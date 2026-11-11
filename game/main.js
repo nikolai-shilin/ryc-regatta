@@ -288,11 +288,22 @@ for (const [id, f] of [['#zoomIn', 1 / 1.06], ['#zoomOut', 1.06]]) {
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, stop);
 }
 
-// keyboard, for a computer: ←/→ steer, ↑/↓ sheet, space tack, K kite, X/C/V drone/top/helm view, A/Z zoom in/out, Esc pause
+// game speed: the race runs 1×, 1.5×, 2× or 3× as fast (more fixed steps a frame, so the sailing is the same; times
+// are in race seconds, so results don't change)
+const SPEEDS = [1, 1.5, 2, 3], speedBtn = $('#speedBtn');
+let timeScale = 1;
+const cycleSpeed = () => {
+  timeScale = SPEEDS[(SPEEDS.indexOf(timeScale) + 1) % SPEEDS.length];
+  speedBtn.textContent = `${timeScale}×`; speedBtn.classList.toggle('fast', timeScale > 1); haptic('light');
+};
+speedBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); cycleSpeed(); });
+
+// keyboard, for a computer: ←/→ steer, ↑/↓ sheet, space tack, K kite, T game speed, X/C/V drone/top/helm view, A/Z zoom in/out, Esc pause
 window.addEventListener('keydown', (e) => {
   input.keys[e.code] = true;
   if (e.code === 'Space') { e.preventDefault(); doTack(); }
   if (e.code === 'KeyK') doKite();
+  if (e.code === 'KeyT') cycleSpeed();
   if (e.code === 'KeyA') world.zoom(1 / 1.12); // held down, the key repeats: a smooth zoom
   if (e.code === 'KeyZ') world.zoom(1.12);
   const view = { KeyX: 'drone', KeyC: 'top', KeyV: 'helm' }[e.code]; // in the order of the buttons
@@ -411,7 +422,9 @@ function updateHud(dt) {
   if (ck !== chipsKey) { chipsKey = ck; el.chips.innerHTML = chips.map(([k, s]) => `<span class="chip ${k}">${s}</span>`).join(''); }
 
   const left = -race.clock;
-  txt(el.count, race.clock < 0 && left <= 10 ? String(Math.ceil(left)) : '');
+  // the countdown to the start, large all the way, and huge for the last ten seconds
+  txt(el.count, race.clock < 0 ? (left <= 10 ? String(Math.ceil(left)) : fmt(left + 0.999)) : '');
+  el.count.classList.toggle('final', race.clock < 0 && left <= 10);
   const ci = Math.ceil(-race.clock);
   if (race.clock < 0 && ci !== lastClockInt) {
     if (lastClockInt !== null && ci <= 10 && ci > 0) { audio.tone(ci <= 3 ? 1046 : 880, 0.12); if (ci <= 3) haptic('light'); }
@@ -545,7 +558,7 @@ function loop(now) {
     if (input.keys.ArrowDown || input.keys.KeyS) setSheet(P.sheet + dt * 0.6);
     if (!input.rudderHeld) input.rudder *= Math.exp(-dt * 5);
     if (!P.auto) P.rudder = input.rudder; else input.rudder = 0;
-    acc += dt;
+    acc += dt * timeScale;
     while (acc >= STEP) { race.step(STEP); acc -= STEP; }
     handleMessages();
     updateHud(dt);
@@ -557,7 +570,7 @@ function loop(now) {
     race.idle(dt);
     if (paused) audio.update(P, true);
   }
-  world.frame(running && !paused ? dt : 0, race.t);
+  world.frame(running && !paused ? dt * timeScale : 0, race.t); // foam and wakes keep pace with the race
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

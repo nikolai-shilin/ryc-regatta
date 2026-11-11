@@ -26,7 +26,7 @@ void main() {
 }`;
 const WATER_FS = /* glsl */ `
 uniform float uTime, uFogNear, uFogFar, uChop, uAmp, uWhite; uniform vec4 uW[8]; uniform float uWs[8], uQ[8];
-uniform vec3 uCam, uSun, uDeep, uScatter, uTop, uHorizon, uFog; uniform vec4 uGust[12]; uniform vec2 uWind;
+uniform vec3 uCam, uSun, uDeep, uScatter, uTop, uHorizon, uFog; uniform vec4 uGust[12]; uniform vec2 uWind, uPivot;
 uniform sampler2D uRipple;
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
 vec3 skyAt(vec3 d) {
@@ -53,6 +53,11 @@ void main() {
   // wind ripples: two layers of a noise normal map drifting downwind, fading with distance
   float dist = length(uCam - vWorld);
   vec2 wq = vec2(-uWind.y, uWind.x);
+  // wind lanes: long streaks of rougher, brighter water lying along the wind, so a shift shows as the lanes swinging
+  // round. They are laid out about the middle of the course (uPivot), so near the boats they turn in place.
+  vec2 pc = p - uPivot;
+  float lane = smoothstep(0.46, 0.62, texture2D(uRipple, vec2(dot(pc, wq) / 70.0, dot(pc, uWind) / 800.0 - uTime * 0.0013)).w);
+  lane *= 1.0 - smoothstep(250.0, 700.0, dist);
   vec2 q1 = vec2(dot(p, wq), dot(p, uWind)) / 19.0 - vec2(0.0, uTime * 0.035);
   vec2 q2 = vec2(dot(p, wq) * 0.8 + dot(p, uWind) * 0.6, dot(p, uWind) * 0.8 - dot(p, wq) * 0.6) / 6.5 - vec2(0.0, uTime * 0.07);
   vec4 t1 = texture2D(uRipple, q1);
@@ -65,7 +70,7 @@ void main() {
   // big, slow patches of rougher and smoother water, so the chop never reads as one repeating tile
   vec2 pr = vec2(dot(p, vec2(0.83, 0.56)), dot(p, vec2(-0.56, 0.83)));
   float patchy = texture2D(uRipple, pr / 83.0 + uWind * uTime * 0.0021).w;
-  float rs = uChop * (1.0 + 1.6 * gust) * (0.55 + 0.9 * patchy) / (1.0 + dist / 140.0);
+  float rs = uChop * (1.0 + 1.6 * gust) * (0.55 + 0.9 * patchy) * (0.5 + 1.2 * lane) / (1.0 + dist / 140.0);
   vec2 rw = r.x * wq + r.y * uWind; // ripple slope in world x/z
   n = normalize(vec3(n.x + rw.x * rs, n.y, n.z + rw.y * rs));
   vec3 V = normalize(uCam - vWorld);
@@ -98,6 +103,7 @@ void main() {
   col = mix(col, col * 0.7 + uScatter * 0.45, halo * 0.3);
   float wisp = smoothstep(0.66, 0.8, 0.6 * brk + 0.4 * edge) * smoothstep(0.55, 0.7, patchy) * uWhite * 0.12; // old foam
   col = mix(col, vec3(0.88, 0.93, 0.95), clamp(cap * 0.8 + wisp, 0.0, 1.0));
+  col = mix(col, col * 1.25 + vec3(0.035, 0.05, 0.065), lane * 0.7); // the lanes catch a little more light
   col *= 1.0 - 0.22 * gust; // a gust reads as a darker patch
   col = mix(col, uFog, smoothstep(uFogNear, uFogFar, dist));
   gl_FragColor = vec4(col, 1.0);
@@ -494,7 +500,7 @@ export class World {
       uDeep: { value: new THREE.Color('#062a40') }, uScatter: { value: new THREE.Color('#1aa3a0') },
       uTop: { value: SKY_TOP }, uHorizon: { value: SKY_HORIZON }, uFog: { value: SKY_HORIZON },
       uFogNear: { value: FOG_NEAR }, uFogFar: { value: FOG_FAR }, uChop: { value: 0.15 }, uAmp: { value: 0.4 }, uWhite: { value: 0 },
-      uGust: { value: Array.from({ length: 12 }, () => new THREE.Vector4()) }, uWind: { value: new THREE.Vector2(0, 1) },
+      uGust: { value: Array.from({ length: 12 }, () => new THREE.Vector4()) }, uWind: { value: new THREE.Vector2(0, 1) }, uPivot: { value: new THREE.Vector2() },
       uRipple: { value: rippleTexture() },
     };
     this.water = new THREE.Mesh(waterGeometry(), new THREE.ShaderMaterial({ uniforms: this.waterU, vertexShader: WATER_VS, fragmentShader: WATER_FS, defines: { WAVES: NW } }));
@@ -542,6 +548,7 @@ export class World {
     this.W.forEach((p, i) => { this.waterU.uW.value[i].set(p.dx, p.dz, p.k, p.A); this.waterU.uWs.value[i] = p.w; this.waterU.uQ.value[i] = p.Q; });
     this.waterU.uChop.value = 0.1 + race.wind.p.tws / 60;
     this.waterU.uAmp.value = race.wind.p.waves;
+    this.waterU.uPivot.value.set(race.course.windward.x, race.course.windward.z / 2); // the wind lanes turn about the middle of the course
     this.waterU.uWhite.value = clamp((race.wind.p.tws - 10) / 9, 0, 1); // whitecaps from about force 4
     this.boatViews = race.boats.map((b, i) => {
       const v = b.ai

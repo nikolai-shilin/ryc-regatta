@@ -137,6 +137,8 @@
   #hud .zoom { display: flex; flex-direction: column; gap: 6px; pointer-events: auto; }
   #hud .zoom button { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--tag-line); background: var(--bg); color: #fff; font-family: var(--sans); font-weight: 700; font-size: 20px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); touch-action: none; }
   #hud .zoom button:active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  #hud .zoom #speedBtn { margin-top: 6px; font-size: 12px; letter-spacing: -0.02em; } /* game speed: 1×, 1.5×, 2×, 3× */
+  #hud .zoom #speedBtn.fast { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
   #hud #rudder { width: 170px; height: 96px; }
   #hud #rudder .track { stroke: rgba(8, 14, 20, 0.42); stroke-width: 14; }
   #hud #rudder .ticks { stroke: rgba(255, 255, 255, 0.35); }
@@ -149,10 +151,15 @@
   #hud #tackBtn { right: calc(76px + var(--sr)); bottom: calc(16px + var(--sb)); }
   #hud #kiteBtn { right: calc(76px + var(--sr)); bottom: calc(82px + var(--sb)); width: 46px; height: 46px; font-size: 9px; }
   #hud #toast { font-family: var(--sans); font-weight: 700; font-size: 14px; padding: 9px 16px; border-radius: 18px; background: rgba(8, 14, 20, 0.62); color: #fff; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-  #hud #count { font-size: 68px; }
+  /* the start countdown: at the bottom, above the steering arc and the tack button */
+  #hud #count { top: auto; bottom: calc(112px + var(--sb)); font-size: clamp(64px, 17vmin, 104px); font-weight: 400; }
+  #hud #count.final { font-size: clamp(100px, 22vmin, 160px); }
   @media (orientation: portrait) {
     #hud #inst { width: 56px; height: 56px; } #hud #heel { width: 56px; height: 28px; } #hud .speed { font-size: 28px; } #hud #mini { width: 88px; height: 88px; }
-    #hud .tc { top: calc(132px + var(--st)); } #hud #rudder { width: 160px; height: 90px; }
+    #hud .tc { top: calc(46px + var(--st)); } #hud #rudder { width: 160px; height: 90px; } /* the readouts just under the view buttons */
+  }
+  @media (orientation: portrait) and (max-width: 430px) { /* a narrow phone: a smaller minimap, clear of the readouts beside it */
+    #hud #mini { width: 68px; height: 68px; border-radius: 12px; }
   }
 
   /* ---------- menus: the app's sheet ---------- */
@@ -230,11 +237,9 @@
       <div class="seg" id="camSeg"><button data-cam="drone" data-t="drone" title="X"></button><button data-cam="top" data-t="top" title="C"></button><button data-cam="helm" data-t="helm" title="V"></button></div>
       <button class="round-s" id="pauseBtn" aria-label="pause"><svg width="14" height="14" viewBox="0 0 14 14"><rect x="2" y="1" width="3.5" height="12" rx="1.2" fill="currentColor"/><rect x="8.5" y="1" width="3.5" height="12" rx="1.2" fill="currentColor"/></svg></button>
     </div>
-    <div class="row">
-      <div class="zoom"><button id="zoomIn" aria-label="zoom in (A)" title="Zoom in · A">+</button><button id="zoomOut" aria-label="zoom out (Z)" title="Zoom out · Z">−</button></div>
-      <canvas id="mini" width="240" height="240"></canvas>
-    </div>
+    <canvas id="mini" width="240" height="240"></canvas>
   </div>
+  <div class="tl zoom"><button id="zoomIn" aria-label="zoom in (A)" title="Zoom in · A">+</button><button id="zoomOut" aria-label="zoom out (Z)" title="Zoom out · Z">−</button><button id="speedBtn" aria-label="game speed (T)" title="Game speed · T">1×</button></div>
   <div id="rudderZone">
     <svg id="rudder" viewBox="0 0 210 118">
       <path class="track" d="M22 104 A84 84 0 0 1 188 104"/>
