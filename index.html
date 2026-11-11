@@ -6,120 +6,199 @@
 <title>Regatta · Sailing Certification Test</title>
 <meta name="description" content="A 3D sailing game: race a yacht round a windward–leeward course against three boats, in light, medium or strong wind.">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#0b3550">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" href="/fonts/fonts.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
+  /* The app's own look (docs/design/app.css): Merriweather Light display, uppercase Carlito kickers, one blue accent,
+     black-on-white chips and pills; the night theme on a black ground. Red and yellow only for warnings and flags. */
   :root {
     --st: max(env(safe-area-inset-top), calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)));
     --sb: max(env(safe-area-inset-bottom), var(--tg-safe-area-inset-bottom, 0px));
     --sl: max(env(safe-area-inset-left), var(--tg-safe-area-inset-left, 0px));
     --sr: max(env(safe-area-inset-right), var(--tg-safe-area-inset-right, 0px));
-    --accent: #35b0f2; --ok: #2ecc71; --warn: #ffb020; --bad: #ff4d3d;
-    --glass: rgba(6, 22, 34, 0.42); --line: rgba(255, 255, 255, 0.7);
-    font-family: 'Carlito', 'Lato', system-ui, -apple-system, sans-serif;
+    --bg: #ffffff; --ink: #000000; --muted: #6d7a7e; --faint: #b8c2c6; --band: #f2f7f9; --line: #eef2f4; --tag-line: #dfe5e8;
+    --accent: #0290d7; --on-accent: #ffffff; --sel-bg: #000000; --sel-ink: #ffffff; --danger: #d40000; --warn: #ffa800;
+    --scrim: rgba(0, 0, 0, 0.35); --shadow: rgba(0, 0, 0, 0.18); --glass: rgba(255, 255, 255, 0.9);
+    --serif: 'Merriweather', Georgia, serif; --sans: 'Carlito', 'Lato', Arial, sans-serif;
+  }
+  .theme-night {
+    --bg: #000000; --ink: #ffffff; --muted: #a8b9c9; --faint: #5c6f80; --band: #14191e; --line: #1f2830; --tag-line: #43586b;
+    --accent: #35b0f2; --on-accent: #00131f; --sel-bg: #ffffff; --sel-ink: #000000; --danger: #ff6a5c;
+    --scrim: rgba(0, 0, 0, 0.6); --shadow: rgba(0, 0, 0, 0.6); --glass: rgba(0, 0, 0, 0.82);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b3550; color: #fff; overscroll-behavior: none; }
-  body { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b3550; color: var(--ink); overscroll-behavior: none; -webkit-font-smoothing: antialiased; }
+  body { font-family: var(--serif); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   button { font: inherit; color: inherit; cursor: pointer; }
-  .pill { background: var(--glass); border-radius: 12px; padding: 4px 9px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-weight: 700; font-size: 13px; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+  .kicker { font-family: var(--sans); font-weight: 700; font-size: 13px; letter-spacing: -0.02em; text-transform: uppercase; color: var(--ink); }
+  .meta { font-family: var(--sans); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; color: var(--muted); }
+  /* text over the sea, as the app's text on photos */
+  .on-photo { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6), 0 2px 14px rgba(0,0,0,.55); }
 
   /* ---------- HUD ---------- */
-  #hud { position: fixed; inset: 0; pointer-events: none; }
+  #hud { position: fixed; inset: 0; pointer-events: none; font-family: var(--sans); }
   #hud[hidden] { display: none; }
   #hud > * { position: absolute; }
-  .tl { left: calc(10px + var(--sl)); top: calc(8px + var(--st)); display: flex; gap: 8px; align-items: flex-start; }
-  #inst { width: 74px; height: 74px; border-radius: 50%; background: var(--glass); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-  .tl .col { display: flex; flex-direction: column; gap: 6px; }
-  #heel { width: 74px; }
-  .tc { left: 50%; transform: translateX(-50%); top: calc(6px + var(--st)); display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .speed { font-weight: 900; font-size: 34px; line-height: 1; text-shadow: 0 2px 6px rgba(0,0,0,.45); font-variant-numeric: tabular-nums; }
-  .speed small { font-size: 14px; font-weight: 700; margin-left: 3px; opacity: .85; }
-  #status { white-space: nowrap; font-variant-numeric: tabular-nums; }
-  #status.bad { background: rgba(200, 40, 30, .75); }
-  .trim { display: flex; align-items: center; gap: 6px; }
-  .trim i { display: block; width: 26px; height: 4px; border-radius: 2px; background: var(--ok); transition: transform .15s, background .15s; }
-  .trim[data-s="in"] i:first-child { background: var(--bad); transform: rotate(-35deg); }
-  .trim[data-s="out"] i:last-child { background: var(--bad); transform: rotate(30deg); }
-  .trim[data-s="irons"] i { background: var(--bad); transform: rotate(60deg); }
-  .trim span { font-size: 12px; }
-  .tr { right: calc(10px + var(--sr)); top: calc(8px + var(--st)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-  .tr .row { display: flex; gap: 6px; pointer-events: auto; }
-  .seg { display: flex; border-radius: 12px; overflow: hidden; background: var(--glass); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-  .seg button { background: none; border: 0; padding: 6px 11px; font-weight: 700; font-size: 13px; }
-  .seg button.on { background: rgba(255,255,255,.9); color: #0b2638; }
-  .icon-btn { width: 32px; height: 30px; border: 0; border-radius: 12px; background: var(--glass); font-weight: 900; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-  #mini { width: 118px; height: 118px; border-radius: 14px; background: rgba(6, 30, 46, .55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .chip-ui { background: var(--glass); color: var(--ink); border-radius: 54px; padding: 0 12px; height: 28px; display: inline-flex; align-items: center; gap: 8px; font-family: var(--sans); font-weight: 700; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 10px rgba(0,0,0,.12); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-variant-numeric: tabular-nums; }
+  .tl { left: calc(12px + var(--sl)); top: calc(10px + var(--st)); display: flex; gap: 8px; align-items: flex-start; }
+  #inst { width: 76px; height: 76px; border-radius: 50%; background: var(--glass); box-shadow: 0 2px 10px rgba(0,0,0,.15); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  #inst .ring { fill: none; stroke: var(--tag-line); stroke-width: 1.5; }
+  #inst .port { stroke: var(--danger); } #inst .stbd { stroke: #1aa39a; }
+  #inst .hull { fill: var(--ink); } #inst .tw { fill: var(--muted); } #inst .aw { fill: var(--accent); }
+  #inst text { font-family: var(--sans); font-weight: 700; font-size: 10px; }
+  .tl .col { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  #heel { width: 76px; height: 38px; border-radius: 0 0 40px 40px; background: var(--glass); box-shadow: 0 2px 10px rgba(0,0,0,.12); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  #heel .arc { fill: none; stroke: var(--tag-line); stroke-width: 5; } #heel .red { fill: none; stroke: var(--danger); stroke-width: 5; }
+  #heel text { font-family: var(--sans); font-weight: 700; font-size: 9px; fill: var(--ink); }
+  #heelNeedle { stroke: var(--ink); }
+  .tc { left: 50%; transform: translateX(-50%); top: calc(6px + var(--st)); display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .speed { font-family: var(--serif); font-weight: 300; font-size: 40px; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .speed small { font-family: var(--sans); font-weight: 700; font-size: 13px; text-transform: uppercase; margin-left: 4px; letter-spacing: 0.02em; }
+  #status.bad { background: var(--danger); color: #fff; }
+  .perf { font-family: var(--sans); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .perf:empty, .chips:empty { display: none; }
+  .trim i { display: block; width: 22px; height: 4px; border-radius: 2px; background: var(--ink); transition: transform .15s, background .15s; }
+  .trim[data-s="in"] i:first-child { background: var(--danger); transform: rotate(-35deg); }
+  .trim[data-s="out"] i:last-child { background: var(--danger); transform: rotate(30deg); }
+  .trim[data-s="irons"] i { background: var(--danger); transform: rotate(60deg); }
+  .chips { display: flex; gap: 6px; }
+  .chip { font-family: var(--sans); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; height: 26px; display: inline-flex; align-items: center; padding: 0 11px; border-radius: 54px; background: var(--glass); color: var(--ink); white-space: nowrap; }
+  .chip.bad { background: var(--danger); color: #fff; } .chip.warn { background: var(--warn); color: #000; } .chip.ok { background: var(--accent); color: var(--on-accent); }
+  .flags { display: flex; gap: 4px; }
+  .flag { display: block; width: 24px; height: 16px; border-radius: 2px; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,.4); font-style: normal; }
+  .flag.cls { background: #f2c230; color: #111; font: 900 12px/16px var(--sans); text-align: center; }
+  .flag.P { background: #1f4fa8; } .flag.P::after { content: ''; position: absolute; inset: 5px 8px; background: #fff; }
+  .flag.X { background: linear-gradient(#1f4fa8, #1f4fa8) center / 5px 100% no-repeat, linear-gradient(#1f4fa8, #1f4fa8) center / 100% 4px no-repeat, #fff; }
+  .tr { right: calc(12px + var(--sr)); top: calc(10px + var(--st)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .tr .row { display: flex; gap: 6px; pointer-events: auto; align-items: center; }
+  /* camera: the app's tags, the chosen one black */
+  .seg { display: flex; gap: 6px; }
+  .seg button { height: 32px; padding: 0 14px; border-radius: 54px; border: 2px solid var(--tag-line); background: var(--bg); color: var(--ink); font-family: var(--serif); font-size: 14px; line-height: 1; }
+  .seg button.on { background: var(--sel-bg); border-color: var(--sel-bg); color: var(--sel-ink); }
+  .round-s { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--accent); background: var(--bg); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+  #mini { width: 120px; height: 120px; border-radius: 22px; background: var(--glass); box-shadow: 0 2px 10px rgba(0,0,0,.15); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 
   /* controls: rudder (left thumb), sheet + tack (right thumb) */
   #rudderZone { left: 0; bottom: 0; width: 42%; height: 58%; pointer-events: auto; touch-action: none; }
   #rudder { position: absolute; left: calc(14px + var(--sl)); bottom: calc(10px + var(--sb)); width: 210px; height: 118px; pointer-events: none; }
-  #rudder .lbl { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-size: 11px; font-weight: 700; opacity: .8; text-transform: uppercase; letter-spacing: .06em; }
-  #sheetZone { right: calc(0px + var(--sr)); bottom: calc(10px + var(--sb)); width: 76px; height: min(300px, calc(100% - 196px - var(--st) - var(--sb))); pointer-events: auto; touch-action: none; display: flex; justify-content: center; }
-  #sheet { position: relative; width: 22px; height: calc(100% - 22px); border-radius: 12px; background: rgba(255,255,255,.22); border: 2px solid var(--line); margin-top: 0; }
-  #sheet .band { position: absolute; left: 0; right: 0; background: rgba(46, 204, 113, .6); border-radius: 4px; }
-  #sheet .knob { position: absolute; left: -9px; width: 36px; height: 18px; border-radius: 9px; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); transform: translateY(-50%); }
-  #sheet .cap { position: absolute; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; opacity: .8; white-space: nowrap; text-transform: uppercase; letter-spacing: .05em; }
-  #sheet .cap.t { top: -18px; } #sheet .cap.b { bottom: -18px; }
+  #rudder .track { fill: none; stroke: rgba(255,255,255,.55); stroke-width: 16; stroke-linecap: round; }
+  #rudder .ticks { fill: none; stroke: rgba(0,0,0,.25); stroke-width: 2; stroke-dasharray: 2 10; }
+  #rudderKnob { fill: var(--accent); stroke: #fff; stroke-width: 3; }
+  #sheetZone { right: calc(0px + var(--sr)); bottom: calc(10px + var(--sb)); width: 80px; height: min(300px, calc(100% - 200px - var(--st) - var(--sb))); pointer-events: auto; touch-action: none; display: flex; justify-content: center; }
+  #sheet { position: relative; width: 24px; height: calc(100% - 22px); border-radius: 54px; background: var(--glass); border: 2px solid var(--tag-line); box-shadow: 0 2px 10px rgba(0,0,0,.15); }
+  #sheet .band { position: absolute; left: 2px; right: 2px; background: color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 54px; }
+  #sheet .knob { position: absolute; left: -10px; width: 40px; height: 20px; border-radius: 54px; background: var(--accent); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.3); transform: translateY(-50%); }
+  #sheet .cap { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--sans); font-size: 11px; font-weight: 700; white-space: nowrap; text-transform: uppercase; letter-spacing: .02em; }
+  #sheet .cap.t { top: -19px; } #sheet .cap.b { bottom: -19px; }
   #sheetZone.auto #sheet { opacity: .55; }
-  .round { width: 66px; height: 66px; border-radius: 50%; border: 2px solid var(--line); background: rgba(255,255,255,.16); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; pointer-events: auto; touch-action: none; }
-  .round:active, .round.down { background: rgba(255,255,255,.45); }
-  #tackBtn { right: calc(92px + var(--sr)); bottom: calc(18px + var(--sb)); }
-  #kiteBtn { right: calc(92px + var(--sr)); bottom: calc(96px + var(--sb)); width: 54px; height: 54px; font-size: 10px; }
-  #kiteBtn.on { background: rgba(29, 111, 209, .75); }
+  /* the app's round buttons: accent ring, filled while pressed */
+  .round { width: 68px; height: 68px; border-radius: 50%; border: 2px solid var(--accent); background: var(--bg); color: var(--accent); font-family: var(--sans); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .02em; pointer-events: auto; touch-action: none; box-shadow: 0 2px 10px rgba(0,0,0,.18); padding: 0; }
+  .round:active, .round.down, #kiteBtn.on { background: var(--accent); color: var(--on-accent); }
+  #tackBtn { right: calc(94px + var(--sr)); bottom: calc(18px + var(--sb)); }
+  #kiteBtn { right: calc(94px + var(--sr)); bottom: calc(98px + var(--sb)); width: 56px; height: 56px; font-size: 10px; }
   #kiteBtn[hidden] { display: none; }
-  #toast { left: 50%; top: 40%; transform: translate(-50%, -50%); font-size: 20px; font-weight: 900; text-align: center; text-shadow: 0 2px 8px rgba(0,0,0,.6); opacity: 0; transition: opacity .3s; white-space: nowrap; }
+  #toast { left: 50%; top: 42%; transform: translate(-50%, -50%); max-width: calc(100% - 40px); background: var(--bg); color: var(--ink); border-radius: 28px; padding: 12px 20px; font-family: var(--serif); font-size: 16px; line-height: 1.3; text-align: center; box-shadow: 0 8px 30px var(--shadow); opacity: 0; transition: opacity .3s; }
   #toast.show { opacity: 1; }
-  #count { left: 50%; top: 22%; transform: translateX(-50%); font-size: 72px; font-weight: 900; text-shadow: 0 3px 12px rgba(0,0,0,.5); font-variant-numeric: tabular-nums; }
+  #count { left: 50%; top: 22%; transform: translateX(-50%); font-family: var(--serif); font-weight: 300; font-size: 84px; line-height: 1; font-variant-numeric: tabular-nums; }
 
-  /* ---------- menus ---------- */
-  .overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: calc(12px + var(--st)) calc(12px + var(--sr)) calc(12px + var(--sb)) calc(12px + var(--sl)); background: rgba(4, 20, 32, .35); }
+  /* ---------- the sailing HUD: its own look — dark glass, half transparent, compact (whatever the app's theme) ---------- */
+  #hud {
+    --bg: rgba(8, 14, 20, 0.5); --glass: rgba(8, 14, 20, 0.46); --ink: #ffffff; --muted: rgba(255, 255, 255, 0.66); --faint: rgba(255, 255, 255, 0.32);
+    --tag-line: rgba(255, 255, 255, 0.2); --accent: #35b0f2; --on-accent: #00131f; --sel-bg: rgba(255, 255, 255, 0.86); --sel-ink: #0b1218;
+    --danger: #ff6a5c; --warn: #ffb020; --shadow: rgba(0, 0, 0, 0.25);
+  }
+  #hud .chip-ui, #hud #inst, #hud #heel, #hud #mini, #hud #sheet, #hud .round, #hud .seg button, #hud .round-s, #hud #toast { box-shadow: none; }
+  #hud .chip-ui { height: 24px; padding: 0 10px; font-size: 12px; gap: 6px; }
+  #hud .chip { height: 22px; padding: 0 9px; font-size: 11px; }
+  #hud .chip.warn { background: rgba(255, 176, 32, 0.85); }
+  #hud .trim i { width: 18px; height: 3px; }
+  #hud .speed { font-size: 32px; }
+  #hud .speed small { font-size: 11px; }
+  #hud .perf { font-size: 11px; }
+  #hud .tc { gap: 4px; }
+  #hud #inst { width: 62px; height: 62px; }
+  #hud #heel { width: 62px; height: 31px; }
+  #hud .tl { gap: 6px; } #hud .tr { gap: 6px; }
+  #hud .seg button { height: 28px; padding: 0 11px; font-family: var(--sans); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .02em; border-width: 1.5px; }
+  #hud .round-s { width: 30px; height: 30px; border: 1.5px solid var(--tag-line); color: #fff; background: var(--bg); }
+  #hud .round-s svg { width: 11px; height: 11px; }
+  #hud #mini { width: 100px; height: 100px; border-radius: 16px; }
+  #hud #rudder { width: 170px; height: 96px; }
+  #hud #rudder .track { stroke: rgba(8, 14, 20, 0.42); stroke-width: 14; }
+  #hud #rudder .ticks { stroke: rgba(255, 255, 255, 0.35); }
+  #hud #rudderKnob { stroke: rgba(255, 255, 255, 0.85); stroke-width: 2.5; }
+  #hud #sheetZone { width: 64px; }
+  #hud #sheet { width: 18px; border-width: 1.5px; }
+  #hud #sheet .knob { left: -8px; width: 30px; height: 16px; border-width: 1.5px; }
+  #hud #sheet .cap { font-size: 10px; }
+  #hud .round { width: 56px; height: 56px; font-size: 11px; border-width: 1.5px; color: #fff; border-color: rgba(53, 176, 242, 0.85); }
+  #hud #tackBtn { right: calc(76px + var(--sr)); bottom: calc(16px + var(--sb)); }
+  #hud #kiteBtn { right: calc(76px + var(--sr)); bottom: calc(82px + var(--sb)); width: 46px; height: 46px; font-size: 9px; }
+  #hud #toast { font-family: var(--sans); font-weight: 700; font-size: 14px; padding: 9px 16px; border-radius: 18px; background: rgba(8, 14, 20, 0.62); color: #fff; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  #hud #count { font-size: 68px; }
+  @media (orientation: portrait) {
+    #hud #inst { width: 56px; height: 56px; } #hud #heel { width: 56px; height: 28px; } #hud .speed { font-size: 28px; } #hud #mini { width: 88px; height: 88px; }
+    #hud .tc { top: calc(132px + var(--st)); } #hud #rudder { width: 160px; height: 90px; }
+  }
+
+  /* ---------- menus: the app's sheet ---------- */
+  .overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: calc(12px + var(--st)) calc(12px + var(--sr)) calc(12px + var(--sb)) calc(12px + var(--sl)); background: var(--scrim); }
   .overlay[hidden] { display: none; }
-  .card { width: min(560px, 100%); max-height: 100%; overflow: auto; background: rgba(8, 26, 40, .82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-radius: 22px; padding: 20px 22px; box-shadow: 0 20px 60px rgba(0,0,0,.35); touch-action: pan-y; }
-  .card h1 { margin: 0; font-size: 30px; font-weight: 900; letter-spacing: -.01em; }
-  .card .sub { margin: 2px 0 14px; opacity: .8; font-size: 15px; }
+  .card { width: min(560px, 100%); max-height: 100%; overflow: auto; background: var(--bg); color: var(--ink); border-radius: 28px; padding: 22px 24px 24px; box-shadow: 0 12px 40px var(--shadow); touch-action: pan-y; }
+  .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .logo { display: block; width: 50px; height: 25px; }
+  .theme-night .logo { filter: invert(1); }
+  .card h1 { margin: 0; font-family: var(--serif); font-weight: 300; font-size: 40px; line-height: 0.95; letter-spacing: -0.025em; }
+  .card .sub { margin: 10px 0 18px; font-size: 15px; line-height: 1.45; color: var(--muted); }
   .card .grid { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; }
-  .card .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; opacity: .75; }
   .choice { display: flex; flex-wrap: wrap; gap: 6px; }
-  .choice button { border: 1.5px solid rgba(255,255,255,.35); background: transparent; border-radius: 12px; padding: 7px 12px; font-weight: 700; font-size: 14px; }
-  .choice button.on { background: #fff; color: #0b2638; border-color: #fff; }
-  .go { display: block; width: 100%; margin-top: 16px; border: 0; border-radius: 14px; padding: 13px; font-size: 18px; font-weight: 900; background: var(--accent); color: #00131f; }
+  .choice button { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 54px; border: 2px solid var(--tag-line); background: var(--bg); color: var(--ink); font-family: var(--serif); font-size: 15px; line-height: 1; }
+  .choice button.on { background: var(--sel-bg); border-color: var(--sel-bg); color: var(--sel-ink); }
+  .go { display: flex; align-items: center; justify-content: center; width: 100%; height: 56px; margin-top: 18px; border-radius: 54px; border: 2px solid var(--accent); background: var(--accent); color: var(--on-accent); font-family: var(--serif); font-size: 20px; line-height: 1; }
   .go[hidden] { display: none; }
-  .go.ghost { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,.4); margin-top: 8px; font-size: 16px; padding: 10px; }
-  .how { margin: 14px 0 0; padding: 0; list-style: none; font-size: 14px; line-height: 1.4; opacity: .9; display: grid; gap: 4px; }
-  .how b { color: #9fdcff; }
-  .back { display: inline-block; margin-top: 12px; color: #9fdcff; text-decoration: none; font-size: 14px; }
-  .rotate { margin-top: 10px; font-size: 13px; color: var(--warn); display: none; }
+  .go.ghost { background: var(--bg); color: var(--ink); border-color: var(--tag-line); height: 52px; font-size: 18px; margin-top: 10px; }
+  .how { margin: 16px 0 0; padding: 14px 16px; list-style: none; background: var(--band); border-radius: 22px; font-family: var(--sans); font-size: 14px; line-height: 1.35; color: var(--muted); display: grid; gap: 6px; }
+  .how b { color: var(--ink); }
+  .back { display: inline-block; margin-top: 14px; color: var(--accent); text-decoration: none; font-size: 15px; }
+  .rotate { margin-top: 10px; font-family: var(--sans); font-weight: 700; font-size: 13px; color: var(--danger); display: none; }
   @media (orientation: portrait) { .rotate { display: block; } }
-  table.res { width: 100%; border-collapse: collapse; margin: 6px 0 0; font-size: 16px; font-variant-numeric: tabular-nums; }
-  table.res td { padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,.12); }
-  table.res tr.me td { color: #9fdcff; font-weight: 900; }
+  table.res { width: 100%; border-collapse: collapse; margin: 14px 0 0; font-family: var(--sans); font-size: 17px; font-variant-numeric: tabular-nums; }
+  table.res td { padding: 9px 4px; border-bottom: 1px solid var(--line); }
+  table.res td:first-child { color: var(--muted); width: 28px; }
+  table.res tr.me td { color: var(--accent); font-weight: 700; }
   table.res td:last-child { text-align: right; }
-  .res-wrap { display: grid; grid-template-columns: 1fr 150px; gap: 14px; align-items: start; }
-  #track { width: 150px; height: 150px; border-radius: 12px; background: rgba(6, 30, 46, .7); }
+  .res-wrap { display: grid; grid-template-columns: 1fr 156px; gap: 16px; align-items: start; }
+  #track { width: 156px; height: 156px; border-radius: 22px; background: var(--band); margin-top: 14px; }
   @media (max-width: 520px) { .res-wrap { grid-template-columns: 1fr; } }
   /* a phone on its side: the menu in two columns so it fits without scrolling */
   @media (orientation: landscape) and (max-height: 560px) {
-    #menu .card { width: min(820px, 100%); padding: 16px 20px; }
-    #menu .cols { display: grid; grid-template-columns: 1.15fr 1fr; gap: 22px; align-items: start; }
-    #menu .how { margin: 4px 0 0; font-size: 13px; }
-    #menu h1 { font-size: 26px; } #menu .sub { font-size: 14px; margin-bottom: 10px; }
-    #menu .go { margin-top: 12px; padding: 11px; }
-    .choice button { padding: 6px 10px; font-size: 13px; }
+    #menu .card { width: min(840px, 100%); padding: 16px 20px 18px; }
+    #menu .cols { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start; }
+    #menu .card-top { margin-bottom: 8px; }
+    #menu h1 { font-size: 30px; } #menu .sub { font-size: 13px; margin: 6px 0 10px; }
+    #menu .grid { gap: 5px 12px; }
+    .choice button { height: 31px; padding: 0 11px; font-size: 13px; }
+    #menu .go { margin-top: 0; height: 50px; font-size: 18px; } #menu .go.ghost { margin-top: 8px; height: 44px; font-size: 16px; }
+    #menu .how { margin-top: 12px; padding: 10px 14px; font-size: 13px; gap: 4px; }
+    #results .card { width: min(720px, 100%); }
+  }
+  @media (orientation: landscape) and (max-height: 430px) {
+    #menu .card-top { margin-bottom: 2px; } #menu h1 { font-size: 26px; } #menu .sub { display: none; }
+    #menu .grid { margin-top: 10px; gap: 4px 12px; } .choice button { height: 29px; }
   }
 
   /* phones held upright: smaller instruments, controls still under the thumbs */
   @media (orientation: portrait) {
-    .tl { flex-direction: column; } #inst { width: 62px; height: 62px; } #heel { width: 62px; }
-    .speed { font-size: 28px; } #mini { width: 96px; height: 96px; }
-    .tc { top: calc(48px + var(--st)); }
+    .tl { flex-direction: column; } #inst { width: 64px; height: 64px; } #heel { width: 64px; height: 32px; }
+    .speed { font-size: 32px; } #mini { width: 98px; height: 98px; }
+    .tc { top: calc(150px + var(--st)); } #status { font-size: 12px; }
     #rudderZone { width: 55%; height: 40%; } #rudder { width: 180px; height: 100px; }
     #sheetZone { height: min(36%, 260px); }
   }
-  @media (max-height: 380px) { #mini { width: 92px; height: 92px; } .speed { font-size: 28px; } #inst { width: 62px; height: 62px; } #heel { width: 62px; } }
+  @media (max-height: 380px) { #mini { width: 94px; height: 94px; } .speed { font-size: 32px; } #inst { width: 64px; height: 64px; } #heel { width: 64px; height: 32px; } }
 </style>
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
 </head>
@@ -129,67 +208,79 @@
 <div id="hud" hidden>
   <div class="tl">
     <svg id="inst" viewBox="-50 -50 100 100" aria-label="wind">
-      <circle r="44" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>
-      <path d="M-33.7 -28.3 A44 44 0 0 1 -22 -38.1" stroke="rgba(255,77,61,.85)" stroke-width="5" fill="none"/>
-      <path d="M22 -38.1 A44 44 0 0 1 33.7 -28.3" stroke="rgba(46,204,113,.85)" stroke-width="5" fill="none"/>
-      <path d="M0 -20 C6 -10 7 6 5 18 L-5 18 C-7 6 -6 -10 0 -20Z" fill="#fff"/>
-      <g id="windArrow"><path d="M0 -46 L-7 -32 L-2 -32 L-2 -24 L2 -24 L2 -32 L7 -32Z" fill="#ffd400" transform="rotate(180 0 -35)"/></g>
-      <text id="twsTxt" y="38" text-anchor="middle" font-size="11" font-weight="700" fill="#fff"></text>
+      <circle class="ring" r="44"/>
+      <path class="port" d="M-33.7 -28.3 A44 44 0 0 1 -22 -38.1" stroke-width="5" fill="none"/>
+      <path class="stbd" d="M22 -38.1 A44 44 0 0 1 33.7 -28.3" stroke-width="5" fill="none"/>
+      <path class="hull" d="M0 -20 C6 -10 7 6 5 18 L-5 18 C-7 6 -6 -10 0 -20Z"/>
+      <g id="twaTick"><path class="tw" d="M0 -44 L-4 -36 L4 -36Z"/></g>
+      <g id="windArrow"><path class="aw" d="M0 -46 L-7 -32 L-2 -32 L-2 -24 L2 -24 L2 -32 L7 -32Z" transform="rotate(180 0 -35)"/></g>
+      <text id="awsTxt" x="-13" y="36" text-anchor="middle" fill="var(--accent)"></text>
+      <text id="twsTxt" x="13" y="36" text-anchor="middle" fill="var(--muted)"></text>
     </svg>
     <div class="col">
-      <svg id="heel" viewBox="-40 -6 80 40">
-        <path d="M-32 0 A32 32 0 0 0 32 0" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="6"/>
-        <path d="M-32 0 A32 32 0 0 0 -18.4 26.2" fill="none" stroke="rgba(255,77,61,.8)" stroke-width="6"/>
-        <path d="M32 0 A32 32 0 0 1 18.4 26.2" fill="none" stroke="rgba(255,77,61,.8)" stroke-width="6"/>
-        <line id="heelNeedle" x1="0" y1="0" x2="0" y2="32" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-        <text id="heelTxt" x="0" y="-0.5" text-anchor="middle" font-size="9" font-weight="700" fill="#fff"></text>
+      <svg id="heel" viewBox="-40 -4 80 40">
+        <path class="arc" d="M-32 0 A32 32 0 0 0 32 0"/>
+        <path class="red" d="M-32 0 A32 32 0 0 0 -18.4 26.2"/>
+        <path class="red" d="M32 0 A32 32 0 0 1 18.4 26.2"/>
+        <line id="heelNeedle" x1="0" y1="0" x2="0" y2="31" stroke-width="3" stroke-linecap="round"/>
+        <text id="heelTxt" x="0" y="13" text-anchor="middle"></text>
       </svg>
+      <div class="flags" id="flags"></div>
     </div>
   </div>
   <div class="tc">
-    <div class="speed"><b id="spd">0.0</b><small data-t="kn"></small></div>
-    <div class="pill" id="status"></div>
-    <div class="trim pill" id="trim"><i></i><i></i><span id="trimTxt"></span></div>
+    <div class="speed on-photo"><span id="spd">0.0</span><small data-t="kn"></small></div>
+    <div class="chip-ui" id="status"></div>
+    <div class="perf on-photo" id="perf"></div>
+    <div class="trim chip-ui" id="trim"><i></i><i></i><span id="trimTxt"></span></div>
+    <div class="chips" id="chips"></div>
   </div>
   <div class="tr">
     <div class="row">
       <div class="seg" id="camSeg"><button data-cam="drone" data-t="drone"></button><button data-cam="helm" data-t="helm"></button></div>
-      <button class="icon-btn" id="pauseBtn" aria-label="pause">II</button>
+      <button class="round-s" id="pauseBtn" aria-label="pause"><svg width="14" height="14" viewBox="0 0 14 14"><rect x="2" y="1" width="3.5" height="12" rx="1.2" fill="currentColor"/><rect x="8.5" y="1" width="3.5" height="12" rx="1.2" fill="currentColor"/></svg></button>
     </div>
-    <canvas id="mini" width="236" height="236"></canvas>
+    <canvas id="mini" width="240" height="240"></canvas>
   </div>
   <div id="rudderZone">
     <svg id="rudder" viewBox="0 0 210 118">
-      <path d="M22 104 A84 84 0 0 1 188 104" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="16" stroke-linecap="round"/>
-      <path d="M22 104 A84 84 0 0 1 188 104" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2" stroke-dasharray="2 10"/>
-      <circle id="rudderKnob" cx="105" cy="20" r="14" fill="#fff"/>
+      <path class="track" d="M22 104 A84 84 0 0 1 188 104"/>
+      <path class="ticks" d="M22 104 A84 84 0 0 1 188 104"/>
+      <circle id="rudderKnob" cx="105" cy="20" r="14"/>
     </svg>
   </div>
-  <div id="sheetZone"><div id="sheet"><div class="band"></div><div class="knob"></div><span class="cap t" data-t="in"></span><span class="cap b" data-t="out"></span></div></div>
+  <div id="sheetZone"><div id="sheet"><div class="band"></div><div class="knob"></div><span class="cap t on-photo" data-t="in"></span><span class="cap b on-photo" data-t="out"></span></div></div>
   <button class="round" id="tackBtn"></button>
   <button class="round" id="kiteBtn" hidden data-t="kite"></button>
   <div id="toast"></div>
-  <div id="count"></div>
+  <div id="count" class="on-photo"></div>
 </div>
 
 <div class="overlay" id="menu">
   <div class="card">
     <div class="cols"><div>
+    <div class="card-top"><img class="logo" src="/design/logo-black.svg" alt="RYC"><span class="kicker" data-t="kick"></span></div>
     <h1 data-t="title"></h1>
     <p class="sub" data-t="sub"></p>
     <div class="grid">
-      <span class="k" data-t="wind"></span>
+      <span class="meta" data-t="wind"></span>
       <div class="choice" data-opt="preset"><button data-v="light" data-t="light"></button><button data-v="medium" data-t="medium"></button><button data-v="strong" data-t="strong"></button></div>
-      <span class="k" data-t="laps"></span>
+      <span class="meta" data-t="laps"></span>
       <div class="choice" data-opt="laps"><button data-v="1">1</button><button data-v="2">2</button></div>
-      <span class="k" data-t="sails"></span>
+      <span class="meta" data-t="sails"></span>
       <div class="choice" data-opt="autoTrim"><button data-v="0" data-t="manual"></button><button data-v="1" data-t="auto"></button></div>
-      <span class="k" data-t="sound"></span>
+      <span class="meta" data-t="startK"></span>
+      <div class="choice" data-opt="start"><button data-v="1" data-t="m1"></button><button data-v="3" data-t="m3"></button><button data-v="5" data-t="m5"></button></div>
+      <span class="meta" data-t="currentK"></span>
+      <div class="choice" data-opt="current"><button data-v="0" data-t="off"></button><button data-v="1" data-t="on"></button></div>
+      <span class="meta" data-t="gfx"></span>
+      <div class="choice" data-opt="gfx"><button data-v="auto" data-t="gAuto"></button><button data-v="high" data-t="gHigh"></button><button data-v="medium" data-t="gMedium"></button><button data-v="low" data-t="gLow"></button></div>
+      <span class="meta" data-t="sound"></span>
       <div class="choice" data-opt="sound"><button data-v="1" data-t="on"></button><button data-v="0" data-t="off"></button></div>
     </div>
+    </div><div>
     <button class="go" id="goBtn" data-t="start"></button>
     <button class="go ghost" id="resumeBtn" hidden data-t="resume"></button>
-    </div><div>
     <ul class="how">
       <li data-t="how1"></li><li data-t="how2"></li><li data-t="how3"></li><li data-t="how4"></li>
     </ul>
@@ -201,10 +292,11 @@
 
 <div class="overlay" id="results" hidden>
   <div class="card">
+    <div class="card-top"><img class="logo" src="/design/logo-black.svg" alt="RYC"><span class="kicker" data-t="kick"></span></div>
     <h1 id="resTitle"></h1>
     <div class="res-wrap">
       <table class="res" id="resTable"></table>
-      <canvas id="track" width="300" height="300"></canvas>
+      <canvas id="track" width="312" height="312"></canvas>
     </div>
     <button class="go" id="againBtn" data-t="again"></button>
     <button class="go ghost" id="menuBtn" data-t="menu"></button>

@@ -1,45 +1,64 @@
-// Regatta: the game loop, the touch controls, the HUD and the menus.
-import { Race, D2R, KN, UP_TWA, clamp, idealSail, sheetFor } from './sim.js';
-import { World } from './world.js';
+// Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
+import { Race, D2R, KN, clamp, wrap, idealSail, sheetFor, beatAngle } from './sim.js';
+import { World, defaultQuality } from './world.js';
 
 const $ = (s) => document.querySelector(s);
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
 
 // ---------- words ----------
+const ord = (n) => `${n}${['st', 'nd', 'rd'][n - 1] || 'th'}`;
 const T = {
   en: {
-    title: 'Regatta', sub: 'A windward–leeward race against three boats. Steer, trim, tack — and read the wind.',
-    wind: 'Wind', light: 'Light · 6 kn', medium: 'Medium · 12 kn', strong: 'Strong · 19 kn', laps: 'Laps', sails: 'Sails',
-    manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', on: 'On', off: 'Off', start: 'Start race', resume: 'Resume', restart: 'Restart',
-    how1: '<b>Left thumb</b>: slide on the arc to steer.', how2: '<b>Right thumb</b>: sheet slider — up pulls the sails in, down lets them out. Keep the telltales green.',
-    how3: '<b>Tack</b> turns you through the wind; downwind it becomes <b>Gybe</b>. <b>Kite</b> sets the gennaker on a run.',
-    how4: 'Dark patches on the water are gusts: ease the sheet before you heel too far. Start after the gun, round the yellow-arrow mark, finish through the line.',
+    kick: 'Game', title: 'Regatta', sub: 'A windward–leeward race against three boats, under the racing rules. Steer, trim, tack, read the wind.',
+    wind: 'Wind', light: 'Light · 7 kn', medium: 'Medium · 12 kn', strong: 'Strong · 19 kn', laps: 'Laps', sails: 'Sails',
+    manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
+    currentK: 'Current', gfx: 'Graphics', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', start: 'Start race', resume: 'Resume', restart: 'Restart',
+    how1: '<b>Left thumb</b> steers on the arc. <b>Right thumb</b> works the sheet: up pulls the sails in, down lets them out. Keep the telltales green.',
+    how2: '<b>Tack</b> turns you through the wind (<b>Gybe</b> downwind). <b>Kite</b> sets the gennaker on a run. In a gust, ease the sheet before she heels too far.',
+    how3: 'Start after the gun — the class flag comes down. Over early and you must go back. Round the windward mark <b>leaving it to port</b>, finish through the line.',
+    how4: 'Racing rules: port tack keeps clear of starboard, windward of leeward, the boat astern of the boat ahead; inside boat gets room at the mark. Hit someone you should have avoided — two penalty turns. Touch a mark — one.',
     rotate: 'Turn your phone sideways for the best view.', back: '← Back to Sailing Certification Test',
     kn: 'kn', drone: 'Drone', helm: 'Helm', tack: 'Tack', gybe: 'Gybe', kite: 'Kite', in: 'In', out: 'Out',
     ok: 'Trim OK', pullIn: 'Pull in', easeOut: 'Ease out', irons: 'In irons',
-    startIn: 'Start in', lineStart: 'Start line', mark: 'Windward mark', gate: 'Leeward gate', finish: 'Finish line', ocsS: 'OCS — return below the line',
-    ocs: 'Over early! Go back below the line', cleared: 'Clear — now start', started: 'Good start!', rounded: 'Mark rounded — bear away',
-    gateMsg: 'Through the gate — back upwind', gun: 'Go!', bump: 'Bump!', broach: 'Broach! Ease the sheet', kitedown: 'Too close to the wind for the kite',
+    startIn: 'Start', lineStart: 'Start line', mark: 'Windward mark', gate: 'Leeward gate', finish: 'Finish', ocsS: 'OCS — return below the line',
+    target: 'target', vmg: 'VMG', line: 'line', toLine: 'to line', favPin: 'pin end favoured', favBoat: 'boat end favoured', square: 'line square',
+    sigWarn: (n) => `Warning signal — class flag up, ${n} min`, sigPrep: (n) => `Preparatory — P flag up, ${n} min`, sig1: 'One minute — P flag down', gun: 'Start! Class flag down',
+    ocs: 'Over early! X flag — go back below the line', cleared: 'Clear — now start', started: 'Good start!', rounded: 'Mark rounded — bear away, kite up',
+    missedLine: 'Outside the line — cross between the committee boat and the pin', missedGate: 'Outside the gate — go back and sail between the two buoys', wrongSide: 'Leave the mark to port — go back round it',
+    gateMsg: 'Through the gate — back upwind', bump: 'Contact!', broach: 'Broach! Ease the sheet', kitedown: 'Too close to the wind for the kite',
     heelMsg: 'Too much heel — ease the sheet', ironsMsg: 'In irons — steer away from the wind', gust: 'Gust!', autoOff: 'Auto-trim off — you trim now',
-    results: 'Results', again: 'Race again', menu: 'Menu', racing: 'racing…', you: 'You', paused: 'Paused',
-    place: (n) => `${n}${['st', 'nd', 'rd'][n - 1] || 'th'}`, finished: (n) => `Finished ${n}${['st', 'nd', 'rd'][n - 1] || 'th'}!`,
+    hail10: 'Starboard!', hail11: 'Windward boat, keep clear!', hail12: 'Keep clear astern!', hail13: 'You’re tacking — keep clear!', hail18: 'Room at the mark!', hail44: 'Penalty boat — keep clear!',
+    fouled: (w, r) => `Foul on ${w} (rule ${r}) — do two penalty turns`, theyFouled: (w, r) => `${w} broke rule ${r} and takes a penalty`,
+    touched: 'You touched the mark — one penalty turn', penaltyDone: 'Penalty done', pen: (d, n) => `Penalty ${d}/${n} turns`,
+    dirty: 'Dirty air', surf: 'Surfing!', tackCall: 'Ready about… Lee-oh!', gybeCall: 'Stand by to gybe… Gybe-oh!',
+    results: 'Results', again: 'Race again', menu: 'Menu', racing: 'racing…', you: 'You', dsq: 'DSQ',
+    gfxDown: (q) => `Graphics set to ${q} to keep it smooth`, place: ord, finished: (n) => `Finished ${ord(n)}!`, finishedDsq: 'Finished without taking your penalty — DSQ',
   },
   ru: {
-    title: 'Регата', sub: 'Гонка «апвинд — даунвинд» против трёх лодок. Рули, работай шкотом, делай повороты и читай ветер.',
-    wind: 'Ветер', light: 'Слабый · 6 уз', medium: 'Средний · 12 уз', strong: 'Сильный · 19 уз', laps: 'Круги', sails: 'Паруса',
-    manual: 'Сам', auto: 'Авто', sound: 'Звук', on: 'Вкл', off: 'Выкл', start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
-    how1: '<b>Левый палец</b>: веди по дуге, чтобы рулить.', how2: '<b>Правый палец</b>: шкот — вверх выбрать, вниз потравить. Колдунчики должны быть зелёными.',
-    how3: '<b>Поворот</b> — оверштаг через ветер; на полных курсах он становится <b>фордевиндом</b>. <b>Генакер</b> — для попутного ветра.',
-    how4: 'Тёмные пятна на воде — порывы: потрави шкот, пока крен не стал слишком большим. Стартуй после сигнала, обогни знак под жёлтой стрелкой, финишируй через линию.',
+    kick: 'Игра', title: 'Регата', sub: 'Гонка «апвинд — даунвинд» против трёх лодок по правилам. Рули, работай шкотом, делай повороты, читай ветер.',
+    wind: 'Ветер', light: 'Слабый · 7 уз', medium: 'Средний · 12 уз', strong: 'Сильный · 19 уз', laps: 'Круги', sails: 'Паруса',
+    manual: 'Сам', auto: 'Авто', sound: 'Звук', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
+    currentK: 'Течение', gfx: 'Графика', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
+    how1: '<b>Левый палец</b> рулит по дуге. <b>Правый</b> работает шкотом: вверх выбрать, вниз потравить. Колдунчики должны быть зелёными.',
+    how2: '<b>Поворот</b> — оверштаг через ветер (на полных курсах — <b>фордевинд</b>). <b>Генакер</b> — для попутного ветра. В порыве трави шкот, пока крен не стал слишком большим.',
+    how3: 'Старт после сигнала — флаг класса спущен. Фальстарт — вернись за линию. Верхний знак огибают, <b>оставляя его слева</b>; финиш — через линию.',
+    how4: 'Правила: левый галс уступает правому, наветренная — подветренной, догоняющая — идущей впереди; внутренней лодке у знака дают место. Столкнулся, когда должен был уступить, — два штрафных оборота. Задел знак — один.',
     rotate: 'Поверните телефон горизонтально.', back: '← Назад в Sailing Certification Test',
     kn: 'уз', drone: 'Дрон', helm: 'Штурвал', tack: 'Поворот', gybe: 'Фордевинд', kite: 'Генакер', in: 'Выбрать', out: 'Травить',
     ok: 'Паруса в норме', pullIn: 'Выбери шкот', easeOut: 'Потрави шкот', irons: 'Левентик',
-    startIn: 'Старт через', lineStart: 'Линия старта', mark: 'Верхний знак', gate: 'Нижние ворота', finish: 'Финиш', ocsS: 'Фальстарт — вернись за линию',
-    ocs: 'Фальстарт! Вернись за линию', cleared: 'Теперь стартуй', started: 'Отличный старт!', rounded: 'Знак пройден — уваливайся',
-    gateMsg: 'Ворота пройдены — снова на ветер', gun: 'Старт!', bump: 'Столкновение!', broach: 'Брочинг! Трави шкот', kitedown: 'Слишком остро для генакера',
+    startIn: 'Старт', lineStart: 'Линия старта', mark: 'Верхний знак', gate: 'Нижние ворота', finish: 'Финиш', ocsS: 'Фальстарт — вернись за линию',
+    target: 'цель', vmg: 'VMG', line: 'линия', toLine: 'до линии', favPin: 'выгоднее у знака', favBoat: 'выгоднее у судна', square: 'линия ровная',
+    sigWarn: (n) => `Предупредительный сигнал — флаг класса, ${n} мин`, sigPrep: (n) => `Подготовительный — флаг P, ${n} мин`, sig1: 'Одна минута — флаг P спущен', gun: 'Старт! Флаг класса спущен',
+    ocs: 'Фальстарт! Флаг X — вернись за линию', cleared: 'Теперь стартуй', started: 'Отличный старт!', rounded: 'Знак пройден — уваливайся, ставь генакер',
+    missedLine: 'Мимо линии — пересеки её между судейским судном и знаком', missedGate: 'Мимо ворот — вернись и пройди между двумя знаками', wrongSide: 'Знак оставляют слева — обогни его снова',
+    gateMsg: 'Ворота пройдены — снова на ветер', bump: 'Столкновение!', broach: 'Брочинг! Трави шкот', kitedown: 'Слишком остро для генакера',
     heelMsg: 'Сильный крен — потрави шкот', ironsMsg: 'Левентик — уваливайся', gust: 'Порыв!', autoOff: 'Автоподбор выключен — шкот твой',
-    results: 'Результаты', again: 'Ещё гонку', menu: 'Меню', racing: 'в гонке…', you: 'Вы', paused: 'Пауза',
-    place: (n) => `${n}-е`, finished: (n) => `Финиш: ${n}-е место!`,
+    hail10: 'Правый галс!', hail11: 'Наветренная, уходи!', hail12: 'Сзади, уходи!', hail13: 'Ты в повороте — уходи!', hail18: 'Место у знака!', hail44: 'Штрафник, уходи!',
+    fouled: (w, r) => `Нарушение против ${w} (правило ${r}) — два штрафных оборота`, theyFouled: (w, r) => `${w}: нарушение правила ${r}, штрафные обороты`,
+    touched: 'Касание знака — один штрафной оборот', penaltyDone: 'Штраф выполнен', pen: (d, n) => `Штраф ${d}/${n} об.`,
+    dirty: 'Грязный ветер', surf: 'Сёрфинг!', tackCall: 'К повороту оверштаг… Поворот!', gybeCall: 'К повороту фордевинд… Поворот!',
+    results: 'Результаты', again: 'Ещё гонку', menu: 'Меню', racing: 'в гонке…', you: 'Вы', dsq: 'DSQ',
+    gfxDown: (q) => `Графика: «${q}» — для плавности`, place: (n) => `${n}-е`, finished: (n) => `Финиш: ${n}-е место!`, finishedDsq: 'Финиш без штрафа — дисквалификация (DSQ)',
   },
 };
 const urlLang = new URLSearchParams(location.search).get('lang');
@@ -50,20 +69,33 @@ document.documentElement.lang = LANG;
 for (const el of document.querySelectorAll('[data-t]')) el.innerHTML = t(el.dataset.t);
 const fmt = (s) => { s = Math.max(0, s); return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`; };
 
+// ---------- the app's light and night themes ----------
+const night = () => (TG ? TG.colorScheme === 'dark' : window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+let COL = {};
+function applyTheme() {
+  document.documentElement.classList.toggle('theme-night', night());
+  const cs = getComputedStyle(document.getElementById('hud')), v = (k) => cs.getPropertyValue(k).trim(); // the minimap draws in the HUD's own colours
+  COL = { ink: v('--ink'), muted: v('--muted'), faint: v('--faint'), accent: v('--accent'), danger: v('--danger'), bg: v('--bg') };
+  try { TG && TG.setHeaderColor && TG.setHeaderColor(night() ? '#000000' : '#ffffff'); } catch (e) {}
+}
+applyTheme();
+if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
+
 // ---------- settings ----------
-const opts = { preset: 'medium', laps: 1, autoTrim: 0, sound: 1 };
+const opts = { preset: 'medium', laps: 1, autoTrim: 0, sound: 1, start: 1, current: 0, gfx: 'auto' };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
 const saveOpts = () => { try { localStorage.setItem('regatta', JSON.stringify(opts)); } catch (e) {} };
+const paintOpts = () => document.querySelectorAll('.choice').forEach((g) => g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(opts[g.dataset.opt]) === b.dataset.v)));
+paintOpts();
 for (const g of document.querySelectorAll('.choice')) {
   const k = g.dataset.opt;
-  const paint = () => g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(opts[k]) === b.dataset.v));
-  paint();
   g.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    opts[k] = k === 'preset' ? b.dataset.v : +b.dataset.v; paint(); saveOpts();
+    opts[k] = k === 'preset' || k === 'gfx' ? b.dataset.v : +b.dataset.v; paintOpts(); saveOpts();
+    if (k === 'gfx') { world.setQuality(startQuality()); perf.settle = 2; }
     if (k === 'sound') audio.setOn(!!opts.sound);
     if (k === 'autoTrim' && race && running) race.player.autoTrim = !!opts.autoTrim;
-    if (k === 'preset' || k === 'laps') { if (!running) newRace(); else menuChanged = true; }
+    if (k === 'preset' || k === 'laps' || k === 'start' || k === 'current') { if (!running) newRace(); else menuChanged = true; }
   });
 }
 
@@ -72,7 +104,7 @@ if (TG) {
   TG.ready(); TG.expand();
   try { TG.disableVerticalSwipes && TG.disableVerticalSwipes(); } catch (e) {}
   try { if (TG.isVersionAtLeast && TG.isVersionAtLeast('8.0') && /android|iphone|ipad/i.test(navigator.userAgent)) TG.requestFullscreen(); } catch (e) {}
-  try { TG.setHeaderColor && TG.setHeaderColor('#0b3550'); } catch (e) {}
+  TG.onEvent && TG.onEvent('themeChanged', () => applyTheme());
   TG.BackButton.show();
   TG.BackButton.onClick(() => { if (running && !paused) pause(); else location.href = '/'; });
 }
@@ -80,32 +112,62 @@ const haptic = (kind) => {
   try { if (TG && TG.HapticFeedback) kind === 'warn' ? TG.HapticFeedback.notificationOccurred('warning') : TG.HapticFeedback.impactOccurred(kind || 'light'); else navigator.vibrate && navigator.vibrate(kind === 'heavy' ? 40 : 15); } catch (e) {}
 };
 
-// ---------- sound ----------
+// ---------- sound: wind, water, flapping sails, winch, horns, voices ----------
 const audio = {
-  ctx: null, on: !!opts.sound, windGain: null,
+  ctx: null, on: !!opts.sound,
+  noise(ctx) {
+    const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    return buf;
+  },
+  chain(type, freq, q) {
+    const src = this.ctx.createBufferSource(); src.buffer = this.buf; src.loop = true; src.loopStart = Math.random();
+    const f = this.ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; if (q) f.Q.value = q;
+    const g = this.ctx.createGain(); g.gain.value = 0;
+    src.connect(f).connect(g).connect(this.master); src.start();
+    return g;
+  },
   init() {
     if (this.ctx) { this.ctx.resume(); return; }
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-      // wind and water: filtered noise
-      const len = this.ctx.sampleRate * 2, buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = buf.getChannelData(0);
-      let last = 0; for (let i = 0; i < len; i++) { last = last * 0.97 + (Math.random() * 2 - 1) * 0.03; d[i] = last * 6; }
-      const src = this.ctx.createBufferSource(); src.buffer = buf; src.loop = true;
-      const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
-      this.windGain = this.ctx.createGain(); this.windGain.gain.value = 0;
-      src.connect(f).connect(this.windGain).connect(this.ctx.destination); src.start();
+      this.buf = this.noise(this.ctx);
+      this.master = this.ctx.createGain(); this.master.gain.value = this.on ? 1 : 0; this.master.connect(this.ctx.destination);
+      this.windG = this.chain('lowpass', 500); this.waterG = this.chain('bandpass', 1500, 0.6); this.flapG = this.chain('bandpass', 320, 1.2);
     } catch (e) { this.ctx = null; }
   },
-  setOn(v) { this.on = v; if (this.windGain) this.windGain.gain.value = 0; },
+  setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; if (!v && window.speechSynthesis) speechSynthesis.cancel(); },
+  set(g, v, tc = 0.25) { if (g && this.ctx) g.gain.setTargetAtTime(v, this.ctx.currentTime, tc); },
+  update(P, paused) {
+    if (!this.ctx) return;
+    const k = paused ? 0 : 1;
+    this.set(this.windG, k * Math.min(0.45, 0.03 + P.aws / 80));
+    this.set(this.waterG, k * Math.min(0.35, P.v / 22 + (P.surf > 0 ? 0.1 : 0)));
+    const flog = P.trim === 'irons' ? 1 : P.luff;
+    this.set(this.flapG, k * flog * (Math.random() < 0.45 ? 0.55 : 0.04), 0.012); // a sail flogging cracks
+  },
   tone(freq, dur, type = 'sine', vol = 0.25) {
-    if (!this.on || !this.ctx) return;
+    if (!this.ctx) return;
     const o = this.ctx.createOscillator(), g = this.ctx.createGain(), n = this.ctx.currentTime;
     o.type = type; o.frequency.value = freq;
     g.gain.setValueAtTime(0, n); g.gain.linearRampToValueAtTime(vol, n + 0.02); g.gain.setValueAtTime(vol, n + dur - 0.05); g.gain.linearRampToValueAtTime(0, n + dur);
-    o.connect(g).connect(this.ctx.destination); o.start(n); o.stop(n + dur + 0.02);
+    o.connect(g).connect(this.master); o.start(n); o.stop(n + dur + 0.02);
   },
-  horn() { this.tone(233, 1.1, 'sawtooth', 0.12); this.tone(466, 1.1, 'square', 0.04); },
-  wind(level) { if (this.windGain && this.on) this.windGain.gain.setTargetAtTime(level, this.ctx.currentTime, 0.3); },
+  horn(long) { const d = long ? 2.2 : 1.0; this.tone(233, d, 'sawtooth', 0.12); this.tone(466, d, 'square', 0.035); },
+  click() { // a winch pawl
+    if (!this.ctx) return;
+    const s = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain(), n = this.ctx.currentTime;
+    s.buffer = this.buf; f.type = 'highpass'; f.frequency.value = 3500; g.gain.setValueAtTime(0.25, n); g.gain.exponentialRampToValueAtTime(0.001, n + 0.03);
+    s.connect(f).connect(g).connect(this.master); s.start(n, Math.random(), 0.04);
+  },
+  say(text) {
+    if (!this.on || !window.speechSynthesis) return;
+    try {
+      const u = new SpeechSynthesisUtterance(text.replace('…', ', '));
+      u.lang = LANG === 'ru' ? 'ru-RU' : 'en-GB'; u.rate = 1.1; u.volume = 0.9;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    } catch (e) {}
+  },
 };
 
 // ---------- the world ----------
@@ -117,10 +179,30 @@ try { world = new World(canvas); } catch (e) {
 }
 const resize = () => world.resize(window.innerWidth, window.innerHeight);
 window.addEventListener('resize', resize); resize();
+const GFX_KEY = 'regatta-gfx';
+function startQuality() {
+  if (opts.gfx !== 'auto') return opts.gfx;
+  try { return localStorage.getItem(GFX_KEY) || defaultQuality(); } catch (e) { return defaultQuality(); }
+}
+world.setQuality(startQuality());
+// Auto: watch the frame rate while racing; under 45 fps, step down a level and remember it for this device
+const perf = { t: 0, n: 0, settle: 3 };
+function watchFps(raw) {
+  if (opts.gfx !== 'auto' || world.quality === 'low') return;
+  if (perf.settle > 0) { perf.settle -= raw; return; }
+  perf.t += raw; perf.n++;
+  if (perf.t < 3) return;
+  const fps = perf.n / perf.t; perf.t = perf.n = 0;
+  if (fps >= 45) return;
+  const q = world.quality === 'high' ? 'medium' : 'low';
+  world.setQuality(q); perf.settle = 2;
+  try { localStorage.setItem(GFX_KEY, q); } catch (e) {}
+  toast(t('gfxDown', t(q === 'medium' ? 'gMedium' : 'gLow')), 2.5);
+}
 
 let race = null, running = false, paused = false, menuChanged = false, hints = {}, lastClockInt = null;
 function newRace() {
-  race = new Race({ preset: opts.preset, laps: opts.laps, autoTrim: !!opts.autoTrim });
+  race = new Race({ preset: opts.preset, laps: opts.laps, autoTrim: !!opts.autoTrim, start: opts.start, current: !!opts.current });
   race.player.name = t('you');
   world.setRace(race);
   world.resetView();
@@ -129,8 +211,7 @@ function newRace() {
 newRace();
 
 // ---------- controls ----------
-const input = { rudderHeld: false, rudder: 0, keys: {} };
-// rudder: drag sideways anywhere in the bottom-left zone
+const input = { rudderHeld: false, rudder: 0, keys: {}, lastSheet: 0 };
 const rz = $('#rudderZone');
 let rudderPtr = null, rudderX0 = 0;
 rz.addEventListener('pointerdown', (e) => {
@@ -141,18 +222,20 @@ rz.addEventListener('pointermove', (e) => { if (e.pointerId === rudderPtr) input
 const rudderUp = (e) => { if (e.pointerId === rudderPtr) { rudderPtr = null; input.rudderHeld = false; } };
 rz.addEventListener('pointerup', rudderUp); rz.addEventListener('pointercancel', rudderUp);
 
-// sheet: the thumb's height on the slider is the sheet (top = all in)
 const sz = $('#sheetZone'), sheetEl = $('#sheet');
 let sheetPtr = null;
-const setSheetFrom = (y) => {
-  const r = sheetEl.getBoundingClientRect();
-  race.player.sheet = clamp((y - r.top) / r.height, 0, 1);
+const autoOff = () => {
+  if (!race.player.autoTrim) return;
+  race.player.autoTrim = false; opts.autoTrim = 0; saveOpts(); paintOpts(); toast(t('autoOff'));
 };
-sz.addEventListener('pointerdown', (e) => {
-  sheetPtr = e.pointerId; sz.setPointerCapture(e.pointerId);
-  if (race.player.autoTrim) { race.player.autoTrim = false; opts.autoTrim = 0; saveOpts(); document.querySelectorAll('[data-opt="autoTrim"] button').forEach((b) => b.classList.toggle('on', b.dataset.v === '0')); toast(t('autoOff')); }
-  setSheetFrom(e.clientY); e.preventDefault();
-});
+const setSheet = (v) => {
+  const P = race.player; v = clamp(v, 0, 1);
+  if (v < input.lastSheet - 0.012) { audio.click(); input.lastSheet = v; } // trimming in: the winch clicks
+  else if (v > input.lastSheet) input.lastSheet = v;
+  P.sheet = v;
+};
+const setSheetFrom = (y) => { const r = sheetEl.getBoundingClientRect(); setSheet((y - r.top) / r.height); };
+sz.addEventListener('pointerdown', (e) => { sheetPtr = e.pointerId; sz.setPointerCapture(e.pointerId); autoOff(); input.lastSheet = race.player.sheet; setSheetFrom(e.clientY); e.preventDefault(); });
 sz.addEventListener('pointermove', (e) => { if (e.pointerId === sheetPtr) setSheetFrom(e.clientY); });
 const sheetUp = (e) => { if (e.pointerId === sheetPtr) sheetPtr = null; };
 sz.addEventListener('pointerup', sheetUp); sz.addEventListener('pointercancel', sheetUp);
@@ -193,11 +276,10 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyK') doKite();
   if (e.code === 'KeyC') setCam(world.mode === 'drone' ? 'helm' : 'drone');
   if (e.code === 'Escape' || e.code === 'KeyP') { if (running) paused ? resume() : pause(); }
-  if ((e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'KeyW' || e.code === 'KeyS') && race.player.autoTrim) { race.player.autoTrim = false; opts.autoTrim = 0; saveOpts(); toast(t('autoOff')); }
+  if (['ArrowUp', 'ArrowDown', 'KeyW', 'KeyS'].includes(e.code)) autoOff();
 });
 window.addEventListener('keyup', (e) => { input.keys[e.code] = false; });
 
-// cameras
 const camSeg = $('#camSeg');
 function setCam(m) { world.mode = m; camSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.cam === m)); }
 camSeg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setCam(b.dataset.cam); });
@@ -214,7 +296,7 @@ function startRace() {
   race.player.autoTrim = !!opts.autoTrim;
   setCam(world.mode);
 }
-function pause() { paused = true; menu.hidden = false; $('#resumeBtn').hidden = false; $('#goBtn').textContent = t('restart'); audio.wind(0); }
+function pause() { paused = true; menu.hidden = false; $('#resumeBtn').hidden = false; $('#goBtn').textContent = t('restart'); }
 function resume() { if (menuChanged) { startRace(); return; } paused = false; menu.hidden = true; }
 $('#goBtn').addEventListener('click', startRace);
 $('#resumeBtn').addEventListener('click', resume);
@@ -223,82 +305,118 @@ $('#againBtn').addEventListener('click', () => { running = false; newRace(); sta
 $('#menuBtn').addEventListener('click', () => { running = false; paused = false; newRace(); results.hidden = true; hud.hidden = true; menu.hidden = false; $('#resumeBtn').hidden = true; $('#goBtn').textContent = t('start'); });
 if (TG) $('#backLink').addEventListener('click', (e) => { e.preventDefault(); location.href = '/'; });
 
-// ---------- HUD ----------
-const el = { spd: $('#spd'), status: $('#status'), trim: $('#trim'), trimTxt: $('#trimTxt'), arrow: $('#windArrow'), tws: $('#twsTxt'),
-  needle: $('#heelNeedle'), heelTxt: $('#heelTxt'), knob: $('#rudderKnob'), band: $('#sheet .band'), sknob: $('#sheet .knob'), toast: $('#toast'), count: $('#count') };
+// ---------- instruments ----------
+const el = { spd: $('#spd'), perf: $('#perf'), status: $('#status'), trim: $('#trim'), trimTxt: $('#trimTxt'), arrow: $('#windArrow'), ttick: $('#twaTick'),
+  tws: $('#twsTxt'), aws: $('#awsTxt'), needle: $('#heelNeedle'), heelTxt: $('#heelTxt'), knob: $('#rudderKnob'), band: $('#sheet .band'), sknob: $('#sheet .knob'),
+  toast: $('#toast'), count: $('#count'), flags: $('#flags'), chips: $('#chips') };
 let toastT = 0;
-function toast(msg, secs = 2.2) { el.toast.textContent = msg; el.toast.classList.add('show'); toastT = secs; }
+const txt = (e, s) => { if (e._t !== s) { e._t = s; e.textContent = s; } }; // write the DOM only when the text changes
+function toast(msg, secs = 2.4) { txt(el.toast, msg); el.toast.classList.add('show'); toastT = secs; }
 function hint(key, msg, every = 12) { const n = race.clock; if (hints[key] && n - hints[key] < every) return; hints[key] = n; toast(msg); }
 
 const legName = { start: 'lineStart', mark: 'mark', gate: 'gate', finish: 'finish' };
+let flagsKey = '', chipsKey = '';
 function updateHud(dt) {
-  const P = race.player, a = Math.abs(P.twa) / D2R;
-  el.spd.textContent = (P.v / KN).toFixed(1);
-  el.arrow.setAttribute('transform', `rotate(${(P.twa / D2R).toFixed(1)})`);
-  el.tws.textContent = `${P.tws.toFixed(0)} ${t('kn')}`;
+  const P = race.player, a = Math.abs(P.twa) / D2R, awa = Math.abs(P.awa) / D2R, c = race.course;
+  const kn = P.v / KN;
+  txt(el.spd, kn.toFixed(1));
+  // wind instrument: the yellow arrow is the apparent wind (what the sails feel), the white tick the true wind
+  el.arrow.setAttribute('transform', `rotate(${(P.awa / D2R).toFixed(1)})`);
+  el.ttick.setAttribute('transform', `rotate(${(P.twa / D2R).toFixed(1)})`);
+  txt(el.aws, `A ${P.aws.toFixed(0)}`); txt(el.tws, `T ${P.tws.toFixed(0)}`);
   const side = P.twa >= 0 ? 1 : -1;
   el.needle.setAttribute('transform', `rotate(${(side * P.heel).toFixed(1)})`);
-  el.needle.setAttribute('stroke', P.heel > 35 ? '#ff4d3d' : P.heel > 28 ? '#ffb020' : '#fff');
-  el.heelTxt.textContent = `${P.heel.toFixed(0)}°`;
+  el.needle.style.stroke = P.heel > 35 ? 'var(--danger)' : P.heel > 28 ? 'var(--warn)' : 'var(--ink)';
+  txt(el.heelTxt, `${P.heel.toFixed(0)}°`);
   el.trim.dataset.s = P.trim;
-  el.trimTxt.textContent = t({ ok: 'ok', in: 'pullIn', out: 'easeOut', irons: 'irons' }[P.trim]);
-  // rudder knob along the arc
+  txt(el.trimTxt, t({ ok: 'ok', in: 'pullIn', out: 'easeOut', irons: 'irons' }[P.trim]));
   const ang = P.rudder * 70 * D2R; el.knob.setAttribute('cx', (105 + Math.sin(ang) * 84).toFixed(1)); el.knob.setAttribute('cy', (104 - Math.cos(ang) * 84).toFixed(1));
-  // sheet slider: the knob, and the green band where the trim is right
-  const tol = 7 / 76, lo = clamp(sheetFor(idealSail(a)) - tol, 0, 1), hi = clamp(sheetFor(idealSail(a) + P.depower) + tol, 0, 1);
+  const tol = 7 / 77, lo = clamp(sheetFor(idealSail(awa)) - tol, 0, 1), hi = clamp(sheetFor(idealSail(awa) + P.depower) + tol, 0, 1);
   el.band.style.top = `${lo * 100}%`; el.band.style.height = `${(hi - lo) * 100}%`;
-  el.band.style.display = a < 30 ? 'none' : '';
+  el.band.style.display = a < 28 ? 'none' : '';
   el.sknob.style.top = `${P.sheet * 100}%`;
   sz.classList.toggle('auto', P.autoTrim);
-  // buttons
-  const gybe = a > 95;
-  tackBtn.textContent = t(gybe ? 'gybe' : 'tack');
+  txt(tackBtn, t(a > 95 ? 'gybe' : 'tack'));
   tackBtn.classList.toggle('down', !!P.auto);
   kiteBtn.hidden = !(a > 90 || P.kite) || race.clock < 0;
   kiteBtn.classList.toggle('on', P.kite);
-  // status line
-  const leg = race.course.legs[P.leg];
+
+  // status and the line below it
+  const leg = c.legs[P.leg];
   el.status.classList.toggle('bad', P.ocs);
-  if (P.ocs) el.status.textContent = t('ocsS');
-  else if (race.clock < 0) el.status.textContent = `${t('startIn')} ${fmt(-race.clock + 0.999)}`;
-  else if (P.done) el.status.textContent = `${t('place', P.place)} · ${fmt(P.finish)}`;
+  let perf = '';
+  if (P.ocs) txt(el.status, t('ocsS'));
+  else if (race.clock < 0) {
+    txt(el.status, `${t('startIn')} ${fmt(-race.clock + 0.999)}`);
+    // distance to the line, time to get there at this speed, and the favoured end
+    const li = race.lineInfo(P), close = (Math.sin(P.h) * c.normal.x - Math.cos(P.h) * c.normal.z) * P.v;
+    const ux = Math.sin(race.wind.dir()), uz = -Math.cos(race.wind.dir());
+    const fav = (c.pin.x - c.committee.x) * ux + (c.pin.z - c.committee.z) * uz;
+    perf = `${t('line')} ${Math.max(0, -li.d).toFixed(0)} m` + (close > 0.3 && li.d < 0 ? ` · ${fmt(-li.d / close)} ${t('toLine')}` : '') + ` · ${Math.abs(fav) < 4 ? t('square') : fav > 0 ? t('favPin') : t('favBoat')}`;
+  } else if (P.done) txt(el.status, P.dsq ? `${t('dsq')} · ${fmt(P.finish)}` : `${t('place', P.place)} · ${fmt(P.finish)}`);
   else {
     const place = race.standings().indexOf(P) + 1, d = race.distToNext(P);
-    el.status.textContent = `${fmt(race.clock)} · ${t(legName[leg])} ${Math.round(d)} m · ${t('place', place)}`;
+    txt(el.status, `${fmt(race.clock)} · ${t(legName[leg])} ${Math.round(d)} m · ${t('place', place)}`);
   }
-  // the last ten seconds, big
+  if (race.clock >= 0 && !P.done) {
+    const m = race.nextMark(P), brg = Math.atan2(m.x - P.x, -(m.z - P.z));
+    const vmg = kn * Math.cos(wrap(brg - P.h)), pct = P.polar > 0.5 ? Math.round((kn / P.polar) * 100) : 0;
+    perf = `${t('target')} ${P.polar.toFixed(1)} · ${pct}% · ${t('vmg')} ${vmg.toFixed(1)}`;
+  }
+  txt(el.perf, perf);
+
+  // the committee boat's flags
+  const fk = `${race.flags.cls}${race.flags.P}${race.flags.X}`;
+  if (fk !== flagsKey) {
+    flagsKey = fk;
+    el.flags.innerHTML = (race.flags.cls ? '<i class="flag cls">R</i>' : '') + (race.flags.P ? '<i class="flag P"></i>' : '') + (race.flags.X ? '<i class="flag X"></i>' : '');
+  }
+  // chips: penalty, dirty air, surfing
+  const chips = [];
+  if (P.pen) chips.push(['bad', t('pen', Math.min(P.pen.turns, Math.floor(Math.abs(P.pen.sum) / (2 * Math.PI) * 10) / 10).toFixed(1), P.pen.turns)]);
+  if (P.shadow > 0.08) chips.push(['warn', `${t('dirty')} −${Math.round(P.shadow * 100)}%`]);
+  if (P.surf > 0) chips.push(['ok', t('surf')]);
+  const ck = chips.map((x) => x.join()).join('|');
+  if (ck !== chipsKey) { chipsKey = ck; el.chips.innerHTML = chips.map(([k, s]) => `<span class="chip ${k}">${s}</span>`).join(''); }
+
   const left = -race.clock;
-  el.count.textContent = race.clock < 0 && left <= 10 ? String(Math.ceil(left)) : '';
-  // sounds and signals of the start
+  txt(el.count, race.clock < 0 && left <= 10 ? String(Math.ceil(left)) : '');
   const ci = Math.ceil(-race.clock);
   if (race.clock < 0 && ci !== lastClockInt) {
-    if (lastClockInt !== null && (ci === 30 || ci <= 10)) { audio.tone(ci <= 3 ? 1046 : 880, ci === 30 ? 0.35 : 0.12); if (ci <= 3) haptic('light'); }
+    if (lastClockInt !== null && ci <= 10 && ci > 0) { audio.tone(ci <= 3 ? 1046 : 880, 0.12); if (ci <= 3) haptic('light'); }
     lastClockInt = ci;
   }
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) el.toast.classList.remove('show'); }
-  audio.wind(Math.min(0.5, 0.05 + P.tws / 60 + P.v / 40) * (paused ? 0 : 1));
+  audio.update(P, paused);
 }
 
 // messages from the race and the boat
 function handleMessages() {
   const P = race.player;
   for (const m of race.messages) {
-    if (m.key === 'gun') { audio.horn(); haptic('heavy'); if (!P.ocs) toast(t('gun')); }
-    else if (m.key === 'finished') { toast(t('finished', m.arg), 3); audio.horn(); haptic('heavy'); setTimeout(showResults, 2500); }
+    const a = m.arg || {};
+    if (m.key === 'signal') {
+      audio.horn(a.sound === 'long'); haptic(a.key === 'gun' ? 'heavy' : 'medium');
+      if (a.key === 'gun' && P.ocs) continue;
+      toast(t(a.key, Math.round(-a.t / 60)), 3);
+    } else if (m.key === 'finished' || m.key === 'finishedDsq') { toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy'); setTimeout(showResults, 2500); }
     else if (m.key === 'gate') toast(t('gateMsg'));
-    else if (m.key === 'bump') hint('bump', t('bump'), 3);
-    else { toast(t(m.key)); if (m.key === 'ocs') { audio.tone(523, 0.6, 'square', 0.1); haptic('warn'); } if (m.key === 'rounded') haptic('medium'); }
+    else if (m.key === 'bump') { hint('bump', t('bump'), 3); haptic('heavy'); }
+    else if (m.key === 'hail') { const h = t('hail' + a.rule); toast(`${a.who}: “${h}”`, 2.2); audio.say(h); haptic('warn'); }
+    else if (m.key === 'fouled' || m.key === 'theyFouled') toast(t(m.key, a.who, a.rule), 3.5);
+    else { toast(t(m.key), 2.6); if (m.key === 'ocs') haptic('warn'); if (m.key === 'rounded') haptic('medium'); }
   }
   race.messages.length = 0;
   for (const e of P.events) {
     if (e === 'broach') { toast(t('broach')); haptic('heavy'); }
     if (e === 'kitedown') toast(t('kitedown'));
+    if (e === 'penaltyDone') toast(t('penaltyDone'));
+    if (e === 'tacking' || e === 'gybing') audio.say(t(e === 'tacking' ? 'tackCall' : 'gybeCall'));
   }
   P.events.length = 0;
   for (const b of race.boats) if (b !== P) b.events.length = 0;
-  // coaching, now and then
   if (P.heel > 33) hint('heel', t('heelMsg'), 10);
-  if (P.trim === 'irons' && P.v < 0.6 && !P.auto && race.clock > -50) hint('irons', t('ironsMsg'), 10);
+  if (P.trim === 'irons' && P.v < 0.6 && !P.auto && !P.pen && race.clock > race.seq[0].t + 8) hint('irons', t('ironsMsg'), 10);
   if (P.gust > 0.55) hint('gust', t('gust'), 15);
 }
 
@@ -310,90 +428,95 @@ function drawMap(ctx, size, full) {
   const s = Math.min(size / (x1 - x0), size / (z1 - z0)), ox = size / 2 - ((x0 + x1) / 2) * s, oz = size / 2 - ((z0 + z1) / 2) * s;
   const X = (x) => ox + x * s, Z = (z) => oz + z * s;
   ctx.clearRect(0, 0, size, size);
-  // gusts, as dark patches
   if (!full) for (const g of race.wind.gusts) {
-    ctx.fillStyle = `rgba(0, 8, 20, ${(0.35 * g.s / race.wind.p.gustStr * Math.min(1, g.life / 6)).toFixed(2)})`;
+    ctx.globalAlpha = 0.16 * g.s / race.wind.p.gustStr * Math.min(1, g.life / 6); ctx.fillStyle = COL.accent;
     ctx.beginPath(); ctx.arc(X(g.x), Z(g.z), g.r * s, 0, 7); ctx.fill();
   }
-  // laylines to the windward mark
+  ctx.globalAlpha = 1;
+  // laylines to the windward mark, for the wind and current now
   const leg = c.legs[P.leg];
   if (leg === 'mark' || full) {
-    ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 5]);
+    ctx.strokeStyle = COL.faint; ctx.lineWidth = 1.5; ctx.setLineDash([4, 5]);
+    const up = beatAngle(race.wind.p.tws) * D2R;
     for (const sd of [-1, 1]) {
-      const hd = W + sd * UP_TWA * D2R, L = 600;
+      const hd = W + sd * up, L = 600;
       ctx.beginPath(); ctx.moveTo(X(c.windward.x), Z(c.windward.z)); ctx.lineTo(X(c.windward.x - Math.sin(hd) * L), Z(c.windward.z + Math.cos(hd) * L)); ctx.stroke();
     }
     ctx.setLineDash([]);
   }
-  // line
-  ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
-  ctx.beginPath(); ctx.moveTo(X(c.pin.x), Z(0)); ctx.lineTo(X(c.committee.x), Z(0)); ctx.stroke(); ctx.setLineDash([]);
-  // marks
+  ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(X(c.pin.x), Z(c.pin.z)); ctx.lineTo(X(c.committee.x), Z(c.committee.z)); ctx.stroke(); ctx.setLineDash([]);
   const next = leg === 'mark' ? [c.windward] : leg === 'gate' ? c.gate : [c.pin, c.committee];
   for (const m of [c.windward, ...c.gate, c.pin, c.committee]) {
-    ctx.fillStyle = next.includes(m) && !full ? '#ffd400' : '#ff7a1a';
-    ctx.beginPath(); ctx.arc(X(m.x), Z(m.z), next.includes(m) && !full ? 4.5 : 3.5, 0, 7); ctx.fill();
+    const hot = next.includes(m) && !full;
+    ctx.fillStyle = hot ? COL.accent : '#ff7a1a';
+    ctx.beginPath(); ctx.arc(X(m.x), Z(m.z), hot ? 4.5 : 3.5, 0, 7); ctx.fill();
   }
-  // track
   const tr = P.track; if (tr.length > 1) {
-    ctx.strokeStyle = full ? '#9fdcff' : 'rgba(159,220,255,.6)'; ctx.lineWidth = full ? 2 : 1.2;
-    ctx.beginPath(); tr.forEach(([x, z], i) => (i ? ctx.lineTo(X(x), Z(z)) : ctx.moveTo(X(x), Z(z)))); ctx.lineTo(X(P.x), Z(P.z)); ctx.stroke();
+    ctx.strokeStyle = COL.accent; ctx.globalAlpha = full ? 1 : 0.6; ctx.lineWidth = full ? 2 : 1.2;
+    ctx.beginPath(); tr.forEach(([x, z], i) => (i ? ctx.lineTo(X(x), Z(z)) : ctx.moveTo(X(x), Z(z)))); ctx.lineTo(X(P.x), Z(P.z)); ctx.stroke(); ctx.globalAlpha = 1;
   }
-  // boats
   for (const b of race.boats) {
     ctx.save(); ctx.translate(X(b.x), Z(b.z)); ctx.rotate(b.h);
-    ctx.fillStyle = b === P ? '#fff' : '#' + b.color.toString(16).padStart(6, '0');
+    ctx.fillStyle = b === P ? COL.ink : '#' + b.color.toString(16).padStart(6, '0');
     const k = b === P ? 1.3 : 1; ctx.beginPath(); ctx.moveTo(0, -6 * k); ctx.lineTo(3.5 * k, 5 * k); ctx.lineTo(-3.5 * k, 5 * k); ctx.closePath(); ctx.fill();
+    if (b.pen) { ctx.strokeStyle = COL.danger; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, 8, 0, 7); ctx.stroke(); }
     ctx.restore();
   }
-  // wind arrow
-  ctx.save(); ctx.translate(size - 16, 16); ctx.rotate(W + Math.PI);
-  ctx.fillStyle = '#ffd400'; ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(5, 3); ctx.lineTo(1.5, 3); ctx.lineTo(1.5, 9); ctx.lineTo(-1.5, 9); ctx.lineTo(-1.5, 3); ctx.lineTo(-5, 3); ctx.closePath(); ctx.fill();
-  ctx.restore();
+  // wind arrow, and the current if there is one
+  const arrow = (x, y, ang, col, len) => {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.fillStyle = col;
+    ctx.beginPath(); ctx.moveTo(0, -len); ctx.lineTo(5, -len + 9); ctx.lineTo(1.5, -len + 9); ctx.lineTo(1.5, len); ctx.lineTo(-1.5, len); ctx.lineTo(-1.5, -len + 9); ctx.lineTo(-5, -len + 9); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  };
+  arrow(size - 16, 18, W + Math.PI, COL.accent, 10);
+  const cu = race.current;
+  if (cu.x || cu.z) arrow(16, size - 18, Math.atan2(cu.x, -cu.z), COL.muted, 9);
 }
 
 function showResults() {
   if (!race.over) return;
   renderResults();
-  drawMap($('#track').getContext('2d'), 300, true);
+  drawMap($('#track').getContext('2d'), 312, true);
   results.hidden = false; hud.hidden = true;
 }
-// the table keeps filling in as the others cross the line
 function renderResults() {
   const st = race.standings();
   $('#resTitle').textContent = t('results');
-  $('#resTable').innerHTML = st.map((b, i) => `<tr class="${b === race.player ? 'me' : ''}"><td>${i + 1}</td><td>${b === race.player ? t('you') : b.name}</td><td>${b.done ? fmt(b.finish) : t('racing')}</td></tr>`).join('');
+  $('#resTable').innerHTML = st.map((b, i) => `<tr class="${b === race.player ? 'me' : ''}"><td>${b.dsq ? '–' : i + 1}</td><td>${b === race.player ? t('you') : b.name}</td><td>${b.done ? (b.dsq ? `${t('dsq')} · ` : '') + fmt(b.finish) : t('racing')}</td></tr>`).join('');
 }
 
 // ---------- the loop ----------
-let last = performance.now(), acc = 0, clockT = 0;
+let last = performance.now(), acc = 0;
 const STEP = 1 / 60;
+let frameN = 0;
 function loop(now) {
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
-  clockT += dt;
+  const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now;
+  if (window.__slow) { const t0 = performance.now(); while (performance.now() - t0 < window.__slow); } // debug: pretend to be a slow phone
   const P = race.player;
   if (running && !paused) {
-    // keyboard steering and sheet
     const kl = input.keys.ArrowLeft || input.keys.KeyA, kr = input.keys.ArrowRight || input.keys.KeyD;
     if (kl || kr) { input.rudderHeld = true; input._key = true; input.rudder = clamp(input.rudder + (kr ? 1 : -1) * dt * 2.5, -1, 1); P.auto = null; }
     else if (input._key) { input._key = false; input.rudderHeld = rudderPtr !== null; }
-    if (input.keys.ArrowUp || input.keys.KeyW) P.sheet = clamp(P.sheet - dt * 0.6, 0, 1);
-    if (input.keys.ArrowDown || input.keys.KeyS) P.sheet = clamp(P.sheet + dt * 0.6, 0, 1);
+    if (input.keys.ArrowUp || input.keys.KeyW) setSheet(P.sheet - dt * 0.6);
+    if (input.keys.ArrowDown || input.keys.KeyS) setSheet(P.sheet + dt * 0.6);
     if (!input.rudderHeld) input.rudder *= Math.exp(-dt * 5);
     if (!P.auto) P.rudder = input.rudder; else input.rudder = 0;
     acc += dt;
     while (acc >= STEP) { race.step(STEP); acc -= STEP; }
     handleMessages();
     updateHud(dt);
-    drawMap(mctx, 236, false);
-    if (!results.hidden && Math.floor(clockT) !== Math.floor(clockT - dt)) renderResults();
-  } else if (!running) {
-    // behind the menu: the boats drift on the start area and the drone circles
-    world.orbit += dt * 0.12;
+    if (world.quality === 'high' || frameN++ % 3 === 0) drawMap(mctx, 240, false);
+    watchFps(raw);
+    if (!results.hidden && Math.floor(race.clock) !== Math.floor(race.clock - dt)) renderResults();
+  } else {
+    if (!running) world.orbit += dt * 0.12; // behind the menu the drone circles
+    race.idle(dt);
+    if (paused) audio.update(P, true);
   }
-  world.frame(running && !paused ? dt : 0, clockT);
+  world.frame(running && !paused ? dt : 0, race.t);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, world };
-document.addEventListener('visibilitychange', () => { if (document.hidden && running && !paused) pause(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && running && !paused && !window.__rg) pause(); }); // not in debug: test screenshots hide the tab
