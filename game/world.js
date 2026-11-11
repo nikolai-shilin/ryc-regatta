@@ -106,7 +106,7 @@ void main() {
 }`;
 
 // distance lines across the beat: from the windward mark down to the start line, every 50 m (100 m on a long course),
-// each a row of faint dashes with its distance to the mark written on it. They widen with the distance, as the laylines do.
+// each a row of faint dashes with its distance to the mark written at both ends. They widen with the distance, as the laylines do.
 export const ladderStep = (beat) => (beat > 600 ? 100 : 50);
 function ladder(c) {
   const g = new THREE.Group(), beat = -c.windward.z, step = ladderStep(beat);
@@ -117,7 +117,7 @@ function ladder(c) {
     const tex = new THREE.CanvasTexture(dash); tex.wrapS = THREE.RepeatWrapping; tex.repeat.set((2 * half) / 8, 1);
     const line = new THREE.Mesh(new THREE.PlaneGeometry(2 * half, 0.35).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.45, depthWrite: false, fog: true }));
     line.position.set(c.windward.x, 0.65, z); line.renderOrder = 1; g.add(line);
-    // the distance, at the middle and every 120 m out to the ends
+    // the distance, just past each end of the line
     const lc = document.createElement('canvas'); lc.width = 160; lc.height = 56;
     const x = lc.getContext('2d'), text = `${d} m`;
     x.font = '700 30px Carlito, Lato, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
@@ -125,9 +125,7 @@ function ladder(c) {
     x.fillStyle = 'rgba(0,0,0,0.38)'; x.beginPath(); x.roundRect((160 - w) / 2, 8, w, 40, 20); x.fill();
     x.fillStyle = '#fff'; x.fillText(text, 80, 29);
     const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(lc), transparent: true, depthWrite: false, fog: true, toneMapped: false });
-    for (let off = 0; off <= half - 15; off += 120) for (const sd of off ? [-1, 1] : [1]) {
-      const s = new THREE.Sprite(mat); s.scale.set(13, 4.55, 1); s.position.set(c.windward.x + sd * off, 3.2, z); g.add(s);
-    }
+    for (const sd of [-1, 1]) { const s = new THREE.Sprite(mat); s.scale.set(13, 4.55, 1); s.position.set(c.windward.x + sd * (half + 7), 3.2, z); g.add(s); }
   }
   return g;
 }
