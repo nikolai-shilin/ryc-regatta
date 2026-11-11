@@ -369,6 +369,7 @@ function updateHud(dt) {
   // status and the line below it
   const leg = c.legs[P.leg];
   el.status.classList.toggle('bad', P.ocs);
+  el.status.style.display = race.clock < 0 && !P.ocs ? 'none' : ''; // before the start the big countdown says it
   let perf = '';
   if (P.ocs) txt(el.status, t('ocsS'));
   else if (race.clock < 0) {
