@@ -1,6 +1,7 @@
 // Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
 import { Race, D2R, KN, clamp, wrap, idealSail, sheetFor, beatAngle } from './sim.js';
 import { World, defaultQuality } from './world.js';
+import { raceStarted, raceFinished } from './stats.js';
 
 const $ = (s) => document.querySelector(s);
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
@@ -308,6 +309,7 @@ function startRace() {
   running = true; paused = false;
   race.player.autoTrim = !!opts.autoTrim;
   setCam(world.mode);
+  raceStarted(race, opts); // counted for the admins' Overview (stats.js)
 }
 function pause() { paused = true; menu.hidden = false; $('#resumeBtn').hidden = false; $('#goBtn').textContent = t('restart'); }
 function resume() { if (menuChanged) { startRace(); return; } paused = false; menu.hidden = true; }
@@ -404,7 +406,7 @@ function handleMessages() {
       audio.horn(a.sound === 'long'); haptic(a.key === 'gun' ? 'heavy' : 'medium');
       if (a.key === 'gun' && P.ocs) continue;
       toast(t(a.key, Math.round(-a.t / 60)), 3);
-    } else if (m.key === 'finished' || m.key === 'finishedDsq') { toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy'); setTimeout(showResults, 2500); }
+    } else if (m.key === 'finished' || m.key === 'finishedDsq') { raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy'); setTimeout(showResults, 2500); }
     else if (m.key === 'gate') toast(t('gateMsg'));
     else if (m.key === 'bump') { hint('bump', t('bump'), 3); haptic('heavy'); }
     else if (m.key === 'hail') { const h = t('hail' + a.rule); toast(`${a.who}: “${h}”`, 2.2); audio.say(h); haptic('warn'); }
