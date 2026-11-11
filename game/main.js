@@ -91,8 +91,9 @@ applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 
 // ---------- settings ----------
-const opts = { preset: 'medium', fleet: 10, length: 'medium', laps: 1, autoTrim: 0, sound: 1, start: 1, current: 0, gfx: 'auto', guides: 1 };
+const opts = { preset: 'medium', fleet: 5, length: 'medium', laps: 1, autoTrim: 0, sound: 1, start: 1, current: 0, gfx: 'auto', guides: 1 };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
+if (opts.fleetV !== 3) { opts.fleet = 5; opts.fleetV = 3; } // the default changed (10, then 7): start everyone on 5 once
 const saveOpts = () => { try { localStorage.setItem('regatta', JSON.stringify(opts)); } catch (e) {} };
 const paintOpts = () => document.querySelectorAll('.choice').forEach((g) => g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(opts[g.dataset.opt]) === b.dataset.v)));
 paintOpts();
@@ -287,14 +288,15 @@ for (const [id, f] of [['#zoomIn', 1 / 1.06], ['#zoomOut', 1.06]]) {
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, stop);
 }
 
-// keyboard, for a computer: ←/→ steer, ↑/↓ sheet, space tack, K kite, C camera, Esc pause
+// keyboard, for a computer: ←/→ steer, ↑/↓ sheet, space tack, K kite, X/C/V drone/top/helm view, A/Z zoom in/out, Esc pause
 window.addEventListener('keydown', (e) => {
   input.keys[e.code] = true;
   if (e.code === 'Space') { e.preventDefault(); doTack(); }
   if (e.code === 'KeyK') doKite();
-  if (e.code === 'Equal' || e.code === 'NumpadAdd') world.zoom(1 / 1.2);
-  if (e.code === 'Minus' || e.code === 'NumpadSubtract') world.zoom(1.2);
-  if (e.code === 'KeyC') setCam({ drone: 'top', top: 'helm', helm: 'drone' }[world.mode] || 'drone');
+  if (e.code === 'KeyA') world.zoom(1 / 1.12); // held down, the key repeats: a smooth zoom
+  if (e.code === 'KeyZ') world.zoom(1.12);
+  const view = { KeyX: 'drone', KeyC: 'top', KeyV: 'helm' }[e.code]; // in the order of the buttons
+  if (view) setCam(view);
   if (e.code === 'Escape' || e.code === 'KeyP') { if (running) paused ? resume() : pause(); }
   if (['ArrowUp', 'ArrowDown', 'KeyW', 'KeyS'].includes(e.code)) autoOff();
 });
@@ -525,7 +527,7 @@ function loop(now) {
   if (window.__slow) { const t0 = performance.now(); while (performance.now() - t0 < window.__slow); } // debug: pretend to be a slow phone
   const P = race.player;
   if (running && !paused) {
-    const kl = input.keys.ArrowLeft || input.keys.KeyA, kr = input.keys.ArrowRight || input.keys.KeyD;
+    const kl = input.keys.ArrowLeft, kr = input.keys.ArrowRight;
     if (kl || kr) { input.rudderHeld = true; input._key = true; input.rudder = clamp(input.rudder + (kr ? 1 : -1) * dt * 2.5, -1, 1); P.auto = null; }
     else if (input._key) { input._key = false; input.rudderHeld = rudderPtr !== null; }
     if (input.keys.ArrowUp || input.keys.KeyW) setSheet(P.sheet - dt * 0.6);

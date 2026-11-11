@@ -403,8 +403,10 @@ export class BoatView {
     if (this.detailOn === on) return;
     if (!this.small) {
       this.small = [];
+      const keep = new Set(); // the sails (each a group of two faces) and the kite gear: never hidden here
+      for (const k of [this.main, this.jib, this.kite, this.sprit, this.kiteSheet]) if (k) k.traverse((o) => keep.add(o));
       this.tilt.traverse((o) => {
-        if (!(o.isMesh || o.isLine) || !o.geometry || o === this.label || o === this.kiteSheet || o === this.sprit) return;
+        if (!(o.isMesh || o.isLine) || !o.geometry || keep.has(o)) return;
         if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
         const r = o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z);
         if (r < 0.9 || o.isLine) this.small.push(o);
