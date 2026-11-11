@@ -15,11 +15,12 @@ function send(body) {
   } catch (e) {}
 }
 
-// A race has begun (the player pressed Start or Race again): race is the sim's Race, opts the menu's settings.
+// A race has begun (the player pressed Start or Race again): race is the sim's Race, opts the menu's settings. Wind,
+// laps, course length and fleet make the course, so the admins compare best times only on the same one.
 export function raceStarted(race, opts) {
   if (!race || race._rid) return;
   race._rid = uuid();
-  send({ ev: 'start', id: race._rid, wind: opts.preset, laps: opts.laps });
+  send({ ev: 'start', id: race._rid, wind: opts.preset, laps: opts.laps, length: opts.length, boats: race.boats.length });
 }
 
 // The player crossed the finish line (place is null when disqualified).
