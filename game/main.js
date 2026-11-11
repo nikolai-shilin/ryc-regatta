@@ -1,5 +1,5 @@
 // Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
-import { Race, D2R, KN, clamp, wrap, idealSail, sheetFor, beatAngle } from './sim.js';
+import { Race, D2R, KN, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE } from './sim.js';
 import { World, defaultQuality } from './world.js';
 import { raceStarted, raceFinished } from './stats.js';
 
@@ -13,12 +13,13 @@ const T = {
     kick: 'Game', title: 'Regatta', sub: 'A windward–leeward race against three boats, under the racing rules. Steer, trim, tack, read the wind.',
     wind: 'Wind', light: 'Light · 7 kn', medium: 'Medium · 12 kn', strong: 'Strong · 19 kn', laps: 'Laps', sails: 'Sails',
     manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
+    fleetK: 'Boats', lengthK: 'Course', lShort: 'Short', lMedium: 'Medium', lLong: 'Long',
     currentK: 'Current', guidesK: 'Guides', gfx: 'Graphics', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', start: 'Start race', resume: 'Resume', restart: 'Restart',
     how1: '<b>Left thumb</b> steers on the arc. <b>Right thumb</b> works the sheet: up pulls the sails in, down lets them out. Keep the telltales green.',
     how2: '<b>Tack</b> turns you through the wind (<b>Gybe</b> downwind). <b>Kite</b> sets the gennaker on a run. In a gust, ease the sheet before she heels too far.',
     how3: 'Start after the gun — the class flag comes down. Over early and you must go back. Round the windward mark <b>leaving it to port</b>, finish through the line.',
     how5: 'Round your boat: the <b>arrow</b> shows where the wind blows from; <b>red</b> — too close to the wind to sail; <b>green</b> marks — the best angle upwind; <b>blue</b> — the best angle downwind.',
-    how4: 'Racing rules: port tack keeps clear of starboard, windward of leeward, the boat astern of the boat ahead; inside boat gets room at the mark. Hit someone you should have avoided — two penalty turns. Touch a mark — one.',
+    how4: 'Racing rules: port tack keeps clear of starboard, windward of leeward, the boat astern of the boat ahead; at a mark, the <b>zone</b> (dashed ring, three hull lengths): if two boats are overlapped when the first reaches it, the inside one gets room, if not — the one clear ahead. Hit someone you should have avoided — two penalty turns. Touch a mark — one.',
     rotate: 'Turn your phone sideways for the best view.', back: '← Back to Sailing Certification Test',
     flagCls: 'Class', flagP: 'Prep', flagX: 'Recall', kn: 'kn', drone: 'Drone', helm: 'Helm', top: 'Top', tack: 'Tack', gybe: 'Gybe', kite: 'Kite', in: 'In', out: 'Out',
     ok: 'Trim OK', pullIn: 'Pull in', easeOut: 'Ease out', irons: 'In irons',
@@ -32,7 +33,9 @@ const T = {
     hail10: 'Starboard!', hail11: 'Windward boat, keep clear!', hail12: 'Keep clear astern!', hail13: 'You’re tacking — keep clear!', hail18: 'Room at the mark!', hail44: 'Penalty boat — keep clear!',
     fouled: (w, r) => `Foul on ${w} (rule ${r}) — do two penalty turns`, theyFouled: (w, r) => `${w} broke rule ${r} and takes a penalty`,
     touched: 'You touched the mark — one penalty turn', penaltyDone: 'Penalty done', pen: (d, n) => `Penalty ${d}/${n} turns`,
-    dirty: 'Dirty air', surf: 'Surfing!', tackCall: 'Ready about… Lee-oh!', gybeCall: 'Stand by to gybe… Gybe-oh!',
+    dirty: 'Dirty air', surf: 'Surfing!',
+    zIn: (n) => `Zone · overlapped with ${n}, you're inside — you get room`, zOut: (n) => `Zone · overlapped with ${n}, you're outside — give room`,
+    zAhead: (n) => `Zone · clear ahead of ${n} — you get room`, zAstern: (n) => `Zone · clear astern of ${n} — keep clear`, tackCall: 'Ready about… Lee-oh!', gybeCall: 'Stand by to gybe… Gybe-oh!',
     results: 'Results', again: 'Race again', menu: 'Menu', racing: 'racing…', you: 'You', dsq: 'DSQ',
     gfxDown: (q) => `Graphics set to ${q} to keep it smooth`, place: ord, finished: (n) => `Finished ${ord(n)}!`, finishedDsq: 'Finished without taking your penalty — DSQ',
   },
@@ -40,12 +43,13 @@ const T = {
     kick: 'Игра', title: 'Регата', sub: 'Гонка «апвинд — даунвинд» против трёх лодок по правилам. Рули, работай шкотом, делай повороты, читай ветер.',
     wind: 'Ветер', light: 'Слабый · 7 уз', medium: 'Средний · 12 уз', strong: 'Сильный · 19 уз', laps: 'Круги', sails: 'Паруса',
     manual: 'Сам', auto: 'Авто', sound: 'Звук', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
+    fleetK: 'Лодок', lengthK: 'Дистанция', lShort: 'Короткая', lMedium: 'Средняя', lLong: 'Длинная',
     currentK: 'Течение', guidesK: 'Подсказки', gfx: 'Графика', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
     how1: '<b>Левый палец</b> рулит по дуге. <b>Правый</b> работает шкотом: вверх выбрать, вниз потравить. Колдунчики должны быть зелёными.',
     how2: '<b>Поворот</b> — оверштаг через ветер (на полных курсах — <b>фордевинд</b>). <b>Генакер</b> — для попутного ветра. В порыве трави шкот, пока крен не стал слишком большим.',
     how3: 'Старт после сигнала — флаг класса спущен. Фальстарт — вернись за линию. Верхний знак огибают, <b>оставляя его слева</b>; финиш — через линию.',
     how5: 'Вокруг лодки: <b>стрелка</b> — откуда дует ветер; <b>красное</b> — слишком остро к ветру, идти нельзя; <b>зелёные</b> метки — лучший угол на ветер; <b>синие</b> — лучший угол по ветру.',
-    how4: 'Правила: левый галс уступает правому, наветренная — подветренной, догоняющая — идущей впереди; внутренней лодке у знака дают место. Столкнулся, когда должен был уступить, — два штрафных оборота. Задел знак — один.',
+    how4: 'Правила: левый галс уступает правому, наветренная — подветренной, догоняющая — идущей впереди; у знака — <b>зона</b> (пунктирный круг, три корпуса): если лодки связаны, когда первая в неё входит, место получает внутренняя, если не связаны — идущая впереди. Столкнулся, когда должен был уступить, — два штрафных оборота. Задел знак — один.',
     rotate: 'Поверните телефон горизонтально.', back: '← Назад в Sailing Certification Test',
     flagCls: 'Класс', flagP: 'Подгот.', flagX: 'Отзыв', kn: 'уз', drone: 'Дрон', helm: 'Штурвал', top: 'Сверху', tack: 'Поворот', gybe: 'Фордевинд', kite: 'Генакер', in: 'Выбрать', out: 'Травить',
     ok: 'Паруса в норме', pullIn: 'Выбери шкот', easeOut: 'Потрави шкот', irons: 'Левентик',
@@ -59,7 +63,9 @@ const T = {
     hail10: 'Правый галс!', hail11: 'Наветренная, уходи!', hail12: 'Сзади, уходи!', hail13: 'Ты в повороте — уходи!', hail18: 'Место у знака!', hail44: 'Штрафник, уходи!',
     fouled: (w, r) => `Нарушение против ${w} (правило ${r}) — два штрафных оборота`, theyFouled: (w, r) => `${w}: нарушение правила ${r}, штрафные обороты`,
     touched: 'Касание знака — один штрафной оборот', penaltyDone: 'Штраф выполнен', pen: (d, n) => `Штраф ${d}/${n} об.`,
-    dirty: 'Грязный ветер', surf: 'Сёрфинг!', tackCall: 'К повороту оверштаг… Поворот!', gybeCall: 'К повороту фордевинд… Поворот!',
+    dirty: 'Грязный ветер', surf: 'Сёрфинг!',
+    zIn: (n) => `Зона · связаны с ${n}, ты внутри — тебе дают место`, zOut: (n) => `Зона · связаны с ${n}, ты снаружи — дай место`,
+    zAhead: (n) => `Зона · не связаны, ты впереди ${n} — тебе дают место`, zAstern: (n) => `Зона · не связаны, ты позади ${n} — держись в стороне`, tackCall: 'К повороту оверштаг… Поворот!', gybeCall: 'К повороту фордевинд… Поворот!',
     results: 'Результаты', again: 'Ещё гонку', menu: 'Меню', racing: 'в гонке…', you: 'Вы', dsq: 'DSQ',
     gfxDown: (q) => `Графика: «${q}» — для плавности`, place: (n) => `${n}-е`, finished: (n) => `Финиш: ${n}-е место!`, finishedDsq: 'Финиш без штрафа — дисквалификация (DSQ)',
   },
@@ -85,7 +91,7 @@ applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 
 // ---------- settings ----------
-const opts = { preset: 'medium', laps: 1, autoTrim: 0, sound: 1, start: 1, current: 0, gfx: 'auto', guides: 1 };
+const opts = { preset: 'medium', fleet: 10, length: 'medium', laps: 1, autoTrim: 0, sound: 1, start: 1, current: 0, gfx: 'auto', guides: 1 };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
 const saveOpts = () => { try { localStorage.setItem('regatta', JSON.stringify(opts)); } catch (e) {} };
 const paintOpts = () => document.querySelectorAll('.choice').forEach((g) => g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(opts[g.dataset.opt]) === b.dataset.v)));
@@ -94,7 +100,7 @@ for (const g of document.querySelectorAll('.choice')) {
   const k = g.dataset.opt;
   g.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    opts[k] = k === 'preset' || k === 'gfx' ? b.dataset.v : +b.dataset.v; paintOpts(); saveOpts();
+    opts[k] = k === 'preset' || k === 'gfx' || k === 'length' ? b.dataset.v : +b.dataset.v; paintOpts(); saveOpts();
     if (k === 'gfx') { world.setQuality(startQuality()); perf.settle = 2; }
     if (k === 'guides') world.showGuides = !!opts.guides;
     if (k === 'sound') audio.setOn(!!opts.sound);
@@ -207,7 +213,7 @@ function watchFps(raw) {
 
 let race = null, running = false, paused = false, menuChanged = false, hints = {}, lastClockInt = null;
 function newRace() {
-  race = new Race({ preset: opts.preset, laps: opts.laps, autoTrim: !!opts.autoTrim, start: opts.start, current: !!opts.current });
+  race = new Race({ preset: opts.preset, laps: opts.laps, autoTrim: !!opts.autoTrim, start: opts.start, current: !!opts.current, fleet: opts.fleet, length: opts.length });
   race.player.name = t('you');
   world.setRace(race);
   world.resetView();
@@ -383,6 +389,17 @@ function updateHud(dt) {
   if (P.pen) chips.push(['bad', t('pen', Math.min(P.pen.turns, Math.floor(Math.abs(P.pen.sum) / (2 * Math.PI) * 10) / 10).toFixed(1), P.pen.turns)]);
   if (P.shadow > 0.08) chips.push(['warn', `${t('dirty')} −${Math.round(P.shadow * 100)}%`]);
   if (P.surf > 0) chips.push(['ok', t('surf')]);
+  // mark-room: who gets it was settled when the first of you reached the zone
+  let zs = null, zd = 1e9;
+  for (const st of race.zoneStates.values()) {
+    if (st.p !== P && st.q !== P) continue;
+    const o = st.p === P ? st.q : st.p, d = Math.hypot(o.x - P.x, o.z - P.z);
+    if (d < zd) { zd = d; zs = { st, o }; }
+  }
+  if (zs && zd < 60) {
+    const mine = zs.st.entitled === P, n = zs.o.name;
+    chips.push([mine ? 'ok' : 'warn', zs.st.overlapped ? t(mine ? 'zIn' : 'zOut', n) : t(mine ? 'zAhead' : 'zAstern', n)]);
+  }
   const ck = chips.map((x) => x.join()).join('|');
   if (ck !== chipsKey) { chipsKey = ck; el.chips.innerHTML = chips.map(([k, s]) => `<span class="chip ${k}">${s}</span>`).join(''); }
 
@@ -431,7 +448,7 @@ function handleMessages() {
 const mini = $('#mini'), mctx = mini.getContext('2d');
 function drawMap(ctx, size, full) {
   const c = race.course, P = race.player, W = race.wind.dir();
-  const x0 = -150, x1 = 150, z0 = c.windward.z - 45, z1 = 140;
+  const hw = Math.max(150, c.len / 2 + 40), x0 = -hw, x1 = hw, z0 = c.windward.z - 45, z1 = 140;
   const s = Math.min(size / (x1 - x0), size / (z1 - z0)), ox = size / 2 - ((x0 + x1) / 2) * s, oz = size / 2 - ((z0 + z1) / 2) * s;
   const X = (x) => ox + x * s, Z = (z) => oz + z * s;
   ctx.clearRect(0, 0, size, size);
@@ -454,6 +471,12 @@ function drawMap(ctx, size, full) {
   ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
   ctx.beginPath(); ctx.moveTo(X(c.pin.x), Z(c.pin.z)); ctx.lineTo(X(c.committee.x), Z(c.committee.z)); ctx.stroke(); ctx.setLineDash([]);
   const next = leg === 'mark' ? [c.windward] : leg === 'gate' ? c.gate : [c.pin, c.committee];
+  ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
+  for (const m of [c.windward, ...c.gate]) { // the three-length zone
+    ctx.strokeStyle = next.includes(m) && !full ? COL.accent : COL.ink; ctx.globalAlpha = next.includes(m) ? 0.8 : 0.35;
+    ctx.beginPath(); ctx.arc(X(m.x), Z(m.z), ZONE * s, 0, 7); ctx.stroke();
+  }
+  ctx.setLineDash([]); ctx.globalAlpha = 1;
   for (const m of [c.windward, ...c.gate, c.pin, c.committee]) {
     const hot = next.includes(m) && !full;
     ctx.fillStyle = hot ? COL.accent : '#ff7a1a';
