@@ -67,11 +67,18 @@
   .chips { display: flex; gap: 6px; }
   .chip { font-family: var(--sans); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; height: 26px; display: inline-flex; align-items: center; padding: 0 11px; border-radius: 54px; background: var(--glass); color: var(--ink); white-space: nowrap; }
   .chip.bad { background: var(--danger); color: #fff; } .chip.warn { background: var(--warn); color: #000; } .chip.ok { background: var(--accent); color: var(--on-accent); }
-  .flags { display: flex; gap: 4px; }
-  .flag { display: block; width: 24px; height: 16px; border-radius: 2px; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,.4); font-style: normal; }
-  .flag.cls { background: #f2c230; color: #111; font: 900 12px/16px var(--sans); text-align: center; }
-  .flag.P { background: #1f4fa8; } .flag.P::after { content: ''; position: absolute; inset: 5px 8px; background: #fff; }
-  .flag.X { background: linear-gradient(#1f4fa8, #1f4fa8) center / 5px 100% no-repeat, linear-gradient(#1f4fa8, #1f4fa8) center / 100% 4px no-repeat, #fff; }
+  /* the committee boat's flags, big in the centre while the start sequence runs (and X while anyone is over early) */
+  .flags { display: flex; gap: 14px; padding: 8px 14px 6px; border-radius: 16px; background: var(--glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .flags:empty { display: none; }
+  .flags figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .flags figcaption { font-family: var(--sans); font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: #fff; white-space: nowrap; }
+  .flag { display: block; width: 54px; height: 36px; border-radius: 2px; position: relative; box-shadow: 0 2px 6px rgba(0,0,0,.45); font-style: normal; transform-origin: left center; animation: flutter 1.4s ease-in-out infinite alternate; }
+  .flags figure:nth-child(2) .flag { animation-delay: -.5s; } .flags figure:nth-child(3) .flag { animation-delay: -.9s; }
+  @keyframes flutter { from { transform: perspective(120px) rotateY(-12deg) skewY(-2deg); } to { transform: perspective(120px) rotateY(10deg) skewY(2deg); } }
+  .flag.cls { background: #f2c230; color: #111; font: 900 24px/36px var(--sans); text-align: center; }
+  .flag.P { background: #1f4fa8; } .flag.P::after { content: ''; position: absolute; inset: 11px 18px; background: #fff; }
+  .flag.X { background: linear-gradient(#1f4fa8, #1f4fa8) center / 11px 100% no-repeat, linear-gradient(#1f4fa8, #1f4fa8) center / 100% 9px no-repeat, #fff; }
+  @media (max-height: 420px) { .flag { width: 44px; height: 29px; } .flag.cls { font-size: 20px; line-height: 29px; } .flag.P::after { inset: 9px 15px; } .flags { padding: 6px 12px 5px; gap: 12px; } }
   .tr { right: calc(12px + var(--sr)); top: calc(10px + var(--st)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
   .tr .row { display: flex; gap: 6px; pointer-events: auto; align-items: center; }
   /* camera: the app's tags, the chosen one black */
@@ -126,6 +133,10 @@
   #hud .round-s { width: 30px; height: 30px; border: 1.5px solid var(--tag-line); color: #fff; background: var(--bg); }
   #hud .round-s svg { width: 11px; height: 11px; }
   #hud #mini { width: 100px; height: 100px; border-radius: 16px; }
+  #hud .tr .row { align-items: flex-start; }
+  #hud .zoom { display: flex; flex-direction: column; gap: 6px; pointer-events: auto; }
+  #hud .zoom button { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--tag-line); background: var(--bg); color: #fff; font-family: var(--sans); font-weight: 700; font-size: 20px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); touch-action: none; }
+  #hud .zoom button:active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
   #hud #rudder { width: 170px; height: 96px; }
   #hud #rudder .track { stroke: rgba(8, 14, 20, 0.42); stroke-width: 14; }
   #hud #rudder .ticks { stroke: rgba(255, 255, 255, 0.35); }
@@ -206,41 +217,23 @@
 <canvas id="gl"></canvas>
 
 <div id="hud" hidden>
-  <div class="tl">
-    <svg id="inst" viewBox="-50 -50 100 100" aria-label="wind">
-      <circle class="ring" r="44"/>
-      <path class="port" d="M-33.7 -28.3 A44 44 0 0 1 -22 -38.1" stroke-width="5" fill="none"/>
-      <path class="stbd" d="M22 -38.1 A44 44 0 0 1 33.7 -28.3" stroke-width="5" fill="none"/>
-      <path class="hull" d="M0 -20 C6 -10 7 6 5 18 L-5 18 C-7 6 -6 -10 0 -20Z"/>
-      <g id="twaTick"><path class="tw" d="M0 -44 L-4 -36 L4 -36Z"/></g>
-      <g id="windArrow"><path class="aw" d="M0 -46 L-7 -32 L-2 -32 L-2 -24 L2 -24 L2 -32 L7 -32Z" transform="rotate(180 0 -35)"/></g>
-      <text id="awsTxt" x="-13" y="36" text-anchor="middle" fill="var(--accent)"></text>
-      <text id="twsTxt" x="13" y="36" text-anchor="middle" fill="var(--muted)"></text>
-    </svg>
-    <div class="col">
-      <svg id="heel" viewBox="-40 -4 80 40">
-        <path class="arc" d="M-32 0 A32 32 0 0 0 32 0"/>
-        <path class="red" d="M-32 0 A32 32 0 0 0 -18.4 26.2"/>
-        <path class="red" d="M32 0 A32 32 0 0 1 18.4 26.2"/>
-        <line id="heelNeedle" x1="0" y1="0" x2="0" y2="31" stroke-width="3" stroke-linecap="round"/>
-        <text id="heelTxt" x="0" y="13" text-anchor="middle"></text>
-      </svg>
-      <div class="flags" id="flags"></div>
-    </div>
-  </div>
   <div class="tc">
     <div class="speed on-photo"><span id="spd">0.0</span><small data-t="kn"></small></div>
     <div class="chip-ui" id="status"></div>
+    <div class="flags" id="flags"></div>
     <div class="perf on-photo" id="perf"></div>
     <div class="trim chip-ui" id="trim"><i></i><i></i><span id="trimTxt"></span></div>
     <div class="chips" id="chips"></div>
   </div>
   <div class="tr">
     <div class="row">
-      <div class="seg" id="camSeg"><button data-cam="drone" data-t="drone"></button><button data-cam="helm" data-t="helm"></button></div>
+      <div class="seg" id="camSeg"><button data-cam="drone" data-t="drone"></button><button data-cam="top" data-t="top"></button><button data-cam="helm" data-t="helm"></button></div>
       <button class="round-s" id="pauseBtn" aria-label="pause"><svg width="14" height="14" viewBox="0 0 14 14"><rect x="2" y="1" width="3.5" height="12" rx="1.2" fill="currentColor"/><rect x="8.5" y="1" width="3.5" height="12" rx="1.2" fill="currentColor"/></svg></button>
     </div>
-    <canvas id="mini" width="240" height="240"></canvas>
+    <div class="row">
+      <div class="zoom"><button id="zoomIn" aria-label="zoom in">+</button><button id="zoomOut" aria-label="zoom out">−</button></div>
+      <canvas id="mini" width="240" height="240"></canvas>
+    </div>
   </div>
   <div id="rudderZone">
     <svg id="rudder" viewBox="0 0 210 118">
@@ -273,6 +266,8 @@
       <div class="choice" data-opt="start"><button data-v="1" data-t="m1"></button><button data-v="3" data-t="m3"></button><button data-v="5" data-t="m5"></button></div>
       <span class="meta" data-t="currentK"></span>
       <div class="choice" data-opt="current"><button data-v="0" data-t="off"></button><button data-v="1" data-t="on"></button></div>
+      <span class="meta" data-t="guidesK"></span>
+      <div class="choice" data-opt="guides"><button data-v="1" data-t="on"></button><button data-v="0" data-t="off"></button></div>
       <span class="meta" data-t="gfx"></span>
       <div class="choice" data-opt="gfx"><button data-v="auto" data-t="gAuto"></button><button data-v="high" data-t="gHigh"></button><button data-v="medium" data-t="gMedium"></button><button data-v="low" data-t="gLow"></button></div>
       <span class="meta" data-t="sound"></span>
@@ -282,7 +277,7 @@
     <button class="go" id="goBtn" data-t="start"></button>
     <button class="go ghost" id="resumeBtn" hidden data-t="resume"></button>
     <ul class="how">
-      <li data-t="how1"></li><li data-t="how2"></li><li data-t="how3"></li><li data-t="how4"></li>
+      <li data-t="how1"></li><li data-t="how2"></li><li data-t="how5"></li><li data-t="how3"></li><li data-t="how4"></li>
     </ul>
     <p class="rotate" data-t="rotate"></p>
     <a class="back" id="backLink" href="/" data-t="back"></a>

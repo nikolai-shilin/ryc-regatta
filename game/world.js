@@ -1,6 +1,6 @@
 // Regatta: the 3D picture — sea, sky, boats, marks, wake and the two cameras (drone and helm).
 import * as THREE from 'three';
-import { D2R, wrap, clamp, lerp, waveHeight } from './sim.js';
+import { D2R, wrap, clamp, lerp, waveHeight, beatAngle, runAngle } from './sim.js';
 import { BoatView, LOOKS } from './yacht.js';
 
 const SKY_TOP = new THREE.Color('#4f8fcb'), SKY_HORIZON = new THREE.Color('#d6e7f0');
@@ -343,6 +343,41 @@ function island(rand, R, H, color) {
   return m;
 }
 
+// ---------- guides around your boat ----------
+// Built with the wind from the north and turned to the wind each frame: a half-transparent 3D arrow upwind of the
+// boat, pointing the way the wind blows; and a ring: red where she can't sail (too close to the wind), green marks
+// at the best angle upwind on each tack, blue marks at the best angle downwind on each gybe; a white pointer for
+// your heading. Compass c in this frame sits at ring angle π/2 − c.
+const R_IN = 9, R_OUT = 10.6;
+const glass = (color, opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide, fog: false });
+const sector = (r0, r1, c0, c1, mat) => new THREE.Mesh(new THREE.RingGeometry(r0, r1, Math.max(6, Math.ceil(Math.abs(c1 - c0) / (2 * D2R))), 1, Math.PI / 2 - c1, c1 - c0).rotateX(-Math.PI / 2), mat);
+function windArrow() {
+  const s = new THREE.Shape(); // pointing −y in the drawing: towards the boat once laid on the water
+  s.moveTo(0, -3.4); s.lineTo(1.7, -0.6); s.lineTo(0.6, -0.6); s.lineTo(0.6, 3.2); s.lineTo(-0.6, 3.2); s.lineTo(-0.6, -0.6); s.lineTo(-1.7, -0.6); s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, { depth: 0.35, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.12, bevelSegments: 2 });
+  g.rotateX(-Math.PI / 2); g.translate(0, 0.25, 0);
+  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: '#dff3ff', emissive: '#7cc8f0', emissiveIntensity: 0.35, roughness: 0.3, transparent: true, opacity: 0.5, depthWrite: false }));
+  m.renderOrder = 3;
+  return m;
+}
+function guides(tws) {
+  const g = new THREE.Group(), turn = new THREE.Group(); g.add(turn); // turn: rotated to the wind
+  const beat = beatAngle(tws) * D2R, run = runAngle(tws) * D2R;
+  turn.add(sector(R_IN + 0.55, R_IN + 0.75, 0, 2 * Math.PI, glass('#ffffff', 0.22))); // the dial
+  turn.add(sector(R_IN, R_OUT, -beat, beat, glass('#ff4d3d', 0.3))); // no-go: too close to the wind
+  for (const sd of [-1, 1]) {
+    turn.add(sector(R_IN - 0.5, R_OUT + 0.9, sd * beat - 2.2 * D2R, sd * beat + 2.2 * D2R, glass('#2ee6a0', 0.75))); // best upwind
+    turn.add(sector(R_IN - 0.5, R_OUT + 0.9, sd * run - 2.2 * D2R, sd * run + 2.2 * D2R, glass('#3aa8ff', 0.75))); // best downwind
+  }
+  turn.add(sector(R_IN, R_OUT, Math.PI - (Math.PI - run), Math.PI + (Math.PI - run), glass('#3aa8ff', 0.12))); // the slow dead run between the gybes
+  const arrow = windArrow(); arrow.position.set(0, 0, -(R_OUT + 6)); turn.add(arrow);
+  const tick = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.4, 3).rotateX(-Math.PI / 2), glass('#ffffff', 0.85)); // your heading
+  g.add(tick);
+  g.userData = { turn, arrow, tick };
+  for (const o of [turn, tick]) o.traverse((m) => { if (m.isMesh) m.renderOrder = Math.max(m.renderOrder, 2); });
+  return g;
+}
+
 // ---------- graphics levels ----------
 // High for computers, Medium to start on phones; Auto (main.js) steps down when the frame rate drops.
 const PHONE = /android|iphone|ipad/i.test(navigator.userAgent);
@@ -425,8 +460,9 @@ export class World {
 
     this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uMax: { value: WAKE_AGE } };
     this.wakes = [];
+    this.showGuides = true; this.guides = null;
     this.mode = 'drone';
-    this.orbit = 0; this.dist = 26; this.look = 0; this.lookHold = 0;
+    this.orbit = 0; this.dist = 26; this.look = 0; this.lookHold = 0; this.helmFov = 68;
     this.camH = 0;
     this.boatViews = [];
     this.marks = null;
@@ -468,6 +504,8 @@ export class World {
     this.pointers = [cone(), cone()]; for (const p of this.pointers) g.add(p);
     this.marks = g; this.scene.add(g);
     this.camH = race.player.h;
+    if (this.guides) this.scene.remove(this.guides);
+    this.guides = guides(race.wind.p.tws); this.scene.add(this.guides);
     for (const f of this.foam) f.age = 99;
     for (const w of this.wakes) w.dispose(this.scene);
     this.wakes = race.boats.map(() => new Wake(this.scene, this.wakeU));
@@ -571,10 +609,28 @@ export class World {
     fp.needsUpdate = fa.needsUpdate = fs.needsUpdate = true;
     this.foamU.uScale.value = this.renderer.domElement.height / (2 * Math.tan((this.camera.fov * D2R) / 2));
 
+    // guides: around your boat, turned to the wind she feels; off in the helm view
+    if (this.guides) {
+      const G = this.guides, U = G.userData;
+      G.visible = this.showGuides && this.mode !== 'helm' && !P.done;
+      G.position.set(P.x, 0.45 + race.wind.p.waves * 0.9, P.z);
+      U.turn.rotation.y = -P.wdir;
+      U.arrow.position.z = -(R_OUT + 6) + ((t * 1.6) % 2.4); // drifting gently downwind
+      U.arrow.material.opacity = 0.5 * Math.min(1, (2.4 - ((t * 1.6) % 2.4)) * 2); // and fading as it slides in
+      U.tick.position.set(Math.sin(P.h) * (R_OUT + 0.9), 0, -Math.cos(P.h) * (R_OUT + 0.9)); U.tick.rotation.y = -P.h;
+    }
     // cameras
     this.camH += wrap(P.h - this.camH) * (1 - Math.exp(-dt * 1.6));
     const cam = this.camera;
-    if (this.mode === 'drone') {
+    cam.up.set(0, 1, 0);
+    if (this.mode === 'top') {
+      // straight down, your heading up the screen, so steering left turns her left on screen too
+      const hgt = 20 + this.dist * 1.6 * (cam.aspect < 1 ? 1.5 : 1);
+      cam.position.lerp(new THREE.Vector3(P.x, hgt, P.z), 1 - Math.exp(-dt * 8));
+      cam.up.set(Math.sin(this.camH), 0, -Math.cos(this.camH));
+      cam.lookAt(P.x, 0, P.z);
+      cam.fov = 50;
+    } else if (this.mode === 'drone') {
       const ph = this.camH + this.orbit, el = 22 * D2R, d = this.dist * (cam.aspect < 1 ? 1.75 : 1); // a tall screen needs the drone further back
       const tx = P.x + Math.sin(P.h) * 5, tz = P.z - Math.cos(P.h) * 5;
       const want = new THREE.Vector3(tx - Math.sin(ph) * d * Math.cos(el), 3 + d * Math.sin(el), tz + Math.cos(ph) * d * Math.cos(el));
@@ -588,7 +644,7 @@ export class World {
       const eye = new THREE.Vector3(side * 1.0, 2.75, 4.45).applyMatrix4(v.tilt.matrixWorld);
       cam.position.copy(eye);
       cam.rotation.set(-0.1, -P.h + this.look - side * 0.22, side * P.heel * D2R * 0.4);
-      cam.fov = 68;
+      cam.fov = this.helmFov;
     }
     cam.updateProjectionMatrix();
     this.sky.position.copy(cam.position);
@@ -603,7 +659,11 @@ export class World {
   }
 
   // camera gestures
-  drag(dx) { if (this.mode === 'drone') this.orbit -= dx * 0.006; else { this.look = clamp(this.look - dx * 0.005, -2.6, 2.6); this.lookHold = 1.2; } }
-  zoom(f) { if (this.mode === 'drone') this.dist = clamp(this.dist * f, 12, 90); }
-  resetView() { this.orbit = 0; this.look = 0; this.dist = 26; }
+  drag(dx) { if (this.mode === 'top') return; if (this.mode === 'drone') this.orbit -= dx * 0.006; else { this.look = clamp(this.look - dx * 0.005, -2.6, 2.6); this.lookHold = 1.2; } }
+  // zoom: f < 1 in, f > 1 out — the drone comes closer, the top view lower, the helm view through a longer lens
+  zoom(f) {
+    if (this.mode === 'helm') this.helmFov = clamp(this.helmFov * f, 30, 80);
+    else this.dist = clamp(this.dist * f, 8, 110);
+  }
+  resetView() { this.orbit = 0; this.look = 0; this.dist = 26; this.helmFov = 68; }
 }

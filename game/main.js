@@ -12,13 +12,14 @@ const T = {
     kick: 'Game', title: 'Regatta', sub: 'A windward–leeward race against three boats, under the racing rules. Steer, trim, tack, read the wind.',
     wind: 'Wind', light: 'Light · 7 kn', medium: 'Medium · 12 kn', strong: 'Strong · 19 kn', laps: 'Laps', sails: 'Sails',
     manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
-    currentK: 'Current', gfx: 'Graphics', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', start: 'Start race', resume: 'Resume', restart: 'Restart',
+    currentK: 'Current', guidesK: 'Guides', gfx: 'Graphics', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', start: 'Start race', resume: 'Resume', restart: 'Restart',
     how1: '<b>Left thumb</b> steers on the arc. <b>Right thumb</b> works the sheet: up pulls the sails in, down lets them out. Keep the telltales green.',
     how2: '<b>Tack</b> turns you through the wind (<b>Gybe</b> downwind). <b>Kite</b> sets the gennaker on a run. In a gust, ease the sheet before she heels too far.',
     how3: 'Start after the gun — the class flag comes down. Over early and you must go back. Round the windward mark <b>leaving it to port</b>, finish through the line.',
+    how5: 'Round your boat: the <b>arrow</b> shows where the wind blows from; <b>red</b> — too close to the wind to sail; <b>green</b> marks — the best angle upwind; <b>blue</b> — the best angle downwind.',
     how4: 'Racing rules: port tack keeps clear of starboard, windward of leeward, the boat astern of the boat ahead; inside boat gets room at the mark. Hit someone you should have avoided — two penalty turns. Touch a mark — one.',
     rotate: 'Turn your phone sideways for the best view.', back: '← Back to Sailing Certification Test',
-    kn: 'kn', drone: 'Drone', helm: 'Helm', tack: 'Tack', gybe: 'Gybe', kite: 'Kite', in: 'In', out: 'Out',
+    flagCls: 'Class', flagP: 'Prep', flagX: 'Recall', kn: 'kn', drone: 'Drone', helm: 'Helm', top: 'Top', tack: 'Tack', gybe: 'Gybe', kite: 'Kite', in: 'In', out: 'Out',
     ok: 'Trim OK', pullIn: 'Pull in', easeOut: 'Ease out', irons: 'In irons',
     startIn: 'Start', lineStart: 'Start line', mark: 'Windward mark', gate: 'Leeward gate', finish: 'Finish', ocsS: 'OCS — return below the line',
     target: 'target', vmg: 'VMG', line: 'line', toLine: 'to line', favPin: 'pin end favoured', favBoat: 'boat end favoured', square: 'line square',
@@ -38,13 +39,14 @@ const T = {
     kick: 'Игра', title: 'Регата', sub: 'Гонка «апвинд — даунвинд» против трёх лодок по правилам. Рули, работай шкотом, делай повороты, читай ветер.',
     wind: 'Ветер', light: 'Слабый · 7 уз', medium: 'Средний · 12 уз', strong: 'Сильный · 19 уз', laps: 'Круги', sails: 'Паруса',
     manual: 'Сам', auto: 'Авто', sound: 'Звук', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
-    currentK: 'Течение', gfx: 'Графика', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
+    currentK: 'Течение', guidesK: 'Подсказки', gfx: 'Графика', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
     how1: '<b>Левый палец</b> рулит по дуге. <b>Правый</b> работает шкотом: вверх выбрать, вниз потравить. Колдунчики должны быть зелёными.',
     how2: '<b>Поворот</b> — оверштаг через ветер (на полных курсах — <b>фордевинд</b>). <b>Генакер</b> — для попутного ветра. В порыве трави шкот, пока крен не стал слишком большим.',
     how3: 'Старт после сигнала — флаг класса спущен. Фальстарт — вернись за линию. Верхний знак огибают, <b>оставляя его слева</b>; финиш — через линию.',
+    how5: 'Вокруг лодки: <b>стрелка</b> — откуда дует ветер; <b>красное</b> — слишком остро к ветру, идти нельзя; <b>зелёные</b> метки — лучший угол на ветер; <b>синие</b> — лучший угол по ветру.',
     how4: 'Правила: левый галс уступает правому, наветренная — подветренной, догоняющая — идущей впереди; внутренней лодке у знака дают место. Столкнулся, когда должен был уступить, — два штрафных оборота. Задел знак — один.',
     rotate: 'Поверните телефон горизонтально.', back: '← Назад в Sailing Certification Test',
-    kn: 'уз', drone: 'Дрон', helm: 'Штурвал', tack: 'Поворот', gybe: 'Фордевинд', kite: 'Генакер', in: 'Выбрать', out: 'Травить',
+    flagCls: 'Класс', flagP: 'Подгот.', flagX: 'Отзыв', kn: 'уз', drone: 'Дрон', helm: 'Штурвал', top: 'Сверху', tack: 'Поворот', gybe: 'Фордевинд', kite: 'Генакер', in: 'Выбрать', out: 'Травить',
     ok: 'Паруса в норме', pullIn: 'Выбери шкот', easeOut: 'Потрави шкот', irons: 'Левентик',
     startIn: 'Старт', lineStart: 'Линия старта', mark: 'Верхний знак', gate: 'Нижние ворота', finish: 'Финиш', ocsS: 'Фальстарт — вернись за линию',
     target: 'цель', vmg: 'VMG', line: 'линия', toLine: 'до линии', favPin: 'выгоднее у знака', favBoat: 'выгоднее у судна', square: 'линия ровная',
@@ -82,7 +84,7 @@ applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 
 // ---------- settings ----------
-const opts = { preset: 'medium', laps: 1, autoTrim: 0, sound: 1, start: 1, current: 0, gfx: 'auto' };
+const opts = { preset: 'medium', laps: 1, autoTrim: 0, sound: 1, start: 1, current: 0, gfx: 'auto', guides: 1 };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
 const saveOpts = () => { try { localStorage.setItem('regatta', JSON.stringify(opts)); } catch (e) {} };
 const paintOpts = () => document.querySelectorAll('.choice').forEach((g) => g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(opts[g.dataset.opt]) === b.dataset.v)));
@@ -93,6 +95,7 @@ for (const g of document.querySelectorAll('.choice')) {
     const b = e.target.closest('button'); if (!b) return;
     opts[k] = k === 'preset' || k === 'gfx' ? b.dataset.v : +b.dataset.v; paintOpts(); saveOpts();
     if (k === 'gfx') { world.setQuality(startQuality()); perf.settle = 2; }
+    if (k === 'guides') world.showGuides = !!opts.guides;
     if (k === 'sound') audio.setOn(!!opts.sound);
     if (k === 'autoTrim' && race && running) race.player.autoTrim = !!opts.autoTrim;
     if (k === 'preset' || k === 'laps' || k === 'start' || k === 'current') { if (!running) newRace(); else menuChanged = true; }
@@ -185,6 +188,7 @@ function startQuality() {
   try { return localStorage.getItem(GFX_KEY) || defaultQuality(); } catch (e) { return defaultQuality(); }
 }
 world.setQuality(startQuality());
+world.showGuides = !!opts.guides;
 // Auto: watch the frame rate while racing; under 45 fps, step down a level and remember it for this device
 const perf = { t: 0, n: 0, settle: 3 };
 function watchFps(raw) {
@@ -268,13 +272,22 @@ canvas.addEventListener('pointermove', (e) => {
 const ptrUp = (e) => { ptrs.delete(e.pointerId); pinch0 = 0; };
 canvas.addEventListener('pointerup', ptrUp); canvas.addEventListener('pointercancel', ptrUp);
 canvas.addEventListener('wheel', (e) => { e.preventDefault(); world.zoom(Math.exp(e.deltaY * 0.001)); }, { passive: false });
+// + / − buttons: a step per tap, repeating while held
+for (const [id, f] of [['#zoomIn', 1 / 1.06], ['#zoomOut', 1.06]]) {
+  const b = $(id); let timer = null;
+  const stop = () => { clearInterval(timer); timer = null; };
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); world.zoom(f ** 3); stop(); timer = setInterval(() => world.zoom(f), 40); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, stop);
+}
 
 // keyboard, for a computer: ←/→ steer, ↑/↓ sheet, space tack, K kite, C camera, Esc pause
 window.addEventListener('keydown', (e) => {
   input.keys[e.code] = true;
   if (e.code === 'Space') { e.preventDefault(); doTack(); }
   if (e.code === 'KeyK') doKite();
-  if (e.code === 'KeyC') setCam(world.mode === 'drone' ? 'helm' : 'drone');
+  if (e.code === 'Equal' || e.code === 'NumpadAdd') world.zoom(1 / 1.2);
+  if (e.code === 'Minus' || e.code === 'NumpadSubtract') world.zoom(1.2);
+  if (e.code === 'KeyC') setCam({ drone: 'top', top: 'helm', helm: 'drone' }[world.mode] || 'drone');
   if (e.code === 'Escape' || e.code === 'KeyP') { if (running) paused ? resume() : pause(); }
   if (['ArrowUp', 'ArrowDown', 'KeyW', 'KeyS'].includes(e.code)) autoOff();
 });
@@ -306,8 +319,7 @@ $('#menuBtn').addEventListener('click', () => { running = false; paused = false;
 if (TG) $('#backLink').addEventListener('click', (e) => { e.preventDefault(); location.href = '/'; });
 
 // ---------- instruments ----------
-const el = { spd: $('#spd'), perf: $('#perf'), status: $('#status'), trim: $('#trim'), trimTxt: $('#trimTxt'), arrow: $('#windArrow'), ttick: $('#twaTick'),
-  tws: $('#twsTxt'), aws: $('#awsTxt'), needle: $('#heelNeedle'), heelTxt: $('#heelTxt'), knob: $('#rudderKnob'), band: $('#sheet .band'), sknob: $('#sheet .knob'),
+const el = { spd: $('#spd'), perf: $('#perf'), status: $('#status'), trim: $('#trim'), trimTxt: $('#trimTxt'), knob: $('#rudderKnob'), band: $('#sheet .band'), sknob: $('#sheet .knob'),
   toast: $('#toast'), count: $('#count'), flags: $('#flags'), chips: $('#chips') };
 let toastT = 0;
 const txt = (e, s) => { if (e._t !== s) { e._t = s; e.textContent = s; } }; // write the DOM only when the text changes
@@ -320,14 +332,6 @@ function updateHud(dt) {
   const P = race.player, a = Math.abs(P.twa) / D2R, awa = Math.abs(P.awa) / D2R, c = race.course;
   const kn = P.v / KN;
   txt(el.spd, kn.toFixed(1));
-  // wind instrument: the yellow arrow is the apparent wind (what the sails feel), the white tick the true wind
-  el.arrow.setAttribute('transform', `rotate(${(P.awa / D2R).toFixed(1)})`);
-  el.ttick.setAttribute('transform', `rotate(${(P.twa / D2R).toFixed(1)})`);
-  txt(el.aws, `A ${P.aws.toFixed(0)}`); txt(el.tws, `T ${P.tws.toFixed(0)}`);
-  const side = P.twa >= 0 ? 1 : -1;
-  el.needle.setAttribute('transform', `rotate(${(side * P.heel).toFixed(1)})`);
-  el.needle.style.stroke = P.heel > 35 ? 'var(--danger)' : P.heel > 28 ? 'var(--warn)' : 'var(--ink)';
-  txt(el.heelTxt, `${P.heel.toFixed(0)}°`);
   el.trim.dataset.s = P.trim;
   txt(el.trimTxt, t({ ok: 'ok', in: 'pullIn', out: 'easeOut', irons: 'irons' }[P.trim]));
   const ang = P.rudder * 70 * D2R; el.knob.setAttribute('cx', (105 + Math.sin(ang) * 84).toFixed(1)); el.knob.setAttribute('cy', (104 - Math.cos(ang) * 84).toFixed(1));
@@ -369,7 +373,8 @@ function updateHud(dt) {
   const fk = `${race.flags.cls}${race.flags.P}${race.flags.X}`;
   if (fk !== flagsKey) {
     flagsKey = fk;
-    el.flags.innerHTML = (race.flags.cls ? '<i class="flag cls">R</i>' : '') + (race.flags.P ? '<i class="flag P"></i>' : '') + (race.flags.X ? '<i class="flag X"></i>' : '');
+    const fig = (cls, inner, cap) => `<figure><i class="flag ${cls}">${inner}</i><figcaption>${t(cap)}</figcaption></figure>`;
+    el.flags.innerHTML = (race.flags.cls ? fig('cls', 'R', 'flagCls') : '') + (race.flags.P ? fig('P', '', 'flagP') : '') + (race.flags.X ? fig('X', '', 'flagX') : '');
   }
   // chips: penalty, dirty air, surfing
   const chips = [];
