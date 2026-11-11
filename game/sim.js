@@ -106,9 +106,9 @@ export const depowerFor = (full) => (full > 24 ? 28 * (1 - 24 / full) : 0);
 
 // ---------- wind ----------
 export const PRESETS = {
-  light:  { tws: 7,  osc: 9,  period: 110, gusts: 7,  gustStr: 0.35, veer: 8,  waves: 0.18 },
-  medium: { tws: 12, osc: 10, period: 90,  gusts: 9,  gustStr: 0.33, veer: 10, waves: 0.45 },
-  strong: { tws: 19, osc: 11, period: 75,  gusts: 11, gustStr: 0.36, veer: 12, waves: 0.85 },
+  light:  { tws: 7,  osc: 12, period: 110, gusts: 7,  gustStr: 0.35, veer: 8,  waves: 0.18 },
+  medium: { tws: 12, osc: 13, period: 90,  gusts: 9,  gustStr: 0.33, veer: 10, waves: 0.45 },
+  strong: { tws: 19, osc: 14, period: 75,  gusts: 11, gustStr: 0.36, veer: 12, waves: 0.85 },
 };
 
 export class Wind {
@@ -134,10 +134,12 @@ export class Wind {
       life: 0,
     };
   }
-  // the mean direction now: slow oscillations plus a persistent drift
+  // the middle the wind swings about: it moves only with the slow persistent drift
+  mean() { return this.base + this.drift * this.t; }
+  // the direction now: the middle plus the oscillations, a long swing (up to `osc` degrees either way) and a shorter one
   dir() {
     const { osc, period } = this.p, t = this.t;
-    return this.base + this.drift * t + D2R * osc * (0.65 * Math.sin((2 * Math.PI * t) / period + this.phase) + 0.35 * Math.sin((2 * Math.PI * t) / (period * 0.43) + 1.3 * this.phase));
+    return this.mean() + D2R * osc * (0.75 * Math.sin((2 * Math.PI * t) / period + this.phase) + 0.25 * Math.sin((2 * Math.PI * t) / (period * 0.43) + 1.3 * this.phase));
   }
   step(dt) {
     this.t += dt;
@@ -206,9 +208,11 @@ export class Boat {
     this.sail = Math.min(sheetAngle, Math.max(awa - 2, 2));
     this.luff = a < NO_GO ? 1 : clamp((err - ease - 5) / 18, 0, 1);
     this.trim = a < NO_GO ? 'irons' : err > ease + 7 ? 'in' : err < -7 ? 'out' : 'ok';
-    const eff = clamp(err > 0 ? 1 - (err / 28) ** 2 : 1 - (err / 35) ** 2, err > 0 ? 0.08 : 0.25, 1);
+    // with the gennaker up the crew trims it and it does most of the driving, so a badly trimmed main costs far less
+    const kiteK = this.kite ? 0.7 : 0;
+    const eff = lerp(clamp(err > 0 ? 1 - (err / 28) ** 2 : 1 - (err / 35) ** 2, err > 0 ? 0.08 : 0.25, 1), 1, kiteK);
     this.eff = eff;
-    const power = err > 0 ? clamp(1 - err / 28, 0.05, 1) : 1 + -err / 80;
+    const power = lerp(err > 0 ? clamp(1 - err / 28, 0.05, 1) : 1 + -err / 80, 1, kiteK);
 
     // heel
     this.heel = lerp(this.heel, full * power, 1 - Math.exp(-dt / 1.1));

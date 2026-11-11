@@ -105,6 +105,33 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
+// distance lines across the beat: from the windward mark down to the start line, every 50 m (100 m on a long course),
+// each a row of faint dashes with its distance to the mark written on it. They widen with the distance, as the laylines do.
+export const ladderStep = (beat) => (beat > 600 ? 100 : 50);
+function ladder(c) {
+  const g = new THREE.Group(), beat = -c.windward.z, step = ladderStep(beat);
+  const dash = document.createElement('canvas'); dash.width = 64; dash.height = 4;
+  const dx = dash.getContext('2d'); dx.fillStyle = '#fff'; dx.fillRect(0, 0, 32, 4);
+  for (let d = step; d < beat - 15; d += step) {
+    const z = c.windward.z + d, half = Math.min(260, 30 + d * 0.95);
+    const tex = new THREE.CanvasTexture(dash); tex.wrapS = THREE.RepeatWrapping; tex.repeat.set((2 * half) / 8, 1);
+    const line = new THREE.Mesh(new THREE.PlaneGeometry(2 * half, 0.35).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.45, depthWrite: false, fog: true }));
+    line.position.set(c.windward.x, 0.65, z); line.renderOrder = 1; g.add(line);
+    // the distance, at the middle and every 120 m out to the ends
+    const lc = document.createElement('canvas'); lc.width = 160; lc.height = 56;
+    const x = lc.getContext('2d'), text = `${d} m`;
+    x.font = '700 30px Carlito, Lato, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    const w = x.measureText(text).width + 26;
+    x.fillStyle = 'rgba(0,0,0,0.38)'; x.beginPath(); x.roundRect((160 - w) / 2, 8, w, 40, 20); x.fill();
+    x.fillStyle = '#fff'; x.fillText(text, 80, 29);
+    const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(lc), transparent: true, depthWrite: false, fog: true, toneMapped: false });
+    for (let off = 0; off <= half - 15; off += 120) for (const sd of off ? [-1, 1] : [1]) {
+      const s = new THREE.Sprite(mat); s.scale.set(13, 4.55, 1); s.position.set(c.windward.x + sd * off, 3.2, z); g.add(s);
+    }
+  }
+  return g;
+}
+
 // the zone round each rounding mark — three hull lengths — as a ring of dashes riding the waves: one mesh for all
 // of them; the rings of the mark you sail for now are brighter
 class ZoneRings {
@@ -544,6 +571,7 @@ export class World {
     const cone = () => { const m = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.6, 4), new THREE.MeshBasicMaterial({ color: '#ffd400', fog: false })); m.rotation.x = Math.PI; return m; };
     this.pointers = [cone(), cone()]; for (const p of this.pointers) g.add(p);
     this.zones = new ZoneRings([c.windward, c.gate[0], c.gate[1]]); g.add(this.zones.mesh);
+    this.ladder = ladder(c); g.add(this.ladder);
     this.marks = g; this.scene.add(g);
     this.camH = race.player.h;
     if (this.guides) this.scene.remove(this.guides);
@@ -631,6 +659,7 @@ export class World {
     // the line shows before the start and on the way to the finish
     const k = race.course.legs[P.leg];
     this.line.visible = k === 'start' || k === 'finish';
+    this.ladder.visible = this.showGuides && !P.done; // the distance lines go with the other guides
     // pointers over the next mark(s)
     const c = race.course;
     const targets = k === 'mark' ? [c.windward] : k === 'gate' ? c.gate : [c.pin, { x: c.committee.x, z: c.committee.z }];

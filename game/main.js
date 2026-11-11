@@ -1,6 +1,6 @@
 // Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
 import { Race, D2R, KN, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE } from './sim.js';
-import { World, defaultQuality } from './world.js';
+import { World, defaultQuality, ladderStep } from './world.js';
 import { raceStarted, raceFinished } from './stats.js';
 
 const $ = (s) => document.querySelector(s);
@@ -18,7 +18,7 @@ const T = {
     how1: '<b>Left thumb</b> steers on the arc. <b>Right thumb</b> works the sheet: up pulls the sails in, down lets them out. Keep the telltales green.',
     how2: '<b>Tack</b> turns you through the wind (<b>Gybe</b> downwind). <b>Kite</b> sets the gennaker on a run. In a gust, ease the sheet before she heels too far.',
     how3: 'Start after the gun — the class flag comes down. Over early and you must go back. Round the windward mark <b>leaving it to port</b>, finish through the line.',
-    how5: 'Round your boat: the <b>arrow</b> shows where the wind blows from; <b>red</b> — too close to the wind to sail; <b>green</b> marks — the best angle upwind; <b>blue</b> — the best angle downwind.',
+    how5: 'Round your boat: the <b>arrow</b> shows where the wind blows from; <b>red</b> — too close to the wind to sail; <b>green</b> marks — the best angle upwind; <b>blue</b> — the best angle downwind. The wind swings ten degrees and more either way every minute or so: in a <b>lift</b> you can point higher, in a <b>header</b> tack.',
     how4: 'Racing rules: port tack keeps clear of starboard, windward of leeward, the boat astern of the boat ahead; at a mark, the <b>zone</b> (dashed ring, three hull lengths): if two boats are overlapped when the first reaches it, the inside one gets room, if not — the one clear ahead. Hit someone you should have avoided — two penalty turns. Touch a mark — one.',
     rotate: 'Turn your phone sideways for the best view.', back: '← Back to Sailing Certification Test',
     flagCls: 'Class', flagP: 'Prep', flagX: 'Recall', kn: 'kn', drone: 'Drone', helm: 'Helm', top: 'Top', tack: 'Tack', gybe: 'Gybe', kite: 'Kite', in: 'In', out: 'Out',
@@ -33,7 +33,7 @@ const T = {
     hail10: 'Starboard!', hail11: 'Windward boat, keep clear!', hail12: 'Keep clear astern!', hail13: 'You’re tacking — keep clear!', hail18: 'Room at the mark!', hail44: 'Penalty boat — keep clear!',
     fouled: (w, r) => `Foul on ${w} (rule ${r}) — do two penalty turns`, theyFouled: (w, r) => `${w} broke rule ${r} and takes a penalty`,
     touched: 'You touched the mark — one penalty turn', penaltyDone: 'Penalty done', pen: (d, n) => `Penalty ${d}/${n} turns`,
-    dirty: 'Dirty air', surf: 'Surfing!',
+    dirty: 'Dirty air', surf: 'Surfing!', lift: (d) => `Lift ${d}°`, header: (d) => `Header ${d}° — tack?`,
     zIn: (n) => `Zone · overlapped with ${n}, you're inside — you get room`, zOut: (n) => `Zone · overlapped with ${n}, you're outside — give room`,
     zAhead: (n) => `Zone · clear ahead of ${n} — you get room`, zAstern: (n) => `Zone · clear astern of ${n} — keep clear`, tackCall: 'Ready about… Lee-oh!', gybeCall: 'Stand by to gybe… Gybe-oh!',
     results: 'Results', again: 'Race again', menu: 'Menu', racing: 'racing…', you: 'You', dsq: 'DSQ',
@@ -48,7 +48,7 @@ const T = {
     how1: '<b>Левый палец</b> рулит по дуге. <b>Правый</b> работает шкотом: вверх выбрать, вниз потравить. Колдунчики должны быть зелёными.',
     how2: '<b>Поворот</b> — оверштаг через ветер (на полных курсах — <b>фордевинд</b>). <b>Генакер</b> — для попутного ветра. В порыве трави шкот, пока крен не стал слишком большим.',
     how3: 'Старт после сигнала — флаг класса спущен. Фальстарт — вернись за линию. Верхний знак огибают, <b>оставляя его слева</b>; финиш — через линию.',
-    how5: 'Вокруг лодки: <b>стрелка</b> — откуда дует ветер; <b>красное</b> — слишком остро к ветру, идти нельзя; <b>зелёные</b> метки — лучший угол на ветер; <b>синие</b> — лучший угол по ветру.',
+    how5: 'Вокруг лодки: <b>стрелка</b> — откуда дует ветер; <b>красное</b> — слишком остро к ветру, идти нельзя; <b>зелёные</b> метки — лучший угол на ветер; <b>синие</b> — лучший угол по ветру. Ветер гуляет на десять с лишним градусов в обе стороны каждую минуту-другую: когда он <b>отходит</b>, можно идти круче, когда <b>заходит</b> — поворачивай.',
     how4: 'Правила: левый галс уступает правому, наветренная — подветренной, догоняющая — идущей впереди; у знака — <b>зона</b> (пунктирный круг, три корпуса): если лодки связаны, когда первая в неё входит, место получает внутренняя, если не связаны — идущая впереди. Столкнулся, когда должен был уступить, — два штрафных оборота. Задел знак — один.',
     rotate: 'Поверните телефон горизонтально.', back: '← Назад в Sailing Certification Test',
     flagCls: 'Класс', flagP: 'Подгот.', flagX: 'Отзыв', kn: 'уз', drone: 'Дрон', helm: 'Штурвал', top: 'Сверху', tack: 'Поворот', gybe: 'Фордевинд', kite: 'Генакер', in: 'Выбрать', out: 'Травить',
@@ -63,7 +63,7 @@ const T = {
     hail10: 'Правый галс!', hail11: 'Наветренная, уходи!', hail12: 'Сзади, уходи!', hail13: 'Ты в повороте — уходи!', hail18: 'Место у знака!', hail44: 'Штрафник, уходи!',
     fouled: (w, r) => `Нарушение против ${w} (правило ${r}) — два штрафных оборота`, theyFouled: (w, r) => `${w}: нарушение правила ${r}, штрафные обороты`,
     touched: 'Касание знака — один штрафной оборот', penaltyDone: 'Штраф выполнен', pen: (d, n) => `Штраф ${d}/${n} об.`,
-    dirty: 'Грязный ветер', surf: 'Сёрфинг!',
+    dirty: 'Грязный ветер', surf: 'Сёрфинг!', lift: (d) => `Ветер отошёл ${d}°`, header: (d) => `Ветер зашёл ${d}° — поворот?`,
     zIn: (n) => `Зона · связаны с ${n}, ты внутри — тебе дают место`, zOut: (n) => `Зона · связаны с ${n}, ты снаружи — дай место`,
     zAhead: (n) => `Зона · не связаны, ты впереди ${n} — тебе дают место`, zAstern: (n) => `Зона · не связаны, ты позади ${n} — держись в стороне`, tackCall: 'К повороту оверштаг… Поворот!', gybeCall: 'К повороту фордевинд… Поворот!',
     results: 'Результаты', again: 'Ещё гонку', menu: 'Меню', racing: 'в гонке…', you: 'Вы', dsq: 'DSQ',
@@ -391,6 +391,11 @@ function updateHud(dt) {
   if (P.pen) chips.push(['bad', t('pen', Math.min(P.pen.turns, Math.floor(Math.abs(P.pen.sum) / (2 * Math.PI) * 10) / 10).toFixed(1), P.pen.turns)]);
   if (P.shadow > 0.08) chips.push(['warn', `${t('dirty')} −${Math.round(P.shadow * 100)}%`]);
   if (P.surf > 0) chips.push(['ok', t('surf')]);
+  // on the beat, the wind's swing against its middle: a lift (she can point higher) or a header (time to tack)
+  if (race.clock >= 0 && !P.done && !P.auto && a < 70) {
+    const s = Math.round(((P.twa < 0 ? -1 : 1) * wrap(P.wdir - race.wind.mean())) / D2R);
+    if (s >= 4) chips.push(['ok', t('lift', s)]); else if (s <= -4) chips.push(['warn', t('header', -s)]);
+  }
   // mark-room: who gets it was settled when the first of you reached the zone
   let zs = null, zd = 1e9;
   for (const st of race.zoneStates.values()) {
@@ -472,6 +477,12 @@ function drawMap(ctx, size, full) {
   }
   ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
   ctx.beginPath(); ctx.moveTo(X(c.pin.x), Z(c.pin.z)); ctx.lineTo(X(c.committee.x), Z(c.committee.z)); ctx.stroke(); ctx.setLineDash([]);
+  if (opts.guides) { // the distance lines across the beat, as on the water, every 100 m here
+    const beat = -c.windward.z, st = Math.max(100, ladderStep(beat));
+    ctx.strokeStyle = COL.ink; ctx.globalAlpha = 0.18; ctx.lineWidth = 1;
+    for (let d = st; d < beat - 15; d += st) { const z = c.windward.z + d, hw = Math.min(260, 30 + d * 0.95); ctx.beginPath(); ctx.moveTo(X(c.windward.x - hw), Z(z)); ctx.lineTo(X(c.windward.x + hw), Z(z)); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+  }
   const next = leg === 'mark' ? [c.windward] : leg === 'gate' ? c.gate : [c.pin, c.committee];
   ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
   for (const m of [c.windward, ...c.gate]) { // the three-length zone
