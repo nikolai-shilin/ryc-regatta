@@ -204,6 +204,12 @@ function sailTexture(kind, look) {
     }
     x.strokeStyle = look.laminate ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.08)'; x.lineWidth = 2;
     for (let i = 1; i < 10; i++) { x.beginPath(); x.moveTo(0, (i * H) / 10 + 20); x.lineTo(W, (i * H) / 10 - 30); x.stroke(); }
+    // creases: faint wrinkles fanning from the clew (bottom right) and from the head, each a shadow with a highlight
+    const crease = (x0, y0, x1, y1) => {
+      for (const [d, s] of [[0, 'rgba(0,0,0,.07)'], [2.5, 'rgba(255,255,255,.08)']]) { x.strokeStyle = s; x.lineWidth = 1.6; x.beginPath(); x.moveTo(x0 + d, y0); x.lineTo(x1 + d, y1); x.stroke(); }
+    };
+    for (let i = 0; i < 6; i++) crease(W - 6, H - 6, W * (0.62 - i * 0.05), H * (0.86 - i * 0.05));
+    for (let i = 0; i < 4; i++) crease(W * 0.06, 6, W * (0.22 + i * 0.06), H * (0.1 + i * 0.025));
     // tapes along the luff and foot, the leech line
     x.fillStyle = look.tape; x.fillRect(0, 0, 10, H); x.fillRect(0, H - 10, W, 10); x.fillRect(W - 6, 0, 6, H);
     if (kind === 'main') {
@@ -229,7 +235,7 @@ function sailTexture(kind, look) {
   return t;
 }
 // a sail: one grid geometry, drawn twice so the number reads the right way round from both sides
-function sailMesh(rows, cols, tex) {
+function sailMesh(rows, cols, tex, shiny = false) {
   const g = new THREE.BufferGeometry();
   const pos = new Float32Array((rows + 1) * (cols + 1) * 3), uv = [], idx = [];
   for (let i = 0; i <= rows; i++) for (let j = 0; j <= cols; j++) uv.push(j / cols, i / rows);
@@ -241,11 +247,25 @@ function sailMesh(rows, cols, tex) {
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   g.setIndex(idx);
   const back = tex.clone(); back.repeat.x = -1; back.offset.x = 1; back.needsUpdate = true;
-  const mat = (map, side) => new THREE.MeshStandardMaterial({ map, side, roughness: 0.72, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.22 });
+  // laminate (shiny) sails catch a soft sheen; the emissive part is the light the cloth lets through (see backlight)
+  const mat = (map, side) => new THREE.MeshStandardMaterial({ map, side, roughness: shiny ? 0.45 : 0.72, metalness: shiny ? 0.12 : 0, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.22 });
   const grp = new THREE.Group();
   grp.add(new THREE.Mesh(g, mat(tex, THREE.FrontSide)), new THREE.Mesh(g, mat(back, THREE.BackSide)));
   grp.userData = { rows, cols, g };
   return grp;
+}
+// the sun through the cloth: when the sun is behind a sail as you look at it, the sail glows warm and its seams,
+// battens and number show darker against the light; lit from your side it shows plain
+const _n = new THREE.Vector3(), _p = new THREE.Vector3(), _c = new THREE.Vector3();
+function backlight(grp, cam, sun) {
+  const m = grp.children[0], g = grp.userData.g, N = g.attributes.normal;
+  if (!N) return;
+  const i = Math.floor(N.count / 2);
+  _n.fromBufferAttribute(N, i).transformDirection(m.matrixWorld);
+  _p.fromBufferAttribute(g.attributes.position, i).applyMatrix4(m.matrixWorld);
+  const s = _n.dot(sun), c = _n.dot(_c.copy(cam).sub(_p));
+  const k = s * c < 0 ? Math.min(1, Math.abs(s) * 1.5) : 0;
+  for (const ch of grp.children) { ch.material.emissiveIntensity = 0.18 + 0.5 * k; ch.material.emissive.setRGB(1, 1 - 0.06 * k, 1 - 0.16 * k); }
 }
 function setSail(m, fn) {
   const { rows, cols, g } = m.userData, a = g.attributes.position, v = new THREE.Vector3();
@@ -367,11 +387,11 @@ export class BoatView {
     this.mainPivot = add(new THREE.Group(), 0, 0, MAST_Z);
     const boom = cyl(0.065, 0.05, 4.9, M.carbon, 8); boom.rotation.x = Math.PI / 2; boom.position.set(0, BOOM_Y, 2.45); this.mainPivot.add(boom);
     this.mainPivot.add(line([[0, MAST_FOOT + 0.25, 0.1], [0, BOOM_Y - 0.05, 1.2]])); // vang
-    this.main = sailMesh(14, 8, sailTexture('main', look)); this.mainPivot.add(this.main);
+    this.main = sailMesh(14, 8, sailTexture('main', look), look.laminate); this.mainPivot.add(this.main);
     // jib on the forestay, swung about the stay itself
     this.jibPivot = add(new THREE.Group(), TACK.x, TACK.y, TACK.z);
     this.jibAxis = HEAD.clone().sub(TACK).normalize();
-    this.jib = sailMesh(12, 6, sailTexture('jib', look)); this.jibPivot.add(this.jib);
+    this.jib = sailMesh(12, 6, sailTexture('jib', look), look.laminate); this.jibPivot.add(this.jib);
     this.kite = sailMesh(12, 8, sailTexture('kite', look)); this.kite.visible = false; T.add(this.kite);
 
     // telltales on the jib luff (they matter at the helm)
@@ -415,7 +435,7 @@ export class BoatView {
     for (const o of this.small) o.visible = on;
     this.detailOn = on;
   }
-  update(b, t, W, showLabel) {
+  update(b, t, W, showLabel, light = null) { // light: { cam, sun } for the sun through the sails
     const y = waveHeight(W, b.x, b.z, t), fx = Math.sin(b.h), fz = -Math.cos(b.h);
     const pitch = Math.atan2(waveHeight(W, b.x + fx * 4, b.z + fz * 4, t) - waveHeight(W, b.x - fx * 4, b.z - fz * 4, t), 8);
     const roll = Math.atan2(waveHeight(W, b.x - fz * 1.5, b.z + fx * 1.5, t) - waveHeight(W, b.x + fz * 1.5, b.z - fx * 1.5, t), 3) * 0.5;
@@ -481,6 +501,7 @@ export class BoatView {
       tt.rotation.x = -rot;
       tt.material.color.set(ok ? '#2ecc71' : '#ff4d3d');
     }
+    if (light) for (const s of b.kite ? [this.main, this.jib, this.kite] : [this.main, this.jib]) backlight(s, light.cam, light.sun);
     if (this.label) {
       this.label.visible = showLabel;
       this.label.userData.set(this.labelText + (b.pen ? ' ⟳' : b.ocs ? ' OCS' : b.dsq ? ' DSQ' : ''), !!(b.pen || b.ocs));
