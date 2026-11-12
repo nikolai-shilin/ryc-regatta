@@ -1,6 +1,7 @@
 // Regatta: the 3D picture — sea, sky, boats, marks, wake and the two cameras (drone and helm).
 import * as THREE from 'three';
-import { D2R, wrap, clamp, lerp, waveHeight, beatAngle, runAngle } from './sim.js';
+import { D2R, wrap, clamp, lerp, waveHeight, beatAngle, runAngle, HULL, ZONE } from './sim.js';
+const SC = HULL / 10.4; // the model is drawn 10.4 m long; a First 40.7 is 12.2 m
 import { BoatView, LOOKS } from './yacht.js';
 
 const SKY_TOP = new THREE.Color('#4f8fcb'), SKY_HORIZON = new THREE.Color('#d6e7f0');
@@ -25,7 +26,7 @@ void main() {
 }`;
 const WATER_FS = /* glsl */ `
 uniform float uTime, uFogNear, uFogFar, uChop, uAmp, uWhite; uniform vec4 uW[8]; uniform float uWs[8], uQ[8];
-uniform vec3 uCam, uSun, uDeep, uScatter, uTop, uHorizon, uFog; uniform vec4 uGust[12]; uniform vec2 uWind;
+uniform vec3 uCam, uSun, uDeep, uScatter, uTop, uHorizon, uFog; uniform vec4 uGust[12]; uniform vec2 uWind, uPivot;
 uniform sampler2D uRipple;
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
 vec3 skyAt(vec3 d) {
@@ -52,6 +53,11 @@ void main() {
   // wind ripples: two layers of a noise normal map drifting downwind, fading with distance
   float dist = length(uCam - vWorld);
   vec2 wq = vec2(-uWind.y, uWind.x);
+  // wind lanes: long streaks of rougher, brighter water lying along the wind, so a shift shows as the lanes swinging
+  // round. They are laid out about the middle of the course (uPivot), so near the boats they turn in place.
+  vec2 pc = p - uPivot;
+  float lane = smoothstep(0.46, 0.62, texture2D(uRipple, vec2(dot(pc, wq) / 70.0, dot(pc, uWind) / 800.0 - uTime * 0.0013)).w);
+  lane *= 1.0 - smoothstep(250.0, 700.0, dist);
   vec2 q1 = vec2(dot(p, wq), dot(p, uWind)) / 19.0 - vec2(0.0, uTime * 0.035);
   vec2 q2 = vec2(dot(p, wq) * 0.8 + dot(p, uWind) * 0.6, dot(p, uWind) * 0.8 - dot(p, wq) * 0.6) / 6.5 - vec2(0.0, uTime * 0.07);
   vec4 t1 = texture2D(uRipple, q1);
@@ -61,7 +67,10 @@ void main() {
   vec4 t2 = texture2D(uRipple, q2);
   vec2 r = (t1.xy * 2.0 - 1.0) + (t2.xy * 2.0 - 1.0) * 0.7;
 #endif
-  float rs = uChop * (1.0 + 1.6 * gust) / (1.0 + dist / 140.0);
+  // big, slow patches of rougher and smoother water, so the chop never reads as one repeating tile
+  vec2 pr = vec2(dot(p, vec2(0.83, 0.56)), dot(p, vec2(-0.56, 0.83)));
+  float patchy = texture2D(uRipple, pr / 83.0 + uWind * uTime * 0.0021).w;
+  float rs = uChop * (1.0 + 1.6 * gust) * (0.55 + 0.9 * patchy) * (0.5 + 1.2 * lane) / (1.0 + dist / 140.0);
   vec2 rw = r.x * wq + r.y * uWind; // ripple slope in world x/z
   n = normalize(vec3(n.x + rw.x * rs, n.y, n.z + rw.y * rs));
   vec3 V = normalize(uCam - vWorld);
@@ -72,30 +81,92 @@ void main() {
   // the water body: deep blue, lit turquoise where the crests let the sun through
   vec3 sunFlat = normalize(vec3(uSun.x, 0.0, uSun.z));
   float crest = smoothstep(-0.2, 1.0, vH / max(uAmp, 0.08));
-  float sss = crest * (0.35 + 0.65 * max(0.0, dot(-V, sunFlat))) * (1.0 - cosT * 0.5);
-  vec3 body = uDeep * (0.75 + 0.25 * max(dot(n, uSun), 0.0)) + uScatter * sss * 0.55;
+  float sss = crest * (0.35 + 0.65 * max(0.0, dot(-V, sunFlat))) * (1.0 - cosT * 0.5) * (0.6 + 0.8 * patchy);
+  vec3 body = uDeep * (0.75 + 0.25 * max(dot(n, uSun), 0.0)) + uScatter * sss * 0.45;
   vec3 col = mix(body, refl, F);
   // the sun: a sharp glint and a broader glitter
   vec3 Hh = normalize(uSun + V);
   float nh = max(dot(n, Hh), 0.0);
   col += vec3(1.0, 0.93, 0.8) * (pow(nh, 1400.0) * 9.0 + pow(nh, 160.0) * 0.5);
-  // whitecaps on the crests in a breeze, broken up by the ripple noise
-  // (streaks stretched downwind, on the crests, more in the gusts)
+  // whitecaps: a few waves break here and there — on a crest, where a slow patch of the noise says so — with a
+  // ragged edge, and leave fading foam behind them. Nothing stretched or small-tiled, so no rows of dashes.
 #ifdef LOW_Q
-  float streak = t1.w;
+  float edge = t1.w;
 #else
-  vec2 q3 = vec2(dot(p, wq) / 2.2, dot(p, uWind) / 7.5 - uTime * 0.05);
-  float streak = texture2D(uRipple, q3).w;
+  vec2 pe = vec2(dot(p, vec2(0.6, -0.8)), dot(p, vec2(0.8, 0.6)));
+  float edge = texture2D(uRipple, pe / 7.3 - uWind * uTime * 0.02).w;
 #endif
-  float cap = smoothstep(0.8, 0.97, 0.5 * crest + 0.6 * streak + 0.12 * gust) * uWhite;
-  float wisp = smoothstep(0.62, 0.8, 0.35 * crest + 0.7 * streak) * uWhite * 0.18; // old foam lying on the water
-  col = mix(col, vec3(0.9, 0.94, 0.96), clamp(cap * 0.9 + wisp, 0.0, 1.0));
+  float brk = texture2D(uRipple, pr / 37.0 - uWind * uTime * 0.006).w; // where a wave is breaking now
+  float wv = 1.2 * crest + 3.0 * brk + 2.2 * edge + 0.4 * gust;
+  float cap = smoothstep(4.5, 4.75, wv) * uWhite * (0.55 + 0.45 * t1.w); // narrow step: crisp, ragged edges; foam isn't flat white
+  float halo = smoothstep(4.3, 4.55, wv) * uWhite; // the aerated, paler water just round a breaking crest
+  col = mix(col, col * 0.7 + uScatter * 0.45, halo * 0.3);
+  float wisp = smoothstep(0.66, 0.8, 0.6 * brk + 0.4 * edge) * smoothstep(0.55, 0.7, patchy) * uWhite * 0.12; // old foam
+  col = mix(col, vec3(0.88, 0.93, 0.95), clamp(cap * 0.8 + wisp, 0.0, 1.0));
+  col = mix(col, col * 1.25 + vec3(0.035, 0.05, 0.065), lane * 0.7); // the lanes catch a little more light
   col *= 1.0 - 0.22 * gust; // a gust reads as a darker patch
   col = mix(col, uFog, smoothstep(uFogNear, uFogFar, dist));
   gl_FragColor = vec4(col, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
+
+// distance lines across the beat: from the windward mark down to the start line, every 50 m (100 m on a long course),
+// each a row of faint dashes with its distance to the mark written at both ends. They widen with the distance, as the laylines do.
+export const ladderStep = (beat) => (beat > 600 ? 100 : 50);
+function ladder(c) {
+  const g = new THREE.Group(), beat = -c.windward.z, step = ladderStep(beat);
+  const dash = document.createElement('canvas'); dash.width = 64; dash.height = 4;
+  const dx = dash.getContext('2d'); dx.fillStyle = '#fff'; dx.fillRect(0, 0, 32, 4);
+  for (let d = step; d < beat - 15; d += step) {
+    const z = c.windward.z + d, half = Math.min(260, 30 + d * 0.95);
+    const tex = new THREE.CanvasTexture(dash); tex.wrapS = THREE.RepeatWrapping; tex.repeat.set((2 * half) / 8, 1);
+    const line = new THREE.Mesh(new THREE.PlaneGeometry(2 * half, 0.35).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.45, depthWrite: false, fog: true }));
+    line.position.set(c.windward.x, 0.65, z); line.renderOrder = 1; g.add(line);
+    // the distance, just past each end of the line
+    const lc = document.createElement('canvas'); lc.width = 160; lc.height = 56;
+    const x = lc.getContext('2d'), text = `${d} m`;
+    x.font = '700 30px Carlito, Lato, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    const w = x.measureText(text).width + 26;
+    x.fillStyle = 'rgba(0,0,0,0.38)'; x.beginPath(); x.roundRect((160 - w) / 2, 8, w, 40, 20); x.fill();
+    x.fillStyle = '#fff'; x.fillText(text, 80, 29);
+    const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(lc), transparent: true, depthWrite: false, fog: true, toneMapped: false });
+    for (const sd of [-1, 1]) { const s = new THREE.Sprite(mat); s.scale.set(13, 4.55, 1); s.position.set(c.windward.x + sd * (half + 7), 3.2, z); g.add(s); }
+  }
+  return g;
+}
+
+// the zone round each rounding mark — three hull lengths — as a ring of dashes riding the waves: one mesh for all
+// of them; the rings of the mark you sail for now are brighter
+class ZoneRings {
+  constructor(marks) {
+    const N = 72, pos = [], col = [], idx = [];
+    this.marks = marks; this.v = [];
+    marks.forEach((m, k) => {
+      for (let i = 0; i < N; i++) {
+        const a0 = (i / N) * 2 * Math.PI, a1 = ((i + 0.5) / N) * 2 * Math.PI, o = pos.length / 3;
+        for (const [a, r] of [[a0, ZONE - 0.3], [a0, ZONE + 0.3], [a1, ZONE - 0.3], [a1, ZONE + 0.3]]) { this.v.push(k, Math.sin(a) * r, -Math.cos(a) * r); pos.push(0, 0, 0); col.push(1, 1, 1, 0.3); }
+        idx.push(o, o + 1, o + 2, o + 1, o + 3, o + 2);
+      }
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 4));
+    g.setIndex(idx);
+    this.mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: true }));
+    this.mesh.frustumCulled = false; this.mesh.renderOrder = 2;
+    this.next = -1;
+  }
+  update(W, t, next) { // next: the indexes of the marks you sail for now
+    const g = this.mesh.geometry, P = g.attributes.position, C = g.attributes.color, key = next.join();
+    for (let i = 0; i < this.v.length / 3; i++) {
+      const m = this.marks[this.v[i * 3]], x = m.x + this.v[i * 3 + 1], z = m.z + this.v[i * 3 + 2];
+      P.setXYZ(i, x, waveHeight(W, x, z, t) + 0.12, z);
+      if (key !== this.next) C.setW(i, next.includes(this.v[i * 3]) ? 0.8 : 0.28);
+    }
+    P.needsUpdate = true; if (key !== this.next) { C.needsUpdate = true; this.next = key; }
+  }
+}
 
 // a tileable noise height field → normal map (rgb) with the height kept in alpha, for the wind ripples
 function rippleTexture(N = 256) {
@@ -182,10 +253,10 @@ class Wake {
       const fx = Math.sin(s.h), fz = -Math.cos(s.h), rx = Math.cos(s.h), rz = Math.sin(s.h);
       const str = clamp((s.v - 0.6) / 3.5, 0, 1) * (i < this.trail.length ? 1 : 0);
       let cx, cz, half;
-      if (r === 0) { cx = s.x - fx * 5.0; cz = s.z - fz * 5.0; half = 0.7 + age * 0.12; } // wash, from the transom
+      if (r === 0) { cx = s.x - fx * 5.0 * SC; cz = s.z - fz * 5.0 * SC; half = 0.7 + age * 0.12; } // wash, from the transom
       else {
         const side = r === 1 ? 1 : -1, out = 1.0 + 0.354 * s.v * age; // tan 19.5° ≈ 0.354: the arms spread as the waves travel
-        cx = s.x + fx * 4.2 + rx * side * out; cz = s.z + fz * 4.2 + rz * side * out; half = 0.28 + age * 0.04;
+        cx = s.x + fx * 4.2 * SC + rx * side * out; cz = s.z + fz * 4.2 * SC + rz * side * out; half = 0.28 + age * 0.04;
       }
       for (let e = 0; e < 2; e++) {
         const o = (r * WAKE_N + i) * 2 + e, sd = e ? 1 : -1, x = cx + rx * sd * half, z = cz + rz * sd * half;
@@ -348,7 +419,7 @@ function island(rand, R, H, color) {
 // boat, pointing the way the wind blows; and a ring: red where she can't sail (too close to the wind), green marks
 // at the best angle upwind on each tack, blue marks at the best angle downwind on each gybe; a white pointer for
 // your heading. Compass c in this frame sits at ring angle π/2 − c.
-const R_IN = 9, R_OUT = 10.6;
+const R_IN = 10.5, R_OUT = 12.4;
 const glass = (color, opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide, fog: false });
 const sector = (r0, r1, c0, c1, mat) => new THREE.Mesh(new THREE.RingGeometry(r0, r1, Math.max(6, Math.ceil(Math.abs(c1 - c0) / (2 * D2R))), 1, Math.PI / 2 - c1, c1 - c0).rotateX(-Math.PI / 2), mat);
 function windArrow() {
@@ -429,7 +500,7 @@ export class World {
       uDeep: { value: new THREE.Color('#062a40') }, uScatter: { value: new THREE.Color('#1aa3a0') },
       uTop: { value: SKY_TOP }, uHorizon: { value: SKY_HORIZON }, uFog: { value: SKY_HORIZON },
       uFogNear: { value: FOG_NEAR }, uFogFar: { value: FOG_FAR }, uChop: { value: 0.15 }, uAmp: { value: 0.4 }, uWhite: { value: 0 },
-      uGust: { value: Array.from({ length: 12 }, () => new THREE.Vector4()) }, uWind: { value: new THREE.Vector2(0, 1) },
+      uGust: { value: Array.from({ length: 12 }, () => new THREE.Vector4()) }, uWind: { value: new THREE.Vector2(0, 1) }, uPivot: { value: new THREE.Vector2() },
       uRipple: { value: rippleTexture() },
     };
     this.water = new THREE.Mesh(waterGeometry(), new THREE.ShaderMaterial({ uniforms: this.waterU, vertexShader: WATER_VS, fragmentShader: WATER_FS, defines: { WAVES: NW } }));
@@ -477,11 +548,13 @@ export class World {
     this.W.forEach((p, i) => { this.waterU.uW.value[i].set(p.dx, p.dz, p.k, p.A); this.waterU.uWs.value[i] = p.w; this.waterU.uQ.value[i] = p.Q; });
     this.waterU.uChop.value = 0.1 + race.wind.p.tws / 60;
     this.waterU.uAmp.value = race.wind.p.waves;
+    this.waterU.uPivot.value.set(race.course.windward.x, race.course.windward.z / 2); // the wind lanes turn about the middle of the course
     this.waterU.uWhite.value = clamp((race.wind.p.tws - 10) / 9, 0, 1); // whitecaps from about force 4
     this.boatViews = race.boats.map((b, i) => {
       const v = b.ai
         ? new BoatView({ look: LOOKS[b.name] || LOOKS.Aurora, label: { text: b.name, color: b.color } })
         : new BoatView({ look: LOOKS.player, player: true });
+      v.root.scale.setScalar(SC);
       this.scene.add(v.root);
       return v;
     });
@@ -502,6 +575,8 @@ export class World {
     // the arrows over the next mark
     const cone = () => { const m = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.6, 4), new THREE.MeshBasicMaterial({ color: '#ffd400', fog: false })); m.rotation.x = Math.PI; return m; };
     this.pointers = [cone(), cone()]; for (const p of this.pointers) g.add(p);
+    this.zones = new ZoneRings([c.windward, c.gate[0], c.gate[1]]); g.add(this.zones.mesh);
+    this.ladder = ladder(c); g.add(this.ladder);
     this.marks = g; this.scene.add(g);
     this.camH = race.player.h;
     if (this.guides) this.scene.remove(this.guides);
@@ -543,8 +618,8 @@ export class World {
       const f = this.foam[this.foamI]; this.foamI = (this.foamI + 1) % this.foamMax;
       const fx = Math.sin(b.h), fz = -Math.cos(b.h), side = Math.random() < 0.5 ? -1 : 1, r = Math.random();
       const kind = 'bow';
-      const along = kind === 'bow' ? -3.2 - Math.random() * 1.5 : kind === 'wash' ? 5.3 + Math.random() : 4.2;
-      const across = kind === 'bow' ? side * 1.2 : kind === 'wash' ? (Math.random() - 0.5) * 1.6 : side * 1.45;
+      const along = kind === 'bow' ? (-3.2 - Math.random() * 1.5) * SC : kind === 'wash' ? 5.3 + Math.random() : 4.2;
+      const across = kind === 'bow' ? side * 1.2 * SC : kind === 'wash' ? (Math.random() - 0.5) * 1.6 : side * 1.45;
       f.x = b.x - fx * along + -fz * across; f.z = b.z - fz * along + fx * across;
       const spread = kind === 'bow' ? 1.1 : kind === 'wash' ? 0.1 : 0.55;
       f.vx = -fz * side * spread * (0.6 + b.v * 0.12) + fx * 0.15; f.vz = fx * side * spread * (0.6 + b.v * 0.12) + fz * 0.15;
@@ -561,7 +636,7 @@ export class World {
     for (let k = 0; k < n; k++) {
       const f = this.foam[this.foamI]; this.foamI = (this.foamI + 1) % this.foamMax;
       const side = Math.random() < 0.5 ? -1 : 1, wind = race.wind.dir();
-      f.x = b.x + fx * 4.4 + -fz * side * 0.8; f.z = b.z + fz * 4.4 + fx * side * 0.8; f.y = 0.8;
+      f.x = b.x + fx * 4.4 * SC + -fz * side * 0.8; f.z = b.z + fz * 4.4 * SC + fx * side * 0.8; f.y = 0.8;
       f.vx = fx * b.v * 0.6 - fz * side * (0.5 + Math.random()) - Math.sin(wind) * 2.5;
       f.vz = fz * b.v * 0.6 + fx * side * (0.5 + Math.random()) + Math.cos(wind) * 2.5;
       f.vy = 2 + Math.random() * 2.5; f.age = 0; f.life = 0.9 + Math.random() * 0.5; f.spray = true; f.s0 = 0.25; f.s1 = 0.6; f.a = 0.8;
@@ -571,17 +646,25 @@ export class World {
   frame(dt, t) {
     const race = this.race, P = race.player, wind = race.wind;
     // boats
-    race.boats.forEach((b, i) => this.boatViews[i].update(b, t, this.W, this.mode === 'drone'));
+    const cp = this.camera.position, farD = this.mode === 'top' ? 1e9 : 85;
+    race.boats.forEach((b, i) => {
+      const v = this.boatViews[i];
+      v.setDetail(b === P || Math.hypot(b.x - cp.x, b.z - cp.z) < farD * (this.quality === 'low' ? 0.6 : 1) && this.mode !== 'top');
+      v.update(b, t, this.W, this.mode === 'drone');
+    });
     // buoys bob
     for (const { obj, p } of this.buoys) {
       obj.position.y = waveHeight(this.W, p.x, p.z, t) * (obj === this.committee ? 0.7 : 0.9);
       if (obj !== this.committee) { obj.rotation.z = Math.sin(t * 1.3 + p.x) * 0.08; obj.rotation.x = Math.cos(t * 1.1 + p.z) * 0.08; }
     }
+    const lg = race.course.legs[P.leg];
+    this.zones.update(this.W, t, P.done ? [] : lg === 'mark' ? [0] : lg === 'gate' ? [1, 2] : []);
     const fl = this.committee.userData.flags;
     for (const k of ['cls', 'P', 'X']) { fl[k].visible = !!race.flags[k]; fl[k].rotation.y = Math.sin(t * 6 + k.length) * 0.25 - race.wind.dir(); }
     // the line shows before the start and on the way to the finish
     const k = race.course.legs[P.leg];
     this.line.visible = k === 'start' || k === 'finish';
+    this.ladder.visible = this.showGuides && !P.done; // the distance lines go with the other guides
     // pointers over the next mark(s)
     const c = race.course;
     const targets = k === 'mark' ? [c.windward] : k === 'gate' ? c.gate : [c.pin, { x: c.committee.x, z: c.committee.z }];
@@ -631,7 +714,7 @@ export class World {
       cam.lookAt(P.x, 0, P.z);
       cam.fov = 50;
     } else if (this.mode === 'drone') {
-      const ph = this.camH + this.orbit, el = 22 * D2R, d = this.dist * (cam.aspect < 1 ? 1.75 : 1); // a tall screen needs the drone further back
+      const ph = this.camH + this.orbit, el = 24 * D2R, d = this.dist * (cam.aspect < 1 ? 1.75 : 1); // a tall screen needs the drone further back
       const tx = P.x + Math.sin(P.h) * 5, tz = P.z - Math.cos(P.h) * 5;
       const want = new THREE.Vector3(tx - Math.sin(ph) * d * Math.cos(el), 3 + d * Math.sin(el), tz + Math.cos(ph) * d * Math.cos(el));
       cam.position.lerp(want, 1 - Math.exp(-dt * 6));
@@ -654,7 +737,9 @@ export class World {
     const u = this.waterU;
     u.uTime.value = t; u.uCam.value.copy(cam.position);
     const bw = wind.dir() + Math.PI; u.uWind.value.set(Math.sin(bw), -Math.cos(bw));
-    wind.gusts.forEach((g, i) => { if (i < 12) u.uGust.value[i].set(g.x, g.z, g.r, (g.s / wind.p.gustStr) * Math.min(1, g.life / 6)); });
+    // the sea shows twelve gusts: the nearest to you (a long course has more)
+    const gs = wind.gusts.length <= 12 ? wind.gusts : [...wind.gusts].sort((a, b) => Math.hypot(a.x - P.x, a.z - P.z) - Math.hypot(b.x - P.x, b.z - P.z)).slice(0, 12);
+    for (let i = 0; i < 12; i++) { const g = gs[i]; if (g) u.uGust.value[i].set(g.x, g.z, g.r, (g.s / wind.p.gustStr) * Math.min(1, g.life / 6)); else u.uGust.value[i].set(0, 0, 1, 0); }
     this.renderer.render(this.scene, cam);
   }
 
@@ -665,5 +750,5 @@ export class World {
     if (this.mode === 'helm') this.helmFov = clamp(this.helmFov * f, 30, 80);
     else this.dist = clamp(this.dist * f, 8, 110);
   }
-  resetView() { this.orbit = 0; this.look = 0; this.dist = 26; this.helmFov = 68; }
+  resetView() { this.orbit = 0; this.look = 0; this.dist = 34; this.helmFov = 68; } // far enough back that the whole rig fits under the readouts
 }

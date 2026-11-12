@@ -279,6 +279,12 @@ export const LOOKS = {
   Aurora: { hull: '#a8202a', stripe: '#f4f2ec', cloth: '#7f858c', laminate: true, tape: '#5f646b', batten: '#5a5f66', ink: '#ffffff', nat: 'GBR', num: '52', kite: ['#e63946', '#ffffff'] },
   Kestrel: { hull: '#14503c', stripe: '#e9e3cf', cloth: '#2a2c30', laminate: true, tape: '#18191c', batten: '#1c1d20', ink: '#f2c230', nat: 'FRA', num: '7', kite: ['#2a9d8f', '#f2c230'] },
   Nomad: { hull: '#2b2f36', stripe: '#e8c547', cloth: '#ebe3cd', tape: '#cfc5aa', batten: '#d2c9b0', ink: '#b3262b', nat: 'ITA', num: '33', kite: ['#f4a261', '#1d1d1d'] },
+  Halcyon: { hull: '#1f4e8c', stripe: '#ffffff', cloth: '#f2f0e8', tape: '#d6d1c2', batten: '#d0ccbe', ink: '#1f4e8c', nat: 'NED', num: '14', kite: ['#3a86ff', '#ffbe0b'] },
+  Mistral: { hull: '#f3f1ec', stripe: '#6c3483', cloth: '#3a3d42', laminate: true, tape: '#23252a', batten: '#26282d', ink: '#ffffff', nat: 'ESP', num: '88', kite: ['#8e44ad', '#ffffff'] },
+  Selkie: { hull: '#0f6b5f', stripe: '#f1ece0', cloth: '#efeadd', tape: '#d3ccb8', batten: '#cfc8b4', ink: '#0f6b5f', nat: 'IRL', num: '21', kite: ['#16a085', '#f1c40f'] },
+  Tern: { hull: '#f5f4f0', stripe: '#e67e22', cloth: '#868c93', laminate: true, tape: '#62676e', batten: '#5d6269', ink: '#1d1d1d', nat: 'GER', num: '9', kite: ['#e67e22', '#2d3436'] },
+  Vela: { hull: '#7a1f3d', stripe: '#f6e6ea', cloth: '#f3f0e8', tape: '#d8d2c3', batten: '#d2ccbd', ink: '#7a1f3d', nat: 'CRO', num: '40', kite: ['#e84393', '#ffffff'] },
+  Zephyr: { hull: '#b9bec4', stripe: '#1d1f22', cloth: '#2b2d31', laminate: true, tape: '#1a1b1e', batten: '#1d1e21', ink: '#e8e8e8', nat: 'SWE', num: '63', kite: ['#0984e3', '#fdcb6e'] },
 };
 
 // ---------- the boat ----------
@@ -392,6 +398,23 @@ export class BoatView {
     this.root.traverse((o) => { if (o.isMesh) { o.castShadow = !(o.userData.flat || o.parent?.userData.flat); o.receiveShadow = true; } });
   }
 
+  // far away, the small fittings (winches, hatches, lines, blocks) aren't worth their draw calls
+  setDetail(on) {
+    if (this.detailOn === on) return;
+    if (!this.small) {
+      this.small = [];
+      const keep = new Set(); // the sails (each a group of two faces) and the kite gear: never hidden here
+      for (const k of [this.main, this.jib, this.kite, this.sprit, this.kiteSheet]) if (k) k.traverse((o) => keep.add(o));
+      this.tilt.traverse((o) => {
+        if (!(o.isMesh || o.isLine) || !o.geometry || keep.has(o)) return;
+        if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+        const r = o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z);
+        if (r < 0.9 || o.isLine) this.small.push(o);
+      });
+    }
+    for (const o of this.small) o.visible = on;
+    this.detailOn = on;
+  }
   update(b, t, W, showLabel) {
     const y = waveHeight(W, b.x, b.z, t), fx = Math.sin(b.h), fz = -Math.cos(b.h);
     const pitch = Math.atan2(waveHeight(W, b.x + fx * 4, b.z + fz * 4, t) - waveHeight(W, b.x - fx * 4, b.z - fz * 4, t), 8);
