@@ -201,6 +201,16 @@ export class Boat {
     this.yawRate = 0; this.kiteJob = null; this.sinceTack = 99;
     this.jibSheet = this.sheet; this.split = false; this.trimSail = 'main'; // split: the jib trimmed on its own sheet
     this.kiteFill = 0; this.jibSail = 0; this.reef = false; this.reefJob = null; this.reefFill = 0; this.backing = false;
+    this.kiteType = 'gen'; // the sail on the bowsprit: 'gen' the gennaker (downwind), 'zero' the code zero (a flat reacher)
+    this.smallJib = false; this.jibJob = null; this.jibSize = 1; // the J3, a smaller jib for a blow; jibSize for the picture
+  }
+  // a headsail change, the J1 for the J3 or back: the crew drops one jib and hoists the other — half a minute with
+  // little jib up, so slow meanwhile
+  setJib(small) {
+    if (this.jibJob || small === this.smallJib) return false;
+    this.jibJob = { small, t: 30, total: 30 };
+    this.events.push('jibStart');
+    return true;
   }
   // a reef in the main for a blow: tying it in takes the crew about 25 s, shaking it out about 15 s, and she sails
   // slower meanwhile. Reefed she heels far less but carries less sail — worth it from about 20 knots.
@@ -213,10 +223,12 @@ export class Boat {
   }
   // the gennaker takes time: the crew hoists it (some 15 s, longer in a breeze) or gets it down (about 10 s), and she
   // sails slower meanwhile. During a drop it still flies (and pulls) until it's in.
-  setKite(up) {
+  setKite(up, type = this.kiteType) {
     if (!up && this.kiteJob && this.kiteJob.up) { this.kiteJob = null; return true; } // stop a hoist: it isn't up yet
     if (this.kiteJob || up === this.kite) return false;
-    const t = up ? 12 + this.tws * 0.25 : 7 + this.tws * 0.15;
+    if (up) this.kiteType = type;
+    // a code zero is furled and unfurled on its own line, quicker than a gennaker goes up and comes down
+    const t = this.kiteType === 'zero' ? (up ? 9 : 5) : up ? 12 + this.tws * 0.25 : 7 + this.tws * 0.15;
     this.kiteJob = { up, t, total: t, messy: false };
     this.events.push(up ? 'kiteHoist' : 'kiteDrop');
     return true;
@@ -225,7 +237,7 @@ export class Boat {
   tackOrGybe() {
     if (this.auto || this.pen) return;
     const newH = this.wdir + this.twa, d = wrap(newH - this.h), gybe = Math.abs(this.twa) > 95 * D2R;
-    this.auto = { to: newH, dir: sgn(d), gybe };
+    this.auto = { to: newH, dir: sgn(d), gybe }; this.lastGybe = gybe;
     this.events.push(gybe ? 'gybing' : 'tacking');
   }
   step(dt, race) {
@@ -243,11 +255,14 @@ export class Boat {
     this.sinceTack += dt;
     if (this.kiteJob) {
       const j = this.kiteJob;
-      if (j.up && a < 85) this.kiteJob = null; // she came up before it was set: the hoist is abandoned
+      if (j.up && a < (this.kiteType === 'zero' ? 55 : 85)) this.kiteJob = null; // she came up before it was set: the hoist is abandoned
       else if ((j.t -= dt) <= 0) { this.kite = j.up; this.kiteJob = null; this.events.push(j.up ? 'kiteUp' : 'kiteIn'); }
     }
     // too close to the wind with the kite still up: it has to come down at once, and a drop in a hurry goes wrong
-    if (this.kite && a < 80 && !(this.kiteJob && !this.kiteJob.up)) { this.kiteJob = { up: false, t: 9, total: 9, messy: true }; this.events.push('kitedown'); }
+    if (this.kite && a < (this.kiteType === 'zero' ? 50 : 80) && !(this.kiteJob && !this.kiteJob.up)) { this.kiteJob = { up: false, t: 9, total: 9, messy: true }; this.events.push('kitedown'); }
+    if (this.jibJob && (this.jibJob.t -= dt) <= 0) { this.smallJib = this.jibJob.small; this.jibJob = null; this.events.push('jibDone'); }
+    const jj = this.jibJob, js0 = (sm) => (sm ? 0.72 : 1); // the J3 is about 70% of the J1
+    this.jibSize = jj ? lerp(js0(!jj.small), js0(jj.small), clamp(1 - jj.t / jj.total, 0, 1)) * (0.35 + 0.65 * Math.abs(1 - 2 * (1 - jj.t / jj.total))) : js0(this.smallJib);
     const kj = this.kiteJob; // how far up the kite is, for the picture
     this.kiteFill = kj ? (kj.up ? 1 - kj.t / kj.total : kj.t / kj.total) : this.kite ? 1 : 0;
     if (this.reefJob && (this.reefJob.t -= dt) <= 0) { this.reef = this.reefJob.on; this.reefJob = null; this.events.push(this.reef ? 'reefDone' : 'shakeDone'); }
@@ -255,7 +270,9 @@ export class Boat {
     this.reefFill = rj ? (rj.on ? 1 - rj.t / rj.total : rj.t / rj.total) : this.reef ? 1 : 0;
 
     // sails
-    const full = fullHeel(this.aws, awa, this.kite) * (1 - 0.32 * this.reefFill), ease = depowerFor(full); // a reef: a third less heel
+    const gen = this.kite && this.kiteType !== 'zero', zero = this.kite && this.kiteType === 'zero';
+    // a reef: a third less heel; the J3 a little less; a code zero adds some
+    const full = (fullHeel(this.aws, awa, gen) + (zero ? 5 * (this.aws / 16) ** 1.4 : 0)) * (1 - 0.32 * this.reefFill) * (this.smallJib ? 0.9 : 1), ease = depowerFor(full);
     this.depower = ease;
     const ideal = idealSail(awa);
     if (this.autoTrim) this.sheet = lerp(this.sheet, sheetFor(ideal + ease), 1 - Math.exp(-dt * 3));
@@ -273,7 +290,7 @@ export class Boat {
     // costs less speed than it saves heel. With the gennaker up the crew trims it and it does most of the driving.
     const effOf = (e) => clamp(e > 0 ? 1 - (e / 28) ** 2 : 1 - (e / 35) ** 2, e > 0 ? 0.08 : 0.25, 1);
     const powOf = (e) => (e > 0 ? clamp(1 - e / 28, 0.05, 1) : 1 + -e / 80);
-    const kiteK = this.kite ? 0.7 : 0;
+    const kiteK = gen ? 0.7 : zero ? 0.35 : 0;
     const eff = lerp(0.5 * effOf(err) + 0.5 * effOf(jerr), 1, kiteK);
     this.eff = eff;
     const power = lerp(0.65 * powOf(err) + 0.35 * powOf(jerr), 1, kiteK);
@@ -289,8 +306,13 @@ export class Boat {
     const chop = 1 - race.wind.p.waves * 0.07 * clamp((70 - a) / 30, 0, 1);
 
     // speed: the target from the polar, and momentum to get there
-    this.polar = polarSpeed(w.tws, a, this.kite || a < 100);
-    let target = polarSpeed(w.tws, a, this.kite) * eff * heelPen * chop * KN;
+    this.polar = polarSpeed(w.tws, a, gen || a < 100);
+    let target = polarSpeed(w.tws, a, gen) * eff * heelPen * chop * KN;
+    // a code zero on a reach in light air: up to 14% more, best about 85° off the wind and fading above 15 knots
+    if (zero) target *= 1 + 0.14 * clamp((15 - w.tws) / 7, 0, 1) * clamp(1 - Math.abs(a - 85) / 45, 0, 1);
+    // the J3: a loss in light air, about even in a blow; changing jibs, little drive meanwhile
+    if (this.smallJib) target *= 1 - clamp(0.1 - (w.tws - 12) * 0.012, 0, 0.1);
+    if (this.jibJob) target *= 0.8;
     if (this.broachT > 0) { target *= 0.35; this.broachT -= dt; }
     if (this.kiteJob) target *= this.kiteJob.messy ? 0.62 : this.kiteJob.up ? 0.93 : 0.88; // crew off the rail, the kite half-set or flogging
     // less sail with a reef: a big loss in light air, next to nothing in a blow; tying it in costs more while it's done
@@ -414,8 +436,13 @@ export class Race {
     this.seq = SEQUENCES[start] || SEQUENCES[1];
     this.clock = this.seq[0].t - (start === 1 ? 4 : 8); // negative before the gun
     this.sigI = 0;
-    this.flags = { cls: start === 1, P: false, X: false };
+    this.flags = { cls: start === 1, P: false, X: false, sub: false };
     if (start === 1) this.flags.P = true;
+    // the preparatory flag the committee flies: P most days; sometimes U (over the line in the last minute: disqualified,
+    // unless the start is recalled) or the black flag (disqualified even then); and after a general recall the next
+    // start goes up the ladder, P → U → black
+    this.prepFlag = ['P', 'P', 'P', 'U', 'B'][Math.abs(Math.floor(seed)) % 5];
+    this.recalls = 0;
     this.t = 0; // time for the waves
     this.waves = makeWaves(this.wind.p.waves, this.wind.dir());
     const ca = this.rand() < 0.5 ? 1 : -1;
@@ -428,21 +455,26 @@ export class Race {
     this.chop = 1;
     const W = this.wind.dir(), beat = beatAngle(this.wind.p.tws);
     const half = this.course.len / 2;
-    this.player = new Boat({ name: 'You', x: 25, z: fleet > 4 ? 78 : 95, h: wrap(W - beat * D2R), v: 2, autoTrim });
+    const near = start === 1 ? 0.55 : 1; // a one-minute start: the fleet begins closer to the line, so all can make it
+    this.player = new Boat({ name: 'You', x: 25, z: (fleet > 4 ? 78 : 95) * near, h: wrap(W - beat * D2R), v: 2, autoTrim });
     const full = fullHeel(this.wind.p.tws * 1.4, 28, false);
     this.player.sheet = sheetFor(idealSail(28) + depowerFor(full));
     const fl = FLEET.slice(0, fleet - 1), n = fl.length;
     this.boats = [this.player];
     fl.forEach(([name, color], i) => {
       const f = n > 1 ? i / (n - 1) : 0.5; // spread them along below the line
-      const b = new Boat({ name, x: lerp(-half - 10, half - 10, f) + (i % 2 ? 8 : -8), z: 105 + (i % 3) * 18, h: wrap(W + (i % 2 ? 90 : -90) * D2R), v: 2, autoTrim: true });
+      const b = new Boat({ name, x: lerp(-half - 10, half - 10, f) + (i % 2 ? 8 : -8), z: (105 + (i % 3) * 18) * near, h: wrap(W + (i % 2 ? 90 : -90) * D2R), v: 2, autoTrim: true });
       b.ai = { skill: 0.8 + this.rand() * 0.18, lineT: clamp(0.15 + f * 0.7 + (this.rand() - 0.5) * 0.08, 0.15, 0.85) /* clear of the ends, where the pin and the committee boat catch them */, lastTack: -999, go: false, mean: W, dirtyT: 0, hailT: -99, wp: 0, loiter: i % 2 ? 1 : -1 };
+      b.ai.port = i % 4 === 3; // one boat in four comes in late on port, looking for a gap
+      b.ai.dare = (((b.ai.lineT * 97.3) % 1) - 0.65) * 3.4; // seconds: how close to the gun she dares cut it (− bolder)
+      if (this.wind.p.tws >= 19 && i % 2) b.smallJib = true; // in a blow, some start with the J3 up
       b.color = color;
       this.boats.push(b);
     });
-    for (const b of this.boats) Object.assign(b, { leg: 0, ocs: false, done: false, finish: null, track: [], lastD: lineD(this.course, b), lastZ: b.z, rnd: null, dsq: false, touchT: 0 });
+    for (const b of this.boats) Object.assign(b, { leg: 0, ocs: false, done: false, finish: null, track: [], lastD: lineD(this.course, b), lastZ: b.z, rnd: null, dsq: false, touchT: 0, ufd: false, bfd: false });
     this.trackT = 0;
     this.messages = [];
+    if (this.prepFlag !== 'P') this.say('prep' + this.prepFlag); // tell the player what the flag means
     this.over = false;
     this.zoneStates = new Map();
     this.pairs = new Map(); // boats near each other: how their right of way came about (rules 15 and 17)
@@ -531,16 +563,24 @@ export class Race {
     this.waves.forEach((p, i) => { if (i >= 3) p.A = (p.A0 * (0.35 + 0.65 * Math.max(0, Math.cos(wrap(p.dir - wd))))) / p.norm * ck; });
     while (this.sigI < this.seq.length && this.clock >= this.seq[this.sigI].t) {
       const s = this.seq[this.sigI++];
-      this.flags.cls = s.cls; this.flags.P = s.P;
+      this.flags.cls = s.cls; this.flags.P = s.P; this.flags.sub = false;
       this.say('signal', s);
     }
     for (const b of this.boats) if (b.ai && !b.done) this.drive(b, dt);
     for (const b of this.boats) b.step(dt, this);
     this.trackRow();
     this.collide(dt);
+    // under U or the black flag: anywhere in the triangle of the line's ends and the first mark in the last minute
+    if (this.prepFlag !== 'P' && this.clock >= -60 && this.clock < 0) for (const b of this.boats) {
+      if (b.ufd || b.bfd || !this.inTriangle(b)) continue;
+      b[this.prepFlag === 'U' ? 'ufd' : 'bfd'] = true;
+      if (b === this.player) { this.say(this.prepFlag === 'U' ? 'ufd' : 'bfd'); this.log.startDsq = this.prepFlag; }
+    }
     if (before < 0 && this.clock >= 0) {
-      const c = this.course;
-      for (const b of this.boats) { const t = lineT(c, b); if (lineD(c, b) > 0 && t > -0.2 && t < 1.2) { b.ocs = true; this.flags.X = true; if (b === this.player) this.say('ocs'); } }
+      const c = this.course, over = this.boats.filter((b) => { const t = lineT(c, b); return lineD(c, b) > 0 && t > -0.2 && t < 1.2; });
+      if (over.length >= Math.max(2, Math.ceil(this.boats.length * 0.35))) { this.generalRecall(); return; }
+      // under P, the boats over are recalled one by one (X flag) and must go back; under U or black they're already out
+      if (this.prepFlag === 'P') for (const b of over) { b.ocs = true; this.flags.X = true; if (b === this.player) this.say('ocs'); }
     }
     if (this.flags.X && (this.clock > 240 || !this.boats.some((b) => b.ocs))) this.flags.X = false;
     for (const b of this.boats) this.progress(b);
@@ -576,8 +616,9 @@ export class Race {
       else if (k === 'finish' && b.lastD > 0 && d <= 0 && on) {
         b.done = true; b.finish = this.clock; b.track.push([b.x, b.z]);
         if (b.pen) { b.dsq = true; b.pen = null; } // didn't take the penalty
+        if (b.ufd || b.bfd) b.dsq = true; // over in the last minute under U or the black flag
         b.place = b.dsq ? null : this.boats.filter((o) => o.done && !o.dsq).length;
-        if (b === this.player) { this.say(b.dsq ? 'finishedDsq' : 'finished', b.place); this.over = true; }
+        if (b === this.player) { this.say(b.ufd || b.bfd ? 'finishedStartDsq' : b.dsq ? 'finishedDsq' : 'finished', b.place); this.over = true; }
       }
     }
     b.lastD = d; b.lastZ = b.z;
@@ -596,12 +637,32 @@ export class Race {
   distToNext(b) { const m = this.nextMark(b); return Math.hypot(m.x - b.x, m.z - b.z); }
   lineInfo(b) { const c = this.course; return { d: lineD(c, b), t: lineT(c, b) }; }
 
+  // the triangle of the starting line's ends and the first mark (rule 30.3 and 30.4)
+  inTriangle(b) {
+    const c = this.course, A = c.pin, B2 = c.committee, C = c.windward;
+    const s = (p1, p2, p3) => (p1.x - p3.x) * (p2.z - p3.z) - (p2.x - p3.x) * (p1.z - p3.z);
+    const d1 = s(b, A, B2), d2 = s(b, B2, C), d3 = s(b, C, A);
+    return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+  }
+  // a general recall: too many over to pick out. The first substitute goes up, everyone goes back below the line and
+  // the sequence starts again — with the next flag up the ladder. A black-flagged boat stays out.
+  generalRecall() {
+    this.recalls++;
+    this.prepFlag = this.prepFlag === 'P' ? 'U' : 'B';
+    this.clock = this.seq[0].t - 12; this.sigI = 0;
+    Object.assign(this.flags, { cls: false, P: this.seq.length <= 2, X: false, sub: true }); // a one-minute start shows its flag before it, as at first
+    const c = this.course;
+    for (const b of this.boats) { Object.assign(b, { leg: 0, ocs: false, ufd: false, rnd: null, lastD: lineD(c, b), lastZ: b.z }); if (b.ai) b.ai.go = false; }
+    this.log.ocs = false; this.log.gunD = null;
+    this.say('genRecall', this.prepFlag);
+  }
+
   // ---------- right of way (RRS Part 2, simplified) ----------
   // who must keep clear of whom, and the rule that says so
-  rightOfWay(p, q) {
+  rightOfWay(p, q, noZone = false) {
     if (p.pen && !q.pen) return { giver: p, rule: '44' };
     if (q.pen && !p.pen) return { giver: q, rule: '44' };
-    const zs = this.zoneOf(p, q); // mark-room (rule 18), settled when the first of them reached the zone
+    const zs = noZone ? null : this.zoneOf(p, q); // mark-room (rule 18), settled when the first of them reached the zone
     if (zs) return { giver: zs.entitled === p ? q : p, rule: '18' };
     if (p.tacking !== q.tacking) return { giver: p.tacking ? p : q, rule: '13' };
     const sp = sgn(p.twa), sq = sgn(q.twa);
@@ -617,6 +678,17 @@ export class Race {
   // within two hull lengths binds her not to sail above her proper course while it lasts.
   trackRow() {
     const bs = this.boats;
+    for (const b of bs) { // in the zone: since when, on which tack, and has she tacked or gybed there (rules 18.3, 18.4)
+      const k = this.course.legs[b.leg], m = this.nextMark(b);
+      const near = k === 'gate' ? Math.min(...this.course.gate.map((g) => Math.hypot(b.x - g.x, b.z - g.z))) : Math.hypot(b.x - m.x, b.z - m.z);
+      const inZ = (k === 'mark' || k === 'gate') && near < ZONE;
+      if (inZ && !b.inZone) Object.assign(b, { inZone: true, zoneT: this.clock, stbdZone: b.twa > 0 && !b.tacking, zoneTackT: undefined, zoneGybed: false });
+      else if (!inZ && b.inZone) Object.assign(b, { inZone: false, stbdZone: false, zoneTackT: undefined, zoneGybed: false });
+      if (b.inZone && b.sinceTack < 0.05 && this.clock - b.zoneT > 0.1) {
+        if (b.lastGybe) b.zoneGybed = true;
+        else { b.stbdZone = false; if (b.twa > 0) b.zoneTackT = this.clock; } // tacked onto starboard in the zone
+      }
+    }
     for (const b of bs) { // her recent headings, for rule 16
       const h = b.hist || (b.hist = []);
       if (!h.length || this.clock - h[h.length - 1][0] > 0.2) h.push([this.clock, b.h]);
@@ -639,7 +711,26 @@ export class Race {
   // who is in the wrong if they touch: Part 2's right of way, then the limits on the boat that holds it
   judge(p, q) {
     const r = this.rightOfWay(p, q);
-    if (r.rule === '44' || r.rule === '18') return r;
+    if (r.rule === '44') return r;
+    const c = this.course, k = c.legs[p.leg];
+    // 18.3: at the windward mark, a boat that tacked onto starboard inside the zone mustn't make a boat that has been
+    // on starboard since she entered it sail above close-hauled, and gives her room if she gets inside
+    if (k === 'mark' && p.leg === q.leg) for (const [x, y] of [[p, q], [q, p]]) {
+      if (x.inZone && y.inZone && x.zoneTackT !== undefined && this.clock - x.zoneTackT < 12 && y.stbdZone) return { giver: x, rule: '18.3' };
+    }
+    if (r.rule === '18') {
+      // 18.4: an inside boat with right of way that must gybe at the mark sails no farther from it than her proper
+      // course needs, until she gybes
+      const ent = r.giver === p ? q : p, o = r.giver;
+      if (k === 'gate' && !ent.zoneGybed && this.rightOfWay(ent, o, true).giver === o && Math.min(...c.gate.map((m) => Math.hypot(ent.x - m.x, ent.z - m.z))) > 2 * HULL) return { giver: ent, rule: '18.4' };
+      return r;
+    }
+    // 19: passing the committee boat (an obstruction, when it isn't a mark of the leg), overlapped: the outside boat
+    // gives the inside one room
+    if (k !== 'start' && k !== 'finish' && p.leg === q.leg && this.overlapped(p, q)) {
+      const cb = this.hardMarks()[4][0], dp = Math.hypot(p.x - cb.x, p.z - cb.z), dq = Math.hypot(q.x - cb.x, q.z - cb.z);
+      if (Math.min(dp, dq) < 2 * HULL) return { giver: dp < dq ? q : p, rule: '19' };
+    }
     const row = r.giver === p ? q : p, i = this.boats.indexOf(p), j = this.boats.indexOf(q);
     const st = this.pairs.get(Math.min(i, j) * 16 + Math.max(i, j));
     // 20: a boat hailed for room to tack that hasn't tacked or given room
@@ -806,20 +897,58 @@ export class Race {
     }
     ai.escT = 0;
     if (b.auto) return;
+    // hailed for room to tack (rule 20): she answers by tacking, after a moment's reaction
+    const h20 = this.r20;
+    if (h20 && h20.hailed === b && !h20.answered && this.clock >= (ai.respondT ?? 0)) { h20.answered = true; ai.lastTack = this.clock; b.tackOrGybe(); return; }
     let tx, tz;
-    const pt = { x: lerp(c.pin.x, c.committee.x, ai.lineT), z: lerp(c.pin.z, c.committee.z, ai.lineT) };
+    // her spot on the line: pushed towards the favoured end (the end further upwind, on the wind as she reads it),
+    // the more so the better she is and the more it's favoured — so the fleet bunches there
+    let lt = ai.lineT;
     if (this.clock < 0) {
-      // before the gun: reach to and fro below the line, then time the run at it
-      const beatV = polarSpeed(b.tws, beatAngle(b.tws)) * KN;
-      const eta = Math.hypot(pt.x - b.x, pt.z - b.z) / (beatV * 0.8) + 5;
-      if (!ai.go && -this.clock <= eta + 6 * (1 - ai.skill) && -this.clock < 80) ai.go = true;
+      const ux = Math.sin(ai.mean), uz = -Math.cos(ai.mean), bias = ((c.committee.x - c.pin.x) * ux + (c.committee.z - c.pin.z) * uz) / c.len;
+      lt = clamp(ai.lineT + sgn(bias) * Math.min(1, Math.abs(bias) / 0.08) * 0.35 * ai.skill, 0.1, 0.9);
+      if (ai.port) lt = Math.max(lt, 0.55); // the port-tack boat goes for a gap right of the middle
+    }
+    const pt = { x: lerp(c.pin.x, c.committee.x, lt), z: lerp(c.pin.z, c.committee.z, lt) };
+    if (this.clock < 0) {
+      // before the gun: reach to and fro below the line, then time the run at it — on her real speed in this wind,
+      // the stream across the line, and the time a boat needs to get going (longer in light air)
+      // (close-hauled she closes the line at about cos(beat) of her speed; from a stop she takes some 6 s to get going)
+      const vt = polarSpeed(b.tws, beatAngle(b.tws)) * KN, cur = this.currentAt(b.x, b.z), curN = cur.x * c.normal.x + cur.z * c.normal.z;
+      const sp = Math.max(0.5, vt * Math.cos(beatAngle(b.tws) * D2R) + curN), lag = 6 * clamp(1 - b.v / vt, 0, 1);
+      const eta = Math.hypot(pt.x - b.x, pt.z - b.z) / sp + lag;
+      if (!ai.go && -this.clock <= eta + 12 && -this.clock < 80) ai.go = true; // in good time: better to wait near the line than be late
       if (!ai.go) {
-        const home = { x: clamp(pt.x + ai.loiter * 35, c.pin.x + 15, c.committee.x - 15), z: pt.z + 55 };
-        if (Math.hypot(home.x - b.x, home.z - b.z) < 15) ai.loiter *= -1;
+        // waiting: to and fro below the line; the port-tack boat waits off the pin end
+        // (each round her own part of the line, so the fleet waits spread out; it bunches only on the run in)
+        const own = { x: lerp(c.pin.x, c.committee.x, ai.lineT), z: lerp(c.pin.z, c.committee.z, ai.lineT) };
+        const home = ai.port ? { x: c.pin.x - 20, z: own.z + 40 } : { x: clamp(own.x + ai.loiter * 35, c.pin.x + 15, c.committee.x - 15), z: own.z + 55 };
+        if (Math.hypot(home.x - b.x, home.z - b.z) < 15 && this.tackClear(b)) ai.loiter *= -1; // turn back only with room to
         tx = home.x; tz = home.z;
       } else {
         tx = pt.x + c.normal.x * 30; tz = pt.z + c.normal.z * 30;
-        if (lineD(c, b) > -9 && this.clock < -1) { this.steerTo(b, W - 40 * D2R * sgn(b.twa)); b.autoTrim = false; b.sheet = 1; return; } // early: luff and wait
+        // too early for the distance left: stop and hold her place (luffed, main out — she backs and stays put);
+        // under U or the black flag, a few seconds more careful
+        // (the sheet well out, the sails flapping: she slows nearly to a stop without going astern). She goes when the
+        // time left is what she needs from here, plus a second or two the less sure skippers leave — and under U or the
+        // black flag, a few more.
+        const dl = -lineD(c, b), need = Math.max(0, dl) / sp + lag, margin = this.prepFlag === 'P' ? 3 * (1 - ai.skill) + ai.dare : 2 + 3 * (1 - ai.skill) + Math.max(0, ai.dare);
+        if (this.clock < -1 && dl < 16 + margin * 2 && (-this.clock > need + margin || dl < 1.5 + margin)) {
+          // with a boat close to windward she can't luff into it (rule 16): she only lets the sheet go and slows
+          const ux = Math.sin(W), uz = -Math.cos(W);
+          const crowded = this.boats.some((o) => o !== b && !o.done && Math.hypot(o.x - b.x, o.z - b.z) < 2 * HULL && (o.x - b.x) * ux + (o.z - b.z) * uz > 0);
+          if (!crowded) this.steerTo(b, W - 48 * D2R * sgn(b.twa)); else this.steerTo(b, W - Math.max(48 * D2R, Math.abs(b.twa)) * sgn(b.twa)); // never so high that a shift puts her head to wind
+          b.autoTrim = false; b.sheet = 0.86; return;
+        }
+        // hunting: just to leeward of a boat on the same tack, close, she luffs a little to push it up and make room
+        // (a few seconds at a time, and only while the other is still there to windward)
+        if (this.clock < -4 && Math.abs(b.twa) < 70 * D2R) {
+          const o = this.boats.find((o) => o !== b && !o.done && sgn(o.twa) === sgn(b.twa) && Math.hypot(o.x - b.x, o.z - b.z) < 1.6 * HULL && this.rightOfWay(b, o).giver === o);
+          if (o && (ai.huntT > this.clock || this.rand() < dt * ai.skill * 0.8)) {
+            if (!(ai.huntT > this.clock)) ai.huntT = this.clock + 3 + 3 * this.rand();
+            this.steerTo(b, W - sgn(b.twa) * (beatAngle(b.tws) - 8) * D2R); return;
+          }
+        }
       }
     } else if (b.ocs) { tx = pt.x - c.normal.x * 25; tz = pt.z - c.normal.z * 25; }
     else { const t = this.aiTarget(b); tx = t.x; tz = t.z; }
@@ -886,15 +1015,18 @@ export class Race {
       for (const o of this.boats) {
         if (o === b || o.done) continue;
         const cp = this.cpa(b, o);
-        if (cp.now > 70 || cp.d > 18 || cp.t > 10) continue;
-        const giver = this.judge(b, o).giver === b;
+        // how far ahead she looks for trouble: a hail makes her look at once
+        const look = this.clock - (ai.alertT ?? -99) < 6 ? 12 : 7 + 3 * ai.skill;
+        if (cp.now > 70 || cp.d > 18 || cp.t > look) continue;
+        // waiting before the start she simply keeps out of everyone's way, right of way or not
+        const waiting = this.clock < 0 && !ai.go, giver = waiting || this.judge(b, o).giver === b;
         if (!giver && !(cp.t < 5 && cp.d < SEP + 4)) continue;
         if (!threat || cp.t < threat.t) threat = { o, t: cp.t, giver };
       }
       if (threat) {
         const near = this.boats.filter((o) => o !== b && !o.done && Math.hypot(o.x - b.x, o.z - b.z) < 70);
         const room = (h) => Math.min(markClear(h) + SEP, ...near.map((o) => this.cpa(b, o, h).d));
-        const offs = threat.giver ? [-25, -40, -60, 15, 30, 0] : [-15, 15, -30, 30, 0]; // − bears away, + luffs
+        const offs = this.clock < 0 && !ai.go ? [-30, 30, -60, 60, -90, 90, 0] : threat.giver ? [-25, -40, -60, 15, 30, 0] : [-15, 15, -30, 30, 0]; // − bears away, + luffs
         let best = want, bd = -1;
         for (const d of offs) {
           const h = want + tack * d * D2R;
@@ -922,28 +1054,66 @@ export class Race {
   // boat she must keep clear of, or the committee boat — she hails you; you must tack (or give her room), and when
   // you have, or after a few seconds, she tacks. Returns true when she has just tacked.
   roomToTack(b, ai) {
-    const you = this.player, h = this.r20;
+    const h = this.r20;
     if (h && h.hailer === b) {
-      if (!h.tacked && (you.sinceTack < this.clock - h.t || this.clock - h.t > 4)) { h.tacked = true; ai.lastTack = this.clock; b.tackOrGybe(); return true; }
+      const o = h.hailed;
+      if (!h.tacked && (o.sinceTack < this.clock - h.t || this.clock - h.t > 4)) { h.tacked = true; ai.lastTack = this.clock; b.tackOrGybe(); return true; }
       return false;
     }
-    if (!this.rulesOn || you.done || (h && this.clock - h.t < 12) || this.clock - (ai.r20T ?? -99) < 20) return false;
+    if (!this.rulesOn || (h && this.clock - h.t < 12) || this.clock - (ai.r20T ?? -99) < 20) return false;
+    const o = this.tackBlocker(b);
+    if (!o) return false;
+    ai.r20T = this.clock;
+    this.r20 = { hailer: b, hailed: o, t: this.clock, tacked: false };
+    if (o.ai) o.ai.respondT = this.clock + 1 + 2.5 * (1 - o.ai.skill);
+    if (o === this.player) { this.say('hail', { who: b.name, rule: '20' }); this.log.hails['20'] = (this.log.hails['20'] || 0) + 1; }
+    return false;
+  }
+  // the boat that stops b tacking: on the same tack, close to windward and not clear astern — when b, close-hauled,
+  // has an obstruction ahead (a boat she must keep clear of, or the committee boat). Null if there's none.
+  tackBlocker(b) {
+    if (b.done || b.tacking || Math.abs(b.twa) > 60 * D2R) return null;
     const fx = Math.sin(b.h), fz = -Math.cos(b.h), ux = Math.sin(b.wdir), uz = -Math.cos(b.wdir); // ahead; towards the wind
-    const dx = you.x - b.x, dz = you.z - b.z;
-    if (sgn(you.twa) !== sgn(b.twa) || you.tacking || Math.hypot(dx, dz) > 2.2 * HULL || dx * ux + dz * uz < 2 || dx * fx + dz * fz < -HULL) return false; // you: same tack, close to windward, not clear astern
+    const blocker = this.boats.find((o) => {
+      if (o === b || o.done || sgn(o.twa) !== sgn(b.twa) || o.tacking) return false;
+      const dx = o.x - b.x, dz = o.z - b.z;
+      return Math.hypot(dx, dz) < 2.2 * HULL && dx * ux + dz * uz > 2 && dx * fx + dz * fz > -HULL;
+    });
+    if (!blocker) return null;
     const cb = this.hardMarks()[4][0], cx = cb.x - b.x, cz = cb.z - b.z, along = cx * fx + cz * fz;
     let blocked = along > 0 && along < 30 && Math.abs(cx * -fz + cz * fx) < 9;
     for (const o of this.boats) {
       if (blocked) break;
-      if (o === b || o === you || o.done || sgn(o.twa) === sgn(b.twa)) continue;
+      if (o === b || o === blocker || o.done || sgn(o.twa) === sgn(b.twa)) continue;
       const c = this.cpa(b, o);
       blocked = this.rightOfWay(b, o).giver === b && c.t < 8 && c.d < 2 * HALF_B + 3;
     }
-    if (!blocked) return false;
-    ai.r20T = this.clock;
-    this.r20 = { hailer: b, hailed: you, t: this.clock, tacked: false };
-    this.say('hail', { who: b.name, rule: '20' }); this.log.hails['20'] = (this.log.hails['20'] || 0) + 1;
-    return false;
+    return blocked ? blocker : null;
+  }
+  // what you could hail now: room to tack, or a boat that must keep clear of you and is on her way into you
+  youCanHail() {
+    const P = this.player;
+    if (!this.rulesOn || P.done) return null;
+    const blk = this.tackBlocker(P);
+    if (blk && !(this.r20 && this.clock - this.r20.t < 12)) return { rule: '20', o: blk };
+    let best = null;
+    for (const o of this.boats) {
+      if (o === P || o.done) continue;
+      const c = this.cpa(P, o);
+      if (c.now > 50 || c.t > 8 || c.d > SEP + 6) continue;
+      const r = this.judge(P, o);
+      if (r.giver === o && (!best || c.t < best.t)) best = { rule: r.rule, o, t: c.t };
+    }
+    return best;
+  }
+  // you hail: the boat you hail looks to her duty at once; hailed for room to tack, she tacks (after a moment)
+  hail() {
+    const h = this.youCanHail();
+    this.say('youHail', { rule: h ? h.rule : null });
+    if (!h || !h.o.ai) return;
+    const ai = h.o.ai;
+    ai.alertT = this.clock;
+    if (h.rule === '20') { this.r20 = { hailer: this.player, hailed: h.o, t: this.clock, tacked: true }; ai.respondT = this.clock + 1 + 2.5 * (1 - ai.skill); }
   }
   steerTo(b, want) { b.rudder = clamp(wrap(want - b.h) * 2.4 - b.yawRate * 1.1, -1, 1); } // meeting her swing, as she doesn't stop turning at once
   // a tack now wouldn't put her across another boat's bow (rule 13: while tacking she keeps clear of everyone)

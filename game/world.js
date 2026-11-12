@@ -514,6 +514,9 @@ export function flagTexture(k) {
   const c = document.createElement('canvas'); c.width = 96; c.height = 64;
   const x = c.getContext('2d');
   if (k === 'P') { x.fillStyle = '#1f4fa8'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#fff'; x.fillRect(30, 20, 36, 24); }
+  else if (k === 'U') { x.fillStyle = '#fff'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#d22'; x.fillRect(0, 0, 48, 32); x.fillRect(48, 32, 48, 32); }
+  else if (k === 'B') { x.fillStyle = '#111'; x.fillRect(0, 0, 96, 64); }
+  else if (k === 'sub') { x.fillStyle = '#1f4fa8'; x.beginPath(); x.moveTo(0, 0); x.lineTo(96, 32); x.lineTo(0, 64); x.fill(); x.fillStyle = '#f2c230'; x.beginPath(); x.moveTo(8, 12); x.lineTo(70, 32); x.lineTo(8, 52); x.fill(); } // the first substitute
   else if (k === 'X') { x.fillStyle = '#fff'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#1f4fa8'; x.fillRect(40, 0, 16, 64); x.fillRect(0, 24, 96, 16); }
   else { x.fillStyle = '#f2c230'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#111'; x.font = '900 40px Carlito, Lato, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('R', 48, 34); }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
@@ -529,13 +532,14 @@ function committeeBoat() {
   const win = new THREE.Mesh(new THREE.BoxGeometry(2.85, 0.5, 3.6), new THREE.MeshLambertMaterial({ color: '#1f2a33' })); win.position.set(0, 2.5, 0.2); g.add(win);
   const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 5, 6), new THREE.MeshLambertMaterial({ color: '#ccc' })); mast.position.set(0, 5.4, 0.2); g.add(mast);
   const yard = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.06, 0.06), new THREE.MeshLambertMaterial({ color: '#ccc' })); yard.position.set(0, 7.6, 0.2); g.add(yard);
-  // the class flag (warning signal), P (preparatory), X (individual recall)
+  // the class flag (warning signal), P (preparatory — or U, or black), X (individual recall), the first substitute
+  // (general recall)
   const flags = {};
-  [['cls', -1.3], ['P', 0], ['X', 1.3]].forEach(([k, x]) => {
+  [['cls', -1.3], ['P', 0], ['X', 1.3], ['sub', 2.6]].forEach(([k, x]) => {
     const f = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.7), new THREE.MeshBasicMaterial({ map: flagTexture(k), side: THREE.DoubleSide, fog: true }));
     f.position.set(x, 7.15, 0.2); g.add(f); flags[k] = f;
   });
-  g.userData.flags = flags;
+  g.userData.flags = flags; g.userData.prepTex = { P: flags.P.material.map, U: flagTexture('U'), B: flagTexture('B') };
   return g;
 }
 
@@ -855,6 +859,7 @@ export class World {
       const v = this.boatViews[i];
       v.setDetail(b === P || Math.hypot(b.x - cp.x, b.z - cp.z) < farD * (this.quality === 'low' ? 0.6 : 1) && this.mode !== 'top');
       v.update(b, t, this.W, this.mode === 'drone', { cam: cp, sun: SUN });
+      if (v.crew) v.crew[0].g.visible = !(b === P && this.mode === 'helm'); // at the helm, you are the helmsman
       this.settle(v, dt);
       this.seaShadows[i]?.update(this.quality !== 'low'); // Low: no shadows anywhere
     });
@@ -877,7 +882,8 @@ export class World {
     const lg = race.course.legs[P.leg];
     this.zones.update(this.W, t, P.done ? [] : lg === 'mark' ? [0] : lg === 'gate' ? [1, 2] : []);
     const fl = this.committee.userData.flags;
-    for (const k of ['cls', 'P', 'X']) { fl[k].visible = !!race.flags[k]; fl[k].rotation.y = Math.sin(t * 6 + k.length) * 0.25 - race.wind.dir(); }
+    for (const k of ['cls', 'P', 'X', 'sub']) { fl[k].visible = !!race.flags[k]; fl[k].rotation.y = Math.sin(t * 6 + k.length) * 0.25 - race.wind.dir(); }
+    const pt = this.committee.userData.prepTex[race.prepFlag || 'P']; if (fl.P.material.map !== pt) { fl.P.material.map = pt; fl.P.material.needsUpdate = true; }
     // the line shows before the start and on the way to the finish
     const k = race.course.legs[P.leg];
     this.line.visible = k === 'start' || k === 'finish';

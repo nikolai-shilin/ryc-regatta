@@ -35,6 +35,19 @@ const T = {
     hail20: 'Room to tack!', exonerated: 'Pushed into it by another boat’s foul — no penalty (rule 21)',
     barging: 'Barging: there’s no room at the committee boat at the start — the windward boat keeps clear',
     reef: 'Reef', reefStart: 'Tying in a reef…', reefDone: 'Reefed — she stands up better', shakeStart: 'Shaking out the reef…', shakeDone: 'Full main again',
+    jibBtn: 'J3', jibBig: 'J1', jibStart: 'Changing jibs…', jibDone: 'New jib up', zero: 'Code 0',
+    kiteHoistZ: 'Unfurling the code zero…', kiteUpZ: 'Code zero drawing', kiteDropZ: 'Furling the code zero…',
+    hailBtn: 'Hail', youHail: (h) => `You: “${h}”`, hailNone: 'Nothing to hail for',
+    prepU: 'U flag today: in the triangle by the line in the last minute, you’re out (UFD)', prepB: 'Black flag today: over in the last minute and you’re out, even if the start is recalled (BFD)',
+    ufd: 'Over in the last minute under the U flag — disqualified (UFD)', bfd: 'Over in the last minute under the black flag — disqualified (BFD)',
+    genRecall: (f) => `General recall — too many over. The start is repeated${f === 'U' ? ', now under the U flag' : f === 'B' ? ', now under the black flag' : ''}`,
+    finishedStartDsq: 'Finished — but disqualified at the start', flagU: 'U flag', flagB: 'Black', flagSub: 'Recall',
+    dStartDsq: (f) => (f === 'U' ? 'Disqualified at the start (U flag)' : 'Disqualified at the start (black flag)'), tipStartDsq: 'Under U or the black flag, stay below the line for the whole last minute.',
+    'r18.3': 'Tacking in the zone', 'r18.4': 'Gybing at the mark', r19: 'Room at an obstruction', rU: 'The U flag', rB: 'The black flag',
+    'x18.3': 'A boat that tacks onto starboard in the zone mustn’t make a boat that has been on starboard since entering it sail above close-hauled, and gives her room if she gets inside.',
+    'x18.4': 'An inside boat with right of way that has to gybe at the mark sails no farther from it than her proper course needs.',
+    x19: 'Passing an obstruction overlapped (the committee boat, away from the start and finish), the outside boat gives the inside one room.',
+    'hail18.3': 'You tacked in the zone — keep clear!', 'hail18.4': 'Gybe — no wider than you need!', hail19: 'Room at the committee boat!',
     pb: (s) => `Your best on this course: ${s}`, pbNew: 'A new personal best!', pbToday: (s) => `Your best today: ${s}`, todayTop: 'Today’s fastest', guest: 'Guest',
     cSteer: 'Steer: drag your left thumb along the arc', cSheet: 'Trim: slide your right thumb up to pull the sails in, down to ease them',
     cLine: 'Head for the line and cross it just after the gun', cHeader: 'The wind has headed you — tap Tack', cMark: 'Round the mark leaving it on your left (to port)',
@@ -53,7 +66,7 @@ const T = {
     ok: 'Trim OK', pullIn: 'Pull in', easeOut: 'Ease out', irons: 'In irons',
     startIn: 'Start', lineStart: 'Start line', mark: 'Windward mark', gate: 'Leeward gate', finish: 'Finish', ocsS: 'OCS — return below the line',
     target: 'target', vmg: 'VMG', line: 'line', toLine: 'to line', favPin: 'pin end favoured', favBoat: 'boat end favoured', square: 'line square',
-    sigWarn: (n) => `Warning signal — class flag up, ${n} min`, sigPrep: (n) => `Preparatory — P flag up, ${n} min`, sig1: 'One minute — P flag down', gun: 'Start! Class flag down',
+    sigWarn: (n) => `Warning signal — class flag up, ${n} min`, sigPrep: (n, f = 'P') => `Preparatory — ${{ P: 'P flag', U: 'U flag', B: 'black flag' }[f]} up, ${n} min`, sig1: (n, f = 'P') => `One minute — ${{ P: 'P flag', U: 'U flag', B: 'black flag' }[f]} down`, gun: 'Start! Class flag down',
     ocs: 'Over early! X flag — go back below the line', cleared: 'Clear — now start', started: 'Good start!', rounded: 'Mark rounded — bear away, kite up',
     missedLine: 'Outside the line — cross between the committee boat and the pin', missedGate: 'Outside the gate — go back and sail between the two buoys', wrongSide: 'Leave the mark to port — go back round it',
     gateMsg: 'Through the gate — back upwind', bump: 'Contact!', broach: 'Broach! Ease the sheet', kitedown: 'Too close to the wind — the kite comes down in a hurry',
@@ -93,6 +106,19 @@ const T = {
     hail20: 'Место для поворота!', exonerated: 'Тебя вытолкнули чужим нарушением — без штрафа (правило 21)',
     barging: 'У судейского судна на старте места не положено — наветренная уступает',
     reef: 'Риф', reefStart: 'Берём риф…', reefDone: 'Риф взят — крен меньше', shakeStart: 'Отдаём риф…', shakeDone: 'Снова полный грот',
+    jibBtn: 'J3', jibBig: 'J1', jibStart: 'Меняем стаксель…', jibDone: 'Новый стаксель поднят', zero: 'Код 0',
+    kiteHoistZ: 'Раскатываем код-зеро…', kiteUpZ: 'Код-зеро работает', kiteDropZ: 'Скатываем код-зеро…',
+    hailBtn: 'Окрик', youHail: (h) => `Ты: «${h}»`, hailNone: 'Окликать некого',
+    prepU: 'Сегодня флаг U: в треугольнике у линии в последнюю минуту — дисквалификация (UFD)', prepB: 'Сегодня чёрный флаг: за линией в последнюю минуту — дисквалификация, даже при общем отзыве (BFD)',
+    ufd: 'За линией в последнюю минуту под флагом U — дисквалификация (UFD)', bfd: 'За линией в последнюю минуту под чёрным флагом — дисквалификация (BFD)',
+    genRecall: (f) => `Общий отзыв — слишком многие за линией. Старт повторяется${f === 'U' ? ', теперь под флагом U' : f === 'B' ? ', теперь под чёрным флагом' : ''}`,
+    finishedStartDsq: 'Финиш — но дисквалификация на старте', flagU: 'Флаг U', flagB: 'Чёрный', flagSub: 'Отзыв',
+    dStartDsq: (f) => (f === 'U' ? 'Дисквалификация на старте (флаг U)' : 'Дисквалификация на старте (чёрный флаг)'), tipStartDsq: 'Под флагом U или чёрным флагом всю последнюю минуту держись ниже линии.',
+    'r18.3': 'Поворот в зоне', 'r18.4': 'Фордевинд у знака', r19: 'Место у препятствия', rU: 'Флаг U', rB: 'Чёрный флаг',
+    'x18.3': 'Лодка, сделавшая поворот на правый галс в зоне, не должна заставлять лодку, идущую правым галсом с входа в зону, идти выше бейдевинда, и даёт ей место, если та окажется внутри.',
+    'x18.4': 'Внутренняя лодка с правом дороги, которой нужно сделать фордевинд у знака, не уходит от него дальше, чем требует её надлежащий курс.',
+    x19: 'Проходя препятствие связанными (судейское судно — не на старте и финише), внешняя лодка даёт внутренней место.',
+    'hail18.3': 'Ты повернул в зоне — уходи!', 'hail18.4': 'Фордевинд — не шире, чем нужно!', hail19: 'Место у судейского судна!',
     pb: (s) => `Твой рекорд на этой дистанции: ${s}`, pbNew: 'Новый личный рекорд!', pbToday: (s) => `Твой лучший результат сегодня: ${s}`, todayTop: 'Самые быстрые сегодня', guest: 'Гость',
     cSteer: 'Руль: веди левым пальцем по дуге', cSheet: 'Шкот: правым пальцем вверх — выбрать паруса, вниз — потравить',
     cLine: 'Иди к линии и пересеки её сразу после сигнала', cHeader: 'Ветер зашёл — жми «Поворот»', cMark: 'Огибай знак, оставляя его слева',
@@ -111,7 +137,7 @@ const T = {
     ok: 'Паруса в норме', pullIn: 'Выбери шкот', easeOut: 'Потрави шкот', irons: 'Левентик',
     startIn: 'Старт', lineStart: 'Линия старта', mark: 'Верхний знак', gate: 'Нижние ворота', finish: 'Финиш', ocsS: 'Фальстарт — вернись за линию',
     target: 'цель', vmg: 'VMG', line: 'линия', toLine: 'до линии', favPin: 'выгоднее у знака', favBoat: 'выгоднее у судна', square: 'линия ровная',
-    sigWarn: (n) => `Предупредительный сигнал — флаг класса, ${n} мин`, sigPrep: (n) => `Подготовительный — флаг P, ${n} мин`, sig1: 'Одна минута — флаг P спущен', gun: 'Старт! Флаг класса спущен',
+    sigWarn: (n) => `Предупредительный сигнал — флаг класса, ${n} мин`, sigPrep: (n, f = 'P') => `Подготовительный — ${{ P: 'флаг P', U: 'флаг U', B: 'чёрный флаг' }[f]}, ${n} мин`, sig1: (n, f = 'P') => `Одна минута — ${{ P: 'флаг P', U: 'флаг U', B: 'чёрный флаг' }[f]} спущен`, gun: 'Старт! Флаг класса спущен',
     ocs: 'Фальстарт! Флаг X — вернись за линию', cleared: 'Теперь стартуй', started: 'Отличный старт!', rounded: 'Знак пройден — уваливайся, ставь генакер',
     missedLine: 'Мимо линии — пересеки её между судейским судном и знаком', missedGate: 'Мимо ворот — вернись и пройди между двумя знаками', wrongSide: 'Знак оставляют слева — обогни его снова',
     gateMsg: 'Ворота пройдены — снова на ветер', bump: 'Столкновение!', broach: 'Брочинг! Трави шкот', kitedown: 'Слишком остро — генакер убирают в спешке',
@@ -359,8 +385,12 @@ const doKite = () => {
   if (!running || paused) return;
   const P = race.player, j = P.kiteJob;
   if (j) { if (j.up && P.setKite(false)) haptic('light'); return; }
-  if (P.kite || Math.abs(P.twa) / D2R > 90) { if (P.setKite(!P.kite)) haptic('light'); }
+  if (P.kite) { if (P.setKite(false)) haptic('light'); return; }
+  const type = kiteKind(P);
+  if (type && P.setKite(true, type)) haptic('light');
 };
+// which sail the Kite button sets now: the gennaker running, a code zero reaching in light air (below 15 knots)
+const kiteKind = (P) => { const a = Math.abs(P.twa) / D2R; return a > 100 ? 'gen' : a > 60 && P.tws < 15 ? 'zero' : null; };
 // the reef: a button above the kite's, shown in a breeze; a tap starts the crew tying a reef in (or shaking it out)
 const reefBtn = kiteBtn.cloneNode(true); reefBtn.id = 'reefBtn'; reefBtn.classList.remove('on'); reefBtn.innerHTML = t('reef'); kiteBtn.after(reefBtn);
 document.head.append(Object.assign(document.createElement('style'), { textContent: `
@@ -369,6 +399,29 @@ document.head.append(Object.assign(document.createElement('style'), { textConten
   #hud.split-trim #reefBtn { right: calc(136px + var(--sr)); }
   #reefBtn.on { background: var(--accent); color: var(--on-accent); } #reefBtn[hidden] { display: none; }` }));
 const doReef = () => { if (!running || paused) return; const P = race.player; if (!P.reefJob && P.setReef(!P.reef)) haptic('light'); };
+// the jib: in a breeze, a button to change to the J3 (or back to the J1); and the hail, shown when there's something
+// to hail for — room to tack, or a boat that must keep clear of you and is on her way into you
+const jibBtn = reefBtn.cloneNode(true); jibBtn.id = 'jibBtn'; reefBtn.after(jibBtn);
+const hailBtn = reefBtn.cloneNode(true); hailBtn.id = 'hailBtn'; hailBtn.innerHTML = t('hailBtn'); jibBtn.after(hailBtn);
+document.head.append(Object.assign(document.createElement('style'), { textContent: `
+  #jibBtn { right: calc(94px + var(--sr)); bottom: calc(234px + var(--sb)); width: 56px; height: 56px; font-size: 10px; }
+  #hailBtn { right: calc(94px + var(--sr)); bottom: calc(302px + var(--sb)); width: 56px; height: 56px; font-size: 10px; background: var(--warn); color: #1a1200; border-color: var(--warn); }
+  #hud #jibBtn { right: calc(76px + var(--sr)); bottom: calc(190px + var(--sb)); width: 46px; height: 46px; font-size: 9px; }
+  #hud #hailBtn { right: calc(76px + var(--sr)); bottom: calc(244px + var(--sb)); width: 46px; height: 46px; font-size: 9px; }
+  #hud.split-trim #jibBtn, #hud.split-trim #hailBtn { right: calc(136px + var(--sr)); }
+  #jibBtn[hidden], #hailBtn[hidden] { display: none; }
+  .flag.U { background: conic-gradient(#d22 0 25%, #fff 0 50%, #d22 0 75%, #fff 0); }
+  .flag.B { background: #111; }
+  .flag.sub { background: #f2c230; clip-path: polygon(0 0, 100% 50%, 0 100%); box-shadow: inset 0 0 0 4px #1f4fa8; }` }));
+const doJib = () => { if (!running || paused) return; const P = race.player; if (!P.jibJob && P.setJib(!P.smallJib)) haptic('light'); };
+const doHail = () => {
+  if (!running || paused) return;
+  const h = race.youCanHail();
+  race.hail(); haptic('medium');
+  if (!h) toast(t('hailNone'), 1.4);
+};
+jibBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doJib(); });
+hailBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doHail(); });
 reefBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doReef(); });
 tackBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doTack(); });
 kiteBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doKite(); });
@@ -483,12 +536,18 @@ function updateHud(dt) {
   sz.classList.toggle('auto', P.autoTrim);
   txt(tackBtn, t(a > 95 ? 'gybe' : 'tack'));
   tackBtn.classList.toggle('down', !!P.auto);
-  kiteBtn.hidden = !(a > 90 || P.kite || P.kiteJob) || race.clock < 0;
+  const kk = P.kite || P.kiteJob ? P.kiteType : kiteKind(P);
+  kiteBtn.hidden = !(kk || P.kite || P.kiteJob) || race.clock < 0;
+  if (kiteBtn.dataset.k !== kk) { kiteBtn.dataset.k = kk; txt(kiteBtn, t(kk === 'zero' ? 'zero' : 'kite')); }
   kiteBtn.classList.toggle('on', P.kiteJob ? P.kiteJob.up : P.kite);
   kiteBtn.style.opacity = P.kiteJob ? (0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 180))).toFixed(2) : ''; // the crew at work: it pulses
   reefBtn.hidden = !(race.wind.p.tws >= 15 || P.reef || P.reefJob);
   reefBtn.classList.toggle('on', P.reefJob ? P.reefJob.on : P.reef);
   reefBtn.style.opacity = P.reefJob ? (0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 180))).toFixed(2) : '';
+  jibBtn.hidden = !(race.wind.p.tws >= 15 || P.smallJib || P.jibJob);
+  const jl = t((P.jibJob ? P.jibJob.small : P.smallJib) ? 'jibBig' : 'jibBtn'); if (jibBtn.textContent !== jl) txt(jibBtn, jl); // what a tap changes to
+  jibBtn.style.opacity = P.jibJob ? (0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 180))).toFixed(2) : '';
+  hailBtn.hidden = !race.youCanHail();
 
   // status and the line below it
   const leg = c.legs[P.leg];
@@ -516,11 +575,12 @@ function updateHud(dt) {
   txt(el.perf, perf);
 
   // the committee boat's flags
-  const fk = `${race.flags.cls}${race.flags.P}${race.flags.X}`;
+  const fk = `${race.flags.cls}${race.flags.P}${race.flags.X}${race.flags.sub}${race.prepFlag}`;
   if (fk !== flagsKey) {
     flagsKey = fk;
     const fig = (cls, inner, cap) => `<figure><i class="flag ${cls}">${inner}</i><figcaption>${t(cap)}</figcaption></figure>`;
-    el.flags.innerHTML = (race.flags.cls ? fig('cls', 'R', 'flagCls') : '') + (race.flags.P ? fig('P', '', 'flagP') : '') + (race.flags.X ? fig('X', '', 'flagX') : '');
+    const pf = race.prepFlag || 'P'; // the preparatory flag: P, U or black
+    el.flags.innerHTML = (race.flags.sub ? fig('sub', '', 'flagSub') : '') + (race.flags.cls ? fig('cls', 'R', 'flagCls') : '') + (race.flags.P ? fig(pf, '', { P: 'flagP', U: 'flagU', B: 'flagB' }[pf]) : '') + (race.flags.X ? fig('X', '', 'flagX') : '');
   }
   // chips: penalty, dirty air, surfing
   const chips = [];
@@ -582,11 +642,14 @@ function handleMessages() {
     if (m.key === 'signal') {
       audio.horn(a.sound === 'long'); haptic(a.key === 'gun' ? 'heavy' : 'medium');
       if (a.key === 'gun' && P.ocs) continue;
-      toast(t(a.key, Math.round(-a.t / 60)), 3);
-    } else if (m.key === 'finished' || m.key === 'finishedDsq') { raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy'); setTimeout(showResults, 2500); }
+      toast(t(a.key, Math.round(-a.t / 60), race.prepFlag), 3);
+    } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') { raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy'); setTimeout(showResults, 2500); }
     else if (m.key === 'gate') toast(t('gateMsg'));
     else if (m.key === 'bump') { hint('bump', t('bump'), 3); haptic('heavy'); }
     else if (m.key === 'hail') { const h = t('hail' + a.rule); toast(`${a.who}: “${h}”`, 2.2); audio.say(h); haptic('warn'); }
+    else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); audio.say(h); } }
+    else if (m.key === 'genRecall') { toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(); haptic('warn'); }
+    else if (m.key === 'prepU' || m.key === 'prepB' || m.key === 'ufd' || m.key === 'bfd') { toast(t(m.key), 4); if (m.key === 'ufd' || m.key === 'bfd') haptic('warn'); }
     else if (m.key === 'fouled' || m.key === 'theyFouled') toast(t(m.key, a.who, a.rule), 3.5);
     else { toast(t(m.key), 2.6); if (m.key === 'ocs') haptic('warn'); if (m.key === 'rounded') haptic('medium'); }
   }
@@ -594,7 +657,8 @@ function handleMessages() {
   for (const e of P.events) {
     if (e === 'broach') { toast(t('broach')); haptic('heavy'); }
     if (e === 'kitedown') { toast(t('kitedown')); haptic('warn'); }
-    if (e === 'kiteHoist' || e === 'kiteDrop' || e === 'kiteUp' || e === 'reefStart' || e === 'reefDone' || e === 'shakeStart' || e === 'shakeDone') toast(t(e), 1.8);
+    if (e === 'kiteHoist' || e === 'kiteDrop' || e === 'kiteUp') toast(t(e + (P.kiteType === 'zero' ? 'Z' : '')), 1.8);
+    if (e === 'reefStart' || e === 'reefDone' || e === 'shakeStart' || e === 'shakeDone' || e === 'jibStart' || e === 'jibDone') toast(t(e), 1.8);
     if (e === 'penaltyDone') toast(t('penaltyDone'));
     if (e === 'tacking' || e === 'gybing') audio.say(t(e === 'tacking' ? 'tackCall' : 'gybeCall'));
   }
@@ -685,7 +749,8 @@ function showResults() {
 // the racing-rules articles (the site's theory pages), by rule
 const RULE_LINK = { 10: 'rightofway#sec-r10', 11: 'rightofway#sec-r11', 12: 'rightofway#sec-r12', 13: 'rightofway#sec-r13', 18: 'marks#sec-room',
   15: 'limits#sec-r15', 16: 'limits#sec-r16-1', 17: 'limits#sec-r17', 20: 'obstructions#sec-tack', 21: 'penalties#sec-exoneration',
-  31: 'penalties#sec-how', 44: 'penalties#sec-how', ocs: 'starting#sec-recalls' };
+  31: 'penalties#sec-how', 44: 'penalties#sec-how', ocs: 'starting#sec-recalls',
+  '18.3': 'marks#sec-tack', '18.4': 'marks#sec-gybe', 19: 'obstructions#sec-room', U: 'starting#sec-recalls', B: 'starting#sec-recalls' };
 const ruleHref = (r) => `${LANG === 'ru' ? '/ru' : ''}/racing-rules/${RULE_LINK[r]}`;
 const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // personal bests, kept on this device: per course on a free race, per day on today's race
@@ -700,7 +765,8 @@ function renderDebrief() {
   const L = race.log, P = race.player, s = race.settings, rows = [];
   const row = (ok, text, tip, link) => rows.push(`<li class="${ok ? 'ok' : 'warn'}"><b>${esc(text)}</b>${tip ? `<span>${esc(tip)}</span>` : ''}${link || ''}</li>`);
   // the start
-  if (L.ocs) row(false, t('dGunOver'), t('tipStart'), `<a class="rl" hidden href="${ruleHref('ocs')}">${esc(t('read'))} · ${esc(t('rOcs'))} →</a>`);
+  if (L.startDsq) row(false, t('dStartDsq', L.startDsq), t('tipStartDsq'), `<a class="rl" hidden href="${ruleHref(L.startDsq)}">${esc(t('read'))} · ${esc(t('r' + L.startDsq))} →</a>`);
+  else if (L.ocs) row(false, t('dGunOver'), t('tipStart'), `<a class="rl" hidden href="${ruleHref('ocs')}">${esc(t('read'))} · ${esc(t('rOcs'))} →</a>`);
   else if (L.gunD != null) {
     const good = L.gunD >= 0 && L.gunD < 25 && L.gunV > 3.5;
     row(good, t('dGun', Math.round(Math.max(0, L.gunD)), L.gunV.toFixed(1)) + (L.startT != null && L.startT > 8 ? ` · ${t('dStartLate', Math.round(L.startT))}` : ''), good ? '' : t('tipStart'));
@@ -721,7 +787,7 @@ function renderDebrief() {
   if (L.penT > 1) row(false, t('dPen', Math.round(L.penT)), '');
   const hails = Object.values(L.hails).reduce((x, y) => x + y, 0);
   if (hails) { const rs = Object.keys(L.hails).filter((r) => !seen.has(r)).sort((x, y) => L.hails[y] - L.hails[x]).slice(0, 2); row(false, t('dHails', hails), rs.map((r) => `${t('dRule', r)}: ${t('x' + r)}`).join(' '), rs.filter((r) => RULE_LINK[r]).map((r) => `<a class="rl" hidden href="${ruleHref(r)}">${esc(t('dRule', r))} · ${esc(t('r' + r))} →</a>`).join('')); }
-  if (!L.fouls.length && !L.ocs && !hails) row(true, t('dClean'), '');
+  if (!L.fouls.length && !L.ocs && !L.startDsq && !hails) row(true, t('dClean'), '');
   // personal best
   let pb = '';
   if (P.done && !P.dsq) {

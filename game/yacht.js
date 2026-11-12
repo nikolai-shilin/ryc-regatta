@@ -491,6 +491,18 @@ export class BoatView {
     const vane = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.12, 6), M.dark); vane.rotation.x = -Math.PI / 2; vane.position.set(0, 0.1, -0.38); this.windex.add(vane);
     const tail = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.1), new THREE.MeshStandardMaterial({ color: '#e63946', side: THREE.DoubleSide })); tail.rotation.y = Math.PI / 2; tail.position.set(0, 0.12, 0.12); this.windex.add(tail);
     this.sailSide = 1;
+    // the crew: four sailors — the helm, the main trimmer, the jib (and kite) trimmer, and the bow. Each is legs and an
+    // upper body that leans; where they sit and how far they lean out is set in update()
+    const jacket = new THREE.MeshStandardMaterial({ color: look.crew || look.stripe, roughness: 0.8 });
+    const trousers = new THREE.MeshStandardMaterial({ color: '#262a31', roughness: 0.85 }), skin = new THREE.MeshStandardMaterial({ color: '#d29f7c', roughness: 0.7 });
+    this.crew = [3.9, 2.7, 1.7, 0.7].map((z0, i) => {
+      const g = new THREE.Group(), upper = new THREE.Group(), legs = new THREE.Mesh(new THREE.CapsuleGeometry(0.085, 0.5, 3, 6), trousers);
+      const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.34, 4, 8), jacket); torso.position.y = 0.3; upper.add(torso);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.105, 10, 8), skin); head.position.y = 0.66; upper.add(head);
+      g.add(legs, upper); T.add(g);
+      return { g, upper, legs, z0, i, x: 0, y: deckY(z0), z: z0, lean: 0, stand: 0 };
+    });
+
     // everything solid casts and catches the sun's shadow (sails on the deck and on each other)
     this.root.traverse((o) => { if (o.isMesh) { o.castShadow = !(o.userData.flat || o.parent?.userData.flat); o.receiveShadow = true; } });
   }
@@ -553,6 +565,24 @@ export class BoatView {
     lz.setXYZ(0, cw.x, cw.y, cw.z); lz.setXYZ(1, 0, deckY(0) + 0.5, 0.1); lz.setXYZ(2, -ls * 0.95, deckY(0.4) + 0.06, 0.4); lz.setXYZ(3, -ls * 1.02, deckY(2) + 0.3, 2.0); lz.needsUpdate = true;
     // the wind vane points into the apparent wind
     this.windex.rotation.y = -b.awa;
+    // the crew: upwind on the windward rail, leaning out the more she heels; downwind in the cockpit, the kite trimmer
+    // to leeward watching the kite; the bow goes forward for a hoist, a drop or a jib change. They cross the boat in a
+    // tack or gybe over a second or two.
+    const dt = clamp(t - (this.crewT ?? t), 0, 0.1); this.crewT = t;
+    const up = Math.abs(b.twa) < 95 * D2R, hike = clamp(b.heel / 18, 0.15, 1), bowBusy = !!(b.kiteJob || b.jibJob || b.reefJob);
+    for (const c of this.crew) {
+      let x, y, z = c.z0, lean = 0, stand = 0;
+      if (c.i === 0) { x = side * 0.95; y = deckY(3.9) - 0.05; lean = up ? 0.2 * hike : 0; } // the helm, to windward at the wheel
+      else if (c.i === 3 && bowBusy) { x = 0.1; z = b.reefJob ? MAST_Z + 0.6 : -3.4; y = deckY(z) + 0.02; stand = 1; } // forward to work
+      else if (up) { x = side * (hbAt(z) - 0.1); y = deckY(z) + 0.03; lean = 0.6 * hike; } // on the rail, hiking
+      else { x = (c.i === 2 && b.kite ? -side : side) * 0.65; z = c.i === 3 ? 1.2 : c.z0; y = deckY(z) - 0.22; } // in the cockpit
+      const k = 1 - Math.exp(-dt * 2.2);
+      c.x += (x - c.x) * k; c.y += (y - c.y) * k; c.z += (z - c.z) * k; c.lean += (lean - c.lean) * k; c.stand += (stand - c.stand) * k;
+      const sd = c.x >= 0 ? 1 : -1; // the side she's on: legs point inboard, the body leans out
+      c.g.position.set(c.x, c.y, c.z);
+      c.upper.rotation.z = -sd * c.lean; c.upper.position.y = c.stand * 0.55;
+      c.legs.rotation.z = (1 - c.stand) * sd * Math.PI / 2; c.legs.position.set(-sd * (1 - c.stand) * 0.3, 0.06 + c.stand * 0.33, 0);
+    }
     // gennaker on the bowsprit
     // kf: how far the gennaker is up — it climbs the mast furled during a hoist and fills only at the top, and comes
     // down collapsing during a drop
