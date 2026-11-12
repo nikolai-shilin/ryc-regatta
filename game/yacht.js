@@ -2,6 +2,7 @@
 // square-top main with battens and a sail number, jib, asymmetric gennaker on a bowsprit.
 // Local frame: +x starboard, +y up, −z forward (the bow), the waterline at y = 0.
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { D2R, clamp, lerp, waveHeight } from './sim.js';
 
 export const L = 10.4, B = 3.35, MAST_Z = -0.9;
@@ -102,6 +103,33 @@ function coachroofGeometry() {
   g.rotateX(-Math.PI / 2);
   return g;
 }
+
+// the hull with its keel and rudder, the deck, the cockpit and the coachroof, modelled in Blender
+// (docs/design/blender/game_yacht.py) on the lines above: a chine aft, a raked coachroof front with a window band, seats
+// and an open transom. Its parts come by material name; if the file doesn't load in 8 s, the boat is built from the
+// lines above instead.
+const MODEL = await new Promise((res) => {
+  const done = (v) => { clearTimeout(timer); res(v); }, timer = setTimeout(() => res(null), 8000);
+  new GLTFLoader().load(new URL('./yacht.glb', import.meta.url).href, (g) => {
+    const parts = {};
+    g.scene.updateMatrixWorld(true);
+    g.scene.traverse((o) => { if (o.isMesh) { const geo = o.geometry.clone().applyMatrix4(o.matrixWorld); parts[o.material.name] = geo; } });
+    const p = parts.hull?.attributes.position;
+    if (!p || !parts.deck) return done(null);
+    // the hull's paint bands, as hullGeometry gives them: the depth under the sheer
+    const band = new Float32Array(p.count);
+    for (let i = 0; i < p.count; i++) band[i] = sheerAt(tAt(p.getZ(i))) - p.getY(i);
+    parts.hull.setAttribute('band', new THREE.BufferAttribute(band, 1));
+    // the deck's UVs are its plan in metres (x, −z), as deckGeometry's; the teak's run its planks fore and aft
+    for (const [k, s] of [['deck', 1], ['teak', 1 / 0.8]]) {
+      const g2 = parts[k]; if (!g2) continue;
+      const q = g2.attributes.position, uv = new Float32Array(q.count * 2);
+      for (let i = 0; i < q.count; i++) { uv[2 * i] = q.getX(i) * s; uv[2 * i + 1] = -q.getZ(i) * s; }
+      g2.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    }
+    done(parts);
+  }, undefined, () => done(null));
+});
 
 // ---------- textures ----------
 function canvasTex(w, h, draw, rx = 1, ry = 1) {
@@ -355,21 +383,26 @@ export class BoatView {
     this.root.add(this.tilt);
     const T = this.tilt, add = (o, x = 0, y = 0, z = 0) => { o.position.set(x, y, z); T.add(o); return o; };
 
-    // hull, deck, cockpit, coachroof
-    add(new THREE.Mesh(hullGeometry(), hullMaterial(look.hull, look.stripe)));
-    add(new THREE.Mesh(deckGeometry(), M.deck));
-    add(new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.5, 3.25), M.well), 0, deckY(3.1) - 0.25, 3.12);
-    for (const sx of [-1, 1]) {
-      add(new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.06, 2.3), M.teak), sx * 0.72, deckY(3) - 0.3, 2.65); // benches
-      add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 2.2), M.gel), sx * 0.98, deckY(2.6) + 0.08, 2.6); // coamings
-    }
-    const cr = add(new THREE.Mesh(coachroofGeometry(), M.gel), 0, deckY(0) - 0.02, 0);
-    cr.position.y = deckY(-0.3) - 0.02;
-    // windows along the coachroof sides, and the companionway
-    for (const sx of [-1, 1]) {
-      const a = [sx * 1.15, 1.2], f = [sx * 0.77, -1.6], len = Math.hypot(a[0] - f[0], a[1] - f[1]);
-      const w = add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.13, len * 0.8), M.glass), (a[0] + f[0]) / 2, cr.position.y + 0.26, (a[1] + f[1]) / 2);
-      w.rotation.y = Math.atan2(a[0] - f[0], a[1] - f[1]);
+    // hull, deck, cockpit, coachroof: the Blender model, or built here from the lines
+    const cr = { position: new THREE.Vector3(0, deckY(-0.3) - 0.02, 0) }; // the coachroof's base (its top is 0.46 above)
+    if (MODEL) {
+      const mats = { hull: hullMaterial(look.hull, look.stripe), deck: M.deck, gel: M.gel, teak: M.teak, glass: M.glass };
+      for (const [k, g] of Object.entries(MODEL)) if (mats[k]) add(new THREE.Mesh(g, mats[k]));
+    } else {
+      add(new THREE.Mesh(hullGeometry(), hullMaterial(look.hull, look.stripe)));
+      add(new THREE.Mesh(deckGeometry(), M.deck));
+      add(new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.5, 3.25), M.well), 0, deckY(3.1) - 0.25, 3.12);
+      for (const sx of [-1, 1]) {
+        add(new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.06, 2.3), M.teak), sx * 0.72, deckY(3) - 0.3, 2.65); // benches
+        add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 2.2), M.gel), sx * 0.98, deckY(2.6) + 0.08, 2.6); // coamings
+      }
+      add(new THREE.Mesh(coachroofGeometry(), M.gel), 0, cr.position.y, 0);
+      // windows along the coachroof sides
+      for (const sx of [-1, 1]) {
+        const a = [sx * 1.15, 1.2], f = [sx * 0.77, -1.6], len = Math.hypot(a[0] - f[0], a[1] - f[1]);
+        const w = add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.13, len * 0.8), M.glass), (a[0] + f[0]) / 2, cr.position.y + 0.26, (a[1] + f[1]) / 2);
+        w.rotation.y = Math.atan2(a[0] - f[0], a[1] - f[1]);
+      }
     }
     // the companionway: washboard in an alloy frame, and the sliding hatch over it on its rails
     const top = cr.position.y + 0.46; // the coachroof's top
