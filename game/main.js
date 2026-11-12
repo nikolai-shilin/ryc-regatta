@@ -24,6 +24,17 @@ const T = {
     x10: 'On opposite tacks, the boat with the wind on her port side keeps clear.', x11: 'Overlapped on the same tack, the windward boat keeps clear.',
     x12: 'On the same tack and not overlapped, the boat behind keeps clear.', x13: 'From head to wind until close-hauled, a tacking boat keeps clear of everyone.',
     x18: 'In the zone the inside boat, or the one clear ahead, gets room to round the mark.', x31: 'Touching a mark costs one penalty turn.', x44: 'A boat spinning her penalty turns keeps clear of the others.',
+    r15: 'Just got right of way — give room first', r16: 'Right of way, but no sudden turns', r17: 'In to leeward from astern — no higher than your proper course',
+    x15: 'A boat that gets right of way by her own action (a tack, or sailing up from astern) must at first give the other room to keep clear.',
+    x16: 'A boat with right of way that changes course must leave the other boat room to keep clear.',
+    x17: 'Overlapped to leeward from clear astern within two hull lengths, a boat must not sail above her proper course.',
+    hail15: 'Give me room to keep clear!', hail16: 'Don’t turn into me!', hail17: 'Proper course!',
+    split: 'Main + jib', mainCap: 'Main', jibCap: 'Jib', jibIn: 'Jib: pull in', jibOut: 'Jib: ease out',
+    kiteHoist: 'Hoisting the kite…', kiteUp: 'Kite’s drawing', kiteDrop: 'Dropping the kite…',
+    r20: 'Room to tack at an obstruction', x20: 'Close-hauled and blocked by an obstruction ahead, a boat may hail for room to tack; the boat hailed must tack or give her room.',
+    hail20: 'Room to tack!', exonerated: 'Pushed into it by another boat’s foul — no penalty (rule 21)',
+    barging: 'Barging: there’s no room at the committee boat at the start — the windward boat keeps clear',
+    reef: 'Reef', reefStart: 'Tying in a reef…', reefDone: 'Reefed — she stands up better', shakeStart: 'Shaking out the reef…', shakeDone: 'Full main again',
     pb: (s) => `Your best on this course: ${s}`, pbNew: 'A new personal best!', pbToday: (s) => `Your best today: ${s}`, todayTop: 'Today’s fastest', guest: 'Guest',
     cSteer: 'Steer: drag your left thumb along the arc', cSheet: 'Trim: slide your right thumb up to pull the sails in, down to ease them',
     cLine: 'Head for the line and cross it just after the gun', cHeader: 'The wind has headed you — tap Tack', cMark: 'Round the mark leaving it on your left (to port)',
@@ -33,10 +44,10 @@ const T = {
     fleetK: 'Boats', lengthK: 'Course', lShort: 'Short', lMedium: 'Medium', lLong: 'Long',
     currentK: 'Current', guidesK: 'Guides', gfx: 'Graphics', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', start: 'Start race', resume: 'Resume', restart: 'Restart',
     how1: '<b>Left thumb</b> steers on the arc. <b>Right thumb</b> works the sheet: up pulls the sails in, down lets them out. Keep the telltales green.',
-    how2: '<b>Tack</b> turns you through the wind (<b>Gybe</b> downwind). <b>Kite</b> sets the gennaker on a run. In a gust, ease the sheet before she heels too far.',
+    how2: '<b>Tack</b> turns you through the wind (<b>Gybe</b> downwind). <b>Kite</b> sets the gennaker on a run — the hoist and the drop take the crew a few seconds, so get it down in good time before the gate. In a gust, ease the sheet before she heels too far; in a blow, <b>Reef</b> makes the main smaller. Before the start, head up and let the sheet right out to stop — or even go astern.',
     how3: 'Start after the gun — the class flag comes down. Over early and you must go back. Round the windward mark <b>leaving it to port</b>, finish through the line.',
     how5: 'Round your boat: the <b>arrow</b> shows where the wind blows from; <b>red</b> — too close to the wind to sail; <b>green</b> marks — the best angle upwind; <b>blue</b> — the best angle downwind. The wind swings ten degrees and more either way every minute or so: in a <b>lift</b> you can point higher, in a <b>header</b> tack.',
-    how4: 'Racing rules: port tack keeps clear of starboard, windward of leeward, the boat astern of the boat ahead; at a mark, the <b>zone</b> (dashed ring, three hull lengths): if two boats are overlapped when the first reaches it, the inside one gets room, if not — the one clear ahead. Hit someone you should have avoided — two penalty turns. Touch a mark — one.',
+    how4: 'Racing rules: port tack keeps clear of starboard, windward of leeward, the boat astern of the boat ahead; at a mark, the <b>zone</b> (dashed ring, three hull lengths): if two boats are overlapped when the first reaches it, the inside one gets room, if not — the one clear ahead. Hit someone you should have avoided — two penalty turns. Touch a mark — one. A boat that has just got right of way must first give the other room, and a boat with right of way mustn’t turn suddenly into one keeping clear.',
     rotate: 'Turn your phone sideways for the best view.', back: '← Back to Sailing Certification Test',
     flagCls: 'Class', flagP: 'Prep', flagX: 'Recall', kn: 'kn', drone: 'Drone', helm: 'Helm', top: 'Top', tack: 'Tack', gybe: 'Gybe', kite: 'Kite', in: 'In', out: 'Out',
     ok: 'Trim OK', pullIn: 'Pull in', easeOut: 'Ease out', irons: 'In irons',
@@ -45,7 +56,7 @@ const T = {
     sigWarn: (n) => `Warning signal — class flag up, ${n} min`, sigPrep: (n) => `Preparatory — P flag up, ${n} min`, sig1: 'One minute — P flag down', gun: 'Start! Class flag down',
     ocs: 'Over early! X flag — go back below the line', cleared: 'Clear — now start', started: 'Good start!', rounded: 'Mark rounded — bear away, kite up',
     missedLine: 'Outside the line — cross between the committee boat and the pin', missedGate: 'Outside the gate — go back and sail between the two buoys', wrongSide: 'Leave the mark to port — go back round it',
-    gateMsg: 'Through the gate — back upwind', bump: 'Contact!', broach: 'Broach! Ease the sheet', kitedown: 'Too close to the wind for the kite',
+    gateMsg: 'Through the gate — back upwind', bump: 'Contact!', broach: 'Broach! Ease the sheet', kitedown: 'Too close to the wind — the kite comes down in a hurry',
     heelMsg: 'Too much heel — ease the sheet', ironsMsg: 'In irons — steer away from the wind', gust: 'Gust!', autoOff: 'Auto-trim off — you trim now',
     hail10: 'Starboard!', hail11: 'Windward boat, keep clear!', hail12: 'Keep clear astern!', hail13: 'You’re tacking — keep clear!', hail18: 'Room at the mark!', hail44: 'Penalty boat — keep clear!',
     fouled: (w, r) => `Foul on ${w} (rule ${r}) — do two penalty turns`, theyFouled: (w, r) => `${w} broke rule ${r} and takes a penalty`,
@@ -71,6 +82,17 @@ const T = {
     x10: 'На разных галсах уступает лодка, у которой ветер слева (левый галс).', x11: 'Связанные на одном галсе: наветренная уступает.',
     x12: 'На одном галсе без связанности уступает идущая сзади.', x13: 'От линии ветра до курса бейдевинд лодка в повороте уступает всем.',
     x18: 'В зоне место для огибания знака получает внутренняя лодка или та, что впереди.', x31: 'Касание знака — один штрафной оборот.', x44: 'Лодка на штрафных оборотах уступает остальным.',
+    r15: 'Получила право дороги — сначала дай место', r16: 'Право дороги — но без резких поворотов', r17: 'Догнала сзади под ветром — не выше надлежащего курса',
+    x15: 'Лодка, получившая право дороги своими действиями (поворотом или догнав сзади), сначала должна дать другой место, чтобы уступить.',
+    x16: 'Лодка с правом дороги, меняя курс, должна оставлять другой лодке место, чтобы уступить.',
+    x17: 'Став связанной под ветром, догнав сзади в пределах двух корпусов, лодка не должна идти выше своего надлежащего курса.',
+    hail15: 'Дай место уступить!', hail16: 'Не поворачивай на меня!', hail17: 'Надлежащий курс!',
+    split: 'Грот + стаксель', mainCap: 'Грот', jibCap: 'Стаксель', jibIn: 'Стаксель: выбрать', jibOut: 'Стаксель: травить',
+    kiteHoist: 'Ставим генакер…', kiteUp: 'Генакер работает', kiteDrop: 'Убираем генакер…',
+    r20: 'Место для поворота у препятствия', x20: 'Идя в бейдевинд и упираясь в препятствие, лодка может окликнуть и попросить место для поворота; окликнутая должна повернуть или дать место.',
+    hail20: 'Место для поворота!', exonerated: 'Тебя вытолкнули чужим нарушением — без штрафа (правило 21)',
+    barging: 'У судейского судна на старте места не положено — наветренная уступает',
+    reef: 'Риф', reefStart: 'Берём риф…', reefDone: 'Риф взят — крен меньше', shakeStart: 'Отдаём риф…', shakeDone: 'Снова полный грот',
     pb: (s) => `Твой рекорд на этой дистанции: ${s}`, pbNew: 'Новый личный рекорд!', pbToday: (s) => `Твой лучший результат сегодня: ${s}`, todayTop: 'Самые быстрые сегодня', guest: 'Гость',
     cSteer: 'Руль: веди левым пальцем по дуге', cSheet: 'Шкот: правым пальцем вверх — выбрать паруса, вниз — потравить',
     cLine: 'Иди к линии и пересеки её сразу после сигнала', cHeader: 'Ветер зашёл — жми «Поворот»', cMark: 'Огибай знак, оставляя его слева',
@@ -80,10 +102,10 @@ const T = {
     fleetK: 'Лодок', lengthK: 'Дистанция', lShort: 'Короткая', lMedium: 'Средняя', lLong: 'Длинная',
     currentK: 'Течение', guidesK: 'Подсказки', gfx: 'Графика', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
     how1: '<b>Левый палец</b> рулит по дуге. <b>Правый</b> работает шкотом: вверх выбрать, вниз потравить. Колдунчики должны быть зелёными.',
-    how2: '<b>Поворот</b> — оверштаг через ветер (на полных курсах — <b>фордевинд</b>). <b>Генакер</b> — для попутного ветра. В порыве трави шкот, пока крен не стал слишком большим.',
+    how2: '<b>Поворот</b> — оверштаг через ветер (на полных курсах — <b>фордевинд</b>). <b>Генакер</b> — для попутного ветра; постановка и уборка занимают у экипажа несколько секунд, так что убирай его заранее, до ворот. В порыве трави шкот, пока крен не стал слишком большим; в сильный ветер <b>Риф</b> уменьшает грот. Перед стартом приведись и потрави шкот до конца — лодка остановится или даже пойдёт назад.',
     how3: 'Старт после сигнала — флаг класса спущен. Фальстарт — вернись за линию. Верхний знак огибают, <b>оставляя его слева</b>; финиш — через линию.',
     how5: 'Вокруг лодки: <b>стрелка</b> — откуда дует ветер; <b>красное</b> — слишком остро к ветру, идти нельзя; <b>зелёные</b> метки — лучший угол на ветер; <b>синие</b> — лучший угол по ветру. Ветер гуляет на десять с лишним градусов в обе стороны каждую минуту-другую: когда он <b>отходит</b>, можно идти круче, когда <b>заходит</b> — поворачивай.',
-    how4: 'Правила: левый галс уступает правому, наветренная — подветренной, догоняющая — идущей впереди; у знака — <b>зона</b> (пунктирный круг, три корпуса): если лодки связаны, когда первая в неё входит, место получает внутренняя, если не связаны — идущая впереди. Столкнулся, когда должен был уступить, — два штрафных оборота. Задел знак — один.',
+    how4: 'Правила: левый галс уступает правому, наветренная — подветренной, догоняющая — идущей впереди; у знака — <b>зона</b> (пунктирный круг, три корпуса): если лодки связаны, когда первая в неё входит, место получает внутренняя, если не связаны — идущая впереди. Столкнулся, когда должен был уступить, — два штрафных оборота. Задел знак — один. Лодка, только что получившая право дороги, сначала даёт место, а лодка с правом дороги не может резко поворачивать на ту, что уступает.',
     rotate: 'Поверните телефон горизонтально.', back: '← Назад в Sailing Certification Test',
     flagCls: 'Класс', flagP: 'Подгот.', flagX: 'Отзыв', kn: 'уз', drone: 'Дрон', helm: 'Штурвал', top: 'Сверху', tack: 'Поворот', gybe: 'Фордевинд', kite: 'Генакер', in: 'Выбрать', out: 'Травить',
     ok: 'Паруса в норме', pullIn: 'Выбери шкот', easeOut: 'Потрави шкот', irons: 'Левентик',
@@ -92,7 +114,7 @@ const T = {
     sigWarn: (n) => `Предупредительный сигнал — флаг класса, ${n} мин`, sigPrep: (n) => `Подготовительный — флаг P, ${n} мин`, sig1: 'Одна минута — флаг P спущен', gun: 'Старт! Флаг класса спущен',
     ocs: 'Фальстарт! Флаг X — вернись за линию', cleared: 'Теперь стартуй', started: 'Отличный старт!', rounded: 'Знак пройден — уваливайся, ставь генакер',
     missedLine: 'Мимо линии — пересеки её между судейским судном и знаком', missedGate: 'Мимо ворот — вернись и пройди между двумя знаками', wrongSide: 'Знак оставляют слева — обогни его снова',
-    gateMsg: 'Ворота пройдены — снова на ветер', bump: 'Столкновение!', broach: 'Брочинг! Трави шкот', kitedown: 'Слишком остро для генакера',
+    gateMsg: 'Ворота пройдены — снова на ветер', bump: 'Столкновение!', broach: 'Брочинг! Трави шкот', kitedown: 'Слишком остро — генакер убирают в спешке',
     heelMsg: 'Сильный крен — потрави шкот', ironsMsg: 'Левентик — уваливайся', gust: 'Порыв!', autoOff: 'Автоподбор выключен — шкот твой',
     hail10: 'Правый галс!', hail11: 'Наветренная, уходи!', hail12: 'Сзади, уходи!', hail13: 'Ты в повороте — уходи!', hail18: 'Место у знака!', hail44: 'Штрафник, уходи!',
     fouled: (w, r) => `Нарушение против ${w} (правило ${r}) — два штрафных оборота`, theyFouled: (w, r) => `${w}: нарушение правила ${r}, штрафные обороты`,
@@ -142,6 +164,8 @@ const paintOpts = () => {
   });
   const n = $('#dailyNote'); if (n) { n.hidden = opts.mode !== 'daily'; n.textContent = t('dailyNote', windName(s.preset)); }
 };
+// a third way to trim: the main and the jib each on their own sheet
+{ const g = document.querySelector('.choice[data-opt="autoTrim"]'); if (g && !g.querySelector('[data-v="2"]')) { const b = document.createElement('button'); b.dataset.v = '2'; b.innerHTML = t('split'); g.append(b); } }
 paintOpts();
 for (const g of document.querySelectorAll('.choice')) {
   const k = g.dataset.opt;
@@ -152,7 +176,7 @@ for (const g of document.querySelectorAll('.choice')) {
     if (k === 'gfx') { world.setQuality(startQuality()); perf.settle = 2; }
     if (k === 'guides') world.showGuides = !!opts.guides;
     if (k === 'sound') audio.setOn(!!opts.sound);
-    if (k === 'autoTrim' && race && running) race.player.autoTrim = !!opts.autoTrim;
+    if (k === 'autoTrim' && race && running) applyTrimMode();
     if (k === 'preset' || k === 'laps' || k === 'start' || k === 'current' || k === 'mode' || k === 'fleet' || k === 'length') { if (!running) newRace(); else menuChanged = true; }
   });
 }
@@ -262,7 +286,7 @@ function watchFps(raw) {
 let race = null, running = false, paused = false, menuChanged = false, hints = {}, lastClockInt = null, coachSeen = {};
 function newRace() {
   const s = settings();
-  race = new Race({ preset: s.preset, laps: s.laps, autoTrim: !!opts.autoTrim, start: s.start, current: !!s.current, fleet: s.fleet, length: s.length, seed: s.daily ? s.seed : undefined });
+  race = new Race({ preset: s.preset, laps: s.laps, autoTrim: opts.autoTrim === 1, start: s.start, current: !!s.current, fleet: s.fleet, length: s.length, seed: s.daily ? s.seed : undefined });
   race.settings = s;
   race.player.name = t('you');
   world.setRace(race);
@@ -284,7 +308,34 @@ const rudderUp = (e) => { if (e.pointerId === rudderPtr) { rudderPtr = null; inp
 rz.addEventListener('pointerup', rudderUp); rz.addEventListener('pointercancel', rudderUp);
 
 const sz = $('#sheetZone'), sheetEl = $('#sheet');
-let sheetPtr = null;
+let sheetPtr = null, sheetWhich = 'main';
+// Main + jib: the jib gets its own slider, to the left of the main's (built here, styled like it, white knob)
+const jibEl = sheetEl.cloneNode(true); jibEl.id = 'jibSheet'; sheetEl.before(jibEl);
+const jibKnob = jibEl.querySelector('.knob'), jibBand = jibEl.querySelector('.band');
+document.head.append(Object.assign(document.createElement('style'), { textContent: `
+  #jibSheet { position: relative; width: 24px; height: calc(100% - 22px); border-radius: 54px; background: var(--glass); border: 2px solid var(--tag-line); margin-right: 30px; display: none; }
+  #jibSheet .band { position: absolute; left: 2px; right: 2px; background: color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 54px; }
+  #jibSheet .knob { position: absolute; left: -10px; width: 40px; height: 20px; border-radius: 54px; background: #fff; border: 2px solid var(--accent); box-shadow: 0 2px 6px rgba(0,0,0,.3); transform: translateY(-50%); }
+  #jibSheet .cap { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--sans); font-size: 11px; font-weight: 700; white-space: nowrap; text-transform: uppercase; letter-spacing: .02em; }
+  #jibSheet .cap.t { top: -19px; } #jibSheet .cap.b { bottom: -19px; }
+  #sheetZone.split, #hud #sheetZone.split { width: 124px; } #sheetZone.split #jibSheet { display: block; }
+  #hud.split-trim #tackBtn, #hud.split-trim #kiteBtn { right: calc(136px + var(--sr)); } /* moved over for the second slider */
+  #hud #jibSheet { width: 18px; border-width: 1.5px; margin-right: 26px; } #hud #jibSheet .knob { left: -8px; width: 30px; height: 16px; border-width: 1.5px; box-shadow: none; } #hud #jibSheet .cap { font-size: 10px; }` }));
+// the Sails setting on the player's boat: 0 one sheet, 1 auto-trim, 2 main and jib apart
+function applyTrimMode() {
+  const P = race && race.player; if (!P) return;
+  P.autoTrim = opts.autoTrim === 1; P.split = opts.autoTrim === 2;
+  if (P.split) P.jibSheet = P.sheet;
+  sz.classList.toggle('split', P.split); hud.classList.toggle('split-trim', P.split);
+  sheetEl.querySelector('.cap.t').innerHTML = t(P.split ? 'mainCap' : 'in');
+  jibEl.querySelector('.cap.t').innerHTML = t('jibCap');
+}
+// in Main + jib, a thumb works whichever slider it lands nearer
+const pickSheet = (x) => {
+  if (!race.player.split) return 'main';
+  const a = jibEl.getBoundingClientRect(), b = sheetEl.getBoundingClientRect();
+  return Math.abs(x - (a.left + a.width / 2)) < Math.abs(x - (b.left + b.width / 2)) ? 'jib' : 'main';
+};
 const autoOff = () => {
   if (!race.player.autoTrim) return;
   race.player.autoTrim = false; opts.autoTrim = 0; saveOpts(); paintOpts(); toast(t('autoOff'));
@@ -293,17 +344,32 @@ const setSheet = (v) => {
   const P = race.player; v = clamp(v, 0, 1);
   if (v < input.lastSheet - 0.012) { audio.click(); input.lastSheet = v; } // trimming in: the winch clicks
   else if (v > input.lastSheet) input.lastSheet = v;
-  P.sheet = v;
+  if (sheetWhich === 'jib') P.jibSheet = v; else P.sheet = v;
 };
-const setSheetFrom = (y) => { const r = sheetEl.getBoundingClientRect(); setSheet((y - r.top) / r.height); };
-sz.addEventListener('pointerdown', (e) => { sheetPtr = e.pointerId; sz.setPointerCapture(e.pointerId); autoOff(); input.lastSheet = race.player.sheet; setSheetFrom(e.clientY); e.preventDefault(); });
+const setSheetFrom = (y) => { const r = (sheetWhich === 'jib' ? jibEl : sheetEl).getBoundingClientRect(); setSheet((y - r.top) / r.height); };
+sz.addEventListener('pointerdown', (e) => { sheetPtr = e.pointerId; sz.setPointerCapture(e.pointerId); autoOff(); sheetWhich = pickSheet(e.clientX); input.lastSheet = sheetWhich === 'jib' ? race.player.jibSheet : race.player.sheet; setSheetFrom(e.clientY); e.preventDefault(); });
 sz.addEventListener('pointermove', (e) => { if (e.pointerId === sheetPtr) setSheetFrom(e.clientY); });
 const sheetUp = (e) => { if (e.pointerId === sheetPtr) sheetPtr = null; };
 sz.addEventListener('pointerup', sheetUp); sz.addEventListener('pointercancel', sheetUp);
 
 const tackBtn = $('#tackBtn'), kiteBtn = $('#kiteBtn');
 const doTack = () => { if (!running || paused) return; race.player.tackOrGybe(); haptic('medium'); };
-const doKite = () => { if (!running || paused) return; const P = race.player; if (Math.abs(P.twa) / D2R > 90) { P.kite = !P.kite; haptic('light'); } };
+// the kite: a tap starts the crew hoisting it (or getting it down); a tap during a hoist calls it off
+const doKite = () => {
+  if (!running || paused) return;
+  const P = race.player, j = P.kiteJob;
+  if (j) { if (j.up && P.setKite(false)) haptic('light'); return; }
+  if (P.kite || Math.abs(P.twa) / D2R > 90) { if (P.setKite(!P.kite)) haptic('light'); }
+};
+// the reef: a button above the kite's, shown in a breeze; a tap starts the crew tying a reef in (or shaking it out)
+const reefBtn = kiteBtn.cloneNode(true); reefBtn.id = 'reefBtn'; reefBtn.classList.remove('on'); reefBtn.innerHTML = t('reef'); kiteBtn.after(reefBtn);
+document.head.append(Object.assign(document.createElement('style'), { textContent: `
+  #reefBtn { right: calc(94px + var(--sr)); bottom: calc(166px + var(--sb)); width: 56px; height: 56px; font-size: 10px; }
+  #hud #reefBtn { right: calc(76px + var(--sr)); bottom: calc(136px + var(--sb)); width: 46px; height: 46px; font-size: 9px; }
+  #hud.split-trim #reefBtn { right: calc(136px + var(--sr)); }
+  #reefBtn.on { background: var(--accent); color: var(--on-accent); } #reefBtn[hidden] { display: none; }` }));
+const doReef = () => { if (!running || paused) return; const P = race.player; if (!P.reefJob && P.setReef(!P.reef)) haptic('light'); };
+reefBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doReef(); });
 tackBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doTack(); });
 kiteBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doKite(); });
 
@@ -378,7 +444,7 @@ function startRace() {
   race.coach = opts.played <= 3; // the first three races: tips as you go
   menu.hidden = true; results.hidden = true; hud.hidden = false;
   running = true; paused = false;
-  race.player.autoTrim = !!opts.autoTrim;
+  applyTrimMode();
   setCam(world.mode);
   raceStarted(race, race.settings); // counted for the admins' Overview and the leaderboards (stats.js)
 }
@@ -407,17 +473,22 @@ function updateHud(dt) {
   txt(el.spd, kn.toFixed(1));
   el.trim.dataset.s = P.trim;
   el.trim.hidden = P.trim === 'ok'; // the chip only when there's something to do
-  txt(el.trimTxt, t({ ok: 'ok', in: 'pullIn', out: 'easeOut', irons: 'irons' }[P.trim]));
+  txt(el.trimTxt, t(P.trimSail === 'jib' && (P.trim === 'in' || P.trim === 'out') ? (P.trim === 'in' ? 'jibIn' : 'jibOut') : { ok: 'ok', in: 'pullIn', out: 'easeOut', irons: 'irons' }[P.trim]));
   const ang = P.rudder * 70 * D2R; el.knob.setAttribute('cx', (105 + Math.sin(ang) * 84).toFixed(1)); el.knob.setAttribute('cy', (104 - Math.cos(ang) * 84).toFixed(1));
   const tol = 7 / 77, lo = clamp(sheetFor(idealSail(awa)) - tol, 0, 1), hi = clamp(sheetFor(idealSail(awa) + P.depower) + tol, 0, 1);
   el.band.style.top = `${lo * 100}%`; el.band.style.height = `${(hi - lo) * 100}%`;
   el.band.style.display = a < 28 ? 'none' : '';
   el.sknob.style.top = `${P.sheet * 100}%`;
+  if (P.split) { jibKnob.style.top = `${P.jibSheet * 100}%`; jibBand.style.top = el.band.style.top; jibBand.style.height = el.band.style.height; jibBand.style.display = el.band.style.display; }
   sz.classList.toggle('auto', P.autoTrim);
   txt(tackBtn, t(a > 95 ? 'gybe' : 'tack'));
   tackBtn.classList.toggle('down', !!P.auto);
-  kiteBtn.hidden = !(a > 90 || P.kite) || race.clock < 0;
-  kiteBtn.classList.toggle('on', P.kite);
+  kiteBtn.hidden = !(a > 90 || P.kite || P.kiteJob) || race.clock < 0;
+  kiteBtn.classList.toggle('on', P.kiteJob ? P.kiteJob.up : P.kite);
+  kiteBtn.style.opacity = P.kiteJob ? (0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 180))).toFixed(2) : ''; // the crew at work: it pulses
+  reefBtn.hidden = !(race.wind.p.tws >= 15 || P.reef || P.reefJob);
+  reefBtn.classList.toggle('on', P.reefJob ? P.reefJob.on : P.reef);
+  reefBtn.style.opacity = P.reefJob ? (0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 180))).toFixed(2) : '';
 
   // status and the line below it
   const leg = c.legs[P.leg];
@@ -522,7 +593,8 @@ function handleMessages() {
   race.messages.length = 0;
   for (const e of P.events) {
     if (e === 'broach') { toast(t('broach')); haptic('heavy'); }
-    if (e === 'kitedown') toast(t('kitedown'));
+    if (e === 'kitedown') { toast(t('kitedown')); haptic('warn'); }
+    if (e === 'kiteHoist' || e === 'kiteDrop' || e === 'kiteUp' || e === 'reefStart' || e === 'reefDone' || e === 'shakeStart' || e === 'shakeDone') toast(t(e), 1.8);
     if (e === 'penaltyDone') toast(t('penaltyDone'));
     if (e === 'tacking' || e === 'gybing') audio.say(t(e === 'tacking' ? 'tackCall' : 'gybeCall'));
   }
@@ -544,8 +616,8 @@ function drawMap(ctx, size, full) {
   const X = (x) => ox + x * s, Z = (z) => oz + z * s;
   ctx.clearRect(0, 0, size, size);
   if (!full) for (const g of race.wind.gusts) {
-    ctx.globalAlpha = 0.16 * g.s / race.wind.p.gustStr * Math.min(1, g.life / 6); ctx.fillStyle = COL.accent;
-    ctx.beginPath(); ctx.arc(X(g.x), Z(g.z), g.r * s, 0, 7); ctx.fill();
+    ctx.globalAlpha = 0.16 * g.s / race.wind.p.gustStr * (g.k ?? Math.min(1, g.life / 6)); ctx.fillStyle = COL.accent;
+    ctx.beginPath(); ctx.ellipse(X(g.x), Z(g.z), g.r * s, g.r * 1.35 * s, W, 0, 7); ctx.fill(); // longer down the wind than across
   }
   ctx.globalAlpha = 1;
   // laylines to the windward mark, for the wind and current now
@@ -597,7 +669,7 @@ function drawMap(ctx, size, full) {
     ctx.restore();
   };
   arrow(size - 16, 18, W + Math.PI, COL.accent, 10);
-  const cu = race.current;
+  const cu = race.currentAt(P.x, P.z); // the stream where you are now
   if (cu.x || cu.z) arrow(16, size - 18, Math.atan2(cu.x, -cu.z), COL.muted, 9);
 }
 
@@ -612,6 +684,7 @@ function showResults() {
 // ---------- the debrief: what went well and what to work on, with the rules behind any foul ----------
 // the racing-rules articles (the site's theory pages), by rule
 const RULE_LINK = { 10: 'rightofway#sec-r10', 11: 'rightofway#sec-r11', 12: 'rightofway#sec-r12', 13: 'rightofway#sec-r13', 18: 'marks#sec-room',
+  15: 'limits#sec-r15', 16: 'limits#sec-r16-1', 17: 'limits#sec-r17', 20: 'obstructions#sec-tack', 21: 'penalties#sec-exoneration',
   31: 'penalties#sec-how', 44: 'penalties#sec-how', ocs: 'starting#sec-recalls' };
 const ruleHref = (r) => `${LANG === 'ru' ? '/ru' : ''}/racing-rules/${RULE_LINK[r]}`;
 const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

@@ -68,7 +68,8 @@ void main() {
   // gusts: rougher water
   float gust = 0.0;
   for (int i = 0; i < 12; i++) {
-    float f = clamp(1.0 - length(p - uGust[i].xy) / max(uGust[i].z, 1.0), 0.0, 1.0);
+    vec2 gd = p - uGust[i].xy; // a gust is longer down the wind than it is wide (uWind: the way it blows)
+    float f = clamp(1.0 - length(vec2(dot(gd, uWind) / 1.35, dot(gd, vec2(-uWind.y, uWind.x)))) / max(uGust[i].z, 1.0), 0.0, 1.0);
     gust += f * f * (3.0 - 2.0 * f) * uGust[i].w;
   }
   gust = clamp(gust, 0.0, 1.0);
@@ -854,14 +855,15 @@ export class World {
       const v = this.boatViews[i];
       v.setDetail(b === P || Math.hypot(b.x - cp.x, b.z - cp.z) < farD * (this.quality === 'low' ? 0.6 : 1) && this.mode !== 'top');
       v.update(b, t, this.W, this.mode === 'drone', { cam: cp, sun: SUN });
+      this.settle(v, dt);
       this.seaShadows[i]?.update(this.quality !== 'low'); // Low: no shadows anywhere
     });
     // buoys bob and tilt with the sea under them; in a current a mark leans downstream on its mooring and trails a
     // little foam
-    const cur = race.current, cs = Math.hypot(cur.x, cur.z);
     for (const { obj, p } of this.buoys) {
       obj.position.y = waveHeight(this.W, p.x, p.z, t) * (obj === this.committee ? 0.7 : 0.9);
       if (obj === this.committee) continue;
+      const cur = race.currentAt(p.x, p.z), cs = Math.hypot(cur.x, cur.z); // the stream where this mark lies
       const sx = waveSlope(this.W, p.x, p.z, t, 1, 0), sz = waveSlope(this.W, p.x, p.z, t, 0, 1);
       obj.rotation.z = sx * 0.8 - cur.x * 0.5; obj.rotation.x = -sz * 0.8 + cur.z * 0.5;
       if (cs > 0.05 && Math.random() < dt * 7) {
@@ -965,10 +967,24 @@ export class World {
     const u = this.waterU;
     u.uTime.value = t; u.uCam.value.copy(cam.position);
     const bw = wind.dir() + Math.PI; u.uWind.value.set(Math.sin(bw), -Math.cos(bw));
+    for (let i = 0; i < this.W.length; i++) u.uW.value[i].w = this.W[i].A; // the chop builds and dies with the wind (sim.js)
     // the sea shows twelve gusts: the nearest to you (a long course has more)
     const gs = wind.gusts.length <= 12 ? wind.gusts : [...wind.gusts].sort((a, b) => Math.hypot(a.x - P.x, a.z - P.z) - Math.hypot(b.x - P.x, b.z - P.z)).slice(0, 12);
-    for (let i = 0; i < 12; i++) { const g = gs[i]; if (g) u.uGust.value[i].set(g.x, g.z, g.r, (g.s / wind.p.gustStr) * Math.min(1, g.life / 6)); else u.uGust.value[i].set(0, 0, 1, 0); }
+    for (let i = 0; i < 12; i++) { const g = gs[i]; if (g) u.uGust.value[i].set(g.x, g.z, g.r, (g.s / wind.p.gustStr) * (g.k ?? Math.min(1, g.life / 6))); else u.uGust.value[i].set(0, 0, 1, 0); } // k: a gust filling in or dying away
     this.renderer.render(this.scene, cam);
+  }
+
+  // a 12-metre boat has weight: she doesn't follow every wave at once but lags the sea a little and overshoots it,
+  // heaving, pitching and rolling on springs (the model puts her where the sea would; she gets there here)
+  settle(v, dt) {
+    const R = v.root, T = v.tilt;
+    let s = v.sea;
+    if (!s || dt > 0.1) s = v.sea = { y: R.position.y, vy: 0, px: T.rotation.x, vp: 0, rz: T.rotation.z, vr: 0 }; // first frame, or after a pause
+    const h = Math.min(dt, 1 / 30), spring = (x, vx, to, k, c) => { vx += (k * (to - x) - c * vx) * h; return [x + vx * h, vx]; };
+    [s.y, s.vy] = spring(s.y, s.vy, R.position.y, 7, 2.9); // about a 2.4 s heave, damped to ~0.55 of critical
+    [s.px, s.vp] = spring(s.px, s.vp, T.rotation.x, 9, 3.3);
+    [s.rz, s.vr] = spring(s.rz, s.vr, T.rotation.z, 6, 2.7);
+    R.position.y = s.y; T.rotation.x = s.px; T.rotation.z = s.rz;
   }
 
   // camera gestures

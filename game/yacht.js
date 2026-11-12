@@ -527,16 +527,17 @@ export class BoatView {
     const sa = b.sail * D2R, luff = b.luff, ph = t * 17;
     this.mainPivot.rotation.y = -this.sailSide * sa;
     const belly = -this.sailSide * (1 - luff * 0.85);
+    const reefDrop = (b.reefFill || 0) * 2.4; // a reef: the head comes 2.4 m down the mast, the sail is that much smaller
     // square-top main: the chord narrows up the mast to a wide head, with roach on the leech; twist opens the top
     setSail(this.main, (f, u, v) => {
       const chord = lerp(4.75, 1.4, f) + 0.45 * Math.sin(Math.PI * f), tw = -this.sailSide * f * f * 0.5 * u;
-      v.set(belly * Math.sin(Math.PI * u ** 0.78) * chord * 0.11 * (1 - 0.4 * f) + tw + luff * 0.22 * Math.sin(ph + f * 6 + u * 5) * u, BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y), u * chord);
+      v.set(belly * Math.sin(Math.PI * u ** 0.78) * chord * 0.11 * (1 - 0.4 * f) + tw + luff * 0.22 * Math.sin(ph + f * 6 + u * 5) * u, BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), u * chord);
     });
     // the mainsheet, from the traveller to the end of the boom
     const ma = this.mainPivot.rotation.y, bz = 2.52, ms = this.mainsheet.geometry.attributes.position;
     ms.setXYZ(0, clamp(Math.sin(ma) * bz * 0.6, -0.75, 0.75), deckY(1.7) - 0.02, 1.62);
     ms.setXYZ(1, Math.sin(ma) * bz, BOOM_Y - 0.05, MAST_Z + Math.cos(ma) * bz); ms.needsUpdate = true;
-    const ja = Math.min(sa * 0.8 + 3 * D2R, 30 * D2R);
+    const ja = Math.min((b.jibSail ?? b.sail) * D2R * 0.8 + 3 * D2R, 30 * D2R); // on its own sheet when the jib has one
     this.jibPivot.quaternion.setFromAxisAngle(this.jibAxis, -this.sailSide * ja);
     const head = HEAD.clone().sub(TACK), clew = new THREE.Vector3(0, 0.42, 3.75);
     setSail(this.jib, (f, u, v) => {
@@ -553,15 +554,18 @@ export class BoatView {
     // the wind vane points into the apparent wind
     this.windex.rotation.y = -b.awa;
     // gennaker on the bowsprit
-    this.kite.visible = this.sprit.visible = this.kiteSheet.visible = b.kite;
-    if (b.kite) {
-      const a = Math.abs(b.twa) / D2R, out = lerp(6.2, 3.4, clamp((a - 95) / 80, 0, 1)), sd = -this.sailSide;
-      const tk = [SPRIT.x, SPRIT.y + 0.1, SPRIT.z], hd = [0, MASTHEAD - 0.4, MAST_Z - 0.15], cl = [sd * out, 2.9, 1.8];
+    // kf: how far the gennaker is up — it climbs the mast furled during a hoist and fills only at the top, and comes
+    // down collapsing during a drop
+    const kf = b.kiteFill ?? (b.kite ? 1 : 0), kfill = kf * kf;
+    this.kite.visible = this.sprit.visible = this.kiteSheet.visible = kf > 0.02;
+    if (kf > 0.02) {
+      const a = Math.abs(b.twa) / D2R, out = lerp(6.2, 3.4, clamp((a - 95) / 80, 0, 1)) * lerp(0.15, 1, kfill), sd = -this.sailSide;
+      const tk = [SPRIT.x, SPRIT.y + 0.1, SPRIT.z], hd = [0, lerp(SPRIT.y + 1, MASTHEAD - 0.4, kf), lerp(SPRIT.z, MAST_Z - 0.15, kf)], cl = [sd * out, lerp(SPRIT.y + 0.4, 2.9, kf), lerp(SPRIT.z + 0.8, 1.8, kf)];
       setSail(this.kite, (f, u, v) => {
-        const lx = sd * Math.sin(Math.PI * f) * 2.4, lz = -Math.sin(Math.PI * f) * 2.6;
+        const lx = sd * Math.sin(Math.PI * f) * 2.4 * kfill, lz = -Math.sin(Math.PI * f) * 2.6 * kfill;
         const p = [lerp(tk[0], hd[0], f) + lx, lerp(tk[1], hd[1], f), lerp(tk[2], hd[2], f) + lz];
         const q = [lerp(cl[0], hd[0], f), lerp(cl[1], hd[1], f), lerp(cl[2], hd[2], f)];
-        const bul = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, f * 1.08)) * 2.8;
+        const bul = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, f * 1.08)) * 2.8 * kfill;
         v.set(lerp(p[0], q[0], u) + sd * bul, lerp(p[1], q[1], u), lerp(p[2], q[2], u) - bul * 0.9);
       });
       const kp = this.kiteSheet.geometry.attributes.position;
