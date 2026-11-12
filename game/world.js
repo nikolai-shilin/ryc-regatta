@@ -1,12 +1,30 @@
 // Regatta: the 3D picture — sea, sky, boats, marks, wake and the two cameras (drone and helm).
 import * as THREE from 'three';
-import { D2R, wrap, clamp, lerp, waveHeight, beatAngle, runAngle, HULL, ZONE } from './sim.js';
+import { D2R, wrap, clamp, lerp, waveHeight, waveSlope, beatAngle, runAngle, HULL, ZONE } from './sim.js';
 const SC = HULL / 10.4; // the model is drawn 10.4 m long; a First 40.7 is 12.2 m
 import { BoatView, LOOKS } from './yacht.js';
 
 const SKY_TOP = new THREE.Color('#4f8fcb'), SKY_HORIZON = new THREE.Color('#d6e7f0');
 const SUN = new THREE.Vector3(-0.41, 0.57, 0.71).normalize(); // from the south-west, behind a boat beating north
 const FOG_NEAR = 150, FOG_FAR = 3200;
+// fair-weather cumulus on a layer overhead, made from the ripple noise (uRipple): the sky draws them lit from the sun's
+// side (shaded where the cloud thickens towards the sun, a bright rim near it); the sea reflects a cheaper version
+const CLOUDS = /* glsl */ `
+float cloudDen(vec3 d, float t) {
+  vec2 p = d.xz / (max(d.y, 0.0) + 0.1) * 0.3 + vec2(t * 0.0016, t * 0.0007);
+  float n = texture2D(uRipple, p).w * 0.62 + texture2D(uRipple, p * 2.3 + 0.31).w * 0.28 + texture2D(uRipple, p * 6.1 + 0.67).w * 0.1;
+  return smoothstep(0.52, 0.74, n) * smoothstep(0.02, 0.16, d.y);
+}
+vec4 withClouds(vec3 col, vec3 d, vec3 sun, float t, bool cheap) {
+  if (d.y <= 0.0) return vec4(col, 0.0);
+  float c = cloudDen(d, t);
+  if (c <= 0.0) return vec4(col, 0.0);
+  float lit = 0.8;
+  if (!cheap) lit = clamp(0.62 + (c - cloudDen(normalize(d + sun * 0.035), t)) * 1.6, 0.35, 1.0);
+  vec3 cc = mix(vec3(0.6, 0.66, 0.74), vec3(1.0, 0.98, 0.95), lit);
+  cc += vec3(1.0, 0.92, 0.75) * pow(max(dot(d, sun), 0.0), 8.0) * (1.0 - c) * 0.6;
+  return vec4(mix(col, cc, c * 0.92), c);
+}`;
 
 // the waves (sim.js) drive the water shader, the boats and the buoys alike
 const NW = 8, NV = 5; // wave trains shaded / wave trains that move the surface (the short ones would alias on the mesh)
@@ -29,9 +47,13 @@ uniform float uTime, uFogNear, uFogFar, uChop, uAmp, uWhite; uniform vec4 uW[8];
 uniform vec3 uCam, uSun, uDeep, uScatter, uTop, uHorizon, uFog; uniform vec4 uGust[12]; uniform vec2 uWind, uPivot;
 uniform sampler2D uRipple;
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
+${CLOUDS}
 vec3 skyAt(vec3 d) {
   d.y = abs(d.y);
   vec3 c = mix(uHorizon, uTop, pow(clamp(d.y, 0.0, 1.0), 0.5));
+#ifndef LOW_Q
+  c = withClouds(c, d, uSun, uTime, true).rgb; // the clouds in the reflection
+#endif
   return c + vec3(1.0, 0.9, 0.7) * pow(max(dot(d, uSun), 0.0), 10.0) * 0.25;
 }
 void main() {
@@ -58,20 +80,24 @@ void main() {
   vec2 pc = p - uPivot;
   float lane = smoothstep(0.46, 0.62, texture2D(uRipple, vec2(dot(pc, wq) / 70.0, dot(pc, uWind) / 800.0 - uTime * 0.0013)).w);
   lane *= 1.0 - smoothstep(250.0, 700.0, dist);
-  vec2 q1 = vec2(dot(p, wq), dot(p, uWind)) / 19.0 - vec2(0.0, uTime * 0.035);
-  vec2 q2 = vec2(dot(p, wq) * 0.8 + dot(p, uWind) * 0.6, dot(p, uWind) * 0.8 - dot(p, wq) * 0.6) / 6.5 - vec2(0.0, uTime * 0.07);
+  // two layers of ripples, both drifting downwind (1 and 0.8 m/s); the finer one is laid at an angle so the two never
+  // line up, and each layer's slopes are turned back into the world from its own axes
+  vec2 a2 = wq * 0.8 + uWind * 0.6, b2 = uWind * 0.8 - wq * 0.6; // the second layer's axes
+  vec2 q1 = vec2(dot(p, wq), dot(p, uWind) - uTime * 1.0) / 19.0;
+  vec2 q2 = (vec2(dot(p, a2), dot(p, b2)) - uTime * 0.8 * vec2(0.6, 0.8)) / 6.5;
   vec4 t1 = texture2D(uRipple, q1);
+  vec2 rw = (t1.x * 2.0 - 1.0) * wq + (t1.y * 2.0 - 1.0) * uWind; // ripple slope in world x/z
 #ifdef LOW_Q
-  vec2 r = (t1.xy * 2.0 - 1.0) * 1.3;
+  rw *= 1.3;
 #else
   vec4 t2 = texture2D(uRipple, q2);
-  vec2 r = (t1.xy * 2.0 - 1.0) + (t2.xy * 2.0 - 1.0) * 0.7;
+  rw += ((t2.x * 2.0 - 1.0) * a2 + (t2.y * 2.0 - 1.0) * b2) * 0.7;
 #endif
-  // big, slow patches of rougher and smoother water, so the chop never reads as one repeating tile
+  // big, slow patches of rougher and smoother water, so the chop never reads as one repeating tile; they drift downwind
   vec2 pr = vec2(dot(p, vec2(0.83, 0.56)), dot(p, vec2(-0.56, 0.83)));
-  float patchy = texture2D(uRipple, pr / 83.0 + uWind * uTime * 0.0021).w;
+  vec2 prw = vec2(dot(uWind, vec2(0.83, 0.56)), dot(uWind, vec2(-0.56, 0.83))); // the wind in the same axes
+  float patchy = texture2D(uRipple, (pr - prw * uTime * 0.17) / 83.0).w;
   float rs = uChop * (1.0 + 1.6 * gust) * (0.55 + 0.9 * patchy) * (0.5 + 1.2 * lane) / (1.0 + dist / 140.0);
-  vec2 rw = r.x * wq + r.y * uWind; // ripple slope in world x/z
   n = normalize(vec3(n.x + rw.x * rs, n.y, n.z + rw.y * rs));
   vec3 V = normalize(uCam - vWorld);
   float cosT = max(dot(n, V), 0.0);
@@ -90,19 +116,22 @@ void main() {
   col += vec3(1.0, 0.93, 0.8) * (pow(nh, 1400.0) * 9.0 + pow(nh, 160.0) * 0.5);
   // whitecaps: a few waves break here and there — on a crest, where a slow patch of the noise says so — with a
   // ragged edge, and leave fading foam behind them. Nothing stretched or small-tiled, so no rows of dashes.
+  // the noise is read across and along the wind (pa), so a breaker is a short ragged line along the crest, not a blob
+  vec2 pa = vec2(dot(p, wq), dot(p, uWind));
 #ifdef LOW_Q
   float edge = t1.w;
 #else
-  vec2 pe = vec2(dot(p, vec2(0.6, -0.8)), dot(p, vec2(0.8, 0.6)));
-  float edge = texture2D(uRipple, pe / 7.3 - uWind * uTime * 0.02).w;
+  float edge = texture2D(uRipple, vec2(pa.x / 9.0, pa.y / 3.2) - vec2(0.0, uTime * 0.03)).w;
 #endif
-  float brk = texture2D(uRipple, pr / 37.0 - uWind * uTime * 0.006).w; // where a wave is breaking now
-  float wv = 1.2 * crest + 3.0 * brk + 2.2 * edge + 0.4 * gust;
-  float cap = smoothstep(4.5, 4.75, wv) * uWhite * (0.55 + 0.45 * t1.w); // narrow step: crisp, ragged edges; foam isn't flat white
-  float halo = smoothstep(4.3, 4.55, wv) * uWhite; // the aerated, paler water just round a breaking crest
+  float brk = texture2D(uRipple, vec2(pa.x / 46.0, pa.y / 20.0) - vec2(0.0, uTime * 0.012)).w; // where a wave is breaking now
+  float wv = 1.3 * crest + 3.0 * brk + 2.0 * edge + 0.4 * gust;
+  float cap = smoothstep(4.45, 4.95, wv) * uWhite * (0.4 + 0.45 * t1.w); // a soft edge; foam isn't flat white
+  float halo = smoothstep(4.2, 4.6, wv) * uWhite; // the aerated, paler water just round a breaking crest
   col = mix(col, col * 0.7 + uScatter * 0.45, halo * 0.3);
-  float wisp = smoothstep(0.66, 0.8, 0.6 * brk + 0.4 * edge) * smoothstep(0.55, 0.7, patchy) * uWhite * 0.12; // old foam
-  col = mix(col, vec3(0.88, 0.93, 0.95), clamp(cap * 0.8 + wisp, 0.0, 1.0));
+  // old foam: thin streaks lying downwind of the breakers
+  float streak = texture2D(uRipple, vec2(pa.x / 4.5, pa.y / 45.0 - uTime * 0.005)).w;
+  float wisp = smoothstep(0.66, 0.86, 0.6 * brk + 0.4 * streak) * smoothstep(0.5, 0.7, patchy) * uWhite * 0.12 * (1.0 - smoothstep(60.0, 350.0, dist));
+  col = mix(col, vec3(0.86, 0.91, 0.94), clamp(cap * 0.7 + wisp, 0.0, 1.0));
   col = mix(col, col * 1.25 + vec3(0.035, 0.05, 0.065), lane * 0.7); // the lanes catch a little more light
   col *= 1.0 - 0.22 * gust; // a gust reads as a darker patch
   col = mix(col, uFog, smoothstep(uFogNear, uFogFar, dist));
@@ -205,11 +234,12 @@ const WAKE_VS = /* glsl */ `
 attribute float aAge, aSide, aKind, aStr; varying float vAge, vSide, vKind, vStr; varying vec2 vXZ;
 void main() { vAge = aAge; vSide = aSide; vKind = aKind; vStr = aStr; vec4 wp = modelMatrix * vec4(position, 1.0); vXZ = wp.xz; gl_Position = projectionMatrix * viewMatrix * wp; }`;
 const WAKE_FS = /* glsl */ `
-uniform sampler2D uRipple; uniform float uTime, uMax;
+uniform sampler2D uRipple; uniform float uTime, uMax; uniform vec2 uWind;
 varying float vAge, vSide, vKind, vStr; varying vec2 vXZ;
 void main() {
   float k = clamp(vAge / uMax, 0.0, 1.0), edge = 1.0 - abs(vSide);
-  float n1 = texture2D(uRipple, vXZ / 3.2 + vec2(0.0, uTime * 0.01)).w, n2 = texture2D(uRipple, vXZ / 1.1 - vec2(uTime * 0.02, 0.0)).w;
+  // the foam's texture drifts slowly downwind with the surface water
+  float n1 = texture2D(uRipple, (vXZ - uWind * uTime * 0.25) / 3.2).w, n2 = texture2D(uRipple, (vXZ - uWind * uTime * 0.35) / 1.1).w;
   float a; vec3 col;
   if (vKind < 0.5) {
     // the wash: aerated turquoise water under foam that breaks up and thins as it ages and spreads
@@ -268,6 +298,59 @@ class Wake {
   }
 }
 
+// where the hull meets the sea: a patch of water riding the waves round each hull, with the water darkened against
+// the topsides, a band of foam along the waterline that breaks up in the noise, and the bow wave — the band widens
+// at the bow and with speed. Local coordinates aL: metres along (+ towards the bow) and across.
+const CONTACT_VS = /* glsl */ `
+attribute vec2 aL; varying vec2 vL, vXZ;
+void main() { vL = aL; vXZ = position.xz; gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0); }`;
+const CONTACT_FS = /* glsl */ `
+uniform sampler2D uRipple; uniform float uTime, uSpd; uniform vec2 uWind; varying vec2 vL, vXZ;
+const float HL = 5.6, HB = 1.75; // half the waterline's length and beam
+void main() {
+  float s = vL.x / HL, ay = abs(vL.y), d;
+  if (s > 1.0) d = length(vec2(vL.x - HL, vL.y)); // ahead of the stem
+  else if (s < -1.0) d = max(ay - HB * 0.88, -vL.x - HL); // behind the transom
+  else d = ay - (s > 0.0 ? HB * sqrt(max(0.0, 1.0 - s * s)) : HB * (1.0 - 0.12 * s * s)); // metres outside the hull
+  if (d < -0.15) discard;
+  float bow = smoothstep(-0.1, 0.9, s);
+  float n = texture2D(uRipple, (vXZ - uWind * uTime * 0.25) / 1.6).w * 0.6 + texture2D(uRipple, (vXZ - uWind * uTime * 0.4) / 0.6).w * 0.4; // drifting downwind
+  float w = 0.35 + uSpd * (0.5 + 2.6 * bow); // the foam band: wider at the bow and with speed
+  float band = exp(-max(d, 0.0) / w);
+  float crest = exp(-pow((d - w * 0.9) / (0.25 + 0.3 * w), 2.0)) * bow * uSpd; // the bow wave's crest, pushed out from the stem
+  float foam = smoothstep(0.42, 0.72, band * (0.6 + 0.4 * uSpd) + crest * 0.7 + n * 0.55 - 0.25) * (0.4 + 0.6 * uSpd);
+  float shade = (1.0 - smoothstep(-0.2, 2.0, d)) * 0.38;
+  float a = max(foam * 0.9, shade);
+  if (a < 0.01) discard;
+  gl_FragColor = vec4(mix(vec3(0.02, 0.08, 0.11), vec3(0.93, 0.96, 0.98), foam / max(foam + shade, 0.001)), a);
+}`;
+class HullContact {
+  constructor(scene, uniforms) {
+    const NA = 28, NC = 10, A0 = -7.8, A1 = 8.4, C = 4.0, aL = [], idx = [];
+    for (let i = 0; i <= NA; i++) for (let j = 0; j <= NC; j++) aL.push(lerp(A0, A1, i / NA), lerp(-C, C, j / NC));
+    for (let i = 0; i < NA; i++) for (let j = 0; j < NC; j++) { const a = i * (NC + 1) + j, b = a + NC + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(aL.length * 1.5), 3));
+    g.setAttribute('aL', new THREE.Float32BufferAttribute(aL, 2));
+    g.setIndex(idx);
+    this.u = { uRipple: uniforms.uRipple, uTime: uniforms.uTime, uWind: uniforms.uWind, uSpd: { value: 0 } };
+    this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ uniforms: this.u, vertexShader: CONTACT_VS, fragmentShader: CONTACT_FS, transparent: true, depthWrite: false }));
+    this.mesh.frustumCulled = false; this.mesh.renderOrder = 2;
+    scene.add(this.mesh);
+  }
+  dispose(scene) { scene.remove(this.mesh); this.mesh.geometry.dispose(); this.mesh.material.dispose(); }
+  update(b, t, W) {
+    const g = this.mesh.geometry, P = g.attributes.position, L = g.attributes.aL;
+    const fx = Math.sin(b.h), fz = -Math.cos(b.h), rx = Math.cos(b.h), rz = Math.sin(b.h);
+    for (let i = 0; i < P.count; i++) {
+      const a = L.getX(i), c = L.getY(i), x = b.x + fx * a + rx * c, z = b.z + fz * a + rz * c;
+      P.setXYZ(i, x, waveHeight(W, x, z, t) + 0.05, z);
+    }
+    P.needsUpdate = true;
+    this.u.uSpd.value = clamp(b.v / 4.5, 0, 1);
+  }
+}
+
 // foam and spray as soft points, each with its own size and fade
 const FOAM_VS = /* glsl */ `
 attribute float aAlpha, aSize; uniform float uScale; varying float vA;
@@ -310,12 +393,15 @@ function waterGeometry(R = 3000, rings = 200, segs = 256) {
 }
 
 const SKY_FS = /* glsl */ `
-uniform vec3 uTop, uHorizon, uSun; varying vec3 vDir;
+uniform vec3 uTop, uHorizon, uSun; uniform sampler2D uRipple; uniform float uTime; varying vec3 vDir;
+${CLOUDS}
 void main() {
   vec3 d = normalize(vDir);
   vec3 col = mix(uHorizon, uTop, pow(clamp(d.y, 0.0, 1.0), 0.5));
+  vec4 cl = withClouds(col, d, uSun, uTime, false);
+  col = cl.rgb;
   float s = max(dot(d, uSun), 0.0);
-  col += vec3(1.0, 0.92, 0.75) * (pow(s, 800.0) * 4.0 + pow(s, 12.0) * 0.25);
+  col += vec3(1.0, 0.92, 0.75) * (pow(s, 800.0) * 4.0 * (1.0 - cl.a) + pow(s, 12.0) * 0.25); // the disc hides behind a cloud
   gl_FragColor = vec4(col, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -401,17 +487,33 @@ function committeeBoat() {
   return g;
 }
 
+// an island: a ridge of hills whose height rises and falls round it in a few smooth waves, green low down and bare
+// rock higher up; the haze (the fog) pales the far ones towards the sky
 function island(rand, R, H, color) {
-  const geo = new THREE.ConeGeometry(R, H, 11, 4, false);
-  const p = geo.attributes.position;
-  for (let i = 0; i < p.count; i++) {
-    const y = p.getY(i);
-    if (y < H / 2 - 0.01) { const k = 0.75 + rand() * 0.5; p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * (0.6 + rand() * 0.6)); p.setY(i, y + (rand() - 0.5) * H * 0.15); }
+  const NA = 48, NR = 7, pos = [], col = [], idx = [];
+  const ph = [rand() * 6, rand() * 6, rand() * 6, rand() * 6], sx = 1 + rand() * 0.8; // longer one way than the other
+  const ridge = (a) => 0.7 + 0.22 * Math.sin(a * 2 + ph[0]) + 0.12 * Math.sin(a * 5 + ph[1]) + 0.06 * Math.sin(a * 9 + ph[2]);
+  const green = new THREE.Color(color), rock = new THREE.Color('#9c9784'), c = new THREE.Color();
+  pos.push(0, H * 0.72, 0); col.push(rock.r, rock.g, rock.b);
+  for (let j = 1; j <= NR; j++) {
+    const q = j / NR; // the summit … the shore
+    for (let i = 0; i < NA; i++) {
+      const a = (i / NA) * Math.PI * 2, r = R * q * (0.85 + 0.3 * Math.sin(a * 3 + ph[3]));
+      const y = j === NR ? -6 : H * ridge(a) * (1 - q ** 1.5) + (rand() - 0.5) * H * 0.04;
+      pos.push(Math.cos(a) * r * sx, y, Math.sin(a) * r);
+      c.copy(green).lerp(rock, clamp((y / H - 0.35) * 1.6, 0, 1)); col.push(c.r, c.g, c.b);
+    }
   }
-  geo.computeVertexNormals();
-  const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color, flatShading: true }));
-  m.position.y = H / 2 - 8;
-  return m;
+  for (let i = 0; i < NA; i++) idx.push(0, 1 + ((i + 1) % NA), 1 + i);
+  for (let j = 1; j < NR; j++) {
+    const a0 = 1 + (j - 1) * NA, a1 = 1 + j * NA;
+    for (let i = 0; i < NA; i++) { const i1 = (i + 1) % NA; idx.push(a0 + i, a0 + i1, a1 + i, a0 + i1, a1 + i1, a1 + i); }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.setIndex(idx); geo.computeVertexNormals();
+  return new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
 }
 
 // ---------- guides around your boat ----------
@@ -479,16 +581,18 @@ export class World {
     sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03;
     this.scene.add(sun, sun.target);
 
-    this.sky = new THREE.Mesh(new THREE.SphereGeometry(5000, 32, 16), new THREE.ShaderMaterial({
+    const ripple = rippleTexture(); // the noise for the ripples, the clouds and the foam
+    const skyMat = () => new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false,
-      uniforms: { uTop: { value: SKY_TOP }, uHorizon: { value: SKY_HORIZON }, uSun: { value: SUN } },
+      uniforms: { uTop: { value: SKY_TOP }, uHorizon: { value: SKY_HORIZON }, uSun: { value: SUN }, uRipple: { value: ripple }, uTime: { value: 0 } },
       vertexShader: 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
       fragmentShader: SKY_FS,
-    }));
+    });
+    this.sky = new THREE.Mesh(new THREE.SphereGeometry(5000, 32, 16), skyMat());
     this.scene.add(this.sky);
-    // the sky (and a sea below the horizon) as an environment map, so gelcoat, steel and glass reflect it
+    // the sky with its clouds (and a sea below the horizon) as an environment map, so gelcoat, steel and glass reflect it
     const env = new THREE.Scene();
-    env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), this.sky.material.clone()));
+    env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), skyMat()));
     const seaDisc = new THREE.Mesh(new THREE.CircleGeometry(10, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#1b5676' }));
     seaDisc.position.y = -0.4; env.add(seaDisc);
     const pm = new THREE.PMREMGenerator(this.renderer);
@@ -501,7 +605,7 @@ export class World {
       uTop: { value: SKY_TOP }, uHorizon: { value: SKY_HORIZON }, uFog: { value: SKY_HORIZON },
       uFogNear: { value: FOG_NEAR }, uFogFar: { value: FOG_FAR }, uChop: { value: 0.15 }, uAmp: { value: 0.4 }, uWhite: { value: 0 },
       uGust: { value: Array.from({ length: 12 }, () => new THREE.Vector4()) }, uWind: { value: new THREE.Vector2(0, 1) }, uPivot: { value: new THREE.Vector2() },
-      uRipple: { value: rippleTexture() },
+      uRipple: { value: ripple },
     };
     this.water = new THREE.Mesh(waterGeometry(), new THREE.ShaderMaterial({ uniforms: this.waterU, vertexShader: WATER_VS, fragmentShader: WATER_FS, defines: { WAVES: NW } }));
     this.water.frustumCulled = false;
@@ -511,10 +615,26 @@ export class World {
     let s = 7; const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
     for (let i = 0; i < 9; i++) {
       const a = (i / 9) * Math.PI * 2 + rand() * 0.4, r = 1900 + rand() * 900;
-      const isl = island(rand, 220 + rand() * 420, 70 + rand() * 170, i % 3 ? '#6e8467' : '#8b8f7a');
+      const isl = island(rand, 220 + rand() * 420, 70 + rand() * 170, i % 3 ? '#5f7a58' : '#7d8a6a');
       isl.position.x = Math.sin(a) * r; isl.position.z = -Math.cos(a) * r;
       this.scene.add(isl);
     }
+    // and a farther range behind them, pale in the haze
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2 + 0.3 + rand() * 0.5, r = 2900 + rand() * 250;
+      const isl = island(rand, 500 + rand() * 500, 220 + rand() * 260, '#6a7d6a');
+      isl.position.x = Math.sin(a) * r; isl.position.z = -Math.cos(a) * r;
+      this.scene.add(isl);
+    }
+
+    // glare: a soft bloom round the sun when you look towards it (behind a sail or an island it hides)
+    const gc = document.createElement('canvas'); gc.width = gc.height = 128;
+    const gx = gc.getContext('2d'), gr = gx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(255,248,232,1)'); gr.addColorStop(0.12, 'rgba(255,240,214,0.5)'); gr.addColorStop(0.45, 'rgba(255,236,206,0.12)'); gr.addColorStop(1, 'rgba(255,236,206,0)');
+    gx.fillStyle = gr; gx.fillRect(0, 0, 128, 128);
+    this.glare = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(gc), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false, toneMapped: false }));
+    this.glare.scale.setScalar(1500); this.glare.renderOrder = 5;
+    this.scene.add(this.glare);
 
     // wake: foam points
     this.foamN = 1600; this.foam = [];
@@ -529,8 +649,8 @@ export class World {
     this.foamI = 0; this.foamMax = this.foamN;
     for (let i = 0; i < this.foamN; i++) this.foam.push({ x: 0, z: 0, age: 99, life: 1, vx: 0, vz: 0, s0: 1, s1: 2 });
 
-    this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uMax: { value: WAKE_AGE } };
-    this.wakes = [];
+    this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uWind: this.waterU.uWind, uMax: { value: WAKE_AGE } };
+    this.wakes = []; this.contacts = [];
     this.showGuides = true; this.guides = null;
     this.mode = 'drone';
     this.orbit = 0; this.dist = 26; this.look = 0; this.lookHold = 0; this.helmFov = 68;
@@ -584,6 +704,8 @@ export class World {
     for (const f of this.foam) f.age = 99;
     for (const w of this.wakes) w.dispose(this.scene);
     this.wakes = race.boats.map(() => new Wake(this.scene, this.wakeU));
+    for (const h of this.contacts || []) h.dispose(this.scene);
+    this.contacts = race.boats.map(() => new HullContact(this.scene, this.wakeU));
   }
 
   // switch the graphics level: resolution, sun shadows, water mesh and shading, foam
@@ -650,12 +772,23 @@ export class World {
     race.boats.forEach((b, i) => {
       const v = this.boatViews[i];
       v.setDetail(b === P || Math.hypot(b.x - cp.x, b.z - cp.z) < farD * (this.quality === 'low' ? 0.6 : 1) && this.mode !== 'top');
-      v.update(b, t, this.W, this.mode === 'drone');
+      v.update(b, t, this.W, this.mode === 'drone', { cam: cp, sun: SUN });
     });
-    // buoys bob
+    // buoys bob and tilt with the sea under them; in a current a mark leans downstream on its mooring and trails a
+    // little foam
+    const cur = race.current, cs = Math.hypot(cur.x, cur.z);
     for (const { obj, p } of this.buoys) {
       obj.position.y = waveHeight(this.W, p.x, p.z, t) * (obj === this.committee ? 0.7 : 0.9);
-      if (obj !== this.committee) { obj.rotation.z = Math.sin(t * 1.3 + p.x) * 0.08; obj.rotation.x = Math.cos(t * 1.1 + p.z) * 0.08; }
+      if (obj === this.committee) continue;
+      const sx = waveSlope(this.W, p.x, p.z, t, 1, 0), sz = waveSlope(this.W, p.x, p.z, t, 0, 1);
+      obj.rotation.z = sx * 0.8 - cur.x * 0.5; obj.rotation.x = -sz * 0.8 + cur.z * 0.5;
+      if (cs > 0.05 && Math.random() < dt * 7) {
+        const f = this.foam[this.foamI]; this.foamI = (this.foamI + 1) % this.foamMax;
+        const ux = cur.x / cs, uz = cur.z / cs, side = (Math.random() - 0.5) * 1.6;
+        f.x = p.x + ux * 1.1 - uz * side; f.z = p.z + uz * 1.1 + ux * side;
+        f.vx = cur.x * 0.9 - uz * side * 0.12; f.vz = cur.z * 0.9 + ux * side * 0.12;
+        f.age = 0; f.life = 2.5 + Math.random() * 2; f.spray = false; f.s0 = 0.5; f.s1 = 1.4; f.a = 0.32;
+      }
     }
     const lg = race.course.legs[P.leg];
     this.zones.update(this.W, t, P.done ? [] : lg === 'mark' ? [0] : lg === 'gate' ? [1, 2] : []);
@@ -678,7 +811,11 @@ export class World {
       p.rotation.y = t;
     });
     // foam
-    race.boats.forEach((b, i) => { this.spawnFoam(b, dt); this.spawnSpray(b, dt, race); if (this.wakes[i]) this.wakes[i].update(b, dt, t, this.W); });
+    race.boats.forEach((b, i) => {
+      this.spawnFoam(b, dt); this.spawnSpray(b, dt, race);
+      if (this.wakes[i]) this.wakes[i].update(b, dt, t, this.W);
+      if (this.contacts[i]) this.contacts[i].update(b, t, this.W);
+    });
     const ga = this.foamPts.geometry.attributes, fp = ga.position, fa = ga.aAlpha, fs = ga.aSize;
     for (let i = 0; i < this.foamMax; i++) {
       const f = this.foam[i];
@@ -717,8 +854,11 @@ export class World {
       const ph = this.camH + this.orbit, el = 24 * D2R, d = this.dist * (cam.aspect < 1 ? 1.75 : 1); // a tall screen needs the drone further back
       const tx = P.x + Math.sin(P.h) * 5, tz = P.z - Math.cos(P.h) * 5;
       const want = new THREE.Vector3(tx - Math.sin(ph) * d * Math.cos(el), 3 + d * Math.sin(el), tz + Math.cos(ph) * d * Math.cos(el));
+      // a drone in the wind never hangs quite still: a slow sway and a little bob
+      const sw = 0.02 * d;
+      want.x += Math.sin(t * 0.37) * sw; want.z += Math.cos(t * 0.29) * sw; want.y += Math.sin(t * 0.53) * sw * 0.7 + Math.sin(t * 1.7) * 0.06;
       cam.position.lerp(want, 1 - Math.exp(-dt * 6));
-      cam.lookAt(tx, 3.5, tz);
+      cam.lookAt(tx + Math.sin(t * 0.41) * 0.25, 3.5 + Math.sin(t * 0.61) * 0.15, tz);
       cam.fov = 55;
     } else if (this.mode === 'helm') {
       if (this.lookHold <= 0) this.look *= Math.exp(-dt * 1.5); else this.lookHold -= dt;
@@ -730,7 +870,12 @@ export class World {
       cam.fov = this.helmFov;
     }
     cam.updateProjectionMatrix();
-    this.sky.position.copy(cam.position);
+    this.sky.position.copy(cam.position); this.sky.material.uniforms.uTime.value = t; // the clouds drift
+    // the glare: brightest looking straight at the sun, gone when you look away
+    const look = cam.getWorldDirection(this._dir || (this._dir = new THREE.Vector3()));
+    this.glare.position.copy(cam.position).addScaledVector(SUN, 3000);
+    this.glare.material.opacity = 0.55 * Math.max(0, look.dot(SUN)) ** 6;
+    this.glare.visible = this.glare.material.opacity > 0.01;
     this.sun.target.position.set(P.x, 2, P.z); this.sun.position.set(P.x + SUN.x * 70, 2 + SUN.y * 70, P.z + SUN.z * 70);
     // the water disc follows what the camera looks at
     this.water.position.set(Math.round(P.x / 4) * 4, 0, Math.round(P.z / 4) * 4);
