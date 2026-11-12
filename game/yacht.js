@@ -111,7 +111,7 @@ function canvasTex(w, h, draw, rx = 1, ry = 1) {
 }
 // moulded non-skid: a fine diamond pattern, one tile every 35 cm (the deck's UVs are in metres)
 const NONSKID = canvasTex(64, 64, (x, w, h) => {
-  x.fillStyle = '#eceae3'; x.fillRect(0, 0, w, h); x.fillStyle = 'rgba(0,0,0,.07)';
+  x.fillStyle = '#e3e0d7'; x.fillRect(0, 0, w, h); x.fillStyle = 'rgba(0,0,0,.07)';
   for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) { x.save(); x.translate(i * 8 + (j % 2) * 4 + 2, j * 8 + 2); x.rotate(Math.PI / 4); x.fillRect(-1.5, -1.5, 3, 3); x.restore(); }
 }, 1 / 0.35, 1 / 0.35);
 // teak: planks with black caulking and a little grain
@@ -125,18 +125,53 @@ const TEAK = canvasTex(256, 256, (x, w, h) => {
   }
 });
 
+// shade baked into the deck: soft and dark where it meets the coachroof, the coamings, the toe rails and the
+// forehatch, so the deck reads as a surface with things standing on it. Drawn in plan, metres to pixels; each shape
+// is drawn off the canvas and only its blurred shadow lands on it.
+const AO_W = 3.6, AO_L = 10.8, AO_S = 40;
+const DECK_AO = (() => {
+  const c = document.createElement('canvas'); c.width = AO_W * AO_S; c.height = AO_L * AO_S;
+  const x = c.getContext('2d'), X = (v) => (v + AO_W / 2) * AO_S, Y = (z) => (z + AO_L / 2) * AO_S;
+  x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+  const soft = (path, blur, alpha, stroke = 0) => {
+    x.save(); x.shadowColor = `rgba(0,0,0,${alpha})`; x.shadowBlur = blur * AO_S; x.shadowOffsetX = 4000; x.translate(-4000, 0);
+    x.beginPath(); path(); if (stroke) { x.lineWidth = stroke * AO_S; x.strokeStyle = '#000'; x.stroke(); } else { x.fillStyle = '#000'; x.fill(); }
+    x.restore();
+  };
+  // the coachroof's footprint (see coachroofGeometry), a little wider for its bevel
+  const a = 1.18, f = 0.78, za = 1.51, zf = -2.06;
+  soft(() => { x.moveTo(X(-a), Y(za)); x.lineTo(X(a), Y(za)); x.lineTo(X(f), Y(zf)); x.lineTo(X(-f), Y(zf)); x.closePath(); }, 0.35, 0.6);
+  for (const sx of [-1, 1]) soft(() => { x.moveTo(X(sx * 0.98), Y(1.5)); x.lineTo(X(sx * 0.98), Y(3.7)); }, 0.16, 0.5, 0.06); // coamings
+  soft(() => { for (let i = 0; i <= 40; i++) { const t = i / 40; x[i ? 'lineTo' : 'moveTo'](X(halfBeam(t) - 0.02), Y(zAt(t))); }
+    for (let i = 40; i >= 0; i--) { const t = i / 40; x.lineTo(X(-(halfBeam(t) - 0.02)), Y(zAt(t))); } }, 0.1, 0.45, 0.05); // toe rails
+  soft(() => x.rect(X(-0.4), Y(-3.3), 0.8 * AO_S, 0.8 * AO_S), 0.12, 0.4); // forehatch
+  const t = new THREE.CanvasTexture(c);
+  t.repeat.set(1 / AO_W, 1 / AO_L); t.offset.set(0.5, 0.5); // the deck's UVs are its plan in metres (x, −z)
+  return t;
+})();
+function deckMaterial() {
+  const m = new THREE.MeshStandardMaterial({ map: NONSKID, roughness: 0.85, aoMap: DECK_AO, aoMapIntensity: 1 });
+  // the baked shade also dims the sunlit deck a little, not only the sky's light
+  m.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n  diffuseColor.rgb *= mix(1.0, texture2D(aoMap, vAoMapUv).r, 0.45);'); };
+  return m;
+}
+// carbon spars under a clear lacquer, so a mast reads as round: a long sheen down it and the sky in it
+const carbon = () => new THREE.MeshPhysicalMaterial({ color: '#2d3238', roughness: 0.42, metalness: 0.25, clearcoat: 1, clearcoatRoughness: 0.12, envMapIntensity: 1 });
+
 // ---------- materials ----------
 const M = {
-  deck: new THREE.MeshStandardMaterial({ map: NONSKID, roughness: 0.85 }),
+  deck: deckMaterial(),
   gel: new THREE.MeshStandardMaterial({ color: '#f2f1ec', roughness: 0.3, envMapIntensity: 0.8 }),
   teak: new THREE.MeshStandardMaterial({ map: TEAK, roughness: 0.7 }),
   steel: new THREE.MeshStandardMaterial({ color: '#d9dde1', roughness: 0.25, metalness: 1, envMapIntensity: 1 }),
-  carbon: new THREE.MeshStandardMaterial({ color: '#25282d', roughness: 0.38, metalness: 0.35, envMapIntensity: 0.7 }),
-  glass: new THREE.MeshStandardMaterial({ color: '#141b22', roughness: 0.08, metalness: 0.2, envMapIntensity: 1.2 }),
+  carbon: carbon(),
+  // smoked acrylic: dark, but with the sky in it
+  glass: new THREE.MeshStandardMaterial({ color: '#2a3540', roughness: 0.05, metalness: 0.55, envMapIntensity: 1.4 }),
+  alu: new THREE.MeshStandardMaterial({ color: '#c3c8cd', roughness: 0.35, metalness: 0.85, envMapIntensity: 1 }), // hatch frames
   dark: new THREE.MeshStandardMaterial({ color: '#2a2f36', roughness: 0.6 }),
   well: [0, 1, 2, 3, 4, 5].map((i) => new THREE.MeshStandardMaterial(i === 3 ? { map: TEAK, roughness: 0.75, side: THREE.BackSide } : { color: '#e4e1d8', roughness: 0.8, side: THREE.BackSide })),
 };
-const wireMat = new THREE.LineBasicMaterial({ color: 0x2c3238 });
+const wireMat = new THREE.LineBasicMaterial({ color: 0x4d555e, transparent: true, opacity: 0.8 }); // grey and a touch see-through, so the thin lines don't crawl dark against the sky
 const line = (pts) => new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map((p) => new THREE.Vector3(...p))), wireMat);
 const tube = (pts, r, mat, closed = false) => new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)), closed), Math.max(8, pts.length * 6), r, 6, closed), mat);
 const cyl = (r0, r1, h, mat, seg = 10) => new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, seg), mat);
@@ -336,9 +371,18 @@ export class BoatView {
       const w = add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.13, len * 0.8), M.glass), (a[0] + f[0]) / 2, cr.position.y + 0.26, (a[1] + f[1]) / 2);
       w.rotation.y = Math.atan2(a[0] - f[0], a[1] - f[1]);
     }
+    // the companionway: washboard in an alloy frame, and the sliding hatch over it on its rails
+    const top = cr.position.y + 0.46; // the coachroof's top
     add(new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.34, 0.04), M.glass), 0, cr.position.y + 0.22, 1.53);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.44, 0.03), M.alu), 0, cr.position.y + 0.22, 1.522);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.04, 0.72), M.glass), 0, top + 0.035, 1.1);
+    for (const sx of [-1, 1]) add(new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.05, 0.86), M.alu), sx * 0.35, top + 0.025, 1.08);
     add(new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.05, 0.62), M.glass), 0, cr.position.y + 0.47, -0.4); // hatch on the coachroof
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.045, 0.72), M.alu), 0, cr.position.y + 0.465, -0.4);
     add(new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.06, 0.7), M.glass), 0, deckY(-2.9) + 0.06, -2.9); // forehatch
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.055, 0.8), M.alu), 0, deckY(-2.9) + 0.055, -2.9);
+    // teak handrails along the coachroof top
+    for (const sx of [-1, 1]) T.add(tube([[sx * 0.62, top, 1.3], [sx * 0.62, top + 0.07, 1.15], [sx * 0.6, top + 0.07, -1.2], [sx * 0.58, top, -1.35]], 0.02, M.teak));
     // winches: primaries on the coamings, halyard winches on the coachroof
     for (const sx of [-1, 1]) {
       add(cyl(0.1, 0.12, 0.17, M.steel, 16), sx * 1.02, deckY(2.0) + 0.24, 2.0);

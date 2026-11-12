@@ -77,8 +77,12 @@ void main() {
   vec2 wq = vec2(-uWind.y, uWind.x);
   // wind lanes: long streaks of rougher, brighter water lying along the wind, so a shift shows as the lanes swinging
   // round. They are laid out about the middle of the course (uPivot), so near the boats they turn in place.
-  vec2 pc = p - uPivot;
-  float lane = smoothstep(0.46, 0.62, texture2D(uRipple, vec2(dot(pc, wq) / 70.0, dot(pc, uWind) / 800.0 - uTime * 0.0013)).w);
+  // A slow noise bends each lane from side to side and another breaks it into lengths, with soft edges, so from
+  // above they read as ruffled water and not as ruled stripes.
+  vec2 pc = p - uPivot, lq = vec2(dot(pc, wq), dot(pc, uWind));
+  float bend = texture2D(uRipple, lq / vec2(260.0, 420.0) + vec2(0.37, -uTime * 0.0009)).w - 0.5;
+  float lane = smoothstep(0.4, 0.72, texture2D(uRipple, vec2((lq.x + bend * 70.0) / 70.0, lq.y / 800.0 - uTime * 0.0013)).w);
+  lane *= 0.3 + 0.7 * smoothstep(0.3, 0.62, texture2D(uRipple, vec2(lq.x / 210.0 + 0.53, lq.y / 230.0 - uTime * 0.0021)).w);
   lane *= 1.0 - smoothstep(250.0, 700.0, dist);
   // two layers of ripples, both drifting downwind (1 and 0.8 m/s); the finer one is laid at an angle so the two never
   // line up, and each layer's slopes are turned back into the world from its own axes
@@ -97,7 +101,7 @@ void main() {
   vec2 pr = vec2(dot(p, vec2(0.83, 0.56)), dot(p, vec2(-0.56, 0.83)));
   vec2 prw = vec2(dot(uWind, vec2(0.83, 0.56)), dot(uWind, vec2(-0.56, 0.83))); // the wind in the same axes
   float patchy = texture2D(uRipple, (pr - prw * uTime * 0.17) / 83.0).w;
-  float rs = uChop * (1.0 + 1.6 * gust) * (0.55 + 0.9 * patchy) * (0.5 + 1.2 * lane) / (1.0 + dist / 140.0);
+  float rs = uChop * (1.0 + 1.6 * gust) * (0.55 + 0.9 * patchy) * (0.7 + 0.8 * lane) / (1.0 + dist / 140.0);
   n = normalize(vec3(n.x + rw.x * rs, n.y, n.z + rw.y * rs));
   vec3 V = normalize(uCam - vWorld);
   float cosT = max(dot(n, V), 0.0);
@@ -132,7 +136,7 @@ void main() {
   float streak = texture2D(uRipple, vec2(pa.x / 4.5, pa.y / 45.0 - uTime * 0.005)).w;
   float wisp = smoothstep(0.66, 0.86, 0.6 * brk + 0.4 * streak) * smoothstep(0.5, 0.7, patchy) * uWhite * 0.12 * (1.0 - smoothstep(60.0, 350.0, dist));
   col = mix(col, vec3(0.86, 0.91, 0.94), clamp(cap * 0.7 + wisp, 0.0, 1.0));
-  col = mix(col, col * 1.25 + vec3(0.035, 0.05, 0.065), lane * 0.7); // the lanes catch a little more light
+  col = mix(col, col * 1.2 + vec3(0.03, 0.045, 0.06), lane * 0.55); // the lanes catch a little more light
   col *= 1.0 - 0.22 * gust; // a gust reads as a darker patch
   col = mix(col, uFog, smoothstep(uFogNear, uFogFar, dist));
   gl_FragColor = vec4(col, 1.0);
@@ -351,6 +355,53 @@ class HullContact {
   }
 }
 
+// the sails' shadow on the sea: each sail's own cloth, cast along the sun onto the waves (the water takes no shadow
+// map). It is laid on the same wave trains that move the water mesh, a little above them; the stencil darkens each
+// pixel once, so where main and jib (and both faces of a sail) overlap the shade doesn't double.
+const SEASHADE_VS = /* glsl */ `
+uniform float uTime; uniform vec4 uW[8]; uniform float uWs[8]; uniform vec3 uSun;
+varying float vUp; varying vec3 vPos;
+float seaY(vec2 xz) {
+  float h = 0.0;
+  for (int i = 0; i < ${NV}; i++) h += uW[i].w * sin(uW[i].z * dot(uW[i].xy, xz) - uWs[i] * uTime + float(i) * 1.7);
+  return h;
+}
+void main() {
+  vec4 wp = modelMatrix * vec4(position, 1.0);
+  vec2 xz = wp.xz - uSun.xz * wp.y / uSun.y; // onto the level sea
+  float h = seaY(xz);
+  xz = wp.xz - uSun.xz * (wp.y - h) / uSun.y; // and again onto the wave there
+  vUp = wp.y - h; vPos = vec3(xz.x, seaY(xz) + 0.15, xz.y);
+  gl_Position = projectionMatrix * viewMatrix * vec4(vPos, 1.0);
+}`;
+// the shade: what a shadow dims is the light from under the surface, not the sky the sea reflects — so it is faint
+// seen low across the water and plainest from above; and it fades towards the head of the sail, where the
+// penumbra spreads it thin
+const SEASHADE_FS = /* glsl */ `
+varying float vUp; varying vec3 vPos;
+void main() {
+  float down = abs(normalize(cameraPosition - vPos).y);
+  float a = 0.38 * mix(0.2, 1.0, smoothstep(0.05, 0.55, down)) * (1.0 - 0.75 * smoothstep(6.0, 19.0, vUp));
+  gl_FragColor = vec4(0.0, 0.03, 0.06, a);
+}`;
+class SeaShadows {
+  constructor(scene, view, mat) {
+    this.list = [view.main, view.jib, view.kite].map((grp) => {
+      const m = new THREE.Mesh(grp.userData.g, mat); // the sail's own geometry, so it follows the trim and the flogging
+      m.matrixAutoUpdate = false; m.frustumCulled = false; m.renderOrder = 1; // placed by hand: see update
+      scene.add(m);
+      return { m, grp };
+    });
+  }
+  update(on) {
+    for (const { m, grp } of this.list) {
+      m.visible = on && grp.visible;
+      if (m.visible) { grp.updateWorldMatrix(true, false); m.matrix.copy(grp.matrixWorld); } // the scene is the parent, so this is its place in the world
+    }
+  }
+  dispose(scene) { for (const { m } of this.list) scene.remove(m); }
+}
+
 // foam and spray as soft points, each with its own size and fade
 const FOAM_VS = /* glsl */ `
 attribute float aAlpha, aSize; uniform float uScale; varying float vA;
@@ -527,8 +578,8 @@ const sector = (r0, r1, c0, c1, mat) => new THREE.Mesh(new THREE.RingGeometry(r0
 function windArrow() {
   const s = new THREE.Shape(); // pointing −y in the drawing: towards the boat once laid on the water
   s.moveTo(0, -3.4); s.lineTo(1.7, -0.6); s.lineTo(0.6, -0.6); s.lineTo(0.6, 3.2); s.lineTo(-0.6, 3.2); s.lineTo(-0.6, -0.6); s.lineTo(-1.7, -0.6); s.closePath();
-  const g = new THREE.ExtrudeGeometry(s, { depth: 0.35, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.12, bevelSegments: 2 });
-  g.rotateX(-Math.PI / 2); g.translate(0, 0.25, 0);
+  const g = new THREE.ExtrudeGeometry(s, { depth: 0.06, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.1, bevelSegments: 2 });
+  g.rotateX(-Math.PI / 2);
   const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: '#dff3ff', emissive: '#7cc8f0', emissiveIntensity: 0.35, roughness: 0.3, transparent: true, opacity: 0.5, depthWrite: false }));
   m.renderOrder = 3;
   return m;
@@ -546,9 +597,31 @@ function guides(tws) {
   const arrow = windArrow(); arrow.position.set(0, 0, -(R_OUT + 6)); turn.add(arrow);
   const tick = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.4, 3).rotateX(-Math.PI / 2), glass('#ffffff', 0.85)); // your heading
   g.add(tick);
-  g.userData = { turn, arrow, tick };
-  for (const o of [turn, tick]) o.traverse((m) => { if (m.isMesh) m.renderOrder = Math.max(m.renderOrder, 2); });
+  // every piece is draped on the sea each frame (see drapeGuides), so the dial lies on the water as one layer: it
+  // rides the waves instead of floating flat above the troughs and being cut by the crests
+  const drape = [];
+  for (const o of [turn, tick]) o.traverse((m) => {
+    if (!m.isMesh) return;
+    m.renderOrder = Math.max(m.renderOrder, 2); m.frustumCulled = false;
+    m.userData.base = m.geometry.attributes.position.array.slice(); drape.push(m);
+  });
+  g.userData = { turn, arrow, tick, drape };
   return g;
+}
+
+// lay the guides on the waves: each vertex at the sea's height under it, a hand's breadth up (the guides group sits
+// at y = 0 and only turns about the vertical, so a vertex's local height is its height in the world)
+const GUIDE_LIFT = 0.18;
+function drapeGuides(G, W, t) {
+  G.updateMatrixWorld(true);
+  for (const m of G.userData.drape) {
+    const P = m.geometry.attributes.position, B = m.userData.base, e = m.matrixWorld.elements;
+    for (let i = 0, j = 0; i < P.count; i++, j += 3) {
+      const x = B[j], y = B[j + 1], z = B[j + 2];
+      P.array[j + 1] = y + waveHeight(W, e[0] * x + e[4] * y + e[8] * z + e[12], e[2] * x + e[6] * y + e[10] * z + e[14], t) + GUIDE_LIFT;
+    }
+    P.needsUpdate = true;
+  }
 }
 
 // ---------- graphics levels ----------
@@ -564,7 +637,7 @@ export const defaultQuality = () => (PHONE ? 'medium' : 'high');
 // ---------- the world ----------
 export class World {
   constructor(canvas) {
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, stencil: true, powerPreference: 'high-performance' }); // the stencil: for the sails' shadow on the sea
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.05;
     this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -610,6 +683,12 @@ export class World {
     this.water = new THREE.Mesh(waterGeometry(), new THREE.ShaderMaterial({ uniforms: this.waterU, vertexShader: WATER_VS, fragmentShader: WATER_FS, defines: { WAVES: NW } }));
     this.water.frustumCulled = false;
     this.scene.add(this.water);
+    this.shadeMat = new THREE.ShaderMaterial({
+      uniforms: { uTime: this.waterU.uTime, uW: this.waterU.uW, uWs: this.waterU.uWs, uSun: this.waterU.uSun },
+      vertexShader: SEASHADE_VS, fragmentShader: SEASHADE_FS, transparent: true, depthWrite: false, side: THREE.DoubleSide,
+      stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp,
+    });
+    this.seaShadows = [];
 
     // islands on the horizon, to steer by
     let s = 7; const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
@@ -678,6 +757,8 @@ export class World {
       this.scene.add(v.root);
       return v;
     });
+    for (const s of this.seaShadows) s.dispose(this.scene);
+    this.seaShadows = this.boatViews.map((v) => new SeaShadows(this.scene, v, this.shadeMat));
     const c = race.course, g = new THREE.Group();
     this.buoys = [];
     const add = (obj, p) => { obj.position.set(p.x, 0, p.z); g.add(obj); this.buoys.push({ obj, p }); };
@@ -773,6 +854,7 @@ export class World {
       const v = this.boatViews[i];
       v.setDetail(b === P || Math.hypot(b.x - cp.x, b.z - cp.z) < farD * (this.quality === 'low' ? 0.6 : 1) && this.mode !== 'top');
       v.update(b, t, this.W, this.mode === 'drone', { cam: cp, sun: SUN });
+      this.seaShadows[i]?.update(this.quality !== 'low'); // Low: no shadows anywhere
     });
     // buoys bob and tilt with the sea under them; in a current a mark leans downstream on its mooring and trails a
     // little foam
@@ -833,11 +915,12 @@ export class World {
     if (this.guides) {
       const G = this.guides, U = G.userData;
       G.visible = this.showGuides && this.mode !== 'helm' && !P.done;
-      G.position.set(P.x, 0.45 + race.wind.p.waves * 0.9, P.z);
+      G.position.set(P.x, 0, P.z);
       U.turn.rotation.y = -P.wdir;
       U.arrow.position.z = -(R_OUT + 6) + ((t * 1.6) % 2.4); // drifting gently downwind
       U.arrow.material.opacity = 0.5 * Math.min(1, (2.4 - ((t * 1.6) % 2.4)) * 2); // and fading as it slides in
       U.tick.position.set(Math.sin(P.h) * (R_OUT + 0.9), 0, -Math.cos(P.h) * (R_OUT + 0.9)); U.tick.rotation.y = -P.h;
+      if (G.visible) drapeGuides(G, this.W, t);
     }
     // cameras
     this.camH += wrap(P.h - this.camH) * (1 - Math.exp(-dt * 1.6));
