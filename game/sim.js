@@ -552,7 +552,7 @@ export class Race {
   idle(dt) { this.t += dt; }
 
   step(dt) {
-    const before = this.clock;
+    const before = this.clock; this.lastDt = dt;
     this.clock += dt; this.t += dt;
     this.wind.step(dt);
     // the short waves follow the wind: the trains running with it now build and the others die down, and they grow
@@ -863,6 +863,11 @@ export class Race {
     const c = this.course, k = c.legs[b.leg], ai = b.ai;
     if (k === 'mark') {
       const m = c.windward;
+      // tangled up at the mark (circling it without getting round): sail clear out to the east, below the layline,
+      // and come in again from there, as a skipper would
+      ai.nearT = Math.hypot(b.x - m.x, b.z - m.z) < 45 ? (ai.nearT || 0) + (this.lastDt || 0) : 0;
+      if (ai.nearT > 50) { ai.nearT = 0; ai.detour = this.clock + 30; ai.wp = 0; }
+      if (ai.detour > this.clock) return { x: m.x + 35, z: m.z + 30 };
       // round it to port: come in on its east side with room to spare, cross above it, leave on the west side
       // a boat that owes another mark-room (rule 18) goes round outside it, wider and a little later
       const wide = this.owesRoom(b) ? 1 : 0;
