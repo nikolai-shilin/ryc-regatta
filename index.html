@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Regatta · Sailing Certification Test</title>
-<meta name="description" content="A 3D sailing game: race a yacht round a windward–leeward course against three boats, in light, medium or strong wind.">
+<title>Up and down · Sailing Certification Test</title>
+<meta name="description" content="A 3D sailing game: race a yacht round a windward–leeward course against the computer boats, in light, medium or strong wind — or sail today’s race, the same for everyone.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="/favicon.ico">
@@ -132,7 +132,9 @@
   #hud .seg button { height: 28px; padding: 0 11px; font-family: var(--sans); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .02em; border-width: 1.5px; }
   #hud .round-s { width: 30px; height: 30px; border: 1.5px solid var(--tag-line); color: #fff; background: var(--bg); }
   #hud .round-s svg { width: 11px; height: 11px; }
-  #hud #mini { width: 100px; height: 100px; border-radius: 16px; }
+  #hud #mini { width: 132px; height: 132px; border-radius: 16px; pointer-events: auto; cursor: zoom-in; transition: width .2s, height .2s; }
+  #hud #mini.big { width: min(260px, calc(100vh - 80px)); height: min(260px, calc(100vh - 80px)); cursor: zoom-out; } /* a tap makes it big, another small */
+  #hud .trim[hidden] { display: none; }
   #hud .tr .row { align-items: flex-start; }
   #hud .zoom { display: flex; flex-direction: column; gap: 6px; pointer-events: auto; }
   #hud .zoom button { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--tag-line); background: var(--bg); color: #fff; font-family: var(--sans); font-weight: 700; font-size: 20px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); touch-action: none; }
@@ -150,13 +152,16 @@
   #hud .round { width: 56px; height: 56px; font-size: 11px; border-width: 1.5px; color: #fff; border-color: rgba(53, 176, 242, 0.85); }
   #hud #tackBtn { right: calc(76px + var(--sr)); bottom: calc(16px + var(--sb)); }
   #hud #kiteBtn { right: calc(76px + var(--sr)); bottom: calc(82px + var(--sb)); width: 46px; height: 46px; font-size: 9px; }
-  #hud #toast { font-family: var(--sans); font-weight: 700; font-size: 14px; padding: 9px 16px; border-radius: 18px; background: rgba(8, 14, 20, 0.62); color: #fff; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  /* messages: in the column under the readouts, not over the boat */
+  #hud #toast { position: static; transform: none; max-width: min(460px, calc(100vw - 340px)); margin-top: 2px; font-family: var(--sans); font-weight: 700; font-size: 14px; padding: 8px 15px; border-radius: 18px; background: rgba(8, 14, 20, 0.62); color: #fff; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  #hud #toast:not(.show) { visibility: hidden; transition: opacity .3s, visibility 0s .3s; }
   /* the start countdown: at the bottom, above the steering arc and the tack button */
   #hud #count { top: auto; bottom: calc(112px + var(--sb)); font-size: clamp(64px, 17vmin, 104px); font-weight: 400; }
   #hud #count.final { font-size: clamp(100px, 22vmin, 160px); }
   @media (orientation: portrait) {
     #hud #inst { width: 56px; height: 56px; } #hud #heel { width: 56px; height: 28px; } #hud .speed { font-size: 28px; } #hud #mini { width: 88px; height: 88px; }
     #hud .tc { top: calc(46px + var(--st)); } #hud #rudder { width: 160px; height: 90px; } /* the readouts just under the view buttons */
+    #hud #toast { max-width: calc(100vw - 32px); }
   }
   @media (orientation: portrait) and (max-width: 430px) { /* a narrow phone: a smaller minimap, clear of the readouts beside it */
     #hud #mini { width: 68px; height: 68px; border-radius: 12px; }
@@ -170,6 +175,8 @@
   .logo { display: block; width: 50px; height: 25px; }
   .theme-night .logo { filter: invert(1); }
   .card h1 { margin: 0; font-family: var(--serif); font-weight: 300; font-size: 40px; line-height: 0.95; letter-spacing: -0.025em; }
+  .card .fun { margin: 10px 0 0; font-family: var(--serif); font-size: 17px; line-height: 1.35; }
+  .card .fun + .sub { margin-top: 6px; }
   .card .sub { margin: 10px 0 18px; font-size: 15px; line-height: 1.45; color: var(--muted); }
   .card .grid { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; }
   .choice { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -178,6 +185,25 @@
   .go { display: flex; align-items: center; justify-content: center; width: 100%; height: 56px; margin-top: 18px; border-radius: 54px; border: 2px solid var(--accent); background: var(--accent); color: var(--on-accent); font-family: var(--serif); font-size: 20px; line-height: 1; }
   .go[hidden] { display: none; }
   .go.ghost { background: var(--bg); color: var(--ink); border-color: var(--tag-line); height: 52px; font-size: 18px; margin-top: 10px; }
+  .dnote { grid-column: 1 / -1; margin: -2px 0 4px; font-family: var(--sans); font-size: 13px; line-height: 1.35; color: var(--muted); }
+  .dnote[hidden] { display: none; }
+  .choice.locked button:not(.on) { opacity: .45; }
+  .howd { margin: 14px 0 0; }
+  .howd summary { cursor: pointer; font-family: var(--sans); font-weight: 700; font-size: 14px; color: var(--accent); list-style: none; }
+  .howd summary::-webkit-details-marker { display: none; }
+  .howd summary::after { content: ' ▾'; } .howd[open] summary::after { content: ' ▴'; }
+  .howd .how { margin-top: 8px; }
+  .debrief { margin-top: 16px; display: grid; gap: 8px; }
+  .debrief ul.db { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-family: var(--sans); font-size: 15px; line-height: 1.35; }
+  .debrief ul.db li { padding: 9px 12px 9px 14px; border-radius: 14px; background: var(--band); border-left: 4px solid var(--accent); display: grid; gap: 2px; }
+  .debrief ul.db li.warn { border-left-color: var(--warn); }
+  .debrief ul.db li span { color: var(--muted); font-size: 14px; }
+  .debrief ul.db li a, .debrief a { color: var(--accent); text-decoration: none; font-weight: 700; font-size: 14px; }
+  .debrief a[hidden] { display: none; }
+  .debrief .pb { margin: 4px 0 0; font-family: var(--sans); font-size: 15px; }
+  .debrief .pb b { color: var(--accent); }
+  .debrief ol.lb { margin: 6px 0 0; padding: 0 0 0 20px; font-family: var(--sans); font-size: 15px; font-variant-numeric: tabular-nums; }
+  .debrief ol.lb li { padding: 3px 0; } .debrief ol.lb li span { display: inline-block; min-width: 60%; }
   .how { margin: 16px 0 0; padding: 14px 16px; list-style: none; background: var(--band); border-radius: 22px; font-family: var(--sans); font-size: 14px; line-height: 1.35; color: var(--muted); display: grid; gap: 6px; }
   .how b { color: var(--ink); }
   .back { display: inline-block; margin-top: 14px; color: var(--accent); text-decoration: none; font-size: 15px; }
@@ -196,7 +222,7 @@
     #menu .card { width: min(840px, 100%); padding: 16px 20px 18px; }
     #menu .cols { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start; }
     #menu .card-top { margin-bottom: 8px; }
-    #menu h1 { font-size: 30px; } #menu .sub { font-size: 13px; margin: 6px 0 10px; }
+    #menu h1 { font-size: 30px; } #menu .fun { font-size: 14px; margin-top: 6px; } #menu .sub { font-size: 13px; margin: 6px 0 10px; }
     #menu .grid { gap: 5px 12px; }
     .choice button { height: 31px; padding: 0 11px; font-size: 13px; }
     #menu .go { margin-top: 0; height: 50px; font-size: 18px; } #menu .go.ghost { margin-top: 8px; height: 44px; font-size: 16px; }
@@ -231,6 +257,7 @@
     <div class="perf on-photo" id="perf"></div>
     <div class="trim chip-ui" id="trim"><i></i><i></i><span id="trimTxt"></span></div>
     <div class="chips" id="chips"></div>
+    <div id="toast"></div>
   </div>
   <div class="tr">
     <div class="row">
@@ -250,7 +277,6 @@
   <div id="sheetZone"><div id="sheet"><div class="band"></div><div class="knob"></div><span class="cap t on-photo" data-t="in"></span><span class="cap b on-photo" data-t="out"></span></div></div>
   <button class="round" id="tackBtn"></button>
   <button class="round" id="kiteBtn" hidden data-t="kite"></button>
-  <div id="toast"></div>
   <div id="count" class="on-photo"></div>
 </div>
 
@@ -259,8 +285,12 @@
     <div class="cols"><div>
     <div class="card-top"><img class="logo" src="/design/logo-black.svg" alt="RYC"><span class="kicker" data-t="kick"></span></div>
     <h1 data-t="title"></h1>
+    <p class="fun" data-t="fun"></p>
     <p class="sub" data-t="sub"></p>
     <div class="grid">
+      <span class="meta" data-t="modeK"></span>
+      <div class="choice" data-opt="mode"><button data-v="daily" data-t="daily"></button><button data-v="free" data-t="free"></button></div>
+      <p class="dnote" id="dailyNote" hidden></p>
       <span class="meta" data-t="wind"></span>
       <div class="choice" data-opt="preset"><button data-v="light" data-t="light"></button><button data-v="medium" data-t="medium"></button><button data-v="strong" data-t="strong"></button></div>
       <span class="meta" data-t="fleetK"></span>
@@ -285,9 +315,11 @@
     </div><div>
     <button class="go" id="goBtn" data-t="start"></button>
     <button class="go ghost" id="resumeBtn" hidden data-t="resume"></button>
+    <details class="howd" id="howD"><summary data-t="howK"></summary>
     <ul class="how">
       <li data-t="how1"></li><li data-t="how2"></li><li data-t="how5"></li><li data-t="how3"></li><li data-t="how4"></li>
     </ul>
+    </details>
     <p class="rotate" data-t="rotate"></p>
     <a class="back" id="backLink" href="/" data-t="back"></a>
     </div></div>
@@ -302,6 +334,7 @@
       <table class="res" id="resTable"></table>
       <canvas id="track" width="312" height="312"></canvas>
     </div>
+    <div id="debrief" class="debrief"></div>
     <button class="go" id="againBtn" data-t="again"></button>
     <button class="go ghost" id="menuBtn" data-t="menu"></button>
   </div>

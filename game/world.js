@@ -714,7 +714,7 @@ export class World {
       cam.lookAt(P.x, 0, P.z);
       cam.fov = 50;
     } else if (this.mode === 'drone') {
-      const ph = this.camH + this.orbit, el = 22 * D2R, d = this.dist * (cam.aspect < 1 ? 1.75 : 1); // a tall screen needs the drone further back
+      const ph = this.camH + this.orbit, el = 24 * D2R, d = this.dist * (cam.aspect < 1 ? 1.75 : 1); // a tall screen needs the drone further back
       const tx = P.x + Math.sin(P.h) * 5, tz = P.z - Math.cos(P.h) * 5;
       const want = new THREE.Vector3(tx - Math.sin(ph) * d * Math.cos(el), 3 + d * Math.sin(el), tz + Math.cos(ph) * d * Math.cos(el));
       cam.position.lerp(want, 1 - Math.exp(-dt * 6));
@@ -750,5 +750,5 @@ export class World {
     if (this.mode === 'helm') this.helmFov = clamp(this.helmFov * f, 30, 80);
     else this.dist = clamp(this.dist * f, 8, 110);
   }
-  resetView() { this.orbit = 0; this.look = 0; this.dist = 26; this.helmFov = 68; }
+  resetView() { this.orbit = 0; this.look = 0; this.dist = 34; this.helmFov = 68; } // far enough back that the whole rig fits under the readouts
 }

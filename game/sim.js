@@ -290,8 +290,16 @@ export const FLEET = [['Aurora', 0xc0392b], ['Kestrel', 0x1e8449], ['Nomad', 0xd
 export const COURSE_LEN = { short: 1, medium: 2, long: 3.4 };
 export const ZONE = 3 * HULL; // the zone round a mark: three hull lengths
 const SEP = HULL * 0.78; // two boats' centres can't come closer than this
+const KITE_MAX = 26; // the computer boats fly the kite below this true wind speed (knots)
 const lineD = (c, b) => (b.x - c.pin.x) * c.normal.x + (b.z - c.pin.z) * c.normal.z; // + above the line
 const lineT = (c, b) => ((b.x - c.pin.x) * c.dir.x + (b.z - c.pin.z) * c.dir.z) / c.len;
+
+// the daily race: the same course and wind for everyone on a given day (UTC), made from the date
+export function dailyRace(date = new Date()) {
+  const day = date.toISOString().slice(0, 10), n = Math.floor(Date.parse(day) / 864e5), r = rng(n * 2654435761);
+  r(); r();
+  return { day, seed: (n * 7919) % 100000, preset: ['light', 'medium', 'strong'][Math.floor(r() * 3)], fleet: 5, length: 'short', laps: 1, start: 1, current: r() < 0.3 ? 1 : 0 };
+}
 
 // the start sequence: the class flag goes up at the warning signal, P at the preparatory, P down at one minute
 const SEQUENCES = {
@@ -328,7 +336,7 @@ export class Race {
     fl.forEach(([name, color], i) => {
       const f = n > 1 ? i / (n - 1) : 0.5; // spread them along below the line
       const b = new Boat({ name, x: lerp(-half - 10, half - 10, f) + (i % 2 ? 8 : -8), z: 105 + (i % 3) * 18, h: wrap(W + (i % 2 ? 90 : -90) * D2R), v: 2, autoTrim: true });
-      b.ai = { skill: 0.8 + this.rand() * 0.18, lineT: clamp(0.1 + f * 0.8 + (this.rand() - 0.5) * 0.08, 0.05, 0.95), lastTack: -999, go: false, mean: W, dirtyT: 0, hailT: -99, wp: 0, loiter: i % 2 ? 1 : -1 };
+      b.ai = { skill: 0.8 + this.rand() * 0.18, lineT: clamp(0.15 + f * 0.7 + (this.rand() - 0.5) * 0.08, 0.15, 0.85) /* clear of the ends, where the pin and the committee boat catch them */, lastTack: -999, go: false, mean: W, dirtyT: 0, hailT: -99, wp: 0, loiter: i % 2 ? 1 : -1 };
       b.color = color;
       this.boats.push(b);
     });
@@ -337,8 +345,26 @@ export class Race {
     this.messages = [];
     this.over = false;
     this.zoneStates = new Map();
+    // the player's race, for the debrief on the results: the start, speed against target, dirty air, the tacks against
+    // the wind's swings, the fouls and hails, and the time spent on penalties
+    this.log = { gunD: null, gunV: null, ocs: false, startT: null, legs: [], v: 0, polar: 0, sailing: 0, dirty: 0, tacks: [], gybes: 0, fouls: [], hails: {}, penT: 0, leg: 0, auto: false };
   }
   say(key, arg) { this.messages.push({ key, arg }); }
+  record(dt, before) {
+    const P = this.player, L = this.log;
+    if (before < 0 && this.clock >= 0) { L.gunD = -lineD(this.course, P); L.gunV = P.v / KN; L.ocs = P.ocs; }
+    if (P.leg !== L.leg) { L.leg = P.leg; L.legs.push(this.clock); if (P.leg === 1) L.startT = this.clock; }
+    const tackNow = !!P.auto;
+    if (tackNow && !L.auto && this.clock >= 0 && !P.done) {
+      if (P.auto.gybe) L.gybes++;
+      else L.tacks.push(Math.round(sgn(P.twa) * wrap(P.wdir - this.wind.mean()) / D2R)); // − the wind had headed her, + lifted
+    }
+    L.auto = tackNow;
+    if (this.clock < 0 || P.done) return;
+    if (P.pen) L.penT += dt;
+    if (P.shadow > 0.08) L.dirty += dt;
+    if (!P.auto && !P.pen && P.polar > 0.5) { L.v += (P.v / KN) * dt; L.polar += P.polar * dt; L.sailing += dt; }
+  }
   get rulesOn() { return this.clock >= (this.seq.length > 2 ? this.seq[1].t : this.seq[0].t); } // from the preparatory signal
 
   // the wind a boat feels: the wind field, less the shadow of the boats to windward of it
@@ -381,6 +407,7 @@ export class Race {
     for (const b of this.boats) this.progress(b);
     this.zones();
     this.hails();
+    this.record(dt, before);
     this.trackT += dt;
     if (this.trackT > 1) { this.trackT = 0; for (const b of this.boats) if (!b.done) b.track.push([b.x, b.z]); }
   }
@@ -465,6 +492,14 @@ export class Race {
       }
     }
   }
+  owesRoom(b) {
+    for (const st of this.zoneStates.values()) {
+      if (st.p !== b && st.q !== b) continue;
+      const o = st.p === b ? st.q : st.p;
+      if (st.entitled !== b && !o.done && Math.hypot(o.x - b.x, o.z - b.z) < 4 * HULL) return true;
+    }
+    return false;
+  }
   zoneOf(p, q) { for (const st of this.zoneStates.values()) if ((st.p === p && st.q === q) || (st.p === q && st.q === p)) return st; return null; }
   cpa(p, q, ph = p.h) {
     const rx = q.x - p.x, rz = q.z - p.z;
@@ -482,7 +517,7 @@ export class Race {
       const c = this.cpa(P, o);
       if (c.now > 45 || c.d > 11 || c.t > 7) continue;
       const r = this.rightOfWay(P, o);
-      if (r.giver === P && this.clock - o.ai.hailT > 7) { o.ai.hailT = this.clock; this.say('hail', { who: o.name, rule: r.rule }); }
+      if (r.giver === P && this.clock - o.ai.hailT > 7) { o.ai.hailT = this.clock; this.say('hail', { who: o.name, rule: r.rule }); this.log.hails[r.rule] = (this.log.hails[r.rule] || 0) + 1; }
     }
   }
   // contact: the boat that should have kept clear takes a two-turns penalty (rule 44.2)
@@ -490,7 +525,7 @@ export class Race {
     const r = this.rightOfWay(p, q), g = r.giver, other = g === p ? q : p;
     if (g.pen || g.done) return;
     g.pen = { turns: 2, sum: 0 };
-    if (g === this.player) this.say('fouled', { who: other.name, rule: r.rule });
+    if (g === this.player) { this.say('fouled', { who: other.name, rule: r.rule }); this.log.fouls.push({ rule: r.rule, who: other.name }); }
     else if (other === this.player) this.say('theyFouled', { who: g.name, rule: r.rule });
   }
 
@@ -517,7 +552,7 @@ export class Race {
         if (d < r && d > 0.01) {
           b.x = m.x + (dx / d) * r; b.z = m.z + (dz / d) * r; b.v *= 0.9;
           // touching a mark: a one-turn penalty (rules 31 and 44.2)
-          if (b.touchT <= 0 && !b.pen && !b.done && this.rulesOn) { b.pen = { turns: 1, sum: 0 }; if (b === this.player) this.say('touched'); }
+          if (b.touchT <= 0 && !b.pen && !b.done && this.rulesOn) { b.pen = { turns: 1, sum: 0 }; if (b === this.player) { this.say('touched'); this.log.fouls.push({ rule: '31' }); } }
           b.touchT = 3;
         }
       }
@@ -530,7 +565,9 @@ export class Race {
     if (k === 'mark') {
       const m = c.windward;
       // round it to port: come in on its east side with room to spare, cross above it, leave on the west side
-      const w0 = { x: m.x + 10, z: m.z - 9 }, w1 = { x: m.x - 14, z: m.z - 10 };
+      // a boat that owes another mark-room (rule 18) goes round outside it, wider and a little later
+      const wide = this.owesRoom(b) ? 1 : 0;
+      const w0 = { x: m.x + 10 + wide * 12, z: m.z - 9 - wide * 8 }, w1 = { x: m.x - 14 - wide * 6, z: m.z - 10 - wide * 6 };
       if (ai.wp === 0 && b.z < m.z - 4 && b.x > m.x - 3) ai.wp = 1; // clearly above it: now bear away across the top
       if (ai.wp === 1 && Math.hypot(b.x - w1.x, b.z - w1.z) < 6) ai.wp = 0; // there and still not round: go again
       return ai.wp === 0 ? w0 : w1;
@@ -539,11 +576,12 @@ export class Race {
       if (b.z > c.gate[0].z + 1) return { x: 0, z: c.gate[0].z - 15 };
       return { x: b.x < 0 ? -8 : 8, z: c.gate[0].z + 8 };
     }
-    const mx = (c.pin.x + c.committee.x) / 2, mz = (c.pin.z + c.committee.z) / 2;
-    if (k === 'finish') return { x: mx - c.normal.x * 15, z: mz - c.normal.z * 15 };
-    // not started yet: back below the line if over it (or outside its ends), then across it between the ends
+    // the finish: each boat to its own part of the line, so they don't all converge on its middle
     const pt = { x: lerp(c.pin.x, c.committee.x, ai.lineT), z: lerp(c.pin.z, c.committee.z, ai.lineT) };
-    if (lineD(c, b) > 0) return { x: pt.x - c.normal.x * 20, z: pt.z - c.normal.z * 20 };
+    if (k === 'finish') { const f = lerp(0.25, 0.75, ai.lineT); return { x: lerp(c.pin.x, c.committee.x, f) - c.normal.x * 15, z: lerp(c.pin.z, c.committee.z, f) - c.normal.z * 15 }; }
+    // not started yet: back below the line if over it (or outside its ends), then across it between the ends
+    const lt = lineT(c, b);
+    if (lineD(c, b) > 0 || lt < 0.05 || lt > 0.95) return { x: pt.x - c.normal.x * 20, z: pt.z - c.normal.z * 20 }; // outside the ends: first in below the line
     return { x: pt.x + c.normal.x * 30, z: pt.z + c.normal.z * 30 };
   }
   drive(b, dt) {
@@ -579,7 +617,7 @@ export class Race {
     else { const t = this.aiTarget(b); tx = t.x; tz = t.z; }
 
     const brg = Math.atan2(tx - b.x, -(tz - b.z)), rel = wrap(brg - W), tack = sgn(b.twa);
-    const up = (beatAngle(b.tws) + 1.5 - ai.skill) * D2R, down = runAngle(b.tws, b.kite || this.wind.p.tws < 18) * D2R;
+    const up = (beatAngle(b.tws) + 1.5 - ai.skill) * D2R, down = runAngle(b.tws, b.kite || b.tws < KITE_MAX) * D2R;
     let want;
     if (Math.abs(rel) < up) {
       // on the beat: tack on the layline, on a header, or to get out of another boat's wind
@@ -588,38 +626,72 @@ export class Race {
       const shift = wrap(W - ai.mean) / D2R, header = tack > 0 ? shift < -4 : shift > 4;
       ai.dirtyT = b.shadow > 0.12 ? ai.dirtyT + dt : 0;
       const room = Math.abs(rel) < up - 10 * D2R;
-      if (since > 12 && (lay || (room && header && this.rand() < ai.skill * 0.02) || (room && ai.dirtyT > 5 && this.rand() < 0.02))) {
+      if (since > 12 && (lay || (room && header && this.rand() < ai.skill * 0.02) || (room && ai.dirtyT > 5 && this.rand() < 0.02)) && this.tackClear(b)) {
         ai.lastTack = this.clock; ai.dirtyT = 0; b.tackOrGybe(); return;
       }
       want = W - tack * up;
     } else if (Math.abs(rel) > down) want = W - tack * down; // dead downwind: the best angle; the steering below gybes once it can
     else want = brg;
-    // keep clear of boats with right of way: take the turn that opens the gap (bearing away if it's as good)
-    if (this.rulesOn) for (const o of this.boats) {
-      if (o === b || o.done) continue;
-      const cp = this.cpa(b, o);
-      if (cp.now < 50 && cp.d < 12 && cp.t < 8 && this.rightOfWay(b, o).giver === b) {
-        const away = want - tack * 25 * D2R, upw = want + tack * 15 * D2R;
-        want = this.cpa(b, o, away).d >= this.cpa(b, o, upw).d - 3 ? away : upw;
-        break;
-      }
-    }
-    // and don't hit a mark: turn to a heading that can be sailed and clears it, or tack if there is none
-    for (const [m, r] of this.obstacles()) {
-      const clear = (h) => { const dx = m.x - b.x, dz = m.z - b.z, al = dx * Math.sin(h) - dz * Math.cos(h); return al < -2 || al > 32 ? 99 : Math.abs(dx * -Math.cos(h) - dz * Math.sin(h)) - r; };
-      if (clear(want) > 5) continue;
+    // don't hit a mark: turn to a heading that can be sailed and clears it, or tack if there is none
+    const marks = this.obstacles();
+    const markClear = (h) => { // the room a heading leaves to the marks ahead (99: none in the way)
+      let c = 99;
+      for (const [m, r] of marks) { const dx = m.x - b.x, dz = m.z - b.z, al = dx * Math.sin(h) - dz * Math.cos(h); if (al >= -2 && al <= 32) c = Math.min(c, Math.abs(dx * -Math.cos(h) - dz * Math.sin(h)) - r); }
+      return c;
+    };
+    if (markClear(want) <= 5) {
       const opts = [25, -25, 50, -50, 80, -80].map((d) => want + d * D2R).filter((h) => this.canSail(h, W, b.tws));
-      const best = opts.sort((p, q) => clear(q) - clear(p))[0];
-      if (best === undefined || clear(best) < 3) { if (this.clock - ai.lastTack > 6 && Math.abs(rel) < up + 0.3) { ai.lastTack = this.clock; b.tackOrGybe(); return; } }
+      const best = opts.sort((p, q) => markClear(q) - markClear(p))[0];
+      if (best === undefined || markClear(best) < 3) { if (this.clock - ai.lastTack > 6 && Math.abs(rel) < up + 0.3 && this.tackClear(b)) { ai.lastTack = this.clock; b.tackOrGybe(); return; } if (best !== undefined) want = best; }
       else want = best;
-      break;
+    }
+    // keep clear: of the boats it must keep clear of, the most urgent one; and a boat with right of way still alters
+    // course when the other isn't keeping clear and contact is close (rule 14). It takes the sailable heading that
+    // leaves the most room to every boat near and to the marks (stopping instead only makes her a target).
+    if (this.rulesOn) {
+      let threat = null;
+      for (const o of this.boats) {
+        if (o === b || o.done) continue;
+        const cp = this.cpa(b, o);
+        if (cp.now > 70 || cp.d > 18 || cp.t > 10) continue;
+        const giver = this.rightOfWay(b, o).giver === b;
+        if (!giver && !(cp.t < 5 && cp.d < SEP + 4)) continue;
+        if (!threat || cp.t < threat.t) threat = { o, t: cp.t, giver };
+      }
+      if (threat) {
+        const near = this.boats.filter((o) => o !== b && !o.done && Math.hypot(o.x - b.x, o.z - b.z) < 70);
+        const room = (h) => Math.min(markClear(h) + SEP, ...near.map((o) => this.cpa(b, o, h).d));
+        const offs = threat.giver ? [-25, -40, -60, 15, 30, 0] : [-15, 15, -30, 30, 0]; // − bears away, + luffs
+        let best = want, bd = -1;
+        for (const d of offs) {
+          const h = want + tack * d * D2R;
+          if (d > 0 && !this.canSail(h, W, b.tws) && Math.abs(rel) >= up) continue; // off the wind, don't luff into the no-go zone
+          const r = room(h) - Math.abs(d) * 0.04;
+          if (r > bd) { bd = r; best = h; }
+        }
+        want = best;
+      }
     }
     this.steerTo(b, want);
     const a = Math.abs(b.twa) / D2R;
-    b.kite = this.clock > 0 && a > 110 && this.wind.p.tws < 18 ? true : a > 100 ? b.kite : false;
+    // the kite goes up on a run in anything short of a near-gale gust, and comes down in one
+    b.kite = this.clock > 0 && a > 110 && b.tws < KITE_MAX ? true : a > 100 && b.tws < KITE_MAX + 2 ? b.kite : false;
     if (b.autoTrim) b.sheet = clamp(b.sheet + (this.rand() - 0.5) * (1 - ai.skill) * 0.05, 0, 1);
   }
   steerTo(b, want) { b.rudder = clamp(wrap(want - b.h) * 2.4, -1, 1); }
+  // a tack now wouldn't put her across another boat's bow (rule 13: while tacking she keeps clear of everyone)
+  tackClear(b) {
+    const h = wrap(b.wdir + b.twa);
+    for (const o of this.boats) {
+      if (o === b || o.done) continue;
+      const d = Math.hypot(o.x - b.x, o.z - b.z);
+      if (d > 60) continue;
+      if (d < SEP + 8) return false;
+      const c = this.cpa(b, o, h);
+      if (c.d < SEP + 6 && c.t < 12) return false;
+    }
+    return true;
+  }
   canSail(h, W, tws) { return Math.abs(wrap(h - W)) >= (beatAngle(tws) + 1) * D2R; }
   // the nearest heading to `want` that isn't inside the no-go zone
   sailable(want, W, tws) {
