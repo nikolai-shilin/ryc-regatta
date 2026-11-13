@@ -124,8 +124,11 @@
   .fs-note { display: flex; order: 2; }
   .fs .cmap, .cmap { max-height: 320px; }
   .fs-page .aph-p { display: block; }
-  /* upright on a phone the time and Start stay pinned to the bottom of the screen */
-  .setup-go { position: sticky; bottom: 0; z-index: 2; flex-direction: row; align-items: center; gap: var(--s-3); padding: var(--s-3) 0 calc(var(--s-1) + env(safe-area-inset-bottom, 0px)); background: var(--band); }
+  /* upright on a phone the time and Start stay pinned to the bottom of the screen. Fixed, not sticky: sticky would only
+     pin it inside its own panel, the last thing on the page. .scr is a size container, so fixed means the screen's
+     bottom here; the page keeps room under its last line for the row. */
+  .setup-go { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; flex-direction: row; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-5) calc(var(--s-3) + env(safe-area-inset-bottom, 0px)); background: var(--band); box-shadow: 0 -1px 0 var(--tag-line); }
+  .fs-page { padding-bottom: calc(var(--s-6) + 88px + env(safe-area-inset-bottom, 0px)); }
   .setup-time { flex: none; }
   .setup-time .meta { display: none; }
   .setup-go .pill { flex: 1 1 auto; }

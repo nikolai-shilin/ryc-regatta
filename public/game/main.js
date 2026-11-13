@@ -200,6 +200,7 @@ if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEven
 // ---------- settings ----------
 const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 0, sound: 1, start: 1, current: 0, course: 'wl', gfx: 'auto', guides: 1, played: 0 };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
+delete opts.undefined; // left by an older pause menu, whose quick switches also ran the menu's choice handler
 if (opts.fleetV !== 3) { opts.fleet = 5; opts.fleetV = 3; } // the default changed (10, then 7): start everyone on 5 once
 if (opts.optsV !== 4) { opts.length = 'short'; opts.mode = 'daily'; opts.optsV = 4; } // a short race, today's, is the default now
 const saveOpts = () => { try { localStorage.setItem('regatta', JSON.stringify(opts)); } catch (e) {} };
@@ -209,7 +210,7 @@ const settings = () => { if (opts.mode !== 'daily') return { ...opts, daily: nul
 const windName = (p) => t(p);
 const paintOpts = () => {
   const s = settings();
-  document.querySelectorAll('.choice').forEach((g) => {
+  document.querySelectorAll('.choice[data-opt]').forEach((g) => {
     g.classList.toggle('locked', opts.mode === 'daily' && DAILY_KEYS.includes(g.dataset.opt));
     g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(s[g.dataset.opt]) === b.dataset.v));
   });
@@ -218,7 +219,7 @@ const paintOpts = () => {
 // a third way to trim: the main and the jib each on their own sheet
 { const g = document.querySelector('.choice[data-opt="autoTrim"]'); if (g && !g.querySelector('[data-v="2"]')) { const b = document.createElement('button'); b.dataset.v = '2'; b.innerHTML = t('split'); g.append(b); } }
 paintOpts();
-for (const g of document.querySelectorAll('.choice')) {
+for (const g of document.querySelectorAll('.choice[data-opt]')) {
   const k = g.dataset.opt;
   g.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;

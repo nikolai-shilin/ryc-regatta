@@ -62,6 +62,9 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
   const [err, setErr] = useState('');
   const [wait, setWait] = useState(60);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
+  // after a wrong code, back to the first box, once the boxes are enabled again (a disabled box can't take focus)
+  const refocus = useRef(false);
+  useEffect(() => { if (!busy && refocus.current) { refocus.current = false; refs.current[0]?.focus(); } }, [busy]);
   useEffect(() => {
     let sent = Date.now();
     try { sent = Number(sessionStorage.getItem('regatta-otp-sent')) || sent; } catch {}
@@ -74,7 +77,7 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
     setBusy(true); setErr('');
     const supabase = supabaseBrowser();
     const { data, error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
-    if (error || !data.user) { setBusy(false); setErr(t('That code didn’t work. Check it, or send a new one.', 'Код не подошёл. Проверь его или запроси новый.')); setD(['', '', '', '', '', '']); refs.current[0]?.focus(); return; }
+    if (error || !data.user) { setBusy(false); setErr(t('That code didn’t work. Check it, or send a new one.', 'Код не подошёл. Проверь его или запроси новый.')); setD(['', '', '', '', '', '']); refocus.current = true; return; }
     router.replace(data.user.user_metadata?.display_name ? next : `/sign-in/name?next=${encodeURIComponent(next)}`);
     router.refresh();
   };

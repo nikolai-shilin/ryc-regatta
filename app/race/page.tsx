@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { getT } from '@/lib/i18n';
+import { ruBoats, ruPlural } from '@/lib/lang';
 import { getAccount } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN } from '@/lib/race';
@@ -19,7 +20,7 @@ export default async function Hub() {
   const d = dailyRace();
   const wind = { light: t('Light breeze', 'Слабый ветер'), medium: t('Medium breeze', 'Средний ветер'), strong: t('Strong breeze', 'Сильный ветер') }[d.preset];
   const course = { short: t('short', 'короткий'), medium: t('medium', 'средний'), long: t('long', 'длинный') }[d.length];
-  const title = t(`${wind}, ${d.fleet} boats, one ${course} lap`, `${wind}, ${d.fleet} лодок, один ${course} круг`);
+  const title = t(`${wind}, ${d.fleet} boats, one ${course} lap`, `${wind}, ${ruBoats(d.fleet)}, один ${course} круг`);
   const date = new Date(d.day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
   // the tiles show the race; the chip says it is fixed for today and, tapped, why (and how to make it a free race)
   const chips = [t('The same for everyone today', 'Одна для всех сегодня')];
@@ -32,7 +33,7 @@ export default async function Hub() {
   const tiles: [React.ReactNode, string, string, string][] = [
     [<IconWind key="w" s={14} />, t('Wind', 'Ветер'), `${KN[d.preset]} ${t('kn', 'уз')}`, t(`${breeze}, shifting`, `${breeze}, переменчивый`)],
     [<IconRoute key="c" />, t('Course', 'Дистанция'), metres, t(`Up and down, ${d.laps} lap`, `Апвинд — даунвинд, ${d.laps} круг`)],
-    [<IconBoats key="f" />, t('Fleet', 'Флот'), String(d.fleet), t(`You and ${d.fleet - 1} computer boats`, `Ты и ${d.fleet - 1} компьютерных лодки`)],
+    [<IconBoats key="f" />, t('Fleet', 'Флот'), String(d.fleet), t(`You and ${d.fleet - 1} computer boats`, `Ты и ${d.fleet - 1} ${ruPlural(d.fleet - 1, ['компьютерная лодка', 'компьютерные лодки', 'компьютерных лодок'])}`)],
     [<IconFlag key="s" />, t('Start', 'Старт'), t(`${d.start} min`, `${d.start} мин`), d.current ? t('A current runs across', 'Течение поперёк дистанции') : t('Class flag, P, the gun', 'Флаг класса, P, сигнал')],
   ];
   const races = today && today.d === d.day ? today.races : 0;
@@ -52,7 +53,7 @@ export default async function Hub() {
           <div className="hub-main">
             <a className="hub-photo" href="/play?race=today">
               <span className="hm-clip"><Image src="/images/top-v2.jpg" alt={t('Today’s course from above', 'Дистанция дня сверху')} fill sizes="(min-width: 1024px) 680px, 100vw" /></span>
-              <span className="hm-ptag"><span className="hm-ptag-a">{KN[d.preset]} {t('kn', 'уз')}</span><span className="hm-ptag-b"><span>{t('Today', 'Сегодня')}</span><b>{t(`${d.laps} lap`, `${d.laps} круг`)}</b><span>{t(`${d.fleet} boats`, `${d.fleet} лодок`)}</span></span></span>
+              <span className="hm-ptag"><span className="hm-ptag-a">{KN[d.preset]} {t('kn', 'уз')}</span><span className="hm-ptag-b"><span>{t('Today', 'Сегодня')}</span><b>{t(`${d.laps} lap`, `${d.laps} круг`)}</b><span>{t(`${d.fleet} boats`, `${ruBoats(d.fleet)}`)}</span></span></span>
             </a>
             <dl className="qstats">
               {tiles.map(([ico, k, v, note]) => (

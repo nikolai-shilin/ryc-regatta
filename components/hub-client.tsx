@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { tx, type Lang } from '@/lib/lang';
+import { ruBoats, tx, type Lang } from '@/lib/lang';
 import { readOpts, saveOpts } from '@/lib/opts';
 import { KN, type Wind } from '@/lib/race';
 import { IconArrow, IconLock, IconWind } from './ui';
@@ -59,7 +59,7 @@ export function FreeCard({ lang }: { lang: Lang }) {
     const o = readOpts();
     if (!o.lastFree) return;
     const w = { light: t('light', 'слабый'), medium: t('medium', 'средний'), strong: t('strong', 'сильный') }[o.preset];
-    setLast(t(`Last: ${w}, ${o.fleet} boats`, `Прошлая: ${w}, ${o.fleet} лодок`));
+    setLast(t(`Last: ${w}, ${o.fleet} boats`, `Прошлая: ${w}, ${ruBoats(o.fleet)}`));
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const go = (preset: Wind) => { saveOpts({ preset, mode: 'free', lastFree: Date.now() }); location.href = '/play?race=free'; };
   const winds: [Wind, string][] = [['light', t('Light', 'Слабый')], ['medium', t('Medium', 'Средний')], ['strong', t('Strong', 'Сильный')]];

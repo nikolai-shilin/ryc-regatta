@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { getT } from '@/lib/i18n';
+import { ruBoats } from '@/lib/lang';
 import { getAccount } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
 import { dailyRace, KN } from '@/lib/race';
@@ -51,7 +52,7 @@ export default async function Home() {
           <h1 className="hm-display" id="home-h1">{t('Sailing race game: up to seven rivals, shifting wind and the real racing rules', 'Парусная гонка: до семи соперников, переменчивый ветер и настоящие правила')}</h1>
           <p className="hm-lead">{t(
             `Today’s race, ${date}, is ${breeze} of ${kn} knots, ${d.fleet} boats and one ${length} lap up and down. Everyone sails the same race, so times compare fairly. No sign-in needed to play.`,
-            `Гонка дня, ${date}: ${breeze} ${kn} узлов, ${d.fleet} лодок и один ${length} круг апвинд — даунвинд. У всех одна и та же гонка, поэтому время сравнивается честно. Играть можно без входа.`)}</p>
+            `Гонка дня, ${date}: ${breeze} ${kn} узлов, ${ruBoats(d.fleet)} и один ${length} круг апвинд — даунвинд. У всех одна и та же гонка, поэтому время сравнивается честно. Играть можно без входа.`)}</p>
           <span className="meta hm-asof">{t(`Today’s race for ${date} · a new one at midnight`, `Гонка дня на ${date} · новая в полночь`)}</span>
           <RacePill lang={lang} daily={d} />
           <Link className="hm-src" href="/help">{t('How a race goes', 'Как проходит гонка')}<IconArrow s={14} /></Link>
@@ -88,18 +89,18 @@ export default async function Home() {
           <a className="hm-course" href="/play?race=today">
             <span className="hm-photo hm-wide">
               <span className="hm-clip"><Image src="/images/top-v2.jpg" alt={t('Today’s course from above', 'Дистанция дня сверху')} fill sizes="(min-width: 900px) 640px, 100vw" /></span>
-              <span className="hm-ptag"><span className="hm-ptag-a">{kn} {t('kn', 'уз')}</span><span className="hm-ptag-b"><span>{t('Today', 'Сегодня')}</span><b>{t(`${d.laps} lap`, `${d.laps} круг`)}</b><span>{t(`${d.fleet} boats`, `${d.fleet} лодок`)}</span></span></span>
+              <span className="hm-ptag"><span className="hm-ptag-a">{kn} {t('kn', 'уз')}</span><span className="hm-ptag-b"><span>{t('Today', 'Сегодня')}</span><b>{t(`${d.laps} lap`, `${d.laps} круг`)}</b><span>{t(`${d.fleet} boats`, `${ruBoats(d.fleet)}`)}</span></span></span>
             </span>
             <span className="card-title">{t(`Up and down · ${length} course · ${d.laps} lap`, `Апвинд — даунвинд · ${length} · ${d.laps} круг`)}</span>
             <span className="hm-facts">
               <span><IconWind s={15} />{windName}, {kn} {t('kn', 'уз')}</span>
-              <span><IconSail s={15} />{t(`${d.fleet} boats`, `${d.fleet} лодок`)}</span>
+              <span><IconSail s={15} />{t(`${d.fleet} boats`, `${ruBoats(d.fleet)}`)}</span>
               <span>{t(`${d.start}-minute start`, `старт ${d.start} мин`)}</span>
               {d.current ? <span>{t('A current', 'Течение')}</span> : null}
             </span>
           </a>
           <div className="hm-board">
-            <div className="hm-board-h"><span className="meta ink">{t('Today’s fastest', 'Самые быстрые сегодня')}</span><span className="meta">{windName} · {kn} {t('kn', 'уз')} · {d.fleet} {t('boats', 'лодок')}</span></div>
+            <div className="hm-board-h"><span className="meta ink">{t('Today’s fastest', 'Самые быстрые сегодня')}</span><span className="meta">{windName} · {kn} {t('kn', 'уз')} · {t(`${d.fleet} boats`, ruBoats(d.fleet))}</span></div>
             <ol className="hm-lb">
               {top.map((r, i) => (
                 <li key={i} className={i === 0 ? 'first' : ''}>

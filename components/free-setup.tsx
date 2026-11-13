@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { tx, type Lang } from '@/lib/lang';
+import { ruBoats, tx, type Lang } from '@/lib/lang';
 import { readOpts, readPb, saveOpts } from '@/lib/opts';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, type Length, type Shape, type Wind } from '@/lib/race';
 import { CourseMap } from './course-map';
@@ -90,7 +90,7 @@ export default function FreeSetup({ lang, fromToday, head }: { lang: Lang; fromT
               <div className="setup-go">
                 <div className="setup-time">
                   <span className="h-land-s">≈ {minutes(p)} {t('min', 'мин')}</span>
-                  <span className="meta">{t(`${p.fleet} boats · ${p.start}-min start`, `${p.fleet} лодок · старт ${p.start} мин`)}</span>
+                  <span className="meta">{t(`${p.fleet} boats · ${p.start}-min start`, `${ruBoats(p.fleet)} · старт ${p.start} мин`)}</span>
                 </div>
                 <button type="button" className="pill pill-primary pill-wide pill-s" onClick={go}><IconPlay /><span className="btn-t">{t('Start race', 'Начать гонку')}</span></button>
               </div>

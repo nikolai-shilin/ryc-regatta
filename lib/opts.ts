@@ -18,7 +18,9 @@ export const DEFAULTS: Opts = {
 
 export function readOpts(): Opts {
   try {
-    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('regatta') || '{}'), fleetV: 3, optsV: 4 };
+    const o = { ...DEFAULTS, ...JSON.parse(localStorage.getItem('regatta') || '{}'), fleetV: 3, optsV: 4 };
+    delete o.undefined; // junk an older game wrote; dropped on the next save
+    return o;
   } catch {
     return { ...DEFAULTS };
   }

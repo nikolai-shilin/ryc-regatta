@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { tx, type Lang } from '@/lib/lang';
+import { ruBoats, tx, type Lang } from '@/lib/lang';
 import RULES from '@/lib/rules.json';
 import { IconBack, IconRestart, clock } from './ui';
 import { CourseMap } from './course-map';
@@ -68,8 +68,8 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   const kn = { light: 7, medium: 12, strong: 19 }[res.preset];
   const date = new Date(res.at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   const kicker = res.daily
-    ? `${t('Today’s race', 'Гонка дня')} · ${date} · ${windW} ${kn} ${t('kn', 'уз')} · ${res.boats.length} ${t('boats', 'лодок')}`
-    : `${t('Free race', 'Свободная гонка')} · ${windW} ${kn} ${t('kn', 'уз')} · ${res.boats.length} ${t('boats', 'лодок')} · ${res.course.wing ? `${t('triangle', 'треугольник')} · ` : ''}${res.laps} ${t(res.laps > 1 ? 'laps' : 'lap', res.laps > 1 ? 'круга' : 'круг')}`;
+    ? `${t('Today’s race', 'Гонка дня')} · ${date} · ${windW} ${kn} ${t('kn', 'уз')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length))}`
+    : `${t('Free race', 'Свободная гонка')} · ${windW} ${kn} ${t('kn', 'уз')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length))} · ${res.course.wing ? `${t('triangle', 'треугольник')} · ` : ''}${res.laps} ${t(res.laps > 1 ? 'laps' : 'lap', res.laps > 1 ? 'круга' : 'круг')}`;
   const title = me.dsq ? t('Disqualified', 'Дисквалификация') : t(`You finished ${ordEn(place)}`, `${place}-е место на финише`);
   const gap = me.secs != null && winner?.secs != null && winner !== me ? `+${(me.secs - winner.secs).toFixed(1)} ${t('s', 'с')}` : '—';
   const again = res.daily ? '/play?race=today' : '/play?race=free';
