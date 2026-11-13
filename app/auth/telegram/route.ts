@@ -14,6 +14,13 @@ const claimedId = (initData: string) => {
 };
 
 export async function POST(request: NextRequest) {
+  // only from this site's own pages: another site can't sign a visitor in to someone else's Telegram account. The
+  // browser always sends Origin on a cross-site POST, and the check runs before the body is read (any content type).
+  const origin = request.headers.get('origin');
+  let host = '';
+  try { host = origin ? new URL(origin).host : ''; } catch {}
+  if (origin && host !== request.headers.get('host')) return json({ error: 'forbidden' }, 403);
+  if (!(request.headers.get('content-type') || '').startsWith('application/json')) return json({ error: 'bad request' }, 400);
   let initData = '';
   try { const b = await request.json(); initData = typeof b?.initData === 'string' ? b.initData.slice(0, 4096) : ''; } catch {}
   if (!initData) return json({ error: 'bad request' }, 400);
