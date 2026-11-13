@@ -4,6 +4,7 @@ import { D2R, wrap, clamp, lerp, waveHeight, waveSlope, beatAngle, runAngle, HUL
 const SC = HULL / 10.4; // the model is drawn 10.4 m long; a First 40.7 is 12.2 m
 import { BoatView, LOOKS, playerLook } from './yacht.js';
 import { CommitteeBoat } from './committee.js';
+import { Wildlife } from './wildlife.js';
 export { flagTexture } from './committee.js';
 
 const SKY_TOP = new THREE.Color('#4f8fcb'), SKY_HORIZON = new THREE.Color('#d6e7f0');
@@ -658,6 +659,9 @@ export class World {
     this.foamI = 0; this.foamMax = this.foamN;
     for (let i = 0; i < this.foamN; i++) this.foam.push({ x: 0, z: 0, age: 99, life: 1, vx: 0, vz: 0, s0: 1, s1: 2 });
 
+    // gulls, dolphins and whales; their splashes go into the foam above
+    this.wild = new Wildlife(this.scene, (x, z, n, up, size) => this.splash(x, z, n, up, size));
+
     this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uWind: this.waterU.uWind, uMax: { value: WAKE_AGE } };
     this.wakes = []; this.contacts = [];
     this.showGuides = true; this.guides = null;
@@ -722,6 +726,7 @@ export class World {
     this.wakes = race.boats.map(() => new Wake(this.scene, this.wakeU));
     for (const h of this.contacts || []) h.dispose(this.scene);
     this.contacts = race.boats.map(() => new HullContact(this.scene, this.wakeU));
+    this.wild.reset(race);
   }
 
   // switch the graphics level: resolution, sun shadows, water mesh and shading, foam
@@ -738,6 +743,7 @@ export class World {
     this.water.material.defines = Q.low ? { WAVES: 5, LOW_Q: 1 } : { WAVES: NW };
     this.water.material.needsUpdate = true;
     this.foamMax = Q.foam; this.foamI %= Q.foam; this.foamPts.geometry.setDrawRange(0, Q.foam);
+    this.wild.setLevel(q); // fewer gulls and dolphins lower down
     if (hadShadow !== sh) this.scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); }); // shadows on/off: recompile
   }
 
@@ -778,6 +784,20 @@ export class World {
       f.vx = fx * b.v * 0.6 - fz * side * (0.5 + Math.random()) - Math.sin(wind) * 2.5;
       f.vz = fz * b.v * 0.6 + fx * side * (0.5 + Math.random()) + Math.cos(wind) * 2.5;
       f.vy = 2 + Math.random() * 2.5; f.age = 0; f.life = 0.9 + Math.random() * 0.5; f.spray = true; f.s0 = 0.25; f.s1 = 0.6; f.a = 0.8;
+    }
+  }
+
+  // a splash where an animal breaks the water: foam spreading on the surface and, with up > 0, spray thrown up
+  splash(x, z, n, up = 0, size = 1) {
+    n = Math.round(n * (this.quality === 'low' ? 0.4 : this.quality === 'medium' ? 0.7 : 1));
+    const t = this.race ? this.race.t : 0;
+    for (let k = 0; k < n; k++) {
+      const f = this.foam[this.foamI]; this.foamI = (this.foamI + 1) % this.foamMax;
+      const a = Math.random() * 2 * Math.PI, r = Math.random() * size * 0.7, sp = (0.3 + Math.random()) * size * 0.8;
+      f.x = x + Math.cos(a) * r; f.z = z + Math.sin(a) * r; f.vx = Math.cos(a) * sp; f.vz = Math.sin(a) * sp; f.age = 0;
+      f.spray = up > 0 && k % 2 === 0;
+      if (f.spray) { f.y = waveHeight(this.W, f.x, f.z, t) + 0.2; f.vy = up * (0.5 + Math.random() * 0.6); f.life = 0.7 + Math.random() * 0.6; f.s0 = 0.3 * size; f.s1 = 0.8 * size; f.a = 0.8; }
+      else { f.life = 1.5 + Math.random() * 2.5; f.s0 = 0.6 * size; f.s1 = 1.8 * size; f.a = 0.55; }
     }
   }
 
@@ -892,6 +912,7 @@ export class World {
       cam.fov = this.helmFov;
     }
     cam.updateProjectionMatrix();
+    this.wild.update(dt, t, this.W, cam, this.foamU.uScale.value);
     this.sky.position.copy(cam.position); this.sky.material.uniforms.uTime.value = t; // the clouds drift
     // the glare: brightest looking straight at the sun, gone when you look away
     const look = cam.getWorldDirection(this._dir || (this._dir = new THREE.Vector3()));
