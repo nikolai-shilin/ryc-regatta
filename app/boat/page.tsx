@@ -1,12 +1,16 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getT } from '@/lib/i18n';
+import { getT, titled } from '@/lib/i18n';
 import { getAccount } from '@/lib/supabase/server';
 import { IconBack } from '@/components/ui';
 import { SiteHead } from '@/components/site-chrome';
 import { BoatEditor } from '@/components/boat-editor';
 
-export const metadata: Metadata = { title: 'Your boat' };
+export const generateMetadata = titled('Your boat', 'Твоя яхта', {
+  path: '/boat',
+  description: [
+    'Make the yacht yours: hull and sail colours, a logo and a sail number, seen in 3D, for every race you sail in Up and down.',
+    'Сделай яхту своей: цвета корпуса и парусов, логотип и номер на парусе — в 3D, для каждой гонки в Up and down.'],
+});
 
 // Your boat: its colours, logo and sail number beside a live 3D preview, laid out like the free race. Saved on this
 // device for the next race.

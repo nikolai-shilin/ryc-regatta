@@ -1,19 +1,15 @@
-import type { Metadata } from 'next';
-import { getT } from '@/lib/i18n';
+import { getT, titled } from '@/lib/i18n';
 import { getAccount } from '@/lib/supabase/server';
 import { IconArrow, IconSail, IconCheck, IconBook, IconClock, IconSend, IconOut } from '@/components/ui';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 import type { Lang, T } from '@/lib/lang';
 
-export async function generateMetadata(): Promise<Metadata> {
-  const { t } = await getT();
-  return {
-    title: t('Sailing certification exam practice', 'Тренажёр к экзамену на яхтенный сертификат'),
-    description: t(
-      'Free practice for the theory of sailing certification exams, VHF Radio Operator to Yachtmaster Ocean: situations in drawings, the reason after every answer, a mock exam.',
-      'Бесплатная подготовка к теории экзаменов на яхтенные сертификаты от VHF Radio Operator до Yachtmaster Ocean: ситуации в рисунках, пояснение после ответа, пробный экзамен.'),
-  };
-}
+export const generateMetadata = titled('Sailing certification exam practice', 'Тренажёр к экзамену на яхтенный сертификат', {
+  path: '/iyt',
+  description: [
+    'Free practice for the theory of sailing certification exams, VHF Radio Operator to Yachtmaster Ocean: situations in drawings, the reason after every answer, a mock exam.',
+    'Бесплатная подготовка к теории экзаменов на яхтенные сертификаты от VHF Radio Operator до Yachtmaster Ocean: ситуации в рисунках, пояснение после ответа, пробный экзамен.'],
+});
 
 const BOT = 'https://t.me/iyt_test_bot?startapp';
 const web = (lang: Lang) => (lang === 'ru' ? 'https://iyt.rycrentals.com/ru' : 'https://iyt.rycrentals.com/');

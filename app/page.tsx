@@ -1,6 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { getT } from '@/lib/i18n';
+import { pageMeta, jsonLd, SITE, NAME, OG_IMAGE, HOME_TITLE, HOME_DESC } from '@/lib/seo';
 import { ruBoats } from '@/lib/lang';
 import { getAccount } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
@@ -10,6 +12,34 @@ import { RacePill, TileRow, MyRow } from '@/components/home-client';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 import { FaqList } from '@/components/faq-list';
 import { faqGroups, HOME } from '@/lib/faq';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { lang, t } = await getT();
+  return pageMeta(lang, { title: t(...HOME_TITLE), description: t(...HOME_DESC), path: '/', absolute: true });
+}
+
+// For search engines and AI answer engines: who makes the site, and the game itself as a free browser game.
+function siteLd(lang: 'en' | 'ru', t: (en: string, ru: string) => string) {
+  const org = { '@type': 'Organization', '@id': `${SITE}/#ryc`, name: 'RYC', url: 'https://www.rycrentals.com/', logo: `${SITE}/logo-black.svg`, sameAs: ['https://www.rycrentals.com/', 'https://www.rycsailing.com/'] };
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      org,
+      { '@type': 'WebSite', '@id': `${SITE}/#site`, url: `${SITE}/`, name: NAME, inLanguage: ['en', 'ru'], publisher: { '@id': org['@id'] } },
+      {
+        '@type': 'VideoGame', '@id': `${SITE}/#game`, name: NAME, alternateName: t('Up and down sailing race', 'Up and down — парусная гонка'),
+        url: `${SITE}/`, description: t(...HOME_DESC), inLanguage: lang, image: `${SITE}${OG_IMAGE.url}`,
+        screenshot: [`${SITE}/images/hud-desk-v3.jpg`, `${SITE}/images/top-v3.jpg`],
+        genre: ['Sailing', 'Racing', 'Sports simulation'], gamePlatform: ['Web browser', 'Mobile web browser'],
+        applicationCategory: 'GameApplication', operatingSystem: 'Any (runs in a web browser)', playMode: 'SinglePlayer',
+        gameLocation: t('Göcek bay, Turkey', 'Бухта Гёчек, Турция'), isAccessibleForFree: true,
+        offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD', availability: 'https://schema.org/InStock', url: `${SITE}/race` },
+        author: { '@id': org['@id'] }, publisher: { '@id': org['@id'] },
+        potentialAction: { '@type': 'PlayAction', target: `${SITE}/race` },
+      },
+    ],
+  };
+}
 
 // H0 · Home, laid out like rycrentals.com's: a header with the site's pages, a hero with today's race in a pill over
 // the game itself sailing a race (public/hero-view), then sections that alternate white and the pale band.
@@ -41,6 +71,7 @@ export default async function Home() {
 
   return (
     <div className="scr help home" lang={lang}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(siteLd(lang, t))} />
       <SiteHead lang={lang} t={t} account={account} page="home" />
 
       <div className="hm-hero">

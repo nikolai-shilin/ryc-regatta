@@ -1,10 +1,9 @@
-import type { Metadata } from 'next';
-import { getT } from '@/lib/i18n';
+import { getT, titled } from '@/lib/i18n';
 import { getAccount } from '@/lib/supabase/server';
 import ResultView from '@/components/result-view';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 
-export const metadata: Metadata = { title: 'Race result' };
+export const generateMetadata = titled('Race result', 'Результат гонки', { index: false });
 
 // R1 · The result and debrief. The game keeps the race on this device and opens this page at the finish.
 export default async function ResultPage({ params }: { params: Promise<{ id: string }> }) {

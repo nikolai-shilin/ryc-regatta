@@ -1,13 +1,18 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getT } from '@/lib/i18n';
+import { getT, titled } from '@/lib/i18n';
+import { jsonLd } from '@/lib/seo';
 import { getAccount } from '@/lib/supabase/server';
 import { faqGroups } from '@/lib/faq';
 import { IconArrow } from '@/components/ui';
 import { FaqList } from '@/components/faq-list';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 
-export const metadata: Metadata = { title: 'Questions' };
+export const generateMetadata = titled('Questions', 'Вопросы', {
+  path: '/faq',
+  description: [
+    'Questions about Up and down, the free sailing race game: does it work on a phone, how today’s race and the ranking work, sailing the boat, the racing rules the computer boats follow.',
+    'Вопросы об Up and down, бесплатной парусной гонке: работает ли на телефоне, как устроены гонка дня и рейтинг, управление лодкой, правила, по которым гоняются компьютерные лодки.'],
+});
 
 // H2 · Questions: every question in five groups, white and the pale band in turn, as on the home page.
 export default async function Faq() {
@@ -22,7 +27,7 @@ export default async function Faq() {
 
   return (
     <div className="scr help hp" lang={lang}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, '\\u003c') }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <SiteHead lang={lang} t={t} account={account} page="faq" />
       <header className="hm-page hm-ph">
         <span className="kicker">Up and down</span>

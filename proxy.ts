@@ -1,8 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { isLang } from '@/lib/lang';
 
 // Keeps the Supabase session fresh: reads the auth cookies, refreshes an expiring token and writes it back.
+// Also the language in the address: /help?lang=ru is the Russian page (the address search engines index it by, see
+// lib/seo.ts). It reaches the pages as the x-lang header and stays as the lang cookie, so the next page and the game
+// speak it too.
 export async function proxy(request: NextRequest) {
+  const q = request.nextUrl.searchParams.get('lang');
+  const urlLang = isLang(q) ? q : null;
+  if (urlLang) request.headers.set('x-lang', urlLang);
+  else request.headers.delete('x-lang');
   let response = NextResponse.next({ request });
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
     cookies: {
@@ -16,10 +24,11 @@ export async function proxy(request: NextRequest) {
     },
   });
   await supabase.auth.getUser();
+  if (urlLang && request.cookies.get('lang')?.value !== urlLang) response.cookies.set('lang', urlLang, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
   return response;
 }
 
 export const config = {
-  // not for the game's files, the pictures or Next's own assets
-  matcher: ['/((?!_next/static|_next/image|game/|vendor/|play|boat-view|hero-view|images/|favicon.ico|logo-black.svg).*)'],
+  // not for the game's files, the pictures, Next's own assets or the files for crawlers
+  matcher: ['/((?!_next/static|_next/image|game/|vendor/|play|boat-view|hero-view|images/|favicon.ico|logo-black.svg|robots.txt|sitemap.xml|llms.txt).*)'],
 };

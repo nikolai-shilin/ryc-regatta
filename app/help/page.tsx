@@ -1,12 +1,16 @@
-import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getT } from '@/lib/i18n';
+import { getT, titled } from '@/lib/i18n';
 import { getAccount } from '@/lib/supabase/server';
 import { IconArrow } from '@/components/ui';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 
-export const metadata: Metadata = { title: 'How to play' };
+export const generateMetadata = titled('How to play', 'Как играть', {
+  path: '/help',
+  description: [
+    'How to sail Up and down: steer by touch or the arrow keys, trim the main and jib, tack, gybe and hoist the gennaker, win the start and play the wind shifts. The race screen, the camera views and the racing rules, with pictures.',
+    'Как играть в Up and down: руль пальцем или стрелками, настройка грота и стакселя, повороты, генакер, старт и заходы ветра. Экран гонки, виды камеры и правила парусных гонок — с картинками.'],
+});
 
 const WIDE: [number, number][] = [[34.8, 3.1], [65.2, 3.1], [44.2, 9], [84.1, 3.1], [96.5, 8], [9.2, 6.4], [9.2, 18.3], [8, 84], [95.3, 70], [87, 95.7], [73.5, 58.5], [80.8, 24.5]];
 const NARROW: [number, number][] = [[12, 25.3], [86, 25.3], [32.5, 26.1], [62.3, 7.4], [89.5, 7.4], [23, 4.6], [23, 13], [21.5, 85.5], [87, 72], [59.5, 96], [50, 50], [84, 39.5]];

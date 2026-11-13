@@ -1,6 +1,5 @@
-import type { Metadata } from 'next';
 import Image from 'next/image';
-import { getT } from '@/lib/i18n';
+import { getT, titled } from '@/lib/i18n';
 import { ruBoats, ruPlural } from '@/lib/lang';
 import { getAccount } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
@@ -10,7 +9,12 @@ import { SiteHead } from '@/components/site-chrome';
 import { TodayChips, FreeCard } from '@/components/hub-client';
 import { MyRow } from '@/components/home-client';
 
-export const metadata: Metadata = { title: 'Race hub' };
+export const generateMetadata = titled('Race hub', 'Меню гонок', {
+  path: '/race',
+  description: [
+    'Today’s race: the same wind, course and fleet for every player, a new one at midnight UTC. Sail it as often as you like, beat today’s fastest times, or set up a free race of your own.',
+    'Гонка дня: одинаковые ветер, дистанция и флот для всех, новая — каждую полночь по UTC. Проходи сколько хочешь, побей лучшие времена дня или настрой свою свободную гонку.'],
+});
 
 // I1 · The race hub, as a rycrentals subpage: today's race in the head, its course with the tag and the start,
 // today's fastest beside it, and a free race one tap away.

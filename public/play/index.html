@@ -6,6 +6,17 @@
 <title>Race · Up and down</title>
 <meta name="description" content="A 3D sailing game: race a yacht round a windward–leeward course against the computer boats, in light, medium or strong wind — or sail today’s race, the same for everyone.">
 <meta name="robots" content="noindex">
+<!-- the share card when someone sends a link to the race itself -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Up and down">
+<meta property="og:title" content="Up and down — a free sailing race game">
+<meta property="og:description" content="A free 3D sailing race in your browser. Win the start, play the wind shifts and race up to six boats round the marks in Göcek bay, under the real racing rules.">
+<meta property="og:url" content="https://regatta.rycrentals.com/play">
+<meta property="og:image" content="https://regatta.rycrentals.com/images/og-v3.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A race in the game">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="/favicon.ico">
 <link rel="preload" as="image" href="/_next/image?url=%2Fimages%2Fdrone-desk-v3.jpg&amp;w=1920&amp;q=90" media="(orientation: landscape)">
@@ -508,6 +519,7 @@
     : /^(ru|uk|be|kk)\b/i.test((TG && TG.initDataUnsafe && TG.initDataUnsafe.user && TG.initDataUnsafe.user.language_code) || navigator.language || '');
   var t = function (en, r) { return ru ? r : en; };
   document.documentElement.lang = ru ? 'ru' : 'en';
+  document.title = t('Race', 'Гонка') + ' · Up and down';
   var free = q.get('race') === 'free';
   var day = new Date().toLocaleDateString(ru ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
   $('lKick').textContent = free ? t('Free race', 'Свободная гонка') : t('Today’s race', 'Гонка дня') + ' · ' + day;

@@ -1,10 +1,14 @@
-import type { Metadata } from 'next';
-import { getT } from '@/lib/i18n';
+import { getT, titled } from '@/lib/i18n';
 import { getAccount } from '@/lib/supabase/server';
 import FreeSetup from '@/components/free-setup';
 import { SiteHead } from '@/components/site-chrome';
 
-export const metadata: Metadata = { title: 'Free race' };
+export const generateMetadata = titled('Free race', 'Свободная гонка', {
+  path: '/race/free',
+  description: [
+    'Set up your own sailing race: light, medium or strong wind, 3 to 7 boats, up and down or a triangle, one or two laps, a 1, 3 or 5 minute start, with or without a current.',
+    'Настрой свою парусную гонку: слабый, средний или сильный ветер, от 3 до 7 лодок, апвинд — даунвинд или треугольник, один или два круга, старт за 1, 3 или 5 минут, с течением или без.'],
+});
 
 export default async function FreeRacePage({ searchParams }: { searchParams: Promise<{ from?: string }> }) {
   const [{ lang, t }, sp, account] = await Promise.all([getT(), searchParams, getAccount()]);

@@ -1,12 +1,11 @@
-import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getLang } from '@/lib/i18n';
+import { getLang, titled } from '@/lib/i18n';
 import { supabaseServer } from '@/lib/supabase/server';
 import { safeNext } from '@/lib/next-path';
 import { AuthShell } from '@/components/auth-shell';
 import { NameForm } from '@/components/sign-in-forms';
 
-export const metadata: Metadata = { title: 'Your name on the ranking' };
+export const generateMetadata = titled('Your name on the ranking', 'Твоё имя в рейтинге', { index: false });
 
 // "Anna Petrova" from Google becomes "Anna P."
 const short = (full: string) => {

@@ -1,6 +1,5 @@
-import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getT } from '@/lib/i18n';
+import { getT, titled } from '@/lib/i18n';
 import { getAccount } from '@/lib/supabase/server';
 import { safeNext } from '@/lib/next-path';
 import { todayTop } from '@/lib/today';
@@ -8,7 +7,7 @@ import { AuthShell } from '@/components/auth-shell';
 import { SignInForm } from '@/components/sign-in-forms';
 import { clock } from '@/components/ui';
 
-export const metadata: Metadata = { title: 'Sign in' };
+export const generateMetadata = titled('Sign in', 'Вход', { index: false });
 
 export default async function SignIn({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const [{ lang, t }, sp, account, today] = await Promise.all([getT(), searchParams, getAccount(), todayTop()]);

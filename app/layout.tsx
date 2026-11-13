@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Merriweather, Carlito } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { getLang, getT } from '@/lib/i18n';
+import { pageMeta, SITE, NAME, HOME_TITLE, HOME_DESC } from '@/lib/seo';
 import { TelegramSignIn } from '@/components/telegram-sign-in';
 import { BestsSync } from '@/components/bests-sync';
 import '@/styles/tokens.css';
@@ -11,23 +12,21 @@ import '@/styles/ryc.css';
 const merri = Merriweather({ subsets: ['latin', 'cyrillic'], weight: ['300', '400', '700'], variable: '--f-merri', display: 'swap' });
 const carlito = Carlito({ subsets: ['latin', 'cyrillic'], weight: ['400', '700'], variable: '--f-carlito', display: 'swap' });
 
-// The title and description search engines and link previews show, with the hero picture as the preview image.
+// The defaults every page starts from: the site's name and the share card. Each page then gives its own title,
+// description, canonical address and languages (lib/seo.ts, through titled() in lib/i18n.ts).
 export async function generateMetadata(): Promise<Metadata> {
   const { lang, t } = await getT();
-  const title = t('Up and down — a sailing race game', 'Up and down — парусная гонка');
-  const description = t(
-    'A free 3D sailing race in your browser. Win the start, play the wind shifts and race up to six boats round the marks in Göcek bay, under the real racing rules. A new race of the day every midnight.',
-    'Бесплатная 3D-парусная гонка в браузере. Возьми старт, лови заходы ветра и обойди до шести лодок в бухте Гёчек по настоящим правилам парусных гонок. Новая гонка дня каждую полночь.');
+  const base = pageMeta(lang, { title: t(HOME_TITLE[0], HOME_TITLE[1]), description: t(HOME_DESC[0], HOME_DESC[1]), absolute: true });
   return {
-    metadataBase: new URL('https://regatta.rycrentals.com'),
-    title: { default: title, template: '%s · Up and down' },
-    description,
+    ...base,
+    metadataBase: new URL(SITE),
+    title: { default: t(HOME_TITLE[0], HOME_TITLE[1]), template: `%s · ${NAME}` },
+    applicationName: NAME,
+    authors: [{ name: 'RYC', url: 'https://www.rycrentals.com/' }],
+    creator: 'RYC',
+    publisher: 'RYC',
+    category: 'game',
     icons: { icon: '/favicon.ico' },
-    openGraph: {
-      type: 'website', siteName: 'Up and down', title, description, locale: lang === 'ru' ? 'ru_RU' : 'en_GB',
-      images: [{ url: '/images/drone-desk-v3.jpg', alt: t('A race in the game', 'Гонка в игре') }],
-    },
-    twitter: { card: 'summary_large_image', title, description, images: ['/images/drone-desk-v3.jpg'] },
   };
 }
 

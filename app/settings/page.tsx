@@ -1,12 +1,11 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getT } from '@/lib/i18n';
+import { getT, titled } from '@/lib/i18n';
 import { getAccount, initials } from '@/lib/supabase/server';
 import { IconBack } from '@/components/ui';
 import { SiteHead } from '@/components/site-chrome';
 import { SettingsForm } from '@/components/settings-form';
 
-export const metadata: Metadata = { title: 'Settings' };
+export const generateMetadata = titled('Settings', 'Настройки', { index: false });
 
 // S3 / A5 · Settings: the account on top, then one row per setting.
 export default async function SettingsPage() {
