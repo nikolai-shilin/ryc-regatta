@@ -510,6 +510,25 @@ function buoy(color = '#ff7a1a', h = 2.4) {
   return g;
 }
 
+// the stream past a mark: the water piles up on its up-tide side and runs off it in a V of ripples and a streak of
+// foam, as a moored buoy shows a sailor which way the tide runs and how hard. Apex at the top of the texture.
+let veeTex = null;
+function currentVee() {
+  if (!veeTex) {
+    const cv = document.createElement('canvas'); cv.width = 64; cv.height = 256;
+    const x = cv.getContext('2d'), g = x.createLinearGradient(0, 0, 0, 256);
+    g.addColorStop(0, 'rgba(255,255,255,0.95)'); g.addColorStop(0.35, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    x.strokeStyle = g; x.lineCap = 'round'; x.filter = 'blur(1.5px)';
+    x.lineWidth = 4; x.beginPath(); x.moveTo(32, 8); x.lineTo(6, 250); x.moveTo(32, 8); x.lineTo(58, 250); x.stroke();
+    x.lineWidth = 9; x.globalAlpha = 0.55; x.beginPath(); x.moveTo(32, 10); x.lineTo(32, 170); x.stroke();
+    x.globalAlpha = 0.8; x.lineWidth = 3; x.beginPath(); x.arc(32, 22, 16, Math.PI * 1.1, Math.PI * 1.9); x.stroke(); // the pressure wave up-tide
+    veeTex = new THREE.CanvasTexture(cv);
+  }
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: veeTex, transparent: true, depthWrite: false, opacity: 0, fog: true }));
+  m.renderOrder = 2; m.visible = false;
+  return m;
+}
+
 // an island: a ridge of hills whose height rises and falls round it in a few smooth waves, green low down and bare
 // rock higher up; the haze (the fog) pales the far ones towards the sky
 function island(rand, R, H, color) {
@@ -736,8 +755,9 @@ export class World {
     this.seaShadows = this.boatViews.map((v) => new SeaShadows(this.scene, v, this.shadeMat));
     const c = race.course, g = new THREE.Group();
     this.buoys = [];
-    const add = (obj, p) => { obj.position.set(p.x, 0, p.z); g.add(obj); this.buoys.push({ obj, p }); };
-    add(buoy(), c.windward); add(buoy(), c.gate[0]); add(buoy(), c.gate[1]); add(buoy('#ffb000', 2), c.pin);
+    const add = (obj, p, vee) => { obj.position.set(p.x, 0, p.z); g.add(obj); if (vee) g.add(vee); this.buoys.push({ obj, p, vee }); };
+    add(buoy(), c.windward, currentVee()); add(buoy(), c.gate[0], currentVee()); add(buoy(), c.gate[1], currentVee()); add(buoy('#ffb000', 2), c.pin, currentVee());
+    if (c.wing) add(buoy(), c.wing, currentVee());
     // the committee boat lies to her anchor head to wind, 5 m beyond the line's end: which side of her the pin is,
     // and where along her the line meets her, place her orange flag and her officers
     const cbx = Math.cos(W0), cbz = Math.sin(W0), ex = -c.dir.x * 5, ez = -c.dir.z * 5;
@@ -756,7 +776,7 @@ export class World {
     // the arrows over the next mark
     const cone = () => { const m = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.6, 4), new THREE.MeshBasicMaterial({ color: '#ffd400', fog: false })); m.rotation.x = Math.PI; return m; };
     this.pointers = [cone(), cone()]; for (const p of this.pointers) g.add(p);
-    this.zones = new ZoneRings([c.windward, c.gate[0], c.gate[1]]); g.add(this.zones.mesh);
+    this.zones = new ZoneRings([c.windward, c.gate[0], c.gate[1], ...(c.wing ? [c.wing] : [])]); g.add(this.zones.mesh);
     this.ladder = ladder(c); g.add(this.ladder);
     this.lay = new Laylines(c, race.wind.p.tws); g.add(this.lay.group);
     this.marks = g; this.scene.add(g);
@@ -857,7 +877,7 @@ export class World {
     });
     // buoys bob and tilt with the sea under them; in a current a mark leans downstream on its mooring and trails a
     // little foam
-    for (const { obj, p } of this.buoys) {
+    for (const { obj, p, vee } of this.buoys) {
       obj.position.y = waveHeight(this.W, p.x, p.z, t) * (obj === this.committee ? 0.7 : 0.9);
       if (obj === this.committee) { // she pitches and rolls a little on the swell, being long and heavy
         const W0 = this.cbW0, fx = Math.sin(W0), fz = -Math.cos(W0);
@@ -867,7 +887,16 @@ export class World {
       }
       const cur = race.currentAt(p.x, p.z), cs = Math.hypot(cur.x, cur.z); // the stream where this mark lies
       const sx = waveSlope(this.W, p.x, p.z, t, 1, 0), sz = waveSlope(this.W, p.x, p.z, t, 0, 1);
-      obj.rotation.z = sx * 0.8 - cur.x * 0.5; obj.rotation.x = -sz * 0.8 + cur.z * 0.5;
+      obj.rotation.z = sx * 0.8 - cur.x * 0.9; obj.rotation.x = -sz * 0.8 + cur.z * 0.9; // leaning on its mooring, downstream
+      if (vee) {
+        vee.visible = cs > 0.03;
+        if (vee.visible) {
+          const ux = -cur.x / cs, uz = -cur.z / cs, L = 5 + cs * 22, wd = 2.4 + cs * 5; // up-tide; it grows with the stream
+          vee.scale.set(wd, 1, L); vee.rotation.y = Math.atan2(-ux, -uz);
+          vee.position.set(p.x - ux * (L / 2 - 1.3), waveHeight(this.W, p.x, p.z, t) * 0.9 + 0.1, p.z - uz * (L / 2 - 1.3));
+          vee.material.opacity = clamp(cs / 0.3, 0.25, 1) * (0.75 + 0.12 * Math.sin(t * 2.3 + p.x));
+        }
+      }
       if (cs > 0.05 && Math.random() < dt * 7) {
         const f = this.foam[this.foamI]; this.foamI = (this.foamI + 1) % this.foamMax;
         const ux = cur.x / cs, uz = cur.z / cs, side = (Math.random() - 0.5) * 1.6;
@@ -877,7 +906,7 @@ export class World {
       }
     }
     const lg = race.course.legs[P.leg];
-    this.zones.update(this.W, t, P.done ? [] : lg === 'mark' ? [0] : lg === 'gate' ? [1, 2] : []);
+    this.zones.update(this.W, t, P.done ? [] : lg === 'mark' ? [0] : lg === 'gate' ? [1, 2] : lg === 'wing' ? [3] : []);
     this.cb.update(t, dt, race.flags, race.prepFlag, this.cbW0 - race.wind.dir(), race.wind.p.tws * 0.514); // flags fly downwind
     const k = race.course.legs[P.leg]; // the start line stays drawn for the whole race
     this.ladder.visible = this.showGuides && !P.done; // the distance lines go with the other guides
@@ -885,7 +914,7 @@ export class World {
     if (this.lay.group.visible) this.lay.update(this.W, race.wind.dir(), t);
     // pointers over the next mark(s)
     const c = race.course;
-    const targets = k === 'mark' ? [c.windward] : k === 'gate' ? c.gate : [c.pin, { x: c.committee.x, z: c.committee.z }];
+    const targets = k === 'mark' ? [c.windward] : k === 'wing' ? [c.wing] : k === 'gate' ? c.gate : [c.pin, { x: c.committee.x, z: c.committee.z }];
     this.pointers.forEach((p, i) => {
       const m = targets[i];
       p.visible = !!m && !P.done;

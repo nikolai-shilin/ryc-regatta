@@ -36,10 +36,10 @@ export function waveHeight(W, x, z, t) {
   for (const p of W) h += p.A * Math.sin(p.k * (p.dx * x + p.dz * z) - p.w * t + p.ph);
   return h;
 }
-// the slope of the sea along a direction (ux, uz): + uphill
-export function waveSlope(W, x, z, t, ux, uz) {
+// the slope of the sea along a direction (ux, uz): + uphill; `n` only the first n trains (the long swell)
+export function waveSlope(W, x, z, t, ux, uz, n = W.length) {
   let s = 0;
-  for (const p of W) s += p.A * p.k * (p.dx * ux + p.dz * uz) * Math.cos(p.k * (p.dx * x + p.dz * z) - p.w * t + p.ph);
+  for (let i = 0; i < n; i++) { const p = W[i]; s += p.A * p.k * (p.dx * ux + p.dz * uz) * Math.cos(p.k * (p.dx * x + p.dz * z) - p.w * t + p.ph); }
   return s;
 }
 
@@ -97,6 +97,7 @@ export function runAngle(tws, kite = true) {
 
 // sails: the best angle off the centreline for an apparent wind angle (degrees)
 const SHEET_IN = 8, SHEET_OUT = 85;
+const FOOT = 8, PINCH = 0.06; // slow upwind: up to 8° to foot, 4% a degree for pointing above it
 export const idealSail = (awa) => clamp(awa * 0.45 - 2, SHEET_IN, SHEET_OUT);
 export const sheetFor = (angle) => clamp((angle - SHEET_IN) / (SHEET_OUT - SHEET_IN), 0, 1);
 const HEEL_SIDE = [[0, 0.3], [18, 0.3], [22, 1], [50, 1], [100, 0.5], [180, 0.12]];
@@ -117,16 +118,29 @@ export const PRESETS = {
   strong: { tws: 19, osc: 14, period: 75,  gusts: 11, gustStr: 0.36, veer: 12, waves: 0.85 },
 };
 
+// a sea breeze: on a sunny day with a light gradient the land heats up and draws the wind in off the sea. It fills
+// in during the race, building by a third and swinging steadily to the right (veering) by some 15° over twelve
+// minutes, so the right side pays more and more. Not in a strong wind (the gradient wind rules). From its own
+// generator, so the gusts and shifts of a seed stay as they were.
+export function seaBreeze(seed, preset) {
+  const r = rng(seed * 13 + 3); r(); r();
+  return preset !== 'strong' && r() < 0.45;
+}
+const SEA_T = 720, SEA_VEER = 15 * D2R;
+
 export class Wind {
-  constructor(preset, seed = 1, span = 280) {
+  constructor(preset, seed = 1, span = 280, wide = 0) {
     this.p = PRESETS[preset] || PRESETS.medium;
     this.span = span; // how far upwind the course goes: the gusts cover it all
+    this.wide = wide; // and how far out to the side (a triangle's wing mark)
+    this.sea = seaBreeze(seed, preset);
     this.rand = rng(seed);
     this.t = 0;
     this.base = 0; // from the north
     this.phase = this.rand() * 6;
     this.drift = (this.rand() - 0.5) * 2 * 4 * D2R / 300; // a persistent shift, up to 4° in five minutes
     this.side = (this.rand() - 0.5) * 2; // which side of the course has more pressure (and a shift with it)
+    if (this.sea) this.drift = 0; // the sea breeze is the persistent shift that day
     // irregular shifts on top of the swing — a wander to a new value every 40 s or so and a slower one every 150 s —
     // so the next shift can't be timed from the last; from their own generators, so the gusts stay where they were
     this.noise = [rng(seed * 31 + 5), rng(seed * 17 + 11)].map((r) => ({ r, k: [] }));
@@ -137,7 +151,7 @@ export class Wind {
   newGust(anywhere) {
     const r = this.rand;
     return {
-      x: (r() - 0.5) * Math.max(700, this.span + 500), z: anywhere ? -(this.span + 420) + r() * (this.span + 620) : -(this.span + 420) - r() * 200,
+      x: (r() - 0.5) * (Math.max(700, this.span + 500) + 2 * this.wide), z: anywhere ? -(this.span + 420) + r() * (this.span + 620) : -(this.span + 420) - r() * 200,
       r: 45 + r() * 60, s: this.p.gustStr * (0.55 + r() * 0.45),
       veer: (r() - 0.5) * 2 * this.p.veer * D2R, // a gust can lift or head you
       life: 0,
@@ -152,7 +166,9 @@ export class Wind {
     g.k = Math.min(1, g.life / 6) * clamp((g.max - g.life) / 15, 0, 1);
   }
   // the middle the wind swings about: it moves only with the slow persistent drift
-  mean() { return this.base + this.drift * this.t; }
+  mean() { return this.base + this.drift * this.t + (this.sea ? SEA_VEER * this.seaK() : 0); }
+  seaK() { const f = clamp(this.t / SEA_T, 0, 1); return f * (2 - f); } // how far the sea breeze has come in, 0 … 1: quickest at first
+  build() { return this.sea ? 0.85 + 0.33 * this.seaK() : 1; } // and how much it has built
   // the direction now: the middle plus the oscillations, a long swing (up to `osc` degrees either way) and a shorter one
   dir() {
     const { osc, period } = this.p, t = this.t;
@@ -161,7 +177,7 @@ export class Wind {
   }
   step(dt) {
     this.t += dt;
-    const d = this.dir(), sp = this.p.tws * KN * 0.75;
+    const d = this.dir(), sp = this.p.tws * this.build() * KN * 0.75;
     const vx = -Math.sin(d) * sp, vz = Math.cos(d) * sp; // gusts ride downwind
     for (let i = 0; i < this.gusts.length; i++) {
       const g = this.gusts[i];
@@ -183,7 +199,7 @@ export class Wind {
       extra += g.s * w; veer += (g.veer - 6 * D2R * clamp(lat / g.r, -1, 1)) * w;
     }
     const sx = clamp(x / 160, -1, 1) * this.side; // more pressure, and a few degrees of shift, on one side
-    return { dir: d0 + veer + sx * 3 * D2R, tws: this.p.tws * (1 + extra + 0.07 * sx), gust: clamp(extra / this.p.gustStr, 0, 1) };
+    return { dir: d0 + veer + sx * 3 * D2R, tws: this.p.tws * this.build() * (1 + extra + 0.07 * sx), gust: clamp(extra / this.p.gustStr, 0, 1) };
   }
 }
 
@@ -203,6 +219,12 @@ export class Boat {
     this.kiteFill = 0; this.jibSail = 0; this.reef = false; this.reefJob = null; this.reefFill = 0; this.backing = false;
     this.kiteType = 'gen'; // the sail on the bowsprit: 'gen' the gennaker (downwind), 'zero' the code zero (a flat reacher)
     this.smallJib = false; this.jibJob = null; this.jibSize = 1; // the J3, a smaller jib for a blow; jibSize for the picture
+    // the side the boom is on decides her tack (+1 starboard: boom to port). Upwind and reaching it simply follows the
+    // wind; running, she can sail on a little "by the lee" (the wind on the boom's side) before it comes across
+    this.boom = 0; this.byLee = 0;
+    this.kiteGybe = null; // the gennaker being gybed: the crew takes the sheet round the forestay and sets it again
+    this.crew = o.crew ?? 0.6; // how likely the crew is to get a hard job wrong (0 never … 1 often)
+    this.aAvg = 0; this.waveN = 0; this.waveRhythm = 0; this.stall = 0; // upwind in waves, and pointing too high while slow
   }
   // a headsail change, the J1 for the J3 or back: the crew drops one jib and hoists the other — half a minute with
   // little jib up, so slow meanwhile
@@ -236,11 +258,39 @@ export class Boat {
   get tacking() { return (this.auto && !this.auto.gybe) || Math.abs(this.twa) < NO_GO * D2R; }
   tackOrGybe() {
     if (this.auto || this.pen) return;
+    // already by the lee: the crew pulls the boom across, no turn needed
+    if (this.boom && sgn(this.twa) !== this.boom && Math.abs(this.twa) > 120 * D2R) { this.lastGybe = true; this.events.push('gybing'); this.flipBoom(false); return; }
     const newH = this.wdir + this.twa, d = wrap(newH - this.h), gybe = Math.abs(this.twa) > 95 * D2R;
     this.auto = { to: newH, dir: sgn(d), gybe }; this.lastGybe = gybe;
     this.events.push(gybe ? 'gybing' : 'tacking');
   }
+  // the boom comes across: in a gybe the crew has it in hand; in a crash gybe (sailed too far by the lee) it slams
+  // over, and in a breeze she rolls hard to the new leeward side and round up — a death roll with the kite up. With
+  // the gennaker up the crew gybes it too, a few seconds of it barely pulling, and in a blow it can wrap round the
+  // forestay and has to come down: likelier in a gust, when she's slow, with a less sure crew, and in a crash gybe.
+  flipBoom(crash) {
+    const race = this._race, tws = this.tws, r = race ? race.rand() : 0.5;
+    this.boom = -this.boom; this.byLee = 0;
+    if (crash) {
+      const kiteUp = this.kite && this.kiteType !== 'zero';
+      if (tws >= 14 && kiteUp) {
+        this.events.push('deathRoll'); this.broachT = 4; this.heel = 48; this.v *= 0.6;
+        if (tws > 18 || r < 0.5) { this.kite = true; this.kiteJob = { up: false, t: 12, total: 12, messy: true }; }
+      } else if (tws >= 11) { this.events.push('crashGybe'); this.broachT = 1.8; this.heel = Math.max(this.heel, 30); this.v *= 0.8; }
+      else { this.events.push('crashGybe'); this.v *= 0.9; }
+    }
+    if (this.kite && !(this.kiteJob && !this.kiteJob.up)) {
+      const zero = this.kiteType === 'zero', t = zero ? 9 : 4 + tws * 0.15;
+      this.kiteGybe = { t, total: t };
+      if (!zero) {
+        const polar = polarSpeed(tws, Math.abs(this.twa) / D2R) * KN;
+        const risk = clamp((tws - 16) / 45, 0, 0.2) * this.crew * (crash ? 2.5 : 1) * (this.v < 0.6 * polar ? 1.4 : 1);
+        if ((race ? race.rand() : 1) < risk) { this.kiteGybe = null; this.kiteJob = { up: false, t: 14 + tws * 0.3, total: 14 + tws * 0.3, messy: true }; this.events.push('kiteWrap'); }
+      }
+    }
+  }
   step(dt, race) {
+    this._race = race;
     const w = race.windAt(this);
     this.wdir = w.dir; this.tws = w.tws; this.gust = w.gust; this.shadow = w.shadow;
     const twa = wrap(w.dir - this.h), a = Math.abs(twa) / D2R, side = sgn(twa);
@@ -251,6 +301,19 @@ export class Boat {
     this.aws = Math.hypot(ax, az) / KN;
     this.awa = wrap(Math.atan2(-ax, az) - this.h);
     const awa = Math.abs(this.awa) / D2R;
+
+    // the boom: upwind and reaching it is on the leeward side; through head to wind (a tack) it follows at once. Past
+    // dead downwind it stays where it was — she is sailing by the lee — until the crew gybes it (she's turning on
+    // through, or the button), or it comes across on its own: a crash gybe, sooner in a breeze and a seaway
+    if (!this.boom || a < 90) this.boom = sgn(twa);
+    else if (sgn(twa) !== this.boom) {
+      this.byLee = 180 - a;
+      const turning = Math.abs(this.yawRate) > 0.1 && sgn(twa) * this.yawRate > 0; // turning on, further by the lee, at some 6° a second: she means to gybe
+      const thr = 14 - 5 * clamp((w.tws - 12) / 10, 0, 1) - 3 * race.wind.p.waves;
+      if ((turning && this.byLee > 2) || (this.ai && this.byLee > 4) || (this.auto && this.auto.gybe && this.byLee > 1)) this.flipBoom(false);
+      else if (this.byLee > thr) this.flipBoom(true);
+    } else this.byLee = 0;
+    if (this.kiteGybe && (this.kiteGybe.t -= dt) <= 0) { this.kiteGybe = null; this.events.push('kiteGybed'); }
 
     this.sinceTack += dt;
     if (this.kiteJob) {
@@ -263,8 +326,9 @@ export class Boat {
     if (this.jibJob && (this.jibJob.t -= dt) <= 0) { this.smallJib = this.jibJob.small; this.jibJob = null; this.events.push('jibDone'); }
     const jj = this.jibJob, js0 = (sm) => (sm ? 0.72 : 1); // the J3 is about 70% of the J1
     this.jibSize = jj ? lerp(js0(!jj.small), js0(jj.small), clamp(1 - jj.t / jj.total, 0, 1)) * (0.35 + 0.65 * Math.abs(1 - 2 * (1 - jj.t / jj.total))) : js0(this.smallJib);
-    const kj = this.kiteJob; // how far up the kite is, for the picture
+    const kj = this.kiteJob, kg = this.kiteGybe; // how far up the kite is, and how collapsed while it's gybed, for the picture
     this.kiteFill = kj ? (kj.up ? 1 - kj.t / kj.total : kj.t / kj.total) : this.kite ? 1 : 0;
+    this.kiteCollapse = kg ? Math.sin(Math.PI * (1 - kg.t / kg.total)) : 0;
     if (this.reefJob && (this.reefJob.t -= dt) <= 0) { this.reef = this.reefJob.on; this.reefJob = null; this.events.push(this.reef ? 'reefDone' : 'shakeDone'); }
     const rj = this.reefJob;
     this.reefFill = rj ? (rj.on ? 1 - rj.t / rj.total : rj.t / rj.total) : this.reef ? 1 : 0;
@@ -303,11 +367,30 @@ export class Boat {
     const W = race.waves;
     const slope = W ? waveSlope(W, this.x, this.z, race.t, fx, fz) : 0;
     this.slope = slope;
-    const chop = 1 - race.wind.p.waves * 0.07 * clamp((70 - a) / 30, 0, 1);
+    // upwind the swell stops her when she meets a face square on. The way through: luff up a little as the bow climbs
+    // the face and bear away down the back, so she meets each one at an angle and picks up speed going down. waveN is
+    // the swell's slope under her (+ climbing), waveRhythm how well her steering follows it (+1 well, −1 against it)
+    const amp = race.wind.p.waves, upW = clamp((75 - a) / 35, 0, 1) * amp;
+    const swell = W ? waveSlope(W, this.x, this.z, race.t, fx, fz, 3) : 0;
+    this.waveN = clamp(swell / (amp * 0.12 + 1e-3), -1.5, 1.5);
+    this.aAvg += (a - this.aAvg) * (1 - Math.exp(-dt / 6));
+    const dev = this.aAvg - a; // + she's higher than her average heading
+    const fit = clamp(dev / 4, -1, 1) * clamp(this.waveN, -1, 1);
+    this.waveRhythm += (fit - this.waveRhythm) * (1 - Math.exp(-dt / 4));
+    const chop = 1 - upW * (0.05 + 0.06 * Math.max(0, this.waveN) - 0.05 * fit);
+
+    // slow, the keel hasn't the grip to point: until she's back up to speed she sails as if pinching. Footing a few
+    // degrees lower, sheets a touch eased, gets her going again far sooner (after a tack, a stop, a bad set)
+    // stall: how many degrees lower than close-hauled she should sail now; each degree she points above that costs speed
+    const bt = beatAngle(w.tws), vBeat = polarSpeed(w.tws, bt) * KN;
+    this.stall = FOOT * clamp(1 - this.v / (vBeat * 0.95), 0, 1);
+    const pinch = a < 80 && a > NO_GO ? clamp(bt + this.stall - a, 0, this.stall) : 0;
 
     // speed: the target from the polar, and momentum to get there
     this.polar = polarSpeed(w.tws, a, gen || a < 100);
-    let target = polarSpeed(w.tws, a, gen) * eff * heelPen * chop * KN;
+    let target = polarSpeed(w.tws, a, gen) * eff * heelPen * chop * (1 - PINCH * pinch) * KN;
+    if (this.byLee > 0) target *= 1 - 0.012 * this.byLee; // by the lee: the wind gets behind the main
+    if (this.kiteGybe) target *= this.kiteType === 'zero' ? 0.85 : 0.88; // the kite barely pulls while it's gybed
     // a code zero on a reach in light air: up to 14% more, best about 85° off the wind and fading above 15 knots
     if (zero) target *= 1 + 0.14 * clamp((15 - w.tws) / 7, 0, 1) * clamp(1 - Math.abs(a - 85) / 45, 0, 1);
     // the J3: a loss in light air, about even in a blow; changing jibs, little drive meanwhile
@@ -370,19 +453,35 @@ export class Boat {
 }
 
 // ---------- the course ----------
-export function makeCourse(laps, beat, bias, fleet = 4) {
+// The course: 'wl' windward–leeward (up to the windward mark, down through the gate, round again, down to the finish);
+// 'tri' a triangle — up to the windward mark, a tight reach out to the wing mark (some 100° off the wind, code-zero
+// weather in light air), a gybe there and a broad reach back down through the gate, and round again; the last lap
+// reaches from the wing mark straight down to the finish. All the marks are left to port.
+export function makeCourse(laps, beat, bias, fleet = 4, type = 'wl') {
   const half = Math.max(70, fleet * 10), dx = Math.cos(bias), dz = Math.sin(bias); // the line: some 1.6 boat lengths a boat
+  const gate = fleet > 5 ? [{ x: -27, z: -50 }, { x: 27, z: -50 }] : [{ x: -22, z: -45 }, { x: 22, z: -45 }];
+  let wing = null, wingOut = null, legs = ['start', ...Array.from({ length: laps }, (_, i) => (i < laps - 1 ? ['mark', 'gate'] : ['mark'])).flat(), 'finish'];
+  if (type === 'tri') {
+    // from the gate the wing lies 45° off the wind to the left, from the windward mark 100° off it: B up the beat
+    // from the gate puts it 0.85 B out and 0.85 B up
+    const B = beat + gate[0].z;
+    wing = { x: -0.85 * B, z: gate[0].z - 0.85 * B };
+    // its outside: straight on from the reach in, turned away from the reach out
+    const i1 = norm(wing.x, wing.z + beat), o1 = norm(-wing.x, gate[0].z - wing.z);
+    wingOut = norm(i1.x - o1.x, i1.z - o1.z);
+    legs = ['start', ...Array.from({ length: laps }, (_, i) => (i < laps - 1 ? ['mark', 'wing', 'gate'] : ['mark', 'wing'])).flat(), 'finish'];
+  }
   return {
-    laps,
+    laps, type, wing, wingOut,
     // the line, skewed by `bias`: bias > 0 puts the pin end further upwind (pin favoured)
     pin: { x: -half * dx, z: -half * dz }, committee: { x: half * dx, z: half * dz },
     dir: { x: dx, z: dz }, normal: { x: dz, z: -dx }, // along the line (pin → boat), and towards the course
     len: 2 * half,
     windward: { x: 0, z: -beat },
-    gate: fleet > 5 ? [{ x: -27, z: -50 }, { x: 27, z: -50 }] : [{ x: -22, z: -45 }, { x: 22, z: -45 }],
-    legs: ['start', ...Array.from({ length: laps }, (_, i) => (i < laps - 1 ? ['mark', 'gate'] : ['mark'])).flat(), 'finish'],
+    gate, legs,
   };
 }
+const norm = (x, z) => { const l = Math.hypot(x, z) || 1; return { x: x / l, z: z / l }; };
 // the fleet you race against (names and the colour on the map), and how long the course is
 export const FLEET = [['Aurora', 0xc0392b], ['Kestrel', 0x1e8449], ['Nomad', 0xd4ac0d], ['Halcyon', 0x2e86de], ['Mistral', 0x8e44ad],
   ['Selkie', 0x16a085], ['Tern', 0xe67e22], ['Vela', 0xe84393], ['Zephyr', 0x7f8c8d]];
@@ -407,6 +506,8 @@ function spinePoint(b, m) { // the point on her spine nearest to m
   return { x: b.x + fx * s, z: b.z + fz * s };
 }
 const KITE_MAX = 26; // the computer boats fly the kite below this true wind speed (knots)
+// her tack, as the rules have it: from the side her boom is on (sailing by the lee she is still on her old tack)
+const tackOf = (b) => b.boom || sgn(b.twa);
 const lineD = (c, b) => (b.x - c.pin.x) * c.normal.x + (b.z - c.pin.z) * c.normal.z; // + above the line
 const lineT = (c, b) => ((b.x - c.pin.x) * c.dir.x + (b.z - c.pin.z) * c.dir.z) / c.len;
 
@@ -414,7 +515,7 @@ const lineT = (c, b) => ((b.x - c.pin.x) * c.dir.x + (b.z - c.pin.z) * c.dir.z) 
 export function dailyRace(date = new Date()) {
   const day = date.toISOString().slice(0, 10), n = Math.floor(Date.parse(day) / 864e5), r = rng(n * 2654435761);
   r(); r();
-  return { day, seed: (n * 7919) % 100000, preset: ['light', 'medium', 'strong'][Math.floor(r() * 3)], fleet: 5, length: 'short', laps: 1, start: 1, current: r() < 0.3 ? 1 : 0 };
+  return { day, seed: (n * 7919) % 100000, preset: ['light', 'medium', 'strong'][Math.floor(r() * 3)], fleet: 5, length: 'short', laps: 1, start: 1, current: r() < 0.3 ? 1 : 0, course: 'wl' };
 }
 
 // the start sequence: the class flag goes up at the warning signal, P at the preparatory, P down at one minute
@@ -426,13 +527,13 @@ const SEQUENCES = {
 
 // ---------- the race ----------
 export class Race {
-  constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short' } = {}) {
+  constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl' } = {}) {
     this.rand = rng(seed + 7);
     const beatLen = ({ light: 200, medium: 260, strong: 280 }[preset] || 260) * (COURSE_LEN[length] || 1);
-    this.wind = new Wind(preset, seed, beatLen);
+    this.wind = new Wind(preset, seed, beatLen, course === 'tri' ? 0.85 * beatLen : 0);
     const bias = (this.rand() - 0.5) * 2 * 8 * D2R;
     fleet = clamp(Math.round(fleet), 2, FLEET.length + 1);
-    this.course = makeCourse(laps, beatLen, bias, fleet);
+    this.course = makeCourse(laps, beatLen, bias, fleet, course === 'tri' ? 'tri' : 'wl');
     this.seq = SEQUENCES[start] || SEQUENCES[1];
     this.clock = this.seq[0].t - (start === 1 ? 4 : 8); // negative before the gun
     this.sigI = 0;
@@ -468,13 +569,14 @@ export class Race {
       b.ai.port = i % 4 === 3; // one boat in four comes in late on port, looking for a gap
       b.ai.dare = (((b.ai.lineT * 97.3) % 1) - 0.65) * 3.4; // seconds: how close to the gun she dares cut it (− bolder)
       if (this.wind.p.tws >= 19 && i % 2) b.smallJib = true; // in a blow, some start with the J3 up
-      b.color = color;
+      b.color = color; b.crew = 1.5 - b.ai.skill; // the better skippers have the surer crews
       this.boats.push(b);
     });
     for (const b of this.boats) Object.assign(b, { leg: 0, ocs: false, done: false, finish: null, track: [], lastD: lineD(this.course, b), lastZ: b.z, rnd: null, dsq: false, touchT: 0, ufd: false, bfd: false });
     this.trackT = 0;
     this.messages = [];
     if (this.prepFlag !== 'P') this.say('prep' + this.prepFlag); // tell the player what the flag means
+    if (this.wind.sea) this.say('seaBreeze'); // the forecast: a sea breeze coming in
     this.over = false;
     this.zoneStates = new Map();
     this.pairs = new Map(); // boats near each other: how their right of way came about (rules 15 and 17)
@@ -605,8 +707,16 @@ export class Race {
         const m = c.windward, ux = Math.sin(b.wdir), uz = -Math.cos(b.wdir); // towards the wind
         const ahead = (b.x - m.x) * ux + (b.z - m.z) * uz, side = (b.x - m.x) * -uz + (b.z - m.z) * ux; // side > 0: east of it
         if (b.rnd !== null && ahead > 0 && ahead < 70) {
-          if (b.rnd > 0 && side <= 0) { b.leg++; b.rnd = null; if (b.ai) b.ai.wp = 0; if (b === this.player) this.say('rounded'); b.lastD = d; b.lastZ = b.z; return; }
+          if (b.rnd > 0 && side <= 0) { b.leg++; b.rnd = null; if (b.ai) b.ai.wp = 0; if (b === this.player) this.say(c.type === 'tri' ? 'roundedTri' : 'rounded'); b.lastD = d; b.lastZ = b.z; return; }
           if (b.rnd < 0 && side > 0 && b === this.player) this.say('wrongSide'); // went over it the wrong way
+        }
+        b.rnd = side;
+      } else if (k === 'wing') {
+        // the same at the wing mark, across the line straight out from it, from the reach in round to the reach out
+        const m = c.wing, o = c.wingOut, ahead = (b.x - m.x) * o.x + (b.z - m.z) * o.z, side = (b.x - m.x) * -o.z + (b.z - m.z) * o.x;
+        if (b.rnd !== null && ahead > 0 && ahead < 70) {
+          if (b.rnd > 0 && side <= 0) { b.leg++; b.rnd = null; if (b.ai) b.ai.wp = 0; if (b === this.player) this.say('roundedWing'); b.lastD = d; b.lastZ = b.z; return; }
+          if (b.rnd < 0 && side > 0 && b === this.player) this.say('wrongSide');
         }
         b.rnd = side;
       } else if (k === 'gate' && b.lastZ <= c.gate[0].z && b.z > c.gate[0].z) {
@@ -631,6 +741,7 @@ export class Race {
   nextMark(b) {
     const c = this.course, k = c.legs[b.leg];
     if (k === 'mark') return c.windward;
+    if (k === 'wing') return c.wing;
     if (k === 'gate') return { x: 0, z: c.gate[0].z };
     return { x: (c.pin.x + c.committee.x) / 2, z: (c.pin.z + c.committee.z) / 2 };
   }
@@ -665,7 +776,7 @@ export class Race {
     const zs = noZone ? null : this.zoneOf(p, q); // mark-room (rule 18), settled when the first of them reached the zone
     if (zs) return { giver: zs.entitled === p ? q : p, rule: '18' };
     if (p.tacking !== q.tacking) return { giver: p.tacking ? p : q, rule: '13' };
-    const sp = sgn(p.twa), sq = sgn(q.twa);
+    const sp = tackOf(p), sq = tackOf(q);
     if (sp !== sq) return { giver: sp < 0 ? p : q, rule: '10' };
     // same tack: not overlapped → the boat clear astern keeps clear; overlapped → the windward boat
     if (!this.overlapped(p, q)) return { giver: this.clearAhead(p, q) === p ? q : p, rule: '12' };
@@ -771,11 +882,11 @@ export class Race {
     const bs = this.boats, c = this.course;
     for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
       const p = bs[i], q = bs[j], key = i * 16 + j, st = this.zoneStates.get(key), k = c.legs[p.leg];
-      if (p.leg !== q.leg || (k !== 'mark' && k !== 'gate') || p.done || q.done) { if (st) this.zoneStates.delete(key); continue; }
+      if (p.leg !== q.leg || (k !== 'mark' && k !== 'gate' && k !== 'wing') || p.done || q.done) { if (st) this.zoneStates.delete(key); continue; }
       const m = this.nextMark(p), dp = Math.hypot(p.x - m.x, p.z - m.z), dq = Math.hypot(q.x - m.x, q.z - m.z);
       if (st) { if (dp > ZONE + 10 && dq > ZONE + 10) this.zoneStates.delete(key); continue; }
       if ((dp < ZONE || dq < ZONE) && Math.hypot(p.x - q.x, p.z - q.z) < 3 * HULL) {
-        if (k === 'mark' && sgn(p.twa) !== sgn(q.twa)) continue;
+        if (k === 'mark' && tackOf(p) !== tackOf(q)) continue;
         const ov = this.overlapped(p, q);
         this.zoneStates.set(key, { p, q, overlapped: ov, entitled: ov ? (dp < dq ? p : q) : this.clearAhead(p, q) });
       }
@@ -861,18 +972,21 @@ export class Race {
   // ---------- the computer skippers ----------
   aiTarget(b) {
     const c = this.course, k = c.legs[b.leg], ai = b.ai;
-    if (k === 'mark') {
-      const m = c.windward;
-      // tangled up at the mark (circling it without getting round): sail clear out to the east, below the layline,
-      // and come in again from there, as a skipper would
+    if (k === 'mark' || k === 'wing') {
+      // o: the mark's outside (upwind for the windward mark), p: square to it, the side she comes in on
+      const m = k === 'mark' ? c.windward : c.wing, o = k === 'mark' ? { x: 0, z: -1 } : c.wingOut, p = { x: -o.z, z: o.x };
+      const at = (fp, fo) => ({ x: m.x + p.x * fp + o.x * fo, z: m.z + p.z * fp + o.z * fo });
+      // tangled up at the mark (circling it without getting round): sail clear out on the side she comes in on, and
+      // come in again from there, as a skipper would
       ai.nearT = Math.hypot(b.x - m.x, b.z - m.z) < 45 ? (ai.nearT || 0) + (this.lastDt || 0) : 0;
       if (ai.nearT > 50) { ai.nearT = 0; ai.detour = this.clock + 30; ai.wp = 0; }
-      if (ai.detour > this.clock) return { x: m.x + 35, z: m.z + 30 };
-      // round it to port: come in on its east side with room to spare, cross above it, leave on the west side
+      if (ai.detour > this.clock) return at(35, -30);
+      // round it to port: come in on its near side with room to spare, cross outside it, leave on the far side
       // a boat that owes another mark-room (rule 18) goes round outside it, wider and a little later
       const wide = this.owesRoom(b) ? 1 : 0;
-      const w0 = { x: m.x + 10 + wide * 12, z: m.z - 9 - wide * 8 }, w1 = { x: m.x - 14 - wide * 6, z: m.z - 10 - wide * 6 };
-      if (ai.wp === 0 && b.z < m.z - 4 && b.x > m.x - 3) ai.wp = 1; // clearly above it: now bear away across the top
+      const w0 = at(10 + wide * 12, 9 + wide * 8), w1 = at(-14 - wide * 6, 10 + wide * 6);
+      const ah = (b.x - m.x) * o.x + (b.z - m.z) * o.z, sd = (b.x - m.x) * p.x + (b.z - m.z) * p.z;
+      if (ai.wp === 0 && ah > 4 && sd > -3) ai.wp = 1; // clearly outside it: now bear away across
       if (ai.wp === 1 && Math.hypot(b.x - w1.x, b.z - w1.z) < 6) ai.wp = 0; // there and still not round: go again
       return ai.wp === 0 ? w0 : w1;
     }
@@ -996,8 +1110,14 @@ export class Race {
         const lead = this.distToNext(you) - this.distToNext(b);
         if (lead > 15 && Math.hypot(you.x - b.x, you.z - b.z) < 150 && sgn(you.twa) !== tack && this.rand() < ai.skill * 0.6 && this.tackClear(b)) { ai.lastTack = this.clock; b.tackOrGybe(); return; }
       }
-      want = W - tack * up;
-    } else if (Math.abs(rel) > down) want = W - tack * down; // dead downwind: the best angle; the steering below gybes once it can
+      // sailing it: a few degrees lower while she's slow, to build speed; in a seaway up the face, down the back
+      want = W - tack * (up + (b.stall * ai.skill - 3 * ai.skill * clamp(b.waveN, -1, 1) * clamp(this.wind.p.waves / 0.45, 0, 1)) * D2R);
+    } else if (Math.abs(rel) > down) {
+      // dead downwind: the best angle on this gybe, the steering below gybes once it can. With the mark off to the
+      // other side, as just past the wing mark of a triangle, the other gybe is the one that heads for it: gybe now
+      const pastWing = c.legs[b.leg - 1] === 'wing', toward = pastWing && Math.abs(rel) < down + 15 * D2R && b.boom !== -sgn(rel) ? -sgn(rel) : tack;
+      want = W - toward * down;
+    }
     else want = brg;
     // don't hit a mark: turn to a heading that can be sailed and clears it, or tack if there is none
     const marks = this.obstacles();
@@ -1048,8 +1168,12 @@ export class Race {
     // before the gate (a drop takes ten seconds or so)
     const kUp = b.kiteJob ? b.kiteJob.up : b.kite, k = c.legs[b.leg];
     const nearGate = k === 'gate' && this.distToNext(b) < 45 + 100 * (1 - ai.skill); // (a finish under the kite is fine)
-    const wantKite = nearGate || k === 'mark' || k === 'start' ? false : this.clock > 0 && a > 120 && b.tws < KITE_MAX ? true : a > 100 && b.tws < KITE_MAX + 2 ? kUp : false;
-    if (wantKite !== kUp) b.setKite(wantKite);
+    let wantKite = nearGate || k === 'mark' || k === 'start' ? false : this.clock > 0 && a > 120 && b.tws < KITE_MAX ? true : a > 100 && b.tws < KITE_MAX + 2 ? kUp : false, type = 'gen';
+    // the tight reach out to the wing mark in light air: the code zero, furled again before the gybe there
+    // (with the gennaker already up and the mark close, not worth the change)
+    if (k === 'wing' && b.tws < 15 && a > 60 && a < 118 && !(b.kite && b.kiteType === 'gen' && this.distToNext(b) < 120)) { type = 'zero'; wantKite = this.clock > 0 && this.distToNext(b) > 30 + 50 * (1 - ai.skill); }
+    if (kUp && b.kiteType !== type) wantKite = false; // the other sail is up: down with it first
+    if (wantKite !== kUp) b.setKite(wantKite, type);
     // a reef when it blows over 21 knots for a while, shaken out when it eases below 16
     ai.blowT = b.tws > 21.5 ? (ai.blowT || 0) + dt : 0; ai.easeT = b.tws < 16 ? (ai.easeT || 0) + dt : 0;
     if (!b.reef && ai.blowT > 20) b.setReef(true); else if (b.reef && ai.easeT > 30) b.setReef(false);
@@ -1143,12 +1267,12 @@ export class Race {
   // the marks as they are, for contact: a buoy about a metre across the waterline, the committee boat's hull
   hardMarks() {
     const c = this.course, cb = { x: c.committee.x + c.dir.x * 5, z: c.committee.z + c.dir.z * 5 };
-    return [[c.windward, 1], [c.gate[0], 1], [c.gate[1], 1], [c.pin, 1], [cb, 4]];
+    return [[c.windward, 1], [c.gate[0], 1], [c.gate[1], 1], [c.pin, 1], [cb, 4], ...(c.wing ? [[c.wing, 1]] : [])];
   }
   // and with a margin, for the computer skippers to steer round
   obstacles() {
     const c = this.course, cb = { x: c.committee.x + c.dir.x * 5, z: c.committee.z + c.dir.z * 5 };
-    return [[c.windward, 4], [c.gate[0], 4], [c.gate[1], 4], [c.pin, 4], [cb, 8]];
+    return [[c.windward, 4], [c.gate[0], 4], [c.gate[1], 4], [c.pin, 4], [cb, 8], ...(c.wing ? [[c.wing, 4]] : [])];
   }
   nearest(b) {
     let best = { d: 1e9, x: 0, z: 0 };

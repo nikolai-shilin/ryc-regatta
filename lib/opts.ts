@@ -1,10 +1,10 @@
 // The player's settings, shared with the game on this origin: localStorage 'regatta' is the object the game reads at
 // the start of every race (public/game/main.js, "settings"). fleetV and optsV mark them as current, so the game keeps them.
-import type { Length, Wind } from './race';
+import type { Length, Shape, Wind } from './race';
 
 export type Opts = {
   mode: 'daily' | 'free';
-  preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number;
+  preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape;
   autoTrim: number; // 0 I trim · 1 auto · 2 main + jib
   sound: number; guides: number; gfx: 'auto' | 'high' | 'medium' | 'low';
   camera: 'drone' | 'top' | 'helm'; vibration: number;
@@ -12,7 +12,7 @@ export type Opts = {
 };
 
 export const DEFAULTS: Opts = {
-  mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0,
+  mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl',
   autoTrim: 0, sound: 1, guides: 1, gfx: 'auto', camera: 'drone', vibration: 1, fleetV: 3, optsV: 4,
 };
 

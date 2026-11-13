@@ -27,7 +27,8 @@ export function CourseMap({ lang, geo, preset, W, H, className, route, fleet, tr
   const corner: XZ = [M[0] - (beat / 2) * Math.tan(a), (M[1] + Wm[1]) / 2];
 
   // fit: everything on the water, with room for the labels round it
-  const pts: XZ[] = [Wm, ...geo.gate, geo.pin, geo.committee, ...(route ? [corner] : []), ...(tracks || []).flatMap((t) => t.pts)];
+  const Wg = geo.wing, rounding: XZ[] = [Wm, ...geo.gate, ...(Wg ? [Wg] : [])];
+  const pts: XZ[] = [...rounding, geo.pin, geo.committee, ...(route ? [corner] : []), ...(tracks || []).flatMap((t) => t.pts)];
   const xs = pts.map((p) => p[0]), zs = pts.map((p) => p[1]);
   const x0 = Math.min(...xs) - 12, x1 = Math.max(...xs) + 12, z0 = Math.min(...zs) - 12, z1 = Math.max(...zs) + 12;
   const pad = { t: 40, b: route ? 44 : 30, l: 16, r: 56 };
@@ -79,19 +80,21 @@ export function CourseMap({ lang, geo, preset, W, H, className, route, fleet, tr
           const z = Wm[1] + d, hw = Math.min(260, 30 + d * 0.95);
           return <path key={d} d={`M${X(Wm[0] - hw)} ${Z(z)} H${X(Wm[0] + hw)}`} stroke="#fff" strokeOpacity={0.13} strokeWidth={1} strokeDasharray="6 5" />;
         })}
-        {[Wm, ...geo.gate].map((p, i) => <circle key={i} cx={X(p[0])} cy={Z(p[1])} r={ZONE * s} fill="none" stroke="#fff" strokeOpacity={0.28} strokeDasharray="2 3" />)}
+        {rounding.map((p, i) => <circle key={i} cx={X(p[0])} cy={Z(p[1])} r={ZONE * s} fill="none" stroke="#fff" strokeOpacity={0.28} strokeDasharray="2 3" />)}
 
         {route && (
           <g fill="none" stroke={ME} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round">
             <path d={`M${X(M[0])} ${Z(M[1])} L${X(corner[0])} ${Z(corner[1])} L${X(Wm[0])} ${Z(Wm[1])}`} strokeOpacity={0.85} />
-            <path d={`M${X(Wm[0]) + 4} ${Z(Wm[1]) + 8} L${X(M[0]) + 4} ${Z(M[1]) - 6}`} strokeOpacity={0.6} strokeDasharray="4 5" />
+            {Wg
+              ? <path d={`M${X(Wm[0]) - 6} ${Z(Wm[1]) + 3} L${X(Wg[0]) + 6} ${Z(Wg[1]) - 3} L${X(M[0]) - 4} ${Z(M[1]) - 6}`} strokeOpacity={0.6} strokeDasharray="4 5" />
+              : <path d={`M${X(Wm[0]) + 4} ${Z(Wm[1]) + 8} L${X(M[0]) + 4} ${Z(M[1]) - 6}`} strokeOpacity={0.6} strokeDasharray="4 5" />}
           </g>
         )}
         {(tracks || []).filter((t) => !t.me).map((t, i) => <path key={i} d={path(t.pts)} fill="none" stroke="#fff" strokeOpacity={0.32} strokeWidth={1.3} strokeLinejoin="round" />)}
         {(tracks || []).filter((t) => t.me).map((t, i) => <path key={i} d={path(t.pts)} fill="none" stroke={ME} strokeWidth={2.6} strokeLinejoin="round" strokeLinecap="round" />)}
 
         <path d={`M${X(geo.pin[0])} ${Z(geo.pin[1])} L${X(geo.committee[0])} ${Z(geo.committee[1])}`} stroke="#fff" strokeOpacity={0.85} strokeWidth={1.4} strokeDasharray="3 4" />
-        {[Wm, ...geo.gate].map((p, i) => <circle key={i} cx={X(p[0])} cy={Z(p[1])} r={i ? 4.5 : 5.5} fill={MARK} stroke={SEA} strokeWidth={1.5} />)}
+        {rounding.map((p, i) => <circle key={i} cx={X(p[0])} cy={Z(p[1])} r={i === 1 || i === 2 ? 4.5 : 5.5} fill={MARK} stroke={SEA} strokeWidth={1.5} />)}
         <path d={`M${X(geo.pin[0]) - 6} ${Z(geo.pin[1]) + 5} l6 -11 6 11 z`} fill="#f2c230" />
         <g transform={`translate(${X(geo.committee[0])} ${Z(geo.committee[1])}) rotate(90)`}><path d={hull(Math.max(14, HULL * 1.4 * s))} fill="#f4f6f7" /></g>
         {Array.from({ length: n }, (_, i) => {
@@ -110,6 +113,7 @@ export function CourseMap({ lang, geo, preset, W, H, className, route, fleet, tr
 
         <g fontSize={10} fill={TXT} style={font}>
           <text x={X(Wm[0]) - 11} y={Z(Wm[1]) + 3.5} textAnchor="end" {...halo}>{ru ? 'ВЕРХНИЙ ЗНАК' : 'WINDWARD MARK'}</text>
+          {Wg && <text x={X(Wg[0])} y={Z(Wg[1]) - 10} textAnchor="middle" {...halo}>{ru ? 'БОКОВОЙ ЗНАК' : 'WING MARK'}</text>}
           <text x={X(geo.gate[0][0]) - 9} y={Z(geo.gate[0][1]) - 6} textAnchor="end" {...halo}>{ru ? `ВОРОТА ${m(gateW).toUpperCase()}` : `GATE ${m(gateW).toUpperCase()}`}</text>
           <text x={X(M[0])} y={Z(M[1]) + (route ? 18 + boatL : 17)} textAnchor="middle" {...halo}>{ru ? `СТАРТ · ФИНИШ ${m(lineLen).toUpperCase()}` : `START · FINISH ${m(lineLen).toUpperCase()}`}</text>
           {/* the wind, top left */}

@@ -635,7 +635,7 @@ export class BoatView {
     const y = waveHeight(W, b.x, b.z, t), fx = Math.sin(b.h), fz = -Math.cos(b.h);
     const pitch = Math.atan2(waveHeight(W, b.x + fx * 4, b.z + fz * 4, t) - waveHeight(W, b.x - fx * 4, b.z - fz * 4, t), 8);
     const roll = Math.atan2(waveHeight(W, b.x - fz * 1.5, b.z + fx * 1.5, t) - waveHeight(W, b.x + fz * 1.5, b.z - fx * 1.5, t), 3) * 0.5;
-    const side = b.twa >= 0 ? 1 : -1;
+    const side = b.boom || (b.twa >= 0 ? 1 : -1); // the boom's side: by the lee it stays put until she gybes
     this.sailSide = lerp(this.sailSide, side, Math.abs(b.twa) > 2.1 ? 0.2 : 0.06); // a gybe slams the boom across
     this.root.position.set(b.x, y * 0.85 - 0.05, b.z);
     this.root.rotation.y = -b.h;
@@ -699,7 +699,7 @@ export class BoatView {
     // gennaker on the bowsprit
     // kf: how far the gennaker is up — it climbs the mast furled during a hoist and fills only at the top, and comes
     // down collapsing during a drop
-    const kf = b.kiteFill ?? (b.kite ? 1 : 0), kfill = kf * kf;
+    const kf = b.kiteFill ?? (b.kite ? 1 : 0), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0)); // half collapsed while it's gybed
     this.kite.visible = this.sprit.visible = this.kiteSheet.visible = kf > 0.02;
     if (kf > 0.02) {
       const a = Math.abs(b.twa) / D2R, out = lerp(6.2, 3.4, clamp((a - 95) / 80, 0, 1)) * lerp(0.15, 1, kfill), sd = -this.sailSide;
