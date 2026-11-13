@@ -206,16 +206,14 @@ const tube = (pts, r, mat, closed = false) => new THREE.Mesh(new THREE.TubeGeome
 const cyl = (r0, r1, h, mat, seg = 10) => new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, seg), mat);
 
 // ---------- the logo ----------
-// the club's logo (the pennant with RYC in it), recoloured and drawn large so it stays sharp on a canvas; or the
-// player's own picture (a data: URL from the boat page), drawn as it is
+// the club's logo (the white RYC pennant on a red square, public/images/ryc-badge.svg) or the player's own picture
+// (a data: URL from the boat page), each drawn as it is
+const RYC_BADGE = '/images/ryc-badge.svg';
 const logoCache = {};
-function logoImage(logo, color) {
-  const own = typeof logo === 'string', key = own ? logo : 'ryc' + color;
-  if (!logoCache[key]) logoCache[key] = (own ? Promise.resolve(logo) : fetch('/logo-black.svg').then((r) => r.text())
-    .then((svg) => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replaceAll('#000000', color).replace('width="50" height="25"', 'width="800" height="400"'))))
-    .then((src) => new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = src; }))
-    .catch(() => null);
-  return logoCache[key];
+function logoImage(logo) {
+  const src = typeof logo === 'string' ? logo : RYC_BADGE;
+  if (!logoCache[src]) logoCache[src] = new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = src; }).catch(() => null);
+  return logoCache[src];
 }
 // draws a picture as large as fits in a w × h box centred on (cx, cy), keeping its shape
 function drawContain(x, img, cx, cy, w, h) {
@@ -247,10 +245,10 @@ const PORTLIGHT = new THREE.MeshStandardMaterial({
   color: '#0b1116', roughness: 0.05, metalness: 0.3, envMapIntensity: 1.5, transparent: true, alphaTest: 0.4, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2,
   alphaMap: canvasTex(256, 32, (x, w, h) => { x.fillStyle = '#000'; x.fillRect(0, 0, w, h); x.fillStyle = '#fff'; x.beginPath(); x.roundRect(4, 4, w - 8, h - 8, 12); x.fill(); }),
 });
-function logoDecal(side, logo, color, z0 = -2.55, y0 = 0.64, W = 1.36, H = 0.52) {
+function logoDecal(side, logo, z0 = -2.55, y0 = 0.64, W = 1.36, H = 0.52) {
   const c = document.createElement('canvas'); c.width = 512; c.height = 256;
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
-  logoImage(logo, color).then((img) => { if (img) { drawContain(c.getContext('2d'), img, 256, 128, 496, 248); tex.needsUpdate = true; } });
+  logoImage(logo).then((img) => { if (img) { drawContain(c.getContext('2d'), img, 256, 128, 496, 248); tex.needsUpdate = true; } });
   return hullDecal(side, z0, y0, W, H, new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.35, roughness: 0.25, envMapIntensity: 0.9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 }));
 }
 
@@ -293,7 +291,7 @@ function sailTexture(kind, look) {
       if (look.logo) x.fillText(look.num, 0, 120);
       else { x.fillText(look.nat, 0, -82); x.fillText(look.num, 0, 70); }
       x.restore();
-      if (look.logo) logoImage(look.logo, look.ink).then((img) => {
+      if (look.logo) logoImage(look.logo).then((img) => {
         if (!img) return;
         x.save(); x.translate(W * 0.47, H * 0.255); x.scale(1, 0.44); drawContain(x, img, 0, 0, 340, 300); x.restore(); // a wide logo fills the width, a square one the height
         t.needsUpdate = true; // the clone on the other side shares the canvas
@@ -366,7 +364,7 @@ export function labelSprite(color) {
 }
 // the looks: hull paint, sail cloth and number, gennaker panels
 export const LOOKS = {
-  player: { hull: '#f6f5f1', stripe: '#16325c', cloth: '#f4f2ea', tape: '#d9d4c4', batten: '#d5d1c4', ink: '#16325c', nat: 'RYC', num: '1', logo: true, kite: ['#16325c'] },
+  player: { hull: '#1c1f24', stripe: '#1c1f24', cloth: '#2a2c30', laminate: true, tape: '#1e1f22', batten: '#1d1f22', ink: '#ffffff', nat: 'RYC', num: '1', logo: true, kite: ['#1c1f24'], crew: '#1c1f24', pants: '#1c1f24' }, // all black, the sail number white (lib/boat.ts DEFAULT_BOAT)
   Aurora: { hull: '#a8202a', stripe: '#f4f2ec', cloth: '#7f858c', laminate: true, tape: '#5f646b', batten: '#5a5f66', ink: '#ffffff', nat: 'GBR', num: '52', kite: ['#e63946', '#ffffff'] },
   Kestrel: { hull: '#14503c', stripe: '#e9e3cf', cloth: '#2a2c30', laminate: true, tape: '#18191c', batten: '#1c1d20', ink: '#f2c230', nat: 'FRA', num: '7', kite: ['#2a9d8f', '#f2c230'] },
   Nomad: { hull: '#2b2f36', stripe: '#e8c547', cloth: '#ebe3cd', tape: '#cfc5aa', batten: '#d2c9b0', ink: '#b3262b', nat: 'ITA', num: '33', kite: ['#f4a261', '#1d1d1d'] },
@@ -380,18 +378,19 @@ export const LOOKS = {
 
 // the player's own boat, as the boat page (/boat) saves it in localStorage 'regatta-boat': the colours of the hull, the
 // sails, the gennaker and the crew, the sail number and the logo. lookFrom turns it into a look; anything missing or
-// malformed keeps the club's colours.
+// malformed keeps the default boat's (all black).
 export const BOAT_KEY = 'regatta-boat';
 const DEFAULT_LOGO = '/images/ryc-rentals-bot.png';
 const isHex = (v) => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
 const darker = (hex, f) => '#' + new THREE.Color(hex).lerp(new THREE.Color('#000000'), f).getHexString();
 export function lookFrom(b) {
-  const L = { ...LOOKS.player, crew: LOOKS.player.stripe, pants: '#262a31' };
+  const L = { ...LOOKS.player };
   if (!b || typeof b !== 'object') return L;
-  for (const k of ['hull', 'stripe', 'cloth', 'ink', 'crew', 'pants']) if (isHex(b[k])) L[k] = b[k];
+  for (const k of ['hull', 'cloth', 'ink', 'crew', 'pants']) if (isHex(b[k])) L[k] = b[k];
+  L.stripe = L.hull; // no stripe of its own: the sheer stripe and the boot-top are the hull's colour
   const kite = Array.isArray(b.kite) ? b.kite[0] : b.kite; // the player's gennaker is one colour (older saves kept three panels: the top one)
   if (isHex(kite)) L.kite = [kite];
-  L.laminate = !!b.laminate;
+  if (typeof b.laminate === 'boolean') L.laminate = b.laminate;
   L.tape = darker(L.cloth, L.laminate ? 0.28 : 0.12); L.batten = darker(L.cloth, L.laminate ? 0.3 : 0.14); // the luff tape and battens: a shade darker than the cloth
   if (typeof b.num === 'string' && b.num.trim()) L.num = b.num.trim().slice(0, 3);
   if (typeof b.nat === 'string' && b.nat.trim()) L.nat = b.nat.trim().toUpperCase().slice(0, 3);
@@ -584,7 +583,7 @@ export class BoatView {
       t.userData = { f, sx }; this.jibPivot.add(t); this.tells.push(t);
     }
     if (label) { this.label = labelSprite(label.color); this.labelText = label.text; this.label.position.set(0, 18.4, 0); this.root.add(this.label); }
-    if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(sx, look.logo, look.stripe)); // the logo on both bows
+    if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(sx, look.logo)); // the logo on both bows
     for (const sx of [-1, 1]) { T.add(hullDecal(sx, -0.55, 0.78, 1.5, 0.15, PORTLIGHT)); T.add(hullDecal(sx, 1.05, 0.79, 0.75, 0.13, PORTLIGHT)); } // hull windows
     // the running rigging: jib sheets (the working one taut to the leeward winch, the lazy one slack), the gennaker
     // sheet, halyards down the front of the mast, and a wind vane at the masthead

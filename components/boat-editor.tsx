@@ -58,7 +58,7 @@ export function BoatEditor({ lang }: { lang: Lang }) {
     if (file.current) file.current.value = '';
   };
 
-  const swatches = (k: 'hull' | 'stripe' | 'cloth' | 'ink' | 'kite' | 'crew' | 'pants', label: string) => (
+  const swatches = (k: 'hull' | 'cloth' | 'ink' | 'kite' | 'crew' | 'pants', label: string) => (
     <div className="srow srow-sw">
       <span className="srow-k" id={`l-${k}`}>{label}</span>
       <Swatches label={`l-${k}`} value={b[k]} options={SWATCHES[k]} onChange={(v) => { set({ [k]: v }); if (k === 'kite') setDown(true); else if (k !== 'crew' && k !== 'pants') setDown(false); }} t={t} />
@@ -97,7 +97,6 @@ export function BoatEditor({ lang }: { lang: Lang }) {
         <div className="set-sec">
           <div className="group-k"><span className="kicker">{t('Hull', 'Корпус')}</span></div>
           {swatches('hull', t('Hull', 'Борт'))}
-          {swatches('stripe', t('Stripe', 'Полоса'))}
         </div>
 
         <div className="set-sec">
@@ -110,7 +109,7 @@ export function BoatEditor({ lang }: { lang: Lang }) {
             </div>
           </div>
           {swatches('cloth', t('Sail colour', 'Цвет парусов'))}
-          {swatches('ink', t('Number and logo', 'Номер и логотип'))}
+          {swatches('ink', t('Sail number', 'Номер'))}
           {swatches('kite', t('Gennaker', 'Геннакер'))}
         </div>
 

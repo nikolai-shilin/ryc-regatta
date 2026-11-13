@@ -4,9 +4,9 @@
 export type Logo = 'ryc' | 'custom' | 'none';
 export type Boat = {
   preset?: string;
-  hull: string; stripe: string;          // the topsides and the stripe under the sheer (and the boot-top)
+  hull: string;                          // the topsides, the stripe under the sheer and the boot-top all in one colour
   cloth: string; laminate: boolean;      // the mainsail and jib: their colour, and laminate (fibres, a sheen) or Dacron
-  ink: string;                           // the sail number and, for the club's logo, the logo on the main
+  ink: string;                           // the sail number (and its letters, without a logo)
   kite: string;                          // the gennaker: one colour
   crew: string; pants: string;           // the team: jackets and trousers
   logo: Logo; logoImg?: string;          // the logo on the main and the bows; logoImg: your own picture as a data: URL
@@ -20,16 +20,16 @@ export const DEFAULT_LOGO = '/images/ryc-rentals-bot.png';
 
 export type Preset = { id: string; en: string; ru: string; boat: Omit<Boat, 'logo' | 'logoImg' | 'nat' | 'num' | 'preset'> };
 
-// one-colour schemes: the hull, the gennaker and the team jackets in one colour, on white sails, with a stripe and a
-// sail number that show up against it. Picking one keeps your number and logo.
+// one-colour schemes: the hull, the gennaker and the team jackets in one colour, on white sails, with a sail number
+// that shows up against it. Picking one keeps your number and logo.
 const light = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
   return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255 > 0.6;
 };
 function mono(id: string, en: string, ru: string, c: string, dark = false): Preset {
-  const stripe = light(c) ? '#1d1d1d' : '#ffffff';
+  const mark = light(c) ? '#1d1d1d' : '#ffffff';
   const cloth = dark ? '#2a2c30' : '#f4f2ea';
-  return { id, en, ru, boat: { hull: c, stripe, cloth, laminate: dark, ink: dark || light(c) ? stripe : c, kite: c, crew: c, pants: dark ? c : '#262a31' } };
+  return { id, en, ru, boat: { hull: c, cloth, laminate: dark, ink: dark || light(c) ? mark : c, kite: c, crew: c, pants: dark ? c : '#262a31' } };
 }
 export const PRESETS: Preset[] = [
   mono('white', 'White', 'Белая', '#f4f3ef'),
@@ -46,10 +46,10 @@ export const PRESETS: Preset[] = [
   mono('purple', 'Purple', 'Фиолетовая', '#5b2a86'),
 ];
 
-// the club's own colours: the boat you start with, and what Reset brings back
+// the boat you start with, and what Reset brings back: all black (the Black preset), with the club's red RYC badge
+// on the main and the bows and the sail number in white
 export const DEFAULT_BOAT: Boat = {
-  hull: '#f4f3ef', stripe: '#16325c', cloth: '#f4f2ea', laminate: false, ink: '#16325c', kite: '#16325c',
-  crew: '#16325c', pants: '#262a31', logo: 'ryc', nat: 'RYC', num: '1',
+  preset: 'black', ...PRESETS.find((p) => p.id === 'black')!.boat, logo: 'ryc', nat: 'RYC', num: '1',
 };
 
 // the colours to choose from: the presets' own, so every colour a preset (or the club's boat) sets, its team's jackets
@@ -60,7 +60,6 @@ const uniq = (l: string[]) => [...new Set(l.map((c) => c.toLowerCase()))];
 const MARKS = uniq(['#ffffff', '#1d1d1d', ...PALETTE.filter((c) => !['#f4f3ef', '#1c1f24'].includes(c))]);
 export const SWATCHES = {
   hull: PALETTE,
-  stripe: MARKS,
   cloth: uniq([...PRESETS.map((p) => p.boat.cloth), '#ebe3cd', '#dfe4e8', '#868c93', '#3a3d42']),
   ink: MARKS,
   kite: PALETTE,
@@ -75,10 +74,10 @@ export function readBoat(): Boat {
     const b = JSON.parse(localStorage.getItem(BOAT_KEY) || 'null');
     if (!b || typeof b !== 'object') return { ...DEFAULT_BOAT };
     const out: Boat = { ...DEFAULT_BOAT, preset: typeof b.preset === 'string' ? b.preset : undefined };
-    for (const k of ['hull', 'stripe', 'cloth', 'ink', 'crew', 'pants'] as const) if (isHex(b[k])) out[k] = b[k];
+    for (const k of ['hull', 'cloth', 'ink', 'crew', 'pants'] as const) if (isHex(b[k])) out[k] = b[k];
     const kite = Array.isArray(b.kite) ? b.kite[0] : b.kite; // saved before the gennaker went one colour: its top panel
     if (isHex(kite)) out.kite = kite;
-    out.laminate = !!b.laminate;
+    if (typeof b.laminate === 'boolean') out.laminate = b.laminate;
     if (b.logo === 'ryc' || b.logo === 'none' || b.logo === 'custom') out.logo = b.logo;
     if (typeof b.logoImg === 'string' && b.logoImg.startsWith('data:image/')) out.logoImg = b.logoImg;
     if (typeof b.nat === 'string') out.nat = b.nat;
