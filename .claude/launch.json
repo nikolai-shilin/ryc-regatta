@@ -9,6 +9,20 @@
         "dev"
       ],
       "port": 5193
+    },
+    {
+      "name": "ui-review",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5199",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        ".ui-review"
+      ],
+      "port": 5199
     }
   ]
 }
