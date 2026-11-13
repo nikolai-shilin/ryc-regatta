@@ -33,17 +33,19 @@ button.link-row { width: 100%; background: none; border: 0; border-bottom: 1px s
 .boat-sub { display: block; margin-top: 2px; color: var(--muted); }
 .srow.srow-sw { flex-direction: column; align-items: stretch; gap: 8px; padding: 8px 0 10px; }
 .sws { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 4px; }
-.sw, .kite-sw { position: relative; flex: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); cursor: pointer; }
-.kite-sw { width: 22px; height: 30px; border-radius: 11px; }
-.sw[aria-checked="true"], .sw.sw-own, .kite-sw[aria-pressed="true"] { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15), 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
-.sw-pick { overflow: hidden; background: conic-gradient(#ff4d4d, #ffd60a, #4ade80, #22d3ee, #3b82f6, #e879f9, #ff4d4d); }
-.sw-pick.sw-own::after { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7); }
-.sw-pick input { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); padding: 0; border: 0; opacity: 0; cursor: pointer; }
-.sw-pick:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
-.presets { display: flex; gap: 8px; overflow-x: auto; padding: 8px 2px 10px; scroll-snap-type: x proximity; scrollbar-width: thin; }
-.preset { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 92px; padding: 6px 4px 8px; border: 2px solid transparent; border-radius: 16px; background: var(--band); cursor: pointer; scroll-snap-align: start; font: 700 12px/1.1 var(--f-carlito), Arial, sans-serif; color: var(--ink); text-align: center; }
+.sw { position: relative; flex: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); cursor: pointer; }
+.sw[aria-checked="true"] { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15), 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
+.presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; padding: 10px 0 12px; }
+.preset { display: flex; flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; padding: 4px 4px 7px; border: 2px solid transparent; border-radius: 16px; background: var(--band); cursor: pointer; color: var(--ink); transition: border-color 0.15s, background-color 0.15s; }
 .preset:hover { border-color: var(--tag-line); }
 .preset.on { border-color: var(--ink); background: var(--bg); }
+.preset-pic { position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; background: linear-gradient(#e6f1f8, #f2f7f9 70%); }
+.preset-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; animation: preset-in 0.3s ease-out; }
+.preset-pic i { position: absolute; left: 50%; top: 50%; width: 34%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%); background: var(--c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); opacity: 0.5; }
+.preset-name { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; font: 700 12px/1.1 var(--f-carlito), Arial, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preset-name i { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2); }
+@keyframes preset-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .preset-pic img { animation: none; } }
 .logo-pick { display: flex; align-items: center; gap: 8px; flex: none; }
 .logo-thumb { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 34px; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); overflow: hidden; }
 .logo-thumb img { max-width: 48px; max-height: 28px; object-fit: contain; }
@@ -59,6 +61,6 @@ button.link-row { width: 100%; background: none; border: 0; border-bottom: 1px s
   .boat-grid { gap: 0 56px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
   .boat-prev { border-radius: 28px; }
   .sw { width: 30px; height: 30px; }
-  .kite-sw { width: 24px; height: 34px; border-radius: 12px; }
-  .preset { width: 100px; font-size: 13px; }
+  .presets { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+  .preset-name { font-size: 13px; }
 }

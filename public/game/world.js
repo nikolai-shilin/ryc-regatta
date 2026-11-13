@@ -2,7 +2,9 @@
 import * as THREE from 'three';
 import { D2R, wrap, clamp, lerp, waveHeight, waveSlope, beatAngle, runAngle, HULL, ZONE } from './sim.js';
 const SC = HULL / 10.4; // the model is drawn 10.4 m long; a First 40.7 is 12.2 m
-import { BoatView, LOOKS } from './yacht.js';
+import { BoatView, LOOKS, playerLook } from './yacht.js';
+import { CommitteeBoat } from './committee.js';
+export { flagTexture } from './committee.js';
 
 const SKY_TOP = new THREE.Color('#4f8fcb'), SKY_HORIZON = new THREE.Color('#d6e7f0');
 const SUN = new THREE.Vector3(-0.41, 0.57, 0.71).normalize(); // from the south-west, behind a boat beating north
@@ -459,87 +461,10 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
-// ---------- the committee boat's hull ----------
-// stations from the stern (t = 0) to the bow (t = 1), each a rounded section from the deck edge to the keel
-function hullGeometry(L, B, sheer, draft, colors) {
-  const N = 30, K = 9, pos = [], col = [], idx = [];
-  const hull = new THREE.Color(colors.hull), stripe = new THREE.Color(colors.stripe), bottom = new THREE.Color('#7a2e2e');
-  const st = (t) => ({
-    hb: (B / 2) * (t < 0.55 ? 0.8 + 0.2 * Math.sin((t / 0.55) * Math.PI / 2) : Math.cos(((t - 0.55) / 0.45) * Math.PI / 2) ** 0.8),
-    sy: sheer + 0.32 * t * t,
-    d: draft * (t < 0.5 ? 0.6 + 0.4 * Math.sin((t / 0.5) * Math.PI / 2) : 0.15 + 0.85 * Math.cos(((t - 0.5) / 0.5) * Math.PI / 2)),
-    z: L / 2 - t * L,
-  });
-  const W = 2 * K + 1;
-  for (let i = 0; i <= N; i++) {
-    const s = st(i / N);
-    for (let k = -K; k <= K; k++) {
-      const th = (Math.abs(k) / K) * Math.PI / 2;
-      const x = Math.sign(k) * s.hb * Math.cos(th) ** 0.5, y = lerp(s.sy, -s.d, Math.sin(th) ** 1.3);
-      pos.push(x, y, s.z);
-      const c = y < 0.02 ? bottom : y < 0.2 ? stripe : hull;
-      col.push(c.r, c.g, c.b);
-    }
-  }
-  for (let i = 0; i < N; i++) for (let k = 0; k < W - 1; k++) {
-    const a = i * W + k, b = a + 1, c = a + W, d = c + 1;
-    idx.push(a, c, b, b, c, d);
-  }
-  // transom
-  const s0 = st(0), ci = pos.length / 3;
-  pos.push(0, (s0.sy - s0.d) / 2, s0.z); col.push(hull.r, hull.g, hull.b);
-  for (let k = 0; k < W - 1; k++) idx.push(ci, k, k + 1);
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  g.setIndex(idx); g.computeVertexNormals();
-  // the deck, along the sheer
-  const dp = [], di = [];
-  for (let i = 0; i <= N; i++) { const s = st(i / N); dp.push(-s.hb, s.sy, s.z, s.hb, s.sy, s.z); }
-  for (let i = 0; i < N; i++) { const a = i * 2; di.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-  const dg = new THREE.BufferGeometry();
-  dg.setAttribute('position', new THREE.Float32BufferAttribute(dp, 3)); dg.setIndex(di); dg.computeVertexNormals();
-  return { hull: g, deck: dg, sheerAt: (t) => st(t).sy };
-}
-
 function buoy(color = '#ff7a1a', h = 2.4) {
   const g = new THREE.Group(), m = new THREE.MeshLambertMaterial({ color });
   const c = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.1, h, 16), m); c.position.y = h / 2 - 0.4; g.add(c);
   const top = new THREE.Mesh(new THREE.ConeGeometry(1.0, 0.9, 16), m); top.position.y = h - 0.4 + 0.45; g.add(top);
-  return g;
-}
-
-// code flags drawn on a canvas
-export function flagTexture(k) {
-  const c = document.createElement('canvas'); c.width = 96; c.height = 64;
-  const x = c.getContext('2d');
-  if (k === 'P') { x.fillStyle = '#1f4fa8'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#fff'; x.fillRect(30, 20, 36, 24); }
-  else if (k === 'U') { x.fillStyle = '#fff'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#d22'; x.fillRect(0, 0, 48, 32); x.fillRect(48, 32, 48, 32); }
-  else if (k === 'B') { x.fillStyle = '#111'; x.fillRect(0, 0, 96, 64); }
-  else if (k === 'sub') { x.fillStyle = '#1f4fa8'; x.beginPath(); x.moveTo(0, 0); x.lineTo(96, 32); x.lineTo(0, 64); x.fill(); x.fillStyle = '#f2c230'; x.beginPath(); x.moveTo(8, 12); x.lineTo(70, 32); x.lineTo(8, 52); x.fill(); } // the first substitute
-  else if (k === 'X') { x.fillStyle = '#fff'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#1f4fa8'; x.fillRect(40, 0, 16, 64); x.fillRect(0, 24, 96, 16); }
-  else { x.fillStyle = '#f2c230'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#111'; x.font = '900 40px Carlito, Lato, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('R', 48, 34); }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-
-function committeeBoat() {
-  const g = new THREE.Group();
-  const H = hullGeometry(12, 4, 1.3, 0.8, { hull: '#ffffff', stripe: '#1d3557' });
-  g.add(new THREE.Mesh(H.hull, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
-  g.add(new THREE.Mesh(H.deck, new THREE.MeshLambertMaterial({ color: '#dcd8cc', side: THREE.DoubleSide })));
-  const cab = new THREE.Mesh(new THREE.BoxGeometry(2.8, 1.6, 4.2), new THREE.MeshLambertMaterial({ color: '#f2f2ee' })); cab.position.set(0, 2.2, 0.2); g.add(cab);
-  const win = new THREE.Mesh(new THREE.BoxGeometry(2.85, 0.5, 3.6), new THREE.MeshLambertMaterial({ color: '#1f2a33' })); win.position.set(0, 2.5, 0.2); g.add(win);
-  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 5, 6), new THREE.MeshLambertMaterial({ color: '#ccc' })); mast.position.set(0, 5.4, 0.2); g.add(mast);
-  const yard = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.06, 0.06), new THREE.MeshLambertMaterial({ color: '#ccc' })); yard.position.set(0, 7.6, 0.2); g.add(yard);
-  // the class flag (warning signal), P (preparatory — or U, or black), X (individual recall), the first substitute
-  // (general recall)
-  const flags = {};
-  [['cls', -1.3], ['P', 0], ['X', 1.3], ['sub', 2.6]].forEach(([k, x]) => {
-    const f = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.7), new THREE.MeshBasicMaterial({ map: flagTexture(k), side: THREE.DoubleSide, fog: true }));
-    f.position.set(x, 7.15, 0.2); g.add(f); flags[k] = f;
-  });
-  g.userData.flags = flags; g.userData.prepTex = { P: flags.P.material.map, U: flagTexture('U'), B: flagTexture('B') };
   return g;
 }
 
@@ -757,7 +682,7 @@ export class World {
     this.boatViews = race.boats.map((b, i) => {
       const v = b.ai
         ? new BoatView({ look: LOOKS[b.name] || LOOKS.Aurora, label: { text: b.name, color: b.color } })
-        : new BoatView({ look: LOOKS.player, player: true });
+        : new BoatView({ look: playerLook(), player: true }); // your boat in the colours you chose on /boat
       v.root.scale.setScalar(SC);
       this.scene.add(v.root);
       return v;
@@ -768,8 +693,13 @@ export class World {
     this.buoys = [];
     const add = (obj, p) => { obj.position.set(p.x, 0, p.z); g.add(obj); this.buoys.push({ obj, p }); };
     add(buoy(), c.windward); add(buoy(), c.gate[0]); add(buoy(), c.gate[1]); add(buoy('#ffb000', 2), c.pin);
-    this.committee = committeeBoat(); add(this.committee, { x: c.committee.x + c.dir.x * 5, z: c.committee.z + c.dir.z * 5 });
-    this.committee.rotation.y = -W0; // lying head to wind
+    // the committee boat lies to her anchor head to wind, 5 m beyond the line's end: which side of her the pin is,
+    // and where along her the line meets her, place her orange flag and her officers
+    const cbx = Math.cos(W0), cbz = Math.sin(W0), ex = -c.dir.x * 5, ez = -c.dir.z * 5;
+    this.cb = new CommitteeBoat(ex * cbx + ez * cbz >= 0 ? 1 : -1, -ex * cbz + ez * cbx);
+    this.committee = this.cb.root; this.cbW0 = W0;
+    add(this.committee, { x: c.committee.x + c.dir.x * 5, z: c.committee.z + c.dir.z * 5 });
+    this.committee.rotation.y = -W0;
     // the line, as a row of floating dashes
     const dash = document.createElement('canvas'); dash.width = 64; dash.height = 4;
     const dx = dash.getContext('2d'); dx.fillStyle = '#fff'; dx.fillRect(0, 0, 40, 4);
@@ -867,7 +797,12 @@ export class World {
     // little foam
     for (const { obj, p } of this.buoys) {
       obj.position.y = waveHeight(this.W, p.x, p.z, t) * (obj === this.committee ? 0.7 : 0.9);
-      if (obj === this.committee) continue;
+      if (obj === this.committee) { // she pitches and rolls a little on the swell, being long and heavy
+        const W0 = this.cbW0, fx = Math.sin(W0), fz = -Math.cos(W0);
+        obj.rotation.x = waveSlope(this.W, p.x, p.z, t, fx, fz) * 0.35;
+        obj.rotation.z = waveSlope(this.W, p.x, p.z, t, -fz, fx) * 0.35;
+        continue;
+      }
       const cur = race.currentAt(p.x, p.z), cs = Math.hypot(cur.x, cur.z); // the stream where this mark lies
       const sx = waveSlope(this.W, p.x, p.z, t, 1, 0), sz = waveSlope(this.W, p.x, p.z, t, 0, 1);
       obj.rotation.z = sx * 0.8 - cur.x * 0.5; obj.rotation.x = -sz * 0.8 + cur.z * 0.5;
@@ -881,9 +816,7 @@ export class World {
     }
     const lg = race.course.legs[P.leg];
     this.zones.update(this.W, t, P.done ? [] : lg === 'mark' ? [0] : lg === 'gate' ? [1, 2] : []);
-    const fl = this.committee.userData.flags;
-    for (const k of ['cls', 'P', 'X', 'sub']) { fl[k].visible = !!race.flags[k]; fl[k].rotation.y = Math.sin(t * 6 + k.length) * 0.25 - race.wind.dir(); }
-    const pt = this.committee.userData.prepTex[race.prepFlag || 'P']; if (fl.P.material.map !== pt) { fl.P.material.map = pt; fl.P.material.needsUpdate = true; }
+    this.cb.update(t, dt, race.flags, race.prepFlag, this.cbW0 - race.wind.dir(), race.wind.p.tws * 0.514); // flags fly downwind
     // the line shows before the start and on the way to the finish
     const k = race.course.legs[P.leg];
     this.line.visible = k === 'start' || k === 'finish';

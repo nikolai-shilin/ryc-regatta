@@ -15,7 +15,7 @@ import bpy, bmesh, math, os
 from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.normpath(os.path.join(HERE, '..', 'game', 'yacht.glb'))
+OUT = os.path.normpath(os.path.join(HERE, '..', 'public', 'game', 'yacht.glb'))
 
 # ---------- yacht.js's lines (game frame: +x starboard, +y up, -z forward, the waterline at y = 0) ----------
 L, B = 10.4, 3.35

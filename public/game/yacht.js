@@ -3,6 +3,7 @@
 // Local frame: +x starboard, +y up, −z forward (the bow), the waterline at y = 0.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { D2R, clamp, lerp, waveHeight } from './sim.js';
 
 export const L = 10.4, B = 3.35, MAST_Z = -0.9;
@@ -204,15 +205,22 @@ const line = (pts) => new THREE.Line(new THREE.BufferGeometry().setFromPoints(pt
 const tube = (pts, r, mat, closed = false) => new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)), closed), Math.max(8, pts.length * 6), r, 6, closed), mat);
 const cyl = (r0, r1, h, mat, seg = 10) => new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, seg), mat);
 
-// ---------- the RYC logo ----------
-// the club's logo (the pennant with RYC in it), recoloured and drawn large so it stays sharp on a canvas
+// ---------- the logo ----------
+// the club's logo (the pennant with RYC in it), recoloured and drawn large so it stays sharp on a canvas; or the
+// player's own picture (a data: URL from the boat page), drawn as it is
 const logoCache = {};
-function logoImage(color) {
-  if (!logoCache[color]) logoCache[color] = fetch('/logo-black.svg').then((r) => r.text()).then((svg) => new Promise((res, rej) => {
-    const img = new Image(); img.onload = () => res(img); img.onerror = rej;
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replaceAll('#000000', color).replace('width="50" height="25"', 'width="800" height="400"'));
-  })).catch(() => null);
-  return logoCache[color];
+function logoImage(logo, color) {
+  const own = typeof logo === 'string', key = own ? logo : 'ryc' + color;
+  if (!logoCache[key]) logoCache[key] = (own ? Promise.resolve(logo) : fetch('/logo-black.svg').then((r) => r.text())
+    .then((svg) => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replaceAll('#000000', color).replace('width="50" height="25"', 'width="800" height="400"'))))
+    .then((src) => new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = src; }))
+    .catch(() => null);
+  return logoCache[key];
+}
+// draws a picture as large as fits in a w × h box centred on (cx, cy), keeping its shape
+function drawContain(x, img, cx, cy, w, h) {
+  const s = Math.min(w / (img.naturalWidth || img.width), h / (img.naturalHeight || img.height)), dw = (img.naturalWidth || img.width) * s, dh = (img.naturalHeight || img.height) * s;
+  x.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
 }
 
 // a logo decal on the bow, wrapped onto the hull's own surface (side: +1 starboard, −1 port)
@@ -239,10 +247,10 @@ const PORTLIGHT = new THREE.MeshStandardMaterial({
   color: '#0b1116', roughness: 0.05, metalness: 0.3, envMapIntensity: 1.5, transparent: true, alphaTest: 0.4, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2,
   alphaMap: canvasTex(256, 32, (x, w, h) => { x.fillStyle = '#000'; x.fillRect(0, 0, w, h); x.fillStyle = '#fff'; x.beginPath(); x.roundRect(4, 4, w - 8, h - 8, 12); x.fill(); }),
 });
-function logoDecal(side, color, z0 = -2.55, y0 = 0.64, W = 1.36, H = 0.52) {
+function logoDecal(side, logo, color, z0 = -2.55, y0 = 0.64, W = 1.36, H = 0.52) {
   const c = document.createElement('canvas'); c.width = 512; c.height = 256;
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
-  logoImage(color).then((img) => { if (img) { c.getContext('2d').drawImage(img, 8, 4, 496, 248); tex.needsUpdate = true; } });
+  logoImage(logo, color).then((img) => { if (img) { drawContain(c.getContext('2d'), img, 256, 128, 496, 248); tex.needsUpdate = true; } });
   return hullDecal(side, z0, y0, W, H, new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.35, roughness: 0.25, envMapIntensity: 0.9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 }));
 }
 
@@ -285,9 +293,9 @@ function sailTexture(kind, look) {
       if (look.logo) x.fillText(look.num, 0, 120);
       else { x.fillText(look.nat, 0, -82); x.fillText(look.num, 0, 70); }
       x.restore();
-      if (look.logo) logoImage(look.ink).then((img) => {
+      if (look.logo) logoImage(look.logo, look.ink).then((img) => {
         if (!img) return;
-        x.save(); x.translate(W * 0.47, H * 0.27); x.scale(1, 0.44); x.drawImage(img, -170, -85, 340, 170); x.restore();
+        x.save(); x.translate(W * 0.47, H * 0.255); x.scale(1, 0.44); drawContain(x, img, 0, 0, 340, 300); x.restore(); // a wide logo fills the width, a square one the height
         t.needsUpdate = true; // the clone on the other side shares the canvas
       });
     } else {
@@ -358,7 +366,7 @@ export function labelSprite(color) {
 }
 // the looks: hull paint, sail cloth and number, gennaker panels
 export const LOOKS = {
-  player: { hull: '#f6f5f1', stripe: '#16325c', cloth: '#f4f2ea', tape: '#d9d4c4', batten: '#d5d1c4', ink: '#16325c', nat: 'RYC', num: '1', logo: true, kite: ['#1d6fd1', '#ffffff', '#16325c'] },
+  player: { hull: '#f6f5f1', stripe: '#16325c', cloth: '#f4f2ea', tape: '#d9d4c4', batten: '#d5d1c4', ink: '#16325c', nat: 'RYC', num: '1', logo: true, kite: ['#16325c'] },
   Aurora: { hull: '#a8202a', stripe: '#f4f2ec', cloth: '#7f858c', laminate: true, tape: '#5f646b', batten: '#5a5f66', ink: '#ffffff', nat: 'GBR', num: '52', kite: ['#e63946', '#ffffff'] },
   Kestrel: { hull: '#14503c', stripe: '#e9e3cf', cloth: '#2a2c30', laminate: true, tape: '#18191c', batten: '#1c1d20', ink: '#f2c230', nat: 'FRA', num: '7', kite: ['#2a9d8f', '#f2c230'] },
   Nomad: { hull: '#2b2f36', stripe: '#e8c547', cloth: '#ebe3cd', tape: '#cfc5aa', batten: '#d2c9b0', ink: '#b3262b', nat: 'ITA', num: '33', kite: ['#f4a261', '#1d1d1d'] },
@@ -369,6 +377,73 @@ export const LOOKS = {
   Vela: { hull: '#7a1f3d', stripe: '#f6e6ea', cloth: '#f3f0e8', tape: '#d8d2c3', batten: '#d2ccbd', ink: '#7a1f3d', nat: 'CRO', num: '40', kite: ['#e84393', '#ffffff'] },
   Zephyr: { hull: '#b9bec4', stripe: '#1d1f22', cloth: '#2b2d31', laminate: true, tape: '#1a1b1e', batten: '#1d1e21', ink: '#e8e8e8', nat: 'SWE', num: '63', kite: ['#0984e3', '#fdcb6e'] },
 };
+
+// the player's own boat, as the boat page (/boat) saves it in localStorage 'regatta-boat': the colours of the hull, the
+// sails, the gennaker and the crew, the sail number and the logo. lookFrom turns it into a look; anything missing or
+// malformed keeps the club's colours.
+export const BOAT_KEY = 'regatta-boat';
+const DEFAULT_LOGO = '/images/ryc-rentals-bot.png';
+const isHex = (v) => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
+const darker = (hex, f) => '#' + new THREE.Color(hex).lerp(new THREE.Color('#000000'), f).getHexString();
+export function lookFrom(b) {
+  const L = { ...LOOKS.player, crew: LOOKS.player.stripe, pants: '#262a31' };
+  if (!b || typeof b !== 'object') return L;
+  for (const k of ['hull', 'stripe', 'cloth', 'ink', 'crew', 'pants']) if (isHex(b[k])) L[k] = b[k];
+  const kite = Array.isArray(b.kite) ? b.kite[0] : b.kite; // the player's gennaker is one colour (older saves kept three panels: the top one)
+  if (isHex(kite)) L.kite = [kite];
+  L.laminate = !!b.laminate;
+  L.tape = darker(L.cloth, L.laminate ? 0.28 : 0.12); L.batten = darker(L.cloth, L.laminate ? 0.3 : 0.14); // the luff tape and battens: a shade darker than the cloth
+  if (typeof b.num === 'string' && b.num.trim()) L.num = b.num.trim().slice(0, 3);
+  if (typeof b.nat === 'string' && b.nat.trim()) L.nat = b.nat.trim().toUpperCase().slice(0, 3);
+  const own = typeof b.logoImg === 'string' && b.logoImg.startsWith('data:image/') ? b.logoImg : DEFAULT_LOGO; // 'Yours' before an upload: the RYC Rentals Bot badge
+  L.logo = b.logo === 'none' ? false : b.logo === 'custom' ? own : true;
+  return L;
+}
+export function playerLook() {
+  try { return lookFrom(JSON.parse(localStorage.getItem(BOAT_KEY) || 'null')); } catch (e) { return lookFrom(null); }
+}
+
+// ---------- the crew ----------
+// a sailor, built at the hips and facing +x: legs that bend at the hip and the knee (sea boots on), a body that leans,
+// arms bent at the elbow with gloved hands, an inflatable lifejacket's collar and a cap with a peak. The boat turns
+// each one about y and mirrors those on the port side.
+const THIGH = 0.44, SHIN = 0.44;
+const SAILOR = (() => {
+  const thigh = new THREE.CapsuleGeometry(0.075, THIGH - 0.1, 3, 8).translate(0, -THIGH / 2, 0);
+  const shin = mergeGeometries([
+    new THREE.CapsuleGeometry(0.06, SHIN - 0.1, 3, 8).translate(0, -SHIN / 2, 0),
+    new THREE.BoxGeometry(0.24, 0.09, 0.11).translate(0.06, -SHIN - 0.02, 0), // the boot
+  ]);
+  const elbow = 1.15; // the forearm bent forward
+  const arm = mergeGeometries([
+    new THREE.CapsuleGeometry(0.052, 0.2, 3, 6).translate(0, -0.14, 0),
+    new THREE.CapsuleGeometry(0.046, 0.18, 3, 6).translate(0, -0.12, 0).rotateZ(elbow).translate(0, -0.27, 0),
+    new THREE.SphereGeometry(0.052, 6, 5).scale(1.1, 0.8, 0.7).translate(0, -0.27, 0).rotateZ(elbow).translate(0, -0.27, 0), // glove
+  ]);
+  const torso = new THREE.CapsuleGeometry(0.15, 0.24, 4, 10).scale(0.82, 1, 1.12).translate(0, 0.3, 0); // deeper across the shoulders than front to back
+  const collar = new THREE.TorusGeometry(0.115, 0.05, 6, 14).rotateX(Math.PI / 2).scale(0.85, 1, 1.05).translate(0.01, 0.5, 0);
+  const head = new THREE.SphereGeometry(0.1, 12, 9).scale(0.95, 1.08, 0.9).translate(0, 0.66, 0);
+  const cap = mergeGeometries([
+    new THREE.SphereGeometry(0.104, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.97, 0.75, 0.92).translate(0, 0.69, 0),
+    new THREE.CylinderGeometry(0.09, 0.09, 0.012, 12, 1, false, 0, Math.PI).scale(1.1, 1, 0.95).rotateY(-Math.PI / 2).translate(0.07, 0.69, 0), // the peak, forward
+  ]);
+  const glasses = new THREE.BoxGeometry(0.03, 0.035, 0.15).translate(0.085, 0.665, 0);
+  return { thigh, shin, arm, torso, collar, head, cap, glasses };
+})();
+export function sailor(m) {
+  const g = new THREE.Group(), body = new THREE.Group(), upper = new THREE.Group();
+  g.add(body); body.add(upper);
+  const legs = [-1, 1].map((sz) => {
+    const hip = new THREE.Group(), knee = new THREE.Group();
+    hip.position.set(0, 0.07, sz * 0.1); hip.add(new THREE.Mesh(SAILOR.thigh, m.trousers));
+    knee.position.y = -THIGH; knee.add(new THREE.Mesh(SAILOR.shin, m.trousers)); hip.add(knee);
+    body.add(hip);
+    return { hip, knee };
+  });
+  upper.add(new THREE.Mesh(SAILOR.torso, m.jacket), new THREE.Mesh(SAILOR.collar, m.vest), new THREE.Mesh(SAILOR.head, m.skin), new THREE.Mesh(SAILOR.cap, m.cap), new THREE.Mesh(SAILOR.glasses, M.dark));
+  const arms = [-1, 1].map((sz) => { const a = new THREE.Mesh(SAILOR.arm, m.jacket); a.position.set(0, 0.47, sz * 0.2); a.rotation.x = -sz * 0.12; upper.add(a); return a; });
+  return { g, body, upper, legs, arms };
+}
 
 // ---------- the boat ----------
 const MAST_FOOT = 1.48, MASTHEAD = 16.6, BOOM_Y = 2.25, HOUNDS = 14.9;
@@ -423,6 +498,7 @@ export class BoatView {
     }
     // traveller across the forward end of the cockpit; wheel on a pedestal aft
     add(new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.04, 0.07), M.steel), 0, deckY(1.7) - 0.04, 1.62);
+    this.travCar = add(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.07, 0.12), M.dark), 0, deckY(1.7) + 0.01, 1.62); // the mainsheet's car on it
     add(cyl(0.055, 0.08, 0.8, M.dark), 0, deckY(4) - 0.1, 4.05);
     add(new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 8), M.dark), 0, deckY(4) + 0.32, 4.05); // binnacle
     this.wheel = add(new THREE.Mesh(new THREE.TorusGeometry(0.47, 0.025, 8, 36), M.steel), 0, deckY(4) + 0.32, 4.15);
@@ -432,14 +508,44 @@ export class BoatView {
       const pts = []; for (let i = 0; i <= 24; i++) { const t = 0.01 + (i / 24) * 0.96; pts.push([sx * (halfBeam(t) - 0.02), sheerAt(t) + 0.03, zAt(t)]); }
       T.add(tube(pts, 0.025, M.teak));
     }
-    const py = sheerAt(0.94), pz = zAt(0.94), ay = sheerAt(0.03), az = zAt(0.03);
-    T.add(tube([[-0.5, py, pz + 0.5], [-0.52, py + 0.62, pz + 0.3], [0, py + 0.66, BOW_Z + 0.25], [0.52, py + 0.62, pz + 0.3], [0.5, py, pz + 0.5]], 0.018, M.steel));
-    T.add(tube([[-1.35, ay, az - 0.9], [-1.35, ay + 0.65, az - 0.6], [-1.0, ay + 0.65, az - 0.05], [-0.45, ay + 0.6, az + 0.02]], 0.018, M.steel));
-    T.add(tube([[1.35, ay, az - 0.9], [1.35, ay + 0.65, az - 0.6], [1.0, ay + 0.65, az - 0.05], [0.45, ay + 0.6, az + 0.02]], 0.018, M.steel));
-    const st = [0.22, 0.4, 0.58, 0.76];
+    // the pulpit (open at the front, as on a racer, so the jib's tack and the gennaker's sit clear of it) and the
+    // pushpit round the stern quarters: stainless rails on legs, each with a lower rail. The lifelines run between
+    // them through the stanchions.
+    const RIN = 0.08, RH = 0.62, at = (t, h = 0, inset = RIN) => [Math.max(0.12, halfBeam(t) - inset), sheerAt(t) + h, zAt(t)];
+    const PA = 0.86, PF = 0.965, QF = 0.11, QA = 0.012; // the pulpit's legs (aft, forward) and the pushpit's (forward, aft)
     for (const sx of [-1, 1]) {
-      for (const t of st) add(cyl(0.012, 0.014, 0.62, M.steel, 6), sx * (halfBeam(t) - 0.07), sheerAt(t) + 0.31, zAt(t));
-      for (const h of [0.6, 0.3]) T.add(line([[sx * 0.52, py + h, pz + 0.35], ...st.slice().reverse().map((t) => [sx * (halfBeam(t) - 0.07), sheerAt(t) + h, zAt(t)]), [sx * 1.35, ay + h, az - 0.75]]));
+      const m = (p) => [sx * p[0], p[1], p[2]];
+      T.add(tube([at(PA), at(PA, RH - 0.1), at(PA + 0.02, RH), at(0.92, RH + 0.02), at(PF - 0.012, RH), at(PF, RH - 0.1), at(PF)].map(m), 0.019, M.steel));
+      T.add(tube([at(PA, 0.3), at(0.92, 0.31), at(PF, 0.3)].map(m), 0.014, M.steel));
+      const sq = [Math.max(1.05, halfBeam(QA) - 0.32), sheerAt(QA), zAt(QA) - 0.04]; // the pushpit's aft leg, just outboard of the open transom
+      T.add(tube([at(QF), at(QF, RH - 0.1), at(QF - 0.02, RH), at(0.05, RH + 0.02), at(0.018, RH, 0.14), [sq[0] + 0.12, sq[1] + RH, sq[2] + 0.02], [sq[0], sq[1] + RH - 0.1, sq[2]], sq].map(m), 0.019, M.steel));
+      T.add(tube([at(QF, 0.3), at(0.05, 0.31), at(0.02, 0.3, 0.14)].map(m), 0.014, M.steel));
+      for (const p of [at(PA), at(PF), at(QF), at(0.03, 0, 0.12), sq]) add(cyl(0.03, 0.036, 0.04, M.steel, 8), sx * p[0], p[1] + 0.02, p[2]); // their feet
+      add(cyl(0.014, 0.014, RH, M.steel, 6), sx * at(0.03, 0, 0.12)[0], sheerAt(0.03) + RH / 2, zAt(0.03)); // the pushpit's middle leg
+    }
+    const st = [0.24, 0.42, 0.6, 0.77];
+    for (const sx of [-1, 1]) {
+      for (const t of st) {
+        add(cyl(0.012, 0.014, RH, M.steel, 6), sx * (halfBeam(t) - RIN), sheerAt(t) + RH / 2, zAt(t));
+        add(cyl(0.028, 0.034, 0.04, M.steel, 8), sx * (halfBeam(t) - RIN), sheerAt(t) + 0.02, zAt(t)); // the stanchion's base
+      }
+      for (const h of [RH - 0.03, 0.3]) T.add(line([PA, ...st.slice().reverse(), QF].map((t) => { const p = at(t, h); return [sx * p[0], p[1], p[2]]; })));
+    }
+    // deck hardware: the genoa tracks with their cars (the jib sheets lead through them), clutches ahead of the
+    // halyard winches, mooring cleats at the bow and the quarters
+    const TRK = 1.28, trackRise = Math.atan2(deckY(-0.5) - deckY(1.0), 1.5);
+    for (const sx of [-1, 1]) {
+      const tr = add(new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.025, 1.5), M.alu), sx * TRK, deckY(0.25) + 0.035, 0.25); tr.rotation.x = trackRise;
+      add(new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.15), M.dark), sx * TRK, deckY(0.4) + 0.07, 0.4);
+      for (let k = 0; k < 3; k++) {
+        add(new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.06, 0.15), M.dark), sx * (0.28 + k * 0.075), top + 0.06, 0.98);
+        add(new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.02, 0.08), M.alu), sx * (0.28 + k * 0.075), top + 0.095, 0.96);
+      }
+      for (const t of [0.9, 0.04]) {
+        const [x, y, z] = at(t, 0, t > 0.5 ? 0.22 : 0.3);
+        add(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.045, 0.07), M.alu), sx * x, y + 0.045, z);
+        add(new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.028, 0.22), M.alu), sx * x, y + 0.08, z);
+      }
     }
     // bowsprit for the gennaker
     this.sprit = add(cyl(0.035, 0.045, 1.5, M.carbon, 8), 0, SPRIT.y, BOW_Z - 0.65);
@@ -478,7 +584,7 @@ export class BoatView {
       t.userData = { f, sx }; this.jibPivot.add(t); this.tells.push(t);
     }
     if (label) { this.label = labelSprite(label.color); this.labelText = label.text; this.label.position.set(0, 18.4, 0); this.root.add(this.label); }
-    if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(sx, look.stripe)); // the RYC logo on both bows
+    if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(sx, look.logo, look.stripe)); // the logo on both bows
     for (const sx of [-1, 1]) { T.add(hullDecal(sx, -0.55, 0.78, 1.5, 0.15, PORTLIGHT)); T.add(hullDecal(sx, 1.05, 0.79, 0.75, 0.13, PORTLIGHT)); } // hull windows
     // the running rigging: jib sheets (the working one taut to the leeward winch, the lazy one slack), the gennaker
     // sheet, halyards down the front of the mast, and a wind vane at the masthead
@@ -491,16 +597,18 @@ export class BoatView {
     const vane = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.12, 6), M.dark); vane.rotation.x = -Math.PI / 2; vane.position.set(0, 0.1, -0.38); this.windex.add(vane);
     const tail = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.1), new THREE.MeshStandardMaterial({ color: '#e63946', side: THREE.DoubleSide })); tail.rotation.y = Math.PI / 2; tail.position.set(0, 0.12, 0.12); this.windex.add(tail);
     this.sailSide = 1;
-    // the crew: four sailors — the helm, the main trimmer, the jib (and kite) trimmer, and the bow. Each is legs and an
-    // upper body that leans; where they sit and how far they lean out is set in update()
+    // the crew: four sailors — the helm, the main trimmer, the jib (and kite) trimmer, and the bow (see sailor()); where
+    // they sit, which way they face and how far they lean out is set in update()
     const jacket = new THREE.MeshStandardMaterial({ color: look.crew || look.stripe, roughness: 0.8 });
-    const trousers = new THREE.MeshStandardMaterial({ color: '#262a31', roughness: 0.85 }), skin = new THREE.MeshStandardMaterial({ color: '#d29f7c', roughness: 0.7 });
-    this.crew = [3.9, 2.7, 1.7, 0.7].map((z0, i) => {
-      const g = new THREE.Group(), upper = new THREE.Group(), legs = new THREE.Mesh(new THREE.CapsuleGeometry(0.085, 0.5, 3, 6), trousers);
-      const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.34, 4, 8), jacket); torso.position.y = 0.3; upper.add(torso);
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.105, 10, 8), skin); head.position.y = 0.66; upper.add(head);
-      g.add(legs, upper); T.add(g);
-      return { g, upper, legs, z0, i, x: 0, y: deckY(z0), z: z0, lean: 0, stand: 0 };
+    const trousers = new THREE.MeshStandardMaterial({ color: look.pants || '#262a31', roughness: 0.85 });
+    const vest = new THREE.MeshStandardMaterial({ color: '#22262c', roughness: 0.55 });
+    const cap = new THREE.MeshStandardMaterial({ color: new THREE.Color(look.crew || look.stripe).getHSL({}).l < 0.3 ? '#efeee9' : '#22262c', roughness: 0.75 });
+    const skins = ['#c99272', '#e2b291', '#a36d4c', '#d8a27e'];
+    this.roofY = top + 0.03; // where the bow stands to reef, at the mast
+    this.crew = [4.35, 2.7, 1.7, 0.7].map((z0, i) => {
+      const s = sailor({ jacket, trousers, vest, cap, skin: new THREE.MeshStandardMaterial({ color: skins[i], roughness: 0.65 }) });
+      T.add(s.g);
+      return { g: s.g, s, z0, i, x: 0, y: deckY(z0), z: z0, yaw: Math.PI, lean: 0, stand: 0, knee: -0.8, reach: 0.5 };
     });
 
     // everything solid casts and catches the sun's shadow (sails on the deck and on each other)
@@ -547,7 +655,8 @@ export class BoatView {
     });
     // the mainsheet, from the traveller to the end of the boom
     const ma = this.mainPivot.rotation.y, bz = 2.52, ms = this.mainsheet.geometry.attributes.position;
-    ms.setXYZ(0, clamp(Math.sin(ma) * bz * 0.6, -0.75, 0.75), deckY(1.7) - 0.02, 1.62);
+    ms.setXYZ(0, clamp(Math.sin(ma) * bz * 0.6, -0.75, 0.75), deckY(1.7) + 0.04, 1.62);
+    this.travCar.position.x = ms.getX(0);
     ms.setXYZ(1, Math.sin(ma) * bz, BOOM_Y - 0.05, MAST_Z + Math.cos(ma) * bz); ms.needsUpdate = true;
     const ja = Math.min((b.jibSail ?? b.sail) * D2R * 0.8 + 3 * D2R, 30 * D2R); // on its own sheet when the jib has one
     this.jibPivot.quaternion.setFromAxisAngle(this.jibAxis, -this.sailSide * ja);
@@ -561,27 +670,32 @@ export class BoatView {
     // the jib sheets: from the clew to the car on the leeward side deck and on to the winch; the lazy one slack
     const cw = clew.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1;
     const js = this.jibSheet.geometry.attributes.position, lz = this.lazySheet.geometry.attributes.position;
-    js.setXYZ(0, cw.x, cw.y, cw.z); js.setXYZ(1, ls * 0.95, deckY(0.4) + 0.06, 0.4); js.setXYZ(2, ls * 1.02, deckY(2) + 0.3, 2.0); js.needsUpdate = true;
-    lz.setXYZ(0, cw.x, cw.y, cw.z); lz.setXYZ(1, 0, deckY(0) + 0.5, 0.1); lz.setXYZ(2, -ls * 0.95, deckY(0.4) + 0.06, 0.4); lz.setXYZ(3, -ls * 1.02, deckY(2) + 0.3, 2.0); lz.needsUpdate = true;
+    js.setXYZ(0, cw.x, cw.y, cw.z); js.setXYZ(1, ls * 1.28, deckY(0.4) + 0.1, 0.4); js.setXYZ(2, ls * 1.02, deckY(2) + 0.3, 2.0); js.needsUpdate = true;
+    lz.setXYZ(0, cw.x, cw.y, cw.z); lz.setXYZ(1, 0, deckY(0) + 0.5, 0.1); lz.setXYZ(2, -ls * 1.28, deckY(0.4) + 0.1, 0.4); lz.setXYZ(3, -ls * 1.02, deckY(2) + 0.3, 2.0); lz.needsUpdate = true;
     // the wind vane points into the apparent wind
     this.windex.rotation.y = -b.awa;
     // the crew: upwind on the windward rail, leaning out the more she heels; downwind in the cockpit, the kite trimmer
     // to leeward watching the kite; the bow goes forward for a hoist, a drop or a jib change. They cross the boat in a
     // tack or gybe over a second or two.
-    const dt = clamp(t - (this.crewT ?? t), 0, 0.1); this.crewT = t;
+    const first = this.crewT === undefined, dt = clamp(t - (this.crewT ?? t), 0, 0.1); this.crewT = t; // the first time, straight to their places
     const up = Math.abs(b.twa) < 95 * D2R, hike = clamp(b.heel / 18, 0.15, 1), bowBusy = !!(b.kiteJob || b.jibJob || b.reefJob);
     for (const c of this.crew) {
-      let x, y, z = c.z0, lean = 0, stand = 0;
-      if (c.i === 0) { x = side * 0.95; y = deckY(3.9) - 0.05; lean = up ? 0.2 * hike : 0; } // the helm, to windward at the wheel
-      else if (c.i === 3 && bowBusy) { x = 0.1; z = b.reefJob ? MAST_Z + 0.6 : -3.4; y = deckY(z) + 0.02; stand = 1; } // forward to work
-      else if (up) { x = side * (hbAt(z) - 0.1); y = deckY(z) + 0.03; lean = 0.6 * hike; } // on the rail, hiking
-      else { x = (c.i === 2 && b.kite ? -side : side) * 0.65; z = c.i === 3 ? 1.2 : c.z0; y = deckY(z) - 0.22; } // in the cockpit
-      const k = 1 - Math.exp(-dt * 2.2);
-      c.x += (x - c.x) * k; c.y += (y - c.y) * k; c.z += (z - c.z) * k; c.lean += (lean - c.lean) * k; c.stand += (stand - c.stand) * k;
-      const sd = c.x >= 0 ? 1 : -1; // the side she's on: legs point inboard, the body leans out
-      c.g.position.set(c.x, c.y, c.z);
-      c.upper.rotation.z = -sd * c.lean; c.upper.position.y = c.stand * 0.55;
-      c.legs.rotation.z = (1 - c.stand) * sd * Math.PI / 2; c.legs.position.set(-sd * (1 - c.stand) * 0.3, 0.06 + c.stand * 0.33, 0);
+      // yaw turns a sailor (0 faces outboard, π/2 forward, π inboard); lean tips the body forward, out over the
+      // lifelines when she faces outboard; knee bends the knees (the thighs lie level when seated); reach swings the arms
+      let x, y, z = c.z0, yaw = Math.PI, lean = 0.12, stand = 0, knee = -0.8, reach = 0.55;
+      if (c.i === 0) { x = side * 1.12; y = deckY(z) + 0.05; yaw = 2.2; lean = up ? 0.05 - 0.15 * hike : 0.12; knee = -1.3; reach = 1.0; } // the helm: to windward, aft of the wheel, hands on its rim
+      else if (c.i === 3 && bowBusy) { x = 0.12; z = b.reefJob ? MAST_Z + 0.55 : -3.4; y = b.reefJob ? this.roofY : deckY(z) + 0.02; yaw = Math.PI / 2; stand = 1; lean = 0.15; reach = 0.7; } // forward to work
+      else if (up) { x = side * (hbAt(z) - 0.12); y = deckY(z) + 0.09; yaw = 0; lean = 0.12 + 0.45 * hike; knee = -1.85; reach = 0.3; } // on the rail, legs over the side, hiking out
+      else { x = (c.i === 3 || (c.i === 2 && b.kite) ? -side : side) * 0.72; z = c.i === 3 ? 2.85 : c.z0; y = 0.8; } // on the cockpit seats, the kite trimmer to leeward
+      const k = first ? 1 : 1 - Math.exp(-dt * 2.2);
+      c.x += (x - c.x) * k; c.y += (y - c.y) * k; c.z += (z - c.z) * k; c.yaw += (yaw - c.yaw) * k;
+      c.lean += (lean - c.lean) * k; c.stand += (stand - c.stand) * k; c.knee += (knee - c.knee) * k; c.reach += (reach - c.reach) * k;
+      const sd = c.x >= 0 ? 1 : -1, s = c.s; // the side she's on: the port side's sailors are mirrored, so +x is always outboard
+      c.g.position.set(c.x, c.y, c.z); c.g.scale.x = sd;
+      s.body.rotation.y = c.yaw; s.body.position.y = c.stand * (THIGH + SHIN + 0.02);
+      s.upper.rotation.z = -c.lean;
+      for (const l of s.legs) { l.hip.rotation.z = (1 - c.stand) * Math.PI / 2; l.knee.rotation.z = (1 - c.stand) * c.knee; }
+      for (const a of s.arms) a.rotation.z = c.reach;
     }
     // gennaker on the bowsprit
     // kf: how far the gennaker is up — it climbs the mast furled during a hoist and fills only at the top, and comes
