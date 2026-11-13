@@ -21,7 +21,7 @@ export default async function SettingsPage() {
       </nav>
     </div>
   );
-  const via = account?.provider === 'google' ? 'Google' : t('email code', 'код по почте');
+  const via = account?.provider === 'google' ? 'Google' : account?.provider === 'telegram' ? 'Telegram' : t('email code', 'код по почте');
   return (
     <div className="scr app" lang={lang} data-acct={account ? 'signed' : 'guest'}>
       <SiteHead lang={lang} t={t} account={account} page="settings" />
@@ -38,7 +38,7 @@ export default async function SettingsPage() {
                 <span className="avatar">{initials(account.name, account.email)}</span>
                 <div className="acct-guest">
                   <span className="card-title">{account.name || account.email}</span>
-                  <span className="small">{account.email} · {via}</span>
+                  <span className="small">{[account.email, via].filter(Boolean).join(' · ')}</span>
                 </div>
                 <Link className="mini" href="/sign-in/name?next=/settings"><span className="btn-t">{t('Name', 'Имя')}</span></Link>
                 <form action="/auth/sign-out" method="post"><button className="mini" type="submit"><span className="btn-t">{t('Sign out', 'Выйти')}</span></button></form>

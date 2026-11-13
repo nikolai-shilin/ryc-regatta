@@ -22,18 +22,20 @@ export async function supabaseServer() {
 
 export type Account = { id: string; email: string; name: string; provider: string } | null;
 
-// Who is signed in, if anyone. The ranking name is kept in the user's metadata (display_name).
+// Who is signed in, if anyone. The ranking name is kept in the user's metadata (display_name). A Telegram player
+// (app/auth/telegram) has a made-up address that is never shown, so email is empty for them.
 export async function getAccount(): Promise<Account> {
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getUser();
   const u = data.user;
   if (!u) return null;
   const meta = u.user_metadata || {};
+  const tg = !!u.app_metadata?.telegram_id;
   return {
     id: u.id,
-    email: u.email || '',
+    email: tg ? '' : u.email || '',
     name: String(meta.display_name || ''),
-    provider: String(u.app_metadata?.provider || 'email'),
+    provider: tg ? 'telegram' : String(u.app_metadata?.provider || 'email'),
   };
 }
 

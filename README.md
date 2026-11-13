@@ -69,3 +69,9 @@ In the Supabase project (`iyt-test`), Authentication needs:
   default template also works: it goes through `/auth/callback`.
 
 The display name is kept in the user's `user_metadata.display_name`.
+
+**Telegram:** the IYT mini app opens the site with Telegram's launch data in the hash. `components/telegram-sign-in.tsx` posts it to
+`/auth/telegram`, which asks `https://iyt.rycrentals.com/api/regatta-session` (the `iyt-test` repo, which holds the bot token and the
+Supabase secret key) for a one-time token and turns it into the session. The player's account is
+`tg-<telegram id>@telegram.rycrentals.com` with `app_metadata.telegram_id`; that address is never mailed or shown. `IYT_API_URL`
+points the route at another iyt server when testing.
