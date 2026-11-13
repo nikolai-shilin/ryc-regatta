@@ -20,7 +20,7 @@ export default async function Home() {
   const windName = { light: t('Light', 'Слабый'), medium: t('Medium', 'Средний'), strong: t('Strong', 'Сильный') }[d.preset];
   const breeze = { light: t('a light breeze', 'слабый ветер'), medium: t('a medium breeze', 'средний ветер'), strong: t('a strong breeze', 'сильный ветер') }[d.preset];
   const length = { short: t('short', 'короткий'), medium: t('medium', 'средний'), long: t('long', 'длинный') }[d.length];
-  const date = new Date(d.day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const date = new Date(d.day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
   const live = today && today.d === d.day ? today : null;
   const top = live ? live.top : [];
   const best = top[0];

@@ -26,9 +26,12 @@ export default async function SettingsPage() {
     <div className="scr app" lang={lang} data-acct={account ? 'signed' : 'guest'}>
       <SiteHead lang={lang} t={t} account={account} page="settings" />
       <div className="lay page">
-        <div className="lhead">
-          <Link className="round round-s round-muted" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
-          <h1 className="h-land-s">{t('Settings', 'Настройки')}</h1>
+        <div className="aph">
+          <div className="aph-top">
+            <Link className="round round-s round-muted" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
+            <span className="kicker">{t('Settings', 'Настройки')}</span>
+          </div>
+          <h1 className="aph-h">{t('Sailing, screen and sound', 'Яхта, экран и звук')}</h1>
         </div>
         <SettingsForm lang={lang} langRow={langRow} accountRow={account ? (
               <div className="acct acct-row">

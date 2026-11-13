@@ -69,7 +69,7 @@ export function FreeCard({ lang }: { lang: Lang }) {
       <h2 className="hm-h3">{t('Or race in a wind you pick', 'Или гоняйся в свой ветер')}</h2>
       <div className="qtags" role="group" aria-label={t('Start a free race in this wind', 'Начать свободную гонку в этот ветер')}>
         {winds.map(([w, label]) => (
-          <button key={w} type="button" className="qtag" onClick={() => go(w)}>{label} {KN[w]}</button>
+          <button key={w} type="button" className="qtag" onClick={() => go(w)}>{label} {KN[w]} {t('kn', 'уз')}</button>
         ))}
       </div>
       <Link className="hm-src" href="/race/free">{t('More options', 'Все настройки')}<IconArrow s={14} /></Link>

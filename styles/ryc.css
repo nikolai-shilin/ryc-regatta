@@ -37,7 +37,7 @@
 /* the page's head: a back arrow and a kicker, a light serif title, a muted line */
 .aph { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); }
 .aph-top { display: flex; align-items: center; gap: var(--s-3); }
-.aph-top .round-muted { border-color: var(--ctl-line, var(--tag-line)); color: var(--ink); }
+:is(.aph-top, .lhead) > a.round-muted { border-color: var(--ctl-line, var(--tag-line)); color: var(--ink); }
 .aph .kicker { display: inline-flex; align-items: center; gap: 6px; }
 .aph-h { margin: 0; font: 300 var(--t-h2)/1.05 var(--f-serif); letter-spacing: -0.025em; text-wrap: balance; }
 .aph-p { margin: 0; max-width: 62ch; font: 400 var(--t-m)/1.45 var(--f-serif); color: var(--muted); }
@@ -135,8 +135,6 @@
   .fs-q { gap: var(--s-6); max-width: 680px; }
   .fs-aside { gap: var(--s-4); position: sticky; top: 0; }
   .fs-aside :is(.qrows, .fs-k, .fs-note) { display: flex; }
-  .qtag { min-height: var(--h-l); padding: 0 var(--s-5); font-size: var(--t-l); }
-  .fs .qtag { min-height: var(--h-m); padding: 0 var(--s-4); font-size: var(--t-m); }
   .setup-panel { gap: var(--gap); padding: var(--s-5); }
   .fs .cmap, .cmap { max-height: 300px; }
   .fs .cmap { max-height: 220px; }
@@ -216,7 +214,6 @@
   .bt { grid-template-columns: minmax(0, 1fr) 460px; gap: var(--s-8) var(--s-16); }
   .bt-page .aph-p { display: block; }
   .bt-q { gap: var(--s-6); max-width: 680px; }
-  .bt .qtag { min-height: var(--h-m); padding: 0 var(--s-4); font-size: var(--t-m); }
   .bt-aside { gap: var(--s-4); }
   .bt-k { display: block; }
   .bt-prev { height: clamp(360px, calc(100cqh - var(--hm-head) - var(--s-10) - var(--s-12) - 110px), 640px); }
@@ -560,7 +557,7 @@
   .hm-faq-side { position: sticky; top: calc(var(--hm-head) + var(--s-6)); }
   .hm-help { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
   .iyt-how, .iyt-levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .hm-foot { grid-template-columns: minmax(0, 1fr) repeat(3, minmax(0, 240px)) max-content; gap: var(--s-8) var(--s-10); }
+  .hm-foot { grid-template-columns: minmax(max-content, 1fr) repeat(3, minmax(0, 240px)) max-content; gap: var(--s-8) var(--s-10); }
   .hm-foot > .hm-brand { grid-column: auto; }
 }
 @container help (min-width: 1100px) {
