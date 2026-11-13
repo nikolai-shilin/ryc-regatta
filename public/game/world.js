@@ -877,6 +877,7 @@ export class World {
       mirrored(v.root);
       // …but not the crew (eleven parts a sailor) or the wires: too small to make out in a half-size, rippled reflection
       for (const c of v.crew) c.g.traverse((o) => o.layers.disable(MIRRORED));
+      for (const o of [v.wheel, v.windex, v.travCar, ...v.tells]) o.traverse((x) => x.layers.disable(MIRRORED)); // nor the wheel and such
       v.root.traverse((o) => { if (o.isLine) o.layers.disable(MIRRORED); });
       v.root.traverse((o) => { if (o.isSprite && o.material.depthTest === false && o.material.toneMapped === false) o.layers.set(OVERLAY); }); // the name tag: drawn after the post
       this.scene.add(v.root);

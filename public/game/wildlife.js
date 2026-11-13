@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { waveHeight, clamp, lerp, wrap, KN } from './sim.js';
+import { rigidSkin } from './skin.js';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const smooth = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
@@ -215,17 +216,19 @@ export class Wildlife {
     const wet = (color) => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.32, metalness: 0, color }); // wet skin catches the sky
 
     // gulls
+    const GULL_SPHERE = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 0.8); // wings up, down or folded
     const G = gullGeometry(), gm = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
     this.gulls = Array.from({ length: LEVEL.high.fly + LEVEL.high.rest }, () => {
+      // one draw a gull (skin.js): the body is the root bone, each wing a shoulder and a wrist bone
       const g = new THREE.Group(); g.rotation.order = 'YXZ';
-      g.add(new THREE.Mesh(G.body, gm));
+      const body = new THREE.Bone(), bones = [body], parts = [[G.body, body]];
       const wings = [-1, 1].map((sx, i) => {
-        const sh = new THREE.Group(); sh.position.set(sx * 0.06, 0.02, -0.04); g.add(sh);
-        sh.add(new THREE.Mesh(G.arm[i], gm));
-        const tip = new THREE.Group(); tip.position.x = sx * 0.3; sh.add(tip);
-        tip.add(new THREE.Mesh(G.hand[i], gm));
+        const sh = new THREE.Bone(); sh.position.set(sx * 0.06, 0.02, -0.04); body.add(sh);
+        const tip = new THREE.Bone(); tip.position.x = sx * 0.3; sh.add(tip);
+        bones.push(sh, tip); parts.push([G.arm[i], sh], [G.hand[i], tip]);
         return { sx, sh, tip };
       });
+      g.add(rigidSkin(parts, bones, body, gm, GULL_SPHERE));
       scene.add(g);
       return { g, wings, p: new THREE.Vector3(), v: new THREE.Vector3(), a: new THREE.Vector3(), roll: 0, fp: Math.random() * 6, flap: 0, flapT: 0, glide: 3, mode: 'fly' };
     });

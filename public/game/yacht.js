@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { rigidSkin } from './skin.js';
 import { D2R, clamp, lerp, waveHeight } from './sim.js';
 
 export const L = 10.4, B = 3.35, MAST_Z = -0.9;
@@ -468,19 +469,30 @@ const SAILOR = (() => {
   const glasses = new THREE.BoxGeometry(0.03, 0.035, 0.15).translate(0.085, 0.665, 0);
   return { thigh, shin, arm, torso, collar, head, cap, glasses };
 })();
+// A sailor is one draw, not eleven (skin.js): the joints (body, upper body, hips, knees, arms) are bones. The parts'
+// colours ride on the vertices, each from the material it was given, so all the sailors in the race share this one.
+const CREW_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75 });
+const SAILOR_SPHERE = new THREE.Sphere(new THREE.Vector3(0, 0.4, 0), 1.6); // round every pose, seated to standing
 export function sailor(m) {
-  const g = new THREE.Group(), body = new THREE.Group(), upper = new THREE.Group();
-  g.add(body); body.add(upper);
+  const g = new THREE.Group(), body = new THREE.Bone(), upper = new THREE.Bone();
+  body.add(upper);
+  const bones = [body, upper], parts = []; // [geometry, its bone, the material it would have had]
   const legs = [-1, 1].map((sz) => {
-    const hip = new THREE.Group(), knee = new THREE.Group();
-    hip.position.set(0, 0.07, sz * 0.1); hip.add(new THREE.Mesh(SAILOR.thigh, m.trousers));
-    knee.position.y = -THIGH; knee.add(new THREE.Mesh(SAILOR.shin, m.trousers)); hip.add(knee);
-    body.add(hip);
+    const hip = new THREE.Bone(), knee = new THREE.Bone();
+    hip.position.set(0, 0.07, sz * 0.1); knee.position.y = -THIGH; hip.add(knee); body.add(hip);
+    bones.push(hip, knee); parts.push([SAILOR.thigh, hip, m.trousers], [SAILOR.shin, knee, m.trousers]);
     return { hip, knee };
   });
-  upper.add(new THREE.Mesh(SAILOR.torso, m.jacket), new THREE.Mesh(SAILOR.collar, m.vest), new THREE.Mesh(SAILOR.head, m.skin), new THREE.Mesh(SAILOR.cap, m.cap), new THREE.Mesh(SAILOR.glasses, M.dark));
-  const arms = [-1, 1].map((sz) => { const a = new THREE.Mesh(SAILOR.arm, m.jacket); a.position.set(0, 0.47, sz * 0.2); a.rotation.x = -sz * 0.12; upper.add(a); return a; });
-  return { g, body, upper, legs, arms };
+  parts.push([SAILOR.torso, upper, m.jacket], [SAILOR.collar, upper, m.vest], [SAILOR.head, upper, m.skin], [SAILOR.cap, upper, m.cap], [SAILOR.glasses, upper, M.dark]);
+  const arms = [-1, 1].map((sz) => {
+    const a = new THREE.Bone(); a.position.set(0, 0.47, sz * 0.2); a.rotation.x = -sz * 0.12; upper.add(a);
+    bones.push(a); parts.push([SAILOR.arm, a, m.jacket]);
+    return a;
+  });
+  const mesh = rigidSkin(parts.map(([geo, bone, mat]) => [geo, bone, mat.color]), bones, body, CREW_MAT, SAILOR_SPHERE);
+  mesh.userData.detail = true; // small: hidden far off with the fittings (setDetail)
+  g.add(mesh);
+  return { g, body, upper, legs, arms, mesh };
 }
 
 // ---------- the boat ----------

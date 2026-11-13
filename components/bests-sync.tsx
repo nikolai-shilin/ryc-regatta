@@ -1,6 +1,5 @@
 'use client';
 import { useEffect } from 'react';
-import { supabaseBrowser } from '@/lib/supabase/client';
 
 // Personal bests follow a signed-in player to any device. The game keeps them on the device, in localStorage under
 // regatta-pb ({ course key: seconds }, public/game/main.js personalBest); the account keeps a copy in its
@@ -22,14 +21,19 @@ export function BestsSync() {
   useEffect(() => {
     let local: Bests = {};
     try { local = clean(JSON.parse(localStorage.getItem(KEY) || '{}')); } catch {}
-    const supabase = supabaseBrowser();
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
+    // Only a signed-in player has anything to sync, and the session lives in the sb-…-auth-token cookie: without it
+    // there's nothing to do, and the Supabase client (~70 KB gzipped) isn't even downloaded. Most visitors are guests.
+    if (!/(?:^|;\s*)sb-[^=]+-auth-token(?:\.\d+)?=/.test(document.cookie)) return;
+    (async () => {
+      const { supabaseBrowser } = await import('@/lib/supabase/client');
+      const supabase = supabaseBrowser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const remote = clean(user.user_metadata?.pb), merged: Bests = { ...remote };
       for (const [k, v] of Object.entries(local)) if (!(merged[k] <= v)) merged[k] = v;
       if (!same(merged, local)) try { localStorage.setItem(KEY, JSON.stringify(merged)); } catch {}
       if (!same(merged, remote)) await supabase.auth.updateUser({ data: { pb: merged } }); // merged into the metadata, the name kept
-    }).catch(() => {});
+    })().catch(() => {});
   }, []);
   return null;
 }
