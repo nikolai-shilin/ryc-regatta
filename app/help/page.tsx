@@ -32,9 +32,9 @@ export default async function Help() {
     [t('Rule 18', 'Правило 18'), t('Mark-room', 'Место у знака'), t('In the zone — the dashed ring, three hull lengths — the inside boat, or the one clear ahead, gets room to round.', 'В зоне — пунктирное кольцо в три корпуса — место получает внутренняя лодка или та, что впереди.')],
     [t('Rules 31 and 44', 'Правила 31 и 44'), t('Penalties', 'Штрафы'), t('Break a rule: two penalty turns. Touch a mark: one. The debrief after the finish shows each one.', 'Нарушил правило — два штрафных оборота. Задел знак — один. Разбор после финиша покажет каждый.')],
   ];
-  const sec = (id: string, n: number, title: string, body: React.ReactNode) => (
+  const sec = (id: string, kicker: string, title: string, body: React.ReactNode) => (
     <section className="hsec" id={id}>
-      <div className="hsec-k"><span className="kicker">{n}</span><h2 className="h-land-s">{title}</h2></div>
+      <div className="hsec-k"><span className="kicker">{kicker}</span><h2 className="h-land-s">{title}</h2></div>
       {body}
     </section>
   );
@@ -63,7 +63,7 @@ export default async function Help() {
           </nav>
         </header>
 
-        {sec('h-screen', 1, t('The race screen', 'Экран гонки'), <>
+        {sec('h-screen', t('Everything you see', 'Всё, что на экране'), t('The race screen', 'Экран гонки'), <>
           <figure className="hfig only-wide" style={{ margin: 0 }}>
             <Image className="hshot" src="/images/hud-desk.jpg" width={2160} height={1350} sizes="(min-width: 1200px) 1120px, 100vw" alt={t('The race screen on a desktop, numbered', 'Экран гонки на компьютере, с номерами')} />
             {marks(WIDE)}
@@ -77,7 +77,7 @@ export default async function Help() {
           </ol>
         </>)}
 
-        {sec('h-controls', 2, t('Controls', 'Управление'), (
+        {sec('h-controls', t('Sailing the boat', 'Как вести лодку'), t('Controls', 'Управление'), (
           <div className="hgrid">
             {item('h-steer', t('The steering arc', 'Дуга руля'), t('Steer', 'Руль'), t('Drag your left thumb along the arc. She turns slowly, so make small moves: every turn of the rudder brakes the boat.', 'Веди левым пальцем по дуге. Яхта поворачивает медленно, так что двигай понемногу: каждый поворот руля тормозит лодку.'), <>{t('Keyboard:', 'Клавиатура:')} <K k="←" /> <K k="→" /></>)}
             {item('h-trim', t('The sheet slider', 'Ползунок шкота'), t('Trim the sails', 'Настрой паруса'), t('Slide your right thumb up to pull the sails in, down to ease them. Keep the knob in the blue band. Rather just steer? Settings › Sails › Auto.', 'Правым пальцем вверх — выбрать паруса, вниз — потравить. Держи ручку в синей полосе. Хочешь только рулить? Настройки › Паруса › Авто.'), <>{t('Keyboard:', 'Клавиатура:')} <K k="↑" /> <K k="↓" /></>)}
@@ -85,7 +85,7 @@ export default async function Help() {
           </div>
         ))}
 
-        {sec('h-wind', 3, t('Reading the wind', 'Как читать ветер'), (
+        {sec('h-wind', t('Where the speed is', 'Откуда скорость'), t('Reading the wind', 'Как читать ветер'), (
           <div className="hsplit">
             <Image className="hshot" src="/images/h-wind.jpg" width={960} height={720} sizes="(min-width: 600px) 50vw, 100vw" alt={t('The wind ring round the boat, from above', 'Кольцо ветра вокруг лодки, сверху')} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -100,7 +100,7 @@ export default async function Help() {
           </div>
         ))}
 
-        {sec('h-start', 4, t('The start', 'Старт'), (
+        {sec('h-start', t('Flags and the gun', 'Флаги и сигнал'), t('The start', 'Старт'), (
           <div className="hsplit">
             <Image className="hshot" src="/images/h-start.jpg" width={960} height={720} sizes="(min-width: 600px) 50vw, 100vw" alt={t('The committee boat flags over the start line', 'Флаги судейского судна над стартовой линией')} />
             <ol className="hsteps">
@@ -113,14 +113,14 @@ export default async function Help() {
           </div>
         ))}
 
-        {sec('h-rules', 5, t('The rules on the water', 'Правила на воде'), <>
+        {sec('h-rules', t('Who keeps clear', 'Кто уступает'), t('The rules on the water', 'Правила на воде'), <>
           <p className="lead">{t('The computer boats race by the Racing Rules of Sailing, and so do you. The six you meet most:', 'Компьютерные лодки гоняются по Правилам парусных гонок — и ты тоже. Шесть, что встречаются чаще всего:')}</p>
           <div className="hrules">
             {rules.map(([m, h, p]) => <div key={m} className="hrule"><span className="meta">{m}</span><span className="card-title">{h}</span><p className="lead">{p}</p></div>)}
           </div>
         </>)}
 
-        {sec('h-views', 6, t('Three views', 'Три вида'), (
+        {sec('h-views', t('Cameras', 'Камеры'), t('Three views', 'Три вида'), (
           <div className="hgrid">
             {item('h-view-drone', t('The drone view', 'Вид с дрона'), t('Drone', 'Дрон'), t('Behind and above the boat: the best view for racing.', 'Сзади и сверху — лучший вид для гонки.'), <>{t('Key', 'Клавиша')} <K k="X" /></>)}
             {item('h-view-top', t('The top view', 'Вид сверху'), t('Top', 'Сверху'), t('Straight down: for tactics, the line and the marks.', 'Прямо сверху — для тактики, линии и знаков.'), <>{t('Key', 'Клавиша')} <K k="C" /></>)}
@@ -130,7 +130,7 @@ export default async function Help() {
 
         <section className="hsec" id="h-today">
           <div className="hband">
-            <span className="kicker">7</span>
+            <span className="kicker">{t('Once a day', 'Раз в день')}</span>
             <h2 className="h-land-s">{t('Today’s race', 'Гонка дня')}</h2>
             <p className="lead">{t('Once a day everyone sails the same race: the same wind, course and fleet, so times compare fairly. Sign in and your time goes on today’s ranking. A free race lets you choose everything; its times stay with you.', 'Раз в день у всех одна гонка: один ветер, дистанция и флот, поэтому время сравнивается честно. Войди — и твоё время попадёт в рейтинг дня. В свободной гонке выбираешь всё сам, а результаты остаются у тебя.')}</p>
             <Link className="pill pill-primary pill-s" href="/race" style={{ alignSelf: 'flex-start' }}><span className="btn-t">{t('To the race hub', 'В меню гонок')}</span><IconArrow /></Link>

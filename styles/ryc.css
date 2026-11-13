@@ -293,12 +293,14 @@
   .rcard { padding: 26px 28px; }
 }
 
-/* home pictures are squircles (the RYC photo shape); plain rounding where the browser has no corner-shape */
-.home .hshot { border-radius: 28px; }
-.home .hitem .hshot { border-radius: 22px; }
+/* home, help and race pictures are squircles (the RYC photo shape); plain rounding where the browser has no corner-shape */
+.today-photo { border-radius: 28px; overflow: hidden; }
+@supports (corner-shape: squircle) { .today-photo { corner-shape: squircle; border-radius: 56px; } }
+:is(.home, .help) .hshot { border-radius: 28px; }
+:is(.home, .help) .hitem .hshot { border-radius: 22px; }
 @supports (corner-shape: squircle) {
-  .home .hshot { corner-shape: squircle; border-radius: 56px; }
-  .home .hitem .hshot { border-radius: 40px; }
+  :is(.home, .help) .hshot { corner-shape: squircle; border-radius: 56px; }
+  :is(.home, .help) .hitem .hshot { border-radius: 40px; }
 }
 .hfeat-ico { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: var(--band); color: var(--ink); }
 .hfoot { border-top: 1px solid var(--line); padding-top: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
@@ -420,7 +422,6 @@
   .hub-grid { flex: 0 1 auto; margin: auto 0; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 28px; }
   .hub-side { gap: 20px; }
   .today-photo { height: 280px; }
-  .band.today { border-radius: 0 0 28px 28px; }
   .free-card { flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 18px; }
   .free-card > .round { display: none; }
   .today-body { padding: 24px 28px 28px; gap: 14px; }
