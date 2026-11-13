@@ -53,9 +53,18 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 - **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes
   wrong (a sheet left out or in too hard, a broach, a foul, a collision, aground, stopped after the gun, now and then a
   tack) and through the start (the signals, a boat too close, the line far off, over early, a quick or a late start).
-  His 27 lines (three ElevenLabs recordings) are one after another in `public/game/skipper-ru.mp3`, with silence between them;
-  `skipper.clips` in `main.js` says where each one starts and how long it is, `skipper.pools` which lines go with which
-  situation.
+  In the English game the voice is a crew's racing calls instead, a man's and a woman's: the hails (Starboard!, Keep
+  clear!, Room at the mark!, Room to tack!), Protest!, Tacking!, Jibe!, Heads!, Trim!, Ease!, Bear away!, Head up!,
+  Overlap! or Clear ahead/astern! at a mark's zone, Go, go, go!, and the count from ten to the gun in place of the
+  beeps, in one voice per race.
+  Each language's lines (ElevenLabs recordings) are one after another in `public/game/skipper-<lang>.mp3`, mono 32 kbps,
+  with silence between them; `VOICES` in `main.js` says where each one starts and how long it is, and which lines go
+  with which situation. The voice has its own switch, apart from Sound (`voice` in the `regatta` options: Voice in the
+  pause menu, Voice on board in Settings); off, the hails are spoken by the browser and the count beeps.
+- **The other boats, heard close to:** within about 70 m (`crews` in `main.js`), another boat's tack or gybe is heard
+  (her sails flogging, her winch), her crew's calls in the game's language (the same voices, under the Voice switch, one
+  boat at a time, never over your own crew), and the nearest one's bow wave within 40 m. Each sound comes from her side
+  of the screen, quieter and duller with distance; a hail comes from the boat that hails.
 
 ## Run it locally
 
