@@ -89,6 +89,8 @@ export default function ResultView({ id, lang, signedName }: { id: string; lang:
   if (!L.fouls.length && !L.ocs && !L.startDsq && !hails) items.push({ k: t('Rules', 'Правила'), good: true, v: t('No fouls and no penalties — a clean race', 'Ни нарушений, ни штрафов — чистая гонка'), tip: '' });
   const foulRules = [...new Map(L.fouls.map((f) => [f.rule, f])).values()];
   const legM = legDistances(res.course, res.course.legs);
+  const tracks = res.boats.map((b) => ({ pts: b.track, me: b.me }));
+  const fouls = L.fouls.filter((f) => f.x != null && f.z != null).map((f) => [f.x!, f.z!] as [number, number]);
   const legName = (k: string) => ({ start: t('Start', 'Старт'), mark: t('Windward mark', 'Верхний знак'), gate: t('Leeward gate', 'Нижние ворота'), finish: t('Finish', 'Финиш') }[k] || k);
 
   return (
@@ -112,6 +114,16 @@ export default function ResultView({ id, lang, signedName }: { id: string; lang:
             <Link className="pill pill-s" href="/race"><span className="btn-t">{t('Race hub', 'Меню гонок')}</span></Link>
           </div>
         </header>
+
+        {/* the whole race from above, as wide as the page: a square map on a phone, a wide one where there's room */}
+        <section className="hsec">
+          <div className="rcard line">
+            <div className="lhead"><span className="meta">{t('Your track', 'Твой трек')}</span><span className="sp" /><span className="small" style={{ color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 6 }}><span className="bdot" style={{ background: '#3db8ff' }} />{t('you', 'ты')}<span className="bdot" style={{ background: 'var(--faint)', marginLeft: 8 }} />{t('the fleet', 'соперники')}</span></div>
+            <CourseMap className="track only-narrow" lang={lang} geo={res.course} preset={res.preset} W={340} H={340} tracks={tracks} fouls={fouls} />
+            <CourseMap className="track track-wide only-wide" lang={lang} geo={res.course} preset={res.preset} W={1000} H={580} tracks={tracks} fouls={fouls} />
+            <span className="small" style={{ color: 'var(--muted)' }}>{t('Course', 'Дистанция')} {fmtDistance(courseDistance(res.course, res.laps), lang)}{L.fouls.length ? ` · ${t('orange rings mark the fouls', 'оранжевые кольца — нарушения')}` : ''}</span>
+          </div>
+        </section>
 
         <section className="hsec">
           <div className="hsplit">
@@ -139,12 +151,6 @@ export default function ResultView({ id, lang, signedName }: { id: string; lang:
               )}
             </div>
             <div className="hcol">
-              <div className="rcard line">
-                <div className="lhead"><span className="meta">{t('Your track', 'Твой трек')}</span><span className="sp" /><span className="small" style={{ color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 6 }}><span className="bdot" style={{ background: '#3db8ff' }} />{t('you', 'ты')}<span className="bdot" style={{ background: 'var(--faint)', marginLeft: 8 }} />{t('the fleet', 'соперники')}</span></div>
-                <CourseMap className="track" lang={lang} geo={res.course} preset={res.preset} W={340} H={340}
-                  tracks={res.boats.map((b) => ({ pts: b.track, me: b.me }))} fouls={L.fouls.filter((f) => f.x != null && f.z != null).map((f) => [f.x!, f.z!] as [number, number])} />
-                <span className="small" style={{ color: 'var(--muted)' }}>{t('Course', 'Дистанция')} {fmtDistance(courseDistance(res.course, res.laps), lang)}{L.fouls.length ? ` · ${t('orange rings mark the fouls', 'оранжевые кольца — нарушения')}` : ''}</span>
-              </div>
               {!!L.legs.length && (
                 <div className="rcard line">
                   <span className="meta">{t('Leg by leg', 'По отрезкам')}</span>

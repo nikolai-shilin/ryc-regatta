@@ -267,6 +267,7 @@
 .rtable .me .n, .rtable .me .g { color: var(--accent); }
 .bdot { width: 10px; height: 10px; border-radius: 50%; }
 .track { display: block; width: 100%; height: auto; max-height: 440px; }
+.track.track-wide { max-height: none; }
 .dbgrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .dbi { background: var(--band); border-radius: 22px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
 .dbi .lhead { gap: 8px; }
