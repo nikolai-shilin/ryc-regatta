@@ -93,7 +93,8 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   const you = shared ? t('This boat', 'Эта лодка') : t('You', 'Ты');
   // the link to this page, with a line to go with it: shared by the phone's own sheet, or copied where there's none
   const share = async () => {
-    const url = `${location.origin}/race/result/${encodeURIComponent(res.id)}${lang === 'ru' ? '?lang=ru' : ''}`; // in Russian, the card and title are too
+    // in Russian the card and the title are too; utm_source says in the analytics how many come from a shared result
+    const url = `${location.origin}/race/result/${encodeURIComponent(res.id)}?${lang === 'ru' ? 'lang=ru&' : ''}utm_source=share&utm_medium=result`;
     const time = me.secs != null && !me.dsq ? clock(me.secs) : '';
     const text = me.dsq ? t('My race in Up and down', 'Моя гонка в Up and down')
       : res.daily && isToday ? t(`I finished ${ordEn(place)} in ${time} in today’s race. Can you beat it?`, `${place}-е место за ${time} в гонке дня. Сможешь быстрее?`)

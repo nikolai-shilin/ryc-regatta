@@ -25,8 +25,8 @@ export async function getT() {
 // A page's title, description and share card in the reader's language:
 //   export const generateMetadata = titled('Settings', 'Настройки', { index: false });
 //   export const generateMetadata = titled('How to play', 'Как играть', { path: '/help', description: ['…', '…'] });
-type Opts = { path?: string; description?: [string, string]; index?: boolean };
+type Opts = { path?: string; description?: [string, string]; index?: boolean; today?: boolean };
 export const titled = (en: string, ru: string, o: Opts = {}) => async (): Promise<Metadata> => {
   const { lang, t } = await getT();
-  return pageMeta(lang, { title: t(en, ru), description: o.description && t(...o.description), path: o.path, index: o.index });
+  return pageMeta(lang, { title: t(en, ru), description: o.description && t(...o.description), path: o.path, index: o.index, today: o.today });
 };

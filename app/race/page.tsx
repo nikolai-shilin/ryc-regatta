@@ -11,6 +11,7 @@ import { MyRow } from '@/components/home-client';
 
 export const generateMetadata = titled('Race hub', 'Меню гонок', {
   path: '/race',
+  today: true,
   description: [
     'Today’s race: the same wind, course and fleet for every player, a new one at midnight UTC. Sail it as often as you like, beat today’s fastest times, or set up a free race of your own.',
     'Гонка дня: одинаковые ветер, дистанция и флот для всех, новая — каждую полночь по UTC. Проходи сколько хочешь, побей лучшие времена дня или настрой свою свободную гонку.'],

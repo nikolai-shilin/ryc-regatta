@@ -36,6 +36,10 @@ ${NAME} is a free 3D sailing race game by RYC that runs in any modern web browse
   - [The racing rules in five minutes](${SITE}/learn/rules): port and starboard, windward and leeward, clear astern, tacking, room at the mark, penalties
   - [How to win a sailing start](${SITE}/learn/start): the signals, the favoured end, timing the run, holding your spot, over early, clear air
   - [Headers and lifts](${SITE}/learn/shifts): tacking on the wind shifts, laylines, gusts and lulls, gybing on the lifts downwind
+  - [Rounding the marks](${SITE}/learn/marks): the windward mark on starboard, the bear-away, picking a side of the gate, wide in and tight out, room in the zone
+  - [Sailing downwind](${SITE}/learn/downwind): the gennaker, sailing angles, gybing on the lifts, crash gybes and death rolls, surfing waves
+  - [Sail trim and boat speed](${SITE}/learn/trim): the sheets, steering, footing for speed, heel, reefing in a blow
+  - [Sailing racing glossary](${SITE}/learn/glossary): beat, overlap, clear astern, header, lift, layline, zone, mark-room, OCS and more
 - [Sailing certification exam practice](${SITE}/iyt): RYC's free practice app for sailing certification theory exams
 
 Every page is also in Russian: add ?lang=ru to the address (for example ${SITE}/faq?lang=ru).

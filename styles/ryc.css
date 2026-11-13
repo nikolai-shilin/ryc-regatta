@@ -609,3 +609,11 @@
   .gd-sec::before { content: attr(data-n); grid-row: 1 / span 9; font: 300 var(--t-xl, 28px)/1.2 var(--f-serif); color: var(--faint); }
   .gd-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+/* the glossary: a term and its definition per row */
+.gd-terms { margin: 0; gap: 0; }
+.gd-term { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-1); padding-block: var(--s-4); border-top: 1px solid var(--line, #e3e8ea); scroll-margin-top: var(--hm-head); }
+.gd-term dt { font: 700 var(--t-m)/1.3 var(--f-sans); }
+.gd-term dd { margin: 0; font: 400 var(--t-m)/1.55 var(--f-serif); max-width: 68ch; }
+.gd-term:target { background: var(--band); box-shadow: -12px 0 0 var(--band), 12px 0 0 var(--band); }
+.gd-see { display: inline-flex; align-items: center; gap: 2px; color: var(--accent); font: 700 var(--t-s)/1 var(--f-sans); white-space: nowrap; }
+@media (min-width: 900px) { .gd-term { grid-template-columns: 260px minmax(0, 1fr); column-gap: var(--s-8); } }

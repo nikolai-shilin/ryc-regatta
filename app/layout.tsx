@@ -26,6 +26,13 @@ export async function generateMetadata(): Promise<Metadata> {
     creator: 'RYC',
     publisher: 'RYC',
     category: 'game',
+    // the search consoles' ownership checks, from the environment (Vercel › Settings › Environment Variables), so a
+    // code from Google Search Console, Yandex Webmaster or Bing Webmaster Tools needs no commit
+    verification: {
+      ...(process.env.GOOGLE_SITE_VERIFICATION && { google: process.env.GOOGLE_SITE_VERIFICATION }),
+      ...(process.env.YANDEX_VERIFICATION && { yandex: process.env.YANDEX_VERIFICATION }),
+      ...(process.env.BING_SITE_VERIFICATION && { other: { 'msvalidate.01': process.env.BING_SITE_VERIFICATION } }),
+    },
     // favicon.ico for the small sizes, the badge as a PNG (app/icon.tsx) for Google's results and an installed app
     icons: { icon: [{ url: '/favicon.ico', sizes: '32x32' }, { url: '/icon', type: 'image/png', sizes: '512x512' }], apple: [{ url: '/apple-icon', sizes: '180x180' }] },
   };

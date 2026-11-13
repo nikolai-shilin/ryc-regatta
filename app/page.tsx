@@ -15,7 +15,7 @@ import { faqGroups, HOME } from '@/lib/faq';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { lang, t } = await getT();
-  return pageMeta(lang, { title: t(...HOME_TITLE), description: t(...HOME_DESC), path: '/', absolute: true });
+  return pageMeta(lang, { title: t(...HOME_TITLE), description: t(...HOME_DESC), path: '/', absolute: true, today: true });
 }
 
 // For search engines and AI answer engines: who makes the site, and the game itself as a free browser game.

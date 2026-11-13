@@ -14,11 +14,145 @@ export type Guide = {
 // the rules guide on the Sailing Certification Test site, rule by rule
 const rr = (lang: Lang, page: string) => `https://iyt.rycrentals.com${lang === 'ru' ? '/ru' : ''}/racing-rules/${page}`;
 
-export const GUIDES = ['rules', 'start', 'shifts'] as const;
+export const GUIDES = ['rules', 'start', 'shifts', 'marks', 'downwind', 'trim'] as const;
 export type GuideSlug = (typeof GUIDES)[number];
 export const isGuide = (s: string): s is GuideSlug => (GUIDES as readonly string[]).includes(s);
 
 export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
+  if (slug === 'marks') return {
+    slug,
+    title: t('Rounding the marks: the windward mark and the gate', 'Огибание знаков: верхний знак и ворота'),
+    short: t('Rounding the marks', 'Огибание знаков'),
+    kicker: t('Learn to race · marks', 'Учись гоняться · знаки'),
+    description: t(
+      'How to round the marks in a sailboat race: approaching the windward mark on the starboard layline, the bear-away, choosing a side of the leeward gate, wide in and tight out, room in the zone and touching a mark.',
+      'Как огибать знаки в парусной гонке: подход к верхнему знаку по лейлайну правого галса, поворот на попутный курс, выбор знака в нижних воротах, «широко зайти — узко выйти», место в зоне и касание знака.'),
+    intro: t(
+      'Boats bunch up at the marks, so places are won and lost there more than anywhere else on the course. A clean rounding is mostly a matter of arriving on the right tack, at the right angle, with the rules on your side.',
+      'У знаков лодки сходятся вместе, и места там выигрывают и проигрывают чаще, чем где-либо на дистанции. Чистое огибание — это прежде всего прийти правильным галсом, под правильным углом и с правилами на своей стороне.'),
+    sections: [
+      { id: 'approach', h: t('Come in on starboard', 'Подходи правым галсом'), p: [
+        t('The windward mark is usually left to port, so the last tack into it is on starboard, and a starboard boat has right of way over anyone coming in on port (rule 10). Coming in on port means ducking the starboard boats or tacking under them in the zone — where you must not make a boat that is fetching the mark sail above close-hauled (rule 18.3).',
+          'Верхний знак обычно оставляют слева, поэтому последний галс к нему — правый, а лодка правого галса имеет право дороги над всеми, кто идёт левым (правило 10). Подходить левым — значит проходить за кормой лодок правого галса или поворачивать под ними в зоне, где нельзя заставить лодку, идущую прямо на знак, идти круче бейдевинда (правило 18.3).'),
+        t('Don’t overstand: tack onto the layline late enough that a shift can’t leave you sailing extra distance, but early enough not to be stuck below it in a crowd.',
+          'Не перебирай: выходи на лейлайн достаточно поздно, чтобы сдвиг ветра не заставил идти лишнее, но достаточно рано, чтобы не застрять под ним в толпе.'),
+      ] },
+      { id: 'bear', h: t('The bear-away', 'Поворот на попутный'), p: [
+        t('Round close to the mark, then bear away smoothly onto the run, easing the sheets as you turn, and hoist the gennaker once you are clear and pointing down the course. Hoisting takes the crew a few seconds, so don’t ask for it in the middle of the turn.',
+          'Обогни знак вплотную, плавно увались на попутный курс, потравливая шкоты по ходу поворота, и ставь генакер, когда отошёл от знака и смотришь вниз по дистанции. Постановка занимает у команды несколько секунд, так что не проси её посреди поворота.'),
+      ] },
+      { id: 'gate', h: t('Pick a side of the gate', 'Выбери знак в воротах'), p: [
+        t('At the bottom of the run, a gate gives you two marks to choose from: sail between them and round either one. Take the one further upwind, which shortens the next beat, or the one that sends you towards the side of the course you want — and the one with fewer boats queuing for it.',
+          'В конце попутного ворота дают выбор из двух знаков: пройди между ними и обогни любой. Бери тот, что ближе к ветру, — следующая лавировка станет короче, — или тот, что уводит на нужную сторону дистанции, и тот, у которого меньше очередь.'),
+        t('Drop the gennaker a few lengths before the mark, so the crew is ready to trim upwind as you round.',
+          'Убирай генакер за несколько корпусов до знака, чтобы команда успела подготовиться к лавировке.'),
+      ] },
+      { id: 'wide', h: t('Wide in, tight out', 'Широко зайти — узко выйти'), p: [
+        t('Approach a leeward mark a little wide and turn so that you leave it close, already close-hauled. A boat that cuts in tight comes out wide and below the boats behind her, in their dirty air.',
+          'Подходи к нижнему знаку чуть шире и поворачивай так, чтобы выйти от него вплотную, уже в бейдевинд. Лодка, которая срезает внутрь, выходит широко, под лодками позади и в их ветровой тени.'),
+      ] },
+      { id: 'room', h: t('Room in the zone', 'Место в зоне'), p: [
+        t('When the first of two overlapped boats reaches the zone, three hull lengths from the mark, the outside boat must give the inside one room to round (rule 18). Get the inside overlap before the zone; an overlap made inside it doesn’t count if you came from clear astern. Between boats on opposite tacks on a beat, at the windward mark, rule 18 doesn’t apply.',
+          'Когда первая из двух перекрывающихся лодок входит в зону — три корпуса от знака, — внешняя должна дать внутренней место, чтобы обогнуть (правило 18). Добейся внутреннего перекрытия до зоны: если ты пришёл чисто позади, перекрытие внутри зоны не считается. Между лодками на разных галсах на лавировке, у верхнего знака, правило 18 не действует.'),
+        t('Touch a mark and you take a penalty turn (rule 31) — in the game, one turn through a tack and a gybe.',
+          'Коснулся знака — делай штрафной оборот (правило 31); в игре это один оборот через оверштаг и фордевинд.'),
+      ] },
+    ],
+    more: [
+      { label: t('Room at marks, rule by rule', 'Место у знаков, правило за правилом'), href: rr(lang, 'marks') },
+      { label: t('Glossary: zone, mark-room, layline', 'Словарь: зона, место у знака, лейлайн'), href: '/learn/glossary#zone' },
+    ],
+    try: { label: t('Sail today’s race', 'Пройди гонку дня'), href: '/race', text: t(
+      'A windward mark, a gate, five boats arriving with you and the rules on the water.',
+      'Верхний знак, ворота, пять лодок, которые приходят вместе с тобой, и правила на воде.') },
+  };
+
+  if (slug === 'downwind') return {
+    slug,
+    title: t('Sailing downwind: the gennaker, angles and gybes', 'Попутные курсы: генакер, углы и повороты'),
+    short: t('Sailing downwind', 'Попутные курсы'),
+    kicker: t('Learn to race · downwind', 'Учись гоняться · попутный'),
+    description: t(
+      'How to sail fast downwind in a race: when to set the gennaker, sailing angles instead of dead downwind, gybing on the lifts, avoiding a crash gybe or a death roll, and surfing waves.',
+      'Как быстро идти на попутных курсах в гонке: когда ставить генакер, углы вместо чистого фордевинда, фордевинд на отходе, как избежать самопроизвольного поворота и брочинга, сёрфинг на волне.'),
+    intro: t(
+      'Downwind looks like the easy part: the wind is behind you and the boat feels slower than it is. But the gaps between boats open and close fastest here, with the big sail up, the shifts and the waves.',
+      'Попутный курс кажется лёгким: ветер сзади, и лодка будто идёт медленнее, чем на самом деле. Но именно здесь, с большим парусом, заходами ветра и волной, разрывы между лодками растут и тают быстрее всего.'),
+    sections: [
+      { id: 'kite', h: t('Set the gennaker', 'Ставь генакер'), p: [
+        t('The gennaker is a big, light sail set from the bow, and it is most of a boat’s speed downwind. Set it once you have borne away round the windward mark and are clear of other boats; hoisting and dropping take the crew a few seconds. In light air on a reach, a flatter code zero does the same job closer to the wind.',
+          'Генакер — большой лёгкий парус, который ставят с носа, и на попутных курсах он даёт лодке большую часть скорости. Ставь его, когда увалился за верхним знаком и отошёл от других лодок; постановка и уборка занимают у команды несколько секунд. В слабый ветер на галфвинде ту же работу ближе к ветру делает более плоский код-зеро.'),
+      ] },
+      { id: 'angles', h: t('Sail angles, not dead downwind', 'Иди углами, а не чистым фордевиндом'), p: [
+        t('With an asymmetric gennaker most boats are faster with the wind a little off the stern than dead behind, so they reach down the run in a couple of gybes rather than straight at the mark. Head up a few degrees in a lull to keep the speed up, and bear away in a gust, when the boat can go deeper at the same speed.',
+          'С асимметричным генакером большинство лодок идут быстрее, когда ветер чуть сбоку от кормы, чем строго сзади, поэтому проходят попутный в бакштаг с парой поворотов, а не прямо на знак. В затишье приведись на несколько градусов, чтобы не терять скорость, а в порыве увались — лодка пойдёт глубже с той же скоростью.'),
+      ] },
+      { id: 'gybe', h: t('Gybe on the lifts', 'Фордевинд на отходе'), p: [
+        t('Downwind the shifts work the other way round from the beat: a lift makes you head up, away from the mark, to keep your angle to the wind. Gybe, and the same shift points you at the mark again.',
+          'На попутном сдвиги работают наоборот по сравнению с лавировкой: отход заставляет приводиться, уходя от знака, чтобы сохранить угол к ветру. Сделай поворот фордевинд — и тот же сдвиг снова поведёт тебя к знаку.'),
+      ] },
+      { id: 'lee', h: t('Not too far by the lee', 'Не уходи слишком далеко на ветер с кормы'), p: [
+        t('Bear away past dead downwind and the wind gets behind the mainsail: you are sailing by the lee. Go too far and the boom slams across on its own, a crash gybe; with the gennaker up she can roll and round up, a death roll. When the game warns you that you are by the lee, gybe or head up.',
+          'Увалишься дальше чистого фордевинда — ветер зайдёт за грот с другой стороны. Если уйти слишком далеко, гик перебросит сам — самопроизвольный поворот; с генакером лодку может положить и привести — брочинг. Когда игра предупреждает, что ветер заходит с кормы на «неправильный» борт, делай поворот или приводись.'),
+      ] },
+      { id: 'waves', h: t('Surf the waves', 'Лови волну'), p: [
+        t('In a strong breeze the waves can carry the boat faster than the wind alone. Luff up a little as a wave lifts the stern to catch it, then bear away down its face and ride it as long as you can.',
+          'В сильный ветер волна может нести лодку быстрее, чем один ветер. Когда волна поднимает корму, чуть приведись, чтобы поймать её, затем увались вниз по склону и держись на ней сколько получится.'),
+      ] },
+    ],
+    more: [
+      { label: t('Headers and lifts', 'Заходы и отходы ветра'), href: '/learn/shifts#down' },
+      { label: t('Questions: crash gybe and death roll', 'Вопросы: самопроизвольный поворот и брочинг'), href: '/faq' },
+    ],
+    try: { label: t('Race in a strong breeze', 'Гонка в сильный ветер'), href: '/race/free', text: t(
+      'Set a strong breeze in a free race: the gennaker, the waves to surf and a boom that bites back.',
+      'Поставь сильный ветер в свободной гонке: генакер, волна для сёрфинга и гик, который может ударить.') },
+  };
+
+  if (slug === 'trim') return {
+    slug,
+    title: t('Sail trim and boat speed', 'Настройка парусов и скорость лодки'),
+    short: t('Sail trim and speed', 'Настройка и скорость'),
+    kicker: t('Learn to race · speed', 'Учись гоняться · скорость'),
+    description: t(
+      'How to make a sailboat go fast: trimming the main and jib, steering smoothly, footing for speed upwind, controlling heel, and reefing or changing jibs in a blow.',
+      'Как заставить парусную лодку идти быстро: настройка грота и стакселя, плавное рулевое управление, увалиться ради скорости на лавировке, контроль крена, риф и смена стакселя в сильный ветер.'),
+    intro: t(
+      'Tactics win races only if the boat is fast enough to use them. Most lost speed comes from three things: sails set wrong for the wind, too much rudder, and too much heel.',
+      'Тактика выигрывает гонки, только если лодке хватает скорости ею воспользоваться. Большая часть потерянной скорости — от трёх вещей: паруса не по ветру, слишком много руля и слишком большой крен.'),
+    sections: [
+      { id: 'sheet', h: t('Set the sheet for the wind', 'Шкот — по ветру'), p: [
+        t('A sail works when the wind flows smoothly along both sides of it. Let it out too far and its front edge flaps; pull it in too far and the flow breaks away behind it and the boat slows without showing it. Every time you change course, the sheets have to follow.',
+          'Парус работает, когда ветер плавно обтекает его с обеих сторон. Перетравишь — передняя кромка заполощет; перебрал — поток срывается с подветренной стороны, и лодка замедляется незаметно. При каждой смене курса шкоты должны следовать за ним.'),
+        t('In Up and down each sheet has a blue band for the wind you’re in: keep the knob in it. Or let the game trim for you and only steer.',
+          'В Up and down у каждого шкота есть синяя полоса для текущего ветра: держи ползунок в ней. Или пусть игра настраивает паруса сама, а ты только рули.'),
+      ] },
+      { id: 'steer', h: t('Steer in small moves', 'Рули маленькими движениями'), p: [
+        t('The rudder is a brake as well as a steering wheel: every movement of it slows the boat. Make small, early corrections rather than big late ones, and let the boat sail.',
+          'Руль не только поворачивает, но и тормозит: каждое его движение замедляет лодку. Делай небольшие ранние поправки вместо больших поздних и дай лодке идти.'),
+      ] },
+      { id: 'foot', h: t('Foot to build speed', 'Увались, чтобы разогнаться'), p: [
+        t('Upwind, a slow boat pointing as high as a fast one only slips sideways. After a tack, a bad wave or a lull, bear away a few degrees, let her pick up speed, then come back up.',
+          'На лавировке медленная лодка, которая идёт так же круто, как быстрая, только сползает вбок. После поворота, неудачной волны или затишья увались на пару градусов, дай лодке разогнаться и потом снова приведись.'),
+      ] },
+      { id: 'heel', h: t('Keep her upright', 'Держи лодку ровно'), p: [
+        t('A boat heeled too far drags her rudder, slides to leeward and wants to round up into the wind. When a gust lays her over, ease the sheet until she comes back up; the game says so when the heel is too much.',
+          'Слишком накренённая лодка тянет руль, сползает под ветер и стремится привестись. Когда порыв кладёт её, потрави шкот, пока она не выпрямится; игра подскажет, если крен слишком большой.'),
+      ] },
+      { id: 'blow', h: t('Reef and change down in a blow', 'Риф и малый стаксель в сильный ветер'), p: [
+        t('When easing the sheet isn’t enough, make the sails smaller: reef the main, and change to the small jib (the J3). A boat with less sail but upright is faster than one with full sail flat on her side.',
+          'Когда травить шкот уже не помогает, уменьшай паруса: бери риф на гроте и ставь малый стаксель (J3). Лодка с меньшими парусами, но ровная идёт быстрее той, что с полными парусами лежит на борту.'),
+      ] },
+    ],
+    more: [
+      { label: t('How to play: sails in your hands', 'Как играть: паруса в твоих руках'), href: '/help#h-controls' },
+      { label: t('Glossary: sheet and trim', 'Словарь: шкот и настройка'), href: '/learn/glossary#sheet' },
+    ],
+    try: { label: t('Set up a free race', 'Настрой свободную гонку'), href: '/race/free', text: t(
+      'Turn auto-trim off in Settings, pick a medium breeze and sail on the sheets yourself.',
+      'Выключи автонастройку в настройках, выбери средний ветер и работай шкотами сам.') },
+  };
+
   if (slug === 'rules') return {
     slug,
     title: t('The racing rules in five minutes', 'Правила парусных гонок за пять минут'),
