@@ -578,11 +578,11 @@ function windArrow() {
 function guides(tws) {
   const g = new THREE.Group(), turn = new THREE.Group(); g.add(turn); // turn: rotated to the wind
   const beat = beatAngle(tws) * D2R, run = runAngle(tws) * D2R;
-  turn.add(sector(R_IN + 0.55, R_IN + 0.75, 0, 2 * Math.PI, glass('#ffffff', 0.22))); // the dial
   turn.add(sector(R_IN, R_OUT, -beat, beat, glass('#ff4d3d', 0.3))); // no-go: too close to the wind
   for (const sd of [-1, 1]) {
-    turn.add(sector(R_IN - 0.5, R_OUT + 0.9, sd * beat - 2.2 * D2R, sd * beat + 2.2 * D2R, glass('#2ee6a0', 0.75))); // best upwind
-    turn.add(sector(R_IN - 0.5, R_OUT + 0.9, sd * run - 2.2 * D2R, sd * run + 2.2 * D2R, glass('#3aa8ff', 0.75))); // best downwind
+    // thin and half-see-through, only a touch beyond the ring: read at a glance without shouting over the sea
+    turn.add(sector(R_IN - 0.15, R_OUT + 0.25, sd * beat - 1.2 * D2R, sd * beat + 1.2 * D2R, glass('#2ee6a0', 0.42))); // best upwind
+    turn.add(sector(R_IN - 0.15, R_OUT + 0.25, sd * run - 1.2 * D2R, sd * run + 1.2 * D2R, glass('#3aa8ff', 0.42))); // best downwind
   }
   turn.add(sector(R_IN, R_OUT, Math.PI - (Math.PI - run), Math.PI + (Math.PI - run), glass('#3aa8ff', 0.12))); // the slow dead run between the gybes
   const arrow = windArrow(); arrow.position.set(0, 0, -(R_OUT + 6)); turn.add(arrow);
