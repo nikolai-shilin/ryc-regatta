@@ -98,6 +98,21 @@ export function runAngle(tws, kite = true) {
   return best;
 }
 
+// coasting: how fast she loses way (m/s²) at speed v (m/s) when the sails drive her only to `target`. The hull's drag
+// goes as the square of her speed — about v²/COAST — and the sails' drive still covers the drag at the target speed;
+// near head to wind the rig and the flogging sails add their windage in the apparent wind aws (m/s). Luffed head to
+// wind at 6½ knots in 12 knots of breeze she is down to 2 knots after some 15 s and 2 boat lengths, and stops after
+// about 3 (further in light air, sooner in a blow).
+const COAST = 40, WINDAGE = 0.0007, HULL_V = 8 * KN; // m; per m of air; hull speed, about 8 knots on her 11 m waterline
+export const coast = (v, aws, aDeg, target = 0) => (v * v - target * target) / COAST + WINDAGE * aws * aws * clamp((NO_GO + 6 - aDeg) / 6, 0, 1);
+// how far she carries her way to windward, luffed head to wind from speed v (m/s) in tws knots, until she's down to
+// steerage way (about 2 knots)
+export function shootReach(v, tws) {
+  let d = 0;
+  for (let i = 0; i < 400 && v > 1; i++) { v -= coast(v, tws * KN + v, 0) * 0.1; d += v * 0.1; }
+  return d;
+}
+
 // sails: the best angle off the centreline for an apparent wind angle (degrees)
 const SHEET_IN = 8, SHEET_OUT = 85;
 const FOOT = 8, PINCH = 0.06; // slow upwind: up to 8° to foot, 4% a degree for pointing above it
@@ -217,7 +232,7 @@ export class Boat {
     this.twa = 0; this.tws = 0; this.wdir = 0; this.gust = 0; this.shadow = 0;
     this.awa = 0; this.aws = 0; this.sail = 0; this.trim = 'ok'; this.trimErr = 0; this.luff = 0; this.eff = 1; this.depower = 0;
     this.target = 0; this.polar = 0; this.surf = 0; this.events = []; this.broachT = 0; this.hit = 0; this.slope = 0;
-    this.yawRate = 0; this.kiteJob = null; this.sinceTack = 99;
+    this.yawRate = 0; this.kiteJob = null; this.sinceTack = 99; this.tackSide = 0;
     this.jibSheet = this.sheet; this.split = false; this.trimSail = 'main'; // split: the jib trimmed on its own sheet
     this.kiteFill = 0; this.jibSail = 0; this.reef = false; this.reefJob = null; this.reefFill = 0; this.backing = false;
     this.kiteType = 'gen'; // the sail on the bowsprit: 'gen' the gennaker (downwind), 'zero' the code zero (a flat reacher)
@@ -258,7 +273,9 @@ export class Boat {
     this.events.push(up ? 'kiteHoist' : 'kiteDrop');
     return true;
   }
-  get tacking() { return (this.auto && !this.auto.gybe) || Math.abs(this.twa) < NO_GO * D2R; }
+  // tacking (rule 13): from passing head to wind until she bears away to close-hauled on the new tack. Luffing up
+  // towards head to wind on her own tack — shooting a mark — is not a tack: tackSide is the tack she was last sailing
+  get tacking() { return (this.auto && !this.auto.gybe) || (Math.abs(this.twa) < NO_GO * D2R && sgn(this.twa) !== this.tackSide); }
   tackOrGybe() {
     if (this.auto || this.pen) return;
     // already by the lee: the crew pulls the boom across, no turn needed
@@ -298,6 +315,7 @@ export class Boat {
     this.wdir = w.dir; this.tws = w.tws; this.gust = w.gust; this.shadow = w.shadow;
     const twa = wrap(w.dir - this.h), a = Math.abs(twa) / D2R, side = sgn(twa);
     this.twa = twa;
+    if (a >= NO_GO) this.tackSide = side;
     // apparent wind: the true wind minus the boat's own motion
     const tws = w.tws * KN, fx = Math.sin(this.h), fz = -Math.cos(this.h);
     const ax = -Math.sin(w.dir) * tws - fx * this.v, az = Math.cos(w.dir) * tws - fz * this.v;
@@ -409,8 +427,16 @@ export class Boat {
     this.backing = !this.kite && !this.auto && !this.pen && a < 55 && this.sheet > 0.9 && this.v < 1.5;
     if (this.backing) target = -0.9 * KN * clamp((55 - a) / 25, 0, 1) * clamp(w.tws / 12, 0.5, 1.4);
     this.target = target;
-    const tau = target > this.v ? 6 : a < NO_GO ? 3 : this.v > target * 1.2 ? 2 : 4.5; // above hull speed the drag bites
-    this.v += (target - this.v) * (1 - Math.exp(-dt / tau));
+    // momentum: speeding up she follows the target lazily (τ 6 s), the sails having to drive 7½ tonnes. Slowing down,
+    // it is the hull's drag that takes the way off (coast()): hard at full speed, ever more gently as she slows — so
+    // luffed head to wind she carries her way two or three boat lengths, enough to shoot a mark. Two things stop her
+    // sooner: above hull speed (off a wave) the wave drag bites at once; and off the wind with the sails let fly, as a
+    // crew holds her on the line before the start, they flog and she slides sideways, and the way comes off in seconds.
+    const letFly = a > bt && this.luff > 0.5;
+    if (target > this.v || this.v < 0 || target < 0 || letFly || (this.v > HULL_V && this.v > target * 1.2)) {
+      const tau = target > this.v ? 6 : a < NO_GO ? 3 : this.v > target * 1.2 ? 2 : 4.5;
+      this.v += (target - this.v) * (1 - Math.exp(-dt / tau));
+    } else this.v = Math.max(target, this.v - coast(this.v, this.aws * KN, a, target) * dt);
     this.v -= 9.81 * slope * 0.3 * dt;
     this.surf = 0;
     if (a > 110 && w.tws > 13 && slope < 0 && this.v > 3 && this.v < target * 1.4) { const s = -slope * 9.81 * 0.35 * dt; this.v += s; this.surf = s / dt; }
@@ -1093,8 +1119,9 @@ export class Race {
 
     const brg = Math.atan2(tx - b.x, -(tz - b.z)), rel = wrap(brg - W), tack = sgn(b.twa);
     const up = (beatAngle(b.tws) + 1.5 - ai.skill) * D2R, down = runAngle(b.tws, b.kite || b.tws < KITE_MAX) * D2R;
-    let want;
-    if (Math.abs(rel) < up) {
+    let want = this.shootMark(b, tx, tz, up);
+    if (want !== null) { /* shooting the windward mark */ }
+    else if (Math.abs(rel) < up) {
       // on the beat: tack on the layline, on a header, or to get out of another boat's wind
       const since = this.clock - ai.lastTack;
       const lay = tack > 0 ? rel >= up - 1 * D2R : rel <= -(up - 1 * D2R);
@@ -1256,6 +1283,31 @@ export class Race {
     const ai = h.o.ai;
     ai.alertT = this.clock;
     if (h.rule === '20') { this.r20 = { hailer: this.player, hailed: h.o, t: this.clock, tacked: true }; ai.respondT = this.clock + 1 + 2.5 * (1 - ai.skill); }
+  }
+  // shooting the windward mark: coming in just short of the layline (or on it, slow), rather than put in two more
+  // tacks she luffs head to wind and carries her way up to it — the Boat's coasting. Too slow to carry that far, she
+  // first bears away a few degrees for a few seconds to build speed. The heading to steer, or null to sail as usual.
+  shootMark(b, tx, tz, up) {
+    const ai = b.ai, W = b.wdir;
+    if (this.clock < 0 || b.ocs || b.pen || this.course.legs[b.leg] !== 'mark' || ai.wp !== 0 || ai.detour > this.clock) { ai.shoot = null; return null; }
+    const dx = tx - b.x, dz = tz - b.z, d = Math.hypot(dx, dz), brg = Math.atan2(dx, -dz);
+    const tack = b.tackSide || sgn(b.twa), q = -tack * wrap(brg - W); // the target's angle off the wind on her side (≥ up: she fetches it)
+    if (ai.shoot === 'luff') {
+      if (b.v > 0.9 && q > 0 && d > 3) return brg; // carrying her way up to it
+      ai.shoot = null; ai.shootT = this.clock; return null; // there, or her way's gone: sail on as usual
+    }
+    if (b.tacking || q < up - 12 * D2R || q > up + 3 * D2R || d > 70 || this.clock - (ai.shootT ?? -99) < 20) { ai.shoot = null; return null; }
+    const margin = 0.75 + 0.15 * ai.skill; // she judges it with a little in hand, the better skippers closer
+    if (shootReach(b.v, b.tws) * margin > d) { ai.shoot = 'luff'; ai.shootT = this.clock; return brg; }
+    // not enough way on for it: bear away 8° for speed (at most some 8 s), then luff when she has it
+    const vFoot = polarSpeed(b.tws, up / D2R + 8) * KN;
+    if (ai.shoot === 'build' && this.clock - ai.buildT > 8) { ai.shoot = null; ai.shootT = this.clock; return null; }
+    if (b.v < 0.95 * vFoot && shootReach(vFoot, b.tws) * margin > d * 0.8) {
+      if (ai.shoot !== 'build') { ai.shoot = 'build'; ai.buildT = this.clock; }
+      return W - tack * (up + 8 * D2R);
+    }
+    if (ai.shoot === 'build') ai.shoot = null;
+    return null;
   }
   steerTo(b, want) { b.rudder = clamp(wrap(want - b.h) * 2.4 - b.yawRate * 1.1, -1, 1); } // meeting her swing, as she doesn't stop turning at once
   // a tack now wouldn't put her across another boat's bow (rule 13: while tacking she keeps clear of everyone)
