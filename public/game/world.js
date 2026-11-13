@@ -213,7 +213,7 @@ function ladder(c) {
   return g;
 }
 
-// the laylines to the windward mark: two lines like the start line, from the edge of its zone down each side of the beat,
+// the laylines to the windward mark: two lines like the start line but yellow, from the edge of its zone down each side of the beat,
 // far enough to reach below the start line. Each is a long strip, laid on the waves and turned to the wind every frame.
 class Laylines {
   constructor(c, tws) {
@@ -243,7 +243,7 @@ function lineStrip(len) { // a straight line len metres long, lying flat along x
       for (const o of [-HW, HW]) { this.v.push(d, o); pos.push(0, 0, 0); uv.push(d / DASH, o < 0 ? 0 : 1); }
       if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     }
-    const mat = lineMat();
+    const mat = lineMat().clone(); mat.color.set('#ffd400'); // the same dashes, in yellow
     this.group = new THREE.Group();
     this.lines = [-1, 1].map((sd) => {
       const g = new THREE.BufferGeometry();
