@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import type { Lang, T } from '@/lib/lang';
 import { SITE, jsonLd, langUrl } from '@/lib/seo';
-import { initials, type Account } from '@/lib/supabase/server';
 import { Logo, Langs } from './ui';
 import { SiteMenu } from './home-client';
 
@@ -26,7 +25,8 @@ function Breadcrumbs({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Page; 
 // The site's header, as on rycrentals.com: the logo, the site's pages in the middle (from 1100 px wide), and the menu
 // (the burger and your avatar) at the right. On every page: the scrolling ones (home, help, the race result) and the
 // app screens, where it sits over the screen and stays short on a phone held sideways.
-export function SiteHead({ lang, t, account, page, crumbs }: { lang: Lang; t: T; account: Account; page: Page; crumbs?: Crumb[] }) {
+// Who is signed in isn't known here (the pages are cached): the avatar and the account link are filled in by lib/me.ts.
+export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Page; crumbs?: Crumb[] }) {
   const cur = (p: Page) => (p === page ? ({ 'aria-current': 'page' } as const) : {});
   return (
     <header className="hm-head">
@@ -41,20 +41,20 @@ export function SiteHead({ lang, t, account, page, crumbs }: { lang: Lang; t: T;
           <Link className="hm-tab" href="/faq" {...cur('faq')}>{t('Questions', 'Вопросы')}</Link>
           <Link className="hm-tab" href="/iyt" {...cur('iyt')}>{'Sailing Certification Test'}</Link>
         </nav>
-        <SiteMenu lang={lang} initials={account ? initials(account.name, account.email) : null} />
+        <SiteMenu lang={lang} />
       </div>
     </header>
   );
 }
 
 // The site's footer: the logo, three columns of links, the language switch.
-export function SiteFoot({ lang, t, account, back }: { lang: Lang; t: T; account: Account; back: string }) {
+export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) {
   return (
     <div className="hm-page hm-foot-wrap">
       <footer className="hm-foot">
         <Link className="hm-brand" href="/" aria-label="RYC"><Logo /></Link>
         <div className="hm-foot-col"><span className="meta">{t('Game', 'Игра')}</span><Link href="/help">{t('How to play', 'Как играть')}</Link><Link href="/race">{t('Today’s race', 'Гонка дня')}</Link><Link href="/race/free">{t('Free race', 'Свободная гонка')}</Link><Link href="/boat">{t('Your boat', 'Твоя яхта')}</Link><Link href="/learn">{t('Learn to race', 'Учись гоняться')}</Link><Link href="/settings">{t('Settings', 'Настройки')}</Link></div>
-        <div className="hm-foot-col"><span className="meta">{t('Account', 'Аккаунт')}</span>{account ? <Link href="/settings">{account.name || account.email}</Link> : <Link href="/sign-in">{t('Sign in', 'Войти')}</Link>}<Link href="/faq">{t('Questions', 'Вопросы')}</Link></div>
+        <div className="hm-foot-col"><span className="meta">{t('Account', 'Аккаунт')}</span><Link className="if-me me-name" href="/settings" /><Link className="if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link><Link href="/faq">{t('Questions', 'Вопросы')}</Link></div>
         <div className="hm-foot-col"><span className="meta">RYC</span><a href="https://www.rycrentals.com/">rycrentals.com</a><a href="https://www.rycsailing.com/">rycsailing.com</a><Link href="/iyt">{'Sailing Certification Test'}</Link></div>
         <Langs lang={lang} back={back} />
       </footer>

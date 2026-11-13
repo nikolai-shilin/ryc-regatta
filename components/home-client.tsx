@@ -11,9 +11,10 @@ const IconUser = () => <svg viewBox="0 0 16 16" width={16} height={16} aria-hidd
 const IconPrev = () => <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>;
 const IconNext = () => <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>;
 
-// The header's menu: the burger and your avatar (your initials once signed in). It holds the account pages, and on a
+// The header's menu: the burger and your avatar (your initials once signed in, from lib/me.ts: the pages are cached,
+// so whether you are is drawn by CSS, .if-me and .if-guest). It holds the account pages, and on a
 // narrow screen, where the header's links are hidden, the site's pages too.
-export function SiteMenu({ lang, initials }: { lang: Lang; initials: string | null }) {
+export function SiteMenu({ lang }: { lang: Lang }) {
   const t = tx(lang);
   const ref = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
@@ -23,9 +24,9 @@ export function SiteMenu({ lang, initials }: { lang: Lang; initials: string | nu
   }, []);
   return (
     <details className="hm-menu" ref={ref}>
-      <summary className="hm-prof" aria-label={t('Menu', 'Меню')}><IconBurger /><span className="hm-av">{initials || <IconUser />}</span></summary>
+      <summary className="hm-prof" aria-label={t('Menu', 'Меню')}><IconBurger /><span className="hm-av"><IconUser /><span className="me-ini" /></span></summary>
       <div className="hm-menu-pop">
-        {initials ? null : <Link className="hm-mi" href="/sign-in">{t('Sign in', 'Войти')}</Link>}
+        <Link className="hm-mi if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link>
         <Link className="hm-mi" href="/boat">{t('Your boat', 'Твоя яхта')}</Link>
         <Link className="hm-mi" href="/settings">{t('Settings', 'Настройки')}</Link>
         <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы')}>
@@ -143,7 +144,8 @@ export function TileRow({ lang, head, children }: { lang: Lang; head: ReactNode;
 // device's record all the same: the row shows where the time stands against the board, its place when the board has it
 // and its gap to the leader, and says so when a time that would be on the board isn't, rather than sit under slower ones.
 // The board names no one, so "on it" means a ranked time equal to this one.
-export function MyRow({ lang, day, signedIn, top = [], next = '/' }: { lang: Lang; day: string; signedIn: boolean; top?: { s: number }[]; next?: string }) {
+// Signed in or not is CSS's to show (.if-me, .if-guest; lib/me.ts), so Home can be a cached page.
+export function MyRow({ lang, day, top = [], next = '/' }: { lang: Lang; day: string; top?: { s: number }[]; next?: string }) {
   const t = tx(lang);
   const [best, setBest] = useState<number | null>(null);
   useEffect(() => { setBest(readPb()[`daily|${day}`] ?? null); }, [day]);
@@ -156,11 +158,10 @@ export function MyRow({ lang, day, signedIn, top = [], next = '/' }: { lang: Lan
       <span className="hm-n">{listed ? place : '·'}</span>
       <span>
         {t('You', 'Ты')}
-        {signedIn && missing && <small className="hm-why" title={t('This device has the time, but the race didn’t reach today’s ranking', 'Время есть на этом устройстве, но в рейтинг дня гонка не попала')}>{t('not on the ranking', 'не в рейтинге')}</small>}
+        {missing && <small className="hm-why if-me" title={t('This device has the time, but the race didn’t reach today’s ranking', 'Время есть на этом устройстве, но в рейтинг дня гонка не попала')}>{t('not on the ranking', 'не в рейтинге')}</small>}
       </span>
-      {signedIn
-        ? <span className="hm-t">{best != null ? <>{clock(best)}{Math.abs(gap) >= 0.05 ? <small>{gap > 0 ? '+' : '−'}{Math.abs(gap).toFixed(1)}</small> : null}</> : <span className="hm-muted">{t('not yet', 'ещё нет')}</span>}</span>
-        : <Link className="hm-src" href={`/sign-in?next=${next}`}>{t('Sign in to get on it', 'Войди, чтобы попасть сюда')}</Link>}
+      <span className="hm-t if-me">{best != null ? <>{clock(best)}{Math.abs(gap) >= 0.05 ? <small>{gap > 0 ? '+' : '−'}{Math.abs(gap).toFixed(1)}</small> : null}</> : <span className="hm-muted">{t('not yet', 'ещё нет')}</span>}</span>
+      <Link className="hm-src if-guest" href={`/sign-in?next=${next}`}>{t('Sign in to get on it', 'Войди, чтобы попасть сюда')}</Link>
     </li>
   );
 }
