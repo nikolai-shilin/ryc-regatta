@@ -74,7 +74,7 @@ export default async function Hub() {
               <ol className="hm-lb">
                 {top.map((r, i) => (
                   <li key={i} className={i === 0 ? 'first' : ''}>
-                    <span className="hm-n">{i + 1}</span><span>{r.name || t('Guest', 'Гость')}</span>
+                    <span className="hm-n">{i + 1}</span><span>{r.name || t('No name', 'Без имени')}</span>
                     <span className="hm-t">{clock(r.s)}{i > 0 && best ? <small>+{(r.s - best.s).toFixed(1)}</small> : null}</span>
                   </li>
                 ))}

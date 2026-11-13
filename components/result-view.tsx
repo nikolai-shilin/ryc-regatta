@@ -256,7 +256,7 @@ function Ranking({ t, top, me, signedName, you }: { t: (en: string, ru: string) 
     <div className="rcard">
       <span className="meta">{t('Today’s fastest', 'Самые быстрые сегодня')}</span>
       <ol className="lb">
-        {(top || []).map((r, i) => <li key={i}><span className="n">{i + 1}</span><span>{r.name || t('Guest', 'Гость')}</span><span>{clock(r.s)}</span></li>)}
+        {(top || []).map((r, i) => <li key={i}><span className="n">{i + 1}</span><span>{r.name || t('No name', 'Без имени')}</span><span>{clock(r.s)}</span></li>)}
         {top && !top.length && <li><span className="n">·</span><span className="muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
         <li className="me"><span className="n">·</span><span>{you || (signedName ? `${signedName} (${t('you', 'ты')})` : t('You', 'Ты'))}</span><span>{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</span></li>
       </ol>

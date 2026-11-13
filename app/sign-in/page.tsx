@@ -13,7 +13,7 @@ export default async function SignIn({ searchParams }: { searchParams: Promise<{
   const [{ lang, t }, sp, account, today] = await Promise.all([getT(), searchParams, getAccount(), todayTop()]);
   const next = safeNext(sp.next);
   if (account) redirect(next);
-  const top = (today?.top || []).slice(0, 2).map((r) => `${r.name || t('Guest', 'Гость')} ${clock(r.s)}`);
+  const top = (today?.top || []).slice(0, 2).map((r) => `${r.name || t('No name', 'Без имени')} ${clock(r.s)}`);
   const caption = (
     <>
       <span className="chip chip-s chip-photo">{t('Today’s fastest', 'Самые быстрые сегодня')}</span>
