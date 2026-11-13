@@ -245,7 +245,11 @@ export class Wildlife {
       return { g, m, base: wg.attributes.position.array.slice(), x: 0, z: 0, h: 0, k: Math.random() * 10 };
     });
     this._v = new THREE.Vector3(); this._d = new THREE.Vector3();
+    // what the gulls do that can be heard, for the game to read and clear each frame (main.js, asides):
+    // { type: 'call', p, n, alarm } a gull calling, n notes; { type: 'up', p, player } one put up off the water by a boat
+    this.events = [];
   }
+  emit(e) { if (this.events.length < 12) this.events.push(e); }
 
   // a lower level mid-race (Auto steps down) sends the spare gulls away; the pod comes smaller next time
   setLevel(q) {
@@ -255,13 +259,13 @@ export class Wildlife {
   }
 
   reset(race) {
-    this.race = race; this.clock = 0;
+    this.race = race; this.clock = 0; this.events.length = 0;
     const P = race.player, c = race.course, L = this.level;
     this.cx = P.x; this.cz = P.z;
     // gulls: some wheeling round you, a few sitting on the sea by the windward mark and the gate
     this.gulls.forEach((b, i) => {
       b.on = i < L.fly + L.rest;
-      b.g.visible = b.on;
+      b.g.visible = b.on; b.callT = rnd(4, 30);
       if (i < L.fly) { this.orbit(b, i); const t = this.orbitAt(b); b.p.set(t.x, t.y, t.z); b.v.set(-Math.sin(b.ph), 0, Math.cos(b.ph)).multiplyScalar(b.spd * Math.sign(b.om)); b.mode = 'fly'; b.landT = rnd(30, 120); }
       else if (i < L.fly + L.rest) {
         const m = (i - L.fly) % 3 === 2 ? c.gate[0] : c.windward, a = rnd(0, 2 * Math.PI), r = rnd(25, 60);
@@ -308,13 +312,18 @@ export class Wildlife {
       b.g.position.copy(p); b.g.rotation.set(Math.sin(this.clock * 1.3 + b.fp) * 0.06, -b.yaw, Math.sin(this.clock * 1.1 + b.fp) * 0.05);
       this.wings(b, 0, 0, 1);
       // a boat coming close puts her up; one of the flock left far behind goes after you again
-      if (this.nearestBoat(p.x, p.z) < 28 || (!b.stay && Math.hypot(P.x - p.x, P.z - p.z) > 300)) {
+      const near = this.nearestBoat(p.x, p.z) < 28;
+      if (near || (!b.stay && Math.hypot(P.x - p.x, P.z - p.z) > 300)) {
+        if (near) { this.emit({ type: 'up', p, player: Math.hypot(P.x - p.x, P.z - p.z) < 28 }); this.emit({ type: 'call', p, n: 3, alarm: true }); } // up with a cry
         b.mode = 'fly'; b.stay = false; this.orbit(b, Math.floor(Math.random() * 4)); b.landT = rnd(50, 140);
         v.set(fwdX(b.yaw) * 4, 3.2, fwdZ(b.yaw) * 4); b.flapT = 2.5;
       }
       b.g.visible = p.distanceTo(cam.position) < 900;
       return;
     }
+    // now and then she calls: a long cry, or a few laughing notes
+    b.callT -= dt;
+    if (b.callT <= 0) { b.callT = rnd(10, 40); this.emit({ type: 'call', p, n: 1 + Math.floor(Math.random() * 4), alarm: false }); }
     let tx, ty, tz, spd;
     if (b.mode === 'fly') {
       b.ph += b.om * dt;

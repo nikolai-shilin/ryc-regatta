@@ -272,7 +272,7 @@ const audio = {
       this.windG = this.chain('lowpass', 500); this.waterG = this.chain('bandpass', 1500, 0.6); this.flapG = this.chain('bandpass', 320, 1.2);
     } catch (e) { this.ctx = null; }
   },
-  setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; if (!v && window.speechSynthesis) speechSynthesis.cancel(); if (!v) skipper.stop(); },
+  setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; if (!v && window.speechSynthesis) speechSynthesis.cancel(); if (!v) { skipper.stop(); asides.stop(); } },
   set(g, v, tc = 0.25) { if (g && this.ctx) g.gain.setTargetAtTime(v, this.ctx.currentTime, tc); },
   update(P, paused) {
     if (!this.ctx) return;
@@ -562,6 +562,94 @@ const crews = {
   },
 };
 
+// ---------- the gulls you hear, and the crew's asides ----------
+// The gulls (wildlife.js) call now and then, and cry when a boat puts one up off the water: a cry made here, from where
+// the gull is, quieter and duller the further off (under Sound, like the wind and the water). In the Russian game the
+// crew has two asides of their own, each a file of its own and under the Voice switch: after another boat hails us,
+// «Шо он орёт, я всё равно ничего не понимаю»; and when we put a gull up, «О, смотри, чайка полетела. Главное, на кита
+// не наехать». An aside waits for the skipper to finish his line, and he waits for it.
+const asides = {
+  R: 120, // metres: a gull beyond is out of earshot
+  files: { ru: { sho: 'crew-ru-sho.mp3', gull: 'crew-ru-gull.mp3' } },
+  buf: {}, loading: {}, last: {}, raced: {}, pend: null, cryTill: 0,
+  load() {
+    const files = this.files[LANG]; if (!files || !audio.ctx) return;
+    for (const [k, f] of Object.entries(files)) {
+      if (this.buf[k] || this.loading[k]) continue;
+      this.loading[k] = true;
+      fetch(new URL(f, import.meta.url)).then((r) => r.arrayBuffer())
+        .then((b) => new Promise((res, rej) => audio.ctx.decodeAudioData(b, res, rej)))
+        .then((b) => { this.buf[k] = b; }, () => { this.loading[k] = false; });
+    }
+  },
+  reset() { this.stop(); this.pend = null; this.raced = {}; },
+  stop() { try { this.src && this.src.stop(); } catch (e) {} this.src = null; },
+  live() { return audio.ctx && audio.on && !paused && audio.ctx.state === 'running'; },
+  // after another boat's hail, now and then: what's he on about?
+  hail() {
+    if (!this.buf.sho || !opts.voice || this.pend) return;
+    const now = audio.ctx.currentTime;
+    if (now - (this.last.sho ?? -1e9) < 180 || Math.random() > 0.4) return;
+    this.pend = { k: 'sho', at: Math.max(now, skipper.speakTill) + 0.5, until: now + 6 };
+  },
+  // a line now; false when it can't be heard
+  say(k) {
+    const b = this.buf[k]; if (!b || !this.live() || !opts.voice) return false;
+    const ctx = audio.ctx, now = ctx.currentTime, s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 0.9;
+    s.buffer = b; s.connect(g).connect(audio.master); s.start(now); this.stop(); this.src = s;
+    this.last[k] = now; skipper.speakTill = Math.max(skipper.speakTill, now + b.duration + 0.4); skipper.busyTill = Math.max(skipper.busyTill, now + b.duration + 6);
+    return true;
+  },
+  // a gull's cry: a long rising-and-falling "kee-yow", then laughing notes; on being put up, quick sharp notes
+  cry(p, n, alarm) {
+    const ctx = audio.ctx, pl = crews.place(p), d = Math.hypot(pl.d, p.y || 0), near = clamp(1 - d / this.R, 0, 1);
+    if (near <= 0) return;
+    const v = near * near, out = crews.out(1, pl.pan), lp = ctx.createBiquadFilter(), pitch = 0.88 + Math.random() * 0.24;
+    lp.type = 'lowpass'; lp.frequency.value = 2500 + 7000 * near; lp.connect(out);
+    let t = ctx.currentTime + 0.03 + Math.random() * 0.08;
+    const note = (dur, a, b, c, vol) => {
+      const o = ctx.createOscillator(), am = ctx.createOscillator(), amG = ctx.createGain(), env = ctx.createGain();
+      const f1 = ctx.createBiquadFilter(), f2 = ctx.createBiquadFilter();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(a * pitch, t); o.frequency.linearRampToValueAtTime(b * pitch, t + dur * 0.3); o.frequency.linearRampToValueAtTime(c * pitch, t + dur);
+      f1.type = 'bandpass'; f1.frequency.value = 1500; f1.Q.value = 2.5; f2.type = 'bandpass'; f2.frequency.value = 2900; f2.Q.value = 2; // a gull's nasal ring
+      am.frequency.value = 55 + Math.random() * 30; amG.gain.value = vol * 0.35; // the rasp in it
+      env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(vol, t + 0.02); env.gain.setValueAtTime(vol, t + dur * 0.6); env.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      am.connect(amG).connect(env.gain);
+      o.connect(f1).connect(env); o.connect(f2).connect(env); env.connect(lp);
+      o.start(t); am.start(t); o.stop(t + dur + 0.05); am.stop(t + dur + 0.05);
+      t += dur;
+    };
+    const vol = 0.5 * Math.max(v, 0.03);
+    if (alarm) for (let i = 0; i < n; i++) { note(0.11 + Math.random() * 0.03, 1500, 1650, 1150, vol); t += 0.06 + Math.random() * 0.04; }
+    else {
+      note(0.36 + Math.random() * 0.14, 1000, 1650, 820, vol); t += 0.12;
+      for (let i = 1; i < n; i++) { note(0.13 + Math.random() * 0.04, 1350, 1450, 1050, vol * 0.85); t += 0.08 + Math.random() * 0.05; }
+    }
+    this.cryTill = t + 1.5 + Math.random() * 3;
+  },
+  // every frame: what the gulls did, and a waiting aside
+  update() {
+    const ev = world.wild && world.wild.events; if (!ev) return;
+    const can = this.live() && race && !race.over;
+    if (can) {
+      const now = audio.ctx.currentTime;
+      for (const e of ev) {
+        if (e.type === 'call' && (e.alarm || now >= this.cryTill)) this.cry(e.p, e.n, e.alarm);
+        // we put one up: a look, once a race
+        if (e.type === 'up' && e.player && this.buf.gull && opts.voice && !this.raced.gull && !this.pend && Math.random() < 0.7) {
+          this.raced.gull = true; this.pend = { k: 'gull', at: now + 0.8, until: now + 5 };
+        }
+      }
+    }
+    ev.length = 0;
+    const pd = this.pend; if (!pd || !can) return;
+    const now = audio.ctx.currentTime;
+    if (now > pd.until) { this.pend = null; return; } // the moment has passed
+    if (now < pd.at || now < skipper.speakTill || (window.speechSynthesis && speechSynthesis.speaking)) return;
+    this.say(pd.k); this.pend = null;
+  },
+};
+
 // ---------- the world ----------
 const canvas = $('#gl');
 let world;
@@ -608,7 +696,7 @@ function newRace() {
   race.player.name = t('you');
   world.setRace(race);
   world.resetView();
-  hints = {}; lastClockInt = null; coachSeen = {}; skipper.reset();
+  hints = {}; lastClockInt = null; coachSeen = {}; skipper.reset(); asides.reset();
 }
 newRace();
 
@@ -784,7 +872,7 @@ const hudNext = createHudNext({ t, LANG, fmt, world, getRace: () => race, setCam
 const menu = $('#menu'), results = $('#results'), hud = $('#hud');
 if (!opts.played) $('#howD').open = true; // how to play: open until the first race
 function startRace() {
-  audio.init(); audio.setOn(!!opts.sound); skipper.load();
+  audio.init(); audio.setOn(!!opts.sound); skipper.load(); asides.load();
   if (running || menuChanged || race.over || (race.settings.daily && race.settings.daily !== dailyRace().day)) newRace(); // a new day: a new daily race
   menuChanged = false;
   opts.played = (opts.played || 0) + 1; saveOpts();
@@ -840,7 +928,7 @@ pauseEl.addEventListener('click', (e) => {
   if (k === 'autoTrim') { opts.autoTrim = opts.autoTrim === 1 ? 0 : 1; applyTrimMode(); }
   else opts[k] = opts[k] ? 0 : 1;
   if (k === 'sound') audio.setOn(!!opts.sound);
-  if (k === 'voice' && !opts.voice) skipper.stop();
+  if (k === 'voice' && !opts.voice) { skipper.stop(); asides.stop(); asides.pend = null; }
   if (k === 'guides') world.showGuides = !!opts.guides;
   saveOpts(); paintPause();
 });
@@ -975,7 +1063,7 @@ function updateHud(dt) {
     lastClockInt = ci;
   }
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) el.toast.classList.remove('show'); }
-  audio.update(P, paused); crews.update(P, paused);
+  audio.update(P, paused); crews.update(P, paused); asides.update();
   if (race.coach) coach(P, a, leg);
   skipper.watch(P, dt);
   hudNext.update(P, dt);
@@ -1008,7 +1096,7 @@ function handleMessages() {
     else if (m.key === 'gate') toast(t('gateMsg'));
     else if (m.key === 'bump') { hint('bump', t('bump'), 3); haptic('heavy'); skipper.shout(race.clock < 0 ? 'push' : 'contact'); }
     else if (m.key === 'aground') { hint('aground', t('aground'), 3); haptic('heavy'); skipper.shout('aground'); }
-    else if (m.key === 'hail') { const h = t('hail' + a.rule); toast(`${a.who}: “${h}”`, 2.2); if (!skipper.cue('hail' + a.rule, race.boats.find((b) => b.name === a.who))) audio.say(h); haptic('warn'); }
+    else if (m.key === 'hail') { const h = t('hail' + a.rule); toast(`${a.who}: “${h}”`, 2.2); if (!skipper.cue('hail' + a.rule, race.boats.find((b) => b.name === a.who))) audio.say(h); asides.hail(); haptic('warn'); }
     else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); if (!skipper.cue('hail' + a.rule)) audio.say(h); } }
     else if (m.key === 'seaBreeze') toast(t('seaBreeze'), 5);
     else if (m.key === 'genRecall') { toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(); haptic('warn'); skipper.shout('lost'); }
@@ -1269,5 +1357,5 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, world, audio, skipper, crews };
+if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, world, audio, skipper, crews, asides };
 document.addEventListener('visibilitychange', () => { if (document.hidden && running && !paused && !window.__rg) pause(); }); // not in debug: test screenshots hide the tab
