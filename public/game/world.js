@@ -8,6 +8,7 @@ import { Wildlife } from './wildlife.js';
 import { Post, Mirror, OVERLAY, MIRRORED } from './post.js';
 import { Ocean, OCEAN_GLSL, oceanUniforms, blankOcean } from './ocean.js';
 import { skyAt, pickSky, SKY_GLSL, skyUniforms } from './light.js';
+import { Skopea } from './skopea.js';
 export { flagTexture } from './committee.js';
 
 // the sky's colours and the sun: one set of objects that every shader shares; setLight() changes them in place
@@ -112,7 +113,7 @@ void main() {
   float F = 0.02 + 0.98 * pow(1.0 - cosT, 5.0);
   vec3 R = reflect(-V, n);
   vec3 refl = skyAt(R);
-  // the boats, marks and islands in the water: the mirror's picture, rippled by the surface; the sky where it shows none
+  // the boats, marks and the land in the water: the mirror's picture, rippled by the surface; the sky where it shows none
   if (uReflOn > 0.5) {
     vec4 rc = uReflMat * vec4(vWorld.x, 0.0, vWorld.z, 1.0);
     vec2 ruv = rc.xy / rc.w + n.xz * 0.4 / (1.0 + dist * 0.07);
@@ -655,37 +656,8 @@ function currentVee() {
   return m;
 }
 
-// an island: a ridge of hills whose height rises and falls round it in a few smooth waves, green low down and bare
-// rock higher up; the haze (the fog) pales the far ones towards the sky
 // put an object (and all of it: layers are tested per mesh) in what the sea reflects
 function mirrored(obj) { obj.traverse((o) => o.layers.enable(MIRRORED)); return obj; }
-
-function island(rand, R, H, color) {
-  const NA = 48, NR = 7, pos = [], col = [], idx = [];
-  const ph = [rand() * 6, rand() * 6, rand() * 6, rand() * 6], sx = 1 + rand() * 0.8; // longer one way than the other
-  const ridge = (a) => 0.7 + 0.22 * Math.sin(a * 2 + ph[0]) + 0.12 * Math.sin(a * 5 + ph[1]) + 0.06 * Math.sin(a * 9 + ph[2]);
-  const green = new THREE.Color(color), rock = new THREE.Color('#9c9784'), c = new THREE.Color();
-  pos.push(0, H * 0.72, 0); col.push(rock.r, rock.g, rock.b);
-  for (let j = 1; j <= NR; j++) {
-    const q = j / NR; // the summit … the shore
-    for (let i = 0; i < NA; i++) {
-      const a = (i / NA) * Math.PI * 2, r = R * q * (0.85 + 0.3 * Math.sin(a * 3 + ph[3]));
-      const y = j === NR ? -6 : H * ridge(a) * (1 - q ** 1.5) + (rand() - 0.5) * H * 0.04;
-      pos.push(Math.cos(a) * r * sx, y, Math.sin(a) * r);
-      c.copy(green).lerp(rock, clamp((y / H - 0.35) * 1.6, 0, 1)); col.push(c.r, c.g, c.b);
-    }
-  }
-  for (let i = 0; i < NA; i++) idx.push(0, 1 + ((i + 1) % NA), 1 + i);
-  for (let j = 1; j < NR; j++) {
-    const a0 = 1 + (j - 1) * NA, a1 = 1 + j * NA;
-    for (let i = 0; i < NA; i++) { const i1 = (i + 1) % NA; idx.push(a0 + i, a0 + i1, a1 + i, a0 + i1, a1 + i1, a1 + i); }
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  geo.setIndex(idx); geo.computeVertexNormals();
-  return new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
-}
 
 // ---------- guides around your boat ----------
 // Built with the wind from the north and turned to the wind each frame: a ring, faint enough to read the sea through: red where she can't sail (too close to the wind), green marks
@@ -810,23 +782,15 @@ export class World {
     });
     this.seaShadows = [];
 
-    // islands on the horizon, to steer by
-    let s = 7; const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-    for (let i = 0; i < 9; i++) {
-      const a = (i / 9) * Math.PI * 2 + rand() * 0.4, r = 1900 + rand() * 900;
-      const isl = island(rand, 220 + rand() * 420, 70 + rand() * 170, i % 3 ? '#5f7a58' : '#7d8a6a');
-      isl.position.x = Math.sin(a) * r; isl.position.z = -Math.cos(a) * r;
-      this.scene.add(mirrored(isl));
-    }
-    // and a farther range behind them, pale in the haze
-    for (let i = 0; i < 7; i++) {
-      const a = (i / 7) * Math.PI * 2 + 0.3 + rand() * 0.5, r = 2900 + rand() * 250;
-      const isl = island(rand, 500 + rand() * 500, 220 + rand() * 260, '#6a7d6a');
-      isl.position.x = Math.sin(a) * r; isl.position.z = -Math.cos(a) * r;
-      this.scene.add(isl);
-    }
+    // the land round the course: Göcek bay, its hills, the town and Skopea Marina (skopea.js); setRace moves it so
+    // the race's start sits where land.js laid it in the bay
+    this.skopea = new Skopea();
+    this.scene.add(this.skopea.group);
+    // the sea reflects the hills, the town and the moored yachts; not the pines, the most of it to draw a second
+    // time, which the rippled reflection of a green hillside wouldn't show
+    for (const o of [this.skopea.land, this.skopea.town, this.skopea.boats]) mirrored(o);
 
-    // glare: a soft bloom round the sun when you look towards it (behind a sail or an island it hides)
+    // glare: a soft bloom round the sun when you look towards it (behind a sail or a hill it hides)
     const gc = document.createElement('canvas'); gc.width = gc.height = 128;
     const gx = gc.getContext('2d'), gr = gx.createRadialGradient(64, 64, 0, 64, 64, 64);
     gr.addColorStop(0, 'rgba(255,248,232,1)'); gr.addColorStop(0.12, 'rgba(255,240,214,0.5)'); gr.addColorStop(0.45, 'rgba(255,236,206,0.12)'); gr.addColorStop(1, 'rgba(255,236,206,0)');
@@ -954,11 +918,13 @@ export class World {
     for (const h of this.contacts || []) h.dispose(this.scene);
     this.contacts = race.boats.map(() => new HullContact(this.scene, this.wakeU));
     this.wild.reset(race);
+    this.skopea.place(race.at);
   }
 
   // switch the graphics level: resolution, sun shadows, water mesh and shading, foam
   setQuality(q) {
     if (!QUALITY[q] || this.quality === q) return;
+    this.skopea.setQuality(q);
     const Q = QUALITY[q], hadShadow = this.quality ? QUALITY[this.quality].shadow > 0 : true;
     this.quality = q;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, Q.ratio));

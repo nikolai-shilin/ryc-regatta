@@ -6,7 +6,7 @@
 // then is the picture tone mapped (ACES) and written to the screen. The labels over the boats are drawn afterwards,
 // straight to the screen, so they stay crisp and untouched.
 //
-// Mirror: the boats, marks, islands and birds drawn from below the sea, for the water shader to reflect.
+// Mirror: the boats, marks, the land and birds drawn from below the sea, for the water shader to reflect.
 import * as THREE from 'three';
 
 export const OVERLAY = 1; // the layer of what is drawn after the post (the boats' name tags)

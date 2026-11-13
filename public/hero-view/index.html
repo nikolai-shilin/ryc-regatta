@@ -14,6 +14,9 @@
   canvas.live { opacity: 1; }
   @media (prefers-reduced-motion: reduce) { canvas { display: none; } }
 </style>
+<!-- the land round the course (game/land.js): fetched at once, not after the modules that ask for it -->
+<link rel="preload" as="fetch" href="/game/skopea.bin" crossorigin>
+<link rel="preload" as="fetch" href="/game/skopea.json" crossorigin>
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
 </head>
 <body>

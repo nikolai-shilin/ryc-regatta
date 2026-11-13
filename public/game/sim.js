@@ -3,6 +3,8 @@
 // The wind "from" W is a compass direction. A boat's true wind angle TWA = wrap(W − heading): positive = wind over
 // the starboard side (starboard tack). AWA is the same for the apparent wind, the wind the sails feel.
 
+import { placeCourse, roomAt } from './land.js';
+
 export const KN = 0.514444; // m/s per knot
 export const D2R = Math.PI / 180;
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -50,6 +52,7 @@ export function waveSlope(W, x, z, t, ux, uz, n = W.length) {
 // Downwind figures are with the spinnaker; without it the boat is slower off the wind.
 export const NO_GO = 28;
 export const HULL = 12.2; // length overall, metres
+const GROUND = HULL / 2 + 2; // how near the shore her middle can come: the bow just short of the rocks
 const P_TWS = [4, 6, 8, 10, 12, 14, 16, 20, 24];
 const P_BEAT = [46, 44, 42, 40.5, 39.5, 39, 38.5, 38.5, 39];
 const P_TWA = [52, 60, 75, 90, 110, 120, 135, 150, 165, 180];
@@ -541,6 +544,8 @@ export class Race {
     const bias = (this.rand() - 0.5) * 2 * 8 * D2R;
     fleet = clamp(Math.round(fleet), 2, FLEET.length + 1);
     this.course = makeCourse(laps, beatLen, bias, fleet, course === 'tri' ? 'tri' : 'wl');
+    // laid in Göcek bay, in clear water off Skopea Marina (land.js): the start is at this point of the bay
+    this.at = placeCourse(this.course, beatAngle(this.wind.p.tws));
     this.seq = SEQUENCES[start] || SEQUENCES[1];
     this.clock = this.seq[0].t - (start === 1 ? 4 : 8); // negative before the gun
     this.sigI = 0;
@@ -592,6 +597,8 @@ export class Race {
     this.log = { gunD: null, gunV: null, ocs: false, startT: null, legs: [], v: 0, polar: 0, sailing: 0, dirty: 0, tacks: [], gybes: 0, fouls: [], hails: {}, penT: 0, leg: 0, auto: false };
   }
   say(key, arg) { this.messages.push({ key, arg }); }
+  // how far a point of the race is from the shore, metres: + at sea, − on land
+  roomAt(x, z) { return roomAt(x + this.at.x, z + this.at.z); }
   record(dt, before) {
     const P = this.player, L = this.log;
     if (before < 0 && this.clock >= 0) { L.gunD = -lineD(this.course, P); L.gunV = P.v / KN; L.ocs = P.ocs; }
@@ -949,6 +956,16 @@ export class Race {
         }
         p.hit = q.hit = 2;
       }
+    }
+    // the shore: a boat that sails onto it is stopped there and set back off into the water
+    for (const b of bs) {
+      b.groundT = (b.groundT || 0) - dt;
+      const r = this.roomAt(b.x, b.z);
+      if (r >= GROUND) continue;
+      const e = 10, gx = this.roomAt(b.x + e, b.z) - this.roomAt(b.x - e, b.z), gz = this.roomAt(b.x, b.z + e) - this.roomAt(b.x, b.z - e), g = Math.hypot(gx, gz) || 1;
+      b.x += (gx / g) * (GROUND - r); b.z += (gz / g) * (GROUND - r);
+      if (b.groundT <= 0) { b.v *= 0.3; if (b === this.player) this.say('aground'); }
+      b.v = Math.min(b.v, 0.8); b.groundT = 3;
     }
     const marks = this.hardMarks();
     for (const b of bs) {

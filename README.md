@@ -32,6 +32,10 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 - **Styles:** `styles/bundle.css` is the RYC design system, `styles/ryc.css` holds the game's pages and `styles/app.css` the app's own
   additions. Layouts follow the screen through container queries: phone sideways, phone upright, desktop.
 - **The yacht:** `public/game/yacht.glb` is made by `blender/yacht.py`. Run it in Blender; it writes the file in place.
+- **The land:** every race is sailed in Göcek bay, off Skopea Marina. `public/game/skopea.bin` and `skopea.json` (the
+  hills, the coast, the marinas' pontoons and the town) are made by `python3 blender/skopea.py <work dir>`, from the
+  Terrarium elevation tiles and OpenStreetMap; it needs numpy and Pillow and keeps its downloads in the work dir.
+  `land.js` lays each course in clear water there, `skopea.js` draws the land.
 
 ## Run it locally
 

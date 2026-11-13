@@ -86,7 +86,7 @@ const T = {
     sigWarn: (n) => `Warning signal — class flag up, ${n} min`, sigPrep: (n, f = 'P') => `Preparatory — ${{ P: 'P flag', U: 'U flag', B: 'black flag' }[f]} up, ${n} min`, sig1: (n, f = 'P') => `One minute — ${{ P: 'P flag', U: 'U flag', B: 'black flag' }[f]} down`, gun: 'Start! Class flag down',
     ocs: 'Over early! X flag — go back below the line', cleared: 'Clear — now start', started: 'Good start!', rounded: 'Mark rounded — bear away, kite up',
     missedLine: 'Outside the line — cross between the committee boat and the pin', missedGate: 'Outside the gate — go back and sail between the two buoys', wrongSide: 'Leave the mark to port — go back round it',
-    gateMsg: 'Through the gate — back upwind', bump: 'Contact!', broach: 'Broach! Ease the sheet', kitedown: 'Too close to the wind — the kite comes down in a hurry',
+    gateMsg: 'Through the gate — back upwind', bump: 'Contact!', aground: 'Aground! Steer back out to sea', broach: 'Broach! Ease the sheet', kitedown: 'Too close to the wind — the kite comes down in a hurry',
     heelMsg: 'Too much heel — ease the sheet', ironsMsg: 'In irons — steer away from the wind', gust: 'Gust!', autoOff: 'Auto-trim off — you trim now',
     hail10: 'Starboard!', hail11: 'Windward boat, keep clear!', hail12: 'Keep clear astern!', hail13: 'You’re tacking — keep clear!', hail18: 'Room at the mark!', hail44: 'Penalty boat — keep clear!',
     fouled: (w, r) => `Foul on ${w} (rule ${r}) — penalty turn: tack and gybe`, theyFouled: (w, r) => `${w} broke rule ${r} and takes a penalty`,
@@ -164,7 +164,7 @@ const T = {
     sigWarn: (n) => `Предупредительный сигнал — флаг класса, ${n} мин`, sigPrep: (n, f = 'P') => `Подготовительный — ${{ P: 'флаг P', U: 'флаг U', B: 'чёрный флаг' }[f]}, ${n} мин`, sig1: (n, f = 'P') => `Одна минута — ${{ P: 'флаг P', U: 'флаг U', B: 'чёрный флаг' }[f]} спущен`, gun: 'Старт! Флаг класса спущен',
     ocs: 'Фальстарт! Флаг X — вернись за линию', cleared: 'Теперь стартуй', started: 'Отличный старт!', rounded: 'Знак пройден — уваливайся, ставь генакер',
     missedLine: 'Мимо линии — пересеки её между судейским судном и знаком', missedGate: 'Мимо ворот — вернись и пройди между двумя знаками', wrongSide: 'Знак оставляют слева — обогни его снова',
-    gateMsg: 'Ворота пройдены — снова на ветер', bump: 'Столкновение!', broach: 'Брочинг! Трави шкот', kitedown: 'Слишком остро — генакер убирают в спешке',
+    gateMsg: 'Ворота пройдены — снова на ветер', bump: 'Столкновение!', aground: 'На мели! Уходите от берега', broach: 'Брочинг! Трави шкот', kitedown: 'Слишком остро — генакер убирают в спешке',
     heelMsg: 'Сильный крен — потрави шкот', ironsMsg: 'Левентик — уваливайся', gust: 'Порыв!', autoOff: 'Автоподбор выключен — шкот твой',
     hail10: 'Правый галс!', hail11: 'Наветренная, уходи!', hail12: 'Сзади, уходи!', hail13: 'Ты в повороте — уходи!', hail18: 'Место у знака!', hail44: 'Штрафник, уходи!',
     fouled: (w, r) => `Нарушение против ${w} (правило ${r}) — штрафной оборот: оверштаг и фордевинд`, theyFouled: (w, r) => `${w}: нарушение правила ${r}, штрафные обороты`,
@@ -735,6 +735,7 @@ function handleMessages() {
     } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') { raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy'); setTimeout(finishToPage, 2500); }
     else if (m.key === 'gate') toast(t('gateMsg'));
     else if (m.key === 'bump') { hint('bump', t('bump'), 3); haptic('heavy'); }
+    else if (m.key === 'aground') { hint('aground', t('aground'), 3); haptic('heavy'); }
     else if (m.key === 'hail') { const h = t('hail' + a.rule); toast(`${a.who}: “${h}”`, 2.2); audio.say(h); haptic('warn'); }
     else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); audio.say(h); } }
     else if (m.key === 'seaBreeze') toast(t('seaBreeze'), 5);
@@ -768,12 +769,30 @@ function handleMessages() {
 const mini = $('#mini'), mctx = mini.getContext('2d');
 mini.width = mini.height = 360; mctx.setTransform(1.5, 0, 0, 1.5, 0, 0); // drawn at 240, sharp at the bigger size
 mini.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); mini.classList.toggle('big'); });
+// the shore of Göcek bay (and the marinas' pontoons) where it comes into the map, in the map's faint ink; made once
+// for each race and map size
+let shore = { key: '' };
+function shoreLayer(ox, oz, s, size) {
+  const key = [race.at.x, race.at.z, ox, oz, s, size, COL.faint].join();
+  if (shore.key === key) return shore.cv;
+  const n = size * 2, cv = document.createElement('canvas'); cv.width = cv.height = n;
+  const x = cv.getContext('2d'), img = x.createImageData(n, n);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const r = race.roomAt((i / 2 - ox) / s, (j / 2 - oz) / s);
+    img.data[(j * n + i) * 4 + 3] = r < 0 ? 255 : 0;
+  }
+  x.putImageData(img, 0, 0);
+  x.globalCompositeOperation = 'source-in'; x.fillStyle = COL.faint; x.fillRect(0, 0, n, n);
+  shore = { key, cv };
+  return cv;
+}
 function drawMap(ctx, size, full) {
   const c = race.course, P = race.player, W = race.wind.dir();
   const hw = Math.max(150, c.len / 2 + 40, c.wing ? -c.wing.x / 2 + 60 : 0), x0 = -hw + (c.wing ? c.wing.x / 2 : 0), x1 = hw + (c.wing ? c.wing.x / 2 : 0), z0 = c.windward.z - 45, z1 = 140;
   const s = Math.min(size / (x1 - x0), size / (z1 - z0)), ox = size / 2 - ((x0 + x1) / 2) * s, oz = size / 2 - ((z0 + z1) / 2) * s;
   const X = (x) => ox + x * s, Z = (z) => oz + z * s;
   ctx.clearRect(0, 0, size, size);
+  ctx.drawImage(shoreLayer(ox, oz, s, size), 0, 0, size, size);
   if (!full) for (const g of race.wind.gusts) {
     ctx.globalAlpha = 0.16 * g.s / race.wind.p.gustStr * (g.k ?? Math.min(1, g.life / 6)); ctx.fillStyle = COL.accent;
     ctx.beginPath(); ctx.ellipse(X(g.x), Z(g.z), g.r * s, g.r * 1.35 * s, W, 0, 7); ctx.fill(); // longer down the wind than across

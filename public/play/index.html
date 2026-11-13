@@ -11,6 +11,9 @@
 <link rel="preload" as="image" href="/_next/image?url=%2Fimages%2Fdrone-desk-v2.jpg&amp;w=1920&amp;q=90" media="(orientation: landscape)">
 <link rel="preload" as="image" href="/_next/image?url=%2Fimages%2Fdrone-port-v2.jpg&amp;w=1080&amp;q=90" media="(orientation: portrait)">
 <link rel="stylesheet" href="https://iyt.rycrentals.com/fonts/fonts.css">
+<!-- the land round the course (game/land.js): fetched at once, not after the modules that ask for it -->
+<link rel="preload" as="fetch" href="/game/skopea.bin" crossorigin>
+<link rel="preload" as="fetch" href="/game/skopea.json" crossorigin>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <!-- Vercel Web Analytics: the race page is static, outside the Next.js layout that carries <Analytics /> -->
 <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
@@ -531,8 +534,8 @@
   var tipTimer = setInterval(function () { tipEl.classList.add('fade'); setTimeout(function () { ti++; showTip(); tipEl.classList.remove('fade'); }, 350); }, 5000);
 
   // progress: each file the race needs has a weight (three.js is most of the bytes); main.js running is the last 12
-  var files = [['three.module.js', 36], ['GLTFLoader.js', 4], ['BufferGeometryUtils.js', 3], ['/game/sim.js', 6], ['/game/world.js', 4],
-    ['/game/post.js', 1], ['/game/ocean.js', 1], ['/game/light.js', 1],
+  var files = [['three.module.js', 30], ['GLTFLoader.js', 4], ['BufferGeometryUtils.js', 3], ['/game/sim.js', 6], ['/game/world.js', 4],
+    ['/game/post.js', 1], ['/game/ocean.js', 1], ['/game/light.js', 1], ['/game/land.js', 1], ['/game/skopea.js', 2], ['skopea.json', 1], ['skopea.bin', 2],
     ['/game/yacht.js', 4], ['/game/committee.js', 3], ['/game/wildlife.js', 3], ['/game/hud-next.js', 2], ['/game/stats.js', 1], ['/game/main.js', 4], ['yacht.glb', 15]];
   var got = {}, target = 0, shown = 0, soft = 0, ready = false, failed = false, t0 = performance.now();
   var steps = { wind: t('Checking the wind', 'Смотрим на ветер'), course: t('Laying the course', 'Ставим дистанцию'), boat: t('Rigging the boat', 'Готовим лодку'),
