@@ -42,7 +42,7 @@ export function SettingsForm({ lang, langRow, accountRow }: { lang: Lang; langRo
         {seg('camera', t('First camera', 'Камера'), [['drone', t('Drone', 'Дрон')], ['top', t('Top', 'Сверху')], ['helm', t('Helm', 'Штурвал')]])}
         <div className="srow">
           <span className="srow-k">{t('Colours, logo and number', 'Цвета, логотип и номер')}</span>
-          <Link className="mini" href="/boat"><span className="btn-t">{t('Your boat', 'Твоя яхта')}</span><IconArrow s={14} /></Link>
+          <Link className="mini" href="/boat?from=settings"><span className="btn-t">{t('Your boat', 'Твоя яхта')}</span><IconArrow s={14} /></Link>
         </div>
       </div>
       </div>

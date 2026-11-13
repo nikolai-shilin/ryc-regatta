@@ -1,7 +1,8 @@
 /* The app around the design stylesheets (bundle.css, ryc.css, copied from the RYC design canvas). */
 html, body { margin: 0; background: #ffffff; color: #000000; }
 body { font-family: var(--f-merri), Georgia, serif; -webkit-font-smoothing: antialiased; }
-.scr button { font: inherit; }
+/* buttons take the page's font unless their class sets one, so a button.mini looks like an a.mini */
+:where(.scr button) { font: inherit; }
 button.link-row, button.tag, button.mini, button.pill, button.chip { cursor: pointer; }
 button.link-row { width: 100%; background: none; border: 0; border-bottom: 1px solid var(--line); text-align: left; }
 .segc button { display: inline-flex; align-items: center; height: 28px; padding: 0 11px; border-radius: 54px; border: 0; background: none; font: 14px/1 var(--f-merri), Georgia, serif; color: var(--ink); white-space: nowrap; cursor: pointer; }
@@ -17,7 +18,7 @@ button.link-row { width: 100%; background: none; border: 0; border-bottom: 1px s
 .dlg-wrap .scrim { position: absolute; inset: 0; }
 /* one look for every control's states: a keyboard focus ring, and a dimmed disabled state */
 .scr :is(a, button, input, [role="switch"]):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.scr :is(.field, .otp input):focus-visible { outline: 0; }
+.scr :is(.field, .otp input, .num-in):focus-visible { outline: 0; }
 .scr button:disabled { opacity: 0.45; cursor: default; }
 /* the email row: field, Google and Send code are one height */
 .field, .pill.pill-oauth, .field-row .pill { height: var(--pill-h, 48px); }
@@ -50,12 +51,11 @@ button.link-row { width: 100%; background: none; border: 0; border-bottom: 1px s
 .logo-thumb { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 34px; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); overflow: hidden; }
 .logo-thumb img { max-width: 48px; max-height: 28px; object-fit: contain; }
 .num-pair { display: flex; gap: 6px; flex: none; }
-.num-in { width: 64px; height: 36px; padding: 0 8px; border: 2px solid var(--tag-line); border-radius: 12px; background: var(--bg); color: var(--ink); font: 700 18px/1 var(--f-carlito), Arial, sans-serif; text-align: center; text-transform: uppercase; outline: none; }
+.num-in { width: 64px; height: 36px; padding: 0 8px; border: 2px solid var(--tag-line); border-radius: 18px; background: var(--bg); color: var(--ink); font: 700 18px/1 var(--f-carlito), Arial, sans-serif; text-align: center; text-transform: uppercase; outline: none; }
 .num-in:focus { border-color: var(--accent); }
 .boat-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; }
 @container scr (orientation: portrait) {
   .boat-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(220px, 42%) minmax(0, 1fr); gap: 14px 0; }
-  .boat-page { padding-top: 40px; }
 }
 @container scr (min-width: 1024px) and (min-height: 640px) {
   .boat-grid { gap: 0 56px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
@@ -64,3 +64,5 @@ button.link-row { width: 100%; background: none; border: 0; border-bottom: 1px s
   .presets { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
   .preset-name { font-size: 13px; }
 }
+/* the free-race options wrap rather than cut a word off when the column is narrow (the 1024px desktop, Russian) */
+.setup-grid .tags.tight { flex-wrap: wrap; }

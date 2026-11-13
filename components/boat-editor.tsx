@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { tx, type Lang } from '@/lib/lang';
 import { DEFAULT_BOAT, DEFAULT_LOGO, PRESETS, SWATCHES, readBoat, saveBoat, shrinkLogo, type Boat, type Logo } from '@/lib/boat';
-import { IconSail } from './ui';
 
 // The boat page: a live 3D preview (the game's own yacht, in /boat-view) beside the colours of the hull, the sails, the
 // gennaker and the team, the logo and the sail number. Every change shows at once and is saved where the game reads it.
@@ -96,11 +95,11 @@ export function BoatEditor({ lang }: { lang: Lang }) {
 
         <div className="set-sec">
           <div className="group-k"><span className="kicker">{t('Hull', 'Корпус')}</span></div>
-          {swatches('hull', t('Hull', 'Борт'))}
+          {swatches('hull', t('Hull colour', 'Цвет корпуса'))}
         </div>
 
         <div className="set-sec">
-          <div className="group-k"><IconSail /><span className="kicker">{t('Sails', 'Паруса')}</span></div>
+          <div className="group-k"><span className="kicker">{t('Sails', 'Паруса')}</span></div>
           <div className="srow">
             <span className="srow-k" id="l-lam">{t('Cloth', 'Ткань')}</span>
             <div className="segc" role="radiogroup" aria-labelledby="l-lam">
@@ -109,7 +108,7 @@ export function BoatEditor({ lang }: { lang: Lang }) {
             </div>
           </div>
           {swatches('cloth', t('Sail colour', 'Цвет парусов'))}
-          {swatches('ink', t('Sail number', 'Номер'))}
+          {swatches('ink', t('Number colour', 'Цвет номера'))}
           {swatches('kite', t('Gennaker', 'Геннакер'))}
         </div>
 
@@ -129,7 +128,7 @@ export function BoatEditor({ lang }: { lang: Lang }) {
               <span className="small boat-sub">{b.logoImg ? t('PNG with a clear background works best', 'Лучше всего PNG с прозрачным фоном') : t('RYC Rentals Bot until you upload your own', 'RYC Rentals Bot, пока не загрузишь свой')}</span>
             </span>
             <div className="logo-pick">
-              <span className="logo-thumb" style={{ backgroundColor: b.cloth }}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={b.logoImg || DEFAULT_LOGO} alt={b.logoImg ? t('Your logo', 'Твой логотип') : 'RYC Rentals Bot'} /></span>
+              <span className="logo-thumb" style={{ backgroundColor: b.cloth }}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={b.logoImg || DEFAULT_LOGO} alt={b.logoImg ? t('Your logo', 'Свой логотип') : 'RYC Rentals Bot'} /></span>
               {b.logoImg && <button type="button" className="mini" onClick={() => { setB((x) => ({ ...x, logoImg: undefined })); setDown(false); }}><span className="btn-t">{t('Default', 'Стандартный')}</span></button>}
               <button type="button" className="mini" onClick={() => file.current?.click()}><span className="btn-t">{b.logoImg ? t('Change', 'Заменить') : t('Upload', 'Загрузить')}</span></button>
               <input ref={file} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" hidden onChange={(e) => onFile(e.target.files?.[0])} />

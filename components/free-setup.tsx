@@ -47,8 +47,8 @@ export default function FreeSetup({ lang, fromToday }: { lang: Lang; fromToday: 
         </div>
         <div className="setup-grid">
           <div className="opts">
-            <span className="meta">{t('Wind', 'Ветер')}</span>
-            {tags('preset', [['light', t('Light · 7 kn', 'Слабый · 7 уз')], ['medium', t('Medium · 12 kn', 'Средний · 12 уз')], ['strong', t('Strong · 19 kn', 'Сильный · 19 уз')]])}
+            <span className="meta">{t('Wind, kn', 'Ветер, уз')}</span>
+            {tags('preset', [['light', t('Light · 7', 'Слабый · 7')], ['medium', t('Medium · 12', 'Средний · 12')], ['strong', t('Strong · 19', 'Сильный · 19')]])}
             <span className="meta">{t('Boats', 'Лодок')}</span>
             {tags('fleet', [[3, '3'], [5, '5'], [7, '7']])}
             <span className="meta">{t('Course', 'Дистанция')}</span>
