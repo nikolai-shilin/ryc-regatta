@@ -5,6 +5,13 @@ import { raceStarted, raceFinished } from './stats.js';
 
 const $ = (s) => document.querySelector(s);
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
+// The game has its own address, regatta.rycrentals.com (middleware.js serves this page at its root); the app and its
+// articles stay on iyt.rycrentals.com, so the links back to them name that host. Anywhere else (a preview, localhost)
+// both are on one host and the links stay relative.
+const SITE = location.hostname === 'regatta.rycrentals.com' ? 'https://iyt.rycrentals.com' : '';
+// From Telegram the app passes its launch data in the hash, as Telegram does (miniapp/app.js); telegram-web-app.js has
+// read and kept it by now, so it comes off the address bar and out of any link the player copies.
+if (TG && /tgWebAppData=/.test(location.hash)) try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
 
 // ---------- words ----------
 const ord = (n) => `${n}${['st', 'nd', 'rd'][n - 1] || 'th'}`;
@@ -214,7 +221,7 @@ if (TG) {
   try { if (TG.isVersionAtLeast && TG.isVersionAtLeast('8.0') && /android|iphone|ipad/i.test(navigator.userAgent)) TG.requestFullscreen(); } catch (e) {}
   TG.onEvent && TG.onEvent('themeChanged', () => applyTheme());
   TG.BackButton.show();
-  TG.BackButton.onClick(() => { if (running && !paused) pause(); else location.href = '/'; });
+  TG.BackButton.onClick(() => { if (running && !paused) pause(); else location.href = SITE + '/'; });
 }
 const haptic = (kind) => {
   try { if (TG && TG.HapticFeedback) kind === 'warn' ? TG.HapticFeedback.notificationOccurred('warning') : TG.HapticFeedback.impactOccurred(kind || 'light'); else navigator.vibrate && navigator.vibrate(kind === 'heavy' ? 40 : 15); } catch (e) {}
@@ -508,7 +515,8 @@ $('#resumeBtn').addEventListener('click', resume);
 $('#pauseBtn').addEventListener('click', pause);
 $('#againBtn').addEventListener('click', () => { running = false; newRace(); startRace(); });
 $('#menuBtn').addEventListener('click', () => { running = false; paused = false; newRace(); results.hidden = true; hud.hidden = true; menu.hidden = false; $('#resumeBtn').hidden = true; $('#goBtn').textContent = t('start'); });
-if (TG) $('#backLink').addEventListener('click', (e) => { e.preventDefault(); location.href = '/'; });
+$('#backLink').href = SITE + '/';
+if (TG) $('#backLink').addEventListener('click', (e) => { e.preventDefault(); location.href = SITE + '/'; });
 
 // ---------- instruments ----------
 const el = { spd: $('#spd'), perf: $('#perf'), status: $('#status'), trim: $('#trim'), trimTxt: $('#trimTxt'), knob: $('#rudderKnob'), band: $('#sheet .band'), sknob: $('#sheet .knob'),
@@ -751,7 +759,7 @@ const RULE_LINK = { 10: 'rightofway#sec-r10', 11: 'rightofway#sec-r11', 12: 'rig
   15: 'limits#sec-r15', 16: 'limits#sec-r16-1', 17: 'limits#sec-r17', 20: 'obstructions#sec-tack', 21: 'penalties#sec-exoneration',
   31: 'penalties#sec-how', 44: 'penalties#sec-how', ocs: 'starting#sec-recalls',
   '18.3': 'marks#sec-tack', '18.4': 'marks#sec-gybe', 19: 'obstructions#sec-room', U: 'starting#sec-recalls', B: 'starting#sec-recalls' };
-const ruleHref = (r) => `${LANG === 'ru' ? '/ru' : ''}/racing-rules/${RULE_LINK[r]}`;
+const ruleHref = (r) => `${SITE}${LANG === 'ru' ? '/ru' : ''}/racing-rules/${RULE_LINK[r]}`;
 const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // personal bests, kept on this device: per course on a free race, per day on today's race
 const PB_KEY = 'regatta-pb';
@@ -795,8 +803,9 @@ function renderDebrief() {
     pb = `<p class="pb">${r.isNew ? `<b>${esc(t('pbNew'))}</b> ` : ''}${esc(t(s.daily ? 'pbToday' : 'pb', fmt(r.best)))}</p>`;
   }
   $('#debrief').innerHTML = `<span class="meta">${esc(t('dbK'))}</span><ul class="db">${rows.join('')}</ul>${pb}<div id="todayTop"></div>`;
-  // the rule articles are the site's pages; a link shows only once its page is there (a level can be switched off)
-  for (const a of $('#debrief').querySelectorAll('a.rl')) fetch(a.getAttribute('href').split('#')[0], { method: 'HEAD' }).then((r) => { if (r.ok) a.hidden = false; }).catch(() => {});
+  // the rule articles are the site's pages; a link shows only once its page is there (a level can be switched off).
+  // The check asks this host (the same deployment), since iyt.rycrentals.com would not answer it across origins
+  for (const a of $('#debrief').querySelectorAll('a.rl')) fetch(a.getAttribute('href').slice(SITE.length).split('#')[0], { method: 'HEAD' }).then((r) => { if (r.ok) a.hidden = false; }).catch(() => {});
   // today's fastest (from the server, a few minutes behind)
   if (s.daily) fetch('/api/game').then((r) => (r.ok ? r.json() : null)).then((j) => {
     const d = j && j.daily; if (!d || d.d !== s.daily || !d.top.length) return;
