@@ -728,6 +728,7 @@ export class World {
     this.mode = 'drone';
     this.orbit = 0; this.dist = 26; this.look = 0; this.lookHold = 0; this.helmFov = 68;
     this.camH = 0;
+    this.intro = { t: 0, T: 8 }; // the opening fly-around (frame); flyIn() plays it again
     this.boatViews = [];
     this.marks = null;
   }
@@ -954,25 +955,39 @@ export class World {
       U.tick.position.set(Math.sin(P.h) * (R_OUT + 0.9), 0, -Math.cos(P.h) * (R_OUT + 0.9)); U.tick.rotation.y = -P.h;
       if (G.visible) drapeGuides(G, this.W, t);
     }
-    // cameras
-    this.camH += wrap(P.h - this.camH) * (1 - Math.exp(-dt * 1.6));
+    // cameras: they move on the wall clock, not the race's (behind the menu or paused the race gives dt = 0, and a
+    // camera on dt would sit where it was made, at the origin on the water's surface); the first frame puts it in place
+    const now = performance.now(), cdt = this._camLast == null ? 0 : Math.min(0.1, (now - this._camLast) / 1000);
+    const first = this._camLast == null; this._camLast = now;
+    const cl = (k) => (first ? 1 : 1 - Math.exp(-cdt * k));
+    this.camH += wrap(P.h - this.camH) * cl(1.6);
     const cam = this.camera;
     cam.up.set(0, 1, 0);
+    if (this.intro && this.mode !== 'drone') this.intro = null; // the fly-in is the drone's
     if (this.mode === 'top') {
       // straight down, your heading up the screen, so steering left turns her left on screen too
       const hgt = 20 + this.dist * 1.6 * (cam.aspect < 1 ? 1.5 : 1);
-      cam.position.lerp(new THREE.Vector3(P.x, hgt, P.z), 1 - Math.exp(-dt * 8));
+      cam.position.lerp(new THREE.Vector3(P.x, hgt, P.z), cl(8));
       cam.up.set(Math.sin(this.camH), 0, -Math.cos(this.camH));
       cam.lookAt(P.x, 0, P.z);
       cam.fov = 50;
     } else if (this.mode === 'drone') {
-      const ph = this.camH + this.orbit, el = 24 * D2R, d = this.dist * (cam.aspect < 1 ? 1.75 : 1); // a tall screen needs the drone further back
+      let ph = this.camH + this.orbit, el = 24 * D2R, d = this.dist * (cam.aspect < 1 ? 1.75 : 1); // a tall screen needs the drone further back
+      // the fly-in: from high and far off, the drone sweeps three-quarters of the way round her as it comes down
+      let intro = 0;
+      if (this.intro) {
+        this.intro.t += cdt;
+        const u = Math.min(1, this.intro.t / this.intro.T);
+        intro = 1 - u * u * (3 - 2 * u); // 1 → 0, eased at both ends
+        if (u >= 1) this.intro = null;
+      }
+      ph -= intro * 1.5 * Math.PI; el += intro * 38 * D2R; d *= 1 + intro * 3.5;
       const tx = P.x + Math.sin(P.h) * 5, tz = P.z - Math.cos(P.h) * 5;
       const want = new THREE.Vector3(tx - Math.sin(ph) * d * Math.cos(el), 3 + d * Math.sin(el), tz + Math.cos(ph) * d * Math.cos(el));
       // a drone in the wind never hangs quite still: a slow sway and a little bob
       const sw = 0.02 * d;
       want.x += Math.sin(t * 0.37) * sw; want.z += Math.cos(t * 0.29) * sw; want.y += Math.sin(t * 0.53) * sw * 0.7 + Math.sin(t * 1.7) * 0.06;
-      cam.position.lerp(want, 1 - Math.exp(-dt * 6));
+      if (intro > 0) cam.position.copy(want); else cam.position.lerp(want, cl(6));
       cam.lookAt(tx + Math.sin(t * 0.41) * 0.25, 3.5 + Math.sin(t * 0.61) * 0.15, tz);
       cam.fov = 55;
     } else if (this.mode === 'helm') {
@@ -1025,5 +1040,6 @@ export class World {
     if (this.mode === 'helm') this.helmFov = clamp(this.helmFov * f, 30, 80);
     else this.dist = clamp(this.dist * f, 8, 110);
   }
+  flyIn(T = 8) { this.intro = { t: 0, T }; }
   resetView() { this.orbit = 0; this.look = 0; this.dist = 34; this.helmFov = 68; } // far enough back that the whole rig fits under the readouts
 }
