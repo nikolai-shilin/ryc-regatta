@@ -76,10 +76,30 @@ export function skyAt(hour, overcast = false) {
     L.horizon.lerp(new THREE.Color('#c9a68e').multiplyScalar(k), 0.25 * warm);
     L.hemiI *= k; L.sunI *= k; L.exposure += 0.15 * (1 - k);
   }
+  L.foam = foamLight(L, e);
   L.disc = overcast ? 0 : 1;
   L.bloom = { threshold: L.thr, strength: L.str };
   L.sunDir = dir; L.elevation = e; L.hour = hour; L.overcast = overcast;
   return L;
+}
+
+// the colour foam takes in this light: foam is white and rough, so it shows the light that falls on it — the sun
+// (on its bubbles even when it is low) and the sky over it and round the horizon. Against the light at noon, which
+// stays white: gold and rose with the sun low, grey under a cloud deck. The hue all of it, the dimming only partly,
+// as the eye forgives a dim scene.
+function foamIn(L, e) {
+  const k = L.sunI * (0.25 + 0.75 * Math.sin(Math.max(e, 0) * D));
+  return new THREE.Color(L.sun).multiplyScalar(k).add(new THREE.Color(L.hemiSky).multiplyScalar(L.hemiI)).add(new THREE.Color(L.horizon).multiplyScalar(0.5 * L.hemiI));
+}
+let NOON = null;
+function foamLight(L, e) {
+  if (!NOON) { const K = KEYS[KEYS.length - 1]; NOON = foamIn(mix(K, K, 0), K.e); }
+  const c = foamIn(L, e); c.r /= NOON.r; c.g /= NOON.g; c.b /= NOON.b;
+  const m = Math.max(c.r, c.g, c.b, 1e-4), b = 0.5 + 0.5 * Math.min(1, m) ** 0.7;
+  // the tone mapping (ACES) bleaches bright colours towards white, so the hue is pushed a little past the light's own
+  const g = (c.r + c.g + c.b) / (3 * m);
+  c.multiplyScalar(1 / m); c.r = g + (c.r - g) * 1.35; c.g = g + (c.g - g) * 1.35; c.b = g + (c.b - g) * 1.35;
+  return c.multiplyScalar(b / Math.max(c.r, c.g, c.b));
 }
 
 // "18:40"
@@ -140,6 +160,6 @@ export function skyUniforms() {
   return {
     uTop: { value: new THREE.Color() }, uHorizon: { value: new THREE.Color() }, uSun: { value: new THREE.Vector3(0, 1, 0) },
     uSunCol: { value: new THREE.Color() }, uCloudLit: { value: new THREE.Color() }, uCloudDark: { value: new THREE.Color() },
-    uMie: { value: 0.1 }, uCloud: { value: 0 },
+    uMie: { value: 0.1 }, uCloud: { value: 0 }, uFoamCol: { value: new THREE.Color(1, 1, 1) },
   };
 }

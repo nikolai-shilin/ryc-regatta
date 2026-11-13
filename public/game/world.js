@@ -38,7 +38,7 @@ void main() {
 }`;
 const WATER_FS = /* glsl */ `
 uniform float uTime, uFogNear, uFogFar, uChop, uAmp, uWhite, uGlint, uReflOn; uniform vec4 uW[8]; uniform float uWs[8], uQ[8];
-uniform vec3 uCam, uDeep, uScatter; uniform vec4 uGust[12]; uniform vec2 uWind, uPivot;
+uniform vec3 uCam, uDeep, uScatter, uFoamCol; uniform vec4 uGust[12]; uniform vec2 uWind, uPivot;
 uniform sampler2D uRefl; uniform mat4 uReflMat;
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
 ${SKY_GLSL}
@@ -181,7 +181,7 @@ void main() {
   // old foam: thin streaks lying downwind of the breakers
   float streak = texture2D(uRipple, vec2(pa.x / 4.5, pa.y / 45.0 - uTime * 0.005)).w;
   float wisp = smoothstep(0.66, 0.86, 0.6 * brk + 0.4 * streak) * smoothstep(0.5, 0.7, patchy) * uWhite * 0.12 * (1.0 - smoothstep(60.0, 350.0, dist));
-  col = mix(col, vec3(0.86, 0.91, 0.94), clamp(cap * 0.7 + wisp, 0.0, 1.0));
+  col = mix(col, vec3(0.86, 0.91, 0.94) * uFoamCol, clamp(cap * 0.7 + wisp, 0.0, 1.0));
   col = mix(col, col * 1.2 + vec3(0.03, 0.045, 0.06), lane * 0.55); // the lanes catch a little more light
   col *= 1.0 - 0.22 * gust; // a gust reads as a darker patch
   // the haze: the sky's own colour at the horizon in that direction, so the sea melts into it (warmer towards the sun)
@@ -340,7 +340,7 @@ attribute float aAge, aSide, aKind, aStr; varying float vAge, vSide, vKind, vStr
 ${OCEAN_GLSL}
 void main() { vAge = aAge; vSide = aSide; vKind = aKind; vStr = aStr; vec4 wp = modelMatrix * vec4(position, 1.0); vXZ = wp.xz; wp.y += fftDisp(wp.xz).y; gl_Position = projectionMatrix * viewMatrix * wp; }`;
 const WAKE_FS = /* glsl */ `
-uniform sampler2D uRipple; uniform float uTime, uMax; uniform vec2 uWind;
+uniform sampler2D uRipple; uniform float uTime, uMax; uniform vec2 uWind; uniform vec3 uFoamCol;
 varying float vAge, vSide, vKind, vStr; varying vec2 vXZ;
 void main() {
   float k = clamp(vAge / uMax, 0.0, 1.0), edge = clamp(1.0 - abs(vSide), 0.0, 1.0); // clamped: pow() of a hair below 0 is NaN
@@ -351,12 +351,12 @@ void main() {
     // the wash: aerated turquoise water under foam that breaks up and thins as it ages and spreads
     float foam = smoothstep(0.42, 0.78, n1 * 0.55 + n2 * 0.45 + (1.0 - k) * 0.42 - (1.0 - edge) * 0.55);
     float aer = edge * edge * (1.0 - k) * (1.0 - k) * 0.1 * (1.0 - smoothstep(0.0, 1.0, k * 2.0));
-    col = mix(vec3(0.22, 0.45, 0.52), vec3(0.93, 0.96, 0.98), foam);
+    col = mix(vec3(0.22, 0.45, 0.52) * (0.5 + 0.5 * uFoamCol), vec3(0.93, 0.96, 0.98) * uFoamCol, foam);
     a = max(foam * (1.0 - k) * 0.95, aer) * smoothstep(0.0, 0.25, edge);
   } else {
     // a Kelvin arm: a thin crest line, broken by the noise
     float line = pow(edge, 2.2) * smoothstep(0.3, 0.7, n2 * 0.7 + n1 * 0.4);
-    col = vec3(0.9, 0.94, 0.97);
+    col = vec3(0.9, 0.94, 0.97) * uFoamCol;
     a = line * (1.0 - k) * (1.0 - k) * 0.55;
   }
   a *= vStr * min(1.0, vAge * 3.0 + 0.4);
@@ -412,7 +412,7 @@ attribute vec2 aL; varying vec2 vL, vXZ;
 ${OCEAN_GLSL}
 void main() { vL = aL; vXZ = position.xz; gl_Position = projectionMatrix * viewMatrix * vec4(position + vec3(0.0, fftDisp(position.xz).y, 0.0), 1.0); }`;
 const CONTACT_FS = /* glsl */ `
-uniform sampler2D uRipple; uniform float uTime, uSpd; uniform vec2 uWind; varying vec2 vL, vXZ;
+uniform sampler2D uRipple; uniform float uTime, uSpd; uniform vec2 uWind; uniform vec3 uFoamCol; varying vec2 vL, vXZ;
 const float HL = 5.6, HB = 1.75; // half the waterline's length and beam
 void main() {
   float s = vL.x / HL, ay = abs(vL.y), d;
@@ -429,7 +429,7 @@ void main() {
   float shade = (1.0 - smoothstep(-0.2, 2.0, d)) * 0.38;
   float a = max(foam * 0.9, shade);
   if (a < 0.01) discard;
-  gl_FragColor = vec4(mix(vec3(0.02, 0.08, 0.11), vec3(0.93, 0.96, 0.98), foam / max(foam + shade, 0.001)), a);
+  gl_FragColor = vec4(mix(vec3(0.02, 0.08, 0.11), vec3(0.93, 0.96, 0.98) * uFoamCol, foam / max(foam + shade, 0.001)), a);
 }`;
 class HullContact {
   constructor(scene, uniforms) {
@@ -440,7 +440,7 @@ class HullContact {
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(aL.length * 1.5), 3));
     g.setAttribute('aL', new THREE.Float32BufferAttribute(aL, 2));
     g.setIndex(idx);
-    this.u = { uRipple: uniforms.uRipple, uTime: uniforms.uTime, uWind: uniforms.uWind, uSpd: { value: 0 },
+    this.u = { uRipple: uniforms.uRipple, uTime: uniforms.uTime, uWind: uniforms.uWind, uFoamCol: uniforms.uFoamCol, uSpd: { value: 0 },
       uFftD: uniforms.uFftD, uFftS: uniforms.uFftS, uFftOn: uniforms.uFftOn, uFftL: uniforms.uFftL, uFftW: uniforms.uFftW };
     this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ uniforms: this.u, vertexShader: CONTACT_VS, fragmentShader: CONTACT_FS, transparent: true, depthWrite: false }));
     this.mesh.frustumCulled = false; this.mesh.renderOrder = 2;
@@ -512,8 +512,8 @@ const FOAM_VS = /* glsl */ `
 attribute float aAlpha, aSize; uniform float uScale; varying float vA;
 void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); vA = aAlpha; gl_PointSize = aSize * uScale / max(-mv.z, 0.5); gl_Position = projectionMatrix * mv; }`;
 const FOAM_FS = /* glsl */ `
-uniform sampler2D uMap; varying float vA;
-void main() { vec4 t = texture2D(uMap, gl_PointCoord); if (t.a * vA < 0.01) discard; gl_FragColor = vec4(vec3(0.95, 0.97, 1.0), t.a * vA); }`;
+uniform sampler2D uMap; uniform vec3 uFoamCol; varying float vA;
+void main() { vec4 t = texture2D(uMap, gl_PointCoord); if (t.a * vA < 0.01) discard; gl_FragColor = vec4(vec3(0.95, 0.97, 1.0) * uFoamCol, t.a * vA); }`;
 function foamSprite() {
   const c = document.createElement('canvas'); c.width = c.height = 64;
   const x = c.getContext('2d');
@@ -602,7 +602,7 @@ function buoy(color = '#ff7a1a', R = 1.05) {
 // where a mark meets the sea: a ring of water round it that rides the waves, darker against the PVC, with a band of
 // foam where the chop slaps against it — wider on the side the wind and the waves come from
 const MARK_FS = /* glsl */ `
-uniform sampler2D uRipple; uniform float uTime, uR; uniform vec2 uWind; varying vec2 vL, vXZ;
+uniform sampler2D uRipple; uniform float uTime, uR; uniform vec2 uWind; uniform vec3 uFoamCol; varying vec2 vL, vXZ;
 void main() {
   float d = length(vL) - uR;
   if (d < -0.04) discard;
@@ -614,7 +614,7 @@ void main() {
   float shade = (1.0 - smoothstep(-0.04, 0.7, d)) * 0.32;
   float a = max(foam, shade) * (1.0 - smoothstep(1.2, 2.0, d));
   if (a < 0.01) discard;
-  gl_FragColor = vec4(mix(vec3(0.02, 0.07, 0.1), vec3(0.93, 0.96, 0.98), foam / max(foam + shade, 0.001)), a);
+  gl_FragColor = vec4(mix(vec3(0.02, 0.07, 0.1), vec3(0.93, 0.96, 0.98) * uFoamCol, foam / max(foam + shade, 0.001)), a);
 }`;
 class MarkContact {
   constructor(R, uniforms) {
@@ -625,7 +625,7 @@ class MarkContact {
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(aL.length * 1.5), 3));
     g.setAttribute('aL', new THREE.Float32BufferAttribute(aL, 2));
     g.setIndex(idx);
-    this.u = { uRipple: uniforms.uRipple, uTime: uniforms.uTime, uWind: uniforms.uWind, uR: { value: R },
+    this.u = { uRipple: uniforms.uRipple, uTime: uniforms.uTime, uWind: uniforms.uWind, uFoamCol: uniforms.uFoamCol, uR: { value: R },
       uFftD: uniforms.uFftD, uFftS: uniforms.uFftS, uFftOn: uniforms.uFftOn, uFftL: uniforms.uFftL, uFftW: uniforms.uFftW };
     this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ uniforms: this.u, vertexShader: CONTACT_VS, fragmentShader: MARK_FS, transparent: true, depthWrite: false }));
     this.mesh.frustumCulled = false; this.mesh.renderOrder = 2;
@@ -805,7 +805,7 @@ export class World {
     fg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.foamN * 3), 3));
     fg.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(this.foamN), 1));
     fg.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array(this.foamN), 1));
-    this.foamU = { uMap: { value: foamSprite() }, uScale: { value: 400 } };
+    this.foamU = { uMap: { value: foamSprite() }, uScale: { value: 400 }, uFoamCol: this.skyU.uFoamCol };
     this.foamPts = new THREE.Points(fg, new THREE.ShaderMaterial({ uniforms: this.foamU, vertexShader: FOAM_VS, fragmentShader: FOAM_FS, transparent: true, depthWrite: false }));
     this.foamPts.frustumCulled = false;
     this.scene.add(this.foamPts);
@@ -815,7 +815,7 @@ export class World {
     // gulls, dolphins and whales; their splashes go into the foam above
     this.wild = new Wildlife(this.scene, (x, z, n, up, size) => this.splash(x, z, n, up, size));
 
-    this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uWind: this.waterU.uWind, uMax: { value: WAKE_AGE }, ...this.oceanU };
+    this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uWind: this.waterU.uWind, uFoamCol: this.skyU.uFoamCol, uMax: { value: WAKE_AGE }, ...this.oceanU };
     this.wakes = []; this.contacts = [];
     this.showGuides = true; this.guides = null;
     this.mode = 'drone';
@@ -837,7 +837,7 @@ export class World {
     SKY_TOP.copy(L.top); SKY_HORIZON.copy(L.horizon);
     const U = this.skyU;
     U.uSunCol.value.copy(L.sun); U.uCloudLit.value.copy(L.cloudLit); U.uCloudDark.value.copy(L.cloudDark);
-    U.uMie.value = L.mie; U.uCloud.value = L.cloud; this.discU.value = L.disc;
+    U.uMie.value = L.mie; U.uCloud.value = L.cloud; U.uFoamCol.value.copy(L.foam); this.discU.value = L.disc;
     this.sun.color.copy(L.sun); this.sun.intensity = L.sunI;
     this.hemi.color.copy(L.hemiSky); this.hemi.groundColor.copy(L.hemiGround); this.hemi.intensity = L.hemiI;
     this.scene.fog.color.copy(SKY_HORIZON); this.scene.fog.near = L.fogNear; this.scene.fog.far = L.fogFar;
