@@ -37,6 +37,17 @@
         ".ui-review"
       ],
       "port": 5199
+    },
+    {
+      "name": "regatta-prod",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "next",
+        "start",
+        "--port",
+        "5197"
+      ],
+      "port": 5197
     }
   ]
 }

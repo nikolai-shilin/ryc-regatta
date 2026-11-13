@@ -181,7 +181,7 @@
 @supports (corner-shape: squircle) { .bt-prev { corner-shape: squircle; border-radius: calc(var(--r-l) * 1.7); } }
 .bt-prev iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
 .bt-pose { position: absolute; left: var(--s-3); bottom: var(--s-3); border: 0; background: var(--glass); box-shadow: var(--shadow-s); }
-.bt-hint { position: absolute; right: var(--s-4); bottom: var(--s-4); pointer-events: none; color: var(--sea-ink); }
+.bt-hint { position: absolute; right: var(--s-4); top: var(--s-4); /* up top, clear of the Upwind/Gennaker switch at the bottom on a phone */ pointer-events: none; color: var(--sea-ink); }
 .bt-go { display: flex; flex-direction: column; gap: var(--s-2); }
 .sws { display: flex; flex-wrap: wrap; gap: var(--s-2); padding: 0 var(--s-1); }
 .sw { position: relative; flex: none; width: calc(var(--h-s) - 6px); height: calc(var(--h-s) - 6px); padding: 0; border: 0; border-radius: 50%; background: var(--c); box-shadow: var(--hairline); cursor: pointer; }
@@ -344,7 +344,8 @@
 .hm-text { margin: 0; font: 400 var(--t-m)/1.5 var(--f-serif); color: var(--muted); max-width: 62ch; }
 .hm-meta { font: 400 var(--t-s)/1.4 var(--f-serif); color: var(--muted); }
 .hm-muted { color: var(--muted); }
-.hm-src { display: inline-flex; align-items: center; gap: var(--s-1); font: 700 var(--t-s)/1 var(--f-sans); letter-spacing: var(--caps); text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+.hm-src { display: inline-flex; align-items: center; gap: var(--s-1); font: 700 var(--t-s)/1 var(--f-sans); letter-spacing: var(--caps); text-transform: uppercase; color: var(--accent); white-space: nowrap;
+  padding-block: 15px; margin-block: -15px; } /* a 44px tap target on a phone, the line laid out as before */
 .hm-src:hover { text-decoration: underline; text-underline-offset: 3px; }
 .home .kicker { font-size: var(--t-s); }
 .home .card-title { font-size: var(--t-m); line-height: 1.3; }
