@@ -512,15 +512,36 @@ const skipper = {
 
 // ---------- the other crews: what you hear of a boat when you sail close to her ----------
 // Within about seventy metres: her sails flogging and her winches in a tack or a gybe, her bow wave and wash, and her
-// crew's calls in the game's language (the voices of skipper-<lang>.mp3, under the Voice switch). Each comes from where
-// she is (left or right of where the camera looks), quieter and duller the further off she is.
+// crew's calls in the game's language (under the Voice switch): in Russian the other skippers have a voice of their own,
+// crews-ru.mp3, the same lines as ours said by another man; in English the voices of skipper-en.mp3. Each comes from
+// where she is (left or right of where the camera looks), quieter and duller the further off she is.
 const crews = {
   R: 70, // metres: out of earshot beyond
   calls: {
-    ru: { tacking: ['tack1', 'tack2'], gybing: ['tack1', 'tack2'], tacked: ['pull1', 'pull2'], broach: ['hold'], crashGybe: ['hold'], deathRoll: ['hold'], kiteWrap: ['hold'], kitedown: ['hold'] },
+    ru: { tacking: ['tack1', 'tack2'], gybing: ['tack1', 'tack2'], tacked: ['pull1', 'pull2', 'pull3'], broach: ['hold', 'ease1'], crashGybe: ['hold', 'people'], deathRoll: ['hold', 'people'], kiteWrap: ['hold', 'clue'], kitedown: ['hold', 'column'] },
     en: { tacking: ['gTacking'], gybing: ['gJibe', 'gHeads'], tacked: ['gTrim'], broach: ['gEase'], crashGybe: ['gHeads'], deathRoll: ['gHeads'], kiteWrap: ['gHeads'], kitedown: ['gEase'] },
   },
   last: new WeakMap(), talkTill: 0, wash: null,
+  // their own voice where there is one: the file, and where each line sits in it, [start, length] in seconds
+  own: { ru: { file: 'crews-ru.mp3', clips: {
+    hands: [0.08, 3.32], ease1: [3.62, 2.6], pull1: [6.4, 0.66], pull2: [7.3, 2.02], hold: [9.57, 3.85],
+    tack1: [13.73, 3.67], tack2: [17.63, 3.84], ease2: [21.72, 2.75], pull3: [24.68, 2.97], people: [27.87, 3.37],
+    column: [31.47, 2.98], feet: [34.67, 3.31], clue: [38.18, 3.12],
+  } } },
+  buf: null, loading: false,
+  load() {
+    const o = this.own[LANG]; if (!o || this.buf || this.loading || !audio.ctx) return;
+    this.loading = true;
+    fetch(new URL(o.file, import.meta.url)).then((r) => r.arrayBuffer())
+      .then((b) => new Promise((res, rej) => audio.ctx.decodeAudioData(b, res, rej)))
+      .then((b) => { this.buf = b; }, () => { this.loading = false; });
+  },
+  // where line k is to be had: { buf, at, len, own } in their own voice if it's loaded, else in ours; null if neither
+  line(k) {
+    const c = this.buf && this.own[LANG].clips[k];
+    if (c) return { buf: this.buf, at: c[0], len: c[1], own: true };
+    return skipper.buf && skipper.clips[k] ? { buf: skipper.buf, at: skipper.clips[k][0], len: skipper.clips[k][1], own: false } : null;
+  },
   // a boat as heard from ours: near 1 alongside to 0 out of earshot, pan −1 left to 1 right of the camera's view
   place(b) {
     const P = race.player, dx = b.x - P.x, dz = b.z - P.z, d = Math.hypot(dx, dz);
@@ -540,13 +561,14 @@ const crews = {
     const v = near * near, ctx = audio.ctx, now = ctx.currentTime;
     if (e === 'tacking' || e === 'gybing') { this.flog(v, pan, 1.6); this.winch(v, pan, 1.5); }
     const list = (this.calls[LANG] || {})[e];
-    if (!list || !skipper.buf || !opts.voice || now < this.talkTill || now < skipper.speakTill || now - (this.last.get(b) ?? -1e9) < 10) return;
+    if (!list || !(this.buf || skipper.buf) || !opts.voice || now < this.talkTill || now < skipper.speakTill || now - (this.last.get(b) ?? -1e9) < 10) return;
     const { len } = this.say(b, this.pick(b, list), 0.8 * Math.max(v, 0.08));
     this.last.set(b, now); this.talkTill = now + len + 1.5;
   },
   // Each other boat's skipper has a voice of their own: the same recordings, played lower and slower or higher and
-  // quicker (never at our own pitch), darker or brighter; in English the man or the woman of skipper-en.mp3 at her
-  // helm. The browser's speech, where it speaks for her, takes her pitch too (audio.say).
+  // quicker (never at our own pitch), darker or brighter; in Russian the other man's, half as far from his own pitch
+  // so he's still himself; in English the man or the woman of skipper-en.mp3 at her helm. The browser's speech, where
+  // it speaks for her, takes her pitch too (audio.say).
   voices: new WeakMap(),
   RATES: [0.84, 1.12, 0.9, 1.17, 0.8, 1.07, 0.94, 1.14, 0.87, 1.1],
   voice(b) {
@@ -566,14 +588,15 @@ const crews = {
   },
   // play line k as boat b's skipper says it, from where she is: { src, len } (len in seconds as heard)
   say(b, k, gain, hail) {
-    const ctx = audio.ctx, [at, len] = skipper.clips[k], v = this.voice(b), { near, pan } = this.place(b);
+    const ctx = audio.ctx, ln = this.line(k), v = this.voice(b), { near, pan } = this.place(b);
+    const { at, len } = ln, rate = ln.own ? 1 + (v.rate - 1) / 2 : v.rate;
     const s = ctx.createBufferSource(), sh = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter();
-    s.buffer = skipper.buf; s.playbackRate.value = v.rate;
+    s.buffer = ln.buf; s.playbackRate.value = rate;
     sh.type = 'highshelf'; sh.frequency.value = 2200; sh.gain.value = v.tone;
     lp.type = 'lowpass'; lp.frequency.value = (hail ? 3000 : 1500) + 6000 * near; // across the water a voice loses its top; a hail is shouted
     s.connect(sh).connect(lp).connect(this.out(gain, pan * (hail ? 0.7 : 1)));
     s.start(ctx.currentTime, Math.max(0, at - 0.03), len + 0.09); // the duration is the file's, whatever the rate
-    return { src: s, len: len / v.rate };
+    return { src: s, len: len / rate };
   },
   // sails flogging through the wind: noise in cracks, dying away
   flog(v, pan, dur) {
@@ -921,7 +944,7 @@ const hudNext = createHudNext({ t, LANG, fmt, world, getRace: () => race, setCam
 const menu = $('#menu'), results = $('#results'), hud = $('#hud');
 if (!opts.played) $('#howD').open = true; // how to play: open until the first race
 function startRace() {
-  audio.init(); audio.setOn(!!opts.sound); skipper.load(); asides.load();
+  audio.init(); audio.setOn(!!opts.sound); skipper.load(); crews.load(); asides.load();
   if (running || menuChanged || race.over || (race.settings.daily && race.settings.daily !== dailyRace().day)) newRace(); // a new day: a new daily race
   menuChanged = false;
   opts.played = (opts.played || 0) + 1; saveOpts();
