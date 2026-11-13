@@ -579,9 +579,9 @@ $('#backLink').href = HUB;
   const want = new URLSearchParams(location.search).get('race');
   opts.mode = want === 'free' ? 'free' : 'daily';
   menu.hidden = true; menuChanged = true;
-  const loadEl = $('#loading');
-  requestAnimationFrame(() => { loadEl.classList.add('go'); }); // the bar fills while the scene settles
-  setTimeout(() => { loadEl.classList.add('out'); startRace(); setTimeout(() => { loadEl.hidden = true; }, 400); }, 1400);
+  // the preloader in play/index.html has counted the files in; the scene is built, so it fills its bar and fades into the race
+  if (window.rycLoader) window.rycLoader.done(startRace);
+  else { $('#loading').hidden = true; startRace(); }
 }
 
 
