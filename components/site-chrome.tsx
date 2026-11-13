@@ -4,7 +4,7 @@ import { initials, type Account } from '@/lib/supabase/server';
 import { Logo, Langs } from './ui';
 import { SiteMenu } from './home-client';
 
-type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin';
+type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt';
 
 // The site's header, as on rycrentals.com: the logo, the site's pages in the middle (from 1100 px wide), and the menu
 // (the burger and your avatar) at the right. On every page: the scrolling ones (home, help, the race result) and the
@@ -21,7 +21,7 @@ export function SiteHead({ lang, t, account, page }: { lang: Lang; t: T; account
           <Link className="hm-tab" href="/race/free" {...cur('free')}>{t('Free race', 'Свободная гонка')}</Link>
           <Link className="hm-tab" href="/boat" {...cur('boat')}>{t('Your boat', 'Твоя яхта')}</Link>
           <Link className="hm-tab" href="/faq" {...cur('faq')}>{t('Questions', 'Вопросы')}</Link>
-          <a className="hm-tab" href="https://iyt.rycrentals.com/">{t('IYT Test', 'Тест IYT')}</a>
+          <Link className="hm-tab" href="/iyt" {...cur('iyt')}>{t('IYT Test', 'Тест IYT')}</Link>
         </nav>
         <SiteMenu lang={lang} initials={account ? initials(account.name, account.email) : null} />
       </div>
@@ -37,7 +37,7 @@ export function SiteFoot({ lang, t, account, back }: { lang: Lang; t: T; account
         <Link className="hm-brand" href="/" aria-label="RYC"><Logo /></Link>
         <div className="hm-foot-col"><span className="meta">{t('Game', 'Игра')}</span><Link href="/help">{t('How to play', 'Как играть')}</Link><Link href="/race">{t('Today’s race', 'Гонка дня')}</Link><Link href="/race/free">{t('Free race', 'Свободная гонка')}</Link><Link href="/boat">{t('Your boat', 'Твоя яхта')}</Link><Link href="/settings">{t('Settings', 'Настройки')}</Link></div>
         <div className="hm-foot-col"><span className="meta">{t('Account', 'Аккаунт')}</span>{account ? <Link href="/settings">{account.name || account.email}</Link> : <Link href="/sign-in">{t('Sign in', 'Войти')}</Link>}<Link href="/faq">{t('Questions', 'Вопросы')}</Link></div>
-        <div className="hm-foot-col"><span className="meta">RYC</span><a href="https://www.rycrentals.com/">rycrentals.com</a><a href="https://www.rycsailing.com/">rycsailing.com</a><a href="https://iyt.rycrentals.com/">{t('IYT Test', 'Тест IYT')}</a></div>
+        <div className="hm-foot-col"><span className="meta">RYC</span><a href="https://www.rycrentals.com/">rycrentals.com</a><a href="https://www.rycsailing.com/">rycsailing.com</a><Link href="/iyt">{t('IYT Test', 'Тест IYT')}</Link></div>
         <Langs lang={lang} back={back} />
       </footer>
     </div>

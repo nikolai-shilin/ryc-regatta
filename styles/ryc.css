@@ -501,6 +501,25 @@
 .hm-tips li { display: flex; align-items: center; gap: var(--s-3); font: 400 var(--t-m)/1.3 var(--f-serif); }
 .hm-tips .meta { margin-left: auto; padding-left: var(--s-3); white-space: nowrap; }
 
+/* the IYT Test page (rycrentals.com/iyt carried over): the way in, four cards on how it works, the levels in two
+   columns between hairlines, a centred way in again at the foot */
+.iyt-lead { max-width: 64ch; }
+.iyt-open { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); margin-top: var(--s-3); }
+.iyt-note { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); font: 400 var(--t-s)/1.4 var(--f-serif); }
+.iyt-how { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); }
+.iyt-card { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); border-radius: var(--r-l); background: var(--band); }
+.hm-band .iyt-card, .hm-help-side .iyt-card { background: var(--bg); }
+.hm-help-side .iyt-card { border: 1px solid var(--line); }
+.iyt-card .hm-text { font-size: var(--t-s); }
+.iyt-card-h { display: flex; align-items: center; gap: var(--s-3); }
+.iyt-ic { display: inline-flex; align-items: center; justify-content: center; flex: none; width: var(--h-m); height: var(--h-m); border-radius: 50%; background: var(--sel-bg); color: var(--sel-ink); }
+.iyt-levels { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); column-gap: var(--s-10); }
+.iyt-levels li { display: flex; flex-direction: column; gap: var(--s-1); padding-block: var(--s-4); border-top: 1px solid var(--tag-line); }
+.iyt-levels .hm-text { margin-top: var(--s-1); font-size: var(--t-s); }
+.iyt-end { align-items: center; text-align: center; }
+.iyt-end .iyt-open { align-items: center; }
+.iyt-end .iyt-note { justify-content: center; }
+
 /* footer */
 .hm-foot-wrap { padding-block: var(--s-10); }
 .hm-foot { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-8); padding-top: var(--s-6); border-top: 1px solid var(--line); }
@@ -527,6 +546,8 @@
   .hm-steps { padding: var(--s-6); }
   .hm-stats > div { padding: var(--s-5) var(--s-5); }
   .hm-stat-v { font-size: var(--hm-h2); }
+  .iyt-card { padding: var(--s-6); }
+  .iyt-open { flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-5); }
 }
 @container help (min-width: 900px) {
   .help > * { --hm-gutter: var(--s-16); --hm-head: 76px; }
@@ -536,6 +557,7 @@
   .hm-faq { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
   .hm-faq-side { position: sticky; top: calc(var(--hm-head) + var(--s-6)); }
   .hm-help { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+  .iyt-how, .iyt-levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hm-foot { grid-template-columns: minmax(0, 1fr) repeat(3, minmax(0, 240px)) max-content; gap: var(--s-8) var(--s-10); }
   .hm-foot > .hm-brand { grid-column: auto; }
 }

@@ -30,6 +30,10 @@ export const IconTide = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} heigh
 export const IconBoats = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M8 4v12H3zM16 7v9h-4zM2 19c3 1.5 17 1.5 20 0" /></svg>;
 export const IconTrophy = ({ s = 16 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8" /></svg>;
 export const IconDevice = ({ s = 16 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2" /><path d="M11 18h2" /></svg>;
+export const IconSend = ({ s = 20 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M21 3 3 10.5l7 2.5 2.5 7zM21 3 10 13" /></svg>;
+export const IconCheck = ({ s = 18 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>;
+export const IconBook = ({ s = 18 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z" /></svg>;
+export const IconOut = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" /></svg>;
 export const IconGoogle = ({ s = 20 }) => (
   <svg viewBox="0 0 48 48" width={s} height={s} aria-hidden="true">
     <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
