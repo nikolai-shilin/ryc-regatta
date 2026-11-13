@@ -63,7 +63,7 @@ export default async function Help() {
       <header className="hm-page hm-ph">
         <span className="kicker">Up and down</span>
         <h1 className="hm-ph-h">{t('How to play', 'Как играть')}</h1>
-        <p className="hm-text">{t('Race a yacht round the marks against the computer boats. Here is everything on the race screen, and what to do with it.', 'Гонка вокруг знаков против компьютерных лодок. Здесь — всё, что есть на экране гонки, и что с этим делать.')}</p>
+        <p className="hm-text">{t('Everything on the race screen and what to do with it: how to steer and trim, read the wind, time the start, and the handful of rules that decide most races. Read it once and your first race goes a lot better.', 'Всё, что есть на экране гонки, и что с этим делать: как рулить и работать парусами, читать ветер, выходить на старт, и те несколько правил, что решают большинство гонок. Прочитай один раз — и первая гонка пойдёт куда лучше.')}</p>
         <nav className="hm-ph-nav" aria-label={t('Contents', 'Содержание')}>
           {[['h-screen', t('The race screen', 'Экран гонки')], ['h-controls', t('Controls', 'Управление')], ['h-wind', t('The wind', 'Ветер')], ['h-start', t('The start', 'Старт')], ['h-rules', t('Rules', 'Правила')], ['h-views', t('Views', 'Виды')], ['h-today', t('Today’s race', 'Гонка дня')]].map(([h, l]) => <a key={h} className="hm-chip" href={`#${h}`}>{l}</a>)}
         </nav>

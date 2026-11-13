@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Merriweather, Carlito } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
-import { getLang } from '@/lib/i18n';
+import { getLang, getT } from '@/lib/i18n';
 import { TelegramSignIn } from '@/components/telegram-sign-in';
 import '@/styles/tokens.css';
 import '@/styles/ryc.css';
@@ -10,11 +10,25 @@ import '@/styles/ryc.css';
 const merri = Merriweather({ subsets: ['latin', 'cyrillic'], weight: ['300', '400', '700'], variable: '--f-merri', display: 'swap' });
 const carlito = Carlito({ subsets: ['latin', 'cyrillic'], weight: ['400', '700'], variable: '--f-carlito', display: 'swap' });
 
-export const metadata: Metadata = {
-  title: { default: 'Up and down — a sailing race game', template: '%s · Up and down' },
-  description: 'Race a yacht round a windward–leeward course against the computer boats, in shifting wind, under the real racing rules.',
-  icons: { icon: '/favicon.ico' },
-};
+// The title and description search engines and link previews show, with the hero picture as the preview image.
+export async function generateMetadata(): Promise<Metadata> {
+  const { lang, t } = await getT();
+  const title = t('Up and down — a sailing race game', 'Up and down — парусная гонка');
+  const description = t(
+    'A free 3D sailing race in your browser. Win the start, play the wind shifts and race up to six boats round the marks in Göcek bay, under the real racing rules. A new race of the day every midnight.',
+    'Бесплатная 3D-парусная гонка в браузере. Возьми старт, лови заходы ветра и обойди до шести лодок в бухте Гёчек по настоящим правилам парусных гонок. Новая гонка дня каждую полночь.');
+  return {
+    metadataBase: new URL('https://regatta.rycrentals.com'),
+    title: { default: title, template: '%s · Up and down' },
+    description,
+    icons: { icon: '/favicon.ico' },
+    openGraph: {
+      type: 'website', siteName: 'Up and down', title, description, locale: lang === 'ru' ? 'ru_RU' : 'en_GB',
+      images: [{ url: '/images/drone-desk-v3.jpg', alt: t('A race in the game', 'Гонка в игре') }],
+    },
+    twitter: { card: 'summary_large_image', title, description, images: ['/images/drone-desk-v3.jpg'] },
+  };
+}
 
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#ffffff' };
 

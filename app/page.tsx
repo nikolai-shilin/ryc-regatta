@@ -27,14 +27,14 @@ export default async function Home() {
   const best = top[0];
 
   const tiles: [string, string, string, string][] = [
-    ['h-wind', '/help', t('Wind that shifts', 'Ветер меняется'), t('10° and more a minute, with gusts and lulls', '10° и больше в минуту, с порывами и затишьями')],
-    ['h-start', '/help', t('A real start', 'Настоящий старт'), t('Class flag, P, one minute, then the gun', 'Флаг класса, P, минута — и сигнал')],
-    ['h-trim', '/help', t('Sails you trim', 'Паруса настраиваешь сам'), t('Main and jib, or auto-trim', 'Грот и стаксель или автонастройка')],
-    ['h-view-drone', '/help', t('Rivals who know the rules', 'Соперники знают правила'), t('3, 5 or 7 boats, penalty turns too', '3, 5 или 7 лодок, и штрафные обороты')],
-    ['h-tack', '/help', t('Tacks and gybes', 'Повороты'), t('Tack on the headers, gybe the kite', 'Поворачивай на заходах, перекидывай генакер')],
-    ['h-steer', '/help', t('Touch or keys', 'Пальцем или клавишами'), t('A phone either way, or a keyboard', 'Телефон в любой ориентации или клавиатура')],
-    ['h-view-helm', '/help', t('From the helm', 'С руля'), t('Sail it from the cockpit', 'Веди яхту из кокпита')],
-    ['h-view-top', '/help', t('From above', 'Сверху'), t('The whole course and the lay lines', 'Вся дистанция и лейлайны')],
+    ['h-wind', '/help#h-wind', t('Wind that won’t sit still', 'Ветер, который не стоит на месте'), t('Shifts of 10° and more a minute, gusts and lulls. Races are won on them', 'Заходы на 10° и больше каждую минуту, порывы и затишья. На них и выигрывают')],
+    ['h-start', '/help#h-start', t('A start like the real thing', 'Старт как в жизни'), t('Class flag, P, one minute, then the gun. Over early? Go back', 'Флаг класса, P, минута — и сигнал. Фальстарт? Назад за линию')],
+    ['h-trim', '/help#h-controls', t('Sails in your hands', 'Паруса в твоих руках'), t('Main and jib on their own sheets, or auto-trim while you steer', 'Грот и стаксель на своих шкотах или автонастройка, а ты только рулишь')],
+    ['h-view-drone', '/help#h-rules', t('Rivals who know their rights', 'Соперники знают свои права'), t('Up to six computer boats that hail, give way and do their penalty turns', 'До шести компьютерных лодок: окликают, уступают и крутят штрафные обороты')],
+    ['h-tack', '/help#h-controls', t('Tacks, gybes and the kite', 'Повороты и генакер'), t('Tack on the headers, hoist the gennaker for the run home', 'Поворачивай на заходах, ставь генакер на попутном к финишу')],
+    ['h-steer', '/help#h-controls', t('A phone or a keyboard', 'Телефон или клавиатура'), t('Steer with your thumb, upright or sideways, or with the arrow keys', 'Рули пальцем, вертикально или горизонтально, или стрелками')],
+    ['h-view-helm', '/help#h-views', t('From the helm', 'С руля'), t('Sail from the cockpit, with Göcek’s hills all around', 'Веди яхту из кокпита, а вокруг — холмы Гёчека')],
+    ['h-view-top', '/help#h-views', t('From above', 'Сверху'), t('The whole course, the lay lines and every boat at a glance', 'Вся дистанция, лейлайны и все лодки одним взглядом')],
   ];
   const all = faqGroups(t).flatMap((g) => g.items);
   const faq = HOME.map((id) => all.find((f) => f.id === id)!);
@@ -49,11 +49,11 @@ export default async function Home() {
         <iframe className="hm-scene" src="/hero-view" title={t('A race in the game', 'Гонка в игре')} aria-hidden="true" tabIndex={-1} />
         <section className="hm-page hm-hero-in" aria-labelledby="home-h1">
           <span className="kicker">{t('Up and down · a sailing race game by RYC', 'Up and down · парусная гонка от RYC')}</span>
-          <h1 className="hm-display" id="home-h1">{t('Sailing race game: up to seven rivals, shifting wind and the real racing rules', 'Парусная гонка: до семи соперников, переменчивый ветер и настоящие правила')}</h1>
+          <h1 className="hm-display" id="home-h1">{t('Win the start. Play the shifts. Race by the real rules.', 'Возьми старт. Лови заходы. Гоняйся по настоящим правилам.')}</h1>
           <p className="hm-lead">{t(
-            `Today’s race, ${date}, is ${breeze} of ${kn} knots, ${d.fleet} boats and one ${length} lap up and down. Everyone sails the same race, so times compare fairly. No sign-in needed to play.`,
-            `Гонка дня, ${date}: ${breeze} ${kn} узлов, ${ruBoats(d.fleet)} и один ${length} круг апвинд — даунвинд. У всех одна и та же гонка, поэтому время сравнивается честно. Играть можно без входа.`)}</p>
-          <span className="meta hm-asof">{t(`Today’s race for ${date} · a new one at midnight`, `Гонка дня на ${date} · новая в полночь`)}</span>
+            `Today, ${date}: ${breeze} of ${kn} knots in Göcek bay, ${d.fleet} boats on the line, one ${length} lap up and down. Everyone sails the same race, so the only thing between you and the top of the ranking is how you sail it. Free in the browser, no sign-in to play.`,
+            `Сегодня, ${date}: ${breeze} ${kn} узлов в бухте Гёчек, ${ruBoats(d.fleet)} на линии, один ${length} круг апвинд — даунвинд. У всех одна и та же гонка, так что между тобой и первой строчкой рейтинга — только то, как ты её пройдёшь. Бесплатно, в браузере, играть можно без входа.`)}</p>
+          <span className="meta hm-asof">{t(`Today’s race · ${date} · a new one every midnight UTC`, `Гонка дня · ${date} · новая каждую полночь по UTC`)}</span>
           <RacePill lang={lang} daily={d} />
           <Link className="hm-src" href="/help">{t('How a race goes', 'Как проходит гонка')}<IconArrow s={14} /></Link>
         </section>
@@ -62,7 +62,7 @@ export default async function Home() {
       <div className="hm-band">
         <section className="hm-page hm-sec" aria-labelledby="h-parts">
           <TileRow lang={lang} head={
-            <div className="hm-sec-t"><span className="kicker">{t('In the game · 8 parts', 'В игре · 8 частей')}</span><h2 className="hm-h2" id="h-parts">{t('Everything a real race has', 'Всё, что есть в настоящей гонке')}</h2></div>
+            <div className="hm-sec-t"><span className="kicker">{t('Inside the game', 'Внутри игры')}</span><h2 className="hm-h2" id="h-parts">{t('Everything a real race throws at you', 'Всё, чем встречает настоящая гонка')}</h2></div>
           }>
             {tiles.map(([img, href, title, meta]) => (
               <Link className="hm-tile" href={href} key={img}>
@@ -78,10 +78,10 @@ export default async function Home() {
       <section className="hm-page hm-sec" aria-labelledby="h-today">
         <div className="hm-sec-h">
           <div className="hm-sec-t">
-            <span className="kicker">{t('Today’s race · the same for everyone', 'Гонка дня · одна для всех')}</span>
+            <span className="kicker">{t('Today’s race · one race, one ranking', 'Гонка дня · одна гонка, один рейтинг')}</span>
             <h2 className="hm-h2" id="h-today">{best
-              ? t(`${live!.races} races today · best time ${clock(best.s)}`, `Гонок сегодня: ${live!.races} · лучшее время ${clock(best.s)}`)
-              : t('Be the first on today’s ranking', 'Стань первым в рейтинге дня')}</h2>
+              ? t(`${live!.races} races sailed today. The time to beat: ${clock(best.s)}`, `Заездов сегодня: ${live!.races}. Время, которое надо побить, — ${clock(best.s)}`)
+              : t('Nobody has finished yet. Set the time to beat', 'Ещё никто не финишировал. Задай время, которое будут бить')}</h2>
           </div>
           <Link className="hm-src" href="/race">{t('Race hub', 'Меню гонок')}<IconArrow s={14} /></Link>
         </div>
@@ -122,9 +122,9 @@ export default async function Home() {
           <Link className="hm-src" href="/help">{t('How to play in detail', 'Подробно о игре')}<IconArrow s={14} /></Link>
         </div>
         <ol className="hm-steps">
-          <li><span className="hm-num">1</span><span className="hm-step-t"><span className="hm-h3">{t('Pick a race', 'Выбери гонку')}</span><span className="hm-text">{t('Today’s race is the same for everyone. A free race takes your wind, fleet and course. Both start in one tap.', 'Гонка дня одна для всех. В свободной — твой ветер, флот и дистанция. Обе начинаются в одно касание.')}</span></span></li>
-          <li><span className="hm-num">2</span><span className="hm-step-t"><span className="hm-h3">{t('Get the start right', 'Возьми старт')}</span><span className="hm-text">{t('Hold below the line until the gun. Over early and the X flag sends you back to start again.', 'Держись под линией до сигнала. Фальстарт — флаг X, возвращайся и стартуй заново.')}</span></span></li>
-          <li><span className="hm-num">3</span><span className="hm-step-t"><span className="hm-h3">{t('Round the marks', 'Обойди знаки')}</span><span className="hm-text">{t('Beat up to the windward mark, run back through the gate and finish. Your time goes on today’s ranking.', 'Лавируй к верхнему знаку, спускайся через ворота и финишируй. Время попадёт в рейтинг дня.')}</span></span></li>
+          <li><span className="hm-num">1</span><span className="hm-step-t"><span className="hm-h3">{t('Pick a race', 'Выбери гонку')}</span><span className="hm-text">{t('Today’s race is the same for everyone. A free race is yours to set up: the wind, the fleet, the course. Either starts in one tap.', 'Гонка дня одна для всех. Свободную настраиваешь сам: ветер, флот, дистанцию. Любая начинается в одно касание.')}</span></span></li>
+          <li><span className="hm-num">2</span><span className="hm-step-t"><span className="hm-h3">{t('Win the start', 'Выиграй старт')}</span><span className="hm-text">{t('Hover below the line while the minute runs down, then cross it at full speed on the gun. Go too soon and the X flag sends you back.', 'Держись под линией, пока идёт минута, и пересеки её на полном ходу с сигналом. Поспешишь — флаг X отправит назад.')}</span></span></li>
+          <li><span className="hm-num">3</span><span className="hm-step-t"><span className="hm-h3">{t('Round the marks', 'Обойди знаки')}</span><span className="hm-text">{t('Work the shifts up to the windward mark, run back down through the gate and take the gun. Signed in, your time goes on today’s ranking.', 'Лови заходы на лавировке к верхнему знаку, спустись через ворота и финишируй. Если ты вошёл, время попадёт в рейтинг дня.')}</span></span></li>
         </ol>
       </section>
 
@@ -132,10 +132,10 @@ export default async function Home() {
         <section className="hm-page hm-sec" aria-labelledby="h-num">
           <div className="hm-sec-t"><span className="kicker">{t('RYC race office', 'Гоночный комитет RYC')}</span><h2 className="hm-h2" id="h-num">{t('The game in numbers', 'Игра в цифрах')}</h2></div>
           <dl className="hm-stats">
-            <div><dt className="meta">{t('Wind', 'Ветер')}</dt><dd className="hm-stat-v">{KN.light}–{KN.strong} {t('kn', 'уз')}</dd><dd className="hm-meta">{t('Light, medium or strong breeze', 'Слабый, средний или сильный')}</dd></div>
-            <div><dt className="meta">{t('Rivals', 'Соперники')}</dt><dd className="hm-stat-v">3 · 5 · 7</dd><dd className="hm-meta">{t('Computer boats that sail by the rules', 'Компьютерные лодки, которые ходят по правилам')}</dd></div>
-            <div><dt className="meta">{t('Shifts', 'Заходы')}</dt><dd className="hm-stat-v">10°+</dd><dd className="hm-meta">{t('Every minute, with gusts and lulls', 'Каждую минуту, с порывами и затишьями')}</dd></div>
-            <div><dt className="meta">{t('Race of the day', 'Гонка дня')}</dt><dd className="hm-stat-v">1</dd><dd className="hm-meta">{t('A new one at midnight, the same for all', 'Новая в полночь, одна для всех')}</dd></div>
+            <div><dt className="meta">{t('Wind', 'Ветер')}</dt><dd className="hm-stat-v">{KN.light}–{KN.strong} {t('kn', 'уз')}</dd><dd className="hm-meta">{t('From light air to a breeze you reef for', 'От лёгкого ветра до такого, что берут рифы')}</dd></div>
+            <div><dt className="meta">{t('Fleet', 'Флот')}</dt><dd className="hm-stat-v">3 · 5 · 7</dd><dd className="hm-meta">{t('Boats on the line, every one sailing by the rules', 'Лодок на линии, и все ходят по правилам')}</dd></div>
+            <div><dt className="meta">{t('Shifts', 'Заходы')}</dt><dd className="hm-stat-v">10°+</dd><dd className="hm-meta">{t('Every minute. Catch them or lose places', 'Каждую минуту. Лови их или теряй места')}</dd></div>
+            <div><dt className="meta">{t('Race of the day', 'Гонка дня')}</dt><dd className="hm-stat-v">1</dd><dd className="hm-meta">{t('One for everyone, a new one every midnight', 'Одна на всех, новая каждую полночь')}</dd></div>
           </dl>
           <p className="hm-cite">{t('Free · no install · phone or computer · English and Russian.', 'Бесплатно · без установки · телефон или компьютер · английский и русский.')}<a className="hm-src" href="#faq">{t('Questions', 'Вопросы')}<IconArrow s={14} /></a></p>
         </section>
@@ -158,7 +158,7 @@ export default async function Home() {
           <div className="hm-help-main">
             <span className="kicker">Sailing Certification Test</span>
             <h2 className="hm-h2" id="h-rules">{t('Learn the rules there, race by them here', 'Учи правила там, гоняйся по ним здесь')}</h2>
-            <p className="hm-text">{t('Up and down is made by RYC alongside Sailing Certification Test, the app for sailing certification exam practice. The rules the computer boats follow are the ones on the exam.', 'Up and down делает RYC вместе с Sailing Certification Test — приложением для подготовки к экзаменам на яхтенные сертификаты. Компьютерные лодки ходят по тем же правилам, что спрашивают на экзамене.')}</p>
+            <p className="hm-text">{t('Up and down comes from RYC, the team behind Sailing Certification Test, the free trainer for sailing certificate exams. The computer boats give way by the same rules the exam asks about, so every race is revision you can feel on the water.', 'Up and down делает RYC — команда, которая сделала Sailing Certification Test, бесплатный тренажёр к экзаменам на яхтенные сертификаты. Компьютерные лодки уступают по тем же правилам, что спрашивают на экзамене, так что каждая гонка — повторение, которое чувствуешь на воде.')}</p>
             <a className="hm-app" href="https://iyt.rycrentals.com/">
               <span className="hm-app-ic"><Logo /></span>
               <span className="hm-app-t"><span className="hm-app-n">Sailing Certification Test</span><span className="meta">{t('Exam practice · 6100 questions', 'Подготовка к экзамену · 6100 вопросов')}</span></span>
