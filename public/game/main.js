@@ -306,10 +306,12 @@ const audio = {
   },
 };
 
-// ---------- the skipper: a recorded voice from Odessa that shouts at the crew when they've earned it ----------
-// Russian only (the game in English keeps its own calls). All the lines are in one file, skipper-ru.mp3, loaded once the
-// race starts; he says one at a time, takes a breath between lines and doesn't repeat a line within a minute.
-const skipper = {
+// ---------- the skipper: recorded voices on board ----------
+// In Russian, a skipper from Odessa who shouts at the crew when they've earned it; in English, a crew's racing calls: the
+// hails, protest, bear away, and the count down to the gun. Each language's lines are in one file, skipper-<lang>.mp3,
+// loaded once the race starts. He says one line at a time, takes a breath between lines and doesn't repeat a line within a
+// minute; a call that must be heard now (a hail, the count) cuts in.
+const VOICES = { ru: {
   // where each line sits in skipper-ru.mp3: [start, length] in seconds
   clips: {
     // on the boat
@@ -367,11 +369,38 @@ const skipper = {
     clean: ['clean'], // a start without fuss, or the windward mark with no fouls
     late: ['late'], // across the line more than ten seconds after the gun
   },
+}, en: {
+  // a crew's racing calls in skipper-en.mp3, and the count to the gun: [start, length] in seconds
+  clips: {
+    starboard: [0.6, 0.744], // Starboard!
+    keepClear: [1.944, 0.737], // Keep clear!
+    port: [3.28, 2.301], // You're on port! We're on starboard!
+    hold: [6.181, 1.038], // Hold your course!
+    room: [7.819, 0.967], // Room at the mark!
+    protest: [9.386, 0.785], // Protest!
+    bearAway: [10.771, 0.852], // Bear away!
+    go: [12.223, 1.107], // Go, go, go!
+    n10: [13.929, 0.487], n9: [15.016, 0.565], n8: [16.182, 0.438], n7: [17.22, 0.568], n6: [18.388, 0.667], // Ten… six
+    n5: [19.655, 0.506], n4: [20.76, 0.539], n3: [21.899, 0.545], n2: [23.044, 0.508], n1: [24.152, 0.506], // five… one
+    start: [25.258, 2.019], // Start, start, start!
+  },
+  // the hails, by rule (the ones with no recording are still spoken by the browser), and the other calls
+  pools: {
+    hail10: ['starboard', 'port'], hail11: ['keepClear'], hail12: ['keepClear'], hail13: ['keepClear'], hail15: ['keepClear'],
+    hail44: ['keepClear'], 'hail18.3': ['keepClear'], hail16: ['hold'], hail17: ['hold'], hail18: ['room'],
+    protest: ['protest'], // a foul, ours or theirs
+    bearAway: ['bearAway'], irons: ['bearAway'], // the windward mark rounded; in irons
+    go: ['go'], // back below the line after being over early: now start
+    start: ['start'], // the gun
+  },
+} };
+const skipper = {
+  ...VOICES[LANG],
   buf: null, loading: false, src: null, speakTill: 0, busyTill: 0, last: {},
   load() {
-    if (LANG !== 'ru' || this.buf || this.loading || !audio.ctx) return;
+    if (!VOICES[LANG] || this.buf || this.loading || !audio.ctx) return;
     this.loading = true;
-    fetch(new URL('skipper-ru.mp3', import.meta.url)).then((r) => r.arrayBuffer())
+    fetch(new URL(`skipper-${LANG}.mp3`, import.meta.url)).then((r) => r.arrayBuffer())
       .then((b) => new Promise((res, rej) => audio.ctx.decodeAudioData(b, res, rej)))
       .then((b) => { this.buf = b; }, () => { this.loading = false; });
   },
@@ -383,15 +412,32 @@ const skipper = {
     if (now < (now_ ? this.speakTill : this.busyTill) || (window.speechSynthesis && speechSynthesis.speaking)) return false;
     const fresh = (this.pools[kind] || []).filter((k) => !(now - this.last[k] < 60));
     if (!fresh.length || Math.random() > chance) return false;
-    const k = fresh[Math.floor(Math.random() * fresh.length)], [at, len] = this.clips[k];
-    const s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 0.9;
-    s.buffer = this.buf; s.connect(g).connect(audio.master); s.start(now, at, len);
-    this.stop(); this.src = s; this.last[k] = now; this.speakTill = now + len + 0.4; this.busyTill = now + len + 8;
+    const k = fresh[Math.floor(Math.random() * fresh.length)], len = this.play(k);
+    this.last[k] = now; this.speakTill = now + len + 0.4; this.busyTill = now + len + 8;
     return true;
+  },
+  // a call that has to be heard now (a hail, the count to the gun): no breath, no minute's rest, and it cuts in on a line
+  cue(kind) {
+    const list = this.pools[kind] || (this.clips[kind] ? [kind] : null);
+    if (!list || !this.buf || !audio.on || paused || audio.ctx.state !== 'running') return false;
+    const now = audio.ctx.currentTime, len = this.play(list[Math.floor(Math.random() * list.length)]);
+    this.speakTill = now + len + 0.2; this.busyTill = Math.max(this.busyTill, now + len + 2);
+    return true;
+  },
+  // the clips have silence round them in the file, and some decoders start an MP3 a few hundredths of a second late:
+  // play a little either side, so a line never loses its first or last sound
+  play(k) {
+    const ctx = audio.ctx, [at, len] = this.clips[k], s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 0.9;
+    s.buffer = this.buf; s.connect(g).connect(audio.master); s.start(ctx.currentTime, Math.max(0, at - 0.03), len + 0.09);
+    this.stop(); this.src = s;
+    return len;
   },
   stop() { try { this.src && this.src.stop(); } catch (e) {} this.src = null; },
   // the start signals and crossing the line, from the race's messages
-  signal(key) { const k = { sigWarn: 'plan', sigPrep: 'flag', sig1: 'minute' }[key]; if (k) this.shout(k, 1, true); },
+  signal(key, ocs) {
+    if (key === 'gun') { if (!ocs) this.cue('start'); return; }
+    const k = { sigWarn: 'plan', sigPrep: 'flag', sig1: 'minute' }[key]; if (k) this.shout(k, 1, true);
+  },
   started(c) { this.shout(c < 3 ? 'ready' : c > 10 ? 'late' : 'clean', 1, true); },
   // what he watches for himself, every frame: a sheet left wrong, a sheet fiddled with, a boat stopped after the gun,
   // a boat too close, the line far off as the gun nears
@@ -431,10 +477,17 @@ try { world = new World(canvas); } catch (e) {
 }
 const resize = () => world.resize(window.innerWidth, window.innerHeight);
 window.addEventListener('resize', resize); resize();
-const GFX_KEY = 'regatta-gfx';
+// Auto remembers a step down as 'medium|<when>' for three days, then tries the device's own level again: one slow
+// race (another tab busy, a hot phone) shouldn't keep the picture down for good. A bare level from before is retried now.
+const GFX_KEY = 'regatta-gfx', GFX_DAYS = 3;
 function startQuality() {
   if (opts.gfx !== 'auto') return opts.gfx;
-  try { return localStorage.getItem(GFX_KEY) || defaultQuality(); } catch (e) { return defaultQuality(); }
+  try {
+    const [q, at] = (localStorage.getItem(GFX_KEY) || '').split('|');
+    if (q && Date.now() - at < GFX_DAYS * 864e5) return q;
+    localStorage.removeItem(GFX_KEY);
+  } catch (e) {}
+  return defaultQuality();
 }
 world.setQuality(startQuality());
 world.showGuides = !!opts.guides;
@@ -449,7 +502,7 @@ function watchFps(raw) {
   if (fps >= 45) return;
   const q = world.quality === 'high' ? 'medium' : 'low';
   world.setQuality(q); perf.settle = 2;
-  try { localStorage.setItem(GFX_KEY, q); } catch (e) {}
+  try { localStorage.setItem(GFX_KEY, `${q}|${Date.now()}`); } catch (e) {}
   toast(t('gfxDown', t(q === 'medium' ? 'gMedium' : 'gLow')), 2.5);
 }
 
@@ -816,7 +869,7 @@ function updateHud(dt) {
   el.count.classList.toggle('final', race.clock < 0 && left <= 10);
   const ci = Math.ceil(-race.clock);
   if (race.clock < 0 && ci !== lastClockInt) {
-    if (lastClockInt !== null && ci <= 10 && ci > 0) { audio.tone(ci <= 3 ? 1046 : 880, 0.12); if (ci <= 3) haptic('light'); }
+    if (lastClockInt !== null && ci <= 10 && ci > 0) { if (!skipper.cue('n' + ci)) audio.tone(ci <= 3 ? 1046 : 880, 0.12); if (ci <= 3) haptic('light'); } // the count: a voice, or beeps
     lastClockInt = ci;
   }
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) el.toast.classList.remove('show'); }
@@ -846,25 +899,26 @@ function handleMessages() {
   for (const m of race.messages) {
     const a = m.arg || {};
     if (m.key === 'signal') {
-      audio.horn(a.sound === 'long'); haptic(a.key === 'gun' ? 'heavy' : 'medium'); skipper.signal(a.key);
+      audio.horn(a.sound === 'long'); haptic(a.key === 'gun' ? 'heavy' : 'medium'); skipper.signal(a.key, P.ocs);
       if (a.key === 'gun' && P.ocs) continue;
       toast(t(a.key, Math.round(-a.t / 60), race.prepFlag), 3);
     } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') { raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy'); setTimeout(finishToPage, 2500); }
     else if (m.key === 'gate') toast(t('gateMsg'));
     else if (m.key === 'bump') { hint('bump', t('bump'), 3); haptic('heavy'); skipper.shout(race.clock < 0 ? 'push' : 'contact'); }
     else if (m.key === 'aground') { hint('aground', t('aground'), 3); haptic('heavy'); skipper.shout('aground'); }
-    else if (m.key === 'hail') { const h = t('hail' + a.rule); toast(`${a.who}: “${h}”`, 2.2); audio.say(h); haptic('warn'); }
-    else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); audio.say(h); } }
+    else if (m.key === 'hail') { const h = t('hail' + a.rule); toast(`${a.who}: “${h}”`, 2.2); if (!skipper.cue('hail' + a.rule)) audio.say(h); haptic('warn'); }
+    else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); if (!skipper.cue('hail' + a.rule)) audio.say(h); } }
     else if (m.key === 'seaBreeze') toast(t('seaBreeze'), 5);
     else if (m.key === 'genRecall') { toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(); haptic('warn'); skipper.shout('lost'); }
     else if (m.key === 'prepU' || m.key === 'prepB' || m.key === 'ufd' || m.key === 'bfd') { toast(t(m.key), 4); if (m.key === 'prepU' || m.key === 'prepB') skipper.shout('flag', 1, true); if (m.key === 'ufd' || m.key === 'bfd') { haptic('warn'); skipper.shout('lost'); } }
-    else if (m.key === 'fouled' || m.key === 'theyFouled') { toast(t(m.key, a.who, a.rule), 3.5); skipper.shout(m.key === 'fouled' ? 'foul' : 'contact'); }
+    else if (m.key === 'fouled' || m.key === 'theyFouled') { toast(t(m.key, a.who, a.rule), 3.5); skipper.cue('protest') || skipper.shout(m.key === 'fouled' ? 'foul' : 'contact'); }
     else {
       toast(t(m.key), 2.6); if (m.key === 'ocs') { haptic('warn'); skipper.shout('early', 1, true); } if (m.key === 'rounded') haptic('medium');
       if (m.key === 'touched' || m.key === 'wrongSide' || m.key === 'missedGate') skipper.shout('foul');
       if (m.key === 'missedLine') skipper.shout('where', 1, true);
       if (m.key === 'started') skipper.started(race.clock);
-      if ((m.key === 'rounded' || m.key === 'roundedTri') && P.leg === 2 && !race.log.fouls.length) skipper.shout('clean'); // the windward mark, and nobody touched yet
+      if (m.key === 'cleared') skipper.cue('go');
+      if ((m.key === 'rounded' || m.key === 'roundedTri') && !skipper.cue('bearAway') && P.leg === 2 && !race.log.fouls.length) skipper.shout('clean'); // the windward mark, and nobody touched yet
     }
   }
   race.messages.length = 0;
@@ -881,7 +935,7 @@ function handleMessages() {
   P.events.length = 0;
   for (const b of race.boats) if (b !== P) b.events.length = 0;
   if (P.heel > 33) hint('heel', t('heelMsg'), 10);
-  if (P.trim === 'irons' && P.v < 0.6 && !P.auto && !P.pen && race.clock > race.seq[0].t + 8) hint('irons', t('ironsMsg'), 10);
+  if (P.trim === 'irons' && P.v < 0.6 && !P.auto && !P.pen && race.clock > race.seq[0].t + 8) { hint('irons', t('ironsMsg'), 10); skipper.shout('irons'); }
   if (P.gust > 0.55) hint('gust', t('gust'), 15);
   // slow on the beat and pointing as if at full speed: foot to build it; in a seaway, steer the waves
   if (race.clock > 0 && !P.auto && !P.pen && P.trim !== 'irons' && P.stall > 2.5 && Math.abs(P.twa) / D2R < beatAngle(P.tws) + 3) hint('foot', t('foot'), 30);
