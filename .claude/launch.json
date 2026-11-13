@@ -11,6 +11,20 @@
       "port": 5193
     },
     {
+      "name": "game-static",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5196",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "public"
+      ],
+      "port": 5196
+    },
+    {
       "name": "ui-review",
       "runtimeExecutable": "python3",
       "runtimeArgs": [
