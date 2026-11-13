@@ -7,7 +7,7 @@ import { CommitteeBoat } from './committee.js';
 import { Wildlife } from './wildlife.js';
 import { Post, Mirror, OVERLAY, MIRRORED } from './post.js';
 import { Ocean, OCEAN_GLSL, oceanUniforms, blankOcean } from './ocean.js';
-import { LIGHTS, pickLight, sunVector, SKY_GLSL, skyUniforms } from './light.js';
+import { skyAt, pickSky, SKY_GLSL, skyUniforms } from './light.js';
 export { flagTexture } from './committee.js';
 
 // the sky's colours and the sun: one set of objects that every shader shares; setLight() changes them in place
@@ -761,30 +761,29 @@ export class World {
     this.marks = null;
     for (const w of [...this.wild.gulls, ...this.wild.dolphins, ...this.wild.whales]) mirrored(w.g);
     this.glareK = 1;
-    this.setLight('day');
+    this.setLight(skyAt(14.5));
   }
 
-  // the light the race is sailed in (light.js): the sun, the sky and its haze, the clouds, the sea's colours, the
-  // exposure and the bloom; the environment map that the boats reflect is made again for it
-  setLight(name) {
-    const L = LIGHTS[name] || LIGHTS.day;
-    this.light = name;
-    sunVector(L, this.race ? this.race.wind.dir() : 0, SUN);
-    SKY_TOP.set(L.top); SKY_HORIZON.set(L.horizon);
+  // the light the race is sailed in (light.js: skyAt, for an hour of the day): the sun, the sky and its haze, the
+  // clouds, the sea's colours, the exposure and the bloom; the environment map that the boats reflect is made again
+  setLight(L) {
+    this.light = L;
+    SUN.copy(L.sunDir);
+    SKY_TOP.copy(L.top); SKY_HORIZON.copy(L.horizon);
     const U = this.skyU;
-    U.uSunCol.value.set(L.sun); U.uCloudLit.value.set(L.cloudLit); U.uCloudDark.value.set(L.cloudDark);
+    U.uSunCol.value.copy(L.sun); U.uCloudLit.value.copy(L.cloudLit); U.uCloudDark.value.copy(L.cloudDark);
     U.uMie.value = L.mie; U.uCloud.value = L.cloud; this.discU.value = L.disc;
-    this.sun.color.set(L.sun); this.sun.intensity = L.sunI;
-    this.hemi.color.set(L.hemiSky); this.hemi.groundColor.set(L.hemiGround); this.hemi.intensity = L.hemiI;
+    this.sun.color.copy(L.sun); this.sun.intensity = L.sunI;
+    this.hemi.color.copy(L.hemiSky); this.hemi.groundColor.copy(L.hemiGround); this.hemi.intensity = L.hemiI;
     this.scene.fog.color.copy(SKY_HORIZON); this.scene.fog.near = L.fogNear; this.scene.fog.far = L.fogFar;
     const W = this.waterU;
     W.uFogNear.value = L.fogNear; W.uFogFar.value = L.fogFar;
-    W.uDeep.value.set(L.deep); W.uScatter.value.set(L.scatter); W.uGlint.value = L.glint;
+    W.uDeep.value.copy(L.deep); W.uScatter.value.copy(L.scatter); W.uGlint.value = L.glint;
     this.shadeMat.uniforms.uShade.value = L.shade;
     this.renderer.toneMappingExposure = L.exposure;
-    this.glare.material.color.set(L.sun); this.glareK = L.disc;
+    this.glare.material.color.copy(L.sun); this.glareK = L.disc;
     this.bloomLook = L.bloom; if (this.post) this.post.setLook(L.bloom);
-    this.envSea.material.color.set(L.deep).lerp(SKY_HORIZON, 0.2);
+    this.envSea.material.color.copy(L.deep).lerp(SKY_HORIZON, 0.2);
     const pm = new THREE.PMREMGenerator(this.renderer), old = this.scene.environment;
     this.scene.environment = pm.fromScene(this.env, 0.02).texture;
     pm.dispose(); if (old) old.dispose();
@@ -801,7 +800,7 @@ export class World {
     this.waterU.uAmp.value = race.wind.p.waves;
     this.waterU.uPivot.value.set(race.course.windward.x, race.course.windward.z / 2); // the wind lanes turn about the middle of the course
     this.waterU.uWhite.value = clamp((race.wind.p.tws - 10) / 9, 0, 1); // whitecaps from about force 4
-    this.setLight(pickLight(race));
+    this.setLight(pickSky(race));
     // the chop is raised by the race's mean wind and keeps its heading (the sea lags the shifts)
     if (this.ocean) this.ocean.setWind(race.wind.p.tws);
     this.oceanU.uFftW.value.set(Math.sin(W0 + Math.PI), -Math.cos(W0 + Math.PI));

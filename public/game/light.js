@@ -1,52 +1,104 @@
-// Regatta: the light a race is sailed in — a clear day, a hazy morning, the golden hour, an overcast sky — and the
-// sky that goes with it. Each look sets the sun (where it stands relative to the wind, its colour and strength), the
-// sky and the haze, the clouds, the sea's own colours and the exposure, so they always agree with each other.
+// Regatta: the light a race is sailed in — the time of day over Göcek bay, clear or overcast — and the sky that goes
+// with it. The hour puts the sun where it really stands (east in the morning, high in the south at midday, west in
+// the evening); its height above the horizon then sets everything else — the sun's colour and strength, the sky and
+// its haze, the clouds, the sea's own colours and the exposure — so they always agree with each other.
 import * as THREE from 'three';
 
-// azimuth: degrees from straight upwind, clockwise seen from above (0: the sun ahead of a boat on the beat,
-// 180: behind her); elevation: degrees above the horizon
-export const LIGHTS = {
-  day: {
-    azimuth: 210, elevation: 35, sun: '#fff1dc', sunI: 3.2, hemiSky: '#dbeaff', hemiGround: '#2c4a5c', hemiI: 0.9,
-    top: '#4f8fcb', horizon: '#d6e7f0', mie: 0.12, cloud: 0, cloudLit: '#fffbf3', cloudDark: '#99a8bd',
-    deep: '#062a40', scatter: '#1aa3a0', exposure: 1.05, glint: 1, shade: 1, disc: 1, fogNear: 150, fogFar: 3200,
-    bloom: { threshold: 2.4, strength: 0.28 },
-  },
-  morning: {
-    azimuth: 115, elevation: 19, sun: '#ffe2c0', sunI: 2.7, hemiSky: '#d6e3f2', hemiGround: '#34505c', hemiI: 0.85,
-    top: '#5a8dc4', horizon: '#e4e5e3', mie: 0.22, cloud: -0.05, cloudLit: '#fff3e4', cloudDark: '#a2adbd',
-    deep: '#08304a', scatter: '#1d9aa0', exposure: 1.08, glint: 1, shade: 0.9, disc: 1, fogNear: 120, fogFar: 2600,
-    bloom: { threshold: 2.2, strength: 0.3 },
-  },
-  golden: {
-    azimuth: 28, elevation: 8.5, sun: '#ffb874', sunI: 2.6, hemiSky: '#c6d0e4', hemiGround: '#3c3a44', hemiI: 0.62,
-    top: '#4f74a8', horizon: '#efd3b4', mie: 0.42, cloud: 0.02, cloudLit: '#ffd9ad', cloudDark: '#8a8899',
-    deep: '#0a2638', scatter: '#2a8a86', exposure: 1.12, glint: 1.25, shade: 0.8, disc: 1, fogNear: 140, fogFar: 2900,
-    bloom: { threshold: 2.0, strength: 0.36 },
-  },
-  overcast: {
-    azimuth: 190, elevation: 48, sun: '#e9eef2', sunI: 0.95, hemiSky: '#e6ebf0', hemiGround: '#4a5961', hemiI: 1.75,
-    top: '#8f9eab', horizon: '#c6cdd3', mie: 0.05, cloud: 0.24, cloudLit: '#d9dee3', cloudDark: '#8d96a0',
-    deep: '#0f2c38', scatter: '#2c7c80', exposure: 1.0, glint: 0.12, shade: 0.22, disc: 0, fogNear: 100, fogFar: 2300,
-    bloom: { threshold: 2.6, strength: 0.18 },
-  },
-};
+const D = Math.PI / 180;
+const LAT = 36.75 * D; // Göcek
+const DECL = 20 * D; // the sun's declination in the sailing season (late May, mid July)
+const CLOCK = 1.07; // the clock is this many hours ahead of the sun there (UTC+3 at 28.9° E)
+const MIN_E = 3; // degrees: the earliest and latest a race goes, the sun just clear of the horizon
 
-// the light for a race: ?light=… in the address wins (for testing); otherwise one chosen from the race's own numbers,
-// so today's race looks the same for everyone, and a clear day most often
-export function pickLight(race) {
-  try {
-    const q = new URLSearchParams(location.search).get('light');
-    if (q && LIGHTS[q]) return q;
-  } catch (e) {}
-  const u = ((race.tidePh ?? Math.random() * 6.283) / 6.283 * 7.31) % 1;
-  return u < 0.5 ? 'day' : u < 0.68 ? 'morning' : u < 0.86 ? 'golden' : 'overcast';
+// The looks at a few heights of the sun (degrees); the hours between are blended from them.
+const KEYS = [
+  { e: 3, sun: '#ff8c48', sunI: 1.7, hemiSky: '#aeb3d2', hemiGround: '#3a3040', hemiI: 0.52, top: '#365383', horizon: '#f0ae80',
+    mie: 0.66, cloud: 0.04, cloudLit: '#ffa86e', cloudDark: '#6e6782', deep: '#0a1d2d', scatter: '#2a6c72', exposure: 1.24, glint: 1.5,
+    shade: 0.55, fogNear: 120, fogFar: 2500, thr: 1.7, str: 0.42 },
+  { e: 6, sun: '#ffa660', sunI: 2.2, hemiSky: '#bcc4dc', hemiGround: '#3c3742', hemiI: 0.58, top: '#4469a0', horizon: '#f2c39c',
+    mie: 0.52, cloud: 0.03, cloudLit: '#ffc590', cloudDark: '#7f7b8f', deep: '#0a2334', scatter: '#2a8080', exposure: 1.16, glint: 1.35,
+    shade: 0.7, fogNear: 130, fogFar: 2700, thr: 1.9, str: 0.38 },
+  { e: 10, sun: '#ffb874', sunI: 2.6, hemiSky: '#c6d0e4', hemiGround: '#3c3a44', hemiI: 0.62, top: '#4f74a8', horizon: '#efd3b4',
+    mie: 0.42, cloud: 0.02, cloudLit: '#ffd9ad', cloudDark: '#8a8899', deep: '#0a2638', scatter: '#2a8a86', exposure: 1.12, glint: 1.25,
+    shade: 0.8, fogNear: 140, fogFar: 2900, thr: 2.0, str: 0.36 },
+  { e: 20, sun: '#ffe2c0', sunI: 2.7, hemiSky: '#d6e3f2', hemiGround: '#34505c', hemiI: 0.85, top: '#5a8dc4', horizon: '#e4e5e3',
+    mie: 0.22, cloud: -0.03, cloudLit: '#fff3e4', cloudDark: '#a2adbd', deep: '#08304a', scatter: '#1d9aa0', exposure: 1.08, glint: 1,
+    shade: 0.9, fogNear: 120, fogFar: 2600, thr: 2.2, str: 0.3 },
+  { e: 35, sun: '#fff1dc', sunI: 3.2, hemiSky: '#dbeaff', hemiGround: '#2c4a5c', hemiI: 0.9, top: '#4f8fcb', horizon: '#d6e7f0',
+    mie: 0.12, cloud: 0, cloudLit: '#fffbf3', cloudDark: '#99a8bd', deep: '#062a40', scatter: '#1aa3a0', exposure: 1.05, glint: 1,
+    shade: 1, fogNear: 150, fogFar: 3200, thr: 2.4, str: 0.28 },
+  { e: 72, sun: '#fff7ee', sunI: 3.4, hemiSky: '#d4e6ff', hemiGround: '#264658', hemiI: 0.95, top: '#3c7fc6', horizon: '#cfe3ef',
+    mie: 0.08, cloud: -0.02, cloudLit: '#ffffff', cloudDark: '#9eb0c6', deep: '#04283f', scatter: '#14aaa6', exposure: 1.0, glint: 0.9,
+    shade: 1, fogNear: 160, fogFar: 3300, thr: 2.5, str: 0.26 },
+];
+const OVERCAST = { sun: '#e9eef2', sunI: 0.95, hemiSky: '#e6ebf0', hemiGround: '#4a5961', hemiI: 1.75, top: '#8f9eab', horizon: '#c6cdd3',
+  mie: 0.05, cloud: 0.24, cloudLit: '#d9dee3', cloudDark: '#8d96a0', deep: '#0f2c38', scatter: '#2c7c80', exposure: 1.0, glint: 0.12,
+  shade: 0.22, fogNear: 100, fogFar: 2300, thr: 2.6, str: 0.18 };
+const COLOURS = ['sun', 'hemiSky', 'hemiGround', 'top', 'horizon', 'cloudLit', 'cloudDark', 'deep', 'scatter'];
+
+const lerp = (a, b, k) => a + (b - a) * k;
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+function mix(A, B, k) { // two looks blended: numbers straight, colours as THREE.Colors (in linear light)
+  const o = {};
+  for (const n in A) {
+    if (COLOURS.includes(n)) o[n] = new THREE.Color(A[n]).lerp(new THREE.Color(B[n]), k);
+    else if (typeof A[n] === 'number') o[n] = lerp(A[n], B[n], k);
+  }
+  return o;
 }
 
-// where the sun stands, given the wind's direction (radians, sim.js: the way it comes from)
-export function sunVector(L, windDir, out = new THREE.Vector3()) {
-  const a = windDir + L.azimuth * Math.PI / 180, e = L.elevation * Math.PI / 180;
-  return out.set(Math.sin(a) * Math.cos(e), Math.sin(e), -Math.cos(a) * Math.cos(e)).normalize();
+// where the sun is at an hour of the sun's own time: [x east, y up, z south], and its height in degrees
+function sunAt(solar) {
+  const H = (solar - 12) * 15 * D;
+  const E = -Math.cos(DECL) * Math.sin(H);
+  const N = Math.cos(LAT) * Math.sin(DECL) - Math.sin(LAT) * Math.cos(DECL) * Math.cos(H);
+  const U = Math.sin(LAT) * Math.sin(DECL) + Math.cos(LAT) * Math.cos(DECL) * Math.cos(H);
+  return { dir: new THREE.Vector3(E, U, -N).normalize(), e: Math.asin(U) / D };
+}
+// the first and last hour (sun's time) of racing: the sun MIN_E degrees up
+const H0 = Math.acos((Math.sin(MIN_E * D) - Math.sin(LAT) * Math.sin(DECL)) / (Math.cos(LAT) * Math.cos(DECL))) / D / 15;
+export const HOURS = [12 - H0 + CLOCK, 12 + H0 + CLOCK]; // on the clock: about 6:20 to 19:50
+
+// The light at an hour of the clock (local time, 6.5 = 6:30), clear or overcast: the sun's direction (sunDir) and
+// everything the world needs to draw it
+export function skyAt(hour, overcast = false) {
+  const solar = Math.min(Math.max(hour - CLOCK, 12 - H0), 12 + H0);
+  const { dir, e } = sunAt(solar);
+  let i = 0; while (i < KEYS.length - 2 && e > KEYS[i + 1].e) i++;
+  const L = mix(KEYS[i], KEYS[i + 1], smooth(0, 1, (e - KEYS[i].e) / (KEYS[i + 1].e - KEYS[i].e)));
+  // the evening against the morning: more haze in the air after a day of sun, so a warmer, softer light
+  const eve = solar > 12 ? 1 - smooth(10, 30, e) : 0;
+  L.mie *= 1 + 0.3 * eve; L.horizon.lerp(new THREE.Color('#f6c39a'), 0.12 * eve); L.sun.lerp(new THREE.Color('#ff9a50'), 0.1 * eve);
+  if (overcast) { // the cloud deck: the sun gone, the light flat and grey, and dimmer the lower the sun is behind it
+    const O = mix(OVERCAST, OVERCAST, 0), k = 0.55 + 0.45 * smooth(MIN_E, 30, e), warm = 1 - smooth(MIN_E, 20, e);
+    Object.assign(L, mix(L, O, 0.88));
+    for (const c of ['top', 'horizon', 'cloudLit', 'cloudDark', 'hemiSky']) L[c].multiplyScalar(k);
+    L.horizon.lerp(new THREE.Color('#c9a68e').multiplyScalar(k), 0.25 * warm);
+    L.hemiI *= k; L.sunI *= k; L.exposure += 0.15 * (1 - k);
+  }
+  L.disc = overcast ? 0 : 1;
+  L.bloom = { threshold: L.thr, strength: L.str };
+  L.sunDir = dir; L.elevation = e; L.hour = hour; L.overcast = overcast;
+  return L;
+}
+
+// "18:40"
+export const clockText = (hour) => { const m = Math.round(hour * 60); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
+
+// the light for a race: ?hour=18.5 and ?sky=overcast|clear in the address win (for testing; the old ?light=day,
+// morning, golden, overcast still work); otherwise an hour and a sky chosen from the race's own numbers, so today's
+// race looks the same for everyone — any hour of the racing day alike, and overcast about one race in seven
+export function pickSky(race) {
+  const ph = (race.tidePh ?? Math.random() * 6.283) / 6.283;
+  let hour = HOURS[0] + ((ph * 7.31) % 1) * (HOURS[1] - HOURS[0]), overcast = ((ph * 13.73 + 0.37) % 1) < 0.14;
+  try {
+    const q = new URLSearchParams(location.search);
+    const old = { day: [14.5, 0], morning: [9.5, 0], golden: [19, 0], overcast: [14, 1] }[q.get('light')];
+    if (old) [hour, overcast] = [old[0], !!old[1]];
+    const h = parseFloat(q.get('hour')); if (h >= 0 && h < 24) hour = Math.min(Math.max(h, HOURS[0]), HOURS[1]);
+    if (q.get('sky') === 'overcast') overcast = true; else if (q.get('sky') === 'clear') overcast = false;
+  } catch (e) {}
+  return skyAt(hour, overcast);
 }
 
 // The sky, shared by the sky dome, the sea's reflection of it and the haze on the water: a gradient from the
