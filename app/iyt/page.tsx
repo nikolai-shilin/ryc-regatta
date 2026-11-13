@@ -8,10 +8,10 @@ import type { Lang, T } from '@/lib/lang';
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getT();
   return {
-    title: t('IYT exam practice', 'Тренажёр IYT'),
+    title: t('Sailing certification exam practice', 'Тренажёр к экзамену на яхтенный сертификат'),
     description: t(
-      'Free practice for the theory of IYT exams, VHF Radio Operator to Yachtmaster Ocean: situations in drawings, the reason after every answer, a mock exam.',
-      'Бесплатная подготовка к теории экзаменов IYT от VHF Radio Operator до Yachtmaster Ocean: ситуации в рисунках, пояснение после ответа, пробный экзамен.'),
+      'Free practice for the theory of sailing certification exams, VHF Radio Operator to Yachtmaster Ocean: situations in drawings, the reason after every answer, a mock exam.',
+      'Бесплатная подготовка к теории экзаменов на яхтенные сертификаты от VHF Radio Operator до Yachtmaster Ocean: ситуации в рисунках, пояснение после ответа, пробный экзамен.'),
   };
 }
 
@@ -67,7 +67,7 @@ export default async function Iyt() {
   const total = levels.reduce((a, l) => a + l[1], 0);
 
   const ld = {
-    '@context': 'https://schema.org', '@type': 'WebApplication', name: 'IYT Test', inLanguage: ['en', 'ru'],
+    '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Sailing Certification Test', inLanguage: ['en', 'ru'],
     applicationCategory: 'EducationalApplication', operatingSystem: 'Web, Telegram', url: 'https://iyt.rycrentals.com/',
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
   };
@@ -78,11 +78,11 @@ export default async function Iyt() {
       <SiteHead lang={lang} t={t} account={account} page="iyt" />
 
       <header className="hm-page hm-ph">
-        <span className="kicker">{t('IYT exam practice', 'Тренажёр IYT')}</span>
-        <h1 className="hm-ph-h">{t('Prepare for your IYT exam for free', 'Подготовьтесь к экзамену IYT бесплатно')}</h1>
+        <span className="kicker">{t('Sailing certification exam practice', 'Тренажёр к экзамену на яхтенный сертификат')}</span>
+        <h1 className="hm-ph-h">{t('Prepare for your sailing certification exam for free', 'Подготовьтесь к экзамену на яхтенный сертификат бесплатно')}</h1>
         <p className="hm-text iyt-lead">{t(
-          `IYT Test is our free trainer for the theory of IYT sailing certificates: ${n(total)} questions from VHF Radio Operator to Yachtmaster Ocean, with a short explanation after every answer. In English and Russian, no sign-up.`,
-          `IYT Test — наш бесплатный тренажёр теории к сертификатам IYT: ${n(total)} вопросов от VHF Radio Operator до Yachtmaster Ocean и короткое пояснение после каждого ответа. На русском и английском, без регистрации.`)}</p>
+          `Sailing Certification Test is our free trainer for the theory of sailing certificates: ${n(total)} questions from VHF Radio Operator to Yachtmaster Ocean, with a short explanation after every answer. In English and Russian, no sign-up.`,
+          `Sailing Certification Test — наш бесплатный тренажёр теории к яхтенным сертификатам: ${n(total)} вопросов от VHF Radio Operator до Yachtmaster Ocean и короткое пояснение после каждого ответа. На русском и английском, без регистрации.`)}</p>
         <Open lang={lang} t={t} />
       </header>
 
@@ -103,7 +103,7 @@ export default async function Iyt() {
           <div className="hm-sec-t">
             <span className="kicker">{t(`${levels.length} courses · ${n(total)} questions`, `${levels.length} курсов · ${n(total)} вопросов`)}</span>
             <h2 className="hm-h2" id="iyt-levels">{t('Levels', 'Уровни')}</h2>
-            <p className="hm-text iyt-lead">{t(`${n(total)} questions across every IYT theory level, plus the racing rules and a charter check-in course.`, `${n(total)} вопросов по всем уровням теории IYT, плюс правила парусных гонок и курс приёмки чартерной яхты.`)}</p>
+            <p className="hm-text iyt-lead">{t(`${n(total)} questions across every theory level from VHF Radio Operator to Yachtmaster Ocean, plus the racing rules and a charter check-in course.`, `${n(total)} вопросов по всем уровням теории от VHF Radio Operator до Yachtmaster Ocean, плюс правила парусных гонок и курс приёмки чартерной яхты.`)}</p>
           </div>
           <ul className="iyt-levels">
             {levels.map(([name, q, text]) => (
@@ -122,8 +122,8 @@ export default async function Iyt() {
           <span className="kicker">RYC</span>
           <h2 className="hm-h2" id="iyt-why">{t('Why a charter site makes an exam trainer', 'Зачем чартерному сайту тренажёр')}</h2>
           <p className="hm-text">{t(
-            'To charter a yacht without a hired skipper, the charter company asks for a skipper’s licence, and IYT certificates are among the common ones. The trainer helps with the theory part of the exam. Once you have the licence, discounted boats for your dates are on rycrentals.com.',
-            'Чтобы взять яхту в чартер без нанятого шкипера, чартерная компания попросит шкиперские права, и сертификаты IYT — одни из распространённых. Тренажёр помогает с теоретической частью экзамена. А когда права на руках, яхты со скидкой на ваши даты — на rycrentals.com.')}</p>
+            'To charter a yacht without a hired skipper, the charter company asks for a skipper’s licence, such as a sailing certificate. The trainer helps with the theory part of the exam. Once you have the licence, discounted boats for your dates are on rycrentals.com.',
+            'Чтобы взять яхту в чартер без нанятого шкипера, чартерная компания попросит шкиперские права — например, яхтенный сертификат. Тренажёр помогает с теоретической частью экзамена. А когда права на руках, яхты со скидкой на ваши даты — на rycrentals.com.')}</p>
           <p className="hm-text">{t(
             'The racing rules course asks about the same rules the boats in Up and down sail by.',
             'Курс правил парусных гонок спрашивает о тех же правилах, по которым ходят лодки в Up and down.')}</p>
@@ -133,8 +133,8 @@ export default async function Iyt() {
           <div className="iyt-card">
             <span className="hm-h3">{t('Written for study', 'Сделано для учёбы')}</span>
             <p className="hm-text">{t(
-              'The questions and articles are our own work, close to the IYT syllabus. They are not IYT exam content, and neither IYT nor World Sailing has reviewed them. The exam size, time and pass mark in the trainer are its own defaults.',
-              'Вопросы и статьи — наша работа, близкая к программе IYT. Это не экзаменационные материалы IYT, их не проверяли ни IYT, ни World Sailing. Число вопросов, время и проходной балл пробного экзамена — настройки тренажёра.')}</p>
+              'The questions and articles are our own work, close to the syllabus of the sailing certificates. They are not official exam content, and neither a certifying body nor World Sailing has reviewed them. The exam size, time and pass mark in the trainer are its own defaults.',
+              'Вопросы и статьи — наша работа, близкая к программе яхтенных сертификатов. Это не официальные экзаменационные материалы, их не проверяли ни сертифицирующие организации, ни World Sailing. Число вопросов, время и проходной балл пробного экзамена — настройки тренажёра.')}</p>
           </div>
           <div className="iyt-card">
             <span className="hm-h3">{t('Found a mistake?', 'Нашли ошибку?')}</span>

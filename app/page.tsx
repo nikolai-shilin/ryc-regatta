@@ -157,10 +157,10 @@ export default async function Home() {
           <div className="hm-help-main">
             <span className="kicker">Sailing Certification Test</span>
             <h2 className="hm-h2" id="h-rules">{t('Learn the rules there, race by them here', 'Учи правила там, гоняйся по ним здесь')}</h2>
-            <p className="hm-text">{t('Up and down is made by RYC alongside Sailing Certification Test, the app for IYT exam practice. The rules the computer boats follow are the ones on the exam.', 'Up and down делает RYC вместе с Sailing Certification Test — приложением для подготовки к экзаменам IYT. Компьютерные лодки ходят по тем же правилам, что спрашивают на экзамене.')}</p>
+            <p className="hm-text">{t('Up and down is made by RYC alongside Sailing Certification Test, the app for sailing certification exam practice. The rules the computer boats follow are the ones on the exam.', 'Up and down делает RYC вместе с Sailing Certification Test — приложением для подготовки к экзаменам на яхтенные сертификаты. Компьютерные лодки ходят по тем же правилам, что спрашивают на экзамене.')}</p>
             <a className="hm-app" href="https://iyt.rycrentals.com/">
               <span className="hm-app-ic"><Logo /></span>
-              <span className="hm-app-t"><span className="hm-app-n">Sailing Certification Test</span><span className="meta">{t('IYT exam practice · 6100 questions', 'Подготовка к IYT · 6100 вопросов')}</span></span>
+              <span className="hm-app-t"><span className="hm-app-n">Sailing Certification Test</span><span className="meta">{t('Exam practice · 6100 questions', 'Подготовка к экзамену · 6100 вопросов')}</span></span>
               <span className="hm-app-go" aria-hidden="true"><IconArrow s={20} /></span>
             </a>
           </div>

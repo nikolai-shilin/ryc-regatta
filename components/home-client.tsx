@@ -34,7 +34,7 @@ export function SiteMenu({ lang, initials }: { lang: Lang; initials: string | nu
           <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня')}</Link>
           <Link className="hm-mi" href="/race/free">{t('Free race', 'Свободная гонка')}</Link>
           <Link className="hm-mi" href="/faq">{t('Questions', 'Вопросы')}</Link>
-          <Link className="hm-mi" href="/iyt">{t('IYT Test', 'Тест IYT')}</Link>
+          <Link className="hm-mi" href="/iyt">{'Sailing Certification Test'}</Link>
         </nav>
       </div>
     </details>
