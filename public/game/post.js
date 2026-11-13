@@ -13,11 +13,21 @@ export const OVERLAY = 1; // the layer of what is drawn after the post (the boat
 export const MIRRORED = 2; // the layer of what the sea reflects
 
 const QUAD_VS = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+// a safety net: a NaN or an infinity from any shader would turn black in the tone mapping and spread through the
+// bloom as a halo, so they are dropped (a NaN fails every comparison; the selects are exact) and the rest capped
+const FINITE = /* glsl */ `
+vec3 finite(vec3 c) {
+  c.r = c.r >= 0.0 && c.r < 6e4 ? c.r : (c.r >= 6e4 ? 6e4 : 0.0);
+  c.g = c.g >= 0.0 && c.g < 6e4 ? c.g : (c.g >= 6e4 ? 6e4 : 0.0);
+  c.b = c.b >= 0.0 && c.b < 6e4 ? c.b : (c.b >= 6e4 ? 6e4 : 0.0);
+  return min(c, vec3(64.0));
+}`;
 
 // the bright part, with a soft knee, and a first step down (13 taps would be steadier; 4 bilinear taps + the
 // luminance-weighted average keep single glints from flickering)
 const PREFILTER_FS = /* glsl */ `
 uniform sampler2D uIn; uniform vec2 uTexel; uniform float uThr, uKnee; varying vec2 vUv;
+${FINITE}
 vec3 bright(vec3 c) {
   float br = max(c.r, max(c.g, c.b));
   float soft = clamp(br - uThr + uKnee, 0.0, 2.0 * uKnee); soft = soft * soft / (4.0 * uKnee + 1e-4);
@@ -27,7 +37,7 @@ void main() {
   vec3 s = vec3(0.0); float w = 0.0;
   for (int i = 0; i < 4; i++) {
     vec2 o = vec2(i == 1 || i == 3 ? 1.0 : -1.0, i >= 2 ? 1.0 : -1.0) * uTexel;
-    vec3 c = min(texture2D(uIn, vUv + o).rgb, vec3(64.0));
+    vec3 c = finite(texture2D(uIn, vUv + o).rgb);
     float k = 1.0 / (1.0 + max(c.r, max(c.g, c.b))); // Karis: a single blazing pixel doesn't dominate
     s += bright(c) * k; w += k;
   }
@@ -53,8 +63,9 @@ void main() {
 }`;
 const COMPOSITE_FS = /* glsl */ `
 uniform sampler2D uScene, uBloom; uniform float uBloomK, uVig, uAspect; varying vec2 vUv;
+${FINITE}
 void main() {
-  vec3 c = texture2D(uScene, vUv).rgb + texture2D(uBloom, vUv).rgb * uBloomK;
+  vec3 c = finite(texture2D(uScene, vUv).rgb) + finite(texture2D(uBloom, vUv).rgb) * uBloomK;
   vec2 q = (vUv - 0.5) * vec2(uAspect, 1.0);
   c *= 1.0 - uVig * smoothstep(0.45, 1.0, length(q) / (0.5 * length(vec2(uAspect, 1.0)))); // corners a touch darker, as a lens has them
   gl_FragColor = vec4(c, 1.0);

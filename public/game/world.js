@@ -42,6 +42,11 @@ uniform sampler2D uRefl; uniform mat4 uReflMat;
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
 ${SKY_GLSL}
 ${OCEAN_GLSL}
+vec4 hash42(vec2 p) { // Dave Hoskins' hash, steady for the course's sizes of coordinate
+  vec4 p4 = fract(vec4(p.xyxy) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+  p4 += dot(p4, p4.wzxy + 33.33);
+  return fract((p4.xxyz + p4.yzzw) * p4.zywx);
+}
 vec3 skyAt(vec3 d) {
   d.y = abs(d.y);
   vec3 c = skyBase(d);
@@ -121,13 +126,42 @@ void main() {
   vec3 body = uDeep * (0.75 + 0.25 * max(dot(n, uSun), 0.0)) + uScatter * sss * 0.45;
   vec3 col = mix(body, refl, F);
   // the sun: a sharp glint and a broader glitter
-  // specular antialiasing (Toksvig): where the normal changes faster than a pixel can show, the highlight is
-  // widened and dimmed to keep its energy, so far water shows a soft glitter path instead of crawling sparkles
+  // the sun's glitter. What glints are facets far smaller than the waves drawn here — capillary ripples — each a
+  // tiny mirror that shows the sun only while it is tilted just so, for a few hundredths of a second. dS: the
+  // slope a facet must have, against the surface's own, to send the sun to the eye. The facets' slopes spread with
+  // the wind (Cox–Munk), more in a gust, and more again where the drawn surface itself changes faster than a pixel
+  // (nv, specular antialiasing). Close by, the facets are points that flash and go; far off, where many share a
+  // pixel, they become their average: the soft glitter path. Both have the same mean, so the change can't be seen.
   vec3 fw = fwidth(n); float nv = clamp(dot(fw, fw), 0.0, 1.0);
-  float p1 = 1400.0 / (1.0 + 1400.0 * nv * 0.6), p2 = 160.0 / (1.0 + 160.0 * nv * 0.6);
   vec3 Hh = normalize(uSun + V);
-  float nh = max(dot(n, Hh), 0.0);
-  col += uSunCol * uGlint * (pow(nh, p1) * 9.0 * (p1 + 2.0) / 1402.0 + pow(nh, p2) * 0.5 * (p2 + 2.0) / 162.0);
+  float Fh = 0.02 + 0.98 * pow(1.0 - max(dot(V, Hh), 0.0), 5.0);
+  vec2 dS = -Hh.xz / max(Hh.y, 0.05) + n.xz / max(n.y, 0.05);
+  float U = max(0.0, (uChop - 0.1) * 60.0) * 0.514; // the wind, m/s
+  float sm2 = (0.0012 + 0.0011 * U) * (1.0 + 0.8 * gust) + nv * 0.5; // the facets' slope spread (per axis)
+  const float SS2 = 0.00035; // the sun's own size, as a spread of slope
+  float glit = SS2 / (sm2 + SS2) * exp(-dot(dS, dS) / (2.0 * (sm2 + SS2)));
+  // the facets live in cells that grow with the distance (each level twice the last, two levels blended), so a
+  // glint stays about a pixel across from the bow out to the horizon; every level keeps the same mean
+  float fpm = length(fwidth(p)); // a pixel's width on the water, metres
+  float lod = clamp(log2(fpm / 0.02), 0.0, 9.0), l0 = floor(lod);
+  float spark = 0.0, far = 1.0;
+  for (int L = 0; L < 2; L++) {
+    float lv = l0 + float(L), cs = 0.05 * exp2(lv), wl = L == 0 ? 1.0 - fract(lod) : fract(lod);
+    vec2 q = (p - uWind * uTime * 0.5) / cs + lv * 17.0; // drifting with the surface water
+    vec2 c = floor(q), f = fract(q);
+    vec4 h = hash42(c);
+    float ph = uTime * (5.0 + 7.0 * h.w) + h.z * 9.0; // each facet keeps its own time
+    vec4 g = hash42(c + floor(ph) * vec2(13.7, 7.3)); // a new tilt for each flash
+    vec2 r = sqrt(-2.0 * log(max(g.x, 1e-4))) * vec2(cos(6.2832 * g.y), sin(6.2832 * g.y)) * sqrt(sm2);
+    float gl = exp(-dot(dS - r, dS - r) / (2.0 * SS2));
+    float tw = sin(3.1416 * fract(ph)); tw *= tw; // it brightens and fades
+    float fp = fpm / cs, R = 0.2;
+    float spot = 1.0 - smoothstep(R - fp * 0.7, R + fp * 0.7, length(f - (0.25 + 0.5 * h.xy)));
+    spark += wl * gl * tw * spot / (3.1416 * R * R * 0.5);
+    if (L == 1) far = 1.0 - smoothstep(0.6, 1.2, fp); // past the last level: the average
+  }
+  glit = mix(glit, spark, far);
+  col += uSunCol * uGlint * min(Fh * 70.0 * glit, 14.0); // capped: a glint blooms into a small star, not a lamp
   // whitecaps: a few waves break here and there — on a crest, where a slow patch of the noise says so — with a
   // ragged edge, and leave fading foam behind them. Nothing stretched or small-tiled, so no rows of dashes.
   // the noise is read across and along the wind (pa), so a breaker is a short ragged line along the crest, not a blob
@@ -308,14 +342,14 @@ const WAKE_FS = /* glsl */ `
 uniform sampler2D uRipple; uniform float uTime, uMax; uniform vec2 uWind;
 varying float vAge, vSide, vKind, vStr; varying vec2 vXZ;
 void main() {
-  float k = clamp(vAge / uMax, 0.0, 1.0), edge = 1.0 - abs(vSide);
+  float k = clamp(vAge / uMax, 0.0, 1.0), edge = clamp(1.0 - abs(vSide), 0.0, 1.0); // clamped: pow() of a hair below 0 is NaN
   // the foam's texture drifts slowly downwind with the surface water
   float n1 = texture2D(uRipple, (vXZ - uWind * uTime * 0.25) / 3.2).w, n2 = texture2D(uRipple, (vXZ - uWind * uTime * 0.35) / 1.1).w;
   float a; vec3 col;
   if (vKind < 0.5) {
     // the wash: aerated turquoise water under foam that breaks up and thins as it ages and spreads
     float foam = smoothstep(0.42, 0.78, n1 * 0.55 + n2 * 0.45 + (1.0 - k) * 0.42 - (1.0 - edge) * 0.55);
-    float aer = edge * edge * (1.0 - k) * (1.0 - k) * 0.1 * smoothstep(1.0, 0.0, k * 2.0);
+    float aer = edge * edge * (1.0 - k) * (1.0 - k) * 0.1 * (1.0 - smoothstep(0.0, 1.0, k * 2.0));
     col = mix(vec3(0.22, 0.45, 0.52), vec3(0.93, 0.96, 0.98), foam);
     a = max(foam * (1.0 - k) * 0.95, aer) * smoothstep(0.0, 0.25, edge);
   } else {
@@ -528,11 +562,78 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
-function buoy(color = '#ff7a1a', h = 2.4) {
-  const g = new THREE.Group(), m = new THREE.MeshLambertMaterial({ color });
-  const c = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.1, h, 16), m); c.position.y = h / 2 - 0.4; g.add(c);
-  const top = new THREE.Mesh(new THREE.ConeGeometry(1.0, 0.9, 16), m); top.position.y = h - 0.4 + 0.45; g.add(top);
+// an inflatable racing mark: a glossy PVC cylinder in eight panels, each blown out a little between its seams, its
+// top rounded over to a slight dome with a lifting handle on it, sitting a fifth of its height in the water, with a
+// wet, greener band at the waterline (it lives out there). R: its radius; it is 2.1 R tall above the water.
+const BUOY_PANELS = 8;
+function buoy(color = '#ff7a1a', R = 1.05) {
+  const g = new THREE.Group();
+  const H = 2.1 * R, base = -0.45 * R, fil = 0.32 * R, pts = [];
+  pts.push(new THREE.Vector2(0.001, base), new THREE.Vector2(R * 0.82, base), new THREE.Vector2(R * 0.97, base + 0.08 * R));
+  for (let i = 0; i <= 10; i++) pts.push(new THREE.Vector2(R, base + 0.16 * R + (H - fil - base - 0.16 * R) * (i / 10)));
+  for (let i = 1; i <= 8; i++) { const a = (i / 8) * Math.PI / 2; pts.push(new THREE.Vector2(R - fil + Math.cos(a) * fil, H - fil + Math.sin(a) * fil)); }
+  for (let i = 1; i <= 4; i++) { const f = i / 4; pts.push(new THREE.Vector2((R - fil) * (1 - f) + 0.001, H + 0.07 * R * Math.sin(f * Math.PI / 2))); }
+  const geo = new THREE.LatheGeometry(pts, BUOY_PANELS * 8);
+  const P = geo.attributes.position, col = [], c0 = new THREE.Color(color), wet = new THREE.Color(color).multiplyScalar(0.55).lerp(new THREE.Color('#4d5a2e'), 0.35), c = new THREE.Color();
+  for (let i = 0; i < P.count; i++) {
+    const x = P.getX(i), y = P.getY(i), z = P.getZ(i), r = Math.hypot(x, z);
+    if (r > 0.05) { // the panels: full in the middle, drawn in at the seams
+      const s = ((Math.atan2(z, x) / (2 * Math.PI)) * BUOY_PANELS + 100) % 1, k = 0.95 + 0.05 * Math.sqrt(Math.sin(Math.PI * s));
+      P.setX(i, x * k); P.setZ(i, z * k);
+    }
+    c.copy(c0).lerp(wet, 1 - THREE.MathUtils.smoothstep(y, -0.05, 0.12)); // the waterline
+    c.multiplyScalar(1 - 0.12 * (1 - THREE.MathUtils.smoothstep(y, 0.1, 0.45))); // still wet just above it
+    col.push(c.r, c.g, c.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.computeVertexNormals();
+  const body = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.42, clearcoat: 0.6, clearcoatRoughness: 0.28 }));
+  body.castShadow = body.receiveShadow = true; g.add(body);
+  const rubber = new THREE.MeshStandardMaterial({ color: '#23262b', roughness: 0.7 });
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.17 * R, 0.035 * R, 8, 20, Math.PI), rubber);
+  handle.position.y = H + 0.06 * R; g.add(handle);
+  const valve = new THREE.Mesh(new THREE.CylinderGeometry(0.07 * R, 0.08 * R, 0.05 * R, 12), rubber);
+  valve.position.set(0.32 * R, H + 0.03 * R, 0.1 * R); g.add(valve);
+  g.userData.R = R;
   return g;
+}
+
+// where a mark meets the sea: a ring of water round it that rides the waves, darker against the PVC, with a band of
+// foam where the chop slaps against it — wider on the side the wind and the waves come from
+const MARK_FS = /* glsl */ `
+uniform sampler2D uRipple; uniform float uTime, uR; uniform vec2 uWind; varying vec2 vL, vXZ;
+void main() {
+  float d = length(vL) - uR;
+  if (d < -0.04) discard;
+  float n = texture2D(uRipple, (vXZ - uWind * uTime * 0.3) / 1.3).w * 0.6 + texture2D(uRipple, (vXZ - uWind * uTime * 0.5) / 0.45).w * 0.4;
+  float up = 0.5 - 0.5 * dot(normalize(vL + 1e-4), uWind); // 1 on the side the waves come from
+  float w = 0.12 + 0.28 * up;
+  float slap = 0.6 + 0.4 * sin(uTime * 2.1 + atan(vL.y, vL.x) * 2.0 + n * 5.0); // the chop reaching it in turn round its side
+  float foam = smoothstep(0.5, 0.95, exp(-max(d, 0.0) / w) * slap + n * 0.65 - 0.3) * 0.7;
+  float shade = (1.0 - smoothstep(-0.04, 0.7, d)) * 0.32;
+  float a = max(foam, shade) * (1.0 - smoothstep(1.2, 2.0, d));
+  if (a < 0.01) discard;
+  gl_FragColor = vec4(mix(vec3(0.02, 0.07, 0.1), vec3(0.93, 0.96, 0.98), foam / max(foam + shade, 0.001)), a);
+}`;
+class MarkContact {
+  constructor(R, uniforms) {
+    const NA = 40, NR = 7, R1 = R + 2.2, aL = [], idx = [];
+    for (let j = 0; j <= NR; j++) for (let i = 0; i < NA; i++) { const a = (i / NA) * 2 * Math.PI, r = R * 0.94 + (R1 - R * 0.94) * (j / NR) ** 1.6; aL.push(Math.cos(a) * r, Math.sin(a) * r); }
+    for (let j = 0; j < NR; j++) for (let i = 0; i < NA; i++) { const a = j * NA + i, b = j * NA + ((i + 1) % NA); idx.push(a, b, a + NA, b, b + NA, a + NA); } // facing up
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(aL.length * 1.5), 3));
+    g.setAttribute('aL', new THREE.Float32BufferAttribute(aL, 2));
+    g.setIndex(idx);
+    this.u = { uRipple: uniforms.uRipple, uTime: uniforms.uTime, uWind: uniforms.uWind, uR: { value: R },
+      uFftD: uniforms.uFftD, uFftS: uniforms.uFftS, uFftOn: uniforms.uFftOn, uFftL: uniforms.uFftL, uFftW: uniforms.uFftW };
+    this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ uniforms: this.u, vertexShader: CONTACT_VS, fragmentShader: MARK_FS, transparent: true, depthWrite: false }));
+    this.mesh.frustumCulled = false; this.mesh.renderOrder = 2;
+  }
+  update(p, t, W) {
+    const P = this.mesh.geometry.attributes.position, L = this.mesh.geometry.attributes.aL;
+    for (let i = 0; i < P.count; i++) { const x = p.x + L.getX(i), z = p.z + L.getY(i); P.setXYZ(i, x, waveHeight(W, x, z, t) + 0.04, z); }
+    P.needsUpdate = true;
+  }
 }
 
 // the stream past a mark: the water piles up on its up-tide side and runs off it in a V of ripples and a streak of
@@ -699,7 +800,7 @@ export class World {
       uGust: { value: Array.from({ length: 12 }, () => new THREE.Vector4()) }, uWind: { value: new THREE.Vector2(0, 1) }, uPivot: { value: new THREE.Vector2() },
       ...this.skyU, ...this.oceanU, ...this.reflU,
     };
-    this.water = new THREE.Mesh(waterGeometry(), new THREE.ShaderMaterial({ uniforms: this.waterU, vertexShader: WATER_VS, fragmentShader: WATER_FS, defines: { WAVES: NW } }));
+    this.water = new THREE.Mesh(waterGeometry(), new THREE.ShaderMaterial({ uniforms: this.waterU, vertexShader: WATER_VS, fragmentShader: WATER_FS, defines: { WAVES: NW }, extensions: { derivatives: true } }));
     this.water.frustumCulled = false;
     this.scene.add(this.water);
     this.shadeMat = new THREE.ShaderMaterial({
@@ -818,8 +919,12 @@ export class World {
     this.seaShadows = this.boatViews.map((v) => new SeaShadows(this.scene, v, this.shadeMat));
     const c = race.course, g = new THREE.Group();
     this.buoys = [];
-    const add = (obj, p, vee) => { obj.position.set(p.x, 0, p.z); g.add(mirrored(obj)); if (vee) g.add(vee); this.buoys.push({ obj, p, vee }); };
-    add(buoy(), c.windward, currentVee()); add(buoy(), c.gate[0], currentVee()); add(buoy(), c.gate[1], currentVee()); add(buoy('#ffb000', 2), c.pin, currentVee());
+    const add = (obj, p, vee) => {
+      obj.position.set(p.x, 0, p.z); g.add(mirrored(obj)); if (vee) g.add(vee);
+      const ring = obj.userData.R ? new MarkContact(obj.userData.R, this.wakeU) : null; if (ring) g.add(ring.mesh);
+      this.buoys.push({ obj, p, vee, ring });
+    };
+    add(buoy(), c.windward, currentVee()); add(buoy(), c.gate[0], currentVee()); add(buoy(), c.gate[1], currentVee()); add(buoy('#ffb000', 0.85), c.pin, currentVee());
     if (c.wing) add(buoy(), c.wing, currentVee());
     // the committee boat lies to her anchor head to wind, 5 m beyond the line's end: which side of her the pin is,
     // and where along her the line meets her, place her orange flag and her officers
@@ -959,8 +1064,9 @@ export class World {
     });
     // buoys bob and tilt with the sea under them; in a current a mark leans downstream on its mooring and trails a
     // little foam
-    for (const { obj, p, vee } of this.buoys) {
+    for (const { obj, p, vee, ring } of this.buoys) {
       obj.position.y = waveHeight(this.W, p.x, p.z, t) * (obj === this.committee ? 0.7 : 0.9);
+      if (ring) ring.update(p, t, this.W);
       if (obj === this.committee) { // she pitches and rolls a little on the swell, being long and heavy
         const W0 = this.cbW0, fx = Math.sin(W0), fz = -Math.cos(W0);
         obj.rotation.x = waveSlope(this.W, p.x, p.z, t, fx, fz) * 0.35;
