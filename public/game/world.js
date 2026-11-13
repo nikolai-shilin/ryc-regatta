@@ -158,16 +158,13 @@ void main() {
 }`;
 
 // distance lines across the beat: from the windward mark down to the start line, every 50 m (100 m on a long course),
-// each a row of white dashes like the start line's, with its distance to the mark written at both ends. They widen with the distance, as the laylines do.
+// each a line like the start line, with its distance to the mark written at both ends. They widen with the distance, as the laylines do.
 export const ladderStep = (beat) => (beat > 600 ? 100 : 50);
 function ladder(c) {
   const g = new THREE.Group(), beat = -c.windward.z, step = ladderStep(beat);
-  const dash = document.createElement('canvas'); dash.width = 64; dash.height = 4;
-  const dx = dash.getContext('2d'); dx.fillStyle = '#fff'; dx.fillRect(0, 0, 40, 4);
   for (let d = step; d < beat - 15; d += step) {
     const z = c.windward.z + d, half = Math.min(260, 30 + d * 0.95);
-    const tex = new THREE.CanvasTexture(dash); tex.wrapS = THREE.RepeatWrapping; tex.repeat.set((2 * half) / 5, 1); // a dash every 5 m, as on the start line
-    const line = new THREE.Mesh(new THREE.PlaneGeometry(2 * half, 0.5).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.75, depthWrite: false, fog: true }));
+    const line = new THREE.Mesh(lineStrip(2 * half), lineMat());
     line.position.set(c.windward.x, 0.65, z); line.renderOrder = 1; g.add(line);
     // the distance, just past each end of the line
     const lc = document.createElement('canvas'); lc.width = 160; lc.height = 56;
@@ -182,23 +179,37 @@ function ladder(c) {
   return g;
 }
 
-// the laylines to the windward mark: two rows of white dashes, like the start line's, from the edge of its zone down each side of the beat,
+// the laylines to the windward mark: two lines like the start line, from the edge of its zone down each side of the beat,
 // far enough to reach below the start line. Each is a long strip, laid on the waves and turned to the wind every frame.
 class Laylines {
   constructor(c, tws) {
     this.m = c.windward; this.up = beatAngle(tws) * D2R;
-    const L = (-c.windward.z + 80) / Math.cos(this.up), N = Math.ceil(L / 4), HW = 0.25; // 4 m pieces, 0.5 m wide
-    const dash = document.createElement('canvas'); dash.width = 64; dash.height = 4;
-    const dx = dash.getContext('2d'); dx.fillStyle = '#fff'; dx.fillRect(0, 0, 40, 4);
-    const tex = new THREE.CanvasTexture(dash); tex.wrapS = THREE.RepeatWrapping;
+    const L = (-c.windward.z + 80) / Math.cos(this.up), N = Math.ceil(L / 4), HW = LINE_W / 2; // 4 m pieces
     this.v = []; // per vertex: distance from the mark, offset across
+// every line drawn on the water — the start line, the distance lines, the laylines, the zones round the marks — looks
+// the same: white dashes half a metre wide, one every 5 m, faint enough that the sea reads through them
+const LINE_W = 0.5, DASH = 5, DASH_ON = 0.6, LINE_A = 0.2;
+let dashMat = null;
+function lineMat() { // one material for all the straight lines; their UVs count in dashes
+  if (dashMat) return dashMat;
+  const cv = document.createElement('canvas'); cv.width = 64; cv.height = 4;
+  const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, Math.round(64 * DASH_ON), 4);
+  const tex = new THREE.CanvasTexture(cv); tex.wrapS = THREE.RepeatWrapping;
+  return (dashMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: LINE_A, depthWrite: false, side: THREE.DoubleSide, fog: true }));
+}
+function lineStrip(len) { // a straight line len metres long, lying flat along x
+  const g = new THREE.PlaneGeometry(len, LINE_W).rotateX(-Math.PI / 2), uv = g.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setX(i, (uv.getX(i) * len) / DASH);
+  return g;
+}
+
     const pos = [], uv = [], idx = [];
     for (let i = 0; i <= N; i++) {
       const d = ZONE + (i / N) * L;
-      for (const o of [-HW, HW]) { this.v.push(d, o); pos.push(0, 0, 0); uv.push(d / 5, o < 0 ? 0 : 1); } // a dash every 5 m
+      for (const o of [-HW, HW]) { this.v.push(d, o); pos.push(0, 0, 0); uv.push(d / DASH, o < 0 ? 0 : 1); }
       if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     }
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.75, depthWrite: false, side: THREE.DoubleSide, fog: true });
+    const mat = lineMat();
     this.group = new THREE.Group();
     this.lines = [-1, 1].map((sd) => {
       const g = new THREE.BufferGeometry();
@@ -223,16 +234,17 @@ class Laylines {
   }
 }
 
-// the zone round the gate and wing marks — three hull lengths (none at the windward mark: no mark-room there) — as a ring of dashes riding the waves: one mesh for all
-// of them; the rings of the mark you sail for now are brighter
+// the zone round the gate and wing marks — three hull lengths (none at the windward mark: no mark-room there) — as a ring of dashes riding the waves,
+// dashed like the other lines: one mesh for all of them; the rings of the mark you sail for now are as bright as the lines, the others fainter
+const RING_ON = LINE_A, RING_OFF = LINE_A * 0.4;
 class ZoneRings {
   constructor(marks) {
-    const N = 72, pos = [], col = [], idx = [];
+    const N = Math.round((2 * Math.PI * ZONE) / DASH), pos = [], col = [], idx = [], hw = LINE_W / 2;
     this.marks = marks; this.v = [];
     marks.forEach((m, k) => {
       for (let i = 0; i < N; i++) {
-        const a0 = (i / N) * 2 * Math.PI, a1 = ((i + 0.5) / N) * 2 * Math.PI, o = pos.length / 3;
-        for (const [a, r] of [[a0, ZONE - 0.3], [a0, ZONE + 0.3], [a1, ZONE - 0.3], [a1, ZONE + 0.3]]) { this.v.push(k, Math.sin(a) * r, -Math.cos(a) * r); pos.push(0, 0, 0); col.push(1, 1, 1, 0.3); }
+        const a0 = (i / N) * 2 * Math.PI, a1 = ((i + DASH_ON) / N) * 2 * Math.PI, o = pos.length / 3;
+        for (const [a, r] of [[a0, ZONE - hw], [a0, ZONE + hw], [a1, ZONE - hw], [a1, ZONE + hw]]) { this.v.push(k, Math.sin(a) * r, -Math.cos(a) * r); pos.push(0, 0, 0); col.push(1, 1, 1, RING_OFF); }
         idx.push(o, o + 1, o + 2, o + 1, o + 3, o + 2);
       }
     });
@@ -249,7 +261,7 @@ class ZoneRings {
     for (let i = 0; i < this.v.length / 3; i++) {
       const m = this.marks[this.v[i * 3]], x = m.x + this.v[i * 3 + 1], z = m.z + this.v[i * 3 + 2];
       P.setXYZ(i, x, waveHeight(W, x, z, t) + 0.12, z);
-      if (key !== this.next) C.setW(i, next.includes(this.v[i * 3]) ? 0.8 : 0.28);
+      if (key !== this.next) C.setW(i, next.includes(this.v[i * 3]) ? RING_ON : RING_OFF);
     }
     P.needsUpdate = true; if (key !== this.next) { C.needsUpdate = true; this.next = key; }
   }
@@ -575,34 +587,23 @@ function island(rand, R, H, color) {
 }
 
 // ---------- guides around your boat ----------
-// Built with the wind from the north and turned to the wind each frame: a half-transparent 3D arrow upwind of the
-// boat, pointing the way the wind blows; and a ring: red where she can't sail (too close to the wind), green marks
+// Built with the wind from the north and turned to the wind each frame: a ring, faint enough to read the sea through: red where she can't sail (too close to the wind), green marks
 // at the best angle upwind on each tack, blue marks at the best angle downwind on each gybe; a white pointer for
 // your heading. Compass c in this frame sits at ring angle π/2 − c.
 const R_IN = 10.5, R_OUT = 12.4;
 const glass = (color, opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide, fog: false });
 const sector = (r0, r1, c0, c1, mat) => new THREE.Mesh(new THREE.RingGeometry(r0, r1, Math.max(6, Math.ceil(Math.abs(c1 - c0) / (2 * D2R))), 1, Math.PI / 2 - c1, c1 - c0).rotateX(-Math.PI / 2), mat);
-function windArrow() {
-  const s = new THREE.Shape(); // pointing −y in the drawing: towards the boat once laid on the water
-  s.moveTo(0, -3.4); s.lineTo(1.7, -0.6); s.lineTo(0.6, -0.6); s.lineTo(0.6, 3.2); s.lineTo(-0.6, 3.2); s.lineTo(-0.6, -0.6); s.lineTo(-1.7, -0.6); s.closePath();
-  const g = new THREE.ExtrudeGeometry(s, { depth: 0.06, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.1, bevelSegments: 2 });
-  g.rotateX(-Math.PI / 2);
-  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: '#dff3ff', emissive: '#7cc8f0', emissiveIntensity: 0.35, roughness: 0.3, transparent: true, opacity: 0.5, depthWrite: false }));
-  m.renderOrder = 3;
-  return m;
-}
 function guides(tws) {
   const g = new THREE.Group(), turn = new THREE.Group(); g.add(turn); // turn: rotated to the wind
   const beat = beatAngle(tws) * D2R, run = runAngle(tws) * D2R;
-  turn.add(sector(R_IN, R_OUT, -beat, beat, glass('#ff4d3d', 0.3))); // no-go: too close to the wind
+  turn.add(sector(R_IN, R_OUT, -beat, beat, glass('#ff4d3d', 0.14))); // no-go: too close to the wind
   for (const sd of [-1, 1]) {
     // thin and half-see-through, only a touch beyond the ring: read at a glance without shouting over the sea
-    turn.add(sector(R_IN - 0.15, R_OUT + 0.25, sd * beat - 1.2 * D2R, sd * beat + 1.2 * D2R, glass('#2ee6a0', 0.42))); // best upwind
-    turn.add(sector(R_IN - 0.15, R_OUT + 0.25, sd * run - 1.2 * D2R, sd * run + 1.2 * D2R, glass('#3aa8ff', 0.42))); // best downwind
+    turn.add(sector(R_IN - 0.15, R_OUT + 0.25, sd * beat - 1.2 * D2R, sd * beat + 1.2 * D2R, glass('#2ee6a0', 0.22))); // best upwind
+    turn.add(sector(R_IN - 0.15, R_OUT + 0.25, sd * run - 1.2 * D2R, sd * run + 1.2 * D2R, glass('#3aa8ff', 0.22))); // best downwind
   }
-  turn.add(sector(R_IN, R_OUT, Math.PI - (Math.PI - run), Math.PI + (Math.PI - run), glass('#3aa8ff', 0.12))); // the slow dead run between the gybes
-  const arrow = windArrow(); arrow.position.set(0, 0, -(R_OUT + 6)); turn.add(arrow);
-  const tick = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.4, 3).rotateX(-Math.PI / 2), glass('#ffffff', 0.85)); // your heading
+  turn.add(sector(R_IN, R_OUT, Math.PI - (Math.PI - run), Math.PI + (Math.PI - run), glass('#3aa8ff', 0.06))); // the slow dead run between the gybes
+  const tick = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.4, 3).rotateX(-Math.PI / 2), glass('#ffffff', 0.5)); // your heading
   g.add(tick);
   // every piece is draped on the sea each frame (see drapeGuides), so the dial lies on the water as one layer: it
   // rides the waves instead of floating flat above the troughs and being cut by the crests
@@ -612,7 +613,7 @@ function guides(tws) {
     m.renderOrder = Math.max(m.renderOrder, 2); m.frustumCulled = false;
     m.userData.base = m.geometry.attributes.position.array.slice(); drape.push(m);
   });
-  g.userData = { turn, arrow, tick, drape };
+  g.userData = { turn, tick, drape };
   return g;
 }
 
@@ -829,11 +830,8 @@ export class World {
     add(this.committee, { x: c.committee.x + c.dir.x * 5, z: c.committee.z + c.dir.z * 5 });
     this.committee.rotation.y = -W0;
     // the line, as a row of floating dashes
-    const dash = document.createElement('canvas'); dash.width = 64; dash.height = 4;
-    const dx = dash.getContext('2d'); dx.fillStyle = '#fff'; dx.fillRect(0, 0, 40, 4);
-    const tex = new THREE.CanvasTexture(dash); tex.wrapS = THREE.RepeatWrapping; tex.repeat.set(28, 1);
     const len = Math.hypot(c.committee.x - c.pin.x, c.committee.z - c.pin.z);
-    this.line = new THREE.Mesh(new THREE.PlaneGeometry(len, 0.5).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.75, depthWrite: false, fog: true }));
+    this.line = new THREE.Mesh(lineStrip(len), lineMat());
     this.line.rotation.y = -Math.atan2(c.dir.z, c.dir.x); this.line.position.set((c.pin.x + c.committee.x) / 2, 0.7, (c.pin.z + c.committee.z) / 2);
     g.add(this.line);
     // the arrows over the next mark
@@ -1034,8 +1032,6 @@ export class World {
       G.visible = this.showGuides && this.mode !== 'helm' && !P.done;
       G.position.set(P.x, 0, P.z);
       U.turn.rotation.y = -P.wdir;
-      U.arrow.position.z = -(R_OUT + 6) + ((t * 1.6) % 2.4); // drifting gently downwind
-      U.arrow.material.opacity = 0.5 * Math.min(1, (2.4 - ((t * 1.6) % 2.4)) * 2); // and fading as it slides in
       U.tick.position.set(Math.sin(P.h) * (R_OUT + 0.9), 0, -Math.cos(P.h) * (R_OUT + 0.9)); U.tick.rotation.y = -P.h;
       if (G.visible) drapeGuides(G, this.W, t);
     }
