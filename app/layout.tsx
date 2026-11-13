@@ -17,10 +17,19 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#ffffff' };
 
+// The IYT mini app opens this site with Telegram's launch data in the hash (#tgWebAppData=…), but the race itself is
+// on /play, a page or two later, where the hash is gone. Telegram's own script (loaded by the race page) reads the
+// launch data from the hash or, failing that, from sessionStorage under __telegram__initParams, so whichever page
+// the player lands on keeps it there in the same shape; then the race knows the Telegram player and names their races.
+const KEEP_TG_LAUNCH = `try{var h=new URLSearchParams(location.hash.slice(1));if(h.get('tgWebAppData')){var k='__telegram__initParams',p=JSON.parse(sessionStorage.getItem(k)||'{}')||{};h.forEach(function(v,n){p[n]=v});sessionStorage.setItem(k,JSON.stringify(p))}}catch(e){}`;
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const lang = await getLang();
   return (
     <html lang={lang} className={`${merri.variable} ${carlito.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: KEEP_TG_LAUNCH }} />
+      </head>
       <body>
         {children}
         <Analytics />
