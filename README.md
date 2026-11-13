@@ -10,7 +10,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 | --- | --- | --- |
 | `/` | Home: the game described in detail | `app/page.tsx` |
 | `/race` | The race hub: today's race, today's fastest, a free race | `app/race/page.tsx` |
-| `/race/free` | Set up a free race (wind, fleet, course, laps, start, current) | `components/free-setup.tsx` |
+| `/race/free` | Set up a free race (venue, wind, fleet, course, laps, start, current) | `components/free-setup.tsx` |
 | `/race/result/[id]` | The result and debrief after a race | `components/result-view.tsx` |
 | `/boat` | Your boat: colours, logo, sail number and team, beside the game's own yacht in 3D (`/boat-view`) | `components/boat-editor.tsx` |
 | `/settings` | Account, sailing, screen and sound, language | `components/settings-form.tsx` |
@@ -46,7 +46,19 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 - **Styles:** `styles/tokens.css` is the RYC design system's tokens and `styles/ryc.css` holds the pages. Layouts follow
   the screen through container queries: phone sideways, phone upright, desktop.
 - **The yacht:** `public/game/yacht.glb` is made by `blender/yacht.py`. Run it in Blender; it writes the file in place.
-- **The land:** every race is sailed in Göcek bay, off Skopea Marina. `public/game/skopea.bin` and `skopea.json` (the
+- **The venues:** today's race is always sailed in Göcek bay; a free race goes to the venue the set-up chose (`venue`
+  in the `regatta` options; `?venue=<id>` in the game's address overrides it): Göcek, Cowes, Newport, Sydney, Kiel,
+  Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland or Lake Garda. `public/game/venues.js` holds each one's position,
+  prevailing wind, clock and look (its woods, farmland, houses, moored boats and water); `lib/venues.ts` is the set-up
+  page's list of them, and `npm test` keeps the two in step. Each venue's land is baked by
+  `python3 blender/venues.py <work dir> [id ...]` into `public/game/venues/<id>.json` and `.bin`, the same way as
+  Göcek's (below), but centred on the race area and turned so the venue's prevailing wind comes from the game's north,
+  where every race's wind is; the sun turns with it, and stands where it does at that latitude in the sailing season.
+  The json also lists the towns and the landmarks `skopea.js` draws: the Harbour Bridge, the Newport Bridge, the Sky
+  Tower, Laboe's memorial and the lighthouses of Kiel and Trieste. `npm test` sails every course at every venue and
+  checks its marks are in clear water. Moving between today's race and a free race in the game reloads the page when
+  the venue changes.
+- **The land:** Göcek bay, off Skopea Marina. `public/game/skopea.bin` and `skopea.json` (the
   hills, the coast, the marinas' pontoons and the town) are made by `python3 blender/skopea.py <work dir>`, from the
   Terrarium elevation tiles and OpenStreetMap; it needs numpy and Pillow and keeps its downloads in the work dir.
   `land.js` lays each course in clear water there, `skopea.js` draws the land.

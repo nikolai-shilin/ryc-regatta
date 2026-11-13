@@ -1,13 +1,18 @@
-// Regatta: the light a race is sailed in — the time of day over Göcek bay, clear or overcast — and the sky that goes
+// Regatta: the light a race is sailed in — the time of day at the race's venue, clear or overcast — and the sky that goes
 // with it. The hour puts the sun where it really stands (east in the morning, high in the south at midday, west in
 // the evening); its height above the horizon then sets everything else — the sun's colour and strength, the sky and
 // its haze, the clouds, the sea's own colours and the exposure — so they always agree with each other.
 import * as THREE from 'three';
+import { VENUE } from './venues.js';
 
 const D = Math.PI / 180;
-const LAT = 36.75 * D; // Göcek
-const DECL = 20 * D; // the sun's declination in the sailing season (late May, mid July)
-const CLOCK = 1.07; // the clock is this many hours ahead of the sun there (UTC+3 at 28.9° E)
+const LAT = VENUE.lat * D; // Göcek, 36.75° N, or the venue's
+const DECL = Math.sign(VENUE.lat) * 20 * D; // the sun's declination in the sailing season (late May to mid July; south of the equator, December to February)
+const CLOCK = VENUE.tz - VENUE.lon / 15; // the clock is this many hours ahead of the sun there (UTC+3 at 28.9° E: 1.07)
+// the venue's land is turned so its prevailing wind comes from the game's north (venues.js); the sun turns with it
+const TURN = VENUE.wind * D;
+// and its sea's own colours, where it has them
+const WATER = VENUE.look.water;
 const MIN_E = 3; // degrees: the earliest and latest a race goes, the sun just clear of the horizon
 
 // The looks at a few heights of the sun (degrees); the hours between are blended from them.
@@ -53,7 +58,8 @@ function sunAt(solar) {
   const E = -Math.cos(DECL) * Math.sin(H);
   const N = Math.cos(LAT) * Math.sin(DECL) - Math.sin(LAT) * Math.cos(DECL) * Math.cos(H);
   const U = Math.sin(LAT) * Math.sin(DECL) + Math.cos(LAT) * Math.cos(DECL) * Math.cos(H);
-  return { dir: new THREE.Vector3(E, U, -N).normalize(), e: Math.asin(U) / D };
+  const x = E, z = -N, c = Math.cos(TURN), s = Math.sin(TURN);
+  return { dir: new THREE.Vector3(x * c + z * s, U, z * c - x * s).normalize(), e: Math.asin(U) / D };
 }
 // the first and last hour (sun's time) of racing: the sun MIN_E degrees up
 const H0 = Math.acos((Math.sin(MIN_E * D) - Math.sin(LAT) * Math.sin(DECL)) / (Math.cos(LAT) * Math.cos(DECL))) / D / 15;
@@ -76,6 +82,7 @@ export function skyAt(hour, overcast = false) {
     L.horizon.lerp(new THREE.Color('#c9a68e').multiplyScalar(k), 0.25 * warm);
     L.hemiI *= k; L.sunI *= k; L.exposure += 0.15 * (1 - k);
   }
+  if (WATER) { L.deep.lerp(new THREE.Color(WATER.deep), WATER.k); L.scatter.lerp(new THREE.Color(WATER.scatter), WATER.k); }
   L.foam = foamLight(L, e);
   L.disc = overcast ? 0 : 1;
   L.bloom = { threshold: L.thr, strength: L.str };

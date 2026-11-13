@@ -3,6 +3,7 @@ import { Race, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE,
 import { World, defaultQuality, ladderStep } from './world.js';
 import { raceStarted, raceFinished, raceResult } from './stats.js';
 import { createHudNext } from './hud-next.js';
+import { VENUE, venueById } from './venues.js';
 
 const $ = (s) => document.querySelector(s);
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
@@ -225,6 +226,8 @@ for (const g of document.querySelectorAll('.choice[data-opt]')) {
     const b = e.target.closest('button'); if (!b) return;
     if (opts.mode === 'daily' && DAILY_KEYS.includes(k)) { Object.assign(opts, Object.fromEntries(DAILY_KEYS.map((x) => [x, settings()[x]]))); opts.mode = 'free'; } // changing today's settings makes it a free race
     opts[k] = k === 'preset' || k === 'gfx' || k === 'length' || k === 'mode' || k === 'course' ? b.dataset.v : +b.dataset.v; paintOpts(); saveOpts();
+    // today's race is in Göcek, a free race where the set-up chose: another venue's land needs the page loaded again
+    if (k === 'mode' && !new URLSearchParams(location.search).get('venue') && (opts.mode === 'daily' ? 'gocek' : venueById(opts.venue).id) !== VENUE.id) { location.href = '/play?race=' + opts.mode; return; }
     if (k === 'gfx') { world.setQuality(startQuality()); perf.settle = 2; }
     if (k === 'guides') world.showGuides = !!opts.guides;
     if (k === 'sound') audio.setOn(!!opts.sound);

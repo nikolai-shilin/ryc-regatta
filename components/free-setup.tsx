@@ -3,11 +3,13 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ruBoats, tx, type Lang } from '@/lib/lang';
 import { readOpts, readPb, saveOpts } from '@/lib/opts';
+import type { VenueId } from '@/lib/venues';
+import { venueOf, VENUES } from '@/lib/venues';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, type Length, type Shape, type Wind } from '@/lib/race';
 import { CourseMap } from './course-map';
-import { IconBack, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconTrophy, clock } from './ui';
+import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconTrophy, clock } from './ui';
 
-type Pick = { preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape };
+type Pick = { venue: VenueId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape };
 
 // a rough guide to the race's length on the water, so a choice shows its effect
 const minutes = (p: Pick) => Math.round(({ short: 4.5, medium: 7, long: 9.5 }[p.length] * p.laps * { light: 1.25, medium: 1, strong: 0.9 }[p.preset] * (p.course === 'tri' ? 1.3 : 1)) + p.start);
@@ -15,12 +17,13 @@ const minutes = (p: Pick) => Math.round(({ short: 4.5, medium: 7, long: 9.5 }[p.
 // S1 · Free race set-up: only the race. Start saves the choice where the game reads it and opens the race.
 export default function FreeSetup({ lang, fromToday, head }: { lang: Lang; fromToday: boolean; head?: ReactNode }) {
   const t = tx(lang);
-  const [p, setP] = useState<Pick>({ preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' });
+  const [p, setP] = useState<Pick>({ venue: 'gocek', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' });
   useEffect(() => {
     const o = readOpts();
     const d = dailyRace();
-    setP(fromToday ? { preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course }
-      : { preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: o.course === 'tri' ? 'tri' : 'wl' });
+    const venue = venueOf(o.venue).id;
+    setP(fromToday ? { venue, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course }
+      : { venue, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: o.course === 'tri' ? 'tri' : 'wl' });
   }, [fromToday]);
   const set = <K extends keyof Pick>(k: K, v: Pick[K]) => setP((x) => ({ ...x, [k]: v }));
   const go = () => { saveOpts({ ...p, mode: 'free', lastFree: Date.now() }); location.href = '/play?race=free'; };
@@ -41,6 +44,7 @@ export default function FreeSetup({ lang, fromToday, head }: { lang: Lang; fromT
   useEffect(() => { setPb(readPb()); }, []);
   const best = pb[`${p.preset}|${p.laps}|${p.length}|${p.fleet}${p.course === 'tri' ? '|tri' : ''}`];
   const geo = plannedCourse(p.preset, p.length, p.fleet, p.course);
+  const where = venueOf(p.venue);
   const courseName = { short: t('Short', 'Короткая'), medium: t('Medium', 'Средняя'), long: t('Long', 'Длинная') }[p.length];
 
   return (
@@ -55,8 +59,10 @@ export default function FreeSetup({ lang, fromToday, head }: { lang: Lang; fromT
                 <span className="kicker">{t('Free race', 'Свободная гонка')}</span>
               </div>
               <h1 className="aph-h" id="fs-title">{t('Set up your race', 'Настрой гонку')}</h1>
-              <p className="aph-p">{t('Pick the wind, the fleet and the course. The game keeps your best time on every course; it doesn’t go on today’s ranking.', 'Выбери ветер, флот и дистанцию. Игра помнит лучшее время на каждой дистанции; в рейтинг дня оно не попадает.')}</p>
+              <p className="aph-p">{t('Pick the place, the wind, the fleet and the course. The game keeps your best time on every course; it doesn’t go on today’s ranking.', 'Выбери место, ветер, флот и дистанцию. Игра помнит лучшее время на каждой дистанции; в рейтинг дня оно не попадает.')}</p>
             </div>
+            {tags('venue', <IconPin />, t('Where', 'Где'), VENUES.map((v) => [v.id, t(...v.name)] as [VenueId, string]),
+              <p className="hint">{t(...where.place)} · {t(`prevailing wind ${where.wind[0]}`, `преобладающий ветер ${where.wind[1]}`)}. {t(...where.about)}</p>)}
             {tags('preset', <IconWind s={14} />, t('Wind', 'Ветер'), [['light', t('Light 7 kn', 'Слабый 7 уз')], ['medium', t('Medium 12 kn', 'Средний 12 уз')], ['strong', t('Strong 19 kn', 'Сильный 19 уз')]])}
             {tags('fleet', <IconBoats />, t('Boats', 'Лодки'), [[3, t('3 boats', '3 лодки')], [5, t('5 boats', '5 лодок')], [7, t('7 boats', '7 лодок')]])}
             {tags('course', <IconRoute />, t('Shape', 'Форма'), [['wl', t('Up and down', 'Апвинд — даунвинд')], ['tri', t('Triangle', 'Треугольник')]],
@@ -70,6 +76,7 @@ export default function FreeSetup({ lang, fromToday, head }: { lang: Lang; fromT
           <aside className="fs-aside" aria-label={t('Your race', 'Твоя гонка')}>
             <span className="kicker fs-k">{t('Your race', 'Твоя гонка')}</span>
             <ul className="band qrows">
+              <li className="qrow"><span className="meta">{t('Where', 'Где')}</span><span className="qrow-v">{t(...where.name)}, {t(...where.place)}</span></li>
               <li className="qrow"><span className="meta">{t('Wind', 'Ветер')}</span><span className="qrow-v">{{ light: t('Light 7 kn', 'Слабый 7 уз'), medium: t('Medium 12 kn', 'Средний 12 уз'), strong: t('Strong 19 kn', 'Сильный 19 уз') }[p.preset]}</span></li>
               <li className="qrow"><span className="meta">{t('Boats', 'Лодки')}</span><span className="qrow-v">{p.fleet}</span></li>
               <li className="qrow"><span className="meta">{t('Course', 'Дистанция')}</span><span className="qrow-v">{p.course === 'tri' ? t('Triangle', 'Треугольник') : t('Up and down', 'Апвинд — даунвинд')}, {courseName.toLowerCase()}</span></li>

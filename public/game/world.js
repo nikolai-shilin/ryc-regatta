@@ -528,10 +528,13 @@ function foamSprite() {
 }
 
 // A disc of water, dense in the middle and sparse at the edge; it follows the camera.
-function waterGeometry(R = 3000, rings = 200, segs = 256) {
+// fine near the boat, out to R; then a few coarse rings on out to `far`, flat water for the venues whose sea reaches
+// further than R from the course (Sydney's harbour up to its bridge)
+function waterGeometry(R = 3000, rings = 200, segs = 256, far = 9000, outer = 30) {
   const pos = [0, 0, 0], idx = [];
+  rings += outer;
   for (let i = 1; i <= rings; i++) {
-    const r = R * (i / rings) ** 2.6;
+    const r = i <= rings - outer ? R * (i / (rings - outer)) ** 2.6 : R + (far - R) * ((i - rings + outer) / outer) ** 1.4;
     for (let j = 0; j < segs; j++) { const a = (j / segs) * Math.PI * 2; pos.push(Math.cos(a) * r, 0, Math.sin(a) * r); }
   }
   for (let j = 0; j < segs; j++) idx.push(0, 1 + ((j + 1) % segs), 1 + j);

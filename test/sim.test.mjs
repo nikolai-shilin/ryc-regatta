@@ -46,3 +46,36 @@ for (const preset of ['light', 'medium', 'strong']) {
     assert.ok(Math.min(...times) > floor * 1.5, `fastest ${Math.min(...times)} s, floor ${floor} s`);
   });
 }
+
+// The venues a free race can go to (public/game/venues.js; the set-up page's list is lib/venues.ts). Each one's land,
+// baked by blender/venues.py, must be there, at the venue's own position and turned to its wind; and every course,
+// in every wind, must be laid with its marks well clear of the shore. Each venue is sailed in a Node of its own, since
+// the game picks its venue once, from the address, as the page loads.
+test('the set-up page lists the game’s venues', async () => {
+  const { VENUES } = await import('../public/game/venues.js');
+  const page = await readFile(new URL('../lib/venues.ts', import.meta.url), 'utf8');
+  assert.deepEqual([...page.matchAll(/\{ id: '([a-z-]+)', name: \['([^']+)', '([^']+)'\]/g)].map((m) => [m[1], m[2], m[3]]), VENUES.map((v) => [v.id, ...v.name]));
+});
+
+const { execFileSync } = await import('node:child_process');
+const { VENUES } = await import('../public/game/venues.js');
+for (const v of VENUES.filter((x) => x.id !== 'gocek')) {
+  test(`${v.name[0]}: the land is baked, and every course is laid in clear water`, () => {
+    const code = `
+      import { readFile } from 'node:fs/promises';
+      globalThis.location = { search: '?venue=${v.id}' };
+      globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))));
+      const sim = await import(${JSON.stringify(new URL('../public/game/sim.js', import.meta.url).href)});
+      const { SKOPEA } = await import(${JSON.stringify(new URL('../public/game/land.js', import.meta.url).href)});
+      let worst = Infinity;
+      for (const preset of ['light', 'medium', 'strong']) for (const length of ['short', 'medium', 'long']) for (const course of ['wl', 'tri']) {
+        const r = new sim.Race({ preset, length, course, fleet: 7, laps: 1, seed: 1 }), c = r.course;
+        for (const m of [c.windward, ...c.gate, c.pin, c.committee, ...(c.wing ? [c.wing] : [])]) worst = Math.min(worst, r.roomAt(m.x, m.z));
+      }
+      console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn, worst }));`;
+    const out = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' }));
+    assert.deepEqual(out.origin, [v.lat, v.lon], 'baked at the venue’s position');
+    assert.equal(out.turn, v.wind, 'turned to the venue’s wind');
+    assert.ok(out.worst >= 60, `a mark only ${Math.round(out.worst)} m from the shore`);
+  });
+}

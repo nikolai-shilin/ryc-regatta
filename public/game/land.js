@@ -1,11 +1,15 @@
-// The land round the course: Göcek bay (Skopea Limanı) in Turkey, the real coast, hills and marinas, baked by
-// blender/skopea.py into skopea.json and skopea.bin. This module holds the numbers only (no three.js), for the race:
-// how much sea room there is anywhere, and where in the bay a course fits.
+// The land round the course: the real coast, hills and marinas of the race's venue (venues.js). Göcek bay (Skopea
+// Limanı) in Turkey is baked by blender/skopea.py into skopea.json and skopea.bin, the other venues by
+// blender/venues.py into venues/<id>.json and .bin. This module holds the numbers only (no three.js), for the race:
+// how much sea room there is anywhere, and where in the venue's water a course fits.
 //
-// The bay's own frame: metres from Göcek, x east and z south, like the race's (the wind from the north). A race
-// is laid at an offset (ox, oz) in it: a point (x, z) of the race is (x + ox, z + oz) in the bay.
+// The venue's own frame: metres, x east and z south in Göcek (from the town); elsewhere from the middle of the race
+// area, turned so the prevailing wind comes from the north like the race's. A race is laid at an offset (ox, oz) in
+// it: a point (x, z) of the race is (x + ox, z + oz) in the venue.
+import { VENUE, landFiles } from './venues.js';
+export { VENUE };
 
-const base = new URL('./', import.meta.url);
+const base = new URL('./', import.meta.url), [JSON_FILE, BIN_FILE] = landFiles();
 // skopea.bin comes gzipped (a host sends a .bin as it is), unless the host has already unpacked it on the way
 async function unpack(r) {
   const b = await r.arrayBuffer(), u = new Uint8Array(b, 0, 2);
@@ -13,8 +17,8 @@ async function unpack(r) {
   return new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
 }
 const [META, BIN] = await Promise.all([
-  fetch(new URL('skopea.json', base)).then((r) => r.json()),
-  fetch(new URL('skopea.bin', base)).then(unpack),
+  fetch(new URL(JSON_FILE, base)).then((r) => r.json()),
+  fetch(new URL(BIN_FILE, base)).then(unpack),
 ]);
 const T = META.terrain, M = META.room;
 // each row is stored as differences from the point before it: added up again here (wrapping as they were taken)
@@ -34,10 +38,20 @@ export function roomAt(x, z) {
   return 4 * ((a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v);
 }
 
-// Skopea Marina, on the town quay at the head of the bay
+// Göcek: Skopea Marina, on the town quay at the head of the bay
 const SKOPEA_MARINA = (META.marinas.find((m) => /skopea/i.test(m.name)) || { at: [-60, -156] }).at;
-// the windward mark the bay would choose: some 450 m off Skopea Marina, out in the middle of the inner bay
-const HOME = { x: SKOPEA_MARINA[0] - 90, z: SKOPEA_MARINA[1] + 450 };
+// where the course would go: in Göcek, the windward mark some 450 m off Skopea Marina, out in the middle of the inner
+// bay; elsewhere the middle of the beat at the middle of the race area
+const HOME = META.home ? { x: META.home[0], z: META.home[1] } : { x: SKOPEA_MARINA[0] - 90, z: SKOPEA_MARINA[1] + 450 };
+
+// the places a course may start round a point, nearest first: every 25 m out to 4 km
+let RINGS = null;
+function rings() {
+  if (RINGS) return RINGS;
+  const a = [];
+  for (let x = -4000; x <= 4000; x += 25) for (let z = -4000; z <= 4000; z += 25) if (x * x + z * z <= 16e6) a.push([x, z, x * x + z * z]);
+  return (RINGS = a.sort((p, q) => p[2] - q[2] || p[0] - q[0] || p[1] - q[1]));
+}
 
 // Where the course goes: the start (the race's origin) somewhere in the bay with the marks, the starting area and the
 // beat out to the laylines all in clear water; of the places that fit, the one that puts the windward mark nearest
@@ -53,6 +67,17 @@ export function placeCourse(course, beatDeg = 42) {
     need.push([-w, -f * beat, 25], [w, -f * beat, 25]);
   }
   if (c.wing) for (const [a, b] of [[c.windward, c.wing], [c.wing, c.gate[0]]]) need.push([(a.x + b.x) / 2, (a.z + b.z) / 2, 50]);
+  const fits = (gx, gz) => { let worst = Infinity; for (const [x, z, r] of need) { worst = Math.min(worst, roomAt(gx + x, gz + z) - r); if (worst < 0) break; } return worst; };
+  if (META.home) { // the nearest start to the middle that fits; none: the one with the most room
+    const want = { x: HOME.x - c.windward.x / 2, z: HOME.z - c.windward.z / 2 };
+    let spare = null, spareR = -Infinity;
+    for (const [dx, dz] of rings()) {
+      const gx = want.x + dx, gz = want.z + dz, w = fits(gx, gz);
+      if (w >= 0) return { x: gx, z: gz };
+      if (w > spareR) { spare = { x: gx, z: gz }; spareR = w; }
+    }
+    return spare;
+  }
   const want = { x: HOME.x - c.windward.x, z: HOME.z - c.windward.z };
   let best = null, bestD = Infinity, spare = null, spareR = -Infinity;
   for (let gx = -3000; gx <= 3000; gx += 25) for (let gz = -600; gz <= 5000; gz += 25) {
