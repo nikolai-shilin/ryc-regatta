@@ -26,7 +26,8 @@ export async function generateMetadata(): Promise<Metadata> {
     creator: 'RYC',
     publisher: 'RYC',
     category: 'game',
-    icons: { icon: '/favicon.ico' },
+    // favicon.ico for the small sizes, the badge as a PNG (app/icon.tsx) for Google's results and an installed app
+    icons: { icon: [{ url: '/favicon.ico', sizes: '32x32' }, { url: '/icon', type: 'image/png', sizes: '512x512' }], apple: [{ url: '/apple-icon', sizes: '180x180' }] },
   };
 }
 

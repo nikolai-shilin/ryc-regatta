@@ -32,6 +32,10 @@ ${NAME} is a free 3D sailing race game by RYC that runs in any modern web browse
 - [How to play](${SITE}/help): controls, the race screen, camera views and the racing rules, with pictures
 - [Questions](${SITE}/faq): every question about the game, today's race, sailing and the rules
 - [Your boat](${SITE}/boat): hull and sail colours, logo and sail number
+- [Learn to race](${SITE}/learn): short guides to sailboat racing
+  - [The racing rules in five minutes](${SITE}/learn/rules): port and starboard, windward and leeward, clear astern, tacking, room at the mark, penalties
+  - [How to win a sailing start](${SITE}/learn/start): the signals, the favoured end, timing the run, holding your spot, over early, clear air
+  - [Headers and lifts](${SITE}/learn/shifts): tacking on the wind shifts, laylines, gusts and lulls, gybing on the lifts downwind
 - [Sailing certification exam practice](${SITE}/iyt): RYC's free practice app for sailing certification theory exams
 
 Every page is also in Russian: add ?lang=ru to the address (for example ${SITE}/faq?lang=ru).

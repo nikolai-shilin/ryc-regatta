@@ -82,8 +82,8 @@ export default async function Home() {
           <span className="kicker">{t('Up and down · a sailing race game by RYC', 'Up and down · парусная гонка от RYC')}</span>
           <h1 className="hm-display" id="home-h1">{t('Win the start. Play the shifts. Race by the real rules.', 'Возьми старт. Лови заходы. Гоняйся по настоящим правилам.')}</h1>
           <p className="hm-lead">{t(
-            `Today, ${date}: ${breeze} of ${kn} knots in Göcek bay, ${d.fleet} boats on the line, one ${length} lap up and down. Everyone sails the same race, so the only thing between you and the top of the ranking is how you sail it. Free in the browser, no sign-in to play.`,
-            `Сегодня, ${date}: ${breeze} ${kn} узлов в бухте Гёчек, ${ruBoats(d.fleet)} на линии, один ${length} круг апвинд — даунвинд. У всех одна и та же гонка, так что между тобой и первой строчкой рейтинга — только то, как ты её пройдёшь. Бесплатно, в браузере, играть можно без входа.`)}</p>
+            `Today, ${date}: ${breeze} of ${kn} knots in Göcek bay, ${d.fleet} boats on the line, one ${length} lap up and down. Everyone sails the same race, so the only thing between you and the top of the ranking is how you sail it. A free online sailing game, a yacht race simulator right in the browser, no sign-in to play.`,
+            `Сегодня, ${date}: ${breeze} ${kn} узлов в бухте Гёчек, ${ruBoats(d.fleet)} на линии, один ${length} круг апвинд — даунвинд. У всех одна и та же гонка, так что между тобой и первой строчкой рейтинга — только то, как ты её пройдёшь. Бесплатный парусный симулятор онлайн, прямо в браузере, играть можно без входа.`)}</p>
           <span className="meta hm-asof">{t(`Today’s race · ${date} · a new one every midnight UTC`, `Гонка дня · ${date} · новая каждую полночь по UTC`)}</span>
           <RacePill lang={lang} daily={d} />
           <Link className="hm-src" href="/help">{t('How a race goes', 'Как проходит гонка')}<IconArrow s={14} /></Link>

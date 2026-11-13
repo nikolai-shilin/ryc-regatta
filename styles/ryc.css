@@ -592,3 +592,20 @@
 .legs li.done::before { background: var(--accent); }
 .legs .t { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
 .legs .d { display: block; color: var(--muted); font-size: var(--t-s); }
+
+/* Learn to race (/learn): the guides, a column of text in the site's serif, sections numbered down the side */
+.gd { display: flex; flex-direction: column; gap: var(--s-10); padding-block: var(--s-8) var(--hm-sec); }
+.gd-sec { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); scroll-margin-top: var(--hm-head); max-width: 760px; }
+.gd-sec h2 { margin: 0; font: 300 var(--t-xl, 28px)/1.2 var(--f-serif); letter-spacing: -0.01em; text-wrap: balance; }
+.gd-sec p { margin: 0; font: 400 var(--t-m)/1.6 var(--f-serif); color: var(--ink); max-width: 68ch; }
+.gd-more { display: flex; flex-direction: column; gap: var(--s-2); }
+.gd-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); padding-block: var(--s-6) var(--hm-sec); }
+.gd-card { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-6); border-radius: var(--r-l); background: var(--band); color: var(--ink); }
+.gd-card:hover .card-title { color: var(--accent); }
+.gd-card .card-title { font: 300 22px/1.25 var(--f-serif); }
+.gd-card p { margin: 0; color: var(--muted); }
+@media (min-width: 900px) {
+  .gd-sec { grid-template-columns: 56px minmax(0, 1fr); column-gap: var(--s-6); }
+  .gd-sec::before { content: attr(data-n); grid-row: 1 / span 9; font: 300 var(--t-xl, 28px)/1.2 var(--f-serif); color: var(--faint); }
+  .gd-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

@@ -51,11 +51,17 @@ export const IconGoogle = ({ s = 20 }) => (
 
 // EN | RU: plain links through /lang, so they work without JavaScript and the game sees the same choice.
 export function Langs({ lang, back, className = '' }: { lang: Lang; back: string; className?: string }) {
-  const href = (to: Lang) => `/lang?to=${to}&back=${encodeURIComponent(back)}`;
+  // the page itself with ?lang= (proxy.ts keeps the choice as the cookie): a link a search engine follows to the page in
+  // the other language, which /lang, a redirect kept out of robots.txt, never was
+  const href = (to: Lang) => {
+    const u = new URL(back, 'https://x');
+    u.searchParams.set('lang', to);
+    return u.pathname + u.search + u.hash;
+  };
   return (
     <nav className={`langs ${className}`} aria-label={lang === 'ru' ? 'Язык' : 'Language'}>
-      <a className={`lang ${lang === 'en' ? 'lang-on' : ''}`} href={href('en')}>EN</a>
-      <a className={`lang ${lang === 'ru' ? 'lang-on' : ''}`} href={href('ru')}>RU</a>
+      <a className={`lang ${lang === 'en' ? 'lang-on' : ''}`} href={href('en')} hrefLang="en" lang="en">EN</a>
+      <a className={`lang ${lang === 'ru' ? 'lang-on' : ''}`} href={href('ru')} hrefLang="ru" lang="ru">RU</a>
     </nav>
   );
 }

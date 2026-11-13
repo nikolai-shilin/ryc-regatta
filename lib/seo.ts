@@ -13,10 +13,10 @@ export const NAME = 'Up and down';
 export const OG_IMAGE = { url: '/images/og-v3.jpg', width: 1200, height: 630, type: 'image/jpeg' };
 
 // The home page's title and description, also the defaults for any page that doesn't give its own.
-export const HOME_TITLE: [string, string] = ['Up and down — a free sailing race game', 'Up and down — бесплатная парусная гонка'];
+export const HOME_TITLE: [string, string] = ['Up and down — a free online sailing race game', 'Up and down — парусная гонка и симулятор яхты онлайн'];
 export const HOME_DESC: [string, string] = [
-  'A free 3D sailing race in your browser. Win the start, play the wind shifts and race up to six boats round the marks in Göcek bay, under the real racing rules. A new race of the day every midnight.',
-  'Бесплатная 3D-парусная гонка в браузере. Возьми старт, лови заходы ветра и обойди до шести лодок в бухте Гёчек по настоящим правилам парусных гонок. Новая гонка дня каждую полночь.'];
+  'A free 3D sailing game and yacht race simulator in your browser. Win the start, play the wind shifts and race up to six boats round the marks in Göcek bay, under the real racing rules. A new race of the day every midnight.',
+  'Бесплатный 3D-парусный симулятор и гонка яхт в браузере. Возьми старт, лови заходы ветра и обойди до шести лодок в бухте Гёчек по настоящим правилам парусных гонок. Новая гонка дня каждую полночь.'];
 
 export const langUrl = (path: string, lang: Lang) => (lang === 'ru' ? `${path}?lang=ru` : path);
 export const languages = (path: string) => ({ en: langUrl(path, 'en'), ru: langUrl(path, 'ru'), 'x-default': path });
