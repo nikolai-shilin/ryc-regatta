@@ -726,9 +726,10 @@ export class BoatView {
       tt.material.color.set(ok ? '#2ecc71' : '#ff4d3d');
     }
     if (light) for (const s of b.kite ? [this.main, this.jib, this.kite] : [this.main, this.jib]) backlight(s, light.cam, light.sun);
-    if (this.label) {
-      this.label.visible = showLabel;
-      this.label.userData.set(this.labelText + (b.pen ? ' ⟳' : b.ocs ? ' OCS' : b.dsq ? ' DSQ' : ''), !!(b.pen || b.ocs));
+    if (this.label) { // no names over the boats: a tag only while she's on a penalty, over early or disqualified
+      const status = b.pen ? '⟳' : b.ocs ? 'OCS' : b.dsq ? 'DSQ' : '';
+      this.label.visible = showLabel && !!status;
+      if (status) this.label.userData.set(status, true);
     }
   }
 }

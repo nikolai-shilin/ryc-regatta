@@ -1,4 +1,5 @@
-// The lighter HUD, tried behind ?hud=next (?hud=old goes back; H switches live). It takes the current HUD's
+// The lighter HUD, the default now (?hud=old brings back the old one and remembers it, ?hud=next undoes that;
+// H switches live). It takes the old HUD's
 // controls and readouts and gives them less room: one slim pill for speed and the race, a small wind dial, a
 // smaller map, a camera button that cycles, controls that fade back when your thumbs are off them, and the
 // target labelled on the water. Everything moves rather than jumps.
@@ -218,9 +219,10 @@ export function createHudNext({ t, LANG, fmt, world, getRace, setCam }) {
   let on = false, chipsReady = false;
   try {
     const q = new URLSearchParams(location.search).get('hud');
-    if (q === 'next') localStorage.setItem('hudNext', '1'); else if (q === 'old') localStorage.removeItem('hudNext');
-    on = localStorage.getItem('hudNext') === '1';
-  } catch (e) { on = /[?&]hud=next\b/.test(location.search); }
+    localStorage.removeItem('hudNext'); // the trial's opt-in, not needed now it's the default
+    if (q === 'old') localStorage.setItem('hudOld', '1'); else if (q === 'next') localStorage.removeItem('hudOld');
+    on = localStorage.getItem('hudOld') !== '1';
+  } catch (e) { on = !/[?&]hud=old\b/.test(location.search); }
 
   function apply(v) {
     on = v; hud.classList.toggle('next', on);
@@ -366,5 +368,5 @@ export function createHudNext({ t, LANG, fmt, world, getRace, setCam }) {
   function clearChips() { for (const c of live.values()) clearTimeout(c.timer); live.clear(); chipBox.textContent = ''; }
   chipsReady = true;
 
-  return { update, chips, get on() { return on; }, toggle() { apply(!on); try { on ? localStorage.setItem('hudNext', '1') : localStorage.removeItem('hudNext'); } catch (e) {} return on; } };
+  return { update, chips, get on() { return on; }, toggle() { apply(!on); try { on ? localStorage.removeItem('hudOld') : localStorage.setItem('hudOld', '1'); } catch (e) {} return on; } };
 }
