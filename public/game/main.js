@@ -314,8 +314,10 @@ const audio = {
 // ---------- the skipper: recorded voices on board ----------
 // In Russian, a skipper from Odessa who shouts at the crew when they've earned it; in English, a crew's racing calls: the
 // hails, protest, bear away, and the count down to the gun. Each language's lines are in one file, skipper-<lang>.mp3,
-// loaded once the race starts. He says one line at a time, takes a breath between lines and doesn't repeat a line within a
-// minute; a call that must be heard now (a hail, the count) cuts in.
+// loaded once the race starts. He says one line at a time, and not every time he could: half the time he lets a moment
+// go, and after a line he keeps quiet for twenty seconds or more. He doesn't repeat a line within a few minutes, and of
+// the lines that fit he picks at random, likelier the longer since he said it; a call that must be heard now (a hail,
+// the count) cuts in.
 const VOICES = { ru: {
   // where each line sits in skipper-ru.mp3: [start, length] in seconds
   clips: {
@@ -350,29 +352,29 @@ const VOICES = { ru: {
     ease3: [102.248, 2.007], // Да трави ты, сучара тупая!
     pull4: [104.855, 3.157], // Я вас очень сильно матом прошу, доберите!
   },
-  // the lines for each situation
+  // the lines for each situation: most have a few that fit, so the same moment doesn't always get the same line
   pools: {
-    pull: ['pull1', 'pull2', 'pull3', 'pull4'], // the sails flapping, the sheet left out
+    pull: ['pull1', 'pull2', 'pull3', 'pull4', 'people'], // the sails flapping, the sheet left out
     ease: ['ease2', 'ease1', 'ease3'], // sheeted in too hard
-    heel: ['ease1', 'ease2', 'ease3'], // heeled over: ease!
+    heel: ['ease1', 'ease2', 'ease3', 'hold'], // heeled over: ease!
     fiddle: ['hands', 'hands2'], // the sheet worked in and out, in and out
-    chaos: ['hold'], // a broach, a crash gybe, a death roll, a wrapped or collapsed kite
+    chaos: ['hold', 'people', 'clue'], // a broach, a crash gybe, a death roll, a wrapped or collapsed kite
     tack: ['tack1', 'tack2'], // a tack or a gybe, now and then
-    foul: ['people'], // a foul, a touched mark, the wrong side of a mark, a missed gate
-    slow: ['column'], // stopped, or in irons, after the gun
-    contact: ['feet'], // a collision after the start, or a boat that fouled us
-    push: ['push'], // a collision before the start
-    lost: ['clue'], // a general recall, disqualified at the start
+    foul: ['people', 'clue'], // a foul, a touched mark, the wrong side of a mark, a missed gate
+    slow: ['column', 'people', 'clue'], // stopped, or in irons, after the gun
+    contact: ['feet', 'push', 'people'], // a collision after the start, or a boat that fouled us
+    push: ['push', 'feet'], // a collision before the start
+    lost: ['clue', 'people'], // a general recall, disqualified at the start
     aground: ['sank', 'clue'],
     plan: ['plan'], // the warning signal
-    flag: ['flag'], // the preparatory signal, and the U or black flag today
+    flag: ['flag', 'plan'], // the preparatory signal, and the U or black flag today
     minute: ['minute'], // the one-minute signal
-    where: ['where'], // far from the line near the gun, or across it outside the ends
-    distance: ['distance'], // another boat a few metres off for a while, not touching
-    early: ['early'], // over early
-    ready: ['ready'], // across the line within three seconds of the gun
+    where: ['where', 'clue'], // far from the line near the gun, or across it outside the ends
+    distance: ['distance', 'push'], // another boat a few metres off for a while, not touching
+    early: ['early', 'ready'], // over early
+    ready: ['ready', 'clean'], // across the line within three seconds of the gun
     clean: ['clean'], // a start without fuss, or the windward mark with no fouls
-    late: ['late'], // across the line more than ten seconds after the gun
+    late: ['late', 'column'], // across the line more than ten seconds after the gun
   },
 }, en: {
   // a crew's racing calls in skipper-en.mp3, a man's and a woman's (g…), and the count to the gun: [start, length] in seconds
@@ -415,7 +417,9 @@ const VOICES = { ru: {
 } };
 const skipper = {
   ...VOICES[LANG],
-  buf: null, loading: false, src: null, speakTill: 0, busyTill: 0, last: {},
+  buf: null, loading: false, src: null, speakTill: 0, busyTill: 0, last: {}, letGo: {},
+  TALK: 0.5, // how often he says something when he could
+  REST: 180, // seconds before he says a line again
   load() {
     if (!VOICES[LANG] || this.buf || this.loading || !audio.ctx) return;
     this.loading = true;
@@ -425,21 +429,32 @@ const skipper = {
   },
   // a line for the situation; false when he keeps quiet (no sound, mid-line, a hail being spoken, said it lately).
   // A moment that won't come again (a signal, the start) needn't wait for his breath, only for the line he's saying.
+  // Whether he speaks is rolled once for a moment: a situation he lets go (one the game asks about every frame, a sheet
+  // left wrong, heeled over) isn't asked again for a while.
   shout(kind, chance = 1, now_ = false) {
     if (!this.buf || !audio.on || !opts.voice || paused || audio.ctx.state !== 'running') return false;
     const ctx = audio.ctx, now = ctx.currentTime;
-    if (now < (now_ ? this.speakTill : this.busyTill) || (window.speechSynthesis && speechSynthesis.speaking)) return false;
-    const fresh = (this.pools[kind] || []).filter((k) => !(now - this.last[k] < 60));
-    if (!fresh.length || Math.random() > chance) return false;
-    const k = fresh[Math.floor(Math.random() * fresh.length)], len = this.play(k);
-    this.last[k] = now; this.speakTill = now + len + 0.4; this.busyTill = now + len + 8;
+    if (now < (now_ ? this.speakTill : this.busyTill) || now < (this.letGo[kind] ?? 0) || (window.speechSynthesis && speechSynthesis.speaking)) return false;
+    const fresh = (this.pools[kind] || []).filter((k) => !(now - this.last[k] < this.REST));
+    if (!fresh.length) return false;
+    if (Math.random() > chance * this.TALK) { this.letGo[kind] = now + 10 + Math.random() * 15; return false; }
+    const k = this.choose(fresh, now), len = this.play(k);
+    this.last[k] = now; this.speakTill = now + len + 0.4; this.busyTill = now + len + 20 + Math.random() * 20;
     return true;
+  },
+  // one of the lines at random, a line he's never said or not said for long likelier than one he said lately
+  choose(list, now) {
+    const w = list.map((k) => (this.last[k] === undefined ? 1 : Math.min(1, 0.15 + (now - this.last[k]) / 600)));
+    let r = Math.random() * w.reduce((a, b) => a + b, 0), i = 0;
+    while (i < list.length - 1 && (r -= w[i]) > 0) i++;
+    return list[i];
   },
   // a call that has to be heard now (a hail, the count to the gun): no breath, no minute's rest, and it cuts in on a line
   cue(kind, from) {
     const list = this.pools[kind] || (this.clips[kind] ? [kind] : null);
     if (!list || !this.buf || !audio.on || !opts.voice || paused || audio.ctx.state !== 'running') return false;
-    const now = audio.ctx.currentTime, len = this.play(from ? crews.pick(from, list) : list[Math.floor(Math.random() * list.length)], from);
+    const now = audio.ctx.currentTime, k = from ? crews.pick(from, list) : this.choose(list, now), len = this.play(k, from);
+    if (!from) this.last[k] = now;
     this.speakTill = now + len + 0.2; this.busyTill = Math.max(this.busyTill, now + len + 2);
     return true;
   },
