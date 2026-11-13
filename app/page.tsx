@@ -7,6 +7,8 @@ import { dailyRace, KN } from '@/lib/race';
 import { Logo, IconArrow, IconPlay, IconWind, IconSail, clock } from '@/components/ui';
 import { RacePill, TileRow, MyRow } from '@/components/home-client';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
+import { FaqList } from '@/components/faq-list';
+import { faqGroups, HOME } from '@/lib/faq';
 
 // H0 · Home, laid out like rycrentals.com's: a header with the site's pages, a hero with today's race in a pill over
 // the game itself sailing a race (public/hero-view), then sections that alternate white and the pale band.
@@ -33,14 +35,8 @@ export default async function Home() {
     ['h-view-helm', '/help', t('From the helm', 'С руля'), t('Sail it from the cockpit', 'Веди яхту из кокпита')],
     ['h-view-top', '/help', t('From above', 'Сверху'), t('The whole course and the lay lines', 'Вся дистанция и лейлайны')],
   ];
-  const faq: [string, string][] = [
-    [t('Is it free?', 'Это бесплатно?'), t('Yes. The game runs in the browser on a phone or a computer, with nothing to install and nothing to pay.', 'Да. Игра работает в браузере на телефоне или компьютере: ничего не нужно устанавливать и ни за что платить.')],
-    [t('Do I have to sign in?', 'Нужно ли входить?'), t('No. Sign in with Google or your email only to put your time on today’s ranking and keep your best times on every device.', 'Нет. Войди через Google или по почте, только чтобы попасть в рейтинг дня и видеть лучшие результаты на любом устройстве.')],
-    [t('How is today’s race chosen?', 'Как выбирается гонка дня?'), t('A new race starts at midnight. Its wind, course and fleet are the same for every player, so the times compare fairly.', 'Новая гонка начинается в полночь. Ветер, дистанция и флот у всех одинаковые, поэтому время сравнивается честно.')],
-    [t('What is a free race?', 'Что такое свободная гонка?'), t('You pick the wind, fleet, course, laps and start yourself and race as often as you like. The game keeps your best time on every course; free race times don’t go on today’s ranking.', 'Ты сам выбираешь ветер, флот, дистанцию, круги и старт и гоняешься сколько хочешь. Игра помнит лучший результат на каждой дистанции; время свободных гонок не попадает в рейтинг дня.')],
-    [t('Which rules do the boats sail by?', 'По каким правилам ходят лодки?'), t('Part 2 of the Racing Rules of Sailing: port gives way to starboard, windward keeps clear, room at the mark. Break one and you spin a penalty turn, the computer boats too.', 'По части 2 Правил парусных гонок: левый галс уступает правому, наветренная лодка уступает, место у знака. Нарушил — крути штрафной оборот; компьютерные лодки тоже.')],
-    [t('Does it work on a phone?', 'Работает ли на телефоне?'), t('Yes, held sideways or upright. Steer by touch on a phone and with the arrow keys on a computer.', 'Да, в любой ориентации. На телефоне рули пальцем, на компьютере — стрелками.')],
-  ];
+  const all = faqGroups(t).flatMap((g) => g.items);
+  const faq = HOME.map((id) => all.find((f) => f.id === id)!);
 
   return (
     <div className="scr help home" lang={lang}>
@@ -149,17 +145,10 @@ export default async function Home() {
           <div className="hm-faq-side">
             <span className="kicker">{t('Questions', 'Вопросы')}</span>
             <h2 className="hm-h2" id="h-faq">{t('In short', 'Коротко')}</h2>
-            <p className="hm-text">{t('The game, today’s race and the ranking in a few lines. The full guide is on the How to play page.', 'Об игре, гонке дня и рейтинге в нескольких строках. Полное руководство — на странице «Как играть».')}</p>
-            <Link className="hm-src" href="/help">{t('How to play', 'Как играть')}<IconArrow s={14} /></Link>
+            <p className="hm-text">{t(`Six to start with. ${all.length - faq.length} more on sailing, the rules and your boat are on the Questions page.`, `Шесть для начала. Ещё ${all.length - faq.length} — об управлении, правилах и яхте — на странице «Вопросы».`)}</p>
+            <Link className="hm-src" href="/faq">{t('All questions', 'Все вопросы')}<IconArrow s={14} /></Link>
           </div>
-          <div className="hm-faq-list">
-            {faq.map(([q, a], i) => (
-              <details className="hm-faq-item" key={i} open={i === 0}>
-                <summary>{q}<svg className="hm-faq-ico" viewBox="0 0 20 20" width={18} height={18} aria-hidden="true"><path d="M10 3.5v13M3.5 10h13" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" /></svg></summary>
-                <p className="hm-text">{a}</p>
-              </details>
-            ))}
-          </div>
+          <FaqList items={faq} openFirst />
         </div>
       </section>
 
