@@ -153,3 +153,20 @@ export function MyRow({ lang, day, signedIn, next = '/' }: { lang: Lang; day: st
     </li>
   );
 }
+
+// The hero's live race (public/hero-view): the whole game, ~1.4 MB of three.js and the course. It shares the page's
+// thread, so it starts only once the page has loaded and gone idle; until then the still picture under it shows.
+export function HeroScene({ title }: { title: string }) {
+  const [src, setSrc] = useState<string | undefined>();
+  useEffect(() => {
+    let idle = 0, timer = 0;
+    const go = () => {
+      const ric = window.requestIdleCallback;
+      if (ric) idle = ric(() => setSrc('/hero-view'), { timeout: 2000 });
+      else timer = window.setTimeout(() => setSrc('/hero-view'), 200);
+    };
+    if (document.readyState === 'complete') go(); else window.addEventListener('load', go, { once: true });
+    return () => { window.removeEventListener('load', go); if (idle) window.cancelIdleCallback(idle); clearTimeout(timer); };
+  }, []);
+  return <iframe className="hm-scene" src={src} title={title} aria-hidden="true" tabIndex={-1} />;
+}

@@ -875,6 +875,9 @@ export class World {
         : new BoatView({ look: playerLook(), player: true }); // your boat in the colours you chose on /boat
       v.root.scale.setScalar(SC);
       mirrored(v.root);
+      // …but not the crew (eleven parts a sailor) or the wires: too small to make out in a half-size, rippled reflection
+      for (const c of v.crew) c.g.traverse((o) => o.layers.disable(MIRRORED));
+      v.root.traverse((o) => { if (o.isLine) o.layers.disable(MIRRORED); });
       v.root.traverse((o) => { if (o.isSprite && o.material.depthTest === false && o.material.toneMapped === false) o.layers.set(OVERLAY); }); // the name tag: drawn after the post
       this.scene.add(v.root);
       return v;
@@ -919,7 +922,40 @@ export class World {
     this.contacts = race.boats.map(() => new HullContact(this.scene, this.wakeU));
     this.wild.reset(race);
     this.skopea.place(race.at);
+    this.prepare();
   }
+
+  // Every material's shaders, compiled before the frame that needs them. Drawn cold, the first frame compiled ~70
+  // programs one after another and held the page for ~0.4 s; compileAsync hands them all to the GPU process at once
+  // (KHR_parallel_shader_compile) and leaves this thread free. Until they're ready, render() draws nothing and the
+  // last picture (or the page's still, or the preloader) stays up. ready() says when.
+  prepare() {
+    const r = this.renderer, prev = r.getRenderTarget();
+    let p;
+    try {
+      const jobs = [];
+      r.setRenderTarget(this.post ? this.post.rt : null); // the scene's pass draws into the post's target when there is one: compile that variant
+      jobs.push(r.compileAsync(this.scene, this.camera));
+      // the sea's mirror: its camera sees only the MIRRORED layer, no lights among it, so its programs are variants of their own
+      if (this.mirror) { r.setRenderTarget(this.mirror.rt); jobs.push(r.compileAsync(this.scene, this.mirror.cam)); }
+      // the full-screen passes (the chop's FFT, the bloom) each swap a material onto one quad: set them out side by side.
+      // All draw into targets but the bloom's composite, which draws to the screen.
+      for (const pass of [this.ocean, this.post]) {
+        if (!pass || !this.post) continue;
+        const into = new THREE.Scene(), out = new THREE.Scene();
+        for (const m of Object.values(pass)) if (m && m.isShaderMaterial) (m === pass.mComp ? out : into).add(new THREE.Mesh(pass.quad.geometry, m));
+        r.setRenderTarget(this.post.rt); jobs.push(r.compileAsync(into, pass.cam));
+        if (out.children.length) { r.setRenderTarget(null); jobs.push(r.compileAsync(out, pass.cam)); }
+      }
+      p = Promise.all(jobs);
+    } catch (e) { p = Promise.resolve(); }
+    r.setRenderTarget(prev);
+    const job = Promise.race([p, new Promise((res) => setTimeout(res, 4000))]).catch(() => {}) // never wait on it for ever
+      .then(() => { if (this.preparing === job) this.preparing = null; });
+    this.preparing = job;
+    return job;
+  }
+  ready() { return this.preparing || Promise.resolve(); }
 
   // switch the graphics level: resolution, sun shadows, water mesh and shading, foam
   setQuality(q) {
@@ -960,6 +996,7 @@ export class World {
       this.oceanU.uFftOn.value = 0; this.oceanU.uFftD.value = this.oceanU.uFftS.value = blankOcean();
     }
     if (hadShadow !== sh) this.scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); }); // shadows on/off: recompile
+    if (this.race) this.prepare(); // a new level, new shader variants: compiled aside while the race goes on
   }
 
   resize(w, h) {
@@ -1174,6 +1211,7 @@ export class World {
   // the chop, the mirror, then the picture: through the post-processing when the level has it, the labels on top
   render(cam) {
     const r = this.renderer, sc = this.scene;
+    if (this.preparing) return; // shaders still compiling (prepare)
     if (this.ocean) this.ocean.update(this.waterU.uTime.value);
     sc.updateMatrixWorld(); cam.updateMatrixWorld();
     const au = sc.matrixWorldAutoUpdate; sc.matrixWorldAutoUpdate = false; // once is enough for all the passes

@@ -34,15 +34,25 @@ function start() {
   world.showGuides = false;
   world.setQuality(/android|iphone|ipad/i.test(navigator.userAgent) ? 'medium' : 'high');
 
-  let race;
+  let race, ready = false, last = performance.now(), acc = 0;
   function newRace() {
+    ready = false;
     race = new Race({ preset: 'medium', fleet: 5, laps: 1, length: 'short', start: 1, seed: 4242 + Math.floor(Math.random() * 50) });
     world.setRace(race); // first: the world dresses your boat in your colours because she has no skipper yet
     const P = race.player;
     P.autoTrim = true; P.crew = 0.2;
     P.ai = { skill: 0.97, lineT: 0.5, lastTack: -999, go: false, mean: race.wind.dir(), dirtyT: 0, hailT: -99, wp: 0, loiter: 1, port: false, dare: 0 };
     world.resetView(); world.dist = 36; world.orbit = 0.9;
-    while (race.clock < 20) race.step(STEP); // just past the gun: the fleet off the line and up the first beat
+    // sailed on to just past the gun: the fleet off the line and up the first beat. That is ~1200 steps, seconds of work
+    // on a phone, and this frame shares the home page's thread, so it goes in slices of a few ms: the page stays live.
+    const r = race;
+    (function warm() {
+      if (r !== race) return;
+      const end = performance.now() + 6;
+      while (r.clock < 20 && performance.now() < end) r.step(STEP);
+      if (r.clock < 20) setTimeout(warm, 0);
+      else world.ready().then(() => { if (r === race) { ready = true; last = performance.now(); acc = 0; } }); // and the shaders compiled alongside
+    })();
   }
   newRace();
 
@@ -50,17 +60,17 @@ function start() {
   size(); addEventListener('resize', size);
 
   // draw only while the hero is on screen (the observer's root is the page's viewport, not this frame's)
-  let on = true, last = performance.now(), acc = 0;
+  let on = true;
   new IntersectionObserver(([e]) => { on = e.isIntersecting; last = performance.now(); }).observe(document.documentElement);
   document.addEventListener('visibilitychange', () => { last = performance.now(); });
 
   function loop(now) {
     requestAnimationFrame(loop);
-    if (!on || document.hidden) return;
+    if (!on || document.hidden || !ready) return;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     acc += dt;
     while (acc >= STEP) { race.step(STEP); acc -= STEP; }
-    if (race.player.done || race.clock > 600) newRace();
+    if (race.player.done || race.clock > 600) { newRace(); return; } // the last frame stays up while the next one warms
     world.orbit += dt * 0.035; // the drone drifts round her
     world.frame(dt, race.t);
     canvas.classList.add('live');

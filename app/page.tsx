@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import Image, { getImageProps } from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getT } from '@/lib/i18n';
@@ -8,7 +8,7 @@ import { getAccount } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
 import { dailyRace, KN } from '@/lib/race';
 import { Logo, IconArrow, IconPlay, IconWind, IconSail, clock } from '@/components/ui';
-import { RacePill, TileRow, MyRow } from '@/components/home-client';
+import { RacePill, TileRow, MyRow, HeroScene } from '@/components/home-client';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 import { FaqList } from '@/components/faq-list';
 import { faqGroups, HOME } from '@/lib/faq';
@@ -66,6 +66,11 @@ export default async function Home() {
     ['h-view-helm', '/help#h-views', t('From the helm', 'С руля'), t('Sail from the cockpit, with Göcek’s hills all around', 'Веди яхту из кокпита, а вокруг — холмы Гёчека')],
     ['h-view-top', '/help#h-views', t('From above', 'Сверху'), t('The whole course, the lay lines and every boat at a glance', 'Вся дистанция, лейлайны и все лодки одним взглядом')],
   ];
+  // the hero's still: the wide picture on a wide screen, the upright one on a phone — one <picture>, so a browser
+  // fetches only the one it shows (two <Image>s hidden by CSS each got fetched, at high priority)
+  const hero = { alt: '', fill: true, sizes: '100vw', fetchPriority: 'high', loading: 'eager' } as const;
+  const heroWide = getImageProps({ ...hero, src: '/images/drone-desk-v3.jpg' }).props.srcSet;
+  const { alt: _alt, ...heroNarrow } = getImageProps({ ...hero, src: '/images/drone-port-v3.jpg' }).props;
   const all = faqGroups(t).flatMap((g) => g.items);
   const faq = HOME.map((id) => all.find((f) => f.id === id)!);
 
@@ -75,9 +80,11 @@ export default async function Home() {
       <SiteHead lang={lang} t={t} account={account} page="home" />
 
       <div className="hm-hero">
-        <Image className="bgimg only-wide" src="/images/drone-desk-v3.jpg" alt="" fill priority sizes="100vw" />
-        <Image className="bgimg only-narrow" src="/images/drone-port-v3.jpg" alt="" fill priority sizes="100vw" />
-        <iframe className="hm-scene" src="/hero-view" title={t('A race in the game', 'Гонка в игре')} aria-hidden="true" tabIndex={-1} />
+        <picture>
+          <source media="(min-width: 600px)" srcSet={heroWide} sizes="100vw" />
+          <img className="bgimg" {...heroNarrow} alt="" />
+        </picture>
+        <HeroScene title={t('A race in the game', 'Гонка в игре')} />
         <section className="hm-page hm-hero-in" aria-labelledby="home-h1">
           <span className="kicker">{t('Up and down · a sailing race game by RYC', 'Up and down · парусная гонка от RYC')}</span>
           <h1 className="hm-display" id="home-h1">{t('Win the start. Play the shifts. Race by the real rules.', 'Возьми старт. Лови заходы. Гоняйся по настоящим правилам.')}</h1>

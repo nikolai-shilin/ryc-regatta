@@ -857,8 +857,11 @@ $('#backLink').href = HUB;
   opts.mode = want === 'free' ? 'free' : 'daily';
   menu.hidden = true; menuChanged = true;
   // the preloader in play/index.html has counted the files in; the scene is built, so it fills its bar and fades into the race
-  if (window.rycLoader) window.rycLoader.done(startRace);
-  else { $('#loading').hidden = true; startRace(); }
+  // …once the shaders are compiled too (world.prepare), so the first frame of the race doesn't stall
+  world.ready().then(() => {
+    if (window.rycLoader) window.rycLoader.done(startRace);
+    else { $('#loading').hidden = true; startRace(); }
+  });
 }
 
 

@@ -131,6 +131,7 @@ const MODEL = await new Promise((res) => {
     done(parts);
   }, undefined, () => done(null));
 });
+const SHARED = new Set(MODEL ? Object.values(MODEL) : []); // every boat's hull and deck: never disposed by one of them
 
 // ---------- textures ----------
 function canvasTex(w, h, draw, rx = 1, ry = 1) {
@@ -650,6 +651,46 @@ export class BoatView {
 
     // everything solid casts and catches the sun's shadow (sails on the deck and on each other)
     this.root.traverse((o) => { if (o.isMesh) { o.castShadow = !(o.userData.flat || o.parent?.userData.flat); o.receiveShadow = true; } });
+    this.bake();
+  }
+
+  // The fittings that never move (hull, deck gear, rails, stanchions, rig, standing rigging) are ~150 small parts, each
+  // its own draw — in the view, the sea's reflection and the sun's shadow. Merged per material (and per detail level,
+  // so setDetail still hides the small ones far off), a boat costs a dozen draws instead.
+  bake() {
+    const moving = new Set([this.travCar, this.wheel, this.sprit, this.mainPivot, this.jibPivot, this.kite, this.windex,
+      this.mainsheet, this.jibSheet, this.lazySheet, this.kiteSheet, ...this.crew.map((c) => c.g)]);
+    const sets = new Map();
+    for (const o of this.tilt.children) {
+      if (moving.has(o) || o.children.length || !(o.isMesh || o.isLine) || Array.isArray(o.material)) continue;
+      o.updateMatrix();
+      if (o.matrix.determinant() < 0) continue; // mirrored: its faces would turn inside out
+      const g = o.geometry;
+      if (!g.boundingSphere) g.computeBoundingSphere();
+      const small = o.isLine || g.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z) < 0.9; // as setDetail
+      const attrs = Object.keys(g.attributes).sort().join();
+      const key = [o.isLine ? 'L' : 'M', o.material.uuid, small, o.castShadow, o.renderOrder, attrs, !!g.index].join('|');
+      if (!sets.has(key)) sets.set(key, { list: [], small, line: o.isLine, mat: o.material, cast: o.castShadow, order: o.renderOrder });
+      sets.get(key).list.push(o);
+    }
+    for (const s of sets.values()) {
+      if (s.list.length < 2) continue;
+      const geos = s.list.map((o) => {
+        let g = o.geometry.clone().applyMatrix4(o.matrix);
+        if (s.line) { // a strip of points → its segments, so many lines can be one LineSegments
+          const p = g.attributes.position, idx = [];
+          for (let i = 0; i < p.count - 1; i++) idx.push(i, i + 1);
+          g.setIndex(idx);
+        }
+        return g;
+      });
+      const merged = mergeGeometries(geos);
+      if (!merged) continue;
+      const m = s.line ? new THREE.LineSegments(merged, s.mat) : new THREE.Mesh(merged, s.mat);
+      m.castShadow = s.cast; m.receiveShadow = true; m.renderOrder = s.order; m.userData.detail = s.small;
+      for (const o of s.list) { this.tilt.remove(o); if (!SHARED.has(o.geometry)) o.geometry.dispose(); }
+      this.tilt.add(m);
+    }
   }
 
   // far away, the small fittings (winches, hatches, lines, blocks) aren't worth their draw calls
@@ -663,7 +704,7 @@ export class BoatView {
         if (!(o.isMesh || o.isLine) || !o.geometry || keep.has(o)) return;
         if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
         const r = o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z);
-        if (r < 0.9 || o.isLine) this.small.push(o);
+        if (o.userData.detail ?? (r < 0.9 || o.isLine)) this.small.push(o); // merged parts (bake) say which they are
       });
     }
     for (const o of this.small) o.visible = on;
