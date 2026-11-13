@@ -191,6 +191,23 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
+// every line drawn on the water — the start line, the distance lines, the laylines, the zones round the marks — looks
+// the same: white dashes half a metre wide, one every 5 m, faint enough that the sea reads through them
+const LINE_W = 0.5, DASH = 5, DASH_ON = 0.6, LINE_A = 0.2;
+let dashMat = null;
+function lineMat() { // one material for all the straight lines; their UVs count in dashes
+  if (dashMat) return dashMat;
+  const cv = document.createElement('canvas'); cv.width = 64; cv.height = 4;
+  const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, Math.round(64 * DASH_ON), 4);
+  const tex = new THREE.CanvasTexture(cv); tex.wrapS = THREE.RepeatWrapping;
+  return (dashMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: LINE_A, depthWrite: false, side: THREE.DoubleSide, fog: true }));
+}
+function lineStrip(len) { // a straight line len metres long, lying flat along x
+  const g = new THREE.PlaneGeometry(len, LINE_W).rotateX(-Math.PI / 2), uv = g.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setX(i, (uv.getX(i) * len) / DASH);
+  return g;
+}
+
 // distance lines across the beat: from the windward mark down to the start line, every 50 m (100 m on a long course),
 // each a line like the start line, with its distance to the mark written at both ends. They widen with the distance, as the laylines do.
 export const ladderStep = (beat) => (beat > 600 ? 100 : 50);
@@ -220,23 +237,6 @@ class Laylines {
     this.m = c.windward; this.up = beatAngle(tws) * D2R;
     const L = (-c.windward.z + 80) / Math.cos(this.up), N = Math.ceil(L / 4), HW = LINE_W / 2; // 4 m pieces
     this.v = []; // per vertex: distance from the mark, offset across
-// every line drawn on the water — the start line, the distance lines, the laylines, the zones round the marks — looks
-// the same: white dashes half a metre wide, one every 5 m, faint enough that the sea reads through them
-const LINE_W = 0.5, DASH = 5, DASH_ON = 0.6, LINE_A = 0.2;
-let dashMat = null;
-function lineMat() { // one material for all the straight lines; their UVs count in dashes
-  if (dashMat) return dashMat;
-  const cv = document.createElement('canvas'); cv.width = 64; cv.height = 4;
-  const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, Math.round(64 * DASH_ON), 4);
-  const tex = new THREE.CanvasTexture(cv); tex.wrapS = THREE.RepeatWrapping;
-  return (dashMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: LINE_A, depthWrite: false, side: THREE.DoubleSide, fog: true }));
-}
-function lineStrip(len) { // a straight line len metres long, lying flat along x
-  const g = new THREE.PlaneGeometry(len, LINE_W).rotateX(-Math.PI / 2), uv = g.attributes.uv;
-  for (let i = 0; i < uv.count; i++) uv.setX(i, (uv.getX(i) * len) / DASH);
-  return g;
-}
-
     const pos = [], uv = [], idx = [];
     for (let i = 0; i <= N; i++) {
       const d = ZONE + (i / N) * L;
