@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Race view</title>
+<!-- The home page's hero background (app/page.tsx embeds it): the game itself (public/game), a race already under way
+     with every boat, yours included, sailed by the game's own skippers, seen from the drone as it slowly circles.
+     Nothing to steer. The page shows a still picture behind this until the first frame is drawn. -->
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+  canvas { display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 0.8s ease; }
+  canvas.live { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { canvas { display: none; } }
+</style>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+</head>
+<body>
+<canvas id="c" aria-hidden="true"></canvas>
+<script type="module">
+import { World } from '/game/world.js';
+import { Race } from '/game/sim.js';
+
+const canvas = document.getElementById('c');
+const STEP = 1 / 60;
+
+function start() {
+  let world;
+  try { world = new World(canvas); } catch (e) { return; } // no WebGL: the page's picture stays
+  world.showGuides = false;
+  world.setQuality(/android|iphone|ipad/i.test(navigator.userAgent) ? 'medium' : 'high');
+
+  let race;
+  function newRace() {
+    race = new Race({ preset: 'medium', fleet: 5, laps: 1, length: 'short', start: 1, seed: 4242 + Math.floor(Math.random() * 50) });
+    world.setRace(race); // first: the world dresses your boat in your colours because she has no skipper yet
+    const P = race.player;
+    P.autoTrim = true; P.crew = 0.2;
+    P.ai = { skill: 0.97, lineT: 0.5, lastTack: -999, go: false, mean: race.wind.dir(), dirtyT: 0, hailT: -99, wp: 0, loiter: 1, port: false, dare: 0 };
+    world.resetView(); world.dist = 36; world.orbit = 0.9;
+    while (race.clock < 20) race.step(STEP); // just past the gun: the fleet off the line and up the first beat
+  }
+  newRace();
+
+  const size = () => world.resize(innerWidth, innerHeight);
+  size(); addEventListener('resize', size);
+
+  // draw only while the hero is on screen (the observer's root is the page's viewport, not this frame's)
+  let on = true, last = performance.now(), acc = 0;
+  new IntersectionObserver(([e]) => { on = e.isIntersecting; last = performance.now(); }).observe(document.documentElement);
+  document.addEventListener('visibilitychange', () => { last = performance.now(); });
+
+  function loop(now) {
+    requestAnimationFrame(loop);
+    if (!on || document.hidden) return;
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    acc += dt;
+    while (acc >= STEP) { race.step(STEP); acc -= STEP; }
+    if (race.player.done || race.clock > 600) newRace();
+    world.orbit += dt * 0.035; // the drone drifts round her
+    world.frame(dt, race.t);
+    canvas.classList.add('live');
+  }
+  requestAnimationFrame(loop);
+}
+
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) start();
+</script>
+</body>
+</html>

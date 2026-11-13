@@ -11,12 +11,14 @@ const config: NextConfig = {
     return [
       { source: '/play', destination: '/play/index.html' },
       { source: '/boat-view', destination: '/boat-view/index.html' }, // the boat page's 3D preview, the game's own yacht
+      { source: '/hero-view', destination: '/hero-view/index.html' }, // the home page's hero: a race the game sails by itself
     ];
   },
   async headers() {
     return [
       { source: '/play', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/boat-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
+      { source: '/hero-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/game/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=0, must-revalidate' }] },
     ];
   },

@@ -1,114 +1,213 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { getT } from '@/lib/i18n';
+import { getAccount, initials } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
 import { dailyRace, KN } from '@/lib/race';
-import { Logo, Langs, IconPlay, clock } from '@/components/ui';
+import { Logo, Langs, IconArrow, IconPlay, IconWind, IconSail, clock } from '@/components/ui';
+import { SiteMenu, RacePill, TileRow, MyRow } from '@/components/home-client';
 
-// H0 · Home: what Up and down is, in detail, for anyone arriving on the web.
+// H0 · Home, laid out like rycrentals.com's: a header with the site's pages, a hero with today's race in a pill over
+// the game itself sailing a race (public/hero-view), then sections that alternate white and the pale band.
 export default async function Home() {
   const { lang, t } = await getT();
-  const [today, d] = [await todayTop(), dailyRace()];
+  const [account, today] = await Promise.all([getAccount(), todayTop()]);
+  const d = dailyRace();
+  const kn = KN[d.preset];
   const windName = { light: t('Light', 'Слабый'), medium: t('Medium', 'Средний'), strong: t('Strong', 'Сильный') }[d.preset];
-  const top = today && today.d === d.day ? today.top : [];
+  const breeze = { light: t('a light breeze', 'слабый ветер'), medium: t('a medium breeze', 'средний ветер'), strong: t('a strong breeze', 'сильный ветер') }[d.preset];
+  const length = { short: t('short', 'короткий'), medium: t('medium', 'средний'), long: t('long', 'длинный') }[d.length];
+  const date = new Date(d.day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const live = today && today.d === d.day ? today : null;
+  const top = live ? live.top : [];
+  const best = top[0];
+  const ini = account ? initials(account.name, account.email) : null;
+
+  const tiles: [string, string, string, string][] = [
+    ['h-wind', '/help', t('Wind that shifts', 'Ветер меняется'), t('10° and more a minute, with gusts and lulls', '10° и больше в минуту, с порывами и затишьями')],
+    ['h-start', '/help', t('A real start', 'Настоящий старт'), t('Class flag, P, one minute, then the gun', 'Флаг класса, P, минута — и сигнал')],
+    ['h-trim', '/help', t('Sails you trim', 'Паруса настраиваешь сам'), t('Main and jib, or auto-trim', 'Грот и стаксель или автонастройка')],
+    ['h-view-drone', '/help', t('Rivals who know the rules', 'Соперники знают правила'), t('3, 5 or 7 boats, penalty turns too', '3, 5 или 7 лодок, и штрафные обороты')],
+    ['h-tack', '/help', t('Tacks and gybes', 'Повороты'), t('Tack on the headers, gybe the kite', 'Поворачивай на заходах, перекидывай генакер')],
+    ['h-steer', '/help', t('Touch or keys', 'Пальцем или клавишами'), t('A phone either way, or a keyboard', 'Телефон в любой ориентации или клавиатура')],
+    ['h-view-helm', '/help', t('From the helm', 'С руля'), t('Sail it from the cockpit', 'Веди яхту из кокпита')],
+    ['h-view-top', '/help', t('From above', 'Сверху'), t('The whole course and the lay lines', 'Вся дистанция и лейлайны')],
+  ];
+  const faq: [string, string][] = [
+    [t('Is it free?', 'Это бесплатно?'), t('Yes. The game runs in the browser on a phone or a computer, with nothing to install and nothing to pay.', 'Да. Игра работает в браузере на телефоне или компьютере: ничего не нужно устанавливать и ни за что платить.')],
+    [t('Do I have to sign in?', 'Нужно ли входить?'), t('No. Sign in with Google or your email only to put your time on today’s ranking and keep your best times on every device.', 'Нет. Войди через Google или по почте, только чтобы попасть в рейтинг дня и видеть лучшие результаты на любом устройстве.')],
+    [t('How is today’s race chosen?', 'Как выбирается гонка дня?'), t('A new race starts at midnight. Its wind, course and fleet are the same for every player, so the times compare fairly.', 'Новая гонка начинается в полночь. Ветер, дистанция и флот у всех одинаковые, поэтому время сравнивается честно.')],
+    [t('What is a free race?', 'Что такое свободная гонка?'), t('You pick the wind, fleet, course, laps and start yourself and race as often as you like. The game keeps your best time on every course; free race times don’t go on today’s ranking.', 'Ты сам выбираешь ветер, флот, дистанцию, круги и старт и гоняешься сколько хочешь. Игра помнит лучший результат на каждой дистанции; время свободных гонок не попадает в рейтинг дня.')],
+    [t('Which rules do the boats sail by?', 'По каким правилам ходят лодки?'), t('Part 2 of the Racing Rules of Sailing: port gives way to starboard, windward keeps clear, room at the mark. Break one and you spin a penalty turn, the computer boats too.', 'По части 2 Правил парусных гонок: левый галс уступает правому, наветренная лодка уступает, место у знака. Нарушил — крути штрафной оборот; компьютерные лодки тоже.')],
+    [t('Does it work on a phone?', 'Работает ли на телефоне?'), t('Yes, held sideways or upright. Steer by touch on a phone and with the arrow keys on a computer.', 'Да, в любой ориентации. На телефоне рули пальцем, на компьютере — стрелками.')],
+  ];
+
   return (
     <div className="scr help home" lang={lang}>
-      <header className="home-hero">
-        <Image className="bgimg only-wide" src="/images/drone-desk.jpg" alt="" fill priority sizes="100vw" />
-        <Image className="bgimg only-narrow" src="/images/drone-port.jpg" alt="" fill priority sizes="100vw" />
-        <div className="shade-hero" />
-        <nav className="home-top" aria-label={t('Main', 'Главное')}>
-          <Logo className="logo-w" />
-          <span className="kicker">Up and down</span>
-          <span className="sp" />
-          <Link className="navl only-wide" href="/help">{t('How to play', 'Как играть')}</Link>
-          <Link className="navl only-wide" href="/sign-in">{t('Sign in', 'Войти')}</Link>
-          <Langs lang={lang} back="/" className="only-wide" />
-          <Link className="pill pill-primary pill-xs" href="/race"><span className="btn-t">{t('Play', 'Играть')}</span></Link>
-        </nav>
-        <div className="home-hero-in">
-          <span className="kicker">{t('A sailing race game by RYC', 'Парусная гонка от RYC')}</span>
-          <h1 className="on-photo">Up and down</h1>
-          <p className="lead on-photo">{t('Race a yacht round the marks against computer boats, in shifting wind and under the real racing rules. In the browser.', 'Гонка на яхте вокруг знаков против компьютерных лодок, в меняющийся ветер и по настоящим правилам гонок. В браузере.')}</p>
-          <p className="facts-line">{t('Free · No install · Phone or computer · EN / RU', 'Бесплатно · Без установки · Телефон или компьютер · EN / RU')}</p>
-          <div className="btn-row">
-            <a className="pill pill-primary pill-s" href="/play?race=today"><IconPlay /><span className="btn-t"><span className="l-narrow">{t('Play today', 'Гонка дня')}</span><span className="l-wide">{t('Play today’s race', 'Сыграть гонку дня')}</span></span></a>
-            <Link className="pill pill-s pill-photo" href="/help"><span className="btn-t">{t('How to play', 'Как играть')}</span></Link>
-          </div>
+      <header className="hm-head">
+        <div className="hm-page hm-head-in">
+          <Link className="hm-brand" href="/" aria-label="RYC · Up and down"><Logo /></Link>
+          <nav className="hm-nav" aria-label={t('Main', 'Главное')}>
+            <Link className="hm-tab" href="/help">{t('How to play', 'Как играть')}</Link>
+            <Link className="hm-tab" href="/race">{t('Today’s race', 'Гонка дня')}</Link>
+            <Link className="hm-tab" href="/race/free">{t('Free race', 'Свободная гонка')}</Link>
+            <Link className="hm-tab" href="/boat">{t('Your boat', 'Твоя яхта')}</Link>
+            <a className="hm-tab" href="#faq">{t('Questions', 'Вопросы')}</a>
+            <a className="hm-tab" href="https://iyt.rycrentals.com/">{t('IYT Test', 'Тест IYT')}</a>
+          </nav>
+          <SiteMenu lang={lang} initials={ini} />
         </div>
       </header>
 
-      <div className="hwrap">
-        <section className="hsec">
-          <div className="hsec-k"><span className="kicker">{t('Real sailing, made playable', 'Настоящий парусный спорт — в игре')}</span><h2 className="h-land-s">{t('Everything a race has', 'Всё, что есть в гонке')}</h2></div>
-          <div className="hgrid hgrid-4">
-            <Feat img="h-wind" title={t('Wind that never sits still', 'Ветер не стоит на месте')} text={t('It swings ten degrees and more every minute, with gusts and lulls. Read the shifts on the ring round your boat and tack on the headers.', 'Он меняется на десять градусов и больше каждую минуту, с порывами и затишьями. Читай заходы по кольцу вокруг лодки и поворачивай на них.')} />
-            <Feat img="h-start" title={t('A start like a real one', 'Старт как настоящий')} text={t('Class flag, P, one minute, the gun. Over early and the X flag sends you back; under the U or the black flag, you are out.', 'Флаг класса, P, минута, сигнал. Фальстарт — флаг X, возвращайся; под флагом U или чёрным — дисквалификация.')} />
-            <Feat img="h-trim" title={t('Sails you trim', 'Паруса, которые надо настраивать')} text={t('Pull the sheet in upwind, ease it off the wind — or let auto-trim do it and just steer. Main and jib on their own sliders, if you want both.', 'Выбирай шкот на лавировке, трави на попутном — или включи автонастройку и просто рули. Грот и стаксель — каждый на своём ползунке, если хочешь.')} />
-            <Feat img="h-view-drone" title={t('Rivals who know the rules', 'Соперники знают правила')} text={t('Three, five or seven computer boats that hail, keep clear, take room at the mark — and spin their penalty turns when they get it wrong.', 'Три, пять или семь компьютерных лодок окликают, уступают, берут место у знака — и крутят штрафные обороты, когда ошибаются.')} />
+      <div className="hm-hero">
+        <Image className="bgimg only-wide" src="/images/drone-desk.jpg" alt="" fill priority sizes="100vw" />
+        <Image className="bgimg only-narrow" src="/images/drone-port.jpg" alt="" fill priority sizes="100vw" />
+        <iframe className="hm-scene" src="/hero-view" title={t('A race in the game', 'Гонка в игре')} aria-hidden="true" tabIndex={-1} />
+        <section className="hm-page hm-hero-in" aria-labelledby="home-h1">
+          <span className="kicker">{t('Up and down · a sailing race game by RYC', 'Up and down · парусная гонка от RYC')}</span>
+          <h1 className="hm-display" id="home-h1">{t('Sailing race game: up to seven rivals, shifting wind and the real racing rules', 'Парусная гонка: до семи соперников, переменчивый ветер и настоящие правила')}</h1>
+          <p className="hm-lead">{t(
+            `Today’s race, ${date}, is ${breeze} of ${kn} knots, ${d.fleet} boats and one ${length} lap up and down. Everyone sails the same race, so times compare fairly. No sign-in needed to play.`,
+            `Гонка дня, ${date}: ${breeze} ${kn} узлов, ${d.fleet} лодок и один ${length} круг апвинд — даунвинд. У всех одна и та же гонка, поэтому время сравнивается честно. Играть можно без входа.`)}</p>
+          <span className="meta hm-asof">{t(`Today’s race for ${date} · a new one at midnight`, `Гонка дня на ${date} · новая в полночь`)}</span>
+          <RacePill lang={lang} daily={d} />
+          <Link className="hm-src" href="/help">{t('How a race goes', 'Как проходит гонка')}<IconArrow s={14} /></Link>
+        </section>
+      </div>
+
+      <div className="hm-band">
+        <section className="hm-page hm-sec" aria-labelledby="h-parts">
+          <TileRow lang={lang} head={
+            <div className="hm-sec-t"><span className="kicker">{t('In the game · 8 parts', 'В игре · 8 частей')}</span><h2 className="hm-h2" id="h-parts">{t('Everything a real race has', 'Всё, что есть в настоящей гонке')}</h2></div>
+          }>
+            {tiles.map(([img, href, title, meta]) => (
+              <Link className="hm-tile" href={href} key={img}>
+                <span className="hm-photo hm-sq"><Image src={`/images/${img}.jpg`} alt="" fill sizes="180px" /></span>
+                <span className="card-title">{title}</span>
+                <span className="hm-meta">{meta}</span>
+              </Link>
+            ))}
+          </TileRow>
+        </section>
+      </div>
+
+      <section className="hm-page hm-sec" aria-labelledby="h-today">
+        <div className="hm-sec-h">
+          <div className="hm-sec-t">
+            <span className="kicker">{t('Today’s race · the same for everyone', 'Гонка дня · одна для всех')}</span>
+            <h2 className="hm-h2" id="h-today">{best
+              ? t(`${live!.races} races today · best time ${clock(best.s)}`, `Гонок сегодня: ${live!.races} · лучшее время ${clock(best.s)}`)
+              : t('Be the first on today’s ranking', 'Стань первым в рейтинге дня')}</h2>
+          </div>
+          <Link className="hm-src" href="/race">{t('Race hub', 'Меню гонок')}<IconArrow s={14} /></Link>
+        </div>
+        <div className="hm-today">
+          <a className="hm-course" href="/play?race=today">
+            <span className="hm-photo hm-wide">
+              <span className="hm-clip"><Image src="/images/top.jpg" alt={t('Today’s course from above', 'Дистанция дня сверху')} fill sizes="(min-width: 900px) 640px, 100vw" /></span>
+              <span className="hm-ptag"><span className="hm-ptag-a">{kn} {t('kn', 'уз')}</span><span className="hm-ptag-b"><span>{t('Today', 'Сегодня')}</span><b>{t(`${d.laps} lap`, `${d.laps} круг`)}</b><span>{t(`${d.fleet} boats`, `${d.fleet} лодок`)}</span></span></span>
+            </span>
+            <span className="card-title">{t(`Up and down · ${length} course · ${d.laps} lap`, `Апвинд — даунвинд · ${length} · ${d.laps} круг`)}</span>
+            <span className="hm-facts">
+              <span><IconWind s={15} />{windName}, {kn} {t('kn', 'уз')}</span>
+              <span><IconSail s={15} />{t(`${d.fleet} boats`, `${d.fleet} лодок`)}</span>
+              <span>{t(`${d.start}-minute start`, `старт ${d.start} мин`)}</span>
+              {d.current ? <span>{t('A current', 'Течение')}</span> : null}
+            </span>
+          </a>
+          <div className="hm-board">
+            <div className="hm-board-h"><span className="meta ink">{t('Today’s fastest', 'Самые быстрые сегодня')}</span><span className="meta">{windName} · {kn} {t('kn', 'уз')} · {d.fleet} {t('boats', 'лодок')}</span></div>
+            <ol className="hm-lb">
+              {top.map((r, i) => (
+                <li key={i} className={i === 0 ? 'first' : ''}>
+                  <span className="hm-n">{i + 1}</span><span>{r.name || t('Guest', 'Гость')}</span>
+                  <span className="hm-t">{clock(r.s)}{i > 0 && best ? <small>+{(r.s - best.s).toFixed(1)}</small> : null}</span>
+                </li>
+              ))}
+              {!top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
+              <MyRow lang={lang} day={d.day} signedIn={!!account} />
+            </ol>
+            <a className="pill pill-primary hm-cta" href="/play?race=today"><IconPlay /><span className="btn-t">{t('Sail today’s race', 'Пройти гонку дня')}</span></a>
+          </div>
+        </div>
+      </section>
+
+      <section className="hm-page hm-sec" aria-labelledby="h-how">
+        <div className="hm-sec-h">
+          <div className="hm-sec-t"><span className="kicker">{t('How a race goes', 'Как проходит гонка')}</span><h2 className="hm-h2" id="h-how">{t('A minute to the gun, then up and down', 'Минута до старта — и вверх-вниз')}</h2></div>
+          <Link className="hm-src" href="/help">{t('How to play in detail', 'Подробно о игре')}<IconArrow s={14} /></Link>
+        </div>
+        <ol className="hm-steps">
+          <li><span className="hm-num">1</span><span className="hm-step-t"><span className="hm-h3">{t('Pick a race', 'Выбери гонку')}</span><span className="hm-text">{t('Today’s race is the same for everyone. A free race takes your wind, fleet and course. Both start in one tap.', 'Гонка дня одна для всех. В свободной — твой ветер, флот и дистанция. Обе начинаются в одно касание.')}</span></span></li>
+          <li><span className="hm-num">2</span><span className="hm-step-t"><span className="hm-h3">{t('Get the start right', 'Возьми старт')}</span><span className="hm-text">{t('Hold below the line until the gun. Over early and the X flag sends you back to start again.', 'Держись под линией до сигнала. Фальстарт — флаг X, возвращайся и стартуй заново.')}</span></span></li>
+          <li><span className="hm-num">3</span><span className="hm-step-t"><span className="hm-h3">{t('Round the marks', 'Обойди знаки')}</span><span className="hm-text">{t('Beat up to the windward mark, run back through the gate and finish. Your time goes on today’s ranking.', 'Лавируй к верхнему знаку, спускайся через ворота и финишируй. Время попадёт в рейтинг дня.')}</span></span></li>
+        </ol>
+      </section>
+
+      <div className="hm-band">
+        <section className="hm-page hm-sec" aria-labelledby="h-num">
+          <div className="hm-sec-t"><span className="kicker">{t('RYC race office', 'Гоночный комитет RYC')}</span><h2 className="hm-h2" id="h-num">{t('The game in numbers', 'Игра в цифрах')}</h2></div>
+          <dl className="hm-stats">
+            <div><dt className="meta">{t('Wind', 'Ветер')}</dt><dd className="hm-stat-v">{KN.light}–{KN.strong} {t('kn', 'уз')}</dd><dd className="hm-meta">{t('Light, medium or strong breeze', 'Слабый, средний или сильный')}</dd></div>
+            <div><dt className="meta">{t('Rivals', 'Соперники')}</dt><dd className="hm-stat-v">3 · 5 · 7</dd><dd className="hm-meta">{t('Computer boats that sail by the rules', 'Компьютерные лодки, которые ходят по правилам')}</dd></div>
+            <div><dt className="meta">{t('Shifts', 'Заходы')}</dt><dd className="hm-stat-v">10°+</dd><dd className="hm-meta">{t('Every minute, with gusts and lulls', 'Каждую минуту, с порывами и затишьями')}</dd></div>
+            <div><dt className="meta">{t('Race of the day', 'Гонка дня')}</dt><dd className="hm-stat-v">1</dd><dd className="hm-meta">{t('A new one at midnight, the same for all', 'Новая в полночь, одна для всех')}</dd></div>
+          </dl>
+          <p className="hm-cite">{t('Free · no install · phone or computer · English and Russian.', 'Бесплатно · без установки · телефон или компьютер · английский и русский.')}<a className="hm-src" href="#faq">{t('Questions', 'Вопросы')}<IconArrow s={14} /></a></p>
+        </section>
+      </div>
+
+      <section className="hm-page hm-sec" id="faq" aria-labelledby="h-faq">
+        <div className="hm-faq">
+          <div className="hm-faq-side">
+            <span className="kicker">{t('Questions', 'Вопросы')}</span>
+            <h2 className="hm-h2" id="h-faq">{t('In short', 'Коротко')}</h2>
+            <p className="hm-text">{t('The game, today’s race and the ranking in a few lines. The full guide is on the How to play page.', 'Об игре, гонке дня и рейтинге в нескольких строках. Полное руководство — на странице «Как играть».')}</p>
+            <Link className="hm-src" href="/help">{t('How to play', 'Как играть')}<IconArrow s={14} /></Link>
+          </div>
+          <div className="hm-faq-list">
+            {faq.map(([q, a], i) => (
+              <details className="hm-faq-item" key={i} open={i === 0}>
+                <summary>{q}<svg className="hm-faq-ico" viewBox="0 0 20 20" width={18} height={18} aria-hidden="true"><path d="M10 3.5v13M3.5 10h13" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" /></svg></summary>
+                <p className="hm-text">{a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="hm-band">
+        <section className="hm-page hm-sec hm-help" aria-labelledby="h-rules">
+          <div className="hm-help-main">
+            <span className="kicker">Sailing Certification Test</span>
+            <h2 className="hm-h2" id="h-rules">{t('Learn the rules there, race by them here', 'Учи правила там, гоняйся по ним здесь')}</h2>
+            <p className="hm-text">{t('Up and down is made by RYC alongside Sailing Certification Test, the app for IYT exam practice. The rules the computer boats follow are the ones on the exam.', 'Up and down делает RYC вместе с Sailing Certification Test — приложением для подготовки к экзаменам IYT. Компьютерные лодки ходят по тем же правилам, что спрашивают на экзамене.')}</p>
+            <a className="hm-app" href="https://iyt.rycrentals.com/">
+              <span className="hm-app-ic"><Logo /></span>
+              <span className="hm-app-t"><span className="hm-app-n">Sailing Certification Test</span><span className="meta">{t('IYT exam practice · 6100 questions', 'Подготовка к IYT · 6100 вопросов')}</span></span>
+              <span className="hm-app-go" aria-hidden="true"><IconArrow s={20} /></span>
+            </a>
+          </div>
+          <div className="hm-help-side">
+            <span className="meta">{t('Rules you meet on the first beat', 'Правила, которые встретишь на первой лавировке')}</span>
+            <ol className="hm-tips">
+              <li><span className="hm-num">1</span><span>{t('Port gives way to starboard', 'Левый галс уступает правому')}</span><span className="meta">{t('Rule 10', 'Правило 10')}</span></li>
+              <li><span className="hm-num">2</span><span>{t('Windward boat keeps clear', 'Наветренная уступает')}</span><span className="meta">{t('Rule 11', 'Правило 11')}</span></li>
+              <li><span className="hm-num">3</span><span>{t('Room at the mark', 'Место у знака')}</span><span className="meta">{t('Rule 18', 'Правило 18')}</span></li>
+            </ol>
           </div>
         </section>
+      </div>
 
-        <section className="hsec">
-          <div className="hsplit">
-            <div className="hstack">
-              <span className="kicker">{t('Every day', 'Каждый день')}</span>
-              <h2 className="h-land-s">{t('Today’s race, the same for everyone', 'Гонка дня — одна для всех')}</h2>
-              <p className="lead">{t('One race a day with the same wind, course and fleet for every player, so the times compare fairly. Sign in with Google or your email to put your time on the ranking; your best times follow you to any device.', 'Одна гонка в день: у всех один ветер, дистанция и флот, поэтому время сравнивается честно. Войди через Google или по почте, чтобы попасть в рейтинг; лучшие результаты будут с тобой на любом устройстве.')}</p>
-              <a className="pill pill-primary pill-s" href="/play?race=today"><IconPlay /><span className="btn-t">{t('Sail today’s race', 'Пройти гонку дня')}</span></a>
-            </div>
-            <div className="band-line fastest">
-              <div className="lhead"><span className="meta">{t('Today’s fastest', 'Самые быстрые сегодня')}</span><span className="sp" /><span className="meta">{windName} · {KN[d.preset]} {t('kn', 'уз')} · {d.fleet} {t('boats', 'лодок')}</span></div>
-              <ol className="lb">
-                {top.map((r, i) => <li key={i}><span className="n">{i + 1}</span><span>{r.name || t('Guest', 'Гость')}</span><span>{clock(r.s)}</span></li>)}
-                {!top.length && <li><span className="n">·</span><span className="muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
-                <li className="me"><span className="n">·</span><span>{t('You?', 'Ты?')}</span><span /></li>
-              </ol>
-            </div>
-          </div>
-        </section>
-
-        <section className="hsec">
-          <div className="hstack">
-            <span className="kicker">{t('Free race', 'Свободная гонка')}</span>
-            <h2 className="h-land-s">{t('Or set up your own', 'Или настрой свою')}</h2>
-            <p className="lead">{t('Pick the wind, the fleet, the course, the laps and the start, and race as often as you like. The game keeps your best time for every course.', 'Выбери ветер, флот, дистанцию, круги и старт — и гоняйся сколько хочешь. Игра помнит твой лучший результат на каждой дистанции.')}</p>
-            <Link className="pill pill-s" href="/race/free"><span className="btn-t">{t('Set up a free race', 'Настроить гонку')}</span></Link>
-          </div>
-        </section>
-
-        <section className="hsec">
-          <div className="hband">
-            <span className="kicker">{t('Ready?', 'Готов?')}</span>
-            <h2 className="h-land-s">{t('The start sequence is waiting', 'Стартовая процедура ждёт')}</h2>
-            <p className="lead muted">{t('Up and down is made by RYC alongside Sailing Certification Test, the app for IYT exam practice: learn the rules there, race by them here.', 'Up and down делает RYC вместе с Sailing Certification Test — приложением для подготовки к экзаменам IYT: учи правила там, гоняйся по ним здесь.')}</p>
-            <div className="btn-row">
-              <a className="pill pill-primary pill-s" href="/play?race=today"><IconPlay /><span className="btn-t">{t('Play today’s race', 'Сыграть гонку дня')}</span></a>
-              <Link className="pill pill-s" href="/help"><span className="btn-t">{t('How to play', 'Как играть')}</span></Link>
-            </div>
-          </div>
-        </section>
-
-        <footer className="hfoot">
-          <span className="kicker">RYC · Up and down</span>
-          <Link href="/help">{t('How to play', 'Как играть')}</Link>
-          <Link href="/race">{t('Race hub', 'Меню гонок')}</Link>
-          <Link href="/sign-in">{t('Sign in', 'Войти')}</Link>
-          <a href="https://iyt.rycrentals.com/">Sailing Certification Test</a>
-          <span className="sp" />
+      <div className="hm-page hm-foot-wrap">
+        <footer className="hm-foot">
+          <Link className="hm-brand" href="/" aria-label="RYC"><Logo /></Link>
+          <div className="hm-foot-col"><span className="meta">{t('Game', 'Игра')}</span><Link href="/help">{t('How to play', 'Как играть')}</Link><Link href="/race">{t('Today’s race', 'Гонка дня')}</Link><Link href="/race/free">{t('Free race', 'Свободная гонка')}</Link><Link href="/boat">{t('Your boat', 'Твоя яхта')}</Link><Link href="/settings">{t('Settings', 'Настройки')}</Link></div>
+          <div className="hm-foot-col"><span className="meta">{t('Account', 'Аккаунт')}</span>{account ? <Link href="/settings">{account.name || account.email}</Link> : <Link href="/sign-in">{t('Sign in', 'Войти')}</Link>}<a href="#faq">{t('Questions', 'Вопросы')}</a></div>
+          <div className="hm-foot-col"><span className="meta">RYC</span><a href="https://www.rycrentals.com/">rycrentals.com</a><a href="https://www.rycsailing.com/">rycsailing.com</a><a href="https://iyt.rycrentals.com/">{t('IYT Test', 'Тест IYT')}</a></div>
           <Langs lang={lang} back="/" />
         </footer>
       </div>
-    </div>
-  );
-}
-
-function Feat({ img, title, text }: { img: string; title: string; text: string }) {
-  return (
-    <div className="hitem">
-      <Image className="hshot" src={`/images/${img}.jpg`} width={960} height={720} sizes="(min-width: 900px) 280px, 50vw" alt="" />
-      <span className="card-title">{title}</span>
-      <p className="lead">{text}</p>
     </div>
   );
 }
