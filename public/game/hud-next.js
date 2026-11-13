@@ -15,7 +15,7 @@ const ICON = {
 };
 
 const CSS = `
-#hud.next { --hz: 1; zoom: var(--hz); --glass: rgba(8, 14, 20, 0.42); --line: rgba(255, 255, 255, 0.14); --ok: #2ee6a0; --ease: cubic-bezier(.2, .8, .2, 1); }
+#hud.next { --hz: 1; --nx-w: 84px; zoom: var(--hz); --glass: rgba(8, 14, 20, 0.42); --line: rgba(255, 255, 255, 0.14); --ok: #2ee6a0; --ease: cubic-bezier(.2, .8, .2, 1); }
 @media (min-width: 1100px) and (min-height: 640px) { #hud.next, #nxTag { --hz: 1.15; } }
 @media (min-width: 1500px) and (min-height: 860px) { #hud.next, #nxTag { --hz: 1.3; } }
 .nx { display: none !important; }
@@ -44,9 +44,14 @@ const CSS = `
 .nx-place.up { animation: nx-pop .9s var(--ease); color: var(--ok); }
 .nx-place.down { animation: nx-pop .9s var(--ease); color: var(--danger); }
 .nx-mute { color: rgba(255,255,255,.62); font-weight: 700; }
-#hud.next .chip { height: 22px; font-size: 11px; animation: nx-drop .4s var(--ease) both; }
-#hud.next #toast { font-size: 13px; padding: 7px 14px; transform: translateY(-6px); transition: opacity .3s, transform .35s var(--ease), visibility 0s .3s; }
-#hud.next #toast.show { transform: none; transition: opacity .25s, transform .35s var(--ease); }
+#hud.next .chip { height: 22px; font-size: 11px; }
+/* chips: one element each, its words changing in place; in with a soft drop, out with a fade while the others slide over */
+.nx-chip { overflow: hidden; white-space: nowrap; max-width: 0; padding-left: 0 !important; padding-right: 0 !important; margin: 0 -3px; opacity: 0; transform: translateY(-8px) scale(.94);
+  transition: opacity .45s ease, transform .55s var(--ease), max-width .55s var(--ease), padding .55s var(--ease), margin .55s var(--ease), background-color .5s, color .5s; }
+.nx-chip.in { max-width: 340px; padding-left: 9px !important; padding-right: 9px !important; margin: 0; opacity: 1; transform: none; }
+.nx-chip.out { transition: opacity .5s ease, transform .6s var(--ease), max-width .6s var(--ease) .15s, padding .6s var(--ease) .15s, margin .6s var(--ease) .15s, background-color .5s, color .5s; }
+#hud.next #toast { font-size: 13px; padding: 7px 14px; transform: translateY(-8px) scale(.97); transition: opacity .5s ease, transform .6s var(--ease), visibility 0s .5s; }
+#hud.next #toast.show { transform: none; transition: opacity .4s ease, transform .55s var(--ease); }
 /* the start flags: smaller */
 #hud.next .flags { gap: 10px; padding: 6px 10px 5px; border-radius: 12px; background: var(--glass); animation: nx-drop .4s var(--ease) both; }
 #hud.next .flag { width: 36px; height: 24px; } #hud.next .flag.cls { font-size: 16px; line-height: 24px; } #hud.next .flag.P::after { inset: 7px 12px; }
@@ -59,7 +64,7 @@ const CSS = `
 /* top left: a small wind dial */
 .nx-inst { position: absolute; left: calc(10px + var(--sl)); top: calc(8px + var(--st)); gap: 12px; align-items: flex-start; animation: nx-slide-l .55s var(--ease) both; }
 .nx-inst .col { display: flex; flex-direction: column; align-items: center; gap: 9px; }
-.nx-dial { width: 64px; height: 64px; border-radius: 50%; display: block; }
+.nx-dial { width: var(--nx-w); height: var(--nx-w); border-radius: 50%; display: block; }
 .nx-dial text { font-family: var(--sans); font-weight: 700; }
 #hud.next .tr .row .nx-b { position: static; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--glass); color: #fff; font: 700 10px var(--sans); padding: 0; margin: 0; pointer-events: auto; transition: background-color .2s, transform .15s; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 #hud.next .tr .row #zoomIn, #hud.next .tr .row #zoomOut { font-size: 16px; line-height: 1; }
@@ -76,8 +81,8 @@ const CSS = `
 .nx-cam.say { gap: 5px; } .nx-cam.say span { max-width: 80px; opacity: 1; }
 .nx-cam:active { transform: scale(.92); }
 #hud.next .round-s { width: 28px; height: 28px; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-#hud.next #mini { width: 112px; height: 112px; border-radius: 14px; background: var(--glass); border: 1px solid var(--line); opacity: .88; transition: width .3s var(--ease), height .3s var(--ease), opacity .3s; }
-#hud.next #mini.big { width: min(260px, calc(100vh - 80px)); height: min(260px, calc(100vh - 80px)); opacity: 1; }
+#hud.next #mini { width: var(--nx-w); height: var(--nx-w); border-radius: 14px; background: var(--glass); border: 1px solid var(--line); opacity: .88; transition: width .3s var(--ease), height .3s var(--ease), opacity .3s; }
+#hud.next #mini.big { width: min(260px, calc(100vh - 140px)); height: min(260px, calc(100vh - 140px)); opacity: 1; }
 
 /* bottom left: the rudder fades back when no one is steering */
 #hud.next #rudder { width: 150px; height: 84px; opacity: .45; transition: opacity .4s; }
@@ -144,10 +149,10 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { #hud.next *, #hud.next, #nxTag * { animation: none !important; transition: none !important; } }
 
 @media (orientation: portrait) {
-  #hud.next .tc { top: calc(126px + var(--st)); }
+  #hud.next { --nx-w: 62px; }
+  #hud.next .tc { top: calc(158px + var(--st)); } /* under the dial and the map */
   .nx-pct { display: none !important; }
-  .nx-dial { width: 54px; height: 54px; }
-  #hud.next #mini { width: 76px; height: 76px; border-radius: 12px; }
+  #hud.next #mini { border-radius: 12px; }
   #hud.next #rudder { width: 140px; height: 78px; }
 }
 `;
@@ -159,7 +164,7 @@ export function createHudNext({ t, LANG, fmt, world, getRace, setCam }) {
   const $ = (s) => document.querySelector(s);
   const hud = $('#hud'), tc = hud.querySelector('.tc'), row = hud.querySelector('.tr .row'), zoomBox = hud.querySelector('.zoom');
   const speedBtn = $('#speedBtn'), zoomIn = $('#zoomIn'), zoomOut = $('#zoomOut'), rudder = $('#rudder'), sz = $('#sheetZone'), sheet = $('#sheet'), jibSheet = $('#jibSheet');
-  const count = $('#count');
+  const count = $('#count'), mini = $('#mini'), trBox = hud.querySelector('.tr');
   const nf = (x, d = 1) => (LANG === 'ru' ? x.toFixed(d).replace('.', ',') : x.toFixed(d));
   const M = LANG === 'ru' ? 'м' : 'm';
   document.head.append(Object.assign(document.createElement('style'), { textContent: CSS }));
@@ -210,7 +215,7 @@ export function createHudNext({ t, LANG, fmt, world, getRace, setCam }) {
   const tagT = tag.querySelector('.in span'), tagIn = tag.querySelector('.in');
   const v3 = world.camera.position.clone();
 
-  let on = false;
+  let on = false, chipsReady = false;
   try {
     const q = new URLSearchParams(location.search).get('hud');
     if (q === 'next') localStorage.setItem('hudNext', '1'); else if (q === 'old') localStorage.removeItem('hudNext');
@@ -219,9 +224,11 @@ export function createHudNext({ t, LANG, fmt, world, getRace, setCam }) {
 
   function apply(v) {
     on = v; hud.classList.toggle('next', on);
+    if (chipsReady) clearChips();
     for (const id of btnIds) { const b = document.getElementById(id); if (b) (on ? acts : hud).append(b); }
     for (const b of [zoomIn, zoomOut, speedBtn]) b.classList.toggle('nx-b', on);
     if (on) cam.before(zoomIn, zoomOut, speedBtn); else zoomBox.append(zoomIn, zoomOut, speedBtn);
+    (on ? inst.querySelector('.col') : trBox).append(mini); // the map under the wind dial, the same size
     if (!on) tag.classList.remove('on');
     // replay the entrance
     for (const el of [pill, inst, hud.querySelector('.tr')]) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
@@ -333,5 +340,31 @@ export function createHudNext({ t, LANG, fmt, world, getRace, setCam }) {
     tag.classList.add('on');
   }
 
-  return { update, get on() { return on; }, toggle() { apply(!on); try { on ? localStorage.setItem('hudNext', '1') : localStorage.removeItem('hudNext'); } catch (e) {} return on; } };
+  // chips, kept by key: a new one fades in, a changed one only changes its words (and colour), one no longer
+  // wanted stays a moment (no flicker at a threshold), then fades out and folds away
+  const chipBox = $('#chips'), live = new Map(), LINGER = 0.9;
+  function chips(list) {
+    const now = performance.now() / 1000, want = new Set();
+    for (const [kind, text, key = text] of list) {
+      want.add(key);
+      let c = live.get(key);
+      if (!c) {
+        const el = document.createElement('span'); el.className = `chip nx-chip ${kind}`; chipBox.append(el);
+        c = { el, kind }; live.set(key, c);
+        void el.offsetWidth; el.classList.add('in'); // from the start state, so it animates
+      }
+      if (c.kind !== kind) { c.el.classList.replace(c.kind, kind); c.kind = kind; }
+      if (c.out) { c.out = false; clearTimeout(c.timer); c.el.classList.remove('out'); c.el.classList.add('in'); }
+      txt(c.el, text); c.seen = now;
+    }
+    for (const [key, c] of live) {
+      if (want.has(key) || c.out || now - c.seen < LINGER) continue;
+      c.out = true; c.el.classList.remove('in'); c.el.classList.add('out');
+      c.timer = setTimeout(() => { c.el.remove(); live.delete(key); }, 800);
+    }
+  }
+  function clearChips() { for (const c of live.values()) clearTimeout(c.timer); live.clear(); chipBox.textContent = ''; }
+  chipsReady = true;
+
+  return { update, chips, get on() { return on; }, toggle() { apply(!on); try { on ? localStorage.setItem('hudNext', '1') : localStorage.removeItem('hudNext'); } catch (e) {} return on; } };
 }

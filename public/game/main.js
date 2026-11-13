@@ -663,14 +663,14 @@ function updateHud(dt) {
   }
   // chips: penalty, dirty air, surfing
   const chips = [];
-  if (P.pen) chips.push(['bad', t('pen', Math.min(P.pen.turns, Math.floor(Math.abs(P.pen.sum) / (2 * Math.PI) * 10) / 10).toFixed(1), P.pen.turns)]);
-  if (P.shadow > 0.08) chips.push(['warn', `${t('dirty')} −${Math.round(P.shadow * 100)}%`]);
-  if (P.surf > 0) chips.push(['ok', t('surf')]);
-  if (P.byLee > 3) chips.push([P.byLee > 8 ? 'bad' : 'warn', t('byLee', Math.round(P.byLee))]);
+  if (P.pen) chips.push(['bad', t('pen', Math.min(P.pen.turns, Math.floor(Math.abs(P.pen.sum) / (2 * Math.PI) * 10) / 10).toFixed(1), P.pen.turns), 'pen']);
+  if (P.shadow > 0.08) chips.push(['warn', `${t('dirty')} −${Math.round(P.shadow * 100)}%`, 'dirty']);
+  if (P.surf > 0) chips.push(['ok', t('surf'), 'surf']);
+  if (P.byLee > 3) chips.push([P.byLee > 8 ? 'bad' : 'warn', t('byLee', Math.round(P.byLee)), 'byLee']);
   // on the beat, the wind's swing against its middle: a lift (she can point higher) or a header (time to tack)
   if (race.clock >= 0 && !P.done && !P.auto && a < 70) {
     const s = Math.round(((P.twa < 0 ? -1 : 1) * wrap(P.wdir - race.wind.mean())) / D2R);
-    if (s >= 4) chips.push(['ok', t('lift', s)]); else if (s <= -4) chips.push(['warn', t('header', -s)]);
+    if (s >= 4) chips.push(['ok', t('lift', s), 'shift']); else if (s <= -4) chips.push(['warn', t('header', -s), 'shift']);
   }
   // mark-room: who gets it was settled when the first of you reached the zone
   let zs = null, zd = 1e9;
@@ -681,11 +681,12 @@ function updateHud(dt) {
   }
   if (zs && zd < 60) {
     const mine = zs.st.entitled === P, n = zs.o.name;
-    chips.push([mine ? 'ok' : 'warn', zs.st.overlapped ? t(mine ? 'zIn' : 'zOut', n) : t(mine ? 'zAhead' : 'zAstern', n)]);
+    chips.push([mine ? 'ok' : 'warn', zs.st.overlapped ? t(mine ? 'zIn' : 'zOut', n) : t(mine ? 'zAhead' : 'zAstern', n), 'zone']);
   }
   if (hudNext.on) chips.length = Math.min(chips.length, 2); // the lighter HUD: the two that matter most
   const ck = chips.map((x) => x.join()).join('|');
-  if (ck !== chipsKey) { chipsKey = ck; el.chips.innerHTML = chips.map(([k, s]) => `<span class="chip ${k}">${s}</span>`).join(''); }
+  if (hudNext.on) { hudNext.chips(chips); chipsKey = ''; } // it updates them in place, in and out smoothly
+  else if (ck !== chipsKey) { chipsKey = ck; el.chips.innerHTML = chips.map(([k, s]) => `<span class="chip ${k}">${s}</span>`).join(''); }
 
   const left = -race.clock;
   // the countdown to the start, large all the way, and huge for the last ten seconds
