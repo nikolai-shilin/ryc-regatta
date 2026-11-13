@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "cleanUrls": true,
+  "ignoreCommand": "git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- .",
+  "headers": [
+    { "source": "/(.*)", "headers": [{ "key": "x-robots-tag", "value": "noindex" }] },
+    { "source": "/game/(.*)", "headers": [{ "key": "cache-control", "value": "public, max-age=0, must-revalidate" }] }
+  ]
+}

@@ -1,6 +1,9 @@
-// Tells the server about the player's races (api/game.mjs → public.game_races), for the admins' Overview page: one post
-// when a race starts, one when the player crosses the finish. Best effort: a failure is ignored and the game never
-// waits on it. Inside Telegram the launch data names the player; in a plain browser the race is counted without a name.
+// Tells the server about the player's races (api/game.mjs on iyt.rycrentals.com → public.game_races), for the admins'
+// Overview page: one post when a race starts, one when the player crosses the finish. Best effort: a failure is ignored
+// and the game never waits on it. Inside Telegram the launch data names the player; in a plain browser the race is
+// counted without a name. The post goes to another site, so it stays a simple request (plain text, no headers of its
+// own, the launch data in the body): no preflight, which a keepalive post on leaving the page may not get through.
+const API = 'https://iyt.rycrentals.com/api/game';
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
 
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID()
@@ -8,10 +11,7 @@ const uuid = () => (crypto.randomUUID ? crypto.randomUUID()
 
 function send(body) {
   try {
-    fetch('/api/game', {
-      method: 'POST', keepalive: true, body: JSON.stringify(body),
-      headers: { 'content-type': 'application/json', 'x-telegram-init-data': TG ? TG.initData : '' },
-    }).catch(() => {});
+    fetch(API, { method: 'POST', keepalive: true, body: JSON.stringify({ ...body, initData: TG ? TG.initData : '' }) }).catch(() => {});
   } catch (e) {}
 }
 

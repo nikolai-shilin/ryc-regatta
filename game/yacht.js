@@ -208,7 +208,7 @@ const cyl = (r0, r1, h, mat, seg = 10) => new THREE.Mesh(new THREE.CylinderGeome
 // the club's logo (the pennant with RYC in it), recoloured and drawn large so it stays sharp on a canvas
 const logoCache = {};
 function logoImage(color) {
-  if (!logoCache[color]) logoCache[color] = fetch('/design/logo-black.svg').then((r) => r.text()).then((svg) => new Promise((res, rej) => {
+  if (!logoCache[color]) logoCache[color] = fetch('/logo-black.svg').then((r) => r.text()).then((svg) => new Promise((res, rej) => {
     const img = new Image(); img.onload = () => res(img); img.onerror = rej;
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replaceAll('#000000', color).replace('width="50" height="25"', 'width="800" height="400"'));
   })).catch(() => null);

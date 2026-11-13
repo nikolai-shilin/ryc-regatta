@@ -5,10 +5,10 @@ import { raceStarted, raceFinished } from './stats.js';
 
 const $ = (s) => document.querySelector(s);
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
-// The game has its own address, regatta.rycrentals.com (middleware.js serves this page at its root); the app and its
-// articles stay on iyt.rycrentals.com, so the links back to them name that host. Anywhere else (a preview, localhost)
-// both are on one host and the links stay relative.
-const SITE = location.hostname === 'regatta.rycrentals.com' ? 'https://iyt.rycrentals.com' : '';
+// The game is a site of its own (ryc-regatta/, the Vercel project ryc-regatta, at regatta.rycrentals.com); the app,
+// its rule articles, its fonts and the race scores (api/game.mjs) stay on iyt.rycrentals.com, which lets this site
+// read them across origins. SITE is in stats.js too.
+const SITE = 'https://iyt.rycrentals.com';
 // From Telegram the app passes its launch data in the hash, as Telegram does (miniapp/app.js); telegram-web-app.js has
 // read and kept it by now, so it comes off the address bar and out of any link the player copies.
 if (TG && /tgWebAppData=/.test(location.hash)) try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
@@ -803,11 +803,10 @@ function renderDebrief() {
     pb = `<p class="pb">${r.isNew ? `<b>${esc(t('pbNew'))}</b> ` : ''}${esc(t(s.daily ? 'pbToday' : 'pb', fmt(r.best)))}</p>`;
   }
   $('#debrief').innerHTML = `<span class="meta">${esc(t('dbK'))}</span><ul class="db">${rows.join('')}</ul>${pb}<div id="todayTop"></div>`;
-  // the rule articles are the site's pages; a link shows only once its page is there (a level can be switched off).
-  // The check asks this host (the same deployment), since iyt.rycrentals.com would not answer it across origins
-  for (const a of $('#debrief').querySelectorAll('a.rl')) fetch(a.getAttribute('href').slice(SITE.length).split('#')[0], { method: 'HEAD' }).then((r) => { if (r.ok) a.hidden = false; }).catch(() => {});
+  // the rule articles are the app's pages; a link shows only once its page is there (a level can be switched off)
+  for (const a of $('#debrief').querySelectorAll('a.rl')) fetch(a.getAttribute('href').split('#')[0], { method: 'HEAD' }).then((r) => { if (r.ok) a.hidden = false; }).catch(() => {});
   // today's fastest (from the server, a few minutes behind)
-  if (s.daily) fetch('/api/game').then((r) => (r.ok ? r.json() : null)).then((j) => {
+  if (s.daily) fetch(`${SITE}/api/game`).then((r) => (r.ok ? r.json() : null)).then((j) => {
     const d = j && j.daily; if (!d || d.d !== s.daily || !d.top.length) return;
     $('#todayTop').innerHTML = `<span class="meta">${esc(t('todayTop'))}</span><ol class="lb">${d.top.map((x) => `<li><span>${esc(x.name || t('guest'))}</span><b>${fmt(x.s)}</b></li>`).join('')}</ol>`;
   }).catch(() => {});
