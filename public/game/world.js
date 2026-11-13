@@ -5,34 +5,22 @@ const SC = HULL / 10.4; // the model is drawn 10.4 m long; a First 40.7 is 12.2 
 import { BoatView, LOOKS, playerLook } from './yacht.js';
 import { CommitteeBoat } from './committee.js';
 import { Wildlife } from './wildlife.js';
+import { Post, Mirror, OVERLAY, MIRRORED } from './post.js';
+import { Ocean, OCEAN_GLSL, oceanUniforms, blankOcean } from './ocean.js';
+import { LIGHTS, pickLight, sunVector, SKY_GLSL, skyUniforms } from './light.js';
 export { flagTexture } from './committee.js';
 
+// the sky's colours and the sun: one set of objects that every shader shares; setLight() changes them in place
 const SKY_TOP = new THREE.Color('#4f8fcb'), SKY_HORIZON = new THREE.Color('#d6e7f0');
-const SUN = new THREE.Vector3(-0.41, 0.57, 0.71).normalize(); // from the south-west, behind a boat beating north
+const SUN = new THREE.Vector3(-0.41, 0.57, 0.71).normalize(); // a clear day: from the south-west, behind a boat beating north
 const FOG_NEAR = 150, FOG_FAR = 3200;
-// fair-weather cumulus on a layer overhead, made from the ripple noise (uRipple): the sky draws them lit from the sun's
-// side (shaded where the cloud thickens towards the sun, a bright rim near it); the sea reflects a cheaper version
-const CLOUDS = /* glsl */ `
-float cloudDen(vec3 d, float t) {
-  vec2 p = d.xz / (max(d.y, 0.0) + 0.1) * 0.3 + vec2(t * 0.0016, t * 0.0007);
-  float n = texture2D(uRipple, p).w * 0.62 + texture2D(uRipple, p * 2.3 + 0.31).w * 0.28 + texture2D(uRipple, p * 6.1 + 0.67).w * 0.1;
-  return smoothstep(0.52, 0.74, n) * smoothstep(0.02, 0.16, d.y);
-}
-vec4 withClouds(vec3 col, vec3 d, vec3 sun, float t, bool cheap) {
-  if (d.y <= 0.0) return vec4(col, 0.0);
-  float c = cloudDen(d, t);
-  if (c <= 0.0) return vec4(col, 0.0);
-  float lit = 0.8;
-  if (!cheap) lit = clamp(0.62 + (c - cloudDen(normalize(d + sun * 0.035), t)) * 1.6, 0.35, 1.0);
-  vec3 cc = mix(vec3(0.6, 0.66, 0.74), vec3(1.0, 0.98, 0.95), lit);
-  cc += vec3(1.0, 0.92, 0.75) * pow(max(dot(d, sun), 0.0), 8.0) * (1.0 - c) * 0.6;
-  return vec4(mix(col, cc, c * 0.92), c);
-}`;
 
 // the waves (sim.js) drive the water shader, the boats and the buoys alike
 const NW = 8, NV = 5; // wave trains shaded / wave trains that move the surface (the short ones would alias on the mesh)
+// the chop from the FFT (ocean.js) rides on top of the swell; it fades out far off, where the mesh is too coarse for it
 const WATER_VS = /* glsl */ `
-uniform float uTime; uniform vec4 uW[8]; uniform float uWs[8], uQ[8];
+uniform float uTime; uniform vec4 uW[8]; uniform float uWs[8], uQ[8]; uniform vec3 uCam;
+${OCEAN_GLSL}
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
 void main() {
   vec4 wp = modelMatrix * vec4(position, 1.0);
@@ -42,22 +30,25 @@ void main() {
     float ph = k * dot(d, xz) - uWs[i] * uTime + float(i) * 1.7;
     off.xz += uQ[i] * A * d * cos(ph); off.y += A * sin(ph); // Gerstner: crests pinch, troughs flatten
   }
-  wp.xyz += off; vWorld = wp.xyz; vXZ = xz; vH = off.y;
+  vH = off.y;
+  off += fftDisp(xz) * (1.0 - smoothstep(180.0, 420.0, length(xz - uCam.xz)));
+  wp.xyz += off; vWorld = wp.xyz; vXZ = xz;
   gl_Position = projectionMatrix * viewMatrix * wp;
 }`;
 const WATER_FS = /* glsl */ `
-uniform float uTime, uFogNear, uFogFar, uChop, uAmp, uWhite; uniform vec4 uW[8]; uniform float uWs[8], uQ[8];
-uniform vec3 uCam, uSun, uDeep, uScatter, uTop, uHorizon, uFog; uniform vec4 uGust[12]; uniform vec2 uWind, uPivot;
-uniform sampler2D uRipple;
+uniform float uTime, uFogNear, uFogFar, uChop, uAmp, uWhite, uGlint, uReflOn; uniform vec4 uW[8]; uniform float uWs[8], uQ[8];
+uniform vec3 uCam, uDeep, uScatter; uniform vec4 uGust[12]; uniform vec2 uWind, uPivot;
+uniform sampler2D uRefl; uniform mat4 uReflMat;
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
-${CLOUDS}
+${SKY_GLSL}
+${OCEAN_GLSL}
 vec3 skyAt(vec3 d) {
   d.y = abs(d.y);
-  vec3 c = mix(uHorizon, uTop, pow(clamp(d.y, 0.0, 1.0), 0.5));
+  vec3 c = skyBase(d);
 #ifndef LOW_Q
   c = withClouds(c, d, uSun, uTime, true).rgb; // the clouds in the reflection
 #endif
-  return c + vec3(1.0, 0.9, 0.7) * pow(max(dot(d, uSun), 0.0), 10.0) * 0.25;
+  return c + uSunCol * pow(max(dot(d, uSun), 0.0), 10.0) * 0.25;
 }
 void main() {
   vec2 p = vXZ;
@@ -68,6 +59,8 @@ void main() {
     float ph = k * dot(d, p) - uWs[i] * uTime + float(i) * 1.7, c = cos(ph), s = sin(ph);
     n.xz -= d * k * A * c; n.y -= uQ[i] * k * A * s;
   }
+  // the chop: its slopes and where it folds (J < 1 at a sharpening crest)
+  vec3 ch = fftSlope(p);
   // gusts: rougher water
   float gust = 0.0;
   for (int i = 0; i < 12; i++) {
@@ -94,7 +87,7 @@ void main() {
   vec2 q1 = vec2(dot(p, wq), dot(p, uWind) - uTime * 1.0) / 19.0;
   vec2 q2 = (vec2(dot(p, a2), dot(p, b2)) - uTime * 0.8 * vec2(0.6, 0.8)) / 6.5;
   vec4 t1 = texture2D(uRipple, q1);
-  vec2 rw = (t1.x * 2.0 - 1.0) * wq + (t1.y * 2.0 - 1.0) * uWind; // ripple slope in world x/z
+  vec2 rw = ((t1.x * 2.0 - 1.0) * wq + (t1.y * 2.0 - 1.0) * uWind) * (1.0 - 0.55 * uFftOn); // ripple slope in world x/z (the chop takes over its band)
 #ifdef LOW_Q
   rw *= 1.3;
 #else
@@ -106,12 +99,21 @@ void main() {
   vec2 prw = vec2(dot(uWind, vec2(0.83, 0.56)), dot(uWind, vec2(-0.56, 0.83))); // the wind in the same axes
   float patchy = texture2D(uRipple, (pr - prw * uTime * 0.17) / 83.0).w;
   float rs = uChop * (1.0 + 1.6 * gust) * (0.55 + 0.9 * patchy) * (0.7 + 0.8 * lane) / (1.0 + dist / 140.0);
-  n = normalize(vec3(n.x + rw.x * rs, n.y, n.z + rw.y * rs));
+  // the chop's slopes: rougher in a gust and in the rough patches, gone far off where its tile would show
+  float fk = (0.75 + 0.6 * gust) * (0.7 + 0.6 * patchy) * (1.0 - smoothstep(350.0, 1100.0, dist));
+  n = normalize(vec3(n.x + rw.x * rs - ch.x * fk, n.y, n.z + rw.y * rs - ch.y * fk));
   vec3 V = normalize(uCam - vWorld);
   float cosT = max(dot(n, V), 0.0);
   float F = 0.02 + 0.98 * pow(1.0 - cosT, 5.0);
   vec3 R = reflect(-V, n);
   vec3 refl = skyAt(R);
+  // the boats, marks and islands in the water: the mirror's picture, rippled by the surface; the sky where it shows none
+  if (uReflOn > 0.5) {
+    vec4 rc = uReflMat * vec4(vWorld.x, 0.0, vWorld.z, 1.0);
+    vec2 ruv = rc.xy / rc.w + n.xz * 0.4 / (1.0 + dist * 0.07);
+    vec4 rt = texture2D(uRefl, ruv);
+    refl = mix(refl, rt.rgb, rt.a * uReflOn * (1.0 - smoothstep(0.96, 1.0, max(abs(ruv.x - 0.5), abs(ruv.y - 0.5)) * 2.0)));
+  }
   // the water body: deep blue, lit turquoise where the crests let the sun through
   vec3 sunFlat = normalize(vec3(uSun.x, 0.0, uSun.z));
   float crest = smoothstep(-0.2, 1.0, vH / max(uAmp, 0.08));
@@ -119,9 +121,13 @@ void main() {
   vec3 body = uDeep * (0.75 + 0.25 * max(dot(n, uSun), 0.0)) + uScatter * sss * 0.45;
   vec3 col = mix(body, refl, F);
   // the sun: a sharp glint and a broader glitter
+  // specular antialiasing (Toksvig): where the normal changes faster than a pixel can show, the highlight is
+  // widened and dimmed to keep its energy, so far water shows a soft glitter path instead of crawling sparkles
+  vec3 fw = fwidth(n); float nv = clamp(dot(fw, fw), 0.0, 1.0);
+  float p1 = 1400.0 / (1.0 + 1400.0 * nv * 0.6), p2 = 160.0 / (1.0 + 160.0 * nv * 0.6);
   vec3 Hh = normalize(uSun + V);
   float nh = max(dot(n, Hh), 0.0);
-  col += vec3(1.0, 0.93, 0.8) * (pow(nh, 1400.0) * 9.0 + pow(nh, 160.0) * 0.5);
+  col += uSunCol * uGlint * (pow(nh, p1) * 9.0 * (p1 + 2.0) / 1402.0 + pow(nh, p2) * 0.5 * (p2 + 2.0) / 162.0);
   // whitecaps: a few waves break here and there — on a crest, where a slow patch of the noise says so — with a
   // ragged edge, and leave fading foam behind them. Nothing stretched or small-tiled, so no rows of dashes.
   // the noise is read across and along the wind (pa), so a breaker is a short ragged line along the crest, not a blob
@@ -132,7 +138,8 @@ void main() {
   float edge = texture2D(uRipple, vec2(pa.x / 9.0, pa.y / 3.2) - vec2(0.0, uTime * 0.03)).w;
 #endif
   float brk = texture2D(uRipple, vec2(pa.x / 46.0, pa.y / 20.0) - vec2(0.0, uTime * 0.012)).w; // where a wave is breaking now
-  float wv = 1.3 * crest + 3.0 * brk + 2.0 * edge + 0.4 * gust;
+  float fold = smoothstep(0.9, 0.35, ch.z); // the chop folding over its own crest
+  float wv = 1.3 * crest + 3.0 * brk + 2.0 * edge + 0.4 * gust + 1.4 * fold;
   float cap = smoothstep(4.45, 4.95, wv) * uWhite * (0.4 + 0.45 * t1.w); // a soft edge; foam isn't flat white
   float halo = smoothstep(4.2, 4.6, wv) * uWhite; // the aerated, paler water just round a breaking crest
   col = mix(col, col * 0.7 + uScatter * 0.45, halo * 0.3);
@@ -142,23 +149,25 @@ void main() {
   col = mix(col, vec3(0.86, 0.91, 0.94), clamp(cap * 0.7 + wisp, 0.0, 1.0));
   col = mix(col, col * 1.2 + vec3(0.03, 0.045, 0.06), lane * 0.55); // the lanes catch a little more light
   col *= 1.0 - 0.22 * gust; // a gust reads as a darker patch
-  col = mix(col, uFog, smoothstep(uFogNear, uFogFar, dist));
+  // the haze: the sky's own colour at the horizon in that direction, so the sea melts into it (warmer towards the sun)
+  vec3 hz = normalize(vec3(-V.x, 0.0, -V.z) + vec3(0.0, 0.001, 0.0));
+  col = mix(col, skyBase(hz), smoothstep(uFogNear, uFogFar, dist));
   gl_FragColor = vec4(col, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
 
 // distance lines across the beat: from the windward mark down to the start line, every 50 m (100 m on a long course),
-// each a row of faint dashes with its distance to the mark written at both ends. They widen with the distance, as the laylines do.
+// each a row of white dashes like the start line's, with its distance to the mark written at both ends. They widen with the distance, as the laylines do.
 export const ladderStep = (beat) => (beat > 600 ? 100 : 50);
 function ladder(c) {
   const g = new THREE.Group(), beat = -c.windward.z, step = ladderStep(beat);
   const dash = document.createElement('canvas'); dash.width = 64; dash.height = 4;
-  const dx = dash.getContext('2d'); dx.fillStyle = '#fff'; dx.fillRect(0, 0, 32, 4);
+  const dx = dash.getContext('2d'); dx.fillStyle = '#fff'; dx.fillRect(0, 0, 40, 4);
   for (let d = step; d < beat - 15; d += step) {
     const z = c.windward.z + d, half = Math.min(260, 30 + d * 0.95);
-    const tex = new THREE.CanvasTexture(dash); tex.wrapS = THREE.RepeatWrapping; tex.repeat.set((2 * half) / 8, 1);
-    const line = new THREE.Mesh(new THREE.PlaneGeometry(2 * half, 0.35).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.45, depthWrite: false, fog: true }));
+    const tex = new THREE.CanvasTexture(dash); tex.wrapS = THREE.RepeatWrapping; tex.repeat.set((2 * half) / 5, 1); // a dash every 5 m, as on the start line
+    const line = new THREE.Mesh(new THREE.PlaneGeometry(2 * half, 0.5).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.75, depthWrite: false, fog: true }));
     line.position.set(c.windward.x, 0.65, z); line.renderOrder = 1; g.add(line);
     // the distance, just past each end of the line
     const lc = document.createElement('canvas'); lc.width = 160; lc.height = 56;
@@ -173,12 +182,12 @@ function ladder(c) {
   return g;
 }
 
-// the laylines to the windward mark: two yellow rows of dashes from the edge of its zone down each side of the beat,
+// the laylines to the windward mark: two rows of white dashes, like the start line's, from the edge of its zone down each side of the beat,
 // far enough to reach below the start line. Each is a long strip, laid on the waves and turned to the wind every frame.
 class Laylines {
   constructor(c, tws) {
     this.m = c.windward; this.up = beatAngle(tws) * D2R;
-    const L = (-c.windward.z + 80) / Math.cos(this.up), N = Math.ceil(L / 4), HW = 0.6; // 4 m pieces, 1.2 m wide
+    const L = (-c.windward.z + 80) / Math.cos(this.up), N = Math.ceil(L / 4), HW = 0.25; // 4 m pieces, 0.5 m wide
     const dash = document.createElement('canvas'); dash.width = 64; dash.height = 4;
     const dx = dash.getContext('2d'); dx.fillStyle = '#fff'; dx.fillRect(0, 0, 40, 4);
     const tex = new THREE.CanvasTexture(dash); tex.wrapS = THREE.RepeatWrapping;
@@ -186,10 +195,10 @@ class Laylines {
     const pos = [], uv = [], idx = [];
     for (let i = 0; i <= N; i++) {
       const d = ZONE + (i / N) * L;
-      for (const o of [-HW, HW]) { this.v.push(d, o); pos.push(0, 0, 0); uv.push(d / 10, o < 0 ? 0 : 1); }
+      for (const o of [-HW, HW]) { this.v.push(d, o); pos.push(0, 0, 0); uv.push(d / 5, o < 0 ? 0 : 1); } // a dash every 5 m
       if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     }
-    const mat = new THREE.MeshBasicMaterial({ color: '#ffd400', map: tex, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide, fog: true });
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.75, depthWrite: false, side: THREE.DoubleSide, fog: true });
     this.group = new THREE.Group();
     this.lines = [-1, 1].map((sd) => {
       const g = new THREE.BufferGeometry();
@@ -281,7 +290,8 @@ function rippleTexture(N = 256) {
 const WAKE_N = 64, WAKE_DT = 0.3, WAKE_AGE = WAKE_N * WAKE_DT; // samples, seconds apart, seconds of wake
 const WAKE_VS = /* glsl */ `
 attribute float aAge, aSide, aKind, aStr; varying float vAge, vSide, vKind, vStr; varying vec2 vXZ;
-void main() { vAge = aAge; vSide = aSide; vKind = aKind; vStr = aStr; vec4 wp = modelMatrix * vec4(position, 1.0); vXZ = wp.xz; gl_Position = projectionMatrix * viewMatrix * wp; }`;
+${OCEAN_GLSL}
+void main() { vAge = aAge; vSide = aSide; vKind = aKind; vStr = aStr; vec4 wp = modelMatrix * vec4(position, 1.0); vXZ = wp.xz; wp.y += fftDisp(wp.xz).y; gl_Position = projectionMatrix * viewMatrix * wp; }`;
 const WAKE_FS = /* glsl */ `
 uniform sampler2D uRipple; uniform float uTime, uMax; uniform vec2 uWind;
 varying float vAge, vSide, vKind, vStr; varying vec2 vXZ;
@@ -352,7 +362,8 @@ class Wake {
 // at the bow and with speed. Local coordinates aL: metres along (+ towards the bow) and across.
 const CONTACT_VS = /* glsl */ `
 attribute vec2 aL; varying vec2 vL, vXZ;
-void main() { vL = aL; vXZ = position.xz; gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0); }`;
+${OCEAN_GLSL}
+void main() { vL = aL; vXZ = position.xz; gl_Position = projectionMatrix * viewMatrix * vec4(position + vec3(0.0, fftDisp(position.xz).y, 0.0), 1.0); }`;
 const CONTACT_FS = /* glsl */ `
 uniform sampler2D uRipple; uniform float uTime, uSpd; uniform vec2 uWind; varying vec2 vL, vXZ;
 const float HL = 5.6, HB = 1.75; // half the waterline's length and beam
@@ -382,7 +393,8 @@ class HullContact {
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(aL.length * 1.5), 3));
     g.setAttribute('aL', new THREE.Float32BufferAttribute(aL, 2));
     g.setIndex(idx);
-    this.u = { uRipple: uniforms.uRipple, uTime: uniforms.uTime, uWind: uniforms.uWind, uSpd: { value: 0 } };
+    this.u = { uRipple: uniforms.uRipple, uTime: uniforms.uTime, uWind: uniforms.uWind, uSpd: { value: 0 },
+      uFftD: uniforms.uFftD, uFftS: uniforms.uFftS, uFftOn: uniforms.uFftOn, uFftL: uniforms.uFftL, uFftW: uniforms.uFftW };
     this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ uniforms: this.u, vertexShader: CONTACT_VS, fragmentShader: CONTACT_FS, transparent: true, depthWrite: false }));
     this.mesh.frustumCulled = false; this.mesh.renderOrder = 2;
     scene.add(this.mesh);
@@ -406,6 +418,7 @@ class HullContact {
 const SEASHADE_VS = /* glsl */ `
 uniform float uTime; uniform vec4 uW[8]; uniform float uWs[8]; uniform vec3 uSun;
 varying float vUp; varying vec3 vPos;
+${OCEAN_GLSL}
 float seaY(vec2 xz) {
   float h = 0.0;
   for (int i = 0; i < ${NV}; i++) h += uW[i].w * sin(uW[i].z * dot(uW[i].xy, xz) - uWs[i] * uTime + float(i) * 1.7);
@@ -416,17 +429,17 @@ void main() {
   vec2 xz = wp.xz - uSun.xz * wp.y / uSun.y; // onto the level sea
   float h = seaY(xz);
   xz = wp.xz - uSun.xz * (wp.y - h) / uSun.y; // and again onto the wave there
-  vUp = wp.y - h; vPos = vec3(xz.x, seaY(xz) + 0.15, xz.y);
+  vUp = wp.y - h; vPos = vec3(xz.x, seaY(xz) + fftDisp(xz).y + 0.15, xz.y);
   gl_Position = projectionMatrix * viewMatrix * vec4(vPos, 1.0);
 }`;
 // the shade: what a shadow dims is the light from under the surface, not the sky the sea reflects — so it is faint
 // seen low across the water and plainest from above; and it fades towards the head of the sail, where the
 // penumbra spreads it thin
 const SEASHADE_FS = /* glsl */ `
-varying float vUp; varying vec3 vPos;
+uniform float uShade; varying float vUp; varying vec3 vPos;
 void main() {
   float down = abs(normalize(cameraPosition - vPos).y);
-  float a = 0.38 * mix(0.2, 1.0, smoothstep(0.05, 0.55, down)) * (1.0 - 0.75 * smoothstep(6.0, 19.0, vUp));
+  float a = 0.38 * uShade * mix(0.2, 1.0, smoothstep(0.05, 0.55, down)) * (1.0 - 0.75 * smoothstep(6.0, 19.0, vUp));
   gl_FragColor = vec4(0.0, 0.03, 0.06, a);
 }`;
 class SeaShadows {
@@ -489,15 +502,15 @@ function waterGeometry(R = 3000, rings = 200, segs = 256) {
 }
 
 const SKY_FS = /* glsl */ `
-uniform vec3 uTop, uHorizon, uSun; uniform sampler2D uRipple; uniform float uTime; varying vec3 vDir;
-${CLOUDS}
+uniform float uTime, uDisc; varying vec3 vDir;
+${SKY_GLSL}
 void main() {
   vec3 d = normalize(vDir);
-  vec3 col = mix(uHorizon, uTop, pow(clamp(d.y, 0.0, 1.0), 0.5));
+  vec3 col = skyBase(d);
   vec4 cl = withClouds(col, d, uSun, uTime, false);
   col = cl.rgb;
   float s = max(dot(d, uSun), 0.0);
-  col += vec3(1.0, 0.92, 0.75) * (pow(s, 800.0) * 4.0 * (1.0 - cl.a) + pow(s, 12.0) * 0.25); // the disc hides behind a cloud
+  col += uSunCol * (pow(s, 800.0) * 6.0 * uDisc * (1.0 - cl.a) + pow(s, 12.0) * 0.25); // the disc hides behind a cloud
   gl_FragColor = vec4(col, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -531,6 +544,9 @@ function currentVee() {
 
 // an island: a ridge of hills whose height rises and falls round it in a few smooth waves, green low down and bare
 // rock higher up; the haze (the fog) pales the far ones towards the sky
+// put an object (and all of it: layers are tested per mesh) in what the sea reflects
+function mirrored(obj) { obj.traverse((o) => o.layers.enable(MIRRORED)); return obj; }
+
 function island(rand, R, H, color) {
   const NA = 48, NR = 7, pos = [], col = [], idx = [];
   const ph = [rand() * 6, rand() * 6, rand() * 6, rand() * 6], sx = 1 + rand() * 0.8; // longer one way than the other
@@ -617,11 +633,13 @@ function drapeGuides(G, W, t) {
 
 // ---------- graphics levels ----------
 // High for computers, Medium to start on phones; Auto (main.js) steps down when the frame rate drops.
+// post: the HDR pass with bloom (its blur steps) and multisampling; mirror: the reflection's size (0: the sea
+// reflects only the sky); fft: the chop as a real sea spectrum
 const PHONE = /android|iphone|ipad/i.test(navigator.userAgent);
 export const QUALITY = {
-  high:   { ratio: 1.75, shadow: PHONE ? 1024 : 2048, rings: 200, segs: 256, foam: 1600 },
-  medium: { ratio: 1.3,  shadow: 1024, rings: 140, segs: 192, foam: 900 },
-  low:    { ratio: 1.0,  shadow: 0,    rings: 100, segs: 128, foam: 450, low: true }, // no shadows, simpler water
+  high:   { ratio: 1.75, shadow: PHONE ? 1024 : 2048, rings: 200, segs: 256, foam: 1600, post: { bloomLevels: 5, samples: 4 }, mirror: PHONE ? 0.35 : 0.5, fft: 128 },
+  medium: { ratio: 1.3,  shadow: 1024, rings: 140, segs: 192, foam: 900, post: { bloomLevels: 4, samples: 2 }, mirror: 0, fft: 64 },
+  low:    { ratio: 1.0,  shadow: 0,    rings: 100, segs: 128, foam: 450, low: true, post: null, mirror: 0, fft: 0 }, // no shadows, simpler water, straight to the screen
 };
 export const defaultQuality = () => (PHONE ? 'medium' : 'high');
 
@@ -637,7 +655,8 @@ export class World {
     this.scene.fog = new THREE.Fog(SKY_HORIZON, FOG_NEAR, FOG_FAR);
     this.camera = new THREE.PerspectiveCamera(55, 1, 0.3, 6000);
     this.camera.rotation.order = 'YXZ';
-    this.scene.add(new THREE.HemisphereLight('#dbeaff', '#2c4a5c', 0.9));
+    this.hemi = new THREE.HemisphereLight('#dbeaff', '#2c4a5c', 0.9);
+    this.scene.add(this.hemi);
     // the sun casts shadows in a box that follows your boat: sails on the deck and on each other
     const sun = this.sun = new THREE.DirectionalLight('#fff1dc', 3.2);
     sun.castShadow = true; sun.shadow.mapSize.set(phone ? 1024 : 2048, phone ? 1024 : 2048);
@@ -646,36 +665,44 @@ export class World {
     this.scene.add(sun, sun.target);
 
     const ripple = rippleTexture(); // the noise for the ripples, the clouds and the foam
+    // the sky's uniforms, shared by the dome, the environment map and the water (setLight changes them)
+    this.skyU = { ...skyUniforms(), uRipple: { value: ripple } };
+    this.skyU.uTop.value = SKY_TOP; this.skyU.uHorizon.value = SKY_HORIZON; this.skyU.uSun.value = SUN;
+    this.discU = { value: 1 };
     const skyMat = () => new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false,
-      uniforms: { uTop: { value: SKY_TOP }, uHorizon: { value: SKY_HORIZON }, uSun: { value: SUN }, uRipple: { value: ripple }, uTime: { value: 0 } },
+      uniforms: { ...this.skyU, uTime: { value: 0 }, uDisc: this.discU },
       vertexShader: 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
       fragmentShader: SKY_FS,
     });
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(5000, 32, 16), skyMat());
     this.scene.add(this.sky);
-    // the sky with its clouds (and a sea below the horizon) as an environment map, so gelcoat, steel and glass reflect it
-    const env = new THREE.Scene();
-    env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), skyMat()));
-    const seaDisc = new THREE.Mesh(new THREE.CircleGeometry(10, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#1b5676' }));
-    seaDisc.position.y = -0.4; env.add(seaDisc);
-    const pm = new THREE.PMREMGenerator(this.renderer);
-    this.scene.environment = pm.fromScene(env, 0.02).texture; pm.dispose();
+    // the sky with its clouds (and a sea below the horizon) as an environment map, so gelcoat, steel and glass reflect
+    // it; made again whenever the light changes
+    this.env = new THREE.Scene();
+    this.env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), skyMat()));
+    this.envSea = new THREE.Mesh(new THREE.CircleGeometry(10, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#1b5676' }));
+    this.envSea.position.y = -0.4; this.env.add(this.envSea);
+
+    // the chop (an FFT ocean, where the GPU can do it), the mirror and the camera's post-processing: switched on by
+    // the graphics level (setQuality)
+    this.oceanU = oceanUniforms();
+    this.reflU = { uRefl: { value: null }, uReflMat: { value: new THREE.Matrix4() }, uReflOn: { value: 0 } };
+    this.ocean = null; this.mirror = null; this.post = null;
 
     this.waterU = {
       uTime: { value: 0 }, uW: { value: Array.from({ length: NW }, () => new THREE.Vector4()) }, uWs: { value: new Array(NW).fill(0) }, uQ: { value: new Array(NW).fill(0) },
-      uCam: { value: new THREE.Vector3() }, uSun: { value: SUN },
+      uCam: { value: new THREE.Vector3() },
       uDeep: { value: new THREE.Color('#062a40') }, uScatter: { value: new THREE.Color('#1aa3a0') },
-      uTop: { value: SKY_TOP }, uHorizon: { value: SKY_HORIZON }, uFog: { value: SKY_HORIZON },
-      uFogNear: { value: FOG_NEAR }, uFogFar: { value: FOG_FAR }, uChop: { value: 0.15 }, uAmp: { value: 0.4 }, uWhite: { value: 0 },
+      uFogNear: { value: FOG_NEAR }, uFogFar: { value: FOG_FAR }, uChop: { value: 0.15 }, uAmp: { value: 0.4 }, uWhite: { value: 0 }, uGlint: { value: 1 },
       uGust: { value: Array.from({ length: 12 }, () => new THREE.Vector4()) }, uWind: { value: new THREE.Vector2(0, 1) }, uPivot: { value: new THREE.Vector2() },
-      uRipple: { value: ripple },
+      ...this.skyU, ...this.oceanU, ...this.reflU,
     };
     this.water = new THREE.Mesh(waterGeometry(), new THREE.ShaderMaterial({ uniforms: this.waterU, vertexShader: WATER_VS, fragmentShader: WATER_FS, defines: { WAVES: NW } }));
     this.water.frustumCulled = false;
     this.scene.add(this.water);
     this.shadeMat = new THREE.ShaderMaterial({
-      uniforms: { uTime: this.waterU.uTime, uW: this.waterU.uW, uWs: this.waterU.uWs, uSun: this.waterU.uSun },
+      uniforms: { uTime: this.waterU.uTime, uW: this.waterU.uW, uWs: this.waterU.uWs, uSun: this.waterU.uSun, uShade: { value: 1 }, ...this.oceanU },
       vertexShader: SEASHADE_VS, fragmentShader: SEASHADE_FS, transparent: true, depthWrite: false, side: THREE.DoubleSide,
       stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp,
     });
@@ -687,7 +714,7 @@ export class World {
       const a = (i / 9) * Math.PI * 2 + rand() * 0.4, r = 1900 + rand() * 900;
       const isl = island(rand, 220 + rand() * 420, 70 + rand() * 170, i % 3 ? '#5f7a58' : '#7d8a6a');
       isl.position.x = Math.sin(a) * r; isl.position.z = -Math.cos(a) * r;
-      this.scene.add(isl);
+      this.scene.add(mirrored(isl));
     }
     // and a farther range behind them, pale in the haze
     for (let i = 0; i < 7; i++) {
@@ -722,7 +749,7 @@ export class World {
     // gulls, dolphins and whales; their splashes go into the foam above
     this.wild = new Wildlife(this.scene, (x, z, n, up, size) => this.splash(x, z, n, up, size));
 
-    this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uWind: this.waterU.uWind, uMax: { value: WAKE_AGE } };
+    this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uWind: this.waterU.uWind, uMax: { value: WAKE_AGE }, ...this.oceanU };
     this.wakes = []; this.contacts = [];
     this.showGuides = true; this.guides = null;
     this.mode = 'drone';
@@ -731,6 +758,35 @@ export class World {
     this.intro = { t: 0, T: 8 }; // the opening fly-around (frame); flyIn() plays it again
     this.boatViews = [];
     this.marks = null;
+    for (const w of [...this.wild.gulls, ...this.wild.dolphins, ...this.wild.whales]) mirrored(w.g);
+    this.glareK = 1;
+    this.setLight('day');
+  }
+
+  // the light the race is sailed in (light.js): the sun, the sky and its haze, the clouds, the sea's colours, the
+  // exposure and the bloom; the environment map that the boats reflect is made again for it
+  setLight(name) {
+    const L = LIGHTS[name] || LIGHTS.day;
+    this.light = name;
+    sunVector(L, this.race ? this.race.wind.dir() : 0, SUN);
+    SKY_TOP.set(L.top); SKY_HORIZON.set(L.horizon);
+    const U = this.skyU;
+    U.uSunCol.value.set(L.sun); U.uCloudLit.value.set(L.cloudLit); U.uCloudDark.value.set(L.cloudDark);
+    U.uMie.value = L.mie; U.uCloud.value = L.cloud; this.discU.value = L.disc;
+    this.sun.color.set(L.sun); this.sun.intensity = L.sunI;
+    this.hemi.color.set(L.hemiSky); this.hemi.groundColor.set(L.hemiGround); this.hemi.intensity = L.hemiI;
+    this.scene.fog.color.copy(SKY_HORIZON); this.scene.fog.near = L.fogNear; this.scene.fog.far = L.fogFar;
+    const W = this.waterU;
+    W.uFogNear.value = L.fogNear; W.uFogFar.value = L.fogFar;
+    W.uDeep.value.set(L.deep); W.uScatter.value.set(L.scatter); W.uGlint.value = L.glint;
+    this.shadeMat.uniforms.uShade.value = L.shade;
+    this.renderer.toneMappingExposure = L.exposure;
+    this.glare.material.color.set(L.sun); this.glareK = L.disc;
+    this.bloomLook = L.bloom; if (this.post) this.post.setLook(L.bloom);
+    this.envSea.material.color.set(L.deep).lerp(SKY_HORIZON, 0.2);
+    const pm = new THREE.PMREMGenerator(this.renderer), old = this.scene.environment;
+    this.scene.environment = pm.fromScene(this.env, 0.02).texture;
+    pm.dispose(); if (old) old.dispose();
   }
 
   setRace(race) {
@@ -744,11 +800,17 @@ export class World {
     this.waterU.uAmp.value = race.wind.p.waves;
     this.waterU.uPivot.value.set(race.course.windward.x, race.course.windward.z / 2); // the wind lanes turn about the middle of the course
     this.waterU.uWhite.value = clamp((race.wind.p.tws - 10) / 9, 0, 1); // whitecaps from about force 4
+    this.setLight(pickLight(race));
+    // the chop is raised by the race's mean wind and keeps its heading (the sea lags the shifts)
+    if (this.ocean) this.ocean.setWind(race.wind.p.tws);
+    this.oceanU.uFftW.value.set(Math.sin(W0 + Math.PI), -Math.cos(W0 + Math.PI));
     this.boatViews = race.boats.map((b, i) => {
       const v = b.ai
         ? new BoatView({ look: LOOKS[b.name] || LOOKS.Aurora, label: { text: b.name, color: b.color } })
         : new BoatView({ look: playerLook(), player: true }); // your boat in the colours you chose on /boat
       v.root.scale.setScalar(SC);
+      mirrored(v.root);
+      v.root.traverse((o) => { if (o.isSprite && o.material.depthTest === false && o.material.toneMapped === false) o.layers.set(OVERLAY); }); // the name tag: drawn after the post
       this.scene.add(v.root);
       return v;
     });
@@ -756,7 +818,7 @@ export class World {
     this.seaShadows = this.boatViews.map((v) => new SeaShadows(this.scene, v, this.shadeMat));
     const c = race.course, g = new THREE.Group();
     this.buoys = [];
-    const add = (obj, p, vee) => { obj.position.set(p.x, 0, p.z); g.add(obj); if (vee) g.add(vee); this.buoys.push({ obj, p, vee }); };
+    const add = (obj, p, vee) => { obj.position.set(p.x, 0, p.z); g.add(mirrored(obj)); if (vee) g.add(vee); this.buoys.push({ obj, p, vee }); };
     add(buoy(), c.windward, currentVee()); add(buoy(), c.gate[0], currentVee()); add(buoy(), c.gate[1], currentVee()); add(buoy('#ffb000', 2), c.pin, currentVee());
     if (c.wing) add(buoy(), c.wing, currentVee());
     // the committee boat lies to her anchor head to wind, 5 m beyond the line's end: which side of her the pin is,
@@ -807,6 +869,28 @@ export class World {
     this.water.material.needsUpdate = true;
     this.foamMax = Q.foam; this.foamI %= Q.foam; this.foamPts.geometry.setDrawRange(0, Q.foam);
     this.wild.setLevel(q); // fewer gulls and dolphins lower down
+    // the camera's post-processing
+    const r = this.renderer;
+    if (Q.post && Post.supported(r)) { if (!this.post) this.post = new Post(r); this.post.setLevel(Q.post); if (this.bloomLook) this.post.setLook(this.bloomLook); }
+    else if (this.post) { this.post.dispose(); this.post = null; }
+    this.camera.layers.set(0); if (!this.post) this.camera.layers.enable(OVERLAY); // without the post the labels go in with the rest
+    // the mirror
+    if (Q.mirror > 0 && Post.supported(r)) { if (!this.mirror) this.mirror = new Mirror(r); this.mirror.setScale(Q.mirror); }
+    else if (this.mirror) { this.mirror.dispose(); this.mirror = null; }
+    this.reflU.uReflOn.value = 0;
+    // the chop
+    if (Q.fft && Ocean.supported(r)) {
+      if (!this.ocean || this.ocean.N !== Q.fft) {
+        if (this.ocean) this.ocean.dispose();
+        this.ocean = new Ocean(r, Q.fft, 40);
+        if (this.race) this.ocean.setWind(this.race.wind.p.tws);
+      }
+      this.oceanU.uFftD.value = this.ocean.disp.texture; this.oceanU.uFftS.value = this.ocean.slope.texture;
+      this.oceanU.uFftL.value = this.ocean.L; this.oceanU.uFftOn.value = 1;
+    } else {
+      if (this.ocean) { this.ocean.dispose(); this.ocean = null; }
+      this.oceanU.uFftOn.value = 0; this.oceanU.uFftD.value = this.oceanU.uFftS.value = blankOcean();
+    }
     if (hadShadow !== sh) this.scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); }); // shadows on/off: recompile
   }
 
@@ -871,7 +955,7 @@ export class World {
     race.boats.forEach((b, i) => {
       const v = this.boatViews[i];
       v.setDetail(b === P || Math.hypot(b.x - cp.x, b.z - cp.z) < farD * (this.quality === 'low' ? 0.6 : 1) && this.mode !== 'top');
-      v.update(b, t, this.W, this.mode === 'drone', { cam: cp, sun: SUN });
+      v.update(b, t, this.W, this.mode === 'drone');
       if (v.crew) v.crew[0].g.visible = !(b === P && this.mode === 'helm'); // at the helm, you are the helmsman
       this.settle(v, dt);
       this.seaShadows[i]?.update(this.quality !== 'low'); // Low: no shadows anywhere
@@ -1005,7 +1089,7 @@ export class World {
     // the glare: brightest looking straight at the sun, gone when you look away
     const look = cam.getWorldDirection(this._dir || (this._dir = new THREE.Vector3()));
     this.glare.position.copy(cam.position).addScaledVector(SUN, 3000);
-    this.glare.material.opacity = 0.55 * Math.max(0, look.dot(SUN)) ** 6;
+    this.glare.material.opacity = 0.55 * this.glareK * Math.max(0, look.dot(SUN)) ** 6;
     this.glare.visible = this.glare.material.opacity > 0.01;
     this.sun.target.position.set(P.x, 2, P.z); this.sun.position.set(P.x + SUN.x * 70, 2 + SUN.y * 70, P.z + SUN.z * 70);
     // the water disc follows what the camera looks at
@@ -1017,7 +1101,30 @@ export class World {
     // the sea shows twelve gusts: the nearest to you (a long course has more)
     const gs = wind.gusts.length <= 12 ? wind.gusts : [...wind.gusts].sort((a, b) => Math.hypot(a.x - P.x, a.z - P.z) - Math.hypot(b.x - P.x, b.z - P.z)).slice(0, 12);
     for (let i = 0; i < 12; i++) { const g = gs[i]; if (g) u.uGust.value[i].set(g.x, g.z, g.r, (g.s / wind.p.gustStr) * (g.k ?? Math.min(1, g.life / 6))); else u.uGust.value[i].set(0, 0, 1, 0); } // k: a gust filling in or dying away
-    this.renderer.render(this.scene, cam);
+    this.render(cam);
+  }
+
+  // the chop, the mirror, then the picture: through the post-processing when the level has it, the labels on top
+  render(cam) {
+    const r = this.renderer, sc = this.scene;
+    if (this.ocean) this.ocean.update(this.waterU.uTime.value);
+    sc.updateMatrixWorld(); cam.updateMatrixWorld();
+    const au = sc.matrixWorldAutoUpdate; sc.matrixWorldAutoUpdate = false; // once is enough for all the passes
+    const on = !!this.mirror && this.mode !== 'top' && this.mirror.render(sc, cam); // from straight above the sea reflects next to nothing
+    this.reflU.uReflOn.value = on ? 1 : 0;
+    if (on) { this.reflU.uRefl.value = this.mirror.rt.texture; this.reflU.uReflMat.value.copy(this.mirror.matrix); }
+    if (this.post) {
+      this.post.render(sc, cam, () => {
+        const ac = r.autoClear, sm = r.shadowMap.autoUpdate;
+        r.autoClear = false; r.shadowMap.autoUpdate = false; cam.layers.set(OVERLAY);
+        r.render(sc, cam);
+        cam.layers.set(0); r.autoClear = ac; r.shadowMap.autoUpdate = sm;
+      });
+    } else {
+      r.setRenderTarget(null);
+      r.render(sc, cam);
+    }
+    sc.matrixWorldAutoUpdate = au;
   }
 
   // a 12-metre boat has weight: she doesn't follow every wave at once but lags the sea a little and overshoots it,

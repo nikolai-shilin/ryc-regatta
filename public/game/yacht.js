@@ -303,8 +303,54 @@ function sailTexture(kind, look) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.wrapS = THREE.RepeatWrapping;
   return t;
 }
+// the cloth's relief, as a normal map: the panel seams (raised where two panels overlap and are stitched), the
+// batten pockets, and soft wrinkles fanning from the clew and the head; a spinnaker's seams run out from its head.
+// Drawn as a height field with the sail texture's own layout, then turned into normals.
+const RELIEF = {};
+function sailRelief(kind) {
+  if (RELIEF[kind]) return RELIEF[kind];
+  const W = 256, H = kind === 'main' ? 512 : kind === 'jib' ? 384 : 256;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  x.fillStyle = '#808080'; x.fillRect(0, 0, W, H);
+  const line = (x0, y0, x1, y1, w, col) => { x.strokeStyle = col; x.lineWidth = w; x.beginPath(); x.moveTo(x0, y0); x.lineTo(x1, y1); x.stroke(); };
+  if (kind === 'kite') {
+    for (let i = 1; i < 8; i++) line(0, (i * H) / 8, W, (i * H) / 8, 2.5, 'rgba(255,255,255,.55)');
+    for (let i = 1; i < 12; i++) line(0, 0, W, (i * H) / 12, 2, 'rgba(255,255,255,.45)');
+    for (let i = 0; i < 9; i++) line(W * (0.15 + i * 0.09), H, W * (0.05 + i * 0.1), H * 0.55, 7, 'rgba(0,0,0,.08)'); // the foot's soft folds
+  } else {
+    for (let i = 1; i < 10; i++) line(0, (i * H) / 10 + 10, W, (i * H) / 10 - 15, 3, 'rgba(255,255,255,.6)');
+    for (let i = 0; i < 7; i++) line(W - 3, H - 3, W * (0.6 - i * 0.06), H * (0.84 - i * 0.06), 6, `rgba(0,0,0,${0.1 - i * 0.008})`); // from the clew
+    for (let i = 0; i < 5; i++) line(W * 0.04, 3, W * (0.2 + i * 0.06), H * (0.1 + i * 0.025), 4, 'rgba(0,0,0,.08)'); // from the head
+    x.fillStyle = 'rgba(255,255,255,.7)';
+    if (kind === 'main') [[0.9, 1], [0.76, 1], [0.6, 0.45], [0.42, 0.4], [0.24, 0.35]].forEach(([v, len]) => x.fillRect(W * (1 - len), H * (1 - v) - 3, W * len, 6));
+    else { x.fillRect(W * 0.7, H * 0.35, W * 0.3, 4); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 4); }
+    x.fillRect(0, 0, 5, H); x.fillRect(0, H - 5, W, 5); // the tapes along the luff and the foot
+  }
+  const src = x.getImageData(0, 0, W, H).data, out = x.createImageData(W, H), d = out.data;
+  const h = (i, j) => src[((Math.min(H - 1, Math.max(0, j)) * W) + Math.min(W - 1, Math.max(0, i))) * 4] / 255;
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const k = 2.2, nx = (h(i - 1, j) - h(i + 1, j)) * k, ny = (h(i, j + 1) - h(i, j - 1)) * k, l = Math.hypot(nx, ny, 1), o = (j * W + i) * 4;
+    d[o] = (nx / l * 0.5 + 0.5) * 255; d[o + 1] = (ny / l * 0.5 + 0.5) * 255; d[o + 2] = (1 / l * 0.5 + 0.5) * 255; d[o + 3] = 255;
+  }
+  x.putImageData(out, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; t.wrapS = THREE.RepeatWrapping;
+  return (RELIEF[kind] = t);
+}
+// the sun through the cloth: lit from behind as you look at it, a sail glows with the light it lets through, tinted
+// by the cloth and darker where the seams, battens and number are (the colour squared: light crossing a dye)
+function translucent(m, amount) {
+  m.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+#if NUM_DIR_LIGHTS > 0
+      reflectedLight.directDiffuse += diffuseColor.rgb * diffuseColor.rgb * directionalLights[0].color * max(-dot(normal, directionalLights[0].direction), 0.0) * ${amount.toFixed(2)};
+#endif`);
+  };
+  m.customProgramCacheKey = () => `sail${amount}`;
+  return m;
+}
 // a sail: one grid geometry, drawn twice so the number reads the right way round from both sides
-function sailMesh(rows, cols, tex, shiny = false) {
+function sailMesh(rows, cols, tex, shiny = false, kind = 'main') {
   const g = new THREE.BufferGeometry();
   const pos = new Float32Array((rows + 1) * (cols + 1) * 3), uv = [], idx = [];
   for (let i = 0; i <= rows; i++) for (let j = 0; j <= cols; j++) uv.push(j / cols, i / rows);
@@ -316,25 +362,17 @@ function sailMesh(rows, cols, tex, shiny = false) {
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   g.setIndex(idx);
   const back = tex.clone(); back.repeat.x = -1; back.offset.x = 1; back.needsUpdate = true;
-  // laminate (shiny) sails catch a soft sheen; the emissive part is the light the cloth lets through (see backlight)
-  const mat = (map, side) => new THREE.MeshStandardMaterial({ map, side, roughness: shiny ? 0.45 : 0.72, metalness: shiny ? 0.12 : 0, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.22 });
+  const relief = sailRelief(kind), reliefBack = relief.clone(); reliefBack.repeat.x = -1; reliefBack.offset.x = 1; reliefBack.needsUpdate = true;
+  // laminate (shiny) sails catch a soft sheen and let less light through than woven cloth; a spinnaker's thin nylon
+  // the most. A little emissive stands for the light bounced off the sea into the cloth's shaded side.
+  const mat = (map, nmap, side) => translucent(new THREE.MeshStandardMaterial({
+    map, side, normalMap: nmap, normalScale: new THREE.Vector2(0.6, 0.6), roughness: shiny ? 0.45 : 0.72, metalness: shiny ? 0.12 : 0,
+    emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.1,
+  }), kind === 'kite' ? 0.6 : shiny ? 0.28 : 0.45);
   const grp = new THREE.Group();
-  grp.add(new THREE.Mesh(g, mat(tex, THREE.FrontSide)), new THREE.Mesh(g, mat(back, THREE.BackSide)));
+  grp.add(new THREE.Mesh(g, mat(tex, relief, THREE.FrontSide)), new THREE.Mesh(g, mat(back, reliefBack, THREE.BackSide)));
   grp.userData = { rows, cols, g };
   return grp;
-}
-// the sun through the cloth: when the sun is behind a sail as you look at it, the sail glows warm and its seams,
-// battens and number show darker against the light; lit from your side it shows plain
-const _n = new THREE.Vector3(), _p = new THREE.Vector3(), _c = new THREE.Vector3();
-function backlight(grp, cam, sun) {
-  const m = grp.children[0], g = grp.userData.g, N = g.attributes.normal;
-  if (!N) return;
-  const i = Math.floor(N.count / 2);
-  _n.fromBufferAttribute(N, i).transformDirection(m.matrixWorld);
-  _p.fromBufferAttribute(g.attributes.position, i).applyMatrix4(m.matrixWorld);
-  const s = _n.dot(sun), c = _n.dot(_c.copy(cam).sub(_p));
-  const k = s * c < 0 ? Math.min(1, Math.abs(s) * 1.5) : 0;
-  for (const ch of grp.children) { ch.material.emissiveIntensity = 0.18 + 0.5 * k; ch.material.emissive.setRGB(1, 1 - 0.06 * k, 1 - 0.16 * k); }
 }
 function setSail(m, fn) {
   const { rows, cols, g } = m.userData, a = g.attributes.position, v = new THREE.Vector3();
@@ -569,12 +607,12 @@ export class BoatView {
     this.mainPivot = add(new THREE.Group(), 0, 0, MAST_Z);
     const boom = cyl(0.065, 0.05, 4.9, M.carbon, 8); boom.rotation.x = Math.PI / 2; boom.position.set(0, BOOM_Y, 2.45); this.mainPivot.add(boom);
     this.mainPivot.add(line([[0, MAST_FOOT + 0.25, 0.1], [0, BOOM_Y - 0.05, 1.2]])); // vang
-    this.main = sailMesh(14, 8, sailTexture('main', look), look.laminate); this.mainPivot.add(this.main);
+    this.main = sailMesh(14, 8, sailTexture('main', look), look.laminate, 'main'); this.mainPivot.add(this.main);
     // jib on the forestay, swung about the stay itself
     this.jibPivot = add(new THREE.Group(), TACK.x, TACK.y, TACK.z);
     this.jibAxis = HEAD.clone().sub(TACK).normalize();
-    this.jib = sailMesh(12, 6, sailTexture('jib', look), look.laminate); this.jibPivot.add(this.jib);
-    this.kite = sailMesh(12, 8, sailTexture('kite', look)); this.kite.visible = false; T.add(this.kite);
+    this.jib = sailMesh(12, 6, sailTexture('jib', look), look.laminate, 'jib'); this.jibPivot.add(this.jib);
+    this.kite = sailMesh(12, 8, sailTexture('kite', look), false, 'kite'); this.kite.visible = false; T.add(this.kite);
 
     // telltales on the jib luff (they matter at the helm)
     this.tells = [];
@@ -631,7 +669,7 @@ export class BoatView {
     for (const o of this.small) o.visible = on;
     this.detailOn = on;
   }
-  update(b, t, W, showLabel, light = null) { // light: { cam, sun } for the sun through the sails
+  update(b, t, W, showLabel) {
     const y = waveHeight(W, b.x, b.z, t), fx = Math.sin(b.h), fz = -Math.cos(b.h);
     const pitch = Math.atan2(waveHeight(W, b.x + fx * 4, b.z + fz * 4, t) - waveHeight(W, b.x - fx * 4, b.z - fz * 4, t), 8);
     const roll = Math.atan2(waveHeight(W, b.x - fz * 1.5, b.z + fx * 1.5, t) - waveHeight(W, b.x + fz * 1.5, b.z - fx * 1.5, t), 3) * 0.5;
@@ -725,7 +763,6 @@ export class BoatView {
       tt.rotation.x = -rot;
       tt.material.color.set(ok ? '#2ecc71' : '#ff4d3d');
     }
-    if (light) for (const s of b.kite ? [this.main, this.jib, this.kite] : [this.main, this.jib]) backlight(s, light.cam, light.sun);
     if (this.label) { // no names over the boats: a tag only while she's on a penalty, over early or disqualified
       const status = b.pen ? '⟳' : b.ocs ? 'OCS' : b.dsq ? 'DSQ' : '';
       this.label.visible = showLabel && !!status;
