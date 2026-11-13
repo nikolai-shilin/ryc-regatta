@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Up and down · Sailing Certification Test</title>
+<title>Race · Up and down</title>
 <meta name="description" content="A 3D sailing game: race a yacht round a windward–leeward course against the computer boats, in light, medium or strong wind — or sail today’s race, the same for everyone.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#ffffff">
@@ -243,6 +243,58 @@
     #sheetZone { height: min(36%, 260px); }
   }
   @media (max-height: 380px) { #mini { width: 94px; height: 94px; } .speed { font-size: 32px; } #inst { width: 64px; height: 64px; } #heel { width: 64px; height: 32px; } }
+
+  /* ---------- loading the race, the pause card and the confirmation (the RYC design canvas: I2, S4, S6) ---------- */
+  #loading { position: fixed; inset: 0; z-index: 30; background: #0b3550; transition: opacity .35s; }
+  #loading[hidden] { display: none; }
+  #loading.out { opacity: 0; }
+  #loading .l-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(4,10,16,.82) 0%, rgba(4,10,16,.55) 42%, rgba(4,10,16,.15) 78%); }
+  #loading .l-in { position: absolute; left: calc(48px + var(--sl)); right: 24px; bottom: calc(34px + var(--sb)); max-width: 460px; display: flex; flex-direction: column; gap: 12px; }
+  #loading .l-top { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  #loading .l-logo { width: 50px; height: 25px; filter: invert(1); }
+  #loading .kicker { color: #fff; }
+  #loading h1 { margin: 0; font: 300 54px/0.95 var(--serif); letter-spacing: -0.025em; }
+  #loading p { margin: 0; font: 15px/1.42 var(--serif); }
+  #loading .l-bar { width: 260px; max-width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,.25); overflow: hidden; margin-top: 8px; }
+  #loading .l-bar i { display: block; height: 100%; width: 4%; background: #35b0f2; border-radius: 2px; transition: width 1.3s ease-out; }
+  #loading.go .l-bar i { width: 100%; }
+  #loading .meta { color: rgba(255,255,255,.8); }
+  @media (orientation: portrait) { #loading .l-in { left: 24px; } #loading h1 { font-size: 48px; } #loading .l-shade { background: linear-gradient(180deg, rgba(4,10,16,.25) 0%, rgba(4,10,16,.2) 40%, rgba(4,10,16,.86) 100%); } }
+
+  .overlay.pause { justify-content: space-between; align-items: stretch; gap: 20px; padding: calc(24px + var(--st)) calc(22px + var(--sr)) calc(20px + var(--sb)) calc(44px + var(--sl)); background: linear-gradient(90deg, rgba(4,10,16,.8) 0%, rgba(4,10,16,.5) 50%, rgba(4,10,16,.35) 100%); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .p-info { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .p-info .kicker { color: #fff; }
+  .p-info h1 { margin: 0; font: 300 46px/0.98 var(--serif); letter-spacing: -0.025em; }
+  .p-info p { margin: 0; font: 15px/1.4 var(--serif); }
+  .p-stats { display: flex; gap: 30px; margin-top: auto; }
+  .p-stats > div { display: flex; flex-direction: column; gap: 3px; }
+  .p-stats b { font: 300 30px/1 var(--serif); font-variant-numeric: tabular-nums; }
+  .p-stats .meta, .p-stats span { color: rgba(255,255,255,.78); font-family: var(--sans); font-size: 13px; }
+  .p-stats .meta { font-size: 12px; }
+  .p-esc { color: rgba(255,255,255,.7); display: none; }
+  @media (hover: hover) and (pointer: fine) { .p-esc { display: block; } }
+  .p-card { width: 318px; max-height: 100%; align-self: center; display: flex; flex-direction: column; gap: 10px; padding: 18px; }
+  .p-card .go { margin: 0; height: 48px; font-size: 18px; }
+  .p-rows { display: flex; flex-direction: column; }
+  .p-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 42px; padding: 0 4px; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; font: 15px var(--serif); color: var(--ink); }
+  .p-row:last-child { border-bottom: 0; }
+  .p-card .choice button { height: 34px; font-size: 14px; }
+  .p-card > .meta { margin-top: 4px; }
+  @media (orientation: portrait) {
+    .overlay.pause { flex-direction: column; padding: calc(56px + var(--st)) 16px calc(16px + var(--sb)); background: linear-gradient(180deg, rgba(4,10,16,.55) 0%, rgba(4,10,16,.75) 100%); }
+    .p-info h1 { font-size: 42px; } .p-stats { margin-top: 14px; gap: 22px; }
+    .p-card { width: auto; align-self: stretch; }
+  }
+  @media (min-width: 1024px) and (min-height: 640px) {
+    .overlay.pause { padding: 96px; }
+    .p-info h1 { font-size: 84px; } .p-info p { font-size: 19px; } .p-stats b { font-size: 48px; } .p-stats { gap: 48px; margin-top: 40px; }
+    .p-card { width: 420px; padding: 28px; gap: 14px; } .p-row { height: 52px; font-size: 17px; }
+  }
+  .c-card { width: min(452px, 100%); display: flex; flex-direction: column; gap: 10px; }
+  .c-card h2 { margin: 0; font: 300 28px/1.04 var(--serif); letter-spacing: -0.02em; }
+  .c-card p { margin: 0; font: 15px/1.42 var(--serif); color: var(--muted); }
+  .c-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+  .c-btns .go { margin: 0; height: 48px; font-size: 18px; }
 </style>
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
 </head>
@@ -280,7 +332,7 @@
   <div id="count" class="on-photo"></div>
 </div>
 
-<div class="overlay" id="menu">
+<div class="overlay" id="menu" hidden>
   <div class="card">
     <div class="cols"><div>
     <div class="card-top"><img class="logo" src="/logo-black.svg" alt="RYC"><span class="kicker" data-t="kick"></span></div>
@@ -337,6 +389,51 @@
     <div id="debrief" class="debrief"></div>
     <button class="go" id="againBtn" data-t="again"></button>
     <button class="go ghost" id="menuBtn" data-t="menu"></button>
+  </div>
+</div>
+
+<!-- the race's own overlays; the menus and the results are pages of the Next.js app (/race, /race/free, /race/result/[id]) -->
+<div id="loading">
+  <div class="l-shade"></div>
+  <div class="l-in on-photo">
+    <div class="l-top"><img class="l-logo" src="/logo-black.svg" alt="RYC"><span class="kicker" data-t="kick"></span></div>
+    <h1>Up and down</h1>
+    <p data-t="sub"></p>
+    <div class="l-bar"><i></i></div>
+    <span class="meta" data-t="loadingK"></span>
+  </div>
+</div>
+
+<div class="overlay pause" id="pauseCard" hidden>
+  <div class="p-info on-photo">
+    <span class="kicker" data-t="pausedK"></span>
+    <h1 id="pLeg"></h1>
+    <p id="pNext"></p>
+    <div class="p-stats">
+      <div><span class="meta" data-t="placeK"></span><b id="pPlace"></b><span id="pOf"></span></div>
+      <div><span class="meta" data-t="timeK"></span><b id="pTime"></b></div>
+      <div><span class="meta" data-t="penK"></span><b id="pPen"></b><span id="pPenD"></span></div>
+    </div>
+    <span class="p-esc meta" data-t="escResumes"></span>
+  </div>
+  <div class="card p-card">
+    <button class="go" id="pResume" data-t="resume"></button>
+    <div class="p-rows">
+      <button class="p-row" id="pChange"><span data-t="changeRace"></span><span class="meta" data-t="startsOver"></span></button>
+      <button class="p-row" id="pRestart"><span data-t="restart"></span></button>
+      <button class="p-row" id="pLeave"><span data-t="leaveHub"></span></button>
+    </div>
+    <span class="meta" data-t="quickK"></span>
+    <div class="choice"><button data-q="sound" data-t="sound"></button><button data-q="guides" data-t="guidesK"></button><button data-q="autoTrim" data-t="auto"></button></div>
+  </div>
+</div>
+
+<div class="overlay" id="confirmCard" hidden>
+  <div class="card c-card" role="dialog" aria-modal="true" aria-labelledby="cHead">
+    <span class="kicker" data-t="pausedK"></span>
+    <h2 id="cHead" data-t="leaveK"></h2>
+    <p id="cTxt"></p>
+    <div class="c-btns"><button class="go ghost" id="cKeep" data-t="keepRacing"></button><button class="go" id="cGo"></button></div>
   </div>
 </div>
 

@@ -9,6 +9,8 @@ const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.i
 // its rule articles, its fonts and the race scores (api/game.mjs in the iyt-test repo) stay on iyt.rycrentals.com, which lets this site
 // read them across origins. SITE is in stats.js too.
 const SITE = 'https://iyt.rycrentals.com';
+// The menus are Next.js pages on this site now: the race hub, the free-race set-up and the race's result page.
+const HUB = '/race';
 // From Telegram the app passes its launch data in the hash, as Telegram does (miniapp/app.js in iyt-test); telegram-web-app.js has
 // read and kept it by now, so it comes off the address bar and out of any link the player copies.
 if (TG && /tgWebAppData=/.test(location.hash)) try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
@@ -17,6 +19,9 @@ if (TG && /tgWebAppData=/.test(location.hash)) try { history.replaceState(null, 
 const ord = (n) => `${n}${['st', 'nd', 'rd'][n - 1] || 'th'}`;
 const T = {
   en: {
+    pausedK: 'Paused', legOf: (a, b) => `Leg ${a} of ${b}`, nextK: (m) => `Next: ${m}`, placeK: 'Place', ofN: (n) => `of ${n}`, timeK: 'Race time', penK: 'Penalties', penNone: 'clean so far', penS: 'spinning turns',
+    changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
+    leaveK: 'Leave this race?', leaveTxt: (pl, leg) => `You are ${pl} on leg ${leg}. This race’s time and place are not kept.`, keepRacing: 'Keep racing', doRestart: 'Restart', doChange: 'Change it', doLeave: 'Leave',
     kick: 'Game', title: 'Up and down', fun: 'Just for fun — take a break and relax between tests.', sub: 'A windward–leeward race against the computer boats, under the racing rules. Steer, trim, tack, read the wind.',
     modeK: 'Race', daily: 'Today’s race', free: 'Free race', howK: 'How to play',
     dailyNote: (w) => `The same course and wind for everyone today — ${w} — so times compare fairly. The fastest are on the Home page.`,
@@ -88,6 +93,9 @@ const T = {
     gfxDown: (q) => `Graphics set to ${q} to keep it smooth`, place: ord, finished: (n) => `Finished ${ord(n)}!`, finishedDsq: 'Finished without taking your penalty — DSQ',
   },
   ru: {
+    pausedK: 'Пауза', legOf: (a, b) => `Отрезок ${a} из ${b}`, nextK: (m) => `Дальше: ${m}`, placeK: 'Место', ofN: (n) => `из ${n}`, timeK: 'Время', penK: 'Штрафы', penNone: 'пока чисто', penS: 'штрафные обороты',
+    changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', startsOver: 'заново', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
+    leaveK: 'Выйти из гонки?', leaveTxt: (pl, leg) => `Ты ${pl}-й на ${leg}-м отрезке. Время и место этой гонки не сохранятся.`, keepRacing: 'Продолжить', doRestart: 'Заново', doChange: 'Изменить', doLeave: 'Выйти',
     kick: 'Игра', title: 'Up and down', fun: 'Просто для удовольствия — отдохни и расслабься между тестами.', sub: 'Гонка «апвинд — даунвинд» против компьютерных лодок по правилам. Рули, работай шкотом, делай повороты, читай ветер.',
     modeK: 'Гонка', daily: 'Гонка дня', free: 'Свободная', howK: 'Как играть',
     dailyNote: (w) => `Сегодня у всех одна дистанция и один ветер — ${w}, — так что время честно сравнивается. Самые быстрые — на главной.`,
@@ -160,7 +168,8 @@ const T = {
   },
 };
 const urlLang = new URLSearchParams(location.search).get('lang');
-const LANG = urlLang === 'ru' || urlLang === 'en' ? urlLang
+const cookieLang = (document.cookie.match(/(?:^|; )lang=(en|ru)\b/) || [])[1];
+const LANG = urlLang === 'ru' || urlLang === 'en' ? urlLang : cookieLang ? cookieLang
   : /^(ru|uk|be|kk)\b/i.test((TG && TG.initDataUnsafe?.user?.language_code) || navigator.language || '') ? 'ru' : 'en';
 const t = (k, ...a) => { const v = T[LANG][k] ?? T.en[k] ?? k; return typeof v === 'function' ? v(...a) : v; };
 document.documentElement.lang = LANG;
@@ -221,9 +230,11 @@ if (TG) {
   try { if (TG.isVersionAtLeast && TG.isVersionAtLeast('8.0') && /android|iphone|ipad/i.test(navigator.userAgent)) TG.requestFullscreen(); } catch (e) {}
   TG.onEvent && TG.onEvent('themeChanged', () => applyTheme());
   TG.BackButton.show();
-  TG.BackButton.onClick(() => { if (running && !paused) pause(); else location.href = SITE + '/'; });
+  TG.BackButton.onClick(() => { if (running && !paused) pause(); else location.href = HUB; });
 }
 const haptic = (kind) => {
+  if (opts.vibration === 0) return; // Settings › Vibration
+  if (!TG && navigator.userActivation && !navigator.userActivation.hasBeenActive) return; // the browser refuses before the first tap
   try { if (TG && TG.HapticFeedback) kind === 'warn' ? TG.HapticFeedback.notificationOccurred('warning') : TG.HapticFeedback.impactOccurred(kind || 'light'); else navigator.vibrate && navigator.vibrate(kind === 'heavy' ? 40 : 15); } catch (e) {}
 };
 
@@ -491,7 +502,7 @@ window.addEventListener('keyup', (e) => { input.keys[e.code] = false; });
 const camSeg = $('#camSeg');
 function setCam(m) { world.mode = m; camSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.cam === m)); }
 camSeg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setCam(b.dataset.cam); });
-setCam('drone');
+setCam(['drone', 'top', 'helm'].includes(opts.camera) ? opts.camera : 'drone'); // Settings › First camera
 
 // ---------- menus ----------
 const menu = $('#menu'), results = $('#results'), hud = $('#hud');
@@ -508,15 +519,63 @@ function startRace() {
   setCam(world.mode);
   raceStarted(race, race.settings); // counted for the admins' Overview and the leaderboards (stats.js)
 }
-function pause() { paused = true; menu.hidden = false; $('#resumeBtn').hidden = false; $('#goBtn').textContent = t('restart'); }
-function resume() { if (menuChanged) { startRace(); return; } paused = false; menu.hidden = true; }
+// ---------- pause: the race stays in view; resume, change the race, restart or leave (each of the last three asks first) ----------
+const pauseEl = $('#pauseCard'), confirmEl = $('#confirmCard');
+const ordL = (n) => (LANG === 'ru' ? `${n}-е` : ord(n));
+function paintPause() {
+  const P = race.player, legs = race.course.legs, n = legs.length - 1, leg = Math.min(n, Math.max(1, P.leg));
+  const place = race.standings().indexOf(P) + 1, L = race.log;
+  $('#pLeg').textContent = t('legOf', leg, n);
+  $('#pNext').textContent = P.leg < legs.length ? t('nextK', t(legName[legs[P.leg]])) : '';
+  $('#pPlace').textContent = ordL(place); $('#pOf').textContent = t('ofN', race.boats.length);
+  $('#pTime').textContent = fmt(Math.max(0, race.clock));
+  $('#pPen').textContent = L.penT > 1 ? `${Math.round(L.penT)} s` : '0'; $('#pPenD').textContent = L.penT > 1 ? t('penS') : t('penNone');
+  for (const b of pauseEl.querySelectorAll('[data-q]')) b.classList.toggle('on', b.dataset.q === 'autoTrim' ? opts.autoTrim === 1 : !!opts[b.dataset.q]);
+}
+function pause() { if (!running || race.over) return; paused = true; paintPause(); pauseEl.hidden = false; confirmEl.hidden = true; }
+function resume() { paused = false; pauseEl.hidden = true; confirmEl.hidden = true; }
+let confirmDo = null;
+function ask(action) {
+  const P = race.player, place = race.standings().indexOf(P) + 1, leg = Math.max(1, P.leg);
+  $('#cTxt').textContent = t('leaveTxt', LANG === 'ru' ? place : ord(place), leg);
+  $('#cGo').textContent = t({ restart: 'doRestart', change: 'doChange', leave: 'doLeave' }[action]);
+  confirmDo = action; pauseEl.hidden = true; confirmEl.hidden = false;
+}
+$('#pResume').addEventListener('click', resume);
+$('#pChange').addEventListener('click', () => ask('change'));
+$('#pRestart').addEventListener('click', () => ask('restart'));
+$('#pLeave').addEventListener('click', () => ask('leave'));
+$('#cKeep').addEventListener('click', () => { confirmEl.hidden = true; pauseEl.hidden = false; });
+$('#cGo').addEventListener('click', () => {
+  if (confirmDo === 'restart') { confirmEl.hidden = true; paused = false; running = false; newRace(); startRace(); return; }
+  location.href = confirmDo === 'change' ? '/race/free' : HUB;
+});
+pauseEl.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-q]'); if (!b) return;
+  const k = b.dataset.q;
+  if (k === 'autoTrim') { opts.autoTrim = opts.autoTrim === 1 ? 0 : 1; applyTrimMode(); }
+  else opts[k] = opts[k] ? 0 : 1;
+  if (k === 'sound') audio.setOn(!!opts.sound);
+  if (k === 'guides') world.showGuides = !!opts.guides;
+  saveOpts(); paintPause();
+});
 $('#goBtn').addEventListener('click', startRace);
 $('#resumeBtn').addEventListener('click', resume);
 $('#pauseBtn').addEventListener('click', pause);
 $('#againBtn').addEventListener('click', () => { running = false; newRace(); startRace(); });
 $('#menuBtn').addEventListener('click', () => { running = false; paused = false; newRace(); results.hidden = true; hud.hidden = true; menu.hidden = false; $('#resumeBtn').hidden = true; $('#goBtn').textContent = t('start'); });
-$('#backLink').href = SITE + '/';
-if (TG) $('#backLink').addEventListener('click', (e) => { e.preventDefault(); location.href = SITE + '/'; });
+$('#backLink').href = HUB;
+
+// ---------- the race to sail: from the address (the hub and the set-up page are Next.js pages) ----------
+{
+  const want = new URLSearchParams(location.search).get('race');
+  opts.mode = want === 'free' ? 'free' : 'daily';
+  menu.hidden = true; menuChanged = true;
+  const loadEl = $('#loading');
+  requestAnimationFrame(() => { loadEl.classList.add('go'); }); // the bar fills while the scene settles
+  setTimeout(() => { loadEl.classList.add('out'); startRace(); setTimeout(() => { loadEl.hidden = true; }, 400); }, 1400);
+}
+
 
 // ---------- instruments ----------
 const el = { spd: $('#spd'), perf: $('#perf'), status: $('#status'), trim: $('#trim'), trimTxt: $('#trimTxt'), knob: $('#rudderKnob'), band: $('#sheet .band'), sknob: $('#sheet .knob'),
@@ -651,7 +710,7 @@ function handleMessages() {
       audio.horn(a.sound === 'long'); haptic(a.key === 'gun' ? 'heavy' : 'medium');
       if (a.key === 'gun' && P.ocs) continue;
       toast(t(a.key, Math.round(-a.t / 60), race.prepFlag), 3);
-    } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') { raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy'); setTimeout(showResults, 2500); }
+    } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') { raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy'); setTimeout(finishToPage, 2500); }
     else if (m.key === 'gate') toast(t('gateMsg'));
     else if (m.key === 'bump') { hint('bump', t('bump'), 3); haptic('heavy'); }
     else if (m.key === 'hail') { const h = t('hail' + a.rule); toast(`${a.who}: “${h}”`, 2.2); audio.say(h); haptic('warn'); }
@@ -743,6 +802,36 @@ function drawMap(ctx, size, full) {
   arrow(size - 16, 18, W + Math.PI, COL.accent, 10);
   const cu = race.currentAt(P.x, P.z); // the stream where you are now
   if (cu.x || cu.z) arrow(16, size - 18, Math.atan2(cu.x, -cu.z), COL.muted, 9);
+}
+
+
+// ---------- the finish: the computer boats sail on to the line (fast, unseen), the race is kept, the result page opens ----------
+function finishToPage() {
+  if (!race.over) return;
+  for (let n = 0; !race.boats.every((b) => b.done) && n < 60 * 900; n++) race.step(STEP);
+  const id = race._rid || (race._rid = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())));
+  const c = race.course, P = race.player, L = race.log, s = race.settings;
+  const xz = (m) => [Math.round(m.x), Math.round(m.z)];
+  const thin = (tr) => { const k = Math.max(1, Math.ceil(tr.length / 160)); return tr.filter((_, i) => i % k === 0 || i === tr.length - 1).map(([x, z]) => [Math.round(x), Math.round(z)]); };
+  let pb = null;
+  if (P.done && !P.dsq) pb = personalBest(s.daily ? `daily|${s.daily}` : `${s.preset}|${s.laps}|${s.length}|${s.fleet}`, Math.round(P.finish * 10) / 10);
+  const head = L.tacks.filter((x) => x <= -3).length, lift = L.tacks.filter((x) => x >= 3).length;
+  const res = {
+    v: 1, id, at: Date.now(), daily: s.daily || null, preset: s.preset, length: s.length, laps: s.laps, start: s.start, current: !!s.current,
+    course: { windward: xz(c.windward), gate: c.gate.map(xz), pin: xz(c.pin), committee: xz(c.committee), legs: c.legs },
+    boats: race.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, color: typeof b.color === 'number' ? '#' + b.color.toString(16).padStart(6, '0') : null,
+      done: !!b.done, dsq: !!b.dsq, secs: b.done ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track || []) })),
+    log: { gunD: L.gunD, gunV: L.gunV, ocs: !!L.ocs, startDsq: L.startDsq || null, startT: L.startT, sailing: L.sailing, pct: L.sailing > 20 && L.polar ? Math.round((L.v / L.polar) * 100) : null,
+      head, lift, tacks: L.tacks.length, dirty: Math.round(L.dirty), penT: Math.round(L.penT), hails: L.hails, legs: L.legs, legPlaces: L.legPlaces || [],
+      fouls: L.fouls.map((f) => ({ rule: String(f.rule), who: f.who || null, t: f.t ?? null, x: f.x == null ? null : Math.round(f.x), z: f.z == null ? null : Math.round(f.z) })) },
+    pb: pb && { best: pb.best, isNew: pb.isNew },
+  };
+  try {
+    const keys = Object.keys(localStorage).filter((k) => k.startsWith('regatta-result-')).sort((a, b) => (JSON.parse(localStorage.getItem(a) || '{}').at || 0) - (JSON.parse(localStorage.getItem(b) || '{}').at || 0));
+    while (keys.length >= 20) localStorage.removeItem(keys.shift()); // the last twenty races stay on this device
+    localStorage.setItem('regatta-result-' + id, JSON.stringify(res));
+  } catch (e) {}
+  location.href = '/race/result/' + encodeURIComponent(id);
 }
 
 function showResults() {

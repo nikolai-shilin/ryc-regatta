@@ -486,7 +486,7 @@ export class Race {
   record(dt, before) {
     const P = this.player, L = this.log;
     if (before < 0 && this.clock >= 0) { L.gunD = -lineD(this.course, P); L.gunV = P.v / KN; L.ocs = P.ocs; }
-    if (P.leg !== L.leg) { L.leg = P.leg; L.legs.push(this.clock); if (P.leg === 1) L.startT = this.clock; }
+    if (P.leg !== L.leg) { L.leg = P.leg; L.legs.push(this.clock); (L.legPlaces || (L.legPlaces = [])).push(this.standings().indexOf(P) + 1); if (P.leg === 1) L.startT = this.clock; }
     const tackNow = !!P.auto;
     if (tackNow && !L.auto && this.clock >= 0 && !P.done) {
       if (P.auto.gybe) L.gybes++;
@@ -817,7 +817,7 @@ export class Race {
     if (g.wrongedT !== undefined && this.clock - g.wrongedT < 1.5) { if (g === this.player) this.say('exonerated'); return; }
     g.pen = { turns: 2, sum: 0 }; other.wrongedT = this.clock;
     if (g === this.player) {
-      this.say('fouled', { who: other.name, rule: r.rule }); this.log.fouls.push({ rule: r.rule, who: other.name });
+      this.say('fouled', { who: other.name, rule: r.rule }); this.log.fouls.push({ rule: r.rule, who: other.name, t: this.clock, x: g.x, z: g.z });
       // barging: squeezing in between a leeward boat and the committee boat at the start — there's no room to be had
       // there (rule 18 doesn't apply at a starting mark), so the windward boat is simply in the wrong
       const c = this.course;
@@ -851,7 +851,7 @@ export class Race {
         if (d < r && d > 0.01) {
           b.x += (dx / d) * (r - d); b.z += (dz / d) * (r - d); b.v *= 0.9;
           // touching a mark: a one-turn penalty (rules 31 and 44.2)
-          if (b.touchT <= 0 && !b.pen && !b.done && this.rulesOn) { b.pen = { turns: 1, sum: 0 }; if (b === this.player) { this.say('touched'); this.log.fouls.push({ rule: '31' }); } }
+          if (b.touchT <= 0 && !b.pen && !b.done && this.rulesOn) { b.pen = { turns: 1, sum: 0 }; if (b === this.player) { this.say('touched'); this.log.fouls.push({ rule: '31', t: this.clock, x: b.x, z: b.z }); } }
           b.touchT = 3;
         }
       }

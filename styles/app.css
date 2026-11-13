@@ -1,0 +1,64 @@
+/* The app around the design stylesheets (bundle.css, ryc.css, copied from the RYC design canvas). */
+html, body { margin: 0; background: #ffffff; color: #000000; }
+body { font-family: var(--f-merri), Georgia, serif; -webkit-font-smoothing: antialiased; }
+.scr button { font: inherit; }
+button.link-row, button.tag, button.mini, button.pill, button.chip { cursor: pointer; }
+button.link-row { width: 100%; background: none; border: 0; border-bottom: 1px solid var(--line); text-align: left; }
+.segc button { display: inline-flex; align-items: center; height: 28px; padding: 0 11px; border-radius: 54px; border: 0; background: none; font: 14px/1 var(--f-merri), Georgia, serif; color: var(--ink); white-space: nowrap; cursor: pointer; }
+.segc button.on { background: var(--sel-bg); color: var(--sel-ink); }
+@container scr (orientation: portrait) { .segc button { padding: 0 10px; font-size: 13px; } }
+@container scr (min-width: 1024px) and (min-height: 640px) { .segc button { height: 34px; padding: 0 14px; font-size: 16px; } }
+.field:focus { border-color: var(--accent); }
+.otp input:focus { border-color: var(--accent); }
+.err { margin: 0; font: 14px/1.35 var(--f-carlito), Arial, sans-serif; color: var(--danger); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* the today's-race dialog over the hub */
+.dlg-wrap { position: fixed; inset: 0; z-index: 20; container: scr / size; }
+.dlg-wrap .scrim { position: absolute; inset: 0; }
+/* one look for every control's states: a keyboard focus ring, and a dimmed disabled state */
+.scr :is(a, button, input, [role="switch"]):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.scr :is(.field, .otp input):focus-visible { outline: 0; }
+.scr button:disabled { opacity: 0.45; cursor: default; }
+/* the email row: field, Google and Send code are one height */
+.field, .pill.pill-oauth, .field-row .pill { height: var(--pill-h, 48px); }
+
+/* the boat page (/boat): the 3D preview beside the controls; upright, the preview on top. The controls scroll on their own. */
+.boat-page { overflow: hidden !important; }
+.boat-grid { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 0 24px; }
+.boat-prev { position: relative; min-height: 0; border-radius: 22px; overflow: hidden; background: #dcecf6; }
+.boat-prev iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.boat-pose { position: absolute; left: 10px; bottom: 10px; background: rgba(255, 255, 255, 0.92); border-color: transparent; }
+.boat-hint { position: absolute; right: 14px; bottom: 18px; pointer-events: none; color: #4c6878; }
+.boat-ctl { min-height: 0; overflow-y: auto; padding: 0 4px 12px 0; overscroll-behavior: contain; }
+.boat-sub { display: block; margin-top: 2px; color: var(--muted); }
+.srow.srow-sw { flex-direction: column; align-items: stretch; gap: 8px; padding: 8px 0 10px; }
+.sws { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 4px; }
+.sw, .kite-sw { position: relative; flex: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); cursor: pointer; }
+.kite-sw { width: 22px; height: 30px; border-radius: 11px; }
+.sw[aria-checked="true"], .sw.sw-own, .kite-sw[aria-pressed="true"] { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15), 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
+.sw-pick { overflow: hidden; background: conic-gradient(#ff4d4d, #ffd60a, #4ade80, #22d3ee, #3b82f6, #e879f9, #ff4d4d); }
+.sw-pick.sw-own::after { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7); }
+.sw-pick input { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.sw-pick:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.presets { display: flex; gap: 8px; overflow-x: auto; padding: 8px 2px 10px; scroll-snap-type: x proximity; scrollbar-width: thin; }
+.preset { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 92px; padding: 6px 4px 8px; border: 2px solid transparent; border-radius: 16px; background: var(--band); cursor: pointer; scroll-snap-align: start; font: 700 12px/1.1 var(--f-carlito), Arial, sans-serif; color: var(--ink); text-align: center; }
+.preset:hover { border-color: var(--tag-line); }
+.preset.on { border-color: var(--ink); background: var(--bg); }
+.logo-pick { display: flex; align-items: center; gap: 8px; flex: none; }
+.logo-thumb { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 34px; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); overflow: hidden; }
+.logo-thumb img { max-width: 48px; max-height: 28px; object-fit: contain; }
+.num-pair { display: flex; gap: 6px; flex: none; }
+.num-in { width: 64px; height: 36px; padding: 0 8px; border: 2px solid var(--tag-line); border-radius: 12px; background: var(--bg); color: var(--ink); font: 700 18px/1 var(--f-carlito), Arial, sans-serif; text-align: center; text-transform: uppercase; outline: none; }
+.num-in:focus { border-color: var(--accent); }
+.boat-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; }
+@container scr (orientation: portrait) {
+  .boat-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(220px, 42%) minmax(0, 1fr); gap: 14px 0; }
+  .boat-page { padding-top: 40px; }
+}
+@container scr (min-width: 1024px) and (min-height: 640px) {
+  .boat-grid { gap: 0 56px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+  .boat-prev { border-radius: 28px; }
+  .sw { width: 30px; height: 30px; }
+  .kite-sw { width: 24px; height: 34px; border-radius: 12px; }
+  .preset { width: 100px; font-size: 13px; }
+}

@@ -1,0 +1,126 @@
+{
+ "r10": {
+  "en": "Port keeps clear of starboard",
+  "ru": "Левый галс уступает правому"
+ },
+ "r11": {
+  "en": "Windward keeps clear of leeward",
+  "ru": "Наветренная уступает подветренной"
+ },
+ "r12": {
+  "en": "Clear astern keeps clear",
+  "ru": "Догоняющая уступает"
+ },
+ "r13": {
+  "en": "While tacking, keep clear",
+  "ru": "В повороте — уступай"
+ },
+ "r15": {
+  "en": "Just got right of way — give room first",
+  "ru": "Получила право дороги — сначала дай место"
+ },
+ "r16": {
+  "en": "Right of way, but no sudden turns",
+  "ru": "Право дороги — но без резких поворотов"
+ },
+ "r17": {
+  "en": "In to leeward from astern — no higher than your proper course",
+  "ru": "Догнала сзади под ветром — не выше надлежащего курса"
+ },
+ "r18": {
+  "en": "Mark-room",
+  "ru": "Место у знака"
+ },
+ "r18.3": {
+  "en": "Tacking in the zone",
+  "ru": "Поворот в зоне"
+ },
+ "r18.4": {
+  "en": "Gybing at the mark",
+  "ru": "Фордевинд у знака"
+ },
+ "r19": {
+  "en": "Room at an obstruction",
+  "ru": "Место у препятствия"
+ },
+ "r20": {
+  "en": "Room to tack at an obstruction",
+  "ru": "Место для поворота у препятствия"
+ },
+ "r31": {
+  "en": "Touching a mark",
+  "ru": "Касание знака"
+ },
+ "r44": {
+  "en": "A boat taking a penalty keeps clear",
+  "ru": "Лодка на штрафе уступает"
+ },
+ "rOcs": {
+  "en": "Over the line at the start",
+  "ru": "Фальстарт"
+ },
+ "rU": {
+  "en": "The U flag",
+  "ru": "Флаг U"
+ },
+ "rB": {
+  "en": "The black flag",
+  "ru": "Чёрный флаг"
+ },
+ "x10": {
+  "en": "On opposite tacks, the boat with the wind on her port side keeps clear.",
+  "ru": "На разных галсах уступает лодка, у которой ветер слева (левый галс)."
+ },
+ "x11": {
+  "en": "Overlapped on the same tack, the windward boat keeps clear.",
+  "ru": "Связанные на одном галсе: наветренная уступает."
+ },
+ "x12": {
+  "en": "On the same tack and not overlapped, the boat behind keeps clear.",
+  "ru": "На одном галсе без связанности уступает идущая сзади."
+ },
+ "x13": {
+  "en": "From head to wind until close-hauled, a tacking boat keeps clear of everyone.",
+  "ru": "От линии ветра до курса бейдевинд лодка в повороте уступает всем."
+ },
+ "x15": {
+  "en": "A boat that gets right of way by her own action (a tack, or sailing up from astern) must at first give the other room to keep clear.",
+  "ru": "Лодка, получившая право дороги своими действиями (поворотом или догнав сзади), сначала должна дать другой место, чтобы уступить."
+ },
+ "x16": {
+  "en": "A boat with right of way that changes course must leave the other boat room to keep clear.",
+  "ru": "Лодка с правом дороги, меняя курс, должна оставлять другой лодке место, чтобы уступить."
+ },
+ "x17": {
+  "en": "Overlapped to leeward from clear astern within two hull lengths, a boat must not sail above her proper course.",
+  "ru": "Став связанной под ветром, догнав сзади в пределах двух корпусов, лодка не должна идти выше своего надлежащего курса."
+ },
+ "x18": {
+  "en": "In the zone the inside boat, or the one clear ahead, gets room to round the mark.",
+  "ru": "В зоне место для огибания знака получает внутренняя лодка или та, что впереди."
+ },
+ "x18.3": {
+  "en": "A boat that tacks onto starboard in the zone mustn’t make a boat that has been on starboard since entering it sail above close-hauled, and gives her room if she gets inside.",
+  "ru": "Лодка, сделавшая поворот на правый галс в зоне, не должна заставлять лодку, идущую правым галсом с входа в зону, идти выше бейдевинда, и даёт ей место, если та окажется внутри."
+ },
+ "x18.4": {
+  "en": "An inside boat with right of way that has to gybe at the mark sails no farther from it than her proper course needs.",
+  "ru": "Внутренняя лодка с правом дороги, которой нужно сделать фордевинд у знака, не уходит от него дальше, чем требует её надлежащий курс."
+ },
+ "x19": {
+  "en": "Passing an obstruction overlapped (the committee boat, away from the start and finish), the outside boat gives the inside one room.",
+  "ru": "Проходя препятствие связанными (судейское судно — не на старте и финише), внешняя лодка даёт внутренней место."
+ },
+ "x20": {
+  "en": "Close-hauled and blocked by an obstruction ahead, a boat may hail for room to tack; the boat hailed must tack or give her room.",
+  "ru": "Идя в бейдевинд и упираясь в препятствие, лодка может окликнуть и попросить место для поворота; окликнутая должна повернуть или дать место."
+ },
+ "x31": {
+  "en": "Touching a mark costs one penalty turn.",
+  "ru": "Касание знака — один штрафной оборот."
+ },
+ "x44": {
+  "en": "A boat spinning her penalty turns keeps clear of the others.",
+  "ru": "Лодка на штрафных оборотах уступает остальным."
+ }
+}
