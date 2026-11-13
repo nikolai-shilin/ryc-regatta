@@ -3,6 +3,7 @@ import { Merriweather, Carlito } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { getLang, getT } from '@/lib/i18n';
 import { TelegramSignIn } from '@/components/telegram-sign-in';
+import { BestsSync } from '@/components/bests-sync';
 import '@/styles/tokens.css';
 import '@/styles/ryc.css';
 
@@ -50,6 +51,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         {children}
         <TelegramSignIn />
+        <BestsSync />
         <Analytics />
       </body>
     </html>

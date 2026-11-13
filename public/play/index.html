@@ -14,7 +14,12 @@
 <!-- the land round the course (game/land.js): fetched at once, not after the modules that ask for it -->
 <link rel="preload" as="fetch" href="/game/skopea.bin" crossorigin>
 <link rel="preload" as="fetch" href="/game/skopea.json" crossorigin>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="modulepreload" href="/vendor/three@0.160.0/build/three.module.min.js">
+<!-- Telegram's script, only inside Telegram: the launch data in the hash, or kept in sessionStorage by the site's pages
+     (app/layout.tsx), or Telegram's own webview. Elsewhere the race doesn't wait on telegram.org at all. It is written
+     in, not added, so it still runs before the scripts below that read window.Telegram. -->
+<script>(function () { var s = ''; try { s = sessionStorage.getItem('__telegram__initParams') || ''; } catch (e) {}
+  if (/tgWebAppData/.test(location.hash + s) || window.TelegramWebviewProxy) document.write('<script src="https://telegram.org/js/telegram-web-app.js"><\/script>'); })();</script>
 <!-- Vercel Web Analytics: the race page is static, outside the Next.js layout that carries <Analytics /> -->
 <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
 <script defer src="/_vercel/insights/script.js"></script>
@@ -379,7 +384,7 @@
   #confirmCard .c-btns { gap: 8px; margin-top: 8px; }
   #confirmCard .go.ghost { background: rgba(255, 255, 255, 0.06); color: #fff; border: 1px solid rgba(255, 255, 255, 0.16); }
 </style>
-<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+<script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
 </head>
 <body>
 <canvas id="gl"></canvas>

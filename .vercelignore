@@ -1,5 +1,6 @@
-# Serve only the game: index.html, game/, the logo and the icon
+# Not deployed: the docs, the Blender scripts that make the game's files, the tests and Claude's settings
 README.md
 blender
 .claude
 .gitignore
+test

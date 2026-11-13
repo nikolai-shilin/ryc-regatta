@@ -12,25 +12,39 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 | `/race` | The race hub: today's race, today's fastest, a free race | `app/race/page.tsx` |
 | `/race/free` | Set up a free race (wind, fleet, course, laps, start, current) | `components/free-setup.tsx` |
 | `/race/result/[id]` | The result and debrief after a race | `components/result-view.tsx` |
+| `/boat` | Your boat: colours, logo, sail number and team, beside the game's own yacht in 3D (`/boat-view`) | `components/boat-editor.tsx` |
 | `/settings` | Account, sailing, screen and sound, language | `components/settings-form.tsx` |
 | `/help` | How to play, with screenshots | `app/help/page.tsx` |
+| `/faq` | Questions: 32 in five groups | `lib/faq.ts`, `components/faq-list.tsx` |
+| `/iyt` | The IYT sailing certification test, as rycrentals.com/iyt has it | `app/iyt/page.tsx` |
 | `/sign-in`, `/sign-in/code`, `/sign-in/name` | Supabase sign-in: Google or a 6-digit email code, then a name for the ranking | `components/sign-in-forms.tsx` |
 | `/play?race=today` or `?race=free` | The game itself, a static page | `public/play/index.html`, `public/game/` |
 
 - **The game:** it lives in `public/`, and `next.config.ts` rewrites `/play` to `/play/index.html`.
   - The game and the pages share this origin, so they share localStorage:
     - `regatta` holds the options the free-race set-up and Settings write.
-    - `regatta-pb` holds personal bests.
+    - `regatta-pb` holds personal bests. For a signed-in player `components/bests-sync.tsx` merges it, on every page, with
+      the copy in their account (`user_metadata.pb`), so their bests follow them to any device.
     - `regatta-result-<id>` holds each finished race. The game keeps the last 20, then opens `/race/result/<id>`.
-  - A result link therefore works only on the device that sailed the race.
+  - The game also posts each finished race to the scores server (below), so a result link opens on any device; there
+    it reads as "this boat", not "you", and the page has a Share button for your own races.
+- **Scores:** `public/game/stats.js` posts every race's start, finish and result to `https://iyt.rycrentals.com/api/game`
+  (`api/game.mjs` in the `iyt-test` repo, table `public.game_races`). It names the player by Telegram's launch data inside
+  Telegram, or else by the site account's access token, which the game gets from `/auth/token` on this origin. The
+  server drops a time faster than the course allows (0.45 s a metre of beat a lap); `npm test` checks that the
+  computer boats stay well above that floor.
+- **Three.js** 0.160.0 is served from `public/vendor/` (the build and the three addons the game uses), not a CDN. To
+  upgrade, copy the same files from the new `three` package into a folder named for its version and change the import
+  maps in `public/play`, `public/hero-view` and `public/boat-view`.
 - **Languages:** English and Russian.
   - The `lang` cookie decides, set by `/lang?to=ru&back=/somewhere`; without it, the browser's Accept-Language does.
   - The game reads the same cookie.
   - The copy is inline as `t('English', 'Русский')` pairs (`lib/lang.ts`).
-- **Today's race:** `lib/race.ts` is a copy of the game's `dailyRace()` and must stay in step with `public/game/sim.js`. Today's fastest
-  comes from `https://iyt.rycrentals.com/api/game` (the `iyt-test` repo).
-- **Styles:** `styles/bundle.css` is the RYC design system, `styles/ryc.css` holds the game's pages and `styles/app.css` the app's own
-  additions. Layouts follow the screen through container queries: phone sideways, phone upright, desktop.
+- **Today's race:** `lib/race.ts` is a copy of the game's `dailyRace()` and must stay in step with `public/game/sim.js`;
+  `npm test` compares the two over 500 days. Its day is the UTC date, so it changes at 03:00 in Moscow and Türkiye.
+  Today's fastest comes from `https://iyt.rycrentals.com/api/game` (the `iyt-test` repo).
+- **Styles:** `styles/tokens.css` is the RYC design system's tokens and `styles/ryc.css` holds the pages. Layouts follow
+  the screen through container queries: phone sideways, phone upright, desktop.
 - **The yacht:** `public/game/yacht.glb` is made by `blender/yacht.py`. Run it in Blender; it writes the file in place.
 - **The land:** every race is sailed in Göcek bay, off Skopea Marina. `public/game/skopea.bin` and `skopea.json` (the
   hills, the coast, the marinas' pontoons and the town) are made by `python3 blender/skopea.py <work dir>`, from the
@@ -54,7 +68,7 @@ npm run dev
 ```
 
 The app runs at http://localhost:5193 (the game is at http://localhost:5193/play?race=today). `npm run typecheck` and `npm run build`
-check it.
+check it; `npm test` sails the game's race headless in Node (about 10 seconds).
 
 ## Environment
 

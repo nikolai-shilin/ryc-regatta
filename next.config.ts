@@ -20,6 +20,8 @@ const config: NextConfig = {
       { source: '/boat-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/hero-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/game/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=0, must-revalidate' }] },
+      // three.js, served from here rather than a CDN (the version is in the path, so a file there never changes)
+      { source: '/vendor/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }] },
     ];
   },
 };

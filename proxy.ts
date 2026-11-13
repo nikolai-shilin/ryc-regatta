@@ -21,5 +21,5 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // not for the game's files, the pictures or Next's own assets
-  matcher: ['/((?!_next/static|_next/image|game/|play|boat-view|hero-view|images/|favicon.ico|logo-black.svg).*)'],
+  matcher: ['/((?!_next/static|_next/image|game/|vendor/|play|boat-view|hero-view|images/|favicon.ico|logo-black.svg).*)'],
 };

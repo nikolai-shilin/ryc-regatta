@@ -1,7 +1,7 @@
 // Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
 import { Race, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace } from './sim.js';
 import { World, defaultQuality, ladderStep } from './world.js';
-import { raceStarted, raceFinished } from './stats.js';
+import { raceStarted, raceFinished, raceResult } from './stats.js';
 import { createHudNext } from './hud-next.js';
 
 const $ = (s) => document.querySelector(s);
@@ -1003,6 +1003,7 @@ function finishToPage() {
     while (keys.length >= 20) localStorage.removeItem(keys.shift()); // the last twenty races stay on this device
     localStorage.setItem('regatta-result-' + id, JSON.stringify(res));
   } catch (e) {}
+  raceResult(race, res); // and on the server, so the result's link opens on any device (stats.js)
   location.href = '/race/result/' + encodeURIComponent(id);
 }
 
