@@ -48,14 +48,16 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 - **The yacht:** `public/game/yacht.glb` is made by `blender/yacht.py`. Run it in Blender; it writes the file in place.
 - **The venues:** today's race is always sailed in Göcek bay; a free race goes to the venue the set-up chose (`venue`
   in the `regatta` options; `?venue=<id>` in the game's address overrides it): Göcek, Cowes, Newport, Sydney, Kiel,
-  Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland or Lake Garda. `public/game/venues.js` holds each one's position,
+  Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland, San Francisco, Valencia, Barcelona, Palma, Marstrand, Bermuda,
+  Enoshima, Weymouth, Marseille, Rio de Janeiro or Lake Garda. `public/game/venues.js` holds each one's position,
   prevailing wind, clock and look (its woods, farmland, houses, moored boats and water); `lib/venues.ts` is the set-up
   page's list of them, and `npm test` keeps the two in step. Each venue's land is baked by
   `python3 blender/venues.py <work dir> [id ...]` into `public/game/venues/<id>.json` and `.bin`, the same way as
   Göcek's (below), but centred on the race area and turned so the venue's prevailing wind comes from the game's north,
   where every race's wind is; the sun turns with it, and stands where it does at that latitude in the sailing season.
-  The json also lists the towns and the landmarks `skopea.js` draws: the Harbour Bridge, the Newport Bridge, the Sky
-  Tower, Laboe's memorial and the lighthouses of Kiel and Trieste. `npm test` sails every course at every venue and
+  The json also lists the towns and the landmarks `skopea.js` draws: the Harbour Bridge, the Newport Bridge, the Golden
+  Gate, the Sky Tower, Laboe's memorial, the Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la
+  Garde, Christ the Redeemer, Enoshima's Sea Candle and the lighthouses of Kiel and Trieste. `npm test` sails every course at every venue and
   checks its marks are in clear water. Moving between today's race and a free race in the game reloads the page when
   the venue changes.
 - **The land:** Göcek bay, off Skopea Marina. `public/game/skopea.bin` and `skopea.json` (the

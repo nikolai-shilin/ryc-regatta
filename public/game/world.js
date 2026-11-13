@@ -730,7 +730,8 @@ export class World {
     const phone = /android|iphone|ipad/i.test(navigator.userAgent);
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(SKY_HORIZON, FOG_NEAR, FOG_FAR);
-    this.camera = new THREE.PerspectiveCamera(55, 1, 0.3, 6000);
+    // out to 9 km: as far as the venue's land goes (8.5 km), so a landmark or a mountain behind the course is drawn
+    this.camera = new THREE.PerspectiveCamera(55, 1, 0.3, 9000);
     this.camera.rotation.order = 'YXZ';
     this.hemi = new THREE.HemisphereLight('#dbeaff', '#2c4a5c', 0.9);
     this.scene.add(this.hemi);

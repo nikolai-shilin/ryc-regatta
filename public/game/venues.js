@@ -123,6 +123,110 @@ export const VENUES = [
     },
   },
   {
+    id: 'san-francisco', name: ['San Francisco', 'Сан-Франциско'], lat: 37.815, lon: -122.435, wind: 255, tz: -7,
+    look: {
+      ground: { forest: ['#33452a', '#465a33', '#617040'], scrub: '#9a9460', rock: ['#9a9284', '#7a7366'], town: '#b0a89a', shore: '#b8ad94' },
+      fields: ['#a89a5c', '#b8a868', '#8f9a58', '#c2b070'],
+      trees: [['conifer', 0.4, '#26401f', '#3c5a2c'], ['eucalypt', 0.35, '#4a5a3a', '#7d8a62'], ['broad', 0.25, '#33482a', '#5a733a']], treeTop: 500, woods: 0.45,
+      walls: ['#f2efe6', '#e8e0cc', '#d9d4c8', '#c9d3d8', '#efe6d2', '#e6d9c0'], roofs: ['#6f6a64', '#8a8076', '#a85a40', '#5d6266'], flat: 0.55,
+      boats: { sail: 0.75, motor: 0.25, big: 0 },
+      water: { deep: '#0b2f3c', scatter: '#2a7f7a', k: 0.5 },
+    },
+  },
+  {
+    id: 'valencia', name: ['Valencia', 'Валенсия'], lat: 39.455, lon: -0.285, wind: 110, tz: 2,
+    look: {
+      ground: { forest: ['#3a5229', '#4c6a30', '#66823c'], scrub: '#8a8a58', rock: ['#b8a888', '#9a8a6c'], town: '#bba98e', shore: '#e0cfa4' },
+      fields: ['#4f7a30', '#5f8a38', '#6a9440', '#a8a060', '#8a9a50'],
+      trees: [['broad', 0.45, '#335226', '#5a7c34'], ['palm', 0.3, '#3d5a2c', '#6a8a3a'], ['stone', 0.25, '#2e4626', '#4f6834']], treeTop: 600, woods: 0.35,
+      walls: ['#f2e6cc', '#efd9b0', '#f6f1e6', '#e3cfa8', '#f0dfc0', '#e8d5b5'], roofs: ['#b4603e', '#a5543a', '#9c4f37', '#8a8e90'], flat: 0.6,
+      boats: { sail: 0.6, motor: 0.3, big: 0.1, bigKind: 'super' },
+      water: { deep: '#06304a', scatter: '#1a9a9a', k: 0.3 },
+    },
+  },
+  {
+    id: 'barcelona', name: ['Barcelona', 'Барселона'], lat: 41.372, lon: 2.225, wind: 200, tz: 2,
+    look: {
+      ground: { forest: ['#33482a', '#46602f', '#5f7a3c'], scrub: '#7f8656', rock: ['#b4a890', '#958a74'], town: '#b8a890', shore: '#dcc9a0' },
+      trees: [['stone', 0.45, '#2e4626', '#4f6834'], ['broad', 0.35, '#33482a', '#5a7838'], ['palm', 0.2, '#3d5a2c', '#6a8a3a']], treeTop: 600, woods: 0.7,
+      walls: ['#e8d9bc', '#dcc7a2', '#f2ebdc', '#cdb48c', '#e6d2b0', '#f6f1e6'], roofs: ['#b4603e', '#a5543a', '#8a8e90', '#9c4f37'], flat: 0.7,
+      boats: { sail: 0.6, motor: 0.3, big: 0.1, bigKind: 'super' },
+      water: { deep: '#05304a', scatter: '#1a9a9a', k: 0.25 },
+    },
+  },
+  {
+    id: 'palma', name: ['Palma', 'Пальма'], lat: 39.535, lon: 2.63, wind: 220, tz: 2,
+    look: {
+      ground: { forest: ['#33482a', '#46602f', '#5f7a3c'], scrub: '#868a58', rock: ['#c4b49a', '#a3937a'], town: '#bfae92', shore: '#e2d2ac' },
+      fields: ['#7a8a48', '#8c9650', '#a39a5c', '#6a7f3c'],
+      trees: [['stone', 0.35, '#2e4626', '#4f6834'], ['olive', 0.35, '#56603e', '#7f8660'], ['shrub', 0.2, '#3e4d2c', '#6a7640'], ['palm', 0.1, '#3d5a2c', '#6a8a3a']], treeTop: 900, woods: 0.6,
+      walls: ['#f0dfbe', '#e8cfa2', '#f6efe0', '#dcc49a', '#efe2c8', '#e9d6b2'], roofs: ['#b4603e', '#a5543a', '#c0704a', '#9c4f37'], flat: 0.45,
+      boats: { sail: 0.6, motor: 0.25, big: 0.15, bigKind: 'super' },
+      water: { deep: '#04324e', scatter: '#16aaa6', k: 0.4 },
+    },
+  },
+  {
+    id: 'marstrand', name: ['Marstrand', 'Марстранд'], lat: 57.885, lon: 11.555, wind: 225, tz: 2,
+    look: {
+      ground: { forest: ['#2c4224', '#3b5530', '#566d3a'], scrub: '#7a7f56', rock: ['#a8988c', '#857870'], town: '#9c8a80', shore: '#a8988a' },
+      trees: [['conifer', 0.55, '#22381f', '#36502c'], ['broad', 0.3, '#33502a', '#5a7838'], ['shrub', 0.15, '#4a5a34', '#6f7a48']], treeTop: 200, woods: 0.35,
+      walls: ['#8b2d23', '#a03a2c', '#f4f2ec', '#e8e2d0', '#d8c79a', '#7a2a22'], roofs: ['#3f3a38', '#5a3a33', '#8a3b2e', '#4a4d50'], flat: 0.05,
+      boats: { sail: 0.85, motor: 0.15, big: 0 },
+      water: { deep: '#0a2a36', scatter: '#24706c', k: 0.6 },
+    },
+  },
+  {
+    id: 'bermuda', name: ['Bermuda', 'Бермуды'], lat: 32.305, lon: -64.84, wind: 200, tz: -3,
+    look: {
+      ground: { forest: ['#2f4a26', '#3f6030', '#5a7a3a'], scrub: '#7a8a50', rock: ['#c9bba0', '#a89a80'], town: '#c8bca8', shore: '#efdcc4' },
+      trees: [['broad', 0.4, '#2f4a26', '#56783a'], ['palm', 0.3, '#3d5a2c', '#6a8a3a'], ['cypress', 0.3, '#25391f', '#3a5230']], treeTop: 100, woods: 0.7,
+      walls: ['#f6c9c4', '#bfe0e8', '#f7e3a6', '#c9e6c4', '#f4f1ea', '#e8c8e0'], roofs: ['#f6f6f2', '#efefea', '#f2f2ee', '#e8e8e2'], flat: 0,
+      boats: { sail: 0.7, motor: 0.25, big: 0.05, bigKind: 'super' },
+      water: { deep: '#03385a', scatter: '#16c0c0', k: 0.65 },
+    },
+  },
+  {
+    id: 'enoshima', name: ['Enoshima', 'Эносима'], lat: 35.285, lon: 139.495, wind: 190, tz: 9,
+    look: {
+      ground: { forest: ['#1f3a1e', '#2c4a26', '#43622f'], scrub: '#6a7a48', rock: ['#8e8a7e', '#6f6b62'], town: '#a09c94', shore: '#a89f8c' },
+      trees: [['broad', 0.55, '#1f3a1e', '#3f5e2c'], ['conifer', 0.3, '#1c331b', '#2f4a28'], ['pine', 0.15, '#26401f', '#45602f']], treeTop: 400, woods: 0.9,
+      walls: ['#eeece6', '#d9d6ce', '#c8c4ba', '#e6e0d2', '#b9b4aa', '#f4f2ee'], roofs: ['#3e4752', '#4a4d50', '#2f3a46', '#6a6e72'], flat: 0.35,
+      boats: { sail: 0.7, motor: 0.3, big: 0 },
+      water: { deep: '#062c42', scatter: '#1f8a90', k: 0.4 },
+    },
+  },
+  {
+    id: 'weymouth', name: ['Weymouth', 'Уэймут'], lat: 50.605, lon: -2.41, wind: 225, tz: 1,
+    look: {
+      ground: { forest: ['#2f4a26', '#3e5d2e', '#557a3a'], scrub: '#7a9050', rock: ['#d4ccb4', '#b4aa92'], town: '#a8988a', shore: '#cfc2a0' },
+      fields: ['#6f9a45', '#7fa64e', '#8fae55', '#a8b866', '#c2b46a', '#5f8c3e'],
+      trees: [['broad', 0.9, '#2f4a26', '#5d7f3a'], ['conifer', 0.1, '#243b22', '#3a5530']], treeTop: 400, woods: 0.3,
+      walls: ['#e9dfc8', '#d9ccae', '#f2efe8', '#c8b894', '#a0573f', '#ece3cf'], roofs: ['#4f565c', '#5c6266', '#6b4a3e', '#7a4636'], flat: 0.15,
+      boats: { sail: 0.8, motor: 0.2, big: 0 },
+      water: { deep: '#0b2e38', scatter: '#2a8278', k: 0.5 },
+    },
+  },
+  {
+    id: 'marseille', name: ['Marseille', 'Марсель'], lat: 43.265, lon: 5.335, wind: 315, tz: 2,
+    look: {
+      ground: { forest: ['#3a4c2c', '#4a5e34', '#647440'], scrub: '#8a8a5c', rock: ['#d8d2c2', '#b8b0a0'], town: '#c2b8a6', shore: '#d6cfbe' },
+      trees: [['pine', 0.4, '#2c4224', '#566d3a'], ['shrub', 0.45, '#3e4d2c', '#6a7640'], ['stone', 0.15, '#2e4626', '#4f6834']], treeTop: 600, woods: 0.45,
+      walls: ['#efe3c8', '#e6d2a8', '#f2ebe0', '#d9c39b', '#eadbc0', '#f6f1e6'], roofs: ['#b4603e', '#a5543a', '#c0704a', '#9c4f37'], flat: 0.3,
+      boats: { sail: 0.75, motor: 0.25, big: 0 },
+      water: { deep: '#04304c', scatter: '#18a6a8', k: 0.35 },
+    },
+  },
+  {
+    id: 'rio', name: ['Rio de Janeiro', 'Рио-де-Жанейро'], lat: -22.93, lon: -43.158, wind: 150, tz: -3,
+    look: {
+      ground: { forest: ['#1c3a1a', '#284d22', '#3c642c'], scrub: '#5f7a3c', rock: ['#8a8680', '#6a6660'], town: '#b4aca0', shore: '#e4d6b0' },
+      trees: [['broad', 0.7, '#1c3a1a', '#3c642c'], ['palm', 0.2, '#2f4a24', '#557a34'], ['eucalypt', 0.1, '#3a4a30', '#5f6e48']], treeTop: 900, woods: 0.95,
+      walls: ['#f2efe6', '#e6dfcf', '#d6dde0', '#f1e2c4', '#e8d0c0', '#c9d6c8'], roofs: ['#a84f36', '#93452f', '#7b8287', '#5f666b'], flat: 0.6,
+      boats: { sail: 0.65, motor: 0.35, big: 0 },
+      water: { deep: '#073044', scatter: '#228a86', k: 0.45 },
+    },
+  },
+  {
     id: 'garda', name: ['Lake Garda', 'Озеро Гарда'], lat: 45.84, lon: 10.85, wind: 190, tz: 2,
     look: {
       ground: { forest: ['#2c4524', '#3c5a2c', '#557236'], scrub: '#7c8452', rock: ['#b8b2a2', '#958f80'], town: '#b0a48c', shore: '#bdb3a0' },

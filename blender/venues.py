@@ -34,6 +34,23 @@ VENUES = {
     'antigua': dict(home=(16.9890, -61.7700), wind=95, towns=[(17.0080, -61.7640, 500), (17.0180, -61.7820, 700)]),
     'auckland': dict(home=(-36.8300, 174.8150), wind=225, towns=[(-36.8480, 174.7650, 1500), (-36.8280, 174.7980, 900), (-36.8500, 174.8100, 1300), (-36.8000, 174.7900, 1500)],
                      landmarks=[dict(kind='tower', at=(-36.84846, 174.76218), h=328, style='sky')]),
+    'san-francisco': dict(home=(37.8150, -122.4350), wind=255, towns=[(37.8020, -122.4400, 1100), (37.7960, -122.4120, 1100), (37.8580, -122.4850, 800), (37.8730, -122.4570, 700)],
+                          landmarks=[dict(kind='suspension', a=(37.8077, -122.4750), b=(37.8288, -122.4813), h=227, span=1280, deck=67, color='#c0362c')]),
+    'valencia': dict(home=(39.4550, -0.2850), wind=110, towns=[(39.4700, -0.3700, 1200), (39.4700, -0.3250, 1000), (39.4300, -0.3300, 800)]),
+    'barcelona': dict(home=(41.3720, 2.2250), wind=200, towns=[(41.3850, 2.1800, 1100), (41.3950, 2.2050, 1100), (41.3780, 2.1900, 700), (41.4100, 2.2250, 900)],
+                      landmarks=[dict(kind='spires', at=(41.4036, 2.1744), h=172)]),
+    'palma': dict(home=(39.5350, 2.6300), wind=220, towns=[(39.5700, 2.6500, 1200), (39.5350, 2.7200, 800), (39.5550, 2.6000, 700)],
+                  landmarks=[dict(kind='cathedral', at=(39.5675, 2.6483), h=44)]),
+    'marstrand': dict(home=(57.8850, 11.5550), wind=225, towns=[(57.8860, 11.5850, 500), (57.8900, 11.6000, 500), (57.8650, 11.6000, 400)],
+                      landmarks=[dict(kind='fort', at=(57.8866, 11.5806), h=24)]),
+    'bermuda': dict(home=(32.3050, -64.8400), wind=200, towns=[(32.2930, -64.7830, 900), (32.3250, -64.8350, 500), (32.3100, -64.8650, 600), (32.2850, -64.8150, 700)]),
+    'enoshima': dict(home=(35.2850, 139.4950), wind=190, towns=[(35.3100, 139.4800, 1200), (35.3100, 139.5300, 1200), (35.3050, 139.5000, 800)],
+                     landmarks=[dict(kind='lighthouse', at=(35.2997, 139.4796), h=60, style='candle')]),
+    'weymouth': dict(home=(50.6050, -2.4100), wind=225, towns=[(50.6100, -2.4550, 1100), (50.5550, -2.4400, 900), (50.6300, -2.4400, 700)]),
+    'marseille': dict(home=(43.2650, 5.3350), wind=315, towns=[(43.2950, 5.3750, 1200), (43.2750, 5.3650, 900), (43.2600, 5.3800, 700), (43.3100, 5.3650, 1000)],
+                      landmarks=[dict(kind='basilica', at=(43.2840, 5.3713), h=52)]),
+    'rio': dict(home=(-22.9300, -43.1580), wind=150, towns=[(-22.9250, -43.1750, 1200), (-22.9000, -43.1150, 1200), (-22.9450, -43.1800, 900), (-22.9700, -43.1850, 1000)],
+                landmarks=[dict(kind='statue', at=(-22.9519, -43.2105), h=38)]),
     'garda': dict(home=(45.8400, 10.8500), wind=190, lake='Lago di Garda', towns=[(45.8860, 10.8410, 800), (45.8750, 10.8760, 600), (45.7650, 10.8100, 600), (45.8730, 10.8560, 500)]),
 }
 
@@ -199,7 +216,7 @@ def bake(vid, V):
             # The coastline decides, not the elevation (whose sandbanks and seabed would come up as islands): every
             # coast way is drawn as a wall, and the sea is flooded in from the water side of each (OSM draws the land
             # on a way's left), up to the walls. What the flood doesn't reach is land: the mainland, and the islands
-            # inside their rings. A flood that comes up into the hills started on the wrong side, and is put back
+            # inside their rings. A flood that is mostly above the sea's level started on the wrong side, and is put back
             # (where OSM's coastline leaves a water area to one side, its land side is the bigger part of the box).
             img = Image.new('L', (GW, GH), 0); d = ImageDraw.Draw(img)
             for r in coast: d.line(pix(r), fill=128, width=2)
@@ -215,11 +232,12 @@ def bake(vid, V):
                 if not (0 <= i < GH and 0 <= j < GW) or img.getpixel((j, i)) != 0: continue
                 ImageDraw.floodfill(img, (j, i), 255)
                 now = np.asarray(img) == 255; new = now & ~filled
-                if new.any() and np.median(H[new]) > 8: print('  put back a flood of', int(new.sum()), 'cells at median', round(float(np.median(H[new]))), 'm'); img.paste(Image.fromarray(np.where(new, 64, np.asarray(img)).astype(np.uint8))); continue
+                if new.any() and np.mean(H[new] > 1.5) > 0.4: print('  put back a flood of', int(new.sum()), 'cells,', round(100 * float(np.mean(H[new] > 1.5))), '% above the sea'); img.paste(Image.fromarray(np.where(new, 64, np.asarray(img)).astype(np.uint8))); continue
                 filled = now; regions += 1
-            # and water wherever the elevation is at the sea's level too: the waters OSM maps inside its coastline
-            # (Sydney's coastline crosses the Heads; the harbour behind them is a water area of its own)
-            land = ~filled & (H > 1.0)
+            # and water wherever the elevation is down at the sea's level too (its water surfaces are flat, at 0 or
+            # below): the waters OSM maps inside its coastline (Sydney's coastline crosses the Heads; the harbour behind
+            # them is a water area of its own). Not a little above it: Valencia's rice fields are a metre or two up
+            land = ~filled & (H > 0.3)
             print('  coast ways', len(coast), '| sea regions', regions)
 
     # ---------- the sea room: the distance to the shore, 20 m grid over the middle 10 km ----------
