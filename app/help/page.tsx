@@ -8,7 +8,7 @@ import { SiteHead, SiteFoot } from '@/components/site-chrome';
 
 export const metadata: Metadata = { title: 'How to play' };
 
-const WIDE: [number, number][] = [[53.5, 3.2], [43.5, 8.5], [84, 7.5], [89, 13], [5.5, 6], [13.5, 87], [95.5, 70], [88.5, 91], [66, 66]];
+const WIDE: [number, number][] = [[53.5, 3.2], [43.5, 8.5], [84, 7.5], [89, 13], [5.5, 6], [13.5, 87], [95.5, 70], [88.5, 91], [70.5, 60]];
 const NARROW: [number, number][] = [[36, 7.6], [28.5, 13], [43, 2.5], [77, 9], [14, 4.5], [47, 91], [86, 72], [63, 91.5], [78, 55]];
 const K = ({ k }: { k: string }) => <span className="kbd">{k}</span>;
 
@@ -47,7 +47,7 @@ export default async function Help() {
   const marks = (pts: [number, number][]) => pts.map(([x, y], i) => <span key={i} className="hmark" style={{ left: `${x}%`, top: `${y}%` }}>{i + 1}</span>);
   const item = (img: string, alt: string, title: string, text: string, keys: React.ReactNode) => (
     <div className="hitem">
-      <Image className="hshot" src={`/images/${img}.jpg`} width={960} height={720} sizes="(min-width: 900px) 360px, (min-width: 600px) 50vw, 100vw" alt={alt} />
+      <Image className="hshot" src={`/images/${img}-v2.jpg`} width={960} height={720} sizes="(min-width: 900px) 360px, (min-width: 600px) 50vw, 100vw" alt={alt} />
       <span className="card-title">{title}</span>
       <p className="lead">{text}</p>
       <span className="hkeys">{keys}</span>
@@ -68,11 +68,11 @@ export default async function Help() {
 
       {sec('h-screen', t('Everything you see', 'Всё, что на экране'), t('The race screen', 'Экран гонки'), <>
         <figure className="hfig only-wide">
-          <Image className="hshot" src="/images/hud-desk.jpg" width={2160} height={1350} sizes="(min-width: 1200px) 1120px, 100vw" alt={t('The race screen on a desktop, numbered', 'Экран гонки на компьютере, с номерами')} />
+          <Image className="hshot" src="/images/hud-desk-v2.jpg" width={2160} height={1350} sizes="(min-width: 1200px) 1120px, 100vw" alt={t('The race screen on a desktop, numbered', 'Экран гонки на компьютере, с номерами')} />
           {marks(WIDE)}
         </figure>
         <figure className="hfig only-narrow">
-          <Image className="hshot" src="/images/hud-port.jpg" width={780} height={1688} sizes="100vw" alt={t('The race screen on a phone held upright, numbered', 'Экран гонки на телефоне вертикально, с номерами')} />
+          <Image className="hshot" src="/images/hud-port-v2.jpg" width={780} height={1688} sizes="100vw" alt={t('The race screen on a phone held upright, numbered', 'Экран гонки на телефоне вертикально, с номерами')} />
           {marks(NARROW)}
         </figure>
         <ol className="hlegend">
@@ -90,7 +90,7 @@ export default async function Help() {
 
       {sec('h-wind', t('Where the speed is', 'Откуда скорость'), t('Reading the wind', 'Как читать ветер'), (
         <div className="hsplit">
-          <Image className="hshot" src="/images/h-wind.jpg" width={960} height={720} sizes="(min-width: 600px) 50vw, 100vw" alt={t('The wind ring round the boat, from above', 'Кольцо ветра вокруг лодки, сверху')} />
+          <Image className="hshot" src="/images/h-wind-v2.jpg" width={960} height={720} sizes="(min-width: 600px) 50vw, 100vw" alt={t('The wind ring round the boat, from above', 'Кольцо ветра вокруг лодки, сверху')} />
           <div className="hstack">
             <p className="lead">{t('The ring round your boat shows the wind. It swings ten degrees and more either way every minute or so: in a lift you can point higher; in a header, tack — the chip under the speed says which.', 'Кольцо вокруг лодки показывает ветер. Он меняется на десять градусов и больше каждую минуту: когда отходит — иди круче, когда заходит — делай поворот. Подсказка под скоростью скажет, что сейчас.')}</p>
             <div className="legend">
@@ -105,7 +105,7 @@ export default async function Help() {
 
       {sec('h-start', t('Flags and the gun', 'Флаги и сигнал'), t('The start', 'Старт'), (
         <div className="hsplit">
-          <Image className="hshot" src="/images/h-start.jpg" width={960} height={720} sizes="(min-width: 600px) 50vw, 100vw" alt={t('The committee boat flags over the start line', 'Флаги судейского судна над стартовой линией')} />
+          <Image className="hshot" src="/images/h-start-v2.jpg" width={960} height={720} sizes="(min-width: 600px) 50vw, 100vw" alt={t('The committee boat flags over the start line', 'Флаги судейского судна над стартовой линией')} />
           <ol className="hsteps">
             <li><span className="t">{t('Class', 'Класс')}</span><span>{t('Warning: the class flag goes up and the countdown starts.', 'Предупреждение: поднимается флаг класса, начинается отсчёт.')}</span></li>
             <li><span className="t">P</span><span>{t('Preparatory: the P flag goes up (or U, or the black flag).', 'Подготовительный: поднимается флаг P (или U, или чёрный).')}</span></li>
