@@ -1,4 +1,4 @@
-// Tells the server about the player's races (api/game.mjs on iyt.rycrentals.com → public.game_races), for the admins'
+// Tells the server about the player's races (api/game.mjs in the iyt-test repo, on iyt.rycrentals.com → public.game_races), for the admins'
 // Overview page: one post when a race starts, one when the player crosses the finish. Best effort: a failure is ignored
 // and the game never waits on it. Inside Telegram the launch data names the player; in a plain browser the race is
 // counted without a name. The post goes to another site, so it stays a simple request (plain text, no headers of its

@@ -5,11 +5,11 @@ import { raceStarted, raceFinished } from './stats.js';
 
 const $ = (s) => document.querySelector(s);
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
-// The game is a site of its own (ryc-regatta/, the Vercel project ryc-regatta, at regatta.rycrentals.com); the app,
-// its rule articles, its fonts and the race scores (api/game.mjs) stay on iyt.rycrentals.com, which lets this site
+// The game is a site of its own (this repo, the Vercel project ryc-regatta, at regatta.rycrentals.com); the app,
+// its rule articles, its fonts and the race scores (api/game.mjs in the iyt-test repo) stay on iyt.rycrentals.com, which lets this site
 // read them across origins. SITE is in stats.js too.
 const SITE = 'https://iyt.rycrentals.com';
-// From Telegram the app passes its launch data in the hash, as Telegram does (miniapp/app.js); telegram-web-app.js has
+// From Telegram the app passes its launch data in the hash, as Telegram does (miniapp/app.js in iyt-test); telegram-web-app.js has
 // read and kept it by now, so it comes off the address bar and out of any link the player copies.
 if (TG && /tgWebAppData=/.test(location.hash)) try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
 

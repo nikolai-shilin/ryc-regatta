@@ -1,5 +1,5 @@
-# Regatta: the game's racing yacht (ryc-regatta/game/yacht.js), the hard parts modelled here and exported to
-# ryc-regatta/game/yacht.glb: the hull (chined aft, fine forward), a fin keel with a bulb, a spade rudder, the deck
+# Regatta: the game's racing yacht (game/yacht.js), the hard parts modelled here and exported to
+# game/yacht.glb: the hull (chined aft, fine forward), a fin keel with a bulb, a spade rudder, the deck
 # with an open-transom cockpit cut into it, seats and coamings, and a coachroof with a raked front and a window band.
 # The sails, rig, lifelines, winches, wheel, hatches and decals stay in yacht.js (they move, or are made per boat).
 #
@@ -15,7 +15,7 @@ import bpy, bmesh, math, os
 from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.normpath(os.path.join(HERE, '..', '..', '..', 'ryc-regatta', 'game', 'yacht.glb'))
+OUT = os.path.normpath(os.path.join(HERE, '..', 'game', 'yacht.glb'))
 
 # ---------- yacht.js's lines (game frame: +x starboard, +y up, -z forward, the waterline at y = 0) ----------
 L, B = 10.4, 3.35
