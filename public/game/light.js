@@ -86,11 +86,17 @@ export function skyAt(hour, overcast = false) {
 export const clockText = (hour) => { const m = Math.round(hour * 60); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
 
 // the light for a race: ?hour=18.5 and ?sky=overcast|clear in the address win (for testing; the old ?light=day,
-// morning, golden, overcast still work); otherwise an hour and a sky chosen from the race's own numbers, so today's
-// race looks the same for everyone — any hour of the racing day alike, and overcast about one race in seven
-export function pickSky(race) {
-  const ph = (race.tidePh ?? Math.random() * 6.283) / 6.283;
-  let hour = HOURS[0] + ((ph * 7.31) % 1) * (HOURS[1] - HOURS[0]), overcast = ((ph * 13.73 + 0.37) % 1) < 0.14;
+// morning, golden, overcast still work); otherwise a new hour every start, any hour of the racing day alike but at
+// least two hours from the last one (remembered across visits), and overcast about one race in seven
+let last = null;
+try { last = parseFloat(localStorage.getItem('regatta.hour')); } catch (e) {}
+export function pickSky() {
+  let hour;
+  do hour = HOURS[0] + Math.random() * (HOURS[1] - HOURS[0]);
+  while (Number.isFinite(last) && Math.abs(hour - last) < 2);
+  let overcast = Math.random() < 0.14;
+  last = hour;
+  try { localStorage.setItem('regatta.hour', hour.toFixed(2)); } catch (e) {}
   try {
     const q = new URLSearchParams(location.search);
     const old = { day: [14.5, 0], morning: [9.5, 0], golden: [19, 0], overcast: [14, 1] }[q.get('light')];
