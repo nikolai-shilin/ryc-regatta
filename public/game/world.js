@@ -173,6 +173,47 @@ function ladder(c) {
   return g;
 }
 
+// the laylines to the windward mark: two yellow rows of dashes from the edge of its zone down each side of the beat,
+// far enough to reach below the start line. Each is a long strip, laid on the waves and turned to the wind every frame.
+class Laylines {
+  constructor(c, tws) {
+    this.m = c.windward; this.up = beatAngle(tws) * D2R;
+    const L = (-c.windward.z + 80) / Math.cos(this.up), N = Math.ceil(L / 4), HW = 0.6; // 4 m pieces, 1.2 m wide
+    const dash = document.createElement('canvas'); dash.width = 64; dash.height = 4;
+    const dx = dash.getContext('2d'); dx.fillStyle = '#fff'; dx.fillRect(0, 0, 40, 4);
+    const tex = new THREE.CanvasTexture(dash); tex.wrapS = THREE.RepeatWrapping;
+    this.v = []; // per vertex: distance from the mark, offset across
+    const pos = [], uv = [], idx = [];
+    for (let i = 0; i <= N; i++) {
+      const d = ZONE + (i / N) * L;
+      for (const o of [-HW, HW]) { this.v.push(d, o); pos.push(0, 0, 0); uv.push(d / 10, o < 0 ? 0 : 1); }
+      if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    }
+    const mat = new THREE.MeshBasicMaterial({ color: '#ffd400', map: tex, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide, fog: true });
+    this.group = new THREE.Group();
+    this.lines = [-1, 1].map((sd) => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos.slice(), 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      g.setIndex(idx);
+      const mesh = new THREE.Mesh(g, mat); mesh.frustumCulled = false; mesh.renderOrder = 2; mesh.userData.sd = sd;
+      this.group.add(mesh); return mesh;
+    });
+  }
+  // W: where the wind blows from now. A boat close-hauled heading hd lays the mark from anywhere on the line that runs
+  // from the mark back the way she came: (−sin hd, cos hd)
+  update(Wv, W, t) {
+    for (const mesh of this.lines) {
+      const hd = W + mesh.userData.sd * this.up, ux = -Math.sin(hd), uz = Math.cos(hd), P = mesh.geometry.attributes.position;
+      for (let i = 0; i < this.v.length / 2; i++) {
+        const d = this.v[i * 2], o = this.v[i * 2 + 1], x = this.m.x + ux * d - uz * o, z = this.m.z + uz * d + ux * o;
+        P.setXYZ(i, x, waveHeight(Wv, x, z, t) + 0.15, z);
+      }
+      P.needsUpdate = true;
+    }
+  }
+}
+
 // the zone round each rounding mark — three hull lengths — as a ring of dashes riding the waves: one mesh for all
 // of them; the rings of the mark you sail for now are brighter
 class ZoneRings {
@@ -717,6 +758,7 @@ export class World {
     this.pointers = [cone(), cone()]; for (const p of this.pointers) g.add(p);
     this.zones = new ZoneRings([c.windward, c.gate[0], c.gate[1]]); g.add(this.zones.mesh);
     this.ladder = ladder(c); g.add(this.ladder);
+    this.lay = new Laylines(c, race.wind.p.tws); g.add(this.lay.group);
     this.marks = g; this.scene.add(g);
     this.camH = race.player.h;
     if (this.guides) this.scene.remove(this.guides);
@@ -839,6 +881,8 @@ export class World {
     this.cb.update(t, dt, race.flags, race.prepFlag, this.cbW0 - race.wind.dir(), race.wind.p.tws * 0.514); // flags fly downwind
     const k = race.course.legs[P.leg]; // the start line stays drawn for the whole race
     this.ladder.visible = this.showGuides && !P.done; // the distance lines go with the other guides
+    this.lay.group.visible = this.showGuides && (k === 'start' || k === 'mark') && !P.done; // laylines before the start and on the beat
+    if (this.lay.group.visible) this.lay.update(this.W, race.wind.dir(), t);
     // pointers over the next mark(s)
     const c = race.course;
     const targets = k === 'mark' ? [c.windward] : k === 'gate' ? c.gate : [c.pin, { x: c.committee.x, z: c.committee.z }];
