@@ -214,7 +214,7 @@ class Laylines {
   }
 }
 
-// the zone round each rounding mark — three hull lengths — as a ring of dashes riding the waves: one mesh for all
+// the zone round the gate and wing marks — three hull lengths (none at the windward mark: no mark-room there) — as a ring of dashes riding the waves: one mesh for all
 // of them; the rings of the mark you sail for now are brighter
 class ZoneRings {
   constructor(marks) {
@@ -777,7 +777,7 @@ export class World {
     // the arrows over the next mark
     const cone = () => { const m = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.6, 4), new THREE.MeshBasicMaterial({ color: '#ffd400', fog: false })); m.rotation.x = Math.PI; return m; };
     this.pointers = [cone(), cone()]; for (const p of this.pointers) g.add(p);
-    this.zones = new ZoneRings([c.windward, c.gate[0], c.gate[1], ...(c.wing ? [c.wing] : [])]); g.add(this.zones.mesh);
+    this.zones = new ZoneRings([c.gate[0], c.gate[1], ...(c.wing ? [c.wing] : [])]); g.add(this.zones.mesh);
     this.ladder = ladder(c); g.add(this.ladder);
     this.lay = new Laylines(c, race.wind.p.tws); g.add(this.lay.group);
     this.marks = g; this.scene.add(g);
@@ -907,7 +907,7 @@ export class World {
       }
     }
     const lg = race.course.legs[P.leg];
-    this.zones.update(this.W, t, P.done ? [] : lg === 'mark' ? [0] : lg === 'gate' ? [1, 2] : lg === 'wing' ? [3] : []);
+    this.zones.update(this.W, t, P.done ? [] : lg === 'gate' ? [0, 1] : lg === 'wing' ? [2] : []);
     this.cb.update(t, dt, race.flags, race.prepFlag, this.cbW0 - race.wind.dir(), race.wind.p.tws * 0.514); // flags fly downwind
     const k = race.course.legs[P.leg]; // the start line stays drawn for the whole race
     this.ladder.visible = this.showGuides && !P.done; // the distance lines go with the other guides

@@ -433,9 +433,16 @@ export class Boat {
     this.yaw = this.yawRate;
     const prevH = this.h;
     this.h = wrap(this.h + this.yaw * dt);
+    // a penalty turn (rule 44.2): one tack and one gybe, turning the same way. The bow crossing the wind is the tack,
+    // the stern crossing it the gybe; a crossing the other way round starts the turn again from there
     if (this.pen) {
-      this.pen.sum += wrap(this.h - prevH);
-      if (Math.abs(this.pen.sum) >= this.pen.turns * 2 * Math.PI - 0.15) { this.pen = null; this.events.push('penaltyDone'); }
+      const t0 = wrap(this.wdir - prevH), t1 = wrap(this.wdir - this.h), d = sgn(wrap(this.h - prevH));
+      if (d && t0 && t1 && sgn(t0) !== sgn(t1)) {
+        const pen = this.pen, kind = Math.abs(t1) < Math.PI / 2 ? 'tack' : 'gybe';
+        if (pen.dir && d !== pen.dir) { pen.tack = pen.gybe = false; }
+        pen.dir = d; pen[kind] = true;
+        if (pen.tack && pen.gybe) { this.pen = null; this.events.push('penaltyDone'); }
+      }
     }
     this.v -= (Math.abs(this.yaw) * 0.1 + Math.abs(this.rudder) * 0.06) * this.v * dt;
     if (!this.backing) this.v = Math.max(0, this.v);
@@ -789,16 +796,11 @@ export class Race {
   // within two hull lengths binds her not to sail above her proper course while it lasts.
   trackRow() {
     const bs = this.boats;
-    for (const b of bs) { // in the zone: since when, on which tack, and has she tacked or gybed there (rules 18.3, 18.4)
-      const k = this.course.legs[b.leg], m = this.nextMark(b);
-      const near = k === 'gate' ? Math.min(...this.course.gate.map((g) => Math.hypot(b.x - g.x, b.z - g.z))) : Math.hypot(b.x - m.x, b.z - m.z);
-      const inZ = (k === 'mark' || k === 'gate') && near < ZONE;
-      if (inZ && !b.inZone) Object.assign(b, { inZone: true, zoneT: this.clock, stbdZone: b.twa > 0 && !b.tacking, zoneTackT: undefined, zoneGybed: false });
-      else if (!inZ && b.inZone) Object.assign(b, { inZone: false, stbdZone: false, zoneTackT: undefined, zoneGybed: false });
-      if (b.inZone && b.sinceTack < 0.05 && this.clock - b.zoneT > 0.1) {
-        if (b.lastGybe) b.zoneGybed = true;
-        else { b.stbdZone = false; if (b.twa > 0) b.zoneTackT = this.clock; } // tacked onto starboard in the zone
-      }
+    for (const b of bs) { // in the gate's zone: since when, and has she gybed there (rule 18.4)
+      const inZ = this.course.legs[b.leg] === 'gate' && Math.min(...this.course.gate.map((g) => Math.hypot(b.x - g.x, b.z - g.z))) < ZONE;
+      if (inZ && !b.inZone) Object.assign(b, { inZone: true, zoneT: this.clock, zoneGybed: false });
+      else if (!inZ && b.inZone) Object.assign(b, { inZone: false, zoneGybed: false });
+      if (b.inZone && b.sinceTack < 0.05 && this.clock - b.zoneT > 0.1 && b.lastGybe) b.zoneGybed = true;
     }
     for (const b of bs) { // her recent headings, for rule 16
       const h = b.hist || (b.hist = []);
@@ -824,11 +826,6 @@ export class Race {
     const r = this.rightOfWay(p, q);
     if (r.rule === '44') return r;
     const c = this.course, k = c.legs[p.leg];
-    // 18.3: at the windward mark, a boat that tacked onto starboard inside the zone mustn't make a boat that has been
-    // on starboard since she entered it sail above close-hauled, and gives her room if she gets inside
-    if (k === 'mark' && p.leg === q.leg) for (const [x, y] of [[p, q], [q, p]]) {
-      if (x.inZone && y.inZone && x.zoneTackT !== undefined && this.clock - x.zoneTackT < 12 && y.stbdZone) return { giver: x, rule: '18.3' };
-    }
     if (r.rule === '18') {
       // 18.4: an inside boat with right of way that must gybe at the mark sails no farther from it than her proper
       // course needs, until she gybes
@@ -877,16 +874,15 @@ export class Race {
   clearAhead(p, q) { const fx = Math.sin(p.h), fz = -Math.cos(p.h); return (q.x - p.x) * fx + (q.z - p.z) * fz > 0 ? q : p; }
   // Rule 18: when the first of two boats reaches the zone (three lengths from the mark), it is settled who gets
   // mark-room — the inside boat if they are overlapped then, the boat clear ahead if not — and that holds until both
-  // have left. Between boats on opposite tacks on a beat to the windward mark rule 18 doesn't apply (18.1(a)).
+  // have left. Not at the windward mark: there nobody gets mark-room, and port keeps clear of starboard (rule 10).
   zones() {
     const bs = this.boats, c = this.course;
     for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
       const p = bs[i], q = bs[j], key = i * 16 + j, st = this.zoneStates.get(key), k = c.legs[p.leg];
-      if (p.leg !== q.leg || (k !== 'mark' && k !== 'gate' && k !== 'wing') || p.done || q.done) { if (st) this.zoneStates.delete(key); continue; }
+      if (p.leg !== q.leg || (k !== 'gate' && k !== 'wing') || p.done || q.done) { if (st) this.zoneStates.delete(key); continue; }
       const m = this.nextMark(p), dp = Math.hypot(p.x - m.x, p.z - m.z), dq = Math.hypot(q.x - m.x, q.z - m.z);
       if (st) { if (dp > ZONE + 10 && dq > ZONE + 10) this.zoneStates.delete(key); continue; }
       if ((dp < ZONE || dq < ZONE) && Math.hypot(p.x - q.x, p.z - q.z) < 3 * HULL) {
-        if (k === 'mark' && tackOf(p) !== tackOf(q)) continue;
         const ov = this.overlapped(p, q);
         this.zoneStates.set(key, { p, q, overlapped: ov, entitled: ov ? (dp < dq ? p : q) : this.clearAhead(p, q) });
       }
@@ -920,13 +916,13 @@ export class Race {
       if (r.giver === P && this.clock - o.ai.hailT > 7) { o.ai.hailT = this.clock; this.say('hail', { who: o.name, rule: r.rule }); this.log.hails[r.rule] = (this.log.hails[r.rule] || 0) + 1; }
     }
   }
-  // contact: the boat that should have kept clear takes a two-turns penalty (rule 44.2)
+  // contact: the boat that should have kept clear takes a one-turn penalty, one tack and one gybe (rule 44.2)
   foul(p, q) {
     const r = this.judge(p, q), g = r.giver, other = g === p ? q : p;
     if (g.pen || g.done) return;
     // 21: a boat pushed into this contact by another's foul a moment before is exonerated
     if (g.wrongedT !== undefined && this.clock - g.wrongedT < 1.5) { if (g === this.player) this.say('exonerated'); return; }
-    g.pen = { turns: 2, sum: 0 }; other.wrongedT = this.clock;
+    g.pen = { tack: false, gybe: false, dir: 0 }; other.wrongedT = this.clock;
     if (g === this.player) {
       this.say('fouled', { who: other.name, rule: r.rule }); this.log.fouls.push({ rule: r.rule, who: other.name, t: this.clock, x: g.x, z: g.z });
       // barging: squeezing in between a leeward boat and the committee boat at the start — there's no room to be had
@@ -962,7 +958,7 @@ export class Race {
         if (d < r && d > 0.01) {
           b.x += (dx / d) * (r - d); b.z += (dz / d) * (r - d); b.v *= 0.9;
           // touching a mark: a one-turn penalty (rules 31 and 44.2)
-          if (b.touchT <= 0 && !b.pen && !b.done && this.rulesOn) { b.pen = { turns: 1, sum: 0 }; if (b === this.player) { this.say('touched'); this.log.fouls.push({ rule: '31', t: this.clock, x: b.x, z: b.z }); } }
+          if (b.touchT <= 0 && !b.pen && !b.done && this.rulesOn) { b.pen = { tack: false, gybe: false, dir: 0 }; if (b === this.player) { this.say('touched'); this.log.fouls.push({ rule: '31', t: this.clock, x: b.x, z: b.z }); } }
           b.touchT = 3;
         }
       }

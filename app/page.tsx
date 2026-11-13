@@ -169,7 +169,7 @@ export default async function Home() {
             <ol className="hm-tips">
               <li><span className="hm-num">1</span><span>{t('Port gives way to starboard', 'Левый галс уступает правому')}</span><span className="meta">{t('Rule 10', 'Правило 10')}</span></li>
               <li><span className="hm-num">2</span><span>{t('Windward boat keeps clear', 'Наветренная уступает')}</span><span className="meta">{t('Rule 11', 'Правило 11')}</span></li>
-              <li><span className="hm-num">3</span><span>{t('Room at the mark', 'Место у знака')}</span><span className="meta">{t('Rule 18', 'Правило 18')}</span></li>
+              <li><span className="hm-num">3</span><span>{t('A tacking boat keeps clear', 'Поворачивающая уступает')}</span><span className="meta">{t('Rule 13', 'Правило 13')}</span></li>
             </ol>
           </div>
         </section>

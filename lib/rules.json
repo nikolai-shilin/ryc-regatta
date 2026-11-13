@@ -96,8 +96,8 @@
   "ru": "Став связанной под ветром, догнав сзади в пределах двух корпусов, лодка не должна идти выше своего надлежащего курса."
  },
  "x18": {
-  "en": "In the zone the inside boat, or the one clear ahead, gets room to round the mark.",
-  "ru": "В зоне место для огибания знака получает внутренняя лодка или та, что впереди."
+  "en": "At the gate and the wing mark, in the zone, the inside boat, or the one clear ahead, gets room to round. Not at the windward mark: there nobody gets mark-room, and port keeps clear of starboard.",
+  "ru": "У ворот и у бокового знака в зоне место для огибания получает внутренняя лодка или та, что впереди. У верхнего знака места не требует никто: левый галс уступает правому."
  },
  "x18.3": {
   "en": "A boat that tacks onto starboard in the zone mustn’t make a boat that has been on starboard since entering it sail above close-hauled, and gives her room if she gets inside.",
@@ -116,8 +116,8 @@
   "ru": "Идя в бейдевинд и упираясь в препятствие, лодка может окликнуть и попросить место для поворота; окликнутая должна повернуть или дать место."
  },
  "x31": {
-  "en": "Touching a mark costs one penalty turn.",
-  "ru": "Касание знака — один штрафной оборот."
+  "en": "Touching a mark costs one penalty turn: a tack and a gybe.",
+  "ru": "Касание знака — штрафной оборот: поворот оверштаг и фордевинд."
  },
  "x44": {
   "en": "A boat spinning her penalty turns keeps clear of the others.",
