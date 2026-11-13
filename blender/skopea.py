@@ -1,6 +1,12 @@
 # Skopea: the land round Göcek bay for the game, baked into public/game/skopea.bin and skopea.json.
 #
 #   python3 blender/skopea.py <work dir>
+#   python3 blender/skopea.py <work dir> --buildings     (only the buildings, in the json as it is)
+#
+# OpenStreetMap has few of Göcek's buildings mapped, so the town is filled from Microsoft's Global ML Building
+# Footprints (ODbL, as OSM): the file for quadkey 122101223 in the Turkey region (dataset-links.csv at
+# minedbuildings.z5.web.core.windows.net/global-buildings), downloaded as <work dir>/footprints.csv.gz. OSM's own
+# buildings come first; a footprint is added where OSM has none, if it is ashore, sure (confidence) and house-sized.
 #
 # The heights come from the Terrarium elevation tiles (AWS open data, SRTM on land); the coastline, the marinas'
 # pontoons and the town's buildings from OpenStreetMap (the Overpass API). Both are downloaded into <work dir> once,
@@ -14,7 +20,7 @@
 #     bay, coarse far off)
 #   the sea room: mx × mz Int8 in steps of 4 m, on an even grid of `cell` metres: how far it is to the shore, + at
 #     sea, − on land (as far as 508 m)
-import gzip, json, math, os, subprocess, sys
+import gzip, json, math, os, subprocess, sys, time
 import numpy as np
 from PIL import Image, ImageDraw
 
@@ -25,6 +31,80 @@ MLAT, MLON = 110574.0, 111320 * math.cos(math.radians(LAT0))
 os.makedirs(WORK, exist_ok=True)
 
 def to_xz(lat, lon): return (np.asarray(lon) - LON0) * MLON, -(np.asarray(lat) - LAT0) * MLAT
+
+# ---------- OpenStreetMap: the query, and the buildings ----------
+def overpass(name, q):
+    p = os.path.join(WORK, name + '.json')
+    for k in range(10):  # the main server turns a busy minute away (502, 504) but answers a retry
+        try:
+            with open(p) as f: return json.load(f)['elements']
+        except (OSError, ValueError, KeyError): pass
+        u = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter'][k % 4 == 3]
+        subprocess.run(['curl', '-s', '-m', '200', '-A', 'regatta-map-build/1.0', '-o', p, '--data-urlencode', f'data=[out:json][timeout:180];{q}', u])
+        time.sleep(min(60, 8 * (k + 1)) if k else 0)
+    raise SystemExit('Overpass gave nothing for ' + name)
+
+def poly(el):
+    g = el.get('geometry') or []
+    if len(g) < 2: return None
+    x, z = to_xz([p['lat'] for p in g], [p['lon'] for p in g])
+    return [[round(float(a), 1), round(float(b), 1)] for a, b in zip(x, z)]
+
+# the buildings: the town and the villas all round the bay, OSM's and the footprints; the 5000 nearest the town
+def footprints(ashore):
+    p = os.path.join(WORK, 'footprints.csv.gz')
+    if not os.path.exists(p): print('no', p, ': OSM buildings only'); return []
+    out = []
+    with gzip.open(p, 'rt') as f:
+        for ln in f:
+            el = json.loads(ln); ring = el['geometry']['coordinates'][0]
+            lon = [c[0] for c in ring]; lat = [c[1] for c in ring]
+            if not (36.705 < lat[0] < 36.795 and 28.875 < lon[0] < 29.005) or el['properties'].get('confidence', 1) < 0.75: continue
+            x, z = to_xz(lat, lon); r = [[round(float(a), 1), round(float(b), 1)] for a, b in zip(x, z)]
+            r = r[:-1] if r[0] == r[-1] else r
+            area = abs(sum(r[i][0] * r[(i + 1) % len(r)][1] - r[(i + 1) % len(r)][0] * r[i][1] for i in range(len(r)))) / 2
+            cx = sum(a for a, _ in r) / len(r); cz = sum(b for _, b in r) / len(r)
+            if area < 25 or area > 4000 or not ashore(cx, cz): continue
+            h = el['properties'].get('height', -1)
+            out.append((cx, cz, r, round(h, 1) if h and h > 0 else 0))
+    return out
+
+def town_buildings(ashore=lambda x, z: True):
+    build = overpass('build2', '(way["building"](36.705,28.875,36.795,29.005););out geom tags;')
+    out = []
+    for el in build:
+        p = poly(el)
+        if not p or len(p) < 4: continue
+        t = el.get('tags', {})
+        lv = t.get('building:levels'); hh = t.get('height')
+        try: h = float(str(hh).split()[0]) if hh else (float(lv) * 3.1 + 1.0 if lv else 0)
+        except ValueError: h = 0
+        r = p[:-1] if p[0] == p[-1] else p
+        out.append((math.hypot(sum(a for a, _ in r) / len(r), sum(b for _, b in r) / len(r)), {'r': [[round(a), round(b)] for a, b in r], 'h': round(h, 1)}))
+    # a footprint where OSM has no building: none of OSM's within 12 m of its middle
+    taken = set()
+    for _, b in out:
+        for a, c in b['r']: taken.add((int(a // 12), int(c // 12)))
+    added = 0
+    for cx, cz, r, h in footprints(ashore):
+        if (int(cx // 12), int(cz // 12)) in taken: continue
+        out.append((math.hypot(cx, cz), {'r': [[round(a), round(b)] for a, b in r], 'h': h})); added += 1
+    print('osm', len(out) - added, '| footprints added', added)
+    out.sort(key=lambda o: o[0])
+    return [b for _, b in out[:5000]]
+
+if '--buildings' in sys.argv:
+    path = os.path.join(OUT, 'skopea.json')
+    with open(path) as f: meta = json.load(f)
+    M = meta['room']; T = meta['terrain']
+    with open(os.path.join(OUT, 'skopea.bin'), 'rb') as f: raw = gzip.decompress(f.read())
+    room = np.frombuffer(raw[T['nx'] * T['nz'] * 2:], np.int8).reshape(M['nz'], M['nx']).astype(np.int32).cumsum(1).astype(np.int8)
+    def ashore(x, z):  # at least 8 m in from the water, by the sea room (4 m steps); off its grid, let it be
+        i = round((z - M['z0']) / M['cell']); j = round((x - M['x0']) / M['cell'])
+        return not (0 <= i < M['nz'] and 0 <= j < M['nx']) or room[i, j] <= -2
+    before = len(meta['buildings']); meta['buildings'] = town_buildings(ashore)
+    with open(path, 'w') as f: json.dump(meta, f, separators=(',', ':'))
+    print('buildings', before, '->', len(meta['buildings'])); sys.exit()
 
 # ---------- the heights ----------
 Z14 = 14
@@ -55,20 +135,11 @@ def height(x, z):
     return (IMG[y0, x0] * (1 - fx) + IMG[y0, x0 + 1] * fx) * (1 - fy) + (IMG[y0 + 1, x0] * (1 - fx) + IMG[y0 + 1, x0 + 1] * fx) * fy
 
 # ---------- OpenStreetMap ----------
-def overpass(name, q):
-    p = os.path.join(WORK, name + '.json')
-    if not os.path.exists(p) or os.path.getsize(p) < 1000:
-        for u in ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter']:
-            r = subprocess.run(['curl', '-s', '-m', '150', '-A', 'regatta-map-build/1.0', '-o', p, '-w', '%{http_code}', '--data-urlencode', f'data=[out:json][timeout:120];{q}', u], capture_output=True, text=True)
-            if r.stdout == '200': break
-    with open(p) as f: return json.load(f)['elements']
-
 shore = overpass('marina', '(way["leisure"="marina"](36.73,28.92,36.765,28.96);relation["leisure"="marina"](36.73,28.92,36.765,28.96);'
                  'way["man_made"~"pier|breakwater|groyne|quay"](36.73,28.92,36.765,28.96);way["natural"="coastline"](36.70,28.88,36.80,29.00);); out geom tags;')
 coast = [w for w in shore if w.get('tags', {}).get('natural') == 'coastline']
 marina = [w for w in shore if w.get('tags', {}).get('natural') != 'coastline']
 names = overpass('mar2', '(nwr["leisure"="marina"](36.72,28.90,36.78,28.99););out center tags;')
-build = overpass('build', '(way["building"](36.735,28.915,36.765,28.965);); out geom;')
 
 def line(el): x, z = to_xz([p['lat'] for p in el['geometry']], [p['lon'] for p in el['geometry']]); return np.stack([x, z], 1)
 
@@ -178,11 +249,6 @@ th = np.where(L, np.maximum(th, 1.2 + np.clip(-rm, 0, 60) * 0.06), -np.clip(2.5 
 heights = np.clip(np.round(th * 10), -32000, 32000).astype(np.int16)
 
 # ---------- the marinas, the pontoons and the town ----------
-def poly(el):
-    g = el.get('geometry') or []
-    if len(g) < 2: return None
-    x, z = to_xz([p['lat'] for p in g], [p['lon'] for p in g])
-    return [[round(float(a), 1), round(float(b), 1)] for a, b in zip(x, z)]
 marinas = []
 for el in names:
     if el.get('tags', {}).get('leisure') != 'marina': continue
@@ -197,15 +263,7 @@ for el in marina:
         p = poly(el)
         if p: piers.append({'kind': t.get('man_made') or 'slipway', 'pts': p, 'area': t.get('area') == 'yes' or p[0] == p[-1] and len(p) > 3,
                             'floating': t.get('floating') == 'yes' or 'pontoon' in t.get('name', '').lower(), 'w': float(str(t.get('width', '0')).split()[0] or 0) if str(t.get('width', '0')).replace('.', '', 1).split()[0].isdigit() else 0})
-buildings = []
-for el in build:
-    p = poly(el)
-    if not p or len(p) < 4: continue
-    t = el.get('tags', {})
-    lv = t.get('building:levels'); hh = t.get('height')
-    try: h = float(hh) if hh else (float(lv) * 3.1 + 1.0 if lv else 0)
-    except ValueError: h = 0
-    buildings.append({'r': p[:-1] if p[0] == p[-1] else p, 'h': round(h, 1)})
+buildings = town_buildings()
 
 with open(os.path.join(OUT, 'skopea.bin'), 'wb') as f:
     rows = lambda a: np.diff(a.astype(np.int32), axis=1, prepend=0)  # wraps the same way the sums wrap in land.js

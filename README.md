@@ -61,7 +61,10 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 - **The land:** Göcek bay, off Skopea Marina. `public/game/skopea.bin` and `skopea.json` (the
   hills, the coast, the marinas' pontoons and the town) are made by `python3 blender/skopea.py <work dir>`, from the
   Terrarium elevation tiles and OpenStreetMap; it needs numpy and Pillow and keeps its downloads in the work dir.
-  `land.js` lays each course in clear water there, `skopea.js` draws the land.
+  `land.js` lays each course in clear water there, `skopea.js` draws the land. OpenStreetMap has few of Göcek's buildings,
+  so its town also comes from Microsoft's Global ML Building Footprints (ODbL, see `skopea.py`);
+  `python3 blender/skopea.py <work dir> --buildings` redoes only the buildings, leaving the coast and the sea room (and
+  so where today's course is laid) as they are.
 - **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes
   wrong (a sheet left out or in too hard, a broach, a foul, a collision, aground, stopped after the gun, now and then a
   tack) and through the start (the signals, a boat too close, the line far off, over early, a quick or a late start).
