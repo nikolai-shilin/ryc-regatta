@@ -493,8 +493,8 @@
 .hm-help-main { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); min-width: 0; }
 .hm-app { display: flex; align-items: center; gap: var(--s-3); width: 100%; max-width: 440px; margin-top: var(--s-2); padding: 6px; border-radius: var(--r-full); border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
 .hm-app:hover { border-color: var(--tag-line); }
-.hm-app-ic { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--deep); color: var(--on-photo); }
-.hm-app-ic .logo { width: 32px; height: 16px; }
+.hm-app-ic { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--danger); color: var(--on-photo); }
+.hm-app-ic .logo { width: 32px; height: 16px; color: inherit; }
 .hm-app-t { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
 .hm-app-n { font: 400 var(--t-m)/1.25 var(--f-serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hm-app-go { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
