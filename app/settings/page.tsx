@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getT } from '@/lib/i18n';
 import { getAccount, initials } from '@/lib/supabase/server';
 import { IconBack } from '@/components/ui';
+import { SiteHead } from '@/components/site-chrome';
 import { SettingsForm } from '@/components/settings-form';
 
 export const metadata: Metadata = { title: 'Settings' };
@@ -22,7 +23,8 @@ export default async function SettingsPage() {
   );
   const via = account?.provider === 'google' ? 'Google' : t('email code', 'код по почте');
   return (
-    <div className="scr" lang={lang} data-acct={account ? 'signed' : 'guest'}>
+    <div className="scr app" lang={lang} data-acct={account ? 'signed' : 'guest'}>
+      <SiteHead lang={lang} t={t} account={account} page="settings" />
       <div className="lay page">
         <div className="lhead">
           <Link className="round round-s round-muted" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>

@@ -8,49 +8,122 @@
 @container scr (orientation: portrait) { .page { padding: var(--s-12) var(--s-5) var(--s-6); } }
 @container scr (min-width: 1024px) and (min-height: 640px) { .page { padding: var(--s-10) max(var(--s-16), calc((100% - 1180px) / 2)) var(--s-12); } }
 
+/* app screens under the site header: the header takes its height, the screen fills the rest. Sideways on a phone it
+   stays short (the race needs the height); its edges line up with the screen's own padding in every layout. */
+.scr.app { display: flex; flex-direction: column; }
+.app > * { --hm-gutter: var(--s-8); --hm-head: 52px; }
+.app > .hm-head { position: relative; flex: none; }
+.app .hm-head-in { min-height: var(--hm-head); }
+.app > .lay { position: relative; inset: auto; flex: 1 1 auto; min-height: 0; }
+.app > .page { padding-top: var(--s-4); }
+@container scr (orientation: portrait) {
+  .app > * { --hm-gutter: var(--s-5); --hm-head: 60px; }
+  .app > .page { padding-top: var(--s-6); }
+}
+@container scr (min-width: 1024px) and (min-height: 640px) {
+  .app > * { --hm-gutter: var(--s-16); --hm-head: 76px; --hm-page: calc(1180px + 2 * var(--s-16)); }
+  .app > .page { padding-top: var(--s-10); }
+}
+@container scr (min-width: 1100px) and (min-height: 640px) {
+  .app .hm-nav { display: flex; }
+  .app .hm-menu-nav { display: none; }
+}
+
 .logo { display: block; width: 50px; height: 25px; flex: none; color: var(--ink); }
 .logo-w { color: var(--on-photo); }
 .group-k { display: flex; align-items: center; gap: var(--s-2); padding-bottom: var(--s-2); border-bottom: 1px solid var(--line); }
 
-/* race hub: today's race, today's fastest, a free race */
-.hub-grid { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(0, 1fr); gap: var(--gap); }
-.hub-side { display: flex; flex-direction: column; gap: var(--gap); min-height: 0; }
-.today { display: flex; flex-direction: column; overflow: hidden; }
-/* the photo heads its card: only its top corners round, its foot runs straight into the card's text */
-.today-photo { position: relative; flex: none; height: 240px; overflow: hidden; border-radius: var(--r-l) var(--r-l) 0 0; }
-@supports (corner-shape: squircle) { .today-photo { corner-shape: squircle; border-radius: calc(var(--r-l) * 2) calc(var(--r-l) * 2) 0 0; } }
-.today-photo img { object-fit: cover; }
-.today-body { flex: 1 1 auto; padding: var(--card-pad); display: flex; flex-direction: column; gap: var(--gap); }
-.fastest { padding: var(--card-pad); display: flex; flex-direction: column; gap: var(--s-2); }
-.free-card { padding: var(--card-pad); display: flex; flex-direction: column; gap: var(--gap); color: var(--ink); }
-.free-quick { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.free-quick .tag { flex: 1 1 auto; padding-inline: var(--s-3); }
-.free-more { display: inline-flex; align-items: center; gap: var(--s-1); align-self: flex-start; color: var(--accent); }
+/* ---------- app screens in rycrentals.com's subpage style ---------- */
+/* the page's head: a back arrow and a kicker, a light serif title, a muted line */
+.aph { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); }
+.aph-top { display: flex; align-items: center; gap: var(--s-3); }
+.aph-top .round-muted { border-color: var(--ctl-line, var(--tag-line)); color: var(--ink); }
+.aph .kicker { display: inline-flex; align-items: center; gap: 6px; }
+.aph-h { margin: 0; font: 300 var(--t-h2)/1.05 var(--f-serif); letter-spacing: -0.025em; text-wrap: balance; }
+.aph-p { margin: 0; max-width: 62ch; font: 400 var(--t-m)/1.45 var(--f-serif); color: var(--muted); }
+/* rycrentals' answer tags: big serif pills, the chosen one filled */
+.qtags { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.qtag { display: inline-flex; align-items: center; gap: var(--s-2); min-height: var(--h-m); padding: 0 var(--s-4); border: 2px solid var(--tag-line); border-radius: var(--r-full); background: var(--bg); color: var(--ink); font: 400 var(--t-m)/1 var(--f-serif); white-space: nowrap; cursor: pointer; }
+.qtag:hover { border-color: var(--muted); }
+.qtag.on, .qtag[aria-checked="true"] { border-color: var(--sel-bg); background: var(--sel-bg); color: var(--sel-ink); }
+.qtag .td { font: 400 var(--t-xs)/1 var(--f-sans); opacity: 0.65; }
+/* a summary card of rows: the name in caps on the left, its value on the right */
+.qrows { list-style: none; margin: 0; padding: var(--s-1) var(--s-5); display: flex; flex-direction: column; }
+.qrow { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: var(--h-l); border-top: 1px solid var(--line); }
+.qrow:first-child { border-top: 0; }
+.qrow .meta { flex: none; }
+.qrow-v { min-width: 0; font: 400 var(--t-m)/1.25 var(--f-serif); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.band .qtag { background: var(--bg); }
+.band .qtag.on, .band .qtag[aria-checked="true"] { background: var(--sel-bg); }
+
+/* race hub: the head with today's race, then the course with its tag and the start beside today's fastest and a
+   free race */
+.hub-page { gap: var(--s-5); }
+.hub2 { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+.hub-main { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+.hub-photo { display: none; position: relative; aspect-ratio: 352 / 190; width: 100%; border-radius: var(--r-l); background: var(--photo-bg); }
+.hub-photo .hm-clip img { object-fit: cover; }
+.hub-main > .pill { align-self: stretch; }
+/* sideways on a phone, Start comes first so it stays in view; the tiles and the chip follow */
+.hub-main > .pill { order: -1; }
+/* rycrentals' summary tiles: on the pale band, an icon and a label, a big figure, a line under it */
+.qstats { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); }
+.qstats > div { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; padding: var(--s-3) var(--s-4); border-radius: var(--r-m); background: var(--band); }
+.qstats dt { display: inline-flex; align-items: center; gap: 5px; }
+.qstats dd { margin: 0; }
+.qstat-v { font: 700 var(--t-h3)/1.1 var(--f-sans); color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.qstats .hm-meta { font-size: var(--t-xs); line-height: 1.3; }
+.hub-side { display: flex; flex-direction: column; gap: var(--s-5); min-width: 0; }
+.hub-board .hm-board-h .meta:first-child { color: var(--ink); }
+.free-card { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--card-pad); }
+.free-card .hm-h3 { margin: 0; }
 @container scr (orientation: portrait) {
-  .hub-grid { grid-template-columns: minmax(0, 1fr); grid-auto-rows: min-content; }
-  .today-body .sp { flex: 0 0 var(--s-1); }
+  .hub2 { grid-template-columns: minmax(0, 1fr); }
+  .hub-photo { display: block; }
+  .hub-main > .pill { order: 0; }
+  .qstats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @container scr (min-width: 1024px) and (min-height: 640px) {
-  .hub-grid { flex: 0 1 auto; margin: auto 0; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--s-8); }
-  .hub-side { align-self: start; gap: var(--s-5); }
-  .today-photo { height: 280px; }
+  .hub-page { gap: var(--s-8); }
+  .aph-h { font-size: var(--t-h1); }
+  .hub2 { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-8) var(--s-16); }
+  .hub-photo { display: block; }
+  .hub-main > .pill { align-self: flex-start; order: 0; }
+  .qstats { gap: var(--s-3); }
+  .qstats > div { gap: var(--s-2); padding: var(--s-4) var(--s-5); border-radius: var(--r-l); }
+  .qstat-v { font-size: var(--hm-h2); }
+  .qstats .hm-meta { font-size: var(--t-s); }
+  .free-card { padding: var(--s-6); }
 }
 
-/* free race set-up: the options beside the course */
-.setup-grid { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 286px; gap: var(--s-5); }
-.opts { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: var(--s-2) var(--s-3); align-items: center; align-content: start; }
-/* the options wrap rather than cut a word off when the column is narrow (Russian) */
-.opts .segc { justify-self: start; max-width: 100%; flex-wrap: wrap; border-radius: var(--r-m); }
-.ohint { grid-column: 2; margin-top: calc(-1 * var(--s-1)); }
+/* free race set-up, laid out like rycrentals' questions: the choices as answer tags on the left, your race beside
+   them (the summary, the course and Start) */
+.fs { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--s-6); align-items: start; }
+.fs-q { display: flex; flex-direction: column; gap: var(--s-5); min-width: 0; }
+.fs-g { display: flex; flex-direction: column; gap: var(--s-2); }
+.fs-g .hint { margin: 0; }
+.fs-gk { display: inline-flex; align-items: center; gap: 6px; }
+.fs-gk svg { color: var(--muted); }
+/* rycrentals' note under the request: a round icon and a muted line */
+.fs-note { display: none; align-items: flex-start; gap: var(--s-3); }
+.fs-note-i { display: inline-flex; align-items: center; justify-content: center; flex: none; width: var(--h-s); height: var(--h-s); border-radius: 50%; background: var(--band); color: var(--accent); }
+.fs-note p { margin: 0; font: 400 var(--t-s)/1.45 var(--f-serif); color: var(--muted); }
+.fs-aside { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
+.fs-aside :is(.qrows, .fs-k) { display: none; }
+/* sideways on a phone: the course and Start stay in view while the choices scroll, and the head stays short */
+.fs-aside { position: sticky; top: 0; }
+.fs .cmap { max-height: 150px; }
+.fs-page .aph-p { display: none; }
 .setup-panel { padding: var(--card-pad); display: flex; flex-direction: column; gap: var(--s-2); }
 .cmap { display: block; width: 100%; height: auto; max-height: 260px; }
 .setup-go { display: flex; flex-direction: column; gap: var(--s-2); }
 .setup-time { display: flex; align-items: baseline; gap: var(--s-2); }
 @container scr (orientation: portrait) {
-  .setup-grid { grid-template-columns: minmax(0, 1fr); grid-auto-rows: min-content; }
-  .opts { grid-template-columns: 64px minmax(0, 1fr); }
-  .setup-panel .sp { flex: 0 0 var(--s-1); }
-  .cmap { max-height: 320px; }
+  .fs { grid-template-columns: minmax(0, 1fr); }
+  .fs-aside { position: static; }
+  .fs-note { display: flex; order: 2; }
+  .fs .cmap, .cmap { max-height: 320px; }
+  .fs-page .aph-p { display: block; }
   /* upright on a phone the time and Start stay pinned to the bottom of the screen */
   .setup-go { position: sticky; bottom: 0; z-index: 2; flex-direction: row; align-items: center; gap: var(--s-3); padding: var(--s-3) 0 calc(var(--s-1) + env(safe-area-inset-bottom, 0px)); background: var(--band); }
   .setup-time { flex: none; }
@@ -58,10 +131,17 @@
   .setup-go .pill { flex: 1 1 auto; }
 }
 @container scr (min-width: 1024px) and (min-height: 640px) {
-  .setup-grid { flex: 0 1 auto; margin: auto 0; align-items: start; grid-template-columns: minmax(0, 1fr) 400px; gap: var(--s-12); }
-  .opts { grid-template-columns: 110px minmax(0, 1fr); gap: var(--s-3) var(--s-4); }
-  .setup-panel { gap: var(--gap); }
-  .cmap { max-height: 300px; }
+  .fs { grid-template-columns: minmax(0, 1fr) 380px; gap: var(--s-16); }
+  .fs-q { gap: var(--s-6); max-width: 680px; }
+  .fs-aside { gap: var(--s-4); position: sticky; top: 0; }
+  .fs-aside :is(.qrows, .fs-k, .fs-note) { display: flex; }
+  .qtag { min-height: var(--h-l); padding: 0 var(--s-5); font-size: var(--t-l); }
+  .fs .qtag { min-height: var(--h-m); padding: 0 var(--s-4); font-size: var(--t-m); }
+  .setup-panel { gap: var(--gap); padding: var(--s-5); }
+  .fs .cmap, .cmap { max-height: 300px; }
+  .fs .cmap { max-height: 220px; }
+  .fs .qrow { min-height: var(--h-m); }
+  .fs-page .aph-p { display: block; }
 }
 
 /* settings: one row per setting, the name on the left and its control on the right */
@@ -116,6 +196,28 @@
 }
 @container scr (min-width: 1024px) and (min-height: 640px) {
   .boat-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 0 var(--s-12); }
+}
+
+/* your boat, closer to rycrentals: a page head, the preview as a big photo card, the presets as photo thumbs, and
+   the settings as rows under kickers */
+.boat-page { gap: var(--s-4); }
+.boat-head .aph-p { display: none; }
+.boat-head .aph-h { font-size: var(--t-h3); }
+.boat-prev { border-radius: var(--r-l); }
+@supports (corner-shape: squircle) { .boat-prev { corner-shape: squircle; border-radius: calc(var(--r-l) * 1.7); } }
+.boat-ctl .group-k { padding-bottom: var(--s-2); border-bottom: 0; }
+.boat-ctl .set-sec + .set-sec { margin-top: var(--s-6); }
+.boat-ctl .srow-k { font: 400 var(--t-m)/1.3 var(--f-serif); }
+.preset { border-radius: var(--r-m); padding: 3px; }
+.preset-pic { border-radius: calc(var(--r-m) - 4px); }
+.boat-pose { border: 0; box-shadow: var(--shadow-s); }
+.boat-note { display: flex; align-items: center; gap: var(--s-3); min-width: 0; font: 400 var(--t-s)/1.4 var(--f-serif); color: var(--muted); }
+.boat-go { margin-top: var(--s-4); }
+@container scr (orientation: portrait) { .boat-head .aph-h { font-size: var(--t-h2); } }
+@container scr (min-width: 1024px) and (min-height: 640px) {
+  .boat-page { gap: var(--s-6); }
+  .boat-head .aph-h { font-size: var(--t-h1); }
+  .boat-head .aph-p { display: block; }
 }
 
 /* a sheet over a screen: centred in landscape, full width upright, a dialog on a desktop */
@@ -222,10 +324,10 @@
   .hband { padding: var(--s-8); }
 }
 
-/* home: rycrentals.com's home, carried over. A white header with the site's pages, a hero with today's race in a
+/* home (and the site's header, footer and section pieces the other scrolling pages share): rycrentals.com's home, carried over. A white header with the site's pages, a hero with today's race in a
    pill over the game sailing a race, then full-width sections that alternate white and the pale band, each opening
    with a kicker and a serif heading on the left and a caps link (or the row's arrows) on the right. */
-.home {
+.scr.help, .scr.app {
   --hm-gutter: var(--s-4); --hm-page: 1600px; --hm-sec: var(--s-12);
   --hm-display: 34px; --hm-h2: 28px; --hm-head: 64px;
   --hm-shadow: 0 8px 28px rgba(0, 0, 0, 0.07); --hm-shadow-photo: 0 12px 40px rgba(0, 0, 0, 0.35);
@@ -253,6 +355,7 @@
 .hm-nav { display: none; justify-content: center; gap: var(--s-1); min-width: 0; }
 .hm-tab { display: inline-flex; align-items: center; height: var(--h-m); padding: 0 var(--s-4); border-radius: var(--r-full); font: 700 var(--t-m)/1 var(--f-sans); color: var(--muted); white-space: nowrap; }
 .hm-tab:hover { color: var(--ink); background: var(--band); }
+.hm-tab[aria-current="page"] { color: var(--ink); background: var(--band); }
 .hm-menu { position: relative; }
 .hm-prof { display: inline-flex; align-items: center; gap: var(--s-2); height: var(--h-m); padding: var(--s-1) var(--s-1) var(--s-1) var(--s-3); border-radius: var(--r-full); border: 2px solid var(--tag-line); background: var(--bg); color: var(--ink); cursor: pointer; list-style: none; }
 .hm-prof::-webkit-details-marker { display: none; }
@@ -301,6 +404,28 @@
 .hm-sec-h { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: var(--s-4) var(--s-6); }
 .hm-sec-t { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
 .hm-arrows { display: none; gap: var(--s-2); }
+
+/* a page's own head under the site header (help, the race result): kicker, a serif title, a line, contents */
+.hm-ph { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); padding-block: var(--s-10) var(--s-2); }
+.hm-ph-h { margin: 0; font: 300 var(--hm-display)/1.05 var(--f-serif); letter-spacing: -0.025em; text-wrap: balance; }
+.hm-ph-nav { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-2); }
+.hm-ph + .hm-sec { padding-top: var(--s-8); }
+.hm-band :is(.hrule, .hband, .rcard:not(.line)) { background: var(--bg); }
+.hp .hfig { max-width: 1120px; }
+.hp .hm-sec .lead { color: var(--muted); }
+
+/* How to play, closer to rycrentals: black numbers on the screenshot and in the key, the start as numbered steps */
+.hp .hmark { background: var(--sel-bg); color: var(--sel-ink); box-shadow: 0 0 0 3px var(--bg); }
+.hp .hlegend .num-ico { width: var(--h-s); height: var(--h-s); background: var(--sel-bg); color: var(--sel-ink); font-size: var(--t-s); }
+.hp .hlegend li { grid-template-columns: var(--h-s) minmax(0, 1fr); align-items: center; }
+.hp .hlegend li b { font: 400 var(--t-m)/1.3 var(--f-serif); }
+.hp .hsteps { gap: var(--s-1); }
+.hp .hsteps li { grid-template-columns: 72px minmax(0, 1fr); align-items: center; padding: var(--s-3) 0; font: 400 var(--t-m)/1.4 var(--f-serif); }
+.hp .hsteps .t { display: inline-flex; align-items: center; justify-content: center; justify-self: start; min-width: var(--h-s); height: var(--h-s); padding: 0 var(--s-2); border-radius: var(--r-full); background: var(--sel-bg); color: var(--sel-ink); font: 700 var(--t-s)/1 var(--f-sans); }
+.hp .hrule .meta { color: var(--muted); }
+.hp .hrule .card-title { font: 400 var(--t-l)/1.25 var(--f-serif); }
+.hp .hrule { border-radius: var(--r-l); padding: var(--s-5); }
+.hp .hitem .card-title { font-size: var(--t-m); }
 
 /* the row of tiles */
 .hm-row { display: flex; gap: var(--s-3); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: calc(-1 * var(--hm-gutter)); padding: 2px var(--hm-gutter) 6px; scroll-padding-inline: var(--hm-gutter); }
@@ -387,7 +512,7 @@
 .hm-foot .langs { align-self: start; justify-self: start; }
 
 @container help (min-width: 600px) {
-  .home > * { --hm-gutter: var(--s-6); --hm-display: 44px; --hm-h2: 32px; --hm-sec: var(--s-16); --hm-head: 76px; }
+  .help > * { --hm-gutter: var(--s-6); --hm-display: 44px; --hm-h2: 32px; --hm-sec: var(--s-16); --hm-head: 76px; }
   .hm-hero-in { align-items: center; text-align: center; gap: var(--s-5); padding-block: var(--s-20) var(--s-16); }
   .hm-hero > .hm-hero-in > .hm-src { align-self: center; }
   .hm-race { margin-inline: auto; }
@@ -404,7 +529,7 @@
   .hm-stat-v { font-size: var(--hm-h2); }
 }
 @container help (min-width: 900px) {
-  .home > * { --hm-gutter: var(--s-16); --hm-head: 76px; }
+  .help > * { --hm-gutter: var(--s-16); --hm-head: 76px; }
   .hm-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .hm-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .hm-today { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-8) var(--s-16); }

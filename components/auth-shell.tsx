@@ -1,10 +1,13 @@
 import Image from 'next/image';
-import type { Lang } from '@/lib/lang';
+import { tx, type Lang } from '@/lib/lang';
+import { SiteHead } from './site-chrome';
 
-// A1–A3: the course from above beside (or above, on a phone held upright) the form.
+// A1–A3: under the site header, the course from above beside (or above, on a phone held upright) the form.
+// Nobody is signed in on these pages (sign-in sends a signed-in visitor on).
 export function AuthShell({ lang, caption, children }: { lang: Lang; caption?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="scr" lang={lang}>
+    <div className="scr app" lang={lang}>
+      <SiteHead lang={lang} t={tx(lang)} account={null} page="signin" />
       <div className="lay split split-auth">
         <div className="split-photo">
           <Image className="bgimg" src="/images/top.jpg" alt="" fill priority sizes="(orientation: portrait) 100vw, 50vw" />

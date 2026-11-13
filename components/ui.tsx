@@ -21,6 +21,15 @@ export const IconLock = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} heigh
 export const IconWind = ({ s = 13 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} strokeWidth={2.2} aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7" /></svg>;
 export const IconSail = ({ s = 18 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M12 3v14M12 4l7 11h-7M12 7l-6 8h6M4 19c2.5 1.5 13.5 1.5 16 0" /></svg>;
 export const IconScreen = ({ s = 18 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5" /><path d="M8 21h8" /></svg>;
+// small marks for kickers and tiles, as rycrentals puts one before a label
+export const IconFlag = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5" /></svg>;
+export const IconRoute = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><circle cx="6" cy="18" r="2" /><circle cx="18" cy="6" r="2" /><path d="M8 18h5a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h5" /></svg>;
+export const IconLaps = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v4h-4" /></svg>;
+export const IconClock = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 1.5M10 2h4" /></svg>;
+export const IconTide = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M3 9c3-2 6 2 9 0s6-2 9 0M3 15c3-2 6 2 9 0s6-2 9 0" /></svg>;
+export const IconBoats = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M8 4v12H3zM16 7v9h-4zM2 19c3 1.5 17 1.5 20 0" /></svg>;
+export const IconTrophy = ({ s = 16 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8" /></svg>;
+export const IconDevice = ({ s = 16 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2" /><path d="M11 18h2" /></svg>;
 export const IconGoogle = ({ s = 20 }) => (
   <svg viewBox="0 0 48 48" width={s} height={s} aria-hidden="true">
     <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />

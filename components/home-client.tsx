@@ -138,7 +138,7 @@ export function TileRow({ lang, head, children }: { lang: Lang; head: ReactNode;
 }
 
 // Your best time in today's race on this device (the game keeps it), or the way onto the ranking.
-export function MyRow({ lang, day, signedIn }: { lang: Lang; day: string; signedIn: boolean }) {
+export function MyRow({ lang, day, signedIn, next = '/' }: { lang: Lang; day: string; signedIn: boolean; next?: string }) {
   const t = tx(lang);
   const [best, setBest] = useState<number | null>(null);
   useEffect(() => { setBest(readPb()[`daily|${day}`] ?? null); }, [day]);
@@ -148,7 +148,7 @@ export function MyRow({ lang, day, signedIn }: { lang: Lang; day: string; signed
       <span>{t('You', 'Ты')}</span>
       {signedIn
         ? <span className="hm-t">{best != null ? clock(best) : <span className="hm-muted">{t('not yet', 'ещё нет')}</span>}</span>
-        : <Link className="hm-src" href="/sign-in?next=/">{t('Sign in to get on it', 'Войди, чтобы попасть сюда')}</Link>}
+        : <Link className="hm-src" href={`/sign-in?next=${next}`}>{t('Sign in to get on it', 'Войди, чтобы попасть сюда')}</Link>}
     </li>
   );
 }

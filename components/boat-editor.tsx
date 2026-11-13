@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { tx, type Lang } from '@/lib/lang';
+import { IconDevice, IconPlay } from './ui';
 import { DEFAULT_BOAT, DEFAULT_LOGO, PRESETS, SWATCHES, readBoat, saveBoat, shrinkLogo, type Boat, type Logo } from '@/lib/boat';
 
 // The boat page: a live 3D preview (the game's own yacht, in /boat-view) beside the colours of the hull, the sails, the
@@ -150,9 +151,10 @@ export function BoatEditor({ lang }: { lang: Lang }) {
 
         {err && <p className="err" role="alert">{err}</p>}
         <div className="boat-foot">
-          <span className="small muted">{t('Saved on this device. You race in it from the next start.', 'Сохранено на этом устройстве. В гонке — со следующего старта.')}</span>
+          <span className="boat-note"><span className="fs-note-i"><IconDevice /></span><span>{t('Saved on this device. You race in her from the next start.', 'Сохранено на этом устройстве. В гонке — со следующего старта.')}</span></span>
           <button type="button" className="mini" onClick={() => { setB({ ...DEFAULT_BOAT, logoImg: b.logoImg }); setDown(false); }}><span className="btn-t">{t('Reset', 'Сбросить')}</span></button>
         </div>
+        <a className="pill pill-primary boat-go" href="/play?race=today"><IconPlay /><span className="btn-t">{t('Sail her in today’s race', 'В гонку дня на ней')}</span></a>
       </div>
     </div>
   );

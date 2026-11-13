@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getT } from '@/lib/i18n';
 import { getAccount } from '@/lib/supabase/server';
 import { IconBack } from '@/components/ui';
+import { SiteHead } from '@/components/site-chrome';
 import { BoatEditor } from '@/components/boat-editor';
 
 export const metadata: Metadata = { title: 'Your boat' };
@@ -13,11 +14,16 @@ export default async function BoatPage({ searchParams }: { searchParams: Promise
   // opened from Settings, the back arrow and Done return there; otherwise to the race hub
   const back = q.from === 'settings' ? '/settings' : '/race';
   return (
-    <div className="scr" lang={lang} data-acct={account ? 'signed' : 'guest'}>
+    <div className="scr app" lang={lang} data-acct={account ? 'signed' : 'guest'}>
+      <SiteHead lang={lang} t={t} account={account} page="boat" />
       <div className="lay page boat-page">
-        <div className="lhead">
-          <Link className="round round-s round-muted" href={back} aria-label={back === '/settings' ? t('Back to settings', 'Назад в настройки') : t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
-          <h1 className="h-land-s">{t('Your boat', 'Твоя яхта')}</h1>
+        <div className="aph boat-head">
+          <div className="aph-top">
+            <Link className="round round-s round-muted" href={back} aria-label={back === '/settings' ? t('Back to settings', 'Назад в настройки') : t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
+            <span className="kicker">{t('Your boat', 'Твоя яхта')}</span>
+          </div>
+          <h1 className="aph-h">{t('Colours, logo and sail number', 'Цвета, логотип и номер')}</h1>
+          <p className="aph-p">{t('Saved on this device: you race in her from the next start. Drag the boat to turn her.', 'Сохраняется на этом устройстве: в гонке — со следующего старта. Тяни яхту, чтобы повернуть.')}</p>
         </div>
         <BoatEditor lang={lang} />
       </div>

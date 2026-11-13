@@ -1,11 +1,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { getT } from '@/lib/i18n';
-import { getAccount, initials } from '@/lib/supabase/server';
+import { getAccount } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
 import { dailyRace, KN } from '@/lib/race';
-import { Logo, Langs, IconArrow, IconPlay, IconWind, IconSail, clock } from '@/components/ui';
-import { SiteMenu, RacePill, TileRow, MyRow } from '@/components/home-client';
+import { Logo, IconArrow, IconPlay, IconWind, IconSail, clock } from '@/components/ui';
+import { RacePill, TileRow, MyRow } from '@/components/home-client';
+import { SiteHead, SiteFoot } from '@/components/site-chrome';
 
 // H0 · Home, laid out like rycrentals.com's: a header with the site's pages, a hero with today's race in a pill over
 // the game itself sailing a race (public/hero-view), then sections that alternate white and the pale band.
@@ -21,7 +22,6 @@ export default async function Home() {
   const live = today && today.d === d.day ? today : null;
   const top = live ? live.top : [];
   const best = top[0];
-  const ini = account ? initials(account.name, account.email) : null;
 
   const tiles: [string, string, string, string][] = [
     ['h-wind', '/help', t('Wind that shifts', 'Ветер меняется'), t('10° and more a minute, with gusts and lulls', '10° и больше в минуту, с порывами и затишьями')],
@@ -44,20 +44,7 @@ export default async function Home() {
 
   return (
     <div className="scr help home" lang={lang}>
-      <header className="hm-head">
-        <div className="hm-page hm-head-in">
-          <Link className="hm-brand" href="/" aria-label="RYC · Up and down"><Logo /></Link>
-          <nav className="hm-nav" aria-label={t('Main', 'Главное')}>
-            <Link className="hm-tab" href="/help">{t('How to play', 'Как играть')}</Link>
-            <Link className="hm-tab" href="/race">{t('Today’s race', 'Гонка дня')}</Link>
-            <Link className="hm-tab" href="/race/free">{t('Free race', 'Свободная гонка')}</Link>
-            <Link className="hm-tab" href="/boat">{t('Your boat', 'Твоя яхта')}</Link>
-            <a className="hm-tab" href="#faq">{t('Questions', 'Вопросы')}</a>
-            <a className="hm-tab" href="https://iyt.rycrentals.com/">{t('IYT Test', 'Тест IYT')}</a>
-          </nav>
-          <SiteMenu lang={lang} initials={ini} />
-        </div>
-      </header>
+      <SiteHead lang={lang} t={t} account={account} page="home" />
 
       <div className="hm-hero">
         <Image className="bgimg only-wide" src="/images/drone-desk.jpg" alt="" fill priority sizes="100vw" />
@@ -199,15 +186,7 @@ export default async function Home() {
         </section>
       </div>
 
-      <div className="hm-page hm-foot-wrap">
-        <footer className="hm-foot">
-          <Link className="hm-brand" href="/" aria-label="RYC"><Logo /></Link>
-          <div className="hm-foot-col"><span className="meta">{t('Game', 'Игра')}</span><Link href="/help">{t('How to play', 'Как играть')}</Link><Link href="/race">{t('Today’s race', 'Гонка дня')}</Link><Link href="/race/free">{t('Free race', 'Свободная гонка')}</Link><Link href="/boat">{t('Your boat', 'Твоя яхта')}</Link><Link href="/settings">{t('Settings', 'Настройки')}</Link></div>
-          <div className="hm-foot-col"><span className="meta">{t('Account', 'Аккаунт')}</span>{account ? <Link href="/settings">{account.name || account.email}</Link> : <Link href="/sign-in">{t('Sign in', 'Войти')}</Link>}<a href="#faq">{t('Questions', 'Вопросы')}</a></div>
-          <div className="hm-foot-col"><span className="meta">RYC</span><a href="https://www.rycrentals.com/">rycrentals.com</a><a href="https://www.rycsailing.com/">rycsailing.com</a><a href="https://iyt.rycrentals.com/">{t('IYT Test', 'Тест IYT')}</a></div>
-          <Langs lang={lang} back="/" />
-        </footer>
-      </div>
+      <SiteFoot lang={lang} t={t} account={account} back="/" />
     </div>
   );
 }

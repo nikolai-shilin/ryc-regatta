@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import RULES from '@/lib/rules.json';
@@ -26,7 +26,8 @@ const RULE_LINK: Record<string, string> = { 10: 'rightofway#sec-r10', 11: 'right
 const rule = (k: string, lang: Lang) => (RULES as Record<string, { en: string; ru: string }>)[k]?.[lang] || '';
 const ordEn = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`;
 
-export default function ResultView({ id, lang, signedName }: { id: string; lang: Lang; signedName: string | null }) {
+// head and foot: the site's header and footer, rendered by the page (server components) and passed in
+export default function ResultView({ id, lang, signedName, head, foot }: { id: string; lang: Lang; signedName: string | null; head?: ReactNode; foot?: ReactNode }) {
   const t = tx(lang);
   const [res, setRes] = useState<Result | null | undefined>(undefined);
   const [top, setTop] = useState<Top[] | null>(null);
@@ -40,10 +41,11 @@ export default function ResultView({ id, lang, signedName }: { id: string; lang:
     }).catch(() => {});
   }, [res]);
 
-  if (res === undefined) return <div className="scr help" lang={lang} />;
+  if (res === undefined) return <div className="scr help" lang={lang}>{head}</div>;
   if (!res) {
     return (
       <div className="scr help" lang={lang}>
+        {head}
         <div className="hwrap">
           <header className="hhead">
             <div className="lhead">
@@ -55,6 +57,7 @@ export default function ResultView({ id, lang, signedName }: { id: string; lang:
             <div className="btn-row"><Link className="pill pill-primary pill-s" href="/race"><span className="btn-t">{t('Race hub', 'Меню гонок')}</span></Link></div>
           </header>
         </div>
+        {foot}
       </div>
     );
   }
@@ -95,6 +98,7 @@ export default function ResultView({ id, lang, signedName }: { id: string; lang:
 
   return (
     <div className="scr help result" lang={lang} data-acct={signedName ? 'signed' : 'guest'}>
+      {head}
       <div className="hwrap">
         <header className="hhead">
           <div className="lhead">
@@ -199,6 +203,7 @@ export default function ResultView({ id, lang, signedName }: { id: string; lang:
           </div>
         </section>
       </div>
+      {foot}
     </div>
   );
 }

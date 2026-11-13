@@ -2,9 +2,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
-import { readOpts, readPb, saveOpts } from '@/lib/opts';
+import { readOpts, saveOpts } from '@/lib/opts';
 import { KN, type Wind } from '@/lib/race';
-import { IconArrow, IconLock, IconWind, clock } from './ui';
+import { IconArrow, IconLock, IconWind } from './ui';
 
 // Today's conditions as chips; tapping one says why they are fixed (S2) and offers the same race as a free race.
 export function TodayChips({ lang, chips, day }: { lang: Lang; chips: string[]; day: string }) {
@@ -50,20 +50,6 @@ export function TodayChips({ lang, chips, day }: { lang: Lang; chips: string[]; 
   );
 }
 
-// Your best time in today's race on this device (the game keeps it), shown on the ranking's last row.
-export function MyToday({ lang, day, name }: { lang: Lang; day: string; name: string }) {
-  const t = tx(lang);
-  const [best, setBest] = useState<number | null>(null);
-  useEffect(() => { setBest(readPb()[`daily|${day}`] ?? null); }, [day]);
-  return (
-    <li className="me">
-      <span className="n">·</span>
-      <span>{name ? `${name} (${t('you', 'ты')})` : t('You', 'Ты')}</span>
-      <span>{best != null ? clock(best) : t('not yet', 'ещё нет')}</span>
-    </li>
-  );
-}
-
 // The free-race card: one tap starts a free race in that wind, with the fleet, course and start you chose last time;
 // More options opens the full set-up.
 export function FreeCard({ lang }: { lang: Lang }) {
@@ -78,14 +64,15 @@ export function FreeCard({ lang }: { lang: Lang }) {
   const go = (preset: Wind) => { saveOpts({ preset, mode: 'free', lastFree: Date.now() }); location.href = '/play?race=free'; };
   const winds: [Wind, string][] = [['light', t('Light', 'Слабый')], ['medium', t('Medium', 'Средний')], ['strong', t('Strong', 'Сильный')]];
   return (
-    <div className="band-line free-card">
+    <div className="band free-card">
       <div className="lhead"><span className="kicker">{t('Free race', 'Свободная гонка')}</span><span className="sp" />{last && <span className="meta">{last}</span>}</div>
-      <div className="free-quick" role="group" aria-label={t('Start a free race in this wind', 'Начать свободную гонку в этот ветер')}>
+      <h2 className="hm-h3">{t('Or race in a wind you pick', 'Или гоняйся в свой ветер')}</h2>
+      <div className="qtags" role="group" aria-label={t('Start a free race in this wind', 'Начать свободную гонку в этот ветер')}>
         {winds.map(([w, label]) => (
-          <button key={w} type="button" className="tag tag-s" onClick={() => go(w)}>{label} {KN[w]}</button>
+          <button key={w} type="button" className="qtag" onClick={() => go(w)}>{label} {KN[w]}</button>
         ))}
       </div>
-      <Link className="free-more" href="/race/free">{t('More options', 'Все настройки')}<IconArrow s={16} /></Link>
+      <Link className="hm-src" href="/race/free">{t('More options', 'Все настройки')}<IconArrow s={14} /></Link>
     </div>
   );
 }
