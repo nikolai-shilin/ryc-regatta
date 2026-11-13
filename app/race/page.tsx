@@ -52,7 +52,7 @@ export default async function Hub() {
         <div className="hub2">
           <div className="hub-main">
             <a className="hub-photo" href="/play?race=today">
-              <span className="hm-clip"><Image src="/images/top-v2.jpg" alt={t('Today’s course from above', 'Дистанция дня сверху')} fill sizes="(min-width: 1024px) 680px, 100vw" /></span>
+              <span className="hm-clip"><Image src="/images/top-v3.jpg" alt={t('Today’s course from above', 'Дистанция дня сверху')} fill sizes="(min-width: 1024px) 680px, 100vw" /></span>
               <span className="hm-ptag"><span className="hm-ptag-a">{KN[d.preset]} {t('kn', 'уз')}</span><span className="hm-ptag-b"><span>{t('Today', 'Сегодня')}</span><b>{t(`${d.laps} lap`, `${d.laps} круг`)}</b><span>{t(`${d.fleet} boats`, `${ruBoats(d.fleet)}`)}</span></span></span>
             </a>
             <dl className="qstats">

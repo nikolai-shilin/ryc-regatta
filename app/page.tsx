@@ -44,8 +44,8 @@ export default async function Home() {
       <SiteHead lang={lang} t={t} account={account} page="home" />
 
       <div className="hm-hero">
-        <Image className="bgimg only-wide" src="/images/drone-desk-v2.jpg" alt="" fill priority sizes="100vw" />
-        <Image className="bgimg only-narrow" src="/images/drone-port-v2.jpg" alt="" fill priority sizes="100vw" />
+        <Image className="bgimg only-wide" src="/images/drone-desk-v3.jpg" alt="" fill priority sizes="100vw" />
+        <Image className="bgimg only-narrow" src="/images/drone-port-v3.jpg" alt="" fill priority sizes="100vw" />
         <iframe className="hm-scene" src="/hero-view" title={t('A race in the game', 'Гонка в игре')} aria-hidden="true" tabIndex={-1} />
         <section className="hm-page hm-hero-in" aria-labelledby="home-h1">
           <span className="kicker">{t('Up and down · a sailing race game by RYC', 'Up and down · парусная гонка от RYC')}</span>
@@ -66,7 +66,7 @@ export default async function Home() {
           }>
             {tiles.map(([img, href, title, meta]) => (
               <Link className="hm-tile" href={href} key={img}>
-                <span className="hm-photo hm-sq"><Image src={`/images/${img}-v2.jpg`} alt="" fill sizes="180px" /></span>
+                <span className="hm-photo hm-sq"><Image src={`/images/${img}-v3.jpg`} alt="" fill sizes="180px" /></span>
                 <span className="card-title">{title}</span>
                 <span className="hm-meta">{meta}</span>
               </Link>
@@ -88,7 +88,7 @@ export default async function Home() {
         <div className="hm-today">
           <a className="hm-course" href="/play?race=today">
             <span className="hm-photo hm-wide">
-              <span className="hm-clip"><Image src="/images/top-v2.jpg" alt={t('Today’s course from above', 'Дистанция дня сверху')} fill sizes="(min-width: 900px) 640px, 100vw" /></span>
+              <span className="hm-clip"><Image src="/images/top-v3.jpg" alt={t('Today’s course from above', 'Дистанция дня сверху')} fill sizes="(min-width: 900px) 640px, 100vw" /></span>
               <span className="hm-ptag"><span className="hm-ptag-a">{kn} {t('kn', 'уз')}</span><span className="hm-ptag-b"><span>{t('Today', 'Сегодня')}</span><b>{t(`${d.laps} lap`, `${d.laps} круг`)}</b><span>{t(`${d.fleet} boats`, `${ruBoats(d.fleet)}`)}</span></span></span>
             </span>
             <span className="card-title">{t(`Up and down · ${length} course · ${d.laps} lap`, `Апвинд — даунвинд · ${length} · ${d.laps} круг`)}</span>

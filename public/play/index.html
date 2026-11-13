@@ -8,8 +8,8 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="/favicon.ico">
-<link rel="preload" as="image" href="/_next/image?url=%2Fimages%2Fdrone-desk-v2.jpg&amp;w=1920&amp;q=90" media="(orientation: landscape)">
-<link rel="preload" as="image" href="/_next/image?url=%2Fimages%2Fdrone-port-v2.jpg&amp;w=1080&amp;q=90" media="(orientation: portrait)">
+<link rel="preload" as="image" href="/_next/image?url=%2Fimages%2Fdrone-desk-v3.jpg&amp;w=1920&amp;q=90" media="(orientation: landscape)">
+<link rel="preload" as="image" href="/_next/image?url=%2Fimages%2Fdrone-port-v3.jpg&amp;w=1080&amp;q=90" media="(orientation: portrait)">
 <link rel="stylesheet" href="https://iyt.rycrentals.com/fonts/fonts.css">
 <!-- the land round the course (game/land.js): fetched at once, not after the modules that ask for it -->
 <link rel="preload" as="fetch" href="/game/skopea.bin" crossorigin>
@@ -515,7 +515,7 @@
   // the photo: the game seen from the drone, sized by the image optimiser (AVIF ~110 KB), faded in once it is here
   var photo = $('lPhoto'), img = new Image();
   img.onload = function () { photo.style.backgroundImage = 'url("' + img.src + '")'; requestAnimationFrame(function () { photo.classList.add('on'); }); };
-  img.src = matchMedia('(orientation: portrait)').matches ? '/_next/image?url=%2Fimages%2Fdrone-port-v2.jpg&w=1080&q=90' : '/_next/image?url=%2Fimages%2Fdrone-desk-v2.jpg&w=1920&q=90';
+  img.src = matchMedia('(orientation: portrait)').matches ? '/_next/image?url=%2Fimages%2Fdrone-port-v3.jpg&w=1080&q=90' : '/_next/image?url=%2Fimages%2Fdrone-desk-v3.jpg&w=1920&q=90';
 
   // a tip while it loads, a new one every five seconds
   var tips = [

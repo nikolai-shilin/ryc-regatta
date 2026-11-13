@@ -10,7 +10,7 @@ export function AuthShell({ lang, caption, children }: { lang: Lang; caption?: R
       <SiteHead lang={lang} t={tx(lang)} account={null} page="signin" />
       <div className="lay split split-auth">
         <div className="split-photo">
-          <Image className="bgimg" src="/images/top-v2.jpg" alt="" fill priority sizes="(orientation: portrait) 100vw, 50vw" />
+          <Image className="bgimg" src="/images/top-v3.jpg" alt="" fill priority sizes="(orientation: portrait) 100vw, 50vw" />
           <div className="photo-fade" />
           {caption && <div className="cap no-port">{caption}</div>}
         </div>
