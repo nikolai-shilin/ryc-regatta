@@ -1,5 +1,5 @@
 // Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
-import { Race, D2R, KN, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace } from './sim.js';
+import { Race, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace } from './sim.js';
 import { World, defaultQuality, ladderStep } from './world.js';
 import { raceStarted, raceFinished } from './stats.js';
 import { createHudNext } from './hud-next.js';
@@ -272,7 +272,7 @@ const audio = {
       this.windG = this.chain('lowpass', 500); this.waterG = this.chain('bandpass', 1500, 0.6); this.flapG = this.chain('bandpass', 320, 1.2);
     } catch (e) { this.ctx = null; }
   },
-  setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; if (!v && window.speechSynthesis) speechSynthesis.cancel(); },
+  setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; if (!v && window.speechSynthesis) speechSynthesis.cancel(); if (!v) skipper.stop(); },
   set(g, v, tc = 0.25) { if (g && this.ctx) g.gain.setTargetAtTime(v, this.ctx.currentTime, tc); },
   update(P, paused) {
     if (!this.ctx) return;
@@ -303,6 +303,122 @@ const audio = {
       u.lang = LANG === 'ru' ? 'ru-RU' : 'en-GB'; u.rate = 1.1; u.volume = 0.9;
       speechSynthesis.cancel(); speechSynthesis.speak(u);
     } catch (e) {}
+  },
+};
+
+// ---------- the skipper: a recorded voice from Odessa that shouts at the crew when they've earned it ----------
+// Russian only (the game in English keeps its own calls). All the lines are in one file, skipper-ru.mp3, loaded once the
+// race starts; he says one at a time, takes a breath between lines and doesn't repeat a line within a minute.
+const skipper = {
+  // where each line sits in skipper-ru.mp3: [start, length] in seconds
+  clips: {
+    // on the boat
+    hands: [0.6, 3.772], // Руки убрал! Это шкот, а не твоя личная жизнь!
+    ease1: [4.972, 2.861], // Трави, блядь! Она сама не догадается!
+    pull1: [8.433, 1.181], // Добирай!
+    pull2: [10.214, 2.371], // Не уговаривай верёвку — тяни!
+    hold: [13.185, 4.965], // Кто держит? Кто не держит? Почему вообще никто не держит?!
+    tack1: [18.75, 4.416], // Поворот через три… два… да куда вы уже пошли?!
+    tack2: [23.766, 4.131], // Готовься к повороту! Хотя нет, уже поздно — поворачиваем!
+    ease2: [28.497, 3.43], // Шкот отдай! Не замуж же за него вышла!
+    pull3: [32.527, 3.374], // Добери этот парус, он уже морально распустился!
+    people: [36.501, 3.995], // Что ж вы за люди такие? Я же русским языком ору!
+    column: [41.096, 3.41], // Не стой столбом, у нас тут гонка, а не экскурсия!
+    feet: [45.106, 4.014], // Под ногами не мешайся. Лучше где-нибудь сбоку мешайся!
+    clue: [49.72, 3.435], // Кто-нибудь, сделайте вид, что знает, что происходит!
+    // at the start
+    minute: [53.754, 4.256], // До старта минута! У нас есть время испортить всё красиво!
+    push: [58.61, 2.348], // Не толкайся, мы и так идём не туда!
+    plan: [61.558, 3.195], // Стартуем по плану. План, правда, никто не видел.
+    where: [65.353, 3.251], // Линия старта где? Там, где сейчас чужая яхта?
+    distance: [69.205, 3.115], // Держи дистанцию! Это гонка, а не знакомство!
+    early: [72.92, 2.634], // Рано пошли! Зато уверенно!
+    late: [76.153, 2.48], // Поздно пошли! Зато без суеты!
+    ready: [79.233, 3.457], // Кто дал команду стартовать? Я ещё морально не готов!
+    flag: [83.29, 5.04], // Смотрите на флаг! Хотя бы один из нас должен понимать, что он означает!
+    clean: [88.93, 3.385], // Идём чисто! В смысле, пока никого не задели!
+    // with feeling
+    sank: [92.915, 4.239], // Что ж вы за люди такие? Что ж вы ботик потопили, гады?
+    hands2: [97.754, 3.893], // Гадёныш, убери свои руки тупые, блядь! Бросай, брат!
+    ease3: [102.248, 2.007], // Да трави ты, сучара тупая!
+    pull4: [104.855, 3.157], // Я вас очень сильно матом прошу, доберите!
+  },
+  // the lines for each situation
+  pools: {
+    pull: ['pull1', 'pull2', 'pull3', 'pull4'], // the sails flapping, the sheet left out
+    ease: ['ease2', 'ease1', 'ease3'], // sheeted in too hard
+    heel: ['ease1', 'ease2', 'ease3'], // heeled over: ease!
+    fiddle: ['hands', 'hands2'], // the sheet worked in and out, in and out
+    chaos: ['hold'], // a broach, a crash gybe, a death roll, a wrapped or collapsed kite
+    tack: ['tack1', 'tack2'], // a tack or a gybe, now and then
+    foul: ['people'], // a foul, a touched mark, the wrong side of a mark, a missed gate
+    slow: ['column'], // stopped, or in irons, after the gun
+    contact: ['feet'], // a collision after the start, or a boat that fouled us
+    push: ['push'], // a collision before the start
+    lost: ['clue'], // a general recall, disqualified at the start
+    aground: ['sank', 'clue'],
+    plan: ['plan'], // the warning signal
+    flag: ['flag'], // the preparatory signal, and the U or black flag today
+    minute: ['minute'], // the one-minute signal
+    where: ['where'], // far from the line near the gun, or across it outside the ends
+    distance: ['distance'], // another boat a few metres off for a while, not touching
+    early: ['early'], // over early
+    ready: ['ready'], // across the line within three seconds of the gun
+    clean: ['clean'], // a start without fuss, or the windward mark with no fouls
+    late: ['late'], // across the line more than ten seconds after the gun
+  },
+  buf: null, loading: false, src: null, speakTill: 0, busyTill: 0, last: {},
+  load() {
+    if (LANG !== 'ru' || this.buf || this.loading || !audio.ctx) return;
+    this.loading = true;
+    fetch(new URL('skipper-ru.mp3', import.meta.url)).then((r) => r.arrayBuffer())
+      .then((b) => new Promise((res, rej) => audio.ctx.decodeAudioData(b, res, rej)))
+      .then((b) => { this.buf = b; }, () => { this.loading = false; });
+  },
+  // a line for the situation; false when he keeps quiet (no sound, mid-line, a hail being spoken, said it lately).
+  // A moment that won't come again (a signal, the start) needn't wait for his breath, only for the line he's saying.
+  shout(kind, chance = 1, now_ = false) {
+    if (!this.buf || !audio.on || paused || audio.ctx.state !== 'running') return false;
+    const ctx = audio.ctx, now = ctx.currentTime;
+    if (now < (now_ ? this.speakTill : this.busyTill) || (window.speechSynthesis && speechSynthesis.speaking)) return false;
+    const fresh = (this.pools[kind] || []).filter((k) => !(now - this.last[k] < 60));
+    if (!fresh.length || Math.random() > chance) return false;
+    const k = fresh[Math.floor(Math.random() * fresh.length)], [at, len] = this.clips[k];
+    const s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 0.9;
+    s.buffer = this.buf; s.connect(g).connect(audio.master); s.start(now, at, len);
+    this.stop(); this.src = s; this.last[k] = now; this.speakTill = now + len + 0.4; this.busyTill = now + len + 8;
+    return true;
+  },
+  stop() { try { this.src && this.src.stop(); } catch (e) {} this.src = null; },
+  // the start signals and crossing the line, from the race's messages
+  signal(key) { const k = { sigWarn: 'plan', sigPrep: 'flag', sig1: 'minute' }[key]; if (k) this.shout(k, 1, true); },
+  started(c) { this.shout(c < 3 ? 'ready' : c > 10 ? 'late' : 'clean', 1, true); },
+  // what he watches for himself, every frame: a sheet left wrong, a sheet fiddled with, a boat stopped after the gun,
+  // a boat too close, the line far off as the gun nears
+  w: null,
+  reset() { this.stop(); this.w = { trim: '', t: 0, sheet: 0, dir: 0, rev: [], slowT: 0, nearT: 0 }; },
+  watch(P, dt) {
+    const w = this.w, c = race.clock;
+    if (!this.buf || !w || P.done || P.pen || P.auto) return;
+    // the sheet: pull in or ease out for three seconds straight
+    const wrong = c > 5 && !P.autoTrim && (P.trim === 'in' || P.trim === 'out');
+    w.t = wrong && P.trim === w.trim ? w.t + dt : 0; w.trim = P.trim;
+    if (w.t > 3 && this.shout(P.trim === 'in' ? 'pull' : 'ease')) w.t = 0;
+    // fiddling: six changes of direction on the sheet within four seconds
+    const ds = P.sheet - w.sheet; w.sheet = P.sheet;
+    if (!P.autoTrim && Math.abs(ds) > 0.004 && Math.sign(ds) !== w.dir) { w.dir = Math.sign(ds); w.rev.push(c); }
+    while (w.rev.length && c - w.rev[0] > 4) w.rev.shift();
+    if (w.rev.length >= 6 && this.shout('fiddle')) w.rev.length = 0;
+    // after the gun, all but stopped for four seconds
+    w.slowT = c > 3 && P.v / KN < 1.5 ? w.slowT + dt : 0;
+    if (w.slowT > 4 && this.shout('slow')) w.slowT = 0;
+    if (P.heel > 33) this.shout('heel');
+    // another boat within a hull length and a half, not touching, for two seconds
+    let near = 1e9; for (const b of race.boats) if (b !== P && !b.done) near = Math.min(near, Math.hypot(b.x - P.x, b.z - P.z));
+    w.nearT = near < HULL * 1.4 && near > HULL * 0.5 ? w.nearT + dt : 0;
+    if (w.nearT > 2 && this.shout('distance')) w.nearT = 0;
+    // half a minute to the gun and still far from the line
+    if (c > -30 && c < -10 && P.leg === 0 && -race.lineInfo(P).d > 80) this.shout('where');
   },
 };
 
@@ -345,7 +461,7 @@ function newRace() {
   race.player.name = t('you');
   world.setRace(race);
   world.resetView();
-  hints = {}; lastClockInt = null; coachSeen = {};
+  hints = {}; lastClockInt = null; coachSeen = {}; skipper.reset();
 }
 newRace();
 
@@ -521,7 +637,7 @@ const hudNext = createHudNext({ t, LANG, fmt, world, getRace: () => race, setCam
 const menu = $('#menu'), results = $('#results'), hud = $('#hud');
 if (!opts.played) $('#howD').open = true; // how to play: open until the first race
 function startRace() {
-  audio.init(); audio.setOn(!!opts.sound);
+  audio.init(); audio.setOn(!!opts.sound); skipper.load();
   if (running || menuChanged || race.over || (race.settings.daily && race.settings.daily !== dailyRace().day)) newRace(); // a new day: a new daily race
   menuChanged = false;
   opts.played = (opts.played || 0) + 1; saveOpts();
@@ -706,6 +822,7 @@ function updateHud(dt) {
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) el.toast.classList.remove('show'); }
   audio.update(P, paused);
   if (race.coach) coach(P, a, leg);
+  skipper.watch(P, dt);
   hudNext.update(P, dt);
 }
 // the first races: a tip when it's needed, each once a race
@@ -729,31 +846,37 @@ function handleMessages() {
   for (const m of race.messages) {
     const a = m.arg || {};
     if (m.key === 'signal') {
-      audio.horn(a.sound === 'long'); haptic(a.key === 'gun' ? 'heavy' : 'medium');
+      audio.horn(a.sound === 'long'); haptic(a.key === 'gun' ? 'heavy' : 'medium'); skipper.signal(a.key);
       if (a.key === 'gun' && P.ocs) continue;
       toast(t(a.key, Math.round(-a.t / 60), race.prepFlag), 3);
     } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') { raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy'); setTimeout(finishToPage, 2500); }
     else if (m.key === 'gate') toast(t('gateMsg'));
-    else if (m.key === 'bump') { hint('bump', t('bump'), 3); haptic('heavy'); }
-    else if (m.key === 'aground') { hint('aground', t('aground'), 3); haptic('heavy'); }
+    else if (m.key === 'bump') { hint('bump', t('bump'), 3); haptic('heavy'); skipper.shout(race.clock < 0 ? 'push' : 'contact'); }
+    else if (m.key === 'aground') { hint('aground', t('aground'), 3); haptic('heavy'); skipper.shout('aground'); }
     else if (m.key === 'hail') { const h = t('hail' + a.rule); toast(`${a.who}: “${h}”`, 2.2); audio.say(h); haptic('warn'); }
     else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); audio.say(h); } }
     else if (m.key === 'seaBreeze') toast(t('seaBreeze'), 5);
-    else if (m.key === 'genRecall') { toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(); haptic('warn'); }
-    else if (m.key === 'prepU' || m.key === 'prepB' || m.key === 'ufd' || m.key === 'bfd') { toast(t(m.key), 4); if (m.key === 'ufd' || m.key === 'bfd') haptic('warn'); }
-    else if (m.key === 'fouled' || m.key === 'theyFouled') toast(t(m.key, a.who, a.rule), 3.5);
-    else { toast(t(m.key), 2.6); if (m.key === 'ocs') haptic('warn'); if (m.key === 'rounded') haptic('medium'); }
+    else if (m.key === 'genRecall') { toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(); haptic('warn'); skipper.shout('lost'); }
+    else if (m.key === 'prepU' || m.key === 'prepB' || m.key === 'ufd' || m.key === 'bfd') { toast(t(m.key), 4); if (m.key === 'prepU' || m.key === 'prepB') skipper.shout('flag', 1, true); if (m.key === 'ufd' || m.key === 'bfd') { haptic('warn'); skipper.shout('lost'); } }
+    else if (m.key === 'fouled' || m.key === 'theyFouled') { toast(t(m.key, a.who, a.rule), 3.5); skipper.shout(m.key === 'fouled' ? 'foul' : 'contact'); }
+    else {
+      toast(t(m.key), 2.6); if (m.key === 'ocs') { haptic('warn'); skipper.shout('early', 1, true); } if (m.key === 'rounded') haptic('medium');
+      if (m.key === 'touched' || m.key === 'wrongSide' || m.key === 'missedGate') skipper.shout('foul');
+      if (m.key === 'missedLine') skipper.shout('where', 1, true);
+      if (m.key === 'started') skipper.started(race.clock);
+      if ((m.key === 'rounded' || m.key === 'roundedTri') && P.leg === 2 && !race.log.fouls.length) skipper.shout('clean'); // the windward mark, and nobody touched yet
+    }
   }
   race.messages.length = 0;
   for (const e of P.events) {
-    if (e === 'broach') { toast(t('broach')); haptic('heavy'); }
-    if (e === 'kitedown') { toast(t('kitedown')); haptic('warn'); }
+    if (e === 'broach') { toast(t('broach')); haptic('heavy'); skipper.shout('chaos'); }
+    if (e === 'kitedown') { toast(t('kitedown')); haptic('warn'); skipper.shout('chaos'); }
     if (e === 'kiteHoist' || e === 'kiteDrop' || e === 'kiteUp') toast(t(e + (P.kiteType === 'zero' ? 'Z' : '')), 1.8);
     if (e === 'reefStart' || e === 'reefDone' || e === 'shakeStart' || e === 'shakeDone' || e === 'jibStart' || e === 'jibDone') toast(t(e), 1.8);
     if (e === 'penaltyDone') toast(t('penaltyDone'));
-    if (e === 'kiteWrap' || e === 'crashGybe' || e === 'deathRoll') { toast(t(e), 3); haptic(e === 'kiteWrap' ? 'warn' : 'heavy'); }
+    if (e === 'kiteWrap' || e === 'crashGybe' || e === 'deathRoll') { toast(t(e), 3); haptic(e === 'kiteWrap' ? 'warn' : 'heavy'); skipper.shout('chaos'); }
     if (e === 'kiteGybed') toast(t('kiteGybed'), 1.4);
-    if (e === 'tacking' || e === 'gybing') audio.say(t(e === 'tacking' ? 'tackCall' : 'gybeCall'));
+    if ((e === 'tacking' || e === 'gybing') && (P.pen || !skipper.shout('tack', 0.35))) audio.say(t(e === 'tacking' ? 'tackCall' : 'gybeCall')); // now and then the skipper calls it his way
   }
   P.events.length = 0;
   for (const b of race.boats) if (b !== P) b.events.length = 0;
@@ -988,5 +1111,5 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, world };
+if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, world, audio, skipper };
 document.addEventListener('visibilitychange', () => { if (document.hidden && running && !paused && !window.__rg) pause(); }); // not in debug: test screenshots hide the tab

@@ -36,6 +36,12 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   hills, the coast, the marinas' pontoons and the town) are made by `python3 blender/skopea.py <work dir>`, from the
   Terrarium elevation tiles and OpenStreetMap; it needs numpy and Pillow and keeps its downloads in the work dir.
   `land.js` lays each course in clear water there, `skopea.js` draws the land.
+- **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes
+  wrong (a sheet left out or in too hard, a broach, a foul, a collision, aground, stopped after the gun, now and then a
+  tack) and through the start (the signals, a boat too close, the line far off, over early, a quick or a late start).
+  His 27 lines (three ElevenLabs recordings) are one after another in `public/game/skipper-ru.mp3`, with silence between them;
+  `skipper.clips` in `main.js` says where each one starts and how long it is, `skipper.pools` which lines go with which
+  situation.
 
 ## Run it locally
 
