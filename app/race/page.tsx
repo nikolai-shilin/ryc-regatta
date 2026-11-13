@@ -79,7 +79,7 @@ export default async function Hub() {
                   </li>
                 ))}
                 {!top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
-                <MyRow lang={lang} day={d.day} signedIn={!!account} next="/race" />
+                <MyRow lang={lang} day={d.day} signedIn={!!account} top={top} next="/race" />
               </ol>
             </div>
             <FreeCard lang={lang} />

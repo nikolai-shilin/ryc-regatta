@@ -461,6 +461,7 @@
 .hm-lb li.me .hm-n { background: var(--sel-bg); color: var(--sel-ink); }
 .hm-t { font: 700 var(--t-m)/1 var(--f-sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hm-t small { margin-left: var(--s-2); font: 400 var(--t-s)/1 var(--f-sans); color: var(--muted); }
+.hm-why { margin-left: var(--s-2); font: 700 var(--t-s)/1 var(--f-sans); letter-spacing: var(--caps); text-transform: uppercase; color: var(--muted); white-space: nowrap; } /* your time, kept here but not by the ranking */
 .hm-cta { align-self: flex-start; margin-top: var(--s-6); }
 
 /* how a race goes */

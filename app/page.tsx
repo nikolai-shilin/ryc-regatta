@@ -147,7 +147,7 @@ export default async function Home() {
                 </li>
               ))}
               {!top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
-              <MyRow lang={lang} day={d.day} signedIn={!!account} />
+              <MyRow lang={lang} day={d.day} signedIn={!!account} top={top} />
             </ol>
             <a className="pill pill-primary hm-cta" href="/play?race=today"><IconPlay /><span className="btn-t">{t('Sail today’s race', 'Пройти гонку дня')}</span></a>
           </div>

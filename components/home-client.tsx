@@ -138,17 +138,28 @@ export function TileRow({ lang, head, children }: { lang: Lang; head: ReactNode;
   );
 }
 
-// Your best time in today's race on this device (the game keeps it), or the way onto the ranking.
-export function MyRow({ lang, day, signedIn, next = '/' }: { lang: Lang; day: string; signedIn: boolean; next?: string }) {
+// Your best time in today's race on this device (the game keeps it), or the way onto the ranking. The ranking above it is
+// the server's, and a time the server didn't keep (a finish that never reached it, or one its checks threw out) is in this
+// device's record all the same: the row shows where the time stands against the board, its place when the board has it
+// and its gap to the leader, and says so when a time that would be on the board isn't, rather than sit under slower ones.
+// The board names no one, so "on it" means a ranked time equal to this one.
+export function MyRow({ lang, day, signedIn, top = [], next = '/' }: { lang: Lang; day: string; signedIn: boolean; top?: { s: number }[]; next?: string }) {
   const t = tx(lang);
   const [best, setBest] = useState<number | null>(null);
   useEffect(() => { setBest(readPb()[`daily|${day}`] ?? null); }, [day]);
+  const listed = best != null && top.some((r) => Math.abs(r.s - best) < 0.05);
+  const place = best != null ? top.filter((r) => r.s < best - 0.05).length + 1 : 0;
+  const missing = best != null && !listed && (top.length < 3 || best < top[top.length - 1].s);
+  const gap = best != null && top.length ? best - top[0].s : 0;
   return (
     <li className="me">
-      <span className="hm-n">·</span>
-      <span>{t('You', 'Ты')}</span>
+      <span className="hm-n">{listed ? place : '·'}</span>
+      <span>
+        {t('You', 'Ты')}
+        {signedIn && missing && <small className="hm-why" title={t('This device has the time, but the race didn’t reach today’s ranking', 'Время есть на этом устройстве, но в рейтинг дня гонка не попала')}>{t('not on the ranking', 'не в рейтинге')}</small>}
+      </span>
       {signedIn
-        ? <span className="hm-t">{best != null ? clock(best) : <span className="hm-muted">{t('not yet', 'ещё нет')}</span>}</span>
+        ? <span className="hm-t">{best != null ? <>{clock(best)}{Math.abs(gap) >= 0.05 ? <small>{gap > 0 ? '+' : '−'}{Math.abs(gap).toFixed(1)}</small> : null}</> : <span className="hm-muted">{t('not yet', 'ещё нет')}</span>}</span>
         : <Link className="hm-src" href={`/sign-in?next=${next}`}>{t('Sign in to get on it', 'Войди, чтобы попасть сюда')}</Link>}
     </li>
   );
