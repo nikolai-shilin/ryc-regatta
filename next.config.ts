@@ -4,6 +4,9 @@ import type { NextConfig } from 'next';
 // /play serves that page, so the game and the Next.js pages share one origin (the Supabase session cookie and the
 // settings in localStorage reach the race).
 const config: NextConfig = {
+  // The game pictures in public/images are rendered at 3–4× and served at quality 90 (every <Image> snaps to the one
+  // allowed quality), AVIF where the browser takes it, else WebP. They only change with a new render, so cache them long.
+  images: { qualities: [90], formats: ['image/avif', 'image/webp'], minimumCacheTTL: 2678400 },
   async rewrites() {
     return [
       { source: '/play', destination: '/play/index.html' },
