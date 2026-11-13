@@ -57,11 +57,14 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…
 
 In the Supabase project (`iyt-test`), Authentication needs:
 
-- **Google:** turn on the Google provider.
+- **Google:** the Google provider is on, with the web client "Supabase sign-in (regatta.rycrentals.com)" from the Google Cloud
+  project **RYC Regatta** (`ryc-regatta`). Its consent screen, "Up and down", is published. The client's only redirect URI is
+  `https://xpdhkahgvusuicynssxq.supabase.co/auth/v1/callback`. Google never shows a secret again: to replace it, add a new secret to
+  the client, paste it into Supabase, then disable and delete the old one.
 - **Redirect URLs:**
-  - `http://localhost:5193/auth/callback`
-  - `https://regatta.rycrentals.com/auth/callback`
-  - the Site URL
+  - `http://localhost:5193/**`
+  - `https://regatta.rycrentals.com/**`
+  - The Site URL stays at its default, because the project is shared with the iyt app.
 - **Email code:** the "Magic link" email template must include `{{ .Token }}`, so the email carries the 6-digit code. The link in the
   default template also works: it goes through `/auth/callback`.
 
