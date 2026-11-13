@@ -1,0 +1,5 @@
+# Serve only the game: index.html, game/, the logo and the icon
+README.md
+blender
+.claude
+.gitignore
