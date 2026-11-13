@@ -2,6 +2,7 @@
 import { Race, D2R, KN, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace } from './sim.js';
 import { World, defaultQuality, ladderStep } from './world.js';
 import { raceStarted, raceFinished } from './stats.js';
+import { createHudNext } from './hud-next.js';
 
 const $ = (s) => document.querySelector(s);
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
@@ -498,6 +499,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Space') { e.preventDefault(); doTack(); }
   if (e.code === 'KeyK') doKite();
   if (e.code === 'KeyT') cycleSpeed();
+  if (e.code === 'KeyH') toast(hudNext.toggle() ? 'HUD: next' : 'HUD: old', 1.2);
   if (e.code === 'KeyA') world.zoom(1 / 1.12); // held down, the key repeats: a smooth zoom
   if (e.code === 'KeyZ') world.zoom(1.12);
   const view = { KeyX: 'drone', KeyC: 'top', KeyV: 'helm' }[e.code]; // in the order of the buttons
@@ -511,6 +513,8 @@ const camSeg = $('#camSeg');
 function setCam(m) { world.mode = m; camSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.cam === m)); }
 camSeg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setCam(b.dataset.cam); });
 setCam(['drone', 'top', 'helm'].includes(opts.camera) ? opts.camera : 'drone'); // Settings › First camera
+// the lighter HUD on trial: ?hud=next turns it on, ?hud=old off, H switches while sailing
+const hudNext = createHudNext({ t, LANG, fmt, world, getRace: () => race, setCam });
 
 // ---------- menus ----------
 const menu = $('#menu'), results = $('#results'), hud = $('#hud');
@@ -679,6 +683,7 @@ function updateHud(dt) {
     const mine = zs.st.entitled === P, n = zs.o.name;
     chips.push([mine ? 'ok' : 'warn', zs.st.overlapped ? t(mine ? 'zIn' : 'zOut', n) : t(mine ? 'zAhead' : 'zAstern', n)]);
   }
+  if (hudNext.on) chips.length = Math.min(chips.length, 2); // the lighter HUD: the two that matter most
   const ck = chips.map((x) => x.join()).join('|');
   if (ck !== chipsKey) { chipsKey = ck; el.chips.innerHTML = chips.map(([k, s]) => `<span class="chip ${k}">${s}</span>`).join(''); }
 
@@ -694,6 +699,7 @@ function updateHud(dt) {
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) el.toast.classList.remove('show'); }
   audio.update(P, paused);
   if (race.coach) coach(P, a, leg);
+  hudNext.update(P, dt);
 }
 // the first races: a tip when it's needed, each once a race
 function coach(P, a, leg) {
