@@ -81,13 +81,12 @@ export function BoatEditor({ lang }: { lang: Lang }) {
           <div className="presets" role="list">
             {PRESETS.map((p) => (
               <button key={p.id} type="button" role="listitem" className={`preset ${b.preset === p.id ? 'on' : ''}`} aria-pressed={b.preset === p.id}
-                style={{ ['--c' as string]: p.boat.hull }}
+                aria-label={t(p.en, p.ru)} title={t(p.en, p.ru)} style={{ ['--c' as string]: p.boat.hull }}
                 onClick={() => setB((x) => ({ ...x, ...p.boat, preset: p.id }))}>
                 <span className="preset-pic">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {shots[p.id] ? <img src={shots[p.id]} alt="" /> : <i aria-hidden="true" />}
                 </span>
-                <span className="preset-name"><i aria-hidden="true" />{t(p.en, p.ru)}</span>
               </button>
             ))}
           </div>

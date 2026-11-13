@@ -26,12 +26,7 @@ export default async function SettingsPage() {
       <div className="lay page">
         <div className="lhead" style={{ gap: 14 }}>
           <Link className="round round-s round-muted" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-            <span className="kicker">Up and down</span>
-            <h1 className="h-land-s">{t('Settings', 'Настройки')}</h1>
-          </div>
-          <span className="sp" />
-          <Link className="pill pill-primary pill-xs" href="/race" style={{ flex: 'none' }}><span className="btn-t">{t('Done', 'Готово')}</span></Link>
+          <h1 className="h-land-s">{t('Settings', 'Настройки')}</h1>
         </div>
         <SettingsForm lang={lang} langRow={langRow} accountRow={account ? (
               <div className="acct acct-row">
@@ -45,7 +40,10 @@ export default async function SettingsPage() {
               </div>
             ) : (
               <div className="acct acct-row">
-                <span className="small" style={{ flex: '1 1 auto' }}>{t('Playing as a guest: your times stay on this device.', 'Ты играешь как гость: результаты только на этом устройстве.')}</span>
+                <div className="acct-guest">
+                  <span className="srow-k">{t('Guest', 'Гость')}</span>
+                  <span className="small">{t('Times stay on this device', 'Результаты только на этом устройстве')}</span>
+                </div>
                 <Link className="pill pill-xs" href="/sign-in?next=/settings" style={{ flex: 'none' }}><span className="btn-t">{t('Sign in', 'Войти')}</span></Link>
               </div>
             )} />

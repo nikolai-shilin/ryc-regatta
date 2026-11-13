@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
-import { readOpts, readPb } from '@/lib/opts';
+import { readOpts, readPb, saveOpts } from '@/lib/opts';
+import { KN, type Wind } from '@/lib/race';
 import { IconArrow, IconLock, IconWind, clock } from './ui';
 
 // Today's conditions as chips; tapping one says why they are fixed (S2) and offers the same race as a free race.
@@ -17,12 +18,10 @@ export function TodayChips({ lang, chips, day }: { lang: Lang; chips: string[]; 
   }, [open]);
   return (
     <>
-      <div className="chip-tags" style={{ gap: 6 }}>
-        {chips.map((c, i) => (
-          <button key={i} type="button" className="chip chip-s" onClick={() => setOpen(true)} style={{ border: 0 }}>
-            {i === 0 && <IconWind />}{c}
-          </button>
-        ))}
+      <div className="chip-tags">
+        <button type="button" className="chip chip-s" onClick={() => setOpen(true)} style={{ border: 0, gap: 6 }}>
+          <IconWind />{chips.join(' · ')}<IconLock />
+        </button>
       </div>
       {open && (
         <div className="dlg-wrap" lang={lang}>
@@ -65,15 +64,28 @@ export function MyToday({ lang, day, name }: { lang: Lang; day: string; name: st
   );
 }
 
-// The free-race card: what the player chose last time.
-export function LastFree({ lang }: { lang: Lang }) {
+// The free-race card: one tap starts a free race in that wind, with the fleet, course and start you chose last time;
+// More options opens the full set-up.
+export function FreeCard({ lang }: { lang: Lang }) {
   const t = tx(lang);
-  const [txt, setTxt] = useState('');
+  const [last, setLast] = useState('');
   useEffect(() => {
     const o = readOpts();
     if (!o.lastFree) return;
     const w = { light: t('light', 'слабый'), medium: t('medium', 'средний'), strong: t('strong', 'сильный') }[o.preset];
-    setTxt(t(`Last time: ${w}, ${o.fleet} boats, ${o.laps} ${o.laps > 1 ? 'laps' : 'lap'}.`, `В прошлый раз: ${w}, ${o.fleet} лодок, ${o.laps} ${o.laps > 1 ? 'круга' : 'круг'}.`));
+    setLast(t(`Last: ${w}, ${o.fleet} boats`, `Прошлая: ${w}, ${o.fleet} лодок`));
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
-  return <span className="small" style={{ color: 'var(--muted)' }}>{t('Your wind, fleet and course.', 'Свой ветер, флот и дистанция.')}{txt ? ` ${txt}` : ''}</span>;
+  const go = (preset: Wind) => { saveOpts({ preset, mode: 'free', lastFree: Date.now() }); location.href = '/play?race=free'; };
+  const winds: [Wind, string][] = [['light', t('Light', 'Слабый')], ['medium', t('Medium', 'Средний')], ['strong', t('Strong', 'Сильный')]];
+  return (
+    <div className="band-line free-card">
+      <div className="lhead"><span className="kicker">{t('Free race', 'Свободная гонка')}</span><span className="sp" />{last && <span className="meta">{last}</span>}</div>
+      <div className="free-quick" role="group" aria-label={t('Start a free race in this wind', 'Начать свободную гонку в этот ветер')}>
+        {winds.map(([w, label]) => (
+          <button key={w} type="button" className="tag tag-s" onClick={() => go(w)}>{label} {KN[w]}</button>
+        ))}
+      </div>
+      <Link className="free-more" href="/race/free">{t('More options', 'Все настройки')}<IconArrow s={16} /></Link>
+    </div>
+  );
 }

@@ -36,15 +36,14 @@ button.link-row { width: 100%; background: none; border: 0; border-bottom: 1px s
 .sws { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 4px; }
 .sw { position: relative; flex: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); cursor: pointer; }
 .sw[aria-checked="true"] { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15), 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
-.presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; padding: 10px 0 12px; }
-.preset { display: flex; flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; padding: 4px 4px 7px; border: 2px solid transparent; border-radius: 16px; background: var(--band); cursor: pointer; color: var(--ink); transition: border-color 0.15s, background-color 0.15s; }
+/* the presets are a strip of small pictures, six to a row, so the colour settings below stay in view; the name shows on hover */
+.presets { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; padding: 8px 0 12px; }
+.preset { display: flex; flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; padding: 2px; border: 2px solid transparent; border-radius: 12px; background: var(--band); cursor: pointer; color: var(--ink); transition: border-color 0.15s, background-color 0.15s; }
 .preset:hover { border-color: var(--tag-line); }
 .preset.on { border-color: var(--ink); background: var(--bg); }
-.preset-pic { position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; background: linear-gradient(#e6f1f8, #f2f7f9 70%); }
+.preset-pic { position: relative; display: block; aspect-ratio: 1; border-radius: 9px; overflow: hidden; background: linear-gradient(#e6f1f8, #f2f7f9 70%); }
 .preset-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; animation: preset-in 0.3s ease-out; }
 .preset-pic i { position: absolute; left: 50%; top: 50%; width: 34%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%); background: var(--c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); opacity: 0.5; }
-.preset-name { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; font: 700 12px/1.1 var(--f-carlito), Arial, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.preset-name i { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2); }
 @keyframes preset-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .preset-pic img { animation: none; } }
 .logo-pick { display: flex; align-items: center; gap: 8px; flex: none; }
@@ -61,8 +60,50 @@ button.link-row { width: 100%; background: none; border: 0; border-bottom: 1px s
   .boat-grid { gap: 0 56px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
   .boat-prev { border-radius: 28px; }
   .sw { width: 30px; height: 30px; }
-  .presets { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
-  .preset-name { font-size: 13px; }
 }
-/* the free-race options wrap rather than cut a word off when the column is narrow (the 1024px desktop, Russian) */
-.setup-grid .tags.tight { flex-wrap: wrap; }
+
+/* page headers: the back arrow and the title on one row */
+.srow-link { display: inline-flex; align-items: center; gap: 6px; flex: none; font: 15px/1.2 var(--f-merri), Georgia, serif; color: var(--ink); }
+.acct-guest { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+/* race hub: the free-race card fits its content — three one-tap winds and the full set-up */
+.free-card { flex: none; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 10px; }
+.free-quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.free-quick .tag { flex: 1 1 auto; justify-content: center; padding-inline: 12px; }
+.free-more { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font: 15px/1.2 var(--f-merri), Georgia, serif; color: var(--accent); }
+@container scr (min-width: 1024px) and (min-height: 640px) {
+  .free-card { gap: 14px; }
+  .hub-side { align-self: start; }
+}
+
+/* free race: the options are segmented controls, as in Settings; they wrap rather than cut a word off (narrow, Russian) */
+.opts .segc { justify-self: start; max-width: 100%; flex-wrap: wrap; border-radius: 20px; }
+.setup-go { display: flex; flex-direction: column; gap: 8px; }
+.setup-time { display: flex; align-items: baseline; gap: 10px; }
+@container scr (min-width: 1024px) and (min-height: 640px) { .setup-go { gap: 14px; } }
+@container scr (orientation: portrait) {
+  .setup-go { position: sticky; bottom: 0; z-index: 2; flex-direction: row; align-items: center; gap: 14px; padding: 10px 0 calc(4px + env(safe-area-inset-bottom, 0px)); background: var(--band); }
+  .setup-time { flex: none; }
+  .setup-time .meta { display: none; }
+  .setup-time .h-land-s { font-size: 26px; }
+  .setup-go .pill { padding-inline: 16px; gap: 8px; }
+  .setup-go .pill { flex: 1 1 auto; }
+}
+
+/* home: the hero's facts on one line, its two buttons side by side, and four features */
+.facts-line { margin: 0; font: 700 13px/1.35 var(--f-carlito), Arial, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255, 255, 255, 0.82); }
+.home-hero-in .btn-row { flex-wrap: nowrap; }
+.home-hero-in .btn-row .pill { flex: 0 1 auto; min-width: 0; }
+.home .l-wide { display: none; }
+.hgrid.hgrid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
+.hgrid-4 .lead { display: none; }
+@container help (max-width: 599px) {
+  .home-hero { min-height: 560px; }
+  .home-hero-in .btn-row .pill { flex: 1 1 auto; justify-content: center; padding-inline: 16px; gap: 8px; }
+}
+@container help (min-width: 600px) {
+  .home .l-wide { display: inline; }
+  .home .l-narrow { display: none; }
+  .hgrid-4 .lead { display: block; }
+}
+@container help (min-width: 900px) { .hgrid.hgrid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

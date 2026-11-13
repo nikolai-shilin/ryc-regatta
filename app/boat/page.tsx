@@ -17,12 +17,7 @@ export default async function BoatPage({ searchParams }: { searchParams: Promise
       <div className="lay page boat-page">
         <div className="lhead" style={{ gap: 14 }}>
           <Link className="round round-s round-muted" href={back} aria-label={back === '/settings' ? t('Back to settings', 'Назад в настройки') : t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-            <span className="kicker">Up and down</span>
-            <h1 className="h-land-s">{t('Your boat', 'Твоя яхта')}</h1>
-          </div>
-          <span className="sp" />
-          <Link className="pill pill-primary pill-xs" href={back} style={{ flex: 'none' }}><span className="btn-t">{t('Done', 'Готово')}</span></Link>
+          <h1 className="h-land-s">{t('Your boat', 'Твоя яхта')}</h1>
         </div>
         <BoatEditor lang={lang} />
       </div>

@@ -5,8 +5,8 @@ import { getT } from '@/lib/i18n';
 import { getAccount, initials } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
 import { dailyRace, KN } from '@/lib/race';
-import { Logo, IconHelp, IconSliders, IconPlay, IconArrow, IconSail, clock } from '@/components/ui';
-import { TodayChips, MyToday, LastFree } from '@/components/hub-client';
+import { Logo, IconHelp, IconSliders, IconPlay, IconSail, clock } from '@/components/ui';
+import { TodayChips, MyToday, FreeCard } from '@/components/hub-client';
 
 export const metadata: Metadata = { title: 'Race hub' };
 
@@ -19,13 +19,11 @@ export default async function Hub() {
   const course = { short: t('short', 'короткий'), medium: t('medium', 'средний'), long: t('long', 'длинный') }[d.length];
   const title = t(`${wind}, ${d.fleet} boats, one ${course} lap`, `${wind}, ${d.fleet} лодок, один ${course} круг`);
   const date = new Date(d.day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  // only what the title doesn't already say (it names the wind, the fleet, the course and the lap)
   const chips = [
     `${KN[d.preset]} ${t('kn', 'уз')}`,
-    t(`${d.fleet} boats`, `${d.fleet} лодок`),
-    { short: t('Short course', 'Короткая дистанция'), medium: t('Medium course', 'Средняя дистанция'), long: t('Long course', 'Длинная дистанция') }[d.length],
-    t('1 lap', '1 круг'),
-    t(`${d.start}-min start`, `Старт ${d.start} мин`),
-    ...(d.current ? [t('Current', 'Течение')] : []),
+    t(`${d.start}-min start`, `старт ${d.start} мин`),
+    ...(d.current ? [t('current', 'течение')] : []),
   ];
   const top = today && today.d === d.day ? today.top : [];
 
@@ -51,7 +49,6 @@ export default async function Hub() {
               <div className="lhead"><span className="kicker">{t('Today’s race', 'Гонка дня')}</span><span className="sp" /><span className="meta">{date}</span></div>
               <h1 className="h-land-s today-title">{title}</h1>
               <TodayChips lang={lang} chips={chips} day={date} />
-              <p className="small" style={{ color: 'var(--muted)' }}>{t('The same wind and course for everyone today, so times compare fairly.', 'Сегодня у всех один ветер и одна дистанция — время сравнивается честно.')}</p>
               <span className="sp" />
               <a className="pill pill-primary pill-wide pill-s" href="/play?race=today"><IconPlay /><span className="btn-t">{t('Start today’s race', 'Начать гонку дня')}</span></a>
             </div>
@@ -67,14 +64,7 @@ export default async function Hub() {
                   : <li className="me"><span className="n">·</span><Link href="/sign-in?next=/race" style={{ color: 'var(--accent)' }}>{t('Sign in to get on it', 'Войди, чтобы попасть сюда')}</Link><span /></li>}
               </ol>
             </div>
-            <Link className="band-line free-card" href="/race/free">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, flex: '1 1 auto' }}>
-                <span className="kicker">{t('Free race', 'Свободная гонка')}</span>
-                <LastFree lang={lang} />
-              </div>
-              <span className="pill pill-xs only-desk" style={{ ['--d' as string]: 'inline-flex' }}><span className="btn-t">{t('Set up a free race', 'Настроить гонку')}</span><IconArrow s={18} /></span>
-              <span className="round round-s" style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }} aria-hidden="true"><IconArrow /></span>
-            </Link>
+            <FreeCard lang={lang} />
           </div>
         </div>
       </div>
