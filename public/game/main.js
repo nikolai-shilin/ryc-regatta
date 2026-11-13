@@ -68,7 +68,7 @@ const T = {
     wind: 'Wind', light: 'Light · 7 kn', medium: 'Medium · 12 kn', strong: 'Strong · 19 kn', laps: 'Laps', sails: 'Sails',
     manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
     fleetK: 'Boats', lengthK: 'Course', lShort: 'Short', lMedium: 'Medium', lLong: 'Long',
-    currentK: 'Current', guidesK: 'Guides', gfx: 'Graphics', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', start: 'Start race', resume: 'Resume', restart: 'Restart',
+    currentK: 'Current', guidesK: 'Guides', gfx: 'Graphics', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', gsHigh: 'High', gsMedium: 'Medium', gsLow: 'Low', gfxNow: (q) => `Graphics · ${q} now`, start: 'Start race', resume: 'Resume', restart: 'Restart',
     how1: '<b>Left thumb</b> steers on the arc. <b>Right thumb</b> works the sheet: up pulls the sails in, down lets them out. Keep the telltales green.',
     how2: '<b>Tack</b> turns you through the wind (<b>Gybe</b> downwind). <b>Kite</b> sets the gennaker on a run — the hoist and the drop take the crew a few seconds, so get it down in good time before the gate. In a gust, ease the sheet before she heels too far; in a blow, <b>Reef</b> makes the main smaller. Before the start, head up and let the sheet right out to stop — or even go astern.',
     how3: 'Start after the gun — the class flag comes down. Over early and you must go back. Round the windward mark <b>leaving it to port</b>, finish through the line.',
@@ -146,7 +146,7 @@ const T = {
     wind: 'Ветер', light: 'Слабый · 7 уз', medium: 'Средний · 12 уз', strong: 'Сильный · 19 уз', laps: 'Круги', sails: 'Паруса',
     manual: 'Сам', auto: 'Авто', sound: 'Звук', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
     fleetK: 'Лодок', lengthK: 'Дистанция', lShort: 'Короткая', lMedium: 'Средняя', lLong: 'Длинная',
-    currentK: 'Течение', guidesK: 'Подсказки', gfx: 'Графика', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
+    currentK: 'Течение', guidesK: 'Подсказки', gfx: 'Графика', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', gsHigh: 'Макс.', gsMedium: 'Сред.', gsLow: 'Мин.', gfxNow: (q) => `Графика · сейчас ${q.toLowerCase()}`, start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
     how1: '<b>Левый палец</b> рулит по дуге. <b>Правый</b> работает шкотом: вверх выбрать, вниз потравить. Колдунчики должны быть зелёными.',
     how2: '<b>Поворот</b> — оверштаг через ветер (на полных курсах — <b>фордевинд</b>). <b>Генакер</b> — для попутного ветра; постановка и уборка занимают у экипажа несколько секунд, так что убирай его заранее, до ворот. В порыве трави шкот, пока крен не стал слишком большим; в сильный ветер <b>Риф</b> уменьшает грот. Перед стартом приведись и потрави шкот до конца — лодка остановится или даже пойдёт назад.',
     how3: 'Старт после сигнала — флаг класса спущен. Фальстарт — вернись за линию. Верхний знак огибают, <b>оставляя его слева</b>; финиш — через линию.',
@@ -544,6 +544,9 @@ function paintPause() {
   $('#pTime').textContent = fmt(Math.max(0, race.clock));
   $('#pPen').textContent = L.penT > 1 ? `${Math.round(L.penT)} s` : '0'; $('#pPenD').textContent = L.penT > 1 ? t('penS') : t('penNone');
   for (const b of pauseEl.querySelectorAll('[data-q]')) b.classList.toggle('on', b.dataset.q === 'autoTrim' ? opts.autoTrim === 1 : !!opts[b.dataset.q]);
+  // graphics: the choice, and on Auto the level it has settled on for this device
+  for (const b of pauseEl.querySelectorAll('[data-g]')) b.setAttribute('aria-checked', String(b.dataset.g === opts.gfx));
+  $('#pGfxK').textContent = opts.gfx === 'auto' ? t('gfxNow', t({ high: 'gHigh', medium: 'gMedium', low: 'gLow' }[world.quality] || 'gHigh')) : t('gfx');
 }
 function pause() { if (!running || race.over) return; paused = true; paintPause(); pauseEl.hidden = false; confirmEl.hidden = true; }
 function resume() { paused = false; pauseEl.hidden = true; confirmEl.hidden = true; }
@@ -564,6 +567,8 @@ $('#cGo').addEventListener('click', () => {
   location.href = confirmDo === 'change' ? '/race/free' : HUB;
 });
 pauseEl.addEventListener('click', (e) => {
+  const g = e.target.closest('[data-g]');
+  if (g) { opts.gfx = g.dataset.g; saveOpts(); world.setQuality(startQuality()); perf.settle = 2; paintOpts(); paintPause(); return; } // as the menu's Graphics does
   const b = e.target.closest('[data-q]'); if (!b) return;
   const k = b.dataset.q;
   if (k === 'autoTrim') { opts.autoTrim = opts.autoTrim === 1 ? 0 : 1; applyTrimMode(); }

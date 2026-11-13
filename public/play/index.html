@@ -359,6 +359,12 @@
   #pauseCard .choice button::before { content: ''; width: 7px; height: 7px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.45); transition: background-color .2s, box-shadow .2s; }
   #pauseCard .choice button.on { background: rgba(46, 230, 160, 0.12); border-color: rgba(46, 230, 160, 0.45); color: #fff; }
   #pauseCard .choice button.on::before { background: var(--ok); box-shadow: 0 0 8px rgba(46, 230, 160, 0.7); }
+  /* graphics: one of four, a segmented track in the chips' colours */
+  #pauseCard .p-seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; margin: 0 2px; padding: 3px; border: 1px solid var(--line); border-radius: 54px; background: rgba(255, 255, 255, 0.05); }
+  #pauseCard .p-seg button { height: 28px; padding: 0 4px; border: 0; border-radius: 54px; background: transparent; color: rgba(255, 255, 255, 0.72); font: 700 11px var(--sans); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; cursor: pointer; transition: background-color .2s, color .2s, box-shadow .2s, transform .12s; }
+  #pauseCard .p-seg button:hover { color: #fff; }
+  #pauseCard .p-seg button:active { transform: scale(.97); }
+  #pauseCard .p-seg button[aria-checked="true"] { background: rgba(46, 230, 160, 0.12); box-shadow: inset 0 0 0 1px rgba(46, 230, 160, 0.45); color: #fff; }
   @media (min-width: 1024px) and (min-height: 640px) {
     #pauseCard .p-card { width: 340px; padding: 16px; gap: 8px; } #pauseCard .p-row { height: 46px; font-size: 15px; }
   }
@@ -598,6 +604,8 @@
     </div>
     <span class="meta" data-t="quickK"></span>
     <div class="choice"><button data-q="sound" data-t="sound"></button><button data-q="guides" data-t="guidesK"></button><button data-q="autoTrim" data-t="auto"></button></div>
+    <span class="meta" id="pGfxK" data-t="gfx"></span>
+    <div class="p-seg" role="radiogroup" aria-labelledby="pGfxK"><button role="radio" data-g="auto" data-t="gAuto"></button><button role="radio" data-g="high" data-t="gsHigh"></button><button role="radio" data-g="medium" data-t="gsMedium"></button><button role="radio" data-g="low" data-t="gsLow"></button></div>
   </div>
 </div>
 
