@@ -817,9 +817,7 @@ export class World {
     const lg = race.course.legs[P.leg];
     this.zones.update(this.W, t, P.done ? [] : lg === 'mark' ? [0] : lg === 'gate' ? [1, 2] : []);
     this.cb.update(t, dt, race.flags, race.prepFlag, this.cbW0 - race.wind.dir(), race.wind.p.tws * 0.514); // flags fly downwind
-    // the line shows before the start and on the way to the finish
-    const k = race.course.legs[P.leg];
-    this.line.visible = k === 'start' || k === 'finish';
+    const k = race.course.legs[P.leg]; // the start line stays drawn for the whole race
     this.ladder.visible = this.showGuides && !P.done; // the distance lines go with the other guides
     // pointers over the next mark(s)
     const c = race.course;
