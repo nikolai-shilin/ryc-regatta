@@ -66,7 +66,7 @@ const T = {
     cLine: 'Head for the line and cross it just after the gun', cHeader: 'The wind has headed you — tap Tack', cMark: 'Round the mark leaving it on your left (to port)',
     cKite: 'Bear away and tap Kite to fly the gennaker', cGate: 'Sail between the two buoys of the gate', cFinish: 'Now cross the line to finish',
     wind: 'Wind', light: 'Light · 7 kn', medium: 'Medium · 12 kn', strong: 'Strong · 19 kn', laps: 'Laps', sails: 'Sails',
-    manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
+    manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', voiceK: 'Voice', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
     fleetK: 'Boats', lengthK: 'Course', lShort: 'Short', lMedium: 'Medium', lLong: 'Long',
     currentK: 'Current', guidesK: 'Guides', gfx: 'Graphics', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', gsHigh: 'High', gsMedium: 'Medium', gsLow: 'Low', gfxNow: (q) => `Graphics · ${q} now`, start: 'Start race', resume: 'Resume', restart: 'Restart',
     how1: '<b>Left thumb</b> steers on the arc. <b>Right thumb</b> works the sheet: up pulls the sails in, down lets them out. Keep the telltales green.',
@@ -144,7 +144,7 @@ const T = {
     cLine: 'Иди к линии и пересеки её сразу после сигнала', cHeader: 'Ветер зашёл — жми «Поворот»', cMark: 'Огибай знак, оставляя его слева',
     cKite: 'Уваливайся и жми «Генакер»', cGate: 'Пройди между двумя знаками ворот', cFinish: 'Теперь пересеки линию — финиш',
     wind: 'Ветер', light: 'Слабый · 7 уз', medium: 'Средний · 12 уз', strong: 'Сильный · 19 уз', laps: 'Круги', sails: 'Паруса',
-    manual: 'Сам', auto: 'Авто', sound: 'Звук', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
+    manual: 'Сам', auto: 'Авто', sound: 'Звук', voiceK: 'Голос', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
     fleetK: 'Лодок', lengthK: 'Дистанция', lShort: 'Короткая', lMedium: 'Средняя', lLong: 'Длинная',
     currentK: 'Течение', guidesK: 'Подсказки', gfx: 'Графика', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', gsHigh: 'Макс.', gsMedium: 'Сред.', gsLow: 'Мин.', gfxNow: (q) => `Графика · сейчас ${q.toLowerCase()}`, start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
     how1: '<b>Левый палец</b> рулит по дуге. <b>Правый</b> работает шкотом: вверх выбрать, вниз потравить. Колдунчики должны быть зелёными.',
@@ -198,7 +198,7 @@ applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 
 // ---------- settings ----------
-const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 0, sound: 1, start: 1, current: 0, course: 'wl', gfx: 'auto', guides: 1, played: 0 };
+const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 0, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', gfx: 'auto', guides: 1, played: 0 };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
 delete opts.undefined; // left by an older pause menu, whose quick switches also ran the menu's choice handler
 if (opts.fleetV !== 3) { opts.fleet = 5; opts.fleetV = 3; } // the default changed (10, then 7): start everyone on 5 once
@@ -407,7 +407,7 @@ const skipper = {
   // a line for the situation; false when he keeps quiet (no sound, mid-line, a hail being spoken, said it lately).
   // A moment that won't come again (a signal, the start) needn't wait for his breath, only for the line he's saying.
   shout(kind, chance = 1, now_ = false) {
-    if (!this.buf || !audio.on || paused || audio.ctx.state !== 'running') return false;
+    if (!this.buf || !audio.on || !opts.voice || paused || audio.ctx.state !== 'running') return false;
     const ctx = audio.ctx, now = ctx.currentTime;
     if (now < (now_ ? this.speakTill : this.busyTill) || (window.speechSynthesis && speechSynthesis.speaking)) return false;
     const fresh = (this.pools[kind] || []).filter((k) => !(now - this.last[k] < 60));
@@ -419,7 +419,7 @@ const skipper = {
   // a call that has to be heard now (a hail, the count to the gun): no breath, no minute's rest, and it cuts in on a line
   cue(kind) {
     const list = this.pools[kind] || (this.clips[kind] ? [kind] : null);
-    if (!list || !this.buf || !audio.on || paused || audio.ctx.state !== 'running') return false;
+    if (!list || !this.buf || !audio.on || !opts.voice || paused || audio.ctx.state !== 'running') return false;
     const now = audio.ctx.currentTime, len = this.play(list[Math.floor(Math.random() * list.length)]);
     this.speakTill = now + len + 0.2; this.busyTill = Math.max(this.busyTill, now + len + 2);
     return true;
@@ -703,6 +703,9 @@ function startRace() {
 }
 // ---------- pause: the race stays in view; resume, change the race, restart or leave (each of the last three asks first) ----------
 const pauseEl = $('#pauseCard'), confirmEl = $('#confirmCard');
+// the voice on board (the skipper in Russian, the crew's calls in English) has a switch of its own, next to Sound;
+// off, the hails are spoken by the browser again and the count to the gun beeps (Settings › Voice on board too)
+{ const s = pauseEl.querySelector('[data-q="sound"]'); if (s) { const b = s.cloneNode(); b.dataset.q = 'voice'; delete b.dataset.t; b.innerHTML = t('voiceK'); s.after(b); s.parentNode.style.flexWrap = 'wrap'; } }
 const ordL = (n) => (LANG === 'ru' ? `${n}-е` : ord(n));
 function paintPause() {
   const P = race.player, legs = race.course.legs, n = legs.length - 1, leg = Math.min(n, Math.max(1, P.leg));
@@ -743,6 +746,7 @@ pauseEl.addEventListener('click', (e) => {
   if (k === 'autoTrim') { opts.autoTrim = opts.autoTrim === 1 ? 0 : 1; applyTrimMode(); }
   else opts[k] = opts[k] ? 0 : 1;
   if (k === 'sound') audio.setOn(!!opts.sound);
+  if (k === 'voice' && !opts.voice) skipper.stop();
   if (k === 'guides') world.showGuides = !!opts.guides;
   saveOpts(); paintPause();
 });

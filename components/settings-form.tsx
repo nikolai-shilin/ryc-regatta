@@ -5,7 +5,7 @@ import { readOpts, saveOpts, DEFAULTS, type Opts } from '@/lib/opts';
 import Link from 'next/link';
 import { IconArrow, IconSail, IconScreen } from './ui';
 
-type Keys = 'autoTrim' | 'guides' | 'camera' | 'gfx' | 'sound' | 'vibration';
+type Keys = 'autoTrim' | 'guides' | 'camera' | 'gfx' | 'sound' | 'voice' | 'vibration';
 
 // S3 · How you sail and how the game runs. Every change is saved at once where the game reads it.
 export function SettingsForm({ lang, langRow, accountRow }: { lang: Lang; langRow: React.ReactNode; accountRow: React.ReactNode }) {
@@ -24,7 +24,7 @@ export function SettingsForm({ lang, langRow, accountRow }: { lang: Lang; langRo
       </div>
     </div>
   );
-  const sw = (k: 'guides' | 'sound' | 'vibration', label: string, cls = '') => (
+  const sw = (k: 'guides' | 'sound' | 'voice' | 'vibration', label: string, cls = '') => (
     <div className={`srow ${cls}`}>
       <span className="srow-k" id={`l-${k}`}>{label}</span>
       <button type="button" className="tgl" role="switch" aria-checked={!!o[k]} aria-labelledby={`l-${k}`} onClick={() => set(k, o[k] ? 0 : 1)}><i /></button>
@@ -50,6 +50,7 @@ export function SettingsForm({ lang, langRow, accountRow }: { lang: Lang; langRo
         <div className="group-k"><IconScreen /><span className="kicker">{t('Screen and sound', 'Экран и звук')}</span></div>
         {seg('gfx', t('Graphics', 'Графика'), [['auto', t('Auto', 'Авто')], ['high', t('High', 'Макс.')], ['medium', t('Medium', 'Сред.')], ['low', t('Low', 'Мин.')]])}
         {sw('sound', t('Sound', 'Звук'))}
+        {sw('voice', t('Voice on board', 'Голос шкипера'))}
         {sw('vibration', t('Vibration', 'Вибрация'), 'no-desk')}
         {langRow}
       </div>

@@ -8,12 +8,13 @@ export type Opts = {
   autoTrim: number; // 0 I trim · 1 auto · 2 main + jib
   sound: number; guides: number; gfx: 'auto' | 'high' | 'medium' | 'low';
   camera: 'drone' | 'top' | 'helm'; vibration: number;
+  voice: number; // the skipper's voice (the crew's calls in English), apart from Sound
   lastFree?: number; played?: number; fleetV: number; optsV: number;
 };
 
 export const DEFAULTS: Opts = {
   mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl',
-  autoTrim: 0, sound: 1, guides: 1, gfx: 'auto', camera: 'drone', vibration: 1, fleetV: 3, optsV: 4,
+  autoTrim: 0, sound: 1, guides: 1, gfx: 'auto', camera: 'drone', vibration: 1, voice: 1, fleetV: 3, optsV: 4,
 };
 
 export function readOpts(): Opts {
