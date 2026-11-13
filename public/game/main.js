@@ -296,11 +296,16 @@ const audio = {
     s.buffer = this.buf; f.type = 'highpass'; f.frequency.value = 3500; g.gain.setValueAtTime(0.25, n); g.gain.exponentialRampToValueAtTime(0.001, n + 0.03);
     s.connect(f).connect(g).connect(this.master); s.start(n, Math.random(), 0.04);
   },
-  say(text) {
+  say(text, from) { // from: another boat, spoken in her skipper's own pitch, and her own voice where there are several
     if (!this.on || !window.speechSynthesis) return;
     try {
       const u = new SpeechSynthesisUtterance(text.replace('…', ', '));
       u.lang = LANG === 'ru' ? 'ru-RU' : 'en-GB'; u.rate = 1.1; u.volume = 0.9;
+      if (from) {
+        const v = crews.voice(from), list = speechSynthesis.getVoices().filter((x) => x.lang.slice(0, 2) === LANG);
+        u.pitch = v.pitch; u.rate = 1.1 * Math.sqrt(v.rate);
+        if (list.length > 1) u.voice = list[v.n % list.length];
+      }
       speechSynthesis.cancel(); speechSynthesis.speak(u);
     } catch (e) {}
   },
@@ -434,13 +439,14 @@ const skipper = {
   cue(kind, from) {
     const list = this.pools[kind] || (this.clips[kind] ? [kind] : null);
     if (!list || !this.buf || !audio.on || !opts.voice || paused || audio.ctx.state !== 'running') return false;
-    const now = audio.ctx.currentTime, len = this.play(list[Math.floor(Math.random() * list.length)], from);
+    const now = audio.ctx.currentTime, len = this.play(from ? crews.pick(from, list) : list[Math.floor(Math.random() * list.length)], from);
     this.speakTill = now + len + 0.2; this.busyTill = Math.max(this.busyTill, now + len + 2);
     return true;
   },
   // the clips have silence round them in the file, and some decoders start an MP3 a few hundredths of a second late:
   // play a little either side, so a line never loses its first or last sound
-  play(k, from) { // from: another boat, whose call comes from where she is
+  play(k, from) { // from: another boat, whose call comes from where she is, in her skipper's own voice (crews.say)
+    if (from) { const r = crews.say(from, k, 0.9, true); this.stop(); this.src = r.src; return r.len; }
     const ctx = audio.ctx, [at, len] = this.clips[k], s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 0.9;
     s.buffer = this.buf; s.connect(g).connect(from ? crews.out(1, crews.place(from).pan * 0.7) : audio.master); s.start(ctx.currentTime, Math.max(0, at - 0.03), len + 0.09);
     this.stop(); this.src = s;
@@ -520,11 +526,39 @@ const crews = {
     if (e === 'tacking' || e === 'gybing') { this.flog(v, pan, 1.6); this.winch(v, pan, 1.5); }
     const list = (this.calls[LANG] || {})[e];
     if (!list || !skipper.buf || !opts.voice || now < this.talkTill || now < skipper.speakTill || now - (this.last.get(b) ?? -1e9) < 10) return;
-    const k = list[Math.floor(Math.random() * list.length)], [at, len] = skipper.clips[k];
-    const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(); s.buffer = skipper.buf;
-    f.type = 'lowpass'; f.frequency.value = 1500 + 6000 * near; // across the water a voice loses its top
-    s.connect(f).connect(this.out(0.8 * Math.max(v, 0.08), pan)); s.start(now, Math.max(0, at - 0.03), len + 0.09);
+    const { len } = this.say(b, this.pick(b, list), 0.8 * Math.max(v, 0.08));
     this.last.set(b, now); this.talkTill = now + len + 1.5;
+  },
+  // Each other boat's skipper has a voice of their own: the same recordings, played lower and slower or higher and
+  // quicker (never at our own pitch), darker or brighter; in English the man or the woman of skipper-en.mp3 at her
+  // helm. The browser's speech, where it speaks for her, takes her pitch too (audio.say).
+  voices: new WeakMap(),
+  RATES: [0.84, 1.12, 0.9, 1.17, 0.8, 1.07, 0.94, 1.14, 0.87, 1.1],
+  voice(b) {
+    let v = this.voices.get(b);
+    if (!v) {
+      const n = Math.max(0, race.boats.indexOf(b)), rate = this.RATES[n % this.RATES.length];
+      v = { n, rate, tone: [-5, 4, -2, 6, -6, 2][n % 6], woman: n % 2 === 1, pitch: clamp(0.55 + (rate - 0.8) * 2.4, 0.5, 1.6) };
+      this.voices.set(b, v);
+    }
+    return v;
+  },
+  // a line from the list in her voice: in English, her helm's (the woman's clips are the g… ones)
+  pick(b, list) {
+    const w = this.voice(b).woman, mine = LANG === 'en' ? list.filter((k) => /^g[A-Z0-9]/.test(k) === w) : list;
+    const from = mine.length ? mine : list;
+    return from[Math.floor(Math.random() * from.length)];
+  },
+  // play line k as boat b's skipper says it, from where she is: { src, len } (len in seconds as heard)
+  say(b, k, gain, hail) {
+    const ctx = audio.ctx, [at, len] = skipper.clips[k], v = this.voice(b), { near, pan } = this.place(b);
+    const s = ctx.createBufferSource(), sh = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter();
+    s.buffer = skipper.buf; s.playbackRate.value = v.rate;
+    sh.type = 'highshelf'; sh.frequency.value = 2200; sh.gain.value = v.tone;
+    lp.type = 'lowpass'; lp.frequency.value = (hail ? 3000 : 1500) + 6000 * near; // across the water a voice loses its top; a hail is shouted
+    s.connect(sh).connect(lp).connect(this.out(gain, pan * (hail ? 0.7 : 1)));
+    s.start(ctx.currentTime, Math.max(0, at - 0.03), len + 0.09); // the duration is the file's, whatever the rate
+    return { src: s, len: len / v.rate };
   },
   // sails flogging through the wind: noise in cracks, dying away
   flog(v, pan, dur) {
@@ -1096,7 +1130,7 @@ function handleMessages() {
     else if (m.key === 'gate') toast(t('gateMsg'));
     else if (m.key === 'bump') { hint('bump', t('bump'), 3); haptic('heavy'); skipper.shout(race.clock < 0 ? 'push' : 'contact'); }
     else if (m.key === 'aground') { hint('aground', t('aground'), 3); haptic('heavy'); skipper.shout('aground'); }
-    else if (m.key === 'hail') { const h = t('hail' + a.rule); toast(`${a.who}: “${h}”`, 2.2); if (!skipper.cue('hail' + a.rule, race.boats.find((b) => b.name === a.who))) audio.say(h); asides.hail(); haptic('warn'); }
+    else if (m.key === 'hail') { const h = t('hail' + a.rule), who = race.boats.find((b) => b.name === a.who); toast(`${a.who}: “${h}”`, 2.2); if (!skipper.cue('hail' + a.rule, who)) audio.say(h, who); asides.hail(); haptic('warn'); }
     else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); if (!skipper.cue('hail' + a.rule)) audio.say(h); } }
     else if (m.key === 'seaBreeze') toast(t('seaBreeze'), 5);
     else if (m.key === 'genRecall') { toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(); haptic('warn'); skipper.shout('lost'); }
