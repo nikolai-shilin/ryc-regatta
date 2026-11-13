@@ -23,7 +23,10 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  await supabase.auth.getUser();
+  // getClaims, not getUser: it refreshes an expiring session just the same, but checks the token here against the
+  // project's signing key (ES256, its JWKS cached across requests) instead of asking Supabase on every page. The page
+  // itself still asks Supabase (getAccount in lib/supabase/server.ts), so a signed-in page waits on one round trip, not two.
+  await supabase.auth.getClaims();
   if (urlLang && request.cookies.get('lang')?.value !== urlLang) response.cookies.set('lang', urlLang, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
   return response;
 }

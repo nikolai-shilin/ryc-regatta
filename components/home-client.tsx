@@ -167,9 +167,13 @@ export function MyRow({ lang, day, signedIn, top = [], next = '/' }: { lang: Lan
 
 // The hero's live race (public/hero-view): the whole game, ~1.4 MB of three.js and the course. It shares the page's
 // thread, so it starts only once the page has loaded and gone idle; until then the still picture under it shows.
+// Not at all where it would be hidden (reduced motion: a display:none iframe still downloads everything), or where the
+// reader has asked to save data or is on a slow connection: there the still picture is the hero.
 export function HeroScene({ title }: { title: string }) {
   const [src, setSrc] = useState<string | undefined>();
   useEffect(() => {
+    const net = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || net?.saveData || /(^|-)(2g|3g)$/.test(net?.effectiveType || '')) return;
     let idle = 0, timer = 0;
     const go = () => {
       const ric = window.requestIdleCallback;
