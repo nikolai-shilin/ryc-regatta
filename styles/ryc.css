@@ -161,16 +161,27 @@
 }
 @container scr (min-width: 1024px) and (min-height: 640px) { .set-grid { gap: 0 var(--s-16); } }
 
-/* your boat: the 3D preview beside the controls (upright, on top); the controls scroll on their own */
-.boat-page { overflow: hidden !important; }
-.boat-grid { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 0 var(--s-6); }
-.boat-prev { position: relative; min-height: 0; overflow: hidden; border-radius: var(--r-l); background: var(--sea); }
-.boat-prev iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
-.boat-pose { position: absolute; left: var(--s-3); bottom: var(--s-3); background: var(--glass); border-color: transparent; }
-.boat-hint { position: absolute; right: var(--s-4); bottom: var(--s-4); pointer-events: none; color: var(--sea-ink); }
-.boat-ctl { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 var(--s-1) var(--s-3) 0; }
-.boat-sub { display: block; margin-top: 2px; color: var(--muted); }
-.srow.srow-sw { flex-direction: column; align-items: stretch; gap: var(--s-2); padding: var(--s-2) 0; }
+/* your boat, laid out like the free race: the head and the choices on the left, the 3D preview and the race button
+   beside them, held in view while the choices scroll. Upright on a phone the preview stays on top and the race
+   button at the bottom, the choices scrolling between them. */
+.bt { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); grid-template-areas: "head aside" "q aside"; gap: var(--s-5) var(--s-6); align-items: start; }
+.bt-head { grid-area: head; min-width: 0; }
+.bt-page .aph-p { display: none; }
+.bt-q { grid-area: q; display: flex; flex-direction: column; gap: var(--s-5); min-width: 0; }
+.bt-part { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-1); }
+.bt-sub { font: 400 var(--t-s)/1.3 var(--f-serif); color: var(--muted); }
+.bt-logo { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.bt-logo .hint { flex: 1 1 auto; min-width: 0; font-family: var(--f-serif); }
+.bt-note { display: flex; align-items: center; padding-top: var(--s-4); border-top: 1px solid var(--line); }
+.bt-note p { flex: 1 1 auto; min-width: 0; }
+.bt-aside { grid-area: aside; position: sticky; top: 0; display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
+.bt-k { display: none; }
+.bt-prev { position: relative; overflow: hidden; min-height: 200px; height: calc(100cqh - var(--hm-head) - var(--s-4) - var(--s-5) - var(--h-l) - var(--s-3)); border-radius: var(--r-l); background: var(--sea); }
+@supports (corner-shape: squircle) { .bt-prev { corner-shape: squircle; border-radius: calc(var(--r-l) * 1.7); } }
+.bt-prev iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.bt-pose { position: absolute; left: var(--s-3); bottom: var(--s-3); border: 0; background: var(--glass); box-shadow: var(--shadow-s); }
+.bt-hint { position: absolute; right: var(--s-4); bottom: var(--s-4); pointer-events: none; color: var(--sea-ink); }
+.bt-go { display: flex; flex-direction: column; gap: var(--s-2); }
 .sws { display: flex; flex-wrap: wrap; gap: var(--s-2); padding: 0 var(--s-1); }
 .sw { position: relative; flex: none; width: calc(var(--h-s) - 6px); height: calc(var(--h-s) - 6px); padding: 0; border: 0; border-radius: 50%; background: var(--c); box-shadow: var(--hairline); cursor: pointer; }
 .sw[aria-checked="true"] { box-shadow: var(--hairline), 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
@@ -184,40 +195,31 @@
 .preset-pic i { position: absolute; left: 50%; top: 50%; width: 34%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%); background: var(--c); box-shadow: var(--hairline); opacity: 0.5; }
 @keyframes preset-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .preset-pic img { animation: none; } }
-.logo-pick { display: flex; align-items: center; gap: var(--s-2); flex: none; }
 .logo-thumb { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: var(--h-s); overflow: hidden; border-radius: var(--r-xs); box-shadow: var(--hairline); }
 .logo-thumb img { max-width: 48px; max-height: calc(var(--h-s) - 6px); object-fit: contain; }
 .num-pair { display: flex; gap: var(--s-2); flex: none; }
 .num-in { width: 64px; height: var(--h-s); padding: 0 var(--s-2); border: 2px solid var(--tag-line); border-radius: var(--r-full); background: var(--bg); color: var(--ink); font: 700 var(--t-l)/1 var(--f-sans); text-align: center; text-transform: uppercase; outline: none; }
 .num-in:focus { border-color: var(--accent); }
-.boat-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding-top: var(--s-4); }
-@container scr (orientation: portrait) {
-  .boat-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(220px, 42%) minmax(0, 1fr); gap: var(--s-4) 0; }
-}
-@container scr (min-width: 1024px) and (min-height: 640px) {
-  .boat-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 0 var(--s-12); }
-}
-
-/* your boat, closer to rycrentals: a page head, the preview as a big photo card, the presets as photo thumbs, and
-   the settings as rows under kickers */
-.boat-page { gap: var(--s-4); }
-.boat-head .aph-p { display: none; }
-.boat-head .aph-h { font-size: var(--t-h3); }
-.boat-prev { border-radius: var(--r-l); }
-@supports (corner-shape: squircle) { .boat-prev { corner-shape: squircle; border-radius: calc(var(--r-l) * 1.7); } }
-.boat-ctl .group-k { padding-bottom: var(--s-2); border-bottom: 0; }
-.boat-ctl .set-sec + .set-sec { margin-top: var(--s-6); }
-.boat-ctl .srow-k { font: 400 var(--t-m)/1.3 var(--f-serif); }
 .preset { border-radius: var(--r-m); padding: 3px; }
 .preset-pic { border-radius: calc(var(--r-m) - 4px); }
-.boat-pose { border: 0; box-shadow: var(--shadow-s); }
-.boat-note { display: flex; align-items: center; gap: var(--s-3); min-width: 0; font: 400 var(--t-s)/1.4 var(--f-serif); color: var(--muted); }
-.boat-go { margin-top: var(--s-4); }
-@container scr (orientation: portrait) { .boat-head .aph-h { font-size: var(--t-h2); } }
+@container scr (orientation: portrait) {
+  .bt { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "view" "q" "go"; gap: var(--s-4); }
+  .bt-page .aph-p { display: block; }
+  .bt-aside { display: contents; }
+  /* sticky edges sit inside the page's padding (top and bottom --s-6 here): pull them out to the screen's edge so the
+     choices don't show through above the preview or under the button */
+  .bt-view { grid-area: view; position: sticky; top: calc(-1 * var(--s-6)); z-index: 3; margin-top: calc(-1 * var(--s-4)); padding: var(--s-4) 0 var(--s-3); background: var(--bg); }
+  .bt-prev { height: 34cqh; min-height: 220px; }
+  .bt-go { grid-area: go; position: sticky; bottom: calc(-1 * var(--s-6)); z-index: 3; margin-bottom: calc(-1 * var(--s-6)); padding: var(--s-3) 0 calc(var(--s-6) + env(safe-area-inset-bottom, 0px)); background: var(--bg); }
+}
 @container scr (min-width: 1024px) and (min-height: 640px) {
-  .boat-page { gap: var(--s-6); }
-  .boat-head .aph-h { font-size: var(--t-h1); }
-  .boat-head .aph-p { display: block; }
+  .bt { grid-template-columns: minmax(0, 1fr) 460px; gap: var(--s-8) var(--s-16); }
+  .bt-page .aph-p { display: block; }
+  .bt-q { gap: var(--s-6); max-width: 680px; }
+  .bt .qtag { min-height: var(--h-m); padding: 0 var(--s-4); font-size: var(--t-m); }
+  .bt-aside { gap: var(--s-4); }
+  .bt-k { display: block; }
+  .bt-prev { height: clamp(360px, calc(100cqh - var(--hm-head) - var(--s-10) - var(--s-12) - 110px), 640px); }
 }
 
 /* a sheet over a screen: centred in landscape, full width upright, a dialog on a desktop */

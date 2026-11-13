@@ -28,6 +28,12 @@ export const IconLaps = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} heigh
 export const IconClock = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 1.5M10 2h4" /></svg>;
 export const IconTide = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M3 9c3-2 6 2 9 0s6-2 9 0M3 15c3-2 6 2 9 0s6-2 9 0" /></svg>;
 export const IconBoats = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M8 4v12H3zM16 7v9h-4zM2 19c3 1.5 17 1.5 20 0" /></svg>;
+export const IconGrid = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" /></svg>;
+export const IconHull = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M2 11h20l-3 6.5a1 1 0 0 1-.9.5H5.9a1 1 0 0 1-.9-.5z" /></svg>;
+export const IconKite = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M6 3v18M6 4c7 1.5 12 7 12 15H6" /></svg>;
+export const IconHash = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M5 9h15M4 15h15M10 4 8 20M16 4l-2 16" /></svg>;
+export const IconImage = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5" /><circle cx="9" cy="10" r="1.8" /><path d="m21 16-5-5L5 20" /></svg>;
+export const IconCrew = ({ s = 14 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><circle cx="12" cy="7.5" r="3.5" /><path d="M5 20.5a7 7 0 0 1 14 0" /></svg>;
 export const IconTrophy = ({ s = 16 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8" /></svg>;
 export const IconDevice = ({ s = 16 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2" /><path d="M11 18h2" /></svg>;
 export const IconSend = ({ s = 20 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...S} aria-hidden="true"><path d="M21 3 3 10.5l7 2.5 2.5 7zM21 3 10 13" /></svg>;
