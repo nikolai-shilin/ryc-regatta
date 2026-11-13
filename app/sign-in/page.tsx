@@ -17,8 +17,8 @@ export default async function SignIn({ searchParams }: { searchParams: Promise<{
   const top = (today?.top || []).slice(0, 2).map((r) => `${r.name || t('Guest', 'Гость')} ${clock(r.s)}`);
   const caption = (
     <>
-      <span className="chip chip-s" style={{ alignSelf: 'flex-start', background: 'rgba(8,14,20,0.55)', color: '#fff' }}>{t('Today’s fastest', 'Самые быстрые сегодня')}</span>
-      <span className="small on-photo" style={{ maxWidth: 280 }}>{[...top, t('you?', 'ты?')].join(' · ')}</span>
+      <span className="chip chip-s chip-photo">{t('Today’s fastest', 'Самые быстрые сегодня')}</span>
+      <span className="small on-photo">{[...top, t('you?', 'ты?')].join(' · ')}</span>
     </>
   );
   return (

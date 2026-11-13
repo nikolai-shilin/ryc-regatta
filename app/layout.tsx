@@ -1,11 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import { Merriweather, Carlito } from 'next/font/google';
 import { getLang } from '@/lib/i18n';
-import '@/styles/bundle.css';
+import '@/styles/tokens.css';
 import '@/styles/ryc.css';
-import '@/styles/app.css';
 
-// The RYC look: Merriweather (Light for headings) and Carlito for labels; both carry Cyrillic.
+// The RYC look: Carlito for text and controls, Merriweather Light for headings and big numbers; both carry Cyrillic.
 const merri = Merriweather({ subsets: ['latin', 'cyrillic'], weight: ['300', '400', '700'], variable: '--f-merri', display: 'swap' });
 const carlito = Carlito({ subsets: ['latin', 'cyrillic'], weight: ['400', '700'], variable: '--f-carlito', display: 'swap' });
 

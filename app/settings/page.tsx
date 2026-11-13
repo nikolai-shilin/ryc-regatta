@@ -24,14 +24,14 @@ export default async function SettingsPage() {
   return (
     <div className="scr" lang={lang} data-acct={account ? 'signed' : 'guest'}>
       <div className="lay page">
-        <div className="lhead" style={{ gap: 14 }}>
+        <div className="lhead">
           <Link className="round round-s round-muted" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
           <h1 className="h-land-s">{t('Settings', 'Настройки')}</h1>
         </div>
         <SettingsForm lang={lang} langRow={langRow} accountRow={account ? (
               <div className="acct acct-row">
                 <span className="avatar">{initials(account.name, account.email)}</span>
-                <div style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div className="acct-guest">
                   <span className="card-title">{account.name || account.email}</span>
                   <span className="small">{account.email} · {via}</span>
                 </div>
@@ -44,7 +44,7 @@ export default async function SettingsPage() {
                   <span className="srow-k">{t('Guest', 'Гость')}</span>
                   <span className="small">{t('Times stay on this device', 'Результаты только на этом устройстве')}</span>
                 </div>
-                <Link className="pill pill-xs" href="/sign-in?next=/settings" style={{ flex: 'none' }}><span className="btn-t">{t('Sign in', 'Войти')}</span></Link>
+                <Link className="pill pill-xs" href="/sign-in?next=/settings"><span className="btn-t">{t('Sign in', 'Войти')}</span></Link>
               </div>
             )} />
       </div>

@@ -38,7 +38,7 @@ export default function FreeSetup({ lang, fromToday }: { lang: Lang; fromToday: 
   return (
     <div className="scr" lang={lang}>
       <div className="lay page">
-        <div className="lhead" style={{ gap: 14 }}>
+        <div className="lhead">
           <Link className="round round-s round-muted" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
           <h1 className="h-land-s">{t('Set up your race', 'Настрой гонку')}</h1>
         </div>

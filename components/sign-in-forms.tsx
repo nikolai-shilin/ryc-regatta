@@ -41,7 +41,7 @@ export function SignInForm({ lang, next, failed }: { lang: Lang; next: string; f
         <Link className="back-link" href={next}>{t('Not now', 'Не сейчас')}</Link>
       </div>
       <h1 className="h-land-s">{t('Sign in to get on the ranking', 'Войди, чтобы попасть в рейтинг')}</h1>
-      <p className="lead" style={{ color: 'var(--muted)' }}>{t('Your times go on today’s ranking, and your best times follow you to any device.', 'Твоё время попадёт в рейтинг дня, а рекорды будут с тобой на любом устройстве.')}</p>
+      <p className="lead muted">{t('Your times go on today’s ranking, and your best times follow you to any device.', 'Твоё время попадёт в рейтинг дня, а рекорды будут с тобой на любом устройстве.')}</p>
       <button type="button" className="pill pill-oauth pill-wide" onClick={google} disabled={busy}><IconGoogle /><span className="btn-t">{t('Continue with Google', 'Войти через Google')}</span></button>
       <div className="or">{t('or by email', 'или по почте')}</div>
       <form className="field-row" onSubmit={send} noValidate>
@@ -104,7 +104,7 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
         <Link className="back-link" href={`/sign-in?next=${encodeURIComponent(next)}`}>{t('Change email', 'Другая почта')}</Link>
       </div>
       <h1 className="h-land-s">{t('Check your email', 'Проверь почту')}</h1>
-      <p className="lead" style={{ color: 'var(--muted)' }}>{t('We sent a 6-digit code to ', 'Мы отправили 6-значный код на ')}<b style={{ color: 'var(--ink)', fontWeight: 400 }}>{email}</b>{t('. Type it here.', '. Введи его здесь.')}</p>
+      <p className="lead muted">{t('We sent a 6-digit code to ', 'Мы отправили 6-значный код на ')}<b className="ink">{email}</b>{t('. Type it here.', '. Введи его здесь.')}</p>
       <div className="otp" role="group" aria-label={t('Code', 'Код')}>
         {d.map((c, i) => (
           <input key={i} ref={(el) => { refs.current[i] = el; }} className={c ? 'on' : ''} inputMode="numeric" autoComplete={i === 0 ? 'one-time-code' : 'off'} maxLength={i === 0 ? 6 : 1} value={c} disabled={busy}
@@ -116,7 +116,7 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
       {err ? <p className="err" role="alert">{err}</p> : (
         <p className="hint">{wait > 0
           ? t(`Didn’t get it? Check spam, or send it again in ${mmss(wait)}.`, `Не пришёл? Проверь спам или отправь снова через ${mmss(wait)}.`)
-          : <>{t('Didn’t get it? Check spam, or ', 'Не пришёл? Проверь спам или ')}<button type="button" className="back-link" style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer', fontSize: 13 }} onClick={resend}>{t('send it again', 'отправь снова')}</button>.</>}</p>
+          : <>{t('Didn’t get it? Check spam, or ', 'Не пришёл? Проверь спам или ')}<button type="button" className="back-link" onClick={resend}>{t('send it again', 'отправь снова')}</button>.</>}</p>
       )}
       <span className="sp" />
       <button type="button" className="pill pill-primary pill-wide pill-s" disabled={busy || !d.every(Boolean)} onClick={() => verify(d.join(''))}><span className="btn-t">{t('Sign in', 'Войти')}</span></button>
@@ -144,7 +144,7 @@ export function NameForm({ lang, next, suggested }: { lang: Lang; next: string; 
     <form onSubmit={save} style={{ display: 'contents' }}>
       <div className="lhead"><span className="kicker">{t('Almost there', 'Почти готово')}</span></div>
       <h1 className="h-land-s">{t('How should the ranking show you?', 'Как подписать тебя в рейтинге?')}</h1>
-      <p className="lead" style={{ color: 'var(--muted)' }}>{t('Only this name is public. Your email stays private.', 'Всем видно только это имя. Почта остаётся скрытой.')}</p>
+      <p className="lead muted">{t('Only this name is public. Your email stays private.', 'Всем видно только это имя. Почта остаётся скрытой.')}</p>
       <label className="meta" htmlFor="nm">{t('Name on the ranking', 'Имя в рейтинге')}</label>
       <input id="nm" className="field" type="text" autoComplete="nickname" maxLength={24} value={name} onChange={(e) => setName(e.target.value)} disabled={busy} autoFocus />
       {err ? <p className="err" role="alert">{err}</p> : <p className="hint">{t('First name and the first letter of your surname works well. You can change it in Settings.', 'Лучше всего имя и первая буква фамилии. Поменять можно в настройках.')}</p>}

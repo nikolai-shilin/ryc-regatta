@@ -40,11 +40,11 @@ export default async function Hub() {
           <Link className="round round-s round-muted" href="/settings" aria-label={t('Settings', 'Настройки')}><IconSliders /></Link>
           {account
             ? <Link className="avatar" href="/settings" aria-label={account.name || account.email}>{initials(account.name, account.email)}</Link>
-            : <Link className="pill pill-xs" href="/sign-in?next=/race" style={{ flex: 'none' }}><span className="btn-t">{t('Sign in', 'Войти')}</span></Link>}
+            : <Link className="pill pill-xs" href="/sign-in?next=/race"><span className="btn-t">{t('Sign in', 'Войти')}</span></Link>}
         </div>
         <div className="hub-grid">
           <div className="band today">
-            <div className="today-photo only-desk"><Image src="/images/top.jpg" alt={t('Today’s course from above', 'Дистанция дня сверху')} fill sizes="680px" style={{ objectFit: 'cover' }} /></div>
+            <div className="today-photo only-desk"><Image src="/images/top.jpg" alt={t('Today’s course from above', 'Дистанция дня сверху')} fill sizes="680px" /></div>
             <div className="today-body">
               <div className="lhead"><span className="kicker">{t('Today’s race', 'Гонка дня')}</span><span className="sp" /><span className="meta">{date}</span></div>
               <h1 className="h-land-s today-title">{title}</h1>
@@ -58,10 +58,10 @@ export default async function Hub() {
               <span className="meta">{t('Today’s fastest', 'Самые быстрые сегодня')}</span>
               <ol className="lb">
                 {top.map((r, i) => <li key={i}><span className="n">{i + 1}</span><span>{r.name || t('Guest', 'Гость')}</span><span>{clock(r.s)}</span></li>)}
-                {!top.length && <li><span className="n">·</span><span style={{ color: 'var(--muted)' }}>{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
+                {!top.length && <li><span className="n">·</span><span className="muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
                 {account
                   ? <MyToday lang={lang} day={d.day} name={account.name} />
-                  : <li className="me"><span className="n">·</span><Link href="/sign-in?next=/race" style={{ color: 'var(--accent)' }}>{t('Sign in to get on it', 'Войди, чтобы попасть сюда')}</Link><span /></li>}
+                  : <li className="me"><span className="n">·</span><Link href="/sign-in?next=/race" className="accent">{t('Sign in to get on it', 'Войди, чтобы попасть сюда')}</Link><span /></li>}
               </ol>
             </div>
             <FreeCard lang={lang} />

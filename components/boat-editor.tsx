@@ -150,7 +150,7 @@ export function BoatEditor({ lang }: { lang: Lang }) {
 
         {err && <p className="err" role="alert">{err}</p>}
         <div className="boat-foot">
-          <span className="small" style={{ color: 'var(--muted)' }}>{t('Saved on this device. You race in it from the next start.', 'Сохранено на этом устройстве. В гонке — со следующего старта.')}</span>
+          <span className="small muted">{t('Saved on this device. You race in it from the next start.', 'Сохранено на этом устройстве. В гонке — со следующего старта.')}</span>
           <button type="button" className="mini" onClick={() => { setB({ ...DEFAULT_BOAT, logoImg: b.logoImg }); setDown(false); }}><span className="btn-t">{t('Reset', 'Сбросить')}</span></button>
         </div>
       </div>

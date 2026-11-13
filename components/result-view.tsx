@@ -106,10 +106,10 @@ export default function ResultView({ id, lang, signedName }: { id: string; lang:
             <div className="stat"><span className="meta">{t('Time', 'Время')}</span><b>{me.secs != null ? clock(me.secs) : '—'}</b></div>
             <div className="stat"><span className="meta">{t('Behind the winner', 'От победителя')}</span><b>{gap}</b></div>
             <div className="stat"><span className="meta">{t('Penalties', 'Штрафы')}</span><b>{L.penT > 1 ? `${L.penT} ${t('s', 'с')}` : '0'}</b></div>
-            {res.pb?.isNew && <span className="chip chip-on" style={{ alignSelf: 'center' }}>{t('New personal best', 'Новый личный рекорд')}</span>}
-            {!res.pb?.isNew && res.pb && me.secs === res.pb.best && <span className="chip chip-on" style={{ alignSelf: 'center' }}>{res.daily ? t('Your best today', 'Твой лучший сегодня') : t('Your best on this course', 'Твой лучший на этой дистанции')}</span>}
+            {res.pb?.isNew && <span className="chip chip-on">{t('New personal best', 'Новый личный рекорд')}</span>}
+            {!res.pb?.isNew && res.pb && me.secs === res.pb.best && <span className="chip chip-on">{res.daily ? t('Your best today', 'Твой лучший сегодня') : t('Your best on this course', 'Твой лучший на этой дистанции')}</span>}
           </div>
-          <div className="btn-row" style={{ marginTop: 4 }}>
+          <div className="btn-row">
             <a className="pill pill-primary pill-s" href={again}><IconRestart /><span className="btn-t">{t('Race again', 'Ещё гонку')}</span></a>
             <Link className="pill pill-s" href="/race"><span className="btn-t">{t('Race hub', 'Меню гонок')}</span></Link>
           </div>
@@ -118,10 +118,10 @@ export default function ResultView({ id, lang, signedName }: { id: string; lang:
         {/* the whole race from above, as wide as the page: a square map on a phone, a wide one where there's room */}
         <section className="hsec">
           <div className="rcard line">
-            <div className="lhead"><span className="meta">{t('Your track', 'Твой трек')}</span><span className="sp" /><span className="small" style={{ color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 6 }}><span className="bdot" style={{ background: '#3db8ff' }} />{t('you', 'ты')}<span className="bdot" style={{ background: 'var(--faint)', marginLeft: 8 }} />{t('the fleet', 'соперники')}</span></div>
+            <div className="lhead"><span className="meta">{t('Your track', 'Твой трек')}</span><span className="sp" /><span className="small muted ico-t"><span className="bdot bdot-you" />{t('you', 'ты')}<span className="bdot bdot-fleet" />{t('the fleet', 'соперники')}</span></div>
             <CourseMap className="track only-narrow" lang={lang} geo={res.course} preset={res.preset} W={340} H={340} tracks={tracks} fouls={fouls} />
             <CourseMap className="track track-wide only-wide" lang={lang} geo={res.course} preset={res.preset} W={1000} H={580} tracks={tracks} fouls={fouls} />
-            <span className="small" style={{ color: 'var(--muted)' }}>{t('Course', 'Дистанция')} {fmtDistance(courseDistance(res.course, res.laps), lang)}{L.fouls.length ? ` · ${t('orange rings mark the fouls', 'оранжевые кольца — нарушения')}` : ''}</span>
+            <span className="small muted">{t('Course', 'Дистанция')} {fmtDistance(courseDistance(res.course, res.laps), lang)}{L.fouls.length ? ` · ${t('orange rings mark the fouls', 'оранжевые кольца — нарушения')}` : ''}</span>
           </div>
         </section>
 
@@ -145,8 +145,8 @@ export default function ResultView({ id, lang, signedName }: { id: string; lang:
               {res.daily ? <Ranking t={t} top={top} me={me} signedName={signedName} /> : (
                 <div className="rcard">
                   <span className="meta">{t('Your best on this course', 'Твой лучший на этой дистанции')}</span>
-                  <span className="rnum" style={{ fontSize: 56 }}>{res.pb ? clock(res.pb.best) : '—'}</span>
-                  <p className="lead" style={{ color: 'var(--muted)', fontSize: 15 }}>{t('Free races stay with you; today’s race is the one that ranks.', 'Свободные гонки остаются у тебя; в рейтинг идёт гонка дня.')}</p>
+                  <span className="h-land">{res.pb ? clock(res.pb.best) : '—'}</span>
+                  <p className="lead muted">{t('Free races stay with you; today’s race is the one that ranks.', 'Свободные гонки остаются у тебя; в рейтинг идёт гонка дня.')}</p>
                 </div>
               )}
             </div>
@@ -183,9 +183,9 @@ export default function ResultView({ id, lang, signedName }: { id: string; lang:
           </div>
           {foulRules.map((f) => (
             <div key={f.rule} className="rule-box">
-              <span className="meta" style={{ color: 'var(--accent)' }}>{t(`Rule ${f.rule}`, `Правило ${f.rule}`)}{f.t != null ? ` · ${clock(Math.max(0, f.t))}` : ''}{f.who ? ` · ${f.who}` : ''}</span>
+              <span className="meta accent">{t(`Rule ${f.rule}`, `Правило ${f.rule}`)}{f.t != null ? ` · ${clock(Math.max(0, f.t))}` : ''}{f.who ? ` · ${f.who}` : ''}</span>
               <span className="card-title">{rule('r' + f.rule, lang)}</span>
-              <p className="lead" style={{ fontSize: 15, color: 'var(--muted)' }}>{rule('x' + f.rule, lang)}</p>
+              <p className="lead muted">{rule('x' + f.rule, lang)}</p>
               {RULE_LINK[f.rule] && <a className="back-link" href={`https://iyt.rycrentals.com${lang === 'ru' ? '/ru' : ''}/racing-rules/${RULE_LINK[f.rule]}`}>{t('Read the rule →', 'Прочитать правило →')}</a>}
             </div>
           ))}
@@ -209,13 +209,13 @@ function Ranking({ t, top, me, signedName }: { t: (en: string, ru: string) => st
       <span className="meta">{t('Today’s fastest', 'Самые быстрые сегодня')}</span>
       <ol className="lb">
         {(top || []).map((r, i) => <li key={i}><span className="n">{i + 1}</span><span>{r.name || t('Guest', 'Гость')}</span><span>{clock(r.s)}</span></li>)}
-        {top && !top.length && <li><span className="n">·</span><span style={{ color: 'var(--muted)' }}>{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
+        {top && !top.length && <li><span className="n">·</span><span className="muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
         <li className="me"><span className="n">·</span><span>{signedName ? `${signedName} (${t('you', 'ты')})` : t('You', 'Ты')}</span><span>{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</span></li>
       </ol>
       {!signedName && (
         <>
-          <p className="lead" style={{ color: 'var(--muted)', fontSize: 15 }}>{t('Sign in and your times go on today’s ranking, with your best times on any device.', 'Войди — и твоё время попадёт в рейтинг дня, а лучшие результаты будут на любом устройстве.')}</p>
-          <Link className="pill pill-primary pill-s" href="/sign-in?next=/race" style={{ alignSelf: 'flex-start' }}><span className="btn-t">{t('Sign in', 'Войти')}</span></Link>
+          <p className="lead muted">{t('Sign in and your times go on today’s ranking, with your best times on any device.', 'Войди — и твоё время попадёт в рейтинг дня, а лучшие результаты будут на любом устройстве.')}</p>
+          <Link className="pill pill-primary pill-s" href="/sign-in?next=/race"><span className="btn-t">{t('Sign in', 'Войти')}</span></Link>
         </>
       )}
     </div>

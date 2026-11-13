@@ -15,7 +15,7 @@ export default async function BoatPage({ searchParams }: { searchParams: Promise
   return (
     <div className="scr" lang={lang} data-acct={account ? 'signed' : 'guest'}>
       <div className="lay page boat-page">
-        <div className="lhead" style={{ gap: 14 }}>
+        <div className="lhead">
           <Link className="round round-s round-muted" href={back} aria-label={back === '/settings' ? t('Back to settings', 'Назад в настройки') : t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
           <h1 className="h-land-s">{t('Your boat', 'Твоя яхта')}</h1>
         </div>

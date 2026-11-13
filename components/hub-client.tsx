@@ -19,13 +19,13 @@ export function TodayChips({ lang, chips, day }: { lang: Lang; chips: string[]; 
   return (
     <>
       <div className="chip-tags">
-        <button type="button" className="chip chip-s" onClick={() => setOpen(true)} style={{ border: 0, gap: 6 }}>
+        <button type="button" className="chip chip-s" onClick={() => setOpen(true)}>
           <IconWind />{chips.join(' · ')}<IconLock />
         </button>
       </div>
       {open && (
         <div className="dlg-wrap" lang={lang}>
-          <div className="scr" style={{ position: 'absolute', inset: 0, background: 'transparent' }}>
+          <div className="scr dlg-scr">
             <div className="lay">
               <div className="scrim" onClick={() => setOpen(false)} />
               <div className="lsheet" role="dialog" aria-modal="true" aria-labelledby="lock-h">
@@ -33,10 +33,10 @@ export function TodayChips({ lang, chips, day }: { lang: Lang; chips: string[]; 
                 <div className="lhead">
                   <span className="kicker">{t('Today’s race', 'Гонка дня')} · {day}</span>
                   <span className="sp" />
-                  <span className="meta" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><IconLock />{t('Fixed', 'Закреплена')}</span>
+                  <span className="meta ico-t"><IconLock />{t('Fixed', 'Закреплена')}</span>
                 </div>
                 <h2 id="lock-h" className="h-land-s">{t('Everyone sails the same race today', 'Сегодня у всех одна и та же гонка')}</h2>
-                <p className="lead" style={{ color: 'var(--muted)' }}>{t('The wind, the boats and the course are the same for everyone, so times compare fairly. Change them and it becomes a free race: that time won’t count for today’s ranking.', 'Ветер, лодки и дистанция одинаковые для всех, поэтому время сравнивается честно. Измени их — и это станет свободной гонкой: время не попадёт в рейтинг дня.')}</p>
+                <p className="lead muted">{t('The wind, the boats and the course are the same for everyone, so times compare fairly. Change them and it becomes a free race: that time won’t count for today’s ranking.', 'Ветер, лодки и дистанция одинаковые для всех, поэтому время сравнивается честно. Измени их — и это станет свободной гонкой: время не попадёт в рейтинг дня.')}</p>
                 <div className="btn-pair">
                   <button type="button" className="pill pill-primary pill-s" onClick={() => setOpen(false)}><span className="btn-t">{t('Keep today’s race', 'Остаться в гонке дня')}</span></button>
                   <Link className="pill pill-s" href="/race/free?from=today"><span className="btn-t">{t('Make it a free race', 'Свободная гонка')}</span><IconArrow /></Link>

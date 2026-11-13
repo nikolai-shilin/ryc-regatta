@@ -19,19 +19,19 @@ export default async function Home() {
         <div className="shade-hero" />
         <nav className="home-top" aria-label={t('Main', 'Главное')}>
           <Logo className="logo-w" />
-          <span className="kicker" style={{ color: '#fff' }}>Up and down</span>
+          <span className="kicker">Up and down</span>
           <span className="sp" />
           <Link className="navl only-wide" href="/help">{t('How to play', 'Как играть')}</Link>
           <Link className="navl only-wide" href="/sign-in">{t('Sign in', 'Войти')}</Link>
           <Langs lang={lang} back="/" className="only-wide" />
-          <Link className="pill pill-primary pill-xs" href="/race" style={{ flex: 'none' }}><span className="btn-t">{t('Play', 'Играть')}</span></Link>
+          <Link className="pill pill-primary pill-xs" href="/race"><span className="btn-t">{t('Play', 'Играть')}</span></Link>
         </nav>
         <div className="home-hero-in">
-          <span className="kicker" style={{ color: '#fff' }}>{t('A sailing race game by RYC', 'Парусная гонка от RYC')}</span>
+          <span className="kicker">{t('A sailing race game by RYC', 'Парусная гонка от RYC')}</span>
           <h1 className="on-photo">Up and down</h1>
           <p className="lead on-photo">{t('Race a yacht round the marks against computer boats, in shifting wind and under the real racing rules. In the browser.', 'Гонка на яхте вокруг знаков против компьютерных лодок, в меняющийся ветер и по настоящим правилам гонок. В браузере.')}</p>
           <p className="facts-line">{t('Free · No install · Phone or computer · EN / RU', 'Бесплатно · Без установки · Телефон или компьютер · EN / RU')}</p>
-          <div className="btn-row" style={{ marginTop: 6 }}>
+          <div className="btn-row">
             <a className="pill pill-primary pill-s" href="/play?race=today"><IconPlay /><span className="btn-t"><span className="l-narrow">{t('Play today', 'Гонка дня')}</span><span className="l-wide">{t('Play today’s race', 'Сыграть гонку дня')}</span></span></a>
             <Link className="pill pill-s pill-photo" href="/help"><span className="btn-t">{t('How to play', 'Как играть')}</span></Link>
           </div>
@@ -51,17 +51,17 @@ export default async function Home() {
 
         <section className="hsec">
           <div className="hsplit">
-            <div className="hsec-k" style={{ gap: 14 }}>
+            <div className="hstack">
               <span className="kicker">{t('Every day', 'Каждый день')}</span>
               <h2 className="h-land-s">{t('Today’s race, the same for everyone', 'Гонка дня — одна для всех')}</h2>
               <p className="lead">{t('One race a day with the same wind, course and fleet for every player, so the times compare fairly. Sign in with Google or your email to put your time on the ranking; your best times follow you to any device.', 'Одна гонка в день: у всех один ветер, дистанция и флот, поэтому время сравнивается честно. Войди через Google или по почте, чтобы попасть в рейтинг; лучшие результаты будут с тобой на любом устройстве.')}</p>
-              <a className="pill pill-primary pill-s" href="/play?race=today" style={{ alignSelf: 'flex-start' }}><IconPlay /><span className="btn-t">{t('Sail today’s race', 'Пройти гонку дня')}</span></a>
+              <a className="pill pill-primary pill-s" href="/play?race=today"><IconPlay /><span className="btn-t">{t('Sail today’s race', 'Пройти гонку дня')}</span></a>
             </div>
-            <div className="band-line fastest" style={{ padding: '22px 24px 14px' }}>
+            <div className="band-line fastest">
               <div className="lhead"><span className="meta">{t('Today’s fastest', 'Самые быстрые сегодня')}</span><span className="sp" /><span className="meta">{windName} · {KN[d.preset]} {t('kn', 'уз')} · {d.fleet} {t('boats', 'лодок')}</span></div>
-              <ol className="lb" style={{ fontSize: 17 }}>
+              <ol className="lb">
                 {top.map((r, i) => <li key={i}><span className="n">{i + 1}</span><span>{r.name || t('Guest', 'Гость')}</span><span>{clock(r.s)}</span></li>)}
-                {!top.length && <li><span className="n">·</span><span style={{ color: 'var(--muted)' }}>{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
+                {!top.length && <li><span className="n">·</span><span className="muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
                 <li className="me"><span className="n">·</span><span>{t('You?', 'Ты?')}</span><span /></li>
               </ol>
             </div>
@@ -69,19 +69,19 @@ export default async function Home() {
         </section>
 
         <section className="hsec">
-          <div className="hsec-k" style={{ gap: 14 }}>
+          <div className="hstack">
             <span className="kicker">{t('Free race', 'Свободная гонка')}</span>
             <h2 className="h-land-s">{t('Or set up your own', 'Или настрой свою')}</h2>
             <p className="lead">{t('Pick the wind, the fleet, the course, the laps and the start, and race as often as you like. The game keeps your best time for every course.', 'Выбери ветер, флот, дистанцию, круги и старт — и гоняйся сколько хочешь. Игра помнит твой лучший результат на каждой дистанции.')}</p>
-            <Link className="pill pill-s" href="/race/free" style={{ alignSelf: 'flex-start' }}><span className="btn-t">{t('Set up a free race', 'Настроить гонку')}</span></Link>
+            <Link className="pill pill-s" href="/race/free"><span className="btn-t">{t('Set up a free race', 'Настроить гонку')}</span></Link>
           </div>
         </section>
 
         <section className="hsec">
-          <div className="hband" style={{ padding: 32 }}>
+          <div className="hband">
             <span className="kicker">{t('Ready?', 'Готов?')}</span>
             <h2 className="h-land-s">{t('The start sequence is waiting', 'Стартовая процедура ждёт')}</h2>
-            <p className="lead" style={{ color: 'var(--muted)' }}>{t('Up and down is made by RYC alongside Sailing Certification Test, the app for IYT exam practice: learn the rules there, race by them here.', 'Up and down делает RYC вместе с Sailing Certification Test — приложением для подготовки к экзаменам IYT: учи правила там, гоняйся по ним здесь.')}</p>
+            <p className="lead muted">{t('Up and down is made by RYC alongside Sailing Certification Test, the app for IYT exam practice: learn the rules there, race by them here.', 'Up and down делает RYC вместе с Sailing Certification Test — приложением для подготовки к экзаменам IYT: учи правила там, гоняйся по ним здесь.')}</p>
             <div className="btn-row">
               <a className="pill pill-primary pill-s" href="/play?race=today"><IconPlay /><span className="btn-t">{t('Play today’s race', 'Сыграть гонку дня')}</span></a>
               <Link className="pill pill-s" href="/help"><span className="btn-t">{t('How to play', 'Как играть')}</span></Link>

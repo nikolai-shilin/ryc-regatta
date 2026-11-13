@@ -64,11 +64,11 @@ export default async function Help() {
         </header>
 
         {sec('h-screen', t('Everything you see', 'Всё, что на экране'), t('The race screen', 'Экран гонки'), <>
-          <figure className="hfig only-wide" style={{ margin: 0 }}>
+          <figure className="hfig only-wide">
             <Image className="hshot" src="/images/hud-desk.jpg" width={2160} height={1350} sizes="(min-width: 1200px) 1120px, 100vw" alt={t('The race screen on a desktop, numbered', 'Экран гонки на компьютере, с номерами')} />
             {marks(WIDE)}
           </figure>
-          <figure className="hfig only-narrow" style={{ margin: 0 }}>
+          <figure className="hfig only-narrow">
             <Image className="hshot" src="/images/hud-port.jpg" width={780} height={1688} sizes="100vw" alt={t('The race screen on a phone held upright, numbered', 'Экран гонки на телефоне вертикально, с номерами')} />
             {marks(NARROW)}
           </figure>
@@ -88,13 +88,13 @@ export default async function Help() {
         {sec('h-wind', t('Where the speed is', 'Откуда скорость'), t('Reading the wind', 'Как читать ветер'), (
           <div className="hsplit">
             <Image className="hshot" src="/images/h-wind.jpg" width={960} height={720} sizes="(min-width: 600px) 50vw, 100vw" alt={t('The wind ring round the boat, from above', 'Кольцо ветра вокруг лодки, сверху')} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="hstack">
               <p className="lead">{t('The ring round your boat shows the wind. It swings ten degrees and more either way every minute or so: in a lift you can point higher; in a header, tack — the chip under the speed says which.', 'Кольцо вокруг лодки показывает ветер. Он меняется на десять градусов и больше каждую минуту: когда отходит — иди круче, когда заходит — делай поворот. Подсказка под скоростью скажет, что сейчас.')}</p>
-              <div className="legend" style={{ fontSize: 15, gap: '10px 12px' }}>
-                <span className="sw" style={{ background: '#b9c6cf' }} /><span>{t('Arrow: where the wind comes from', 'Стрелка: откуда дует ветер')}</span>
-                <span className="sw" style={{ background: '#d9675d' }} /><span>{t('Red: too close to the wind to sail', 'Красный: слишком круто, лодка не идёт')}</span>
-                <span className="sw" style={{ background: '#7fd3b0' }} /><span>{t('Green: the best angle upwind', 'Зелёный: лучший угол против ветра')}</span>
-                <span className="sw" style={{ background: '#4ea8e0' }} /><span>{t('Blue: the best angle downwind', 'Синий: лучший угол по ветру')}</span>
+              <div className="legend">
+                <span className="lsw lsw-arrow" /><span>{t('Arrow: where the wind comes from', 'Стрелка: откуда дует ветер')}</span>
+                <span className="lsw lsw-no" /><span>{t('Red: too close to the wind to sail', 'Красный: слишком круто, лодка не идёт')}</span>
+                <span className="lsw lsw-up" /><span>{t('Green: the best angle upwind', 'Зелёный: лучший угол против ветра')}</span>
+                <span className="lsw lsw-down" /><span>{t('Blue: the best angle downwind', 'Синий: лучший угол по ветру')}</span>
               </div>
             </div>
           </div>
@@ -133,7 +133,7 @@ export default async function Help() {
             <span className="kicker">{t('Once a day', 'Раз в день')}</span>
             <h2 className="h-land-s">{t('Today’s race', 'Гонка дня')}</h2>
             <p className="lead">{t('Once a day everyone sails the same race: the same wind, course and fleet, so times compare fairly. Sign in and your time goes on today’s ranking. A free race lets you choose everything; its times stay with you.', 'Раз в день у всех одна гонка: один ветер, дистанция и флот, поэтому время сравнивается честно. Войди — и твоё время попадёт в рейтинг дня. В свободной гонке выбираешь всё сам, а результаты остаются у тебя.')}</p>
-            <Link className="pill pill-primary pill-s" href="/race" style={{ alignSelf: 'flex-start' }}><span className="btn-t">{t('To the race hub', 'В меню гонок')}</span><IconArrow /></Link>
+            <Link className="pill pill-primary pill-s" href="/race"><span className="btn-t">{t('To the race hub', 'В меню гонок')}</span><IconArrow /></Link>
           </div>
         </section>
       </div>
