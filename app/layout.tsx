@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Merriweather, Carlito } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 import { getLang } from '@/lib/i18n';
 import '@/styles/tokens.css';
 import '@/styles/ryc.css';
@@ -20,7 +21,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = await getLang();
   return (
     <html lang={lang} className={`${merri.variable} ${carlito.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
