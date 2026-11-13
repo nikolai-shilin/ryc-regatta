@@ -513,7 +513,7 @@ const camSeg = $('#camSeg');
 function setCam(m) { world.mode = m; camSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.cam === m)); }
 camSeg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setCam(b.dataset.cam); });
 setCam(['drone', 'top', 'helm'].includes(opts.camera) ? opts.camera : 'drone'); // Settings › First camera
-// the lighter HUD on trial: ?hud=next turns it on, ?hud=old off, H switches while sailing
+// the lighter HUD, the default: ?hud=old brings back the old one (and keeps it), ?hud=next returns; H switches while sailing
 const hudNext = createHudNext({ t, LANG, fmt, world, getRace: () => race, setCam });
 
 // ---------- menus ----------
