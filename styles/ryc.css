@@ -663,6 +663,30 @@
 .bt-go { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 8px; flex: none; height: 44px; border-radius: 54px; background: var(--accent); color: var(--on-accent); font: 700 13px/1 var(--f-sans); letter-spacing: .04em; text-transform: uppercase; text-decoration: none; border: 0; cursor: pointer; box-shadow: 0 0 0 6px rgba(8, 14, 20, 0.0); transition: filter .2s, transform .12s; }
 .bt-go svg { width: 14px; height: 14px; }
 .bt-go:hover { filter: brightness(1.08); } .bt-go:active { transform: scale(.97); }
+/* a card with a fixed top and bottom (the free race): Start and Show course above, your boat and Settings below, the
+   choices scrolling between them, fading out under each edge */
+.bt-card.bt-docked { overflow: hidden; padding: 0; gap: 0; }
+.bt-docked .bt-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  display: flex; flex-direction: column; gap: 16px; padding: 10px 16px 14px;
+  -webkit-mask-image: linear-gradient(transparent, #000 10px, #000 calc(100% - 12px), transparent); mask-image: linear-gradient(transparent, #000 10px, #000 calc(100% - 12px), transparent); }
+.bt-dock { flex: none; display: flex; gap: 8px; padding: 16px 16px 6px; }
+.bt-dock-b { padding: 6px 12px 12px; border-top: 1px solid var(--line); }
+.bt-dock .bt-go { position: static; flex: 1 1 auto; min-width: 0; }
+.bt-dock-b .bt-rows { flex: 1; flex-direction: row; gap: 4px; margin: 0; }
+.bt-dock-b .bt-row { flex: 1 1 0; min-width: 0; }
+.bt-dock-b .bt-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-show { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: none; height: 44px; padding: 0 16px; border-radius: 54px; border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(255, 255, 255, 0.08); color: #fff; font: 700 12px/1 var(--f-sans); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; cursor: pointer; transition: background-color .2s, border-color .2s, transform .12s; }
+.bt-show:hover { background: rgba(255, 255, 255, 0.14); } .bt-show:active { transform: scale(.97); }
+.bt-show[aria-pressed="true"] { background: rgba(255, 214, 64, 0.14); border-color: rgba(255, 214, 64, 0.55); }
+.bt-show svg { width: 15px; height: 15px; }
+/* what the scene shows, over it: the wind, the current, the course */
+.bt-cap { pointer-events: auto; display: flex; align-items: flex-start; gap: 10px; max-width: 420px; margin-top: auto; padding: 10px 10px 10px 14px; border-radius: 16px; background: rgba(8, 14, 20, 0.55); border: 1px solid rgba(255, 255, 255, 0.14); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); text-shadow: none; animation: bt-set-in .25s var(--ease) both; }
+.bt-cap-t { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.bt-cap-t b { font: 700 12px/1.2 var(--f-sans); letter-spacing: .05em; text-transform: uppercase; }
+.bt-cap-t span { font: 400 13px/1.4 var(--f-serif); color: rgba(255, 255, 255, 0.8); }
+.bt-cap-x { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.1); color: #fff; font: 400 18px/1 var(--f-sans); cursor: pointer; }
+.bt-cap-x:hover { background: rgba(255, 255, 255, 0.2); }
+.bt-cap + .bt-stats { margin-top: 0; }
 .bt-seg { display: grid; grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 54px; background: rgba(255, 255, 255, 0.05); flex: none; }
 .bt-seg :is(button, a) { display: flex; align-items: center; justify-content: center; text-decoration: none; height: 28px; border: 0; border-radius: 54px; background: transparent; color: rgba(255, 255, 255, 0.72); font: 700 11px/1 var(--f-sans); letter-spacing: .04em; text-transform: uppercase; cursor: pointer; transition: background-color .2s, color .2s, box-shadow .2s; }
 .bt-seg :is(button, a):hover { color: #fff; }
@@ -754,3 +778,16 @@
   .bt-card { width: 420px; padding: 22px; gap: 18px; }
 }
 @media (prefers-reduced-motion: reduce) { .bt-card { animation: none; } }
+
+/* the docked card on a phone held upright and on a big screen */
+@container scr (orientation: portrait) {
+  .bt-docked .bt-body { padding: 8px 14px 12px; gap: 14px; }
+  .bt-dock { padding: 12px 14px 4px; } .bt-dock-b { padding: 4px 10px 8px; }
+  .bt-show { padding: 0 12px; }
+  .bt-cap { padding: 8px 8px 8px 12px; } .bt-cap-t span { font-size: 12px; }
+}
+@container scr (max-height: 500px) and (orientation: landscape) { .bt-cap-t span { display: none; } }
+@container scr (min-width: 1024px) and (min-height: 640px) {
+  .bt-docked .bt-body { padding: 12px 22px 18px; gap: 18px; }
+  .bt-dock { padding: 22px 22px 8px; } .bt-dock-b { padding: 8px 16px 16px; }
+}

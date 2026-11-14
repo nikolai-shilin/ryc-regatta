@@ -7,19 +7,27 @@ import type { VenueId } from '@/lib/venues';
 import { venueOf, VENUES } from '@/lib/venues';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, type Length, type Shape, type Wind } from '@/lib/race';
 import { CourseMap } from './course-map';
-import { GameScene } from './game-scene';
+import { GameScene, type SceneSetup } from './game-scene';
 import { PauseCard, SettingsRow, type Who } from './pause-card';
 import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, clock } from './ui';
 
 type Pick = { venue: VenueId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape };
 
 // a rough guide to the race's length on the water, so a choice shows its effect
+// what the scene shows as each choice is made: the fleet, the wind or the current over the course, or the course
+type View = SceneSetup['view'];
+const VIEW_OF: Record<keyof Pick, View> = { venue: 'boats', fleet: 'boats', start: 'boats', preset: 'wind', current: 'current', course: 'course', length: 'course', laps: 'course' };
+// the breeze as the game blows it (sim.js PRESETS): its gusts' top and how far it swings either way
+const GUST: Record<Wind, [number, number]> = { light: [9, 12], medium: [16, 13], strong: [26, 14] };
+
 const minutes = (p: Pick) => Math.round(({ short: 4.5, medium: 7, long: 9.5 }[p.length] * p.laps * { light: 1.25, medium: 1, strong: 0.9 }[p.preset] * (p.course === 'tri' ? 1.3 : 1)) + p.start);
 
 // S1 · Free race set-up, as the boat page: the game's own scene at the chosen venue behind it all (your yacht afloat there
 // on a clear evening, /boat-view), the race's place and numbers over it as the pause screen has them, and the choices
-// in the pause menu's dark glass card. Picking another place loads that venue's scene and fades it in over the last;
-// the wind changes the breeze in the scene as it is. Start saves the choice where the game reads it and opens the race.
+// in the pause menu's dark glass card. Picking another place loads that venue's scene and fades it in over the last.
+// The scene is the race as it will be laid, all its boats afloat together; each choice flies the drone to where it shows
+// (the wind or the current over the course, the course itself), and Show course does too. Start and Show course stay at
+// the card's top, your boat and Settings at its bottom. Start saves the choice where the game reads it and opens the race.
 export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromToday: boolean; who: Who }) {
   const t = tx(lang);
   const [p, setP] = useState<Pick>({ venue: 'gocek', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' });
@@ -32,7 +40,8 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
       : { venue, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: o.course === 'tri' ? 'tri' : 'wl' });
     setReady(true);
   }, [fromToday]);
-  const set = <K extends keyof Pick>(k: K, v: Pick[K]) => setP((x) => ({ ...x, [k]: v }));
+  const [view, setView] = useState<View>('boats');
+  const set = <K extends keyof Pick>(k: K, v: Pick[K]) => { setP((x) => ({ ...x, [k]: v })); setView(VIEW_OF[k]); };
   const go = () => { saveOpts({ ...p, mode: 'free', lastFree: Date.now() }); location.href = '/play?race=free'; };
 
   // one choice as the pause menu's quick switches: a label, then pills with a light that's on
@@ -54,6 +63,27 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
   const where = venueOf(p.venue);
   const courseName = { short: t('Short', 'Короткая'), medium: t('Medium', 'Средняя'), long: t('Long', 'Длинная') }[p.length];
   const metres = fmtDistance(courseDistance(geo, p.laps), lang).split(' · ')[0];
+  const shapeName = p.course === 'tri' ? t('Triangle', 'Треугольник') : t('Up and down', 'Апвинд — даунвинд');
+  const lapsName = `${p.laps} ${t(p.laps > 1 ? 'laps' : 'lap', p.laps > 1 ? 'круга' : 'круг')}`;
+  const beat = Math.round(Math.abs(geo.windward[1]));
+  const scene: SceneSetup = {
+    race: { preset: p.preset, fleet: p.fleet, length: p.length, laps: p.laps, course: p.course, current: p.current, start: p.start },
+    view,
+    labels: { windward: t('Windward mark', 'Верхний знак'), gate: t('Gate', 'Ворота'), wing: t('Wing mark', 'Боковой знак'), line: t('Start · Finish', 'Старт · Финиш'), beat: t(`Beat ${beat} m`, `Лавировка ${beat} м`) },
+  };
+  // a word on what the scene shows, when it shows more than the boats
+  const cap: Record<Exclude<View, 'boats'>, [string, string]> = {
+    wind: [t(`Wind · ${KN[p.preset]} kn`, `Ветер · ${KN[p.preset]} уз`),
+      t(`The streaks run with the breeze down the course. The gold ones are gusts, up to ${GUST[p.preset][0]} kn; the wind swings up to ${GUST[p.preset][1]}° either way.`,
+        `Штрихи бегут с ветром вниз по дистанции. Золотые — порывы, до ${GUST[p.preset][0]} уз; ветер гуляет до ${GUST[p.preset][1]}° в каждую сторону.`)],
+    current: p.current
+      ? [t('Current · 0.6 kn', 'Течение · 0,6 уз'), t('The tide sets every boat across the course, harder on one side, and builds and eases as you race.', 'Течение сносит все лодки поперёк дистанции, с одного края сильнее, и то крепчает, то слабеет по ходу гонки.')]
+      : [t('No current', 'Без течения'), t('The water stands still. Switch the current on to see the tide run over the course.', 'Вода стоит. Включи течение — и увидишь, как оно идёт по дистанции.')],
+    course: [`${shapeName} · ${lapsName} · ${metres}`,
+      `${p.course === 'tri'
+        ? t('From the start up to the windward mark, a reach out to the wing mark and back down to the gate', 'От старта вверх к верхнему знаку, галфвинд к боковому знаку и вниз к воротам')
+        : t('From the start up to the windward mark and down to the gate', 'От старта вверх к верхнему знаку и вниз к воротам')}${p.laps > 1 ? t(', then round again; lap 1 in gold, lap 2 in blue.', ', потом ещё круг; первый круг золотой, второй синий.') : t(', then down to the finish.', ', потом вниз на финиш.')}`],
+  };
   // upright the places run in one row that scrolls sideways: the chosen one in view
   useEffect(() => {
     const row = document.querySelector('.bt-card .bt-row1'), on = row?.querySelector<HTMLElement>('[aria-checked="true"]');
@@ -63,7 +93,7 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
   return (
     <div className="scr bt-scr" lang={lang}>
       <div className="bt">
-        {ready && <GameScene venue={p.venue} wind={p.preset} title={t('The race’s venue in 3D', 'Место гонки в 3D')} />}
+        {ready && <GameScene venue={p.venue} wind={p.preset} setup={scene} title={t('The race’s venue in 3D', 'Место гонки в 3D')} />}
 
         <div className="bt-info">
           <div className="bt-top">
@@ -72,6 +102,12 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
           </div>
           <h1 className="bt-h" id="fs-title">{t(...where.name)}</h1>
           <p className="bt-p">{t(...where.place)} · {t(`prevailing wind ${where.wind[0]}`, `преобладающий ветер ${where.wind[1]}`)}. {t(...where.about)}</p>
+          {view !== 'boats' && (
+            <div className="bt-cap" role="status">
+              <span className="bt-cap-t"><b>{cap[view][0]}</b><span>{cap[view][1]}</span></span>
+              <button type="button" className="bt-cap-x" onClick={() => setView('boats')} aria-label={t('Back to the boats', 'Назад к лодкам')}>×</button>
+            </div>
+          )}
           <div className="bt-stats">
             <div><span className="bt-sk">{t('Wind', 'Ветер')}</span><b>{KN[p.preset]} {t('kn', 'уз')}</b></div>
             <div><span className="bt-sk">{t('Course', 'Дистанция')}</span><b>{metres}</b></div>
@@ -80,8 +116,17 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
           </div>
         </div>
 
-        <PauseCard lang={lang} who={who} back={fromToday ? '/race/free?from=today' : '/race/free'} label={t('Set up your race', 'Настрой гонку')}>
-          <button type="button" className="bt-go" onClick={go}><IconPlay /><span>{t('Start race', 'Начать гонку')}</span></button>
+        <PauseCard lang={lang} who={who} back={fromToday ? '/race/free?from=today' : '/race/free'} label={t('Set up your race', 'Настрой гонку')}
+          head={<>
+            <button type="button" className="bt-go" onClick={go}><IconPlay /><span>{t('Start race', 'Начать гонку')}</span></button>
+            <button type="button" className="bt-show" aria-pressed={view === 'course'} onClick={() => setView(view === 'course' ? 'boats' : 'course')}>
+              {view === 'course' ? <IconBoats s={15} /> : <IconRoute s={15} />}<span>{view === 'course' ? t('Boats', 'Лодки') : t('Show course', 'Дистанция')}</span>
+            </button>
+          </>}
+          foot={<div className="bt-rows">
+            <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
+            <SettingsRow lang={lang} />
+          </div>}>
           {tags('venue', <IconPin />, t('Where', 'Где'), VENUES.map((v) => [v.id, t(...v.name)] as [VenueId, string]))}
           {tags('preset', <IconWind s={14} />, t('Wind', 'Ветер'), [['light', t('Light 7 kn', 'Слабый 7 уз')], ['medium', t('Medium 12 kn', 'Средний 12 уз')], ['strong', t('Strong 19 kn', 'Сильный 19 уз')]])}
           {tags('fleet', <IconBoats />, t('Boats', 'Лодки'), [[3, t('3 boats', '3 лодки')], [5, t('5 boats', '5 лодок')], [7, t('7 boats', '7 лодок')]])}
@@ -93,16 +138,12 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
           {tags('current', <IconTide />, t('Current', 'Течение'), [[0, t('Off', 'Выкл')], [1, t('On', 'Вкл')]],
             <p className="bt-hint">{t('On: a tide sets every boat across the course.', 'Вкл: течение сносит все лодки поперёк дистанции.')}</p>)}
           <div className="bt-g">
-            <span className="bt-k"><IconRoute />{t('Your course', 'Твоя дистанция')}<span className="bt-k-r">{p.course === 'tri' ? `${t('Triangle', 'Треугольник')} · ` : ''}{courseName} · {p.laps} {t(p.laps > 1 ? 'laps' : 'lap', p.laps > 1 ? 'круга' : 'круг')} · {metres}</span></span>
+            <span className="bt-k"><IconRoute />{t('Your course', 'Твоя дистанция')}<span className="bt-k-r">{p.course === 'tri' ? `${t('Triangle', 'Треугольник')} · ` : ''}{courseName} · {lapsName} · {metres}</span></span>
             <CourseMap className="cmap bt-map" lang={lang} geo={geo} preset={p.preset} W={250} H={210} route fleet={p.fleet} />
           </div>
           <p className="bt-saved bt-saved-l">{best != null
             ? t(`Your best on this course: ${clock(best)}. Beat it and the result page says so.`, `Твой лучший результат на этой дистанции: ${clock(best)}. Побьёшь — страница результата скажет.`)
             : t('The game keeps your best time on every course. A free race doesn’t go on today’s ranking.', 'Игра помнит лучшее время на каждой дистанции. Свободная гонка в рейтинг дня не идёт.')}</p>
-          <div className="bt-rows">
-            <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
-            <SettingsRow lang={lang} />
-          </div>
         </PauseCard>
       </div>
     </div>

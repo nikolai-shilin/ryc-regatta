@@ -13,21 +13,37 @@ const Open = createContext<(open: boolean) => void>(() => {});
 // The glass card of the pages laid out as the race's pause screen (the race hub, the free race's set-up). Like the
 // pause menu it has a second view: Settings opens in the card itself, in place of what it holds, and Back returns to it,
 // without leaving the page. back: this page's own path, for the language switch and signing in to come back to.
-export function PauseCard({ lang, who, back, label, children }: { lang: Lang; who: Who; back: string; label: string; children: ReactNode }) {
+// head and foot stay put at the card's top and bottom while what is between them scrolls (the free race: Start and
+// Show course over the choices, your boat and Settings under them); Settings, open, takes the whole card.
+export function PauseCard({ lang, who, back, label, head, foot, children }: { lang: Lang; who: Who; back: string; label: string; head?: ReactNode; foot?: ReactNode; children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const card = useRef<HTMLElement>(null);
+  const card = useRef<HTMLElement>(null), body = useRef<HTMLDivElement>(null);
+  const docked = !!(head || foot);
   useEffect(() => {
-    card.current?.scrollTo({ top: 0 });
+    (body.current || card.current)?.scrollTo({ top: 0 });
     if (!open) return;
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     addEventListener('keydown', k);
     return () => removeEventListener('keydown', k);
   }, [open]);
   return (
-    <section className="bt-card" ref={card} aria-label={label}>
+    <section className={`bt-card${docked ? ' bt-docked' : ''}`} ref={card} aria-label={label}>
       <Open.Provider value={setOpen}>
-        <div className="bt-view" hidden={open}>{children}</div>
-        {open && <Settings lang={lang} who={who} back={back} close={() => setOpen(false)} />}
+        {docked ? (
+          <>
+            {head && !open && <div className="bt-dock bt-dock-t">{head}</div>}
+            <div className="bt-body" ref={body}>
+              <div className="bt-view" hidden={open}>{children}</div>
+              {open && <Settings lang={lang} who={who} back={back} close={() => setOpen(false)} />}
+            </div>
+            {foot && !open && <div className="bt-dock bt-dock-b">{foot}</div>}
+          </>
+        ) : (
+          <>
+            <div className="bt-view" hidden={open}>{children}</div>
+            {open && <Settings lang={lang} who={who} back={back} close={() => setOpen(false)} />}
+          </>
+        )}
       </Open.Provider>
     </section>
   );
