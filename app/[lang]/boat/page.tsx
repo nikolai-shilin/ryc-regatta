@@ -19,7 +19,7 @@ export default async function BoatPage({ params, searchParams }: LangParams & { 
   // opened from Settings, the back arrow returns there; otherwise to the race hub
   const back = q.from === 'settings' ? '/settings' : '/race';
   return (
-    <div className="scr bt-scr" lang={lang} data-acct={account ? 'signed' : 'guest'}>
+    <div className="scr bt-scr bc" lang={lang} data-acct={account ? 'signed' : 'guest'}>
       <BoatEditor lang={lang} back={(
         <Link className="bt-back" href={back} aria-label={back === '/settings' ? t('Back to settings', 'Назад в настройки') : t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
       )} />

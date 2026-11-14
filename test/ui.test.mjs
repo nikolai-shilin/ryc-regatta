@@ -63,3 +63,17 @@ test('the broadcast HUD has every word in both languages, and the game uses it',
   assert.match(play, /\['\/game\/hud-bc\.js', \d+\]/); // the loader counts it in
   assert.doesNotMatch(main + play, /hud-next/);
 });
+
+test('the pages laid out as the pause screen are in the broadcast look', () => {
+  assert.match(read('app/[lang]/layout.tsx'), /import '@\/public\/ui\/tokens\.css';\nimport '@\/styles\/broadcast\.css';/); // the layer after the tokens
+  for (const f of ['app/[lang]/race/page.tsx', 'app/[lang]/boat/page.tsx', 'components/free-setup.tsx', 'components/result-view.tsx']) {
+    const roots = read(f).match(/className="scr bt-scr[^"]*"/g) || [];
+    assert.ok(roots.length, f);
+    for (const r of roots) assert.match(r, /\bbc\b/, `${f}: ${r}`);
+  }
+  // the layer reaches only the pages that opt in: every selector starts at .bc
+  const layer = read('styles/broadcast.css').replace(/\/\*[\s\S]*?\*\//g, '').replace(/@[^{]+\{/g, '');
+  for (const m of layer.matchAll(/([^{}]+)\{[^{}]*\}/g)) {
+    for (const part of m[1].split(/,(?![^(]*\))/)) assert.match(part.trim(), /^\.bc\b|^\.bt-scr\.bc\b/, part.trim());
+  }
+});

@@ -68,6 +68,9 @@ export function Langs({ lang, back, className = '' }: { lang: Lang; back: string
   );
 }
 
+// a number and its unit ("12 kn"), the unit set small after it, as the broadcast sets them
+export const Num = ({ v }: { v: string }) => { const [n, ...u] = v.split(' '); return <>{n}{u.length ? <span className="unit">{u.join(' ')}</span> : null}</>; };
+
 export const clock = (s: number) => {
   const m = Math.floor(s / 60), r = s - m * 60;
   return `${m}:${r.toFixed(1).padStart(4, '0')}`;

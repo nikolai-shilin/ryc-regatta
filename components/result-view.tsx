@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ruBoats, tx, type Lang } from '@/lib/lang';
 import RULES from '@/lib/rules.json';
-import { IconBack, IconRestart, IconPlay, IconTrophy, IconRoute, IconFlag, IconSail, IconSliders, IconClock, clock } from './ui';
+import { IconBack, IconRestart, IconPlay, IconTrophy, IconRoute, IconFlag, IconSail, IconSliders, IconClock, Num, clock } from './ui';
 import { ShareButton } from './share-sheet';
 import { CourseMap } from './course-map';
 import { GameScene } from './game-scene';
@@ -63,7 +63,7 @@ export default function ResultView({ id, lang, signedName, who, head, foot }: { 
     }).catch(() => {});
   }, [res]);
 
-  if (res === undefined) return <div className="scr bt-scr" lang={lang} />; // most often found: the scene's dark, not the site's header
+  if (res === undefined) return <div className="scr bt-scr bc" lang={lang} />; // most often found: the scene's dark, not the site's header
   if (!res) {
     return (
       <div className="scr help" lang={lang}>
@@ -153,7 +153,7 @@ export default function ResultView({ id, lang, signedName, who, head, foot }: { 
     ...(me.done && me.secs != null && L.legs.length < res.course.legs.length ? [{ k: 'finish', i: res.course.legs.length - 1, tm: me.secs, pl: me.dsq ? 0 : place }] : [])];
 
   return (
-    <div className="scr bt-scr rs-scr" lang={lang} data-acct={signedName ? 'signed' : 'guest'}>
+    <div className="scr bt-scr rs-scr bc" lang={lang} data-acct={signedName ? 'signed' : 'guest'}>
       <div className="bt">
         <GameScene venue={where.id} wind={res.preset} finish={scene} title={t('The finish in 3D, as it was', 'Финиш в 3D, как он был')} />
 
@@ -171,7 +171,7 @@ export default function ResultView({ id, lang, signedName, who, head, foot }: { 
             <div><span className="bt-sk">{t('Place', 'Место')}</span><b>{me.dsq ? 'DSQ' : t(ordEn(place), `${place}-е`)}</b><span className="bt-sv">{me.dsq ? t('disqualified', 'дисквалификация') : t(`of ${res.boats.length} boats`, `из ${ruBoats(res.boats.length)}`)}</span></div>
             <div><span className="bt-sk">{t('Time', 'Время')}</span><b>{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</b><span className="bt-sv">{pbNote || t('at the line', 'на финише')}</span></div>
             <div><span className="bt-sk">{t('Behind', 'Отставание')}</span><b>{winner && winner !== me && me.secs != null && winner.secs != null ? `+${gapS(me.secs - winner.secs)}` : '—'}</b><span className="bt-sv">{winner && winner !== me ? t(`${winner.name} won`, `победа: ${winner.name}`) : shared ? t('this boat won', 'эта лодка победила') : t('you won', 'ты победил')}</span></div>
-            <div><span className="bt-sk">{t('Penalties', 'Штрафы')}</span><b>{L.penT > 1 ? `${L.penT} ${t('s', 'с')}` : '0'}</b><span className="bt-sv">{L.penT > 1 ? t('turning circles', 'штрафные обороты') : t('A clean race', 'Чистая гонка')}</span></div>
+            <div><span className="bt-sk">{t('Penalties', 'Штрафы')}</span><b><Num v={L.penT > 1 ? `${L.penT} ${t('s', 'с')}` : '0'} /></b><span className="bt-sv">{L.penT > 1 ? t('turning circles', 'штрафные обороты') : t('A clean race', 'Чистая гонка')}</span></div>
           </div>
         </div>
 

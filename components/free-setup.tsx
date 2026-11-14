@@ -9,7 +9,7 @@ import { courseDistance, dailyRace, fmtDistance, pbKey, plannedCourse, savedShap
 import { CourseMap } from './course-map';
 import { GameScene, type SceneSetup } from './game-scene';
 import { PauseCard, SettingsRow, type Who } from './pause-card';
-import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, IconSun, clock } from './ui';
+import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, IconSun, Num, clock } from './ui';
 
 // the way round each shape but up and down, under its choice
 const SHAPE_HINT: Partial<Record<Shape, [string, string]>> = {
@@ -112,7 +112,7 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
   }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="scr bt-scr" lang={lang}>
+    <div className="scr bt-scr bc" lang={lang}>
       <div className="bt">
         {ready && <GameScene venue={p.venue} wind={p.preset} setup={scene} title={t('The race’s venue in 3D', 'Место гонки в 3D')} />}
 
@@ -130,9 +130,9 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
             </div>
           )}
           <div className="bt-stats">
-            <div><span className="bt-sk">{t('Wind', 'Ветер')}</span><b>{KN[p.preset]} {t('kn', 'уз')}</b></div>
-            <div><span className="bt-sk">{t('Course', 'Дистанция')}</span><b>{metres}</b></div>
-            <div><span className="bt-sk">{t('About', 'Около')}</span><b>{minutes(p)} {t('min', 'мин')}</b></div>
+            <div><span className="bt-sk">{t('Wind', 'Ветер')}</span><b><Num v={`${KN[p.preset]} ${t('kn', 'уз')}`} /></b></div>
+            <div><span className="bt-sk">{t('Course', 'Дистанция')}</span><b><Num v={metres} /></b></div>
+            <div><span className="bt-sk">{t('About', 'Около')}</span><b><Num v={`${minutes(p)} ${t('min', 'мин')}`} /></b></div>
             <div><span className="bt-sk">{t('Your best', 'Рекорд')}</span><b>{best != null ? clock(best) : '—'}</b></div>
           </div>
         </div>

@@ -1,0 +1,213 @@
+/* ==========================================================================
+   The pages laid out as the race's pause screen (the race hub, the free race, the result, your boat), in the
+   broadcast design system (public/ui/tokens.css). Each page opts in with class "bc" on its .bt-scr root; the layout
+   and the markup stay those of ryc.css, this layer gives them the broadcast's look: the condensed face for labels,
+   names and numbers, square panels over the scene, the slanted cut on the one action, one colour per meaning.
+   ========================================================================== */
+
+/* the old tokens these pages are built on, pointed at the broadcast's */
+.bt-scr.bc {
+  --f-sans: var(--cond); --f-serif: var(--sans);
+  --bg: var(--panel); --muted: var(--ink-3); --line: var(--rule); --tag-line: var(--w-16); --band: var(--fill-1);
+  --accent: var(--you); --on-accent: var(--ink-on); --ok: var(--up); --hairline: inset 0 0 0 1px var(--w-25);
+  background: var(--ground); font-family: var(--sans);
+}
+.bc .bt::before { background: linear-gradient(90deg, rgba(3, 8, 14, 0.85) 0%, rgba(3, 8, 14, 0.5) 38%, rgba(3, 8, 14, 0.08) 64%, rgba(3, 8, 14, 0.3) 100%); }
+
+/* ---------- the heading over the scene ---------- */
+.bc .bt-info { gap: var(--s-5); text-shadow: none; }
+.bc .bt-top { gap: var(--s-3); }
+.bc .bt-back { width: var(--h-m); height: var(--h-m); border-radius: 0; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+.bc .bt-back:hover { background: var(--panel-2); }
+.bc .bt-kick { display: inline-flex; align-items: center; height: 28px; padding: 0 var(--s-6) 0 var(--s-3); background: var(--you); color: var(--ink-on);
+  font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); }
+.bc .bt-h { margin: var(--s-2) 0 0; font: 700 var(--fs-display)/0.9 var(--cond); letter-spacing: -0.005em; text-transform: uppercase; text-wrap: balance; }
+.bc .bt-p { max-width: 56ch; font: 500 var(--fs-lead)/1.55 var(--sans); color: var(--ink-2); }
+/* the numbers: a row of cells, as the broadcast's lower third */
+.bc .bt-stats { align-self: flex-start; flex-wrap: wrap; gap: 0; max-width: 760px; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+.bc .bt-stats > div { flex: 1 1 140px; gap: var(--s-2); padding: var(--s-4) var(--s-6); border-right: 1px solid var(--rule); }
+.bc .bt-stats > div:last-child { border-right: 0; }
+.bc .bt-stats b { font: 700 var(--fs-h3)/1 var(--cond); }
+.bc .bt-stats .unit { text-transform: uppercase; }
+.bc .bt-sk { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .bt-sv { font: 500 var(--fs-small)/1.3 var(--sans); color: var(--ink-2); }
+.bc .bt-cap { gap: var(--s-3); padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4); border: 0; border-left: 4px solid var(--gold); border-radius: 0; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+.bc .bt-cap-t b { font: 700 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); }
+.bc .bt-cap-t span { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-2); }
+.bc .bt-cap-x { border-radius: 0; background: var(--fill-2); }
+.bc .bt-cap-x:hover { background: var(--w-16); }
+
+/* ---------- the card ---------- */
+.bc .bt-card { --cp: var(--s-5); width: 400px; gap: var(--s-5); padding: var(--cp); border: 0; border-radius: 0; background: var(--panel); box-shadow: none;
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); scrollbar-color: var(--w-25) transparent; }
+/* the one action: the broadcast's blue, cut on one side */
+/* drawn rather than clipped, the slant, so that while the card scrolls under it (it stays at the top) it can stand
+   on a solid ground that covers the rows going by, the card's padding round it included */
+.bc .bt-go { --go-ground: rgb(8, 13, 21); height: var(--h-l); gap: var(--s-3); border-radius: 0; color: var(--ink-on); font: 700 var(--fs-row)/1 var(--cond); letter-spacing: var(--ls-label);
+  background: linear-gradient(var(--you), var(--you)) left / calc(100% - 18px) 100% no-repeat,
+    linear-gradient(to bottom right, var(--you) 50%, transparent calc(50% + 0.5px)) right / 18px 100% no-repeat, var(--go-ground);
+  box-shadow: 0 0 0 var(--cp) var(--go-ground); clip-path: inset(calc(-1 * var(--cp)) calc(-1 * var(--cp)) -8px); }
+.bc .bt-dock .bt-go { box-shadow: none; clip-path: none; }
+.bc .bt-go svg { width: 18px; height: 18px; }
+.bc .bt-go:hover { filter: brightness(1.08); }
+.bc .bt-go:active { transform: none; scale: .97; }
+.bc .bt-g { gap: var(--s-3); }
+.bc .bt-k { gap: var(--s-2); margin: 0; font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink); }
+.bc .bt-k svg { width: 14px; height: 14px; color: var(--ink-3); }
+.bc .bt-k-r { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .bt-part { gap: var(--s-2); margin-top: 0; }
+.bc .bt-sub { margin: 0; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .bt-hint, .bc .bt-saved { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-3); }
+.bc .bt-err { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--live); }
+
+/* rankings: a position block, the name, the time, rows to the card's edges */
+.bc .bt-lb { margin-inline: calc(-1 * var(--cp)); border-top: 1px solid var(--rule); }
+.bc .bt-lb li { display: flex; align-items: center; gap: var(--s-3); min-height: var(--h-m); padding: 0 var(--cp) 0 0; border-bottom: 1px solid var(--rule-2);
+  font: 700 var(--fs-lead)/1.1 var(--cond); letter-spacing: var(--ls-name); animation: bc-slide-l .4s var(--ease) both; animation-delay: calc(var(--r, 0) * 45ms + 300ms); }
+.bc .bt-lb li:nth-child(2) { --r: 1; } .bc .bt-lb li:nth-child(3) { --r: 2; } .bc .bt-lb li:nth-child(4) { --r: 3; } .bc .bt-lb li:nth-child(n+5) { --r: 4; }
+.bc .bt-lb li > span:nth-child(2) { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc .bt-lb .hm-n { width: 40px; height: auto; align-self: stretch; min-height: var(--h-m); flex: none; border-radius: 0; background: var(--fill-2); color: var(--ink); box-shadow: none; font: 700 var(--fs-lead)/1 var(--cond); }
+.bc .bt-lb li.first .hm-n { background: var(--ink); color: var(--ink-on); box-shadow: none; }
+.bc .bt-lb li.me { background: color-mix(in srgb, var(--you) 16%, transparent); border-radius: 0; }
+.bc .bt-lb li.me .hm-n { background: var(--you); color: var(--ink-on); box-shadow: none; }
+.bc .bt-lb .hm-t { font: 700 var(--fs-lead)/1 var(--cond); }
+.bc .bt-lb .hm-t small { font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-3); }
+.bc .bt-lb .hm-why, .bc .bt-lb .hm-muted { font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-3); }
+.bc .bt-lb .hm-src { font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; color: var(--you); white-space: nowrap; }
+.bc .rs-name { gap: var(--s-2); }
+.bc .rs-dot { border-radius: 0; width: 4px; height: 18px; } .bc .rs-dot-me { background: var(--you); } .bc .rs-dot-fleet { background: var(--w-50); }
+
+/* choices: a segmented row, the picked one in your colour */
+.bc .bt-pills { gap: var(--s-1); }
+.bc .bt-pill { white-space: nowrap; height: var(--h-m); gap: var(--s-2); padding: 0 var(--s-4) 0 var(--s-3); border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink);
+  font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-button); }
+.bc .bt-pill:hover { background: var(--w-14); color: var(--ink); }
+.bc .bt-pill::before { border-radius: 0; width: 8px; height: 8px; box-shadow: inset 0 0 0 1.5px var(--w-50); }
+.bc .bt-pill[aria-checked="true"] { background: color-mix(in srgb, var(--up) 16%, transparent); box-shadow: inset 0 -3px 0 var(--up); color: var(--ink); }
+.bc .bt-pill[aria-checked="true"]::before { background: var(--up); box-shadow: none; }
+/* a pick among a few (role radio) is the design's segmented choice: no dot, the picked one filled in your colour;
+   an on/off (role switch) keeps the dot, green when on */
+.bc .bt-pill[role="radio"] { padding: 0 var(--s-4); }
+.bc .bt-pill[role="radio"]::before { display: none; }
+.bc .bt-pill[role="radio"][aria-checked="true"] { background: var(--you); color: var(--ink-on); box-shadow: none; }
+.bc .bt-pill:active, .bc .bt-row:active { transform: none; scale: .97; }
+.bc .bt-pill-go { flex: 1 1 0; justify-content: center; padding: 0 var(--s-3); }
+.bc .bt-seg { gap: var(--s-1); padding: 0; border: 0; border-radius: 0; background: none; }
+.bc .bt-seg :is(button, a) { height: var(--h-m); border-radius: 0; background: var(--fill-2); color: var(--ink); font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-button); }
+.bc .bt-seg :is(button, a):hover { background: var(--w-14); }
+.bc .bt-seg :is(button[aria-checked="true"], a[aria-current]) { background: var(--you); color: var(--ink-on); box-shadow: none; }
+
+/* the rows that lead on, as the pause menu's */
+.bc .bt-rows { gap: 0; margin: 0 calc(-1 * var(--cp)); border-top: 1px solid var(--rule); }
+.bc .bt-row { height: var(--h-m); gap: var(--s-3); margin: 0; padding: 0 var(--cp); border: 0; border-bottom: 1px solid var(--rule-2); border-radius: 0; font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-name); }
+.bc .bt-rows .bt-row:last-child { border-bottom: 0; }
+.bc .bt-row:hover { background: var(--w-06); border-radius: 0; }
+.bc .bt-row svg { width: 18px; height: 18px; opacity: 1; color: var(--ink-3); }
+.bc .bt-row-m { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
+.bc .bt-row-back { background: var(--fill-2); margin: 0; }
+.bc .bt-row-back:hover { background: var(--w-14); }
+.bc .bt-mini { height: var(--h-s); padding: 0 var(--s-3); border: 0; border-radius: 0; background: var(--fill-2); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); }
+.bc .bt-mini:hover { background: var(--w-14); }
+.bc .bt-mini-on, .bc .bt-mini-on:hover { background: var(--you); color: var(--ink-on); }
+.bc .bt-acct { gap: var(--s-3); padding: var(--s-3); border: 0; border-radius: 0; background: var(--fill-1); }
+.bc .bt-av { border-radius: 0; background: var(--fill-2); box-shadow: inset 0 -3px 0 var(--you); font: 700 var(--fs-small)/1 var(--cond); }
+.bc .bt-acct-t b { font: 700 var(--fs-body)/1.2 var(--cond); letter-spacing: var(--ls-name); }
+.bc .bt-acct-t small { font: 500 var(--fs-label)/1.3 var(--sans); }
+
+/* the free race: Start and Show course on top, your boat and Settings under, the choices between */
+.bc .bt-card.bt-docked { padding: 0; gap: 0; }
+.bc .bt-docked .bt-body { gap: var(--s-5); padding: var(--s-3) var(--cp) var(--s-4); scrollbar-color: var(--w-25) transparent; }
+.bc .bt-dock { gap: var(--s-2); padding: var(--cp) var(--cp) var(--s-2); }
+.bc .bt-dock-b { padding: 0; border-top: 1px solid var(--rule); }
+.bc .bt-dock-b .bt-rows { flex-direction: row; margin: 0; border-top: 0; }
+.bc .bt-dock-b .bt-row { flex: 1 1 0; justify-content: center; padding: 0 var(--s-3); border-bottom: 0; }
+.bc .bt-dock-b .bt-row + .bt-row { border-left: 1px solid var(--rule-2); }
+.bc .bt-show { height: var(--h-l); gap: var(--s-2); padding: 0 var(--s-4); border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
+.bc .bt-show:hover { background: var(--w-14); }
+.bc .bt-show[aria-pressed="true"] { background: color-mix(in srgb, var(--gold) 16%, transparent); box-shadow: inset 0 -3px 0 var(--gold); }
+.bc .bt-card .bt-map, .bc .bt-card .rs-track { border-radius: 0; }
+.bc .fp-btn, .bc .fp-pop, .bc .fp-o { border-radius: 0; }
+.bc .fp-btn { height: var(--h-m); border: 0; background: var(--fill-2); font: 500 var(--fs-body)/1 var(--sans); }
+.bc .fp-btn:hover { background: var(--w-14); }
+.bc .fp-btn[aria-expanded="true"] { background: var(--fill-2); box-shadow: inset 0 -3px 0 var(--you); }
+.bc .fp-img { border-radius: 0; }
+.bc .fp-code { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); }
+.bc .fp-pop { border: 0; background: var(--surface); }
+.bc .fp-q { height: var(--h-m); border-bottom-color: var(--rule); font: 500 var(--fs-body)/1 var(--sans); }
+.bc .fp-o { font: 500 var(--fs-body)/1 var(--sans); }
+.bc .fp-o[aria-selected="true"] { background: color-mix(in srgb, var(--you) 16%, transparent); box-shadow: inset 3px 0 0 var(--you); }
+
+/* your boat: the presets, the colours, the numbers */
+.bc .bt-card .preset { border: 0; border-radius: 0; background: var(--fill-1); padding: 2px; }
+.bc .bt-card .preset:hover { background: var(--fill-2); }
+.bc .bt-card .preset.on { background: color-mix(in srgb, var(--you) 18%, transparent); box-shadow: inset 0 -3px 0 var(--you); }
+.bc .bt-card .preset-pic { border-radius: 0; }
+.bc .bt-card .sw { border-radius: 0; }
+.bc .bt-card .sw[aria-checked="true"] { box-shadow: var(--hairline), 0 0 0 2px var(--ground), 0 0 0 4px var(--ink); }
+.bc .bt-card .num-in { height: var(--h-m); border: 0; border-bottom: 2px solid var(--w-35); border-radius: 0; background: var(--fill-1); font: 700 var(--fs-lead)/1 var(--cond); }
+.bc .bt-card .num-in:focus { border-bottom-color: var(--you); background: var(--w-10); }
+.bc .bt-card .logo-thumb { border-radius: 0; }
+
+/* the result's debrief: one call a row, its colour by how it went */
+.bc .rs-legs li { font: 700 var(--fs-body)/1.25 var(--cond); }
+.bc .rs-legs .d { font: 500 var(--fs-label)/1.3 var(--sans); }
+.bc .legs li::before { border-radius: 0; }
+.bc .rs-db { gap: var(--s-1); }
+.bc .rs-db li { gap: var(--s-2); padding: var(--s-3) var(--s-4); border: 0; border-left: 4px solid var(--down); border-radius: 0; background: var(--fill-1); }
+.bc .rs-db li.ok { border-left-color: var(--up); }
+.bc .rs-db-k { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); }
+.bc .rs-st { font-size: var(--fs-label); color: var(--down); }
+.bc .rs-st::before { border-radius: 0; background: var(--down); box-shadow: none; }
+.bc .rs-db li.ok .rs-st { color: var(--up); } .bc .rs-db li.ok .rs-st::before { background: var(--up); box-shadow: none; }
+.bc .rs-db-v { font: 700 var(--fs-row)/1.15 var(--cond); }
+.bc .rs-db-tip { font: 500 var(--fs-small)/1.45 var(--sans); }
+.bc .rs-rule { gap: var(--s-2); padding: var(--s-3) var(--s-4); border: 0; border-left: 4px solid var(--live); border-radius: 0; background: color-mix(in srgb, var(--live) 10%, transparent); }
+.bc .rs-rule-k { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--live); }
+.bc .rs-rule b { font: 700 var(--fs-body)/1.3 var(--cond); }
+.bc .rs-rule-a { color: var(--you); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); }
+.bc .rs-key { font: 600 var(--fs-label)/1 var(--cond); }
+
+/* the share sheet, over the result */
+.bc .shr-p { border: 0; border-radius: 0; background: var(--surface); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5); }
+.bc .shr-h b { font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); }
+.bc .shr-x { border-radius: 0; background: var(--fill-2); }
+.bc .shr-l { font: 500 var(--fs-body)/1.45 var(--sans); color: var(--ink-2); }
+.bc .shr-a { border-radius: 0; font: 600 var(--fs-small)/1.2 var(--cond); }
+.bc .shr-i { border-radius: 0; }
+
+/* motion: the heading rises line by line, the card slides in from the right */
+.bc .bt-info > * { animation: bc-rise .55s var(--ease) both; }
+.bc .bt-info > :nth-child(1) { animation-delay: .1s; } .bc .bt-info > :nth-child(2) { animation-delay: .17s; }
+.bc .bt-info > :nth-child(3) { animation-delay: .24s; } .bc .bt-info > :nth-child(n+4) { animation-delay: .31s; }
+.bc .bt-card { animation: bc-slide-r .6s var(--ease) both .25s; }
+.bc .bt-pill, .bc .bt-seg :is(button, a), .bc .bt-row, .bc .bt-mini, .bc .bt-show { transition: background-color var(--t-quick), color var(--t-quick), scale .12s; }
+
+/* ---------- the layouts ---------- */
+/* a phone upright: the heading over the top, the card in the lower part */
+@container scr (orientation: portrait) {
+  .bc .bt::before { background: linear-gradient(180deg, rgba(3, 8, 14, 0.75) 0%, rgba(3, 8, 14, 0.1) 30%, rgba(3, 8, 14, 0.1) 50%, rgba(3, 8, 14, 0.7) 100%); }
+  .bc .bt-info { gap: var(--s-3); }
+  .bc .bt-h { font-size: var(--fs-h2); }
+  .bc .bt-p { font-size: var(--fs-small); }
+  .bc .bt-stats { flex-wrap: nowrap; align-self: stretch; max-width: none; }
+  .bc .bt-stats > div { flex: 1 1 0; min-width: 0; padding: var(--s-2) var(--s-3); }
+  .bc .bt-stats b { font-size: var(--fs-row); }
+  .bc .bt-card { --cp: var(--s-4); width: auto; gap: var(--s-4); }
+}
+/* a phone sideways: a smaller heading, a narrower card */
+@container scr (max-height: 500px) and (orientation: landscape) {
+  .bc .bt-info { gap: var(--s-3); }
+  .bc .bt-h { font-size: var(--fs-h3); }
+  .bc .bt-stats { flex-wrap: nowrap; }
+  .bc .bt-stats > div { flex: 1 1 0; min-width: 0; padding: var(--s-2) var(--s-4); }
+  .bc .bt-pill { font-size: var(--fs-small); }
+  .bc .bt-stats b { font-size: var(--fs-title); }
+  .bc .bt-sv { display: none; }
+  .bc .bt-card { --cp: var(--s-4); width: 340px; gap: var(--s-4); }
+  .bc .bt-go { height: var(--h-m); font-size: var(--fs-lead); }
+}
+/* a computer */
+@container scr (min-width: 1024px) and (min-height: 640px) {
+  .bc .bt { padding: 48px 48px 40px 64px; }
+  .bc .bt-card { --cp: var(--s-6); width: 440px; gap: var(--s-5); }
+}
