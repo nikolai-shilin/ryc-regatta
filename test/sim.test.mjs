@@ -390,6 +390,27 @@ test('a result without the finish kept puts the fleet close to where it was as y
   }
 });
 
+// what the result page's tiles and penalty column read (main.js finishToPage keeps it): every boat's clock at each leg,
+// her penalties, and your top speed and gybes; recorded only, the sailing is the golden fixture's below
+test('the race keeps every boat’s leg times and penalties, and your top speed and gybes', () => {
+  const r = new sim.Race({ preset: 'medium', fleet: 6, laps: 1, length: 'short', start: 1, seed: 4242, course: 'tri' }), P = r.player;
+  P.ai = { ...r.boats.find((b) => b.ai).ai, lineT: 0.5, skill: 0.9 }; P.autoTrim = true;
+  for (let n = 0; n < 60 * 60 * 40 && !r.boats.every((b) => b.done); n++) r.step(1 / 60);
+  assert.ok(P.done, 'you finished');
+  for (const b of r.boats) {
+    assert.equal(b.legT.length, r.course.legs.length - 1, `${b.name}: a time for the start and each mark`);
+    assert.ok(b.legT.every((x, i) => x >= 0 && (i === 0 || x > b.legT[i - 1]) && x < b.finish), `${b.name}: in order, before the finish`);
+    assert.ok(Number.isInteger(b.pens) && b.pens >= 0);
+  }
+  assert.deepEqual(P.legT, r.log.legs, 'yours as the log has them');
+  assert.equal(P.pens, r.log.fouls.length, 'a penalty for each foul and each mark touched');
+  assert.equal(r.log.startT, P.legT[0]);
+  assert.ok(r.log.startAt > -0.5 && r.log.startAt < 1.5, `crossed at ${r.log.startAt} along the line`);
+  assert.ok(r.log.top > 3 && r.log.top < 20, `top speed ${r.log.top} kn`);
+  assert.ok(r.log.topLeg >= 1 && r.log.topLeg < r.course.legs.length);
+  assert.ok(Number.isInteger(r.log.gybes) && r.log.gybes >= 0); // the gybe button's, as the tacks are (the computer helming yours steers hers)
+});
+
 // Up and down and the triangle, one lap (test/golden.mjs --write made the fixture): the same finishes, leg times and
 // tracks, to the tenth, so 'wl' and 'tri' sail on unchanged from here on. Rewrite the fixture only when a change to the
 // sailing is meant, and whenever Göcek's land is baked again (the races are sailed in its bay, round its shore).

@@ -1777,11 +1777,13 @@ function finishToPage() {
     course: { windward: xz(c.windward), gate: c.gate.map(xz), pin: xz(c.pin), committee: xz(c.committee), legs: c.legs, ...(c.wing && { wing: xz(c.wing) }), type: c.type,
       marks: Object.fromEntries(Object.entries(c.marks).map(([k, m]) => [k, xz(m)])), ...(c.finish && { finish: [xz(c.finish.a), xz(c.finish.b)] }) },
     boats: race.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, color: typeof b.color === 'number' ? '#' + b.color.toString(16).padStart(6, '0') : null, flag: flagCode(b === P ? playerLook().flag : LOOKS[b.name] && LOOKS[b.name].flag),
-      done: !!b.done, dsq: !!b.dsq, secs: b.done ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track || []), ...(race._fin?.get(b) && { at: race._fin.get(b) }) })),
+      done: !!b.done, dsq: !!b.dsq, secs: b.done ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track || []), ...(race._fin?.get(b) && { at: race._fin.get(b) }),
+      legT: (b.legT || []).map((x) => Math.round(x * 10) / 10), pens: b.pens || 0 })), // the clock as she finished each leg, and her penalties
     log: { gunD: L.gunD, gunV: L.gunV, ocs: !!L.ocs, startDsq: L.startDsq || null, startT: L.startT, sailing: L.sailing, pct: L.sailing > 20 && L.polar ? Math.round((L.v / L.polar) * 100) : null,
-      head, lift, tacks: L.tacks.length, dirty: Math.round(L.dirty), penT: Math.round(L.penT), hails: L.hails, legs: L.legs, legPlaces: L.legPlaces || [],
+      head, lift, tacks: L.tacks.length, gybes: L.gybes, dirty: Math.round(L.dirty), penT: Math.round(L.penT), hails: L.hails, legs: L.legs, legPlaces: L.legPlaces || [],
+      startAt: L.startAt, top: Math.round(L.top * 10) / 10, topLeg: L.topLeg, topKite: !!L.topKite,
       fouls: L.fouls.map((f) => ({ rule: String(f.rule), who: f.who || null, t: f.t ?? null, x: f.x == null ? null : Math.round(f.x), z: f.z == null ? null : Math.round(f.z) })) },
-    pb: pb && { best: pb.best, isNew: pb.isNew },
+    pb: pb && { best: pb.best, isNew: pb.isNew, ...(pb.prev != null && { prev: pb.prev }) },
   };
   try {
     const keys = Object.keys(localStorage).filter((k) => k.startsWith('regatta-result-')).sort((a, b) => (JSON.parse(localStorage.getItem(a) || '{}').at || 0) - (JSON.parse(localStorage.getItem(b) || '{}').at || 0));
@@ -1793,14 +1795,15 @@ function finishToPage() {
 }
 
 
-// personal bests, kept on this device: per course on a free race, per day on today's race
+// personal bests, kept on this device: per course on a free race, per day on today's race. A new best's result keeps the
+// one it beat (pb.prev), for the result page's "Before this race"; regatta-pb itself stays { key: seconds }
 const PB_KEY = 'regatta-pb';
 const pbKey = (s, r) => `${s.preset}|${s.laps}|${s.length}|${s.fleet}${r.course.type !== 'wl' ? '|' + r.course.type : ''}`; // each shape but up and down is a course of its own: the one sailed
 function personalBest(key, secs) {
   let all = {}; try { all = JSON.parse(localStorage.getItem(PB_KEY) || '{}'); } catch (e) {}
   const old = all[key], isNew = secs != null && (old == null || secs < old);
   if (isNew) { all[key] = secs; for (const k of Object.keys(all)) if (/^daily\|/.test(k) && k < `daily|${dailyRace(new Date(Date.now() - 7 * 864e5)).day}`) delete all[k]; try { localStorage.setItem(PB_KEY, JSON.stringify(all)); } catch (e) {} }
-  return { best: isNew ? secs : old, isNew: isNew && old != null };
+  return { best: isNew ? secs : old, isNew: isNew && old != null, prev: isNew ? old ?? null : null }; // prev: the best this one beat
 }
 
 // ---------- the loop ----------
