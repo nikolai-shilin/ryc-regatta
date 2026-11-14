@@ -516,6 +516,8 @@
 .bc .hm-chip { height: var(--h-m); padding: 0 var(--s-4); border-radius: 0; background: var(--fill-2); color: var(--ink); text-decoration: none;
   font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; transition: background-color var(--t-quick); }
 .bc .hm-chip:hover { background: var(--w-14); }
+.bc .hm-chip .td { margin-left: var(--s-2); color: var(--ink-3); opacity: 1; font-weight: 600; }
+.bc .hm-ph > .hm-text a { color: var(--you); text-underline-offset: 3px; }
 .bc .hm-ph > * { animation: bc-rise var(--t-in) var(--ease) both; }
 .bc .hm-ph > :nth-child(2) { animation-delay: .07s; } .bc .hm-ph > :nth-child(3) { animation-delay: .14s; } .bc .hm-ph > :nth-child(n+4) { animation-delay: .21s; }
 /* type */

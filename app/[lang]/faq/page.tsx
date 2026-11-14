@@ -30,9 +30,9 @@ export default async function Faq({ params }: LangParams) {
       <header className="hm-page hm-ph">
         <span className="kicker">Up and down</span>
         <h1 className="hm-ph-h">{t('Questions', 'Вопросы')}</h1>
-        <p className="hm-text">{t('The game, today’s race, sailing the boat and the rules, a question at a time. For the race screen itself, with pictures, see How to play.', 'Об игре, гонке дня, управлении лодкой и правилах — по вопросу за раз. Сам экран гонки, с картинками, — на странице «Как играть».')}</p>
+        <p className="hm-text">{t('The game, today’s race, sailing the boat and the rules, a question at a time. For the race screen itself, with pictures, see ', 'Об игре, гонке дня, управлении лодкой и правилах — по вопросу за раз. Сам экран гонки, с картинками, — на странице «')}<Link href="/help">{t('How to play', 'Как играть')}</Link>{t('.', '».')}</p>
         <nav className="hm-ph-nav" aria-label={t('Contents', 'Содержание')}>
-          {groups.map((g) => <a key={g.id} className="hm-chip" href={`#q-${g.id}`}>{g.title}</a>)}
+          {groups.map((g) => <a key={g.id} className="hm-chip" href={`#q-${g.id}`}>{g.title}<span className="td">{g.items.length}</span></a>)}
         </nav>
       </header>
 
