@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { tx, type Lang } from '@/lib/lang';
 import { cleanName, NAME_MAX } from '@/lib/name';
-import { IconGoogle } from './ui';
+import { placeAmong } from '@/lib/race-log';
+import { IconGoogle, clock } from './ui';
 
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 const callback = (next: string) => `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
@@ -130,10 +131,29 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
 }
 
 // A3 · The ranking shows a name, never the email: first name and the first letter of the surname.
-export function NameForm({ lang, next, suggested, fromGoogle = false }: { lang: Lang; next: string; suggested: string; fromGoogle?: boolean }) {
+// Your best time in today's race on this device: the game's record of it (regatta-pb), else the day's results kept here
+function todaysTime(day: string) {
+  let best: number | null = null;
+  try {
+    const pb = JSON.parse(localStorage.getItem('regatta-pb') || '{}')[`daily|${day}`];
+    if (typeof pb === 'number' && pb > 0) best = pb;
+    for (const k of Object.keys(localStorage)) {
+      if (!k.startsWith('regatta-result-')) continue;
+      const r = JSON.parse(localStorage.getItem(k) || 'null'), me = r?.daily === day && Array.isArray(r.boats) ? r.boats.find((b: { me?: boolean }) => b.me) : null;
+      if (me && me.done && !me.dsq && typeof me.secs === 'number' && (best == null || me.secs < best)) best = me.secs;
+    }
+  } catch {}
+  return best;
+}
+
+// day and times: today's race and its ranked times (lib/rating.ts; null when they couldn't be had). With a time of
+// today's on this device, a row shows where it would go on the ranking, under the name being typed
+export function NameForm({ lang, next, suggested, fromGoogle = false, day, times = null }: { lang: Lang; next: string; suggested: string; fromGoogle?: boolean; day?: string; times?: number[] | null }) {
   const t = tx(lang);
   const router = useRouter();
   const [name, setName] = useState(suggested);
+  const [mine, setMine] = useState<number | null>(null);
+  useEffect(() => { if (day && times) setMine(todaysTime(day)); }, [day, times]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const save = async (e: React.FormEvent) => {
@@ -152,6 +172,11 @@ export function NameForm({ lang, next, suggested, fromGoogle = false }: { lang: 
       <p className="lead muted">{t('Only this name is public. Your email stays private.', 'Всем видно только это имя. Почта остаётся скрытой.')}</p>
       <label className="au-lbl" htmlFor="nm">{t('Name on the ranking', 'Имя в рейтинге')}</label>
       <input id="nm" className="field" type="text" autoComplete="nickname" maxLength={NAME_MAX} value={name} onChange={(e) => setName(e.target.value)} disabled={busy} autoFocus />
+      {mine != null && times && (
+        <ol className="hm-lb bt-lb au-pv" aria-label={t('Where your time today goes on the ranking', 'Где твоё сегодняшнее время в рейтинге')}>
+          <li className="me"><span className="hm-n">{placeAmong(times, mine)}</span><span>{cleanName(name) || t('Your name', 'Твоё имя')}</span><span className="hm-t">{clock(mine)}</span></li>
+        </ol>
+      )}
       {err ? <p className="err" role="alert">{err}</p> : <p className="hint">{fromGoogle ? t('Taken from your Google account: change it if you like. You can change it later in Settings too.', 'Взято из аккаунта Google — поменяй, если хочешь. Позже это можно сделать и в настройках.') : t('First name and the first letter of your surname works well. You can change it in Settings.', 'Лучше всего имя и первая буква фамилии. Поменять можно в настройках.')}</p>}
       <span className="sp" />
       <button className="pill pill-primary pill-wide pill-s" type="submit" disabled={busy}><span className="btn-t">{next.startsWith('/race') ? t('Save and race', 'Сохранить и в гонку') : t('Save', 'Сохранить')}</span></button>
