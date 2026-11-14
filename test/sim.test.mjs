@@ -332,7 +332,7 @@ for (const v of VENUES) {
       console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, corners: MESH.corners, heights: SKOPEA.parts.heights.length }));`;
     const out = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' }));
     assert.deepEqual(out.origin, [v.lat, v.lon], 'baked at the venue’s position');
-    assert.equal(out.turn, v.wind, 'turned to the venue’s wind'); // Göcek's own bake isn't turned: its wind is north
+    assert.equal(out.turn, v.wind, 'turned to the venue’s wind');
     assert.ok(out.worst >= 60, `a mark only ${Math.round(out.worst)} m from the shore (${out.where})`);
     assert.equal(out.corners, out.heights, 'the terrain the game builds from the quadtree has a height for each of its corners');
   });

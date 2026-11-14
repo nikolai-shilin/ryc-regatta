@@ -11,8 +11,9 @@
 # The frame: metres, x east and z south, from the middle of the venue's race area (`home`), turned so that its
 # prevailing wind (`wind`, the compass direction it blows from) comes from the game's north (−z), since every race is
 # laid with the wind from there. A race in Cowes beats into the Solent's south-westerly, one in Sydney into the
-# north-easterly sea breeze. `turn` in the json is that angle, so the game can turn the sun with the land. Göcek's
-# frame is older: from the town (`origin`), not turned, and its json has no `home` (land.js lays its course its own way).
+# north-easterly sea breeze, one in Göcek into the afternoon breeze funnelled up the bay from the south-south-west. `turn` in the json
+# is that angle, so the game can turn the sun with the land. Göcek's frame is from the town (`origin`), with the race
+# area's middle `mid` metres off it (x east, z south, turned with the rest into the json's `home`).
 #
 # The json holds the small things (the marinas, the piers, the towns, the landmarks) and `parts`: what the .bin holds,
 # in order, each padded to 4 bytes. The .bin is gzipped (a host serves a .bin as it is, so it is packed here and
@@ -47,7 +48,7 @@ from PIL import Image, ImageDraw, ImageFilter
 # bathy: where the sea floor's survey comes from, finer than the elevation tiles' own (EMODnet's in Europe, some 115 m;
 # NOAA's on the US coasts, down to a few metres): the depths the sea is lighter over
 VENUES = {
-    'gocek': dict(bathy='emodnet', origin=(36.7525, 28.9395), mid=(-400, 700), wind=0, zoom=14, out='skopea', towns=[(36.7564, 28.9402, 650)],
+    'gocek': dict(bathy='emodnet', origin=(36.7525, 28.9395), mid=(-400, 700), wind=195, zoom=14, out='skopea', towns=[(36.7564, 28.9402, 650)],
                   build=(36.705, 28.875, 36.795, 29.005), footprints=('Turkey', '122101223')),
     'cowes': dict(bathy='emodnet', zoom=14, home=(50.7880, -1.3060), wind=225, towns=[(50.7600, -1.2980, 900), (50.7570, -1.2880, 700)]),
     'newport': dict(bathy='noaa', zoom=14, home=(41.4570, -71.3600), wind=210, towns=[(41.4850, -71.3150, 1300), (41.4960, -71.3700, 700)],
@@ -234,7 +235,7 @@ def bake(vid, V, fetch_only=False):
     LAT0, LON0 = V.get('origin') or V['home']
     MLAT, MLON = 110574.0, 111320 * math.cos(math.radians(LAT0))
     TH = math.radians(V['wind']); CO, SI = math.cos(TH), math.sin(TH)
-    MID = np.array(V.get('mid', (0.0, 0.0)), float)
+    MX, MZ = V.get('mid', (0.0, 0.0)); MID = np.array((MX * CO + MZ * SI, MZ * CO - MX * SI), float) # turned with the frame
 
     # the frame: compass metres (x east, z south) turned so the wind's direction lands on −z
     def to_xz(lat, lon):
@@ -822,7 +823,7 @@ def bake(vid, V, fetch_only=False):
     os.makedirs(os.path.dirname(jpath), exist_ok=True)
     with open(jpath[:-5] + '.bin', 'wb') as f: f.write(gzip.compress(raw, 9, mtime=0))
     meta = {
-        'origin': [LAT0, LON0], 'turn': V['wind'], **({'home': [0, 0]} if V.get('home') else {}), 'mid': [float(MID[0]), float(MID[1])], 'lake': bool(V.get('lake')),
+        'origin': [LAT0, LON0], 'turn': V['wind'], 'home': [round(float(MID[0]), 1), round(float(MID[1]), 1)], 'mid': [float(MID[0]), float(MID[1])], 'lake': bool(V.get('lake')),
         'terrain': {'ext': EXTENT, 'n': N}, 'grid': {'x0': -EXTENT, 'cell': CC, 'n': NCC}, 'ao': {'cell': CC * 2, 'n': NCC // 2, 'k': 4}, 'far': {'ext': FEXT, 'cell': FCELL, 'n': NF, 'k': 2}, 'near': {'x0': -NE * EC / 2, 'cell': EC, 'n': NE},
         'room': {'x0': MX0, 'z0': MZ0, 'cell': SC, 'nx': MW, 'nz': MH}, 'classes': CLASSES, 'parts': desc,
         'marinas': marinas, 'pierKinds': PIERS, 'towns': towns, 'landmarks': landmarks,
