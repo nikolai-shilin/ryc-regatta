@@ -29,7 +29,7 @@ export const HUD_STRINGS = {
     space: 'Space', boardFoot: (n) => `The boats round you · ${n} in all`,
     toLeg: { lineStart: 'To the start line', mark: 'To the windward mark', mark1: 'To mark 1', wing: 'To the wing mark', mark2: 'To mark 2', offset: 'To the offset mark', gate: 'To the leeward gate', finish: 'To the finish' },
     go: 'Go', leads: 'Leads', afterGun: 'after the gun', ord: (n) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`,
-    pen: 'Pen',
+    umpire: 'Umpire · penalty', oneTurn: 'one turn', ruleN: (r) => `Rule ${r}`, against: (n) => `Against ${n}`, againstYou: 'Against you', pen: 'Pen',
     squareAt: 'square', veer: 'Veer', back: 'Back', mToLine: (m) => `${m} m to line`,
     hold: (s) => `Hold ${s}, then bear away`, bearNow: 'Bear away now, full speed', late: 'Late: bear away now',
   },
@@ -49,7 +49,7 @@ export const HUD_STRINGS = {
     space: 'Пробел', boardFoot: (n) => `Лодки рядом с тобой · всего ${n}`,
     toLeg: { lineStart: 'К линии старта', mark: 'К верхнему знаку', mark1: 'К знаку 1', wing: 'К боковому знаку', mark2: 'К знаку 2', offset: 'К знаку смещения', gate: 'К нижним воротам', finish: 'К финишу' },
     go: 'Старт!', leads: 'Лидирует', afterGun: 'после сигнала', ord: (n) => `${n}-й`,
-    pen: 'Штраф',
+    umpire: 'Судья · штраф', oneTurn: 'один оборот', ruleN: (r) => `Правило ${r}`, against: (n) => `Против ${n}`, againstYou: 'Против тебя', pen: 'Штраф',
     squareAt: 'ровная при', veer: 'Сдвиг вправо', back: 'Сдвиг влево', mToLine: (m) => `${m} м до линии`,
     hold: (s) => `Выжди ${s}, потом уваливайся`, bearNow: 'Уваливайся сейчас, полный ход', late: 'Опаздываешь: уваливайся сейчас',
   },
@@ -362,6 +362,19 @@ const CSS = `
 .b-board.b-intro .b-row { animation: bc-slide-l .4s var(--ease) both; animation-delay: calc(${AT(3)} + (var(--r, 0) + 2) * var(--t-stagger)); }
 .b-row:nth-child(2) { --r: 1; } .b-row:nth-child(3) { --r: 2; } .b-row:nth-child(4) { --r: 3; } .b-row:nth-child(5) { --r: 4; } .b-row:nth-child(6) { --r: 5; }
 
+/* the umpire's call: a red header, the boat penalised and the rule, a timer running down (under the race bug, over the
+   calls) */
+.b-ump { display: flex; flex-direction: column; width: 400px; margin-bottom: var(--s-1); animation: bc-slide-l .5s var(--ease) both; }
+.b-ump .b-umph { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) var(--s-4); background: var(--live); color: var(--ink); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.b-ump .b-umph svg { width: 16px; height: 18px; flex: none; }
+.b-ump .b-umpb { display: flex; align-items: center; gap: var(--s-4); padding: var(--s-4); }
+#hud.bc .b-ump .b-fl { width: 36px; height: 24px; }
+.b-ump .b-umpt { display: flex; flex-direction: column; gap: var(--s-2); flex: 1; min-width: 0; }
+.b-ump .n-m { display: flex; align-items: baseline; gap: var(--s-2); letter-spacing: var(--ls-name); }
+.b-ump .b-me { color: var(--you); } .b-ump .b-me:empty { display: none; }
+.b-ump .b-umpr { font: 500 var(--fs-body)/1.3 var(--sans); color: var(--ink-2); }
+.b-timer { height: 3px; background: var(--w-10); }
+.b-timer > i { display: block; height: 100%; background: var(--w-62); }
 /* a boat with a penalty to do: PEN, on her row of the board and on her tag */
 .b-pen { flex: none; display: inline-flex; align-items: center; align-self: center; height: 18px; padding: 0 var(--s-2); margin-right: var(--s-2); background: var(--live); color: var(--ink); font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
 .b-btag .b-pen { align-self: stretch; height: auto; margin: 0; padding: 0 var(--s-3); }
@@ -374,6 +387,12 @@ const CSS = `
 
 /* ---------- compact: a phone sideways, then upright ---------- */
 @media not all and ${WIDE} {
+  .b-ump { width: 280px; }
+  .b-ump .b-umph { padding: var(--s-1) var(--s-3); font-size: var(--fs-label); }
+  .b-ump .b-umpb { gap: var(--s-3); padding: var(--s-2) var(--s-3); }
+  #hud.bc .b-ump .b-fl { width: 24px; height: 16px; }
+  .b-ump .n-m { font-size: var(--fs-body); }
+  .b-ump .b-umpr { font-size: var(--fs-small); }
   .b-pen { height: 14px; padding: 0 var(--s-1); margin-right: var(--s-1); }
   #hud.bc .b-bug, #hud.bc .b-state, #hud.bc .b-board .b-bh, #hud.bc .b-board .b-bf, #hud.bc .b-map .b-mh, #hud.bc .b-gunc, #hud.bc .b-bias, #hud.bc .b-legs, #hud.bc .b-wind .b-wt > .lbl:first-child, #hud.bc .b-dir { display: none !important; }
   #hud.bc .b-tr, #hud.bc .b-low { display: contents !important; }
@@ -544,6 +563,12 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     </div></div>`);
   const acts = html(`<div class="bx b-acts"></div>`);
   const goEl = html(`<div class="b-go" aria-hidden="true"></div>`), fin = html(`<div class="b-fin" role="status"><span class="k"></span><b></b></div>`);
+  // the umpire's card, over the calls
+  const ump = html(`<div class="b-ump" role="status" hidden><div class="b-umph"><svg viewBox="0 0 16 18" aria-hidden="true"><path d="M2 1v16" stroke="currentColor" stroke-width="2"/><path d="M3 2h11v8H3z" fill="currentColor"/></svg><span>${L.umpire}</span></div>
+    <div class="pn b-umpb"><img class="b-fl" alt="" hidden><div class="b-umpt"><span class="n-m"><span class="nm"></span><span class="lbl b-me"></span></span><span class="b-umpr"></span><span class="lbl b-umpv"></span></div></div>
+    <div class="b-timer" aria-hidden="true"><i></i></div></div>`);
+  calls.append(ump);
+  const U = { fl: q(ump, '.b-fl'), nm: q(ump, '.nm'), me: q(ump, '.b-me'), r: q(ump, '.b-umpr'), v: q(ump, '.b-umpv'), bar: q(ump, '.b-timer i') };
   hud.append(bug, calls, top, tr, board, map, low, acts, goEl, fin);
   const windBox = q(tr, '.b-wind');
   const B = {
@@ -671,8 +696,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   let twaS = null, lastCount = '', legsKey = '', seqKey = '', raceRef = null, wasLead = null, wasPre = true, wasDone = false, wasShift = '', pulseAt = -1e9;
   // each boat's leg as last seen, and when each boat reached each mark (the race's clock), for the splits
   const legOf = new Map(), atMark = [];
-  // the wind's first reading; the start's call as last made
-  let wind0 = null, burnK = null;
+  // the umpire's card, while it shows (seconds left); the wind's first reading; the start's call as last made
+  let umpT = 0, wind0 = null, burnK = null;
+  const UMP_S = 7;
   // play a one-off animation again: the class off, a reflow, on, and off when it's done
   // a boat's flag (its picture's address, from main.js: the fleet's from their looks, yours from the boat page), yours
   // read once a race
@@ -690,7 +716,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   function update(P, dt) {
     if (!on) return;
     const race = getRace(), c = race.course, kn = P.v / KN, twa = P.twa, pre = race.clock < 0, done = !!P.done;
-    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; mySail = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); wind0 = race.wind.dir(); burnK = null; intro(); }
+    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; mySail = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); umpT = 0; ump.hidden = true; wind0 = race.wind.dir(); burnK = null; intro(); }
     const leg = c.legs[P.leg], nLegs = c.legs.length - 1;
     // the order: before the gun, nearest the line first; then the race's
     const toLine = (b) => Math.max(0, -race.lineInfo(b).d);
@@ -716,6 +742,8 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
         flash(split, 'on', 4800);
       }
     }
+    // the umpire's card runs down, then goes
+    if (umpT > 0) { umpT -= dt; U.bar.style.width = `${(clamp(umpT / UMP_S, 0, 1) * 100).toFixed(1)}%`; if (umpT <= 0) ump.hidden = true; }
     // the finish
     if (done && !wasDone) { txt(q(fin, '.k'), L.finished); txt(q(fin, 'b'), `${L.ord(P.place)} · ${fmt(P.finish)}`); fin.classList.add('on'); }
     if (!done) fin.classList.remove('on');
@@ -1043,5 +1071,23 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     }
   }
 
-  return { update, chips, remaining };
+  // the umpire's call on a foul that involves you (main.js hands over the race's message: 'fouled', you fouled a.who;
+  // 'theyFouled', a.who fouled you; 'touched', you touched a mark): who takes the penalty, one turn (a tack and a gybe,
+  // rule 44.2), the rule in a sentence; a timer runs down and it goes
+  function umpire(key, a = {}) {
+    const race = getRace(), P = race.player, mine = key !== 'theyFouled';
+    const b = mine ? P : race.boats.find((x) => x.name === a.who), you = b === P;
+    const rule = key === 'touched' ? '31' : String(a.rule ?? '');
+    txt(U.nm, `${you ? sailNo() : b ? b.name : a.who || ''} · ${L.oneTurn}`);
+    txt(U.me, you && sailNo() !== t('you') ? L.you : '');
+    setFlag(U.fl, b ? flagOf(b, you) : null);
+    const x = t('x' + rule);
+    txt(U.r, `${L.ruleN(rule)}: ${x !== 'x' + rule ? x : t('r' + rule)}`);
+    txt(U.v, key === 'fouled' ? L.against(a.who) : key === 'theyFouled' ? L.againstYou : '');
+    U.v.hidden = !U.v.textContent;
+    umpT = UMP_S; U.bar.style.width = '100%';
+    ump.hidden = false; ump.style.animation = 'none'; void ump.offsetWidth; ump.style.animation = ''; // in again, if one was showing
+  }
+
+  return { update, chips, remaining, umpire };
 }
