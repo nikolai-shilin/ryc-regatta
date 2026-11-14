@@ -267,6 +267,20 @@ function sailTexture(kind, look) {
     for (let i = 1; i < 12; i++) { x.beginPath(); x.moveTo(0, 0); x.lineTo(W, (i * H) / 12); x.stroke(); } // radial seams from the head
   } else {
     x.fillStyle = look.cloth; x.fillRect(0, 0, W, H);
+    // draws in metres on the cloth: clothAt(luff length, chord at f, where across the chord) gives onCloth(m, draw),
+    // draw() centred m metres up the luff with the canvas scaled by the chord there, so a mark keeps its shape however
+    // much the sail has narrowed
+    const clothAt = (span, chordAt, u) => (m, draw) => {
+      const f = m / span;
+      x.save(); x.translate(W * u, H * (1 - f)); x.scale(W / chordAt(f), H / span); draw(); x.restore();
+      t.needsUpdate = true; // the clone on the other side shares the canvas
+    };
+    // the country flag, SAIL_MARK m wide and 3:2, m metres up the luff
+    const flagAt = (onCloth, m) => logoImage(look.flag).then((img) => img && onCloth(m, () => {
+      const w = SAIL_MARK, h = w / 1.5;
+      x.drawImage(img, -w / 2, -h / 2, w, h);
+      x.strokeStyle = 'rgba(0,0,0,.22)'; x.lineWidth = 0.008; x.strokeRect(-w / 2, -h / 2, w, h); // an edge, for a white flag on white cloth
+    }));
     // laminate: fine fibres; cloth: panel seams
     if (look.laminate) {
       x.strokeStyle = 'rgba(255,255,255,.07)'; x.lineWidth = 1;
@@ -294,21 +308,14 @@ function sailTexture(kind, look) {
       else { x.fillText(look.nat, 0, -82); x.fillText(look.num, 0, 70); }
       x.restore();
       // the logo and the country flag above it, the same width on the cloth (SAIL_MARK m), evenly spaced between the
-      // number and the top batten. draw() works in metres centred m metres up the luff: the canvas is scaled by the
-      // chord there, so a square badge comes out square and the flag 3:2 however much the sail has narrowed
-      const onCloth = (m, draw) => {
-        const f = m / MAIN_SPAN;
-        x.save(); x.translate(W * 0.47, H * (1 - f)); x.scale(W / mainChord(f), H / MAIN_SPAN); draw(); x.restore();
-        t.needsUpdate = true; // the clone on the other side shares the canvas
-      };
+      // number and the top batten
+      const onCloth = clothAt(MAIN_SPAN, mainChord, 0.47);
       if (look.logo) logoImage(look.logo).then((img) => img && onCloth(9.8, () => drawContain(x, img, 0, 0, SAIL_MARK, SAIL_MARK))); // a wide logo fills the width, a square one is SAIL_MARK square
-      if (look.flag) logoImage(look.flag).then((img) => img && onCloth(11.56, () => {
-        const w = SAIL_MARK, h = w / 1.5;
-        x.drawImage(img, -w / 2, -h / 2, w, h);
-        x.strokeStyle = 'rgba(0,0,0,.22)'; x.lineWidth = 0.008; x.strokeRect(-w / 2, -h / 2, w, h); // an edge, for a white flag on white cloth
-      }));
+      if (look.flag) flagAt(onCloth, 11.56);
     } else {
       x.fillStyle = look.batten; x.fillRect(W * 0.7, H * 0.35, W * 0.3, 8); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 8);
+      // the jib flies the flag too, the same size, low and forward of its battens where the cloth is wide
+      if (look.flag) flagAt(clothAt(JIB_LUFF, (f) => JIB_FOOT * (1 - f), 0.45), 3.6);
     }
   }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.wrapS = THREE.RepeatWrapping;
@@ -513,6 +520,8 @@ const mainChord = (f) => lerp(4.75, 1.4, f) + 0.45 * Math.sin(Math.PI * f);
 const MAIN_SPAN = MASTHEAD - 0.3 - BOOM_Y, SAIL_MARK = 1.5;
 const TACK = new THREE.Vector3(0, sheerAt(1) + 0.08, BOW_Z + 0.08);
 const HEAD = new THREE.Vector3(0, HOUNDS - 0.3, MAST_Z - 0.12);
+// the jib: its luff up the forestay, and its clew from the tack (the foot); at f up the luff its chord is JIB_FOOT·(1 − f)
+const JIB_CLEW = new THREE.Vector3(0, 0.42, 3.75), JIB_LUFF = HEAD.distanceTo(TACK), JIB_FOOT = JIB_CLEW.length();
 const SPRIT = new THREE.Vector3(0, sheerAt(1) + 0.12, BOW_Z - 1.4);
 
 export class BoatView {
@@ -764,7 +773,7 @@ export class BoatView {
     ms.setXYZ(1, Math.sin(ma) * bz, BOOM_Y - 0.05, MAST_Z + Math.cos(ma) * bz); ms.needsUpdate = true;
     const ja = Math.min((b.jibSail ?? b.sail) * D2R * 0.8 + 3 * D2R, 30 * D2R); // on its own sheet when the jib has one
     this.jibPivot.quaternion.setFromAxisAngle(this.jibAxis, -this.sailSide * ja);
-    const head = HEAD.clone().sub(TACK), clew = new THREE.Vector3(0, 0.42, 3.75);
+    const head = HEAD.clone().sub(TACK), clew = JIB_CLEW;
     setSail(this.jib, (f, u, v) => {
       const lx = head.x * f, ly = head.y * f, lz = head.z * f;
       const ex = lerp(clew.x, head.x, f), ey = lerp(clew.y, head.y, f), ez = lerp(clew.z, head.z, f);
