@@ -88,6 +88,18 @@ VENUES = {
                                 dict(kind='mosque', at=(41.0085, 28.9799), h=55, minarets=4, mh=60, semis=2, wall='#c99272'),  # Hagia Sophia
                                 dict(kind='mosque', at=(41.0162, 28.9638), h=53, minarets=4, mh=72),  # Süleymaniye
                                 dict(kind='tower', at=(41.0256, 28.9741), h=63, style='galata')]),
+    # the Neva under the Peter and Paul Fortress's walls, between the Trinity and Palace bridges; the city's heights in
+    # the tiles are its roofs, not its ground (and the river stands 12 to 20 m up in them), so the land is laid flat
+    'st-petersburg': dict(zoom=14, flat=2.2, relations=True, home=(59.9464, 30.3187), wind=245,
+                          towns=[(59.9420, 30.2850, 1000), (59.9580, 30.3050, 900), (59.9370, 30.3250, 1100), (59.9590, 30.3420, 800), (59.9480, 30.3500, 700)],
+                          landmarks=[dict(kind='spire', style='peter-paul', at=(59.95010, 30.31603), b=(59.95024, 30.31700), h=122.5),  # the cathedral's belfry, the apse to the east
+                                     dict(kind='spire', style='admiralty', at=(59.93757, 30.30862), h=72.5),
+                                     dict(kind='column', at=(59.94431, 30.30690), h=32), dict(kind='column', at=(59.94467, 30.30503), h=32),  # the rostral columns
+                                     # the bridges, their spans open for the yachts (n spans, `open` the ones raised, `leaves` each)
+                                     dict(kind='drawbridge', a=(59.94649, 30.32951), b=(59.95103, 30.32544), deck=9, w=24, n=7, open=[1], leaves=1, color='#5a6863'),  # Trinity: raised by the left bank
+                                     dict(kind='drawbridge', a=(59.94024, 30.30935), b=(59.94214, 30.30682), deck=7, w=28, n=5, open=[2], leaves=2, color='#56645f'),  # Palace
+                                     dict(kind='drawbridge', a=(59.94522, 30.30317), b=(59.94735, 30.30362), deck=7, w=24, n=3, open=[1], leaves=2, color='#5d625f'),  # Exchange
+                                     dict(kind='drawbridge', a=(59.95012, 30.34896), b=(59.95358, 30.34979), deck=10, w=34, n=6, open=[1], leaves=1, color='#4f5a57')]),  # Liteyny
 }
 
 # what is on the ground (the cover part), from OpenStreetMap's land use; 0 where the map has nothing, which the game
@@ -257,6 +269,12 @@ def bake(vid, V, fetch_only=False):
         return height
     height = mosaic(V.get('zoom', ZOOM), EXTENT * 1.45)
     far_height = mosaic(FZOOM, FEXT * 1.02)
+    if V.get('flat') is not None:
+        # a flat city whose tiles have its roofs for its ground: the land at `flat` metres, the sea as the tiles have it;
+        # the land beyond less the roofs' 15 m or so, its real hills (Pulkovo's) still standing
+        f0, raw, raw_far = float(V['flat']), height, far_height
+        height = lambda x, z: (lambda h: np.where(h <= 0.5, h, f0).astype(np.float32))(raw(x, z))
+        far_height = lambda x, z: (lambda h: np.where(h <= 0.5, h, f0 + np.maximum(0, h - 15)).astype(np.float32))(raw_far(x, z))
 
     # ---------- OpenStreetMap ----------
     coastQ = f'way["natural"="coastline"]({bbox(EXTENT * 1.5)});' if not V.get('lake') else f'relation["natural"="water"]["name"="{V["lake"]}"];'
@@ -271,6 +289,7 @@ def bake(vid, V, fetch_only=False):
     if os.path.exists(os.path.join(work, 'buildings.json')): build = overpass(work, 'buildings', '(' + ''.join(f'way["building"]({b});' for b in boxes) + ');out geom tags;')
     else:  # one town at a time: a big city's all at once is more than a busy server answers
         build = [el for i, b in enumerate(boxes) for el in overpass(work, f'buildings-{i}', f'(way["building"]({b}););out geom tags;')]
+    if V.get('relations'): build += overpass(work, 'buildings-rel', '(' + ''.join(f'relation["building"]({b});' for b in boxes) + ');out geom;')  # (out geom alone: see above)
     tall = overpass(work, 'tall', f'(way["building"]["building:levels"~"^([89]|[1-9][0-9])$"]({bbox(8500)});way["building"]["height"~"^([3-9][0-9]|[1-9][0-9][0-9])(\\\\.[0-9]+)?( m)?$"]({bbox(8500)}););out geom tags;')
     cb = bbox(EXTENT * 1.45)
     coverQ = ''.join(f'{t}["{k}"~"^({"|".join(sorted(set(v for _, tags in LAYERS for v in tags.get(k, []))))})$"]({cb});'
@@ -399,7 +418,7 @@ def bake(vid, V, fetch_only=False):
                 if len(r) > 2: wd.polygon(pix(r), fill=255)
             for r in loops([line(m['geometry']) for m in el.get('members', []) if m.get('type') == 'way' and m.get('geometry') and m.get('role') == 'inner']):
                 if len(r) > 2: wd.polygon(pix(r), fill=0)
-    carve = (np.asarray(wimg) > 127) & land & (H <= 2.0)
+    carve = (np.asarray(wimg) > 127) & land & (H <= max(2.0, V.get('flat') or 0))  # (a flat city's rivers: all of them)
     land = land & ~carve
     print(f'  water ashore at the sea\'s level: {int(carve.sum())} cells', flush=True)
     # where the beaches are: the bed shelves gently off them
@@ -416,6 +435,12 @@ def bake(vid, V, fetch_only=False):
         kind = el.get('tags', {}).get('man_made')
         if kind not in ('pier', 'breakwater', 'groyne') or not el.get('geometry'): continue
         od.line(pix(line(el['geometry'])), fill=255, width=max(1, round((6 if kind != 'pier' else 2.5 + 2 * 14) / CELL)))
+    for lm in V.get('landmarks', []):  # the bridges' piers
+        if lm['kind'] != 'drawbridge': continue
+        a, b = np.array(to_xz(*lm['a']), float), np.array(to_xz(*lm['b']), float); u = (b - a) / np.hypot(*(b - a)); v = np.array([-u[1], u[0]])
+        for i in range(1, lm['n']):
+            c = a + (b - a) * i / lm['n']
+            od.polygon(pix([c + u * su * 5 + v * sv * (lm['w'] / 2 + 3) for su, sv in ((-1, -1), (1, -1), (1, 1), (-1, 1))]), fill=255)
     land_o = np.asarray(obst) > 127
     k0 = int((-5000 + G) / CELL); k1 = int((5000 + G) / CELL)
     sub = land_o[k0:k1:2, k0:k1:2]
@@ -689,13 +714,36 @@ def bake(vid, V, fetch_only=False):
         cx_ = sum(a for a, _ in r) / len(r); cz_ = sum(b for _, b in r) / len(r)
         near = min([math.hypot(cx_ - MID[0], cz_ - MID[1])] + [math.hypot(cx_ - tx, cz_ - tz) * 1.5 for tx, tz in TOWN_XZ])
         found.append({'r': r, 'h': round(min(h, 400), 1), 'roof': roof, 'd': near - min(h, 200) * 20, 'c': (cx_, cz_)})
+    def keyhole(el):
+        # a relation's outer ring with its courtyards cut in: each inner ring joined to the outer one at their nearest
+        # corners and walked the other way round, so that one ring of corners draws the building with its holes
+        segs = lambda role: [np.array(poly(m['geometry'])) for m in el.get('members', []) if m.get('type') == 'way' and m.get('geometry') and (m.get('role') == 'inner') == (role == 'inner')]
+        outs = [r for r in loops(segs('outer')) if len(r) > 3 and np.hypot(*(r[0] - r[-1])) < 1.5]
+        if not outs: return None
+        area = lambda r: (r[:-1, 0] * r[1:, 1] - r[1:, 0] * r[:-1, 1]).sum() / 2
+        o = max(outs, key=lambda r: abs(area(r)))[:-1]
+        if area(np.vstack([o, o[:1]])) < 0: o = o[::-1]
+        for h_ in sorted((r for r in loops(segs('inner')) if len(r) > 3 and np.hypot(*(r[0] - r[-1])) < 1.5), key=lambda r: -abs(area(r)))[:6]:
+            h_ = h_[:-1]
+            if area(np.vstack([h_, h_[:1]])) > 0: h_ = h_[::-1]
+            d = np.hypot(o[:, None, 0] - h_[None, :, 0], o[:, None, 1] - h_[None, :, 1]); i, j = np.unravel_index(np.argmin(d), d.shape)
+            o = np.vstack([o[:i + 1], h_[j:], h_[:j + 1], o[i:]])
+        # thinned to the 255 corners a building can have
+        k = 0.4
+        while len(o) > 250:
+            keep = [0]
+            for n_ in range(1, len(o)):
+                if np.hypot(*(o[n_] - o[keep[-1]])) >= k: keep.append(n_)
+            o = o[keep]; k *= 1.5
+        return [[round(float(a), 1), round(float(b), 1)] for a, b in o] + [[round(float(o[0][0]), 1), round(float(o[0][1]), 1)]]
     for el in build + tall:
-        if el.get('id') in seen: continue
-        seen.add(el.get('id'))
-        p = poly(el.get('geometry'))
+        if (el['type'], el.get('id')) in seen: continue
+        seen.add((el['type'], el.get('id')))
+        p = poly(el.get('geometry')) if el['type'] == 'way' else keyhole(el)
         if not p or len(p) < 4: continue
         t = el.get('tags', {}); h = num(t.get('height')) or (num(t.get('building:levels')) * 3.1 + 1.0 if t.get('building:levels') else 0)
         kind = 3 if t.get('building') in ('church', 'chapel', 'cathedral') else 4 if t.get('building') == 'mosque' else ROOFS.get(t.get('roof:shape'), 0)
+        if t.get('building') in ('castle', 'fortress') or t.get('historic') in ('castle', 'fort', 'citywalls'): kind, h = 5, h or 11.0  # a fortress's ramparts
         add(p[:-1] if p[0] == p[-1] else p, h, kind)
     if os.path.exists(foot):
         # a footprint where OSM has no building (none of OSM's within 12 m of its middle), ashore, sure and house-sized

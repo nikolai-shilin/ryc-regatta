@@ -68,12 +68,14 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 - **The yacht:** `public/game/yacht.glb` is made by `blender/yacht.py`. Run it in Blender; it writes the file in place.
 - **The venues:** today's race goes to a venue a day (`dailyVenue()` in `public/game/venues.js`, copied in
   `lib/race.ts` and in `public/play/index.html`'s preloader, which `npm test` checks): the days go round all of them
-  in a shuffled order, so each comes once every 22 days and none two days running. A new venue goes in all three
-  lists in the same place; it reshuffles the rotation, so add it close to midnight UTC, or today's venue changes mid-day. The home page's live view (`/hero-view`) stays in Göcek, to match its
+  in a shuffled order, so each comes once a round and none two days running. A new venue goes in all three lists in
+  the same place, with the day it joins (`from`, a day still to come): the days before it keep the venues they had,
+  and from it the rounds start again with the new one among them. The home page's live view (`/hero-view`) stays in Göcek, to match its
   photos. A free race goes to the venue the set-up chose (`venue`
   in the `regatta` options; `?venue=<id>` in the game's address overrides it): Göcek, Cowes, Newport, Sydney, Kiel,
   Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland, San Francisco, Valencia, Barcelona, Palma, Marstrand, Bermuda,
-  Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda or Istanbul. `public/game/venues.js` holds each one's position,
+  Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda, Istanbul or St Petersburg (the Neva under the
+  Peter and Paul Fortress, its bridges raised). `public/game/venues.js` holds each one's position,
   prevailing wind, clock and look (its woods, farmland, houses, moored boats and water); `lib/venues.ts` is the set-up
   page's list of them, and `npm test` keeps the two in step. Each venue's land, Göcek's too, is baked by
   `python3 blender/venues.py [work dir] [id ...]` (needs numpy and Pillow; `--fetch` only downloads; the downloads are

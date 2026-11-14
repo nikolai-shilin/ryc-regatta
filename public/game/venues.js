@@ -275,6 +275,22 @@ export const VENUES = [
       water: { deep: '#0a2e40', scatter: '#24868a', k: 0.45, shallow: '#4a9a8e', clear: 0.3 },
     },
   },
+  {
+    // the Neva under the Peter and Paul Fortress's walls, in the westerly off the Gulf of Finland; today's race comes
+    // here from its `from` day (dailyVenue)
+    id: 'st-petersburg', name: ['St Petersburg', 'Санкт-Петербург'], lat: 59.9464, lon: 30.3187, wind: 245, tz: 3, from: '2026-11-20',
+    skip: ['tri:medium', 'tri:long'], // the river is too narrow for the triangle's wing mark
+    look: {
+      haze: 0.8,
+      ground: { forest: ['#2b4126', '#3a5530', '#4f6c3a'], scrub: '#6c7d4c', rock: ['#a0968d', '#857c74'], town: '#9a948b', shore: '#9d948b', grass: '#5f7d45' },
+      trees: [['broad', 0.85, '#2b4126', '#557338'], ['conifer', 0.15, '#22371f', '#344f2b']], treeTop: 120, woods: 0.3,
+      // the city's stucco: ochre, pale pink, cream, the Winter Palace's green, grey and white; its roofs painted iron
+      walls: ['#e2c27c', '#e4b9a4', '#efe3c9', '#8fb7a0', '#c9c4ba', '#f1ede4', '#d9a77e', '#c7d0cc'], roofs: ['#7e4a3a', '#6b7672', '#5a5f60', '#4f6a5c'], flat: 0.75,
+      fill: 0, // every house is on the map: none made up in its squares and courtyards
+      boats: { sail: 0.55, motor: 0.45, big: 0 },
+      water: { deep: '#1b313a', scatter: '#3b625f', k: 0.55, shallow: '#4a5446', clear: 0.08 },
+    },
+  },
 ];
 
 export const venueById = (id) => VENUES.find((v) => v.id === id) || VENUES[0];
@@ -285,17 +301,24 @@ export const shapeOffered = (v, shape, length) => !(v.skip || []).includes(`${sh
 // Today's race: a venue a day, from the date (UTC), the same for everyone. The days go round all of them in a shuffled
 // order, a new one every len days, so each venue comes once in that time and none two days running. lib/race.ts has
 // a copy (npm test keeps them in step).
+// A venue added later joins on its `from` day: the days before it go round the venues there were then, as they always
+// did; from it the rounds start again with it among them. ROUNDS: each such stretch, its first day (n0) and its venues.
 const dayRng = (seed) => { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; };
-function round(k) { // the order of the venues in round k
-  const ids = VENUES.map((v) => v.id), r = dayRng((k + 1) * 40503 + 977);
-  for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
-  return ids;
+const dayN = (s) => Math.floor(Date.parse(s) / 864e5);
+export const ROUNDS = [0, ...new Set(VENUES.filter((v) => v.from).map((v) => dayN(v.from)))].sort((a, b) => a - b)
+  .map((n0) => ({ n0, ids: VENUES.filter((v) => !v.from || dayN(v.from) <= n0).map((v) => v.id) }));
+function round(ids, k) { // the order of the venues in round k
+  const a = ids.slice(), r = dayRng((k + 1) * 40503 + 977);
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
 }
-export function dailyVenue(date = new Date()) {
-  const n = Math.floor(Date.parse(date.toISOString().slice(0, 10)) / 864e5), len = VENUES.length, k = Math.floor(n / len), ids = round(k);
-  if (ids[0] === round(k - 1)[len - 1]) [ids[0], ids[1]] = [ids[1], ids[0]]; // not the same place as yesterday
-  return ids[n - k * len];
+function venueOn(n) {
+  let e = ROUNDS.length - 1; while (e > 0 && n < ROUNDS[e].n0) e--;
+  const { n0, ids } = ROUNDS[e], len = ids.length, k = Math.floor((n - n0) / len), a = round(ids, k);
+  if (a[0] === (k > 0 || e === 0 ? round(ids, k - 1)[len - 1] : venueOn(n0 - 1))) [a[0], a[1]] = [a[1], a[0]]; // not the same place as yesterday
+  return a[n - n0 - k * len];
 }
+export const dailyVenue = (date = new Date()) => venueOn(Math.floor(Date.parse(date.toISOString().slice(0, 10)) / 864e5));
 
 // The venue of the race on this page: ?venue= in the address wins; a free race goes where the set-up chose
 // (localStorage 'regatta', venue); today's race (any other /play) to the day's venue. The home page's view
