@@ -271,6 +271,7 @@ function sailTexture(kind, look) {
   const W = 512, H = kind === 'main' ? 1024 : kind === 'jib' ? 1536 : 512; // the jib tall enough for the ad on it to read
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d');
+  let sideB = null; // the jib's back face, when it needs a canvas of its own
   if (kind === 'kite') {
     const cols = look.kite; // horizontal panels in the boat's colours
     for (let i = 0; i < 8; i++) { x.fillStyle = cols[i % cols.length]; x.fillRect(0, (i * H) / 8, W, H / 8 + 1); }
@@ -329,18 +330,26 @@ function sailTexture(kind, look) {
       // chord, f up the luff) to P = head·f + clew·(1 − f)·u in the sail's plane, a grid sheared by the raked luff and
       // tapering to the head: the canvas is set to that map's inverse at the ad's middle (f0 up, about halfway along), so the
       // logo stands upright, level with the deck, and comes out its own shape on the sail.
+      // The back face reads the canvas mirrored (u → 1 − u), which would turn the shear the wrong way and lean the ad: it
+      // gets a canvas of its own (t.back, the cloth as drawn so far), the ad on it drawn with the shear the other way round.
+      const cb = document.createElement('canvas'); cb.width = W; cb.height = H; cb.getContext('2d').drawImage(c, 0, 0);
+      const tb = new THREE.CanvasTexture(cb);
       jibAd().then((img) => {
         if (!img) return;
         const f0 = 0.25, u0 = 0.52, hd = HEAD.clone().sub(TACK);
         const a = JIB_CLEW.z * (1 - f0), b = JIB_CLEW.y * (1 - f0), cc = hd.z - JIB_CLEW.z * u0, d = hd.y - JIB_CLEW.y * u0, det = a * d - b * cc;
-        x.save(); x.translate(W * u0, H * (1 - f0)); x.transform((W * d) / det, (H * b) / det, (W * cc) / det, (H * a) / det, 0, 0);
-        drawContain(x, img, 0, 0, JIB_AD, JIB_AD_H);
-        x.restore();
-        t.needsUpdate = true; // the clone on the other side shares the canvas
+        for (const [ctx, s] of [[x, 1], [cb.getContext('2d'), -1]]) {
+          ctx.save(); ctx.translate(W * (s > 0 ? u0 : 1 - u0), H * (1 - f0)); ctx.transform((W * d) / det, (s * H * b) / det, (s * W * cc) / det, (H * a) / det, 0, 0);
+          drawContain(ctx, img, 0, 0, JIB_AD, JIB_AD_H);
+          ctx.restore();
+        }
+        t.needsUpdate = true; tb.needsUpdate = true;
       });
+      sideB = tb;
     }
   }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.wrapS = THREE.RepeatWrapping;
+  if (sideB) { sideB.colorSpace = t.colorSpace; sideB.anisotropy = t.anisotropy; sideB.wrapS = t.wrapS; t.back = sideB; }
   return t;
 }
 // the cloth's relief, as a normal map: the panel seams (raised where two panels overlap and are stitched), the
@@ -401,7 +410,7 @@ function sailMesh(rows, cols, tex, shiny = false, kind = 'main') {
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   g.setIndex(idx);
-  const back = tex.clone(); back.repeat.x = -1; back.offset.x = 1; back.needsUpdate = true;
+  const back = tex.back || tex.clone(); back.repeat.x = -1; back.offset.x = 1; back.needsUpdate = true;
   const relief = sailRelief(kind), reliefBack = relief.clone(); reliefBack.repeat.x = -1; reliefBack.offset.x = 1; reliefBack.needsUpdate = true;
   // laminate (shiny) sails catch a soft sheen and let less light through than woven cloth; a spinnaker's thin nylon
   // the most. A little emissive stands for the light bounced off the sea into the cloth's shaded side.
