@@ -563,6 +563,16 @@
 .bc .gd-term dd { font: 500 var(--fs-body)/1.6 var(--sans); color: var(--ink-2); }
 .bc .gd-term:target { background: var(--fill-1); box-shadow: -12px 0 0 var(--fill-1), 12px 0 0 var(--fill-1); }
 .bc .gd-see { color: var(--you); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); }
+/* Learn: the glossary as a banner under the guides */
+.bc .gd-banner { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5) var(--s-8); padding: var(--s-8); background: var(--panel-2); color: var(--ink); text-decoration: none; transition: box-shadow var(--t-quick); }
+.bc .gd-banner:hover { box-shadow: inset 0 0 0 1px var(--w-25); }
+.bc .gd-banner .kicker { flex: none; }
+.bc .gd-banner-t { flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: var(--s-2); }
+.bc .gd-banner-t .card-title { font: 700 var(--fs-h3)/1 var(--cond); text-transform: uppercase; }
+.bc .gd-banner-t p { margin: 0; font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+.bc .gd-banner-go { display: inline-flex; align-items: center; gap: var(--s-2); min-height: var(--h-m); padding: 0 var(--s-5); background: var(--fill-2);
+  font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; transition: background-color var(--t-quick); }
+.bc .gd-banner:hover .gd-banner-go { background: var(--w-14); }
 /* a guide's end: Now try it in solid blue, then three ways on, the next guide last */
 .bc .gd-try { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-6); padding: var(--s-8); background: var(--you); color: var(--ink-on); }
 .bc .gd-try-t { flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); }
@@ -582,6 +592,11 @@
 .bc .gd-next-card .card-title { font-size: var(--fs-lead); text-transform: uppercase; }
 .bc .gd-next-card svg { grid-column: 2; grid-row: 1 / span 2; color: var(--you); }
 .bc .gd-also { margin: var(--s-2) 0 0; display: flex; flex-wrap: wrap; gap: var(--s-6); }
+/* a closing band: the glossary's way on to the guides */
+.bc .rd-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-5); margin-bottom: var(--hm-sec); padding: var(--s-8); background: var(--panel-2); }
+.bc .rd-cta-t { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
+.bc .rd-cta-t b { font: 700 var(--fs-h3)/1 var(--cond); text-transform: uppercase; }
+@container help (max-width: 599px) { .bc :is(.gd-banner, .gd-try, .rd-cta) { padding: var(--s-6) var(--s-5); } }
 /* the exam trainer */
 .bc .iyt-card { border-radius: 0; background: var(--surface); }
 .bc .hm-help-side .iyt-card { border: 0; border-left: 4px solid var(--you); }
