@@ -22,7 +22,7 @@ export default async function SettingsPage({ params }: LangParams) {
   );
   const via = account?.provider === 'google' ? 'Google' : account?.provider === 'telegram' ? 'Telegram' : t('email code', 'код по почте');
   return (
-    <div className="scr app" lang={lang} data-acct={account ? 'signed' : 'guest'}>
+    <div className="scr app bc" lang={lang} data-acct={account ? 'signed' : 'guest'}>
       <SiteHead lang={lang} t={t} page="settings" />
       <div className="lay page">
         <div className="aph">

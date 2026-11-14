@@ -23,7 +23,7 @@ export default async function Glossary({ params }: LangParams) {
     hasDefinedTerm: terms.map((x) => ({ '@type': 'DefinedTerm', '@id': `${url}#${x.id}`, name: x.term, description: x.def, inDefinedTermSet: url })),
   };
   return (
-    <div className="scr help hp" lang={lang}>
+    <div className="scr help hp bc" lang={lang}>
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <SiteHead lang={lang} t={t} page="learn" crumbs={[[t('Learn to race', 'Учись гоняться'), '/learn'], [t('Glossary', 'Словарь'), '/learn/glossary']]} />
       <header className="hm-page hm-ph">

@@ -5,11 +5,11 @@ import { tx, type Lang } from '@/lib/lang';
 import { DAYTIMES, readOpts, readPb, saveOpts, type Daytime } from '@/lib/opts';
 import type { VenueId } from '@/lib/venues';
 import { lengthOffered, shapeOffered, venueOf, VENUES } from '@/lib/venues';
-import { courseDistance, dailyRace, fmtDistance, pbKey, plannedCourse, savedShape, KN, SHAPE_NAME, SHAPES, type Length, type Shape, type Wind } from '@/lib/race';
+import { courseDistance, dailyRace, fmtDistance, pbKey, plannedCourse, raceMinutes, savedShape, KN, SHAPE_NAME, SHAPES, type Length, type Shape, type Wind } from '@/lib/race';
 import { CourseMap } from './course-map';
 import { GameScene, type SceneSetup } from './game-scene';
 import { PauseCard, SettingsRow, type Who } from './pause-card';
-import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, IconSun, clock } from './ui';
+import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, IconSun, Num, clock } from './ui';
 
 // the way round each shape but up and down, under its choice
 const SHAPE_HINT: Partial<Record<Shape, [string, string]>> = {
@@ -20,10 +20,8 @@ const SHAPE_HINT: Partial<Record<Shape, [string, string]>> = {
 
 type Pick = { venue: VenueId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape; daytime: Daytime };
 
-// a rough guide to the race's length on the water, so a choice shows its effect; each shape's factor is as the computer
-// boats take it, against up and down
-const SHAPE_TIME: Record<Shape, number> = { wl: 1, tri: 1.3, trap: 1.25, wlu: 1.6 };
-const minutes = (p: Pick) => Math.round(({ short: 4.5, medium: 7, long: 9.5 }[p.length] * p.laps * { light: 1.25, medium: 1, strong: 0.9 }[p.preset] * SHAPE_TIME[p.course]) + p.start);
+// a rough guide to the race's length on the water, so a choice shows its effect (lib/race.ts)
+const minutes = raceMinutes;
 // what the scene shows as each choice is made: the fleet, the wind or the current over the course, or the course
 type View = SceneSetup['view'];
 const VIEW_OF: Record<keyof Pick, View> = { venue: 'boats', fleet: 'boats', start: 'boats', preset: 'wind', current: 'current', course: 'course', length: 'course', laps: 'course', daytime: 'boats' };
@@ -114,9 +112,9 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
   }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="scr bt-scr" lang={lang}>
+    <div className="scr bt-scr bc" lang={lang}>
       <div className="bt">
-        {ready && <GameScene venue={p.venue} wind={p.preset} setup={scene} title={t('The race’s venue in 3D', 'Место гонки в 3D')} />}
+        {ready && <GameScene venue={p.venue} wind={p.preset} setup={scene} title={t('The race’s venue in 3D', 'Место гонки в 3D')} loading={t('Loading the venue', 'Загружаем место гонки')} />}
 
         <div className="bt-info">
           <div className="bt-top">
@@ -132,9 +130,9 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
             </div>
           )}
           <div className="bt-stats">
-            <div><span className="bt-sk">{t('Wind', 'Ветер')}</span><b>{KN[p.preset]} {t('kn', 'уз')}</b></div>
-            <div><span className="bt-sk">{t('Course', 'Дистанция')}</span><b>{metres}</b></div>
-            <div><span className="bt-sk">{t('About', 'Около')}</span><b>{minutes(p)} {t('min', 'мин')}</b></div>
+            <div><span className="bt-sk">{t('Wind', 'Ветер')}</span><b><Num v={`${KN[p.preset]} ${t('kn', 'уз')}`} /></b></div>
+            <div><span className="bt-sk">{t('Course', 'Дистанция')}</span><b><Num v={metres} /></b></div>
+            <div><span className="bt-sk">{t('About', 'Около')}</span><b><Num v={`${minutes(p)} ${t('min', 'мин')}`} /></b></div>
             <div><span className="bt-sk">{t('Your best', 'Рекорд')}</span><b>{best != null ? clock(best) : '—'}</b></div>
           </div>
         </div>
@@ -169,7 +167,7 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
           {tags('start', <IconFlag />, t('Start', 'Старт'), [[1, t('1 min', '1 мин')], [3, t('3 min', '3 мин')], [5, t('5 min', '5 мин')]])}
           {tags('current', <IconTide />, t('Current', 'Течение'), [[0, t('Off', 'Выкл')], [1, t('On', 'Вкл')]],
             <p className="bt-hint">{t('On: a tide sets every boat across the course.', 'Вкл: течение сносит все лодки поперёк дистанции.')}</p>)}
-          <div className="bt-g">
+          <div className="bt-g fs-course-in">
             <span className="bt-k"><IconRoute />{t('Your course', 'Твоя дистанция')}<span className="bt-k-r">{p.course !== 'wl' ? `${shapeName} · ` : ''}{courseName} · {lapsName} · {metres}</span></span>
             <CourseMap className="cmap bt-map" lang={lang} geo={geo} preset={p.preset} W={250} H={210} route fleet={p.fleet} />
           </div>

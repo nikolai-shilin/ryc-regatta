@@ -43,6 +43,11 @@ export function dailyRace(date = new Date()): Daily {
 }
 
 export const KN: Record<Wind, number> = { light: 7, medium: 12, strong: 19 };
+// about how long a race takes, start sequence included, in minutes: the free race's set-up and the home page say it.
+// Each shape's factor is as the computer boats take it, against up and down.
+const SHAPE_TIME: Record<Shape, number> = { wl: 1, tri: 1.3, trap: 1.25, wlu: 1.6 };
+export const raceMinutes = (p: { preset: Wind; length: Length; laps: number; start: number; course: Shape }) =>
+  Math.round({ short: 4.5, medium: 7, long: 9.5 }[p.length] * p.laps * { light: 1.25, medium: 1, strong: 0.9 }[p.preset] * SHAPE_TIME[p.course] + p.start);
 
 // The course on the water, in metres, as public/game/sim.js lays it out (makeCourse, Race): x across, z down the wind
 // (the wind blows from −z), the start line through z = 0. A planned course has no skew; the game gives each race a

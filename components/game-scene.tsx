@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { VenueId } from '@/lib/venues';
 import type { Wind } from '@/lib/race';
+import { LoadBar } from './skeleton';
 
 // The scene behind the pages laid out as the race's pause screen (the race hub, the free race's set-up): the game at a
 // venue (public/boat-view), your yacht afloat there on a clear evening. Another venue is a new page, loaded beside the
@@ -17,7 +18,7 @@ export type SceneSetup = {
   view: 'boats' | 'wind' | 'current' | 'course';
   labels: Record<string, string>;
 };
-export function GameScene({ venue, wind, title, finish, setup }: { venue: VenueId; wind: Wind; title: string; finish?: object; setup?: SceneSetup }) {
+export function GameScene({ venue, wind, title, finish, setup, loading }: { venue: VenueId; wind: Wind; title: string; finish?: object; setup?: SceneSetup; loading?: string }) {
   const [frames, setFrames] = useState<{ id: number; venue: VenueId; wind: Wind; live: boolean }[]>(() => [{ id: 0, venue, wind, live: false }]);
   const refs = useRef(new Map<number, HTMLIFrameElement>());
   const windNow = useRef(wind); windNow.current = wind;
@@ -65,7 +66,9 @@ export function GameScene({ venue, wind, title, finish, setup }: { venue: VenueI
     if (info) ro.observe(info);
     return () => { removeEventListener('message', on); removeEventListener('resize', fit); ro.disconnect(); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  return <>{frames.map((f) => (
+  // the bar runs while the venue on top is still coming up
+  const busy = !frames[frames.length - 1].live;
+  return <>{loading ? <LoadBar label={loading} on={busy} /> : null}{frames.map((f) => (
     <iframe key={f.id} ref={(el) => { if (el) refs.current.set(f.id, el); else refs.current.delete(f.id); }} className={`bt-scene bt-fade ${f.live ? 'on' : ''}`}
       src={`/boat-view?venue=${f.venue}&wind=${f.wind}${finish ? '&finish=1' : setup ? '&setup=1' : ''}`} title={title} onLoad={() => post({ type: 'hello' }, f.id)} />
   ))}</>;

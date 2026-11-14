@@ -1,4 +1,5 @@
 import type { Lang } from '@/lib/lang';
+import { CountUp } from './count-up';
 
 // The RYC logo and the line icons of the design (24px grid, 2px stroke, currentColor).
 export function Logo({ className = 'logo' }: { className?: string }) {
@@ -67,6 +68,10 @@ export function Langs({ lang, back, className = '' }: { lang: Lang; back: string
     </nav>
   );
 }
+
+// a number and its unit ("12 kn"), the unit set small after it, as the broadcast sets them; the number counts up the
+// first time it's seen
+export const Num = ({ v }: { v: string }) => { const [n, ...u] = v.split(' '); return <><CountUp v={n} />{u.length ? <span className="unit">{u.join(' ')}</span> : null}</>; };
 
 export const clock = (s: number) => {
   const m = Math.floor(s / 60), r = s - m * 60;

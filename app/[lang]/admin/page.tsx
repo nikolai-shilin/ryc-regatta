@@ -26,7 +26,7 @@ export default async function AdminPage({ params }: LangParams) {
     jib = typeof row?.value?.url === 'string' ? { url: row.value.url, path: typeof row.value.path === 'string' ? row.value.path : undefined } : null;
   }
   return (
-    <div className="scr app" lang={lang} data-acct={account ? 'signed' : 'guest'}>
+    <div className="scr app bc" lang={lang} data-acct={account ? 'signed' : 'guest'}>
       <SiteHead lang={lang} t={t} page="settings" />
       <div className="lay page">
         <div className="aph">

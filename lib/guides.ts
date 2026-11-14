@@ -124,8 +124,8 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
       { id: 'sheet', h: t('Set the sheet for the wind', 'Шкот — по ветру'), p: [
         t('A sail works when the wind flows smoothly along both sides of it. Let it out too far and its front edge flaps; pull it in too far and the flow breaks away behind it and the boat slows without showing it. Every time you change course, the sheets have to follow.',
           'Парус работает, когда ветер плавно обтекает его с обеих сторон. Перетравишь — передняя кромка заполощет; перебрал — поток срывается с подветренной стороны, и лодка замедляется незаметно. При каждой смене курса шкоты должны следовать за ним.'),
-        t('In Up and down each sheet has a blue band for the wind you’re in: keep the knob in it. Or let the game trim for you and only steer.',
-          'В Up and down у каждого шкота есть синяя полоса для текущего ветра: держи ползунок в ней. Или пусть игра настраивает паруса сама, а ты только рули.'),
+        t('In Up and down each sheet has a green band for the wind you’re in: keep the knob in it. Or let the game trim for you and only steer.',
+          'В Up and down у каждого шкота есть зелёная полоса для текущего ветра: держи ползунок в ней. Или пусть игра настраивает паруса сама, а ты только рули.'),
       ] },
       { id: 'steer', h: t('Steer in small moves', 'Рули маленькими движениями'), p: [
         t('The rudder is a brake as well as a steering wheel: every movement of it slows the boat. Make small, early corrections rather than big late ones, and let the boat sail.',
@@ -285,8 +285,8 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
       { id: 'tack', h: t('Tack on the headers', 'Поворачивай на заходе'), p: [
         t('When you are headed, tack: on the new tack the same shift lifts you, and you sail towards the mark at a better angle. Stay on the tack that points you closer to the mark, and you are always on the lifted one.',
           'Когда ветер зашёл — поворачивай: на новом галсе тот же сдвиг станет отходом, и ты пойдёшь к знаку под лучшим углом. Держись галса, который ведёт ближе к знаку, — и ты всегда на выгодном.'),
-        t('In Up and down the chip under the speed says which you are in: orange for a header, blue for a lift. After the race, the result counts your tacks in headers and in lifts.',
-          'В Up and down метка под скоростью говорит, что сейчас: оранжевая — заход, синяя — отход. После гонки в результате посчитано, сколько поворотов ты сделал на заходе и сколько на отходе.'),
+        t('In Up and down the wind box says which you are in on the beat: Header in orange, Lift in green. After the race, the result counts your tacks in headers and in lifts.',
+          'В Up and down окно ветра на лавировке говорит, что сейчас: «Заход» оранжевым, «Отход» зелёным. После гонки в результате посчитано, сколько поворотов ты сделал на заходе и сколько на отходе.'),
       ] },
       { id: 'dont', h: t('When not to tack', 'Когда не поворачивать'), p: [
         t('Every tack costs a few boat lengths while the boat slows and builds speed again. A shift of two or three degrees that lasts ten seconds isn’t worth one. Wait until the header is real — and don’t tack into another boat’s dirty air, or onto port across a fleet on starboard.',

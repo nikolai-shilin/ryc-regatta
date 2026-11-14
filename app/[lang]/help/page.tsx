@@ -11,24 +11,28 @@ export const generateMetadata = titled('How to play', 'Как играть', {
     'Как играть в Up and down: руль пальцем или стрелками, настройка грота и стакселя, повороты, генакер, старт и заходы ветра. Экран гонки, виды камеры и правила парусных гонок — с картинками.'],
 });
 
-const WIDE: [number, number][] = [[34.8, 3.1], [65.2, 3.1], [44.2, 9], [84.1, 3.1], [96.5, 8], [9.2, 6.4], [9.2, 18.3], [8, 84], [95.3, 70], [87, 95.7], [73.5, 58.5], [80.8, 24.5]];
-const NARROW: [number, number][] = [[12, 25.3], [86, 25.3], [32.5, 26.1], [62.3, 7.4], [89.5, 7.4], [23, 4.6], [23, 13], [21.5, 85.5], [87, 72], [59.5, 96], [50, 50], [84, 39.5]];
+// where each numbered part sits on the pictures, as a share of their width and height, in the key's order (the
+// pictures and the blocks' places come from scripts/shots.mjs); null where that layout has no such part (a computer
+// steers with the keys, so it shows no steering arc)
+type Mark = [number, number] | null;
+const WIDE: Mark[] = [[36, 93.3], [32, 9], [36, 83.7], [85.5, 10], [75.8, 20], [18.6, 72], [72, 9.8], null, [93.3, 75], [80.4, 94], [60, 55], [51.5, 31.2]];
+const NARROW: Mark[] = [[16, 3.5], [59.5, 19.2], [24.5, 80.4], [32.5, 8.7], [49.5, 11], [33.5, 18], [82, 49], [6, 84], [81, 80], [60, 89.5], [72, 52], [54, 32.8]];
 const K = ({ k }: { k: string }) => <span className="kbd">{k}</span>;
 
 // H1 · How to play: one page with the game's own pictures, instead of coach marks.
 export default async function Help({ params }: LangParams) {
   const { lang, t } = await getT(params);
   const key: [string, string][] = [
-    [t('Speed', 'Скорость'), t('Boat speed in knots; the bar under it fills towards her target speed.', 'Скорость лодки в узлах; полоска под ней растёт к целевой скорости.')],
-    [t('The race', 'Гонка'), t('Before the start: the countdown, the distance and time to the line, the favoured end. Then the race time, the next mark and your place.', 'До старта — отсчёт, расстояние и время до линии, выгодный конец. Потом — время гонки, следующий знак и твоё место.')],
-    [t('Committee boat flags', 'Флаги судейского судна'), t('The start signals. See “The start”.', 'Стартовые сигналы. См. «Старт».')],
-    [t('Zoom and game speed', 'Масштаб и скорость игры'), t('+ and − move the camera; 1× runs the race 1.5, 2 or 3 times faster.', '+ и − приближают камеру; 1× ускоряет гонку в 1,5, 2 или 3 раза.')],
-    [t('Camera and pause', 'Камера и пауза'), t('The camera button switches Drone, Top and Helm; the last button pauses the race.', 'Кнопка камеры переключает Дрон, Сверху и Штурвал; последняя ставит гонку на паузу.')],
-    [t('Wind dial', 'Ветер'), t('Where the wind comes from and how strong it is; red, the angles too close to sail.', 'Откуда дует ветер и какой он силы; красным — слишком острые углы.')],
+    [t('Your numbers', 'Твои цифры'), t('Speed, how close you are to her target speed, VMG and the distance to the next mark, and the gap to the leader. Before the start: the distance to the line and your time to burn.', 'Скорость, насколько ты близок к целевой, VMG и расстояние до следующего знака, отставание от лидера. До старта — расстояние до линии и запас времени.')],
+    [t('Start clock and flags', 'Часы старта и флаги'), t('Before the gun: the countdown, the committee boat’s flags and which end of the line is favoured. Then the legs of the race. See “The start”.', 'До сигнала — отсчёт, флаги судейского судна и выгодный конец линии. Потом — отрезки гонки. См. «Старт».')],
+    [t('The call', 'Подсказка'), t('What to do next, or what just happened: the start signals, a tip, a rule.', 'Что делать дальше или что сейчас было: сигналы старта, подсказка, правило.')],
+    [t('Wind box', 'Окно ветра'), t('Where the wind comes from round your bow and how strong it is; red, the angles too close to sail. On the beat it says Lift or Header.', 'Откуда дует ветер относительно носа и какой он силы; красным — слишком острые углы. На лавировке пишет «Отход» или «Заход».')],
+    [t('The fleet', 'Флот'), t('Before the start, who is nearest the line; then the order of the race and each boat’s gap.', 'До старта — кто ближе к линии; потом порядок гонки и разрыв каждой лодки.')],
     [t('Map', 'Карта'), t('The whole course: the marks, the line, every boat. Tap it to make it bigger.', 'Вся дистанция: знаки, линия, все лодки. Нажми, чтобы увеличить.')],
-    [t('Steering arc', 'Руль'), t('Drag along it with your left thumb, or press ← →.', 'Веди по дуге левым пальцем или жми ← →.')],
-    [t('Sheet', 'Шкот'), t('Up pulls the sails in, down eases them; ↑ ↓ on a keyboard.', 'Вверх — выбрать паруса, вниз — потравить; ↑ ↓ на клавиатуре.')],
-    [t('Tack', 'Поворот'), t('Turns you through the wind; downwind it gybes. Space on a keyboard.', 'Поворот через ветер, на попутном курсе — фордевинд. Пробел на клавиатуре.')],
+    [t('Camera, zoom and pause', 'Камера, масштаб и пауза'), t('The camera button switches Drone, Top and Helm; + and − zoom; 1× runs the race faster; the last button pauses.', 'Кнопка камеры переключает Дрон, Сверху и Штурвал; + и − приближают; 1× ускоряет гонку; последняя кнопка — пауза.')],
+    [t('Steering arc', 'Руль'), t('On a phone, drag along it with your left thumb. On a computer, ← →.', 'На телефоне веди по дуге левым пальцем. На компьютере — ← →.')],
+    [t('Sheet', 'Шкот'), t('Up pulls the sails in, down eases them; keep the knob in the green band. ↑ ↓ on a keyboard.', 'Вверх — выбрать паруса, вниз — потравить; держи ручку в зелёной полосе. ↑ ↓ на клавиатуре.')],
+    [t('Tack', 'Поворот'), t('Turns you through the wind; downwind it gybes. The kite, a reef or a smaller jib come up above it when they’re wanted.', 'Поворот через ветер, на попутном курсе — фордевинд. Генакер, риф и малый стаксель появляются над ней, когда нужны.')],
     [t('Wind ring', 'Кольцо ветра'), t('The angles you can sail, round your boat. See “Reading the wind”.', 'Углы, под которыми можно идти, вокруг лодки. См. «Как читать ветер».')],
     [t('Where next', 'Куда дальше'), t('The line before the start, then each mark, and how far it is.', 'До старта — линия, потом каждый знак, и сколько до него.')],
   ];
@@ -49,10 +53,10 @@ export default async function Help({ params }: LangParams) {
     );
     return band ? <div className="hm-band">{el}</div> : el;
   };
-  const marks = (pts: [number, number][]) => pts.map(([x, y], i) => <span key={i} className="hmark" style={{ left: `${x}%`, top: `${y}%` }}>{i + 1}</span>);
+  const marks = (pts: Mark[]) => pts.map((m, i) => m && <span key={i} className="hmark" style={{ left: `${m[0]}%`, top: `${m[1]}%` }}>{i + 1}</span>);
   const item = (img: string, alt: string, title: string, text: string, keys: React.ReactNode) => (
     <div className="hitem">
-      <Image className="hshot" src={`/images/${img}-v3.jpg`} width={960} height={720} sizes="(min-width: 900px) 360px, (min-width: 600px) 50vw, 100vw" alt={alt} />
+      <Image className="hshot" src={`/images/${img}.jpg`} width={960} height={720} sizes="(min-width: 900px) 360px, (min-width: 600px) 50vw, 100vw" alt={alt} />
       <span className="card-title">{title}</span>
       <p className="lead">{text}</p>
       <span className="hkeys">{keys}</span>
@@ -60,7 +64,7 @@ export default async function Help({ params }: LangParams) {
   );
 
   return (
-    <div className="scr help hp" lang={lang}>
+    <div className="scr help hp bc" lang={lang}>
       <SiteHead lang={lang} t={t} page="help" />
       <header className="hm-page hm-ph">
         <span className="kicker">Up and down</span>
@@ -73,11 +77,11 @@ export default async function Help({ params }: LangParams) {
 
       {sec('h-screen', t('Everything you see', 'Всё, что на экране'), t('The race screen', 'Экран гонки'), <>
         <figure className="hfig only-wide">
-          <Image className="hshot" src="/images/hud-desk-v3.jpg" width={2160} height={1350} sizes="(min-width: 1200px) 1120px, 100vw" alt={t('The race screen on a desktop, numbered', 'Экран гонки на компьютере, с номерами')} />
+          <Image className="hshot" src="/images/hud-desk-v4.jpg" width={3240} height={2025} sizes="(min-width: 1200px) 1120px, 100vw" alt={t('The race screen on a desktop, numbered', 'Экран гонки на компьютере, с номерами')} />
           {marks(WIDE)}
         </figure>
         <figure className="hfig only-narrow">
-          <Image className="hshot" src="/images/hud-port-v3.jpg" width={780} height={1688} sizes="100vw" alt={t('The race screen on a phone held upright, numbered', 'Экран гонки на телефоне вертикально, с номерами')} />
+          <Image className="hshot" src="/images/hud-port-v4.jpg" width={1170} height={2532} sizes="100vw" alt={t('The race screen on a phone held upright, numbered', 'Экран гонки на телефоне вертикально, с номерами')} />
           {marks(NARROW)}
         </figure>
         <ol className="hlegend">
@@ -87,9 +91,9 @@ export default async function Help({ params }: LangParams) {
 
       {sec('h-controls', t('Sailing the boat', 'Как вести лодку'), t('Controls', 'Управление'), (
         <div className="hgrid">
-          {item('h-steer', t('The steering arc', 'Дуга руля'), t('Steer', 'Руль'), t('Drag your left thumb along the arc. She turns slowly, so make small moves: every turn of the rudder brakes the boat.', 'Веди левым пальцем по дуге. Яхта поворачивает медленно, так что двигай понемногу: каждый поворот руля тормозит лодку.'), <>{t('Keyboard:', 'Клавиатура:')} <K k="←" /> <K k="→" /></>)}
-          {item('h-trim', t('The sheet slider', 'Ползунок шкота'), t('Trim the sails', 'Настрой паруса'), t('Slide your right thumb up to pull the sails in, down to ease them. Keep the knob in the green band. Rather just steer? Settings › Sails › Auto.', 'Правым пальцем вверх — выбрать паруса, вниз — потравить. Держи ручку в зелёной полосе. Хочешь только рулить? Настройки › Паруса › Авто.'), <>{t('Keyboard:', 'Клавиатура:')} <K k="↑" /> <K k="↓" /></>)}
-          {item('h-tack', t('The Tack button', 'Кнопка «Поворот»'), t('Tack, gybe, kite', 'Поворот, фордевинд, генакер'), t('Tack turns the bow through the wind; downwind the same button gybes. On a run, Kite sets the gennaker — drop it in good time before the gate. In a blow, Reef makes the main smaller.', '«Поворот» проводит нос через ветер, на попутном курсе — фордевинд. На попутном «Генакер» ставит генакер — убирай его заранее до ворот. В сильный ветер «Риф» уменьшает грот.'), <>{t('Keyboard:', 'Клавиатура:')} <K k={t('Space', 'Пробел')} /> {t('tack', 'поворот')} · <K k="K" /> {t('kite', 'генакер')}</>)}
+          {item('h-steer-v4', t('The steering arc', 'Дуга руля'), t('Steer', 'Руль'), t('Drag your left thumb along the arc. She turns slowly, so make small moves: every turn of the rudder brakes the boat.', 'Веди левым пальцем по дуге. Яхта поворачивает медленно, так что двигай понемногу: каждый поворот руля тормозит лодку.'), <>{t('Keyboard:', 'Клавиатура:')} <K k="←" /> <K k="→" /></>)}
+          {item('h-trim-v4', t('The sheet slider', 'Ползунок шкота'), t('Trim the sails', 'Настрой паруса'), t('Slide your right thumb up to pull the sails in, down to ease them. Keep the knob in the green band. Rather just steer? Settings › Sails › Auto.', 'Правым пальцем вверх — выбрать паруса, вниз — потравить. Держи ручку в зелёной полосе. Хочешь только рулить? Настройки › Паруса › Авто.'), <>{t('Keyboard:', 'Клавиатура:')} <K k="↑" /> <K k="↓" /></>)}
+          {item('h-tack-v4', t('The Tack button', 'Кнопка «Поворот»'), t('Tack, gybe, kite', 'Поворот, фордевинд, генакер'), t('Tack turns the bow through the wind; downwind the same button gybes. On a run, Kite sets the gennaker — drop it in good time before the gate. In a blow, Reef makes the main smaller.', '«Поворот» проводит нос через ветер, на попутном курсе — фордевинд. На попутном «Генакер» ставит генакер — убирай его заранее до ворот. В сильный ветер «Риф» уменьшает грот.'), <>{t('Keyboard:', 'Клавиатура:')} <K k={t('Space', 'Пробел')} /> {t('tack', 'поворот')} · <K k="K" /> {t('kite', 'генакер')}</>)}
         </div>
       ))}
 
@@ -97,7 +101,7 @@ export default async function Help({ params }: LangParams) {
         <div className="hsplit">
           <Image className="hshot" src="/images/h-wind-v3.jpg" width={960} height={720} sizes="(min-width: 600px) 50vw, 100vw" alt={t('The wind ring round the boat, from above', 'Кольцо ветра вокруг лодки, сверху')} />
           <div className="hstack">
-            <p className="lead">{t('The ring round your boat shows the angles you can sail, and the dial at the top left where the wind comes from. It swings ten degrees and more either way every minute or so: in a lift you can point higher; in a header, tack — the chip under the speed says which.', 'Кольцо вокруг лодки показывает, под какими углами можно идти, а круг слева вверху — откуда дует ветер. Он меняется на десять градусов и больше каждую минуту: когда отходит — иди круче, когда заходит — делай поворот. Подсказка под скоростью скажет, что сейчас.')}</p>
+            <p className="lead">{t('The ring round your boat shows the angles you can sail, and the wind box at the top of the screen where the wind comes from and how strong it is. It swings ten degrees and more either way every minute or so: in a lift you can point higher; in a header, tack — on the beat the wind box says Lift or Header.', 'Кольцо вокруг лодки показывает, под какими углами можно идти, а окно ветра вверху экрана — откуда и с какой силой дует ветер. Он меняется на десять градусов и больше каждую минуту: когда отходит — иди круче, когда заходит — делай поворот. На лавировке окно ветра так и пишет: «Отход» или «Заход».')}</p>
             <div className="legend">
               <span className="lsw lsw-no" /><span>{t('Red: too close to the wind to sail', 'Красный: слишком круто, лодка не идёт')}</span>
               <span className="lsw lsw-up" /><span>{t('Green: the best angle upwind', 'Зелёный: лучший угол против ветра')}</span>
@@ -109,7 +113,7 @@ export default async function Help({ params }: LangParams) {
 
       {sec('h-start', t('Flags and the gun', 'Флаги и сигнал'), t('The start', 'Старт'), (
         <div className="hsplit">
-          <Image className="hshot" src="/images/h-start-v3.jpg" width={960} height={720} sizes="(min-width: 600px) 50vw, 100vw" alt={t('The committee boat flags over the start line', 'Флаги судейского судна над стартовой линией')} />
+          <Image className="hshot" src="/images/h-start-v4.jpg" width={960} height={720} sizes="(min-width: 600px) 50vw, 100vw" alt={t('The committee boat flags over the start line', 'Флаги судейского судна над стартовой линией')} />
           <ol className="hsteps">
             <li><span className="t">{t('Class', 'Класс')}</span><span>{t('Warning: the class flag goes up and the countdown starts.', 'Предупреждение: поднимается флаг класса, начинается отсчёт.')}</span></li>
             <li><span className="t">P</span><span>{t('Preparatory: the P flag goes up (or U, or the black flag).', 'Подготовительный: поднимается флаг P (или U, или чёрный).')}</span></li>
@@ -129,9 +133,9 @@ export default async function Help({ params }: LangParams) {
 
       {sec('h-views', t('Cameras', 'Камеры'), t('Three views', 'Три вида'), (
         <div className="hgrid">
-          {item('h-view-drone', t('The drone view', 'Вид с дрона'), t('Drone', 'Дрон'), t('Behind and above the boat: the best view for racing.', 'Сзади и сверху — лучший вид для гонки.'), <>{t('Key', 'Клавиша')} <K k="X" /></>)}
-          {item('h-view-top', t('The top view', 'Вид сверху'), t('Top', 'Сверху'), t('Straight down: for tactics, the line and the marks.', 'Прямо сверху — для тактики, линии и знаков.'), <>{t('Key', 'Клавиша')} <K k="C" /></>)}
-          {item('h-view-helm', t('The helm view', 'Вид со штурвала'), t('Helm', 'Штурвал'), t('From the helm, as if you were sailing her.', 'Со штурвала, как будто ты на борту.'), <>{t('Key', 'Клавиша')} <K k="V" /></>)}
+          {item('h-view-drone-v3', t('The drone view', 'Вид с дрона'), t('Drone', 'Дрон'), t('Behind and above the boat: the best view for racing.', 'Сзади и сверху — лучший вид для гонки.'), <>{t('Key', 'Клавиша')} <K k="X" /></>)}
+          {item('h-view-top-v3', t('The top view', 'Вид сверху'), t('Top', 'Сверху'), t('Straight down: for tactics, the line and the marks.', 'Прямо сверху — для тактики, линии и знаков.'), <>{t('Key', 'Клавиша')} <K k="C" /></>)}
+          {item('h-view-helm-v3', t('The helm view', 'Вид со штурвала'), t('Helm', 'Штурвал'), t('From the helm, as if you were sailing her.', 'Со штурвала, как будто ты на борту.'), <>{t('Key', 'Клавиша')} <K k="V" /></>)}
         </div>
       ))}
 

@@ -16,7 +16,7 @@ export default async function Learn({ params }: LangParams) {
   const { lang, t } = await getT(params);
   const guides = GUIDES.map((g) => guide(g, t, lang));
   return (
-    <div className="scr help hp" lang={lang}>
+    <div className="scr help hp bc" lang={lang}>
       <SiteHead lang={lang} t={t} page="learn" />
       <header className="hm-page hm-ph">
         <span className="kicker">Up and down</span>

@@ -2,7 +2,9 @@
 import { Race, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone, laidShape } from './sim.js';
 import { World, defaultQuality, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
 import { raceStarted, raceFinished, raceResult } from './stats.js';
-import { createHudNext } from './hud-next.js';
+import { createHud } from './hud-bc.js';
+import { LOOKS, playerLook } from './yacht.js';
+const flagCode = (src) => { const m = typeof src === 'string' && /\/flags\/([a-z]{2}(?:-[a-z]+)?)\.svg$/.exec(src); return m ? m[1] : null; }; // '/flags/gb.svg' → 'gb'
 import { VENUE, venueById, laidLength, lengthOffered } from './venues.js';
 
 const $ = (s) => document.querySelector(s);
@@ -30,7 +32,7 @@ const T = {
     shapeWl: 'Up and down', shapeTri: 'Triangle', shapeTrap: 'Trapezoid', shapeWlu: 'Up and down, upwind finish',
     dbK: 'Your race', dGun: (d, v) => `At the gun: ${d} m from the line at ${v} kn`, dGunOver: 'At the gun: over the line — you had to go back',
     dStartLate: (s) => `You crossed the line ${s} s after the gun`, tipStart: 'Aim to be a boat length behind the line, at full speed, as the gun goes.',
-    dSpeed: (p) => `Speed: ${p}% of target on average`, tipSpeed: 'Keep the sheet in the blue band and steer smoothly: every turn of the rudder brakes.',
+    dSpeed: (p) => `Speed: ${p}% of target on average`, tipSpeed: 'Keep the sheet in the green band and steer smoothly: every turn of the rudder brakes.',
     dTacks: (h, l) => `Tacks on the beat: ${h} in a header, ${l} in a lift`, tipTacks: 'Tack when the wind heads you (the orange chip), not when it lifts you (the blue one).',
     dDirty: (s) => `${s} s in another boat’s dirty air`, tipDirty: 'Behind and downwind of another boat the wind is weaker: tack away or sail clear of it.',
     dPen: (s) => `${s} s spinning penalty turns`, dClean: 'No fouls and no penalties — a clean race', dHails: (n) => `Hailed ${n}× by boats you had to keep clear of`,
@@ -64,7 +66,7 @@ const T = {
     x19: 'Passing an obstruction overlapped (the committee boat, away from the start and finish), the outside boat gives the inside one room.',
     'hail18.3': 'You tacked in the zone — keep clear!', 'hail18.4': 'Gybe — no wider than you need!', hail19: 'Room at the committee boat!',
     pb: (s) => `Your best on this course: ${s}`, pbNew: 'A new personal best!', pbToday: (s) => `Your best today: ${s}`, todayTop: 'Today’s fastest', guest: 'No name',
-    cSteer: 'Steer: drag your left thumb along the arc', cSheet: 'Trim: slide your right thumb up to pull the sails in, down to ease them',
+    cSteer: 'Steer: ← → on a keyboard, or your left thumb along the arc', cSheet: 'Trim: ↑ ↓, or your right thumb up the slider to pull the sails in, down to ease them',
     cLine: 'Head for the line and cross it just after the gun', cHeader: 'The wind has headed you — tap Tack', cMark: 'Round the mark leaving it on your left (to port)',
     cKite: 'Bear away and tap Kite to fly the gennaker', cGate: 'Sail between the two buoys of the gate', cFinish: 'Now cross the line to finish',
     cFinishUp: 'The finish line is up the course, just right of the windward mark — beat up and cross it',
@@ -114,7 +116,7 @@ const T = {
     shapeWl: 'Апвинд — даунвинд', shapeTri: 'Треугольник', shapeTrap: 'Трапеция', shapeWlu: 'Апвинд — даунвинд, финиш наверху',
     dbK: 'Твоя гонка', dGun: (d, v) => `На сигнале старта: ${d} м до линии, ${v} уз`, dGunOver: 'На сигнале старта: за линией — пришлось возвращаться',
     dStartLate: (s) => `Линию пересёк через ${s} с после сигнала`, tipStart: 'Цель — быть в корпусе от линии на полной скорости в момент сигнала.',
-    dSpeed: (p) => `Скорость: в среднем ${p}% от целевой`, tipSpeed: 'Держи шкот в синей полосе и рули плавно: каждое движение руля тормозит.',
+    dSpeed: (p) => `Скорость: в среднем ${p}% от целевой`, tipSpeed: 'Держи шкот в зелёной полосе и рули плавно: каждое движение руля тормозит.',
     dTacks: (h, l) => `Повороты на лавировке: ${h} — когда ветер зашёл, ${l} — когда отошёл`, tipTacks: 'Поворачивай, когда ветер заходит (оранжевая метка), а не когда отходит (синяя).',
     dDirty: (s) => `${s} с в грязном ветре другой лодки`, tipDirty: 'За другой лодкой и под ветром от неё ветер слабее: поверни или уйди в чистый ветер.',
     dPen: (s) => `${s} с на штрафных оборотах`, dClean: 'Ни нарушений, ни штрафов — чистая гонка', dHails: (n) => `${n} раз(а) окликнули лодки, которым ты должен был уступить`,
@@ -148,7 +150,7 @@ const T = {
     x19: 'Проходя препятствие связанными (судейское судно — не на старте и финише), внешняя лодка даёт внутренней место.',
     'hail18.3': 'Ты повернул в зоне — уходи!', 'hail18.4': 'Фордевинд — не шире, чем нужно!', hail19: 'Место у судейского судна!',
     pb: (s) => `Твой рекорд на этой дистанции: ${s}`, pbNew: 'Новый личный рекорд!', pbToday: (s) => `Твой лучший результат сегодня: ${s}`, todayTop: 'Самые быстрые сегодня', guest: 'Без имени',
-    cSteer: 'Руль: веди левым пальцем по дуге', cSheet: 'Шкот: правым пальцем вверх — выбрать паруса, вниз — потравить',
+    cSteer: 'Руль: ← → на клавиатуре или левым пальцем по дуге', cSheet: 'Шкот: ↑ ↓ или правым пальцем по ползунку: вверх — выбрать паруса, вниз — потравить',
     cLine: 'Иди к линии и пересеки её сразу после сигнала', cHeader: 'Ветер зашёл — жми «Поворот»', cMark: 'Огибай знак, оставляя его слева',
     cKite: 'Уваливайся и жми «Генакер»', cGate: 'Пройди между двумя знаками ворот', cFinish: 'Теперь пересеки линию — финиш',
     cFinishUp: 'Финишная линия наверху, чуть правее верхнего знака — лавируй к ней и пересеки её',
@@ -205,7 +207,7 @@ function applyTheme() {
   document.documentElement.classList.toggle('theme-night', night());
   const cs = getComputedStyle(document.getElementById('hud')), v = (k) => cs.getPropertyValue(k).trim(); // the minimap draws in the HUD's own colours
   COL = { ink: v('--ink'), muted: v('--muted'), faint: v('--faint'), accent: v('--accent'), danger: v('--danger'), bg: v('--bg') };
-  try { TG && TG.setHeaderColor && TG.setHeaderColor(night() ? '#000000' : '#ffffff'); } catch (e) {}
+  try { TG && TG.setHeaderColor && TG.setHeaderColor('#070d16'); } catch (e) {} // the broadcast's ground, as every page now
 }
 applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
@@ -1199,7 +1201,6 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Space') { e.preventDefault(); doTack(); }
   if (e.code === 'KeyK') doKite();
   if (e.code === 'KeyT') cycleSpeed();
-  if (e.code === 'KeyH') toast(hudNext.toggle() ? 'HUD: next' : 'HUD: old', 1.2);
   if (e.code === 'KeyA') world.zoom(1 / 1.12); // held down, the key repeats: a smooth zoom
   if (e.code === 'KeyZ') world.zoom(1.12);
   const view = { KeyX: 'drone', KeyC: 'top', KeyV: 'helm' }[e.code]; // in the order of the buttons
@@ -1213,11 +1214,11 @@ const camSeg = $('#camSeg');
 function setCam(m) { world.mode = m; camSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.cam === m)); }
 camSeg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setCam(b.dataset.cam); });
 setCam(['drone', 'top', 'helm'].includes(opts.camera) ? opts.camera : 'drone'); // Settings › First camera
-// the lighter HUD, the default: ?hud=old brings back the old one (and keeps it), ?hud=next returns; H switches while sailing
-const hudNext = createHudNext({ t, LANG, fmt, world, getRace: () => race, setCam });
+// the HUD, as a sailing broadcast lays it out (hud-bc.js)
+const bcHud = createHud({ t, LANG, fmt, world, getRace: () => race, setCam, flagOf: (b, me) => (me ? playerLook().flag : LOOKS[b.name] && LOOKS[b.name].flag) || null });
 
 // ---------- menus ----------
-const menu = $('#menu'), results = $('#results'), hud = $('#hud');
+const menu = $('#menu'), hud = $('#hud');
 if (!opts.played) $('#howD').open = true; // how to play: open until the first race
 function startRace() {
   audio.init(); audio.setOn(!!opts.sound); skipper.load(); crews.load(); asides.load(); calls.load();
@@ -1228,7 +1229,7 @@ function startRace() {
   menuChanged = false;
   opts.played = (opts.played || 0) + 1; saveOpts();
   race.coach = opts.played <= 3; // the first three races: tips as you go
-  menu.hidden = true; results.hidden = true; hud.hidden = false;
+  menu.hidden = true; hud.hidden = false;
   running = true; paused = false;
   applyTrimMode();
   setCam(world.mode);
@@ -1292,8 +1293,6 @@ pauseEl.addEventListener('click', (e) => {
 $('#goBtn').addEventListener('click', startRace);
 $('#resumeBtn').addEventListener('click', resume);
 $('#pauseBtn').addEventListener('click', pause);
-$('#againBtn').addEventListener('click', () => { running = false; newRace(); startRace(); });
-$('#menuBtn').addEventListener('click', () => { running = false; paused = false; newRace(); results.hidden = true; hud.hidden = true; menu.hidden = false; $('#resumeBtn').hidden = true; $('#goBtn').textContent = t('start'); });
 $('#backLink').href = HUB;
 
 // ---------- the race to sail: from the address (the hub and the set-up page are Next.js pages) ----------
@@ -1301,6 +1300,13 @@ $('#backLink').href = HUB;
   const want = new URLSearchParams(location.search).get('race');
   opts.mode = want === 'free' ? 'free' : 'daily';
   paintOpts(); // the menu as this race has it (the note on today's race, its place and wind)
+  // the loading screen names the race now it's known: the venue in its title, the wind, the course and the fleet under it
+  const s = settings(), tr = (en, ru) => (LANG === 'ru' ? ru : en), boats = s.fleet - 1;
+  window.rycLoader?.race?.(VENUE.name[LANG === 'ru' ? 1 : 0], [
+    [tr('Wind', 'Ветер'), { light: 7, medium: 12, strong: 19 }[s.preset], tr('kn', 'уз'), { light: tr('Light breeze', 'Слабый ветер'), medium: tr('Medium breeze', 'Средний ветер'), strong: tr('Strong breeze', 'Сильный ветер') }[s.preset]],
+    [tr('Course', 'Дистанция'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
+    [tr('Fleet', 'Флот'), s.fleet, '', tr(`You and ${boats} boats`, `Ты и ${boats} ${boats === 1 ? 'лодка' : boats < 5 ? 'лодки' : 'лодок'}`)],
+  ]);
   menu.hidden = true; menuChanged = true;
   // the preloader in play/index.html has counted the files in; the scene is built, so it fills its bar and fades into the race
   // …once the shaders are compiled too (world.prepare), so the first frame of the race doesn't stall
@@ -1322,7 +1328,7 @@ function hint(key, msg, every = 12) { const n = race.clock; if (hints[key] && n 
 const legName = { start: 'lineStart', mark: 'mark', wing: 'wing', mark2: 'mark2', offset: 'offset', gate: 'gate', finish: 'finish' };
 // a leg's name, by its mark: on a trapezoid the windward mark is mark 1
 const legKey = (c, k) => (k === 'mark' && c.type === 'trap' ? 'mark1' : legName[k]);
-let flagsKey = '', chipsKey = '';
+let flagsKey = '';
 function updateHud(dt) {
   const P = race.player, a = Math.abs(P.twa) / D2R, awa = Math.abs(P.awa) / D2R, c = race.course;
   const kn = P.v / KN;
@@ -1408,10 +1414,8 @@ function updateHud(dt) {
     chips.push([mine ? 'ok' : 'warn', zs.st.overlapped ? t(mine ? 'zIn' : 'zOut', n) : t(mine ? 'zAhead' : 'zAstern', n), 'zone']);
     skipper.zone(zs.st, mine);
   }
-  if (hudNext.on) chips.length = Math.min(chips.length, 2); // the lighter HUD: the two that matter most
-  const ck = chips.map((x) => x.join()).join('|');
-  if (hudNext.on) { hudNext.chips(chips); chipsKey = ''; } // it updates them in place, in and out smoothly
-  else if (ck !== chipsKey) { chipsKey = ck; el.chips.innerHTML = chips.map(([k, s]) => `<span class="chip ${k}">${s}</span>`).join(''); }
+  chips.splice(0, chips.length, ...chips.filter((x) => x[2] !== 'shift').slice(0, 2)); // the two that matter most (the wind's swing is in the wind box)
+  bcHud.chips(chips); // it updates them in place, in and out smoothly
 
   const left = -race.clock;
   // the countdown to the start, large all the way, and huge for the last ten seconds
@@ -1426,7 +1430,7 @@ function updateHud(dt) {
   audio.update(P, paused); crews.update(P, paused); asides.update(); committee.update(); engine.update(false);
   if (race.coach) coach(P, a, leg);
   skipper.watch(P, dt);
-  hudNext.update(P, dt);
+  bcHud.update(P, dt);
 }
 // the first races: a tip when it's needed, each once a race
 function coach(P, a, leg) {
@@ -1630,7 +1634,7 @@ function finishToPage() {
     venue: VENUE.id, origin: [Math.round(race.at.x), Math.round(race.at.z)], seed: s.seed ?? null,
     course: { windward: xz(c.windward), gate: c.gate.map(xz), pin: xz(c.pin), committee: xz(c.committee), legs: c.legs, ...(c.wing && { wing: xz(c.wing) }), type: c.type,
       marks: Object.fromEntries(Object.entries(c.marks).map(([k, m]) => [k, xz(m)])), ...(c.finish && { finish: [xz(c.finish.a), xz(c.finish.b)] }) },
-    boats: race.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, color: typeof b.color === 'number' ? '#' + b.color.toString(16).padStart(6, '0') : null,
+    boats: race.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, color: typeof b.color === 'number' ? '#' + b.color.toString(16).padStart(6, '0') : null, flag: flagCode(b === P ? playerLook().flag : LOOKS[b.name] && LOOKS[b.name].flag),
       done: !!b.done, dsq: !!b.dsq, secs: b.done ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track || []), ...(race._fin?.get(b) && { at: race._fin.get(b) }) })),
     log: { gunD: L.gunD, gunV: L.gunV, ocs: !!L.ocs, startDsq: L.startDsq || null, startT: L.startT, sailing: L.sailing, pct: L.sailing > 20 && L.polar ? Math.round((L.v / L.polar) * 100) : null,
       head, lift, tacks: L.tacks.length, dirty: Math.round(L.dirty), penT: Math.round(L.penT), hails: L.hails, legs: L.legs, legPlaces: L.legPlaces || [],
@@ -1646,22 +1650,7 @@ function finishToPage() {
   location.href = '/race/result/' + encodeURIComponent(id);
 }
 
-function showResults() {
-  if (!race.over) return;
-  renderResults();
-  drawMap($('#track').getContext('2d'), 312, true);
-  renderDebrief();
-  results.hidden = false; hud.hidden = true;
-}
 
-// ---------- the debrief: what went well and what to work on, with the rules behind any foul ----------
-// the racing-rules articles (the site's theory pages), by rule
-const RULE_LINK = { 10: 'rightofway#sec-r10', 11: 'rightofway#sec-r11', 12: 'rightofway#sec-r12', 13: 'rightofway#sec-r13', 18: 'marks#sec-room',
-  15: 'limits#sec-r15', 16: 'limits#sec-r16-1', 17: 'limits#sec-r17', 20: 'obstructions#sec-tack', 21: 'penalties#sec-exoneration',
-  31: 'penalties#sec-how', 44: 'penalties#sec-how', ocs: 'starting#sec-recalls',
-  '18.3': 'marks#sec-tack', '18.4': 'marks#sec-gybe', 19: 'obstructions#sec-room', U: 'starting#sec-recalls', B: 'starting#sec-recalls' };
-const ruleHref = (r) => `${SITE}${LANG === 'ru' ? '/ru' : ''}/racing-rules/${RULE_LINK[r]}`;
-const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // personal bests, kept on this device: per course on a free race, per day on today's race
 const PB_KEY = 'regatta-pb';
 const pbKey = (s, r) => `${s.preset}|${s.laps}|${s.length}|${s.fleet}${r.course.type !== 'wl' ? '|' + r.course.type : ''}`; // each shape but up and down is a course of its own: the one sailed
@@ -1670,53 +1659,6 @@ function personalBest(key, secs) {
   const old = all[key], isNew = secs != null && (old == null || secs < old);
   if (isNew) { all[key] = secs; for (const k of Object.keys(all)) if (/^daily\|/.test(k) && k < `daily|${dailyRace(new Date(Date.now() - 7 * 864e5)).day}`) delete all[k]; try { localStorage.setItem(PB_KEY, JSON.stringify(all)); } catch (e) {} }
   return { best: isNew ? secs : old, isNew: isNew && old != null };
-}
-function renderDebrief() {
-  const L = race.log, P = race.player, s = race.settings, rows = [];
-  const row = (ok, text, tip, link) => rows.push(`<li class="${ok ? 'ok' : 'warn'}"><b>${esc(text)}</b>${tip ? `<span>${esc(tip)}</span>` : ''}${link || ''}</li>`);
-  // the start
-  if (L.startDsq) row(false, t('dStartDsq', L.startDsq), t('tipStartDsq'), `<a class="rl" hidden href="${ruleHref(L.startDsq)}">${esc(t('read'))} · ${esc(t('r' + L.startDsq))} →</a>`);
-  else if (L.ocs) row(false, t('dGunOver'), t('tipStart'), `<a class="rl" hidden href="${ruleHref('ocs')}">${esc(t('read'))} · ${esc(t('rOcs'))} →</a>`);
-  else if (L.gunD != null) {
-    const good = L.gunD >= 0 && L.gunD < 25 && L.gunV > 3.5;
-    row(good, t('dGun', Math.round(Math.max(0, L.gunD)), L.gunV.toFixed(1)) + (L.startT != null && L.startT > 8 ? ` · ${t('dStartLate', Math.round(L.startT))}` : ''), good ? '' : t('tipStart'));
-  }
-  // speed against the polar
-  if (L.sailing > 20) { const pct = Math.round((L.v / L.polar) * 100); row(pct >= 90, t('dSpeed', pct), pct >= 90 ? '' : t('tipSpeed')); }
-  // tacks against the wind's swings
-  const head = L.tacks.filter((x) => x <= -3).length, lift = L.tacks.filter((x) => x >= 3).length;
-  if (L.tacks.length) row(lift <= head, t('dTacks', head, lift), lift > head ? t('tipTacks') : '');
-  if (L.dirty >= 10) row(L.dirty < 30, t('dDirty', Math.round(L.dirty)), L.dirty >= 30 ? t('tipDirty') : '');
-  // fouls, with the rule to read
-  const seen = new Set();
-  for (const f of L.fouls) {
-    if (seen.has(f.rule)) continue; seen.add(f.rule);
-    const n = L.fouls.filter((x) => x.rule === f.rule).length;
-    row(false, `${t('dRule', f.rule)} · ${t('r' + f.rule)}${n > 1 ? ` ×${n}` : ''}`, t('x' + f.rule), RULE_LINK[f.rule] ? `<a class="rl" hidden href="${ruleHref(f.rule)}">${esc(t('read'))} →</a>` : '');
-  }
-  if (L.penT > 1) row(false, t('dPen', Math.round(L.penT)), '');
-  const hails = Object.values(L.hails).reduce((x, y) => x + y, 0);
-  if (hails) { const rs = Object.keys(L.hails).filter((r) => !seen.has(r)).sort((x, y) => L.hails[y] - L.hails[x]).slice(0, 2); row(false, t('dHails', hails), rs.map((r) => `${t('dRule', r)}: ${t('x' + r)}`).join(' '), rs.filter((r) => RULE_LINK[r]).map((r) => `<a class="rl" hidden href="${ruleHref(r)}">${esc(t('dRule', r))} · ${esc(t('r' + r))} →</a>`).join('')); }
-  if (!L.fouls.length && !L.ocs && !L.startDsq && !hails) row(true, t('dClean'), '');
-  // personal best
-  let pb = '';
-  if (P.done && !P.dsq) {
-    const key = s.daily ? `daily|${s.daily}` : pbKey(s, race), r = personalBest(key, Math.round(P.finish * 10) / 10);
-    pb = `<p class="pb">${r.isNew ? `<b>${esc(t('pbNew'))}</b> ` : ''}${esc(t(s.daily ? 'pbToday' : 'pb', fmt(r.best)))}</p>`;
-  }
-  $('#debrief').innerHTML = `<span class="meta">${esc(t('dbK'))}</span><ul class="db">${rows.join('')}</ul>${pb}<div id="todayTop"></div>`;
-  // the rule articles are the app's pages; a link shows only once its page is there (a level can be switched off)
-  for (const a of $('#debrief').querySelectorAll('a.rl')) fetch(a.getAttribute('href').split('#')[0], { method: 'HEAD' }).then((r) => { if (r.ok) a.hidden = false; }).catch(() => {});
-  // today's fastest (from the server, a few minutes behind)
-  if (s.daily) fetch(`${SITE}/api/game`).then((r) => (r.ok ? r.json() : null)).then((j) => {
-    const d = j && j.daily; if (!d || d.d !== s.daily || !d.top.length) return;
-    $('#todayTop').innerHTML = `<span class="meta">${esc(t('todayTop'))}</span><ol class="lb">${d.top.map((x) => `<li><span>${esc(x.name || t('guest'))}</span><b>${fmt(x.s)}</b></li>`).join('')}</ol>`;
-  }).catch(() => {});
-}
-function renderResults() {
-  const st = race.standings();
-  $('#resTitle').textContent = t('results');
-  $('#resTable').innerHTML = st.map((b, i) => `<tr class="${b === race.player ? 'me' : ''}"><td>${b.dsq ? '–' : i + 1}</td><td>${b === race.player ? t('you') : b.name}</td><td>${b.done ? (b.dsq ? `${t('dsq')} · ` : '') + fmt(b.finish) : t('racing')}</td></tr>`).join('');
 }
 
 // ---------- the loop ----------
@@ -1741,7 +1683,6 @@ function loop(now) {
     updateHud(dt);
     if (world.quality === 'high' || frameN++ % 3 === 0) drawMap(mctx, 240, false);
     watchFps(raw);
-    if (!results.hidden && Math.floor(race.clock) !== Math.floor(race.clock - dt)) renderResults();
   } else {
     if (!running) world.orbit += dt * 0.12; // behind the menu the drone circles
     race.idle(dt);

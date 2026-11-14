@@ -1,0 +1,124 @@
+/* ==========================================================================
+   The race's own overlays in the broadcast look (public/ui/tokens.css): the loading screen, the pause card and the
+   card that asks before you leave. Each carries class="bc" in public/play/index.html; the markup and its script are
+   the page's own, this only restyles them (and outranks the page's inline styles: every rule here is #id.bc).
+   ========================================================================== */
+
+/* ---------- loading: the venue behind, the name in capitals, the progress as the broadcast's bar ---------- */
+#loading.bc { background: var(--ground); font-family: var(--sans); }
+#loading.bc .l-shade { background: linear-gradient(90deg, rgba(3, 8, 14, 0.85) 0%, rgba(3, 8, 14, 0.5) 50%, rgba(3, 8, 14, 0.1) 80%); }
+#loading.bc .l-head { gap: 0; align-items: stretch; height: 36px; }
+#loading.bc .l-logo { display: none; }
+#loading.bc .l-head::before { content: ''; width: 5px; background: var(--you); }
+#loading.bc .l-head .kicker { display: flex; align-items: center; padding: 0 var(--s-3); background: var(--panel-2); color: var(--ink);
+  font: 700 var(--fs-lead)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; text-shadow: none; }
+#loading.bc .l-in { gap: var(--s-5); text-shadow: none; }
+#loading.bc .l-in > .kicker { align-self: flex-start; display: inline-flex; align-items: center; min-height: 28px; padding: var(--s-1) var(--s-6) var(--s-1) var(--s-3); background: var(--you); color: var(--ink-on);
+  font: 700 var(--fs-small)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); }
+#loading.bc h1 { font: 700 var(--fs-display)/0.9 var(--cond); letter-spacing: -0.005em; text-transform: uppercase; }
+#loading.bc .l-sub { font: 500 var(--fs-lead)/1.5 var(--sans); color: var(--ink-2); }
+/* the race's numbers, once the game knows it: a row of cells */
+#loading.bc .l-cells { display: flex; max-width: 640px; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); animation: bc-rise .45s var(--ease) both; }
+#loading.bc .l-cells[hidden] { display: none; }
+#loading.bc .l-cells > div { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-4) var(--s-5); border-right: 1px solid var(--rule); }
+#loading.bc .l-cells > div:last-child { border-right: 0; }
+#loading.bc .l-cells .meta { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+#loading.bc .l-cells b { font: 700 var(--fs-h3)/1 var(--cond); }
+#loading.bc .l-cells small { margin-left: var(--s-1); font: 600 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; color: var(--ink-3); }
+#loading.bc .l-cells em { font: 500 var(--fs-small)/1.3 var(--sans); font-style: normal; color: var(--ink-2); }
+#loading.bc .l-prog { gap: var(--s-3); max-width: 480px; }
+#loading.bc .l-row .meta { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink); }
+#loading.bc .l-pct { font: 700 var(--fs-row)/1 var(--cond); color: var(--ink); letter-spacing: 0; }
+#loading.bc .l-bar { height: 6px; border-radius: 0; background: var(--fill-3); }
+#loading.bc .l-bar i { border-radius: 0; background: var(--you); }
+#loading.bc.err .l-bar i { background: var(--live); }
+/* the tip, as a panel with its white kicker */
+#loading.bc .l-tip { max-width: 480px; margin: var(--s-2) 0 0; padding: var(--s-4) var(--s-5); border: 0; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+#loading.bc .l-tip .meta { display: flex; width: max-content; margin: 0 0 var(--s-2); padding: var(--s-1) var(--s-4) var(--s-1) var(--s-2); background: var(--ink); color: var(--ink-on);
+  font: 700 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+#loading.bc .l-err a, #loading.bc .l-err button { height: var(--h-l); padding: 0 var(--s-6); border: 0; border-radius: 0; background: var(--you); color: var(--ink-on);
+  font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
+#loading.bc .l-err a { background: var(--fill-2); color: var(--ink); }
+@media (min-width: 1024px) and (min-height: 640px) { #loading.bc h1 { font-size: var(--fs-hero); } #loading.bc .l-in { max-width: 760px; } }
+@media (max-height: 420px) { #loading.bc h1 { font-size: var(--fs-h2); } #loading.bc .l-tip, #loading.bc .l-cells em { display: none; } #loading.bc .l-cells > div { padding: var(--s-2) var(--s-4); } #loading.bc .l-cells b { font-size: var(--fs-title); } }
+@media (orientation: portrait) { #loading.bc .l-cells > div { padding: var(--s-3); } #loading.bc .l-cells b { font-size: var(--fs-title); } }
+
+/* ---------- the pause: where the race stands on the left, the card on the right ---------- */
+#pauseCard.bc { font-family: var(--sans); }
+#pauseCard.bc .p-info { gap: var(--s-4); font-family: var(--cond); text-shadow: none; }
+#pauseCard.bc .p-badge { height: 28px; gap: var(--s-2); padding: 0 var(--s-6) 0 var(--s-3); border: 0; border-radius: 0; background: var(--you); color: var(--ink-on);
+  font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); -webkit-backdrop-filter: none; backdrop-filter: none; }
+#pauseCard.bc .p-badge::before { background: linear-gradient(90deg, var(--ink-on) 0 35%, transparent 35% 65%, var(--ink-on) 65%); }
+#pauseCard.bc .p-info h1 { font: 700 var(--fs-h1)/0.92 var(--cond); letter-spacing: -0.005em; text-transform: uppercase; }
+#pauseCard.bc .p-legs { gap: var(--s-1); }
+#pauseCard.bc .p-legs i { height: 6px; border-radius: 0; background: var(--w-14); box-shadow: none; }
+#pauseCard.bc .p-legs i.done { background: var(--w-50); box-shadow: none; }
+#pauseCard.bc .p-legs i.now { background: var(--you); }
+/* the next target, as its tag on the water */
+#pauseCard.bc .p-info p { height: 30px; gap: var(--s-2); padding: 0 var(--s-3) 0 0; border: 0; border-radius: 0; background: var(--panel); color: var(--ink);
+  font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-name); text-transform: none; clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
+#pauseCard.bc .p-info p::before { width: 26px; height: 100%; border-radius: 0; box-shadow: none; background: linear-gradient(var(--c, var(--gold)), var(--c, var(--gold))) center / 10px 4px no-repeat, var(--ink); }
+#pauseCard.bc .p-info p.mark { --c: var(--buoy); }
+#pauseCard.bc .p-info p.mark::before { background: linear-gradient(var(--buoy), var(--buoy)) center / 9px 13px no-repeat, var(--ink); }
+/* the numbers: one row of cells */
+#pauseCard.bc .p-stats { gap: 0; align-self: flex-start; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+#pauseCard.bc .p-stats > div { gap: var(--s-2); min-width: 120px; padding: var(--s-4) var(--s-6); border: 0; border-right: 1px solid var(--rule); border-radius: 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+#pauseCard.bc .p-stats > div:last-child { border-right: 0; }
+#pauseCard.bc .p-stats .meta { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+#pauseCard.bc .p-stats b { font: 700 var(--fs-h3)/1 var(--cond); }
+#pauseCard.bc .p-stats span:not(.meta) { font: 500 var(--fs-small)/1.2 var(--sans); color: var(--ink-2); }
+#pauseCard.bc .p-stats > div:last-child.clean b { color: var(--up); }
+#pauseCard.bc .p-stats > div:last-child.pen b { color: var(--live); }
+#pauseCard.bc .p-esc { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
+#pauseCard.bc .p-esc kbd { border-radius: 0; border: 1px solid var(--rule); font: 600 var(--fs-label)/1 var(--cond); color: var(--ink-2); }
+/* the card */
+#pauseCard.bc .card, #confirmCard.bc .card { border: 0; border-radius: 0; background: var(--panel); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); animation: bc-slide-r .45s var(--ease) both; }
+#pauseCard.bc .p-card { gap: var(--s-2); padding: var(--s-5); }
+#pauseCard.bc .go, #confirmCard.bc .go { height: var(--h-l); gap: var(--s-3); border-radius: 0; background: var(--you); color: var(--ink-on);
+  font: 700 var(--fs-row)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%); }
+#pauseCard.bc .go:active, #confirmCard.bc .go:active, #pauseCard.bc .p-row:active, #pauseCard.bc .choice button:active, #pauseCard.bc .p-seg button:active { transform: none; scale: .97; }
+#pauseCard.bc #pResume::before { width: 14px; height: 14px; }
+#pauseCard.bc .p-rows { gap: 0; margin: var(--s-2) calc(-1 * var(--s-5)) 0; border-top: 1px solid var(--rule); }
+#pauseCard.bc .p-row { height: var(--h-m); padding: 0 var(--s-5); border-radius: 0; border-bottom: 1px solid var(--rule-2); font: 700 var(--fs-lead)/1 var(--cond); letter-spacing: var(--ls-name); }
+#pauseCard.bc .p-row:hover { background: var(--w-06); }
+#pauseCard.bc .p-row::before { color: var(--ink-3); opacity: 1; }
+#pauseCard.bc .p-row .meta { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
+#pauseCard.bc .p-card > .meta, #confirmCard.bc .kicker { margin: var(--s-3) 0 var(--s-1); font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+/* quick switches: on/off with a green mark; graphics: one of four, the picked one blue */
+#pauseCard.bc .choice { gap: var(--s-1); padding: 0; }
+#pauseCard.bc .choice button { height: var(--h-s); gap: var(--s-2); padding: 0 var(--s-3); border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink);
+  font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); }
+#pauseCard.bc .choice button::before { border-radius: 0; width: 8px; height: 8px; box-shadow: inset 0 0 0 1.5px var(--w-50); }
+#pauseCard.bc .choice button.on { background: color-mix(in srgb, var(--up) 16%, transparent); box-shadow: inset 0 -3px 0 var(--up); }
+#pauseCard.bc .choice button.on::before { background: var(--up); box-shadow: none; }
+#pauseCard.bc .p-seg { gap: var(--s-1); margin: 0; padding: 0; border: 0; border-radius: 0; background: none; }
+#pauseCard.bc .p-seg button { height: var(--h-s); border-radius: 0; background: var(--fill-2); color: var(--ink); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); }
+#pauseCard.bc .p-seg button[aria-checked="true"] { background: var(--you); color: var(--ink-on); box-shadow: none; }
+@media (min-width: 1024px) and (min-height: 640px) {
+  #pauseCard.bc .p-card { width: 400px; padding: var(--s-6); }
+  #pauseCard.bc .p-rows { margin-inline: calc(-1 * var(--s-6)); }
+  #pauseCard.bc .p-row { padding: 0 var(--s-6); }
+  #pauseCard.bc .p-info h1 { font-size: var(--fs-display); }
+  #pauseCard.bc .p-stats b { font-size: var(--fs-h2); }
+}
+@media (orientation: portrait) { #pauseCard.bc .p-info h1 { font-size: var(--fs-h2); } #pauseCard.bc .p-stats { align-self: stretch; } #pauseCard.bc .p-stats > div { flex: 1; min-width: 0; padding: var(--s-3) var(--s-4); } #pauseCard.bc .p-stats b { font-size: var(--fs-title); } }
+@media (max-height: 420px) {
+  #pauseCard.bc .p-info h1 { font-size: var(--fs-h3); }
+  #pauseCard.bc .p-stats > div { min-width: 0; padding: var(--s-2) var(--s-4); }
+  #pauseCard.bc .p-stats b { font-size: var(--fs-title); }
+  #pauseCard.bc .p-card { padding: var(--s-3); }
+  #pauseCard.bc .p-rows { margin-inline: calc(-1 * var(--s-3)); }
+  #pauseCard.bc .go { height: var(--h-m); font-size: var(--fs-lead); }
+  #pauseCard.bc .p-row { height: 36px; padding: 0 var(--s-3); }
+}
+
+/* ---------- before you leave: a white bar that asks, the line, two buttons ---------- */
+#confirmCard.bc .c-card { gap: var(--s-3); padding: 0 0 var(--s-5); }
+#confirmCard.bc .kicker { display: block; margin: 0; padding: var(--s-2) var(--s-4); background: var(--ink); color: var(--ink-on); font-weight: 700; }
+#confirmCard.bc .c-card h2 { margin: var(--s-3) var(--s-5) 0; font: 700 var(--fs-h3)/1 var(--cond); text-transform: uppercase; }
+#confirmCard.bc .c-card p { margin: 0 var(--s-5); font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+#confirmCard.bc .c-btns { gap: var(--s-2); margin: var(--s-2) var(--s-5) 0; }
+#confirmCard.bc .go { font-size: var(--fs-lead); }
+#confirmCard.bc .go.ghost { border: 0; background: var(--fill-2); color: var(--ink); clip-path: none; }
+#confirmCard.bc .go.ghost:hover { background: var(--w-14); }

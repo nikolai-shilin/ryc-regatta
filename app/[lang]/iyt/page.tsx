@@ -67,7 +67,7 @@ export default async function Iyt({ params }: LangParams) {
   };
 
   return (
-    <div className="scr help hp iyt" lang={lang}>
+    <div className="scr help hp iyt bc" lang={lang}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, '\\u003c') }} />
       <SiteHead lang={lang} t={t} page="iyt" />
 
