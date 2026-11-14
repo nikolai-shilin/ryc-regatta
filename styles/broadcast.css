@@ -308,10 +308,10 @@
 }
 .bc.help > *, .bc.app > * { --h-m: 44px; --h-l: 56px; --h-s: 32px; }
 
-/* the header: the name with the blue mark, the pages as tabs, Play now beside the menu */
+/* the header: the name with the blue mark, the pages as tabs, Sign in and Play now beside the menu */
 .bc .hm-head { background: rgba(5, 10, 18, 0.94); border-bottom: 1px solid var(--rule); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); animation: bc-drop var(--t-in) var(--ease) both; }
 .bc .hm-head-in { min-height: var(--h-xl); gap: var(--s-3) var(--s-6); }
-.bc .hm-brand { align-items: stretch; height: 36px; flex: none; text-decoration: none; }
+.bc .hm-brand { align-items: stretch; height: 36px; flex: none; margin-right: auto; text-decoration: none; }
 .bc .hm-brand .logo { display: none; }
 .bc .hm-brand::before { content: ''; width: 5px; background: var(--you); }
 .bc .hm-brand-t { display: flex; align-items: center; padding: 0 var(--s-3); background: var(--panel-2); color: var(--ink); font: 700 var(--fs-lead)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; white-space: nowrap; }
@@ -320,9 +320,23 @@
   font: 600 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; transition: color var(--t-quick), border-color var(--t-quick); }
 .bc .hm-tab:hover { background: none; color: var(--ink); }
 .bc .hm-tab[aria-current="page"] { background: none; color: var(--ink); border-bottom-color: var(--you); }
-.bc .hm-play { display: inline-flex; align-items: center; flex: none; min-height: var(--h-m); margin-left: auto; padding: 0 var(--s-8) 0 var(--s-4); background: var(--you); color: var(--ink-on); text-decoration: none; white-space: nowrap;
+.bc .hm-play { display: inline-flex; align-items: center; flex: none; min-height: var(--h-m); padding: 0 var(--s-8) 0 var(--s-4); background: var(--you); color: var(--ink-on); text-decoration: none; white-space: nowrap;
   font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
 .bc .hm-play:hover { filter: brightness(1.08); }
+/* Sign in, a quiet button beside Play now where the bar has room (from 600px wide; on a phone it's in the menu) */
+.bc .hm-signin { display: none; align-items: center; flex: none; min-height: var(--h-m); padding: 0 var(--s-4); background: var(--fill-2); color: var(--ink); text-decoration: none; white-space: nowrap;
+  font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; transition: background-color var(--t-quick); }
+.bc .hm-signin:hover { background: var(--w-14); }
+@container help (min-width: 600px) { .bc .hm-signin { display: inline-flex; } .bc .hm-mi-signin { display: none; } }
+@container scr (min-width: 600px) { .bc .hm-signin { display: inline-flex; } .bc .hm-mi-signin { display: none; } }
+/* the tabs need the room: none under 1280px wide (they're in the menu), and Your boat and the exam trainer only from
+   1600px (Your boat is in the menu anyway; the trainer goes there between) */
+@container help (max-width: 1279px) { .bc .hm-nav { display: none; } .bc .hm-menu-nav { display: flex; } }
+@container scr (max-width: 1279px) { .bc .hm-nav { display: none; } .bc .hm-menu-nav { display: flex; } }
+@container help (max-width: 1599px) { .bc .hm-tab-x { display: none; } }
+@container scr (max-width: 1599px) { .bc .hm-tab-x { display: none; } }
+@container help (min-width: 1280px) and (max-width: 1599px) { .bc .hm-menu-nav { display: flex; } .bc .hm-menu-nav > :not(.hm-mi-x, .hm-msep) { display: none; } }
+@container scr (min-width: 1280px) and (max-width: 1599px) and (min-height: 640px) { .bc .hm-menu-nav { display: flex; } .bc .hm-menu-nav > :not(.hm-mi-x, .hm-msep) { display: none; } }
 .bc .hm-prof { height: var(--h-m); border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink); }
 .bc .hm-menu[open] .hm-prof { box-shadow: inset 0 -3px 0 var(--you); }
 .bc .hm-av { border-radius: 0; background: var(--w-14); color: var(--ink); font-family: var(--cond); }
@@ -470,7 +484,7 @@
 
 /* a phone: the hook comes down a size, the bar keeps only what fits */
 @container help (max-width: 599px) {
-  .bc .hm-head-in { min-height: 60px; }
+  .bc .hm-head-in { min-height: 60px; column-gap: var(--s-3); }
   .bc .hm-brand-t { font-size: var(--fs-body); }
   .bc .hm-play { padding: 0 var(--s-6) 0 var(--s-3); font-size: var(--fs-small); }
   .bc .ho-in { padding: var(--s-10) var(--s-4) var(--s-8); }
