@@ -51,6 +51,16 @@ test('the site’s course numbers are the game’s', () => {
   assert.deepEqual(site.BEAT_LEN, BEAT);
 });
 
+// the course as a set of rounding marks keyed by leg, with what each leg is: a beat into the windward mark, a reach
+// to the wing; the triangle's finish is the start line (null)
+test('the course lists its marks and legs', () => {
+  const c = sim.makeCourse(2, 260, 0, 5, 'tri');
+  assert.deepEqual(Object.keys(c.marks), ['mark', 'wing']);
+  assert.deepEqual(c.legInfo.map((l) => l.beat), [false, true, false, false, true, false, false]);
+  assert.equal(c.finish, null);
+  assert.equal(sim.legAim(c, c.legs.indexOf('gate')).x, (c.gate[0].x + c.gate[1].x) / 2);
+});
+
 // sail a race to the end with only the computer boats racing; their finishing times
 function sail(opts) {
   const r = new sim.Race(opts), others = r.boats.filter((b) => b !== r.player);
