@@ -48,3 +48,18 @@ test('the site and the game load the tokens and both Sofia Sans faces with Cyril
   assert.match(play, /<link rel="stylesheet" href="\/ui\/tokens\.css">/);
   assert.match(play, /family=Sofia\+Sans\+Condensed:wght@[\d.;]+&amp;family=Sofia\+Sans:wght@[\d.;]+/);
 });
+
+test('the broadcast HUD has every word in both languages, and the game uses it', async () => {
+  // the HUD imports sim.js, whose land.js fetches the bay's files: answered from the disk, as in sim.test.mjs
+  const { readFile } = await import('node:fs/promises');
+  globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))));
+  const { HUD_STRINGS: S } = await import('../public/game/hud-bc.js');
+  const keys = (o) => Object.keys(o).sort();
+  assert.deepEqual(keys(S.ru), keys(S.en));
+  assert.deepEqual(keys(S.ru.shape), keys(S.en.shape));
+  for (const [k, v] of Object.entries(S.ru)) if (typeof v === 'function') assert.match(v(1, 4), /1/, k);
+  const main = read('public/game/main.js'), play = read('public/play/index.html');
+  assert.match(main, /import \{ createHud \} from '\.\/hud-bc\.js'/);
+  assert.match(play, /\['\/game\/hud-bc\.js', \d+\]/); // the loader counts it in
+  assert.doesNotMatch(main + play, /hud-next/);
+});

@@ -624,7 +624,7 @@
   // progress: each file the race needs has a weight (three.js is most of the bytes); main.js running is the last 12
   var files = [['three.module.js', 30], ['GLTFLoader.js', 4], ['BufferGeometryUtils.js', 3], ['/game/sim.js', 6], ['/game/world.js', 4],
     ['/game/post.js', 1], ['/game/ocean.js', 1], ['/game/light.js', 1], ['/game/land.js', 1], ['/game/skopea.js', 2], ['skopea.json', 1], ['skopea.bin', 2],
-    ['/game/yacht.js', 4], ['/game/committee.js', 3], ['/game/wildlife.js', 3], ['/game/hud-next.js', 2], ['/game/stats.js', 1], ['/game/main.js', 4], ['yacht.glb', 15]];
+    ['/game/yacht.js', 4], ['/game/committee.js', 3], ['/game/wildlife.js', 3], ['/game/hud-bc.js', 3], ['/game/stats.js', 1], ['/game/main.js', 4], ['yacht.glb', 15]];
   var got = {}, target = 0, shown = 0, soft = 0, ready = false, failed = false, t0 = performance.now();
   var steps = { wind: t('Checking the wind', 'Смотрим на ветер'), course: t('Laying the course', 'Ставим дистанцию'), boat: t('Rigging the boat', 'Готовим лодку'),
     slow: t('Slow connection — still loading', 'Медленная связь — ещё грузится'), ready: t('Ready — to the start', 'Готово — на старт'), err: t('The race didn’t load', 'Гонка не загрузилась') };

@@ -105,7 +105,7 @@
 @keyframes bc-pin { from { scale: 1 0; } }
 @keyframes bc-live { 0%, 100% { box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.3); } 50% { box-shadow: 0 0 0 7px rgba(255, 59, 48, 0); } }
 @keyframes bc-deplete { from { width: 100%; } to { width: 0; } }
-@keyframes bc-call { 0% { opacity: 0; translate: 0 10px; } 40% { opacity: 1; translate: 0 0; box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.62); } 100% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.06); } }
+@keyframes bc-call { 0% { opacity: 0; translate: 0 10px; } 40% { opacity: 1; translate: 0 0; box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.62); } 100% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } }
 @keyframes bc-beat { 0% { scale: 1.12; } 100% { scale: 1; } }
 @keyframes bc-flash { 0% { background-color: rgba(255, 255, 255, 0.35); } 100% { background-color: transparent; } }
 @keyframes bc-sheen { from { background-position: 160% 0; } to { background-position: -60% 0; } }

@@ -2,7 +2,7 @@
 import { Race, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone, laidShape } from './sim.js';
 import { World, defaultQuality, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
 import { raceStarted, raceFinished, raceResult } from './stats.js';
-import { createHudNext } from './hud-next.js';
+import { createHud } from './hud-bc.js';
 import { VENUE, venueById } from './venues.js';
 
 const $ = (s) => document.querySelector(s);
@@ -1199,7 +1199,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Space') { e.preventDefault(); doTack(); }
   if (e.code === 'KeyK') doKite();
   if (e.code === 'KeyT') cycleSpeed();
-  if (e.code === 'KeyH') toast(hudNext.toggle() ? 'HUD: next' : 'HUD: old', 1.2);
+  if (e.code === 'KeyH') toast(bcHud.toggle() ? 'HUD: broadcast' : 'HUD: old', 1.2);
   if (e.code === 'KeyA') world.zoom(1 / 1.12); // held down, the key repeats: a smooth zoom
   if (e.code === 'KeyZ') world.zoom(1.12);
   const view = { KeyX: 'drone', KeyC: 'top', KeyV: 'helm' }[e.code]; // in the order of the buttons
@@ -1213,8 +1213,8 @@ const camSeg = $('#camSeg');
 function setCam(m) { world.mode = m; camSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.cam === m)); }
 camSeg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setCam(b.dataset.cam); });
 setCam(['drone', 'top', 'helm'].includes(opts.camera) ? opts.camera : 'drone'); // Settings › First camera
-// the lighter HUD, the default: ?hud=old brings back the old one (and keeps it), ?hud=next returns; H switches while sailing
-const hudNext = createHudNext({ t, LANG, fmt, world, getRace: () => race, setCam });
+// the broadcast HUD (hud-bc.js), the default: ?hud=old brings back the old one (and keeps it), ?hud=bc returns; H switches while sailing
+const bcHud = createHud({ t, LANG, fmt, world, getRace: () => race, setCam });
 
 // ---------- menus ----------
 const menu = $('#menu'), results = $('#results'), hud = $('#hud');
@@ -1408,9 +1408,9 @@ function updateHud(dt) {
     chips.push([mine ? 'ok' : 'warn', zs.st.overlapped ? t(mine ? 'zIn' : 'zOut', n) : t(mine ? 'zAhead' : 'zAstern', n), 'zone']);
     skipper.zone(zs.st, mine);
   }
-  if (hudNext.on) chips.length = Math.min(chips.length, 2); // the lighter HUD: the two that matter most
+  if (bcHud.on) chips.splice(0, chips.length, ...chips.filter((x) => x[2] !== 'shift').slice(0, 2)); // the broadcast HUD: the two that matter most (the wind's swing is in its wind box)
   const ck = chips.map((x) => x.join()).join('|');
-  if (hudNext.on) { hudNext.chips(chips); chipsKey = ''; } // it updates them in place, in and out smoothly
+  if (bcHud.on) { bcHud.chips(chips); chipsKey = ''; } // it updates them in place, in and out smoothly
   else if (ck !== chipsKey) { chipsKey = ck; el.chips.innerHTML = chips.map(([k, s]) => `<span class="chip ${k}">${s}</span>`).join(''); }
 
   const left = -race.clock;
@@ -1426,7 +1426,7 @@ function updateHud(dt) {
   audio.update(P, paused); crews.update(P, paused); asides.update(); committee.update(); engine.update(false);
   if (race.coach) coach(P, a, leg);
   skipper.watch(P, dt);
-  hudNext.update(P, dt);
+  bcHud.update(P, dt);
 }
 // the first races: a tip when it's needed, each once a race
 function coach(P, a, leg) {
