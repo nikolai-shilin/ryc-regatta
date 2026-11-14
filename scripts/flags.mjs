@@ -129,6 +129,108 @@ const FLAGS = {
   za: () => rect(0, 0, W, H, '#fff') + `<polygon points="0,0 900,0 900,200 375,200" fill="#e03c31"/><polygon points="0,600 900,600 900,400 375,400" fill="#001489"/>`
     + `<polygon points="0,0 90,0 330,240 900,240 900,360 330,360 90,600 0,600 0,520 280,300 0,80" fill="#007749"/>`
     + `<polygon points="0,80 280,300 0,520 0,440 180,300 0,160" fill="#ffb81c"/><polygon points="0,160 180,300 0,440" fill="#000"/>`,
+
+  // Antigua and Barbuda: the V of black, blue and white with the rising sun, on red
+  ag: () => rect(0, 0, W, H, '#ce1126') + `<clipPath id="ag-v"><polygon points="0,0 900,0 450,600"/></clipPath><g clip-path="url(#ag-v)">`
+    + rect(0, 0, W, 250, '#000') + sun(450, 250, 62, 16, '#fcd116') + rect(0, 250, W, 100, '#0072c6') + rect(0, 350, W, 250, '#fff') + `</g>`,
+  // Bosnia and Herzegovina: the yellow triangle and the line of stars along it, on blue
+  ba: () => rect(0, 0, W, H, '#002395') + `<polygon points="240,0 840,0 840,600" fill="#fecb00"/>`
+    + Array.from({ length: 9 }, (_, k) => { const t = -53 + 75 * k; return star(187 + t, 53 + t, 34, '#fff'); }).join(''),
+  // Bermuda: the red ensign, the arms (the red lion holding the Sea Venture's shield) simplified
+  bm: () => rect(0, 0, W, H, '#c8102e') + unionJack(0, 0, 450, 300)
+    + `<path d="M600,250h150v130q0,70 -75,100q-75,-30 -75,-100z" fill="#fff" stroke="#fff" stroke-width="10"/>`
+    + `<path d="M600,400q75,40 150,0v-20q0,70 -75,100q-75,-30 -75,-100z" fill="#2f8f3a"/>`
+    + `<path d="M640,400q-10,-60 15,-95q-8,-25 12,-35q25,-5 30,20q20,15 18,45q20,20 10,65z" fill="#c8102e"/>`
+    + `<path d="M660,330h45v40q0,25 -22,35q-23,-10 -23,-35z" fill="#7fb2e5" stroke="#fcd116" stroke-width="4"/>`,
+  // Chile: the white star in the blue square, white over red
+  cl: () => rect(0, 0, W, 300, '#fff') + rect(0, 300, W, 300, '#d52b1e') + rect(0, 0, 300, 300, '#0039a6') + star(150, 150, 60, '#fff'),
+  co: () => rect(0, 0, W, 300, '#fcd116') + rect(0, 300, W, 150, '#003893') + rect(0, 450, W, 150, '#ce1126'),
+  cu: () => Array.from({ length: 5 }, (_, i) => rect(0, (H / 5) * i, W, H / 5 + 0.5, i % 2 ? '#fff' : '#002a8f')).join('')
+    + `<polygon points="0,0 519.6,300 0,600" fill="#cf142b"/>` + star(173, 300, 70, '#fff'),
+  // Cyprus: the copper island over two olive branches, on white
+  cy: () => rect(0, 0, W, H, '#fff')
+    + `<polygon fill="#d57800" points="250,262 290,232 340,226 382,202 430,196 480,206 520,192 580,176 650,142 705,112 662,162 612,202 582,228 560,252 520,272 480,300 430,320 380,326 330,316 290,302 258,286"/>`
+    + [1, -1].map((s) => `<path d="M${450 - s * 12},440 Q${450 - s * 90},440 ${450 - s * 170},380" fill="none" stroke="#4e5b31" stroke-width="7"/>`
+      + [0.2, 0.4, 0.6, 0.8].map((u) => { const x = 450 - s * (12 + 158 * u), y = 440 - 60 * u * u; return `<ellipse cx="${f(x)}" cy="${f(y - 16)}" rx="9" ry="20" fill="#4e5b31" transform="rotate(${-s * 30} ${f(x)} ${f(y - 16)})"/><ellipse cx="${f(x)}" cy="${f(y + 14)}" rx="9" ry="20" fill="#4e5b31" transform="rotate(${s * 40} ${f(x)} ${f(y + 14)})"/>`; }).join('')).join(''),
+  id: () => hz('#ff0000', '#ffffff'),
+  // Iceland: the red Nordic cross edged in white, on blue
+  is: () => nordic('#02529c', '#ffffff', 252, 396, 233, 367) + rect(288, 0, 72, H, '#dc1e35') + rect(0, 267, W, 66, '#dc1e35'),
+  // Kyrgyzstan: the sun of forty rays with the tunduk, the yurt's crown, on red
+  kg: () => rect(0, 0, W, H, '#e8112d') + sun(450, 300, 100, 40, '#ffef00')
+    + `<clipPath id="kg-t"><circle cx="450" cy="300" r="62"/></clipPath><circle cx="450" cy="300" r="62" fill="none" stroke="#e8112d" stroke-width="12"/><g clip-path="url(#kg-t)" fill="none" stroke="#e8112d" stroke-width="9">`
+    + [-1, 0, 1].map((k) => `<path d="M${450 + k * 22},230Q${450 + k * 48},300 ${450 + k * 22},370"/><path d="M380,${300 + k * 22}Q450,${300 + k * 40} 520,${300 + k * 22}"/>`).join('') + `</g>`,
+  // South Korea: the taegeuk and the four trigrams, drawn on the flag's own 72 × 48 grid
+  kr: () => {
+    const tri = (bars, s) => bars.map((solid, i) => { const y = s * (19 + 3 * i); return `<path d="M-6,${y}${solid ? 'H6' : 'H-0.5M0.5,' + y + 'H6'}" stroke="#000" stroke-width="2"/>`; }).join('');
+    return `<svg viewBox="-36 -24 72 48" width="${W}" height="${H}"><rect x="-36" y="-24" width="72" height="48" fill="#fff"/>`
+      + `<g transform="rotate(-56.3099)"><circle r="12" fill="#cd2e3a"/><path fill="#0047a0" d="M0,-12A6,6 0 0,0 0,0A6,6 0 0,1 0,12A12,12 0 0,1 0,-12z"/>${tri([1, 1, 1], -1)}${tri([0, 0, 0], 1)}</g>`
+      + `<g transform="rotate(56.3099)">${tri([0, 1, 0], -1)}${tri([1, 0, 1], 1)}</g></svg>`;
+  },
+  lu: () => hz('#ed2939', '#ffffff', '#00a1de'),
+  // Morocco: the green interlaced pentagram, on red
+  ma: () => rect(0, 0, W, H, '#c1272d')
+    + `<polygon fill="none" stroke="#006233" stroke-width="20" points="${[0, 2, 4, 1, 3].map((i) => { const t = (i * 2 * Math.PI) / 5; return `${f(450 + 160 * Math.sin(t))},${f(310 - 160 * Math.cos(t))}`; }).join(' ')}"/>`,
+  mc: () => hz('#ce1126', '#ffffff'),
+  // Moldova: blue, yellow and red, with the eagle holding the shield of the aurochs head, simplified
+  md: () => vt('#0046ae', '#ffd200', '#cc092f')
+    + `<path fill="#b07e3c" d="M450,175q-22,0 -24,24l-74,-44q-34,52 -22,126q16,62 70,92l50,22l50,-22q54,-30 70,-92q12,-74 -22,-126l-74,44q-2,-24 -24,-24z"/>`
+    + `<path fill="#e8b23c" d="M440,186l-16,10l18,4z"/>`
+    + `<clipPath id="md-s"><path d="M405,250h90v70q0,42 -45,58q-45,-16 -45,-58z"/></clipPath><g clip-path="url(#md-s)">` + rect(400, 245, 100, 70, '#cc092f') + rect(400, 315, 100, 70, '#0046ae') + `</g>`
+    + `<path d="M405,250h90v70q0,42 -45,58q-45,-16 -45,-58z" fill="none" stroke="#6b4a1f" stroke-width="4"/>`
+    + `<path fill="#ffd200" d="M428,268q-8,-14 4,-22q-2,14 10,20q8,-6 16,0q12,-6 10,-20q12,8 4,22q-4,10 -10,14v28q0,14 -12,18q-12,-4 -12,-18v-28q-6,-4 -10,-14z"/>`
+    + star(450, 252, 9, '#ffd200'),
+  // North Macedonia: the yellow sun and its eight rays to the edges, on red
+  mk: () => rect(0, 0, W, H, '#d20000')
+    + [[390, 0, 510, 0], [900, 245, 900, 355], [390, 600, 510, 600], [0, 245, 0, 355], [0, 0, 110, 0, 0, 70], [900, 0, 790, 0, 900, 70], [900, 600, 790, 600, 900, 530], [0, 600, 110, 600, 0, 530]]
+      .map((p) => p.length === 4 ? `<polygon fill="#ffe600" points="450,300 ${p[0]},${p[1]} ${p[2]},${p[3]}"/>` : `<polygon fill="#ffe600" points="450,300 ${p[2]},${p[3]} ${p[0]},${p[1]} ${p[4]},${p[5]}"/>`).join('')
+    + `<circle cx="450" cy="300" r="90" fill="#d20000"/><circle cx="450" cy="300" r="74" fill="#ffe600"/>`,
+  // Malta: the George Cross, edged in red, in the white hoist
+  mt: () => vt('#ffffff', '#cf142b') + bolnisi(110, 110, 66, '#cf142b') + bolnisi(110, 110, 58, '#a9a9a9'),
+  // Mexico: green, white and red, with the eagle on the cactus inside the oak and laurel, simplified
+  mx: () => vt('#006847', '#ffffff', '#ce1126') + `<g transform="translate(450 330) scale(1.5) translate(-450 -330)">`
+    + `<path d="M380,320Q395,390 450,398Q505,390 520,320" fill="none" stroke="#006847" stroke-width="12"/><path d="M430,398h40v8h-40z" fill="#ce1126"/>`
+    + `<path fill="#4f8a3c" d="M430,372q-6,-28 10,-38q-2,-16 10,-18q12,2 10,18q16,10 10,38z"/>`
+    + `<path fill="#8c5a2b" d="M402,250q20,-6 30,14l14,-30q12,-12 26,-4q10,8 2,18q22,-6 40,8q-26,4 -30,30q8,20 -4,44q-14,18 -36,14q-24,-4 -30,-30q-4,-24 10,-34q-20,-10 -22,-30z"/>`
+    + `<path d="M430,340q20,8 46,-8" fill="none" stroke="#5a8f3c" stroke-width="5"/></g>`,
+  // Malaysia: fourteen stripes, the yellow crescent and fourteen-pointed star on blue
+  my: () => Array.from({ length: 14 }, (_, i) => rect(0, (H / 14) * i, W, H / 14 + 0.5, i % 2 ? '#fff' : '#cc0001')).join('')
+    + rect(0, 0, 450, (H / 14) * 8, '#010066') + crescent(165, 171.4, 112, 96, 30, '#fc0', '#010066') + star(318, 171.4, 88, '#fc0', 14, 38),
+  pe: () => vt('#d91023', '#ffffff', '#d91023'),
+  // the Philippines: the white triangle with the sun and three stars, blue over red
+  ph: () => hz('#0038a8', '#ce1126') + `<polygon points="0,0 519.6,300 0,600" fill="#fff"/>` + sun(173, 300, 46, 8, '#fcd116')
+    + [[52, 62], [52, 538], [440, 300]].map(([x, y]) => star(x, y, 28, '#fcd116', 5, 11, Math.atan2(x - 173, -(y - 300)))).join(''),
+  // Qatar: the white serrated band at the hoist, on maroon
+  qa: () => rect(0, 0, W, H, '#8a1538')
+    + `<polygon fill="#fff" points="0,0 250,0 ${Array.from({ length: 9 }, (_, i) => `330,${f((i + 0.5) * H / 9)} 250,${f((i + 1) * H / 9)}`).join(' ')} 0,600"/>`,
+  // Serbia: the national flag, the tricolour without the arms
+  rs: () => hz('#c6363c', '#0c4076', '#ffffff'),
+  // Singapore: the white crescent and five stars on red, over white
+  sg: () => hz('#ef3340', '#ffffff') + crescent(160, 150, 95, 80, 30, '#fff', '#ef3340')
+    + Array.from({ length: 5 }, (_, i) => { const t = (i * 2 * Math.PI) / 5; return star(f(255 + 50 * Math.sin(t)), f(150 - 50 * Math.cos(t)), 21, '#fff'); }).join(''),
+  // Slovenia: the shield of Triglav and its three stars over the white, blue and red
+  si: () => hz('#ffffff', '#005da4', '#ed1c24')
+    + `<clipPath id="si-s"><path d="M150,110h120v110q0,50 -60,75q-60,-25 -60,-75z"/></clipPath>`
+    + `<path d="M150,110h120v110q0,50 -60,75q-60,-25 -60,-75z" fill="#005da4"/><g clip-path="url(#si-s)"><polygon fill="#fff" points="150,240 182,200 194,212 210,168 226,212 238,200 270,240 270,300 150,300"/>`
+    + [244, 258].map((y) => `<path d="M150,${y}q10,-8 20,0t20,0t20,0t20,0t20,0t20,0" fill="none" stroke="#005da4" stroke-width="5"/>`).join('') + `</g>`
+    + `<path d="M150,110h120v110q0,50 -60,75q-60,-25 -60,-75z" fill="none" stroke="#ed1c24" stroke-width="8"/>`
+    + [[186, 132], [234, 132], [210, 150]].map(([x, y]) => star(x, y, 10, '#ffdd00', 6, 5)).join(''),
+  // Slovakia: the white double cross on the blue hills, in a red shield edged white
+  sk: () => hz('#ffffff', '#0b4ea2', '#ee1c25')
+    + `<clipPath id="sk-s"><path d="M150,120h200v200q0,100 -100,140q-100,-40 -100,-140z"/></clipPath>`
+    + `<path d="M150,120h200v200q0,100 -100,140q-100,-40 -100,-140z" fill="#ee1c25" stroke="#fff" stroke-width="14"/>`
+    + `<g clip-path="url(#sk-s)"><circle cx="250" cy="430" r="62" fill="#0b4ea2"/><circle cx="178" cy="458" r="56" fill="#0b4ea2"/><circle cx="322" cy="458" r="56" fill="#0b4ea2"/></g>`
+    + rect(238, 165, 24, 215, '#fff') + rect(208, 200, 84, 22, '#fff') + rect(188, 262, 124, 24, '#fff'),
+  // Tunisia: the red crescent and star in the white disc, on red
+  tn: () => rect(0, 0, W, H, '#e70013') + `<circle cx="450" cy="300" r="150" fill="#fff"/>`
+    + crescent(450, 300, 112, 90, 28, '#e70013', '#fff') + star(478, 300, 60, '#e70013', 5, 23, -Math.PI / 2),
+  // Uruguay: nine stripes and the Sun of May in the white canton
+  uy: () => Array.from({ length: 9 }, (_, i) => rect(0, (H / 9) * i, W, H / 9 + 0.5, i % 2 ? '#0038a8' : '#fff')).join('')
+    + rect(0, 0, 333.3, 333.3, '#fff') + sun(166.7, 166.7, 46, 16, '#fcd116'),
+  // Uzbekistan: blue, white and green edged in red, the crescent and twelve stars
+  uz: () => rect(0, 0, W, 192, '#0099b5') + rect(0, 192, W, 12, '#ce1126') + rect(0, 204, W, 192, '#fff') + rect(0, 396, W, 12, '#ce1126') + rect(0, 408, W, 192, '#1eb53a')
+    + crescent(120, 96, 64, 56, 20, '#fff', '#0099b5')
+    + [[40, [300, 340, 380]], [96, [260, 300, 340, 380]], [152, [220, 260, 300, 340, 380]]].map(([y, xs]) => xs.map((x) => star(x, y, 14, '#fff')).join('')).join(''),
+  vn: () => rect(0, 0, W, H, '#da251d') + star(450, 300, 180, '#ffff00'),
 };
 
 const out = new URL('../public/flags/', import.meta.url);
