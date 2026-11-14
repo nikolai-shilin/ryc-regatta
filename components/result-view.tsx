@@ -7,6 +7,7 @@ import { IconBack, IconRestart, IconPlay, IconTrophy, IconRoute, IconFlag, IconS
 import { ShareButton } from './share-sheet';
 import { CourseMap } from './course-map';
 import { GameScene } from './game-scene';
+import { Soundtrack } from './soundtrack';
 import { PauseCard, SettingsRow, type Who } from './pause-card';
 import { courseDistance, fmtDistance, legDistances, shapeOf, SHAPE_NAME, type Shape } from '@/lib/race';
 import { finishScene, neighbours, raceVenue, type Pose } from '@/lib/finish';
@@ -156,6 +157,7 @@ export default function ResultView({ id, lang, signedName, who, head, foot }: { 
     <div className="scr bt-scr rs-scr" lang={lang} data-acct={signedName ? 'signed' : 'guest'}>
       <div className="bt">
         <GameScene venue={where.id} wind={res.preset} finish={scene} title={t('The finish in 3D, as it was', 'Финиш в 3D, как он был')} />
+        {!shared && <Soundtrack />}
 
         {/* the heading as the other pages laid out as the race's pause screen have it (the race hub, the free race, your
             boat): the back arrow and a kicker, the big serif line, a word on where and how the finish went, and the

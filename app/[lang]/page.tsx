@@ -10,6 +10,7 @@ import { VENUES, venueOf } from '@/lib/venues';
 import { Logo, IconArrow, IconPlay, IconWind, IconSail, IconPin, clock } from '@/components/ui';
 import { RacePill, TileRow, MyRow, HeroScene } from '@/components/home-client';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
+import { Soundtrack } from '@/components/soundtrack';
 import { FaqList } from '@/components/faq-list';
 import { faqGroups, HOME } from '@/lib/faq';
 
@@ -89,6 +90,7 @@ export default async function Home({ params }: LangParams) {
           <img className="bgimg" {...heroNarrow} alt="" />
         </picture>
         <HeroScene title={t('A race in the game', 'Гонка в игре')} />
+        <Soundtrack />
         <section className="hm-page hm-hero-in" aria-labelledby="home-h1">
           <span className="kicker">{t('Up and down · a sailing race game by RYC', 'Up and down · парусная гонка от RYC')}</span>
           <h1 className="hm-display" id="home-h1">{t('Win the start. Play the shifts. Race by the real rules.', 'Возьми старт. Лови заходы. Гоняйся по настоящим правилам.')}</h1>
