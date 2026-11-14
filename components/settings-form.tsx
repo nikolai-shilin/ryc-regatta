@@ -5,7 +5,7 @@ import { readOpts, saveOpts, DEFAULTS, type Opts } from '@/lib/opts';
 import Link from 'next/link';
 import { IconArrow, IconSail, IconScreen } from './ui';
 
-type Keys = 'autoTrim' | 'guides' | 'camera' | 'gfx' | 'sound' | 'voice' | 'vibration';
+type Keys = 'autoTrim' | 'guides' | 'camera' | 'gfx' | 'sound' | 'voice' | 'vibration' | 'music';
 
 // S3 · How you sail and how the game runs. Every change is saved at once where the game reads it.
 export function SettingsForm({ lang, langRow, accountRow }: { lang: Lang; langRow: React.ReactNode; accountRow: React.ReactNode }) {
@@ -51,6 +51,7 @@ export function SettingsForm({ lang, langRow, accountRow }: { lang: Lang; langRo
         {seg('gfx', t('Graphics', 'Графика'), [['auto', t('Auto', 'Авто')], ['high', t('High', 'Макс.')], ['medium', t('Medium', 'Сред.')], ['low', t('Low', 'Мин.')]])}
         {sw('sound', t('Sound', 'Звук'))}
         {sw('voice', t('Voice on board', 'Голос шкипера'))}
+        {seg('music', t('Music', 'Музыка'), [['ambient', t('Ambient', 'Эмбиент')], ['film', t('Film', 'Кино')], ['folk', t('Folk', 'Фолк')], ['off', t('Off', 'Выкл')]])}
         {sw('vibration', t('Vibration', 'Вибрация'), 'no-desk')}
         {langRow}
       </div>
