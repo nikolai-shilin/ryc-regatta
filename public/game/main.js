@@ -71,7 +71,7 @@ const T = {
     cFinishUp: 'The finish line is up the course, just right of the windward mark — beat up and cross it',
     cFinishR: 'The finish line is off to the right of the gate — reach across and cross it', cFinishL: 'The finish line is off to the left of the gate — reach across and cross it',
     wind: 'Wind', light: 'Light · 7 kn', medium: 'Medium · 12 kn', strong: 'Strong · 19 kn', laps: 'Laps', sails: 'Sails',
-    manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', voiceK: 'Voice', musicK: 'Music', muAmbient: 'Ambient', muFilm: 'Film', muFolk: 'Folk', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
+    manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', voiceK: 'Voice', musicK: 'Music', muAmbient: 'Ambient', muFilm: 'Film', muFolk: 'Folk', seaK: 'Sea', seaLoud: 'Loud', seaNormal: 'Normal', seaQuiet: 'Quiet', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
     fleetK: 'Boats', lengthK: 'Course', lShort: 'Short', lMedium: 'Medium', lLong: 'Long',
     currentK: 'Current', guidesK: 'Guides', gfx: 'Graphics', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', gsHigh: 'High', gsMedium: 'Medium', gsLow: 'Low', gfxNow: (q) => `Graphics · ${q} now`, start: 'Start race', resume: 'Resume', restart: 'Restart',
     how1: '<b>Left thumb</b> steers on the arc. <b>Right thumb</b> works the sheet: up pulls the sails in, down lets them out. Keep the telltales green.',
@@ -155,7 +155,7 @@ const T = {
     cFinishUp: 'Финишная линия наверху, чуть правее верхнего знака — лавируй к ней и пересеки её',
     cFinishR: 'Финишная линия справа от ворот — иди к ней галфвиндом и пересеки её', cFinishL: 'Финишная линия слева от ворот — иди к ней галфвиндом и пересеки её',
     wind: 'Ветер', light: 'Слабый · 7 уз', medium: 'Средний · 12 уз', strong: 'Сильный · 19 уз', laps: 'Круги', sails: 'Паруса',
-    manual: 'Сам', auto: 'Авто', sound: 'Звук', voiceK: 'Голос', musicK: 'Музыка', muAmbient: 'Эмбиент', muFilm: 'Кино', muFolk: 'Фолк', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
+    manual: 'Сам', auto: 'Авто', sound: 'Звук', voiceK: 'Голос', musicK: 'Музыка', muAmbient: 'Эмбиент', muFilm: 'Кино', muFolk: 'Фолк', seaK: 'Море', seaLoud: 'Громко', seaNormal: 'Обычно', seaQuiet: 'Тихо', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
     fleetK: 'Лодок', lengthK: 'Дистанция', lShort: 'Короткая', lMedium: 'Средняя', lLong: 'Длинная',
     currentK: 'Течение', guidesK: 'Подсказки', gfx: 'Графика', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', gsHigh: 'Макс.', gsMedium: 'Сред.', gsLow: 'Мин.', gfxNow: (q) => `Графика · сейчас ${q.toLowerCase()}`, start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
     how1: '<b>Левый палец</b> рулит по дуге. <b>Правый</b> работает шкотом: вверх выбрать, вниз потравить. Колдунчики должны быть зелёными.',
@@ -212,7 +212,7 @@ applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 
 // ---------- settings ----------
-const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 0, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', guides: 1, music: 'ambient', played: 0 };
+const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 0, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', guides: 1, music: 'ambient', sea: 'normal', played: 0 };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
 delete opts.undefined; // left by an older pause menu, whose quick switches also ran the menu's choice handler
 if (opts.fleetV !== 3) { opts.fleet = 5; opts.fleetV = 3; } // the default changed (10, then 7): start everyone on 5 once
@@ -266,6 +266,9 @@ const haptic = (kind) => {
 };
 
 // ---------- sound: wind, water, flapping sails, winch, horns, voices ----------
+// the sea and the wind, as loud as Settings › Sea says (the pause menu's too)
+const SEA = { loud: 1.6, normal: 1, quiet: 0.4, off: 0 };
+const seaK = () => SEA[opts.sea] ?? 1;
 const audio = {
   ctx: null, on: !!opts.sound,
   noise(ctx) {
@@ -299,9 +302,9 @@ const audio = {
   set(g, v, tc = 0.25) { if (g && this.ctx) g.gain.setTargetAtTime(v, this.ctx.currentTime, tc); },
   update(P, paused) {
     if (!this.ctx) return;
-    const k = paused ? 0 : 1;
-    this.set(this.windG, k * Math.min(0.45, 0.03 + P.aws / 80));
-    this.set(this.waterG, k * Math.min(0.35, P.v / 22 + (P.surf > 0 ? 0.1 : 0)));
+    const k = paused ? 0 : 1, sea = k * seaK();
+    this.set(this.windG, sea * Math.min(0.45, 0.03 + P.aws / 80));
+    this.set(this.waterG, sea * Math.min(0.35, P.v / 22 + (P.surf > 0 ? 0.1 : 0)));
     const flog = P.trim === 'irons' ? 1 : P.luff;
     this.set(this.flapG, k * flog * (Math.random() < 0.45 ? 0.55 : 0.04), 0.012); // a sail flogging cracks
   },
@@ -1264,6 +1267,7 @@ function paintPause() {
   for (const b of pauseEl.querySelectorAll('[data-q]')) b.classList.toggle('on', b.dataset.q === 'autoTrim' ? opts.autoTrim === 1 : !!opts[b.dataset.q]);
   // graphics: the choice, and on Auto the level it has settled on for this device
   for (const b of pauseEl.querySelectorAll('[data-g]')) b.setAttribute('aria-checked', String(b.dataset.g === opts.gfx));
+  for (const b of pauseEl.querySelectorAll('[data-sea]')) b.setAttribute('aria-checked', String(b.dataset.sea === (opts.sea in SEA ? opts.sea : 'normal')));
   for (const b of pauseEl.querySelectorAll('[data-mu]')) b.setAttribute('aria-checked', String(b.dataset.mu === (MUSIC_STYLES.includes(opts.music) ? opts.music : 'off')));
   $('#pGfxK').textContent = opts.gfx === 'auto' ? t('gfxNow', t({ high: 'gHigh', medium: 'gMedium', low: 'gLow' }[world.quality] || 'gHigh')) : t('gfx');
 }
@@ -1290,6 +1294,8 @@ pauseEl.addEventListener('click', (e) => {
   if (g) { opts.gfx = g.dataset.g; saveOpts(); world.setQuality(startQuality()); perf.settle = 2; paintOpts(); paintPause(); return; } // as the menu's Graphics does
   const mu = e.target.closest('[data-mu]');
   if (mu) { opts.music = mu.dataset.mu; saveOpts(); score.style(); paintPause(); return; } // Settings › Music, from here too
+  const sea = e.target.closest('[data-sea]');
+  if (sea) { opts.sea = sea.dataset.sea; saveOpts(); paintPause(); return; } // Settings › Sea: heard as the race resumes
   const b = e.target.closest('[data-q]'); if (!b) return;
   const k = b.dataset.q;
   if (k === 'autoTrim') { opts.autoTrim = opts.autoTrim === 1 ? 0 : 1; applyTrimMode(); }
