@@ -3,8 +3,8 @@
 // The wind "from" W is a compass direction. A boat's true wind angle TWA = wrap(W − heading): positive = wind over
 // the starboard side (starboard tack). AWA is the same for the apparent wind, the wind the sails feel.
 
-import { placeCourse, roomAt } from './land.js';
-import { dailyVenue } from './venues.js';
+import { placeCourse, roomAt, VENUE } from './land.js';
+import { dailyVenue, shapeOffered } from './venues.js';
 
 export const KN = 0.514444; // m/s per knot
 export const D2R = Math.PI / 180;
@@ -648,7 +648,7 @@ export class Race {
   constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl' } = {}) {
     this.rand = rng(seed + 7);
     const beatLen = ({ light: 200, medium: 260, strong: 280 }[preset] || 260) * (COURSE_LEN[length] || 1);
-    if (!SHAPES.includes(course)) course = 'wl';
+    if (!SHAPES.includes(course) || !shapeOffered(VENUE, course, length)) course = 'wl'; // unknown, or not laid here
     const bias = (this.rand() - 0.5) * 2 * 8 * D2R;
     fleet = clamp(Math.round(fleet), 2, FLEET.length + 1);
     this.course = makeCourse(laps, beatLen, bias, fleet, course);

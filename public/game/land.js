@@ -59,14 +59,25 @@ function rings() {
 export function placeCourse(course, beatDeg = 42) {
   const c = course, beat = -c.windward.z, half = c.len / 2, tb = Math.tan(beatDeg * Math.PI / 180);
   const need = []; // [x, z, metres of water round it]
-  for (const m of [c.windward, ...c.gate, c.pin, c.committee, ...(c.wing ? [c.wing] : [])]) need.push([m.x, m.z, 70]);
+  // every mark: the windward mark, the gate and the line, then the course's other marks and a finish line of its own
+  const others = Object.entries(c.marks).filter(([k]) => k !== 'mark').map(([, m]) => m);
+  const fin = c.finish ? [c.finish.a, c.finish.b, c.finishBoat] : [];
+  for (const m of [c.windward, ...c.gate, c.pin, c.committee, ...others, ...fin]) need.push([m.x, m.z, 70]);
   for (const f of [-1, -0.5, 0, 0.5, 1]) for (const z of [0, 90, 170]) need.push([f * (half + 60), z, 35]); // the line and the boats below it
   need.push([0, -beat - 90, 25]); // over the top of the windward mark
   for (const f of [0.25, 0.5, 0.75]) { // the beat, out to most of the way to the laylines
     const w = Math.min(f, 1 - f) * beat * tb * 0.85;
     need.push([-w, -f * beat, 25], [w, -f * beat, 25]);
   }
-  if (c.wing) for (const [a, b] of [[c.windward, c.wing], [c.wing, c.gate[0]]]) need.push([(a.x + b.x) / 2, (a.z + b.z) / 2, 50]);
+  // the middle of each leg sailed off the wind, each once, but the run from the windward mark down to the gate (it's
+  // over the beat): a leg goes from its mark, the gate's left buoy or the finish line's pin to the next; a finish back
+  // at the start line counts as the gate, just above it
+  const end = (i) => c.marks[c.legs[i]] || (c.legs[i] === 'gate' || !c.finish ? c.gate[0] : c.finish.a);
+  for (let i = 2; i < c.legs.length; i++) {
+    const a = end(i - 1), b = end(i), m = [(a.x + b.x) / 2, (a.z + b.z) / 2, 50];
+    if (c.legInfo[i].beat || (a === c.windward && b === c.gate[0]) || need.some((p) => p[0] === m[0] && p[1] === m[1] && p[2] === 50)) continue;
+    need.push(m);
+  }
   const fits = (gx, gz) => { let worst = Infinity; for (const [x, z, r] of need) { worst = Math.min(worst, roomAt(gx + x, gz + z) - r); if (worst < 0) break; } return worst; };
   if (META.home) { // the nearest start to the middle that fits; none: the one with the most room
     const want = { x: HOME.x - c.windward.x / 2, z: HOME.z - c.windward.z / 2 };
