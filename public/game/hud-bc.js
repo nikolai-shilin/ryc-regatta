@@ -25,6 +25,7 @@ export const HUD_STRINGS = {
     toLeader: 'To leader', ahead: 'Ahead of 2nd', time: 'Time', start: 'Start', perMin: '/min', camera: 'Camera', pause: 'Pause',
     you: 'You', layIn: (s) => `Layline in ${s} · then tack`, layNow: 'On the layline · tack', over: 'Past the layline · tack now', fetch: 'Laying the mark',
     advantage: 'Advantage',
+    space: 'Space',
     go: 'Go', leads: 'Leads', afterGun: 'after the gun', ord: (n) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`,
   },
   ru: {
@@ -39,6 +40,7 @@ export const HUD_STRINGS = {
     toLeader: 'До лидера', ahead: 'Впереди второго', time: 'Время', start: 'Старт', perMin: '/мин', camera: 'Камера', pause: 'Пауза',
     you: 'Ты', layIn: (s) => `Лейлайн через ${s} · потом поворот`, layNow: 'На лейлайне · поворот', over: 'Лейлайн пройден · поворачивай', fetch: 'Идёшь на знак',
     advantage: 'Выигрыш',
+    space: 'Пробел',
     go: 'Старт!', leads: 'Лидирует', afterGun: 'после сигнала', ord: (n) => `${n}-й`,
   },
 };
@@ -209,7 +211,7 @@ const CSS = `
 @keyframes b-fresh { 50% { background-color: color-mix(in srgb, var(--you) 45%, rgba(5, 10, 18, 0.88)); } }
 @media (hover: hover) and (pointer: fine) {
   #hud.bc .b-acts > #tackBtn::after, #hud.bc .b-acts > #kiteBtn::after { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); color: var(--ink-3); border: 1px solid var(--rule); padding: var(--s-1) var(--s-2); text-transform: none; }
-  #hud.bc .b-acts > #tackBtn::after { content: 'Space'; } #hud.bc .b-acts > #kiteBtn::after { content: 'K'; }
+  #hud.bc .b-acts > #tackBtn::after { content: attr(data-key); } #hud.bc .b-acts > #kiteBtn::after { content: 'K'; }
   #hud.bc .b-acts > .round.on::after, #hud.bc .b-acts > .round.down::after { color: var(--ink-on); border-color: rgba(4, 18, 30, 0.3); }
 }
 #hud.bc #sheetZone { right: calc(28px + var(--sr)); bottom: calc(28px + var(--sb)); width: 64px; height: min(300px, calc(100vh / var(--hz, 1) - 440px)); padding: 36px 0 40px; justify-content: center; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); transition: opacity .4s; animation: bc-slide-r var(--t-in) var(--ease) both .3s; }
@@ -300,6 +302,9 @@ const CSS = `
 #hud.bc .b-lay.on { display: flex; }
 .b-lay svg { width: 16px; height: 16px; flex: none; }
 .b-lay.now { background: var(--you); }
+/* the key that does what the call asks, on a computer (as the tack button shows it) */
+.b-key { display: none; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: none; color: var(--ink-on); border: 1px solid color-mix(in srgb, var(--ink-on) 30%, transparent); padding: var(--s-1) var(--s-2); }
+@media (hover: hover) and (pointer: fine) { .b-lay .b-key:not(:empty) { display: inline-block; } }
 /* the boats' tags and the advantage line, over the water (outside #hud, scaled as it is) */
 #hud.bc { z-index: 1; }
 #bOver { position: fixed; inset: 0; z-index: 0; pointer-events: none; zoom: var(--hz, 1); display: none; }
@@ -454,7 +459,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   const board = html(`<div class="bx pn b-board"><div class="b-bh"><span class="lbl-ink b-bt"></span><span class="lbl b-br"></span></div><div class="b-rows"></div></div>`);
   const map = html(`<div class="bx pn b-map"><div class="b-mh"><span class="lbl-ink">${L.course}</span><span class="lbl b-shape"></span></div></div>`);
   const TACK_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9c2.5-4.5 9.5-4.5 12 0"/><path d="M12.5 9H16.5V5"/><path d="M10 11.5V17"/></g></svg>';
-  const low = html(`<div class="bx b-low"><div class="b-split" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}<span></span></div></div><div class="b-state"></div>
+  const low = html(`<div class="bx b-low"><div class="b-split" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}<span></span><kbd class="b-key"></kbd></div></div><div class="b-state"></div>
     <div class="pn b-you pre">
       <div class="c-pos s-run s-done"></div>
       <div class="c-nm s-pre s-run s-done"><i></i><span class="n-m">${t('you')}</span></div>
@@ -518,7 +523,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     over.append(el);
     return { el, box: q(el, '.in'), p: q(el, '.p'), c: q(el, '.c'), n: q(el, '.n .nt'), fl: q(el, '.b-fl'), v: q(el, '.v'), w: 0, f: 0 };
   });
-  const lay = q(low, '.b-lay'), layT = q(lay, 'span');
+  const lay = q(low, '.b-lay'), layT = q(lay, 'span'), layK = q(lay, '.b-key');
   const split = q(low, '.b-split'), SP = { k: q(split, '.k'), t: q(split, '.t'), v: q(split, '.v'), g: q(split, '.g') };
 
   // the game's own elements, and where each goes in this HUD
@@ -548,6 +553,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
 
   hud.classList.add('bc');
   for (const m of MOVES) m.to.append(m.el);
+  const tackB = $('#tackBtn'); if (tackB) tackB.dataset.key = L.space;
   scale();
 
   const txt = (e, s) => { if (e._t !== s) { e._t = s; e.textContent = s; } };
@@ -773,7 +779,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     // the layline, when nothing else is being called
     const ly = !pre && !done ? layline(race, c, P) : null;
     lay.classList.toggle('on', !!ly && !toastEl.classList.contains('show'));
-    if (ly) { txt(layT, ly[0]); lay.classList.toggle('now', ly[1]); }
+    if (ly) { txt(layT, ly[0]); lay.classList.toggle('now', ly[1]); txt(layK, ly[2] ? L.space : ''); }
 
     // the rudder fades back when no one is steering
     rudder.classList.toggle('act', Math.abs(P.rudder) > 0.04);
@@ -871,7 +877,8 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   function layline(race, c, P) {
     if (!isBeat(c, P.leg) || P.auto) return null;
     const m = race.nextMark(P), k = laylineAt({ mx: m.x, mz: m.z, x: P.x, z: P.z, h: P.h, v: P.v, W: P.wdir, beat: beatAngle(P.tws) * D2R });
-    return !k ? null : k.kind === 'in' ? [L.layIn(fmt(k.s)), false] : k.kind === 'fetch' ? [L.fetch, false] : [k.kind === 'over' ? L.over : L.layNow, true];
+    // [the words, whether it's now, whether it asks for a tack (Space)]
+    return !k ? null : k.kind === 'in' ? [L.layIn(fmt(k.s)), false, true] : k.kind === 'fetch' ? [L.fetch, false, false] : [k.kind === 'over' ? L.over : L.layNow, true, true];
   }
 
   function placeTag(race, c, leg, P) {
