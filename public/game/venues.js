@@ -51,7 +51,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'newport', name: ['Newport', 'Ньюпорт'], lat: 41.457, lon: -71.36, wind: 210, tz: -4, stream: ['tide', 10, 0.8],
+    id: 'newport', name: ['Newport', 'Ньюпорт'], lat: 41.457, lon: -71.36, wind: 210, tz: -4, stream: ['tide', 340, 0.8],
     look: {
       haze: 0.95,
       ground: { forest: ['#2b4526', '#3a5a2f', '#557539'], scrub: '#7a8a52', rock: ['#8e8a80', '#6f6c66'], town: '#9a968c', shore: '#a8a090' },
@@ -63,7 +63,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'sydney', name: ['Sydney', 'Сидней'], lat: -33.848, lon: 151.256, wind: 45, tz: 11, stream: ['tide', 250, 0.6],
+    id: 'sydney', name: ['Sydney', 'Сидней'], lat: -33.848, lon: 151.256, wind: 45, tz: 11, stream: ['tide', 225, 0.6],
     look: {
       haze: 1.15,
       ground: { forest: ['#3a4a2c', '#4d5c37', '#6b7547'], scrub: '#7f7f58', rock: ['#c9a878', '#a8865c'], town: '#a8988a', shore: '#d8c49a' },
@@ -131,7 +131,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'auckland', name: ['Auckland', 'Окленд'], lat: -36.83, lon: 174.815, wind: 225, tz: 13, stream: ['tide', 240, 1.0],
+    id: 'auckland', name: ['Auckland', 'Окленд'], lat: -36.83, lon: 174.815, wind: 225, tz: 13, stream: ['tide', 230, 1.0],
     look: {
       haze: 1.2,
       ground: { forest: ['#24401f', '#335229', '#4a6b34'], scrub: '#6b7a44', rock: ['#5d5a55', '#45433f'], town: '#9a948a', shore: '#b8a888' },
@@ -190,7 +190,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'marstrand', name: ['Marstrand', 'Марстранд'], lat: 57.885, lon: 11.555, wind: 225, tz: 2, stream: ['flow', 345, 0.4],
+    id: 'marstrand', name: ['Marstrand', 'Марстранд'], lat: 57.885, lon: 11.555, wind: 225, tz: 2, stream: ['flow', 15, 0.4],
     look: {
       haze: 1.15,
       ground: { forest: ['#2c4224', '#3b5530', '#566d3a'], scrub: '#7a7f56', rock: ['#a8988c', '#857870'], town: '#9c8a80', shore: '#a8988a' },
@@ -246,7 +246,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'rio', name: ['Rio de Janeiro', 'Рио-де-Жанейро'], lat: -22.93, lon: -43.158, wind: 150, tz: -3, stream: ['tide', 355, 0.8],
+    id: 'rio', name: ['Rio de Janeiro', 'Рио-де-Жанейро'], lat: -22.93, lon: -43.158, wind: 150, tz: -3, stream: ['tide', 35, 0.8],
     look: {
       haze: 0.9,
       ground: { forest: ['#1c3a1a', '#284d22', '#3c642c'], scrub: '#5f7a3c', rock: ['#8a8680', '#6a6660'], town: '#b4aca0', shore: '#e4d6b0' },
@@ -268,7 +268,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'istanbul', name: ['Istanbul', 'Стамбул'], lat: 40.982, lon: 28.992, wind: 35, tz: 3, stream: ['flow', 195, 1.0],
+    id: 'istanbul', name: ['Istanbul', 'Стамбул'], lat: 40.982, lon: 28.992, wind: 35, tz: 3, stream: ['flow', 185, 1.0],
     look: {
       haze: 0.8,
       ground: { forest: ['#2e4626', '#3f5a2e', '#5a733a'], scrub: '#7c7e54', rock: ['#b0a690', '#8f8674'], town: '#b2a692', shore: '#bfb39a' },
