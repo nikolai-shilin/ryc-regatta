@@ -311,7 +311,7 @@ function Ranking({ t, lang, top, field, id, daily, me, signedName, you }: { t: (
         {(top || []).map((r, i) => <li key={i} className={i === 0 ? 'first' : ''}><span className="hm-n">{i + 1}</span><Who fl={r.fl} name={r.name || t('No name', 'Без имени')} lang={lang} /><span className="hm-t">{clock(r.s)}</span></li>)}
         {top === null && daily && [0, 1, 2].map((i) => <li key={i} className="sk-li" aria-hidden="true"><Sk w={20} h={14} /><Sk w="60%" h={14} /><Sk w={48} h={14} /></li>)}
         {top && !top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
-        <li className="me"><span className="hm-n">{listed ? place : '·'}</span><span>{you || (signedName ? `${signedName} (${t('you', 'ты')})` : t('You', 'Ты'))}</span><span className="hm-t">{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</span></li>
+        <li className="me"><span className="hm-n">{listed ? place : '·'}</span><Who fl={me.flag} name={you || (signedName ? `${signedName} (${t('you', 'ты')})` : t('You', 'Ты'))} lang={lang} /><span className="hm-t">{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</span></li>
       </ol>
       {daily && <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')} ›</Link>}
       {!signedName && !you && (

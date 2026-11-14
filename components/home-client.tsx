@@ -3,7 +3,9 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { readPb } from '@/lib/opts';
+import { readBoat } from '@/lib/boat';
 import { clock } from './ui';
+import { FlagImg } from './flag';
 
 const IconBurger = () => <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
 const IconUser = () => <svg viewBox="0 0 16 16" width={16} height={16} aria-hidden="true"><circle cx="8" cy="5.2" r="2.8" fill="currentColor" /><path d="M2.5 14.5c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6z" fill="currentColor" /></svg>;
@@ -49,7 +51,8 @@ export function SiteMenu({ lang }: { lang: Lang }) {
 export function MyRow({ lang, day, top = [], next = '/' }: { lang: Lang; day: string; top?: { s: number }[]; next?: string }) {
   const t = tx(lang);
   const [best, setBest] = useState<number | null>(null);
-  useEffect(() => { setBest(readPb()[`daily|${day}`] ?? null); }, [day]);
+  const [fl, setFl] = useState<string | null>(null); // the flag you fly on the boat page, as the rows above show theirs
+  useEffect(() => { setBest(readPb()[`daily|${day}`] ?? null); setFl(readBoat().flag ?? null); }, [day]);
   const listed = best != null && top.some((r) => Math.abs(r.s - best) < 0.05);
   const place = best != null ? top.filter((r) => r.s < best - 0.05).length + 1 : 0;
   const missing = best != null && !listed && (top.length < 3 || best < top[top.length - 1].s);
@@ -57,8 +60,9 @@ export function MyRow({ lang, day, top = [], next = '/' }: { lang: Lang; day: st
   return (
     <li className="me">
       <span className="hm-n">{listed ? place : '·'}</span>
-      <span>
-        <span className="if-guest">{t('You', 'Ты')}</span><span className="if-me lb-you" data-you={t('(you)', '(ты)')} />
+      <span className="lb-who">
+        <FlagImg code={fl} lang={lang} />
+        <span className="lb-nm"><span className="if-guest">{t('You', 'Ты')}</span><span className="if-me lb-you" data-you={t('(you)', '(ты)')} /></span>
         {missing && <small className="hm-why if-me" title={t('This device has the time, but the race didn’t reach today’s ranking', 'Время есть на этом устройстве, но в рейтинг дня гонка не попала')}>{t('not on the ranking', 'не в рейтинге')}</small>}
       </span>
       <span className="hm-t if-me">{best != null ? <>{clock(best)}{Math.abs(gap) >= 0.05 ? <small>{gap > 0 ? '+' : '−'}{Math.abs(gap).toFixed(1)}</small> : null}</> : <span className="hm-muted">{t('not yet', 'ещё нет')}</span>}</span>
