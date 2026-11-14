@@ -12,6 +12,11 @@
 #loading.bc .l-head::before { content: ''; width: 5px; background: var(--you); }
 #loading.bc .l-head .kicker { display: flex; align-items: center; padding: 0 var(--s-3); background: var(--panel-2); color: var(--ink);
   font: 700 var(--fs-lead)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; text-shadow: none; }
+/* the ticker beside the brand: what's coming up (the venue, the start sequence) */
+#loading.bc .l-tick { display: flex; align-items: center; gap: var(--s-3); margin-left: var(--s-3); padding: 0 var(--s-4); background: var(--panel-2); color: var(--ink-2);
+  font: 600 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; text-shadow: none; white-space: nowrap; }
+#loading.bc .l-tick b { color: var(--ink); font-weight: 700; }
+@media (max-width: 640px) { #loading.bc .l-tick .l-tn { display: none; } }
 #loading.bc .l-in { gap: var(--s-5); text-shadow: none; }
 #loading.bc .l-in > .kicker { align-self: flex-start; display: inline-flex; align-items: center; min-height: 28px; padding: var(--s-1) var(--s-6) var(--s-1) var(--s-3); background: var(--you); color: var(--ink-on);
   font: 700 var(--fs-small)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); }
@@ -41,6 +46,11 @@
   font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
 #loading.bc .l-err a { background: var(--fill-2); color: var(--ink); }
 @media (min-width: 1024px) and (min-height: 640px) { #loading.bc h1 { font-size: var(--fs-hero); } #loading.bc .l-in { max-width: 760px; } }
+/* wide enough, the tip is a card of its own at the bottom right, its white kicker at its top edge */
+@media (min-width: 1400px) and (min-height: 640px) {
+  #loading.bc .l-tip { position: fixed; right: calc(var(--s-16) + var(--sr)); bottom: calc(var(--s-16) + var(--sb)); width: 420px; max-width: none; min-height: 0; margin: 0; padding: 0 var(--s-5) var(--s-5); }
+  #loading.bc .l-tip .meta { margin: 0 0 var(--s-5) calc(-1 * var(--s-5)); padding: var(--s-2) var(--s-6) var(--s-2) var(--s-3); font-size: var(--fs-small); }
+}
 @media (max-height: 420px) { #loading.bc h1 { font-size: var(--fs-h2); } #loading.bc .l-tip, #loading.bc .l-cells em { display: none; } #loading.bc .l-cells > div { padding: var(--s-2) var(--s-4); } #loading.bc .l-cells b { font-size: var(--fs-title); } }
 @media (orientation: portrait) { #loading.bc .l-cells > div { padding: var(--s-3); } #loading.bc .l-cells b { font-size: var(--fs-title); } }
 
@@ -99,6 +109,22 @@
 #pauseCard.bc .p-seg { gap: var(--s-1); margin: 0; padding: 0; border: 0; border-radius: 0; background: none; }
 #pauseCard.bc .p-seg button { height: var(--h-s); border-radius: 0; background: var(--fill-2); color: var(--ink); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); }
 #pauseCard.bc .p-seg button[aria-checked="true"] { background: var(--you); color: var(--ink-on); box-shadow: none; }
+#pauseCard.bc .p-seg button { white-space: normal; line-height: 1.1; } /* a long word (Грот + стаксель) takes two lines */
+/* guides, sound and voice: a switch each, as Settings has them */
+#pauseCard.bc .p-togs { display: flex; flex-direction: column; margin: var(--s-1) 0; }
+#pauseCard.bc .p-tog { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); min-height: var(--h-m); border-bottom: 1px solid var(--rule-2); font: 500 var(--fs-body)/1.3 var(--sans); }
+#pauseCard.bc .p-tog:last-child { border-bottom: 0; }
+#pauseCard.bc .sw { position: relative; flex: none; width: calc(var(--s-12) + var(--s-1)); height: calc(var(--s-6) + var(--s-1)); padding: 0; border: 0; border-radius: 0; background: var(--fill-3); cursor: pointer;
+  transition: background-color var(--t-quick); }
+#pauseCard.bc .sw::after { content: ''; position: absolute; top: var(--s-1); left: var(--s-1); width: var(--s-5); height: var(--s-5); background: var(--ink); transition: left var(--t-quick) var(--ease), background-color var(--t-quick); }
+#pauseCard.bc .sw.on { background: var(--you); }
+#pauseCard.bc .sw.on::after { left: calc(var(--s-6) + var(--s-1)); background: var(--ink-on); }
+#pauseCard.bc .sw:active { scale: .96; }
+/* the ticker over it all: paused, the venue, the race's clock */
+#pauseCard.bc .p-tick { align-self: flex-start; display: block; padding: 0 var(--s-4); background: var(--panel-2); color: var(--ink-2);
+  font: 600 var(--fs-small)/calc(var(--s-8) + var(--s-1)) var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; text-shadow: none; white-space: nowrap; }
+#pauseCard.bc .p-tick b { color: var(--ink); font-weight: 700; }
+#pauseCard.bc .p-tick:empty { display: none; }
 @media (min-width: 1024px) and (min-height: 640px) {
   #pauseCard.bc .p-card { width: 400px; padding: var(--s-6); }
   #pauseCard.bc .p-rows { margin-inline: calc(-1 * var(--s-6)); }
@@ -108,6 +134,9 @@
 }
 @media (orientation: portrait) { #pauseCard.bc .p-info h1 { font-size: var(--fs-h2); } #pauseCard.bc .p-stats { align-self: stretch; } #pauseCard.bc .p-stats > div { flex: 1; min-width: 0; padding: var(--s-3) var(--s-4); } #pauseCard.bc .p-stats b { font-size: var(--fs-title); } }
 @media (max-height: 420px) {
+  #pauseCard.bc .p-badge { display: none; } /* the ticker says Paused */
+  #pauseCard.bc .p-tick { line-height: var(--h-s); }
+  #pauseCard.bc .p-tog { min-height: var(--h-s); }
   #pauseCard.bc .p-info h1 { font-size: var(--fs-h3); }
   #pauseCard.bc .p-stats > div { min-width: 0; padding: var(--s-2) var(--s-4); }
   #pauseCard.bc .p-stats b { font-size: var(--fs-title); }

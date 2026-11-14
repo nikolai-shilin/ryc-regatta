@@ -25,6 +25,9 @@ export const HUD_STRINGS = {
     toLeader: 'To leader', ahead: 'Ahead of 2nd', time: 'Time', start: 'Start', perMin: '/min', camera: 'Camera', pause: 'Pause',
     you: 'You', layIn: (s) => `Layline in ${s} · then tack`, layNow: 'On the layline · tack', over: 'Past the layline · tack now', fetch: 'Laying the mark',
     advantage: 'Advantage',
+    camName: { drone: 'Drone camera', top: 'Top camera', helm: 'Helm camera' },
+    space: 'Space', boardFoot: (n) => `The boats round you · ${n} in all`,
+    toLeg: { lineStart: 'To the start line', mark: 'To the windward mark', mark1: 'To mark 1', wing: 'To the wing mark', mark2: 'To mark 2', offset: 'To the offset mark', gate: 'To the leeward gate', finish: 'To the finish' },
     go: 'Go', leads: 'Leads', afterGun: 'after the gun', ord: (n) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`,
   },
   ru: {
@@ -39,6 +42,9 @@ export const HUD_STRINGS = {
     toLeader: 'До лидера', ahead: 'Впереди второго', time: 'Время', start: 'Старт', perMin: '/мин', camera: 'Камера', pause: 'Пауза',
     you: 'Ты', layIn: (s) => `Лейлайн через ${s} · потом поворот`, layNow: 'На лейлайне · поворот', over: 'Лейлайн пройден · поворачивай', fetch: 'Идёшь на знак',
     advantage: 'Выигрыш',
+    camName: { drone: 'Камера с дрона', top: 'Камера сверху', helm: 'Камера у штурвала' },
+    space: 'Пробел', boardFoot: (n) => `Лодки рядом с тобой · всего ${n}`,
+    toLeg: { lineStart: 'К линии старта', mark: 'К верхнему знаку', mark1: 'К знаку 1', wing: 'К боковому знаку', mark2: 'К знаку 2', offset: 'К знаку смещения', gate: 'К нижним воротам', finish: 'К финишу' },
     go: 'Старт!', leads: 'Лидирует', afterGun: 'после сигнала', ord: (n) => `${n}-й`,
   },
 };
@@ -57,6 +63,8 @@ const ARROW = { up: 'M5 1 L9 8 H1 Z', down: 'M5 9 L9 2 H1 Z', reach: 'M9 5 L2 1 
 // The layouts follow the screen: wide (a computer, a tablet sideways) as the designs are drawn at 1600×1000, compact
 // (a phone sideways, 844×390) and compact upright. Each is scaled as a whole to the screen it's on (--hz).
 const WIDE = '(min-width: 1100px) and (min-height: 640px)';
+// the blocks come in one after another, in reading order (the design's 60 ms stagger): the delay of the i-th
+const AT = (i) => `calc(${i} * var(--t-stagger) + 150ms)`;
 const CSS = `
 #hud.bc { zoom: var(--hz, 1); }
 #hud.bc > .tc, #hud.bc > .tr, #hud.bc > .tl { display: none !important; }
@@ -66,7 +74,7 @@ const CSS = `
 #hud.bc button { pointer-events: auto; }
 
 /* ---------- top left: the race bug, the calls under it ---------- */
-.b-bug { left: calc(28px + var(--sl)); top: calc(26px + var(--st)); align-items: stretch; height: 52px; animation: bc-slide-l var(--t-in) var(--ease) both .1s; }
+.b-bug { left: calc(28px + var(--sl)); top: calc(26px + var(--st)); align-items: stretch; height: 52px; animation: bc-slide-l var(--t-in) var(--ease) both ${AT(0)}; }
 .b-bug .b-acc { width: 6px; background: var(--you); }
 .b-bug .b-bug-t { display: flex; flex-direction: column; justify-content: center; gap: var(--s-2); padding: 0 var(--s-5) 0 var(--s-4); }
 .b-bug .b-title { font: 700 var(--fs-row)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
@@ -87,7 +95,7 @@ const CSS = `
 #hud.bc #trim i { background: var(--ink); }
 
 /* ---------- top centre: the gun clock, then the legs ---------- */
-.b-top { left: 50%; top: calc(22px + var(--st)); translate: -50% 0; flex-direction: column; align-items: center; gap: var(--s-2); animation: bc-drop var(--t-in) var(--ease) both .15s; }
+.b-top { left: 50%; top: calc(22px + var(--st)); translate: -50% 0; flex-direction: column; align-items: center; gap: var(--s-2); animation: bc-drop var(--t-in) var(--ease) both ${AT(1)}; }
 .b-gun { display: flex; align-items: stretch; }
 .b-gun > div { display: flex; flex-direction: column; justify-content: center; gap: var(--s-2); }
 .b-flagbox { flex-direction: row !important; align-items: center; gap: var(--s-3); padding: 0 var(--s-5) 0 var(--s-8); }
@@ -101,6 +109,7 @@ const CSS = `
 .b-gunc { align-items: center; padding: var(--s-3) var(--s-8); min-width: 240px; }
 .b-gunn { font: 800 var(--fs-h1)/0.9 var(--cond); transition: color .4s; }
 .b-gunn.soon { color: var(--gold); } .b-gunn.now { color: var(--live); }
+.b-gunn.beat { animation: bc-beat .5s var(--ease); } /* the last ten seconds: a beat a second, in its own place */
 .b-seq { position: relative; width: 200px; height: 4px; background: var(--fill-3); }
 .b-seq > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--you); transition: width .6s var(--ease); }
 .b-seq > b { position: absolute; top: -3px; width: 2px; height: 10px; background: var(--ink); }
@@ -114,9 +123,12 @@ const CSS = `
 .b-legs .b-leg.done { background: var(--w-25); color: var(--ink); }
 .b-legs .b-leg.now { background: var(--you); color: var(--ink-on); }
 .b-legs .b-leg svg { width: 10px; height: 10px; flex: none; }
+/* under the top camera the wind rides in the leg tracker: which way it blows across the picture, and how strong */
+.b-lw { display: flex; align-items: center; gap: var(--s-2); padding-left: var(--s-4); border-left: 1px solid var(--rule); }
+.b-lw svg { width: 18px; height: 18px; flex: none; color: var(--you); }
 
 /* ---------- top right: the buttons and the wind; the board under them ---------- */
-.b-tr { right: calc(28px + var(--sr)); top: calc(26px + var(--st)); align-items: flex-start; gap: var(--s-2); animation: bc-slide-r var(--t-in) var(--ease) both .2s; }
+.b-tr { right: calc(28px + var(--sr)); top: calc(26px + var(--st)); align-items: flex-start; gap: var(--s-2); animation: bc-slide-r var(--t-in) var(--ease) both ${AT(2)}; }
 .b-btns { display: flex; gap: var(--s-1); }
 #hud.bc .b-btns > button { position: static; display: inline-flex; align-items: center; justify-content: center; gap: 0; width: auto; min-width: var(--h-m); height: var(--h-m); padding: 0; margin: 0; border: 0; border-radius: 0; background: var(--panel); color: var(--ink); font: 700 var(--fs-body)/1 var(--cond); letter-spacing: 0; -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); transition: background-color var(--t-quick), color var(--t-quick), scale .12s; }
 #hud.bc .b-btns > button:hover { background: var(--panel-2); }
@@ -131,7 +143,7 @@ const CSS = `
 .b-wind svg { width: 64px; height: 64px; flex: none; display: block; }
 .b-wind .b-wt { display: flex; flex-direction: column; gap: var(--s-2); }
 .b-wind .b-wl { letter-spacing: var(--ls-button); white-space: nowrap; }
-.b-board { right: calc(28px + var(--sr)); top: calc(126px + var(--st)); width: 340px; flex-direction: column; animation: bc-slide-r var(--t-in) var(--ease) both .3s; }
+.b-board { right: calc(28px + var(--sr)); top: calc(126px + var(--st)); width: 340px; flex-direction: column; animation: bc-slide-r var(--t-in) var(--ease) both ${AT(3)}; }
 .b-board .b-bh { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--rule); }
 .b-row { display: flex; align-items: center; height: 40px; border-bottom: 1px solid var(--rule-2); transition: background-color .4s; }
 .b-row:last-child { border-bottom: 0; }
@@ -154,9 +166,14 @@ const CSS = `
 .b-row .b-x { min-width: 52px; padding-right: var(--s-4); text-align: right; font: 700 var(--fs-row)/1 var(--cond); color: var(--ink-2); }
 .b-board.pre .b-pos { display: none; } .b-board:not(.pre) .b-x { display: none; }
 .b-board.pre .b-row { height: 34px; } .b-board.pre .b-mv { display: none; }
+/* under the rows: how many boats there are, and the key that hides the board and brings it back */
+.b-bf { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-2) var(--s-4) var(--s-3); border-top: 1px solid var(--rule-2); }
+.b-lk { display: none; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); color: var(--ink-3); border: 1px solid var(--rule); padding: var(--s-1) var(--s-2); }
+@media (hover: hover) and (pointer: fine) { .b-lk { display: inline-block; } }
+#hud.bc .b-board.off { display: none !important; }
 
 /* ---------- bottom left: the course ---------- */
-.b-map { left: calc(28px + var(--sl)); bottom: calc(28px + var(--sb)); flex-direction: column; animation: bc-rise var(--t-in) var(--ease) both .35s; }
+.b-map { left: calc(28px + var(--sl)); bottom: calc(28px + var(--sb)); flex-direction: column; animation: bc-rise var(--t-in) var(--ease) both ${AT(4)}; }
 .b-map .b-mh { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-3) var(--s-4) var(--s-2); }
 #hud.bc #mini { position: static; display: block; width: 240px; height: 240px; margin: 0 var(--s-1) var(--s-1); border: 0; border-radius: 0; background: none; opacity: 1; pointer-events: auto; -webkit-backdrop-filter: none; backdrop-filter: none; transition: width .3s var(--ease), height .3s var(--ease); }
 #hud.bc #mini.big { width: min(420px, calc(100vh / var(--hz, 1) - 260px)); height: min(420px, calc(100vh / var(--hz, 1) - 260px)); }
@@ -168,7 +185,7 @@ const CSS = `
 }
 
 /* ---------- bottom centre: the call, the leg, your numbers ---------- */
-.b-low { left: 50%; bottom: calc(28px + var(--sb)); translate: -50% 0; flex-direction: column; align-items: stretch; animation: bc-rise var(--t-in) var(--ease) both .25s; }
+.b-low { left: 50%; bottom: calc(28px + var(--sb)); translate: -50% 0; flex-direction: column; align-items: stretch; animation: bc-rise var(--t-in) var(--ease) both ${AT(5)}; }
 .b-callrow { display: flex; min-height: 30px; margin-bottom: var(--s-2); }
 #hud.bc #toast { position: static; margin: 0; transform: none; translate: 0 0; display: flex; align-items: center; gap: var(--s-3); max-width: 640px; min-height: 30px; padding: var(--s-2) var(--s-4); border-radius: 0; background: var(--ink); color: var(--ink-on); font: 700 var(--fs-small)/1.15 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; text-align: left; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
 #hud.bc #toast.long { font: 600 var(--fs-body)/1.3 var(--cond); letter-spacing: var(--ls-name); text-transform: none; }
@@ -182,6 +199,11 @@ const CSS = `
 .b-you .c-pos { width: 48px; padding: 0 !important; align-items: center; background: var(--you); color: var(--ink-on); font: 700 var(--fs-h3)/1 var(--cond); }
 .b-you .c-nm { flex-direction: row; align-items: center; gap: var(--s-3); padding-left: var(--s-5); }
 .b-you .c-nm i { width: 6px; height: 30px; background: var(--you); }
+/* your flag and sail number, "You" under them; the blue bar where you fly no flag */
+#hud.bc .b-you .c-nm .b-fl { width: 30px; height: 20px; }
+.b-you .c-nm .b-fl:not([hidden]) + i { display: none; }
+.b-you .c-nmt { display: flex; flex-direction: column; gap: var(--s-2); white-space: nowrap; }
+.b-you .c-nmt .lbl { color: var(--you); }
 .b-you .c-leg { display: none; }
 .b-you .b-v { display: flex; align-items: baseline; gap: var(--s-2); white-space: nowrap; }
 .b-you .b-g { position: relative; width: 100px; height: 3px; background: var(--fill-3); }
@@ -194,7 +216,7 @@ const CSS = `
 .b-you.pre > div:not(.s-pre), .b-you.run > div:not(.s-run), .b-you.done > div:not(.s-done) { display: none !important; }
 
 /* ---------- bottom right: the buttons and the sheet ---------- */
-.b-acts { right: calc(108px + var(--sr)); bottom: calc(28px + var(--sb)); flex-direction: column; align-items: flex-end; gap: var(--s-2); }
+.b-acts { right: calc(108px + var(--sr)); bottom: calc(28px + var(--sb)); flex-direction: column; align-items: flex-end; gap: var(--s-2); animation: bc-slide-r var(--t-in) var(--ease) both ${AT(6)}; }
 #hud.bc.split-trim .b-acts { right: calc(168px + var(--sr)); }
 #hud.bc .b-acts > .round { position: static; display: inline-flex; align-items: center; gap: var(--s-3); width: auto !important; height: var(--h-m) !important; padding: 0 var(--s-4) 0 var(--s-6); margin: 0; border: 0; border-radius: 0; background: var(--panel); color: var(--ink); font: 700 var(--fs-body)/1 var(--cond) !important; letter-spacing: var(--ls-button); text-transform: uppercase; clip-path: polygon(var(--cut) 0, 100% 0, 100% 100%, 0 100%); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); animation: bc-slide-r .4s var(--ease) both; transition: background-color var(--t-quick), color var(--t-quick), scale .12s; }
 #hud.bc .b-acts > .round::before { content: ''; width: 18px; height: 18px; flex: none; background: currentColor; -webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat; }
@@ -209,10 +231,10 @@ const CSS = `
 @keyframes b-fresh { 50% { background-color: color-mix(in srgb, var(--you) 45%, rgba(5, 10, 18, 0.88)); } }
 @media (hover: hover) and (pointer: fine) {
   #hud.bc .b-acts > #tackBtn::after, #hud.bc .b-acts > #kiteBtn::after { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); color: var(--ink-3); border: 1px solid var(--rule); padding: var(--s-1) var(--s-2); text-transform: none; }
-  #hud.bc .b-acts > #tackBtn::after { content: 'Space'; } #hud.bc .b-acts > #kiteBtn::after { content: 'K'; }
+  #hud.bc .b-acts > #tackBtn::after { content: attr(data-key); } #hud.bc .b-acts > #kiteBtn::after { content: 'K'; }
   #hud.bc .b-acts > .round.on::after, #hud.bc .b-acts > .round.down::after { color: var(--ink-on); border-color: rgba(4, 18, 30, 0.3); }
 }
-#hud.bc #sheetZone { right: calc(28px + var(--sr)); bottom: calc(28px + var(--sb)); width: 64px; height: min(300px, calc(100vh / var(--hz, 1) - 440px)); padding: 36px 0 40px; justify-content: center; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); transition: opacity .4s; animation: bc-slide-r var(--t-in) var(--ease) both .3s; }
+#hud.bc #sheetZone { right: calc(28px + var(--sr)); bottom: calc(28px + var(--sb)); width: 64px; height: min(300px, calc(100vh / var(--hz, 1) - 440px)); padding: 36px 0 40px; justify-content: center; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); transition: opacity .4s; animation: bc-slide-r var(--t-in) var(--ease) both ${AT(7)}; }
 #hud.bc #sheetZone.split { width: 124px; }
 #hud.bc #sheetZone.auto { opacity: .45; }
 #hud.bc #sheet, #hud.bc #jibSheet { width: 6px; height: 100%; border: 0; border-radius: 0; background: var(--fill-3); box-shadow: none; }
@@ -242,8 +264,10 @@ const CSS = `
 .b-mid { display: none; stroke: var(--w-62); stroke-width: 2; }
 #hud.bc .b-mid { display: inline; }
 
-/* the last ten seconds, big, a beat a second */
+/* the last ten seconds, big, a beat a second: on a phone, where the gun clock is folded away (a wide screen beats the
+   gun clock itself) */
 #hud.bc #count:not(.final) { display: none; }
+@media ${WIDE} { #hud.bc #count { display: none; } }
 #hud.bc #count.final { left: 50%; top: 30%; bottom: auto; transform: translateX(-50%); font: 800 180px/0.9 var(--cond); color: var(--ink); text-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); }
 #hud.bc #count.beat { animation: bc-beat .5s var(--ease); }
 
@@ -300,6 +324,9 @@ const CSS = `
 #hud.bc .b-lay.on { display: flex; }
 .b-lay svg { width: 16px; height: 16px; flex: none; }
 .b-lay.now { background: var(--you); }
+/* the key that does what the call asks, on a computer (as the tack button shows it) */
+.b-key { display: none; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: none; color: var(--ink-on); border: 1px solid color-mix(in srgb, var(--ink-on) 30%, transparent); padding: var(--s-1) var(--s-2); }
+@media (hover: hover) and (pointer: fine) { .b-lay .b-key:not(:empty) { display: inline-block; } }
 /* the boats' tags and the advantage line, over the water (outside #hud, scaled as it is) */
 #hud.bc { z-index: 1; }
 #bOver { position: fixed; inset: 0; z-index: 0; pointer-events: none; zoom: var(--hz, 1); display: none; }
@@ -319,19 +346,26 @@ const CSS = `
 .b-btag.me .in { box-shadow: inset 0 -3px 0 var(--you); clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
 .b-btag .c { width: 4px; background: var(--c, var(--fill-3)); }
 .b-btag .n { display: flex; align-items: center; gap: var(--s-2); padding: 0 var(--s-3); font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-name); }
+.b-btag .b-me { color: var(--you); } .b-btag .b-me:empty { display: none; }
 .b-btag .v { display: flex; align-items: center; padding: 0 var(--s-3); border-left: 1px solid var(--rule); font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-2); }
-.b-btag .stem { position: absolute; left: -1px; bottom: 0; width: 2px; height: 22px; background: linear-gradient(var(--w-90), var(--w-14)); }
+.b-btag .stem { position: absolute; left: -1px; bottom: 0; width: 2px; height: 22px; background: linear-gradient(var(--w-90), var(--w-14)); transform-origin: top; animation: bc-pin .35s var(--ease) both .3s; }
+/* the HUD's entrance: the tags on the water drop in last, after every block, their pins after them; the board's rows
+   arrive one after another (b-intro, for a moment as a race comes on, or the board comes back) */
+#nxTag.b-intro .in, #bOver.b-intro .b-btag .in { animation-delay: ${AT(8)}; }
+#nxTag.b-intro .stem, #bOver.b-intro .b-btag .stem { animation-delay: calc(${AT(8)} + .3s); }
+.b-board.b-intro .b-row { animation: bc-slide-l .4s var(--ease) both; animation-delay: calc(${AT(3)} + (var(--r, 0) + 2) * var(--t-stagger)); }
+.b-row:nth-child(2) { --r: 1; } .b-row:nth-child(3) { --r: 2; } .b-row:nth-child(4) { --r: 3; } .b-row:nth-child(5) { --r: 4; } .b-row:nth-child(6) { --r: 5; }
 
 /* ---------- compact: a phone sideways, then upright ---------- */
 @media not all and ${WIDE} {
-  #hud.bc .b-bug, #hud.bc .b-state, #hud.bc .b-board .b-bh, #hud.bc .b-map .b-mh, #hud.bc .b-gunc, #hud.bc .b-bias, #hud.bc .b-legs, #hud.bc .b-wind .b-wt > .lbl:first-child, #hud.bc .b-dir { display: none !important; }
+  #hud.bc .b-bug, #hud.bc .b-state, #hud.bc .b-board .b-bh, #hud.bc .b-board .b-bf, #hud.bc .b-map .b-mh, #hud.bc .b-gunc, #hud.bc .b-bias, #hud.bc .b-legs, #hud.bc .b-wind .b-wt > .lbl:first-child, #hud.bc .b-dir { display: none !important; }
   #hud.bc .b-tr, #hud.bc .b-low { display: contents !important; }
-  .b-wind { position: absolute; left: calc(16px + var(--sl)); top: calc(12px + var(--st)); height: 36px; gap: var(--s-2); padding: 0 var(--s-3) 0 var(--s-2); margin: 0; pointer-events: none; animation: bc-slide-l var(--t-in) var(--ease) both .1s; }
+  .b-wind { position: absolute; left: calc(16px + var(--sl)); top: calc(12px + var(--st)); height: 36px; gap: var(--s-2); padding: 0 var(--s-3) 0 var(--s-2); margin: 0; pointer-events: none; animation: bc-slide-l var(--t-in) var(--ease) both ${AT(0)}; }
   .b-wind svg { width: 30px; height: 30px; }
   .b-wind .b-wt { flex-direction: row; align-items: baseline; gap: var(--s-2); }
   .b-wind .n-l { font-size: var(--fs-body); }
   .b-wind .b-shift { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
-  .b-btns { position: absolute; right: calc(16px + var(--sr)); top: calc(12px + var(--st)); pointer-events: none; animation: bc-slide-r var(--t-in) var(--ease) both .1s; }
+  .b-btns { position: absolute; right: calc(16px + var(--sr)); top: calc(12px + var(--st)); pointer-events: none; animation: bc-slide-r var(--t-in) var(--ease) both ${AT(2)}; }
   #hud.bc .b-btns > button { min-width: 36px; height: 36px; }
   #hud.bc .b-btns > button svg { width: 16px; height: 16px; }
   #hud.bc .b-btns > #zoomIn, #hud.bc .b-btns > #zoomOut { font-size: var(--fs-row); }
@@ -352,14 +386,14 @@ const CSS = `
   .b-flagbox { padding: var(--s-2) var(--s-3); gap: var(--s-2); }
   #hud.bc #flags .flag { width: 30px; height: 20px; } #hud.bc #flags .flag.P::after { inset: 6px 10px; } #hud.bc #flags .flag.cls { font-size: var(--fs-small); line-height: 20px; }
   #hud.bc #flags figcaption { display: none; }
-  .b-you { position: absolute; left: 50%; top: calc(12px + var(--st)); translate: -50% 0; height: 36px; pointer-events: none; animation: bc-drop var(--t-in) var(--ease) both .1s; clip-path: polygon(0 0, 100% 0, calc(100% - var(--cut)) 100%, 0 100%); }
+  .b-you { position: absolute; left: 50%; top: calc(12px + var(--st)); translate: -50% 0; height: 36px; pointer-events: none; animation: bc-drop var(--t-in) var(--ease) both ${AT(1)}; clip-path: polygon(0 0, 100% 0, calc(100% - var(--cut)) 100%, 0 100%); }
   .b-you > div { flex-direction: row; align-items: center; gap: var(--s-2); padding: 0 var(--s-3); }
   .b-you { padding-right: var(--s-4); }
-  .b-you > div > .lbl, .b-you .c-nm, .b-you .c-vmg, .b-you .c-ldr, .b-you .c-burn, .b-you .b-sub { display: none !important; }
+  .b-you > div > .lbl, .b-you .c-nm, .b-you .c-vm, .b-you .c-ldr, .b-you .c-burn, .b-you .b-sub { display: none !important; }
   .b-you .c-pos { width: 34px; font-size: var(--fs-title); }
   .b-you .c-leg { display: flex; font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-2); white-space: nowrap; }
   .b-you .c-leg svg { width: 9px; height: 9px; }
-  .b-you .n-l { font-size: var(--fs-body); }
+  .b-you .n-l, .b-you .pv { font-size: var(--fs-body); }
   .b-you .unit { font-size: var(--fs-label); }
   .b-you .b-g { width: 34px; }
   .b-you .b-g::after { display: none; }
@@ -386,6 +420,12 @@ const CSS = `
   .b-split > * { padding: 0 var(--s-3); font-size: var(--fs-small) !important; } .b-split .k { font-size: var(--fs-label) !important; }
   .b-go { font-size: 110px; } .b-fin b { font-size: var(--fs-h2); }
 }
+/* a phone sideways: pause beside the board, and the call right over the tack button (moved into its column: see
+   placeCall) */
+@media not all and ${WIDE} { @media (orientation: landscape) {
+  #hud.bc .b-btns > #pauseBtn { position: absolute; right: calc(168px + var(--s-1)); top: 42px; }
+  .b-acts > .b-callrow { position: static; translate: none; margin: 0; }
+} }
 @media not all and ${WIDE} { @media (orientation: portrait) {
   .b-wind { top: calc(56px + var(--st)); }
   .b-board { top: calc(56px + var(--st)); }
@@ -423,7 +463,7 @@ const legKind = (c, i) => (isBeat(c, i) ? 'up' : ['wing', 'mark2', 'offset'].inc
 const CAMS = ['drone', 'top', 'helm'];
 const hex = (n) => (typeof n === 'number' ? '#' + n.toString(16).padStart(6, '0') : '');
 
-export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFlag = () => null }) {
+export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFlag = () => null, sailOf = () => '' }) {
   const L = HUD_STRINGS[LANG] || HUD_STRINGS.en;
   const $ = (s) => document.querySelector(s);
   const hud = $('#hud');
@@ -444,24 +484,24 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       <div class="pn b-gunc"><span class="lbl">${L.startIn}</span><span class="b-gunn" role="timer" aria-live="off"></span><div class="b-seq"><i></i></div><div class="b-seql"></div></div>
       <div class="pn2 cut-r b-bias"><span class="lbl">${L.bias}</span><span class="n-m b-bv"></span><span class="lbl b-bl"></span></div>
     </div>
-    <div class="pn cut-lr b-legs"><span class="lbl-ink b-legn"></span><div class="b-legr"></div><span class="lbl-ink">${L.finish}</span></div></div>`);
+    <div class="pn cut-lr b-legs"><span class="lbl-ink b-legn"></span><div class="b-legr"></div><span class="lbl-ink">${L.finish}</span>
+      <span class="b-lw" hidden><svg viewBox="0 0 64 64" role="img"><path d="M32 56 L44 16 L32 24 L20 16 Z" fill="currentColor"/></svg><span class="n-s"></span></span></div></div>`);
   const tr = html(`<div class="bx b-tr"><div class="b-btns"><button class="b-cam" aria-label="${L.camera} (X/C/V)" title="${L.camera} · X C V">${CAM_SVG}<span></span></button></div>
     <div class="pn cut-l b-wind"><svg viewBox="0 0 64 64" role="img"><circle cx="32" cy="32" r="29" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
       <path class="nogo" fill="rgba(255,59,48,0.3)"/><g stroke="rgba(255,255,255,0.5)" stroke-width="2"><path d="M32 3v6M32 55v6M3 32h6M55 32h6"/></g>
       <path d="M32 22 C 34.6 25.5 35.2 31 34.7 38 L 29.3 38 C 28.8 31 29.4 25.5 32 22 Z" fill="rgba(255,255,255,0.9)"/>
       <g class="tw"><path d="M32 4 L38 15 L32 12 L26 15 Z" fill="#3db8ff" transform="rotate(180 32 9.5)"/></g></svg>
       <div class="b-wt"><span class="lbl">${L.trueWind}</span><span class="n-l b-tws"></span><span class="lbl b-wl"><span class="b-dir"></span><span class="b-shift"></span></span></div></div></div>`);
-  const board = html(`<div class="bx pn b-board"><div class="b-bh"><span class="lbl-ink b-bt"></span><span class="lbl b-br"></span></div><div class="b-rows"></div></div>`);
+  const board = html(`<div class="bx pn b-board"><div class="b-bh"><span class="lbl-ink b-bt"></span><span class="lbl b-br"></span></div><div class="b-rows"></div><div class="b-bf"><span class="lbl b-bfn"></span><kbd class="b-lk">L</kbd></div></div>`);
   const map = html(`<div class="bx pn b-map"><div class="b-mh"><span class="lbl-ink">${L.course}</span><span class="lbl b-shape"></span></div></div>`);
   const TACK_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9c2.5-4.5 9.5-4.5 12 0"/><path d="M12.5 9H16.5V5"/><path d="M10 11.5V17"/></g></svg>';
-  const low = html(`<div class="bx b-low"><div class="b-split" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}<span></span></div></div><div class="b-state"></div>
+  const low = html(`<div class="bx b-low"><div class="b-split" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}<span></span><kbd class="b-key"></kbd></div></div><div class="b-state"></div>
     <div class="pn b-you pre">
       <div class="c-pos s-run s-done"></div>
-      <div class="c-nm s-pre s-run s-done"><i></i><span class="n-m">${t('you')}</span></div>
+      <div class="c-nm s-pre s-run s-done"><img class="b-fl" alt="" hidden><i></i><span class="c-nmt"><span class="n-m"></span><span class="lbl">${L.you}</span></span></div>
       <div class="c-leg s-pre s-run s-done"><svg viewBox="0 0 10 10" aria-hidden="true"><path fill="currentColor"/></svg><span></span></div>
       <div class="c-spd s-pre s-run"><span class="lbl">${L.speed}</span><span class="n-l"><span class="v"></span><span class="unit">${KNU}</span></span></div>
-      <div class="c-pct s-run"><span class="lbl">${L.ofTarget}</span><span class="n-l v"></span><span class="b-g" aria-hidden="true"><i></i></span></div>
-      <div class="c-vmg s-run"><span class="lbl">${L.vmg}</span><span class="n-l"><span class="v"></span><span class="unit">${KNU}</span></span></div>
+      <div class="c-pct s-run"><span class="lbl">${L.vmg} · ${L.ofTarget.toLowerCase()}</span><span class="b-v"><span class="n-l c-vm"><span class="v"></span><span class="unit">${KNU}</span></span><span class="n-s pv"></span></span><span class="b-g" aria-hidden="true"><i></i></span></div>
       <div class="c-to s-pre s-run"><span class="lbl"></span><span class="b-v"><span class="n-l"><span class="v"></span><span class="unit">${M.toUpperCase()}</span></span><span class="b-sub"></span></span></div>
       <div class="c-burn s-pre"><span class="lbl">${L.burn}</span><span class="n-l v"></span></div>
       <div class="c-ldr s-run"><span class="lbl"></span><span class="b-v"><span class="n-l v"></span><span class="b-sub r"></span></span></div>
@@ -473,15 +513,16 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   const windBox = q(tr, '.b-wind');
   const B = {
     sub: q(bug, '.b-sub'), clock: q(bug, '.b-clock'), gun: q(top, '.b-gun'), gunN: q(top, '.b-gunn'), seq: q(top, '.b-seq'), seqI: q(top, '.b-seq i'), seqL: q(top, '.b-seql'),
-    bv: q(top, '.b-bv'), bl: q(top, '.b-bl'), legs: q(top, '.b-legs'), legN: q(top, '.b-legn'), legR: q(top, '.b-legr'), btns: q(tr, '.b-btns'), cam: q(tr, '.b-cam'),
+    bv: q(top, '.b-bv'), bl: q(top, '.b-bl'), legs: q(top, '.b-legs'), legN: q(top, '.b-legn'), legR: q(top, '.b-legr'), lw: q(top, '.b-lw'), lwSvg: q(top, '.b-lw svg'), lwN: q(top, '.b-lw .n-s'), btns: q(tr, '.b-btns'), cam: q(tr, '.b-cam'),
     nogo: q(tr, '.nogo'), tw: q(tr, '.tw'), tws: q(tr, '.b-tws'), dir: q(tr, '.b-dir'), shift: q(tr, '.b-shift'), windSvg: q(tr, 'svg'),
-    bt: q(board, '.b-bt'), br: q(board, '.b-br'), rows: q(board, '.b-rows'), shape: q(map, '.b-shape'), state: q(low, '.b-state'), you: q(low, '.b-you'),
+    bt: q(board, '.b-bt'), br: q(board, '.b-br'), rows: q(board, '.b-rows'), bfn: q(board, '.b-bfn'), shape: q(map, '.b-shape'), state: q(low, '.b-state'), you: q(low, '.b-you'),
   };
   const cell = (k) => q(low, `.c-${k}`);
   const Y = {
-    pos: cell('pos'), legP: q(cell('leg'), 'path'), legT: q(cell('leg'), 'span'), spd: q(cell('spd'), '.v'), pct: q(cell('pct'), '.v'), pctG: q(cell('pct'), '.b-g'),
-    pctI: q(cell('pct'), '.b-g i'), vmg: q(cell('vmg'), '.v'), toL: q(cell('to'), '.lbl'), to: q(cell('to'), '.v'), eta: q(cell('to'), '.b-sub'), burn: q(cell('burn'), '.v'),
+    pos: cell('pos'), legP: q(cell('leg'), 'path'), legT: q(cell('leg'), 'span'), spd: q(cell('spd'), '.v'), pct: q(cell('pct'), '.pv'), pctG: q(cell('pct'), '.b-g'),
+    pctI: q(cell('pct'), '.b-g i'), vmg: q(cell('pct'), '.c-vm .v'), toL: q(cell('to'), '.lbl'), to: q(cell('to'), '.v'), eta: q(cell('to'), '.b-sub'), burn: q(cell('burn'), '.v'),
     ldrL: q(cell('ldr'), '.lbl'), ldr: q(cell('ldr'), '.v'), rate: q(cell('ldr'), '.b-sub'), time: q(cell('time'), '.v'),
+    nm: q(cell('nm'), '.n-m'), fl: q(cell('nm'), '.b-fl'),
   };
   // six rows on the board (three on a phone), made once and refilled
   const rows = Array.from({ length: 6 }, () => {
@@ -495,6 +536,11 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     e.preventDefault();
     setCam(CAMS[(CAMS.indexOf(world.mode) + 1) % CAMS.length]);
     B.cam.classList.add('say'); clearTimeout(sayT); sayT = setTimeout(() => B.cam.classList.remove('say'), 1400);
+  });
+  // L hides the board and brings it back (a computer's keys; see main.js for the others)
+  addEventListener('keydown', (e) => {
+    if (e.code !== 'KeyL' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || hud.hidden || e.target.closest?.('input, textarea, select')) return;
+    if (!board.classList.toggle('off')) intro([board]);
   });
   // the rudder's centre mark
   const mid = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -514,11 +560,11 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   document.body.append(over);
   const advLine = q(over, '.adv'), advLab = q(over, '.b-advl');
   const btags = Array.from({ length: 3 }, () => {
-    const el = html(`<div class="b-btag"><span class="stem"></span><div class="in"><b class="p"></b><i class="c"></i><span class="n"><img class="b-fl" alt="" hidden><span class="nt"></span></span><span class="v"></span></div></div>`);
+    const el = html(`<div class="b-btag"><span class="stem"></span><div class="in"><b class="p"></b><i class="c"></i><span class="n"><img class="b-fl" alt="" hidden><span class="nt"></span><span class="lbl b-me"></span></span><span class="v"></span></div></div>`);
     over.append(el);
-    return { el, box: q(el, '.in'), p: q(el, '.p'), c: q(el, '.c'), n: q(el, '.n .nt'), fl: q(el, '.b-fl'), v: q(el, '.v'), w: 0, f: 0 };
+    return { el, box: q(el, '.in'), p: q(el, '.p'), c: q(el, '.c'), n: q(el, '.n .nt'), me: q(el, '.b-me'), fl: q(el, '.b-fl'), v: q(el, '.v'), w: 0, f: 0 };
   });
-  const lay = q(low, '.b-lay'), layT = q(lay, 'span');
+  const lay = q(low, '.b-lay'), layT = q(lay, 'span'), layK = q(lay, '.b-key');
   const split = q(low, '.b-split'), SP = { k: q(split, '.k'), t: q(split, '.t'), v: q(split, '.v'), g: q(split, '.g') };
 
   // the game's own elements, and where each goes in this HUD
@@ -545,14 +591,23 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     for (const el of [hud, tag, over]) el.style.setProperty('--hz', hz.toFixed(3));
   }
   addEventListener('resize', scale); scale();
+  // a phone sideways has the call over the tack button: the call's row goes to the top of the buttons' column, and
+  // back over your strip on any other screen
+  const callRow = q(low, '.b-callrow'), landQ = matchMedia('(orientation: landscape)');
+  function placeCall() {
+    if (!wideQ.matches && landQ.matches) { if (callRow.parentNode !== acts) acts.prepend(callRow); }
+    else if (callRow.parentNode !== low) split.after(callRow);
+  }
+  addEventListener('resize', placeCall); placeCall();
 
   hud.classList.add('bc');
   for (const m of MOVES) m.to.append(m.el);
+  const tackB = $('#tackBtn'); if (tackB) tackB.dataset.key = L.space;
   scale();
 
   const txt = (e, s) => { if (e._t !== s) { e._t = s; e.textContent = s; } };
   // (a flash running on it stays: see flash below)
-  const cls = (e, c) => { if (e._c !== c) { e._c = c; e.className = c + ['gain', 'lose', 'pulse'].filter((k) => e.classList.contains(k)).map((k) => ' ' + k).join(''); } };
+  const cls = (e, c) => { if (e._c !== c) { e._c = c; e.className = c + ['gain', 'lose', 'pulse', 'beat'].filter((k) => e.classList.contains(k)).map((k) => ' ' + k).join(''); } };
   const htm = (e, s) => { if (e._h !== s) { e._h = s; e.innerHTML = s; } };
   const pt = (a, r) => `${(32 + r * Math.sin(a)).toFixed(2)} ${(32 - r * Math.cos(a)).toFixed(2)}`;
   const metres = (d) => `${Math.round(d)} ${M}`;
@@ -584,15 +639,20 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   // play a one-off animation again: the class off, a reflow, on, and off when it's done
   // a boat's flag (its picture's address, from main.js: the fleet's from their looks, yours from the boat page), yours
   // read once a race
-  let myFlag;
+  let myFlag, mySail;
   const flagOf = (b, me) => (me ? (myFlag === undefined ? (myFlag = lookFlag(b, true)) : myFlag) : lookFlag(b, false));
+  // your sail number (from the boat page), read once a race too; "You" when there's none
+  const sailNo = () => (mySail === undefined ? (mySail = sailOf() || t('you')) : mySail);
   const setFlag = (img, src) => { if (img._s === src) return; img._s = src; img.hidden = !src; if (src) img.src = src; else img.removeAttribute('src'); };
+  // the entrance's last part, as a race comes on: the tags, and the board's rows one by one
+  let introT = 0;
+  const intro = (els = [tag, over, board]) => { clearTimeout(introT); for (const e of els) e.classList.add('b-intro'); introT = setTimeout(() => { for (const e of [tag, over, board]) e.classList.remove('b-intro'); }, 1800); };
   const flash = (el, c, ms) => { el.classList.remove(c, ...({ gain: ['lose'], lose: ['gain'] }[c] || [])); void el.offsetWidth; el.classList.add(c); clearTimeout(el['_f' + c]); el['_f' + c] = setTimeout(() => el.classList.remove(c), ms); };
 
   function update(P, dt) {
     if (!on) return;
     const race = getRace(), c = race.course, kn = P.v / KN, twa = P.twa, pre = race.clock < 0, done = !!P.done;
-    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); }
+    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; mySail = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); intro(); }
     const leg = c.legs[P.leg], nLegs = c.legs.length - 1;
     // the order: before the gun, nearest the line first; then the race's
     const toLine = (b) => Math.max(0, -race.lineInfo(b).d);
@@ -624,15 +684,17 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     wasDone = done;
     const daily = !!race.settings?.daily;
 
-    // the bug: the race, and the clock
-    txt(B.sub, `${daily ? L.daily : L.free}${venue ? ' · ' + venue : ''}`);
+    // the bug: the race, and the clock; from the top camera or the helm, the camera's name, as a broadcast says which it's on
+    txt(B.sub, world.mode !== 'drone' && L.camName[world.mode] ? L.camName[world.mode] : `${daily ? L.daily : L.free}${venue ? ' · ' + venue : ''}`);
     txt(B.clock, pre ? L.live : done ? fmt(P.finish) : fmt(race.clock));
     B.clock.classList.toggle('run', !pre);
 
     // the gun clock, before the start
     B.gun.hidden = !pre; B.legs.hidden = pre;
     if (pre) {
-      txt(B.gunN, fmt(left + 0.999));
+      const gs = fmt(left + 0.999);
+      if (left <= 10 && gs !== B.gunN._t) flash(B.gunN, 'beat', 500);
+      txt(B.gunN, gs);
       cls(B.gunN, `b-gunn${left <= 10 ? ' now' : left <= 60 ? ' soon' : ''}`);
       const seq = race.seq, total = -seq[0].t, k = `${seq.length}|${total}`;
       if (k !== seqKey) {
@@ -666,6 +728,15 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       }
       [...B.legR.children].forEach((el, i) => { el.classList.toggle('done', done || i + 1 < P.leg); el.classList.toggle('now', !done && i + 1 === P.leg); });
       txt(B.legN, done ? L.finished : P.leg ? L.legOf(P.leg, nLegs) : L.start); // leg 0 after the gun: still to cross the line
+      // the top camera: the wind in the tracker, its arrow the way it blows across the screen
+      const topCam = world.mode === 'top' && !done;
+      B.lw.hidden = !topCam;
+      if (topCam) {
+        const ux = Math.sin(P.wdir), uz = -Math.cos(P.wdir), a = onScreen(P.x, 0, P.z, 1e5), b = onScreen(P.x + ux * 60, 0, P.z + uz * 60, 1e5);
+        if (a && b) { const r = Math.round(Math.atan2(a[1] - b[1], a[0] - b[0]) / D2R - 90); if (B.lwSvg._r !== r) { B.lwSvg._r = r; B.lwSvg.style.rotate = `${r}deg`; } }
+        htm(B.lwN, `${Math.round(P.tws)}<span class="unit">${KNU}</span>`);
+        B.lwSvg.setAttribute('aria-label', `${L.trueWind} ${Math.round(P.tws)} ${t('kn')}`);
+      }
     }
 
     // the wind: where it comes from round your bow, its strength, and how it has swung on the beat
@@ -689,8 +760,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
 
     // the board: on the line before the start, then the race order with the gaps
     board.classList.toggle('pre', pre);
-    txt(B.bt, pre ? L.onLine : done ? L.finished : t(legKey(c, leg)));
+    txt(B.bt, pre ? L.onLine : done ? L.finished : L.toLeg[legKey(c, leg)] || t(legKey(c, leg)));
     txt(B.br, pre ? L.toLineSpd : L.gap);
+    txt(B.bfn, L.boardFoot(race.boats.length));
     const iP = st.indexOf(P), show = iP < 6 ? st.slice(0, 6) : [...st.slice(0, 5), P], cx = iP < 3 ? st.slice(0, 3) : [...st.slice(0, 2), P];
     const leader = st[0], remL = remaining(race, leader);
     if (!pre) for (const [b, i] of st.map((b, i) => [b, i + 1])) {
@@ -734,6 +806,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     B.state.classList.toggle('bad', !!P.ocs);
     cls(B.you, `pn b-you ${pre ? 'pre' : done ? 'done' : 'run'}`);
     txt(Y.pos, P.dsq ? '–' : String(place));
+    txt(Y.nm, sailNo()); setFlag(Y.fl, flagOf(P, true));
     txt(Y.spd, nf(kn));
     const ink = (el, c2) => { el.classList.remove('good', 'low', 'late'); if (c2) el.classList.add(c2); };
     if (pre) {
@@ -742,7 +815,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       Y.legP.setAttribute('d', ARROW.up); txt(Y.legT, `${L.start} ${fmt(left + 0.999)}`);
       if (close > 0.3 && li.d < 0) {
         const burn = left - -li.d / close;
-        txt(Y.burn, burn > -1 ? fmt(burn) : `−${fmt(-burn)}`); ink(Y.burn, burn <= -1 ? 'late' : burn < 5 ? 'low' : '');
+        txt(Y.burn, burn >= 1 ? `+${fmt(burn)}` : burn > -1 ? fmt(0) : `−${fmt(-burn)}`); ink(Y.burn, burn <= -1 ? 'late' : burn < 5 ? 'low' : ''); // time in hand +, late −
       } else { txt(Y.burn, '—'); ink(Y.burn, ''); }
     } else if (!done) {
       const m = race.nextMark(P), brg = Math.atan2(m.x - P.x, -(m.z - P.z)), cos = Math.cos(wrap(brg - P.h));
@@ -773,7 +846,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     // the layline, when nothing else is being called
     const ly = !pre && !done ? layline(race, c, P) : null;
     lay.classList.toggle('on', !!ly && !toastEl.classList.contains('show'));
-    if (ly) { txt(layT, ly[0]); lay.classList.toggle('now', ly[1]); }
+    if (ly) { txt(layT, ly[0]); lay.classList.toggle('now', ly[1]); txt(layK, ly[2] ? L.space : ''); }
 
     // the rudder fades back when no one is steering
     rudder.classList.toggle('act', Math.abs(P.rudder) > 0.04);
@@ -832,7 +905,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       g.el.style.transform = `translate(${at[0].toFixed(1)}px, ${at[1].toFixed(1)}px)`;
       txt(g.p, pre ? '·' : String(place));
       g.c.style.setProperty('--c', me ? 'var(--you)' : hex(b.color));
-      txt(g.n, me ? L.you : b.name); setFlag(g.fl, flagOf(b, me));
+      txt(g.n, me ? sailNo() : b.name); txt(g.me, me ? L.you : ''); setFlag(g.fl, flagOf(b, me));
       txt(g.v, `${nf(b.v / KN)} ${t('kn')}`);
       // its box slid back onto the screen when the boat is near an edge (its width read now and then, not every frame)
       if (!g.w || ++g.f % 30 === 0) g.w = g.box.offsetWidth;
@@ -871,7 +944,8 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   function layline(race, c, P) {
     if (!isBeat(c, P.leg) || P.auto) return null;
     const m = race.nextMark(P), k = laylineAt({ mx: m.x, mz: m.z, x: P.x, z: P.z, h: P.h, v: P.v, W: P.wdir, beat: beatAngle(P.tws) * D2R });
-    return !k ? null : k.kind === 'in' ? [L.layIn(fmt(k.s)), false] : k.kind === 'fetch' ? [L.fetch, false] : [k.kind === 'over' ? L.over : L.layNow, true];
+    // [the words, whether it's now, whether it asks for a tack (Space)]
+    return !k ? null : k.kind === 'in' ? [L.layIn(fmt(k.s)), false, true] : k.kind === 'fetch' ? [L.fetch, false, false] : [k.kind === 'over' ? L.over : L.layNow, true, true];
   }
 
   function placeTag(race, c, leg, P) {

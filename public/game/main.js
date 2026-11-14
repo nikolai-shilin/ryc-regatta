@@ -25,7 +25,7 @@ const ord = (n) => `${n}${['st', 'nd', 'rd'][n - 1] || 'th'}`;
 const T = {
   en: {
     pausedK: 'Paused', legOf: (a, b) => `Leg ${a} of ${b}`, nextK: (m) => `Next: ${m}`, placeK: 'Place', ofN: (n) => `of ${n}`, timeK: 'Race time', penK: 'Penalties', penNone: 'clean so far', penS: 'spinning turns',
-    changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
+    changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', camK: 'Camera', sAuto: 'Auto', guidesSw: 'Guides on the water', voiceSw: 'Voice on board', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
     leaveK: 'Leave this race?', leaveTxt: (pl, leg) => `You are ${pl} on leg ${leg}.`, keepRacing: 'Keep racing', doRestart: 'Restart', doChange: 'Change it', doLeave: 'Leave',
     inSeq: 'You are in the start sequence.', notKept: 'This race’s time and place are not kept.',
     askK: { restart: 'Restart', change: 'Change the race', leave: 'Leave' }, askH: { restart: 'Restart this race?', change: 'Change the race?', leave: 'Leave this race?' },
@@ -114,7 +114,7 @@ const T = {
   },
   ru: {
     pausedK: 'Пауза', legOf: (a, b) => `Отрезок ${a} из ${b}`, nextK: (m) => `Дальше: ${m}`, placeK: 'Место', ofN: (n) => `из ${n}`, timeK: 'Время', penK: 'Штрафы', penNone: 'пока чисто', penS: 'штрафные обороты',
-    changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
+    changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', camK: 'Камера', sAuto: 'Авто', guidesSw: 'Подсказки на воде', voiceSw: 'Голос шкипера', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
     leaveK: 'Выйти из гонки?', leaveTxt: (pl, leg) => `Ты ${pl}-й на ${leg}-м отрезке.`, keepRacing: 'Продолжить', doRestart: 'Заново', doChange: 'Изменить', doLeave: 'Выйти',
     inSeq: 'Идёт стартовая процедура.', notKept: 'Время и место этой гонки не сохранятся.',
     askK: { restart: 'Заново', change: 'Изменить гонку', leave: 'Выход' }, askH: { restart: 'Начать заново?', change: 'Изменить гонку?', leave: 'Выйти из гонки?' },
@@ -1221,6 +1221,7 @@ const cycleSpeed = () => {
 speedBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); cycleSpeed(); });
 
 // keyboard, for a computer: ←/→ steer, ↑/↓ sheet, space tack, K kite, T game speed, X/C/V drone/top/helm view, A/Z zoom in/out, Esc pause
+// (L hides and shows the fleet board: hud-bc.js)
 window.addEventListener('keydown', (e) => {
   input.keys[e.code] = true;
   if (e.code === 'Space') { e.preventDefault(); doTack(); }
@@ -1240,7 +1241,8 @@ function setCam(m) { world.mode = m; camSeg.querySelectorAll('button').forEach((
 camSeg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setCam(b.dataset.cam); });
 setCam(['drone', 'top', 'helm'].includes(opts.camera) ? opts.camera : 'drone'); // Settings › First camera
 // the HUD, as a sailing broadcast lays it out (hud-bc.js)
-const bcHud = createHud({ t, LANG, fmt, world, getRace: () => race, setCam, flagOf: (b, me) => (me ? playerLook().flag : LOOKS[b.name] && LOOKS[b.name].flag) || null });
+const bcHud = createHud({ t, LANG, fmt, world, getRace: () => race, setCam, flagOf: (b, me) => (me ? playerLook().flag : LOOKS[b.name] && LOOKS[b.name].flag) || null,
+  sailOf: () => { const l = playerLook(); return `${l.nat} ${l.num}`.trim(); } }); // your flag and sail number, as the boat page sets them
 
 // ---------- menus ----------
 const menu = $('#menu'), hud = $('#hud');
@@ -1262,10 +1264,9 @@ function startRace() {
 }
 // ---------- pause: the race stays in view; resume, change the race, restart or leave (each of the last three asks first) ----------
 const pauseEl = $('#pauseCard'), confirmEl = $('#confirmCard');
-// the voice on board (the skipper in Russian, the crew's calls in English) has a switch of its own, next to Sound;
+// the voice on board (the skipper in Russian, the crew's calls in English) has a switch of its own, under Sound;
 // off, the hails and the call for a tack or a gybe are still heard, and the count to the gun beeps (Settings › Voice on
 // board too). The race committee and the umpire are under Sound alone.
-{ const s = pauseEl.querySelector('[data-q="sound"]'); if (s) { const b = s.cloneNode(); b.dataset.q = 'voice'; delete b.dataset.t; b.innerHTML = t('voiceK'); s.after(b); s.parentNode.style.flexWrap = 'wrap'; } }
 const ordL = (n) => (LANG === 'ru' ? `${n}-е` : ord(n));
 function paintPause() {
   const P = race.player, legs = race.course.legs, n = legs.length - 1, leg = Math.min(n, Math.max(1, P.leg));
@@ -1282,7 +1283,13 @@ function paintPause() {
   $('#pPlace').textContent = ordL(place); $('#pOf').textContent = t('ofN', race.boats.length);
   $('#pTime').textContent = fmt(Math.max(0, race.clock));
   $('#pPen').textContent = L.penT > 1 ? `${Math.round(L.penT)} s` : '0'; $('#pPenD').textContent = L.penT > 1 ? t('penS') : t('penNone');
-  for (const b of pauseEl.querySelectorAll('[data-q]')) b.classList.toggle('on', b.dataset.q === 'autoTrim' ? opts.autoTrim === 1 : !!opts[b.dataset.q]);
+  // the ticker: paused, the venue, the race's clock (the count to the gun before it)
+  const tick = $('#pTick'); tick.textContent = '';
+  tick.append(`${t('pausedK')} · `, Object.assign(document.createElement('b'), { textContent: VENUE.name[LANG === 'ru' ? 1 : 0] }), ` · ${race.clock < 0 ? `${t('startIn')} ${fmt(-race.clock + 0.999)}` : fmt(race.clock)}`);
+  // guides, sound and voice: switches; the sails three ways; the camera
+  for (const b of pauseEl.querySelectorAll('[data-q]')) { const on = !!opts[b.dataset.q]; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); }
+  for (const b of pauseEl.querySelectorAll('[data-trim]')) b.setAttribute('aria-checked', String(Number(b.dataset.trim) === (opts.autoTrim | 0)));
+  for (const b of pauseEl.querySelectorAll('[data-pc]')) b.setAttribute('aria-checked', String(b.dataset.pc === world.mode));
   // graphics: the choice, and on Auto the level it has settled on for this device
   for (const b of pauseEl.querySelectorAll('[data-g]')) b.setAttribute('aria-checked', String(b.dataset.g === opts.gfx));
   for (const b of pauseEl.querySelectorAll('[data-mv]')) b.setAttribute('aria-checked', String(b.dataset.mv === (opts.musicVol in MUSIC_VOL ? opts.musicVol : 'normal')));
@@ -1340,10 +1347,13 @@ pauseEl.addEventListener('click', (e) => {
   if (mv) { opts.musicVol = mv.dataset.mv; saveOpts(); score.style(); paintPause(); return; } // Settings › Music volume: heard as the race resumes
   const sea = e.target.closest('[data-sea]');
   if (sea) { opts.sea = sea.dataset.sea; saveOpts(); paintPause(); return; } // Settings › Sea: heard as the race resumes
+  const tr = e.target.closest('[data-trim]');
+  if (tr) { opts.autoTrim = Number(tr.dataset.trim); applyTrimMode(); saveOpts(); paintOpts(); paintPause(); return; } // Settings › Sails: I trim, Auto, Main + jib
+  const pc = e.target.closest('[data-pc]');
+  if (pc) { setCam(pc.dataset.pc); opts.camera = pc.dataset.pc; saveOpts(); paintPause(); return; } // the camera now, and Settings › First camera
   const b = e.target.closest('[data-q]'); if (!b) return;
   const k = b.dataset.q;
-  if (k === 'autoTrim') { opts.autoTrim = opts.autoTrim === 1 ? 0 : 1; applyTrimMode(); }
-  else opts[k] = opts[k] ? 0 : 1;
+  opts[k] = opts[k] ? 0 : 1;
   if (k === 'sound') audio.setOn(!!opts.sound);
   if (k === 'voice' && !opts.voice) { skipper.stop(); asides.stop(); asides.pend = null; }
   if (k === 'guides') world.showGuides = !!opts.guides;
@@ -1365,7 +1375,7 @@ $('#backLink').href = HUB;
     [tr('Wind', 'Ветер'), { light: 7, medium: 12, strong: 19 }[s.preset], tr('kn', 'уз'), { light: tr('Light breeze', 'Слабый ветер'), medium: tr('Medium breeze', 'Средний ветер'), strong: tr('Strong breeze', 'Сильный ветер') }[s.preset]],
     [tr('Course', 'Дистанция'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
     [tr('Fleet', 'Флот'), s.fleet, '', tr(`You and ${boats} boats`, `Ты и ${boats} ${boats === 1 ? 'лодка' : boats < 5 ? 'лодки' : 'лодок'}`)],
-  ]);
+  ], tr(`${s.start}-minute start sequence`, `стартовая процедура ${s.start} мин`)); // what's coming up, in the ticker
   menu.hidden = true; menuChanged = true;
   // the preloader in play/index.html has counted the files in; the scene is built, so it fills its bar and fades into the race
   // …once the shaders are compiled too (world.prepare), so the first frame of the race doesn't stall
