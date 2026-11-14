@@ -758,7 +758,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       Y.legP.setAttribute('d', ARROW.up); txt(Y.legT, `${L.start} ${fmt(left + 0.999)}`);
       if (close > 0.3 && li.d < 0) {
         const burn = left - -li.d / close;
-        txt(Y.burn, burn > -1 ? fmt(burn) : `−${fmt(-burn)}`); ink(Y.burn, burn <= -1 ? 'late' : burn < 5 ? 'low' : '');
+        txt(Y.burn, burn >= 1 ? `+${fmt(burn)}` : burn > -1 ? fmt(0) : `−${fmt(-burn)}`); ink(Y.burn, burn <= -1 ? 'late' : burn < 5 ? 'low' : ''); // time in hand +, late −
       } else { txt(Y.burn, '—'); ink(Y.burn, ''); }
     } else if (!done) {
       const m = race.nextMark(P), brg = Math.atan2(m.x - P.x, -(m.z - P.z)), cos = Math.cos(wrap(brg - P.h));
