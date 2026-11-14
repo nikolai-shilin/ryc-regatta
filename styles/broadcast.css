@@ -640,6 +640,55 @@
 .bc .gd-term dd { font: 500 var(--fs-body)/1.6 var(--sans); color: var(--ink-2); }
 .bc .gd-term:target { background: var(--fill-1); box-shadow: -12px 0 0 var(--fill-1), 12px 0 0 var(--fill-1); }
 .bc .gd-see { color: var(--you); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); }
+/* Learn: each guide's card with its picture from the game, its number on a white block at the picture's foot (the
+   guide without a picture has its topic in big faint letters there instead) */
+.bc .gd-card { padding: 0; gap: 0; overflow: hidden; }
+.bc .gd-card-pic { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; background: var(--panel-2); }
+.bc .gd-card-pic img { display: block; width: 100%; height: 100%; object-fit: cover; transition: scale var(--t-in) var(--ease); }
+.bc .gd-card:hover .gd-card-pic img { scale: 1.03; }
+.bc .gd-card-n { position: absolute; left: 0; bottom: 0; display: flex; align-items: center; justify-content: center; width: 48px; height: 40px; background: var(--ink); color: var(--ink-on); font: 700 var(--fs-title)/1 var(--cond); }
+.bc .gd-card-slate { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--panel-2), var(--surface)); }
+.bc .gd-card-topic { font: 800 var(--fs-h1)/1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; color: var(--w-14); }
+.bc .gd-card-b { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); padding: var(--s-5) var(--s-6) var(--s-6); }
+.bc .gd-card-b .hm-src { margin-top: auto; padding-top: var(--s-2); }
+/* a guide's head over its picture: dark on the left where the words are, and into the ground at the foot */
+.bc .gd-hero { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: flex-end; min-height: min(600px, 80svh); }
+.bc .gd-hero-bg { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.bc .gd-hero::after { content: ''; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(0deg, var(--ground) 0%, transparent 45%), linear-gradient(90deg, color-mix(in srgb, var(--ground) 88%, transparent) 0%, var(--scrim) 50%, transparent 82%); }
+.bc .gd-hero > .hm-ph { position: relative; padding-top: var(--s-20); }
+.bc .gd-hero .hm-ph-h { max-width: 900px; }
+@container help (max-width: 899px) {
+  .bc .gd-hero::after { background: linear-gradient(0deg, var(--ground) 0%, color-mix(in srgb, var(--ground) 82%, transparent) 50%, var(--scrim) 100%); }
+}
+/* on a phone the picture is a band above the title, fading into the ground, and the words are on the ground */
+@container help (max-width: 599px) {
+  .bc .gd-hero { flex-direction: column; align-items: stretch; min-height: 0; }
+  .bc .gd-hero-bg { position: relative; inset: auto; z-index: 0; height: auto; aspect-ratio: 16 / 9; -webkit-mask-image: linear-gradient(180deg, var(--ink) 55%, transparent); mask-image: linear-gradient(180deg, var(--ink) 55%, transparent); }
+  .bc .gd-hero::after { content: none; }
+  .bc .gd-hero > .hm-ph { margin-top: calc(-1 * var(--s-8)); padding-top: 0; }
+}
+/* a section's tip: a callout edged in your blue, or the umpire's red when it's about a foul or a penalty */
+.bc .gd-tip { display: flex; flex-direction: column; gap: var(--s-2); max-width: 68ch; margin-top: var(--s-2); padding: var(--s-4) var(--s-5); background: var(--panel-2); border-left: 4px solid var(--you); }
+.bc .gd-tip .lbl { color: var(--you); }
+.bc .gd-tip.pen { border-left-color: var(--live); }
+.bc .gd-tip.pen .lbl { color: var(--live); }
+.bc .gd-sec .gd-tip p { font: 500 var(--fs-body)/1.55 var(--sans); color: var(--ink); }
+/* a guide's drawing: the marks in their orange, your track in your blue, the other way dashed, the wind in white */
+.bc .gd-fig { display: flex; flex-direction: column; gap: var(--s-4); max-width: 520px; margin: var(--s-2) 0 0; padding: var(--s-5); background: var(--surface); }
+.bc .gd-fig svg { display: block; width: 100%; height: auto; }
+.bc .gd-fig text { fill: var(--ink); font: 700 var(--fs-label) var(--cond); letter-spacing: var(--ls-label); }
+.bc .gd-fig .f-wind { fill: none; stroke: var(--ink); stroke-width: 2; }
+.bc .gd-fig .f-wind-h { fill: var(--ink); }
+.bc .gd-fig .f-you { fill: none; stroke: var(--you); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.bc .gd-fig .f-you-h { fill: var(--you); }
+.bc .gd-fig .f-alt { fill: none; stroke: var(--w-50); stroke-width: 2.5; stroke-dasharray: 6 6; }
+.bc .gd-fig .f-alt-h { fill: var(--w-50); }
+.bc .gd-fig .f-buoy { fill: var(--buoy); }
+.bc .gd-fig figcaption { display: flex; flex-direction: column; gap: var(--s-2); }
+.bc .gd-key { display: flex; align-items: center; gap: var(--s-3); font: 500 var(--fs-small)/1.4 var(--sans); color: var(--ink-2); }
+.bc .gd-key::before { content: ''; flex: none; width: 28px; border-top: 3px solid var(--you); }
+.bc .gd-key-alt::before { border-top: 3px dashed var(--w-50); }
 /* Learn: the glossary as a banner under the guides */
 .bc .gd-banner { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5) var(--s-8); padding: var(--s-8); background: var(--panel-2); color: var(--ink); text-decoration: none; transition: box-shadow var(--t-quick); }
 .bc .gd-banner:hover { box-shadow: inset 0 0 0 1px var(--w-25); }
