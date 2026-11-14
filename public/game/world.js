@@ -234,7 +234,7 @@ function lineStrip(len) { // a straight line len metres long, lying flat along x
 }
 
 // distance lines across a beat: from its mark (or the middle of the line it goes to) down to where it starts, every 50 m
-// (100 m on a long beat), each a line like the start line, with its distance to the mark written at both ends. They
+// (100 m on a long beat), each a line like the start line, with no labels on the water. They
 // widen with the distance, as the laylines do. Laid again for each beat (setTarget).
 export const ladderStep = (beat) => (beat > 600 ? 100 : 50);
 class Ladder {
@@ -242,21 +242,12 @@ class Ladder {
   setTarget(m, from) {
     const key = `${m.x}|${m.z}|${from.z}`; if (key === this.key) return; this.key = key;
     const g = this.group, beat = from.z - m.z, step = ladderStep(beat);
-    for (const o of g.children) { if (o.isSprite) { o.material.map.dispose(); o.material.dispose(); } else o.geometry.dispose(); }
+    for (const o of g.children) o.geometry.dispose();
     g.clear();
     for (let d = step; d < beat - 15; d += step) {
       const z = m.z + d, half = Math.min(260, 30 + d * 0.95);
       const line = new THREE.Mesh(lineStrip(2 * half), lineMat());
       line.position.set(m.x, 0.65, z); line.renderOrder = 1; g.add(line);
-      // the distance, just past each end of the line
-      const lc = document.createElement('canvas'); lc.width = 160; lc.height = 56;
-      const x = lc.getContext('2d'), text = `${d} m`;
-      x.font = '700 30px Carlito, Lato, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-      const w = x.measureText(text).width + 26;
-      x.fillStyle = 'rgba(0,0,0,0.38)'; x.beginPath(); x.roundRect((160 - w) / 2, 8, w, 40, 20); x.fill();
-      x.fillStyle = '#fff'; x.fillText(text, 80, 29);
-      const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(lc), transparent: true, depthWrite: false, fog: true, toneMapped: false });
-      for (const sd of [-1, 1]) { const s = new THREE.Sprite(mat); s.scale.set(13, 4.55, 1); s.position.set(m.x + sd * (half + 7), 3.2, z); g.add(s); }
     }
   }
 }
