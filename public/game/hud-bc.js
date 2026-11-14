@@ -25,6 +25,7 @@ export const HUD_STRINGS = {
     toLeader: 'To leader', ahead: 'Ahead of 2nd', time: 'Time', start: 'Start', perMin: '/min', camera: 'Camera', pause: 'Pause',
     you: 'You', layIn: (s) => `Layline in ${s} · then tack`, layNow: 'On the layline · tack', over: 'Past the layline · tack now', fetch: 'Laying the mark',
     advantage: 'Advantage',
+    camName: { drone: 'Drone camera', top: 'Top camera', helm: 'Helm camera' },
     space: 'Space', boardFoot: (n) => `The boats round you · ${n} in all`,
     toLeg: { lineStart: 'To the start line', mark: 'To the windward mark', mark1: 'To mark 1', wing: 'To the wing mark', mark2: 'To mark 2', offset: 'To the offset mark', gate: 'To the leeward gate', finish: 'To the finish' },
     go: 'Go', leads: 'Leads', afterGun: 'after the gun', ord: (n) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`,
@@ -41,6 +42,7 @@ export const HUD_STRINGS = {
     toLeader: 'До лидера', ahead: 'Впереди второго', time: 'Время', start: 'Старт', perMin: '/мин', camera: 'Камера', pause: 'Пауза',
     you: 'Ты', layIn: (s) => `Лейлайн через ${s} · потом поворот`, layNow: 'На лейлайне · поворот', over: 'Лейлайн пройден · поворачивай', fetch: 'Идёшь на знак',
     advantage: 'Выигрыш',
+    camName: { drone: 'Камера с дрона', top: 'Камера сверху', helm: 'Камера у штурвала' },
     space: 'Пробел', boardFoot: (n) => `Лодки рядом с тобой · всего ${n}`,
     toLeg: { lineStart: 'К линии старта', mark: 'К верхнему знаку', mark1: 'К знаку 1', wing: 'К боковому знаку', mark2: 'К знаку 2', offset: 'К знаку смещения', gate: 'К нижним воротам', finish: 'К финишу' },
     go: 'Старт!', leads: 'Лидирует', afterGun: 'после сигнала', ord: (n) => `${n}-й`,
@@ -119,6 +121,9 @@ const CSS = `
 .b-legs .b-leg.done { background: var(--w-25); color: var(--ink); }
 .b-legs .b-leg.now { background: var(--you); color: var(--ink-on); }
 .b-legs .b-leg svg { width: 10px; height: 10px; flex: none; }
+/* under the top camera the wind rides in the leg tracker: which way it blows across the picture, and how strong */
+.b-lw { display: flex; align-items: center; gap: var(--s-2); padding-left: var(--s-4); border-left: 1px solid var(--rule); }
+.b-lw svg { width: 18px; height: 18px; flex: none; color: var(--you); }
 
 /* ---------- top right: the buttons and the wind; the board under them ---------- */
 .b-tr { right: calc(28px + var(--sr)); top: calc(26px + var(--st)); align-items: flex-start; gap: var(--s-2); animation: bc-slide-r var(--t-in) var(--ease) both .2s; }
@@ -465,7 +470,8 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       <div class="pn b-gunc"><span class="lbl">${L.startIn}</span><span class="b-gunn" role="timer" aria-live="off"></span><div class="b-seq"><i></i></div><div class="b-seql"></div></div>
       <div class="pn2 cut-r b-bias"><span class="lbl">${L.bias}</span><span class="n-m b-bv"></span><span class="lbl b-bl"></span></div>
     </div>
-    <div class="pn cut-lr b-legs"><span class="lbl-ink b-legn"></span><div class="b-legr"></div><span class="lbl-ink">${L.finish}</span></div></div>`);
+    <div class="pn cut-lr b-legs"><span class="lbl-ink b-legn"></span><div class="b-legr"></div><span class="lbl-ink">${L.finish}</span>
+      <span class="b-lw" hidden><svg viewBox="0 0 64 64" role="img"><path d="M32 56 L44 16 L32 24 L20 16 Z" fill="currentColor"/></svg><span class="n-s"></span></span></div></div>`);
   const tr = html(`<div class="bx b-tr"><div class="b-btns"><button class="b-cam" aria-label="${L.camera} (X/C/V)" title="${L.camera} · X C V">${CAM_SVG}<span></span></button></div>
     <div class="pn cut-l b-wind"><svg viewBox="0 0 64 64" role="img"><circle cx="32" cy="32" r="29" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
       <path class="nogo" fill="rgba(255,59,48,0.3)"/><g stroke="rgba(255,255,255,0.5)" stroke-width="2"><path d="M32 3v6M32 55v6M3 32h6M55 32h6"/></g>
@@ -493,7 +499,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   const windBox = q(tr, '.b-wind');
   const B = {
     sub: q(bug, '.b-sub'), clock: q(bug, '.b-clock'), gun: q(top, '.b-gun'), gunN: q(top, '.b-gunn'), seq: q(top, '.b-seq'), seqI: q(top, '.b-seq i'), seqL: q(top, '.b-seql'),
-    bv: q(top, '.b-bv'), bl: q(top, '.b-bl'), legs: q(top, '.b-legs'), legN: q(top, '.b-legn'), legR: q(top, '.b-legr'), btns: q(tr, '.b-btns'), cam: q(tr, '.b-cam'),
+    bv: q(top, '.b-bv'), bl: q(top, '.b-bl'), legs: q(top, '.b-legs'), legN: q(top, '.b-legn'), legR: q(top, '.b-legr'), lw: q(top, '.b-lw'), lwSvg: q(top, '.b-lw svg'), lwN: q(top, '.b-lw .n-s'), btns: q(tr, '.b-btns'), cam: q(tr, '.b-cam'),
     nogo: q(tr, '.nogo'), tw: q(tr, '.tw'), tws: q(tr, '.b-tws'), dir: q(tr, '.b-dir'), shift: q(tr, '.b-shift'), windSvg: q(tr, 'svg'),
     bt: q(board, '.b-bt'), br: q(board, '.b-br'), rows: q(board, '.b-rows'), bfn: q(board, '.b-bfn'), shape: q(map, '.b-shape'), state: q(low, '.b-state'), you: q(low, '.b-you'),
   };
@@ -653,8 +659,8 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     wasDone = done;
     const daily = !!race.settings?.daily;
 
-    // the bug: the race, and the clock
-    txt(B.sub, `${daily ? L.daily : L.free}${venue ? ' · ' + venue : ''}`);
+    // the bug: the race, and the clock; from the top camera or the helm, the camera's name, as a broadcast says which it's on
+    txt(B.sub, world.mode !== 'drone' && L.camName[world.mode] ? L.camName[world.mode] : `${daily ? L.daily : L.free}${venue ? ' · ' + venue : ''}`);
     txt(B.clock, pre ? L.live : done ? fmt(P.finish) : fmt(race.clock));
     B.clock.classList.toggle('run', !pre);
 
@@ -697,6 +703,15 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       }
       [...B.legR.children].forEach((el, i) => { el.classList.toggle('done', done || i + 1 < P.leg); el.classList.toggle('now', !done && i + 1 === P.leg); });
       txt(B.legN, done ? L.finished : P.leg ? L.legOf(P.leg, nLegs) : L.start); // leg 0 after the gun: still to cross the line
+      // the top camera: the wind in the tracker, its arrow the way it blows across the screen
+      const topCam = world.mode === 'top' && !done;
+      B.lw.hidden = !topCam;
+      if (topCam) {
+        const ux = Math.sin(P.wdir), uz = -Math.cos(P.wdir), a = onScreen(P.x, 0, P.z, 1e5), b = onScreen(P.x + ux * 60, 0, P.z + uz * 60, 1e5);
+        if (a && b) { const r = Math.round(Math.atan2(a[1] - b[1], a[0] - b[0]) / D2R - 90); if (B.lwSvg._r !== r) { B.lwSvg._r = r; B.lwSvg.style.rotate = `${r}deg`; } }
+        htm(B.lwN, `${Math.round(P.tws)}<span class="unit">${KNU}</span>`);
+        B.lwSvg.setAttribute('aria-label', `${L.trueWind} ${Math.round(P.tws)} ${t('kn')}`);
+      }
     }
 
     // the wind: where it comes from round your bow, its strength, and how it has swung on the beat
