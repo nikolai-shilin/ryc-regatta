@@ -34,16 +34,20 @@
 <script>(function () { var v = 'gocek';
   var ids = ['gocek', 'cowes', 'newport', 'sydney', 'kiel', 'trieste', 'porto-cervo', 'saint-tropez', 'antigua', 'auckland',
     'san-francisco', 'valencia', 'barcelona', 'palma', 'marstrand', 'bermuda', 'enoshima', 'weymouth', 'marseille', 'rio', 'garda', 'istanbul'];
-  function round(k) {
-    var a = ids.slice(), s = ((k + 1) * 40503 + 977) >>> 0 || 1, i, j, x;
+  // a venue added later joins on its day: [the day, the venues from it], the days before going round the ones there were
+  var eras = [[0, ids], [Math.floor(Date.parse('2026-11-20') / 864e5), ids.concat(['st-petersburg'])]];
+  function round(v, k) {
+    var a = v.slice(), s = ((k + 1) * 40503 + 977) >>> 0 || 1, i, j, x;
     for (i = a.length - 1; i > 0; i--) { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; j = Math.floor(s / 4294967296 * (i + 1)); x = a[i]; a[i] = a[j]; a[j] = x; }
     return a;
   }
-  function today() {
-    var n = Math.floor(Date.parse(new Date().toISOString().slice(0, 10)) / 864e5), len = ids.length, k = Math.floor(n / len), a = round(k), x;
-    if (a[0] === round(k - 1)[len - 1]) { x = a[0]; a[0] = a[1]; a[1] = x; }
-    return a[n - k * len];
+  function on(n) {
+    var e = eras.length - 1; while (e > 0 && n < eras[e][0]) e--;
+    var n0 = eras[e][0], v = eras[e][1], len = v.length, k = Math.floor((n - n0) / len), a = round(v, k), x;
+    if (a[0] === (k > 0 || e === 0 ? round(v, k - 1)[len - 1] : on(n0 - 1))) { x = a[0]; a[0] = a[1]; a[1] = x; }
+    return a[n - n0 - k * len];
   }
+  function today() { return on(Math.floor(Date.parse(new Date().toISOString().slice(0, 10)) / 864e5)); }
   try { var q = new URLSearchParams(location.search); v = q.get('venue') || (q.get('race') === 'free' ? JSON.parse(localStorage.getItem('regatta') || '{}').venue : today()) || 'gocek'; } catch (e) {}
   if (!/^[a-z-]+$/.test(v)) v = 'gocek';
   var f = v === 'gocek' ? ['/game/skopea.bin', '/game/skopea.json'] : ['/game/venues/' + v + '.bin', '/game/venues/' + v + '.json'];

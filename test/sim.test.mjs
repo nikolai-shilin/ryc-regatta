@@ -45,7 +45,7 @@ test('the shapes come round in about the weights', () => {
 // today's venue: every venue in turn, never the same two days running; and the play page's preloader (an inline copy
 // in public/play/index.html) fetches the same venue's land as the game then asks for
 test('today’s race goes round the venues, and the play page preloads the day’s', async () => {
-  const { VENUES, dailyVenue, landFiles, venueById } = await import('../public/game/venues.js');
+  const { ROUNDS, dailyVenue, landFiles, venueById } = await import('../public/game/venues.js');
   const html = await readFile(new URL('../public/play/index.html', import.meta.url), 'utf8');
   const script = html.match(/<script>(\(function \(\) \{ var v = 'gocek';[\s\S]*?)<\/script>/)[1];
   const { runInNewContext } = await import('node:vm');
@@ -54,9 +54,12 @@ test('today’s race goes round the venues, and the play page preloads the day�
   for (let d = 0; d < 400; d++) {
     const now = from + d * 864e5, day = new Date(now), v = dailyVenue(day);
     assert.notEqual(v, prev, `${day.toISOString().slice(0, 10)}: not yesterday’s venue`); prev = v;
-    if (Math.floor(now / 864e5) % VENUES.length === 0) { // a round: the days are counted from 1970 in rounds of len
-      const round = new Set(Array.from({ length: VENUES.length }, (_, i) => dailyVenue(new Date(now + i * 864e5))));
-      assert.ok(round.size >= VENUES.length - 2, 'every venue comes round');
+    // a round: the days are counted in rounds of the venues there are, from 1970 or from the day the last one joined
+    const n = Math.floor(now / 864e5), e = ROUNDS.findLastIndex((r) => n >= r.n0), { n0, ids } = ROUNDS[e], len = ids.length;
+    if ((n - n0) % len === 0 && !(ROUNDS[e + 1] && n + len > ROUNDS[e + 1].n0)) {
+      const round = new Set(Array.from({ length: len }, (_, i) => dailyVenue(new Date(now + i * 864e5))));
+      assert.ok(round.size >= len - 2, 'every venue comes round');
+      if (n0 > 0) assert.equal(round.size, len, 'all of them, the new one among them');
     }
     const links = [];
     class FakeDate extends Date { constructor(...a) { super(...(a.length ? a : [now])); } }
@@ -151,6 +154,17 @@ test('a finish line of its own has its committee boat', () => {
 test('an unknown course is up and down', () => {
   for (const course of ['trap', 'wlu', 'tri', 'wl']) assert.equal(new sim.Race({ course, seed: 3 }).course.type, course);
   assert.equal(new sim.Race({ course: 'zigzag', seed: 3 }).course.type, 'wl');
+});
+// a length the venue doesn't offer at all is sailed at the longest it has
+test('a skipped length is sailed at the longest the venue has', async () => {
+  const { VENUE, laidLength } = await import('../public/game/venues.js'), was = VENUE.skip;
+  VENUE.skip = ['long'];
+  try {
+    assert.equal(laidLength(VENUE, 'long'), 'medium');
+    assert.equal(laidLength(VENUE, 'medium'), 'medium');
+    const a = new sim.Race({ preset: 'medium', length: 'long', seed: 3 }), b = new sim.Race({ preset: 'medium', length: 'medium', seed: 3 });
+    assert.equal(a.course.windward.z, b.course.windward.z);
+  } finally { VENUE.skip = was; }
 });
 // a shape the venue doesn't offer at that length (its `skip` list) is sailed as up and down; at other lengths it isn't
 test('a skipped shape falls back to up and down', async () => {
@@ -301,11 +315,18 @@ test('the set-up page’s skip lists are the game’s', async () => {
 });
 // today's race goes to every venue on the short course, in any shape: none may be skipped there
 test('no venue skips a shape on the short course', async () => {
-  const { VENUES, shapeOffered } = await import('../public/game/venues.js');
+  const { VENUES, shapeOffered, lengthOffered } = await import('../public/game/venues.js');
   for (const v of VENUES) for (const shape of sim.SHAPES) assert.ok(shapeOffered(v, shape, 'short'), `${v.id}: ${shape}`);
+  for (const v of VENUES) assert.ok(lengthOffered(v, 'short'), `${v.id}: the short course`);
 });
 
 const { execFileSync } = await import('node:child_process');
+// every script of the game parses (the ones the browser alone runs, main.js among them, aren't loaded by these tests)
+test('every game script parses', async () => {
+  const { readdirSync } = await import('node:fs');
+  const dir = new URL('../public/game/', import.meta.url);
+  for (const f of readdirSync(dir).filter((n) => n.endsWith('.js'))) execFileSync(process.execPath, ['--check', new URL(f, dir).pathname]);
+});
 const { VENUES } = await import('../public/game/venues.js');
 for (const v of VENUES) {
   test(`${v.name[0]}: the land is baked, and every course is laid in clear water`, () => {
@@ -315,22 +336,30 @@ for (const v of VENUES) {
       globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))));
       const sim = await import(${JSON.stringify(new URL('../public/game/sim.js', import.meta.url).href)});
       const { SKOPEA, MESH } = await import(${JSON.stringify(new URL('../public/game/land.js', import.meta.url).href)});
-      const { VENUE, shapeOffered } = await import(${JSON.stringify(new URL('../public/game/venues.js', import.meta.url).href)});
-      let worst = Infinity, where = '';
+      const { VENUE, shapeOffered, lengthOffered } = await import(${JSON.stringify(new URL('../public/game/venues.js', import.meta.url).href)});
+      let worst = Infinity, where = '', under = '';
+      // the bridges too low for a mast: no two of a course's marks on either side of one
+      const low = (SKOPEA.meta.landmarks || []).filter((l) => l.a && l.b && (l.deck ?? Infinity) < 25);
+      const side = (p, q, w) => Math.sign((q[0] - p[0]) * (w[1] - p[1]) - (q[1] - p[1]) * (w[0] - p[0]));
+      const across = (p, q, a, b) => side(p, q, a) * side(p, q, b) < 0 && side(a, b, p) * side(a, b, q) < 0;
       for (const preset of ['light', 'medium', 'strong']) for (const length of ['short', 'medium', 'long']) for (const course of sim.SHAPES) {
-        if (!shapeOffered(VENUE, course, length)) continue;
+        if (!shapeOffered(VENUE, course, length) || !lengthOffered(VENUE, length)) continue;
         const r = new sim.Race({ preset, length, course, fleet: 7, laps: 1, seed: 1 }), c = r.course;
         const f = c.finish ? [c.finish.a, c.finish.b, c.finishBoat] : [];
-        for (const m of [...Object.values(c.marks), ...c.gate, c.pin, c.committee, ...f]) {
+        const ms = [...Object.values(c.marks), ...c.gate, c.pin, c.committee, ...f];
+        for (const m of ms) {
           const room = r.roomAt(m.x, m.z);
           if (room < worst) { worst = room; where = course + ' ' + preset + ' ' + length; }
         }
+        const xz = ms.map((m) => [m.x + r.at.x, m.z + r.at.z]);
+        for (const l of low) for (const p of xz) for (const q of xz) if (across(p, q, l.a, l.b)) under = course + ' ' + preset + ' ' + length;
       }
-      console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, corners: MESH.corners, heights: SKOPEA.parts.heights.length }));`;
+      console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, under, corners: MESH.corners, heights: SKOPEA.parts.heights.length }));`;
     const out = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' }));
     assert.deepEqual(out.origin, [v.lat, v.lon], 'baked at the venue’s position');
     assert.equal(out.turn, v.wind, 'turned to the venue’s wind'); // Göcek's own bake isn't turned: its wind is north
     assert.ok(out.worst >= 60, `a mark only ${Math.round(out.worst)} m from the shore (${out.where})`);
+    assert.equal(out.under, '', 'a course across a bridge too low for a mast');
     assert.equal(out.corners, out.heights, 'the terrain the game builds from the quadtree has a height for each of its corners');
   });
 }

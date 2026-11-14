@@ -4,8 +4,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { clamp } from './sim.js';
+import { sponsor } from './sponsor.js';
 
-// what the banner says: the domain in navy, the call in red
+// what the banner says until /sponsor answers, or when the admin has set nothing: the first words in navy, the second in red
 export const BANNER = ['RYCRENTALS.COM', 'RENT YACHTS HERE!'];
 
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -13,7 +14,7 @@ const SPEED = 28; // m/s, about 55 kn: a banner tow's cruise, slow enough to rea
 const ROPE = 45, ROPE_DROP = 8 * Math.PI / 180, SAG = 1.4; // the tow rope: length, how steeply it runs down aft, its sag
 const BANNER_H = 4.6; // metres, top to bottom; the length follows from the lettering
 const NX = 64, NY = 4; // the banner's grid
-const PASS = 3200; // metres of each pass, half before the point nearest you and half after (fog hides the ends)
+const PASS = 1800; // metres of each pass, half before the point nearest you and half after (fog hides the ends)
 const MID = 900; // metres either side of that point that should be over water
 const STEP = 20, CLIMB = 0.18; // her height profile: its spacing, and the steepest she climbs or comes down
 
@@ -75,12 +76,14 @@ function planeGeometry() {
   return mergeGeometries(parts);
 }
 
-// the lettering, on a canvas: off-white cloth with a navy hem, the domain in navy and the call in red
+// the lettering, on a canvas: off-white cloth with a navy hem, the first words in navy, a red dot, the second in red
+// (one part alone: just the navy words)
 function bannerTexture(lines, anisotropy) {
   const c = document.createElement('canvas'), x = c.getContext('2d'), H = 256, px = 196;
   const font = `900 ${px}px Impact, "Arial Narrow", "Helvetica Neue", Arial, sans-serif`;
   x.font = font;
-  const gap = px * 0.75, w0 = x.measureText(lines[0]).width, w1 = x.measureText(lines[1]).width, pad = px * 0.5;
+  const two = lines.length > 1 && !!lines[1];
+  const gap = two ? px * 0.75 : 0, w0 = x.measureText(lines[0]).width, w1 = two ? x.measureText(lines[1]).width : 0, pad = px * 0.5;
   const W = w0 + gap + w1 + 2 * pad, k = Math.min(1, 4096 / W);
   c.width = Math.ceil(W * k); c.height = H;
   x.scale(k, 1);
@@ -88,8 +91,10 @@ function bannerTexture(lines, anisotropy) {
   x.fillStyle = '#0b2a4a'; x.fillRect(0, 0, W, 12); x.fillRect(0, H - 12, W, 12);
   x.font = font; x.textBaseline = 'middle';
   x.fillStyle = '#0b2a4a'; x.fillText(lines[0], pad, H / 2 + 6);
-  x.fillStyle = '#d7262e'; x.beginPath(); x.arc(pad + w0 + gap / 2, H / 2, px * 0.07, 0, 2 * Math.PI); x.fill();
-  x.fillText(lines[1], pad + w0 + gap, H / 2 + 6);
+  if (two) {
+    x.fillStyle = '#d7262e'; x.beginPath(); x.arc(pad + w0 + gap / 2, H / 2, px * 0.07, 0, 2 * Math.PI); x.fill();
+    x.fillText(lines[1], pad + w0 + gap, H / 2 + 6);
+  }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = anisotropy;
   return { tex, aspect: W / H };
@@ -127,6 +132,13 @@ export class BannerPlane {
     };
     this.banner = new THREE.Mesh(bg, bm);
     this.group.add(this.rope, this.pole, this.weight, this.banner);
+    // the admin's words, once /sponsor answers (long before the first pass): a new texture, and the banner's length to suit
+    sponsor().then((d) => {
+      if (!Array.isArray(d?.banner) || !d.banner.length) return;
+      const n = bannerTexture(d.banner, anisotropy);
+      bm.map.dispose(); bm.map = n.tex; bm.needsUpdate = true;
+      this.len = clamp(BANNER_H * n.aspect, 30, 90);
+    });
 
     this.p = new THREE.Vector3(); this.v = new THREE.Vector3(); // where she is and how she goes (for her sound)
     this.on = false; this.race = null;
@@ -139,37 +151,46 @@ export class BannerPlane {
   reset(race, ground) {
     this.race = race; this.ground = ground || (() => 0);
     this.on = false; this.show(false);
-    this.timer = rnd(35, 90); // the first comes over in the sequence before the start, or soon after
+    this.timer = rnd(15, 30); // the first comes over early in the sequence before the start
     this.clock = 0;
   }
 
-  // a pass across what you're looking at, 260–560 m off and low, 25–32 m up, so it's in the drone's picture: of a dozen lines
-  // tried, the one with the least land under its middle stretch; out at the ends she climbs over whatever is there
+  // a pass straight across what you're looking at, side-on so the banner reads, 170–300 m off, and as high as puts the
+  // banner a third of the way down the picture (the camera is low and looks down, so 'up in the sky' is out of frame):
+  // of a dozen lines tried, the one with the least land under its middle stretch (the first ones tried are the nearest
+  // and squarest); out at the ends she climbs over whatever is there
   spawn(cam) {
     const look = cam.getWorldDirection(this._d), lh = Math.atan2(look.x, -look.z);
     let best = null;
     for (let i = 0; i < 12; i++) {
-      const h = lh + (Math.random() < 0.5 ? -1 : 1) * rnd(0.6, 2.5), D = rnd(260, 560);
+      const sq = i / 11, h = lh + (Math.random() < 0.5 ? -1 : 1) * (Math.PI / 2 + rnd(-0.25, 0.25) * (1 + sq)), D = rnd(170, 230) + sq * 70;
       const fx = Math.sin(h), fz = -Math.cos(h), cx = cam.position.x + Math.sin(lh) * D, cz = cam.position.z - Math.cos(lh) * D;
       let top = 0;
       for (let s = -MID; s <= MID; s += 60) top = Math.max(top, this.ground(cx + fx * s, cz + fz * s));
-      if (!best || top < best.top) best = { h, x0: cx - fx * PASS / 2, z0: cz - fz * PASS / 2, top };
+      if (!best || top < best.top) best = { h, D, x0: cx - fx * PASS / 2, z0: cz - fz * PASS / 2, top };
       if (top < 2) break;
     }
     Object.assign(this, best);
     const fx = Math.sin(this.h), fz = -Math.cos(this.h);
     this.f = { x: fx, z: fz };
-    // her height along the pass, every STEP metres: 45 m over the land under her and under the banner trailing
+    // her height along the pass, every STEP metres: 45 m over any land under her and under the banner trailing
     // behind, never below her cruising height, and changing no steeper than she can climb
-    const base = rnd(25, 32), n = Math.ceil((PASS + 200) / STEP) + 1, g = new Float32Array(n), a = new Float32Array(n);
-    for (let i = 0; i < n; i++) g[i] = this.ground(this.x0 + fx * i * STEP, this.z0 + fz * i * STEP);
+    const base = this.cruise(cam, best.D), n = Math.ceil((PASS + 200) / STEP) + 1, g = new Float32Array(n), a = new Float32Array(n);
+    for (let i = 0; i < n; i++) g[i] = this.ground(this.x0 + fx * i * STEP, this.z0 + fz * i * STEP); // below 0: the sea's floor
     const back = Math.ceil(130 / STEP);
-    for (let i = 0; i < n; i++) { let m = -1e9; for (let j = Math.max(0, i - back); j <= Math.min(n - 1, i + 2); j++) m = Math.max(m, g[j]); a[i] = Math.max(base, m + 45); }
+    for (let i = 0; i < n; i++) { let m = -1e9; for (let j = Math.max(0, i - back); j <= Math.min(n - 1, i + 2); j++) m = Math.max(m, g[j]); a[i] = m > 0 ? Math.max(base, m + 45) : base; }
     for (let i = 1; i < n; i++) a[i] = Math.max(a[i], a[i - 1] - CLIMB * STEP);
     for (let i = n - 2; i >= 0; i--) a[i] = Math.max(a[i], a[i + 1] - CLIMB * STEP);
     this.alts = a;
     this.s = 0; this.on = true; this.show(true);
     this.k = Math.random() * 10;
+  }
+  // her height for a pass D m off along the camera's look: the banner (hung ROPE·sin(ROPE_DROP) below her) where the
+  // ray through a third of the way down the picture meets that distance; never so low the banner skims the waves
+  cruise(cam, D) {
+    const r = this._a.set(0, 0.35, 0.5).unproject(cam).sub(cam.position), hz = Math.hypot(r.x, r.z);
+    const y = cam.position.y + (hz > 1e-6 ? r.y / hz : 0) * D;
+    return clamp(y + ROPE * Math.sin(ROPE_DROP) + rnd(-1, 1), BANNER_H / 2 + ROPE * Math.sin(ROPE_DROP) + 4, 45);
   }
   altAt(s) {
     const a = this.alts, x = clamp(s / STEP, 0, a.length - 1.001), i = Math.floor(x), u = x - i;
@@ -186,7 +207,7 @@ export class BannerPlane {
       this.spawn(cam);
     }
     this.s += SPEED * dt;
-    if (this.s > PASS + ROPE + this.len) { this.on = false; this.show(false); this.timer = rnd(150, 300); return; }
+    if (this.s > PASS + ROPE + this.len) { this.on = false; this.show(false); this.timer = rnd(60, 120); return; }
     const t = this.clock + this.k, f = this.f;
     // she holds her line and height, give or take the air
     const bob = 0.9 * Math.sin(t * 0.37) + 0.3 * Math.sin(t * 1.13), yaw = 0.025 * Math.sin(t * 0.23);

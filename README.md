@@ -38,6 +38,10 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   owner edits (in the Supabase dashboard's SQL editor: `insert into public.regatta_admins values ('name@example.com')`,
   lower case); row-level security lets only them write the setting and the bucket. These live in the same Supabase
   project as the IYT test's tables, so their names start with `regatta_`.
+- **The plane's banner:** a light plane (`public/game/plane.js`) tows a banner across the course every minute or two,
+  side-on to the camera and low enough to sit in the upper part of the picture. Its words are set on `/admin` too
+  (key `plane_banner` in `public.regatta_settings`, `{ lines: ['navy words', 'red words'] }`), served by `/sponsor`
+  with the jib's logo (`public/game/sponsor.js` asks once a page). Nothing set: RYCRENTALS.COM · RENT YACHTS HERE!
 - **Scores:** `public/game/stats.js` posts every race's start, finish and result to `https://iyt.rycrentals.com/api/game`
   (`api/game.mjs` in the `iyt-test` repo, table `public.game_races`). It names the player by Telegram's launch data inside
   Telegram, or else by the site account's access token, which the game gets from `/auth/token` on this origin. The
@@ -64,12 +68,14 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 - **The yacht:** `public/game/yacht.glb` is made by `blender/yacht.py`. Run it in Blender; it writes the file in place.
 - **The venues:** today's race goes to a venue a day (`dailyVenue()` in `public/game/venues.js`, copied in
   `lib/race.ts` and in `public/play/index.html`'s preloader, which `npm test` checks): the days go round all of them
-  in a shuffled order, so each comes once every 22 days and none two days running. A new venue goes in all three
-  lists in the same place; it reshuffles the rotation, so add it close to midnight UTC, or today's venue changes mid-day. The home page's live view (`/hero-view`) stays in Göcek, to match its
+  in a shuffled order, so each comes once a round and none two days running. A new venue goes in all three lists in
+  the same place, with the day it joins (`from`, a day still to come): the days before it keep the venues they had,
+  and from it the rounds start again with the new one among them. The home page's live view (`/hero-view`) stays in Göcek, to match its
   photos. A free race goes to the venue the set-up chose (`venue`
   in the `regatta` options; `?venue=<id>` in the game's address overrides it): Göcek, Cowes, Newport, Sydney, Kiel,
   Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland, San Francisco, Valencia, Barcelona, Palma, Marstrand, Bermuda,
-  Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda or Istanbul. `public/game/venues.js` holds each one's position,
+  Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda, Istanbul or St Petersburg (the Neva under the
+  Peter and Paul Fortress, its bridges raised). `public/game/venues.js` holds each one's position,
   prevailing wind, clock and look (its woods, farmland, houses, moored boats and water); `lib/venues.ts` is the set-up
   page's list of them, and `npm test` keeps the two in step. Each venue's land, Göcek's too, is baked by
   `python3 blender/venues.py [work dir] [id ...]` (needs numpy and Pillow; `--fetch` only downloads; the downloads are
@@ -97,9 +103,9 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     shallows);
   - the land beyond, out to 64 km on a 400 m grid, drawn pulled in to just inside the view and lowered by the earth's
     curve, coloured as the venue's own land mostly is: the Alps round Garda, Fuji from Enoshima;
-  - the buildings, up to 8,000, the far ones only if tall (pitched roofs where the map or the venue's look has them,
-    on near-convex footprints too; windows spaced each building its own way, glass towers, and the churches and
-    mosques with their bell towers, domes and minarets), and the piers and pontoons.
+  - the buildings, up to 8,000 (a big city's more), the far ones only if tall (pitched roofs where the map or the
+    venue's look has them, on near-convex footprints too; windows spaced each building its own way, glass towers, and
+    the churches and mosques with their bell towers, domes and minarets), and the piers and pontoons.
   The shadows on the land, of the hills, the far mountains, the buildings and the trees, are worked out on the GPU
   from where the sun is (`shadows()` in `skopea.js`), and fall on the water, the yachts and the marks too. The terrain
   and the towns are drawn in tiles, so what is out of view isn't; the trees far off as plain crowns. Cliffs are
@@ -108,9 +114,11 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   `skopea.js` draws: the Harbour Bridge, the Newport Bridge, the Golden Gate, the Sky Tower, Laboe's memorial, the
   Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la Garde, Christ the Redeemer, Enoshima's Sea
   Candle, the lighthouses of Kiel and Trieste, and Istanbul's Bosphorus Bridge, Galata Tower, Blue Mosque, Hagia
-  Sophia and Süleymaniye. `land.js` lays each course in clear water; `npm test` sails every
-  course shape at every venue and checks its marks are in clear water; a shape a venue has no room for at a length
-  goes in its `skip`, and the set-up offers only the shapes `shapeOffered()` (`lib/venues.ts`) allows there. Moving between today's race and a free race in the
+  Sophia and Süleymaniye. `land.js` lays each course in clear water, and not across a bridge too low for a mast (St
+  Petersburg's drawbridges); `npm test` sails every course shape at every venue and checks its marks are in clear
+  water and on one side of every such bridge; a shape a venue has no room for at a length goes in its `skip`, as does
+  a length it has no room for at all (St Petersburg's long course: a long request is sailed at the longest it has), and
+  the set-up offers only the shapes and lengths `shapeOffered()` and `lengthOffered()` (`lib/venues.ts`) allow there. Moving between today's race and a free race in the
   game reloads the page when the venue changes. OpenStreetMap has few of Göcek's buildings, so its town also comes
   from Microsoft's Global ML Building Footprints (ODbL), which `venues.py` downloads with the rest.
 - **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes

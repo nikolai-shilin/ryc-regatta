@@ -154,6 +154,31 @@ function rings() {
   return (RINGS = a.sort((p, q) => p[2] - q[2] || p[0] - q[0] || p[1] - q[1]));
 }
 
+// The bridges too low for a mast (St Petersburg's drawbridges, 7 to 10 m up; the Golden Gate's 67 m isn't): a course
+// isn't laid across one, nor within 40 m of it, so the fleet doesn't sail through its deck
+const LOW = (META.landmarks || []).filter((l) => l.a && l.b && (l.deck ?? Infinity) < 25).map((l) => [l.a, l.b]);
+function hullOf(pts) { // the convex hull, anticlockwise (x right, z down)
+  const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], hi = [];
+  for (const q of p) { while (lo.length > 1 && cr(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+  for (const q of p.reverse()) { while (hi.length > 1 && cr(hi[hi.length - 2], hi[hi.length - 1], q) <= 0) hi.pop(); hi.push(q); }
+  return lo.slice(0, -1).concat(hi.slice(0, -1));
+}
+// how far a segment a–b keeps from a convex hull: 0 where it crosses or lies in it
+function nearHull(h, a, b) {
+  const cr = (o, p, q) => (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0]);
+  const inside = (q) => h.every((p, i) => cr(p, h[(i + 1) % h.length], q) >= 0);
+  const toSeg = (q, u, v) => { const dx = v[0] - u[0], dz = v[1] - u[1], t = Math.max(0, Math.min(1, ((q[0] - u[0]) * dx + (q[1] - u[1]) * dz) / (dx * dx + dz * dz || 1))); return Math.hypot(q[0] - u[0] - t * dx, q[1] - u[1] - t * dz); };
+  if (inside(a) || inside(b)) return 0;
+  let d = Infinity;
+  for (let i = 0; i < h.length; i++) {
+    const u = h[i], v = h[(i + 1) % h.length];
+    if (cr(a, b, u) * cr(a, b, v) < 0 && cr(u, v, a) * cr(u, v, b) < 0) return 0;
+    d = Math.min(d, toSeg(u, a, b), toSeg(v, a, b), toSeg(a, u, v), toSeg(b, u, v));
+  }
+  return d;
+}
+
 // Where the course goes: the start (the race's origin) somewhere in the bay with the marks, the starting area and the
 // beat out to the laylines all in clear water; of the places that fit, the one that puts the windward mark nearest
 // HOME. Only from the course's shape, so the same race is laid in the same place on every device.
@@ -179,7 +204,11 @@ export function placeCourse(course, beatDeg = 42) {
     if (c.legInfo[i].beat || (a === c.windward && b === c.gate[0]) || need.some((p) => p[0] === m[0] && p[1] === m[1] && p[2] === 50)) continue;
     need.push(m);
   }
-  const fits = (gx, gz) => { let worst = Infinity; for (const [x, z, r] of need) { worst = Math.min(worst, roomAt(gx + x, gz + z) - r); if (worst < 0) break; } return worst; };
+  const hull = hullOf(need.map(([x, z]) => [x, z]));
+  const fits = (gx, gz) => {
+    let worst = Infinity; for (const [x, z, r] of need) { worst = Math.min(worst, roomAt(gx + x, gz + z) - r); if (worst < 0) break; }
+    return worst >= 0 && LOW.some(([a, b]) => nearHull(hull, [a[0] - gx, a[1] - gz], [b[0] - gx, b[1] - gz]) < 40) ? -1 : worst;
+  };
   if (META.home) { // the nearest start to the middle that fits; none: the one with the most room
     const want = { x: HOME.x - c.windward.x / 2, z: HOME.z - c.windward.z / 2 };
     let spare = null, spareR = -Infinity;
