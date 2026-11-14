@@ -30,6 +30,7 @@ export const HUD_STRINGS = {
     toLeg: { lineStart: 'To the start line', mark: 'To the windward mark', mark1: 'To mark 1', wing: 'To the wing mark', mark2: 'To mark 2', offset: 'To the offset mark', gate: 'To the leeward gate', finish: 'To the finish' },
     go: 'Go', leads: 'Leads', afterGun: 'after the gun', ord: (n) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`,
     umpire: 'Umpire · penalty', oneTurn: 'one turn', ruleN: (r) => `Rule ${r}`, against: (n) => `Against ${n}`, againstYou: 'Against you', pen: 'Pen',
+    split: 'split', timeGap: 'Time · gap', due: 'Grey: due at the mark at their pace',
     squareAt: 'square', veer: 'Veer', back: 'Back', mToLine: (m) => `${m} m to line`,
     hold: (s) => `Hold ${s}, then bear away`, bearNow: 'Bear away now, full speed', late: 'Late: bear away now',
   },
@@ -50,6 +51,7 @@ export const HUD_STRINGS = {
     toLeg: { lineStart: 'К линии старта', mark: 'К верхнему знаку', mark1: 'К знаку 1', wing: 'К боковому знаку', mark2: 'К знаку 2', offset: 'К знаку смещения', gate: 'К нижним воротам', finish: 'К финишу' },
     go: 'Старт!', leads: 'Лидирует', afterGun: 'после сигнала', ord: (n) => `${n}-й`,
     umpire: 'Судья · штраф', oneTurn: 'один оборот', ruleN: (r) => `Правило ${r}`, against: (n) => `Против ${n}`, againstYou: 'Против тебя', pen: 'Штраф',
+    split: 'отсечка', timeGap: 'Время · разрыв', due: 'Серым: когда будут у знака в своём темпе',
     squareAt: 'ровная при', veer: 'Сдвиг вправо', back: 'Сдвиг влево', mToLine: (m) => `${m} м до линии`,
     hold: (s) => `Выжди ${s}, потом уваливайся`, bearNow: 'Уваливайся сейчас, полный ход', late: 'Опаздываешь: уваливайся сейчас',
   },
@@ -378,6 +380,19 @@ const CSS = `
 /* a boat with a penalty to do: PEN, on her row of the board and on her tag */
 .b-pen { flex: none; display: inline-flex; align-items: center; align-self: center; height: 18px; padding: 0 var(--s-2); margin-right: var(--s-2); background: var(--live); color: var(--ink); font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
 .b-btag .b-pen { align-self: stretch; height: auto; margin: 0; padding: 0 var(--s-3); }
+/* the split at a mark, every boat's time there, in the board's place for a few seconds; the ones still to round in grey,
+   when they're due at their pace */
+.b-msplit { right: calc(28px + var(--sr)); top: calc(126px + var(--st)); width: 340px; flex-direction: column; animation: bc-slide-r .5s var(--ease) both; }
+.b-msplit .b-bh { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--rule); }
+.b-msplit .b-row .b-pos { width: 34px; }
+.b-msplit .b-row.rd .b-pos { background: var(--ink); color: var(--ink-on); }
+.b-msplit .b-row.me .b-pos { background: var(--you); color: var(--ink-on); }
+.b-msplit .b-tm { width: 56px; text-align: right; font: 600 var(--fs-row)/1 var(--cond); color: var(--ink-2); }
+.b-msplit .b-row .b-gp { min-width: 66px; }
+.b-msplit .b-row.due .b-nm, .b-msplit .b-row.due .b-tm, .b-msplit .b-row.due .b-gp { color: var(--ink-3); }
+.b-msplit .b-row.due .b-fl { opacity: .6; }
+.b-msplit .b-bf { padding: var(--s-2) var(--s-4) var(--s-3); border-top: 1px solid var(--rule-2); }
+#hud.bc .b-board.spl { display: none !important; }
 #bOver .b-pen[hidden] { display: none; }
 /* the call's two signs: a tack, or bear away (before the start) */
 .b-lay .i-bear { display: none; }
@@ -393,6 +408,11 @@ const CSS = `
   #hud.bc .b-ump .b-fl { width: 24px; height: 16px; }
   .b-ump .n-m { font-size: var(--fs-body); }
   .b-ump .b-umpr { font-size: var(--fs-small); }
+  .b-msplit { right: calc(16px + var(--sr)); top: calc(54px + var(--st)); width: 200px; }
+  .b-msplit .b-bh { padding: var(--s-2) var(--s-3); }
+  .b-msplit .b-bf, .b-msplit .b-tm { display: none !important; }
+  .b-msplit .b-row .b-pos { width: 22px; }
+  .b-msplit .b-row .b-gp { min-width: 0; }
   .b-pen { height: 14px; padding: 0 var(--s-1); margin-right: var(--s-1); }
   #hud.bc .b-bug, #hud.bc .b-state, #hud.bc .b-board .b-bh, #hud.bc .b-board .b-bf, #hud.bc .b-map .b-mh, #hud.bc .b-gunc, #hud.bc .b-bias, #hud.bc .b-legs, #hud.bc .b-wind .b-wt > .lbl:first-child, #hud.bc .b-dir { display: none !important; }
   #hud.bc .b-tr, #hud.bc .b-low { display: contents !important; }
@@ -464,7 +484,7 @@ const CSS = `
 } }
 @media not all and ${WIDE} { @media (orientation: portrait) {
   .b-wind { top: calc(56px + var(--st)); }
-  .b-board { top: calc(56px + var(--st)); }
+  .b-board, .b-msplit { top: calc(56px + var(--st)); }
   .b-btns { top: auto; right: calc(16px + var(--sr)); bottom: calc(250px + var(--sb)); flex-direction: column; }
   .b-map { top: calc(100px + var(--st)); }
   .b-calls { top: calc(208px + var(--st)); }
@@ -507,6 +527,23 @@ export const squareBearing = (c) => ((Math.round(Math.atan2(c.normal.x, -c.norma
 
 // How far the wind has swung since a first reading, in whole degrees: + veered (clockwise), − backed.
 export const veerBack = (now, first) => Math.round(wrap(now - first) / D2R);
+
+// When a boat still to round a mark is due there at her pace: the race's clock now plus her distance to it over the
+// speed she has made good towards it (m/s); null when she isn't closing on it, or it's more than a quarter of an hour off.
+export function dueAt(d, pace, clock) {
+  if (!(pace > 0.3) || !Number.isFinite(d)) return null;
+  const s = d / pace;
+  return s > 900 ? null : clock + s;
+}
+
+// A mark's split: the boats round it in the order they rounded (t, the race's clock there), then those still to round
+// by when they're due (due: true, t their estimate, or null with none, last). The gap is to the first one round.
+export function markSplit(list) {
+  const round = list.filter((r) => !r.due).sort((a, b) => a.t - b.t);
+  const due = list.filter((r) => r.due).sort((a, b) => (a.t ?? Infinity) - (b.t ?? Infinity));
+  const first = round.length ? round[0].t : null;
+  return [...round, ...due].map((r) => ({ ...r, gap: r.t == null || first == null ? null : r.t - first }));
+}
 
 const LEG = { start: 'lineStart', mark: 'mark', wing: 'wing', mark2: 'mark2', offset: 'offset', gate: 'gate', finish: 'finish' };
 // a leg's name, by its mark: on a trapezoid the windward mark is mark 1
@@ -563,13 +600,21 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     </div></div>`);
   const acts = html(`<div class="bx b-acts"></div>`);
   const goEl = html(`<div class="b-go" aria-hidden="true"></div>`), fin = html(`<div class="b-fin" role="status"><span class="k"></span><b></b></div>`);
-  // the umpire's card, over the calls
+  // the umpire's card, over the calls; the split at a mark, in the board's place
   const ump = html(`<div class="b-ump" role="status" hidden><div class="b-umph"><svg viewBox="0 0 16 18" aria-hidden="true"><path d="M2 1v16" stroke="currentColor" stroke-width="2"/><path d="M3 2h11v8H3z" fill="currentColor"/></svg><span>${L.umpire}</span></div>
     <div class="pn b-umpb"><img class="b-fl" alt="" hidden><div class="b-umpt"><span class="n-m"><span class="nm"></span><span class="lbl b-me"></span></span><span class="b-umpr"></span><span class="lbl b-umpv"></span></div></div>
     <div class="b-timer" aria-hidden="true"><i></i></div></div>`);
   calls.append(ump);
   const U = { fl: q(ump, '.b-fl'), nm: q(ump, '.nm'), me: q(ump, '.b-me'), r: q(ump, '.b-umpr'), v: q(ump, '.b-umpv'), bar: q(ump, '.b-timer i') };
-  hud.append(bug, calls, top, tr, board, map, low, acts, goEl, fin);
+  const msplit = html(`<div class="bx pn b-msplit" role="status" hidden><div class="b-bh"><span class="lbl-ink"></span><span class="lbl">${L.timeGap}</span></div><div class="b-rows"></div>
+    <div class="b-bf"><span class="lbl">${L.due}</span></div><div class="b-timer" aria-hidden="true"><i></i></div></div>`);
+  const MS = { k: q(msplit, '.lbl-ink'), bar: q(msplit, '.b-timer i'), rows: [] };
+  for (let n = 0; n < 6; n++) {
+    const r = html(`<div class="b-row"><b class="b-pos"></b><img class="b-fl" alt="" hidden><span class="b-nm"></span><b class="b-pen" hidden>${L.pen}</b><span class="b-tm"></span><span class="b-gp"></span></div>`);
+    q(msplit, '.b-rows').append(r);
+    MS.rows.push({ el: r, pos: q(r, '.b-pos'), fl: q(r, '.b-fl'), nm: q(r, '.b-nm'), pen: q(r, '.b-pen'), tm: q(r, '.b-tm'), gp: q(r, '.b-gp') });
+  }
+  hud.append(bug, calls, top, tr, board, msplit, map, low, acts, goEl, fin);
   const windBox = q(tr, '.b-wind');
   const B = {
     sub: q(bug, '.b-sub'), clock: q(bug, '.b-clock'), gun: q(top, '.b-gun'), gunN: q(top, '.b-gunn'), seq: q(top, '.b-seq'), seqI: q(top, '.b-seq i'), seqL: q(top, '.b-seql'),
@@ -696,9 +741,10 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   let twaS = null, lastCount = '', legsKey = '', seqKey = '', raceRef = null, wasLead = null, wasPre = true, wasDone = false, wasShift = '', pulseAt = -1e9;
   // each boat's leg as last seen, and when each boat reached each mark (the race's clock), for the splits
   const legOf = new Map(), atMark = [];
-  // the umpire's card, while it shows (seconds left); the wind's first reading; the start's call as last made
-  let umpT = 0, wind0 = null, burnK = null;
-  const UMP_S = 7;
+  // the umpire's card and the split at a mark, while they show (seconds left); the wind's first reading, the start's
+  // call as last made
+  let umpT = 0, spl = null, wind0 = null, burnK = null;
+  const UMP_S = 7, SPLIT_S = 8;
   // play a one-off animation again: the class off, a reflow, on, and off when it's done
   // a boat's flag (its picture's address, from main.js: the fleet's from their looks, yours from the boat page), yours
   // read once a race
@@ -716,7 +762,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   function update(P, dt) {
     if (!on) return;
     const race = getRace(), c = race.course, kn = P.v / KN, twa = P.twa, pre = race.clock < 0, done = !!P.done;
-    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; mySail = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); umpT = 0; ump.hidden = true; wind0 = race.wind.dir(); burnK = null; intro(); }
+    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; mySail = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); umpT = 0; ump.hidden = true; spl = null; msplit.hidden = true; board.classList.remove('spl'); wind0 = race.wind.dir(); burnK = null; intro(); }
     const leg = c.legs[P.leg], nLegs = c.legs.length - 1;
     // the order: before the gun, nearest the line first; then the race's
     const toLine = (b) => Math.max(0, -race.lineInfo(b).d);
@@ -727,21 +773,19 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     // the gun: GO, unless you're over
     if (wasPre && !pre && !P.ocs) { txt(goEl, L.go); flash(goEl, 'on', 1500); }
     wasPre = pre;
-    // every boat's roundings, as they happen; yours cut to a split: where, your place, the clock, the gap to the first there
+    // every boat's roundings, as they happen. Yours: over the start line a strip (your place, how long after the gun);
+    // at a mark the full split, every boat's time there, in the board's place
     if (!pre) for (const b of race.boats) {
       const was = legOf.get(b) ?? b.leg;
       for (let l = was + 1; l <= b.leg; l++) (atMark[l] ||= new Map()).set(b, race.clock);
       legOf.set(b, b.leg);
-      if (b === P && P.leg > was && !done) {
-        const times = [...atMark[P.leg].values()], first = Math.min(...times), mine = atMark[P.leg].get(P), atStart = P.leg === 1;
-        txt(SP.k, atStart ? L.start : t(legKey(c, c.legs[P.leg - 1])));
-        txt(SP.t, L.ord(st.indexOf(P) + 1));
-        txt(SP.v, fmt(race.clock));
-        txt(SP.g, atStart ? `+${fmt(race.clock)} ${L.afterGun}` : mine <= first ? L.leads : `+${fmt(mine - first)}`);
-        cls(SP.g, `g ${atStart ? '' : mine <= first ? 'gold' : 'down'}`);
-        flash(split, 'on', 4800);
-      }
+      if (b !== P || P.leg <= was || done) continue;
+      if (P.leg > 1) { spl = { l: P.leg, n: -1, left: SPLIT_S }; split.classList.remove('on'); continue; }
+      txt(SP.k, L.start); txt(SP.t, L.ord(st.indexOf(P) + 1)); txt(SP.v, fmt(race.clock));
+      txt(SP.g, `+${fmt(race.clock)} ${L.afterGun}`); cls(SP.g, 'g');
+      flash(split, 'on', 4800);
     }
+    if (spl) markSplitShow(race, c, P, dt);
     // the umpire's card runs down, then goes
     if (umpT > 0) { umpT -= dt; U.bar.style.width = `${(clamp(umpT / UMP_S, 0, 1) * 100).toFixed(1)}%`; if (umpT <= 0) ump.hidden = true; }
     // the finish
@@ -1069,6 +1113,40 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       ch.out = true; ch.el.classList.remove('in'); ch.el.classList.add('out');
       ch.timer = setTimeout(() => { ch.el.remove(); live.delete(key); }, 800);
     }
+  }
+
+  // the split at the mark you've just rounded, in the board's place: filled as it opens and again as each boat rounds
+  // while it shows (not every frame); the ones still to round greyed, with when they're due at their pace now
+  function markSplitShow(race, c, P, dt) {
+    spl.left -= dt;
+    if (spl.left <= 0) { spl = null; msplit.hidden = true; board.classList.remove('spl'); return; }
+    MS.bar.style.width = `${(clamp(spl.left / SPLIT_S, 0, 1) * 100).toFixed(1)}%`;
+    const at = atMark[spl.l];
+    if (!at || at.size === spl.n) return;
+    if (spl.n < 0) { msplit.hidden = false; board.classList.add('spl'); }
+    spl.n = at.size;
+    const ml = spl.l - 1; // the mark: where the leg before this one went
+    remaining(race, P); // (the legs' lengths, for this course)
+    const rows = markSplit(race.boats.map((b) => {
+      if (at.has(b)) return { b, t: at.get(b) };
+      // her pace: how much nearer the mark she has got since this leg began, a second (on a beat that counts her tacks)
+      const t0 = atMark[ml]?.get(b), d = race.distToNext(b);
+      if (b.done || b.dsq || b.leg !== ml || t0 === undefined || race.clock - t0 < 15) return { b, due: true, t: null };
+      return { b, due: true, t: dueAt(d, (lens[ml] - d) / (race.clock - t0), race.clock) };
+    }));
+    const iP = rows.findIndex((r) => r.b === P);
+    const show = iP < 6 ? rows.slice(0, 6) : [...rows.slice(0, 5), rows[iP]], cx = iP < 3 ? rows.slice(0, 3) : [...rows.slice(0, 2), rows[iP]];
+    txt(MS.k, `${t(legKey(c, c.legs[ml]))} · ${L.split}`);
+    MS.rows.forEach((r, n) => {
+      const x = show[n];
+      r.el.hidden = !x; if (!x) return;
+      const me = x.b === P, i = rows.indexOf(x) + 1, lead = i === 1 && !x.due;
+      cls(r.el, `b-row${me ? ' me' : ''}${x.due ? ' due' : ' rd'}${lead ? ' first' : ''}${cx.includes(x) ? '' : ' cxh'}`);
+      txt(r.pos, String(i));
+      txt(r.nm, me ? t('you') : x.b.name); setFlag(r.fl, flagOf(x.b, me)); showPen(r.pen, x.b);
+      txt(r.tm, x.t == null ? '—' : fmt(x.t));
+      txt(r.gp, x.gap == null ? '—' : lead ? L.leads : `+${fmt(x.gap)}`); r.gp.classList.toggle('dim', lead);
+    });
   }
 
   // the umpire's call on a foul that involves you (main.js hands over the race's message: 'fouled', you fouled a.who;

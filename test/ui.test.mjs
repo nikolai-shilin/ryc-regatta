@@ -115,6 +115,20 @@ test('the line is square to the wind from its square bearing; veer and back agai
   assert.equal(veerBack(1 * D2R, 357 * D2R), 4);
 });
 
+test('the split at a mark: the boats round in order, then the rest by when they are due', async () => {
+  const { markSplit, dueAt } = await import('../public/game/hud-bc.js');
+  assert.equal(dueAt(100, 4, 460), 485); // 100 m off at 4 m/s made good towards it: 25 s on
+  assert.equal(dueAt(100, 0.2, 460), null); // not closing on it
+  assert.equal(dueAt(100, -3, 460), null); // sailing away from it
+  assert.equal(dueAt(5000, 4, 460), null); // more than a quarter of an hour off
+  const rows = markSplit([
+    { b: 'C', due: true, t: 490 }, { b: 'A', t: 462 }, { b: 'E', due: true, t: null }, { b: 'B', t: 471 }, { b: 'D', due: true, t: 485 },
+  ]);
+  assert.deepEqual(rows.map((r) => r.b), ['A', 'B', 'D', 'C', 'E']);
+  assert.deepEqual(rows.map((r) => r.gap), [0, 9, 23, 28, null]);
+  assert.deepEqual(markSplit([{ b: 'A', due: true, t: 500 }]).map((r) => r.gap), [null]); // nobody round yet: no gaps
+});
+
 // a selector list split at its own commas, not those inside :is(…) or :not(…)
 function topLevel(list) {
   const out = []; let depth = 0, cur = '';
