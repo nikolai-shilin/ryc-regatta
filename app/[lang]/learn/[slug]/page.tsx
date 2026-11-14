@@ -5,7 +5,8 @@ import { getT } from '@/lib/i18n';
 import { pageMeta, jsonLd, langUrl, SITE, OG_IMAGE } from '@/lib/seo';
 import { GUIDES, guide, isGuide } from '@/lib/guides';
 import { IconArrow } from '@/components/ui';
-import { SiteHead, SiteFoot } from '@/components/site-chrome';
+import { SiteHead, SiteFoot, Trail, type Crumb } from '@/components/site-chrome';
+import { Toc } from '@/components/toc';
 
 type Props = { params: Promise<{ lang: string; slug: string }> };
 // when the guides were written, and last changed: for the Article data below
@@ -23,12 +24,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { ...meta, openGraph: { ...meta.openGraph, type: 'article', publishedTime: PUBLISHED, modifiedTime: MODIFIED, authors: ['RYC'] } };
 }
 
-// L1 · A guide: the title and the intro, the sections one after another, then the game, where you try it.
+// L1 · A guide: the title and the intro, the sections one after another (the contents beside them on a wide screen),
+// then the game, where you try it, and three ways on: the most relevant reading, the glossary, and the next guide.
 export default async function GuidePage({ params }: Props) {
   const [{ slug }, { lang, t }] = await Promise.all([params, getT(params)]);
   if (!isGuide(slug)) notFound();
   const g = guide(slug, t, lang);
-  const others = GUIDES.filter((s) => s !== slug).map((s) => guide(s, t, lang));
+  const crumbs: Crumb[] = [[t('Learn to race', 'Учись гоняться'), '/learn'], [g.short, `/learn/${slug}`]];
+  const contents: [string, string][] = g.sections.map((s) => [s.id, s.h.replace(/ \(rules? [^)]*\)| \(правил[ао] [^)]*\)/, '')]);
+  // Read more: the guide's first further reading, its glossary link (or the glossary), then the next guide in order (the
+  // last one goes back to the first); any other reading under them
+  const next = guide(GUIDES[(GUIDES.indexOf(slug) + 1) % GUIDES.length], t, lang);
+  const gloss = g.more.find((m) => m.href.startsWith('/learn/glossary'));
+  const related = g.more.find((m) => m !== gloss);
+  const rest = g.more.filter((m) => m !== gloss && m !== related);
+  const glossLabel = gloss ? gloss.label.replace(/^(Glossary|Словарь): (.)/, (_, _w, c: string) => c.toUpperCase()) : t('Sailing racing glossary', 'Словарь парусных гонок');
+  const cards: [string, string, string][] = [
+    ...(related ? [[t('Further reading', 'Подробнее'), related.label, related.href] as [string, string, string]] : []),
+    [t('Glossary', 'Словарь'), glossLabel, gloss?.href || '/learn/glossary'],
+    [t('Next guide', 'Следующее пособие'), next.short, `/learn/${next.slug}`],
+  ];
+  const go = (href: string, cls: string, body: React.ReactNode) => (href.startsWith('/')
+    ? <Link key={href} className={cls} href={href}>{body}</Link>
+    : <a key={href} className={cls} href={href}>{body}</a>);
   const url = SITE + langUrl(`/learn/${slug}`, lang);
   const ld = {
     '@context': 'https://schema.org', '@type': 'Article', headline: g.title, description: g.description, inLanguage: lang,
@@ -41,41 +59,46 @@ export default async function GuidePage({ params }: Props) {
   return (
     <div className="scr help hp bc" lang={lang}>
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
-      <SiteHead lang={lang} t={t} page="learn" crumbs={[[t('Learn to race', 'Учись гоняться'), '/learn'], [g.short, `/learn/${slug}`]]} />
+      <SiteHead lang={lang} t={t} page="learn" crumbs={crumbs} />
       <header className="hm-page hm-ph">
-        <Link className="kicker" href="/learn">{g.kicker}</Link>
+        <Trail t={t} crumbs={crumbs} />
+        <span className="kicker">{g.kicker}</span>
         <h1 className="hm-ph-h">{g.title}</h1>
         <p className="hm-text">{g.intro}</p>
-        <nav className="hm-ph-nav" aria-label={t('Contents', 'Содержание')}>
-          {g.sections.map((s) => <a key={s.id} className="hm-chip" href={`#${s.id}`}>{s.h.replace(/ \(rules? [^)]*\)| \(правил[ао] [^)]*\)/, '')}</a>)}
+        <nav className="hm-ph-nav rd-chips" aria-label={t('Contents', 'Содержание')}>
+          {contents.map(([id, h]) => <a key={id} className="hm-chip" href={`#${id}`}>{h}</a>)}
         </nav>
       </header>
 
-      <article className="hm-page gd">
-        {g.sections.map((s, i) => (
-          <section key={s.id} id={s.id} className="gd-sec" data-n={String(i + 1).padStart(2, '0')} aria-labelledby={`${s.id}-t`}>
-            <h2 id={`${s.id}-t`}>{s.h}</h2>
-            {s.p.map((p, j) => <p key={j}>{p}</p>)}
-          </section>
-        ))}
-      </article>
+      <div className="hm-page rd-layout">
+        <Toc items={contents} label={t('Contents', 'Содержание')} numbered />
+        <div className="rd-main">
+          <article className="gd">
+            {g.sections.map((s, i) => (
+              <section key={s.id} id={s.id} className="gd-sec" data-n={String(i + 1).padStart(2, '0')} aria-labelledby={`${s.id}-t`}>
+                <h2 id={`${s.id}-t`}>{s.h}</h2>
+                {s.p.map((p, j) => <p key={j}>{p}</p>)}
+              </section>
+            ))}
+          </article>
 
-      <div className="hm-band">
-        <section className="hm-page hm-sec hm-help" aria-labelledby="gd-try">
-          <div className="hm-help-main">
-            <span className="kicker">{t('Now try it', 'Теперь попробуй')}</span>
-            <h2 className="hm-h2" id="gd-try">{t('On the water, in your browser', 'На воде, прямо в браузере')}</h2>
-            <p className="hm-text">{g.try.text} {t('Up and down is free, on a phone or a computer, with nothing to install.', 'Up and down бесплатна, на телефоне или компьютере, ничего не нужно устанавливать.')}</p>
-            <Link className="pill pill-primary hm-cta" href={g.try.href}><span className="btn-t">{g.try.label}</span><IconArrow /></Link>
-          </div>
-          <div className="hm-help-side gd-more">
-            <span className="kicker">{t('Read more', 'Читать дальше')}</span>
-            {g.more.map((m) => (m.href.startsWith('/')
-              ? <Link key={m.href} className="hm-src" href={m.href}>{m.label}<IconArrow s={14} /></Link>
-              : <a key={m.href} className="hm-src" href={m.href}>{m.label}<IconArrow s={14} /></a>))}
-            {others.map((o) => <Link key={o.slug} className="hm-src" href={`/learn/${o.slug}`}>{o.short}<IconArrow s={14} /></Link>)}
-          </div>
-        </section>
+          <section className="gd-try" aria-labelledby="gd-try">
+            <div className="gd-try-t">
+              <span className="gd-try-k">{t('Now try it', 'Теперь попробуй')}</span>
+              <h2 className="hm-h2" id="gd-try">{t('On the water, in your browser', 'На воде, прямо в браузере')}</h2>
+              <p>{g.try.text} {t('Up and down is free, on a phone or a computer, with nothing to install.', 'Up and down бесплатна, на телефоне или компьютере, ничего не нужно устанавливать.')}</p>
+            </div>
+            <Link className="gd-try-go" href={g.try.href}>{g.try.label}<IconArrow /></Link>
+          </section>
+
+          <section className="gd-more" aria-labelledby="gd-more">
+            <h2 className="lbl-ink" id="gd-more">{t('Read more', 'Читать дальше')}</h2>
+            <div className="gd-next">
+              {cards.map(([k, label, href]) => go(href, 'gd-next-card', <><span className="lbl">{k}</span><span className="card-title">{label}</span><IconArrow s={16} /></>))}
+            </div>
+            {rest.length > 0 && <p className="gd-also">{rest.map((m) => go(m.href, 'hm-src', <>{m.label}<IconArrow s={14} /></>))}</p>}
+          </section>
+        </div>
       </div>
 
       <SiteFoot lang={lang} t={t} back={`/learn/${slug}`} />

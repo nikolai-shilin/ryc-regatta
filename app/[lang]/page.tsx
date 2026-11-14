@@ -279,7 +279,7 @@ export default async function Home({ params }: LangParams) {
               <span className="ho-k">Sailing Certification Test</span>
               <h2 className="ho-h2" id="h-rules">{t('Learn the rules there, race by them here', 'Учи правила там, гоняйся по ним здесь')}</h2>
               <p className="ho-ps">{t('Up and down comes from RYC, the team behind Sailing Certification Test, the free trainer for sailing certificate exams. The computer boats give way by the same rules the exam asks about, so every race is revision you can feel on the water.', 'Up and down делает RYC — команда, которая сделала Sailing Certification Test, бесплатный тренажёр к экзаменам на яхтенные сертификаты. Компьютерные лодки уступают по тем же правилам, что спрашивают на экзамене, так что каждая гонка — повторение, которое чувствуешь на воде.')}</p>
-              <a className="ho-ghost" href="https://iyt.rycrentals.com/">{t('Exam practice · 6100 questions', 'Подготовка к экзамену · 6100 вопросов')}<IconArrow s={16} /></a>
+              <Link className="ho-ghost" href="/iyt">{t('Exam practice · 6100 questions', 'Подготовка к экзамену · 6100 вопросов')}<IconArrow s={16} /></Link>
             </div>
             <div className="ho-rules">
               <span className="lbl">{t('Rules you meet on the first beat', 'Правила, которые встретишь на первой лавировке')}</span>

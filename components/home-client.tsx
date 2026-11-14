@@ -9,8 +9,8 @@ const IconBurger = () => <svg viewBox="0 0 24 24" width={20} height={20} fill="n
 const IconUser = () => <svg viewBox="0 0 16 16" width={16} height={16} aria-hidden="true"><circle cx="8" cy="5.2" r="2.8" fill="currentColor" /><path d="M2.5 14.5c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6z" fill="currentColor" /></svg>;
 
 // The header's menu: the burger and your avatar (your initials once signed in, from lib/me.ts: the pages are cached,
-// so whether you are is drawn by CSS, .if-me and .if-guest). It holds the account pages, and on a
-// narrow screen, where the header's links are hidden, the site's pages too.
+// so whether you are is drawn by CSS, .if-me and .if-guest). It holds the account pages (Sign in too, where the bar has
+// no room for its own button), and on a narrow screen, where the header's links are hidden, the site's pages too.
 export function SiteMenu({ lang }: { lang: Lang }) {
   const t = tx(lang);
   const ref = useRef<HTMLDetailsElement>(null);
@@ -23,7 +23,7 @@ export function SiteMenu({ lang }: { lang: Lang }) {
     <details className="hm-menu" ref={ref}>
       <summary className="hm-prof" aria-label={t('Menu', 'Меню')}><IconBurger /><span className="hm-av"><IconUser /><span className="me-ini" /></span></summary>
       <div className="hm-menu-pop">
-        <Link className="hm-mi if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link>
+        <Link className="hm-mi hm-mi-signin if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link>
         <Link className="hm-mi" href="/boat">{t('Your boat', 'Твоя яхта')}</Link>
         <Link className="hm-mi" href="/settings">{t('Settings', 'Настройки')}</Link>
         <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы')}>
@@ -32,8 +32,9 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня')}</Link>
           <Link className="hm-mi" href="/race/rating">{t('Rating', 'Рейтинг')}</Link>
           <Link className="hm-mi" href="/race/free">{t('Free race', 'Свободная гонка')}</Link>
+          <Link className="hm-mi" href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
           <Link className="hm-mi" href="/faq">{t('Questions', 'Вопросы')}</Link>
-          <Link className="hm-mi" href="/iyt">{'Sailing Certification Test'}</Link>
+          <Link className="hm-mi hm-mi-x" href="/iyt">{'Sailing Certification Test'}</Link>
         </nav>
       </div>
     </details>
