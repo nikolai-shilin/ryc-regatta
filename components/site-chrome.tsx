@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import Link from 'next/link';
 import type { Lang, T } from '@/lib/lang';
 import { SITE, jsonLd, langUrl } from '@/lib/seo';
@@ -8,7 +9,7 @@ type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'set
 
 // Where each page sits under Home, for the breadcrumb trail search engines show instead of the bare address
 // (BreadcrumbList). A guide passes its own trail: Home › Learn to race › the guide.
-type Crumb = [name: string, path: string];
+export type Crumb = [name: string, path: string];
 const CRUMBS: Partial<Record<Page, [en: string, ru: string, path: string]>> = {
   help: ['How to play', 'Как играть', '/help'], faq: ['Questions', 'Вопросы', '/faq'], race: ['Today’s race', 'Гонка дня', '/race'],
   free: ['Free race', 'Свободная гонка', '/race/free'], boat: ['Your boat', 'Твоя яхта', '/boat'],
@@ -20,6 +21,18 @@ function Breadcrumbs({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Page; 
   if (!trail.length) return null;
   const items = [[t('Home', 'Главная'), '/'] as Crumb, ...trail].map(([name, path], i) => ({ '@type': 'ListItem', position: i + 1, name, item: SITE + langUrl(path, lang) }));
   return <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: items })} />;
+}
+
+// The same trail where the reader sees it, over a guide's or the glossary's head: without Home (the name in the header
+// goes there), the last step the page itself.
+export function Trail({ t, crumbs }: { t: T; crumbs: Crumb[] }) {
+  return (
+    <nav className="rd-trail" aria-label={t('Breadcrumb', 'Навигационная цепочка')}>
+      {crumbs.map(([name, path], i) => (i < crumbs.length - 1
+        ? <Fragment key={path}><Link href={path}>{name}</Link><span aria-hidden="true">/</span></Fragment>
+        : <span key={path} aria-current="page">{name}</span>))}
+    </nav>
+  );
 }
 
 // The site's header, as on rycrentals.com: the logo, the site's pages in the middle (from 1100 px wide), and the menu

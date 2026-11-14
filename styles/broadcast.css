@@ -563,6 +563,25 @@
 .bc .gd-term dd { font: 500 var(--fs-body)/1.6 var(--sans); color: var(--ink-2); }
 .bc .gd-term:target { background: var(--fill-1); box-shadow: -12px 0 0 var(--fill-1), 12px 0 0 var(--fill-1); }
 .bc .gd-see { color: var(--you); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); }
+/* a guide's end: Now try it in solid blue, then three ways on, the next guide last */
+.bc .gd-try { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-6); padding: var(--s-8); background: var(--you); color: var(--ink-on); }
+.bc .gd-try-t { flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); }
+.bc .gd-try-k { font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.bc .gd-try .hm-h2 { color: var(--ink-on); }
+.bc .gd-try p { margin: 0; max-width: 62ch; font: 500 var(--fs-body)/1.5 var(--sans); }
+.bc .gd-try-go { display: inline-flex; align-items: center; gap: var(--s-3); min-height: var(--h-l); padding: 0 var(--s-8); background: var(--ink-on); color: var(--ink); text-decoration: none;
+  font: 700 var(--fs-row)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; transition: filter var(--t-quick), scale .12s; }
+.bc .gd-try-go:hover { filter: brightness(1.5); }
+.bc .gd-try-go:active { scale: .97; }
+.bc .gd-more { gap: var(--s-4); padding-block: var(--s-12) var(--hm-sec); }
+.bc .gd-more h2 { margin: 0; }
+.bc .gd-next { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--s-2); }
+.bc .gd-next-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-2) var(--s-4); min-height: 72px; padding: var(--s-4) var(--s-5); background: var(--surface); color: var(--ink); text-decoration: none;
+  transition: box-shadow var(--t-quick); }
+.bc .gd-next-card:hover { box-shadow: inset 0 0 0 1px var(--w-25); }
+.bc .gd-next-card .card-title { font-size: var(--fs-lead); text-transform: uppercase; }
+.bc .gd-next-card svg { grid-column: 2; grid-row: 1 / span 2; color: var(--you); }
+.bc .gd-also { margin: var(--s-2) 0 0; display: flex; flex-wrap: wrap; gap: var(--s-6); }
 /* the exam trainer */
 .bc .iyt-card { border-radius: 0; background: var(--surface); }
 .bc .hm-help-side .iyt-card { border: 0; border-left: 4px solid var(--you); }
@@ -592,6 +611,12 @@
   .bc .rd-main :is(.hlegend, .hrules) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bc .rd-main > .rd-end > .hm-sec { padding: var(--s-8); margin-bottom: var(--hm-sec); background: var(--panel-2); }
 }
+/* the trail over a guide's or the glossary's head: Learn to race / the page */
+.bc .rd-trail { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--s-3); margin-bottom: calc(-1 * var(--s-2));
+  font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .rd-trail a { display: inline-flex; align-items: center; min-height: var(--h-m); color: var(--ink-2); text-decoration: none; transition: color var(--t-quick); }
+.bc .rd-trail a:hover { color: var(--ink); }
+.bc .rd-trail [aria-current] { color: var(--ink); font-weight: 700; }
 /* the start sequence, a cell a signal with its flag; the gun marked in blue. The flags' blue is their cloth's, as the
    game flies them (public/play/index.html), the one colour here not from the tokens. */
 .bc .rd-flags { --flag-blue: #1f4fa8; list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 1px; background: var(--rule); }
