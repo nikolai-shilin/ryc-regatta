@@ -8,8 +8,9 @@ import { DailyLock } from '@/components/daily-lock';
 import { ruPlural } from '@/lib/lang';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, SHAPE_NAME } from '@/lib/race';
 import { venueOf } from '@/lib/venues';
-import { IconBack, IconPlay, IconTrophy, IconSliders, IconSail, Num, clock } from '@/components/ui';
-import { FreeQuick } from '@/components/hub-client';
+import { IconBack, IconPlay, IconTrophy, IconSliders, Num, clock } from '@/components/ui';
+import { BoatRow, FreeQuick } from '@/components/hub-client';
+import { SceneBrand } from '@/components/scene-brand';
 import { GameScene } from '@/components/game-scene';
 import { PauseCard, SettingsRow, type Who } from '@/components/pause-card';
 import { MyRow } from '@/components/home-client';
@@ -45,15 +46,14 @@ export default async function Hub({ params }: LangParams) {
         <div className="bt-info">
           <div className="bt-top">
             <Link className="bt-back" href="/" aria-label={t('Home', 'На главную')}><IconBack /></Link>
-            <span className="bt-kick">{t('Today’s race', 'Гонка дня')} · {date}</span>
+            <SceneBrand />
             <span className="bt-top-r">
+              <span className="bt-tick"><span className="dot-live" aria-hidden="true" /><time dateTime={d.day}>{date}</time></span>
               <Link className="bt-ico" href="/help" aria-label={t('How to play', 'Как играть')} title={t('How to play', 'Как играть')}>?</Link>
-              {who
-                ? <Link className="bt-acct bt-acct-me" href="/settings" aria-label={t(`Settings, signed in as ${who.name || who.email}`, `Настройки, вход как ${who.name || who.email}`)}>{who.initials}</Link>
-                : <Link className="bt-acct" href="/sign-in?next=/race">{t('Sign in', 'Войти')}</Link>}
             </span>
           </div>
-          <h1 className="bt-h">{v.name[L]}</h1>
+          <span className="bt-kick">{t('Today’s race', 'Гонка дня')}</span>
+          <h1 className="bt-h bt-hero">{v.name[L]}</h1>
           <p className="bt-p">{v.place[L]}. {v.about[L]} {best
             ? t(`The same race for everyone today: ${races} sailed so far.`, `Сегодня у всех одна гонка: уже ${races} ${ruPlural(races, ['заезд', 'заезда', 'заездов'])}.`)
             : t('The same race for everyone today. Nobody has finished it yet.', 'Сегодня у всех одна гонка. Её ещё никто не прошёл.')}</p>
@@ -66,6 +66,12 @@ export default async function Hub({ params }: LangParams) {
         </div>
 
         <PauseCard lang={lang} who={who} back="/race" label={t('Today’s race', 'Гонка дня')}>
+          <div className="bt-card-h">
+            <span className="lbl-ink">{t('Today’s race', 'Гонка дня')}</span>
+            {who
+              ? <Link className="bt-acct bt-acct-me" href="/settings" aria-label={t(`Settings, signed in as ${who.name || who.email}`, `Настройки, вход как ${who.name || who.email}`)}>{who.initials}</Link>
+              : <Link className="bt-acct" href="/sign-in?next=/race">{t('Sign in', 'Войти')}</Link>}
+          </div>
           <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Start today’s race', 'Начать гонку дня')}</span></a>
           <div className="bt-g">
             <span className="bt-k"><IconTrophy />{t('Today’s fastest', 'Самые быстрые сегодня')}{races ? <span className="bt-k-r">{t(`${races} ${races === 1 ? 'race' : 'races'}`, `заездов: ${races}`)}</span> : null}</span>
@@ -84,8 +90,8 @@ export default async function Hub({ params }: LangParams) {
           <FreeQuick lang={lang} />
           <div className="bt-rows">
             <button type="button" className="bt-row" data-lock aria-haspopup="dialog"><IconSliders /><span>{t('Change the wind or course', 'Изменить ветер или дистанцию')}</span><span className="bt-row-m">{t('A free race', 'Свободная гонка')}</span></button>
-            <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
-            <SettingsRow lang={lang} />
+            <BoatRow lang={lang} />
+            <SettingsRow lang={lang} note />
           </div>
         </PauseCard>
       </div>

@@ -166,8 +166,10 @@
 /* the picture still being drawn: a sheen running over the tile */
 .bc .sk { background-image: linear-gradient(100deg, transparent 30%, var(--w-08) 50%, transparent 70%) !important; background-size: 220% 100% !important;
   background-color: var(--fill-1); animation: bc-sheen 1.3s linear infinite; }
-.bc .bt-card .sw { border-radius: 0; }
-.bc .bt-card .sw[aria-checked="true"] { box-shadow: var(--hairline), 0 0 0 2px var(--ground), 0 0 0 4px var(--ink); }
+/* a swatch is a touch's size, the one picked ringed in blue */
+.bc .bt-card .sws { gap: var(--s-2); }
+.bc .bt-card .sw { width: var(--h-m); height: var(--h-m); border-radius: 0; }
+.bc .bt-card .sw[aria-checked="true"] { box-shadow: var(--hairline), 0 0 0 2px var(--ground), 0 0 0 4px var(--you); }
 .bc .bt-card .num-in { height: var(--h-m); border: 0; border-bottom: 2px solid var(--w-35); border-radius: 0; background: var(--fill-1); font: 700 var(--fs-lead)/1 var(--cond); }
 .bc .bt-card .num-in:focus { border-bottom-color: var(--you); background: var(--w-10); }
 .bc .bt-card .logo-thumb { border-radius: 0; }
@@ -295,6 +297,79 @@
   .bc .rs-more { padding: var(--s-10) var(--s-6) var(--s-12); }
   .bc .rs-down { display: none; }
 }
+
+/* ---------- the scene pages' own pieces, as the design draws them ---------- */
+/* the top bar: the back button, the game's name as the title block, and on the hub a ticker with the day */
+.bc .bt-brand { display: inline-flex; align-items: stretch; flex: none; height: 36px; color: var(--ink); }
+.bc .bt-brand i { width: 5px; background: var(--you); }
+.bc .bt-brand > span { display: flex; align-items: center; padding: 0 var(--s-3); background: var(--panel-2); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  font: 700 var(--fs-lead)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; white-space: nowrap; }
+.bc .bt-top-r { align-items: center; }
+.bc .bt-tick { display: inline-flex; align-items: center; gap: var(--s-2); height: 36px; padding: 0 var(--s-4); background: var(--panel-2); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; white-space: nowrap; color: var(--ink); }
+.bc .bt-info > .bt-kick, .bc .bt-kicks { align-self: flex-start; }
+.bc .bt-kicks { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.bc .bt-kick-w { background: var(--ink); }
+/* a card's header: what it holds, and one control on the right */
+.bc .bt-card-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); margin: calc(-1 * var(--cp)) calc(-1 * var(--cp)) 0;
+  padding: var(--s-2) var(--s-2) var(--s-2) var(--cp); border-bottom: 1px solid var(--rule); }
+.bc .bt-card-h .bt-acct { flex: none; width: auto; background: var(--fill-2); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.bc .bt-card-h .bt-acct:hover { background: var(--w-14); }
+.bc .bt-card-h .bt-acct-me, .bc .bt-card-h .bt-acct-me:hover { background: var(--you); }
+/* the rows' notes on the right: what's set now */
+/* (the note gives way first, then the row's name) */
+.bc .bt-rows .bt-row > span { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc .bt-rows .bt-row > .bt-row-m { flex-shrink: 100; }
+/* the wind's number after its name, smaller */
+.bc .bt-pill small { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); opacity: .7; }
+/* the hub's headline at the hero's size on a computer (it comes down with the screen) */
+@container scr (min-width: 1024px) and (min-height: 640px) { .bc .bt-h.bt-hero { font-size: var(--fs-hero); } }
+/* a phone: the top bar's pieces a size smaller, so they keep to one line */
+@container scr (max-width: 599px) {
+  .bc .bt-top { gap: var(--s-2); }
+  .bc .bt-brand > span { padding: 0 var(--s-2); font-size: var(--fs-body); }
+  .bc .bt-tick { gap: 6px; padding: 0 var(--s-2); letter-spacing: var(--ls-button); }
+}
+
+/* the free race: four places and All, the race's size two to a row on a wide screen in a wider card */
+.bc .fs-where { display: flex; flex-wrap: wrap; gap: var(--s-1); }
+.bc .fs-all { gap: var(--s-2); padding: 0 var(--s-3) 0 var(--s-4); box-shadow: inset 0 0 0 1px var(--w-25); background: none; }
+.bc .fs-all::before { display: none; }
+.bc .fs-all svg { transition: rotate var(--t-quick); }
+.bc .fs-all[aria-expanded="true"] { background: var(--fill-2); box-shadow: inset 0 -3px 0 var(--you); }
+.bc .fs-all[aria-expanded="true"] svg { rotate: 180deg; }
+.bc .fs-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }
+/* upright on a phone the four and All keep to one row that scrolls sideways */
+@container scr (orientation: portrait) {
+  .bc .fs-one { flex-wrap: nowrap; margin: 0 calc(-1 * var(--cp)); padding: 0 var(--cp); overflow-x: auto; scrollbar-width: none; }
+  .bc .fs-one::-webkit-scrollbar { display: none; }
+  .bc .fs-one > .bt-pills { flex-wrap: nowrap; }
+  .bc .fs-one .bt-pill { flex: none; }
+}
+@container scr (min-width: 1280px) and (min-height: 640px) {
+  .bc.fs-scr .bt-card { width: 540px; }
+  .bc .fs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5) var(--s-4); }
+  .bc .fs-grid .bt-pill { flex: 1 1 auto; justify-content: center; padding: 0 var(--s-2); letter-spacing: var(--ls-name); }
+}
+
+/* the result: the time and the gap in columns of their own; Copy link beside Share */
+.bc .rs-lb .hm-t { flex: none; min-width: 56px; text-align: right; }
+.bc .rs-gap { flex: none; min-width: 52px; text-align: right; font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-3); }
+.bc .rs-share-b { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
+/* your boat: her flag and sail number as the headline; Back to the RYC colours in the card's head; the colours two to
+   a row on a wide screen in a wider card; the flag and the number side by side (the flag's list, open, takes the row) */
+.bc .bt-h-boat { display: flex; align-items: center; gap: 0.2em; }
+.bc .bt-h-flag { flex: none; width: 0.66em; height: 0.44em; object-fit: cover; box-shadow: 0 0 0 1px var(--w-35); }
+.bc .bt-card-h .bt-mini { display: inline-flex; align-items: center; gap: var(--s-2); height: var(--h-m); }
+.bc .bt-card-h .bt-mini svg { width: 14px; height: 14px; color: var(--ink-3); }
+.bc .bt-grid2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }
+.bc .bt-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--s-5) var(--s-4); }
+.bc .bt-pair > :has(.fp-pop) { grid-column: 1 / -1; }
+@container scr (min-width: 1024px) and (min-height: 640px) { .bc .bt-grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5) var(--s-4); } }
+@container scr (min-width: 1280px) and (min-height: 640px) { .bc .bt-card.bt-boat { width: 540px; } }
+
+.bc .bt-logo .bt-mini { height: var(--h-m); }
 
 /* ==========================================================================
    The site's own pages in the broadcast look (the home, the reading pages, settings and signing in): the old tokens
@@ -750,6 +825,11 @@
   .bc .adm-tow { padding-left: var(--s-6); }
   .bc .adm-tow::before { width: var(--s-6); }
 }
+/* each section headed by the white kick alone; the banner's words with their labels above the fields */
+.bc .adm-k { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-4); }
+.bc .adm .srow.adm-field { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: var(--s-2); padding: var(--s-2) 0; border-bottom: 0; }
+.bc .adm .srow.adm-field .srow-k { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .adm .srow.adm-field .adm-in { flex: none; width: 100%; }
 
 /* ---------- the user flows (the intro and settings flows canvas) ---------- */
 /* I1 · the hub's top right: How to play, and Sign in or your initials (A4) */

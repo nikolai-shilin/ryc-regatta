@@ -60,9 +60,9 @@ export function AdminForm({ lang, current }: { lang: Lang; current: { url: strin
   };
 
   return (
-    <div className="set-grid adm adm-jib">
+    <section className="set-grid adm adm-jib" aria-labelledby="adm-k-jib">
       <div className="set-sec">
-        <div className="group-k"><IconImage /><span className="kicker">{t('On every jib', 'На каждом стакселе')}</span></div>
+        <div className="adm-k"><span className="kicker" id="adm-k-jib">{t('On every jib', 'На каждом стакселе')}</span></div>
         <div className="adm-prev" aria-label={t('How it reads on white and on black sails', 'Как она смотрится на белых и чёрных парусах')}>
           {['#f4f2ea', '#2a2c30'].map((c) => (
             <div key={c} className="adm-sail" style={{ background: c }}>
@@ -89,7 +89,7 @@ export function AdminForm({ lang, current }: { lang: Lang; current: { url: strin
           <a className="srow-link" href="/boat">{t('Your boat', 'Ваша яхта')}<IconArrow s={14} /></a>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -125,9 +125,9 @@ export function BannerForm({ lang, current }: { lang: Lang; current: string[] | 
   };
 
   return (
-    <div className="set-grid adm adm-banner">
+    <section className="set-grid adm adm-banner" aria-labelledby="adm-k-ban">
       <div className="set-sec">
-        <div className="group-k"><IconImage /><span className="kicker">{t('On the plane’s banner', 'На баннере самолёта')}</span></div>
+        <div className="adm-k"><span className="kicker" id="adm-k-ban">{t('On the plane’s banner', 'На баннере самолёта')}</span></div>
         <div className="adm-tow"><div className="adm-ban" aria-label={t('How the banner reads', 'Как читается баннер')}>
           {lines.length ? (
             <>
@@ -141,11 +141,11 @@ export function BannerForm({ lang, current }: { lang: Lang; current: string[] | 
         <p className="hint">{t('A light plane tows it low across the course every minute or two, side-on to the camera. Leave both empty for the RYC banner.', 'Лёгкий самолёт проносит его низко над дистанцией каждые минуту-две, боком к камере. Оставьте оба поля пустыми — будет баннер RYC.')}</p>
       </div>
       <div className="set-sec">
-        <div className="srow">
+        <div className="srow adm-field">
           <label className="srow-k" htmlFor="adm-ban-a">{t('First words (navy)', 'Первые слова (синие)')}</label>
           <span className="adm-in"><input id="adm-ban-a" className="field" type="text" maxLength={BANNER_MAX} value={a} disabled={busy} onChange={(e) => { setA(e.target.value); setDone(''); }} /><span className="adm-n" aria-hidden="true">{a.length}/{BANNER_MAX}</span></span>
         </div>
-        <div className="srow">
+        <div className="srow adm-field">
           <label className="srow-k" htmlFor="adm-ban-b">{t('Then (red)', 'Затем (красные)')}</label>
           <span className="adm-in"><input id="adm-ban-b" className="field" type="text" maxLength={BANNER_MAX} value={b} disabled={busy} onChange={(e) => { setB(e.target.value); setDone(''); }} /><span className="adm-n" aria-hidden="true">{b.length}/{BANNER_MAX}</span></span>
         </div>
@@ -155,6 +155,6 @@ export function BannerForm({ lang, current }: { lang: Lang; current: string[] | 
         </div>
         {err ? <p className="err" role="alert">{err}</p> : done ? <p className="hint" role="status">{done}</p> : null}
       </div>
-    </div>
+    </section>
   );
 }

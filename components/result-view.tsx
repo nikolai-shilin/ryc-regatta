@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { ruBoats, tx, type Lang } from '@/lib/lang';
 import RULES from '@/lib/rules.json';
 import { IconBack, IconRestart, IconPlay, IconTrophy, IconFlag, IconSail, IconSliders, Num, clock } from './ui';
-import { ShareButton } from './share-sheet';
+import { CopyLink, ShareButton } from './share-sheet';
+import { SceneBrand } from './scene-brand';
 import { CountUp } from './count-up';
 import { ResultSkeleton, Sk } from './skeleton';
 import { FlagImg, Who } from './flag';
@@ -173,6 +174,9 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
         <div className="bt-info">
           <div className="bt-top">
             <Link className="bt-back" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
+            <SceneBrand />
+          </div>
+          <div className="bt-kicks">
             <span className="bt-kick">{kicker}</span>
             {pbNote && res.pb?.isNew ? <span className="bt-kick rs-kick-g">{pbNote}</span> : null}
           </div>
@@ -200,7 +204,8 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
                 <li key={i} className={`${b.me ? 'me' : ''} ${i === 0 && !b.dsq ? 'first' : ''}`}>
                   <span className="hm-n">{b.dsq ? '–' : i + 1}</span>
                   <span className="rs-name"><span className="rs-dot" style={{ background: b.me ? 'var(--you)' : b.color || 'rgba(255,255,255,.4)' }} /><FlagImg code={b.flag} lang={lang} />{b.me ? you : b.name}</span>
-                  <span className="hm-t">{b.dsq ? 'DSQ' : b.secs != null ? clock(b.secs) : '—'}{b.secs != null && winner?.secs != null && b !== winner && !b.dsq ? <small>+{(b.secs - winner.secs).toFixed(1)}</small> : null}</span>
+                  <span className="hm-t">{b.dsq ? 'DSQ' : b.secs != null ? clock(b.secs) : '—'}</span>
+                  <span className="rs-gap">{b.secs != null && winner?.secs != null && b !== winner && !b.dsq ? `+${(b.secs - winner.secs).toFixed(1)}` : ''}</span>
                 </li>
               ))}
             </ol>
@@ -278,7 +283,10 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
               <div className="rs-card rs-pad rs-share">
                 <span className="bt-k">{t('Share this race', 'Поделиться гонкой')}</span>
                 <p className="rs-ps">“{shareText()}” {t('A result link opens on any device, as this boat’s result.', 'Ссылка открывается на любом устройстве — как результат этой лодки.')}</p>
-                <ShareButton lang={lang} data={shareData} className="bt-show rs-ghost" title={t('Share your result', 'Поделиться результатом')} />
+                <div className="rs-share-b">
+                  <CopyLink lang={lang} data={shareData} className="bt-show rs-ghost" />
+                  <ShareButton lang={lang} data={shareData} className="bt-show rs-ghost" title={t('Share your result', 'Поделиться результатом')} />
+                </div>
               </div>
             </div>
           )}
