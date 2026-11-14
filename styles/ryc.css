@@ -161,6 +161,10 @@
 .acct { display: flex; align-items: center; gap: var(--s-3); }
 .acct .small { color: var(--muted); }
 .acct-row { padding-bottom: var(--s-3); margin-bottom: var(--s-3); border-bottom: 1px solid var(--line); }
+.name-row { margin: calc(-1 * var(--s-3)) 0 var(--s-3); padding-bottom: var(--s-3); border-bottom: 1px solid var(--line); }
+.name-row .srow { border-bottom: 0; }
+.name-in { display: flex; align-items: center; gap: var(--s-2); flex: 0 1 60%; min-width: 0; }
+.name-in .field { flex: 1 1 auto; width: auto; min-width: 0; height: var(--h-m, 40px); font-size: var(--t-s); }
 .acct-guest { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 @container scr (orientation: portrait) {
   .set-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
