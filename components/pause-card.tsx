@@ -55,7 +55,7 @@ export function SettingsRow({ lang }: { lang: Lang }) {
   return <button type="button" className="bt-row" onClick={() => open(true)}><IconScreen /><span>{t('Settings', 'Настройки')}</span></button>;
 }
 
-type Keys = 'autoTrim' | 'guides' | 'camera' | 'gfx' | 'sound' | 'voice' | 'vibration' | 'music';
+type Keys = 'autoTrim' | 'guides' | 'camera' | 'gfx' | 'sound' | 'voice' | 'vibration' | 'music' | 'musicVol' | 'sea';
 
 // How you sail and how the game runs, as /settings has them: every change is saved at once where the game reads it
 function Settings({ lang, who, back, close }: { lang: Lang; who: Who; back: string; close: () => void }) {
@@ -91,7 +91,9 @@ function Settings({ lang, who, back, close }: { lang: Lang; who: Who; back: stri
       <div className="bt-g">
         <span className="bt-k"><IconScreen />{t('Screen and sound', 'Экран и звук')}</span>
         {seg('gfx', t('Graphics', 'Графика'), [['auto', t('Auto', 'Авто')], ['high', t('High', 'Макс.')], ['medium', t('Medium', 'Сред.')], ['low', t('Low', 'Мин.')]])}
-        {seg('music', t('Music', 'Музыка'), [['ambient', t('Ambient', 'Эмбиент')], ['film', t('Film', 'Кино')], ['folk', t('Folk', 'Фолк')], ['off', t('Off', 'Выкл')]])}
+        {seg('music', t('Music', 'Музыка'), [['ambient', t('Ambient', 'Эмбиент')], ['film', t('Film', 'Кино')], ['folk', t('Folk', 'Фолк')], ['racing', t('Racing', 'Гонка')], ['off', t('Off', 'Выкл')]])}
+        {seg('musicVol', t('Music volume', 'Громкость музыки'), [['loud', t('Loud', 'Громко')], ['normal', t('Normal', 'Обычно')], ['quiet', t('Quiet', 'Тихо')]])}
+        {seg('sea', t('Sea', 'Море'), [['loud', t('Loud', 'Громко')], ['normal', t('Normal', 'Обычно')], ['quiet', t('Quiet', 'Тихо')], ['off', t('Off', 'Выкл')]])}
         <div className="bt-pills">
           {sw('sound', t('Sound', 'Звук'))}
           {sw('voice', t('Voice on board', 'Голос шкипера'))}
