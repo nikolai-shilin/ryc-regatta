@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { getT } from '@/lib/i18n';
 import { pageMeta } from '@/lib/seo';
 import { describe, getResult } from '@/lib/result';
-import { getAccount } from '@/lib/supabase/server';
+import { getAccount, initials } from '@/lib/supabase/server';
 import ResultView from '@/components/result-view';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 
@@ -21,11 +21,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return { ...meta, openGraph: { ...meta.openGraph, url: `/race/result/${id}${lang === 'ru' ? '?lang=ru' : ''}`, images: [card] }, twitter: { ...meta.twitter, images: [card] } };
 }
 
-// R1 · The result and debrief. The game keeps the race on this device and opens this page at the finish.
+// R1 · The result and debrief, as the race's pause screen: the finish as it was behind it all (the game's own scene at
+// the race's venue, every boat where she was as you crossed the line), the result over it, and the debrief in the pause
+// menu's glass card. The game keeps the race on this device and opens this page at the finish. The site's header and
+// footer are only for a race that can't be found.
 export default async function ResultPage({ params }: { params: Promise<{ id: string }> }) {
   const [{ id }, { lang, t }, account] = await Promise.all([params, getT(), getAccount()]);
+  const who = account ? { name: account.name, email: account.email, initials: initials(account.name, account.email), via: account.provider === 'google' ? 'Google' : account.provider === 'telegram' ? 'Telegram' : t('email code', 'код по почте') } : null;
   return (
-    <ResultView id={id} lang={lang} signedName={account ? account.name || account.email : null}
+    <ResultView id={id} lang={lang} signedName={account ? account.name || account.email : null} who={who}
       head={<SiteHead lang={lang} t={t} account={account} page="result" />}
       foot={<SiteFoot lang={lang} t={t} account={account} back={`/race/result/${id}`} />} />
   );

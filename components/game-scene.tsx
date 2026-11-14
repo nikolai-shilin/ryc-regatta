@@ -7,11 +7,13 @@ import type { Wind } from '@/lib/race';
 // venue (public/boat-view), your yacht afloat there on a clear evening. Another venue is a new page, loaded beside the
 // one showing and faded in over it once its first frame is up; a venue picked while one loads takes its place. Each is
 // told the wind as it changes, and what the page's card (.bt-card) and heading (.bt-info) cover, so the boat stands
-// in the part left clear.
-export function GameScene({ venue, wind, title }: { venue: VenueId; wind: Wind; title: string }) {
+// in the part left clear. With `finish` (lib/finish.ts) it is the result page's scene: the finish of the race as it was,
+// sent to the scene once it is up.
+export function GameScene({ venue, wind, title, finish }: { venue: VenueId; wind: Wind; title: string; finish?: object }) {
   const [frames, setFrames] = useState<{ id: number; venue: VenueId; wind: Wind; live: boolean }[]>(() => [{ id: 0, venue, wind, live: false }]);
   const refs = useRef(new Map<number, HTMLIFrameElement>());
   const windNow = useRef(wind); windNow.current = wind;
+  const fin = useRef(finish); fin.current = finish;
   const post = (msg: object, id?: number) => refs.current.forEach((f, k) => { if (id == null || id === k) f.contentWindow?.postMessage(msg, location.origin); });
   const parts = () => ({ card: document.querySelector('.bt-card'), info: document.querySelector('.bt-info') });
   const inset = (id?: number) => {
@@ -37,7 +39,7 @@ export function GameScene({ venue, wind, title }: { venue: VenueId; wind: Wind; 
       if (e.origin !== location.origin) return;
       const id = [...refs.current].find(([, f]) => f.contentWindow === e.source)?.[0];
       if (id == null) return;
-      if (e.data?.type === 'ready') { inset(id); post({ type: 'wind', preset: windNow.current }, id); }
+      if (e.data?.type === 'ready') { inset(id); post(fin.current ? { type: 'finish', ...fin.current } : { type: 'wind', preset: windNow.current }, id); }
       if (e.data?.type === 'live') {
         setFrames((fs) => fs.map((f) => (f.id === id ? { ...f, live: true } : f)));
         setTimeout(() => setFrames((fs) => fs.filter((f) => f.id >= id)), 900); // the one under it, once faded over
@@ -53,6 +55,6 @@ export function GameScene({ venue, wind, title }: { venue: VenueId; wind: Wind; 
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return <>{frames.map((f) => (
     <iframe key={f.id} ref={(el) => { if (el) refs.current.set(f.id, el); else refs.current.delete(f.id); }} className={`bt-scene bt-fade ${f.live ? 'on' : ''}`}
-      src={`/boat-view?venue=${f.venue}&wind=${f.wind}`} title={title} onLoad={() => post({ type: 'hello' }, f.id)} />
+      src={`/boat-view?venue=${f.venue}&wind=${f.wind}${finish ? '&finish=1' : ''}`} title={title} onLoad={() => post({ type: 'hello' }, f.id)} />
   ))}</>;
 }

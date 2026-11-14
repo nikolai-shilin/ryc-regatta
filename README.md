@@ -11,7 +11,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 | `/` | Home: the game described in detail | `app/page.tsx` |
 | `/race` | The race hub: today's race, today's fastest and a free race, in the pause-menu card over today's venue in the game's own scene (`components/game-scene.tsx`) | `app/race/page.tsx` |
 | `/race/free` | Set up a free race (venue, wind, fleet, course, laps, start, current), in the pause-menu card over the game's own scene at the chosen venue (`/boat-view?venue=&wind=`), which fades to each new place | `components/free-setup.tsx` |
-| `/race/result/[id]` | The result and debrief after a race | `components/result-view.tsx` |
+| `/race/result/[id]` | The result and debrief after a race, in the pause-menu card over the finish as it was: the game's own scene at the race's venue (`/boat-view?finish=1`), the line, the marks and every boat where she was as you crossed it | `components/result-view.tsx`, `lib/finish.ts` |
 | `/boat` | Your boat: colours, logo, sail number and team, in the race's pause-menu card over the game's own scene: your yacht on Lake Garda on a summer evening (`/boat-view`) | `components/boat-editor.tsx` |
 | `/settings` | Account, sailing, screen and sound, language | `components/settings-form.tsx` |
 | `/help` | How to play, with screenshots | `app/help/page.tsx` |
@@ -25,7 +25,9 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     - `regatta` holds the options the free-race set-up and Settings write.
     - `regatta-pb` holds personal bests. For a signed-in player `components/bests-sync.tsx` merges it, on every page, with
       the copy in their account (`user_metadata.pb`), so their bests follow them to any device.
-    - `regatta-result-<id>` holds each finished race. The game keeps the last 20, then opens `/race/result/<id>`.
+    - `regatta-result-<id>` holds each finished race. The game keeps the last 20, then opens `/race/result/<id>`. With it go
+      the venue, where the course lay there, and each boat's position, heading and sails the moment you finished, for the
+      result page's scene; an older result has only the tracks, and `lib/finish.ts` puts each boat where hers had her then.
   - The game also posts each finished race to the scores server (below), so a result link opens on any device; there
     it reads as "this boat", not "you", and the page has a Share button for your own races.
 - **Scores:** `public/game/stats.js` posts every race's start, finish and result to `https://iyt.rycrentals.com/api/game`

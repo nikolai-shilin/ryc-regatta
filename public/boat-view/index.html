@@ -13,7 +13,12 @@
      The page sends the look to show, postMessage({ type: 'look', boat }), the point of sail ({ type: 'pose', down }),
      and the part of the frame its choices cover ({ type: 'inset', l, r, t, b }: fractions of the width and height), so
      the boat stands in the part left clear. ({ type: 'thumbs', items }) draws the presets' pictures, on the old studio
-     backdrop, and sends them back. -->
+     backdrop, and sends them back.
+     With ?finish=1 it is the result page's scene instead: the finish of a race as it was the moment you crossed the
+     line, and nothing shows until the page sends it ({ type: 'finish', race, boats }: the race's settings, its course and
+     where it lay, and each boat where she was, her heading and how she sailed). The marks, the line and the committee
+     boat are there, the fleet in its colours with the names over the boats, and the drone looks at your boat from
+     downwind, the line and the boats still coming down behind her. -->
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #1b2a3a; }
   canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; outline: 0; opacity: 0; transition: opacity 0.8s ease; }
@@ -22,10 +27,10 @@
 </style>
 <!-- the venue, before the game's modules read it from the address, and its land fetched at once -->
 <script>(function () {
-  var q = new URLSearchParams(location.search), v = q.get('venue') || 'garda', w = q.get('wind') || 'light';
+  var q = new URLSearchParams(location.search), v = q.get('venue') || 'garda', w = q.get('wind') || 'light', fin = q.get('finish') === '1' ? '&finish=1' : '';
   if (!/^[a-z-]+$/.test(v)) v = 'garda';
   if (!/^[a-z]+$/.test(w)) w = 'light';
-  history.replaceState(null, '', location.pathname + '?venue=' + v + '&wind=' + w + '&sky=clear');
+  history.replaceState(null, '', location.pathname + '?venue=' + v + '&wind=' + w + '&sky=clear' + fin);
   var f = v === 'gocek' ? ['/game/skopea.bin', '/game/skopea.json'] : ['/game/venues/' + v + '.bin', '/game/venues/' + v + '.json'];
   f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
 <script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
@@ -35,7 +40,8 @@
 <script type="module">
 import * as THREE from 'three';
 import { World } from '/game/world.js';
-import { Race } from '/game/sim.js';
+import { Race, beatAngle } from '/game/sim.js';
+import { placeCourse } from '/game/land.js';
 import { BoatView, lookFrom } from '/game/yacht.js';
 import { HOURS } from '/game/light.js';
 
@@ -45,6 +51,7 @@ history.replaceState(null, '', location.search + '&hour=' + (HOURS[1] - 1.1).toF
 const canvas = document.getElementById('c');
 const say = (msg) => parent.postMessage(msg, location.origin);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+const FINISH = new URLSearchParams(location.search).get('finish') === '1';
 
 // her two points of sail: close-hauled on starboard, and broad reaching under the gennaker
 const UP = { twa: 0.72, awa: 0.42, heel: 14, rudder: 0, sail: 16, luff: 0, trim: 'ok', kite: false, kiteFill: 0, v: 3.1 };
@@ -69,8 +76,52 @@ if (world) {
     if (world.marks) world.marks.visible = false; // no marks, no line, no committee boat
     P = race.player; W = race.wind.dir(); X = P.x; Z = P.z; heel = HEEL[preset];
   };
-  sail(new URLSearchParams(location.search).get('wind'));
+  if (!FINISH) sail(new URLSearchParams(location.search).get('wind'));
   world.resetView(); world.droneEl = 7; world.droneAim = 6.5; world.orbit = 2.3; // low over the water, the hills behind her
+
+  // the finish as it was: the race laid again as it lay (its course, where it was at the venue), every boat posed where
+  // she was the moment you crossed the line, and the drone downwind of you, a little off to one side, high enough to
+  // see the line and the boats coming down to it over you
+  let fleet = null, look0 = 0, reach = 40;
+  const finish = (d) => {
+    const r = d.race, c = r.course, pt = ([x, z]) => ({ x, z });
+    race = new Race({ preset: r.preset, fleet: Math.max(2, d.boats.length), laps: r.laps || 1, length: r.length || 'short', start: r.start || 1, current: !!r.current, course: c.type === 'tri' ? 'tri' : 'wl', seed: r.seed ?? 4242 });
+    const C = race.course;
+    Object.assign(C, { pin: pt(c.pin), committee: pt(c.committee), windward: pt(c.windward), gate: c.gate.map(pt), ...(c.wing && { wing: pt(c.wing) }) });
+    const dx = C.committee.x - C.pin.x, dz = C.committee.z - C.pin.z, len = Math.hypot(dx, dz) || 1;
+    Object.assign(C, { dir: { x: dx / len, z: dz / len }, normal: { x: dz / len, z: -dx / len }, len });
+    race.at = r.origin ? pt(r.origin) : placeCourse(C, beatAngle(race.wind.p.tws));
+    wind = r.preset; heel = 1;
+    W = race.wind.dir();
+    // the boats, by name: yours is the player, the others the fleet the race was made with
+    const byName = new Map(race.boats.filter((b) => b.ai).map((b) => [b.name, b]));
+    fleet = [];
+    for (const s of d.boats) {
+      const b = s.me ? race.player : byName.get(s.name);
+      if (!b) continue;
+      const twa = s.twa ?? wrap(W - s.h), down = Math.abs(twa) > 1.75, a = Math.abs(twa) * 180 / Math.PI;
+      // how she sailed, from the game when it kept it, else her point of sail: close-hauled, reaching, or under the kite
+      const pose = { x: s.x, z: s.z, h: s.h, twa, awa: s.awa ?? twa * (down ? 0.8 : 0.6), heel: s.heel ?? (down ? 6 : a < 60 ? 14 : 10),
+        sail: s.sail ?? Math.min(80, Math.max(12, 16 + (a - 41) * 0.52)), kite: s.kite != null ? !!s.kite : down, kiteFill: s.kiteFill ?? (down ? 1 : 0),
+        boom: s.boom ?? (Math.sign(twa) || 1), v: s.v ?? 3, rudder: 0, luff: 0, trim: 'ok', wdir: W, tws: race.wind.p.tws };
+      fleet.push([b, pose]);
+    }
+    race.boats = fleet.map(([b]) => b);
+    if (!race.boats.includes(race.player)) { race.boats.unshift(race.player); fleet.unshift([race.player, { x: 0, z: 0, h: W + Math.PI, twa: Math.PI, awa: 2.5, heel: 6, sail: 70, kite: true, kiteFill: 1, boom: 1, v: 3, rudder: 0, luff: 0, trim: 'ok', wdir: W, tws: race.wind.p.tws }]); }
+    race.player.done = true; // no pointers, laylines or guides: the race is over
+    race.flags = { cls: false, P: false, X: false, sub: false };
+    world.setRace(race);
+    for (const [b, p] of fleet) Object.assign(b, p);
+    P = race.player; X = P.x; Z = P.z;
+    // how far the drone stands off: enough to take in the two boats nearest you, no more (the rest are on the map)
+    const near = fleet.filter(([b]) => b !== P).map(([b]) => Math.hypot(b.x - X, b.z - Z)).sort((a, b) => a - b);
+    reach = Math.max(30, Math.min(70, (near[1] ?? near[0] ?? 50) * 0.8));
+    world.droneEl = 12; world.droneAim = 3;
+    world.camH = P.h; world.orbit = look0 = wrap(W - P.h + 0.5); // from downwind, looking up the course
+    world.intro = { t: 0, T: 5 }; // a shorter fly-in, down onto the finish
+    size();
+    world.ready().then(go);
+  };
 
   const size = () => {
     world.resize(innerWidth, innerHeight);
@@ -80,7 +131,7 @@ if (world) {
     world.camera.updateProjectionMatrix();
     // and far enough back that she fits it, masthead to waterline (the drone stands 1.75 times further off in a tall frame)
     const clear = Math.max(0.2, 1 - inset.t - inset.b);
-    world.dist = Math.min(90, Math.max(16, 19.5 / clear / (w < h ? 1.75 : 1)));
+    world.dist = FINISH ? Math.min(100, reach / Math.sqrt(clear) / (w < h ? 1.5 : 1)) : Math.min(90, Math.max(16, 19.5 / clear / (w < h ? 1.75 : 1)));
   };
   size(); addEventListener('resize', size);
 
@@ -104,25 +155,36 @@ if (world) {
     if (e.data.type === 'look') pending = lookFrom(e.data.boat); // dressed on the next frame, so dragging a colour stays smooth
     if (e.data.type === 'pose') pose = e.data.down ? DOWN : UP;
     if (e.data.type === 'inset') { inset = e.data; size(); }
-    if (e.data.type === 'wind' && e.data.preset !== wind) { const o = world.orbit, d = world.dist; sail(e.data.preset); world.orbit = o; world.dist = d; }
+    if (e.data.type === 'finish' && FINISH && !fleet && e.data.race && Array.isArray(e.data.boats)) finish(e.data);
+    if (e.data.type === 'wind' && !FINISH && e.data.preset !== wind) { const o = world.orbit, d = world.dist; sail(e.data.preset); world.orbit = o; world.dist = d; }
     if (e.data.type === 'thumbs' && Array.isArray(e.data.items)) shoot(e.data.items);
   });
 
-  let last = performance.now(), t = 0;
-  world.ready().then(() => {
-    requestAnimationFrame(function loop(now) {
-      requestAnimationFrame(loop);
-      if (document.hidden) { last = now; return; }
-      const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
-      if (pending) { world.setPlayerLook(pending); pending = null; }
+  // the loop starts once the race is laid and its land is in (for the finish, once the page has sent it)
+  let last = performance.now(), t = 0, started = false;
+  function go() { if (!started) { started = true; last = performance.now(); requestAnimationFrame(loop); } }
+  if (!FINISH) world.ready().then(go);
+  function loop(now) {
+    requestAnimationFrame(loop);
+    if (document.hidden) { last = now; return; }
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+    if (pending) { world.setPlayerLook(pending); pending = null; }
+    if (fleet) {
+      // the finish, held: each boat as she was, the sea and the flags still moving; the drone sways a little about
+      // where it looks from, and comes back to it after you let go
+      for (const [b, p] of fleet) Object.assign(b, p);
+      race.t = t;
+      const sway = Math.sin(t * 0.06) * 0.35;
+      if (idle > 0) { idle -= dt; look0 = world.orbit - sway; } else world.orbit = look0 + sway;
+    } else {
       // posed where she started, sailing in the wind as it is
       Object.assign(P, pose, { heel: pose.heel * heel, x: X, z: Z, h: wrap(W - pose.twa), boom: Math.sign(pose.twa), wdir: W, tws: race.wind.p.tws });
       race.t = t;
       if (idle > 0) idle -= dt; else world.orbit += dt * 0.05;
-      world.frame(dt, t);
-      if (!canvas.classList.contains('live')) { canvas.classList.add('live'); say({ type: 'live' }); }
-    });
-  });
+    }
+    world.frame(dt, t);
+    if (!canvas.classList.contains('live')) { canvas.classList.add('live'); say({ type: 'live' }); }
+  }
 }
 say({ type: 'ready' });
 
