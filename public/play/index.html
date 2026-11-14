@@ -27,6 +27,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sofia+Sans+Condensed:wght@500;600;700;800&amp;family=Sofia+Sans:wght@500;600;700&amp;display=swap">
 <link rel="stylesheet" href="/ui/tokens.css">
+<link rel="stylesheet" href="/ui/game.css">
 <!-- the land round the course (game/land.js): fetched at once, not after the modules that ask for it. Its venue as
      game/venues.js pageVenue() chooses it: ?venue=, else a free race's choice, else today's (dailyVenue, copied here
      with the venues in the same order; npm test runs this script against the game's) -->
@@ -563,7 +564,7 @@
 </div>
 
 <!-- the race's own overlays; the menus and the results are pages of the Next.js app (/race, /race/free, /race/result/[id]) -->
-<div id="loading" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="lStep">
+<div id="loading" class="bc" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="lStep">
   <div class="l-photo" id="lPhoto"></div>
   <div class="l-shade"></div>
   <div class="l-head on-photo"><img class="l-logo" src="/logo-black.svg" alt="RYC"><span class="kicker">Up and down</span></div>
@@ -675,7 +676,7 @@
 })();
 </script>
 
-<div class="overlay pause" id="pauseCard" hidden>
+<div class="overlay pause bc" id="pauseCard" hidden>
   <div class="p-info on-photo">
     <span class="kicker p-badge" data-t="pausedK"></span>
     <h1 id="pLeg"></h1>
@@ -702,7 +703,7 @@
   </div>
 </div>
 
-<div class="overlay" id="confirmCard" hidden>
+<div class="overlay bc" id="confirmCard" hidden>
   <div class="card c-card" role="dialog" aria-modal="true" aria-labelledby="cHead">
     <span class="kicker" data-t="pausedK"></span>
     <h2 id="cHead" data-t="leaveK"></h2>

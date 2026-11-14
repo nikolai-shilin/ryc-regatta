@@ -47,6 +47,11 @@ test('the site and the game load the tokens and both Sofia Sans faces with Cyril
   const play = read('public/play/index.html');
   assert.match(play, /<link rel="stylesheet" href="\/ui\/tokens\.css">/);
   assert.match(play, /family=Sofia\+Sans\+Condensed:wght@[\d.;]+&amp;family=Sofia\+Sans:wght@[\d.;]+/);
+  // the files are served as they are: the proxy (which sends pages to their language) leaves /ui/ alone, as /game/
+  assert.match(read('proxy.ts'), /matcher: \['\/\(\(\?!.*\bui\/\|/);
+  assert.match(play, /<link rel="stylesheet" href="\/ui\/game\.css">/);
+  // the race's overlays opt in: loading, the pause, the card before you leave
+  for (const id of ['loading', 'pauseCard', 'confirmCard']) assert.match(play, new RegExp(`<div (id="${id}" class="[^"]*\\bbc\\b|class="[^"]*\\bbc\\b[^"]*" id="${id}")`), id);
 });
 
 test('the broadcast HUD has every word in both languages, and the game uses it', async () => {

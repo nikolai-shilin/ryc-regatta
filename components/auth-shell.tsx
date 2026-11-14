@@ -6,7 +6,7 @@ import { SiteHead } from './site-chrome';
 // Nobody is signed in on these pages (sign-in sends a signed-in visitor on).
 export function AuthShell({ lang, caption, children }: { lang: Lang; caption?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="scr app" lang={lang}>
+    <div className="scr app bc" lang={lang}>
       <SiteHead lang={lang} t={tx(lang)} page="signin" />
       <div className="lay split split-auth">
         <div className="split-photo">

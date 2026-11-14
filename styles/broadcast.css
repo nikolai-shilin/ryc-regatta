@@ -269,16 +269,16 @@
 }
 
 /* ==========================================================================
-   The site's own scrolling pages in the broadcast look (the home, the reading pages): the old tokens
+   The site's own pages in the broadcast look (the home, the reading pages, settings and signing in): the old tokens
    pointed at the broadcast's, the header and footer as its bars, the home's sections.
    ========================================================================== */
-.bc.help {
+.bc.help, .bc.app {
   --f-sans: var(--cond); --f-serif: var(--sans);
   --bg: var(--surface); --muted: var(--ink-3); --line: var(--rule); --tag-line: var(--w-16); --band: var(--fill-1);
   --accent: var(--you); --on-accent: var(--ink-on); --sel-bg: var(--you); --sel-ink: var(--ink-on);
   background: var(--ground); color: var(--ink); font-family: var(--sans);
 }
-.bc.help > * { --h-m: 44px; --h-l: 56px; }
+.bc.help > *, .bc.app > * { --h-m: 44px; --h-l: 56px; --h-s: 32px; }
 
 /* the header: the name with the blue mark, the pages as tabs, Play now beside the menu */
 .bc .hm-head { background: rgba(5, 10, 18, 0.94); border-bottom: 1px solid var(--rule); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); animation: bc-drop .4s var(--ease) both; }
@@ -529,3 +529,52 @@
 .bc .iyt-ic { border-radius: 0; background: var(--you); color: var(--ink-on); }
 .bc .iyt-levels li { border-top-color: var(--rule); }
 .bc .iyt-note { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-3); }
+
+/* ---------- the app screens: settings, and signing in (email, code, name) ----------
+   Built from the shared controls of styles/tokens.css (the pill, the round back button, the segmented choice, the
+   switch, the field, the code's boxes); here each takes the broadcast's shape: square, the condensed face, the picked
+   one in your colour, the one action blue and cut. */
+.bc .aph { gap: var(--s-4); }
+.bc .aph-top { gap: var(--s-3); }
+.bc .aph .kicker { background: var(--you); }
+.bc .aph-h, .bc .h-land, .bc .h-land-s { font: 700 var(--fs-h2)/0.95 var(--cond); letter-spacing: 0; text-transform: uppercase; }
+.bc .h-land { font-size: var(--fs-h1); }
+.bc .aph-p { font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+.bc .small, .bc .hint { font: 500 var(--fs-small)/1.45 var(--sans); }
+.bc .err { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--live); }
+.bc .back-link { color: var(--you); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
+.bc .round { border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink); }
+.bc .round:hover { background: var(--w-14); }
+.bc .pill-quiet, .bc .pill-oauth { background: var(--fill-2); color: var(--ink); }
+.bc .pill-wide { width: 100%; }
+.bc .pill-primary.pill-wide { padding-right: var(--s-6); }
+.bc .pill-xs { height: var(--h-m); font-size: var(--fs-small); padding: 0 var(--s-4); }
+.bc .mini, .bc .chip { border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
+.bc .mini:hover { background: var(--w-14); }
+.bc .chip-photo { background: var(--panel); }
+.bc .avatar { border-radius: 0; background: var(--fill-2); color: var(--ink); box-shadow: inset 0 -3px 0 var(--you); font: 700 var(--fs-small)/1 var(--cond); }
+.bc .segc { gap: var(--s-1); padding: 0; border: 0; border-radius: 0; }
+.bc .segc :is(a, button) { height: var(--h-s); padding: 0 var(--s-3); border-radius: 0; background: var(--fill-2); color: var(--ink); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
+.bc .segc :is(a, button):hover { background: var(--w-14); }
+.bc .segc .on, .bc .segc .on:hover { background: var(--you); color: var(--ink-on); }
+.bc .tgl { width: 52px; height: 28px; border-radius: 0; background: var(--fill-3); }
+.bc .tgl i { top: 4px; left: 4px; width: 20px; border-radius: 0; background: var(--ink); box-shadow: none; transition: left .25s var(--ease), background-color .25s; }
+.bc .tgl[aria-checked="true"] { background: var(--you); }
+.bc .tgl[aria-checked="true"] i { left: 28px; background: var(--ink-on); }
+.bc .field { height: 52px; border: 0; border-bottom: 2px solid var(--w-35); border-radius: 0; background: var(--fill-1); color: var(--ink); font: 600 var(--fs-row)/1 var(--sans); }
+.bc .field:focus { border-bottom-color: var(--you); background: var(--w-10); }
+.bc .otp input { border: 0; border-bottom: 2px solid var(--w-35); border-radius: 0; background: var(--fill-1); font: 700 var(--fs-h3) var(--cond); }
+.bc .otp input.on { border-bottom-color: var(--ink); }
+.bc .otp input:focus { border-bottom-color: var(--you); background: var(--w-10); }
+.bc .or { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
+/* settings: one row a setting */
+.bc .group-k { border-bottom-color: var(--rule); }
+.bc .group-k svg { color: var(--ink-3); }
+.bc .srow { border-bottom-color: var(--rule-2); }
+.bc .srow-k { font: 500 var(--fs-body)/1.3 var(--sans); color: var(--ink); }
+.bc .srow-link { color: var(--you); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; text-decoration: none; }
+.bc .acct-row { border-bottom-color: var(--rule); }
+/* signing in: the course from above beside the form */
+.bc .split-photo { background: var(--surface); }
+.bc .photo-fade { background: linear-gradient(180deg, rgba(3, 8, 14, 0) 0%, rgba(3, 8, 14, 0.75) 100%); }
+.bc .split-panel { background: var(--ground); }
