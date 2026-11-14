@@ -660,7 +660,7 @@
   backdrop-filter: blur(18px) saturate(1.25); -webkit-backdrop-filter: blur(18px) saturate(1.25); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35); animation: bt-in .35s var(--ease) both;
 }
 @keyframes bt-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }
-.bt-go { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 8px; flex: none; height: 44px; border-radius: 54px; background: var(--accent); color: var(--on-accent); font: 700 13px/1 var(--f-sans); letter-spacing: .04em; text-transform: uppercase; text-decoration: none; box-shadow: 0 0 0 6px rgba(8, 14, 20, 0.0); transition: filter .2s, transform .12s; }
+.bt-go { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 8px; flex: none; height: 44px; border-radius: 54px; background: var(--accent); color: var(--on-accent); font: 700 13px/1 var(--f-sans); letter-spacing: .04em; text-transform: uppercase; text-decoration: none; border: 0; cursor: pointer; box-shadow: 0 0 0 6px rgba(8, 14, 20, 0.0); transition: filter .2s, transform .12s; }
 .bt-go svg { width: 14px; height: 14px; }
 .bt-go:hover { filter: brightness(1.08); } .bt-go:active { transform: scale(.97); }
 .bt-seg { display: grid; grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 54px; background: rgba(255, 255, 255, 0.05); flex: none; }
