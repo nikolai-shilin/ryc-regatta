@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNod
 import { tx, type Lang } from '@/lib/lang';
 import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart, IconFlag } from './ui';
 import { FLAGS, findFlag, flagSrc, type Flag } from '@/lib/flags';
+import { SceneBrand } from './scene-brand';
 import { DEFAULT_BOAT, DEFAULT_LOGO, PRESETS, SWATCHES, readBoat, saveBoat, shrinkLogo, type Boat, type Logo } from '@/lib/boat';
 
 // The boat page, laid out like the race's pause screen: the game's own scene behind it all (your yacht on Lake Garda,
@@ -107,17 +108,25 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
       <iframe ref={frame} className="bt-scene" src="/boat-view" onLoad={() => post({ type: 'hello' })} title={t('Your boat in 3D', 'Твоя яхта в 3D')} />
 
       <div className="bt-info" ref={info}>
-        <div className="bt-top">{back}<span className="bt-kick">{t('Your boat', 'Твоя яхта')}</span></div>
-        <h1 className="bt-h">{preset ? t(preset.en, preset.ru) : t('Your own colours', 'Свои цвета')}</h1>
+        <div className="bt-top">{back}<SceneBrand /></div>
+        <span className="bt-kick">{t('Your boat', 'Твоя яхта')}</span>
+        {/* her flag and sail number, as the race calls her */}
+        <h1 className="bt-h bt-h-boat">{/* eslint-disable-next-line @next/next/no-img-element */}{flag && <img className="bt-h-flag" src={flagSrc(flag.code)} alt={t(flag.en, flag.ru)} />}<span>{`${b.nat} ${b.num || '1'}`.trim()}</span></h1>
         <p className="bt-p">{t('Lake Garda, a summer evening. Drag to circle her.', 'Озеро Гарда, летний вечер. Тяни, чтобы облететь яхту.')}</p>
         <div className="bt-stats">
-          <div><span className="bt-sk">{t('Sail number', 'Номер')}</span><b>{/* eslint-disable-next-line @next/next/no-img-element */}{flag && <img className="bt-flag-s" src={flagSrc(flag.code)} alt={t(flag.en, flag.ru)} />}{b.logo === 'none' && b.nat ? `${b.nat} ` : ''}{b.num || '1'}</b></div>
+          <div><span className="bt-sk">{t('Colours', 'Цвета')}</span><b>{preset ? t(preset.en, preset.ru) : t('Your own', 'Свои')}</b></div>
           <div><span className="bt-sk">{t('Sails', 'Паруса')}</span><b>{b.laminate ? t('Laminate', 'Ламинат') : t('Dacron', 'Дакрон')}</b></div>
           <div><span className="bt-sk">{t('Logo', 'Логотип')}</span><b>{logoName}</b></div>
         </div>
       </div>
 
-      <section className="bt-card" ref={card} aria-label={t('Colours, logo and sail number', 'Цвета, логотип и номер')}>
+      <section className="bt-card bt-boat" ref={card} aria-labelledby="b-card">
+        <div className="bt-card-h">
+          <span className="lbl-ink" id="b-card">{t('Colours, logo and sail number', 'Цвета, логотип и номер')}</span>
+          <button type="button" className="bt-mini" onClick={() => { setB({ ...DEFAULT_BOAT, logoImg: b.logoImg }); setDown(false); }}>
+            <IconRestart s={14} /><span>{t('Back to the RYC colours', 'Вернуть цвета RYC')}</span>
+          </button>
+        </div>
         <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Sail her in today’s race', 'В гонку дня на ней')}</span></a>
         <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс')}>
           <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд')}</button>
@@ -141,20 +150,29 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
           </div>
         </div>
 
-        <div className="bt-g">
-          {kicker('l-hull', <IconHull />, t('Hull', 'Корпус'))}
-          <Swatches label="l-hull" value={b.hull} options={SWATCHES.hull} onChange={(v) => { set({ hull: v }); setDown(false); }} t={t} />
-        </div>
+        {/* the colours two to a row on a wide screen */}
+        <div className="bt-grid2">
+          <div className="bt-g">
+            {kicker('l-hull', <IconHull />, t('Hull', 'Корпус'))}
+            <Swatches label="l-hull" value={b.hull} options={SWATCHES.hull} onChange={(v) => { set({ hull: v }); setDown(false); }} t={t} />
+          </div>
 
-        <div className="bt-g">
-          {kicker('l-sails', <IconSail s={14} />, t('Sails', 'Паруса'))}
-          {tags('l-sails', b.laminate, [[false, t('Dacron', 'Дакрон')], [true, t('Laminate', 'Ламинат')]], (v) => { set({ laminate: v }); setDown(false); })}
-          {swatches('cloth', t('Colour', 'Цвет'), true)}
-        </div>
+          <div className="bt-g">
+            {kicker('l-sails', <IconSail s={14} />, t('Sails', 'Паруса'))}
+            {tags('l-sails', b.laminate, [[false, t('Dacron', 'Дакрон')], [true, t('Laminate', 'Ламинат')]], (v) => { set({ laminate: v }); setDown(false); })}
+            {swatches('cloth', t('Colour', 'Цвет'), true)}
+          </div>
 
-        <div className="bt-g">
-          {kicker('l-kite', <IconKite />, t('Gennaker', 'Геннакер'))}
-          <Swatches label="l-kite" value={b.kite} options={SWATCHES.kite} onChange={(v) => { set({ kite: v }); setDown(true); }} t={t} />
+          <div className="bt-g">
+            {kicker('l-kite', <IconKite />, t('Gennaker', 'Геннакер'))}
+            <Swatches label="l-kite" value={b.kite} options={SWATCHES.kite} onChange={(v) => { set({ kite: v }); setDown(true); }} t={t} />
+          </div>
+
+          <div className="bt-g">
+            {kicker('l-team', <IconCrew />, t('Team', 'Команда'))}
+            {swatches('crew', t('Jackets', 'Куртки'), true)}
+            {swatches('pants', t('Trousers', 'Брюки'), true)}
+          </div>
         </div>
 
         <div className="bt-g">
@@ -169,30 +187,23 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
           </div>
         </div>
 
-        <div className="bt-g">
-          {kicker('l-flag', <IconFlag />, t('Flag on the main', 'Флаг на гроте'))}
-          <FlagPicker value={flag?.code} onChange={setFlag} t={t} />
-        </div>
-
-        <div className="bt-g">
-          <label className="bt-k" htmlFor="b-num"><IconHash />{t('Sail number', 'Номер на парусе')}</label>
-          <div className="num-pair">
-            {b.logo === 'none' && <input className="num-in" aria-label={t('Letters on the sail', 'Буквы на парусе')} value={b.nat} maxLength={3} onChange={(e) => set({ nat: e.target.value.toUpperCase().replace(/[^A-ZА-ЯЁ]/g, '') })} />}
-            <input id="b-num" className="num-in" inputMode="numeric" value={b.num} maxLength={3} onChange={(e) => set({ num: e.target.value.replace(/[^0-9]/g, '') })} onBlur={() => { if (!b.num) set({ num: '1' }); }} />
+        {/* the flag and the number side by side; the flag's list, open, takes the row */}
+        <div className="bt-pair">
+          <div className="bt-g">
+            {kicker('l-flag', <IconFlag />, t('Flag on the main', 'Флаг на гроте'))}
+            <FlagPicker value={flag?.code} onChange={setFlag} t={t} />
           </div>
-          {swatches('ink', t('Colour', 'Цвет'), true)}
+          <div className="bt-g">
+            <label className="bt-k" htmlFor="b-num"><IconHash />{t('Sail number', 'Номер на парусе')}</label>
+            <div className="num-pair">
+              {b.logo === 'none' && <input className="num-in" aria-label={t('Letters on the sail', 'Буквы на парусе')} value={b.nat} maxLength={3} onChange={(e) => set({ nat: e.target.value.toUpperCase().replace(/[^A-ZА-ЯЁ]/g, '') })} />}
+              <input id="b-num" className="num-in" inputMode="numeric" value={b.num} maxLength={3} onChange={(e) => set({ num: e.target.value.replace(/[^0-9]/g, '') })} onBlur={() => { if (!b.num) set({ num: '1' }); }} />
+            </div>
+          </div>
         </div>
-
-        <div className="bt-g">
-          {kicker('l-team', <IconCrew />, t('Team', 'Команда'))}
-          {swatches('crew', t('Jackets', 'Куртки'), true)}
-          {swatches('pants', t('Trousers', 'Брюки'), true)}
-        </div>
+        {swatches('ink', t('Sail number colour', 'Цвет номера'), true)}
 
         {err && <p className="bt-err" role="alert">{err}</p>}
-        <button type="button" className="bt-row" onClick={() => { setB({ ...DEFAULT_BOAT, logoImg: b.logoImg }); setDown(false); }}>
-          <IconRestart /><span>{t('Back to the RYC colours', 'Вернуть цвета RYC')}</span>
-        </button>
         <p className="bt-saved">{t('Saved on this device. You race in her from the next start.', 'Сохранено на этом устройстве. В гонке — со следующего старта.')}</p>
       </section>
     </div>

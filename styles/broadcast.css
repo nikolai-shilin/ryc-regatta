@@ -166,8 +166,10 @@
 /* the picture still being drawn: a sheen running over the tile */
 .bc .sk { background-image: linear-gradient(100deg, transparent 30%, var(--w-08) 50%, transparent 70%) !important; background-size: 220% 100% !important;
   background-color: var(--fill-1); animation: bc-sheen 1.3s linear infinite; }
-.bc .bt-card .sw { border-radius: 0; }
-.bc .bt-card .sw[aria-checked="true"] { box-shadow: var(--hairline), 0 0 0 2px var(--ground), 0 0 0 4px var(--ink); }
+/* a swatch is a touch's size, the one picked ringed in blue */
+.bc .bt-card .sws { gap: var(--s-2); }
+.bc .bt-card .sw { width: var(--h-m); height: var(--h-m); border-radius: 0; }
+.bc .bt-card .sw[aria-checked="true"] { box-shadow: var(--hairline), 0 0 0 2px var(--ground), 0 0 0 4px var(--you); }
 .bc .bt-card .num-in { height: var(--h-m); border: 0; border-bottom: 2px solid var(--w-35); border-radius: 0; background: var(--fill-1); font: 700 var(--fs-lead)/1 var(--cond); }
 .bc .bt-card .num-in:focus { border-bottom-color: var(--you); background: var(--w-10); }
 .bc .bt-card .logo-thumb { border-radius: 0; }
@@ -354,6 +356,20 @@
 .bc .rs-lb .hm-t { flex: none; min-width: 56px; text-align: right; }
 .bc .rs-gap { flex: none; min-width: 52px; text-align: right; font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-3); }
 .bc .rs-share-b { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
+/* your boat: her flag and sail number as the headline; Back to the RYC colours in the card's head; the colours two to
+   a row on a wide screen in a wider card; the flag and the number side by side (the flag's list, open, takes the row) */
+.bc .bt-h-boat { display: flex; align-items: center; gap: 0.2em; }
+.bc .bt-h-flag { flex: none; width: 0.66em; height: 0.44em; object-fit: cover; box-shadow: 0 0 0 1px var(--w-35); }
+.bc .bt-card-h .bt-mini { display: inline-flex; align-items: center; gap: var(--s-2); height: var(--h-m); }
+.bc .bt-card-h .bt-mini svg { width: 14px; height: 14px; color: var(--ink-3); }
+.bc .bt-grid2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }
+.bc .bt-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--s-5) var(--s-4); }
+.bc .bt-pair > :has(.fp-pop) { grid-column: 1 / -1; }
+@container scr (min-width: 1024px) and (min-height: 640px) { .bc .bt-grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5) var(--s-4); } }
+@container scr (min-width: 1280px) and (min-height: 640px) { .bc .bt-card.bt-boat { width: 540px; } }
+
+.bc .bt-logo .bt-mini { height: var(--h-m); }
 
 /* ==========================================================================
    The site's own pages in the broadcast look (the home, the reading pages, settings and signing in): the old tokens
