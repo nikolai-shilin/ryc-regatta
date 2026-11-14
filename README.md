@@ -1,6 +1,6 @@
 # Regatta
 
-Up and down is a 3D sailing game at https://regatta.rycrentals.com. You race a windward–leeward course against computer boats, under the
+Up and down is a 3D sailing game at https://regatta.rycrentals.com. You race round the marks against computer boats, under the
 racing rules. It is a Next.js app (App Router) around a static Three.js game, deployed by the Vercel project
 `ryc-regatta` on every push to `main`.
 
@@ -10,7 +10,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 | --- | --- | --- |
 | `/` | Home: the game described in detail | `app/[lang]/page.tsx` |
 | `/race` | The race hub: today's race, today's fastest and a free race, in the pause-menu card over today's venue in the game's own scene (`components/game-scene.tsx`) | `app/[lang]/race/page.tsx` |
-| `/race/free` | Set up a free race (venue, wind, fleet, course, laps, start, current), in the pause-menu card over the game's own scene at the chosen venue (`/boat-view?venue=&wind=`), which fades to each new place | `components/free-setup.tsx` |
+| `/race/free` | Set up a free race (venue, wind, fleet, course shape — up and down, triangle, trapezoid or up and down with an upwind finish — length, laps, start, current), in the pause-menu card over the game's own scene at the chosen venue (`/boat-view?venue=&wind=`), which fades to each new place | `components/free-setup.tsx` |
 | `/race/result/[id]` | The result and debrief after a race, in the pause-menu card over the finish as it was: the game's own scene at the race's venue (`/boat-view?finish=1`), the line, the marks and every boat where she was as you crossed it | `components/result-view.tsx`, `lib/finish.ts` |
 | `/boat` | Your boat: colours, logo, sail number and team, in the race's pause-menu card over the game's own scene: your yacht on Lake Garda on a summer evening (`/boat-view`) | `components/boat-editor.tsx` |
 | `/settings` | Account, sailing, screen and sound, language | `components/settings-form.tsx` |
@@ -49,7 +49,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   - The game reads the same cookie.
   - The copy is inline as `t('English', 'Русский')` pairs (`lib/lang.ts`).
 - **Today's race:** `lib/race.ts` is a copy of the game's `dailyRace()` and must stay in step with `public/game/sim.js`;
-  `npm test` compares the two over 500 days. Its day is the UTC date, so it changes at 03:00 in Moscow and Türkiye.
+  `npm test` compares the two over 546 days. From `SHAPES_FROM` today's race picks one of the four shapes each day. Its day is the UTC date, so it changes at 03:00 in Moscow and Türkiye.
   Today's fastest comes from `https://iyt.rycrentals.com/api/game` (the `iyt-test` repo).
 - **Styles:** `styles/tokens.css` is the RYC design system's tokens and `styles/ryc.css` holds the pages. Layouts follow
   the screen through container queries: phone sideways, phone upright, desktop.
@@ -86,7 +86,8 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la Garde, Christ the Redeemer, Enoshima's Sea
   Candle, the lighthouses of Kiel and Trieste, and Istanbul's Bosphorus Bridge, Galata Tower, Blue Mosque, Hagia
   Sophia and Süleymaniye. `land.js` lays each course in clear water; `npm test` sails every
-  course at every venue and checks its marks are in clear water. Moving between today's race and a free race in the
+  course shape at every venue and checks its marks are in clear water; a shape a venue has no room for at a length
+  goes in its `skip`, and the set-up offers only the shapes `shapeOffered()` (`lib/venues.ts`) allows there. Moving between today's race and a free race in the
   game reloads the page when the venue changes. OpenStreetMap has few of Göcek's buildings, so its town also comes
   from Microsoft's Global ML Building Footprints (ODbL), which `venues.py` downloads with the rest.
 - **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes

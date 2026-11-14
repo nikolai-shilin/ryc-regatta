@@ -190,8 +190,10 @@ for (const preset of ['light', 'medium', 'strong']) {
   });
 }
 
-// The new shapes, sailed headless by the computer boats in every wind, one lap and two: each race sailed once, for both
-// tests. Every boat that finishes went round every mark in turn, and well above the server's floor.
+// The new shapes, sailed headless by the computer boats: one lap in every wind, and two laps in strong wind (the
+// trapezoid's re-beat from the gate to mark 2 and the repeated laps; strong wind is where the fastest time comes
+// nearest the floor), each race sailed once, for both tests. Every boat that finishes went round every mark in turn,
+// and well above the server's floor.
 const shapeRuns = new Map();
 function shapeRun(course, preset, laps) {
   const key = `${course} ${preset} ${laps}`, opts = { course, preset, laps, length: 'short', fleet: 5, seed: 11 };
@@ -205,7 +207,7 @@ const LEGS = {
   trap: (laps) => ['start', 'mark', 'mark2', 'gate', ...Array.from({ length: laps - 1 }, () => ['mark2', 'gate']).flat(), 'finish'],
   wlu: (laps) => ['start', ...Array.from({ length: laps }, () => ['mark', 'offset', 'gate']).flat(), 'finish'],
 };
-for (const course of ['trap', 'wlu']) for (const preset of ['light', 'medium', 'strong']) for (const laps of [1, 2]) {
+for (const course of ['trap', 'wlu']) for (const [preset, laps] of [['light', 1], ['medium', 1], ['strong', 1], ['strong', 2]]) {
   test(`${course} ${preset} ${laps}: the computer boats sail every leg in order`, () => {
     const { times, seen, legs } = shapeRun(course, preset, laps);
     assert.deepEqual(legs, LEGS[course](laps));
@@ -358,9 +360,10 @@ test('a result without the finish kept puts the fleet close to where it was as y
   }
 });
 
-// Up and down and the triangle, sailed before the course code was reshaped (test/golden.mjs --write made the fixture):
-// the same finishes, leg times and tracks, to the tenth. Rewrite the fixture only when a change to the sailing is meant.
-test('the existing shapes sail exactly as before the course refactor', async () => {
+// Up and down and the triangle, one lap (test/golden.mjs --write made the fixture): the same finishes, leg times and
+// tracks, to the tenth, so 'wl' and 'tri' sail on unchanged from here on. Rewrite the fixture only when a change to the
+// sailing is meant, and whenever Göcek's land is baked again (the races are sailed in its bay, round its shore).
+test('up and down and the triangle sail exactly as the fixture has them', async () => {
   const { goldenRuns } = await import('./golden.mjs');
   const fixture = JSON.parse(await readFile(new URL('./fixtures/courses-golden.json', import.meta.url), 'utf8'));
   assert.deepEqual(goldenRuns(), fixture);
@@ -383,5 +386,21 @@ test('the site lays every shape where the game does', () => {
       assert.equal(!!g.finish, !!c.finish, `${at} finish`);
       if (c.finish) { near(g.finish[0], c.finish.a, `${at} finish a`); near(g.finish[1], c.finish.b, `${at} finish b`); }
       assert.deepEqual(site.courseLegs(laps, shape), c.legs, `${at} legs ${laps}`);
+    }
+});
+
+// the course's length on the site's pages (lib/race.ts legDistances, courseDistance) is the game's: each leg from the
+// last one's aim to its own (the middle of the line, of the gate, of the finish line), with no bias in the wind
+test('the site measures the trapezoid and the upwind finish leg by leg as the game lays them', () => {
+  const d = (p, q) => Math.hypot(q.x - p.x, q.z - p.z);
+  for (const shape of ['trap', 'wlu']) for (const preset of ['light', 'medium', 'strong'])
+    for (const length of ['short', 'medium', 'long']) for (const fleet of [5, 7]) for (const laps of [1, 2]) {
+      const c = sim.makeCourse(laps, BEAT[preset] * sim.COURSE_LEN[length], 0, fleet, shape), at = `${shape} ${preset} ${length} ${fleet} ${laps}`;
+      const want = c.legs.map((_, i) => (i ? d(sim.legAim(c, i - 1), sim.legAim(c, i)) : 0));
+      const got = site.legDistances(site.plannedCourse(preset, length, fleet, shape), c.legs);
+      assert.equal(got.length, want.length, at);
+      got.forEach((g, i) => assert.ok(Math.abs(g - want[i]) < 1, `${at} leg ${i} (${c.legs[i]}): ${g.toFixed(1)} vs ${want[i].toFixed(1)} m`));
+      const total = want.reduce((a, b) => a + b, 0);
+      assert.ok(Math.abs(site.courseDistance(site.plannedCourse(preset, length, fleet, shape), laps) - total) < 2, `${at} total`);
     }
 });

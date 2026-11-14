@@ -40,7 +40,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { World } from '/game/world.js';
-import { Race, beatAngle } from '/game/sim.js';
+import { Race, beatAngle, legAim, SHAPES } from '/game/sim.js';
 import { placeCourse } from '/game/land.js';
 import { BoatView, lookFrom } from '/game/yacht.js';
 import { HOURS } from '/game/light.js';
@@ -88,9 +88,20 @@ if (world) {
   let fleet = null, look0 = 0, reach = 40;
   const finish = (d) => {
     const r = d.race, c = r.course, pt = ([x, z]) => ({ x, z });
-    race = new Race({ preset: r.preset, fleet: Math.max(2, d.boats.length), laps: r.laps || 1, length: r.length || 'short', start: r.start || 1, current: !!r.current, course: c.type === 'tri' ? 'tri' : 'wl', seed: r.seed ?? 4242 });
-    const C = race.course;
-    Object.assign(C, { pin: pt(c.pin), committee: pt(c.committee), windward: pt(c.windward), gate: c.gate.map(pt), ...(c.wing && { wing: pt(c.wing) }) });
+    // its shape: as the game kept it, or for a race kept before the shapes, a triangle if it has a wing mark
+    const type = SHAPES.includes(c.type) ? c.type : c.wing ? 'tri' : 'wl';
+    race = new Race({ preset: r.preset, fleet: Math.max(2, d.boats.length), laps: r.laps || 1, length: r.length || 'short', start: r.start || 1, current: !!r.current, course: type, seed: r.seed ?? 4242 });
+    const C = race.course, windward = pt(c.windward), wing = c.wing ? pt(c.wing) : null;
+    // every rounding mark as it lay (the windward mark one with C.windward), and a finish line of its own with its
+    // committee boat a little out beyond its right-hand end
+    const marks = { mark: windward, ...(wing && { wing }) };
+    for (const [k, m] of Object.entries(c.marks || {})) if (k !== 'mark') marks[k] = k === 'wing' && wing ? wing : pt(m);
+    Object.assign(C, { pin: pt(c.pin), committee: pt(c.committee), windward, gate: c.gate.map(pt), wing, marks });
+    if (Array.isArray(c.finish)) {
+      const a = pt(c.finish[0]), b = pt(c.finish[1]), fl = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+      C.finish = { a, b, through: C.finish?.through || { x: (b.z - a.z) / fl, z: -(b.x - a.x) / fl } };
+      C.finishBoat = { x: b.x + ((b.x - a.x) / fl) * 5, z: b.z + ((b.z - a.z) / fl) * 5 };
+    }
     const dx = C.committee.x - C.pin.x, dz = C.committee.z - C.pin.z, len = Math.hypot(dx, dz) || 1;
     Object.assign(C, { dir: { x: dx / len, z: dz / len }, normal: { x: dz / len, z: -dx / len }, len });
     race.at = r.origin ? pt(r.origin) : placeCourse(C, beatAngle(race.wind.p.tws));
@@ -209,6 +220,8 @@ if (world) {
   // run together), arrows along it the way it is sailed, the line, a dot on each mark, and their names
   let deco = null;
   const mid = (a, b) => ({ x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 });
+  // everything laid on the water: the line, every mark, the gate, and a finish line of its own and its committee boat
+  const coursePts = (C) => [C.pin, C.committee, ...Object.values(C.marks), ...C.gate, ...(C.finish ? [C.finish.a, C.finish.b, C.finishBoat] : [])];
   const buildDeco = () => {
     if (deco) { world.scene.remove(deco); deco.traverse((o) => { if (o.material) { o.material.map?.dispose(); o.material.dispose(); } }); }
     deco = new THREE.Group();
@@ -220,20 +233,25 @@ if (world) {
       if (s.chev) { s.chev.renderOrder = 6; deco.add(s.chev); }
       U.segs.push(s);
     };
-    for (let lap = 0; lap < C.laps; lap++) {
-      const m = flatMat(LAP[lap % 2], 0.95), last = lap === C.laps - 1;
-      m.userData.route = true;
-      const pts = [lap ? G : M, C.windward, ...(C.wing ? [C.wing] : []), last ? M : G];
-      for (let i = 1; i < pts.length; i++) ribbon(pts[i - 1], pts[i], m, lap - (C.laps - 1) / 2, true, 'route');
+    // leg by leg, from the middle of the line to each leg's mark (the middle of the gate, of the finish line); a lap
+    // ends at the gate, and the leg on to the finish is the last lap's
+    const lapMats = Array.from({ length: C.laps }, (_, lap) => { const m = flatMat(LAP[lap % 2], 0.95); m.userData.route = true; return m; });
+    let lap = 0, from = M;
+    for (let i = 1; i < C.legs.length; i++) {
+      const to = legAim(C, i), L = Math.min(lap, C.laps - 1);
+      ribbon(from, to, lapMats[L], L - (C.laps - 1) / 2, true, 'route');
+      from = to; if (C.legs[i] === 'gate') lap++;
     }
     ribbon(C.pin, C.committee, flatMat('#ffffff', 0.8), 0, false, 'marks');
+    if (C.finish) ribbon(C.finish.a, C.finish.b, flatMat('#ffffff', 0.8), 0, false, 'marks');
     const orange = flatMat('#ff8a1e', 1), white = flatMat('#ffffff', 1);
-    for (const p of [C.windward, ...C.gate, ...(C.wing ? [C.wing] : []), C.pin]) { const m = new THREE.Mesh(DOT, orange); m.position.set(p.x, 1.6, p.z); m.renderOrder = 7; deco.add(m); U.dots.push(m); }
-    const cb = new THREE.Mesh(DOT, white); cb.position.set(C.committee.x + C.dir.x * 5, 1.6, C.committee.z + C.dir.z * 5); cb.renderOrder = 7; deco.add(cb); U.dots.push(cb);
+    const dot = (p, mat) => { const m = new THREE.Mesh(DOT, mat); m.position.set(p.x, 1.6, p.z); m.renderOrder = 7; deco.add(m); U.dots.push(m); };
+    for (const p of [...Object.values(C.marks), ...C.gate, C.pin, ...(C.finish ? [C.finish.a] : [])]) dot(p, orange);
+    dot({ x: C.committee.x + C.dir.x * 5, z: C.committee.z + C.dir.z * 5 }, white);
+    if (C.finishBoat) dot(C.finishBoat, white);
     U.mats = [...new Set([...U.segs.map((s) => s.mesh.material), orange, white])];
     world.scene.add(deco);
-    const xs = [C.pin.x, C.committee.x, C.windward.x, ...C.gate.map((g) => g.x), ...(C.wing ? [C.wing.x] : []), ...poses.map(([, p]) => p.x)];
-    const zs = [C.pin.z, C.committee.z, C.windward.z, ...C.gate.map((g) => g.z), ...(C.wing ? [C.wing.z] : []), ...poses.map(([, p]) => p.z)];
+    const all = [...coursePts(C), ...poses.map(([, p]) => p)], xs = all.map((p) => p.x), zs = all.map((p) => p.z);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs), mx = 0.4 * (x1 - x0) + 180, mz = 0.25 * (z1 - z0) + 160;
     area = { x0: x0 - mx, x1: x1 + mx, z0: z0 - mz, z1: z1 + mz };
   };
@@ -253,12 +271,20 @@ if (world) {
   };
   const labelCourse = (L) => {
     const U = deco.userData, C = race.course, M = mid(C.pin, C.committee);
-    for (const s of U.tags) { deco.remove(s); s.material.map.dispose(); s.material.dispose(); }
+    // the old names off the water now, disposed once any compile under way is done (world.ready), never under it
+    const old = U.tags;
+    for (const s of old) deco.remove(s);
+    world.ready().then(() => { for (const s of old) { s.material.map.dispose(); s.material.dispose(); } });
     U.tags = [];
     const at = (s, p, y = 9) => { s.position.set(p.x, y, p.z); deco.add(s); U.tags.push(s); };
     if (L.windward) at(tag(L.windward, '#ff8a1e', 0.5, -0.35), C.windward);
-    if (L.gate) at(tag(L.gate, '#ff8a1e', -0.12, 0.5), C.gate[1]);
-    if (L.wing && C.wing) at(tag(L.wing, '#ff8a1e', 1.05, 0.5), C.wing);
+    // the gate's name off its right-hand buoy, or its left-hand one when a finish line lies off to the right of it
+    const gateL = C.finish && C.finish.a.x > C.gate[1].x && C.finish.a.z > C.windward.z / 2;
+    if (L.gate) at(gateL ? tag(L.gate, '#ff8a1e', 1.12, 0.5) : tag(L.gate, '#ff8a1e', -0.12, 0.5), gateL ? C.gate[0] : C.gate[1]);
+    if (L.wing && C.marks.wing) at(tag(L.wing, '#ff8a1e', 1.05, 0.5), C.marks.wing);
+    if (L.mark2 && C.marks.mark2) at(tag(L.mark2, '#ff8a1e', 1.05, 0.5), C.marks.mark2);
+    if (L.offset && C.marks.offset) at(tag(L.offset, '#ff8a1e', 1.05, 0.5), C.marks.offset);
+    if (L.finish && C.finish) at(tag(L.finish, '#ffffff', -0.1, 0.5), mid(C.finish.a, C.finish.b));
     if (L.line) at(tag(L.line, '#ffffff', 0.5, 1.6), M);
     if (L.beat) at(tag(L.beat, null, -0.15, 0.5), mid(M, C.windward));
   };
@@ -267,8 +293,11 @@ if (world) {
   const lay = (s) => {
     const preset = HEEL[s.preset] ? s.preset : 'medium';
     wind = preset; heel = HEEL[preset];
-    race = new Race({ preset, fleet: s.fleet, laps: s.laps, length: s.length, start: s.start, current: !!s.current, course: s.course === 'tri' ? 'tri' : 'wl', seed: 4242 });
+    race = new Race({ preset, fleet: s.fleet, laps: s.laps, length: s.length, start: s.start, current: !!s.current, course: s.course, seed: 4242 }); // a shape not laid at this venue goes back to up and down (sim.js)
     race.player.done = true; // no pointers, laylines or zones: nothing to sail for yet
+    // the old course's drawing out of the scene first: setRace compiles what the scene holds (world.prepare), and
+    // buildDeco disposes it below, which would leave that compile waiting on materials that are gone
+    if (deco) world.scene.remove(deco);
     world.setRace(race);
     world.mode = 'set-up'; // the drone is flown here (camStep)
     P = race.player; W = race.wind.dir();
@@ -297,7 +326,7 @@ if (world) {
       const d = Math.max(30, R / (TAN * asp * cw), (R * 0.5 + 12) / (TAN * ch)) * 1.05 * zoomK;
       return { tx: cx, tz: cz, ty: 4, d, el: 13 * D2R, az: P.h + 2.3 + spin };
     }
-    const C = race.course, pts = [C.pin, C.committee, C.windward, ...C.gate, ...(C.wing ? [C.wing] : []), ...poses.map(([, p]) => p)];
+    const C = race.course, pts = [...coursePts(C), ...poses.map(([, p]) => p)];
     const el = (view === 'course' ? 58 : 48) * D2R, az = W + ovSpin;
     const xs = pts.map((p) => p.x), zs = pts.map((p) => p.z), cx = (Math.min(...xs) + Math.max(...xs)) / 2, cz = (Math.min(...zs) + Math.max(...zs)) / 2;
     const rx = Math.cos(az), rz = Math.sin(az), fx = Math.sin(az), fz = -Math.cos(az);

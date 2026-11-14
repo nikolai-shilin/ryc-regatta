@@ -18,13 +18,16 @@ async function font(family: string, weight: 300 | 700, text: string) {
   } catch { return null; }
 }
 
-// The course to scale, the windward mark up: the start line dashed, the marks in orange; with `tracks` each boat's
+// The course to scale, the windward mark up: the start line dashed (and a finish line of its own, when the course has
+// one), the marks in orange; with `tracks` each boat's
 // track (yours brighter), with `route` (the beat angle, in degrees) the way round as a faint line, the beat in two
 // tacks as the game's set-up draws it, and with `wind` the wind coming down from the top.
 export function CourseSvg({ course: c, tracks, route, wind }: { course: CourseGeo; tracks?: { pts: XZ[]; me: boolean }[]; route?: number; wind?: boolean }) {
   const { w, h } = PANEL;
-  const marks: XZ[] = [c.windward, ...c.gate, ...(c.wing ? [c.wing] : [])];
-  const pts: XZ[] = [...marks, c.pin, c.committee, ...(tracks || []).flatMap((t) => t.pts)];
+  // the rounding marks by the leg that goes to each (a result saved before the shapes has only the windward and wing marks)
+  const round: Partial<Record<string, XZ>> = { mark: c.windward, ...(c.wing && { wing: c.wing }), ...c.marks };
+  const marks: XZ[] = [...Object.values(round).filter((m): m is XZ => !!m), ...c.gate];
+  const pts: XZ[] = [...marks, ...(c.finish || []), c.pin, c.committee, ...(tracks || []).flatMap((t) => t.pts)];
   const mid = (a: XZ, b: XZ): XZ => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
   const M = mid(c.pin, c.committee), beat = Math.hypot(c.windward[0] - M[0], c.windward[1] - M[1]);
   const corner: XZ = [M[0] - (beat / 2) * Math.tan(((route || 40) * Math.PI) / 180), (M[1] + c.windward[1]) / 2];
@@ -35,11 +38,14 @@ export function CourseSvg({ course: c, tracks, route, wind }: { course: CourseGe
   const ox = (w - (x1 - x0) * s) / 2, oz = pad + (h - pad - 28 - (z1 - z0) * s) / 2;
   const X = (x: number) => ox + (x - x0) * s, Z = (z: number) => oz + (z - z0) * s;
   const path = (tr: XZ[]) => tr.map(([x, z], i) => `${i ? 'L' : 'M'}${X(x).toFixed(1)} ${Z(z).toFixed(1)}`).join(' ');
-  const way: XZ[] = [M, corner, c.windward, ...(c.wing ? [c.wing] : []), mid(c.gate[0], c.gate[1]), M];
+  // one lap: up to the windward mark, round the marks off the wind to the gate, then home to the finish
+  const off = [round.wing, round.mark2, round.offset].filter((m): m is XZ => !!m);
+  const way: XZ[] = [M, corner, c.windward, ...off, mid(c.gate[0], c.gate[1]), c.finish ? mid(c.finish[0], c.finish[1]) : M];
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
       {wind && <path d={`M${w / 2} 18 L${w / 2} 44 M${w / 2 - 7} 36 L${w / 2} 46 L${w / 2 + 7} 36`} stroke="rgba(255,255,255,0.7)" strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" />}
       <line x1={X(c.pin[0])} y1={Z(c.pin[1])} x2={X(c.committee[0])} y2={Z(c.committee[1])} stroke="rgba(255,255,255,0.55)" strokeWidth={2} strokeDasharray="6 6" />
+      {c.finish && <line x1={X(c.finish[0][0])} y1={Z(c.finish[0][1])} x2={X(c.finish[1][0])} y2={Z(c.finish[1][1])} stroke="rgba(255,255,255,0.55)" strokeWidth={2} strokeDasharray="6 6" />}
       {route && <path d={path(way)} fill="none" stroke="rgba(143,211,255,0.45)" strokeWidth={3} strokeDasharray="2 9" strokeLinecap="round" />}
       {(tracks || []).filter((t) => !t.me && t.pts.length > 1).map((t, i) => <path key={i} d={path(t.pts)} fill="none" stroke="rgba(255,255,255,0.42)" strokeWidth={2.5} strokeLinejoin="round" />)}
       {(tracks || []).filter((t) => t.me && t.pts.length > 1).map((t, i) => <path key={`me${i}`} d={path(t.pts)} fill="none" stroke={ME} strokeWidth={5} strokeLinejoin="round" strokeLinecap="round" />)}

@@ -3,7 +3,7 @@ import { getT, titled, type LangParams } from '@/lib/i18n';
 import { ruBoats } from '@/lib/lang';
 import { getAccount, initials } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
-import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN } from '@/lib/race';
+import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, SHAPE_NAME } from '@/lib/race';
 import { venueOf } from '@/lib/venues';
 import { IconBack, IconPlay, IconTrophy, IconSliders, IconSail, clock } from '@/components/ui';
 import { FreeQuick } from '@/components/hub-client';
@@ -50,7 +50,7 @@ export default async function Hub({ params }: LangParams) {
             : t('The same race for everyone today. Nobody has finished it yet.', 'Сегодня у всех одна гонка. Её ещё никто не прошёл.')}</p>
           <div className="bt-stats">
             <div><span className="bt-sk">{t('Wind', 'Ветер')}</span><b>{KN[d.preset]} {t('kn', 'уз')}</b><span className="bt-sv">{t(`${breeze}, shifting`, `${breeze}, переменчивый`)}</span></div>
-            <div><span className="bt-sk">{t('Course', 'Дистанция')}</span><b>{metres}</b><span className="bt-sv">{t(`Up and down, ${d.laps} lap`, `Апвинд — даунвинд, ${d.laps} круг`)}</span></div>
+            <div><span className="bt-sk">{t('Course', 'Дистанция')}</span><b>{metres}</b><span className="bt-sv">{t(`${SHAPE_NAME[d.course][0]} · ${d.laps} lap`, `${SHAPE_NAME[d.course][1]} · ${d.laps} круг`)}</span></div>
             <div><span className="bt-sk">{t('Fleet', 'Флот')}</span><b>{d.fleet}</b><span className="bt-sv">{t(`You and ${d.fleet - 1} boats`, `Ты и ${ruBoats(d.fleet - 1)}`)}</span></div>
             <div><span className="bt-sk">{t('Start', 'Старт')}</span><b>{t(`${d.start} min`, `${d.start} мин`)}</b><span className="bt-sv">{d.current ? t('A current runs across', 'Течение поперёк') : t('Class flag, P, the gun', 'Флаг класса, P, сигнал')}</span></div>
           </div>

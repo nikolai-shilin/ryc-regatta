@@ -21,7 +21,8 @@ export class JuryBoat {
   reset(race) {
     this.race = race;
     const c = race.course, beat = -c.windward.z, tb = Math.tan(beatAngle(race.wind.p.tws) * Math.PI / 180);
-    const pts = [c.windward, ...c.gate, c.pin, c.committee, ...(c.wing ? [c.wing] : [])].map((m) => [m.x, m.z]);
+    // every mark, the gate, the line, and a finish line of its own with its committee boat (a trapezoid's, out to the left)
+    const pts = [...Object.values(c.marks), ...c.gate, c.pin, c.committee, ...(c.finish ? [c.finish.a, c.finish.b, c.finishBoat] : [])].map((m) => [m.x, m.z]);
     pts.push([0, 200], [0, -beat - 90], [-beat * tb * 0.3, -beat / 2], [beat * tb * 0.3, -beat / 2]);
     const xs = pts.map((p) => p[0]), zs = pts.map((p) => p[1]);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);

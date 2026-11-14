@@ -1,6 +1,9 @@
-// The golden runs: up and down and the triangle, sailed to the end in headless Node, and boiled down to each boat's
-// finish, leg-change times and (every 30th) track point. test/sim.test.mjs holds the course code to the fixture
-// written here; rewrite it only on purpose: node test/golden.mjs --write
+// The golden runs: up and down and the triangle, one lap, in light and strong wind, with and without the current (8
+// races, fleet 7, seed 31), sailed to the end in headless Node and boiled down to each boat's finish, leg-change times
+// and (every 30th) track point. test/sim.test.mjs holds 'wl' and 'tri' to the fixture written here, so they sail on
+// unchanged by the new shapes and whatever comes after. Rewrite it only on purpose: node test/golden.mjs --write. The
+// race is sailed in Göcek's bay, so the fixture must be written again whenever Göcek's land is baked again
+// (blender/venues.py): the boats steer round the shore.
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
@@ -27,8 +30,8 @@ function sailRun(opts) {
 
 export function goldenRuns() {
   const runs = [];
-  for (const course of ['wl', 'tri']) for (const preset of ['light', 'strong']) for (const laps of [1, 2]) for (const current of [0, 1])
-    runs.push({ key: `${course} ${preset} laps ${laps} current ${current}`, ...sailRun({ course, preset, laps, current }) });
+  for (const course of ['wl', 'tri']) for (const preset of ['light', 'strong']) for (const current of [0, 1])
+    runs.push({ key: `${course} ${preset} laps 1 current ${current}`, ...sailRun({ course, preset, laps: 1, current }) });
   return JSON.parse(JSON.stringify(runs));
 }
 
