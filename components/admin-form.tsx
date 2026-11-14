@@ -91,3 +91,69 @@ export function AdminForm({ lang, current }: { lang: Lang; current: { url: strin
     </div>
   );
 }
+
+// The words on the banner the light plane tows over the course now and then (public/game/plane.js): the first part in
+// navy, then a red dot and the second part in red, in public.regatta_settings 'plane_banner' as { lines: [a, b] }, which
+// /sponsor hands the game. Nothing set: the game's own RYCRENTALS.COM · RENT YACHTS HERE!
+const BANNER_KEY = 'plane_banner', BANNER_MAX = 40;
+
+export function BannerForm({ lang, current }: { lang: Lang; current: string[] | null }) {
+  const t = tx(lang);
+  const router = useRouter();
+  const [a, setA] = useState(current?.[0] ?? '');
+  const [b, setB] = useState(current?.[1] ?? '');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [done, setDone] = useState('');
+  const lines = [a.trim(), b.trim()].filter(Boolean);
+  const same = lines.join('\n') === (current ?? []).join('\n');
+
+  const write = async (clear: boolean) => {
+    setBusy(true); setErr(''); setDone('');
+    const sb = supabaseBrowser();
+    const row = clear
+      ? await sb.from('regatta_settings').delete().eq('key', BANNER_KEY)
+      : await sb.from('regatta_settings').upsert({ key: BANNER_KEY, value: { lines }, updated_at: new Date().toISOString() });
+    if (row.error) { setBusy(false); return setErr(row.error.message); }
+    await sponsorChanged();
+    if (clear) { setA(''); setB(''); }
+    setDone(clear
+      ? t('Removed. The plane tows the RYC banner again from the next race.', 'Убрано. Со следующей гонки самолёт снова тянет баннер RYC.')
+      : t('Saved. The plane tows it from the next race.', 'Сохранено. Со следующей гонки самолёт тянет его.'));
+    setBusy(false); router.refresh();
+  };
+
+  return (
+    <div className="set-grid adm-banner">
+      <div className="set-sec">
+        <div className="group-k"><IconImage /><span className="kicker">{t('On the plane’s banner', 'На баннере самолёта')}</span></div>
+        <div className="adm-ban" aria-label={t('How the banner reads', 'Как читается баннер')}>
+          {lines.length ? (
+            <>
+              <span className="adm-ban-a">{lines[0]}</span>
+              {lines[1] && <><span className="adm-ban-dot" aria-hidden="true" /><span className="adm-ban-b">{lines[1]}</span></>}
+            </>
+          ) : (
+            <><span className="adm-ban-a">RYCRENTALS.COM</span><span className="adm-ban-dot" aria-hidden="true" /><span className="adm-ban-b">RENT YACHTS HERE!</span></>
+          )}
+        </div>
+        <p className="hint">{t('A light plane tows it low across the course every minute or two, side-on to the camera. Leave both empty for the RYC banner.', 'Лёгкий самолёт проносит его низко над дистанцией каждые минуту-две, боком к камере. Оставьте оба поля пустыми — будет баннер RYC.')}</p>
+      </div>
+      <div className="set-sec">
+        <div className="srow">
+          <label className="srow-k" htmlFor="adm-ban-a">{t('First words (navy)', 'Первые слова (синие)')}</label>
+          <input id="adm-ban-a" className="field" type="text" maxLength={BANNER_MAX} value={a} disabled={busy} onChange={(e) => { setA(e.target.value); setDone(''); }} />
+        </div>
+        <div className="srow">
+          <label className="srow-k" htmlFor="adm-ban-b">{t('Then (red)', 'Затем (красные)')}</label>
+          <input id="adm-ban-b" className="field" type="text" maxLength={BANNER_MAX} value={b} disabled={busy} onChange={(e) => { setB(e.target.value); setDone(''); }} />
+        </div>
+        <div className="btn-row adm-go">
+          <button type="button" className="pill pill-primary pill-xs" disabled={!lines.length || same || busy} onClick={() => write(false)}><span className="btn-t">{busy ? t('Saving…', 'Сохраняю…') : t('Put it on the banner', 'Поставить на баннер')}</span></button>
+          {current && <button type="button" className="pill pill-quiet pill-xs" disabled={busy} onClick={() => write(true)}><span className="btn-t">{t('Back to the RYC banner', 'Вернуть баннер RYC')}</span></button>}
+        </div>
+        {err ? <p className="err" role="alert">{err}</p> : done ? <p className="hint" role="status">{done}</p> : null}
+      </div>
+    </div>
+  );
+}
