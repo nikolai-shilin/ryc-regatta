@@ -31,7 +31,7 @@ const T = {
     inSeq: 'You are in the start sequence.', notKept: 'This race’s time and place are not kept.',
     askK: { restart: 'Restart', change: 'Change the race', leave: 'Leave' }, askH: { restart: 'Restart this race?', change: 'Change the race?', leave: 'Leave this race?' },
     askT: { restart: 'It starts over from the start sequence, the same course in the same wind.', change: 'Next you pick the place, the wind and the course, and the race starts over with them.', leave: 'You go back to the race hub.' },
-    sailUp: 'Beating to', sailDown: (k) => (k ? 'Running to' : 'Running, kite down, to'), sailReach: 'Reaching to', aheadOf: (n, m) => `${n} is ${m} m ahead.`, leadBy: (m) => `You lead by ${m} m.`, leadAlone: 'You lead.',
+    sailUp: 'Beating to', sailDown: (k) => (k ? 'Running to' : 'Running, kite down, to'), sailReach: 'Reaching to', aheadOf: (n, s) => `${n} is ${s} ahead.`, leadBy: (s) => `You lead by ${s}.`, leadAlone: 'You lead.',
     // the pause's next target, with how far and how to round it; the leave dialog's headline; the course map's words
     nextAt: (m, d) => `Next: ${m} · ${d} m`, howPort: 'Leave it to port, on your left as you round it.', howGate: 'Sail between the two buoys and round either one.',
     howFinish: 'Cross the finish line between its ends.', howStart: 'Cross the line after the gun, between the committee boat and the pin.',
@@ -126,7 +126,7 @@ const T = {
     inSeq: 'Идёт стартовая процедура.', notKept: 'Время и место этой гонки не сохранятся.',
     askK: { restart: 'Заново', change: 'Изменить гонку', leave: 'Выход' }, askH: { restart: 'Начать заново?', change: 'Изменить гонку?', leave: 'Выйти из гонки?' },
     askT: { restart: 'Всё начнётся со стартовой процедуры: та же дистанция, тот же ветер.', change: 'Дальше выберешь место, ветер и дистанцию — и гонка начнётся заново.', leave: 'Ты вернёшься в меню гонок.' },
-    sailUp: 'Лавировка к', sailDown: (k) => (k ? 'Фордевинд под генакером к' : 'Фордевинд без генакера к'), sailReach: 'Галфвинд к', aheadOf: (n, m) => `${n} впереди на ${m} м.`, leadBy: (m) => `Ты лидируешь на ${m} м.`, leadAlone: 'Ты лидируешь.',
+    sailUp: 'Лавировка к', sailDown: (k) => (k ? 'Фордевинд под генакером к' : 'Фордевинд без генакера к'), sailReach: 'Галфвинд к', aheadOf: (n, s) => `${n} впереди на ${s}.`, leadBy: (s) => `Ты лидируешь на ${s}.`, leadAlone: 'Ты лидируешь.',
     nextAt: (m, d) => `Дальше: ${m} · ${d} м`, howPort: 'Огибай его, оставляя слева — по левому борту.', howGate: 'Пройди между двумя знаками и обогни любой из них.',
     howFinish: 'Пересеки финишную линию между её концами.', howStart: 'Пересеки линию после сигнала, между судейским судном и знаком.',
     whereH: (pl, d, to) => `Ты ${pl}-й, ${d} м до ${to}`,
@@ -1322,7 +1322,9 @@ function pauseLine(P, place, nx) {
   const mark = nx ? t(legKey(race.course, nx)).toLowerCase() : '';
   const how = isBeat(race.course, P.leg) ? t('sailUp') : legKind(race.course, P.leg) === 'reach' ? t('sailReach') : t('sailDown', !!P.kite);
   const st = race.standings(), ahead = st[place - 2], behind = st[place], rem = (b) => bcHud.remaining(race, b);
-  const gap = ahead ? t('aheadOf', ahead.name, Math.max(1, Math.round(rem(P) - rem(ahead)))) : behind ? t('leadBy', Math.max(1, Math.round(rem(behind) - rem(P)))) : t('leadAlone');
+  // the gap in time, at the pace of the boat behind (as the board gives it): "0:12"
+  const span = (b, m) => { const s = bcHud.gapTime(race, b, m); return s == null ? `${Math.max(1, Math.round(m))} ${LANG === 'ru' ? 'м' : 'm'}` : fmt(Math.max(1, s)); };
+  const gap = ahead ? t('aheadOf', ahead.name, span(P, rem(P) - rem(ahead))) : behind ? t('leadBy', span(behind, rem(behind) - rem(P))) : t('leadAlone');
   return `${how} ${mark}. ${gap}`;
 }
 if (!TG) {

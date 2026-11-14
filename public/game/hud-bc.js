@@ -8,7 +8,7 @@
 //   on the water  the mark you're sailing to, labelled
 // It takes the game's own controls and readouts (the same elements, so main.js drives them as before) and moves them
 // into these blocks.
-import { D2R, KN, clamp, wrap, idealSail, sheetFor, beatAngle, legTargets, legAim, isBeat } from './sim.js';
+import { D2R, KN, NO_GO, clamp, wrap, idealSail, sheetFor, beatAngle, polarSpeed, legTargets, legAim, isBeat } from './sim.js';
 import { VENUE } from './venues.js';
 
 // the HUD's own words; test/ui.test.mjs checks both languages have them all
@@ -22,7 +22,7 @@ export const HUD_STRINGS = {
     onLine: 'On the line', toLineSpd: 'To line · speed', gap: 'Gap', leader: 'Leader', course: 'Course',
     shape: { wl: 'Windward–leeward', tri: 'Triangle', trap: 'Trapezoid', wlu: 'Upwind finish' },
     speed: 'Speed', ofTarget: 'Of target', vmg: 'VMG', toMark: 'To mark', toLine: 'To line', burn: 'Time to burn',
-    toLeader: 'To leader', ahead: 'Ahead of 2nd', time: 'Time', start: 'Start', perMin: '/min', camera: 'Camera', pause: 'Pause',
+    toLeader: 'To leader', ahead: 'Ahead of 2nd', sec: 's', time: 'Time', start: 'Start', perMin: '/min', camera: 'Camera', pause: 'Pause',
     you: 'You', layIn: (s) => `Layline in ${s} · then tack`, layNow: 'On the layline · tack', over: 'Past the layline · tack now', fetch: 'Laying the mark',
     advantage: 'Advantage',
     camName: { drone: 'Drone camera', top: 'Top camera', helm: 'Helm camera' },
@@ -43,7 +43,7 @@ export const HUD_STRINGS = {
     onLine: 'На линии', toLineSpd: 'До линии · скорость', gap: 'Разрыв', leader: 'Лидер', course: 'Дистанция',
     shape: { wl: 'Апвинд — даунвинд', tri: 'Треугольник', trap: 'Трапеция', wlu: 'Финиш наверху' },
     speed: 'Скорость', ofTarget: 'От цели', vmg: 'VMG', toMark: 'До знака', toLine: 'До линии', burn: 'Запас времени',
-    toLeader: 'До лидера', ahead: 'Впереди второго', time: 'Время', start: 'Старт', perMin: '/мин', camera: 'Камера', pause: 'Пауза',
+    toLeader: 'До лидера', ahead: 'Впереди второго', sec: 'с', time: 'Время', start: 'Старт', perMin: '/мин', camera: 'Камера', pause: 'Пауза',
     you: 'Ты', layIn: (s) => `Лейлайн через ${s} · потом поворот`, layNow: 'На лейлайне · поворот', over: 'Лейлайн пройден · поворачивай', fetch: 'Идёшь на знак',
     advantage: 'Выигрыш',
     camName: { drone: 'Камера с дрона', top: 'Камера сверху', helm: 'Камера у штурвала' },
@@ -528,6 +528,16 @@ export const squareBearing = (c) => ((Math.round(Math.atan2(c.normal.x, -c.norma
 // How far the wind has swung since a first reading, in whole degrees: + veered (clockwise), − backed.
 export const veerBack = (now, first) => Math.round(wrap(now - first) / D2R);
 
+// The best speed a boat can make good along a leg (m/s): the polar's best over the angles she could sail, at the wind's
+// mean speed (tws, knots), the leg running twaDeg off the wind (0: straight upwind, 180: dead downwind). A beat's comes
+// out as the beat's VMG, a run's as the run's, a reach's as her speed on it. It turns the board's gaps, metres of course
+// still to sail, into seconds: steady, as it doesn't move with a gust, a tack or a penalty turn.
+export function legPace(tws, twaDeg) {
+  let best = 0;
+  for (let a = NO_GO + 2; a <= 180; a += 2) best = Math.max(best, polarSpeed(tws, a) * KN * Math.cos((a - twaDeg) * D2R));
+  return best;
+}
+
 // A mark's split: the boats round it in the order they rounded (t, the race's clock there), then those still to round
 // (due: true) nearest the mark first (d, metres to it; null, as for a boat out of the race, last). The gap is to the
 // first one round. No time is guessed for those still to round: near a mark a boat can miss it, or take a penalty and
@@ -710,6 +720,20 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   const htm = (e, s) => { if (e._h !== s) { e._h = s; e.innerHTML = s; } };
   const pt = (a, r) => `${(32 + r * Math.sin(a)).toFixed(2)} ${(32 - r * Math.cos(a)).toFixed(2)}`;
   const metres = (d) => `${Math.round(d)} ${M}`;
+  // a gap of m metres of course as seconds, at the pace the boat behind can make on her leg (legPace), kept by leg
+  const paces = new Map();
+  function gapTime(race, b, m) {
+    const c = race.course, i = clamp(b.leg, 1, c.legs.length - 1), tws = (race.wind.p && race.wind.p.tws) || 12;
+    const key = `${i}|${tws}`;
+    if (!paces.has(key) || paces.get(key).c !== c) {
+      const a = legAim(c, i - 1), z = legAim(c, i), up = Math.atan2(c.normal.x, -c.normal.z);
+      const twa = Math.abs(wrap(Math.atan2(z.x - a.x, -(z.z - a.z)) - up)) / D2R;
+      paces.set(key, { c, v: legPace(tws, twa) });
+    }
+    const v = paces.get(key).v;
+    return v > 0.3 ? Math.max(0, m) / v : null;
+  }
+  const secs = (s) => (s == null ? '—' : `+${fmt(s)}`);
 
   // how far a boat has still to sail: to her next mark, then each leg after it, mark to mark
   let lens = null, lensFor = null;
@@ -723,7 +747,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     for (let i = b.leg + 1; i < c.legs.length; i++) d += lens[i];
     return d;
   }
-  // the gap to the leader against time, for its trend: metres a minute, gained (+) or lost
+  // the gap to the leader against time, for its trend: seconds a minute, gained (+) or lost
   const hist = [];
   function trend(clock, gap) {
     hist.push([clock, gap]);
@@ -900,7 +924,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
         if (b.dsq) g = t('dsq');
         else if (i === 1) g = b.done ? fmt(b.finish) : L.leader;
         else if (b.done && leader.done) g = `+${fmt(b.finish - leader.finish)}`;
-        else g = `+${metres(Math.max(0, remaining(race, b) - remL))}`;
+        else g = secs(gapTime(race, b, remaining(race, b) - remL));
         txt(r.gp, g); r.gp.classList.toggle('dim', i === 1);
       }
     });
@@ -938,13 +962,16 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       Y.legP.setAttribute('d', ARROW[legKind(c, Math.max(1, P.leg))]); txt(Y.legT, P.leg ? L.legShort(P.leg, nLegs) : L.start);
       // to the leader, or ahead of the second, and the trend
       const lead = iP === 0, other = lead ? st[1] : leader;
-      const gap = other ? (lead ? remaining(race, other) - remaining(race, P) : remaining(race, P) - remL) : 0;
+      const gapM = other ? (lead ? remaining(race, other) - remaining(race, P) : remaining(race, P) - remL) : 0;
+      // in seconds at the pace of the boat behind: the second's when you lead, yours when you don't
+      const gap = other ? gapTime(race, lead ? other : P, gapM) : null;
       txt(Y.ldrL, lead ? L.ahead : L.toLeader);
-      txt(Y.ldr, other ? `+${metres(Math.max(0, gap))}` : '—');
+      txt(Y.ldr, other ? secs(gap) : '—');
       if (lead !== wasLead) { wasLead = lead; hist.length = 0; }
-      const r = trend(race.clock, lead ? -gap : gap); // gaining on the one ahead, or pulling away: both > 0
-      txt(Y.rate, Math.abs(r) >= 2 ? `${r > 0 ? '▲' : '▼'} ${Math.round(Math.abs(r))} ${M}${L.perMin}` : '');
-      ink(Y.rate, Math.abs(r) >= 2 ? (r > 0 ? 'good' : 'low') : '');
+      const r = gap == null ? 0 : trend(race.clock, lead ? -gap : gap); // seconds a minute, gaining on the one ahead or pulling away: both > 0
+      const rs = Math.abs(r) >= 1 ? String(Math.round(Math.abs(r))) : nf(Math.abs(r));
+      txt(Y.rate, Math.abs(r) >= 0.5 ? `${r > 0 ? '▲' : '▼'} ${rs} ${L.sec}${L.perMin}` : '');
+      ink(Y.rate, Math.abs(r) >= 0.5 ? (r > 0 ? 'good' : 'low') : '');
     } else {
       txt(Y.time, P.dsq ? t('dsq') : fmt(P.finish));
       Y.legP.setAttribute('d', ARROW.down); txt(Y.legT, L.finished);
@@ -1160,5 +1187,5 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     ump.hidden = false; ump.style.animation = 'none'; void ump.offsetWidth; ump.style.animation = ''; // in again, if one was showing
   }
 
-  return { update, chips, remaining, umpire };
+  return { update, chips, remaining, gapTime, umpire };
 }

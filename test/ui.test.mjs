@@ -115,6 +115,19 @@ test('the line is square to the wind from its square bearing; veer and back agai
   assert.equal(veerBack(1 * D2R, 357 * D2R), 4);
 });
 
+test('the board turns metres of course into seconds at the pace a boat can make good on her leg', async () => {
+  const { legPace } = await import('../public/game/hud-bc.js');
+  const { polarSpeed, beatAngle, KN, D2R } = await import('../public/game/sim.js');
+  for (const tws of [7, 12, 19]) {
+    const beat = beatAngle(tws), vmgUp = polarSpeed(tws, beat) * KN * Math.cos(beat * D2R);
+    assert.ok(Math.abs(legPace(tws, 0) - vmgUp) < 0.15 * vmgUp, `upwind at ${tws} kn: ${legPace(tws, 0)} vs ${vmgUp}`); // the beat's VMG
+    assert.ok(legPace(tws, 180) > legPace(tws, 0), `a run is faster down the course than a beat up it at ${tws} kn`);
+    assert.ok(legPace(tws, 100) > legPace(tws, 180), `a reach is the fastest leg at ${tws} kn`);
+    assert.ok(legPace(tws, 0) > 1 && legPace(tws, 100) < 12, 'in the yacht’s range');
+  }
+  assert.ok(legPace(19, 0) > legPace(7, 0), 'more wind, more pace');
+});
+
 test('the split at a mark: the boats round in order, then the rest nearest the mark first, with no time guessed', async () => {
   const { markSplit } = await import('../public/game/hud-bc.js');
   const rows = markSplit([
