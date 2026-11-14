@@ -55,15 +55,22 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
   );
 }
 
-// The site's footer: the logo, three columns of links, the language switch.
+// The site's footer, one bar as the broadcast's: who makes it, a short row of links (the reading pages, your account or
+// the way to sign in, RYC's own sites), and the language switch.
 export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) {
   return (
     <div className="hm-page hm-foot-wrap">
       <footer className="hm-foot">
-        <Link className="hm-brand" href="/" aria-label="RYC"><Logo /></Link>
-        <div className="hm-foot-col"><span className="meta">{t('Game', 'Игра')}</span><Link href="/help">{t('How to play', 'Как играть')}</Link><Link href="/race">{t('Today’s race', 'Гонка дня')}</Link><Link href="/race/rating">{t('Rating', 'Рейтинг')}</Link><Link href="/race/free">{t('Free race', 'Свободная гонка')}</Link><Link href="/boat">{t('Your boat', 'Твоя яхта')}</Link><Link href="/learn">{t('Learn to race', 'Учись гоняться')}</Link><Link href="/settings">{t('Settings', 'Настройки')}</Link></div>
-        <div className="hm-foot-col"><span className="meta">{t('Account', 'Аккаунт')}</span><Link className="if-me me-name" href="/settings" /><Link className="if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link><Link href="/faq">{t('Questions', 'Вопросы')}</Link></div>
-        <div className="hm-foot-col"><span className="meta">RYC</span><a href="https://www.rycrentals.com/">rycrentals.com</a><a href="https://www.rycsailing.com/">rycsailing.com</a><Link href="/iyt">{'Sailing Certification Test'}</Link></div>
+        <span className="hm-foot-by">{t('Up and down · RYC race office', 'Up and down · офис регаты RYC')}</span>
+        <nav className="hm-foot-links" aria-label={t('More', 'Ещё')}>
+          <Link href="/help">{t('How to play', 'Как играть')}</Link>
+          <Link href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
+          <Link href="/faq">{t('Questions', 'Вопросы')}</Link>
+          <Link href="/iyt">{'Sailing Certification Test'}</Link>
+          <Link className="if-me me-name" href="/settings" /><Link className="if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link>
+          <a href="https://www.rycrentals.com/">rycrentals.com</a>
+          <a href="https://www.rycsailing.com/">rycsailing.com</a>
+        </nav>
         <Langs lang={lang} back={back} />
       </footer>
     </div>

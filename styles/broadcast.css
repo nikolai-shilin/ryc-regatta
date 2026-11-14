@@ -345,19 +345,17 @@
 .bc .hm-mi:hover { background: var(--w-06); }
 .bc .hm-msep { background: var(--rule); }
 
-/* the footer: room under it for the bar that stays at the foot of the screen */
-.bc .hm-foot-wrap { padding-block: var(--s-10) calc(var(--s-20) + var(--s-6)); }
-.bc .hm-foot { border-top-color: var(--rule); }
-/* the footer keeps RYC's own mark, not the header's name */
-.bc .hm-foot .hm-brand { height: auto; }
-.bc .hm-foot .hm-brand::before { content: none; }
-.bc .hm-foot .hm-brand .logo { display: block; color: var(--ink); }
-.bc .hm-foot-col .meta { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
-.bc .hm-foot-col a { font: 700 var(--fs-small)/1.2 var(--cond); letter-spacing: var(--ls-button); color: var(--ink-2); text-decoration: none; }
-.bc .hm-foot-col a:hover { color: var(--ink); }
-.bc .hm-foot .langs { padding: 2px; border: 0; border-radius: 0; background: var(--fill-1); }
-.bc .hm-foot .lang { border-radius: 0; color: var(--ink-3); font-family: var(--cond); }
-.bc .hm-foot .lang-on { background: var(--you); color: var(--ink-on); }
+/* the footer: one bar, who makes it, a row of links, the languages; room under it for the bar that stays at the foot
+   of the screen */
+.bc .hm-foot-wrap { padding-block: var(--s-4) calc(var(--s-20) + var(--s-6)); }
+.bc .hm-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-10); padding-top: var(--s-4); border-top-color: var(--rule);
+  font: 600 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .hm-foot-links { display: flex; flex-wrap: wrap; gap: 0 var(--s-6); }
+.bc .hm-foot :is(.hm-foot-links a, .lang) { display: inline-flex; align-items: center; min-height: var(--h-m); color: var(--ink-2); text-decoration: none; transition: color var(--t-quick); }
+.bc .hm-foot :is(.hm-foot-links a, .lang):hover { color: var(--ink); }
+.bc .hm-foot .langs { gap: var(--s-2); padding: 0; border: 0; border-radius: 0; }
+.bc .hm-foot .lang { height: auto; padding: 0; border-radius: 0; background: none; font: inherit; }
+.bc .hm-foot .lang-on { color: var(--ink); }
 
 /* ---------- home: the hook ---------- */
 .bc .ho-hero { position: relative; isolation: isolate; overflow: hidden; display: flex; min-height: min(820px, calc(100svh - 72px)); }
