@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 // the public Supabase bucket regatta-ads). The game (public/game/yacht.js, jibAd) is static and has no Supabase client,
 // so it asks here. Cached at the CDN for a minute, so a new logo is on the water a minute or so after it is saved.
 //
-//   GET /sponsor → { jib: 'https://…/regatta-ads/…png' } or { jib: null }
+//   GET /sponsor → { jib: 'https://…/regatta-ads/…png' }, { jib: '/images/ryc-sponsor.svg' } or { jib: null }
 export const revalidate = 60;
 
 export async function GET() {
@@ -16,7 +16,10 @@ export async function GET() {
     });
     const rows = r.ok ? await r.json() : [];
     const url = rows?.[0]?.value?.url;
-    if (typeof url === 'string' && url.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/regatta-ads/`)) jib = url;
+    // a picture an admin uploaded, or one of the site's own (the sample: /images/ryc-sponsor.svg, the club's logo)
+    const uploaded = typeof url === 'string' && url.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/regatta-ads/`);
+    const ours = typeof url === 'string' && /^\/images\/[\w.-]+\.(svg|png|jpe?g|webp)$/.test(url);
+    if (uploaded || ours) jib = url;
   } catch {
     // no ad: the jib stays plain
   }
