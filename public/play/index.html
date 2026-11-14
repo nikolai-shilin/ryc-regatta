@@ -402,6 +402,7 @@
   /* graphics: one of four, a segmented track in the chips' colours */
   #pauseCard .p-seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; margin: 0 2px; padding: 3px; border: 1px solid var(--line); border-radius: 54px; background: rgba(255, 255, 255, 0.05); }
   #pauseCard .p-seg.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  #pauseCard .p-seg.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   #pauseCard .p-seg button { height: 28px; padding: 0 4px; border: 0; border-radius: 54px; background: transparent; color: rgba(255, 255, 255, 0.72); font: 700 11px var(--sans); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; cursor: pointer; transition: background-color .2s, color .2s, box-shadow .2s, transform .12s; }
   #pauseCard .p-seg button:hover { color: #fff; }
   #pauseCard .p-seg button:active { transform: scale(.97); }
@@ -701,6 +702,8 @@
     <div class="p-seg" role="radiogroup" aria-labelledby="pGfxK"><button role="radio" data-g="auto" data-t="gAuto"></button><button role="radio" data-g="high" data-t="gsHigh"></button><button role="radio" data-g="medium" data-t="gsMedium"></button><button role="radio" data-g="low" data-t="gsLow"></button></div>
     <span class="meta" id="pMusicK" data-t="musicK"></span>
     <div class="p-seg five" role="radiogroup" aria-labelledby="pMusicK"><button role="radio" data-mu="ambient" data-t="muAmbient"></button><button role="radio" data-mu="film" data-t="muFilm"></button><button role="radio" data-mu="folk" data-t="muFolk"></button><button role="radio" data-mu="racing" data-t="muRacing"></button><button role="radio" data-mu="off" data-t="off"></button></div>
+    <span class="meta" id="pMuVolK" data-t="muVolK"></span>
+    <div class="p-seg three" role="radiogroup" aria-labelledby="pMuVolK"><button role="radio" data-mv="loud" data-t="seaLoud"></button><button role="radio" data-mv="normal" data-t="seaNormal"></button><button role="radio" data-mv="quiet" data-t="seaQuiet"></button></div>
     <span class="meta" id="pSeaK" data-t="seaK"></span>
     <div class="p-seg" role="radiogroup" aria-labelledby="pSeaK"><button role="radio" data-sea="loud" data-t="seaLoud"></button><button role="radio" data-sea="normal" data-t="seaNormal"></button><button role="radio" data-sea="quiet" data-t="seaQuiet"></button><button role="radio" data-sea="off" data-t="off"></button></div>
   </div>

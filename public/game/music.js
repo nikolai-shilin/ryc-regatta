@@ -374,6 +374,8 @@ export function createMusic(ctx, out) {
     },
     // paused, the music fades out; back, it fades in
     pause(v) { if (v === paused) return; paused = v; setLevel(v ? 0 : M.volume, v ? 0.25 : 0.8); },
+    // how loud the music is (Settings › Music volume): its level, eased there
+    setVolume(v) { if (v === M.volume) return; M.volume = v; if (cur && !paused && (style !== 'racing' || R.buf)) setLevel(v, 0.3); },
     // the voices: v 0..1, how loud a voice is now (main.js measures them); the music bows out under them
     voices(v) {
       if (now() < breathUntil) return;
