@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { readPb, saveOpts } from '@/lib/opts';
-import { KN, type Daily, type Length, type Shape, type Wind } from '@/lib/race';
+import { KN, SHAPE_NAME, SHAPES, type Daily, type Length, type Shape, type Wind } from '@/lib/race';
 import { IconArrow, IconPlay, clock } from './ui';
 
 const IconBurger = () => <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
@@ -61,7 +61,7 @@ export function RacePill({ lang, daily }: { lang: Lang; daily: Daily }) {
   const OPTS: { [K in keyof Pick]: [Pick[K], string][] } = {
     preset: [['light', t(`Light ${KN.light} kn`, `Слабый ${KN.light} уз`)], ['medium', t(`Medium ${KN.medium} kn`, `Средний ${KN.medium} уз`)], ['strong', t(`Strong ${KN.strong} kn`, `Сильный ${KN.strong} уз`)]],
     fleet: [[3, t('3 boats', '3 лодки')], [5, t('5 boats', '5 лодок')], [7, t('7 boats', '7 лодок')]],
-    course: [['wl', t('Up and down', 'Апвинд — даунвинд')], ['tri', t('Triangle', 'Треугольник')]],
+    course: SHAPES.map((s) => [s, t(...SHAPE_NAME[s])]),
     length: [['short', t('Short', 'Короткая')], ['medium', t('Medium', 'Средняя')], ['long', t('Long', 'Длинная')]],
     laps: [[1, t('1 lap', '1 круг')], [2, t('2 laps', '2 круга')]],
     start: [[1, t('1 min', '1 мин')], [3, t('3 min', '3 мин')], [5, t('5 min', '5 мин')]],

@@ -1,11 +1,13 @@
-import { ruBoats, tx, type Lang } from './lang';
+import { ruBoats, tx, type Lang } from './lang.ts'; // with their extensions, so npm test's Node finds them too
+import { shapeOf, SHAPE_NAME, type Shape } from './race.ts';
 
 // A finished race as the game posted it for its result link (public/game/stats.js raceResult → iyt.rycrentals.com
 // api/game, which serves it back by id). Only the parts the share card and the page title read.
 export type XZ = [number, number];
 export type SharedResult = {
   v: 1; id: string; at: number; daily: string | null; preset: 'light' | 'medium' | 'strong'; length: string; laps: number;
-  course: { windward: XZ; gate: XZ[]; pin: XZ; committee: XZ; wing?: XZ };
+  // `type`, `marks` and `finish` came with the course shapes: a result saved before them has none
+  course: { windward: XZ; gate: XZ[]; pin: XZ; committee: XZ; wing?: XZ; type?: Shape; marks?: Record<string, XZ>; finish?: [XZ, XZ] };
   boats: { me: boolean; done: boolean; dsq: boolean; secs: number | null; track: XZ[] }[];
 };
 
@@ -37,7 +39,7 @@ export function describe(res: SharedResult, lang: Lang) {
   const wind = { light: t('Light breeze', 'Слабый ветер'), medium: t('Medium breeze', 'Средний ветер'), strong: t('Strong breeze', 'Сильный ветер') }[res.preset];
   const kn = { light: 7, medium: 12, strong: 19 }[res.preset];
   const len = ({ short: t('short', 'короткая'), medium: t('medium', 'средняя'), long: t('long', 'длинная') } as Record<string, string>)[res.length] || '';
-  const shape = res.course.wing ? t('triangle', 'треугольник') : t('up and down', 'апвинд — даунвинд');
+  const shape = t(...SHAPE_NAME[shapeOf(res.course)]).toLowerCase();
   const laps = t(`${res.laps} ${res.laps > 1 ? 'laps' : 'lap'}`, `${res.laps} ${res.laps > 1 ? 'круга' : 'круг'}`);
   const detail = `${wind} ${kn} ${t('kn', 'уз')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length))} · ${shape}${len ? `, ${len}` : ''}, ${laps}`;
   const isToday = res.daily === new Date().toISOString().slice(0, 10);

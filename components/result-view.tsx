@@ -5,14 +5,17 @@ import { ruBoats, tx, type Lang } from '@/lib/lang';
 import RULES from '@/lib/rules.json';
 import { IconBack, IconRestart, clock } from './ui';
 import { CourseMap } from './course-map';
-import { courseDistance, fmtDistance, legDistances } from '@/lib/race';
+import { courseDistance, fmtDistance, legDistances, shapeOf, SHAPE_NAME, type Shape } from '@/lib/race';
 
 // What the game keeps for a finished race (public/game/main.js, finishToPage).
 type Boat = { name: string | null; me: boolean; color: string | null; done: boolean; dsq: boolean; secs: number | null; track: [number, number][] };
 type Foul = { rule: string; who: string | null; t: number | null; x: number | null; z: number | null };
 type Result = {
   v: 1; id: string; at: number; daily: string | null; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
-  course: { windward: [number, number]; gate: [number, number][]; pin: [number, number]; committee: [number, number]; legs: string[]; wing?: [number, number]; type?: 'tri' };
+  // `type`, `marks` (every rounding mark, by the leg that goes to it) and `finish` (a finish line of its own) came with the
+  // course shapes: a result saved before them has none, and a wing mark makes it a triangle
+  course: { windward: [number, number]; gate: [number, number][]; pin: [number, number]; committee: [number, number]; legs: string[]; wing?: [number, number];
+    type?: Shape; marks?: Record<string, [number, number]>; finish?: [[number, number], [number, number]] };
   boats: Boat[];
   log: { gunD: number | null; gunV: number | null; ocs: boolean; startDsq: string | null; startT: number | null; sailing: number; pct: number | null; head: number; lift: number; tacks: number;
     dirty: number; penT: number; hails: Record<string, number>; legs: number[]; legPlaces: number[]; fouls: Foul[] };
@@ -79,9 +82,11 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   const windW = { light: t('light', 'слабый'), medium: t('medium', 'средний'), strong: t('strong', 'сильный') }[res.preset];
   const kn = { light: 7, medium: 12, strong: 19 }[res.preset];
   const date = new Date(res.at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  // the course's shape, named unless it's up and down
+  const shape = shapeOf(res.course), shapeW = shape === 'wl' ? null : t(...SHAPE_NAME[shape]).toLowerCase();
   const kicker = res.daily
-    ? `${shared ? t('Race of the day', 'Гонка дня') : t('Today’s race', 'Гонка дня')} · ${date} · ${windW} ${kn} ${t('kn', 'уз')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length))}`
-    : `${t('Free race', 'Свободная гонка')} · ${windW} ${kn} ${t('kn', 'уз')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length))} · ${res.course.wing ? `${t('triangle', 'треугольник')} · ` : ''}${res.laps} ${t(res.laps > 1 ? 'laps' : 'lap', res.laps > 1 ? 'круга' : 'круг')}`;
+    ? `${shared ? t('Race of the day', 'Гонка дня') : t('Today’s race', 'Гонка дня')} · ${date} · ${windW} ${kn} ${t('kn', 'уз')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length))}${shapeW ? ` · ${shapeW}` : ''}`
+    : `${t('Free race', 'Свободная гонка')} · ${windW} ${kn} ${t('kn', 'уз')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length))} · ${shapeW ? `${shapeW} · ` : ''}${res.laps} ${t(res.laps > 1 ? 'laps' : 'lap', res.laps > 1 ? 'круга' : 'круг')}`;
   const title = me.dsq ? t('Disqualified', 'Дисквалификация') : shared ? t(`Finished ${ordEn(place)}`, `${place}-е место на финише`) : t(`You finished ${ordEn(place)}`, `${place}-е место на финише`);
   const gap = me.secs != null && winner?.secs != null && winner !== me ? `+${(me.secs - winner.secs).toFixed(1)} ${t('s', 'с')}` : '—';
   const again = res.daily ? '/play?race=today' : '/play?race=free';
@@ -135,7 +140,8 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   const legM = legDistances(res.course, res.course.legs);
   const tracks = res.boats.map((b) => ({ pts: b.track, me: b.me }));
   const fouls = L.fouls.filter((f) => f.x != null && f.z != null).map((f) => [f.x!, f.z!] as [number, number]);
-  const legName = (k: string) => ({ start: t('Start', 'Старт'), mark: t('Windward mark', 'Верхний знак'), wing: t('Wing mark', 'Боковой знак'), gate: t('Leeward gate', 'Нижние ворота'), finish: t('Finish', 'Финиш') }[k] || k);
+  const legName = (k: string) => ({ start: t('Start', 'Старт'), mark: shape === 'trap' ? t('Mark 1', 'Знак 1') : t('Windward mark', 'Верхний знак'), wing: t('Wing mark', 'Боковой знак'),
+    mark2: t('Mark 2', 'Знак 2'), offset: t('Offset mark', 'Знак смещения'), gate: t('Leeward gate', 'Нижние ворота'), finish: t('Finish', 'Финиш') }[k] || k);
 
   return (
     <div className="scr help result" lang={lang} data-acct={signedName ? 'signed' : 'guest'}>

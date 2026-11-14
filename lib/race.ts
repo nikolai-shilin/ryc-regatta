@@ -81,6 +81,15 @@ export const SHAPE_NAME: Record<Shape, [en: string, ru: string]> = {
   trap: ['Trapezoid', 'Трапеция'],
   wlu: ['Up and down, upwind finish', 'Апвинд — даунвинд, финиш наверху'],
 };
+export const SHAPES = Object.keys(SHAPE_NAME) as Shape[];
+const isShape = (s: unknown): s is Shape => typeof s === 'string' && (SHAPES as string[]).includes(s);
+// a course saved in the options: one of the four shapes, else up and down
+export const savedShape = (s: unknown): Shape => (isShape(s) ? s : 'wl');
+// a course's shape: its `type`, or for a result saved before the shapes, a triangle if it has a wing mark
+export const shapeOf = (c: { type?: unknown; wing?: unknown }): Shape => (isShape(c.type) ? c.type : c.wing ? 'tri' : 'wl');
+// the key of a free race's best time on this device (public/game/main.js pbKey): each shape but up and down its own
+export const pbKey = (o: { preset: Wind; laps: number; length: Length; fleet: number; course: Shape }) =>
+  `${o.preset}|${o.laps}|${o.length}|${o.fleet}${o.course === 'wl' ? '' : '|' + o.course}`;
 
 const mid = (a: XZ, b: XZ): XZ => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
 const dist = (a: XZ, b: XZ) => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -107,7 +116,7 @@ export const courseLegs = (laps: number, shape: Shape = 'wl') => {
   return ['start', ...lapsOf(['mark', 'gate'], ['mark']), 'finish'];
 };
 export const courseDistance = (c: CourseGeo, laps: number) =>
-  legDistances(c, courseLegs(laps, c.type ?? (c.wing ? 'tri' : 'wl'))).reduce((a, b) => a + b, 0);
+  legDistances(c, courseLegs(laps, shapeOf(c))).reduce((a, b) => a + b, 0);
 
 // "520 m · 0.28 nm"
 export function fmtDistance(m: number, lang: 'en' | 'ru') {

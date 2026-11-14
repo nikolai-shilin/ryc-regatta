@@ -6,7 +6,7 @@ import { pageMeta, jsonLd, SITE, NAME, OG_IMAGE, HOME_TITLE, HOME_DESC } from '@
 import { ruBoats } from '@/lib/lang';
 import { getAccount } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
-import { dailyRace, KN } from '@/lib/race';
+import { dailyRace, KN, SHAPE_NAME } from '@/lib/race';
 import { VENUES, venueOf } from '@/lib/venues';
 import { Logo, IconArrow, IconPlay, IconWind, IconSail, IconPin, clock } from '@/components/ui';
 import { RacePill, TileRow, MyRow, HeroScene } from '@/components/home-client';
@@ -130,7 +130,7 @@ export default async function Home() {
               <span className="hm-clip"><Image src="/images/top-v3.jpg" alt={t('Today’s course from above', 'Дистанция дня сверху')} fill sizes="(min-width: 900px) 640px, 100vw" /></span>
               <span className="hm-ptag"><span className="hm-ptag-a">{kn} {t('kn', 'уз')}</span><span className="hm-ptag-b"><span>{t('Today', 'Сегодня')}</span><b>{t(`${d.laps} lap`, `${d.laps} круг`)}</b><span>{t(`${d.fleet} boats`, `${ruBoats(d.fleet)}`)}</span></span></span>
             </span>
-            <span className="card-title">{t(`Up and down · ${length} course · ${d.laps} lap`, `Апвинд — даунвинд · ${length} · ${d.laps} круг`)}</span>
+            <span className="card-title">{t(`${SHAPE_NAME[d.course][0]} · ${length} course · ${d.laps} lap`, `${SHAPE_NAME[d.course][1]} · ${length} · ${d.laps} круг`)}</span>
             <span className="hm-facts">
               <span><IconPin s={15} />{where}</span>
               <span><IconWind s={15} />{windName}, {kn} {t('kn', 'уз')}</span>
