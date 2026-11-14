@@ -3,7 +3,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ruBoats, tx, type Lang } from '@/lib/lang';
 import RULES from '@/lib/rules.json';
-import { IconBack, IconRestart, IconPlay, IconTrophy, IconRoute, IconFlag, IconSail, IconSliders, IconClock, IconSend, clock } from './ui';
+import { IconBack, IconRestart, IconPlay, IconTrophy, IconRoute, IconFlag, IconSail, IconSliders, IconClock, clock } from './ui';
+import { ShareButton } from './share-sheet';
 import { CourseMap } from './course-map';
 import { GameScene } from './game-scene';
 import { PauseCard, SettingsRow, type Who } from './pause-card';
@@ -44,7 +45,6 @@ export default function ResultView({ id, lang, signedName, who, head, foot }: { 
   // shared: the race isn't on this device, but the game posted it to the server when it finished (stats.js raceResult),
   // so this is someone's link: the page speaks of "this boat", not "you"
   const [shared, setShared] = useState(false);
-  const [copied, setCopied] = useState(false);
   useEffect(() => {
     let mine: Result | null = null;
     try { mine = JSON.parse(localStorage.getItem('regatta-result-' + id) || 'null'); } catch {}
@@ -103,28 +103,16 @@ export default function ResultView({ id, lang, signedName, who, head, foot }: { 
     ? (isToday && me.secs != null && !me.dsq ? { href: '/play?race=today', label: t('Beat this time', 'Побей это время') } : { href: '/race', label: t('Sail today’s race', 'Пройти гонку дня') })
     : { href: again, label: t('Race again', 'Ещё гонку') };
   const you = shared ? t('This boat', 'Эта лодка') : t('You', 'Ты');
-  // the link to this page, with a line to go with it: shared by the phone's own sheet, or copied where there's none
-  const share = async () => {
-    // in Russian the card and the title are too; utm_source says in the analytics how many come from a shared result
+  // the link to this page, with a line to go with it, for the share sheet (components/share-sheet): each app gets it
+  // with its own utm_source, so the analytics say which app a visit came from
+  const shareData = () => {
+    // in Russian the card and the title are too
     const url = `${location.origin}/race/result/${encodeURIComponent(res.id)}?${lang === 'ru' ? 'lang=ru&' : ''}utm_source=share&utm_medium=result`;
     const time = me.secs != null && !me.dsq ? clock(me.secs) : '';
     const text = me.dsq ? t('My race in Up and down', 'Моя гонка в Up and down')
       : res.daily && isToday ? t(`I finished ${ordEn(place)} in ${time} in today’s race. Can you beat it?`, `${place}-е место за ${time} в гонке дня. Сможешь быстрее?`)
       : t(`I finished ${ordEn(place)} in ${time}`, `${place}-е место за ${time}`);
-    try {
-      if (navigator.share) { await navigator.share({ title: 'Up and down', text, url }); return; }
-    } catch (e) { if ((e as Error)?.name === 'AbortError') return; }
-    const line = `${text} ${url}`;
-    let ok = false;
-    try { await navigator.clipboard.writeText(line); ok = true; } catch {
-      // no clipboard API here (Telegram's webview, an embedded browser): the old way, through a selected field
-      const f = document.createElement('textarea');
-      f.value = line; f.setAttribute('readonly', ''); f.style.position = 'fixed'; f.style.opacity = '0';
-      document.body.append(f); f.select();
-      try { ok = document.execCommand('copy'); } catch {}
-      f.remove();
-    }
-    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2500); }
+    return { title: 'Up and down', text, url };
   };
 
   // the debrief: the game's own items, each good or one to work on
@@ -192,7 +180,7 @@ export default function ResultView({ id, lang, signedName, who, head, foot }: { 
         <PauseCard lang={lang} who={who} back={`/race/result/${res.id}`} label={t('Race result', 'Результат гонки')}
           head={<>
             <a className="bt-go" href={cta.href}>{shared ? <IconPlay /> : <IconRestart />}<span>{cta.label}</span></a>
-            {!shared && <button type="button" className="bt-show" onClick={share}><IconSend s={15} /><span>{copied ? t('Copied', 'Скопировано') : t('Share', 'Поделиться')}</span></button>}
+            {!shared && <ShareButton lang={lang} data={shareData} title={t('Share your result', 'Поделиться результатом')} />}
           </>}
           foot={<div className="bt-rows">
             <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>

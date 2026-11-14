@@ -817,3 +817,31 @@ html[data-me] .hm-av > svg { display: none; }
   .bt-docked .bt-body { padding: 12px 22px 18px; gap: 18px; }
   .bt-dock { padding: 22px 22px 8px; } .bt-dock-b { padding: 8px 16px 16px; }
 }
+
+/* ---------- the share sheet (components/share-sheet): over the screen, at the bottom on a phone held upright ---------- */
+.shr { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: var(--scrim); animation: shr-fade .2s ease both; }
+.shr-p { width: 100%; max-width: 400px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 12px;
+  padding: 16px 16px 18px; border-radius: 22px; background: #0f1b26; color: #fff; border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45); animation: shr-in .28s cubic-bezier(.2, .8, .2, 1) both; }
+.shr-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.shr-h b { font: 700 13px/1 var(--f-sans); letter-spacing: .05em; text-transform: uppercase; }
+.shr-x { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.1); color: #fff; font: 400 20px/1 var(--f-sans); cursor: pointer; }
+.shr-x:hover { background: rgba(255, 255, 255, 0.2); }
+.shr-l { margin: 0; font: 400 14px/1.4 var(--f-serif); color: rgba(255, 255, 255, 0.75); }
+.shr-g { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 6px; }
+.shr-a { display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; padding: 4px 0; border: 0; border-radius: 14px; background: none; color: #fff;
+  font: 400 12px/1.2 var(--f-sans); text-align: center; text-decoration: none; cursor: pointer; transition: transform .12s; }
+.shr-a > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shr-a:active { transform: scale(.94); }
+.shr-a:focus-visible { outline: 2px solid #35b0f2; outline-offset: 2px; }
+.shr-i { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); transition: filter .2s; }
+.shr-i-n { background: rgba(255, 255, 255, 0.1); }
+.shr-a:hover .shr-i { filter: brightness(1.12); }
+@keyframes shr-fade { from { opacity: 0; } }
+@keyframes shr-in { from { opacity: 0; transform: translateY(12px) scale(.98); } }
+@container scr (orientation: portrait) and (max-width: 599px) {
+  .shr { align-items: flex-end; padding: 0; }
+  .shr-p { max-width: none; border-radius: 22px 22px 0 0; border-bottom: 0; padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) { .shr, .shr-p { animation: none; } }
