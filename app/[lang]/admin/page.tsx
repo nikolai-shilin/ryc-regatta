@@ -35,6 +35,7 @@ export default async function AdminPage({ params }: LangParams) {
             <span className="kicker">{t('Admin', 'Админка')}</span>
           </div>
           <h1 className="aph-h">{t('Ads in the game', 'Реклама в игре')}</h1>
+          <p className="aph-p">{t('The logo every boat carries on her jib, and the words on the banner the plane tows over the course.', 'Логотип на стакселе каждой яхты и слова на баннере, который самолёт проносит над дистанцией.')}</p>
         </div>
         {!account ? (
           <div className="acct acct-row">

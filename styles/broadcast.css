@@ -822,6 +822,11 @@
   .bc .adm-tow { padding-left: var(--s-6); }
   .bc .adm-tow::before { width: var(--s-6); }
 }
+/* each section headed by the white kick alone; the banner's words with their labels above the fields */
+.bc .adm-k { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-4); }
+.bc .adm .srow.adm-field { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: var(--s-2); padding: var(--s-2) 0; border-bottom: 0; }
+.bc .adm .srow.adm-field .srow-k { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .adm .srow.adm-field .adm-in { flex: none; width: 100%; }
 
 /* ---------- the user flows (the intro and settings flows canvas) ---------- */
 /* I1 · the hub's top right: How to play, and Sign in or your initials (A4) */
