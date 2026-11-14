@@ -339,3 +339,23 @@ test('the existing shapes sail exactly as before the course refactor', async () 
   const fixture = JSON.parse(await readFile(new URL('./fixtures/courses-golden.json', import.meta.url), 'utf8'));
   assert.deepEqual(goldenRuns(), fixture);
 });
+
+// the site's copy of the geometry (lib/race.ts) lays every shape where the game does
+test('the site lays every shape where the game does', () => {
+  const near = (p, q, what) => assert.ok(Math.hypot(p[0] - q.x, p[1] - q.z) < 0.5, `${what}: ${p} vs ${q.x},${q.z}`);
+  for (const shape of ['wl', 'tri', 'trap', 'wlu']) for (const preset of ['light', 'medium', 'strong'])
+    for (const length of ['short', 'medium', 'long']) for (const fleet of [5, 7]) for (const laps of [1, 2]) {
+      const c = sim.makeCourse(laps, BEAT[preset] * sim.COURSE_LEN[length], 0, fleet, shape);
+      const g = site.plannedCourse(preset, length, fleet, shape), at = `${shape} ${preset} ${length} ${fleet}`;
+      assert.equal(g.type, shape);
+      near(g.windward, c.windward, `${at} windward`);
+      near(g.pin, c.pin, `${at} pin`); near(g.committee, c.committee, `${at} committee`);
+      c.gate.forEach((p, i) => near(g.gate[i], p, `${at} gate ${i}`));
+      assert.deepEqual(Object.keys(g.marks).sort(), Object.keys(c.marks).sort(), `${at} marks`);
+      for (const k of Object.keys(c.marks)) near(g.marks[k], c.marks[k], `${at} ${k}`);
+      if (c.wing) near(g.wing, c.wing, `${at} wing`);
+      assert.equal(!!g.finish, !!c.finish, `${at} finish`);
+      if (c.finish) { near(g.finish[0], c.finish.a, `${at} finish a`); near(g.finish[1], c.finish.b, `${at} finish b`); }
+      assert.deepEqual(site.courseLegs(laps, shape), c.legs, `${at} legs ${laps}`);
+    }
+});
