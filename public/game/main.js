@@ -219,7 +219,8 @@ if (opts.optsV !== 4) { opts.length = 'short'; opts.mode = 'daily'; opts.optsV =
 const saveOpts = () => { try { localStorage.setItem('regatta', JSON.stringify(opts)); } catch (e) {} };
 // the race's settings: the menu's, or in today's race the day's own (the same for everyone)
 const DAILY_KEYS = ['preset', 'fleet', 'length', 'laps', 'start', 'current', 'course'];
-const settings = () => { if (opts.mode !== 'daily') return { ...opts, length: laidLength(VENUE, opts.length), daily: null }; // (a length the venue hasn't: the longest it has) const d = dailyRace(); return { ...opts, ...d, daily: d.day }; };
+// (a free race's length the venue hasn't room for: the longest it has)
+const settings = () => { if (opts.mode !== 'daily') return { ...opts, length: laidLength(VENUE, opts.length), daily: null }; const d = dailyRace(); return { ...opts, ...d, daily: d.day }; };
 const windName = (p) => t(p);
 const SHAPE_KEY = { wl: 'shapeWl', tri: 'shapeTri', trap: 'shapeTrap', wlu: 'shapeWlu' };
 const paintOpts = () => {

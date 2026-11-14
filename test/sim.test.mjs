@@ -321,6 +321,12 @@ test('no venue skips a shape on the short course', async () => {
 });
 
 const { execFileSync } = await import('node:child_process');
+// every script of the game parses (the ones the browser alone runs, main.js among them, aren't loaded by these tests)
+test('every game script parses', async () => {
+  const { readdirSync } = await import('node:fs');
+  const dir = new URL('../public/game/', import.meta.url);
+  for (const f of readdirSync(dir).filter((n) => n.endsWith('.js'))) execFileSync(process.execPath, ['--check', new URL(f, dir).pathname]);
+});
 const { VENUES } = await import('../public/game/venues.js');
 for (const v of VENUES) {
   test(`${v.name[0]}: the land is baked, and every course is laid in clear water`, () => {
