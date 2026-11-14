@@ -146,6 +146,15 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   (her sails flogging, her winch), her crew's calls in the game's language (the same voices, under the Voice switch, one
   boat at a time, never over your own crew), and the nearest one's bow wave within 40 m. Each sound comes from her side
   of the screen, quieter and duller with distance; a hail comes from the boat that hails.
+- **The gulls:** real herring gulls, recorded on the shore and cut into calls (a mew, a call, a pair, the long call,
+  the alarm as one is put up off the water) one after another in `public/game/gulls.mp3`; `GULLS` in `main.js` says
+  where each starts. `scripts/gulls.py` makes the file from the recordings on Wikimedia Commons: "Gull 1" and "Gull 2"
+  by avphillips (public domain) and xeno-canto XC707075 by Sonothèque ADVL (CC0).
+- **The music:** `public/game/music.js` follows the race (calm before the start, building to the gun, up when it goes
+  well, dark when it doesn't) in the style Settings › Music picks: Ambient, Film and Folk are synthesized; Racing is a
+  recorded track, `public/game/music-racing.mp3`, cut on its bar lines by `scripts/racing-music.py` into loops for the
+  moods, the build that lands its drop on the gun, its ending for a win, and accents of its own crash. `RACING` in
+  `music.js` says where each piece and each of its bars starts.
 
 ## Run it locally
 

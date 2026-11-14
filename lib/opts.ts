@@ -1,7 +1,11 @@
 // The player's settings, shared with the game on this origin: localStorage 'regatta' is the object the game reads at
-// the start of every race (public/game/main.js, "settings"). fleetV and optsV mark them as current, so the game keeps them.
+// the start of every race (public/game/main.js, "settings"). fleetV, optsV and musicV mark them as current, so the game keeps them.
 import type { Length, Shape, Wind } from './race';
 import type { VenueId } from './venues';
+
+export type Music = 'ambient' | 'film' | 'folk' | 'racing' | 'off';
+export type Sea = 'loud' | 'normal' | 'quiet' | 'off';
+export type Volume = 'loud' | 'normal' | 'quiet';
 
 export type Daytime = 'any' | 'morning' | 'midday' | 'afternoon' | 'evening';
 export const DAYTIMES: readonly Daytime[] = ['any', 'morning', 'midday', 'afternoon', 'evening'];
@@ -15,17 +19,22 @@ export type Opts = {
   sound: number; guides: number; gfx: 'auto' | 'high' | 'medium' | 'low';
   camera: 'drone' | 'top' | 'helm'; vibration: number;
   voice: number; // the skipper's voice (the crew's calls in English), apart from Sound
-  lastFree?: number; played?: number; fleetV: number; optsV: number;
+  music: Music; // the soundtrack's style (public/game/music.js), or none
+  musicVol: Volume; // how loud the music is (public/game/main.js: MUSIC_VOL)
+  sea: Sea; // how loud the sea and the wind are (public/game/main.js: SEA)
+  lastFree?: number; played?: number; fleetV: number; optsV: number; musicV: number;
 };
 
 export const DEFAULTS: Opts = {
   mode: 'daily', venue: 'gocek', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any',
-  autoTrim: 0, sound: 1, guides: 1, gfx: 'auto', camera: 'drone', vibration: 1, voice: 1, fleetV: 3, optsV: 4,
+  autoTrim: 0, sound: 1, guides: 1, gfx: 'auto', camera: 'drone', vibration: 1, voice: 1, music: 'racing', musicVol: 'normal', sea: 'normal', fleetV: 3, optsV: 4, musicV: 1,
 };
 
 export function readOpts(): Opts {
   try {
-    const o = { ...DEFAULTS, ...JSON.parse(localStorage.getItem('regatta') || '{}'), fleetV: 3, optsV: 4 };
+    const saved = JSON.parse(localStorage.getItem('regatta') || '{}');
+    const o = { ...DEFAULTS, ...saved, fleetV: 3, optsV: 4, musicV: 1 };
+    if (saved.musicV !== 1) o.music = 'racing'; // Racing is the default music now, as in the game: once, then theirs
     delete o.undefined; // junk an older game wrote; dropped on the next save
     return o;
   } catch {

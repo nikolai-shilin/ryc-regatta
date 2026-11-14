@@ -234,8 +234,8 @@ function lineStrip(len) { // a straight line len metres long, lying flat along x
 }
 
 // distance lines across a beat: from its mark (or the middle of the line it goes to) down to where it starts, every 50 m
-// (100 m on a long beat), each a line like the start line, with no labels on the water. They
-// widen with the distance, as the laylines do. Laid again for each beat (setTarget).
+// (100 m on a long beat), each a line like the start line, with no labels on the water. They widen with the distance,
+// as the laylines do. Laid again for each beat (setTarget).
 export const ladderStep = (beat) => (beat > 600 ? 100 : 50);
 class Ladder {
   constructor() { this.group = new THREE.Group(); this.key = ''; }
