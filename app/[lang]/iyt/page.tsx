@@ -1,6 +1,8 @@
 import { getT, titled, type LangParams } from '@/lib/i18n';
 import { IconArrow, IconSend, IconOut } from '@/components/ui';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
+import { IytSample } from '@/components/iyt-sample';
+import { iytSample } from '@/lib/iyt-sample';
 import type { Lang, T } from '@/lib/lang';
 
 export const generateMetadata = titled('Sailing certification exam practice', 'Тренажёр к экзамену на яхтенный сертификат', {
@@ -26,8 +28,8 @@ function Open({ lang, t }: { lang: Lang; t: T }) {
   );
 }
 
-// IYT · the IYT Test, as rycrentals.com/iyt has it: what the trainer is (the title beside the ways in, on a wide
-// screen), how it works in four numbered steps, its nine levels, why RYC makes it, and the way in again at the foot.
+// IYT · the IYT Test, as rycrentals.com/iyt has it: what the trainer is and the ways in, beside a real question from it
+// to try (on a wide screen; under it on a narrower one), how it works in four numbered steps, its nine levels, why RYC makes it, and the way in again at the foot.
 export default async function Iyt({ params }: LangParams) {
   const { lang, t } = await getT(params);
   const n = (v: number) => v.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB');
@@ -75,13 +77,12 @@ export default async function Iyt({ params }: LangParams) {
         <div>
           <span className="kicker">{t('Sailing certification exam practice', 'Тренажёр к экзамену на яхтенный сертификат')}</span>
           <h1 className="hm-ph-h">{t('Prepare for your sailing certification exam for free', 'Подготовьтесь к экзамену на яхтенный сертификат бесплатно')}</h1>
-        </div>
-        <div>
           <p className="hm-text iyt-lead">{t(
             `Sailing Certification Test is our free trainer for the theory of sailing certificates: ${n(total)} questions from VHF Radio Operator to Yachtmaster Ocean, with a short explanation after every answer. In English and Russian, no sign-up.`,
             `Sailing Certification Test — наш бесплатный тренажёр теории к яхтенным сертификатам: ${n(total)} вопросов от VHF Radio Operator до Yachtmaster Ocean и короткое пояснение после каждого ответа. На русском и английском, без регистрации.`)}</p>
           <Open lang={lang} t={t} />
         </div>
+        <IytSample lang={lang} q={iytSample(lang)} />
       </header>
 
       <section className="hm-page hm-sec" aria-labelledby="iyt-how">

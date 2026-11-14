@@ -739,11 +739,37 @@
 .bc .iyt-ic { border-radius: 0; background: var(--you); color: var(--ink-on); }
 .bc .iyt-levels li { border-top-color: var(--rule); }
 .bc .iyt-note { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-3); }
+/* a question from the trainer to try, in the head: its drawing, the question, four options; then right or not, why,
+   the rules and the way to more (components/iyt-sample.tsx) */
+.bc .iyt-q { align-self: stretch; width: 100%; max-width: 520px; background: var(--surface); }
+.bc .iyt-q-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); padding: var(--s-4) var(--s-5) var(--s-3); border-bottom: 1px solid var(--rule); }
+.bc .iyt-q-b { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); }
+.bc .iyt-q-fig { display: block; width: 100%; height: auto; }
+.bc .iyt-q-text { margin: var(--s-1) 0; font: 600 var(--fs-lead)/1.4 var(--sans); color: var(--ink); }
+.bc .iyt-q-opts { display: flex; flex-direction: column; gap: var(--s-2); }
+.bc .iyt-q-opt { appearance: none; display: flex; align-items: stretch; gap: var(--s-4); width: 100%; min-height: var(--h-l); padding: 0 var(--s-4) 0 0; border: 0; border-radius: 0; background: var(--fill-1); color: var(--ink);
+  text-align: left; cursor: pointer; font: 500 var(--fs-small)/1.4 var(--sans); transition: background-color var(--t-quick), color var(--t-quick); }
+.bc .iyt-q-opt:hover { background: var(--w-10); }
+.bc .iyt-q-opt b { flex: none; display: flex; align-items: center; justify-content: center; width: var(--h-m); background: var(--fill-2); font: 700 var(--fs-lead)/1 var(--cond); }
+.bc .iyt-q-opt span { align-self: center; padding-block: var(--s-3); }
+.bc .iyt-q-opt.ok { background: color-mix(in srgb, var(--up) 16%, transparent); }
+.bc .iyt-q-opt.ok b { background: var(--up); color: var(--ink-on); }
+.bc .iyt-q-opt.no { background: color-mix(in srgb, var(--live) 16%, transparent); }
+.bc .iyt-q-opt.no b { background: var(--live); color: var(--ink); }
+.bc .iyt-q-opt.off { background: var(--fill-1); color: var(--ink-3); }
+.bc .iyt-q-opt[aria-disabled="true"] { cursor: default; }
+.bc .iyt-q-why { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); padding: var(--s-4) var(--s-4) var(--s-2); border-left: 4px solid var(--up); background: color-mix(in srgb, var(--up) 10%, transparent); }
+.bc .iyt-q-why.no { border-left-color: var(--live); background: color-mix(in srgb, var(--live) 10%, transparent); }
+.bc .iyt-q-why p { margin: 0; font: 500 var(--fs-small)/1.5 var(--sans); color: var(--ink-2); }
+.bc .iyt-q-why.ok b { color: var(--up); }
+.bc .iyt-q-why.no b { color: var(--ink); }
+.bc .iyt-q-why .hm-src { display: inline-flex; align-items: center; gap: var(--s-2); min-height: var(--h-m); text-decoration: none; text-transform: uppercase; }
 /* its head in two columns on a wide screen: the title on the left, the line and the ways in on the right */
 .bc .iyt-hero > div { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-5); min-width: 0; }
 .bc .iyt-hero .kicker { background: var(--you); }
 @container help (min-width: 1100px) {
-  .bc .hm-ph.iyt-hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-6) var(--s-16); align-items: end; }
+  .bc .hm-ph.iyt-hero { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: var(--s-8) var(--s-12); align-items: start; }
+  .bc .iyt-hero > .iyt-q { justify-self: end; }
 }
 /* how it works: a numbered row of cells, as the lower third's */
 .bc .rd-cells { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 1px; background: var(--rule); }
