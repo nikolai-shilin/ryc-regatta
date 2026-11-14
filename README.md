@@ -57,22 +57,31 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland, San Francisco, Valencia, Barcelona, Palma, Marstrand, Bermuda,
   Enoshima, Weymouth, Marseille, Rio de Janeiro or Lake Garda. `public/game/venues.js` holds each one's position,
   prevailing wind, clock and look (its woods, farmland, houses, moored boats and water); `lib/venues.ts` is the set-up
-  page's list of them, and `npm test` keeps the two in step. Each venue's land is baked by
-  `python3 blender/venues.py <work dir> [id ...]` into `public/game/venues/<id>.json` and `.bin`, the same way as
-  Göcek's (below), but centred on the race area and turned so the venue's prevailing wind comes from the game's north,
-  where every race's wind is; the sun turns with it, and stands where it does at that latitude in the sailing season.
-  The json also lists the towns and the landmarks `skopea.js` draws: the Harbour Bridge, the Newport Bridge, the Golden
-  Gate, the Sky Tower, Laboe's memorial, the Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la
-  Garde, Christ the Redeemer, Enoshima's Sea Candle and the lighthouses of Kiel and Trieste. `npm test` sails every course at every venue and
-  checks its marks are in clear water. Moving between today's race and a free race in the game reloads the page when
-  the venue changes.
-- **The land:** Göcek bay, off Skopea Marina. `public/game/skopea.bin` and `skopea.json` (the
-  hills, the coast, the marinas' pontoons and the town) are made by `python3 blender/skopea.py <work dir>`, from the
-  Terrarium elevation tiles and OpenStreetMap; it needs numpy and Pillow and keeps its downloads in the work dir.
-  `land.js` lays each course in clear water there, `skopea.js` draws the land. OpenStreetMap has few of Göcek's buildings,
-  so its town also comes from Microsoft's Global ML Building Footprints (ODbL, see `skopea.py`);
-  `python3 blender/skopea.py <work dir> --buildings` redoes only the buildings, leaving the coast and the sea room (and
-  so where today's course is laid) as they are.
+  page's list of them, and `npm test` keeps the two in step. Each venue's land, Göcek's too, is baked by
+  `python3 blender/venues.py <work dir> [id ...]` (needs numpy and Pillow; `--fetch` only downloads, into the work dir,
+  where a second run finds them) into `public/game/venues/<id>.json` and `.bin` (Göcek's into `public/game/skopea.json`
+  and `.bin`), from the Terrarium elevation tiles and OpenStreetMap: centred on the race area and turned so the venue's
+  prevailing wind comes from the game's north, where every race's wind is; the sun turns with it, and stands where it
+  does at that latitude in the sailing season. Göcek's keeps its older frame, from the town and not turned.
+  What the .bin holds, `land.js` unpacks and `skopea.js` draws:
+  - the terrain as a quadtree, some 8 m cells on the coast and round the race area, coarser where the hills are far or
+    smooth; the shore meets the water on OpenStreetMap's coastline to the metre, and the bed under the water is as steep
+    as the land above it (deep under a cliff, shallow off a beach), or the tiles' own depths where deeper;
+  - what is on the ground, on a 20 m grid: OpenStreetMap's woods, scrub, grass, fields, orchards, towns, industry,
+    beaches, bare rock and wetland, and a town wherever buildings stand close; the ground's colour is worked out for each
+    pixel from it, and where the map has nothing, from the venue's look;
+  - how much of the sky each point sees (the shade in valleys), and the water's depth (the sea is lighter over the
+    shallows); the hills' shadows are worked out in the game from where the sun is;
+  - the land beyond, out to 64 km on a 400 m grid, drawn pulled in to just inside the view and lowered by the earth's
+    curve: the Alps round Garda, Fuji from Enoshima;
+  - the buildings (their pitched roofs too, where the map or the venue's look has them).
+  The json lists the marinas' pontoons, the towns where the houses the map lacks are filled in, and the landmarks
+  `skopea.js` draws: the Harbour Bridge, the Newport Bridge, the Golden Gate, the Sky Tower, Laboe's memorial, the
+  Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la Garde, Christ the Redeemer, Enoshima's Sea
+  Candle and the lighthouses of Kiel and Trieste. `land.js` lays each course in clear water; `npm test` sails every
+  course at every venue and checks its marks are in clear water. Moving between today's race and a free race in the
+  game reloads the page when the venue changes. OpenStreetMap has few of Göcek's buildings, so its town also comes
+  from Microsoft's Global ML Building Footprints (ODbL), which `venues.py` downloads with the rest.
 - **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes
   wrong (a sheet left out or in too hard, a broach, a foul, a collision, aground, stopped after the gun, now and then a
   tack) and through the start (the signals, a boat too close, the line far off, over early, a quick or a late start).

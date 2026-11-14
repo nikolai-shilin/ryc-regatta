@@ -43,6 +43,8 @@ const WATER_FS = /* glsl */ `
 uniform float uTime, uFogNear, uFogFar, uChop, uAmp, uWhite, uGlint, uReflOn; uniform vec4 uW[8]; uniform float uWs[8], uQ[8];
 uniform vec3 uCam, uDeep, uScatter, uFoamCol; uniform vec4 uGust[12]; uniform vec2 uWind, uPivot;
 uniform sampler2D uRefl; uniform mat4 uReflMat;
+// the land's (skopea.js): the depth over its square, the hills' shadow, and where the venue's frame is
+uniform sampler2D uSeabed, uShadeTex; uniform vec3 uGridXf, uShadeXf, uLandAt, uShallow; uniform float uShallowK;
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
 ${SKY_GLSL}
 ${OCEAN_GLSL}
@@ -60,6 +62,10 @@ vec3 skyAt(vec3 d) {
   return c + uSunCol * pow(max(dot(d, uSun), 0.0), 10.0) * 0.25;
 }
 void main() {
+  // past the land's square the sea is all haze, the sky's own colour there: left to the sky, so the land beyond
+  // (skopea.js, drawn under everything) shows where it rises
+  vec2 g0 = (vWorld.xz + uLandAt.xz - uGridXf.xy) * uGridXf.z;
+  if (g0.x < 0.0 || g0.y < 0.0 || g0.x > 1.0 || g0.y > 1.0) discard;
   vec2 p = vXZ;
   // the wave trains' normal, all eight
   vec3 n = vec3(0.0, 1.0, 0.0);
@@ -126,8 +132,14 @@ void main() {
   // the water body: deep blue, lit turquoise where the crests let the sun through
   vec3 sunFlat = normalize(vec3(uSun.x, 0.0, uSun.z));
   float crest = smoothstep(-0.2, 1.0, vH / max(uAmp, 0.08));
-  float sss = crest * (0.35 + 0.65 * max(0.0, dot(-V, sunFlat))) * (1.0 - cosT * 0.5) * (0.6 + 0.8 * patchy);
-  vec3 body = uDeep * (0.75 + 0.25 * max(dot(n, uSun), 0.0)) + uScatter * sss * 0.45;
+  // in a hill's shadow the sun neither lights the water nor glints on it; over the shallows the bed shows through
+  vec2 lp = vWorld.xz + uLandAt.xz, lg = (lp - uShadeXf.xy) * uShadeXf.z;
+  float lsun = lg.x > 0.0 && lg.y > 0.0 && lg.x < 1.0 && lg.y < 1.0 ? texture2D(uShadeTex, lg).r : 1.0;
+  float dep = texture2D(uSeabed, (lp - uGridXf.xy) * uGridXf.z).r * 25.5;
+  float shal = uShallowK * (1.0 - smoothstep(0.8, 14.0, dep)) * (1.0 - smoothstep(1800.0, 4500.0, dist));
+  float sss = crest * (0.35 + 0.65 * max(0.0, dot(-V, sunFlat))) * (1.0 - cosT * 0.5) * (0.6 + 0.8 * patchy) * lsun;
+  vec3 body = uDeep * (0.75 + 0.25 * max(dot(n, uSun), 0.0) * lsun) + uScatter * sss * 0.45;
+  body = mix(body, uShallow * (0.5 + 0.5 * lsun * max(dot(n, uSun), 0.0)), shal);
   vec3 col = mix(body, refl, F);
   // the sun: a sharp glint and a broader glitter
   // the sun's glitter. What glints are facets far smaller than the waves drawn here — capillary ripples — each a
@@ -165,7 +177,7 @@ void main() {
     if (L == 1) far = 1.0 - smoothstep(0.6, 1.2, fp); // past the last level: the average
   }
   glit = mix(glit, spark, far);
-  col += uSunCol * uGlint * min(Fh * 70.0 * glit, 14.0); // capped: a glint blooms into a small star, not a lamp
+  col += uSunCol * uGlint * lsun * min(Fh * 70.0 * glit, 14.0); // capped: a glint blooms into a small star, not a lamp
   // whitecaps: a few waves break here and there — on a crest, where a slow patch of the noise says so — with a
   // ragged edge, and leave fading foam behind them. Nothing stretched or small-tiled, so no rows of dashes.
   // the noise is read across and along the wind (pa), so a breaker is a short ragged line along the crest, not a blob
@@ -733,7 +745,8 @@ export class World {
     const phone = /android|iphone|ipad/i.test(navigator.userAgent);
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(SKY_HORIZON, FOG_NEAR, FOG_FAR);
-    // out to 9 km: as far as the venue's land goes (8.5 km), so a landmark or a mountain behind the course is drawn
+    // out to 9 km: as far as the venue's terrain goes (8.5 km), so a landmark or a hill behind the course is drawn
+    // (the mountains beyond are pulled in to just inside it: skopea.js)
     this.camera = new THREE.PerspectiveCamera(55, 1, 0.3, 9000);
     this.camera.rotation.order = 'YXZ';
     this.hemi = new THREE.HemisphereLight('#dbeaff', '#2c4a5c', 0.9);
@@ -757,6 +770,7 @@ export class World {
       fragmentShader: SKY_FS,
     });
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(5000, 32, 16), skyMat());
+    this.sky.renderOrder = -2; // first: the land beyond (skopea.js) is drawn over it, then everything else
     this.scene.add(this.sky);
     // airliners at cruise and their contrails, drawn with the sky, through its clouds (jets.js)
     this.jets = new Jets(this.skyU, this.sky.material.uniforms.uTime);
@@ -794,8 +808,9 @@ export class World {
 
     // the land round the course: Göcek bay, its hills, the town and Skopea Marina (skopea.js); setRace moves it so
     // the race's start sits where land.js laid it in the bay
-    this.skopea = new Skopea();
+    this.skopea = new Skopea(this.skyU);
     this.scene.add(this.skopea.group);
+    Object.assign(this.waterU, this.skopea.waterU);
     // the sea reflects the hills, the town and the moored yachts; not the pines, the most of it to draw a second
     // time, which the rippled reflection of a green hillside wouldn't show
     for (const o of [this.skopea.land, this.skopea.town, this.skopea.boats]) mirrored(o);
@@ -862,6 +877,7 @@ export class World {
     this.glare.material.color.copy(L.sun); this.glareK = L.disc;
     this.bloomLook = L.bloom; if (this.post) this.post.setLook(L.bloom);
     this.envSea.material.color.copy(L.deep).lerp(SKY_HORIZON, 0.2);
+    if (this.skopea) this.skopea.setLight(L);
     const pm = new THREE.PMREMGenerator(this.renderer), old = this.scene.environment;
     this.scene.environment = pm.fromScene(this.env, 0.02).texture;
     pm.dispose(); if (old) old.dispose();

@@ -1,7 +1,7 @@
-// The land round the course: the real coast, hills and marinas of the race's venue (venues.js). Göcek bay (Skopea
-// Limanı) in Turkey is baked by blender/skopea.py into skopea.json and skopea.bin, the other venues by
-// blender/venues.py into venues/<id>.json and .bin. This module holds the numbers only (no three.js), for the race:
-// how much sea room there is anywhere, and where in the venue's water a course fits.
+// The land round the course: the real coast, hills and marinas of the race's venue (venues.js), each baked by
+// blender/venues.py into its .json and .bin (Göcek's as skopea.json and skopea.bin, the others' as venues/<id>.*).
+// This module holds the numbers only (no three.js), for the race and for the picture (skopea.js): the parts of the
+// .bin unpacked, how much sea room there is anywhere, and where in the venue's water a course fits.
 //
 // The venue's own frame: metres, x east and z south in Göcek (from the town); elsewhere from the middle of the race
 // area, turned so the prevailing wind comes from the north like the race's. A race is laid at an offset (ox, oz) in
@@ -20,13 +20,28 @@ const [META, BIN] = await Promise.all([
   fetch(new URL(JSON_FILE, base)).then((r) => r.json()),
   fetch(new URL(BIN_FILE, base)).then(unpack),
 ]);
-const T = META.terrain, M = META.room;
-// each row is stored as differences from the point before it: added up again here (wrapping as they were taken)
-function rows(a, w) { for (let i = 0; i < a.length; i += w) for (let j = i + 1; j < i + w; j++) a[j] += a[j - 1]; return a; }
+const M = META.room;
+// each row is stored as differences from the point before it (or the whole part as one row): added up again here,
+// wrapping as they were taken
+function rows(a, w) { for (let i = 0; i < a.length; i += w) for (let j = i + 1; j < i + w && j < a.length; j++) a[j] += a[j - 1]; return a; }
+// or each point as what its neighbours left, up and up-left predict (left + up − up-left), and the difference
+function grad(a, w) {
+  for (let k = 1; k < a.length; k++) { const i = (k / w) | 0, j = k - i * w; a[k] += !i ? a[k - 1] : !j ? a[k - w] : a[k - 1] + a[k - w] - a[k - w - 1]; }
+  return a;
+}
+// the parts of the .bin, in the order the json lists them, each padded to 4 bytes (blender/venues.py)
+const TYPES = { i8: Int8Array, u8: Uint8Array, i16: Int16Array, u16: Uint16Array, bits: Uint8Array };
+const PARTS = {};
+for (let o = 0, k = 0; k < META.parts.length; k++) {
+  const p = META.parts[k], T = TYPES[p.t], n = p.t === 'bits' ? Math.ceil(p.len / 8) : p.len, a = new T(BIN, o, n);
+  if (p.d === 'rows') rows(a, p.w); else if (p.d === 'seq') rows(a, a.length); else if (p.d === 'grad') grad(a, p.w);
+  PARTS[p.n] = a; if (p.t === 'bits') PARTS[p.n + 'Len'] = p.len;
+  o += n * T.BYTES_PER_ELEMENT; o += (4 - (o % 4)) % 4;
+}
 export const SKOPEA = {
   meta: META,
-  heights: rows(new Int16Array(BIN.slice(0, T.nx * T.nz * 2)), T.nx), // decimetres
-  room: rows(new Int8Array(BIN, T.nx * T.nz * 2, M.nx * M.nz), M.nx), // steps of 4 m
+  parts: PARTS,
+  room: PARTS.room, // steps of 4 m
 };
 
 // the sea room at a point of the bay, metres: how far to the shore, + at sea, − on land (as far as 508 m)
