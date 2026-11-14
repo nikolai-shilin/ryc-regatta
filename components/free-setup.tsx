@@ -10,6 +10,7 @@ import { CourseMap } from './course-map';
 import { GameScene, type SceneSetup } from './game-scene';
 import { PauseCard, SettingsRow, type Who } from './pause-card';
 import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, IconSun, Num, clock } from './ui';
+import { SceneBrand } from './scene-brand';
 
 // the way round each shape but up and down, under its choice
 const SHAPE_HINT: Partial<Record<Shape, [string, string]>> = {
@@ -47,8 +48,12 @@ export default function FreeSetup({ lang, from, who }: { lang: Lang; from: 'toda
     const start: Pick = fromToday ? { venue: d.venue, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course, daytime }
       : { venue, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: savedShape(o.course), daytime };
     setP(start); if (from) setBase(start);
+    setNear([d.venue, venue]);
     setReady(true);
   }, [from]); // eslint-disable-line react-hooks/exhaustive-deps
+  // today's venue and the one you sailed last: the first of the places offered, before the rest A to Z
+  const [near, setNear] = useState<VenueId[]>([]);
+  const [allPlaces, setAllPlaces] = useState(false);
   // the race this page was opened from, to mark what's changed from it
   const [base, setBase] = useState<Pick | null>(null);
   const changed = base ? (Object.keys(base) as (keyof Pick)[]).filter((k) => base[k] !== p[k]) : [];
@@ -61,11 +66,13 @@ export default function FreeSetup({ lang, from, who }: { lang: Lang; from: 'toda
   useEffect(() => { if (!lengthOffered(p.venue, p.length)) setP((x) => ({ ...x, length: lengthOffered(x.venue, 'medium') ? 'medium' : 'short' })); }, [p.venue, p.length]);
   const go = () => { saveOpts({ ...p, mode: 'free', lastFree: Date.now() }); location.href = '/play?race=free'; };
 
+  // a blue dot on a choice changed from the race this page was opened from
+  const chg = (k: keyof Pick) => changed.includes(k) ? <i className="bt-chg" title={t('Changed', 'Изменено')}><span className="vh">{t('changed', 'изменено')}</span></i> : null;
   // one choice as the pause menu's quick switches: a label, then pills with a light that's on
   const tags = <K extends keyof Pick>(k: K, ico: React.ReactNode, label: string, opts: [Pick[K], string][], hint?: React.ReactNode) => (
     <div className="bt-g">
-      <span className="bt-k" id={`fs-${k}`}>{ico}{label}{changed.includes(k) ? <i className="bt-chg" title={t('Changed', 'Изменено')}><span className="vh">{t('changed', 'изменено')}</span></i> : null}</span>
-      <div className={`bt-pills ${k === 'venue' ? 'bt-row1' : ''}`} role="radiogroup" aria-labelledby={`fs-${k}`}>
+      <span className="bt-k" id={`fs-${k}`}>{ico}{label}{chg(k)}</span>
+      <div className="bt-pills" role="radiogroup" aria-labelledby={`fs-${k}`}>
         {opts.map(([v, l]) => (
           <button key={String(v)} type="button" role="radio" aria-checked={p[k] === v} className="bt-pill" onClick={() => set(k, v)}>{l}</button>
         ))}
@@ -111,22 +118,24 @@ export default function FreeSetup({ lang, from, who }: { lang: Lang; from: 'toda
         : t(', then a beat up to the finish line below the windward mark.', ', потом лавировка к финишу чуть ниже верхнего знака.')}`,
     }[p.course]],
   };
-  // upright the places run in one row that scrolls sideways: the chosen one in view
-  useEffect(() => {
-    const row = document.querySelector('.bt-card .bt-row1'), on = row?.querySelector<HTMLElement>('[aria-checked="true"]');
-    if (row && on && row.scrollWidth > row.clientWidth) row.scrollLeft = on.offsetLeft - (row as HTMLElement).offsetLeft - (row.clientWidth - on.offsetWidth) / 2;
-  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  // the places: four to pick from (today's, your last, then the first A to Z; the one chosen always among them), and
+  // All opens every one, by name in the page's language (VENUES' own order is today's race's rotation, so it stays)
+  const byName = VENUES.map((v) => [v.id, t(...v.name)] as [VenueId, string]).sort((a, b) => a[1].localeCompare(b[1], lang));
+  const four = [...new Set([...near, ...byName.map(([id]) => id)])].slice(0, 4);
+  if (!four.includes(p.venue)) four[3] = p.venue;
+  const places = allPlaces ? byName : four.map((id) => byName.find(([v]) => v === id)!);
 
   return (
-    <div className="scr bt-scr bc" lang={lang}>
+    <div className="scr bt-scr bc fs-scr" lang={lang}>
       <div className="bt">
         {ready && <GameScene venue={p.venue} wind={p.preset} setup={scene} title={t('The race’s venue in 3D', 'Место гонки в 3D')} loading={t('Loading the venue', 'Загружаем место гонки')} />}
 
         <div className="bt-info">
           <div className="bt-top">
             <Link className="bt-back" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
-            <span className="bt-kick">{from === 'race' ? t('Change the race', 'Изменить гонку') : t('Free race', 'Свободная гонка')}</span>
+            <SceneBrand />
           </div>
+          <span className="bt-kick bt-kick-w">{from === 'race' ? t('Change the race', 'Изменить гонку') : t('Free race', 'Свободная гонка')}</span>
           <h1 className="bt-h" id="fs-title">{t(...where.name)}</h1>
           <p className="bt-p">{t(...where.place)} · {t(`prevailing wind ${where.wind[0]}`, `преобладающий ветер ${where.wind[1]}`)}. {t(...where.about)}</p>
           {view !== 'boats' && (
@@ -136,10 +145,9 @@ export default function FreeSetup({ lang, from, who }: { lang: Lang; from: 'toda
             </div>
           )}
           <div className="bt-stats">
-            <div><span className="bt-sk">{t('Wind', 'Ветер')}</span><b><Num v={`${KN[p.preset]} ${t('kn', 'уз')}`} /></b></div>
-            <div><span className="bt-sk">{t('Course', 'Дистанция')}</span><b><Num v={metres} /></b></div>
+            <div><span className="bt-sk">{t('Beat', 'Лавировка')}</span><b><Num v={`${beat} ${t('m', 'м')}`} /></b></div>
             <div><span className="bt-sk">{t('About', 'Около')}</span><b><Num v={`${minutes(p)} ${t('min', 'мин')}`} /></b></div>
-            <div><span className="bt-sk">{t('Your best', 'Рекорд')}</span><b>{best != null ? clock(best) : '—'}</b></div>
+            <div><span className="bt-sk">{t('Your best', 'Рекорд')}</span><b className={best != null ? 'is-gold' : ''}>{best != null ? clock(best) : '—'}</b></div>
           </div>
         </div>
 
@@ -154,8 +162,19 @@ export default function FreeSetup({ lang, from, who }: { lang: Lang; from: 'toda
             <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
             <SettingsRow lang={lang} />
           </div>}>
-          {/* by name, in the page's language (VENUES' own order is today's race's rotation, so it stays as it is) */}
-          {tags('venue', <IconPin />, t('Where', 'Где'), VENUES.map((v) => [v.id, t(...v.name)] as [VenueId, string]).sort((a, b) => a[1].localeCompare(b[1], lang)))}
+          <div className="bt-g">
+            <span className="bt-k" id="fs-venue"><IconPin />{t('Where', 'Где')}{chg('venue')}</span>
+            <div className={`fs-where${allPlaces ? '' : ' fs-one'}`}>
+              <div className="bt-pills" id="fs-places" role="radiogroup" aria-labelledby="fs-venue">
+                {places.map(([v, l]) => (
+                  <button key={v} type="button" role="radio" aria-checked={p.venue === v} className="bt-pill" onClick={() => { set('venue', v); setAllPlaces(false); }}>{l}</button>
+                ))}
+              </div>
+              <button type="button" className="bt-pill fs-all" aria-expanded={allPlaces} aria-controls="fs-places" onClick={() => setAllPlaces(!allPlaces)}>
+                {t(`All ${VENUES.length}`, `Все ${VENUES.length}`)}<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="2" /></svg>
+              </button>
+            </div>
+          </div>
           {tags('preset', <IconWind s={14} />, t('Wind', 'Ветер'), [['light', t('Light 7 kn', 'Слабый 7 уз')], ['medium', t('Medium 12 kn', 'Средний 12 уз')], ['strong', t('Strong 19 kn', 'Сильный 19 уз')]])}
           {tags('daytime', <IconSun />, t('Time of day', 'Время суток'), [['any', t('Any', 'Любое')], ['morning', t('Morning', 'Утро')], ['midday', t('Midday', 'Полдень')], ['afternoon', t('Afternoon', 'День')], ['evening', t('Evening', 'Вечер')]],
             <p className="bt-hint">{{
@@ -165,14 +184,17 @@ export default function FreeSetup({ lang, from, who }: { lang: Lang; from: 'toda
               afternoon: t('The sun past its highest, swinging west.', 'Солнце уже за зенитом, уходит на запад.'),
               evening: t('Golden light, the sun an hour above the horizon.', 'Золотой свет, солнце за час до заката.'),
             }[p.daytime]}</p>)}
-          {tags('fleet', <IconBoats />, t('Boats', 'Лодки'), [[3, t('3 boats', '3 лодки')], [5, t('5 boats', '5 лодок')], [7, t('7 boats', '7 лодок')]])}
           {tags('course', <IconRoute />, t('Shape', 'Форма'), shapes.map((s) => [s, t(...SHAPE_NAME[s])] as [Shape, string]),
             SHAPE_HINT[p.course] && <p className="bt-hint">{t(...SHAPE_HINT[p.course]!)}</p>)}
-          {tags('length', <IconRoute />, t('Course', 'Дистанция'), ([['short', t('Short', 'Короткая')], ['medium', t('Medium', 'Средняя')], ['long', t('Long', 'Длинная')]] as [Length, string][]).filter(([l]) => lengthOffered(p.venue, l)))}
-          {tags('laps', <IconLaps />, t('Laps', 'Круги'), [[1, t('1 lap', '1 круг')], [2, t('2 laps', '2 круга')]])}
-          {tags('start', <IconFlag />, t('Start', 'Старт'), [[1, t('1 min', '1 мин')], [3, t('3 min', '3 мин')], [5, t('5 min', '5 мин')]])}
-          {tags('current', <IconTide />, t('Current', 'Течение'), [[0, t('Off', 'Выкл')], [1, t('On', 'Вкл')]],
-            <p className="bt-hint">{t('On: a tide sets every boat across the course.', 'Вкл: течение сносит все лодки поперёк дистанции.')}</p>)}
+          {/* the race's size, two to a row on a wide screen */}
+          <div className="fs-grid">
+            {tags('length', <IconRoute />, t('Course', 'Дистанция'), ([['short', t('Short', 'Короткая')], ['medium', t('Medium', 'Средняя')], ['long', t('Long', 'Длинная')]] as [Length, string][]).filter(([l]) => lengthOffered(p.venue, l)))}
+            {tags('fleet', <IconBoats />, t('Boats', 'Лодки'), [[3, t('3 boats', '3 лодки')], [5, t('5 boats', '5 лодок')], [7, t('7 boats', '7 лодок')]])}
+            {tags('laps', <IconLaps />, t('Laps', 'Круги'), [[1, t('1 lap', '1 круг')], [2, t('2 laps', '2 круга')]])}
+            {tags('start', <IconFlag />, t('Start', 'Старт'), [[1, t('1 min', '1 мин')], [3, t('3 min', '3 мин')], [5, t('5 min', '5 мин')]])}
+            {tags('current', <IconTide />, t('Current', 'Течение'), [[0, t('Off', 'Выкл')], [1, t('On', 'Вкл')]],
+              <p className="bt-hint">{t('On: a tide sets every boat across the course.', 'Вкл: течение сносит все лодки поперёк дистанции.')}</p>)}
+          </div>
           <div className="bt-g fs-course-in">
             <span className="bt-k"><IconRoute />{t('Your course', 'Твоя дистанция')}<span className="bt-k-r">{p.course !== 'wl' ? `${shapeName} · ` : ''}{courseName} · {lapsName} · {metres}</span></span>
             <CourseMap className="cmap bt-map" lang={lang} geo={geo} preset={p.preset} W={250} H={210} route fleet={p.fleet} />
