@@ -31,7 +31,7 @@ test('today’s race goes round the venues, and the play page preloads the day�
   for (let d = 0; d < 400; d++) {
     const now = from + d * 864e5, day = new Date(now), v = dailyVenue(day);
     assert.notEqual(v, prev, `${day.toISOString().slice(0, 10)}: not yesterday’s venue`); prev = v;
-    if (d % VENUES.length === 0) {
+    if (Math.floor(now / 864e5) % VENUES.length === 0) { // a round: the days are counted from 1970 in rounds of len
       const round = new Set(Array.from({ length: VENUES.length }, (_, i) => dailyVenue(new Date(now + i * 864e5))));
       assert.ok(round.size >= VENUES.length - 2, 'every venue comes round');
     }

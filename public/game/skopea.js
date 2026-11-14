@@ -670,7 +670,7 @@ function marinas() {
 
 // ---------- the landmarks ----------
 // what the json lists: a steel arch bridge (Sydney Harbour), a suspension bridge (Newport), a tower (Auckland's Sky
-// Tower, Laboe's naval memorial), a lighthouse. Each in one colour a part, merged into one mesh.
+// Tower, Laboe's naval memorial, Galata), a lighthouse, a mosque (Istanbul's). Each in one colour a part, merged into one mesh.
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z), XA = V3(1, 0, 0);
 // a beam from a to b, w wide and h deep
 function beam(a, b, w, h, col) {
@@ -733,6 +733,10 @@ function landmarks() {
       if (L.style === 'sky') { // a concrete shaft, the pod of decks and glass, the mast
         parts.push(post(x, z, y, 7, 6, 190, '#d9d9d4'), post(x, z, y + 186, 15, 18, 10, '#cfcfca'), post(x, z, y + 196, 19, 19, 14, '#3b4a55'),
           post(x, z, y + 210, 18, 15, 8, '#d9d9d4'), post(x, z, y + 218, 5, 4.5, 30, '#d9d9d4'), post(x, z, y + 248, 2.5, 0.5, L.h - 248, '#c8c8c4', 8));
+      } else if (L.style === 'galata') { // Galata's round stone tower over the Golden Horn: the gallery, the lead cone
+        const stone = '#b9ad96';
+        parts.push(post(x, z, y - 2, 8.6, 8, L.h * 0.74 + 2, stone, 16), post(x, z, y + L.h * 0.7, 9.6, 9.6, 2, '#a89c86', 16), post(x, z, y + L.h * 0.74, 7.8, 7.8, L.h * 0.06, stone, 16));
+        parts.push(tint(new THREE.ConeGeometry(8.6, L.h * 0.2, 16).translate(x, y + L.h * 0.9, z), '#6f777c'));
       } else { // a tapering brick tower, like a ship's stern
         parts.push(tint(new THREE.CylinderGeometry(4.5, 9, L.h, 4).rotateY(Math.PI / 4).translate(x, y + L.h / 2, z), '#7a5246'), tint(new THREE.BoxGeometry(40, 9, 26).translate(x, y + 4.5, z + 18), '#8a6a5c'));
       }
@@ -770,6 +774,25 @@ function landmarks() {
       const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), stone = '#e8e4da';
       parts.push(tint(new THREE.BoxGeometry(12, 8, 12).translate(x, y + 4, z), '#bdb6a8'), post(x, z, y + 8, 4.5, 2.6, 22, stone, 10));
       parts.push(tint(new THREE.BoxGeometry(28, 2.4, 2.6).translate(x, y + 27.5, z), stone), post(x, z, y + 30, 1.6, 1.6, 3.5, stone, 8));
+    } else if (L.kind === 'mosque') {
+      // Istanbul's imperial mosques on their hills: the square prayer hall, the great dome on its drum (its top L.h up),
+      // the half-domes and the corner domes stepping down from it, the pencil minarets with their balconies and lead
+      // cones (L.minarets of them, L.mh high: four at the hall's corners, the Blue Mosque's other two at its courtyard's)
+      const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), stone = L.wall || '#d4cdbf', lead = '#8a9298', H = L.h;
+      const r = H * 0.27, w = r * 5, hb = H * 0.42, yd = H - r;
+      const dome = (dx, dz, y0, rr) => parts.push(tint(new THREE.SphereGeometry(rr, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2).translate(x + dx, y0, z + dz), lead));
+      parts.push(tint(new THREE.BoxGeometry(w, hb + 2, w).translate(x, y + hb / 2 - 1, z), stone), post(x, z, y + hb, r * 1.08, r * 1.02, yd - hb, stone, 16));
+      dome(0, 0, y + yd, r);
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]].slice(0, L.semis || 4)) dome(dx * r, dz * r, y + hb, r * 0.8);
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const dx = sx * w * 0.34, dz = sz * w * 0.34; parts.push(post(x + dx, z + dz, y + hb, r * 0.34, r * 0.32, r * 0.25, stone, 10)); dome(dx, dz, y + hb + r * 0.25, r * 0.32); }
+      const at = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) => [a * (w / 2 + 3), b * (w / 2 + 3)]);
+      if (L.minarets > 4) { at.push([-(w / 2 + 3), w * 1.5 + 3], [w / 2 + 3, w * 1.5 + 3]); parts.push(tint(new THREE.BoxGeometry(w, 9, w).translate(x, y + 3.5, z + w), stone)); }
+      for (const [dx, dz] of at.slice(0, L.minarets)) {
+        const mx = x + dx, mz = z + dz, mh = L.mh;
+        parts.push(post(mx, mz, y - 2, 2.5, 1.9, mh * 0.86 + 2, stone, 10));
+        for (const f of L.minarets > 4 ? [0.46, 0.6, 0.74] : [0.55, 0.72]) parts.push(post(mx, mz, y + mh * f, 3.2, 3.2, 1.3, stone, 10));
+        parts.push(tint(new THREE.ConeGeometry(2.1, mh * 0.14, 10).translate(mx, y + mh * 0.93, mz), lead));
+      }
     }
   }
   if (!parts.length) return null;

@@ -1,7 +1,7 @@
 // Where a race can be sailed: the set-up page's list, and today's race goes to one of them each day (lib/race.ts). The game's own list, with each venue's position, wind and
 // look, is public/game/venues.js; the ids and names here must match it (npm test checks).
 export type VenueId = 'gocek' | 'cowes' | 'newport' | 'sydney' | 'kiel' | 'trieste' | 'porto-cervo' | 'saint-tropez' | 'antigua' | 'auckland'
-  | 'san-francisco' | 'valencia' | 'barcelona' | 'palma' | 'marstrand' | 'bermuda' | 'enoshima' | 'weymouth' | 'marseille' | 'rio' | 'garda';
+  | 'san-francisco' | 'valencia' | 'barcelona' | 'palma' | 'marstrand' | 'bermuda' | 'enoshima' | 'weymouth' | 'marseille' | 'rio' | 'garda' | 'istanbul';
 type Pair = [string, string]; // English, Russian
 
 export const VENUES: { id: VenueId; name: Pair; place: Pair; wind: Pair; about: Pair }[] = [
@@ -47,6 +47,8 @@ export const VENUES: { id: VenueId; name: Pair; place: Pair; wind: Pair; about: 
     about: ['Guanabara Bay of the 2016 Olympics, under Sugarloaf and Christ the Redeemer.', 'Залив Гуанабара Олимпиады 2016 года, под Сахарной Головой и статуей Христа.'] },
   { id: 'garda', name: ['Lake Garda', 'Озеро Гарда'], place: ['Italy', 'Италия'], wind: ['S', 'Ю'],
     about: ['Fresh water under the Alps, off Riva and Torbole, in the afternoon Ora.', 'Пресная вода у подножия Альп, у Ривы и Торболе, под дневным ветром Ора.'] },
+  { id: 'istanbul', name: ['Istanbul', 'Стамбул'], place: ['Turkey', 'Турция'], wind: ['NE', 'СВ'],
+    about: ['Off Moda at the mouth of the Bosphorus, in the poyraz, the old city’s domes and minarets ashore.', 'У Моды, у входа в Босфор, под северо-восточным пойразом; на берегу — купола и минареты старого города.'] },
 ];
 
 export const venueOf = (id: string | undefined) => VENUES.find((v) => v.id === id) || VENUES[0];

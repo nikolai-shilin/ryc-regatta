@@ -27,7 +27,7 @@
      with the venues in the same order; npm test runs this script against the game's) -->
 <script>(function () { var v = 'gocek';
   var ids = ['gocek', 'cowes', 'newport', 'sydney', 'kiel', 'trieste', 'porto-cervo', 'saint-tropez', 'antigua', 'auckland',
-    'san-francisco', 'valencia', 'barcelona', 'palma', 'marstrand', 'bermuda', 'enoshima', 'weymouth', 'marseille', 'rio', 'garda'];
+    'san-francisco', 'valencia', 'barcelona', 'palma', 'marstrand', 'bermuda', 'enoshima', 'weymouth', 'marseille', 'rio', 'garda', 'istanbul'];
   function round(k) {
     var a = ids.slice(), s = ((k + 1) * 40503 + 977) >>> 0 || 1, i, j, x;
     for (i = a.length - 1; i > 0; i--) { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; j = Math.floor(s / 4294967296 * (i + 1)); x = a[i]; a[i] = a[j]; a[j] = x; }
