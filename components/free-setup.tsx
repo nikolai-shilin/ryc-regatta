@@ -7,6 +7,7 @@ import type { VenueId } from '@/lib/venues';
 import { venueOf, VENUES } from '@/lib/venues';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, type Length, type Shape, type Wind } from '@/lib/race';
 import { CourseMap } from './course-map';
+import { GameScene } from './game-scene';
 import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, clock } from './ui';
 
 type Pick = { venue: VenueId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape };
@@ -52,7 +53,7 @@ export default function FreeSetup({ lang, fromToday }: { lang: Lang; fromToday: 
   const where = venueOf(p.venue);
   const courseName = { short: t('Short', 'Короткая'), medium: t('Medium', 'Средняя'), long: t('Long', 'Длинная') }[p.length];
   const metres = fmtDistance(courseDistance(geo, p.laps), lang).split(' · ')[0];
-  const card = useRef<HTMLElement>(null), info = useRef<HTMLDivElement>(null);
+  const card = useRef<HTMLElement>(null);
   // upright the places run in one row that scrolls sideways: the chosen one in view
   useEffect(() => {
     const row = card.current?.querySelector('.bt-row1'), on = row?.querySelector<HTMLElement>('[aria-checked="true"]');
@@ -62,9 +63,9 @@ export default function FreeSetup({ lang, fromToday }: { lang: Lang; fromToday: 
   return (
     <div className="scr bt-scr" lang={lang}>
       <div className="bt">
-        {ready && <Scene venue={p.venue} wind={p.preset} card={card} info={info} title={t('The race’s venue in 3D', 'Место гонки в 3D')} />}
+        {ready && <GameScene venue={p.venue} wind={p.preset} title={t('The race’s venue in 3D', 'Место гонки в 3D')} />}
 
-        <div className="bt-info" ref={info}>
+        <div className="bt-info">
           <div className="bt-top">
             <Link className="bt-back" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
             <span className="bt-kick">{t('Free race', 'Свободная гонка')}</span>
@@ -102,53 +103,4 @@ export default function FreeSetup({ lang, fromToday }: { lang: Lang; fromToday: 
       </div>
     </div>
   );
-}
-
-// The scene behind the set-up: the game at the venue (public/boat-view). Another venue is a new page, loaded beside the
-// one showing and faded in over it once its first frame is up; a venue picked while one loads takes its place. Each
-// is told the wind as it changes, and what the card and the heading cover, so the boat stands in the part left clear.
-function Scene({ venue, wind, card, info, title }: { venue: VenueId; wind: Wind; card: React.RefObject<HTMLElement | null>; info: React.RefObject<HTMLDivElement | null>; title: string }) {
-  const [frames, setFrames] = useState<{ id: number; venue: VenueId; wind: Wind; live: boolean }[]>(() => [{ id: 0, venue, wind, live: false }]);
-  const refs = useRef(new Map<number, HTMLIFrameElement>());
-  const windNow = useRef(wind); windNow.current = wind;
-  const post = (msg: object, id?: number) => refs.current.forEach((f, k) => { if (id == null || id === k) f.contentWindow?.postMessage(msg, location.origin); });
-  const inset = (id?: number) => {
-    const c = card.current?.getBoundingClientRect(), h = info.current?.getBoundingClientRect(), W = innerWidth, H = innerHeight;
-    const p = info.current?.querySelector('.bt-p')?.getBoundingClientRect(), st = info.current?.querySelector('.bt-stats')?.getBoundingClientRect();
-    if (!c || !h) return;
-    const tall = c.width > W * 0.7, head = (p && p.height ? p.bottom : h.top + 120) / H;
-    post({ type: 'inset', l: 0, r: tall ? 0 : (W - c.left) / W, t: Math.min(0.4, tall ? h.bottom / H : head * 0.6), b: tall ? (H - c.top) / H : st ? (H - st.top) / H * 0.5 : 0 }, id);
-  };
-  // a new venue: a new page beside the one showing (or in place of one still loading)
-  useEffect(() => {
-    setFrames((fs) => {
-      const top = fs[fs.length - 1];
-      if (top.venue === venue) return fs;
-      const next = { id: top.id + 1, venue, wind: windNow.current, live: false };
-      return top.live ? [...fs.filter((f) => f.live), next] : [...fs.filter((f) => f !== top), next];
-    });
-  }, [venue]);
-  useEffect(() => { post({ type: 'wind', preset: wind }); }, [wind]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    const on = (e: MessageEvent) => {
-      if (e.origin !== location.origin) return;
-      const id = [...refs.current].find(([, f]) => f.contentWindow === e.source)?.[0];
-      if (id == null) return;
-      if (e.data?.type === 'ready') { inset(id); post({ type: 'wind', preset: windNow.current }, id); }
-      if (e.data?.type === 'live') {
-        setFrames((fs) => fs.map((f) => (f.id === id ? { ...f, live: true } : f)));
-        setTimeout(() => setFrames((fs) => fs.filter((f) => f.id >= id)), 900); // the one under it, once faded over
-      }
-    };
-    addEventListener('message', on);
-    const ro = new ResizeObserver(() => inset());
-    if (card.current) ro.observe(card.current);
-    if (info.current) ro.observe(info.current);
-    addEventListener('resize', () => inset());
-    return () => { removeEventListener('message', on); ro.disconnect(); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  return <>{frames.map((f) => (
-    <iframe key={f.id} ref={(el) => { if (el) refs.current.set(f.id, el); else refs.current.delete(f.id); }} className={`bt-scene bt-fade ${f.live ? 'on' : ''}`}
-      src={`/boat-view?venue=${f.venue}&wind=${f.wind}`} title={title} onLoad={() => post({ type: 'hello' }, f.id)} />
-  ))}</>;
 }

@@ -9,7 +9,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 | Address | What it is | Where |
 | --- | --- | --- |
 | `/` | Home: the game described in detail | `app/page.tsx` |
-| `/race` | The race hub: today's race, today's fastest, a free race | `app/race/page.tsx` |
+| `/race` | The race hub: today's race, today's fastest and a free race, in the pause-menu card over today's venue in the game's own scene (`components/game-scene.tsx`) | `app/race/page.tsx` |
 | `/race/free` | Set up a free race (venue, wind, fleet, course, laps, start, current), in the pause-menu card over the game's own scene at the chosen venue (`/boat-view?venue=&wind=`), which fades to each new place | `components/free-setup.tsx` |
 | `/race/result/[id]` | The result and debrief after a race | `components/result-view.tsx` |
 | `/boat` | Your boat: colours, logo, sail number and team, in the race's pause-menu card over the game's own scene: your yacht on Lake Garda on a summer evening (`/boat-view`) | `components/boat-editor.tsx` |
