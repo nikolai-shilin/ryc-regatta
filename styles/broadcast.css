@@ -551,6 +551,9 @@
 .bc .hm-faq-list .hm-faq-item > summary:hover { color: var(--you); }
 .bc .hm-faq-list .hm-faq-ico { color: var(--ink-3); }
 .bc .hm-faq-list .hm-text { margin: 0; padding: 0 var(--s-5) var(--s-5); font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+.bc .hm-faq-open .hm-faq-q { margin: 0; padding: var(--s-5) var(--s-5) var(--s-2); color: var(--ink); font: 700 var(--fs-row)/1.2 var(--cond); letter-spacing: var(--ls-name); text-wrap: balance; }
+.bc .hm-faq-open .hm-faq-item:target .hm-faq-q { color: var(--you); }
+.bc .hm-faq-open .hm-faq-item { scroll-margin-top: calc(var(--hm-head, 72px) + var(--s-4)); }
 /* the bar that never goes away */
 .bc .ho-dock { position: sticky; bottom: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3) var(--s-6);
   padding: var(--s-3) max(var(--s-8), calc((100% - 1240px) / 2)) calc(var(--s-3) + env(safe-area-inset-bottom, 0px));

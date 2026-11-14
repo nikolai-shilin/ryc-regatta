@@ -45,7 +45,7 @@ export default async function Faq({ params }: LangParams) {
                 <h2 className="hm-h2" id={`q-${g.id}-t`}>{g.title}</h2>
                 <span className="meta">{t(`${g.items.length} questions`, `Вопросов: ${g.items.length}`)}</span>
               </div>
-              <FaqList items={g.items} />
+              <FaqList items={g.items} open />
             </div>
           </section>
         );
