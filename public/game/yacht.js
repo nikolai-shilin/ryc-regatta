@@ -223,6 +223,16 @@ function drawContain(x, img, cx, cy, w, h) {
   x.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
 }
 
+// the ad on every boat's jib, as the site's admin sets it (/admin, which /sponsor serves): asked for once a page, then
+// the picture itself (from Supabase Storage, so loaded for CORS: a tainted canvas can't go to the GPU). None, no ad.
+let adPromise = null;
+function jibAd() {
+  if (!adPromise) adPromise = fetch('/sponsor').then((r) => (r.ok ? r.json() : null))
+    .then((d) => (d && typeof d.jib === 'string' ? new Promise((res, rej) => { const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => res(img); img.onerror = rej; img.src = d.jib; }) : null))
+    .catch(() => null);
+  return adPromise;
+}
+
 // a logo decal on the bow, wrapped onto the hull's own surface (side: +1 starboard, −1 port)
 function hullX(t, y) { // the hull's half-breadth at station t, height y
   const hb = halfBeam(t), sy = sheerAt(t), d = canoe(t), n = lerp(2.9, 1.6, clamp((t - 0.45) / 0.55, 0, 1));
@@ -257,7 +267,7 @@ function logoDecal(side, logo, z0 = -2.55, y0 = 0.64, W = 1.36, H = 0.52) {
 // ---------- sails ----------
 // a canvas texture for a sail; u runs luff → leech, v foot → head
 function sailTexture(kind, look) {
-  const W = 512, H = kind === 'main' ? 1024 : kind === 'jib' ? 768 : 512;
+  const W = 512, H = kind === 'main' ? 1024 : kind === 'jib' ? 1536 : 512; // the jib tall enough for the ad on it to read
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d');
   if (kind === 'kite') {
@@ -308,7 +318,20 @@ function sailTexture(kind, look) {
         x.strokeStyle = 'rgba(0,0,0,.22)'; x.lineWidth = 0.008; x.strokeRect(-w / 2, -h / 2, w, h); // an edge, for a white flag on white cloth
       }));
     } else {
-      x.fillStyle = look.batten; x.fillRect(W * 0.7, H * 0.35, W * 0.3, 8); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 8);
+      x.fillStyle = look.batten; x.fillRect(W * 0.7, H * 0.35, W * 0.3, 16); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 16);
+      // the ad, low on the jib under the battens, at most JIB_AD wide and JIB_AD_H tall. The cloth maps (u along the
+      // chord, f up the luff) to P = head·f + clew·(1 − f)·u in the sail's plane, a grid sheared by the raked luff and
+      // tapering to the head: the canvas is set to that map's inverse at the ad's middle (f0 up, about halfway along), so the
+      // logo stands upright, level with the deck, and comes out its own shape on the sail.
+      jibAd().then((img) => {
+        if (!img) return;
+        const f0 = 0.25, u0 = 0.52, hd = HEAD.clone().sub(TACK);
+        const a = JIB_CLEW.z * (1 - f0), b = JIB_CLEW.y * (1 - f0), cc = hd.z - JIB_CLEW.z * u0, d = hd.y - JIB_CLEW.y * u0, det = a * d - b * cc;
+        x.save(); x.translate(W * u0, H * (1 - f0)); x.transform((W * d) / det, (H * b) / det, (W * cc) / det, (H * a) / det, 0, 0);
+        drawContain(x, img, 0, 0, JIB_AD, JIB_AD_H);
+        x.restore();
+        t.needsUpdate = true; // the clone on the other side shares the canvas
+      });
     }
   }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.wrapS = THREE.RepeatWrapping;
@@ -513,6 +536,7 @@ const mainChord = (f) => lerp(4.75, 1.4, f) + 0.45 * Math.sin(Math.PI * f);
 const MAIN_SPAN = MASTHEAD - 0.3 - BOOM_Y, SAIL_MARK = 1.5;
 const TACK = new THREE.Vector3(0, sheerAt(1) + 0.08, BOW_Z + 0.08);
 const HEAD = new THREE.Vector3(0, HOUNDS - 0.3, MAST_Z - 0.12);
+const JIB_CLEW = new THREE.Vector3(0, 0.42, 3.75), JIB_AD = 2, JIB_AD_H = 1; // the clew from the tack; the ad's box, in metres
 const SPRIT = new THREE.Vector3(0, sheerAt(1) + 0.12, BOW_Z - 1.4);
 
 export class BoatView {
@@ -764,7 +788,7 @@ export class BoatView {
     ms.setXYZ(1, Math.sin(ma) * bz, BOOM_Y - 0.05, MAST_Z + Math.cos(ma) * bz); ms.needsUpdate = true;
     const ja = Math.min((b.jibSail ?? b.sail) * D2R * 0.8 + 3 * D2R, 30 * D2R); // on its own sheet when the jib has one
     this.jibPivot.quaternion.setFromAxisAngle(this.jibAxis, -this.sailSide * ja);
-    const head = HEAD.clone().sub(TACK), clew = new THREE.Vector3(0, 0.42, 3.75);
+    const head = HEAD.clone().sub(TACK), clew = JIB_CLEW;
     setSail(this.jib, (f, u, v) => {
       const lx = head.x * f, ly = head.y * f, lz = head.z * f;
       const ex = lerp(clew.x, head.x, f), ey = lerp(clew.y, head.y, f), ez = lerp(clew.z, head.z, f);

@@ -14,6 +14,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 | `/race/result/[id]` | The result and debrief after a race, in the pause-menu card over the finish as it was: the game's own scene at the race's venue (`/boat-view?finish=1`), the line, the marks and every boat where she was as you crossed it | `components/result-view.tsx`, `lib/finish.ts` |
 | `/boat` | Your boat: colours, logo, sail number and team, in the race's pause-menu card over the game's own scene: your yacht on Lake Garda on a summer evening (`/boat-view`) | `components/boat-editor.tsx` |
 | `/settings` | Account, sailing, screen and sound, language | `components/settings-form.tsx` |
+| `/admin` | For the site's admins: the ad on every boat's jib, uploaded or removed (not linked from anywhere, not indexed) | `components/admin-form.tsx` |
 | `/help` | How to play, with screenshots | `app/[lang]/help/page.tsx` |
 | `/faq` | Questions: 32 in five groups | `lib/faq.ts`, `components/faq-list.tsx` |
 | `/iyt` | The IYT sailing certification test, as rycrentals.com/iyt has it | `app/[lang]/iyt/page.tsx` |
@@ -30,6 +31,13 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
       result page's scene; an older result has only the tracks, and `lib/finish.ts` puts each boat where hers had her then.
   - The game also posts each finished race to the scores server (below), so a result link opens on any device; there
     it reads as "this boat", not "you", and the page has a Share button for your own races.
+- **The ad on the jib:** every boat in the game (yours, the computer boats, the previews) carries one sponsor's logo
+  low on the jib, at most 2 × 1 m, set on `/admin`. The picture is in the public Supabase Storage bucket `regatta-ads`,
+  its address in `public.regatta_settings` (key `jib_ad`); `/sponsor` hands it to the game (`jibAd()` in
+  `public/game/yacht.js`), cached a minute. Admins are the emails in `public.regatta_admins`, which only the database's
+  owner edits (in the Supabase dashboard's SQL editor: `insert into public.regatta_admins values ('name@example.com')`,
+  lower case); row-level security lets only them write the setting and the bucket. These live in the same Supabase
+  project as the IYT test's tables, so their names start with `regatta_`.
 - **Scores:** `public/game/stats.js` posts every race's start, finish and result to `https://iyt.rycrentals.com/api/game`
   (`api/game.mjs` in the `iyt-test` repo, table `public.game_races`). It names the player by Telegram's launch data inside
   Telegram, or else by the site account's access token, which the game gets from `/auth/token` on this origin. The
