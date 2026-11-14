@@ -1,5 +1,6 @@
 import { isLang, ruBoats, tx, type Lang } from '@/lib/lang';
 import { dailyRace, plannedCourse, KN, BEAT_ANGLE } from '@/lib/race';
+import { venueOf } from '@/lib/venues';
 import { todayTop } from '@/lib/today';
 import { card, CourseSvg } from '@/lib/og';
 
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
   const shape = d.course === 'tri' ? t('triangle', 'треугольник') : t('up and down', 'апвинд — даунвинд');
   const races = today && today.d === d.day && today.races ? t(` · ${today.races} races sailed`, ` · пройдено гонок: ${today.races}`) : '';
   const img = await card({
-    kind: `${t('Today’s race', 'Гонка дня')} · ${date}`,
+    kind: `${t('Today’s race', 'Гонка дня')} · ${date} · ${t(...venueOf(d.venue).name)}`,
     headline: best ? t(`Time to beat: ${clock(best.s)}`, `Побей ${clock(best.s)}`) : t('Be first today', 'Будь первым'),
     detail: `${wind} ${KN[d.preset]} ${t('kn', 'уз')} · ${t(`${d.fleet} boats`, ruBoats(d.fleet))} · ${shape}, ${len}${races}`,
     call: t('Sail today’s race', 'Пройди гонку дня'),

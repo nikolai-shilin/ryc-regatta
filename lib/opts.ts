@@ -5,7 +5,7 @@ import type { VenueId } from './venues';
 
 export type Opts = {
   mode: 'daily' | 'free';
-  venue: VenueId; // where a free race is sailed (public/game/venues.js); today's race is always in Göcek
+  venue: VenueId; // where a free race is sailed (public/game/venues.js); today's race goes to the day's venue
   preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape;
   autoTrim: number; // 0 I trim · 1 auto · 2 main + jib
   sound: number; guides: number; gfx: 'auto' | 'high' | 'medium' | 'low';

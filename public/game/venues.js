@@ -1,5 +1,5 @@
-// Where a race is sailed: Göcek bay, where today's race always is, and the famous regatta venues a free race can go
-// to. Numbers and colours only (no three.js, nothing fetched), so the race, the light and the land can all ask.
+// Where a race is sailed: Göcek bay and the famous regatta venues. Today's race goes to one of them each day
+// (dailyVenue); a free race goes where the set-up chose. Numbers and colours only (no three.js, nothing fetched), so the race, the light and the land can all ask.
 //
 // The land of each is baked from real elevation and OpenStreetMap: Göcek by blender/skopea.py (skopea.json/.bin),
 // the others by blender/venues.py (venues/<id>.json/.bin), which keeps the same lat, lon and wind as here.
@@ -240,13 +240,30 @@ export const VENUES = [
 
 export const venueById = (id) => VENUES.find((v) => v.id === id) || VENUES[0];
 
+// Today's race: a venue a day, from the date (UTC), the same for everyone. The days go round all of them in a shuffled
+// order, a new one every len days, so each venue comes once in that time and none two days running. lib/race.ts has
+// a copy (npm test keeps them in step).
+const dayRng = (seed) => { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; };
+function round(k) { // the order of the venues in round k
+  const ids = VENUES.map((v) => v.id), r = dayRng((k + 1) * 40503 + 977);
+  for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+  return ids;
+}
+export function dailyVenue(date = new Date()) {
+  const n = Math.floor(Date.parse(date.toISOString().slice(0, 10)) / 864e5), len = VENUES.length, k = Math.floor(n / len), ids = round(k);
+  if (ids[0] === round(k - 1)[len - 1]) [ids[0], ids[1]] = [ids[1], ids[0]]; // not the same place as yesterday
+  return ids[n - k * len];
+}
+
 // The venue of the race on this page: ?venue= in the address wins; a free race goes where the set-up chose
-// (localStorage 'regatta', venue); today's race, the home page's view and Node's tests are in Göcek.
+// (localStorage 'regatta', venue); today's race (any other /play) to the day's venue. The home page's view
+// (/hero-view) and Node's tests are in Göcek.
 export function pageVenue() {
   try {
     const q = new URLSearchParams(location.search);
     if (q.get('venue')) return venueById(q.get('venue'));
     if (q.get('race') === 'free') return venueById(JSON.parse(localStorage.getItem('regatta') || '{}').venue);
+    if (/^\/play/.test(location.pathname)) return venueById(dailyVenue());
   } catch (e) {}
   return VENUES[0];
 }

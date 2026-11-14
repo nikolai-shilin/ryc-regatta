@@ -1,4 +1,4 @@
-// Where a free race can be sailed: the set-up page's list. The game's own list, with each venue's position, wind and
+// Where a race can be sailed: the set-up page's list, and today's race goes to one of them each day (lib/race.ts). The game's own list, with each venue's position, wind and
 // look, is public/game/venues.js; the ids and names here must match it (npm test checks).
 export type VenueId = 'gocek' | 'cowes' | 'newport' | 'sydney' | 'kiel' | 'trieste' | 'porto-cervo' | 'saint-tropez' | 'antigua' | 'auckland'
   | 'san-francisco' | 'valencia' | 'barcelona' | 'palma' | 'marstrand' | 'bermuda' | 'enoshima' | 'weymouth' | 'marseille' | 'rio' | 'garda';
@@ -6,7 +6,7 @@ type Pair = [string, string]; // English, Russian
 
 export const VENUES: { id: VenueId; name: Pair; place: Pair; wind: Pair; about: Pair }[] = [
   { id: 'gocek', name: ['Göcek', 'Гёчек'], place: ['Turkey', 'Турция'], wind: ['N', 'С'],
-    about: ['Pine-clad hills and the gulets of Skopea Marina. Today’s race is always sailed here.', 'Сосновые холмы и гулеты марины Скопеа. Гонка дня всегда проходит здесь.'] },
+    about: ['Pine-clad hills and the gulets of Skopea Marina, where the game began.', 'Сосновые холмы и гулеты марины Скопеа, где игра началась.'] },
   { id: 'cowes', name: ['Cowes', 'Каус'], place: ['Isle of Wight, UK', 'Остров Уайт, Великобритания'], wind: ['SW', 'ЮЗ'],
     about: ['The Solent, home of Cowes Week since 1826, in the south-westerly.', 'Пролив Солент, где с 1826 года проходит Неделя Каус, под юго-западным ветром.'] },
   { id: 'newport', name: ['Newport', 'Ньюпорт'], place: ['Rhode Island, USA', 'Род-Айленд, США'], wind: ['SW', 'ЮЗ'],

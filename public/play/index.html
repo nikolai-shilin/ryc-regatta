@@ -23,9 +23,22 @@
 <link rel="preload" as="image" href="/_next/image?url=%2Fimages%2Fdrone-port-v3.jpg&amp;w=1080&amp;q=90" media="(orientation: portrait)">
 <link rel="stylesheet" href="https://iyt.rycrentals.com/fonts/fonts.css">
 <!-- the land round the course (game/land.js): fetched at once, not after the modules that ask for it. Its venue as
-     game/venues.js pageVenue() chooses it: ?venue=, else a free race's choice, else Göcek -->
+     game/venues.js pageVenue() chooses it: ?venue=, else a free race's choice, else today's (dailyVenue, copied here
+     with the venues in the same order; npm test runs this script against the game's) -->
 <script>(function () { var v = 'gocek';
-  try { var q = new URLSearchParams(location.search); v = q.get('venue') || (q.get('race') === 'free' && JSON.parse(localStorage.getItem('regatta') || '{}').venue) || 'gocek'; } catch (e) {}
+  var ids = ['gocek', 'cowes', 'newport', 'sydney', 'kiel', 'trieste', 'porto-cervo', 'saint-tropez', 'antigua', 'auckland',
+    'san-francisco', 'valencia', 'barcelona', 'palma', 'marstrand', 'bermuda', 'enoshima', 'weymouth', 'marseille', 'rio', 'garda'];
+  function round(k) {
+    var a = ids.slice(), s = ((k + 1) * 40503 + 977) >>> 0 || 1, i, j, x;
+    for (i = a.length - 1; i > 0; i--) { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; j = Math.floor(s / 4294967296 * (i + 1)); x = a[i]; a[i] = a[j]; a[j] = x; }
+    return a;
+  }
+  function today() {
+    var n = Math.floor(Date.parse(new Date().toISOString().slice(0, 10)) / 864e5), len = ids.length, k = Math.floor(n / len), a = round(k), x;
+    if (a[0] === round(k - 1)[len - 1]) { x = a[0]; a[0] = a[1]; a[1] = x; }
+    return a[n - k * len];
+  }
+  try { var q = new URLSearchParams(location.search); v = q.get('venue') || (q.get('race') === 'free' ? JSON.parse(localStorage.getItem('regatta') || '{}').venue : today()) || 'gocek'; } catch (e) {}
   if (!/^[a-z-]+$/.test(v)) v = 'gocek';
   var f = v === 'gocek' ? ['/game/skopea.bin', '/game/skopea.json'] : ['/game/venues/' + v + '.bin', '/game/venues/' + v + '.json'];
   f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>

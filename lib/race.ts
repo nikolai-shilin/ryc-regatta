@@ -1,5 +1,6 @@
 // Today's race and the race options, as the game has them (public/game/sim.js: dailyRace and the option values).
 // The same date gives the same race on the hub and in the game.
+import { VENUES, type VenueId } from './venues.ts'; // with its extension, so npm test's Node finds it too
 
 function rng(seed: number) {
   // exactly as sim.js, signed shift included, so the numbers match the game's
@@ -10,12 +11,24 @@ function rng(seed: number) {
 export type Wind = 'light' | 'medium' | 'strong';
 export type Length = 'short' | 'medium' | 'long';
 export type Shape = 'wl' | 'tri';
-export type Daily = { day: string; seed: number; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape };
+export type Daily = { day: string; seed: number; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape; venue: VenueId };
+
+// today's venue, as public/game/venues.js dailyVenue: the days go round all the venues in a shuffled order
+function round(k: number) {
+  const ids = VENUES.map((v) => v.id), r = rng((k + 1) * 40503 + 977);
+  for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+  return ids;
+}
+export function dailyVenue(date = new Date()): VenueId {
+  const n = Math.floor(Date.parse(date.toISOString().slice(0, 10)) / 864e5), len = VENUES.length, k = Math.floor(n / len), ids = round(k);
+  if (ids[0] === round(k - 1)[len - 1]) [ids[0], ids[1]] = [ids[1], ids[0]];
+  return ids[n - k * len];
+}
 
 export function dailyRace(date = new Date()): Daily {
   const day = date.toISOString().slice(0, 10), n = Math.floor(Date.parse(day) / 864e5), r = rng(n * 2654435761);
   r(); r();
-  return { day, seed: (n * 7919) % 100000, preset: (['light', 'medium', 'strong'] as const)[Math.floor(r() * 3)], fleet: 5, length: 'short', laps: 1, start: 1, current: r() < 0.3 ? 1 : 0, course: 'wl' };
+  return { day, seed: (n * 7919) % 100000, preset: (['light', 'medium', 'strong'] as const)[Math.floor(r() * 3)], fleet: 5, length: 'short', laps: 1, start: 1, current: r() < 0.3 ? 1 : 0, course: 'wl', venue: dailyVenue(date) };
 }
 
 export const KN: Record<Wind, number> = { light: 7, medium: 12, strong: 19 };

@@ -19,6 +19,33 @@ test('the site and the game agree on today’s race, every day for a year and mo
   }
 });
 
+// today's venue: every venue in turn, never the same two days running; and the play page's preloader (an inline copy
+// in public/play/index.html) fetches the same venue's land as the game then asks for
+test('today’s race goes round the venues, and the play page preloads the day’s', async () => {
+  const { VENUES, dailyVenue, landFiles, venueById } = await import('../public/game/venues.js');
+  const html = await readFile(new URL('../public/play/index.html', import.meta.url), 'utf8');
+  const script = html.match(/<script>(\(function \(\) \{ var v = 'gocek';[\s\S]*?)<\/script>/)[1];
+  const { runInNewContext } = await import('node:vm');
+  const from = Date.UTC(2026, 0, 1);
+  let prev = null;
+  for (let d = 0; d < 400; d++) {
+    const now = from + d * 864e5, day = new Date(now), v = dailyVenue(day);
+    assert.notEqual(v, prev, `${day.toISOString().slice(0, 10)}: not yesterday’s venue`); prev = v;
+    if (d % VENUES.length === 0) {
+      const round = new Set(Array.from({ length: VENUES.length }, (_, i) => dailyVenue(new Date(now + i * 864e5))));
+      assert.ok(round.size >= VENUES.length - 2, 'every venue comes round');
+    }
+    const links = [];
+    class FakeDate extends Date { constructor(...a) { super(...(a.length ? a : [now])); } }
+    FakeDate.parse = Date.parse;
+    runInNewContext(script, {
+      Date: FakeDate, Math, JSON, URLSearchParams, location: { search: '?race=today' }, localStorage: { getItem: () => null },
+      document: { createElement: () => ({}), head: { appendChild: (l) => links.push(l.href) } },
+    });
+    assert.deepEqual(links.sort(), landFiles(venueById(v)).map((f) => '/game/' + f).sort(), day.toISOString().slice(0, 10));
+  }
+});
+
 test('the site’s course numbers are the game’s', () => {
   assert.deepEqual(site.COURSE_LEN, sim.COURSE_LEN);
   assert.deepEqual(site.BEAT_LEN, BEAT);

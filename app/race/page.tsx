@@ -4,7 +4,8 @@ import { ruBoats, ruPlural } from '@/lib/lang';
 import { getAccount } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN } from '@/lib/race';
-import { IconPlay, IconWind, IconRoute, IconBoats, IconFlag, clock } from '@/components/ui';
+import { venueOf } from '@/lib/venues';
+import { IconPlay, IconWind, IconRoute, IconBoats, IconFlag, IconPin, clock } from '@/components/ui';
 import { SiteHead } from '@/components/site-chrome';
 import { TodayChips, FreeCard } from '@/components/hub-client';
 import { MyRow } from '@/components/home-client';
@@ -13,8 +14,8 @@ export const generateMetadata = titled('Race hub', 'Меню гонок', {
   path: '/race',
   today: true,
   description: [
-    'Today’s race: the same wind, course and fleet for every player, a new one at midnight UTC. Sail it as often as you like, beat today’s fastest times, or set up a free race of your own.',
-    'Гонка дня: одинаковые ветер, дистанция и флот для всех, новая — каждую полночь по UTC. Проходи сколько хочешь, побей лучшие времена дня или настрой свою свободную гонку.'],
+    'Today’s race: the same venue, wind, course and fleet for every player, a new one at midnight UTC. Sail it as often as you like, beat today’s fastest times, or set up a free race of your own.',
+    'Гонка дня: одинаковые место, ветер, дистанция и флот для всех, новая — каждую полночь по UTC. Проходи сколько хочешь, побей лучшие времена дня или настрой свою свободную гонку.'],
 });
 
 // I1 · The race hub, as a rycrentals subpage: today's race in the head, its course with the tag and the start,
@@ -22,7 +23,7 @@ export const generateMetadata = titled('Race hub', 'Меню гонок', {
 export default async function Hub() {
   const { lang, t } = await getT();
   const [account, today] = await Promise.all([getAccount(), todayTop()]);
-  const d = dailyRace();
+  const d = dailyRace(), v = venueOf(d.venue), L = lang === 'ru' ? 1 : 0;
   const wind = { light: t('Light breeze', 'Слабый ветер'), medium: t('Medium breeze', 'Средний ветер'), strong: t('Strong breeze', 'Сильный ветер') }[d.preset];
   const course = { short: t('short', 'короткий'), medium: t('medium', 'средний'), long: t('long', 'длинный') }[d.length];
   const title = t(`${wind}, ${d.fleet} boats, one ${course} lap`, `${wind}, ${ruBoats(d.fleet)}, один ${course} круг`);
@@ -49,8 +50,9 @@ export default async function Hub() {
       <div className="lay page hub-page">
         <div className="aph">
           <span className="kicker">{t('Today’s race', 'Гонка дня')} · {date}</span>
+          <span className="hub-where"><IconPin s={15} /><b>{v.name[L]}</b><span>{v.place[L]}</span></span>
           <h1 className="aph-h">{title}</h1>
-          <p className="aph-p">{best
+          <p className="aph-p">{v.about[L]} {best
             ? t(`The same race for everyone today: ${races} sailed so far, the best in ${clock(best.s)}.`, `Сегодня у всех одна гонка: уже ${races} заездов, лучшее время ${clock(best.s)}.`)
             : t('The same race for everyone today, so the times compare fairly. Nobody has finished it yet.', 'Сегодня у всех одна гонка, поэтому время сравнивается честно. Её ещё никто не прошёл.')}</p>
         </div>

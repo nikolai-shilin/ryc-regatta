@@ -4,6 +4,7 @@
 // the starboard side (starboard tack). AWA is the same for the apparent wind, the wind the sails feel.
 
 import { placeCourse, roomAt } from './land.js';
+import { dailyVenue } from './venues.js';
 
 export const KN = 0.514444; // m/s per knot
 export const D2R = Math.PI / 180;
@@ -547,11 +548,11 @@ const tackOf = (b) => b.boom || sgn(b.twa);
 const lineD = (c, b) => (b.x - c.pin.x) * c.normal.x + (b.z - c.pin.z) * c.normal.z; // + above the line
 const lineT = (c, b) => ((b.x - c.pin.x) * c.dir.x + (b.z - c.pin.z) * c.dir.z) / c.len;
 
-// the daily race: the same course and wind for everyone on a given day (UTC), made from the date
+// the daily race: the same venue, course and wind for everyone on a given day (UTC), made from the date
 export function dailyRace(date = new Date()) {
   const day = date.toISOString().slice(0, 10), n = Math.floor(Date.parse(day) / 864e5), r = rng(n * 2654435761);
   r(); r();
-  return { day, seed: (n * 7919) % 100000, preset: ['light', 'medium', 'strong'][Math.floor(r() * 3)], fleet: 5, length: 'short', laps: 1, start: 1, current: r() < 0.3 ? 1 : 0, course: 'wl' };
+  return { day, seed: (n * 7919) % 100000, preset: ['light', 'medium', 'strong'][Math.floor(r() * 3)], fleet: 5, length: 'short', laps: 1, start: 1, current: r() < 0.3 ? 1 : 0, course: 'wl', venue: dailyVenue(date) };
 }
 
 // the start sequence: the class flag goes up at the warning signal, P at the preparatory, P down at one minute

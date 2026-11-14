@@ -7,7 +7,8 @@ import { ruBoats } from '@/lib/lang';
 import { getAccount } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
 import { dailyRace, KN } from '@/lib/race';
-import { Logo, IconArrow, IconPlay, IconWind, IconSail, clock } from '@/components/ui';
+import { VENUES, venueOf } from '@/lib/venues';
+import { Logo, IconArrow, IconPlay, IconWind, IconSail, IconPin, clock } from '@/components/ui';
 import { RacePill, TileRow, MyRow, HeroScene } from '@/components/home-client';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 import { FaqList } from '@/components/faq-list';
@@ -32,7 +33,7 @@ function siteLd(lang: 'en' | 'ru', t: (en: string, ru: string) => string) {
         screenshot: [`${SITE}/images/hud-desk-v3.jpg`, `${SITE}/images/top-v3.jpg`],
         genre: ['Sailing', 'Racing', 'Sports simulation'], gamePlatform: ['Web browser', 'Mobile web browser'],
         applicationCategory: 'GameApplication', operatingSystem: 'Any (runs in a web browser)', playMode: 'SinglePlayer',
-        gameLocation: t('Göcek bay, Turkey', 'Бухта Гёчек, Турция'), isAccessibleForFree: true,
+        gameLocation: VENUES.map((v) => `${t(...v.name)}, ${t(...v.place)}`), isAccessibleForFree: true,
         offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD', availability: 'https://schema.org/InStock', url: `${SITE}/race` },
         author: { '@id': org['@id'] }, publisher: { '@id': org['@id'] },
         potentialAction: { '@type': 'PlayAction', target: `${SITE}/race` },
@@ -46,7 +47,7 @@ function siteLd(lang: 'en' | 'ru', t: (en: string, ru: string) => string) {
 export default async function Home() {
   const { lang, t } = await getT();
   const [account, today] = await Promise.all([getAccount(), todayTop()]);
-  const d = dailyRace();
+  const d = dailyRace(), where = venueOf(d.venue).name[lang === 'ru' ? 1 : 0];
   const kn = KN[d.preset];
   const windName = { light: t('Light', 'Слабый'), medium: t('Medium', 'Средний'), strong: t('Strong', 'Сильный') }[d.preset];
   const breeze = { light: t('a light breeze', 'слабый ветер'), medium: t('a medium breeze', 'средний ветер'), strong: t('a strong breeze', 'сильный ветер') }[d.preset];
@@ -63,7 +64,7 @@ export default async function Home() {
     ['h-view-drone', '/help#h-rules', t('Rivals who know their rights', 'Соперники знают свои права'), t('Up to six computer boats that hail, give way and do their penalty turns', 'До шести компьютерных лодок: окликают, уступают и крутят штрафные обороты')],
     ['h-tack', '/help#h-controls', t('Tacks, gybes and the kite', 'Повороты и генакер'), t('Tack on the headers, hoist the gennaker for the run home', 'Поворачивай на заходах, ставь генакер на попутном к финишу')],
     ['h-steer', '/help#h-controls', t('A phone or a keyboard', 'Телефон или клавиатура'), t('Steer with your thumb, upright or sideways, or with the arrow keys', 'Рули пальцем, вертикально или горизонтально, или стрелками')],
-    ['h-view-helm', '/help#h-views', t('From the helm', 'С руля'), t('Sail from the cockpit, with Göcek’s hills all around', 'Веди яхту из кокпита, а вокруг — холмы Гёчека')],
+    ['h-view-helm', '/help#h-views', t('From the helm', 'С руля'), t('Sail from the cockpit, with the venue’s hills and town all around', 'Веди яхту из кокпита, а вокруг — холмы и город')],
     ['h-view-top', '/help#h-views', t('From above', 'Сверху'), t('The whole course, the lay lines and every boat at a glance', 'Вся дистанция, лейлайны и все лодки одним взглядом')],
   ];
   // the hero's still: the wide picture on a wide screen, the upright one on a phone — one <picture>, so a browser
@@ -89,8 +90,8 @@ export default async function Home() {
           <span className="kicker">{t('Up and down · a sailing race game by RYC', 'Up and down · парусная гонка от RYC')}</span>
           <h1 className="hm-display" id="home-h1">{t('Win the start. Play the shifts. Race by the real rules.', 'Возьми старт. Лови заходы. Гоняйся по настоящим правилам.')}</h1>
           <p className="hm-lead">{t(
-            `Today, ${date}: ${breeze} of ${kn} knots in Göcek bay, ${d.fleet} boats on the line, one ${length} lap up and down. Everyone sails the same race, so the only thing between you and the top of the ranking is how you sail it. A free online sailing game, a yacht race simulator right in the browser, no sign-in to play.`,
-            `Сегодня, ${date}: ${breeze} ${kn} узлов в бухте Гёчек, ${ruBoats(d.fleet)} на линии, один ${length} круг апвинд — даунвинд. У всех одна и та же гонка, так что между тобой и первой строчкой рейтинга — только то, как ты её пройдёшь. Бесплатный парусный симулятор онлайн, прямо в браузере, играть можно без входа.`)}</p>
+            `Today, ${date}, ${where}: ${breeze} of ${kn} knots, ${d.fleet} boats on the line, one ${length} lap up and down. Everyone sails the same race, so the only thing between you and the top of the ranking is how you sail it. A free online sailing game, a yacht race simulator right in the browser, no sign-in to play.`,
+            `Сегодня, ${date}, ${where}: ${breeze} ${kn} узлов, ${ruBoats(d.fleet)} на линии, один ${length} круг апвинд — даунвинд. У всех одна и та же гонка, так что между тобой и первой строчкой рейтинга — только то, как ты её пройдёшь. Бесплатный парусный симулятор онлайн, прямо в браузере, играть можно без входа.`)}</p>
           <span className="meta hm-asof">{t(`Today’s race · ${date} · a new one every midnight UTC`, `Гонка дня · ${date} · новая каждую полночь по UTC`)}</span>
           <RacePill lang={lang} daily={d} />
           <Link className="hm-src" href="/help">{t('How a race goes', 'Как проходит гонка')}<IconArrow s={14} /></Link>
@@ -131,6 +132,7 @@ export default async function Home() {
             </span>
             <span className="card-title">{t(`Up and down · ${length} course · ${d.laps} lap`, `Апвинд — даунвинд · ${length} · ${d.laps} круг`)}</span>
             <span className="hm-facts">
+              <span><IconPin s={15} />{where}</span>
               <span><IconWind s={15} />{windName}, {kn} {t('kn', 'уз')}</span>
               <span><IconSail s={15} />{t(`${d.fleet} boats`, `${ruBoats(d.fleet)}`)}</span>
               <span>{t(`${d.start}-minute start`, `старт ${d.start} мин`)}</span>

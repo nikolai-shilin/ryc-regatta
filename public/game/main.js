@@ -26,7 +26,7 @@ const T = {
     leaveK: 'Leave this race?', leaveTxt: (pl, leg) => `You are ${pl} on leg ${leg}. This race’s time and place are not kept.`, keepRacing: 'Keep racing', doRestart: 'Restart', doChange: 'Change it', doLeave: 'Leave',
     kick: 'Game', title: 'Up and down', fun: 'Just for fun — take a break and relax between tests.', sub: 'A windward–leeward race against the computer boats, under the racing rules. Steer, trim, tack, read the wind.',
     modeK: 'Race', daily: 'Today’s race', free: 'Free race', howK: 'How to play',
-    dailyNote: (w) => `The same course and wind for everyone today — ${w} — so times compare fairly. The fastest are on the Home page.`,
+    dailyNote: (w, at) => `The same place, course and wind for everyone today — ${at}, ${w} — so times compare fairly. The fastest are on the Home page.`,
     dbK: 'Your race', dGun: (d, v) => `At the gun: ${d} m from the line at ${v} kn`, dGunOver: 'At the gun: over the line — you had to go back',
     dStartLate: (s) => `You crossed the line ${s} s after the gun`, tipStart: 'Aim to be a boat length behind the line, at full speed, as the gun goes.',
     dSpeed: (p) => `Speed: ${p}% of target on average`, tipSpeed: 'Keep the sheet in the blue band and steer smoothly: every turn of the rudder brakes.',
@@ -104,7 +104,7 @@ const T = {
     leaveK: 'Выйти из гонки?', leaveTxt: (pl, leg) => `Ты ${pl}-й на ${leg}-м отрезке. Время и место этой гонки не сохранятся.`, keepRacing: 'Продолжить', doRestart: 'Заново', doChange: 'Изменить', doLeave: 'Выйти',
     kick: 'Игра', title: 'Up and down', fun: 'Просто для удовольствия — отдохни и расслабься между тестами.', sub: 'Гонка «апвинд — даунвинд» против компьютерных лодок по правилам. Рули, работай шкотом, делай повороты, читай ветер.',
     modeK: 'Гонка', daily: 'Гонка дня', free: 'Свободная', howK: 'Как играть',
-    dailyNote: (w) => `Сегодня у всех одна дистанция и один ветер — ${w}, — так что время честно сравнивается. Самые быстрые — на главной.`,
+    dailyNote: (w, at) => `Сегодня у всех одно место, одна дистанция и один ветер — ${at}, ${w}, — так что время честно сравнивается. Самые быстрые — на главной.`,
     dbK: 'Твоя гонка', dGun: (d, v) => `На сигнале старта: ${d} м до линии, ${v} уз`, dGunOver: 'На сигнале старта: за линией — пришлось возвращаться',
     dStartLate: (s) => `Линию пересёк через ${s} с после сигнала`, tipStart: 'Цель — быть в корпусе от линии на полной скорости в момент сигнала.',
     dSpeed: (p) => `Скорость: в среднем ${p}% от целевой`, tipSpeed: 'Держи шкот в синей полосе и рули плавно: каждое движение руля тормозит.',
@@ -215,7 +215,7 @@ const paintOpts = () => {
     g.classList.toggle('locked', opts.mode === 'daily' && DAILY_KEYS.includes(g.dataset.opt));
     g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(s[g.dataset.opt]) === b.dataset.v));
   });
-  const n = $('#dailyNote'); if (n) { n.hidden = opts.mode !== 'daily'; n.textContent = t('dailyNote', windName(s.preset)); }
+  const n = $('#dailyNote'); if (n) { n.hidden = opts.mode !== 'daily'; n.textContent = t('dailyNote', windName(s.preset), venueById(s.venue).name[LANG === 'ru' ? 1 : 0]); }
 };
 // a third way to trim: the main and the jib each on their own sheet
 { const g = document.querySelector('.choice[data-opt="autoTrim"]'); if (g && !g.querySelector('[data-v="2"]')) { const b = document.createElement('button'); b.dataset.v = '2'; b.innerHTML = t('split'); g.append(b); } }
@@ -226,8 +226,8 @@ for (const g of document.querySelectorAll('.choice[data-opt]')) {
     const b = e.target.closest('button'); if (!b) return;
     if (opts.mode === 'daily' && DAILY_KEYS.includes(k)) { Object.assign(opts, Object.fromEntries(DAILY_KEYS.map((x) => [x, settings()[x]]))); opts.mode = 'free'; } // changing today's settings makes it a free race
     opts[k] = k === 'preset' || k === 'gfx' || k === 'length' || k === 'mode' || k === 'course' ? b.dataset.v : +b.dataset.v; paintOpts(); saveOpts();
-    // today's race is in Göcek, a free race where the set-up chose: another venue's land needs the page loaded again
-    if (k === 'mode' && !new URLSearchParams(location.search).get('venue') && (opts.mode === 'daily' ? 'gocek' : venueById(opts.venue).id) !== VENUE.id) { location.href = '/play?race=' + opts.mode; return; }
+    // today's race is at the day's venue, a free race where the set-up chose: another venue's land needs the page loaded again
+    if (k === 'mode' && !new URLSearchParams(location.search).get('venue') && (opts.mode === 'daily' ? dailyRace().venue : venueById(opts.venue).id) !== VENUE.id) { location.href = '/play?race=' + (opts.mode === 'daily' ? 'today' : 'free'); return; }
     if (k === 'gfx') { world.setQuality(startQuality()); perf.settle = 2; }
     if (k === 'guides') world.showGuides = !!opts.guides;
     if (k === 'sound') audio.setOn(!!opts.sound);
@@ -948,7 +948,10 @@ const menu = $('#menu'), results = $('#results'), hud = $('#hud');
 if (!opts.played) $('#howD').open = true; // how to play: open until the first race
 function startRace() {
   audio.init(); audio.setOn(!!opts.sound); skipper.load(); crews.load(); asides.load();
-  if (running || menuChanged || race.over || (race.settings.daily && race.settings.daily !== dailyRace().day)) newRace(); // a new day: a new daily race
+  const day = dailyRace();
+  // a new day: a new daily race, and at another venue its land needs the page loaded again
+  if (race.settings.daily && race.settings.daily !== day.day && day.venue !== VENUE.id && !new URLSearchParams(location.search).get('venue')) { location.href = '/play?race=today'; return; }
+  if (running || menuChanged || race.over || (race.settings.daily && race.settings.daily !== day.day)) newRace();
   menuChanged = false;
   opts.played = (opts.played || 0) + 1; saveOpts();
   race.coach = opts.played <= 3; // the first three races: tips as you go
@@ -1018,6 +1021,7 @@ $('#backLink').href = HUB;
 {
   const want = new URLSearchParams(location.search).get('race');
   opts.mode = want === 'free' ? 'free' : 'daily';
+  paintOpts(); // the menu as this race has it (the note on today's race, its place and wind)
   menu.hidden = true; menuChanged = true;
   // the preloader in play/index.html has counted the files in; the scene is built, so it fills its bar and fades into the race
   // …once the shaders are compiled too (world.prepare), so the first frame of the race doesn't stall
