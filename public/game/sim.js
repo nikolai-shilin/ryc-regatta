@@ -520,28 +520,32 @@ export function makeCourse(laps, beat, bias, fleet = 4, type = 'wl') {
   const marks = { mark: windward, ...(wing ? { wing } : {}) }, outs = { wing: wingOut };
   let finish = null; // the finish line, {a, b, through}: from its left end to its right, crossed `through`
   if (type === 'trap') {
-    // mark 2: the reach from mark 1 sailed 115° off the wind, as long as 0.6 of the beat and 50 m more, so the gate
-    // below it and the finish beyond that lie out to the left, clear of the start and the first beat
-    const L = 0.6 * beat + 50, mark2 = { x: -L * Math.sin(TRAP_REACH), z: -beat - L * Math.cos(TRAP_REACH) };
-    gate = gate.map((g) => ({ x: g.x + mark2.x, z: g.z })); // straight down the run from it
-    marks.mark2 = mark2; outs.mark2 = outside(windward, mark2, { x: mark2.x, z: gate[0].z });
+    // the gate, level with the start line, and the finish line to its right lie out to the left: the finish 1.2 times
+    // the line's half-length and 75 m beyond its middle, well outside the start and the left side of the first beat
+    // (the starboard layline from the pin), in any fleet; mark 2 straight up from the gate, where the reach from mark 1
+    // sailed 115° off the wind reaches
+    const gx = -(1.2 * half + 125), gz = -20;
+    const mark2 = { x: gx, z: -beat + gx / Math.tan(TRAP_REACH) };
+    gate = gate.map((g) => ({ x: g.x + gx, z: gz })); // straight down the run from it
+    marks.mark2 = mark2; outs.mark2 = outside(windward, mark2, { x: gx, z: gz });
     legs = ['start', 'mark', 'mark2', 'gate', ...Array.from({ length: laps - 1 }, () => ['mark2', 'gate']).flat(), 'finish'];
     // the finish: 40 m of line, 50 m to the right of the gate, square to the beam reach home
-    const fx = mark2.x + 50;
-    finish = { a: { x: fx, z: gate[0].z - 20 }, b: { x: fx, z: gate[0].z + 20 }, through: { x: 1, z: 0 } };
+    finish = { a: { x: gx + 50, z: gz - 20 }, b: { x: gx + 50, z: gz + 20 }, through: { x: 1, z: 0 } };
   } else if (type === 'wlu') {
     // the offset mark: a short reach out to the left, a little below the windward mark
     const offset = { x: -55, z: -beat + 10 };
     marks.offset = offset; outs.offset = outside(windward, offset, { x: (gate[0].x + gate[1].x) / 2, z: gate[0].z });
     legs = ['start', ...lapsOf(['mark', 'offset', 'gate']), 'finish'];
-    // the finish: 60 m of line across the wind, a little below the windward mark and well out to its right, away
-    // from the boats coming in to round it on starboard
-    finish = { a: { x: 70, z: -beat + 20 }, b: { x: 130, z: -beat + 20 }, through: { x: 0, z: -1 } };
+    // the finish: 60 m of line across the wind, 15 m below the windward mark, from just to its right out to the
+    // right; its middle within 15° of dead upwind from the gate's, so the last leg is a beat. Its pin is short of the
+    // boats coming in on starboard to round the mark, which cross the line between its ends
+    const fz = -beat + 15;
+    finish = { a: { x: 5, z: fz }, b: { x: 65, z: fz }, through: { x: 0, z: -1 } };
   }
   // for each leg: whether it's a beat (up to the windward mark; up to mark 2 after the first lap; up to an upwind
   // finish), and the outside of its mark when it isn't (null: straight upwind, by the wind of the moment)
   const legInfo = legs.map((k, i) => {
-    const beat = k === 'mark' || (k === 'mark2' && i > 2) || (k === 'finish' && type === 'wlu');
+    const beat = k === 'mark' || (k === 'mark2' && legs[i - 1] === 'gate') || (k === 'finish' && type === 'wlu');
     return { beat, out: beat ? null : outs[k] ?? null };
   });
   // the finish line's committee boat: a little out beyond its right-hand end, as the start's is
@@ -590,9 +594,9 @@ const ROUNDED = {
 // the committee boat's hull, a little out beyond the line's end
 const cbHull = (c) => ({ x: c.committee.x + c.dir.x * 5, z: c.committee.z + c.dir.z * 5 });
 // everything on the course that's in the way, each with its size: the rounding marks, the gate, the pin, the committee
-// boat, and a finish line's own pin and committee boat when it has them
-const markSizes = (c, buoy, hull) => [...Object.values(c.marks), ...c.gate, c.pin].map((m) => [m, buoy])
-  .concat([[cbHull(c), hull]], c.finish ? [[c.finish.a, buoy], [c.finishBoat, hull]] : []);
+// boat, and a finish line's own pin and committee boat when it has them (`pin`: the finish pin's size)
+const markSizes = (c, buoy, hull, pin = buoy) => [...Object.values(c.marks), ...c.gate, c.pin].map((m) => [m, buoy])
+  .concat([[cbHull(c), hull]], c.finish ? [[c.finish.a, pin], [c.finishBoat, hull]] : []);
 const norm = (x, z) => { const l = Math.hypot(x, z) || 1; return { x: x / l, z: z / l }; };
 // the fleet you race against (names and the colour on the map), and how long the course is
 export const FLEET = [['Aurora', 0xc0392b], ['Kestrel', 0x1e8449], ['Nomad', 0xd4ac0d], ['Halcyon', 0x2e86de], ['Mistral', 0x8e44ad],
@@ -1090,10 +1094,10 @@ export class Race {
       const m = c.marks[k], o = c.legInfo[b.leg].out || { x: 0, z: -1 }, p = { x: -o.z, z: o.x };
       const at = (fp, fo) => ({ x: m.x + p.x * fp + o.x * fo, z: m.z + p.z * fp + o.z * fo });
       // tangled up at the mark (circling it without getting round): sail clear out on the side she comes in on, and
-      // come in again from there, as a skipper would
+      // come in again from there, as a skipper would (with an upwind finish line just below it, out below the line)
       ai.nearT = Math.hypot(b.x - m.x, b.z - m.z) < 45 ? (ai.nearT || 0) + (this.lastDt || 0) : 0;
       if (ai.nearT > 50) { ai.nearT = 0; ai.detour = this.clock + 30; ai.wp = 0; }
-      if (ai.detour > this.clock) return at(35, -30);
+      if (ai.detour > this.clock) return at(35, c.finish && c.finish.through.z < 0 ? -60 : -30);
       // round it to port: come in on its near side with room to spare, cross outside it, leave on the far side
       // a boat that owes another mark-room (rule 18) goes round outside it, wider and a little later
       const wide = this.owesRoom(b) ? 1 : 0;
@@ -1131,6 +1135,9 @@ export class Race {
       b.setKite(false);
       const o = this.nearest(b);
       ai.escT = (ai.escT || 0) + dt;
+      // just short of a finish line of her own, she first sails back off it, so as not to cross it before her turns
+      const f = c.finish, s = f && c.legs[b.leg] === 'finish' ? (b.x - f.a.x) * f.through.x + (b.z - f.a.z) * f.through.z : -99;
+      if (s > -20 && s < 0) { this.steerTo(b, this.sailable(Math.atan2(-f.through.x, f.through.z), W, b.tws)); return; }
       if (o.d < 24 && ai.escT < 12) { this.steerTo(b, this.sailable(Math.atan2(b.x - o.x, -(b.z - o.z)), W, b.tws)); return; }
       b.rudder = 1; return;
     }
@@ -1413,8 +1420,9 @@ export class Race {
   }
   // the marks as they are, for contact: a buoy about a metre across the waterline, the committee boat's hull
   hardMarks() { return markSizes(this.course, 1, 4); }
-  // and with a margin, for the computer skippers to steer round
-  obstacles() { return markSizes(this.course, 4, 8); }
+  // and with a margin, for the computer skippers to steer round (a wider berth to a finish line's own pin, which can
+  // stand among the boats coming in to a mark)
+  obstacles() { return markSizes(this.course, 4, 8, 8); }
   nearest(b) {
     let best = { d: 1e9, x: 0, z: 0 };
     for (const [m, r] of this.obstacles()) { const d = Math.hypot(b.x - m.x, b.z - m.z) - r; if (d < best.d) best = { d, x: m.x, z: m.z }; }

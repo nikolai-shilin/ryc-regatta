@@ -97,8 +97,23 @@ test('the upwind finish is laid as the spec says', () => {
     assert.ok(o.z - w.z >= 0 && o.z - w.z <= 20, `${preset}: the offset mark is ${(o.z - w.z).toFixed(1)} m below`);
     assert.ok(f.x > w.x && f.z > w.z, `${preset}: the finish is below and to the right of the windward mark`);
     assert.ok(c.finish.through.z < -0.99, `${preset}: the finish is crossed going upwind`);
+    const up = offWind(mid(...c.gate), f); // the last leg is a beat: the finish lies close to dead upwind of the gate
+    assert.ok(up <= 15, `${preset}: the finish is ${up.toFixed(1)}° off dead upwind from the gate`);
     assert.deepEqual(c.legs, ['start', 'mark', 'offset', 'gate', 'finish']);
     assert.deepEqual(c.legs.map((_, i) => sim.isBeat(c, i)), [false, true, false, false, true]);
+    assert.deepEqual(c.legs.map((_, i) => sim.hasZone(c, i)), [false, false, true, true, false]);
+  }
+});
+// the trapezoid's finish line lies out to the left of the start: in any fleet, any wind and either skew of the line,
+// its ends and its committee boat are well outside the first beat's left side (the starboard layline from the pin)
+test('the trapezoid’s finish is clear of the start and the first beat', () => {
+  for (const preset of ['light', 'medium', 'strong']) for (let fleet = 5; fleet <= 10; fleet++) for (const bias of [-8, 8]) {
+    const c = sim.makeCourse(1, BEAT[preset], bias * sim.D2R, fleet, 'trap'), p = c.pin, beat = sim.beatAngle(sim.PRESETS[preset].tws) * sim.D2R;
+    for (const [name, q] of [['pin', c.finish.a], ['boat end', c.finish.b], ['committee boat', c.finishBoat]]) {
+      // how far outside the layline: left of it and below, + (it runs up to the left from the pin, close-hauled)
+      const out = -(q.x - p.x) * Math.cos(beat) + (q.z - p.z) * Math.sin(beat);
+      assert.ok(out >= 30, `${preset}, fleet ${fleet}, bias ${bias}°: the finish ${name} is ${out.toFixed(1)} m outside the layline`);
+    }
   }
 });
 // each finish line's committee boat lies beyond its right-hand end, as the start's does; none on the start line's finish
@@ -166,6 +181,7 @@ for (const course of ['trap', 'wlu']) for (const preset of ['light', 'medium', '
   });
   test(`${course} ${preset} ${laps}: the computer boats finish well above the server's floor`, () => {
     const times = shapeRun(course, preset, laps).times.filter((x) => x != null), floor = FLOOR * BEAT[preset] * sim.COURSE_LEN.short * laps;
+    assert.ok(times.length >= 3, 'most of the fleet finishes');
     assert.ok(Math.min(...times) > floor * 1.5, `fastest ${Math.min(...times)} s, floor ${floor} s`);
   });
 }
@@ -185,8 +201,10 @@ test('the upwind finish line doesn’t finish a boat before her last leg', () =>
   assert.equal(b.leg, c.legs.indexOf('mark'));
   across(c.legs.lastIndexOf('mark'), fx, -1);
   assert.equal(b.done, false, 'beating up to the windward mark on the last lap');
+  across(c.legs.indexOf('finish'), Math.min(f.a.x, f.b.x) - 8, -1);
+  assert.equal(b.done, false, 'outside the line’s pin end');
   across(c.legs.indexOf('finish'), Math.max(f.a.x, f.b.x) + 8, -1);
-  assert.equal(b.done, false, 'outside the line’s end');
+  assert.equal(b.done, false, 'outside the line’s boat end');
   across(c.legs.indexOf('finish'), fx, 1);
   assert.equal(b.done, false, 'crossing it downwind');
   across(c.legs.indexOf('finish'), fx, -1);
