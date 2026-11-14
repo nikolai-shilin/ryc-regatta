@@ -60,8 +60,16 @@ export const BEAT_LEN: Record<Wind, number> = { light: 200, medium: 260, strong:
 // the close-hauled angle to the true wind at each preset's wind speed (sim.js P_BEAT)
 export const BEAT_ANGLE: Record<Wind, number> = { light: 43, medium: 39.5, strong: 38.5 };
 
-export function plannedCourse(preset: Wind, length: Length, fleet: number, shape: Shape = 'wl'): CourseGeo & { type: Shape } {
-  const beat = BEAT_LEN[preset] * COURSE_LEN[length], half = Math.max(70, fleet * 10);
+// another class of yacht (lib/yachts.ts) sails a course of her own size, as sim.js lays it (scaleCourse): courseK as
+// long, everything across the water lineK as wide
+export function plannedCourse(preset: Wind, length: Length, fleet: number, shape: Shape = 'wl', yacht?: { courseK: number; lineK: number }): CourseGeo & { type: Shape } {
+  if (!yacht || yacht.lineK === 1) return laid(preset, length, fleet, shape, yacht?.courseK ?? 1);
+  const K = yacht.lineK, c = laid(preset, length, fleet, shape, yacht.courseK / K), S = (p: XZ): XZ => [p[0] * K, p[1] * K];
+  return { type: c.type, windward: S(c.windward), gate: c.gate.map(S), pin: S(c.pin), committee: S(c.committee),
+    marks: Object.fromEntries(Object.entries(c.marks || {}).map(([k, m]) => [k, S(m as XZ)])), ...(c.wing && { wing: S(c.wing) }), ...(c.finish && { finish: [S(c.finish[0]), S(c.finish[1])] as [XZ, XZ] }) };
+}
+function laid(preset: Wind, length: Length, fleet: number, shape: Shape, k: number): CourseGeo & { type: Shape } {
+  const beat = BEAT_LEN[preset] * COURSE_LEN[length] * k, half = Math.max(70, fleet * 10);
   let gate: XZ[] = fleet > 5 ? [[-27, -50], [27, -50]] : [[-22, -45], [22, -45]];
   const windward: XZ = [0, -beat], marks: NonNullable<CourseGeo['marks']> = { mark: windward };
   let wing: XZ | undefined, finish: [XZ, XZ] | undefined;
@@ -94,8 +102,9 @@ export const savedShape = (s: unknown): Shape => (isShape(s) ? s : 'wl');
 // a course's shape: its `type`, or for a result saved before the shapes, a triangle if it has a wing mark
 export const shapeOf = (c: { type?: unknown; wing?: unknown }): Shape => (isShape(c.type) ? c.type : c.wing ? 'tri' : 'wl');
 // the key of a free race's best time on this device (public/game/main.js pbKey): each shape but up and down its own
-export const pbKey = (o: { preset: Wind; laps: number; length: Length; fleet: number; course: Shape }) =>
-  `${o.preset}|${o.laps}|${o.length}|${o.fleet}${o.course === 'wl' ? '' : '|' + o.course}`;
+// (and each class of yacht but the club's 40-footer too)
+export const pbKey = (o: { preset: Wind; laps: number; length: Length; fleet: number; course: Shape; yacht?: string }) =>
+  `${o.preset}|${o.laps}|${o.length}|${o.fleet}${o.course === 'wl' ? '' : '|' + o.course}${o.yacht && o.yacht !== 'club40' ? '|' + o.yacht : ''}`;
 
 const mid = (a: XZ, b: XZ): XZ => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
 const dist = (a: XZ, b: XZ) => Math.hypot(a[0] - b[0], a[1] - b[1]);

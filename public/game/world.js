@@ -2,7 +2,8 @@
 import * as THREE from 'three';
 import { D2R, wrap, clamp, lerp, waveHeight, waveSlope, beatAngle, runAngle, HULL, ZONE, legTargets, legAim, isBeat, hasZone } from './sim.js';
 const SC = HULL / 10.4; // the model is drawn 10.4 m long; a First 40.7 is 12.2 m
-import { BoatView, LOOKS, playerLook } from './yacht.js';
+import { LOOKS, playerLook } from './yacht.js';
+import { makeBoatView } from './boats3d.js';
 import { CommitteeBoat } from './committee.js';
 import { JuryBoat } from './jury.js';
 import { Wildlife } from './wildlife.js';
@@ -420,14 +421,15 @@ class Wake {
   update(b, dt, t, W) {
     // a new sample every WAKE_DT seconds; the newest point always rides with the boat
     this.acc += dt;
-    const here = { x: b.x, z: b.z, h: b.h, v: b.v, born: t };
+    const here = { x: b.x, z: b.z, h: b.h, v: b.v, born: t, fly: b.ride || 0 };
     if (!this.trail.length || this.acc >= WAKE_DT) { this.acc = 0; this.trail.unshift(here); if (this.trail.length > WAKE_N) this.trail.pop(); }
     else this.trail[0] = here;
     const g = this.mesh.geometry, P = g.attributes.position, AG = g.attributes.aAge, SD = g.attributes.aSide, KD = g.attributes.aKind, ST = g.attributes.aStr;
     for (let r = 0; r < 3; r++) for (let i = 0; i < WAKE_N; i++) {
       const s = this.trail[Math.min(i, this.trail.length - 1)], age = Math.max(0, t - s.born);
       const fx = Math.sin(s.h), fz = -Math.cos(s.h), rx = Math.cos(s.h), rz = Math.sin(s.h);
-      const str = clamp((s.v - 0.6) / 3.5, 0, 1) * (i < this.trail.length ? 1 : 0);
+      // (flying, a foiler leaves no bow wave: only the thin wash of her rudder and foil)
+      const str = clamp((s.v - 0.6) / 3.5, 0, 1) * (i < this.trail.length ? 1 : 0) * (r && s.fly ? 1 - s.fly : 1);
       let cx, cz, half;
       if (r === 0) { cx = s.x - fx * 5.0 * SC; cz = s.z - fz * 5.0 * SC; half = 0.7 + age * 0.12; } // wash, from the transom
       else {
@@ -488,10 +490,13 @@ class HullContact {
   }
   dispose(scene) { scene.remove(this.mesh); this.mesh.geometry.dispose(); this.mesh.material.dispose(); }
   update(b, t, W) {
-    const g = this.mesh.geometry, P = g.attributes.position, L = g.attributes.aL;
+    // another class's hull is laid HULL / 12.2 times the club boat's size; a foiler flying has none in the water
+    this.mesh.visible = !(b.ride > 0.5);
+    if (!this.mesh.visible) return;
+    const g = this.mesh.geometry, P = g.attributes.position, L = g.attributes.aL, S = HULL / 12.2;
     const fx = Math.sin(b.h), fz = -Math.cos(b.h), rx = Math.cos(b.h), rz = Math.sin(b.h);
     for (let i = 0; i < P.count; i++) {
-      const a = L.getX(i), c = L.getY(i), x = b.x + fx * a + rx * c, z = b.z + fz * a + rz * c;
+      const a = L.getX(i) * S, c = L.getY(i) * S, x = b.x + fx * a + rx * c, z = b.z + fz * a + rz * c;
       P.setXYZ(i, x, waveHeight(W, x, z, t) + 0.05, z);
     }
     P.needsUpdate = true;
@@ -936,9 +941,9 @@ export class World {
   // you chose on /boat (or the look given)
   boatView(b, look) {
     const v = b.ai
-      ? new BoatView({ look: LOOKS[b.name] || LOOKS.Aurora, label: { text: b.name, color: b.color } })
-      : new BoatView({ look: look || playerLook(), player: true });
-    v.root.scale.setScalar(SC);
+      ? makeBoatView({ look: LOOKS[b.name] || LOOKS.Aurora, label: { text: b.name, color: b.color } })
+      : makeBoatView({ look: look || playerLook(), player: true });
+    v.root.scale.setScalar(HULL / (v.drawnL || 10.4)); // the club's boat is drawn 10.4 m long; the other classes at their own length
     mirrored(v.root);
     // …but not the crew (eleven parts a sailor) or the wires: too small to make out in a half-size, rippled reflection
     for (const c of v.crew) c.g.traverse((o) => o.layers.disable(MIRRORED));
@@ -1126,6 +1131,24 @@ export class World {
     }
   }
 
+  // a foiler flying: a rooster tail of spray where her leeward foil arm and her rudder cut the surface, thrown up and
+  // aft and drifting away to leeward, more the faster she goes (in her own frame: the arm some 2.6 m out to leeward
+  // and 0.6 m aft of amidships, the rudder at the transom)
+  spawnFoilSpray(b, dt) {
+    const fx = Math.sin(b.h), fz = -Math.cos(b.h), rx = Math.cos(b.h), rz = Math.sin(b.h), lee = -(b.boom || (b.twa >= 0 ? 1 : -1));
+    b._spr = (b._spr || 0) + dt * b.v * 1.6;
+    while (b._spr > 1) {
+      b._spr -= 1;
+      const rud = Math.random() < 0.35, along = rud ? -HULL / 2 + 0.3 : -0.6, across = rud ? 0 : lee * 2.6;
+      const f = this.foam[this.foamI]; this.foamI = (this.foamI + 1) % this.foamMax;
+      f.x = b.x + fx * along + rx * across; f.z = b.z + fz * along + rz * across; f.y = 0.2;
+      const back = 0.25 + Math.random() * 0.35, out = (Math.random() - 0.3) * 1.6;
+      f.vx = fx * b.v * (1 - back) + rx * lee * out; f.vz = fz * b.v * (1 - back) + rz * lee * out;
+      f.vy = 1.5 + Math.random() * 2.5 + b.v * 0.06;
+      f.age = 0; f.life = 0.6 + Math.random() * 0.6; f.spray = true; f.s0 = rud ? 0.25 : 0.35; f.s1 = rud ? 0.7 : 1.1; f.a = 0.75;
+    }
+  }
+
   // spray over the bow when she slams into a wave upwind in a breeze
   spawnSpray(b, dt, race) {
     if (b.v < 2.5 || b.tws < 12 || Math.abs(b.twa) > 75 * D2R || b.slope < 0.035) return;
@@ -1238,7 +1261,7 @@ export class World {
     });
     // foam
     race.boats.forEach((b, i) => {
-      this.spawnFoam(b, dt); this.spawnSpray(b, dt, race);
+      if (b.ride > 0.5) this.spawnFoilSpray(b, dt); else { this.spawnFoam(b, dt); this.spawnSpray(b, dt, race); }
       if (this.wakes[i]) this.wakes[i].update(b, dt, t, this.W);
       if (this.contacts[i]) this.contacts[i].update(b, t, this.W);
     });

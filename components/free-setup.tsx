@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { DAYTIMES, readOpts, readPb, saveOpts, type Daytime } from '@/lib/opts';
 import type { VenueId } from '@/lib/venues';
+import { YACHTS, isYacht, yachtOf, type YachtId } from '@/lib/yachts';
 import { shapeOffered, venueOf, VENUES } from '@/lib/venues';
 import { courseDistance, dailyRace, fmtDistance, pbKey, plannedCourse, savedShape, KN, SHAPE_NAME, SHAPES, type Length, type Shape, type Wind } from '@/lib/race';
 import { CourseMap } from './course-map';
@@ -18,15 +19,15 @@ const SHAPE_HINT: Partial<Record<Shape, [string, string]>> = {
   wlu: ['Up to the windward mark, a short reach to the offset mark, a run down through the gate, and a last beat up to a finish line below the windward mark.', 'Вверх к верхнему знаку, короткий галфвинд к знаку смещения, фордевинд через ворота и последняя лавировка к финишу чуть ниже верхнего знака.'],
 };
 
-type Pick = { venue: VenueId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape; daytime: Daytime };
+type Pick = { venue: VenueId; yacht: YachtId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape; daytime: Daytime };
 
 // a rough guide to the race's length on the water, so a choice shows its effect; each shape's factor is as the computer
 // boats take it, against up and down
 const SHAPE_TIME: Record<Shape, number> = { wl: 1, tri: 1.3, trap: 1.25, wlu: 1.6 };
-const minutes = (p: Pick) => Math.round(({ short: 4.5, medium: 7, long: 9.5 }[p.length] * p.laps * { light: 1.25, medium: 1, strong: 0.9 }[p.preset] * SHAPE_TIME[p.course]) + p.start);
+const minutes = (p: Pick) => Math.round(({ short: 4.5, medium: 7, long: 9.5 }[p.length] * p.laps * { light: 1.25, medium: 1, strong: 0.9 }[p.preset] * SHAPE_TIME[p.course] * yachtOf(p.yacht).timeK) + p.start);
 // what the scene shows as each choice is made: the fleet, the wind or the current over the course, or the course
 type View = SceneSetup['view'];
-const VIEW_OF: Record<keyof Pick, View> = { venue: 'boats', fleet: 'boats', start: 'boats', preset: 'wind', current: 'current', course: 'course', length: 'course', laps: 'course', daytime: 'boats' };
+const VIEW_OF: Record<keyof Pick, View> = { venue: 'boats', yacht: 'boats', fleet: 'boats', start: 'boats', preset: 'wind', current: 'current', course: 'course', length: 'course', laps: 'course', daytime: 'boats' };
 // the breeze as the game blows it (sim.js PRESETS): its gusts' top and how far it swings either way
 const GUST: Record<Wind, [number, number]> = { light: [9, 12], medium: [16, 13], strong: [26, 14] };
 
@@ -38,14 +39,16 @@ const GUST: Record<Wind, [number, number]> = { light: [9, 12], medium: [16, 13],
 // the card's top, your boat and Settings at its bottom. Start saves the choice where the game reads it and opens the race.
 export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromToday: boolean; who: Who }) {
   const t = tx(lang);
-  const [p, setP] = useState<Pick>({ venue: 'gocek', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any' });
+  const [p, setP] = useState<Pick>({ venue: 'gocek', yacht: 'club40', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any' });
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const o = readOpts();
     const d = dailyRace();
     const venue = venueOf(o.venue).id, daytime = DAYTIMES.includes(o.daytime) ? o.daytime : 'any';
-    setP(fromToday ? { venue, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course, daytime }
-      : { venue, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: savedShape(o.course), daytime });
+    // a yacht asked for in the address (the yachts page's Race her), else the one last raced
+    const asked = new URLSearchParams(location.search).get('yacht'), yacht = isYacht(asked) ? asked : isYacht(o.yacht) ? o.yacht : 'club40';
+    setP(fromToday ? { venue, yacht, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course, daytime }
+      : { venue, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: savedShape(o.course), daytime, yacht });
     setReady(true);
   }, [fromToday]);
   const [view, setView] = useState<View>('boats');
@@ -70,7 +73,8 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
   const [pb, setPb] = useState<Record<string, number>>({});
   useEffect(() => { setPb(readPb()); }, []);
   const best = pb[pbKey(p)];
-  const geo = plannedCourse(p.preset, p.length, p.fleet, p.course);
+  const boat = yachtOf(p.yacht);
+  const geo = plannedCourse(p.preset, p.length, p.fleet, p.course, boat);
   const where = venueOf(p.venue);
   const courseName = { short: t('Short', 'Короткая'), medium: t('Medium', 'Средняя'), long: t('Long', 'Длинная') }[p.length];
   const metres = fmtDistance(courseDistance(geo, p.laps), lang).split(' · ')[0];
@@ -114,7 +118,7 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
   return (
     <div className="scr bt-scr" lang={lang}>
       <div className="bt">
-        {ready && <GameScene venue={p.venue} wind={p.preset} setup={scene} title={t('The race’s venue in 3D', 'Место гонки в 3D')} />}
+        {ready && <GameScene venue={p.venue} boat={p.yacht} wind={p.preset} setup={scene} title={t('The race’s venue in 3D', 'Место гонки в 3D')} />}
 
         <div className="bt-info">
           <div className="bt-top">
@@ -146,9 +150,12 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
           </>}
           foot={<div className="bt-rows">
             <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
+            <Link className="bt-row" href={`/yachts?y=${p.yacht}&from=free`}><IconBoats s={18} /><span>{t('The yachts', 'Яхты')}</span></Link>
             <SettingsRow lang={lang} />
           </div>}>
           {tags('venue', <IconPin />, t('Where', 'Где'), VENUES.map((v) => [v.id, t(...v.name)] as [VenueId, string]))}
+          {tags('yacht', <IconSail s={14} />, t('Yacht', 'Яхта'), YACHTS.map((y) => [y.id, t(...y.name)] as [YachtId, string]),
+            <p className="bt-hint">{t(...boat.tagline)} <Link href={`/yachts?y=${boat.id}&from=free`}>{t('About the yachts', 'О яхтах')}</Link></p>)}
           {tags('preset', <IconWind s={14} />, t('Wind', 'Ветер'), [['light', t('Light 7 kn', 'Слабый 7 уз')], ['medium', t('Medium 12 kn', 'Средний 12 уз')], ['strong', t('Strong 19 kn', 'Сильный 19 уз')]])}
           {tags('daytime', <IconSun />, t('Time of day', 'Время суток'), [['any', t('Any', 'Любое')], ['morning', t('Morning', 'Утро')], ['midday', t('Midday', 'Полдень')], ['afternoon', t('Afternoon', 'День')], ['evening', t('Evening', 'Вечер')]],
             <p className="bt-hint">{{

@@ -5,7 +5,7 @@ import { getAccount, initials } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, SHAPE_NAME } from '@/lib/race';
 import { venueOf } from '@/lib/venues';
-import { IconBack, IconPlay, IconTrophy, IconSliders, IconSail, clock } from '@/components/ui';
+import { IconBack, IconPlay, IconTrophy, IconSliders, IconSail, IconBoats, clock } from '@/components/ui';
 import { FreeQuick } from '@/components/hub-client';
 import { GameScene } from '@/components/game-scene';
 import { PauseCard, SettingsRow, type Who } from '@/components/pause-card';
@@ -75,6 +75,7 @@ export default async function Hub({ params }: LangParams) {
           <div className="bt-rows">
             <Link className="bt-row" href="/race/free?from=today"><IconSliders /><span>{t('Change the wind or course', 'Изменить ветер или дистанцию')}</span><span className="bt-row-m">{t('A free race', 'Свободная гонка')}</span></Link>
             <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
+            <Link className="bt-row" href="/yachts"><IconBoats s={18} /><span>{t('The yachts', 'Яхты')}</span><span className="bt-row-m">J/70 · RS21 · AC75</span></Link>
             <SettingsRow lang={lang} />
           </div>
         </PauseCard>

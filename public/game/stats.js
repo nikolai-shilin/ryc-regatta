@@ -5,6 +5,7 @@
 // of their account (from /auth/token, on this origin); in a plain browser signed out the race is a guest's. The post
 // goes to another site, so it stays a simple request (plain text, no headers of its own, the launch data and the token
 // in the body): no preflight, which a keepalive post on leaving the page may not get through.
+import { CLS } from './classes.js';
 const API = 'https://iyt.rycrentals.com/api/game';
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
 
@@ -38,7 +39,8 @@ function send(body, tok = token) {
 export function raceStarted(race, opts) {
   if (!race || race._rid) return;
   race._rid = uuid();
-  const body = { ev: 'start', id: race._rid, wind: opts.preset, laps: opts.laps, length: opts.length, shape: race.course.type, boats: race.boats.length, ...(opts.daily && { daily: opts.daily }) };
+  // (and the class of yacht, when not the club's 40-footer: a J/70's or an AC75's times aren't the same race's)
+  const body = { ev: 'start', id: race._rid, wind: opts.preset, laps: opts.laps, length: opts.length, shape: race.course.type, boats: race.boats.length, ...(opts.daily && { daily: opts.daily }), ...(CLS.id !== 'club40' && { yacht: CLS.id }) };
   account().then((tok) => send(body, tok));
 }
 

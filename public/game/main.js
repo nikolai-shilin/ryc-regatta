@@ -1,9 +1,10 @@
 // Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
-import { Race, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone, laidShape } from './sim.js';
+import { Race, CLS, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone, laidShape } from './sim.js';
 import { World, defaultQuality, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
 import { raceStarted, raceFinished, raceResult } from './stats.js';
 import { createHudNext } from './hud-next.js';
 import { VENUE, venueById } from './venues.js';
+import { classById } from './classes.js';
 import { createMusic, direct, MUSIC_STYLES } from './music.js';
 
 const $ = (s) => document.querySelector(s);
@@ -87,7 +88,7 @@ const T = {
     roundedTri: 'Mark rounded — bear away onto the reach to the wing mark', roundedWing: 'Wing mark rounded — gybe onto the broad reach',
     roundedTrap: 'Mark 1 rounded — bear away onto the broad reach to mark 2', roundedMark2: 'Mark 2 rounded — bear away onto the run to the gate',
     roundedWlu: 'Mark rounded — bear away to the offset mark', roundedOffset: 'Offset mark rounded — bear away, kite up', gateFinish: 'Through the gate — now for the finish',
-    seaBreeze: 'Sea breeze today — it will build and swing right as you race', kiteWrap: 'The kite wrapped in the gybe — it has to come down', kiteGybed: 'Kite gybed',
+    seaBreeze: 'Sea breeze today — it will build and swing right as you race', kiteWrap: 'The kite wrapped in the gybe — it has to come down', kiteGybed: 'Kite gybed', takeoff: 'Foiling!', splashdown: 'Off the foils — build speed to take off again',
     crashGybe: 'Crash gybe! Too far by the lee — the boom slammed across', deathRoll: 'Death roll! By the lee with the kite up — she rolled and rounded up',
     byLee: (d) => `By the lee ${d}° — gybe or head up`, foot: 'Slow — foot a few degrees to build speed', waveTip: 'Waves: luff up the face, bear away down the back', ocsS: 'OCS — return below the line',
     target: 'target', vmg: 'VMG', line: 'line', toLine: 'to line', favPin: 'pin end favoured', favBoat: 'boat end favoured', square: 'line square',
@@ -171,7 +172,7 @@ const T = {
     roundedTri: 'Знак пройден — уваливайся на галфвинд к боковому знаку', roundedWing: 'Боковой знак пройден — поворот фордевинд на бакштаг',
     roundedTrap: 'Знак 1 пройден — уваливайся на бакштаг к знаку 2', roundedMark2: 'Знак 2 пройден — уваливайся на фордевинд к воротам',
     roundedWlu: 'Знак пройден — уваливайся к знаку смещения', roundedOffset: 'Знак смещения пройден — уваливайся, ставь генакер', gateFinish: 'Ворота пройдены — теперь на финиш',
-    seaBreeze: 'Сегодня бриз — он будет усиливаться и отходить вправо', kiteWrap: 'Генакер закрутился на повороте — его надо убрать', kiteGybed: 'Генакер переброшен',
+    seaBreeze: 'Сегодня бриз — он будет усиливаться и отходить вправо', kiteWrap: 'Генакер закрутился на повороте — его надо убрать', kiteGybed: 'Генакер переброшен', takeoff: 'Летим на крыльях!', splashdown: 'Упали с крыльев — разгоняйся, чтобы снова взлететь',
     crashGybe: 'Самопроизвольный фордевинд! Слишком далеко на ветер с кормы — гик перелетел', deathRoll: 'Брочинг на ветер! С генакером на «неправильном» борту — её положило и привело',
     byLee: (d) => `Ветер с подветра ${d}° — поворачивай или приводись`, foot: 'Мало скорости — уваливайся на пару градусов, разгонись', waveTip: 'Волна: приводись на склон, уваливайся с гребня', ocsS: 'Фальстарт — вернись за линию',
     target: 'цель', vmg: 'VMG', line: 'линия', toLine: 'до линии', favPin: 'выгоднее у знака', favBoat: 'выгоднее у судна', square: 'линия ровная',
@@ -243,6 +244,8 @@ for (const g of document.querySelectorAll('.choice[data-opt]')) {
     if (opts.mode === 'daily' && DAILY_KEYS.includes(k)) { Object.assign(opts, Object.fromEntries(DAILY_KEYS.map((x) => [x, settings()[x]]))); opts.mode = 'free'; } // changing today's settings makes it a free race
     opts[k] = k === 'preset' || k === 'gfx' || k === 'length' || k === 'mode' || k === 'course' ? b.dataset.v : +b.dataset.v; paintOpts(); saveOpts();
     // today's race is at the day's venue, a free race where the set-up chose: another venue's land needs the page loaded again
+    // …and so does another class of yacht: today's race is sailed in the club's 40-footer, a free race in the one chosen (classes.js)
+    if (k === 'mode' && !new URLSearchParams(location.search).get('boat') && (opts.mode === 'daily' ? 'club40' : classById(opts.yacht).id) !== CLS.id) { location.href = '/play?race=' + (opts.mode === 'daily' ? 'today' : 'free'); return; }
     if (k === 'mode' && !new URLSearchParams(location.search).get('venue') && (opts.mode === 'daily' ? dailyRace().venue : venueById(opts.venue).id) !== VENUE.id) { location.href = '/play?race=' + (opts.mode === 'daily' ? 'today' : 'free'); return; }
     if (k === 'gfx') { world.setQuality(startQuality()); perf.settle = 2; }
     if (k === 'guides') world.showGuides = !!opts.guides;
@@ -1131,7 +1134,7 @@ const doKite = () => {
   if (type && P.setKite(true, type)) haptic('light');
 };
 // which sail the Kite button sets now: the gennaker running, a code zero reaching in light air (below 15 knots)
-const kiteKind = (P) => { const a = Math.abs(P.twa) / D2R; return a > 100 ? 'gen' : a > 60 && P.tws < 15 ? 'zero' : null; };
+const kiteKind = (P) => { const a = Math.abs(P.twa) / D2R; return a > 100 && CLS.kite ? 'gen' : a > 60 && P.tws < 15 && CLS.zero ? 'zero' : null; }; // the class's sails (classes.js)
 // the reef: a button above the kite's, shown in a breeze; a tap starts the crew tying a reef in (or shaking it out)
 const reefBtn = kiteBtn.cloneNode(true); reefBtn.id = 'reefBtn'; reefBtn.classList.remove('on'); reefBtn.innerHTML = t('reef'); kiteBtn.after(reefBtn);
 document.head.append(Object.assign(document.createElement('style'), { textContent: `
@@ -1367,10 +1370,10 @@ function updateHud(dt) {
   if (kiteBtn.dataset.k !== kk) { kiteBtn.dataset.k = kk; txt(kiteBtn, t(kk === 'zero' ? 'zero' : 'kite')); }
   kiteBtn.classList.toggle('on', P.kiteJob ? P.kiteJob.up : P.kite);
   kiteBtn.style.opacity = P.kiteJob ? (0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 180))).toFixed(2) : ''; // the crew at work: it pulses
-  reefBtn.hidden = !(race.wind.p.tws >= 15 || P.reef || P.reefJob);
+  reefBtn.hidden = !((race.wind.p.tws >= 15 && CLS.reef) || P.reef || P.reefJob);
   reefBtn.classList.toggle('on', P.reefJob ? P.reefJob.on : P.reef);
   reefBtn.style.opacity = P.reefJob ? (0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 180))).toFixed(2) : '';
-  jibBtn.hidden = !(race.wind.p.tws >= 15 || P.smallJib || P.jibJob);
+  jibBtn.hidden = !((race.wind.p.tws >= 15 && CLS.j3) || P.smallJib || P.jibJob);
   const jl = t((P.jibJob ? P.jibJob.small : P.smallJib) ? 'jibBig' : 'jibBtn'); if (jibBtn.textContent !== jl) txt(jibBtn, jl); // what a tap changes to
   jibBtn.style.opacity = P.jibJob ? (0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 180))).toFixed(2) : '';
   hailBtn.hidden = !race.youCanHail();
@@ -1528,6 +1531,7 @@ function handleMessages() {
     if (e === 'penaltyDone') toast(t('penaltyDone'));
     if (e === 'kiteWrap' || e === 'crashGybe' || e === 'deathRoll') { toast(t(e), 3); haptic(e === 'kiteWrap' ? 'warn' : 'heavy'); if (!(e === 'crashGybe' && skipper.cue('heads'))) skipper.shout('chaos'); }
     if (e === 'kiteGybed') toast(t('kiteGybed'), 1.4);
+    if (e === 'takeoff' || e === 'splashdown') { toast(t(e), e === 'takeoff' ? 1.6 : 2.6); if (e === 'splashdown' && race.clock > 0) haptic('warn'); }
     // the call for a tack or a gybe: now and then the Russian skipper's own way, else the crew's (with Voice off too)
     if ((e === 'tacking' || e === 'gybing') && !(!P.pen && skipper.shout('tack', 0.35))) skipper.cue(e === 'tacking' ? 'tackCall' : 'gybeCall', null, true);
   }
@@ -1655,7 +1659,7 @@ function finishToPage() {
   const head = L.tacks.filter((x) => x <= -3).length, lift = L.tacks.filter((x) => x >= 3).length;
   const res = {
     v: 1, id, at: Date.now(), daily: s.daily || null, preset: s.preset, length: s.length, laps: s.laps, start: s.start, current: !!s.current,
-    venue: VENUE.id, origin: [Math.round(race.at.x), Math.round(race.at.z)], seed: s.seed ?? null,
+    venue: VENUE.id, ...(CLS.id !== 'club40' && { yacht: CLS.id }), origin: [Math.round(race.at.x), Math.round(race.at.z)], seed: s.seed ?? null,
     course: { windward: xz(c.windward), gate: c.gate.map(xz), pin: xz(c.pin), committee: xz(c.committee), legs: c.legs, ...(c.wing && { wing: xz(c.wing) }), type: c.type,
       marks: Object.fromEntries(Object.entries(c.marks).map(([k, m]) => [k, xz(m)])), ...(c.finish && { finish: [xz(c.finish.a), xz(c.finish.b)] }) },
     boats: race.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, color: typeof b.color === 'number' ? '#' + b.color.toString(16).padStart(6, '0') : null,
@@ -1692,7 +1696,7 @@ const ruleHref = (r) => `${SITE}${LANG === 'ru' ? '/ru' : ''}/racing-rules/${RUL
 const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // personal bests, kept on this device: per course on a free race, per day on today's race
 const PB_KEY = 'regatta-pb';
-const pbKey = (s, r) => `${s.preset}|${s.laps}|${s.length}|${s.fleet}${r.course.type !== 'wl' ? '|' + r.course.type : ''}`; // each shape but up and down is a course of its own: the one sailed
+const pbKey = (s, r) => `${s.preset}|${s.laps}|${s.length}|${s.fleet}${r.course.type !== 'wl' ? '|' + r.course.type : ''}${CLS.id !== 'club40' ? '|' + CLS.id : ''}`; // each shape but up and down is a course of its own: the one sailed
 function personalBest(key, secs) {
   let all = {}; try { all = JSON.parse(localStorage.getItem(PB_KEY) || '{}'); } catch (e) {}
   const old = all[key], isNew = secs != null && (old == null || secs < old);

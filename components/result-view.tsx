@@ -27,6 +27,7 @@ type Result = {
   log: { gunD: number | null; gunV: number | null; ocs: boolean; startDsq: string | null; startT: number | null; sailing: number; pct: number | null; head: number; lift: number; tacks: number;
     dirty: number; penT: number; hails: Record<string, number>; legs: number[]; legPlaces: number[]; fouls: Foul[] };
   pb: { best: number; isNew: boolean } | null;
+  yacht?: string; // the class it was sailed in (lib/yachts.ts), when not the club's 40-footer
   venue?: string; origin?: [number, number]; seed?: number | null; // where it was sailed: kept since the finish scene
 };
 type Top = { name: string | null; s: number };
@@ -156,7 +157,7 @@ export default function ResultView({ id, lang, signedName, who, head, foot }: { 
   return (
     <div className="scr bt-scr rs-scr" lang={lang} data-acct={signedName ? 'signed' : 'guest'}>
       <div className="bt">
-        <GameScene venue={where.id} wind={res.preset} finish={scene} title={t('The finish in 3D, as it was', 'Финиш в 3D, как он был')} />
+        <GameScene venue={where.id} boat={res.yacht} wind={res.preset} finish={scene} title={t('The finish in 3D, as it was', 'Финиш в 3D, как он был')} />
         {!shared && <Soundtrack />}
 
         {/* the heading as the other pages laid out as the race's pause screen have it (the race hub, the free race, your

@@ -869,3 +869,11 @@ html[data-me] .hm-av > svg { display: none; }
 .adm-ban-dot { flex: none; width: 0.3em; height: 0.3em; border-radius: 50%; background: #d7262e; }
 .adm-ban-a, .adm-ban-b { overflow: hidden; text-overflow: ellipsis; }
 .adm-banner .srow .field { flex: 0 1 60%; width: auto; min-width: 0; height: var(--h-m, 40px); }
+
+/* ---------- the yachts (/yachts): what each is, in the boat page's card ---------- */
+.yt-about p { margin: 0; font: 400 13.5px/1.45 var(--f-serif); color: rgba(255, 255, 255, 0.86); }
+.yt-about p + p { margin-top: 8px; }
+.yt-spec { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin: 0; border-radius: 12px; overflow: hidden; background: var(--line); }
+.yt-spec > div { padding: 8px 10px; background: rgba(8, 14, 20, 0.55); }
+.yt-spec dt { font: 700 10px/1.2 var(--f-sans); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.yt-spec dd { margin: 3px 0 0; font: 700 13px/1.25 var(--f-sans); color: #fff; }

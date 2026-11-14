@@ -2,6 +2,7 @@
 // the start of every race (public/game/main.js, "settings"). fleetV, optsV and musicV mark them as current, so the game keeps them.
 import type { Length, Shape, Wind } from './race';
 import type { VenueId } from './venues';
+import type { YachtId } from './yachts';
 
 export type Music = 'racing' | 'groove' | 'riff' | 'openwater' | 'off';
 export const TRACKS: readonly Music[] = ['racing', 'groove', 'riff', 'openwater']; // public/game/music.js: MUSIC_STYLES
@@ -14,6 +15,7 @@ export const DAYTIMES: readonly Daytime[] = ['any', 'morning', 'midday', 'aftern
 export type Opts = {
   mode: 'daily' | 'free';
   venue: VenueId; // where a free race is sailed (public/game/venues.js); today's race goes to the day's venue
+  yacht: YachtId; // the class a free race is sailed in (public/game/classes.js); today's race is always the club's 40-footer
   preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape;
   daytime: Daytime; // the time of day a free race is sailed at (public/game/light.js: DAYTIMES); 'any' a new hour every race
   autoTrim: number; // 0 I trim · 1 auto · 2 main + jib
@@ -27,7 +29,7 @@ export type Opts = {
 };
 
 export const DEFAULTS: Opts = {
-  mode: 'daily', venue: 'gocek', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any',
+  mode: 'daily', venue: 'gocek', yacht: 'club40', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any',
   autoTrim: 0, sound: 1, guides: 1, gfx: 'auto', camera: 'drone', vibration: 1, voice: 1, music: 'racing', musicVol: 'normal', sea: 'normal', fleetV: 3, optsV: 4, musicV: 1,
 };
 

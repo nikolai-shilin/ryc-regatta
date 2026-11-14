@@ -17,8 +17,10 @@ export type SceneSetup = {
   view: 'boats' | 'wind' | 'current' | 'course';
   labels: Record<string, string>;
 };
-export function GameScene({ venue, wind, title, finish, setup }: { venue: VenueId; wind: Wind; title: string; finish?: object; setup?: SceneSetup }) {
-  const [frames, setFrames] = useState<{ id: number; venue: VenueId; wind: Wind; live: boolean }[]>(() => [{ id: 0, venue, wind, live: false }]);
+// `boat`: the class of yacht the scene shows (public/game/classes.js), the club's 40-footer without one; another is a
+// new page too, as another venue is
+export function GameScene({ venue, boat = '', wind, title, finish, setup }: { venue: VenueId; boat?: string; wind: Wind; title: string; finish?: object; setup?: SceneSetup }) {
+  const [frames, setFrames] = useState<{ id: number; venue: VenueId; boat: string; wind: Wind; live: boolean }[]>(() => [{ id: 0, venue, boat, wind, live: false }]);
   const refs = useRef(new Map<number, HTMLIFrameElement>());
   const windNow = useRef(wind); windNow.current = wind;
   const fin = useRef(finish); fin.current = finish;
@@ -38,11 +40,11 @@ export function GameScene({ venue, wind, title, finish, setup }: { venue: VenueI
   useEffect(() => {
     setFrames((fs) => {
       const top = fs[fs.length - 1];
-      if (top.venue === venue) return fs;
-      const next = { id: top.id + 1, venue, wind: windNow.current, live: false };
+      if (top.venue === venue && top.boat === boat) return fs;
+      const next = { id: top.id + 1, venue, boat, wind: windNow.current, live: false };
       return top.live ? [...fs.filter((f) => f.live), next] : [...fs.filter((f) => f !== top), next];
     });
-  }, [venue]);
+  }, [venue, boat]);
   useEffect(() => { if (!su.current) post({ type: 'wind', preset: wind }); }, [wind]); // eslint-disable-line react-hooks/exhaustive-deps
   const setupKey = setup ? JSON.stringify(setup) : '';
   useEffect(() => { if (su.current) post({ type: 'setup', ...su.current }); }, [setupKey]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -67,6 +69,6 @@ export function GameScene({ venue, wind, title, finish, setup }: { venue: VenueI
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return <>{frames.map((f) => (
     <iframe key={f.id} ref={(el) => { if (el) refs.current.set(f.id, el); else refs.current.delete(f.id); }} className={`bt-scene bt-fade ${f.live ? 'on' : ''}`}
-      src={`/boat-view?venue=${f.venue}&wind=${f.wind}${finish ? '&finish=1' : setup ? '&setup=1' : ''}`} title={title} onLoad={() => post({ type: 'hello' }, f.id)} />
+      src={`/boat-view?venue=${f.venue}&wind=${f.wind}${finish ? '&finish=1' : setup ? '&setup=1' : ''}${f.boat && f.boat !== 'club40' ? `&boat=${f.boat}` : ''}`} title={title} onLoad={() => post({ type: 'hello' }, f.id)} />
   ))}</>;
 }

@@ -33,7 +33,7 @@ function section(t, s) {
 }
 
 // hull paint: gloss gelcoat with a boot-top, antifouling below it and a cove stripe under the sheer, drawn crisp in the shader
-function hullMaterial(hull, stripe) {
+export function hullMaterial(hull, stripe) {
   const m = new THREE.MeshStandardMaterial({ color: hull, roughness: 0.22, metalness: 0, envMapIntensity: 0.9, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uStripe = { value: new THREE.Color(stripe) }; sh.uniforms.uBottom = { value: new THREE.Color('#5b1f24') };
@@ -191,7 +191,7 @@ function deckMaterial() {
 const carbon = () => new THREE.MeshPhysicalMaterial({ color: '#2d3238', roughness: 0.42, metalness: 0.25, clearcoat: 1, clearcoatRoughness: 0.12, envMapIntensity: 1 });
 
 // ---------- materials ----------
-const M = {
+export const M = {
   deck: deckMaterial(),
   gel: new THREE.MeshStandardMaterial({ color: '#f2f1ec', roughness: 0.3, envMapIntensity: 0.8 }),
   teak: new THREE.MeshStandardMaterial({ map: TEAK, roughness: 0.7 }),
@@ -204,22 +204,22 @@ const M = {
   well: [0, 1, 2, 3, 4, 5].map((i) => new THREE.MeshStandardMaterial(i === 3 ? { map: TEAK, roughness: 0.75, side: THREE.BackSide } : { color: '#e4e1d8', roughness: 0.8, side: THREE.BackSide })),
 };
 const wireMat = new THREE.LineBasicMaterial({ color: 0x4d555e, transparent: true, opacity: 0.8 }); // grey and a touch see-through, so the thin lines don't crawl dark against the sky
-const line = (pts) => new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map((p) => new THREE.Vector3(...p))), wireMat);
-const tube = (pts, r, mat, closed = false) => new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)), closed), Math.max(8, pts.length * 6), r, 6, closed), mat);
-const cyl = (r0, r1, h, mat, seg = 10) => new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, seg), mat);
+export const line = (pts) => new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map((p) => new THREE.Vector3(...p))), wireMat);
+export const tube = (pts, r, mat, closed = false) => new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)), closed), Math.max(8, pts.length * 6), r, 6, closed), mat);
+export const cyl = (r0, r1, h, mat, seg = 10) => new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, seg), mat);
 
 // ---------- the logo ----------
 // the club's logo (the white RYC pennant on a red square, public/images/ryc-badge.svg) or the player's own picture
 // (a data: URL from the boat page), each drawn as it is
 const RYC_BADGE = '/images/ryc-badge.svg';
 const logoCache = {};
-function logoImage(logo) {
+export function logoImage(logo) {
   const src = typeof logo === 'string' ? logo : RYC_BADGE;
   if (!logoCache[src]) logoCache[src] = new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = src; }).catch(() => null);
   return logoCache[src];
 }
 // draws a picture as large as fits in a w × h box centred on (cx, cy), keeping its shape
-function drawContain(x, img, cx, cy, w, h) {
+export function drawContain(x, img, cx, cy, w, h) {
   const s = Math.min(w / (img.naturalWidth || img.width), h / (img.naturalHeight || img.height)), dw = (img.naturalWidth || img.width) * s, dh = (img.naturalHeight || img.height) * s;
   x.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
 }
@@ -267,7 +267,11 @@ function logoDecal(side, logo, z0 = -2.55, y0 = 0.64, W = 1.36, H = 0.52) {
 
 // ---------- sails ----------
 // a canvas texture for a sail; u runs luff → leech, v foot → head
-function sailTexture(kind, look) {
+// rig: another class's sails (boats3d.js) — the main's luff (span, m) and its chord up it, where the logo and the flag
+// go on it (m up the luff) and how wide, where the number goes (0 the foot … 1 the head), and the jib's head and clew
+// from its tack with the ad's box; this boat's own when left out
+export function sailTexture(kind, look, rig = null) {
+  const R = rig || RIG();
   const W = 512, H = kind === 'main' ? 1024 : kind === 'jib' ? 1536 : 512; // the jib tall enough for the ad on it to read
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d');
@@ -289,7 +293,7 @@ function sailTexture(kind, look) {
     };
     // the country flag, SAIL_MARK m wide and 3:2, m metres up the luff
     const flagAt = (onCloth, m) => logoImage(look.flag).then((img) => img && onCloth(m, () => {
-      const w = SAIL_MARK, h = w / 1.5;
+      const w = R.mark, h = w / 1.5;
       x.drawImage(img, -w / 2, -h / 2, w, h);
       x.strokeStyle = 'rgba(0,0,0,.22)'; x.lineWidth = 0.008; x.strokeRect(-w / 2, -h / 2, w, h); // an edge, for a white flag on white cloth
     }));
@@ -314,16 +318,16 @@ function sailTexture(kind, look) {
       x.fillStyle = look.batten;
       [[0.9, 1], [0.76, 1], [0.6, 0.45], [0.42, 0.4], [0.24, 0.35]].forEach(([v, len]) => x.fillRect(W * (1 - len), H * (1 - v) - 5, W * len, 10));
       // the sail number (and on our boat the RYC logo above it), squashed to come out the right shape on the sail
-      x.save(); x.translate(W * 0.47, H * 0.36); x.scale(1, 0.44);
+      x.save(); x.translate(W * 0.47, H * (1 - R.numAt)); x.scale(1, 0.44 * R.numK);
       x.fillStyle = look.ink; x.font = '900 128px Carlito, Lato, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
       if (look.logo) x.fillText(look.num, 0, 120);
       else { x.fillText(look.nat, 0, -82); x.fillText(look.num, 0, 70); }
       x.restore();
       // the logo and the country flag above it, the same width on the cloth (SAIL_MARK m), evenly spaced between the
       // number and the top batten
-      const onCloth = clothAt(MAIN_SPAN, mainChord, 0.47);
-      if (look.logo) logoImage(look.logo).then((img) => img && onCloth(9.8, () => drawContain(x, img, 0, 0, SAIL_MARK, SAIL_MARK))); // a wide logo fills the width, a square one is SAIL_MARK square
-      if (look.flag) flagAt(onCloth, 11.56);
+      const onCloth = clothAt(R.span, R.chord, 0.47);
+      if (look.logo) logoImage(look.logo).then((img) => img && onCloth(R.logoM, () => drawContain(x, img, 0, 0, R.mark, R.mark))); // a wide logo fills the width, a square one is SAIL_MARK square
+      if (look.flag) flagAt(onCloth, R.flagM);
     } else {
       x.fillStyle = look.batten; x.fillRect(W * 0.7, H * 0.35, W * 0.3, 16); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 16);
       // the ad, low on the jib under the battens, at most JIB_AD wide and JIB_AD_H tall. The cloth maps (u along the
@@ -336,11 +340,11 @@ function sailTexture(kind, look) {
       const tb = new THREE.CanvasTexture(cb);
       jibAd().then((img) => {
         if (!img) return;
-        const f0 = 0.25, u0 = 0.52, hd = HEAD.clone().sub(TACK);
-        const a = JIB_CLEW.z * (1 - f0), b = JIB_CLEW.y * (1 - f0), cc = hd.z - JIB_CLEW.z * u0, d = hd.y - JIB_CLEW.y * u0, det = a * d - b * cc;
+        const f0 = 0.25, u0 = 0.52, hd = R.hd, CL = R.clew;
+        const a = CL.z * (1 - f0), b = CL.y * (1 - f0), cc = hd.z - CL.z * u0, d = hd.y - CL.y * u0, det = a * d - b * cc;
         for (const [ctx, s] of [[x, 1], [cb.getContext('2d'), -1]]) {
           ctx.save(); ctx.translate(W * (s > 0 ? u0 : 1 - u0), H * (1 - f0)); ctx.transform((W * d) / det, (s * H * b) / det, (s * W * cc) / det, (H * a) / det, 0, 0);
-          drawContain(ctx, img, 0, 0, JIB_AD, JIB_AD_H);
+          drawContain(ctx, img, 0, 0, R.ad, R.adH);
           ctx.restore();
         }
         t.needsUpdate = true; tb.needsUpdate = true;
@@ -399,7 +403,7 @@ function translucent(m, amount) {
   return m;
 }
 // a sail: one grid geometry, drawn twice so the number reads the right way round from both sides
-function sailMesh(rows, cols, tex, shiny = false, kind = 'main') {
+export function sailMesh(rows, cols, tex, shiny = false, kind = 'main') {
   const g = new THREE.BufferGeometry();
   const pos = new Float32Array((rows + 1) * (cols + 1) * 3), uv = [], idx = [];
   for (let i = 0; i <= rows; i++) for (let j = 0; j <= cols; j++) uv.push(j / cols, i / rows);
@@ -423,7 +427,7 @@ function sailMesh(rows, cols, tex, shiny = false, kind = 'main') {
   grp.userData = { rows, cols, g };
   return grp;
 }
-function setSail(m, fn) {
+export function setSail(m, fn) {
   const { rows, cols, g } = m.userData, a = g.attributes.position, v = new THREE.Vector3();
   for (let i = 0; i <= rows; i++) for (let j = 0; j <= cols; j++) { fn(i / rows, j / cols, v); a.setXYZ(i * (cols + 1) + j, v.x, v.y, v.z); }
   a.needsUpdate = true; g.computeVertexNormals(); g.computeBoundingSphere();
@@ -495,6 +499,7 @@ export function playerLook() {
 // arms bent at the elbow with gloved hands, an inflatable lifejacket's collar and a cap with a peak. The boat turns
 // each one about y and mirrors those on the port side.
 const THIGH = 0.44, SHIN = 0.44;
+export { THIGH, SHIN };
 const SAILOR = (() => {
   const thigh = new THREE.CapsuleGeometry(0.075, THIGH - 0.1, 3, 8).translate(0, -THIGH / 2, 0);
   const shin = mergeGeometries([
@@ -554,6 +559,8 @@ const HEAD = new THREE.Vector3(0, HOUNDS - 0.3, MAST_Z - 0.12);
 // the jib's clew from the tack (the foot), and the box the ad on the jib fits in, in metres
 const JIB_CLEW = new THREE.Vector3(0, 0.42, 3.75), JIB_AD = 2, JIB_AD_H = 1;
 const SPRIT = new THREE.Vector3(0, sheerAt(1) + 0.12, BOW_Z - 1.4);
+// this boat's sails, as sailTexture lays out the marks on them (numAt, numK: the number's height up the main and its size)
+const RIG = () => ({ span: MAIN_SPAN, chord: mainChord, logoM: 9.8, flagM: 11.56, mark: SAIL_MARK, numAt: 0.64, numK: 1, hd: HEAD.clone().sub(TACK), clew: JIB_CLEW, ad: JIB_AD, adH: JIB_AD_H });
 
 export class BoatView {
   constructor({ look = LOOKS.player, label = null, player = false }) {

@@ -27,10 +27,12 @@
 </style>
 <!-- the venue, before the game's modules read it from the address, and its land fetched at once -->
 <script>(function () {
-  var q = new URLSearchParams(location.search), v = q.get('venue') || 'garda', w = q.get('wind') || 'light', fin = q.get('finish') === '1' ? '&finish=1' : q.get('setup') === '1' ? '&setup=1' : '';
+  // ?boat=j70|rs21|ac75: that class of yacht (public/game/classes.js), the whole fleet in it; the club's 40-footer without it
+  var q = new URLSearchParams(location.search), v = q.get('venue') || 'garda', w = q.get('wind') || 'light', fin = q.get('finish') === '1' ? '&finish=1' : q.get('setup') === '1' ? '&setup=1' : '', y = q.get('boat') || '';
   if (!/^[a-z-]+$/.test(v)) v = 'garda';
   if (!/^[a-z]+$/.test(w)) w = 'light';
-  history.replaceState(null, '', location.pathname + '?venue=' + v + '&wind=' + w + '&sky=clear' + fin);
+  if (!/^[a-z0-9]+$/.test(y)) y = '';
+  history.replaceState(null, '', location.pathname + '?venue=' + v + '&wind=' + w + '&sky=clear' + fin + (y ? '&boat=' + y : ''));
   var f = v === 'gocek' ? ['/game/skopea.bin', '/game/skopea.json'] : ['/game/venues/' + v + '.bin', '/game/venues/' + v + '.json'];
   f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
 <script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
@@ -42,7 +44,9 @@ import * as THREE from 'three';
 import { World } from '/game/world.js';
 import { Race, beatAngle, legAim, SHAPES } from '/game/sim.js';
 import { placeCourse } from '/game/land.js';
-import { BoatView, lookFrom } from '/game/yacht.js';
+import { lookFrom } from '/game/yacht.js';
+import { makeBoatView } from '/game/boats3d.js';
+import { CLS } from '/game/classes.js';
 import { HOURS, skyAt, dayHour } from '/game/light.js';
 import { OVERLAY } from '/game/post.js';
 
@@ -57,8 +61,12 @@ const SETUP = !FINISH && new URLSearchParams(location.search).get('setup') === '
 const D2R = Math.PI / 180;
 
 // her two points of sail: close-hauled on starboard, and broad reaching under the gennaker
-const UP = { twa: 0.72, awa: 0.42, heel: 14, rudder: 0, sail: 16, luff: 0, trim: 'ok', kite: false, kiteFill: 0, v: 3.1 };
-const DOWN = { twa: 2.45, awa: 1.95, heel: 6, rudder: 0, sail: 68, luff: 0, trim: 'ok', kite: true, kiteFill: 1, v: 3.6 };
+let UP = { twa: 0.72, awa: 0.42, heel: 14, rudder: 0, sail: 16, luff: 0, trim: 'ok', kite: false, kiteFill: 0, v: 3.1 };
+let DOWN = { twa: 2.45, awa: 1.95, heel: 6, rudder: 0, sail: 68, luff: 0, trim: 'ok', kite: true, kiteFill: 1, v: 3.6 };
+// a foiler flies, the apparent wind far ahead of her on every point of sail: the sails sheeted in, no kite
+if (CLS.foil) { UP = { ...UP, awa: 0.24, sail: 7, v: 16, ride: 1 }; DOWN = { ...DOWN, awa: 0.52, sail: 17, kite: false, kiteFill: 0, v: 19, ride: 1 }; }
+// how tall she stands against the club's boat, so the drone frames her
+const SIZE = { j70: 0.62, rs21: 0.6, ac75: 1.55 }[CLS.id] || 1;
 let pose = UP, pending = null, inset = { l: 0, r: 0, t: 0, b: 0 };
 
 let world;
@@ -80,7 +88,7 @@ if (world) {
     P = race.player; W = race.wind.dir(); X = P.x; Z = P.z; heel = HEEL[preset];
   };
   if (!FINISH && !SETUP) sail(new URLSearchParams(location.search).get('wind'));
-  world.resetView(); world.droneEl = 7; world.droneAim = 6.5; world.orbit = 2.3; // low over the water, the hills behind her
+  world.resetView(); world.droneEl = 7; world.droneAim = 6.5 * SIZE + (CLS.foil ? 1.7 : 0); world.orbit = 2.3; // low over the water, the hills behind her
 
   // the finish as it was: the race laid again as it lay (its course, where it was at the venue), every boat posed where
   // she was the moment you crossed the line, and the drone downwind of you, a little off to one side, high enough to
@@ -405,7 +413,7 @@ if (world) {
     world.camera.updateProjectionMatrix();
     // and far enough back that she fits it, masthead to waterline (the drone stands 1.75 times further off in a tall frame)
     const clear = Math.max(0.2, 1 - inset.t - inset.b);
-    world.dist = FINISH ? Math.min(100, reach / Math.sqrt(clear) / (w < h ? 1.5 : 1)) : Math.min(90, Math.max(16, 19.5 / clear / (w < h ? 1.75 : 1)));
+    world.dist = FINISH ? Math.min(100 * SIZE, reach / Math.sqrt(clear) / (w < h ? 1.5 : 1)) : Math.min(90 * SIZE, Math.max(16 * SIZE, 19.5 * SIZE / clear / (w < h ? 1.75 : 1)));
   };
   size(); addEventListener('resize', size);
 
@@ -492,7 +500,7 @@ function shoot(items, w = 320, h = 240) {
   const DOWN_SHOT = { x: 0, z: 0, h: 0, twa: 2.55, awa: 2.1, heel: 5, rudder: 0, sail: 68, luff: 0, trim: 'ok', kite: true, kiteFill: 1 };
   const out = {};
   for (const { id, boat: b } of items) {
-    const v = new BoatView({ look: lookFrom(b) });
+    const v = makeBoatView({ look: lookFrom(b) });
     scene.add(v.root);
     for (let i = 0; i < 40; i++) v.update(DOWN_SHOT, i * 0.1, [], false, { cam: cam.position, sun: SUN }); // let the crew settle on the rail
     r.render(scene, cam);

@@ -5,6 +5,8 @@
 
 import { placeCourse, roomAt, VENUE, SKOPEA } from './land.js';
 import { dailyVenue, shapeOffered } from './venues.js';
+import { CLS } from './classes.js';
+export { CLS };
 
 export const KN = 0.514444; // m/s per knot
 export const D2R = Math.PI / 180;
@@ -52,7 +54,9 @@ export function waveSlope(W, x, z, t, ux, uz, n = W.length) {
 // targets), and 165° / 180° as a share of the 150° speed — lower in light air, where running deep is slow.
 // Downwind figures are with the spinnaker; without it the boat is slower off the wind.
 export const NO_GO = 28;
-export const HULL = 12.2; // length overall, metres
+// the class this page races (classes.js): the club's 40-footer sails to the table below; the J/70 and the AC75 to
+// their own (classes.js), and with their own size, momentum and heel
+export const HULL = CLS.loa; // length overall, metres
 const GROUND = HULL / 2 + 2; // how near the shore her middle can come: the bow just short of the rocks
 const P_TWS = [4, 6, 8, 10, 12, 14, 16, 20, 24];
 const P_BEAT = [46, 44, 42, 40.5, 39.5, 39, 38.5, 38.5, 39];
@@ -78,20 +82,31 @@ function rowSpeed(i, a) {
   const pts = [[P_BEAT[i], P_BEATV[i]], ...P_TWA.map((x, j) => [x, P_V[i][j]])];
   return table(pts, a);
 }
+// another class's own table (classes.js): the same shape, close-hauled angle and speed, then a speed per angle
+const OWN = CLS.v ? { tws: CLS.tws, beat: CLS.beat, beatV: CLS.beatV, twa: CLS.twa, v: CLS.v } : null;
+function ownRow(i, a) {
+  const o = OWN;
+  if (a <= NO_GO) return 0;
+  if (a < o.beat[i]) return o.beatV[i] * ((a - NO_GO) / (o.beat[i] - NO_GO)) ** 1.6;
+  return table([[o.beat[i], o.beatV[i]], ...o.twa.filter((x) => x > o.beat[i]).map((x) => [x, o.v[i][o.twa.indexOf(x)]])], a);
+}
+const TWS_ = OWN ? OWN.tws : P_TWS, BEAT_ = OWN ? OWN.beat : P_BEAT, ROW = OWN ? ownRow : rowSpeed;
 // target speed in knots
 export function polarSpeed(tws, aDeg, kite = true) {
   const a = Math.abs(aDeg);
   let v;
-  if (tws <= P_TWS[0]) v = rowSpeed(0, a) * (tws / P_TWS[0]) ** 0.85;
+  if (tws <= TWS_[0]) v = ROW(0, a) * (tws / TWS_[0]) ** 0.85;
   else {
-    let i = 0; while (i < P_TWS.length - 2 && tws > P_TWS[i + 1]) i++;
-    const f = clamp((tws - P_TWS[i]) / (P_TWS[i + 1] - P_TWS[i]), 0, 1.2);
-    v = lerp(rowSpeed(i, a), rowSpeed(i + 1, a), f);
+    let i = 0; while (i < TWS_.length - 2 && tws > TWS_[i + 1]) i++;
+    const f = clamp((tws - TWS_[i]) / (TWS_[i + 1] - TWS_[i]), 0, 1.2);
+    v = lerp(ROW(i, a), ROW(i + 1, a), f);
   }
-  if (!kite) v *= lerp(1, 0.8, clamp((a - 100) / 50, 0, 1));
+  if (!kite && CLS.kite) v *= lerp(1, 0.8, clamp((a - 100) / 50, 0, 1)); // a class with no kite sails without one at full speed
   return v;
 }
-export const beatAngle = (tws) => table(P_TWS.map((x, i) => [x, P_BEAT[i]]), tws);
+export const beatAngle = (tws) => table(TWS_.map((x, i) => [x, BEAT_[i]]), tws);
+// a foiler off her foils: a heavy displacement boat, knots for each knot of true wind by the angle (classes.js)
+export const dispSpeed = (tws, aDeg) => (CLS.foil ? tws * table(CLS.foil.disp, Math.abs(aDeg)) : Infinity);
 // the true wind angle that makes the best way downwind
 export function runAngle(tws, kite = true) {
   let best = 150, bv = 0;
@@ -104,8 +119,8 @@ export function runAngle(tws, kite = true) {
 // near head to wind the rig and the flogging sails add their windage in the apparent wind aws (m/s). Luffed head to
 // wind at 6½ knots in 12 knots of breeze she is down to 2 knots after some 15 s and 2 boat lengths, and stops after
 // about 3 (further in light air, sooner in a blow).
-const COAST = 40, WINDAGE = 0.0007, HULL_V = 8 * KN; // m; per m of air; hull speed, about 8 knots on her 11 m waterline
-export const coast = (v, aws, aDeg, target = 0) => (v * v - target * target) / COAST + WINDAGE * aws * aws * clamp((NO_GO + 6 - aDeg) / 6, 0, 1);
+const COAST = CLS.coast, WINDAGE = 0.0007, HULL_V = CLS.hullV * KN; // m; per m of air; hull speed, about 8 knots on her 11 m waterline
+export const coast = (v, aws, aDeg, target = 0, k = COAST) => (v * v - target * target) / k + WINDAGE * aws * aws * clamp((NO_GO + 6 - aDeg) / 6, 0, 1);
 // how far she carries her way to windward, luffed head to wind from speed v (m/s) in tws knots, until she's down to
 // steerage way (about 2 knots)
 export function shootReach(v, tws) {
@@ -121,7 +136,9 @@ export const idealSail = (awa) => clamp(awa * 0.45 - 2, SHEET_IN, SHEET_OUT);
 export const sheetFor = (angle) => clamp((angle - SHEET_IN) / (SHEET_OUT - SHEET_IN), 0, 1);
 const HEEL_SIDE = [[0, 0.3], [18, 0.3], [22, 1], [50, 1], [100, 0.5], [180, 0.12]];
 // heel with the sails full; above about 24° a good crew eases (depowers) to keep her on her feet
-export const fullHeel = (aws, awa, kite) => 24 * (aws / 16) ** 1.4 * table(HEEL_SIDE, awa) + (kite ? 8 * (aws / 16) ** 1.4 : 0);
+// (another class: heelK as much, and a foiler's apparent wind, three times the true, counts as awsK times less)
+const HEEL_K = CLS.heelK, AWS_K = CLS.awsK;
+export const fullHeel = (aws, awa, kite) => { aws /= AWS_K; return HEEL_K * (24 * (aws / 16) ** 1.4 * table(HEEL_SIDE, awa) + (kite ? 8 * (aws / 16) ** 1.4 : 0)); };
 export const depowerFor = (full) => (full > 24 ? 28 * (1 - 24 / full) : 0);
 
 // ---------- wind ----------
@@ -248,7 +265,7 @@ export class Boat {
   // a headsail change, the J1 for the J3 or back: the crew drops one jib and hoists the other — half a minute with
   // little jib up, so slow meanwhile
   setJib(small) {
-    if (this.jibJob || small === this.smallJib) return false;
+    if (this.jibJob || small === this.smallJib || (small && !CLS.j3)) return false;
     this.jibJob = { small, t: 30, total: 30 };
     this.events.push('jibStart');
     return true;
@@ -256,7 +273,7 @@ export class Boat {
   // a reef in the main for a blow: tying it in takes the crew about 25 s, shaking it out about 15 s, and she sails
   // slower meanwhile. Reefed she heels far less but carries less sail — worth it from about 20 knots.
   setReef(on) {
-    if (this.reefJob || on === this.reef) return false;
+    if (this.reefJob || on === this.reef || (on && !CLS.reef)) return false;
     const t = on ? 25 : 15;
     this.reefJob = { on, t, total: t };
     this.events.push(on ? 'reefStart' : 'shakeStart');
@@ -267,6 +284,7 @@ export class Boat {
   setKite(up, type = this.kiteType) {
     if (!up && this.kiteJob && this.kiteJob.up) { this.kiteJob = null; return true; } // stop a hoist: it isn't up yet
     if (this.kiteJob || up === this.kite) return false;
+    if (up && !(type === 'zero' ? CLS.zero : CLS.kite)) return false; // the class hasn't the sail
     if (up) this.kiteType = type;
     // a code zero is furled and unfurled on its own line, quicker than a gennaker goes up and comes down
     const t = this.kiteType === 'zero' ? (up ? 9 : 5) : up ? 12 + this.tws * 0.25 : 7 + this.tws * 0.15;
@@ -423,6 +441,14 @@ export class Boat {
     // less sail with a reef: a big loss in light air, next to nothing in a blow; tying it in costs more while it's done
     target *= 1 - this.reefFill * clamp(0.16 - (w.tws - 12) * 0.018, 0.02, 0.16);
     if (this.reefJob) target *= 0.85;
+    // a foiler: on her foils from takeoff speed until she slows below landing speed; off them, a displacement boat
+    if (CLS.foil) {
+      const kn = this.v / KN;
+      if (!this.fly && kn >= CLS.foil.takeoff) { this.fly = true; this.events.push('takeoff'); }
+      else if (this.fly && kn < CLS.foil.land) { this.fly = false; this.events.push('splashdown'); }
+      if (!this.fly) target = Math.min(target, dispSpeed(w.tws, a) * eff * KN);
+      this.ride = lerp(this.ride || 0, this.fly ? clamp((kn - CLS.foil.land) / 10, 0.4, 1) : 0, 1 - Math.exp(-dt / 0.8));
+    }
     // backing the main: head near the wind with the sheet let right out, the crew pushes the boom out against the
     // wind and she stops, then gathers way astern — how a boat holds her place on the line before the start
     this.backing = !this.kite && !this.auto && !this.pen && a < 55 && this.sheet > 0.9 && this.v < 1.5;
@@ -435,9 +461,9 @@ export class Boat {
     // crew holds her on the line before the start, they flog and she slides sideways, and the way comes off in seconds.
     const letFly = a > bt && this.luff > 0.5;
     if (target > this.v || this.v < 0 || target < 0 || letFly || (this.v > HULL_V && this.v > target * 1.2)) {
-      const tau = target > this.v ? 6 : a < NO_GO ? 3 : this.v > target * 1.2 ? 2 : 4.5;
+      const tau = target > this.v ? CLS.tau : a < NO_GO ? 3 : this.v > target * 1.2 ? 2 : 4.5;
       this.v += (target - this.v) * (1 - Math.exp(-dt / tau));
-    } else this.v = Math.max(target, this.v - coast(this.v, this.aws * KN, a, target) * dt);
+    } else this.v = Math.max(target, this.v - coast(this.v, this.aws * KN, a, target, CLS.foil && !this.fly ? CLS.foil.dispCoast : COAST) * dt);
     this.v -= 9.81 * slope * 0.3 * dt;
     this.surf = 0;
     if (a > 110 && w.tws > 13 && slope < 0 && this.v > 3 && this.v < target * 1.4) { const s = -slope * 9.81 * 0.35 * dt; this.v += s; this.surf = s / dt; }
@@ -562,6 +588,14 @@ export function makeCourse(laps, beat, bias, fleet = 4, type = 'wl') {
     finishBoat: finish && { x: finish.b.x + fe.x * 5, z: finish.b.z + fe.z * 5 },
   };
 }
+// a course laid K times its size across the water (the line's length too), its directions as they were
+export function scaleCourse(c, K) {
+  const done = new Map(); // a point named twice (the windward mark is marks.mark too) stays one object
+  const S = (o) => { if (!o || typeof o.x !== 'number') return o; if (!done.has(o)) done.set(o, { ...o, x: o.x * K, z: o.z * K }); return done.get(o); };
+  return { ...c, wing: S(c.wing), pin: S(c.pin), committee: S(c.committee), len: c.len * K, windward: S(c.windward), gate: c.gate.map(S),
+    marks: Object.fromEntries(Object.entries(c.marks).map(([k, m]) => [k, S(m)])),
+    finish: c.finish && { a: S(c.finish.a), b: S(c.finish.b), through: c.finish.through }, finishBoat: S(c.finishBoat) };
+}
 const TRAP_REACH = 115 * D2R; // the trapezoid's reach from mark 1 to mark 2, off the wind
 // a mark's outside, rounded on the way from `from` to `to`: straight on from the leg in, turned away from the leg out
 function outside(from, m, to) {
@@ -611,7 +645,7 @@ export const ZONE = 3 * HULL; // the zone round a mark: three hull lengths
 const SEP = HULL * 0.78; // the computer skippers keep the centres this far apart, and then some
 // for contact a hull is a capsule: a spine along her centreline with a rounded edge half her beam out, so two boats
 // can sail a couple of metres apart side by side, and a bow can touch a mark
-const HALF_B = 1.85, SPINE = HULL / 2 - HALF_B;
+const HALF_B = CLS.beam / 2, SPINE = HULL / 2 - HALF_B;
 function hullGap(p, q) { // the closest approach of two spines: distance, and the direction from p's to q's
   const d1x = Math.sin(p.h) * SPINE * 2, d1z = -Math.cos(p.h) * SPINE * 2, d2x = Math.sin(q.h) * SPINE * 2, d2z = -Math.cos(q.h) * SPINE * 2;
   const p1x = p.x - d1x / 2, p1z = p.z - d1z / 2, p2x = q.x - d2x / 2, p2z = q.z - d2z / 2;
@@ -655,15 +689,23 @@ const SEQUENCES = {
 export class Race {
   constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl' } = {}) {
     this.rand = rng(seed + 7);
-    const beatLen = ({ light: 200, medium: 260, strong: 280 }[preset] || 260) * (COURSE_LEN[length] || 1);
+    // a class of her own sails a course of her own size: courseK as long, the line, gate and marks lineK as wide
+    const beatLen = ({ light: 200, medium: 260, strong: 280 }[preset] || 260) * (COURSE_LEN[length] || 1) * CLS.courseK, K = CLS.lineK;
     course = laidShape(course, length); // unknown, or not laid here: up and down
     const bias = (this.rand() - 0.5) * 2 * 8 * D2R;
     fleet = clamp(Math.round(fleet), 2, FLEET.length + 1);
-    this.course = makeCourse(laps, beatLen, bias, fleet, course);
+    this.course = K === 1 ? makeCourse(laps, beatLen, bias, fleet, course) : scaleCourse(makeCourse(laps, beatLen / K, bias, fleet, course), K);
     // the gusts cover the course out to the side too: a triangle's wing mark, a trapezoid's gate
     this.wind = new Wind(preset, seed, beatLen, course === 'tri' ? 0.85 * beatLen : course === 'trap' ? -Math.min(...this.course.gate.map((g) => g.x)) : 0);
     // laid in the venue's water, in the clear nearest the middle of its race area (land.js): the start is at this point
     this.at = placeCourse(this.course, beatAngle(this.wind.p.tws));
+    // a bigger class's course (classes.js) that has no room here in its shape: up and down, which needs the least
+    if (this.at?.spare && K > 1 && course !== 'wl') {
+      course = 'wl';
+      this.course = scaleCourse(makeCourse(laps, beatLen / K, bias, fleet, course), K);
+      this.wind = new Wind(preset, seed, beatLen, 0);
+      this.at = placeCourse(this.course, beatAngle(this.wind.p.tws));
+    }
     this.seq = SEQUENCES[start] || SEQUENCES[1];
     this.clock = this.seq[0].t - (start === 1 ? 4 : 8); // negative before the gun
     this.sigI = 0;
@@ -698,14 +740,15 @@ export class Race {
     const W = this.wind.dir(), beat = beatAngle(this.wind.p.tws);
     const half = this.course.len / 2;
     const near = start === 1 ? 0.55 : 1; // a one-minute start: the fleet begins closer to the line, so all can make it
-    this.player = new Boat({ name: 'You', x: 25, z: (fleet > 4 ? 78 : 95) * near, h: wrap(W - beat * D2R), v: 2, autoTrim });
+    const SK = CLS.startK; // a faster class starts further off the line
+    this.player = new Boat({ name: 'You', x: 25 * K, z: (fleet > 4 ? 78 : 95) * near * SK, h: wrap(W - beat * D2R), v: 2, autoTrim });
     const full = fullHeel(this.wind.p.tws * 1.4, 28, false);
     this.player.sheet = sheetFor(idealSail(28) + depowerFor(full));
     const fl = FLEET.slice(0, fleet - 1), n = fl.length;
     this.boats = [this.player];
     fl.forEach(([name, color], i) => {
       const f = n > 1 ? i / (n - 1) : 0.5; // spread them along below the line
-      const b = new Boat({ name, x: lerp(-half - 10, half - 10, f) + (i % 2 ? 8 : -8), z: (105 + (i % 3) * 18) * near, h: wrap(W + (i % 2 ? 90 : -90) * D2R), v: 2, autoTrim: true });
+      const b = new Boat({ name, x: lerp(-half - 10 * K, half - 10 * K, f) + (i % 2 ? 8 : -8) * K, z: (105 + (i % 3) * 18) * near * SK, h: wrap(W + (i % 2 ? 90 : -90) * D2R), v: 2, autoTrim: true });
       b.ai = { skill: 0.8 + this.rand() * 0.18, lineT: clamp(0.15 + f * 0.7 + (this.rand() - 0.5) * 0.08, 0.15, 0.85) /* clear of the ends, where the pin and the committee boat catch them */, lastTack: -999, go: false, mean: W, dirtyT: 0, hailT: -99, wp: 0, loiter: i % 2 ? 1 : -1 };
       b.ai.port = i % 4 === 3; // one boat in four comes in late on port, looking for a gap
       b.ai.dare = (((b.ai.lineT * 97.3) % 1) - 0.65) * 3.4; // seconds: how close to the gun she dares cut it (− bolder)
@@ -1195,15 +1238,16 @@ export class Race {
         // waiting: to and fro below the line; the port-tack boat waits off the pin end
         // (each round her own part of the line, so the fleet waits spread out; it bunches only on the run in)
         const own = { x: lerp(c.pin.x, c.committee.x, ai.lineT), z: lerp(c.pin.z, c.committee.z, ai.lineT) };
-        const home = ai.port ? { x: c.pin.x - 20, z: own.z + 40 } : { x: clamp(own.x + ai.loiter * 35, c.pin.x + 15, c.committee.x - 15), z: own.z + 55 };
+        // (a faster class waits further off, startK times: classes.js)
+        const SK = CLS.startK, home = ai.port ? { x: c.pin.x - 20 * SK, z: own.z + 40 * SK } : { x: clamp(own.x + ai.loiter * 35 * SK, c.pin.x + 15 * SK, c.committee.x - 15 * SK), z: own.z + 55 * SK };
         // a stream setting her up to the line: she waits further off by what it carries her in half a minute, and steers
         // for a point up-tide of where she means to be, so she isn't swept over the line before the gun
         const upN = Math.max(0, curN) * 30; home.x -= c.normal.x * upN; home.z -= c.normal.z * upN;
-        if (Math.hypot(home.x - b.x, home.z - b.z) < 15 && this.tackClear(b)) ai.loiter *= -1; // turn back only with room to
+        if (Math.hypot(home.x - b.x, home.z - b.z) < 15 * SK && this.tackClear(b)) ai.loiter *= -1; // turn back only with room to
         const eh = Math.min(60, Math.hypot(home.x - b.x, home.z - b.z) / Math.max(1.5, b.v));
         tx = home.x - cur.x * eh * ai.skill; tz = home.z - cur.z * eh * ai.skill;
       } else {
-        tx = pt.x + c.normal.x * 30; tz = pt.z + c.normal.z * 30;
+        tx = pt.x + c.normal.x * 30 * CLS.startK; tz = pt.z + c.normal.z * 30 * CLS.startK;
         // too early for the distance left: stop and hold her place (luffed, main out — she backs and stays put);
         // under U or the black flag, a few seconds more careful
         // (the sheet well out, the sails flapping: she slows nearly to a stop without going astern). She goes when the
@@ -1211,10 +1255,10 @@ export class Race {
         // black flag, a few more.
         // (with the stream behind her, a few seconds more: it carries her on whatever she does)
         const dl = -lineD(c, b), need = Math.max(0, dl) / sp + lag, margin = (this.prepFlag === 'P' ? 3 * (1 - ai.skill) + ai.dare : 2 + 3 * (1 - ai.skill) + Math.max(0, ai.dare)) + 4 * Math.max(0, curN);
-        if (this.clock < -1 && dl < 16 + margin * 2 && (-this.clock > need + margin || dl < 1.5 + margin)) {
+        if (this.clock < -1 && dl < (16 + margin * 2) * CLS.startK && (-this.clock > need + margin || dl < (1.5 + margin) * CLS.startK)) {
           // a stream setting her up to the line would carry her over before the gun while she waits: she bears away
           // and sails back down a little, then comes up to it again
-          if (curN > 0 && dl < curN * -this.clock + 3 + margin) { this.steerTo(b, W - 130 * D2R * sgn(b.twa)); b.autoTrim = true; return; }
+          if (curN > 0 && dl < curN * -this.clock + (3 + margin) * CLS.startK) { this.steerTo(b, W - 130 * D2R * sgn(b.twa)); b.autoTrim = true; return; }
           // with a boat close to windward she can't luff into it (rule 16): she only lets the sheet go and slows
           const ux = Math.sin(W), uz = -Math.cos(W);
           const crowded = this.boats.some((o) => o !== b && !o.done && Math.hypot(o.x - b.x, o.z - b.z) < 2 * HULL && (o.x - b.x) * ux + (o.z - b.z) * uz > 0);
