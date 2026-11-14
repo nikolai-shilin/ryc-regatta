@@ -280,7 +280,9 @@ export const VENUES = [
     // the Neva under the Peter and Paul Fortress's walls, in the westerly off the Gulf of Finland; today's race comes
     // here from its `from` day (dailyVenue)
     id: 'st-petersburg', name: ['St Petersburg', 'Санкт-Петербург'], lat: 59.9464, lon: 30.3187, wind: 245, tz: 3, from: '2026-11-20',
-    skip: ['tri:medium', 'tri:long'], // the river is too narrow for the triangle's wing mark
+    // the river is too narrow for the triangle's wing mark, and the long course's beat (the medium wind's, some 900 m
+    // and wide) has no reach of it between two of the bridges, too low for a mast
+    skip: ['tri:medium', 'tri:long', 'long'],
     look: {
       haze: 0.8,
       ground: { forest: ['#2b4126', '#3a5530', '#4f6c3a'], scrub: '#6c7d4c', rock: ['#a0968d', '#857c74'], town: '#9a948b', shore: '#9d948b', grass: '#5f7d45' },
@@ -298,8 +300,11 @@ export const VENUES = [
 
 export const venueById = (id) => VENUES.find((v) => v.id === id) || VENUES[0];
 // whether a course shape is laid at the venue at that length: its `skip` lists the '<shape>:<length>' that don't fit
-// its water (never a short course, where today's race goes); lib/venues.ts has the same lists
+// its water, and a length none fits (never a short course, where today's race goes); lib/venues.ts has the same lists
 export const shapeOffered = (v, shape, length) => !(v.skip || []).includes(`${shape}:${length}`);
+export const lengthOffered = (v, length) => !(v.skip || []).includes(length);
+// the length a race asked for is sailed at: that, or the longest the venue has shorter
+export const laidLength = (v, length) => ['long', 'medium', 'short'].slice(['long', 'medium', 'short'].indexOf(length)).find((l) => lengthOffered(v, l)) || 'short';
 
 // Today's race: a venue a day, from the date (UTC), the same for everyone. The days go round all of them in a shuffled
 // order, a new one every len days, so each venue comes once in that time and none two days running. lib/race.ts has

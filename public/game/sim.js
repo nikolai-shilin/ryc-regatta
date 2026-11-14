@@ -4,7 +4,7 @@
 // the starboard side (starboard tack). AWA is the same for the apparent wind, the wind the sails feel.
 
 import { placeCourse, roomAt, VENUE } from './land.js';
-import { dailyVenue, shapeOffered } from './venues.js';
+import { dailyVenue, shapeOffered, laidLength } from './venues.js';
 
 export const KN = 0.514444; // m/s per knot
 export const D2R = Math.PI / 180;
@@ -655,6 +655,7 @@ const SEQUENCES = {
 export class Race {
   constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl' } = {}) {
     this.rand = rng(seed + 7);
+    length = laidLength(VENUE, length); // one the venue hasn't room for: the longest it has
     const beatLen = ({ light: 200, medium: 260, strong: 280 }[preset] || 260) * (COURSE_LEN[length] || 1);
     course = laidShape(course, length); // unknown, or not laid here: up and down
     const bias = (this.rand() - 0.5) * 2 * 8 * D2R;

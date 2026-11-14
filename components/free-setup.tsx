@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { DAYTIMES, readOpts, readPb, saveOpts, type Daytime } from '@/lib/opts';
 import type { VenueId } from '@/lib/venues';
-import { shapeOffered, venueOf, VENUES } from '@/lib/venues';
+import { lengthOffered, shapeOffered, venueOf, VENUES } from '@/lib/venues';
 import { courseDistance, dailyRace, fmtDistance, pbKey, plannedCourse, savedShape, KN, SHAPE_NAME, SHAPES, type Length, type Shape, type Wind } from '@/lib/race';
 import { CourseMap } from './course-map';
 import { GameScene, type SceneSetup } from './game-scene';
@@ -53,6 +53,8 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
   // the shapes this venue has room for at this length; one it hasn't goes back to up and down (the drone stays put)
   const shapes = SHAPES.filter((s) => shapeOffered(p.venue, s, p.length));
   useEffect(() => { if (!shapeOffered(p.venue, p.course, p.length)) setP((x) => ({ ...x, course: 'wl' })); }, [p.venue, p.course, p.length]);
+  // and the lengths it has room for: one it hasn't goes down to the longest it has
+  useEffect(() => { if (!lengthOffered(p.venue, p.length)) setP((x) => ({ ...x, length: lengthOffered(x.venue, 'medium') ? 'medium' : 'short' })); }, [p.venue, p.length]);
   const go = () => { saveOpts({ ...p, mode: 'free', lastFree: Date.now() }); location.href = '/play?race=free'; };
 
   // one choice as the pause menu's quick switches: a label, then pills with a light that's on
@@ -162,7 +164,7 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
           {tags('fleet', <IconBoats />, t('Boats', 'Лодки'), [[3, t('3 boats', '3 лодки')], [5, t('5 boats', '5 лодок')], [7, t('7 boats', '7 лодок')]])}
           {tags('course', <IconRoute />, t('Shape', 'Форма'), shapes.map((s) => [s, t(...SHAPE_NAME[s])] as [Shape, string]),
             SHAPE_HINT[p.course] && <p className="bt-hint">{t(...SHAPE_HINT[p.course]!)}</p>)}
-          {tags('length', <IconRoute />, t('Course', 'Дистанция'), [['short', t('Short', 'Короткая')], ['medium', t('Medium', 'Средняя')], ['long', t('Long', 'Длинная')]])}
+          {tags('length', <IconRoute />, t('Course', 'Дистанция'), ([['short', t('Short', 'Короткая')], ['medium', t('Medium', 'Средняя')], ['long', t('Long', 'Длинная')]] as [Length, string][]).filter(([l]) => lengthOffered(p.venue, l)))}
           {tags('laps', <IconLaps />, t('Laps', 'Круги'), [[1, t('1 lap', '1 круг')], [2, t('2 laps', '2 круга')]])}
           {tags('start', <IconFlag />, t('Start', 'Старт'), [[1, t('1 min', '1 мин')], [3, t('3 min', '3 мин')], [5, t('5 min', '5 мин')]])}
           {tags('current', <IconTide />, t('Current', 'Течение'), [[0, t('Off', 'Выкл')], [1, t('On', 'Вкл')]],

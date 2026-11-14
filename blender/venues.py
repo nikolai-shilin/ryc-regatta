@@ -104,7 +104,8 @@ VENUES = {
                                      dict(kind='drawbridge', a=(59.94649, 30.32951), b=(59.95103, 30.32544), deck=9, w=24, n=7, open=[1], leaves=1, color='#5a6863'),  # Trinity: raised by the left bank
                                      dict(kind='drawbridge', a=(59.94024, 30.30935), b=(59.94214, 30.30682), deck=7, w=28, n=5, open=[2], leaves=2, color='#56645f'),  # Palace
                                      dict(kind='drawbridge', a=(59.94522, 30.30317), b=(59.94735, 30.30362), deck=7, w=24, n=3, open=[1], leaves=2, color='#5d625f'),  # Exchange
-                                     dict(kind='drawbridge', a=(59.95012, 30.34896), b=(59.95358, 30.34979), deck=10, w=34, n=6, open=[1], leaves=1, color='#4f5a57')]),  # Liteyny
+                                     dict(kind='drawbridge', a=(59.95012, 30.34896), b=(59.95358, 30.34979), deck=10, w=34, n=6, open=[1], leaves=1, color='#4f5a57'),  # Liteyny
+                                     dict(kind='drawbridge', a=(59.93340, 30.29095), b=(59.93612, 30.28831), deck=9, w=37, n=8, open=[6], leaves=2, color='#4f5653')]),  # Blagoveshchensky: raised by Vasilievsky Island
 }
 
 # what is on the ground (the cover part), from OpenStreetMap's land use; 0 where the map has nothing, which the game

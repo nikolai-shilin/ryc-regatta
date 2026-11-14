@@ -155,6 +155,17 @@ test('an unknown course is up and down', () => {
   for (const course of ['trap', 'wlu', 'tri', 'wl']) assert.equal(new sim.Race({ course, seed: 3 }).course.type, course);
   assert.equal(new sim.Race({ course: 'zigzag', seed: 3 }).course.type, 'wl');
 });
+// a length the venue doesn't offer at all is sailed at the longest it has
+test('a skipped length is sailed at the longest the venue has', async () => {
+  const { VENUE, laidLength } = await import('../public/game/venues.js'), was = VENUE.skip;
+  VENUE.skip = ['long'];
+  try {
+    assert.equal(laidLength(VENUE, 'long'), 'medium');
+    assert.equal(laidLength(VENUE, 'medium'), 'medium');
+    const a = new sim.Race({ preset: 'medium', length: 'long', seed: 3 }), b = new sim.Race({ preset: 'medium', length: 'medium', seed: 3 });
+    assert.equal(a.course.windward.z, b.course.windward.z);
+  } finally { VENUE.skip = was; }
+});
 // a shape the venue doesn't offer at that length (its `skip` list) is sailed as up and down; at other lengths it isn't
 test('a skipped shape falls back to up and down', async () => {
   const { VENUE } = await import('../public/game/venues.js'), was = VENUE.skip;
@@ -304,8 +315,9 @@ test('the set-up page’s skip lists are the game’s', async () => {
 });
 // today's race goes to every venue on the short course, in any shape: none may be skipped there
 test('no venue skips a shape on the short course', async () => {
-  const { VENUES, shapeOffered } = await import('../public/game/venues.js');
+  const { VENUES, shapeOffered, lengthOffered } = await import('../public/game/venues.js');
   for (const v of VENUES) for (const shape of sim.SHAPES) assert.ok(shapeOffered(v, shape, 'short'), `${v.id}: ${shape}`);
+  for (const v of VENUES) assert.ok(lengthOffered(v, 'short'), `${v.id}: the short course`);
 });
 
 const { execFileSync } = await import('node:child_process');
@@ -318,22 +330,30 @@ for (const v of VENUES) {
       globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))));
       const sim = await import(${JSON.stringify(new URL('../public/game/sim.js', import.meta.url).href)});
       const { SKOPEA, MESH } = await import(${JSON.stringify(new URL('../public/game/land.js', import.meta.url).href)});
-      const { VENUE, shapeOffered } = await import(${JSON.stringify(new URL('../public/game/venues.js', import.meta.url).href)});
-      let worst = Infinity, where = '';
+      const { VENUE, shapeOffered, lengthOffered } = await import(${JSON.stringify(new URL('../public/game/venues.js', import.meta.url).href)});
+      let worst = Infinity, where = '', under = '';
+      // the bridges too low for a mast: no two of a course's marks on either side of one
+      const low = (SKOPEA.meta.landmarks || []).filter((l) => l.a && l.b && (l.deck ?? Infinity) < 25);
+      const side = (p, q, w) => Math.sign((q[0] - p[0]) * (w[1] - p[1]) - (q[1] - p[1]) * (w[0] - p[0]));
+      const across = (p, q, a, b) => side(p, q, a) * side(p, q, b) < 0 && side(a, b, p) * side(a, b, q) < 0;
       for (const preset of ['light', 'medium', 'strong']) for (const length of ['short', 'medium', 'long']) for (const course of sim.SHAPES) {
-        if (!shapeOffered(VENUE, course, length)) continue;
+        if (!shapeOffered(VENUE, course, length) || !lengthOffered(VENUE, length)) continue;
         const r = new sim.Race({ preset, length, course, fleet: 7, laps: 1, seed: 1 }), c = r.course;
         const f = c.finish ? [c.finish.a, c.finish.b, c.finishBoat] : [];
-        for (const m of [...Object.values(c.marks), ...c.gate, c.pin, c.committee, ...f]) {
+        const ms = [...Object.values(c.marks), ...c.gate, c.pin, c.committee, ...f];
+        for (const m of ms) {
           const room = r.roomAt(m.x, m.z);
           if (room < worst) { worst = room; where = course + ' ' + preset + ' ' + length; }
         }
+        const xz = ms.map((m) => [m.x + r.at.x, m.z + r.at.z]);
+        for (const l of low) for (const p of xz) for (const q of xz) if (across(p, q, l.a, l.b)) under = course + ' ' + preset + ' ' + length;
       }
-      console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, corners: MESH.corners, heights: SKOPEA.parts.heights.length }));`;
+      console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, under, corners: MESH.corners, heights: SKOPEA.parts.heights.length }));`;
     const out = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' }));
     assert.deepEqual(out.origin, [v.lat, v.lon], 'baked at the venue’s position');
     assert.equal(out.turn, v.wind, 'turned to the venue’s wind'); // Göcek's own bake isn't turned: its wind is north
     assert.ok(out.worst >= 60, `a mark only ${Math.round(out.worst)} m from the shore (${out.where})`);
+    assert.equal(out.under, '', 'a course across a bridge too low for a mast');
     assert.equal(out.corners, out.heights, 'the terrain the game builds from the quadtree has a height for each of its corners');
   });
 }

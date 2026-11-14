@@ -3,7 +3,7 @@ import { Race, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE,
 import { World, defaultQuality, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
 import { raceStarted, raceFinished, raceResult } from './stats.js';
 import { createHudNext } from './hud-next.js';
-import { VENUE, venueById } from './venues.js';
+import { VENUE, venueById, laidLength, lengthOffered } from './venues.js';
 
 const $ = (s) => document.querySelector(s);
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
@@ -219,7 +219,7 @@ if (opts.optsV !== 4) { opts.length = 'short'; opts.mode = 'daily'; opts.optsV =
 const saveOpts = () => { try { localStorage.setItem('regatta', JSON.stringify(opts)); } catch (e) {} };
 // the race's settings: the menu's, or in today's race the day's own (the same for everyone)
 const DAILY_KEYS = ['preset', 'fleet', 'length', 'laps', 'start', 'current', 'course'];
-const settings = () => { if (opts.mode !== 'daily') return { ...opts, daily: null }; const d = dailyRace(); return { ...opts, ...d, daily: d.day }; };
+const settings = () => { if (opts.mode !== 'daily') return { ...opts, length: laidLength(VENUE, opts.length), daily: null }; // (a length the venue hasn't: the longest it has) const d = dailyRace(); return { ...opts, ...d, daily: d.day }; };
 const windName = (p) => t(p);
 const SHAPE_KEY = { wl: 'shapeWl', tri: 'shapeTri', trap: 'shapeTrap', wlu: 'shapeWlu' };
 const paintOpts = () => {
@@ -227,6 +227,7 @@ const paintOpts = () => {
   document.querySelectorAll('.choice[data-opt]').forEach((g) => {
     g.classList.toggle('locked', opts.mode === 'daily' && DAILY_KEYS.includes(g.dataset.opt));
     g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(s[g.dataset.opt]) === b.dataset.v));
+    if (g.dataset.opt === 'length') g.querySelectorAll('button').forEach((b) => { b.hidden = !lengthOffered(VENUE, b.dataset.v); });
   });
   const n = $('#dailyNote'); if (n) { n.hidden = opts.mode !== 'daily'; n.textContent = t('dailyNote', windName(s.preset), venueById(s.venue).name[LANG === 'ru' ? 1 : 0], t(SHAPE_KEY[laidShape(s.course, s.length)])); } // the shape the race is laid in (sim.js), not only the one asked for
 };

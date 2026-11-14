@@ -573,7 +573,7 @@ function pyramidRoof(r, y, H, col) {
 // a church: stone, a steep roof on its rectangle and a bell tower with its spire at one end; a mosque: pale stone,
 // a dome on a drum and a minaret at a corner
 function worship(b, g, yb, h, area, mosque, seed) {
-  const R = rect(b.r), out = [], stone = mosque ? '#e6dfcf' : '#d3c8b2', roof = mosque ? '#8a9298' : '#6e5a4e';
+  const R = rect(b.r), out = [], stone = b.wc || (mosque ? '#e6dfcf' : '#d3c8b2'), roof = b.rc || (mosque ? '#8a9298' : '#6e5a4e'); // (the map's, where it has them)
   out.push(kinded(paint(g, stone, stone), 2 + seed));
   if (!R) return out;
   const top = yb + h;

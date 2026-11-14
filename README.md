@@ -114,9 +114,11 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   `skopea.js` draws: the Harbour Bridge, the Newport Bridge, the Golden Gate, the Sky Tower, Laboe's memorial, the
   Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la Garde, Christ the Redeemer, Enoshima's Sea
   Candle, the lighthouses of Kiel and Trieste, and Istanbul's Bosphorus Bridge, Galata Tower, Blue Mosque, Hagia
-  Sophia and Süleymaniye. `land.js` lays each course in clear water; `npm test` sails every
-  course shape at every venue and checks its marks are in clear water; a shape a venue has no room for at a length
-  goes in its `skip`, and the set-up offers only the shapes `shapeOffered()` (`lib/venues.ts`) allows there. Moving between today's race and a free race in the
+  Sophia and Süleymaniye. `land.js` lays each course in clear water, and not across a bridge too low for a mast (St
+  Petersburg's drawbridges); `npm test` sails every course shape at every venue and checks its marks are in clear
+  water and on one side of every such bridge; a shape a venue has no room for at a length goes in its `skip`, as does
+  a length it has no room for at all (St Petersburg's long course: a long request is sailed at the longest it has), and
+  the set-up offers only the shapes and lengths `shapeOffered()` and `lengthOffered()` (`lib/venues.ts`) allow there. Moving between today's race and a free race in the
   game reloads the page when the venue changes. OpenStreetMap has few of Göcek's buildings, so its town also comes
   from Microsoft's Global ML Building Footprints (ODbL), which `venues.py` downloads with the rest.
 - **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes
