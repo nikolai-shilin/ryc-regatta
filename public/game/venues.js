@@ -5,6 +5,10 @@
 // the others' into venues/<id>.json/.bin), which keeps the same lat, lon and wind as here.
 // wind: the compass direction the venue's prevailing wind blows from. The baked land is turned so it comes from the
 // game's north, where every race's wind is. tz: the clock's hours ahead of UTC in the sailing season.
+// stream: the water's own run there, in a race with the current on (sim.js): ['tide', compass direction the flood
+// runs to, knots] runs one way or the other along that line, the flood or the ebb, and builds, eases and swings with
+// the tide; ['flow', direction, knots] always runs that way (a river, an ocean current), slower near the banks. None:
+// a sea without a real tide (the Med, the Baltic, a lake), where the current is the wind's own light surface drift.
 //
 // The set-up page's list of them, with what each is, is lib/venues.ts; npm test keeps the two in step.
 // look: how the land is drawn (skopea.js)
@@ -26,7 +30,7 @@ const MED = { walls: ['#f3eee4', '#efe6d2', '#f6f2ea', '#e9dcc0', '#f1e3c8', '#f
 
 export const VENUES = [
   {
-    id: 'gocek', name: ['Göcek', 'Гёчек'], lat: 36.7525, lon: 28.9395, wind: 0, tz: 3,
+    id: 'gocek', name: ['Göcek', 'Гёчек'], lat: 36.7525, lon: 28.9395, wind: 195, tz: 3,
     look: {
       haze: 1.1,
       ground: { forest: ['#2c4224', '#3c5530', '#566d3a'], scrub: '#7b7d55', rock: ['#9a917c', '#7b7465'], town: '#a19a84', shore: '#a39a86' },
@@ -36,7 +40,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'cowes', name: ['Cowes', 'Каус'], lat: 50.788, lon: -1.306, wind: 225, tz: 1,
+    id: 'cowes', name: ['Cowes', 'Каус'], lat: 50.788, lon: -1.306, wind: 225, tz: 1, stream: ['tide', 75, 1.1],
     look: {
       haze: 0.85,
       ground: { forest: ['#2f4a26', '#3e5d2e', '#557a3a'], scrub: '#6f8a4a', rock: ['#a59d86', '#8a8473'], town: '#9c8f80', shore: '#b9ab8a' },
@@ -48,7 +52,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'newport', name: ['Newport', 'Ньюпорт'], lat: 41.457, lon: -71.36, wind: 210, tz: -4,
+    id: 'newport', name: ['Newport', 'Ньюпорт'], lat: 41.457, lon: -71.36, wind: 210, tz: -4, stream: ['tide', 340, 0.8],
     look: {
       haze: 0.95,
       ground: { forest: ['#2b4526', '#3a5a2f', '#557539'], scrub: '#7a8a52', rock: ['#8e8a80', '#6f6c66'], town: '#9a968c', shore: '#a8a090' },
@@ -60,7 +64,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'sydney', name: ['Sydney', 'Сидней'], lat: -33.848, lon: 151.256, wind: 45, tz: 11,
+    id: 'sydney', name: ['Sydney', 'Сидней'], lat: -33.848, lon: 151.256, wind: 45, tz: 11, stream: ['tide', 225, 0.6],
     look: {
       haze: 1.15,
       ground: { forest: ['#3a4a2c', '#4d5c37', '#6b7547'], scrub: '#7f7f58', rock: ['#c9a878', '#a8865c'], town: '#a8988a', shore: '#d8c49a' },
@@ -117,7 +121,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'antigua', name: ['Antigua', 'Антигуа'], lat: 16.989, lon: -61.77, wind: 95, tz: -4,
+    id: 'antigua', name: ['Antigua', 'Антигуа'], lat: 16.989, lon: -61.77, wind: 95, tz: -4, stream: ['flow', 290, 0.5],
     look: {
       haze: 1.6,
       ground: { forest: ['#3c5a2a', '#4f7032', '#6a8a3e'], scrub: '#8a8a52', rock: ['#a8957a', '#86765f'], town: '#b9a88e', shore: '#eadcb8' },
@@ -128,7 +132,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'auckland', name: ['Auckland', 'Окленд'], lat: -36.83, lon: 174.815, wind: 225, tz: 13,
+    id: 'auckland', name: ['Auckland', 'Окленд'], lat: -36.83, lon: 174.815, wind: 225, tz: 13, stream: ['tide', 230, 1.0],
     look: {
       haze: 1.2,
       ground: { forest: ['#24401f', '#335229', '#4a6b34'], scrub: '#6b7a44', rock: ['#5d5a55', '#45433f'], town: '#9a948a', shore: '#b8a888' },
@@ -140,7 +144,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'san-francisco', name: ['San Francisco', 'Сан-Франциско'], lat: 37.815, lon: -122.435, wind: 255, tz: -7,
+    id: 'san-francisco', name: ['San Francisco', 'Сан-Франциско'], lat: 37.815, lon: -122.435, wind: 255, tz: -7, stream: ['tide', 85, 1.2],
     look: {
       haze: 0.8,
       ground: { forest: ['#33452a', '#465a33', '#617040'], scrub: '#9a9460', rock: ['#9a9284', '#7a7366'], town: '#b0a89a', shore: '#b8ad94' },
@@ -187,7 +191,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'marstrand', name: ['Marstrand', 'Марстранд'], lat: 57.885, lon: 11.555, wind: 225, tz: 2,
+    id: 'marstrand', name: ['Marstrand', 'Марстранд'], lat: 57.885, lon: 11.555, wind: 225, tz: 2, stream: ['flow', 15, 0.4],
     look: {
       haze: 1.15,
       ground: { forest: ['#2c4224', '#3b5530', '#566d3a'], scrub: '#7a7f56', rock: ['#a8988c', '#857870'], town: '#9c8a80', shore: '#a8988a' },
@@ -220,7 +224,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'weymouth', name: ['Weymouth', 'Уэймут'], lat: 50.605, lon: -2.41, wind: 225, tz: 1,
+    id: 'weymouth', name: ['Weymouth', 'Уэймут'], lat: 50.605, lon: -2.41, wind: 225, tz: 1, stream: ['tide', 60, 0.5],
     look: {
       haze: 0.9,
       ground: { forest: ['#2f4a26', '#3e5d2e', '#557a3a'], scrub: '#7a9050', rock: ['#d4ccb4', '#b4aa92'], town: '#a8988a', shore: '#cfc2a0' },
@@ -243,7 +247,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'rio', name: ['Rio de Janeiro', 'Рио-де-Жанейро'], lat: -22.93, lon: -43.158, wind: 150, tz: -3,
+    id: 'rio', name: ['Rio de Janeiro', 'Рио-де-Жанейро'], lat: -22.93, lon: -43.158, wind: 150, tz: -3, stream: ['tide', 35, 0.8],
     look: {
       haze: 0.9,
       ground: { forest: ['#1c3a1a', '#284d22', '#3c642c'], scrub: '#5f7a3c', rock: ['#8a8680', '#6a6660'], town: '#b4aca0', shore: '#e4d6b0' },
@@ -265,7 +269,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'istanbul', name: ['Istanbul', 'Стамбул'], lat: 40.982, lon: 28.992, wind: 35, tz: 3,
+    id: 'istanbul', name: ['Istanbul', 'Стамбул'], lat: 40.982, lon: 28.992, wind: 35, tz: 3, stream: ['flow', 185, 1.0],
     look: {
       haze: 0.8,
       ground: { forest: ['#2e4626', '#3f5a2e', '#5a733a'], scrub: '#7c7e54', rock: ['#b0a690', '#8f8674'], town: '#b2a692', shore: '#bfb39a' },
@@ -279,7 +283,7 @@ export const VENUES = [
   {
     // the Neva under the Peter and Paul Fortress's walls, in the westerly off the Gulf of Finland; today's race comes
     // here from its `from` day (dailyVenue)
-    id: 'st-petersburg', name: ['St Petersburg', 'Санкт-Петербург'], lat: 59.9464, lon: 30.3187, wind: 245, tz: 3, from: '2026-11-20',
+    id: 'st-petersburg', name: ['St Petersburg', 'Санкт-Петербург'], lat: 59.9464, lon: 30.3187, wind: 245, tz: 3, stream: ['flow', 235, 0.9], from: '2026-11-20',
     // the river is too narrow for the triangle's wing mark, and the long course's beat (the medium wind's, some 900 m
     // and wide) has no reach of it between two of the bridges, too low for a mast
     skip: ['tri:medium', 'tri:long', 'long'],

@@ -105,7 +105,7 @@ export default function FreeSetup({ lang, from, who }: { lang: Lang; from: 'toda
       t(`The streaks run with the breeze down the course. The gold ones are gusts, up to ${GUST[p.preset][0]} kn; the wind swings up to ${GUST[p.preset][1]}° either way.`,
         `Штрихи бегут с ветром вниз по дистанции. Золотые — порывы, до ${GUST[p.preset][0]} уз; ветер гуляет до ${GUST[p.preset][1]}° в каждую сторону.`)],
     current: p.current
-      ? [t('Current · 0.6 kn', 'Течение · 0,6 уз'), t('The tide sets every boat across the course, harder on one side, and builds and eases as you race.', 'Течение сносит все лодки поперёк дистанции, с одного края сильнее, и то крепчает, то слабеет по ходу гонки.')]
+      ? [t('Current · the venue’s own', 'Течение · местное'), t('The water runs as it does there: the tide along the channel, a river downstream, or, where the sea has no tide, the wind’s light drift. Harder in places, and it builds and eases as you race.', 'Вода идёт так, как там на самом деле: прилив вдоль пролива, река вниз по течению, а где прилива нет — лёгкий дрейф по ветру. Где-то сильнее, и то крепчает, то слабеет по ходу гонки.')]
       : [t('No current', 'Без течения'), t('The water stands still. Switch the current on to see the tide run over the course.', 'Вода стоит. Включи течение — и увидишь, как оно идёт по дистанции.')],
     course: [`${shapeName} · ${lapsName} · ${metres}`, {
       wl: `${t('From the start up to the windward mark and down to the gate', 'От старта вверх к верхнему знаку и вниз к воротам')}${p.laps > 1 ? t(', then round again; lap 1 in gold, lap 2 in blue.', ', потом ещё круг; первый круг золотой, второй синий.') : t(', then down to the finish.', ', потом вниз на финиш.')}`,
@@ -193,7 +193,7 @@ export default function FreeSetup({ lang, from, who }: { lang: Lang; from: 'toda
             {tags('laps', <IconLaps />, t('Laps', 'Круги'), [[1, t('1 lap', '1 круг')], [2, t('2 laps', '2 круга')]])}
             {tags('start', <IconFlag />, t('Start', 'Старт'), [[1, t('1 min', '1 мин')], [3, t('3 min', '3 мин')], [5, t('5 min', '5 мин')]])}
             {tags('current', <IconTide />, t('Current', 'Течение'), [[0, t('Off', 'Выкл')], [1, t('On', 'Вкл')]],
-              <p className="bt-hint">{t('On: a tide sets every boat across the course.', 'Вкл: течение сносит все лодки поперёк дистанции.')}</p>)}
+              <p className="bt-hint">{t('On: the venue’s tide, river or drift sets every boat.', 'Вкл: местный прилив, река или дрейф сносит все лодки.')}</p>)}
           </div>
           <div className="bt-g fs-course-in">
             <span className="bt-k"><IconRoute />{t('Your course', 'Твоя дистанция')}<span className="bt-k-r">{p.course !== 'wl' ? `${shapeName} · ` : ''}{courseName} · {lapsName} · {metres}</span></span>

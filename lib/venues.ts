@@ -9,7 +9,7 @@ export type VenueId = 'gocek' | 'cowes' | 'newport' | 'sydney' | 'kiel' | 'tries
 type Pair = [string, string]; // English, Russian
 
 export const VENUES: { id: VenueId; name: Pair; place: Pair; wind: Pair; skip?: string[]; from?: string; about: Pair }[] = [
-  { id: 'gocek', name: ['Göcek', 'Гёчек'], place: ['Turkey', 'Турция'], wind: ['N', 'С'],
+  { id: 'gocek', name: ['Göcek', 'Гёчек'], place: ['Turkey', 'Турция'], wind: ['SSW', 'ЮЮЗ'],
     about: ['Pine-clad hills and the gulets of Skopea Marina, where the game began.', 'Сосновые холмы и гулеты марины Скопеа, где игра началась.'] },
   { id: 'cowes', name: ['Cowes', 'Каус'], place: ['Isle of Wight, UK', 'Остров Уайт, Великобритания'], wind: ['SW', 'ЮЗ'],
     about: ['The Solent, home of Cowes Week since 1826, in the south-westerly.', 'Пролив Солент, где с 1826 года проходит Неделя Каус, под юго-западным ветром.'] },

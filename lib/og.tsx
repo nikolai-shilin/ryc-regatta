@@ -58,7 +58,7 @@ type Card = { kind: string; headline: string; detail: string; call: string; pane
 
 // The card: UP AND DOWN, the kind of race, the headline in Merriweather, the detail, the button and the address.
 export async function card({ kind, headline, detail, call, panel, windLabel }: Card) {
-  const text = `UP AND DOWN ${headline}${kind}${detail}${call}${windLabel || ''} → regatta.rycrentals.com`;
+  const text = `UP AND DOWN ${headline}${kind}${detail}${call}${windLabel || ''} → upandown.rycrentals.com`;
   const fonts = (await Promise.all([font('Merriweather', 300, text), font('Carlito', 700, text)])).filter((f) => f !== null);
   return new ImageResponse(
     (
@@ -74,7 +74,7 @@ export async function card({ kind, headline, detail, call, panel, windLabel }: C
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
             <div style={{ display: 'flex', background: ACCENT, borderRadius: 999, padding: '14px 30px', fontSize: 30 }}>{call} →</div>
-            <div style={{ display: 'flex', fontSize: 26, opacity: 0.8 }}>regatta.rycrentals.com</div>
+            <div style={{ display: 'flex', fontSize: 26, opacity: 0.8 }}>upandown.rycrentals.com</div>
           </div>
         </div>
         <div style={{ position: 'absolute', right: 64, top: 64, width: PANEL.w, height: PANEL.h, display: 'flex', background: SEA, borderRadius: 28, border: '2px solid rgba(143, 211, 255, 0.25)' }}>

@@ -3,7 +3,7 @@
 // The wind "from" W is a compass direction. A boat's true wind angle TWA = wrap(W − heading): positive = wind over
 // the starboard side (starboard tack). AWA is the same for the apparent wind, the wind the sails feel.
 
-import { placeCourse, roomAt, VENUE } from './land.js';
+import { placeCourse, roomAt, VENUE, SKOPEA } from './land.js';
 import { dailyVenue, shapeOffered, laidLength } from './venues.js';
 
 export const KN = 0.514444; // m/s per knot
@@ -663,7 +663,7 @@ export class Race {
     this.course = makeCourse(laps, beatLen, bias, fleet, course);
     // the gusts cover the course out to the side too: a triangle's wing mark, a trapezoid's gate
     this.wind = new Wind(preset, seed, beatLen, course === 'tri' ? 0.85 * beatLen : course === 'trap' ? -Math.min(...this.course.gate.map((g) => g.x)) : 0);
-    // laid in Göcek bay, in clear water off Skopea Marina (land.js): the start is at this point of the bay
+    // laid in the venue's water, in the clear nearest the middle of its race area (land.js): the start is at this point
     this.at = placeCourse(this.course, beatAngle(this.wind.p.tws));
     this.seq = SEQUENCES[start] || SEQUENCES[1];
     this.clock = this.seq[0].t - (start === 1 ? 4 : 8); // negative before the gun
@@ -677,8 +677,19 @@ export class Race {
     this.recalls = 0;
     this.t = 0; // time for the waves
     this.waves = makeWaves(this.wind.p.waves, this.wind.dir());
-    const ca = this.rand() < 0.5 ? 1 : -1;
-    this.current = current ? { x: ca * 0.6 * KN * Math.cos(0.3), z: 0.6 * KN * Math.sin(0.3) * (this.rand() < 0.5 ? 1 : -1) } : { x: 0, z: 0 };
+    // the current, when there is one, is the venue's own (venues.js stream): its tide along its line, the flood or the
+    // ebb; a river's or an ocean current's steady run; or, where the sea has no real tide, the wind's light surface
+    // drift, downwind and some 20° to the right of it (to the left south of the equator). Turned into the land's frame,
+    // where the venue's wind is north.
+    const ca = this.rand() < 0.5 ? 1 : -1, st = VENUE.stream;
+    this.stream = st ? st[0] : 'drift';
+    this.current = { x: 0, z: 0 };
+    if (current) {
+      const ebb = this.rand() < 0.5, kn = st ? st[2] : SKOPEA.meta.lake ? 0.15 : 0.3;
+      const to = st ? st[1] + (st[0] === 'tide' && ebb ? 180 : 0) : VENUE.wind + 180 + (VENUE.lat < 0 ? -20 : 20);
+      const g = (to - (SKOPEA.meta.turn ?? VENUE.wind)) * D2R;
+      this.current = { x: Math.sin(g) * kn * KN, z: -Math.cos(g) * kn * KN };
+    }
     this.curSide = -ca; // the side of the course where the stream runs strongest
     this.tidePh = ((seed % 997) / 997) * 2 * Math.PI; // where in its cycle the tide is at the start
     for (const p of this.waves) { // the chop follows the wind (see step): each train's own direction and starting height
@@ -780,6 +791,10 @@ export class Race {
   currentAt(x, z) {
     const c = this.current;
     if (!c.x && !c.z) return c;
+    if (this.stream === 'flow') { // a river or an ocean current runs steadily, a little uneven, slower near the banks
+      const k = clamp(this.roomAt(x, z) / 120, 0.35, 1) * (1 + 0.15 * Math.sin(z / 170 + 0.8) + 0.08 * Math.sin((this.t * 2 * Math.PI) / 900 + this.tidePh));
+      return { x: c.x * k, z: c.z * k };
+    }
     const f = clamp(1 + 0.6 * this.curSide * clamp(x / 220, -1, 1) + 0.2 * Math.sin(z / 170 + 0.8), 0.3, 1.8);
     // and the tide works through its cycle as you race: the stream builds and eases (±40% over some 25 minutes) and
     // swings round by up to 25°
@@ -1186,8 +1201,12 @@ export class Race {
         // (each round her own part of the line, so the fleet waits spread out; it bunches only on the run in)
         const own = { x: lerp(c.pin.x, c.committee.x, ai.lineT), z: lerp(c.pin.z, c.committee.z, ai.lineT) };
         const home = ai.port ? { x: c.pin.x - 20, z: own.z + 40 } : { x: clamp(own.x + ai.loiter * 35, c.pin.x + 15, c.committee.x - 15), z: own.z + 55 };
+        // a stream setting her up to the line: she waits further off by what it carries her in half a minute, and steers
+        // for a point up-tide of where she means to be, so she isn't swept over the line before the gun
+        const upN = Math.max(0, curN) * 30; home.x -= c.normal.x * upN; home.z -= c.normal.z * upN;
         if (Math.hypot(home.x - b.x, home.z - b.z) < 15 && this.tackClear(b)) ai.loiter *= -1; // turn back only with room to
-        tx = home.x; tz = home.z;
+        const eh = Math.min(60, Math.hypot(home.x - b.x, home.z - b.z) / Math.max(1.5, b.v));
+        tx = home.x - cur.x * eh * ai.skill; tz = home.z - cur.z * eh * ai.skill;
       } else {
         tx = pt.x + c.normal.x * 30; tz = pt.z + c.normal.z * 30;
         // too early for the distance left: stop and hold her place (luffed, main out — she backs and stays put);
@@ -1195,8 +1214,12 @@ export class Race {
         // (the sheet well out, the sails flapping: she slows nearly to a stop without going astern). She goes when the
         // time left is what she needs from here, plus a second or two the less sure skippers leave — and under U or the
         // black flag, a few more.
-        const dl = -lineD(c, b), need = Math.max(0, dl) / sp + lag, margin = this.prepFlag === 'P' ? 3 * (1 - ai.skill) + ai.dare : 2 + 3 * (1 - ai.skill) + Math.max(0, ai.dare);
+        // (with the stream behind her, a few seconds more: it carries her on whatever she does)
+        const dl = -lineD(c, b), need = Math.max(0, dl) / sp + lag, margin = (this.prepFlag === 'P' ? 3 * (1 - ai.skill) + ai.dare : 2 + 3 * (1 - ai.skill) + Math.max(0, ai.dare)) + 4 * Math.max(0, curN);
         if (this.clock < -1 && dl < 16 + margin * 2 && (-this.clock > need + margin || dl < 1.5 + margin)) {
+          // a stream setting her up to the line would carry her over before the gun while she waits: she bears away
+          // and sails back down a little, then comes up to it again
+          if (curN > 0 && dl < curN * -this.clock + 3 + margin) { this.steerTo(b, W - 130 * D2R * sgn(b.twa)); b.autoTrim = true; return; }
           // with a boat close to windward she can't luff into it (rule 16): she only lets the sheet go and slows
           const ux = Math.sin(W), uz = -Math.cos(W);
           const crowded = this.boats.some((o) => o !== b && !o.done && Math.hypot(o.x - b.x, o.z - b.z) < 2 * HULL && (o.x - b.x) * ux + (o.z - b.z) * uz > 0);

@@ -3,8 +3,8 @@
 // This module holds the numbers only (no three.js), for the race and for the picture (skopea.js): the parts of the
 // .bin unpacked, how much sea room there is anywhere, and where in the venue's water a course fits.
 //
-// The venue's own frame: metres, x east and z south in Göcek (from the town); elsewhere from the middle of the race
-// area, turned so the prevailing wind comes from the north like the race's. A race is laid at an offset (ox, oz) in
+// The venue's own frame: metres, x east and z south, from the middle of the race area (in Göcek from the town),
+// turned so the prevailing wind comes from the north like the race's. A race is laid at an offset (ox, oz) in
 // it: a point (x, z) of the race is (x + ox, z + oz) in the venue.
 import { VENUE, landFiles, venueById } from './venues.js';
 export { VENUE };
@@ -139,11 +139,8 @@ export function roomAt(x, z) {
   return 4 * ((a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v);
 }
 
-// Göcek: Skopea Marina, on the town quay at the head of the bay
-const SKOPEA_MARINA = (META.marinas.find((m) => /skopea/i.test(m.name)) || { at: [-60, -156] }).at;
-// where the course would go: in Göcek, the windward mark some 450 m off Skopea Marina, out in the middle of the inner
-// bay; elsewhere the middle of the beat at the middle of the race area
-const HOME = META.home ? { x: META.home[0], z: META.home[1] } : { x: SKOPEA_MARINA[0] - 90, z: SKOPEA_MARINA[1] + 450 };
+// where the course would go: the middle of the beat at the middle of the venue's race area
+const HOME = { x: META.home[0], z: META.home[1] };
 
 // the places a course may start round a point, nearest first: every 25 m out to 4 km
 let RINGS = null;
@@ -209,25 +206,13 @@ export function placeCourse(course, beatDeg = 42) {
     let worst = Infinity; for (const [x, z, r] of need) { worst = Math.min(worst, roomAt(gx + x, gz + z) - r); if (worst < 0) break; }
     return worst >= 0 && LOW.some(([a, b]) => nearHull(hull, [a[0] - gx, a[1] - gz], [b[0] - gx, b[1] - gz]) < 40) ? -1 : worst;
   };
-  if (META.home) { // the nearest start to the middle that fits; none: the one with the most room
-    const want = { x: HOME.x - c.windward.x / 2, z: HOME.z - c.windward.z / 2 };
-    let spare = null, spareR = -Infinity;
-    for (const [dx, dz] of rings()) {
-      const gx = want.x + dx, gz = want.z + dz, w = fits(gx, gz);
-      if (w >= 0) return { x: gx, z: gz };
-      if (w > spareR) { spare = { x: gx, z: gz }; spareR = w; }
-    }
-    return spare;
+  // the nearest start to the middle that fits; none: the one with the most room
+  const want = { x: HOME.x - c.windward.x / 2, z: HOME.z - c.windward.z / 2 };
+  let spare = null, spareR = -Infinity;
+  for (const [dx, dz] of rings()) {
+    const gx = want.x + dx, gz = want.z + dz, w = fits(gx, gz);
+    if (w >= 0) return { x: gx, z: gz };
+    if (w > spareR) { spare = { x: gx, z: gz }; spareR = w; }
   }
-  const want = { x: HOME.x - c.windward.x, z: HOME.z - c.windward.z };
-  let best = null, bestD = Infinity, spare = null, spareR = -Infinity;
-  for (let gx = -3000; gx <= 3000; gx += 25) for (let gz = -600; gz <= 5000; gz += 25) {
-    const d = Math.hypot(gx - want.x, gz - want.z);
-    if (best && d >= bestD) continue;
-    let worst = Infinity;
-    for (const [x, z, r] of need) { worst = Math.min(worst, roomAt(gx + x, gz + z) - r); if (worst < 0 && best) break; }
-    if (worst >= 0) { best = { x: gx, z: gz }; bestD = d; }
-    if (!best && worst > spareR) { spare = { x: gx, z: gz }; spareR = worst; } // none fits: the one with the most room
-  }
-  return best || spare;
+  return spare && { ...spare, spare: true }; // (marked: a bigger class's course falls back to up and down, sim.js Race)
 }

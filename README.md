@@ -1,6 +1,6 @@
 # Regatta
 
-Up and down is a 3D sailing game at https://regatta.rycrentals.com. You race round the marks against computer boats, under the
+Up and down is a 3D sailing game at https://upandown.rycrentals.com. You race round the marks against computer boats, under the
 racing rules. It is a Next.js app (App Router) around a static Three.js game, deployed by the Vercel project
 `ryc-regatta` on every push to `main`.
 
@@ -191,8 +191,10 @@ In the Supabase project (`iyt-test`), Authentication needs:
   the client, paste it into Supabase, then disable and delete the old one.
 - **Redirect URLs:**
   - `http://localhost:5193/**`
-  - `https://regatta.rycrentals.com/**`
-  - The Site URL stays at its default, because the project is shared with the iyt app.
+  - `https://regatta.rycrentals.com/**` (the old address, still served)
+  - `https://upandown.rycrentals.com/**`
+  - **Site URL:** `https://upandown.rycrentals.com`. Supabase sends a sign-in here when its return address isn't on the list
+    above, and email templates read it as `{{ .SiteURL }}`. The project is shared with the iyt app, so this affects it too.
 - **Email code:** the "Magic link" email template must include `{{ .Token }}`, so the email carries the 6-digit code. The link in the
   default template also works: it goes through `/auth/callback`.
 

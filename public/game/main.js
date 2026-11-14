@@ -11,7 +11,7 @@ import { createMusic, direct, MUSIC_STYLES } from './music.js';
 
 const $ = (s) => document.querySelector(s);
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
-// The game is a site of its own (this repo, the Vercel project ryc-regatta, at regatta.rycrentals.com); the app,
+// The game is a site of its own (this repo, the Vercel project ryc-regatta, at upandown.rycrentals.com); the app,
 // its rule articles, its fonts and the race scores (api/game.mjs in the iyt-test repo) stay on iyt.rycrentals.com, which lets this site
 // read them across origins. SITE is in stats.js too.
 const SITE = 'https://iyt.rycrentals.com';
