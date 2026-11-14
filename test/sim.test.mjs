@@ -69,10 +69,60 @@ test('the course lists its marks and legs', () => {
   assert.deepEqual(sim.legTargets(c, at('gate')), [c.gate[0], c.gate[1]]);
 });
 
-// sail a race to the end with only the computer boats racing; their finishing times
-function sail(opts) {
-  const r = new sim.Race(opts), others = r.boats.filter((b) => b !== r.player);
-  for (let n = 0; n < 60 * 60 * 40 && !others.every((b) => b.done); n++) r.step(1 / 60);
+// the new shapes, laid for each wind's beat with the line square: the angles off the wind (from −z) of their legs
+const offWind = (p, q) => Math.acos(-(q.z - p.z) / Math.hypot(q.x - p.x, q.z - p.z)) / sim.D2R;
+const mid = (a, b) => ({ x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 });
+test('the trapezoid is laid as the spec says', () => {
+  for (const preset of ['light', 'medium', 'strong']) {
+    const c = sim.makeCourse(1, BEAT[preset] * sim.COURSE_LEN.short, 0, 5, 'trap'), { mark, mark2 } = c.marks;
+    const g = mid(...c.gate), f = mid(c.finish.a, c.finish.b), reach = offWind(mark, mark2), home = offWind(g, f);
+    assert.ok(reach >= 110 && reach <= 120, `${preset}: the reach to mark 2 is ${reach.toFixed(1)}° off the wind`);
+    assert.ok(mark2.x < mark.x && mark2.z > mark.z, `${preset}: mark 2 is out to the left, below mark 1`);
+    assert.ok(Math.abs(g.x - mark2.x) < 1, `${preset}: the gate is straight down the run from mark 2`);
+    assert.ok(home >= 80 && home <= 100, `${preset}: the reach home is ${home.toFixed(1)}° off the wind`);
+    assert.ok(c.finish.through.x > 0.99, `${preset}: the finish is crossed going right`);
+    assert.deepEqual(c.legs, ['start', 'mark', 'mark2', 'gate', 'finish']);
+  }
+  // each lap after the first beats back up to mark 2 and runs down again
+  const c = sim.makeCourse(2, 260, 0, 5, 'trap');
+  assert.deepEqual(c.legs, ['start', 'mark', 'mark2', 'gate', 'mark2', 'gate', 'finish']);
+  assert.deepEqual(c.legs.map((_, i) => sim.isBeat(c, i)), [false, true, false, false, true, false, false]);
+  assert.deepEqual(c.legs.map((_, i) => sim.hasZone(c, i)), [false, false, true, true, false, true, false]);
+});
+test('the upwind finish is laid as the spec says', () => {
+  for (const preset of ['light', 'medium', 'strong']) {
+    const c = sim.makeCourse(1, BEAT[preset] * sim.COURSE_LEN.short, 0, 5, 'wlu'), w = c.windward, o = c.marks.offset;
+    const f = mid(c.finish.a, c.finish.b);
+    assert.ok(o.x - w.x >= -60 && o.x - w.x <= -50, `${preset}: the offset mark is ${(o.x - w.x).toFixed(1)} m across`);
+    assert.ok(o.z - w.z >= 0 && o.z - w.z <= 20, `${preset}: the offset mark is ${(o.z - w.z).toFixed(1)} m below`);
+    assert.ok(f.x > w.x && f.z > w.z, `${preset}: the finish is below and to the right of the windward mark`);
+    assert.ok(c.finish.through.z < -0.99, `${preset}: the finish is crossed going upwind`);
+    assert.deepEqual(c.legs, ['start', 'mark', 'offset', 'gate', 'finish']);
+    assert.deepEqual(c.legs.map((_, i) => sim.isBeat(c, i)), [false, true, false, false, true]);
+  }
+});
+// each finish line's committee boat lies beyond its right-hand end, as the start's does; none on the start line's finish
+test('a finish line of its own has its committee boat', () => {
+  for (const type of ['trap', 'wlu']) {
+    const c = sim.makeCourse(1, 260, 0, 5, type), { a, b } = c.finish, fb = c.finishBoat;
+    assert.ok(Math.abs(Math.hypot(fb.x - b.x, fb.z - b.z) - 5) < 0.01 && Math.hypot(fb.x - a.x, fb.z - a.z) > Math.hypot(b.x - a.x, b.z - a.z), type);
+    assert.ok((b.x - a.x) * -c.finish.through.z + (b.z - a.z) * c.finish.through.x > 0, `${type}: the boat end is on the right, crossing`);
+  }
+  for (const type of ['wl', 'tri']) assert.equal(sim.makeCourse(1, 260, 0, 5, type).finishBoat, null);
+});
+test('an unknown course is up and down', () => {
+  for (const course of ['trap', 'wlu', 'tri', 'wl']) assert.equal(new sim.Race({ course, seed: 3 }).course.type, course);
+  assert.equal(new sim.Race({ course: 'zigzag', seed: 3 }).course.type, 'wl');
+});
+
+// sail a race to the end with only the computer boats racing; their finishing times. onLeg(i, leg): the i-th computer
+// boat has just begun leg `leg`
+function sail(opts, onLeg) {
+  const r = new sim.Race(opts), others = r.boats.filter((b) => b !== r.player), at = others.map((b) => b.leg);
+  for (let n = 0; n < 60 * 60 * 40 && !others.every((b) => b.done); n++) {
+    r.step(1 / 60);
+    if (onLeg) others.forEach((b, i) => { if (b.leg !== at[i]) onLeg(i, (at[i] = b.leg)); });
+  }
   return others.map((b) => (b.done && !b.dsq ? Math.round(b.finish * 10) / 10 : null));
 }
 
@@ -91,6 +141,79 @@ for (const preset of ['light', 'medium', 'strong']) {
     assert.ok(Math.min(...times) > floor * 1.5, `fastest ${Math.min(...times)} s, floor ${floor} s`);
   });
 }
+
+// The new shapes, sailed headless by the computer boats in every wind, one lap and two: each race sailed once, for both
+// tests. Every boat that finishes went round every mark in turn, and well above the server's floor.
+const shapeRuns = new Map();
+function shapeRun(course, preset, laps) {
+  const key = `${course} ${preset} ${laps}`, opts = { course, preset, laps, length: 'short', fleet: 5, seed: 11 };
+  if (!shapeRuns.has(key)) {
+    const seen = [], times = sail(opts, (i, leg) => (seen[i] ||= []).push(leg));
+    shapeRuns.set(key, { times, seen, legs: new sim.Race(opts).course.legs });
+  }
+  return shapeRuns.get(key);
+}
+const LEGS = {
+  trap: (laps) => ['start', 'mark', 'mark2', 'gate', ...Array.from({ length: laps - 1 }, () => ['mark2', 'gate']).flat(), 'finish'],
+  wlu: (laps) => ['start', ...Array.from({ length: laps }, () => ['mark', 'offset', 'gate']).flat(), 'finish'],
+};
+for (const course of ['trap', 'wlu']) for (const preset of ['light', 'medium', 'strong']) for (const laps of [1, 2]) {
+  test(`${course} ${preset} ${laps}: the computer boats sail every leg in order`, () => {
+    const { times, seen, legs } = shapeRun(course, preset, laps);
+    assert.deepEqual(legs, LEGS[course](laps));
+    assert.ok(times.filter((x) => x != null).length >= 3, `only ${times.filter((x) => x != null).length} finished`);
+    times.forEach((x, i) => { if (x != null) assert.deepEqual(seen[i], legs.map((_, j) => j).slice(1), `boat ${i}`); });
+  });
+  test(`${course} ${preset} ${laps}: the computer boats finish well above the server's floor`, () => {
+    const times = shapeRun(course, preset, laps).times.filter((x) => x != null), floor = FLOOR * BEAT[preset] * sim.COURSE_LEN.short * laps;
+    assert.ok(Math.min(...times) > floor * 1.5, `fastest ${Math.min(...times)} s, floor ${floor} s`);
+  });
+}
+
+// the upwind finish lies just by the windward mark, so a boat beating up to the mark can sail across it: that's not a
+// finish. On her last leg the same crossing is one, between its ends and going upwind only.
+test('the upwind finish line doesn’t finish a boat before her last leg', () => {
+  const r = new sim.Race({ course: 'wlu', preset: 'medium', fleet: 5, seed: 11, laps: 2 }), c = r.course, b = r.player, f = c.finish;
+  r.clock = 30;
+  const across = (leg, x, dz) => { // from 10 m on one side of the line to 10 m on the other
+    Object.assign(b, { leg, done: false, lastF: undefined });
+    for (let s = -10; s <= 10; s++) { b.x = x; b.z = f.a.z + dz * s; r.progress(b); }
+  };
+  const fx = (f.a.x + f.b.x) / 2;
+  across(c.legs.indexOf('mark'), fx, -1);
+  assert.equal(b.done, false, 'beating up to the windward mark');
+  assert.equal(b.leg, c.legs.indexOf('mark'));
+  across(c.legs.lastIndexOf('mark'), fx, -1);
+  assert.equal(b.done, false, 'beating up to the windward mark on the last lap');
+  across(c.legs.indexOf('finish'), Math.max(f.a.x, f.b.x) + 8, -1);
+  assert.equal(b.done, false, 'outside the line’s end');
+  across(c.legs.indexOf('finish'), fx, 1);
+  assert.equal(b.done, false, 'crossing it downwind');
+  across(c.legs.indexOf('finish'), fx, -1);
+  assert.equal(b.done, true, 'up across it on her last leg');
+});
+
+// Trapezoid mark 2 is rounded twice: from the reach on the first lap, and from the beat after. Each time, circling it
+// the wrong way or sailing past it on the wrong side doesn't count; rounding it to port does.
+test('trapezoid mark 2 counts only when rounded to port', () => {
+  const r = new sim.Race({ course: 'trap', preset: 'medium', fleet: 5, seed: 11, laps: 2 }), c = r.course, b = r.player, m = c.marks.mark2;
+  r.clock = 30;
+  for (const leg of [2, 4]) {
+    assert.equal(c.legs[leg], 'mark2');
+    // o: the mark's outside on this leg (upwind, by her wind, after the beat), p: square to it, to its right looking out
+    const o = c.legInfo[leg].out || { x: Math.sin(b.wdir), z: -Math.cos(b.wdir) }, p = { x: -o.z, z: o.x };
+    const sailPath = (pts) => { Object.assign(b, { leg, rnd: null }); for (const [fp, fo] of pts) { b.x = m.x + p.x * fp + o.x * fo; b.z = m.z + p.z * fp + o.z * fo; r.progress(b); } };
+    const circle = (from, to) => Array.from({ length: Math.abs(to - from) / 5 + 1 }, (_, i) => (from + Math.sign(to - from) * 5 * i) * sim.D2R).map((a) => [15 * Math.cos(a), 15 * Math.sin(a)]);
+    sailPath(circle(0, -540)); // one and a half times round it clockwise, from its right
+    assert.equal(b.leg, leg, `leg ${leg}: circled clockwise`);
+    sailPath(Array.from({ length: 25 }, (_, i) => [-15, -60 + 5 * i])); // straight past it, leaving it to starboard
+    assert.equal(b.leg, leg, `leg ${leg}: past it on the wrong side`);
+    r.messages.length = 0;
+    sailPath(circle(-60, 200)); // round it to port: up its right side, across outside it, away on its left
+    assert.equal(b.leg, leg + 1, `leg ${leg}: rounded to port`);
+    assert.ok(r.messages.some((x) => x.key === 'roundedMark2'), 'the player hears it');
+  }
+});
 
 // The venues a free race can go to (public/game/venues.js; the set-up page's list is lib/venues.ts). Each one's land,
 // baked by blender/venues.py, must be there, at the venue's own position and turned to its wind; and every course,
