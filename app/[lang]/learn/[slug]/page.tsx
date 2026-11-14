@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getT } from '@/lib/i18n';
 import { pageMeta, jsonLd, langUrl, SITE, OG_IMAGE } from '@/lib/seo';
-import { GUIDES, guide, isGuide } from '@/lib/guides';
+import { GUIDES, guide, guideNo, isGuide } from '@/lib/guides';
 import { IconArrow } from '@/components/ui';
 import { SiteHead, SiteFoot, Trail, type Crumb } from '@/components/site-chrome';
 import { Toc } from '@/components/toc';
+import { GuideFigure } from '@/components/guide-figure';
 
 type Props = { params: Promise<{ lang: string; slug: string }> };
 // when the guides were written, and last changed: for the Article data below
@@ -24,8 +26,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { ...meta, openGraph: { ...meta.openGraph, type: 'article', publishedTime: PUBLISHED, modifiedTime: MODIFIED, authors: ['RYC'] } };
 }
 
-// L1 · A guide: the title and the intro, the sections one after another (the contents beside them on a wide screen),
-// then the game, where you try it, and three ways on: the most relevant reading, the glossary, and the next guide.
+// L1 · A guide: its number, the title and the intro over its picture from the game (where it has one), the sections one after another (the contents beside them on a wide screen),
+// each with its tip and its drawing, then the game, where you try it, and three ways on: the most relevant reading, the glossary, and the next guide.
 export default async function GuidePage({ params }: Props) {
   const [{ slug }, { lang, t }] = await Promise.all([params, getT(params)]);
   if (!isGuide(slug)) notFound();
@@ -48,9 +50,22 @@ export default async function GuidePage({ params }: Props) {
     ? <Link key={href} className={cls} href={href}>{body}</Link>
     : <a key={href} className={cls} href={href}>{body}</a>);
   const url = SITE + langUrl(`/learn/${slug}`, lang);
+  // "Guide 4 of 6 · marks": the number, and the topic from the kicker ("Learn to race · marks"), the trail above saying the rest
+  const kicker = [t(`Guide ${guideNo(slug)} of ${GUIDES.length}`, `Пособие ${guideNo(slug)} из ${GUIDES.length}`), g.kicker.split(' · ')[1]].filter(Boolean).join(' · ');
+  const head = (
+    <div className="hm-page hm-ph">
+      <Trail t={t} crumbs={crumbs} />
+      <span className="kicker">{kicker}</span>
+      <h1 className="hm-ph-h">{g.title}</h1>
+      <p className="hm-text">{g.intro}</p>
+      <nav className="hm-ph-nav rd-chips" aria-label={t('Contents', 'Содержание')}>
+        {contents.map(([id, h]) => <a key={id} className="hm-chip" href={`#${id}`}>{h}</a>)}
+      </nav>
+    </div>
+  );
   const ld = {
     '@context': 'https://schema.org', '@type': 'Article', headline: g.title, description: g.description, inLanguage: lang,
-    url, mainEntityOfPage: url, image: SITE + OG_IMAGE.url, datePublished: PUBLISHED, dateModified: MODIFIED,
+    url, mainEntityOfPage: url, image: SITE + (g.img?.src || OG_IMAGE.url), datePublished: PUBLISHED, dateModified: MODIFIED,
     author: { '@type': 'Organization', name: 'RYC', url: 'https://www.rycrentals.com/' },
     publisher: { '@type': 'Organization', name: 'RYC', url: 'https://www.rycrentals.com/', logo: { '@type': 'ImageObject', url: `${SITE}/logo-black.svg` } },
     about: ['Sailboat racing', 'Racing Rules of Sailing'],
@@ -60,15 +75,9 @@ export default async function GuidePage({ params }: Props) {
     <div className="scr help hp bc" lang={lang}>
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <SiteHead lang={lang} t={t} page="learn" crumbs={crumbs} />
-      <header className="hm-page hm-ph">
-        <Trail t={t} crumbs={crumbs} />
-        <span className="kicker">{g.kicker}</span>
-        <h1 className="hm-ph-h">{g.title}</h1>
-        <p className="hm-text">{g.intro}</p>
-        <nav className="hm-ph-nav rd-chips" aria-label={t('Contents', 'Содержание')}>
-          {contents.map(([id, h]) => <a key={id} className="hm-chip" href={`#${id}`}>{h}</a>)}
-        </nav>
-      </header>
+      {g.img
+        ? <header className="gd-hero"><Image className="gd-hero-bg" src={g.img.src} width={g.img.width} height={g.img.height} sizes="100vw" fetchPriority="high" loading="eager" alt={g.img.alt} />{head}</header>
+        : <header>{head}</header>}
 
       <div className="hm-page rd-layout">
         <Toc items={contents} label={t('Contents', 'Содержание')} numbered />
@@ -78,6 +87,8 @@ export default async function GuidePage({ params }: Props) {
               <section key={s.id} id={s.id} className="gd-sec" data-n={String(i + 1).padStart(2, '0')} aria-labelledby={`${s.id}-t`}>
                 <h2 id={`${s.id}-t`}>{s.h}</h2>
                 {s.p.map((p, j) => <p key={j}>{p}</p>)}
+                {s.fig && <GuideFigure fig={s.fig} t={t} />}
+                {s.tip && <div className={s.pen ? 'gd-tip pen' : 'gd-tip'}><b className="lbl">{t('Tip', 'Совет')}</b><p>{s.tip}</p></div>}
               </section>
             ))}
           </article>

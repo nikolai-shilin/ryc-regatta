@@ -647,6 +647,65 @@
 .bc .gd-term dd { font: 500 var(--fs-body)/1.6 var(--sans); color: var(--ink-2); }
 .bc .gd-term:target { background: var(--fill-1); box-shadow: -12px 0 0 var(--fill-1), 12px 0 0 var(--fill-1); }
 .bc .gd-see { color: var(--you); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); }
+/* Learn: each guide's card with its picture from the game, its number on a white block at the picture's foot (the
+   guide without a picture has its topic in big faint letters there instead) */
+.bc .gd-card { padding: 0; gap: 0; overflow: hidden; }
+.bc .gd-card-pic { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; background: var(--panel-2); }
+.bc .gd-card-pic img { display: block; width: 100%; height: 100%; object-fit: cover; transition: scale var(--t-in) var(--ease); }
+.bc .gd-card:hover .gd-card-pic img { scale: 1.03; }
+.bc .gd-card-n { position: absolute; left: 0; bottom: 0; display: flex; align-items: center; justify-content: center; width: 48px; height: 40px; background: var(--ink); color: var(--ink-on); font: 700 var(--fs-title)/1 var(--cond); }
+.bc .gd-card-slate { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--panel-2), var(--surface)); }
+.bc .gd-card-topic { font: 800 var(--fs-h1)/1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; color: var(--w-14); }
+.bc .gd-card-b { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); padding: var(--s-5) var(--s-6) var(--s-6); }
+.bc .gd-card-b .hm-src { margin-top: auto; padding-top: var(--s-2); }
+/* a guide's head over its picture: dark on the left where the words are, and into the ground at the foot */
+.bc .gd-hero { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: flex-end; min-height: min(600px, 80svh); }
+.bc .gd-hero-bg { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.bc .gd-hero::after { content: ''; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(0deg, var(--ground) 0%, transparent 45%), linear-gradient(90deg, color-mix(in srgb, var(--ground) 88%, transparent) 0%, var(--scrim) 50%, transparent 82%); }
+.bc .gd-hero > .hm-ph { position: relative; padding-top: var(--s-20); }
+.bc .gd-hero .hm-ph-h { max-width: 900px; }
+@container help (max-width: 899px) {
+  .bc .gd-hero::after { background: linear-gradient(0deg, var(--ground) 0%, color-mix(in srgb, var(--ground) 82%, transparent) 50%, var(--scrim) 100%); }
+}
+/* on a phone the picture is a band above the title, fading into the ground, and the words are on the ground */
+@container help (max-width: 599px) {
+  .bc .gd-hero { flex-direction: column; align-items: stretch; min-height: 0; }
+  .bc .gd-hero-bg { position: relative; inset: auto; z-index: 0; height: auto; aspect-ratio: 16 / 9; -webkit-mask-image: linear-gradient(180deg, var(--ink) 55%, transparent); mask-image: linear-gradient(180deg, var(--ink) 55%, transparent); }
+  .bc .gd-hero::after { content: none; }
+  .bc .gd-hero > .hm-ph { margin-top: calc(-1 * var(--s-8)); padding-top: 0; }
+}
+/* a section's tip: a callout edged in your blue, or the umpire's red when it's about a foul or a penalty */
+.bc .gd-tip { display: flex; flex-direction: column; gap: var(--s-2); max-width: 68ch; margin-top: var(--s-2); padding: var(--s-4) var(--s-5); background: var(--panel-2); border-left: 4px solid var(--you); }
+.bc .gd-tip .lbl { color: var(--you); }
+.bc .gd-tip.pen { border-left-color: var(--live); }
+.bc .gd-tip.pen .lbl { color: var(--live); }
+.bc .gd-sec .gd-tip p { font: 500 var(--fs-body)/1.55 var(--sans); color: var(--ink); }
+/* a guide's drawing: the marks in their orange, your track in your blue, the other way dashed, the wind in white */
+.bc .gd-fig { display: flex; flex-direction: column; gap: var(--s-4); max-width: 520px; margin: var(--s-2) 0 0; padding: var(--s-5); background: var(--surface); }
+.bc .gd-fig svg { display: block; width: 100%; height: auto; }
+.bc .gd-fig text { fill: var(--ink); font: 700 var(--fs-label) var(--cond); letter-spacing: var(--ls-label); }
+.bc .gd-fig .f-wind { fill: none; stroke: var(--ink); stroke-width: 2; }
+.bc .gd-fig .f-wind-h { fill: var(--ink); }
+.bc .gd-fig .f-you { fill: none; stroke: var(--you); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.bc .gd-fig .f-you-h { fill: var(--you); }
+.bc .gd-fig .f-alt { fill: none; stroke: var(--w-50); stroke-width: 2.5; stroke-dasharray: 6 6; }
+.bc .gd-fig .f-alt-h { fill: var(--w-50); }
+.bc .gd-fig .f-buoy { fill: var(--buoy); }
+.bc .gd-fig figcaption { display: flex; flex-direction: column; gap: var(--s-2); }
+.bc .gd-key { display: flex; align-items: center; gap: var(--s-3); font: 500 var(--fs-small)/1.4 var(--sans); color: var(--ink-2); }
+.bc .gd-key::before { content: ''; flex: none; width: 28px; border-top: 3px solid var(--you); }
+.bc .gd-key-alt::before { border-top: 3px dashed var(--w-50); }
+/* the glossary in six groups: a heading with its count, then the terms as tiles, each with its see-link at the foot */
+.bc .gd-groups { gap: var(--s-12); }
+.bc .gd-group { display: flex; flex-direction: column; gap: var(--s-4); scroll-margin-top: var(--hm-head); }
+.bc .gd-group h2 { margin: 0; display: flex; align-items: baseline; gap: var(--s-4); font: 700 var(--fs-h3)/1 var(--cond); text-transform: uppercase; }
+.bc .gd-groups .gd-terms { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 1px; }
+/* the hairlines between the tiles are their own outlines, so a short last row leaves no grey cells */
+.bc .gd-groups .gd-term { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-5) var(--s-6) var(--s-4); border-top: 0; outline: 1px solid var(--rule); background: var(--surface); }
+.bc .gd-groups .gd-term:target { background: var(--surface); box-shadow: inset 4px 0 0 var(--you); }
+.bc .gd-see-d { margin: auto 0 0; }
+.bc .gd-groups .gd-see { gap: var(--s-1); min-height: var(--h-m); white-space: normal; text-decoration: none; text-transform: uppercase; }
 /* Learn: the glossary as a banner under the guides */
 .bc .gd-banner { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5) var(--s-8); padding: var(--s-8); background: var(--panel-2); color: var(--ink); text-decoration: none; transition: box-shadow var(--t-quick); }
 .bc .gd-banner:hover { box-shadow: inset 0 0 0 1px var(--w-25); }
@@ -687,11 +746,37 @@
 .bc .iyt-ic { border-radius: 0; background: var(--you); color: var(--ink-on); }
 .bc .iyt-levels li { border-top-color: var(--rule); }
 .bc .iyt-note { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-3); }
+/* a question from the trainer to try, in the head: its drawing, the question, four options; then right or not, why,
+   the rules and the way to more (components/iyt-sample.tsx) */
+.bc .iyt-q { align-self: stretch; width: 100%; max-width: 520px; background: var(--surface); }
+.bc .iyt-q-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); padding: var(--s-4) var(--s-5) var(--s-3); border-bottom: 1px solid var(--rule); }
+.bc .iyt-q-b { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); }
+.bc .iyt-q-fig { display: block; width: 100%; height: auto; }
+.bc .iyt-q-text { margin: var(--s-1) 0; font: 600 var(--fs-lead)/1.4 var(--sans); color: var(--ink); }
+.bc .iyt-q-opts { display: flex; flex-direction: column; gap: var(--s-2); }
+.bc .iyt-q-opt { appearance: none; display: flex; align-items: stretch; gap: var(--s-4); width: 100%; min-height: var(--h-l); padding: 0 var(--s-4) 0 0; border: 0; border-radius: 0; background: var(--fill-1); color: var(--ink);
+  text-align: left; cursor: pointer; font: 500 var(--fs-small)/1.4 var(--sans); transition: background-color var(--t-quick), color var(--t-quick); }
+.bc .iyt-q-opt:hover { background: var(--w-10); }
+.bc .iyt-q-opt b { flex: none; display: flex; align-items: center; justify-content: center; width: var(--h-m); background: var(--fill-2); font: 700 var(--fs-lead)/1 var(--cond); }
+.bc .iyt-q-opt span { align-self: center; padding-block: var(--s-3); }
+.bc .iyt-q-opt.ok { background: color-mix(in srgb, var(--up) 16%, transparent); }
+.bc .iyt-q-opt.ok b { background: var(--up); color: var(--ink-on); }
+.bc .iyt-q-opt.no { background: color-mix(in srgb, var(--live) 16%, transparent); }
+.bc .iyt-q-opt.no b { background: var(--live); color: var(--ink); }
+.bc .iyt-q-opt.off { background: var(--fill-1); color: var(--ink-3); }
+.bc .iyt-q-opt[aria-disabled="true"] { cursor: default; }
+.bc .iyt-q-why { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); padding: var(--s-4) var(--s-4) var(--s-2); border-left: 4px solid var(--up); background: color-mix(in srgb, var(--up) 10%, transparent); }
+.bc .iyt-q-why.no { border-left-color: var(--live); background: color-mix(in srgb, var(--live) 10%, transparent); }
+.bc .iyt-q-why p { margin: 0; font: 500 var(--fs-small)/1.5 var(--sans); color: var(--ink-2); }
+.bc .iyt-q-why.ok b { color: var(--up); }
+.bc .iyt-q-why.no b { color: var(--ink); }
+.bc .iyt-q-why .hm-src { display: inline-flex; align-items: center; gap: var(--s-2); min-height: var(--h-m); text-decoration: none; text-transform: uppercase; }
 /* its head in two columns on a wide screen: the title on the left, the line and the ways in on the right */
 .bc .iyt-hero > div { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-5); min-width: 0; }
 .bc .iyt-hero .kicker { background: var(--you); }
 @container help (min-width: 1100px) {
-  .bc .hm-ph.iyt-hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-6) var(--s-16); align-items: end; }
+  .bc .hm-ph.iyt-hero { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: var(--s-8) var(--s-12); align-items: start; }
+  .bc .iyt-hero > .iyt-q { justify-self: end; }
 }
 /* how it works: a numbered row of cells, as the lower third's */
 .bc .rd-cells { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 1px; background: var(--rule); }
