@@ -845,3 +845,10 @@ html[data-me] .hm-av > svg { display: none; }
   .shr-p { max-width: none; border-radius: 22px 22px 0 0; border-bottom: 0; padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) { .shr, .shr-p { animation: none; } }
+
+/* the admin page (/admin): the jib's ad, previewed on a white and a black sail */
+.adm-prev { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-2); margin: var(--s-2) 0 var(--s-3); }
+.adm-sail { display: grid; place-items: center; aspect-ratio: 2 / 1; padding: var(--s-3); border-radius: var(--r-m, 12px); border: 1px solid var(--line); }
+.adm-sail img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.adm-go { margin: var(--s-3) 0 var(--s-2); }
+#adm-file { min-width: 0; max-width: 60%; font-size: var(--t-s); color: var(--ink); }
