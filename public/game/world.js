@@ -7,6 +7,7 @@ import { CommitteeBoat } from './committee.js';
 import { JuryBoat } from './jury.js';
 import { Wildlife } from './wildlife.js';
 import { BannerPlane } from './plane.js';
+import { Jets } from './jets.js';
 import { Post, Mirror, OVERLAY, MIRRORED } from './post.js';
 import { Ocean, OCEAN_GLSL, oceanUniforms, blankOcean } from './ocean.js';
 import { skyAt, pickSky, SKY_GLSL, skyUniforms } from './light.js';
@@ -757,6 +758,9 @@ export class World {
     });
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(5000, 32, 16), skyMat());
     this.scene.add(this.sky);
+    // airliners at cruise and their contrails, drawn with the sky, through its clouds (jets.js)
+    this.jets = new Jets(this.skyU, this.sky.material.uniforms.uTime);
+    this.scene.add(this.jets.group);
     // the sky with its clouds (and a sea below the horizon) as an environment map, so gelcoat, steel and glass reflect
     // it; made again whenever the light changes
     this.env = new THREE.Scene();
@@ -951,6 +955,7 @@ export class World {
     this.contacts = race.boats.map(() => new HullContact(this.scene, this.wakeU));
     this.wild.reset(race);
     this.plane.reset(race, (x, z) => groundAt(x + race.at.x, z + race.at.z)); // the land is laid round race.at
+    this.jets.reset(race);
     this.skopea.place(race.at);
     this.prepare();
   }
@@ -1239,6 +1244,7 @@ export class World {
     this.wild.update(dt, t, this.W, cam, this.foamU.uScale.value);
     this.plane.update(dt, cam, !this.intro);
     this.sky.position.copy(cam.position); this.sky.material.uniforms.uTime.value = t; // the clouds drift
+    this.jets.update(dt, cam, this.race);
     // the glare: brightest looking straight at the sun, gone when you look away
     const look = cam.getWorldDirection(this._dir || (this._dir = new THREE.Vector3()));
     this.glare.position.copy(cam.position).addScaledVector(SUN, 3000);
