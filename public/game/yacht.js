@@ -136,13 +136,13 @@ const MODEL = await new Promise((res) => {
 const SHARED = new Set(MODEL ? Object.values(MODEL) : []); // every boat's hull and deck: never disposed by one of them
 
 // ---------- textures ----------
-function canvasTex(w, h, draw, rx = 1, ry = 1) {
+export function canvasTex(w, h, draw, rx = 1, ry = 1) {
   const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
   return t;
 }
 // moulded non-skid: a fine diamond pattern, one tile every 35 cm (the deck's UVs are in metres)
-const NONSKID = canvasTex(64, 64, (x, w, h) => {
+export const NONSKID = canvasTex(64, 64, (x, w, h) => {
   x.fillStyle = '#e3e0d7'; x.fillRect(0, 0, w, h); x.fillStyle = 'rgba(0,0,0,.07)';
   for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) { x.save(); x.translate(i * 8 + (j % 2) * 4 + 2, j * 8 + 2); x.rotate(Math.PI / 4); x.fillRect(-1.5, -1.5, 3, 3); x.restore(); }
 }, 1 / 0.35, 1 / 0.35);
@@ -520,7 +520,12 @@ const SAILOR = (() => {
     new THREE.CylinderGeometry(0.09, 0.09, 0.012, 12, 1, false, 0, Math.PI).scale(1.1, 1, 0.95).rotateY(-Math.PI / 2).translate(0.07, 0.69, 0), // the peak, forward
   ]);
   const glasses = new THREE.BoxGeometry(0.03, 0.035, 0.15).translate(0.085, 0.665, 0);
-  return { thigh, shin, arm, torso, collar, head, cap, glasses };
+  // a racing helmet (the AC75's crews, boats3d.js): a shell over the head and ears, with a short visor
+  const helmet = mergeGeometries([
+    new THREE.SphereGeometry(0.122, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.6).scale(1.02, 0.92, 0.96).translate(-0.005, 0.66, 0),
+    new THREE.CylinderGeometry(0.1, 0.1, 0.012, 12, 1, false, 0, Math.PI).scale(0.9, 1, 0.85).rotateY(-Math.PI / 2).translate(0.06, 0.7, 0),
+  ]);
+  return { thigh, shin, arm, torso, collar, head, cap, glasses, helmet };
 })();
 // A sailor is one draw, not eleven (skin.js): the joints (body, upper body, hips, knees, arms) are bones. The parts'
 // colours ride on the vertices, each from the material it was given, so all the sailors in the race share this one.
@@ -536,7 +541,7 @@ export function sailor(m) {
     bones.push(hip, knee); parts.push([SAILOR.thigh, hip, m.trousers], [SAILOR.shin, knee, m.trousers]);
     return { hip, knee };
   });
-  parts.push([SAILOR.torso, upper, m.jacket], [SAILOR.collar, upper, m.vest], [SAILOR.head, upper, m.skin], [SAILOR.cap, upper, m.cap], [SAILOR.glasses, upper, M.dark]);
+  parts.push([SAILOR.torso, upper, m.jacket], [SAILOR.collar, upper, m.vest], [SAILOR.head, upper, m.skin], [m.helmet ? SAILOR.helmet : SAILOR.cap, upper, m.cap], [SAILOR.glasses, upper, M.dark]);
   const arms = [-1, 1].map((sz) => {
     const a = new THREE.Bone(); a.position.set(0, 0.47, sz * 0.2); a.rotation.x = -sz * 0.12; upper.add(a);
     bones.push(a); parts.push([SAILOR.arm, a, m.jacket]);

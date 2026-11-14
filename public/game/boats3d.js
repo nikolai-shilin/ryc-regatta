@@ -6,7 +6,7 @@
 // D-section mast, a self-tacking jib and eight in their pods). makeBoatView gives the page's class (classes.js CLS).
 // Local frame as yacht.js: +x starboard, +y up, −z forward (the bow), the waterline at y = 0.
 import * as THREE from 'three';
-import { BoatView, M, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, sailor, labelSprite, THIGH, SHIN, LOOKS } from './yacht.js';
+import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, sailor, labelSprite, THIGH, SHIN, LOOKS } from './yacht.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CLS } from './classes.js';
 import { D2R, clamp, lerp, waveHeight } from './sim.js';
@@ -19,54 +19,115 @@ export function makeBoatView(o) {
 
 // ---------- a lofted hull ----------
 // H: L (m), hb(t) half-beam, sheer(t), depth(t) of the canoe body under the waterline, n(t) the sections' squareness
-// (a superellipse: 2 round … 3 boxy), with t = 0 at the transom and 1 at the stem
+// (a superellipse: 2 round … 3 boxy), with t = 0 at the transom and 1 at the stem. H.chine, if given, is a hard chine
+// as the club's boat has (blender/yacht.py hull_point): y(t) its height, w(t) how hard it is (1 hard … 0 the round
+// section), dead(t) the bottom's deadrise there in degrees, flat the bottom's depth as a share of the canoe's
+const smooth = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t); };
 function hullOf(H) {
   const STERN = H.L / 2, zAt = (t) => STERN - t * H.L, tAt = (z) => clamp((STERN - z) / H.L, 0, 1);
-  const section = (t, s) => {
+  const round = (t, s) => {
     const hb = H.hb(t), sy = H.sheer(t), d = H.depth(t), n = H.n(t);
     const phi = (s * Math.PI) / 2, c = Math.cos(phi), sn = Math.sin(phi), yr = sn ** (2 / n);
     return [hb * c ** (2 / n) * (1 - (H.flare ?? 0.04) * sn), sy - (sy + d) * yr];
   };
-  // the half-breadth at station t and height y: the section above, solved for y
+  // s = 0 at the deck edge … 1 at the keel; with a chine, the topsides run down to it (the first half of s) and the
+  // bottom is a curve from the chine, out at its deadrise, to the flat of the keel line
+  const SPLIT = 0.5;
+  const section = (t, s) => {
+    const C = H.chine, w = C ? C.w(t) : 0;
+    if (!C) return round(t, s);
+    const sy = H.sheer(t), d = H.depth(t), n = H.n(t), yc = C.y(t);
+    const sc = (Math.asin(clamp((sy - yc) / (sy + d), 0, 1) ** (n / 2)) * 2) / Math.PI; // where the round section reaches the chine
+    const sf = s <= SPLIT ? (s / SPLIT) * sc : sc + ((s - SPLIT) / (1 - SPLIT)) * (1 - sc);
+    const [fx, fy] = round(t, sf);
+    if (s <= SPLIT || w <= 0) return [fx, fy];
+    const [xc, ycc] = round(t, sc), u = (s - SPLIT) / (1 - SPLIT), d2 = d * (C.flat ?? 0.86), dr = (C.dead(t) * Math.PI) / 180, k = xc * 0.42;
+    const P = [[xc, ycc], [xc - k * Math.cos(dr), ycc - k * Math.sin(dr)], [xc * 0.38, -d2], [0, -d2]];
+    const B = [(1 - u) ** 3, 3 * u * (1 - u) ** 2, 3 * u * u * (1 - u), u ** 3];
+    const bx = B.reduce((a, b, i) => a + b * P[i][0], 0), by = B.reduce((a, b, i) => a + b * P[i][1], 0);
+    return [lerp(fx, bx, w), lerp(fy, by, w)];
+  };
+  // the half-breadth at station t and height y, on the topsides: the round section solved for y
   const xAt = (t, y) => {
     const hb = H.hb(t), sy = H.sheer(t), d = H.depth(t), n = H.n(t);
     const sn = clamp((sy - y) / (sy + d), 0, 1) ** (n / 2), c = Math.sqrt(Math.max(0, 1 - sn * sn));
     return hb * c ** (2 / n) * (1 - (H.flare ?? 0.04) * sn);
   };
   function geometry() {
-    const N = 56, K = 16, W = 2 * K + 1, pos = [], band = [], idx = [];
+    const N = 80, K = 24, W = 2 * K + 1, pos = [], band = [], idx = [];
+    // the samples crowd towards the chine, so its edge stays crisp
+    const sOf = (k) => { const s = 1 - Math.abs(k) / K; return !H.chine || s <= SPLIT ? s : SPLIT + (1 - SPLIT) * ((s - SPLIT) / (1 - SPLIT)) ** 1.15; };
     for (let i = 0; i <= N; i++) {
-      const t = (i / N) ** 0.85, sy = H.sheer(t), z = zAt(t);
-      for (let k = -K; k <= K; k++) { const [x, y] = section(t, 1 - Math.abs(k) / K); pos.push(Math.sign(k) * x, y, z); band.push(sy - y); }
+      const t = Math.min(0.997, (i / N) ** 0.85), sy = H.sheer(t), z = zAt(t);
+      for (let k = -K; k <= K; k++) { const [x, y] = section(t, sOf(k)); pos.push(Math.sign(k) * x, y, z); band.push(sy - y); }
     }
     for (let i = 0; i < N; i++) for (let k = 0; k < W - 1; k++) { const a = i * W + k, b = a + 1, c = a + W, d = c + 1; idx.push(a, c, b, b, c, d); }
-    // the transom, flat: a fan from the middle of its outline
-    const base = pos.length / 3;
-    for (let k = 0; k < W; k++) { pos.push(pos[k * 3], pos[k * 3 + 1], pos[k * 3 + 2]); band.push(1); }
-    let cy = 0; for (let k = 0; k < W; k++) cy += pos[k * 3 + 1]; cy /= W;
-    const ci = pos.length / 3; pos.push(0, cy, STERN); band.push(1);
-    for (let k = 0; k < W - 1; k++) idx.push(ci, base + k + 1, base + k);
-    idx.push(ci, base, base + W - 1);
+    // the transom, flat: a fan from the middle of its outline; and the stem, closed the same way
+    for (const [r, flip] of [[0, false], [N, true]]) {
+      const base = pos.length / 3, o = r * W;
+      for (let k = 0; k < W; k++) { pos.push(pos[(o + k) * 3], pos[(o + k) * 3 + 1], pos[(o + k) * 3 + 2]); band.push(1); }
+      let cy = 0; for (let k = 0; k < W; k++) cy += pos[(o + k) * 3 + 1]; cy /= W;
+      const ci = pos.length / 3; pos.push(0, cy, pos[o * 3 + 2]); band.push(1);
+      for (let k = 0; k < W - 1; k++) flip ? idx.push(ci, base + k, base + k + 1) : idx.push(ci, base + k + 1, base + k);
+      flip ? idx.push(ci, base + W - 1, base) : idx.push(ci, base, base + W - 1);
+    }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     g.setAttribute('band', new THREE.Float32BufferAttribute(band, 1));
     g.setIndex(idx); g.computeVertexNormals();
     return g;
   }
-  // the deck: the sheer outline, a little crowned, with holes cut in it (each [x0, z0, x1, z1]: the cockpit, the pods)
-  function deck(holes = [], crown = 0.04) {
-    const sh = new THREE.Shape(), n = 48;
+  // the deck: the sheer outline, a little crowned, with holes cut in it: each [x0, z0, x1, z1] (a box) or a list of
+  // [x, z] points (an outline, as tub() gives)
+  const crownY = (x, z, crown) => H.sheer(tAt(z)) + crown * (1 - (x / Math.max(H.hb(tAt(z)), 0.2)) ** 2);
+  // notch: an open-aft tub's outline (tub(…, { openAft })), cut into the deck's own edge at the transom
+  function deck(holes = [], crown = 0.04, notch = null) {
+    const sh = new THREE.Shape(), n = 64;
     for (let i = 0; i <= n; i++) { const t = i / n; sh[i ? 'lineTo' : 'moveTo'](H.hb(t) - 0.015, -zAt(t)); }
     for (let i = n; i >= 0; i--) { const t = i / n; sh.lineTo(-(H.hb(t) - 0.015), -zAt(t)); }
-    for (const [x0, z0, x1, z1] of holes) {
-      const p = new THREE.Path(); p.moveTo(x0, -z0); p.lineTo(x0, -z1); p.lineTo(x1, -z1); p.lineTo(x1, -z0); p.closePath(); sh.holes.push(p);
+    if (notch) { // from the port corner of the transom in along it, round the well, and out to the starboard corner
+      const k = notch.findIndex(([x, z]) => x < 0 && z >= STERN - 1e-6);
+      for (let i = 0; i < notch.length; i++) { const [x, z] = notch[(k + i) % notch.length]; sh.lineTo(x, -z); }
     }
-    const g = new THREE.ShapeGeometry(sh, 4), q = g.attributes.position;
-    for (let i = 0; i < q.count; i++) { const x = q.getX(i), z = -q.getY(i), t = tAt(z); q.setXYZ(i, x, H.sheer(t) + crown * (1 - (x / Math.max(H.hb(t), 0.2)) ** 2), z); }
+    for (const h of holes) {
+      const pts = typeof h[0] === 'number' ? [[h[0], h[1]], [h[0], h[3]], [h[2], h[3]], [h[2], h[1]]] : h;
+      const p = new THREE.Path(); pts.forEach(([x, z], i) => (i ? p.lineTo(x, -z) : p.moveTo(x, -z))); p.closePath(); sh.holes.push(p);
+    }
+    const g = new THREE.ShapeGeometry(sh, 6), q = g.attributes.position;
+    for (let i = 0; i < q.count; i++) { const x = q.getX(i), z = -q.getY(i); q.setXYZ(i, x, crownY(x, z, crown), z); }
     g.computeVertexNormals();
     const uv = new Float32Array(q.count * 2); for (let i = 0; i < q.count; i++) { uv[2 * i] = q.getX(i); uv[2 * i + 1] = -q.getZ(i); }
     g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     return g;
+  }
+  // a well sunk into the deck — a cockpit, a crew pod: a rounded outline [x0, z0]–[x1, z1] at the deck (corner radius
+  // r), its walls sloping in by `slope` to a floor at y = floorY. openAft leaves the aft end open (an open transom).
+  // Gives the outline (for deck()'s hole), the walls and the floor
+  function tub(x0, z0, x1, z1, r, floorY, { slope = 0.06, crown = 0.04, openAft = false } = {}) {
+    const ring = (a0, b0, a1, b1, rr) => {
+      const pts = [], seg = 5, cs = [[a1 - rr, b0 + rr, -Math.PI / 2], [a1 - rr, b1 - rr, 0], [a0 + rr, b1 - rr, Math.PI / 2], [a0 + rr, b0 + rr, Math.PI]];
+      cs.forEach(([cx, cz, a], k) => {
+        const sharp = openAft && (k === 1 || k === 2);
+        if (sharp) { pts.push([k === 1 ? a1 : a0, b1]); return; }
+        for (let i = 0; i <= seg; i++) { const th = a + (Math.PI / 2) * (i / seg); pts.push([cx + rr * Math.cos(th), cz + rr * Math.sin(th)]); }
+      });
+      return pts;
+    };
+    const top = ring(x0, z0, x1, z1, r), bot = ring(x0 + slope, z0 + slope, x1 - slope, openAft ? z1 : z1 - slope, Math.max(0.02, r - slope));
+    const pos = [], idx = [], m = top.length;
+    for (const [x, z] of top) pos.push(x, crownY(x, z, crown) - 0.005, z);
+    for (const [x, z] of bot) pos.push(x, floorY, z);
+    for (let i = 0; i < m; i++) {
+      const j = (i + 1) % m;
+      if (openAft && top[i][1] >= z1 - 1e-6 && top[j][1] >= z1 - 1e-6) continue; // the open transom: no wall there
+      idx.push(i, j, m + i, j, m + j, m + i);
+    }
+    const walls = new THREE.BufferGeometry(); walls.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); walls.setIndex(idx); walls.computeVertexNormals();
+    const fs = new THREE.Shape(); bot.forEach(([x, z], i) => (i ? fs.lineTo(x, -z) : fs.moveTo(x, -z))); fs.closePath();
+    const floor = new THREE.ShapeGeometry(fs, 4).rotateX(-Math.PI / 2).translate(0, floorY, 0);
+    const fq = floor.attributes.position, fuv = new Float32Array(fq.count * 2); for (let i = 0; i < fq.count; i++) { fuv[2 * i] = fq.getX(i); fuv[2 * i + 1] = -fq.getZ(i); }
+    floor.setAttribute('uv', new THREE.BufferAttribute(fuv, 2));
+    return { outline: top, walls, floor };
   }
   // a picture wrapped onto the topsides (side +1 starboard), centred z0 aft of amidships and y0 up, W × H metres
   function decal(side, z0, y0, Wd, Hd, material) {
@@ -82,8 +143,35 @@ function hullOf(H) {
     const m = new THREE.Mesh(g, material); m.userData.flat = true;
     return m;
   }
+  // the deck's smooth gelcoat border along the sheer, inside which the non-skid lies
+  function border(width, mat, crown = 0.04) {
+    const pos = [], idx = [], n = 64;
+    for (const sd of [-1, 1]) {
+      const b0 = pos.length / 3;
+      for (let i = 0; i <= n; i++) {
+        const t = 0.003 + (i / n) * 0.99, z = zAt(t), hb = H.hb(t) - 0.015, wi = Math.min(width, hb * 0.6);
+        pos.push(sd * hb, crownY(hb, z, crown) + 0.004, z, sd * (hb - wi), crownY(hb - wi, z, crown) + 0.004, z);
+      }
+      for (let i = 0; i < n; i++) { const a = b0 + i * 2; sd > 0 ? idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3) : idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, mat); m.userData.flat = true;
+    return m;
+  }
   const deckY = (z) => H.sheer(tAt(z)), hbAt = (z) => H.hb(tAt(z));
-  return { zAt, tAt, xAt, geometry, deck, decal, deckY, hbAt, BOW: -STERN, STERN };
+  return { zAt, tAt, xAt, geometry, deck, tub, decal, border, deckY, hbAt, BOW: -STERN, STERN };
+}
+
+// the sail number on both bows, as racing boats carry it: the letters and the number, in the sail's ink on the paint
+function bowNumber(hull, look, z0, y0, W, H) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+  const x = c.getContext('2d'), text = `${look.nat && !look.logo ? look.nat + ' ' : ''}${look.num || ''}`.trim();
+  const dark = new THREE.Color(look.hull).getHSL({}).l < 0.45;
+  x.fillStyle = dark ? '#f4f4f0' : '#15181c'; x.font = '900 110px Carlito, Lato, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(text, 256, 68, 500);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  const mat = new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.4, roughness: 0.3, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
+  return [-1, 1].map((sd) => hull.decal(sd, z0, y0, W, H, mat));
 }
 
 function logoDecal(hull, side, logo, z0, y0, W, H) {
@@ -147,6 +235,15 @@ function winchGeo(r, h) {
 const blockGeo = (r) => new THREE.CylinderGeometry(r, r, r * 0.9, 10).rotateZ(Math.PI / 2);
 // a cam cleat: two jaws on a base
 const camGeo = () => mergeGeometries([new THREE.BoxGeometry(0.06, 0.012, 0.09), new THREE.BoxGeometry(0.014, 0.03, 0.06).translate(-0.018, 0.02, 0), new THREE.BoxGeometry(0.014, 0.03, 0.06).translate(0.018, 0.02, 0)]);
+// the deck's moulded non-skid (in metres, as the club boat's, without her baked shade) and its smooth gelcoat
+const SKID = new THREE.MeshStandardMaterial({ map: NONSKID, roughness: 0.85 });
+const GEL2 = new THREE.MeshStandardMaterial({ color: '#f1f0eb', roughness: 0.28, envMapIntensity: 0.8, side: THREE.DoubleSide });
+// carbon spars under clear lacquer, the 2×2 twill of the cloth faintly showing through
+const WEAVE = canvasTex(64, 64, (x, w, h) => {
+  x.fillStyle = '#2b3036'; x.fillRect(0, 0, w, h);
+  for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) { x.fillStyle = (i + j) % 4 < 2 ? '#353b42' : '#24292e'; x.fillRect(i * 8, j * 8, 8, 8); }
+}, 10, 60);
+const CARBON = new THREE.MeshPhysicalMaterial({ color: '#ffffff', map: WEAVE, roughness: 0.4, metalness: 0.2, clearcoat: 1, clearcoatRoughness: 0.1, envMapIntensity: 1 });
 const MAT = {
   fin: new THREE.MeshStandardMaterial({ color: '#202429', roughness: 0.45, metalness: 0.1 }), // faired, painted foils
   lead: new THREE.MeshStandardMaterial({ color: '#2a2d31', roughness: 0.5, metalness: 0.3 }),
@@ -288,6 +385,9 @@ const J = (() => {
     sheer: (t) => (RS ? 0.55 + 0.09 * t ** 1.8 : 0.6 + 0.13 * t ** 1.6),
     depth: (t) => (RS ? 0.26 : 0.3) * Math.sin(Math.PI * Math.min(1, t * 0.93 + 0.05)) ** 0.75,
     n: (t) => lerp(RS ? 2.9 : 2.7, 1.7, clamp((t - 0.45) / 0.55, 0, 1)),
+    // a chine aft, just clear of the water at the transom, fading out forward (the RS21's harder and longer)
+    chine: { y: (t) => (RS ? 0.13 : 0.1) - 0.22 * t, w: (t) => 1 - smooth(RS ? 0.4 : 0.28, RS ? 0.8 : 0.64, t),
+      dead: (t) => lerp(RS ? 12 : 16, RS ? 7 : 10, clamp(t / 0.35, 0, 1)), flat: 0.85 },
   });
   const MAST_Z = RS ? -0.95 : -1.05, MAST_FOOT = RS ? 0.66 : 0.78, MASTHEAD = RS ? 9.7 : 10.2, HOUNDS = RS ? 8.0 : 8.4, BOOM_Y = RS ? 1.32 : 1.45;
   const chord = RS ? (f) => lerp(2.9, 0.45, f) + 0.3 * Math.sin(Math.PI * f) : (f) => lerp(3.05, 0.42, f) + 0.32 * Math.sin(Math.PI * f);
@@ -307,15 +407,14 @@ class SportView extends ClassView {
     add(new THREE.Mesh(H.geometry(), hullMaterial(look.hull, look.stripe)));
     // the deck, the open cockpit cut out of it from the cuddy (on the RS21, from just aft of the mast) to the open
     // transom, and its floor and sides
-    const cz0 = RS ? -0.5 : -0.35, cz1 = H.STERN + 0.05, cx = RS ? 0.8 : 0.74;
-    add(new THREE.Mesh(H.deck([[-cx, cz0, cx, cz1]], 0.03), M.deck));
-    const floorY = RS ? 0.26 : 0.3, cl = cz1 - cz0;
-    add(new THREE.Mesh(new THREE.BoxGeometry(cx * 2, 0.04, cl), M.gel), 0, floorY, (cz0 + cz1) / 2);
-    for (const sx of [-1, 1]) {
-      const wall = add(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.36, cl), M.gel), sx * cx, floorY + 0.18, (cz0 + cz1) / 2);
-      wall.userData.detail = false;
-    }
-    add(new THREE.Mesh(new THREE.BoxGeometry(cx * 2, 0.36, 0.04), M.gel), 0, floorY + 0.18, cz0);
+    const cz0 = RS ? -0.5 : -0.35, cx = RS ? 0.8 : 0.74, floorY = RS ? 0.26 : 0.3;
+    // the cockpit: a moulded well, its walls sloping in to a non-skid floor and open to the transom, notched out of
+    // the deck; the deck non-skid inside a smooth gelcoat border along the sheer
+    const ck = H.tub(-cx, cz0, cx, H.STERN, 0.2, floorY, { slope: 0.09, crown: 0.03, openAft: true });
+    add(new THREE.Mesh(H.deck([], 0.03, ck.outline), SKID));
+    const walls = add(new THREE.Mesh(ck.walls, GEL2)); walls.userData.detail = false;
+    add(new THREE.Mesh(ck.floor, SKID));
+    T.add(H.border(0.08, GEL2, 0.03));
     // the cuddy: a low, rounded coachroof forward of the cockpit, with a small hatch, and the mast through it
     const cud = new THREE.Shape(), a = 0.62, f = 0.4, za = -0.35, zf = -2.0, r = 0.18;
     cud.moveTo(-a + r, -za); cud.lineTo(a - r, -za); cud.quadraticCurveTo(a, -za, a, -za - r); cud.lineTo(f, -zf - r); cud.quadraticCurveTo(f, -zf, f - r, -zf);
@@ -371,9 +470,9 @@ class SportView extends ClassView {
       T.add(line([[sx * hb(z0), H.deckY(z0) + 0.48, z0], ...[0.68, 0.45, 0.22].map((t) => [sx * (H.hbAt(H.zAt(t)) - 0.06), H.deckY(H.zAt(t)) + 0.48, H.zAt(t)])]));
     }
     // the bowsprit, run out for the kite
-    this.sprit = add(cyl(0.025, 0.03, 1.6, M.carbon, 8), 0, J.SPRIT.y, H.BOW - 0.7); this.sprit.rotation.x = Math.PI / 2;
+    this.sprit = add(cyl(0.025, 0.03, 1.6, CARBON, 8), 0, J.SPRIT.y, H.BOW - 0.7); this.sprit.rotation.x = Math.PI / 2;
     // the rig: a carbon mast through the cuddy, one set of swept spreaders, no backstay
-    add(cyl(0.04, 0.065, J.MASTHEAD - J.MAST_FOOT, M.carbon), 0, (J.MAST_FOOT + J.MASTHEAD) / 2, J.MAST_Z);
+    add(cyl(0.04, 0.065, J.MASTHEAD - J.MAST_FOOT, CARBON, 14), 0, (J.MAST_FOOT + J.MASTHEAD) / 2, J.MAST_Z);
     const SPR = RS ? 4.9 : 5.1;
     // the mast's collar at the deck, the gooseneck, the halyards down its front (jib, kite) and back (main), the spreaders' tips
     add(cyl(0.085, 0.095, 0.06, M.dark, 14), 0, H.deckY(J.MAST_Z) + (RS ? 0.03 : 0.2), J.MAST_Z);
@@ -390,19 +489,20 @@ class SportView extends ClassView {
     this.mainsheet = line([[0, 0, 0], [0, 1, 0]]); this.mainsheet.frustumCulled = false; T.add(this.mainsheet);
     this.travCar = add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.09, 12), M.dark), 0, floorY + 0.06, 0.9); // the mainsheet's ratchet block
     this.mainPivot = add(new THREE.Group(), 0, 0, J.MAST_Z);
-    const BL = RS ? 3.0 : 3.15, boom = cyl(0.04, 0.032, BL, M.carbon, 8); boom.rotation.x = Math.PI / 2; boom.position.set(0, J.BOOM_Y, BL / 2 - 0.02); this.mainPivot.add(boom);
+    const BL = RS ? 3.0 : 3.15, boom = cyl(0.04, 0.032, BL, CARBON, 10); boom.rotation.x = Math.PI / 2; boom.position.set(0, J.BOOM_Y, BL / 2 - 0.02); this.mainPivot.add(boom);
     // a rigid kicker from the mast's foot to the boom, the outhaul's end fitting and the mainsheet's block under the boom
     const vang = tube([[0, J.MAST_FOOT + 0.3, 0.07], [0, J.BOOM_Y - 0.05, 0.78]], 0.018, M.alu); this.mainPivot.add(vang);
     const end = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.1), M.alu); end.position.set(0, J.BOOM_Y, BL - 0.05); this.mainPivot.add(end);
     const mb = new THREE.Mesh(blockGeo(0.035), M.dark); mb.position.set(0, J.BOOM_Y - 0.07, 2.9); this.mainPivot.add(mb);
-    this.main = sailMesh(14, 8, sailTexture('main', look, J.rig), look.laminate, 'main'); this.mainPivot.add(this.main);
+    this.main = sailMesh(20, 10, sailTexture('main', look, J.rig), look.laminate, 'main'); this.mainPivot.add(this.main);
     this.TACK = J.TACK; this.HEAD = J.HEAD; this.CLEW = J.CLEW; this.jibMax = 26;
     this.jibPivot = add(new THREE.Group(), J.TACK.x, J.TACK.y, J.TACK.z);
     this.jibAxis = J.HEAD.clone().sub(J.TACK).normalize();
-    this.jib = sailMesh(12, 6, sailTexture('jib', look, J.rig), look.laminate, 'jib'); this.jibPivot.add(this.jib);
-    this.kite = sailMesh(12, 8, sailTexture('kite', look), false, 'kite'); this.kite.visible = false; T.add(this.kite);
+    this.jib = sailMesh(16, 8, sailTexture('jib', look, J.rig), look.laminate, 'jib'); this.jibPivot.add(this.jib);
+    this.kite = sailMesh(16, 10, sailTexture('kite', look), false, 'kite'); this.kite.visible = false; T.add(this.kite);
     this.makeTells(player);
-    if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, H.BOW + 1.15, 0.5, 0.8, 0.3));
+    if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, H.BOW + 1.3, 0.5, 0.8, 0.3));
+    T.add(...bowNumber(H, look, H.BOW + 0.62, 0.48, 0.62, 0.17));
     // the jib sheets, the working one taut and the lazy one slack; the kite's sheet and its tack line to the sprit
     this.jibSheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0]]); this.lazySheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]);
     this.kiteSheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0]]); T.add(this.jibSheet, this.lazySheet, this.kiteSheet);
@@ -477,6 +577,8 @@ const A = (() => {
     sheer: (t) => 1.05 + 0.32 * t ** 2.2,
     depth: (t) => 0.62 * Math.sin(Math.PI * Math.min(1, t * 0.88 + 0.1)) ** 0.6,
     n: (t) => lerp(3.4, 2.1, clamp((t - 0.4) / 0.6, 0, 1)), // a flat-bottomed scow aft
+    // a hard chine high on the topsides aft, the flat, nearly deadrise-less bottom of a skimming hull below it
+    chine: { y: (t) => 0.42 - 0.45 * t, w: (t) => 1 - smooth(0.5, 0.88, t), dead: (t) => lerp(7, 3, clamp(t / 0.4, 0, 1)), flat: 0.92 },
   });
   const MAST_Z = -2.2, MAST_FOOT = 1.2, MASTHEAD = 27.6, DECK = hull.deckY(MAST_Z);
   const FOOT_Y = DECK + 0.15; // the main sweeps the deck: no boom
@@ -503,16 +605,16 @@ class AC75View extends ClassView {
     add(new THREE.Mesh(bg, paint), 0, -0.48, 0.5);
     // the deck, flat and dark, with eight crew pods cut into it, four a side: the cyclors forward, the trimmers, the
     // helms aft. Each pod has a rubber rim, a floor and its seat or wheel
-    const pods = [];
-    for (const sx of [-1, 1]) for (const [z0, z1] of [[-0.6, 0.8], [1.6, 3.0], [3.8, 5.2], [7.4, 9.2]]) pods.push(sx < 0 ? [-2.05, z0, -1.05, z1] : [1.05, z0, 2.05, z1]);
-    add(new THREE.Mesh(H.deck(pods, 0.08), new THREE.MeshStandardMaterial({ color: '#2b2f35', roughness: 0.55, metalness: 0.15 })));
-    for (const [x0, z0, x1, z1] of pods) {
-      const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, dy = H.deckY(cz);
-      const pod = add(new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, 0.9, z1 - z0), M.well.map((m) => m)), cx, dy - 0.45, cz);
-      pod.userData.detail = false;
-      for (const [w, d, ox, oz] of [[x1 - x0 + 0.07, 0.07, 0, z0 - cz], [x1 - x0 + 0.07, 0.07, 0, z1 - cz], [0.07, z1 - z0, x0 - cx, 0], [0.07, z1 - z0, x1 - cx, 0]])
-        add(new THREE.Mesh(new THREE.BoxGeometry(w, 0.06, d), MAT.rubber), cx + ox, dy + 0.06, cz + oz);
+    // each a moulded well with rounded corners, its rim in rubber
+    const pods = [], podWall = new THREE.MeshStandardMaterial({ color: '#3a3f46', roughness: 0.6, side: THREE.DoubleSide });
+    for (const sx of [-1, 1]) for (const [z0, z1] of [[-0.6, 0.8], [1.6, 3.0], [3.8, 5.2], [7.4, 9.2]]) {
+      const [x0, x1] = sx < 0 ? [-2.05, -1.05] : [1.05, 2.05], tb = H.tub(x0, z0, x1, z1, 0.22, H.deckY((z0 + z1) / 2) - 0.9, { slope: 0.05, crown: 0.08 });
+      pods.push(tb.outline);
+      const w = add(new THREE.Mesh(tb.walls, podWall)); w.userData.detail = false;
+      add(new THREE.Mesh(tb.floor, MAT.rubber));
+      T.add(tube(tb.outline.map(([x, z]) => [x, H.deckY(z) + 0.1, z]), 0.03, MAT.rubber, true));
     }
+    add(new THREE.Mesh(H.deck(pods, 0.08), new THREE.MeshStandardMaterial({ color: '#2b2f35', roughness: 0.55, metalness: 0.15 })));
     // the cyclors' bikes in the two forward pods each side: a saddle on its post, the crank housing and the bars
     this.bikes = [];
     for (const sx of [-1, 1]) for (const z of [0.1, 2.3]) {
@@ -563,12 +665,12 @@ class AC75View extends ClassView {
     }
     // the mast: a tall D-section stepped on a ball, rotating with the main; the shrouds and the jumpers, the forestay
     this.mast = new THREE.Group(); this.mast.position.set(0, 0, -0.35);
-    const mast = cyl(0.2, 0.36, A.MASTHEAD - A.MAST_FOOT, M.carbon, 18); mast.position.y = (A.MAST_FOOT + A.MASTHEAD) / 2; mast.scale.set(0.75, 1, 1.55); this.mast.add(mast);
+    const mast = cyl(0.2, 0.36, A.MASTHEAD - A.MAST_FOOT, CARBON, 20); mast.position.y = (A.MAST_FOOT + A.MASTHEAD) / 2; mast.scale.set(0.75, 1, 1.55); this.mast.add(mast);
     add(new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.4, 1.4), M.dark), 0, H.deckY(A.MAST_Z), A.MAST_Z);
     for (const sx of [-1, 1]) {
       T.add(line([[0, 22.5, A.MAST_Z], [sx * 1.4, 13, A.MAST_Z + 0.4], [sx * (H.hbAt(A.MAST_Z + 1) - 0.2), H.deckY(A.MAST_Z + 1) + 0.05, A.MAST_Z + 1]]));
       T.add(line([[0, 13, A.MAST_Z], [sx * (H.hbAt(A.MAST_Z + 0.5) - 0.25), H.deckY(A.MAST_Z + 0.5) + 0.05, A.MAST_Z + 0.5]]));
-      const s = add(cyl(0.03, 0.05, 1.4, M.carbon, 6), sx * 0.7, 13, A.MAST_Z + 0.2); s.rotation.z = Math.PI / 2;
+      const s = add(cyl(0.03, 0.05, 1.4, CARBON, 6), sx * 0.7, 13, A.MAST_Z + 0.2); s.rotation.z = Math.PI / 2;
       add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.12), M.steel), sx * (H.hbAt(A.MAST_Z + 1) - 0.2), H.deckY(A.MAST_Z + 1) + 0.04, A.MAST_Z + 1);
     }
     T.add(line([[0, A.HEAD.y + 0.1, A.MAST_Z], [A.TACK.x, A.TACK.y, A.TACK.z]]));
@@ -579,8 +681,8 @@ class AC75View extends ClassView {
     this.mainPivot = add(new THREE.Group(), 0, 0, A.MAST_Z + 0.35);
     this.mainPivot.add(this.mast);
     const mtex = sailTexture('main', look, A.rig);
-    this.main = sailMesh(16, 8, mtex, true, 'main'); this.mainPivot.add(this.main);
-    this.main2 = sailMesh(16, 8, mtex, true, 'main'); this.mainPivot.add(this.main2);
+    this.main = sailMesh(24, 12, mtex, true, 'main'); this.mainPivot.add(this.main);
+    this.main2 = sailMesh(24, 12, mtex, true, 'main'); this.mainPivot.add(this.main2);
     this.clewBoard = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 0.9), M.carbon); this.mainPivot.add(this.clewBoard);
     // the self-tacking jib: its car runs on a curved track across the foredeck
     this.TACK = A.TACK; this.HEAD = A.HEAD; this.CLEW = A.CLEW; this.jibMax = 18; this.jibBelly = 0.09;
@@ -588,7 +690,7 @@ class AC75View extends ClassView {
     T.add(tube(trk, 0.03, M.steel));
     this.jibPivot = add(new THREE.Group(), A.TACK.x, A.TACK.y, A.TACK.z);
     this.jibAxis = A.HEAD.clone().sub(A.TACK).normalize();
-    this.jib = sailMesh(12, 6, sailTexture('jib', look, A.rig), true, 'jib'); this.jibPivot.add(this.jib);
+    this.jib = sailMesh(18, 8, sailTexture('jib', look, A.rig), true, 'jib'); this.jibPivot.add(this.jib);
     this.jibCar = add(new THREE.Group()); this.jibCar.add(new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.1, 0.18), M.dark)); // a group: bake() leaves it to move
     this.jibSheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0]]); this.jibSheet.frustumCulled = false; T.add(this.jibSheet);
     // no kite on a foiler: the parts the game asks for, never shown
@@ -596,9 +698,14 @@ class AC75View extends ClassView {
     this.sprit = new THREE.Group(); this.kiteSheet = new THREE.Group(); this.lazySheet = new THREE.Group();
     this.makeTells(player);
     if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, H.BOW + 4.6, 0.75, 2.6, 0.95));
+    T.add(...bowNumber(H, look, H.BOW + 2.3, 0.95, 2.0, 0.5));
     this.windex = windex(add, A.MASTHEAD + 0.05, A.MAST_Z);
+    // the broadcast's camera pods: one on a short post on the aft deck looking forward, one high on the mast
+    add(cyl(0.04, 0.05, 0.5, M.dark, 8), 0, H.deckY(10.2) + 0.25, 10.2);
+    add(new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.22, 4, 10).rotateX(Math.PI / 2), M.dark), 0, H.deckY(10.2) + 0.55, 10.15);
+    const cam = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.2, 4, 10).rotateX(Math.PI / 2), M.dark); cam.position.set(0, 18.5, -0.4); this.mast.add(cam);
     // eight: the two helms aft at their wheels, the two trimmers, and the four cyclors on their bikes forward
-    const m = crewMats(look), spots = [];
+    const m = { ...crewMats(look), helmet: true }, spots = []; // America's Cup crews race in helmets
     for (const [z, i] of [[8.0, 0], [4.5, 1], [2.3, 3], [0.1, 3]]) for (const sx of [-1, 1]) spots.push([sx, z, i]);
     this.crew = spots.map(([sx, z0, i], n) => {
       const s = sailor({ ...m, skin: new THREE.MeshStandardMaterial({ color: SKINS[n % SKINS.length], roughness: 0.65 }) });
