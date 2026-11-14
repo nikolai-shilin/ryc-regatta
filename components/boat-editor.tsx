@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { tx, type Lang } from '@/lib/lang';
-import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart } from './ui';
+import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart, IconFlag } from './ui';
+import { FLAGS, findFlag, flagSrc } from '@/lib/flags';
 import { DEFAULT_BOAT, DEFAULT_LOGO, PRESETS, SWATCHES, readBoat, saveBoat, shrinkLogo, type Boat, type Logo } from '@/lib/boat';
 
 // The boat page, laid out like the race's pause screen: the game's own scene behind it all (your yacht on Lake Garda,
@@ -92,6 +93,9 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
     </div>
   );
   const preset = PRESETS.find((p) => p.id === b.preset);
+  const flag = findFlag(b.flag);
+  // a flag on the main: the boat then carries that country's letters too (shown when there's no logo)
+  const setFlag = (code: string) => { const f = findFlag(code); setB((x) => ({ ...x, flag: f?.code, ...(f ? { nat: f.ioc } : {}) })); setDown(false); };
   const logoName = b.logo === 'ryc' ? 'RYC' : b.logo === 'custom' ? t('Yours', 'Свой') : t('None', 'Нет');
 
   return (
@@ -103,7 +107,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         <h1 className="bt-h">{preset ? t(preset.en, preset.ru) : t('Your own colours', 'Свои цвета')}</h1>
         <p className="bt-p">{t('Lake Garda, a summer evening. Drag to circle her.', 'Озеро Гарда, летний вечер. Тяни, чтобы облететь яхту.')}</p>
         <div className="bt-stats">
-          <div><span className="bt-sk">{t('Sail number', 'Номер')}</span><b>{b.logo === 'none' && b.nat ? `${b.nat} ` : ''}{b.num || '1'}</b></div>
+          <div><span className="bt-sk">{t('Sail number', 'Номер')}</span><b>{/* eslint-disable-next-line @next/next/no-img-element */}{flag && <img className="bt-flag-s" src={flagSrc(flag.code)} alt={t(flag.en, flag.ru)} />}{b.logo === 'none' && b.nat ? `${b.nat} ` : ''}{b.num || '1'}</b></div>
           <div><span className="bt-sk">{t('Sails', 'Паруса')}</span><b>{b.laminate ? t('Laminate', 'Ламинат') : t('Dacron', 'Дакрон')}</b></div>
           <div><span className="bt-sk">{t('Logo', 'Логотип')}</span><b>{logoName}</b></div>
         </div>
@@ -158,6 +162,20 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
             <button type="button" className="bt-mini" onClick={() => file.current?.click()}>{b.logoImg ? t('Change', 'Заменить') : t('Upload', 'Загрузить')}</button>
             <input ref={file} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" hidden onChange={(e) => onFile(e.target.files?.[0])} />
           </div>
+        </div>
+
+        <div className="bt-g">
+          {kicker('l-flag', <IconFlag />, t('Flag on the main', 'Флаг на гроте'))}
+          <div className="flags" role="radiogroup" aria-labelledby="l-flag">
+            <button type="button" role="radio" aria-checked={!flag} className="flag flag-none" aria-label={t('No flag', 'Без флага')} title={t('No flag', 'Без флага')} onClick={() => setFlag('')} />
+            {FLAGS.map((f) => (
+              <button key={f.code} type="button" role="radio" aria-checked={flag?.code === f.code} className="flag" aria-label={t(f.en, f.ru)} title={t(f.en, f.ru)} onClick={() => setFlag(f.code)}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={flagSrc(f.code)} alt="" loading="lazy" />
+              </button>
+            ))}
+          </div>
+          <span className="bt-sub">{flag ? `${t(flag.en, flag.ru)} · ${flag.ioc}` : t('No flag on the sail', 'Без флага на парусе')}</span>
         </div>
 
         <div className="bt-g">

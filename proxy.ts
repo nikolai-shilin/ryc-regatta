@@ -51,5 +51,5 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // not for the game's files, the pictures, Next's own assets or the files for crawlers
-  matcher: ['/((?!_next/static|_next/image|_vercel|game/|vendor/|play|boat-view|hero-view|images/|favicon.ico|logo-black.svg|og/|robots.txt|sitemap.xml|llms.txt|indexnow.txt|manifest.webmanifest|apple-icon|icon).*)'],
+  matcher: ['/((?!_next/static|_next/image|_vercel|game/|vendor/|play|boat-view|hero-view|images/|flags/|favicon.ico|logo-black.svg|og/|robots.txt|sitemap.xml|llms.txt|indexnow.txt|manifest.webmanifest|apple-icon|icon).*)'],
 };
