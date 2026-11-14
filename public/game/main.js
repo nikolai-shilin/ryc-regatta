@@ -25,7 +25,12 @@ const T = {
   en: {
     pausedK: 'Paused', legOf: (a, b) => `Leg ${a} of ${b}`, nextK: (m) => `Next: ${m}`, placeK: 'Place', ofN: (n) => `of ${n}`, timeK: 'Race time', penK: 'Penalties', penNone: 'clean so far', penS: 'spinning turns',
     changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
-    leaveK: 'Leave this race?', leaveTxt: (pl, leg) => `You are ${pl} on leg ${leg}. This race’s time and place are not kept.`, keepRacing: 'Keep racing', doRestart: 'Restart', doChange: 'Change it', doLeave: 'Leave',
+    leaveK: 'Leave this race?', leaveTxt: (pl, leg) => `You are ${pl} on leg ${leg}.`, keepRacing: 'Keep racing', doRestart: 'Restart', doChange: 'Change it', doLeave: 'Leave',
+    inSeq: 'You are in the start sequence.', notKept: 'This race’s time and place are not kept.',
+    askK: { restart: 'Restart', change: 'Change the race', leave: 'Leave' }, askH: { restart: 'Restart this race?', change: 'Change the race?', leave: 'Leave this race?' },
+    askT: { restart: 'It starts over from the start sequence, the same course in the same wind.', change: 'Next you pick the place, the wind and the course, and the race starts over with them.', leave: 'You go back to the race hub.' },
+    sailUp: 'Beating to', sailDown: (k) => (k ? 'Running to' : 'Running, kite down, to'), sailReach: 'Reaching to', aheadOf: (n, m) => `${n} is ${m} m ahead.`, leadBy: (m) => `You lead by ${m} m.`, leadAlone: 'You lead.',
+    timeFree: 'free race', timeDaily: 'today’s race', inStart: 'In the start sequence.', notOver: 'Still to cross the start line.', notOverYou: 'You haven’t crossed the start line yet.',
     kick: 'Game', title: 'Up and down', fun: 'Just for fun — take a break and relax between tests.', sub: 'A race round the marks against the computer boats, under the racing rules. Steer, trim, tack, read the wind.',
     modeK: 'Race', daily: 'Today’s race', free: 'Free race', howK: 'How to play',
     dailyNote: (w, at, sh) => `The same place, course and wind for everyone today — ${at}, ${sh}, ${w} — so times compare fairly. The fastest are on the Home page.`,
@@ -109,7 +114,12 @@ const T = {
   ru: {
     pausedK: 'Пауза', legOf: (a, b) => `Отрезок ${a} из ${b}`, nextK: (m) => `Дальше: ${m}`, placeK: 'Место', ofN: (n) => `из ${n}`, timeK: 'Время', penK: 'Штрафы', penNone: 'пока чисто', penS: 'штрафные обороты',
     changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
-    leaveK: 'Выйти из гонки?', leaveTxt: (pl, leg) => `Ты ${pl}-й на ${leg}-м отрезке. Время и место этой гонки не сохранятся.`, keepRacing: 'Продолжить', doRestart: 'Заново', doChange: 'Изменить', doLeave: 'Выйти',
+    leaveK: 'Выйти из гонки?', leaveTxt: (pl, leg) => `Ты ${pl}-й на ${leg}-м отрезке.`, keepRacing: 'Продолжить', doRestart: 'Заново', doChange: 'Изменить', doLeave: 'Выйти',
+    inSeq: 'Идёт стартовая процедура.', notKept: 'Время и место этой гонки не сохранятся.',
+    askK: { restart: 'Заново', change: 'Изменить гонку', leave: 'Выход' }, askH: { restart: 'Начать заново?', change: 'Изменить гонку?', leave: 'Выйти из гонки?' },
+    askT: { restart: 'Всё начнётся со стартовой процедуры: та же дистанция, тот же ветер.', change: 'Дальше выберешь место, ветер и дистанцию — и гонка начнётся заново.', leave: 'Ты вернёшься в меню гонок.' },
+    sailUp: 'Лавировка к', sailDown: (k) => (k ? 'Фордевинд под генакером к' : 'Фордевинд без генакера к'), sailReach: 'Галфвинд к', aheadOf: (n, m) => `${n} впереди на ${m} м.`, leadBy: (m) => `Ты лидируешь на ${m} м.`, leadAlone: 'Ты лидируешь.',
+    timeFree: 'свободная гонка', timeDaily: 'гонка дня', inStart: 'Идёт стартовая процедура.', notOver: 'Стартовая линия ещё впереди.', notOverYou: 'Ты ещё не пересёк стартовую линию.',
     kick: 'Игра', title: 'Up and down', fun: 'Просто для удовольствия — отдохни и расслабься между тестами.', sub: 'Гонка вокруг знаков против компьютерных лодок по правилам. Рули, работай шкотом, делай повороты, читай ветер.',
     modeK: 'Гонка', daily: 'Гонка дня', free: 'Свободная', howK: 'Как играть',
     dailyNote: (w, at, sh) => `Сегодня у всех одно место, одна дистанция и один ветер — ${at}, ${sh}, ${w}, — так что время честно сравнивается. Самые быстрые — на главной.`,
@@ -1249,9 +1259,11 @@ function paintPause() {
   $('#pLegs').innerHTML = Array.from({ length: n }, (_, i) => `<i class="${i + 1 < leg ? 'done' : i + 1 === leg ? 'now' : ''}"></i>`).join('');
   const nx = legs[P.leg];
   $('#pNext').textContent = P.leg < legs.length ? t('nextK', t(legKey(race.course, nx))) : '';
+  $('#pLine').textContent = pauseLine(P, place, nx);
+  $('#pTimeD').textContent = race.settings.daily ? t('timeDaily') : t('timeFree');
   $('#pNext').classList.toggle('mark', !!race.course.marks[nx] || nx === 'gate'); // as its tag on the water
   $('#pPen').parentNode.className = L.penT > 1 ? 'pen' : 'clean';
-  $('.p-esc').innerHTML = `<kbd>Esc</kbd>${t('resume')}`;
+  $('.p-esc').innerHTML = `<kbd>Esc</kbd>${t('escResumes').replace(/^Esc\s*(—\s*)?/, '')}`;
   $('#pPlace').textContent = ordL(place); $('#pOf').textContent = t('ofN', race.boats.length);
   $('#pTime').textContent = fmt(Math.max(0, race.clock));
   $('#pPen').textContent = L.penT > 1 ? `${Math.round(L.penT)} s` : '0'; $('#pPenD').textContent = L.penT > 1 ? t('penS') : t('penNone');
@@ -1260,12 +1272,35 @@ function paintPause() {
   for (const b of pauseEl.querySelectorAll('[data-g]')) b.setAttribute('aria-checked', String(b.dataset.g === opts.gfx));
   $('#pGfxK').textContent = opts.gfx === 'auto' ? t('gfxNow', t({ high: 'gHigh', medium: 'gMedium', low: 'gLow' }[world.quality] || 'gHigh')) : t('gfx');
 }
+const legKind = (c, i) => (isBeat(c, i) ? 'up' : ['wing', 'mark2', 'offset'].includes(c.legs[i]) ? 'reach' : 'down');
+// a sentence on the race as it stands: the leg you're on, and the boat ahead (or your lead), as a commentator would
+function pauseLine(P, place, nx) {
+  if (race.clock < 0) return t('inStart');
+  if (P.leg < 1) return t('notOver');
+  const mark = nx ? t(legKey(race.course, nx)).toLowerCase() : '';
+  const how = isBeat(race.course, P.leg) ? t('sailUp') : legKind(race.course, P.leg) === 'reach' ? t('sailReach') : t('sailDown', !!P.kite);
+  const st = race.standings(), ahead = st[place - 2], behind = st[place], rem = (b) => bcHud.remaining(race, b);
+  const gap = ahead ? t('aheadOf', ahead.name, Math.max(1, Math.round(rem(P) - rem(ahead)))) : behind ? t('leadBy', Math.max(1, Math.round(rem(behind) - rem(P)))) : t('leadAlone');
+  return `${how} ${mark}. ${gap}`;
+}
+if (!TG) {
+  const guard = () => { try { if (!history.state || !history.state.race) history.pushState({ race: 1 }, ''); } catch (e) {} };
+  addEventListener('popstate', () => {
+    if (!running || race.over) { location.href = HUB; return; }
+    if (!confirmEl.hidden) { location.href = HUB; return; }
+    if (paused) ask('leave'); else pause();
+    guard();
+  });
+  addEventListener('pointerdown', guard, { once: true }); // a browser keeps an entry only after the page is used
+}
 function pause() { if (!running || race.over) return; paused = true; paintPause(); pauseEl.hidden = false; confirmEl.hidden = true; }
 function resume() { paused = false; pauseEl.hidden = true; confirmEl.hidden = true; }
 let confirmDo = null;
 function ask(action) {
-  const P = race.player, place = race.standings().indexOf(P) + 1, leg = Math.max(1, P.leg);
-  $('#cTxt').textContent = t('leaveTxt', LANG === 'ru' ? place : ord(place), leg);
+  const P = race.player, place = race.standings().indexOf(P) + 1;
+  const where = race.clock < 0 ? t('inSeq') : P.leg < 1 ? t('notOverYou') : t('leaveTxt', LANG === 'ru' ? place : ord(place), P.leg);
+  $('#cKick').textContent = t('askK')[action]; $('#cHead').textContent = t('askH')[action];
+  $('#cTxt').textContent = `${where} ${t('askT')[action]} ${t('notKept')}`;
   $('#cGo').textContent = t({ restart: 'doRestart', change: 'doChange', leave: 'doLeave' }[action]);
   confirmDo = action; pauseEl.hidden = true; confirmEl.hidden = false;
 }
@@ -1276,7 +1311,7 @@ $('#pLeave').addEventListener('click', () => ask('leave'));
 $('#cKeep').addEventListener('click', () => { confirmEl.hidden = true; pauseEl.hidden = false; });
 $('#cGo').addEventListener('click', () => {
   if (confirmDo === 'restart') { confirmEl.hidden = true; paused = false; running = false; newRace(); startRace(); return; }
-  location.href = confirmDo === 'change' ? '/race/free' : HUB;
+  location.href = confirmDo === 'change' ? `/race/free?from=${race.settings.daily ? 'today' : 'race'}` : HUB;
 });
 pauseEl.addEventListener('click', (e) => {
   const g = e.target.closest('[data-g]');

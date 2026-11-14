@@ -746,3 +746,63 @@
   .bc .adm-tow { padding-left: var(--s-6); }
   .bc .adm-tow::before { width: var(--s-6); }
 }
+
+/* ---------- the user flows (the intro and settings flows canvas) ---------- */
+/* I1 · the hub's top right: How to play, and Sign in or your initials (A4) */
+.bc .bt-top-r { display: flex; gap: var(--s-1); margin-left: auto; }
+/* on a wide screen they sit in the screen's top right corner, over the card, as an app's own controls */
+@container scr (min-width: 1100px) and (min-height: 640px) {
+  .bc .bt-top-r { position: fixed; top: var(--s-12); right: var(--s-12); z-index: 5; }
+  /* (its row fades in rather than drops: a drop's leftover translate would hold the corner to the row) */
+  .bc .bt-top:has(> .bt-top-r) { animation-name: bc-in; }
+}
+.bc .bt-ico, .bc .bt-acct { display: inline-flex; align-items: center; justify-content: center; height: var(--h-m); min-width: var(--h-m); padding: 0 var(--s-3);
+  background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); text-decoration: none;
+  font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; transition: background-color .2s; }
+.bc .bt-ico { font-size: var(--fs-row); padding: 0; }
+.bc .bt-ico:hover, .bc .bt-acct:hover { background: var(--panel-2); }
+.bc .bt-acct-me { background: var(--you); color: var(--ink-on); }
+.bc .bt-acct-me:hover { background: var(--you); filter: brightness(1.08); }
+/* S2 · today's numbers can be tapped: they open the sheet that says why they're fixed */
+.bc .bt-stats-lock > [data-lock] { cursor: pointer; transition: background-color .2s; }
+.bc .bt-stats-lock > [data-lock]:hover { background: var(--w-06); }
+.bc .bt-stats-lock > [data-lock] .bt-sk::after { content: ''; display: inline-block; width: 9px; height: 11px; margin-left: 6px; vertical-align: -1px; opacity: .75; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Cpath d='M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3Crect x='1' y='5' width='8' height='6.5' rx='1'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Cpath d='M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3Crect x='1' y='5' width='8' height='6.5' rx='1'/%3E%3C/svg%3E") center / contain no-repeat; }
+.bc button.bt-row { width: 100%; border: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.bc .dl { width: min(520px, calc(100vw - 32px)); max-width: none; margin: auto; padding: 0; border: 0; background: var(--panel-2); color: var(--ink);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%); }
+.bc .dl::backdrop { background: rgba(3, 8, 14, 0.62); }
+.bc .dl[open] { animation: bc-rise .35s var(--ease) both; }
+.bc .dl-in { display: flex; flex-direction: column; gap: var(--s-4); padding: var(--s-6); }
+.bc .dl-k { align-self: flex-start; padding: 6px 22px 6px 10px; background: var(--you); color: var(--ink-on); font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+.bc .dl-h { margin: 0; font: 700 var(--fs-h3)/1 var(--cond); text-transform: uppercase; }
+.bc .dl-p { margin: 0; font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+.bc .dl-s { font-size: var(--fs-small); color: var(--ink-3); }
+.bc .dl-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-1); }
+.bc .dl-chips li { padding: var(--s-2) var(--s-3); background: var(--fill-2); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
+.bc .dl-btns { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-2); }
+.bc .dl-keep, .bc .dl-free { flex: 1 1 200px; display: inline-flex; align-items: center; justify-content: center; height: var(--h-l); padding: 0 var(--s-6); border: 0; cursor: pointer;
+  font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; text-decoration: none; }
+.bc .dl-keep { background: var(--you); color: var(--ink-on); }
+.bc .dl-free { background: var(--fill-2); color: var(--ink); }
+.bc .dl-free:hover { background: var(--fill-3); }
+/* S1 opened from a race or from today's: a blue dot on each row changed from it, and what happens */
+.bc .bt-chg { display: inline-block; width: 8px; height: 8px; margin-left: var(--s-2); border-radius: 50%; background: var(--you); box-shadow: 0 0 0 3px rgba(61, 184, 255, 0.25); }
+.bc .bt-what { margin: 0; padding: var(--s-3) var(--s-4); background: color-mix(in srgb, var(--you) 12%, transparent); box-shadow: inset 3px 0 0 var(--you); font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-2); }
+.bc .bt-what b { color: var(--ink); margin-right: var(--s-1); }
+/* A4 · your row on the ranking, by the name you race under */
+.bc .lb-you::before { content: var(--me-name, "You") " " attr(data-you); }
+/* R1 · where your time stands in the day's field */
+.bc .rs-standing { margin: 0 0 var(--s-3); font: 600 var(--fs-body)/1.3 var(--cond); letter-spacing: var(--ls-name); color: var(--ink-2); }
+.bc .rs-standing b { color: var(--you); font-weight: 700; }
+/* H0 · How to play from the hero, and the cards that are links */
+.bc .ho-how { align-self: flex-start; margin-top: var(--s-1); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-2); text-decoration: none; }
+.bc .ho-how:hover { color: var(--ink); }
+.bc a.ho-feat-a { color: inherit; text-decoration: none; transition: background-color .2s; }
+.bc a.ho-feat-a:hover { background: var(--panel-2); }
+.bc a.ho-feat-a:hover i { background: var(--you); }
+/* S3 · Done */
+.bc .done-btn { margin-left: auto; height: var(--h-m); padding: 0 var(--s-8) 0 var(--s-6); border: 0; cursor: pointer; background: var(--you); color: var(--ink-on);
+  font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+.bc .aph-top { width: 100%; }
+
+.bc .ho-feats-4 { grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); }

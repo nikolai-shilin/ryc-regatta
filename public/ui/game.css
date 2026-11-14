@@ -61,6 +61,10 @@
 #pauseCard.bc .p-info p::before { width: 26px; height: 100%; border-radius: 0; box-shadow: none; background: linear-gradient(var(--c, var(--gold)), var(--c, var(--gold))) center / 10px 4px no-repeat, var(--ink); }
 #pauseCard.bc .p-info p.mark { --c: var(--buoy); }
 #pauseCard.bc .p-info p.mark::before { background: linear-gradient(var(--buoy), var(--buoy)) center / 9px 13px no-repeat, var(--ink); }
+/* the race in a sentence, as a commentator says it: the leg, and the boat ahead or your lead */
+#pauseCard.bc .p-info p.p-line { display: block; height: auto; max-width: 46ch; padding: 0; background: none; font: 500 var(--fs-lead)/1.45 var(--sans); color: var(--ink-2); text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5); }
+#pauseCard.bc .p-info p.p-line::before { display: none; }
+#pauseCard.bc .p-info p.p-line:empty { display: none; }
 /* the numbers: one row of cells */
 #pauseCard.bc .p-stats { gap: 0; align-self: flex-start; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
 #pauseCard.bc .p-stats > div { gap: var(--s-2); min-width: 120px; padding: var(--s-4) var(--s-6); border: 0; border-right: 1px solid var(--rule); border-radius: 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }

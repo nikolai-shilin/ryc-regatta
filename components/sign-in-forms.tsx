@@ -128,7 +128,7 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
 }
 
 // A3 · The ranking shows a name, never the email: first name and the first letter of the surname.
-export function NameForm({ lang, next, suggested }: { lang: Lang; next: string; suggested: string }) {
+export function NameForm({ lang, next, suggested, fromGoogle = false }: { lang: Lang; next: string; suggested: string; fromGoogle?: boolean }) {
   const t = tx(lang);
   const router = useRouter();
   const [name, setName] = useState(suggested);
@@ -150,9 +150,9 @@ export function NameForm({ lang, next, suggested }: { lang: Lang; next: string; 
       <p className="lead muted">{t('Only this name is public. Your email stays private.', 'Всем видно только это имя. Почта остаётся скрытой.')}</p>
       <label className="meta" htmlFor="nm">{t('Name on the ranking', 'Имя в рейтинге')}</label>
       <input id="nm" className="field" type="text" autoComplete="nickname" maxLength={24} value={name} onChange={(e) => setName(e.target.value)} disabled={busy} autoFocus />
-      {err ? <p className="err" role="alert">{err}</p> : <p className="hint">{t('First name and the first letter of your surname works well. You can change it in Settings.', 'Лучше всего имя и первая буква фамилии. Поменять можно в настройках.')}</p>}
+      {err ? <p className="err" role="alert">{err}</p> : <p className="hint">{fromGoogle ? t('Taken from your Google account: change it if you like. You can change it later in Settings too.', 'Взято из аккаунта Google — поменяй, если хочешь. Позже это можно сделать и в настройках.') : t('First name and the first letter of your surname works well. You can change it in Settings.', 'Лучше всего имя и первая буква фамилии. Поменять можно в настройках.')}</p>}
       <span className="sp" />
-      <button className="pill pill-primary pill-wide pill-s" type="submit" disabled={busy}><span className="btn-t">{t('Save', 'Сохранить')}</span></button>
+      <button className="pill pill-primary pill-wide pill-s" type="submit" disabled={busy}><span className="btn-t">{next.startsWith('/race') ? t('Save and race', 'Сохранить и в гонку') : t('Save', 'Сохранить')}</span></button>
     </form>
   );
 }

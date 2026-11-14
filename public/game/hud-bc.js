@@ -922,5 +922,5 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     }
   }
 
-  return { update, chips };
+  return { update, chips, remaining };
 }

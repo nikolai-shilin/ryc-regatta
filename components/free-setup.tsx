@@ -34,7 +34,9 @@ const GUST: Record<Wind, [number, number]> = { light: [9, 12], medium: [16, 13],
 // The scene is the race as it will be laid, all its boats afloat together; each choice flies the drone to where it shows
 // (the wind or the current over the course, the course itself), and Show course does too. Start and Show course stay at
 // the card's top, your boat and Settings at its bottom. Start saves the choice where the game reads it and opens the race.
-export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromToday: boolean; who: Who }) {
+// from: 'today' (today's race, as a free race), 'race' (the free race you were sailing; the game's Change the race), or none
+export default function FreeSetup({ lang, from, who }: { lang: Lang; from: 'today' | 'race' | null; who: Who }) {
+  const fromToday = from === 'today';
   const t = tx(lang);
   const [p, setP] = useState<Pick>({ venue: 'gocek', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any' });
   const [ready, setReady] = useState(false);
@@ -42,10 +44,14 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
     const o = readOpts();
     const d = dailyRace();
     const venue = venueOf(o.venue).id, daytime = DAYTIMES.includes(o.daytime) ? o.daytime : 'any';
-    setP(fromToday ? { venue, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course, daytime }
-      : { venue, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: savedShape(o.course), daytime });
+    const start: Pick = fromToday ? { venue: d.venue, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course, daytime }
+      : { venue, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: savedShape(o.course), daytime };
+    setP(start); if (from) setBase(start);
     setReady(true);
-  }, [fromToday]);
+  }, [from]); // eslint-disable-line react-hooks/exhaustive-deps
+  // the race this page was opened from, to mark what's changed from it
+  const [base, setBase] = useState<Pick | null>(null);
+  const changed = base ? (Object.keys(base) as (keyof Pick)[]).filter((k) => base[k] !== p[k]) : [];
   const [view, setView] = useState<View>('boats');
   const set = <K extends keyof Pick>(k: K, v: Pick[K]) => { setP((x) => ({ ...x, [k]: v })); setView(VIEW_OF[k]); };
   // the shapes this venue has room for at this length; one it hasn't goes back to up and down (the drone stays put)
@@ -58,7 +64,7 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
   // one choice as the pause menu's quick switches: a label, then pills with a light that's on
   const tags = <K extends keyof Pick>(k: K, ico: React.ReactNode, label: string, opts: [Pick[K], string][], hint?: React.ReactNode) => (
     <div className="bt-g">
-      <span className="bt-k" id={`fs-${k}`}>{ico}{label}</span>
+      <span className="bt-k" id={`fs-${k}`}>{ico}{label}{changed.includes(k) ? <i className="bt-chg" title={t('Changed', 'Изменено')}><span className="vh">{t('changed', 'изменено')}</span></i> : null}</span>
       <div className={`bt-pills ${k === 'venue' ? 'bt-row1' : ''}`} role="radiogroup" aria-labelledby={`fs-${k}`}>
         {opts.map(([v, l]) => (
           <button key={String(v)} type="button" role="radio" aria-checked={p[k] === v} className="bt-pill" onClick={() => set(k, v)}>{l}</button>
@@ -119,7 +125,7 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
         <div className="bt-info">
           <div className="bt-top">
             <Link className="bt-back" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
-            <span className="bt-kick">{t('Free race', 'Свободная гонка')}</span>
+            <span className="bt-kick">{from === 'race' ? t('Change the race', 'Изменить гонку') : t('Free race', 'Свободная гонка')}</span>
           </div>
           <h1 className="bt-h" id="fs-title">{t(...where.name)}</h1>
           <p className="bt-p">{t(...where.place)} · {t(`prevailing wind ${where.wind[0]}`, `преобладающий ветер ${where.wind[1]}`)}. {t(...where.about)}</p>
@@ -139,7 +145,7 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
 
         <PauseCard lang={lang} who={who} back={fromToday ? '/race/free?from=today' : '/race/free'} label={t('Set up your race', 'Настрой гонку')}
           head={<>
-            <button type="button" className="bt-go" onClick={go}><IconPlay /><span>{t('Start race', 'Начать гонку')}</span></button>
+            <button type="button" className="bt-go" onClick={go}><IconPlay /><span>{from === 'race' ? t('Restart with these', 'Заново с этими') : t('Start race', 'Начать гонку')}</span></button>
             <button type="button" className="bt-show" aria-pressed={view === 'course'} onClick={() => setView(view === 'course' ? 'boats' : 'course')}>
               {view === 'course' ? <IconBoats s={15} /> : <IconRoute s={15} />}<span>{view === 'course' ? t('Boats', 'Лодки') : t('Show course', 'Дистанция')}</span>
             </button>
@@ -171,6 +177,7 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
             <span className="bt-k"><IconRoute />{t('Your course', 'Твоя дистанция')}<span className="bt-k-r">{p.course !== 'wl' ? `${shapeName} · ` : ''}{courseName} · {lapsName} · {metres}</span></span>
             <CourseMap className="cmap bt-map" lang={lang} geo={geo} preset={p.preset} W={250} H={210} route fleet={p.fleet} />
           </div>
+          {base && changed.length ? <p className="bt-what" role="status"><b>{t('What happens', 'Что будет')}</b> {from === 'today' ? t(`A free race with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'} from today’s. It doesn’t go on today’s ranking.`, `Свободная гонка, изменений по сравнению с гонкой дня: ${changed.length}. В рейтинг дня она не идёт.`) : t(`The race starts over, with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'}.`, `Гонка начнётся заново, изменений: ${changed.length}.`)}</p> : null}
           <p className="bt-saved bt-saved-l">{best != null
             ? t(`Your best on this course: ${clock(best)}. Beat it and the result page says so.`, `Твой лучший результат на этой дистанции: ${clock(best)}. Побьёшь — страница результата скажет.`)
             : t('The game keeps your best time on every course. A free race doesn’t go on today’s ranking.', 'Игра помнит лучшее время на каждой дистанции. Свободная гонка в рейтинг дня не идёт.')}</p>

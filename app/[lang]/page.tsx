@@ -79,6 +79,12 @@ export default async function Home({ params }: LangParams) {
     [t('Tacks, gybes and the kite', 'Повороты и генакер'), t('Tack on the headers, hoist the gennaker for the run home.', 'Поворачивай на заходах, ставь генакер на попутном к финишу.')],
     [t('A phone or a keyboard', 'Телефон или клавиатура'), t('Steer with your thumb, upright or sideways, or with the arrow keys.', 'Рули пальцем, вертикально или горизонтально, или стрелками.')],
   ];
+  const way: [string, string, string][] = [
+    [t('Or set up your own', 'Или настрой свою'), t('The place, the wind, the fleet, the course’s shape and length, laps, the start’s length and the current. The game keeps your best on every course.', 'Место, ветер, флот, форма и длина дистанции, круги, длина старта и течение. Игра помнит твоё лучшее время на каждой дистанции.'), '/race/free'],
+    [t('A debrief, not just a place', 'Разбор, а не только место'), t('Every finish opens its own page: the results, your track with any foul marked, leg by leg, what to work on, and the rule behind each foul.', 'Каждый финиш открывает свою страницу: результаты, твой трек с отмеченными нарушениями, отрезок за отрезком, над чем поработать и правило за каждым нарушением.'), '/help#h-today'],
+    [t('Hold it any way you like', 'Держи как удобно'), t('Phone sideways, phone upright or a computer: the race screen lays itself out for each, and follows the phone if you turn it mid-race.', 'Телефон горизонтально, вертикально или компьютер: экран гонки подстраивается под каждый и поворачивается вместе с телефоном прямо в гонке.'), '/help#h-screen'],
+    [t('Three views', 'Три вида'), t('The drone behind the boat, straight down from above, or from the helm. Switch any time; on a keyboard, X, C and V.', 'Дрон за лодкой, прямо сверху или со штурвала. Переключай в любой момент; на клавиатуре — X, C и V.'), '/help#h-views'],
+  ];
   const steps: [string, string, string][] = [
     ['h-wind-v3', t('Pick a race', 'Выбери гонку'), t('Today’s race is the same for everyone. A free race is yours to set up: the wind, the fleet, the course. Either starts in one tap.', 'Гонка дня одна для всех. Свободную настраиваешь сам: ветер, флот, дистанцию. Любая начинается в одно касание.')],
     ['h-start-v4', t('Win the start', 'Выиграй старт'), t('Hover below the line while the minute runs down, then cross it at full speed on the gun. Go too soon and the X flag sends you back.', 'Держись под линией, пока идёт минута, и пересеки её на полном ходу с сигналом. Поспешишь — флаг X отправит назад.')],
@@ -116,8 +122,9 @@ export default async function Home({ params }: LangParams) {
               <a className="ho-go ho-go-xl" href={go}><IconPlay s={22} /><span>{t('Sail today’s race', 'Пройти гонку дня')}</span></a>
               <Link className="ho-ghost ho-go-xl" href="/race/free">{t('Practise first', 'Сначала потренироваться')}</Link>
             </div>
+            <Link className="ho-how" href="/help">{t('New to it? How to play, in 3 minutes', 'Впервые? Как играть — за 3 минуты')} ›</Link>
             <ul className="ho-trust">
-              <li>{t('Free', 'Бесплатно')}</li><li>{t('No install', 'Без установки')}</li><li>{t('No sign-up to play', 'Без регистрации')}</li><li>{t('Phone or keyboard', 'Телефон или клавиатура')}</li>
+              <li>{t('Free', 'Бесплатно')}</li><li>{t('No install', 'Без установки')}</li><li>{t('No sign-up to play', 'Без регистрации')}</li><li>{t('Phone or keyboard', 'Телефон или клавиатура')}</li><li>English · Русский</li>
             </ul>
           </div>
           <aside className="ho-card ho-rank" aria-label={t('Today’s ranking', 'Рейтинг дня')}>
@@ -244,6 +251,14 @@ export default async function Home({ params }: LangParams) {
             <div><dt className="bt-sk">{t('Shifts', 'Заходы')}</dt><dd><b><CountUp v="10°+" /></b></dd><dd className="bt-sv">{t('Every minute. Catch them or lose places', 'Каждую минуту. Лови их или теряй места')}</dd></div>
             <div><dt className="bt-sk">{t('Race of the day', 'Гонка дня')}</dt><dd><b>1</b></dd><dd className="bt-sv">{t('One for everyone, a new one every midnight', 'Одна на всех, новая каждую полночь')}</dd></div>
           </dl>
+        </section>
+
+        {/* your race, your way: the set-up, the debrief, the screens and the views */}
+        <section className="ho-sec" aria-labelledby="h-way">
+          <div className="ho-sec-t"><span className="ho-k">{t('Your race, your way', 'Твоя гонка — по-твоему')}</span><h2 className="ho-h2" id="h-way">{t('Set it up, sail it, read it back', 'Настрой, пройди, разбери')}</h2></div>
+          <div className="ho-feats ho-feats-4">
+            {way.map(([title, text, href]) => <Link className="ho-feat ho-feat-a" href={href} key={title}><i aria-hidden="true" /><div><h3 className="ho-h3">{title}</h3><p className="ho-ps">{text}</p></div></Link>)}
+          </div>
         </section>
 
         {/* 8 · the doubts, answered where they come up */}

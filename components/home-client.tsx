@@ -58,7 +58,7 @@ export function MyRow({ lang, day, top = [], next = '/' }: { lang: Lang; day: st
     <li className="me">
       <span className="hm-n">{listed ? place : '·'}</span>
       <span>
-        {t('You', 'Ты')}
+        <span className="if-guest">{t('You', 'Ты')}</span><span className="if-me lb-you" data-you={t('(you)', '(ты)')} />
         {missing && <small className="hm-why if-me" title={t('This device has the time, but the race didn’t reach today’s ranking', 'Время есть на этом устройстве, но в рейтинг дня гонка не попала')}>{t('not on the ranking', 'не в рейтинге')}</small>}
       </span>
       <span className="hm-t if-me">{best != null ? <>{clock(best)}{Math.abs(gap) >= 0.05 ? <small>{gap > 0 ? '+' : '−'}{Math.abs(gap).toFixed(1)}</small> : null}</> : <span className="hm-muted">{t('not yet', 'ещё нет')}</span>}</span>

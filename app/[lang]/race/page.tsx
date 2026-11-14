@@ -4,6 +4,7 @@ import { ruBoats } from '@/lib/lang';
 import { getAccount, initials } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
 import { Who as LbWho } from '@/components/flag';
+import { DailyLock } from '@/components/daily-lock';
 import { ruPlural } from '@/lib/lang';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, SHAPE_NAME } from '@/lib/race';
 import { venueOf } from '@/lib/venues';
@@ -45,16 +46,22 @@ export default async function Hub({ params }: LangParams) {
           <div className="bt-top">
             <Link className="bt-back" href="/" aria-label={t('Home', 'На главную')}><IconBack /></Link>
             <span className="bt-kick">{t('Today’s race', 'Гонка дня')} · {date}</span>
+            <span className="bt-top-r">
+              <Link className="bt-ico" href="/help" aria-label={t('How to play', 'Как играть')} title={t('How to play', 'Как играть')}>?</Link>
+              {who
+                ? <Link className="bt-acct bt-acct-me" href="/settings" aria-label={t(`Settings, signed in as ${who.name || who.email}`, `Настройки, вход как ${who.name || who.email}`)}>{who.initials}</Link>
+                : <Link className="bt-acct" href="/sign-in?next=/race">{t('Sign in', 'Войти')}</Link>}
+            </span>
           </div>
           <h1 className="bt-h">{v.name[L]}</h1>
           <p className="bt-p">{v.place[L]}. {v.about[L]} {best
             ? t(`The same race for everyone today: ${races} sailed so far.`, `Сегодня у всех одна гонка: уже ${races} ${ruPlural(races, ['заезд', 'заезда', 'заездов'])}.`)
             : t('The same race for everyone today. Nobody has finished it yet.', 'Сегодня у всех одна гонка. Её ещё никто не прошёл.')}</p>
-          <div className="bt-stats">
-            <div><span className="bt-sk">{t('Wind', 'Ветер')}</span><b><Num v={`${KN[d.preset]} ${t('kn', 'уз')}`} /></b><span className="bt-sv">{t(`${breeze}, shifting`, `${breeze}, переменчивый`)}</span></div>
-            <div><span className="bt-sk">{t('Course', 'Дистанция')}</span><b><Num v={metres} /></b><span className="bt-sv">{t(`${SHAPE_NAME[d.course][0]} · ${d.laps} lap`, `${SHAPE_NAME[d.course][1]} · ${d.laps} круг`)}</span></div>
-            <div><span className="bt-sk">{t('Fleet', 'Флот')}</span><b>{d.fleet}</b><span className="bt-sv">{t(`You and ${d.fleet - 1} boats`, `Ты и ${ruBoats(d.fleet - 1)}`)}</span></div>
-            <div><span className="bt-sk">{t('Start', 'Старт')}</span><b><Num v={t(`${d.start} min`, `${d.start} мин`)} /></b><span className="bt-sv">{d.current ? t('A current runs across', 'Течение поперёк') : t('Class flag, P, the gun', 'Флаг класса, P, сигнал')}</span></div>
+          <div className="bt-stats bt-stats-lock">
+            <div data-lock role="button" tabIndex={0} aria-haspopup="dialog"><span className="bt-sk">{t('Wind', 'Ветер')}</span><b><Num v={`${KN[d.preset]} ${t('kn', 'уз')}`} /></b><span className="bt-sv">{t(`${breeze}, shifting`, `${breeze}, переменчивый`)}</span></div>
+            <div data-lock role="button" tabIndex={0} aria-haspopup="dialog"><span className="bt-sk">{t('Course', 'Дистанция')}</span><b><Num v={metres} /></b><span className="bt-sv">{t(`${SHAPE_NAME[d.course][0]} · ${d.laps} lap`, `${SHAPE_NAME[d.course][1]} · ${d.laps} круг`)}</span></div>
+            <div data-lock role="button" tabIndex={0} aria-haspopup="dialog"><span className="bt-sk">{t('Fleet', 'Флот')}</span><b>{d.fleet}</b><span className="bt-sv">{t(`You and ${d.fleet - 1} boats`, `Ты и ${ruBoats(d.fleet - 1)}`)}</span></div>
+            <div data-lock role="button" tabIndex={0} aria-haspopup="dialog"><span className="bt-sk">{t('Start', 'Старт')}</span><b><Num v={t(`${d.start} min`, `${d.start} мин`)} /></b><span className="bt-sv">{d.current ? t('A current runs across', 'Течение поперёк') : t('Class flag, P, the gun', 'Флаг класса, P, сигнал')}</span></div>
           </div>
         </div>
 
@@ -76,12 +83,13 @@ export default async function Hub({ params }: LangParams) {
           </div>
           <FreeQuick lang={lang} />
           <div className="bt-rows">
-            <Link className="bt-row" href="/race/free?from=today"><IconSliders /><span>{t('Change the wind or course', 'Изменить ветер или дистанцию')}</span><span className="bt-row-m">{t('A free race', 'Свободная гонка')}</span></Link>
+            <button type="button" className="bt-row" data-lock aria-haspopup="dialog"><IconSliders /><span>{t('Change the wind or course', 'Изменить ветер или дистанцию')}</span><span className="bt-row-m">{t('A free race', 'Свободная гонка')}</span></button>
             <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
             <SettingsRow lang={lang} />
           </div>
         </PauseCard>
       </div>
+      <DailyLock lang={lang} chips={[`${t(...venueOf(d.venue).name)}`, `${breeze} ${KN[d.preset]} ${t('kn', 'уз')}`, `${t(...SHAPE_NAME[d.course])} · ${metres}`, t(`${d.fleet} boats`, `${d.fleet} лодок`), t(`${d.start} min start`, `старт ${d.start} мин`), d.current ? t('Current on', 'С течением') : t('No current', 'Без течения')]} />
     </div>
   );
 }

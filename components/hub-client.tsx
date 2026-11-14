@@ -1,7 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { ruBoats, tx, type Lang } from '@/lib/lang';
+import Link from 'next/link';
 import { readOpts, saveOpts } from '@/lib/opts';
+import { venueOf } from '@/lib/venues';
 import { KN, type Wind } from '@/lib/race';
 import { IconWind } from './ui';
 
@@ -14,7 +16,8 @@ export function FreeQuick({ lang }: { lang: Lang }) {
     const o = readOpts();
     if (!o.lastFree) return;
     const w = { light: t('light', 'слабый'), medium: t('medium', 'средний'), strong: t('strong', 'сильный') }[o.preset];
-    setLast(t(`Last: ${w}, ${o.fleet} boats`, `Прошлая: ${w}, ${ruBoats(o.fleet)}`));
+    const v = t(...venueOf(o.venue).name), laps = o.laps > 1 ? t(`, ${o.laps} laps`, `, ${o.laps} круга`) : '';
+    setLast(t(`Last: ${v}, ${w}, ${o.fleet} boats${laps}`, `Прошлая: ${v}, ${w}, ${ruBoats(o.fleet)}${laps}`));
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const go = (preset: Wind) => { saveOpts({ preset, mode: 'free', lastFree: Date.now() }); location.href = '/play?race=free'; };
   const winds: [Wind, string][] = [['light', t('Light', 'Слабый')], ['medium', t('Medium', 'Средний')], ['strong', t('Strong', 'Сильный')]];
@@ -26,6 +29,7 @@ export function FreeQuick({ lang }: { lang: Lang }) {
           <button key={w} type="button" className="bt-pill bt-pill-go" onClick={() => go(w)}>{label} {KN[w]} {t('kn', 'уз')}</button>
         ))}
       </div>
+      <Link className="lb-more" href="/race/free">{t('Set up a free race: place, wind, course', 'Настроить свободную гонку: место, ветер, дистанция')} ›</Link>
     </div>
   );
 }

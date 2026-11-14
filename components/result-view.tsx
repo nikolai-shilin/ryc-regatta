@@ -44,6 +44,8 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   const t = tx(lang);
   const [res, setRes] = useState<Result | null | undefined>(undefined);
   const [top, setTop] = useState<Top[] | null>(null);
+  // the day's whole field, for "2nd of 37 today": the times of everyone ranked (null until known, or if the server can't say)
+  const [field, setField] = useState<number[] | null>(null);
   // shared: the race isn't on this device, but the game posted it to the server when it finished (stats.js raceResult),
   // so this is someone's link: the page speaks of "this boat", not "you"
   const [shared, setShared] = useState(false);
@@ -62,6 +64,9 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
     if (!res?.daily) return;
     fetch('https://iyt.rycrentals.com/api/game').then((r) => (r.ok ? r.json() : null)).then((j) => {
       const d = j?.daily; if (d && d.d === res.daily) setTop((d.top || []).slice(0, 3));
+    }).catch(() => {});
+    fetch(`https://iyt.rycrentals.com/api/game?day=${encodeURIComponent(res.daily)}`).then((r) => (r.ok ? r.json() : null)).then((j) => {
+      if (j && j.d === res.daily && Array.isArray(j.rows)) setField(j.rows.map((r: { s: number }) => r.s));
     }).catch(() => {});
   }, [res]);
 
@@ -127,15 +132,15 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   else if (L.ocs) items.push({ k: t('Start', 'Старт'), good: false, v: t('At the gun: over the line — you had to go back', 'На сигнале старта: за линией — пришлось возвращаться'), tip: t('Aim to be a boat length behind the line, at full speed, as the gun goes.', 'Цель — быть в корпусе от линии на полной скорости в момент сигнала.') });
   else if (L.gunD != null && L.gunV != null) {
     const good = L.gunD >= 0 && L.gunD < 25 && L.gunV > 3.5, d = Math.round(Math.max(0, L.gunD)), v = L.gunV.toFixed(1);
-    items.push({ k: t('Start', 'Старт'), good, v: t(`At the gun: ${d} m from the line at ${v} kn`, `На сигнале старта: ${d} м до линии, ${v.replace('.', ',')} уз`), tip: good ? '' : t('Aim to be a boat length behind the line, at full speed, as the gun goes.', 'Цель — быть в корпусе от линии на полной скорости в момент сигнала.') });
+    items.push({ k: t('Start', 'Старт'), good, v: t(`At the gun: ${d} m from the line at ${v} kn`, `На сигнале старта: ${d} м до линии, ${v.replace('.', ',')} уз`), tip: good ? t('Close to the line and up to speed at the gun: that is the start that wins races.', 'У линии и на скорости в момент старта — так и выигрываются гонки.') : t('Aim to be a boat length behind the line, at full speed, as the gun goes.', 'Цель — быть в корпусе от линии на полной скорости в момент сигнала.') });
   }
-  if (L.pct != null) items.push({ k: t('Speed', 'Скорость'), good: L.pct >= 90, v: t(`${L.pct}% of target on average`, `В среднем ${L.pct}% от целевой`), tip: L.pct >= 90 ? '' : t('Keep the sheet in the green band and steer smoothly: every turn of the rudder brakes the boat.', 'Держи шкот в зелёной полосе и рули плавно: каждое движение руля тормозит.') });
-  if (L.tacks) items.push({ k: t('Tacks', 'Повороты'), good: L.lift <= L.head, v: t(`On the beat: ${L.head} in a header, ${L.lift} in a lift`, `На лавировке: ${L.head} — когда ветер зашёл, ${L.lift} — когда отошёл`), tip: L.lift <= L.head ? '' : t('Tack when the wind heads you (Header in the wind box), not when it lifts you (Lift).', 'Поворачивай, когда ветер заходит («Заход» в окне ветра), а не когда отходит («Отход»).') });
-  if (L.dirty >= 10) items.push({ k: t('Dirty air', 'Ветровая тень'), good: L.dirty < 30, v: t(`${L.dirty} s in another boat’s dirty air`, `${L.dirty} с в ветровой тени другой лодки`), tip: L.dirty < 30 ? '' : t('Behind and downwind of another boat the wind is weaker: tack away or sail clear of it.', 'За другой лодкой и под ветром от неё ветер слабее: поверни или уйди из ветровой тени.') });
+  if (L.pct != null) items.push({ k: t('Speed', 'Скорость'), good: L.pct >= 90, v: t(`${L.pct}% of target on average`, `В среднем ${L.pct}% от целевой`), tip: L.pct >= 90 ? t('The sheet stayed in the green band: the boat sailed close to her best.', 'Шкот был в зелёной полосе — лодка шла близко к лучшей скорости.') : t('Keep the sheet in the green band and steer smoothly: every turn of the rudder brakes the boat.', 'Держи шкот в зелёной полосе и рули плавно: каждое движение руля тормозит.') });
+  if (L.tacks) items.push({ k: t('Tacks', 'Повороты'), good: L.lift <= L.head, v: t(`On the beat: ${L.head} in a header, ${L.lift} in a lift`, `На лавировке: ${L.head} — когда ветер зашёл, ${L.lift} — когда отошёл`), tip: L.lift <= L.head ? t('You tacked on the headers: each one turned the shift into ground gained.', 'Ты поворачивал на заходах — и каждый превращал сдвиг ветра в выигрыш.') : t('Tack when the wind heads you (Header in the wind box), not when it lifts you (Lift).', 'Поворачивай, когда ветер заходит («Заход» в окне ветра), а не когда отходит («Отход»).') });
+  if (L.dirty >= 10) items.push({ k: t('Dirty air', 'Ветровая тень'), good: L.dirty < 30, v: t(`${L.dirty} s in another boat’s dirty air`, `${L.dirty} с в ветровой тени другой лодки`), tip: L.dirty < 30 ? t('Mostly in clear air, where the wind is full.', 'Почти всё время в чистом ветре, где он полный.') : t('Behind and downwind of another boat the wind is weaker: tack away or sail clear of it.', 'За другой лодкой и под ветром от неё ветер слабее: поверни или уйди из ветровой тени.') });
   if (L.penT > 1) items.push({ k: t('Penalties', 'Штрафы'), good: false, v: t(`${L.penT} s spinning penalty turns`, `${L.penT} с на штрафных оборотах`), tip: t('The rule behind each foul is below.', 'Правило за каждым нарушением — ниже.') });
   const hails = Object.values(L.hails || {}).reduce((a, b) => a + b, 0);
   if (hails) items.push({ k: t('Hails', 'Оклики'), good: false, v: t(`Hailed ${hails}× by boats you had to keep clear of`, `${hails} раз(а) окликнули лодки, которым ты должен был уступить`), tip: t('A hail is a warning, not a penalty — keep clear in time.', 'Оклик — предупреждение, а не штраф: уступай вовремя.'), note: true });
-  if (!L.fouls.length && !L.ocs && !L.startDsq && !hails) items.push({ k: t('Rules', 'Правила'), good: true, v: t('No fouls and no penalties — a clean race', 'Ни нарушений, ни штрафов — чистая гонка'), tip: '' });
+  if (!L.fouls.length && !L.ocs && !L.startDsq && !hails) items.push({ k: t('Rules', 'Правила'), good: true, v: t('No fouls and no penalties — a clean race', 'Ни нарушений, ни штрафов — чистая гонка'), tip: t('You kept clear in time, every time.', 'Ты всегда вовремя уступал дорогу.') });
   const foulRules = [...new Map(L.fouls.map((f) => [f.rule, f])).values()];
   const legM = legDistances(res.course, res.course.legs);
   const tracks = res.boats.map((b) => ({ pts: b.track, me: b.me }));
@@ -259,7 +264,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
             <div className="rs-col rs-wide">
               <span className="rs-kick">{t('Today’s race', 'Гонка дня')}</span>
               <h2 className="rs-h2">{t('Today’s fastest', 'Самые быстрые сегодня')}</h2>
-              <Ranking t={t} lang={lang} top={top} daily={!!res.daily} me={me} signedName={shared ? null : signedName} you={shared ? you : null} />
+              <Ranking t={t} lang={lang} top={top} field={field} id={res.id} daily={!!res.daily} me={me} signedName={shared ? null : signedName} you={shared ? you : null} />
             </div>
           ) : null}
           {!shared && (
@@ -281,7 +286,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
 
         <nav className="rs-card rs-next" aria-label={t('Where next', 'Куда дальше')}>
           <Link className="bt-row" href={again}><IconRestart s={18} /><span>{res.daily ? t('Today’s race again', 'Гонка дня ещё раз') : t('The same race again', 'Эту же гонку ещё раз')}</span></Link>
-          <Link className="bt-row" href="/race/free"><IconSliders /><span>{t('Free race', 'Свободная гонка')}</span><span className="bt-row-m">{t('Set it up', 'Настроить')}</span></Link>
+          <Link className="bt-row" href={res.daily ? '/race/free?from=today' : '/race/free'}><IconSliders /><span>{res.daily ? t('A free race in these conditions', 'Свободная гонка в этих условиях') : t('Free race', 'Свободная гонка')}</span><span className="bt-row-m">{t('Set it up', 'Настроить')}</span></Link>
           <Link className="bt-row" href="/race"><IconFlag s={18} /><span>{t('Race hub', 'Меню гонок')}</span></Link>
           <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
         </nav>
@@ -291,20 +296,28 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
 }
 
 // you: how a shared result names its boat; then there's no asking to sign in, as it isn't the viewer's race
-function Ranking({ t, lang, top, daily, me, signedName, you }: { t: (en: string, ru: string) => string; lang: Lang; top: Top[] | null; daily: boolean; me: Boat; signedName: string | null; you: string | null }) {
+function Ranking({ t, lang, top, field, id, daily, me, signedName, you }: { t: (en: string, ru: string) => string; lang: Lang; top: Top[] | null; field: number[] | null; id: string; daily: boolean; me: Boat; signedName: string | null; you: string | null }) {
+  // where this time stands in the day's field: signed in, it's on it; a guest's would be, if they signed in
+  const mine = me.secs != null && !me.dsq ? me.secs : null;
+  const listed = mine != null && !!field && field.some((s) => Math.abs(s - mine) < 0.05);
+  const place = mine != null && field ? field.filter((s) => s < mine - 0.05).length + 1 : 0, of = field ? field.length + (listed ? 0 : 1) : 0;
+  const ordP = lang === 'ru' ? `${place}-е` : `${place}${['th', 'st', 'nd', 'rd'][(place % 100 > 10 && place % 100 < 14) || place % 10 > 3 ? 0 : place % 10]}`;
+  const standing = !place ? '' : signedName && !you && listed ? t(`${ordP} of ${of} today`, `${ordP} место из ${of} сегодня`)
+    : !you && !signedName ? t(`${clock(mine!)} would be ${ordP} of ${of} today`, `${clock(mine!)} — это ${ordP} место из ${of} сегодня`) : '';
   return (
     <div className="rs-card rs-rank">
+      {standing && <p className="rs-standing"><b>{standing}</b></p>}
       <ol className="hm-lb bt-lb">
         {(top || []).map((r, i) => <li key={i} className={i === 0 ? 'first' : ''}><span className="hm-n">{i + 1}</span><Who fl={r.fl} name={r.name || t('No name', 'Без имени')} lang={lang} /><span className="hm-t">{clock(r.s)}</span></li>)}
         {top === null && daily && [0, 1, 2].map((i) => <li key={i} className="sk-li" aria-hidden="true"><Sk w={20} h={14} /><Sk w="60%" h={14} /><Sk w={48} h={14} /></li>)}
         {top && !top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
-        <li className="me"><span className="hm-n">·</span><span>{you || (signedName ? `${signedName} (${t('you', 'ты')})` : t('You', 'Ты'))}</span><span className="hm-t">{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</span></li>
+        <li className="me"><span className="hm-n">{listed ? place : '·'}</span><span>{you || (signedName ? `${signedName} (${t('you', 'ты')})` : t('You', 'Ты'))}</span><span className="hm-t">{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</span></li>
       </ol>
       {daily && <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')} ›</Link>}
       {!signedName && !you && (
         <div className="rs-sign">
           <span className="rs-ps"><b>{t('Not on the ranking', 'Не в рейтинге')}</b> · {t('sign in and your times go on it.', 'войди — и время попадёт в рейтинг.')}</span>
-          <Link className="bt-mini bt-mini-on" href="/sign-in?next=/race">{t('Sign in', 'Войти')}</Link>
+          <Link className="bt-mini bt-mini-on" href={`/sign-in?next=${encodeURIComponent(`/race/result/${id}`)}`}>{t('Sign in', 'Войти')}</Link>
         </div>
       )}
     </div>

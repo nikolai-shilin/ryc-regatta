@@ -12,5 +12,5 @@ export const generateMetadata = titled('Free race', 'Свободная гонк
 export default async function FreeRacePage({ params, searchParams }: LangParams & { searchParams: Promise<{ from?: string }> }) {
   const [{ lang, t }, sp, account] = await Promise.all([getT(params), searchParams, getAccount()]);
   const who = account ? { name: account.name, email: account.email, initials: initials(account.name, account.email), via: account.provider === 'google' ? 'Google' : account.provider === 'telegram' ? 'Telegram' : t('email code', 'код по почте') } : null;
-  return <FreeSetup lang={lang} fromToday={sp.from === 'today'} who={who} />;
+  return <FreeSetup lang={lang} from={sp.from === 'today' ? 'today' : sp.from === 'race' ? 'race' : null} who={who} />;
 }

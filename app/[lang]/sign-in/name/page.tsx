@@ -19,10 +19,11 @@ export default async function Name({ params, searchParams }: LangParams & { sear
   const { data } = await supabase.auth.getUser();
   if (!data.user) redirect(`/sign-in?next=${encodeURIComponent(next)}`);
   const meta = data.user.user_metadata || {};
+  const fromGoogle = !meta.display_name && !!(meta.full_name || meta.name);
   const suggested = String(meta.display_name || short(String(meta.full_name || meta.name || '')));
   return (
     <AuthShell lang={lang}>
-      <NameForm lang={lang} next={next} suggested={suggested} />
+      <NameForm lang={lang} next={next} suggested={suggested} fromGoogle={fromGoogle && !!suggested} />
     </AuthShell>
   );
 }

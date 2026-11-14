@@ -636,9 +636,10 @@
     <h1 id="pLeg"></h1>
     <div class="p-legs" id="pLegs" aria-hidden="true"></div>
     <p id="pNext"></p>
+    <p class="p-line" id="pLine"></p>
     <div class="p-stats">
       <div><span class="meta" data-t="placeK"></span><b id="pPlace"></b><span id="pOf"></span></div>
-      <div><span class="meta" data-t="timeK"></span><b id="pTime"></b></div>
+      <div><span class="meta" data-t="timeK"></span><b id="pTime"></b><span id="pTimeD"></span></div>
       <div><span class="meta" data-t="penK"></span><b id="pPen"></b><span id="pPenD"></span></div>
     </div>
     <span class="p-esc meta" data-t="escResumes"></span>
@@ -659,7 +660,7 @@
 
 <div class="overlay bc" id="confirmCard" hidden>
   <div class="card c-card" role="dialog" aria-modal="true" aria-labelledby="cHead">
-    <span class="kicker" data-t="pausedK"></span>
+    <span class="kicker" id="cKick" data-t="pausedK"></span>
     <h2 id="cHead" data-t="leaveK"></h2>
     <p id="cTxt"></p>
     <div class="c-btns"><button class="go ghost" id="cKeep" data-t="keepRacing"></button><button class="go" id="cGo"></button></div>

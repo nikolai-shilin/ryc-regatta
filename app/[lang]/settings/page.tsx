@@ -1,3 +1,4 @@
+import { DoneButton } from '@/components/done-button';
 import Link from 'next/link';
 import { getT, titled, type LangParams } from '@/lib/i18n';
 import { getAccount, initials } from '@/lib/supabase/server';
@@ -29,6 +30,7 @@ export default async function SettingsPage({ params }: LangParams) {
           <div className="aph-top">
             <Link className="round round-s round-muted" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
             <span className="kicker">{t('Settings', 'Настройки')}</span>
+            <DoneButton label={t('Done', 'Готово')} />
           </div>
           <h1 className="aph-h">{t('Sailing, screen and sound', 'Яхта, экран и звук')}</h1>
         </div>
