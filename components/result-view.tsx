@@ -155,7 +155,7 @@ export default function ResultView({ id, lang, signedName, who, head, foot }: { 
     : nb.ahead ? t(`Last across the line, ${gapS(nb.ahead.gap)} after ${nb.ahead.name}.`, `Последним на финише, через ${gapS(nb.ahead.gap)} после ${nb.ahead.name}.`) : '';
   const pbNote = shared ? null : res.pb?.isNew ? t('New personal best', 'Новый личный рекорд')
     : res.pb && me.secs === res.pb.best ? (res.daily ? t('Your best today', 'Твой лучший сегодня') : t('Your best on this course', 'Твой лучший на этой дистанции')) : null;
-  const placeOf = me.dsq ? 'DSQ' : `${place}/${res.boats.length}`;
+  const colorOf = (name: string) => res.boats.find((b) => b.name === name)?.color || '#ffd640';
   const legs = [...L.legs.map((tm, i) => ({ k: res.course.legs[i], i, tm, pl: L.legPlaces[i] })),
     ...(me.done && me.secs != null && L.legs.length < res.course.legs.length ? [{ k: 'finish', i: res.course.legs.length - 1, tm: me.secs, pl: me.dsq ? 0 : place }] : [])];
 
@@ -164,19 +164,29 @@ export default function ResultView({ id, lang, signedName, who, head, foot }: { 
       <div className="bt">
         <GameScene venue={where.id} wind={res.preset} finish={scene} title={t('The finish in 3D, as it was', 'Финиш в 3D, как он был')} />
 
-        <div className="bt-info">
+        {/* the race's state as the game's own pause screen has it: a status chip, the bold sans heading, the legs as a
+            track (all sailed), the boats either side of you at the line as the chips they wear on the water, and the
+            numbers in glass tiles */}
+        <div className="bt-info rs-info">
           <div className="bt-top">
             <Link className="bt-back" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
-            <span className="bt-kick">{kicker}</span>
+            <span className={`rs-badge ${me.dsq ? 'dsq' : ''}`}>{me.dsq ? t('Disqualified', 'Дисквалификация') : t('Finished', 'Финиш')}</span>
           </div>
-          <h1 className="bt-h">{title}</h1>
-          <p className="bt-p">{t(...where.name)}, {t(...where.place)}. {near || t('The boats are where they were at the finish.', 'Лодки там, где были на финише.')}</p>
-          {pbNote && <span className="bt-badge">{pbNote}</span>}
-          <div className="bt-stats">
-            <div><span className="bt-sk">{t('Time', 'Время')}</span><b>{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</b></div>
-            <div><span className="bt-sk">{t('Place', 'Место')}</span><b>{placeOf}</b></div>
-            <div><span className="bt-sk">{t('Behind', 'Отставание')}</span><b>{gap}</b></div>
-            <div><span className="bt-sk">{t('Penalties', 'Штрафы')}</span><b>{L.penT > 1 ? `${L.penT} ${t('s', 'с')}` : '0'}</b></div>
+          <h1 className="bt-h rs-h">{title}</h1>
+          <div className="rs-legs-track" aria-hidden="true">{res.course.legs.slice(1).map((k, i) => <i key={i} className="done" />)}</div>
+          <span className="rs-kick">{t(...where.name)} · {kicker}</span>
+          <span className="sr-only">{near}</span>
+          {((nb.ahead || nb.behind) && !me.dsq || pbNote) && (
+            <div className="rs-near">
+              {pbNote && <span className="rs-pb" style={{ ['--c' as string]: '#2ee6a0' }}>{pbNote}</span>}
+              {nb.ahead && !me.dsq && <span aria-hidden="true" style={{ ['--c' as string]: colorOf(nb.ahead.name) }}>{t(`${nb.ahead.name} ${gapS(nb.ahead.gap)} ahead`, `${nb.ahead.name} на ${gapS(nb.ahead.gap)} впереди`)}</span>}
+              {nb.behind && !me.dsq && <span aria-hidden="true" style={{ ['--c' as string]: colorOf(nb.behind.name) }}>{t(`${nb.behind.name} ${gapS(nb.behind.gap)} behind`, `${nb.behind.name} на ${gapS(nb.behind.gap)} позади`)}</span>}
+            </div>
+          )}
+          <div className="rs-stats">
+            <div><span className="rs-sk">{t('Place', 'Место')}</span><b>{me.dsq ? 'DSQ' : t(ordEn(place), `${place}-е`)}</b><span>{t(`of ${res.boats.length}`, `из ${res.boats.length}`)}</span></div>
+            <div><span className="rs-sk">{t('Race time', 'Время')}</span><b>{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</b><span>{winner && winner !== me && me.secs != null && winner.secs != null ? t(`+${gapS(me.secs - winner.secs)} on ${winner.name}`, `+${gapS(me.secs - winner.secs)} от ${winner.name}`) : shared ? t('the winner', 'победитель') : t('you won', 'ты победил')}</span></div>
+            <div className={L.penT > 1 ? 'pen' : 'clean'}><span className="rs-sk">{t('Penalties', 'Штрафы')}</span><b>{L.penT > 1 ? `${L.penT} ${t('s', 'с')}` : '0'}</b><span>{L.penT > 1 ? t('turning circles', 'штрафные обороты') : t('clean race', 'чистая гонка')}</span></div>
           </div>
         </div>
 
