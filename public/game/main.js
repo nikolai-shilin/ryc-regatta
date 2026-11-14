@@ -637,6 +637,43 @@ const crews = {
   },
 };
 
+// ---------- the banner plane's engine ----------
+// A flat-four at cruise and a two-blade prop, both near 80 Hz: a buzzing sawtooth with a throb under it and the hiss of
+// the propwash, louder and brighter the nearer she is, its pitch up as she comes and down as she goes (Doppler), and
+// panned to where she is in the picture. Silent while paused or behind the menu; under Sound like everything else.
+const engine = {
+  build() {
+    const ctx = audio.ctx, o = ctx.createOscillator(), sub = ctx.createOscillator(), subG = ctx.createGain();
+    const thr = ctx.createOscillator(), thrG = ctx.createGain(), am = ctx.createGain(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+    o.type = 'sawtooth'; sub.type = 'square'; subG.gain.value = 0.35; thr.frequency.value = 6.5; thrG.gain.value = 0.25; am.gain.value = 0.75;
+    thr.connect(thrG).connect(am.gain); // the beat between the cylinders and the blades
+    lp.type = 'lowpass'; lp.Q.value = 0.8; g.gain.value = 0;
+    o.connect(am); sub.connect(subG).connect(am); am.connect(lp).connect(g);
+    const w = ctx.createBufferSource(), wf = ctx.createBiquadFilter(), wg = ctx.createGain(); // the propwash
+    w.buffer = audio.buf; w.loop = true; wf.type = 'bandpass'; wf.frequency.value = 700; wf.Q.value = 0.6; wg.gain.value = 0.5;
+    w.connect(wf).connect(wg).connect(g);
+    const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if (p) g.connect(p).connect(audio.master); else g.connect(audio.master);
+    for (const x of [o, sub, thr]) x.start(); w.start(0, Math.random());
+    this.n = { o, sub, lp, g, p };
+  },
+  update(still) {
+    if (!audio.ctx || !audio.buf) return;
+    if (!this.n) this.build();
+    const { o, sub, lp, g, p } = this.n, ctx = audio.ctx, now = ctx.currentTime, pl = world.plane;
+    if (still || !pl || !pl.on) { g.gain.setTargetAtTime(0, now, 0.15); return; }
+    const cam = world.camera.position, dx = pl.p.x - cam.x, dy = pl.p.y - cam.y, dz = pl.p.z - cam.z, d = Math.max(1, Math.hypot(dx, dy, dz));
+    const vr = -(pl.v.x * dx + pl.v.y * dy + pl.v.z * dz) / d, f = 78 * 343 / (343 - vr); // closing speed: positive coming
+    o.frequency.setTargetAtTime(f, now, 0.1); sub.frequency.setTargetAtTime(f / 2, now, 0.1);
+    lp.frequency.setTargetAtTime(300 + 2600 * Math.min(1, 140 / d), now, 0.2); // the air takes the top off at a distance
+    g.gain.setTargetAtTime(0.32 * Math.min(1, 90 / d), now, 0.2);
+    if (p) {
+      const v = world.camera.getWorldDirection(this._v || (this._v = cam.clone())), r = Math.hypot(v.x, v.z) || 1, hd = Math.hypot(dx, dz) || 1;
+      p.pan.setTargetAtTime(clamp((dx * -v.z + dz * v.x) / r / hd, -1, 1) * 0.8, now, 0.2);
+    }
+  },
+};
+
 // ---------- the gulls you hear, and the crew's asides ----------
 // The gulls (wildlife.js) call now and then, and cry when a boat puts one up off the water: a cry made here, from where
 // the gull is, quieter and duller the further off (under Sound, like the wind and the water). In the Russian game the
@@ -1204,7 +1241,7 @@ function updateHud(dt) {
     lastClockInt = ci;
   }
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) el.toast.classList.remove('show'); }
-  audio.update(P, paused); crews.update(P, paused); asides.update();
+  audio.update(P, paused); crews.update(P, paused); asides.update(); engine.update(false);
   if (race.coach) coach(P, a, leg);
   skipper.watch(P, dt);
   hudNext.update(P, dt);
@@ -1501,10 +1538,11 @@ function loop(now) {
     if (!running) world.orbit += dt * 0.12; // behind the menu the drone circles
     race.idle(dt);
     if (paused) { audio.update(P, true); crews.update(P, true); }
+    engine.update(true);
   }
   world.frame(running && !paused ? dt * timeScale : 0, race.t); // foam and wakes keep pace with the race
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, world, audio, skipper, crews, asides };
+if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, world, audio, skipper, crews, asides, engine };
 document.addEventListener('visibilitychange', () => { if (document.hidden && running && !paused && !window.__rg) pause(); }); // not in debug: test screenshots hide the tab

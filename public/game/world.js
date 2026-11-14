@@ -4,6 +4,7 @@ import { D2R, wrap, clamp, lerp, waveHeight, waveSlope, beatAngle, runAngle, HUL
 const SC = HULL / 10.4; // the model is drawn 10.4 m long; a First 40.7 is 12.2 m
 import { BoatView, LOOKS, playerLook } from './yacht.js';
 import { CommitteeBoat } from './committee.js';
+import { JuryBoat } from './jury.js';
 import { Wildlife } from './wildlife.js';
 import { Post, Mirror, OVERLAY, MIRRORED } from './post.js';
 import { Ocean, OCEAN_GLSL, oceanUniforms, blankOcean } from './ocean.js';
@@ -920,6 +921,9 @@ export class World {
     this.committee = this.cb.root; this.cbW0 = W0;
     add(this.committee, { x: c.committee.x + c.dir.x * 5, z: c.committee.z + c.dir.z * 5 });
     this.committee.rotation.y = -W0;
+    // the jury boat, off the course, going round it
+    this.jury ||= new JuryBoat(); this.jury.reset(race);
+    g.add(mirrored(this.jury.root));
     // the line, as a row of floating dashes
     const len = Math.hypot(c.committee.x - c.pin.x, c.committee.z - c.pin.z);
     this.line = new THREE.Mesh(lineStrip(len), lineMat());
@@ -938,6 +942,7 @@ export class World {
     for (const f of this.foam) f.age = 99;
     for (const w of this.wakes) w.dispose(this.scene);
     this.wakes = race.boats.map(() => new Wake(this.scene, this.wakeU));
+    this.juryWake?.dispose(this.scene); this.juryWake = new Wake(this.scene, this.wakeU);
     for (const h of this.contacts || []) h.dispose(this.scene);
     this.contacts = race.boats.map(() => new HullContact(this.scene, this.wakeU));
     this.wild.reset(race);
@@ -1073,6 +1078,23 @@ export class World {
     }
   }
 
+  // the jury boat goes her way; she rides the swell like the committee boat, her bow up a little with speed
+  juryFrame(dt, t) {
+    const j = this.jury, o = j.root;
+    j.update(dt, t);
+    if (!j.on) return;
+    const fx = Math.sin(j.h), fz = -Math.cos(j.h);
+    o.position.set(j.x, waveHeight(this.W, j.x, j.z, t) * 0.7, j.z);
+    o.rotation.y = -j.h;
+    o.rotation.x = waveSlope(this.W, j.x, j.z, t, fx, fz) * 0.35 + clamp(j.v / 6, 0, 1) * 0.045;
+    o.rotation.z = waveSlope(this.W, j.x, j.z, t, -fz, fx) * 0.35 - j.yawRate * j.v * 0.06; // she leans into a turn
+    this.juryWake.update(j, dt, t, this.W);
+    // her burgee flies to the wind she makes as well as the wind there is
+    const W = this.race.wind.dir(), tw = this.race.wind.p.tws * 0.514;
+    const ax = -tw * Math.sin(W) - fx * j.v, az = tw * Math.cos(W) - fz * j.v; // the air going past her
+    j.cb.update(t, dt, null, null, j.h - Math.atan2(-ax, az), Math.hypot(ax, az));
+  }
+
   frame(dt, t) {
     const race = this.race, P = race.player, wind = race.wind;
     // boats
@@ -1116,6 +1138,7 @@ export class World {
         f.age = 0; f.life = 2.5 + Math.random() * 2; f.spray = false; f.s0 = 0.5; f.s1 = 1.4; f.a = 0.32;
       }
     }
+    this.juryFrame(dt, t);
     const lg = race.course.legs[P.leg];
     this.zones.update(this.W, t, P.done ? [] : lg === 'gate' ? [0, 1] : lg === 'wing' ? [2] : []);
     this.cb.update(t, dt, race.flags, race.prepFlag, this.cbW0 - race.wind.dir(), race.wind.p.tws * 0.514); // flags fly downwind
