@@ -296,6 +296,39 @@
   .bc .rs-down { display: none; }
 }
 
+/* ---------- the scene pages' own pieces, as the design draws them ---------- */
+/* the top bar: the back button, the game's name as the title block, and on the hub a ticker with the day */
+.bc .bt-brand { display: inline-flex; align-items: stretch; flex: none; height: 36px; color: var(--ink); }
+.bc .bt-brand i { width: 5px; background: var(--you); }
+.bc .bt-brand > span { display: flex; align-items: center; padding: 0 var(--s-3); background: var(--panel-2); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  font: 700 var(--fs-lead)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; white-space: nowrap; }
+.bc .bt-top-r { align-items: center; }
+.bc .bt-tick { display: inline-flex; align-items: center; gap: var(--s-2); height: 36px; padding: 0 var(--s-4); background: var(--panel-2); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; white-space: nowrap; color: var(--ink); }
+.bc .bt-info > .bt-kick, .bc .bt-kicks { align-self: flex-start; }
+.bc .bt-kicks { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.bc .bt-kick-w { background: var(--ink); }
+/* a card's header: what it holds, and one control on the right */
+.bc .bt-card-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); margin: calc(-1 * var(--cp)) calc(-1 * var(--cp)) 0;
+  padding: var(--s-2) var(--s-2) var(--s-2) var(--cp); border-bottom: 1px solid var(--rule); }
+.bc .bt-card-h .bt-acct { flex: none; width: auto; background: var(--fill-2); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.bc .bt-card-h .bt-acct:hover { background: var(--w-14); }
+.bc .bt-card-h .bt-acct-me, .bc .bt-card-h .bt-acct-me:hover { background: var(--you); }
+/* the rows' notes on the right: what's set now */
+/* (the note gives way first, then the row's name) */
+.bc .bt-rows .bt-row > span { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc .bt-rows .bt-row > .bt-row-m { flex-shrink: 100; }
+/* the wind's number after its name, smaller */
+.bc .bt-pill small { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); opacity: .7; }
+/* the hub's headline at the hero's size on a computer (it comes down with the screen) */
+@container scr (min-width: 1024px) and (min-height: 640px) { .bc .bt-h.bt-hero { font-size: var(--fs-hero); } }
+/* a phone: the top bar's pieces a size smaller, so they keep to one line */
+@container scr (max-width: 599px) {
+  .bc .bt-top { gap: var(--s-2); }
+  .bc .bt-brand > span { padding: 0 var(--s-2); font-size: var(--fs-body); }
+  .bc .bt-tick { gap: 6px; padding: 0 var(--s-2); letter-spacing: var(--ls-button); }
+}
+
 /* ==========================================================================
    The site's own pages in the broadcast look (the home, the reading pages, settings and signing in): the old tokens
    pointed at the broadcast's, the header and footer as its bars, the home's sections.

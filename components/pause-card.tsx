@@ -9,6 +9,8 @@ import { IconScreen, IconSail, IconCrew } from './ui';
 export type Who = { name: string; email: string; via: string; initials: string } | null;
 
 const Open = createContext<(open: boolean) => void>(() => {});
+// whether Settings is open in the card: the row's summary reads the options again when it closes
+const Shown = createContext(false);
 
 // The glass card of the pages laid out as the race's pause screen (the race hub, the free race's set-up). Like the
 // pause menu it has a second view: Settings opens in the card itself, in place of what it holds, and Back returns to it,
@@ -28,7 +30,7 @@ export function PauseCard({ lang, who, back, label, head, foot, children }: { la
   }, [open]);
   return (
     <section className={`bt-card${docked ? ' bt-docked' : ''}`} ref={card} aria-label={label}>
-      <Open.Provider value={setOpen}>
+      <Open.Provider value={setOpen}><Shown.Provider value={open}>
         {docked ? (
           <>
             {head && !open && <div className="bt-dock bt-dock-t">{head}</div>}
@@ -44,15 +46,24 @@ export function PauseCard({ lang, who, back, label, head, foot, children }: { la
             {open && <Settings lang={lang} who={who} back={back} close={() => setOpen(false)} />}
           </>
         )}
-      </Open.Provider>
+      </Shown.Provider></Open.Provider>
     </section>
   );
 }
 
-// the row that opens them, as the pause menu's rows
-export function SettingsRow({ lang }: { lang: Lang }) {
-  const open = useContext(Open), t = tx(lang);
-  return <button type="button" className="bt-row" onClick={() => open(true)}><IconScreen /><span>{t('Settings', 'Настройки')}</span></button>;
+// the row that opens them, as the pause menu's rows; note: with how you sail and the first camera on its right, as
+// they're saved on this device
+export function SettingsRow({ lang, note = false }: { lang: Lang; note?: boolean }) {
+  const open = useContext(Open), shown = useContext(Shown), t = tx(lang);
+  const [sum, setSum] = useState('');
+  useEffect(() => {
+    if (!note || shown) return;
+    const o = readOpts();
+    const trim = [t('I trim', 'Трим сам'), t('Auto trim', 'Автотрим'), t('Main + jib', 'Грот + стаксель')][o.autoTrim] || '';
+    const cam = { drone: t('drone', 'дрон'), top: t('top', 'сверху'), helm: t('helm', 'штурвал') }[o.camera] || '';
+    setSum([trim, cam].filter(Boolean).join(' · '));
+  }, [note, shown, lang]); // eslint-disable-line react-hooks/exhaustive-deps
+  return <button type="button" className="bt-row" onClick={() => open(true)}><IconScreen /><span>{t('Settings', 'Настройки')}</span>{sum && <span className="bt-row-m">{sum}</span>}</button>;
 }
 
 type Keys = 'autoTrim' | 'guides' | 'camera' | 'gfx' | 'sound' | 'voice' | 'vibration' | 'music' | 'musicVol' | 'sea';
