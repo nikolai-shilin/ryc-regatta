@@ -18,7 +18,7 @@ const MARKS: Record<ShareTarget, ReactNode> = {
   email: <><rect {...L} x="3" y="5.5" width="18" height="13" rx="2" /><path {...L} d="m3.5 7 8.5 6 8.5-6" /></>,
   sms: <path {...L} d="M5 18.5V17a7.5 7 0 1 1 3 1.3L4 20z" />,
 };
-const IconLink = () => <svg viewBox="0 0 24 24" width={20} height={20} {...L} aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>;
+const IconLink = ({ s = 20 }) => <svg viewBox="0 0 24 24" width={s} height={s} {...L} aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>;
 const IconMore = () => <svg viewBox="0 0 24 24" width={20} height={20} {...F} aria-hidden="true"><circle cx="5.5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="18.5" cy="12" r="1.8" /></svg>;
 
 // The Share button and its sheet: the apps one by one, the link to copy, and the phone's own sheet for the rest.
@@ -99,5 +99,19 @@ export function ShareButton({ lang, data, className = 'bt-show', title }: { lang
       </button>
       {sheet}
     </>
+  );
+}
+
+// Copy link, beside Share: the link Share would send, on the clipboard as it is, then Copied for a moment
+export function CopyLink({ lang, data, className = 'bt-show' }: { lang: Lang; data: () => ShareData; className?: string }) {
+  const t = tx(lang);
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    if (await copyText(tagged(data().url, 'copy'))) { setCopied(true); setTimeout(() => setCopied(false), 2500); }
+  };
+  return (
+    <button type="button" className={className} onClick={copy}>
+      {copied ? <IconCheck s={15} /> : <IconLink s={15} />}<span aria-live="polite">{copied ? t('Copied', 'Скопировано') : t('Copy link', 'Скопировать ссылку')}</span>
+    </button>
   );
 }

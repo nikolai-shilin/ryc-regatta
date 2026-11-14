@@ -350,6 +350,11 @@
   .bc .fs-grid .bt-pill { flex: 1 1 auto; justify-content: center; padding: 0 var(--s-2); letter-spacing: var(--ls-name); }
 }
 
+/* the result: the time and the gap in columns of their own; Copy link beside Share */
+.bc .rs-lb .hm-t { flex: none; min-width: 56px; text-align: right; }
+.bc .rs-gap { flex: none; min-width: 52px; text-align: right; font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-3); }
+.bc .rs-share-b { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
 /* ==========================================================================
    The site's own pages in the broadcast look (the home, the reading pages, settings and signing in): the old tokens
    pointed at the broadcast's, the header and footer as its bars, the home's sections.
