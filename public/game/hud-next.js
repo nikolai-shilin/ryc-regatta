@@ -3,7 +3,7 @@
 // controls and readouts and gives them less room: one slim pill for speed and the race, a small wind dial, a
 // smaller map, a camera button that cycles, controls that fade back when your thumbs are off them, and the
 // target labelled on the water. Everything moves rather than jumps.
-import { D2R, KN, clamp, wrap, idealSail, sheetFor, beatAngle } from './sim.js';
+import { D2R, KN, clamp, wrap, idealSail, sheetFor, beatAngle, legTargets } from './sim.js';
 
 const ic = (svg) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'>${svg}</svg>`)}")`;
 const ICON = {
@@ -158,7 +158,9 @@ const CSS = `
 }
 `;
 
-const LEG = { start: 'lineStart', mark: 'mark', wing: 'wing', gate: 'gate', finish: 'finish' };
+const LEG = { start: 'lineStart', mark: 'mark', wing: 'wing', mark2: 'mark2', offset: 'offset', gate: 'gate', finish: 'finish' };
+// a leg's name, by its mark: on a trapezoid the windward mark is mark 1
+const legKey = (c, k) => (k === 'mark' && c.type === 'trap' ? 'mark1' : LEG[k]);
 const CAMS = ['drone', 'top', 'helm'];
 
 export function createHudNext({ t, LANG, fmt, world, getRace, setCam }) {
@@ -264,7 +266,7 @@ export function createHudNext({ t, LANG, fmt, world, getRace, setCam }) {
     } else {
       txt(P_.fav, '');
       if (P.done) { txt(P_.clock, fmt(P.finish)); txt(P_.toT, t('finish')); }
-      else { txt(P_.clock, fmt(race.clock)); txt(P_.toT, `${t(LEG[leg])} · ${Math.round(race.distToNext(P))} ${M}`); }
+      else { txt(P_.clock, fmt(race.clock)); txt(P_.toT, `${t(legKey(c, leg))} · ${Math.round(race.distToNext(P))} ${M}`); }
       const place = P.done ? P.place : race.standings().indexOf(P) + 1;
       txt(P_.place, `${place}/${race.boats.length}`);
       if (lastPlace && place !== lastPlace) {
@@ -321,14 +323,14 @@ export function createHudNext({ t, LANG, fmt, world, getRace, setCam }) {
 
   function placeTag(race, c, leg, P) {
     if (hud.hidden || P.done) { tag.classList.remove('on'); return; }
-    const next = leg === 'mark' ? [c.windward] : leg === 'wing' ? [c.wing] : leg === 'gate' ? c.gate : [c.pin, c.committee];
+    const next = legTargets(c, P.leg);
     const x = next.reduce((s, m) => s + m.x, 0) / next.length, z = next.reduce((s, m) => s + m.z, 0) / next.length;
     v3.set(x, 2.5, z).project(world.camera);
     const hz = parseFloat(getComputedStyle(tag).zoom) || 1, W = innerWidth / hz, H = innerHeight / hz;
     let sx = (v3.x + 1) / 2 * W, sy = (1 - v3.y) / 2 * H;
     const lw = tagIn.offsetWidth / 2 + 10; // the label must fit whole, or it goes to the edge and points
     const behind = v3.z > 1, inView = !behind && sx > lw && sx < W - lw && sy > 60 && sy < H - 40;
-    tag.classList.toggle('mark', leg === 'mark' || leg === 'wing' || leg === 'gate');
+    tag.classList.toggle('mark', !!c.marks[leg] || leg === 'gate');
     tag.classList.toggle('edge', !inView);
     let rot = 0;
     if (!inView) { // pin it to the edge, pointing the way
@@ -338,7 +340,7 @@ export function createHudNext({ t, LANG, fmt, world, getRace, setCam }) {
     }
     tag.style.transform = `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px)`;
     tag.querySelector('.ptr').style.transform = `rotate(${(rot / D2R).toFixed(0)}deg)`;
-    txt(tagT, `${t(LEG[leg])} · ${Math.round(race.distToNext(P))} ${M}`);
+    txt(tagT, `${t(legKey(c, leg))} · ${Math.round(race.distToNext(P))} ${M}`);
     tag.classList.add('on');
   }
 
