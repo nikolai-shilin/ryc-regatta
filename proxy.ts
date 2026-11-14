@@ -19,8 +19,8 @@ export async function proxy(request: NextRequest) {
   }
   const q = url.searchParams.get('lang');
   const urlLang = isLang(q) ? q : null;
-  // the route handlers (sign-in callbacks, /lang) answer at their own address; everything else is a page
-  const page = !/^\/(auth\/|lang$|_)/.test(url.pathname);
+  // the route handlers (sign-in callbacks, /lang, the jib's ad /sponsor) answer at their own address; everything else is a page
+  const page = !/^\/(auth\/|lang$|sponsor$|_)/.test(url.pathname);
   const target = url.clone();
   if (page) {
     target.pathname = `/${pickLang(q, request.cookies.get('lang')?.value, request.headers.get('accept-language'))}${url.pathname === '/' ? '' : url.pathname}`;
