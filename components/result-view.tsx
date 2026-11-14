@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ruBoats, tx, type Lang } from '@/lib/lang';
 import RULES from '@/lib/rules.json';
-import { IconBack, IconRestart, IconPlay, IconTrophy, IconRoute, IconFlag, IconSail, IconSliders, IconClock, clock } from './ui';
+import { IconBack, IconRestart, IconPlay, IconTrophy, IconRoute, IconFlag, IconSail, IconSliders, IconClock, IconSend, clock } from './ui';
 import { CourseMap } from './course-map';
 import { GameScene } from './game-scene';
 import { PauseCard, SettingsRow, type Who } from './pause-card';
@@ -155,7 +155,6 @@ export default function ResultView({ id, lang, signedName, who, head, foot }: { 
     : nb.ahead ? t(`Last across the line, ${gapS(nb.ahead.gap)} after ${nb.ahead.name}.`, `Последним на финише, через ${gapS(nb.ahead.gap)} после ${nb.ahead.name}.`) : '';
   const pbNote = shared ? null : res.pb?.isNew ? t('New personal best', 'Новый личный рекорд')
     : res.pb && me.secs === res.pb.best ? (res.daily ? t('Your best today', 'Твой лучший сегодня') : t('Your best on this course', 'Твой лучший на этой дистанции')) : null;
-  const colorOf = (name: string) => res.boats.find((b) => b.name === name)?.color || '#ffd640';
   const legs = [...L.legs.map((tm, i) => ({ k: res.course.legs[i], i, tm, pl: L.legPlaces[i] })),
     ...(me.done && me.secs != null && L.legs.length < res.course.legs.length ? [{ k: 'finish', i: res.course.legs.length - 1, tm: me.secs, pl: me.dsq ? 0 : place }] : [])];
 
@@ -164,40 +163,35 @@ export default function ResultView({ id, lang, signedName, who, head, foot }: { 
       <div className="bt">
         <GameScene venue={where.id} wind={res.preset} finish={scene} title={t('The finish in 3D, as it was', 'Финиш в 3D, как он был')} />
 
-        {/* the race's state as the game's own pause screen has it: a status chip, the bold sans heading, the legs as a
-            track (all sailed), the boats either side of you at the line as the chips they wear on the water, and the
-            numbers in glass tiles */}
-        <div className="bt-info rs-info">
+        {/* the heading as the other pages laid out as the race's pause screen have it (the race hub, the free race, your
+            boat): the back arrow and a kicker, the big serif line, a word on where and how the finish went, and the
+            numbers with a line under each */}
+        <div className="bt-info">
           <div className="bt-top">
             <Link className="bt-back" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
-            <span className={`rs-badge ${me.dsq ? 'dsq' : ''}`}>{me.dsq ? t('Disqualified', 'Дисквалификация') : t('Finished', 'Финиш')}</span>
+            <span className="bt-kick">{kicker}</span>
           </div>
-          <h1 className="bt-h rs-h">{title}</h1>
-          <div className="rs-legs-track" aria-hidden="true">{res.course.legs.slice(1).map((k, i) => <i key={i} className="done" />)}</div>
-          <span className="rs-kick">{t(...where.name)} · {kicker}</span>
-          <span className="sr-only">{near}</span>
-          {((nb.ahead || nb.behind) && !me.dsq || pbNote) && (
-            <div className="rs-near">
-              {pbNote && <span className="rs-pb" style={{ ['--c' as string]: '#2ee6a0' }}>{pbNote}</span>}
-              {nb.ahead && !me.dsq && <span aria-hidden="true" style={{ ['--c' as string]: colorOf(nb.ahead.name) }}>{t(`${nb.ahead.name} ${gapS(nb.ahead.gap)} ahead`, `${nb.ahead.name} на ${gapS(nb.ahead.gap)} впереди`)}</span>}
-              {nb.behind && !me.dsq && <span aria-hidden="true" style={{ ['--c' as string]: colorOf(nb.behind.name) }}>{t(`${nb.behind.name} ${gapS(nb.behind.gap)} behind`, `${nb.behind.name} на ${gapS(nb.behind.gap)} позади`)}</span>}
-            </div>
-          )}
-          <div className="rs-stats">
-            <div><span className="rs-sk">{t('Place', 'Место')}</span><b>{me.dsq ? 'DSQ' : t(ordEn(place), `${place}-е`)}</b><span>{t(`of ${res.boats.length}`, `из ${res.boats.length}`)}</span></div>
-            <div><span className="rs-sk">{t('Race time', 'Время')}</span><b>{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</b><span>{winner && winner !== me && me.secs != null && winner.secs != null ? t(`+${gapS(me.secs - winner.secs)} on ${winner.name}`, `+${gapS(me.secs - winner.secs)} от ${winner.name}`) : shared ? t('the winner', 'победитель') : t('you won', 'ты победил')}</span></div>
-            <div className={L.penT > 1 ? 'pen' : 'clean'}><span className="rs-sk">{t('Penalties', 'Штрафы')}</span><b>{L.penT > 1 ? `${L.penT} ${t('s', 'с')}` : '0'}</b><span>{L.penT > 1 ? t('turning circles', 'штрафные обороты') : t('clean race', 'чистая гонка')}</span></div>
+          <h1 className="bt-h">{title}</h1>
+          <p className="bt-p">{t(...where.name)}, {t(...where.place)}. {near || t('The boats are where they were at the finish.', 'Лодки там, где были на финише.')}</p>
+          <div className="bt-stats">
+            <div><span className="bt-sk">{t('Place', 'Место')}</span><b>{me.dsq ? 'DSQ' : t(ordEn(place), `${place}-е`)}</b><span className="bt-sv">{me.dsq ? t('disqualified', 'дисквалификация') : t(`of ${res.boats.length} boats`, `из ${ruBoats(res.boats.length)}`)}</span></div>
+            <div><span className="bt-sk">{t('Time', 'Время')}</span><b>{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</b><span className="bt-sv">{pbNote || t('at the line', 'на финише')}</span></div>
+            <div><span className="bt-sk">{t('Behind', 'Отставание')}</span><b>{winner && winner !== me && me.secs != null && winner.secs != null ? `+${gapS(me.secs - winner.secs)}` : '—'}</b><span className="bt-sv">{winner && winner !== me ? t(`${winner.name} won`, `победа: ${winner.name}`) : shared ? t('this boat won', 'эта лодка победила') : t('you won', 'ты победил')}</span></div>
+            <div><span className="bt-sk">{t('Penalties', 'Штрафы')}</span><b>{L.penT > 1 ? `${L.penT} ${t('s', 'с')}` : '0'}</b><span className="bt-sv">{L.penT > 1 ? t('turning circles', 'штрафные обороты') : t('A clean race', 'Чистая гонка')}</span></div>
           </div>
         </div>
 
-        <PauseCard lang={lang} who={who} back={`/race/result/${res.id}`} label={t('Race result', 'Результат гонки')}>
-          <a className="bt-go" href={cta.href}>{shared ? <IconPlay /> : <IconRestart />}<span>{cta.label}</span></a>
-          {!shared && (
-            <div className="bt-pills">
-              <button type="button" className="bt-pill bt-pill-go" onClick={share}>{copied ? t('Link copied', 'Ссылка скопирована') : t('Share the result', 'Поделиться результатом')}</button>
-            </div>
-          )}
-
+        {/* the card as the free race's: what to do next fixed at the top, your boat and Settings at the bottom, the
+            result and the debrief scrolling between them */}
+        <PauseCard lang={lang} who={who} back={`/race/result/${res.id}`} label={t('Race result', 'Результат гонки')}
+          head={<>
+            <a className="bt-go" href={cta.href}>{shared ? <IconPlay /> : <IconRestart />}<span>{cta.label}</span></a>
+            {!shared && <button type="button" className="bt-show" onClick={share}><IconSend s={15} /><span>{copied ? t('Copied', 'Скопировано') : t('Share', 'Поделиться')}</span></button>}
+          </>}
+          foot={<div className="bt-rows">
+            <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
+            <SettingsRow lang={lang} />
+          </div>}>
           <div className="bt-g">
             <span className="bt-k"><IconTrophy s={13} />{t('Results', 'Результаты')}<span className="bt-k-r">{t(`${res.boats.length} boats`, ruBoats(res.boats.length))}</span></span>
             <ol className="hm-lb bt-lb rs-lb">
@@ -263,8 +257,6 @@ export default function ResultView({ id, lang, signedName, who, head, foot }: { 
           <div className="bt-rows">
             <Link className="bt-row" href="/race/free"><IconSliders /><span>{t('Free race', 'Свободная гонка')}</span><span className="bt-row-m">{t('Set it up', 'Настроить')}</span></Link>
             <Link className="bt-row" href="/race"><IconFlag s={18} /><span>{t('Race hub', 'Меню гонок')}</span></Link>
-            <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
-            <SettingsRow lang={lang} />
           </div>
         </PauseCard>
       </div>
