@@ -45,7 +45,7 @@ export function NameRow({ lang, name: saved }: { lang: Lang; name: string }) {
   );
 }
 
-type Keys ='autoTrim' | 'guides' | 'camera' | 'gfx' | 'sound' | 'voice' | 'vibration' | 'music' | 'musicVol' | 'sea';
+type Keys = 'autoTrim' | 'guides' | 'camera' | 'gfx' | 'sound' | 'voice' | 'vibration' | 'music' | 'musicVol' | 'sea';
 
 // S3 · How you sail and how the game runs. Every change is saved at once where the game reads it.
 export function SettingsForm({ lang, langRow, accountRow }: { lang: Lang; langRow: React.ReactNode; accountRow: React.ReactNode }) {
