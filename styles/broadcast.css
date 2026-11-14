@@ -689,6 +689,16 @@
 .bc .gd-key { display: flex; align-items: center; gap: var(--s-3); font: 500 var(--fs-small)/1.4 var(--sans); color: var(--ink-2); }
 .bc .gd-key::before { content: ''; flex: none; width: 28px; border-top: 3px solid var(--you); }
 .bc .gd-key-alt::before { border-top: 3px dashed var(--w-50); }
+/* the glossary in six groups: a heading with its count, then the terms as tiles, each with its see-link at the foot */
+.bc .gd-groups { gap: var(--s-12); }
+.bc .gd-group { display: flex; flex-direction: column; gap: var(--s-4); scroll-margin-top: var(--hm-head); }
+.bc .gd-group h2 { margin: 0; display: flex; align-items: baseline; gap: var(--s-4); font: 700 var(--fs-h3)/1 var(--cond); text-transform: uppercase; }
+.bc .gd-groups .gd-terms { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 1px; }
+/* the hairlines between the tiles are their own outlines, so a short last row leaves no grey cells */
+.bc .gd-groups .gd-term { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-5) var(--s-6) var(--s-4); border-top: 0; outline: 1px solid var(--rule); background: var(--surface); }
+.bc .gd-groups .gd-term:target { background: var(--surface); box-shadow: inset 4px 0 0 var(--you); }
+.bc .gd-see-d { margin: auto 0 0; }
+.bc .gd-groups .gd-see { gap: var(--s-1); min-height: var(--h-m); white-space: normal; text-decoration: none; text-transform: uppercase; }
 /* Learn: the glossary as a banner under the guides */
 .bc .gd-banner { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5) var(--s-8); padding: var(--s-8); background: var(--panel-2); color: var(--ink); text-decoration: none; transition: box-shadow var(--t-quick); }
 .bc .gd-banner:hover { box-shadow: inset 0 0 0 1px var(--w-25); }
