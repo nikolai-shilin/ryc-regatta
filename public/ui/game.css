@@ -12,6 +12,11 @@
 #loading.bc .l-head::before { content: ''; width: 5px; background: var(--you); }
 #loading.bc .l-head .kicker { display: flex; align-items: center; padding: 0 var(--s-3); background: var(--panel-2); color: var(--ink);
   font: 700 var(--fs-lead)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; text-shadow: none; }
+/* the ticker beside the brand: what's coming up (the venue, the start sequence) */
+#loading.bc .l-tick { display: flex; align-items: center; gap: var(--s-3); margin-left: var(--s-3); padding: 0 var(--s-4); background: var(--panel-2); color: var(--ink-2);
+  font: 600 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; text-shadow: none; white-space: nowrap; }
+#loading.bc .l-tick b { color: var(--ink); font-weight: 700; }
+@media (max-width: 640px) { #loading.bc .l-tick .l-tn { display: none; } }
 #loading.bc .l-in { gap: var(--s-5); text-shadow: none; }
 #loading.bc .l-in > .kicker { align-self: flex-start; display: inline-flex; align-items: center; min-height: 28px; padding: var(--s-1) var(--s-6) var(--s-1) var(--s-3); background: var(--you); color: var(--ink-on);
   font: 700 var(--fs-small)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); }
@@ -41,6 +46,11 @@
   font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
 #loading.bc .l-err a { background: var(--fill-2); color: var(--ink); }
 @media (min-width: 1024px) and (min-height: 640px) { #loading.bc h1 { font-size: var(--fs-hero); } #loading.bc .l-in { max-width: 760px; } }
+/* wide enough, the tip is a card of its own at the bottom right, its white kicker at its top edge */
+@media (min-width: 1400px) and (min-height: 640px) {
+  #loading.bc .l-tip { position: fixed; right: calc(var(--s-16) + var(--sr)); bottom: calc(var(--s-16) + var(--sb)); width: 420px; max-width: none; min-height: 0; margin: 0; padding: 0 var(--s-5) var(--s-5); }
+  #loading.bc .l-tip .meta { margin: 0 0 var(--s-5) calc(-1 * var(--s-5)); padding: var(--s-2) var(--s-6) var(--s-2) var(--s-3); font-size: var(--fs-small); }
+}
 @media (max-height: 420px) { #loading.bc h1 { font-size: var(--fs-h2); } #loading.bc .l-tip, #loading.bc .l-cells em { display: none; } #loading.bc .l-cells > div { padding: var(--s-2) var(--s-4); } #loading.bc .l-cells b { font-size: var(--fs-title); } }
 @media (orientation: portrait) { #loading.bc .l-cells > div { padding: var(--s-3); } #loading.bc .l-cells b { font-size: var(--fs-title); } }
 

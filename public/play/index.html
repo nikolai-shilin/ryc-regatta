@@ -514,7 +514,7 @@
 <div id="loading" class="bc" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="lStep">
   <div class="l-photo" id="lPhoto"></div>
   <div class="l-shade"></div>
-  <div class="l-head on-photo"><img class="l-logo" src="/logo-black.svg" alt="RYC"><span class="kicker">Up and down</span></div>
+  <div class="l-head on-photo"><img class="l-logo" src="/logo-black.svg" alt="RYC"><span class="kicker">Up and down</span><span class="l-tick"><span class="dot-live"></span><span id="lTick"></span></span></div>
   <div class="l-in on-photo">
     <span class="kicker" id="lKick">&nbsp;</span>
     <h1 id="lH">Up and down</h1>
@@ -546,6 +546,7 @@
   $('lSub').textContent = free
     ? t('Your wind, your fleet, your course — against the computer boats, under the racing rules.', 'Твой ветер, твой флот, твоя дистанция — против компьютерных лодок, по правилам.')
     : t('The same race for everyone today, so the times compare fairly.', 'Сегодня у всех одна гонка, поэтому время сравнивается честно.');
+  $('lTick').textContent = t('Coming up', 'Дальше');
   $('lRetry').textContent = t('Try again', 'Ещё раз');
   $('lBack').textContent = t('Race hub', 'Меню гонок');
 
@@ -614,10 +615,12 @@
   $('lRetry').addEventListener('click', function () { location.reload(); });
 
   window.rycLoader = {
-    // main.js, once it knows the race: its venue as the title, and its numbers under it ([label, value, unit, line] each)
-    race: function (venue, cells) {
+    // main.js, once it knows the race: its venue as the title, and its numbers under it ([label, value, unit, line] each);
+    // the ticker says what's coming up: the venue, then (next) the start sequence
+    race: function (venue, cells, next) {
       var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
       $('lH').textContent = venue;
+      $('lTick').innerHTML = esc(t('Coming up', 'Дальше')) + ' · <b>' + esc(venue) + '</b>' + (next ? '<span class="l-tn"> · ' + esc(next) + '</span>' : '');
       var box = $('lCells');
       box.innerHTML = cells.map(function (c) { return '<div><span class="meta">' + esc(c[0]) + '</span><b>' + esc(c[1]) + (c[2] ? '<small>' + esc(c[2]) + '</small>' : '') + '</b><em>' + esc(c[3]) + '</em></div>'; }).join('');
       box.hidden = false;
