@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { HOME_DESC, NAME } from '@/lib/seo';
 
-// What a phone shows when the site is added to the home screen: the name, the RYC badge and the start page.
+// What a phone shows when the site is added to the home screen: the name, the broadcast title block and the start page.
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: `${NAME} — a sailing race game`, short_name: NAME, description: HOME_DESC[0],

@@ -38,8 +38,8 @@ export async function generateMetadata({ params }: LangParams): Promise<Metadata
       ...(process.env.YANDEX_VERIFICATION && { yandex: process.env.YANDEX_VERIFICATION }),
       ...(process.env.BING_SITE_VERIFICATION && { other: { 'msvalidate.01': process.env.BING_SITE_VERIFICATION } }),
     },
-    // favicon.ico for the small sizes, the badge as a PNG (app/icon.tsx) for Google's results and an installed app
-    icons: { icon: [{ url: '/favicon.ico', sizes: '32x32' }, { url: '/icon', type: 'image/png', sizes: '512x512' }], apple: [{ url: '/apple-icon', sizes: '180x180' }] },
+    // favicon.ico for the small sizes, the broadcast title block as a PNG (app/icon.tsx) for Google's results and an installed app
+    icons: { icon: [{ url: '/favicon.ico', sizes: '16x16 32x32 48x48' }, { url: '/icon', type: 'image/png', sizes: '512x512' }], apple: [{ url: '/apple-icon', sizes: '180x180' }] },
   };
 }
 
