@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: `${NAME} — a sailing race game`, short_name: NAME, description: HOME_DESC[0],
     start_url: '/', scope: '/', display: 'standalone', orientation: 'any',
-    background_color: '#ffffff', theme_color: '#ffffff', categories: ['games', 'sports'], lang: 'en',
+    background_color: '#070d16', theme_color: '#070d16', categories: ['games', 'sports'], lang: 'en',
     icons: [
       { src: '/icon', sizes: '512x512', type: 'image/png', purpose: 'any' },
       { src: '/apple-icon', sizes: '180x180', type: 'image/png' },

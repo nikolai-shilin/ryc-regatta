@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: LangParams): Promise<Metadata
   };
 }
 
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#ffffff' };
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#070d16' }; // the broadcast's ground (public/ui/tokens.css), under the browser's bar
 
 // The IYT mini app opens this site with Telegram's launch data in the hash (#tgWebAppData=…), but the race itself is
 // on /play, a page or two later, where the hash is gone. Telegram's own script (loaded by the race page) reads the

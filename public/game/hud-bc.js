@@ -24,6 +24,8 @@ export const HUD_STRINGS = {
     shape: { wl: 'Windward–leeward', tri: 'Triangle', trap: 'Trapezoid', wlu: 'Upwind finish' },
     speed: 'Speed', ofTarget: 'Of target', vmg: 'VMG', toMark: 'To mark', toLine: 'To line', burn: 'Time to burn',
     toLeader: 'To leader', ahead: 'Ahead of 2nd', time: 'Time', start: 'Start', perMin: '/min', camera: 'Camera', pause: 'Pause',
+    you: 'You', layIn: (s) => `Layline in ${s} · then tack`, layNow: 'On the layline · tack', over: 'Past the layline · tack now', fetch: 'Laying the mark',
+    advantage: 'Advantage',
   },
   ru: {
     title: 'Up and down', daily: 'Гонка дня', free: 'Свободная гонка', live: 'Эфир', startIn: 'До старта', gun: 'Старт',
@@ -35,6 +37,8 @@ export const HUD_STRINGS = {
     shape: { wl: 'Апвинд — даунвинд', tri: 'Треугольник', trap: 'Трапеция', wlu: 'Финиш наверху' },
     speed: 'Скорость', ofTarget: 'От цели', vmg: 'VMG', toMark: 'До знака', toLine: 'До линии', burn: 'Запас времени',
     toLeader: 'До лидера', ahead: 'Впереди второго', time: 'Время', start: 'Старт', perMin: '/мин', camera: 'Камера', pause: 'Пауза',
+    you: 'Ты', layIn: (s) => `Лейлайн через ${s} · потом поворот`, layNow: 'На лейлайне · поворот', over: 'Лейлайн пройден · поворачивай', fetch: 'Идёшь на знак',
+    advantage: 'Выигрыш',
   },
 };
 
@@ -248,6 +252,34 @@ const CSS = `
 #nxTag .ptr svg { width: 14px; height: 14px; display: block; }
 #nxTag.edge .ptr { display: flex; } #nxTag.edge .buoy { display: none; }
 
+/* the layline, as the call when nothing else is called */
+.b-lay { display: none; align-items: center; gap: var(--s-3); min-height: 30px; padding: var(--s-2) var(--s-4); background: var(--ink); color: var(--ink-on);
+  font: 700 var(--fs-small)/1.15 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; animation: bc-call 1.1s var(--ease) both; }
+#hud.bc .b-lay.on { display: flex; }
+.b-lay svg { width: 16px; height: 16px; flex: none; }
+.b-lay.now { background: var(--you); }
+/* the boats' tags and the advantage line, over the water (outside #hud, scaled as it is) */
+#hud.bc { z-index: 1; }
+#bOver { position: fixed; inset: 0; z-index: 0; pointer-events: none; zoom: var(--hz, 1); display: none; }
+#bOver.on { display: block; }
+#bOver svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
+#bOver .adv { stroke: var(--gold); stroke-width: 2; opacity: .85; filter: drop-shadow(0 0 6px rgba(245, 196, 0, 0.5)); }
+.b-advl { position: absolute; left: 0; top: 0; display: none; align-items: center; height: 22px; padding: 0 var(--s-3); translate: -50% -130%; background: var(--gold); color: var(--ink-on); white-space: nowrap;
+  font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.b-advl.on { display: flex; }
+.b-btag { position: absolute; left: 0; top: 0; display: none; will-change: transform; }
+.b-btag.on { display: block; }
+.b-btag .in { position: absolute; left: 0; bottom: 0; translate: -50% -22px; display: flex; align-items: stretch; height: 28px; background: var(--panel); color: var(--ink); white-space: nowrap;
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); animation: bc-drop .5s var(--ease) both; }
+.b-btag .p { width: 26px; display: flex; align-items: center; justify-content: center; background: var(--fill-2); font: 700 var(--fs-body)/1 var(--cond); }
+.b-btag.first .p { background: var(--ink); color: var(--ink-on); }
+.b-btag.me .p { background: var(--you); color: var(--ink-on); }
+.b-btag.me .in { box-shadow: inset 0 -3px 0 var(--you); clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
+.b-btag .c { width: 4px; background: var(--c, var(--fill-3)); }
+.b-btag .n { display: flex; align-items: center; padding: 0 var(--s-3); font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-name); }
+.b-btag .v { display: flex; align-items: center; padding: 0 var(--s-3); border-left: 1px solid var(--rule); font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-2); }
+.b-btag .stem { position: absolute; left: -1px; bottom: 0; width: 2px; height: 22px; background: linear-gradient(var(--w-90), var(--w-14)); }
+
 /* ---------- compact: a phone sideways, then upright ---------- */
 @media not all and ${WIDE} {
   #hud.bc .b-bug, #hud.bc .b-state, #hud.bc .b-board .b-bh, #hud.bc .b-map .b-mh, #hud.bc .b-gunc, #hud.bc .b-bias, #hud.bc .b-legs, #hud.bc .b-wind .b-wt > .lbl:first-child, #hud.bc .b-dir { display: none !important; }
@@ -306,6 +338,8 @@ const CSS = `
   #hud.bc #count.final { top: 26%; font-size: 120px; }
   #nxTag .in { height: 24px; } #nxTag .buoy, #nxTag .ptr { width: 22px; }
   #nxTag .t-nm, #nxTag .t-v { font-size: var(--fs-small); padding: 0 var(--s-2); }
+  .b-btag .in { height: 24px; } .b-btag .p { width: 22px; font-size: var(--fs-small); } .b-btag .n, .b-btag .v { font-size: var(--fs-label); padding: 0 var(--s-2); }
+  .b-lay { font-size: var(--fs-label); padding: var(--s-2) var(--s-3); }
 }
 @media not all and ${WIDE} { @media (orientation: portrait) {
   .b-wind { top: calc(56px + var(--st)); }
@@ -319,6 +353,22 @@ const CSS = `
   .b-you .c-pct .b-g { display: none; }
 } }
 `;
+
+// On a beat, where the layline is along the course you're steering: the mark (mx, mz), you (x, z, heading h, speed v
+// in m/s), the wind from W and the angle she sails to it (radians). The layline is where the mark opens up on the other
+// tack, as wide of the wind as she can point. { kind: 'in', s } seconds to it (within three minutes), 'now' on it,
+// 'over' past it, 'fetch' already laying the mark on this tack; null when not sailing upwind or it's further.
+export function laylineAt({ mx, mz, x, z, h, v, W, beat }) {
+  const side = Math.sign(wrap(h - W)) || 1;
+  if (Math.abs(wrap(h - W)) > beat + 25 * D2R) return null; // not sailing upwind just now
+  const rel = (px, pz) => wrap(Math.atan2(mx - px, -(mz - pz)) - W); // the mark's bearing, against the wind
+  const past = (px, pz) => -side * rel(px, pz) >= beat; // on the other side of the wind, as wide as the tack goes
+  if (Math.abs(wrap(rel(x, z) + W - h)) < 4 * D2R) return { kind: 'fetch' };
+  if (past(x, z)) return { kind: -side * rel(x, z) > beat + 6 * D2R ? 'over' : 'now' };
+  const vx = Math.sin(h) * v, vz = -Math.cos(h) * v;
+  for (let s = 1; s <= 180; s++) if (past(x + vx * s, z + vz * s)) return { kind: 'in', s };
+  return null;
+}
 
 const LEG = { start: 'lineStart', mark: 'mark', wing: 'wing', mark2: 'mark2', offset: 'offset', gate: 'gate', finish: 'finish' };
 // a leg's name, by its mark: on a trapezoid the windward mark is mark 1
@@ -358,7 +408,8 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
       <div class="b-wt"><span class="lbl">${L.trueWind}</span><span class="n-l b-tws"></span><span class="lbl b-wl"><span class="b-dir"></span><span class="b-shift"></span></span></div></div></div>`);
   const board = html(`<div class="bx pn b-board"><div class="b-bh"><span class="lbl-ink b-bt"></span><span class="lbl b-br"></span></div><div class="b-rows"></div></div>`);
   const map = html(`<div class="bx pn b-map"><div class="b-mh"><span class="lbl-ink">${L.course}</span><span class="lbl b-shape"></span></div></div>`);
-  const low = html(`<div class="bx b-low"><div class="b-callrow"></div><div class="b-state"></div>
+  const TACK_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9c2.5-4.5 9.5-4.5 12 0"/><path d="M12.5 9H16.5V5"/><path d="M10 11.5V17"/></g></svg>';
+  const low = html(`<div class="bx b-low"><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}<span></span></div></div><div class="b-state"></div>
     <div class="pn b-you pre">
       <div class="c-pos s-run s-done"></div>
       <div class="c-nm s-pre s-run s-done"><i></i><span class="n-m">${t('you')}</span></div>
@@ -411,6 +462,16 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
   document.body.append(tag);
   const tagN = q(tag, '.t-nm'), tagV = q(tag, '.t-v'), tagIn = q(tag, '.in'), tagPtr = q(tag, '.ptr');
   const v3 = world.camera.position.clone();
+  // over the water: the advantage line and its label, and three boats' tags (you, and the two that matter most)
+  const over = html(`<div id="bOver" class="bc"><svg><polyline class="adv" fill="none"/></svg><span class="b-advl"></span></div>`);
+  document.body.append(over);
+  const advLine = q(over, '.adv'), advLab = q(over, '.b-advl');
+  const btags = Array.from({ length: 3 }, () => {
+    const el = html(`<div class="b-btag"><span class="stem"></span><div class="in"><b class="p"></b><i class="c"></i><span class="n"></span><span class="v"></span></div></div>`);
+    over.append(el);
+    return { el, p: q(el, '.p'), c: q(el, '.c'), n: q(el, '.n'), v: q(el, '.v') };
+  });
+  const lay = q(low, '.b-lay'), layT = q(lay, 'span');
 
   // the game's own elements, and where each goes in this HUD; a marker keeps its old place for the way back
   const btnIds = ['hailBtn', 'jibBtn', 'reefBtn', 'kiteBtn', 'tackBtn']; // top to bottom
@@ -434,7 +495,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
   function scale() {
     const w = innerWidth, h = innerHeight, port = h > w;
     const hz = wideQ.matches ? clamp(Math.min(w / 1600, h / 1000), 0.66, 1.3) : port ? clamp(Math.min(w / 390, h / 844), 0.82, 1.15) : clamp(Math.min(w / 844, h / 390), 0.82, 1.2);
-    for (const el of [hud, tag]) el.style.setProperty('--hz', hz.toFixed(3));
+    for (const el of [hud, tag, over]) el.style.setProperty('--hz', hz.toFixed(3));
   }
   addEventListener('resize', scale); scale();
 
@@ -442,7 +503,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
     on = v; hud.classList.toggle('bc', on);
     if (chipsReady) clearChips();
     for (const m of MOVES) { if (on) m.to.append(m.el); else m.mark.after(m.el); }
-    if (!on) { tag.classList.remove('on'); hud.style.removeProperty('--hz'); } else scale();
+    if (!on) { tag.classList.remove('on'); over.classList.remove('on'); hud.style.removeProperty('--hz'); } else scale();
     // the blocks come in again
     for (const el of [bug, top, tr, board, map, low, $('#sheetZone')]) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
   }
@@ -628,6 +689,10 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
 
     // the call: short ones as the broadcast's capitals, a sentence in its own case
     toastEl.classList.toggle('long', (toastEl.textContent || '').length > 44);
+    // the layline, when nothing else is being called
+    const ly = !pre && !done ? layline(race, c, P) : null;
+    lay.classList.toggle('on', !!ly && !toastEl.classList.contains('show'));
+    if (ly) { txt(layT, ly[0]); lay.classList.toggle('now', ly[1]); }
 
     // the rudder fades back when no one is steering
     rudder.classList.toggle('act', Math.abs(P.rudder) > 0.04);
@@ -658,6 +723,69 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
     txt(q(B.cam, 'span'), t(world.mode));
 
     placeTag(race, c, leg, P);
+    over.classList.toggle('on', !hud.hidden);
+    if (!hud.hidden) { placeBoats(race, P, st, pre); placeAdv(race, c, P, st, pre, done); }
+  }
+
+  // the screen point of a place on the water (in the tags' own scaled pixels), or null behind the camera or off it
+  function onScreen(x, y, z, pad = 0) {
+    v3.set(x, y, z).project(world.camera);
+    if (v3.z > 1) return null;
+    const hz = parseFloat(over.style.getPropertyValue('--hz')) || 1, W = innerWidth / hz, H = innerHeight / hz;
+    const sx = (v3.x + 1) / 2 * W, sy = (1 - v3.y) / 2 * H;
+    return sx < -pad || sx > W + pad || sy < -pad || sy > H + pad ? null : [sx, sy];
+  }
+
+  // the boats' tags: yours, and before the start the two nearest the line, then the leader and the boat just ahead (or
+  // just behind, when you lead); halfway up each mast. Not yours from the helm.
+  function placeBoats(race, P, st, pre) {
+    const i = st.indexOf(P);
+    const others = pre ? st.filter((b) => b !== P).slice(0, 2) : [st[0], st[i - 1] || st[i + 1]].filter((b) => b && b !== P);
+    const list = [...(world.mode === 'helm' ? [] : [P]), ...new Set(others)].slice(0, 3);
+    btags.forEach((g, n) => {
+      const b = list[n], at = b && !b.done && onScreen(b.x, 9, b.z, 40); // halfway up the mast
+      g.el.classList.toggle('on', !!at);
+      if (!at) return;
+      const place = st.indexOf(b) + 1, me = b === P;
+      cls(g.el, `b-btag on${me ? ' me' : ''}${place === 1 && !pre ? ' first' : ''}`);
+      g.el.style.transform = `translate(${at[0].toFixed(1)}px, ${at[1].toFixed(1)}px)`;
+      txt(g.p, pre ? '·' : String(place));
+      g.c.style.setProperty('--c', me ? 'var(--you)' : hex(b.color));
+      txt(g.n, me ? L.you : b.name);
+      txt(g.v, `${nf(b.v / KN)} ${t('kn')}`);
+    });
+  }
+
+  // the advantage line: across the water through the leader, square to the wind, on a beat or a run, while you're
+  // behind it; its label says how far, along the wind
+  function placeAdv(race, c, P, st, pre, done) {
+    const lead = st[0], kind = legKind(c, Math.max(1, P.leg));
+    let gap = 0, pts = [];
+    if (!pre && !done && lead && lead !== P && !lead.done && lead.leg === P.leg && kind !== 'reach') {
+      const W = race.wind.dir(), ux = Math.sin(W), uz = -Math.cos(W), s = kind === 'up' ? 1 : -1; // up the wind, or down it
+      gap = ((lead.x - P.x) * ux + (lead.z - P.z) * uz) * s;
+      if (gap > 3) for (let k = -12; k <= 12; k++) { const a = onScreen(lead.x - uz * k * 40, 0.3, lead.z + ux * k * 40, 4000); if (a) pts.push(a); }
+    }
+    const show = pts.length > 1;
+    advLine.style.display = show ? '' : 'none';
+    if (show) advLine.setAttribute('points', pts.map((a) => a.map((v) => v.toFixed(1)).join(',')).join(' '));
+    // the label at the leader, or where the line is in sight when she isn't: the visible point nearest the middle
+    let at = show && onScreen(lead.x, 0.3, lead.z, 0);
+    if (show && !at) {
+      const hz = parseFloat(over.style.getPropertyValue('--hz')) || 1, W = innerWidth / hz, H = innerHeight / hz;
+      const seen = pts.filter(([x, y]) => x > 120 && x < W - 120 && y > 80 && y < H - 80);
+      at = seen.sort((a, b) => Math.abs(a[0] - W / 2) - Math.abs(b[0] - W / 2))[0] || null;
+    }
+    advLab.classList.toggle('on', !!at);
+    if (at) { advLab.style.transform = `translate(${at[0].toFixed(1)}px, ${at[1].toFixed(1)}px)`; txt(advLab, `${L.advantage} · ${lead.name} +${metres(gap)}`); }
+  }
+
+  // on a beat: how long until the mark opens up on the other tack, along the course you're steering (the wind as it is
+  // where you are; a shift moves it). [what to call, whether it's now]
+  function layline(race, c, P) {
+    if (!isBeat(c, P.leg) || P.auto) return null;
+    const m = race.nextMark(P), k = laylineAt({ mx: m.x, mz: m.z, x: P.x, z: P.z, h: P.h, v: P.v, W: P.wdir, beat: beatAngle(P.tws) * D2R });
+    return !k ? null : k.kind === 'in' ? [L.layIn(fmt(k.s)), false] : k.kind === 'fetch' ? [L.fetch, false] : [k.kind === 'over' ? L.over : L.layNow, true];
   }
 
   function placeTag(race, c, leg, P) {

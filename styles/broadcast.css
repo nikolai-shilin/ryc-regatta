@@ -148,6 +148,17 @@
 .bc .bt-card .num-in:focus { border-bottom-color: var(--you); background: var(--w-10); }
 .bc .bt-card .logo-thumb { border-radius: 0; }
 
+/* the free race's course: in the card, or on a wide screen in its own column beside it */
+.bc .bt-side { display: contents; }
+.bc .fs-course { display: none; }
+@container scr (min-width: 1280px) and (min-height: 700px) {
+  .bc .bt-side { display: flex; align-self: stretch; align-items: center; gap: var(--s-5); min-height: 0; }
+  .bc .fs-course { display: flex; flex-direction: column; gap: var(--s-3); width: 260px; margin: 0; padding: var(--s-4); background: var(--panel);
+    -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); animation: bc-slide-r .6s var(--ease) both .15s; }
+  .bc .fs-course .cmap { max-height: none; }
+  .bc .fs-course-in { display: none; }
+}
+
 /* ---------- the result: one window of the finish, then the page runs on below it ----------
    The root stays one window tall (a size container, so the layouts still follow the window, as .scr.app does) and the
    sections run on past it; the document scrolls, over the scene too, which here is only to look at. */

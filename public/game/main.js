@@ -205,7 +205,7 @@ function applyTheme() {
   document.documentElement.classList.toggle('theme-night', night());
   const cs = getComputedStyle(document.getElementById('hud')), v = (k) => cs.getPropertyValue(k).trim(); // the minimap draws in the HUD's own colours
   COL = { ink: v('--ink'), muted: v('--muted'), faint: v('--faint'), accent: v('--accent'), danger: v('--danger'), bg: v('--bg') };
-  try { TG && TG.setHeaderColor && TG.setHeaderColor(night() ? '#000000' : '#ffffff'); } catch (e) {}
+  try { TG && TG.setHeaderColor && TG.setHeaderColor('#070d16'); } catch (e) {} // the broadcast's ground, as every page now
 }
 applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
@@ -1301,6 +1301,13 @@ $('#backLink').href = HUB;
   const want = new URLSearchParams(location.search).get('race');
   opts.mode = want === 'free' ? 'free' : 'daily';
   paintOpts(); // the menu as this race has it (the note on today's race, its place and wind)
+  // the loading screen names the race now it's known: the venue in its title, the wind, the course and the fleet under it
+  const s = settings(), tr = (en, ru) => (LANG === 'ru' ? ru : en), boats = s.fleet - 1;
+  window.rycLoader?.race?.(VENUE.name[LANG === 'ru' ? 1 : 0], [
+    [tr('Wind', 'Ветер'), { light: 7, medium: 12, strong: 19 }[s.preset], tr('kn', 'уз'), { light: tr('Light breeze', 'Слабый ветер'), medium: tr('Medium breeze', 'Средний ветер'), strong: tr('Strong breeze', 'Сильный ветер') }[s.preset]],
+    [tr('Course', 'Дистанция'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
+    [tr('Fleet', 'Флот'), s.fleet, '', tr(`You and ${boats} boats`, `Ты и ${boats} ${boats === 1 ? 'лодка' : boats < 5 ? 'лодки' : 'лодок'}`)],
+  ]);
   menu.hidden = true; menuChanged = true;
   // the preloader in play/index.html has counted the files in; the scene is built, so it fills its bar and fades into the race
   // …once the shaders are compiled too (world.prepare), so the first frame of the race doesn't stall

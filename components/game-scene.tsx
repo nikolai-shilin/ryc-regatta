@@ -25,7 +25,12 @@ export function GameScene({ venue, wind, title, finish, setup }: { venue: VenueI
   const su = useRef(setup); su.current = setup;
   const first = (): object => (fin.current ? { type: 'finish', ...fin.current } : su.current ? { type: 'setup', ...su.current } : { type: 'wind', preset: windNow.current });
   const post = (msg: object, id?: number) => refs.current.forEach((f, k) => { if (id == null || id === k) f.contentWindow?.postMessage(msg, location.origin); });
-  const parts = () => ({ card: document.querySelector('.bt-card'), info: document.querySelector('.bt-info') });
+  // the card, or the card with the course beside it (the free race on a wide screen, .bt-side; display: contents, so of
+  // no size, where the course isn't shown)
+  const parts = () => {
+    const side = document.querySelector('.bt-side'), card = document.querySelector('.bt-card');
+    return { card: side && side.getBoundingClientRect().width ? side : card, info: document.querySelector('.bt-info') };
+  };
   const inset = (id?: number) => {
     const { card, info } = parts();
     const c = card?.getBoundingClientRect(), h = info?.getBoundingClientRect(), W = innerWidth, H = innerHeight;

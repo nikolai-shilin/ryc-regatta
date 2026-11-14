@@ -17,7 +17,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="A race in the game">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#070d16">
 <link rel="icon" href="/favicon.ico">
 <link rel="preload" as="image" href="/_next/image?url=%2Fimages%2Fdrone-desk-v3.jpg&amp;w=1920&amp;q=90" media="(orientation: landscape)">
 <link rel="preload" as="image" href="/_next/image?url=%2Fimages%2Fdrone-port-v3.jpg&amp;w=1080&amp;q=90" media="(orientation: portrait)">
@@ -570,7 +570,8 @@
   <div class="l-head on-photo"><img class="l-logo" src="/logo-black.svg" alt="RYC"><span class="kicker">Up and down</span></div>
   <div class="l-in on-photo">
     <span class="kicker" id="lKick">&nbsp;</span>
-    <h1>Up and down</h1>
+    <h1 id="lH">Up and down</h1>
+    <div class="l-cells" id="lCells" hidden></div>
     <p class="l-sub" id="lSub"></p>
     <div class="l-prog">
       <div class="l-row"><span class="meta" id="lStep">&nbsp;</span><span class="meta l-pct" id="lPct">0%</span></div>
@@ -666,6 +667,14 @@
   $('lRetry').addEventListener('click', function () { location.reload(); });
 
   window.rycLoader = {
+    // main.js, once it knows the race: its venue as the title, and its numbers under it ([label, value, unit, line] each)
+    race: function (venue, cells) {
+      var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
+      $('lH').textContent = venue;
+      var box = $('lCells');
+      box.innerHTML = cells.map(function (c) { return '<div><span class="meta">' + esc(c[0]) + '</span><b>' + esc(c[1]) + (c[2] ? '<small>' + esc(c[2]) + '</small>' : '') + '</b><em>' + esc(c[3]) + '</em></div>'; }).join('');
+      box.hidden = false;
+    },
     // main.js: the scene is built. Fill the bar, let the first frames render under it, then fade into the race.
     done: function (start) {
       if (ready || failed) { if (!failed) start(); return; }

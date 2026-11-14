@@ -69,6 +69,20 @@ test('the broadcast HUD has every word in both languages, and the game uses it',
   assert.doesNotMatch(main + play, /hud-next/);
 });
 
+test('the layline call: when the mark opens up on the other tack', async () => {
+  const { laylineAt } = await import('../public/game/hud-bc.js');
+  // the wind from the north, a 45° beat, the mark 500 m straight upwind; on starboard (heading 45° left of the wind)
+  // at 3 m/s she reaches the port layline at (−250, −250), 354 m on: 118 s
+  const r = Math.PI / 180, base = { mx: 0, mz: -500, W: 0, beat: 45 * r, v: 3 };
+  assert.deepEqual(laylineAt({ ...base, x: 0, z: 0, h: -45 * r }), { kind: 'in', s: 118 });
+  assert.deepEqual(laylineAt({ ...base, x: -250, z: -250, h: -45 * r }), { kind: 'now' }); // on it: tack
+  assert.deepEqual(laylineAt({ ...base, x: -350, z: -250, h: -45 * r }), { kind: 'over' }); // 54° wide: past it
+  assert.deepEqual(laylineAt({ ...base, x: -250, z: -250, h: 45 * r }), { kind: 'fetch' }); // tacked: laying the mark
+  assert.deepEqual(laylineAt({ ...base, x: 250, z: 0, h: 45 * r }), { kind: 'in', s: 59 }); // the same on port, mirrored
+  assert.equal(laylineAt({ ...base, x: 0, z: 0, h: 180 * r }), null); // running: no layline to call
+  assert.equal(laylineAt({ ...base, mz: -5000, x: 0, z: 0, h: -45 * r }), null); // more than three minutes off
+});
+
 // a selector list split at its own commas, not those inside :is(…) or :not(…)
 function topLevel(list) {
   const out = []; let depth = 0, cur = '';
