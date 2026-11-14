@@ -844,6 +844,13 @@ const post = (x, z, y0, r0, r1, h, col, n = 12) => tint(new THREE.CylinderGeomet
 // a block w along `ang` (radians from +x towards +z), d across it, from y0 up h
 const blk = (x, z, y0, h, w, d, ang, col) => tint(new THREE.BoxGeometry(w, h, d).rotateY(-ang).translate(x, y0 + h / 2, z), col);
 const GOLD = '#d6a43a';
+// a wedge along the ground from p0 to p1 (x, z), w wide: its top from y0 down to y1, its foot at yb (a bridge's approach)
+function wedge(p0, p1, y0, y1, yb, w, col) {
+  const g = new THREE.BoxGeometry(1, 1, 1), a = g.attributes.position, dx = p1.x - p0.x, dz = p1.z - p0.z, len = Math.hypot(dx, dz);
+  for (let i = 0; i < a.count; i++) { const t = a.getX(i) + 0.5; a.setXYZ(i, t * len, a.getY(i) > 0 ? y0 + (y1 - y0) * t : yb, a.getZ(i) * w); }
+  g.rotateY(-Math.atan2(dz, dx)).translate(p0.x, 0, p0.z); g.computeVertexNormals();
+  return tint(g, col);
+}
 function landmarks() {
   const parts = [];
   for (const L of META.landmarks || []) {
@@ -971,6 +978,16 @@ function landmarks() {
       const D = L.deck, W = L.w, steel = L.color || '#5a6863', stone = '#9a9088', n = L.n, S = len / n;
       const P = (u, yy, v = 0) => V3(ax + ux * u - uz * v, yy, az + uz * u + ux * v);
       for (let i = 1; i < n; i++) { const p = P(i * S, 0); parts.push(blk(p.x, p.z, -3, D + 2, 9, W + 5, ang, stone)); }
+      // its ends: on each bank a granite abutment from the last span out to where the land is (the map's ends can stop
+      // short of it), then the roadway down from the deck to the street
+      for (const [u, sd] of [[0, -1], [len, 1]]) {
+        let reach = 60; for (let t = 0; t <= 60; t += 1.5) { const q = P(u + sd * t, 0); if (groundAt(q.x, q.z) > 1) { reach = t; break; } }
+        const e0 = u - sd * 4.5, e1 = u + sd * (reach + 6), c = P((e0 + e1) / 2, 0);
+        parts.push(blk(c.x, c.z, -3, D + 3 - 0.8, Math.abs(e1 - e0), W + 5, ang, stone));
+        const f = P(e1, 0), g0 = Math.max(0.6, groundAt(f.x, f.z)), run = Math.max(12, (D - g0) * 7), f1 = P(e1 + sd * run, 0);
+        parts.push(wedge(f, f1, D + 0.8, g0 + 0.15, g0 - 1, W, '#4b4f50'), wedge(f, f1, D + 0.6, g0 + 0.05, g0 - 1.5, W + 4, stone));
+        parts.push(beam(P(e0, D), P(e1, D), W, 1.6, '#4b4f50'));
+      }
       for (let i = 0; i < n; i++) {
         const u0 = i * S + 4.5, u1 = (i + 1) * S - 4.5;
         if ((L.open || []).includes(i)) {
