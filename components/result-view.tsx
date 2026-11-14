@@ -17,6 +17,7 @@ import { finishScene, neighbours, raceVenue, type Pose } from '@/lib/finish';
 import { venueOf } from '@/lib/venues';
 import { readOpts } from '@/lib/opts';
 import { bestLeg, startOf } from '@/lib/race-log';
+import { shortName } from '@/lib/name';
 
 // What the game keeps for a finished race (public/game/main.js, finishToPage).
 // legT (the clock as she finished each leg, the start's crossing first) and pens (her penalties) came with the finish's
@@ -78,7 +79,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
       if (!live) return;
       const rows: Top[] | null = day && day.d === res.daily && Array.isArray(day.rows) ? day.rows : null, d = j?.daily;
       if (rows) setField(rows.map((r) => r.s));
-      setTop(rows ? rows.slice(0, 5).map((r) => ({ name: r.name, s: r.s, fl: r.fl })) : d && d.d === res.daily ? (d.top || []).slice(0, 3) : []);
+      setTop(rows ? rows.slice(0, 5).map((r) => ({ name: shortName(r.name), s: r.s, fl: r.fl })) : d && d.d === res.daily ? (d.top || []).slice(0, 3) : []);
     });
     return () => { live = false; };
   }, [res]);

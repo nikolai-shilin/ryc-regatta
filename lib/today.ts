@@ -1,5 +1,6 @@
 import 'server-only';
 import { getRating, todayUtc } from './rating';
+import { shortName } from './name';
 
 // the scores API; SCORES_API points the site at another one (a local copy, a stub for testing)
 const SCORES = process.env.SCORES_API || 'https://iyt.rycrentals.com/api/game';
@@ -21,7 +22,7 @@ export async function todayTop(): Promise<Today | null> {
   const d = j && j.daily;
   if (rating && rating.d === day) {
     const rows = rating.rows;
-    return { d: day, w: rating.w ?? d?.w, races: rating.races || d?.races || 0, top: rows.slice(0, TOP).map((r) => ({ name: r.name, s: r.s, fl: r.fl })),
+    return { d: day, w: rating.w ?? d?.w, races: rating.races || d?.races || 0, top: rows.slice(0, TOP).map((r) => ({ name: shortName(r.name), s: r.s, fl: r.fl })),
       n: TOP, ranked: rows.length, tenth: rows.length >= 10 ? rows[9].s : null };
   }
   return d && Array.isArray(d.top) ? { d: d.d, w: d.w, races: d.races || 0, top: d.top.slice(0, 3), n: 3 } : null;
