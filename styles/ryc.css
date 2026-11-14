@@ -852,3 +852,11 @@ html[data-me] .hm-av > svg { display: none; }
 .adm-sail img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .adm-go { margin: var(--s-3) 0 var(--s-2); }
 #adm-file { min-width: 0; max-width: 60%; font-size: var(--t-s); color: var(--ink); }
+/* the plane's banner on /admin: a strip of off-white cloth with a navy hem, as the game paints it (public/game/plane.js) */
+.adm-banner { margin-top: var(--s-6); }
+.adm-ban { display: flex; align-items: center; gap: 0.5em; overflow: hidden; white-space: nowrap; margin: var(--s-2) 0 var(--s-3); padding: 0.45em 0.8em; background: #f7f5ef; border-block: 4px solid #0b2a4a; font: 900 clamp(18px, 3.2vw, 28px)/1.1 Impact, "Arial Narrow", "Helvetica Neue", Arial, sans-serif; }
+.adm-ban-a { color: #0b2a4a; }
+.adm-ban-b { color: #d7262e; }
+.adm-ban-dot { flex: none; width: 0.3em; height: 0.3em; border-radius: 50%; background: #d7262e; }
+.adm-ban-a, .adm-ban-b { overflow: hidden; text-overflow: ellipsis; }
+.adm-banner .srow .field { flex: 0 1 60%; width: auto; min-width: 0; height: var(--h-m, 40px); }

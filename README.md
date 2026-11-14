@@ -38,6 +38,10 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   owner edits (in the Supabase dashboard's SQL editor: `insert into public.regatta_admins values ('name@example.com')`,
   lower case); row-level security lets only them write the setting and the bucket. These live in the same Supabase
   project as the IYT test's tables, so their names start with `regatta_`.
+- **The plane's banner:** a light plane (`public/game/plane.js`) tows a banner across the course every minute or two,
+  side-on to the camera and low enough to sit in the upper part of the picture. Its words are set on `/admin` too
+  (key `plane_banner` in `public.regatta_settings`, `{ lines: ['navy words', 'red words'] }`), served by `/sponsor`
+  with the jib's logo (`public/game/sponsor.js` asks once a page). Nothing set: RYCRENTALS.COM · RENT YACHTS HERE!
 - **Scores:** `public/game/stats.js` posts every race's start, finish and result to `https://iyt.rycrentals.com/api/game`
   (`api/game.mjs` in the `iyt-test` repo, table `public.game_races`). It names the player by Telegram's launch data inside
   Telegram, or else by the site account's access token, which the game gets from `/auth/token` on this origin. The

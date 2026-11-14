@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { rigidSkin } from './skin.js';
+import { sponsor } from './sponsor.js';
 import { D2R, clamp, lerp, waveHeight } from './sim.js';
 
 export const L = 10.4, B = 3.35, MAST_Z = -0.9;
@@ -227,7 +228,7 @@ function drawContain(x, img, cx, cy, w, h) {
 // the picture itself (from Supabase Storage, so loaded for CORS: a tainted canvas can't go to the GPU). None, no ad.
 let adPromise = null;
 function jibAd() {
-  if (!adPromise) adPromise = fetch('/sponsor').then((r) => (r.ok ? r.json() : null))
+  if (!adPromise) adPromise = sponsor()
     .then((d) => (d && typeof d.jib === 'string' ? new Promise((res, rej) => { const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => res(img); img.onerror = rej; img.src = d.jib; }) : null))
     .catch(() => null);
   return adPromise;
