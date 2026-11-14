@@ -253,6 +253,9 @@ export const VENUES = [
 ];
 
 export const venueById = (id) => VENUES.find((v) => v.id === id) || VENUES[0];
+// whether a course shape is laid at the venue at that length: its `skip` lists the '<shape>:<length>' that don't fit
+// its water (never a short course, where today's race goes); lib/venues.ts has the same lists
+export const shapeOffered = (v, shape, length) => !(v.skip || []).includes(`${shape}:${length}`);
 
 // Today's race: a venue a day, from the date (UTC), the same for everyone. The days go round all of them in a shuffled
 // order, a new one every len days, so each venue comes once in that time and none two days running. lib/race.ts has
