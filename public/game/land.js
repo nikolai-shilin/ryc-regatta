@@ -6,7 +6,7 @@
 // The venue's own frame: metres, x east and z south in Göcek (from the town); elsewhere from the middle of the race
 // area, turned so the prevailing wind comes from the north like the race's. A race is laid at an offset (ox, oz) in
 // it: a point (x, z) of the race is (x + ox, z + oz) in the venue.
-import { VENUE, landFiles } from './venues.js';
+import { VENUE, landFiles, venueById } from './venues.js';
 export { VENUE };
 
 const base = new URL('./', import.meta.url), [JSON_FILE, BIN_FILE] = landFiles();
@@ -16,10 +16,15 @@ async function unpack(r) {
   if (u[0] !== 0x1f || u[1] !== 0x8b) return b;
   return new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
 }
-const [META, BIN] = await Promise.all([
-  fetch(new URL(JSON_FILE, base)).then((r) => r.json()),
-  fetch(new URL(BIN_FILE, base)).then(unpack),
-]);
+const load = ([json, bin]) => Promise.all([fetch(new URL(json, base)).then((r) => r.json()), fetch(new URL(bin, base)).then(unpack)]);
+let [META, BIN] = await load([JSON_FILE, BIN_FILE]);
+// A venue blender/venues.py hasn't baked again yet still has its old files, without `parts`, which this can't read:
+// until it is baked, its race is sailed in Göcek's land (under its own name, wind, light and colours), so the game
+// still loads there. npm test still names each such venue, as its land isn't at its own position.
+if (!META.parts) {
+  console.warn(`${VENUE.id}: its land isn't baked in the new format yet, so the race is in Göcek's`);
+  [META, BIN] = await load(landFiles(venueById('gocek')));
+}
 const M = META.room;
 // each row is stored as differences from the point before it (or the whole part as one row): added up again here,
 // wrapping as they were taken
