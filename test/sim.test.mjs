@@ -59,6 +59,14 @@ test('the course lists its marks and legs', () => {
   assert.deepEqual(c.legInfo.map((l) => l.beat), [false, true, false, false, true, false, false]);
   assert.equal(c.finish, null);
   assert.equal(sim.legAim(c, c.legs.indexOf('gate')).x, (c.gate[0].x + c.gate[1].x) / 2);
+  // a zone (mark-room) at the gate and the wing, none at the windward mark; the beats are the legs up to it
+  const at = (k) => c.legs.indexOf(k);
+  assert.equal(sim.hasZone(c, at('gate')), true);
+  assert.equal(sim.hasZone(c, at('wing')), true);
+  assert.equal(sim.hasZone(c, at('mark')), false);
+  assert.deepEqual(c.legs.map((_, i) => sim.isBeat(c, i)), c.legs.map((k) => k === 'mark'));
+  assert.deepEqual(sim.legTargets(c, at('start')), [c.pin, c.committee]);
+  assert.deepEqual(sim.legTargets(c, at('gate')), [c.gate[0], c.gate[1]]);
 });
 
 // sail a race to the end with only the computer boats racing; their finishing times

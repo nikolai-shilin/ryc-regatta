@@ -856,8 +856,8 @@ export class Race {
   // within two hull lengths binds her not to sail above her proper course while it lasts.
   trackRow() {
     const bs = this.boats, c = this.course;
-    for (const b of bs) { // in the zone of the leg's mark (or the gate's): since when, and has she gybed there (rule 18.4)
-      const inZ = hasZone(c, b.leg) && Math.min(...legTargets(c, b.leg).map((g) => Math.hypot(b.x - g.x, b.z - g.z))) < ZONE;
+    for (const b of bs) { // in the gate's zone: since when, and has she gybed there (rule 18.4, only ever at the gate)
+      const inZ = c.legs[b.leg] === 'gate' && Math.min(...c.gate.map((g) => Math.hypot(b.x - g.x, b.z - g.z))) < ZONE;
       if (inZ && !b.inZone) Object.assign(b, { inZone: true, zoneT: this.clock, zoneGybed: false });
       else if (!inZ && b.inZone) Object.assign(b, { inZone: false, zoneGybed: false });
       if (b.inZone && b.sinceTack < 0.05 && this.clock - b.zoneT > 0.1 && b.lastGybe) b.zoneGybed = true;
@@ -888,9 +888,9 @@ export class Race {
     const c = this.course, k = c.legs[p.leg];
     if (r.rule === '18') {
       // 18.4: an inside boat with right of way that must gybe at the mark sails no farther from it than her proper
-      // course needs, until she gybes
+      // course needs, until she gybes. Applied only at the gate, as the game always has (not at a wing mark)
       const ent = r.giver === p ? q : p, o = r.giver;
-      if (hasZone(c, p.leg) && !ent.zoneGybed && this.rightOfWay(ent, o, true).giver === o && Math.min(...legTargets(c, p.leg).map((m) => Math.hypot(ent.x - m.x, ent.z - m.z))) > 2 * HULL) return { giver: ent, rule: '18.4' };
+      if (k === 'gate' && !ent.zoneGybed && this.rightOfWay(ent, o, true).giver === o && Math.min(...c.gate.map((m) => Math.hypot(ent.x - m.x, ent.z - m.z))) > 2 * HULL) return { giver: ent, rule: '18.4' };
       return r;
     }
     // 19: passing the committee boat (an obstruction, when it isn't a mark of the leg), overlapped: the outside boat
