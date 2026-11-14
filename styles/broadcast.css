@@ -569,6 +569,43 @@
 .bc .iyt-ic { border-radius: 0; background: var(--you); color: var(--ink-on); }
 .bc .iyt-levels li { border-top-color: var(--rule); }
 .bc .iyt-note { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-3); }
+/* a reading page with a contents card (how to play, the guides): the sections in one column; on a narrower screen the
+   bands still reach the screen's edges, on a wide one the card stays beside the text and marks the section being read
+   (components/toc.tsx), and the head's chips go */
+.bc .rd-layout { display: grid; grid-template-columns: minmax(0, 1fr); }
+.bc .rd-main { min-width: 0; }
+.bc .rd-main > .hm-band { margin-inline: calc(50% - 50cqi); padding-inline: calc(50cqi - 50%); }
+.bc .rd-toc { display: none; }
+.bc .rd-toc .lbl { display: block; padding: var(--s-3) var(--s-4); }
+.bc .rd-toc a { display: flex; align-items: center; gap: var(--s-3); min-height: var(--h-m); padding: var(--s-2) var(--s-4); border-left: 3px solid transparent; color: var(--ink-2); text-decoration: none;
+  font: 700 var(--fs-body)/1.15 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; transition: color var(--t-quick), background-color var(--t-quick), border-color var(--t-quick); }
+.bc .rd-toc a:hover { color: var(--ink); }
+.bc .rd-toc a[aria-current] { color: var(--ink); border-left-color: var(--you); background: var(--fill-1); }
+.bc .rd-toc b { flex: none; min-width: 1.1em; color: var(--you); }
+@container help (min-width: 1280px) {
+  .bc .rd-chips { display: none; }
+  .bc .rd-layout { grid-template-columns: 260px minmax(0, 1fr); gap: var(--s-12); align-items: start; padding-top: var(--s-8); }
+  .bc .rd-toc { position: sticky; top: calc(var(--hm-head) + var(--s-6)); display: flex; flex-direction: column; max-height: calc(100vh - var(--hm-head) - var(--s-12)); overflow-y: auto;
+    padding: var(--s-2) 0; background: var(--panel); }
+  .bc .rd-main > .hm-band { margin-inline: 0; padding-inline: 0; background: none; }
+  .bc .rd-main > :first-child:is(.hm-sec, .gd), .bc .rd-main > :first-child > .hm-sec { padding-top: 0; }
+  .bc .rd-main :is(.hlegend, .hrules) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bc .rd-main > .rd-end > .hm-sec { padding: var(--s-8); margin-bottom: var(--hm-sec); background: var(--panel-2); }
+}
+/* the start sequence, a cell a signal with its flag; the gun marked in blue. The flags' blue is their cloth's, as the
+   game flies them (public/play/index.html), the one colour here not from the tokens. */
+.bc .rd-flags { --flag-blue: #1f4fa8; list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 1px; background: var(--rule); }
+.bc .rd-flags li { flex: 1 1 150px; display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-4); padding: var(--s-5); background: var(--surface); }
+.bc .rd-flags li.gun { box-shadow: inset 0 3px 0 var(--you); }
+.bc .rd-flags .d { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-2); }
+.bc .rd-flag { display: block; flex: none; box-shadow: 0 0 0 1px var(--w-25); }
+.bc .rd-flag.down .rd-flag-cloth { opacity: 0.4; }
+.bc .rd-flag .f-gold { fill: var(--gold); }
+.bc .rd-flag .f-blue { fill: var(--flag-blue); }
+.bc .rd-flag .f-white { fill: var(--ink); }
+.bc .rd-flag .f-ink { fill: var(--ink-on); font: 700 20px var(--cond); }
+.bc .rd-flag .f-arrow { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: square; }
+.bc .rd-flags-shot { max-width: 560px; }
 
 /* ---------- the app screens: settings, and signing in (email, code, name) ----------
    Built from the shared controls of styles/tokens.css (the pill, the round back button, the segmented choice, the
