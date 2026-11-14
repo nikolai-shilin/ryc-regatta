@@ -366,11 +366,11 @@ const CSS = `
   .b-you { position: absolute; left: 50%; top: calc(12px + var(--st)); translate: -50% 0; height: 36px; pointer-events: none; animation: bc-drop var(--t-in) var(--ease) both .1s; clip-path: polygon(0 0, 100% 0, calc(100% - var(--cut)) 100%, 0 100%); }
   .b-you > div { flex-direction: row; align-items: center; gap: var(--s-2); padding: 0 var(--s-3); }
   .b-you { padding-right: var(--s-4); }
-  .b-you > div > .lbl, .b-you .c-nm, .b-you .c-vmg, .b-you .c-ldr, .b-you .c-burn, .b-you .b-sub { display: none !important; }
+  .b-you > div > .lbl, .b-you .c-nm, .b-you .c-vm, .b-you .c-ldr, .b-you .c-burn, .b-you .b-sub { display: none !important; }
   .b-you .c-pos { width: 34px; font-size: var(--fs-title); }
   .b-you .c-leg { display: flex; font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-2); white-space: nowrap; }
   .b-you .c-leg svg { width: 9px; height: 9px; }
-  .b-you .n-l { font-size: var(--fs-body); }
+  .b-you .n-l, .b-you .pv { font-size: var(--fs-body); }
   .b-you .unit { font-size: var(--fs-label); }
   .b-you .b-g { width: 34px; }
   .b-you .b-g::after { display: none; }
@@ -471,8 +471,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       <div class="c-nm s-pre s-run s-done"><img class="b-fl" alt="" hidden><i></i><span class="c-nmt"><span class="n-m"></span><span class="lbl">${L.you}</span></span></div>
       <div class="c-leg s-pre s-run s-done"><svg viewBox="0 0 10 10" aria-hidden="true"><path fill="currentColor"/></svg><span></span></div>
       <div class="c-spd s-pre s-run"><span class="lbl">${L.speed}</span><span class="n-l"><span class="v"></span><span class="unit">${KNU}</span></span></div>
-      <div class="c-pct s-run"><span class="lbl">${L.ofTarget}</span><span class="n-l v"></span><span class="b-g" aria-hidden="true"><i></i></span></div>
-      <div class="c-vmg s-run"><span class="lbl">${L.vmg}</span><span class="n-l"><span class="v"></span><span class="unit">${KNU}</span></span></div>
+      <div class="c-pct s-run"><span class="lbl">${L.vmg} · ${L.ofTarget.toLowerCase()}</span><span class="b-v"><span class="n-l c-vm"><span class="v"></span><span class="unit">${KNU}</span></span><span class="n-s pv"></span></span><span class="b-g" aria-hidden="true"><i></i></span></div>
       <div class="c-to s-pre s-run"><span class="lbl"></span><span class="b-v"><span class="n-l"><span class="v"></span><span class="unit">${M.toUpperCase()}</span></span><span class="b-sub"></span></span></div>
       <div class="c-burn s-pre"><span class="lbl">${L.burn}</span><span class="n-l v"></span></div>
       <div class="c-ldr s-run"><span class="lbl"></span><span class="b-v"><span class="n-l v"></span><span class="b-sub r"></span></span></div>
@@ -490,8 +489,8 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   };
   const cell = (k) => q(low, `.c-${k}`);
   const Y = {
-    pos: cell('pos'), legP: q(cell('leg'), 'path'), legT: q(cell('leg'), 'span'), spd: q(cell('spd'), '.v'), pct: q(cell('pct'), '.v'), pctG: q(cell('pct'), '.b-g'),
-    pctI: q(cell('pct'), '.b-g i'), vmg: q(cell('vmg'), '.v'), toL: q(cell('to'), '.lbl'), to: q(cell('to'), '.v'), eta: q(cell('to'), '.b-sub'), burn: q(cell('burn'), '.v'),
+    pos: cell('pos'), legP: q(cell('leg'), 'path'), legT: q(cell('leg'), 'span'), spd: q(cell('spd'), '.v'), pct: q(cell('pct'), '.pv'), pctG: q(cell('pct'), '.b-g'),
+    pctI: q(cell('pct'), '.b-g i'), vmg: q(cell('pct'), '.c-vm .v'), toL: q(cell('to'), '.lbl'), to: q(cell('to'), '.v'), eta: q(cell('to'), '.b-sub'), burn: q(cell('burn'), '.v'),
     ldrL: q(cell('ldr'), '.lbl'), ldr: q(cell('ldr'), '.v'), rate: q(cell('ldr'), '.b-sub'), time: q(cell('time'), '.v'),
     nm: q(cell('nm'), '.n-m'), fl: q(cell('nm'), '.b-fl'),
   };
