@@ -51,6 +51,24 @@ test('the site’s course numbers are the game’s', () => {
   assert.deepEqual(site.BEAT_LEN, BEAT);
 });
 
+// the course as a set of rounding marks keyed by leg, with what each leg is: a beat into the windward mark, a reach
+// to the wing; the triangle's finish is the start line (null)
+test('the course lists its marks and legs', () => {
+  const c = sim.makeCourse(2, 260, 0, 5, 'tri');
+  assert.deepEqual(Object.keys(c.marks), ['mark', 'wing']);
+  assert.deepEqual(c.legInfo.map((l) => l.beat), [false, true, false, false, true, false, false]);
+  assert.equal(c.finish, null);
+  assert.equal(sim.legAim(c, c.legs.indexOf('gate')).x, (c.gate[0].x + c.gate[1].x) / 2);
+  // a zone (mark-room) at the gate and the wing, none at the windward mark; the beats are the legs up to it
+  const at = (k) => c.legs.indexOf(k);
+  assert.equal(sim.hasZone(c, at('gate')), true);
+  assert.equal(sim.hasZone(c, at('wing')), true);
+  assert.equal(sim.hasZone(c, at('mark')), false);
+  assert.deepEqual(c.legs.map((_, i) => sim.isBeat(c, i)), c.legs.map((k) => k === 'mark'));
+  assert.deepEqual(sim.legTargets(c, at('start')), [c.pin, c.committee]);
+  assert.deepEqual(sim.legTargets(c, at('gate')), [c.gate[0], c.gate[1]]);
+});
+
 // sail a race to the end with only the computer boats racing; their finishing times
 function sail(opts) {
   const r = new sim.Race(opts), others = r.boats.filter((b) => b !== r.player);
@@ -131,4 +149,12 @@ test('a result without the finish kept puts the fleet close to where it was as y
     const b = s.me ? P : r.boats.find((o) => o.name === s.name), was = at.get(b);
     assert.ok(Math.hypot(s.x - was.x, s.z - was.z) < 40, `${s.name || 'you'}: ${Math.round(Math.hypot(s.x - was.x, s.z - was.z))} m from where she was`);
   }
+});
+
+// Up and down and the triangle, sailed before the course code was reshaped (test/golden.mjs --write made the fixture):
+// the same finishes, leg times and tracks, to the tenth. Rewrite the fixture only when a change to the sailing is meant.
+test('the existing shapes sail exactly as before the course refactor', async () => {
+  const { goldenRuns } = await import('./golden.mjs');
+  const fixture = JSON.parse(await readFile(new URL('./fixtures/courses-golden.json', import.meta.url), 'utf8'));
+  assert.deepEqual(goldenRuns(), fixture);
 });
