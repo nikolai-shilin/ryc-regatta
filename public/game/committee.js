@@ -20,6 +20,7 @@ export function flagTexture(k) {
   else if (k === 'B') { x.fillStyle = '#111'; x.fillRect(0, 0, 96, 64); }
   else if (k === 'sub') { x.fillStyle = '#1f4fa8'; x.beginPath(); x.moveTo(0, 0); x.lineTo(96, 32); x.lineTo(0, 64); x.fill(); x.fillStyle = '#f2c230'; x.beginPath(); x.moveTo(8, 12); x.lineTo(70, 32); x.lineTo(8, 52); x.fill(); } // the first substitute
   else if (k === 'X') { x.fillStyle = '#fff'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#1f4fa8'; x.fillRect(40, 0, 16, 64); x.fillRect(0, 24, 96, 16); }
+  else if (k === 'blue') { x.fillStyle = '#1f4fa8'; x.fillRect(0, 0, 96, 64); } // the finish boat's: on station at the finish
   else if (k === 'orange') { x.fillStyle = '#ff6a10'; x.fillRect(0, 0, 96, 64); }
   else if (k === 'burgee') { x.fillStyle = '#1d3557'; x.beginPath(); x.moveTo(0, 0); x.lineTo(96, 32); x.lineTo(0, 64); x.fill(); x.fillStyle = '#fff'; x.beginPath(); x.moveTo(0, 24); x.lineTo(72, 32); x.lineTo(0, 40); x.fill(); }
   else { x.fillStyle = '#f2c230'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#111'; x.font = '900 40px Carlito, Lato, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('R', 48, 34); }
@@ -344,6 +345,9 @@ export class CommitteeBoat {
     root.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: '#3a3f46' })));
     root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   }
+
+  // a finish line's boat: she runs no start, and the class flag's halyard flies the blue flag instead
+  finishing() { const f = this.flags.cls; f.mat.map = flagTexture('blue'); f.mat.needsUpdate = true; return this; }
 
   // flags: { cls, P, X, sub } as the race flies them; prepFlag: P, U or B; downwind: the wind's direction in the
   // boat (0 = straight aft); wind in m/s. A flag is hoisted or lowered along its halyard, not switched.

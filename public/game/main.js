@@ -1,6 +1,6 @@
 // Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
-import { Race, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace } from './sim.js';
-import { World, defaultQuality, ladderStep } from './world.js';
+import { Race, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone, laidShape } from './sim.js';
+import { World, defaultQuality, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
 import { raceStarted, raceFinished, raceResult } from './stats.js';
 import { createHudNext } from './hud-next.js';
 import { VENUE, venueById } from './venues.js';
@@ -25,9 +25,10 @@ const T = {
     pausedK: 'Paused', legOf: (a, b) => `Leg ${a} of ${b}`, nextK: (m) => `Next: ${m}`, placeK: 'Place', ofN: (n) => `of ${n}`, timeK: 'Race time', penK: 'Penalties', penNone: 'clean so far', penS: 'spinning turns',
     changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
     leaveK: 'Leave this race?', leaveTxt: (pl, leg) => `You are ${pl} on leg ${leg}. This race’s time and place are not kept.`, keepRacing: 'Keep racing', doRestart: 'Restart', doChange: 'Change it', doLeave: 'Leave',
-    kick: 'Game', title: 'Up and down', fun: 'Just for fun — take a break and relax between tests.', sub: 'A windward–leeward race against the computer boats, under the racing rules. Steer, trim, tack, read the wind.',
+    kick: 'Game', title: 'Up and down', fun: 'Just for fun — take a break and relax between tests.', sub: 'A race round the marks against the computer boats, under the racing rules. Steer, trim, tack, read the wind.',
     modeK: 'Race', daily: 'Today’s race', free: 'Free race', howK: 'How to play',
-    dailyNote: (w, at) => `The same place, course and wind for everyone today — ${at}, ${w} — so times compare fairly. The fastest are on the Home page.`,
+    dailyNote: (w, at, sh) => `The same place, course and wind for everyone today — ${at}, ${sh}, ${w} — so times compare fairly. The fastest are on the Home page.`,
+    shapeWl: 'Up and down', shapeTri: 'Triangle', shapeTrap: 'Trapezoid', shapeWlu: 'Up and down, upwind finish',
     dbK: 'Your race', dGun: (d, v) => `At the gun: ${d} m from the line at ${v} kn`, dGunOver: 'At the gun: over the line — you had to go back',
     dStartLate: (s) => `You crossed the line ${s} s after the gun`, tipStart: 'Aim to be a boat length behind the line, at full speed, as the gun goes.',
     dSpeed: (p) => `Speed: ${p}% of target on average`, tipSpeed: 'Keep the sheet in the blue band and steer smoothly: every turn of the rudder brakes.',
@@ -67,6 +68,8 @@ const T = {
     cSteer: 'Steer: drag your left thumb along the arc', cSheet: 'Trim: slide your right thumb up to pull the sails in, down to ease them',
     cLine: 'Head for the line and cross it just after the gun', cHeader: 'The wind has headed you — tap Tack', cMark: 'Round the mark leaving it on your left (to port)',
     cKite: 'Bear away and tap Kite to fly the gennaker', cGate: 'Sail between the two buoys of the gate', cFinish: 'Now cross the line to finish',
+    cFinishUp: 'The finish line is up the course, just right of the windward mark — beat up and cross it',
+    cFinishR: 'The finish line is off to the right of the gate — reach across and cross it', cFinishL: 'The finish line is off to the left of the gate — reach across and cross it',
     wind: 'Wind', light: 'Light · 7 kn', medium: 'Medium · 12 kn', strong: 'Strong · 19 kn', laps: 'Laps', sails: 'Sails',
     manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', voiceK: 'Voice', musicK: 'Music', muAmbient: 'Ambient', muFilm: 'Film', muFolk: 'Folk', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
     fleetK: 'Boats', lengthK: 'Course', lShort: 'Short', lMedium: 'Medium', lLong: 'Long',
@@ -80,6 +83,7 @@ const T = {
     flagCls: 'Class', flagP: 'Prep', flagX: 'Recall', kn: 'kn', drone: 'Drone', helm: 'Helm', top: 'Top', tack: 'Tack', gybe: 'Gybe', kite: 'Kite', in: 'In', out: 'Out',
     ok: 'Trim OK', pullIn: 'Pull in', easeOut: 'Ease out', irons: 'In irons',
     startIn: 'Start', lineStart: 'Start line', mark: 'Windward mark', wing: 'Wing mark', gate: 'Leeward gate', finish: 'Finish',
+    mark1: 'Mark 1', mark2: 'Mark 2', offset: 'Offset mark',
     roundedTri: 'Mark rounded — bear away onto the reach to the wing mark', roundedWing: 'Wing mark rounded — gybe onto the broad reach',
     roundedTrap: 'Mark 1 rounded — bear away onto the broad reach to mark 2', roundedMark2: 'Mark 2 rounded — bear away onto the run to the gate',
     roundedWlu: 'Mark rounded — bear away to the offset mark', roundedOffset: 'Offset mark rounded — bear away, kite up', gateFinish: 'Through the gate — now for the finish',
@@ -105,9 +109,10 @@ const T = {
     pausedK: 'Пауза', legOf: (a, b) => `Отрезок ${a} из ${b}`, nextK: (m) => `Дальше: ${m}`, placeK: 'Место', ofN: (n) => `из ${n}`, timeK: 'Время', penK: 'Штрафы', penNone: 'пока чисто', penS: 'штрафные обороты',
     changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
     leaveK: 'Выйти из гонки?', leaveTxt: (pl, leg) => `Ты ${pl}-й на ${leg}-м отрезке. Время и место этой гонки не сохранятся.`, keepRacing: 'Продолжить', doRestart: 'Заново', doChange: 'Изменить', doLeave: 'Выйти',
-    kick: 'Игра', title: 'Up and down', fun: 'Просто для удовольствия — отдохни и расслабься между тестами.', sub: 'Гонка «апвинд — даунвинд» против компьютерных лодок по правилам. Рули, работай шкотом, делай повороты, читай ветер.',
+    kick: 'Игра', title: 'Up and down', fun: 'Просто для удовольствия — отдохни и расслабься между тестами.', sub: 'Гонка вокруг знаков против компьютерных лодок по правилам. Рули, работай шкотом, делай повороты, читай ветер.',
     modeK: 'Гонка', daily: 'Гонка дня', free: 'Свободная', howK: 'Как играть',
-    dailyNote: (w, at) => `Сегодня у всех одно место, одна дистанция и один ветер — ${at}, ${w}, — так что время честно сравнивается. Самые быстрые — на главной.`,
+    dailyNote: (w, at, sh) => `Сегодня у всех одно место, одна дистанция и один ветер — ${at}, ${sh}, ${w}, — так что время честно сравнивается. Самые быстрые — на главной.`,
+    shapeWl: 'Апвинд — даунвинд', shapeTri: 'Треугольник', shapeTrap: 'Трапеция', shapeWlu: 'Апвинд — даунвинд, финиш наверху',
     dbK: 'Твоя гонка', dGun: (d, v) => `На сигнале старта: ${d} м до линии, ${v} уз`, dGunOver: 'На сигнале старта: за линией — пришлось возвращаться',
     dStartLate: (s) => `Линию пересёк через ${s} с после сигнала`, tipStart: 'Цель — быть в корпусе от линии на полной скорости в момент сигнала.',
     dSpeed: (p) => `Скорость: в среднем ${p}% от целевой`, tipSpeed: 'Держи шкот в синей полосе и рули плавно: каждое движение руля тормозит.',
@@ -147,6 +152,8 @@ const T = {
     cSteer: 'Руль: веди левым пальцем по дуге', cSheet: 'Шкот: правым пальцем вверх — выбрать паруса, вниз — потравить',
     cLine: 'Иди к линии и пересеки её сразу после сигнала', cHeader: 'Ветер зашёл — жми «Поворот»', cMark: 'Огибай знак, оставляя его слева',
     cKite: 'Уваливайся и жми «Генакер»', cGate: 'Пройди между двумя знаками ворот', cFinish: 'Теперь пересеки линию — финиш',
+    cFinishUp: 'Финишная линия наверху, чуть правее верхнего знака — лавируй к ней и пересеки её',
+    cFinishR: 'Финишная линия справа от ворот — иди к ней галфвиндом и пересеки её', cFinishL: 'Финишная линия слева от ворот — иди к ней галфвиндом и пересеки её',
     wind: 'Ветер', light: 'Слабый · 7 уз', medium: 'Средний · 12 уз', strong: 'Сильный · 19 уз', laps: 'Круги', sails: 'Паруса',
     manual: 'Сам', auto: 'Авто', sound: 'Звук', voiceK: 'Голос', musicK: 'Музыка', muAmbient: 'Эмбиент', muFilm: 'Кино', muFolk: 'Фолк', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
     fleetK: 'Лодок', lengthK: 'Дистанция', lShort: 'Короткая', lMedium: 'Средняя', lLong: 'Длинная',
@@ -160,6 +167,7 @@ const T = {
     flagCls: 'Класс', flagP: 'Подгот.', flagX: 'Отзыв', kn: 'уз', drone: 'Дрон', helm: 'Штурвал', top: 'Сверху', tack: 'Поворот', gybe: 'Фордевинд', kite: 'Генакер', in: 'Выбрать', out: 'Травить',
     ok: 'Паруса в норме', pullIn: 'Выбери шкот', easeOut: 'Потрави шкот', irons: 'Левентик',
     startIn: 'Старт', lineStart: 'Линия старта', mark: 'Верхний знак', wing: 'Боковой знак', gate: 'Нижние ворота', finish: 'Финиш',
+    mark1: 'Знак 1', mark2: 'Знак 2', offset: 'Знак смещения',
     roundedTri: 'Знак пройден — уваливайся на галфвинд к боковому знаку', roundedWing: 'Боковой знак пройден — поворот фордевинд на бакштаг',
     roundedTrap: 'Знак 1 пройден — уваливайся на бакштаг к знаку 2', roundedMark2: 'Знак 2 пройден — уваливайся на фордевинд к воротам',
     roundedWlu: 'Знак пройден — уваливайся к знаку смещения', roundedOffset: 'Знак смещения пройден — уваливайся, ставь генакер', gateFinish: 'Ворота пройдены — теперь на финиш',
@@ -214,13 +222,14 @@ const saveOpts = () => { try { localStorage.setItem('regatta', JSON.stringify(op
 const DAILY_KEYS = ['preset', 'fleet', 'length', 'laps', 'start', 'current', 'course'];
 const settings = () => { if (opts.mode !== 'daily') return { ...opts, daily: null }; const d = dailyRace(); return { ...opts, ...d, daily: d.day }; };
 const windName = (p) => t(p);
+const SHAPE_KEY = { wl: 'shapeWl', tri: 'shapeTri', trap: 'shapeTrap', wlu: 'shapeWlu' };
 const paintOpts = () => {
   const s = settings();
   document.querySelectorAll('.choice[data-opt]').forEach((g) => {
     g.classList.toggle('locked', opts.mode === 'daily' && DAILY_KEYS.includes(g.dataset.opt));
     g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(s[g.dataset.opt]) === b.dataset.v));
   });
-  const n = $('#dailyNote'); if (n) { n.hidden = opts.mode !== 'daily'; n.textContent = t('dailyNote', windName(s.preset), venueById(s.venue).name[LANG === 'ru' ? 1 : 0]); }
+  const n = $('#dailyNote'); if (n) { n.hidden = opts.mode !== 'daily'; n.textContent = t('dailyNote', windName(s.preset), venueById(s.venue).name[LANG === 'ru' ? 1 : 0], t(SHAPE_KEY[laidShape(s.course, s.length)])); } // the shape the race is laid in (sim.js), not only the one asked for
 };
 // a third way to trim: the main and the jib each on their own sheet
 { const g = document.querySelector('.choice[data-opt="autoTrim"]'); if (g && !g.querySelector('[data-v="2"]')) { const b = document.createElement('button'); b.dataset.v = '2'; b.innerHTML = t('split'); g.append(b); } }
@@ -1245,8 +1254,8 @@ function paintPause() {
   $('#pLeg').textContent = t('legOf', leg, n);
   $('#pLegs').innerHTML = Array.from({ length: n }, (_, i) => `<i class="${i + 1 < leg ? 'done' : i + 1 === leg ? 'now' : ''}"></i>`).join('');
   const nx = legs[P.leg];
-  $('#pNext').textContent = P.leg < legs.length ? t('nextK', t(legName[nx])) : '';
-  $('#pNext').classList.toggle('mark', nx === 'mark' || nx === 'wing' || nx === 'gate'); // as its tag on the water
+  $('#pNext').textContent = P.leg < legs.length ? t('nextK', t(legKey(race.course, nx))) : '';
+  $('#pNext').classList.toggle('mark', !!race.course.marks[nx] || nx === 'gate'); // as its tag on the water
   $('#pPen').parentNode.className = L.penT > 1 ? 'pen' : 'clean';
   $('.p-esc').innerHTML = `<kbd>Esc</kbd>${t('resume')}`;
   $('#pPlace').textContent = ordL(place); $('#pOf').textContent = t('ofN', race.boats.length);
@@ -1320,7 +1329,9 @@ const txt = (e, s) => { if (e._t !== s) { e._t = s; e.textContent = s; } }; // w
 function toast(msg, secs = 2.4) { txt(el.toast, msg); el.toast.classList.add('show'); toastT = secs; }
 function hint(key, msg, every = 12) { const n = race.clock; if (hints[key] && n - hints[key] < every) return; hints[key] = n; toast(msg); }
 
-const legName = { start: 'lineStart', mark: 'mark', wing: 'wing', gate: 'gate', finish: 'finish' };
+const legName = { start: 'lineStart', mark: 'mark', wing: 'wing', mark2: 'mark2', offset: 'offset', gate: 'gate', finish: 'finish' };
+// a leg's name, by its mark: on a trapezoid the windward mark is mark 1
+const legKey = (c, k) => (k === 'mark' && c.type === 'trap' ? 'mark1' : legName[k]);
 let flagsKey = '', chipsKey = '';
 function updateHud(dt) {
   const P = race.player, a = Math.abs(P.twa) / D2R, awa = Math.abs(P.awa) / D2R, c = race.course;
@@ -1367,7 +1378,7 @@ function updateHud(dt) {
   } else if (P.done) txt(el.status, P.dsq ? `${t('dsq')} · ${fmt(P.finish)}` : `${t('place', P.place)} · ${fmt(P.finish)}`);
   else {
     const place = race.standings().indexOf(P) + 1, d = race.distToNext(P);
-    txt(el.status, `${fmt(race.clock)} · ${t(legName[leg])} ${Math.round(d)} m · ${t('place', place)}`);
+    txt(el.status, `${fmt(race.clock)} · ${t(legKey(c, leg))} ${Math.round(d)} m · ${t('place', place)}`);
   }
   if (race.clock >= 0 && !P.done) {
     const m = race.nextMark(P), brg = Math.atan2(m.x - P.x, -(m.z - P.z));
@@ -1430,16 +1441,21 @@ function updateHud(dt) {
 // the first races: a tip when it's needed, each once a race
 function coach(P, a, leg) {
   const once = (k, cond) => { if (!cond || coachSeen[k] || toastT > 0.6) return; coachSeen[k] = 1; toast(t(k), 4.5); };
-  const c = race.clock, s0 = race.seq[0].t, d = race.distToNext(P);
+  const c = race.clock, s0 = race.seq[0].t, d = race.distToNext(P), cs = race.course, beat = isBeat(cs, P.leg);
   once('cSteer', c > s0 + 3);
   once('cSheet', coachSeen.cSteer && c > s0 + 10 && !P.autoTrim);
   once('cLine', c > -32 && c < -5);
   const shift = (P.twa < 0 ? -1 : 1) * wrap(P.wdir - race.wind.mean()) / D2R;
-  once('cHeader', c > 20 && leg === 'mark' && a < 70 && shift <= -5 && !P.auto);
+  once('cHeader', c > 20 && beat && a < 70 && shift <= -5 && !P.auto);
   once('cMark', leg === 'mark' && d < 90);
-  once('cKite', c > 0 && leg !== 'mark' && leg !== 'start' && a > 110 && !P.kite);
+  once('cKite', c > 0 && !beat && leg !== 'start' && a > 110 && !P.kite);
   once('cGate', leg === 'gate' && d < 90);
-  once('cFinish', leg === 'finish' && d < 90);
+  const fi = cs.legs.length - 1;
+  if (!cs.finish) once('cFinish', leg === 'finish' && d < 90);
+  else if (leg === 'finish') { // a line of its own: which way it is, as the leg begins
+    const f = legAim(cs, fi), g = legAim(cs, fi - 1);
+    once(isBeat(cs, fi) ? 'cFinishUp' : f.x > g.x ? 'cFinishR' : 'cFinishL', true);
+  }
 }
 
 // messages from the race and the boat
@@ -1477,17 +1493,17 @@ function handleMessages() {
     }
     else if (m.key === 'fouled' || m.key === 'theyFouled') { score.sting(m.key === 'fouled' ? 'loss' : 'hit'); toast(t(m.key, a.who, a.rule), 3.5); skipper.cue('protest') || skipper.shout(m.key === 'fouled' ? 'foul' : 'contact'); committee.call(m.key === 'fouled' ? 'uPen' : 'uThem', 4); }
     else {
-      toast(t(m.key), 2.6); if (m.key === 'ocs') { haptic('warn'); skipper.shout('early', 1, true); } if (m.key === 'rounded') haptic('medium');
+      toast(t(m.key), 2.6); if (m.key === 'ocs') { haptic('warn'); skipper.shout('early', 1, true); } if (m.key === 'rounded' || m.key === 'roundedTrap' || m.key === 'roundedWlu') haptic('medium');
       if (m.key === 'touched' || m.key === 'wrongSide' || m.key === 'missedGate') { skipper.shout('foul'); score.sting('loss'); }
       if (m.key === 'ocs') score.sting('loss');
       if (m.key === 'cleared' || m.key === 'exonerated') score.sting('gain');
-      if (m.key === 'rounded' || m.key === 'roundedTri') score.sting('round');
+      if (m.key === 'rounded' || m.key === 'roundedTri' || m.key === 'roundedTrap' || m.key === 'roundedWlu') score.sting('round');
       if (m.key === 'touched') committee.call('uMark', 4);
       if (m.key === 'exonerated') committee.call('uNone', 4);
       if (m.key === 'missedLine') skipper.shout('where', 1, true);
       if (m.key === 'started') skipper.started(race.clock);
       if (m.key === 'cleared') { skipper.cue('go'); committee.call('cBack'); }
-      if ((m.key === 'rounded' || m.key === 'roundedTri') && !skipper.cue('bearAway') && P.leg === 2 && !race.log.fouls.length) skipper.shout('clean'); // the windward mark, and nobody touched yet
+      if (['rounded', 'roundedTri', 'roundedTrap', 'roundedWlu'].includes(m.key) && !skipper.cue('bearAway') && P.leg === 2 && !race.log.fouls.length) skipper.shout('clean'); // the windward mark, and nobody touched yet
     }
   }
   race.messages.length = 0;
@@ -1535,7 +1551,13 @@ function shoreLayer(ox, oz, s, size) {
 }
 function drawMap(ctx, size, full) {
   const c = race.course, P = race.player, W = race.wind.dir();
-  const hw = Math.max(150, c.len / 2 + 40, c.wing ? -c.wing.x / 2 + 60 : 0), x0 = -hw + (c.wing ? c.wing.x / 2 : 0), x1 = hw + (c.wing ? c.wing.x / 2 : 0), z0 = c.windward.z - 45, z1 = 140;
+  // its bounds: across, every mark, the gate and a finish line of its own (a triangle's wing mark, a trapezoid's gate
+  // and finish, out to the left), with the start line in view however tall the course; up and down, from the top mark
+  const fin = c.finish ? [c.finish.a, c.finish.b, c.finishBoat] : [], far = [...Object.values(c.marks), { x: (c.gate[0].x + c.gate[1].x) / 2, z: c.gate[0].z }, ...fin];
+  const lo = Math.min(0, ...far.map((m) => m.x)), hi = Math.max(0, ...far.map((m) => m.x)), cx = (lo + hi) / 2;
+  const z0 = Math.min(...far.map((m) => m.z)) - 45, z1 = Math.max(140, ...far.map((m) => m.z + 45));
+  const hw = Math.max(150, c.len / 2 + 40, (hi - lo) / 2 + 60, Math.max(c.pin.x, c.committee.x) + 20 - cx, cx - Math.min(c.pin.x, c.committee.x) + 20);
+  const x0 = cx - hw, x1 = cx + hw;
   const s = Math.min(size / (x1 - x0), size / (z1 - z0)), ox = size / 2 - ((x0 + x1) / 2) * s, oz = size / 2 - ((z0 + z1) / 2) * s;
   const X = (x) => ox + x * s, Z = (z) => oz + z * s;
   ctx.clearRect(0, 0, size, size);
@@ -1545,35 +1567,34 @@ function drawMap(ctx, size, full) {
     ctx.beginPath(); ctx.ellipse(X(g.x), Z(g.z), g.r * s, g.r * 1.35 * s, W, 0, 7); ctx.fill(); // longer down the wind than across
   }
   ctx.globalAlpha = 1;
-  // laylines to the windward mark, for the wind and current now
-  const leg = c.legs[P.leg];
-  if (leg === 'mark' || full) {
+  // laylines to the beat's mark, for the wind and current now (off a beat, the last beat's, as the ladder below)
+  const onBeat = isBeat(c, P.leg), aim = legAim(c, beatOf(c, P.leg));
+  if (onBeat || full) {
     ctx.strokeStyle = COL.faint; ctx.lineWidth = 1.5; ctx.setLineDash([4, 5]);
     const up = beatAngle(race.wind.p.tws) * D2R;
     for (const sd of [-1, 1]) {
       const hd = W + sd * up, L = 600;
-      ctx.beginPath(); ctx.moveTo(X(c.windward.x), Z(c.windward.z)); ctx.lineTo(X(c.windward.x - Math.sin(hd) * L), Z(c.windward.z + Math.cos(hd) * L)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(X(aim.x), Z(aim.z)); ctx.lineTo(X(aim.x - Math.sin(hd) * L), Z(aim.z + Math.cos(hd) * L)); ctx.stroke();
     }
     ctx.setLineDash([]);
   }
   ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
-  ctx.beginPath(); ctx.moveTo(X(c.pin.x), Z(c.pin.z)); ctx.lineTo(X(c.committee.x), Z(c.committee.z)); ctx.stroke(); ctx.setLineDash([]);
+  for (const [a, b] of [[c.pin, c.committee], ...(c.finish ? [[c.finish.a, c.finish.b]] : [])]) { ctx.beginPath(); ctx.moveTo(X(a.x), Z(a.z)); ctx.lineTo(X(b.x), Z(b.z)); ctx.stroke(); }
+  ctx.setLineDash([]);
   if (opts.guides) { // the distance lines across the beat, as on the water, every 100 m here
-    const beat = -c.windward.z, st = Math.max(100, ladderStep(beat));
+    const j = beatOf(c, P.leg), m = legAim(c, j), beat = beatFrom(c, j).z - m.z, st = Math.max(100, ladderStep(beat));
     ctx.strokeStyle = COL.ink; ctx.globalAlpha = 0.18; ctx.lineWidth = 1;
-    for (let d = st; d < beat - 15; d += st) { const z = c.windward.z + d, hw = Math.min(260, 30 + d * 0.95); ctx.beginPath(); ctx.moveTo(X(c.windward.x - hw), Z(z)); ctx.lineTo(X(c.windward.x + hw), Z(z)); ctx.stroke(); }
+    for (let d = st; d < beat - 15; d += st) { const z = m.z + d, hw = Math.min(260, 30 + d * 0.95); ctx.beginPath(); ctx.moveTo(X(m.x - hw), Z(z)); ctx.lineTo(X(m.x + hw), Z(z)); ctx.stroke(); }
     ctx.globalAlpha = 1;
   }
-  const next = leg === 'mark' ? [c.windward] : leg === 'wing' ? [c.wing] : leg === 'gate' ? c.gate : [c.pin, c.committee];
-  const rounding = [c.windward, ...c.gate, ...(c.wing ? [c.wing] : [])];
+  const next = legTargets(c, P.leg), inZone = hasZone(c, P.leg) ? next : [];
   ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
-  for (const m of rounding) { // the three-length zone (none at the windward mark: no mark-room there)
-    if (m === c.windward) continue;
-    ctx.strokeStyle = next.includes(m) && !full ? COL.accent : COL.ink; ctx.globalAlpha = next.includes(m) ? 0.8 : 0.35;
+  for (const m of zoneMarks(c)) { // the three-length zone (none at a mark reached on a beat: no mark-room there)
+    ctx.strokeStyle = inZone.includes(m) && !full ? COL.accent : COL.ink; ctx.globalAlpha = inZone.includes(m) ? 0.8 : 0.35;
     ctx.beginPath(); ctx.arc(X(m.x), Z(m.z), ZONE * s, 0, 7); ctx.stroke();
   }
   ctx.setLineDash([]); ctx.globalAlpha = 1;
-  for (const m of [...rounding, c.pin, c.committee]) {
+  for (const m of [...Object.values(c.marks), ...c.gate, c.pin, c.committee, ...(c.finish ? [c.finish.a, c.finish.b] : [])]) {
     const hot = next.includes(m) && !full;
     ctx.fillStyle = hot ? COL.accent : '#ff7a1a';
     ctx.beginPath(); ctx.arc(X(m.x), Z(m.z), hot ? 4.5 : 3.5, 0, 7); ctx.fill();
@@ -1617,12 +1638,13 @@ function finishToPage() {
   const xz = (m) => [Math.round(m.x), Math.round(m.z)];
   const thin = (tr) => { const k = Math.max(1, Math.ceil(tr.length / 160)); return tr.filter((_, i) => i % k === 0 || i === tr.length - 1).map(([x, z]) => [Math.round(x), Math.round(z)]); };
   let pb = null;
-  if (P.done && !P.dsq) pb = personalBest(s.daily ? `daily|${s.daily}` : pbKey(s), Math.round(P.finish * 10) / 10);
+  if (P.done && !P.dsq) pb = personalBest(s.daily ? `daily|${s.daily}` : pbKey(s, race), Math.round(P.finish * 10) / 10);
   const head = L.tacks.filter((x) => x <= -3).length, lift = L.tacks.filter((x) => x >= 3).length;
   const res = {
     v: 1, id, at: Date.now(), daily: s.daily || null, preset: s.preset, length: s.length, laps: s.laps, start: s.start, current: !!s.current,
     venue: VENUE.id, origin: [Math.round(race.at.x), Math.round(race.at.z)], seed: s.seed ?? null,
-    course: { windward: xz(c.windward), gate: c.gate.map(xz), pin: xz(c.pin), committee: xz(c.committee), legs: c.legs, ...(c.wing && { wing: xz(c.wing), type: 'tri' }) },
+    course: { windward: xz(c.windward), gate: c.gate.map(xz), pin: xz(c.pin), committee: xz(c.committee), legs: c.legs, ...(c.wing && { wing: xz(c.wing) }), type: c.type,
+      marks: Object.fromEntries(Object.entries(c.marks).map(([k, m]) => [k, xz(m)])), ...(c.finish && { finish: [xz(c.finish.a), xz(c.finish.b)] }) },
     boats: race.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, color: typeof b.color === 'number' ? '#' + b.color.toString(16).padStart(6, '0') : null,
       done: !!b.done, dsq: !!b.dsq, secs: b.done ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track || []), ...(race._fin?.get(b) && { at: race._fin.get(b) }) })),
     log: { gunD: L.gunD, gunV: L.gunV, ocs: !!L.ocs, startDsq: L.startDsq || null, startT: L.startT, sailing: L.sailing, pct: L.sailing > 20 && L.polar ? Math.round((L.v / L.polar) * 100) : null,
@@ -1657,7 +1679,7 @@ const ruleHref = (r) => `${SITE}${LANG === 'ru' ? '/ru' : ''}/racing-rules/${RUL
 const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // personal bests, kept on this device: per course on a free race, per day on today's race
 const PB_KEY = 'regatta-pb';
-const pbKey = (s) => `${s.preset}|${s.laps}|${s.length}|${s.fleet}${s.course === 'tri' ? '|tri' : ''}`; // a triangle is a course of its own
+const pbKey = (s, r) => `${s.preset}|${s.laps}|${s.length}|${s.fleet}${r.course.type !== 'wl' ? '|' + r.course.type : ''}`; // each shape but up and down is a course of its own: the one sailed
 function personalBest(key, secs) {
   let all = {}; try { all = JSON.parse(localStorage.getItem(PB_KEY) || '{}'); } catch (e) {}
   const old = all[key], isNew = secs != null && (old == null || secs < old);
@@ -1694,7 +1716,7 @@ function renderDebrief() {
   // personal best
   let pb = '';
   if (P.done && !P.dsq) {
-    const key = s.daily ? `daily|${s.daily}` : pbKey(s), r = personalBest(key, Math.round(P.finish * 10) / 10);
+    const key = s.daily ? `daily|${s.daily}` : pbKey(s, race), r = personalBest(key, Math.round(P.finish * 10) / 10);
     pb = `<p class="pb">${r.isNew ? `<b>${esc(t('pbNew'))}</b> ` : ''}${esc(t(s.daily ? 'pbToday' : 'pb', fmt(r.best)))}</p>`;
   }
   $('#debrief').innerHTML = `<span class="meta">${esc(t('dbK'))}</span><ul class="db">${rows.join('')}</ul>${pb}<div id="todayTop"></div>`;
