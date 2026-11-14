@@ -98,7 +98,17 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   Each language's lines (ElevenLabs recordings) are one after another in `public/game/skipper-<lang>.mp3`, mono 32 kbps,
   with silence between them; `VOICES` in `main.js` says where each one starts and how long it is, and which lines go
   with which situation. The voice has its own switch, apart from Sound (`voice` in the `regatta` options: Voice in the
-  pause menu, Voice on board in Settings); off, the hails are spoken by the browser and the count beeps.
+  pause menu, Voice on board in Settings); off, the hails and the call for a tack or a gybe are still heard, recorded,
+  and the count beeps.
+- **The calls, the race committee and the umpire:** what the browser's speech used to say is recorded now, with
+  [Piper](https://github.com/OHF-Voice/piper1-gpl), a local neural text-to-speech: in Russian the hails by rule and the
+  call for a tack or a gybe, a man's and a woman's; in English the one hail `skipper-en.mp3` lacks. The race committee
+  speaks over the VHF (every signal, a clean start or an individual recall, a general recall, back from over early,
+  out under the U or black flag, the forecast, the finish), and the umpire whistles and calls a penalty, a mark touched,
+  no penalty or a penalty to the other boat through a loudhailer. They're in `public/game/calls-<lang>.mp3`, laid out
+  like the skipper's (`CALLS` in `main.js`); the committee and the umpire are under Sound, not the Voice switch.
+  `scripts/voices.py` makes the files: the lines, the voices, and the shaping (shouted, VHF radio, loudhailer); with
+  `--takes N` it reads each line N times and keeps the reading faster-whisper hears back closest to the text.
 - **The other boats, heard close to:** within about 70 m (`crews` in `main.js`), another boat's tack or gybe is heard
   (her sails flogging, her winch), her crew's calls in the game's language (the same voices, under the Voice switch, one
   boat at a time, never over your own crew), and the nearest one's bow wave within 40 m. Each sound comes from her side
