@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { tx, type Lang } from '@/lib/lang';
+import { cleanName, NAME_MAX } from '@/lib/name';
 import { IconBack, IconGoogle } from './ui';
 
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -136,7 +137,7 @@ export function NameForm({ lang, next, suggested }: { lang: Lang; next: string; 
   const [err, setErr] = useState('');
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    const v = name.trim().replace(/\s+/g, ' ').slice(0, 24);
+    const v = cleanName(name);
     if (v.length < 2) { setErr(t('Two letters at least.', 'Хотя бы две буквы.')); return; }
     setBusy(true); setErr('');
     const { error } = await supabaseBrowser().auth.updateUser({ data: { display_name: v } });
@@ -149,7 +150,7 @@ export function NameForm({ lang, next, suggested }: { lang: Lang; next: string; 
       <h1 className="h-land-s">{t('How should the ranking show you?', 'Как подписать тебя в рейтинге?')}</h1>
       <p className="lead muted">{t('Only this name is public. Your email stays private.', 'Всем видно только это имя. Почта остаётся скрытой.')}</p>
       <label className="meta" htmlFor="nm">{t('Name on the ranking', 'Имя в рейтинге')}</label>
-      <input id="nm" className="field" type="text" autoComplete="nickname" maxLength={24} value={name} onChange={(e) => setName(e.target.value)} disabled={busy} autoFocus />
+      <input id="nm" className="field" type="text" autoComplete="nickname" maxLength={NAME_MAX} value={name} onChange={(e) => setName(e.target.value)} disabled={busy} autoFocus />
       {err ? <p className="err" role="alert">{err}</p> : <p className="hint">{t('First name and the first letter of your surname works well. You can change it in Settings.', 'Лучше всего имя и первая буква фамилии. Поменять можно в настройках.')}</p>}
       <span className="sp" />
       <button className="pill pill-primary pill-wide pill-s" type="submit" disabled={busy}><span className="btn-t">{t('Save', 'Сохранить')}</span></button>

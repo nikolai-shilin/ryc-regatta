@@ -3,7 +3,7 @@ import { getT, titled, type LangParams } from '@/lib/i18n';
 import { getAccount, initials } from '@/lib/supabase/server';
 import { IconBack } from '@/components/ui';
 import { SiteHead } from '@/components/site-chrome';
-import { SettingsForm } from '@/components/settings-form';
+import { NameRow, SettingsForm } from '@/components/settings-form';
 
 export const generateMetadata = titled('Settings', 'Настройки', { index: false });
 
@@ -32,17 +32,17 @@ export default async function SettingsPage({ params }: LangParams) {
           </div>
           <h1 className="aph-h">{t('Sailing, screen and sound', 'Яхта, экран и звук')}</h1>
         </div>
-        <SettingsForm lang={lang} langRow={langRow} accountRow={account ? (
+        <SettingsForm lang={lang} langRow={langRow} accountRow={account ? (<>
               <div className="acct acct-row">
                 <span className="avatar">{initials(account.name, account.email)}</span>
                 <div className="acct-guest">
                   <span className="card-title">{account.name || account.email}</span>
                   <span className="small">{[account.email, via].filter(Boolean).join(' · ')}</span>
                 </div>
-                <Link className="mini" href="/sign-in/name?next=/settings"><span className="btn-t">{t('Name', 'Имя')}</span></Link>
                 <form action="/auth/sign-out" method="post"><button className="mini" type="submit"><span className="btn-t">{t('Sign out', 'Выйти')}</span></button></form>
               </div>
-            ) : (
+              <NameRow lang={lang} name={account.name} />
+            </>) : (
               <div className="acct acct-row">
                 <div className="acct-guest">
                   <span className="srow-k">{t('Guest', 'Гость')}</span>
