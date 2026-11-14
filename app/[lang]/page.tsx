@@ -12,6 +12,7 @@ import { MyRow, HeroScene, Countdown, Ticker, Dock } from '@/components/home-cli
 import { CountUp } from '@/components/count-up';
 import { Who } from '@/components/flag';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
+import { Soundtrack } from '@/components/soundtrack';
 import { FaqList } from '@/components/faq-list';
 import { faqGroups, HOME } from '@/lib/faq';
 
@@ -111,6 +112,7 @@ export default async function Home({ params }: LangParams) {
           <img className="ho-bg" {...heroNarrow} alt="" />
         </picture>
         <HeroScene title={t('A race in the game', 'Гонка в игре')} />
+        <Soundtrack />
         <div className="ho-in">
           <div className="ho-info">
             <span className="ho-kick"><span className="dot-live" />{t(`Live · today’s race · ${where}`, `Эфир · гонка дня · ${where}`)}</span>

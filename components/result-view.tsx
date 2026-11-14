@@ -11,6 +11,7 @@ import { ResultSkeleton, Sk } from './skeleton';
 import { FlagImg, Who } from './flag';
 import { CourseMap } from './course-map';
 import { GameScene } from './game-scene';
+import { Soundtrack } from './soundtrack';
 import { courseDistance, fmtDistance, legDistances, shapeOf, SHAPE_NAME, type Shape } from '@/lib/race';
 import { finishScene, neighbours, raceVenue, type Pose } from '@/lib/finish';
 import { venueOf } from '@/lib/venues';
@@ -170,6 +171,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
     <div className="scr bt-scr rs-scr bc" lang={lang} data-acct={signedName ? 'signed' : 'guest'}>
       <div className="bt">
         <GameScene venue={where.id} wind={res.preset} finish={scene} title={t('The finish in 3D, as it was', 'Финиш в 3D, как он был')} loading={t('Loading the finish', 'Загружаем финиш')} />
+        {!shared && <Soundtrack />}
 
         <div className="bt-info">
           <div className="bt-top">
