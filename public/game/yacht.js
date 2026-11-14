@@ -293,20 +293,20 @@ function sailTexture(kind, look) {
       if (look.logo) x.fillText(look.num, 0, 120);
       else { x.fillText(look.nat, 0, -82); x.fillText(look.num, 0, 70); }
       x.restore();
-      if (look.logo) logoImage(look.logo).then((img) => {
-        if (!img) return;
-        x.save(); x.translate(W * 0.47, H * 0.255); x.scale(1, 0.44); drawContain(x, img, 0, 0, 340, 300); x.restore(); // a wide logo fills the width, a square one the height
+      // the logo and the country flag above it, the same width on the cloth (SAIL_MARK m), evenly spaced between the
+      // number and the top batten. draw() works in metres centred m metres up the luff: the canvas is scaled by the
+      // chord there, so a square badge comes out square and the flag 3:2 however much the sail has narrowed
+      const onCloth = (m, draw) => {
+        const f = m / MAIN_SPAN;
+        x.save(); x.translate(W * 0.47, H * (1 - f)); x.scale(W / mainChord(f), H / MAIN_SPAN); draw(); x.restore();
         t.needsUpdate = true; // the clone on the other side shares the canvas
-      });
-      // the country flag high on the main, between the top batten and the logo: the sail narrows up there, so the
-      // canvas squashes it harder (0.3) than the number to come out 3:2 on the cloth
-      if (look.flag) logoImage(look.flag).then((img) => {
-        if (!img) return;
-        const fw = 380, fh = fw / 1.5 * 0.3, fx = W * 0.47 - fw / 2, fy = H * 0.148 - fh / 2; // about 1.5 m × 1 m on the cloth
-        x.drawImage(img, fx, fy, fw, fh);
-        x.strokeStyle = 'rgba(0,0,0,.22)'; x.lineWidth = 1.5; x.strokeRect(fx, fy, fw, fh); // an edge, for a white flag on white cloth
-        t.needsUpdate = true;
-      });
+      };
+      if (look.logo) logoImage(look.logo).then((img) => img && onCloth(9.8, () => drawContain(x, img, 0, 0, SAIL_MARK, SAIL_MARK))); // a wide logo fills the width, a square one is SAIL_MARK square
+      if (look.flag) logoImage(look.flag).then((img) => img && onCloth(11.56, () => {
+        const w = SAIL_MARK, h = w / 1.5;
+        x.drawImage(img, -w / 2, -h / 2, w, h);
+        x.strokeStyle = 'rgba(0,0,0,.22)'; x.lineWidth = 0.008; x.strokeRect(-w / 2, -h / 2, w, h); // an edge, for a white flag on white cloth
+      }));
     } else {
       x.fillStyle = look.batten; x.fillRect(W * 0.7, H * 0.35, W * 0.3, 8); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 8);
     }
@@ -507,6 +507,10 @@ export function sailor(m) {
 
 // ---------- the boat ----------
 const MAST_FOOT = 1.48, MASTHEAD = 16.6, BOOM_Y = 2.25, HOUNDS = 14.9;
+// the square-top main: its chord at fraction f of the luff (narrowing to a wide head, with roach), the luff's length
+// (the cloth runs from BOOM_Y + 0.08 to MASTHEAD − 0.3), and the width of the logo and the flag on it, in metres
+const mainChord = (f) => lerp(4.75, 1.4, f) + 0.45 * Math.sin(Math.PI * f);
+const MAIN_SPAN = MASTHEAD - 0.3 - BOOM_Y, SAIL_MARK = 1.5;
 const TACK = new THREE.Vector3(0, sheerAt(1) + 0.08, BOW_Z + 0.08);
 const HEAD = new THREE.Vector3(0, HOUNDS - 0.3, MAST_Z - 0.12);
 const SPRIT = new THREE.Vector3(0, sheerAt(1) + 0.12, BOW_Z - 1.4);
@@ -750,7 +754,7 @@ export class BoatView {
     const reefDrop = (b.reefFill || 0) * 2.4; // a reef: the head comes 2.4 m down the mast, the sail is that much smaller
     // square-top main: the chord narrows up the mast to a wide head, with roach on the leech; twist opens the top
     setSail(this.main, (f, u, v) => {
-      const chord = lerp(4.75, 1.4, f) + 0.45 * Math.sin(Math.PI * f), tw = -this.sailSide * f * f * 0.5 * u;
+      const chord = mainChord(f), tw = -this.sailSide * f * f * 0.5 * u;
       v.set(belly * Math.sin(Math.PI * u ** 0.78) * chord * 0.11 * (1 - 0.4 * f) + tw + luff * 0.22 * Math.sin(ph + f * 6 + u * 5) * u, BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), u * chord);
     });
     // the mainsheet, from the traveller to the end of the boom
