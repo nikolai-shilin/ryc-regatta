@@ -13,14 +13,14 @@ export function GET() {
 
 > ${HOME_DESC[0]}
 
-${NAME} is a free 3D sailing race game by RYC that runs in any modern web browser, on a phone or a computer, with nothing to install. You sail a yacht round a windward–leeward (up and down) or triangle course at one of 21 famous regatta venues (Göcek, Cowes, Newport, Sydney, San Francisco, Auckland and more), against up to six computer boats that race by the Racing Rules of Sailing: they hail, give way and do their penalty turns. It is in English and Russian.
+${NAME} is a free 3D sailing race game by RYC that runs in any modern web browser, on a phone or a computer, with nothing to install. You sail a yacht round one of four courses (up and down, a triangle, a trapezoid, or up and down with an upwind finish) at one of 21 famous regatta venues (Göcek, Cowes, Newport, Sydney, San Francisco, Auckland and more), against up to six computer boats that race by the Racing Rules of Sailing: they hail, give way and do their penalty turns. It is in English and Russian.
 
 ## Key facts
 
 - Price: free. Sign-in (Google or email) is optional and only puts your time on the daily ranking.
 - Platforms: web browser on phone, tablet or computer. Touch steering on a phone, arrow keys on a computer.
 - Today's race: a new race every midnight UTC, the same venue, wind, course and fleet for every player (the venues take turns), so times compare fairly; ranked for signed-in players.
-- Free race: light (7 kn), medium (12 kn) or strong (19 kn) wind; 3, 5 or 7 boats; up and down or triangle; short, medium or long; 1 or 2 laps; a 1, 3 or 5 minute start; current on or off.
+- Free race: light (7 kn), medium (12 kn) or strong (19 kn) wind; 3, 5 or 7 boats; up and down, triangle, trapezoid or up and down with an upwind finish; short, medium or long; 1 or 2 laps; a 1, 3 or 5 minute start; current on or off.
 - Sailing: main and jib on their own sheets or auto-trim, tacks, gybes and a gennaker downwind; wind shifts of 10° and more, gusts and lulls; a real start sequence with the class flag, P, one minute and the gun.
 - Made by RYC (https://www.rycrentals.com/), alongside Sailing Certification Test, an app for sailing certification exam practice.
 

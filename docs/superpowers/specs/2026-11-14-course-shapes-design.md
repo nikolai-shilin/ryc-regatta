@@ -122,13 +122,16 @@ Marks are left to port. Laid out for the race's beat B (`x` across, `z` down the
 today.
 
 - **Mark 1:** the windward mark, as today.
-- **Mark 2:** out to the left of and a little below mark 1. The reach from mark 1 makes the standard 60–70° angle with
-  the beat, so it's sailed about 110–120° off the wind: a broad reach under the kite. That's broader than the
-  triangle's tight reach to its wing mark (about 100°, code-zero weather in light air), so the two shapes sail
-  differently.
-- **Mark 3:** the leeward gate, two buoys, straight downwind of mark 2. The run from mark 2 is dead downwind.
-- **Finish:** a short line of its own, to the right of mark 3. It's laid across a beam reach from the gate, so the last
-  leg is a reach.
+- **Mark 2:** out to the left of mark 1 and some 100–115 m below it, straight up from the gate. The reach from mark 1
+  makes the standard 60–70° angle with the beat, so it's sailed about 115° off the wind: a broad reach under the kite.
+  That's broader than the triangle's tight reach to its wing mark (about 100°, code-zero weather in light air), so the
+  two shapes sail differently.
+- **Mark 3:** the leeward gate, two buoys, straight downwind of mark 2. The run from mark 2 is dead downwind. The gate
+  is level with the start line (20 m above it), out to the left: its middle 1.2 times the start line's half-length and
+  125 m beyond the line's middle, so it stays clear of the start and the left side of the first beat in any fleet.
+- **Finish:** a short line of its own, 40 m long, 50 m to the right of the gate's middle and across the wind, laid
+  from the start line's half-length as the gate is. It's crossed on a beam reach from the gate, so the last leg is a
+  reach.
 - **Legs:**
   - lap 1: start, mark 1, mark 2, gate 3
   - each further lap: beat from the gate to mark 2, run back to gate 3
@@ -136,13 +139,19 @@ today.
 
   So one lap is: beat, reach, run, reach home.
 
+  The beat from the gate back up to mark 2 is shorter than the first beat, since mark 2 is below mark 1 and the gate is
+  above the start line: on a short course about 66–163 m (a third to three fifths of the beat), by the wind and the
+  fleet; on the longer courses two thirds of the beat or more.
+
 ### Up and down with an upwind finish
 
 - **Windward mark:** as today.
 - **Offset mark:** a short reach to the left, about 50–60 m across the wind and a little below the windward mark.
 - **Gate:** as today.
-- **Finish line:** at the top, a little below and to the right of the windward mark, so boats finishing don't meet
-  boats rounding. It has its own committee boat, flying the blue flag, and its own pin.
+- **Finish line:** at the top, 60 m long and across the wind, 15 m below the windward mark, running from 5 m to 65 m
+  to its right, so boats finishing don't meet boats rounding. Its middle is within 15° of dead upwind from the gate's,
+  so the last leg is a beat. It has its own committee boat, flying the blue flag, a little beyond its right-hand end,
+  and its own pin.
 - **Legs:**
   - each lap: start, windward mark, offset mark, gate
   - last: beat to the finish
@@ -211,8 +220,10 @@ today.
 
   The shape names are in English and Russian, as the mini app's other strings are, and the mini app is rebuilt
   (`npm run build`, `miniapp/build.mjs`).
-- The time floor (`FLOOR` seconds a metre of beat a lap) stays valid. No new shape has less beat per lap than up and
-  down. The trapezoid's laps after the first beat to mark 2 for the same length.
+- The time floor (`FLOOR` seconds a metre of beat a lap) stays valid. Each new shape's first lap has a full beat, as up
+  and down has. The trapezoid's laps after the first beat only from the gate to mark 2, which is shorter than a full
+  beat (on a short course about 66–163 m, by the wind and the fleet), so a 2-lap trapezoid has less beat than the
+  floor counts. The floor still holds: the fastest computer-boat times stay above 1.5 times it (tested in `npm test`).
 
 ## Tests (`npm test`)
 

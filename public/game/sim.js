@@ -604,6 +604,9 @@ export const FLEET = [['Aurora', 0xc0392b], ['Kestrel', 0x1e8449], ['Nomad', 0xd
 export const COURSE_LEN = { short: 1, medium: 2, long: 3.4 };
 // the course shapes: up and down, the triangle, the trapezoid, up and down with an upwind finish
 export const SHAPES = ['wl', 'tri', 'trap', 'wlu'];
+// the shape a race with these settings is laid in: the one asked for, or up and down when it is unknown or the venue
+// doesn't lay it at that length (venues.js skip)
+export const laidShape = (course, length) => (SHAPES.includes(course) && shapeOffered(VENUE, course, length) ? course : 'wl');
 export const ZONE = 3 * HULL; // the zone round a mark: three hull lengths
 const SEP = HULL * 0.78; // the computer skippers keep the centres this far apart, and then some
 // for contact a hull is a capsule: a spine along her centreline with a rounded edge half her beam out, so two boats
@@ -629,8 +632,8 @@ const tackOf = (b) => b.boom || sgn(b.twa);
 const lineD = (c, b) => (b.x - c.pin.x) * c.normal.x + (b.z - c.pin.z) * c.normal.z; // + above the line
 const lineT = (c, b) => ((b.x - c.pin.x) * c.dir.x + (b.z - c.pin.z) * c.dir.z) / c.len;
 
-// the daily race: the same venue, course and wind for everyone on a given day (UTC), made from the date
-// the days before SHAPES_FROM are all up and down; from it the day's course goes round the four shapes
+// the daily race: the same venue, course and wind for everyone on a given day (UTC), made from the date. The days
+// before SHAPES_FROM are all up and down; from it today's race picks one of the four shapes each day
 export const SHAPES_FROM = '2026-11-20';
 export function dailyRace(date = new Date()) {
   const day = date.toISOString().slice(0, 10), n = Math.floor(Date.parse(day) / 864e5), r = rng(n * 2654435761);
@@ -653,7 +656,7 @@ export class Race {
   constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl' } = {}) {
     this.rand = rng(seed + 7);
     const beatLen = ({ light: 200, medium: 260, strong: 280 }[preset] || 260) * (COURSE_LEN[length] || 1);
-    if (!SHAPES.includes(course) || !shapeOffered(VENUE, course, length)) course = 'wl'; // unknown, or not laid here
+    course = laidShape(course, length); // unknown, or not laid here: up and down
     const bias = (this.rand() - 0.5) * 2 * 8 * D2R;
     fleet = clamp(Math.round(fleet), 2, FLEET.length + 1);
     this.course = makeCourse(laps, beatLen, bias, fleet, course);

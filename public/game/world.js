@@ -1,6 +1,6 @@
 // Regatta: the 3D picture — sea, sky, boats, marks, wake and the two cameras (drone and helm).
 import * as THREE from 'three';
-import { D2R, wrap, clamp, lerp, waveHeight, waveSlope, beatAngle, runAngle, HULL, ZONE } from './sim.js';
+import { D2R, wrap, clamp, lerp, waveHeight, waveSlope, beatAngle, runAngle, HULL, ZONE, legTargets, legAim, isBeat, hasZone } from './sim.js';
 const SC = HULL / 10.4; // the model is drawn 10.4 m long; a First 40.7 is 12.2 m
 import { BoatView, LOOKS, playerLook } from './yacht.js';
 import { CommitteeBoat } from './committee.js';
@@ -11,7 +11,7 @@ import { Jets } from './jets.js';
 import { Post, Mirror, OVERLAY, MIRRORED } from './post.js';
 import { Ocean, OCEAN_GLSL, oceanUniforms, blankOcean } from './ocean.js';
 import { skyAt, pickSky, SKY_GLSL, skyUniforms } from './light.js';
-import { Skopea, groundAt } from './skopea.js';
+import { Skopea, groundAt, inLandShadow } from './skopea.js';
 export { flagTexture } from './committee.js';
 
 // the sky's colours and the sun: one set of objects that every shader shares; setLight() changes them in place
@@ -44,7 +44,7 @@ uniform float uTime, uFogNear, uFogFar, uChop, uAmp, uWhite, uGlint, uReflOn; un
 uniform vec3 uCam, uDeep, uScatter, uFoamCol; uniform vec4 uGust[12]; uniform vec2 uWind, uPivot;
 uniform sampler2D uRefl; uniform mat4 uReflMat;
 // the land's (skopea.js): the depth over its square, the hills' shadow, and where the venue's frame is
-uniform sampler2D uSeabed, uShadeTex; uniform vec3 uGridXf, uShadeXf, uLandAt, uShallow; uniform float uShallowK;
+uniform sampler2D uSeabed, uShadeTex, uShore, uCalm; uniform vec3 uGridXf, uShadeXf, uLandAt, uShallow, uNearXf; uniform float uShallowK;
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
 ${SKY_GLSL}
 ${OCEAN_GLSL}
@@ -199,6 +199,15 @@ void main() {
   col = mix(col, vec3(0.86, 0.91, 0.94) * uFoamCol, clamp(cap * 0.7 + wisp, 0.0, 1.0));
   col = mix(col, col * 1.2 + vec3(0.03, 0.045, 0.06), lane * 0.55); // the lanes catch a little more light
   col *= 1.0 - 0.22 * gust; // a gust reads as a darker patch
+  // the surf: along the shore (how far out from it: uShore, round the race area), the swell breaking in lines that run
+  // in and fade, in a wider band the bigger the waves; hardly any by the quays and piers (uCalm)
+  vec2 sg = (lp - uNearXf.xy) * uNearXf.z;
+  if (sg.x > 0.0 && sg.y > 0.0 && sg.x < 1.0 && sg.y < 1.0) {
+    float sd = texture2D(uShore, sg).r * 63.75, reach = 3.0 + 9.0 * clamp(uAmp, 0.0, 1.5);
+    float run = 0.5 + 0.5 * sin(sd * 0.7 - uTime * 1.3 + texture2D(uRipple, lp / 37.0).w * 6.0);
+    float surf = (1.0 - smoothstep(0.5, reach, sd)) * (0.35 + 0.65 * smoothstep(0.55, 0.9, run)) * (1.0 - smoothstep(600.0, 1500.0, dist)) * (1.0 - 0.85 * texture2D(uCalm, sg).r);
+    col = mix(col, vec3(0.88, 0.92, 0.94) * uFoamCol, clamp(surf * 0.85, 0.0, 0.85));
+  }
   // the haze: the sky's own colour at the horizon in that direction, so the sea melts into it (warmer towards the sun)
   vec3 hz = normalize(vec3(-V.x, 0.0, -V.z) + vec3(0.0, 0.001, 0.0));
   col = mix(col, skyBase(hz), smoothstep(uFogNear, uFogFar, dist));
@@ -224,39 +233,56 @@ function lineStrip(len) { // a straight line len metres long, lying flat along x
   return g;
 }
 
-// distance lines across the beat: from the windward mark down to the start line, every 50 m (100 m on a long course),
-// each a line like the start line, with its distance to the mark written at both ends. They widen with the distance, as the laylines do.
+// distance lines across a beat: from its mark (or the middle of the line it goes to) down to where it starts, every 50 m
+// (100 m on a long beat), each a line like the start line, with its distance to the mark written at both ends. They
+// widen with the distance, as the laylines do. Laid again for each beat (setTarget).
 export const ladderStep = (beat) => (beat > 600 ? 100 : 50);
-function ladder(c) {
-  const g = new THREE.Group(), beat = -c.windward.z, step = ladderStep(beat);
-  for (let d = step; d < beat - 15; d += step) {
-    const z = c.windward.z + d, half = Math.min(260, 30 + d * 0.95);
-    const line = new THREE.Mesh(lineStrip(2 * half), lineMat());
-    line.position.set(c.windward.x, 0.65, z); line.renderOrder = 1; g.add(line);
-    // the distance, just past each end of the line
-    const lc = document.createElement('canvas'); lc.width = 160; lc.height = 56;
-    const x = lc.getContext('2d'), text = `${d} m`;
-    x.font = '700 30px Carlito, Lato, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-    const w = x.measureText(text).width + 26;
-    x.fillStyle = 'rgba(0,0,0,0.38)'; x.beginPath(); x.roundRect((160 - w) / 2, 8, w, 40, 20); x.fill();
-    x.fillStyle = '#fff'; x.fillText(text, 80, 29);
-    const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(lc), transparent: true, depthWrite: false, fog: true, toneMapped: false });
-    for (const sd of [-1, 1]) { const s = new THREE.Sprite(mat); s.scale.set(13, 4.55, 1); s.position.set(c.windward.x + sd * (half + 7), 3.2, z); g.add(s); }
+class Ladder {
+  constructor() { this.group = new THREE.Group(); this.key = ''; }
+  setTarget(m, from) {
+    const key = `${m.x}|${m.z}|${from.z}`; if (key === this.key) return; this.key = key;
+    const g = this.group, beat = from.z - m.z, step = ladderStep(beat);
+    for (const o of g.children) { if (o.isSprite) { o.material.map.dispose(); o.material.dispose(); } else o.geometry.dispose(); }
+    g.clear();
+    for (let d = step; d < beat - 15; d += step) {
+      const z = m.z + d, half = Math.min(260, 30 + d * 0.95);
+      const line = new THREE.Mesh(lineStrip(2 * half), lineMat());
+      line.position.set(m.x, 0.65, z); line.renderOrder = 1; g.add(line);
+      // the distance, just past each end of the line
+      const lc = document.createElement('canvas'); lc.width = 160; lc.height = 56;
+      const x = lc.getContext('2d'), text = `${d} m`;
+      x.font = '700 30px Carlito, Lato, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      const w = x.measureText(text).width + 26;
+      x.fillStyle = 'rgba(0,0,0,0.38)'; x.beginPath(); x.roundRect((160 - w) / 2, 8, w, 40, 20); x.fill();
+      x.fillStyle = '#fff'; x.fillText(text, 80, 29);
+      const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(lc), transparent: true, depthWrite: false, fog: true, toneMapped: false });
+      for (const sd of [-1, 1]) { const s = new THREE.Sprite(mat); s.scale.set(13, 4.55, 1); s.position.set(m.x + sd * (half + 7), 3.2, z); g.add(s); }
+    }
   }
-  return g;
 }
+// the beat whose laylines and distance lines show on leg i: the one sailed now, else the last one sailed (before the
+// start, the first); and where it starts, for them to reach down to: the start line on a beat to the windward mark (on
+// every lap, as always), else the gate it leaves
+export function beatOf(c, i) {
+  let j = Math.min(i, c.legs.length - 1); while (j > 0 && !isBeat(c, j)) j--;
+  return j > 0 ? j : c.legInfo.findIndex((l) => l.beat);
+}
+export const beatFrom = (c, j) => legAim(c, c.legs[j] === 'mark' ? 0 : j - 1);
+// the marks with a zone: the gate, and every mark some leg reaches on a reach or a run (the wing, mark 2, the offset)
+export const zoneMarks = (c) => [...c.gate, ...Object.entries(c.marks).filter(([k]) => c.legs.some((l, i) => l === k && hasZone(c, i))).map(([, m]) => m)];
+// a finish line's committee boat runs no start: she flies the blue flag, on station, for the whole race
+const ON_STATION = { cls: true };
 
-// the laylines to the windward mark: two lines like the start line but yellow, from the edge of its zone down each side of the beat,
-// far enough to reach below the start line. Each is a long strip, laid on the waves and turned to the wind every frame.
+// the laylines to the beat's mark: two lines like the start line but yellow, from the edge of its zone down each side of the beat,
+// far enough to reach below where it starts. Each is a long strip, laid on the waves and turned to the wind every frame.
 class Laylines {
   constructor(c, tws) {
-    this.m = c.windward; this.up = beatAngle(tws) * D2R;
-    const L = (-c.windward.z + 80) / Math.cos(this.up), N = Math.ceil(L / 4), HW = LINE_W / 2; // 4 m pieces
-    this.v = []; // per vertex: distance from the mark, offset across
+    this.up = beatAngle(tws) * D2R;
+    const N = (this.N = Math.ceil((-c.windward.z + 80) / Math.cos(this.up) / 4)), HW = LINE_W / 2; // 4 m pieces on the first beat, the longest
+    this.v = []; // per vertex: distance from the mark (setTarget), offset across
     const pos = [], uv = [], idx = [];
     for (let i = 0; i <= N; i++) {
-      const d = ZONE + (i / N) * L;
-      for (const o of [-HW, HW]) { this.v.push(d, o); pos.push(0, 0, 0); uv.push(d / DASH, o < 0 ? 0 : 1); }
+      for (const o of [-HW, HW]) { this.v.push(0, o); pos.push(0, 0, 0); uv.push(0, o < 0 ? 0 : 1); }
       if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     }
     const mat = lineMat().clone(); mat.color.set('#ffd400'); // the same dashes, in yellow
@@ -269,6 +295,13 @@ class Laylines {
       const mesh = new THREE.Mesh(g, mat); mesh.frustumCulled = false; mesh.renderOrder = 2; mesh.userData.sd = sd;
       this.group.add(mesh); return mesh;
     });
+  }
+  // m: the beat's mark (or the middle of its line); from: where the beat starts. The lines reach 80 m below it
+  setTarget(m, from) {
+    this.m = m;
+    const N = this.N, L = (from.z - m.z + 80) / Math.cos(this.up);
+    for (let i = 0; i <= N; i++) this.v[i * 4] = this.v[i * 4 + 2] = ZONE + (i / N) * L;
+    for (const mesh of this.lines) { const U = mesh.geometry.attributes.uv; for (let k = 0; k < U.count; k++) U.setX(k, this.v[k * 2] / DASH); U.needsUpdate = true; }
   }
   // W: where the wind blows from now. A boat close-hauled heading hd lays the mark from anywhere on the line that runs
   // from the mark back the way she came: (−sin hd, cos hd)
@@ -284,7 +317,7 @@ class Laylines {
   }
 }
 
-// the zone round the gate and wing marks — three hull lengths (none at the windward mark: no mark-room there) — as a ring of dashes riding the waves,
+// the zone round the gate and the marks reached on a reach or a run — three hull lengths (none at a mark reached on a beat: no mark-room there) — as a ring of dashes riding the waves,
 // dashed like the other lines: one mesh for all of them; the rings of the mark you sail for now are as bright as the lines, the others fainter
 const RING_ON = LINE_A, RING_OFF = LINE_A * 0.4;
 class ZoneRings {
@@ -813,7 +846,7 @@ export class World {
     Object.assign(this.waterU, this.skopea.waterU);
     // the sea reflects the hills, the town and the moored yachts; not the pines, the most of it to draw a second
     // time, which the rippled reflection of a green hillside wouldn't show
-    for (const o of [this.skopea.land, this.skopea.town, this.skopea.boats]) mirrored(o);
+    for (const o of [this.skopea.land, this.skopea.town, this.skopea.boats, this.skopea.far]) mirrored(o); // (the far mountains too, in the calm)
 
     // glare: a soft bloom round the sun when you look towards it (behind a sail or a hill it hides)
     const gc = document.createElement('canvas'); gc.width = gc.height = 128;
@@ -877,7 +910,7 @@ export class World {
     this.glare.material.color.copy(L.sun); this.glareK = L.disc;
     this.bloomLook = L.bloom; if (this.post) this.post.setLook(L.bloom);
     this.envSea.material.color.copy(L.deep).lerp(SKY_HORIZON, 0.2);
-    if (this.skopea) this.skopea.setLight(L);
+    if (this.skopea) this.skopea.setLight(L, this.renderer);
     const pm = new THREE.PMREMGenerator(this.renderer), old = this.scene.environment;
     this.scene.environment = pm.fromScene(this.env, 0.02).texture;
     pm.dispose(); if (old) old.dispose();
@@ -916,7 +949,7 @@ export class World {
     for (const o of [v.wheel, v.windex, v.travCar, ...v.tells]) o.traverse((x) => x.layers.disable(MIRRORED)); // nor the wheel and such
     v.root.traverse((o) => { if (o.isLine) o.layers.disable(MIRRORED); });
     v.root.traverse((o) => { if (o.isSprite && o.material.depthTest === false && o.material.toneMapped === false) o.layers.set(OVERLAY); }); // the name tag: drawn after the post
-    this.scene.add(v.root);
+    this.scene.add(inLandShadow(v.root)); // in the hills' shadow as the land is
     return v;
   }
   // your boat dressed again, in a new look (the boat page's preview, as you choose)
@@ -928,6 +961,12 @@ export class World {
     this.seaShadows[i]?.dispose(this.scene);
     this.seaShadows[i] = new SeaShadows(this.scene, this.boatViews[i], this.shadeMat);
   }
+  // the laylines and the distance lines on the beat leg i sails (or last sailed)
+  aimGuides(c, i) {
+    const j = beatOf(c, i); if (j === this.beatI) return;
+    this.beatI = j; const m = legAim(c, j), from = beatFrom(c, j);
+    this.lay.setTarget(m, from); this.ladder.setTarget(m, from);
+  }
   setMarks(race) {
     const c = race.course, g = new THREE.Group(), W0 = race.wind.dir();
     this.buoys = [];
@@ -936,30 +975,45 @@ export class World {
       const ring = obj.userData.R ? new MarkContact(obj.userData.R, this.wakeU) : null; if (ring) g.add(ring.mesh);
       this.buoys.push({ obj, p, vee, ring });
     };
-    add(buoy(), c.windward, currentVee()); add(buoy(), c.gate[0], currentVee()); add(buoy(), c.gate[1], currentVee()); add(buoy('#ffb000', 0.85), c.pin, currentVee());
-    if (c.wing) add(buoy(), c.wing, currentVee());
-    // the committee boat lies to her anchor head to wind, 5 m beyond the line's end: which side of her the pin is,
-    // and where along her the line meets her, place her orange flag and her officers
-    const cbx = Math.cos(W0), cbz = Math.sin(W0), ex = -c.dir.x * 5, ez = -c.dir.z * 5;
-    this.cb = new CommitteeBoat(ex * cbx + ez * cbz >= 0 ? 1 : -1, -ex * cbz + ez * cbx);
-    this.committee = this.cb.root; this.cbW0 = W0;
-    add(this.committee, { x: c.committee.x + c.dir.x * 5, z: c.committee.z + c.dir.z * 5 });
-    this.committee.rotation.y = -W0;
+    for (const m of [...Object.values(c.marks), ...c.gate]) add(buoy(), m, currentVee()); // the rounding marks and the gate
+    add(buoy('#ffb000', 0.85), c.pin, currentVee());
+    // a committee boat lies to her anchor head to wind, 5 m beyond her line's end (d: along the line, towards her):
+    // which side of her the pin is, and where along her the line meets her, place her orange flag and her officers
+    const cbx = Math.cos(W0), cbz = Math.sin(W0);
+    const cboat = (hull, d) => {
+      const ex = -d.x * 5, ez = -d.z * 5, b = new CommitteeBoat(ex * cbx + ez * cbz >= 0 ? 1 : -1, -ex * cbz + ez * cbx);
+      b.root.userData.boat = true; add(b.root, hull); b.root.rotation.y = -W0; return b;
+    };
+    // a line, as a row of floating dashes
+    const dashes = (a, b) => {
+      const m = new THREE.Mesh(lineStrip(Math.hypot(b.x - a.x, b.z - a.z)), lineMat());
+      m.rotation.y = -Math.atan2(b.z - a.z, b.x - a.x); m.position.set((a.x + b.x) / 2, 0.7, (a.z + b.z) / 2);
+      g.add(m); return m;
+    };
+    this.cb = cboat({ x: c.committee.x + c.dir.x * 5, z: c.committee.z + c.dir.z * 5 }, c.dir);
+    this.committee = inLandShadow(this.cb.root); this.cbW0 = W0;
     // the jury boat, off the course, going round it
     this.jury ||= new JuryBoat(); this.jury.reset(race);
     g.add(mirrored(this.jury.root));
-    // the line, as a row of floating dashes
-    const len = Math.hypot(c.committee.x - c.pin.x, c.committee.z - c.pin.z);
-    this.line = new THREE.Mesh(lineStrip(len), lineMat());
-    this.line.rotation.y = -Math.atan2(c.dir.z, c.dir.x); this.line.position.set((c.pin.x + c.committee.x) / 2, 0.7, (c.pin.z + c.committee.z) / 2);
-    g.add(this.line);
+    this.line = dashes(c.pin, c.committee);
+    // a finish line of its own: its pin, the line, and a second committee boat beyond its right-hand end, on station
+    // with the blue flag
+    this.fb = null;
+    if (c.finish) {
+      const f = c.finish, fl = Math.hypot(f.b.x - f.a.x, f.b.z - f.a.z);
+      add(buoy('#ffb000', 0.85), f.a, currentVee());
+      this.fb = cboat(c.finishBoat, { x: (f.b.x - f.a.x) / fl, z: (f.b.z - f.a.z) / fl }).finishing();
+      dashes(f.a, f.b);
+    }
     // the arrows over the next mark
     const cone = () => { const m = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.6, 4), new THREE.MeshBasicMaterial({ color: '#ffd400', fog: false })); m.rotation.x = Math.PI; return m; };
     this.pointers = [cone(), cone()]; for (const p of this.pointers) g.add(p);
-    this.zones = new ZoneRings([c.gate[0], c.gate[1], ...(c.wing ? [c.wing] : [])]); g.add(this.zones.mesh);
-    this.ladder = ladder(c); g.add(this.ladder);
+    this.zoneM = zoneMarks(c);
+    this.zones = new ZoneRings(this.zoneM); g.add(this.zones.mesh);
+    this.ladder = new Ladder(); g.add(this.ladder.group);
     this.lay = new Laylines(c, race.wind.p.tws); g.add(this.lay.group);
-    this.marks = g; this.scene.add(g);
+    this.beatI = -1; this.aimGuides(c, race.player.leg);
+    this.marks = g; this.scene.add(inLandShadow(g));
     this.camH = race.player.h;
     if (this.guides) this.scene.remove(this.guides);
     this.guides = guides(race.wind.p.tws); this.scene.add(this.guides);
@@ -1136,9 +1190,10 @@ export class World {
     // buoys bob and tilt with the sea under them; in a current a mark leans downstream on its mooring and trails a
     // little foam
     for (const { obj, p, vee, ring } of this.buoys) {
-      obj.position.y = waveHeight(this.W, p.x, p.z, t) * (obj === this.committee ? 0.7 : 0.9);
+      const boat = obj.userData.boat; // a committee boat
+      obj.position.y = waveHeight(this.W, p.x, p.z, t) * (boat ? 0.7 : 0.9);
       if (ring) ring.update(p, t, this.W);
-      if (obj === this.committee) { // she pitches and rolls a little on the swell, being long and heavy
+      if (boat) { // she pitches and rolls a little on the swell, being long and heavy
         const W0 = this.cbW0, fx = Math.sin(W0), fz = -Math.cos(W0);
         obj.rotation.x = waveSlope(this.W, p.x, p.z, t, fx, fz) * 0.35;
         obj.rotation.z = waveSlope(this.W, p.x, p.z, t, -fz, fx) * 0.35;
@@ -1165,16 +1220,16 @@ export class World {
       }
     }
     this.juryFrame(dt, t);
-    const lg = race.course.legs[P.leg];
-    this.zones.update(this.W, t, P.done ? [] : lg === 'gate' ? [0, 1] : lg === 'wing' ? [2] : []);
+    const c = race.course, k = c.legs[P.leg];
+    this.zones.update(this.W, t, P.done || !hasZone(c, P.leg) ? [] : legTargets(c, P.leg).map((m) => this.zoneM.indexOf(m)));
     this.cb.update(t, dt, race.flags, race.prepFlag, this.cbW0 - race.wind.dir(), race.wind.p.tws * 0.514); // flags fly downwind
-    const k = race.course.legs[P.leg]; // the start line stays drawn for the whole race
-    this.ladder.visible = this.showGuides && !P.done; // the distance lines go with the other guides
-    this.lay.group.visible = this.showGuides && (k === 'start' || k === 'mark') && !P.done; // laylines before the start and on the beat
+    if (this.fb) this.fb.update(t, dt, ON_STATION, 'P', this.cbW0 - race.wind.dir(), race.wind.p.tws * 0.514);
+    this.aimGuides(c, P.leg); // the guides to this beat's mark (the start line stays drawn for the whole race)
+    this.ladder.group.visible = this.showGuides && !P.done; // the distance lines go with the other guides
+    this.lay.group.visible = this.showGuides && (k === 'start' || isBeat(c, P.leg)) && !P.done; // laylines before the start and on a beat
     if (this.lay.group.visible) this.lay.update(this.W, race.wind.dir(), t);
     // pointers over the next mark(s)
-    const c = race.course;
-    const targets = k === 'mark' ? [c.windward] : k === 'wing' ? [c.wing] : k === 'gate' ? c.gate : [c.pin, { x: c.committee.x, z: c.committee.z }];
+    const targets = legTargets(c, P.leg);
     this.pointers.forEach((p, i) => {
       const m = targets[i];
       p.visible = !!m && !P.done;
@@ -1260,6 +1315,7 @@ export class World {
     this.wild.update(dt, t, this.W, cam, this.foamU.uScale.value);
     this.plane.update(dt, cam, !this.intro);
     this.sky.position.copy(cam.position); this.sky.material.uniforms.uTime.value = t; // the clouds drift
+    this.skopea.update(cam.position); // the far trees as plain crowns
     this.jets.update(dt, cam, this.race);
     // the glare: brightest looking straight at the sun, gone when you look away
     const look = cam.getWorldDirection(this._dir || (this._dir = new THREE.Vector3()));

@@ -1,4 +1,4 @@
-import { dailyRace, dailyVenue, type XZ } from './race.ts'; // with their extensions, so npm test's Node finds them too
+import { dailyRace, dailyVenue, type Shape, type XZ } from './race.ts'; // with their extensions, so npm test's Node finds them too
 import { venueOf, type VenueId } from './venues.ts';
 
 // The finish of a race as it was the moment you crossed the line, for the scene behind the result page
@@ -9,7 +9,8 @@ import { venueOf, type VenueId } from './venues.ts';
 // how a boat sailed at that moment, as the game keeps it
 export type Pose = { x: number; z: number; h: number; twa?: number; awa?: number; heel?: number; sail?: number; kite?: number; kiteFill?: number; boom?: number; v?: number; done?: number };
 type Boat = { name: string | null; me: boolean; done: boolean; dsq: boolean; secs: number | null; track: XZ[]; at?: Pose };
-type Course = { windward: XZ; gate: XZ[]; pin: XZ; committee: XZ; legs: string[]; wing?: XZ; type?: 'tri' };
+// `type`, `marks` and `finish` came with the course shapes: a race kept before them has none, and a wing mark makes it a triangle
+type Course = { windward: XZ; gate: XZ[]; pin: XZ; committee: XZ; legs: string[]; wing?: XZ; type?: Shape; marks?: Record<string, XZ>; finish?: [XZ, XZ] };
 export type FinishResult = {
   daily: string | null; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
   course: Course; boats: Boat[]; venue?: string; origin?: XZ; seed?: number | null;
