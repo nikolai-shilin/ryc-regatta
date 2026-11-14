@@ -225,7 +225,7 @@ function lineStrip(len) { // a straight line len metres long, lying flat along x
 }
 
 // distance lines across the beat: from the windward mark down to the start line, every 50 m (100 m on a long course),
-// each a line like the start line, with its distance to the mark written at both ends. They widen with the distance, as the laylines do.
+// each a line like the start line, with no labels on the water. They widen with the distance, as the laylines do.
 export const ladderStep = (beat) => (beat > 600 ? 100 : 50);
 function ladder(c) {
   const g = new THREE.Group(), beat = -c.windward.z, step = ladderStep(beat);
@@ -233,15 +233,6 @@ function ladder(c) {
     const z = c.windward.z + d, half = Math.min(260, 30 + d * 0.95);
     const line = new THREE.Mesh(lineStrip(2 * half), lineMat());
     line.position.set(c.windward.x, 0.65, z); line.renderOrder = 1; g.add(line);
-    // the distance, just past each end of the line
-    const lc = document.createElement('canvas'); lc.width = 160; lc.height = 56;
-    const x = lc.getContext('2d'), text = `${d} m`;
-    x.font = '700 30px Carlito, Lato, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-    const w = x.measureText(text).width + 26;
-    x.fillStyle = 'rgba(0,0,0,0.38)'; x.beginPath(); x.roundRect((160 - w) / 2, 8, w, 40, 20); x.fill();
-    x.fillStyle = '#fff'; x.fillText(text, 80, 29);
-    const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(lc), transparent: true, depthWrite: false, fog: true, toneMapped: false });
-    for (const sd of [-1, 1]) { const s = new THREE.Sprite(mat); s.scale.set(13, 4.55, 1); s.position.set(c.windward.x + sd * (half + 7), 3.2, z); g.add(s); }
   }
   return g;
 }
