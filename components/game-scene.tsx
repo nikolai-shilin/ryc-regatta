@@ -13,7 +13,7 @@ import type { Wind } from '@/lib/race';
 // With `setup` it is the free race's set-up: the race as it will be laid (every boat, the marks, the committee boat),
 // and `setup.view` says what the drone shows: the fleet, the wind or the current over the course, or the course.
 export type SceneSetup = {
-  race: { preset: Wind; fleet: number; length: string; laps: number; course: string; current: number; start: number };
+  race: { preset: Wind; fleet: number; length: string; laps: number; course: string; current: number; start: number; daytime?: string };
   view: 'boats' | 'wind' | 'current' | 'course';
   labels: Record<string, string>;
 };

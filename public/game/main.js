@@ -203,7 +203,7 @@ applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 
 // ---------- settings ----------
-const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 0, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', gfx: 'auto', guides: 1, played: 0 };
+const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 0, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', guides: 1, played: 0 };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
 delete opts.undefined; // left by an older pause menu, whose quick switches also ran the menu's choice handler
 if (opts.fleetV !== 3) { opts.fleet = 5; opts.fleetV = 3; } // the default changed (10, then 7): start everyone on 5 once

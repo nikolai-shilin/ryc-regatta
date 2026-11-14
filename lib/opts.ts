@@ -3,10 +3,14 @@
 import type { Length, Shape, Wind } from './race';
 import type { VenueId } from './venues';
 
+export type Daytime = 'any' | 'morning' | 'midday' | 'afternoon' | 'evening';
+export const DAYTIMES: readonly Daytime[] = ['any', 'morning', 'midday', 'afternoon', 'evening'];
+
 export type Opts = {
   mode: 'daily' | 'free';
   venue: VenueId; // where a free race is sailed (public/game/venues.js); today's race goes to the day's venue
   preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape;
+  daytime: Daytime; // the time of day a free race is sailed at (public/game/light.js: DAYTIMES); 'any' a new hour every race
   autoTrim: number; // 0 I trim · 1 auto · 2 main + jib
   sound: number; guides: number; gfx: 'auto' | 'high' | 'medium' | 'low';
   camera: 'drone' | 'top' | 'helm'; vibration: number;
@@ -15,7 +19,7 @@ export type Opts = {
 };
 
 export const DEFAULTS: Opts = {
-  mode: 'daily', venue: 'gocek', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl',
+  mode: 'daily', venue: 'gocek', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any',
   autoTrim: 0, sound: 1, guides: 1, gfx: 'auto', camera: 'drone', vibration: 1, voice: 1, fleetV: 3, optsV: 4,
 };
 
