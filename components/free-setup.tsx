@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { readOpts, readPb, saveOpts } from '@/lib/opts';
@@ -8,7 +8,8 @@ import { venueOf, VENUES } from '@/lib/venues';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, type Length, type Shape, type Wind } from '@/lib/race';
 import { CourseMap } from './course-map';
 import { GameScene } from './game-scene';
-import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, clock } from './ui';
+import { PauseCard, SettingsRow, type Who } from './pause-card';
+import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, clock } from './ui';
 
 type Pick = { venue: VenueId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape };
 
@@ -19,7 +20,7 @@ const minutes = (p: Pick) => Math.round(({ short: 4.5, medium: 7, long: 9.5 }[p.
 // on a clear evening, /boat-view), the race's place and numbers over it as the pause screen has them, and the choices
 // in the pause menu's dark glass card. Picking another place loads that venue's scene and fades it in over the last;
 // the wind changes the breeze in the scene as it is. Start saves the choice where the game reads it and opens the race.
-export default function FreeSetup({ lang, fromToday }: { lang: Lang; fromToday: boolean }) {
+export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromToday: boolean; who: Who }) {
   const t = tx(lang);
   const [p, setP] = useState<Pick>({ venue: 'gocek', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' });
   const [ready, setReady] = useState(false);
@@ -53,10 +54,9 @@ export default function FreeSetup({ lang, fromToday }: { lang: Lang; fromToday: 
   const where = venueOf(p.venue);
   const courseName = { short: t('Short', 'Короткая'), medium: t('Medium', 'Средняя'), long: t('Long', 'Длинная') }[p.length];
   const metres = fmtDistance(courseDistance(geo, p.laps), lang).split(' · ')[0];
-  const card = useRef<HTMLElement>(null);
   // upright the places run in one row that scrolls sideways: the chosen one in view
   useEffect(() => {
-    const row = card.current?.querySelector('.bt-row1'), on = row?.querySelector<HTMLElement>('[aria-checked="true"]');
+    const row = document.querySelector('.bt-card .bt-row1'), on = row?.querySelector<HTMLElement>('[aria-checked="true"]');
     if (row && on && row.scrollWidth > row.clientWidth) row.scrollLeft = on.offsetLeft - (row as HTMLElement).offsetLeft - (row.clientWidth - on.offsetWidth) / 2;
   }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -80,7 +80,7 @@ export default function FreeSetup({ lang, fromToday }: { lang: Lang; fromToday: 
           </div>
         </div>
 
-        <section className="bt-card" ref={card} aria-labelledby="fs-title">
+        <PauseCard lang={lang} who={who} back={fromToday ? '/race/free?from=today' : '/race/free'} label={t('Set up your race', 'Настрой гонку')}>
           <button type="button" className="bt-go" onClick={go}><IconPlay /><span>{t('Start race', 'Начать гонку')}</span></button>
           {tags('venue', <IconPin />, t('Where', 'Где'), VENUES.map((v) => [v.id, t(...v.name)] as [VenueId, string]))}
           {tags('preset', <IconWind s={14} />, t('Wind', 'Ветер'), [['light', t('Light 7 kn', 'Слабый 7 уз')], ['medium', t('Medium 12 kn', 'Средний 12 уз')], ['strong', t('Strong 19 kn', 'Сильный 19 уз')]])}
@@ -99,7 +99,11 @@ export default function FreeSetup({ lang, fromToday }: { lang: Lang; fromToday: 
           <p className="bt-saved bt-saved-l">{best != null
             ? t(`Your best on this course: ${clock(best)}. Beat it and the result page says so.`, `Твой лучший результат на этой дистанции: ${clock(best)}. Побьёшь — страница результата скажет.`)
             : t('The game keeps your best time on every course. A free race doesn’t go on today’s ranking.', 'Игра помнит лучшее время на каждой дистанции. Свободная гонка в рейтинг дня не идёт.')}</p>
-        </section>
+          <div className="bt-rows">
+            <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
+            <SettingsRow lang={lang} />
+          </div>
+        </PauseCard>
       </div>
     </div>
   );

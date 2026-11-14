@@ -1,4 +1,5 @@
 import { getT, titled } from '@/lib/i18n';
+import { getAccount, initials } from '@/lib/supabase/server';
 import FreeSetup from '@/components/free-setup';
 
 export const generateMetadata = titled('Free race', 'Свободная гонка', {
@@ -9,6 +10,7 @@ export const generateMetadata = titled('Free race', 'Свободная гонк
 });
 
 export default async function FreeRacePage({ searchParams }: { searchParams: Promise<{ from?: string }> }) {
-  const [{ lang }, sp] = await Promise.all([getT(), searchParams]);
-  return <FreeSetup lang={lang} fromToday={sp.from === 'today'} />;
+  const [{ lang, t }, sp, account] = await Promise.all([getT(), searchParams, getAccount()]);
+  const who = account ? { name: account.name, email: account.email, initials: initials(account.name, account.email), via: account.provider === 'google' ? 'Google' : account.provider === 'telegram' ? 'Telegram' : t('email code', 'код по почте') } : null;
+  return <FreeSetup lang={lang} fromToday={sp.from === 'today'} who={who} />;
 }

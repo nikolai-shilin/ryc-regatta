@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import { getT, titled } from '@/lib/i18n';
 import { ruBoats } from '@/lib/lang';
-import { getAccount } from '@/lib/supabase/server';
+import { getAccount, initials } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN } from '@/lib/race';
 import { venueOf } from '@/lib/venues';
-import { IconBack, IconPlay, IconTrophy, IconSliders, IconSail, IconScreen, clock } from '@/components/ui';
+import { IconBack, IconPlay, IconTrophy, IconSliders, IconSail, clock } from '@/components/ui';
 import { FreeQuick } from '@/components/hub-client';
 import { GameScene } from '@/components/game-scene';
+import { PauseCard, SettingsRow, type Who } from '@/components/pause-card';
 import { MyRow } from '@/components/home-client';
 
 export const generateMetadata = titled('Race hub', 'Меню гонок', {
@@ -31,6 +32,7 @@ export default async function Hub() {
   const metres = fmtDistance(courseDistance(plannedCourse(d.preset, d.length, d.fleet, d.course), d.laps), lang).split(' · ')[0];
   const breeze = { light: t('Light breeze', 'Слабый ветер'), medium: t('Medium breeze', 'Средний ветер'), strong: t('Strong breeze', 'Сильный ветер') }[d.preset];
   const races = today && today.d === d.day ? today.races : 0;
+  const who: Who = account ? { name: account.name, email: account.email, initials: initials(account.name, account.email), via: account.provider === 'google' ? 'Google' : account.provider === 'telegram' ? 'Telegram' : t('email code', 'код по почте') } : null;
 
   return (
     <div className="scr bt-scr" lang={lang} data-acct={account ? 'signed' : 'guest'}>
@@ -54,7 +56,7 @@ export default async function Hub() {
           </div>
         </div>
 
-        <section className="bt-card" aria-label={t('Today’s race', 'Гонка дня')}>
+        <PauseCard lang={lang} who={who} back="/race" label={t('Today’s race', 'Гонка дня')}>
           <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Start today’s race', 'Начать гонку дня')}</span></a>
           <div className="bt-g">
             <span className="bt-k"><IconTrophy />{t('Today’s fastest', 'Самые быстрые сегодня')}{races ? <span className="bt-k-r">{t(`${races} races`, `заездов: ${races}`)}</span> : null}</span>
@@ -73,9 +75,9 @@ export default async function Hub() {
           <div className="bt-rows">
             <Link className="bt-row" href="/race/free?from=today"><IconSliders /><span>{t('Change the wind or course', 'Изменить ветер или дистанцию')}</span><span className="bt-row-m">{t('A free race', 'Свободная гонка')}</span></Link>
             <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
-            <Link className="bt-row" href="/settings"><IconScreen /><span>{t('Settings', 'Настройки')}</span></Link>
+            <SettingsRow lang={lang} />
           </div>
-        </section>
+        </PauseCard>
       </div>
     </div>
   );
