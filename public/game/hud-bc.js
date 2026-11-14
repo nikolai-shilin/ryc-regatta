@@ -29,6 +29,8 @@ export const HUD_STRINGS = {
     space: 'Space', boardFoot: (n) => `The boats round you · ${n} in all`,
     toLeg: { lineStart: 'To the start line', mark: 'To the windward mark', mark1: 'To mark 1', wing: 'To the wing mark', mark2: 'To mark 2', offset: 'To the offset mark', gate: 'To the leeward gate', finish: 'To the finish' },
     go: 'Go', leads: 'Leads', afterGun: 'after the gun', ord: (n) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`,
+    squareAt: 'square', veer: 'Veer', back: 'Back', mToLine: (m) => `${m} m to line`,
+    hold: (s) => `Hold ${s}, then bear away`, bearNow: 'Bear away now, full speed', late: 'Late: bear away now',
   },
   ru: {
     title: 'Up and down', daily: 'Гонка дня', free: 'Свободная гонка', live: 'Эфир', startIn: 'До старта', gun: 'Старт',
@@ -46,6 +48,8 @@ export const HUD_STRINGS = {
     space: 'Пробел', boardFoot: (n) => `Лодки рядом с тобой · всего ${n}`,
     toLeg: { lineStart: 'К линии старта', mark: 'К верхнему знаку', mark1: 'К знаку 1', wing: 'К боковому знаку', mark2: 'К знаку 2', offset: 'К знаку смещения', gate: 'К нижним воротам', finish: 'К финишу' },
     go: 'Старт!', leads: 'Лидирует', afterGun: 'после сигнала', ord: (n) => `${n}-й`,
+    squareAt: 'ровная при', veer: 'Сдвиг вправо', back: 'Сдвиг влево', mToLine: (m) => `${m} м до линии`,
+    hold: (s) => `Выжди ${s}, потом уваливайся`, bearNow: 'Уваливайся сейчас, полный ход', late: 'Опаздываешь: уваливайся сейчас',
   },
 };
 
@@ -356,6 +360,12 @@ const CSS = `
 .b-board.b-intro .b-row { animation: bc-slide-l .4s var(--ease) both; animation-delay: calc(${AT(3)} + (var(--r, 0) + 2) * var(--t-stagger)); }
 .b-row:nth-child(2) { --r: 1; } .b-row:nth-child(3) { --r: 2; } .b-row:nth-child(4) { --r: 3; } .b-row:nth-child(5) { --r: 4; } .b-row:nth-child(6) { --r: 5; }
 
+/* the call's two signs: a tack, or bear away (before the start) */
+.b-lay .i-bear { display: none; }
+.b-lay.burn .i-bear { display: block; } .b-lay.burn .i-tack { display: none; }
+.b-lay.late { background: var(--live); color: var(--ink); }
+.b-shift.b-vb { color: var(--ink); }
+
 /* ---------- compact: a phone sideways, then upright ---------- */
 @media not all and ${WIDE} {
   #hud.bc .b-bug, #hud.bc .b-state, #hud.bc .b-board .b-bh, #hud.bc .b-board .b-bf, #hud.bc .b-map .b-mh, #hud.bc .b-gunc, #hud.bc .b-bias, #hud.bc .b-legs, #hud.bc .b-wind .b-wt > .lbl:first-child, #hud.bc .b-dir { display: none !important; }
@@ -455,6 +465,23 @@ export function laylineAt({ mx, mz, x, z, h, v, W, beat }) {
   return null;
 }
 
+// The call before the start, from the time to burn (seconds in hand, − late) and the seconds to the gun: in the last
+// minute, early by more than five seconds 'hold' (for s seconds, then bear away), within three either way 'now', more
+// than three late 'late'; null otherwise. Between the bands it keeps the call it had (prev), so it doesn't flicker.
+export function burnCall(burn, left, prev = null) {
+  if (burn == null || !Number.isFinite(burn) || !(left > 0 && left < 60)) return null;
+  const was = prev && prev.kind;
+  const kind = burn > 5 ? 'hold' : burn > 3 ? (was === 'now' ? 'now' : 'hold') : burn >= -3 ? 'now' : burn >= -4 && was === 'now' ? 'now' : 'late';
+  return kind === 'hold' ? { kind, s: burn } : { kind };
+}
+
+// The bearing the line is square to: the wind from there and neither end is favoured (degrees, 0 … 359, from the north
+// clockwise). The line's normal points up the course, into the wind it was laid for.
+export const squareBearing = (c) => ((Math.round(Math.atan2(c.normal.x, -c.normal.z) / D2R) % 360) + 360) % 360;
+
+// How far the wind has swung since a first reading, in whole degrees: + veered (clockwise), − backed.
+export const veerBack = (now, first) => Math.round(wrap(now - first) / D2R);
+
 const LEG = { start: 'lineStart', mark: 'mark', wing: 'wing', mark2: 'mark2', offset: 'offset', gate: 'gate', finish: 'finish' };
 // a leg's name, by its mark: on a trapezoid the windward mark is mark 1
 const legKey = (c, k) => (k === 'mark' && c.type === 'trap' ? 'mark1' : LEG[k]);
@@ -494,8 +521,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       <div class="b-wt"><span class="lbl">${L.trueWind}</span><span class="n-l b-tws"></span><span class="lbl b-wl"><span class="b-dir"></span><span class="b-shift"></span></span></div></div></div>`);
   const board = html(`<div class="bx pn b-board"><div class="b-bh"><span class="lbl-ink b-bt"></span><span class="lbl b-br"></span></div><div class="b-rows"></div><div class="b-bf"><span class="lbl b-bfn"></span><kbd class="b-lk">L</kbd></div></div>`);
   const map = html(`<div class="bx pn b-map"><div class="b-mh"><span class="lbl-ink">${L.course}</span><span class="lbl b-shape"></span></div></div>`);
-  const TACK_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9c2.5-4.5 9.5-4.5 12 0"/><path d="M12.5 9H16.5V5"/><path d="M10 11.5V17"/></g></svg>';
-  const low = html(`<div class="bx b-low"><div class="b-split" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}<span></span><kbd class="b-key"></kbd></div></div><div class="b-state"></div>
+  const TACK_SVG = '<svg class="i-tack" viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9c2.5-4.5 9.5-4.5 12 0"/><path d="M12.5 9H16.5V5"/><path d="M10 11.5V17"/></g></svg>';
+  const BEAR_SVG = '<svg class="i-bear" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v9M3 7l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const low = html(`<div class="bx b-low"><div class="b-split" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}${BEAR_SVG}<span></span><kbd class="b-key"></kbd></div></div><div class="b-state"></div>
     <div class="pn b-you pre">
       <div class="c-pos s-run s-done"></div>
       <div class="c-nm s-pre s-run s-done"><img class="b-fl" alt="" hidden><i></i><span class="c-nmt"><span class="n-m"></span><span class="lbl">${L.you}</span></span></div>
@@ -636,6 +664,8 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   let twaS = null, lastCount = '', legsKey = '', seqKey = '', raceRef = null, wasLead = null, wasPre = true, wasDone = false, wasShift = '', pulseAt = -1e9;
   // each boat's leg as last seen, and when each boat reached each mark (the race's clock), for the splits
   const legOf = new Map(), atMark = [];
+  // the wind's first reading; the start's call as last made
+  let wind0 = null, burnK = null;
   // play a one-off animation again: the class off, a reflow, on, and off when it's done
   // a boat's flag (its picture's address, from main.js: the fleet's from their looks, yours from the boat page), yours
   // read once a race
@@ -652,7 +682,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   function update(P, dt) {
     if (!on) return;
     const race = getRace(), c = race.course, kn = P.v / KN, twa = P.twa, pre = race.clock < 0, done = !!P.done;
-    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; mySail = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); intro(); }
+    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; mySail = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); wind0 = race.wind.dir(); burnK = null; intro(); }
     const leg = c.legs[P.leg], nLegs = c.legs.length - 1;
     // the order: before the gun, nearest the line first; then the race's
     const toLine = (b) => Math.max(0, -race.lineInfo(b).d);
@@ -713,7 +743,8 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       const fav = (c.pin.x - c.committee.x) * ux + (c.pin.z - c.committee.z) * uz, len = Math.hypot(c.pin.x - c.committee.x, c.pin.z - c.committee.z);
       const deg = Math.round(Math.asin(clamp(Math.abs(fav) / (len || 1), 0, 1)) / D2R);
       htm(B.bv, Math.abs(fav) < 4 ? L.square : `${fav > 0 ? L.pinEnd : L.boatEnd} <span class="is-up">+${deg}°</span>`);
-      txt(B.bl, `${L.line} ${metres(len)}`);
+      // its length, and the wind it would be square to
+      txt(B.bl, `${L.line} ${metres(len)} · ${L.squareAt} ${String(squareBearing(c)).padStart(3, '0')}°`);
     } else {
       // the legs: done, now, to come
       const k = c.legs.join() + c.type;
@@ -749,12 +780,15 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     txt(B.dir, `${L.from} ${from}°`);
     B.windSvg.setAttribute('aria-label', `${L.trueWind} ${from}°, ${Math.round(P.tws)} ${t('kn')}`);
     let sh = '', shc = '';
-    if (!pre && !done && !P.auto && Math.abs(twa) / D2R < 70) {
+    if (pre) { // before the start: how far it has veered or backed since the first reading
+      const vb = veerBack(race.wind.dir(), wind0 ?? race.wind.dir());
+      if (vb >= 2) { sh = `${L.veer} ${vb}°`; shc = 'b-shift b-vb'; } else if (vb <= -2) { sh = `${L.back} ${-vb}°`; shc = 'b-shift b-vb'; }
+    } else if (!done && !P.auto && Math.abs(twa) / D2R < 70) {
       const s = Math.round(((twa < 0 ? -1 : 1) * wrap(P.wdir - race.wind.mean())) / D2R);
       if (s >= 4) { sh = `${L.lift} ${s}°`; shc = 'b-shift is-up'; } else if (s <= -4) { sh = `${L.header} ${-s}°`; shc = 'b-shift is-down'; }
     }
     txt(B.shift, sh ? ` · ${sh}` : ''); cls(B.shift, shc || 'b-shift');
-    const shk = sh ? shc : '';
+    const shk = sh && !pre ? shc : ''; // a lift or a header pulses the box
     if (shk && shk !== wasShift && race.clock - pulseAt > 10) { pulseAt = race.clock; windBox.style.setProperty('--pc', shk.includes('up') ? 'var(--up)' : 'var(--down)'); flash(windBox, 'pulse', 1400); }
     wasShift = shk;
 
@@ -808,13 +842,14 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     txt(Y.pos, P.dsq ? '–' : String(place));
     txt(Y.nm, sailNo()); setFlag(Y.fl, flagOf(P, true));
     txt(Y.spd, nf(kn));
+    let burn = null; // the time to burn, when you're closing on the line
     const ink = (el, c2) => { el.classList.remove('good', 'low', 'late'); if (c2) el.classList.add(c2); };
     if (pre) {
       const li = race.lineInfo(P), close = (Math.sin(P.h) * c.normal.x - Math.cos(P.h) * c.normal.z) * P.v;
       txt(Y.toL, L.toLine); txt(Y.to, String(Math.round(Math.max(0, -li.d)))); txt(Y.eta, '');
       Y.legP.setAttribute('d', ARROW.up); txt(Y.legT, `${L.start} ${fmt(left + 0.999)}`);
       if (close > 0.3 && li.d < 0) {
-        const burn = left - -li.d / close;
+        burn = left - -li.d / close;
         txt(Y.burn, burn >= 1 ? `+${fmt(burn)}` : burn > -1 ? fmt(0) : `−${fmt(-burn)}`); ink(Y.burn, burn <= -1 ? 'late' : burn < 5 ? 'low' : ''); // time in hand +, late −
       } else { txt(Y.burn, '—'); ink(Y.burn, ''); }
     } else if (!done) {
@@ -844,9 +879,12 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     // the call: short ones as the broadcast's capitals, a sentence in its own case
     toastEl.classList.toggle('long', (toastEl.textContent || '').length > 44);
     // the layline, when nothing else is being called
-    const ly = !pre && !done ? layline(race, c, P) : null;
+    // before the start, the same place calls the time to burn: hold, bear away now, or late
+    burnK = pre && !P.ocs && !P.auto ? burnCall(burn, left, burnK) : null;
+    const ly = !pre && !done ? layline(race, c, P) : burnK ? [burnK.kind === 'hold' ? L.hold(fmt(burnK.s)) : burnK.kind === 'now' ? L.bearNow : L.late, burnK.kind === 'now', false] : null;
     lay.classList.toggle('on', !!ly && !toastEl.classList.contains('show'));
     if (ly) { txt(layT, ly[0]); lay.classList.toggle('now', ly[1]); txt(layK, ly[2] ? L.space : ''); }
+    lay.classList.toggle('burn', !!burnK); lay.classList.toggle('late', burnK?.kind === 'late');
 
     // the rudder fades back when no one is steering
     rudder.classList.toggle('act', Math.abs(P.rudder) > 0.04);
@@ -906,7 +944,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       txt(g.p, pre ? '·' : String(place));
       g.c.style.setProperty('--c', me ? 'var(--you)' : hex(b.color));
       txt(g.n, me ? sailNo() : b.name); txt(g.me, me ? L.you : ''); setFlag(g.fl, flagOf(b, me));
-      txt(g.v, `${nf(b.v / KN)} ${t('kn')}`);
+      txt(g.v, pre && !me ? L.mToLine(Math.round(Math.max(0, -race.lineInfo(b).d))) : `${nf(b.v / KN)} ${t('kn')}`); // a rival before the start: how far from the line
       // its box slid back onto the screen when the boat is near an edge (its width read now and then, not every frame)
       if (!g.w || ++g.f % 30 === 0) g.w = g.box.offsetWidth;
       const half = g.w / 2, edge = 8, dx = Math.min(0, innerWidth - edge - (at[0] + half)) + Math.max(0, edge - (at[0] - half));
