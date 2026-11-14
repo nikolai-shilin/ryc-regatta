@@ -103,9 +103,9 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     shallows);
   - the land beyond, out to 64 km on a 400 m grid, drawn pulled in to just inside the view and lowered by the earth's
     curve, coloured as the venue's own land mostly is: the Alps round Garda, Fuji from Enoshima;
-  - the buildings, up to 8,000, the far ones only if tall (pitched roofs where the map or the venue's look has them,
-    on near-convex footprints too; windows spaced each building its own way, glass towers, and the churches and
-    mosques with their bell towers, domes and minarets), and the piers and pontoons.
+  - the buildings, up to 8,000 (a big city's more), the far ones only if tall (pitched roofs where the map or the
+    venue's look has them, on near-convex footprints too; windows spaced each building its own way, glass towers, and
+    the churches and mosques with their bell towers, domes and minarets), and the piers and pontoons.
   The shadows on the land, of the hills, the far mountains, the buildings and the trees, are worked out on the GPU
   from where the sun is (`shadows()` in `skopea.js`), and fall on the water, the yachts and the marks too. The terrain
   and the towns are drawn in tiles, so what is out of view isn't; the trees far off as plain crowns. Cliffs are

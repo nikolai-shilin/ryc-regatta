@@ -34,8 +34,8 @@
 #   shore    Uint8, on the `near` grid: how far out from the shore, in quarters of a metre (0 ashore, 255 past 63 m)
 #   calm     Uint8, on the `near` grid: 255 by a built shore (a town's, a port's, the piers), where there is no surf
 #   bn, bh, broof, bxz   the buildings: how many corners each has, its height in decimetres (0 unknown), its roof
-#            (0 unknown, 1 flat, 2 pitched; or what it is: 3 a church, 4 a mosque), and all the corners, in metres, as x, z
-#            pairs
+#            (0 unknown, 1 flat, 2 pitched; or what it is: 3 a church, 4 a mosque, 5 a fortress's ramparts), and all the
+#            corners, in metres, as x, z pairs
 #   pn, pk, pw, pxz   the piers, pontoons, quays and breakwaters: how many points each has, what it is (PIERS, + 8 if it
 #            is an area, + 16 if it floats), its width in decimetres (0 unknown), and the points, in half metres
 import gzip, json, math, os, subprocess, sys, time
@@ -45,7 +45,10 @@ from PIL import Image, ImageDraw, ImageFilter
 # home: the middle of the race area, in clear water; wind: the prevailing wind's compass direction (from);
 # towns: (lat, lon, radius m) where the houses the map lacks are filled in; landmarks: drawn by the game (skopea.js);
 # bathy: where the sea floor's survey comes from, finer than the elevation tiles' own (EMODnet's in Europe, some 115 m;
-# NOAA's on the US coasts, down to a few metres): the depths the sea is lighter over
+# NOAA's on the US coasts, down to a few metres): the depths the sea is lighter over; flat: the land laid flat at so
+# many metres (a city whose tiles have its roofs for its ground); bank: how many metres across the shore slopes into the
+# water (12 when not given; a city's quays, a few, and no surf along them); most: how many buildings at the most (8,000
+# when not given)
 VENUES = {
     'gocek': dict(bathy='emodnet', origin=(36.7525, 28.9395), mid=(-400, 700), wind=0, zoom=14, out='skopea', towns=[(36.7564, 28.9402, 650)],
                   build=(36.705, 28.875, 36.795, 29.005), footprints=('Turkey', '122101223')),
@@ -90,7 +93,7 @@ VENUES = {
                                 dict(kind='tower', at=(41.0256, 28.9741), h=63, style='galata')]),
     # the Neva under the Peter and Paul Fortress's walls, between the Trinity and Palace bridges; the city's heights in
     # the tiles are its roofs, not its ground (and the river stands 12 to 20 m up in them), so the land is laid flat
-    'st-petersburg': dict(zoom=14, flat=2.2, relations=True, home=(59.9464, 30.3187), wind=245,
+    'st-petersburg': dict(zoom=14, flat=2.2, bank=2.5, most=11000, relations=True, home=(59.9464, 30.3187), wind=245,
                           towns=[(59.9420, 30.2850, 1000), (59.9580, 30.3050, 900), (59.9370, 30.3250, 1100), (59.9590, 30.3420, 800), (59.9480, 30.3500, 700)],
                           landmarks=[dict(kind='spire', style='peter-paul', at=(59.95010, 30.31603), b=(59.95024, 30.31700), h=122.5),  # the cathedral's belfry, the apse to the east
                                      dict(kind='spire', style='admiralty', at=(59.93757, 30.30862), h=72.5),
@@ -514,15 +517,18 @@ def bake(vid, V, fetch_only=False):
     # the land at least 1.2 m up and rising off the beach, meeting the water on the coast; under it the bed: as steep
     # off the shore as the land above it (deep under a cliff, shallow off a beach), shelving on out, and where the
     # elevation's own sea floor is deeper (the tiles carry the depths), that
-    B = 12.0
+    # (a city's granite embankments: the bank `bank` metres across, not 12; a beach the map has keeps its 12)
+    soft = bilinear(beach.astype(np.float32), -G + CELL / 2, CELL, *np.meshgrid(LX, LX)) > 0.5
+    B = np.where(soft, 12.0, float(V.get('bank', 12.0))).astype(np.float32)
     Rl = np.maximum(th, 1.2 + np.clip(S, 0, 60) * 0.06)
+    if V.get('flat') is not None:  # a flat city's ground all at its height, up to its quays (where the tiles have the river too)
+        Rl = np.full_like(Rl, float(V['flat']))
     Ra = np.where(S > 0, Rl, 0).astype(np.float32); Rd = Ra.copy()
     for di in (-2, -1, 0, 1, 2):
         for dj in (-2, -1, 0, 1, 2):
             if di or dj: Rd = np.maximum(Rd, shift(Ra, di, dj, 0))
     D = np.clip(Rd, 2.5, 60)
     ramp = np.clip(S / B, -1, 1)
-    soft = bilinear(beach.astype(np.float32), -G + CELL / 2, CELL, *np.meshgrid(LX, LX)) > 0.5
     shelf = np.maximum(-(D + np.where(soft, 0.03, 0.08) * np.clip(-S - B, 0, None)), -40)
     sea = np.where(-S < B, D * ramp, np.minimum(shelf, np.where(th < -0.8, th, 0)))
     if bathy is not None:  # the survey's depths, where it has them, past the shore's own slope
@@ -632,6 +638,8 @@ def bake(vid, V, fetch_only=False):
             cover[m_] = CLASSES.index(cls) | ((a_[m_] - (1 if cls == 'forest' else 0)) << 4).astype(np.uint8)
     Lc = bilinear(HL, -EXTENT, LC, CX, CZ)
     cover[Lc <= 0] = 0
+    if V.get('flat') is not None:  # a flat city's river, its polygon over the quays' edge: the quay, not a pond
+        cover[((cover & 15) == CLASSES.index('water')) & (Lc > 0)] = CLASSES.index('town')
     print('  cover:', ', '.join(f'{c} {np.mean(cover & 15 == k):.0%}' for k, c in enumerate(CLASSES) if np.mean(cover & 15 == k) >= 0.005), flush=True)
     # the open sky: how far up the land round each point stands, looking eight ways out to 3 km
     H2 = np.maximum(HL[::2, ::2], 0); h0 = bilinear(H2, -EXTENT, 2 * LC, CX, CZ)
@@ -677,6 +685,8 @@ def bake(vid, V, fetch_only=False):
         fetch_[hit] = t_
     lee = np.zeros(NE * NE, np.float32); lee[qi_] = 1 - np.clip(fetch_ / 1200.0, 0, 1)
     calm = np.maximum(calm, np.round(lee.reshape(NE, NE) * 255)).astype(np.uint8)
+    if V.get('bank') is not None:  # a city on its quays: no surf along them, only on its beaches
+        calm[bilinear(beach.astype(np.float32), -G + CELL / 2, CELL, EX, EZ) < 0.5] = 255
 
     # ---------- the land beyond: out to 64 km on a 400 m grid ----------
     fx = -FEXT + np.arange(NF) * FCELL
@@ -743,7 +753,8 @@ def bake(vid, V, fetch_only=False):
         if not p or len(p) < 4: continue
         t = el.get('tags', {}); h = num(t.get('height')) or (num(t.get('building:levels')) * 3.1 + 1.0 if t.get('building:levels') else 0)
         kind = 3 if t.get('building') in ('church', 'chapel', 'cathedral') else 4 if t.get('building') == 'mosque' else ROOFS.get(t.get('roof:shape'), 0)
-        if t.get('building') in ('castle', 'fortress') or t.get('historic') in ('castle', 'fort', 'citywalls'): kind, h = 5, h or 11.0  # a fortress's ramparts
+        # a fortress's ramparts (a palace the map calls a castle, as St Petersburg's are, is a house like the rest)
+        if (t.get('building') in ('castle', 'fortress') or t.get('historic') in ('castle', 'fort', 'citywalls')) and t.get('castle_type') not in ('palace', 'stately', 'manor', 'shloss', 'schloss'): kind, h = 5, h or 11.0
         add(p[:-1] if p[0] == p[-1] else p, h, kind)
     if os.path.exists(foot):
         # a footprint where OSM has no building (none of OSM's within 12 m of its middle), ashore, sure and house-sized
@@ -775,7 +786,7 @@ def bake(vid, V, fetch_only=False):
     print(f'  town from the buildings: {built.mean():.1%}', flush=True)
     # the nearest, and the tall ones from further: the town round the race area and the skyline beyond it
     found.sort(key=lambda b: b['d'])
-    found = [b for b in found if b['d'] < 6000][:8000]  # (beyond some 4 km of the race area and the towns, the tall ones only)
+    found = [b for b in found if b['d'] < 6000][:V.get('most', 8000)]  # (beyond some 4 km of the race area and the towns, the tall ones only)
     bn = np.array([min(len(b['r']), 255) for b in found], np.uint8)
     bh = np.array([round(b['h'] * 10) for b in found], np.uint16)
     broof = np.array([b['roof'] for b in found], np.uint8)

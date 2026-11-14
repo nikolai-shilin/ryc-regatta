@@ -343,14 +343,19 @@ function far() {
     list.forEach(([, a, b, d, e], i) => idx.set([a, d, b, b, d, e], i * 6));
     return new THREE.BufferAttribute(idx, 1);
   };
-  const idx = cells(1);
+  const idx = cells(1), coarse = cells(2);
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  // the normals of both grids: a corner of the coarse one where the fine one has only sea round it has none of the
+  // fine one's, and a normal of nothing turns the light on it to NaN (black, on the lower graphics levels)
+  g.setIndex(coarse); g.computeVertexNormals(); const nc = g.attributes.normal.array.slice();
+  g.setIndex(idx); g.computeVertexNormals(); const nf = g.attributes.normal.array;
+  for (let i = 0; i < nf.length; i += 3) if (!nf[i] && !nf[i + 1] && !nf[i + 2]) nf.set(nc.subarray(i, i + 3), i);
   const m = new THREE.Mesh(g, landMat(new THREE.MeshLambertMaterial({ depthTest: false, depthWrite: false }), 1, {
     key: 'far', colour: 'farColour()', unlit: true, uniforms: GROUND_U, fsHead: GROUND_GLSL + FAR_GLSL, project: FAR_PROJECT,
     vsHead: 'varying vec3 vLN; varying float vFarZ;', vs: 'vLN = objectNormal; vFarZ = -(viewMatrix * lwp).z;',
   }));
-  m.frustumCulled = false; m.renderOrder = -1; m.userData.full = idx; m.userData.coarse = cells(2);
+  m.frustumCulled = false; m.renderOrder = -1; m.userData.full = idx; m.userData.coarse = coarse;
   return m;
 }
 
@@ -452,6 +457,7 @@ const WALLS = LOOK.walls, ROOFS = LOOK.roofs, FLAT = LOOK.flat ?? 0.45;
 // the tall ones (20 m and up): concrete, stone and glass, flat on top; or the venue's own, where they are blocks of
 // flats in the town's colours
 const TOWERS = LOOK.towers || ['#9aa6b0', '#b8c0c6', '#7f8c96', '#d4d6d2', '#c9c2b4', '#6f7d88'];
+const TALL = LOOK.tall || 20; // from how high a building is a tower (where the old town's palaces stand 20 to 30 m, higher)
 // the buildings, from the .bin: each one's corners (metres), its height and its roof
 function buildings() {
   const out = [];
@@ -510,6 +516,7 @@ void windows(inout vec4 dc) {
   vec3 nn = normalize(vLN);
   if (abs(nn.y) > 0.3) return;
   float kind = floor(vBK), seed = fract(vBK);
+  if (kind > 2.5) return; // a rampart: bare stone
   vec2 tg = normalize(vec2(-nn.z, nn.x) + 1e-5);
   float s = dot(vLand.xz, tg) + seed * 17.0, far_ = smoothstep(150.0, 450.0, length(vHz));
   if (kind > 0.5 && kind < 1.5) { // a tower: glass between thin mullions, floor after floor, tinted
@@ -528,7 +535,7 @@ void windows(inout vec4 dc) {
   dc.rgb *= mix(mix(1.0, 0.6, win), 0.92, far_);
 }`;
 // the kind of building each vertex is part of, for its windows (TOWN_GLSL): 0 a house or a block, 1 a tower, 2 a church
-// or a mosque; its fraction, a number of its own, for its windows' spacing
+// or a mosque, 3 a rampart (none); its fraction, a number of its own, for its windows' spacing
 function kinded(g, k) {
   g = strip(g);
   g.setAttribute('bk', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count).fill(k), 1));
@@ -593,8 +600,8 @@ function town() {
     const yb = Math.max(0.6, y0), seed = r() * 0.98;
     mark(cx, cz, Math.sqrt(area) / 2 + 4);
     if (b.roof === 3 || b.roof === 4) { parts.push(...worship(b, g, yb, h, area, b.roof === 4, seed)); continue; }
-    if (b.roof === 5) { parts.push(kinded(paint(g, '#a2958a', '#7c8a5e'), seed)); continue; } // a fortress's ramparts: granite, grass on top
-    if (h >= 20) { parts.push(kinded(paint(g, TOWERS[Math.floor(r() * TOWERS.length)], '#8a8e90'), 1 + seed)); continue; }
+    if (b.roof === 5) { parts.push(kinded(paint(g, '#b3a497', '#7c8a5e'), 3)); continue; } // a fortress's ramparts: granite, no windows, grass on top
+    if (h >= TALL) { parts.push(kinded(paint(g, TOWERS[Math.floor(r() * TOWERS.length)], '#8a8e90'), 1 + seed)); continue; }
     const wall = WALLS[Math.floor(r() * WALLS.length)], roof = ROOFS[Math.floor(r() * ROOFS.length)];
     // a pitched roof where the map says so, or on a house-sized one most of the venue's are pitched on: hipped on the
     // footprint's rectangle, where it fills most of it; else up to a point over the footprint, where it's near enough

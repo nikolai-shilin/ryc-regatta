@@ -15,8 +15,9 @@
 //     palm, eucalypt, olive, shrub
 //   treeTop: how high the trees go, metres; woods: how much of the land is wooded (0 to 1); snow: the snow line on
 //     the mountains beyond, metres (2900 when not given)
-//   walls, roofs: the houses; flat: the share of flat roofs; towers: the walls of the tall ones (20 m and up), when
-//     not glass and concrete (skopea.js)
+//   walls, roofs: the houses; flat: the share of flat roofs; towers: the walls of the tall ones (20 m and up, or
+//     tall: from how many metres), when not glass and concrete (skopea.js); fill: 0, no houses made up where the map
+//     has none
 //   boats: the moored boats' shares (sail, motor, big) and what the big ones are (gulet or super)
 //   haze: how clear the venue's air is, how far its land is seen through the haze (1 as usual, more is clearer)
 //   water: the sea's own colours (deep, scatter) and how far towards them (0 to 1); over the shallows, the colour
@@ -284,8 +285,10 @@ export const VENUES = [
       haze: 0.8,
       ground: { forest: ['#2b4126', '#3a5530', '#4f6c3a'], scrub: '#6c7d4c', rock: ['#a0968d', '#857c74'], town: '#9a948b', shore: '#9d948b', grass: '#5f7d45' },
       trees: [['broad', 0.85, '#2b4126', '#557338'], ['conifer', 0.15, '#22371f', '#344f2b']], treeTop: 120, woods: 0.3,
-      // the city's stucco: ochre, pale pink, cream, the Winter Palace's green, grey and white; its roofs painted iron
-      walls: ['#e2c27c', '#e4b9a4', '#efe3c9', '#8fb7a0', '#c9c4ba', '#f1ede4', '#d9a77e', '#c7d0cc'], roofs: ['#7e4a3a', '#6b7672', '#5a5f60', '#4f6a5c'], flat: 0.75,
+      // the city's stucco: ochre, pale pink, cream, the Winter Palace's green, grey and white; its roofs painted iron,
+      // most of them, whatever their shape; and its palaces 20 to 30 m high, stucco like the rest (a tower from 45 m:
+      // the few modern ones)
+      walls: ['#e2c27c', '#e4b9a4', '#efe3c9', '#8fb7a0', '#c9c4ba', '#f1ede4', '#d9a77e', '#c7d0cc'], roofs: ['#7e4a3a', '#6b7672', '#5a5f60', '#4f6a5c', '#8a5440'], flat: 0.25, tall: 45,
       fill: 0, // every house is on the map: none made up in its squares and courtyards
       boats: { sail: 0.55, motor: 0.45, big: 0 },
       water: { deep: '#1b313a', scatter: '#3b625f', k: 0.55, shallow: '#4a5446', clear: 0.08 },
