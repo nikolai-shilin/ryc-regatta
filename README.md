@@ -152,6 +152,11 @@ npm run dev
 The app runs at http://localhost:5193 (the game is at http://localhost:5193/play?race=today). `npm run typecheck` and `npm run build`
 check it; `npm test` sails the game's race headless in Node (about 10 seconds).
 
+How to play's pictures of the race screen (`public/images/hud-*`, and the close-ups `h-start`, `h-steer`, `h-trim`,
+`h-tack`) are the game's own, taken in headless Chrome with the site running: `node scripts/shots.mjs
+http://localhost:5193`. It prints where each part of the HUD sits on the two numbered pictures, for the marks in
+`app/[lang]/help/page.tsx`. A picture changed is a new file name (`-v5`), as the image optimiser caches by name.
+
 ## Environment
 
 `.env.local` (and the Vercel project) need:
