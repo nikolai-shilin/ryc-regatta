@@ -51,7 +51,7 @@ function siteLd(lang: 'en' | 'ru', t: (en: string, ru: string) => string) {
 // H0 · Home, as the broadcast lays it out (styles/broadcast.css): the hook (beat today's time, with the game sailing a
 // race behind it and today's ranking beside it), three targets, the first four races, how a race goes, a venue a day,
 // racing a friend, what's inside, the questions, and the rules; a bar with today's race stays at the foot of the screen.
-// Every number is real: today's ranking and races from lib/today.ts, the countdown to midnight UTC, the venues.
+// Every number is real: today's top five, races and 10th time from lib/today.ts, the countdown to midnight UTC, the venues.
 export default async function Home({ params }: LangParams) {
   const { lang, t } = await getT(params);
   const today = await todayTop();
@@ -61,6 +61,7 @@ export default async function Home({ params }: LangParams) {
   const live = today && today.d === d.day ? today : null;
   const top = live ? live.top : [];
   const best = top[0], races = live ? live.races : 0;
+  const tenth = live?.tenth ?? null, ranked = live?.ranked ?? 0; // the 10th time, when ten are ranked today
   const name = (n: string | null) => n || t('No name', 'Без имени');
   const beat = best ? clock(best.s) : null;
   // the ticker: only what's true of today's race
@@ -140,7 +141,7 @@ export default async function Home({ params }: LangParams) {
                 </li>
               ))}
               {!top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
-              <MyRow lang={lang} day={d.day} top={top} />
+              <MyRow lang={lang} day={d.day} top={top} cap={live?.n} />
             </ol>
             <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')} ›</Link>
             <div className="ho-tick" aria-live="polite"><span className="dot-live" /><Ticker lines={lines} /></div>
@@ -163,13 +164,24 @@ export default async function Home({ params }: LangParams) {
               <p className="ho-ps">{t('Cross the line once. The game calls the start, the marks and when to tack as you go.', 'Пересеки финиш один раз. Игра подскажет старт, знаки и когда поворачивать.')}</p>
               <span className="lbl-ink ho-foot">{t(`About ${mins} minutes ›`, `Около ${mins} минут ›`)}</span>
             </a>
-            <a className="ho-goal" href={go}>
-              <span className="ho-medal ho-medal-w">3</span>
-              <span className="lbl is-you">{t('Club racer', 'Клубный гонщик')}</span>
-              <h3 className="ho-h3">{t('Make the podium', 'Попади в тройку')}</h3>
-              <p className="ho-ps">{t('Win the start, tack on the headers, keep the sheet in the green band.', 'Выиграй старт, поворачивай на заходах, держи шкот в зелёной полосе.')}</p>
-              <span className="lbl-ink ho-foot">{top[2] ? t(`Today: ${clock(top[2].s)} is 3rd ›`, `Сегодня: ${clock(top[2].s)} — третье место ›`) : t('The podium is still open ›', 'В тройке ещё есть места ›')}</span>
-            </a>
+            {/* with ten ranked today the club racer's target is the top ten, under the 10th time; else the podium */}
+            {tenth != null ? (
+              <a className="ho-goal" href={go}>
+                <span className="ho-medal ho-medal-w">10</span>
+                <span className="lbl is-you">{t('Club racer', 'Клубный гонщик')}</span>
+                <h3 className="ho-h3">{t(`Top ten under ${clock(tenth)}`, `В десятку быстрее ${clock(tenth)}`)}</h3>
+                <p className="ho-ps">{t('Win the start, tack on the headers, keep the sheet in the green band.', 'Выиграй старт, поворачивай на заходах, держи шкот в зелёной полосе.')}</p>
+                <span className="lbl-ink ho-foot">{t(`Today: ${clock(tenth)} is 10th of ${ranked} ›`, `Сегодня: ${clock(tenth)} — 10-е место из ${ranked} ›`)}</span>
+              </a>
+            ) : (
+              <a className="ho-goal" href={go}>
+                <span className="ho-medal ho-medal-w">3</span>
+                <span className="lbl is-you">{t('Club racer', 'Клубный гонщик')}</span>
+                <h3 className="ho-h3">{t('Make the podium', 'Попади в тройку')}</h3>
+                <p className="ho-ps">{t('Win the start, tack on the headers, keep the sheet in the green band.', 'Выиграй старт, поворачивай на заходах, держи шкот в зелёной полосе.')}</p>
+                <span className="lbl-ink ho-foot">{top[2] ? t(`Today: ${clock(top[2].s)} is 3rd ›`, `Сегодня: ${clock(top[2].s)} — третье место ›`) : t('The podium is still open ›', 'В тройке ещё есть места ›')}</span>
+              </a>
+            )}
             <a className="ho-goal" href={go}>
               <span className="ho-medal ho-medal-g">1</span>
               <span className="lbl is-you">{t('The time to beat', 'Время, которое надо побить')}</span>

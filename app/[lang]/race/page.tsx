@@ -83,7 +83,7 @@ export default async function Hub({ params }: LangParams) {
                 </li>
               ))}
               {!top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
-              <MyRow lang={lang} day={d.day} top={top} next="/race" />
+              <MyRow lang={lang} day={d.day} top={top} cap={today?.n} next="/race" />
             </ol>
             <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')} ›</Link>
           </div>

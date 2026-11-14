@@ -47,13 +47,15 @@ export function SiteMenu({ lang }: { lang: Lang }) {
 // and its gap to the leader, and says so when a time that would be on the board isn't, rather than sit under slower ones.
 // The board names no one, so "on it" means a ranked time equal to this one.
 // Signed in or not is CSS's to show (.if-me, .if-guest; lib/me.ts), so Home can be a cached page.
-export function MyRow({ lang, day, top = [], next = '/' }: { lang: Lang; day: string; top?: { s: number }[]; next?: string }) {
+// cap: how many rows the list can hold (lib/today.ts: 5, or 3 when only the plain API answered), for whether a time
+// slower than the last of them could still have been on it
+export function MyRow({ lang, day, top = [], cap = 5, next = '/' }: { lang: Lang; day: string; top?: { s: number }[]; cap?: number; next?: string }) {
   const t = tx(lang);
   const [best, setBest] = useState<number | null>(null);
   useEffect(() => { setBest(readPb()[`daily|${day}`] ?? null); }, [day]);
   const listed = best != null && top.some((r) => Math.abs(r.s - best) < 0.05);
   const place = best != null ? top.filter((r) => r.s < best - 0.05).length + 1 : 0;
-  const missing = best != null && !listed && (top.length < 3 || best < top[top.length - 1].s);
+  const missing = best != null && !listed && (top.length < cap || best < top[top.length - 1].s);
   const gap = best != null && top.length ? best - top[0].s : 0;
   return (
     <li className="me">

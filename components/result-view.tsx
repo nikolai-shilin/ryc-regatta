@@ -64,12 +64,17 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   }, [id]);
   useEffect(() => {
     if (!res?.daily) return;
-    fetch('https://iyt.rycrentals.com/api/game').then((r) => (r.ok ? r.json() : null)).then((j) => {
-      const d = j?.daily; if (d && d.d === res.daily) setTop((d.top || []).slice(0, 3));
-    }).catch(() => {});
-    fetch(`https://iyt.rycrentals.com/api/game?day=${encodeURIComponent(res.daily)}`).then((r) => (r.ok ? r.json() : null)).then((j) => {
-      if (j && j.d === res.daily && Array.isArray(j.rows)) setField(j.rows.map((r: { s: number }) => r.s));
-    }).catch(() => {});
+    // the day's rating has every ranked time: its first five are the board; if it can't be had, the plain API's
+    // first three (today's only). Both asked at once.
+    const get = (u: string) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    let live = true;
+    Promise.all([get('https://iyt.rycrentals.com/api/game'), get(`https://iyt.rycrentals.com/api/game?day=${encodeURIComponent(res.daily)}`)]).then(([j, day]) => {
+      if (!live) return;
+      const rows: Top[] | null = day && day.d === res.daily && Array.isArray(day.rows) ? day.rows : null, d = j?.daily;
+      if (rows) setField(rows.map((r) => r.s));
+      setTop(rows ? rows.slice(0, 5).map((r) => ({ name: r.name, s: r.s, fl: r.fl })) : d && d.d === res.daily ? (d.top || []).slice(0, 3) : []);
+    });
+    return () => { live = false; };
   }, [res]);
 
   // most often found: its own layout greyed out while it comes, not the site's header
@@ -319,7 +324,7 @@ function Ranking({ t, lang, top, field, id, daily, me, signedName, you }: { t: (
       {standing && <p className="rs-standing"><b>{standing}</b></p>}
       <ol className="hm-lb bt-lb">
         {(top || []).map((r, i) => <li key={i} className={i === 0 ? 'first' : ''}><span className="hm-n">{i + 1}</span><Who fl={r.fl} name={r.name || t('No name', 'Без имени')} lang={lang} /><span className="hm-t">{clock(r.s)}</span></li>)}
-        {top === null && daily && [0, 1, 2].map((i) => <li key={i} className="sk-li" aria-hidden="true"><Sk w={20} h={14} /><Sk w="60%" h={14} /><Sk w={48} h={14} /></li>)}
+        {top === null && daily && [0, 1, 2, 3, 4].map((i) => <li key={i} className="sk-li" aria-hidden="true"><Sk w={20} h={14} /><Sk w="60%" h={14} /><Sk w={48} h={14} /></li>)}
         {top && !top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
         <li className="me"><span className="hm-n">{listed ? place : '·'}</span><span>{you || (signedName ? `${signedName} (${t('you', 'ты')})` : t('You', 'Ты'))}</span><span className="hm-t">{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</span></li>
       </ol>
