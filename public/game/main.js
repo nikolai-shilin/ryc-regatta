@@ -971,7 +971,12 @@ function paintPause() {
   const P = race.player, legs = race.course.legs, n = legs.length - 1, leg = Math.min(n, Math.max(1, P.leg));
   const place = race.standings().indexOf(P) + 1, L = race.log;
   $('#pLeg').textContent = t('legOf', leg, n);
-  $('#pNext').textContent = P.leg < legs.length ? t('nextK', t(legName[legs[P.leg]])) : '';
+  $('#pLegs').innerHTML = Array.from({ length: n }, (_, i) => `<i class="${i + 1 < leg ? 'done' : i + 1 === leg ? 'now' : ''}"></i>`).join('');
+  const nx = legs[P.leg];
+  $('#pNext').textContent = P.leg < legs.length ? t('nextK', t(legName[nx])) : '';
+  $('#pNext').classList.toggle('mark', nx === 'mark' || nx === 'wing' || nx === 'gate'); // as its tag on the water
+  $('#pPen').parentNode.className = L.penT > 1 ? 'pen' : 'clean';
+  $('.p-esc').innerHTML = `<kbd>Esc</kbd>${t('resume')}`;
   $('#pPlace').textContent = ordL(place); $('#pOf').textContent = t('ofN', race.boats.length);
   $('#pTime').textContent = fmt(Math.max(0, race.clock));
   $('#pPen').textContent = L.penT > 1 ? `${Math.round(L.penT)} s` : '0'; $('#pPenD').textContent = L.penT > 1 ? t('penS') : t('penNone');

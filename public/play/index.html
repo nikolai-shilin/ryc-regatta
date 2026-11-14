@@ -405,6 +405,55 @@
     #pauseCard .p-card { width: 340px; padding: 16px; gap: 8px; } #pauseCard .p-row { height: 46px; font-size: 15px; }
   }
   @media (orientation: portrait) { #pauseCard .p-card { width: auto; } }
+  /* the race's state in the HUD's own type too: bold sans, numbers in glass tiles, the legs as a progress track and
+     the next target as the chip it wears on the water (yellow for a line, orange for a mark) */
+  #pauseCard { z-index: 10; background: radial-gradient(120% 90% at 30% 40%, rgba(4,10,16,.25) 0%, rgba(4,10,16,.7) 100%); backdrop-filter: blur(3px) saturate(.9); -webkit-backdrop-filter: blur(3px) saturate(.9); }
+  #confirmCard { z-index: 10; }
+  #pauseCard .p-info { --ok: #2ee6a0; --line: rgba(255, 255, 255, 0.14); gap: 10px; font-family: var(--sans); text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+  #pauseCard .p-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 12px 0 10px; border-radius: 54px; border: 1px solid var(--line);
+    background: rgba(8, 14, 20, .5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); font: 700 11px var(--sans); letter-spacing: .08em; text-shadow: none; }
+  #pauseCard .p-badge::before { content: ''; width: 8px; height: 9px; flex: none; background: linear-gradient(90deg, #fff 0 35%, transparent 35% 65%, #fff 65%); animation: p-blink 1.6s ease-in-out infinite; }
+  @keyframes p-blink { 50% { opacity: .35; } }
+  #pauseCard .p-info h1 { font: 700 40px/1 var(--sans); letter-spacing: -0.01em; text-transform: uppercase; }
+  #pauseCard .p-legs { display: flex; gap: 4px; width: min(260px, 100%); }
+  #pauseCard .p-legs:empty { display: none; }
+  #pauseCard .p-legs i { flex: 1; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .2); }
+  #pauseCard .p-legs i.done { background: var(--ok); box-shadow: 0 0 8px rgba(46, 230, 160, .5); }
+  #pauseCard .p-legs i.now { background: #fff; animation: p-blink 1.6s ease-in-out infinite; }
+  #pauseCard .p-info p:empty { display: none; }
+  #pauseCard .p-info p { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 11px 0 9px; border-radius: 54px; background: rgba(8, 14, 20, .5);
+    border: 1px solid rgba(255, 214, 64, .55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); font: 700 12px var(--sans); letter-spacing: .02em; text-transform: uppercase; text-shadow: none; }
+  #pauseCard .p-info p::before { content: ''; width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--c, #ffd640); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c, #ffd640) 30%, transparent); }
+  #pauseCard .p-info p.mark { --c: #ff8a3d; border-color: rgba(255, 138, 61, .6); }
+  #pauseCard .p-stats { gap: 8px; }
+  #pauseCard .p-stats > div { gap: 4px; min-width: 96px; padding: 10px 14px 11px; border-radius: 16px; border: 1px solid var(--line); background: rgba(8, 14, 20, .5);
+    backdrop-filter: blur(12px) saturate(1.2); -webkit-backdrop-filter: blur(12px) saturate(1.2); text-shadow: none; }
+  #pauseCard .p-stats .meta { font: 700 10px var(--sans); letter-spacing: .07em; color: rgba(255, 255, 255, .62); }
+  #pauseCard .p-stats b { font: 700 30px/1 var(--sans); letter-spacing: -0.01em; }
+  #pauseCard .p-stats span:not(.meta) { font: 700 11px var(--sans); color: rgba(255, 255, 255, .62); }
+  #pauseCard .p-stats > div:last-child.clean b { color: var(--ok); }
+  #pauseCard .p-stats > div:last-child.pen b { color: #ff6a5c; }
+  #pauseCard .p-esc { align-self: flex-start; font: 700 10.5px var(--sans); letter-spacing: .06em; color: rgba(255, 255, 255, .62); text-shadow: none; }
+  #pauseCard .p-esc kbd { display: inline-block; margin-right: 6px; padding: 2px 6px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, .3); border-bottom-width: 2px; font: 700 10px var(--sans); color: #fff; }
+  @media (orientation: portrait) {
+    #pauseCard { background: linear-gradient(180deg, rgba(4,10,16,.35) 0%, rgba(4,10,16,.55) 45%, rgba(4,10,16,.8) 100%); }
+    #pauseCard .p-info h1 { font-size: 36px; }
+    #pauseCard .p-stats { margin-top: 6px; }
+    #pauseCard .p-stats > div { flex: 1; min-width: 0; padding: 10px 12px; }
+    #pauseCard .p-stats b { font-size: 26px; }
+  }
+  #pauseCard .p-card > * { flex: none; } /* a short screen scrolls the card rather than squashing Resume */
+  @media (max-height: 420px) {
+    #pauseCard { padding-top: calc(14px + var(--st)); padding-bottom: calc(12px + var(--sb)); }
+    #pauseCard .p-card { gap: 4px; padding: 10px; } #pauseCard .go { height: 40px; } #pauseCard .p-rows { margin-top: 0; } #pauseCard .p-row { height: 36px; }
+    #pauseCard .p-card > .meta { margin: 6px 4px 0; } #pauseCard .choice button { height: 28px; } #pauseCard .p-seg button { height: 26px; }
+  }
+  @media (max-height: 420px) { #pauseCard .p-info { gap: 7px; } #pauseCard .p-info h1 { font-size: 30px; } #pauseCard .p-stats > div { padding: 8px 12px; } #pauseCard .p-stats b { font-size: 24px; } }
+  @media (min-width: 1024px) and (min-height: 640px) {
+    #pauseCard .p-info { gap: 14px; } #pauseCard .p-info h1 { font-size: 64px; } #pauseCard .p-legs { width: 360px; gap: 6px; } #pauseCard .p-legs i { height: 6px; }
+    #pauseCard .p-stats { gap: 12px; margin-top: 32px; } #pauseCard .p-stats > div { min-width: 140px; padding: 14px 18px 16px; border-radius: 20px; } #pauseCard .p-stats b { font-size: 44px; }
+    #pauseCard .p-stats .meta { font-size: 11px; } #pauseCard .p-stats span:not(.meta) { font-size: 12px; }
+  }
   #confirmCard .c-card { width: min(400px, 100%); padding: 18px; gap: 8px; }
   #confirmCard .kicker { margin: 0; }
   #confirmCard .c-card h2 { font-size: 26px; }
@@ -623,8 +672,9 @@
 
 <div class="overlay pause" id="pauseCard" hidden>
   <div class="p-info on-photo">
-    <span class="kicker" data-t="pausedK"></span>
+    <span class="kicker p-badge" data-t="pausedK"></span>
     <h1 id="pLeg"></h1>
+    <div class="p-legs" id="pLegs" aria-hidden="true"></div>
     <p id="pNext"></p>
     <div class="p-stats">
       <div><span class="meta" data-t="placeK"></span><b id="pPlace"></b><span id="pOf"></span></div>
