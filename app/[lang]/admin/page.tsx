@@ -4,14 +4,16 @@ import { getAccount, supabaseServer } from '@/lib/supabase/server';
 import { IconBack } from '@/components/ui';
 import { SiteHead } from '@/components/site-chrome';
 import { AdminForm, BannerForm } from '@/components/admin-form';
+import { AdminSchedule } from '@/components/admin-schedule';
+import { todayTop } from '@/lib/today';
 
 export const generateMetadata = titled('Admin', 'Админка', { index: false });
 
-// The site's admin: the ad on every boat's jib and the words on the banner the plane tows over the course. Who is an admin is the list public.regatta_admins (by email), which
+// The site's admin: today's race and the days after it (components/admin-schedule.tsx), the ad on every boat's jib and the words on the banner the plane tows over the course. Who is an admin is the list public.regatta_admins (by email), which
 // only the database's owner edits; the table and the bucket only take an admin's writes (row-level security), so this
 // page only hides the form from everyone else.
 export default async function AdminPage({ params }: LangParams) {
-  const [{ lang, t }, account] = await Promise.all([getT(params), getAccount()]);
+  const [{ lang, t }, account, today] = await Promise.all([getT(params), getAccount(), todayTop()]);
   let admin = false, jib: { url: string; path?: string } | null = null, banner: string[] | null = null;
   if (account) {
     const supabase = await supabaseServer();
@@ -34,7 +36,7 @@ export default async function AdminPage({ params }: LangParams) {
             <Link className="round round-s round-muted" href="/settings" aria-label={t('Back to settings', 'Назад в настройки')}><IconBack /></Link>
             <span className="kicker">{t('Admin', 'Админка')}</span>
           </div>
-          <h1 className="aph-h">{t('Ads in the game', 'Реклама в игре')}</h1>
+          <h1 className="aph-h">{t('The race and the ads', 'Гонка и реклама')}</h1>
         </div>
         {!account ? (
           <div className="acct acct-row">
@@ -48,6 +50,7 @@ export default async function AdminPage({ params }: LangParams) {
           <p className="hint">{t(`${account.email || account.name} is not on the admin list.`, `${account.email || account.name} нет в списке администраторов.`)}</p>
         ) : (
           <>
+            <AdminSchedule lang={lang} today={today} />
             <AdminForm lang={lang} current={jib} />
             <BannerForm lang={lang} current={banner} />
           </>
