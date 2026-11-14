@@ -36,11 +36,13 @@
 #   bn, bh, broof, bxz   the buildings: how many corners each has, its height in decimetres (0 unknown), its roof
 #            (0 unknown, 1 flat, 2 pitched; or what it is: 3 a church, 4 a mosque, 5 a fortress's ramparts), and all the
 #            corners, in metres, as x, z pairs
+#   bwall, broofc   each building's walls' and roof's colours as the map has them (building:colour, roof:colour), r g b
+#            each; 0 0 0 where it has none
 #   pn, pk, pw, pxz   the piers, pontoons, quays and breakwaters: how many points each has, what it is (PIERS, + 8 if it
 #            is an area, + 16 if it floats), its width in decimetres (0 unknown), and the points, in half metres
 import gzip, json, math, os, subprocess, sys, time
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageColor, ImageDraw, ImageFilter
 
 # home: the middle of the race area, in clear water; wind: the prevailing wind's compass direction (from);
 # towns: (lat, lon, radius m) where the houses the map lacks are filled in; landmarks: drawn by the game (skopea.js);
@@ -720,10 +722,15 @@ def bake(vid, V, fetch_only=False):
     TOWN_XZ = [tuple(float(v) for v in to_xz(lat, lon)) for lat, lon, _ in V.get('towns', [])]
     ROOFS = {'flat': 1, 'gabled': 2, 'hipped': 2, 'pyramidal': 2, 'half-hipped': 2, 'gambrel': 2, 'mansard': 2, 'skillion': 1, 'dome': 1}
     seen, found = set(), []
-    def add(r, h, roof):
+    def colour(v):  # the map's colour (a CSS name or #hex), or none; a black one a hair lighter, black being none
+        try: c = ImageColor.getrgb(v.strip()) if v else None
+        except ValueError: c = None
+        return tuple(max(1, x) for x in c[:3]) if c else (0, 0, 0)
+    def add(r, h, roof, t=None):
         cx_ = sum(a for a, _ in r) / len(r); cz_ = sum(b for _, b in r) / len(r)
         near = min([math.hypot(cx_ - MID[0], cz_ - MID[1])] + [math.hypot(cx_ - tx, cz_ - tz) * 1.5 for tx, tz in TOWN_XZ])
-        found.append({'r': r, 'h': round(min(h, 400), 1), 'roof': roof, 'd': near - min(h, 200) * 20, 'c': (cx_, cz_)})
+        found.append({'r': r, 'h': round(min(h, 400), 1), 'roof': roof, 'd': near - min(h, 200) * 20, 'c': (cx_, cz_),
+                      'wc': colour((t or {}).get('building:colour')), 'rc': colour((t or {}).get('roof:colour'))})
     def keyhole(el):
         # a relation's outer ring with its courtyards cut in: each inner ring joined to the outer one at their nearest
         # corners and walked the other way round, so that one ring of corners draws the building with its holes
@@ -755,7 +762,7 @@ def bake(vid, V, fetch_only=False):
         kind = 3 if t.get('building') in ('church', 'chapel', 'cathedral') else 4 if t.get('building') == 'mosque' else ROOFS.get(t.get('roof:shape'), 0)
         # a fortress's ramparts (a palace the map calls a castle, as St Petersburg's are, is a house like the rest)
         if (t.get('building') in ('castle', 'fortress') or t.get('historic') in ('castle', 'fort', 'citywalls')) and t.get('castle_type') not in ('palace', 'stately', 'manor', 'shloss', 'schloss'): kind, h = 5, h or 11.0
-        add(p[:-1] if p[0] == p[-1] else p, h, kind)
+        add(p[:-1] if p[0] == p[-1] else p, h, kind, t)
     if os.path.exists(foot):
         # a footprint where OSM has no building (none of OSM's within 12 m of its middle), ashore, sure and house-sized
         taken = {(int(a // 12), int(b // 12)) for f in found for a, b in f['r']}
@@ -790,6 +797,7 @@ def bake(vid, V, fetch_only=False):
     bn = np.array([min(len(b['r']), 255) for b in found], np.uint8)
     bh = np.array([round(b['h'] * 10) for b in found], np.uint16)
     broof = np.array([b['roof'] for b in found], np.uint8)
+    bwall = np.array([b['wc'] for b in found], np.uint8).ravel(); broofc = np.array([b['rc'] for b in found], np.uint8).ravel()
     bxz = np.array([v for b in found for p in b['r'][:255] for v in (round(p[0]), round(p[1]))], np.int16)
     towns = []
     for lat, lon, r in V.get('towns', []):
@@ -821,6 +829,7 @@ def bake(vid, V, fetch_only=False):
         ('roads', 'u8', rows(roads).astype(np.uint8), 'rows', NE), ('shore', 'u8', rows(shore).astype(np.uint8), 'rows', NE),
         ('calm', 'u8', rows(calm).astype(np.uint8), 'rows', NE),
         ('bn', 'u8', bn, None, 0), ('bh', 'u16', bh.astype('<u2'), None, 0), ('broof', 'u8', broof, None, 0),
+        ('bwall', 'u8', bwall, None, 0), ('broofc', 'u8', broofc, None, 0),
         ('bxz', 'i16', seq(bxz).astype('<i2'), 'seq', 0),
         ('pn', 'u16', pn.astype('<u2'), None, 0), ('pk', 'u8', pk, None, 0), ('pw', 'u8', pw, None, 0), ('pxz', 'i16', seq(pxz).astype('<i2'), 'seq', 0),
     ]

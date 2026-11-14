@@ -464,9 +464,17 @@ function buildings() {
   for (let b = 0, o = 0; b < P.bn.length; b++) {
     const n = P.bn[b], r = [];
     for (let k = 0; k < n; k++, o += 2) r.push([P.bxz[o], P.bxz[o + 1]]);
-    out.push({ r, h: P.bh[b] / 10, roof: P.broof[b] });
+    out.push({ r, h: P.bh[b] / 10, roof: P.broof[b], wc: mapColour(P.bwall, b, 0.45), rc: mapColour(P.broofc, b, 0.35) });
   }
   return out;
+}
+// a building's colour as the map has it (a file baked before it had them: none), toned down to paint: the map's
+// colours are names ("aquamarine" for the Winter Palace's green), brighter than any stucco or iron
+const HSL = {};
+function mapColour(a, b, sat) {
+  if (!a || !(a[b * 3] | a[b * 3 + 1] | a[b * 3 + 2])) return null;
+  const c = new THREE.Color().setRGB(a[b * 3] / 255, a[b * 3 + 1] / 255, a[b * 3 + 2] / 255, THREE.SRGBColorSpace).getHSL(HSL, THREE.SRGBColorSpace);
+  return '#' + new THREE.Color().setHSL(c.h, Math.min(c.s, sat), Math.min(Math.max(c.l, 0.3), 0.82), THREE.SRGBColorSpace).getHexString();
 }
 // the piers, pontoons, quays and breakwaters: from the .bin (or, in a file baked before they moved there, the json)
 const PIERS = META.piers || (() => {
@@ -601,8 +609,9 @@ function town() {
     mark(cx, cz, Math.sqrt(area) / 2 + 4);
     if (b.roof === 3 || b.roof === 4) { parts.push(...worship(b, g, yb, h, area, b.roof === 4, seed)); continue; }
     if (b.roof === 5) { parts.push(kinded(paint(g, '#b3a497', '#7c8a5e'), 3)); continue; } // a fortress's ramparts: granite, no windows, grass on top
-    if (h >= TALL) { parts.push(kinded(paint(g, TOWERS[Math.floor(r() * TOWERS.length)], '#8a8e90'), 1 + seed)); continue; }
-    const wall = WALLS[Math.floor(r() * WALLS.length)], roof = ROOFS[Math.floor(r() * ROOFS.length)];
+    if (h >= TALL) { const t0 = TOWERS[Math.floor(r() * TOWERS.length)]; parts.push(kinded(paint(g, b.wc || t0, b.rc || '#8a8e90'), 1 + seed)); continue; }
+    // its colours: the map's, where it has them, else the venue's (drawn either way, so the others keep theirs)
+    const w0 = WALLS[Math.floor(r() * WALLS.length)], r0 = ROOFS[Math.floor(r() * ROOFS.length)], wall = b.wc || w0, roof = b.rc || r0;
     // a pitched roof where the map says so, or on a house-sized one most of the venue's are pitched on: hipped on the
     // footprint's rectangle, where it fills most of it; else up to a point over the footprint, where it's near enough
     // convex; else flat
@@ -610,7 +619,7 @@ function town() {
     const R = pitched ? rect(b.r) : null;
     if (R && area > R.area * 0.78) parts.push(kinded(paint(g, wall, roof), seed), kinded(hipRoof(R, yb + h, roof), seed));
     else if (pitched && b.r.length <= 12 && area < 600 && area > hullArea(b.r) * 0.92) parts.push(kinded(paint(g, wall, roof), seed), kinded(pyramidRoof(b.r, yb + h, Math.min(4, 0.28 * Math.sqrt(area)), roof), seed));
-    else parts.push(kinded(paint(g, wall, pitched || r() >= FLAT ? roof : '#ddd6c8'), seed));
+    else parts.push(kinded(paint(g, wall, pitched || r() >= FLAT || b.rc ? roof : '#ddd6c8'), seed));
   }
   // the houses the map hasn't got: thick where the map has a town (or the venue lists one), scattered as villas up
   // the slopes round the bay
