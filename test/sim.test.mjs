@@ -211,6 +211,20 @@ test('the upwind finish line doesn’t finish a boat before her last leg', () =>
   assert.equal(b.done, true, 'up across it on her last leg');
 });
 
+// a finish line of its own is a mark of the last leg only: brushing its pin or its committee boat on the way up to
+// the windward mark is no foul, on the finish leg it is (rule 31); the windward mark itself is a mark all along
+test('the upwind finish’s pin and boat are marks only on the finish leg', () => {
+  const r = new sim.Race({ course: 'wlu', preset: 'medium', fleet: 5, seed: 11 }), c = r.course, b = r.player;
+  r.clock = 30;
+  const touch = (leg, m) => { Object.assign(b, { leg, pen: null, touchT: 0, done: false, x: m.x + 1, z: m.z, h: 0 }); r.collide(1 / 60); return !!b.pen; };
+  const mark = c.legs.indexOf('mark'), fin = c.legs.indexOf('finish');
+  assert.equal(touch(mark, c.finish.a), false, 'the finish pin, beating up to the windward mark');
+  assert.equal(touch(mark, c.finishBoat), false, 'the finish boat, beating up to the windward mark');
+  assert.equal(touch(fin, c.finish.a), true, 'the finish pin, on the finish leg');
+  assert.equal(touch(fin, c.finishBoat), true, 'the finish boat, on the finish leg');
+  assert.equal(touch(mark, c.windward), true, 'the windward mark');
+});
+
 // Trapezoid mark 2 is rounded twice: from the reach on the first lap, and from the beat after. Each time, circling it
 // the wrong way or sailing past it on the wrong side doesn't count; rounding it to port does.
 test('trapezoid mark 2 counts only when rounded to port', () => {

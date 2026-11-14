@@ -1071,13 +1071,16 @@ export class Race {
       if (b.groundT <= 0) { b.v *= 0.3; if (b === this.player) this.say('aground'); }
       b.v = Math.min(b.v, 0.8); b.groundT = 3;
     }
-    const marks = this.hardMarks();
+    // a finish line of its own (its pin and its committee boat) is a mark of the last leg only: before that, touching
+    // it is no foul, as with any other boat or buoy that's in the way
+    const marks = this.hardMarks(), line = c.finish ? [c.finish.a, c.finishBoat] : [];
     for (const b of bs) {
       b.hit -= dt; b.touchT -= dt;
       for (const [m, rm] of marks) {
         const sp = spinePoint(b, m), dx = sp.x - m.x, dz = sp.z - m.z, d = Math.hypot(dx, dz), r = rm + HALF_B;
         if (d < r && d > 0.01) {
           b.x += (dx / d) * (r - d); b.z += (dz / d) * (r - d); b.v *= 0.9;
+          if (line.includes(m) && c.legs[b.leg] !== 'finish') continue;
           // touching a mark: a one-turn penalty (rules 31 and 44.2)
           if (b.touchT <= 0 && !b.pen && !b.done && this.rulesOn) { b.pen = { tack: false, gybe: false, dir: 0 }; if (b === this.player) { this.say('touched'); this.log.fouls.push({ rule: '31', t: this.clock, x: b.x, z: b.z }); } }
           b.touchT = 3;
@@ -1094,10 +1097,11 @@ export class Race {
       const m = c.marks[k], o = c.legInfo[b.leg].out || { x: 0, z: -1 }, p = { x: -o.z, z: o.x };
       const at = (fp, fo) => ({ x: m.x + p.x * fp + o.x * fo, z: m.z + p.z * fp + o.z * fo });
       // tangled up at the mark (circling it without getting round): sail clear out on the side she comes in on, and
-      // come in again from there, as a skipper would (with an upwind finish line just below it, out below the line)
+      // come in again from there, as a skipper would (at the windward mark with an upwind finish line just below it,
+      // out below the line)
       ai.nearT = Math.hypot(b.x - m.x, b.z - m.z) < 45 ? (ai.nearT || 0) + (this.lastDt || 0) : 0;
       if (ai.nearT > 50) { ai.nearT = 0; ai.detour = this.clock + 30; ai.wp = 0; }
-      if (ai.detour > this.clock) return at(35, c.finish && c.finish.through.z < 0 ? -60 : -30);
+      if (ai.detour > this.clock) return at(35, k === 'mark' && c.finish && c.finish.through.z < 0 ? -60 : -30);
       // round it to port: come in on its near side with room to spare, cross outside it, leave on the far side
       // a boat that owes another mark-room (rule 18) goes round outside it, wider and a little later
       const wide = this.owesRoom(b) ? 1 : 0;
