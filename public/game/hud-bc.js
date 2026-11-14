@@ -105,6 +105,7 @@ const CSS = `
 .b-gunc { align-items: center; padding: var(--s-3) var(--s-8); min-width: 240px; }
 .b-gunn { font: 800 var(--fs-h1)/0.9 var(--cond); transition: color .4s; }
 .b-gunn.soon { color: var(--gold); } .b-gunn.now { color: var(--live); }
+.b-gunn.beat { animation: bc-beat .5s var(--ease); } /* the last ten seconds: a beat a second, in its own place */
 .b-seq { position: relative; width: 200px; height: 4px; background: var(--fill-3); }
 .b-seq > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--you); transition: width .6s var(--ease); }
 .b-seq > b { position: absolute; top: -3px; width: 2px; height: 10px; background: var(--ink); }
@@ -256,8 +257,10 @@ const CSS = `
 .b-mid { display: none; stroke: var(--w-62); stroke-width: 2; }
 #hud.bc .b-mid { display: inline; }
 
-/* the last ten seconds, big, a beat a second */
+/* the last ten seconds, big, a beat a second: on a phone, where the gun clock is folded away (a wide screen beats the
+   gun clock itself) */
 #hud.bc #count:not(.final) { display: none; }
+@media ${WIDE} { #hud.bc #count { display: none; } }
 #hud.bc #count.final { left: 50%; top: 30%; bottom: auto; transform: translateX(-50%); font: 800 180px/0.9 var(--cond); color: var(--ink); text-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); }
 #hud.bc #count.beat { animation: bc-beat .5s var(--ease); }
 
@@ -576,7 +579,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
 
   const txt = (e, s) => { if (e._t !== s) { e._t = s; e.textContent = s; } };
   // (a flash running on it stays: see flash below)
-  const cls = (e, c) => { if (e._c !== c) { e._c = c; e.className = c + ['gain', 'lose', 'pulse'].filter((k) => e.classList.contains(k)).map((k) => ' ' + k).join(''); } };
+  const cls = (e, c) => { if (e._c !== c) { e._c = c; e.className = c + ['gain', 'lose', 'pulse', 'beat'].filter((k) => e.classList.contains(k)).map((k) => ' ' + k).join(''); } };
   const htm = (e, s) => { if (e._h !== s) { e._h = s; e.innerHTML = s; } };
   const pt = (a, r) => `${(32 + r * Math.sin(a)).toFixed(2)} ${(32 - r * Math.cos(a)).toFixed(2)}`;
   const metres = (d) => `${Math.round(d)} ${M}`;
@@ -658,7 +661,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     // the gun clock, before the start
     B.gun.hidden = !pre; B.legs.hidden = pre;
     if (pre) {
-      txt(B.gunN, fmt(left + 0.999));
+      const gs = fmt(left + 0.999);
+      if (left <= 10 && gs !== B.gunN._t) flash(B.gunN, 'beat', 500);
+      txt(B.gunN, gs);
       cls(B.gunN, `b-gunn${left <= 10 ? ' now' : left <= 60 ? ' soon' : ''}`);
       const seq = race.seq, total = -seq[0].t, k = `${seq.length}|${total}`;
       if (k !== seqKey) {
