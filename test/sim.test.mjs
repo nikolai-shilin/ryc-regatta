@@ -106,3 +106,11 @@ for (const v of VENUES.filter((x) => x.id !== 'gocek')) {
     assert.ok(out.worst >= 60, `a mark only ${Math.round(out.worst)} m from the shore`);
   });
 }
+
+// Up and down and the triangle, sailed before the course code was reshaped (test/golden.mjs --write made the fixture):
+// the same finishes, leg times and tracks, to the tenth. Rewrite the fixture only when a change to the sailing is meant.
+test('the existing shapes sail exactly as before the course refactor', async () => {
+  const { goldenRuns } = await import('./golden.mjs');
+  const fixture = JSON.parse(await readFile(new URL('./fixtures/courses-golden.json', import.meta.url), 'utf8'));
+  assert.deepEqual(goldenRuns(), fixture);
+});
