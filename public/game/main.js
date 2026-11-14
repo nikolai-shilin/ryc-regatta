@@ -643,6 +643,76 @@ const crews = {
 // crew has two asides of their own, each a file of its own and under the Voice switch: after another boat hails us,
 // «Шо он орёт, я всё равно ничего не понимаю»; and when we put a gull up, «О, смотри, чайка полетела. Главное, на кита
 // не наехать». An aside waits for the skipper to finish his line, and he waits for it.
+// A herring gull's voice. Each note is a stack of harmonics on a fundamental near 1 kHz, loudest from the second to the
+// fourth, that sweeps up fast and slides down slower, darkening as it falls. What makes it a gull and not a whistle is
+// the rasp: the voice catching on half its pitch (a subharmonic), a pitch that never quite holds still, and breath.
+// She has three calls: the mew, one long plaintive "kee-aaw"; the long call, a drawn note, then a run of "kyow"s
+// quickening and falling away, then a few slower "kau"s (the seaside laugh); and, put up in alarm, a sharp "kyow!"
+// and a hard, low "ga-ga-ga". Plays into dest from t; returns when she's done.
+function gullCall(ctx, dest, t, n, alarm, vol, pitch = 0.9 + Math.random() * 0.2) {
+  const G = gullCall, rnd = (a, b) => a + Math.random() * (b - a);
+  if (G.ctx !== ctx) {
+    G.ctx = ctx;
+    const N = 20, re = new Float32Array(N + 1), im = new Float32Array(N + 1);
+    for (let k = 1; k <= N; k++) im[k] = (k === 1 ? 0.55 : Math.exp(-((k - 3) ** 2) / 6) + 0.5 / k) * (k % 2 ? 1 : -1);
+    G.wave = ctx.createPeriodicWave(re, im);
+    const len = ctx.sampleRate * 2, nb = ctx.createBuffer(1, len, ctx.sampleRate), d = nb.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    G.noise = nb;
+    G.curve = new Float32Array(1024).map((_, i) => Math.tanh(2.2 * (i / 511.5 - 1)) / Math.tanh(2.2));
+  }
+  const noise = () => { const s = ctx.createBufferSource(); s.buffer = G.noise; s.loop = true; return s; };
+  // one note: dur s, a → b (its peak, reached at rise of the way through, held to hold) → c Hz; h the rasp, br the breath
+  const note = ({ dur, a, b, c, rise, hold, h, br }, v, f) => {
+    const s = pitch * f * rnd(0.97, 1.03);
+    const sweep = (p, k) => {
+      p.setValueAtTime(a * s * k, t); p.exponentialRampToValueAtTime(b * s * k, t + dur * rise);
+      p.linearRampToValueAtTime(b * s * k * 0.97, t + dur * hold); p.exponentialRampToValueAtTime(c * s * k, t + dur);
+    };
+    const o = ctx.createOscillator(), sub = ctx.createOscillator(), am = ctx.createGain(), subG = ctx.createGain();
+    const sh = ctx.createWaveShaper(), lp = ctx.createBiquadFilter(), env = ctx.createGain();
+    o.setPeriodicWave(G.wave); sweep(o.frequency, 1); sweep(sub.frequency, 0.5);
+    am.gain.value = 1 - h; subG.gain.value = h; sub.connect(subG).connect(am.gain); // the voice breaking on half its pitch
+    const jit = noise(), jl = ctx.createBiquadFilter(), jg = ctx.createGain(), sg = ctx.createGain(); // and never quite holding it
+    jl.type = 'lowpass'; jl.frequency.value = 300; jg.gain.value = 220 + 300 * h; sg.gain.value = 0.8 + 2 * h; // cents, and a shimmer
+    jit.connect(jl).connect(jg); jg.connect(o.detune); jg.connect(sub.detune); jl.connect(sg).connect(am.gain);
+    sh.curve = G.curve;
+    lp.type = 'lowpass'; lp.Q.value = 0.7; sweep(lp.frequency, 4.2);
+    const air = noise(), ab = ctx.createBiquadFilter(), ag = ctx.createGain(); // breath through the bill
+    ab.type = 'bandpass'; ab.Q.value = 1.3; sweep(ab.frequency, 2.6); ag.gain.value = br;
+    env.gain.setValueAtTime(0.0001, t); env.gain.linearRampToValueAtTime(v, t + Math.min(0.015, dur * 0.15));
+    env.gain.setValueAtTime(v, t + dur * rise); env.gain.linearRampToValueAtTime(v * 0.8, t + dur * hold); env.gain.exponentialRampToValueAtTime(0.0005, t + dur);
+    o.connect(am).connect(sh).connect(lp).connect(env); air.connect(ab).connect(ag).connect(env); env.connect(dest);
+    const off = rnd(0, 1.8), end = t + dur + 0.03;
+    for (const x of [o, sub]) { x.start(t); x.stop(end); }
+    for (const x of [jit, air]) { x.start(t, off); x.stop(end); }
+    t += dur;
+  };
+  const MEW = { a: 850, b: 1150, c: 780, rise: 0.35, hold: 0.65, h: 0.15, br: 0.14 };
+  const DRAWN = { a: 720, b: 1050, c: 800, rise: 0.4, hold: 0.7, h: 0.3, br: 0.16 };
+  const KYOW = { a: 950, b: 1300, c: 980, rise: 0.3, hold: 0.65, h: 0.35, br: 0.12 };
+  const KAU = { a: 900, b: 1080, c: 820, rise: 0.3, hold: 0.6, h: 0.45, br: 0.14 };
+  const GAG = { a: 650, b: 720, c: 560, rise: 0.3, hold: 0.5, h: 0.6, br: 0.2 };
+  if (alarm) {
+    note({ ...KYOW, dur: rnd(0.16, 0.2), h: 0.5 }, vol, 1.08); t += rnd(0.07, 0.11);
+    const k = n + 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < k; i++) { note({ ...GAG, dur: rnd(0.075, 0.1) }, vol * (1 - i * 0.06), 1 - i * 0.01); t += rnd(0.09, 0.14); }
+  } else if (n === 1) note({ ...MEW, dur: rnd(0.5, 0.75) }, vol * 0.9, 1);
+  else if (n === 2) for (let i = 0; i < 2; i++) { note({ ...KYOW, dur: rnd(0.19, 0.24) }, vol, 1 - i * 0.03); t += rnd(0.18, 0.28); }
+  else {
+    note({ ...DRAWN, dur: rnd(0.4, 0.5) }, vol * 0.85, 1); t += rnd(0.1, 0.14);
+    const k = n + 3;
+    for (let i = 0; i < k; i++) {
+      note({ ...KYOW, dur: rnd(0.22, 0.27) * (1 - i * 0.03) }, vol * (i < 3 ? 1 : 1 - (i - 2) * 0.07), 1 + (i < 2 ? i * 0.02 : 0.04 - i * 0.02));
+      t += 0.12 - i * (0.05 / k) + rnd(-0.01, 0.01);
+    }
+    t += 0.06;
+    const m = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < m; i++) { note({ ...KAU, dur: rnd(0.16, 0.2) }, vol * (0.7 - i * 0.12), 0.92 - i * 0.03); t += rnd(0.11, 0.15); }
+  }
+  return t;
+}
+
 const asides = {
   R: 120, // metres: a gull beyond is out of earshot
   files: { ru: { sho: 'crew-ru-sho.mp3', gull: 'crew-ru-gull.mp3' } },
@@ -675,32 +745,19 @@ const asides = {
     this.last[k] = now; skipper.speakTill = Math.max(skipper.speakTill, now + b.duration + 0.4); skipper.busyTill = Math.max(skipper.busyTill, now + b.duration + 6);
     return true;
   },
-  // a gull's cry: a long rising-and-falling "kee-yow", then laughing notes; on being put up, quick sharp notes
+  // a gull's cry, from where she is: quieter, duller and a touch later the further off, with the sea's echo under it
   cry(p, n, alarm) {
     const ctx = audio.ctx, pl = crews.place(p), d = Math.hypot(pl.d, p.y || 0), near = clamp(1 - d / this.R, 0, 1);
     if (near <= 0) return;
-    const v = near * near, out = crews.out(1, pl.pan), lp = ctx.createBiquadFilter(), pitch = 0.88 + Math.random() * 0.24;
-    lp.type = 'lowpass'; lp.frequency.value = 2500 + 7000 * near; lp.connect(out);
-    let t = ctx.currentTime + 0.03 + Math.random() * 0.08;
-    const note = (dur, a, b, c, vol) => {
-      const o = ctx.createOscillator(), am = ctx.createOscillator(), amG = ctx.createGain(), env = ctx.createGain();
-      const f1 = ctx.createBiquadFilter(), f2 = ctx.createBiquadFilter();
-      o.type = 'sawtooth'; o.frequency.setValueAtTime(a * pitch, t); o.frequency.linearRampToValueAtTime(b * pitch, t + dur * 0.3); o.frequency.linearRampToValueAtTime(c * pitch, t + dur);
-      f1.type = 'bandpass'; f1.frequency.value = 1500; f1.Q.value = 2.5; f2.type = 'bandpass'; f2.frequency.value = 2900; f2.Q.value = 2; // a gull's nasal ring
-      am.frequency.value = 55 + Math.random() * 30; amG.gain.value = vol * 0.35; // the rasp in it
-      env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(vol, t + 0.02); env.gain.setValueAtTime(vol, t + dur * 0.6); env.gain.exponentialRampToValueAtTime(0.001, t + dur);
-      am.connect(amG).connect(env.gain);
-      o.connect(f1).connect(env); o.connect(f2).connect(env); env.connect(lp);
-      o.start(t); am.start(t); o.stop(t + dur + 0.05); am.stop(t + dur + 0.05);
-      t += dur;
-    };
-    const vol = 0.5 * Math.max(v, 0.03);
-    if (alarm) for (let i = 0; i < n; i++) { note(0.11 + Math.random() * 0.03, 1500, 1650, 1150, vol); t += 0.06 + Math.random() * 0.04; }
-    else {
-      note(0.36 + Math.random() * 0.14, 1000, 1650, 820, vol); t += 0.12;
-      for (let i = 1; i < n; i++) { note(0.13 + Math.random() * 0.04, 1350, 1450, 1050, vol * 0.85); t += 0.08 + Math.random() * 0.05; }
-    }
-    this.cryTill = t + 1.5 + Math.random() * 3;
+    const v = near * near, out = crews.out(1, pl.pan), lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 2200 + 8000 * near; lp.Q.value = 0.5; lp.connect(out);
+    const echo = ctx.createDelay(0.5), eg = ctx.createGain(), el = ctx.createBiquadFilter(); // off the water and the hulls round about
+    echo.delayTime.value = 0.05 + 0.12 * (1 - near); eg.gain.value = 0.18 + 0.2 * (1 - near); el.type = 'lowpass'; el.frequency.value = 2600;
+    lp.connect(echo).connect(el).connect(eg).connect(out);
+    const t0 = ctx.currentTime + 0.03 + Math.random() * 0.08 + d / 343;
+    const end = gullCall(ctx, lp, t0, n, alarm, 0.55 * Math.max(v, 0.03));
+    setTimeout(() => { try { lp.disconnect(); eg.disconnect(); } catch (e) {} }, (end - ctx.currentTime + 1) * 1000);
+    this.cryTill = end + 1.5 + Math.random() * 3;
   },
   // every frame: what the gulls did, and a waiting aside
   update() {
