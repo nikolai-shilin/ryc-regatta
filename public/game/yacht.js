@@ -302,7 +302,7 @@ function sailTexture(kind, look) {
       // canvas squashes it harder (0.3) than the number to come out 3:2 on the cloth
       if (look.flag) logoImage(look.flag).then((img) => {
         if (!img) return;
-        const fw = 260, fh = fw / 1.5 * 0.3, fx = W * 0.47 - fw / 2, fy = H * 0.148 - fh / 2;
+        const fw = 380, fh = fw / 1.5 * 0.3, fx = W * 0.47 - fw / 2, fy = H * 0.148 - fh / 2; // about 1.5 m × 1 m on the cloth
         x.drawImage(img, fx, fy, fw, fh);
         x.strokeStyle = 'rgba(0,0,0,.22)'; x.lineWidth = 1.5; x.strokeRect(fx, fy, fw, fh); // an edge, for a white flag on white cloth
         t.needsUpdate = true;

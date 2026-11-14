@@ -1,8 +1,8 @@
 'use client';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { tx, type Lang } from '@/lib/lang';
 import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart, IconFlag } from './ui';
-import { FLAGS, findFlag, flagSrc } from '@/lib/flags';
+import { FLAGS, findFlag, flagSrc, type Flag } from '@/lib/flags';
 import { DEFAULT_BOAT, DEFAULT_LOGO, PRESETS, SWATCHES, readBoat, saveBoat, shrinkLogo, type Boat, type Logo } from '@/lib/boat';
 
 // The boat page, laid out like the race's pause screen: the game's own scene behind it all (your yacht on Lake Garda,
@@ -166,16 +166,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
 
         <div className="bt-g">
           {kicker('l-flag', <IconFlag />, t('Flag on the main', 'Флаг на гроте'))}
-          <div className="flags" role="radiogroup" aria-labelledby="l-flag">
-            <button type="button" role="radio" aria-checked={!flag} className="flag flag-none" aria-label={t('No flag', 'Без флага')} title={t('No flag', 'Без флага')} onClick={() => setFlag('')} />
-            {FLAGS.map((f) => (
-              <button key={f.code} type="button" role="radio" aria-checked={flag?.code === f.code} className="flag" aria-label={t(f.en, f.ru)} title={t(f.en, f.ru)} onClick={() => setFlag(f.code)}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={flagSrc(f.code)} alt="" loading="lazy" />
-              </button>
-            ))}
-          </div>
-          <span className="bt-sub">{flag ? `${t(flag.en, flag.ru)} · ${flag.ioc}` : t('No flag on the sail', 'Без флага на парусе')}</span>
+          <FlagPicker value={flag?.code} onChange={setFlag} t={t} />
         </div>
 
         <div className="bt-g">
@@ -199,6 +190,74 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         </button>
         <p className="bt-saved">{t('Saved on this device. You race in her from the next start.', 'Сохранено на этом устройстве. В гонке — со следующего старта.')}</p>
       </section>
+    </div>
+  );
+}
+
+// the flag on the main: a dropdown showing the flag you fly, opening (in the card, so it scrolls with it) on a search
+// box and the countries A to Z in your language, No flag first. Arrows move, Enter picks, Escape closes.
+function FlagPicker({ value, onChange, t }: { value?: string; onChange: (code: string) => void; t: (en: string, ru: string) => string }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const [hi, setHi] = useState(0);
+  const root = useRef<HTMLDivElement>(null), list = useRef<HTMLUListElement>(null), search = useRef<HTMLInputElement>(null);
+  const cur = findFlag(value);
+  const name = (f: Flag) => t(f.en, f.ru);
+  const sorted = useMemo(() => [...FLAGS].sort((a, b) => name(a).localeCompare(name(b))), [t]); // eslint-disable-line react-hooks/exhaustive-deps
+  const needle = q.trim().toLowerCase();
+  const items: (Flag | null)[] = [
+    ...(needle ? [] : [null]),
+    ...sorted.filter((f) => !needle || [f.en, f.ru, f.ioc, f.code].some((s) => s.toLowerCase().includes(needle))),
+  ];
+  const show = (o: boolean) => {
+    setOpen(o); setQ('');
+    if (o) setHi(Math.max(0, items.findIndex((f) => (f?.code ?? '') === (value ?? ''))));
+  };
+  useEffect(() => {
+    if (!open) return;
+    search.current?.focus();
+    const away = (e: PointerEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
+    addEventListener('pointerdown', away);
+    return () => removeEventListener('pointerdown', away);
+  }, [open]);
+  useEffect(() => { list.current?.querySelector(`[data-i="${hi}"]`)?.scrollIntoView({ block: 'nearest' }); }, [hi, open]);
+  const pick = (f: Flag | null | undefined) => { if (f === undefined) return; onChange(f?.code ?? ''); setOpen(false); root.current?.querySelector('button')?.focus(); };
+  const key = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setHi((i) => Math.min(items.length - 1, i + 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setHi((i) => Math.max(0, i - 1)); }
+    else if (e.key === 'Enter') { e.preventDefault(); pick(items[hi]); }
+    else if (e.key === 'Escape') { e.preventDefault(); setOpen(false); root.current?.querySelector('button')?.focus(); }
+  };
+  const thumb = (f: Flag | null | undefined) => f
+    ? <img className="fp-img" src={flagSrc(f.code)} alt="" /> // eslint-disable-line @next/next/no-img-element
+    : <i className="fp-img fp-none" aria-hidden="true" />;
+  return (
+    <div className="fp" ref={root}>
+      <button type="button" className="fp-btn" aria-haspopup="listbox" aria-expanded={open} aria-labelledby="l-flag fp-val"
+        onClick={() => show(!open)} onKeyDown={(e) => { if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); show(true); } }}>
+        {thumb(cur)}
+        <span className="fp-name" id="fp-val">{cur ? name(cur) : t('No flag', 'Без флага')}</span>
+        {cur && <span className="fp-code">{cur.ioc}</span>}
+        <svg className="fp-chev" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      </button>
+      {open && (
+        <div className="fp-pop">
+          <input ref={search} className="fp-q" type="search" value={q} placeholder={t('Search a country', 'Найти страну')} aria-label={t('Search a country', 'Найти страну')}
+            aria-controls="fp-list" aria-activedescendant={items[hi] !== undefined ? `fp-o-${items[hi]?.code ?? 'none'}` : undefined}
+            onChange={(e) => { setQ(e.target.value); setHi(0); }} onKeyDown={key} />
+          <ul className="fp-list" id="fp-list" role="listbox" ref={list} aria-label={t('Flag on the main', 'Флаг на гроте')}>
+            {items.map((f, i) => (
+              <li key={f?.code ?? 'none'} id={`fp-o-${f?.code ?? 'none'}`} data-i={i} role="option" aria-selected={(f?.code ?? '') === (value ?? '')}
+                className={`fp-o ${i === hi ? 'hi' : ''}`} onPointerMove={() => setHi(i)} onClick={() => pick(f)}>
+                {thumb(f)}
+                <span className="fp-name">{f ? name(f) : t('No flag', 'Без флага')}</span>
+                {f && <span className="fp-code">{f.ioc}</span>}
+              </li>
+            ))}
+            {!items.length && <li className="fp-empty">{t('No such country here', 'Такой страны нет')}</li>}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

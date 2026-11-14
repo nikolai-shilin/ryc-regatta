@@ -8,6 +8,7 @@ export const FLAGS: Flag[] = [
   { code: 'ge', ioc: 'GEO', en: 'Georgia', ru: 'Грузия' },
   { code: 'ru', ioc: 'RUS', en: 'Russia', ru: 'Россия' },
   { code: 'ua', ioc: 'UKR', en: 'Ukraine', ru: 'Украина' },
+  { code: 'by', ioc: 'BLR', en: 'Belarus', ru: 'Беларусь' },
   { code: 'kz', ioc: 'KAZ', en: 'Kazakhstan', ru: 'Казахстан' },
   { code: 'am', ioc: 'ARM', en: 'Armenia', ru: 'Армения' },
   { code: 'az', ioc: 'AZE', en: 'Azerbaijan', ru: 'Азербайджан' },

@@ -54,6 +54,14 @@ const FLAGS = {
     + [[195, 120], [705, 120], [195, 480], [705, 480]].map(([x, y]) => bolnisi(x, y, 66, '#ff0000')).join(''),
   ru: () => hz('#ffffff', '#0039a6', '#d52b1e'),
   ua: () => hz('#0057b7', '#ffd700'),
+  // Belarus: red over green, the white hoist band with its red ornament (simplified to a column of rhombi)
+  by: () => rect(0, 0, W, 400, '#c8313e') + rect(0, 400, W, 200, '#4aa657') + rect(0, 0, 100, H, '#fff')
+    + Array.from({ length: 6 }, (_, i) => {
+      const y = 50 + i * 100;
+      return `<polygon fill="#c8313e" points="50,${y - 46} 90,${y} 50,${y + 46} 10,${y}"/><polygon fill="#fff" points="50,${y - 28} 72,${y} 50,${y + 28} 28,${y}"/>`
+        + `<rect fill="#c8313e" x="42" y="${y - 8}" width="16" height="16"/><rect fill="#c8313e" x="46" y="${y + 44}" width="8" height="12"/>`;
+    }).join(''),
+
   kz: () => rect(0, 0, W, H, '#00afca') + rect(42, 0, 8, H, '#fec50c')
     + Array.from({ length: 12 }, (_, i) => `<path fill="#fec50c" d="M66,${25 + i * 48}l22,12l-22,12l-10,-12z"/>`).join('')
     + sun(470, 240, 78, 32, '#fec50c')
