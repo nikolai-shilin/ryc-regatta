@@ -634,6 +634,7 @@
 
 <div class="overlay pause bc" id="pauseCard" hidden>
   <div class="p-info on-photo">
+    <span class="p-tick" id="pTick"></span>
     <span class="kicker p-badge" data-t="pausedK"></span>
     <h1 id="pLeg"></h1>
     <div class="p-legs" id="pLegs" aria-hidden="true"></div>
@@ -653,10 +654,17 @@
       <button class="p-row" id="pRestart"><span data-t="restart"></span></button>
       <button class="p-row" id="pLeave"><span data-t="leaveHub"></span></button>
     </div>
-    <span class="meta" data-t="quickK"></span>
-    <div class="choice"><button data-q="sound" data-t="sound"></button><button data-q="guides" data-t="guidesK"></button><button data-q="autoTrim" data-t="auto"></button></div>
+    <span class="meta" id="pSailsK" data-t="sails"></span>
+    <div class="p-seg three" role="radiogroup" aria-labelledby="pSailsK"><button role="radio" data-trim="0" data-t="manual"></button><button role="radio" data-trim="1" data-t="sAuto"></button><button role="radio" data-trim="2" data-t="split"></button></div>
+    <span class="meta" id="pCamK" data-t="camK"></span>
+    <div class="p-seg three" role="radiogroup" aria-labelledby="pCamK"><button role="radio" data-pc="drone" data-t="drone" title="X"></button><button role="radio" data-pc="top" data-t="top" title="C"></button><button role="radio" data-pc="helm" data-t="helm" title="V"></button></div>
     <span class="meta" id="pGfxK" data-t="gfx"></span>
     <div class="p-seg" role="radiogroup" aria-labelledby="pGfxK"><button role="radio" data-g="auto" data-t="gAuto"></button><button role="radio" data-g="high" data-t="gsHigh"></button><button role="radio" data-g="medium" data-t="gsMedium"></button><button role="radio" data-g="low" data-t="gsLow"></button></div>
+    <div class="p-togs">
+      <div class="p-tog"><span id="pGuidesL" data-t="guidesSw"></span><button class="sw" role="switch" aria-checked="false" data-q="guides" aria-labelledby="pGuidesL"></button></div>
+      <div class="p-tog"><span id="pSoundL" data-t="sound"></span><button class="sw" role="switch" aria-checked="false" data-q="sound" aria-labelledby="pSoundL"></button></div>
+      <div class="p-tog"><span id="pVoiceL" data-t="voiceSw"></span><button class="sw" role="switch" aria-checked="false" data-q="voice" aria-labelledby="pVoiceL"></button></div>
+    </div>
     <span class="meta" id="pMusicK" data-t="musicK"></span>
     <div class="p-seg five" role="radiogroup" aria-labelledby="pMusicK"><button role="radio" data-mu="ambient" data-t="muAmbient"></button><button role="radio" data-mu="film" data-t="muFilm"></button><button role="radio" data-mu="folk" data-t="muFolk"></button><button role="radio" data-mu="racing" data-t="muRacing"></button><button role="radio" data-mu="off" data-t="off"></button></div>
     <span class="meta" id="pMuVolK" data-t="muVolK"></span>
