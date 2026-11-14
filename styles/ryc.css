@@ -855,6 +855,11 @@ html[data-me] .hm-av > svg { display: none; }
 .adm-sail { display: grid; place-items: center; aspect-ratio: 2 / 1; padding: var(--s-3); border-radius: var(--r-m, 12px); border: 1px solid var(--line); }
 .adm-sail img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .adm-go { margin: var(--s-3) 0 var(--s-2); }
+.adm-day { margin-bottom: var(--s-6); }
+.adm-v { min-width: 0; text-align: right; font-size: var(--t-s); color: var(--muted); }
+.adm-day-h { margin-top: var(--s-3); }
+.adm-sched { list-style: none; margin: 0; padding: 0; }
+.adm-sched-d { display: inline-block; min-width: 5.5em; margin-right: var(--s-2); color: var(--muted); font-variant-numeric: tabular-nums; }
 #adm-file { min-width: 0; max-width: 60%; font-size: var(--t-s); color: var(--ink); }
 /* the plane's banner on /admin: a strip of off-white cloth with a navy hem, as the game paints it (public/game/plane.js) */
 .adm-banner { margin-top: var(--s-6); }
