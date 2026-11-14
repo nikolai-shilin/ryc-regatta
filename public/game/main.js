@@ -436,7 +436,7 @@ const VOICES = { ru: {
   clips: {
     // on the boat
     hands: [0.6, 3.772], // Руки убрал! Это шкот, а не твоя личная жизнь!
-    ease1: [4.972, 2.861], // Трави, блядь! Она сама не догадается!
+    // 4.972–7.833, 97.754–101.647 and 102.248–104.255 are silence: three lines with swearing, taken out
     pull1: [8.433, 1.181], // Добирай!
     pull2: [10.214, 2.371], // Не уговаривай верёвку — тяни!
     hold: [13.185, 4.965], // Кто держит? Кто не держит? Почему вообще никто не держит?!
@@ -461,16 +461,14 @@ const VOICES = { ru: {
     clean: [88.93, 3.385], // Идём чисто! В смысле, пока никого не задели!
     // with feeling
     sank: [92.915, 4.239], // Что ж вы за люди такие? Что ж вы ботик потопили, гады?
-    hands2: [97.754, 3.893], // Гадёныш, убери свои руки тупые, блядь! Бросай, брат!
-    ease3: [102.248, 2.007], // Да трави ты, сучара тупая!
     pull4: [104.855, 3.157], // Я вас очень сильно матом прошу, доберите!
   },
   // the lines for each situation: most have a few that fit, so the same moment doesn't always get the same line
   pools: {
     pull: ['pull1', 'pull2', 'pull3', 'pull4', 'people'], // the sails flapping, the sheet left out
-    ease: ['ease2', 'ease1', 'ease3'], // sheeted in too hard
-    heel: ['ease1', 'ease2', 'ease3', 'hold'], // heeled over: ease!
-    fiddle: ['hands', 'hands2'], // the sheet worked in and out, in and out
+    ease: ['ease2'], // sheeted in too hard
+    heel: ['ease2', 'hold'], // heeled over: ease!
+    fiddle: ['hands'], // the sheet worked in and out, in and out
     chaos: ['hold', 'people', 'clue'], // a broach, a crash gybe, a death roll, a wrapped or collapsed kite
     tack: ['tack1', 'tack2'], // a tack or a gybe, now and then
     foul: ['people', 'clue'], // a foul, a touched mark, the wrong side of a mark, a missed gate
@@ -652,13 +650,13 @@ const skipper = {
 const crews = {
   R: 70, // metres: out of earshot beyond
   calls: {
-    ru: { tacking: ['tack1', 'tack2'], gybing: ['tack1', 'tack2'], tacked: ['pull1', 'pull2', 'pull3'], broach: ['hold', 'ease1'], crashGybe: ['hold', 'people'], deathRoll: ['hold', 'people'], kiteWrap: ['hold', 'clue'], kitedown: ['hold', 'column'] },
+    ru: { tacking: ['tack1', 'tack2'], gybing: ['tack1', 'tack2'], tacked: ['pull1', 'pull2', 'pull3'], broach: ['hold', 'ease2'], crashGybe: ['hold', 'people'], deathRoll: ['hold', 'people'], kiteWrap: ['hold', 'clue'], kitedown: ['hold', 'column'] },
     en: { tacking: ['gTacking'], gybing: ['gJibe', 'gHeads'], tacked: ['gTrim'], broach: ['gEase'], crashGybe: ['gHeads'], deathRoll: ['gHeads'], kiteWrap: ['gHeads'], kitedown: ['gEase'] },
   },
   last: new WeakMap(), talkTill: 0, wash: null,
   // their own voice where there is one: the file, and where each line sits in it, [start, length] in seconds
-  own: { ru: { file: 'crews-ru.mp3', clips: {
-    hands: [0.08, 3.32], ease1: [3.62, 2.6], pull1: [6.4, 0.66], pull2: [7.3, 2.02], hold: [9.57, 3.85],
+  own: { ru: { file: 'crews-ru.mp3', clips: { // 3.62–6.22 is silence: a line with swearing, taken out
+    hands: [0.08, 3.32], pull1: [6.4, 0.66], pull2: [7.3, 2.02], hold: [9.57, 3.85],
     tack1: [13.73, 3.67], tack2: [17.63, 3.84], ease2: [21.72, 2.75], pull3: [24.68, 2.97], people: [27.87, 3.37],
     column: [31.47, 2.98], feet: [34.67, 3.31], clue: [38.18, 3.12],
   } } },
