@@ -4,6 +4,7 @@ import { World, defaultQuality, ladderStep } from './world.js';
 import { raceStarted, raceFinished, raceResult } from './stats.js';
 import { createHudNext } from './hud-next.js';
 import { VENUE, venueById } from './venues.js';
+import { createMusic, direct, MUSIC_STYLES } from './music.js';
 
 const $ = (s) => document.querySelector(s);
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
@@ -67,7 +68,7 @@ const T = {
     cLine: 'Head for the line and cross it just after the gun', cHeader: 'The wind has headed you — tap Tack', cMark: 'Round the mark leaving it on your left (to port)',
     cKite: 'Bear away and tap Kite to fly the gennaker', cGate: 'Sail between the two buoys of the gate', cFinish: 'Now cross the line to finish',
     wind: 'Wind', light: 'Light · 7 kn', medium: 'Medium · 12 kn', strong: 'Strong · 19 kn', laps: 'Laps', sails: 'Sails',
-    manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', voiceK: 'Voice', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
+    manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', voiceK: 'Voice', musicK: 'Music', muAmbient: 'Ambient', muFilm: 'Film', muFolk: 'Folk', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
     fleetK: 'Boats', lengthK: 'Course', lShort: 'Short', lMedium: 'Medium', lLong: 'Long',
     currentK: 'Current', guidesK: 'Guides', gfx: 'Graphics', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', gsHigh: 'High', gsMedium: 'Medium', gsLow: 'Low', gfxNow: (q) => `Graphics · ${q} now`, start: 'Start race', resume: 'Resume', restart: 'Restart',
     how1: '<b>Left thumb</b> steers on the arc. <b>Right thumb</b> works the sheet: up pulls the sails in, down lets them out. Keep the telltales green.',
@@ -147,7 +148,7 @@ const T = {
     cLine: 'Иди к линии и пересеки её сразу после сигнала', cHeader: 'Ветер зашёл — жми «Поворот»', cMark: 'Огибай знак, оставляя его слева',
     cKite: 'Уваливайся и жми «Генакер»', cGate: 'Пройди между двумя знаками ворот', cFinish: 'Теперь пересеки линию — финиш',
     wind: 'Ветер', light: 'Слабый · 7 уз', medium: 'Средний · 12 уз', strong: 'Сильный · 19 уз', laps: 'Круги', sails: 'Паруса',
-    manual: 'Сам', auto: 'Авто', sound: 'Звук', voiceK: 'Голос', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
+    manual: 'Сам', auto: 'Авто', sound: 'Звук', voiceK: 'Голос', musicK: 'Музыка', muAmbient: 'Эмбиент', muFilm: 'Кино', muFolk: 'Фолк', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
     fleetK: 'Лодок', lengthK: 'Дистанция', lShort: 'Короткая', lMedium: 'Средняя', lLong: 'Длинная',
     currentK: 'Течение', guidesK: 'Подсказки', gfx: 'Графика', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', gsHigh: 'Макс.', gsMedium: 'Сред.', gsLow: 'Мин.', gfxNow: (q) => `Графика · сейчас ${q.toLowerCase()}`, start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
     how1: '<b>Левый палец</b> рулит по дуге. <b>Правый</b> работает шкотом: вверх выбрать, вниз потравить. Колдунчики должны быть зелёными.',
@@ -203,7 +204,7 @@ applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 
 // ---------- settings ----------
-const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 0, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', guides: 1, played: 0 };
+const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 0, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', guides: 1, music: 'ambient', played: 0 };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
 delete opts.undefined; // left by an older pause menu, whose quick switches also ran the menu's choice handler
 if (opts.fleetV !== 3) { opts.fleet = 5; opts.fleetV = 3; } // the default changed (10, then 7): start everyone on 5 once
@@ -277,8 +278,14 @@ const audio = {
       this.buf = this.noise(this.ctx);
       this.master = this.ctx.createGain(); this.master.gain.value = this.on ? 1 : 0; this.master.connect(this.ctx.destination);
       this.windG = this.chain('lowpass', 500); this.waterG = this.chain('bandpass', 1500, 0.6); this.flapG = this.chain('bandpass', 320, 1.2);
+      // the voices (skipper, crews, committee, umpire) on a bus of their own, measured, so the music bows out under them
+      this.voice = this.ctx.createGain(); this.voice.connect(this.master);
+      this.meter = this.ctx.createAnalyser(); this.meter.fftSize = 512; this.voice.connect(this.meter); this.meterBuf = new Float32Array(512);
+      this.music = createMusic(this.ctx, this.master); // the soundtrack (music.js), in the style Settings › Music chose
     } catch (e) { this.ctx = null; }
   },
+  // how loud the voices are now, 0..1 (the peak of the last ~10 ms)
+  voiceLevel() { if (!this.meter) return 0; this.meter.getFloatTimeDomainData(this.meterBuf); let m = 0; for (const x of this.meterBuf) m = Math.max(m, Math.abs(x)); return m; },
   setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; if (!v) { skipper.stop(); asides.stop(); committee.stop(); } },
   set(g, v, tc = 0.25) { if (g && this.ctx) g.gain.setTargetAtTime(v, this.ctx.currentTime, tc); },
   update(P, paused) {
@@ -307,6 +314,43 @@ const audio = {
   fetch(file) {
     return fetch(new URL(file, import.meta.url)).then((r) => r.arrayBuffer())
       .then((b) => new Promise((res, rej) => this.ctx.decodeAudioData(b, res, rej)));
+  },
+};
+
+// ---------- the soundtrack's cues (music.js plays it): the race read four times a second, the build to the gun ----------
+const score = {
+  t: 0, place: 0, cand: 0, candT: 0, trend: 0, trendUntil: 0, riser: false, breath: false,
+  reset() { this.t = 0; this.place = 0; this.cand = 0; this.trend = 0; this.trendUntil = 0; this.riser = this.breath = false; if (audio.music) audio.music.reset(); },
+  // Settings › Music: ambient, film, folk or off; lighter voices on low graphics, where the phone is short of breath
+  style() { const m = audio.music; if (!m) return; m.lite = world.quality === 'low'; m.setStyle(MUSIC_STYLES.includes(opts.music) ? opts.music : null); },
+  sting(k) { if (audio.music) audio.music.sting(k); },
+  update(P, dt) {
+    const m = audio.music; if (!m) return;
+    m.pause(paused || !running); m.voices(audio.voiceLevel()); m.update();
+    if (!running || paused || !m.style) return;
+    const c = race.clock;
+    // the last eight seconds: a sweep climbing to the gun, and a breath of silence just before it (in seconds as heard)
+    if (c < -9) this.riser = this.breath = false; // again after a general recall
+    if (c < 0 && c > -8 && !this.riser) { this.riser = true; m.riser(-c / timeScale - 0.1); }
+    if (c < 0 && c > -0.5 * timeScale && !this.breath) { this.breath = true; m.breath(-c / timeScale); }
+    if ((this.t -= dt) > 0) return;
+    this.t = 0.25;
+    // a place gained or lost, once it has held two seconds (not in the shuffle off the line)
+    const place = race.standings().indexOf(P) + 1;
+    if (c < 30 || P.done) { this.place = place; this.cand = 0; }
+    else if (place === this.place) this.cand = 0;
+    else if (this.cand !== place) { this.cand = place; this.candT = c; }
+    else if (c - this.candT > 2) { const up = place < this.place; this.place = place; this.cand = 0; this.trend = up ? 1 : -1; this.trendUntil = c + 10; m.sting(up ? 'gain' : 'loss'); }
+    if (c > this.trendUntil) this.trend = 0;
+    const kind = race.course.legs[P.leg], a = Math.abs(P.twa) / D2R;
+    let near = 1e9, zone = false;
+    for (const b of race.boats) if (b !== P && !b.done) near = Math.min(near, Math.hypot(b.x - P.x, b.z - P.z));
+    for (const st of race.zoneStates.values()) { if (st.p !== P && st.q !== P) continue; const o = st.p === P ? st.q : st.p; if (Math.hypot(o.x - P.x, o.z - P.z) < 60) zone = true; }
+    m.set(direct({
+      clock: c, done: P.done, place: P.place ?? place, fleet: race.boats.length, dsq: !!(P.dsq || P.ufd || P.bfd), ocs: !!P.ocs, pen: !!P.pen,
+      zone, near, toMark: race.distToNext(P), markLeg: kind === 'mark' || kind === 'wing' || kind === 'gate', lastLeg: kind === 'finish',
+      downwind: a > 110 || !!P.kite, trend: this.trend,
+    }));
   },
 };
 
@@ -574,7 +618,7 @@ const skipper = {
   play(k, from) { // from: another boat, whose call comes from where she is, in her skipper's own voice (crews.say)
     if (from) { const r = crews.say(from, k, 0.9, true); this.stop(); this.src = r.src; return r.len; }
     const ctx = audio.ctx, { buf, at, len } = lineOf(k), s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 0.9;
-    s.buffer = buf; s.connect(g).connect(audio.master); s.start(ctx.currentTime, Math.max(0, at - 0.03), len + 0.09);
+    s.buffer = buf; s.connect(g).connect(audio.voice); s.start(ctx.currentTime, Math.max(0, at - 0.03), len + 0.09);
     this.stop(); this.src = s;
     return len;
   },
@@ -671,9 +715,9 @@ const crews = {
     return { d, near: clamp(1 - d / this.R, 0, 1), pan: d < 1 ? 0 : clamp((dx * -v.z + dz * v.x) / r / d, -1, 1) };
   },
   // a way into the master: a gain, then a stereo panner where the browser has one
-  out(gain, pan) {
+  out(gain, pan, to = audio.master) { // to audio.voice for a line spoken, so the music bows out under it
     const ctx = audio.ctx, g = ctx.createGain(); g.gain.value = gain;
-    if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan * 0.85; g.connect(p).connect(audio.master); } else g.connect(audio.master);
+    if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan * 0.85; g.connect(p).connect(to); } else g.connect(to);
     return g;
   },
   // one of her events (sim.js): the sound of it, and her crew's call
@@ -716,7 +760,7 @@ const crews = {
     s.buffer = ln.buf; s.playbackRate.value = rate;
     sh.type = 'highshelf'; sh.frequency.value = 2200; sh.gain.value = v.tone;
     lp.type = 'lowpass'; lp.frequency.value = (hail ? 3000 : 1500) + 6000 * near; // across the water a voice loses its top; a hail is shouted
-    s.connect(sh).connect(lp).connect(this.out(gain, pan * (hail ? 0.7 : 1)));
+    s.connect(sh).connect(lp).connect(this.out(gain, pan * (hail ? 0.7 : 1), audio.voice));
     s.start(ctx.currentTime, Math.max(0, at - 0.03), len + 0.09); // the duration is the file's, whatever the rate
     return { src: s, len: len / rate };
   },
@@ -897,7 +941,7 @@ const asides = {
   say(k) {
     const b = this.buf[k]; if (!b || !this.live() || !opts.voice) return false;
     const ctx = audio.ctx, now = ctx.currentTime, s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 0.9;
-    s.buffer = b; s.connect(g).connect(audio.master); s.start(now); this.stop(); this.src = s;
+    s.buffer = b; s.connect(g).connect(audio.voice); s.start(now); this.stop(); this.src = s;
     this.last[k] = now; skipper.speakTill = Math.max(skipper.speakTill, now + b.duration + 0.4); skipper.busyTill = Math.max(skipper.busyTill, now + b.duration + 6);
     return true;
   },
@@ -969,7 +1013,7 @@ const committee = {
     let t = ctx.currentTime;
     if (ump) { this.whistle(t); t += 0.6; }
     const s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = ump ? 0.8 : 0.7; // a handset in the cockpit
-    s.buffer = calls.buf; s.connect(g).connect(ump ? crews.out(1, 0.35) : audio.master); s.start(t, Math.max(0, at - 0.03), len + 0.09);
+    s.buffer = calls.buf; s.connect(g).connect(ump ? crews.out(1, 0.35, audio.voice) : audio.voice); s.start(t, Math.max(0, at - 0.03), len + 0.09);
     this.src = s; this.till = t + len + 0.3;
     skipper.busyTill = Math.max(skipper.busyTill, this.till + 2);
   },
@@ -1033,7 +1077,7 @@ function newRace() {
   race.player.name = t('you');
   world.setRace(race);
   world.resetView();
-  hints = {}; lastClockInt = null; coachSeen = {}; skipper.reset(); asides.reset(); committee.reset();
+  hints = {}; lastClockInt = null; coachSeen = {}; skipper.reset(); asides.reset(); committee.reset(); score.reset();
 }
 newRace();
 
@@ -1209,7 +1253,7 @@ const hudNext = createHudNext({ t, LANG, fmt, world, getRace: () => race, setCam
 const menu = $('#menu'), results = $('#results'), hud = $('#hud');
 if (!opts.played) $('#howD').open = true; // how to play: open until the first race
 function startRace() {
-  audio.init(); audio.setOn(!!opts.sound); skipper.load(); crews.load(); asides.load(); calls.load();
+  audio.init(); audio.setOn(!!opts.sound); skipper.load(); crews.load(); asides.load(); calls.load(); score.style();
   const day = dailyRace();
   // a new day: a new daily race, and at another venue its land needs the page loaded again
   if (race.settings.daily && race.settings.daily !== day.day && day.venue !== VENUE.id && !new URLSearchParams(location.search).get('venue')) { location.href = '/play?race=today'; return; }
@@ -1246,6 +1290,7 @@ function paintPause() {
   for (const b of pauseEl.querySelectorAll('[data-q]')) b.classList.toggle('on', b.dataset.q === 'autoTrim' ? opts.autoTrim === 1 : !!opts[b.dataset.q]);
   // graphics: the choice, and on Auto the level it has settled on for this device
   for (const b of pauseEl.querySelectorAll('[data-g]')) b.setAttribute('aria-checked', String(b.dataset.g === opts.gfx));
+  for (const b of pauseEl.querySelectorAll('[data-mu]')) b.setAttribute('aria-checked', String(b.dataset.mu === (MUSIC_STYLES.includes(opts.music) ? opts.music : 'off')));
   $('#pGfxK').textContent = opts.gfx === 'auto' ? t('gfxNow', t({ high: 'gHigh', medium: 'gMedium', low: 'gLow' }[world.quality] || 'gHigh')) : t('gfx');
 }
 function pause() { if (!running || race.over) return; paused = true; paintPause(); pauseEl.hidden = false; confirmEl.hidden = true; }
@@ -1269,6 +1314,8 @@ $('#cGo').addEventListener('click', () => {
 pauseEl.addEventListener('click', (e) => {
   const g = e.target.closest('[data-g]');
   if (g) { opts.gfx = g.dataset.g; saveOpts(); world.setQuality(startQuality()); perf.settle = 2; paintOpts(); paintPause(); return; } // as the menu's Graphics does
+  const mu = e.target.closest('[data-mu]');
+  if (mu) { opts.music = mu.dataset.mu; saveOpts(); score.style(); paintPause(); return; } // Settings › Music, from here too
   const b = e.target.closest('[data-q]'); if (!b) return;
   const k = b.dataset.q;
   if (k === 'autoTrim') { opts.autoTrim = opts.autoTrim === 1 ? 0 : 1; applyTrimMode(); }
@@ -1410,7 +1457,7 @@ function updateHud(dt) {
     lastClockInt = ci;
   }
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) el.toast.classList.remove('show'); }
-  audio.update(P, paused); crews.update(P, paused); asides.update(); committee.update(); engine.update(false);
+  audio.update(P, paused); crews.update(P, paused); asides.update(); committee.update(); engine.update(false); score.update(P, dt);
   if (race.coach) coach(P, a, leg);
   skipper.watch(P, dt);
   hudNext.update(P, dt);
@@ -1437,6 +1484,7 @@ function handleMessages() {
     const a = m.arg || {};
     if (m.key === 'signal') {
       audio.horn(a.sound === 'long'); haptic(a.key === 'gun' ? 'heavy' : 'medium'); skipper.signal(a.key, P.ocs);
+      score.sting(a.key !== 'gun' ? 'swell' : race.messages.some((n) => n.key === 'genRecall') ? 'hit' : P.ocs ? 'loss' : 'gun'); // the music: a swell at each signal, the gun's hit
       // and on the radio: the signal, or at the gun a clean start or the boats over recalled (not a start being
       // recalled, nor one under U or black, where the boats over are out)
       if (a.key === 'gun') { if (!race.messages.some((n) => n.key === 'genRecall') && !race.boats.some((b) => b.ufd || b.bfd)) committee.call(race.flags.X ? 'cRecall' : 'cClear'); }
@@ -1445,26 +1493,30 @@ function handleMessages() {
       toast(t(a.key, Math.round(-a.t / 60), race.prepFlag), 3);
     } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') {
       race._fin = finishScene(race); raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy');
+      score.sting(m.key !== 'finished' ? 'lose' : m.arg === 1 ? 'win' : m.arg <= Math.max(2, Math.ceil(race.boats.length / 3)) ? 'gain' : 'lose');
       // the committee's word at the finish, heard out before the result
       const end = committee.call(m.key === 'finishedDsq' ? 'cFinDsq' : m.key === 'finishedStartDsq' ? 'cFinOut' : m.arg === 1 ? 'cFin1' : 'cFin', 1.5);
       setTimeout(finishToPage, end ? Math.max(2500, (end - audio.ctx.currentTime) * 1000 + 600) : 2500);
     }
     else if (m.key === 'gate') toast(t('gateMsg'));
-    else if (m.key === 'bump') { hint('bump', t('bump'), 3); haptic('heavy'); skipper.shout(race.clock < 0 ? 'push' : 'contact'); }
-    else if (m.key === 'aground') { hint('aground', t('aground'), 3); haptic('heavy'); skipper.shout('aground'); }
+    else if (m.key === 'bump') { score.sting('hit'); hint('bump', t('bump'), 3); haptic('heavy'); skipper.shout(race.clock < 0 ? 'push' : 'contact'); }
+    else if (m.key === 'aground') { score.sting('hit'); hint('aground', t('aground'), 3); haptic('heavy'); skipper.shout('aground'); }
     else if (m.key === 'hail') { const h = t('hail' + a.rule), who = race.boats.find((b) => b.name === a.who); toast(`${a.who}: “${h}”`, 2.2); skipper.cue('hail' + a.rule, who, true); asides.hail(); haptic('warn'); }
     else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); skipper.cue('hail' + a.rule, null, true); } }
     else if (m.key === 'seaBreeze') { toast(t('seaBreeze'), 5); committee.call('cBreeze', 20); }
-    else if (m.key === 'genRecall') { toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(); haptic('warn'); committee.stop(); committee.call('cGenRecall'); skipper.shout('lost'); }
+    else if (m.key === 'genRecall') { score.sting('hit'); toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(); haptic('warn'); committee.stop(); committee.call('cGenRecall'); skipper.shout('lost'); }
     else if (m.key === 'prepU' || m.key === 'prepB' || m.key === 'ufd' || m.key === 'bfd') {
       toast(t(m.key), 4);
       if (m.key === 'prepU' || m.key === 'prepB') { if (race.seq.length <= 2) committee.call(m.key === 'prepU' ? 'cFlagU' : 'cFlagB', 8); skipper.later('flag'); } // a one-minute start has no preparatory signal to say it
-      if (m.key === 'ufd' || m.key === 'bfd') { haptic('warn'); committee.call('cOut'); skipper.shout('lost'); }
+      if (m.key === 'ufd' || m.key === 'bfd') { score.sting('loss'); haptic('warn'); committee.call('cOut'); skipper.shout('lost'); }
     }
-    else if (m.key === 'fouled' || m.key === 'theyFouled') { toast(t(m.key, a.who, a.rule), 3.5); skipper.cue('protest') || skipper.shout(m.key === 'fouled' ? 'foul' : 'contact'); committee.call(m.key === 'fouled' ? 'uPen' : 'uThem', 4); }
+    else if (m.key === 'fouled' || m.key === 'theyFouled') { score.sting(m.key === 'fouled' ? 'loss' : 'hit'); toast(t(m.key, a.who, a.rule), 3.5); skipper.cue('protest') || skipper.shout(m.key === 'fouled' ? 'foul' : 'contact'); committee.call(m.key === 'fouled' ? 'uPen' : 'uThem', 4); }
     else {
       toast(t(m.key), 2.6); if (m.key === 'ocs') { haptic('warn'); skipper.shout('early', 1, true); } if (m.key === 'rounded') haptic('medium');
-      if (m.key === 'touched' || m.key === 'wrongSide' || m.key === 'missedGate') skipper.shout('foul');
+      if (m.key === 'touched' || m.key === 'wrongSide' || m.key === 'missedGate') { skipper.shout('foul'); score.sting('loss'); }
+      if (m.key === 'ocs') score.sting('loss');
+      if (m.key === 'cleared' || m.key === 'exonerated') score.sting('gain');
+      if (m.key === 'rounded' || m.key === 'roundedTri') score.sting('round');
       if (m.key === 'touched') committee.call('uMark', 4);
       if (m.key === 'exonerated') committee.call('uNone', 4);
       if (m.key === 'missedLine') skipper.shout('where', 1, true);
@@ -1475,8 +1527,8 @@ function handleMessages() {
   }
   race.messages.length = 0;
   for (const e of P.events) {
-    if (e === 'broach') { toast(t('broach')); haptic('heavy'); skipper.shout('chaos'); }
-    if (e === 'kitedown') { toast(t('kitedown')); haptic('warn'); skipper.shout('chaos'); }
+    if (e === 'broach') { score.sting('hit'); toast(t('broach')); haptic('heavy'); skipper.shout('chaos'); }
+    if (e === 'kitedown') { score.sting('hit'); toast(t('kitedown')); haptic('warn'); skipper.shout('chaos'); }
     if (e === 'kiteHoist' || e === 'kiteDrop' || e === 'kiteUp') toast(t(e + (P.kiteType === 'zero' ? 'Z' : '')), 1.8);
     if (e === 'reefStart' || e === 'reefDone' || e === 'shakeStart' || e === 'shakeDone' || e === 'jibStart' || e === 'jibDone') toast(t(e), 1.8);
     if (e === 'penaltyDone') toast(t('penaltyDone'));
@@ -1722,6 +1774,7 @@ function loop(now) {
     if (!running) world.orbit += dt * 0.12; // behind the menu the drone circles
     race.idle(dt);
     if (paused) { audio.update(P, true); crews.update(P, true); }
+    score.update(P, dt); // paused or between races: the music fades out
     engine.update(true);
   }
   world.frame(running && !paused ? dt * timeScale : 0, race.t); // foam and wakes keep pace with the race
