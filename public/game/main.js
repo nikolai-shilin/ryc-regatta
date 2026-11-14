@@ -32,7 +32,11 @@ const T = {
     askK: { restart: 'Restart', change: 'Change the race', leave: 'Leave' }, askH: { restart: 'Restart this race?', change: 'Change the race?', leave: 'Leave this race?' },
     askT: { restart: 'It starts over from the start sequence, the same course in the same wind.', change: 'Next you pick the place, the wind and the course, and the race starts over with them.', leave: 'You go back to the race hub.' },
     sailUp: 'Beating to', sailDown: (k) => (k ? 'Running to' : 'Running, kite down, to'), sailReach: 'Reaching to', aheadOf: (n, m) => `${n} is ${m} m ahead.`, leadBy: (m) => `You lead by ${m} m.`, leadAlone: 'You lead.',
-    // the course map's words
+    // the pause's next target, with how far and how to round it; the leave dialog's headline; the course map's words
+    nextAt: (m, d) => `Next: ${m} · ${d} m`, howPort: 'Leave it to port, on your left as you round it.', howGate: 'Sail between the two buoys and round either one.',
+    howFinish: 'Cross the finish line between its ends.', howStart: 'Cross the line after the gun, between the committee boat and the pin.',
+    whereH: (pl, d, to) => `You’re ${pl}, ${d} m from ${to}`,
+    toK: { lineStart: 'the line', mark: 'the windward mark', mark1: 'mark 1', wing: 'the wing mark', mark2: 'mark 2', offset: 'the offset mark', gate: 'the gate', finish: 'the finish' },
     mapYou: 'You', mapStart: 'Start',
     timeFree: 'free race', timeDaily: 'today’s race', inStart: 'In the start sequence.', notOver: 'Still to cross the start line.', notOverYou: 'You haven’t crossed the start line yet.',
     kick: 'Game', title: 'Up and down', fun: 'Just for fun — take a break and relax between tests.', sub: 'A race round the marks against the computer boats, under the racing rules. Steer, trim, tack, read the wind.',
@@ -123,6 +127,10 @@ const T = {
     askK: { restart: 'Заново', change: 'Изменить гонку', leave: 'Выход' }, askH: { restart: 'Начать заново?', change: 'Изменить гонку?', leave: 'Выйти из гонки?' },
     askT: { restart: 'Всё начнётся со стартовой процедуры: та же дистанция, тот же ветер.', change: 'Дальше выберешь место, ветер и дистанцию — и гонка начнётся заново.', leave: 'Ты вернёшься в меню гонок.' },
     sailUp: 'Лавировка к', sailDown: (k) => (k ? 'Фордевинд под генакером к' : 'Фордевинд без генакера к'), sailReach: 'Галфвинд к', aheadOf: (n, m) => `${n} впереди на ${m} м.`, leadBy: (m) => `Ты лидируешь на ${m} м.`, leadAlone: 'Ты лидируешь.',
+    nextAt: (m, d) => `Дальше: ${m} · ${d} м`, howPort: 'Огибай его, оставляя слева — по левому борту.', howGate: 'Пройди между двумя знаками и обогни любой из них.',
+    howFinish: 'Пересеки финишную линию между её концами.', howStart: 'Пересеки линию после сигнала, между судейским судном и знаком.',
+    whereH: (pl, d, to) => `Ты ${pl}-й, ${d} м до ${to}`,
+    toK: { lineStart: 'линии', mark: 'верхнего знака', mark1: 'знака 1', wing: 'бокового знака', mark2: 'знака 2', offset: 'знака смещения', gate: 'ворот', finish: 'финиша' },
     mapYou: 'Вы', mapStart: 'Старт',
     timeFree: 'свободная гонка', timeDaily: 'гонка дня', inStart: 'Идёт стартовая процедура.', notOver: 'Стартовая линия ещё впереди.', notOverYou: 'Ты ещё не пересёк стартовую линию.',
     kick: 'Игра', title: 'Up and down', fun: 'Просто для удовольствия — отдохни и расслабься между тестами.', sub: 'Гонка вокруг знаков против компьютерных лодок по правилам. Рули, работай шкотом, делай повороты, читай ветер.',
@@ -1277,7 +1285,10 @@ function paintPause() {
   $('#pLeg').textContent = t('legOf', leg, n);
   $('#pLegs').innerHTML = Array.from({ length: n }, (_, i) => `<i class="${i + 1 < leg ? 'done' : i + 1 === leg ? 'now' : ''}"></i>`).join('');
   const nx = legs[P.leg];
-  $('#pNext').textContent = P.leg < legs.length ? t('nextK', t(legKey(race.course, nx))) : '';
+  // the next target, how far (to the line, before you've crossed it; else to the mark, or the middle of the gate or the
+  // finish) and how to round it
+  $('#pNext').textContent = P.leg < legs.length ? t('nextAt', t(legKey(race.course, nx)), Math.round(P.leg < 1 ? Math.max(0, -race.lineInfo(P).d) : race.distToNext(P))) : '';
+  $('#pHow').textContent = P.leg < legs.length ? t(howKey(race.course, nx)) : '';
   $('#pLine').textContent = pauseLine(P, place, nx);
   $('#pTimeD').textContent = race.settings.daily ? t('timeDaily') : t('timeFree');
   $('#pNext').classList.toggle('mark', !!race.course.marks[nx] || nx === 'gate'); // as its tag on the water
@@ -1300,6 +1311,8 @@ function paintPause() {
   for (const b of pauseEl.querySelectorAll('[data-mu]')) b.setAttribute('aria-checked', String(b.dataset.mu === (MUSIC_STYLES.includes(opts.music) ? opts.music : 'off')));
   $('#pGfxK').textContent = opts.gfx === 'auto' ? t('gfxNow', t({ high: 'gHigh', medium: 'gMedium', low: 'gLow' }[world.quality] || 'gHigh')) : t('gfx');
 }
+// how a leg's target is rounded or crossed: every mark is left to port; the gate either way; the lines between their ends
+const howKey = (c, k) => (c.marks[k] ? 'howPort' : k === 'gate' ? 'howGate' : k === 'finish' ? 'howFinish' : 'howStart');
 const legKind = (c, i) => (isBeat(c, i) ? 'up' : ['wing', 'mark2', 'offset'].includes(c.legs[i]) ? 'reach' : 'down');
 // a sentence on the race as it stands: the leg you're on, and the boat ahead (or your lead), as a commentator would
 function pauseLine(P, place, nx) {
@@ -1325,10 +1338,16 @@ function pause() { if (!running || race.over) return; paused = true; paintPause(
 function resume() { paused = false; pauseEl.hidden = true; confirmEl.hidden = true; }
 let confirmDo = null;
 function ask(action) {
-  const P = race.player, place = race.standings().indexOf(P) + 1;
-  const where = race.clock < 0 ? t('inSeq') : P.leg < 1 ? t('notOverYou') : t('leaveTxt', LANG === 'ru' ? place : ord(place), P.leg);
-  $('#cKick').textContent = t('askK')[action]; $('#cHead').textContent = t('askH')[action];
-  $('#cTxt').textContent = `${where} ${t('askT')[action]} ${t('notKept')}`;
+  const P = race.player, place = race.standings().indexOf(P) + 1, c = race.course;
+  if (race.clock >= 0 && P.leg >= 1 && !P.done) { // racing: the question in the bar, where you are as the headline
+    $('#cKick').textContent = t('askH')[action];
+    $('#cHead').textContent = t('whereH', LANG === 'ru' ? place : ord(place), Math.round(race.distToNext(P)), t('toK')[legKey(c, c.legs[P.leg])]);
+    $('#cTxt').textContent = `${t('askT')[action]} ${t('notKept')}`;
+  } else { // in the start sequence, still to cross the line (or finished): the question as the headline
+    const where = race.clock < 0 ? t('inSeq') : P.leg < 1 ? t('notOverYou') : t('leaveTxt', LANG === 'ru' ? place : ord(place), P.leg);
+    $('#cKick').textContent = t('askK')[action]; $('#cHead').textContent = t('askH')[action];
+    $('#cTxt').textContent = `${where} ${t('askT')[action]} ${t('notKept')}`;
+  }
   $('#cGo').textContent = t({ restart: 'doRestart', change: 'doChange', leave: 'doLeave' }[action]);
   confirmDo = action; pauseEl.hidden = true; confirmEl.hidden = false;
 }

@@ -127,6 +127,8 @@ test('the course map: its colours are the tokens, and the boats\' labels never c
   assert.deepEqual([a.x, b.x, c], [60 - 9 - 30, 139, null]);
   assert.equal(placeLabels([it(235, 50)], { size })[0].x, 235 - 9 - 30); // at the edge: to the left
   assert.equal(placeLabels([it(50, 50)], { size, blocked: [{ x: 55, y: 40, w: 40, h: 20 }] })[0].x, 50 - 9 - 30); // clear of the caption and arrows
+  // the pause card's and the leave dialog's new words are in both languages
   const main = read('public/game/main.js');
-  for (const k of ['mapYou', 'mapStart']) assert.equal(main.match(new RegExp(`\\b${k}: `, 'g'))?.length, 2, k);
+  for (const k of ['nextAt', 'howPort', 'howGate', 'howFinish', 'howStart', 'whereH', 'toK', 'mapYou', 'mapStart']) assert.equal(main.match(new RegExp(`\\b${k}: `, 'g'))?.length, 2, k);
+  assert.match(read('public/play/index.html'), /<p class="p-line p-how" id="pHow"><\/p>/);
 });
