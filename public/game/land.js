@@ -49,6 +49,87 @@ export const SKOPEA = {
   room: PARTS.room, // steps of 4 m
 };
 
+const P = PARTS, TN = META.terrain.n, TE = META.terrain.ext, TC = (2 * TE) / TN, W1 = TN + 1;
+// ---------- the terrain: the leaves of the quadtree (blender/venues.py), two triangles each, or a fan round the
+// middle where a neighbour is finer and has a corner on its edge ----------
+const bit = (a, k) => (a[k >> 3] >> (7 - (k & 7))) & 1;
+const KIDS = [[0, 0], [0, 1], [1, 0], [1, 1]];
+export const TREE = (() => {
+  const n = P.treeLen, kids = new Int32Array(n * 4).fill(-1), leafOf = new Int32Array(n).fill(-1);
+  const L = [], I = [], J = [], D = [];
+  let tb = 0, lb = 0;
+  const walk = (lv, i, j) => {
+    const me = tb, sp = bit(P.tree, tb++);
+    if (sp) for (let c = 0; c < 4; c++) kids[me * 4 + c] = walk(lv + 1, 2 * i + KIDS[c][0], 2 * j + KIDS[c][1]);
+    else { leafOf[me] = L.length; L.push(lv); I.push(i); J.push(j); D.push(bit(P.drawn, lb++)); }
+    return me;
+  };
+  walk(0, 0, 0);
+  return { kids, leafOf, L, I, J, D };
+})();
+export const MESH = (() => {
+  const { L, I, J, D } = TREE, nl = L.length, key = (r, c) => r * W1 + c;
+  const corner = new Uint8Array(W1 * W1), used = new Uint8Array(W1 * W1), fan = new Uint8Array(nl);
+  for (let k = 0; k < nl; k++) { const s = TN >> L[k], r = I[k] * s, c = J[k] * s; corner[key(r, c)] = corner[key(r, c + s)] = corner[key(r + s, c)] = corner[key(r + s, c + s)] = 1; }
+  for (let k = 0; k < nl; k++) {
+    if (!D[k]) continue;
+    const s = TN >> L[k], r = I[k] * s, c = J[k] * s, h = s >> 1;
+    used[key(r, c)] = used[key(r, c + s)] = used[key(r + s, c)] = used[key(r + s, c + s)] = 1;
+    if (s < 2) continue;
+    for (const [mr, mc] of [[0, 1], [2, 1], [1, 0], [1, 2]]) { const q = key(r + mr * h, c + mc * h); if (corner[q]) { used[q] = 1; fan[k] = 1; } }
+    if (fan[k]) used[key(r + h, c + h)] = 1;
+  }
+  const index = new Int32Array(W1 * W1).fill(-1);
+  let nv = 0;
+  for (let q = 0; q < used.length; q++) if (used[q]) index[q] = nv++;
+  if (nv !== P.heights.length) console.error(`the terrain has ${nv} corners, its file ${P.heights.length}`);
+  const pos = new Float32Array(nv * 3);
+  for (let q = 0, v = 0; q < used.length; q++) if (used[q]) { pos[v * 3] = -TE + (q % W1) * TC; pos[v * 3 + 1] = P.heights[v] * 0.1; pos[v * 3 + 2] = -TE + Math.floor(q / W1) * TC; v++; }
+  const idx = [], tri0 = new Int32Array(nl), triN = new Uint8Array(nl), Y = (v) => pos[v * 3 + 1];
+  for (let k = 0; k < nl; k++) {
+    if (!D[k]) continue;
+    tri0[k] = idx.length / 3;
+    const s = TN >> L[k], r = I[k] * s, c = J[k] * s, h = s >> 1;
+    const A = index[key(r, c)], B = index[key(r, c + s)], C = index[key(r + s, c)], E = index[key(r + s, c + s)];
+    if (!fan[k]) { // split along the diagonal whose ends are nearer the same height: a ridge stays a ridge
+      if (Math.abs(Y(A) - Y(E)) < Math.abs(Y(B) - Y(C))) idx.push(A, C, E, A, E, B); else idx.push(A, C, B, B, C, E);
+    } else {
+      const M = index[key(r + h, c + h)], ring = [];
+      for (const [q, has] of [[A, 1], [key(r, c + h), 0], [B, 1], [key(r + h, c + s), 0], [E, 1], [key(r + s, c + h), 0], [C, 1], [key(r + h, c), 0]]) {
+        if (has) ring.push(q); else if (corner[q]) ring.push(index[q]);
+      }
+      for (let e = 0; e < ring.length; e++) idx.push(M, ring[(e + 1) % ring.length], ring[e]);
+    }
+    triN[k] = idx.length / 3 - tri0[k];
+  }
+  return { pos, idx: Uint32Array.from(idx), tri0, triN, corners: nv }; // (corners: as many as the file has heights, or the two disagree)
+})();
+
+// the ground's height anywhere, metres: on the triangle drawn there (under the sea, where nothing is drawn, −10)
+export function groundAt(x, z) {
+  const fc = (x + TE) / TC, fr = (z + TE) / TC;
+  if (!(fc >= 0 && fr >= 0 && fc <= TN && fr <= TN)) return -20;
+  const { kids, leafOf, D } = TREE;
+  let node = 0, lv = 0, i = 0, j = 0;
+  while (leafOf[node] < 0) {
+    const s = TN >> (lv + 1), a = fr >= (2 * i + 1) * s ? 1 : 0, b = fc >= (2 * j + 1) * s ? 1 : 0;
+    node = kids[node * 4 + a * 2 + b]; i = 2 * i + a; j = 2 * j + b; lv++;
+  }
+  const k = leafOf[node];
+  if (!D[k]) return -10;
+  const { pos, idx, tri0, triN } = MESH;
+  let best = -10, bestE = Infinity;
+  for (let t = tri0[k]; t < tri0[k] + triN[k]; t++) {
+    const a = idx[t * 3] * 3, b = idx[t * 3 + 1] * 3, c = idx[t * 3 + 2] * 3;
+    const x0 = pos[a], z0 = pos[a + 2], x1 = pos[b], z1 = pos[b + 2], x2 = pos[c], z2 = pos[c + 2];
+    const d = (z1 - z2) * (x0 - x2) + (x2 - x1) * (z0 - z2);
+    const l0 = ((z1 - z2) * (x - x2) + (x2 - x1) * (z - z2)) / d, l1 = ((z2 - z0) * (x - x2) + (x0 - x2) * (z - z2)) / d, l2 = 1 - l0 - l1;
+    const e = -Math.min(l0, l1, l2);
+    if (e < bestE) { bestE = e; best = l0 * pos[a + 1] + l1 * pos[b + 1] + l2 * pos[c + 1]; }
+    if (e <= 1e-6) break;
+  }
+  return best;
+}
 // the sea room at a point of the bay, metres: how far to the shore, + at sea, − on land (as far as 508 m)
 export function roomAt(x, z) {
   const fx = (x - M.x0) / M.cell, fz = (z - M.z0) / M.cell;

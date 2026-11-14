@@ -11,7 +11,7 @@ import { Jets } from './jets.js';
 import { Post, Mirror, OVERLAY, MIRRORED } from './post.js';
 import { Ocean, OCEAN_GLSL, oceanUniforms, blankOcean } from './ocean.js';
 import { skyAt, pickSky, SKY_GLSL, skyUniforms } from './light.js';
-import { Skopea, groundAt } from './skopea.js';
+import { Skopea, groundAt, inLandShadow } from './skopea.js';
 export { flagTexture } from './committee.js';
 
 // the sky's colours and the sun: one set of objects that every shader shares; setLight() changes them in place
@@ -44,7 +44,7 @@ uniform float uTime, uFogNear, uFogFar, uChop, uAmp, uWhite, uGlint, uReflOn; un
 uniform vec3 uCam, uDeep, uScatter, uFoamCol; uniform vec4 uGust[12]; uniform vec2 uWind, uPivot;
 uniform sampler2D uRefl; uniform mat4 uReflMat;
 // the land's (skopea.js): the depth over its square, the hills' shadow, and where the venue's frame is
-uniform sampler2D uSeabed, uShadeTex; uniform vec3 uGridXf, uShadeXf, uLandAt, uShallow; uniform float uShallowK;
+uniform sampler2D uSeabed, uShadeTex, uShore, uCalm; uniform vec3 uGridXf, uShadeXf, uLandAt, uShallow, uNearXf; uniform float uShallowK;
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
 ${SKY_GLSL}
 ${OCEAN_GLSL}
@@ -199,6 +199,15 @@ void main() {
   col = mix(col, vec3(0.86, 0.91, 0.94) * uFoamCol, clamp(cap * 0.7 + wisp, 0.0, 1.0));
   col = mix(col, col * 1.2 + vec3(0.03, 0.045, 0.06), lane * 0.55); // the lanes catch a little more light
   col *= 1.0 - 0.22 * gust; // a gust reads as a darker patch
+  // the surf: along the shore (how far out from it: uShore, round the race area), the swell breaking in lines that run
+  // in and fade, in a wider band the bigger the waves; hardly any by the quays and piers (uCalm)
+  vec2 sg = (lp - uNearXf.xy) * uNearXf.z;
+  if (sg.x > 0.0 && sg.y > 0.0 && sg.x < 1.0 && sg.y < 1.0) {
+    float sd = texture2D(uShore, sg).r * 63.75, reach = 3.0 + 9.0 * clamp(uAmp, 0.0, 1.5);
+    float run = 0.5 + 0.5 * sin(sd * 0.7 - uTime * 1.3 + texture2D(uRipple, lp / 37.0).w * 6.0);
+    float surf = (1.0 - smoothstep(0.5, reach, sd)) * (0.35 + 0.65 * smoothstep(0.55, 0.9, run)) * (1.0 - smoothstep(600.0, 1500.0, dist)) * (1.0 - 0.85 * texture2D(uCalm, sg).r);
+    col = mix(col, vec3(0.88, 0.92, 0.94) * uFoamCol, clamp(surf * 0.85, 0.0, 0.85));
+  }
   // the haze: the sky's own colour at the horizon in that direction, so the sea melts into it (warmer towards the sun)
   vec3 hz = normalize(vec3(-V.x, 0.0, -V.z) + vec3(0.0, 0.001, 0.0));
   col = mix(col, skyBase(hz), smoothstep(uFogNear, uFogFar, dist));
@@ -837,7 +846,7 @@ export class World {
     Object.assign(this.waterU, this.skopea.waterU);
     // the sea reflects the hills, the town and the moored yachts; not the pines, the most of it to draw a second
     // time, which the rippled reflection of a green hillside wouldn't show
-    for (const o of [this.skopea.land, this.skopea.town, this.skopea.boats]) mirrored(o);
+    for (const o of [this.skopea.land, this.skopea.town, this.skopea.boats, this.skopea.far]) mirrored(o); // (the far mountains too, in the calm)
 
     // glare: a soft bloom round the sun when you look towards it (behind a sail or a hill it hides)
     const gc = document.createElement('canvas'); gc.width = gc.height = 128;
@@ -901,7 +910,7 @@ export class World {
     this.glare.material.color.copy(L.sun); this.glareK = L.disc;
     this.bloomLook = L.bloom; if (this.post) this.post.setLook(L.bloom);
     this.envSea.material.color.copy(L.deep).lerp(SKY_HORIZON, 0.2);
-    if (this.skopea) this.skopea.setLight(L);
+    if (this.skopea) this.skopea.setLight(L, this.renderer);
     const pm = new THREE.PMREMGenerator(this.renderer), old = this.scene.environment;
     this.scene.environment = pm.fromScene(this.env, 0.02).texture;
     pm.dispose(); if (old) old.dispose();
@@ -940,7 +949,7 @@ export class World {
     for (const o of [v.wheel, v.windex, v.travCar, ...v.tells]) o.traverse((x) => x.layers.disable(MIRRORED)); // nor the wheel and such
     v.root.traverse((o) => { if (o.isLine) o.layers.disable(MIRRORED); });
     v.root.traverse((o) => { if (o.isSprite && o.material.depthTest === false && o.material.toneMapped === false) o.layers.set(OVERLAY); }); // the name tag: drawn after the post
-    this.scene.add(v.root);
+    this.scene.add(inLandShadow(v.root)); // in the hills' shadow as the land is
     return v;
   }
   // your boat dressed again, in a new look (the boat page's preview, as you choose)
@@ -982,7 +991,7 @@ export class World {
       g.add(m); return m;
     };
     this.cb = cboat({ x: c.committee.x + c.dir.x * 5, z: c.committee.z + c.dir.z * 5 }, c.dir);
-    this.committee = this.cb.root; this.cbW0 = W0;
+    this.committee = inLandShadow(this.cb.root); this.cbW0 = W0;
     // the jury boat, off the course, going round it
     this.jury ||= new JuryBoat(); this.jury.reset(race);
     g.add(mirrored(this.jury.root));
@@ -1004,7 +1013,7 @@ export class World {
     this.ladder = new Ladder(); g.add(this.ladder.group);
     this.lay = new Laylines(c, race.wind.p.tws); g.add(this.lay.group);
     this.beatI = -1; this.aimGuides(c, race.player.leg);
-    this.marks = g; this.scene.add(g);
+    this.marks = g; this.scene.add(inLandShadow(g));
     this.camH = race.player.h;
     if (this.guides) this.scene.remove(this.guides);
     this.guides = guides(race.wind.p.tws); this.scene.add(this.guides);
@@ -1306,6 +1315,7 @@ export class World {
     this.wild.update(dt, t, this.W, cam, this.foamU.uScale.value);
     this.plane.update(dt, cam, !this.intro);
     this.sky.position.copy(cam.position); this.sky.material.uniforms.uTime.value = t; // the clouds drift
+    this.skopea.update(cam.position); // the far trees as plain crowns
     this.jets.update(dt, cam, this.race);
     // the glare: brightest looking straight at the sun, gone when you look away
     const look = cam.getWorldDirection(this._dir || (this._dir = new THREE.Vector3()));
