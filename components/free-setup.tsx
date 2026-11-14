@@ -2,14 +2,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
-import { readOpts, readPb, saveOpts } from '@/lib/opts';
+import { DAYTIMES, readOpts, readPb, saveOpts, type Daytime } from '@/lib/opts';
 import type { VenueId } from '@/lib/venues';
 import { shapeOffered, venueOf, VENUES } from '@/lib/venues';
 import { courseDistance, dailyRace, fmtDistance, pbKey, plannedCourse, savedShape, KN, SHAPE_NAME, SHAPES, type Length, type Shape, type Wind } from '@/lib/race';
 import { CourseMap } from './course-map';
 import { GameScene, type SceneSetup } from './game-scene';
 import { PauseCard, SettingsRow, type Who } from './pause-card';
-import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, clock } from './ui';
+import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, IconSun, clock } from './ui';
 
 // the way round each shape but up and down, under its choice
 const SHAPE_HINT: Partial<Record<Shape, [string, string]>> = {
@@ -18,7 +18,7 @@ const SHAPE_HINT: Partial<Record<Shape, [string, string]>> = {
   wlu: ['Up to the windward mark, a short reach to the offset mark, a run down through the gate, and a last beat up to a finish line below the windward mark.', 'Вверх к верхнему знаку, короткий галфвинд к знаку смещения, фордевинд через ворота и последняя лавировка к финишу чуть ниже верхнего знака.'],
 };
 
-type Pick = { venue: VenueId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape };
+type Pick = { venue: VenueId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape; daytime: Daytime };
 
 // a rough guide to the race's length on the water, so a choice shows its effect; each shape's factor is as the computer
 // boats take it, against up and down
@@ -26,7 +26,7 @@ const SHAPE_TIME: Record<Shape, number> = { wl: 1, tri: 1.3, trap: 1.25, wlu: 1.
 const minutes = (p: Pick) => Math.round(({ short: 4.5, medium: 7, long: 9.5 }[p.length] * p.laps * { light: 1.25, medium: 1, strong: 0.9 }[p.preset] * SHAPE_TIME[p.course]) + p.start);
 // what the scene shows as each choice is made: the fleet, the wind or the current over the course, or the course
 type View = SceneSetup['view'];
-const VIEW_OF: Record<keyof Pick, View> = { venue: 'boats', fleet: 'boats', start: 'boats', preset: 'wind', current: 'current', course: 'course', length: 'course', laps: 'course' };
+const VIEW_OF: Record<keyof Pick, View> = { venue: 'boats', fleet: 'boats', start: 'boats', preset: 'wind', current: 'current', course: 'course', length: 'course', laps: 'course', daytime: 'boats' };
 // the breeze as the game blows it (sim.js PRESETS): its gusts' top and how far it swings either way
 const GUST: Record<Wind, [number, number]> = { light: [9, 12], medium: [16, 13], strong: [26, 14] };
 
@@ -38,14 +38,14 @@ const GUST: Record<Wind, [number, number]> = { light: [9, 12], medium: [16, 13],
 // the card's top, your boat and Settings at its bottom. Start saves the choice where the game reads it and opens the race.
 export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromToday: boolean; who: Who }) {
   const t = tx(lang);
-  const [p, setP] = useState<Pick>({ venue: 'gocek', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' });
+  const [p, setP] = useState<Pick>({ venue: 'gocek', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any' });
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const o = readOpts();
     const d = dailyRace();
-    const venue = venueOf(o.venue).id;
-    setP(fromToday ? { venue, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course }
-      : { venue, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: savedShape(o.course) });
+    const venue = venueOf(o.venue).id, daytime = DAYTIMES.includes(o.daytime) ? o.daytime : 'any';
+    setP(fromToday ? { venue, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course, daytime }
+      : { venue, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: savedShape(o.course), daytime });
     setReady(true);
   }, [fromToday]);
   const [view, setView] = useState<View>('boats');
@@ -78,7 +78,7 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
   const lapsName = `${p.laps} ${t(p.laps > 1 ? 'laps' : 'lap', p.laps > 1 ? 'круга' : 'круг')}`;
   const beat = Math.round(Math.abs(geo.windward[1]));
   const scene: SceneSetup = {
-    race: { preset: p.preset, fleet: p.fleet, length: p.length, laps: p.laps, course: p.course, current: p.current, start: p.start },
+    race: { preset: p.preset, fleet: p.fleet, length: p.length, laps: p.laps, course: p.course, current: p.current, start: p.start, daytime: p.daytime },
     view,
     // the marks' names (on a trapezoid the windward mark is mark 1), and the start line's: the finish too, unless the
     // shape has a finish line of its own
@@ -150,6 +150,14 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
           </div>}>
           {tags('venue', <IconPin />, t('Where', 'Где'), VENUES.map((v) => [v.id, t(...v.name)] as [VenueId, string]))}
           {tags('preset', <IconWind s={14} />, t('Wind', 'Ветер'), [['light', t('Light 7 kn', 'Слабый 7 уз')], ['medium', t('Medium 12 kn', 'Средний 12 уз')], ['strong', t('Strong 19 kn', 'Сильный 19 уз')]])}
+          {tags('daytime', <IconSun />, t('Time of day', 'Время суток'), [['any', t('Any', 'Любое')], ['morning', t('Morning', 'Утро')], ['midday', t('Midday', 'Полдень')], ['afternoon', t('Afternoon', 'День')], ['evening', t('Evening', 'Вечер')]],
+            <p className="bt-hint">{{
+              any: t('A new hour every race, now and then under a grey sky.', 'Каждая гонка в новый час, иногда под серым небом.'),
+              morning: t('Early, the sun low in the east and the air still fresh.', 'Рано: солнце низко на востоке, воздух ещё свежий.'),
+              midday: t('The sun at its highest, the sea at its bluest.', 'Солнце в зените, море самое синее.'),
+              afternoon: t('The sun past its highest, swinging west.', 'Солнце уже за зенитом, уходит на запад.'),
+              evening: t('Golden light, the sun an hour above the horizon.', 'Золотой свет, солнце за час до заката.'),
+            }[p.daytime]}</p>)}
           {tags('fleet', <IconBoats />, t('Boats', 'Лодки'), [[3, t('3 boats', '3 лодки')], [5, t('5 boats', '5 лодок')], [7, t('7 boats', '7 лодок')]])}
           {tags('course', <IconRoute />, t('Shape', 'Форма'), shapes.map((s) => [s, t(...SHAPE_NAME[s])] as [Shape, string]),
             SHAPE_HINT[p.course] && <p className="bt-hint">{t(...SHAPE_HINT[p.course]!)}</p>)}

@@ -43,7 +43,7 @@ import { World } from '/game/world.js';
 import { Race, beatAngle, legAim, SHAPES } from '/game/sim.js';
 import { placeCourse } from '/game/land.js';
 import { BoatView, lookFrom } from '/game/yacht.js';
-import { HOURS } from '/game/light.js';
+import { HOURS, skyAt, dayHour } from '/game/light.js';
 import { OVERLAY } from '/game/post.js';
 
 // the light: an hour and a bit before the sun goes down there (the race's sky reads it from the address)
@@ -144,7 +144,7 @@ if (world) {
   // and golder in the gusts); 'current' the same for the tide; 'course' the route round the marks, lap by lap.
   const FORM = [[0, 0], [-24, 10], [24, -8], [-12, -30], [14, 28], [-38, -18], [36, 16]]; // across to starboard, ahead (m)
   const LAP = ['#ffd640', '#35b0f2'], TAN = Math.tan(27.5 * D2R);
-  let poses = null, spec = '', view = 'boats', labelsKey = '', spin = 0, ovSpin = 0, zoomK = 1, area = null, fRoute = 0, fMarks = 0;
+  let poses = null, spec = '', daytime = 'any', view = 'boats', labelsKey = '', spin = 0, ovSpin = 0, zoomK = 1, area = null, fRoute = 0, fMarks = 0;
   // the drone: where it is (camS) and how it is moving (camV), following the path laid for it (camG)
   const KEYS = ['tx', 'tz', 'ty', 'ld', 'el', 'az'];
   const camS = { tx: 0, tz: 0, ty: 4, ld: Math.log(80), el: 12 * D2R, az: 0, first: true }, camG = { ...camS }, camV = { tx: 0, tz: 0, ty: 0, ld: 0, el: 0, az: 0 };
@@ -309,7 +309,10 @@ if (world) {
   };
   const setupMsg = (d) => {
     const s = d.race, key = JSON.stringify([s.preset, s.fleet, s.length, s.laps, s.course, s.current ? 1 : 0, s.start]), lk = JSON.stringify(d.labels || {});
-    if (key !== spec) { spec = key; lay(s); labelsKey = ''; fly(); }
+    if (key !== spec) { spec = key; lay(s); labelsKey = ''; fly(); if (daytime !== 'any') world.setLight(skyAt(dayHour(daytime))); }
+    // the time of day the race is set to, its light; 'any' is the set-up's own clear evening
+    const dt = dayHour(s.daytime) != null ? s.daytime : 'any';
+    if (dt !== daytime) { daytime = dt; world.setLight(skyAt(dayHour(dt) ?? HOURS[1] - 1.1)); }
     if (lk !== labelsKey) { labelsKey = lk; labelCourse(d.labels || {}); }
     if (d.view && d.view !== view) { view = d.view; zoomK = 1; ovSpin = 0; fly(); }
   };

@@ -65,6 +65,12 @@ function sunAt(solar) {
 const H0 = Math.acos((Math.sin(MIN_E * D) - Math.sin(LAT) * Math.sin(DECL)) / (Math.cos(LAT) * Math.cos(DECL))) / D / 15;
 export const HOURS = [12 - H0 + CLOCK, 12 + H0 + CLOCK]; // on the clock: about 6:20 to 19:50
 
+// the times of day a free race can be set to (lib/opts.ts: daytime), as hours of the venue's clock: two and a half
+// hours after the sun is up, half an hour past its highest, the afternoon three hours on, and an hour and a bit before
+// it goes down (the set-up's own golden light); 'any' is none of them, a new hour every race
+export const DAYTIMES = { morning: HOURS[0] + 2.5, midday: 12.5 + CLOCK, afternoon: 15.5 + CLOCK, evening: HOURS[1] - 1.1 };
+export const dayHour = (d) => DAYTIMES[d] ?? null;
+
 // The light at an hour of the clock (local time, 6.5 = 6:30), clear or overcast: the sun's direction (sunDir) and
 // everything the world needs to draw it
 export function skyAt(hour, overcast = false) {
@@ -114,14 +120,17 @@ export const clockText = (hour) => { const m = Math.round(hour * 60); return `${
 
 // the light for a race: ?hour=18.5 and ?sky=overcast|clear in the address win (for testing; the old ?light=day,
 // morning, golden, overcast still work); otherwise a new hour every start, any hour of the racing day alike but at
-// least two hours from the last one (remembered across visits), and overcast about one race in seven
+// least two hours from the last one (remembered across visits), and overcast about one race in seven. A free race set
+// to a time of day (race.settings.daytime) is sailed at that hour, under a clear sky; today's race keeps the random one.
 let last = null;
 try { last = parseFloat(localStorage.getItem('regatta.hour')); } catch (e) {}
-export function pickSky() {
+export function pickSky(race) {
+  const s = race && race.settings, chosen = s && !s.daily ? dayHour(s.daytime) : null;
   let hour;
   do hour = HOURS[0] + Math.random() * (HOURS[1] - HOURS[0]);
   while (Number.isFinite(last) && Math.abs(hour - last) < 2);
   let overcast = Math.random() < 0.14;
+  if (chosen != null) { hour = chosen; overcast = false; }
   last = hour;
   try { localStorage.setItem('regatta.hour', hour.toFixed(2)); } catch (e) {}
   try {
