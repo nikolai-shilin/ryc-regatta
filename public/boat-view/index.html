@@ -5,8 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Boat preview</title>
-<!-- The boat page's scene (/boat lays its choices over it): the game itself (public/game), your yacht afloat on Lake Garda
-     on a sunny evening, seen from the drone as it slowly circles her; drag to turn it, scroll or pinch to come closer.
+<!-- The scene behind the boat page and the free race's set-up (/boat and /race/free lay their choices over it): the game
+     itself (public/game), your yacht afloat at a venue (?venue=, Lake Garda unless the address says) on a clear evening,
+     the sun an hour above the hills, seen from the drone as it slowly circles her; drag to turn it, scroll or pinch to
+     come closer. ?wind=light|medium|strong sets the breeze, and so the sea; ({ type: 'wind', preset }) changes it.
+     It says ({ type: 'live' }) once its first frame is up, so a page can fade it in over the last one.
      The page sends the look to show, postMessage({ type: 'look', boat }), the point of sail ({ type: 'pose', down }),
      and the part of the frame its choices cover ({ type: 'inset', l, r, t, b }: fractions of the width and height), so
      the boat stands in the part left clear. ({ type: 'thumbs', items }) draws the presets' pictures, on the old studio
@@ -17,10 +20,14 @@
   canvas.live { opacity: 1; }
   canvas:active { cursor: grabbing; }
 </style>
-<!-- the venue and the light, before the game's modules read them from the address: Lake Garda, a clear evening -->
-<script>history.replaceState(null, '', location.pathname + '?venue=garda&hour=19.7&sky=clear');</script>
-<link rel="preload" as="fetch" href="/game/venues/garda.bin" crossorigin>
-<link rel="preload" as="fetch" href="/game/venues/garda.json" crossorigin>
+<!-- the venue, before the game's modules read it from the address, and its land fetched at once -->
+<script>(function () {
+  var q = new URLSearchParams(location.search), v = q.get('venue') || 'garda', w = q.get('wind') || 'light';
+  if (!/^[a-z-]+$/.test(v)) v = 'garda';
+  if (!/^[a-z]+$/.test(w)) w = 'light';
+  history.replaceState(null, '', location.pathname + '?venue=' + v + '&wind=' + w + '&sky=clear');
+  var f = v === 'gocek' ? ['/game/skopea.bin', '/game/skopea.json'] : ['/game/venues/' + v + '.bin', '/game/venues/' + v + '.json'];
+  f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
 <script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
 </head>
 <body>
@@ -30,6 +37,10 @@ import * as THREE from 'three';
 import { World } from '/game/world.js';
 import { Race } from '/game/sim.js';
 import { BoatView, lookFrom } from '/game/yacht.js';
+import { HOURS } from '/game/light.js';
+
+// the light: an hour and a bit before the sun goes down there (the race's sky reads it from the address)
+history.replaceState(null, '', location.search + '&hour=' + (HOURS[1] - 1.1).toFixed(2));
 
 const canvas = document.getElementById('c');
 const say = (msg) => parent.postMessage(msg, location.origin);
@@ -45,13 +56,21 @@ try { world = new World(canvas); } catch (e) { say({ type: 'ready' }); } // no W
 if (world) {
   world.showGuides = false;
   world.setQuality(/android|iphone|ipad/i.test(navigator.userAgent) ? 'medium' : 'high');
-  // a race with only her in it, laid where a race at Garda starts, and never sailed: she is posed each frame instead
-  const race = new Race({ preset: 'light', fleet: 2, laps: 1, length: 'short', start: 1, seed: 4242 });
-  race.boats = [race.player];
-  world.setRace(race);
-  if (world.marks) world.marks.visible = false; // no marks, no line, no committee boat
+  // a race with only her in it, laid where a race there starts, and never sailed: she is posed each frame instead. A
+  // stronger breeze heels her further and raises the sea.
+  const HEEL = { light: 1, medium: 1.35, strong: 1.7 };
+  let race, P, W, X, Z, heel = 1, wind = '';
+  const sail = (preset) => {
+    if (!HEEL[preset]) preset = 'light';
+    wind = preset;
+    race = new Race({ preset, fleet: 2, laps: 1, length: 'short', start: 1, seed: 4242 });
+    race.boats = [race.player];
+    world.setRace(race);
+    if (world.marks) world.marks.visible = false; // no marks, no line, no committee boat
+    P = race.player; W = race.wind.dir(); X = P.x; Z = P.z; heel = HEEL[preset];
+  };
+  sail(new URLSearchParams(location.search).get('wind'));
   world.resetView(); world.droneEl = 7; world.droneAim = 6.5; world.orbit = 2.3; // low over the water, the hills behind her
-  const P = race.player, W = race.wind.dir(), X = P.x, Z = P.z;
 
   const size = () => {
     world.resize(innerWidth, innerHeight);
@@ -85,6 +104,7 @@ if (world) {
     if (e.data.type === 'look') pending = lookFrom(e.data.boat); // dressed on the next frame, so dragging a colour stays smooth
     if (e.data.type === 'pose') pose = e.data.down ? DOWN : UP;
     if (e.data.type === 'inset') { inset = e.data; size(); }
+    if (e.data.type === 'wind' && e.data.preset !== wind) { const o = world.orbit, d = world.dist; sail(e.data.preset); world.orbit = o; world.dist = d; }
     if (e.data.type === 'thumbs' && Array.isArray(e.data.items)) shoot(e.data.items);
   });
 
@@ -96,11 +116,11 @@ if (world) {
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
       if (pending) { world.setPlayerLook(pending); pending = null; }
       // posed where she started, sailing in the wind as it is
-      Object.assign(P, pose, { x: X, z: Z, h: wrap(W - pose.twa), boom: Math.sign(pose.twa), wdir: W, tws: race.wind.p.tws });
+      Object.assign(P, pose, { heel: pose.heel * heel, x: X, z: Z, h: wrap(W - pose.twa), boom: Math.sign(pose.twa), wdir: W, tws: race.wind.p.tws });
       race.t = t;
       if (idle > 0) idle -= dt; else world.orbit += dt * 0.05;
       world.frame(dt, t);
-      canvas.classList.add('live');
+      if (!canvas.classList.contains('live')) { canvas.classList.add('live'); say({ type: 'live' }); }
     });
   });
 }
