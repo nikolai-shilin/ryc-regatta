@@ -12,7 +12,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 | `/race` | The race hub: today's race, today's fastest, a free race | `app/race/page.tsx` |
 | `/race/free` | Set up a free race (venue, wind, fleet, course, laps, start, current) | `components/free-setup.tsx` |
 | `/race/result/[id]` | The result and debrief after a race | `components/result-view.tsx` |
-| `/boat` | Your boat: colours, logo, sail number and team, beside the game's own yacht in 3D (`/boat-view`) | `components/boat-editor.tsx` |
+| `/boat` | Your boat: colours, logo, sail number and team, in the race's pause-menu card over the game's own scene: your yacht on Lake Garda on a summer evening (`/boat-view`) | `components/boat-editor.tsx` |
 | `/settings` | Account, sailing, screen and sound, language | `components/settings-form.tsx` |
 | `/help` | How to play, with screenshots | `app/help/page.tsx` |
 | `/faq` | Questions: 32 in five groups | `lib/faq.ts`, `components/faq-list.tsx` |

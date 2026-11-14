@@ -823,7 +823,7 @@ export class World {
     this.wakes = []; this.contacts = [];
     this.showGuides = true; this.guides = null;
     this.mode = 'drone';
-    this.orbit = 0; this.dist = 26; this.look = 0; this.lookHold = 0; this.helmFov = 68;
+    this.orbit = 0; this.dist = 26; this.droneEl = 24; this.droneAim = 3.5; this.look = 0; // the drone: how far it looks down (degrees), and how high on her it aims (m) this.lookHold = 0; this.helmFov = 68;
     this.camH = 0;
     this.intro = { t: 0, T: 8 }; // the opening fly-around (frame); flyIn() plays it again
     this.boatViews = [];
@@ -873,23 +873,38 @@ export class World {
     // the chop is raised by the race's mean wind and keeps its heading (the sea lags the shifts)
     if (this.ocean) this.ocean.setWind(race.wind.p.tws);
     this.oceanU.uFftW.value.set(Math.sin(W0 + Math.PI), -Math.cos(W0 + Math.PI));
-    this.boatViews = race.boats.map((b, i) => {
-      const v = b.ai
-        ? new BoatView({ look: LOOKS[b.name] || LOOKS.Aurora, label: { text: b.name, color: b.color } })
-        : new BoatView({ look: playerLook(), player: true }); // your boat in the colours you chose on /boat
-      v.root.scale.setScalar(SC);
-      mirrored(v.root);
-      // …but not the crew (eleven parts a sailor) or the wires: too small to make out in a half-size, rippled reflection
-      for (const c of v.crew) c.g.traverse((o) => o.layers.disable(MIRRORED));
-      for (const o of [v.wheel, v.windex, v.travCar, ...v.tells]) o.traverse((x) => x.layers.disable(MIRRORED)); // nor the wheel and such
-      v.root.traverse((o) => { if (o.isLine) o.layers.disable(MIRRORED); });
-      v.root.traverse((o) => { if (o.isSprite && o.material.depthTest === false && o.material.toneMapped === false) o.layers.set(OVERLAY); }); // the name tag: drawn after the post
-      this.scene.add(v.root);
-      return v;
-    });
+    this.boatViews = race.boats.map((b) => this.boatView(b));
     for (const s of this.seaShadows) s.dispose(this.scene);
     this.seaShadows = this.boatViews.map((v) => new SeaShadows(this.scene, v, this.shadeMat));
-    const c = race.course, g = new THREE.Group();
+    this.setMarks(race);
+  }
+  // a boat's view, added to the scene: a computer boat in her own colours with her name over her, yours in the ones
+  // you chose on /boat (or the look given)
+  boatView(b, look) {
+    const v = b.ai
+      ? new BoatView({ look: LOOKS[b.name] || LOOKS.Aurora, label: { text: b.name, color: b.color } })
+      : new BoatView({ look: look || playerLook(), player: true });
+    v.root.scale.setScalar(SC);
+    mirrored(v.root);
+    // …but not the crew (eleven parts a sailor) or the wires: too small to make out in a half-size, rippled reflection
+    for (const c of v.crew) c.g.traverse((o) => o.layers.disable(MIRRORED));
+    for (const o of [v.wheel, v.windex, v.travCar, ...v.tells]) o.traverse((x) => x.layers.disable(MIRRORED)); // nor the wheel and such
+    v.root.traverse((o) => { if (o.isLine) o.layers.disable(MIRRORED); });
+    v.root.traverse((o) => { if (o.isSprite && o.material.depthTest === false && o.material.toneMapped === false) o.layers.set(OVERLAY); }); // the name tag: drawn after the post
+    this.scene.add(v.root);
+    return v;
+  }
+  // your boat dressed again, in a new look (the boat page's preview, as you choose)
+  setPlayerLook(look) {
+    const i = this.race.boats.indexOf(this.race.player); if (i < 0) return;
+    const old = this.boatViews[i]; this.scene.remove(old.root);
+    old.root.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+    this.boatViews[i] = this.boatView(this.race.player, look);
+    this.seaShadows[i]?.dispose(this.scene);
+    this.seaShadows[i] = new SeaShadows(this.scene, this.boatViews[i], this.shadeMat);
+  }
+  setMarks(race) {
+    const c = race.course, g = new THREE.Group(), W0 = race.wind.dir();
     this.buoys = [];
     const add = (obj, p, vee) => {
       obj.position.set(p.x, 0, p.z); g.add(mirrored(obj)); if (vee) g.add(vee);
@@ -1165,7 +1180,7 @@ export class World {
       cam.lookAt(P.x, 0, P.z);
       cam.fov = 50;
     } else if (this.mode === 'drone') {
-      let ph = this.camH + this.orbit, el = 24 * D2R, d = this.dist * (cam.aspect < 1 ? 1.75 : 1); // a tall screen needs the drone further back
+      let ph = this.camH + this.orbit, el = this.droneEl * D2R, d = this.dist * (cam.aspect < 1 ? 1.75 : 1); // a tall screen needs the drone further back
       // the fly-in: from high and far off, the drone sweeps three-quarters of the way round her as it comes down
       let intro = 0;
       if (this.intro) {
@@ -1181,7 +1196,7 @@ export class World {
       const sw = 0.02 * d;
       want.x += Math.sin(t * 0.37) * sw; want.z += Math.cos(t * 0.29) * sw; want.y += Math.sin(t * 0.53) * sw * 0.7 + Math.sin(t * 1.7) * 0.06;
       if (intro > 0) cam.position.copy(want); else cam.position.lerp(want, cl(6));
-      cam.lookAt(tx + Math.sin(t * 0.41) * 0.25, 3.5 + Math.sin(t * 0.61) * 0.15, tz);
+      cam.lookAt(tx + Math.sin(t * 0.41) * 0.25, this.droneAim + Math.sin(t * 0.61) * 0.15, tz);
       cam.fov = 55;
     } else if (this.mode === 'helm') {
       if (this.lookHold <= 0) this.look *= Math.exp(-dt * 1.5); else this.lookHold -= dt;
