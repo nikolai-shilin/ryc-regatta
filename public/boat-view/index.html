@@ -473,7 +473,7 @@ say({ type: 'ready' });
 
 // the presets' pictures: each scheme on the game's yacht with her gennaker up, seen from the windward bow quarter, cut
 // at the waterline on a clear background, in a little studio of their own (another canvas, let go of once done)
-function shoot(items, w = 320, h = 240) {
+function shoot(items, w = 300, h = 300) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const r = new THREE.WebGLRenderer({ canvas: c, antialias: true, alpha: true, preserveDrawingBuffer: true });
   r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05; r.setClearColor(0x000000, 0);
@@ -488,7 +488,7 @@ function shoot(items, w = 320, h = 240) {
     fragmentShader: 'varying vec3 vP; void main(){ float h = normalize(vP).y; vec3 c = h > 0.0 ? mix(vec3(0.86,0.93,0.97), vec3(0.42,0.66,0.88), pow(h, 0.6)) : vec3(0.1,0.3,0.42); gl_FragColor = vec4(c, 1.0); }',
   })));
   const pm = new THREE.PMREMGenerator(r); scene.environment = pm.fromScene(env, 0.02).texture; pm.dispose();
-  const cam = new THREE.PerspectiveCamera(28, w / h, 0.3, 500); cam.position.set(31, 11.5, -18); cam.lookAt(-1, 8.3, -1);
+  const cam = new THREE.PerspectiveCamera(30, w / h, 0.3, 500); cam.position.set(31, 11.5, -18); cam.lookAt(-0.5, 8.6, -1);
   const DOWN_SHOT = { x: 0, z: 0, h: 0, twa: 2.55, awa: 2.1, heel: 5, rudder: 0, sail: 68, luff: 0, trim: 'ok', kite: true, kiteFill: 1 };
   const out = {};
   for (const { id, boat: b } of items) {

@@ -10,6 +10,7 @@ import { VENUES, venueOf } from '@/lib/venues';
 import { IconArrow, IconPlay, Num, clock } from '@/components/ui';
 import { MyRow, HeroScene, Countdown, Ticker, Dock } from '@/components/home-client';
 import { CountUp } from '@/components/count-up';
+import { Who } from '@/components/flag';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 import { FaqList } from '@/components/faq-list';
 import { faqGroups, HOME } from '@/lib/faq';
@@ -63,7 +64,7 @@ export default async function Home({ params }: LangParams) {
   const beat = best ? clock(best.s) : null;
   // the ticker: only what's true of today's race
   const lines = [
-    races ? t(`${races} races sailed today`, `Сегодня заездов: ${races}`) : t('Nobody has finished today’s race yet', 'Гонку дня ещё никто не прошёл'),
+    races ? t(`${races} ${races === 1 ? 'race' : 'races'} sailed today`, `Сегодня заездов: ${races}`) : t('Nobody has finished today’s race yet', 'Гонку дня ещё никто не прошёл'),
     best ? t(`${name(best.name)} holds the time to beat · ${beat}`, `Время, которое надо побить, у ${name(best.name)} · ${beat}`) : '',
     best && top[1] ? t(`${name(top[1].name)} is ${(top[1].s - best.s).toFixed(1)} s off the lead`, `${name(top[1].name)} отстаёт от лидера на ${(top[1].s - best.s).toFixed(1).replace('.', ',')} с`) : '',
     t(`${where} · ${windName.toLowerCase()} ${kn} kn · ${d.fleet} boats`, `${where} · ${windName.toLowerCase()} ${kn} уз · ${ruBoats(d.fleet)}`),
@@ -120,18 +121,19 @@ export default async function Home({ params }: LangParams) {
             </ul>
           </div>
           <aside className="ho-card ho-rank" aria-label={t('Today’s ranking', 'Рейтинг дня')}>
-            <div className="ho-card-h"><span className="lbl-ink">{t('Today’s ranking', 'Рейтинг дня')}</span><span className="lbl">{races ? t(`${races} races`, `заездов: ${races}`) : windName + ` · ${kn} ${t('kn', 'уз')}`}</span></div>
+            <div className="ho-card-h"><span className="lbl-ink">{t('Today’s ranking', 'Рейтинг дня')}</span><span className="lbl">{races ? t(`${races} ${races === 1 ? 'race' : 'races'}`, `заездов: ${races}`) : windName + ` · ${kn} ${t('kn', 'уз')}`}</span></div>
             <div className="ho-cd"><span className="lbl">{t('This race closes, a new one starts in', 'Эта гонка закроется, новая начнётся через')}</span><Countdown /></div>
             <ol className="hm-lb bt-lb">
               {top.map((r, i) => (
                 <li key={i} className={i === 0 ? 'first' : ''}>
-                  <span className="hm-n">{i + 1}</span><span>{name(r.name)}</span>
+                  <span className="hm-n">{i + 1}</span><Who fl={r.fl} name={name(r.name)} lang={lang} />
                   <span className="hm-t">{clock(r.s)}{i > 0 && best ? <small>+{(r.s - best.s).toFixed(1)}</small> : null}</span>
                 </li>
               ))}
               {!top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
               <MyRow lang={lang} day={d.day} top={top} />
             </ol>
+            <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')} ›</Link>
             <div className="ho-tick" aria-live="polite"><span className="dot-live" /><Ticker lines={lines} /></div>
           </aside>
         </div>

@@ -138,10 +138,34 @@
 .bc .fp-o[aria-selected="true"] { background: color-mix(in srgb, var(--you) 16%, transparent); box-shadow: inset 3px 0 0 var(--you); }
 
 /* your boat: the presets, the colours, the numbers */
-.bc .bt-card .preset { border: 0; border-radius: 0; background: var(--fill-1); padding: 2px; }
-.bc .bt-card .preset:hover { background: var(--fill-2); }
-.bc .bt-card .preset.on { background: color-mix(in srgb, var(--you) 18%, transparent); box-shadow: inset 0 -3px 0 var(--you); }
-.bc .bt-card .preset-pic { border-radius: 0; }
+/* a preset is a team card: the boat over a glow of her colour and a waterline, her name on a strip with her colour's
+   bar; the one she's in now has the strip in blue */
+.bc .bt-card .presets { gap: var(--s-2); }
+.bc .bt-card .preset { position: relative; gap: 0; border: 0; border-radius: 0; padding: 0; background: var(--surface); overflow: hidden;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%); transition: background-color .2s; }
+.bc .bt-card .preset-pic { border-radius: 0; aspect-ratio: 1;
+  background: radial-gradient(90% 70% at 50% 92%, color-mix(in srgb, var(--c) 42%, transparent), transparent 72%),
+    linear-gradient(transparent 79%, var(--w-10) 79%, var(--w-10) calc(79% + 1px), rgba(61, 184, 255, 0.06) calc(79% + 1px)); }
+.bc .bt-card .preset-pic img { object-fit: cover; transition: scale .35s var(--ease); }
+.bc .bt-card .preset:hover .preset-pic img { scale: 1.06; }
+.bc .bt-card .preset-n { display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 var(--s-2); overflow: hidden;
+  font: 700 11px/1 var(--cond); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; color: var(--ink-2);
+  background: var(--w-06); transition: background-color .2s, color .2s; }
+.bc .bt-card .preset-n::before { content: ''; flex: none; width: 3px; height: 12px; background: var(--c); box-shadow: 0 0 0 1px var(--w-25); }
+.bc .bt-card .preset:hover .preset-n { color: var(--ink); background: var(--w-10); }
+.bc .bt-card .preset.on { background: color-mix(in srgb, var(--you) 14%, var(--surface)); }
+.bc .bt-card .preset.on .preset-n { background: var(--you); color: var(--ink-on); }
+.bc .bt-card .preset.on .preset-n::before { box-shadow: 0 0 0 1px var(--ink-on); }
+/* upright on a phone, six to a row: no room for the names (the heading above says the one she's in), so each keeps
+   just her colour's bar, blue for the one chosen */
+@container scr (orientation: portrait) {
+  .bc .bt-card .preset-n { height: 5px; padding: 0; font-size: 0; background: var(--c); }
+  .bc .bt-card .preset-n::before { display: none; }
+  .bc .bt-card .preset.on .preset-n { background: var(--you); }
+}
+/* the picture still being drawn: a sheen running over the tile */
+.bc .sk { background-image: linear-gradient(100deg, transparent 30%, var(--w-08) 50%, transparent 70%) !important; background-size: 220% 100% !important;
+  background-color: var(--fill-1); animation: bc-sheen 1.3s linear infinite; }
 .bc .bt-card .sw { border-radius: 0; }
 .bc .bt-card .sw[aria-checked="true"] { box-shadow: var(--hairline), 0 0 0 2px var(--ground), 0 0 0 4px var(--ink); }
 .bc .bt-card .num-in { height: var(--h-m); border: 0; border-bottom: 2px solid var(--w-35); border-radius: 0; background: var(--fill-1); font: 700 var(--fs-lead)/1 var(--cond); }
@@ -606,3 +630,92 @@
   .bc :is(.ho-h1, .bt-h, .hm-ph-h, .aph-h, .ho-bg, .ho-sec-t, .ho-sec-h, .ho-goal, .ho-path li, .ho-step, .ho-feat, .ho-nums, .ho-band, .ho-friend, .ho-split-t,
     .ho-faq, .ho-faq-side, .hm-sec > *, .rs-col > *, .rs-next, .gd-card, .gd-sec, .hrule, .hitem, .hlegend li, .iyt-card) { animation: none !important; }
 }
+
+/* ---------- loading: skeletons and the loading bar (components/skeleton.tsx) ---------- */
+.bc .sk { display: block; flex: none; max-width: 100%; height: 14px; background-color: var(--fill-1);
+  background-image: linear-gradient(100deg, transparent 30%, var(--w-08) 50%, transparent 70%); background-size: 220% 100%;
+  animation: bc-sheen 1.3s linear infinite; }
+.bc .sk.sk-h { height: clamp(56px, 7vw, 104px); margin: var(--s-2) 0; }
+.bc .sk-wait { animation: bc-in .3s both .25s; }
+.bc .sk-wait .bt-top, .bc .sk-wait .bt-stats > div, .bc .sk-wait .bt-g { display: flex; flex-direction: column; gap: var(--s-2); }
+.bc .sk-wait .bt-top { flex-direction: row; align-items: center; gap: var(--s-3); }
+.bc .sk-wait .bt-info { display: flex; flex-direction: column; gap: var(--s-3); }
+/* the bar: a runner along the top edge while a scene loads; it fades away once the scene is up */
+.bc .bc-load { position: fixed; left: 0; right: 0; top: 0; z-index: 30; height: 3px; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity .4s; }
+.bc .bc-load.on { opacity: 1; }
+.bc .bc-load::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 40%; background: linear-gradient(90deg, transparent, var(--you) 40%, var(--ink) 50%, var(--you) 60%, transparent); animation: bc-run 1.4s var(--ease) infinite; }
+.bc .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ---------- flags on the leaderboards (components/flag.tsx) ---------- */
+.bc .fl { flex: none; display: block; width: 24px; height: 16px; object-fit: cover; box-shadow: 0 0 0 1px var(--w-25); }
+.bc .lb-who { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.bc .lb-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc .rs-name .fl { width: 21px; height: 14px; }
+.bc .lb-more { align-self: flex-start; font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--you); text-decoration: none; padding: var(--s-3) 0 0; }
+.bc .lb-more:hover { color: var(--ink); }
+.bc .hm-lb .sk-li { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: var(--s-3); }
+
+/* ---------- R2 · the day's rating ---------- */
+.bc .rt-head { padding-bottom: var(--s-6); }
+.bc .rt-head .hm-ph-h { animation: bc-wipe .9s var(--ease) both .12s; }
+.bc .rt-days { display: flex; align-items: stretch; gap: var(--s-1); max-width: 100%; }
+.bc .rt-strip { display: flex; gap: var(--s-1); overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; scroll-snap-type: x proximity; }
+.bc .rt-strip::-webkit-scrollbar { display: none; }
+@media (max-width: 1000px) { .bc .rt-strip { mask-image: linear-gradient(90deg, #000 85%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); } }
+.bc .rt-day, .bc .rt-step { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 52px; height: 56px;
+  background: var(--fill-1); color: var(--ink-3); text-decoration: none; scroll-snap-align: start; transition: background-color .2s, color .2s; }
+.bc .rt-day b { font: 700 var(--fs-row)/1 var(--cond); color: var(--ink-2); }
+.bc .rt-day span { font: 600 10px/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.bc .rt-day.has { box-shadow: inset 0 -3px 0 var(--w-35); }
+.bc .rt-day.has b { color: var(--ink); }
+.bc .rt-day:hover, .bc .rt-step:hover { background: var(--fill-2); color: var(--ink); }
+.bc .rt-day.on { background: var(--you); color: var(--ink-on); box-shadow: none; }
+.bc .rt-day.on b { color: var(--ink-on); }
+.bc .rt-step { width: 40px; font: 700 var(--fs-title)/1 var(--cond); color: var(--ink); }
+.bc .rt-step.off { opacity: .3; }
+.bc .rt { padding-block: var(--s-4) var(--s-16); }
+.bc .rt-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--s-4); align-items: start; }
+@media (max-width: 900px) { .bc .rt-grid { grid-template-columns: 1fr; } }
+.bc .rt-card { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); background: var(--surface); clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%); }
+.bc .rt-card-h { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding-bottom: var(--s-3); border-bottom: 1px solid var(--rule); }
+.bc .rt-card-h .lbl-ink { display: inline-flex; align-items: center; gap: var(--s-2); }
+.bc .rt-lb { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.bc .rt-lb li { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto 64px; align-items: stretch; min-height: 48px; background: var(--fill-1);
+  animation: bc-slide-l .45s var(--ease) both; animation-delay: calc(var(--i, 0) * 40ms + 120ms); }
+.bc .rt-lb li > * { display: flex; align-items: center; }
+.bc .rt-n { justify-content: center; background: var(--fill-2); font: 700 var(--fs-row)/1 var(--cond); }
+.bc .rt-lb li.first .rt-n { background: var(--gold); color: var(--ink-on); }
+.bc .rt-lb li.pod .rt-n { background: var(--w-25); }
+.bc .rt-lb .lb-who { padding: 0 var(--s-3); font: 700 var(--fs-row)/1 var(--cond); letter-spacing: var(--ls-name); }
+.bc .rt-t { gap: var(--s-2); padding-right: var(--s-3); font: 700 var(--fs-row)/1 var(--cond); font-variant-numeric: tabular-nums; }
+.bc .rt-t small { font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-3); }
+.bc .rt-p { justify-content: flex-end; gap: 4px; padding-right: var(--s-3); border-left: 1px solid var(--rule); font: 700 var(--fs-row)/1 var(--cond); color: var(--up); }
+.bc .rt-lb-m li { grid-template-columns: 40px minmax(0, 1fr) 84px; min-height: 56px; }
+.bc .rt-mw { flex-direction: column; align-items: flex-start !important; justify-content: center; gap: 5px; padding: var(--s-2) 0; min-width: 0; }
+.bc .rt-mw .lb-who { padding: 0 var(--s-3); max-width: 100%; }
+.bc .rt-mw small { padding: 0 var(--s-3); font: 600 var(--fs-label)/1 var(--cond); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.bc .rt-lb-m .rt-p { color: var(--ink); align-items: baseline !important; padding-top: 18px; }
+.bc .rt-lb-m .rt-p b { font-size: var(--fs-title); }
+.bc .rt-lb-m .rt-p small { font: 600 var(--fs-label)/1 var(--cond); color: var(--ink-3); text-transform: uppercase; }
+.bc .rt-lb li.first .rt-p b { color: var(--gold); }
+.bc .rt-none, .bc .rt-guests, .bc .rt-how p, .bc .rt-empty p, .bc .rt-foot { margin: 0; font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+.bc .rt-guests { font-size: var(--fs-small); color: var(--ink-3); }
+.bc .rt-guests a, .bc .rt-foot a { color: var(--you); text-decoration: none; font-weight: 700; }
+.bc .rt-how { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-2); padding: var(--s-4); background: var(--panel-2); box-shadow: inset 3px 0 0 var(--you); }
+.bc .rt-how p { font-size: var(--fs-small); }
+.bc .rt-how .rt-ex { color: var(--ink); font-weight: 700; }
+.bc .rt-go { align-self: flex-start; display: inline-flex; align-items: center; gap: var(--s-3); height: var(--h-l); padding: 0 var(--s-8) 0 var(--s-6); margin-top: var(--s-2);
+  background: var(--you); color: var(--ink-on); text-decoration: none; font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase;
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--cut)) 100%, 0 100%); }
+.bc .rt-go svg { width: 16px; height: 16px; }
+.bc .rt-empty { max-width: 720px; }
+.bc .rt-foot { margin-top: var(--s-6); font-size: var(--fs-small); color: var(--ink-3); }
+@media (max-width: 600px) {
+  .bc .rt-card { padding: var(--s-4) var(--s-3); }
+  .bc .rt-lb li { grid-template-columns: 32px minmax(0, 1fr) auto 52px; }
+  .bc .rt-lb .lb-who, .bc .rt-t, .bc .rt-p { font-size: var(--fs-body); }
+  .bc .rt-t small { display: none; }
+  .bc .rt-lb-m li { grid-template-columns: 32px minmax(0, 1fr) 64px; }
+  .bc .rt-day { width: 46px; }
+}
+@media (prefers-reduced-motion: reduce) { .bc .rt-lb li, .bc .rt-head .hm-ph-h { animation: none !important; } }

@@ -113,6 +113,9 @@
 @keyframes bc-wipe { from { clip-path: inset(-20% 100% -20% 0); } to { clip-path: inset(-20% -5% -20% -5%); } }
 /* a photo behind a page settling in, slowly */
 @keyframes bc-zoom { from { scale: 1.08; } to { scale: 1; } }
+/* a loading bar's runner: across and off, again */
+@keyframes bc-run { from { translate: -100% 0; } to { translate: 260% 0; } }
+@keyframes bc-in { from { opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
   .bc, .bc *, .bc *::before, .bc *::after {

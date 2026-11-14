@@ -98,7 +98,6 @@
 .preset.on { border-color: var(--ink); background: var(--bg); }
 .preset-pic { position: relative; display: block; aspect-ratio: 1; overflow: hidden; border-radius: var(--r-xs); background: linear-gradient(var(--sea), var(--band) 70%); }
 .preset-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; animation: preset-in 0.3s ease-out; }
-.preset-pic i { position: absolute; left: 50%; top: 50%; width: 34%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%); background: var(--c); box-shadow: var(--hairline); opacity: 0.5; }
 @keyframes preset-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .preset-pic img { animation: none; } }
 .logo-thumb { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: var(--h-s); overflow: hidden; border-radius: var(--r-xs); box-shadow: var(--hairline); }

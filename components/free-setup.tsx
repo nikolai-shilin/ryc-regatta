@@ -114,7 +114,7 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
   return (
     <div className="scr bt-scr bc" lang={lang}>
       <div className="bt">
-        {ready && <GameScene venue={p.venue} wind={p.preset} setup={scene} title={t('The race’s venue in 3D', 'Место гонки в 3D')} />}
+        {ready && <GameScene venue={p.venue} wind={p.preset} setup={scene} title={t('The race’s venue in 3D', 'Место гонки в 3D')} loading={t('Loading the venue', 'Загружаем место гонки')} />}
 
         <div className="bt-info">
           <div className="bt-top">

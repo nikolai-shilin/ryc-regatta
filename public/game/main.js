@@ -3,6 +3,8 @@ import { Race, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE,
 import { World, defaultQuality, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
 import { raceStarted, raceFinished, raceResult } from './stats.js';
 import { createHud } from './hud-bc.js';
+import { LOOKS, playerLook } from './yacht.js';
+const flagCode = (src) => { const m = typeof src === 'string' && /\/flags\/([a-z]{2}(?:-[a-z]+)?)\.svg$/.exec(src); return m ? m[1] : null; }; // '/flags/gb.svg' → 'gb'
 import { VENUE, venueById, laidLength, lengthOffered } from './venues.js';
 
 const $ = (s) => document.querySelector(s);
@@ -1213,10 +1215,10 @@ function setCam(m) { world.mode = m; camSeg.querySelectorAll('button').forEach((
 camSeg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setCam(b.dataset.cam); });
 setCam(['drone', 'top', 'helm'].includes(opts.camera) ? opts.camera : 'drone'); // Settings › First camera
 // the HUD, as a sailing broadcast lays it out (hud-bc.js)
-const bcHud = createHud({ t, LANG, fmt, world, getRace: () => race, setCam });
+const bcHud = createHud({ t, LANG, fmt, world, getRace: () => race, setCam, flagOf: (b, me) => (me ? playerLook().flag : LOOKS[b.name] && LOOKS[b.name].flag) || null });
 
 // ---------- menus ----------
-const menu = $('#menu'), results = $('#results'), hud = $('#hud');
+const menu = $('#menu'), hud = $('#hud');
 if (!opts.played) $('#howD').open = true; // how to play: open until the first race
 function startRace() {
   audio.init(); audio.setOn(!!opts.sound); skipper.load(); crews.load(); asides.load(); calls.load();
@@ -1227,7 +1229,7 @@ function startRace() {
   menuChanged = false;
   opts.played = (opts.played || 0) + 1; saveOpts();
   race.coach = opts.played <= 3; // the first three races: tips as you go
-  menu.hidden = true; results.hidden = true; hud.hidden = false;
+  menu.hidden = true; hud.hidden = false;
   running = true; paused = false;
   applyTrimMode();
   setCam(world.mode);
@@ -1291,8 +1293,6 @@ pauseEl.addEventListener('click', (e) => {
 $('#goBtn').addEventListener('click', startRace);
 $('#resumeBtn').addEventListener('click', resume);
 $('#pauseBtn').addEventListener('click', pause);
-$('#againBtn').addEventListener('click', () => { running = false; newRace(); startRace(); });
-$('#menuBtn').addEventListener('click', () => { running = false; paused = false; newRace(); results.hidden = true; hud.hidden = true; menu.hidden = false; $('#resumeBtn').hidden = true; $('#goBtn').textContent = t('start'); });
 $('#backLink').href = HUB;
 
 // ---------- the race to sail: from the address (the hub and the set-up page are Next.js pages) ----------
@@ -1634,7 +1634,7 @@ function finishToPage() {
     venue: VENUE.id, origin: [Math.round(race.at.x), Math.round(race.at.z)], seed: s.seed ?? null,
     course: { windward: xz(c.windward), gate: c.gate.map(xz), pin: xz(c.pin), committee: xz(c.committee), legs: c.legs, ...(c.wing && { wing: xz(c.wing) }), type: c.type,
       marks: Object.fromEntries(Object.entries(c.marks).map(([k, m]) => [k, xz(m)])), ...(c.finish && { finish: [xz(c.finish.a), xz(c.finish.b)] }) },
-    boats: race.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, color: typeof b.color === 'number' ? '#' + b.color.toString(16).padStart(6, '0') : null,
+    boats: race.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, color: typeof b.color === 'number' ? '#' + b.color.toString(16).padStart(6, '0') : null, flag: flagCode(b === P ? playerLook().flag : LOOKS[b.name] && LOOKS[b.name].flag),
       done: !!b.done, dsq: !!b.dsq, secs: b.done ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track || []), ...(race._fin?.get(b) && { at: race._fin.get(b) }) })),
     log: { gunD: L.gunD, gunV: L.gunV, ocs: !!L.ocs, startDsq: L.startDsq || null, startT: L.startT, sailing: L.sailing, pct: L.sailing > 20 && L.polar ? Math.round((L.v / L.polar) * 100) : null,
       head, lift, tacks: L.tacks.length, dirty: Math.round(L.dirty), penT: Math.round(L.penT), hails: L.hails, legs: L.legs, legPlaces: L.legPlaces || [],
@@ -1650,22 +1650,7 @@ function finishToPage() {
   location.href = '/race/result/' + encodeURIComponent(id);
 }
 
-function showResults() {
-  if (!race.over) return;
-  renderResults();
-  drawMap($('#track').getContext('2d'), 312, true);
-  renderDebrief();
-  results.hidden = false; hud.hidden = true;
-}
 
-// ---------- the debrief: what went well and what to work on, with the rules behind any foul ----------
-// the racing-rules articles (the site's theory pages), by rule
-const RULE_LINK = { 10: 'rightofway#sec-r10', 11: 'rightofway#sec-r11', 12: 'rightofway#sec-r12', 13: 'rightofway#sec-r13', 18: 'marks#sec-room',
-  15: 'limits#sec-r15', 16: 'limits#sec-r16-1', 17: 'limits#sec-r17', 20: 'obstructions#sec-tack', 21: 'penalties#sec-exoneration',
-  31: 'penalties#sec-how', 44: 'penalties#sec-how', ocs: 'starting#sec-recalls',
-  '18.3': 'marks#sec-tack', '18.4': 'marks#sec-gybe', 19: 'obstructions#sec-room', U: 'starting#sec-recalls', B: 'starting#sec-recalls' };
-const ruleHref = (r) => `${SITE}${LANG === 'ru' ? '/ru' : ''}/racing-rules/${RULE_LINK[r]}`;
-const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // personal bests, kept on this device: per course on a free race, per day on today's race
 const PB_KEY = 'regatta-pb';
 const pbKey = (s, r) => `${s.preset}|${s.laps}|${s.length}|${s.fleet}${r.course.type !== 'wl' ? '|' + r.course.type : ''}`; // each shape but up and down is a course of its own: the one sailed
@@ -1674,53 +1659,6 @@ function personalBest(key, secs) {
   const old = all[key], isNew = secs != null && (old == null || secs < old);
   if (isNew) { all[key] = secs; for (const k of Object.keys(all)) if (/^daily\|/.test(k) && k < `daily|${dailyRace(new Date(Date.now() - 7 * 864e5)).day}`) delete all[k]; try { localStorage.setItem(PB_KEY, JSON.stringify(all)); } catch (e) {} }
   return { best: isNew ? secs : old, isNew: isNew && old != null };
-}
-function renderDebrief() {
-  const L = race.log, P = race.player, s = race.settings, rows = [];
-  const row = (ok, text, tip, link) => rows.push(`<li class="${ok ? 'ok' : 'warn'}"><b>${esc(text)}</b>${tip ? `<span>${esc(tip)}</span>` : ''}${link || ''}</li>`);
-  // the start
-  if (L.startDsq) row(false, t('dStartDsq', L.startDsq), t('tipStartDsq'), `<a class="rl" hidden href="${ruleHref(L.startDsq)}">${esc(t('read'))} · ${esc(t('r' + L.startDsq))} →</a>`);
-  else if (L.ocs) row(false, t('dGunOver'), t('tipStart'), `<a class="rl" hidden href="${ruleHref('ocs')}">${esc(t('read'))} · ${esc(t('rOcs'))} →</a>`);
-  else if (L.gunD != null) {
-    const good = L.gunD >= 0 && L.gunD < 25 && L.gunV > 3.5;
-    row(good, t('dGun', Math.round(Math.max(0, L.gunD)), L.gunV.toFixed(1)) + (L.startT != null && L.startT > 8 ? ` · ${t('dStartLate', Math.round(L.startT))}` : ''), good ? '' : t('tipStart'));
-  }
-  // speed against the polar
-  if (L.sailing > 20) { const pct = Math.round((L.v / L.polar) * 100); row(pct >= 90, t('dSpeed', pct), pct >= 90 ? '' : t('tipSpeed')); }
-  // tacks against the wind's swings
-  const head = L.tacks.filter((x) => x <= -3).length, lift = L.tacks.filter((x) => x >= 3).length;
-  if (L.tacks.length) row(lift <= head, t('dTacks', head, lift), lift > head ? t('tipTacks') : '');
-  if (L.dirty >= 10) row(L.dirty < 30, t('dDirty', Math.round(L.dirty)), L.dirty >= 30 ? t('tipDirty') : '');
-  // fouls, with the rule to read
-  const seen = new Set();
-  for (const f of L.fouls) {
-    if (seen.has(f.rule)) continue; seen.add(f.rule);
-    const n = L.fouls.filter((x) => x.rule === f.rule).length;
-    row(false, `${t('dRule', f.rule)} · ${t('r' + f.rule)}${n > 1 ? ` ×${n}` : ''}`, t('x' + f.rule), RULE_LINK[f.rule] ? `<a class="rl" hidden href="${ruleHref(f.rule)}">${esc(t('read'))} →</a>` : '');
-  }
-  if (L.penT > 1) row(false, t('dPen', Math.round(L.penT)), '');
-  const hails = Object.values(L.hails).reduce((x, y) => x + y, 0);
-  if (hails) { const rs = Object.keys(L.hails).filter((r) => !seen.has(r)).sort((x, y) => L.hails[y] - L.hails[x]).slice(0, 2); row(false, t('dHails', hails), rs.map((r) => `${t('dRule', r)}: ${t('x' + r)}`).join(' '), rs.filter((r) => RULE_LINK[r]).map((r) => `<a class="rl" hidden href="${ruleHref(r)}">${esc(t('dRule', r))} · ${esc(t('r' + r))} →</a>`).join('')); }
-  if (!L.fouls.length && !L.ocs && !L.startDsq && !hails) row(true, t('dClean'), '');
-  // personal best
-  let pb = '';
-  if (P.done && !P.dsq) {
-    const key = s.daily ? `daily|${s.daily}` : pbKey(s, race), r = personalBest(key, Math.round(P.finish * 10) / 10);
-    pb = `<p class="pb">${r.isNew ? `<b>${esc(t('pbNew'))}</b> ` : ''}${esc(t(s.daily ? 'pbToday' : 'pb', fmt(r.best)))}</p>`;
-  }
-  $('#debrief').innerHTML = `<span class="meta">${esc(t('dbK'))}</span><ul class="db">${rows.join('')}</ul>${pb}<div id="todayTop"></div>`;
-  // the rule articles are the app's pages; a link shows only once its page is there (a level can be switched off)
-  for (const a of $('#debrief').querySelectorAll('a.rl')) fetch(a.getAttribute('href').split('#')[0], { method: 'HEAD' }).then((r) => { if (r.ok) a.hidden = false; }).catch(() => {});
-  // today's fastest (from the server, a few minutes behind)
-  if (s.daily) fetch(`${SITE}/api/game`).then((r) => (r.ok ? r.json() : null)).then((j) => {
-    const d = j && j.daily; if (!d || d.d !== s.daily || !d.top.length) return;
-    $('#todayTop').innerHTML = `<span class="meta">${esc(t('todayTop'))}</span><ol class="lb">${d.top.map((x) => `<li><span>${esc(x.name || t('guest'))}</span><b>${fmt(x.s)}</b></li>`).join('')}</ol>`;
-  }).catch(() => {});
-}
-function renderResults() {
-  const st = race.standings();
-  $('#resTitle').textContent = t('results');
-  $('#resTable').innerHTML = st.map((b, i) => `<tr class="${b === race.player ? 'me' : ''}"><td>${b.dsq ? '–' : i + 1}</td><td>${b === race.player ? t('you') : b.name}</td><td>${b.done ? (b.dsq ? `${t('dsq')} · ` : '') + fmt(b.finish) : t('racing')}</td></tr>`).join('');
 }
 
 // ---------- the loop ----------
@@ -1745,7 +1683,6 @@ function loop(now) {
     updateHud(dt);
     if (world.quality === 'high' || frameN++ % 3 === 0) drawMap(mctx, 240, false);
     watchFps(raw);
-    if (!results.hidden && Math.floor(race.clock) !== Math.floor(race.clock - dt)) renderResults();
   } else {
     if (!running) world.orbit += dt * 0.12; // behind the menu the drone circles
     race.idle(dt);

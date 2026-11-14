@@ -1,4 +1,5 @@
 'use client';
+import { LoadBar } from './skeleton';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { tx, type Lang } from '@/lib/lang';
 import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart, IconFlag } from './ui';
@@ -16,6 +17,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   const [down, setDown] = useState(false);
   const [err, setErr] = useState('');
   const [shots, setShots] = useState<Record<string, string>>({});
+  const [live, setLive] = useState(false); // the 3D scene has drawn its first frame
   const frame = useRef<HTMLIFrameElement>(null);
   const card = useRef<HTMLElement>(null), info = useRef<HTMLDivElement>(null);
   const file = useRef<HTMLInputElement>(null);
@@ -47,7 +49,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
     return () => { ro.disconnect(); removeEventListener('resize', inset); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // the preview says when it's up: then it gets the boat as it is now, and draws the presets' pictures (once a visit:
-  // they're kept for the session, until the presets or the pictures' version, v2, change)
+  // they're kept for the session, until the presets or the pictures' version, v3, change)
   useEffect(() => {
     let cached: Record<string, string> | null = null, asked = false;
     try { const c = JSON.parse(sessionStorage.getItem(SHOTS_KEY) || 'null'); if (c?.v === SHOTS_V) { cached = c.shots; setShots(c.shots); } } catch {}
@@ -57,6 +59,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         post({ type: 'look', boat: latest.current.b }); post({ type: 'pose', down: latest.current.down }); inset();
         if (!cached && !asked) (asked = true), post({ type: 'thumbs', items: PRESETS.map((p) => ({ id: p.id, boat: { ...p.boat, logo: 'none', nat: '', num: '' } })) });
       }
+      if (e.data?.type === 'live') setLive(true);
       if (e.data?.type === 'thumbs' && e.data.shots) {
         cached = e.data.shots; setShots(e.data.shots);
         try { sessionStorage.setItem(SHOTS_KEY, JSON.stringify({ v: SHOTS_V, shots: e.data.shots })); } catch {}
@@ -100,6 +103,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
 
   return (
     <div className="bt">
+      <LoadBar label={t('Loading your boat', 'Загружаем яхту')} on={!live} />
       <iframe ref={frame} className="bt-scene" src="/boat-view" onLoad={() => post({ type: 'hello' })} title={t('Your boat in 3D', 'Твоя яхта в 3D')} />
 
       <div className="bt-info" ref={info}>
@@ -127,10 +131,11 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
               <button key={p.id} type="button" role="listitem" className={`preset ${b.preset === p.id ? 'on' : ''}`} aria-pressed={b.preset === p.id}
                 aria-label={t(p.en, p.ru)} title={t(p.en, p.ru)} style={{ ['--c' as string]: p.boat.hull }}
                 onClick={() => setB((x) => ({ ...x, ...p.boat, preset: p.id }))}>
-                <span className="preset-pic">
+                <span className={`preset-pic${shots[p.id] ? '' : ' sk'}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  {shots[p.id] ? <img src={shots[p.id]} alt="" /> : <i aria-hidden="true" />}
+                  {shots[p.id] ? <img src={shots[p.id]} alt="" /> : null}
                 </span>
+                <span className="preset-n" aria-hidden="true">{t(p.en, p.ru)}</span>
               </button>
             ))}
           </div>
@@ -262,7 +267,7 @@ function FlagPicker({ value, onChange, t }: { value?: string; onChange: (code: s
   );
 }
 
-const SHOTS_KEY = 'regatta-boat-shots', SHOTS_V = 'v2:' + PRESETS.map((p) => p.id + JSON.stringify(p.boat)).join('|');
+const SHOTS_KEY = 'regatta-boat-shots', SHOTS_V = 'v3:' + PRESETS.map((p) => p.id + JSON.stringify(p.boat)).join('|');
 
 // a row of colour swatches, named for the screen reader and on hover by the preset that colour comes from
 function Swatches({ label, value, options, onChange, t }: { label: string; value: string; options: string[]; onChange: (v: string) => void; t: (en: string, ru: string) => string }) {

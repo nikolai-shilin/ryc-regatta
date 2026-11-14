@@ -6,6 +6,8 @@ import RULES from '@/lib/rules.json';
 import { IconBack, IconRestart, IconPlay, IconTrophy, IconFlag, IconSail, IconSliders, Num, clock } from './ui';
 import { ShareButton } from './share-sheet';
 import { CountUp } from './count-up';
+import { ResultSkeleton, Sk } from './skeleton';
+import { FlagImg, Who } from './flag';
 import { CourseMap } from './course-map';
 import { GameScene } from './game-scene';
 import { courseDistance, fmtDistance, legDistances, shapeOf, SHAPE_NAME, type Shape } from '@/lib/race';
@@ -14,7 +16,7 @@ import { venueOf } from '@/lib/venues';
 import { readOpts } from '@/lib/opts';
 
 // What the game keeps for a finished race (public/game/main.js, finishToPage).
-type Boat = { name: string | null; me: boolean; color: string | null; done: boolean; dsq: boolean; secs: number | null; track: [number, number][]; at?: Pose };
+type Boat = { name: string | null; me: boolean; color: string | null; flag?: string | null; done: boolean; dsq: boolean; secs: number | null; track: [number, number][]; at?: Pose };
 type Foul = { rule: string; who: string | null; t: number | null; x: number | null; z: number | null };
 type Result = {
   v: 1; id: string; at: number; daily: string | null; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
@@ -28,7 +30,7 @@ type Result = {
   pb: { best: number; isNew: boolean } | null;
   venue?: string; origin?: [number, number]; seed?: number | null; // where it was sailed: kept since the finish scene
 };
-type Top = { name: string | null; s: number };
+type Top = { name: string | null; s: number; fl?: string | null };
 
 const RULE_LINK: Record<string, string> = { 10: 'rightofway#sec-r10', 11: 'rightofway#sec-r11', 12: 'rightofway#sec-r12', 13: 'rightofway#sec-r13', 18: 'marks#sec-room',
   15: 'limits#sec-r15', 16: 'limits#sec-r16-1', 17: 'limits#sec-r17', 20: 'obstructions#sec-tack', 31: 'penalties#sec-how', 44: 'penalties#sec-how',
@@ -63,7 +65,8 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
     }).catch(() => {});
   }, [res]);
 
-  if (res === undefined) return <div className="scr bt-scr bc" lang={lang} />; // most often found: the scene's dark, not the site's header
+  // most often found: its own layout greyed out while it comes, not the site's header
+  if (res === undefined) return <div className="scr bt-scr rs-scr bc" lang={lang}><ResultSkeleton label={t('Loading the race', 'Загружаем гонку')} /></div>;
   if (!res) {
     return (
       <div className="scr help bc" lang={lang}>
@@ -160,7 +163,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   return (
     <div className="scr bt-scr rs-scr bc" lang={lang} data-acct={signedName ? 'signed' : 'guest'}>
       <div className="bt">
-        <GameScene venue={where.id} wind={res.preset} finish={scene} title={t('The finish in 3D, as it was', 'Финиш в 3D, как он был')} />
+        <GameScene venue={where.id} wind={res.preset} finish={scene} title={t('The finish in 3D, as it was', 'Финиш в 3D, как он был')} loading={t('Loading the finish', 'Загружаем финиш')} />
 
         <div className="bt-info">
           <div className="bt-top">
@@ -191,7 +194,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
               {res.boats.map((b, i) => (
                 <li key={i} className={`${b.me ? 'me' : ''} ${i === 0 && !b.dsq ? 'first' : ''}`}>
                   <span className="hm-n">{b.dsq ? '–' : i + 1}</span>
-                  <span className="rs-name"><span className="rs-dot" style={{ background: b.me ? 'var(--you)' : b.color || 'rgba(255,255,255,.4)' }} />{b.me ? you : b.name}</span>
+                  <span className="rs-name"><span className="rs-dot" style={{ background: b.me ? 'var(--you)' : b.color || 'rgba(255,255,255,.4)' }} /><FlagImg code={b.flag} lang={lang} />{b.me ? you : b.name}</span>
                   <span className="hm-t">{b.dsq ? 'DSQ' : b.secs != null ? clock(b.secs) : '—'}{b.secs != null && winner?.secs != null && b !== winner && !b.dsq ? <small>+{(b.secs - winner.secs).toFixed(1)}</small> : null}</span>
                 </li>
               ))}
@@ -256,7 +259,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
             <div className="rs-col rs-wide">
               <span className="rs-kick">{t('Today’s race', 'Гонка дня')}</span>
               <h2 className="rs-h2">{t('Today’s fastest', 'Самые быстрые сегодня')}</h2>
-              <Ranking t={t} top={top} me={me} signedName={shared ? null : signedName} you={shared ? you : null} />
+              <Ranking t={t} lang={lang} top={top} daily={!!res.daily} me={me} signedName={shared ? null : signedName} you={shared ? you : null} />
             </div>
           ) : null}
           {!shared && (
@@ -288,14 +291,16 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
 }
 
 // you: how a shared result names its boat; then there's no asking to sign in, as it isn't the viewer's race
-function Ranking({ t, top, me, signedName, you }: { t: (en: string, ru: string) => string; top: Top[] | null; me: Boat; signedName: string | null; you: string | null }) {
+function Ranking({ t, lang, top, daily, me, signedName, you }: { t: (en: string, ru: string) => string; lang: Lang; top: Top[] | null; daily: boolean; me: Boat; signedName: string | null; you: string | null }) {
   return (
     <div className="rs-card rs-rank">
       <ol className="hm-lb bt-lb">
-        {(top || []).map((r, i) => <li key={i} className={i === 0 ? 'first' : ''}><span className="hm-n">{i + 1}</span><span>{r.name || t('No name', 'Без имени')}</span><span className="hm-t">{clock(r.s)}</span></li>)}
+        {(top || []).map((r, i) => <li key={i} className={i === 0 ? 'first' : ''}><span className="hm-n">{i + 1}</span><Who fl={r.fl} name={r.name || t('No name', 'Без имени')} lang={lang} /><span className="hm-t">{clock(r.s)}</span></li>)}
+        {top === null && daily && [0, 1, 2].map((i) => <li key={i} className="sk-li" aria-hidden="true"><Sk w={20} h={14} /><Sk w="60%" h={14} /><Sk w={48} h={14} /></li>)}
         {top && !top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
         <li className="me"><span className="hm-n">·</span><span>{you || (signedName ? `${signedName} (${t('you', 'ты')})` : t('You', 'Ты'))}</span><span className="hm-t">{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</span></li>
       </ol>
+      {daily && <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')} ›</Link>}
       {!signedName && !you && (
         <div className="rs-sign">
           <span className="rs-ps"><b>{t('Not on the ranking', 'Не в рейтинге')}</b> · {t('sign in and your times go on it.', 'войди — и время попадёт в рейтинг.')}</span>

@@ -140,6 +140,11 @@ const CSS = `
 .b-row.me { background: color-mix(in srgb, var(--you) 16%, transparent); }
 .b-row.me .b-pos { background: var(--you); color: var(--ink-on); }
 .b-row .b-bar { width: 4px; align-self: stretch; background: var(--c, var(--fill-3)); }
+/* the boat's country flag, 3:2, before her name (none when she flies none) */
+#hud.bc .b-fl, #bOver .b-fl { flex: none; display: block; width: 24px; height: 16px; object-fit: cover; box-shadow: 0 0 0 1px var(--w-25); }
+#hud.bc .b-row .b-fl { margin-left: var(--s-3); }
+#hud.bc .b-row .b-fl + .b-nm { padding-left: var(--s-2); }
+#hud.bc .b-fl[hidden], #bOver .b-fl[hidden] { display: none; }
 .b-row.me .b-bar { background: var(--you); }
 .b-row .b-nm { flex: 1; min-width: 0; padding-left: var(--s-3); font: 700 var(--fs-row)/1 var(--cond); letter-spacing: var(--ls-name); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .b-row .b-mv { width: 18px; font: 700 var(--fs-small)/1 var(--cond); }
@@ -313,7 +318,7 @@ const CSS = `
 .b-btag.me .p { background: var(--you); color: var(--ink-on); }
 .b-btag.me .in { box-shadow: inset 0 -3px 0 var(--you); clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
 .b-btag .c { width: 4px; background: var(--c, var(--fill-3)); }
-.b-btag .n { display: flex; align-items: center; padding: 0 var(--s-3); font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-name); }
+.b-btag .n { display: flex; align-items: center; gap: var(--s-2); padding: 0 var(--s-3); font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-name); }
 .b-btag .v { display: flex; align-items: center; padding: 0 var(--s-3); border-left: 1px solid var(--rule); font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-2); }
 .b-btag .stem { position: absolute; left: -1px; bottom: 0; width: 2px; height: 22px; background: linear-gradient(var(--w-90), var(--w-14)); }
 
@@ -418,7 +423,7 @@ const legKind = (c, i) => (isBeat(c, i) ? 'up' : ['wing', 'mark2', 'offset'].inc
 const CAMS = ['drone', 'top', 'helm'];
 const hex = (n) => (typeof n === 'number' ? '#' + n.toString(16).padStart(6, '0') : '');
 
-export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
+export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFlag = () => null }) {
   const L = HUD_STRINGS[LANG] || HUD_STRINGS.en;
   const $ = (s) => document.querySelector(s);
   const hud = $('#hud');
@@ -480,9 +485,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
   };
   // six rows on the board (three on a phone), made once and refilled
   const rows = Array.from({ length: 6 }, () => {
-    const r = html(`<div class="b-row"><b class="b-pos"></b><i class="b-bar"></i><span class="b-nm"></span><span class="b-mv"></span><span class="b-gp"></span><span class="b-x"></span></div>`);
+    const r = html(`<div class="b-row"><b class="b-pos"></b><i class="b-bar"></i><img class="b-fl" alt="" hidden><span class="b-nm"></span><span class="b-mv"></span><span class="b-gp"></span><span class="b-x"></span></div>`);
     B.rows.append(r);
-    return { el: r, pos: q(r, '.b-pos'), bar: q(r, '.b-bar'), nm: q(r, '.b-nm'), mv: q(r, '.b-mv'), gp: q(r, '.b-gp'), x: q(r, '.b-x') };
+    return { el: r, pos: q(r, '.b-pos'), bar: q(r, '.b-bar'), fl: q(r, '.b-fl'), nm: q(r, '.b-nm'), mv: q(r, '.b-mv'), gp: q(r, '.b-gp'), x: q(r, '.b-x') };
   });
   // the camera button cycles the three views, and says which for a moment
   let sayT = 0;
@@ -509,9 +514,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
   document.body.append(over);
   const advLine = q(over, '.adv'), advLab = q(over, '.b-advl');
   const btags = Array.from({ length: 3 }, () => {
-    const el = html(`<div class="b-btag"><span class="stem"></span><div class="in"><b class="p"></b><i class="c"></i><span class="n"></span><span class="v"></span></div></div>`);
+    const el = html(`<div class="b-btag"><span class="stem"></span><div class="in"><b class="p"></b><i class="c"></i><span class="n"><img class="b-fl" alt="" hidden><span class="nt"></span></span><span class="v"></span></div></div>`);
     over.append(el);
-    return { el, p: q(el, '.p'), c: q(el, '.c'), n: q(el, '.n'), v: q(el, '.v') };
+    return { el, box: q(el, '.in'), p: q(el, '.p'), c: q(el, '.c'), n: q(el, '.n .nt'), fl: q(el, '.b-fl'), v: q(el, '.v'), w: 0, f: 0 };
   });
   const lay = q(low, '.b-lay'), layT = q(lay, 'span');
   const split = q(low, '.b-split'), SP = { k: q(split, '.k'), t: q(split, '.t'), v: q(split, '.v'), g: q(split, '.g') };
@@ -577,12 +582,17 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
   // each boat's leg as last seen, and when each boat reached each mark (the race's clock), for the splits
   const legOf = new Map(), atMark = [];
   // play a one-off animation again: the class off, a reflow, on, and off when it's done
+  // a boat's flag (its picture's address, from main.js: the fleet's from their looks, yours from the boat page), yours
+  // read once a race
+  let myFlag;
+  const flagOf = (b, me) => (me ? (myFlag === undefined ? (myFlag = lookFlag(b, true)) : myFlag) : lookFlag(b, false));
+  const setFlag = (img, src) => { if (img._s === src) return; img._s = src; img.hidden = !src; if (src) img.src = src; else img.removeAttribute('src'); };
   const flash = (el, c, ms) => { el.classList.remove(c, ...({ gain: ['lose'], lose: ['gain'] }[c] || [])); void el.offsetWidth; el.classList.add(c); clearTimeout(el['_f' + c]); el['_f' + c] = setTimeout(() => el.classList.remove(c), ms); };
 
   function update(P, dt) {
     if (!on) return;
     const race = getRace(), c = race.course, kn = P.v / KN, twa = P.twa, pre = race.clock < 0, done = !!P.done;
-    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); }
+    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); }
     const leg = c.legs[P.leg], nLegs = c.legs.length - 1;
     // the order: before the gun, nearest the line first; then the race's
     const toLine = (b) => Math.max(0, -race.lineInfo(b).d);
@@ -698,7 +708,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
       cls(r.el, `b-row${me ? ' me' : ''}${i === 1 && !pre ? ' first' : ''}${cx.includes(b) ? '' : ' cxh'}`);
       txt(r.pos, b.dsq ? '–' : String(i));
       r.bar.style.setProperty('--c', hex(b.color));
-      txt(r.nm, me ? t('you') : b.name);
+      txt(r.nm, me ? t('you') : b.name); setFlag(r.fl, flagOf(b, me));
       const mv = moved.get(b), mvOn = mv && race.clock < mv[1];
       txt(r.mv, mvOn ? (mv[0] === 'u' ? '▲' : '▼') : ''); cls(r.mv, `b-mv${mvOn ? ' ' + mv[0] : ''}`);
       if (mvOn && r.el._mv !== mv) { r.el._mv = mv; flash(r.el, mv[0] === 'u' ? 'gain' : 'lose', 1600); }
@@ -822,8 +832,13 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
       g.el.style.transform = `translate(${at[0].toFixed(1)}px, ${at[1].toFixed(1)}px)`;
       txt(g.p, pre ? '·' : String(place));
       g.c.style.setProperty('--c', me ? 'var(--you)' : hex(b.color));
-      txt(g.n, me ? L.you : b.name);
+      txt(g.n, me ? L.you : b.name); setFlag(g.fl, flagOf(b, me));
       txt(g.v, `${nf(b.v / KN)} ${t('kn')}`);
+      // its box slid back onto the screen when the boat is near an edge (its width read now and then, not every frame)
+      if (!g.w || ++g.f % 30 === 0) g.w = g.box.offsetWidth;
+      const half = g.w / 2, edge = 8, dx = Math.min(0, innerWidth - edge - (at[0] + half)) + Math.max(0, edge - (at[0] - half));
+      const tr = dx ? `calc(-50% + ${dx.toFixed(0)}px) -22px` : '';
+      if (g.box._tr !== tr) { g.box._tr = tr; g.box.style.translate = tr; }
     });
   }
 

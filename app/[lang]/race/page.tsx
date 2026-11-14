@@ -3,6 +3,8 @@ import { getT, titled, type LangParams } from '@/lib/i18n';
 import { ruBoats } from '@/lib/lang';
 import { getAccount, initials } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
+import { Who as LbWho } from '@/components/flag';
+import { ruPlural } from '@/lib/lang';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, SHAPE_NAME } from '@/lib/race';
 import { venueOf } from '@/lib/venues';
 import { IconBack, IconPlay, IconTrophy, IconSliders, IconSail, Num, clock } from '@/components/ui';
@@ -37,7 +39,7 @@ export default async function Hub({ params }: LangParams) {
   return (
     <div className="scr bt-scr bc" lang={lang} data-acct={account ? 'signed' : 'guest'}>
       <div className="bt">
-        <GameScene venue={d.venue} wind={d.preset} title={t('Today’s venue in 3D', 'Место гонки дня в 3D')} />
+        <GameScene venue={d.venue} wind={d.preset} title={t('Today’s venue in 3D', 'Место гонки дня в 3D')} loading={t('Loading the venue', 'Загружаем место гонки')} />
 
         <div className="bt-info">
           <div className="bt-top">
@@ -46,7 +48,7 @@ export default async function Hub({ params }: LangParams) {
           </div>
           <h1 className="bt-h">{v.name[L]}</h1>
           <p className="bt-p">{v.place[L]}. {v.about[L]} {best
-            ? t(`The same race for everyone today: ${races} sailed so far.`, `Сегодня у всех одна гонка: уже ${races} заездов.`)
+            ? t(`The same race for everyone today: ${races} sailed so far.`, `Сегодня у всех одна гонка: уже ${races} ${ruPlural(races, ['заезд', 'заезда', 'заездов'])}.`)
             : t('The same race for everyone today. Nobody has finished it yet.', 'Сегодня у всех одна гонка. Её ещё никто не прошёл.')}</p>
           <div className="bt-stats">
             <div><span className="bt-sk">{t('Wind', 'Ветер')}</span><b><Num v={`${KN[d.preset]} ${t('kn', 'уз')}`} /></b><span className="bt-sv">{t(`${breeze}, shifting`, `${breeze}, переменчивый`)}</span></div>
@@ -59,17 +61,18 @@ export default async function Hub({ params }: LangParams) {
         <PauseCard lang={lang} who={who} back="/race" label={t('Today’s race', 'Гонка дня')}>
           <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Start today’s race', 'Начать гонку дня')}</span></a>
           <div className="bt-g">
-            <span className="bt-k"><IconTrophy />{t('Today’s fastest', 'Самые быстрые сегодня')}{races ? <span className="bt-k-r">{t(`${races} races`, `заездов: ${races}`)}</span> : null}</span>
+            <span className="bt-k"><IconTrophy />{t('Today’s fastest', 'Самые быстрые сегодня')}{races ? <span className="bt-k-r">{t(`${races} ${races === 1 ? 'race' : 'races'}`, `заездов: ${races}`)}</span> : null}</span>
             <ol className="hm-lb bt-lb">
               {top.map((r, i) => (
                 <li key={i} className={i === 0 ? 'first' : ''}>
-                  <span className="hm-n">{i + 1}</span><span>{r.name || t('No name', 'Без имени')}</span>
+                  <span className="hm-n">{i + 1}</span><LbWho fl={r.fl} name={r.name || t('No name', 'Без имени')} lang={lang} />
                   <span className="hm-t">{clock(r.s)}{i > 0 && best ? <small>+{(r.s - best.s).toFixed(1)}</small> : null}</span>
                 </li>
               ))}
               {!top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
               <MyRow lang={lang} day={d.day} top={top} next="/race" />
             </ol>
+            <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')} ›</Link>
           </div>
           <FreeQuick lang={lang} />
           <div className="bt-rows">

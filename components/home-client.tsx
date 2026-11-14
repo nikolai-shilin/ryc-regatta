@@ -30,6 +30,7 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <span className="hm-msep" />
           <Link className="hm-mi" href="/help">{t('How to play', 'Как играть')}</Link>
           <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня')}</Link>
+          <Link className="hm-mi" href="/race/rating">{t('Rating', 'Рейтинг')}</Link>
           <Link className="hm-mi" href="/race/free">{t('Free race', 'Свободная гонка')}</Link>
           <Link className="hm-mi" href="/faq">{t('Questions', 'Вопросы')}</Link>
           <Link className="hm-mi" href="/iyt">{'Sailing Certification Test'}</Link>
