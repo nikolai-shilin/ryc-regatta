@@ -149,9 +149,9 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   where each starts. `scripts/gulls.py` makes the file from the recordings on Wikimedia Commons: "Gull 1" and "Gull 2"
   by avphillips (public domain) and xeno-canto XC707075 by Sonothèque ADVL (CC0).
 - **The music:** `public/game/music.js` follows the race (calm before the start, building to the gun, up when it goes
-  well, dark when it doesn't) in the style Settings › Music picks: Ambient, Film and Folk are synthesized; Racing is a
-  recorded track, `public/game/music-racing.mp3`, cut on its bar lines by `scripts/racing-music.py` into loops for the
-  moods, the build that lands its drop on the gun, its ending for a win, and accents of its own crash. `RACING` in
+  well, dark when it doesn't) with the track Settings › Music picks: Racing, Groove, Riff or Open water. Each is a
+  recorded track, `public/game/music-<id>.mp3`, cut on its bar lines by `scripts/music.py` into loops for the moods,
+  the build that lands its drop on the gun, its ending for a win, and accents of its own crash. `TRACKS` in
   `music.js` says where each piece and each of its bars starts.
 
 ## Run it locally

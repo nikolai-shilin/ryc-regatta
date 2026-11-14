@@ -91,7 +91,7 @@ function Settings({ lang, who, back, close }: { lang: Lang; who: Who; back: stri
       <div className="bt-g">
         <span className="bt-k"><IconScreen />{t('Screen and sound', 'Экран и звук')}</span>
         {seg('gfx', t('Graphics', 'Графика'), [['auto', t('Auto', 'Авто')], ['high', t('High', 'Макс.')], ['medium', t('Medium', 'Сред.')], ['low', t('Low', 'Мин.')]])}
-        {seg('music', t('Music', 'Музыка'), [['ambient', t('Ambient', 'Эмбиент')], ['film', t('Film', 'Кино')], ['folk', t('Folk', 'Фолк')], ['off', t('Off', 'Выкл')]])}
+        {seg('music', t('Music', 'Музыка'), [['racing', t('Racing', 'Гонка')], ['groove', t('Groove', 'Грув')], ['riff', t('Riff', 'Рифф')], ['openwater', t('Open water', 'Простор')], ['off', t('Off', 'Выкл')]])}
         <div className="bt-pills">
           {sw('sound', t('Sound', 'Звук'))}
           {sw('voice', t('Voice on board', 'Голос шкипера'))}
