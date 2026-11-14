@@ -412,6 +412,12 @@ const CSS = `
   .b-split > * { padding: 0 var(--s-3); font-size: var(--fs-small) !important; } .b-split .k { font-size: var(--fs-label) !important; }
   .b-go { font-size: 110px; } .b-fin b { font-size: var(--fs-h2); }
 }
+/* a phone sideways: pause beside the board, and the call right over the tack button (moved into its column: see
+   placeCall) */
+@media not all and ${WIDE} { @media (orientation: landscape) {
+  #hud.bc .b-btns > #pauseBtn { position: absolute; right: calc(168px + var(--s-1)); top: 42px; }
+  .b-acts > .b-callrow { position: static; translate: none; margin: 0; }
+} }
 @media not all and ${WIDE} { @media (orientation: portrait) {
   .b-wind { top: calc(56px + var(--st)); }
   .b-board { top: calc(56px + var(--st)); }
@@ -577,6 +583,14 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     for (const el of [hud, tag, over]) el.style.setProperty('--hz', hz.toFixed(3));
   }
   addEventListener('resize', scale); scale();
+  // a phone sideways has the call over the tack button: the call's row goes to the top of the buttons' column, and
+  // back over your strip on any other screen
+  const callRow = q(low, '.b-callrow'), landQ = matchMedia('(orientation: landscape)');
+  function placeCall() {
+    if (!wideQ.matches && landQ.matches) { if (callRow.parentNode !== acts) acts.prepend(callRow); }
+    else if (callRow.parentNode !== low) split.after(callRow);
+  }
+  addEventListener('resize', placeCall); placeCall();
 
   hud.classList.add('bc');
   for (const m of MOVES) m.to.append(m.el);
