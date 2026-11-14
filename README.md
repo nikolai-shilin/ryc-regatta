@@ -68,31 +68,48 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 - **The yacht:** `public/game/yacht.glb` is made by `blender/yacht.py`. Run it in Blender; it writes the file in place.
 - **The venues:** today's race goes to a venue a day (`dailyVenue()` in `public/game/venues.js`, copied in
   `lib/race.ts` and in `public/play/index.html`'s preloader, which `npm test` checks): the days go round all of them
-  in a shuffled order, so each comes once every 22 days and none two days running. A new venue goes in all three
-  lists in the same place; it reshuffles the rotation, so add it close to midnight UTC, or today's venue changes mid-day. The home page's live view (`/hero-view`) stays in Göcek, to match its
+  in a shuffled order, so each comes once a round and none two days running. A new venue goes in all three lists in
+  the same place, with the day it joins (`from`, a day still to come): the days before it keep the venues they had,
+  and from it the rounds start again with the new one among them. The home page's live view (`/hero-view`) stays in Göcek, to match its
   photos. A free race goes to the venue the set-up chose (`venue`
   in the `regatta` options; `?venue=<id>` in the game's address overrides it): Göcek, Cowes, Newport, Sydney, Kiel,
   Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland, San Francisco, Valencia, Barcelona, Palma, Marstrand, Bermuda,
-  Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda or Istanbul. `public/game/venues.js` holds each one's position,
+  Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda, Istanbul or St Petersburg (the Neva under the
+  Peter and Paul Fortress, its bridges raised). `public/game/venues.js` holds each one's position,
   prevailing wind, clock and look (its woods, farmland, houses, moored boats and water); `lib/venues.ts` is the set-up
   page's list of them, and `npm test` keeps the two in step. Each venue's land, Göcek's too, is baked by
-  `python3 blender/venues.py <work dir> [id ...]` (needs numpy and Pillow; `--fetch` only downloads, into the work dir,
-  where a second run finds them) into `public/game/venues/<id>.json` and `.bin` (Göcek's into `public/game/skopea.json`
+  `python3 blender/venues.py [work dir] [id ...]` (needs numpy and Pillow; `--fetch` only downloads; the downloads are
+  kept in the work dir, `~/.cache/ryc-regatta/venues` when none is given, where a second run finds them) into
+  `public/game/venues/<id>.json` and `.bin` (Göcek's into `public/game/skopea.json`
   and `.bin`), from the Terrarium elevation tiles and OpenStreetMap: centred on the race area and turned so the venue's
   prevailing wind comes from the game's north, where every race's wind is; the sun turns with it, and stands where it
   does at that latitude in the sailing season. Göcek's keeps its older frame, from the town and not turned.
-  What the .bin holds, `land.js` unpacks and `skopea.js` draws:
+  What the .bin holds, `land.js` unpacks (the terrain's mesh too, so `npm test` checks every venue's) and `skopea.js`
+  draws:
   - the terrain as a quadtree, some 8 m cells on the coast and round the race area, coarser where the hills are far or
-    smooth; the shore meets the water on OpenStreetMap's coastline to the metre, and the bed under the water is as steep
-    as the land above it (deep under a cliff, shallow off a beach), or the tiles' own depths where deeper;
-  - what is on the ground, on a 20 m grid: OpenStreetMap's woods, scrub, grass, fields, orchards, towns, industry,
-    beaches, bare rock and wetland, and a town wherever buildings stand close; the ground's colour is worked out for each
-    pixel from it, and where the map has nothing, from the venue's look;
-  - how much of the sky each point sees (the shade in valleys), and the water's depth (the sea is lighter over the
-    shallows); the hills' shadows are worked out in the game from where the sun is;
+    smooth, from elevation tiles some 10 m a pixel (Cowes, Weymouth, Newport, San Francisco and Auckland, where they
+    carry survey data) or 20 m; the shore meets the water on OpenStreetMap's coastline to the metre, the map's water
+    ashore down at the sea's level (an estuary, a lagoon) is water too, and the bed under the water is as steep as the
+    land above it (deep under a cliff, gently shelving off a beach); further out, the sea floor's survey where there is
+    one (EMODnet's round the European venues, Göcek and Istanbul; NOAA's at Newport and San Francisco), else the
+    tiles' own depths where deeper;
+  - what is on the ground, on a 20 m grid: OpenStreetMap's woods (needle-leaved or broad-leaved, for the trees in
+    them), scrub, grass, fields (each its own crop), orchards, towns, industry, beaches, bare rock, wetland, lakes and
+    tidal mud, and a town wherever buildings stand close; the ground's colour is worked out for each pixel from it, and
+    where the map has nothing, from the venue's look, its woods in the same stands the trees are scattered in;
+  - the roads round the race area, how far out from the shore each point is (the surf: none by quays and piers, and
+    less the less open water there is upwind, where the waves come from), how
+    much of the sky each point sees (the shade in valleys), and the water's depth (the sea is lighter over the
+    shallows);
   - the land beyond, out to 64 km on a 400 m grid, drawn pulled in to just inside the view and lowered by the earth's
-    curve: the Alps round Garda, Fuji from Enoshima;
-  - the buildings (their pitched roofs too, where the map or the venue's look has them).
+    curve, coloured as the venue's own land mostly is: the Alps round Garda, Fuji from Enoshima;
+  - the buildings, up to 8,000, the far ones only if tall (pitched roofs where the map or the venue's look has them,
+    on near-convex footprints too; windows spaced each building its own way, glass towers, and the churches and
+    mosques with their bell towers, domes and minarets), and the piers and pontoons.
+  The shadows on the land, of the hills, the far mountains, the buildings and the trees, are worked out on the GPU
+  from where the sun is (`shadows()` in `skopea.js`), and fall on the water, the yachts and the marks too. The terrain
+  and the towns are drawn in tiles, so what is out of view isn't; the trees far off as plain crowns. Cliffs are
+  coloured from the side, in strata; lakes mirror the sky; each venue's air is as clear as its look's `haze` says.
   The json lists the marinas' pontoons, the towns where the houses the map lacks are filled in, and the landmarks
   `skopea.js` draws: the Harbour Bridge, the Newport Bridge, the Golden Gate, the Sky Tower, Laboe's memorial, the
   Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la Garde, Christ the Redeemer, Enoshima's Sea

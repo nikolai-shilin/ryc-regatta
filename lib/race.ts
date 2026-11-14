@@ -13,17 +13,23 @@ export type Length = 'short' | 'medium' | 'long';
 export type Shape = 'wl' | 'tri' | 'trap' | 'wlu';
 export type Daily = { day: string; seed: number; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape; venue: VenueId };
 
-// today's venue, as public/game/venues.js dailyVenue: the days go round all the venues in a shuffled order
-function round(k: number) {
-  const ids = VENUES.map((v) => v.id), r = rng((k + 1) * 40503 + 977);
-  for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
-  return ids;
+// today's venue, as public/game/venues.js dailyVenue: the days go round all the venues in a shuffled order, a venue
+// added later (`from`) among them from its day, the days before going round the ones there were then
+const dayN = (s: string) => Math.floor(Date.parse(s) / 864e5);
+const ROUNDS = [0, ...new Set(VENUES.filter((v) => v.from).map((v) => dayN(v.from!)))].sort((a, b) => a - b)
+  .map((n0) => ({ n0, ids: VENUES.filter((v) => !v.from || dayN(v.from) <= n0).map((v) => v.id) }));
+function round(ids: VenueId[], k: number) {
+  const a = ids.slice(), r = rng((k + 1) * 40503 + 977);
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
 }
-export function dailyVenue(date = new Date()): VenueId {
-  const n = Math.floor(Date.parse(date.toISOString().slice(0, 10)) / 864e5), len = VENUES.length, k = Math.floor(n / len), ids = round(k);
-  if (ids[0] === round(k - 1)[len - 1]) [ids[0], ids[1]] = [ids[1], ids[0]];
-  return ids[n - k * len];
+function venueOn(n: number): VenueId {
+  let e = ROUNDS.length - 1; while (e > 0 && n < ROUNDS[e].n0) e--;
+  const { n0, ids } = ROUNDS[e], len = ids.length, k = Math.floor((n - n0) / len), a = round(ids, k);
+  if (a[0] === (k > 0 || e === 0 ? round(ids, k - 1)[len - 1] : venueOn(n0 - 1))) [a[0], a[1]] = [a[1], a[0]];
+  return a[n - n0 - k * len];
 }
+export const dailyVenue = (date = new Date()): VenueId => venueOn(Math.floor(Date.parse(date.toISOString().slice(0, 10)) / 864e5));
 
 // the days before SHAPES_FROM are all up and down; from it the day's course goes round the four shapes
 export const SHAPES_FROM = '2026-11-20';

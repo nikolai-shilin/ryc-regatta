@@ -3,9 +3,10 @@
 # Terrarium elevation tiles, the mountains far beyond them, and from OpenStreetMap (the Overpass API) the coast, the
 # woods, fields, towns and beaches, the pontoons and the buildings.
 #
-#   python3 blender/venues.py <work dir> [--fetch] [id ...]      (all of them when no id is given)
+#   python3 blender/venues.py [work dir] [--fetch] [id ...]      (all of them when no id is given)
 #
-# Downloads are kept in <work dir>/<id>, so a second run only bakes; --fetch only downloads. Needs numpy and Pillow.
+# Downloads are kept in <work dir>/<id> (~/.cache/ryc-regatta/venues when no work dir is given), so a second run only
+# bakes; --fetch only downloads. Needs numpy and Pillow.
 #
 # The frame: metres, x east and z south, from the middle of the venue's race area (`home`), turned so that its
 # prevailing wind (`wind`, the compass direction it blows from) comes from the game's north (−z), since every race is
@@ -23,66 +24,87 @@
 #   drawn    bits: for each leaf of it in the same order, 1 if it has land in it (the rest is under the sea, not drawn)
 #   heights  Int16, decimetres: the height at each corner the leaves use, by the lattice's rows and columns (see
 #            land.js, which finds the same corners again from the two bit strings)
-#   cover    Uint8, on the `grid`: what is on the ground (CLASSES)
+#   cover    Uint8, on the `grid`: what is on the ground, its class (CLASSES) in the low four bits, a variant of it in the
+#            high four (variant(): a field's crop, what a wood's trees are)
 #   ao       Uint8, on a grid of twice the cells (`ao`): how much of the sky is open (`ao.k` × 63 all of it), for the
 #            shade in valleys
 #   depth    Uint8, on the `grid`: the water's depth in decimetres (255 deeper than 25.4 m, 0 ashore)
 #   far      Int16, in steps of `far.k` metres: the land beyond, out to `far.ext`, on its own even grid
+#   roads    Uint8, on the `near` grid (8 m cells round the race area): 255 on a road
+#   shore    Uint8, on the `near` grid: how far out from the shore, in quarters of a metre (0 ashore, 255 past 63 m)
+#   calm     Uint8, on the `near` grid: 255 by a built shore (a town's, a port's, the piers), where there is no surf
 #   bn, bh, broof, bxz   the buildings: how many corners each has, its height in decimetres (0 unknown), its roof
-#            (0 unknown, 1 flat, 2 pitched), and all the corners, in metres, as x, z pairs
+#            (0 unknown, 1 flat, 2 pitched; or what it is: 3 a church, 4 a mosque), and all the corners, in metres, as x, z
+#            pairs
+#   pn, pk, pw, pxz   the piers, pontoons, quays and breakwaters: how many points each has, what it is (PIERS, + 8 if it
+#            is an area, + 16 if it floats), its width in decimetres (0 unknown), and the points, in half metres
 import gzip, json, math, os, subprocess, sys, time
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 # home: the middle of the race area, in clear water; wind: the prevailing wind's compass direction (from);
-# towns: (lat, lon, radius m) where the houses the map lacks are filled in; landmarks: drawn by the game (skopea.js)
+# towns: (lat, lon, radius m) where the houses the map lacks are filled in; landmarks: drawn by the game (skopea.js);
+# bathy: where the sea floor's survey comes from, finer than the elevation tiles' own (EMODnet's in Europe, some 115 m;
+# NOAA's on the US coasts, down to a few metres): the depths the sea is lighter over
 VENUES = {
-    'gocek': dict(origin=(36.7525, 28.9395), mid=(-400, 700), wind=0, zoom=14, out='skopea', towns=[(36.7564, 28.9402, 650)],
+    'gocek': dict(bathy='emodnet', origin=(36.7525, 28.9395), mid=(-400, 700), wind=0, zoom=14, out='skopea', towns=[(36.7564, 28.9402, 650)],
                   build=(36.705, 28.875, 36.795, 29.005), footprints=('Turkey', '122101223')),
-    'cowes': dict(home=(50.7880, -1.3060), wind=225, towns=[(50.7600, -1.2980, 900), (50.7570, -1.2880, 700)]),
-    'newport': dict(home=(41.4570, -71.3600), wind=210, towns=[(41.4850, -71.3150, 1300), (41.4960, -71.3700, 700)],
+    'cowes': dict(bathy='emodnet', zoom=14, home=(50.7880, -1.3060), wind=225, towns=[(50.7600, -1.2980, 900), (50.7570, -1.2880, 700)]),
+    'newport': dict(bathy='noaa', zoom=14, home=(41.4570, -71.3600), wind=210, towns=[(41.4850, -71.3150, 1300), (41.4960, -71.3700, 700)],
                     landmarks=[dict(kind='suspension', a=(41.5052, -71.3598), b=(41.5046, -71.3318), h=122, span=488, deck=58)]),
     'sydney': dict(home=(-33.8480, 151.2560), wind=45, towns=[(-33.8700, 151.2550, 1500), (-33.8330, 151.2420, 1300), (-33.8380, 151.2830, 1000), (-33.8650, 151.2150, 1200)],
                    landmarks=[dict(kind='arch', a=(-33.8562, 151.2093), b=(-33.8486, 151.2114), h=134, span=503, deck=49)]),
-    'kiel': dict(home=(54.4300, 10.2050), wind=250, towns=[(54.4150, 10.1570, 900), (54.4100, 10.2250, 900), (54.4310, 10.1760, 600), (54.3700, 10.1500, 1500)],
+    'kiel': dict(bathy='emodnet', home=(54.4300, 10.2050), wind=250, towns=[(54.4150, 10.1570, 900), (54.4100, 10.2250, 900), (54.4310, 10.1760, 600), (54.3700, 10.1500, 1500)],
                  landmarks=[dict(kind='lighthouse', at=(54.3887, 10.1906), h=32, ground=0), dict(kind='tower', at=(54.4103, 10.2273), h=85, style='memorial')]),
-    'trieste': dict(home=(45.6720, 13.7280), wind=70, towns=[(45.6500, 13.7700, 1600), (45.6750, 13.7500, 700), (45.6960, 13.7070, 500)],
+    'trieste': dict(bathy='emodnet', home=(45.6720, 13.7280), wind=70, towns=[(45.6500, 13.7700, 1600), (45.6750, 13.7500, 700), (45.6960, 13.7070, 500)],
                     landmarks=[dict(kind='lighthouse', at=(45.6626, 13.7586), h=68)]),
-    'porto-cervo': dict(home=(41.1520, 9.5650), wind=315, towns=[(41.1340, 9.5340, 600), (41.1050, 9.5150, 500)]),
-    'saint-tropez': dict(home=(43.2900, 6.6700), wind=280, towns=[(43.2710, 6.6390, 800), (43.3090, 6.6360, 1000), (43.2930, 6.5870, 600)]),
+    'porto-cervo': dict(bathy='emodnet', home=(41.1520, 9.5650), wind=315, towns=[(41.1340, 9.5340, 600), (41.1050, 9.5150, 500)]),
+    'saint-tropez': dict(bathy='emodnet', home=(43.2900, 6.6700), wind=280, towns=[(43.2710, 6.6390, 800), (43.3090, 6.6360, 1000), (43.2930, 6.5870, 600)]),
     'antigua': dict(home=(16.9890, -61.7700), wind=95, towns=[(17.0080, -61.7640, 500), (17.0180, -61.7820, 700)]),
-    'auckland': dict(home=(-36.8300, 174.8150), wind=225, towns=[(-36.8480, 174.7650, 1500), (-36.8280, 174.7980, 900), (-36.8500, 174.8100, 1300), (-36.8000, 174.7900, 1500)],
+    'auckland': dict(zoom=14, home=(-36.8300, 174.8150), wind=225, towns=[(-36.8480, 174.7650, 1500), (-36.8280, 174.7980, 900), (-36.8500, 174.8100, 1300), (-36.8000, 174.7900, 1500)],
                      landmarks=[dict(kind='tower', at=(-36.84846, 174.76218), h=328, style='sky')]),
-    'san-francisco': dict(home=(37.8150, -122.4350), wind=255, towns=[(37.8020, -122.4400, 1100), (37.7960, -122.4120, 1100), (37.8580, -122.4850, 800), (37.8730, -122.4570, 700)],
+    'san-francisco': dict(bathy='noaa', zoom=14, home=(37.8150, -122.4350), wind=255, towns=[(37.8020, -122.4400, 1100), (37.7960, -122.4120, 1100), (37.8580, -122.4850, 800), (37.8730, -122.4570, 700)],
                           landmarks=[dict(kind='suspension', a=(37.8077, -122.4750), b=(37.8288, -122.4813), h=227, span=1280, deck=67, color='#c0362c')]),
-    'valencia': dict(home=(39.4550, -0.2850), wind=110, towns=[(39.4700, -0.3700, 1200), (39.4700, -0.3250, 1000), (39.4300, -0.3300, 800)]),
-    'barcelona': dict(home=(41.3720, 2.2250), wind=200, towns=[(41.3850, 2.1800, 1100), (41.3950, 2.2050, 1100), (41.3780, 2.1900, 700), (41.4100, 2.2250, 900)],
+    'valencia': dict(bathy='emodnet', home=(39.4550, -0.2850), wind=110, towns=[(39.4700, -0.3700, 1200), (39.4700, -0.3250, 1000), (39.4300, -0.3300, 800)]),
+    'barcelona': dict(bathy='emodnet', home=(41.3720, 2.2250), wind=200, towns=[(41.3850, 2.1800, 1100), (41.3950, 2.2050, 1100), (41.3780, 2.1900, 700), (41.4100, 2.2250, 900)],
                       landmarks=[dict(kind='spires', at=(41.4036, 2.1744), h=172)]),
-    'palma': dict(home=(39.5350, 2.6300), wind=220, towns=[(39.5700, 2.6500, 1200), (39.5350, 2.7200, 800), (39.5550, 2.6000, 700)],
+    'palma': dict(bathy='emodnet', home=(39.5350, 2.6300), wind=220, towns=[(39.5700, 2.6500, 1200), (39.5350, 2.7200, 800), (39.5550, 2.6000, 700)],
                   landmarks=[dict(kind='cathedral', at=(39.5675, 2.6483), h=44)]),
-    'marstrand': dict(home=(57.8850, 11.5550), wind=225, towns=[(57.8860, 11.5850, 500), (57.8900, 11.6000, 500), (57.8650, 11.6000, 400)],
+    'marstrand': dict(bathy='emodnet', home=(57.8850, 11.5550), wind=225, towns=[(57.8860, 11.5850, 500), (57.8900, 11.6000, 500), (57.8650, 11.6000, 400)],
                       landmarks=[dict(kind='fort', at=(57.8866, 11.5806), h=24)]),
     'bermuda': dict(home=(32.3050, -64.8400), wind=200, towns=[(32.2930, -64.7830, 900), (32.3250, -64.8350, 500), (32.3100, -64.8650, 600), (32.2850, -64.8150, 700)]),
     'enoshima': dict(home=(35.2850, 139.4950), wind=190, towns=[(35.3100, 139.4800, 1200), (35.3100, 139.5300, 1200), (35.3050, 139.5000, 800)],
                      landmarks=[dict(kind='lighthouse', at=(35.2997, 139.4796), h=60, style='candle')]),
-    'weymouth': dict(home=(50.6050, -2.4100), wind=225, towns=[(50.6100, -2.4550, 1100), (50.5550, -2.4400, 900), (50.6300, -2.4400, 700)]),
-    'marseille': dict(home=(43.2650, 5.3350), wind=315, towns=[(43.2950, 5.3750, 1200), (43.2750, 5.3650, 900), (43.2600, 5.3800, 700), (43.3100, 5.3650, 1000)],
+    'weymouth': dict(bathy='emodnet', zoom=14, home=(50.6050, -2.4100), wind=225, towns=[(50.6100, -2.4550, 1100), (50.5550, -2.4400, 900), (50.6300, -2.4400, 700)]),
+    'marseille': dict(bathy='emodnet', home=(43.2650, 5.3350), wind=315, towns=[(43.2950, 5.3750, 1200), (43.2750, 5.3650, 900), (43.2600, 5.3800, 700), (43.3100, 5.3650, 1000)],
                       landmarks=[dict(kind='basilica', at=(43.2840, 5.3713), h=52)]),
     'rio': dict(home=(-22.9300, -43.1580), wind=150, towns=[(-22.9250, -43.1750, 1200), (-22.9000, -43.1150, 1200), (-22.9450, -43.1800, 900), (-22.9700, -43.1850, 1000)],
                 landmarks=[dict(kind='statue', at=(-22.9519, -43.2105), h=38)]),
     'garda': dict(home=(45.8400, 10.8500), wind=190, lake='Lago di Garda', towns=[(45.8860, 10.8410, 800), (45.8750, 10.8760, 600), (45.7650, 10.8100, 600), (45.8730, 10.8560, 500)]),
-    'istanbul': dict(home=(40.9820, 28.9920), wind=35, towns=[(40.9900, 29.0270, 1200), (41.0250, 29.0180, 1200), (41.0080, 28.9650, 1500), (41.0330, 28.9800, 1200), (40.9720, 29.0400, 1000),
+    'istanbul': dict(bathy='emodnet', home=(40.9820, 28.9920), wind=35, towns=[(40.9900, 29.0270, 1200), (41.0250, 29.0180, 1200), (41.0080, 28.9650, 1500), (41.0330, 28.9800, 1200), (40.9720, 29.0400, 1000),
                                                                  (41.0430, 29.0060, 900), (41.0480, 29.0250, 700), (41.0365, 29.0310, 600), (41.0440, 29.0440, 700)],  # Beşiktaş, Ortaköy, Kuzguncuk, Beylerbeyi: round the bridge
                      landmarks=[dict(kind='suspension', a=(41.0510, 29.0287), b=(41.0400, 29.0401), h=165, span=1074, deck=64),
                                 dict(kind='mosque', at=(41.0054, 28.9767), h=43, minarets=6, mh=64),  # the Blue Mosque
                                 dict(kind='mosque', at=(41.0085, 28.9799), h=55, minarets=4, mh=60, semis=2, wall='#c99272'),  # Hagia Sophia
                                 dict(kind='mosque', at=(41.0162, 28.9638), h=53, minarets=4, mh=72),  # Süleymaniye
                                 dict(kind='tower', at=(41.0256, 28.9741), h=63, style='galata')]),
+    # the Neva under the Peter and Paul Fortress's walls, between the Trinity and Palace bridges; the city's heights in
+    # the tiles are its roofs, not its ground (and the river stands 12 to 20 m up in them), so the land is laid flat
+    'st-petersburg': dict(zoom=14, flat=2.2, relations=True, home=(59.9464, 30.3187), wind=245,
+                          towns=[(59.9420, 30.2850, 1000), (59.9580, 30.3050, 900), (59.9370, 30.3250, 1100), (59.9590, 30.3420, 800), (59.9480, 30.3500, 700)],
+                          landmarks=[dict(kind='spire', style='peter-paul', at=(59.95010, 30.31603), b=(59.95024, 30.31700), h=122.5),  # the cathedral's belfry, the apse to the east
+                                     dict(kind='spire', style='admiralty', at=(59.93757, 30.30862), h=72.5),
+                                     dict(kind='column', at=(59.94431, 30.30690), h=32), dict(kind='column', at=(59.94467, 30.30503), h=32),  # the rostral columns
+                                     # the bridges, their spans open for the yachts (n spans, `open` the ones raised, `leaves` each)
+                                     dict(kind='drawbridge', a=(59.94649, 30.32951), b=(59.95103, 30.32544), deck=9, w=24, n=7, open=[1], leaves=1, color='#5a6863'),  # Trinity: raised by the left bank
+                                     dict(kind='drawbridge', a=(59.94024, 30.30935), b=(59.94214, 30.30682), deck=7, w=28, n=5, open=[2], leaves=2, color='#56645f'),  # Palace
+                                     dict(kind='drawbridge', a=(59.94522, 30.30317), b=(59.94735, 30.30362), deck=7, w=24, n=3, open=[1], leaves=2, color='#5d625f'),  # Exchange
+                                     dict(kind='drawbridge', a=(59.95012, 30.34896), b=(59.95358, 30.34979), deck=10, w=34, n=6, open=[1], leaves=1, color='#4f5a57')]),  # Liteyny
 }
 
 # what is on the ground (the cover part), from OpenStreetMap's land use; 0 where the map has nothing, which the game
 # fills in from the venue's own look. A later class in LAYERS is laid over an earlier one.
-CLASSES = ['unknown', 'forest', 'scrub', 'grass', 'farmland', 'orchard', 'town', 'industry', 'sand', 'rock', 'wetland']
+CLASSES = ['unknown', 'forest', 'scrub', 'grass', 'farmland', 'orchard', 'town', 'industry', 'sand', 'rock', 'wetland', 'water', 'mud']
 LAYERS = [  # (class, tags)
     ('farmland', {'landuse': ['farmland', 'meadow', 'farmyard', 'greenhouse_horticulture', 'plant_nursery']}),
     ('grass', {'landuse': ['grass', 'village_green', 'recreation_ground', 'cemetery', 'allotments'], 'natural': ['grassland'], 'leisure': ['park', 'golf_course', 'garden', 'pitch']}),
@@ -94,9 +116,18 @@ LAYERS = [  # (class, tags)
     ('industry', {'landuse': ['industrial', 'port', 'railway', 'construction', 'brownfield', 'quarry', 'military']}),
     ('rock', {'natural': ['bare_rock', 'scree', 'rock', 'shingle']}),
     ('sand', {'natural': ['sand', 'beach']}),
+    ('mud', {'natural': ['mud'], 'wetland': ['tidalflat']}),
+    ('water', {'natural': ['water'], 'waterway': ['riverbank'], 'landuse': ['reservoir', 'basin']}),
 ]
+# each cover cell's high four bits: a variant of its class, the same over each of the map's areas (a field's crop, a
+# town's tint); for a wood, what its trees are (1 needle-leaved, 2 broad-leaved, 3 mixed)
+LEAF = {'needleleaved': 1, 'broadleaved': 2, 'mixed': 3}
+def variant(cls, el):
+    if cls == 'forest': return LEAF.get(el.get('tags', {}).get('leaf_type'), 0)
+    return (el['id'] * 2654435761 >> 9) % 15 + 1
 
-WORK = next((a for a in sys.argv[1:] if not a.startswith('--')), '/tmp/venues')
+ARGS = [a for a in sys.argv[1:] if not a.startswith('--')]
+WORK = ARGS.pop(0) if ARGS and ARGS[0] not in VENUES else os.path.expanduser('~/.cache/ryc-regatta/venues')
 GAME = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public', 'game')
 ZOOM = 13  # some 19 m a pixel at the equator: finer than the SRTM under most of it
 EXTENT = 8500.0  # the terrain reaches this far each way
@@ -106,6 +137,7 @@ SC, R = 20, 508  # the sea room's cell and reach
 CC = 20.0  # the cover, the open sky and the depth: 20 m cells over the terrain's square
 NCC = int(2 * EXTENT / CC)
 FZOOM, FEXT, FCELL = 9, 64000.0, 400.0  # the land beyond: out to 64 km, 400 m cells
+NE, EC = 1250, 8.0  # the roads and the distance out from the shore (for the surf): 8 m cells, 5 km each way
 NF = int(2 * FEXT / FCELL) + 1
 
 
@@ -237,6 +269,12 @@ def bake(vid, V, fetch_only=False):
         return height
     height = mosaic(V.get('zoom', ZOOM), EXTENT * 1.45)
     far_height = mosaic(FZOOM, FEXT * 1.02)
+    if V.get('flat') is not None:
+        # a flat city whose tiles have its roofs for its ground: the land at `flat` metres, the sea as the tiles have it;
+        # the land beyond less the roofs' 15 m or so, its real hills (Pulkovo's) still standing
+        f0, raw, raw_far = float(V['flat']), height, far_height
+        height = lambda x, z: (lambda h: np.where(h <= 0.5, h, f0).astype(np.float32))(raw(x, z))
+        far_height = lambda x, z: (lambda h: np.where(h <= 0.5, h, f0 + np.maximum(0, h - 15)).astype(np.float32))(raw_far(x, z))
 
     # ---------- OpenStreetMap ----------
     coastQ = f'way["natural"="coastline"]({bbox(EXTENT * 1.5)});' if not V.get('lake') else f'relation["natural"="water"]["name"="{V["lake"]}"];'
@@ -248,12 +286,41 @@ def bake(vid, V, fetch_only=False):
     def box_at(lat, lon, m): return f'{lat - m / MLAT:.5f},{lon - m / MLON:.5f},{lat + m / MLAT:.5f},{lon + m / MLON:.5f}'
     boxes = [bbox(2300)] + [box_at(lat, lon, r * 1.2) for lat, lon, r in V.get('towns', [])]
     if V.get('build'): boxes = ['{:.5f},{:.5f},{:.5f},{:.5f}'.format(*V['build'])]
-    build = overpass(work, 'buildings', '(' + ''.join(f'way["building"]({b});' for b in boxes) + ');out geom tags;')
+    if os.path.exists(os.path.join(work, 'buildings.json')): build = overpass(work, 'buildings', '(' + ''.join(f'way["building"]({b});' for b in boxes) + ');out geom tags;')
+    else:  # one town at a time: a big city's all at once is more than a busy server answers
+        build = [el for i, b in enumerate(boxes) for el in overpass(work, f'buildings-{i}', f'(way["building"]({b}););out geom tags;')]
+    if V.get('relations'): build += overpass(work, 'buildings-rel', '(' + ''.join(f'relation["building"]({b});' for b in boxes) + ');out geom;')  # (out geom alone: see above)
     tall = overpass(work, 'tall', f'(way["building"]["building:levels"~"^([89]|[1-9][0-9])$"]({bbox(8500)});way["building"]["height"~"^([3-9][0-9]|[1-9][0-9][0-9])(\\\\.[0-9]+)?( m)?$"]({bbox(8500)}););out geom tags;')
     cb = bbox(EXTENT * 1.45)
     coverQ = ''.join(f'{t}["{k}"~"^({"|".join(sorted(set(v for _, tags in LAYERS for v in tags.get(k, []))))})$"]({cb});'
                      for k in ('landuse', 'natural', 'leisure') for t in ('way', 'relation'))
     cover_els = overpass(work, 'cover', f'({coverQ});out geom;')
+    # the water ashore (lakes, rivers, the tidal mud) and the roads round the race area
+    eb, rb = bbox(EXTENT * 1.45), bbox(NE * EC * 1.05)
+    ROADS = {'motorway': 14, 'trunk': 12, 'primary': 10, 'secondary': 9, 'tertiary': 8, 'unclassified': 6, 'residential': 6, 'living_street': 5,
+             'pedestrian': 5, 'service': 4, 'motorway_link': 8, 'trunk_link': 8, 'primary_link': 7, 'secondary_link': 7}
+    waterQ = f'way["natural"~"^(water|mud)$"]({eb});relation["natural"~"^(water|mud)$"]({eb});way["waterway"="riverbank"]({eb});way["landuse"~"^(reservoir|basin)$"]({eb});'
+    roadQ = f'way["highway"~"^({"|".join(ROADS)})$"]({rb});'
+    if os.path.exists(os.path.join(work, 'extra.json')): extra = overpass(work, 'extra', f'({waterQ}{roadQ});out geom;')
+    else:  # the two apart: together they are more than a busy server answers for a city
+        extra = overpass(work, 'water', f'({waterQ});out geom;') + overpass(work, 'roads', f'({roadQ});out geom;')
+    bathy = None
+    if V.get('bathy'):
+        r_ = EXTENT * 1.45; s_, w_, n_, e_ = LAT0 - r_ / MLAT, LON0 - r_ / MLON, LAT0 + r_ / MLAT, LON0 + r_ / MLON
+        nx_, nz_ = (260, 260) if V['bathy'] == 'emodnet' else (900, 900)
+        url = (f'https://ows.emodnet-bathymetry.eu/wcs?service=WCS&version=1.0.0&request=GetCoverage&coverage=emodnet:mean&crs=EPSG:4326'
+               f'&BBOX={w_:.5f},{s_:.5f},{e_:.5f},{n_:.5f}&format=image/tiff&WIDTH={nx_}&HEIGHT={nz_}') if V['bathy'] == 'emodnet' else (
+               f'https://gis.ngdc.noaa.gov/arcgis/rest/services/DEM_mosaics/DEM_all/ImageServer/exportImage?bbox={w_:.5f},{s_:.5f},{e_:.5f},{n_:.5f}'
+               f'&bboxSR=4326&imageSR=4326&size={nx_},{nz_}&format=tiff&pixelType=F32&interpolation=RSP_BilinearInterpolation&f=image')
+        bpath = fetch(os.path.join(work, 'bathy.tif'), url)
+        if not fetch_only:
+            B_ = np.asarray(Image.open(bpath), dtype=np.float32)
+            B_ = np.where(np.isfinite(B_) & (np.abs(B_) < 11000), B_, np.nan)
+            def bathy(x, z):  # the survey's depth (−) or height (+) there, NaN where it has none
+                lat, lon = to_ll(x, z)
+                fx = np.clip((lon - w_) / (e_ - w_) * B_.shape[1] - 0.5, 0, B_.shape[1] - 1.001); fz = np.clip((n_ - lat) / (n_ - s_) * B_.shape[0] - 0.5, 0, B_.shape[0] - 1.001)
+                j = fx.astype(int); i = fz.astype(int); u = fx - j; v = fz - i
+                return (B_[i, j] * (1 - u) + B_[i, j + 1] * u) * (1 - v) + (B_[i + 1, j] * (1 - u) + B_[i + 1, j + 1] * u) * v
     foot = os.path.join(work, 'footprints.csv.gz')
     if V.get('footprints') and not os.path.exists(foot):
         # Microsoft's Global ML Building Footprints (ODbL): the file for one quadkey of a region
@@ -337,12 +404,43 @@ def bake(vid, V, fetch_only=False):
             land = ~filled & (H > 0.3)
             print('  coast ways', len(coast), '| sea regions', regions)
 
+    # the map's water ashore down at the water's own level (an estuary, a lagoon, a river's mouth) is water too; the
+    # lakes up in the hills stay land, drawn as water by the cover
+    wimg = Image.new('L', (GW, GH), 0); wd = ImageDraw.Draw(wimg)
+    for el in extra:
+        t = el.get('tags', {})
+        if not (t.get('natural') == 'water' or t.get('waterway') == 'riverbank' or t.get('landuse') in ('reservoir', 'basin')): continue
+        if el['type'] == 'way' and el.get('geometry'):
+            r = line(el['geometry'])
+            if len(r) > 2: wd.polygon(pix(r), fill=255)
+        elif el['type'] == 'relation':
+            for r in loops([line(m['geometry']) for m in el.get('members', []) if m.get('type') == 'way' and m.get('geometry') and m.get('role') != 'inner']):
+                if len(r) > 2: wd.polygon(pix(r), fill=255)
+            for r in loops([line(m['geometry']) for m in el.get('members', []) if m.get('type') == 'way' and m.get('geometry') and m.get('role') == 'inner']):
+                if len(r) > 2: wd.polygon(pix(r), fill=0)
+    carve = (np.asarray(wimg) > 127) & land & (H <= max(2.0, V.get('flat') or 0))  # (a flat city's rivers: all of them)
+    land = land & ~carve
+    print(f'  water ashore at the sea\'s level: {int(carve.sum())} cells', flush=True)
+    # where the beaches are: the bed shelves gently off them
+    bimg = Image.new('L', (GW, GH), 0); bd = ImageDraw.Draw(bimg)
+    for el in cover_els:
+        if el['type'] == 'way' and el.get('geometry') and el.get('tags', {}).get('natural') in ('beach', 'sand'):
+            r = line(el['geometry'])
+            if len(r) > 2: bd.polygon(pix(r), fill=255)
+    beach = np.asarray(bimg.filter(ImageFilter.MaxFilter(13))) > 127
+
     # ---------- the sea room: the distance to the shore, 20 m grid over the middle 10 km ----------
     obst = Image.fromarray((land * 255).astype(np.uint8)); od = ImageDraw.Draw(obst)
     for el in marina:
         kind = el.get('tags', {}).get('man_made')
         if kind not in ('pier', 'breakwater', 'groyne') or not el.get('geometry'): continue
         od.line(pix(line(el['geometry'])), fill=255, width=max(1, round((6 if kind != 'pier' else 2.5 + 2 * 14) / CELL)))
+    for lm in V.get('landmarks', []):  # the bridges' piers
+        if lm['kind'] != 'drawbridge': continue
+        a, b = np.array(to_xz(*lm['a']), float), np.array(to_xz(*lm['b']), float); u = (b - a) / np.hypot(*(b - a)); v = np.array([-u[1], u[0]])
+        for i in range(1, lm['n']):
+            c = a + (b - a) * i / lm['n']
+            od.polygon(pix([c + u * su * 5 + v * sv * (lm['w'] / 2 + 3) for su, sv in ((-1, -1), (1, -1), (1, 1), (-1, 1))]), fill=255)
     land_o = np.asarray(obst) > 127
     k0 = int((-5000 + G) / CELL); k1 = int((5000 + G) / CELL)
     sub = land_o[k0:k1:2, k0:k1:2]
@@ -424,8 +522,14 @@ def bake(vid, V, fetch_only=False):
             if di or dj: Rd = np.maximum(Rd, shift(Ra, di, dj, 0))
     D = np.clip(Rd, 2.5, 60)
     ramp = np.clip(S / B, -1, 1)
-    shelf = np.maximum(-(D + 0.08 * np.clip(-S - B, 0, None)), -40)
+    soft = bilinear(beach.astype(np.float32), -G + CELL / 2, CELL, *np.meshgrid(LX, LX)) > 0.5
+    shelf = np.maximum(-(D + np.where(soft, 0.03, 0.08) * np.clip(-S - B, 0, None)), -40)
     sea = np.where(-S < B, D * ramp, np.minimum(shelf, np.where(th < -0.8, th, 0)))
+    if bathy is not None:  # the survey's depths, where it has them, past the shore's own slope
+        sb = bathy(*np.meshgrid(LX, LX)).astype(np.float32)
+        have = np.isfinite(sb) & (-S >= B)
+        sea = np.where(have, np.clip(np.nan_to_num(sb), -60, -0.8), sea)
+        print(f'  sea floor from the survey: {have.mean():.0%} of the lattice', flush=True)
     HL = np.where(S > 0, Rl * ramp, sea).astype(np.float32)
     del Rl, Ra, Rd, D, ramp, shelf, sea
 
@@ -505,27 +609,30 @@ def bake(vid, V, fetch_only=False):
     cx = -EXTENT + (np.arange(NCC) + 0.5) * CC
     CX, CZ = np.meshgrid(cx, cx)
     cpix = lambda r: [((x + EXTENT) / CC, (z + EXTENT) / CC) for x, z in r]
-    ways = {}; rels = []
-    for el in cover_els:
+    shapes = []  # (tags, outer rings, inner rings, the element)
+    for el in cover_els + [e for e in extra if 'highway' not in e.get('tags', {})]:
         t = el.get('tags', {})
-        if el['type'] == 'way' and el.get('geometry'): ways[el['id']] = (t, [line(el['geometry'])], [])
+        if el['type'] == 'way' and el.get('geometry'): shapes.append((t, [line(el['geometry'])], [], el))
         elif el['type'] == 'relation':
             o = [line(m['geometry']) for m in el.get('members', []) if m.get('type') == 'way' and m.get('geometry') and m.get('role') != 'inner']
             i = [line(m['geometry']) for m in el.get('members', []) if m.get('type') == 'way' and m.get('geometry') and m.get('role') == 'inner']
-            rels.append((t, loops(o), loops(i)))
+            shapes.append((t, loops(o), loops(i), el))
     cover = np.zeros((NCC, NCC), np.uint8)
     for cls, tags in LAYERS:
         img = Image.new('L', (NCC, NCC), 0); d = ImageDraw.Draw(img); n = 0
-        for t, outer_r, inner_r in list(ways.values()) + rels:
+        for t, outer_r, inner_r, el in shapes:
             if not any(t.get(k) in v for k, v in tags.items()): continue
+            vr = max(1, variant(cls, el)) if cls != 'forest' else variant(cls, el) + 1  # (0 is no area: a wood's 1 is "not said")
             for r in outer_r:
-                if len(r) > 2: d.polygon(cpix(r), fill=255); n += 1
+                if len(r) > 2: d.polygon(cpix(r), fill=vr); n += 1
             for r in inner_r:
                 if len(r) > 2: d.polygon(cpix(r), fill=0)
-        if n: cover[np.asarray(img) > 127] = CLASSES.index(cls)
+        if n:
+            a_ = np.asarray(img); m_ = a_ > 0
+            cover[m_] = CLASSES.index(cls) | ((a_[m_] - (1 if cls == 'forest' else 0)) << 4).astype(np.uint8)
     Lc = bilinear(HL, -EXTENT, LC, CX, CZ)
     cover[Lc <= 0] = 0
-    print('  cover:', ', '.join(f'{c} {np.mean(cover == k):.0%}' for k, c in enumerate(CLASSES) if np.mean(cover == k) >= 0.005), flush=True)
+    print('  cover:', ', '.join(f'{c} {np.mean(cover & 15 == k):.0%}' for k, c in enumerate(CLASSES) if np.mean(cover & 15 == k) >= 0.005), flush=True)
     # the open sky: how far up the land round each point stands, looking eight ways out to 3 km
     H2 = np.maximum(HL[::2, ::2], 0); h0 = bilinear(H2, -EXTENT, 2 * LC, CX, CZ)
     vis = np.zeros_like(h0)
@@ -538,6 +645,38 @@ def bake(vid, V, fetch_only=False):
     vis = vis.reshape(NCC // 2, 2, NCC // 2, 2).mean((1, 3))  # on a 40 m grid, in steps of 4: smooth enough
     ao = (np.clip(np.round(vis / 8 * 63), 0, 63) * 4).astype(np.uint8)
     depth_dm = np.where(Lc >= 0, 0, np.where(-Lc > 25.4, 255, np.round(-Lc * 10))).astype(np.uint8)
+
+    # ---------- the roads and the distance out from the shore, on an 8 m grid round the race area ----------
+    rimg = Image.new('L', (NE, NE), 0); rd = ImageDraw.Draw(rimg)
+    epix = lambda r: [((x + NE * EC / 2) / EC, (z + NE * EC / 2) / EC) for x, z in r]
+    for el in extra:
+        w = ROADS.get(el.get('tags', {}).get('highway'))
+        if w and el.get('geometry') and el.get('tags', {}).get('tunnel') != 'yes' and el.get('tags', {}).get('bridge') != 'yes':
+            rd.line(epix(line(el['geometry'])), fill=255, width=max(1, round(w / EC)))
+    roads = np.asarray(rimg).copy()
+    roads[(np.abs(np.arange(NE) * EC - NE * EC / 2 + EC / 2)[:, None] > 3500) | (np.abs(np.arange(NE) * EC - NE * EC / 2 + EC / 2)[None, :] > 3500)] = 0  # (round the race area: 3.5 km)
+    ex = -NE * EC / 2 + (np.arange(NE) + 0.5) * EC
+    EX, EZ = np.meshgrid(ex, ex)
+    roads[bilinear(HL, -EXTENT, LC, EX, EZ) <= 0.3] = 0
+    off = bilinear(S, -EXTENT, LC, EX, EZ)
+    shore = np.where(off >= 0, 0, np.clip(np.round(-off * 4), 1, 255)).astype(np.uint8)
+    # where the shore is built (a town's, a port's quays, the piers and breakwaters): sheltered water, no surf
+    cimg = Image.new('L', (NE, NE), 0); cd = ImageDraw.Draw(cimg)
+    for el in marina:
+        if el.get('geometry'): cd.line(epix(line(el['geometry'])), fill=255, width=3)
+    ci = np.clip(((EZ + EXTENT) // CC).astype(int), 0, NCC - 1); cj = np.clip(((EX + EXTENT) // CC).astype(int), 0, NCC - 1)
+    built_c = np.isin(cover[ci, cj] & 15, [CLASSES.index('town'), CLASSES.index('industry')]) | (np.asarray(cimg) > 127)
+    calm = (np.asarray(Image.fromarray((built_c * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(9))) > 127).astype(np.uint8) * 255
+    # and in the lee: the waves come with the wind, from the game's north (−z); the less open water there is that way
+    # (the fetch, out to 1.5 km), the less surf
+    near_sh = (off < 0) & (off > -70)
+    qi_ = np.flatnonzero(near_sh); qx, qz = EX.ravel()[qi_], EZ.ravel()[qi_]
+    fetch_ = np.full(len(qi_), 1500.0)
+    for t_ in np.arange(30.0, 1500.0, 30.0):
+        hit = land_at(qx, qz - t_) & (fetch_ >= 1500.0)
+        fetch_[hit] = t_
+    lee = np.zeros(NE * NE, np.float32); lee[qi_] = 1 - np.clip(fetch_ / 1200.0, 0, 1)
+    calm = np.maximum(calm, np.round(lee.reshape(NE, NE) * 255)).astype(np.uint8)
 
     # ---------- the land beyond: out to 64 km on a 400 m grid ----------
     fx = -FEXT + np.arange(NF) * FCELL
@@ -563,6 +702,11 @@ def bake(vid, V, fetch_only=False):
         if not p: continue
         piers.append({'kind': t.get('man_made') or 'slipway', 'pts': p, 'area': t.get('area') == 'yes' or (p[0] == p[-1] and len(p) > 3),
                       'floating': t.get('floating') == 'yes' or 'pontoon' in t.get('name', '').lower(), 'w': num(t.get('width', 0))})
+    PIERS = ['pier', 'breakwater', 'groyne', 'quay', 'slipway']
+    pn = np.array([min(len(p_['pts']), 65535) for p_ in piers], np.uint16)
+    pk = np.array([PIERS.index(p_['kind']) if p_['kind'] in PIERS else 0 for p_ in piers], np.uint8) + np.array([8 * bool(p_['area']) + 16 * bool(p_['floating']) for p_ in piers], np.uint8)
+    pw = np.array([min(255, round(p_['w'] * 10)) for p_ in piers], np.uint8)
+    pxz = np.array([round(v * 2) for p_ in piers for q in p_['pts'][:65535] for v in q], np.int16)
     TOWN_XZ = [tuple(float(v) for v in to_xz(lat, lon)) for lat, lon, _ in V.get('towns', [])]
     ROOFS = {'flat': 1, 'gabled': 2, 'hipped': 2, 'pyramidal': 2, 'half-hipped': 2, 'gambrel': 2, 'mansard': 2, 'skillion': 1, 'dome': 1}
     seen, found = set(), []
@@ -570,13 +714,37 @@ def bake(vid, V, fetch_only=False):
         cx_ = sum(a for a, _ in r) / len(r); cz_ = sum(b for _, b in r) / len(r)
         near = min([math.hypot(cx_ - MID[0], cz_ - MID[1])] + [math.hypot(cx_ - tx, cz_ - tz) * 1.5 for tx, tz in TOWN_XZ])
         found.append({'r': r, 'h': round(min(h, 400), 1), 'roof': roof, 'd': near - min(h, 200) * 20, 'c': (cx_, cz_)})
+    def keyhole(el):
+        # a relation's outer ring with its courtyards cut in: each inner ring joined to the outer one at their nearest
+        # corners and walked the other way round, so that one ring of corners draws the building with its holes
+        segs = lambda role: [np.array(poly(m['geometry'])) for m in el.get('members', []) if m.get('type') == 'way' and m.get('geometry') and (m.get('role') == 'inner') == (role == 'inner')]
+        outs = [r for r in loops(segs('outer')) if len(r) > 3 and np.hypot(*(r[0] - r[-1])) < 1.5]
+        if not outs: return None
+        area = lambda r: (r[:-1, 0] * r[1:, 1] - r[1:, 0] * r[:-1, 1]).sum() / 2
+        o = max(outs, key=lambda r: abs(area(r)))[:-1]
+        if area(np.vstack([o, o[:1]])) < 0: o = o[::-1]
+        for h_ in sorted((r for r in loops(segs('inner')) if len(r) > 3 and np.hypot(*(r[0] - r[-1])) < 1.5), key=lambda r: -abs(area(r)))[:6]:
+            h_ = h_[:-1]
+            if area(np.vstack([h_, h_[:1]])) > 0: h_ = h_[::-1]
+            d = np.hypot(o[:, None, 0] - h_[None, :, 0], o[:, None, 1] - h_[None, :, 1]); i, j = np.unravel_index(np.argmin(d), d.shape)
+            o = np.vstack([o[:i + 1], h_[j:], h_[:j + 1], o[i:]])
+        # thinned to the 255 corners a building can have
+        k = 0.4
+        while len(o) > 250:
+            keep = [0]
+            for n_ in range(1, len(o)):
+                if np.hypot(*(o[n_] - o[keep[-1]])) >= k: keep.append(n_)
+            o = o[keep]; k *= 1.5
+        return [[round(float(a), 1), round(float(b), 1)] for a, b in o] + [[round(float(o[0][0]), 1), round(float(o[0][1]), 1)]]
     for el in build + tall:
-        if el.get('id') in seen: continue
-        seen.add(el.get('id'))
-        p = poly(el.get('geometry'))
+        if (el['type'], el.get('id')) in seen: continue
+        seen.add((el['type'], el.get('id')))
+        p = poly(el.get('geometry')) if el['type'] == 'way' else keyhole(el)
         if not p or len(p) < 4: continue
         t = el.get('tags', {}); h = num(t.get('height')) or (num(t.get('building:levels')) * 3.1 + 1.0 if t.get('building:levels') else 0)
-        add(p[:-1] if p[0] == p[-1] else p, h, ROOFS.get(t.get('roof:shape'), 0))
+        kind = 3 if t.get('building') in ('church', 'chapel', 'cathedral') else 4 if t.get('building') == 'mosque' else ROOFS.get(t.get('roof:shape'), 0)
+        if t.get('building') in ('castle', 'fortress') or t.get('historic') in ('castle', 'fort', 'citywalls'): kind, h = 5, h or 11.0  # a fortress's ramparts
+        add(p[:-1] if p[0] == p[-1] else p, h, kind)
     if os.path.exists(foot):
         # a footprint where OSM has no building (none of OSM's within 12 m of its middle), ashore, sure and house-sized
         taken = {(int(a // 12), int(b // 12)) for f in found for a, b in f['r']}
@@ -602,12 +770,12 @@ def bake(vid, V, fetch_only=False):
         i, j = int((b['c'][1] + EXTENT) // CC), int((b['c'][0] + EXTENT) // CC)
         if 0 <= i < NCC and 0 <= j < NCC: dens[i, j] += 1
     near = sum(shift(dens, di, dj, 0) for di in range(-2, 3) for dj in range(-2, 3))
-    built = (near >= 5) & (Lc > 0) & ~np.isin(cover, [CLASSES.index('sand'), CLASSES.index('rock'), CLASSES.index('industry')])
+    built = (near >= 5) & (Lc > 0) & ~np.isin(cover & 15, [CLASSES.index(c) for c in ('sand', 'rock', 'industry', 'water')])
     cover[built] = CLASSES.index('town')
     print(f'  town from the buildings: {built.mean():.1%}', flush=True)
     # the nearest, and the tall ones from further: the town round the race area and the skyline beyond it
     found.sort(key=lambda b: b['d'])
-    found = found[:5000]
+    found = [b for b in found if b['d'] < 6000][:8000]  # (beyond some 4 km of the race area and the towns, the tall ones only)
     bn = np.array([min(len(b['r']), 255) for b in found], np.uint8)
     bh = np.array([round(b['h'] * 10) for b in found], np.uint16)
     broof = np.array([b['roof'] for b in found], np.uint8)
@@ -639,8 +807,11 @@ def bake(vid, V, fetch_only=False):
         ('ao', 'u8', grad(ao // 4).astype(np.uint8), 'grad', NCC // 2),
         ('depth', 'u8', rows(depth_dm).astype(np.uint8), 'rows', NCC),
         ('far', 'i16', grad(farh // 2).astype('<i2'), 'grad', NF),
+        ('roads', 'u8', rows(roads).astype(np.uint8), 'rows', NE), ('shore', 'u8', rows(shore).astype(np.uint8), 'rows', NE),
+        ('calm', 'u8', rows(calm).astype(np.uint8), 'rows', NE),
         ('bn', 'u8', bn, None, 0), ('bh', 'u16', bh.astype('<u2'), None, 0), ('broof', 'u8', broof, None, 0),
         ('bxz', 'i16', seq(bxz).astype('<i2'), 'seq', 0),
+        ('pn', 'u16', pn.astype('<u2'), None, 0), ('pk', 'u8', pk, None, 0), ('pw', 'u8', pw, None, 0), ('pxz', 'i16', seq(pxz).astype('<i2'), 'seq', 0),
     ]
     raw, desc = b'', []
     for name, typ, a, pack, w in parts:
@@ -652,16 +823,16 @@ def bake(vid, V, fetch_only=False):
     with open(jpath[:-5] + '.bin', 'wb') as f: f.write(gzip.compress(raw, 9, mtime=0))
     meta = {
         'origin': [LAT0, LON0], 'turn': V['wind'], **({'home': [0, 0]} if V.get('home') else {}), 'mid': [float(MID[0]), float(MID[1])], 'lake': bool(V.get('lake')),
-        'terrain': {'ext': EXTENT, 'n': N}, 'grid': {'x0': -EXTENT, 'cell': CC, 'n': NCC}, 'ao': {'cell': CC * 2, 'n': NCC // 2, 'k': 4}, 'far': {'ext': FEXT, 'cell': FCELL, 'n': NF, 'k': 2},
+        'terrain': {'ext': EXTENT, 'n': N}, 'grid': {'x0': -EXTENT, 'cell': CC, 'n': NCC}, 'ao': {'cell': CC * 2, 'n': NCC // 2, 'k': 4}, 'far': {'ext': FEXT, 'cell': FCELL, 'n': NF, 'k': 2}, 'near': {'x0': -NE * EC / 2, 'cell': EC, 'n': NE},
         'room': {'x0': MX0, 'z0': MZ0, 'cell': SC, 'nx': MW, 'nz': MH}, 'classes': CLASSES, 'parts': desc,
-        'marinas': marinas, 'piers': piers, 'towns': towns, 'landmarks': landmarks,
+        'marinas': marinas, 'pierKinds': PIERS, 'towns': towns, 'landmarks': landmarks,
     }
     with open(jpath, 'w') as f: json.dump(meta, f, separators=(',', ':'))
     print(f'{vid}: {os.path.getsize(jpath[:-5] + ".bin") // 1024} kB + {os.path.getsize(jpath) // 1024} kB | sea {(room > 0).mean():.0%} of the middle | marinas {len(marinas)} | piers {len(piers)} | buildings {len(found)}', flush=True)
 
 
 if __name__ == '__main__':
-    want = [a for a in sys.argv[2:] if not a.startswith('--')] or list(VENUES)
+    want = ARGS or list(VENUES)
     for vid in want:
         print('==', vid, flush=True)
         bake(vid, VENUES[vid], '--fetch' in sys.argv)

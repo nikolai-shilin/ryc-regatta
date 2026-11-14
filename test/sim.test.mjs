@@ -45,7 +45,7 @@ test('the shapes come round in about the weights', () => {
 // today's venue: every venue in turn, never the same two days running; and the play page's preloader (an inline copy
 // in public/play/index.html) fetches the same venue's land as the game then asks for
 test('today’s race goes round the venues, and the play page preloads the day’s', async () => {
-  const { VENUES, dailyVenue, landFiles, venueById } = await import('../public/game/venues.js');
+  const { ROUNDS, dailyVenue, landFiles, venueById } = await import('../public/game/venues.js');
   const html = await readFile(new URL('../public/play/index.html', import.meta.url), 'utf8');
   const script = html.match(/<script>(\(function \(\) \{ var v = 'gocek';[\s\S]*?)<\/script>/)[1];
   const { runInNewContext } = await import('node:vm');
@@ -54,9 +54,12 @@ test('today’s race goes round the venues, and the play page preloads the day�
   for (let d = 0; d < 400; d++) {
     const now = from + d * 864e5, day = new Date(now), v = dailyVenue(day);
     assert.notEqual(v, prev, `${day.toISOString().slice(0, 10)}: not yesterday’s venue`); prev = v;
-    if (Math.floor(now / 864e5) % VENUES.length === 0) { // a round: the days are counted from 1970 in rounds of len
-      const round = new Set(Array.from({ length: VENUES.length }, (_, i) => dailyVenue(new Date(now + i * 864e5))));
-      assert.ok(round.size >= VENUES.length - 2, 'every venue comes round');
+    // a round: the days are counted in rounds of the venues there are, from 1970 or from the day the last one joined
+    const n = Math.floor(now / 864e5), e = ROUNDS.findLastIndex((r) => n >= r.n0), { n0, ids } = ROUNDS[e], len = ids.length;
+    if ((n - n0) % len === 0 && !(ROUNDS[e + 1] && n + len > ROUNDS[e + 1].n0)) {
+      const round = new Set(Array.from({ length: len }, (_, i) => dailyVenue(new Date(now + i * 864e5))));
+      assert.ok(round.size >= len - 2, 'every venue comes round');
+      if (n0 > 0) assert.equal(round.size, len, 'all of them, the new one among them');
     }
     const links = [];
     class FakeDate extends Date { constructor(...a) { super(...(a.length ? a : [now])); } }
@@ -312,7 +315,7 @@ for (const v of VENUES) {
       globalThis.location = { search: '?venue=${v.id}' };
       globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))));
       const sim = await import(${JSON.stringify(new URL('../public/game/sim.js', import.meta.url).href)});
-      const { SKOPEA } = await import(${JSON.stringify(new URL('../public/game/land.js', import.meta.url).href)});
+      const { SKOPEA, MESH } = await import(${JSON.stringify(new URL('../public/game/land.js', import.meta.url).href)});
       const { VENUE, shapeOffered } = await import(${JSON.stringify(new URL('../public/game/venues.js', import.meta.url).href)});
       let worst = Infinity, where = '';
       for (const preset of ['light', 'medium', 'strong']) for (const length of ['short', 'medium', 'long']) for (const course of sim.SHAPES) {
@@ -324,11 +327,12 @@ for (const v of VENUES) {
           if (room < worst) { worst = room; where = course + ' ' + preset + ' ' + length; }
         }
       }
-      console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where }));`;
+      console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, corners: MESH.corners, heights: SKOPEA.parts.heights.length }));`;
     const out = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' }));
     assert.deepEqual(out.origin, [v.lat, v.lon], 'baked at the venue’s position');
     assert.equal(out.turn, v.wind, 'turned to the venue’s wind'); // Göcek's own bake isn't turned: its wind is north
     assert.ok(out.worst >= 60, `a mark only ${Math.round(out.worst)} m from the shore (${out.where})`);
+    assert.equal(out.corners, out.heights, 'the terrain the game builds from the quadtree has a height for each of its corners');
   });
 }
 
