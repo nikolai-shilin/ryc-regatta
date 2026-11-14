@@ -25,7 +25,8 @@ export const HUD_STRINGS = {
     toLeader: 'To leader', ahead: 'Ahead of 2nd', time: 'Time', start: 'Start', perMin: '/min', camera: 'Camera', pause: 'Pause',
     you: 'You', layIn: (s) => `Layline in ${s} · then tack`, layNow: 'On the layline · tack', over: 'Past the layline · tack now', fetch: 'Laying the mark',
     advantage: 'Advantage',
-    space: 'Space',
+    space: 'Space', boardFoot: (n) => `The boats round you · ${n} in all`,
+    toLeg: { lineStart: 'To the start line', mark: 'To the windward mark', mark1: 'To mark 1', wing: 'To the wing mark', mark2: 'To mark 2', offset: 'To the offset mark', gate: 'To the leeward gate', finish: 'To the finish' },
     go: 'Go', leads: 'Leads', afterGun: 'after the gun', ord: (n) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`,
   },
   ru: {
@@ -40,7 +41,8 @@ export const HUD_STRINGS = {
     toLeader: 'До лидера', ahead: 'Впереди второго', time: 'Время', start: 'Старт', perMin: '/мин', camera: 'Камера', pause: 'Пауза',
     you: 'Ты', layIn: (s) => `Лейлайн через ${s} · потом поворот`, layNow: 'На лейлайне · поворот', over: 'Лейлайн пройден · поворачивай', fetch: 'Идёшь на знак',
     advantage: 'Выигрыш',
-    space: 'Пробел',
+    space: 'Пробел', boardFoot: (n) => `Лодки рядом с тобой · всего ${n}`,
+    toLeg: { lineStart: 'К линии старта', mark: 'К верхнему знаку', mark1: 'К знаку 1', wing: 'К боковому знаку', mark2: 'К знаку 2', offset: 'К знаку смещения', gate: 'К нижним воротам', finish: 'К финишу' },
     go: 'Старт!', leads: 'Лидирует', afterGun: 'после сигнала', ord: (n) => `${n}-й`,
   },
 };
@@ -156,6 +158,11 @@ const CSS = `
 .b-row .b-x { min-width: 52px; padding-right: var(--s-4); text-align: right; font: 700 var(--fs-row)/1 var(--cond); color: var(--ink-2); }
 .b-board.pre .b-pos { display: none; } .b-board:not(.pre) .b-x { display: none; }
 .b-board.pre .b-row { height: 34px; } .b-board.pre .b-mv { display: none; }
+/* under the rows: how many boats there are, and the key that hides the board and brings it back */
+.b-bf { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-2) var(--s-4) var(--s-3); border-top: 1px solid var(--rule-2); }
+.b-lk { display: none; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); color: var(--ink-3); border: 1px solid var(--rule); padding: var(--s-1) var(--s-2); }
+@media (hover: hover) and (pointer: fine) { .b-lk { display: inline-block; } }
+#hud.bc .b-board.off { display: none !important; }
 
 /* ---------- bottom left: the course ---------- */
 .b-map { left: calc(28px + var(--sl)); bottom: calc(28px + var(--sb)); flex-direction: column; animation: bc-rise var(--t-in) var(--ease) both .35s; }
@@ -335,7 +342,7 @@ const CSS = `
 
 /* ---------- compact: a phone sideways, then upright ---------- */
 @media not all and ${WIDE} {
-  #hud.bc .b-bug, #hud.bc .b-state, #hud.bc .b-board .b-bh, #hud.bc .b-map .b-mh, #hud.bc .b-gunc, #hud.bc .b-bias, #hud.bc .b-legs, #hud.bc .b-wind .b-wt > .lbl:first-child, #hud.bc .b-dir { display: none !important; }
+  #hud.bc .b-bug, #hud.bc .b-state, #hud.bc .b-board .b-bh, #hud.bc .b-board .b-bf, #hud.bc .b-map .b-mh, #hud.bc .b-gunc, #hud.bc .b-bias, #hud.bc .b-legs, #hud.bc .b-wind .b-wt > .lbl:first-child, #hud.bc .b-dir { display: none !important; }
   #hud.bc .b-tr, #hud.bc .b-low { display: contents !important; }
   .b-wind { position: absolute; left: calc(16px + var(--sl)); top: calc(12px + var(--st)); height: 36px; gap: var(--s-2); padding: 0 var(--s-3) 0 var(--s-2); margin: 0; pointer-events: none; animation: bc-slide-l var(--t-in) var(--ease) both .1s; }
   .b-wind svg { width: 30px; height: 30px; }
@@ -462,7 +469,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       <path d="M32 22 C 34.6 25.5 35.2 31 34.7 38 L 29.3 38 C 28.8 31 29.4 25.5 32 22 Z" fill="rgba(255,255,255,0.9)"/>
       <g class="tw"><path d="M32 4 L38 15 L32 12 L26 15 Z" fill="#3db8ff" transform="rotate(180 32 9.5)"/></g></svg>
       <div class="b-wt"><span class="lbl">${L.trueWind}</span><span class="n-l b-tws"></span><span class="lbl b-wl"><span class="b-dir"></span><span class="b-shift"></span></span></div></div></div>`);
-  const board = html(`<div class="bx pn b-board"><div class="b-bh"><span class="lbl-ink b-bt"></span><span class="lbl b-br"></span></div><div class="b-rows"></div></div>`);
+  const board = html(`<div class="bx pn b-board"><div class="b-bh"><span class="lbl-ink b-bt"></span><span class="lbl b-br"></span></div><div class="b-rows"></div><div class="b-bf"><span class="lbl b-bfn"></span><kbd class="b-lk">L</kbd></div></div>`);
   const map = html(`<div class="bx pn b-map"><div class="b-mh"><span class="lbl-ink">${L.course}</span><span class="lbl b-shape"></span></div></div>`);
   const TACK_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9c2.5-4.5 9.5-4.5 12 0"/><path d="M12.5 9H16.5V5"/><path d="M10 11.5V17"/></g></svg>';
   const low = html(`<div class="bx b-low"><div class="b-split" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}<span></span><kbd class="b-key"></kbd></div></div><div class="b-state"></div>
@@ -485,7 +492,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     sub: q(bug, '.b-sub'), clock: q(bug, '.b-clock'), gun: q(top, '.b-gun'), gunN: q(top, '.b-gunn'), seq: q(top, '.b-seq'), seqI: q(top, '.b-seq i'), seqL: q(top, '.b-seql'),
     bv: q(top, '.b-bv'), bl: q(top, '.b-bl'), legs: q(top, '.b-legs'), legN: q(top, '.b-legn'), legR: q(top, '.b-legr'), btns: q(tr, '.b-btns'), cam: q(tr, '.b-cam'),
     nogo: q(tr, '.nogo'), tw: q(tr, '.tw'), tws: q(tr, '.b-tws'), dir: q(tr, '.b-dir'), shift: q(tr, '.b-shift'), windSvg: q(tr, 'svg'),
-    bt: q(board, '.b-bt'), br: q(board, '.b-br'), rows: q(board, '.b-rows'), shape: q(map, '.b-shape'), state: q(low, '.b-state'), you: q(low, '.b-you'),
+    bt: q(board, '.b-bt'), br: q(board, '.b-br'), rows: q(board, '.b-rows'), bfn: q(board, '.b-bfn'), shape: q(map, '.b-shape'), state: q(low, '.b-state'), you: q(low, '.b-you'),
   };
   const cell = (k) => q(low, `.c-${k}`);
   const Y = {
@@ -506,6 +513,11 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     e.preventDefault();
     setCam(CAMS[(CAMS.indexOf(world.mode) + 1) % CAMS.length]);
     B.cam.classList.add('say'); clearTimeout(sayT); sayT = setTimeout(() => B.cam.classList.remove('say'), 1400);
+  });
+  // L hides the board and brings it back (a computer's keys; see main.js for the others)
+  addEventListener('keydown', (e) => {
+    if (e.code !== 'KeyL' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || hud.hidden || e.target.closest?.('input, textarea, select')) return;
+    board.classList.toggle('off');
   });
   // the rudder's centre mark
   const mid = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -703,8 +715,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
 
     // the board: on the line before the start, then the race order with the gaps
     board.classList.toggle('pre', pre);
-    txt(B.bt, pre ? L.onLine : done ? L.finished : t(legKey(c, leg)));
+    txt(B.bt, pre ? L.onLine : done ? L.finished : L.toLeg[legKey(c, leg)] || t(legKey(c, leg)));
     txt(B.br, pre ? L.toLineSpd : L.gap);
+    txt(B.bfn, L.boardFoot(race.boats.length));
     const iP = st.indexOf(P), show = iP < 6 ? st.slice(0, 6) : [...st.slice(0, 5), P], cx = iP < 3 ? st.slice(0, 3) : [...st.slice(0, 2), P];
     const leader = st[0], remL = remaining(race, leader);
     if (!pre) for (const [b, i] of st.map((b, i) => [b, i + 1])) {

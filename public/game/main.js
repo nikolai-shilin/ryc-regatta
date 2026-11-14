@@ -1221,6 +1221,7 @@ const cycleSpeed = () => {
 speedBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); cycleSpeed(); });
 
 // keyboard, for a computer: ←/→ steer, ↑/↓ sheet, space tack, K kite, T game speed, X/C/V drone/top/helm view, A/Z zoom in/out, Esc pause
+// (L hides and shows the fleet board: hud-bc.js)
 window.addEventListener('keydown', (e) => {
   input.keys[e.code] = true;
   if (e.code === 'Space') { e.preventDefault(); doTack(); }

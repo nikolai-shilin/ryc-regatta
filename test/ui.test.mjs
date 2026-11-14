@@ -61,7 +61,7 @@ test('the broadcast HUD has every word in both languages, and the game uses it',
   const { HUD_STRINGS: S } = await import('../public/game/hud-bc.js');
   const keys = (o) => Object.keys(o).sort();
   assert.deepEqual(keys(S.ru), keys(S.en));
-  assert.deepEqual(keys(S.ru.shape), keys(S.en.shape));
+  for (const [k, v] of Object.entries(S.en)) if (v && typeof v === 'object') assert.deepEqual(keys(S.ru[k]), keys(v), k); // the course shapes, the legs, the cameras
   for (const [k, v] of Object.entries(S.ru)) if (typeof v === 'function') assert.match(v(1, 4), /1/, k);
   const main = read('public/game/main.js'), play = read('public/play/index.html');
   assert.match(main, /import \{ createHud \} from '\.\/hud-bc\.js'/);
