@@ -251,7 +251,7 @@ export default async function Home({ params }: LangParams) {
             <p className="ho-ps">{t(`The questions people ask before their first race. ${all.length - faq.length} more are on the Questions page.`, `Вопросы, которые задают перед первой гонкой. Ещё ${all.length - faq.length} — на странице «Вопросы».`)}</p>
             <Link className="ho-ghost" href="/faq">{t('All questions', 'Все вопросы')}<IconArrow s={16} /></Link>
           </div>
-          <div className="ho-card ho-faq"><FaqList items={faq} openFirst /></div>
+          <div className="ho-faq"><FaqList items={faq} openFirst /></div>
         </section>
 
         {/* 9 · the rules, and where to learn them */}

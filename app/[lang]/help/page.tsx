@@ -60,7 +60,7 @@ export default async function Help({ params }: LangParams) {
   );
 
   return (
-    <div className="scr help hp" lang={lang}>
+    <div className="scr help hp bc" lang={lang}>
       <SiteHead lang={lang} t={t} page="help" />
       <header className="hm-page hm-ph">
         <span className="kicker">Up and down</span>
@@ -97,7 +97,7 @@ export default async function Help({ params }: LangParams) {
         <div className="hsplit">
           <Image className="hshot" src="/images/h-wind-v3.jpg" width={960} height={720} sizes="(min-width: 600px) 50vw, 100vw" alt={t('The wind ring round the boat, from above', 'Кольцо ветра вокруг лодки, сверху')} />
           <div className="hstack">
-            <p className="lead">{t('The ring round your boat shows the angles you can sail, and the dial at the top left where the wind comes from. It swings ten degrees and more either way every minute or so: in a lift you can point higher; in a header, tack — the chip under the speed says which.', 'Кольцо вокруг лодки показывает, под какими углами можно идти, а круг слева вверху — откуда дует ветер. Он меняется на десять градусов и больше каждую минуту: когда отходит — иди круче, когда заходит — делай поворот. Подсказка под скоростью скажет, что сейчас.')}</p>
+            <p className="lead">{t('The ring round your boat shows the angles you can sail, and the wind box at the top of the screen where the wind comes from and how strong it is. It swings ten degrees and more either way every minute or so: in a lift you can point higher; in a header, tack — on the beat the wind box says Lift or Header.', 'Кольцо вокруг лодки показывает, под какими углами можно идти, а окно ветра вверху экрана — откуда и с какой силой дует ветер. Он меняется на десять градусов и больше каждую минуту: когда отходит — иди круче, когда заходит — делай поворот. На лавировке окно ветра так и пишет: «Отход» или «Заход».')}</p>
             <div className="legend">
               <span className="lsw lsw-no" /><span>{t('Red: too close to the wind to sail', 'Красный: слишком круто, лодка не идёт')}</span>
               <span className="lsw lsw-up" /><span>{t('Green: the best angle upwind', 'Зелёный: лучший угол против ветра')}</span>

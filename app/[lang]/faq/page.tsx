@@ -24,7 +24,7 @@ export default async function Faq({ params }: LangParams) {
   };
 
   return (
-    <div className="scr help hp" lang={lang}>
+    <div className="scr help hp bc" lang={lang}>
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <SiteHead lang={lang} t={t} page="faq" />
       <header className="hm-page hm-ph">

@@ -64,6 +64,16 @@ test('the broadcast HUD has every word in both languages, and the game uses it',
   assert.doesNotMatch(main + play, /hud-next/);
 });
 
+// a selector list split at its own commas, not those inside :is(…) or :not(…)
+function topLevel(list) {
+  const out = []; let depth = 0, cur = '';
+  for (const ch of list) {
+    if (ch === '(') depth++; else if (ch === ')') depth--;
+    if (ch === ',' && !depth) { out.push(cur); cur = ''; } else cur += ch;
+  }
+  return [...out, cur];
+}
+
 test('the pages laid out as the pause screen are in the broadcast look', () => {
   assert.match(read('app/[lang]/layout.tsx'), /import '@\/public\/ui\/tokens\.css';\nimport '@\/styles\/broadcast\.css';/); // the layer after the tokens
   for (const f of ['app/[lang]/race/page.tsx', 'app/[lang]/boat/page.tsx', 'components/free-setup.tsx', 'components/result-view.tsx']) {
@@ -73,10 +83,12 @@ test('the pages laid out as the pause screen are in the broadcast look', () => {
   }
   // the home is in it too, and its header's Play now and name stay hidden on the pages not yet moved over
   assert.match(read('app/[lang]/page.tsx'), /className="scr help home bc"/);
+  // and the reading pages
+  for (const f of ['help', 'faq', 'learn', 'iyt', 'learn/[slug]', 'learn/glossary']) assert.match(read(`app/[lang]/${f}/page.tsx`), /className="scr help hp[^"]*\bbc"/, f);
   assert.match(read('styles/ryc.css'), /\.hm-brand-t, \.hm-play \{ display: none; \}/);
   // the layer reaches only the pages that opt in: every selector starts at .bc
   const layer = read('styles/broadcast.css').replace(/\/\*[\s\S]*?\*\//g, '').replace(/@[^{]+\{/g, '');
   for (const m of layer.matchAll(/([^{}]+)\{[^{}]*\}/g)) {
-    for (const part of m[1].split(/,(?![^(]*\))/)) assert.match(part.trim(), /^\.bc\b|^\.bt-scr\.bc\b/, part.trim());
+    for (const part of topLevel(m[1])) assert.match(part.trim(), /^\.bc\b|^\.bt-scr\.bc\b/, part.trim());
   }
 });

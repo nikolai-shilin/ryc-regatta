@@ -39,7 +39,7 @@ export default async function GuidePage({ params }: Props) {
   };
 
   return (
-    <div className="scr help hp" lang={lang}>
+    <div className="scr help hp bc" lang={lang}>
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <SiteHead lang={lang} t={t} page="learn" crumbs={[[t('Learn to race', 'Учись гоняться'), '/learn'], [g.short, `/learn/${slug}`]]} />
       <header className="hm-page hm-ph">

@@ -269,16 +269,16 @@
 }
 
 /* ==========================================================================
-   The site's own pages in the broadcast look (the home now; the reading pages as they move over): the old tokens
+   The site's own scrolling pages in the broadcast look (the home, the reading pages): the old tokens
    pointed at the broadcast's, the header and footer as its bars, the home's sections.
    ========================================================================== */
-.bc.home {
+.bc.help {
   --f-sans: var(--cond); --f-serif: var(--sans);
   --bg: var(--surface); --muted: var(--ink-3); --line: var(--rule); --tag-line: var(--w-16); --band: var(--fill-1);
   --accent: var(--you); --on-accent: var(--ink-on); --sel-bg: var(--you); --sel-ink: var(--ink-on);
   background: var(--ground); color: var(--ink); font-family: var(--sans);
 }
-.bc.home > * { --h-m: 44px; --h-l: 56px; }
+.bc.help > * { --h-m: 44px; --h-l: 56px; }
 
 /* the header: the name with the blue mark, the pages as tabs, Play now beside the menu */
 .bc .hm-head { background: rgba(5, 10, 18, 0.94); border-bottom: 1px solid var(--rule); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); animation: bc-drop .4s var(--ease) both; }
@@ -420,15 +420,15 @@
 .bc .ho-nums > div { flex: 1 1 200px; padding: var(--s-6); }
 .bc .ho-nums dd { margin: 0; }
 .bc .ho-nums b { font-size: var(--fs-h2); }
-/* the questions */
+/* the questions (the home's, and the Questions page's) */
 .bc .ho-faq-side { flex: 1 1 280px; max-width: 380px; align-self: flex-start; }
 .bc .ho-faq { flex: 999 1 560px; min-width: 0; align-self: flex-start; }
-.bc .ho-faq .hm-faq-item { border-top: 0; border-bottom: 1px solid var(--rule-2); }
-.bc .ho-faq .hm-faq-item:last-child { border-bottom: 0; }
-.bc .ho-faq .hm-faq-item > summary { align-items: center; min-height: 56px; padding: var(--s-3) var(--s-5); color: var(--ink); font: 700 var(--fs-row)/1.2 var(--cond); }
-.bc .ho-faq .hm-faq-item > summary:hover { color: var(--you); }
-.bc .ho-faq .hm-faq-ico { color: var(--ink-3); }
-.bc .ho-faq .hm-text { margin: 0; padding: 0 var(--s-5) var(--s-5); font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+.bc .hm-faq-list .hm-faq-item { border-top: 0; border-bottom: 1px solid var(--rule-2); }
+.bc .hm-faq-list .hm-faq-item:last-child { border-bottom: 0; }
+.bc .hm-faq-list .hm-faq-item > summary { align-items: center; min-height: 56px; padding: var(--s-3) var(--s-5); color: var(--ink); font: 700 var(--fs-row)/1.2 var(--cond); }
+.bc .hm-faq-list .hm-faq-item > summary:hover { color: var(--you); }
+.bc .hm-faq-list .hm-faq-ico { color: var(--ink-3); }
+.bc .hm-faq-list .hm-text { margin: 0; padding: 0 var(--s-5) var(--s-5); font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
 /* the bar that never goes away */
 .bc .ho-dock { position: sticky; bottom: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3) var(--s-6);
   padding: var(--s-3) max(var(--s-8), calc((100% - 1240px) / 2)) calc(var(--s-3) + env(safe-area-inset-bottom, 0px));
@@ -459,3 +459,73 @@
   .bc .ho-dock-w { display: none; }
   .bc .ho-dock .ho-go { flex: none; padding: 0 var(--s-8) 0 var(--s-4); font-size: var(--fs-small); }
 }
+
+/* ---------- the reading pages: how to play, questions, learn, the guides, the glossary, the exam trainer ----------
+   Laid out as before (ryc.css: the page's head, sections and bands, figures, keyed lists, cards); here in the
+   broadcast's type, square panels on the dark ground, and one colour per meaning. */
+.bc .hm-band { background: var(--surface); }
+.bc .hm-band :is(.hrule, .hband, .rcard:not(.line), .iyt-card) { background: var(--panel-2); }
+/* the page's head: a blue kicker, the title in capitals, a line, the contents as a row of chips */
+.bc .hm-ph { gap: var(--s-5); padding-block: var(--s-16) var(--s-4); }
+.bc .kicker { align-self: flex-start; display: inline-flex; align-items: center; min-height: 28px; padding: var(--s-1) var(--s-6) var(--s-1) var(--s-3); background: var(--ink); color: var(--ink-on);
+  font: 700 var(--fs-small)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); }
+.bc .hm-ph > .kicker { background: var(--you); }
+.bc .hm-ph-h { font: 700 var(--fs-h1)/0.92 var(--cond); letter-spacing: -0.005em; text-transform: uppercase; }
+.bc .hm-ph > .hm-text { font: 500 var(--fs-lead)/1.55 var(--sans); }
+.bc .hm-ph-nav { gap: var(--s-1); }
+.bc .hm-chip { height: var(--h-m); padding: 0 var(--s-4); border-radius: 0; background: var(--fill-2); color: var(--ink); text-decoration: none;
+  font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; transition: background-color var(--t-quick); }
+.bc .hm-chip:hover { background: var(--w-14); }
+.bc .hm-ph > * { animation: bc-rise .55s var(--ease) both; }
+.bc .hm-ph > :nth-child(2) { animation-delay: .07s; } .bc .hm-ph > :nth-child(3) { animation-delay: .14s; } .bc .hm-ph > :nth-child(n+4) { animation-delay: .21s; }
+/* type */
+.bc .hm-h2 { font: 700 var(--fs-h2)/0.95 var(--cond); letter-spacing: 0; text-transform: uppercase; }
+.bc .hm-h3 { font: 700 var(--fs-title)/1.05 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; }
+.bc .hm-text { font: 500 var(--fs-body)/1.55 var(--sans); color: var(--ink-2); }
+.bc .lead, .bc .hm-sec .lead { font: 500 var(--fs-lead)/1.55 var(--sans); color: var(--ink-2); }
+.bc .meta { font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .card-title { font: 700 var(--fs-row)/1.15 var(--cond); letter-spacing: var(--ls-name); color: var(--ink); }
+.bc .hm-src { color: var(--you); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); }
+/* the buttons: the one action blue and cut, the others quiet */
+.bc .pill { height: var(--h-l); gap: var(--s-3); padding: 0 var(--s-8) 0 var(--s-6); border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink); text-decoration: none;
+  font: 700 var(--fs-lead)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; transition: filter var(--t-quick), background-color var(--t-quick), scale .12s; }
+.bc .pill:hover { background: var(--w-14); }
+.bc .pill-primary { padding-right: var(--s-12); background: var(--you); color: var(--ink-on); clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%); }
+.bc .pill-primary:hover { background: var(--you); filter: brightness(1.08); }
+.bc .pill:active { scale: .97; }
+/* pictures: square, on the dark */
+.bc .hshot, .bc .hitem .hshot { border-radius: 0; background: var(--surface); }
+.bc .hfig .hmark { border-radius: 0; background: var(--you); color: var(--ink-on); box-shadow: 0 0 0 3px var(--ground); font-family: var(--cond); }
+/* keyed lists, steps and keys */
+.bc .hlegend .num-ico { border-radius: 0; background: var(--you); color: var(--ink-on); font: 700 var(--fs-small)/1 var(--cond); }
+.bc .hlegend li b { font: 700 var(--fs-lead)/1.2 var(--cond); letter-spacing: var(--ls-name); }
+.bc .hlegend li .d { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-3); }
+.bc .hsteps li { border-bottom-color: var(--rule-2); font: 500 var(--fs-body)/1.45 var(--sans); color: var(--ink-2); }
+.bc .hsteps .t { border-radius: 0; background: var(--ink); color: var(--ink-on); font: 700 var(--fs-body)/1 var(--cond); }
+.bc .lsw { border-radius: 0; }
+.bc .kbd { border: 1px solid var(--rule); border-radius: 0; color: var(--ink-2); font: 600 var(--fs-label)/1 var(--cond); }
+.bc .hkeys { color: var(--ink-3); }
+/* cards: square, an edge of colour where it says something */
+.bc .hrule { padding: var(--s-5); border-left: 4px solid var(--you); border-radius: 0; background: var(--fill-1); }
+.bc .hrule .meta { color: var(--you); }
+.bc .hrule .card-title { font: 700 var(--fs-row)/1.2 var(--cond); }
+.bc .hband, .bc .rcard { border-radius: 0; }
+.bc .hm-faq-list { background: var(--panel); }
+/* learn to race, the guides and the glossary */
+.bc .gd-card { border-radius: 0; background: var(--surface); text-decoration: none; transition: background-color var(--t-quick), translate var(--t-quick); }
+.bc .gd-card:hover { background: color-mix(in srgb, var(--surface), white 4%); translate: 0 -3px; }
+.bc .gd-card .card-title { font: 700 var(--fs-title)/1.1 var(--cond); text-transform: uppercase; }
+.bc .gd-card p { font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+.bc .gd-sec h2 { font: 700 var(--fs-h3)/1 var(--cond); text-transform: uppercase; }
+.bc .gd-sec p { font: 500 var(--fs-lead)/1.65 var(--sans); color: var(--ink-2); }
+.bc .gd-term { border-top-color: var(--rule-2); }
+.bc .gd-term dt { font: 700 var(--fs-row)/1.2 var(--cond); letter-spacing: var(--ls-name); }
+.bc .gd-term dd { font: 500 var(--fs-body)/1.6 var(--sans); color: var(--ink-2); }
+.bc .gd-term:target { background: var(--fill-1); box-shadow: -12px 0 0 var(--fill-1), 12px 0 0 var(--fill-1); }
+.bc .gd-see { color: var(--you); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); }
+/* the exam trainer */
+.bc .iyt-card { border-radius: 0; background: var(--surface); }
+.bc .hm-help-side .iyt-card { border: 0; border-left: 4px solid var(--you); }
+.bc .iyt-ic { border-radius: 0; background: var(--you); color: var(--ink-on); }
+.bc .iyt-levels li { border-top-color: var(--rule); }
+.bc .iyt-note { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-3); }
