@@ -44,7 +44,7 @@
   f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
 <link rel="modulepreload" href="/vendor/three@0.160.0/build/three.module.min.js">
 <!-- Telegram's script, only inside Telegram: the launch data in the hash, or kept in sessionStorage by the site's pages
-     (app/layout.tsx), or Telegram's own webview. Elsewhere the race doesn't wait on telegram.org at all. It is written
+     (app/[lang]/layout.tsx), or Telegram's own webview. Elsewhere the race doesn't wait on telegram.org at all. It is written
      in, not added, so it still runs before the scripts below that read window.Telegram. -->
 <script>(function () { var s = ''; try { s = sessionStorage.getItem('__telegram__initParams') || ''; } catch (e) {}
   if (/tgWebAppData/.test(location.hash + s) || window.TelegramWebviewProxy) document.write('<script src="https://telegram.org/js/telegram-web-app.js"><\/script>'); })();</script>

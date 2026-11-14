@@ -8,15 +8,15 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 
 | Address | What it is | Where |
 | --- | --- | --- |
-| `/` | Home: the game described in detail | `app/page.tsx` |
-| `/race` | The race hub: today's race, today's fastest and a free race, in the pause-menu card over today's venue in the game's own scene (`components/game-scene.tsx`) | `app/race/page.tsx` |
+| `/` | Home: the game described in detail | `app/[lang]/page.tsx` |
+| `/race` | The race hub: today's race, today's fastest and a free race, in the pause-menu card over today's venue in the game's own scene (`components/game-scene.tsx`) | `app/[lang]/race/page.tsx` |
 | `/race/free` | Set up a free race (venue, wind, fleet, course, laps, start, current), in the pause-menu card over the game's own scene at the chosen venue (`/boat-view?venue=&wind=`), which fades to each new place | `components/free-setup.tsx` |
 | `/race/result/[id]` | The result and debrief after a race, in the pause-menu card over the finish as it was: the game's own scene at the race's venue (`/boat-view?finish=1`), the line, the marks and every boat where she was as you crossed it | `components/result-view.tsx`, `lib/finish.ts` |
 | `/boat` | Your boat: colours, logo, sail number and team, in the race's pause-menu card over the game's own scene: your yacht on Lake Garda on a summer evening (`/boat-view`) | `components/boat-editor.tsx` |
 | `/settings` | Account, sailing, screen and sound, language | `components/settings-form.tsx` |
-| `/help` | How to play, with screenshots | `app/help/page.tsx` |
+| `/help` | How to play, with screenshots | `app/[lang]/help/page.tsx` |
 | `/faq` | Questions: 32 in five groups | `lib/faq.ts`, `components/faq-list.tsx` |
-| `/iyt` | The IYT sailing certification test, as rycrentals.com/iyt has it | `app/iyt/page.tsx` |
+| `/iyt` | The IYT sailing certification test, as rycrentals.com/iyt has it | `app/[lang]/iyt/page.tsx` |
 | `/sign-in`, `/sign-in/code`, `/sign-in/name` | Supabase sign-in: Google or a 6-digit email code, then a name for the ranking | `components/sign-in-forms.tsx` |
 | `/play?race=today` or `?race=free` | The game itself, a static page | `public/play/index.html`, `public/game/` |
 
@@ -39,7 +39,13 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   upgrade, copy the same files from the new `three` package into a folder named for its version and change the import
   maps in `public/play`, `public/hero-view` and `public/boat-view`.
 - **Languages:** English and Russian.
-  - The `lang` cookie decides, set by `/lang?to=ru&back=/somewhere`; without it, the browser's Accept-Language does.
+  - The address's `?lang=ru` decides (the address search engines index each language by, `lib/seo.ts`), else the `lang`
+    cookie (set by `?lang=` and by `/lang?to=ru&back=/somewhere`), else the browser's Accept-Language.
+  - Every page lives under `app/[lang]/`, a segment no address shows: `proxy.ts` picks the language and rewrites `/help`
+    to `/ru/help`. So the content pages (Home, `/help`, `/faq`, `/learn`, `/iyt`) are built once per language and served
+    from the CDN; Home is rebuilt every five minutes for today's fastest. `/ru/help` typed in redirects to `/help?lang=ru`.
+  - Those pages don't know who is signed in: the avatar, the footer's account link and "Sign in to get on it" are drawn
+    from the session cookie in the browser (`lib/me.ts`, then CSS `.if-me` / `.if-guest`).
   - The game reads the same cookie.
   - The copy is inline as `t('English', 'Русский')` pairs (`lib/lang.ts`).
 - **Today's race:** `lib/race.ts` is a copy of the game's `dailyRace()` and must stay in step with `public/game/sim.js`;

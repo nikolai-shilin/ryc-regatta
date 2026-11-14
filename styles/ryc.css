@@ -334,6 +334,12 @@
 .hm-menu[open] .hm-prof { border-color: var(--ink); }
 .hm-av { display: inline-flex; align-items: center; justify-content: center; width: var(--h-s); height: var(--h-s); border-radius: 50%; background: var(--sel-bg); color: var(--sel-ink); font: 700 var(--t-xs)/1 var(--f-sans); letter-spacing: var(--caps); }
 .hm-menu-pop { position: absolute; right: 0; top: calc(100% + var(--s-2)); width: 280px; padding: var(--s-2); border-radius: var(--r-m); border: 2px solid var(--tag-line); background: var(--bg); box-shadow: var(--hm-shadow); display: flex; flex-direction: column; }
+/* Signed in or not: lib/me.ts marks <html data-me> from the session cookie, before the first paint, with the initials
+   and the name as --me-ini and --me-name (the pages are cached, so the server can't write them in). */
+html:not([data-me]) .if-me, html[data-me] .if-guest { display: none !important; }
+html[data-me] .hm-av > svg { display: none; }
+.me-ini::before { content: var(--me-ini); }
+.me-name::before { content: var(--me-name); }
 .hm-mi { display: flex; align-items: center; height: var(--h-m); padding: 0 var(--s-3); border-radius: var(--r-full); font: 700 var(--t-m)/1 var(--f-sans); color: var(--ink); }
 .hm-mi:hover { background: var(--band); }
 .hm-menu-nav { display: flex; flex-direction: column; }

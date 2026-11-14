@@ -7,7 +7,7 @@ import { SiteHead } from './site-chrome';
 export function AuthShell({ lang, caption, children }: { lang: Lang; caption?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="scr app" lang={lang}>
-      <SiteHead lang={lang} t={tx(lang)} account={null} page="signin" />
+      <SiteHead lang={lang} t={tx(lang)} page="signin" />
       <div className="lay split split-auth">
         <div className="split-photo">
           <Image className="bgimg" src="/images/top-v3.jpg" alt="" fill priority sizes="(orientation: portrait) 100vw, 50vw" />

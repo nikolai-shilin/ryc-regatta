@@ -5,7 +5,7 @@ import { OG_IMAGE } from '@/lib/seo';
 
 // /og/result/<id>?lang=ru — the picture a shared result link shows in Telegram, WhatsApp, X…: the place and the time
 // and the call to beat it, beside every boat's track on the course (lib/og.tsx). A race that isn't online (yet) gets
-// the site's own picture. The result page names it in its metadata (app/race/result/[id]/page.tsx).
+// the site's own picture. The result page names it in its metadata (app/[lang]/race/result/[id]/page.tsx).
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const q = new URL(request.url).searchParams.get('lang');
