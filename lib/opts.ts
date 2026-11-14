@@ -42,9 +42,13 @@ export function readOpts(): Opts {
   }
 }
 
+// told on this page whenever the settings are saved, so what plays here (components/soundtrack.tsx) follows at once
+export const OPTS_EVENT = 'regatta-opts';
+
 export function saveOpts(patch: Partial<Opts>) {
   const next = { ...readOpts(), ...patch };
   try { localStorage.setItem('regatta', JSON.stringify(next)); } catch {}
+  try { window.dispatchEvent(new Event(OPTS_EVENT)); } catch {}
   return next;
 }
 
