@@ -39,13 +39,13 @@ function paintTexture() {
   return t;
 }
 
-function bannerTexture() {
+function bannerTexture(text = 'RACE COMMITTEE') {
   const c = document.createElement('canvas'); c.width = 512; c.height = 88;
   const x = c.getContext('2d');
   x.fillStyle = '#fff'; x.fillRect(0, 0, 512, 88);
   x.fillStyle = '#1d3557'; x.fillRect(0, 0, 512, 10); x.fillRect(0, 78, 512, 10);
   x.font = '900 46px Carlito, Lato, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.fillText('RACE COMMITTEE', 256, 46);
+  x.fillText(text, 256, 46);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
   return t;
 }
@@ -172,6 +172,8 @@ function officer(i, jacketColor, pose) {
     aR.rotation.set(-0.3, 0, 1.3);
     const horn = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.035, 0.32, 10).rotateZ(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#d4252b', roughness: 0.4 }));
     horn.position.set(0.42, 0.5, 0.12); s.upper.add(horn);
+  } else if (pose === 'wheel') { // both hands on the wheel in front of him
+    aL.rotation.set(0.3, 0, 1.15); aR.rotation.set(-0.3, 0, 1.15);
   } else if (pose === 'board') { // a clipboard: the times and the sail numbers
     aL.rotation.set(0.35, 0, 0.9); aR.rotation.set(-0.35, 0, 0.9);
     const board = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.3, 0.22), new THREE.MeshStandardMaterial({ color: '#f5f2ea', roughness: 0.8 }));
@@ -182,8 +184,10 @@ function officer(i, jacketColor, pose) {
 
 // ---------- the boat ----------
 export class CommitteeBoat {
-  // side: +1 if the pin lies off her starboard side, −1 to port; lineZ: where along her the line meets her (local z)
-  constructor(side = 1, lineZ = 0) {
+  // side: +1 if the pin lies off her starboard side, −1 to port; lineZ: where along her the line meets her (local z).
+  // underway: a sister ship out on the water instead (the jury's, say), with her own banner: no anchor, no signals,
+  // no orange flag, and a helmsman at the wheel on the flybridge
+  constructor(side = 1, lineZ = 0, { underway = false, banner } = {}) {
     const root = this.root = new THREE.Group();
     this.fresh = true; // the first update shows the flags as they are, without hoisting them
     root.rotation.order = 'YXZ'; // heading, then pitch and roll on the swell
@@ -197,7 +201,7 @@ export class CommitteeBoat {
       dark: new THREE.MeshStandardMaterial({ color: '#23272d', roughness: 0.6 }),
       orange: new THREE.MeshStandardMaterial({ color: '#ff6a10', roughness: 0.55 }),
       teak: new THREE.MeshStandardMaterial({ color: '#a8804f', roughness: 0.75 }),
-      banner: new THREE.MeshStandardMaterial({ map: bannerTexture(), roughness: 0.8, side: THREE.DoubleSide }),
+      banner: new THREE.MeshStandardMaterial({ map: bannerTexture(banner), roughness: 0.8, side: THREE.DoubleSide }),
     };
     const bin = {}; // static parts, merged per material
     const put = (k, g) => (bin[k] ||= []).push(g);
@@ -267,8 +271,10 @@ export class CommitteeBoat {
     put('gel', new THREE.CylinderGeometry(0.035, 0.035, 3.9, 6).rotateZ(Math.PI / 2).translate(0, yardY, mz));
     put('gel', new THREE.CylinderGeometry(0.34, 0.34, 0.22, 16).translate(0, 6.15, mz - 0.45));
     put('gel', new THREE.BoxGeometry(0.06, 0.06, 0.4).translate(0, 6.0, mz - 0.25));
-    put('dark', new THREE.SphereGeometry(0.28, 12, 9).translate(0, 6.9, mz - 0.4));
-    lines.push(0, 6.9 + 0.28, mz - 0.4, 0, yardY - 0.1, mz - 0.05);
+    if (!underway) { // the ball comes down when she weighs anchor
+      put('dark', new THREE.SphereGeometry(0.28, 12, 9).translate(0, 6.9, mz - 0.4));
+      lines.push(0, 6.9 + 0.28, mz - 0.4, 0, yardY - 0.1, mz - 0.05);
+    }
     put('dark', new THREE.CylinderGeometry(0.012, 0.012, 1.4, 4).translate(0.5, FLY + 0.85, topA - 0.25)); // VHF whips
     put('dark', new THREE.CylinderGeometry(0.012, 0.012, 1.8, 4).translate(-0.5, FLY + 1.05, topA - 0.25));
     // stays from the masthead to the flybridge corners
@@ -279,35 +285,45 @@ export class CommitteeBoat {
     this.flags = {};
     const hal = { cls: [1.85, 1.4], P: [-1.85, -1.4], X: [1.15, 0.95], sub: [-1.15, -0.95] };
     for (const [k, [xt, xb]] of Object.entries(hal)) {
+      if (underway) continue;
       const top = new THREE.Vector3(xt, yardY - 0.08, mz), bot = new THREE.Vector3(xb, rH, mz);
       lines.push(top.x, top.y, top.z, bot.x, bot.y, bot.z);
       const f = new Flag(flagTexture(k), k === 'sub' ? 1.3 : 1.2, 0.85, k === 'sub');
       f.top = top; f.bot = bot.clone().setY(rH + 0.9); f.h = 0;
       root.add(f.pivot); this.flags[k] = f;
     }
-    this.prepTex = { P: this.flags.P.mat.map, U: flagTexture('U'), B: flagTexture('B') };
+    this.prepTex = { P: this.flags.P?.mat.map, U: flagTexture('U'), B: flagTexture('B') };
     this.burgee = new Flag(flagTexture('burgee'), 0.75, 0.45, true);
     this.burgee.pivot.position.set(0, mTop + 0.05, mz); root.add(this.burgee.pivot);
     put('dark', new THREE.CylinderGeometry(0.01, 0.01, 0.55, 4).translate(0, mTop + 0.25 - 0.27, mz));
 
     // the orange flag on its staff, where the line meets her: her end of the starting line
     const oz = clamp(lineZ, 2.8, 3.9), ox = side * (halfB(oz) - 0.1), oy = deckY(oz);
-    put('steel', rod([ox, oy, oz], [ox, oy + 3.6, oz], 0.03, 6));
-    put('steel', new THREE.SphereGeometry(0.05, 8, 6).translate(ox, oy + 3.62, oz));
-    this.orange = new Flag(flagTexture('orange'), 1.3, 0.9);
-    this.orange.pivot.position.set(ox, oy + 3.55, oz); root.add(this.orange.pivot);
+    if (!underway) {
+      put('steel', rod([ox, oy, oz], [ox, oy + 3.6, oz], 0.03, 6));
+      put('steel', new THREE.SphereGeometry(0.05, 8, 6).translate(ox, oy + 3.62, oz));
+      this.orange = new Flag(flagTexture('orange'), 1.3, 0.9);
+      this.orange.pivot.position.set(ox, oy + 3.55, oz); root.add(this.orange.pivot);
+    }
 
     // the anchor rode from the bow roller down into the sea ahead
     const bow = station(1);
     put('steel', new THREE.BoxGeometry(0.14, 0.12, 0.55).translate(0, bow.sy - 0.02, bow.z - 0.1));
-    const rode = [];
-    for (let i = 0; i <= 8; i++) { const u = i / 8; rode.push([0, lerp(bow.sy - 0.05, -0.6, u) - 0.5 * Math.sin(Math.PI * u) * 0.6, bow.z - 0.3 - u * 11]); }
-    put('dark', tube(rode, 0.025, false, 4));
+    if (!underway) {
+      const rode = [];
+      for (let i = 0; i <= 8; i++) { const u = i / 8; rode.push([0, lerp(bow.sy - 0.05, -0.6, u) - 0.5 * Math.sin(Math.PI * u) * 0.6, bow.z - 0.3 - u * 11]); }
+      put('dark', tube(rode, 0.025, false, 4));
+    }
 
     // the officers: the race officer on the flybridge with binoculars, a hand on the halyards at the mast, the line
     // sighter by the orange flag, the timekeeper with the horn on the aft deck, the recorder with the sheet
     const face = side > 0 ? 0 : Math.PI; // they face the line
-    const crew = [
+    const ahead = Math.PI / 2; // a sailor faces +x: this turns him to look over the bow
+    const crew = underway ? [
+      { at: [0, FLY, conZ + 0.6], jacket: '#1d3557', pose: 'wheel', yaw: ahead },
+      { at: [0.7, FLY, mz + 1.4], jacket: '#f2f1ec', pose: 'glasses', yaw: ahead - 0.9 },
+      { at: [-0.6, deckY(4.2), 4.6], jacket: '#c8342b', pose: 'board', yaw: ahead + 2.4 },
+    ] : [
       { at: [side * 0.9, FLY, mz + 1.6], jacket: '#1d3557', pose: 'glasses', yaw: face },
       { at: [side * 0.45, FLY, mz + 0.45], jacket: '#c8342b', pose: 'halyard', yaw: face },
       { at: [side * (halfB(oz) - 0.5), deckY(oz), oz + 0.55], jacket: '#ff7a1a', pose: 'glasses', yaw: face - side * 0.35 },
@@ -336,6 +352,7 @@ export class CommitteeBoat {
   // flags: { cls, P, X, sub } as the race flies them; prepFlag: P, U or B; downwind: the wind's direction in the
   // boat (0 = straight aft); wind in m/s. A flag is hoisted or lowered along its halyard, not switched.
   update(t, dt, flags, prepFlag, downwind, wind) {
+    if (!this.orange) { this.burgee.update(t, downwind, wind); return; } // underway: the burgee is all she flies
     const pt = this.prepTex[prepFlag || 'P'];
     if (this.flags.P.mat.map !== pt) { this.flags.P.mat.map = pt; this.flags.P.mat.needsUpdate = true; }
     for (const [k, f] of Object.entries(this.flags)) {

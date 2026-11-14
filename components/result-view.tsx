@@ -3,12 +3,17 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ruBoats, tx, type Lang } from '@/lib/lang';
 import RULES from '@/lib/rules.json';
-import { IconBack, IconRestart, clock } from './ui';
+import { IconBack, IconRestart, IconPlay, IconTrophy, IconRoute, IconFlag, IconSail, IconSliders, IconClock, IconSend, clock } from './ui';
 import { CourseMap } from './course-map';
+import { GameScene } from './game-scene';
+import { PauseCard, SettingsRow, type Who } from './pause-card';
 import { courseDistance, fmtDistance, legDistances, shapeOf, SHAPE_NAME, type Shape } from '@/lib/race';
+import { finishScene, neighbours, raceVenue, type Pose } from '@/lib/finish';
+import { venueOf } from '@/lib/venues';
+import { readOpts } from '@/lib/opts';
 
 // What the game keeps for a finished race (public/game/main.js, finishToPage).
-type Boat = { name: string | null; me: boolean; color: string | null; done: boolean; dsq: boolean; secs: number | null; track: [number, number][] };
+type Boat = { name: string | null; me: boolean; color: string | null; done: boolean; dsq: boolean; secs: number | null; track: [number, number][]; at?: Pose };
 type Foul = { rule: string; who: string | null; t: number | null; x: number | null; z: number | null };
 type Result = {
   v: 1; id: string; at: number; daily: string | null; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
@@ -20,6 +25,7 @@ type Result = {
   log: { gunD: number | null; gunV: number | null; ocs: boolean; startDsq: string | null; startT: number | null; sailing: number; pct: number | null; head: number; lift: number; tacks: number;
     dirty: number; penT: number; hails: Record<string, number>; legs: number[]; legPlaces: number[]; fouls: Foul[] };
   pb: { best: number; isNew: boolean } | null;
+  venue?: string; origin?: [number, number]; seed?: number | null; // where it was sailed: kept since the finish scene
 };
 type Top = { name: string | null; s: number };
 
@@ -29,8 +35,9 @@ const RULE_LINK: Record<string, string> = { 10: 'rightofway#sec-r10', 11: 'right
 const rule = (k: string, lang: Lang) => (RULES as Record<string, { en: string; ru: string }>)[k]?.[lang] || '';
 const ordEn = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`;
 
-// head and foot: the site's header and footer, rendered by the page (server components) and passed in
-export default function ResultView({ id, lang, signedName, head, foot }: { id: string; lang: Lang; signedName: string | null; head?: ReactNode; foot?: ReactNode }) {
+// head and foot: the site's header and footer, rendered by the page (server components) and passed in, for a race that
+// can't be found; who: the account, as the card's settings show it
+export default function ResultView({ id, lang, signedName, who, head, foot }: { id: string; lang: Lang; signedName: string | null; who: Who; head?: ReactNode; foot?: ReactNode }) {
   const t = tx(lang);
   const [res, setRes] = useState<Result | null | undefined>(undefined);
   const [top, setTop] = useState<Top[] | null>(null);
@@ -56,7 +63,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
     }).catch(() => {});
   }, [res]);
 
-  if (res === undefined) return <div className="scr help" lang={lang}>{head}</div>;
+  if (res === undefined) return <div className="scr bt-scr" lang={lang} />; // most often found: the scene's dark, not the site's header
   if (!res) {
     return (
       <div className="scr help" lang={lang}>
@@ -143,115 +150,122 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   const legName = (k: string) => ({ start: t('Start', 'Старт'), mark: shape === 'trap' ? t('Mark 1', 'Знак 1') : t('Windward mark', 'Верхний знак'), wing: t('Wing mark', 'Боковой знак'),
     mark2: t('Mark 2', 'Знак 2'), offset: t('Offset mark', 'Знак смещения'), gate: t('Leeward gate', 'Нижние ворота'), finish: t('Finish', 'Финиш') }[k] || k);
 
+  const where = venueOf(raceVenue(res, shared ? 'gocek' : readOpts().venue));
+  const scene = finishScene(res);
+  const nb = neighbours(res);
+  const gapS = (g: number) => `${g.toFixed(1).replace('.', lang === 'ru' ? ',' : '.')} ${t('s', 'с')}`;
+  // the finish in a line: who crossed just before and just after, as the scene shows them
+  const near = me.dsq || me.secs == null ? ''
+    : nb.ahead && nb.behind ? t(`${shared ? 'This boat' : 'You'} crossed ${gapS(nb.ahead.gap)} after ${nb.ahead.name} and ${gapS(nb.behind.gap)} before ${nb.behind.name}.`, `${shared ? 'Эта лодка пересекла' : 'Ты пересёк'} линию через ${gapS(nb.ahead.gap)} после ${nb.ahead.name} и за ${gapS(nb.behind.gap)} до ${nb.behind.name}.`)
+    : nb.behind ? t(`First across the line, ${gapS(nb.behind.gap)} ahead of ${nb.behind.name}.`, `Первым на финише, на ${gapS(nb.behind.gap)} раньше ${nb.behind.name}.`)
+    : nb.ahead ? t(`Last across the line, ${gapS(nb.ahead.gap)} after ${nb.ahead.name}.`, `Последним на финише, через ${gapS(nb.ahead.gap)} после ${nb.ahead.name}.`) : '';
+  const pbNote = shared ? null : res.pb?.isNew ? t('New personal best', 'Новый личный рекорд')
+    : res.pb && me.secs === res.pb.best ? (res.daily ? t('Your best today', 'Твой лучший сегодня') : t('Your best on this course', 'Твой лучший на этой дистанции')) : null;
+  const legs = [...L.legs.map((tm, i) => ({ k: res.course.legs[i], i, tm, pl: L.legPlaces[i] })),
+    ...(me.done && me.secs != null && L.legs.length < res.course.legs.length ? [{ k: 'finish', i: res.course.legs.length - 1, tm: me.secs, pl: me.dsq ? 0 : place }] : [])];
+
   return (
-    <div className="scr help result" lang={lang} data-acct={signedName ? 'signed' : 'guest'}>
-      {head}
-      <div className="hwrap">
-        <header className="hhead">
-          <div className="lhead">
-            <Link className="round round-s round-muted" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
-            <span className="kicker">{kicker}</span>
-          </div>
-          <h1 className="h-land">{title}</h1>
-          <div className="rfacts">
-            <div className="stat"><span className="meta">{t('Time', 'Время')}</span><b>{me.secs != null ? clock(me.secs) : '—'}</b></div>
-            <div className="stat"><span className="meta">{t('Behind the winner', 'От победителя')}</span><b>{gap}</b></div>
-            <div className="stat"><span className="meta">{t('Penalties', 'Штрафы')}</span><b>{L.penT > 1 ? `${L.penT} ${t('s', 'с')}` : '0'}</b></div>
-            {!shared && res.pb?.isNew && <span className="chip chip-on">{t('New personal best', 'Новый личный рекорд')}</span>}
-            {!shared && !res.pb?.isNew && res.pb && me.secs === res.pb.best && <span className="chip chip-on">{res.daily ? t('Your best today', 'Твой лучший сегодня') : t('Your best on this course', 'Твой лучший на этой дистанции')}</span>}
-          </div>
-          <div className="btn-row">
-            <a className="pill pill-primary pill-s" href={cta.href}>{!shared && <IconRestart />}<span className="btn-t">{cta.label}</span></a>
-            {!shared && <button type="button" className="pill pill-s" onClick={share}><span className="btn-t">{copied ? t('Link copied', 'Ссылка скопирована') : t('Share', 'Поделиться')}</span></button>}
-            <Link className="pill pill-s" href="/race"><span className="btn-t">{t('Race hub', 'Меню гонок')}</span></Link>
-          </div>
-        </header>
+    <div className="scr bt-scr rs-scr" lang={lang} data-acct={signedName ? 'signed' : 'guest'}>
+      <div className="bt">
+        <GameScene venue={where.id} wind={res.preset} finish={scene} title={t('The finish in 3D, as it was', 'Финиш в 3D, как он был')} />
 
-        {/* the whole race from above, as wide as the page: a square map on a phone, a wide one where there's room */}
-        <section className="hsec">
-          <div className="rcard line">
-            <div className="lhead"><span className="meta">{shared ? t('The track', 'Трек') : t('Your track', 'Твой трек')}</span><span className="sp" /><span className="small muted ico-t"><span className="bdot bdot-you" />{shared ? t('this boat', 'эта лодка') : t('you', 'ты')}<span className="bdot bdot-fleet" />{t('the fleet', 'соперники')}</span></div>
-            <CourseMap className="track only-narrow" lang={lang} geo={res.course} preset={res.preset} W={340} H={340} tracks={tracks} fouls={fouls} />
-            <CourseMap className="track track-wide only-wide" lang={lang} geo={res.course} preset={res.preset} W={1000} H={580} tracks={tracks} fouls={fouls} />
-            <span className="small muted">{t('Course', 'Дистанция')} {fmtDistance(courseDistance(res.course, res.laps), lang)}{L.fouls.length ? ` · ${t('orange rings mark the fouls', 'оранжевые кольца — нарушения')}` : ''}</span>
+        {/* the heading as the other pages laid out as the race's pause screen have it (the race hub, the free race, your
+            boat): the back arrow and a kicker, the big serif line, a word on where and how the finish went, and the
+            numbers with a line under each */}
+        <div className="bt-info">
+          <div className="bt-top">
+            <Link className="bt-back" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
+            <span className="bt-kick">{kicker}</span>
           </div>
-        </section>
+          <h1 className="bt-h">{title}</h1>
+          <p className="bt-p">{t(...where.name)}, {t(...where.place)}. {near || t('The boats are where they were at the finish.', 'Лодки там, где были на финише.')}</p>
+          <div className="bt-stats">
+            <div><span className="bt-sk">{t('Place', 'Место')}</span><b>{me.dsq ? 'DSQ' : t(ordEn(place), `${place}-е`)}</b><span className="bt-sv">{me.dsq ? t('disqualified', 'дисквалификация') : t(`of ${res.boats.length} boats`, `из ${ruBoats(res.boats.length)}`)}</span></div>
+            <div><span className="bt-sk">{t('Time', 'Время')}</span><b>{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</b><span className="bt-sv">{pbNote || t('at the line', 'на финише')}</span></div>
+            <div><span className="bt-sk">{t('Behind', 'Отставание')}</span><b>{winner && winner !== me && me.secs != null && winner.secs != null ? `+${gapS(me.secs - winner.secs)}` : '—'}</b><span className="bt-sv">{winner && winner !== me ? t(`${winner.name} won`, `победа: ${winner.name}`) : shared ? t('this boat won', 'эта лодка победила') : t('you won', 'ты победил')}</span></div>
+            <div><span className="bt-sk">{t('Penalties', 'Штрафы')}</span><b>{L.penT > 1 ? `${L.penT} ${t('s', 'с')}` : '0'}</b><span className="bt-sv">{L.penT > 1 ? t('turning circles', 'штрафные обороты') : t('A clean race', 'Чистая гонка')}</span></div>
+          </div>
+        </div>
 
-        <section className="hsec">
-          <div className="hsplit">
-            <div className="hcol">
-              <div className="rcard line">
-                <span className="meta">{t('Results', 'Результаты')}</span>
-                <ol className="rtable">
-                  {res.boats.map((b, i) => (
-                    <li key={i} className={b.me ? 'me' : ''}>
-                      <span className="n">{b.dsq ? '–' : i + 1}</span>
-                      <span className="bdot" style={{ background: b.me ? 'var(--accent)' : b.color || 'var(--tag-line)' }} />
-                      <span>{b.me ? you : b.name}</span>
-                      <span>{b.dsq ? 'DSQ' : b.secs != null ? clock(b.secs) : '—'}</span>
-                      <span className="g">{b.secs != null && winner?.secs != null && b !== winner && !b.dsq ? `+${(b.secs - winner.secs).toFixed(1)}` : '—'}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-              {res.daily ? <Ranking t={t} top={top} me={me} signedName={shared ? null : signedName} you={shared ? you : null} /> : shared ? null : (
-                <div className="rcard">
-                  <span className="meta">{t('Your best on this course', 'Твой лучший на этой дистанции')}</span>
-                  <span className="h-land">{res.pb ? clock(res.pb.best) : '—'}</span>
-                  <p className="lead muted">{t('Free races stay with you; today’s race is the one that ranks.', 'Свободные гонки остаются у тебя; в рейтинг идёт гонка дня.')}</p>
-                </div>
-              )}
+        {/* the card as the free race's: what to do next fixed at the top, your boat and Settings at the bottom, the
+            result and the debrief scrolling between them */}
+        <PauseCard lang={lang} who={who} back={`/race/result/${res.id}`} label={t('Race result', 'Результат гонки')}
+          head={<>
+            <a className="bt-go" href={cta.href}>{shared ? <IconPlay /> : <IconRestart />}<span>{cta.label}</span></a>
+            {!shared && <button type="button" className="bt-show" onClick={share}><IconSend s={15} /><span>{copied ? t('Copied', 'Скопировано') : t('Share', 'Поделиться')}</span></button>}
+          </>}
+          foot={<div className="bt-rows">
+            <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
+            <SettingsRow lang={lang} />
+          </div>}>
+          <div className="bt-g">
+            <span className="bt-k"><IconTrophy s={13} />{t('Results', 'Результаты')}<span className="bt-k-r">{t(`${res.boats.length} boats`, ruBoats(res.boats.length))}</span></span>
+            <ol className="hm-lb bt-lb rs-lb">
+              {res.boats.map((b, i) => (
+                <li key={i} className={`${b.me ? 'me' : ''} ${i === 0 && !b.dsq ? 'first' : ''}`}>
+                  <span className="hm-n">{b.dsq ? '–' : i + 1}</span>
+                  <span className="rs-name"><span className="rs-dot" style={{ background: b.me ? 'var(--accent)' : b.color || 'rgba(255,255,255,.4)' }} />{b.me ? you : b.name}</span>
+                  <span className="hm-t">{b.dsq ? 'DSQ' : b.secs != null ? clock(b.secs) : '—'}{b.secs != null && winner?.secs != null && b !== winner && !b.dsq ? <small>+{(b.secs - winner.secs).toFixed(1)}</small> : null}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          {res.daily ? <Ranking t={t} top={top} me={me} signedName={shared ? null : signedName} you={shared ? you : null} /> : shared ? null : (
+            <div className="bt-g">
+              <span className="bt-k"><IconClock />{t('Your best on this course', 'Твой лучший на этой дистанции')}<span className="bt-k-r">{res.pb ? clock(res.pb.best) : '—'}</span></span>
+              <p className="bt-hint rs-hint">{t('Free races stay with you; today’s race is the one that ranks.', 'Свободные гонки остаются у тебя; в рейтинг идёт гонка дня.')}</p>
             </div>
-            <div className="hcol">
-              {!!L.legs.length && (
-                <div className="rcard line">
-                  <span className="meta">{t('Leg by leg', 'По отрезкам')}</span>
-                  <ol className="legs">
-                    {/* the game logs the clock as you pass each mark; the finish is your finishing time and place */}
-                    {[...L.legs.map((tm, i) => ({ k: res.course.legs[i], i, tm, pl: L.legPlaces[i] })),
-                      ...(me.done && me.secs != null && L.legs.length < res.course.legs.length ? [{ k: 'finish', i: res.course.legs.length - 1, tm: me.secs, pl: me.dsq ? 0 : place }] : [])].map((x, i) => (
-                      <li key={i} className="done">
-                        <span>{legName(x.k)}{x.pl || legM[x.i] ? <span className="d">{[legM[x.i] ? `${Math.round(legM[x.i])} ${t('m', 'м')}` : '', x.pl ? t(`${ordEn(x.pl)} of ${res.boats.length}`, `${x.pl}-й из ${res.boats.length}`) : ''].filter(Boolean).join(' · ')}</span> : null}</span>
-                        <span className="t">{clock(Math.max(0, x.tm))}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+          )}
 
-        <section className="hsec">
-          <div className="hsec-k"><span className="kicker">{shared ? t('The race', 'Гонка') : t('Your race', 'Твоя гонка')}</span><h2 className="h-land-s">{t('Where the time went', 'Куда ушло время')}</h2></div>
-          <div className="dbgrid">
-            {items.map((x, i) => (
-              <div key={i} className="dbi">
-                <div className="lhead"><span className="meta">{x.k}</span><span className="sp" /><span className={`st ${x.good ? 'st-good' : 'st-work'}`}>{x.good ? t('Good', 'Хорошо') : t('Work on it', 'Поработай')}</span></div>
-                <span className="v">{x.v}</span>
-                {x.tip && <p className="tip">{x.tip}</p>}
+          <div className="bt-g">
+            <span className="bt-k"><IconRoute />{shared ? t('The track', 'Трек') : t('Your track', 'Твой трек')}<span className="bt-k-r rs-key"><span className="rs-dot rs-dot-me" />{shared ? t('this boat', 'эта лодка') : t('you', 'ты')}<span className="rs-dot rs-dot-fleet" />{t('fleet', 'соперники')}</span></span>
+            <CourseMap className="cmap bt-map rs-track" lang={lang} geo={res.course} preset={res.preset} W={320} H={320} tracks={tracks} fouls={fouls} />
+            <p className="bt-hint rs-hint">{t('Course', 'Дистанция')} {fmtDistance(courseDistance(res.course, res.laps), lang)}{L.fouls.length ? ` · ${t('orange rings mark the fouls', 'оранжевые кольца — нарушения')}` : ''}</p>
+          </div>
+
+          {!!legs.length && (
+            <div className="bt-g">
+              <span className="bt-k"><IconFlag />{t('Leg by leg', 'По отрезкам')}</span>
+              <ol className="legs rs-legs">
+                {/* the game logs the clock as you pass each mark; the finish is your finishing time and place */}
+                {legs.map((x, i) => (
+                  <li key={i} className="done">
+                    <span>{legName(x.k)}{x.pl || legM[x.i] ? <span className="d">{[legM[x.i] ? `${Math.round(legM[x.i])} ${t('m', 'м')}` : '', x.pl ? t(`${ordEn(x.pl)} of ${res.boats.length}`, `${x.pl}-й из ${res.boats.length}`) : ''].filter(Boolean).join(' · ')}</span> : null}</span>
+                    <span className="t">{clock(Math.max(0, x.tm))}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          <div className="bt-g">
+            <span className="bt-k"><IconSail s={13} />{t('Where the time went', 'Куда ушло время')}</span>
+            <ul className="rs-db">
+              {items.map((x, i) => (
+                <li key={i} className={x.good ? 'ok' : 'work'}>
+                  <span className="rs-db-k">{x.k}<span className="rs-st">{x.good ? t('Good', 'Хорошо') : t('Work on it', 'Поработай')}</span></span>
+                  <span className="rs-db-v">{x.v}</span>
+                  {x.tip && <span className="rs-db-tip">{x.tip}</span>}
+                </li>
+              ))}
+            </ul>
+            {foulRules.map((f) => (
+              <div key={f.rule} className="rs-rule">
+                <span className="rs-rule-k">{t(`Rule ${f.rule}`, `Правило ${f.rule}`)}{f.t != null ? ` · ${clock(Math.max(0, f.t))}` : ''}{f.who ? ` · ${f.who}` : ''}</span>
+                <b>{rule('r' + f.rule, lang)}</b>
+                <span className="rs-db-tip">{rule('x' + f.rule, lang)}</span>
+                {RULE_LINK[f.rule] && <a className="rs-rule-a" href={`https://iyt.rycrentals.com${lang === 'ru' ? '/ru' : ''}/racing-rules/${RULE_LINK[f.rule]}`}>{t('Read the rule', 'Прочитать правило')}</a>}
               </div>
             ))}
           </div>
-          {foulRules.map((f) => (
-            <div key={f.rule} className="rule-box">
-              <span className="meta accent">{t(`Rule ${f.rule}`, `Правило ${f.rule}`)}{f.t != null ? ` · ${clock(Math.max(0, f.t))}` : ''}{f.who ? ` · ${f.who}` : ''}</span>
-              <span className="card-title">{rule('r' + f.rule, lang)}</span>
-              <p className="lead muted">{rule('x' + f.rule, lang)}</p>
-              {RULE_LINK[f.rule] && <a className="back-link" href={`https://iyt.rycrentals.com${lang === 'ru' ? '/ru' : ''}/racing-rules/${RULE_LINK[f.rule]}`}>{t('Read the rule →', 'Прочитать правило →')}</a>}
-            </div>
-          ))}
-        </section>
 
-        <section className="hsec">
-          <div className="btn-row">
-            <a className="pill pill-primary pill-s" href={cta.href}>{!shared && <IconRestart />}<span className="btn-t">{cta.label}</span></a>
-            <Link className="pill pill-s" href="/race/free"><span className="btn-t">{t('Free race', 'Свободная гонка')}</span></Link>
-            <Link className="pill pill-s pill-quiet" href="/race"><span className="btn-t">{t('Race hub', 'Меню гонок')}</span></Link>
+          <div className="bt-rows">
+            <Link className="bt-row" href="/race/free"><IconSliders /><span>{t('Free race', 'Свободная гонка')}</span><span className="bt-row-m">{t('Set it up', 'Настроить')}</span></Link>
+            <Link className="bt-row" href="/race"><IconFlag s={18} /><span>{t('Race hub', 'Меню гонок')}</span></Link>
           </div>
-        </section>
+        </PauseCard>
       </div>
-      {foot}
     </div>
   );
 }
@@ -259,18 +273,18 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
 // you: how a shared result names its boat; then there's no asking to sign in, as it isn't the viewer's race
 function Ranking({ t, top, me, signedName, you }: { t: (en: string, ru: string) => string; top: Top[] | null; me: Boat; signedName: string | null; you: string | null }) {
   return (
-    <div className="rcard">
-      <span className="meta">{t('Today’s fastest', 'Самые быстрые сегодня')}</span>
-      <ol className="lb">
-        {(top || []).map((r, i) => <li key={i}><span className="n">{i + 1}</span><span>{r.name || t('No name', 'Без имени')}</span><span>{clock(r.s)}</span></li>)}
-        {top && !top.length && <li><span className="n">·</span><span className="muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
-        <li className="me"><span className="n">·</span><span>{you || (signedName ? `${signedName} (${t('you', 'ты')})` : t('You', 'Ты'))}</span><span>{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</span></li>
+    <div className="bt-g">
+      <span className="bt-k"><IconTrophy s={13} />{t('Today’s fastest', 'Самые быстрые сегодня')}</span>
+      <ol className="hm-lb bt-lb">
+        {(top || []).map((r, i) => <li key={i} className={i === 0 ? 'first' : ''}><span className="hm-n">{i + 1}</span><span>{r.name || t('No name', 'Без имени')}</span><span className="hm-t">{clock(r.s)}</span></li>)}
+        {top && !top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
+        <li className="me"><span className="hm-n">·</span><span>{you || (signedName ? `${signedName} (${t('you', 'ты')})` : t('You', 'Ты'))}</span><span className="hm-t">{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</span></li>
       </ol>
       {!signedName && !you && (
-        <>
-          <p className="lead muted">{t('Sign in and your times go on today’s ranking, with your best times on any device.', 'Войди — и твоё время попадёт в рейтинг дня, а лучшие результаты будут на любом устройстве.')}</p>
-          <Link className="pill pill-primary pill-s" href="/sign-in?next=/race"><span className="btn-t">{t('Sign in', 'Войти')}</span></Link>
-        </>
+        <div className="bt-acct">
+          <span className="bt-acct-t"><b>{t('Not on the ranking', 'Не в рейтинге')}</b><small>{t('Sign in and your times go on it', 'Войди — и время попадёт в рейтинг')}</small></span>
+          <Link className="bt-mini bt-mini-on" href="/sign-in?next=/race">{t('Sign in', 'Войти')}</Link>
+        </div>
       )}
     </div>
   );

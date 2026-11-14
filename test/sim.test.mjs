@@ -54,7 +54,7 @@ test('today’s race goes round the venues, and the play page preloads the day�
   for (let d = 0; d < 400; d++) {
     const now = from + d * 864e5, day = new Date(now), v = dailyVenue(day);
     assert.notEqual(v, prev, `${day.toISOString().slice(0, 10)}: not yesterday’s venue`); prev = v;
-    if (d % VENUES.length === 0) {
+    if (Math.floor(now / 864e5) % VENUES.length === 0) { // a round: the days are counted from 1970 in rounds of len
       const round = new Set(Array.from({ length: VENUES.length }, (_, i) => dailyVenue(new Date(now + i * 864e5))));
       assert.ok(round.size >= VENUES.length - 2, 'every venue comes round');
     }
@@ -331,6 +331,32 @@ for (const v of VENUES) {
     assert.ok(out.worst >= 60, `a mark only ${Math.round(out.worst)} m from the shore (${out.where})`);
   });
 }
+
+// the result page's scene (lib/finish.ts): a result kept before the game kept the finish has only the boats' thinned
+// tracks, so each boat is put where her track had her at your finishing time; that must land her close to where she was
+test('a result without the finish kept puts the fleet close to where it was as you finished', async () => {
+  const { finishScene } = await import('../lib/finish.ts');
+  const r = new sim.Race({ preset: 'medium', fleet: 6, laps: 1, length: 'short', start: 1, seed: 777 }), P = r.player;
+  P.ai = { ...r.boats.find((b) => b.ai).ai, lineT: 0.5, skill: 0.9 }; P.autoTrim = true; // the computer sails yours too
+  let at = null;
+  for (let n = 0; n < 60 * 60 * 40 && !r.boats.every((b) => b.done); n++) {
+    r.step(1 / 60);
+    if (P.done && !at) at = new Map(r.boats.map((b) => [b, { x: b.x, z: b.z }]));
+  }
+  assert.ok(at, 'you finished');
+  // thinned as main.js finishToPage keeps them
+  const thin = (tr) => { const k = Math.max(1, Math.ceil(tr.length / 160)); return tr.filter((_, i) => i % k === 0 || i === tr.length - 1).map(([x, z]) => [Math.round(x), Math.round(z)]); };
+  const xz = (m) => [m.x, m.z], c = r.course;
+  const res = { daily: null, preset: 'medium', length: 'short', laps: 1, start: 1, current: false,
+    course: { windward: xz(c.windward), gate: c.gate.map(xz), pin: xz(c.pin), committee: xz(c.committee), legs: c.legs },
+    boats: r.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, done: b.done, dsq: b.dsq, secs: b.done ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track) })) };
+  const scene = finishScene(res);
+  assert.equal(scene.boats.length, r.boats.length);
+  for (const s of scene.boats) {
+    const b = s.me ? P : r.boats.find((o) => o.name === s.name), was = at.get(b);
+    assert.ok(Math.hypot(s.x - was.x, s.z - was.z) < 40, `${s.name || 'you'}: ${Math.round(Math.hypot(s.x - was.x, s.z - was.z))} m from where she was`);
+  }
+});
 
 // Up and down and the triangle, sailed before the course code was reshaped (test/golden.mjs --write made the fixture):
 // the same finishes, leg times and tracks, to the tenth. Rewrite the fixture only when a change to the sailing is meant.

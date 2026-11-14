@@ -298,6 +298,15 @@ function sailTexture(kind, look) {
         x.save(); x.translate(W * 0.47, H * 0.255); x.scale(1, 0.44); drawContain(x, img, 0, 0, 340, 300); x.restore(); // a wide logo fills the width, a square one the height
         t.needsUpdate = true; // the clone on the other side shares the canvas
       });
+      // the country flag high on the main, between the top batten and the logo: the sail narrows up there, so the
+      // canvas squashes it harder (0.3) than the number to come out 3:2 on the cloth
+      if (look.flag) logoImage(look.flag).then((img) => {
+        if (!img) return;
+        const fw = 380, fh = fw / 1.5 * 0.3, fx = W * 0.47 - fw / 2, fy = H * 0.148 - fh / 2; // about 1.5 m × 1 m on the cloth
+        x.drawImage(img, fx, fy, fw, fh);
+        x.strokeStyle = 'rgba(0,0,0,.22)'; x.lineWidth = 1.5; x.strokeRect(fx, fy, fw, fh); // an edge, for a white flag on white cloth
+        t.needsUpdate = true;
+      });
     } else {
       x.fillStyle = look.batten; x.fillRect(W * 0.7, H * 0.35, W * 0.3, 8); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 8);
     }
@@ -405,19 +414,19 @@ export function labelSprite(color) {
 // the looks: hull paint, sail cloth and number, gennaker panels
 export const LOOKS = {
   player: { hull: '#1c1f24', stripe: '#1c1f24', cloth: '#2a2c30', laminate: true, tape: '#1e1f22', batten: '#1d1f22', ink: '#ffffff', nat: 'RYC', num: '1', logo: true, kite: ['#1c1f24'], crew: '#1c1f24', pants: '#1c1f24' }, // all black, the sail number white (lib/boat.ts DEFAULT_BOAT)
-  Aurora: { hull: '#a8202a', stripe: '#f4f2ec', cloth: '#7f858c', laminate: true, tape: '#5f646b', batten: '#5a5f66', ink: '#ffffff', nat: 'GBR', num: '52', kite: ['#e63946', '#ffffff'] },
-  Kestrel: { hull: '#14503c', stripe: '#e9e3cf', cloth: '#2a2c30', laminate: true, tape: '#18191c', batten: '#1c1d20', ink: '#f2c230', nat: 'FRA', num: '7', kite: ['#2a9d8f', '#f2c230'] },
-  Nomad: { hull: '#2b2f36', stripe: '#e8c547', cloth: '#ebe3cd', tape: '#cfc5aa', batten: '#d2c9b0', ink: '#b3262b', nat: 'ITA', num: '33', kite: ['#f4a261', '#1d1d1d'] },
-  Halcyon: { hull: '#1f4e8c', stripe: '#ffffff', cloth: '#f2f0e8', tape: '#d6d1c2', batten: '#d0ccbe', ink: '#1f4e8c', nat: 'NED', num: '14', kite: ['#3a86ff', '#ffbe0b'] },
-  Mistral: { hull: '#f3f1ec', stripe: '#6c3483', cloth: '#3a3d42', laminate: true, tape: '#23252a', batten: '#26282d', ink: '#ffffff', nat: 'ESP', num: '88', kite: ['#8e44ad', '#ffffff'] },
-  Selkie: { hull: '#0f6b5f', stripe: '#f1ece0', cloth: '#efeadd', tape: '#d3ccb8', batten: '#cfc8b4', ink: '#0f6b5f', nat: 'IRL', num: '21', kite: ['#16a085', '#f1c40f'] },
-  Tern: { hull: '#f5f4f0', stripe: '#e67e22', cloth: '#868c93', laminate: true, tape: '#62676e', batten: '#5d6269', ink: '#1d1d1d', nat: 'GER', num: '9', kite: ['#e67e22', '#2d3436'] },
-  Vela: { hull: '#7a1f3d', stripe: '#f6e6ea', cloth: '#f3f0e8', tape: '#d8d2c3', batten: '#d2ccbd', ink: '#7a1f3d', nat: 'CRO', num: '40', kite: ['#e84393', '#ffffff'] },
-  Zephyr: { hull: '#b9bec4', stripe: '#1d1f22', cloth: '#2b2d31', laminate: true, tape: '#1a1b1e', batten: '#1d1e21', ink: '#e8e8e8', nat: 'SWE', num: '63', kite: ['#0984e3', '#fdcb6e'] },
+  Aurora: { hull: '#a8202a', stripe: '#f4f2ec', cloth: '#7f858c', laminate: true, tape: '#5f646b', batten: '#5a5f66', ink: '#ffffff', nat: 'GBR', flag: '/flags/gb.svg', num: '52', kite: ['#e63946', '#ffffff'] },
+  Kestrel: { hull: '#14503c', stripe: '#e9e3cf', cloth: '#2a2c30', laminate: true, tape: '#18191c', batten: '#1c1d20', ink: '#f2c230', nat: 'FRA', flag: '/flags/fr.svg', num: '7', kite: ['#2a9d8f', '#f2c230'] },
+  Nomad: { hull: '#2b2f36', stripe: '#e8c547', cloth: '#ebe3cd', tape: '#cfc5aa', batten: '#d2c9b0', ink: '#b3262b', nat: 'ITA', flag: '/flags/it.svg', num: '33', kite: ['#f4a261', '#1d1d1d'] },
+  Halcyon: { hull: '#1f4e8c', stripe: '#ffffff', cloth: '#f2f0e8', tape: '#d6d1c2', batten: '#d0ccbe', ink: '#1f4e8c', nat: 'NED', flag: '/flags/nl.svg', num: '14', kite: ['#3a86ff', '#ffbe0b'] },
+  Mistral: { hull: '#f3f1ec', stripe: '#6c3483', cloth: '#3a3d42', laminate: true, tape: '#23252a', batten: '#26282d', ink: '#ffffff', nat: 'ESP', flag: '/flags/es.svg', num: '88', kite: ['#8e44ad', '#ffffff'] },
+  Selkie: { hull: '#0f6b5f', stripe: '#f1ece0', cloth: '#efeadd', tape: '#d3ccb8', batten: '#cfc8b4', ink: '#0f6b5f', nat: 'IRL', flag: '/flags/ie.svg', num: '21', kite: ['#16a085', '#f1c40f'] },
+  Tern: { hull: '#f5f4f0', stripe: '#e67e22', cloth: '#868c93', laminate: true, tape: '#62676e', batten: '#5d6269', ink: '#1d1d1d', nat: 'GER', flag: '/flags/de.svg', num: '9', kite: ['#e67e22', '#2d3436'] },
+  Vela: { hull: '#7a1f3d', stripe: '#f6e6ea', cloth: '#f3f0e8', tape: '#d8d2c3', batten: '#d2ccbd', ink: '#7a1f3d', nat: 'CRO', flag: '/flags/hr.svg', num: '40', kite: ['#e84393', '#ffffff'] },
+  Zephyr: { hull: '#b9bec4', stripe: '#1d1f22', cloth: '#2b2d31', laminate: true, tape: '#1a1b1e', batten: '#1d1e21', ink: '#e8e8e8', nat: 'SWE', flag: '/flags/se.svg', num: '63', kite: ['#0984e3', '#fdcb6e'] },
 };
 
 // the player's own boat, as the boat page (/boat) saves it in localStorage 'regatta-boat': the colours of the hull, the
-// sails, the gennaker and the crew, the sail number and the logo. lookFrom turns it into a look; anything missing or
+// sails, the gennaker and the crew, the sail number, the logo and the flag. lookFrom turns it into a look; anything missing or
 // malformed keeps the default boat's (all black).
 export const BOAT_KEY = 'regatta-boat';
 const DEFAULT_LOGO = '/images/ryc-rentals-bot.png';
@@ -436,6 +445,7 @@ export function lookFrom(b) {
   if (typeof b.nat === 'string' && b.nat.trim()) L.nat = b.nat.trim().toUpperCase().slice(0, 3);
   const own = typeof b.logoImg === 'string' && b.logoImg.startsWith('data:image/') ? b.logoImg : DEFAULT_LOGO; // 'Yours' before an upload: the RYC Rentals Bot badge
   L.logo = b.logo === 'none' ? false : b.logo === 'custom' ? own : true;
+  if (typeof b.flag === 'string' && /^[a-z]{2}$/.test(b.flag)) L.flag = `/flags/${b.flag}.svg`; // public/flags, lib/flags.ts
   return L;
 }
 export function playerLook() {

@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { tx, type Lang } from '@/lib/lang';
-import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart } from './ui';
+import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart, IconFlag } from './ui';
+import { FLAGS, findFlag, flagSrc, type Flag } from '@/lib/flags';
 import { DEFAULT_BOAT, DEFAULT_LOGO, PRESETS, SWATCHES, readBoat, saveBoat, shrinkLogo, type Boat, type Logo } from '@/lib/boat';
 
 // The boat page, laid out like the race's pause screen: the game's own scene behind it all (your yacht on Lake Garda,
@@ -92,6 +93,9 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
     </div>
   );
   const preset = PRESETS.find((p) => p.id === b.preset);
+  const flag = findFlag(b.flag);
+  // a flag on the main: the boat then carries that country's letters too (shown when there's no logo)
+  const setFlag = (code: string) => { const f = findFlag(code); setB((x) => ({ ...x, flag: f?.code, ...(f ? { nat: f.ioc } : {}) })); setDown(false); };
   const logoName = b.logo === 'ryc' ? 'RYC' : b.logo === 'custom' ? t('Yours', 'Свой') : t('None', 'Нет');
 
   return (
@@ -103,7 +107,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         <h1 className="bt-h">{preset ? t(preset.en, preset.ru) : t('Your own colours', 'Свои цвета')}</h1>
         <p className="bt-p">{t('Lake Garda, a summer evening. Drag to circle her.', 'Озеро Гарда, летний вечер. Тяни, чтобы облететь яхту.')}</p>
         <div className="bt-stats">
-          <div><span className="bt-sk">{t('Sail number', 'Номер')}</span><b>{b.logo === 'none' && b.nat ? `${b.nat} ` : ''}{b.num || '1'}</b></div>
+          <div><span className="bt-sk">{t('Sail number', 'Номер')}</span><b>{/* eslint-disable-next-line @next/next/no-img-element */}{flag && <img className="bt-flag-s" src={flagSrc(flag.code)} alt={t(flag.en, flag.ru)} />}{b.logo === 'none' && b.nat ? `${b.nat} ` : ''}{b.num || '1'}</b></div>
           <div><span className="bt-sk">{t('Sails', 'Паруса')}</span><b>{b.laminate ? t('Laminate', 'Ламинат') : t('Dacron', 'Дакрон')}</b></div>
           <div><span className="bt-sk">{t('Logo', 'Логотип')}</span><b>{logoName}</b></div>
         </div>
@@ -161,6 +165,11 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         </div>
 
         <div className="bt-g">
+          {kicker('l-flag', <IconFlag />, t('Flag on the main', 'Флаг на гроте'))}
+          <FlagPicker value={flag?.code} onChange={setFlag} t={t} />
+        </div>
+
+        <div className="bt-g">
           <label className="bt-k" htmlFor="b-num"><IconHash />{t('Sail number', 'Номер на парусе')}</label>
           <div className="num-pair">
             {b.logo === 'none' && <input className="num-in" aria-label={t('Letters on the sail', 'Буквы на парусе')} value={b.nat} maxLength={3} onChange={(e) => set({ nat: e.target.value.toUpperCase().replace(/[^A-ZА-ЯЁ]/g, '') })} />}
@@ -181,6 +190,74 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         </button>
         <p className="bt-saved">{t('Saved on this device. You race in her from the next start.', 'Сохранено на этом устройстве. В гонке — со следующего старта.')}</p>
       </section>
+    </div>
+  );
+}
+
+// the flag on the main: a dropdown showing the flag you fly, opening (in the card, so it scrolls with it) on a search
+// box and the countries A to Z in your language, No flag first. Arrows move, Enter picks, Escape closes.
+function FlagPicker({ value, onChange, t }: { value?: string; onChange: (code: string) => void; t: (en: string, ru: string) => string }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const [hi, setHi] = useState(0);
+  const root = useRef<HTMLDivElement>(null), list = useRef<HTMLUListElement>(null), search = useRef<HTMLInputElement>(null);
+  const cur = findFlag(value);
+  const name = (f: Flag) => t(f.en, f.ru);
+  const sorted = useMemo(() => [...FLAGS].sort((a, b) => name(a).localeCompare(name(b))), [t]); // eslint-disable-line react-hooks/exhaustive-deps
+  const needle = q.trim().toLowerCase();
+  const items: (Flag | null)[] = [
+    ...(needle ? [] : [null]),
+    ...sorted.filter((f) => !needle || [f.en, f.ru, f.ioc, f.code].some((s) => s.toLowerCase().includes(needle))),
+  ];
+  const show = (o: boolean) => {
+    setOpen(o); setQ('');
+    if (o) setHi(Math.max(0, items.findIndex((f) => (f?.code ?? '') === (value ?? ''))));
+  };
+  useEffect(() => {
+    if (!open) return;
+    search.current?.focus();
+    const away = (e: PointerEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
+    addEventListener('pointerdown', away);
+    return () => removeEventListener('pointerdown', away);
+  }, [open]);
+  useEffect(() => { list.current?.querySelector(`[data-i="${hi}"]`)?.scrollIntoView({ block: 'nearest' }); }, [hi, open]);
+  const pick = (f: Flag | null | undefined) => { if (f === undefined) return; onChange(f?.code ?? ''); setOpen(false); root.current?.querySelector('button')?.focus(); };
+  const key = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setHi((i) => Math.min(items.length - 1, i + 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setHi((i) => Math.max(0, i - 1)); }
+    else if (e.key === 'Enter') { e.preventDefault(); pick(items[hi]); }
+    else if (e.key === 'Escape') { e.preventDefault(); setOpen(false); root.current?.querySelector('button')?.focus(); }
+  };
+  const thumb = (f: Flag | null | undefined) => f
+    ? <img className="fp-img" src={flagSrc(f.code)} alt="" /> // eslint-disable-line @next/next/no-img-element
+    : <i className="fp-img fp-none" aria-hidden="true" />;
+  return (
+    <div className="fp" ref={root}>
+      <button type="button" className="fp-btn" aria-haspopup="listbox" aria-expanded={open} aria-labelledby="l-flag fp-val"
+        onClick={() => show(!open)} onKeyDown={(e) => { if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); show(true); } }}>
+        {thumb(cur)}
+        <span className="fp-name" id="fp-val">{cur ? name(cur) : t('No flag', 'Без флага')}</span>
+        {cur && <span className="fp-code">{cur.ioc}</span>}
+        <svg className="fp-chev" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      </button>
+      {open && (
+        <div className="fp-pop">
+          <input ref={search} className="fp-q" type="search" value={q} placeholder={t('Search a country', 'Найти страну')} aria-label={t('Search a country', 'Найти страну')}
+            aria-controls="fp-list" aria-activedescendant={items[hi] !== undefined ? `fp-o-${items[hi]?.code ?? 'none'}` : undefined}
+            onChange={(e) => { setQ(e.target.value); setHi(0); }} onKeyDown={key} />
+          <ul className="fp-list" id="fp-list" role="listbox" ref={list} aria-label={t('Flag on the main', 'Флаг на гроте')}>
+            {items.map((f, i) => (
+              <li key={f?.code ?? 'none'} id={`fp-o-${f?.code ?? 'none'}`} data-i={i} role="option" aria-selected={(f?.code ?? '') === (value ?? '')}
+                className={`fp-o ${i === hi ? 'hi' : ''}`} onPointerMove={() => setHi(i)} onClick={() => pick(f)}>
+                {thumb(f)}
+                <span className="fp-name">{f ? name(f) : t('No flag', 'Без флага')}</span>
+                {f && <span className="fp-code">{f.ioc}</span>}
+              </li>
+            ))}
+            {!items.length && <li className="fp-empty">{t('No such country here', 'Такой страны нет')}</li>}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

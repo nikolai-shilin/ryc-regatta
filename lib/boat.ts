@@ -1,4 +1,6 @@
-// The player's boat: its colours, sail number and logo. The boat page (/boat) saves it in localStorage 'regatta-boat',
+import { findFlag } from './flags';
+
+// The player's boat: its colours, sail number, logo and flag. The boat page (/boat) saves it in localStorage 'regatta-boat',
 // where the game reads it for your yacht at the start of every race (public/game/yacht.js, lookFrom / playerLook).
 
 export type Logo = 'ryc' | 'custom' | 'none';
@@ -12,13 +14,14 @@ export type Boat = {
   logo: Logo; logoImg?: string;          // the logo on the main and the bows; logoImg: your own picture as a data: URL
                                          // ('custom' without one shows DEFAULT_LOGO)
   nat: string; num: string;              // the letters (shown without a logo) and the number on the main
+  flag?: string;                         // the country flag on the main, high under the head (lib/flags.ts), or none
 };
 
 export const BOAT_KEY = 'regatta-boat';
 // the picture 'Yours' shows until you upload one: the RYC Rentals Bot badge (public/game/yacht.js has the same path)
 export const DEFAULT_LOGO = '/images/ryc-rentals-bot.png';
 
-export type Preset = { id: string; en: string; ru: string; boat: Omit<Boat, 'logo' | 'logoImg' | 'nat' | 'num' | 'preset'> };
+export type Preset = { id: string; en: string; ru: string; boat: Omit<Boat, 'logo' | 'logoImg' | 'nat' | 'num' | 'preset' | 'flag'> };
 
 // one-colour schemes: the hull, the gennaker and the team jackets in one colour, on white sails, with a sail number
 // that shows up against it. Picking one keeps your number and logo.
@@ -82,6 +85,7 @@ export function readBoat(): Boat {
     if (typeof b.logoImg === 'string' && b.logoImg.startsWith('data:image/')) out.logoImg = b.logoImg;
     if (typeof b.nat === 'string') out.nat = b.nat;
     if (typeof b.num === 'string') out.num = b.num;
+    if (findFlag(b.flag)) out.flag = b.flag;
     return out;
   } catch {
     return { ...DEFAULT_BOAT };

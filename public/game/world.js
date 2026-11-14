@@ -4,11 +4,14 @@ import { D2R, wrap, clamp, lerp, waveHeight, waveSlope, beatAngle, runAngle, HUL
 const SC = HULL / 10.4; // the model is drawn 10.4 m long; a First 40.7 is 12.2 m
 import { BoatView, LOOKS, playerLook } from './yacht.js';
 import { CommitteeBoat } from './committee.js';
+import { JuryBoat } from './jury.js';
 import { Wildlife } from './wildlife.js';
+import { BannerPlane } from './plane.js';
+import { Jets } from './jets.js';
 import { Post, Mirror, OVERLAY, MIRRORED } from './post.js';
 import { Ocean, OCEAN_GLSL, oceanUniforms, blankOcean } from './ocean.js';
 import { skyAt, pickSky, SKY_GLSL, skyUniforms } from './light.js';
-import { Skopea } from './skopea.js';
+import { Skopea, groundAt } from './skopea.js';
 export { flagTexture } from './committee.js';
 
 // the sky's colours and the sun: one set of objects that every shader shares; setLight() changes them in place
@@ -40,6 +43,8 @@ const WATER_FS = /* glsl */ `
 uniform float uTime, uFogNear, uFogFar, uChop, uAmp, uWhite, uGlint, uReflOn; uniform vec4 uW[8]; uniform float uWs[8], uQ[8];
 uniform vec3 uCam, uDeep, uScatter, uFoamCol; uniform vec4 uGust[12]; uniform vec2 uWind, uPivot;
 uniform sampler2D uRefl; uniform mat4 uReflMat;
+// the land's (skopea.js): the depth over its square, the hills' shadow, and where the venue's frame is
+uniform sampler2D uSeabed, uShadeTex; uniform vec3 uGridXf, uShadeXf, uLandAt, uShallow; uniform float uShallowK;
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
 ${SKY_GLSL}
 ${OCEAN_GLSL}
@@ -57,6 +62,10 @@ vec3 skyAt(vec3 d) {
   return c + uSunCol * pow(max(dot(d, uSun), 0.0), 10.0) * 0.25;
 }
 void main() {
+  // past the land's square the sea is all haze, the sky's own colour there: left to the sky, so the land beyond
+  // (skopea.js, drawn under everything) shows where it rises
+  vec2 g0 = (vWorld.xz + uLandAt.xz - uGridXf.xy) * uGridXf.z;
+  if (g0.x < 0.0 || g0.y < 0.0 || g0.x > 1.0 || g0.y > 1.0) discard;
   vec2 p = vXZ;
   // the wave trains' normal, all eight
   vec3 n = vec3(0.0, 1.0, 0.0);
@@ -123,8 +132,14 @@ void main() {
   // the water body: deep blue, lit turquoise where the crests let the sun through
   vec3 sunFlat = normalize(vec3(uSun.x, 0.0, uSun.z));
   float crest = smoothstep(-0.2, 1.0, vH / max(uAmp, 0.08));
-  float sss = crest * (0.35 + 0.65 * max(0.0, dot(-V, sunFlat))) * (1.0 - cosT * 0.5) * (0.6 + 0.8 * patchy);
-  vec3 body = uDeep * (0.75 + 0.25 * max(dot(n, uSun), 0.0)) + uScatter * sss * 0.45;
+  // in a hill's shadow the sun neither lights the water nor glints on it; over the shallows the bed shows through
+  vec2 lp = vWorld.xz + uLandAt.xz, lg = (lp - uShadeXf.xy) * uShadeXf.z;
+  float lsun = lg.x > 0.0 && lg.y > 0.0 && lg.x < 1.0 && lg.y < 1.0 ? texture2D(uShadeTex, lg).r : 1.0;
+  float dep = texture2D(uSeabed, (lp - uGridXf.xy) * uGridXf.z).r * 25.5;
+  float shal = uShallowK * (1.0 - smoothstep(0.8, 14.0, dep)) * (1.0 - smoothstep(1800.0, 4500.0, dist));
+  float sss = crest * (0.35 + 0.65 * max(0.0, dot(-V, sunFlat))) * (1.0 - cosT * 0.5) * (0.6 + 0.8 * patchy) * lsun;
+  vec3 body = uDeep * (0.75 + 0.25 * max(dot(n, uSun), 0.0) * lsun) + uScatter * sss * 0.45;
+  body = mix(body, uShallow * (0.5 + 0.5 * lsun * max(dot(n, uSun), 0.0)), shal);
   vec3 col = mix(body, refl, F);
   // the sun: a sharp glint and a broader glitter
   // the sun's glitter. What glints are facets far smaller than the waves drawn here — capillary ripples — each a
@@ -162,7 +177,7 @@ void main() {
     if (L == 1) far = 1.0 - smoothstep(0.6, 1.2, fp); // past the last level: the average
   }
   glit = mix(glit, spark, far);
-  col += uSunCol * uGlint * min(Fh * 70.0 * glit, 14.0); // capped: a glint blooms into a small star, not a lamp
+  col += uSunCol * uGlint * lsun * min(Fh * 70.0 * glit, 14.0); // capped: a glint blooms into a small star, not a lamp
   // whitecaps: a few waves break here and there — on a crest, where a slow patch of the noise says so — with a
   // ragged edge, and leave fading foam behind them. Nothing stretched or small-tiled, so no rows of dashes.
   // the noise is read across and along the wind (pa), so a breaker is a short ragged line along the crest, not a blob
@@ -754,7 +769,8 @@ export class World {
     const phone = /android|iphone|ipad/i.test(navigator.userAgent);
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(SKY_HORIZON, FOG_NEAR, FOG_FAR);
-    // out to 9 km: as far as the venue's land goes (8.5 km), so a landmark or a mountain behind the course is drawn
+    // out to 9 km: as far as the venue's terrain goes (8.5 km), so a landmark or a hill behind the course is drawn
+    // (the mountains beyond are pulled in to just inside it: skopea.js)
     this.camera = new THREE.PerspectiveCamera(55, 1, 0.3, 9000);
     this.camera.rotation.order = 'YXZ';
     this.hemi = new THREE.HemisphereLight('#dbeaff', '#2c4a5c', 0.9);
@@ -778,7 +794,11 @@ export class World {
       fragmentShader: SKY_FS,
     });
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(5000, 32, 16), skyMat());
+    this.sky.renderOrder = -2; // first: the land beyond (skopea.js) is drawn over it, then everything else
     this.scene.add(this.sky);
+    // airliners at cruise and their contrails, drawn with the sky, through its clouds (jets.js)
+    this.jets = new Jets(this.skyU, this.sky.material.uniforms.uTime);
+    this.scene.add(this.jets.group);
     // the sky with its clouds (and a sea below the horizon) as an environment map, so gelcoat, steel and glass reflect
     // it; made again whenever the light changes
     this.env = new THREE.Scene();
@@ -812,8 +832,9 @@ export class World {
 
     // the land round the course: Göcek bay, its hills, the town and Skopea Marina (skopea.js); setRace moves it so
     // the race's start sits where land.js laid it in the bay
-    this.skopea = new Skopea();
+    this.skopea = new Skopea(this.skyU);
     this.scene.add(this.skopea.group);
+    Object.assign(this.waterU, this.skopea.waterU);
     // the sea reflects the hills, the town and the moored yachts; not the pines, the most of it to draw a second
     // time, which the rippled reflection of a green hillside wouldn't show
     for (const o of [this.skopea.land, this.skopea.town, this.skopea.boats]) mirrored(o);
@@ -842,6 +863,9 @@ export class World {
 
     // gulls, dolphins and whales; their splashes go into the foam above
     this.wild = new Wildlife(this.scene, (x, z, n, up, size) => this.splash(x, z, n, up, size));
+    // now and then a light plane tows an advertising banner across the course (plane.js)
+    this.plane = new BannerPlane(this.renderer.capabilities.getMaxAnisotropy());
+    this.scene.add(mirrored(this.plane.group));
 
     this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uWind: this.waterU.uWind, uFoamCol: this.skyU.uFoamCol, uMax: { value: WAKE_AGE }, ...this.oceanU };
     this.wakes = []; this.contacts = [];
@@ -877,6 +901,7 @@ export class World {
     this.glare.material.color.copy(L.sun); this.glareK = L.disc;
     this.bloomLook = L.bloom; if (this.post) this.post.setLook(L.bloom);
     this.envSea.material.color.copy(L.deep).lerp(SKY_HORIZON, 0.2);
+    if (this.skopea) this.skopea.setLight(L);
     const pm = new THREE.PMREMGenerator(this.renderer), old = this.scene.environment;
     this.scene.environment = pm.fromScene(this.env, 0.02).texture;
     pm.dispose(); if (old) old.dispose();
@@ -958,6 +983,9 @@ export class World {
     };
     this.cb = cboat({ x: c.committee.x + c.dir.x * 5, z: c.committee.z + c.dir.z * 5 }, c.dir);
     this.committee = this.cb.root; this.cbW0 = W0;
+    // the jury boat, off the course, going round it
+    this.jury ||= new JuryBoat(); this.jury.reset(race);
+    g.add(mirrored(this.jury.root));
     this.line = dashes(c.pin, c.committee);
     // a finish line of its own: its pin, the line, and a second committee boat beyond its right-hand end, on station
     // with the blue flag
@@ -983,9 +1011,12 @@ export class World {
     for (const f of this.foam) f.age = 99;
     for (const w of this.wakes) w.dispose(this.scene);
     this.wakes = race.boats.map(() => new Wake(this.scene, this.wakeU));
+    this.juryWake?.dispose(this.scene); this.juryWake = new Wake(this.scene, this.wakeU);
     for (const h of this.contacts || []) h.dispose(this.scene);
     this.contacts = race.boats.map(() => new HullContact(this.scene, this.wakeU));
     this.wild.reset(race);
+    this.plane.reset(race, (x, z) => groundAt(x + race.at.x, z + race.at.z)); // the land is laid round race.at
+    this.jets.reset(race);
     this.skopea.place(race.at);
     this.prepare();
   }
@@ -1118,6 +1149,23 @@ export class World {
     }
   }
 
+  // the jury boat goes her way; she rides the swell like the committee boat, her bow up a little with speed
+  juryFrame(dt, t) {
+    const j = this.jury, o = j.root;
+    j.update(dt, t);
+    if (!j.on) return;
+    const fx = Math.sin(j.h), fz = -Math.cos(j.h);
+    o.position.set(j.x, waveHeight(this.W, j.x, j.z, t) * 0.7, j.z);
+    o.rotation.y = -j.h;
+    o.rotation.x = waveSlope(this.W, j.x, j.z, t, fx, fz) * 0.35 + clamp(j.v / 6, 0, 1) * 0.045;
+    o.rotation.z = waveSlope(this.W, j.x, j.z, t, -fz, fx) * 0.35 - j.yawRate * j.v * 0.06; // she leans into a turn
+    this.juryWake.update(j, dt, t, this.W);
+    // her burgee flies to the wind she makes as well as the wind there is
+    const W = this.race.wind.dir(), tw = this.race.wind.p.tws * 0.514;
+    const ax = -tw * Math.sin(W) - fx * j.v, az = tw * Math.cos(W) - fz * j.v; // the air going past her
+    j.cb.update(t, dt, null, null, j.h - Math.atan2(-ax, az), Math.hypot(ax, az));
+  }
+
   frame(dt, t) {
     const race = this.race, P = race.player, wind = race.wind;
     // boats
@@ -1162,6 +1210,7 @@ export class World {
         f.age = 0; f.life = 2.5 + Math.random() * 2; f.spray = false; f.s0 = 0.5; f.s1 = 1.4; f.a = 0.32;
       }
     }
+    this.juryFrame(dt, t);
     const c = race.course, k = c.legs[P.leg];
     this.zones.update(this.W, t, P.done || !hasZone(c, P.leg) ? [] : legTargets(c, P.leg).map((m) => this.zoneM.indexOf(m)));
     this.cb.update(t, dt, race.flags, race.prepFlag, this.cbW0 - race.wind.dir(), race.wind.p.tws * 0.514); // flags fly downwind
@@ -1255,7 +1304,9 @@ export class World {
     }
     cam.updateProjectionMatrix();
     this.wild.update(dt, t, this.W, cam, this.foamU.uScale.value);
+    this.plane.update(dt, cam, !this.intro);
     this.sky.position.copy(cam.position); this.sky.material.uniforms.uTime.value = t; // the clouds drift
+    this.jets.update(dt, cam, this.race);
     // the glare: brightest looking straight at the sun, gone when you look away
     const look = cam.getWorldDirection(this._dir || (this._dir = new THREE.Vector3()));
     this.glare.position.copy(cam.position).addScaledVector(SUN, 3000);

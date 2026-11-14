@@ -27,7 +27,7 @@ const CSS = `
 
 /* top centre: one slim pill */
 #hud.next .tc { gap: 5px; top: calc(8px + var(--st)); }
-.nx-pill { height: 32px; border-radius: 54px; align-items: center; padding: 0 4px; font: 700 12px var(--sans); white-space: nowrap; font-variant-numeric: tabular-nums; animation: nx-drop .55s var(--ease) both; }
+.nx-pill { height: 32px; border-radius: 54px; align-items: center; padding: 0 4px; color: #fff; font: 700 12px var(--sans); white-space: nowrap; font-variant-numeric: tabular-nums; animation: nx-drop .55s var(--ease) both; }
 .nx-pill > span { display: inline-flex; align-items: center; gap: 5px; padding: 0 10px; height: 18px; }
 .nx-pill > span + span { border-left: 1px solid var(--line); }
 .nx-pill > span:empty { display: none; }

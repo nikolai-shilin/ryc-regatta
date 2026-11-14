@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// From the IYT mini app the site opens with Telegram's launch data, which the head script in app/layout keeps in
+// From the IYT mini app the site opens with Telegram's launch data, which the head script in app/[lang]/layout keeps in
 // sessionStorage. Once per launch data it goes to /auth/telegram, which signs the player in; then the page is drawn
 // again with their account. A refusal (launch data older than a day) is not asked again; a failure is, on the next page.
 const LAUNCH = '__telegram__initParams', DONE = 'regatta-tg-signin';

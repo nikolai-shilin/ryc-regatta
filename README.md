@@ -8,15 +8,15 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 
 | Address | What it is | Where |
 | --- | --- | --- |
-| `/` | Home: the game described in detail | `app/page.tsx` |
-| `/race` | The race hub: today's race, today's fastest and a free race, in the pause-menu card over today's venue in the game's own scene (`components/game-scene.tsx`) | `app/race/page.tsx` |
+| `/` | Home: the game described in detail | `app/[lang]/page.tsx` |
+| `/race` | The race hub: today's race, today's fastest and a free race, in the pause-menu card over today's venue in the game's own scene (`components/game-scene.tsx`) | `app/[lang]/race/page.tsx` |
 | `/race/free` | Set up a free race (venue, wind, fleet, course shape — up and down, triangle, trapezoid or up and down with an upwind finish — length, laps, start, current), in the pause-menu card over the game's own scene at the chosen venue (`/boat-view?venue=&wind=`), which fades to each new place | `components/free-setup.tsx` |
-| `/race/result/[id]` | The result and debrief after a race | `components/result-view.tsx` |
+| `/race/result/[id]` | The result and debrief after a race, in the pause-menu card over the finish as it was: the game's own scene at the race's venue (`/boat-view?finish=1`), the line, the marks and every boat where she was as you crossed it | `components/result-view.tsx`, `lib/finish.ts` |
 | `/boat` | Your boat: colours, logo, sail number and team, in the race's pause-menu card over the game's own scene: your yacht on Lake Garda on a summer evening (`/boat-view`) | `components/boat-editor.tsx` |
 | `/settings` | Account, sailing, screen and sound, language | `components/settings-form.tsx` |
-| `/help` | How to play, with screenshots | `app/help/page.tsx` |
+| `/help` | How to play, with screenshots | `app/[lang]/help/page.tsx` |
 | `/faq` | Questions: 32 in five groups | `lib/faq.ts`, `components/faq-list.tsx` |
-| `/iyt` | The IYT sailing certification test, as rycrentals.com/iyt has it | `app/iyt/page.tsx` |
+| `/iyt` | The IYT sailing certification test, as rycrentals.com/iyt has it | `app/[lang]/iyt/page.tsx` |
 | `/sign-in`, `/sign-in/code`, `/sign-in/name` | Supabase sign-in: Google or a 6-digit email code, then a name for the ranking | `components/sign-in-forms.tsx` |
 | `/play?race=today` or `?race=free` | The game itself, a static page | `public/play/index.html`, `public/game/` |
 
@@ -25,7 +25,9 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     - `regatta` holds the options the free-race set-up and Settings write.
     - `regatta-pb` holds personal bests. For a signed-in player `components/bests-sync.tsx` merges it, on every page, with
       the copy in their account (`user_metadata.pb`), so their bests follow them to any device.
-    - `regatta-result-<id>` holds each finished race. The game keeps the last 20, then opens `/race/result/<id>`.
+    - `regatta-result-<id>` holds each finished race. The game keeps the last 20, then opens `/race/result/<id>`. With it go
+      the venue, where the course lay there, and each boat's position, heading and sails the moment you finished, for the
+      result page's scene; an older result has only the tracks, and `lib/finish.ts` puts each boat where hers had her then.
   - The game also posts each finished race to the scores server (below), so a result link opens on any device; there
     it reads as "this boat", not "you", and the page has a Share button for your own races.
 - **Scores:** `public/game/stats.js` posts every race's start, finish and result to `https://iyt.rycrentals.com/api/game`
@@ -37,7 +39,13 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   upgrade, copy the same files from the new `three` package into a folder named for its version and change the import
   maps in `public/play`, `public/hero-view` and `public/boat-view`.
 - **Languages:** English and Russian.
-  - The `lang` cookie decides, set by `/lang?to=ru&back=/somewhere`; without it, the browser's Accept-Language does.
+  - The address's `?lang=ru` decides (the address search engines index each language by, `lib/seo.ts`), else the `lang`
+    cookie (set by `?lang=` and by `/lang?to=ru&back=/somewhere`), else the browser's Accept-Language.
+  - Every page lives under `app/[lang]/`, a segment no address shows: `proxy.ts` picks the language and rewrites `/help`
+    to `/ru/help`. So the content pages (Home, `/help`, `/faq`, `/learn`, `/iyt`) are built once per language and served
+    from the CDN; Home is rebuilt every five minutes for today's fastest. `/ru/help` typed in redirects to `/help?lang=ru`.
+  - Those pages don't know who is signed in: the avatar, the footer's account link and "Sign in to get on it" are drawn
+    from the session cookie in the browser (`lib/me.ts`, then CSS `.if-me` / `.if-guest`).
   - The game reads the same cookie.
   - The copy is inline as `t('English', 'Русский')` pairs (`lib/lang.ts`).
 - **Today's race:** `lib/race.ts` is a copy of the game's `dailyRace()` and must stay in step with `public/game/sim.js`;
@@ -48,30 +56,40 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 - **The yacht:** `public/game/yacht.glb` is made by `blender/yacht.py`. Run it in Blender; it writes the file in place.
 - **The venues:** today's race goes to a venue a day (`dailyVenue()` in `public/game/venues.js`, copied in
   `lib/race.ts` and in `public/play/index.html`'s preloader, which `npm test` checks): the days go round all of them
-  in a shuffled order, so each comes once every 21 days and none two days running. A new venue goes in all three
+  in a shuffled order, so each comes once every 22 days and none two days running. A new venue goes in all three
   lists in the same place; it reshuffles the rotation, so add it close to midnight UTC, or today's venue changes mid-day. The home page's live view (`/hero-view`) stays in Göcek, to match its
   photos. A free race goes to the venue the set-up chose (`venue`
   in the `regatta` options; `?venue=<id>` in the game's address overrides it): Göcek, Cowes, Newport, Sydney, Kiel,
   Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland, San Francisco, Valencia, Barcelona, Palma, Marstrand, Bermuda,
-  Enoshima, Weymouth, Marseille, Rio de Janeiro or Lake Garda. `public/game/venues.js` holds each one's position,
+  Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda or Istanbul. `public/game/venues.js` holds each one's position,
   prevailing wind, clock and look (its woods, farmland, houses, moored boats and water); `lib/venues.ts` is the set-up
-  page's list of them, and `npm test` keeps the two in step. Each venue's land is baked by
-  `python3 blender/venues.py <work dir> [id ...]` into `public/game/venues/<id>.json` and `.bin`, the same way as
-  Göcek's (below), but centred on the race area and turned so the venue's prevailing wind comes from the game's north,
-  where every race's wind is; the sun turns with it, and stands where it does at that latitude in the sailing season.
-  The json also lists the towns and the landmarks `skopea.js` draws: the Harbour Bridge, the Newport Bridge, the Golden
-  Gate, the Sky Tower, Laboe's memorial, the Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la
-  Garde, Christ the Redeemer, Enoshima's Sea Candle and the lighthouses of Kiel and Trieste. `npm test` sails every course shape at every venue and
-  checks its marks are in clear water; a shape a venue has no room for at a length goes in its `skip`, and the set-up
-  offers only the shapes `shapeOffered()` (`lib/venues.ts`) allows there. Moving between today's race and a free race in the game reloads the page when
-  the venue changes.
-- **The land:** Göcek bay, off Skopea Marina. `public/game/skopea.bin` and `skopea.json` (the
-  hills, the coast, the marinas' pontoons and the town) are made by `python3 blender/skopea.py <work dir>`, from the
-  Terrarium elevation tiles and OpenStreetMap; it needs numpy and Pillow and keeps its downloads in the work dir.
-  `land.js` lays each course in clear water there, `skopea.js` draws the land. OpenStreetMap has few of Göcek's buildings,
-  so its town also comes from Microsoft's Global ML Building Footprints (ODbL, see `skopea.py`);
-  `python3 blender/skopea.py <work dir> --buildings` redoes only the buildings, leaving the coast and the sea room (and
-  so where today's course is laid) as they are.
+  page's list of them, and `npm test` keeps the two in step. Each venue's land, Göcek's too, is baked by
+  `python3 blender/venues.py <work dir> [id ...]` (needs numpy and Pillow; `--fetch` only downloads, into the work dir,
+  where a second run finds them) into `public/game/venues/<id>.json` and `.bin` (Göcek's into `public/game/skopea.json`
+  and `.bin`), from the Terrarium elevation tiles and OpenStreetMap: centred on the race area and turned so the venue's
+  prevailing wind comes from the game's north, where every race's wind is; the sun turns with it, and stands where it
+  does at that latitude in the sailing season. Göcek's keeps its older frame, from the town and not turned.
+  What the .bin holds, `land.js` unpacks and `skopea.js` draws:
+  - the terrain as a quadtree, some 8 m cells on the coast and round the race area, coarser where the hills are far or
+    smooth; the shore meets the water on OpenStreetMap's coastline to the metre, and the bed under the water is as steep
+    as the land above it (deep under a cliff, shallow off a beach), or the tiles' own depths where deeper;
+  - what is on the ground, on a 20 m grid: OpenStreetMap's woods, scrub, grass, fields, orchards, towns, industry,
+    beaches, bare rock and wetland, and a town wherever buildings stand close; the ground's colour is worked out for each
+    pixel from it, and where the map has nothing, from the venue's look;
+  - how much of the sky each point sees (the shade in valleys), and the water's depth (the sea is lighter over the
+    shallows); the hills' shadows are worked out in the game from where the sun is;
+  - the land beyond, out to 64 km on a 400 m grid, drawn pulled in to just inside the view and lowered by the earth's
+    curve: the Alps round Garda, Fuji from Enoshima;
+  - the buildings (their pitched roofs too, where the map or the venue's look has them).
+  The json lists the marinas' pontoons, the towns where the houses the map lacks are filled in, and the landmarks
+  `skopea.js` draws: the Harbour Bridge, the Newport Bridge, the Golden Gate, the Sky Tower, Laboe's memorial, the
+  Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la Garde, Christ the Redeemer, Enoshima's Sea
+  Candle, the lighthouses of Kiel and Trieste, and Istanbul's Bosphorus Bridge, Galata Tower, Blue Mosque, Hagia
+  Sophia and Süleymaniye. `land.js` lays each course in clear water; `npm test` sails every
+  course shape at every venue and checks its marks are in clear water; a shape a venue has no room for at a length
+  goes in its `skip`, and the set-up offers only the shapes `shapeOffered()` (`lib/venues.ts`) allows there. Moving between today's race and a free race in the
+  game reloads the page when the venue changes. OpenStreetMap has few of Göcek's buildings, so its town also comes
+  from Microsoft's Global ML Building Footprints (ODbL), which `venues.py` downloads with the rest.
 - **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes
   wrong (a sheet left out or in too hard, a broach, a foul, a collision, aground, stopped after the gun, now and then a
   tack) and through the start (the signals, a boat too close, the line far off, over early, a quick or a late start).
@@ -82,7 +100,17 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   Each language's lines (ElevenLabs recordings) are one after another in `public/game/skipper-<lang>.mp3`, mono 32 kbps,
   with silence between them; `VOICES` in `main.js` says where each one starts and how long it is, and which lines go
   with which situation. The voice has its own switch, apart from Sound (`voice` in the `regatta` options: Voice in the
-  pause menu, Voice on board in Settings); off, the hails are spoken by the browser and the count beeps.
+  pause menu, Voice on board in Settings); off, the hails and the call for a tack or a gybe are still heard, recorded,
+  and the count beeps.
+- **The calls, the race committee and the umpire:** what the browser's speech used to say is recorded now, with
+  [Piper](https://github.com/OHF-Voice/piper1-gpl), a local neural text-to-speech: in Russian the hails by rule and the
+  call for a tack or a gybe, a man's and a woman's; in English the one hail `skipper-en.mp3` lacks. The race committee
+  speaks over the VHF (every signal, a clean start or an individual recall, a general recall, back from over early,
+  out under the U or black flag, the forecast, the finish), and the umpire whistles and calls a penalty, a mark touched,
+  no penalty or a penalty to the other boat through a loudhailer. They're in `public/game/calls-<lang>.mp3`, laid out
+  like the skipper's (`CALLS` in `main.js`); the committee and the umpire are under Sound, not the Voice switch.
+  `scripts/voices.py` makes the files: the lines, the voices, and the shaping (shouted, VHF radio, loudhailer); with
+  `--takes N` it reads each line N times and keeps the reading faster-whisper hears back closest to the text.
 - **The other boats, heard close to:** within about 70 m (`crews` in `main.js`), another boat's tack or gybe is heard
   (her sails flogging, her winch), her crew's calls in the game's language (the same voices, under the Voice switch, one
   boat at a time, never over your own crew), and the nearest one's bow wave within 40 m. Each sound comes from her side

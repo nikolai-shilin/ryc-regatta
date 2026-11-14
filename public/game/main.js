@@ -288,7 +288,7 @@ const audio = {
       this.windG = this.chain('lowpass', 500); this.waterG = this.chain('bandpass', 1500, 0.6); this.flapG = this.chain('bandpass', 320, 1.2);
     } catch (e) { this.ctx = null; }
   },
-  setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; if (!v && window.speechSynthesis) speechSynthesis.cancel(); if (!v) { skipper.stop(); asides.stop(); } },
+  setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; if (!v) { skipper.stop(); asides.stop(); committee.stop(); } },
   set(g, v, tc = 0.25) { if (g && this.ctx) g.gain.setTargetAtTime(v, this.ctx.currentTime, tc); },
   update(P, paused) {
     if (!this.ctx) return;
@@ -312,20 +312,117 @@ const audio = {
     s.buffer = this.buf; f.type = 'highpass'; f.frequency.value = 3500; g.gain.setValueAtTime(0.25, n); g.gain.exponentialRampToValueAtTime(0.001, n + 0.03);
     s.connect(f).connect(g).connect(this.master); s.start(n, Math.random(), 0.04);
   },
-  say(text, from) { // from: another boat, spoken in her skipper's own pitch, and her own voice where there are several
-    if (!this.on || !window.speechSynthesis) return;
-    try {
-      const u = new SpeechSynthesisUtterance(text.replace('…', ', '));
-      u.lang = LANG === 'ru' ? 'ru-RU' : 'en-GB'; u.rate = 1.1; u.volume = 0.9;
-      if (from) {
-        const v = crews.voice(from), list = speechSynthesis.getVoices().filter((x) => x.lang.slice(0, 2) === LANG);
-        u.pitch = v.pitch; u.rate = 1.1 * Math.sqrt(v.rate);
-        if (list.length > 1) u.voice = list[v.n % list.length];
-      }
-      speechSynthesis.cancel(); speechSynthesis.speak(u);
-    } catch (e) {}
+  // a file of recorded lines, decoded into the audio context: resolves to its buffer, or null if it can't be had
+  fetch(file) {
+    return fetch(new URL(file, import.meta.url)).then((r) => r.arrayBuffer())
+      .then((b) => new Promise((res, rej) => this.ctx.decodeAudioData(b, res, rej)));
   },
 };
+
+// ---------- the lines the browser once spoke, and the race committee and the umpire ----------
+// Recorded with Piper, a neural text-to-speech, and shaped for where each is heard from (scripts/voices.py), one file a
+// language, calls-<lang>.mp3, loaded with the race. In Russian: the hails, by rule, and the call for a tack or a gybe,
+// a man's (h…) and a woman's (g…); in English the one hail skipper-en.mp3 hasn't got. In both, the race committee on
+// the VHF (c…): the signals, a clean start or a recall, over early and back, the forecast, the finish; and the umpire
+// from the RIB (u…), a whistle and a word: a penalty, a mark touched, no penalty, a penalty on the other boat.
+const CALLS = { ru: {
+  // where each line sits in calls-ru.mp3: [start, length] in seconds
+  h10: [0.5, 0.813], // Правый галс!
+  h11: [1.813, 1.242], // Наветренная, уходи!
+  h12: [3.555, 1.033], // Сзади, уходи!
+  h13: [5.088, 1.231], // Ты в повороте! Уходи!
+  h15: [6.819, 1.161], // Дай место уступить!
+  h16: [8.48, 1.277], // Не поворачивай на меня!
+  h17: [10.257, 1.091], // Надлежащий курс!
+  h18: [11.848, 0.975], // Место у знака!
+  h18_3: [13.324, 1.37], // Ты повернул в зоне! Уходи!
+  h18_4: [15.194, 1.683], // Фордевинд! Не шире, чем нужно!
+  h19: [17.377, 1.637], // Место у судейского судна!
+  h20: [19.514, 1.138], // Место для поворота!
+  h44: [21.152, 1.08], // Штрафник, уходи!
+  g10: [22.732, 0.929], // Правый галс!
+  g11: [24.16, 1.591], // Наветренная, уходи!
+  g12: [26.251, 1.37], // Сзади, уходи!
+  g13: [28.121, 1.567], // Ты в повороте! Уходи!
+  g15: [30.188, 1.149], // Дай место уступить!
+  g16: [31.838, 1.207], // Не поворачивай на меня!
+  g17: [33.545, 1.068], // Надлежащий курс!
+  g18: [35.113, 0.987], // Место у знака!
+  g18_3: [36.6, 2.101], // Ты повернул в зоне! Уходи!
+  g18_4: [39.201, 2.171], // Фордевинд! Не шире, чем нужно!
+  g19: [41.872, 1.567], // Место у судейского судна!
+  g20: [43.94, 1.207], // Место для поворота!
+  g44: [45.647, 1.73], // Штрафник, уходи!
+  hTack: [47.877, 2.238], // К повороту оверштаг! Поворот!
+  hGybe: [50.615, 2.226], // К повороту фордевинд! Поворот!
+  gTack: [53.341, 2.517], // К повороту оверштаг! Поворот!
+  gGybe: [56.358, 2.25], // К повороту фордевинд! Поворот!
+  cWarn5: [59.107, 5.1], // Всем лодкам, на связи судейское судно. Предупредительный сигнал. Пять минут.
+  cWarn3: [64.707, 5.286], // Всем лодкам, на связи судейское судно. Предупредительный сигнал. Три минуты.
+  cPrepP: [70.493, 3.012], // Подготовительный сигнал. Поднят флаг Папа.
+  cPrepU: [74.005, 3.175], // Подготовительный сигнал. Поднят флаг Юниформ.
+  cPrepB: [77.68, 3.105], // Подготовительный сигнал. Поднят чёрный флаг.
+  cFlagU: [81.285, 2.246], // Внимание, старт под флагом Юниформ.
+  cFlagB: [84.031, 2.13], // Внимание, старт под чёрным флагом.
+  c1: [86.661, 1.572], // Одна минута до старта.
+  cClear: [88.733, 2.461], // Старт чистый. Удачной гонки!
+  cRecall: [91.694, 4.47], // Индивидуальный отзыв. Флаг Икс-рей. Лодкам за линией вернуться.
+  cGenRecall: [96.664, 3.833], // Общий отзыв! Общий отзыв. Старт будет повторён.
+  cBack: [100.996, 2.594], // Вы вернулись. Можно стартовать.
+  cOut: [104.09, 3.262], // За линией в последнюю минуту. Вы дисквалифицированы.
+  cBreeze: [107.853, 4.028], // Прогноз на сегодня: бриз. Будет усиливаться и отходить вправо.
+  cFin1: [112.381, 3.108], // Финиш! Первое место. Поздравляем!
+  cFin: [115.989, 2.339], // Финиш. Хорошая гонка!
+  cFinDsq: [118.827, 3.688], // Финиш. Штраф не выполнен. Дисквалификация.
+  cFinOut: [123.015, 2.989], // Финиш. Дисквалификация на старте.
+  uPen: [126.504, 2.731], // Штраф! Оборот: оверштаг и фордевинд.
+  uMark: [129.736, 2.627], // Касание знака! Штрафной оборот.
+  uNone: [132.863, 0.777], // Штрафа нет!
+  uThem: [134.14, 1.429], // Штраф другой лодке!
+}, en: {
+  // where each line sits in calls-en.mp3: [start, length] in seconds
+  hGybeWide: [0.5, 1.73], // Gybe, no wider than you need!
+  gGybeWide: [2.73, 1.474], // Gybe, no wider than you need!
+  cWarn5: [4.704, 3.951], // Race committee, all boats. Warning signal. Five minutes.
+  cWarn3: [9.155, 3.974], // Race committee, all boats. Warning signal. Three minutes.
+  cPrepP: [13.629, 2.42], // Preparatory signal. P flag is up.
+  cPrepU: [16.549, 2.641], // Preparatory signal. Uniform flag is up.
+  cPrepB: [19.689, 3.291], // Preparatory signal. Black flag is up.
+  cFlagU: [23.48, 2.466], // Be advised, this start is under the Uniform flag.
+  cFlagB: [26.447, 2.606], // Be advised, this start is under the black flag.
+  c1: [29.552, 1.456], // One minute to the start.
+  cClear: [31.509, 2.507], // All clear. Good start, everyone.
+  cRecall: [34.516, 4.551], // Individual recall. X-ray flag. Boats over, return to the line.
+  cGenRecall: [39.567, 3.984], // General recall! General recall. The start will be repeated.
+  cBack: [44.051, 1.874], // You're back. Clear to start.
+  cOut: [46.425, 2.786], // Over in the last minute. You are disqualified.
+  cBreeze: [49.711, 3.882], // Today's forecast: a sea breeze, building and veering right through the race.
+  cFin1: [54.093, 2.655], // Finish! First place. Well sailed!
+  cFin: [57.248, 1.886], // Finished. Well sailed.
+  cFinDsq: [59.634, 3.514], // Finished. No penalty taken. Disqualified.
+  cFinOut: [63.648, 2.478], // Finished. Disqualified at the start.
+  uPen: [66.626, 3.145], // Penalty! Take your turn: tack and gybe.
+  uMark: [70.271, 2.289], // Mark touch! Penalty turn.
+  uNone: [73.06, 1.053], // No penalty!
+  uThem: [74.613, 1.781], // Penalty on the other boat!
+} };
+const calls = {
+  clips: CALLS[LANG] || {}, buf: null, loading: false,
+  load() {
+    if (!CALLS[LANG] || this.buf || this.loading || !audio.ctx) return;
+    this.loading = true;
+    audio.fetch(`calls-${LANG}.mp3`).then((b) => { this.buf = b; }, () => { this.loading = false; });
+  },
+};
+// a woman's line, in a crew's voice of two: g and then a capital or a digit (gStarboard, g10, gTack)
+const herLine = (k) => /^g[A-Z0-9]/.test(k);
+// where line k is to be had, in our skipper's recordings or in calls-<lang>.mp3: { buf, at, len, own }, or null.
+// `own` is a voice that isn't our skipper's: another boat shifts it half as far from its pitch (crews.say).
+function lineOf(k) {
+  if (skipper.buf && skipper.clips[k]) return { buf: skipper.buf, at: skipper.clips[k][0], len: skipper.clips[k][1], own: false };
+  if (calls.buf && calls.clips[k]) return { buf: calls.buf, at: calls.clips[k][0], len: calls.clips[k][1], own: true };
+  return null;
+}
 
 // ---------- the skipper: recorded voices on board ----------
 // In Russian, a skipper from Odessa who shouts at the crew when they've earned it; in English, a crew's racing calls: the
@@ -391,6 +488,10 @@ const VOICES = { ru: {
     ready: ['ready', 'clean'], // across the line within three seconds of the gun
     clean: ['clean'], // a start without fuss, or the windward mark with no fouls
     late: ['late', 'column'], // across the line more than ten seconds after the gun
+    // in calls-ru.mp3: the hails by rule, a man's (h…) and a woman's (g…), and the call for a tack or a gybe
+    ...Object.fromEntries(['10', '11', '12', '13', '15', '16', '17', '18', '18.3', '18.4', '19', '20', '44']
+      .map((r) => ['hail' + r, ['h', 'g'].map((p) => p + r.replace('.', '_'))])),
+    tackCall: ['hTack', 'gTack'], gybeCall: ['hGybe', 'gGybe'],
   },
 }, en: {
   // a crew's racing calls in skipper-en.mp3, a man's and a woman's (g…), and the count to the gun: [start, length] in seconds
@@ -415,8 +516,9 @@ const VOICES = { ru: {
     gHeads: [56.721, 0.557], gTacking: [57.878, 0.775], gJibe: [59.253, 0.635], // Heads! Tacking! Jibe!
     gTrim: [60.487, 0.621], gEase: [61.708, 0.625], gBearAway: [62.933, 0.82], gHeadUp: [64.353, 0.598], // Trim! Ease! Bear away! Head up!
   },
-  // the hails, by rule (the ones with no recording are still spoken by the browser), and the other calls
+  // the hails, by rule (18.4 is in calls-en.mp3), and the other calls
   pools: {
+    'hail18.4': ['hGybeWide', 'gGybeWide'],
     hail10: ['starboard', 'port', 'gStarboard'], hail11: ['keepClear', 'gKeepClear'], hail12: ['keepClear', 'gKeepClear'],
     hail13: ['keepClear', 'gKeepClear'], hail15: ['keepClear', 'gKeepClear'], hail44: ['keepClear', 'gKeepClear'],
     'hail18.3': ['keepClear', 'gKeepClear'], hail16: ['hold', 'gHold'], hail17: ['hold', 'gHold'],
@@ -450,8 +552,8 @@ const skipper = {
   shout(kind, chance = 1, now_ = false) {
     if (!this.buf || !audio.on || !opts.voice || paused || audio.ctx.state !== 'running') return false;
     const ctx = audio.ctx, now = ctx.currentTime;
-    if (now < (now_ ? this.speakTill : this.busyTill) || now < (this.letGo[kind] ?? 0) || (window.speechSynthesis && speechSynthesis.speaking)) return false;
-    const fresh = (this.pools[kind] || []).filter((k) => !(now - this.last[k] < this.REST));
+    if (now < (now_ ? this.speakTill : this.busyTill) || now < (this.letGo[kind] ?? 0) || committee.busy()) return false;
+    const fresh = (this.pools[kind] || []).filter((k) => !(now - this.last[k] < this.REST) && lineOf(k));
     if (!fresh.length) return false;
     if (Math.random() > chance * this.TALK) { this.letGo[kind] = now + 10 + Math.random() * 15; return false; }
     const k = this.choose(fresh, now), len = this.play(k);
@@ -465,10 +567,14 @@ const skipper = {
     while (i < list.length - 1 && (r -= w[i]) > 0) i++;
     return list[i];
   },
-  // a call that has to be heard now (a hail, the count to the gun): no breath, no minute's rest, and it cuts in on a line
-  cue(kind, from) {
-    const list = this.pools[kind] || (this.clips[kind] ? [kind] : null);
-    if (!list || !this.buf || !audio.on || !opts.voice || paused || audio.ctx.state !== 'running') return false;
+  // a call that has to be heard now (a hail, the count to the gun): no breath, no minute's rest, and it cuts in on a line.
+  // Ours is said in the race's crew's voice where the call has his and hers. `must`: a call heard with the Voice switch
+  // off too (a hail, the call for a tack or a gybe), as the browser once spoke them.
+  cue(kind, from, must) {
+    const all = this.pools[kind] || (this.clips[kind] || calls.clips[kind] ? [kind] : null);
+    if (!all || !audio.on || !(opts.voice || must) || paused || !audio.ctx || audio.ctx.state !== 'running') return false;
+    let list = all.filter((k) => lineOf(k)); if (!list.length) return false;
+    if (!from) { const mine = list.filter((k) => herLine(k) === (this.crew === 'g')); if (mine.length) list = mine; }
     const now = audio.ctx.currentTime, k = from ? crews.pick(from, list) : this.choose(list, now), len = this.play(k, from);
     if (!from) this.last[k] = now;
     this.speakTill = now + len + 0.2; this.busyTill = Math.max(this.busyTill, now + len + 2);
@@ -478,16 +584,27 @@ const skipper = {
   // play a little either side, so a line never loses its first or last sound
   play(k, from) { // from: another boat, whose call comes from where she is, in her skipper's own voice (crews.say)
     if (from) { const r = crews.say(from, k, 0.9, true); this.stop(); this.src = r.src; return r.len; }
-    const ctx = audio.ctx, [at, len] = this.clips[k], s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 0.9;
-    s.buffer = this.buf; s.connect(g).connect(from ? crews.out(1, crews.place(from).pan * 0.7) : audio.master); s.start(ctx.currentTime, Math.max(0, at - 0.03), len + 0.09);
+    const ctx = audio.ctx, { buf, at, len } = lineOf(k), s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 0.9;
+    s.buffer = buf; s.connect(g).connect(audio.master); s.start(ctx.currentTime, Math.max(0, at - 0.03), len + 0.09);
     this.stop(); this.src = s;
     return len;
   },
   stop() { try { this.src && this.src.stop(); } catch (e) {} this.src = null; },
-  // the start signals and crossing the line, from the race's messages
+  // the start signals and crossing the line, from the race's messages. His word on a signal waits for the committee's
+  // on the radio (later).
   signal(key, ocs) {
     if (key === 'gun') { if (!ocs) this.cue(this.crew === 'g' ? 'gStart' : 'start'); return; }
-    const k = { sigWarn: 'plan', sigPrep: 'flag', sig1: 'minute' }[key]; if (k) this.shout(k, 1, true);
+    const k = { sigWarn: 'plan', sigPrep: 'flag', sig1: 'minute' }[key]; if (k) this.later(k);
+  },
+  // a line for a moment, said once the radio and he are quiet, or let go if that's not within `wait` seconds
+  pend: null,
+  later(kind, wait = 9) { if (audio.ctx) this.pend = { kind, until: audio.ctx.currentTime + wait }; },
+  tick() {
+    const p = this.pend; if (!p || !audio.ctx) return;
+    const now = audio.ctx.currentTime;
+    if (now > p.until) { this.pend = null; return; }
+    if (now < this.speakTill || committee.busy()) return;
+    this.pend = null; this.shout(p.kind, 1, true);
   },
   // the count to the gun, in one voice all the way: in English the race's crew is his or hers, picked at the start
   count(n) { return this.cue(this.crew === 'g' ? 'g' + n : 'n' + n); },
@@ -499,8 +616,9 @@ const skipper = {
   // a boat too close, the line far off as the gun nears
   w: null,
   crew: 'm',
-  reset() { this.stop(); this.crew = Math.random() < 0.5 ? 'm' : 'g'; this.w = { trim: '', t: 0, sheet: 0, dir: 0, rev: [], slowT: 0, nearT: 0 }; },
+  reset() { this.stop(); this.pend = null; this.crew = Math.random() < 0.5 ? 'm' : 'g'; this.w ={ trim: '', t: 0, sheet: 0, dir: 0, rev: [], slowT: 0, nearT: 0 }; },
   watch(P, dt) {
+    this.tick();
     const w = this.w, c = race.clock;
     if (!this.buf || !w || P.done || P.pen || P.auto) return;
     // the sheet: pull in or ease out for three seconds straight
@@ -552,11 +670,10 @@ const crews = {
       .then((b) => new Promise((res, rej) => audio.ctx.decodeAudioData(b, res, rej)))
       .then((b) => { this.buf = b; }, () => { this.loading = false; });
   },
-  // where line k is to be had: { buf, at, len, own } in their own voice if it's loaded, else in ours; null if neither
+  // where line k is to be had: { buf, at, len, own } in their own voice if it's loaded, else in ours or calls-<lang>.mp3
   line(k) {
     const c = this.buf && this.own[LANG].clips[k];
-    if (c) return { buf: this.buf, at: c[0], len: c[1], own: true };
-    return skipper.buf && skipper.clips[k] ? { buf: skipper.buf, at: skipper.clips[k][0], len: skipper.clips[k][1], own: false } : null;
+    return c ? { buf: this.buf, at: c[0], len: c[1], own: true } : lineOf(k);
   },
   // a boat as heard from ours: near 1 alongside to 0 out of earshot, pan −1 left to 1 right of the camera's view
   place(b) {
@@ -577,28 +694,28 @@ const crews = {
     const v = near * near, ctx = audio.ctx, now = ctx.currentTime;
     if (e === 'tacking' || e === 'gybing') { this.flog(v, pan, 1.6); this.winch(v, pan, 1.5); }
     const list = (this.calls[LANG] || {})[e];
-    if (!list || !(this.buf || skipper.buf) || !opts.voice || now < this.talkTill || now < skipper.speakTill || now - (this.last.get(b) ?? -1e9) < 10) return;
+    if (!list || !(this.buf || skipper.buf) || !opts.voice || now < this.talkTill || now < skipper.speakTill || committee.busy() || now - (this.last.get(b) ?? -1e9) < 10) return;
     const { len } = this.say(b, this.pick(b, list), 0.8 * Math.max(v, 0.08));
     this.last.set(b, now); this.talkTill = now + len + 1.5;
   },
   // Each other boat's skipper has a voice of their own: the same recordings, played lower and slower or higher and
   // quicker (never at our own pitch), darker or brighter; in Russian the other man's, half as far from his own pitch
-  // so he's still himself; in English the man or the woman of skipper-en.mp3 at her helm. The browser's speech, where
-  // it speaks for her, takes her pitch too (audio.say).
+  // so he's still himself; in English the man or the woman of skipper-en.mp3 at her helm. Her hails in calls-<lang>.mp3
+  // are her crew's, his or hers, shifted half as far too.
   voices: new WeakMap(),
   RATES: [0.84, 1.12, 0.9, 1.17, 0.8, 1.07, 0.94, 1.14, 0.87, 1.1],
   voice(b) {
     let v = this.voices.get(b);
     if (!v) {
       const n = Math.max(0, race.boats.indexOf(b)), rate = this.RATES[n % this.RATES.length];
-      v = { n, rate, tone: [-5, 4, -2, 6, -6, 2][n % 6], woman: n % 2 === 1, pitch: clamp(0.55 + (rate - 0.8) * 2.4, 0.5, 1.6) };
+      v = { n, rate, tone: [-5, 4, -2, 6, -6, 2][n % 6], woman: n % 2 === 1 };
       this.voices.set(b, v);
     }
     return v;
   },
-  // a line from the list in her voice: in English, her helm's (the woman's clips are the g… ones)
+  // a line from the list in her voice: his or hers where the list has both (the woman's clips are the g… ones)
   pick(b, list) {
-    const w = this.voice(b).woman, mine = LANG === 'en' ? list.filter((k) => /^g[A-Z0-9]/.test(k) === w) : list;
+    const w = this.voice(b).woman, mine = list.filter((k) => herLine(k) === w);
     const from = mine.length ? mine : list;
     return from[Math.floor(Math.random() * from.length)];
   },
@@ -650,12 +767,119 @@ const crews = {
   },
 };
 
+// ---------- the banner plane's engine ----------
+// A flat-four at cruise and a two-blade prop, both near 80 Hz: a buzzing sawtooth with a throb under it and the hiss of
+// the propwash, louder and brighter the nearer she is, its pitch up as she comes and down as she goes (Doppler), and
+// panned to where she is in the picture. Silent while paused or behind the menu; under Sound like everything else.
+const engine = {
+  build() {
+    const ctx = audio.ctx, o = ctx.createOscillator(), sub = ctx.createOscillator(), subG = ctx.createGain();
+    const thr = ctx.createOscillator(), thrG = ctx.createGain(), am = ctx.createGain(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+    o.type = 'sawtooth'; sub.type = 'square'; subG.gain.value = 0.35; thr.frequency.value = 6.5; thrG.gain.value = 0.25; am.gain.value = 0.75;
+    thr.connect(thrG).connect(am.gain); // the beat between the cylinders and the blades
+    lp.type = 'lowpass'; lp.Q.value = 0.8; g.gain.value = 0;
+    o.connect(am); sub.connect(subG).connect(am); am.connect(lp).connect(g);
+    const w = ctx.createBufferSource(), wf = ctx.createBiquadFilter(), wg = ctx.createGain(); // the propwash
+    w.buffer = audio.buf; w.loop = true; wf.type = 'bandpass'; wf.frequency.value = 700; wf.Q.value = 0.6; wg.gain.value = 0.5;
+    w.connect(wf).connect(wg).connect(g);
+    const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if (p) g.connect(p).connect(audio.master); else g.connect(audio.master);
+    for (const x of [o, sub, thr]) x.start(); w.start(0, Math.random());
+    this.n = { o, sub, lp, g, p };
+  },
+  update(still) {
+    if (!audio.ctx || !audio.buf) return;
+    if (!this.n) this.build();
+    const { o, sub, lp, g, p } = this.n, ctx = audio.ctx, now = ctx.currentTime, pl = world.plane;
+    if (still || !pl || !pl.on) { g.gain.setTargetAtTime(0, now, 0.15); return; }
+    const cam = world.camera.position, dx = pl.p.x - cam.x, dy = pl.p.y - cam.y, dz = pl.p.z - cam.z, d = Math.max(1, Math.hypot(dx, dy, dz));
+    const vr = -(pl.v.x * dx + pl.v.y * dy + pl.v.z * dz) / d, f = 78 * 343 / (343 - vr); // closing speed: positive coming
+    o.frequency.setTargetAtTime(f, now, 0.1); sub.frequency.setTargetAtTime(f / 2, now, 0.1);
+    lp.frequency.setTargetAtTime(300 + 2600 * Math.min(1, 140 / d), now, 0.2); // the air takes the top off at a distance
+    g.gain.setTargetAtTime(0.32 * Math.min(1, 90 / d), now, 0.2);
+    if (p) {
+      const v = world.camera.getWorldDirection(this._v || (this._v = cam.clone())), r = Math.hypot(v.x, v.z) || 1, hd = Math.hypot(dx, dz) || 1;
+      p.pan.setTargetAtTime(clamp((dx * -v.z + dz * v.x) / r / hd, -1, 1) * 0.8, now, 0.2);
+    }
+  },
+};
+
 // ---------- the gulls you hear, and the crew's asides ----------
 // The gulls (wildlife.js) call now and then, and cry when a boat puts one up off the water: a cry made here, from where
 // the gull is, quieter and duller the further off (under Sound, like the wind and the water). In the Russian game the
 // crew has two asides of their own, each a file of its own and under the Voice switch: after another boat hails us,
 // «Шо он орёт, я всё равно ничего не понимаю»; and when we put a gull up, «О, смотри, чайка полетела. Главное, на кита
 // не наехать». An aside waits for the skipper to finish his line, and he waits for it.
+// A herring gull's voice. Each note is a stack of harmonics on a fundamental near 1 kHz, loudest from the second to the
+// fourth, that sweeps up fast and slides down slower, darkening as it falls. What makes it a gull and not a whistle is
+// the rasp: the voice catching on half its pitch (a subharmonic), a pitch that never quite holds still, and breath.
+// She has three calls: the mew, one long plaintive "kee-aaw"; the long call, a drawn note, then a run of "kyow"s
+// quickening and falling away, then a few slower "kau"s (the seaside laugh); and, put up in alarm, a sharp "kyow!"
+// and a hard, low "ga-ga-ga". Plays into dest from t; returns when she's done.
+function gullCall(ctx, dest, t, n, alarm, vol, pitch = 0.9 + Math.random() * 0.2) {
+  const G = gullCall, rnd = (a, b) => a + Math.random() * (b - a);
+  if (G.ctx !== ctx) {
+    G.ctx = ctx;
+    const N = 20, re = new Float32Array(N + 1), im = new Float32Array(N + 1);
+    for (let k = 1; k <= N; k++) im[k] = (k === 1 ? 0.55 : Math.exp(-((k - 3) ** 2) / 6) + 0.5 / k) * (k % 2 ? 1 : -1);
+    G.wave = ctx.createPeriodicWave(re, im);
+    const len = ctx.sampleRate * 2, nb = ctx.createBuffer(1, len, ctx.sampleRate), d = nb.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    G.noise = nb;
+    G.curve = new Float32Array(1024).map((_, i) => Math.tanh(2.2 * (i / 511.5 - 1)) / Math.tanh(2.2));
+  }
+  const noise = () => { const s = ctx.createBufferSource(); s.buffer = G.noise; s.loop = true; return s; };
+  // one note: dur s, a → b (its peak, reached at rise of the way through, held to hold) → c Hz; h the rasp, br the breath
+  const note = ({ dur, a, b, c, rise, hold, h, br }, v, f) => {
+    const s = pitch * f * rnd(0.97, 1.03);
+    const sweep = (p, k) => {
+      p.setValueAtTime(a * s * k, t); p.exponentialRampToValueAtTime(b * s * k, t + dur * rise);
+      p.linearRampToValueAtTime(b * s * k * 0.97, t + dur * hold); p.exponentialRampToValueAtTime(c * s * k, t + dur);
+    };
+    const o = ctx.createOscillator(), sub = ctx.createOscillator(), am = ctx.createGain(), subG = ctx.createGain();
+    const sh = ctx.createWaveShaper(), lp = ctx.createBiquadFilter(), env = ctx.createGain();
+    o.setPeriodicWave(G.wave); sweep(o.frequency, 1); sweep(sub.frequency, 0.5);
+    am.gain.value = 1 - h; subG.gain.value = h; sub.connect(subG).connect(am.gain); // the voice breaking on half its pitch
+    const jit = noise(), jl = ctx.createBiquadFilter(), jg = ctx.createGain(), sg = ctx.createGain(); // and never quite holding it
+    jl.type = 'lowpass'; jl.frequency.value = 300; jg.gain.value = 220 + 300 * h; sg.gain.value = 0.8 + 2 * h; // cents, and a shimmer
+    jit.connect(jl).connect(jg); jg.connect(o.detune); jg.connect(sub.detune); jl.connect(sg).connect(am.gain);
+    sh.curve = G.curve;
+    lp.type = 'lowpass'; lp.Q.value = 0.7; sweep(lp.frequency, 4.2);
+    const air = noise(), ab = ctx.createBiquadFilter(), ag = ctx.createGain(); // breath through the bill
+    ab.type = 'bandpass'; ab.Q.value = 1.3; sweep(ab.frequency, 2.6); ag.gain.value = br;
+    env.gain.setValueAtTime(0.0001, t); env.gain.linearRampToValueAtTime(v, t + Math.min(0.015, dur * 0.15));
+    env.gain.setValueAtTime(v, t + dur * rise); env.gain.linearRampToValueAtTime(v * 0.8, t + dur * hold); env.gain.exponentialRampToValueAtTime(0.0005, t + dur);
+    o.connect(am).connect(sh).connect(lp).connect(env); air.connect(ab).connect(ag).connect(env); env.connect(dest);
+    const off = rnd(0, 1.8), end = t + dur + 0.03;
+    for (const x of [o, sub]) { x.start(t); x.stop(end); }
+    for (const x of [jit, air]) { x.start(t, off); x.stop(end); }
+    t += dur;
+  };
+  const MEW = { a: 850, b: 1150, c: 780, rise: 0.35, hold: 0.65, h: 0.15, br: 0.14 };
+  const DRAWN = { a: 720, b: 1050, c: 800, rise: 0.4, hold: 0.7, h: 0.3, br: 0.16 };
+  const KYOW = { a: 950, b: 1300, c: 980, rise: 0.3, hold: 0.65, h: 0.35, br: 0.12 };
+  const KAU = { a: 900, b: 1080, c: 820, rise: 0.3, hold: 0.6, h: 0.45, br: 0.14 };
+  const GAG = { a: 650, b: 720, c: 560, rise: 0.3, hold: 0.5, h: 0.6, br: 0.2 };
+  if (alarm) {
+    note({ ...KYOW, dur: rnd(0.16, 0.2), h: 0.5 }, vol, 1.08); t += rnd(0.07, 0.11);
+    const k = n + 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < k; i++) { note({ ...GAG, dur: rnd(0.075, 0.1) }, vol * (1 - i * 0.06), 1 - i * 0.01); t += rnd(0.09, 0.14); }
+  } else if (n === 1) note({ ...MEW, dur: rnd(0.5, 0.75) }, vol * 0.9, 1);
+  else if (n === 2) for (let i = 0; i < 2; i++) { note({ ...KYOW, dur: rnd(0.19, 0.24) }, vol, 1 - i * 0.03); t += rnd(0.18, 0.28); }
+  else {
+    note({ ...DRAWN, dur: rnd(0.4, 0.5) }, vol * 0.85, 1); t += rnd(0.1, 0.14);
+    const k = n + 3;
+    for (let i = 0; i < k; i++) {
+      note({ ...KYOW, dur: rnd(0.22, 0.27) * (1 - i * 0.03) }, vol * (i < 3 ? 1 : 1 - (i - 2) * 0.07), 1 + (i < 2 ? i * 0.02 : 0.04 - i * 0.02));
+      t += 0.12 - i * (0.05 / k) + rnd(-0.01, 0.01);
+    }
+    t += 0.06;
+    const m = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < m; i++) { note({ ...KAU, dur: rnd(0.16, 0.2) }, vol * (0.7 - i * 0.12), 0.92 - i * 0.03); t += rnd(0.11, 0.15); }
+  }
+  return t;
+}
+
 const asides = {
   R: 120, // metres: a gull beyond is out of earshot
   files: { ru: { sho: 'crew-ru-sho.mp3', gull: 'crew-ru-gull.mp3' } },
@@ -688,32 +912,19 @@ const asides = {
     this.last[k] = now; skipper.speakTill = Math.max(skipper.speakTill, now + b.duration + 0.4); skipper.busyTill = Math.max(skipper.busyTill, now + b.duration + 6);
     return true;
   },
-  // a gull's cry: a long rising-and-falling "kee-yow", then laughing notes; on being put up, quick sharp notes
+  // a gull's cry, from where she is: quieter, duller and a touch later the further off, with the sea's echo under it
   cry(p, n, alarm) {
     const ctx = audio.ctx, pl = crews.place(p), d = Math.hypot(pl.d, p.y || 0), near = clamp(1 - d / this.R, 0, 1);
     if (near <= 0) return;
-    const v = near * near, out = crews.out(1, pl.pan), lp = ctx.createBiquadFilter(), pitch = 0.88 + Math.random() * 0.24;
-    lp.type = 'lowpass'; lp.frequency.value = 2500 + 7000 * near; lp.connect(out);
-    let t = ctx.currentTime + 0.03 + Math.random() * 0.08;
-    const note = (dur, a, b, c, vol) => {
-      const o = ctx.createOscillator(), am = ctx.createOscillator(), amG = ctx.createGain(), env = ctx.createGain();
-      const f1 = ctx.createBiquadFilter(), f2 = ctx.createBiquadFilter();
-      o.type = 'sawtooth'; o.frequency.setValueAtTime(a * pitch, t); o.frequency.linearRampToValueAtTime(b * pitch, t + dur * 0.3); o.frequency.linearRampToValueAtTime(c * pitch, t + dur);
-      f1.type = 'bandpass'; f1.frequency.value = 1500; f1.Q.value = 2.5; f2.type = 'bandpass'; f2.frequency.value = 2900; f2.Q.value = 2; // a gull's nasal ring
-      am.frequency.value = 55 + Math.random() * 30; amG.gain.value = vol * 0.35; // the rasp in it
-      env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(vol, t + 0.02); env.gain.setValueAtTime(vol, t + dur * 0.6); env.gain.exponentialRampToValueAtTime(0.001, t + dur);
-      am.connect(amG).connect(env.gain);
-      o.connect(f1).connect(env); o.connect(f2).connect(env); env.connect(lp);
-      o.start(t); am.start(t); o.stop(t + dur + 0.05); am.stop(t + dur + 0.05);
-      t += dur;
-    };
-    const vol = 0.5 * Math.max(v, 0.03);
-    if (alarm) for (let i = 0; i < n; i++) { note(0.11 + Math.random() * 0.03, 1500, 1650, 1150, vol); t += 0.06 + Math.random() * 0.04; }
-    else {
-      note(0.36 + Math.random() * 0.14, 1000, 1650, 820, vol); t += 0.12;
-      for (let i = 1; i < n; i++) { note(0.13 + Math.random() * 0.04, 1350, 1450, 1050, vol * 0.85); t += 0.08 + Math.random() * 0.05; }
-    }
-    this.cryTill = t + 1.5 + Math.random() * 3;
+    const v = near * near, out = crews.out(1, pl.pan), lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 2200 + 8000 * near; lp.Q.value = 0.5; lp.connect(out);
+    const echo = ctx.createDelay(0.5), eg = ctx.createGain(), el = ctx.createBiquadFilter(); // off the water and the hulls round about
+    echo.delayTime.value = 0.05 + 0.12 * (1 - near); eg.gain.value = 0.18 + 0.2 * (1 - near); el.type = 'lowpass'; el.frequency.value = 2600;
+    lp.connect(echo).connect(el).connect(eg).connect(out);
+    const t0 = ctx.currentTime + 0.03 + Math.random() * 0.08 + d / 343;
+    const end = gullCall(ctx, lp, t0, n, alarm, 0.55 * Math.max(v, 0.03));
+    setTimeout(() => { try { lp.disconnect(); eg.disconnect(); } catch (e) {} }, (end - ctx.currentTime + 1) * 1000);
+    this.cryTill = end + 1.5 + Math.random() * 3;
   },
   // every frame: what the gulls did, and a waiting aside
   update() {
@@ -733,9 +944,58 @@ const asides = {
     const pd = this.pend; if (!pd || !can) return;
     const now = audio.ctx.currentTime;
     if (now > pd.until) { this.pend = null; return; } // the moment has passed
-    if (now < pd.at || now < skipper.speakTill || (window.speechSynthesis && speechSynthesis.speaking)) return;
+    if (now < pd.at || now < skipper.speakTill || committee.busy()) return;
     this.say(pd.k); this.pend = null;
   },
+};
+
+// ---------- the race committee on the VHF, and the umpire from the RIB ----------
+// What the committee boat says to the fleet, under Sound (not the Voice switch: it isn't on board), from calls-<lang>.mp3:
+// each signal as the flag goes up, a clean start or an individual recall, a general recall, back from over early,
+// out under the U or black flag, the day's forecast, the finish. And the umpire, on a foul, a touched mark, a boat
+// exonerated, a penalty to the other boat: a whistle, then his word through the loudhailer. One call at a time, each
+// as soon as the crew and the skipper have had their say (the skipper's word on a signal waits for the radio), and
+// let go if it can't be said while it still matters.
+const committee = {
+  q: [], src: null, till: 0,
+  // line k, said as soon as the boat is quiet, or not at all if that's more than `wait` seconds off; the time it should
+  // be over by. `first`: ahead of what's waiting (a signal goes before the forecast)
+  call(k, wait = 5, first = false) {
+    const c = calls.clips[k]; if (!c || !audio.ctx || !audio.on) return 0;
+    const now = audio.ctx.currentTime;
+    this.q[first ? 'unshift' : 'push']({ k, until: now + wait });
+    return Math.max(now, this.till, skipper.speakTill) + c[1] + (k[0] === 'u' ? 0.6 : 0);
+  },
+  busy() { return !!this.q.length || (audio.ctx && audio.ctx.currentTime < this.till); },
+  stop() { try { this.src && this.src.stop(); } catch (e) {} this.src = null; this.q.length = 0; this.till = 0; },
+  update() {
+    if (!this.q.length || !audio.ctx) return;
+    const now = audio.ctx.currentTime;
+    while (this.q.length && now > this.q[0].until) this.q.shift(); // the moment has passed
+    if (!this.q.length || !calls.buf || !audio.on || paused || audio.ctx.state !== 'running' || now < this.till || now < skipper.speakTill) return;
+    this.play(this.q.shift().k);
+  },
+  play(k) {
+    const ctx = audio.ctx, [at, len] = calls.clips[k], ump = k[0] === 'u';
+    let t = ctx.currentTime;
+    if (ump) { this.whistle(t); t += 0.6; }
+    const s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = ump ? 0.8 : 0.7; // a handset in the cockpit
+    s.buffer = calls.buf; s.connect(g).connect(ump ? crews.out(1, 0.35) : audio.master); s.start(t, Math.max(0, at - 0.03), len + 0.09);
+    this.src = s; this.till = t + len + 0.3;
+    skipper.busyTill = Math.max(skipper.busyTill, this.till + 2);
+  },
+  // the umpire's whistle: a pea whistle's trill, two blasts
+  whistle(t) {
+    const ctx = audio.ctx, out = crews.out(1, 0.35);
+    for (const [at, dur] of [[0, 0.16], [0.22, 0.3]]) {
+      const o = ctx.createOscillator(), lfo = ctx.createOscillator(), dep = ctx.createGain(), g = ctx.createGain(), a = t + at;
+      o.frequency.value = 2900 + Math.random() * 150; lfo.frequency.value = 26 + Math.random() * 6; dep.gain.value = 220; // the pea
+      g.gain.setValueAtTime(0, a); g.gain.linearRampToValueAtTime(0.12, a + 0.015); g.gain.setValueAtTime(0.12, a + dur - 0.04); g.gain.linearRampToValueAtTime(0, a + dur);
+      lfo.connect(dep).connect(o.frequency); o.connect(g).connect(out);
+      o.start(a); lfo.start(a); o.stop(a + dur + 0.02); lfo.stop(a + dur + 0.02);
+    }
+  },
+  reset() { this.stop(); },
 };
 
 // ---------- the world ----------
@@ -784,7 +1044,7 @@ function newRace() {
   race.player.name = t('you');
   world.setRace(race);
   world.resetView();
-  hints = {}; lastClockInt = null; coachSeen = {}; skipper.reset(); asides.reset();
+  hints = {}; lastClockInt = null; coachSeen = {}; skipper.reset(); asides.reset(); committee.reset();
 }
 newRace();
 
@@ -960,7 +1220,7 @@ const hudNext = createHudNext({ t, LANG, fmt, world, getRace: () => race, setCam
 const menu = $('#menu'), results = $('#results'), hud = $('#hud');
 if (!opts.played) $('#howD').open = true; // how to play: open until the first race
 function startRace() {
-  audio.init(); audio.setOn(!!opts.sound); skipper.load(); crews.load(); asides.load();
+  audio.init(); audio.setOn(!!opts.sound); skipper.load(); crews.load(); asides.load(); calls.load();
   const day = dailyRace();
   // a new day: a new daily race, and at another venue its land needs the page loaded again
   if (race.settings.daily && race.settings.daily !== day.day && day.venue !== VENUE.id && !new URLSearchParams(location.search).get('venue')) { location.href = '/play?race=today'; return; }
@@ -977,7 +1237,8 @@ function startRace() {
 // ---------- pause: the race stays in view; resume, change the race, restart or leave (each of the last three asks first) ----------
 const pauseEl = $('#pauseCard'), confirmEl = $('#confirmCard');
 // the voice on board (the skipper in Russian, the crew's calls in English) has a switch of its own, next to Sound;
-// off, the hails are spoken by the browser again and the count to the gun beeps (Settings › Voice on board too)
+// off, the hails and the call for a tack or a gybe are still heard, and the count to the gun beeps (Settings › Voice on
+// board too). The race committee and the umpire are under Sound alone.
 { const s = pauseEl.querySelector('[data-q="sound"]'); if (s) { const b = s.cloneNode(); b.dataset.q = 'voice'; delete b.dataset.t; b.innerHTML = t('voiceK'); s.after(b); s.parentNode.style.flexWrap = 'wrap'; } }
 const ordL = (n) => (LANG === 'ru' ? `${n}-е` : ord(n));
 function paintPause() {
@@ -1162,7 +1423,7 @@ function updateHud(dt) {
     lastClockInt = ci;
   }
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) el.toast.classList.remove('show'); }
-  audio.update(P, paused); crews.update(P, paused); asides.update();
+  audio.update(P, paused); crews.update(P, paused); asides.update(); committee.update(); engine.update(false);
   if (race.coach) coach(P, a, leg);
   skipper.watch(P, dt);
   hudNext.update(P, dt);
@@ -1194,24 +1455,39 @@ function handleMessages() {
     const a = m.arg || {};
     if (m.key === 'signal') {
       audio.horn(a.sound === 'long'); haptic(a.key === 'gun' ? 'heavy' : 'medium'); skipper.signal(a.key, P.ocs);
+      // and on the radio: the signal, or at the gun a clean start or the boats over recalled (not a start being
+      // recalled, nor one under U or black, where the boats over are out)
+      if (a.key === 'gun') { if (!race.messages.some((n) => n.key === 'genRecall') && !race.boats.some((b) => b.ufd || b.bfd)) committee.call(race.flags.X ? 'cRecall' : 'cClear'); }
+      else committee.call({ sigWarn: 'cWarn' + Math.round(-a.t / 60), sigPrep: 'cPrep' + race.prepFlag, sig1: 'c1' }[a.key], 6, true);
       if (a.key === 'gun' && P.ocs) continue;
       toast(t(a.key, Math.round(-a.t / 60), race.prepFlag), 3);
-    } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') { raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy'); setTimeout(finishToPage, 2500); }
+    } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') {
+      race._fin = finishScene(race); raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy');
+      // the committee's word at the finish, heard out before the result
+      const end = committee.call(m.key === 'finishedDsq' ? 'cFinDsq' : m.key === 'finishedStartDsq' ? 'cFinOut' : m.arg === 1 ? 'cFin1' : 'cFin', 1.5);
+      setTimeout(finishToPage, end ? Math.max(2500, (end - audio.ctx.currentTime) * 1000 + 600) : 2500);
+    }
     else if (m.key === 'gate') toast(t('gateMsg'));
     else if (m.key === 'bump') { hint('bump', t('bump'), 3); haptic('heavy'); skipper.shout(race.clock < 0 ? 'push' : 'contact'); }
     else if (m.key === 'aground') { hint('aground', t('aground'), 3); haptic('heavy'); skipper.shout('aground'); }
-    else if (m.key === 'hail') { const h = t('hail' + a.rule), who = race.boats.find((b) => b.name === a.who); toast(`${a.who}: “${h}”`, 2.2); if (!skipper.cue('hail' + a.rule, who)) audio.say(h, who); asides.hail(); haptic('warn'); }
-    else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); if (!skipper.cue('hail' + a.rule)) audio.say(h); } }
-    else if (m.key === 'seaBreeze') toast(t('seaBreeze'), 5);
-    else if (m.key === 'genRecall') { toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(); haptic('warn'); skipper.shout('lost'); }
-    else if (m.key === 'prepU' || m.key === 'prepB' || m.key === 'ufd' || m.key === 'bfd') { toast(t(m.key), 4); if (m.key === 'prepU' || m.key === 'prepB') skipper.shout('flag', 1, true); if (m.key === 'ufd' || m.key === 'bfd') { haptic('warn'); skipper.shout('lost'); } }
-    else if (m.key === 'fouled' || m.key === 'theyFouled') { toast(t(m.key, a.who, a.rule), 3.5); skipper.cue('protest') || skipper.shout(m.key === 'fouled' ? 'foul' : 'contact'); }
+    else if (m.key === 'hail') { const h = t('hail' + a.rule), who = race.boats.find((b) => b.name === a.who); toast(`${a.who}: “${h}”`, 2.2); skipper.cue('hail' + a.rule, who, true); asides.hail(); haptic('warn'); }
+    else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); skipper.cue('hail' + a.rule, null, true); } }
+    else if (m.key === 'seaBreeze') { toast(t('seaBreeze'), 5); committee.call('cBreeze', 20); }
+    else if (m.key === 'genRecall') { toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(); haptic('warn'); committee.stop(); committee.call('cGenRecall'); skipper.shout('lost'); }
+    else if (m.key === 'prepU' || m.key === 'prepB' || m.key === 'ufd' || m.key === 'bfd') {
+      toast(t(m.key), 4);
+      if (m.key === 'prepU' || m.key === 'prepB') { if (race.seq.length <= 2) committee.call(m.key === 'prepU' ? 'cFlagU' : 'cFlagB', 8); skipper.later('flag'); } // a one-minute start has no preparatory signal to say it
+      if (m.key === 'ufd' || m.key === 'bfd') { haptic('warn'); committee.call('cOut'); skipper.shout('lost'); }
+    }
+    else if (m.key === 'fouled' || m.key === 'theyFouled') { toast(t(m.key, a.who, a.rule), 3.5); skipper.cue('protest') || skipper.shout(m.key === 'fouled' ? 'foul' : 'contact'); committee.call(m.key === 'fouled' ? 'uPen' : 'uThem', 4); }
     else {
       toast(t(m.key), 2.6); if (m.key === 'ocs') { haptic('warn'); skipper.shout('early', 1, true); } if (m.key === 'rounded' || m.key === 'roundedTrap' || m.key === 'roundedWlu') haptic('medium');
       if (m.key === 'touched' || m.key === 'wrongSide' || m.key === 'missedGate') skipper.shout('foul');
+      if (m.key === 'touched') committee.call('uMark', 4);
+      if (m.key === 'exonerated') committee.call('uNone', 4);
       if (m.key === 'missedLine') skipper.shout('where', 1, true);
       if (m.key === 'started') skipper.started(race.clock);
-      if (m.key === 'cleared') skipper.cue('go');
+      if (m.key === 'cleared') { skipper.cue('go'); committee.call('cBack'); }
       if (['rounded', 'roundedTri', 'roundedTrap', 'roundedWlu'].includes(m.key) && !skipper.cue('bearAway') && P.leg === 2 && !race.log.fouls.length) skipper.shout('clean'); // the windward mark, and nobody touched yet
     }
   }
@@ -1224,8 +1500,8 @@ function handleMessages() {
     if (e === 'penaltyDone') toast(t('penaltyDone'));
     if (e === 'kiteWrap' || e === 'crashGybe' || e === 'deathRoll') { toast(t(e), 3); haptic(e === 'kiteWrap' ? 'warn' : 'heavy'); if (!(e === 'crashGybe' && skipper.cue('heads'))) skipper.shout('chaos'); }
     if (e === 'kiteGybed') toast(t('kiteGybed'), 1.4);
-    // the call for a tack or a gybe: now and then the Russian skipper's own way, in English the crew's recorded call, else spoken
-    if ((e === 'tacking' || e === 'gybing') && !(!P.pen && skipper.shout('tack', 0.35)) && !skipper.cue(e === 'tacking' ? 'tackCall' : 'gybeCall')) audio.say(t(e === 'tacking' ? 'tackCall' : 'gybeCall'));
+    // the call for a tack or a gybe: now and then the Russian skipper's own way, else the crew's (with Voice off too)
+    if ((e === 'tacking' || e === 'gybing') && !(!P.pen && skipper.shout('tack', 0.35))) skipper.cue(e === 'tacking' ? 'tackCall' : 'gybeCall', null, true);
   }
   P.events.length = 0;
   for (const b of race.boats) if (b !== P) { for (const e of b.events) crews.hear(b, e); b.events.length = 0; } // heard when close
@@ -1332,6 +1608,13 @@ function drawMap(ctx, size, full) {
 
 
 // ---------- the finish: the computer boats sail on to the line (fast, unseen), the race is kept, the result page opens ----------
+// the fleet as it lay the moment you crossed the line: where each boat was, her heading and how she was sailing, for
+// the result page to show the finish as it was (the scene behind it, /boat-view?finish=1)
+function finishScene(race) {
+  const r1 = (v) => Math.round(v * 10) / 10, r2 = (v) => Math.round(v * 100) / 100;
+  return new Map(race.boats.map((b) => [b, { x: r1(b.x), z: r1(b.z), h: r2(b.h), twa: r2(b.twa || 0), awa: r2(b.awa || 0), heel: Math.round(b.heel || 0),
+    sail: Math.round(b.sail || 0), kite: b.kite ? 1 : 0, kiteFill: r2(b.kiteFill || 0), boom: b.boom || 1, v: r1(b.v || 0), done: b.done ? 1 : 0 }]));
+}
 function finishToPage() {
   if (!race.over) return;
   for (let n = 0; !race.boats.every((b) => b.done) && n < 60 * 900; n++) race.step(STEP);
@@ -1344,10 +1627,11 @@ function finishToPage() {
   const head = L.tacks.filter((x) => x <= -3).length, lift = L.tacks.filter((x) => x >= 3).length;
   const res = {
     v: 1, id, at: Date.now(), daily: s.daily || null, preset: s.preset, length: s.length, laps: s.laps, start: s.start, current: !!s.current,
+    venue: VENUE.id, origin: [Math.round(race.at.x), Math.round(race.at.z)], seed: s.seed ?? null,
     course: { windward: xz(c.windward), gate: c.gate.map(xz), pin: xz(c.pin), committee: xz(c.committee), legs: c.legs, ...(c.wing && { wing: xz(c.wing) }), type: c.type,
       marks: Object.fromEntries(Object.entries(c.marks).map(([k, m]) => [k, xz(m)])), ...(c.finish && { finish: [xz(c.finish.a), xz(c.finish.b)] }) },
     boats: race.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, color: typeof b.color === 'number' ? '#' + b.color.toString(16).padStart(6, '0') : null,
-      done: !!b.done, dsq: !!b.dsq, secs: b.done ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track || []) })),
+      done: !!b.done, dsq: !!b.dsq, secs: b.done ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track || []), ...(race._fin?.get(b) && { at: race._fin.get(b) }) })),
     log: { gunD: L.gunD, gunV: L.gunV, ocs: !!L.ocs, startDsq: L.startDsq || null, startT: L.startT, sailing: L.sailing, pct: L.sailing > 20 && L.polar ? Math.round((L.v / L.polar) * 100) : null,
       head, lift, tacks: L.tacks.length, dirty: Math.round(L.dirty), penT: Math.round(L.penT), hails: L.hails, legs: L.legs, legPlaces: L.legPlaces || [],
       fouls: L.fouls.map((f) => ({ rule: String(f.rule), who: f.who || null, t: f.t ?? null, x: f.x == null ? null : Math.round(f.x), z: f.z == null ? null : Math.round(f.z) })) },
@@ -1462,10 +1746,11 @@ function loop(now) {
     if (!running) world.orbit += dt * 0.12; // behind the menu the drone circles
     race.idle(dt);
     if (paused) { audio.update(P, true); crews.update(P, true); }
+    engine.update(true);
   }
   world.frame(running && !paused ? dt * timeScale : 0, race.t); // foam and wakes keep pace with the race
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, world, audio, skipper, crews, asides };
+if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, world, audio, skipper, crews, asides, engine };
 document.addEventListener('visibilitychange', () => { if (document.hidden && running && !paused && !window.__rg) pause(); }); // not in debug: test screenshots hide the tab

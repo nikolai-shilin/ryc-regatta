@@ -82,7 +82,7 @@ export function skyAt(hour, overcast = false) {
     L.horizon.lerp(new THREE.Color('#c9a68e').multiplyScalar(k), 0.25 * warm);
     L.hemiI *= k; L.sunI *= k; L.exposure += 0.15 * (1 - k);
   }
-  if (WATER) { L.deep.lerp(new THREE.Color(WATER.deep), WATER.k); L.scatter.lerp(new THREE.Color(WATER.scatter), WATER.k); }
+  if (WATER && WATER.deep) { L.deep.lerp(new THREE.Color(WATER.deep), WATER.k); L.scatter.lerp(new THREE.Color(WATER.scatter), WATER.k); }
   L.foam = foamLight(L, e);
   L.disc = overcast ? 0 : 1;
   L.bloom = { threshold: L.thr, strength: L.str };
