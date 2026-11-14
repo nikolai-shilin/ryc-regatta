@@ -9,6 +9,7 @@ import { dailyRace, raceMinutes, KN } from '@/lib/race';
 import { VENUES, venueOf } from '@/lib/venues';
 import { IconArrow, IconPlay, Num, clock } from '@/components/ui';
 import { MyRow, HeroScene, Countdown, Ticker, Dock } from '@/components/home-client';
+import { CountUp } from '@/components/count-up';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 import { FaqList } from '@/components/faq-list';
 import { faqGroups, HOME } from '@/lib/faq';
@@ -237,8 +238,8 @@ export default async function Home({ params }: LangParams) {
           </div>
           <dl className="bt-stats ho-nums">
             <div><dt className="bt-sk">{t('Wind', 'Ветер')}</dt><dd><b><Num v={`${KN.light}–${KN.strong} ${t('kn', 'уз')}`} /></b></dd><dd className="bt-sv">{t('From light air to a breeze you reef for', 'От лёгкого ветра до такого, что берут рифы')}</dd></div>
-            <div><dt className="bt-sk">{t('Fleet', 'Флот')}</dt><dd><b>3 · 5 · 7</b></dd><dd className="bt-sv">{t('Boats on the line, every one sailing by the rules', 'Лодок на линии, и все ходят по правилам')}</dd></div>
-            <div><dt className="bt-sk">{t('Shifts', 'Заходы')}</dt><dd><b>10°+</b></dd><dd className="bt-sv">{t('Every minute. Catch them or lose places', 'Каждую минуту. Лови их или теряй места')}</dd></div>
+            <div><dt className="bt-sk">{t('Fleet', 'Флот')}</dt><dd><b><CountUp v="3 · 5 · 7" /></b></dd><dd className="bt-sv">{t('Boats on the line, every one sailing by the rules', 'Лодок на линии, и все ходят по правилам')}</dd></div>
+            <div><dt className="bt-sk">{t('Shifts', 'Заходы')}</dt><dd><b><CountUp v="10°+" /></b></dd><dd className="bt-sv">{t('Every minute. Catch them or lose places', 'Каждую минуту. Лови их или теряй места')}</dd></div>
             <div><dt className="bt-sk">{t('Race of the day', 'Гонка дня')}</dt><dd><b>1</b></dd><dd className="bt-sv">{t('One for everyone, a new one every midnight', 'Одна на всех, новая каждую полночь')}</dd></div>
           </dl>
         </section>

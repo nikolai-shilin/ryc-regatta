@@ -1,5 +1,4 @@
-// The broadcast HUD, the default (?hud=old brings back the old one and remembers it, ?hud=bc undoes that; H switches
-// live). The race laid out as a sailing TV broadcast lays it out, in the design system of public/ui/tokens.css:
+// The HUD. The race laid out as a sailing TV broadcast lays it out, in the design system of public/ui/tokens.css:
 //   top left      the race bug (the race, the venue, the clock) and under it the umpire's and the boat's calls
 //   top centre    the gun clock with the committee's flags and the line's bias; after the gun, the legs
 //   top right     camera, zoom, game speed, pause; the wind; the fleet board
@@ -8,7 +7,7 @@
 //   bottom right  the tack button, the sails' buttons, the sheet
 //   on the water  the mark you're sailing to, labelled
 // It takes the game's own controls and readouts (the same elements, so main.js drives them as before) and moves them
-// into these blocks; switching back to the old HUD puts each one back where it was.
+// into these blocks.
 import { D2R, KN, clamp, wrap, idealSail, sheetFor, beatAngle, legTargets, legAim, isBeat } from './sim.js';
 import { VENUE } from './venues.js';
 
@@ -26,6 +25,7 @@ export const HUD_STRINGS = {
     toLeader: 'To leader', ahead: 'Ahead of 2nd', time: 'Time', start: 'Start', perMin: '/min', camera: 'Camera', pause: 'Pause',
     you: 'You', layIn: (s) => `Layline in ${s} · then tack`, layNow: 'On the layline · tack', over: 'Past the layline · tack now', fetch: 'Laying the mark',
     advantage: 'Advantage',
+    go: 'Go', leads: 'Leads', afterGun: 'after the gun', ord: (n) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`,
   },
   ru: {
     title: 'Up and down', daily: 'Гонка дня', free: 'Свободная гонка', live: 'Эфир', startIn: 'До старта', gun: 'Старт',
@@ -39,6 +39,7 @@ export const HUD_STRINGS = {
     toLeader: 'До лидера', ahead: 'Впереди второго', time: 'Время', start: 'Старт', perMin: '/мин', camera: 'Камера', pause: 'Пауза',
     you: 'Ты', layIn: (s) => `Лейлайн через ${s} · потом поворот`, layNow: 'На лейлайне · поворот', over: 'Лейлайн пройден · поворачивай', fetch: 'Идёшь на знак',
     advantage: 'Выигрыш',
+    go: 'Старт!', leads: 'Лидирует', afterGun: 'после сигнала', ord: (n) => `${n}-й`,
   },
 };
 
@@ -155,7 +156,11 @@ const CSS = `
 #hud.bc #mini { position: static; display: block; width: 240px; height: 240px; margin: 0 var(--s-1) var(--s-1); border: 0; border-radius: 0; background: none; opacity: 1; pointer-events: auto; -webkit-backdrop-filter: none; backdrop-filter: none; transition: width .3s var(--ease), height .3s var(--ease); }
 #hud.bc #mini.big { width: min(420px, calc(100vh / var(--hz, 1) - 260px)); height: min(420px, calc(100vh / var(--hz, 1) - 260px)); }
 @media (pointer: coarse) { .b-map { bottom: auto; top: calc(196px + var(--st)); } #hud.bc #rudder { width: 250px; height: 140px; } } /* the rudder has the corner */
-@media (hover: hover) and (pointer: fine) { #hud.bc #rudderZone { display: none; } } /* on a computer the keys steer */
+/* on a computer the keys steer, and the mouse can too: the arc shows only while it's held, right of the map */
+@media (hover: hover) and (pointer: fine) {
+  #hud.bc #rudder { left: calc(296px + var(--sl)); bottom: calc(24px + var(--sb)); opacity: 0; transition: opacity .25s; }
+  #hud.bc #rudderZone.held #rudder { opacity: 1; transition: opacity .1s; }
+}
 
 /* ---------- bottom centre: the call, the leg, your numbers ---------- */
 .b-low { left: 50%; bottom: calc(28px + var(--sb)); translate: -50% 0; flex-direction: column; align-items: stretch; animation: bc-rise var(--t-in) var(--ease) both .25s; }
@@ -252,6 +257,38 @@ const CSS = `
 #nxTag .ptr svg { width: 14px; height: 14px; display: block; }
 #nxTag.edge .ptr { display: flex; } #nxTag.edge .buoy { display: none; }
 
+/* the race's moments, as a broadcast cuts to them: a split at each mark, the gun, the finish; a place won or lost */
+.b-split { display: none; align-self: flex-start; align-items: stretch; height: 34px; margin-bottom: var(--s-2); }
+#hud.bc .b-split.on { display: flex; animation: b-split 4.8s var(--ease) both; }
+@keyframes b-split { 0% { clip-path: inset(0 100% 0 0); } 9% { clip-path: inset(0 0 0 0); } 90% { clip-path: inset(0 0 0 0); opacity: 1; } 100% { clip-path: inset(0 0 0 0); opacity: 0; } }
+.b-split > * { display: flex; align-items: center; padding: 0 var(--s-4); white-space: nowrap; }
+.b-split .k { background: var(--you); color: var(--ink-on); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.b-split .t { background: var(--ink); color: var(--ink-on); font: 800 var(--fs-row)/1 var(--cond); text-transform: uppercase; }
+.b-split .v { background: var(--panel); font: 700 var(--fs-row)/1 var(--cond); }
+.b-split .g { padding-right: var(--s-6); background: var(--panel); border-left: 1px solid var(--rule); font: 700 var(--fs-lead)/1 var(--cond); clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); }
+.b-split .g.gold { color: var(--gold); } .b-split .g.up { color: var(--up); } .b-split .g.down { color: var(--down); }
+.b-go, .b-fin { display: none; left: 50%; top: 32%; translate: -50% -50%; pointer-events: none; }
+#hud.bc .b-go.on { display: block; animation: b-go 1.5s var(--ease) both; }
+.b-go { font: 800 180px/0.9 var(--cond); text-transform: uppercase; color: var(--ink); text-shadow: 0 4px 40px rgba(0, 0, 0, 0.55); }
+@keyframes b-go { 0% { scale: 1.7; opacity: 0; } 14% { scale: 1; opacity: 1; } 70% { opacity: 1; } 100% { scale: .92; opacity: 0; } }
+#hud.bc .b-fin.on { display: flex; animation: bc-rise .6s var(--ease) both; }
+.b-fin { flex-direction: column; align-items: center; gap: var(--s-3); }
+.b-fin .k { padding: var(--s-2) var(--s-8) var(--s-2) var(--s-5); background: var(--gold); color: var(--ink-on); font: 700 var(--fs-lead)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
+.b-fin b { font: 800 var(--fs-display)/0.9 var(--cond); text-transform: uppercase; white-space: nowrap; text-shadow: 0 4px 40px rgba(0, 0, 0, 0.55); }
+.b-row.gain { animation: b-gain 1.6s var(--ease); } .b-row.lose { animation: b-lose 1.6s var(--ease); }
+@keyframes b-gain { 0% { background-color: rgba(46, 230, 160, 0.5); } 100% { background-color: transparent; } }
+@keyframes b-lose { 0% { background-color: rgba(255, 138, 61, 0.45); } 100% { background-color: transparent; } }
+.b-you .c-pos.gain { animation: b-pop .7s var(--ease); } .b-you .c-pos.lose { animation: b-pop-l .7s var(--ease); }
+@keyframes b-pop { 0% { scale: 1.3; background-color: var(--up); } 100% { scale: 1; } }
+@keyframes b-pop-l { 0% { scale: .85; background-color: var(--down); } 100% { scale: 1; } }
+.b-wind.pulse { animation: b-pulse 1.4s ease-out; }
+@keyframes b-pulse { 0% { box-shadow: inset 0 0 0 3px var(--pc, var(--up)); } 100% { box-shadow: inset 0 0 0 3px transparent; } }
+#hud.bc .b-legs:not([hidden]) { animation: b-wipe .7s var(--ease) both; }
+@keyframes b-wipe { from { clip-path: polygon(16px 0, 16px 0, 16px 100%, 0 100%); } to { clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%); } }
+.b-legs .b-leg.now { background: linear-gradient(90deg, var(--you) 50%, var(--w-10) 50%) right / 200% 100% no-repeat; animation: b-fill .9s var(--ease) both; }
+@keyframes b-fill { to { background-position: left; } }
+
 /* the layline, as the call when nothing else is called */
 .b-lay { display: none; align-items: center; gap: var(--s-3); min-height: 30px; padding: var(--s-2) var(--s-4); background: var(--ink); color: var(--ink-on);
   font: 700 var(--fs-small)/1.15 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; animation: bc-call 1.1s var(--ease) both; }
@@ -340,6 +377,9 @@ const CSS = `
   #nxTag .t-nm, #nxTag .t-v { font-size: var(--fs-small); padding: 0 var(--s-2); }
   .b-btag .in { height: 24px; } .b-btag .p { width: 22px; font-size: var(--fs-small); } .b-btag .n, .b-btag .v { font-size: var(--fs-label); padding: 0 var(--s-2); }
   .b-lay { font-size: var(--fs-label); padding: var(--s-2) var(--s-3); }
+  .b-split { position: absolute; left: 50%; top: calc(56px + var(--st)); translate: -50% 0; height: 28px; margin: 0; }
+  .b-split > * { padding: 0 var(--s-3); font-size: var(--fs-small) !important; } .b-split .k { font-size: var(--fs-label) !important; }
+  .b-go { font-size: 110px; } .b-fin b { font-size: var(--fs-h2); }
 }
 @media not all and ${WIDE} { @media (orientation: portrait) {
   .b-wind { top: calc(56px + var(--st)); }
@@ -409,7 +449,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
   const board = html(`<div class="bx pn b-board"><div class="b-bh"><span class="lbl-ink b-bt"></span><span class="lbl b-br"></span></div><div class="b-rows"></div></div>`);
   const map = html(`<div class="bx pn b-map"><div class="b-mh"><span class="lbl-ink">${L.course}</span><span class="lbl b-shape"></span></div></div>`);
   const TACK_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9c2.5-4.5 9.5-4.5 12 0"/><path d="M12.5 9H16.5V5"/><path d="M10 11.5V17"/></g></svg>';
-  const low = html(`<div class="bx b-low"><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}<span></span></div></div><div class="b-state"></div>
+  const low = html(`<div class="bx b-low"><div class="b-split" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}<span></span></div></div><div class="b-state"></div>
     <div class="pn b-you pre">
       <div class="c-pos s-run s-done"></div>
       <div class="c-nm s-pre s-run s-done"><i></i><span class="n-m">${t('you')}</span></div>
@@ -423,7 +463,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
       <div class="c-time s-done"><span class="lbl">${L.time}</span><span class="n-l v"></span></div>
     </div></div>`);
   const acts = html(`<div class="bx b-acts"></div>`);
-  hud.append(bug, calls, top, tr, board, map, low, acts);
+  const goEl = html(`<div class="b-go" aria-hidden="true"></div>`), fin = html(`<div class="b-fin" role="status"><span class="k"></span><b></b></div>`);
+  hud.append(bug, calls, top, tr, board, map, low, acts, goEl, fin);
+  const windBox = q(tr, '.b-wind');
   const B = {
     sub: q(bug, '.b-sub'), clock: q(bug, '.b-clock'), gun: q(top, '.b-gun'), gunN: q(top, '.b-gunn'), seq: q(top, '.b-seq'), seqI: q(top, '.b-seq i'), seqL: q(top, '.b-seql'),
     bv: q(top, '.b-bv'), bl: q(top, '.b-bl'), legs: q(top, '.b-legs'), legN: q(top, '.b-legn'), legR: q(top, '.b-legr'), btns: q(tr, '.b-btns'), cam: q(tr, '.b-cam'),
@@ -472,23 +514,23 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
     return { el, p: q(el, '.p'), c: q(el, '.c'), n: q(el, '.n'), v: q(el, '.v') };
   });
   const lay = q(low, '.b-lay'), layT = q(lay, 'span');
+  const split = q(low, '.b-split'), SP = { k: q(split, '.k'), t: q(split, '.t'), v: q(split, '.v'), g: q(split, '.g') };
 
-  // the game's own elements, and where each goes in this HUD; a marker keeps its old place for the way back
+  // the game's own elements, and where each goes in this HUD
   const btnIds = ['hailBtn', 'jibBtn', 'reefBtn', 'kiteBtn', 'tackBtn']; // top to bottom
   const MOVES = [
     ['#chips', calls], ['#trim', calls], ['#toast', q(low, '.b-callrow')], ['#flags', q(top, '.b-flagbox')], ['#mini', map],
     ['#zoomIn', B.btns], ['#zoomOut', B.btns], ['#speedBtn', B.btns], ['#pauseBtn', B.btns], ...btnIds.map((id) => [`#${id}`, acts]),
-  ].map(([s, to]) => { const el = $(s); if (!el) return null; const mark = document.createComment(s); el.before(mark); return { el, to, mark }; }).filter(Boolean);
+  ].map(([s, to]) => { const el = $(s); return el && { el, to }; }).filter(Boolean);
+  // the steering arc held (a computer shows it only then)
+  const rz = $('#rudderZone');
+  rz.addEventListener('pointerdown', () => rz.classList.add('held'));
+  for (const ev of ['pointerup', 'pointercancel']) addEventListener(ev, () => rz.classList.remove('held'));
   const fresh = {};
   for (const id of btnIds) { const b = document.getElementById(id); b && b.addEventListener('pointerdown', () => b.classList.remove('fresh')); }
 
-  let on = true, chipsReady = false;
-  try {
-    const p = new URLSearchParams(location.search).get('hud');
-    localStorage.removeItem('hudNext');
-    if (p === 'old') localStorage.setItem('hudOld', '1'); else if (p === 'bc' || p === 'next') localStorage.removeItem('hudOld');
-    on = localStorage.getItem('hudOld') !== '1';
-  } catch (e) { on = !/[?&]hud=old\b/.test(location.search); }
+  const on = true;
+  try { localStorage.removeItem('hudNext'); localStorage.removeItem('hudOld'); } catch (e) {} // the trials' switches, gone
 
   // the whole HUD scaled to the screen: the designs are drawn at 1600×1000 (wide) and 844×390 (a phone sideways)
   const wideQ = matchMedia(WIDE);
@@ -499,18 +541,13 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
   }
   addEventListener('resize', scale); scale();
 
-  function apply(v) {
-    on = v; hud.classList.toggle('bc', on);
-    if (chipsReady) clearChips();
-    for (const m of MOVES) { if (on) m.to.append(m.el); else m.mark.after(m.el); }
-    if (!on) { tag.classList.remove('on'); over.classList.remove('on'); hud.style.removeProperty('--hz'); } else scale();
-    // the blocks come in again
-    for (const el of [bug, top, tr, board, map, low, $('#sheetZone')]) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
-  }
-  apply(on);
+  hud.classList.add('bc');
+  for (const m of MOVES) m.to.append(m.el);
+  scale();
 
   const txt = (e, s) => { if (e._t !== s) { e._t = s; e.textContent = s; } };
-  const cls = (e, c) => { if (e._c !== c) { e._c = c; e.className = c; } };
+  // (a flash running on it stays: see flash below)
+  const cls = (e, c) => { if (e._c !== c) { e._c = c; e.className = c + ['gain', 'lose', 'pulse'].filter((k) => e.classList.contains(k)).map((k) => ' ' + k).join(''); } };
   const htm = (e, s) => { if (e._h !== s) { e._h = s; e.innerHTML = s; } };
   const pt = (a, r) => `${(32 + r * Math.sin(a)).toFixed(2)} ${(32 - r * Math.cos(a)).toFixed(2)}`;
   const metres = (d) => `${Math.round(d)} ${M}`;
@@ -536,18 +573,45 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
     return clock - c0 > 4 ? ((g0 - gap) / (clock - c0)) * 60 : 0;
   }
   const lastPlace = new Map(), moved = new Map();
-  let twaS = null, lastCount = '', legsKey = '', seqKey = '', raceRef = null, wasLead = null;
+  let twaS = null, lastCount = '', legsKey = '', seqKey = '', raceRef = null, wasLead = null, wasPre = true, wasDone = false, wasShift = '', pulseAt = -1e9;
+  // each boat's leg as last seen, and when each boat reached each mark (the race's clock), for the splits
+  const legOf = new Map(), atMark = [];
+  // play a one-off animation again: the class off, a reflow, on, and off when it's done
+  const flash = (el, c, ms) => { el.classList.remove(c, ...({ gain: ['lose'], lose: ['gain'] }[c] || [])); void el.offsetWidth; el.classList.add(c); clearTimeout(el['_f' + c]); el['_f' + c] = setTimeout(() => el.classList.remove(c), ms); };
 
   function update(P, dt) {
     if (!on) return;
     const race = getRace(), c = race.course, kn = P.v / KN, twa = P.twa, pre = race.clock < 0, done = !!P.done;
-    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); moved.clear(); twaS = null; }
+    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); }
     const leg = c.legs[P.leg], nLegs = c.legs.length - 1;
     // the order: before the gun, nearest the line first; then the race's
     const toLine = (b) => Math.max(0, -race.lineInfo(b).d);
     const st = pre ? race.boats.slice().sort((a, b) => toLine(a) - toLine(b)) : race.standings();
     const place = done ? P.place : st.indexOf(P) + 1, left = -race.clock;
     const side = (P.boom ? P.boom > 0 : twa > 0) ? L.stbd : L.port;
+
+    // the gun: GO, unless you're over
+    if (wasPre && !pre && !P.ocs) { txt(goEl, L.go); flash(goEl, 'on', 1500); }
+    wasPre = pre;
+    // every boat's roundings, as they happen; yours cut to a split: where, your place, the clock, the gap to the first there
+    if (!pre) for (const b of race.boats) {
+      const was = legOf.get(b) ?? b.leg;
+      for (let l = was + 1; l <= b.leg; l++) (atMark[l] ||= new Map()).set(b, race.clock);
+      legOf.set(b, b.leg);
+      if (b === P && P.leg > was && !done) {
+        const times = [...atMark[P.leg].values()], first = Math.min(...times), mine = atMark[P.leg].get(P), atStart = P.leg === 1;
+        txt(SP.k, atStart ? L.start : t(legKey(c, c.legs[P.leg - 1])));
+        txt(SP.t, L.ord(st.indexOf(P) + 1));
+        txt(SP.v, fmt(race.clock));
+        txt(SP.g, atStart ? `+${fmt(race.clock)} ${L.afterGun}` : mine <= first ? L.leads : `+${fmt(mine - first)}`);
+        cls(SP.g, `g ${atStart ? '' : mine <= first ? 'gold' : 'down'}`);
+        flash(split, 'on', 4800);
+      }
+    }
+    // the finish
+    if (done && !wasDone) { txt(q(fin, '.k'), L.finished); txt(q(fin, 'b'), `${L.ord(P.place)} · ${fmt(P.finish)}`); fin.classList.add('on'); }
+    if (!done) fin.classList.remove('on');
+    wasDone = done;
     const daily = !!race.settings?.daily;
 
     // the bug: the race, and the clock
@@ -609,6 +673,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
       if (s >= 4) { sh = `${L.lift} ${s}°`; shc = 'b-shift is-up'; } else if (s <= -4) { sh = `${L.header} ${-s}°`; shc = 'b-shift is-down'; }
     }
     txt(B.shift, sh ? ` · ${sh}` : ''); cls(B.shift, shc || 'b-shift');
+    const shk = sh ? shc : '';
+    if (shk && shk !== wasShift && race.clock - pulseAt > 10) { pulseAt = race.clock; windBox.style.setProperty('--pc', shk.includes('up') ? 'var(--up)' : 'var(--down)'); flash(windBox, 'pulse', 1400); }
+    wasShift = shk;
 
     // the board: on the line before the start, then the race order with the gaps
     board.classList.toggle('pre', pre);
@@ -618,7 +685,10 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
     const leader = st[0], remL = remaining(race, leader);
     if (!pre) for (const [b, i] of st.map((b, i) => [b, i + 1])) {
       const was = lastPlace.get(b);
-      if (was && was !== i) moved.set(b, [i < was ? 'u' : 'd', race.clock + 4]);
+      if (was && was !== i && race.clock > 5) { // the first seconds after the gun the order sorts itself out as the boats cross
+        moved.set(b, [i < was ? 'u' : 'd', race.clock + 4]);
+        if (b === P) flash(Y.pos, i < was ? 'gain' : 'lose', 800);
+      }
       lastPlace.set(b, i);
     }
     rows.forEach((r, n) => {
@@ -631,6 +701,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
       txt(r.nm, me ? t('you') : b.name);
       const mv = moved.get(b), mvOn = mv && race.clock < mv[1];
       txt(r.mv, mvOn ? (mv[0] === 'u' ? '▲' : '▼') : ''); cls(r.mv, `b-mv${mvOn ? ' ' + mv[0] : ''}`);
+      if (mvOn && r.el._mv !== mv) { r.el._mv = mv; flash(r.el, mv[0] === 'u' ? 'gain' : 'lose', 1600); }
       if (pre) {
         txt(r.gp, metres(toLine(b))); txt(r.x, nf(b.v / KN));
         r.gp.classList.remove('dim');
@@ -835,8 +906,6 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam }) {
       ch.timer = setTimeout(() => { ch.el.remove(); live.delete(key); }, 800);
     }
   }
-  function clearChips() { for (const ch of live.values()) clearTimeout(ch.timer); live.clear(); chipBox.textContent = ''; }
-  chipsReady = true;
 
-  return { update, chips, get on() { return on; }, toggle() { apply(!on); try { on ? localStorage.removeItem('hudOld') : localStorage.setItem('hudOld', '1'); } catch (e) {} return on; } };
+  return { update, chips };
 }

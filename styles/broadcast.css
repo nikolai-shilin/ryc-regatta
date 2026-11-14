@@ -589,3 +589,20 @@
 .bc .split-photo { background: var(--surface); }
 .bc .photo-fade { background: linear-gradient(180deg, rgba(3, 8, 14, 0) 0%, rgba(3, 8, 14, 0.75) 100%); }
 .bc .split-panel { background: var(--ground); }
+
+/* ---------- motion on the pages, as a broadcast brings its graphics on ----------
+   The big headlines wipe in; the photo behind the home settles; further down, each block rises as it scrolls into
+   view (where the browser has scroll-driven animation; elsewhere it's simply there). Nothing moves under reduced
+   motion. The numbers count up the first time they're seen (components/count-up.tsx). */
+.bc :is(.ho-h1, .bt-h, .hm-ph-h, .aph-h) { animation: bc-wipe .9s var(--ease) both .12s; }
+.bc .ho-bg { animation: bc-zoom 18s ease-out both; }
+@supports (animation-timeline: view()) {
+  .bc :is(.ho-sec-t, .ho-sec-h, .ho-goal, .ho-path li, .ho-step, .ho-feat, .ho-nums, .ho-band, .ho-friend, .ho-split-t, .ho-faq, .ho-faq-side,
+    .hm-sec > *, .rs-col > *, .rs-next, .gd-card, .gd-sec, .hrule, .hitem, .hlegend li, .iyt-card) {
+    animation: bc-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 18%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bc :is(.ho-h1, .bt-h, .hm-ph-h, .aph-h, .ho-bg, .ho-sec-t, .ho-sec-h, .ho-goal, .ho-path li, .ho-step, .ho-feat, .ho-nums, .ho-band, .ho-friend, .ho-split-t,
+    .ho-faq, .ho-faq-side, .hm-sec > *, .rs-col > *, .rs-next, .gd-card, .gd-sec, .hrule, .hitem, .hlegend li, .iyt-card) { animation: none !important; }
+}

@@ -109,6 +109,10 @@
 @keyframes bc-beat { 0% { scale: 1.12; } 100% { scale: 1; } }
 @keyframes bc-flash { 0% { background-color: rgba(255, 255, 255, 0.35); } 100% { background-color: transparent; } }
 @keyframes bc-sheen { from { background-position: 160% 0; } to { background-position: -60% 0; } }
+/* a headline wiped in from the left, as a graphic comes on air; the end leaves room for the letters' overhang */
+@keyframes bc-wipe { from { clip-path: inset(-20% 100% -20% 0); } to { clip-path: inset(-20% -5% -20% -5%); } }
+/* a photo behind a page settling in, slowly */
+@keyframes bc-zoom { from { scale: 1.08; } to { scale: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
   .bc, .bc *, .bc *::before, .bc *::after {

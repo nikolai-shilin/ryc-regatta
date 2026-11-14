@@ -33,7 +33,7 @@
 }
 
 .logo { display: block; width: 50px; height: 25px; flex: none; color: var(--ink); }
-.logo-w { color: var(--on-photo); }
+
 .group-k { display: flex; align-items: center; gap: var(--s-2); padding-bottom: var(--s-2); border-bottom: 1px solid var(--line); }
 
 /* ---------- app screens in rycrentals.com's subpage style ---------- */
@@ -43,112 +43,29 @@
 :is(.aph-top, .lhead) > a.round-muted { border-color: var(--ctl-line, var(--tag-line)); color: var(--ink); }
 .aph .kicker { display: inline-flex; align-items: center; gap: 6px; }
 .aph-h { margin: 0; font: 300 var(--t-h2)/1.05 var(--f-serif); letter-spacing: -0.025em; text-wrap: balance; }
-.aph-p { margin: 0; max-width: 62ch; font: 400 var(--t-m)/1.45 var(--f-serif); color: var(--muted); }
-/* today's venue on the race hub: a pin, its name, where it is */
-.hub-where { display: inline-flex; align-items: center; gap: 6px; font: 500 var(--t-m)/1.2 var(--f-sans, inherit); color: var(--ink); }
-.hub-where span { color: var(--muted); font-weight: 400; }
-/* rycrentals' answer tags: big serif pills, the chosen one filled */
-.qtags { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.qtag { display: inline-flex; align-items: center; gap: var(--s-2); min-height: var(--h-m); padding: 0 var(--s-4); border: 2px solid var(--tag-line); border-radius: var(--r-full); background: var(--bg); color: var(--ink); font: 400 var(--t-m)/1 var(--f-serif); white-space: nowrap; cursor: pointer; }
-.qtag:hover { border-color: var(--muted); }
-.qtag.on, .qtag[aria-checked="true"] { border-color: var(--sel-bg); background: var(--sel-bg); color: var(--sel-ink); }
-.qtag .td { font: 400 var(--t-xs)/1 var(--f-sans); opacity: 0.65; }
-/* a summary card of rows: the name in caps on the left, its value on the right */
-.qrows { list-style: none; margin: 0; padding: var(--s-1) var(--s-5); display: flex; flex-direction: column; }
-.qrow { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: var(--h-l); border-top: 1px solid var(--line); }
-.qrow:first-child { border-top: 0; }
-.qrow .meta { flex: none; }
-.qrow-v { min-width: 0; font: 400 var(--t-m)/1.25 var(--f-serif); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.band .qtag { background: var(--bg); }
-.band .qtag.on, .band .qtag[aria-checked="true"] { background: var(--sel-bg); }
 
-/* race hub: the head with today's race, then the course with its tag and the start beside today's fastest and a
-   free race */
-.hub-page { gap: var(--s-5); }
-.hub2 { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
-.hub-main { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
-.hub-photo { display: none; position: relative; aspect-ratio: 352 / 190; width: 100%; border-radius: var(--r-l); background: var(--photo-bg); }
-.hub-photo .hm-clip img { object-fit: cover; }
-.hub-main > .pill { align-self: stretch; }
-/* sideways on a phone, Start comes first so it stays in view; the tiles and the chip follow */
-.hub-main > .pill { order: -1; }
-/* rycrentals' summary tiles: on the pale band, an icon and a label, a big figure, a line under it */
-.qstats { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); }
-.qstats > div { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; padding: var(--s-3) var(--s-4); border-radius: var(--r-m); background: var(--band); }
-.qstats dt { display: inline-flex; align-items: center; gap: 5px; }
-.qstats dd { margin: 0; }
-.qstat-v { font: 700 var(--t-h3)/1.1 var(--f-sans); color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.qstats .hm-meta { font-size: var(--t-xs); line-height: 1.3; }
-.hub-side { display: flex; flex-direction: column; gap: var(--s-5); min-width: 0; }
-.hub-board .hm-board-h .meta:first-child { color: var(--ink); }
-.free-card { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--card-pad); }
-.free-card .hm-h3 { margin: 0; }
-@container scr (orientation: portrait) {
-  .hub2 { grid-template-columns: minmax(0, 1fr); }
-  .hub-photo { display: block; }
-  .hub-main > .pill { order: 0; }
-  .qstats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 @container scr (min-width: 1024px) and (min-height: 640px) {
-  .hub-page { gap: var(--s-8); }
   .aph-h { font-size: var(--t-h1); }
-  .hub2 { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-8) var(--s-16); }
-  .hub-photo { display: block; }
-  .hub-main > .pill { align-self: flex-start; order: 0; }
-  .qstats { gap: var(--s-3); }
-  .qstats > div { gap: var(--s-2); padding: var(--s-4) var(--s-5); border-radius: var(--r-l); }
-  .qstat-v { font-size: var(--hm-h2); }
-  .qstats .hm-meta { font-size: var(--t-s); }
-  .free-card { padding: var(--s-6); }
 }
 
 /* free race set-up, laid out like rycrentals' questions: the choices as answer tags on the left, your race beside
    them (the summary, the course and Start) */
 .fs { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--s-6); align-items: start; }
-.fs-q { display: flex; flex-direction: column; gap: var(--s-5); min-width: 0; }
-.fs-g { display: flex; flex-direction: column; gap: var(--s-2); }
-.fs-g .hint { margin: 0; }
-.fs-gk { display: inline-flex; align-items: center; gap: 6px; }
-.fs-gk svg { color: var(--muted); }
-/* rycrentals' note under the request: a round icon and a muted line */
-.fs-note { display: none; align-items: flex-start; gap: var(--s-3); }
-.fs-note-i { display: inline-flex; align-items: center; justify-content: center; flex: none; width: var(--h-s); height: var(--h-s); border-radius: 50%; background: var(--band); color: var(--accent); }
-.fs-note p { margin: 0; font: 400 var(--t-s)/1.45 var(--f-serif); color: var(--muted); }
-.fs-aside { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
-.fs-aside :is(.qrows, .fs-k) { display: none; }
-/* sideways on a phone: the course and Start stay in view while the choices scroll, and the head stays short */
-.fs-aside { position: sticky; top: calc(var(--hm-top) + var(--s-4)); }
+
 .fs .cmap { max-height: 150px; }
-.fs-page .aph-p { display: none; }
-.setup-panel { padding: var(--card-pad); display: flex; flex-direction: column; gap: var(--s-2); }
+
 .cmap { display: block; width: 100%; height: auto; max-height: 260px; }
-.setup-go { display: flex; flex-direction: column; gap: var(--s-2); }
-.setup-time { display: flex; align-items: baseline; gap: var(--s-2); }
+
 @container scr (orientation: portrait) {
   .fs { grid-template-columns: minmax(0, 1fr); }
-  .fs-aside { position: static; }
-  .fs-note { display: flex; order: 2; }
+
   .fs .cmap, .cmap { max-height: 320px; }
-  .fs-page .aph-p { display: block; }
-  /* upright on a phone the time and Start stay pinned to the bottom of the screen. Fixed, not sticky: sticky would only
-     pin it inside its own panel, the last thing on the page. .scr is a size container, so fixed means the screen's
-     bottom here; the page keeps room under its last line for the row. */
-  .setup-go { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; flex-direction: row; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-5) calc(var(--s-3) + env(safe-area-inset-bottom, 0px)); background: var(--band); box-shadow: 0 -1px 0 var(--tag-line); }
-  .fs-page { padding-bottom: calc(var(--s-6) + 88px + env(safe-area-inset-bottom, 0px)); }
-  .setup-time { flex: none; }
-  .setup-time .meta { display: none; }
-  .setup-go .pill { flex: 1 1 auto; }
 }
 @container scr (min-width: 1024px) and (min-height: 640px) {
   .fs { grid-template-columns: minmax(0, 1fr) 380px; gap: var(--s-16); }
-  .fs-q { gap: var(--s-6); max-width: 680px; }
-  .fs-aside { gap: var(--s-4); }
-  .fs-aside :is(.qrows, .fs-k, .fs-note) { display: flex; }
-  .setup-panel { gap: var(--gap); padding: var(--s-5); }
+
   .fs .cmap, .cmap { max-height: 300px; }
   .fs .cmap { max-height: 220px; }
-  .fs .qrow { min-height: var(--h-m); }
-  .fs-page .aph-p { display: block; }
 }
 
 /* settings: one row per setting, the name on the left and its control on the right */
@@ -191,15 +108,6 @@
 .num-in:focus { border-color: var(--accent); }
 .preset { border-radius: var(--r-m); padding: 3px; }
 .preset-pic { border-radius: calc(var(--r-m) - 4px); }
-/* a sheet over a screen: centred in landscape, full width upright, a dialog on a desktop */
-.dlg-wrap { position: fixed; inset: 0; z-index: 20; container: scr / size; }
-.dlg-scr { position: absolute; inset: 0; background: transparent; }
-.lsheet { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 580px; display: flex; flex-direction: column; gap: var(--gap); padding: var(--s-3) var(--s-6) var(--s-6); border-radius: var(--r-l) var(--r-l) 0 0; background: var(--bg); color: var(--ink); box-shadow: var(--shadow-l); }
-@container scr (orientation: portrait) { .lsheet { left: 0; right: 0; width: auto; transform: none; padding: var(--s-3) var(--s-5) var(--s-8); } }
-@container scr (min-width: 1024px) and (min-height: 640px) {
-  .lsheet { top: 50%; bottom: auto; transform: translate(-50%, -50%); width: 620px; padding: var(--s-8) var(--s-10); border-radius: var(--r-l); }
-  .lsheet .grip { display: none; }
-}
 
 /* sign-in: a photo beside the panel */
 .split { position: absolute; inset: 0; display: flex; }
@@ -233,14 +141,9 @@
 .hwrap { max-width: 1120px; margin: 0 auto; padding: var(--s-6) var(--s-5) var(--s-16); display: flex; flex-direction: column; gap: var(--section); }
 .hhead { display: flex; flex-direction: column; gap: var(--gap); }
 .hhead .lead { max-width: 640px; color: var(--muted); }
-.hnav { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.hsec { display: flex; flex-direction: column; gap: var(--s-5); scroll-margin-top: var(--s-4); }
-.hsec-k { display: flex; flex-direction: column; gap: var(--s-2); }
-/* a button at the foot of a text block keeps its own width */
-:is(.hsec-k, .hstack, .hband, .rcard) > .pill { align-self: flex-start; }
-.hsec > .lead { max-width: 680px; }
+
 .hsplit { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5) var(--s-8); align-items: start; }
-.hcol { display: flex; flex-direction: column; gap: var(--s-5); min-width: 0; }
+
 .hstack { display: flex; flex-direction: column; gap: var(--gap); }
 
 /* pictures are squircles (the RYC photo shape); plain rounding where the browser has no corner-shape */
@@ -263,7 +166,7 @@
 .hsteps .t { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
 .legend { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: var(--s-2) var(--s-3); align-items: center; }
 .lsw { width: 22px; height: 6px; border-radius: var(--r-full); }
-.lsw-arrow { background: var(--wind-arrow); }
+
 .lsw-no { background: var(--wind-no); }
 .lsw-up { background: var(--wind-up); }
 .lsw-down { background: var(--wind-down); }
@@ -271,28 +174,21 @@
 
 /* cards */
 .hgrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-8) var(--s-6); }
-.hgrid.hgrid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-6) var(--s-3); }
-.hgrid-4 .lead { display: none; }
+
 .hitem { display: flex; flex-direction: column; gap: var(--s-2); }
 .hitem .lead { color: var(--muted); }
 .hrules, .dbgrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); }
 .hrule, .dbi, .rule-box { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--card-pad); border-radius: var(--r-m); background: var(--band); }
-.rule-box { background: var(--bg); border: 2px solid var(--line); }
+
 .hrule .meta { color: var(--accent); }
-.hband, .rcard { display: flex; flex-direction: column; gap: var(--gap); padding: var(--card-pad); border-radius: var(--r-l); background: var(--band); }
-.rcard.line { background: var(--bg); border: 2px solid var(--line); }
-.hband { padding: var(--s-6); }
 
 @container help (min-width: 600px) {
   .hwrap { padding: var(--s-8) var(--s-10) var(--s-16); }
   .hlegend, .hgrid, .hrules, .dbgrid, .hsplit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .hgrid-4 .lead { display: block; }
 }
 @container help (min-width: 900px) {
   .hwrap { padding: var(--s-12) var(--s-16) var(--s-20); }
   .hgrid, .hrules, .hlegend, .dbgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .hgrid.hgrid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .hband { padding: var(--s-8); }
 }
 
 /* home (and the site's header, footer and section pieces the other scrolling pages share): rycrentals.com's home, carried over. A white header with the site's pages, a hero with today's race in a
@@ -311,7 +207,7 @@
 .hm-h2 { margin: 0; font: 300 var(--hm-h2)/1.08 var(--f-serif); letter-spacing: -0.025em; text-wrap: balance; max-width: 900px; }
 .hm-h3 { font: 400 var(--t-l)/1.2 var(--f-serif); letter-spacing: -0.01em; }
 .hm-text { margin: 0; font: 400 var(--t-m)/1.5 var(--f-serif); color: var(--muted); max-width: 62ch; }
-.hm-meta { font: 400 var(--t-s)/1.4 var(--f-serif); color: var(--muted); }
+
 .hm-muted { color: var(--muted); }
 .hm-src { display: inline-flex; align-items: center; gap: var(--s-1); font: 700 var(--t-s)/1 var(--f-sans); letter-spacing: var(--caps); text-transform: uppercase; color: var(--accent); white-space: nowrap;
   padding-block: 15px; margin-block: -15px; } /* a 44px tap target on a phone, the line laid out as before */
@@ -346,43 +242,17 @@ html[data-me] .hm-av > svg { display: none; }
 .hm-menu-nav { display: flex; flex-direction: column; }
 .hm-msep { height: 1px; background: var(--line); margin: var(--s-2); }
 
-/* hero: the game behind, a veil over it, white type, the race pill */
-.hm-hero { position: relative; isolation: isolate; overflow: hidden; background: var(--deep); color: var(--on-photo); }
-.hm-hero .bgimg { z-index: -3; object-position: 50% 62%; }
 .hm-scene { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; border: 0; pointer-events: none; }
-.hm-hero::after { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--hm-veil); }
-.hm-hero-in { display: flex; flex-direction: column; align-items: stretch; gap: var(--s-4); padding-block: var(--s-10) var(--s-10); }
-.hm-hero :is(.kicker, .hm-display, .hm-lead, .hm-asof) { color: var(--on-photo); text-shadow: var(--text-shadow); }
-.hm-asof { color: var(--on-photo-muted); }
-.hm-display { margin: 0; font: 300 var(--hm-display)/1.1 var(--f-serif); letter-spacing: -0.025em; text-wrap: balance; max-width: 22ch; }
-.hm-lead { margin: 0; font: 400 var(--t-m)/1.55 var(--f-serif); max-width: 64ch; }
-.hm-hero > .hm-hero-in > .hm-src { color: var(--hm-link-photo); align-self: flex-start; }
 
-/* the race pill: rycrentals' phone search bar, at every width */
-.hm-race { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: var(--s-3); margin-top: var(--s-1); text-align: start; }
-.hm-pill { display: flex; align-items: center; padding: 6px; border-radius: var(--r-full); background: var(--bg); box-shadow: var(--hm-shadow-photo); color: var(--ink); }
-.hm-pill-t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; min-height: 60px; justify-content: center; padding: var(--s-1) var(--s-3) var(--s-1) var(--s-5); border: 0; border-radius: var(--r-full); background: none; color: var(--ink); text-align: start; cursor: pointer; }
-.hm-pill-t:hover, .hm-pill-t[aria-expanded="true"] { background: var(--band); }
-.hm-l1 { font: 400 var(--t-l)/1.2 var(--f-serif); }
-.hm-l2 { font: 400 var(--t-s)/1.3 var(--f-sans); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hm-go { flex: 0 0 auto; width: 60px; height: 60px; margin-left: 6px; border: 0; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
-.hm-panel { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); border-radius: var(--r-l); background: var(--bg); color: var(--ink); box-shadow: var(--hm-shadow-photo); text-shadow: none; }
-.hm-prow { display: flex; flex-direction: column; gap: var(--s-2); }
-.hm-slab { font: 700 var(--t-xs)/1.2 var(--f-sans); letter-spacing: var(--caps); text-transform: uppercase; }
-.hm-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .hm-chip { display: inline-flex; align-items: center; height: var(--h-m); padding: 0 var(--s-4); border: 0; border-radius: var(--r-full); background: var(--band); color: var(--ink); font: 700 var(--t-s)/1 var(--f-sans); cursor: pointer; white-space: nowrap; }
 .hm-chip:hover { background: var(--tag-line); }
 .hm-chip.on { background: var(--sel-bg); color: var(--sel-ink); }
 .hm-chip .td { margin-left: var(--s-1); font-weight: 400; opacity: 0.65; }
-.hm-panel-go { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); height: var(--h-l); margin-top: var(--s-1); border: 0; border-radius: var(--r-full); background: var(--accent); color: var(--on-accent); font: 400 var(--t-l)/1 var(--f-serif); cursor: pointer; }
-.hm-note { margin: 0; font: 400 var(--t-s)/1.45 var(--f-serif); color: var(--on-photo-muted); text-shadow: var(--text-shadow); }
-.hm-reset { padding: 0; border: 0; background: none; font: 700 var(--t-s)/1 var(--f-sans); letter-spacing: var(--caps); text-transform: uppercase; color: var(--hm-link-photo); cursor: pointer; }
 
 /* sections */
 .hm-sec { display: flex; flex-direction: column; gap: var(--s-6); padding-block: var(--hm-sec); scroll-margin-top: var(--hm-head); }
-.hm-sec-h { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: var(--s-4) var(--s-6); }
+
 .hm-sec-t { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
-.hm-arrows { display: none; gap: var(--s-2); }
 
 /* a page's own head under the site header (help, the race result): kicker, a serif title, a line, contents */
 .hm-ph { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); padding-block: var(--s-10) var(--s-2); }
@@ -406,30 +276,6 @@ html[data-me] .hm-av > svg { display: none; }
 .hp .hrule { border-radius: var(--r-l); padding: var(--s-5); }
 .hp .hitem .card-title { font-size: var(--t-m); }
 
-/* the row of tiles */
-.hm-row { display: flex; gap: var(--s-3); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: calc(-1 * var(--hm-gutter)); padding: 2px var(--hm-gutter) 6px; scroll-padding-inline: var(--hm-gutter); }
-.hm-row::-webkit-scrollbar { display: none; }
-.hm-tile { flex: 0 0 148px; width: 148px; min-width: 0; display: flex; flex-direction: column; gap: var(--s-1); scroll-snap-align: start; color: var(--ink); }
-.hm-tile:hover .card-title { color: var(--accent); }
-.hm-photo { position: relative; display: block; overflow: hidden; background: var(--photo-bg); border-radius: var(--r-l); }
-.hm-photo img { object-fit: cover; }
-.hm-sq { aspect-ratio: 1 / 1; width: 100%; margin-bottom: 6px; }
-@supports (corner-shape: squircle) { .hm-photo { corner-shape: squircle; border-radius: calc(var(--r-l) * 1.7); } }
-
-/* today's race: the course with rycrentals' orange-over-red tag, and today's fastest */
-.hm-today { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-8); align-items: start; }
-.hm-course { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; color: var(--ink); }
-.hm-wide { aspect-ratio: 352 / 200; width: 100%; overflow: visible; }
-.hm-clip { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
-.hm-ptag { position: absolute; top: -14px; right: -6px; width: 84px; height: 84px; display: flex; flex-direction: column; text-align: center; font-family: var(--f-sans); font-weight: 700; line-height: 1; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28); }
-.hm-ptag-a { flex: 0 0 50%; display: flex; align-items: center; justify-content: center; background: var(--hm-off); color: var(--on-warn); font-size: var(--t-h3); }
-.hm-ptag-b { flex: 0 0 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 0.95; background: var(--hm-price); color: var(--on-photo); font-size: 10px; text-transform: uppercase; }
-.hm-ptag-b b { font-size: var(--t-l); text-transform: none; }
-.hm-facts { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); font: 400 var(--t-s)/1.2 var(--f-serif); color: var(--muted); }
-.hm-facts span { display: inline-flex; align-items: center; gap: 5px; }
-.hm-facts svg { color: var(--ink); }
-.hm-board { display: flex; flex-direction: column; min-width: 0; }
-.hm-board-h { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: var(--s-1) var(--s-3); padding-bottom: var(--s-3); }
 .hm-lb { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
 .hm-lb li { display: grid; grid-template-columns: var(--h-s) minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); padding-block: var(--s-3); border-bottom: 1px solid var(--line); font: 400 var(--t-m)/1.3 var(--f-serif); }
 .hm-n { display: inline-flex; align-items: center; justify-content: center; width: var(--h-s); height: var(--h-s); border-radius: 50%; background: var(--band); font: 700 var(--t-s)/1 var(--f-sans); }
@@ -439,20 +285,6 @@ html[data-me] .hm-av > svg { display: none; }
 .hm-t small { margin-left: var(--s-2); font: 400 var(--t-s)/1 var(--f-sans); color: var(--muted); }
 .hm-why { margin-left: var(--s-2); font: 700 var(--t-s)/1 var(--f-sans); letter-spacing: var(--caps); text-transform: uppercase; color: var(--muted); white-space: nowrap; } /* your time, kept here but not by the ranking */
 .hm-cta { align-self: flex-start; margin-top: var(--s-6); }
-
-/* how a race goes */
-.hm-steps { list-style: none; margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-6) var(--s-10); padding: var(--s-5); border-radius: var(--r-l); background: var(--band); }
-.hm-steps li { display: flex; align-items: flex-start; gap: var(--s-3); }
-.hm-step-t { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
-.hm-steps .hm-text { font-size: var(--t-s); }
-.hm-num { display: inline-flex; align-items: center; justify-content: center; flex: none; width: var(--h-s); height: var(--h-s); border-radius: 50%; background: var(--sel-bg); color: var(--sel-ink); font: 700 var(--t-m)/1 var(--f-sans); }
-
-/* numbers */
-.hm-stats { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
-.hm-stats > div { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-4); border-radius: var(--r-l); background: var(--bg); }
-.hm-stats dd { margin: 0; }
-.hm-stat-v { font: 700 var(--t-h3)/1 var(--f-sans); color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.hm-cite { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-4); font: 400 var(--t-s)/1.45 var(--f-serif); color: var(--muted); }
 
 /* questions */
 .hm-faq { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-8) var(--s-16); align-items: start; }
@@ -469,17 +301,8 @@ html[data-me] .hm-av > svg { display: none; }
 /* the rules band: the IYT app in a long pill, and the first rules you meet */
 .hm-help { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-8) var(--s-16); align-items: start; }
 .hm-help-main { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); min-width: 0; }
-.hm-app { display: flex; align-items: center; gap: var(--s-3); width: 100%; max-width: 440px; margin-top: var(--s-2); padding: 6px; border-radius: var(--r-full); border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
-.hm-app:hover { border-color: var(--tag-line); }
-.hm-app-ic { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--danger); color: var(--on-photo); }
-.hm-app-ic .logo { width: 32px; height: 16px; color: inherit; }
-.hm-app-t { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
-.hm-app-n { font: 400 var(--t-m)/1.25 var(--f-serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hm-app-go { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
+
 .hm-help-side { display: flex; flex-direction: column; gap: var(--s-3); }
-.hm-tips { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-3); }
-.hm-tips li { display: flex; align-items: center; gap: var(--s-3); font: 400 var(--t-m)/1.3 var(--f-serif); }
-.hm-tips .meta { margin-left: auto; padding-left: var(--s-3); white-space: nowrap; }
 
 /* the IYT Test page (rycrentals.com/iyt carried over): the way in, four cards on how it works, the levels in two
    columns between hairlines, a centred way in again at the foot */
@@ -512,28 +335,13 @@ html[data-me] .hm-av > svg { display: none; }
 
 @container help (min-width: 600px) {
   .help > * { --hm-gutter: var(--s-6); --hm-display: 44px; --hm-h2: 32px; --hm-sec: var(--s-16); --hm-head: 76px; }
-  .hm-hero-in { align-items: center; text-align: center; gap: var(--s-5); padding-block: var(--s-20) var(--s-16); }
-  .hm-hero > .hm-hero-in > .hm-src { align-self: center; }
-  .hm-race { margin-inline: auto; }
-  .hm-note { text-align: center; }
-  .hm-arrows { display: flex; }
-  .hm-row { gap: var(--s-5); }
-  .hm-tile { flex-basis: 180px; width: 180px; }
-  .hm-ptag { top: -24px; right: -12px; width: 112px; height: 112px; }
-  .hm-ptag-a { font-size: 30px; }
-  .hm-ptag-b { font-size: var(--t-xs); }
-  .hm-ptag-b b { font-size: 25px; }
-  .hm-steps { padding: var(--s-6); }
-  .hm-stats > div { padding: var(--s-5) var(--s-5); }
-  .hm-stat-v { font-size: var(--hm-h2); }
+
   .iyt-card { padding: var(--s-6); }
   .iyt-open { flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-5); }
 }
 @container help (min-width: 900px) {
   .help > * { --hm-gutter: var(--s-16); --hm-head: 76px; }
-  .hm-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .hm-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .hm-today { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-8) var(--s-16); }
+
   .hm-faq { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
   .hm-faq-side { position: sticky; top: calc(var(--hm-head) + var(--s-6)); }
   .hm-help { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
@@ -547,21 +355,8 @@ html[data-me] .hm-av > svg { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .hm-scene { display: none; } .hm-faq-ico { transition: none; } }
 
-/* race result and debrief */
-.rfacts { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-6); align-items: center; }
-.stat { display: flex; flex-direction: column; gap: var(--s-1); }
-.stat b { font: 300 var(--t-h2)/1 var(--f-serif); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .track { display: block; width: 100%; height: auto; max-height: 440px; }
-.track.track-wide { max-height: none; }
-.rtable { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
-.rtable li { display: grid; grid-template-columns: var(--h-xs) 10px minmax(0, 1fr) auto 64px; gap: var(--s-2); align-items: center; padding: var(--s-2) 0; border-bottom: 1px solid var(--line); }
-.rtable li:last-child { border-bottom: 0; }
-.rtable .n { font-weight: 700; color: var(--muted); }
-.rtable .g { text-align: right; color: var(--muted); }
-.rtable .me, .rtable .me :is(.n, .g) { font-weight: 700; color: var(--accent); }
-.dbi .lhead { gap: var(--s-2); }
-.dbi .v { font-size: var(--t-l); line-height: 1.3; }
-.dbi .tip { margin: 0; font-size: var(--t-s); color: var(--muted); }
+
 .legs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .legs li { position: relative; display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: var(--s-3); align-items: start; padding: var(--s-2) 0; }
 .legs li::before { content: ''; position: relative; z-index: 1; width: 12px; height: 12px; margin-top: 4px; border-radius: 50%; border: 2px solid var(--accent); background: var(--bg); }
@@ -757,7 +552,7 @@ html[data-me] .hm-av > svg { display: none; }
 .rs-lb li { grid-template-columns: 26px minmax(0, 1fr) auto; }
 .rs-name { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rs-dot { display: inline-block; flex: none; width: 9px; height: 9px; border-radius: 50%; }
-.rs-dot-me { background: #3db8ff; } .rs-dot-fleet { background: rgba(255, 255, 255, 0.45); margin-left: 6px; }
+
 .rs-key { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; }
 .rs-lb li.me { background: rgba(53, 176, 242, 0.1); border-radius: 10px; }
 .rs-lb li.me .hm-t, .rs-lb li.me .rs-name { color: #fff; }
@@ -769,9 +564,7 @@ html[data-me] .hm-av > svg { display: none; }
 .rs-db { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .rs-db li { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
 .rs-db-k { display: flex; align-items: center; gap: 8px; font: 700 10.5px/1 var(--f-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.rs-st { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: #ffc46b; }
-.rs-st::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #ffa800; box-shadow: 0 0 6px rgba(255, 168, 0, 0.6); }
-.rs-db li.ok .rs-st { color: var(--ok); } .rs-db li.ok .rs-st::before { background: var(--ok); box-shadow: 0 0 6px rgba(46, 230, 160, 0.7); }
+
 .rs-db-v { font: 400 15px/1.3 var(--f-serif); color: #fff; }
 .rs-db-tip { font: 400 12.5px/1.4 var(--f-serif); color: var(--muted); }
 .rs-rule { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(255, 168, 0, 0.45); background: rgba(255, 168, 0, 0.07); }
