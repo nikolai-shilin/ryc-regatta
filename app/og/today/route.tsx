@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   const img = await card({
     kind: `${t('Today’s race', 'Гонка дня')} · ${date} · ${t(...venueOf(d.venue).name)}`,
     headline: best ? t(`Time to beat: ${clock(best.s)}`, `Побей ${clock(best.s)}`) : t('Be first today', 'Будь первым'),
-    detail: `${wind} ${KN[d.preset]} ${t('kn', 'уз')} · ${t(`${d.fleet} boats`, ruBoats(d.fleet))} · ${shape}, ${len}${races}`,
+    detail: `${wind} ${KN[d.preset]} ${t('kn', 'уз')} · ${t(`${d.fleet} boats`, ruBoats(d.fleet))} · ${shape} · ${len}${races}`,
     call: t('Sail today’s race', 'Пройди гонку дня'),
     windLabel: `${KN[d.preset]} ${t('kn', 'уз')}`,
     panel: <CourseSvg course={plannedCourse(d.preset, d.length, d.fleet, d.course)} route={BEAT_ANGLE[d.preset]} wind />,

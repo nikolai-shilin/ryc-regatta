@@ -1,5 +1,5 @@
 // Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
-import { Race, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone } from './sim.js';
+import { Race, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone, laidShape } from './sim.js';
 import { World, defaultQuality, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
 import { raceStarted, raceFinished, raceResult } from './stats.js';
 import { createHudNext } from './hud-next.js';
@@ -228,7 +228,7 @@ const paintOpts = () => {
     g.classList.toggle('locked', opts.mode === 'daily' && DAILY_KEYS.includes(g.dataset.opt));
     g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(s[g.dataset.opt]) === b.dataset.v));
   });
-  const n = $('#dailyNote'); if (n) { n.hidden = opts.mode !== 'daily'; n.textContent = t('dailyNote', windName(s.preset), venueById(s.venue).name[LANG === 'ru' ? 1 : 0], t(SHAPE_KEY[s.course] || 'shapeWl')); }
+  const n = $('#dailyNote'); if (n) { n.hidden = opts.mode !== 'daily'; n.textContent = t('dailyNote', windName(s.preset), venueById(s.venue).name[LANG === 'ru' ? 1 : 0], t(SHAPE_KEY[laidShape(s.course, s.length)])); } // the shape the race is laid in (sim.js), not only the one asked for
 };
 // a third way to trim: the main and the jib each on their own sheet
 { const g = document.querySelector('.choice[data-opt="autoTrim"]'); if (g && !g.querySelector('[data-v="2"]')) { const b = document.createElement('button'); b.dataset.v = '2'; b.innerHTML = t('split'); g.append(b); } }
@@ -1552,8 +1552,8 @@ function drawMap(ctx, size, full) {
     ctx.beginPath(); ctx.ellipse(X(g.x), Z(g.z), g.r * s, g.r * 1.35 * s, W, 0, 7); ctx.fill(); // longer down the wind than across
   }
   ctx.globalAlpha = 1;
-  // laylines to the beat's mark, for the wind and current now
-  const onBeat = isBeat(c, P.leg), aim = onBeat ? legAim(c, P.leg) : c.windward;
+  // laylines to the beat's mark, for the wind and current now (off a beat, the last beat's, as the ladder below)
+  const onBeat = isBeat(c, P.leg), aim = legAim(c, beatOf(c, P.leg));
   if (onBeat || full) {
     ctx.strokeStyle = COL.faint; ctx.lineWidth = 1.5; ctx.setLineDash([4, 5]);
     const up = beatAngle(race.wind.p.tws) * D2R;
@@ -1623,7 +1623,7 @@ function finishToPage() {
   const xz = (m) => [Math.round(m.x), Math.round(m.z)];
   const thin = (tr) => { const k = Math.max(1, Math.ceil(tr.length / 160)); return tr.filter((_, i) => i % k === 0 || i === tr.length - 1).map(([x, z]) => [Math.round(x), Math.round(z)]); };
   let pb = null;
-  if (P.done && !P.dsq) pb = personalBest(s.daily ? `daily|${s.daily}` : pbKey(s), Math.round(P.finish * 10) / 10);
+  if (P.done && !P.dsq) pb = personalBest(s.daily ? `daily|${s.daily}` : pbKey(s, race), Math.round(P.finish * 10) / 10);
   const head = L.tacks.filter((x) => x <= -3).length, lift = L.tacks.filter((x) => x >= 3).length;
   const res = {
     v: 1, id, at: Date.now(), daily: s.daily || null, preset: s.preset, length: s.length, laps: s.laps, start: s.start, current: !!s.current,
@@ -1664,7 +1664,7 @@ const ruleHref = (r) => `${SITE}${LANG === 'ru' ? '/ru' : ''}/racing-rules/${RUL
 const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // personal bests, kept on this device: per course on a free race, per day on today's race
 const PB_KEY = 'regatta-pb';
-const pbKey = (s) => `${s.preset}|${s.laps}|${s.length}|${s.fleet}${['tri', 'trap', 'wlu'].includes(s.course) ? '|' + s.course : ''}`; // each shape but up and down is a course of its own
+const pbKey = (s, r) => `${s.preset}|${s.laps}|${s.length}|${s.fleet}${r.course.type !== 'wl' ? '|' + r.course.type : ''}`; // each shape but up and down is a course of its own: the one sailed
 function personalBest(key, secs) {
   let all = {}; try { all = JSON.parse(localStorage.getItem(PB_KEY) || '{}'); } catch (e) {}
   const old = all[key], isNew = secs != null && (old == null || secs < old);
@@ -1701,7 +1701,7 @@ function renderDebrief() {
   // personal best
   let pb = '';
   if (P.done && !P.dsq) {
-    const key = s.daily ? `daily|${s.daily}` : pbKey(s), r = personalBest(key, Math.round(P.finish * 10) / 10);
+    const key = s.daily ? `daily|${s.daily}` : pbKey(s, race), r = personalBest(key, Math.round(P.finish * 10) / 10);
     pb = `<p class="pb">${r.isNew ? `<b>${esc(t('pbNew'))}</b> ` : ''}${esc(t(s.daily ? 'pbToday' : 'pb', fmt(r.best)))}</p>`;
   }
   $('#debrief').innerHTML = `<span class="meta">${esc(t('dbK'))}</span><ul class="db">${rows.join('')}</ul>${pb}<div id="todayTop"></div>`;
