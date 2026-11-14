@@ -630,10 +630,15 @@ const lineD = (c, b) => (b.x - c.pin.x) * c.normal.x + (b.z - c.pin.z) * c.norma
 const lineT = (c, b) => ((b.x - c.pin.x) * c.dir.x + (b.z - c.pin.z) * c.dir.z) / c.len;
 
 // the daily race: the same venue, course and wind for everyone on a given day (UTC), made from the date
+// the days before SHAPES_FROM are all up and down; from it the day's course goes round the four shapes
+export const SHAPES_FROM = '2026-11-20';
 export function dailyRace(date = new Date()) {
   const day = date.toISOString().slice(0, 10), n = Math.floor(Date.parse(day) / 864e5), r = rng(n * 2654435761);
   r(); r();
-  return { day, seed: (n * 7919) % 100000, preset: ['light', 'medium', 'strong'][Math.floor(r() * 3)], fleet: 5, length: 'short', laps: 1, start: 1, current: r() < 0.3 ? 1 : 0, course: 'wl', venue: dailyVenue(date) };
+  // the draws stay in this order: the wind, the current, then the shape, so the days that came before don't move
+  const preset = ['light', 'medium', 'strong'][Math.floor(r() * 3)], current = r() < 0.3 ? 1 : 0, shape = r();
+  const course = day < SHAPES_FROM ? 'wl' : shape < 0.4 ? 'wl' : shape < 0.6 ? 'tri' : shape < 0.8 ? 'trap' : 'wlu';
+  return { day, seed: (n * 7919) % 100000, preset, fleet: 5, length: 'short', laps: 1, start: 1, current, course, venue: dailyVenue(date) };
 }
 
 // the start sequence: the class flag goes up at the warning signal, P at the preparatory, P down at one minute

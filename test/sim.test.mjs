@@ -13,10 +13,33 @@ const BEAT = { light: 200, medium: 260, strong: 280 }, FLOOR = 0.45;
 // lib/race.ts is a copy of the game's dailyRace for the hub and Home: the same day must give the same race
 test('the site and the game agree on today’s race, every day for a year and more', () => {
   const from = Date.UTC(2026, 0, 1);
-  for (let d = 0; d < 500; d++) {
+  for (let d = 0; d < 546; d++) { // to 2027-06-30
     const day = new Date(from + d * 864e5);
     assert.deepEqual(site.dailyRace(day), sim.dailyRace(day), day.toISOString().slice(0, 10));
   }
+});
+
+// the shapes arrive on SHAPES_FROM; the wind, current and venue of every day were fixed before, and stay so
+test('today’s wind and current don’t move', async () => {
+  const before = JSON.parse(await readFile(new URL('./fixtures/daily-before.json', import.meta.url)));
+  assert.equal(before.length, 546);
+  for (const want of before) {
+    const { day, seed, preset, current, venue } = sim.dailyRace(new Date(want.day));
+    assert.deepEqual({ day, seed, preset, current, venue }, want, want.day);
+  }
+});
+
+test('before SHAPES_FROM every day is up and down', () => {
+  assert.equal(sim.SHAPES_FROM, '2026-11-20');
+  assert.equal(site.SHAPES_FROM, sim.SHAPES_FROM);
+  for (let t = Date.UTC(2026, 0, 1); t < Date.parse(sim.SHAPES_FROM); t += 864e5) assert.equal(sim.dailyRace(new Date(t)).course, 'wl');
+});
+
+test('the shapes come round in about the weights', () => {
+  const count = { wl: 0, tri: 0, trap: 0, wlu: 0 }, from = Date.parse(sim.SHAPES_FROM);
+  for (let d = 0; d < 365; d++) count[sim.dailyRace(new Date(from + d * 864e5)).course]++;
+  assert.ok(count.wl / 365 >= 0.3 && count.wl / 365 <= 0.5, JSON.stringify(count));
+  for (const k of ['tri', 'trap', 'wlu']) assert.ok(count[k] / 365 >= 0.12 && count[k] / 365 <= 0.28, JSON.stringify(count));
 });
 
 // today's venue: every venue in turn, never the same two days running; and the play page's preloader (an inline copy
