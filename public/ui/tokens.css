@@ -1,0 +1,118 @@
+/* ==========================================================================
+   Up and down · the broadcast design system: the one source of its values.
+   The site imports this file (app/[lang]/layout.tsx) and the game links it (/ui/tokens.css in public/play/index.html),
+   so both read the same numbers. A screen opts in with class="bc" on its root; until then it keeps the old look
+   (styles/tokens.css), so pages move over one at a time. test/ui.test.mjs holds the scale to the designs.
+
+   Type   two faces of one family, both with Cyrillic: Sofia Sans Condensed for numbers, names, labels and headlines,
+          Sofia Sans for sentences. Weights: 500 sentences · 600 labels, secondary numbers · 700 what leads ·
+          800 the one big number.
+   Space  a 4px grid. Controls 32 compact · 44 touch · 56 primary · 72 hero.
+   Shape  no rounded corners: the one shape is the slanted cut, 16px (12px on tags on the water).
+   Colour a dark ground, white ink in four strengths, one colour per meaning.
+   Motion blocks rise 14px and fade over 450ms, 60ms apart in reading order; nothing moves under reduced motion.
+   ========================================================================== */
+.bc {
+  /* ---- type ---- */
+  /* the site sets --f-sofia and --f-sofia-c (next/font); the game loads the same faces by name from Google Fonts */
+  --cond: var(--f-sofia-c, 'Sofia Sans Condensed'), 'Arial Narrow', sans-serif;
+  --sans: var(--f-sofia, 'Sofia Sans'), Arial, sans-serif;
+  --fs-label: 12px; --fs-small: 14px; --fs-body: 16px; --fs-lead: 18px; --fs-row: 20px; --fs-title: 24px;
+  --fs-h3: 32px;
+  /* the headline sizes come down on a narrow screen, never below the next step of the scale */
+  --fs-h2: clamp(32px, 3.2vw + 14px, 44px);
+  --fs-h1: clamp(44px, 5vw + 12px, 72px);
+  --fs-display: clamp(72px, 7vw + 16px, 104px);
+  --fs-hero: clamp(72px, 9vw + 4px, 132px);
+  --ls-name: 0.02em; --ls-button: 0.08em; --ls-label: 0.14em;
+
+  /* ---- space ---- */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px;
+  --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px; --s-20: 80px;
+  --h-s: 32px; --h-m: 44px; --h-l: 56px; --h-xl: 72px;
+  --cut: 16px; --cut-tag: 12px;
+
+  /* ---- colour ---- */
+  --ground: #070d16;                       /* page and HUD ground behind photos */
+  --surface: #0b1420;                      /* tiles in a grid */
+  --panel: rgba(5, 10, 18, 0.88);          /* every block over a photo, blurred */
+  --panel-2: rgba(16, 26, 40, 0.92);       /* the second half of a split block, callouts */
+  /* white in eleven strengths: nothing else is used for ink, fills and lines */
+  --w-06: rgba(255, 255, 255, 0.06); --w-08: rgba(255, 255, 255, 0.08); --w-10: rgba(255, 255, 255, 0.1);
+  --w-14: rgba(255, 255, 255, 0.14); --w-16: rgba(255, 255, 255, 0.16); --w-25: rgba(255, 255, 255, 0.25);
+  --w-35: rgba(255, 255, 255, 0.35); --w-50: rgba(255, 255, 255, 0.5); --w-62: rgba(255, 255, 255, 0.62);
+  --w-78: rgba(255, 255, 255, 0.78); --w-90: rgba(255, 255, 255, 0.9);
+  --ink: #ffffff;                          /* numbers, names, headlines */
+  --ink-2: var(--w-78);                    /* sentences */
+  --ink-3: var(--w-62);                    /* labels, units */
+  --ink-on: #04121e;                       /* text on a white, blue, gold or green fill */
+  --rule: var(--w-14);                     /* dividers between blocks */
+  --rule-2: var(--w-06);                   /* dividers between rows */
+  --fill-1: var(--w-06);                   /* inputs, quiet fills */
+  --fill-2: var(--w-08);                   /* buttons and position blocks at rest */
+  --fill-3: var(--w-16);                   /* tracks of bars and sliders */
+  --you: #3db8ff;      /* you, and the one action that matters on the screen */
+  --gold: #f5c400;     /* the advantage line, a leg won, a best time */
+  --up: #2ee6a0;       /* gaining, on target, good */
+  --down: #ff8a3d;     /* losing ground, work on it */
+  --live: #ff3b30;     /* live, umpire, penalty */
+  --buoy: #ff7a1a;     /* the marks, as they look on the water */
+  --scrim: rgba(3, 8, 14, 0.6);            /* over a photo behind text */
+  --blur: blur(16px) saturate(1.2);        /* behind every panel over a photo */
+
+  /* ---- motion ---- */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --ease-in: cubic-bezier(.6, 0, .8, .2);
+  --t-quick: .2s; --t-in: .45s; --t-stagger: 60ms;
+
+  font-family: var(--cond); color: var(--ink);
+  font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
+}
+.bc *, .bc *::before, .bc *::after { box-sizing: border-box; }
+
+/* ---------- the pieces every screen shares (scoped to .bc: the old pages use some of these names) ---------- */
+:where(.bc) .pn { background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+:where(.bc) .pn2 { background: var(--panel-2); }
+/* the broadcast cut: one slanted edge */
+:where(.bc) .cut-r { clip-path: polygon(0 0, 100% 0, calc(100% - var(--cut)) 100%, 0 100%); }
+:where(.bc) .cut-l { clip-path: polygon(var(--cut) 0, 100% 0, 100% 100%, 0 100%); }
+:where(.bc) .cut-lr { clip-path: polygon(var(--cut) 0, 100% 0, calc(100% - var(--cut)) 100%, 0 100%); }
+:where(.bc) .cut-tag { clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
+/* labels and numbers */
+:where(.bc) .lbl { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+:where(.bc) .lbl-ink { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink); }
+:where(.bc) .n-xl { font: 800 var(--fs-h1)/0.9 var(--cond); }
+:where(.bc) .n-l { font: 700 var(--fs-h3)/1 var(--cond); }
+:where(.bc) .n-m { font: 700 var(--fs-title)/1 var(--cond); }
+:where(.bc) .n-s { font: 700 var(--fs-row)/1 var(--cond); }
+:where(.bc) .unit { font: 600 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); color: var(--ink-3); margin-left: var(--s-1); }
+/* a colour says one thing */
+:where(.bc) .is-you { color: var(--you); }
+:where(.bc) .is-up { color: var(--up); }
+:where(.bc) .is-down { color: var(--down); }
+:where(.bc) .is-gold { color: var(--gold); }
+:where(.bc) .dot-live { width: 8px; height: 8px; border-radius: 50%; background: var(--live); box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.28); flex: none; animation: bc-live 1.6s ease-in-out infinite; }
+/* the one keyboard focus ring */
+.bc :is(a, button, input, select, textarea, [role="switch"], [tabindex]):focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
+
+/* ---------- motion ----------
+   `translate` and `scale`, not `transform`, so a block centred with transform: translateX(-50%) keeps its place.
+   A screen staggers its blocks with --i (0, 1, 2…): animation-delay: calc(var(--i, 0) * var(--t-stagger) + 150ms). */
+@keyframes bc-rise { from { opacity: 0; translate: 0 14px; } }
+@keyframes bc-drop { from { opacity: 0; translate: 0 -12px; } }
+@keyframes bc-slide-l { from { opacity: 0; translate: -24px 0; } }
+@keyframes bc-slide-r { from { opacity: 0; translate: 24px 0; } }
+@keyframes bc-pin { from { scale: 1 0; } }
+@keyframes bc-live { 0%, 100% { box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.3); } 50% { box-shadow: 0 0 0 7px rgba(255, 59, 48, 0); } }
+@keyframes bc-deplete { from { width: 100%; } to { width: 0; } }
+@keyframes bc-call { 0% { opacity: 0; translate: 0 10px; } 40% { opacity: 1; translate: 0 0; box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.62); } 100% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.06); } }
+@keyframes bc-beat { 0% { scale: 1.12; } 100% { scale: 1; } }
+@keyframes bc-flash { 0% { background-color: rgba(255, 255, 255, 0.35); } 100% { background-color: transparent; } }
+@keyframes bc-sheen { from { background-position: 160% 0; } to { background-position: -60% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .bc, .bc *, .bc *::before, .bc *::after {
+    animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important;
+    transition-duration: .01ms !important;
+  }
+}

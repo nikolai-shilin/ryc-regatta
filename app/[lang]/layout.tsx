@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Merriweather, Carlito } from 'next/font/google';
+import { Merriweather, Carlito, Sofia_Sans, Sofia_Sans_Condensed } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { getLang, getT, type LangParams } from '@/lib/i18n';
 import { applyMe } from '@/lib/me';
@@ -9,10 +9,15 @@ import { BestsSync } from '@/components/bests-sync';
 import { Me } from '@/components/me';
 import '@/styles/tokens.css';
 import '@/styles/ryc.css';
+import '@/public/ui/tokens.css';
 
 // The RYC look: Carlito for text and controls, Merriweather Light for headings and big numbers; both carry Cyrillic.
 const merri = Merriweather({ subsets: ['latin', 'cyrillic'], weight: ['300', '400', '700'], variable: '--f-merri', display: 'swap' });
 const carlito = Carlito({ subsets: ['latin', 'cyrillic'], weight: ['400', '700'], variable: '--f-carlito', display: 'swap' });
+// The broadcast look (public/ui/tokens.css, on a screen marked .bc): Sofia Sans Condensed for numbers, names, labels and
+// headlines, Sofia Sans for sentences. Both are variable fonts, so one file each covers the weights 500 to 800.
+const sofia = Sofia_Sans({ subsets: ['latin', 'latin-ext', 'cyrillic'], variable: '--f-sofia', display: 'swap' });
+const sofiaC = Sofia_Sans_Condensed({ subsets: ['latin', 'latin-ext', 'cyrillic'], variable: '--f-sofia-c', display: 'swap' });
 
 // The defaults every page starts from: the site's name and the share card. Each page then gives its own title,
 // description, canonical address and languages (lib/seo.ts, through titled() in lib/i18n.ts).
@@ -60,7 +65,7 @@ export default async function RootLayout({ children, params }: LangParams & { ch
   const lang = await getLang(params);
   return (
     // suppressHydrationWarning: the head script marks <html> (data-me, --me-ini) before React sees it
-    <html lang={lang} className={`${merri.variable} ${carlito.variable}`} suppressHydrationWarning>
+    <html lang={lang} className={`${merri.variable} ${carlito.variable} ${sofia.variable} ${sofiaC.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: KEEP_TG_LAUNCH + ME }} />
       </head>
