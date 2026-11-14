@@ -8,6 +8,7 @@ import { JuryBoat } from './jury.js';
 import { Wildlife } from './wildlife.js';
 import { BannerPlane } from './plane.js';
 import { Jets } from './jets.js';
+import { Ships } from './ships.js';
 import { Post, Mirror, OVERLAY, MIRRORED } from './post.js';
 import { Ocean, OCEAN_GLSL, oceanUniforms, blankOcean } from './ocean.js';
 import { skyAt, pickSky, SKY_GLSL, skyUniforms } from './light.js';
@@ -866,6 +867,9 @@ export class World {
     // now and then a light plane tows an advertising banner across the course (plane.js)
     this.plane = new BannerPlane(this.renderer.capabilities.getMaxAnisotropy());
     this.scene.add(mirrored(this.plane.group));
+    // tankers, container ships and the like passing far out, where the venue has open sea (ships.js)
+    this.ships = new Ships(this.skyU);
+    this.scene.add(this.ships.group);
 
     this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uWind: this.waterU.uWind, uFoamCol: this.skyU.uFoamCol, uMax: { value: WAKE_AGE }, ...this.oceanU };
     this.wakes = []; this.contacts = [];
@@ -902,6 +906,7 @@ export class World {
     this.bloomLook = L.bloom; if (this.post) this.post.setLook(L.bloom);
     this.envSea.material.color.copy(L.deep).lerp(SKY_HORIZON, 0.2);
     if (this.skopea) this.skopea.setLight(L, this.renderer);
+    if (this.ships) this.ships.setLight(L);
     const pm = new THREE.PMREMGenerator(this.renderer), old = this.scene.environment;
     this.scene.environment = pm.fromScene(this.env, 0.02).texture;
     pm.dispose(); if (old) old.dispose();
@@ -1017,6 +1022,7 @@ export class World {
     this.wild.reset(race);
     this.plane.reset(race, (x, z) => groundAt(x + race.at.x, z + race.at.z)); // the land is laid round race.at
     this.jets.reset(race);
+    this.ships.reset(race, (x, z) => groundAt(x + race.at.x, z + race.at.z));
     this.skopea.place(race.at);
     this.prepare();
   }
@@ -1308,6 +1314,7 @@ export class World {
     this.sky.position.copy(cam.position); this.sky.material.uniforms.uTime.value = t; // the clouds drift
     this.skopea.update(cam.position); // the far trees as plain crowns
     this.jets.update(dt, cam, this.race);
+    this.ships.update(dt);
     // the glare: brightest looking straight at the sun, gone when you look away
     const look = cam.getWorldDirection(this._dir || (this._dir = new THREE.Vector3()));
     this.glare.position.copy(cam.position).addScaledVector(SUN, 3000);
