@@ -11,7 +11,7 @@ export default async function Code({ params, searchParams }: LangParams & { sear
   const next = safeNext(sp.next);
   if (!sp.email) redirect(`/sign-in?next=${encodeURIComponent(next)}`);
   return (
-    <AuthShell lang={lang}>
+    <AuthShell lang={lang} back={`/sign-in?next=${encodeURIComponent(next)}`}>
       <CodeForm lang={lang} email={sp.email} next={next} />
     </AuthShell>
   );

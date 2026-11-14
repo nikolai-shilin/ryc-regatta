@@ -994,3 +994,88 @@
 .bc .aph-top { width: 100%; }
 
 .bc .ho-feats-4 { grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); }
+
+/* ---------- S3 · Settings over the scene: the heading on the left, three cards on the right ----------
+   The cards sit in the page's one .bt-card (the scene keeps the boat clear of it), which here has no panel of its
+   own: it only scrolls, and each card is a panel. Two columns where there's room, the screen and sound card across
+   both; one column on a phone. */
+.bc.st-scr .done-btn { pointer-events: auto; margin-left: var(--s-2); }
+.bc.st-scr .bt-h { font-size: var(--fs-h1); }
+.bc .bt-card.st-wrap { container: st / inline-size; width: auto; flex: 0 1 880px; align-self: center; max-height: 100%; padding: 0; gap: 0; background: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none; }
+.bc.st-scr .bt-info { flex: 0 1 380px; }
+.bc .st-cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); align-items: start; }
+@container st (min-width: 640px) { .bc .st-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bc .st-wide { grid-column: 1 / -1; } }
+.bc .st-card { background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+.bc .st-card-h { display: flex; align-items: center; min-height: var(--h-m); padding: var(--s-3) var(--s-5); border-bottom: 1px solid var(--rule); }
+.bc .st-card-b { display: flex; flex-direction: column; padding: var(--s-2) var(--s-5) var(--s-4); }
+.bc .st-sub { margin-top: var(--s-3); padding: var(--s-4) 0 var(--s-2); border-top: 1px solid var(--rule); }
+.bc .st-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 var(--s-10); }
+@container st (min-width: 640px) { .bc .st-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* a choice: its name over the buttons, which share the row and are big enough to tap */
+.bc .st-card .srow-seg { flex-direction: column; align-items: stretch; gap: var(--s-2); padding: var(--s-3) 0; }
+.bc .st-card .segc { display: flex; flex-wrap: wrap; }
+.bc .st-card .segc :is(a, button) { flex: 1 1 auto; justify-content: center; height: var(--h-m); }
+.bc .st-card .srow-seg .hint { margin: 0; color: var(--ink-3); }
+.bc .st-card .acct-row { margin: var(--s-2) 0 0; padding: var(--s-2) 0 var(--s-3); border-bottom: 0; }
+.bc .st-card .name-row { margin: 0; padding: 0 0 var(--s-2); border-bottom: 0; }
+.bc .avatar-guest { box-shadow: none; font-size: var(--fs-row); }
+.bc .st-card .card-title { font: 700 var(--fs-title)/1.1 var(--cond); letter-spacing: var(--ls-name); }
+/* your boat: her flag and sail number, then Edit */
+.bc .st-boat { display: flex; align-items: center; gap: var(--s-3); min-height: var(--h-l); color: var(--ink); text-decoration: none; }
+.bc .st-boat b { font: 700 var(--fs-title)/1 var(--cond); letter-spacing: var(--ls-name); white-space: nowrap; }
+.bc .st-boat-bar { flex: none; width: 5px; height: 24px; background: var(--you); }
+.bc .st-boat-k { flex: 1 1 auto; min-width: 0; font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .st-boat-e { display: inline-flex; align-items: center; gap: var(--s-1); flex: none; color: var(--you); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
+.bc .st-boat:hover .st-boat-e { color: var(--ink); }
+/* a phone held upright: the heading short, the cards taking the rest of the screen */
+@container scr (orientation: portrait) {
+  .bc.st-scr .bt-info { flex: none; }
+  .bc.st-scr .bt-p { display: none; }
+  .bc .bt-card.st-wrap { flex: 1 1 auto; align-self: stretch; margin-top: 0; max-height: none; min-height: 0; }
+}
+/* sideways on a phone: the heading narrow, the cards beside it */
+@container scr (max-height: 500px) and (orientation: landscape) {
+  .bc.st-scr .bt-info { flex: 0 0 200px; }
+  .bc .bt-card.st-wrap { flex: 1 1 auto; width: auto; align-self: stretch; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bc .st-card { animation: bc-rise var(--t-in) var(--ease) both; }
+  .bc .st-card:nth-child(2) { animation-delay: var(--t-stagger); } .bc .st-card:nth-child(3) { animation-delay: calc(2 * var(--t-stagger)); }
+}
+
+/* ---------- A1–A3 · Signing in over the scene: one card a step, its number at the top ---------- */
+.bc .bt-card.au-card { width: 420px; gap: var(--s-4); }
+.bc.au-scr .bt-info { flex: 0 1 380px; }
+.bc .au-step-h { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: var(--h-l); margin: calc(-1 * var(--cp)) calc(-1 * var(--cp)) var(--s-1);
+  padding: 0 var(--cp); border-bottom: 1px solid var(--rule); }
+.bc .au-step { display: inline-flex; align-items: center; gap: var(--s-3); }
+.bc .au-step b { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: var(--you); color: var(--ink-on); font: 700 var(--fs-lead)/1 var(--cond); }
+.bc .au-card .h-land-s { font-size: var(--fs-h3); line-height: 1; text-wrap: balance; }
+.bc .au-card .lead { font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+.bc .au-card .pill { min-height: var(--h-l); }
+.bc .au-google, .bc .au-google:hover { background: var(--ink); color: var(--ink-on); }
+.bc .au-google:hover { background: var(--w-90); }
+.bc .au-form { display: flex; flex-direction: column; gap: var(--s-2); }
+.bc .au-form .pill { margin-top: var(--s-2); }
+.bc .au-lbl { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .au-card .sp { display: none; }
+/* why sign in, on the left: today's fastest, and a place for you */
+.bc .au-today { display: flex; flex-direction: column; gap: var(--s-3); width: min(360px, 100%); padding: var(--s-4) var(--s-5); background: var(--panel);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+.bc .au-today ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.bc .au-today li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); min-height: 36px; border-bottom: 1px solid var(--rule-2);
+  font: 700 var(--fs-lead)/1 var(--cond); font-variant-numeric: tabular-nums; }
+.bc .au-today li:last-child { border-bottom: 0; }
+.bc .au-n { display: flex; align-items: center; justify-content: center; height: 28px; background: var(--fill-2); }
+.bc .au-today li:first-child .au-n { background: var(--ink); color: var(--ink-on); }
+.bc .au-today li.me .au-n { background: var(--you); color: var(--ink-on); }
+.bc .au-today li.me { color: var(--you); }
+.bc .au-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: var(--ls-name); }
+/* a phone held upright: the brand on top, the card under it with all it needs (no ranking), the keyboard's room kept */
+@container scr (orientation: portrait) {
+  .bc .bt-card.au-card { width: auto; margin-top: var(--s-4); max-height: none; flex: 0 1 auto; }
+  .bc.au-scr .bt-info { flex: none; }
+  .bc.au-scr .bt-kick, .bc .au-today { display: none; }
+}
+@container scr (max-height: 500px) and (orientation: landscape) { .bc .au-today { display: none; } }
