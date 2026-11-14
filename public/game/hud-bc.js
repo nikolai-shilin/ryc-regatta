@@ -63,6 +63,8 @@ const ARROW = { up: 'M5 1 L9 8 H1 Z', down: 'M5 9 L9 2 H1 Z', reach: 'M9 5 L2 1 
 // The layouts follow the screen: wide (a computer, a tablet sideways) as the designs are drawn at 1600×1000, compact
 // (a phone sideways, 844×390) and compact upright. Each is scaled as a whole to the screen it's on (--hz).
 const WIDE = '(min-width: 1100px) and (min-height: 640px)';
+// the blocks come in one after another, in reading order (the design's 60 ms stagger): the delay of the i-th
+const AT = (i) => `calc(${i} * var(--t-stagger) + 150ms)`;
 const CSS = `
 #hud.bc { zoom: var(--hz, 1); }
 #hud.bc > .tc, #hud.bc > .tr, #hud.bc > .tl { display: none !important; }
@@ -72,7 +74,7 @@ const CSS = `
 #hud.bc button { pointer-events: auto; }
 
 /* ---------- top left: the race bug, the calls under it ---------- */
-.b-bug { left: calc(28px + var(--sl)); top: calc(26px + var(--st)); align-items: stretch; height: 52px; animation: bc-slide-l var(--t-in) var(--ease) both .1s; }
+.b-bug { left: calc(28px + var(--sl)); top: calc(26px + var(--st)); align-items: stretch; height: 52px; animation: bc-slide-l var(--t-in) var(--ease) both ${AT(0)}; }
 .b-bug .b-acc { width: 6px; background: var(--you); }
 .b-bug .b-bug-t { display: flex; flex-direction: column; justify-content: center; gap: var(--s-2); padding: 0 var(--s-5) 0 var(--s-4); }
 .b-bug .b-title { font: 700 var(--fs-row)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
@@ -93,7 +95,7 @@ const CSS = `
 #hud.bc #trim i { background: var(--ink); }
 
 /* ---------- top centre: the gun clock, then the legs ---------- */
-.b-top { left: 50%; top: calc(22px + var(--st)); translate: -50% 0; flex-direction: column; align-items: center; gap: var(--s-2); animation: bc-drop var(--t-in) var(--ease) both .15s; }
+.b-top { left: 50%; top: calc(22px + var(--st)); translate: -50% 0; flex-direction: column; align-items: center; gap: var(--s-2); animation: bc-drop var(--t-in) var(--ease) both ${AT(1)}; }
 .b-gun { display: flex; align-items: stretch; }
 .b-gun > div { display: flex; flex-direction: column; justify-content: center; gap: var(--s-2); }
 .b-flagbox { flex-direction: row !important; align-items: center; gap: var(--s-3); padding: 0 var(--s-5) 0 var(--s-8); }
@@ -126,7 +128,7 @@ const CSS = `
 .b-lw svg { width: 18px; height: 18px; flex: none; color: var(--you); }
 
 /* ---------- top right: the buttons and the wind; the board under them ---------- */
-.b-tr { right: calc(28px + var(--sr)); top: calc(26px + var(--st)); align-items: flex-start; gap: var(--s-2); animation: bc-slide-r var(--t-in) var(--ease) both .2s; }
+.b-tr { right: calc(28px + var(--sr)); top: calc(26px + var(--st)); align-items: flex-start; gap: var(--s-2); animation: bc-slide-r var(--t-in) var(--ease) both ${AT(2)}; }
 .b-btns { display: flex; gap: var(--s-1); }
 #hud.bc .b-btns > button { position: static; display: inline-flex; align-items: center; justify-content: center; gap: 0; width: auto; min-width: var(--h-m); height: var(--h-m); padding: 0; margin: 0; border: 0; border-radius: 0; background: var(--panel); color: var(--ink); font: 700 var(--fs-body)/1 var(--cond); letter-spacing: 0; -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); transition: background-color var(--t-quick), color var(--t-quick), scale .12s; }
 #hud.bc .b-btns > button:hover { background: var(--panel-2); }
@@ -141,7 +143,7 @@ const CSS = `
 .b-wind svg { width: 64px; height: 64px; flex: none; display: block; }
 .b-wind .b-wt { display: flex; flex-direction: column; gap: var(--s-2); }
 .b-wind .b-wl { letter-spacing: var(--ls-button); white-space: nowrap; }
-.b-board { right: calc(28px + var(--sr)); top: calc(126px + var(--st)); width: 340px; flex-direction: column; animation: bc-slide-r var(--t-in) var(--ease) both .3s; }
+.b-board { right: calc(28px + var(--sr)); top: calc(126px + var(--st)); width: 340px; flex-direction: column; animation: bc-slide-r var(--t-in) var(--ease) both ${AT(3)}; }
 .b-board .b-bh { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--rule); }
 .b-row { display: flex; align-items: center; height: 40px; border-bottom: 1px solid var(--rule-2); transition: background-color .4s; }
 .b-row:last-child { border-bottom: 0; }
@@ -171,7 +173,7 @@ const CSS = `
 #hud.bc .b-board.off { display: none !important; }
 
 /* ---------- bottom left: the course ---------- */
-.b-map { left: calc(28px + var(--sl)); bottom: calc(28px + var(--sb)); flex-direction: column; animation: bc-rise var(--t-in) var(--ease) both .35s; }
+.b-map { left: calc(28px + var(--sl)); bottom: calc(28px + var(--sb)); flex-direction: column; animation: bc-rise var(--t-in) var(--ease) both ${AT(4)}; }
 .b-map .b-mh { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-3) var(--s-4) var(--s-2); }
 #hud.bc #mini { position: static; display: block; width: 240px; height: 240px; margin: 0 var(--s-1) var(--s-1); border: 0; border-radius: 0; background: none; opacity: 1; pointer-events: auto; -webkit-backdrop-filter: none; backdrop-filter: none; transition: width .3s var(--ease), height .3s var(--ease); }
 #hud.bc #mini.big { width: min(420px, calc(100vh / var(--hz, 1) - 260px)); height: min(420px, calc(100vh / var(--hz, 1) - 260px)); }
@@ -183,7 +185,7 @@ const CSS = `
 }
 
 /* ---------- bottom centre: the call, the leg, your numbers ---------- */
-.b-low { left: 50%; bottom: calc(28px + var(--sb)); translate: -50% 0; flex-direction: column; align-items: stretch; animation: bc-rise var(--t-in) var(--ease) both .25s; }
+.b-low { left: 50%; bottom: calc(28px + var(--sb)); translate: -50% 0; flex-direction: column; align-items: stretch; animation: bc-rise var(--t-in) var(--ease) both ${AT(5)}; }
 .b-callrow { display: flex; min-height: 30px; margin-bottom: var(--s-2); }
 #hud.bc #toast { position: static; margin: 0; transform: none; translate: 0 0; display: flex; align-items: center; gap: var(--s-3); max-width: 640px; min-height: 30px; padding: var(--s-2) var(--s-4); border-radius: 0; background: var(--ink); color: var(--ink-on); font: 700 var(--fs-small)/1.15 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; text-align: left; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
 #hud.bc #toast.long { font: 600 var(--fs-body)/1.3 var(--cond); letter-spacing: var(--ls-name); text-transform: none; }
@@ -214,7 +216,7 @@ const CSS = `
 .b-you.pre > div:not(.s-pre), .b-you.run > div:not(.s-run), .b-you.done > div:not(.s-done) { display: none !important; }
 
 /* ---------- bottom right: the buttons and the sheet ---------- */
-.b-acts { right: calc(108px + var(--sr)); bottom: calc(28px + var(--sb)); flex-direction: column; align-items: flex-end; gap: var(--s-2); }
+.b-acts { right: calc(108px + var(--sr)); bottom: calc(28px + var(--sb)); flex-direction: column; align-items: flex-end; gap: var(--s-2); animation: bc-slide-r var(--t-in) var(--ease) both ${AT(6)}; }
 #hud.bc.split-trim .b-acts { right: calc(168px + var(--sr)); }
 #hud.bc .b-acts > .round { position: static; display: inline-flex; align-items: center; gap: var(--s-3); width: auto !important; height: var(--h-m) !important; padding: 0 var(--s-4) 0 var(--s-6); margin: 0; border: 0; border-radius: 0; background: var(--panel); color: var(--ink); font: 700 var(--fs-body)/1 var(--cond) !important; letter-spacing: var(--ls-button); text-transform: uppercase; clip-path: polygon(var(--cut) 0, 100% 0, 100% 100%, 0 100%); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); animation: bc-slide-r .4s var(--ease) both; transition: background-color var(--t-quick), color var(--t-quick), scale .12s; }
 #hud.bc .b-acts > .round::before { content: ''; width: 18px; height: 18px; flex: none; background: currentColor; -webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat; }
@@ -232,7 +234,7 @@ const CSS = `
   #hud.bc .b-acts > #tackBtn::after { content: attr(data-key); } #hud.bc .b-acts > #kiteBtn::after { content: 'K'; }
   #hud.bc .b-acts > .round.on::after, #hud.bc .b-acts > .round.down::after { color: var(--ink-on); border-color: rgba(4, 18, 30, 0.3); }
 }
-#hud.bc #sheetZone { right: calc(28px + var(--sr)); bottom: calc(28px + var(--sb)); width: 64px; height: min(300px, calc(100vh / var(--hz, 1) - 440px)); padding: 36px 0 40px; justify-content: center; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); transition: opacity .4s; animation: bc-slide-r var(--t-in) var(--ease) both .3s; }
+#hud.bc #sheetZone { right: calc(28px + var(--sr)); bottom: calc(28px + var(--sb)); width: 64px; height: min(300px, calc(100vh / var(--hz, 1) - 440px)); padding: 36px 0 40px; justify-content: center; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); transition: opacity .4s; animation: bc-slide-r var(--t-in) var(--ease) both ${AT(7)}; }
 #hud.bc #sheetZone.split { width: 124px; }
 #hud.bc #sheetZone.auto { opacity: .45; }
 #hud.bc #sheet, #hud.bc #jibSheet { width: 6px; height: 100%; border: 0; border-radius: 0; background: var(--fill-3); box-shadow: none; }
@@ -346,18 +348,24 @@ const CSS = `
 .b-btag .n { display: flex; align-items: center; gap: var(--s-2); padding: 0 var(--s-3); font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-name); }
 .b-btag .b-me { color: var(--you); } .b-btag .b-me:empty { display: none; }
 .b-btag .v { display: flex; align-items: center; padding: 0 var(--s-3); border-left: 1px solid var(--rule); font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-2); }
-.b-btag .stem { position: absolute; left: -1px; bottom: 0; width: 2px; height: 22px; background: linear-gradient(var(--w-90), var(--w-14)); }
+.b-btag .stem { position: absolute; left: -1px; bottom: 0; width: 2px; height: 22px; background: linear-gradient(var(--w-90), var(--w-14)); transform-origin: top; animation: bc-pin .35s var(--ease) both .3s; }
+/* the HUD's entrance: the tags on the water drop in last, after every block, their pins after them; the board's rows
+   arrive one after another (b-intro, for a moment as a race comes on, or the board comes back) */
+#nxTag.b-intro .in, #bOver.b-intro .b-btag .in { animation-delay: ${AT(8)}; }
+#nxTag.b-intro .stem, #bOver.b-intro .b-btag .stem { animation-delay: calc(${AT(8)} + .3s); }
+.b-board.b-intro .b-row { animation: bc-slide-l .4s var(--ease) both; animation-delay: calc(${AT(3)} + (var(--r, 0) + 2) * var(--t-stagger)); }
+.b-row:nth-child(2) { --r: 1; } .b-row:nth-child(3) { --r: 2; } .b-row:nth-child(4) { --r: 3; } .b-row:nth-child(5) { --r: 4; } .b-row:nth-child(6) { --r: 5; }
 
 /* ---------- compact: a phone sideways, then upright ---------- */
 @media not all and ${WIDE} {
   #hud.bc .b-bug, #hud.bc .b-state, #hud.bc .b-board .b-bh, #hud.bc .b-board .b-bf, #hud.bc .b-map .b-mh, #hud.bc .b-gunc, #hud.bc .b-bias, #hud.bc .b-legs, #hud.bc .b-wind .b-wt > .lbl:first-child, #hud.bc .b-dir { display: none !important; }
   #hud.bc .b-tr, #hud.bc .b-low { display: contents !important; }
-  .b-wind { position: absolute; left: calc(16px + var(--sl)); top: calc(12px + var(--st)); height: 36px; gap: var(--s-2); padding: 0 var(--s-3) 0 var(--s-2); margin: 0; pointer-events: none; animation: bc-slide-l var(--t-in) var(--ease) both .1s; }
+  .b-wind { position: absolute; left: calc(16px + var(--sl)); top: calc(12px + var(--st)); height: 36px; gap: var(--s-2); padding: 0 var(--s-3) 0 var(--s-2); margin: 0; pointer-events: none; animation: bc-slide-l var(--t-in) var(--ease) both ${AT(0)}; }
   .b-wind svg { width: 30px; height: 30px; }
   .b-wind .b-wt { flex-direction: row; align-items: baseline; gap: var(--s-2); }
   .b-wind .n-l { font-size: var(--fs-body); }
   .b-wind .b-shift { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
-  .b-btns { position: absolute; right: calc(16px + var(--sr)); top: calc(12px + var(--st)); pointer-events: none; animation: bc-slide-r var(--t-in) var(--ease) both .1s; }
+  .b-btns { position: absolute; right: calc(16px + var(--sr)); top: calc(12px + var(--st)); pointer-events: none; animation: bc-slide-r var(--t-in) var(--ease) both ${AT(2)}; }
   #hud.bc .b-btns > button { min-width: 36px; height: 36px; }
   #hud.bc .b-btns > button svg { width: 16px; height: 16px; }
   #hud.bc .b-btns > #zoomIn, #hud.bc .b-btns > #zoomOut { font-size: var(--fs-row); }
@@ -378,7 +386,7 @@ const CSS = `
   .b-flagbox { padding: var(--s-2) var(--s-3); gap: var(--s-2); }
   #hud.bc #flags .flag { width: 30px; height: 20px; } #hud.bc #flags .flag.P::after { inset: 6px 10px; } #hud.bc #flags .flag.cls { font-size: var(--fs-small); line-height: 20px; }
   #hud.bc #flags figcaption { display: none; }
-  .b-you { position: absolute; left: 50%; top: calc(12px + var(--st)); translate: -50% 0; height: 36px; pointer-events: none; animation: bc-drop var(--t-in) var(--ease) both .1s; clip-path: polygon(0 0, 100% 0, calc(100% - var(--cut)) 100%, 0 100%); }
+  .b-you { position: absolute; left: 50%; top: calc(12px + var(--st)); translate: -50% 0; height: 36px; pointer-events: none; animation: bc-drop var(--t-in) var(--ease) both ${AT(1)}; clip-path: polygon(0 0, 100% 0, calc(100% - var(--cut)) 100%, 0 100%); }
   .b-you > div { flex-direction: row; align-items: center; gap: var(--s-2); padding: 0 var(--s-3); }
   .b-you { padding-right: var(--s-4); }
   .b-you > div > .lbl, .b-you .c-nm, .b-you .c-vm, .b-you .c-ldr, .b-you .c-burn, .b-you .b-sub { display: none !important; }
@@ -532,7 +540,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   // L hides the board and brings it back (a computer's keys; see main.js for the others)
   addEventListener('keydown', (e) => {
     if (e.code !== 'KeyL' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || hud.hidden || e.target.closest?.('input, textarea, select')) return;
-    board.classList.toggle('off');
+    if (!board.classList.toggle('off')) intro([board]);
   });
   // the rudder's centre mark
   const mid = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -636,12 +644,15 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   // your sail number (from the boat page), read once a race too; "You" when there's none
   const sailNo = () => (mySail === undefined ? (mySail = sailOf() || t('you')) : mySail);
   const setFlag = (img, src) => { if (img._s === src) return; img._s = src; img.hidden = !src; if (src) img.src = src; else img.removeAttribute('src'); };
+  // the entrance's last part, as a race comes on: the tags, and the board's rows one by one
+  let introT = 0;
+  const intro = (els = [tag, over, board]) => { clearTimeout(introT); for (const e of els) e.classList.add('b-intro'); introT = setTimeout(() => { for (const e of [tag, over, board]) e.classList.remove('b-intro'); }, 1800); };
   const flash = (el, c, ms) => { el.classList.remove(c, ...({ gain: ['lose'], lose: ['gain'] }[c] || [])); void el.offsetWidth; el.classList.add(c); clearTimeout(el['_f' + c]); el['_f' + c] = setTimeout(() => el.classList.remove(c), ms); };
 
   function update(P, dt) {
     if (!on) return;
     const race = getRace(), c = race.course, kn = P.v / KN, twa = P.twa, pre = race.clock < 0, done = !!P.done;
-    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; mySail = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); }
+    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; mySail = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); intro(); }
     const leg = c.legs[P.leg], nLegs = c.legs.length - 1;
     // the order: before the gun, nearest the line first; then the race's
     const toLine = (b) => Math.max(0, -race.lineInfo(b).d);
