@@ -1,13 +1,28 @@
 // The soundtrack's director (public/game/music.js): what the music does at each moment of a race. Pure, so it runs in Node.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-const { direct, MUSIC_STYLES } = await import('../public/game/music.js');
+const { direct, MUSIC_STYLES, racingPiece } = await import('../public/game/music.js');
 
 const racing = { clock: 120, done: false, place: 3, fleet: 5, dsq: false, ocs: false, pen: false, zone: false, near: 200, toMark: 300, markLeg: true, lastLeg: false, downwind: false, trend: 0 };
 const at = (o) => direct({ ...racing, ...o });
 
-test('three styles to pick from', () => {
-  assert.deepEqual(MUSIC_STYLES, ['ambient', 'film', 'folk']);
+test('four styles to pick from: three synthesized, and the recorded Racing', () => {
+  assert.deepEqual(MUSIC_STYLES, ['ambient', 'film', 'folk', 'racing']);
+});
+
+// Racing plays pieces of one track: the quiet verse before the start, the groove, the drop when it goes well, its
+// loudest part when it's close, the breakdown when it goes wrong
+test('Racing plays the piece of its track that fits the moment', () => {
+  const piece = (o) => { const d = at(o); return racingPiece(d.mood, d.int); };
+  assert.equal(piece({ clock: -200 }), 'calm');
+  assert.equal(piece({ clock: -50 }), 'drive');
+  assert.equal(piece({ clock: -5 }), 'peak');
+  assert.equal(piece({}), 'drive');
+  assert.equal(piece({ downwind: true }), 'race');
+  assert.equal(piece({ zone: true }), 'peak');
+  assert.equal(piece({ ocs: true }), 'dark');
+  assert.equal(piece({ done: true, place: 5 }), 'dark');
+  assert.equal(piece({ done: true, place: 1 }), 'calm'); // after the ending, which the win's sting plays
 });
 
 test('the pre-start builds: calm, then tense in the last minute, then all in for the last ten seconds', () => {

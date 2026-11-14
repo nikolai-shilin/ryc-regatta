@@ -1,10 +1,36 @@
 // ---------- the soundtrack: music made in the browser as the race goes ----------
-// Three styles (Settings › Music): ambient electronic, film drama and sea folk. Each plays from two dials, intensity
-// (how many layers, how fast) and tension, and a mood that picks its chords: calm, tense, up, dark, win, lose. direct()
-// turns the race into the dials and the mood; main.js adds the accents at the big moments (sting) and the build to
-// the gun (riser, breath). Nothing is loaded: like the wind and the horns, every note is synthesized.
+// Four styles (Settings › Music): ambient electronic, film drama and sea folk, synthesized, and Racing, a recorded
+// track. Each plays from two dials, intensity (how many layers, how fast) and tension, and a mood that picks its chords:
+// calm, tense, up, dark, win, lose. direct() turns the race into the dials and the mood; main.js adds the accents at the
+// big moments (sting) and the build to the gun (riser, breath). The three synthesized ones load nothing; Racing loads
+// its track the first time it's chosen.
 
-export const MUSIC_STYLES = ['ambient', 'film', 'folk'];
+export const MUSIC_STYLES = ['ambient', 'film', 'folk', 'racing'];
+
+// Racing: one track (E minor, speeding up from 131 to 137 bpm), cut on its bar lines by scripts/racing-music.py into
+// music-racing.mp3: loops for the moods, the build that lands its drop on the gun, its ending for a win, and accents
+// made of its crash. Each piece: where it starts in the file (s), and its bars' lengths (s), or how long it is.
+const RACING = {
+  calm: [0.9, [1.8293, 1.8267, 1.816, 1.8213, 1.8213, 1.808, 1.8213, 1.8187, 1.8133, 1.8107, 1.8187, 1.8, 1.8213, 1.816, 1.8107, 1.8107]],
+  drive: [30.964, [1.8027, 1.7973, 1.8027, 1.7973, 1.8, 1.7947, 1.8, 1.7947, 1.7947, 1.792, 1.7947, 1.7867, 1.7973, 1.7867, 1.792, 1.792]],
+  dark: [60.6893, [1.7813, 1.7813, 1.76, 1.7813, 1.7733, 1.768, 1.7627, 1.7733]],
+  race: [75.8707, [1.7653, 1.7627, 1.76, 1.76, 1.7627, 1.76, 1.7573, 1.76, 1.76, 1.76, 1.7573, 1.7573, 1.7573, 1.7547, 1.76, 1.7573]],
+  peak: [105.0227, [1.7467, 1.7493, 1.7467, 1.7467, 1.7467, 1.7467, 1.7467, 1.744]],
+  build: [119.996, [1.768, 1.776, 1.76, 1.7653, 1.7733, 1.7627, 1.7653, 1.7653, 1.7653, 1.7627, 1.76, 1.76]],
+  finale: [142.18, [1.7467, 1.7467, 1.7467, 1.7467, 1.744, 1.744, 1.744, 1.744, 1.7547]],
+  crash: [159.8962, 2.4],
+  swell: [162.6962, 2.42],
+  hit: [165.5262, 0.9],
+};
+const ONE_SHOT = { build: { then: 'race', at: 4 }, finale: { then: 'calm', at: 0 } }; // and where they lead on to
+// which loop plays: by the mood, and in it by the intensity
+export function racingPiece(mood, int) {
+  if (mood === 'dark' || mood === 'lose') return 'dark';
+  if (mood === 'win') return 'calm';
+  if (mood === 'calm') return int < 0.3 ? 'calm' : 'drive';
+  if (mood === 'tense') return int < 0.7 ? 'drive' : 'peak';
+  return int < 0.7 ? 'race' : 'peak';
+}
 
 // what the music should do now. s: { clock, done, place, fleet, dsq, ocs, pen, zone, near (m to the nearest boat),
 // toMark (m), markLeg (the next mark is one to round), lastLeg, downwind, trend (+1 a place gained lately, −1 lost) }
@@ -240,9 +266,87 @@ export function createMusic(ctx, out) {
     step = 0; nextT = Math.max(nextT - 0.2, now() + 0.03); // the steps queued ahead still sound; the new bar starts right after
   }
 
+  // ---------- Racing: the recorded track, played bar by bar ----------
+  // Each bar is its own source, faded in and out over X either side of its bar lines, so the next bar (or another
+  // piece's) takes over on the line. A loop changes on its four-bar phrases; a moment that can't wait cuts in at once.
+  const X = 0.015, R = { buf: null, loading: false, shift: 0, name: 'calm', k: 0, nextT: 0, cue: null, live: [] };
+  R.lp = ctx.createBiquadFilter(); R.lp.type = 'lowpass'; R.lp.frequency.value = 20000; R.lp.Q.value = 0.5;
+  R.out = ctx.createGain(); R.out.gain.value = 1.1; // as loud as the synthesized styles R.lp.connect(R.out);
+  const starts = {}; // each bar's start in the file
+  for (const [n, [at, lens]] of Object.entries(RACING)) if (Array.isArray(lens)) { let t = at; starts[n] = lens.map((l) => { const s = t; t += l; return s; }); }
+  function loadRacing() {
+    if (R.buf || R.loading) return; R.loading = true;
+    fetch(new URL('music-racing.mp3', import.meta.url)).then((r) => r.arrayBuffer())
+      .then((b) => new Promise((res, rej) => ctx.decodeAudioData(b, res, rej)))
+      .then((b) => {
+        // the blip at 0.2 s: where this browser's decoder put the file's start
+        const d = b.getChannelData(0); let i = 0; while (i < d.length && Math.abs(d[i]) < 0.1) i++;
+        R.shift = i < ctx.sampleRate ? i / b.sampleRate - 0.2 : 0; R.buf = b;
+        if (style === 'racing') { R.nextT = now() + 0.05; setLevel(paused ? 0 : M.volume, 0.5); }
+      }, () => { R.loading = false; });
+  }
+  // a stretch of the file (at, len) into the bus from t, faded in at its start and out at its end; returns its handle
+  function clip(at, len, t, gain = 1, dest = R.lp, fadeIn = X, fadeOut = X) {
+    const s = ctx.createBufferSource(), g = ctx.createGain(), c = ctx.createGain(), n = now(), skip = Math.max(0, n - (t - fadeIn));
+    s.buffer = R.buf; s.connect(g).connect(c).connect(dest);
+    g.gain.setValueAtTime(0, t - fadeIn); g.gain.linearRampToValueAtTime(gain, t + fadeIn); g.gain.setValueAtTime(gain, t + len - fadeOut); g.gain.linearRampToValueAtTime(0, t + len + fadeOut);
+    s.start(t - fadeIn + skip, Math.max(0, at + R.shift - fadeIn + skip), len + fadeIn + fadeOut - skip + 0.01);
+    const v = { s, c, t, end: t + len }; R.live.push(v); s.onended = () => { const i = R.live.indexOf(v); if (i >= 0) R.live.splice(i, 1); };
+    return v;
+  }
+  // everything playing or queued fades out over X either side of t
+  function cutAt(t) {
+    for (const v of R.live) if (v.end > t - X) { v.c.gain.cancelScheduledValues(0); v.c.gain.setValueAtTime(1, Math.max(now(), t - X)); v.c.gain.linearRampToValueAtTime(0, Math.max(now(), t - X) + 2 * X); }
+  }
+  // a piece from bar k, at t (now, if not given): what's playing gives way
+  function cue(name, k = 0, t = now() + 0.03) { cutAt(t); R.cue = { name, k, at: t }; if (R.nextT > t) R.nextT = t; }
+  // the tape stops: what's playing slows to a growl and dies away, then the next piece
+  function tapeStop(then, dur = 0.6) {
+    const n = now();
+    for (const v of R.live) {
+      if (v.t <= n) { v.s.playbackRate.setValueAtTime(1, n); v.s.playbackRate.exponentialRampToValueAtTime(0.25, n + dur); v.c.gain.setValueAtTime(1, n); v.c.gain.linearRampToValueAtTime(0, n + dur); }
+      else v.c.gain.setValueAtTime(0, n);
+    }
+    R.cue = { name: then, k: 0, at: n + dur }; R.nextT = n + dur;
+  }
+  function scheduleRacing() {
+    if (!R.buf) return;
+    const until = now() + 0.25;
+    if (R.nextT < now() - 0.5) R.nextT = now() + 0.05;
+    while (R.nextT < until) {
+      if (R.cue && R.nextT >= R.cue.at - 0.002) { R.name = R.cue.name; R.k = R.cue.k; R.nextT = R.cue.at; R.cue = null; }
+      else if (R.k % 4 === 0 && !ONE_SHOT[R.name]) { // a phrase line: the mood that's waiting, and the loop for it
+        if (S.pend) { S.mood = S.pend; S.pend = null; }
+        const want = racingPiece(S.mood, S.tInt); if (want !== R.name) { R.name = want; R.k = 0; }
+      }
+      const len = RACING[R.name][1][R.k], v = clip(starts[R.name][R.k], len, R.nextT);
+      if (R.cue && R.cue.at < v.end - X) { cutAt(R.cue.at); R.nextT = R.cue.at; continue; }
+      R.nextT = v.end; R.k++;
+      if (R.k >= RACING[R.name][1].length) { const o = ONE_SHOT[R.name]; if (o) { R.name = o.then; R.k = o.at; } else R.k = 0; }
+    }
+    S.int = S.tInt; S.ten = S.tTen;
+  }
+  // an accent made of the track: the crash, the same reversed (rising to its end), the drop's downbeat
+  function accent(name, t, gain, from = 0) { const [at, len] = RACING[name]; clip(at + from, len - from, t, gain, R.out, 0.003, 0.003); }
+  // the lowpass: closed for a moment, or for a mood, and open again
+  function filter(hz, t = 0.3) { R.lp.frequency.setTargetAtTime(hz, now(), t); }
+
+  // the moments, in the track's own sounds
+  function racingSting(kind, t) {
+    if (!R.buf) return;
+    if (kind === 'gun') { S.mood = 'up'; S.pend = null; S.tInt = 0.65; if (!R.built) cue('race'); R.built = false; filter(20000, 0.05); } // the drop: the build brought it, or now
+    else if (kind === 'swell') accent('swell', t, 0.5, 1.2); // the last 1.2 s, rising into the signal
+    else if (kind === 'round') accent('crash', t, 0.6);
+    else if (kind === 'gain') { accent('swell', t, 0.5, RACING.swell[1] - 0.6); accent('crash', t + 0.6, 0.7); }
+    else if (kind === 'hit') { accent('hit', t, 0.8); R.lp.frequency.cancelScheduledValues(t); R.lp.frequency.setValueAtTime(350, t + 0.05); R.lp.frequency.setTargetAtTime(20000, t + 0.4, 0.5); }
+    else if (kind === 'loss') { S.mood = 'dark'; S.pend = null; tapeStop('dark'); }
+    else if (kind === 'win') { S.mood = 'win'; S.pend = null; filter(20000, 0.05); cue('finale'); }
+    else if (kind === 'lose') { S.mood = 'lose'; S.pend = null; tapeStop('dark', 1.2); filter(700, 1.5); }
+  }
+
   Object.defineProperties(M, Object.getOwnPropertyDescriptors({ // (descriptors, so the getter stays a getter)
     get style() { return style; },
-    get state() { return { int: S.int, ten: S.ten, mood: S.mood, pend: S.pend, paused, duck: duck.gain.value }; }, // for ?debug
+    get state() { return { int: S.int, ten: S.ten, mood: S.mood, pend: S.pend, paused, duck: duck.gain.value, piece: style === 'racing' ? `${R.name} ${R.k}` : null }; }, // for ?debug
     // 'ambient' | 'film' | 'folk', or null for none; a change crossfades
     setStyle(id) {
       id = MUSIC_STYLES.includes(id) ? id : null;
@@ -250,6 +354,12 @@ export function createMusic(ctx, out) {
       if (cur) retire(cur.bus);
       style = id; cur = null;
       if (!id) return;
+      if (id === 'racing') { // its own player: the bus is the track's
+        cur = { bus: newBus() }; R.lp.disconnect(); R.out.disconnect(); R.out.connect(cur.bus); R.live.length = 0;
+        R.name = racingPiece(S.mood, S.tInt); R.k = 0; R.cue = null; R.nextT = now() + 0.08; filter(20000, 0.01);
+        loadRacing(); R.lp.connect(R.out); if (R.buf) setLevel(paused ? 0 : M.volume, 0.5);
+        return;
+      }
       cur = Object.create(STYLES[id]); cur.bus = newBus();
       bar = 0; step = 0; chordI = 0; nextT = now() + 0.08;
       setLevel(paused ? 0 : M.volume, 0.5);
@@ -257,7 +367,11 @@ export function createMusic(ctx, out) {
     // what direct() said: the dials ease there, the mood waits for the bar line
     set({ int, ten, mood }) { S.tInt = int; S.tTen = ten; want(mood); },
     // a fresh race: back to the quiet of the pre-start
-    reset() { S.int = S.tInt = 0.2; S.ten = S.tTen = 0.25; S.cand = null; if (cur) jump('calm'); else { S.mood = 'calm'; S.pend = null; } },
+    reset() {
+      S.int = S.tInt = 0.2; S.ten = S.tTen = 0.25; S.cand = null;
+      if (style === 'racing') { S.mood = 'calm'; S.pend = null; R.built = false; filter(20000, 0.05); if (R.buf) cue('calm'); }
+      else if (cur) jump('calm'); else { S.mood = 'calm'; S.pend = null; }
+    },
     // paused, the music fades out; back, it fades in
     pause(v) { if (v === paused) return; paused = v; setLevel(v ? 0 : M.volume, v ? 0.25 : 0.8); },
     // the voices: v 0..1, how loud a voice is now (main.js measures them); the music bows out under them
@@ -268,6 +382,12 @@ export function createMusic(ctx, out) {
     // a sweep that climbs for dur seconds, to the gun
     riser(dur) {
       if (!cur || dur < 1) return; const t = now() + 0.02;
+      if (style === 'racing') { // the build's last bars, so its drop lands on the gun
+        if (!R.buf) return;
+        const L = RACING.build[1]; let j = 8, s = 0; while (j > 0 && s + L[j - 1] <= dur - 0.05) s += L[--j];
+        if (j < 8) { cue('build', j, now() + dur - s); R.built = true; }
+        return;
+      }
       noise({ t, freq: 300, sweep: 7000, q: 2.5, dur, gain: 0.14, rise: 1, rev: 0.2 });
       voice({ t, f: 110, slide: 440, slideT: dur, dur, a: dur * 0.9, r: 0.05, gain: 0.05, type: 'sawtooth', det: [-12, 12], lp: 3000, rev: 0.2 });
     },
@@ -280,6 +400,7 @@ export function createMusic(ctx, out) {
       if (big || t < breathUntil) { breathUntil = 0; duck.gain.cancelScheduledValues(t); duck.gain.setTargetAtTime(1, t, 0.02); } // the breath ends on the gun, whatever it brings
       if (!big && t - lastSting < 3) return;
       lastSting = t;
+      if (style === 'racing') { racingSting(kind, t); return; }
       if (kind === 'gun') jump('up', 0.65, 0.3);
       if (kind === 'win') jump('win', 0.55, 0);
       if (kind === 'lose') jump('lose', 0.12, 0.1);
@@ -310,7 +431,7 @@ export function createMusic(ctx, out) {
       }
     },
     // every frame
-    update() { if (cur && !paused) schedule(); },
+    update() { if (cur && !paused) (style === 'racing' ? scheduleRacing() : schedule()); },
   }));
   return M;
 }
