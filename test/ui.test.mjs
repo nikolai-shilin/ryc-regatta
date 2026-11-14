@@ -83,6 +83,52 @@ test('the layline call: when the mark opens up on the other tack', async () => {
   assert.equal(laylineAt({ ...base, mz: -5000, x: 0, z: 0, h: -45 * r }), null); // more than three minutes off
 });
 
+test('the call before the start: hold, bear away now, or late, from the time to burn', async () => {
+  const { burnCall } = await import('../public/game/hud-bc.js');
+  assert.deepEqual(burnCall(23, 40), { kind: 'hold', s: 23 }); // 23 s in hand, 40 s to go: hold 0:23, then bear away
+  assert.equal(burnCall(23, 75), null); // the gun more than a minute off: no call yet
+  assert.equal(burnCall(23, 0), null); // and none after it
+  assert.equal(burnCall(null, 40), null); // not closing on the line: nothing to time
+  assert.deepEqual(burnCall(2, 30), { kind: 'now' });
+  assert.deepEqual(burnCall(-2.5, 30), { kind: 'now' });
+  assert.deepEqual(burnCall(-8, 30), { kind: 'late' });
+  // between the bands it keeps the call it had, so a second either way doesn't flick it back and forth
+  assert.deepEqual(burnCall(4, 30, { kind: 'now' }), { kind: 'now' });
+  assert.deepEqual(burnCall(4, 30, { kind: 'hold', s: 6 }), { kind: 'hold', s: 4 });
+  assert.deepEqual(burnCall(4, 30), { kind: 'hold', s: 4 });
+  assert.deepEqual(burnCall(-3.5, 30, { kind: 'now' }), { kind: 'now' });
+  assert.deepEqual(burnCall(-3.5, 30, { kind: 'late' }), { kind: 'late' });
+});
+
+test('the line is square to the wind from its square bearing; veer and back against the first reading', async () => {
+  const { squareBearing, veerBack } = await import('../public/game/hud-bc.js');
+  const { makeCourse, D2R } = await import('../public/game/sim.js');
+  for (const bias of [-8, -3, 0, 5, 8]) {
+    const c = makeCourse(1, 260, bias * D2R, 6), sq = squareBearing(c);
+    assert.equal(sq, (bias + 360) % 360, `bias ${bias}°`);
+    // the HUD's line bias with the wind from there: neither end further upwind
+    const W = sq * D2R, fav = (c.pin.x - c.committee.x) * Math.sin(W) + (c.pin.z - c.committee.z) * -Math.cos(W);
+    assert.ok(Math.abs(fav) < 1e-6, `fav ${fav}`);
+  }
+  assert.equal(veerBack(5 * D2R, 2 * D2R), 3); // clockwise: veered
+  assert.equal(veerBack(358 * D2R, 2 * D2R), -4); // anticlockwise through north: backed
+  assert.equal(veerBack(1 * D2R, 357 * D2R), 4);
+});
+
+test('the split at a mark: the boats round in order, then the rest by when they are due', async () => {
+  const { markSplit, dueAt } = await import('../public/game/hud-bc.js');
+  assert.equal(dueAt(100, 4, 460), 485); // 100 m off at 4 m/s made good towards it: 25 s on
+  assert.equal(dueAt(100, 0.2, 460), null); // not closing on it
+  assert.equal(dueAt(100, -3, 460), null); // sailing away from it
+  assert.equal(dueAt(5000, 4, 460), null); // more than a quarter of an hour off
+  const rows = markSplit([
+    { b: 'C', due: true, t: 490 }, { b: 'A', t: 462 }, { b: 'E', due: true, t: null }, { b: 'B', t: 471 }, { b: 'D', due: true, t: 485 },
+  ]);
+  assert.deepEqual(rows.map((r) => r.b), ['A', 'B', 'D', 'C', 'E']);
+  assert.deepEqual(rows.map((r) => r.gap), [0, 9, 23, 28, null]);
+  assert.deepEqual(markSplit([{ b: 'A', due: true, t: 500 }]).map((r) => r.gap), [null]); // nobody round yet: no gaps
+});
+
 // a selector list split at its own commas, not those inside :is(…) or :not(…)
 function topLevel(list) {
   const out = []; let depth = 0, cur = '';
