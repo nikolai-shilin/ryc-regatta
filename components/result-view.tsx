@@ -16,9 +16,13 @@ import { courseDistance, fmtDistance, legDistances, shapeOf, SHAPE_NAME, type Sh
 import { finishScene, neighbours, raceVenue, type Pose } from '@/lib/finish';
 import { venueOf } from '@/lib/venues';
 import { readOpts } from '@/lib/opts';
+import { bestLeg, startOf } from '@/lib/race-log';
 
 // What the game keeps for a finished race (public/game/main.js, finishToPage).
-type Boat = { name: string | null; me: boolean; color: string | null; flag?: string | null; done: boolean; dsq: boolean; secs: number | null; track: [number, number][]; at?: Pose };
+// legT (the clock as she finished each leg, the start's crossing first) and pens (her penalties) came with the finish's
+// tiles: a result saved before them has neither, and the page leaves out what it can't say
+type Boat = { name: string | null; me: boolean; color: string | null; flag?: string | null; done: boolean; dsq: boolean; secs: number | null; track: [number, number][]; at?: Pose;
+  legT?: number[]; pens?: number };
 type Foul = { rule: string; who: string | null; t: number | null; x: number | null; z: number | null };
 type Result = {
   v: 1; id: string; at: number; daily: string | null; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
@@ -28,8 +32,10 @@ type Result = {
     type?: Shape; marks?: Record<string, [number, number]>; finish?: [[number, number], [number, number]] };
   boats: Boat[];
   log: { gunD: number | null; gunV: number | null; ocs: boolean; startDsq: string | null; startT: number | null; sailing: number; pct: number | null; head: number; lift: number; tacks: number;
-    dirty: number; penT: number; hails: Record<string, number>; legs: number[]; legPlaces: number[]; fouls: Foul[] };
-  pb: { best: number; isNew: boolean } | null;
+    dirty: number; penT: number; hails: Record<string, number>; legs: number[]; legPlaces: number[]; fouls: Foul[];
+    // with the finish's tiles: the gybes, where along the line you started (0 the pin, 1 the committee boat), the top speed
+    gybes?: number; startAt?: number | null; top?: number; topLeg?: number; topKite?: boolean };
+  pb: { best: number; isNew: boolean; prev?: number } | null; // prev: the best a new one beat
   venue?: string; origin?: [number, number]; seed?: number | null; // where it was sailed: kept since the finish scene
 };
 type Top = { name: string | null; s: number; fl?: string | null };
@@ -169,6 +175,29 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   const legs = [...L.legs.map((tm, i) => ({ k: res.course.legs[i], i, tm, pl: L.legPlaces[i] })),
     ...(me.done && me.secs != null && L.legs.length < res.course.legs.length ? [{ k: 'finish', i: res.course.legs.length - 1, tm: me.secs, pl: me.dsq ? 0 : place }] : [])];
 
+  // the race in four numbers, as the broadcast's finish has them: each only when the race kept what it needs (a result
+  // saved before the game kept the leg times, the gybes and the top speed shows fewer, or none)
+  const st = startOf(L, res.boats), bl = bestLeg(res.boats), pens = me.pens ?? L.fouls.length;
+  const num = (x: number) => x.toFixed(1).replace('.', lang === 'ru' ? ',' : '.');
+  const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
+  const endW = { pin: t('at the pin end', 'у пина'), boat: t('at the boat end', 'у судейского судна'), middle: t('mid-line', 'в середине линии') };
+  type Tile = { k: string; v: string; u?: string; s: string; up?: boolean };
+  const tiles = ([
+    st && { k: t('Start', 'Старт'), v: num(st.late), u: t('s late', 'с после сигнала'),
+      s: L.ocs ? t('Over early: back and started again', 'Фальстарт: вернулся и стартовал снова')
+        : cap([st.place ? t(`${ordEn(st.place)} off the line`, `${st.place}-м пересёк линию`) : '', st.end ? endW[st.end] : ''].filter(Boolean).join(', ')) || t('After the gun', 'После сигнала') },
+    bl && { k: t('Best leg', 'Лучший отрезок'), v: t(`Leg ${bl.leg}`, `Отрезок ${bl.leg}`), up: bl.place === 1,
+      s: bl.place === 1 ? (bl.by < 0.05 ? t('Level with the fastest', 'Вровень с лучшим') : t(`Fastest of the fleet, by ${gapS(bl.by)}`, `Быстрее всех, на ${gapS(bl.by)}`))
+        : t(`${ordEn(bl.place)} fastest of ${bl.of}, ${gapS(bl.by)} off`, `${bl.place}-й из ${bl.of}, ${gapS(bl.by)} от лучшего`) },
+    L.top ? { k: t('Top speed', 'Макс. скорость'), v: num(L.top), u: t('kn', 'уз'),
+      s: cap([L.topKite ? t('under the kite', 'под генакером') : '', L.topLeg ? t(`leg ${L.topLeg}`, `отрезок ${L.topLeg}`) : t('at the start', 'на старте')].filter(Boolean).join(', ')) } : null,
+    L.gybes != null ? { k: t('Tacks · gybes', 'Повороты · фордевинды'), v: `${L.tacks} · ${L.gybes}`,
+      s: pens ? t(`${pens} ${pens === 1 ? 'penalty' : 'penalties'}`, `Штрафов: ${pens}`) : t('No penalties', 'Без штрафов') } : null,
+  ] as (Tile | null)[]).filter((x): x is Tile => !!x);
+  const hasPens = res.boats.some((b) => b.pens != null);
+  // a new best: the one it beat, beside it
+  const prev = !shared && res.pb?.isNew && res.pb.prev != null ? res.pb.prev : null;
+
   // the result as the broadcast lays it out: the finish as it was behind the result and the full table, then, as the
   // page scrolls on, the debrief beside the track and the legs, and today's ranking beside your best and sharing
   const tag = (x: Item) => (x.note ? ['note', t('Note', 'Заметка')] : x.good ? ['ok', t('Good', 'Хорошо')] : ['work', t('Work on it', 'Поработай')]);
@@ -211,6 +240,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
                 <li key={i} className={`${b.me ? 'me' : ''} ${i === 0 && !b.dsq ? 'first' : ''}`}>
                   <span className="hm-n">{b.dsq ? '–' : i + 1}</span>
                   <span className="rs-name"><span className="rs-dot" style={{ background: b.me ? 'var(--you)' : b.color || 'rgba(255,255,255,.4)' }} /><FlagImg code={b.flag} lang={lang} />{b.me ? you : b.name}</span>
+                  {hasPens && <span className="rs-pen" title={b.pens ? t('Penalties she got', 'Сколько штрафов получила') : undefined}>{b.pens ? t(`${b.pens} pen`, `${b.pens} штр.`) : ''}</span>}
                   <span className="hm-t">{b.dsq ? 'DSQ' : b.secs != null ? clock(b.secs) : '—'}</span>
                   <span className="rs-gap">{b.secs != null && winner?.secs != null && b !== winner && !b.dsq ? `+${(b.secs - winner.secs).toFixed(1)}` : ''}</span>
                 </li>
@@ -227,6 +257,17 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
           <div className="rs-col rs-wide">
             <span className="rs-kick">{t('Debrief', 'Разбор')}</span>
             <h2 className="rs-h2">{t('Where the time went', 'Куда ушло время')}</h2>
+            {tiles.length ? (
+              <div className="rs-tiles">
+                {tiles.map((x) => (
+                  <div key={x.k} className="rs-tile">
+                    <span className="bt-sk">{x.k}</span>
+                    <b className={x.up ? 'is-up' : undefined}>{x.v}{x.u ? <span className="unit">{x.u}</span> : null}</b>
+                    <span className="rs-tile-s">{x.s}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <ul className="rs-card rs-db">
               {items.map((x, i) => {
                 const [k, w] = tag(x);
@@ -285,7 +326,9 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
               <h2 className="rs-h2">{t('On this course', 'На этой дистанции')}</h2>
               <div className="bt-stats rs-best">
                 <div><span className="bt-sk">{res.daily ? t('Your best today', 'Твой лучший сегодня') : t('Your best', 'Твой лучший')}</span><b className="is-gold">{res.pb ? clock(res.pb.best) : '—'}</b><span className="bt-sv">{res.pb?.isNew ? t('New personal best', 'Новый личный рекорд') : t('kept on this device', 'хранится на этом устройстве')}</span></div>
-                <div><span className="bt-sk">{t('This race', 'Эта гонка')}</span><b>{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</b><span className="bt-sv">{res.pb && me.secs != null && !me.dsq && me.secs > res.pb.best ? `+${gapS(me.secs - res.pb.best)}` : t('at the line', 'на финише')}</span></div>
+                {prev != null && res.pb
+                  ? <div><span className="bt-sk">{res.daily ? t('Earlier today', 'Раньше сегодня') : t('Before this race', 'До этой гонки')}</span><b>{clock(prev)}</b><span className="bt-sv"><span className="is-up">−{gapS(prev - res.pb.best)}</span></span></div>
+                  : <div><span className="bt-sk">{t('This race', 'Эта гонка')}</span><b>{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</b><span className="bt-sv">{res.pb && me.secs != null && !me.dsq && me.secs > res.pb.best ? `+${gapS(me.secs - res.pb.best)}` : t('at the line', 'на финише')}</span></div>}
               </div>
               <div className="rs-card rs-pad rs-share">
                 <span className="bt-k">{t('Share this race', 'Поделиться гонкой')}</span>
