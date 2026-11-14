@@ -137,14 +137,6 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
           </div>
         </div>
 
-        {/* on a wide screen the course stands in its own column beside the card, so it never runs under the text; else it's
-            in the card */}
-        <div className="bt-side">
-        <figure className="fs-course" aria-label={t('Your course', 'Твоя дистанция')}>
-          <span className="bt-k"><IconRoute />{t('Your course', 'Твоя дистанция')}</span>
-          <CourseMap className="cmap" lang={lang} geo={geo} preset={p.preset} W={240} H={420} route fleet={p.fleet} />
-          <figcaption className="bt-hint">{p.course !== 'wl' ? `${shapeName} · ` : ''}{courseName} · {lapsName} · {metres}</figcaption>
-        </figure>
         <PauseCard lang={lang} who={who} back={fromToday ? '/race/free?from=today' : '/race/free'} label={t('Set up your race', 'Настрой гонку')}
           head={<>
             <button type="button" className="bt-go" onClick={go}><IconPlay /><span>{t('Start race', 'Начать гонку')}</span></button>
@@ -183,7 +175,6 @@ export default function FreeSetup({ lang, fromToday, who }: { lang: Lang; fromTo
             ? t(`Your best on this course: ${clock(best)}. Beat it and the result page says so.`, `Твой лучший результат на этой дистанции: ${clock(best)}. Побьёшь — страница результата скажет.`)
             : t('The game keeps your best time on every course. A free race doesn’t go on today’s ranking.', 'Игра помнит лучшее время на каждой дистанции. Свободная гонка в рейтинг дня не идёт.')}</p>
         </PauseCard>
-        </div>
       </div>
     </div>
   );

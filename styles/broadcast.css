@@ -172,16 +172,9 @@
 .bc .bt-card .num-in:focus { border-bottom-color: var(--you); background: var(--w-10); }
 .bc .bt-card .logo-thumb { border-radius: 0; }
 
-/* the free race's course: in the card, or on a wide screen in its own column beside it */
-.bc .bt-side { display: contents; }
-.bc .fs-course { display: none; }
-@container scr (min-width: 1280px) and (min-height: 700px) {
-  .bc .bt-side { display: flex; align-self: stretch; align-items: center; gap: var(--s-5); min-height: 0; }
-  .bc .fs-course { display: flex; flex-direction: column; gap: var(--s-3); width: 260px; margin: 0; padding: var(--s-4); background: var(--panel);
-    -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); animation: bc-slide-r .6s var(--ease) both .15s; }
-  .bc .fs-course .cmap { max-height: none; }
-  .bc .fs-course-in { display: none; }
-}
+/* the free race's course map: in the card on a smaller screen; on a wide one the water behind shows the course
+   (Show course), so the card keeps to the choices */
+@container scr (min-width: 1280px) and (min-height: 700px) { .bc .fs-course-in { display: none; } }
 
 /* ---------- the result: one window of the finish, then the page runs on below it ----------
    The root stays one window tall (a size container, so the layouts still follow the window, as .scr.app does) and the
@@ -719,3 +712,37 @@
   .bc .rt-day { width: 46px; }
 }
 @media (prefers-reduced-motion: reduce) { .bc .rt-lb li, .bc .rt-head .hm-ph-h { animation: none !important; } }
+
+/* ---------- admin: the ads in the game (components/admin-form.tsx) ---------- */
+.bc .adm { padding: var(--s-6); background: var(--surface); gap: var(--s-5) var(--s-10); clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%); }
+.bc .adm + .adm, .bc .adm.adm-banner { margin-top: var(--s-4); }
+.bc .adm .group-k { padding-bottom: var(--s-3); border-bottom-color: var(--rule); }
+.bc .adm .hint { font: 500 var(--fs-small)/1.5 var(--sans); color: var(--ink-3); }
+.bc .adm .err { font: 600 var(--fs-small)/1.4 var(--sans); color: var(--live); }
+/* the jib: cut like a sail's leech, white cloth and black */
+.bc .adm-prev { gap: var(--s-3); }
+.bc .adm-sail { border: 0; border-radius: 0; clip-path: polygon(24% 0, 100% 0, 100% 100%, 0 100%); padding: var(--s-4) var(--s-4) var(--s-4) 18%; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18); }
+.bc .adm-sail .hint { color: #6b7380; }
+/* the file: a button naming what's chosen */
+.bc .adm-pick { display: inline-flex; align-items: center; gap: var(--s-2); min-width: 0; max-width: 60%; height: var(--h-m); padding: 0 var(--s-4); background: var(--fill-2);
+  font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; color: var(--ink); cursor: pointer; transition: background-color .2s; }
+.bc .adm-pick span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc .adm-pick svg { flex: none; width: 15px; height: 15px; color: var(--ink-3); }
+.bc .adm-pick:hover { background: var(--fill-3); }
+.bc #adm-file:focus-visible + .adm-pick { outline: 2px solid var(--you); outline-offset: 2px; }
+.bc #adm-file:disabled + .adm-pick { opacity: .5; cursor: default; }
+/* the banner, as the plane tows it: on a line from the left */
+.bc .adm-tow { position: relative; padding-left: var(--s-12); margin: var(--s-2) 0 var(--s-3); }
+.bc .adm-tow::before { content: ''; position: absolute; left: 0; top: 50%; width: var(--s-12); border-top: 2px dashed var(--w-50); }
+.bc .adm-ban { margin: 0; border-radius: 0; font-family: var(--cond); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
+.bc .adm-in { position: relative; flex: 0 1 60%; min-width: 0; display: flex; }
+.bc .adm-in .field { flex: 1; width: 100%; min-width: 0; padding-right: 56px; }
+.bc .adm-banner .srow .adm-in .field { flex: 1; }
+.bc .adm-n { position: absolute; right: var(--s-3); top: 50%; translate: 0 -50%; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: 0.06em; color: var(--ink-3); pointer-events: none; font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) {
+  .bc .adm { padding: var(--s-4); }
+  .bc .adm-banner .srow { flex-wrap: wrap; padding-block: var(--s-2); }
+  .bc .adm-banner .srow .adm-in { flex: 1 1 100%; }
+  .bc .adm-tow { padding-left: var(--s-6); }
+  .bc .adm-tow::before { width: var(--s-6); }
+}

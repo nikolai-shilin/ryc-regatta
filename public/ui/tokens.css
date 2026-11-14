@@ -69,6 +69,9 @@
   font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
 }
 .bc *, .bc *::before, .bc *::after { box-sizing: border-box; }
+/* a page in this look is dark to its very end: where its content runs past the screen-high frame (.scr.app on a phone),
+   and in the overscroll above and below it, the document shows the same ground, not the old white */
+html:has(.scr.bc), html:has(.scr.bc) body { background: #070d16; }
 
 /* ---------- the pieces every screen shares (scoped to .bc: the old pages use some of these names) ---------- */
 :where(.bc) .pn { background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
