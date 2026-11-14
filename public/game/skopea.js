@@ -406,8 +406,9 @@ function pines(count, far = false) {
 // the mapped buildings as they are on the map, and the many houses the map lacks round them: white or cream walls,
 // mostly terracotta roofs
 const WALLS = LOOK.walls, ROOFS = LOOK.roofs, FLAT = LOOK.flat ?? 0.45;
-// the tall ones: concrete, stone and glass, flat on top
-const TOWERS = ['#9aa6b0', '#b8c0c6', '#7f8c96', '#d4d6d2', '#c9c2b4', '#6f7d88'];
+// the tall ones (20 m and up): concrete, stone and glass, flat on top; or the venue's own, where they are blocks of
+// flats in the town's colours
+const TOWERS = LOOK.towers || ['#9aa6b0', '#b8c0c6', '#7f8c96', '#d4d6d2', '#c9c2b4', '#6f7d88'];
 // the buildings, from the .bin: each one's corners (metres), its height and its roof
 function buildings() {
   const out = [];

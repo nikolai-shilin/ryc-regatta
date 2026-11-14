@@ -15,7 +15,8 @@
 //     palm, eucalypt, olive, shrub
 //   treeTop: how high the trees go, metres; woods: how much of the land is wooded (0 to 1); snow: the snow line on
 //     the mountains beyond, metres (2900 when not given)
-//   walls, roofs: the houses; flat: the share of flat roofs
+//   walls, roofs: the houses; flat: the share of flat roofs; towers: the walls of the tall ones (20 m and up), when
+//     not glass and concrete (skopea.js)
 //   boats: the moored boats' shares (sail, motor, big) and what the big ones are (gulet or super)
 //   water: the sea's own colours (deep, scatter) and how far towards them (0 to 1); over the shallows, the colour
 //     the bed gives it (shallow) and how clearly (clear, 0 to 1)
@@ -246,6 +247,7 @@ export const VENUES = [
       ground: { forest: ['#2e4626', '#3f5a2e', '#5a733a'], scrub: '#7c7e54', rock: ['#b0a690', '#8f8674'], town: '#b2a692', shore: '#bfb39a' },
       trees: [['stone', 0.35, '#2e4626', '#4f6834'], ['broad', 0.4, '#33482a', '#5a7838'], ['cypress', 0.25, '#25391f', '#3a5230']], treeTop: 250, woods: 0.35,
       walls: ['#efe6d2', '#e8dcc4', '#f4f1ea', '#d9c8a8', '#e6d0b8', '#c9c4ba'], roofs: ['#b4603e', '#a5543a', '#9c4f37', '#7e7f80'], flat: 0.45,
+      towers: ['#e6dfd0', '#d8d0bf', '#ece6da', '#d2cbbd', '#dfd4c0', '#c8ccce'], // blocks of flats, pale concrete and cream
       boats: { sail: 0.55, motor: 0.35, big: 0.1, bigKind: 'super' },
       water: { deep: '#0a2e40', scatter: '#24868a', k: 0.45, shallow: '#4a9a8e', clear: 0.3 },
     },
