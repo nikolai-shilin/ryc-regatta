@@ -134,7 +134,14 @@ if (world) {
   const FORM = [[0, 0], [-24, 10], [24, -8], [-12, -30], [14, 28], [-38, -18], [36, 16]]; // across to starboard, ahead (m)
   const LAP = ['#ffd640', '#35b0f2'], TAN = Math.tan(27.5 * D2R);
   let poses = null, spec = '', view = 'boats', labelsKey = '', spin = 0, ovSpin = 0, zoomK = 1, area = null, fRoute = 0, fMarks = 0;
-  const camS = { tx: 0, tz: 0, ty: 4, ld: Math.log(80), el: 12 * D2R, az: 0, ov: 0, first: true };
+  // the drone: where it is (camS) and how it is moving (camV), following the path laid for it (camG)
+  const KEYS = ['tx', 'tz', 'ty', 'ld', 'el', 'az'];
+  const camS = { tx: 0, tz: 0, ty: 4, ld: Math.log(80), el: 12 * D2R, az: 0, first: true }, camG = { ...camS }, camV = { tx: 0, tz: 0, ty: 0, ld: 0, el: 0, az: 0 };
+  // a flight from one view to the next: from where the path was, along an eased curve, to where it wants to be
+  let flight = null;
+  const fly = () => { if (!camS.first) flight = { u: 0, T: 0, from: { ...camG } }; };
+  const ease = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * x * (x * (x * 6 - 15) + 10); }; // smootherstep: still at both ends
+  const arrived = (u) => !flight || flight.u >= u; // how far through the flight it is, for what shows on arrival
   function dragBy(dx) { if (!SETUP) return world.drag(dx); if (view === 'boats') spin -= dx * 0.006; else ovSpin -= dx * 0.006; }
   function zoomBy(f) { if (!SETUP) return world.zoom(f); zoomK = Math.min(2.5, Math.max(0.35, zoomK * f)); }
 
@@ -240,7 +247,8 @@ if (world) {
     if (color) { x.fillStyle = color; x.beginPath(); x.arc(33, 36, 9, 0, 7); x.fill(); }
     x.fillStyle = '#fff'; x.fillText(text, color ? 52 : 21, 38);
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, depthWrite: false, sizeAttenuation: false, toneMapped: false, transparent: true, fog: false, opacity: 0 }));
-    const H = innerWidth < innerHeight ? 0.032 : 0.04; // a tall frame is mostly the card: smaller names in what it leaves s.scale.set((H * w) / 72, H, 1); s.center.set(cx, cy); s.renderOrder = 12; s.layers.set(OVERLAY);
+    const H = innerWidth < innerHeight ? 0.032 : 0.04; // a tall frame is mostly the card: smaller names in what it leaves
+    s.scale.set((H * w) / 72, H, 1); s.center.set(cx, cy); s.renderOrder = 12; s.layers.set(OVERLAY);
     return s;
   };
   const labelCourse = (L) => {
@@ -272,9 +280,9 @@ if (world) {
   };
   const setupMsg = (d) => {
     const s = d.race, key = JSON.stringify([s.preset, s.fleet, s.length, s.laps, s.course, s.current ? 1 : 0, s.start]), lk = JSON.stringify(d.labels || {});
-    if (key !== spec) { spec = key; lay(s); labelsKey = ''; }
+    if (key !== spec) { spec = key; lay(s); labelsKey = ''; fly(); }
     if (lk !== labelsKey) { labelsKey = lk; labelCourse(d.labels || {}); }
-    if (d.view && d.view !== view) { view = d.view; zoomK = 1; ovSpin = 0; }
+    if (d.view && d.view !== view) { view = d.view; zoomK = 1; ovSpin = 0; fly(); }
   };
 
   // where the drone wants to be for the view: round the fleet, close enough that the boats fill the part of the frame
@@ -299,25 +307,48 @@ if (world) {
     const d = Math.max(U / (TAN * asp * cw), (V * Math.sin(el)) / (TAN * ch)) * 1.02 * zoomK;
     return { tx: cx, tz: cz, ty: 0, d, el, az };
   };
+  // The drone flies between views on an eased curve, starting and stopping gently, in 1.6–3.6 s by how far it climbs
+  // or comes down. Going up it climbs first, then slides over and turns once it is high (from up there it reads as
+  // gentle); coming down it slides over and turns first, then comes down to the boats. Its height goes evenly in ratio, so each doubling takes
+  // as long. Between flights it follows the view as it moves (the fleet circling, a pinch) without jumping.
   const camStep = (dt, t) => {
-    const w = want(), k = camS.first ? 1 : 1 - Math.exp(-dt * 1.3);
-    camS.first = false;
-    camS.tx += (w.tx - camS.tx) * k; camS.tz += (w.tz - camS.tz) * k; camS.ty += (w.ty - camS.ty) * k; camS.el += (w.el - camS.el) * k;
-    camS.ld += (Math.log(w.d) - camS.ld) * k; camS.az += wrap(w.az - camS.az) * k;
-    camS.ov += ((view === 'boats' ? 0 : 1) - camS.ov) * k;
+    const w = want(), lw = Math.log(w.d);
+    if (camS.first) { Object.assign(camG, { tx: w.tx, tz: w.tz, ty: w.ty, ld: lw, el: w.el, az: w.az }); Object.assign(camS, camG, { first: false }); flight = null; }
+    else if (flight) {
+      const f = flight.from;
+      if (!flight.T) flight.T = Math.min(3.6, Math.max(1.6, 1.6 + 0.6 * Math.abs(lw - f.ld)));
+      const u = flight.u = Math.min(1, flight.u + dt / flight.T), up = lw > f.ld;
+      const sz = ease(up ? u / 0.75 : (u - 0.25) / 0.75), sp = ease(up ? (u - 0.25) / 0.75 : u / 0.75);
+      camG.ld = f.ld + (lw - f.ld) * sz;
+      camG.tx = f.tx + (w.tx - f.tx) * sp; camG.tz = f.tz + (w.tz - f.tz) * sp; camG.ty = f.ty + (w.ty - f.ty) * sp;
+      camG.el = f.el + (w.el - f.el) * sp; camG.az = f.az + wrap(w.az - f.az) * sp;
+      if (u >= 1) flight = null;
+    } else {
+      const k = 1 - Math.exp(-dt * 2.5);
+      camG.tx += (w.tx - camG.tx) * k; camG.tz += (w.tz - camG.tz) * k; camG.ty += (w.ty - camG.ty) * k; camG.el += (w.el - camG.el) * k;
+      camG.ld += (lw - camG.ld) * k; camG.az += wrap(w.az - camG.az) * k;
+    }
+    // the drone follows that path on a short, critically damped spring: a flight cut short by another choice hands its
+    // way on to the next one, never stopping dead
+    const om = 9, h = Math.min(dt, 1 / 30);
+    for (const k of KEYS) {
+      const e = k === 'az' ? wrap(camG.az - camS.az) : camG[k] - camS[k];
+      camV[k] += (om * om * e - 2 * om * camV[k]) * h; camS[k] += camV[k] * h;
+    }
     const d = Math.exp(camS.ld), c = Math.cos(camS.el), sw = 0.012 * d, cam = world.camera;
     cam.position.set(camS.tx - Math.sin(camS.az) * d * c + Math.sin(t * 0.37) * sw, camS.ty + 2 + d * Math.sin(camS.el) + Math.sin(t * 0.53) * sw * 0.5, camS.tz + Math.cos(camS.az) * d * c + Math.cos(t * 0.29) * sw);
     cam.up.set(0, 1, 0); cam.lookAt(camS.tx, camS.ty, camS.tz); cam.fov = 55;
     // the haze drawn back as the drone climbs, so the whole course reads from up there
-    const L = world.light, fn = L.fogNear + camS.ov * d * 0.6, ff = L.fogFar + camS.ov * d * 2.2;
+    const hi = Math.max(0, d - 90), L = world.light, fn = L.fogNear + hi * 0.6, ff = L.fogFar + hi * 2.2;
     world.scene.fog.near = fn; world.scene.fog.far = ff; world.waterU.uFogNear.value = fn; world.waterU.uFogFar.value = ff;
   };
   const decoStep = (dt) => {
     const d = Math.exp(camS.ld), k = 1 - Math.exp(-dt * 3);
-    fRoute += ((view === 'course' ? 1 : 0) - fRoute) * k;
-    fMarks += ((view === 'boats' ? 0 : 1) - fMarks) * k;
-    winds.step(dt, view === 'wind' ? 1 : 0, d);
-    tides.step(dt, view === 'current' && (race.current.x || race.current.z) ? 1 : 0, d);
+    // what the view shows comes up as the drone gets there, and goes at once when it leaves
+    fRoute += ((view === 'course' && arrived(0.6) ? 1 : 0) - fRoute) * k;
+    fMarks += ((view !== 'boats' && arrived(0.35) ? 1 : 0) - fMarks) * k;
+    winds.step(dt, view === 'wind' && arrived(0.55) ? 1 : 0, d);
+    tides.step(dt, view === 'current' && (race.current.x || race.current.z) && arrived(0.55) ? 1 : 0, d);
     if (!deco) return;
     const U = deco.userData, wd = Math.max(1.2, d * 0.005);
     deco.visible = fMarks > 0.01 || fRoute > 0.01;
