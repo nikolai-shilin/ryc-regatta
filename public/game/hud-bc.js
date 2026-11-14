@@ -30,7 +30,7 @@ export const HUD_STRINGS = {
     toLeg: { lineStart: 'To the start line', mark: 'To the windward mark', mark1: 'To mark 1', wing: 'To the wing mark', mark2: 'To mark 2', offset: 'To the offset mark', gate: 'To the leeward gate', finish: 'To the finish' },
     go: 'Go', leads: 'Leads', afterGun: 'after the gun', ord: (n) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`,
     umpire: 'Umpire · penalty', oneTurn: 'one turn', ruleN: (r) => `Rule ${r}`, against: (n) => `Against ${n}`, againstYou: 'Against you', pen: 'Pen',
-    split: 'split', timeGap: 'Time · gap', due: 'Grey: due at the mark at their pace',
+    split: 'split', timeGap: 'Time · gap', due: 'Grey: still to round, metres to the mark', toGo: 'to go',
     squareAt: 'square', veer: 'Veer', back: 'Back', mToLine: (m) => `${m} m to line`,
     hold: (s) => `Hold ${s}, then bear away`, bearNow: 'Bear away now, full speed', late: 'Late: bear away now',
   },
@@ -51,7 +51,7 @@ export const HUD_STRINGS = {
     toLeg: { lineStart: 'К линии старта', mark: 'К верхнему знаку', mark1: 'К знаку 1', wing: 'К боковому знаку', mark2: 'К знаку 2', offset: 'К знаку смещения', gate: 'К нижним воротам', finish: 'К финишу' },
     go: 'Старт!', leads: 'Лидирует', afterGun: 'после сигнала', ord: (n) => `${n}-й`,
     umpire: 'Судья · штраф', oneTurn: 'один оборот', ruleN: (r) => `Правило ${r}`, against: (n) => `Против ${n}`, againstYou: 'Против тебя', pen: 'Штраф',
-    split: 'отсечка', timeGap: 'Время · разрыв', due: 'Серым: когда будут у знака в своём темпе',
+    split: 'отсечка', timeGap: 'Время · разрыв', due: 'Серым: ещё не обогнули, метров до знака', toGo: 'осталось',
     squareAt: 'ровная при', veer: 'Сдвиг вправо', back: 'Сдвиг влево', mToLine: (m) => `${m} м до линии`,
     hold: (s) => `Выжди ${s}, потом уваливайся`, bearNow: 'Уваливайся сейчас, полный ход', late: 'Опаздываешь: уваливайся сейчас',
   },
@@ -528,21 +528,15 @@ export const squareBearing = (c) => ((Math.round(Math.atan2(c.normal.x, -c.norma
 // How far the wind has swung since a first reading, in whole degrees: + veered (clockwise), − backed.
 export const veerBack = (now, first) => Math.round(wrap(now - first) / D2R);
 
-// When a boat still to round a mark is due there at her pace: the race's clock now plus her distance to it over the
-// speed she has made good towards it (m/s); null when she isn't closing on it, or it's more than a quarter of an hour off.
-export function dueAt(d, pace, clock) {
-  if (!(pace > 0.3) || !Number.isFinite(d)) return null;
-  const s = d / pace;
-  return s > 900 ? null : clock + s;
-}
-
 // A mark's split: the boats round it in the order they rounded (t, the race's clock there), then those still to round
-// by when they're due (due: true, t their estimate, or null with none, last). The gap is to the first one round.
+// (due: true) nearest the mark first (d, metres to it; null, as for a boat out of the race, last). The gap is to the
+// first one round. No time is guessed for those still to round: near a mark a boat can miss it, or take a penalty and
+// go round again, and a guess at her pace would be a minute out. Her distance is what's known, as on the board.
 export function markSplit(list) {
   const round = list.filter((r) => !r.due).sort((a, b) => a.t - b.t);
-  const due = list.filter((r) => r.due).sort((a, b) => (a.t ?? Infinity) - (b.t ?? Infinity));
+  const due = list.filter((r) => r.due).sort((a, b) => (a.d ?? Infinity) - (b.d ?? Infinity));
   const first = round.length ? round[0].t : null;
-  return [...round, ...due].map((r) => ({ ...r, gap: r.t == null || first == null ? null : r.t - first }));
+  return [...round, ...due].map((r) => ({ ...r, gap: r.due || first == null ? null : r.t - first }));
 }
 
 const LEG = { start: 'lineStart', mark: 'mark', wing: 'wing', mark2: 'mark2', offset: 'offset', gate: 'gate', finish: 'finish' };
@@ -1116,7 +1110,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   }
 
   // the split at the mark you've just rounded, in the board's place: filled as it opens and again as each boat rounds
-  // while it shows (not every frame); the ones still to round greyed, with when they're due at their pace now
+  // while it shows (not every frame); the ones still to round greyed, with how far they are from the mark
   function markSplitShow(race, c, P, dt) {
     spl.left -= dt;
     if (spl.left <= 0) { spl = null; msplit.hidden = true; board.classList.remove('spl'); return; }
@@ -1129,10 +1123,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     remaining(race, P); // (the legs' lengths, for this course)
     const rows = markSplit(race.boats.map((b) => {
       if (at.has(b)) return { b, t: at.get(b) };
-      // her pace: how much nearer the mark she has got since this leg began, a second (on a beat that counts her tacks)
-      const t0 = atMark[ml]?.get(b), d = race.distToNext(b);
-      if (b.done || b.dsq || b.leg !== ml || t0 === undefined || race.clock - t0 < 15) return { b, due: true, t: null };
-      return { b, due: true, t: dueAt(d, (lens[ml] - d) / (race.clock - t0), race.clock) };
+      // still to round: how far she is from the mark (none for a boat out of the race, or not yet on that leg)
+      const d = race.distToNext(b);
+      return { b, due: true, d: b.done || b.dsq || b.leg !== ml || !Number.isFinite(d) ? null : d };
     }));
     const iP = rows.findIndex((r) => r.b === P);
     const show = iP < 6 ? rows.slice(0, 6) : [...rows.slice(0, 5), rows[iP]], cx = iP < 3 ? rows.slice(0, 3) : [...rows.slice(0, 2), rows[iP]];
@@ -1144,8 +1137,8 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       cls(r.el, `b-row${me ? ' me' : ''}${x.due ? ' due' : ' rd'}${lead ? ' first' : ''}${cx.includes(x) ? '' : ' cxh'}`);
       txt(r.pos, String(i));
       txt(r.nm, me ? t('you') : x.b.name); setFlag(r.fl, flagOf(x.b, me)); showPen(r.pen, x.b);
-      txt(r.tm, x.t == null ? '—' : fmt(x.t));
-      txt(r.gp, x.gap == null ? '—' : lead ? L.leads : `+${fmt(x.gap)}`); r.gp.classList.toggle('dim', lead);
+      txt(r.tm, x.due ? (x.d == null ? '—' : `${Math.round(x.d)} ${M}`) : fmt(x.t));
+      txt(r.gp, x.due ? (x.d == null ? '' : L.toGo) : x.gap == null ? '—' : lead ? L.leads : `+${fmt(x.gap)}`); r.gp.classList.toggle('dim', lead || x.due);
     });
   }
 
