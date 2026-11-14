@@ -184,6 +184,11 @@ const CSS = `
 .b-you .c-pos { width: 48px; padding: 0 !important; align-items: center; background: var(--you); color: var(--ink-on); font: 700 var(--fs-h3)/1 var(--cond); }
 .b-you .c-nm { flex-direction: row; align-items: center; gap: var(--s-3); padding-left: var(--s-5); }
 .b-you .c-nm i { width: 6px; height: 30px; background: var(--you); }
+/* your flag and sail number, "You" under them; the blue bar where you fly no flag */
+#hud.bc .b-you .c-nm .b-fl { width: 30px; height: 20px; }
+.b-you .c-nm .b-fl:not([hidden]) + i { display: none; }
+.b-you .c-nmt { display: flex; flex-direction: column; gap: var(--s-2); white-space: nowrap; }
+.b-you .c-nmt .lbl { color: var(--you); }
 .b-you .c-leg { display: none; }
 .b-you .b-v { display: flex; align-items: baseline; gap: var(--s-2); white-space: nowrap; }
 .b-you .b-g { position: relative; width: 100px; height: 3px; background: var(--fill-3); }
@@ -324,6 +329,7 @@ const CSS = `
 .b-btag.me .in { box-shadow: inset 0 -3px 0 var(--you); clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
 .b-btag .c { width: 4px; background: var(--c, var(--fill-3)); }
 .b-btag .n { display: flex; align-items: center; gap: var(--s-2); padding: 0 var(--s-3); font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-name); }
+.b-btag .b-me { color: var(--you); } .b-btag .b-me:empty { display: none; }
 .b-btag .v { display: flex; align-items: center; padding: 0 var(--s-3); border-left: 1px solid var(--rule); font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-2); }
 .b-btag .stem { position: absolute; left: -1px; bottom: 0; width: 2px; height: 22px; background: linear-gradient(var(--w-90), var(--w-14)); }
 
@@ -428,7 +434,7 @@ const legKind = (c, i) => (isBeat(c, i) ? 'up' : ['wing', 'mark2', 'offset'].inc
 const CAMS = ['drone', 'top', 'helm'];
 const hex = (n) => (typeof n === 'number' ? '#' + n.toString(16).padStart(6, '0') : '');
 
-export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFlag = () => null }) {
+export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFlag = () => null, sailOf = () => '' }) {
   const L = HUD_STRINGS[LANG] || HUD_STRINGS.en;
   const $ = (s) => document.querySelector(s);
   const hud = $('#hud');
@@ -462,7 +468,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   const low = html(`<div class="bx b-low"><div class="b-split" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}<span></span><kbd class="b-key"></kbd></div></div><div class="b-state"></div>
     <div class="pn b-you pre">
       <div class="c-pos s-run s-done"></div>
-      <div class="c-nm s-pre s-run s-done"><i></i><span class="n-m">${t('you')}</span></div>
+      <div class="c-nm s-pre s-run s-done"><img class="b-fl" alt="" hidden><i></i><span class="c-nmt"><span class="n-m"></span><span class="lbl">${L.you}</span></span></div>
       <div class="c-leg s-pre s-run s-done"><svg viewBox="0 0 10 10" aria-hidden="true"><path fill="currentColor"/></svg><span></span></div>
       <div class="c-spd s-pre s-run"><span class="lbl">${L.speed}</span><span class="n-l"><span class="v"></span><span class="unit">${KNU}</span></span></div>
       <div class="c-pct s-run"><span class="lbl">${L.ofTarget}</span><span class="n-l v"></span><span class="b-g" aria-hidden="true"><i></i></span></div>
@@ -487,6 +493,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     pos: cell('pos'), legP: q(cell('leg'), 'path'), legT: q(cell('leg'), 'span'), spd: q(cell('spd'), '.v'), pct: q(cell('pct'), '.v'), pctG: q(cell('pct'), '.b-g'),
     pctI: q(cell('pct'), '.b-g i'), vmg: q(cell('vmg'), '.v'), toL: q(cell('to'), '.lbl'), to: q(cell('to'), '.v'), eta: q(cell('to'), '.b-sub'), burn: q(cell('burn'), '.v'),
     ldrL: q(cell('ldr'), '.lbl'), ldr: q(cell('ldr'), '.v'), rate: q(cell('ldr'), '.b-sub'), time: q(cell('time'), '.v'),
+    nm: q(cell('nm'), '.n-m'), fl: q(cell('nm'), '.b-fl'),
   };
   // six rows on the board (three on a phone), made once and refilled
   const rows = Array.from({ length: 6 }, () => {
@@ -519,9 +526,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   document.body.append(over);
   const advLine = q(over, '.adv'), advLab = q(over, '.b-advl');
   const btags = Array.from({ length: 3 }, () => {
-    const el = html(`<div class="b-btag"><span class="stem"></span><div class="in"><b class="p"></b><i class="c"></i><span class="n"><img class="b-fl" alt="" hidden><span class="nt"></span></span><span class="v"></span></div></div>`);
+    const el = html(`<div class="b-btag"><span class="stem"></span><div class="in"><b class="p"></b><i class="c"></i><span class="n"><img class="b-fl" alt="" hidden><span class="nt"></span><span class="lbl b-me"></span></span><span class="v"></span></div></div>`);
     over.append(el);
-    return { el, box: q(el, '.in'), p: q(el, '.p'), c: q(el, '.c'), n: q(el, '.n .nt'), fl: q(el, '.b-fl'), v: q(el, '.v'), w: 0, f: 0 };
+    return { el, box: q(el, '.in'), p: q(el, '.p'), c: q(el, '.c'), n: q(el, '.n .nt'), me: q(el, '.b-me'), fl: q(el, '.b-fl'), v: q(el, '.v'), w: 0, f: 0 };
   });
   const lay = q(low, '.b-lay'), layT = q(lay, 'span'), layK = q(lay, '.b-key');
   const split = q(low, '.b-split'), SP = { k: q(split, '.k'), t: q(split, '.t'), v: q(split, '.v'), g: q(split, '.g') };
@@ -590,15 +597,17 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   // play a one-off animation again: the class off, a reflow, on, and off when it's done
   // a boat's flag (its picture's address, from main.js: the fleet's from their looks, yours from the boat page), yours
   // read once a race
-  let myFlag;
+  let myFlag, mySail;
   const flagOf = (b, me) => (me ? (myFlag === undefined ? (myFlag = lookFlag(b, true)) : myFlag) : lookFlag(b, false));
+  // your sail number (from the boat page), read once a race too; "You" when there's none
+  const sailNo = () => (mySail === undefined ? (mySail = sailOf() || t('you')) : mySail);
   const setFlag = (img, src) => { if (img._s === src) return; img._s = src; img.hidden = !src; if (src) img.src = src; else img.removeAttribute('src'); };
   const flash = (el, c, ms) => { el.classList.remove(c, ...({ gain: ['lose'], lose: ['gain'] }[c] || [])); void el.offsetWidth; el.classList.add(c); clearTimeout(el['_f' + c]); el['_f' + c] = setTimeout(() => el.classList.remove(c), ms); };
 
   function update(P, dt) {
     if (!on) return;
     const race = getRace(), c = race.course, kn = P.v / KN, twa = P.twa, pre = race.clock < 0, done = !!P.done;
-    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); }
+    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; mySail = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); }
     const leg = c.legs[P.leg], nLegs = c.legs.length - 1;
     // the order: before the gun, nearest the line first; then the race's
     const toLine = (b) => Math.max(0, -race.lineInfo(b).d);
@@ -740,6 +749,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     B.state.classList.toggle('bad', !!P.ocs);
     cls(B.you, `pn b-you ${pre ? 'pre' : done ? 'done' : 'run'}`);
     txt(Y.pos, P.dsq ? '–' : String(place));
+    txt(Y.nm, sailNo()); setFlag(Y.fl, flagOf(P, true));
     txt(Y.spd, nf(kn));
     const ink = (el, c2) => { el.classList.remove('good', 'low', 'late'); if (c2) el.classList.add(c2); };
     if (pre) {
@@ -838,7 +848,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       g.el.style.transform = `translate(${at[0].toFixed(1)}px, ${at[1].toFixed(1)}px)`;
       txt(g.p, pre ? '·' : String(place));
       g.c.style.setProperty('--c', me ? 'var(--you)' : hex(b.color));
-      txt(g.n, me ? L.you : b.name); setFlag(g.fl, flagOf(b, me));
+      txt(g.n, me ? sailNo() : b.name); txt(g.me, me ? L.you : ''); setFlag(g.fl, flagOf(b, me));
       txt(g.v, `${nf(b.v / KN)} ${t('kn')}`);
       // its box slid back onto the screen when the boat is near an edge (its width read now and then, not every frame)
       if (!g.w || ++g.f % 30 === 0) g.w = g.box.offsetWidth;
