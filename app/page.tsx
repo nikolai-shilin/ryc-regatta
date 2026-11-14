@@ -127,7 +127,7 @@ export default async function Home() {
         <div className="hm-today">
           <a className="hm-course" href="/play?race=today">
             <span className="hm-photo hm-wide">
-              <span className="hm-clip"><Image src="/images/top-v3.jpg" alt={t('Today’s course from above', 'Дистанция дня сверху')} fill sizes="(min-width: 900px) 640px, 100vw" /></span>
+              <span className="hm-clip"><Image src="/images/top-v3.jpg" alt={t('Yachts racing in the game, seen from above', 'Яхты на гонке в игре, вид сверху')} fill sizes="(min-width: 900px) 640px, 100vw" /></span>
               <span className="hm-ptag"><span className="hm-ptag-a">{kn} {t('kn', 'уз')}</span><span className="hm-ptag-b"><span>{t('Today', 'Сегодня')}</span><b>{t(`${d.laps} lap`, `${d.laps} круг`)}</b><span>{t(`${d.fleet} boats`, `${ruBoats(d.fleet)}`)}</span></span></span>
             </span>
             <span className="card-title">{t(`${SHAPE_NAME[d.course][0]} · ${length} course · ${d.laps} lap`, `${SHAPE_NAME[d.course][1]} · ${length} · ${d.laps} круг`)}</span>

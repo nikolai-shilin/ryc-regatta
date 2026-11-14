@@ -41,7 +41,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   - The game reads the same cookie.
   - The copy is inline as `t('English', 'Русский')` pairs (`lib/lang.ts`).
 - **Today's race:** `lib/race.ts` is a copy of the game's `dailyRace()` and must stay in step with `public/game/sim.js`;
-  `npm test` compares the two over 546 days. From `SHAPES_FROM` the day's course goes round the four shapes. Its day is the UTC date, so it changes at 03:00 in Moscow and Türkiye.
+  `npm test` compares the two over 546 days. From `SHAPES_FROM` today's race picks one of the four shapes each day. Its day is the UTC date, so it changes at 03:00 in Moscow and Türkiye.
   Today's fastest comes from `https://iyt.rycrentals.com/api/game` (the `iyt-test` repo).
 - **Styles:** `styles/tokens.css` is the RYC design system's tokens and `styles/ryc.css` holds the pages. Layouts follow
   the screen through container queries: phone sideways, phone upright, desktop.

@@ -2,7 +2,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
-import { readPb, saveOpts } from '@/lib/opts';
+import { readOpts, readPb, saveOpts } from '@/lib/opts';
+import { shapeOffered } from '@/lib/venues';
 import { KN, SHAPE_NAME, SHAPES, type Daily, type Length, type Shape, type Wind } from '@/lib/race';
 import { IconArrow, IconPlay, clock } from './ui';
 
@@ -52,6 +53,15 @@ export function RacePill({ lang, daily }: { lang: Lang; daily: Daily }) {
   const [p, setP] = useState<Pick>(today);
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  // a free race goes to the venue last picked in the set-up: it offers the shapes that venue has room for at this length
+  // (and today's, to go back to today's race), and once the race is a free one a shape it hasn't goes back to up and
+  // down, as in the set-up
+  const [venue, setVenue] = useState<string>(daily.venue);
+  useEffect(() => { setVenue(readOpts().venue); }, []);
+  const offered = (s: Shape) => shapeOffered(venue, s, p.length);
+  useEffect(() => {
+    if (!KEYS.every((k) => p[k] === today[k]) && !offered(p.course)) setP((x) => ({ ...x, course: 'wl' }));
+  }, [venue, p]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const close = (e: Event) => { if (e instanceof KeyboardEvent ? e.key === 'Escape' : !box.current?.contains(e.target as Node)) setOpen(false); };
     document.addEventListener('click', close); document.addEventListener('keydown', close);
@@ -61,7 +71,7 @@ export function RacePill({ lang, daily }: { lang: Lang; daily: Daily }) {
   const OPTS: { [K in keyof Pick]: [Pick[K], string][] } = {
     preset: [['light', t(`Light ${KN.light} kn`, `Слабый ${KN.light} уз`)], ['medium', t(`Medium ${KN.medium} kn`, `Средний ${KN.medium} уз`)], ['strong', t(`Strong ${KN.strong} kn`, `Сильный ${KN.strong} уз`)]],
     fleet: [[3, t('3 boats', '3 лодки')], [5, t('5 boats', '5 лодок')], [7, t('7 boats', '7 лодок')]],
-    course: SHAPES.map((s) => [s, t(...SHAPE_NAME[s])]),
+    course: SHAPES.filter((s) => s === today.course || offered(s)).map((s) => [s, t(...SHAPE_NAME[s])]),
     length: [['short', t('Short', 'Короткая')], ['medium', t('Medium', 'Средняя')], ['long', t('Long', 'Длинная')]],
     laps: [[1, t('1 lap', '1 круг')], [2, t('2 laps', '2 круга')]],
     start: [[1, t('1 min', '1 мин')], [3, t('3 min', '3 мин')], [5, t('5 min', '5 мин')]],
@@ -69,7 +79,7 @@ export function RacePill({ lang, daily }: { lang: Lang; daily: Daily }) {
   const NAMES: Record<keyof Pick, string> = { preset: t('Wind', 'Ветер'), fleet: t('Boats', 'Лодки'), course: t('Course', 'Дистанция'), length: t('Length', 'Длина'), laps: t('Laps', 'Круги'), start: t('Start', 'Старт') };
   const label = <K extends keyof Pick>(k: K) => (OPTS[k] as [Pick[K], string][]).find(([v]) => v === p[k])?.[1] ?? '';
   const isToday = KEYS.every((k) => p[k] === today[k]);
-  const summary = [label('preset'), label('fleet'), `${label('length').toLowerCase()}, ${label('laps')}`, t(`${p.start}-min start`, `старт ${p.start} мин`)].join(' · ');
+  const summary = [label('preset'), label('fleet'), label('course'), `${label('length').toLowerCase()}, ${label('laps')}`, t(`${p.start}-min start`, `старт ${p.start} мин`)].join(' · ');
   const go = () => {
     if (isToday) { location.href = '/play?race=today'; return; }
     saveOpts({ ...p, current: 0, mode: 'free', lastFree: Date.now() });

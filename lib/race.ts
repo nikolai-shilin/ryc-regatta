@@ -25,7 +25,7 @@ export function dailyVenue(date = new Date()): VenueId {
   return ids[n - k * len];
 }
 
-// the days before SHAPES_FROM are all up and down; from it the day's course goes round the four shapes
+// the days before SHAPES_FROM are all up and down; from it today's race picks one of the four shapes each day
 export const SHAPES_FROM = '2026-11-20';
 export function dailyRace(date = new Date()): Daily {
   const day = date.toISOString().slice(0, 10), n = Math.floor(Date.parse(day) / 864e5), r = rng(n * 2654435761);
