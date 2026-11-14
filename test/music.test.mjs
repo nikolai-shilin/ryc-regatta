@@ -1,19 +1,41 @@
 // The soundtrack's director (public/game/music.js): what the music does at each moment of a race. Pure, so it runs in Node.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-const { direct, MUSIC_STYLES, racingPiece } = await import('../public/game/music.js');
+import { readFileSync } from 'node:fs';
+const { direct, MUSIC_STYLES, piece: pieceFor } = await import('../public/game/music.js');
 
 const racing = { clock: 120, done: false, place: 3, fleet: 5, dsq: false, ocs: false, pen: false, zone: false, near: 200, toMark: 300, markLeg: true, lastLeg: false, downwind: false, trend: 0 };
 const at = (o) => direct({ ...racing, ...o });
 
-test('four styles to pick from: three synthesized, and the recorded Racing', () => {
-  assert.deepEqual(MUSIC_STYLES, ['ambient', 'film', 'folk', 'racing']);
+test('four recorded tracks to pick from, Racing first', () => {
+  assert.deepEqual(MUSIC_STYLES, ['racing', 'groove', 'riff', 'openwater']);
 });
 
-// Racing plays pieces of one track: the quiet verse before the start, the groove, the drop when it goes well, its
+// what music.js says of each track's pieces: { name: [start, [bar lengths]] or [start, length] }
+const tracks = () => {
+  const src = readFileSync(new URL('../public/game/music.js', import.meta.url), 'utf8');
+  const body = src.slice(src.indexOf('const TRACKS = '), src.indexOf('};\nconst ONE_SHOT')) + '}';
+  return Function(`return (${body.replace('const TRACKS = ', '')})`)();
+};
+
+test('every track has its file and every piece the player asks for', () => {
+  const T = tracks();
+  assert.deepEqual(Object.keys(T), MUSIC_STYLES);
+  for (const [id, t] of Object.entries(T)) {
+    readFileSync(new URL(`../public/game/music-${id}.mp3`, import.meta.url));
+    for (const n of ['calm', 'drive', 'dark', 'race', 'peak', 'build', 'finale']) assert.ok(t[n][1].length >= 4 && t[n][1].every((l) => l > 1 && l < 3), `${id} ${n}`);
+    assert.ok(t.build[1].length > 4, `${id}: bars before the drop`);
+    for (const n of ['crash', 'swell', 'hit']) assert.ok(t[n][1] > 0, `${id} ${n}`);
+    // the pieces follow one another in the file, none overlapping the next
+    const ps = Object.values(t).map(([at, l]) => [at, Array.isArray(l) ? l.reduce((a, b) => a + b, 0) : l]).sort((a, b) => a[0] - b[0]);
+    for (let i = 1; i < ps.length; i++) assert.ok(ps[i][0] >= ps[i - 1][0] + ps[i - 1][1], `${id}: piece ${i}`);
+  }
+});
+
+// Each track plays pieces of itself: the quiet part before the start, the groove, the drop when it goes well, its
 // loudest part when it's close, the breakdown when it goes wrong
-test('Racing plays the piece of its track that fits the moment', () => {
-  const piece = (o) => { const d = at(o); return racingPiece(d.mood, d.int); };
+test('a track plays the piece of it that fits the moment', () => {
+  const piece = (o) => { const d = at(o); return pieceFor(d.mood, d.int); };
   assert.equal(piece({ clock: -200 }), 'calm');
   assert.equal(piece({ clock: -50 }), 'drive');
   assert.equal(piece({ clock: -5 }), 'peak');

@@ -3,7 +3,8 @@
 import type { Length, Shape, Wind } from './race';
 import type { VenueId } from './venues';
 
-export type Music = 'ambient' | 'film' | 'folk' | 'racing' | 'off';
+export type Music = 'racing' | 'groove' | 'riff' | 'openwater' | 'off';
+export const TRACKS: readonly Music[] = ['racing', 'groove', 'riff', 'openwater']; // public/game/music.js: MUSIC_STYLES
 export type Sea = 'loud' | 'normal' | 'quiet' | 'off';
 export type Volume = 'loud' | 'normal' | 'quiet';
 
@@ -19,7 +20,7 @@ export type Opts = {
   sound: number; guides: number; gfx: 'auto' | 'high' | 'medium' | 'low';
   camera: 'drone' | 'top' | 'helm'; vibration: number;
   voice: number; // the skipper's voice (the crew's calls in English), apart from Sound
-  music: Music; // the soundtrack's style (public/game/music.js), or none
+  music: Music; // the soundtrack's track (public/game/music.js), or none
   musicVol: Volume; // how loud the music is (public/game/main.js: MUSIC_VOL)
   sea: Sea; // how loud the sea and the wind are (public/game/main.js: SEA)
   lastFree?: number; played?: number; fleetV: number; optsV: number; musicV: number;
@@ -35,6 +36,7 @@ export function readOpts(): Opts {
     const saved = JSON.parse(localStorage.getItem('regatta') || '{}');
     const o = { ...DEFAULTS, ...saved, fleetV: 3, optsV: 4, musicV: 1 };
     if (saved.musicV !== 1) o.music = 'racing'; // Racing is the default music now, as in the game: once, then theirs
+    if (o.music !== 'off' && !TRACKS.includes(o.music)) o.music = 'racing'; // a style that's gone (Ambient, Film, Folk)
     delete o.undefined; // junk an older game wrote; dropped on the next save
     return o;
   } catch {
