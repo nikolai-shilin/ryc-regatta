@@ -3,6 +3,7 @@ import { Race, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE,
 import { World, defaultQuality, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
 import { raceStarted, raceFinished, raceResult } from './stats.js';
 import { createHud } from './hud-bc.js';
+import { mapPalette, placeLabels } from './course-map.js';
 import { LOOKS, playerLook } from './yacht.js';
 const flagCode = (src) => { const m = typeof src === 'string' && /\/flags\/([a-z]{2}(?:-[a-z]+)?)\.svg$/.exec(src); return m ? m[1] : null; }; // '/flags/gb.svg' → 'gb'
 import { VENUE, venueById, laidLength, lengthOffered } from './venues.js';
@@ -31,6 +32,8 @@ const T = {
     askK: { restart: 'Restart', change: 'Change the race', leave: 'Leave' }, askH: { restart: 'Restart this race?', change: 'Change the race?', leave: 'Leave this race?' },
     askT: { restart: 'It starts over from the start sequence, the same course in the same wind.', change: 'Next you pick the place, the wind and the course, and the race starts over with them.', leave: 'You go back to the race hub.' },
     sailUp: 'Beating to', sailDown: (k) => (k ? 'Running to' : 'Running, kite down, to'), sailReach: 'Reaching to', aheadOf: (n, m) => `${n} is ${m} m ahead.`, leadBy: (m) => `You lead by ${m} m.`, leadAlone: 'You lead.',
+    // the course map's words
+    mapYou: 'You', mapStart: 'Start',
     timeFree: 'free race', timeDaily: 'today’s race', inStart: 'In the start sequence.', notOver: 'Still to cross the start line.', notOverYou: 'You haven’t crossed the start line yet.',
     kick: 'Game', title: 'Up and down', fun: 'Just for fun — take a break and relax between tests.', sub: 'A race round the marks against the computer boats, under the racing rules. Steer, trim, tack, read the wind.',
     modeK: 'Race', daily: 'Today’s race', free: 'Free race', howK: 'How to play',
@@ -120,6 +123,7 @@ const T = {
     askK: { restart: 'Заново', change: 'Изменить гонку', leave: 'Выход' }, askH: { restart: 'Начать заново?', change: 'Изменить гонку?', leave: 'Выйти из гонки?' },
     askT: { restart: 'Всё начнётся со стартовой процедуры: та же дистанция, тот же ветер.', change: 'Дальше выберешь место, ветер и дистанцию — и гонка начнётся заново.', leave: 'Ты вернёшься в меню гонок.' },
     sailUp: 'Лавировка к', sailDown: (k) => (k ? 'Фордевинд под генакером к' : 'Фордевинд без генакера к'), sailReach: 'Галфвинд к', aheadOf: (n, m) => `${n} впереди на ${m} м.`, leadBy: (m) => `Ты лидируешь на ${m} м.`, leadAlone: 'Ты лидируешь.',
+    mapYou: 'Вы', mapStart: 'Старт',
     timeFree: 'свободная гонка', timeDaily: 'гонка дня', inStart: 'Идёт стартовая процедура.', notOver: 'Стартовая линия ещё впереди.', notOverYou: 'Ты ещё не пересёк стартовую линию.',
     kick: 'Игра', title: 'Up and down', fun: 'Просто для удовольствия — отдохни и расслабься между тестами.', sub: 'Гонка вокруг знаков против компьютерных лодок по правилам. Рули, работай шкотом, делай повороты, читай ветер.',
     modeK: 'Гонка', daily: 'Гонка дня', free: 'Свободная', howK: 'Как играть',
@@ -213,11 +217,10 @@ const fmt = (s) => { s = Math.max(0, s); return `${Math.floor(s / 60)}:${String(
 
 // ---------- the app's light and night themes ----------
 const night = () => (TG ? TG.colorScheme === 'dark' : window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
-let COL = {};
+// the course map draws in the broadcast's tokens (tokens.css, scoped to .bc), read once: a canvas can't use CSS variables
+const INK = mapPalette(((cs) => (k) => cs.getPropertyValue(k))(getComputedStyle(document.querySelector('.bc') || document.documentElement)));
 function applyTheme() {
   document.documentElement.classList.toggle('theme-night', night());
-  const cs = getComputedStyle(document.getElementById('hud')), v = (k) => cs.getPropertyValue(k).trim(); // the minimap draws in the HUD's own colours
-  COL = { ink: v('--ink'), muted: v('--muted'), faint: v('--faint'), accent: v('--accent'), danger: v('--danger'), bg: v('--bg') };
   try { TG && TG.setHeaderColor && TG.setHeaderColor('#070d16'); } catch (e) {} // the broadcast's ground, as every page now
 }
 applyTheme();
@@ -1595,11 +1598,14 @@ function handleMessages() {
 const mini = $('#mini'), mctx = mini.getContext('2d');
 mini.width = mini.height = 360; mctx.setTransform(1.5, 0, 0, 1.5, 0, 0); // drawn at 240, sharp at the bigger size
 mini.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); mini.classList.toggle('big'); });
-// the shore of Göcek bay (and the marinas' pontoons) where it comes into the map, in the map's faint ink; made once
-// for each race and map size
+// its width on the screen: a phone's small map (under 160 px) has no labels or caption, too small there to read
+let mapW = 240;
+if (window.ResizeObserver) new ResizeObserver((es) => { for (const e of es) mapW = e.contentRect.width; }).observe(mini);
+// the shore of Göcek bay (and the marinas' pontoons) where it comes into the map, faint, and the broadcast's grid over
+// the map, every 25 px; made once for each race and map size
 let shore = { key: '' };
 function shoreLayer(ox, oz, s, size) {
-  const key = [race.at.x, race.at.z, ox, oz, s, size, COL.faint].join();
+  const key = [race.at.x, race.at.z, ox, oz, s, size].join();
   if (shore.key === key) return shore.cv;
   const n = size * 2, cv = document.createElement('canvas'); cv.width = cv.height = n;
   const x = cv.getContext('2d'), img = x.createImageData(n, n);
@@ -1608,9 +1614,19 @@ function shoreLayer(ox, oz, s, size) {
     img.data[(j * n + i) * 4 + 3] = r < 0 ? 255 : 0;
   }
   x.putImageData(img, 0, 0);
-  x.globalCompositeOperation = 'source-in'; x.fillStyle = COL.faint; x.fillRect(0, 0, n, n);
+  x.globalCompositeOperation = 'source-in'; x.fillStyle = INK.w10; x.fillRect(0, 0, n, n);
+  x.globalCompositeOperation = 'source-over'; x.strokeStyle = INK.w06; x.lineWidth = 2; x.beginPath();
+  for (let g = 50; g < n; g += 50) { x.moveTo(g, 0); x.lineTo(g, n); x.moveTo(0, g); x.lineTo(n, g); }
+  x.stroke();
   shore = { key, cv };
   return cv;
+}
+// a label's width, measured once (once the web font is in)
+const labelW = new Map();
+function measure(ctx, s) {
+  const k = ctx.font + s; let w = labelW.get(k);
+  if (w === undefined) { w = ctx.measureText(s).width; if (!document.fonts || document.fonts.status === 'loaded') labelW.set(k, w); }
+  return w;
 }
 function drawMap(ctx, size, full) {
   const c = race.course, P = race.player, W = race.wind.dir();
@@ -1626,14 +1642,14 @@ function drawMap(ctx, size, full) {
   ctx.clearRect(0, 0, size, size);
   ctx.drawImage(shoreLayer(ox, oz, s, size), 0, 0, size, size);
   if (!full) for (const g of race.wind.gusts) {
-    ctx.globalAlpha = 0.16 * g.s / race.wind.p.gustStr * (g.k ?? Math.min(1, g.life / 6)); ctx.fillStyle = COL.accent;
+    ctx.globalAlpha = 0.16 * g.s / race.wind.p.gustStr * (g.k ?? Math.min(1, g.life / 6)); ctx.fillStyle = INK.ink;
     ctx.beginPath(); ctx.ellipse(X(g.x), Z(g.z), g.r * s, g.r * 1.35 * s, W, 0, 7); ctx.fill(); // longer down the wind than across
   }
   ctx.globalAlpha = 1;
   // laylines to the beat's mark, for the wind and current now (off a beat, the last beat's, as the ladder below)
   const onBeat = isBeat(c, P.leg), aim = legAim(c, beatOf(c, P.leg));
   if (onBeat || full) {
-    ctx.strokeStyle = COL.faint; ctx.lineWidth = 1.5; ctx.setLineDash([4, 5]);
+    ctx.strokeStyle = INK.w35; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
     const up = beatAngle(race.wind.p.tws) * D2R;
     for (const sd of [-1, 1]) {
       const hd = W + sd * up, L = 600;
@@ -1641,47 +1657,78 @@ function drawMap(ctx, size, full) {
     }
     ctx.setLineDash([]);
   }
-  ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+  ctx.strokeStyle = INK.gold; ctx.lineWidth = 2; // the start line, and a finish line of its own, in the broadcast's gold
   for (const [a, b] of [[c.pin, c.committee], ...(c.finish ? [[c.finish.a, c.finish.b]] : [])]) { ctx.beginPath(); ctx.moveTo(X(a.x), Z(a.z)); ctx.lineTo(X(b.x), Z(b.z)); ctx.stroke(); }
-  ctx.setLineDash([]);
   if (opts.guides) { // the distance lines across the beat, as on the water, every 100 m here
     const j = beatOf(c, P.leg), m = legAim(c, j), beat = beatFrom(c, j).z - m.z, st = Math.max(100, ladderStep(beat));
-    ctx.strokeStyle = COL.ink; ctx.globalAlpha = 0.18; ctx.lineWidth = 1;
+    ctx.strokeStyle = INK.w14; ctx.lineWidth = 1;
     for (let d = st; d < beat - 15; d += st) { const z = m.z + d, hw = Math.min(260, 30 + d * 0.95); ctx.beginPath(); ctx.moveTo(X(m.x - hw), Z(z)); ctx.lineTo(X(m.x + hw), Z(z)); ctx.stroke(); }
-    ctx.globalAlpha = 1;
   }
   const next = legTargets(c, P.leg), inZone = hasZone(c, P.leg) ? next : [];
   ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
   for (const m of zoneMarks(c)) { // the three-length zone (none at a mark reached on a beat: no mark-room there)
-    ctx.strokeStyle = inZone.includes(m) && !full ? COL.accent : COL.ink; ctx.globalAlpha = inZone.includes(m) ? 0.8 : 0.35;
+    ctx.strokeStyle = inZone.includes(m) ? INK.w78 : INK.w25;
     ctx.beginPath(); ctx.arc(X(m.x), Z(m.z), ZONE * s, 0, 7); ctx.stroke();
   }
-  ctx.setLineDash([]); ctx.globalAlpha = 1;
+  ctx.setLineDash([]);
   for (const m of [...Object.values(c.marks), ...c.gate, c.pin, c.committee, ...(c.finish ? [c.finish.a, c.finish.b] : [])]) {
     const hot = next.includes(m) && !full;
-    ctx.fillStyle = hot ? COL.accent : '#ff7a1a';
-    ctx.beginPath(); ctx.arc(X(m.x), Z(m.z), hot ? 4.5 : 3.5, 0, 7); ctx.fill();
+    ctx.fillStyle = INK.buoy; ctx.beginPath(); ctx.arc(X(m.x), Z(m.z), hot ? 4.5 : 3.5, 0, 7); ctx.fill();
+    if (hot) { ctx.strokeStyle = INK.ink; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(X(m.x), Z(m.z), 7.5, 0, 7); ctx.stroke(); } // where you're going
   }
   const tr = P.track; if (tr.length > 1) {
-    ctx.strokeStyle = COL.accent; ctx.globalAlpha = full ? 1 : 0.6; ctx.lineWidth = full ? 2 : 1.2;
+    ctx.strokeStyle = INK.you; ctx.globalAlpha = full ? 1 : 0.5; ctx.lineWidth = full ? 2 : 1.5;
     ctx.beginPath(); tr.forEach(([x, z], i) => (i ? ctx.lineTo(X(x), Z(z)) : ctx.moveTo(X(x), Z(z)))); ctx.lineTo(X(P.x), Z(P.z)); ctx.stroke(); ctx.globalAlpha = 1;
   }
-  for (const b of race.boats) {
+  // the boats: you in your blue on top, the others white, brighter those ahead of you; a penalty ringed in red
+  const rank = race.standings(), me = rank.indexOf(P), tone = (b) => (rank.indexOf(b) < me ? INK.w90 : INK.w62);
+  const hull = (b) => {
+    const you = b === P, k = you ? 1.3 : 1;
     ctx.save(); ctx.translate(X(b.x), Z(b.z)); ctx.rotate(b.h);
-    ctx.fillStyle = b === P ? COL.ink : '#' + b.color.toString(16).padStart(6, '0');
-    const k = b === P ? 1.3 : 1; ctx.beginPath(); ctx.moveTo(0, -6 * k); ctx.lineTo(3.5 * k, 5 * k); ctx.lineTo(-3.5 * k, 5 * k); ctx.closePath(); ctx.fill();
-    if (b.pen) { ctx.strokeStyle = COL.danger; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, 8, 0, 7); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(0, -6 * k); ctx.lineTo(3.5 * k, 5 * k); ctx.lineTo(-3.5 * k, 5 * k); ctx.closePath();
+    ctx.fillStyle = you ? INK.you : tone(b);
+    if (you) { ctx.strokeStyle = INK.inkOn; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke(); }
+    ctx.fill();
+    if (b.pen) { ctx.strokeStyle = INK.live; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, 8, 0, 7); ctx.stroke(); }
     ctx.restore();
-  }
+  };
+  for (const b of race.boats) if (b !== P) hull(b);
+  hull(P);
   // wind arrow, and the current if there is one
   const arrow = (x, y, ang, col, len) => {
     ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.fillStyle = col;
     ctx.beginPath(); ctx.moveTo(0, -len); ctx.lineTo(5, -len + 9); ctx.lineTo(1.5, -len + 9); ctx.lineTo(1.5, len); ctx.lineTo(-1.5, len); ctx.lineTo(-1.5, -len + 9); ctx.lineTo(-5, -len + 9); ctx.closePath(); ctx.fill();
     ctx.restore();
   };
-  arrow(size - 16, 18, W + Math.PI, COL.accent, 10);
+  arrow(size - 16, 18, W + Math.PI, INK.you, 10);
   const cu = race.currentAt(P.x, P.z); // the stream where you are now
-  if (cu.x || cu.z) arrow(16, size - 18, Math.atan2(cu.x, -cu.z), COL.muted, 9);
+  if (cu.x || cu.z) arrow(16, size - 18, Math.atan2(cu.x, -cu.z), INK.w50, 9);
+  if (full || mapW < 160) return;
+  // the caption: where the leg goes (before the start, the line and then the first mark), in the broadcast's capitals
+  const caps = (x) => x.toLocaleUpperCase(LANG), cy = size - 10;
+  const cap = caps(P.leg < 1 ? `${t('mapStart')} · ${t(legKey(c, c.legs[1]))}` : t(legKey(c, c.legs[Math.min(P.leg, c.legs.length - 1)])));
+  ctx.font = `600 12px ${INK.cond}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  const spaced = 'letterSpacing' in ctx; if (spaced) ctx.letterSpacing = '1.5px';
+  const cw = measure(ctx, cap);
+  ctx.strokeStyle = INK.panel; ctx.lineWidth = 3; ctx.strokeText(cap, size / 2, cy); ctx.fillStyle = INK.w62; ctx.fillText(cap, size / 2, cy);
+  if (spaced) ctx.letterSpacing = '0px';
+  // short labels by the boats: you, the boat ahead of you, the one behind and the leader, each named as the fleet board
+  // names her; one that would cover another label, a boat, an arrow or the caption is left out
+  const bold = `700 12px ${INK.cond}`, semi = `600 12px ${INK.cond}`;
+  const items = [];
+  for (const b of [P, rank[me - 1], rank[me + 1], rank[0]]) if (b && !items.some((it) => it.b === b)) {
+    const s = caps(b === P ? t('mapYou') : b.name);
+    ctx.font = b === P ? bold : semi;
+    items.push({ b, s, x: X(b.x), y: Z(b.z), w: measure(ctx, s), h: 12 });
+  }
+  const at = placeLabels(items, { size, dots: race.boats.map((b) => ({ x: X(b.x), y: Z(b.z) })),
+    blocked: [{ x: size - 30, y: 0, w: 30, h: 34 }, { x: 0, y: size - 34, w: 30, h: 34 }, { x: (size - cw) / 2 - 4, y: cy - 8, w: cw + 8, h: 16 }] });
+  ctx.textAlign = 'left'; ctx.strokeStyle = INK.panel; ctx.lineWidth = 3;
+  items.forEach(({ b, s, y }, i) => {
+    if (!at[i]) return;
+    ctx.font = b === P ? bold : semi; ctx.strokeText(s, at[i].x, y);
+    ctx.fillStyle = b === P ? INK.you : b.pen ? INK.live : tone(b); ctx.fillText(s, at[i].x, y);
+  });
 }
 
 

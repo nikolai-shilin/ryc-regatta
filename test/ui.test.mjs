@@ -111,3 +111,22 @@ test('the pages laid out as the pause screen are in the broadcast look', () => {
     for (const part of topLevel(m[1])) assert.match(part.trim(), /^\.bc\b|^\.bt-scr\.bc\b/, part.trim());
   }
 });
+
+test('the course map: its colours are the tokens, and the boats\' labels never cover each other', async () => {
+  const { mapPalette, placeLabels, MAP_TOKENS } = await import('../public/game/course-map.js');
+  // read from the page, or the tokens' own values when it gives none
+  for (const [k, [v, fall]] of Object.entries(MAP_TOKENS)) if (tokens[v] && !tokens[v].includes('var(')) assert.equal(tokens[v], fall, k);
+  assert.equal(mapPalette().you, '#3db8ff');
+  assert.equal(mapPalette((v) => (v === '--gold' ? ' #abcdef ' : '')).gold, '#abcdef');
+  // a label goes right of its dot, else left; one with room nowhere is left out
+  const size = 240, it = (x, y, w = 30) => ({ x, y, w, h: 12 });
+  assert.deepEqual(placeLabels([it(100, 100)], { size, dots: [{ x: 100, y: 100 }] })[0], { x: 109, y: 94, w: 30, h: 12 }); // right of its dot
+  // three in a row: the first's right side would cover the third's boat, so it goes left; the third has no room
+  const dots = [{ x: 60, y: 100 }, { x: 130, y: 100 }, { x: 95, y: 100 }];
+  const [a, b, c] = placeLabels(dots.map((d) => it(d.x, d.y)), { size, dots });
+  assert.deepEqual([a.x, b.x, c], [60 - 9 - 30, 139, null]);
+  assert.equal(placeLabels([it(235, 50)], { size })[0].x, 235 - 9 - 30); // at the edge: to the left
+  assert.equal(placeLabels([it(50, 50)], { size, blocked: [{ x: 55, y: 40, w: 40, h: 20 }] })[0].x, 50 - 9 - 30); // clear of the caption and arrows
+  const main = read('public/game/main.js');
+  for (const k of ['mapYou', 'mapStart']) assert.equal(main.match(new RegExp(`\\b${k}: `, 'g'))?.length, 2, k);
+});
