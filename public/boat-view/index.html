@@ -271,7 +271,10 @@ if (world) {
   };
   const labelCourse = (L) => {
     const U = deco.userData, C = race.course, M = mid(C.pin, C.committee);
-    for (const s of U.tags) { deco.remove(s); s.material.map.dispose(); s.material.dispose(); }
+    // the old names off the water now, disposed once any compile under way is done (world.ready), never under it
+    const old = U.tags;
+    for (const s of old) deco.remove(s);
+    world.ready().then(() => { for (const s of old) { s.material.map.dispose(); s.material.dispose(); } });
     U.tags = [];
     const at = (s, p, y = 9) => { s.position.set(p.x, y, p.z); deco.add(s); U.tags.push(s); };
     if (L.windward) at(tag(L.windward, '#ff8a1e', 0.5, -0.35), C.windward);
@@ -292,6 +295,9 @@ if (world) {
     wind = preset; heel = HEEL[preset];
     race = new Race({ preset, fleet: s.fleet, laps: s.laps, length: s.length, start: s.start, current: !!s.current, course: s.course, seed: 4242 }); // a shape not laid at this venue goes back to up and down (sim.js)
     race.player.done = true; // no pointers, laylines or zones: nothing to sail for yet
+    // the old course's drawing out of the scene first: setRace compiles what the scene holds (world.prepare), and
+    // buildDeco disposes it below, which would leave that compile waiting on materials that are gone
+    if (deco) world.scene.remove(deco);
     world.setRace(race);
     world.mode = 'set-up'; // the drone is flown here (camStep)
     P = race.player; W = race.wind.dir();
