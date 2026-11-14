@@ -5,7 +5,7 @@ import { tx, type Lang } from '@/lib/lang';
 import { DAYTIMES, readOpts, readPb, saveOpts, type Daytime } from '@/lib/opts';
 import type { VenueId } from '@/lib/venues';
 import { shapeOffered, venueOf, VENUES } from '@/lib/venues';
-import { courseDistance, dailyRace, fmtDistance, pbKey, plannedCourse, savedShape, KN, SHAPE_NAME, SHAPES, type Length, type Shape, type Wind } from '@/lib/race';
+import { courseDistance, dailyRace, fmtDistance, pbKey, plannedCourse, raceMinutes, savedShape, KN, SHAPE_NAME, SHAPES, type Length, type Shape, type Wind } from '@/lib/race';
 import { CourseMap } from './course-map';
 import { GameScene, type SceneSetup } from './game-scene';
 import { PauseCard, SettingsRow, type Who } from './pause-card';
@@ -20,10 +20,8 @@ const SHAPE_HINT: Partial<Record<Shape, [string, string]>> = {
 
 type Pick = { venue: VenueId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape; daytime: Daytime };
 
-// a rough guide to the race's length on the water, so a choice shows its effect; each shape's factor is as the computer
-// boats take it, against up and down
-const SHAPE_TIME: Record<Shape, number> = { wl: 1, tri: 1.3, trap: 1.25, wlu: 1.6 };
-const minutes = (p: Pick) => Math.round(({ short: 4.5, medium: 7, long: 9.5 }[p.length] * p.laps * { light: 1.25, medium: 1, strong: 0.9 }[p.preset] * SHAPE_TIME[p.course]) + p.start);
+// a rough guide to the race's length on the water, so a choice shows its effect (lib/race.ts)
+const minutes = raceMinutes;
 // what the scene shows as each choice is made: the fleet, the wind or the current over the course, or the course
 type View = SceneSetup['view'];
 const VIEW_OF: Record<keyof Pick, View> = { venue: 'boats', fleet: 'boats', start: 'boats', preset: 'wind', current: 'current', course: 'course', length: 'course', laps: 'course', daytime: 'boats' };

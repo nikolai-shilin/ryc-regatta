@@ -23,7 +23,8 @@ function Breadcrumbs({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Page; 
 }
 
 // The site's header, as on rycrentals.com: the logo, the site's pages in the middle (from 1100 px wide), and the menu
-// (the burger and your avatar) at the right. On every page: the scrolling ones (home, help, the race result) and the
+// (the burger and your avatar) at the right. On a page in the broadcast look (.bc, styles/broadcast.css) it is the
+// broadcast's bar: the name with the blue mark, the pages as tabs, Play now beside the menu. On every page: the scrolling ones (home, help, the race result) and the
 // app screens, where it sits over the screen and stays short on a phone held sideways.
 // Who is signed in isn't known here (the pages are cached): the avatar and the account link are filled in by lib/me.ts.
 export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Page; crumbs?: Crumb[] }) {
@@ -32,7 +33,7 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
     <header className="hm-head">
       <Breadcrumbs lang={lang} t={t} page={page} crumbs={crumbs} />
       <div className="hm-page hm-head-in">
-        <Link className="hm-brand" href="/" aria-label="RYC · Up and down"><Logo /></Link>
+        <Link className="hm-brand" href="/" aria-label="RYC · Up and down"><Logo /><span className="hm-brand-t">Up and down</span></Link>
         <nav className="hm-nav" aria-label={t('Main', 'Главное')}>
           <Link className="hm-tab" href="/help" {...cur('help')}>{t('How to play', 'Как играть')}</Link>
           <Link className="hm-tab" href="/race" {...cur('race')}>{t('Today’s race', 'Гонка дня')}</Link>
@@ -41,6 +42,8 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
           <Link className="hm-tab" href="/faq" {...cur('faq')}>{t('Questions', 'Вопросы')}</Link>
           <Link className="hm-tab" href="/iyt" {...cur('iyt')}>{'Sailing Certification Test'}</Link>
         </nav>
+        {/* the broadcast look's way in, always at hand (hidden in the old look, styles/ryc.css) */}
+        <a className="hm-play" href="/play?race=today">{t('Play now', 'Играть')}</a>
         <SiteMenu lang={lang} />
       </div>
     </header>

@@ -324,6 +324,7 @@
 .hm-head-in { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3) var(--s-6); min-height: var(--hm-head); }
 .hm-brand { display: inline-flex; color: var(--ink); }
 .hm-brand .logo { width: 56px; height: 28px; }
+.hm-brand-t, .hm-play { display: none; } /* the broadcast look's (styles/broadcast.css) */
 .hm-nav { display: none; justify-content: center; gap: var(--s-1); min-width: 0; }
 .hm-tab { display: inline-flex; align-items: center; height: var(--h-m); padding: 0 var(--s-4); border-radius: var(--r-full); font: 700 var(--t-m)/1 var(--f-sans); color: var(--muted); white-space: nowrap; }
 .hm-tab:hover { color: var(--ink); background: var(--band); }
