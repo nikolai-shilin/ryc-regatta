@@ -179,7 +179,7 @@ function nearHull(h, a, b) {
 // Where the course goes: the start (the race's origin) somewhere in the bay with the marks, the starting area and the
 // beat out to the laylines all in clear water; of the places that fit, the one that puts the windward mark nearest
 // HOME. Only from the course's shape, so the same race is laid in the same place on every device.
-export function placeCourse(course, beatDeg = 42) {
+export function placeCourse(course, beatDeg = 42, startK = 1) {
   const c = course, beat = -c.windward.z, half = c.len / 2, tb = Math.tan(beatDeg * Math.PI / 180);
   const need = []; // [x, z, metres of water round it]
   // every mark: the windward mark, the gate and the line, then the course's other marks and a finish line of its own
@@ -187,6 +187,9 @@ export function placeCourse(course, beatDeg = 42) {
   const fin = c.finish ? [c.finish.a, c.finish.b, c.finishBoat] : [];
   for (const m of [c.windward, ...c.gate, c.pin, c.committee, ...others, ...fin]) need.push([m.x, m.z, 70]);
   for (const f of [-1, -0.5, 0, 0.5, 1]) for (const z of [0, 90, 170]) need.push([f * (half + 60), z, 35]); // the line and the boats below it
+  // a faster class starts startK times as far off and waits there (classes.js; sim.js Race and drive): its fleet's
+  // water below the line, down to where the furthest boat begins
+  for (let z = 260; z < 170 * startK; z += 90) for (const f of [-1, -0.5, 0, 0.5, 1]) need.push([f * (half + 60), z, 35]);
   need.push([0, -beat - 90, 25]); // over the top of the windward mark
   for (const f of [0.25, 0.5, 0.75]) { // the beat, out to most of the way to the laylines
     const w = Math.min(f, 1 - f) * beat * tb * 0.85;
@@ -201,9 +204,25 @@ export function placeCourse(course, beatDeg = 42) {
     if (c.legInfo[i].beat || (a === c.windward && b === c.gate[0]) || need.some((p) => p[0] === m[0] && p[1] === m[1] && p[2] === 50)) continue;
     need.push(m);
   }
+  // and every leg itself, every 40 m of it from where it starts to where it goes (a mark, or the middle of the gate or
+  // a line): an island can lie across a long beat or run between the points above, as across an AC75's (classes.js)
+  const aim = (k) => {
+    if (c.marks[k]) return c.marks[k];
+    const [a, b] = k === 'gate' ? c.gate : k === 'finish' && c.finish ? [c.finish.a, c.finish.b] : [c.pin, c.committee];
+    return { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 };
+  };
+  const along = new Set();
+  for (let i = 1; i < c.legs.length; i++) {
+    const a = aim(c.legs[i - 1]), b = aim(c.legs[i]), n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 40);
+    if (along.has(c.legs[i - 1] + '>' + c.legs[i])) continue;
+    along.add(c.legs[i - 1] + '>' + c.legs[i]);
+    for (let k = 1; k < n; k++) need.push([a.x + ((b.x - a.x) * k) / n, a.z + ((b.z - a.z) * k) / n, 30]);
+  }
   const hull = hullOf(need.map(([x, z]) => [x, z]));
+  // (only on the map of the sea room: off it, where roomAt calls it open sea, the land may go on)
+  const known = (x, z) => x >= M.x0 && z >= M.z0 && x < M.x0 + (M.nx - 1) * M.cell && z < M.z0 + (M.nz - 1) * M.cell;
   const fits = (gx, gz) => {
-    let worst = Infinity; for (const [x, z, r] of need) { worst = Math.min(worst, roomAt(gx + x, gz + z) - r); if (worst < 0) break; }
+    let worst = Infinity; for (const [x, z, r] of need) { worst = Math.min(worst, known(gx + x, gz + z) ? roomAt(gx + x, gz + z) - r : -1); if (worst < 0) break; }
     return worst >= 0 && LOW.some(([a, b]) => nearHull(hull, [a[0] - gx, a[1] - gz], [b[0] - gx, b[1] - gz]) < 40) ? -1 : worst;
   };
   // the nearest start to the middle that fits; none: the one with the most room

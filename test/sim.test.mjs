@@ -299,8 +299,9 @@ test('trapezoid mark 2 counts only when rounded to port', () => {
 // The venues a free race can go to (public/game/venues.js; the set-up page's list is lib/venues.ts). Each one's land,
 // baked by blender/venues.py, must be there, at the venue's own position and turned to its wind; and every course,
 // in every shape the venue offers at each length and in every wind, must be laid with its marks, gate, line and
-// finish line well clear of the shore. Each venue is sailed in a Node of its own, since
-// the game picks its venue once, from the address, as the page loads.
+// finish line well clear of the shore, and every leg sailed from one to the next in clear water too. In the club's
+// 40-footer and in the AC75, whose courses are laid 2.5 times as long (classes.js): each venue and class is sailed in a
+// Node of its own, since the game picks both once, from the address, as the page loads.
 test('the set-up page lists the game’s venues', async () => {
   const { VENUES } = await import('../public/game/venues.js');
   const page = await readFile(new URL('../lib/venues.ts', import.meta.url), 'utf8');
@@ -328,16 +329,18 @@ test('every game script parses', async () => {
   for (const f of readdirSync(dir).filter((n) => n.endsWith('.js'))) execFileSync(process.execPath, ['--check', new URL(f, dir).pathname]);
 });
 const { VENUES } = await import('../public/game/venues.js');
+const { promisify } = await import('node:util');
+const execFileP = promisify((await import('node:child_process')).execFile);
 for (const v of VENUES) {
-  test(`${v.name[0]}: the land is baked, and every course is laid in clear water`, () => {
-    const code = `
+  test(`${v.name[0]}: the land is baked, and every course is laid in clear water`, async () => {
+    const code = (boat) => `
       import { readFile } from 'node:fs/promises';
-      globalThis.location = { search: '?venue=${v.id}' };
+      globalThis.location = { search: '?venue=${v.id}&boat=${boat}' };
       globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))));
       const sim = await import(${JSON.stringify(new URL('../public/game/sim.js', import.meta.url).href)});
       const { SKOPEA, MESH } = await import(${JSON.stringify(new URL('../public/game/land.js', import.meta.url).href)});
       const { VENUE, shapeOffered, lengthOffered } = await import(${JSON.stringify(new URL('../public/game/venues.js', import.meta.url).href)});
-      let worst = Infinity, where = '', under = '';
+      let worst = Infinity, where = '', under = '', legWorst = Infinity, legWhere = '';
       // the bridges too low for a mast: no two of a course's marks on either side of one
       const low = (SKOPEA.meta.landmarks || []).filter((l) => l.a && l.b && (l.deck ?? Infinity) < 25);
       const side = (p, q, w) => Math.sign((q[0] - p[0]) * (w[1] - p[1]) - (q[1] - p[1]) * (w[0] - p[0]));
@@ -351,16 +354,27 @@ for (const v of VENUES) {
           const room = r.roomAt(m.x, m.z);
           if (room < worst) { worst = room; where = course + ' ' + preset + ' ' + length; }
         }
+        // each leg, every 10 m of it from where it starts (a mark, or the middle of the gate or a line) to where it goes
+        for (let i = 1; i < c.legs.length; i++) {
+          const a = sim.legAim(c, i - 1), b = sim.legAim(c, i), n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 10);
+          for (let k = 0; k <= n; k++) {
+            const room = r.roomAt(a.x + ((b.x - a.x) * k) / n, a.z + ((b.z - a.z) * k) / n);
+            if (room < legWorst) { legWorst = room; legWhere = course + ' ' + preset + ' ' + length + ', ' + c.legs[i - 1] + ' to ' + c.legs[i]; }
+          }
+        }
         const xz = ms.map((m) => [m.x + r.at.x, m.z + r.at.z]);
         for (const l of low) for (const p of xz) for (const q of xz) if (across(p, q, l.a, l.b)) under = course + ' ' + preset + ' ' + length;
       }
-      console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, under, corners: MESH.corners, heights: SKOPEA.parts.heights.length }));`;
-    const out = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' }));
-    assert.deepEqual(out.origin, [v.lat, v.lon], 'baked at the venue’s position');
-    assert.equal(out.turn, v.wind, 'turned to the venue’s wind');
-    assert.ok(out.worst >= 60, `a mark only ${Math.round(out.worst)} m from the shore (${out.where})`);
-    assert.equal(out.under, '', 'a course across a bridge too low for a mast');
-    assert.equal(out.corners, out.heights, 'the terrain the game builds from the quadtree has a height for each of its corners');
+      console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, legWorst, legWhere, under, corners: MESH.corners, heights: SKOPEA.parts.heights.length }));`;
+    const runs = await Promise.all(['club40', 'ac75'].map(async (boat) => [boat, JSON.parse((await execFileP(process.execPath, ['--input-type=module', '-e', code(boat)], { encoding: 'utf8' })).stdout)]));
+    for (const [boat, out] of runs) {
+      assert.deepEqual(out.origin, [v.lat, v.lon], 'baked at the venue’s position');
+      assert.equal(out.turn, v.wind, 'turned to the venue’s wind');
+      assert.ok(out.worst >= 60, `${boat}: a mark only ${Math.round(out.worst)} m from the shore (${out.where})`);
+      assert.ok(out.legWorst >= 20, `${boat}: a leg only ${Math.round(out.legWorst)} m from the shore (${out.legWhere})`);
+      assert.equal(out.under, '', `${boat}: a course across a bridge too low for a mast`);
+      assert.equal(out.corners, out.heights, 'the terrain the game builds from the quadtree has a height for each of its corners');
+    }
   });
 }
 

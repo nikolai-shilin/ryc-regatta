@@ -695,17 +695,29 @@ export class Race {
     course = laidShape(course, length); // unknown, or not laid here: up and down
     const bias = (this.rand() - 0.5) * 2 * 8 * D2R;
     fleet = clamp(Math.round(fleet), 2, FLEET.length + 1);
-    this.course = K === 1 ? makeCourse(laps, beatLen, bias, fleet, course) : scaleCourse(makeCourse(laps, beatLen / K, bias, fleet, course), K);
-    // the gusts cover the course out to the side too: a triangle's wing mark, a trapezoid's gate
-    this.wind = new Wind(preset, seed, beatLen, course === 'tri' ? 0.85 * beatLen : course === 'trap' ? -Math.min(...this.course.gate.map((g) => g.x)) : 0);
-    // laid in the venue's water, in the clear nearest the middle of its race area (land.js): the start is at this point
-    this.at = placeCourse(this.course, beatAngle(this.wind.p.tws));
-    // a bigger class's course (classes.js) that has no room here in its shape: up and down, which needs the least
-    if (this.at?.spare && K > 1 && course !== 'wl') {
-      course = 'wl';
-      this.course = scaleCourse(makeCourse(laps, beatLen / K, bias, fleet, course), K);
-      this.wind = new Wind(preset, seed, beatLen, 0);
-      this.at = placeCourse(this.course, beatAngle(this.wind.p.tws));
+    const lay = (shape, beat) => {
+      this.course = K === 1 ? makeCourse(laps, beat, bias, fleet, shape) : scaleCourse(makeCourse(laps, beat / K, bias, fleet, shape), K);
+      // the gusts cover the course out to the side too: a triangle's wing mark, a trapezoid's gate
+      this.wind = new Wind(preset, seed, beat, shape === 'tri' ? 0.85 * beat : shape === 'trap' ? -Math.min(...this.course.gate.map((g) => g.x)) : 0);
+      // laid in the venue's water, in the clear nearest the middle of its race area (land.js): the start is at this point
+      this.at = placeCourse(this.course, beatAngle(this.wind.p.tws), this.startK);
+    };
+    this.startK = CLS.startK; // how much further off the line than the 40-footer her fleet starts and waits (classes.js)
+    lay(course, beatLen);
+    // a bigger class's course (classes.js) that has no room here as asked: up and down, which needs the least; then
+    // the shorter lengths, the shape and then up and down at each; then up and down smaller still, as far as the
+    // club's own short course. Never across the land, where the fleet would sail onto the shore and stay there
+    if (this.at?.spare && K > 1) {
+      const lens = ['long', 'medium', 'short'], per = beatLen / (COURSE_LEN[length] || 1), tries = [];
+      for (const l of lens.slice(lens.indexOf(length))) for (const s of new Set([course, 'wl'])) if (shapeOffered(VENUE, s, l)) tries.push([s, per * COURSE_LEN[l]]);
+      for (let f = 0.8; per * f >= per / CLS.courseK - 1e-6; f *= 0.8) tries.push(['wl', per * f]);
+      // each with her fleet starting nearer the line where the water below it is too narrow to wait so far off (a river)
+      const sks = [CLS.startK, ...[3, 2, 1.5].filter((k) => k < CLS.startK)];
+      search: for (const [i, [s, b]] of tries.entries()) for (const sk of sks) {
+        if (sk === CLS.startK && !i) continue; // laid already
+        this.startK = sk; lay(s, b);
+        if (!this.at?.spare) break search;
+      }
     }
     this.seq = SEQUENCES[start] || SEQUENCES[1];
     this.clock = this.seq[0].t - (start === 1 ? 4 : 8); // negative before the gun
@@ -741,7 +753,7 @@ export class Race {
     const W = this.wind.dir(), beat = beatAngle(this.wind.p.tws);
     const half = this.course.len / 2;
     const near = start === 1 ? 0.55 : 1; // a one-minute start: the fleet begins closer to the line, so all can make it
-    const SK = CLS.startK; // a faster class starts further off the line
+    const SK = this.startK; // a faster class starts further off the line
     this.player = new Boat({ name: 'You', x: 25 * K, z: (fleet > 4 ? 78 : 95) * near * SK, h: wrap(W - beat * D2R), v: 2, autoTrim });
     const full = fullHeel(this.wind.p.tws * 1.4, 28, false);
     this.player.sheet = sheetFor(idealSail(28) + depowerFor(full));
@@ -1243,8 +1255,8 @@ export class Race {
         // waiting: to and fro below the line; the port-tack boat waits off the pin end
         // (each round her own part of the line, so the fleet waits spread out; it bunches only on the run in)
         const own = { x: lerp(c.pin.x, c.committee.x, ai.lineT), z: lerp(c.pin.z, c.committee.z, ai.lineT) };
-        // (a faster class waits further off, startK times: classes.js)
-        const SK = CLS.startK, home = ai.port ? { x: c.pin.x - 20 * SK, z: own.z + 40 * SK } : { x: clamp(own.x + ai.loiter * 35 * SK, c.pin.x + 15 * SK, c.committee.x - 15 * SK), z: own.z + 55 * SK };
+        // (a faster class waits further off, startK times: classes.js, as far as the venue has water for: Race)
+        const SK = this.startK, home = ai.port ? { x: c.pin.x - 20 * SK, z: own.z + 40 * SK } : { x: clamp(own.x + ai.loiter * 35 * SK, c.pin.x + 15 * SK, c.committee.x - 15 * SK), z: own.z + 55 * SK };
         // a stream setting her up to the line: she waits further off by what it carries her in half a minute, and steers
         // for a point up-tide of where she means to be, so she isn't swept over the line before the gun
         const upN = Math.max(0, curN) * 30; home.x -= c.normal.x * upN; home.z -= c.normal.z * upN;
@@ -1252,7 +1264,7 @@ export class Race {
         const eh = Math.min(60, Math.hypot(home.x - b.x, home.z - b.z) / Math.max(1.5, b.v));
         tx = home.x - cur.x * eh * ai.skill; tz = home.z - cur.z * eh * ai.skill;
       } else {
-        tx = pt.x + c.normal.x * 30 * CLS.startK; tz = pt.z + c.normal.z * 30 * CLS.startK;
+        tx = pt.x + c.normal.x * 30 * this.startK; tz = pt.z + c.normal.z * 30 * this.startK;
         // too early for the distance left: stop and hold her place (luffed, main out — she backs and stays put);
         // under U or the black flag, a few seconds more careful
         // (the sheet well out, the sails flapping: she slows nearly to a stop without going astern). She goes when the
@@ -1260,10 +1272,10 @@ export class Race {
         // black flag, a few more.
         // (with the stream behind her, a few seconds more: it carries her on whatever she does)
         const dl = -lineD(c, b), need = Math.max(0, dl) / sp + lag, margin = (this.prepFlag === 'P' ? 3 * (1 - ai.skill) + ai.dare : 2 + 3 * (1 - ai.skill) + Math.max(0, ai.dare)) + 4 * Math.max(0, curN);
-        if (this.clock < -1 && dl < (16 + margin * 2) * CLS.startK && (-this.clock > need + margin || dl < (1.5 + margin) * CLS.startK)) {
+        if (this.clock < -1 && dl < (16 + margin * 2) * this.startK && (-this.clock > need + margin || dl < (1.5 + margin) * this.startK)) {
           // a stream setting her up to the line would carry her over before the gun while she waits: she bears away
           // and sails back down a little, then comes up to it again
-          if (curN > 0 && dl < curN * -this.clock + (3 + margin) * CLS.startK) { this.steerTo(b, W - 130 * D2R * sgn(b.twa)); b.autoTrim = true; return; }
+          if (curN > 0 && dl < curN * -this.clock + (3 + margin) * this.startK) { this.steerTo(b, W - 130 * D2R * sgn(b.twa)); b.autoTrim = true; return; }
           // with a boat close to windward she can't luff into it (rule 16): she only lets the sheet go and slows
           const ux = Math.sin(W), uz = -Math.cos(W);
           const crowded = this.boats.some((o) => o !== b && !o.done && Math.hypot(o.x - b.x, o.z - b.z) < 2 * HULL && (o.x - b.x) * ux + (o.z - b.z) * uz > 0);
@@ -1331,6 +1343,22 @@ export class Race {
       want = W - toward * down;
     }
     else want = brg;
+    // keep off the shore: with land a few seconds' sailing ahead on the heading she wants (further at speed, as an
+    // AC75's), she takes the nearest sailable heading on this tack with water ahead; with none, she tacks or gybes
+    // onto the other if it has water, else takes the heading with the most
+    const look = Math.max(60, b.v * 8), wet = (h) => Math.min(...[0.4, 0.7, 1].map((f) => this.roomAt(b.x + Math.sin(h) * look * f, b.z - Math.cos(h) * look * f)));
+    if (wet(want) < 25) {
+      const sideOf = (h) => -sgn(wrap(h - W)); // the tack a heading is on
+      let same = null, sw = -Infinity, ow = -Infinity; // the best on this tack, and how good the other's best is
+      for (let d = 0; d <= 180; d += 15) for (const s of d % 180 ? [1, -1] : [1]) {
+        const h = want + s * d * D2R;
+        if (!this.canSail(h, W, b.tws)) continue;
+        const w = wet(h), score = w >= 25 ? 1000 - d : w;
+        if (sideOf(h) === tack) { if (score > sw) { sw = score; same = h; } } else ow = Math.max(ow, score);
+      }
+      if (sw < 1000 && ow > sw && this.clock - ai.lastTack > 5 && this.tackClear(b)) { ai.lastTack = this.clock; b.tackOrGybe(); return; }
+      if (same !== null) want = same;
+    }
     // don't hit a mark: turn to a heading that can be sailed and clears it, or tack if there is none
     const marks = this.obstacles();
     const markClear = (h) => { // the room a heading leaves to the marks ahead (99: none in the way)
