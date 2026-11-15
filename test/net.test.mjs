@@ -15,6 +15,7 @@ class FakeSocket {
   close() { this.readyState = 3; this.onclose?.({}); }
 }
 const frames = (s, event) => s.sent.filter((f) => f.event === event);
+const answerHb = (s) => { const h = frames(s, 'heartbeat').at(-1); s.recv({ topic: 'phoenix', event: 'phx_reply', payload: { status: 'ok' }, ref: h.ref }); };
 const tick = () => new Promise((r) => setImmediate(r));
 
 function setup() {
@@ -65,6 +66,7 @@ test('heartbeats every 25 s and rejoins after a reconnect', async () => {
     const hb = frames(s1, 'heartbeat');
     assert.equal(hb.length, 1);
     assert.equal(hb[0].topic, 'phoenix');
+    answerHb(s1);
     mock.timers.tick(25000);
     assert.equal(frames(s1, 'heartbeat').length, 2);
 
@@ -91,10 +93,71 @@ test('heartbeats every 25 s and rejoins after a reconnect', async () => {
   } finally { mock.timers.reset(); }
 });
 
+test('an unanswered heartbeat closes the socket, then reconnects and rejoins', async () => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+  try {
+    const { rt, ch, joined, sock } = setup();
+    const s1 = sock(); s1.open(); ackJoin(s1); await joined;
+    mock.timers.tick(25000); // heartbeat 1, unanswered
+    assert.equal(s1.readyState, 1);
+    mock.timers.tick(25000); // next tick: dead link
+    assert.equal(s1.readyState, 3);
+    assert.equal(FakeSocket.all.length, 1);
+    mock.timers.tick(1000);
+    assert.equal(FakeSocket.all.length, 2);
+    const s2 = sock(); s2.open();
+    assert.equal(frames(s2, 'phx_join').length, 1);
+    ackJoin(s2); ch.send('ok', {});
+    assert.equal(frames(s2, 'broadcast').length, 1);
+    rt.close();
+  } finally { mock.timers.reset(); }
+});
+
+test('a phx_error on a joined channel rejoins it, and sends wait for the ack', async (t) => {
+  const { rt, ch, joined, sock } = setup();
+  t.after(() => rt.close());
+  const s = sock(); s.open(); ackJoin(s); await joined;
+  s.recv({ topic: 'realtime:match:ABC123', event: 'phx_error', payload: {}, ref: '9' });
+  assert.equal(frames(s, 'phx_join').length, 2);
+  ch.send('lost', {});
+  assert.equal(frames(s, 'broadcast').length, 0);
+  ackJoin(s);
+  ch.send('back', {});
+  assert.equal(frames(s, 'broadcast').length, 1);
+});
+
+test('join rejects after 10 s without an ack, and a later ack still joins', async () => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+  try {
+    const { rt, ch, joined, sock } = setup();
+    const s = sock(); s.open();
+    const failed = assert.rejects(joined, /timed out/);
+    mock.timers.tick(10000);
+    await failed;
+    ackJoin(s);
+    ch.send('late', {});
+    assert.equal(frames(s, 'broadcast').length, 1);
+    rt.close();
+  } finally { mock.timers.reset(); }
+});
+
+test('leave settles a pending join', async () => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+  try {
+    const { rt, ch, joined, sock } = setup();
+    sock().open();
+    const failed = assert.rejects(joined, /left/);
+    ch.leave();
+    await failed;
+    rt.close();
+  } finally { mock.timers.reset(); }
+});
+
 test('reconnect delays run 1, 2, 5, then every 10 s', () => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
   try {
-    const { sock } = setup();
+    const { sock, joined } = setup();
+    joined.catch(() => {}); // it times out while the socket never answers
     const delays = [1000, 2000, 5000, 10000, 10000];
     for (const d of delays) {
       const n = FakeSocket.all.length;
