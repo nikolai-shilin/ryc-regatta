@@ -129,7 +129,7 @@ VENUES = {
                       landmarks=[dict(kind='tower', style='boc', at=(22.279265, 114.16157), b=(22.27956, 114.16139), h=367, clear=40),  # the Bank of China Tower, `b` a corner
                                  dict(kind='wheel', at=(22.28530, 114.16175), b=(22.28538, 114.16200), h=60)]),  # the Observation Wheel on Central's waterfront, facing the harbour
     # Table Bay off the V&A Waterfront, in the south-easterly Cape Doctor off Table Mountain
-    'cape-town': dict(zoom=14, most=11000, relations=True, home=(-33.8978, 18.4556), wind=160, towns=[(-33.9050, 18.4200, 1000), (-33.9150, 18.3950, 900), (-33.9230, 18.4250, 1200)],
+    'cape-town': dict(zoom=14, most=11000, relations=True, plain=(15, 45), paved=True, trees=True, home=(-33.8978, 18.4556), wind=160, towns=[(-33.9050, 18.4200, 1000), (-33.9150, 18.3950, 900), (-33.9230, 18.4250, 1200)],
                       landmarks=[dict(kind='lighthouse', at=(-33.90142, 18.39992), h=16),
                                  dict(kind='wheel', at=(-33.90268, 18.41929), b=(-33.90238, 18.41924), h=40)]),  # the Cape Wheel at the V&A Waterfront, facing the bay
     # the 2004 Olympic waters in Faliro Bay, in the meltemi off the land, the Acropolis upwind
