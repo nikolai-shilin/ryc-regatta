@@ -41,14 +41,14 @@ const GUST: Record<Wind, [number, number]> = { light: [9, 12], medium: [16, 13],
 export default function FreeSetup({ lang, from }: { lang: Lang; from: 'today' | 'race' | null }) {
   const fromToday = from === 'today';
   const t = tx(lang);
-  const [p, setP] = useState<Pick>({ venue: 'gocek', yacht: 'club40', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any' });
+  const [p, setP] = useState<Pick>({ venue: 'gocek', yacht: 'jpk1050', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any' });
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const o = readOpts();
     const d = dailyRace();
     const venue = venueOf(o.venue).id, daytime = DAYTIMES.includes(o.daytime) ? o.daytime : 'any';
     // a yacht asked for in the address (the yachts page's Race her), else the one last raced
-    const asked = new URLSearchParams(location.search).get('yacht'), yacht = isYacht(asked) ? asked : isYacht(o.yacht) ? o.yacht : 'club40';
+    const asked = new URLSearchParams(location.search).get('yacht'), yacht = isYacht(asked) ? asked : isYacht(o.yacht) ? o.yacht : 'jpk1050';
     const start: Pick = fromToday ? { venue: d.venue, yacht: d.yacht, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course, daytime }
       : { venue, yacht, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: savedShape(o.course), daytime };
     setP(start); if (from) setBase(start);

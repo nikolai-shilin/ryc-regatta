@@ -2,9 +2,9 @@
 // yachts page (/yachts), the fleet page (/fleet) and the free race's set-up say about each. Today's race is sailed
 // in a new one every day (lib/race.ts dailyYacht); a free race in any.
 
-export type YachtId = 'club40' | 'bavaria46' | 'j70' | 'rs21' | 'laser' | 'ac75';
-export const YACHT_IDS: readonly YachtId[] = ['club40', 'bavaria46', 'j70', 'rs21', 'laser', 'ac75'];
-export const DEFAULT_YACHT: YachtId = 'club40';
+export type YachtId = 'jpk1050' | 'bavaria46' | 'j70' | 'rs21' | 'laser' | 'ac75';
+export const YACHT_IDS: readonly YachtId[] = ['jpk1050', 'bavaria46', 'j70', 'rs21', 'laser', 'ac75'];
+export const DEFAULT_YACHT: YachtId = 'jpk1050';
 export const isYacht = (v: unknown): v is YachtId => typeof v === 'string' && (YACHT_IDS as readonly string[]).includes(v);
 
 type T2 = [string, string]; // English, Russian
@@ -15,30 +15,32 @@ export type Yacht = {
   race: T2; // how she sails in the game
   specs: { k: T2; v: T2 }[];
   speed: { up: number; down: number }; // knots, close-hauled and at her best downwind angle, in 12 knots of breeze (classes.js)
-  // the free race: courses laid this many times longer than the club's boat's (classes.js courseK), and how long a race
+  // the free race: courses laid this many times longer than the JPK 1050's (classes.js courseK), and how long a race
   // takes her against it
   courseK: number; lineK: number; timeK: number;
 };
 
 export const YACHTS: Yacht[] = [
   {
-    id: 'club40',
-    name: ['Club 40', 'Клуб 40'],
-    kind: ['40-foot racer-cruiser', '40-футовая крейсерско-гоночная яхта'],
-    tagline: ['The club’s own boat, the one most clubs race on weekends.', 'Яхта клуба — на таких гоняются по выходным.'],
+    id: 'jpk1050',
+    name: ['JPK 1050', 'JPK 1050'],
+    kind: ['34-foot offshore racer', '34-футовая офшорная гоночная яхта'],
+    tagline: ['The boat that won the 2025 Fastnet outright, sailed two-handed.', 'Яхта, выигравшая Фастнет-2025 в абсолютном зачёте — вдвоём.'],
     about: [
-      ['A 40-foot racer-cruiser of the kind most clubs race on weekends: a lofted hull with a chine aft, a coachroof and a wheel, a carbon rig with two sets of swept spreaders, a square-top main, a jib and an asymmetric gennaker on a bowsprit, and a code zero for light-air reaching.',
-        '40-футовая крейсерско-гоночная яхта — на таких гоняется большинство клубов по выходным: корпус со скулой в корме, рубка и штурвал, карбоновая мачта с двумя ярусами краспиц, грот с квадратной головой, стаксель и асимметричный генакер на бушприте, а для слабого ветра — код зеро.'],
-      ['She sails to a polar built from 193 official ORC certificates of a popular 40-foot class: seven and a half tonnes that carry their way through a tack and take a while to get going again.',
-        'Её скорости — из поляры по 193 официальным мерительным сертификатам ORC популярного 40-футового класса: семь с половиной тонн, которые хорошо несут инерцию в повороте и не сразу разгоняются снова.'],
+      ['JPK Composites of Lorient, in Brittany, builds offshore racers for crews of two and more. The JPK 1050, drawn by Jacques Valer and Jean-Baptiste Dejeanty, was launched in 2025, and that summer Alexis Loison and Jean-Pierre Kelbert sailed her two-handed to win the centenary Rolex Fastnet Race outright.',
+        'Верфь JPK Composites из Лорьяна в Бретани строит офшорные гоночные яхты для экипажей от двух человек. JPK 1050 по проекту Жака Валера и Жана-Батиста Дежанти спустили на воду в 2025 году, и тем же летом Алексис Луазон и Жан-Пьер Кельбер вдвоём выиграли на ней юбилейную гонку Rolex Fastnet в абсолютном зачёте.'],
+      ['Her hull takes after the scows: full sections forward, the waterline starting nearly a metre aft of the stem, the beam carried aft to a wide transom with twin lifting rudders, and a T-keel with a lead bulb. She is steered with a tiller; the rig is a carbon mast with one set of swept spreaders and twin backstays, a square-top main, a gennaker on a fixed carbon bowsprit and a code zero.',
+        'Корпус — по мотивам скоу: полные обводы в носу, где ватерлиния начинается почти в метре за форштевнем, ширина вынесена в корму к широкому транцу с двумя подъёмными рулями, Т-образный киль со свинцовым бульбом. Управляется румпелем; рангоут — карбоновая мачта с одним ярусом отогнутых назад краспиц и двумя бакштагами, грот с квадратной головой, генакер на неподвижном карбоновом бушприте и код зеро.'],
+      ['She sails to the speeds of a JPK 1050’s official ORC certificate: some three and a half tonnes, quick to get going and quick to lose way, and from about 16 knots of wind she planes on the reaches and runs.',
+        'Её скорости — из официального мерительного сертификата ORC одной из JPK 1050: около трёх с половиной тонн — она быстро разгоняется и быстро теряет ход, а с 16 узлов ветра на полных курсах выходит на глиссирование.'],
     ],
-    race: ['Four crew: trim the main and jib, hoist the gennaker on the runs, change to the J3 and tie in a reef when it blows.', 'Экипаж из четырёх: настраивай грот и стаксель, ставь генакер на полных курсах, в сильный ветер меняй стаксель на J3 и бери риф.'],
+    race: ['Four crew: the helm on the tiller, trim the main and jib, hoist the gennaker on the runs, change to the J3 and tie in a reef when it blows. Light for her size: a tack costs her less than it would a heavier boat, a stall more.', 'Экипаж из четырёх: рулевой на румпеле, настраивай грот и стаксель, ставь генакер на полных курсах, в сильный ветер меняй стаксель на J3 и бери риф. Лёгкая для своего размера: поворот обходится ей дешевле, чем тяжёлой лодке, а потеря хода — дороже.'],
     specs: [
-      { k: ['Length', 'Длина'], v: ['12.2 m', '12,2 м'] }, { k: ['Beam', 'Ширина'], v: ['3.7 m', '3,7 м'] },
-      { k: ['Displacement', 'Водоизмещение'], v: ['7.5 t', '7,5 т'] }, { k: ['Crew', 'Экипаж'], v: ['4', '4'] },
-      { k: ['Sails', 'Паруса'], v: ['Main, jib, J3, gennaker, code zero', 'Грот, стаксель, J3, генакер, код зеро'] },
+      { k: ['Length', 'Длина'], v: ['10.45 m', '10,45 м'] }, { k: ['Beam', 'Ширина'], v: ['3.54 m', '3,54 м'] },
+      { k: ['Displacement', 'Водоизмещение'], v: ['3.5 t', '3,5 т'] }, { k: ['Draft', 'Осадка'], v: ['2.2 m', '2,2 м'] },
+      { k: ['Crew', 'Экипаж'], v: ['4', '4'] }, { k: ['Sails', 'Паруса'], v: ['Main, jib, J3, gennaker, code zero', 'Грот, стаксель, J3, генакер, код зеро'] },
     ],
-    speed: { up: 6.6, down: 8.1 }, courseK: 1, lineK: 1, timeK: 1,
+    speed: { up: 6.7, down: 8.6 }, courseK: 1, lineK: 1, timeK: 1,
   },
   {
     id: 'bavaria46',
@@ -67,8 +69,8 @@ export const YACHTS: Yacht[] = [
     about: [
       ['Designed by Rod Johnstone and launched in 2012, the J/70 became the fastest-growing keelboat class in the world, with thousands built and world championships of more than a hundred boats. Her fin keel with a lead bulb, retractable carbon bowsprit and big asymmetric spinnaker make her a planing sportboat you can still trailer behind a car.',
         'Спроектирован Родом Джонстоном и спущен в 2012 году — J/70 стал самым быстрорастущим килевым классом в мире: построены тысячи лодок, на чемпионаты мира выходят больше ста. Плавниковый киль с бульбом, выдвижной карбоновый бушприт и большой асимметричный спинакер делают его глиссирующим спортботом, который всё равно можно возить на прицепе.'],
-      ['Three to five sail her, hiked out hard on the rail upwind. She weighs about 800 kg, so she jumps up to speed out of a tack and loses it just as fast, and from about 12 knots of wind she planes downwind, faster than the 40-footer.',
-        'Ходят на нём втроём-впятером, на лавировке — в жёсткой откренке на борту. Лодка весит около 800 кг: из поворота разгоняется мгновенно и так же быстро теряет ход, а с 12 узлов ветра на полных курсах выходит на глиссирование — быстрее 40-футовика.'],
+      ['Three to five sail her, hiked out hard on the rail upwind. She weighs about 800 kg, so she jumps up to speed out of a tack and loses it just as fast, and from about 12 knots of wind she planes downwind, faster than the JPK 1050.',
+        'Ходят на нём втроём-впятером, на лавировке — в жёсткой откренке на борту. Лодка весит около 800 кг: из поворота разгоняется мгновенно и так же быстро теряет ход, а с 12 узлов ветра на полных курсах выходит на глиссирование — быстрее JPK 1050.'],
     ],
     race: ['Sharp and twitchy: tacks cost little but stalls cost a lot. Fly the kite early and steer the waves to keep her planing. No code zero, no reef, one jib.', 'Острый и нервный: повороты почти ничего не стоят, а потеря хода — дорого. Ставь спинакер пораньше и веди по волне, чтобы держать глиссирование. Без код зеро, без рифа, один стаксель.'],
     specs: [

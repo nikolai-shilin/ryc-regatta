@@ -1,4 +1,4 @@
-// Regatta: the other classes' yachts, built in code like the club's 40-footer (yacht.js) and dressed the same way —
+// Regatta: the other classes' yachts, built in code like the JPK 1050 (yacht.js) and dressed the same way —
 // your colours, sail number, logo and flag, the sponsor's ad on the jib. Each is drawn at her real size (drawnL in
 // classes.js): the sportboats — the J/70 (tiller, cuddy, retractable sprit and asymmetric kite, four hiking on the
 // rail) and the RS21 (the same idea with a wide open cockpit, no cuddy, three aboard) — the Laser (ILCA) dinghy (one
@@ -25,7 +25,7 @@ export function makeBoatView(o, cls = CLS) {
 // ---------- a lofted hull ----------
 // H: L (m), hb(t) half-beam, sheer(t), depth(t) of the canoe body under the waterline, n(t) the sections' squareness
 // (a superellipse: 2 round … 3 boxy), with t = 0 at the transom and 1 at the stem. H.chine, if given, is a hard chine
-// as the club's boat has (blender/yacht.py hull_point): y(t) its height, w(t) how hard it is (1 hard … 0 the round
+// as the JPK 1050 has (blender/yacht.py hull_point): y(t) its height, w(t) how hard it is (1 hard … 0 the round
 // section), dead(t) the bottom's deadrise there in degrees, flat the bottom's depth as a share of the canoe's
 const smooth = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t); };
 function hullOf(H) {
@@ -264,7 +264,7 @@ function bulbGeo(len, r, seg = 14) {
   }
   return new THREE.LatheGeometry(pts, seg).rotateX(Math.PI / 2).translate(0, 0, -len * 0.42);
 }
-// (the winches, blocks, clutches, wheels and the like are yacht.js's fittings, shared with the club's boat)
+// (the winches, blocks, clutches, wheels and the like are yacht.js's fittings, shared with the JPK 1050)
 // a cam cleat: two jaws on a base
 const camGeo = () => mergeGeometries([new THREE.BoxGeometry(0.06, 0.012, 0.09), new THREE.BoxGeometry(0.014, 0.03, 0.06).translate(-0.018, 0.02, 0), new THREE.BoxGeometry(0.014, 0.03, 0.06).translate(0.018, 0.02, 0)]);
 // the deck's moulded non-skid (in metres, as the club boat's, without her baked shade) and its smooth gelcoat
@@ -308,7 +308,7 @@ function windex(add, y, z) {
   return w;
 }
 
-// ---------- what both share with the club's boat ----------
+// ---------- what both share with the JPK 1050 ----------
 class ClassView {
   start() {
     this.root = new THREE.Group();
@@ -342,7 +342,7 @@ class ClassView {
     this.tilt.rotation.z = side * b.heel * this.cls.heelShow * D2R + roll;
     return side;
   }
-  // the jib on its stay, its sheets, the telltales and the masthead vane: as on the club's boat
+  // the jib on its stay, its sheets, the telltales and the masthead vane: as on the JPK 1050
   jibAndTells(b, t, side, belly, luff, ph, sheetTo) {
     const ja = Math.min((b.jibSail ?? b.sail) * D2R * 0.8 + 3 * D2R, (this.jibMax ?? 30) * D2R);
     this.jibPivot.quaternion.setFromAxisAngle(this.jibAxis, -this.sailSide * ja);

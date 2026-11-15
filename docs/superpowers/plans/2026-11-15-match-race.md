@@ -391,8 +391,8 @@ test('the message budget: one minute of racing under 30 a second', () => { /* co
 
 - [ ] **Step 1: Implement the pages, the route and the card**
 - [ ] **Step 2: Verify** — `npm run typecheck && npm run build` → no errors. `preview_start` the dev server and
-  check: `/match/new` → Create → `/play?match=XXXXXX&venue=…&boat=…`; `/match/abc` → 404; `/match/K7M2QZ?v=cowes&b=club40`
-  shows Join, which opens `/play?match=K7M2QZ&venue=cowes&boat=club40`; `curl -s localhost:5193/connect` → JSON
+  check: `/match/new` → Create → `/play?match=XXXXXX&venue=…&boat=…`; `/match/abc` → 404; `/match/K7M2QZ?v=cowes&b=jpk1050`
+  shows Join, which opens `/play?match=K7M2QZ&venue=cowes&boat=jpk1050`; `curl -s localhost:5193/connect` → JSON
   with `url` and `key`; `/ru/match/new` reads in Russian.
 - [ ] **Step 3: Run all tests** — `npm test` → PASS.
 - [ ] **Step 4: Commit** — `git commit -m "Match race pages: set-up, link, connection"`

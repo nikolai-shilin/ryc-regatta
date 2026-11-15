@@ -74,15 +74,15 @@ test('today’s race goes round the venues, and the play page preloads the day�
   }
 });
 
-// today's yacht: the club's 40-footer until the classes join, then each in turn, never the same two days running
+// today's yacht: the JPK 1050 until the classes join, then each in turn, never the same two days running
 test('today’s race goes round the yachts, a new one every day', async () => {
   const { DAILY_YACHTS, YACHT_ROUNDS, CLASSES, dailyYacht } = await import('../public/game/classes.js');
   const { YACHT_IDS } = await import('../lib/yachts.ts');
   assert.deepEqual(site.DAILY_YACHTS, DAILY_YACHTS);
   for (const id of Object.keys(DAILY_YACHTS)) assert.ok(CLASSES[id] && YACHT_IDS.includes(id), id);
   const first = Math.min(...Object.values(DAILY_YACHTS).map((s) => Date.parse(s)));
-  for (let t = Date.UTC(2026, 0, 1); t < first; t += 864e5) assert.equal(dailyYacht(new Date(t)), 'club40');
-  let prev = 'club40';
+  for (let t = Date.UTC(2026, 0, 1); t < first; t += 864e5) assert.equal(dailyYacht(new Date(t)), 'jpk1050');
+  let prev = 'jpk1050';
   for (let d = 0; d < 400; d++) {
     const now = first + d * 864e5, y = dailyYacht(new Date(now)), day = new Date(now).toISOString().slice(0, 10);
     assert.notEqual(y, prev, `${day}: not yesterday’s yacht`); prev = y;
@@ -110,7 +110,7 @@ test('every yacht of today’s races finishes well above the server’s floor', 
       out[preset] = Math.min(...others.filter((b) => b.done && !b.dsq).map((b) => b.finish));
     }
     console.log(JSON.stringify({ id: sim.CLS.id, out }));`;
-  const runs = await Promise.all(Object.keys(DAILY_YACHTS).filter((id) => id !== 'club40').map(async (boat) =>
+  const runs = await Promise.all(Object.keys(DAILY_YACHTS).filter((id) => id !== 'jpk1050').map(async (boat) =>
     JSON.parse((await promisify(execFile)(process.execPath, ['--input-type=module', '-e', code(boat)], { encoding: 'utf8' })).stdout)));
   for (const { id, out } of runs) for (const [preset, fastest] of Object.entries(out)) {
     const floor = FLOOR * BEAT[preset] * sim.COURSE_LEN.short * (YACHT_FLOOR[id] ?? 1);
@@ -345,8 +345,8 @@ test('trapezoid mark 2 counts only when rounded to port', () => {
 // The venues a free race can go to (public/game/venues.js; the set-up page's list is lib/venues.ts). Each one's land,
 // baked by blender/venues.py, must be there, at the venue's own position and turned to its wind; and every course,
 // in every shape the venue offers at each length and in every wind, must be laid with its marks, gate, line and
-// finish line well clear of the shore, and every leg sailed from one to the next in clear water too. In the club's
-// 40-footer, in the Bavaria 46, whose courses are laid 1.3 times as wide, in the Laser, whose are 0.6 times the size,
+// finish line well clear of the shore, and every leg sailed from one to the next in clear water too. In the
+// JPK 1050, in the Bavaria 46, whose courses are laid 1.3 times as wide, in the Laser, whose are 0.6 times the size,
 // and in the AC75, whose are laid 2.5 times as long (classes.js): each venue and class is sailed in a Node of its own,
 // since the game picks both once, from the address, as the page loads.
 test('the set-up page lists the game’s venues', async () => {
@@ -413,7 +413,7 @@ for (const v of VENUES) {
         for (const l of low) for (const p of xz) for (const q of xz) if (across(p, q, l.a, l.b)) under = course + ' ' + preset + ' ' + length;
       }
       console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, legWorst, legWhere, under, corners: MESH.corners, heights: SKOPEA.parts.heights.length }));`;
-    const runs = await Promise.all(['club40', 'bavaria46', 'laser', 'ac75'].map(async (boat) => [boat, JSON.parse((await execFileP(process.execPath, ['--input-type=module', '-e', code(boat)], { encoding: 'utf8' })).stdout)]));
+    const runs = await Promise.all(['jpk1050', 'bavaria46', 'laser', 'ac75'].map(async (boat) => [boat, JSON.parse((await execFileP(process.execPath, ['--input-type=module', '-e', code(boat)], { encoding: 'utf8' })).stdout)]));
     for (const [boat, out] of runs) {
       assert.deepEqual(out.origin, [v.lat, v.lon], 'baked at the venue’s position');
       assert.equal(out.turn, v.wind, 'turned to the venue’s wind');

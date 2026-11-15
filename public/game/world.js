@@ -1,7 +1,7 @@
 // Regatta: the 3D picture — sea, sky, boats, marks, wake and the two cameras (drone and helm).
 import * as THREE from 'three';
 import { D2R, wrap, clamp, lerp, waveHeight, waveSlope, beatAngle, runAngle, HULL, ZONE, legTargets, legAim, isBeat, hasZone } from './sim.js';
-const SC = HULL / 10.4; // the model is drawn 10.4 m long; a First 40.7 is 12.2 m
+const SC = HULL / 10.45; // the model is drawn 10.45 m long, the JPK 1050 as she is
 import { LOOKS, playerLook } from './yacht.js';
 import { makeBoatView } from './boats3d.js';
 import { CommitteeBoat } from './committee.js';
@@ -125,11 +125,19 @@ void main() {
   float F = 0.02 + 0.98 * pow(1.0 - cosT, 5.0);
   vec3 R = reflect(-V, n);
   vec3 refl = skyAt(R);
-  // the boats, marks and the land in the water: the mirror's picture, rippled by the surface; the sky where it shows none
+  // the boats, marks and the land in the water: the mirror's picture, rippled by the surface; the sky where it shows none.
+  // On water the wind ruffles it is no clean mirror: each picture is drawn out up and down the more the wind and the
+  // further off (a hill's dark reflection a soft, streaked band, not a sharp-edged shape), and broken by the ripples
+  // there too, where the drawn ones have faded out.
   if (uReflOn > 0.5) {
     vec4 rc = uReflMat * vec4(vWorld.x, 0.0, vWorld.z, 1.0);
-    vec2 ruv = rc.xy / rc.w + n.xz * 0.4 / (1.0 + dist * 0.07);
-    vec4 rt = texture2D(uRefl, ruv);
+    float wk = clamp((uChop - 0.1) * 6.0, 0.0, 1.0), farK = smoothstep(40.0, 900.0, dist); // the wind, 0 to 10 m/s; how far off
+    vec2 vf = normalize(vWorld.xz - uCam.xz + 1e-4); // (the streaks lie across the line of sight: long sideways, thin towards you)
+    float streak = texture2D(uRipple, vec2(dot(vWorld.xz, vec2(-vf.y, vf.x)) / 90.0, dot(vWorld.xz, vf) / 7.0) + uTime * 0.01).w - 0.5;
+    vec2 ruv = rc.xy / rc.w + n.xz * 0.4 / (1.0 + dist * 0.07) + vec2(streak * 0.012 * wk * farK, 0.0);
+    float sp = (0.002 + 0.016 * wk) * (0.3 + 0.7 * farK);
+    vec4 rt = texture2D(uRefl, ruv) * 0.3 + (texture2D(uRefl, ruv + vec2(0.0, sp)) + texture2D(uRefl, ruv - vec2(0.0, sp))) * 0.25
+      + (texture2D(uRefl, ruv + vec2(0.0, 2.2 * sp)) + texture2D(uRefl, ruv - vec2(0.0, 2.2 * sp))) * 0.1;
     refl = mix(refl, rt.rgb, rt.a * uReflOn * (1.0 - smoothstep(0.96, 1.0, max(abs(ruv.x - 0.5), abs(ruv.y - 0.5)) * 2.0)));
   }
   // the water body: deep blue, lit turquoise where the crests let the sun through
@@ -976,7 +984,7 @@ export class World {
     const v = b.ai
       ? makeBoatView({ look: LOOKS[b.name] || LOOKS.Aurora, label: { text: b.name, color: b.color } }, b.cls)
       : makeBoatView({ look: look || playerLook(), player: true }, b.cls);
-    v.root.scale.setScalar((b.cls?.loa ?? HULL) / (v.drawnL || 10.4)); // the club's boat is drawn 10.4 m long; the other classes at their own length
+    v.root.scale.setScalar((b.cls?.loa ?? HULL) / (v.drawnL || 10.45)); // every class drawn at her own length (the JPK 1050 10.45 m)
     mirrored(v.root);
     // …but not the crew (eleven parts a sailor) or the wires: too small to make out in a half-size, rippled reflection
     for (const c of v.crew) c.g.traverse((o) => o.layers.disable(MIRRORED));
@@ -1372,7 +1380,7 @@ export class World {
       if (this.lookHold <= 0) this.look *= Math.exp(-dt * 1.5); else this.lookHold -= dt;
       const v = this.boatViews[0], side = P.twa >= 0 ? 1 : -1;
       v.tilt.updateMatrixWorld(true);
-      const [ex, ey, ez] = v.eye || [1.0, 2.75, 4.45]; // the helm's eye on the club's boat; another class's own (boats3d.js)
+      const [ex, ey, ez] = v.eye || [1.38, 2.65, 3.58]; // the helm's eye on the JPK 1050, at the tiller on the side deck; another class's own (boats3d.js)
       const eye = new THREE.Vector3(side * ex, ey, ez).applyMatrix4(v.tilt.matrixWorld);
       cam.position.copy(eye);
       cam.rotation.set(-0.1, -P.h + this.look - side * 0.22, side * P.heel * D2R * 0.4);

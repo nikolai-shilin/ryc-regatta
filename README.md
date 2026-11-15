@@ -155,7 +155,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   room), and not across a bridge too low for a mast (St Petersburg's drawbridges). An AC75's course, 2.5 times as
   long, that has no room as asked is laid up and down, then shorter, then smaller, its fleet starting nearer the line
   where the water below it runs out (`sim.js` Race); and the computer skippers keep off the shore, tacking or gybing
-  away from land a few seconds' sailing ahead. `npm test` sails every course shape at every venue, in the 40-footer, the
+  away from land a few seconds' sailing ahead. `npm test` sails every course shape at every venue, in the JPK 1050, the
   Bavaria 46, the Laser and the AC75, and checks its marks and legs are in clear water and on one side of every such bridge; a shape a venue has no room for at a length goes in its `skip`, as does
   a length it has no room for at all (St Petersburg's long course: a long request is sailed at the longest it has), and
   the set-up offers only the shapes and lengths `shapeOffered()` and `lengthOffered()` (`lib/venues.ts`) allow there. Moving between today's race and a free race in the

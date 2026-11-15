@@ -131,7 +131,7 @@ export function FleetView({ lang, start, back }: { lang: Lang; start: YachtId | 
 
       <section className="bt-card" ref={card} aria-labelledby="fl-card">
         <div className="bt-card-h"><span className="lbl-ink" id="fl-card">{t(...y.name)} · {t(...y.kind)}</span></div>
-        <button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race the ${y.name[0]}`, `В гонку на ${shown === 'club40' ? 'Клубе 40' : y.name[1]}`)}</span></button>
+        <button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race the ${y.name[0]}`, `В гонку на ${y.name[1]}`)}</span></button>
         <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс')}>
           <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд')}</button>
           <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Downwind', 'Фордевинд')}</button>

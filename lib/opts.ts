@@ -30,7 +30,7 @@ export type Opts = {
 };
 
 export const DEFAULTS: Opts = {
-  mode: 'daily', venue: 'gocek', yacht: 'club40', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any',
+  mode: 'daily', venue: 'gocek', yacht: 'jpk1050', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any',
   autoTrim: 0, sound: 1, guides: 1, ghost: 1, gfx: 'auto', camera: 'drone', vibration: 1, voice: 1, music: 'racing', musicVol: 'normal', sea: 'normal', fleetV: 3, optsV: 4, musicV: 1,
 };
 

@@ -48,8 +48,8 @@ function myFlag() {
 export function raceStarted(race, opts) {
   if (!race || race._rid) return;
   race._rid = uuid();
-  // (and the class of yacht, when not the club's 40-footer: a J/70's or an AC75's times aren't the same race's)
-  const body = { ev: 'start', id: race._rid, wind: opts.preset, laps: opts.laps, length: opts.length, shape: race.course.type, boats: race.boats.length, ...(opts.daily && { daily: opts.daily }), ...(myFlag() && { flag: myFlag() }), ...(CLS.id !== 'club40' && { yacht: CLS.id }) };
+  // (and the class of yacht, when not the JPK 1050: a J/70's or an AC75's times aren't the same race's)
+  const body = { ev: 'start', id: race._rid, wind: opts.preset, laps: opts.laps, length: opts.length, shape: race.course.type, boats: race.boats.length, ...(opts.daily && { daily: opts.daily }), ...(myFlag() && { flag: myFlag() }), ...(CLS.id !== 'jpk1050' && { yacht: CLS.id }) };
   account().then((tok) => send(body, tok));
 }
 

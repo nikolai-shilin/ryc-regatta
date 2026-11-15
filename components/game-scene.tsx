@@ -23,7 +23,7 @@ export type SceneSetup = {
 export const SCENE_EVENT = 'regatta-scene';
 export const toScene = (msg: object) => dispatchEvent(new CustomEvent(SCENE_EVENT, { detail: msg }));
 
-// `boat`: the class of yacht the scene shows (public/game/classes.js), the club's 40-footer without one; another is a
+// `boat`: the class of yacht the scene shows (public/game/classes.js), the JPK 1050 without one; another is a
 // new page too, as another venue is
 export function GameScene({ venue, boat = '', wind, title, finish, setup, loading }: { venue: VenueId; boat?: string; wind: Wind; title: string; finish?: object; setup?: SceneSetup; loading?: string }) {
   const [frames, setFrames] = useState<{ id: number; venue: VenueId; boat: string; wind: Wind; live: boolean }[]>(() => [{ id: 0, venue, boat, wind, live: false }]);
@@ -79,6 +79,6 @@ export function GameScene({ venue, boat = '', wind, title, finish, setup, loadin
   const busy = !frames[frames.length - 1].live;
   return <>{loading ? <LoadBar label={loading} on={busy} /> : null}{frames.map((f) => (
     <iframe key={f.id} ref={(el) => { if (el) refs.current.set(f.id, el); else refs.current.delete(f.id); }} className={`bt-scene bt-fade ${f.live ? 'on' : ''}`}
-      src={`/boat-view?venue=${f.venue}&wind=${f.wind}${finish ? '&finish=1' : setup ? '&setup=1' : ''}${f.boat && f.boat !== 'club40' ? `&boat=${f.boat}` : ''}`} title={title} onLoad={() => post({ type: 'hello' }, f.id)} />
+      src={`/boat-view?venue=${f.venue}&wind=${f.wind}${finish ? '&finish=1' : setup ? '&setup=1' : ''}${f.boat && f.boat !== 'jpk1050' ? `&boat=${f.boat}` : ''}`} title={title} onLoad={() => post({ type: 'hello' }, f.id)} />
   ))}</>;
 }

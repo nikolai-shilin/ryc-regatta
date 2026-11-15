@@ -76,10 +76,10 @@ const UP = { twa: 0.72, awa: 0.42, heel: 14, rudder: 0, sail: 16, luff: 0, trim:
 const DOWN = { twa: 2.45, awa: 1.95, heel: 6, rudder: 0, sail: 68, luff: 0, trim: 'ok', kite: true, kiteFill: 1, v: 3.6 };
 const FOIL_UP = { ...UP, awa: 0.24, sail: 7, v: 16, ride: 1 }, FOIL_DOWN = { ...DOWN, awa: 0.52, sail: 17, kite: false, kiteFill: 0, v: 19, ride: 1 };
 const BARE_DOWN = { ...DOWN, sail: 80, kite: false, kiteFill: 0 }; // a class with no kite (the Laser): the boom right out
-// where each sails in the echelon (metres across to starboard, and ahead, of the club's boat): the big foiler out to
-// windward and ahead, the cruiser between it and the club's boat, the sportboats and the dinghy stepping down to
+// where each sails in the echelon (metres across to starboard, and ahead, of the JPK 1050): the big foiler out to
+// windward and ahead, the cruiser between it and the JPK 1050, the sportboats and the dinghy stepping down to
 // leeward and astern
-const SLOT = { ac75: [56, 28], bavaria46: [27, 12], club40: [0, 0], j70: [-30, -12], rs21: [-54, -24], laser: [-74, -34] };
+const SLOT = { ac75: [56, 28], bavaria46: [27, 12], jpk1050: [0, 0], j70: [-30, -12], rs21: [-54, -24], laser: [-74, -34] };
 
 let world;
 try { world = new World(canvas); } catch (e) { say({ type: 'ready' }); } // no WebGL: the page's own picture shows
@@ -94,7 +94,7 @@ if (world) {
   const fx = Math.sin(H), fz = -Math.cos(H), rx = Math.cos(H), rz = Math.sin(H), X0 = P.x, Z0 = P.z;
   const fleet = CLASS_IDS.map((id) => {
     const cls = CLASSES[id], [a, f] = SLOT[id] || [0, 0];
-    const b = id === 'club40' ? P : new P.constructor({ name: id, x: 0, z: 0, h: H, v: 2 });
+    const b = id === 'jpk1050' ? P : new P.constructor({ name: id, x: 0, z: 0, h: H, v: 2 });
     b.cls = cls; b.ai = false;
     return { id, b, cls, x: X0 + rx * a + fx * f, z: Z0 + rz * a + fz * f, ph: CLASS_IDS.indexOf(id) * 1.9 };
   });

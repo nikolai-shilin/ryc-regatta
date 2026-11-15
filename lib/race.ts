@@ -34,9 +34,9 @@ function venueOn(n: number): VenueId {
 export const dailyVenue = (date = new Date()): VenueId => venueOn(Math.floor(Date.parse(date.toISOString().slice(0, 10)) / 864e5));
 
 // today's yacht, as public/game/classes.js dailyYacht: from the day each joins today's races (DAILY_YACHTS) the days go
-// round them in a shuffled order, never the same two days running; the days before the first joined, the Club 40
+// round them in a shuffled order, never the same two days running; the days before the first joined, the JPK 1050
 // (the AC75 from 18 November, when the scores server checks her times against her own share of its floor)
-export const DAILY_YACHTS: Partial<Record<YachtId, string>> = { club40: '2026-11-16', bavaria46: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16', laser: '2026-11-16', ac75: '2026-11-18' };
+export const DAILY_YACHTS: Partial<Record<YachtId, string>> = { jpk1050: '2026-11-16', bavaria46: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16', laser: '2026-11-16', ac75: '2026-11-18' };
 const YACHT_ROUNDS = [...new Set(Object.values(DAILY_YACHTS).map((s) => dayN(s!)))].sort((a, b) => a - b)
   .map((n0) => ({ n0, ids: (Object.keys(DAILY_YACHTS) as YachtId[]).filter((id) => dayN(DAILY_YACHTS[id]!) <= n0) }));
 function yachtRound(ids: YachtId[], k: number) {
@@ -45,7 +45,7 @@ function yachtRound(ids: YachtId[], k: number) {
   return a;
 }
 function yachtOn(n: number): YachtId {
-  if (n < YACHT_ROUNDS[0].n0) return 'club40';
+  if (n < YACHT_ROUNDS[0].n0) return 'jpk1050';
   let e = YACHT_ROUNDS.length - 1; while (e > 0 && n < YACHT_ROUNDS[e].n0) e--;
   const { n0, ids } = YACHT_ROUNDS[e], len = ids.length, k = Math.floor((n - n0) / len), a = yachtRound(ids, k);
   if (len > 1 && a[0] === (k > 0 ? yachtRound(ids, k - 1)[len - 1] : yachtOn(n0 - 1))) [a[0], a[1]] = [a[1], a[0]];
@@ -68,7 +68,7 @@ export const KN: Record<Wind, number> = { light: 7, medium: 12, strong: 19 };
 // about how long a race takes, start sequence included, in minutes: the free race's set-up and the home page say it.
 // Each shape's factor is as the computer boats take it, against up and down.
 const SHAPE_TIME: Record<Shape, number> = { wl: 1, tri: 1.3, trap: 1.25, wlu: 1.6 };
-// timeK: the yacht's pace against the club's 40-footer's (lib/yachts.ts), 1 without one
+// timeK: the yacht's pace against the JPK 1050's (lib/yachts.ts), 1 without one
 export const raceMinutes = (p: { preset: Wind; length: Length; laps: number; start: number; course: Shape; timeK?: number }) =>
   Math.round({ short: 4.5, medium: 7, long: 9.5 }[p.length] * p.laps * { light: 1.25, medium: 1, strong: 0.9 }[p.preset] * SHAPE_TIME[p.course] * (p.timeK ?? 1) + p.start);
 
@@ -85,8 +85,8 @@ export type CourseGeo = {
 };
 export const COURSE_LEN: Record<Length, number> = { short: 1, medium: 2, long: 3.4 };
 export const BEAT_LEN: Record<Wind, number> = { light: 200, medium: 260, strong: 280 };
-// the close-hauled angle to the true wind at each preset's wind speed (sim.js P_BEAT)
-export const BEAT_ANGLE: Record<Wind, number> = { light: 43, medium: 39.5, strong: 38.5 };
+// the close-hauled angle to the true wind at each preset's wind speed (7, 12 and 19 knots: the JPK 1050's beat, classes.js)
+export const BEAT_ANGLE: Record<Wind, number> = { light: 41.5, medium: 39, strong: 39 };
 
 // another class of yacht (lib/yachts.ts) sails a course of her own size, as sim.js lays it (scaleCourse): courseK as
 // long, everything across the water lineK as wide
@@ -130,9 +130,9 @@ export const savedShape = (s: unknown): Shape => (isShape(s) ? s : 'wl');
 // a course's shape: its `type`, or for a result saved before the shapes, a triangle if it has a wing mark
 export const shapeOf = (c: { type?: unknown; wing?: unknown }): Shape => (isShape(c.type) ? c.type : c.wing ? 'tri' : 'wl');
 // the key of a free race's best time on this device (public/game/main.js pbKey): each shape but up and down its own
-// (and each class of yacht but the club's 40-footer too)
+// (and each class of yacht but the JPK 1050 too)
 export const pbKey = (o: { preset: Wind; laps: number; length: Length; fleet: number; course: Shape; yacht?: string }) =>
-  `${o.preset}|${o.laps}|${o.length}|${o.fleet}${o.course === 'wl' ? '' : '|' + o.course}${o.yacht && o.yacht !== 'club40' ? '|' + o.yacht : ''}`;
+  `${o.preset}|${o.laps}|${o.length}|${o.fleet}${o.course === 'wl' ? '' : '|' + o.course}${o.yacht && o.yacht !== 'jpk1050' ? '|' + o.yacht : ''}`;
 
 const mid = (a: XZ, b: XZ): XZ => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
 const dist = (a: XZ, b: XZ) => Math.hypot(a[0] - b[0], a[1] - b[1]);

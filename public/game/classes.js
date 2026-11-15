@@ -1,7 +1,7 @@
-// The yachts you can race: the club's 40-footer (the default), the Bavaria 46
+// The yachts you can race: the JPK 1050 offshore racer (the default), the Bavaria 46
 // cruiser, the J/70 and RS21 sportboats, the Laser (ILCA) single-handed dinghy and the AC75 foiling monohull. A race is one-design: every boat in it is the same class, so the class is chosen for
 // the page, as the venue is (venues.js pageVenue): ?boat= in the address wins; a free race sails what its set-up chose
-// (localStorage 'regatta', yacht); today's race the day's (dailyYacht, below); every other page the club's 40-footer.
+// (localStorage 'regatta', yacht); today's race the day's (dailyYacht, below); every other page the JPK 1050.
 // lib/yachts.ts has the same ids and the words the site shows about them.
 
 // a polar: knots by true wind speed (tws, the columns) and true wind angle (twa, the rows); beat: the close-hauled
@@ -10,17 +10,35 @@ const TWS = [4, 6, 8, 10, 12, 14, 16, 20, 24];
 const TWA = [52, 60, 75, 90, 110, 120, 135, 150, 165, 180];
 
 export const CLASSES = {
-  // a 40-foot racer-cruiser, sailing to a Beneteau First 40.7's measured polar (sim.js keeps its own table: this
-  // class leaves the game exactly as it was)
-  club40: {
-    id: 'club40', loa: 12.2, beam: 3.7, drawnL: 10.4, crew: 4,
+  // the JPK 1050: JPK Composites' 34-foot offshore racer (Jacques Valer and Jean-Baptiste Dejeanty, 2025), built for
+  // IRC and two-handed racing — a scow-inspired hull with a wide transom and twin rudders, a T-keel, a tiller, a carbon
+  // rig with a square-top main, a gennaker on a fixed bowsprit and a code zero. Some 3.5 tonnes: quicker to get going
+  // and to lose way than a heavier 40-footer, and from about 16 knots of wind she planes on the reaches and runs.
+  // She sails to the ORC certificate of SOLENN (FRA 53516, 2026, GPH 581.4): its speeds at each angle; close-hauled,
+  // its beat angle (10 knots' smoothed to 40°) at its beat VMG; 165° and 180° from its downwind VMGs there.
+  jpk1050: {
+    id: 'jpk1050', loa: 10.45, beam: 3.54, drawnL: 10.45, crew: 4,
     kite: true, zero: true, reef: true, j3: true,
-    tau: 6, coast: 40, hullV: 8, heelK: 1, awsK: 1, heelShow: 1, courseK: 1, lineK: 1, startK: 1,
+    tau: 4.5, coast: 32, hullV: 12, heelK: 1, awsK: 1, heelShow: 1, courseK: 1, lineK: 1, startK: 1,
+    tws: TWS, twa: TWA,
+    beat: [45.8, 43, 40.4, 40, 39.2, 38.5, 38.4, 39.2, 40],
+    beatV: [3.92, 5.22, 6.01, 6.53, 6.71, 6.77, 6.84, 6.94, 7.0],
+    v: [
+      [4.28, 4.61, 4.86, 4.77, 4.44, 4.3, 3.81, 3.15, 2.35, 1.97],
+      [5.78, 6.06, 6.26, 6.17, 6.16, 6.03, 5.38, 4.53, 3.56, 2.99],
+      [6.74, 6.96, 7.1, 7.12, 7.25, 7.16, 6.68, 5.68, 4.67, 3.97],
+      [7.23, 7.43, 7.6, 7.71, 7.95, 7.86, 7.46, 6.7, 5.66, 4.87],
+      [7.43, 7.69, 8.01, 8.18, 8.56, 8.58, 8.12, 7.43, 6.58, 5.71],
+      [7.53, 7.82, 8.28, 8.52, 9.03, 9.44, 8.9, 8.01, 7.28, 6.46],
+      [7.61, 7.92, 8.42, 8.92, 9.69, 10.23, 9.96, 8.64, 7.77, 7.03],
+      [7.71, 8.04, 8.64, 9.42, 10.99, 11.74, 12.8, 10.56, 8.84, 7.94],
+      [7.74, 8.11, 8.81, 9.95, 11.84, 13.41, 15.25, 14.62, 10.21, 8.95],
+    ],
   },
   // the Bavaria 46: a 46-foot cruising yacht, the charter fleets' boat — some eleven tonnes, a furling genoa and a
   // main in a lazy bag, a cruising gennaker tacked to a short sprit at the bow. Heavier and a little slower than the
-  // 40-footer everywhere, slow to get going and slow to lose way; a reef for a blow, no code zero and no J3. Her
-  // courses are the 40-footer's length, laid 1.3 times as wide (the line, the room at the marks) for a fleet of 14 m
+  // JPK 1050 everywhere, slow to get going and slow to lose way; a reef for a blow, no code zero and no J3. Her
+  // courses are the JPK 1050's length, laid 1.3 times as wide (the line, the room at the marks) for a fleet of 14 m
   // boats that turn and stop slowly.
   bavaria46: {
     id: 'bavaria46', loa: 14.27, beam: 4.35, drawnL: 14.27, crew: 5,
@@ -134,17 +152,17 @@ export const CLASSES = {
   },
 };
 export const CLASS_IDS = Object.keys(CLASSES);
-export const DEFAULT_CLASS = 'club40';
+export const DEFAULT_CLASS = 'jpk1050';
 export const classById = (id) => CLASSES[id] || CLASSES[DEFAULT_CLASS];
 
 // Today's race's yacht, a new one every day: from the day each joins today's races (DAILY_YACHTS) the days go round
 // them in a shuffled order, every one of them in turn and never the same two days running; the days before the first
-// joined, the club's 40-footer. A class not in DAILY_YACHTS sails only free races. lib/race.ts dailyYacht does the
+// joined, the JPK 1050. A class not in DAILY_YACHTS sails only free races. lib/race.ts dailyYacht does the
 // same, and npm test keeps the two in step.
-// The AC75 joins on 18 November: she sails a course in under half the 40-footer's time, and the scores server
+// The AC75 joins on 18 November: she sails a course in under half the JPK 1050's time, and the scores server
 // (api/game.mjs in the iyt-test repo) checks her times against her own share of its floor (YACHT_FLOOR) from then on.
 // npm test sails every one of them well above the floor the server keeps for her.
-export const DAILY_YACHTS = { club40: '2026-11-16', bavaria46: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16', laser: '2026-11-16', ac75: '2026-11-18' };
+export const DAILY_YACHTS = { jpk1050: '2026-11-16', bavaria46: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16', laser: '2026-11-16', ac75: '2026-11-18' };
 const dayN = (s) => Math.floor(Date.parse(s) / 864e5);
 export const YACHT_ROUNDS = [...new Set(Object.values(DAILY_YACHTS).map(dayN))].sort((a, b) => a - b)
   .map((n0) => ({ n0, ids: Object.keys(DAILY_YACHTS).filter((id) => dayN(DAILY_YACHTS[id]) <= n0) }));
@@ -169,7 +187,7 @@ export function pageClass() {
     const q = new URLSearchParams(location.search);
     if (q.get('boat')) return classById(q.get('boat'));
     if (q.get('race') === 'free') return classById(JSON.parse(localStorage.getItem('regatta') || '{}').yacht);
-    if (/^\/play/.test(location.pathname) && !q.get('drill')) return classById(dailyYacht()); // a drill: the club's boat
+    if (/^\/play/.test(location.pathname) && !q.get('drill')) return classById(dailyYacht()); // a drill: the JPK 1050
   } catch (e) {}
   return CLASSES[DEFAULT_CLASS];
 }

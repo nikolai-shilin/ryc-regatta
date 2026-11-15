@@ -46,7 +46,7 @@ type Result = {
     // with the finish's tiles: the gybes, where along the line you started (0 the pin, 1 the committee boat), the top speed
     gybes?: number; startAt?: number | null; top?: number; topLeg?: number; topKite?: boolean };
   pb: { best: number; isNew: boolean; prev?: number } | null; // prev: the best a new one beat
-  yacht?: string; // the class it was sailed in (lib/yachts.ts), when not the club's 40-footer
+  yacht?: string; // the class it was sailed in (lib/yachts.ts), when not the JPK 1050
   venue?: string; origin?: [number, number]; seed?: number | null; // where it was sailed: kept since the finish scene
 };
 type Top = { name: string | null; s: number; fl?: string | null };

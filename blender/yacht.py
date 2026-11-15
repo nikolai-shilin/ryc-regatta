@@ -1,5 +1,7 @@
-# Regatta: the game's racing yacht (game/yacht.js), the hard parts modelled here and exported to
-# game/yacht.glb: the hull (chined aft, fine forward), a fin keel with a bulb, a spade rudder, the deck
+# Regatta: the game's JPK 1050 (game/yacht.js), the hard parts modelled here and exported to
+# game/yacht.glb: the hull (scow-inspired: full sections forward and a forefoot that lifts clear of the water, the
+# waterline starting about a metre aft of the near-plumb stem; her beam carried aft to a wide transom over a hard
+# chine), a T-keel with its lead bulb, twin rudders hung on the transom, the deck
 # with an open-transom cockpit cut into it, seats and coamings, and a coachroof with a raked front and a window band.
 # The sails, rig, lifelines, winches, wheel, hatches and decals stay in yacht.js (they move, or are made per boat).
 #
@@ -18,28 +20,29 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, '..', 'public', 'game', 'yacht.glb'))
 
 # ---------- yacht.js's lines (game frame: +x starboard, +y up, -z forward, the waterline at y = 0) ----------
-L, B = 10.4, 3.35
+L, B = 10.45, 3.54
 STERN_Z = L / 2
 def clamp(v, a, b): return max(a, min(b, v))
 def lerp(a, b, t): return a + (b - a) * t
 def smooth(e0, e1, x): t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t)
-def half_beam(t):
-    if t < 0.42: return (B / 2) * (0.84 + 0.16 * math.sin((t / 0.42) * math.pi / 2))
-    return (B / 2) * max(0.0, math.cos(min(1, (t - 0.42) / 0.58) * math.pi / 2)) ** 0.85
-def sheer(t): return 1.0 + 0.22 * t ** 1.6
-def canoe(t): return 0.62 * math.sin(math.pi * min(1, t * 0.93 + 0.05)) ** 0.75
+def half_beam(t):  # the beam carried well aft: the transom 92% of the widest, which is 38% of the way forward
+    if t < 0.38: return (B / 2) * (0.92 + 0.08 * math.sin((t / 0.38) * math.pi / 2))
+    return (B / 2) * max(0.0, math.cos(min(1, (t - 0.38) / 0.62) * math.pi / 2)) ** 0.8
+def sheer(t): return 1.04 + 0.17 * t ** 1.6
+def canoe(t):  # the canoe body's depth; forward of t = 0.75 the forefoot lifts, out of the water at the stem
+    return 0.62 * math.sin(math.pi * min(1, t * 0.93 + 0.05)) ** 0.75 - 0.4 * smooth(0.75, 1, t)
 def z_at(t): return STERN_Z - t * L
 def t_at(z): return clamp((STERN_Z - z) / L, 0, 1)
 def deck_y(z, x=0.0):
     hb = max(half_beam(t_at(z)), 0.3)
     return sheer(t_at(z)) + 0.05 * (1 - (x / hb) ** 2)
 FLARE = 0.09  # the topsides' flare: the waterline this much narrower than the deck (yacht.js's FLARE)
-def n_of(t): return lerp(2.9, 1.6, clamp((t - 0.45) / 0.55, 0, 1))
+def n_of(t): return lerp(2.9, 2.0, clamp((t - 0.45) / 0.55, 0, 1))  # boxy aft, still full forward
 def section(t, s):  # yacht.js's section(): s = 0 at the deck edge ... 1 at the keel -> (x, y, dz)
     hb, sy, d, n = half_beam(t), sheer(t), canoe(t), n_of(t)
     phi = s * math.pi / 2; c, sn = math.cos(phi), math.sin(phi); yr = sn ** (2 / n)
     x = hb * c ** (2 / n) * (1 - FLARE * sn)
-    dz = 0.4 * yr * ((t - 0.88) / 0.12) ** 2 if t > 0.88 else 0.0
+    dz = 0.1 * yr * ((t - 0.9) / 0.1) ** 2 if t > 0.9 else 0.0  # a stem near plumb: the forefoot hardly aft of its head
     return x, sy - (sy + d) * yr, dz
 
 def G(x, y, z): return Vector((x, -z, y))  # game -> Blender (Z up, +Y forward); the glTF export turns it back
@@ -107,12 +110,14 @@ def build_hull(bm, mats):
 # ---------- foils: the keel and the rudder ----------
 def naca(u, th):  # half-thickness of a NACA 00xx at chord fraction u
     return 5 * th * (0.2969 * math.sqrt(u) - 0.126 * u - 0.3516 * u * u + 0.2843 * u ** 3 - 0.1036 * u ** 4)
-def foil(bm, mat, y0, y1, c0, c1, le0, le1, th, NS=8, NC=14):
+def foil(bm, mat, y0, y1, c0, c1, le0, le1, th, NS=8, NC=14, x0=0.0, cant=0.0):
+    # x0: the foil's root off the centreline; cant: its tip that many degrees further out (a twin rudder's toe-out)
     secs = []
     for i in range(NS + 1):
         f = i / NS; y = lerp(y0, y1, f); c = lerp(c0, c1, f); le = lerp(le0, le1, f)
+        xo = x0 + math.copysign((y0 - y) * math.tan(math.radians(cant)), x0 or 1)
         us = [(1 - math.cos(math.pi * k / NC)) / 2 for k in range(NC + 1)]
-        pts = [(naca(u, th) * c, le + u * c) for u in us] + [(-naca(u, th) * c, le + u * c) for u in reversed(us[1:-1])]
+        pts = [(xo + naca(u, th) * c, le + u * c) for u in us] + [(xo - naca(u, th) * c, le + u * c) for u in reversed(us[1:-1])]
         secs.append([bm.verts.new(G(x, y, z)) for x, z in pts])
     M = len(secs[0])
     for i in range(NS):
@@ -229,7 +234,8 @@ bm = bmesh.new(); bm.from_mesh(hull.data)
 H = IDX['hull']
 foil(bm, H, 0.15, -1.86, 1.12, 0.74, -0.78, -0.5, 0.12)                     # the keel
 bulb(bm, H, -1.02, 1.16, -1.96, 0.24)                                          # its bulb
-foil(bm, H, 0.1, -1.58, 0.54, 0.34, 4.25 - 0.54 * 0.25, 4.25 - 0.34 * 0.18, 0.11, NS=6)  # the spade rudder, its stock at z = 4.25
+for sx in (-1, 1):  # the twin rudders, hung on the transom and toed out 12° at the tips: high-aspect lifting blades
+    foil(bm, H, 0.55, -1.3, 0.4, 0.28, STERN_Z - 0.08, STERN_Z - 0.04, 0.11, NS=6, x0=sx * 0.82, cant=12)
 for sx in (-1, 1):
     xs = sorted([sx * 0.53, sx * 0.96])   # the seats, into the cockpit's side walls
     plan_prism(bm, rounded_rect(xs[0], xs[1], 1.505, 3.75, 0.06), 0.52, 0.76, IDX['gel'], IDX['gel'], IDX['teak'])

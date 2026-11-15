@@ -48,49 +48,22 @@ export function waveSlope(W, x, z, t, ux, uz, n = W.length) {
   return s;
 }
 
-// ---------- the boat's speed: a Beneteau First 40.7, knots by true wind speed and angle ----------
-// From the class polar (median of 193 official ORC measurements, windregatta.com): jib 52–90°, spinnaker 110–150°.
-// Not in the table, estimated: the close-hauled angle and speed (88% of the 52° speed, as on the class's ORC
-// targets), and 165° / 180° as a share of the 150° speed — lower in light air, where running deep is slow.
-// Downwind figures are with the spinnaker; without it the boat is slower off the wind.
+// ---------- the boat's speed: knots by true wind speed and angle ----------
+// Each class sails to its own polar (classes.js): the close-hauled angle and speed for each true wind speed, then a
+// speed for each angle off the wind — the JPK 1050's from her ORC certificate. Downwind figures are with the spinnaker;
+// without it the boat is slower off the wind.
 export const NO_GO = 28;
-// the class this page races (classes.js): the club's 40-footer sails to the table below; the J/70 and the AC75 to
-// their own (classes.js), and with their own size, momentum and heel
+// the class this page races (classes.js), with its own size, momentum and heel
 export const HULL = CLS.loa; // length overall, metres
 const GROUND = HULL / 2 + 2; // how near the shore her middle can come: the bow just short of the rocks
-const P_TWS = [4, 6, 8, 10, 12, 14, 16, 20, 24];
-const P_BEAT = [46, 44, 42, 40.5, 39.5, 39, 38.5, 38.5, 39];
-const P_TWA = [52, 60, 75, 90, 110, 120, 135, 150, 165, 180];
-const POLAR_4070 = { // TWA → speeds for each TWS above
-  52: [4.17, 5.69, 6.69, 7.24, 7.49, 7.61, 7.68, 7.77, 7.79],
-  60: [4.5, 5.99, 6.92, 7.42, 7.68, 7.81, 7.89, 8.0, 8.03],
-  75: [4.72, 6.19, 7.08, 7.56, 7.85, 8.05, 8.19, 8.38, 8.48],
-  90: [4.6, 6.08, 7.06, 7.6, 7.92, 8.19, 8.41, 8.76, 8.99],
-  110: [4.24, 5.87, 7.05, 7.69, 8.11, 8.47, 8.74, 9.17, 9.45],
-  120: [4.07, 5.69, 6.89, 7.6, 8.06, 8.48, 8.87, 9.57, 10.14],
-  135: [3.55, 5.09, 6.31, 7.2, 7.75, 8.18, 8.62, 9.59, 10.95],
-  150: [2.93, 4.27, 5.44, 6.45, 7.23, 7.74, 8.14, 8.97, 9.99],
-};
-const P_BEATV = POLAR_4070[52].map((v) => +(v * 0.88).toFixed(2));
-const P_V = P_TWS.map((tws, i) => {
-  const k = clamp((tws - 6) / 12, 0, 1), v150 = POLAR_4070[150][i];
-  return [...[52, 60, 75, 90, 110, 120, 135, 150].map((a) => POLAR_4070[a][i]), v150 * lerp(0.86, 0.96, k), v150 * lerp(0.76, 0.9, k)];
-});
-function rowSpeed(i, a) {
-  if (a <= NO_GO) return 0;
-  if (a < P_BEAT[i]) return P_BEATV[i] * ((a - NO_GO) / (P_BEAT[i] - NO_GO)) ** 1.6; // pinching: slow
-  const pts = [[P_BEAT[i], P_BEATV[i]], ...P_TWA.map((x, j) => [x, P_V[i][j]])];
-  return table(pts, a);
-}
-// another class's own table (classes.js): the same shape, close-hauled angle and speed, then a speed per angle
-const OWN = CLS.v ? { tws: CLS.tws, beat: CLS.beat, beatV: CLS.beatV, twa: CLS.twa, v: CLS.v } : null;
-function ownRow(i, a) {
+const OWN = { tws: CLS.tws, beat: CLS.beat, beatV: CLS.beatV, twa: CLS.twa, v: CLS.v };
+function ROW(i, a) {
   const o = OWN;
   if (a <= NO_GO) return 0;
-  if (a < o.beat[i]) return o.beatV[i] * ((a - NO_GO) / (o.beat[i] - NO_GO)) ** 1.6;
+  if (a < o.beat[i]) return o.beatV[i] * ((a - NO_GO) / (o.beat[i] - NO_GO)) ** 1.6; // pinching: slow
   return table([[o.beat[i], o.beatV[i]], ...o.twa.filter((x) => x > o.beat[i]).map((x) => [x, o.v[i][o.twa.indexOf(x)]])], a);
 }
-const TWS_ = OWN ? OWN.tws : P_TWS, BEAT_ = OWN ? OWN.beat : P_BEAT, ROW = OWN ? ownRow : rowSpeed;
+const TWS_ = OWN.tws, BEAT_ = OWN.beat;
 // target speed in knots
 export function polarSpeed(tws, aDeg, kite = true) {
   const a = Math.abs(aDeg);
@@ -723,7 +696,7 @@ export class Race {
       // laid in the venue's water, in the clear nearest the middle of its race area (land.js): the start is at this point
       this.at = placeCourse(this.course, beatAngle(this.wind.p.tws), this.startK);
     };
-    this.startK = CLS.startK; // how much further off the line than the 40-footer her fleet starts and waits (classes.js)
+    this.startK = CLS.startK; // how much further off the line than the JPK 1050 her fleet starts and waits (classes.js)
     lay(course, beatLen);
     // a bigger class's course (classes.js) that has no room here as asked: up and down, which needs the least; then
     // the shorter lengths, the shape and then up and down at each; then up and down smaller still, as far as the

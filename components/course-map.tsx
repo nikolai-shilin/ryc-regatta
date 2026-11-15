@@ -12,7 +12,7 @@ type Props = {
   route?: boolean; fleet?: number; tracks?: Track[]; fouls?: XZ[];
 };
 
-const HULL = 12.2, ZONE = 3 * HULL;
+const HULL = 10.45, ZONE = 3 * HULL; // the JPK 1050's length: the zone is three of them
 const SEA = '#0b2c48', TXT = 'rgba(255,255,255,0.82)', DIM = '#8fd3ff', ME = '#3db8ff', MARK = '#ff8a1e';
 const font = { fontFamily: 'var(--f-carlito), Arial, sans-serif', fontWeight: 700 } as const;
 
