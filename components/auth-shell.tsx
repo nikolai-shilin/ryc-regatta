@@ -1,9 +1,8 @@
-import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { dailyRace } from '@/lib/race';
 import { GameScene } from './game-scene';
 import { SceneBrand } from './scene-brand';
-import { IconBack } from './ui';
+import { BackLink } from './back-link';
 
 // A1–A3: signing in, as the race's pause screen: today's venue in the game's own scene behind (as the race hub has
 // it), the brand and a word on why on the left, and the step's card on the right (components/sign-in-forms.tsx).
@@ -18,7 +17,7 @@ export function AuthShell({ lang, back, aside, children }: { lang: Lang; back?: 
         <GameScene venue={d.venue} wind={d.preset} title={t('Today’s venue in 3D', 'Место гонки дня в 3D')} />
         <div className="bt-info">
           <div className="bt-top">
-            {back && <Link className="bt-back" href={back} aria-label={t('Back', 'Назад')}><IconBack /></Link>}
+            {back && <BackLink href={back} label={t('Back', 'Назад')} />}
             <SceneBrand />
           </div>
           {aside}

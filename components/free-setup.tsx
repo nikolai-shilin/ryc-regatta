@@ -10,7 +10,8 @@ import { courseDistance, dailyRace, fmtDistance, pbKey, plannedCourse, raceMinut
 import { CourseMap } from './course-map';
 import { GameScene, type SceneSetup } from './game-scene';
 import { PauseCard, SettingsRow } from './pause-card';
-import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, IconSun, Num, clock } from './ui';
+import { BackLink } from './back-link';
+import { IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, IconSun, Num, clock } from './ui';
 import { SceneBrand } from './scene-brand';
 
 // the way round each shape but up and down, under its choice
@@ -136,7 +137,7 @@ export default function FreeSetup({ lang, from }: { lang: Lang; from: 'today' | 
 
         <div className="bt-info">
           <div className="bt-top">
-            <Link className="bt-back" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
+            <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок')} />
             <SceneBrand />
           </div>
           <span className="bt-kick bt-kick-w">{from === 'race' ? t('Change the race', 'Изменить гонку') : t('Free race', 'Свободная гонка')}</span>

@@ -125,6 +125,7 @@ export function YachtsView({ lang, start, back }: { lang: Lang; start: YachtId; 
 
         <div className="bt-rows">
           {id === 'club40' && <a className="bt-row" href="/play?race=today"><IconPlay /><span>{t('Today’s race', 'Гонка дня')}</span></a>}
+          <Link className="bt-row" href={`/fleet?y=${id}`}><IconBoats s={18} /><span>{t('The whole fleet', 'Весь флот')}</span><span className="bt-row-m">{t('Together', 'Вместе')}</span></Link>
           <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your colours', 'Твои цвета')}</span><span className="bt-row-m">{t('Every yacht', 'Для всех яхт')}</span></Link>
         </div>
       </section>

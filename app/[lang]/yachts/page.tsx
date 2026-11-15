@@ -1,6 +1,5 @@
-import Link from 'next/link';
 import { getT, titled, type LangParams } from '@/lib/i18n';
-import { IconBack } from '@/components/ui';
+import { BackLink } from '@/components/back-link';
 import { YachtsView } from '@/components/yachts-view';
 import { isYacht } from '@/lib/yachts';
 
@@ -19,7 +18,7 @@ export default async function YachtsPage({ params, searchParams }: LangParams & 
   return (
     <div className="scr bt-scr bc" lang={lang}>
       <YachtsView lang={lang} start={isYacht(q.y) ? q.y : 'club40'} back={(
-        <Link className="bt-back" href={back} aria-label={back === '/race' ? t('Back to the race hub', 'Назад в меню гонок') : t('Back to the free race', 'Назад к свободной гонке')}><IconBack /></Link>
+        <BackLink href={back} label={back === '/race' ? t('Back to the race hub', 'Назад в меню гонок') : t('Back to the free race', 'Назад к свободной гонке')} />
       )} />
     </div>
   );

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { getT, titled, type LangParams } from '@/lib/i18n';
 import { getAccount, initials } from '@/lib/supabase/server';
 import { dailyRace } from '@/lib/race';
-import { IconBack } from '@/components/ui';
+import { BackLink } from '@/components/back-link';
 import { GameScene } from '@/components/game-scene';
 import { SceneBrand } from '@/components/scene-brand';
 import { NameRow, SettingsForm } from '@/components/settings-form';
@@ -51,7 +51,7 @@ export default async function SettingsPage({ params }: LangParams) {
 
         <div className="bt-info">
           <div className="bt-top">
-            <Link className="bt-back" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
+            <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок')} />
             <SceneBrand />
             <DoneButton label={t('Done', 'Готово')} />
           </div>

@@ -1,6 +1,5 @@
-import Link from 'next/link';
 import { getT, titled, type LangParams } from '@/lib/i18n';
-import { IconBack } from '@/components/ui';
+import { BackLink } from '@/components/back-link';
 import { BoatEditor } from '@/components/boat-editor';
 
 export const generateMetadata = titled('Your boat', 'Твоя яхта', {
@@ -20,7 +19,7 @@ export default async function BoatPage({ params, searchParams }: LangParams & { 
   return (
     <div className="scr bt-scr bc" lang={lang}>
       <BoatEditor lang={lang} back={(
-        <Link className="bt-back" href={back} aria-label={back === '/settings' ? t('Back to settings', 'Назад в настройки') : t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
+        <BackLink href={back} label={back === '/settings' ? t('Back to settings', 'Назад в настройки') : t('Back to the race hub', 'Назад в меню гонок')} />
       )} />
     </div>
   );

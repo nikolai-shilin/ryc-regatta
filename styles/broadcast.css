@@ -331,7 +331,9 @@
 
 /* ---------- the scene pages' own pieces, as the design draws them ---------- */
 /* the top bar: the back button, the game's name as the title block, and on the hub a ticker with the day */
-.bc .bt-brand { display: inline-flex; align-items: stretch; flex: none; height: 36px; color: var(--ink); }
+.bc .bt-brand { pointer-events: auto; display: inline-flex; align-items: stretch; flex: none; height: 36px; color: var(--ink); text-decoration: none; }
+.bc .bt-brand:hover > span { background: rgba(28, 42, 62, 0.94); }
+.bc .bt-brand:focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
 .bc .bt-brand i { width: 5px; background: var(--you); }
 .bc .bt-brand > span { display: flex; align-items: center; padding: 0 var(--s-3); background: var(--panel-2); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
   font: 700 var(--fs-lead)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; white-space: nowrap; }

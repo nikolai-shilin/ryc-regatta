@@ -7,7 +7,8 @@ import { DailyLock } from '@/components/daily-lock';
 import { ruPlural } from '@/lib/lang';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, SHAPE_NAME } from '@/lib/race';
 import { venueOf } from '@/lib/venues';
-import { IconBack, IconPlay, IconTrophy, IconSliders, IconBoats, Num, clock } from '@/components/ui';
+import { BackLink } from '@/components/back-link';
+import { IconPlay, IconTrophy, IconSliders, IconBoats, Num, clock } from '@/components/ui';
 import { BoatRow, FreeQuick } from '@/components/hub-client';
 import { PassportRow } from '@/components/passport';
 import { ProgressRows, RivalRow } from '@/components/progress';
@@ -49,7 +50,7 @@ export default async function Hub({ params }: LangParams) {
 
         <div className="bt-info">
           <div className="bt-top">
-            <Link className="bt-back" href="/" aria-label={t('Home', 'На главную')}><IconBack /></Link>
+            <BackLink href="/" label={t('Home', 'На главную')} />
             <SceneBrand />
             <span className="bt-top-r">
               <span className="bt-tick"><span className="dot-live" aria-hidden="true" /><time dateTime={d.day}>{date}</time></span>

@@ -14,6 +14,7 @@ const config: NextConfig = {
       { source: '/play', destination: '/play/index.html' },
       { source: '/boat-view', destination: '/boat-view/index.html' }, // the boat page's 3D preview, the game's own yacht
       { source: '/hero-view', destination: '/hero-view/index.html' }, // the home page's hero: a race the game sails by itself
+      { source: '/fleet-view', destination: '/fleet-view/index.html' }, // the fleet page's scene: every yacht afloat together
     ];
   },
   async headers() {
@@ -21,6 +22,7 @@ const config: NextConfig = {
       { source: '/play', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/boat-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/hero-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
+      { source: '/fleet-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/game/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=0, must-revalidate' }] },
       // a module at its hashed address (scripts/stamp-game.mjs, at the build): a new version has a new address
       { source: '/game/:path*', has: [{ type: 'query', key: 'v' }], headers: [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }] },

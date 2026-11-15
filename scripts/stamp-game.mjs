@@ -1,6 +1,6 @@
 // npm run build runs this first (prebuild). On Vercel it gives each of the game's modules an address with its content's
-// hash, /game/sim.js?v=1a2b3c4d5e, in the three pages that run the game's scene (public/play, public/boat-view,
-// public/hero-view): the import map sends every import of /game/sim.js there, the <link rel="modulepreload"> lists and
+// hash, /game/sim.js?v=1a2b3c4d5e, in the four pages that run the game's scene (public/play, public/boat-view,
+// public/hero-view, public/fleet-view): the import map sends every import of /game/sim.js there, the <link rel="modulepreload"> lists and
 // /play's <script src> name it, and next.config.ts serves an address with ?v= as immutable. So a returning visitor's
 // browser takes the modules from its cache without asking the server again, and a deploy that changes a module changes
 // its address: a page can't get yesterday's sim.js with today's world.js. The game's files that aren't modules (the
@@ -15,7 +15,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-export const PAGES = ['/play/index.html', '/boat-view/index.html', '/hero-view/index.html'];
+export const PAGES = ['/play/index.html', '/boat-view/index.html', '/hero-view/index.html', '/fleet-view/index.html'];
 const THREE = '/vendor/three@0.160.0/build/three.module.min.js';
 const ADDONS = '/vendor/three@0.160.0/examples/jsm/';
 

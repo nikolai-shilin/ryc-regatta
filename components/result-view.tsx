@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ruBoats, tx, type Lang } from '@/lib/lang';
 import RULES from '@/lib/rules.json';
 import { IconBack, IconRestart, IconPlay, IconTrophy, IconFlag, IconSail, IconSliders, Num, clock } from './ui';
+import { BackLink } from './back-link';
 import { CopyLink, ShareButton } from './share-sheet';
 import { SceneBrand } from './scene-brand';
 import { CountUp } from './count-up';
@@ -277,7 +278,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
 
         <div className="bt-info">
           <div className="bt-top">
-            <Link className="bt-back" href="/race" aria-label={t('Back to the race hub', 'Назад в меню гонок')}><IconBack /></Link>
+            <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок')} />
             <SceneBrand />
           </div>
           <div className="bt-kicks">

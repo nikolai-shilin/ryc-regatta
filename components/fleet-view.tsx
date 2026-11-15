@@ -1,0 +1,172 @@
+'use client';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import Link from 'next/link';
+import { tx, type Lang } from '@/lib/lang';
+import { saveOpts } from '@/lib/opts';
+import { YACHTS, yachtOf, type YachtId } from '@/lib/yachts';
+import { IconPlay, IconSail, IconBoats, IconBack, IconArrow, IconGrid } from './ui';
+import { LoadBar } from './skeleton';
+import { SceneBrand } from './scene-brand';
+
+// The fleet: every yacht you can race afloat together in one scene (/fleet-view, Lake Garda on a summer evening, in
+// your colours), the drone flying from one to the next — up and out until both are in the frame, across, and down to
+// her — with what she is, her numbers and how she sails in the game beside her. It tours the fleet by itself, a yacht
+// every DWELL seconds once the drone is there; picking one, the arrows or taking hold of the view stops the tour, and
+// the play button starts it again. All shows the whole fleet from up and back.
+const DWELL = 9;
+
+export function FleetView({ lang, start, back }: { lang: Lang; start: YachtId | null; back: ReactNode }) {
+  const t = tx(lang);
+  const [id, setId] = useState<YachtId | null>(start);
+  const [shown, setShown] = useState<YachtId>(start ?? YACHTS[0].id); // the words stay on the last yacht while the fleet shows
+  const [down, setDown] = useState(false);
+  const [auto, setAuto] = useState(true);
+  const [live, setLive] = useState(false);
+  const [landed, setLanded] = useState(0); // the flights that have landed: the tour's clock restarts on each
+  const [there, setThere] = useState(false); // the drone is at the yacht picked, not on its way
+  const frame = useRef<HTMLIFrameElement>(null), card = useRef<HTMLElement>(null), info = useRef<HTMLDivElement>(null), strip = useRef<HTMLDivElement>(null);
+  const now = useRef({ id, down, live: false }); now.current = { id, down, live };
+  const y = yachtOf(shown);
+
+  const post = useCallback((msg: object) => frame.current?.contentWindow?.postMessage(msg, location.origin), []);
+  // the part of the frame the words cover, so the yacht stands in what is left
+  const inset = useCallback(() => {
+    const c = card.current?.getBoundingClientRect(), h = info.current?.getBoundingClientRect(), s = strip.current?.getBoundingClientRect(), W = innerWidth, H = innerHeight;
+    const p = info.current?.querySelector('.bt-p')?.getBoundingClientRect();
+    if (!c || !h) return;
+    const tall = c.width > W * 0.7, head = (p && p.height ? p.bottom : h.top + 120) / H;
+    post({ type: 'inset', l: 0, r: tall ? 0 : (W - c.left) / W, t: Math.min(0.4, tall ? (h.bottom / H) * 0.9 : head * 0.55), b: tall ? (H - c.top) / H : s ? ((H - s.top) / H) * 0.6 : 0 });
+  }, [post]);
+  const go = useCallback((next: YachtId | null) => {
+    setId(next); setThere(false);
+    if (next) setShown(next);
+    post(next ? { type: 'focus', id: next } : { type: 'overview' });
+    try { history.replaceState(null, '', next ? `${location.pathname}?y=${next}` : location.pathname); } catch {}
+  }, [post]);
+  const step = useCallback((k: number) => {
+    const i = YACHTS.findIndex((x) => x.id === (now.current.id ?? shown));
+    go(YACHTS[(i + k + YACHTS.length) % YACHTS.length].id);
+  }, [go, shown]);
+  const pick = (next: YachtId | null) => { setAuto(false); go(next); };
+  const toggle = () => { if (!auto && !id) go(shown); setAuto(!auto); };
+
+  // the scene's word: it is up (send it the pose and the frame, and after a moment over the whole fleet, the first
+  // yacht), a flight has landed, or you took hold of the view
+  useEffect(() => {
+    let first: ReturnType<typeof setTimeout> | undefined;
+    const on = (e: MessageEvent) => {
+      if (e.origin !== location.origin || e.source !== frame.current?.contentWindow) return;
+      const d = e.data;
+      if (d?.type === 'ready') { post({ type: 'pose', down: now.current.down }); inset(); }
+      if (d?.type === 'live' && !now.current.live) {
+        setLive(true);
+        first = setTimeout(() => go(now.current.id ?? YACHTS[0].id), 1400);
+      }
+      if (d?.type === 'arrived') { setThere(d.id === now.current.id); if (d.id) setLanded((n) => n + 1); }
+      if (d?.type === 'touched') setAuto(false);
+    };
+    const fit = () => inset();
+    addEventListener('message', on); addEventListener('resize', fit);
+    const ro = new ResizeObserver(fit);
+    for (const el of [card.current, info.current, strip.current]) if (el) ro.observe(el);
+    return () => { removeEventListener('message', on); removeEventListener('resize', fit); ro.disconnect(); clearTimeout(first); };
+  }, [go, inset, post]);
+  useEffect(() => { post({ type: 'pose', down }); }, [down, post]);
+  // the tour: the next yacht a while after the drone gets to this one
+  useEffect(() => {
+    if (!auto || !there || !id) return;
+    const k = setTimeout(() => step(1), DWELL * 1000);
+    return () => clearTimeout(k);
+  }, [auto, there, id, landed, step]);
+  // the arrows on the keyboard, as the buttons
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.closest?.('input, textarea, select')) return;
+      if (e.key === 'ArrowRight') { setAuto(false); step(1); }
+      if (e.key === 'ArrowLeft') { setAuto(false); step(-1); }
+    };
+    addEventListener('keydown', key);
+    return () => removeEventListener('keydown', key);
+  }, [step]);
+
+  const race = () => { saveOpts({ yacht: shown }); location.href = `/race/free?yacht=${shown}`; };
+  const kn = (v: number) => `${v} ${t('kn', 'уз')}`;
+  const spec = (k: string) => y.specs.find((s) => s.k[0] === k);
+  const n = YACHTS.findIndex((x) => x.id === shown) + 1;
+
+  return (
+    <div className="bt fl-view">
+      <LoadBar label={t('Loading the fleet', 'Загружаем флот')} on={!live} />
+      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src="/fleet-view?wind=medium" title={t('The fleet in 3D', 'Флот в 3D')}
+        onLoad={() => post({ type: 'hello' })} />
+
+      <div className="bt-info" ref={info}>
+        <div className="bt-top">{back}<SceneBrand /></div>
+        <span className="bt-kick">{t('The fleet', 'Флот')} <span className="fl-n">{id ? `${String(n).padStart(2, '0')} / ${String(YACHTS.length).padStart(2, '0')}` : t('All yachts', 'Все яхты')}</span></span>
+        <h1 className="bt-h fl-h" key={shown}>{id ? t(...y.name) : t('Every yacht', 'Все яхты')}</h1>
+        <p className="bt-p">{id ? <>{t(...y.kind)}. {t(...y.tagline)}</> : t('Four yachts afloat together, from a 22-foot sportboat to the America’s Cup’s foiler. Pick one to fly to her.', 'Четыре яхты на воде вместе — от 22-футового спортбота до летающей яхты Кубка Америки. Выбери, чтобы подлететь к ней.')}</p>
+
+        <div className="fl-strip" ref={strip}>
+          <div className="fl-ctl">
+            <button type="button" className="fl-btn" onClick={() => { setAuto(false); step(-1); }} aria-label={t('Previous yacht', 'Предыдущая яхта')}><IconBack s={16} /></button>
+            <button type="button" className="fl-btn" onClick={toggle} aria-pressed={auto}
+              aria-label={auto ? t('Stop the tour', 'Остановить облёт') : t('Tour the fleet', 'Облететь флот')}>
+              {auto ? <svg viewBox="0 0 24 24" width={14} height={14} aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" /></svg> : <IconPlay s={14} />}
+            </button>
+            <button type="button" className="fl-btn" onClick={() => { setAuto(false); step(1); }} aria-label={t('Next yacht', 'Следующая яхта')}><IconArrow s={16} /></button>
+            <button type="button" className="fl-btn fl-all" onClick={() => pick(null)} aria-pressed={!id}><IconGrid s={14} /><span>{t('All', 'Все')}</span></button>
+          </div>
+          <div className="fl-boats" role="radiogroup" aria-label={t('Yacht', 'Яхта')}>
+            {YACHTS.map((x, i) => (
+              <button key={x.id} type="button" role="radio" aria-checked={x.id === id} className="fl-boat" onClick={() => pick(x.id)}>
+                <span className="fl-i">{String(i + 1).padStart(2, '0')}</span>
+                <b>{t(...x.name)}</b>
+                <span className="fl-m">{t(...x.specs[0].v)} · {kn(x.speed.down)}</span>
+                {x.id === id && auto && <i className={`fl-bar ${there ? 'run' : ''}`} key={landed} style={{ animationDuration: `${DWELL}s` }} aria-hidden="true" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <section className="bt-card" ref={card} aria-labelledby="fl-card">
+        <div className="bt-card-h"><span className="lbl-ink" id="fl-card">{t(...y.name)} · {t(...y.kind)}</span></div>
+        <button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race the ${y.name[0]}`, `В гонку на ${shown === 'club40' ? 'Клубе 40' : y.name[1]}`)}</span></button>
+        <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс')}>
+          <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд')}</button>
+          <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Downwind', 'Фордевинд')}</button>
+        </div>
+
+        <div className="fl-stats">
+          <div><span className="bt-sk">{t('Length', 'Длина')}</span><b>{t(...spec('Length')!.v)}</b></div>
+          <div><span className="bt-sk">{t('Crew', 'Экипаж')}</span><b>{t(...spec('Crew')!.v)}</b></div>
+          <div><span className="bt-sk">{t('Upwind', 'Бейдевинд')}</span><b>{kn(y.speed.up)}</b></div>
+          <div><span className="bt-sk">{t('Downwind', 'Фордевинд')}</span><b>{kn(y.speed.down)}</b></div>
+          <span className="bt-sv">{t('Speeds in 12 kn of wind', 'Скорости при ветре 12 уз')}</span>
+        </div>
+
+        <div className="bt-g yt-about">
+          <span className="bt-k"><IconSail s={14} />{t('About her', 'О яхте')}</span>
+          {y.about.map((p, i) => <p key={i}>{t(...p)}</p>)}
+        </div>
+
+        <div className="bt-g yt-about">
+          <span className="bt-k"><IconPlay />{t('In the game', 'В игре')}</span>
+          <p>{t(...y.race)}</p>
+        </div>
+
+        <div className="bt-g">
+          <span className="bt-k">{t('Specifications', 'Характеристики')}</span>
+          <dl className="yt-spec">
+            {y.specs.map((s) => <div key={s.k[0]}><dt>{t(...s.k)}</dt><dd>{t(...s.v)}</dd></div>)}
+          </dl>
+        </div>
+
+        <div className="bt-rows">
+          <Link className="bt-row" href={`/yachts?y=${shown}`}><IconBoats s={18} /><span>{t('On her own', 'Отдельно')}</span><span className="bt-row-m">{t('The yachts', 'Яхты')}</span></Link>
+          <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your colours', 'Твои цвета')}</span><span className="bt-row-m">{t('Every yacht', 'Для всех яхт')}</span></Link>
+        </div>
+      </section>
+    </div>
+  );
+}

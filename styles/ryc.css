@@ -671,3 +671,50 @@ html[data-me] .hm-av > svg { display: none; }
 .yt-spec > div { padding: 8px 10px; background: rgba(8, 14, 20, 0.55); }
 .yt-spec dt { font: 700 10px/1.2 var(--f-sans); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .yt-spec dd { margin: 3px 0 0; font: 700 13px/1.25 var(--f-sans); color: #fff; }
+
+/* ---------- the fleet (/fleet): every yacht in one scene, the drone touring them, her words in the card ---------- */
+.fl-n { margin-left: 8px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.fl-h { animation: fl-in .5s var(--ease) both; }
+@keyframes fl-in { from { opacity: 0; transform: translateY(6px); } }
+.fl-strip { pointer-events: auto; display: flex; flex-direction: column; gap: 10px; margin-top: auto; text-shadow: none; }
+.fl-ctl { display: flex; gap: 6px; }
+.fl-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 36px; height: 36px; padding: 0; border-radius: 54px; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(8, 14, 20, 0.45); color: #fff; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); cursor: pointer; transition: background-color .2s, border-color .2s, transform .12s; }
+.fl-btn:hover { background: rgba(8, 14, 20, 0.65); } .fl-btn:active { transform: scale(.94); }
+.fl-btn[aria-pressed="true"] { border-color: rgba(46, 230, 160, 0.55); background: rgba(46, 230, 160, 0.14); }
+.fl-all { width: auto; padding: 0 13px 0 11px; font: 700 11px/1 var(--f-sans); letter-spacing: .05em; text-transform: uppercase; }
+.fl-boats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-width: 640px; }
+.fl-boat { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; padding: 10px 12px 12px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(8, 14, 20, 0.45); color: #fff; text-align: left; cursor: pointer; backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); transition: background-color .25s, border-color .25s, transform .12s; }
+.fl-boat:hover { background: rgba(8, 14, 20, 0.62); } .fl-boat:active { transform: scale(.97); }
+.fl-boat[aria-checked="true"] { border-color: rgba(46, 230, 160, 0.5); background: rgba(16, 40, 36, 0.6); }
+.fl-boat b { font: 400 19px/1.05 var(--f-serif); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.fl-i { font: 700 10px/1 var(--f-sans); letter-spacing: .08em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.fl-boat[aria-checked="true"] .fl-i { color: var(--ok); }
+.fl-m { font: 400 11.5px/1.2 var(--f-sans); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+/* the tour's clock: how long until the drone moves on */
+.fl-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--ok); transform: scaleX(0); transform-origin: left; opacity: .85; }
+.fl-bar.run { animation: fl-run linear forwards; }
+@keyframes fl-run { to { transform: scaleX(1); } }
+.fl-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; padding: 2px 2px 0; }
+.fl-stats > div { display: flex; flex-direction: column; gap: 5px; }
+.fl-stats b { font: 300 26px/1 var(--f-serif); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fl-stats .bt-sv { grid-column: 1 / -1; margin-top: -4px; color: var(--muted); }
+/* upright: no tagline, the controls and the yachts on one row that scrolls, and a shorter card, so the yacht has room */
+@container scr (orientation: portrait) {
+  .fl-view .bt-p { display: none; }
+  .fl-view .bt-card { max-height: 40%; }
+  .fl-strip { flex-direction: row; align-items: center; gap: 8px; margin: 6px -16px 0; padding: 2px 16px; overflow-x: auto; scrollbar-width: none; scroll-padding: 0 16px; }
+  .fl-strip::-webkit-scrollbar { display: none; }
+  .fl-ctl { flex: none; }
+  .fl-boats { display: flex; flex: none; max-width: none; }
+  .fl-boat { flex: none; width: 100px; padding: 7px 10px 9px; gap: 3px; }
+  .fl-boat b { font-size: 15px; } .fl-m { display: none; }
+  .fl-btn { width: 32px; height: 32px; } .fl-all { width: 32px; padding: 0; } .fl-all span { display: none; }
+  .fl-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; } .fl-stats b { font-size: 18px; } .fl-stats .bt-sv { display: block; }
+}
+@container scr (max-height: 500px) and (orientation: landscape) {
+  .fl-boat { padding: 7px 10px 9px; } .fl-m { display: none; } .fl-boat b { font-size: 15px; }
+}
+@container scr (min-width: 1024px) and (min-height: 640px) {
+  .fl-boat b { font-size: 22px; } .fl-stats b { font-size: 30px; }
+}
+@media (prefers-reduced-motion: reduce) { .fl-h { animation: none; } .fl-bar.run { animation: none; transform: scaleX(1); opacity: .4; } }

@@ -518,10 +518,11 @@ class HullContact {
   }
   dispose(scene) { scene.remove(this.mesh); this.mesh.geometry.dispose(); this.mesh.material.dispose(); }
   update(b, t, W) {
-    // another class's hull is laid HULL / 12.2 times the club boat's size; a foiler flying has none in the water
+    // another class's hull is laid HULL / 12.2 times the club boat's size (a boat of a class of her own, b.cls, at
+    // hers); a foiler flying has none in the water
     this.mesh.visible = !(b.ride > 0.5);
     if (!this.mesh.visible) return;
-    const g = this.mesh.geometry, P = g.attributes.position, L = g.attributes.aL, S = HULL / 12.2;
+    const g = this.mesh.geometry, P = g.attributes.position, L = g.attributes.aL, S = (b.cls?.loa ?? HULL) / 12.2;
     const fx = Math.sin(b.h), fz = -Math.cos(b.h), rx = Math.cos(b.h), rz = Math.sin(b.h);
     for (let i = 0; i < P.count; i++) {
       const a = L.getX(i) * S, c = L.getY(i) * S, x = b.x + fx * a + rx * c, z = b.z + fz * a + rz * c;
@@ -967,12 +968,13 @@ export class World {
     this.setMarks(race);
   }
   // a boat's view, added to the scene: a computer boat in her own colours with her name over her, yours in the ones
-  // you chose on /boat (or the look given)
+  // you chose on /boat (or the look given). b.cls, when a boat has one, is her class (classes.js) instead of the
+  // page's: the fleet page (/fleet-view) has one of each afloat together.
   boatView(b, look) {
     const v = b.ai
-      ? makeBoatView({ look: LOOKS[b.name] || LOOKS.Aurora, label: { text: b.name, color: b.color } })
-      : makeBoatView({ look: look || playerLook(), player: true });
-    v.root.scale.setScalar(HULL / (v.drawnL || 10.4)); // the club's boat is drawn 10.4 m long; the other classes at their own length
+      ? makeBoatView({ look: LOOKS[b.name] || LOOKS.Aurora, label: { text: b.name, color: b.color } }, b.cls)
+      : makeBoatView({ look: look || playerLook(), player: true }, b.cls);
+    v.root.scale.setScalar((b.cls?.loa ?? HULL) / (v.drawnL || 10.4)); // the club's boat is drawn 10.4 m long; the other classes at their own length
     mirrored(v.root);
     // …but not the crew (eleven parts a sailor) or the wires: too small to make out in a half-size, rippled reflection
     for (const c of v.crew) c.g.traverse((o) => o.layers.disable(MIRRORED));

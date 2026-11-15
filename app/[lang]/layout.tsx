@@ -6,6 +6,7 @@ import { pageMeta, SITE, NAME, HOME_TITLE, HOME_DESC } from '@/lib/seo';
 import { TelegramSignIn } from '@/components/telegram-sign-in';
 import { BestsSync } from '@/components/bests-sync';
 import { Me } from '@/components/me';
+import { NavTrail } from '@/components/back-link';
 import '@/styles/tokens.css';
 import '@/styles/ryc.css';
 import '@/public/ui/tokens.css';
@@ -67,6 +68,7 @@ export default async function RootLayout({ children, params }: LangParams & { ch
         <TelegramSignIn />
         <BestsSync />
         <Me />
+        <NavTrail />
         <Analytics />
       </body>
     </html>

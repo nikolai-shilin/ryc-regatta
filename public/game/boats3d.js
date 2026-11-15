@@ -3,7 +3,8 @@
 // classes.js): the sportboats — the J/70 (tiller, cuddy, retractable sprit and asymmetric kite, four hiking on the
 // rail) and the RS21 (the same idea with a wide open cockpit, no cuddy, three aboard) — and
 // the AC75 foiling monohull (a scow-bowed hull flying on canting T-foil arms, a deck-sweeping double-skin main on a
-// D-section mast, a self-tacking jib and eight in their pods). makeBoatView gives the page's class (classes.js CLS).
+// D-section mast, a self-tacking jib and eight in their pods). makeBoatView gives the page's class (classes.js CLS), or
+// the one asked for (the fleet page, /fleet-view, has one of each afloat together).
 // Local frame as yacht.js: +x starboard, +y up, −z forward (the bow), the waterline at y = 0.
 import * as THREE from 'three';
 import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, sailor, labelSprite, THIGH, SHIN, LOOKS,
@@ -12,9 +13,9 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CLS } from './classes.js';
 import { D2R, clamp, lerp, waveHeight } from './sim.js';
 
-export function makeBoatView(o) {
-  if (CLS.id === 'j70' || CLS.id === 'rs21') return new SportView(o);
-  if (CLS.id === 'ac75') return new AC75View(o);
+export function makeBoatView(o, cls = CLS) {
+  if (cls.id === 'j70' || cls.id === 'rs21') return new SportView({ ...o, cls });
+  if (cls.id === 'ac75') return new AC75View({ ...o, cls });
   return new BoatView(o);
 }
 
@@ -270,7 +271,7 @@ class ClassView {
     this.root = new THREE.Group();
     this.tilt = new THREE.Group(); this.tilt.rotation.order = 'YXZ';
     this.root.add(this.tilt);
-    this.drawnL = CLS.drawnL;
+    this.drawnL = this.cls.drawnL;
     this.sailSide = 1;
     this.tells = [];
     const T = this.tilt;
@@ -294,7 +295,7 @@ class ClassView {
     this.root.position.set(b.x, (y * 0.85 - 0.05) * sea + ride * this.flyY, b.z);
     this.root.rotation.y = -b.h;
     this.tilt.rotation.x = pitch - ride * 0.02; // flying: the bow a touch up
-    this.tilt.rotation.z = side * b.heel * CLS.heelShow * D2R + roll;
+    this.tilt.rotation.z = side * b.heel * this.cls.heelShow * D2R + roll;
     return side;
   }
   // the jib on its stay, its sheets, the telltales and the masthead vane: as on the club's boat
@@ -352,9 +353,11 @@ class ClassView {
 
 // ---------- the sportboats: the J/70 and the RS21 ----------
 // RS: the RS21 — shorter and narrower, lower and flatter-sheered, a wide-open cockpit from the mast to the open
-// transom with no cuddy and no lifelines, a slightly smaller rig and a lifting bulb keel
-const RS = CLS.id === 'rs21';
-const J = (() => {
+// transom with no cuddy and no lifelines, a slightly smaller rig and a lifting bulb keel. Each is worked out once, the
+// first time a boat of hers is built.
+const SPORT = {};
+const sportOf = (RS) => (SPORT[RS] ??= sport(RS));
+const sport = (RS) => {
   const L = RS ? 6.67 : 6.93, B = RS ? 2.2 : 2.25;
   const hull = hullOf({
     L, flare: RS ? 0.05 : 0.03,
@@ -374,11 +377,13 @@ const J = (() => {
   const SPRIT = new THREE.Vector3(0, TACK.y + 0.04, hull.BOW - (RS ? 1.6 : 1.5));
   const rig = rigOf({ span: MASTHEAD - 0.2 - BOOM_Y, chord, numAt: 0.62, logoAt: 0.78, flagAt: 0.9, mark: 0.85, head: HEAD, tack: TACK, clew: CLEW, ad: 1.1, adH: 0.55 });
   return { L, B, hull, MAST_Z, MAST_FOOT, MASTHEAD, HOUNDS, BOOM_Y, chord, TACK, HEAD, CLEW, SPRIT, rig };
-})();
+};
 
 class SportView extends ClassView {
-  constructor({ look = LOOKS.player, label = null, player = false }) {
+  constructor({ look = LOOKS.player, label = null, player = false, cls = CLS }) {
     super();
+    this.cls = cls;
+    const RS = this.RS = cls.id === 'rs21', J = this.J = sportOf(RS);
     const add = this.start(), T = this.tilt, H = J.hull;
     this.flyY = 0;
     add(new THREE.Mesh(H.geometry(), hullMaterial(look.hull, look.stripe)));
@@ -519,7 +524,7 @@ class SportView extends ClassView {
     this.finish(label, 12);
   }
   update(b, t, W, showLabel) {
-    const H = J.hull, side = this.place(b, t, W);
+    const { RS, J } = this, H = J.hull, side = this.place(b, t, W);
     this.wheel.rotation.y = b.rudder * 0.5;
     const sa = b.sail * D2R, luff = b.luff, ph = t * 17;
     this.mainPivot.rotation.y = -this.sailSide * sa;
@@ -591,8 +596,9 @@ const A = (() => {
 })();
 
 class AC75View extends ClassView {
-  constructor({ look = LOOKS.player, label = null, player = false }) {
+  constructor({ look = LOOKS.player, label = null, player = false, cls = CLS }) {
     super();
+    this.cls = cls;
     const add = this.start(), T = this.tilt, H = A.hull;
     this.flyY = 1.7;
     const paint = foilerMaterial(look.hull);
