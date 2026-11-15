@@ -316,7 +316,7 @@ function onCloth(tex, draw) {
   for (const t of [tex, tex.back]) if (t && t.image) { const w = t.image.width, X = t === tex ? (u) => w * u : (u) => w * (1 - u); draw(t.image.getContext('2d'), w, t.image.height, X); t.needsUpdate = true; }
   return tex;
 }
-// a cruiser's sails, whatever the racing look: white woven Dacron, the luff tape and battens a shade darker, the
+// a cruiser's sails, whatever the racing look (but on the fleet page, where she is in yours): white woven Dacron, the luff tape and battens a shade darker, the
 // number in the hull's colour (or navy, on a pale hull) to read on the white
 function dacron(look) {
   const c = new THREE.Color(look.hull), ink = c.getHSL({}).l < 0.55 ? look.hull : '#1d2a44';
@@ -857,7 +857,8 @@ const BV = (() => {
 // the address the import map gives it (its hash after a deploy, as yacht.js's yacht.glb); if it doesn't come in 8 s,
 // she is built from the lines in code instead.
 const fileAt = (f) => (import.meta.resolve ? import.meta.resolve(`./${f}`) : new URL(f, import.meta.url).href);
-const BV_MODEL = CLS.id !== 'bavaria46' && !/fleet-view/.test(globalThis.location?.pathname || '') ? null : await new Promise((res) => {
+const ON_FLEET = /fleet-view/.test(globalThis.location?.pathname || ''); // the fleet page: every yacht in your colours, the cruiser's sails too
+const BV_MODEL = CLS.id !== 'bavaria46' && !ON_FLEET ? null : await new Promise((res) => {
   const done = (v) => { clearTimeout(timer); res(v); }, timer = setTimeout(() => res(null), 8000);
   new GLTFLoader().load(fileAt('bavaria46.glb'), (g) => {
     const parts = {};
@@ -1100,16 +1101,16 @@ class CruiserView extends ClassView {
     gear.add(new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.16), M.dark).translateY(BV.BOOM_Y + 0.06).translateZ(BV.BL - 0.02)); // the outhaul's car at the clew
     this.mainPivot.add(mergeGroup(gear));
     this.mainPivot.add(line([[0.05, BV.BOOM_Y + 0.08, BV.BL - 0.05], [0.05, BV.BOOM_Y + 0.08, 0.2], [0.08, BV.MAST_FOOT + 0.3, 0.17]]));
-    const cloth = dacron(look);
+    const cloth = ON_FLEET ? look : dacron(look);
     const mtex = sailTexture('main', cloth, BV.rig);
-    this.main = sailMesh(24, 12, mtex, false, 'main'); this.mainPivot.add(this.main);
+    this.main = sailMesh(24, 12, mtex, cloth.laminate, 'main'); this.mainPivot.add(this.main);
     // the genoa on the forestay, sheeted through its car on the side deck to the primary winch
     this.TACK = BV.TACK; this.HEAD = BV.HEAD; this.CLEW = BV.CLEW; this.jibMax = 32; this.jibBelly = 0.13;
     this.jibPivot = add(new THREE.Group(), BV.TACK.x, BV.TACK.y, BV.TACK.z);
     this.jibAxis = BV.HEAD.clone().sub(BV.TACK).normalize();
     // the furling genoa, a navy strip of sun cloth down its leech and along its foot, to cover it when it's rolled away
     const jtex = onCloth(sailTexture('jib', cloth, BV.rig), (x, w, h, X) => { x.fillStyle = '#22385a'; x.fillRect(Math.min(X(0.93), X(1)), 0, w * 0.07, h); x.fillRect(0, h * 0.975, w, h * 0.025); });
-    this.jib = sailMesh(18, 9, jtex, false, 'jib'); this.jibPivot.add(this.jib);
+    this.jib = sailMesh(18, 9, jtex, cloth.laminate, 'jib'); this.jibPivot.add(this.jib);
     this.kite = sailMesh(16, 10, sailTexture('kite', look), false, 'kite'); this.kite.visible = false; T.add(this.kite);
     this.makeTells(player);
     if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, H.BOW + 2.4, 1.15, 1.3, 0.48));
