@@ -364,12 +364,14 @@ export class Guest {
     if (race.clock < s.c - 1) this._catchUp(s.c); // a page just opened, or one that slept: the wind and waves too
     // when her controls were where the host's copy's are: her clock stamp on them, less the host's clock when they came
     const lag = Array.isArray(s.a) && Number.isFinite(s.a[0]) && Number.isFinite(s.a[1]) ? s.a[0] - s.a[1] : 0;
-    if (this._first) { this._first = false; setSails(me, o); this._take(o, s.c + lag); return; } // everything, once
+    if (this._first) { this._first = false; this._key = null; setSails(me, o); this._take(o, s.c + lag); return; } // everything, once
     if (this._snapMe) { this._snapMe = false; this._take(o, s.c + lag); return; }
-    const p = this._histAt(s.c + lag);
-    if (!p) return;
-    const E = { x: o.x - p.x, z: o.z - p.z, h: wrap(o.h - p.h), v: o.v - p.v };
-    if (Math.hypot(E.x, E.z) > SNAP_M) this._take(o, s.c + lag);
+    // set against where she was then; with no such pose kept (her clock just jumped, or the host hasn't her newest
+    // stamp yet), against the host's copy itself, carried on to her clock
+    const p = this._histAt(s.c + lag), a = Math.min(HOLD_MS / 1000, Math.max(0, race.clock - s.c));
+    const E = p ? { x: o.x - p.x, z: o.z - p.z, h: wrap(o.h - p.h), v: o.v - p.v }
+      : { x: o.x + Math.sin(o.h) * o.v * a - me.x, z: o.z - Math.cos(o.h) * o.v * a - me.z, h: wrap(o.h - me.h), v: o.v - me.v };
+    if (Math.hypot(E.x, E.z) > SNAP_M) this._take(o, p ? s.c + lag : s.c);
     else this._err = E;
   }
   // the host's copy of her taken as it is, carried on to her own time from `c`, the time on her own clock it stands for
@@ -389,8 +391,12 @@ export class Guest {
     const a = H[i - 1], b = H[i], f = b.c > a.c ? Math.min(1, Math.max(0, (c - a.c) / (b.c - a.c))) : 1;
     return { x: a.x + (b.x - a.x) * f, z: a.z + (b.z - a.z) * f, h: wrap(a.h + wrap(b.h - a.h) * f), v: a.v + (b.v - a.v) * f };
   }
-  // the clock forward to c, the wind and the waves with it
-  _catchUp(c) { for (let d = c - this.race.clock; d > 1e-9; d -= 0.25) this.race.advance(Math.min(0.25, d)); }
+  // the clock forward to c, the wind and the waves with it. A jump (a page just opened, or one that slept) stamps her
+  // controls afresh at the new time: the stamp says when they were last set on this clock
+  _catchUp(c) {
+    if (c - this.race.clock > 0.5) this._key = null;
+    for (let d = c - this.race.clock; d > 1e-9; d -= 0.25) this.race.advance(Math.min(0.25, d));
+  }
 
   _onEv(e) {
     const race = this.race, me = this.me;

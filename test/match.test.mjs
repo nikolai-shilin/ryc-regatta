@@ -623,3 +623,36 @@ test('her penalty turn is the host\'s to judge: her own screen never pays it, an
   assert.equal(d.me.owed, 0); assert.equal(d.me.pen, null);
   assert.deepEqual(d.me.events.filter((e) => e === 'penaltyDone'), ['penaltyDone']);
 });
+
+test('a reloaded guest holding her controls steady is set against the host\'s copy again: a drift eased away, a big one taken at once', async () => {
+  const d = await duel({ latency: 150 });
+  d.run(5, () => { d.me.rudder = 0; });
+  d.run(1, () => { d.me.rudder = 0.2; });
+  d.run(14, () => { d.me.rudder = 0; });
+  d.guest.stop();
+  const lk = makeLink(d.rt, d.code);
+  await lk.all.join();
+  const ear = makeLink(d.rt, d.code).input, stamps = [];
+  await ear.join(); ear.on('input', (m) => stamps.push(m.g));
+  const g2 = new Guest({ race: raceFor(d.match, 'g'), link: lk, me: 'g', now: d.now });
+  await g2.joined;
+  Object.assign(d, { guest: g2, grace: g2.race, me: g2.me, Hg: g2.race.humans.find((b) => b.id === 'h') });
+  d.run(2); // her hands off the helm: the same controls all along
+  assert.ok(stamps.length > 0 && Math.abs(stamps.at(-1) - d.grace.clock) < 2, `her controls stamped at her new time (${stamps.at(-1)}, her clock ${d.grace.clock.toFixed(2)})`);
+  d.me.x += 10; // her screen drifts 10 m off
+  d.run(3);
+  assert.ok(near(d.me, d.Gh) < 2, `the drift eased away (${near(d.me, d.Gh).toFixed(2)} m off the host's copy)`);
+  d.me.x += 25; // and 25 m
+  d.run(0.4);
+  assert.ok(near(d.me, d.Gh) < 2, `taken at once (${near(d.me, d.Gh).toFixed(2)} m)`);
+  // with no past pose of hers to set it against (the host's game hitched; her clock ran on and now waits for it):
+  // the host's copy itself, and 25 m off is still taken at once
+  for (let k = 0; k < 120; k++) { d.clock.t += 1000 * FRAME; d.rt.pump(); d.guest.input(controlsOf(d.me)); d.guest.frame(FRAME); }
+  d.run(0.3);
+  assert.ok(d.grace.clock > d.hrace.clock + 1, 'her clock is waiting for the host\'s');
+  d.me.x += 25;
+  d.run(0.4);
+  // (her boat sails on while her clock waits: she is ahead of the host's copy by the clocks' difference)
+  const lead = d.grace.clock - d.hrace.clock, at = { x: d.Gh.x + Math.sin(d.Gh.h) * d.Gh.v * lead, z: d.Gh.z - Math.cos(d.Gh.h) * d.Gh.v * lead };
+  assert.ok(near(d.me, at) < 2, `taken at once, waiting (${near(d.me, at).toFixed(2)} m off the host's copy carried on ${lead.toFixed(2)} s)`);
+});
