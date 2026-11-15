@@ -197,7 +197,8 @@ export const VENUES = [
     id: 'marstrand', name: ['Marstrand', 'Марстранд'], lat: 57.885, lon: 11.555, wind: 225, tz: 2, stream: ['flow', 15, 0.4],
     look: {
       haze: 1.15,
-      ground: { forest: ['#2c4224', '#3b5530', '#566d3a'], scrub: '#7a7f56', rock: ['#a8988c', '#857870'], town: '#9c8a80', shore: '#a8988a' },
+      // (Bohuslän granite: pinkish grey, not sand)
+      ground: { forest: ['#2c4224', '#3b5530', '#566d3a'], scrub: '#6f7556', rock: ['#a09896', '#78706e'], town: '#9c8a80', shore: '#948c89' },
       trees: [['conifer', 0.55, '#22381f', '#36502c'], ['broad', 0.3, '#33502a', '#5a7838'], ['shrub', 0.15, '#4a5a34', '#6f7a48']], treeTop: 200, woods: 0.35, clearing: 'rock',
       walls: ['#8b2d23', '#a03a2c', '#f4f2ec', '#e8e2d0', '#d8c79a', '#7a2a22'], roofs: ['#3f3a38', '#5a3a33', '#8a3b2e', '#4a4d50'], flat: 0.05,
       boats: { sail: 0.85, motor: 0.15, big: 0 },

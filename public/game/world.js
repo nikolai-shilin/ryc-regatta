@@ -13,7 +13,7 @@ import { Ships } from './ships.js';
 import { Post, Mirror, OVERLAY, MIRRORED } from './post.js';
 import { Ocean, OCEAN_GLSL, oceanUniforms, blankOcean } from './ocean.js';
 import { skyAt, pickSky, SKY_GLSL, skyUniforms } from './light.js';
-import { Skopea, groundAt, inLandShadow } from './skopea.js';
+import { Skopea, groundAt, inLandShadow, CLOUD_GLSL } from './skopea.js';
 export { flagTexture } from './committee.js';
 
 // the sky's colours and the sun: one set of objects that every shader shares; setLight() changes them in place
@@ -49,6 +49,7 @@ uniform sampler2D uRefl; uniform mat4 uReflMat;
 uniform sampler2D uSeabed, uShadeTex, uShore, uCalm; uniform vec3 uGridXf, uShadeXf, uLandAt, uShallow, uNearXf; uniform float uShallowK;
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
 ${SKY_GLSL}
+${CLOUD_GLSL}
 ${OCEAN_GLSL}
 vec4 hash42(vec2 p) { // Dave Hoskins' hash, steady for the course's sizes of coordinate
   vec4 p4 = fract(vec4(p.xyxy) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
@@ -134,9 +135,10 @@ void main() {
   // the water body: deep blue, lit turquoise where the crests let the sun through
   vec3 sunFlat = normalize(vec3(uSun.x, 0.0, uSun.z));
   float crest = smoothstep(-0.2, 1.0, vH / max(uAmp, 0.08));
-  // in a hill's shadow the sun neither lights the water nor glints on it; over the shallows the bed shows through
+  // in a hill's shadow, or a cloud's (skopea.js cloudShade), the sun neither lights the water nor glints on it; over
+  // the shallows the bed shows through
   vec2 lp = vWorld.xz + uLandAt.xz, lg = (lp - uShadeXf.xy) * uShadeXf.z;
-  float lsun = lg.x > 0.0 && lg.y > 0.0 && lg.x < 1.0 && lg.y < 1.0 ? texture2D(uShadeTex, lg).r : 1.0;
+  float lsun = (lg.x > 0.0 && lg.y > 0.0 && lg.x < 1.0 && lg.y < 1.0 ? texture2D(uShadeTex, lg).r : 1.0) * cloudShade(vec3(lp.x, 0.0, lp.y));
   float dep = texture2D(uSeabed, (lp - uGridXf.xy) * uGridXf.z).r * 25.5;
   float shal = uShallowK * (1.0 - smoothstep(0.8, 14.0, dep)) * (1.0 - smoothstep(1800.0, 4500.0, dist));
   float sss = crest * (0.35 + 0.65 * max(0.0, dot(-V, sunFlat))) * (1.0 - cosT * 0.5) * (0.6 + 0.8 * patchy) * lsun;
@@ -1379,7 +1381,7 @@ export class World {
     this.wild.update(dt, t, this.W, cam, this.foamU.uScale.value);
     this.plane.update(dt, cam, !this.intro);
     this.sky.position.copy(cam.position); this.sky.material.uniforms.uTime.value = t; // the clouds drift
-    this.skopea.update(cam.position); // the far trees as plain crowns
+    this.skopea.update(cam.position, t); // the far trees as plain crowns, the clouds' shadows drifting
     this.jets.update(dt, cam, this.race);
     this.ships.update(dt);
     // the glare: brightest looking straight at the sun, gone when you look away

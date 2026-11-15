@@ -12,7 +12,7 @@ export { groundAt };
 import { SKY_GLSL } from './light.js';
 
 const META = SKOPEA.meta, P = SKOPEA.parts, LOOK = VENUE.look;
-const TE = META.terrain.ext;
+const TE = META.terrain.ext, TN_ = META.terrain.n;
 const GN = META.grid.n, GC = META.grid.cell; // the 20 m grid of the cover, the open sky and the depth
 const CLS = Object.fromEntries(META.classes.map((c, i) => [c, i]));
 // a file baked before the roads, the surf's distance from the shore and the calm water were in it: those parts empty
@@ -130,6 +130,21 @@ const LAND_U = {
   uHazeL: { value: 7700 }, uHazeCap: { value: 0.92 },
 };
 let SKY_U = {}; // the sky's uniforms (light.js), from the world
+// The clouds' shadows: the sky's fair-weather cumulus (light.js cloudDen: the same noise, as thick as the sky's) as a
+// layer 1500 m up, drifting as the sky's do, about 8 m a second, but fixed to the venue — the sky draws its clouds
+// round the camera, and a shadow fixed to it would sail along with a fast boat. Where one is between a point and the
+// sun, the sun's light there is dimmed: on the land, the sea (world.js) and the boats and marks (inLandShadow). The
+// sky's noise, thickness and sun (uCs…) are the sky's own uniforms, handed over by the Skopea (its constructor); uCsT
+// is the race's clock (update()).
+export const CLOUD_U = { uCsT: { value: 0 }, uCsRipple: { value: null }, uCsCloud: { value: 0 }, uCsSun: { value: new THREE.Vector3(0, 1, 0) } };
+export const CLOUD_GLSL = /* glsl */ `
+uniform sampler2D uCsRipple; uniform float uCsT, uCsCloud; uniform vec3 uCsSun;
+float cloudShade(vec3 p) { // p: in the venue's frame; 1 in the sun, 0.3 under the thickest cloud
+  if (uCsSun.y < 0.03) return 1.0;
+  vec2 q = (p.xz + uCsSun.xz * ((1500.0 - p.y) / uCsSun.y)) * 0.0002 + vec2(uCsT * 0.0016, uCsT * 0.0007);
+  float n = texture2D(uCsRipple, q).w * 0.62 + texture2D(uCsRipple, q * 2.3 + 0.31).w * 0.28 + 0.05; // (the finest octave as its mean: a shadow is soft)
+  return 1.0 - 0.7 * smoothstep(0.52 - uCsCloud, 0.74 - uCsCloud * 0.5, n);
+}`;
 // Each land material is three.js's own, with the venue's point (vLand) and the view's (vHz) handed on to the pixel:
 // the light there is dimmed by the hills' shadow (the sun's) and by how much of the sky is hidden (the sky's), and
 // its haze is the sea's own: the sky's colour at the horizon that way, thicker with the distance, so the far hills
@@ -138,13 +153,14 @@ const LAND_FS = /* glsl */ `
 uniform vec3 uGridXf, uShadeXf, uAOXf; uniform sampler2D uAO, uShadeTex; uniform float uHazeL, uHazeCap, uHazeK;
 varying vec3 vLand; varying vec3 vHz;
 ${SKY_GLSL}
+${CLOUD_GLSL}
 float landSun(vec2 p) { vec2 g = (p - uShadeXf.xy) * uShadeXf.z; return g.x > 0.0 && g.y > 0.0 && g.x < 1.0 && g.y < 1.0 ? texture2D(uShadeTex, g).r : 1.0; }
 `;
 function landMat(m, k = 1, o = {}) {
   m.fog = false;
   const hk = { value: k };
   m.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, LAND_U, SKY_U, { uHazeK: hk }, o.uniforms || {});
+    Object.assign(sh.uniforms, LAND_U, SKY_U, CLOUD_U, { uHazeK: hk }, o.uniforms || {});
     sh.vertexShader = 'uniform vec3 uAt; varying vec3 vLand; varying vec3 vHz;\n' + (o.vsHead || '') + '\n' + sh.vertexShader.replace('#include <project_vertex>', (o.project || '#include <project_vertex>') + `
       vec4 lwp = vec4(transformed, 1.0);
       #ifdef USE_INSTANCING
@@ -158,7 +174,7 @@ function landMat(m, k = 1, o = {}) {
     if (o.emis) fs = fs.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + o.emis);
     if (o.nrm) fs = fs.replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n' + o.nrm);
     if (!o.unlit) fs = fs.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
-      { float sun = landSun(vLand.xz), sky = texture2D(uAO, (vLand.xz - uAOXf.xy) * uAOXf.z).r * (255.0 / 252.0);
+      { float sun = landSun(vLand.xz) * cloudShade(vLand), sky = texture2D(uAO, (vLand.xz - uAOXf.xy) * uAOXf.z).r * (255.0 / 252.0);
         reflectedLight.directDiffuse *= sun; reflectedLight.directSpecular *= sun; reflectedLight.indirectDiffuse *= 0.3 + 0.7 * sky; }`);
     sh.fragmentShader = fs.replace('#include <tonemapping_fragment>', `{
         float hf = uHazeCap * (1.0 - exp(-length(vHz) * uHazeK / uHazeL));
@@ -190,8 +206,28 @@ const GROUND_U = {
   uLake: { value: new THREE.Color('#2f5566') },
   uCanopy: { value: 1 }, // the canopy's crowns drawn one by one (0 on the lowest graphics level: only their average)
   uClear: { value: { scrub: 0, grass: 1, rock: 2 }[LOOK.clearing] ?? 0 }, // what the clearings are (venues.js look.clearing)
+  uLiftMask: { value: null }, uLiftOn: { value: 1 }, // the canopy's height (LIFT_VS): where the houses keep it off, and whether it's drawn
+  // how far from the shore (land.js roomAt: + at sea, − ashore, in steps of 4 m, on its 20 m grid round the race area)
+  uRoom: { value: (() => {
+    const R = SKOPEA.room, a = new Uint8Array(R.length); for (let k = 0; k < R.length; k++) a[k] = R[k] + 128;
+    const t = new THREE.DataTexture(a, META.room.nx, META.room.nz, THREE.RedFormat, THREE.UnsignedByteType);
+    t.unpackAlignment = 1; t.magFilter = t.minFilter = THREE.LinearFilter; t.needsUpdate = true; return t;
+  })() },
+  uRoomXf: { value: new THREE.Vector4(META.room.x0, META.room.z0, 1 / META.room.cell, 0) }, uRoomN: { value: new THREE.Vector2(META.room.nx, META.room.nz) },
 };
+// shoreDist() (GROUND_GLSL and LIFT_VS): metres from the shore there, + at sea and − ashore; 999 off the grid
+const ROOM_GLSL = /* glsl */ `
+uniform sampler2D uRoom; uniform vec4 uRoomXf; uniform vec2 uRoomN;
+float shoreDist(vec2 p) {
+  vec2 g = ((p - uRoomXf.xy) * uRoomXf.z + 0.5) / uRoomN;
+  if (g.x < 0.5 / uRoomN.x || g.y < 0.5 / uRoomN.y || g.x > 1.0 - 0.5 / uRoomN.x || g.y > 1.0 - 0.5 / uRoomN.y) return 999.0;
+  return (texture2D(uRoom, g).r * 255.0 - 128.0) * 4.0;
+}`;
 const GROUND_GLSL = /* glsl */ `
+#ifndef GROUND_Y
+#define GROUND_Y vLand.y
+#endif
+${ROOM_GLSL}
 uniform sampler2D uCover, uRoads; uniform vec3 uCol[11], uFields[6], uTowns[8], uNearXf, uShare, uLake; uniform float uNF, uTreeTop, uSnow, uNear, uWood, uCanopy, uClear;
 varying vec3 vLN;
 float gLake; // 1 where groundColour() found a lake's still water
@@ -262,7 +298,7 @@ vec3 sown(vec2 p, float v) {
   return c * (0.94 + 0.08 * smoothstep(0.3, 0.5, row) * smoothstep(0.9, 0.7, row));
 }
 vec3 groundColour() {
-  vec3 p = vLand; float y = p.y, ny = normalize(vLN).y;
+  vec3 p = vLand; float y = GROUND_Y, ny = normalize(vLN).y;
   vec2 g = (p.xz - uGridXf.xy) * uGridXf.z + (vec2(lnoise(p.xz / 7.0), lnoise(p.zx / 7.0 + 3.1)) - 0.5) * uGridXf.z * 24.0;
   float cv = floor(texture2D(uCover, g).r * 255.0 + 0.5), v = floor(cv / 16.0);
   int cls = int(cv - v * 16.0);
@@ -327,9 +363,13 @@ vec3 groundColour() {
   // the shore: the sea's mark on it, a band of bare stone (or the beach's sand, or the mud) up from the water —
   // higher where the coast is steep and the waves run up it, ragged along its top, the stone in blocks — dark and wet
   // at the waterline
-  // (on a low, flat shore, where a few centimetres of height are metres of ground, it is shingle: plain, and even)
+  // (on a low, flat shore, where a few centimetres of height are metres of ground, it is shingle: plain, and even, and
+  // measured from the shore — the waterline, and a strip some 4 to 7 m wide inland of it (shoreDist) — not by the
+  // height, which on flat land would band the low ground far back from the water too)
   float rocky = smoothstep(0.1, 0.35, 1.0 - ny), bn = lnoise(p.xz / 6.0 + lnoise(p.xz / 23.0) * 2.0);
-  float top = 1.4 + 1.7 * steep + 0.9 * (bn - 0.5) * rocky, sh = 1.0 - smoothstep(top - 0.25, top + 0.25, y);
+  float top = 1.4 + 1.7 * steep + 0.9 * (bn - 0.5) * rocky, shH = 1.0 - smoothstep(top - 0.25, top + 0.25, y), sd = shoreDist(p.xz);
+  float shF = max(1.0 - smoothstep(0.35, 0.8, y), sd > 900.0 ? shH : (1.0 - smoothstep(3.0 + 3.0 * bn, 5.0 + 3.0 * bn, -sd)) * (1.0 - smoothstep(1.5, 3.0, y)));
+  float sh = mix(shF, shH, rocky);
   float blocks = lnoise(p.xz / 1.8 + bn * 3.0), cracks = smoothstep(0.08, 0.0, abs(lnoise(p.xz / 3.5 + 9.0) - 0.5));
   vec3 sc = cls == 8 ? uCol[8] : cls == 12 ? c : mix(uCol[7] * (0.9 + 0.15 * lnoise(p.xz / 1.2)), mix(uCol[7], uCol[4], 0.35) * (0.72 + 0.45 * blocks) * (1.0 - 0.45 * cracks), rocky);
   c = mix(c, sc * mix(0.55, 1.0, smoothstep(0.05, 0.6, y)), 0.9 * sh);
@@ -371,6 +411,60 @@ if (gLake > 0.5) {
 // share the corners and their normals
 // the slopes' relief (GROUND_GLSL's slopeRelief), on the terrain and the land beyond
 const RELIEF = '{ normal = normalize((viewMatrix * vec4(slopeRelief(normalize(vLN), vLand.xz, length(vHz), 600.0), 0.0)).xyz); }';
+// The canopy's height: in a wood the ground is drawn as the roof of its crowns (canopy()), so it is drawn that high
+// too, some 8 m up (a little more or less crown by crown), and a ridge's outline and a wood's edge stand up as they do
+// — only drawn so: the race, the trees and the houses keep to the ground itself (groundAt). As in groundColour(), as
+// near as a corner can tell: the map's woods, scrub a little; the stands where it says nothing, not their clearings
+// (but low scrub); none in the towns, on the roads, round the houses (uLiftMask, Skopea), on the crags and the bare
+// tops, nor on the shore, rising from the rocks; only round the race area (where the roads are), fading at its edge.
+const FINE = Math.round(Math.log2(2 * TE / 17)); // the quadtree's level of the 17 m squares (terrain(), pines())
+// how much of the canopy's height a square of the mesh carries, by its level: all on the 8 and 17 m ones, most on the
+// 33 m, a little on the 66 m, none on coarser
+const liftShare = (lv) => (lv >= FINE ? 1 : lv === FINE - 1 ? 0.7 : lv === FINE - 2 ? 0.3 : 0);
+// the quadtree's level of the square the point is in (as groundAt finds it): the bigger, the finer
+function levelAt(x, z) {
+  const fc = (x + TE) / (2 * TE / TN_), fr = (z + TE) / (2 * TE / TN_), { kids, leafOf } = TREE;
+  if (!(fc >= 0 && fr >= 0 && fc <= TN_ && fr <= TN_)) return 0;
+  let node = 0, lv = 0, i = 0, j = 0;
+  while (leafOf[node] < 0) {
+    const s = TN_ >> (lv + 1), a = fr >= (2 * i + 1) * s ? 1 : 0, b = fc >= (2 * j + 1) * s ? 1 : 0;
+    node = kids[node * 4 + a * 2 + b]; i = 2 * i + a; j = 2 * j + b; lv++;
+  }
+  return lv;
+}
+const LIFT_VS = /* glsl */ `
+uniform sampler2D uCover, uRoads, uLiftMask; uniform vec3 uGridXf, uNearXf, uTowns[8]; uniform float uWood, uNF, uClear, uTreeTop, uLiftOn;
+attribute float aFine; // how far this corner may carry it (terrain(): none where the mesh is coarse)
+varying float vGroundY;
+${ROOM_GLSL}
+float vhash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+float vnoise(vec2 x) { vec2 i = floor(x), f = fract(x), u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(vhash(i), vhash(i + vec2(1.0, 0.0)), u.x), mix(vhash(i + vec2(0.0, 1.0)), vhash(i + vec2(1.0, 1.0)), u.x), u.y); }
+float canopyLift(vec3 p, vec3 n) {
+  vec2 rg = (p.xz - uNearXf.xy) * uNearXf.z;
+  if (uLiftOn < 0.5 || aFine <= 0.0 || rg.x <= 0.0 || rg.y <= 0.0 || rg.x >= 1.0 || rg.y >= 1.0) return 0.0;
+  float cv = floor(texture2D(uCover, (p.xz - uGridXf.xy) * uGridXf.z).r * 255.0 + 0.5);
+  int cls = int(cv - floor(cv / 16.0) * 16.0);
+  float y = p.y, h = 0.0;
+  if (cls == 1) h = 1.0;
+  else if (cls == 2) h = 0.25;
+  else if (cls == 0) {
+    // (the stands' outline smoothed: without the finest of the noise, and eased in over a wider margin, so a strip of
+    // wood a corner or two wide isn't raised as a fin among the clearings)
+    vec2 q = p.xz * 1.7;
+    float f = 0.55 * vnoise(q / 220.0) + 0.3 * vnoise(q / 70.0) + 0.075;
+    float cleared = (1.0 - smoothstep(uWood - 0.08, uWood + 0.12, f)) * smoothstep(0.9, 0.97, n.y) * (y < 160.0 ? 0.9 : 0.5);
+    h = uNF > 0.0 || uClear > 0.5 ? 1.0 - cleared : mix(1.0, 0.25, smoothstep(0.3, 0.6, cleared));
+    float t = 0.0;
+    for (int i = 0; i < 8; i++) if (uTowns[i].z > 0.0) t = max(t, 1.0 - length(vec2((p.x - uTowns[i].x) / 1.1, p.z - uTowns[i].y)) / uTowns[i].z);
+    h *= 1.0 - clamp(t * 1.4, 0.0, 1.0);
+  }
+  h *= (1.0 - smoothstep(0.5, 0.75, 1.0 - n.y)) * (1.0 - 0.7 * smoothstep(uTreeTop * 0.65, uTreeTop * 1.26, y));
+  h *= (1.0 - smoothstep(0.2, 0.6, texture2D(uRoads, rg).r)) * (1.0 - texture2D(uLiftMask, rg).r);
+  float sd = shoreDist(p.xz); // (rising from the shore's rocks over the first 40 m ashore, whatever the ground's height)
+  h *= (sd > 900.0 ? smoothstep(2.5, 9.0, y) : smoothstep(-4.0, -40.0, sd)) * smoothstep(1.2, 3.0, y) * smoothstep(0.0, 0.06, min(min(rg.x, rg.y), min(1.0 - rg.x, 1.0 - rg.y)));
+  return h * aFine * 8.5 * (0.8 + 0.4 * vhash(floor(p.xz / 7.0) + 0.5));
+}`;
 // …and on the terrain the canopy's crowns too (GROUND_GLSL's canopy(): each a dome on the slope, tilted to the light)
 const RELIEF_CROWNS = `{ vec3 wn = slopeRelief(normalize(vLN), vLand.xz, length(vHz), 600.0);
   if (gCrownK > 0.0) wn = normalize(mix(wn, normalize(wn * gCrownN.y + vec3(gCrownN.x, 0.0, gCrownN.z)), gCrownK * 0.75));
@@ -379,6 +473,24 @@ function terrain() {
   const all = new THREE.BufferGeometry(), pos = new THREE.BufferAttribute(MESH.pos, 3);
   all.setAttribute('position', pos); all.setIndex(new THREE.BufferAttribute(MESH.idx, 1)); all.computeVertexNormals();
   const nrm = all.attributes.normal, { L, I, J, D } = TREE, tiles = new Map();
+  // how far each corner may carry the canopy's height (LIFT_VS): the least share (liftShare) of the squares it is a
+  // corner of — a single corner raised 8 m among the far-apart corners of the flat low land would stand up as a tent
+  const fine = new Float32Array(MESH.corners).fill(1);
+  for (let k = 0; k < L.length; k++) {
+    if (!D[k]) continue;
+    const f = liftShare(L[k]);
+    for (let t = MESH.tri0[k]; t < MESH.tri0[k] + MESH.triN[k]; t++) for (let e = 0; e < 3; e++) { const v = MESH.idx[t * 3 + e]; fine[v] = Math.min(fine[v], f); }
+  }
+  // (twice over, each corner no more than the least of its neighbours': a fine pocket among coarse squares isn't raised)
+  for (let pass = 0; pass < 2; pass++) {
+    const g = fine.slice();
+    for (let t = 0; t < MESH.idx.length; t += 3) {
+      const a = MESH.idx[t], b = MESH.idx[t + 1], c = MESH.idx[t + 2], m = Math.min(fine[a], fine[b], fine[c]);
+      g[a] = Math.min(g[a], m); g[b] = Math.min(g[b], m); g[c] = Math.min(g[c], m);
+    }
+    fine.set(g);
+  }
+  const fineA = new THREE.BufferAttribute(fine, 1);
   for (let k = 0; k < L.length; k++) {
     if (!D[k]) continue;
     const sh = Math.max(0, L[k] - 3), key = (I[k] >> sh) * 8 + (J[k] >> sh);
@@ -386,10 +498,14 @@ function terrain() {
     const list = tiles.get(key), t0 = MESH.tri0[k];
     for (let t = t0; t < t0 + MESH.triN[k]; t++) list.push(MESH.idx[t * 3], MESH.idx[t * 3 + 1], MESH.idx[t * 3 + 2]);
   }
-  const mat = landMat(new THREE.MeshLambertMaterial(), 1, { key: 'ground', colour: 'groundColour()', uniforms: GROUND_U, fsHead: GROUND_GLSL, vsHead: 'varying vec3 vLN;', vs: 'vLN = objectNormal;', emis: LAKE_LIGHT, nrm: RELIEF_CROWNS });
+  const mat = landMat(new THREE.MeshLambertMaterial(), 1, {
+    key: 'ground', colour: 'groundColour()', uniforms: GROUND_U, fsHead: '#define GROUND_Y vGroundY\nvarying float vGroundY;\n' + GROUND_GLSL,
+    vsHead: 'varying vec3 vLN;\n' + LIFT_VS, vs: 'vLN = objectNormal;', emis: LAKE_LIGHT, nrm: RELIEF_CROWNS,
+    project: 'vGroundY = transformed.y; transformed.y += canopyLift(transformed, normalize(objectNormal));\n#include <project_vertex>', // (the ground's own height, for its colour)
+  });
   const group = new THREE.Group(), box = new THREE.Box3(), v = new THREE.Vector3();
   for (const list of tiles.values()) {
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', pos); g.setAttribute('normal', nrm); g.setIndex(list);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', pos); g.setAttribute('normal', nrm); g.setAttribute('aFine', fineA); g.setIndex(list);
     box.makeEmpty(); for (const i of list) box.expandByPoint(v.fromBufferAttribute(pos, i));
     g.boundingSphere = box.getBoundingSphere(new THREE.Sphere()); g.boundingBox = box.clone();
     group.add(new THREE.Mesh(g, mat));
@@ -513,9 +629,10 @@ function pines(count, far = false) {
   if (!sorts[2].length) sorts[2] = [{ kind: 'broad', share: 1, dark: C(GR.forest[0]), light: C(GR.forest[2]) }];
   const pickFrom = (list) => { let pick = r() * list.reduce((a, k) => a + k.share, 0), k = list[0]; for (const q of list) { k = q; if ((pick -= q.share) <= 0) break; } return k; };
   let n = 0, tries = 0;
-  // In a wood the trees stand shoulder to shoulder and their trunks are hidden: the ground there is drawn as the
-  // canopy's roof (GROUND_GLSL's canopy()), so a tree in it is sunk to where its crown meets that roof, a bump in it
-  // (and in a ridge's outline) rather than a lollipop on a bare stalk. By how much, metres, for each kind:
+  // In a wood the trees stand shoulder to shoulder and their trunks are hidden: round the race area the canopy's
+  // roof is drawn at its height (LIFT_VS) and hides them; past it, where the roof is drawn on the ground itself
+  // (GROUND_GLSL's canopy()), a tree in a wood is sunk to where its crown meets that roof, a bump in it (and in a
+  // ridge's outline) rather than a lollipop on a bare stalk. By how much, metres, for each kind:
   const SINK = { pine: 5.4, stone: 7.6, broad: 3, conifer: 2.2, eucalypt: 7.5, olive: 1.2 };
   const put = (k, x, y, z, s, sink = 0) => {
     o.position.set(x, y - 0.6 - sink * s, z); o.rotation.set(0, r() * 6.28, 0); o.scale.set(s, s * (0.85 + r() * 0.35), s); o.updateMatrix();
@@ -551,8 +668,11 @@ function pines(count, far = false) {
     else if (cl === CLS.forest && (coverCell(x, z) >> 4) === 1) k = pickFrom(sorts[1]);
     else if (cl === CLS.forest && (coverCell(x, z) >> 4) === 2) k = pickFrom(sorts[2]);
     else k = pickFrom(kinds);
+    // (sunk as far as the canopy isn't drawn raised there: terrain()'s share for the mesh's squares, round the race area)
+    const lv = levelAt(x, z), inNear = Math.max(Math.abs(x - NEAR.x0 - NEAR.n * NEAR.cell / 2), Math.abs(z - NEAR.x0 - NEAR.n * NEAR.cell / 2)) < NEAR.n * NEAR.cell * 0.44;
+    const lifted = inNear ? liftShare(lv) : 0;
     const inWood = !far && (cl === CLS.forest || (p < 0 && woodAt(x, z) >= WOOD + 0.02 && townness(x, z) <= 0));
-    put(k, x, y, z, (0.75 + r() * 0.65 - Math.min(0.3, y / (TOP * 3))) * (cl === CLS.scrub && !shrub ? 0.6 : 1), inWood ? (SINK[k.kind] || 0) * (0.75 + 0.35 * r()) : 0);
+    put(k, x, y, z, (0.75 + r() * 0.65 - Math.min(0.3, y / (TOP * 3))) * (cl === CLS.scrub && !shrub ? 0.6 : 1), inWood ? (SINK[k.kind] || 0) * (0.75 + 0.35 * r()) * (1 - lifted) : 0);
     n++;
   }
   const geos = {}, mat = landMat(new THREE.MeshLambertMaterial({ vertexColors: true }), 1, { key: 'trees' }), g = new THREE.Group();
@@ -714,8 +834,9 @@ function worship(b, g, yb, h, area, mosque, seed) {
   }
   return out;
 }
+const TAKEN = new Set(); // the ground the town's buildings stand on, and round them, in 9 m cells (town(), liftMask())
 function town() {
-  const r = rng(17), taken = new Set(), key = (x, z) => `${Math.round(x / 9)},${Math.round(z / 9)}`;
+  const r = rng(17), taken = TAKEN, key = (x, z) => `${Math.round(x / 9)},${Math.round(z / 9)}`;
   const tiles = new Map(), tile = (x, z) => { const k = Math.floor(x / TILE) + ',' + Math.floor(z / TILE); if (!tiles.has(k)) tiles.set(k, { parts: [], houses: new Batch() }); return tiles.get(k); };
   let parts = null;
   const mark = (x, z, rad) => { for (let dx = -rad; dx <= rad; dx += 9) for (let dz = -rad; dz <= rad; dz += 9) taken.add(key(x + dx, z + dz)); };
@@ -1207,7 +1328,7 @@ function landmarks() {
 
 // ---------- the land's shadows on everything else ----------
 // The yachts, the marks and the committee boat: their lit materials dimmed where the land's shadow falls (shadows()),
-// as the land and the sea are, so a boat sailing under a cliff at sunset goes into its shade.
+// as the land and the sea are, so a boat sailing under a cliff at sunset goes into its shade; and under a cloud's.
 export function inLandShadow(root) {
   root.traverse((o) => {
     if (!o.isMesh) return;
@@ -1217,15 +1338,15 @@ export function inLandShadow(root) {
       const prev = m.onBeforeCompile, key = m.customProgramCacheKey;
       m.onBeforeCompile = function (sh, r) {
         if (prev) prev.call(this, sh, r);
-        Object.assign(sh.uniforms, { uShadeTex: LAND_U.uShadeTex, uShadeXf: LAND_U.uShadeXf, uLandShadeAt: LAND_U.uAt });
+        Object.assign(sh.uniforms, { uShadeTex: LAND_U.uShadeTex, uShadeXf: LAND_U.uShadeXf, uLandShadeAt: LAND_U.uAt }, CLOUD_U);
         sh.vertexShader = 'uniform vec3 uLandShadeAt; varying vec2 vSunXZ;\n' + sh.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
           { vec4 sw = vec4(transformed, 1.0);
           #ifdef USE_INSTANCING
             sw = instanceMatrix * sw;
           #endif
             sw = modelMatrix * sw; vSunXZ = sw.xz + uLandShadeAt.xz; }`);
-        sh.fragmentShader = 'uniform sampler2D uShadeTex; uniform vec3 uShadeXf; varying vec2 vSunXZ;\n' + sh.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
-          { vec2 g = (vSunXZ - uShadeXf.xy) * uShadeXf.z; float sun = g.x > 0.0 && g.y > 0.0 && g.x < 1.0 && g.y < 1.0 ? texture2D(uShadeTex, g).r : 1.0;
+        sh.fragmentShader = 'uniform sampler2D uShadeTex; uniform vec3 uShadeXf; varying vec2 vSunXZ;\n' + CLOUD_GLSL + '\n' + sh.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+          { vec2 g = (vSunXZ - uShadeXf.xy) * uShadeXf.z; float sun = (g.x > 0.0 && g.y > 0.0 && g.x < 1.0 && g.y < 1.0 ? texture2D(uShadeTex, g).r : 1.0) * cloudShade(vec3(vSunXZ.x, 0.0, vSunXZ.y));
             reflectedLight.directDiffuse *= sun; reflectedLight.directSpecular *= sun; }`);
       };
       m.customProgramCacheKey = function () { return (key ? key.call(this) : '') + '|landshade'; };
@@ -1235,14 +1356,35 @@ export function inLandShadow(root) {
   return root;
 }
 
+// Where the canopy's height (LIFT_VS) is kept off: round every building (the ground town() took for them) and every
+// landmark, a cell wider, on the roads' grid, so a house or a lighthouse in the woods stands in its own clearing
+function liftMask() {
+  const n = NEAR.n, a = new Uint8Array(n * n);
+  const put = (x, z) => {
+    const i = Math.floor((x - NEAR.x0) / NEAR.cell), j = Math.floor((z - NEAR.x0) / NEAR.cell);
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { const ii = i + di, jj = j + dj; if (ii >= 0 && jj >= 0 && ii < n && jj < n) a[jj * n + ii] = 255; }
+  };
+  for (const k of TAKEN) { const c = k.indexOf(','); put(+k.slice(0, c) * 9, +k.slice(c + 1) * 9); }
+  for (const L of META.landmarks || []) {
+    if (L.at) for (let dx = -36; dx <= 36; dx += 9) for (let dz = -36; dz <= 36; dz += 9) put(L.at[0] + dx, L.at[1] + dz);
+    if (L.a && L.b) { // a bridge: along its approaches
+      const len = Math.hypot(L.b[0] - L.a[0], L.b[1] - L.a[1]) || 1, ux = (L.b[0] - L.a[0]) / len, uz = (L.b[1] - L.a[1]) / len;
+      for (let d = -200; d <= len + 200; d += 8) for (const o of [-24, -12, 0, 12, 24]) put(L.a[0] + ux * d - uz * o, L.a[1] + uz * d + ux * o);
+    }
+  }
+  return gridTex(a, n, true);
+}
+
 // ---------- all of it ----------
 export class Skopea {
   // skyU: the sky's uniforms (light.js), for the haze
   constructor(skyU) {
     SKY_U = skyU;
+    Object.assign(CLOUD_U, { uCsRipple: skyU.uRipple, uCsCloud: skyU.uCloud, uCsSun: skyU.uSun }); // the sky's own, shared
     this.group = new THREE.Group();
     this.land = terrain(); this.far = far(); this.trees = pines(16000); this.farTrees = pines(9000, true); this.town = town(); this.boats = marinas();
     this.landmarks = landmarks(); if (this.landmarks) this.town.add(this.landmarks);
+    GROUND_U.uLiftMask.value = liftMask();
     this.group.add(this.far, this.land, this.trees, this.farTrees, this.town, this.boats);
     this.group.traverse((o) => { if (o.isMesh) o.matrixAutoUpdate = false; });
     // what casts the shadows on the land (shadows()): the terrain, the buildings and the trees, not the land beyond
@@ -1253,6 +1395,7 @@ export class Skopea {
       uSeabed: { value: gridTex(P.depth, GN, true) }, uShallow: { value: C(W.shallow || '#4aa79a') }, uShallowK: { value: W.clear ?? 0.45 },
       uLandAt: LAND_U.uAt, uGridXf: LAND_U.uGridXf, uShadeXf: LAND_U.uShadeXf, uShadeTex: LAND_U.uShadeTex,
       uShore: { value: gridTex(P.shore, NEAR.n, true) }, uCalm: { value: gridTex(P.calm, NEAR.n, true) }, uNearXf: GROUND_U.uNearXf,
+      ...CLOUD_U,
     };
   }
   // the race's start at its place in the bay
@@ -1263,8 +1406,9 @@ export class Skopea {
     GROUND_U.uLake.value.copy(L.deep).lerp(L.horizon, 0.35);
     if (renderer) shadows(renderer, this.group, L.sunDir);
   }
-  // each frame: the near trees' tiles far from the camera drawn as plain crowns
-  update(cam) {
+  // each frame: the near trees' tiles far from the camera drawn as plain crowns; the clouds' shadows on the race's clock
+  update(cam, t = 0) {
+    CLOUD_U.uCsT.value = t;
     const gp = this.group.position;
     for (const m of this.trees.children) {
       const lod = m.userData.lod; if (!lod) continue;
