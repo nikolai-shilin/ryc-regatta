@@ -568,7 +568,7 @@
 .bc .ho-step:hover .ho-pic img { scale: 1.04; }
 .bc .ho-step-h { display: flex; align-items: stretch; }
 .bc .ho-step-n { flex: none; width: 56px; display: flex; align-items: center; justify-content: center; background: var(--you); color: var(--ink-on); font: 700 var(--fs-h3)/1 var(--cond); }
-.bc .ho-step-h .ho-h3 { flex: 1 1 auto; padding: var(--s-4) var(--s-5); }
+.bc .ho-step-h .ho-h3 { flex: 1 1 auto; padding: var(--s-4) var(--s-5) var(--s-4) var(--s-8); }
 .bc .ho-step > .ho-ps { padding: 0 var(--s-5) var(--s-6); }
 /* a band: a venue a day, the rules */
 .bc .ho-band { display: flex; flex-wrap: wrap; gap: var(--s-8) var(--s-12); padding: var(--s-10); background: var(--panel-2); }
