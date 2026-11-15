@@ -2,9 +2,10 @@
 # game/yacht.glb, to JPK's drawings (the half-breadth plan, the deck plan and the brochure's profile): the hull
 # (scow-inspired: a rounded spoon bow whose forefoot lifts clear of the water, the waterline starting a metre aft of
 # the stem; the beam carried aft to a wide, slightly raked transom whose bottom sits clear of the water at rest; a hard
-# chine the whole length), a T-keel (a slim fin under a long lead bulb), the deck with the cockpit cut into it behind a
-# closed transom (a footwell narrowing forward to the companionway, foot braces on its floor) and the long coachroof,
-# tapering forward and ramping down into the foredeck, a porthole in each side.
+# chine the whole length, dropping towards the stem, and a knuckle in the topsides above it), a T-keel (a slim fin under
+# a long lead bulb), the deck with the cockpit cut into it behind a closed transom (a footwell narrowing forward to the
+# companionway, foot braces on its floor) and the long coachroof, tapering forward and ramping down into the foredeck,
+# a long smoked window in each side and the hatch garage on its top.
 # The sails, rig, lifelines, winches, tiller, twin rudders, hatches and decals stay in yacht.js (they move, or are
 # made per boat).
 #
@@ -16,7 +17,7 @@
 # deck (non-skid: the deck and the cockpit's floor, no teak aboard), gel, glass. No UVs: yacht.js lays the deck's
 # out from the plan itself.
 #
-#   /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P docs/design/blender/game_yacht.py
+#   /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P blender/yacht.py
 import bpy, bmesh, math, os
 from mathutils import Vector
 
@@ -65,18 +66,30 @@ def section(t, s):  # yacht.js's section(): s = 0 at the deck edge ... 1 at the 
 
 def G(x, y, z): return Vector((x, -z, y))  # game -> Blender (Z up, +Y forward); the glTF export turns it back
 
-# ---------- the hull section: yacht.js's topsides down to the chine, then a flat-ish bottom ----------
+# ---------- the hull section: yacht.js's topsides down to the knuckle, a flat panel to the chine, then a flat-ish bottom ----------
 SPLIT = 0.5           # share of the section's samples above the chine
-def chine_y(t): return 0.5 - 0.05 * t   # half a metre above the water, the whole length (the profile's line)
+KS = 2 / 3            # share of those above the knuckle
+# the hard chine half a metre above the water aft, dropping to 0.3 at the stem, and the knuckle in the topsides 0.76
+# above the water aft to 0.79 at the stem (the photos' lines; yacht.js's chineY, knuckleY)
+def chine_y(t): return max(0.5 - 0.2 * t * t, 0.06 - canoe(t))   # (kept 6 cm above the forefoot, where they meet at the stem)
+def knuckle_y(t): return 0.76 + 0.03 * t
 def chine_w(t): return 1 - smooth(0.96, 1.0, t)   # 1: hard … easing only into the stem
-def hull_point(t, s):
+def s_at(t, y):  # where the section formula comes down to height y
+    sy, d, n = sheer(t), canoe(t), n_of(t)
+    return math.asin(clamp((sy - y) / (sy + d), 0, 1) ** (n / 2)) * 2 / math.pi
+def hull_point(t, s, s0=0.0):  # s0: where the topsides start, under the turn of the deck edge (edge_arc)
     hb, sy, d, n = half_beam(t), sheer(t), canoe(t), n_of(t)
-    yc = chine_y(t)
-    sc = math.asin(clamp((sy - yc) / (sy + d), 0, 1) ** (n / 2)) * 2 / math.pi  # where the formula reaches the chine
-    sf = s / SPLIT * sc if s <= SPLIT else sc + (s - SPLIT) / (1 - SPLIT) * (1 - sc)
+    sc = s_at(t, chine_y(t))  # where the formula reaches the chine
+    sk = min(s_at(t, knuckle_y(t)), sc)  # and the knuckle
+    if s <= SPLIT * KS: return section(t, lerp(s0, sk, s / (SPLIT * KS)))
+    if s <= SPLIT:  # the flat panel between the knuckle and the chine, turned in from the section's curve
+        u = (s - SPLIT * KS) / (SPLIT * (1 - KS))
+        (xk, yk, dk), (xc2, yc3, dc) = section(t, sk), section(t, sc)
+        return lerp(xk, xc2, u), lerp(yk, yc3, u), lerp(dk, dc, u)
+    sf = sc + (s - SPLIT) / (1 - SPLIT) * (1 - sc)
     fx, fy, dz = section(t, sf)
     w = chine_w(t)
-    if s <= SPLIT or w <= 0: return fx, fy, dz
+    if w <= 0: return fx, fy, dz
     xc, yc2, _ = section(t, sc)
     u = (s - SPLIT) / (1 - SPLIT)
     d2 = d * 0.86
@@ -94,7 +107,8 @@ def edge_arc(t):
     hb, sy, d, n = half_beam(t), sheer(t), canoe(t), n_of(t)
     r = min(0.045, hb * 0.25)
     s_r = math.asin(clamp(r / (sy + d), 0, 1) ** (n / 2)) * 2 / math.pi  # the section's s at r below the sheer
-    x_r, y_r, dz = hull_point(t, s_r)
+    s_r = min(s_r / SPLIT * s_at(t, chine_y(t)), 0.5 * s_at(t, knuckle_y(t)))  # (a little higher: a lip at the edge)
+    x_r, y_r, dz = section(t, s_r)
     arc = [(x_r - r + r * math.cos(a), y_r + r * math.sin(a), dz) for a in (math.pi / 2 * k / 4 for k in range(4, 0, -1))]
     return s_r, arc, x_r - r
 
@@ -108,9 +122,9 @@ def build_hull(bm, mats):
         s_r, arc, xd = edge_arc(t)
         ring = [G(x, y, z + dz) for x, y, dz in arc]  # starboard: round the deck edge
         for j in range(KH + 1):  # then deck edge -> keel
-            x, y, dz = hull_point(t, ss(j) if j else s_r); ring.append(G(x, y, z + dz))
+            x, y, dz = hull_point(t, ss(j), s_r); ring.append(G(x, y, z + dz))
         for j in range(KH - 1, -1, -1):  # port, keel -> deck edge
-            x, y, dz = hull_point(t, ss(j) if j else s_r); ring.append(G(-x, y, z + dz))
+            x, y, dz = hull_point(t, ss(j), s_r); ring.append(G(-x, y, z + dz))
         ring += [G(-x, y, z + dz) for x, y, dz in reversed(arc)]  # and round onto the deck
         nh = len(ring)
         for k in range(-(KD - 1), KD):  # the deck, port -> starboard, inside the turn of its edges
@@ -165,7 +179,14 @@ def cr_half(z): return spline(CR_W, CR_ZA - z)
 def cr_top(z):
     if z > -0.34: return lerp(1.71, 1.65, (CR_ZA - z) / 2.3)
     return lerp(1.65, deck_y(z) + 0.04, smooth(-0.34, CR_ZF, z))
-GLASS_LO, GLASS_HI = 1.3, 1.44
+# the side windows: one long smoked window a side (the specification's two 10 mm Altuglass lights), most of the side's
+# height, from abreast the companionway (z = 1.8) forward to z = −0.3, its lower edge sweeping up to a point there
+WIN_ZA, WIN_ZF, WIN_SWEEP = 1.8, -0.3, 1.0
+def window_band(z, yd, side_top):  # the window's lower and upper edge at z (the same rows run on along the plain side)
+    hi = max(side_top - 0.08, lerp(yd, side_top, 0.6))
+    lo = min(yd + 0.08, lerp(yd, side_top, 0.3))
+    u = clamp((WIN_ZF + WIN_SWEEP - z) / WIN_SWEEP, 0, 1)  # 0 … 1 over its forward metre
+    return lerp(lo, hi - 0.004, 1 - (1 - u) ** 1.6), hi
 def build_coachroof(bm, mats):
     NZ = 64
     secs, meta = [], []
@@ -179,7 +200,7 @@ def build_coachroof(bm, mats):
         rr = min(0.07, 0.4 * (ht - yd))
         ys = [0.5, yd]
         side_top = ht - rr
-        lo, hi = min(GLASS_LO, lerp(yd, side_top, 0.45)), min(GLASS_HI, lerp(yd, side_top, 0.75))
+        lo, hi = window_band(z, yd, side_top)
         for y in (lo, hi, side_top): ys.append(y)
         prof = [(w0, ys[0]), (w0, ys[1])]
         for y in ys[2:]: prof.append((lerp(w0, wt, (y - yd) / max(1e-3, side_top - yd)), y))
@@ -195,11 +216,35 @@ def build_coachroof(bm, mats):
         for j in range(M):
             mat = mats['gel']
             seg = j if j <= 8 else 17 - j              # the same segment on either side: 0 below the deck, 2 the window band
-            if seg == 2 and -0.3 < zc < 0.9: mat = mats['glass']   # a porthole each side, abreast the saloon
+            if seg == 2 and WIN_ZF < zc < WIN_ZA: mat = mats['glass']   # the long window each side
             if seg >= 7 and zc > CR_ZF + 0.6: mat = mats['deck']     # its top non-skid, inside a margin of smooth gelcoat
             bm.faces.new((secs[i][j], secs[i][(j + 1) % M], secs[i + 1][(j + 1) % M], secs[i + 1][j])).material_index = mat
     bm.faces.new(list(reversed(secs[0]))).material_index = mats['gel']
     bm.faces.new(secs[-1]).material_index = mats['gel']
+
+# the hatch garage moulded into the roof aft of the mast, the sliding hatch running on it (yacht.js's GARAGE): a
+# rounded hump 0.81 m wide and 1.48 long, 12 cm high, its sides turning onto its top round a 6 cm radius
+GARAGE_X, GARAGE_Z0, GARAGE_Z1, GARAGE_H = 0.405, 0.18, 1.66, 0.12
+def roof_y(x, z):  # the coachroof's top at (x, z), inside its shoulders: build_coachroof's camber
+    w0 = cr_half(z); yd = deck_y(z, w0); ht = max(cr_top(z), yd + 0.04)
+    wt = w0 - 0.11 * clamp((ht - yd) / 0.45, 0.25, 1)
+    k = abs(x) / wt
+    P = [(0, ht + 0.03), (0.3, ht + 0.03 * (1 - 0.09)), (0.6, ht + 0.03 * (1 - 0.36))]
+    if k >= 0.6: return P[2][1]
+    i = 0 if k < 0.3 else 1
+    return lerp(P[i][1], P[i + 1][1], (k - P[i][0]) / 0.3)
+def build_garage(bm, mat):
+    R, SEG = 0.25, 6
+    prof = [(0, -0.04), (0, 0), (0.01, 0.06)] + [(0.07 + 0.06 * math.cos(a), 0.06 + 0.06 * math.sin(a))
+                                                for a in (math.pi * (1 - 0.5 * i / 4) for i in range(1, 5))]   # (inset, height)
+    rings = []
+    for d, h in prof:
+        out = rounded_rect(-GARAGE_X + d, GARAGE_X - d, GARAGE_Z0 + d, GARAGE_Z1 - d, R - d, seg=SEG)
+        rings.append([bm.verts.new(G(x, roof_y(x, z) + h, z)) for x, z in out])
+    M = len(rings[0])
+    for a, b in zip(rings, rings[1:]):
+        for j in range(M): bm.faces.new((a[j], a[(j + 1) % M], b[(j + 1) % M], b[j])).material_index = mat
+    bm.faces.new(list(reversed(rings[0]))).material_index = mat; bm.faces.new(rings[-1]).material_index = mat
 
 # ---------- boxes: the cockpit cutter, seats, coamings ----------
 def plan_prism(bm, outline, y0, y1, mat_side, mat_bottom, mat_top):
@@ -286,8 +331,18 @@ bulb(bm, H, -1.25, 0.71, -2.13, 0.22)                                          #
 for sx in (-1, 1):
     xs = sorted([sx * 0.43, sx * 0.66])   # the foot braces moulded into the floor, for the crew to brace against heeled
     plan_prism(bm, rounded_rect(xs[0], xs[1], 2.95, 4.14, 0.05), COCKPIT_FLOOR - 0.01, COCKPIT_FLOOR + 0.12, IDX['gel'], IDX['gel'], IDX['deck'])
+build_garage(bm, IDX['gel'])
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+# the knuckle's a crease the length of the topsides, not smoothed over: its edges marked sharp
+def on_knuckle(v):
+    x, z, y = v.co.x, -v.co.y, v.co.z
+    t = t_at(z)
+    return abs(x) > 0.05 and 0.002 < t < 0.997 and abs(y - knuckle_y(t)) < 2e-3 and abs(abs(x) - section(t, s_at(t, knuckle_y(t)))[0]) < 5e-3
+kv = {v for v in bm.verts if on_knuckle(v)}
+ks = [e for e in bm.edges if e.verts[0] in kv and e.verts[1] in kv]
+for e in ks: e.smooth = False
+print('knuckle edges', len(ks))
 bm.to_mesh(hull.data); bm.free()
 
 # smooth, with creases at the chine, deck edge, transom and the coachroof's corners
