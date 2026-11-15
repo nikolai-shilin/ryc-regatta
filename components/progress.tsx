@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { tx, ruPlural, type Lang } from '@/lib/lang';
 import { BADGES, FAMS, type BadgeFam, type BadgeId } from '@/lib/badges';
 import { BadgePennant, FAM_COLOUR } from './badge-pennant';
-import { DRILLS, DRILLS_KEY } from '@/lib/drills';
+import { DRILLS, DRILLS_KEY, LEVELS, levelOf, levelOpen, toOpen } from '@/lib/drills';
 import { todayUtc } from '@/lib/log';
 import { passportShare, useLog } from './passport';
 import { ShareButton } from './share-sheet';
@@ -24,29 +24,52 @@ const Stars = ({ n, label }: { n: number; label: string }) => (
   <span className="pg-stars" role="img" aria-label={label}>{[1, 2, 3].map((i) => <i key={i} className={i <= n ? 'on' : ''}>★</i>)}</span>
 );
 
-// /race/drills: each drill, what it is, what three stars take, your best, and the way in
+// /race/drills: the levels, each with its stars so far and whether it's open (two thirds of the stars of the one below
+// open it), and under each its drills: what it is, what three stars take, your best, and the way in (a shut level's
+// drills are shown, with what opens them)
 export function DrillsList({ lang }: { lang: Lang }) {
-  const t = tx(lang), got = useDrills();
+  const t = tx(lang), got = useDrills(), mine = got ? levelOf(got) : null;
+  let n = 0;
   return (
-    <ol className="pg-drills">
-      {DRILLS.map((d, i) => {
-        const n = got?.[d.id] || 0;
+    <div className="pg-levels">
+      {LEVELS.map((lv, li) => {
+        const open = !got || levelOpen(lv.id, got), ds = DRILLS.filter((d) => d.level === lv.id);
+        const have = got ? ds.reduce((a, d) => a + (got[d.id] || 0), 0) : null, below = LEVELS[li - 1];
         return (
-          <li key={d.id} className="pg-card">
-            <div className="pg-card-h"><span className="pg-n">{i + 1}</span><h2>{t(...d.name)}</h2>
-              <span className="pg-min">{t(`${d.min} min`, `${d.min} мин`)}</span></div>
-            <p>{t(...d.what)}</p>
-            <p className="pg-three"><b>{t('Three stars', 'Три звезды')}</b> · {t(...d.three)}</p>
-            <div className="pg-foot">
-              {got ? <Stars n={n} label={t(`Your best: ${n} of 3 stars`, `Твой лучший: ${n} из 3 звёзд`)} /> : <span />}
-              <a className="rt-go pg-go" href={`/play?race=free&drill=${d.id}`}>{n ? t('Again', 'Ещё раз') : t('Start', 'Начать')}</a>
+          <section key={lv.id} className={`pg-level${open ? '' : ' off'}`} aria-labelledby={`lv-${lv.id}`}>
+            <div className="pg-level-h">
+              <span className={`pg-lv l${li + 1}`} aria-hidden="true"><i /><i /><i /><i /></span>
+              <h2 id={`lv-${lv.id}`}>{t(...lv.name)}</h2>
+              {mine === lv.id ? <span className="pg-level-you">{t('Your level', 'Твой уровень')}</span> : null}
+              {have == null ? null : <span className="pg-level-n">{lang === 'ru' ? <><b>{have}</b> из {ds.length * 3} звёзд</> : <><b>{have}</b> of {ds.length * 3} stars</>}</span>}
             </div>
-          </li>
+            <p className="pg-level-who">{t(...lv.who)}{open || !below ? null : <> <b>{lang === 'ru' ? `Откроется с ${toOpen(lv.id)} звёздами уровня «${below.name[1]}».` : `Opens with ${toOpen(lv.id)} stars at ${below.name[0]} level.`}</b></>}</p>
+            <ol className="pg-drills" start={n + 1}>
+              {ds.map((d) => {
+                const s = got?.[d.id] || 0;
+                n++;
+                return (
+                  <li key={d.id} className={`pg-card${open ? '' : ' off'}`}>
+                    <div className="pg-card-h"><span className="pg-n">{n}</span><h3>{t(...d.name)}</h3>
+                      <span className="pg-min">{t(`${d.min} min`, `${d.min} мин`)}</span></div>
+                    <p>{t(...d.what)}</p>
+                    <p className="pg-three"><b>{t('Three stars', 'Три звезды')}</b> · {t(...d.three)}</p>
+                    <div className="pg-foot">
+                      {got ? <Stars n={s} label={t(`Your best: ${s} of 3 stars`, `Твой лучший: ${s} из 3 звёзд`)} /> : <span />}
+                      {open ? <a className="rt-go pg-go" href={`/play?race=free&drill=${d.id}`}>{s ? t('Again', 'Ещё раз') : t('Start', 'Начать')}</a>
+                        : <span className="pg-lock">{t('Not open yet', 'Пока закрыто')}</span>}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
         );
       })}
-    </ol>
+    </div>
   );
 }
+
 
 // /race/badges: every badge as its pennant, those you have lit with when, the rest dark with how; over them how many,
 // a pip each in its family's colour
@@ -110,14 +133,17 @@ export function RaceBadges({ lang, at }: { lang: Lang; at: number }) {
 export function ProgressRows({ lang }: { lang: Lang }) {
   const t = tx(lang), got = useDrills(), log = useLog();
   const stars = got ? DRILLS.reduce((a, d) => a + (got[d.id] || 0), 0) : null;
+  // the pips: your level's drills' stars (the whole set's are too many to draw)
+  const lv = got ? LEVELS.find((l) => l.id === levelOf(got))! : null, mineDs = lv ? DRILLS.filter((d) => d.level === lv.id) : [];
+  const mineStars = got ? mineDs.reduce((a, d) => a + (got[d.id] || 0), 0) : 0;
   const n = log ? BADGES.filter((b) => log.b[b.id]).length : null;
   const last = log ? (Object.entries(log.b) as [BadgeId, number][]).filter(([id]) => BADGES.some((b) => b.id === id)).sort((a, b) => b[1] - a[1])[0]?.[0] : undefined;
   return (
     <>
       <Link className="bt-row pg-row" href="/race/drills">
         <span className="pg-row-ico" aria-hidden="true"><BadgePennant id="drills" fam="result" on /></span>
-        <span className="pg-row-t">{t('Drills', 'Тренировки')}{stars == null ? null : <small>{lang === 'ru' ? <><b>{stars}</b> из {DRILLS.length * 3} звёзд</> : <><b>{stars}</b> of {DRILLS.length * 3} stars</>}</small>}</span>
-        {stars == null ? null : <span className="pg-row-stars" aria-hidden="true">{Array.from({ length: DRILLS.length * 3 }, (_, i) => <i key={i} className={i < stars ? 'on' : undefined}>★</i>)}</span>}
+        <span className="pg-row-t">{t('Drills', 'Тренировки')}{stars == null || !lv ? null : <small>{lang === 'ru' ? <>{lv.name[1]} · <b>{stars}</b> из {DRILLS.length * 3} звёзд</> : <>{lv.name[0]} · <b>{stars}</b> of {DRILLS.length * 3} stars</>}</small>}</span>
+        {stars == null ? null : <span className="pg-row-stars" aria-hidden="true">{Array.from({ length: mineDs.length * 3 }, (_, i) => <i key={i} className={i < mineStars ? 'on' : undefined}>★</i>)}</span>}
       </Link>
       <Link className="bt-row pg-row" href="/race/badges">
         <span className="pg-row-ico" aria-hidden="true">{last ? <BadgePennant id={last} on /> : <BadgePennant id="first" on={false} />}</span>

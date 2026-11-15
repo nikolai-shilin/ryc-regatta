@@ -1318,7 +1318,22 @@
 .bc .pg-drills { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
 .bc .pg-card { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); background: var(--surface); clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%); }
 .bc .pg-card-h { display: flex; align-items: center; gap: var(--s-3); }
-.bc .pg-card-h h2 { flex: 1 1 auto; margin: 0; font: 800 var(--fs-title)/1 var(--cond); text-transform: uppercase; }
+.bc .pg-card-h h2, .bc .pg-card-h h3 { flex: 1 1 auto; margin: 0; font: 800 var(--fs-title)/1 var(--cond); text-transform: uppercase; }
+/* the levels (sim.js LEVELS), each with its pips as the race's board shows a computer skipper's, its stars, whether it's
+   yours; a shut one's drills dimmed, with what opens them */
+.bc .pg-levels { display: flex; flex-direction: column; gap: var(--s-10, 40px); }
+.bc .pg-level-h { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); margin-bottom: var(--s-2); }
+.bc .pg-level-h h2 { margin: 0; font: 800 var(--fs-h3)/1 var(--cond); text-transform: uppercase; }
+.bc .pg-lv { display: inline-flex; align-items: flex-end; gap: 3px; height: 22px; }
+.bc .pg-lv i { width: 5px; background: var(--w-14); } .bc .pg-lv i:nth-child(1) { height: 8px; } .bc .pg-lv i:nth-child(2) { height: 12px; } .bc .pg-lv i:nth-child(3) { height: 17px; } .bc .pg-lv i:nth-child(4) { height: 22px; }
+.bc .pg-lv.l1 i:nth-child(-n+1), .bc .pg-lv.l2 i:nth-child(-n+2), .bc .pg-lv.l3 i:nth-child(-n+3), .bc .pg-lv.l4 i { background: var(--gold); }
+.bc .pg-level-you { padding: var(--s-1) var(--s-2); background: var(--you); color: var(--ink-on); font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.bc .pg-level-n { margin-left: auto; font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-2); }
+.bc .pg-level-n b { color: var(--gold); }
+.bc .pg-level-who { margin: 0 0 var(--s-4); font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+.bc .pg-level-who b { color: var(--ink); font-weight: 700; }
+.bc .pg-card.off { opacity: 0.55; }
+.bc .pg-lock { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 .bc .pg-n { flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--you); color: var(--ink-on); font: 800 var(--fs-lead)/1 var(--cond); }
 .bc .pg-min { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-2); }
 .bc .pg-card p { margin: 0; font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }

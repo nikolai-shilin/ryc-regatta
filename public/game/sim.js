@@ -700,10 +700,15 @@ export const lineT = (c, b) => ((b.x - c.pin.x) * c.dir.x + (b.z - c.pin.z) * c.
 export const SKILL_MIN = 0.25;
 export const LEVELS = [['beginner', 0], ['club', 0.45], ['racer', 0.65], ['expert', 0.85]];
 export const skillLevel = (s) => LEVELS.findLast(([, from]) => s >= from)[0];
-export function fleetSkills(n, rand) {
+// a level's own range of skill: from where it starts to where the next does (beginner from SKILL_MIN, expert to 1)
+export const levelRange = (lv) => { const i = LEVELS.findIndex(([k]) => k === lv); return i < 0 ? null : [Math.max(SKILL_MIN, LEVELS[i][1]), LEVELS[i + 1]?.[1] ?? 1]; };
+// a fleet of one level (a drill's: `lv`) spreads its bands over that level's range alone, the same draws
+export function fleetSkills(n, rand, lv = null) {
   const bands = Array.from({ length: n }, (_, i) => i);
   for (let i = n - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [bands[i], bands[j]] = [bands[j], bands[i]]; }
-  return bands.map((k) => +lerp(SKILL_MIN, 1, ((k + rand()) / n) ** 0.8).toFixed(3)); // a little more of the fleet the better half
+  const r = levelRange(lv), [lo, hi] = r || [SKILL_MIN, 1];
+  // a little more of the fleet the better half; a level's kept under the next one's start
+  return bands.map((k) => { const s = lerp(lo, hi, ((k + rand()) / n) ** 0.8); return +(r ? Math.min(hi - 0.001, s) : s).toFixed(3); });
 }
 // a skipper's habits at the helm and the sheet: slow random wanders (−1…1) of her own, so each boat's mistakes are
 // her own and the race stays the same for the same seed
@@ -740,7 +745,7 @@ export class Race {
   // humans: the boats people sail, in that order; me: the id of the one this screen sails (null: it only watches).
   // match: a match race (Appendix C) between the two humans, `blue` the id of the one at the committee boat's end: up
   // and down twice, the five-minute sequence, no current, two boats, P always
-  constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl', bias: lineBias = null,
+  constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl', bias: lineBias = null, level = null,
     humans = [{ id: 'you', name: 'You' }], me = humans[0].id, match = false, blue = humans[0].id } = {}) {
     this.match = !!match;
     if (match) { fleet = 2; course = 'wl'; laps = 2; start = 5; current = false; }
@@ -818,7 +823,7 @@ export class Race {
     const full = fullHeel(this.wind.p.tws * 1.4, 28, false);
     first.sheet = sheetFor(idealSail(28) + depowerFor(full));
     const fl = FLEET.slice(0, fleet - 1), n = fl.length;
-    const skills = fleetSkills(n, this.rand);
+    const skills = fleetSkills(n, this.rand, level);
     this.boats = [first];
     fl.forEach(([name, color], i) => {
       const f = n > 1 ? i / (n - 1) : 0.5; // spread them along below the line

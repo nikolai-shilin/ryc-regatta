@@ -110,10 +110,17 @@ test('the passport link carries which badges, and an older link only how many', 
 
 test('the drills: the page lists the game\'s, in the game\'s order', async () => {
   const { readFile } = await import('node:fs/promises');
-  const { DRILL_IDS } = await import('../lib/drills.ts');
+  const { DRILL_IDS, DRILLS, levelOf, levelOpen } = await import('../lib/drills.ts');
   // extras.js reaches for the page (three.js, the DOM) as it loads, so its DRILL_ORDER is read from the source
   const src = await readFile(new URL('../public/game/extras.js', import.meta.url), 'utf8');
   const order = JSON.parse(src.match(/export const DRILL_ORDER = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
   assert.deepEqual(DRILL_IDS, order);
-  for (const id of order) assert.match(src, new RegExp(`\\n  ${id}: \\{ race: `), id); // and each has its race
+  // each has its race, at the level the page says
+  for (const d of DRILLS) assert.match(src, new RegExp(`\\n  ${d.id}: \\{ level: '${d.level}',`), d.id);
+  // a level opens with two thirds of the stars below it, and only once the one below is open too
+  assert.equal(levelOf({}), 'beginner');
+  assert.equal(levelOf({ start: 3, mark: 3, layline: 2 }), 'club'); // 8 of 12
+  assert.equal(levelOf({ start: 3, mark: 3, layline: 1 }), 'beginner');
+  assert.ok(!levelOpen('racer', { end: 3, beat: 3, run: 3, finish: 3 })); // club's stars, but club isn't open
+  assert.equal(levelOf(Object.fromEntries(DRILLS.map((d) => [d.id, 2]))), 'expert');
 });
