@@ -25,23 +25,43 @@ export class Room {
     this._peers = new Map(); // id -> { hello, seen }
     this._lastHello = -Infinity;
     this._starts = [];
+    this._started = null; // the host: the StartMsg it sent; carried in its hello for a client that missed it
+    this._emitted = false;
+    this._pick = null; // the host's guest, kept while that guest is heard
     this._left = false;
+    this.error = null;
     const all = link.all;
     all.on('hello', (h) => {
       if (!h || h.id === me.id) return;
       const known = this._peers.has(h.id);
       this._peers.set(h.id, { hello: h, seen: this.now() });
+      if (h.host && h.start && (h.start.guest?.id === me.id || h.start.host?.id === me.id)) this._emitStart(h.start);
       if (!known) this._sendHello(); // answer a newcomer at once rather than on the next beat
     });
     all.on('bye', (b) => { if (b) this._peers.delete(b.id); });
     all.on('start', (m) => { if (m && (m.host?.id === me.id || m.guest?.id === me.id)) this._emitStart(m); });
-    this.joined = all.join().then(() => { if (!this._left) this._sendHello(); }, () => {});
+    // resolves true once joined, false if the join failed (room.error holds why)
+    this.joined = all.join().then(() => { if (!this._left) this._sendHello(); return true; }, (e) => { this.error = e || new Error('join failed'); return false; });
     this._timer = every ? setInterval(() => this.tick(), every) : null;
     this._timer?.unref?.();
   }
 
-  _sendHello() { this._lastHello = this.now(); this.link.all.send('hello', this._hello); }
-  _emitStart(m) { for (const fn of this._starts) fn(m); }
+  _sendHello() {
+    this._lastHello = this.now();
+    const h = this._hello;
+    if (this.isHost) { h.guestId = this._hostGuest()?.id ?? null; h.start = this._started; }
+    this.link.all.send('hello', h);
+  }
+  _emitStart(m) { if (this._emitted) return; this._emitted = true; for (const fn of this._starts) fn(m); }
+  // The host's own pick: sticky while heard, else the first non-host by joinedAt, then id.
+  _hostGuest() {
+    const c = this._heard().filter((h) => !h.host);
+    const kept = c.find((h) => h.id === this._pick);
+    if (kept) return kept;
+    const g = c.sort(byJoin)[0] || null;
+    this._pick = g ? g.id : null;
+    return g;
+  }
   _heard() { const t = this.now(); return [...this._peers.values()].filter((p) => t - p.seen < GONE_MS).map((p) => p.hello); }
 
   // Beat: hello every 3 s.
@@ -51,13 +71,22 @@ export class Room {
     if (this.isHost) return this._hello;
     return this._heard().filter((h) => h.host).sort(byJoin)[0] || null;
   }
-  // The first non-host by joinedAt, then id; this client counts as one when it isn't the host.
+  // The host's pick, as the host sends it; a client that hasn't heard the host orders by joinedAt, then id.
   get guest() {
+    if (this.isHost) return this._hostGuest();
+    const gid = this.host?.guestId;
+    if (gid) return gid === this.me.id ? this._hello : this._heard().find((h) => h.id === gid) || null;
     const c = this._heard().filter((h) => !h.host);
-    if (!this.isHost) c.push(this._hello);
+    c.push(this._hello);
     return c.sort(byJoin)[0] || null;
   }
-  get full() { const g = this.guest; return !this.isHost && !!g && g.id !== this.me.id; }
+  get full() {
+    if (this.isHost) return false;
+    const gid = this.host?.guestId;
+    if (gid) return gid !== this.me.id;
+    const g = this.guest;
+    return !!g && g.id !== this.me.id;
+  }
   get settings() { return this.host?.settings ?? null; }
 
   canStart() { return this.isHost && !!this.guest; }
@@ -66,6 +95,7 @@ export class Room {
     if (!this.isHost || !guest) throw new Error('only the host, with a guest present, can start');
     const pick = (h) => ({ id: h.id, name: h.name, look: h.look });
     const msg = { settings: this.settings, seed: Math.floor(Math.random() * 100000), race: 1, blue: this._hello.id, host: pick(this._hello), guest: pick(guest) };
+    this._started = msg;
     this.link.all.send('start', msg);
     this._emitStart(msg);
     return msg;

@@ -190,3 +190,50 @@ test('a reloaded host keeps the score and loses the race in progress', () => {
   back.endRace({ winner: 'h', margin: 2, abandoned: false });
   assert.equal(Match.from(back.toJSON()).state, 'over');
 });
+
+test('the host picks the guest: a third person with an earlier clock still sees the match full', async () => {
+  const hub = memoryRealtime();
+  const mk = (me, host, t, settings) => {
+    const r = new Room({ link: makeLink(hub, 'SKEW22'), me, host, settings, now: () => t, every: 0 });
+    return r.joined.then(() => r);
+  };
+  const host = await mk(person('h', 'Host'), true, 1000, SETTINGS);
+  const guest = await mk(person('g', 'Guest'), false, 5000, null);
+  const third = await mk(person('x', 'Third'), false, 100, null); // joined last, but its clock says earliest
+  assert.equal(host.guest.id, 'g');
+  assert.equal(third.full, true);
+  assert.equal(guest.full, false);
+  assert.equal(guest.guest.id, 'g');
+  assert.equal(third.guest.id, 'g');
+});
+
+test('a guest whose channel missed start gets onStart from the host\'s next hello, once', async () => {
+  const { hub, clock, now } = setup();
+  const host = new Room({ link: makeLink(hub, 'MISS22'), me: person('h', 'Host'), host: true, settings: SETTINGS, now, every: 0 });
+  await host.joined;
+  const link = makeLink(hub, 'MISS22');
+  const deaf = { ...link, all: { ...link.all, on: (e, f) => { if (e !== 'start') link.all.on(e, f); } } };
+  const guest = new Room({ link: deaf, me: person('g', 'Guest'), host: false, settings: null, now, every: 0 });
+  await guest.joined;
+  const heard = [];
+  guest.onStart((m) => heard.push(m));
+  const msg = host.start();
+  assert.equal(heard.length, 0);
+  clock.t += 3000;
+  host.tick();
+  assert.deepEqual(heard, [msg]);
+  clock.t += 3000;
+  host.tick();
+  assert.equal(heard.length, 1);
+});
+
+test('a join that fails is reported: joined is false and error says why', async () => {
+  const boom = new Error('no socket');
+  const ch = { join: () => Promise.reject(boom), send() {}, on() {}, leave() {} };
+  const room = new Room({ link: { all: ch, input: ch }, me: person('h', 'Host'), host: true, settings: SETTINGS, every: 0 });
+  assert.equal(await room.joined, false);
+  assert.equal(room.error, boom);
+  const ok = await setup().room(person('g', 'G'), false);
+  assert.equal(await ok.joined, true);
+  assert.equal(ok.error, null);
+});
