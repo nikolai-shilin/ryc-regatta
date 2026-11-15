@@ -53,7 +53,8 @@ from PIL import Image, ImageColor, ImageDraw, ImageFilter
 # NOAA's on the US coasts, down to a few metres): the depths the sea is lighter over; flat: the land laid flat at so
 # many metres (a city whose tiles have its roofs for its ground); bank: how many metres across the shore slopes into the
 # water (12 when not given; a city's quays, a few, and no surf along them); most: how many buildings at the most (8,000
-# when not given); plain: (low, high) metres, a coastal plain whose tiles have its roofs and trees for its ground
+# when not given); keep: [(lat, lon, metres)], where every building is kept before any other (an island's fort or
+# lighthouse by the course, further off than a big city's middle, which would fill the count first); plain: (low, high) metres, a coastal plain whose tiles have its roofs and trees for its ground
 # (SRTM's radar): the land up to `low` laid down on the shore's floor and from there back up to the tiles' own at `high`,
 # the hills above it as they are; paved: the map's paved squares and promenades drawn as paving; trees: the map's rows
 # of trees and its single trees planted where they stand
@@ -62,6 +63,7 @@ VENUES = {
                   build=(36.705, 28.875, 36.795, 29.005), footprints=('Turkey', '122101223')),
     'cowes': dict(bathy='emodnet', zoom=14, home=(50.7880, -1.3060), wind=225, towns=[(50.7600, -1.2980, 900), (50.7570, -1.2880, 700)]),
     'newport': dict(bathy='noaa', zoom=14, home=(41.4570, -71.3600), wind=210, towns=[(41.4850, -71.3150, 1300), (41.4960, -71.3700, 700)],
+                    keep=[(41.4777, -71.3405, 450)],  # Fort Adams
                     landmarks=[dict(kind='suspension', a=(41.5052, -71.3598), b=(41.5046, -71.3318), h=122, span=488, deck=58)]),
     'sydney': dict(home=(-33.8480, 151.2560), wind=45, towns=[(-33.8700, 151.2550, 1500), (-33.8330, 151.2420, 1300), (-33.8380, 151.2830, 1000), (-33.8650, 151.2150, 1200)],
                    landmarks=[dict(kind='arch', a=(-33.8562, 151.2093), b=(-33.8486, 151.2114), h=134, span=503, deck=49)]),
@@ -74,8 +76,8 @@ VENUES = {
     'antigua': dict(home=(16.9890, -61.7700), wind=95, towns=[(17.0080, -61.7640, 500), (17.0180, -61.7820, 700)]),
     'auckland': dict(zoom=14, home=(-36.8300, 174.8150), wind=225, towns=[(-36.8480, 174.7650, 1500), (-36.8280, 174.7980, 900), (-36.8500, 174.8100, 1300), (-36.8000, 174.7900, 1500)],
                      landmarks=[dict(kind='tower', at=(-36.84846, 174.76218), h=328, style='sky')]),
-    'san-francisco': dict(bathy='noaa', zoom=14, home=(37.8150, -122.4350), wind=255, towns=[(37.8020, -122.4400, 1100), (37.7960, -122.4120, 1100), (37.8580, -122.4850, 800), (37.8730, -122.4570, 700),
-                                 (37.8267, -122.4230, 250)],  # Alcatraz: the city's buildings would fill the count before its own
+    'san-francisco': dict(bathy='noaa', zoom=14, home=(37.8150, -122.4350), wind=255, towns=[(37.8020, -122.4400, 1100), (37.7960, -122.4120, 1100), (37.8580, -122.4850, 800), (37.8730, -122.4570, 700)],
+                          keep=[(37.8267, -122.4230, 300)],  # Alcatraz
                           landmarks=[dict(kind='suspension', a=(37.8077, -122.4750), b=(37.8288, -122.4813), h=227, span=1280, deck=67, color='#c0362c')]),
     'valencia': dict(bathy='emodnet', home=(39.4550, -0.2850), wind=110, towns=[(39.4700, -0.3700, 1200), (39.4700, -0.3250, 1000), (39.4300, -0.3300, 800)]),
     'barcelona': dict(bathy='emodnet', home=(41.3720, 2.2250), wind=200, towns=[(41.3850, 2.1800, 1100), (41.3950, 2.2050, 1100), (41.3780, 2.1900, 700), (41.4100, 2.2250, 900)],
@@ -85,15 +87,15 @@ VENUES = {
     'marstrand': dict(bathy='emodnet', home=(57.8850, 11.5550), wind=225, towns=[(57.8860, 11.5850, 500), (57.8900, 11.6000, 500), (57.8650, 11.6000, 400)],
                       landmarks=[dict(kind='fort', at=(57.8866, 11.5806), h=24)]),
     'bermuda': dict(home=(32.3050, -64.8400), wind=200, towns=[(32.2930, -64.7830, 900), (32.3250, -64.8350, 500), (32.3100, -64.8650, 600), (32.2850, -64.8150, 700)]),
-    'enoshima': dict(home=(35.2850, 139.4950), wind=190, towns=[(35.3100, 139.4800, 1200), (35.3100, 139.5300, 1200), (35.3050, 139.5000, 800)],
+    'enoshima': dict(home=(35.2850, 139.4950), wind=190, keep=[(35.2990, 139.4805, 500)], towns=[(35.3100, 139.4800, 1200), (35.3100, 139.5300, 1200), (35.3050, 139.5000, 800)],
                      landmarks=[dict(kind='lighthouse', at=(35.2997, 139.4796), h=60, style='candle')]),
     'weymouth': dict(bathy='emodnet', zoom=14, home=(50.6050, -2.4100), wind=225, towns=[(50.6100, -2.4550, 1100), (50.5550, -2.4400, 900), (50.6300, -2.4400, 700)]),
-    'marseille': dict(bathy='emodnet', home=(43.2650, 5.3350), wind=315, towns=[(43.2950, 5.3750, 1200), (43.2750, 5.3650, 900), (43.2600, 5.3800, 700), (43.3100, 5.3650, 1000)],
+    'marseille': dict(bathy='emodnet', home=(43.2650, 5.3350), wind=315, keep=[(43.2805, 5.3080, 1100), (43.2799, 5.3254, 200)], towns=[(43.2950, 5.3750, 1200), (43.2750, 5.3650, 900), (43.2600, 5.3800, 700), (43.3100, 5.3650, 1000)],
                       landmarks=[dict(kind='basilica', at=(43.2840, 5.3713), h=52)]),
     'rio': dict(home=(-22.9300, -43.1580), wind=150, towns=[(-22.9250, -43.1750, 1200), (-22.9000, -43.1150, 1200), (-22.9450, -43.1800, 900), (-22.9700, -43.1850, 1000)],
                 landmarks=[dict(kind='statue', at=(-22.9519, -43.2105), h=38)]),
     'garda': dict(home=(45.8400, 10.8500), wind=190, lake='Lago di Garda', towns=[(45.8860, 10.8410, 800), (45.8750, 10.8760, 600), (45.7650, 10.8100, 600), (45.8730, 10.8560, 500)]),
-    'istanbul': dict(bathy='emodnet', home=(40.9820, 28.9920), wind=35, towns=[(40.9900, 29.0270, 1200), (41.0250, 29.0180, 1200), (41.0080, 28.9650, 1500), (41.0330, 28.9800, 1200), (40.9720, 29.0400, 1000),
+    'istanbul': dict(bathy='emodnet', home=(40.9820, 28.9920), wind=35, keep=[(41.0063, 28.9855, 150), (41.0024, 28.9768, 150)], towns=[(40.9900, 29.0270, 1200), (41.0250, 29.0180, 1200), (41.0080, 28.9650, 1500), (41.0330, 28.9800, 1200), (40.9720, 29.0400, 1000),
                                                                  (41.0430, 29.0060, 900), (41.0480, 29.0250, 700), (41.0365, 29.0310, 600), (41.0440, 29.0440, 700)],  # Beşiktaş, Ortaköy, Kuzguncuk, Beylerbeyi: round the bridge
                      landmarks=[dict(kind='suspension', a=(41.0510, 29.0287), b=(41.0400, 29.0401), h=165, span=1074, deck=64),
                                 dict(kind='mosque', at=(41.0054, 28.9767), h=43, minarets=6, mh=64),  # the Blue Mosque
@@ -859,6 +861,8 @@ def bake(vid, V, fetch_only=False):
         ashore = bilinear(sd10, -G + CELL / 2, CELL, cs[:, 0], cs[:, 1])
         dm = np.hypot(cs[:, 0] - MID[0], cs[:, 1] - MID[1])
         front = 1500.0 * np.clip(1.0 - np.maximum(ashore, 0.0) / 150.0, 0.0, 1.0) * (dm < 3500.0)
+        for lat, lon, r in V.get('keep', []):  # (and first of all what the venue names: an island's buildings, a lighthouse)
+            kx, kz = to_xz(lat, lon); front += 6000.0 * (np.hypot(cs[:, 0] - float(kx), cs[:, 1] - float(kz)) < r)
         for b, f in zip(found, front): b['d'] -= float(f)
     found.sort(key=lambda b: b['d'])
     kept = [b for b in found if b['d'] < 6000][:V.get('most', 8000)]  # (beyond some 4 km of the race area and the towns, the tall ones only)
