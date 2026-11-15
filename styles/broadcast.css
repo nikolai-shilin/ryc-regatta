@@ -480,6 +480,7 @@
 .bc .hm-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-10); padding-top: var(--s-4); border-top-color: var(--rule);
   font: 600 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 .bc .hm-foot-links { display: flex; flex-wrap: wrap; gap: 0 var(--s-6); }
+.bc .hm-foot-note { flex: 1 0 100%; max-width: none; color: var(--ink-3); text-transform: none; letter-spacing: 0; font: 400 12px/1.45 var(--f-sans); }
 .bc .hm-foot :is(.hm-foot-links a, .lang) { display: inline-flex; align-items: center; min-height: var(--h-m); color: var(--ink-2); text-decoration: none; transition: color var(--t-quick); }
 .bc .hm-foot :is(.hm-foot-links a, .lang):hover { color: var(--ink); }
 .bc .hm-foot .langs { gap: var(--s-2); padding: 0; border: 0; border-radius: 0; }

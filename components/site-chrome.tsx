@@ -53,6 +53,7 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
           <Link className="hm-tab" href="/race" {...cur('race')}>{t('Today’s race', 'Гонка дня')}</Link>
           <Link className="hm-tab" href="/race/rating" {...cur('rating')}>{t('Rating', 'Рейтинг')}</Link>
           <Link className="hm-tab" href="/race/free" {...cur('free')}>{t('Free race', 'Свободная гонка')}</Link>
+          <Link className="hm-tab hm-tab-x" href="/fleet">{t('The fleet', 'Флот')}</Link>
           <Link className="hm-tab hm-tab-x" href="/boat" {...cur('boat')}>{t('Your boat', 'Твоя яхта')}</Link>
           <Link className="hm-tab" href="/help" {...cur('help')}>{t('How to play', 'Как играть')}</Link>
           <Link className="hm-tab" href="/learn" {...cur('learn')}>{t('Learn to race', 'Учись гоняться')}</Link>
@@ -70,13 +71,15 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
 }
 
 // The site's footer, one bar as the broadcast's: who makes it, a short row of links (the reading pages, your account or
-// the way to sign in, RYC's own sites), and the language switch.
+// the way to sign in, RYC's own sites), and the language switch; under them, that the game has nothing to do with the
+// America's Cup, whose boat it sails (the AC75).
 export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) {
   return (
     <div className="hm-page hm-foot-wrap">
       <footer className="hm-foot">
         <span className="hm-foot-by">{t('Up and down · RYC race office', 'Up and down · офис регаты RYC')}</span>
         <nav className="hm-foot-links" aria-label={t('More', 'Ещё')}>
+          <Link href="/fleet">{t('The fleet', 'Флот')}</Link>
           <Link href="/help">{t('How to play', 'Как играть')}</Link>
           <Link href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
           <Link href="/race/drills">{t('Drills', 'Тренировки')}</Link>
@@ -88,6 +91,8 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
           <a href="https://www.rycsailing.com/">rycsailing.com</a>
         </nav>
         <Langs lang={lang} back={back} />
+        <p className="hm-foot-note">{t('This simulator is an independent project and is not affiliated with, sponsored by, or endorsed by America’s Cup or its organizers.',
+          'Этот симулятор — независимый проект, не связанный с America’s Cup и его организаторами, не спонсируемый и не одобренный ими.')}</p>
       </footer>
     </div>
   );

@@ -87,6 +87,8 @@ export const YACHTS: Yacht[] = [
         'Гоняется в Кубке Америки с 2021 года и вообще не имеет киля. Два поворотных рычага опускают в воду Т-образные крылья; набрав скорость, подветренное крыло поднимает весь семитонный корпус из воды, и она летит — 30–40 узлов на лавировке и почти 50 на полных курсах. Наветренный рычаг поднят из воды и работает как балласт.'],
       ['Her mainsail is a double skin on a D-shaped mast that sweeps the deck, with no boom; there is no spinnaker, because at those speeds the apparent wind is always ahead. Eight sail her from pods sunk into the deck: two helms, trimmers, a flight controller keeping her at the right height, and the cyclists powering the hydraulics.',
         'Грот — двойной, на D-образной мачте, без гика, нижней шкаториной до самой палубы; спинакера нет, потому что на таких скоростях вымпельный ветер всегда дует спереди. Экипаж из восьми сидит в кокпитах, утопленных в палубу: два рулевых, триммеры, «пилот полёта», держащий нужную высоту, и велосипедисты, питающие гидравлику.'],
+      ['The boat in the game is a virtual model, inspired by the design of today’s AC75-class foiling yachts.',
+        'Виртуальная модель, созданная по мотивам конструкции современных фойловых яхт класса AC75.'],
     ],
     race: ['Stay on the foils: a slow tack or a bad bear-away drops her into the water, and she has to bear off to build speed and take off again. In light wind, bear away to a reach to get flying. Courses are laid two and a half times longer.', 'Держись на крыльях: медленный поворот или неудачный уваливание роняют её в воду, и придётся увалиться, разогнаться и взлететь снова. В слабый ветер увались до галфвинда, чтобы взлететь. Дистанции в два с половиной раза длиннее.'],
     specs: [

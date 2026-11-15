@@ -335,6 +335,8 @@ html[data-me] .hm-av > svg { display: none; }
 .hm-foot-col a { font: 700 var(--t-xs)/1.2 var(--f-sans); letter-spacing: var(--caps); text-transform: uppercase; color: var(--ink); }
 .hm-foot-col a:hover { color: var(--accent); }
 .hm-foot .langs { align-self: start; justify-self: start; }
+/* the line under it all: the game is no part of the America's Cup */
+.hm-foot-note { grid-column: 1 / -1; margin: 0; max-width: 72ch; font: 400 var(--t-xs)/1.45 var(--f-sans); color: var(--muted, var(--ink-2)); }
 
 @container help (min-width: 600px) {
   .help > * { --hm-gutter: var(--s-6); --hm-display: 44px; --hm-h2: 32px; --hm-sec: var(--s-16); --hm-head: 76px; }

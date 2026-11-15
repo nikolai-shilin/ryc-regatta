@@ -8,7 +8,7 @@ import { ruPlural } from '@/lib/lang';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, SHAPE_NAME } from '@/lib/race';
 import { venueOf } from '@/lib/venues';
 import { BackLink } from '@/components/back-link';
-import { IconPlay, IconTrophy, IconSliders, IconBoats, Num, clock } from '@/components/ui';
+import { IconPlay, IconTrophy, IconSliders, IconBoats, IconSail, Num, clock } from '@/components/ui';
 import { BoatRow, FreeQuick } from '@/components/hub-client';
 import { PassportRow } from '@/components/passport';
 import { ProgressRows, RivalRow } from '@/components/progress';
@@ -99,6 +99,7 @@ export default async function Hub({ params }: LangParams) {
             <ProgressRows lang={lang} />
             <BoatRow lang={lang} />
             <Link className="bt-row" href="/yachts"><IconBoats s={18} /><span>{t('The yachts', 'Яхты')}</span><span className="bt-row-m">J/70 · RS21 · AC75</span></Link>
+            <Link className="bt-row" href="/fleet"><IconSail s={18} /><span>{t('The fleet', 'Флот')}</span><span className="bt-row-m">{t('All together in 3D', 'Все вместе в 3D')}</span></Link>
             <SettingsRow lang={lang} note />
           </div>
         </PauseCard>
