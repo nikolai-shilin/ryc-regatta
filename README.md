@@ -50,6 +50,11 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 - **Three.js** 0.160.0 is served from `public/vendor/` (the build and the three addons the game uses), not a CDN. To
   upgrade, copy the same files from the new `three` package into a folder named for its version and change the import
   maps in `public/play`, `public/hero-view` and `public/boat-view`.
+- **Loading the game:** those three pages list every module they load in `<link rel="modulepreload">` (and the yacht
+  in a preload), so the browser asks for them all at once; a module added to the game goes in the lists, and
+  `npm test` says so if it doesn't. On Vercel the build (`prebuild`, `scripts/stamp-game.mjs`) adds each module's
+  content hash to its address through the import map, `/game/sim.js?v=…`, which `next.config.ts` caches for good; the
+  pages in the repo stay unstamped, and the rest of `/game/` revalidates on every visit.
 - **Languages:** English and Russian.
   - The address's `?lang=ru` decides (the address search engines index each language by, `lib/seo.ts`), else the `lang`
     cookie (set by `?lang=` and by `/lang?to=ru&back=/somewhere`), else the browser's Accept-Language.

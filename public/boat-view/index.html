@@ -36,6 +36,31 @@
   var f = v === 'gocek' ? ['/game/skopea.bin', '/game/skopea.json'] : ['/game/venues/' + v + '.bin', '/game/venues/' + v + '.json'];
   f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
 <script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
+<!-- every module the page will load, asked for at once rather than an import at a time, and the yacht with them
+     (game/yacht.js); npm test keeps the list in step with the imports -->
+<link rel="preload" as="fetch" href="/game/yacht.glb" crossorigin>
+<link rel="modulepreload" href="/vendor/three@0.160.0/build/three.module.min.js">
+<link rel="modulepreload" href="/game/world.js">
+<link rel="modulepreload" href="/game/sim.js">
+<link rel="modulepreload" href="/game/land.js">
+<link rel="modulepreload" href="/game/venues.js">
+<link rel="modulepreload" href="/game/classes.js">
+<link rel="modulepreload" href="/game/yacht.js">
+<link rel="modulepreload" href="/vendor/three@0.160.0/examples/jsm/loaders/GLTFLoader.js">
+<link rel="modulepreload" href="/vendor/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js">
+<link rel="modulepreload" href="/game/skin.js">
+<link rel="modulepreload" href="/game/sponsor.js">
+<link rel="modulepreload" href="/game/boats3d.js">
+<link rel="modulepreload" href="/game/committee.js">
+<link rel="modulepreload" href="/game/jury.js">
+<link rel="modulepreload" href="/game/wildlife.js">
+<link rel="modulepreload" href="/game/plane.js">
+<link rel="modulepreload" href="/game/jets.js">
+<link rel="modulepreload" href="/game/light.js">
+<link rel="modulepreload" href="/game/ships.js">
+<link rel="modulepreload" href="/game/post.js">
+<link rel="modulepreload" href="/game/ocean.js">
+<link rel="modulepreload" href="/game/skopea.js">
 </head>
 <body>
 <canvas id="c" aria-label="Your boat, turn it by dragging"></canvas>
