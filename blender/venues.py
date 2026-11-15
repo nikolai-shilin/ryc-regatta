@@ -634,78 +634,6 @@ def bake(vid, V, fetch_only=False):
     HL = np.where(S > 0, Rl * ramp, sea).astype(np.float32)
     del Rl, Ra, Rd, D, ramp, shelf, sea
 
-    # ---------- the quadtree: fine on the coast and round the race area, coarse far off ----------
-    # A square is split while it has land in it and: it is bigger than its distance allows; or the coast runs
-    # through it and it is bigger than the coast's cells at that distance; or its four corners miss the heights
-    # between them by more than its distance allows. Then any square with a neighbour more than one level finer is
-    # split too, so a square's edge has at most one corner of its neighbours' between its own.
-    LEV = int(math.log2(N))
-    he = np.maximum(HL, -1.0)
-    c4 = lambda f: f(f(HL[:-1, :-1], HL[1:, :-1]), f(HL[:-1, 1:], HL[1:, 1:]))
-    cmax, cmin = c4(np.maximum), c4(np.minimum)
-    want, nmax = [], []
-    for Lv in range(LEV + 1):
-        n = 1 << Lv; s = N >> Lv; Sz = s * LC
-        mx = cmax.reshape(n, s, n, s).max((1, 3)); mn = cmin.reshape(n, s, n, s).min((1, 3)); nmax.append(mx)
-        c = -EXTENT + (np.arange(n) + 0.5) * Sz
-        dx = np.maximum(np.abs(c[None, :] - MID[0]) - Sz / 2, 0); dz = np.maximum(np.abs(c[:, None] - MID[1]) - Sz / 2, 0)
-        d = np.hypot(dx, dz)
-        w = (mx > 0) & ((Sz > np.clip(0.06 * d, 66, 1100)) | ((mn <= 0) & (Sz > np.maximum(LC, 0.0032 * d) + 0.1)))
-        if s >= 2 and Lv < LEV:
-            C = he[::s, ::s]; u = (np.arange(s) / s).astype(np.float32)
-            blk = he[:N, :N].reshape(n, s, n, s)
-            fit = (C[:-1, None, :-1, None] * (1 - u)[None, :, None, None] * (1 - u)[None, None, None, :]
-                   + C[:-1, None, 1:, None] * (1 - u)[None, :, None, None] * u[None, None, None, :]
-                   + C[1:, None, :-1, None] * u[None, :, None, None] * (1 - u)[None, None, None, :]
-                   + C[1:, None, 1:, None] * u[None, :, None, None] * u[None, None, None, :])
-            err = np.abs(blk - fit).max((1, 3))
-            w |= (mx > 0) & (err > 0.4 + 0.0012 * d)
-        if Lv == LEV: w[:] = False
-        want.append(w)
-    def grow(split):
-        exist = [np.ones((1, 1), bool)]
-        for Lv in range(LEV): exist.append(np.kron(exist[Lv] & split[Lv], np.ones((2, 2), bool)))
-        split = [split[Lv] & exist[Lv] for Lv in range(LEV + 1)]
-        depth = np.zeros((N, N), np.int8)
-        for Lv in range(LEV + 1):
-            leaf = exist[Lv] & ~split[Lv]
-            if leaf.any(): s = N >> Lv; depth[np.kron(leaf, np.ones((s, s), bool))] = Lv
-        return split, depth
-    split, depth = grow(want)
-    for it in range(40):
-        nb = np.maximum.reduce([shift(depth, 1, 0, 0), shift(depth, -1, 0, 0), shift(depth, 0, 1, 0), shift(depth, 0, -1, 0)])
-        bad = nb > depth + 1
-        if not bad.any(): break
-        ii, jj = np.nonzero(bad)
-        for Lv in np.unique(depth[ii, jj]):
-            m = depth[ii, jj] == Lv; s = N >> int(Lv)
-            split[int(Lv)][ii[m] // s, jj[m] // s] = True
-        split, depth = grow(split)
-    tree, leaves = [], []
-    def walk(Lv, i, j):
-        sp = bool(split[Lv][i, j]); tree.append(sp)
-        if sp:
-            for a, b in ((0, 0), (0, 1), (1, 0), (1, 1)): walk(Lv + 1, 2 * i + a, 2 * j + b)
-        else: leaves.append((Lv, i, j, bool(nmax[Lv][i, j] > 0)))
-    walk(0, 0, 0)
-    lv = np.array(leaves, np.int64); Ls, Li, Lj, Ld = lv[:, 0], lv[:, 1], lv[:, 2], lv[:, 3].astype(bool)
-    ls = N >> Ls; r0 = Li * ls; c0 = Lj * ls
-    W1 = N + 1; key = lambda r, c: r * W1 + c
-    corner = np.zeros(W1 * W1, bool)
-    for a, b in ((0, 0), (0, 1), (1, 0), (1, 1)): corner[key(r0 + a * ls, c0 + b * ls)] = True
-    used = np.zeros(W1 * W1, bool)
-    dr = Ld
-    for a, b in ((0, 0), (0, 1), (1, 0), (1, 1)): used[key(r0[dr] + a * ls[dr], c0[dr] + b * ls[dr])] = True
-    big = dr & (ls >= 2); h2 = ls // 2
-    fan = np.zeros(len(lv), bool)
-    for mr, mc in ((0, 1), (2, 1), (1, 0), (1, 2)):
-        k = key(r0 + mr * h2, c0 + mc * h2); has = big & corner[k]
-        used[k[has]] = True; fan |= has
-    used[key(r0[fan] + h2[fan], c0[fan] + h2[fan])] = True
-    vkeys = np.flatnonzero(used)
-    vh = np.clip(np.round(HL.ravel()[vkeys] * 10), -32000, 32000).astype(np.int16)
-    print(f'  terrain: {len(lv)} leaves ({int(Ld.sum())} drawn), {len(vkeys)} corners, about {int(2 * Ld.sum() + 2 * fan.sum())} triangles', flush=True)
-
     # ---------- the cover, the open sky and the depth, on a 20 m grid ----------
     cx = -EXTENT + (np.arange(NCC) + 0.5) * CC
     CX, CZ = np.meshgrid(cx, cx)
@@ -735,6 +663,10 @@ def bake(vid, V, fetch_only=False):
             cover[m_] = CLASSES.index(cls) | ((a_[m_] - (1 if cls == 'forest' else 0)) << 4).astype(np.uint8)
     Lc = bilinear(HL, -EXTENT, LC, CX, CZ)
     cover[Lc <= 0] = 0
+    # the sea's own polygons (a harbour, a bay the map has as water) lying over the low land of its coast: that land,
+    # not a pond on the shore (the game draws a pond as still water, mirroring the sky)
+    Sc = bilinear(S, -EXTENT, LC, CX, CZ)
+    cover[((cover & 15) == CLASSES.index('water')) & (Lc > 0) & (Lc < 8) & (Sc < 200)] = 0
     if V.get('flat') is not None:  # a flat city's river, its polygon over the quays' edge: the quay, not a pond
         cover[((cover & 15) == CLASSES.index('water')) & (Lc > 0)] = CLASSES.index('town')
     print('  cover:', ', '.join(f'{c} {np.mean(cover & 15 == k):.0%}' for k, c in enumerate(CLASSES) if np.mean(cover & 15 == k) >= 0.005), flush=True)
@@ -906,6 +838,87 @@ def bake(vid, V, fetch_only=False):
         for k in ('a', 'b', 'at'):
             if k in lm: x, z = to_xz(*lm[k]); o[k] = [round(float(x), 1), round(float(z), 1)]
         landmarks.append(o)
+
+    # ---------- the quadtree: fine on the coast and round the race area, coarse far off ----------
+    # A square is split while it has land in it and: it is bigger than its distance allows; or the coast runs
+    # through it and it is bigger than the coast's cells at that distance; or its four corners miss the heights
+    # between them by more than its distance allows. Then any square with a neighbour more than one level finer is
+    # split too, so a square's edge has at most one corner of its neighbours' between its own.
+    # (and round the race area, where the game draws a wood as high as its crowns (skopea.js LIFT_VS), every square
+    # with trees or scrub in it, or ground the map says nothing of, down to 33 m, and within 3 km of the race area to
+    # 17 m: corners enough for a wood's height to stand on, and its edges, without raising a tent over a coarse square)
+    LEV = int(math.log2(N))
+    lx = -EXTENT + (np.arange(N) + 0.5) * LC
+    vc = np.isin(cover & 15, [CLASSES.index(c) for c in ('unknown', 'forest', 'scrub', 'orchard', 'wetland')])
+    vi = np.clip(((lx + EXTENT) / CC).astype(int), 0, NCC - 1)
+    inner = np.abs(lx) < NE * EC / 2 * 0.9
+    veg = vc[vi[:, None], vi[None, :]] & inner[:, None] & inner[None, :] & (HL[:-1, :-1] > 1.0)
+    he = np.maximum(HL, -1.0)
+    c4 = lambda f: f(f(HL[:-1, :-1], HL[1:, :-1]), f(HL[:-1, 1:], HL[1:, 1:]))
+    cmax, cmin = c4(np.maximum), c4(np.minimum)
+    want, nmax = [], []
+    for Lv in range(LEV + 1):
+        n = 1 << Lv; s = N >> Lv; Sz = s * LC
+        mx = cmax.reshape(n, s, n, s).max((1, 3)); mn = cmin.reshape(n, s, n, s).min((1, 3)); nmax.append(mx)
+        c = -EXTENT + (np.arange(n) + 0.5) * Sz
+        dx = np.maximum(np.abs(c[None, :] - MID[0]) - Sz / 2, 0); dz = np.maximum(np.abs(c[:, None] - MID[1]) - Sz / 2, 0)
+        d = np.hypot(dx, dz)
+        w = (mx > 0) & ((Sz > np.clip(0.06 * d, 66, 1100)) | ((mn <= 0) & (Sz > np.maximum(LC, 0.0032 * d) + 0.1)))
+        if Sz > 17: w |= (mx > 0) & veg.reshape(n, s, n, s).any((1, 3)) & ((Sz > 34) | (d < 3000))
+        if s >= 2 and Lv < LEV:
+            C = he[::s, ::s]; u = (np.arange(s) / s).astype(np.float32)
+            blk = he[:N, :N].reshape(n, s, n, s)
+            fit = (C[:-1, None, :-1, None] * (1 - u)[None, :, None, None] * (1 - u)[None, None, None, :]
+                   + C[:-1, None, 1:, None] * (1 - u)[None, :, None, None] * u[None, None, None, :]
+                   + C[1:, None, :-1, None] * u[None, :, None, None] * (1 - u)[None, None, None, :]
+                   + C[1:, None, 1:, None] * u[None, :, None, None] * u[None, None, None, :])
+            err = np.abs(blk - fit).max((1, 3))
+            w |= (mx > 0) & (err > 0.4 + 0.0012 * d)
+        if Lv == LEV: w[:] = False
+        want.append(w)
+    def grow(split):
+        exist = [np.ones((1, 1), bool)]
+        for Lv in range(LEV): exist.append(np.kron(exist[Lv] & split[Lv], np.ones((2, 2), bool)))
+        split = [split[Lv] & exist[Lv] for Lv in range(LEV + 1)]
+        depth = np.zeros((N, N), np.int8)
+        for Lv in range(LEV + 1):
+            leaf = exist[Lv] & ~split[Lv]
+            if leaf.any(): s = N >> Lv; depth[np.kron(leaf, np.ones((s, s), bool))] = Lv
+        return split, depth
+    split, depth = grow(want)
+    for it in range(40):
+        nb = np.maximum.reduce([shift(depth, 1, 0, 0), shift(depth, -1, 0, 0), shift(depth, 0, 1, 0), shift(depth, 0, -1, 0)])
+        bad = nb > depth + 1
+        if not bad.any(): break
+        ii, jj = np.nonzero(bad)
+        for Lv in np.unique(depth[ii, jj]):
+            m = depth[ii, jj] == Lv; s = N >> int(Lv)
+            split[int(Lv)][ii[m] // s, jj[m] // s] = True
+        split, depth = grow(split)
+    tree, leaves = [], []
+    def walk(Lv, i, j):
+        sp = bool(split[Lv][i, j]); tree.append(sp)
+        if sp:
+            for a, b in ((0, 0), (0, 1), (1, 0), (1, 1)): walk(Lv + 1, 2 * i + a, 2 * j + b)
+        else: leaves.append((Lv, i, j, bool(nmax[Lv][i, j] > 0)))
+    walk(0, 0, 0)
+    lv = np.array(leaves, np.int64); Ls, Li, Lj, Ld = lv[:, 0], lv[:, 1], lv[:, 2], lv[:, 3].astype(bool)
+    ls = N >> Ls; r0 = Li * ls; c0 = Lj * ls
+    W1 = N + 1; key = lambda r, c: r * W1 + c
+    corner = np.zeros(W1 * W1, bool)
+    for a, b in ((0, 0), (0, 1), (1, 0), (1, 1)): corner[key(r0 + a * ls, c0 + b * ls)] = True
+    used = np.zeros(W1 * W1, bool)
+    dr = Ld
+    for a, b in ((0, 0), (0, 1), (1, 0), (1, 1)): used[key(r0[dr] + a * ls[dr], c0[dr] + b * ls[dr])] = True
+    big = dr & (ls >= 2); h2 = ls // 2
+    fan = np.zeros(len(lv), bool)
+    for mr, mc in ((0, 1), (2, 1), (1, 0), (1, 2)):
+        k = key(r0 + mr * h2, c0 + mc * h2); has = big & corner[k]
+        used[k[has]] = True; fan |= has
+    used[key(r0[fan] + h2[fan], c0[fan] + h2[fan])] = True
+    vkeys = np.flatnonzero(used)
+    vh = np.clip(np.round(HL.ravel()[vkeys] * 10), -32000, 32000).astype(np.int16)
+    print(f'  terrain: {len(lv)} leaves ({int(Ld.sum())} drawn), {len(vkeys)} corners, about {int(2 * Ld.sum() + 2 * fan.sum())} triangles', flush=True)
 
     # ---------- the files ----------
     rows = lambda a: np.diff(a.astype(np.int32), axis=1, prepend=0)

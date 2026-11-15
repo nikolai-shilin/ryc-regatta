@@ -81,6 +81,10 @@ export function skyAt(hour, overcast = false) {
   // the evening against the morning: more haze in the air after a day of sun, so a warmer, softer light
   const eve = solar > 12 ? 1 - smooth(10, 30, e) : 0;
   L.mie *= 1 + 0.3 * eve; L.horizon.lerp(new THREE.Color('#f6c39a'), 0.12 * eve); L.sun.lerp(new THREE.Color('#ff9a50'), 0.1 * eve);
+  // a morning's mist: the night's cool air still lying on the water and in the valleys till the sun has been up a
+  // while — the haze thicker low down (the sea's and the shore's), the hills standing clear of it (skopea.js)
+  const mist = solar < 12 ? 1 - smooth(6, 22, e) : 0;
+  L.mist = mist; L.fogNear /= 1 + 1.2 * mist; L.fogFar /= 1 + 1.2 * mist;
   if (overcast) { // the cloud deck: the sun gone, the light flat and grey, and dimmer the lower the sun is behind it
     const O = mix(OVERCAST, OVERCAST, 0), k = 0.55 + 0.45 * smooth(MIN_E, 30, e), warm = 1 - smooth(MIN_E, 20, e);
     Object.assign(L, mix(L, O, 0.88));
@@ -145,9 +149,12 @@ export function pickSky(race) {
 
 // The sky, shared by the sky dome, the sea's reflection of it and the haze on the water: a gradient from the
 // horizon up to the zenith, the bright Mie haze round the sun (strongest low down, through more air), and the
-// fair-weather cumulus on a layer overhead, made from the ripple noise (uRipple), lit from the sun's side.
+// fair-weather cumulus on a layer overhead, made from the ripple noise (uRipple), lit from the sun's side. The
+// layer is 1500 m up and fixed to the venue (uSkyAt: the camera's place in the venue's frame, world.js render), as
+// the clouds' shadows on the land and the sea are (skopea.js cloudShade), so each cloud is over its shadow and stays
+// put as a boat sails under it.
 export const SKY_GLSL = /* glsl */ `
-uniform vec3 uTop, uHorizon, uSun, uSunCol, uCloudLit, uCloudDark; uniform float uMie, uCloud; uniform sampler2D uRipple;
+uniform vec3 uTop, uHorizon, uSun, uSunCol, uCloudLit, uCloudDark, uSkyAt; uniform float uMie, uCloud; uniform sampler2D uRipple;
 vec3 skyBase(vec3 d) {
   float y = max(d.y, 0.0), mu = dot(d, uSun);
   vec3 c = mix(uHorizon, uTop, pow(y, 0.5));
@@ -156,7 +163,9 @@ vec3 skyBase(vec3 d) {
   return c;
 }
 float cloudDen(vec3 d, float t) {
-  vec2 p = d.xz / (max(d.y, 0.0) + 0.1) * 0.3 + vec2(t * 0.0016, t * 0.0007);
+  // (where the ray meets the layer; low down, where it would meet it ever further off, nearer, as a flatter dome)
+  float dy = max(d.y, 0.0);
+  vec2 p = (uSkyAt.xz + d.xz * (1500.0 - uSkyAt.y) / (dy + 0.1 * (1.0 - dy))) * 0.0002 + vec2(t * 0.0016, t * 0.0007);
   float n = texture2D(uRipple, p).w * 0.62 + texture2D(uRipple, p * 2.3 + 0.31).w * 0.28 + texture2D(uRipple, p * 6.1 + 0.67).w * 0.1;
   return smoothstep(0.52 - uCloud, 0.74 - uCloud * 0.5, n) * smoothstep(0.02, 0.16, d.y);
 }
@@ -176,6 +185,6 @@ export function skyUniforms() {
   return {
     uTop: { value: new THREE.Color() }, uHorizon: { value: new THREE.Color() }, uSun: { value: new THREE.Vector3(0, 1, 0) },
     uSunCol: { value: new THREE.Color() }, uCloudLit: { value: new THREE.Color() }, uCloudDark: { value: new THREE.Color() },
-    uMie: { value: 0.1 }, uCloud: { value: 0 }, uFoamCol: { value: new THREE.Color(1, 1, 1) },
+    uMie: { value: 0.1 }, uCloud: { value: 0 }, uFoamCol: { value: new THREE.Color(1, 1, 1) }, uSkyAt: { value: new THREE.Vector3() },
   };
 }

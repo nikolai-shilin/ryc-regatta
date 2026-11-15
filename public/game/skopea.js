@@ -127,7 +127,7 @@ const LAND_U = {
   uAt: { value: new THREE.Vector3() },
   uGridXf: { value: new THREE.Vector3(-TE, -TE, 1 / (GN * GC)) }, uShadeXf: { value: new THREE.Vector3(-TE, -TE, 1 / (2 * TE)) },
   uAO: { value: gridTex(P.ao, META.ao.n, true) }, uAOXf: { value: new THREE.Vector3(-TE, -TE, 1 / (META.ao.n * META.ao.cell)) }, uShadeTex: { value: SH_TEX },
-  uHazeL: { value: 7700 }, uHazeCap: { value: 0.92 },
+  uHazeL: { value: 7700 }, uHazeCap: { value: 0.92 }, uMist: { value: 0 },
 };
 let SKY_U = {}; // the sky's uniforms (light.js), from the world
 // The clouds' shadows: the sky's fair-weather cumulus (light.js cloudDen: the same noise, as thick as the sky's) as a
@@ -150,7 +150,10 @@ float cloudShade(vec3 p) { // p: in the venue's frame; 1 in the sun, 0.3 under t
 // its haze is the sea's own: the sky's colour at the horizon that way, thicker with the distance, so the far hills
 // fade into it as the sea does and the mountains out to 64 km are a pale outline. k: how fast it thickens.
 const LAND_FS = /* glsl */ `
-uniform vec3 uGridXf, uShadeXf, uAOXf; uniform sampler2D uAO, uShadeTex; uniform float uHazeL, uHazeCap, uHazeK;
+uniform vec3 uGridXf, uShadeXf, uAOXf; uniform sampler2D uAO, uShadeTex; uniform float uHazeL, uHazeCap, uHazeK, uMist;
+// how much air there is along a line of sight from a height a to a height b, against the same length at the sea: the
+// haze thins upwards (exponentially, over H metres), so a hilltop is seen through less of it than the shore below it
+float hazeAir(float a, float b, float H) { float d = b - a; return abs(d) < 1.0 ? exp(-a / H) : H * (exp(-a / H) - exp(-b / H)) / d; }
 varying vec3 vLand; varying vec3 vHz;
 ${SKY_GLSL}
 ${CLOUD_GLSL}
@@ -177,7 +180,10 @@ function landMat(m, k = 1, o = {}) {
       { float sun = landSun(vLand.xz) * cloudShade(vLand), sky = texture2D(uAO, (vLand.xz - uAOXf.xy) * uAOXf.z).r * (255.0 / 252.0);
         reflectedLight.directDiffuse *= sun; reflectedLight.directSpecular *= sun; reflectedLight.indirectDiffuse *= 0.3 + 0.7 * sky; }`);
     sh.fragmentShader = fs.replace('#include <tonemapping_fragment>', `{
-        float hf = uHazeCap * (1.0 - exp(-length(vHz) * uHazeK / uHazeL));
+        // (as thick as the sea's at the sea, thinner up the hills: over 700 m, or 140 m in a morning's mist (uMist,
+        // light.js), when the hills rise out of it; a quarter of it is high and thin, all the way up)
+        float air = 0.25 + 0.75 * hazeAir(max(cameraPosition.y, 0.0), max(vLand.y, 0.0), mix(700.0, 140.0, uMist));
+        float hf = uHazeCap * (1.0 - exp(-length(vHz) * uHazeK / uHazeL * air));
         gl_FragColor.rgb = mix(gl_FragColor.rgb, skyBase(normalize(vec3(vHz.x, 0.0, vHz.z) + vec3(0.0, 1e-4, 0.0))), hf);
       }
       #include <tonemapping_fragment>`);
@@ -592,24 +598,41 @@ function leafy(g, lump = 0.28) {
 }
 const blob = (sx, sy, sz, x, y, z) => leafy(new THREE.IcosahedronGeometry(1, 0).scale(sx, sy, sz).translate(x, y, z));
 const trunk = (r0, r1, h, col = '#5a4636', y = 0) => tint(new THREE.CylinderGeometry(r0, r1, h, 3, 1, true).translate(0, y + h / 2, 0), col);
+// Each kind in three shapes (treeGeo's v), so a wood isn't one tree over and over; R: a steady random for the shape
 const TREES = {
-  pine: () => [trunk(0.22, 0.32, 7), blob(3.3, 2.6, 3.3, 0, 8, 0), blob(2.1, 1.5, 2.1, 1.5, 9.3, 0.7)],
-  stone: () => [trunk(0.28, 0.4, 9), blob(5.6, 1.7, 5.6, 0, 9.6, 0), blob(3, 1.1, 3, -2.2, 10.4, 1.2)], // the umbrella pine: a flat crown up high
-  broad: () => [trunk(0.35, 0.5, 4), blob(4.2, 3.6, 4.2, 0, 6.6, 0), blob(3, 2.6, 3, 1.8, 8.2, -1)],
-  conifer: () => [trunk(0.2, 0.3, 2.5), leafy(new THREE.ConeGeometry(2.6, 11, 7).translate(0, 7.5, 0), 0.18)],
-  cypress: () => [trunk(0.15, 0.25, 1.5), leafy(new THREE.ConeGeometry(1.25, 12, 6).translate(0, 7, 0), 0.12), blob(1.25, 2.4, 1.25, 0, 3.8, 0)],
-  eucalypt: () => [trunk(0.3, 0.45, 12, '#cfc6b4'), blob(3.4, 2.3, 3.4, 0, 12.5, 0), blob(2.5, 1.8, 2.5, 2.2, 9.8, 1), blob(2.6, 2, 2.6, -1.8, 10.8, -1.2)],
-  olive: () => [trunk(0.35, 0.45, 2.4, '#6b5a48'), blob(2.6, 1.9, 2.6, 0, 3.4, 0), blob(1.6, 1.2, 1.6, 1.3, 4.3, -0.6)],
-  shrub: () => [blob(1.9, 1.1, 1.9, 0, 0.7, 0), blob(1.3, 0.8, 1.3, 1.3, 0.5, 0.7)],
-  palm: () => {
-    const lean = 0.09, top = 9, g = [tint(new THREE.CylinderGeometry(0.2, 0.32, top, 4, 1, true).translate(0, top / 2, 0).rotateZ(-lean), '#8a7a5e')];
+  // the Turkish red pine, Göcek's: a crown of flattish clumps in tiers, wider than it is tall and lopsided, high on a
+  // bare trunk
+  pine: (R) => {
+    const g = [trunk(0.22, 0.32, 7.2)], a0 = R() * 6.28;
+    for (let i = 0; i < 3; i++) {
+      const a = a0 + i * 2.1 + R(), r = 0.5 + R() * 1.4;
+      g.push(blob(2.3 + R() * 1.1, 1.0 + R() * 0.6, 2.1 + R() * 1.1, Math.cos(a) * r, 7.0 + i * 1.0 + R() * 0.5, Math.sin(a) * r));
+    }
+    return g;
+  },
+  stone: (R) => [trunk(0.28, 0.4, 9), blob(5.1 + R(), 1.5 + R() * 0.4, 5.1 + R(), 0, 9.6, 0), blob(2.6 + R(), 1.1, 2.6 + R(), -2.2 + R(), 10.3, 1.2 - R() * 2)], // the umbrella pine: a flat crown up high
+  broad: (R) => [trunk(0.35, 0.5, 4), blob(3.8 + R() * 0.9, 3.2 + R() * 0.8, 3.8 + R() * 0.9, 0, 6.6, 0), blob(2.6 + R(), 2.2 + R() * 0.8, 2.6 + R(), 1.8 - R() * 3.6, 8 + R(), R() * 2 - 1)],
+  conifer: (R) => { const h = 9.5 + R() * 3, w = 2.2 + R() * 0.8; return [trunk(0.2, 0.3, 2.5), leafy(new THREE.ConeGeometry(w, h, 7).translate(0, 2 + h / 2, 0), 0.18)]; },
+  cypress: (R) => { const h = 10.5 + R() * 3; return [trunk(0.15, 0.25, 1.5), leafy(new THREE.ConeGeometry(1.15 + R() * 0.3, h, 6).translate(0, 1 + h / 2, 0), 0.12), blob(1.25, 2.4, 1.25, 0, 3.8, 0)]; },
+  eucalypt: (R) => [trunk(0.3, 0.45, 11 + R() * 2, '#cfc6b4'), blob(3 + R(), 2.1 + R() * 0.5, 3 + R(), R() - 0.5, 12.5, 0), blob(2.5, 1.8, 2.5, 2.2, 9.8 + R(), 1), blob(2.6, 2, 2.6, -1.8, 10.8, -1.2 + R())],
+  olive: (R) => [trunk(0.35, 0.45, 2.2 + R() * 0.6, '#6b5a48'), blob(2.3 + R() * 0.7, 1.7 + R() * 0.4, 2.3 + R() * 0.7, 0, 3.4, 0), blob(1.6, 1.2, 1.6, 1.3 - R() * 2.6, 4.3, -0.6)],
+  shrub: (R) => [blob(1.6 + R() * 0.6, 1 + R() * 0.3, 1.6 + R() * 0.6, 0, 0.7, 0), blob(1.3, 0.8, 1.3, 1.3 - R() * 2.6, 0.5, 0.7)],
+  palm: (R) => {
+    const lean = 0.04 + R() * 0.1, top = 8 + R() * 2.5, g = [tint(new THREE.CylinderGeometry(0.2, 0.32, top, 4, 1, true).translate(0, top / 2, 0).rotateZ(-lean), '#8a7a5e')];
     const tx = Math.sin(lean) * top, ty = Math.cos(lean) * top;
     for (let k = 0; k < 7; k++) g.push(tint(new THREE.BoxGeometry(4.6, 0.12, 0.9).translate(2.3, 0, 0).rotateZ(-0.38 - 0.12 * (k % 2)).rotateY(k * Math.PI * 2 / 7).translate(tx, ty, 0), '#ffffff'));
     return g;
   },
   far: () => [blob(3.6, 4.2, 3.6, 0, 5, 0)], // past 4 km: a crown, no trunk
 };
-const treeGeo = (kind) => mergeGeometries((TREES[kind] || TREES.pine)().map(strip));
+const treeGeo = (kind, v = 0) => mergeGeometries((TREES[kind] || TREES.pine)(rng(31 + v * 101 + kind.length * 7)).map(strip));
+// the trees sway a little in the wind, the crown more than the trunk, each on its own beat (uCsT: the race's clock)
+const SWAY = `
+#ifdef USE_INSTANCING
+  { vec3 ip = instanceMatrix[3].xyz; float k = max(transformed.y - 2.5, 0.0) / 8.0, ph = ip.x * 0.071 + ip.z * 0.053;
+    transformed.xz += vec2(sin(uCsT * 1.6 + ph), cos(uCsT * 1.3 + ph * 1.7)) * 0.16 * k * k * (0.6 + 0.4 * sin(uCsT * 0.37 + ph * 0.3)); }
+#endif
+#include <project_vertex>`;
 // how likely a tree is to stand, by what the map says is there (where it says nothing, the venue's woods decide)
 const TREE_P = { forest: 1, scrub: 0.3, grass: 0.05, farmland: 0.025, orchard: 0.5, town: 0.08, industry: 0.01, sand: 0.015, rock: 0.02, wetland: 0.15, water: 0, mud: 0, paved: 0 };
 const TREE_K = META.classes.map((c) => TREE_P[c] ?? -1);
@@ -636,8 +659,8 @@ function pines(count, far = false) {
   const SINK = { pine: 5.4, stone: 7.6, broad: 3, conifer: 2.2, eucalypt: 7.5, olive: 1.2 };
   const put = (k, x, y, z, s, sink = 0) => {
     o.position.set(x, y - 0.6 - sink * s, z); o.rotation.set(0, r() * 6.28, 0); o.scale.set(s, s * (0.85 + r() * 0.35), s); o.updateMatrix();
-    const key = k.kind + ':' + Math.floor(x / TILE) + ',' + Math.floor(z / TILE);
-    if (!tiles.has(key)) tiles.set(key, { k, list: [] });
+    const v = Math.floor(r() * 3), key = k.kind + ':' + v + ':' + Math.floor(x / TILE) + ',' + Math.floor(z / TILE);
+    if (!tiles.has(key)) tiles.set(key, { k, v, list: [] });
     tiles.get(key).list.push([o.matrix.clone(), c.copy(k.dark).lerp(k.light, r() * 0.7).multiplyScalar(0.9 + r() * 0.2).clone()]);
   };
   // first the trees the map has one by one (blender/venues.py, `trees`): its rows along the streets and promenades
@@ -672,12 +695,14 @@ function pines(count, far = false) {
     const lv = levelAt(x, z), inNear = Math.max(Math.abs(x - NEAR.x0 - NEAR.n * NEAR.cell / 2), Math.abs(z - NEAR.x0 - NEAR.n * NEAR.cell / 2)) < NEAR.n * NEAR.cell * 0.44;
     const lifted = inNear ? liftShare(lv) : 0;
     const inWood = !far && (cl === CLS.forest || (p < 0 && woodAt(x, z) >= WOOD + 0.02 && townness(x, z) <= 0));
-    put(k, x, y, z, (0.75 + r() * 0.65 - Math.min(0.3, y / (TOP * 3))) * (cl === CLS.scrub && !shrub ? 0.6 : 1), inWood ? (SINK[k.kind] || 0) * (0.75 + 0.35 * r()) * (1 - lifted) : 0);
+    // (a stand's trees of an age: some stands taller than others, as well as each tree its own height)
+    put(k, x, y, z, (0.75 + r() * 0.65 - Math.min(0.3, y / (TOP * 3))) * (0.8 + 0.4 * vnoise(x / 160, z / 160)) * (cl === CLS.scrub && !shrub ? 0.6 : 1), inWood ? (SINK[k.kind] || 0) * (0.75 + 0.35 * r()) * (1 - lifted) : 0);
     n++;
   }
-  const geos = {}, mat = landMat(new THREE.MeshLambertMaterial({ vertexColors: true }), 1, { key: 'trees' }), g = new THREE.Group();
-  for (const { k, list } of tiles.values()) {
-    const m = new THREE.InstancedMesh(geos[k.kind] || (geos[k.kind] = treeGeo(k.kind)), mat, list.length);
+  const geos = {}, mat = landMat(new THREE.MeshLambertMaterial({ vertexColors: true }), 1, { key: 'trees', vsHead: 'uniform float uCsT;', project: SWAY }), g = new THREE.Group();
+  for (const { k, v, list } of tiles.values()) {
+    const gk = k.kind === 'far' ? 'far' : k.kind + v;
+    const m = new THREE.InstancedMesh(geos[gk] || (geos[gk] = treeGeo(k.kind, v)), mat, list.length);
     list.forEach(([mx, col], i) => { m.setMatrixAt(i, mx); m.setColorAt(i, col); });
     m.computeBoundingSphere(); // round all of the tile's trees, before setQuality draws fewer
     m.userData.max = list.length;
@@ -1403,6 +1428,7 @@ export class Skopea {
   // the light of the race (light.js): the haze as thick as the sea's, the lakes' colour, the shadows from where the sun is
   setLight(L, renderer) {
     LAND_U.uHazeL.value = L.fogFar * 2.4 * (LOOK.haze ?? 1); // (how clear the venue's air is: venues.js)
+    LAND_U.uMist.value = L.mist || 0;
     GROUND_U.uLake.value.copy(L.deep).lerp(L.horizon, 0.35);
     if (renderer) shadows(renderer, this.group, L.sunDir);
   }

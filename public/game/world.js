@@ -1406,6 +1406,8 @@ export class World {
   render(cam) {
     const r = this.renderer, sc = this.scene;
     if (this.preparing) return; // shaders still compiling (prepare)
+    const at = this.race?.at; // the camera's place in the venue's frame, for the clouds (light.js)
+    this.skyU.uSkyAt.value.set(cam.position.x + (at?.x || 0), cam.position.y, cam.position.z + (at?.z || 0));
     if (this.ocean) this.ocean.update(this.waterU.uTime.value);
     sc.updateMatrixWorld(); cam.updateMatrixWorld();
     const au = sc.matrixWorldAutoUpdate; sc.matrixWorldAutoUpdate = false; // once is enough for all the passes
