@@ -367,7 +367,10 @@
 .bc .fs-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }
 /* upright on a phone the four and All keep to one row that scrolls sideways */
 @container scr (orientation: portrait) {
-  .bc .fs-one { flex-wrap: nowrap; margin: 0 calc(-1 * var(--cp)); padding: 0 var(--cp); overflow-x: auto; scrollbar-width: none; }
+  /* faded at the right edge so the row shows it goes on (All is out there); the end padding as wide as the fade, so
+     scrolled to the end, All comes clear of it */
+  .bc .fs-one { flex-wrap: nowrap; margin: 0 calc(-1 * var(--cp)); padding: 0 var(--s-12) 0 var(--cp); overflow-x: auto; scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - var(--s-12)), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - var(--s-12)), transparent); }
   .bc .fs-one::-webkit-scrollbar { display: none; }
   .bc .fs-one > .bt-pills { flex-wrap: nowrap; }
   .bc .fs-one .bt-pill { flex: none; }
@@ -621,6 +624,12 @@
   .bc .ho-dock-t b { font-size: var(--fs-lead); white-space: nowrap; }
   .bc .ho-dock-w { display: none; }
   .bc .ho-dock .ho-go { flex: none; padding: 0 var(--s-8) 0 var(--s-4); font-size: var(--fs-small); }
+}
+/* the same bar on a phone over an app screen that shows it (admin's), where the container is the screen, not the page */
+@container scr (max-width: 599px) {
+  .bc .hm-head-in { min-height: 60px; column-gap: var(--s-3); }
+  .bc .hm-brand-t { font-size: var(--fs-body); }
+  .bc .hm-play { padding: 0 var(--s-6) 0 var(--s-3); font-size: var(--fs-small); }
 }
 
 /* ---------- the reading pages: how to play, questions, learn, the guides, the glossary, the exam trainer ----------

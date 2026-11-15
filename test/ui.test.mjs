@@ -41,7 +41,13 @@ test('the tokens are scoped to .bc, so pages not yet moved over keep their look'
 test('the site and the game load the tokens and both Sofia Sans faces with Cyrillic', () => {
   const layout = read('app/[lang]/layout.tsx');
   assert.match(layout, /import '@\/public\/ui\/tokens\.css'/);
-  for (const f of ['Sofia_Sans', 'Sofia_Sans_Condensed']) assert.match(layout, new RegExp(`${f}\\(\\{ subsets: \\[[^\\]]*'cyrillic'`), f);
+  // the faces are lib/fonts.ts's, for both root documents: every page's layout and the 404's
+  const fonts = read('lib/fonts.ts');
+  for (const f of ['Sofia_Sans', 'Sofia_Sans_Condensed']) assert.match(fonts, new RegExp(`${f}\\(\\{ subsets: \\[[^\\]]*'cyrillic'`), f);
+  for (const doc of [layout, read('app/global-not-found.tsx')]) {
+    assert.match(doc, /className=\{FONT_VARS\}/);
+    assert.match(doc, /import '@\/public\/ui\/tokens\.css';\nimport '@\/styles\/broadcast\.css';/);
+  }
   assert.match(css, /--cond: var\(--f-sofia-c, 'Sofia Sans Condensed'\)/);
   assert.match(css, /--sans: var\(--f-sofia, 'Sofia Sans'\)/);
   const play = read('public/play/index.html');

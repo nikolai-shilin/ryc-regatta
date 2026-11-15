@@ -20,6 +20,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 | `/iyt` | The IYT sailing certification test, as rycrentals.com/iyt has it | `app/[lang]/iyt/page.tsx` |
 | `/sign-in`, `/sign-in/code`, `/sign-in/name` | Supabase sign-in: Google or a 6-digit email code, then a name for the ranking | `components/sign-in-forms.tsx` |
 | `/play?race=today` or `?race=free` | The game itself, a static page | `public/play/index.html`, `public/game/` |
+| Any other address | The site's 404, with its header and a way back, in the reader's language; `proxy.ts` sends a rating day the API can't have (`/race/rating/not-a-day`, a day to come) here too. A document of its own, as the root layout is under `[lang]` (`experimental.globalNotFound`) | `app/global-not-found.tsx`, `components/not-found-view.tsx` |
 
 - **The game:** it lives in `public/`, and `next.config.ts` rewrites `/play` to `/play/index.html`.
   - The game and the pages share this origin, so they share localStorage:
@@ -50,9 +51,10 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   with the jib's logo (`public/game/sponsor.js` asks once a page). Nothing set: RYCRENTALS.COM · RENT YACHTS HERE!
 - **Scores:** `public/game/stats.js` posts every race's start, finish and result to `https://iyt.rycrentals.com/api/game`
   (`api/game.mjs` in the `iyt-test` repo, table `public.game_races`). It names the player by Telegram's launch data inside
-  Telegram, or else by the site account's access token, which the game gets from `/auth/token` on this origin. The
-  server drops a time faster than the course allows (0.45 s a metre of beat a lap); `npm test` checks that the
-  computer boats stay well above that floor.
+  Telegram, or else by the site account's access token, which the game gets from `/auth/token` on this origin. Run
+  locally (localhost, `*.localhost`) it posts nothing, so test races stay off the rankings; `?scores` in the game's
+  address posts them all the same. The server drops a time faster than the course allows (0.45 s a metre of beat a
+  lap); `npm test` checks that the computer boats stay well above that floor.
 - **Three.js** 0.160.0 is served from `public/vendor/` (the build and the three addons the game uses), not a CDN. To
   upgrade, copy the same files from the new `three` package into a folder named for its version and change the import
   maps in `public/play`, `public/hero-view` and `public/boat-view`.

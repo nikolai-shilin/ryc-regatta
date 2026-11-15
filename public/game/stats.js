@@ -7,7 +7,10 @@
 // in the body): no preflight, which a keepalive post on leaving the page may not get through.
 import { CLS } from './classes.js';
 const API = 'https://iyt.rycrentals.com/api/game';
-const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
+// the game run locally (npm run dev) keeps its races to itself: a test race isn't one of the day's. ?scores in the
+// address posts them all the same, for trying the scores server
+const LOCAL = /^(localhost|127\.0\.0\.1|\[::1\]|.+\.localhost)$/.test(location.hostname) && !/[?&]scores\b/.test(location.search);
+const TG =window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
 
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID()
   : '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)));
@@ -27,6 +30,7 @@ function account() {
 account();
 
 function send(body, tok = token) {
+  if (LOCAL) return;
   try {
     fetch(API, { method: 'POST', keepalive: true, body: JSON.stringify({ ...body, initData: TG ? TG.initData : '', ...(tok && { token: tok }) }) }).catch(() => {});
   } catch (e) {}

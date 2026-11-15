@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { isLang, pickLang } from '@/lib/lang';
+import { validDay } from '@/lib/day';
 
 // Every page, in the reader's language, from the CDN. The pages live under app/[lang]/ and are built once per language
 // at deploy (or every few minutes, Home), so this picks the language (lib/lang.ts pickLang: ?lang=, else the lang
@@ -22,9 +23,17 @@ export async function proxy(request: NextRequest) {
   // the route handlers (sign-in callbacks, /lang, the jib's ad /sponsor) answer at their own address; everything else is a page
   const page = !/^\/(auth\/|lang$|sponsor$|_)/.test(url.pathname);
   const target = url.clone();
+  const hadLang = request.cookies.get('lang')?.value;
   if (page) {
-    target.pathname = `/${pickLang(q, request.cookies.get('lang')?.value, request.headers.get('accept-language'))}${url.pathname === '/' ? '' : url.pathname}`;
+    // a day's rating the API can't have (not a date, after today, too long ago) is a 404 here, as the page itself can
+    // only say so after its loading screen has gone out with a 200: no page answers /404, so app/global-not-found does
+    const day = /^\/race\/rating\/([^/]+)$/.exec(url.pathname)?.[1];
+    const path = day && !validDay(day) ? '/404' : url.pathname;
+    const lang = pickLang(q, hadLang, request.headers.get('accept-language'));
+    target.pathname = `/${lang}${path === '/' ? '' : path}`;
     target.searchParams.delete('lang');
+    // the language chosen, as the request's cookie: the 404 (app/global-not-found.tsx) has no [lang] to read it from
+    if (hadLang !== lang) request.cookies.set('lang', lang);
   }
   const pass = () => (page ? NextResponse.rewrite(target, { request }) : NextResponse.next({ request }));
   let response = pass();
@@ -45,7 +54,7 @@ export async function proxy(request: NextRequest) {
     // project's signing key (ES256, its JWKS cached across requests) instead of asking Supabase on every page.
     await supabase.auth.getClaims();
   }
-  if (urlLang && request.cookies.get('lang')?.value !== urlLang) response.cookies.set('lang', urlLang, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+  if (urlLang && hadLang !== urlLang) response.cookies.set('lang', urlLang, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
   return response;
 }
 
