@@ -16,6 +16,7 @@ import { makeBoatView } from './boats3d.js';
 import { LOOKS, playerLook } from './yacht.js';
 import { VENUE } from './venues.js';
 import { along, ghostGap } from './track.js';
+import { polarSpeed, beatAngle, lineT, KN, D2R } from './sim.js';
 
 const tr = (en, ru) => (ctx?.LANG === 'ru' ? ru : en); // the game's language (main.js), handed over at init
 const q = new URLSearchParams(location.search);
@@ -33,20 +34,27 @@ export const track = (name, data) => { try { window.va('event', { name, data });
 // and how it scores: 3 stars, 2, 1, or 0 for not done.
 export const DRILLS = {
   start: { race: { preset: 'medium', fleet: 6, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' } },
+  // a line skewed 12°, one end or the other (drawn as the page loads, so Again may draw the other)
+  end: { race: { preset: 'medium', fleet: 6, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', bias: (Math.random() < 0.5 ? -1 : 1) * 12 } },
+  layline: { race: { preset: 'medium', fleet: 6, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' } },
   mark: { race: { preset: 'medium', fleet: 6, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' } },
   beat: { race: { preset: 'medium', fleet: 6, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' } },
   // two laps, so the run goes down to the gate (one lap's run is to the finish)
   run: { race: { preset: 'medium', fleet: 6, length: 'short', laps: 2, start: 1, current: 0, course: 'wl' } },
   // an upwind finish where the venue lays one (else up and down's, downwind through the start line)
   finish: { race: { preset: 'medium', fleet: 6, length: 'short', laps: 1, start: 1, current: 0, course: 'wlu' } },
+  // a smaller fleet: room to spin
+  penalty: { race: { preset: 'medium', fleet: 4, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' } },
 };
-export const DRILL_ORDER = ['start', 'mark', 'beat', 'run', 'finish'];
+// as a race comes (lib/drills.ts lists them in this order too)
+export const DRILL_ORDER = ['start', 'end', 'beat', 'layline', 'mark', 'run', 'finish', 'penalty'];
 const drillId = q.get('drill') && DRILLS[q.get('drill')] ? q.get('drill') : null;
 export const drill = drillId;
 // what a drill sails, over the free race's own choices (main.js settings())
 export const drillSettings = () => (drillId ? DRILLS[drillId].race : null);
 const drillName = (id) => ({ start: tr('The start', 'Старт'), mark: tr('The top mark', 'Верхний знак'), beat: tr('The shifts', 'Сдвиги ветра'),
-  run: tr('The run', 'Фордевинд'), finish: tr('The finish', 'Финиш') })[id];
+  run: tr('The run', 'Фордевинд'), finish: tr('The finish', 'Финиш'), end: tr('The favoured end', 'Выгодный конец'), layline: tr('The layline', 'Лейлайн'),
+  penalty: tr('The penalty turn', 'Штрафной оборот') })[id];
 
 let ctx = null, ghost = null, dr = null;
 const css = `
@@ -177,7 +185,7 @@ function startDrill(race) {
   const P = race.player;
   dr = { id: drillId, done: false, pens: 0 };
   // the minute before: yours. The others: a computer skipper sails her to the moment, then she's yours
-  if (drillId !== 'start') {
+  if (drillId !== 'start' && drillId !== 'end') {
     P.ai = { ...(race.boats.find((b) => b.ai)?.ai || {}), skill: 0.92, lineT: 0.5, lastTack: -999, go: false, wp: 0, dirtyT: 0, hailT: -99, port: false, dare: 0, loiter: 1 };
     // the beat: halfway up it (from the middle of the line to the windward mark), so what's left is a couple of minutes
     const C = race.course, beat = Math.hypot(C.windward.x - (C.pin.x + C.committee.x) / 2, C.windward.z - (C.pin.z + C.committee.z) / 2);
@@ -185,22 +193,41 @@ function startDrill(race) {
     // line on the last leg, whatever the course the venue laid
     const gate = C.legs.indexOf('gate'), last = C.legs.length - 1;
     const until = { mark: () => P.leg >= 1 && race.distToNext(P) < 130, beat: () => P.leg >= 1 && race.distToNext(P) < beat * 0.5,
-      run: () => P.leg >= gate && Math.hypot(P.x - C.windward.x, P.z - C.windward.z) > 25, finish: () => P.leg >= last && race.distToNext(P) < 150 }[drillId];
+      run: () => P.leg >= gate && Math.hypot(P.x - C.windward.x, P.z - C.windward.z) > 25, finish: () => P.leg >= last && race.distToNext(P) < 150,
+      // the layline: within 170 m of the windward mark with it still inside the no-go cone (a tack to make, and the call
+      // when), or 90 m from it whatever. The penalty: 30 s up the beat
+      layline: () => P.leg >= 1 && ((race.distToNext(P) < 170 && Math.abs(offWind(P, race.course.windward, P.wdir)) < (beatAngle(P.tws) - 3) * D2R) || race.distToNext(P) < 90),
+      penalty: () => P.leg >= 1 && race.clock > 30 }[drillId];
     for (let n = 0; n < 60 * 600 && !until(); n++) race.step(1 / 60);
     delete P.ai; P.auto = null;
     race.messages.length = 0; for (const b of race.boats) if (b.events) b.events.length = 0; // what was said on the way: not said now
   }
+  // the penalty: one turn owed, a tack and a gybe (rule 44.2), as if she'd just fouled someone
+  if (drillId === 'penalty') { P.pen = { tack: false, gybe: false, dir: 0 }; P.pens = (P.pens || 0) + 1; }
+  // the layline: the tacks from here, and where she was after the last (here, if none) with the wind there
+  if (drillId === 'layline') Object.assign(dr, { tacks: 0, inTack: false, T: { x: P.x, z: P.z, W: P.wdir }, tw: [] });
   dr.t0 = race.clock; dr.place0 = race.standings().indexOf(P) + 1; dr.pens0 = P.pens || 0; dr.leg0 = P.leg;
   const k = document.createElement('div'); k.className = 'drill-k bc';
   k.innerHTML = `<b>${tr('Drill', 'Тренировка')}</b><span>${drillName(drillId)} · ${{ start: tr('cross at the gun, at speed', 'пересеки линию со стартом, на скорости'), mark: tr('round it, gain a place', 'обогни и выиграй место'), beat: tr('to the top mark', 'до верхнего знака'),
-    run: tr('down through the gate', 'вниз через ворота'), finish: tr('cross ahead', 'финишируй впереди') }[drillId]}</span>`;
+    run: tr('down through the gate', 'вниз через ворота'), finish: tr('cross ahead', 'финишируй впереди'), end: tr('start at the end that pays', 'стартуй у выгодного конца'),
+    layline: tr('tack for the mark at the right time', 'поверни на знак вовремя'), penalty: tr('tack, gybe, back up to speed', 'оверштаг, фордевинд и снова на скорость') }[drillId]}</span>`;
   document.body.append(k); dr.k = k;
 }
+
+// the bearing of `m` from the boat, off the wind `W` (radians: 0 dead upwind, signed)
+const offWind = (b, m, W) => { const dx = m.x - b.x, dz = m.z - b.z; return Math.atan2(dx * Math.cos(W) + dz * Math.sin(W), dx * Math.sin(W) - dz * Math.cos(W)); };
 
 function drillFrame(race) {
   if (dr.done) return;
   const P = race.player, L = race.log;
   let end = false;
+  if (dr.id === 'layline' && P.leg === dr.leg0) {
+    // a tack (not a gybe) done: count it, and the approach starts again from where she came out of it
+    if (P.auto && !P.auto.gybe) dr.inTack = true;
+    else if (!P.auto && dr.inTack) { dr.inTack = false; dr.tacks++; dr.T = { x: P.x, z: P.z, W: P.wdir }; dr.tw = []; }
+    // the angle she sails to the wind on the way in (not the last 25 m, where she bears away round it)
+    if (!P.auto && !P.pen && race.distToNext(P) > 25) dr.tw.push(Math.abs(P.twa));
+  }
   if (dr.id === 'start') end = race.clock >= 8;
   else if (dr.id === 'mark') {
     if (P.leg >= 2 && dr.roundT == null) dr.roundT = race.clock;
@@ -210,6 +237,21 @@ function drillFrame(race) {
     if (P.leg > dr.leg0 && dr.roundT == null) dr.roundT = race.clock;
     end = (dr.roundT != null && race.clock - dr.roundT > 10) || race.clock - dr.t0 > 300; // 10 s out of the gate
   } else if (dr.id === 'finish') end = P.done || race.clock - dr.t0 > 300;
+  else if (dr.id === 'end') {
+    // where along the line she was at the gun (0 the pin … 1 the committee boat), and the end further upwind then
+    if (dr.gunAt == null && race.clock >= 0) {
+      const C = race.course, W = race.wind.mean();
+      dr.gunAt = Math.min(1, Math.max(0, lineT(C, P))); dr.boatEnd = (C.committee.x - C.pin.x) * Math.sin(W) - (C.committee.z - C.pin.z) * Math.cos(W) > 0;
+    }
+    end = race.clock >= 8;
+  }
+  else if (dr.id === 'layline') end = P.leg >= 2 || race.clock - dr.t0 > 240;
+  else if (dr.id === 'penalty') {
+    // done: the turn taken, close-hauled again (within 12° of the beat's angle) at 85% of her speed there
+    const ba = beatAngle(P.tws);
+    if (!P.pen && dr.doneT == null && Math.abs(P.twa) <= (ba + 12) * D2R && P.v >= 0.85 * polarSpeed(P.tws, ba) * KN) dr.doneT = race.clock;
+    end = dr.doneT != null || race.clock - dr.t0 > 90;
+  }
   if (!end) return;
   dr.done = true;
   const place = race.standings().indexOf(P) + 1, pens = (P.pens || 0) - dr.pens0, n = race.boats.length;
@@ -229,6 +271,34 @@ function drillFrame(race) {
     line = P.leg < 2 ? tr('The mark wasn’t rounded in time.', 'Знак не обогнут вовремя.')
       : tr(`${ord(dr.place0)} at the zone, ${ord(place)} after it${pens ? ', with a penalty' : ''}. ${stars === 3 ? 'Wide in, tight out.' : 'Three stars: a place gained (or kept at the front), and no penalty.'}`,
         `${dr.place0}-е у зоны, ${place}-е после неё${pens ? ', со штрафом' : ''}. ${stars === 3 ? 'Широко на вход, плотно на выход.' : 'Три звезды: выигранное место (или удержанное первое) и без штрафа.'}`);
+  } else if (dr.id === 'end') {
+    const boat = dr.boatEnd, at = dr.gunAt, d = L.gunD, v = L.gunV, endName = boat ? tr('the committee boat', 'у судейского судна') : tr('the pin', 'у пина');
+    const near = at == null ? 1 : boat ? 1 - at : at; // how far along the line from the end that paid
+    if (L.ocs || L.startDsq) { stars = 0; line = tr('Over the line at the gun: you had to go back.', 'На старте за линией — пришлось возвращаться.'); }
+    else if (d == null || at == null) { stars = 0; line = tr('No start this time.', 'В этот раз старта не было.'); }
+    else {
+      stars = near <= 1 / 3 && d < 15 && v > 4 ? 3 : near <= 1 / 2 && d < 30 ? 2 : 1;
+      line = tr(`The end that paid: ${boat ? 'the committee boat' : 'the pin'}. At the gun you were ${Math.round(near * 100)}% of the way along the line from it, ${Math.round(Math.max(0, d))} m from the line at the gun at ${v.toFixed(1)} kn. ${stars === 3 ? 'A head start on the whole fleet.' : 'Three stars: in the third of the line nearest that end, under 15 m at the gun, over 4 kn. Look which end is further upwind before you set up.'}`,
+        `Выгодный конец — ${endName}. На сигнале ты был в ${Math.round(near * 100)}% длины линии от него, ${Math.round(Math.max(0, d))} м до линии на сигнале, ${v.toFixed(1).replace('.', ',')} уз. ${stars === 3 ? 'Фора перед всем флотом.' : 'Три звезды: в трети линии у этого конца, ближе 15 м на сигнале, быстрее 4 уз. Посмотри, какой конец выше по ветру, прежде чем заходить.'}`);
+    }
+  } else if (dr.id === 'layline') {
+    // overstood: from where she came out of her last tack the mark lay further off the wind than she sailed (the middle
+    // of her angles on the way in), by that many metres across her course. One tack takes her there from the hand-over;
+    // a second is allowed, for a shift or a starboard boat
+    const tw = dr.tw.slice().sort((a, b) => a - b), sails = tw.length ? tw[tw.length >> 1] : beatAngle(P.tws) * D2R;
+    const T = dr.T, lie = Math.abs(offWind(T, race.course.windward, T.W)), d = Math.hypot(race.course.windward.x - T.x, race.course.windward.z - T.z);
+    const over = lie > sails ? d * Math.sin(lie - sails) : 0, n = dr.tacks;
+    stars = P.leg < 2 ? 0 : pens ? 1 : n <= 2 && over < 10 ? 3 : n <= 3 && over < 25 ? 2 : 1;
+    const ru = n === 1 ? 'поворот' : n > 1 && n < 5 ? 'поворота' : 'поворотов';
+    line = P.leg < 2 ? tr('Not at the mark in time.', 'Не дошёл до знака вовремя.')
+      : tr(`${n} ${n === 1 ? 'tack' : 'tacks'}, ${over < 1 ? 'not overstood' : `overstood by ${Math.round(over)} m`}${pens ? ', with a penalty' : ''}. ${stars === 3 ? 'Tacked on the layline, not past it.' : 'Three stars: two tacks at most, under 10 m past the layline, no penalty. Tack when the mark is level with the angle you sail on the other tack, and no later.'}`,
+        `${n} ${ru}, ${over < 1 ? 'без перебора' : `перебор ${Math.round(over)} м`}${pens ? ', со штрафом' : ''}. ${stars === 3 ? 'Поворот точно на лейлайне, без перебора.' : 'Три звезды: не больше двух поворотов, перебор меньше 10 м и без штрафа. Поворачивай, когда знак встаёт на угол, которым ты идёшь другим галсом, и не позже.'}`);
+  } else if (dr.id === 'penalty') {
+    const took = dr.doneT == null ? null : dr.doneT - dr.t0, more = pens; // (pens0 was counted with the drill's own turn)
+    stars = took == null ? 0 : more > 0 ? 1 : took <= 20 ? 3 : took <= 30 ? 2 : 1;
+    line = took == null ? tr('The turn wasn’t done, or she wasn’t back up to speed, in 90 s.', 'Оборот не сделан или скорость не набрана за 90 с.')
+      : tr(`Turned and back up to speed in ${took.toFixed(1)} s${more > 0 ? ', but you fouled someone on the way' : ''}. ${stars === 3 ? 'Barely a dent in your race.' : 'Three stars: under 20 s, keeping clear of the others. Bear away into the gybe, then come up hard through the tack, and don’t stall head to wind.'}`,
+        `Оборот и снова на скорости за ${took.toFixed(1).replace('.', ',')} с${more > 0 ? ', но по пути ты нарушил правила' : ''}. ${stars === 3 ? 'Гонка почти не пострадала.' : 'Три звезды: быстрее 20 с, никому не мешая. Уваливайся в поворот фордевинд, затем резко приводись через оверштаг и не застревай носом к ветру.'}`);
   } else if (dr.id === 'run' || dr.id === 'finish') {
     // places gained (or the lead kept) down the run and through the gate, or up the last of the beat and over the line
     const run = dr.id === 'run', made = run ? dr.roundT != null : P.done, gained = dr.place0 - place;

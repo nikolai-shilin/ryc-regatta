@@ -740,7 +740,7 @@ export class Race {
   // humans: the boats people sail, in that order; me: the id of the one this screen sails (null: it only watches).
   // match: a match race (Appendix C) between the two humans, `blue` the id of the one at the committee boat's end: up
   // and down twice, the five-minute sequence, no current, two boats, P always
-  constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl',
+  constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl', bias: lineBias = null,
     humans = [{ id: 'you', name: 'You' }], me = humans[0].id, match = false, blue = humans[0].id } = {}) {
     this.match = !!match;
     if (match) { fleet = 2; course = 'wl'; laps = 2; start = 5; current = false; }
@@ -751,7 +751,8 @@ export class Race {
     // a class of her own sails a course of her own size: courseK as long, the line, gate and marks lineK as wide
     const beatLen = ({ light: 200, medium: 260, strong: 280 }[preset] || 260) * (COURSE_LEN[length] || 1) * CLS.courseK, K = CLS.lineK;
     course = laidShape(course, length); // unknown, or not laid here: up and down
-    const bias = (this.rand() - 0.5) * 2 * 8 * D2R;
+    // the line's skew, ±8° (a drill's own, degrees, + the pin end upwind), drawn either way so the seed's draws keep in step
+    const drawn = (this.rand() - 0.5) * 2 * 8 * D2R, bias = lineBias == null ? drawn : lineBias * D2R;
     fleet = clamp(Math.round(fleet), Math.max(2, humans.length), FLEET.length + 1);
     const lay = (shape, beat) => {
       this.course = K === 1 ? makeCourse(laps, beat, bias, fleet, shape) : scaleCourse(makeCourse(laps, beat / K, bias, fleet, shape), K);

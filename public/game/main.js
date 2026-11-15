@@ -1131,7 +1131,7 @@ let race = null, running = false, paused = false, menuChanged = false, hints = {
 function newRace() {
   if (MATCH) { matchView(); return; }
   const s = settings();
-  race = new Race({ preset: s.preset, laps: s.laps, autoTrim: opts.autoTrim === 1, start: s.start, current: !!s.current, fleet: s.fleet, length: s.length, course: s.course, seed: s.daily ? s.seed : undefined });
+  race = new Race({ preset: s.preset, laps: s.laps, autoTrim: opts.autoTrim === 1, start: s.start, current: !!s.current, fleet: s.fleet, length: s.length, course: s.course, bias: s.bias, seed: s.daily ? s.seed : undefined });
   race.settings = s;
   race.player.name = t('you');
   world.setRace(race);

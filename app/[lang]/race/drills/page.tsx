@@ -5,8 +5,8 @@ import { DrillsList } from '@/components/progress';
 export const generateMetadata = titled('Drills', 'Тренировки', {
   path: '/race/drills',
   description: [
-    'Short sailing drills in the browser, a minute or two each: the start, rounding the windward mark in a crowd, playing the shifts up a beat, the run down to the gate and the finish. Three stars for each.',
-    'Короткие парусные тренировки в браузере, по минуте-две: старт, огибание верхнего знака в группе, игра на сдвигах ветра на лавировке, фордевинд до ворот и финиш. По три звезды за каждую.'],
+    'Short sailing drills in the browser, a minute or two each: the start and the favoured end of the line, the shifts and the layline up the beat, rounding the windward mark in a crowd, the run down to the gate, the finish and the penalty turn. Three stars for each.',
+    'Короткие парусные тренировки в браузере, по минуте-две: старт и выгодный конец линии, сдвиги ветра и лейлайн на лавировке, огибание верхнего знака в группе, фордевинд до ворот, финиш и штрафной оборот. По три звезды за каждую.'],
 });
 
 // The drills (lib/drills.ts; the game's side in public/game/extras.js): the moments a race is won in, one at a time

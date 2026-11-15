@@ -107,3 +107,13 @@ test('the passport link carries which badges, and an older link only how many', 
   // every badge has its family
   assert.ok(BADGES.every((b) => ['result', 'skill', 'season'].includes(b.fam)));
 });
+
+test('the drills: the page lists the game\'s, in the game\'s order', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { DRILL_IDS } = await import('../lib/drills.ts');
+  // extras.js reaches for the page (three.js, the DOM) as it loads, so its DRILL_ORDER is read from the source
+  const src = await readFile(new URL('../public/game/extras.js', import.meta.url), 'utf8');
+  const order = JSON.parse(src.match(/export const DRILL_ORDER = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
+  assert.deepEqual(DRILL_IDS, order);
+  for (const id of order) assert.match(src, new RegExp(`\\n  ${id}: \\{ race: `), id); // and each has its race
+});
