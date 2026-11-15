@@ -126,7 +126,10 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   from Microsoft's Global ML Building Footprints (ODbL), which `venues.py` downloads with the rest. Hong Kong's
   ground is its own 5 m terrain model (`dtm`), not the tiles, whose radar has the towers' roofs for the city's ground:
   the Digital Terrain Model of the Lands Department, Hong Kong SAR Government, from DATA.GOV.HK (free to use with
-  this attribution), which `venues.py` downloads (29 MB) and cuts to the venue.
+  this attribution), which `venues.py` downloads (29 MB) and cuts to the venue. Batumi's shore has more of the map
+  in it: its paved promenades and squares drawn as paving (`paved`), its palm avenues and other rows of trees planted
+  tree by tree where they stand (`trees`, the .bin's `tk` and `txz`), and its plain, whose tiles carry its roofs and
+  trees some 4 to 8 m up, laid down on the shore's floor below the hills (`plain`).
 - **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes
   wrong (a sheet left out or in too hard, a broach, a foul, a collision, aground, stopped after the gun, now and then a
   tack) and through the start (the signals, a boat too close, the line far off, over early, a quick or a late start).

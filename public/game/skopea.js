@@ -236,6 +236,7 @@ vec3 groundColour() {
   else if (cls == 10) c = uCol[10];
   else if (cls == 11 && ny > 0.97) { c = uLake; wild = 0.0; gLake = 1.0; } // a lake, a reservoir: its surface mirrors the sky (lakeLight)
   else if (cls == 12) { c = mix(uCol[7], vec3(0.16, 0.15, 0.12), 0.45) * (0.85 + 0.25 * lnoise(p.xz / 6.0)); wild = 0.0; } // the tidal mud, wet
+  else if (cls == 13) { c = mix(uCol[6], vec3(0.74, 0.72, 0.68), 0.6) * (0.9 + 0.12 * lnoise(p.xz / 3.0)); wild = 0.0; } // a paved square, a promenade: pale stone, a little of the town's
   else if (cls == 0) {
     // the woods in stands, as the trees are (pines(): woodAt), with grass or fields in the clearings
     float open = (1.0 - smoothstep(uWood - 0.04, uWood + 0.06, lfbm(p.xz * 1.7))) * smoothstep(0.9, 0.97, ny);
@@ -389,7 +390,7 @@ const TREES = {
 };
 const treeGeo = (kind) => mergeGeometries((TREES[kind] || TREES.pine)().map(strip));
 // how likely a tree is to stand, by what the map says is there (where it says nothing, the venue's woods decide)
-const TREE_P = { forest: 1, scrub: 0.3, grass: 0.05, farmland: 0.025, orchard: 0.5, town: 0.08, industry: 0.01, sand: 0.015, rock: 0.02, wetland: 0.15, water: 0, mud: 0 };
+const TREE_P = { forest: 1, scrub: 0.3, grass: 0.05, farmland: 0.025, orchard: 0.5, town: 0.08, industry: 0.01, sand: 0.015, rock: 0.02, wetland: 0.15, water: 0, mud: 0, paved: 0 };
 const TREE_K = META.classes.map((c) => TREE_P[c] ?? -1);
 // They are in 1.5 km tiles, one instanced mesh each, so a tile behind the camera isn't drawn at all; each tile's
 // instances are in no order, so the lower graphics levels draw the first part of every tile.
@@ -407,6 +408,23 @@ function pines(count, far = false) {
   if (!sorts[2].length) sorts[2] = [{ kind: 'broad', share: 1, dark: C(GR.forest[0]), light: C(GR.forest[2]) }];
   const pickFrom = (list) => { let pick = r() * list.reduce((a, k) => a + k.share, 0), k = list[0]; for (const q of list) { k = q; if ((pick -= q.share) <= 0) break; } return k; };
   let n = 0, tries = 0;
+  const put = (k, x, y, z, s) => {
+    o.position.set(x, y - 0.6, z); o.rotation.set(0, r() * 6.28, 0); o.scale.set(s, s * (0.85 + r() * 0.35), s); o.updateMatrix();
+    const key = k.kind + ':' + Math.floor(x / TILE) + ',' + Math.floor(z / TILE);
+    if (!tiles.has(key)) tiles.set(key, { k, list: [] });
+    tiles.get(key).list.push([o.matrix.clone(), c.copy(k.dark).lerp(k.light, r() * 0.7).multiplyScalar(0.9 + r() * 0.2).clone()]);
+  };
+  // first the trees the map has one by one (blender/venues.py, `trees`): its rows along the streets and promenades
+  // and its single trees, each a palm, a conifer or a broad-leaved one as it says; they come first in their tiles, so
+  // the lower graphics levels keep them
+  if (!far && P.tk) {
+    const palmK = palm || { kind: 'palm', share: 1, dark: C(GR.forest[0]), light: C(GR.forest[1]) };
+    for (let i = 0; i < P.tk.length; i++) {
+      const x = P.txz[i * 2] / 2, z = P.txz[i * 2 + 1] / 2, y = groundAt(x, z);
+      if (y < 0.3) continue;
+      put(P.tk[i] === 1 ? palmK : pickFrom(sorts[P.tk[i] === 2 ? 1 : 2]), x, y, z, 0.8 + r() * 0.35);
+    }
+  }
   while (n < count && tries++ < count * 30) {
     // the near ones mostly near the race area, where they're seen close, thinning out up to 4.5 km off; the far
     // ones from 4 km out to the terrain's edge
@@ -424,12 +442,7 @@ function pines(count, far = false) {
     else if (cl === CLS.forest && (coverCell(x, z) >> 4) === 1) k = pickFrom(sorts[1]);
     else if (cl === CLS.forest && (coverCell(x, z) >> 4) === 2) k = pickFrom(sorts[2]);
     else k = pickFrom(kinds);
-    o.position.set(x, y - 0.6, z); o.rotation.set(0, r() * 6.28, 0);
-    const s = (0.75 + r() * 0.65 - Math.min(0.3, y / (TOP * 3))) * (cl === CLS.scrub && !shrub ? 0.6 : 1); o.scale.set(s, s * (0.85 + r() * 0.35), s);
-    o.updateMatrix();
-    const key = k.kind + ':' + Math.floor(x / TILE) + ',' + Math.floor(z / TILE);
-    if (!tiles.has(key)) tiles.set(key, { k, list: [] });
-    tiles.get(key).list.push([o.matrix.clone(), c.copy(k.dark).lerp(k.light, r() * 0.7).multiplyScalar(0.9 + r() * 0.2).clone()]);
+    put(k, x, y, z, (0.75 + r() * 0.65 - Math.min(0.3, y / (TOP * 3))) * (cl === CLS.scrub && !shrub ? 0.6 : 1));
     n++;
   }
   const geos = {}, mat = landMat(new THREE.MeshLambertMaterial({ vertexColors: true }), 1, { key: 'trees' }), g = new THREE.Group();

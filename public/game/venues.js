@@ -307,7 +307,7 @@ export const VENUES = [
     id: 'batumi', name: ['Batumi', 'Батуми'], lat: 41.672, lon: 41.68, wind: 290, tz: 4, stream: ['flow', 55, 0.4], from: '2026-11-20',
     look: {
       haze: 0.85,
-      ground: { forest: ['#264222', '#355a2c', '#4d7238'], scrub: '#6f7f4c', rock: ['#a49c8a', '#857d6e'], town: '#a8a294', shore: '#9b968d', sand: '#9b968d' }, // the beaches are grey pebbles
+      ground: { forest: ['#264222', '#355a2c', '#4d7238'], scrub: '#6f7f4c', rock: ['#a49c8a', '#857d6e'], town: '#9c9b8c', shore: '#9b968d', sand: '#9b968d', grass: '#5a7a38' }, // the beaches are grey pebbles; the subtropical town green round its houses
       trees: [['broad', 0.6, '#264222', '#4f7a36'], ['palm', 0.15, '#2f4a26', '#5a7a3a'], ['conifer', 0.1, '#22381f', '#36502c'], ['cypress', 0.15, '#25391f', '#3a5230']], treeTop: 1400, woods: 0.75, snow: 2600,
       walls: ['#efe8da', '#e6dccb', '#f4f1ea', '#d9cdb6', '#e9d8c2', '#c9c4ba'], roofs: ['#a5543a', '#8c4a36', '#6f7478', '#7e7f80'], flat: 0.6,
       boats: { sail: 0.3, motor: 0.6, big: 0.1, bigKind: 'super' },

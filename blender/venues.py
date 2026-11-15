@@ -41,6 +41,8 @@
 #            each; 0 0 0 where it has none
 #   pn, pk, pw, pxz   the piers, pontoons, quays and breakwaters: how many points each has, what it is (PIERS, + 8 if it
 #            is an area, + 16 if it floats), its width in decimetres (0 unknown), and the points, in half metres
+#   tk, txz  the trees the map has one by one (`trees`: its rows of them along the streets and the promenades, and its
+#            single trees): what each is (0 a broad-leaved tree, 1 a palm, 2 a conifer), and where, in half metres
 import gzip, json, math, os, subprocess, sys, time
 import numpy as np
 from PIL import Image, ImageColor, ImageDraw, ImageFilter
@@ -51,7 +53,10 @@ from PIL import Image, ImageColor, ImageDraw, ImageFilter
 # NOAA's on the US coasts, down to a few metres): the depths the sea is lighter over; flat: the land laid flat at so
 # many metres (a city whose tiles have its roofs for its ground); bank: how many metres across the shore slopes into the
 # water (12 when not given; a city's quays, a few, and no surf along them); most: how many buildings at the most (8,000
-# when not given)
+# when not given); plain: (low, high) metres, a coastal plain whose tiles have its roofs and trees for its ground
+# (SRTM's radar): the land up to `low` laid down on the shore's floor and from there back up to the tiles' own at `high`,
+# the hills above it as they are; paved: the map's paved squares and promenades drawn as paving; trees: the map's rows
+# of trees and its single trees planted where they stand
 VENUES = {
     'gocek': dict(bathy='emodnet', origin=(36.7525, 28.9395), mid=(-400, 700), wind=195, zoom=14, out='skopea', towns=[(36.7564, 28.9402, 650)],
                   build=(36.705, 28.875, 36.795, 29.005), footprints=('Turkey', '122101223')),
@@ -109,7 +114,7 @@ VENUES = {
                                      dict(kind='drawbridge', a=(59.93340, 30.29095), b=(59.93612, 30.28831), deck=9, w=37, n=8, open=[6], leaves=2, color='#4f5653')]),  # Blagoveshchensky: raised by Vasilievsky Island
     # Batumi bay, north-east of the cape, in the Black Sea's afternoon breeze: the city, its towers and the Alphabetic
     # Tower on the cape to the left, the coast to Green Cape and the wooded mountains of Adjara to the right
-    'batumi': dict(bathy='emodnet', zoom=14, most=11000, relations=True, home=(41.6720, 41.6800), wind=290,
+    'batumi': dict(bathy='emodnet', zoom=14, most=11000, relations=True, plain=(12, 30), paved=True, trees=True, home=(41.6720, 41.6800), wind=290,
                    towns=[(41.6480, 41.6400, 1000), (41.6400, 41.6250, 1100), (41.6280, 41.6150, 1000), (41.6500, 41.6560, 700), (41.6700, 41.7080, 900), (41.6900, 41.7180, 800)],
                    landmarks=[dict(kind='tower', at=(41.65596, 41.63935), h=130, style='alphabet'),
                               dict(kind='wheel', at=(41.65535, 41.64260), b=(41.65560, 41.64420), h=55),  # the Batumi Wheel, turning along the shore
@@ -134,7 +139,7 @@ VENUES = {
 
 # what is on the ground (the cover part), from OpenStreetMap's land use; 0 where the map has nothing, which the game
 # fills in from the venue's own look. A later class in LAYERS is laid over an earlier one.
-CLASSES = ['unknown', 'forest', 'scrub', 'grass', 'farmland', 'orchard', 'town', 'industry', 'sand', 'rock', 'wetland', 'water', 'mud']
+CLASSES = ['unknown', 'forest', 'scrub', 'grass', 'farmland', 'orchard', 'town', 'industry', 'sand', 'rock', 'wetland', 'water', 'mud', 'paved']
 LAYERS = [  # (class, tags)
     ('farmland', {'landuse': ['farmland', 'meadow', 'farmyard', 'greenhouse_horticulture', 'plant_nursery']}),
     ('grass', {'landuse': ['grass', 'village_green', 'recreation_ground', 'cemetery', 'allotments'], 'natural': ['grassland'], 'leisure': ['park', 'golf_course', 'garden', 'pitch']}),
@@ -144,6 +149,7 @@ LAYERS = [  # (class, tags)
     ('wetland', {'natural': ['wetland']}),
     ('town', {'landuse': ['residential', 'retail', 'commercial', 'garages']}),
     ('industry', {'landuse': ['industrial', 'port', 'railway', 'construction', 'brownfield', 'quarry', 'military']}),
+    ('paved', {'paved': ['yes']}),  # (the `paved` venues' squares and promenades, tagged so as they are fetched)
     ('rock', {'natural': ['bare_rock', 'scree', 'rock', 'shingle']}),
     ('sand', {'natural': ['sand', 'beach']}),
     ('mud', {'natural': ['mud'], 'wetland': ['tidalflat']}),
@@ -352,6 +358,16 @@ def bake(vid, V, fetch_only=False):
         height = lambda x, z: (lambda h: np.where(h <= 0.5, h, f0).astype(np.float32))(raw(x, z))
         far_height = lambda x, z: (lambda h: np.where(h <= 0.5, h, f0 + np.maximum(0, h - 15)).astype(np.float32))(raw_far(x, z))
 
+    if V.get('plain'):
+        # a coastal plain whose tiles have its roofs and trees for its ground, some 4 to 8 m too high in humps: the land
+        # up to `low` m brought down below the floor the land is laid on (1.2 m at the water, 4.8 m from 60 m back), so the
+        # plain lies on it, and from there back up to the tiles' own at `high`, the hills' feet meeting it; the hills above
+        # as they are
+        lo_, hi_ = V['plain']; raw_p = height
+        def height(x, z, raw_p=raw_p, lo_=float(lo_), hi_=float(hi_)):
+            h = raw_p(x, z)
+            return np.where((h <= 0.5) | (h >= hi_), h, np.interp(h, [0.5, lo_, hi_], [1.0, 4.5, hi_])).astype(np.float32)
+
     if V.get('dtm') == 'hk': height = hk_dtm(work, fetch_only, to_ll, height, EXTENT * 1.45)
 
     # ---------- OpenStreetMap ----------
@@ -373,6 +389,10 @@ def bake(vid, V, fetch_only=False):
     coverQ = ''.join(f'{t}["{k}"~"^({"|".join(sorted(set(v for _, tags in LAYERS for v in tags.get(k, []))))})$"]({cb});'
                      for k in ('landuse', 'natural', 'leisure') for t in ('way', 'relation'))
     cover_els = overpass(work, 'cover', f'({coverQ});out geom;')
+    # the paved squares and promenades (`paved`): areas only, the map's ways round them closed
+    paved_els = overpass(work, 'paved', f'(way["highway"~"^(pedestrian|footway)$"]["area"="yes"]({cb});way["area:highway"]({cb});way["place"="square"]({cb}););out geom tags;') if V.get('paved') else []
+    # the trees one by one (`trees`): the rows along the streets and the promenades, and the single ones, round the race area
+    tree_els = overpass(work, 'trees', f'(way["natural"="tree_row"]({bbox(5000)});node["natural"="tree"]({bbox(5000)}););out geom tags;') if V.get('trees') else []
     # the water ashore (lakes, rivers, the tidal mud) and the roads round the race area
     eb, rb = bbox(EXTENT * 1.45), bbox(NE * EC * 1.05)
     ROADS = {'motorway': 14, 'trunk': 12, 'primary': 10, 'secondary': 9, 'tertiary': 8, 'unclassified': 6, 'residential': 6, 'living_street': 5,
@@ -691,7 +711,9 @@ def bake(vid, V, fetch_only=False):
     CX, CZ = np.meshgrid(cx, cx)
     cpix = lambda r: [((x + EXTENT) / CC, (z + EXTENT) / CC) for x, z in r]
     shapes = []  # (tags, outer rings, inner rings, the element)
-    for el in cover_els + [e for e in extra if 'highway' not in e.get('tags', {})]:
+    paved_areas = [dict(el, tags={'paved': 'yes'}) for el in paved_els if el['type'] == 'way' and len(el.get('geometry') or []) > 3
+                   and el['geometry'][0] == el['geometry'][-1]]
+    for el in cover_els + [e for e in extra if 'highway' not in e.get('tags', {})] + paved_areas:
         t = el.get('tags', {})
         if el['type'] == 'way' and el.get('geometry'): shapes.append((t, [line(el['geometry'])], [], el))
         elif el['type'] == 'relation':
@@ -893,6 +915,25 @@ def bake(vid, V, fetch_only=False):
         p[1:, 1:] = a[1:, :-1] + a[:-1, 1:] - a[:-1, :-1]; p[0, 1:] = a[0, :-1]; p[1:, 0] = a[:-1, 0]
         return a - p
     room8 = np.clip(np.round(room / 4), -127, 127).astype(np.int8)
+    # the trees one by one: a row's every 7 m (a palm's) or 9 m, each tree a palm, a conifer or a broad-leaved one by
+    # what the map says it is; those nearest the race area first, 6000 at the most, ashore
+    PALMS = ('arecaceae', 'phoenix', 'washingtonia', 'trachycarpus', 'chamaerops', 'butia', 'livistona', 'syagrus', 'palm')
+    def tree_kind(t):
+        what = ' '.join(str(t.get(k, '')) for k in ('taxon:family', 'genus', 'species', 'taxon', 'species:en', 'name', 'leaf_type')).lower()
+        return 1 if any(w in what for w in PALMS) else 2 if 'needleleaved' in what or any(w in what for w in ('pinus', 'cedrus', 'cupressus', 'abies', 'picea')) else 0
+    tpts = []
+    for el in tree_els:
+        t = el.get('tags', {}); k = tree_kind(t)
+        if el['type'] == 'node': tpts.append((*to_xz(el['lat'], el['lon']), k)); continue
+        if not el.get('geometry'): continue
+        r = line(el['geometry']); step = 7.0 if k == 1 else 9.0
+        for a, b in zip(r[:-1], r[1:]):
+            L = math.hypot(b[0] - a[0], b[1] - a[1]); m = max(1, int(L // step))
+            for i in range(m): f = (i + 0.5) / m; tpts.append((a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, k))
+    tpts = [(float(x), float(z), k) for x, z, k in tpts if abs(x) < 5000 and abs(z) < 5000 and bilinear(HL, -EXTENT, LC, np.array([x]), np.array([z]))[0] > 0.3]
+    tpts.sort(key=lambda p: math.hypot(p[0] - MID[0], p[1] - MID[1])); tpts = tpts[:6000]
+    tk = np.array([k for _, _, k in tpts], np.uint8); txz = np.array([[round(x * 2), round(z * 2)] for x, z, _ in tpts], np.int32).ravel()
+    if tree_els: print(f'  trees one by one: {len(tpts)} ({int((tk == 1).sum())} palms)', flush=True)
     parts = [  # name, type, the bytes, how it is packed, its row length
         ('room', 'i8', rows(room8).astype(np.int8), 'rows', MW),
         ('tree', 'bits', np.packbits(np.array(tree, np.uint8)), None, len(tree)),
@@ -908,6 +949,7 @@ def bake(vid, V, fetch_only=False):
         ('bwall', 'u8', bwall, None, 0), ('broofc', 'u8', broofc, None, 0),
         ('bxz', 'i16', seq(bxz).astype('<i2'), 'seq', 0),
         ('pn', 'u16', pn.astype('<u2'), None, 0), ('pk', 'u8', pk, None, 0), ('pw', 'u8', pw, None, 0), ('pxz', 'i16', seq(pxz).astype('<i2'), 'seq', 0),
+        ('tk', 'u8', tk, None, 0), ('txz', 'i16', seq(txz).astype('<i2'), 'seq', 0),
     ]
     raw, desc = b'', []
     for name, typ, a, pack, w in parts:
