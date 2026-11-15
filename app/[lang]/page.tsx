@@ -38,7 +38,7 @@ function siteLd(lang: 'en' | 'ru', t: (en: string, ru: string) => string) {
       {
         '@type': 'VideoGame', '@id': `${SITE}/#game`, name: NAME, alternateName: t('Up and down sailing race', 'Up and down — парусная гонка'),
         url: `${SITE}/`, description: t(...HOME_DESC), inLanguage: lang, image: `${SITE}${OG_IMAGE.url}`,
-        screenshot: [`${SITE}/images/hud-desk-v4.jpg`, `${SITE}/images/top-v3.jpg`],
+        screenshot: [`${SITE}/images/hud-desk-v5.jpg`, `${SITE}/images/top-v5.jpg`],
         genre: ['Sailing', 'Racing', 'Sports simulation'], gamePlatform: ['Web browser', 'Mobile web browser'],
         applicationCategory: 'GameApplication', operatingSystem: 'Any (runs in a web browser)', playMode: 'SinglePlayer',
         gameLocation: VENUES.map((v) => `${t(...v.name)}, ${t(...v.place)}`), isAccessibleForFree: true,
@@ -91,15 +91,15 @@ export default async function Home({ params }: LangParams) {
     [t('Three views', 'Три вида'), t('The drone behind the boat, straight down from above, or from the helm. Switch any time; on a keyboard, X, C and V.', 'Дрон за лодкой, прямо сверху или со штурвала. Переключай в любой момент; на клавиатуре — X, C и V.'), '/help#h-views'],
   ];
   const steps: [string, string, string][] = [
-    ['h-wind-v3', t('Pick a race', 'Выбери гонку'), t('Today’s race is the same for everyone. A free race is yours to set up: the wind, the fleet, the course. Either starts in one tap.', 'Гонка дня одна для всех. Свободную настраиваешь сам: ветер, флот, дистанцию. Любая начинается в одно касание.')],
-    ['h-start-v4', t('Win the start', 'Выиграй старт'), t('Hover below the line while the minute runs down, then cross it at full speed on the gun. Go too soon and the X flag sends you back.', 'Держись под линией, пока идёт минута, и пересеки её на полном ходу с сигналом. Поспешишь — флаг X отправит назад.')],
-    ['h-tack-v4', t('Round the marks', 'Обойди знаки'), t('Work the shifts up to the windward mark, run back down through the gate and take the gun. Signed in, your time goes on today’s ranking.', 'Лови заходы на лавировке к верхнему знаку, спустись через ворота и финишируй. Если ты вошёл, время попадёт в рейтинг дня.')],
+    ['h-wind-v5', t('Pick a race', 'Выбери гонку'), t('Today’s race is the same for everyone. A free race is yours to set up: the wind, the fleet, the course. Either starts in one tap.', 'Гонка дня одна для всех. Свободную настраиваешь сам: ветер, флот, дистанцию. Любая начинается в одно касание.')],
+    ['h-start-v5', t('Win the start', 'Выиграй старт'), t('Hover below the line while the minute runs down, then cross it at full speed on the gun. Go too soon and the X flag sends you back.', 'Держись под линией, пока идёт минута, и пересеки её на полном ходу с сигналом. Поспешишь — флаг X отправит назад.')],
+    ['h-tack-v5', t('Round the marks', 'Обойди знаки'), t('Work the shifts up to the windward mark, run back down through the gate and take the gun. Signed in, your time goes on today’s ranking.', 'Лови заходы на лавировке к верхнему знаку, спустись через ворота и финишируй. Если ты вошёл, время попадёт в рейтинг дня.')],
   ];
   // the hero's still under the game: the wide picture on a wide screen, the upright one on a phone — one <picture>, so
   // a browser fetches only the one it shows
   const hero = { alt: '', fill: true, sizes: '100vw', fetchPriority: 'high', loading: 'eager' } as const;
-  const heroWide = getImageProps({ ...hero, src: '/images/drone-desk-v3.jpg' }).props.srcSet;
-  const { alt: _alt, ...heroNarrow } = getImageProps({ ...hero, src: '/images/drone-port-v3.jpg' }).props;
+  const heroWide = getImageProps({ ...hero, src: '/images/drone-desk-v5.jpg' }).props.srcSet;
+  const { alt: _alt, ...heroNarrow } = getImageProps({ ...hero, src: '/images/drone-port-v5.jpg' }).props;
   const all = faqGroups(t).flatMap((g) => g.items);
   const faq = HOME.map((id) => all.find((f) => f.id === id)!);
   const go = '/play?race=today';
@@ -246,7 +246,7 @@ export default async function Home({ params }: LangParams) {
             <div className="ho-acts"><a className="ho-go" href={go}>{t('Set a time to send', 'Поставь время, чтобы отправить')}</a></div>
           </div>
           <figure className="ho-card ho-friend">
-            <span className="ho-pic"><Image src="/images/top-v3.jpg" alt={t('Yachts racing in the game, seen from above', 'Яхты на гонке в игре, вид сверху')} fill sizes="(min-width: 900px) 560px, 100vw" /></span>
+            <span className="ho-pic"><Image src="/images/top-v5.jpg" alt={t('Yachts racing in the game, seen from above', 'Яхты на гонке в игре, вид сверху')} fill sizes="(min-width: 900px) 560px, 100vw" /></span>
             <span className="ho-friend-t"><span className="ho-kick">{t(`Today’s race · ${where}`, `Гонка дня · ${where}`)}</span><b>{t('Can you beat me?', 'Сможешь быстрее?')}</b></span>
             <figcaption><span className="ho-ps">“{t('I finished today’s race. Can you beat my time?', 'Я прошёл гонку дня. Сможешь быстрее?')}”</span><span className="lbl">{t('The link opens on any device', 'Ссылка откроется где угодно')}</span></figcaption>
           </figure>

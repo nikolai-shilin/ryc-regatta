@@ -1,12 +1,15 @@
-// The game's own pictures of its HUD, for How to play (and the guides that show a control): a race in headless Chrome
-// at each size, caught in the minute before the gun, saved to public/images, and where each HUD block sits printed as
-// a share of the picture (for the numbered marks in app/[lang]/help/page.tsx).
+// Every picture of the game on the site, taken by the game: the race screen and its close-ups for How to play (and the
+// guides that show a control), and the scene with no HUD — the home's hero, the fleet from above, the three views, the
+// wind ring and the share card. A race in headless Chrome at each size, caught in the minute before the gun, saved to
+// public/images, and where each HUD block sits printed as a share of the picture (for the numbered marks in
+// app/[lang]/help/page.tsx).
 //
 //   node scripts/shots.mjs [base] [name…]     base: the site, running (npm run dev); default http://localhost:5193
 //
 // Chrome is driven over its DevTools protocol (Node's own WebSocket, no packages). A fresh profile each time, so the
-// race is the first one: the game's first-race tips show as the call over your numbers.
-import { spawn } from 'node:child_process';
+// race is the first one: the game's first-race tips show as the call over your numbers. Every picture is in the same
+// light (LIGHT: Göcek, the free race's own venue, an afternoon under a clear sky), at High graphics.
+import { execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -15,15 +18,27 @@ const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/M
 const [base = 'http://localhost:5193', ...only] = process.argv.slice(2);
 const OUT = new URL('../public/images/', import.meta.url);
 
+const LIGHT = 'hour=15.5&sky=clear';
+
 // each picture: the window (CSS pixels) and its scale, a touch screen or not, and (for a close-up) the HUD's parts to
-// keep: the rest of the HUD is hidden, the scene stays
+// keep: the rest of the HUD (and the yachts' tags) is hidden, the scene stays (keep: [] is the scene alone). cam: the camera, set on the game's
+// world (world.js: mode drone, top or helm; dist, orbit in radians round her, droneEl in degrees down, helmFov, look).
+// out: the picture scaled to that size after it is taken (the share card, kept small for WhatsApp).
 const SHOTS = [
-  { name: 'hud-desk-v4', w: 1200, h: 750, dpr: 2.7, touch: false, call: true, rects: true },
-  { name: 'hud-port-v4', w: 390, h: 844, dpr: 3, touch: true, call: true, rects: true },
-  { name: 'h-start-v4', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: ['.b-top', '#nxTag'] },
-  { name: 'h-steer-v4', w: 640, h: 480, dpr: 3, touch: true, keep: ['#rudderZone'] },
-  { name: 'h-trim-v4', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone'] },
-  { name: 'h-tack-v4', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone', '.b-acts'] },
+  { name: 'hud-desk-v5', w: 1200, h: 750, dpr: 2.7, touch: false, call: true, rects: true },
+  { name: 'hud-port-v5', w: 390, h: 844, dpr: 3, touch: true, call: true, rects: true },
+  { name: 'h-start-v5', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: ['.b-top', '#nxTag'] },
+  { name: 'h-steer-v5', w: 640, h: 480, dpr: 3, touch: true, keep: ['#rudderZone'] },
+  { name: 'h-trim-v5', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone'] },
+  { name: 'h-tack-v5', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone', '.b-acts'] },
+  { name: 'drone-desk-v5', w: 1600, h: 1000, dpr: 2.7, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 } },
+  { name: 'drone-port-v5', w: 390, h: 844, dpr: 3, touch: true, keep: [], cam: { mode: 'drone', dist: 26, orbit: 'lee', droneEl: 18 } },
+  { name: 'top-v5', w: 1266, h: 585, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 70 } },
+  { name: 'og-v5', w: 1200, h: 630, dpr: 2, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 }, out: [1200, 630] },
+  { name: 'h-wind-v5', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 9 } },
+  { name: 'h-view-drone-v5', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 22 } },
+  { name: 'h-view-top-v5', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 40 } },
+  { name: 'h-view-helm-v5', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'helm', helmFov: 68, look: 0 } },
 ].filter((s) => !only.length || only.includes(s.name));
 
 // the HUD's blocks, for the marks
@@ -76,7 +91,10 @@ async function shoot({ send }, s) {
   const metrics = (dpr) => S('Emulation.setDeviceMetricsOverride', { width: s.w, height: s.h, deviceScaleFactor: dpr, mobile: s.touch });
   await metrics(1);
   if (s.touch) await S('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
-  await S('Page.navigate', { url: `${base}/play?race=free&lang=en` });
+  // High graphics, so the picture's scale doesn't make the game step down to Medium on its slow frames
+  await S('Page.navigate', { url: `${base}/robots.txt` }); await sleep(1000);
+  await js(`localStorage.setItem('regatta', JSON.stringify({ gfx: 'high' }))`);
+  await S('Page.navigate', { url: `${base}/play?race=free&lang=en&debug&${LIGHT}` });
 
   // the race under way, not paused, then the right moment: the minute before the gun, and where the picture shows the
   // call, something in it (a tip, the committee's signal; not a warning about the day's flag)
@@ -94,15 +112,35 @@ async function shoot({ send }, s) {
     call = st.call;
     if (s.call ? (call && left <= 62) || left <= 14 : left <= 44) break; // a call comes when it comes in the sequence
   }
+  // the camera glides there over the next frames. orbit 'lee': the drone off her leeward quarter, looking up to windward
+  // past the sails' faces (not along their edges from dead astern), and swung towards the nearest yacht ahead, so she
+  // has company in the picture
+  if (s.cam) await js(`(() => {
+    const W = window.__rg.world, R = window.__rg.race, P = R.player, cam = ${JSON.stringify(s.cam)};
+    if (cam.orbit === 'lee') {
+      const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a)), up = -Math.sign(P.twa || 1);
+      let o = 0.45 * up, best = 160;
+      for (const b of R.boats) {
+        if (b === P) continue;
+        const d = Math.hypot(b.x - P.x, b.z - P.z), rel = wrap(Math.atan2(b.x - P.x, -(b.z - P.z)) - P.h);
+        if (d < best && Math.abs(rel) < 1.1) { best = d; o = Math.max(-0.7, Math.min(0.7, 0.55 * rel + 0.2 * up)); }
+      }
+      cam.orbit = o;
+    }
+    Object.assign(W, cam); return true;
+  })()`);
   await metrics(s.dpr);
-  await sleep(1500); // a few frames at the picture's scale, and the call's own entrance, settled
-  if (s.keep) { // under #hud, so they outrank its hiding
-    await js(`document.head.append(Object.assign(document.createElement('style'), { textContent:
-      '#hud, #hud *, #nxTag, #nxTag * { visibility: hidden !important; } ' + ${JSON.stringify(s.keep.map((k) => (k.startsWith('#nxTag') ? k : `#hud ${k}`)).flatMap((k) => [k, `${k} *`]).join(', '))} + ' { visibility: visible !important; }' }))`);
+  await sleep(s.cam ? 2500 : 1500); // a few frames at the picture's scale, and the call's own entrance (or the camera), settled
+  if (s.keep) { // under #hud, so they outrank its hiding; with nothing kept, everything over the scene goes
+    await js(`document.head.append(Object.assign(document.createElement('style'), { textContent: ${JSON.stringify(s.keep.length
+      ? `#hud, #hud *, #nxTag, #nxTag *, #bOver, #bOver * { visibility: hidden !important; } ${s.keep.map((k) => (k.startsWith('#nxTag') ? k : `#hud ${k}`)).flatMap((k) => [k, `${k} *`]).join(', ')} { visibility: visible !important; }`
+      : 'body > :not(#gl), body > :not(#gl) * { visibility: hidden !important; }')} }))`);
     await sleep(300);
   }
   const shot = await S('Page.captureScreenshot', { format: 'jpeg', quality: 88, captureBeyondViewport: false });
-  writeFileSync(new URL(`${s.name}.jpg`, OUT), Buffer.from(shot.data, 'base64'));
+  const file = new URL(`${s.name}.jpg`, OUT);
+  writeFileSync(file, Buffer.from(shot.data, 'base64'));
+  if (s.out) execFileSync('sips', ['-z', String(s.out[1]), String(s.out[0]), '-s', 'formatOptions', '82', file.pathname, '--out', file.pathname], { stdio: 'ignore' }); // macOS's own
   let rects = '';
   if (s.rects) {
     rects = await js(`JSON.stringify(Object.fromEntries(Object.entries(${JSON.stringify(PARTS)}).map(([k, sel]) => {
@@ -112,7 +150,7 @@ async function shoot({ send }, s) {
       return [k, [p(r.left, innerWidth), p(r.top, innerHeight), p(r.right, innerWidth), p(r.bottom, innerHeight)]];
     })))`);
   }
-  console.log(`${s.name}: ${Math.round(s.w * s.dpr)}×${Math.round(s.h * s.dpr)} at ${left}s to the gun${s.call ? `, call ${call ? 'on' : 'off'}` : ''}${rects ? `\n  ${rects}` : ''}`);
+  console.log(`${s.name}: ${s.out ? s.out.join('×') : `${Math.round(s.w * s.dpr)}×${Math.round(s.h * s.dpr)}`} at ${left}s to the gun${s.call ? `, call ${call ? 'on' : 'off'}` : ''}${rects ? `\n  ${rects}` : ''}`);
   await send('Target.closeTarget', { targetId });
 }
 
