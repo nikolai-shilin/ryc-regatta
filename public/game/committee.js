@@ -165,7 +165,7 @@ function officer(i, jacketColor, pose) {
   if (pose === 'glasses') { // binoculars to the eyes
     aL.rotation.set(0.62, 0, 1.6); aR.rotation.set(-0.62, 0, 1.6);
     const bino = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.07, 0.15), new THREE.MeshStandardMaterial({ color: '#1b1d21', roughness: 0.5 }));
-    bino.position.set(0.36, 0.66, 0); s.upper.add(bino);
+    bino.position.set(0.36, 0.69, 0); s.upper.add(bino);
   } else if (pose === 'halyard') { // one hand up on a halyard, the other pulling down
     aR.rotation.set(-0.2, 0, 2.7); aL.rotation.set(0.15, 0, 0.5);
   } else if (pose === 'horn') { // a horn held up, ready for the next signal
