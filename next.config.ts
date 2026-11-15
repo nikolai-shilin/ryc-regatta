@@ -29,6 +29,11 @@ const config: NextConfig = {
       { source: '/ui/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=0, must-revalidate' }] }, // the design system's, as the game's
       // three.js, served from here rather than a CDN (the version is in the path, so a file there never changes)
       { source: '/vendor/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }] },
+      // the country flags (the flag picker shows some 250 at once) and the pictures as they are, outside next/image (the
+      // badges, the bot's logo on the sail, the OG card): they hardly ever change and carry no hash, so a day without
+      // asking, then a month of answering from the cache while the browser checks in the background
+      { source: '/flags/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=86400, stale-while-revalidate=2592000' }] },
+      { source: '/images/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=86400, stale-while-revalidate=2592000' }] },
     ];
   },
 };

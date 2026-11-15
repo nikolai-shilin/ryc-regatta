@@ -13,6 +13,9 @@ import { arriveLoaded, goBack } from './trail.js';
 import { createMusic, direct, MUSIC_STYLES } from './music.js';
 
 const $ = (s) => document.querySelector(s);
+// a file of the game's (a voice, the calls, the gulls) at the address the page's import map gives it, with its hash
+// (scripts/stamp-game.mjs), so a returning player's browser keeps it; new URL() alone would drop the ?v=
+const fileAt = (f) => (import.meta.resolve ? import.meta.resolve(`./${f}`) : new URL(f, import.meta.url).href);
 // Carlito bold, the face the sail and bow numbers are painted in (yacht.js, boats3d.js); play/index.html asks for it
 // before the game's code is in. Whether it's here when the boats are dressed decides if the start dresses them again.
 const carlitoIn = () => !document.fonts || document.fonts.check('700 32px Carlito', '0123456789');
@@ -394,7 +397,7 @@ const audio = {
   },
   // a file of recorded lines, decoded into the audio context: resolves to its buffer, or null if it can't be had
   fetch(file) {
-    return fetch(new URL(file, import.meta.url)).then((r) => r.arrayBuffer())
+    return fetch(fileAt(file)).then((r) => r.arrayBuffer())
       .then((b) => new Promise((res, rej) => this.ctx.decodeAudioData(b, res, rej)));
   },
 };
@@ -656,7 +659,7 @@ const skipper = {
   load() {
     if (!VOICES[LANG] || this.buf || this.loading || !audio.ctx) return;
     this.loading = true;
-    fetch(new URL(`skipper-${LANG}.mp3`, import.meta.url)).then((r) => r.arrayBuffer())
+    fetch(fileAt(`skipper-${LANG}.mp3`)).then((r) => r.arrayBuffer())
       .then((b) => new Promise((res, rej) => audio.ctx.decodeAudioData(b, res, rej)))
       .then((b) => { this.buf = b; }, () => { this.loading = false; });
   },
@@ -781,7 +784,7 @@ const crews = {
   load() {
     const o = this.own[LANG]; if (!o || this.buf || this.loading || !audio.ctx) return;
     this.loading = true;
-    fetch(new URL(o.file, import.meta.url)).then((r) => r.arrayBuffer())
+    fetch(fileAt(o.file)).then((r) => r.arrayBuffer())
       .then((b) => new Promise((res, rej) => audio.ctx.decodeAudioData(b, res, rej)))
       .then((b) => { this.buf = b; }, () => { this.loading = false; });
   },
@@ -941,7 +944,7 @@ const gulls = {
   load() {
     if (this.buf || this.loading || !audio.ctx) return;
     this.loading = true;
-    fetch(new URL('gulls.mp3', import.meta.url)).then((r) => r.arrayBuffer())
+    fetch(fileAt('gulls.mp3')).then((r) => r.arrayBuffer())
       .then((b) => new Promise((res, rej) => audio.ctx.decodeAudioData(b, res, rej)))
       .then((b) => { this.buf = b; }, () => { this.loading = false; });
   },
@@ -968,7 +971,7 @@ const asides = {
     for (const [k, f] of Object.entries(files)) {
       if (this.buf[k] || this.loading[k]) continue;
       this.loading[k] = true;
-      fetch(new URL(f, import.meta.url)).then((r) => r.arrayBuffer())
+      fetch(fileAt(f)).then((r) => r.arrayBuffer())
         .then((b) => new Promise((res, rej) => audio.ctx.decodeAudioData(b, res, rej)))
         .then((b) => { this.buf[k] = b; }, () => { this.loading[k] = false; });
     }

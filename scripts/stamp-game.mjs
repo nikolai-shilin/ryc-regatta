@@ -5,8 +5,8 @@
 // browser takes the modules from its cache without asking the server again, and a deploy that changes a module changes
 // its address: a page can't get yesterday's sim.js with today's world.js. The game's files that aren't modules (the
 // land, the music, the yacht: some 2 MB each) get the same in the import map, and the modules that fetch them ask it
-// for their address (import.meta.resolve: land.js, music.js, yacht.js), so a returning player doesn't ask for them again
-// either. The rest (main.js's voices and calls) is fetched relative to the modules, without ?v=, and revalidates.
+// for their address (import.meta.resolve: land.js, music.js, yacht.js, boats3d.js), so a returning player doesn't ask
+// for them again either, and main.js asks the same for its voices, calls and gulls.
 //
 // Off Vercel it does nothing, so a local build leaves the checked-in pages as they are (and npm run dev never sees
 // it); `node scripts/stamp-game.mjs --force [public dir]` stamps anyway. It is idempotent: a stamped page stamped
