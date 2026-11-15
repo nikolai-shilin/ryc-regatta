@@ -32,6 +32,11 @@ function send(body, tok = token) {
   } catch (e) {}
 }
 
+// the flag you fly (the boat page's, localStorage 'regatta-boat'), shown by your name on the rankings
+function myFlag() {
+  try { const f = JSON.parse(localStorage.getItem('regatta-boat') || 'null')?.flag; return typeof f === 'string' && /^[a-z]{2}$/.test(f) ? f : null; } catch (e) { return null; }
+}
+
 // A race has begun (the player pressed Start or Race again): race is the sim's Race, opts the race's settings. Wind,
 // laps, course length, fleet and shape (the one it is laid in) make the course, so the admins compare best times only on the same one; daily names
 // the day of today's race (the same wind for everyone), whose times rank on the game card on Home. Only the start
@@ -40,7 +45,7 @@ export function raceStarted(race, opts) {
   if (!race || race._rid) return;
   race._rid = uuid();
   // (and the class of yacht, when not the club's 40-footer: a J/70's or an AC75's times aren't the same race's)
-  const body = { ev: 'start', id: race._rid, wind: opts.preset, laps: opts.laps, length: opts.length, shape: race.course.type, boats: race.boats.length, ...(opts.daily && { daily: opts.daily }), ...(CLS.id !== 'club40' && { yacht: CLS.id }) };
+  const body = { ev: 'start', id: race._rid, wind: opts.preset, laps: opts.laps, length: opts.length, shape: race.course.type, boats: race.boats.length, ...(opts.daily && { daily: opts.daily }), ...(myFlag() && { flag: myFlag() }), ...(CLS.id !== 'club40' && { yacht: CLS.id }) };
   account().then((tok) => send(body, tok));
 }
 

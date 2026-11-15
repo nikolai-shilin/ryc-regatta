@@ -5,10 +5,21 @@ import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { tx, type Lang } from '@/lib/lang';
 import { cleanName, NAME_MAX } from '@/lib/name';
-import { IconBack, IconGoogle } from './ui';
+import { placeAmong } from '@/lib/race-log';
+import { IconGoogle, clock } from './ui';
 
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 const callback = (next: string) => `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+
+// The numbered step at the card's top (1 Email, 2 Code, 3 Name), and on its right a way out of it
+function Step({ n, label, children }: { n: number; label: string; children?: React.ReactNode }) {
+  return (
+    <div className="au-step-h">
+      <span className="au-step"><b>{n}</b><span className="lbl-ink">{label}</span></span>
+      {children}
+    </div>
+  );
+}
 
 // A1 · Google, or a one-time 6-digit code by email (no password).
 export function SignInForm({ lang, next, failed }: { lang: Lang; next: string; failed: boolean }) {
@@ -35,19 +46,15 @@ export function SignInForm({ lang, next, failed }: { lang: Lang; next: string; f
   };
   return (
     <>
-      <div className="lhead">
-        <Link className="round round-s round-muted" href={next} aria-label={t('Back', 'Назад')}><IconBack /></Link>
-        <span className="kicker">{t('Account', 'Аккаунт')}</span>
-        <span className="sp" />
-        <Link className="back-link" href={next}>{t('Not now', 'Не сейчас')}</Link>
-      </div>
+      <Step n={1} label={t('Email', 'Почта')}><Link className="back-link" href={next}>{t('Not now', 'Не сейчас')}</Link></Step>
       <h1 className="h-land-s">{t('Sign in to get on the ranking', 'Войди, чтобы попасть в рейтинг')}</h1>
       <p className="lead muted">{t('Your times go on today’s ranking, and your best times follow you to any device.', 'Твоё время попадёт в рейтинг дня, а рекорды будут с тобой на любом устройстве.')}</p>
-      <button type="button" className="pill pill-oauth pill-wide" onClick={google} disabled={busy}><IconGoogle /><span className="btn-t">{t('Continue with Google', 'Войти через Google')}</span></button>
+      <button type="button" className="pill pill-oauth pill-wide au-google" onClick={google} disabled={busy}><IconGoogle /><span className="btn-t">{t('Continue with Google', 'Войти через Google')}</span></button>
       <div className="or">{t('or by email', 'или по почте')}</div>
-      <form className="field-row" onSubmit={send} noValidate>
-        <input className="field" type="email" name="email" autoComplete="email" inputMode="email" aria-label={t('Email', 'Почта')} placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={busy} />
-        <button className="pill pill-primary pill-s" type="submit" disabled={busy}><span className="btn-t">{t('Send code', 'Получить код')}</span></button>
+      <form className="au-form" onSubmit={send} noValidate>
+        <label className="au-lbl" htmlFor="em">{t('Email', 'Почта')}</label>
+        <input id="em" className="field" type="email" name="email" autoComplete="email" inputMode="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={busy} />
+        <button className="pill pill-primary pill-wide pill-s" type="submit" disabled={busy}><span className="btn-t">{t('Send code', 'Получить код')}</span></button>
       </form>
       {err ? <p className="err" role="alert">{err}</p> : <p className="hint">{t('No password: we email you a 6-digit code.', 'Без пароля: пришлём на почту 6-значный код.')}</p>}
     </>
@@ -101,12 +108,7 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
   };
   return (
     <>
-      <div className="lhead">
-        <Link className="round round-s round-muted" href={`/sign-in?next=${encodeURIComponent(next)}`} aria-label={t('Back', 'Назад')}><IconBack /></Link>
-        <span className="kicker">{t('Sign in', 'Вход')}</span>
-        <span className="sp" />
-        <Link className="back-link" href={`/sign-in?next=${encodeURIComponent(next)}`}>{t('Change email', 'Другая почта')}</Link>
-      </div>
+      <Step n={2} label={t('Code', 'Код')}><Link className="back-link" href={`/sign-in?next=${encodeURIComponent(next)}`}>{t('Change email', 'Другая почта')}</Link></Step>
       <h1 className="h-land-s">{t('Check your email', 'Проверь почту')}</h1>
       <p className="lead muted">{t('We sent a 6-digit code to ', 'Мы отправили 6-значный код на ')}<b className="ink">{email}</b>{t('. Type it here.', '. Введи его здесь.')}</p>
       <div className="otp" role="group" aria-label={t('Code', 'Код')}>
@@ -129,10 +131,29 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
 }
 
 // A3 · The ranking shows a name, never the email: first name and the first letter of the surname.
-export function NameForm({ lang, next, suggested }: { lang: Lang; next: string; suggested: string }) {
+// Your best time in today's race on this device: the game's record of it (regatta-pb), else the day's results kept here
+function todaysTime(day: string) {
+  let best: number | null = null;
+  try {
+    const pb = JSON.parse(localStorage.getItem('regatta-pb') || '{}')[`daily|${day}`];
+    if (typeof pb === 'number' && pb > 0) best = pb;
+    for (const k of Object.keys(localStorage)) {
+      if (!k.startsWith('regatta-result-')) continue;
+      const r = JSON.parse(localStorage.getItem(k) || 'null'), me = r?.daily === day && Array.isArray(r.boats) ? r.boats.find((b: { me?: boolean }) => b.me) : null;
+      if (me && me.done && !me.dsq && typeof me.secs === 'number' && (best == null || me.secs < best)) best = me.secs;
+    }
+  } catch {}
+  return best;
+}
+
+// day and times: today's race and its ranked times (lib/rating.ts; null when they couldn't be had). With a time of
+// today's on this device, a row shows where it would go on the ranking, under the name being typed
+export function NameForm({ lang, next, suggested, fromGoogle = false, day, times = null }: { lang: Lang; next: string; suggested: string; fromGoogle?: boolean; day?: string; times?: number[] | null }) {
   const t = tx(lang);
   const router = useRouter();
   const [name, setName] = useState(suggested);
+  const [mine, setMine] = useState<number | null>(null);
+  useEffect(() => { if (day && times) setMine(todaysTime(day)); }, [day, times]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const save = async (e: React.FormEvent) => {
@@ -146,14 +167,19 @@ export function NameForm({ lang, next, suggested }: { lang: Lang; next: string; 
   };
   return (
     <form onSubmit={save} style={{ display: 'contents' }}>
-      <div className="lhead"><span className="kicker">{t('Almost there', 'Почти готово')}</span></div>
-      <h1 className="h-land-s">{t('How should the ranking show you?', 'Как подписать тебя в рейтинге?')}</h1>
+      <Step n={3} label={t('Name', 'Имя')} />
+      <h1 className="h-land-s">{t('Almost there: how should the ranking show you?', 'Почти готово: как подписать тебя в рейтинге?')}</h1>
       <p className="lead muted">{t('Only this name is public. Your email stays private.', 'Всем видно только это имя. Почта остаётся скрытой.')}</p>
-      <label className="meta" htmlFor="nm">{t('Name on the ranking', 'Имя в рейтинге')}</label>
+      <label className="au-lbl" htmlFor="nm">{t('Name on the ranking', 'Имя в рейтинге')}</label>
       <input id="nm" className="field" type="text" autoComplete="nickname" maxLength={NAME_MAX} value={name} onChange={(e) => setName(e.target.value)} disabled={busy} autoFocus />
-      {err ? <p className="err" role="alert">{err}</p> : <p className="hint">{t('First name and the first letter of your surname works well. You can change it in Settings.', 'Лучше всего имя и первая буква фамилии. Поменять можно в настройках.')}</p>}
+      {mine != null && times && (
+        <ol className="hm-lb bt-lb au-pv" aria-label={t('Where your time today goes on the ranking', 'Где твоё сегодняшнее время в рейтинге')}>
+          <li className="me"><span className="hm-n">{placeAmong(times, mine)}</span><span>{cleanName(name) || t('Your name', 'Твоё имя')}</span><span className="hm-t">{clock(mine)}</span></li>
+        </ol>
+      )}
+      {err ? <p className="err" role="alert">{err}</p> : <p className="hint">{fromGoogle ? t('Taken from your Google account: change it if you like. You can change it later in Settings too.', 'Взято из аккаунта Google — поменяй, если хочешь. Позже это можно сделать и в настройках.') : t('First name and the first letter of your surname works well. You can change it in Settings.', 'Лучше всего имя и первая буква фамилии. Поменять можно в настройках.')}</p>}
       <span className="sp" />
-      <button className="pill pill-primary pill-wide pill-s" type="submit" disabled={busy}><span className="btn-t">{t('Save', 'Сохранить')}</span></button>
+      <button className="pill pill-primary pill-wide pill-s" type="submit" disabled={busy}><span className="btn-t">{next.startsWith('/race') ? t('Save and race', 'Сохранить и в гонку') : t('Save', 'Сохранить')}</span></button>
     </form>
   );
 }

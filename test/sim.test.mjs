@@ -155,6 +155,17 @@ test('an unknown course is up and down', () => {
   for (const course of ['trap', 'wlu', 'tri', 'wl']) assert.equal(new sim.Race({ course, seed: 3 }).course.type, course);
   assert.equal(new sim.Race({ course: 'zigzag', seed: 3 }).course.type, 'wl');
 });
+// a length the venue doesn't offer at all is sailed at the longest it has
+test('a skipped length is sailed at the longest the venue has', async () => {
+  const { VENUE, laidLength } = await import('../public/game/venues.js'), was = VENUE.skip;
+  VENUE.skip = ['long'];
+  try {
+    assert.equal(laidLength(VENUE, 'long'), 'medium');
+    assert.equal(laidLength(VENUE, 'medium'), 'medium');
+    const a = new sim.Race({ preset: 'medium', length: 'long', seed: 3 }), b = new sim.Race({ preset: 'medium', length: 'medium', seed: 3 });
+    assert.equal(a.course.windward.z, b.course.windward.z);
+  } finally { VENUE.skip = was; }
+});
 // a shape the venue doesn't offer at that length (its `skip` list) is sailed as up and down; at other lengths it isn't
 test('a skipped shape falls back to up and down', async () => {
   const { VENUE } = await import('../public/game/venues.js'), was = VENUE.skip;
@@ -304,11 +315,18 @@ test('the set-up page’s skip lists are the game’s', async () => {
 });
 // today's race goes to every venue on the short course, in any shape: none may be skipped there
 test('no venue skips a shape on the short course', async () => {
-  const { VENUES, shapeOffered } = await import('../public/game/venues.js');
+  const { VENUES, shapeOffered, lengthOffered } = await import('../public/game/venues.js');
   for (const v of VENUES) for (const shape of sim.SHAPES) assert.ok(shapeOffered(v, shape, 'short'), `${v.id}: ${shape}`);
+  for (const v of VENUES) assert.ok(lengthOffered(v, 'short'), `${v.id}: the short course`);
 });
 
 const { execFileSync } = await import('node:child_process');
+// every script of the game parses (the ones the browser alone runs, main.js among them, aren't loaded by these tests)
+test('every game script parses', async () => {
+  const { readdirSync } = await import('node:fs');
+  const dir = new URL('../public/game/', import.meta.url);
+  for (const f of readdirSync(dir).filter((n) => n.endsWith('.js'))) execFileSync(process.execPath, ['--check', new URL(f, dir).pathname]);
+});
 const { VENUES } = await import('../public/game/venues.js');
 for (const v of VENUES) {
   test(`${v.name[0]}: the land is baked, and every course is laid in clear water`, () => {
@@ -318,22 +336,30 @@ for (const v of VENUES) {
       globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))));
       const sim = await import(${JSON.stringify(new URL('../public/game/sim.js', import.meta.url).href)});
       const { SKOPEA, MESH } = await import(${JSON.stringify(new URL('../public/game/land.js', import.meta.url).href)});
-      const { VENUE, shapeOffered } = await import(${JSON.stringify(new URL('../public/game/venues.js', import.meta.url).href)});
-      let worst = Infinity, where = '';
+      const { VENUE, shapeOffered, lengthOffered } = await import(${JSON.stringify(new URL('../public/game/venues.js', import.meta.url).href)});
+      let worst = Infinity, where = '', under = '';
+      // the bridges too low for a mast: no two of a course's marks on either side of one
+      const low = (SKOPEA.meta.landmarks || []).filter((l) => l.a && l.b && (l.deck ?? Infinity) < 25);
+      const side = (p, q, w) => Math.sign((q[0] - p[0]) * (w[1] - p[1]) - (q[1] - p[1]) * (w[0] - p[0]));
+      const across = (p, q, a, b) => side(p, q, a) * side(p, q, b) < 0 && side(a, b, p) * side(a, b, q) < 0;
       for (const preset of ['light', 'medium', 'strong']) for (const length of ['short', 'medium', 'long']) for (const course of sim.SHAPES) {
-        if (!shapeOffered(VENUE, course, length)) continue;
+        if (!shapeOffered(VENUE, course, length) || !lengthOffered(VENUE, length)) continue;
         const r = new sim.Race({ preset, length, course, fleet: 7, laps: 1, seed: 1 }), c = r.course;
         const f = c.finish ? [c.finish.a, c.finish.b, c.finishBoat] : [];
-        for (const m of [...Object.values(c.marks), ...c.gate, c.pin, c.committee, ...f]) {
+        const ms = [...Object.values(c.marks), ...c.gate, c.pin, c.committee, ...f];
+        for (const m of ms) {
           const room = r.roomAt(m.x, m.z);
           if (room < worst) { worst = room; where = course + ' ' + preset + ' ' + length; }
         }
+        const xz = ms.map((m) => [m.x + r.at.x, m.z + r.at.z]);
+        for (const l of low) for (const p of xz) for (const q of xz) if (across(p, q, l.a, l.b)) under = course + ' ' + preset + ' ' + length;
       }
-      console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, corners: MESH.corners, heights: SKOPEA.parts.heights.length }));`;
+      console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, under, corners: MESH.corners, heights: SKOPEA.parts.heights.length }));`;
     const out = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' }));
     assert.deepEqual(out.origin, [v.lat, v.lon], 'baked at the venue’s position');
     assert.equal(out.turn, v.wind, 'turned to the venue’s wind');
     assert.ok(out.worst >= 60, `a mark only ${Math.round(out.worst)} m from the shore (${out.where})`);
+    assert.equal(out.under, '', 'a course across a bridge too low for a mast');
     assert.equal(out.corners, out.heights, 'the terrain the game builds from the quadtree has a height for each of its corners');
   });
 }
@@ -362,6 +388,27 @@ test('a result without the finish kept puts the fleet close to where it was as y
     const b = s.me ? P : r.boats.find((o) => o.name === s.name), was = at.get(b);
     assert.ok(Math.hypot(s.x - was.x, s.z - was.z) < 40, `${s.name || 'you'}: ${Math.round(Math.hypot(s.x - was.x, s.z - was.z))} m from where she was`);
   }
+});
+
+// what the result page's tiles and penalty column read (main.js finishToPage keeps it): every boat's clock at each leg,
+// her penalties, and your top speed and gybes; recorded only, the sailing is the golden fixture's below
+test('the race keeps every boat’s leg times and penalties, and your top speed and gybes', () => {
+  const r = new sim.Race({ preset: 'medium', fleet: 6, laps: 1, length: 'short', start: 1, seed: 4242, course: 'tri' }), P = r.player;
+  P.ai = { ...r.boats.find((b) => b.ai).ai, lineT: 0.5, skill: 0.9 }; P.autoTrim = true;
+  for (let n = 0; n < 60 * 60 * 40 && !r.boats.every((b) => b.done); n++) r.step(1 / 60);
+  assert.ok(P.done, 'you finished');
+  for (const b of r.boats) {
+    assert.equal(b.legT.length, r.course.legs.length - 1, `${b.name}: a time for the start and each mark`);
+    assert.ok(b.legT.every((x, i) => x >= 0 && (i === 0 || x > b.legT[i - 1]) && x < b.finish), `${b.name}: in order, before the finish`);
+    assert.ok(Number.isInteger(b.pens) && b.pens >= 0);
+  }
+  assert.deepEqual(P.legT, r.log.legs, 'yours as the log has them');
+  assert.equal(P.pens, r.log.fouls.length, 'a penalty for each foul and each mark touched');
+  assert.equal(r.log.startT, P.legT[0]);
+  assert.ok(r.log.startAt > -0.5 && r.log.startAt < 1.5, `crossed at ${r.log.startAt} along the line`);
+  assert.ok(r.log.top > 3 && r.log.top < 20, `top speed ${r.log.top} kn`);
+  assert.ok(r.log.topLeg >= 1 && r.log.topLeg < r.course.legs.length);
+  assert.ok(Number.isInteger(r.log.gybes) && r.log.gybes >= 0); // the gybe button's, as the tacks are (the computer helming yours steers hers)
 });
 
 // Up and down and the triangle, one lap (test/golden.mjs --write made the fixture): the same finishes, leg times and

@@ -4,7 +4,7 @@
 // the starboard side (starboard tack). AWA is the same for the apparent wind, the wind the sails feel.
 
 import { placeCourse, roomAt, VENUE, SKOPEA } from './land.js';
-import { dailyVenue, shapeOffered } from './venues.js';
+import { dailyVenue, shapeOffered, laidLength } from './venues.js';
 import { CLS } from './classes.js';
 export { CLS };
 
@@ -689,6 +689,7 @@ const SEQUENCES = {
 export class Race {
   constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl' } = {}) {
     this.rand = rng(seed + 7);
+    length = laidLength(VENUE, length); // one the venue hasn't room for: the longest it has
     // a class of her own sails a course of her own size: courseK as long, the line, gate and marks lineK as wide
     const beatLen = ({ light: 200, medium: 260, strong: 280 }[preset] || 260) * (COURSE_LEN[length] || 1) * CLS.courseK, K = CLS.lineK;
     course = laidShape(course, length); // unknown, or not laid here: up and down
@@ -756,7 +757,8 @@ export class Race {
       b.color = color; b.crew = 1.5 - b.ai.skill; // the better skippers have the surer crews
       this.boats.push(b);
     });
-    for (const b of this.boats) Object.assign(b, { leg: 0, ocs: false, done: false, finish: null, track: [], lastD: lineD(this.course, b), lastZ: b.z, rnd: null, dsq: false, touchT: 0, ufd: false, bfd: false });
+    for (const b of this.boats) Object.assign(b, { leg: 0, ocs: false, done: false, finish: null, track: [], lastD: lineD(this.course, b), lastZ: b.z, rnd: null, dsq: false, touchT: 0, ufd: false, bfd: false,
+      legT: [], pens: 0 }); // for the result only: the clock as she finished each leg (the start's crossing first), and the penalties she got
     this.trackT = 0;
     this.messages = [];
     if (this.prepFlag !== 'P') this.say('prep' + this.prepFlag); // tell the player what the flag means
@@ -764,9 +766,11 @@ export class Race {
     this.over = false;
     this.zoneStates = new Map();
     this.pairs = new Map(); // boats near each other: how their right of way came about (rules 15 and 17)
-    // the player's race, for the debrief on the results: the start, speed against target, dirty air, the tacks against
-    // the wind's swings, the fouls and hails, and the time spent on penalties
-    this.log = { gunD: null, gunV: null, ocs: false, startT: null, legs: [], v: 0, polar: 0, sailing: 0, dirty: 0, tacks: [], gybes: 0, fouls: [], hails: {}, penT: 0, leg: 0, auto: false };
+    // the player's race, for the debrief on the results: the start (how long after the gun, and where along the line:
+    // 0 the pin, 1 the committee boat), speed against target, dirty air, the tacks against the wind's swings, the
+    // gybes, the fouls and hails, the time spent on penalties, and the top speed (knots, on which leg, under the kite)
+    this.log = { gunD: null, gunV: null, ocs: false, startT: null, startAt: null, legs: [], v: 0, polar: 0, sailing: 0, dirty: 0, tacks: [], gybes: 0, fouls: [], hails: {}, penT: 0, leg: 0, auto: false,
+      top: 0, topLeg: 0, topKite: false };
   }
   say(key, arg) { this.messages.push({ key, arg }); }
   // how far a point of the race is from the shore, metres: + at sea, − on land
@@ -774,7 +778,7 @@ export class Race {
   record(dt, before) {
     const P = this.player, L = this.log;
     if (before < 0 && this.clock >= 0) { L.gunD = -lineD(this.course, P); L.gunV = P.v / KN; L.ocs = P.ocs; }
-    if (P.leg !== L.leg) { L.leg = P.leg; L.legs.push(this.clock); (L.legPlaces || (L.legPlaces = [])).push(this.standings().indexOf(P) + 1); if (P.leg === 1) L.startT = this.clock; }
+    if (P.leg !== L.leg) { L.leg = P.leg; L.legs.push(this.clock); (L.legPlaces || (L.legPlaces = [])).push(this.standings().indexOf(P) + 1); if (P.leg === 1) { L.startT = this.clock; L.startAt = Math.round(lineT(this.course, P) * 100) / 100; } }
     const tackNow = !!P.auto;
     if (tackNow && !L.auto && this.clock >= 0 && !P.done) {
       if (P.auto.gybe) L.gybes++;
@@ -783,6 +787,7 @@ export class Race {
     L.auto = tackNow;
     if (this.clock < 0 || P.done) return;
     if (P.pen) L.penT += dt;
+    if (P.v / KN > L.top) { L.top = P.v / KN; L.topLeg = P.leg; L.topKite = !!P.kite; }
     if (P.shadow > 0.08) L.dirty += dt;
     if (!P.auto && !P.pen && P.polar > 0.5) { L.v += (P.v / KN) * dt; L.polar += P.polar * dt; L.sailing += dt; }
   }
@@ -875,7 +880,7 @@ export class Race {
       if (this.prepFlag === 'P') for (const b of over) { b.ocs = true; this.flags.X = true; if (b === this.player) this.say('ocs'); }
     }
     if (this.flags.X && (this.clock > 240 || !this.boats.some((b) => b.ocs))) this.flags.X = false;
-    for (const b of this.boats) this.progress(b);
+    for (const b of this.boats) { const leg = b.leg; this.progress(b); if (b.leg > leg) b.legT.push(this.clock); }
     this.zones();
     this.hails();
     this.record(dt, before);
@@ -947,7 +952,7 @@ export class Race {
     this.clock = this.seq[0].t - 12; this.sigI = 0;
     Object.assign(this.flags, { cls: false, P: this.seq.length <= 2, X: false, sub: true }); // a one-minute start shows its flag before it, as at first
     const c = this.course;
-    for (const b of this.boats) { Object.assign(b, { leg: 0, ocs: false, ufd: false, rnd: null, lastD: lineD(c, b), lastZ: b.z }); if (b.ai) b.ai.go = false; }
+    for (const b of this.boats) { Object.assign(b, { leg: 0, ocs: false, ufd: false, rnd: null, lastD: lineD(c, b), lastZ: b.z, legT: [] }); if (b.ai) b.ai.go = false; }
     this.log.ocs = false; this.log.gunD = null;
     this.say('genRecall', this.prepFlag);
   }
@@ -1099,7 +1104,7 @@ export class Race {
     if (g.pen || g.done) return;
     // 21: a boat pushed into this contact by another's foul a moment before is exonerated
     if (g.wrongedT !== undefined && this.clock - g.wrongedT < 1.5) { if (g === this.player) this.say('exonerated'); return; }
-    g.pen = { tack: false, gybe: false, dir: 0 }; other.wrongedT = this.clock;
+    g.pen = { tack: false, gybe: false, dir: 0 }; g.pens++; other.wrongedT = this.clock;
     if (g === this.player) {
       this.say('fouled', { who: other.name, rule: r.rule }); this.log.fouls.push({ rule: r.rule, who: other.name, t: this.clock, x: g.x, z: g.z });
       // barging: squeezing in between a leeward boat and the committee boat at the start — there's no room to be had
@@ -1148,7 +1153,7 @@ export class Race {
           b.x += (dx / d) * (r - d); b.z += (dz / d) * (r - d); b.v *= 0.9;
           if (line.includes(m) && c.legs[b.leg] !== 'finish') continue;
           // touching a mark: a one-turn penalty (rules 31 and 44.2)
-          if (b.touchT <= 0 && !b.pen && !b.done && this.rulesOn) { b.pen = { tack: false, gybe: false, dir: 0 }; if (b === this.player) { this.say('touched'); this.log.fouls.push({ rule: '31', t: this.clock, x: b.x, z: b.z }); } }
+          if (b.touchT <= 0 && !b.pen && !b.done && this.rulesOn) { b.pen = { tack: false, gybe: false, dir: 0 }; b.pens++; if (b === this.player) { this.say('touched'); this.log.fouls.push({ rule: '31', t: this.clock, x: b.x, z: b.z }); } }
           b.touchT = 3;
         }
       }

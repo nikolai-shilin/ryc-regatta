@@ -19,8 +19,9 @@
 //     palm, eucalypt, olive, shrub
 //   treeTop: how high the trees go, metres; woods: how much of the land is wooded (0 to 1); snow: the snow line on
 //     the mountains beyond, metres (2900 when not given)
-//   walls, roofs: the houses; flat: the share of flat roofs; towers: the walls of the tall ones (20 m and up), when
-//     not glass and concrete (skopea.js)
+//   walls, roofs: the houses; flat: the share of flat roofs; towers: the walls of the tall ones (20 m and up, or
+//     tall: from how many metres), when not glass and concrete (skopea.js); fill: 0, no houses made up where the map
+//     has none
 //   boats: the moored boats' shares (sail, motor, big) and what the big ones are (gulet or super)
 //   haze: how clear the venue's air is, how far its land is seen through the haze (1 as usual, more is clearer)
 //   water: the sea's own colours (deep, scatter) and how far towards them (0 to 1); over the shallows, the colour
@@ -51,7 +52,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'newport', name: ['Newport', 'Ньюпорт'], lat: 41.457, lon: -71.36, wind: 210, tz: -4, stream: ['tide', 10, 0.8],
+    id: 'newport', name: ['Newport', 'Ньюпорт'], lat: 41.457, lon: -71.36, wind: 210, tz: -4, stream: ['tide', 340, 0.8],
     look: {
       haze: 0.95,
       ground: { forest: ['#2b4526', '#3a5a2f', '#557539'], scrub: '#7a8a52', rock: ['#8e8a80', '#6f6c66'], town: '#9a968c', shore: '#a8a090' },
@@ -63,7 +64,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'sydney', name: ['Sydney', 'Сидней'], lat: -33.848, lon: 151.256, wind: 45, tz: 11, stream: ['tide', 250, 0.6],
+    id: 'sydney', name: ['Sydney', 'Сидней'], lat: -33.848, lon: 151.256, wind: 45, tz: 11, stream: ['tide', 225, 0.6],
     look: {
       haze: 1.15,
       ground: { forest: ['#3a4a2c', '#4d5c37', '#6b7547'], scrub: '#7f7f58', rock: ['#c9a878', '#a8865c'], town: '#a8988a', shore: '#d8c49a' },
@@ -131,7 +132,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'auckland', name: ['Auckland', 'Окленд'], lat: -36.83, lon: 174.815, wind: 225, tz: 13, stream: ['tide', 240, 1.0],
+    id: 'auckland', name: ['Auckland', 'Окленд'], lat: -36.83, lon: 174.815, wind: 225, tz: 13, stream: ['tide', 230, 1.0],
     look: {
       haze: 1.2,
       ground: { forest: ['#24401f', '#335229', '#4a6b34'], scrub: '#6b7a44', rock: ['#5d5a55', '#45433f'], town: '#9a948a', shore: '#b8a888' },
@@ -190,7 +191,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'marstrand', name: ['Marstrand', 'Марстранд'], lat: 57.885, lon: 11.555, wind: 225, tz: 2, stream: ['flow', 345, 0.4],
+    id: 'marstrand', name: ['Marstrand', 'Марстранд'], lat: 57.885, lon: 11.555, wind: 225, tz: 2, stream: ['flow', 15, 0.4],
     look: {
       haze: 1.15,
       ground: { forest: ['#2c4224', '#3b5530', '#566d3a'], scrub: '#7a7f56', rock: ['#a8988c', '#857870'], town: '#9c8a80', shore: '#a8988a' },
@@ -246,7 +247,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'rio', name: ['Rio de Janeiro', 'Рио-де-Жанейро'], lat: -22.93, lon: -43.158, wind: 150, tz: -3, stream: ['tide', 355, 0.8],
+    id: 'rio', name: ['Rio de Janeiro', 'Рио-де-Жанейро'], lat: -22.93, lon: -43.158, wind: 150, tz: -3, stream: ['tide', 35, 0.8],
     look: {
       haze: 0.9,
       ground: { forest: ['#1c3a1a', '#284d22', '#3c642c'], scrub: '#5f7a3c', rock: ['#8a8680', '#6a6660'], town: '#b4aca0', shore: '#e4d6b0' },
@@ -268,7 +269,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'istanbul', name: ['Istanbul', 'Стамбул'], lat: 40.982, lon: 28.992, wind: 35, tz: 3, stream: ['flow', 195, 1.0],
+    id: 'istanbul', name: ['Istanbul', 'Стамбул'], lat: 40.982, lon: 28.992, wind: 35, tz: 3, stream: ['flow', 185, 1.0],
     look: {
       haze: 0.8,
       ground: { forest: ['#2e4626', '#3f5a2e', '#5a733a'], scrub: '#7c7e54', rock: ['#b0a690', '#8f8674'], town: '#b2a692', shore: '#bfb39a' },
@@ -283,24 +284,95 @@ export const VENUES = [
     // the Neva under the Peter and Paul Fortress's walls, in the westerly off the Gulf of Finland; today's race comes
     // here from its `from` day (dailyVenue)
     id: 'st-petersburg', name: ['St Petersburg', 'Санкт-Петербург'], lat: 59.9464, lon: 30.3187, wind: 245, tz: 3, stream: ['flow', 235, 0.9], from: '2026-11-20',
-    skip: ['tri:medium', 'tri:long'], // the river is too narrow for the triangle's wing mark
+    // the river is too narrow for the triangle's wing mark, and the long course's beat (the medium wind's, some 900 m
+    // and wide) has no reach of it between two of the bridges, too low for a mast
+    skip: ['tri:medium', 'tri:long', 'long'],
     look: {
       haze: 0.8,
       ground: { forest: ['#2b4126', '#3a5530', '#4f6c3a'], scrub: '#6c7d4c', rock: ['#a0968d', '#857c74'], town: '#9a948b', shore: '#9d948b', grass: '#5f7d45' },
       trees: [['broad', 0.85, '#2b4126', '#557338'], ['conifer', 0.15, '#22371f', '#344f2b']], treeTop: 120, woods: 0.3,
-      // the city's stucco: ochre, pale pink, cream, the Winter Palace's green, grey and white; its roofs painted iron
-      walls: ['#e2c27c', '#e4b9a4', '#efe3c9', '#8fb7a0', '#c9c4ba', '#f1ede4', '#d9a77e', '#c7d0cc'], roofs: ['#7e4a3a', '#6b7672', '#5a5f60', '#4f6a5c'], flat: 0.75,
+      // the city's stucco: ochre, pale pink, cream, the Winter Palace's green, grey and white; its roofs painted iron,
+      // most of them, whatever their shape; and its palaces 20 to 30 m high, stucco like the rest (a tower from 45 m:
+      // the few modern ones)
+      walls: ['#e2c27c', '#e4b9a4', '#efe3c9', '#8fb7a0', '#c9c4ba', '#f1ede4', '#d9a77e', '#c7d0cc'], roofs: ['#7e4a3a', '#6b7672', '#5a5f60', '#4f6a5c', '#8a5440'], flat: 0.25, tall: 45,
       fill: 0, // every house is on the map: none made up in its squares and courtyards
       boats: { sail: 0.55, motor: 0.45, big: 0 },
       water: { deep: '#1b313a', scatter: '#3b625f', k: 0.55, shallow: '#4a5446', clear: 0.08 },
+    },
+  },
+  // the five below join today's races with St Petersburg, on its `from` day
+  {
+    // Batumi bay in the Black Sea's afternoon breeze: the city and the Alphabetic Tower on the cape to the left, the
+    // coast to Green Cape and the wooded mountains of Adjara to the right
+    id: 'batumi', name: ['Batumi', 'Батуми'], lat: 41.672, lon: 41.68, wind: 290, tz: 4, stream: ['flow', 55, 0.4], from: '2026-11-20',
+    look: {
+      haze: 0.85,
+      ground: { forest: ['#264222', '#355a2c', '#4d7238'], scrub: '#6f7f4c', rock: ['#a49c8a', '#857d6e'], town: '#a8a294', shore: '#9b968d', sand: '#9b968d' }, // the beaches are grey pebbles
+      trees: [['broad', 0.6, '#264222', '#4f7a36'], ['palm', 0.15, '#2f4a26', '#5a7a3a'], ['conifer', 0.1, '#22381f', '#36502c'], ['cypress', 0.15, '#25391f', '#3a5230']], treeTop: 1400, woods: 0.75, snow: 2600,
+      walls: ['#efe8da', '#e6dccb', '#f4f1ea', '#d9cdb6', '#e9d8c2', '#c9c4ba'], roofs: ['#a5543a', '#8c4a36', '#6f7478', '#7e7f80'], flat: 0.6,
+      boats: { sail: 0.3, motor: 0.6, big: 0.1, bigKind: 'super' },
+      water: { deep: '#0e2c3c', scatter: '#2a6e78', k: 0.5, shallow: '#4a7f78', clear: 0.15 },
+    },
+  },
+  {
+    // the North Sea off Scheveningen's beach, the pier and the Kurhaus, in the south-westerly along the dunes
+    id: 'scheveningen', name: ['Scheveningen', 'Схевенинген'], lat: 52.1209, lon: 4.2693, wind: 225, tz: 2, stream: ['tide', 30, 1.0], from: '2026-11-20',
+    look: {
+      haze: 0.8,
+      ground: { forest: ['#2e4428', '#3f5a32', '#57703f'], scrub: '#7d8058', rock: ['#a49e90', '#87827a'], town: '#9a9088', shore: '#d8cba8', sand: '#e0d3b0', grass: '#6f8a4a' },
+      fields: ['#6f9a45', '#7fa64e', '#8fae55', '#5f8c3e'],
+      trees: [['broad', 0.6, '#2e4428', '#5a7a3c'], ['conifer', 0.4, '#243b22', '#3a5530']], treeTop: 40, woods: 0.25,
+      walls: ['#8a4a36', '#9c5a42', '#a86c50', '#7d4232', '#ece6da', '#c9b9a0'], roofs: ['#4a4e52', '#5a5e62', '#a5543a', '#7e4a3a'], flat: 0.55,
+      boats: { sail: 0.5, motor: 0.4, big: 0.1, bigKind: 'super' },
+      water: { deep: '#2a4044', scatter: '#4f7468', k: 0.6, shallow: '#7a8a6c', clear: 0.05 },
+    },
+  },
+  {
+    // Victoria Harbour between Wan Chai and Tsim Sha Tsui, in the easterly: the towers on both shores, the Peak above
+    id: 'hong-kong', name: ['Hong Kong', 'Гонконг'], lat: 22.289, lon: 114.176, wind: 80, tz: 8, stream: ['tide', 80, 1.0], from: '2026-11-20',
+    look: {
+      haze: 0.7,
+      ground: { forest: ['#24401f', '#33572a', '#4b7034'], scrub: '#5f7a42', rock: ['#9a9488', '#7b766c'], town: '#9c9890', shore: '#a29c90' },
+      trees: [['broad', 0.85, '#24401f', '#4b7a34'], ['palm', 0.15, '#2f4a26', '#5a7a3a']], treeTop: 950, woods: 0.9,
+      walls: ['#dcdad4', '#cfcac0', '#e8e4dc', '#bfc4c6', '#d6cfc0', '#e6e0d0'], roofs: ['#7e7f80', '#6f7478'], flat: 0.95,
+      fill: 0, // every tower is on the map: none made up
+      boats: { sail: 0.3, motor: 0.6, big: 0.1, bigKind: 'super' },
+      water: { deep: '#123a44', scatter: '#2f6e6a', k: 0.55, shallow: '#4f7a6a', clear: 0.08 },
+    },
+  },
+  {
+    // Table Bay off the V&A Waterfront, in the south-easterly Cape Doctor, Table Mountain to windward
+    id: 'cape-town', name: ['Cape Town', 'Кейптаун'], lat: -33.8978, lon: 18.4556, wind: 160, tz: 2, from: '2026-11-20',
+    look: {
+      haze: 1.15,
+      ground: { forest: ['#2f4428', '#41583a', '#5a7046'], scrub: '#7a7a52', rock: ['#a39d92', '#7f7a72'], town: '#aaa498', shore: '#d9d0bc', sand: '#e6dcc4' },
+      trees: [['stone', 0.4, '#2f4428', '#55703f'], ['eucalypt', 0.3, '#4a5a3a', '#7d8a62'], ['shrub', 0.3, '#5a6a42', '#7f8a5c']], treeTop: 700, woods: 0.3,
+      walls: ['#f3eee4', '#efe6d2', '#ffffff', '#e9dcc0', '#d9d0c0', '#c9c4ba'], roofs: ['#7e7f80', '#a5543a', '#5a5f60', '#9c4f37'], flat: 0.5,
+      boats: { sail: 0.55, motor: 0.35, big: 0.1, bigKind: 'super' },
+      water: { deep: '#0b2f45', scatter: '#1f7a86', k: 0.45, shallow: '#3f8f8a', clear: 0.3 },
+    },
+  },
+  {
+    // the 2004 Olympic waters in Faliro Bay, in the meltemi off the land, the Parthenon on the Acropolis to windward
+    id: 'athens', name: ['Athens', 'Афины'], lat: 37.9115, lon: 23.6765, wind: 30, tz: 3, from: '2026-11-20',
+    look: {
+      haze: 1.2, // the meltemi's clear air: the Acropolis and Hymettus seen across the bay
+      ground: { forest: ['#3a4a2c', '#4c5e36', '#66763f'], scrub: '#8a8458', rock: ['#c2b8a2', '#a09684'], town: '#c4bba8', shore: '#c8bca2' },
+      trees: [['pine', 0.6, '#33472a', '#5a6e3a'], ['olive', 0.25, '#56603e', '#7f8660'], ['cypress', 0.15, '#25391f', '#3a5230']], treeTop: 1000, woods: 0.35,
+      walls: ['#f3eee4', '#efe9dc', '#f6f2ea', '#e9dcc0', '#e6e2da', '#ffffff'], roofs: MED.roofs, flat: 0.85,
+      boats: { sail: 0.55, motor: 0.35, big: 0.1, bigKind: 'super' },
+      water: { deep: '#06304a', scatter: '#1d7f9a', k: 0.45, shallow: '#3faab0', clear: 0.45 },
     },
   },
 ];
 
 export const venueById = (id) => VENUES.find((v) => v.id === id) || VENUES[0];
 // whether a course shape is laid at the venue at that length: its `skip` lists the '<shape>:<length>' that don't fit
-// its water (never a short course, where today's race goes); lib/venues.ts has the same lists
+// its water, and a length none fits (never a short course, where today's race goes); lib/venues.ts has the same lists
 export const shapeOffered = (v, shape, length) => !(v.skip || []).includes(`${shape}:${length}`);
+export const lengthOffered = (v, length) => !(v.skip || []).includes(length);
+// the length a race asked for is sailed at: that, or the longest the venue has shorter
+export const laidLength = (v, length) => ['long', 'medium', 'short'].slice(['long', 'medium', 'short'].indexOf(length)).find((l) => lengthOffered(v, l)) || 'short';
 
 // Today's race: a venue a day, from the date (UTC), the same for everyone. The days go round all of them in a shuffled
 // order, a new one every len days, so each venue comes once in that time and none two days running. lib/race.ts has

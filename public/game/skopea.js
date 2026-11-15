@@ -343,14 +343,19 @@ function far() {
     list.forEach(([, a, b, d, e], i) => idx.set([a, d, b, b, d, e], i * 6));
     return new THREE.BufferAttribute(idx, 1);
   };
-  const idx = cells(1);
+  const idx = cells(1), coarse = cells(2);
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  // the normals of both grids: a corner of the coarse one where the fine one has only sea round it has none of the
+  // fine one's, and a normal of nothing turns the light on it to NaN (black, on the lower graphics levels)
+  g.setIndex(coarse); g.computeVertexNormals(); const nc = g.attributes.normal.array.slice();
+  g.setIndex(idx); g.computeVertexNormals(); const nf = g.attributes.normal.array;
+  for (let i = 0; i < nf.length; i += 3) if (!nf[i] && !nf[i + 1] && !nf[i + 2]) nf.set(nc.subarray(i, i + 3), i);
   const m = new THREE.Mesh(g, landMat(new THREE.MeshLambertMaterial({ depthTest: false, depthWrite: false }), 1, {
     key: 'far', colour: 'farColour()', unlit: true, uniforms: GROUND_U, fsHead: GROUND_GLSL + FAR_GLSL, project: FAR_PROJECT,
     vsHead: 'varying vec3 vLN; varying float vFarZ;', vs: 'vLN = objectNormal; vFarZ = -(viewMatrix * lwp).z;',
   }));
-  m.frustumCulled = false; m.renderOrder = -1; m.userData.full = idx; m.userData.coarse = cells(2);
+  m.frustumCulled = false; m.renderOrder = -1; m.userData.full = idx; m.userData.coarse = coarse;
   return m;
 }
 
@@ -452,15 +457,24 @@ const WALLS = LOOK.walls, ROOFS = LOOK.roofs, FLAT = LOOK.flat ?? 0.45;
 // the tall ones (20 m and up): concrete, stone and glass, flat on top; or the venue's own, where they are blocks of
 // flats in the town's colours
 const TOWERS = LOOK.towers || ['#9aa6b0', '#b8c0c6', '#7f8c96', '#d4d6d2', '#c9c2b4', '#6f7d88'];
+const TALL = LOOK.tall || 20; // from how high a building is a tower (where the old town's palaces stand 20 to 30 m, higher)
 // the buildings, from the .bin: each one's corners (metres), its height and its roof
 function buildings() {
   const out = [];
   for (let b = 0, o = 0; b < P.bn.length; b++) {
     const n = P.bn[b], r = [];
     for (let k = 0; k < n; k++, o += 2) r.push([P.bxz[o], P.bxz[o + 1]]);
-    out.push({ r, h: P.bh[b] / 10, roof: P.broof[b] });
+    out.push({ r, h: P.bh[b] / 10, roof: P.broof[b], wc: mapColour(P.bwall, b, 0.45), rc: mapColour(P.broofc, b, 0.35) });
   }
   return out;
+}
+// a building's colour as the map has it (a file baked before it had them: none), toned down to paint: the map's
+// colours are names ("aquamarine" for the Winter Palace's green), brighter than any stucco or iron
+const HSL = {};
+function mapColour(a, b, sat) {
+  if (!a || !(a[b * 3] | a[b * 3 + 1] | a[b * 3 + 2])) return null;
+  const c = new THREE.Color().setRGB(a[b * 3] / 255, a[b * 3 + 1] / 255, a[b * 3 + 2] / 255, THREE.SRGBColorSpace).getHSL(HSL, THREE.SRGBColorSpace);
+  return '#' + new THREE.Color().setHSL(c.h, Math.min(c.s, sat), Math.min(Math.max(c.l, 0.3), 0.82), THREE.SRGBColorSpace).getHexString();
 }
 // the piers, pontoons, quays and breakwaters: from the .bin (or, in a file baked before they moved there, the json)
 const PIERS = META.piers || (() => {
@@ -510,6 +524,7 @@ void windows(inout vec4 dc) {
   vec3 nn = normalize(vLN);
   if (abs(nn.y) > 0.3) return;
   float kind = floor(vBK), seed = fract(vBK);
+  if (kind > 2.5) return; // a rampart: bare stone
   vec2 tg = normalize(vec2(-nn.z, nn.x) + 1e-5);
   float s = dot(vLand.xz, tg) + seed * 17.0, far_ = smoothstep(150.0, 450.0, length(vHz));
   if (kind > 0.5 && kind < 1.5) { // a tower: glass between thin mullions, floor after floor, tinted
@@ -528,7 +543,7 @@ void windows(inout vec4 dc) {
   dc.rgb *= mix(mix(1.0, 0.6, win), 0.92, far_);
 }`;
 // the kind of building each vertex is part of, for its windows (TOWN_GLSL): 0 a house or a block, 1 a tower, 2 a church
-// or a mosque; its fraction, a number of its own, for its windows' spacing
+// or a mosque, 3 a rampart (none); its fraction, a number of its own, for its windows' spacing
 function kinded(g, k) {
   g = strip(g);
   g.setAttribute('bk', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count).fill(k), 1));
@@ -558,7 +573,7 @@ function pyramidRoof(r, y, H, col) {
 // a church: stone, a steep roof on its rectangle and a bell tower with its spire at one end; a mosque: pale stone,
 // a dome on a drum and a minaret at a corner
 function worship(b, g, yb, h, area, mosque, seed) {
-  const R = rect(b.r), out = [], stone = mosque ? '#e6dfcf' : '#d3c8b2', roof = mosque ? '#8a9298' : '#6e5a4e';
+  const R = rect(b.r), out = [], stone = b.wc || (mosque ? '#e6dfcf' : '#d3c8b2'), roof = b.rc || (mosque ? '#8a9298' : '#6e5a4e'); // (the map's, where it has them)
   out.push(kinded(paint(g, stone, stone), 2 + seed));
   if (!R) return out;
   const top = yb + h;
@@ -593,9 +608,10 @@ function town() {
     const yb = Math.max(0.6, y0), seed = r() * 0.98;
     mark(cx, cz, Math.sqrt(area) / 2 + 4);
     if (b.roof === 3 || b.roof === 4) { parts.push(...worship(b, g, yb, h, area, b.roof === 4, seed)); continue; }
-    if (b.roof === 5) { parts.push(kinded(paint(g, '#a2958a', '#7c8a5e'), seed)); continue; } // a fortress's ramparts: granite, grass on top
-    if (h >= 20) { parts.push(kinded(paint(g, TOWERS[Math.floor(r() * TOWERS.length)], '#8a8e90'), 1 + seed)); continue; }
-    const wall = WALLS[Math.floor(r() * WALLS.length)], roof = ROOFS[Math.floor(r() * ROOFS.length)];
+    if (b.roof === 5) { parts.push(kinded(paint(g, '#b3a497', '#7c8a5e'), 3)); continue; } // a fortress's ramparts: granite, no windows, grass on top
+    if (h >= TALL) { const t0 = TOWERS[Math.floor(r() * TOWERS.length)]; parts.push(kinded(paint(g, b.wc || t0, b.rc || '#8a8e90'), 1 + seed)); continue; }
+    // its colours: the map's, where it has them, else the venue's (drawn either way, so the others keep theirs)
+    const w0 = WALLS[Math.floor(r() * WALLS.length)], r0 = ROOFS[Math.floor(r() * ROOFS.length)], wall = b.wc || w0, roof = b.rc || r0;
     // a pitched roof where the map says so, or on a house-sized one most of the venue's are pitched on: hipped on the
     // footprint's rectangle, where it fills most of it; else up to a point over the footprint, where it's near enough
     // convex; else flat
@@ -603,7 +619,7 @@ function town() {
     const R = pitched ? rect(b.r) : null;
     if (R && area > R.area * 0.78) parts.push(kinded(paint(g, wall, roof), seed), kinded(hipRoof(R, yb + h, roof), seed));
     else if (pitched && b.r.length <= 12 && area < 600 && area > hullArea(b.r) * 0.92) parts.push(kinded(paint(g, wall, roof), seed), kinded(pyramidRoof(b.r, yb + h, Math.min(4, 0.28 * Math.sqrt(area)), roof), seed));
-    else parts.push(kinded(paint(g, wall, pitched || r() >= FLAT ? roof : '#ddd6c8'), seed));
+    else parts.push(kinded(paint(g, wall, pitched || r() >= FLAT || b.rc ? roof : '#ddd6c8'), seed));
   }
   // the houses the map hasn't got: thick where the map has a town (or the venue lists one), scattered as villas up
   // the slopes round the bay
@@ -828,6 +844,13 @@ const post = (x, z, y0, r0, r1, h, col, n = 12) => tint(new THREE.CylinderGeomet
 // a block w along `ang` (radians from +x towards +z), d across it, from y0 up h
 const blk = (x, z, y0, h, w, d, ang, col) => tint(new THREE.BoxGeometry(w, h, d).rotateY(-ang).translate(x, y0 + h / 2, z), col);
 const GOLD = '#d6a43a';
+// a wedge along the ground from p0 to p1 (x, z), w wide: its top from y0 down to y1, its foot at yb (a bridge's approach)
+function wedge(p0, p1, y0, y1, yb, w, col) {
+  const g = new THREE.BoxGeometry(1, 1, 1), a = g.attributes.position, dx = p1.x - p0.x, dz = p1.z - p0.z, len = Math.hypot(dx, dz);
+  for (let i = 0; i < a.count; i++) { const t = a.getX(i) + 0.5; a.setXYZ(i, t * len, a.getY(i) > 0 ? y0 + (y1 - y0) * t : yb, a.getZ(i) * w); }
+  g.rotateY(-Math.atan2(dz, dx)).translate(p0.x, 0, p0.z); g.computeVertexNormals();
+  return tint(g, col);
+}
 function landmarks() {
   const parts = [];
   for (const L of META.landmarks || []) {
@@ -886,6 +909,29 @@ function landmarks() {
         const stone = '#b9ad96';
         parts.push(post(x, z, y - 2, 8.6, 8, L.h * 0.74 + 2, stone, 16), post(x, z, y + L.h * 0.7, 9.6, 9.6, 2, '#a89c86', 16), post(x, z, y + L.h * 0.74, 7.8, 7.8, L.h * 0.06, stone, 16));
         parts.push(tint(new THREE.ConeGeometry(8.6, L.h * 0.2, 16).translate(x, y + L.h * 0.9, z), '#6f777c'));
+      } else if (L.style === 'boc') {
+        // the Bank of China Tower: a square of glass split corner to corner into four triangular shafts, each stopping
+        // higher than the last, its top sloping down from the middle to its corners; the two white masts on the highest. `b` a corner
+        const [bx, bz] = L.b, cx = bx - x, cz = bz - z, glass = '#4c5f70', top = (L.h - 52) / 315;
+        const corner = (k) => { const a = k * Math.PI / 2, c = Math.cos(a), s = Math.sin(a); return [x + cx * c - cz * s, z + cx * s + cz * c]; };
+        const H = [198, 231, 270, 315].map((h) => h * top);
+        for (let k = 0; k < 4; k++) {
+          const [ax, az] = corner(k), [qx, qz] = corner(k + 1), h = H[k];
+          const t0 = [x, y + h, z], t1 = [ax, y + h - 30, az], t2 = [qx, y + h - 30, qz], b0 = [x, y - 2, z], b1 = [ax, y - 2, az], b2 = [qx, y - 2, qz];
+          const pos = [], tri = (a, b, c) => pos.push(...a, ...b, ...c, ...a, ...c, ...b); // both ways round: seen from either side
+          tri(t0, t1, t2); for (const [a, b, ta, tb] of [[b0, b1, t0, t1], [b1, b2, t1, t2], [b2, b0, t2, t0]]) { tri(a, ta, tb); tri(a, tb, b); }
+          const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals();
+          parts.push(tint(g, glass));
+        }
+        for (const k of [3, 4]) { const [mx, mz] = corner(k); parts.push(post(x + (mx - x) * 0.3, z + (mz - z) * 0.3, y + H[3] - 12, 1.1, 0.4, L.h - H[3] + 12, '#e8e8e4', 8)); }
+      } else if (L.style === 'alphabet') { // Batumi's Alphabetic Tower: the core, the double helix of the letters round it, the glass ball, the mast
+        const steel = '#c9cdd0', H = L.h, top = H * 0.78, N = 44;
+        parts.push(post(x, z, y, 3.4, 2.6, top, '#e4e6e6', 10));
+        for (const a0 of [0, Math.PI]) for (let i = 0; i < N; i++) {
+          const p = (k) => { const a = a0 + k * 0.42; return V3(x + Math.cos(a) * 6.5, y + (top - 6) * k / N, z + Math.sin(a) * 6.5); };
+          parts.push(beam(p(i), p(i + 1), 1.6, 2.4, steel));
+        }
+        parts.push(tint(new THREE.SphereGeometry(8, 16, 10).translate(x, y + top + 4, z), '#3b4a55'), post(x, z, y + top + 11, 1.4, 0.4, H - top - 11, steel, 8));
       } else { // a tapering brick tower, like a ship's stern
         parts.push(tint(new THREE.CylinderGeometry(4.5, 9, L.h, 4).rotateY(Math.PI / 4).translate(x, y + L.h / 2, z), '#7a5246'), tint(new THREE.BoxGeometry(40, 9, 26).translate(x, y + 4.5, z + 18), '#8a6a5c'));
       }
@@ -955,6 +1001,16 @@ function landmarks() {
       const D = L.deck, W = L.w, steel = L.color || '#5a6863', stone = '#9a9088', n = L.n, S = len / n;
       const P = (u, yy, v = 0) => V3(ax + ux * u - uz * v, yy, az + uz * u + ux * v);
       for (let i = 1; i < n; i++) { const p = P(i * S, 0); parts.push(blk(p.x, p.z, -3, D + 2, 9, W + 5, ang, stone)); }
+      // its ends: on each bank a granite abutment from the last span out to where the land is (the map's ends can stop
+      // short of it), then the roadway down from the deck to the street
+      for (const [u, sd] of [[0, -1], [len, 1]]) {
+        let reach = 60; for (let t = 0; t <= 60; t += 1.5) { const q = P(u + sd * t, 0); if (groundAt(q.x, q.z) > 1) { reach = t; break; } }
+        const e0 = u - sd * 4.5, e1 = u + sd * (reach + 6), c = P((e0 + e1) / 2, 0);
+        parts.push(blk(c.x, c.z, -3, D + 3 - 0.8, Math.abs(e1 - e0), W + 5, ang, stone));
+        const f = P(e1, 0), g0 = Math.max(0.6, groundAt(f.x, f.z)), run = Math.max(12, (D - g0) * 7), f1 = P(e1 + sd * run, 0);
+        parts.push(wedge(f, f1, D + 0.8, g0 + 0.15, g0 - 1, W, '#4b4f50'), wedge(f, f1, D + 0.6, g0 + 0.05, g0 - 1.5, W + 4, stone));
+        parts.push(beam(P(e0, D), P(e1, D), W, 1.6, '#4b4f50'));
+      }
       for (let i = 0; i < n; i++) {
         const u0 = i * S + 4.5, u1 = (i + 1) * S - 4.5;
         if ((L.open || []).includes(i)) {
@@ -973,6 +1029,33 @@ function landmarks() {
           parts.push(beam(P(u0 + (u1 - u0) * t0, rib(t0), v), P(u0 + (u1 - u0) * t1, rib(t1), v), 1.2, 1.4, steel));
         }
       }
+    } else if (L.kind === 'wheel') {
+      // a big wheel on the shore, L.h to its top, turning in the plane through `at` and `b`: the two rims and their
+      // spokes, the legs splayed down to the ground on each side, the gondolas hanging from the rim
+      const [x, z] = L.at, [bx, bz] = L.b, len = Math.hypot(bx - x, bz - z), ux = (bx - x) / len, uz = (bz - z) / len;
+      const y = Math.max(0, groundAt(x, z)) + (L.base || 0), R = L.h / 2 - 2, cy = y + L.h - R - 1.5, white = '#eeeeea', N = 32; // (base: on a pier's deck)
+      const P = (a, r, v) => V3(x + ux * Math.cos(a) * r - uz * v, cy + Math.sin(a) * r, z + uz * Math.cos(a) * r + ux * v);
+      for (const v of [-2.2, 2.2]) for (let i = 0; i < N; i++) {
+        const a0 = (i / N) * Math.PI * 2, a1 = ((i + 1) / N) * Math.PI * 2;
+        parts.push(beam(P(a0, R, v), P(a1, R, v), 0.7, 0.9, white));
+        if (i % 2 === 0) parts.push(beam(P(0, 0, v), P(a0, R, v), 0.25, 0.25, white));
+      }
+      parts.push(beam(P(0, 0, -3), P(0, 0, 3), 1.6, 1.6, '#9a9c9e'));
+      for (const v of [-4.5, 4.5]) for (const s of [-1, 1]) parts.push(beam(P(0, 0, v * 0.6), V3(x + ux * s * R * 0.55 - uz * v, y - 1, z + uz * s * R * 0.55 + ux * v), 1.1, 1.1, white));
+      const cab = ['#d8443a', '#e8a43a', '#3a8ad8', '#4fb06a'];
+      for (let i = 0; i < 16; i++) { const p = P((i / 16) * Math.PI * 2, R, 0); parts.push(tint(new THREE.BoxGeometry(2.4, 2.6, 2.4).translate(p.x, p.y - 2.2, p.z), cab[i % 4])); }
+    } else if (L.kind === 'temple') {
+      // the Parthenon on the Acropolis: the stepped base, the peristyle of marble columns (8 at each end, 17 down each
+      // side), the entablature over them; its long axis from `at` towards `b`
+      const [x, z] = L.at, [bx, bz] = L.b, y = Math.max(0, groundAt(x, z)), marble = '#dccfb2';
+      const len = Math.hypot(bx - x, bz - z), ux = (bx - x) / len, uz = (bz - z) / len, ang = Math.atan2(uz, ux);
+      const W = 69.5, D = 30.9, at = (u, v) => [x + ux * u - uz * v, z + uz * u + ux * v];
+      for (let s = 0; s < 3; s++) parts.push(blk(x, z, y - 2 + s * 0.55, 2.55, W + 4 - s * 1.4, D + 4 - s * 1.4, ang, s ? marble : '#b8ab92'));
+      const cols = [];
+      for (let i = 0; i < 17; i++) for (const sd of [-1, 1]) cols.push([-W / 2 + 1.8 + i * (W - 3.6) / 16, sd * (D / 2 - 1.8)]);
+      for (let i = 1; i < 7; i++) for (const sd of [-1, 1]) cols.push([sd * (W / 2 - 1.8), -D / 2 + 1.8 + i * (D - 3.6) / 7]);
+      for (const [u, v] of cols) { const [cx, cz] = at(u, v); parts.push(post(cx, cz, y + 1.6, 1, 0.8, 10.4, marble, 8)); }
+      parts.push(blk(x, z, y + 12, 3.3, W - 0.6, D - 0.6, ang, marble));
     } else if (L.kind === 'mosque') {
       // Istanbul's imperial mosques on their hills: the square prayer hall, the great dome on its drum (its top L.h up),
       // the half-domes and the corner domes stepping down from it, the pencil minarets with their balconies and lead

@@ -1,4 +1,5 @@
 import type { Lang } from '@/lib/lang';
+import { CountUp } from './count-up';
 
 // The RYC logo and the line icons of the design (24px grid, 2px stroke, currentColor).
 export function Logo({ className = 'logo' }: { className?: string }) {
@@ -51,7 +52,7 @@ export const IconGoogle = ({ s = 20 }) => (
   </svg>
 );
 
-// EN | RU: plain links through /lang, so they work without JavaScript and the game sees the same choice.
+// English · Русский: plain links, so they work without JavaScript and the game sees the same choice.
 export function Langs({ lang, back, className = '' }: { lang: Lang; back: string; className?: string }) {
   // the page itself with ?lang= (proxy.ts keeps the choice as the cookie): a link a search engine follows to the page in
   // the other language, which /lang, a redirect kept out of robots.txt, never was
@@ -60,13 +61,19 @@ export function Langs({ lang, back, className = '' }: { lang: Lang; back: string
     u.searchParams.set('lang', to);
     return u.pathname + u.search + u.hash;
   };
+  const on = (to: Lang) => (lang === to ? ({ 'aria-current': 'true' } as const) : {});
   return (
     <nav className={`langs ${className}`} aria-label={lang === 'ru' ? 'Язык' : 'Language'}>
-      <a className={`lang ${lang === 'en' ? 'lang-on' : ''}`} href={href('en')} hrefLang="en" lang="en">EN</a>
-      <a className={`lang ${lang === 'ru' ? 'lang-on' : ''}`} href={href('ru')} hrefLang="ru" lang="ru">RU</a>
+      <a className={`lang ${lang === 'en' ? 'lang-on' : ''}`} href={href('en')} hrefLang="en" lang="en" {...on('en')}>English</a>
+      <span aria-hidden="true">·</span>
+      <a className={`lang ${lang === 'ru' ? 'lang-on' : ''}`} href={href('ru')} hrefLang="ru" lang="ru" {...on('ru')}>Русский</a>
     </nav>
   );
 }
+
+// a number and its unit ("12 kn"), the unit set small after it, as the broadcast sets them; the number counts up the
+// first time it's seen
+export const Num = ({ v }: { v: string }) => { const [n, ...u] = v.split(' '); return <><CountUp v={n} />{u.length ? <span className="unit">{u.join(' ')}</span> : null}</>; };
 
 export const clock = (s: number) => {
   const m = Math.floor(s / 60), r = s - m * 60;

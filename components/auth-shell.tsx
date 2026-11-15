@@ -1,21 +1,31 @@
-import Image from 'next/image';
+import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
-import { SiteHead } from './site-chrome';
+import { dailyRace } from '@/lib/race';
+import { GameScene } from './game-scene';
+import { SceneBrand } from './scene-brand';
+import { IconBack } from './ui';
 
-// A1–A3: under the site header, the course from above beside (or above, on a phone held upright) the form.
-// Nobody is signed in on these pages (sign-in sends a signed-in visitor on).
-export function AuthShell({ lang, caption, children }: { lang: Lang; caption?: React.ReactNode; children: React.ReactNode }) {
+// A1–A3: signing in, as the race's pause screen: today's venue in the game's own scene behind (as the race hub has
+// it), the brand and a word on why on the left, and the step's card on the right (components/sign-in-forms.tsx).
+// Nobody is signed in on these pages (sign-in sends a signed-in visitor on). back: where the back button goes (none on
+// the last step, the name, which signing in has already passed).
+export function AuthShell({ lang, back, aside, children }: { lang: Lang; back?: string; aside?: React.ReactNode; children: React.ReactNode }) {
+  const t = tx(lang);
+  const d = dailyRace();
   return (
-    <div className="scr app" lang={lang}>
-      <SiteHead lang={lang} t={tx(lang)} page="signin" />
-      <div className="lay split split-auth">
-        <div className="split-photo">
-          <Image className="bgimg" src="/images/top-v3.jpg" alt="" fill priority sizes="(orientation: portrait) 100vw, 50vw" />
-          <div className="photo-fade" />
-          {caption && <div className="cap no-port">{caption}</div>}
+    <div className="scr bt-scr bc au-scr" lang={lang}>
+      <div className="bt">
+        <GameScene venue={d.venue} wind={d.preset} title={t('Today’s venue in 3D', 'Место гонки дня в 3D')} />
+        <div className="bt-info">
+          <div className="bt-top">
+            {back && <Link className="bt-back" href={back} aria-label={t('Back', 'Назад')}><IconBack /></Link>}
+            <SceneBrand />
+          </div>
+          {aside}
         </div>
-        <div className="split-panel">{children}</div>
+        <section className="bt-card au-card">{children}</section>
       </div>
     </div>
   );
 }
+

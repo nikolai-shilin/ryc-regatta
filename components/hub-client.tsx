@@ -1,9 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { ruBoats, tx, type Lang } from '@/lib/lang';
+import Link from 'next/link';
 import { readOpts, saveOpts } from '@/lib/opts';
+import { readBoat } from '@/lib/boat';
+import { findFlag } from '@/lib/flags';
+import { venueOf } from '@/lib/venues';
 import { KN, type Wind } from '@/lib/race';
-import { IconWind } from './ui';
+import { IconSail, IconWind } from './ui';
 
 // The free race in the race hub's card: one tap starts a free race in that wind (with the venue, fleet, course and
 // start you chose last time), as the pause menu's pills.
@@ -14,7 +18,8 @@ export function FreeQuick({ lang }: { lang: Lang }) {
     const o = readOpts();
     if (!o.lastFree) return;
     const w = { light: t('light', 'слабый'), medium: t('medium', 'средний'), strong: t('strong', 'сильный') }[o.preset];
-    setLast(t(`Last: ${w}, ${o.fleet} boats`, `Прошлая: ${w}, ${ruBoats(o.fleet)}`));
+    const v = t(...venueOf(o.venue).name), laps = o.laps > 1 ? t(`, ${o.laps} laps`, `, ${o.laps} круга`) : '';
+    setLast(t(`Last: ${v}, ${w}, ${o.fleet} boats${laps}`, `Прошлая: ${v}, ${w}, ${ruBoats(o.fleet)}${laps}`));
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const go = (preset: Wind) => { saveOpts({ preset, mode: 'free', lastFree: Date.now() }); location.href = '/play?race=free'; };
   const winds: [Wind, string][] = [['light', t('Light', 'Слабый')], ['medium', t('Medium', 'Средний')], ['strong', t('Strong', 'Сильный')]];
@@ -23,9 +28,21 @@ export function FreeQuick({ lang }: { lang: Lang }) {
       <span className="bt-k" id="fq-k"><IconWind s={13} />{t('Or a free race, in a wind you pick', 'Или свободная гонка в свой ветер')}{last && <span className="bt-k-r">{last}</span>}</span>
       <div className="bt-pills" role="group" aria-labelledby="fq-k">
         {winds.map(([w, label]) => (
-          <button key={w} type="button" className="bt-pill bt-pill-go" onClick={() => go(w)}>{label} {KN[w]} {t('kn', 'уз')}</button>
+          <button key={w} type="button" className="bt-pill bt-pill-go" onClick={() => go(w)}>{label} <small>{KN[w]} {t('kn', 'уз')}</small></button>
         ))}
       </div>
+      <Link className="lb-more" href="/race/free">{t('Set up a free race: place, wind, course', 'Настроить свободную гонку: место, ветер, дистанция')} ›</Link>
     </div>
   );
+}
+
+// Your boat in the hub's rows, with her sail number and country on the right, as the boat saved on this device has them
+export function BoatRow({ lang }: { lang: Lang }) {
+  const t = tx(lang);
+  const [note, setNote] = useState('');
+  useEffect(() => {
+    const b = readBoat(), f = findFlag(b.flag);
+    setNote([`${b.nat} ${b.num || '1'}`.trim(), f ? t(f.en, f.ru) : ''].filter(Boolean).join(' · '));
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
+  return <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span>{note && <span className="bt-row-m">{note}</span>}</Link>;
 }

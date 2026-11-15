@@ -1,6 +1,8 @@
 import { getT, titled, type LangParams } from '@/lib/i18n';
-import { IconArrow, IconSail, IconCheck, IconBook, IconClock, IconSend, IconOut } from '@/components/ui';
+import { IconArrow, IconSend, IconOut } from '@/components/ui';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
+import { IytSample } from '@/components/iyt-sample';
+import { iytSample } from '@/lib/iyt-sample';
 import type { Lang, T } from '@/lib/lang';
 
 export const generateMetadata = titled('Sailing certification exam practice', 'Тренажёр к экзамену на яхтенный сертификат', {
@@ -26,23 +28,23 @@ function Open({ lang, t }: { lang: Lang; t: T }) {
   );
 }
 
-// IYT · the IYT Test, as rycrentals.com/iyt has it: what the trainer is, how it works, its nine levels, why RYC makes
-// it, and the way in again at the foot.
+// IYT · the IYT Test, as rycrentals.com/iyt has it: what the trainer is and the ways in, beside a real question from it
+// to try (on a wide screen; under it on a narrower one), how it works in four numbered steps, its nine levels, why RYC makes it, and the way in again at the foot.
 export default async function Iyt({ params }: LangParams) {
   const { lang, t } = await getT(params);
   const n = (v: number) => v.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB');
 
-  const how: [React.ReactNode, string, string][] = [
-    [<IconSail key="s" s={20} />, t('Situations, not definitions', 'Ситуации, а не определения'), t(
+  const how: [string, string][] = [
+    [t('Situations, not definitions', 'Ситуации, а не определения'), t(
       'Every question is a moment on the water, drawn where it can be: the mark ahead, the lights at night, the other boat’s bearing, the engine panel. Four options to choose from.',
       'Каждый вопрос — момент на воде, где можно — с рисунком: знак впереди, огни ночью, пеленг на другое судно, панель двигателя. Четыре варианта ответа.')],
-    [<IconCheck key="c" s={20} />, t('The reason after every answer', 'Пояснение после каждого ответа'), t(
+    [t('The reason after every answer', 'Пояснение после каждого ответа'), t(
       'Right or wrong, you see a one-line explanation and the rule behind it: COLREGs, IALA buoyage or standard seamanship. Your mistakes come back until you get them right.',
       'Верно или нет — вы видите короткое пояснение и правило, из которого оно следует: МППСС-72, система МАМС или хорошая морская практика. Ошибки возвращаются, пока не ответите верно.')],
-    [<IconBook key="b" s={20} />, t('Theory for every topic', 'Теория по каждой теме'), t(
+    [t('Theory for every topic', 'Теория по каждой теме'), t(
       'Each level is split into topics, and every topic has a short article with drawings that explains the rules its questions ask about.',
       'Уровень разбит на темы, и у каждой темы есть короткая статья с рисунками — о правилах, о которых спрашивают её вопросы.')],
-    [<IconClock key="k" s={20} />, t('Timed mock exam', 'Пробный экзамен с таймером'), t(
+    [t('Timed mock exam', 'Пробный экзамен с таймером'), t(
       'A mock exam with a timer draws questions from every topic of the level, and your progress is shown per topic, so you know what to repeat.',
       'Пробный экзамен берёт вопросы из всех тем уровня, а прогресс виден по каждой теме — понятно, что повторить.')],
   ];
@@ -67,29 +69,29 @@ export default async function Iyt({ params }: LangParams) {
   };
 
   return (
-    <div className="scr help hp iyt" lang={lang}>
+    <div className="scr help hp iyt bc" lang={lang}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, '\\u003c') }} />
       <SiteHead lang={lang} t={t} page="iyt" />
 
-      <header className="hm-page hm-ph">
-        <span className="kicker">{t('Sailing certification exam practice', 'Тренажёр к экзамену на яхтенный сертификат')}</span>
-        <h1 className="hm-ph-h">{t('Prepare for your sailing certification exam for free', 'Подготовьтесь к экзамену на яхтенный сертификат бесплатно')}</h1>
-        <p className="hm-text iyt-lead">{t(
-          `Sailing Certification Test is our free trainer for the theory of sailing certificates: ${n(total)} questions from VHF Radio Operator to Yachtmaster Ocean, with a short explanation after every answer. In English and Russian, no sign-up.`,
-          `Sailing Certification Test — наш бесплатный тренажёр теории к яхтенным сертификатам: ${n(total)} вопросов от VHF Radio Operator до Yachtmaster Ocean и короткое пояснение после каждого ответа. На русском и английском, без регистрации.`)}</p>
-        <Open lang={lang} t={t} />
+      <header className="hm-page hm-ph iyt-hero">
+        <div>
+          <span className="kicker">{t('Sailing certification exam practice', 'Тренажёр к экзамену на яхтенный сертификат')}</span>
+          <h1 className="hm-ph-h">{t('Prepare for your sailing certification exam for free', 'Подготовьтесь к экзамену на яхтенный сертификат бесплатно')}</h1>
+          <p className="hm-text iyt-lead">{t(
+            `Sailing Certification Test is our free trainer for the theory of sailing certificates: ${n(total)} questions from VHF Radio Operator to Yachtmaster Ocean, with a short explanation after every answer. In English and Russian, no sign-up.`,
+            `Sailing Certification Test — наш бесплатный тренажёр теории к яхтенным сертификатам: ${n(total)} вопросов от VHF Radio Operator до Yachtmaster Ocean и короткое пояснение после каждого ответа. На русском и английском, без регистрации.`)}</p>
+          <Open lang={lang} t={t} />
+        </div>
+        <IytSample lang={lang} q={iytSample(lang)} />
       </header>
 
       <section className="hm-page hm-sec" aria-labelledby="iyt-how">
         <div className="hm-sec-t"><span className="kicker">{t('The trainer', 'Тренажёр')}</span><h2 className="hm-h2" id="iyt-how">{t('How it works', 'Как устроен тренажёр')}</h2></div>
-        <div className="iyt-how">
-          {how.map(([ic, title, text]) => (
-            <div className="iyt-card" key={title}>
-              <span className="iyt-card-h"><span className="iyt-ic">{ic}</span><span className="hm-h3">{title}</span></span>
-              <p className="hm-text">{text}</p>
-            </div>
+        <ol className="rd-cells">
+          {how.map(([title, text], i) => (
+            <li key={title}><span className="lbl">{String(i + 1).padStart(2, '0')}</span><b>{title}</b><p>{text}</p></li>
           ))}
-        </div>
+        </ol>
       </section>
 
       <div className="hm-band">

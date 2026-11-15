@@ -60,9 +60,9 @@ export function AdminForm({ lang, current }: { lang: Lang; current: { url: strin
   };
 
   return (
-    <div className="set-grid">
+    <section className="set-grid adm adm-jib" aria-labelledby="adm-k-jib">
       <div className="set-sec">
-        <div className="group-k"><IconImage /><span className="kicker">{t('On every jib', 'На каждом стакселе')}</span></div>
+        <div className="adm-k"><span className="kicker" id="adm-k-jib">{t('On every jib', 'На каждом стакселе')}</span></div>
         <div className="adm-prev" aria-label={t('How it reads on white and on black sails', 'Как она смотрится на белых и чёрных парусах')}>
           {['#f4f2ea', '#2a2c30'].map((c) => (
             <div key={c} className="adm-sail" style={{ background: c }}>
@@ -75,8 +75,9 @@ export function AdminForm({ lang, current }: { lang: Lang; current: { url: strin
       </div>
       <div className="set-sec">
         <div className="srow">
-          <label className="srow-k" htmlFor="adm-file">{t('Picture', 'Картинка')}</label>
-          <input id="adm-file" type="file" accept={Object.keys(TYPES).join(',')} disabled={busy} onChange={(e) => pick(e.target.files?.[0])} />
+          <span className="srow-k">{t('Picture', 'Картинка')}</span>
+          <input id="adm-file" className="vh" type="file" accept={Object.keys(TYPES).join(',')} disabled={busy} onChange={(e) => pick(e.target.files?.[0])} />
+          <label className="adm-pick" htmlFor="adm-file"><IconImage /><span>{file ? file.name : t('Choose a picture', 'Выбрать картинку')}</span></label>
         </div>
         <div className="btn-row adm-go">
           <button type="button" className="pill pill-primary pill-xs" disabled={!file || busy} onClick={save}><span className="btn-t">{busy && file ? t('Saving…', 'Сохраняю…') : t('Put it on the jibs', 'Поставить на стаксели')}</span></button>
@@ -88,7 +89,7 @@ export function AdminForm({ lang, current }: { lang: Lang; current: { url: strin
           <a className="srow-link" href="/boat">{t('Your boat', 'Ваша яхта')}<IconArrow s={14} /></a>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -124,10 +125,10 @@ export function BannerForm({ lang, current }: { lang: Lang; current: string[] | 
   };
 
   return (
-    <div className="set-grid adm-banner">
+    <section className="set-grid adm adm-banner" aria-labelledby="adm-k-ban">
       <div className="set-sec">
-        <div className="group-k"><IconImage /><span className="kicker">{t('On the plane’s banner', 'На баннере самолёта')}</span></div>
-        <div className="adm-ban" aria-label={t('How the banner reads', 'Как читается баннер')}>
+        <div className="adm-k"><span className="kicker" id="adm-k-ban">{t('On the plane’s banner', 'На баннере самолёта')}</span></div>
+        <div className="adm-tow"><div className="adm-ban" aria-label={t('How the banner reads', 'Как читается баннер')}>
           {lines.length ? (
             <>
               <span className="adm-ban-a">{lines[0]}</span>
@@ -136,17 +137,17 @@ export function BannerForm({ lang, current }: { lang: Lang; current: string[] | 
           ) : (
             <><span className="adm-ban-a">RYCRENTALS.COM</span><span className="adm-ban-dot" aria-hidden="true" /><span className="adm-ban-b">RENT YACHTS HERE!</span></>
           )}
-        </div>
+        </div></div>
         <p className="hint">{t('A light plane tows it low across the course every minute or two, side-on to the camera. Leave both empty for the RYC banner.', 'Лёгкий самолёт проносит его низко над дистанцией каждые минуту-две, боком к камере. Оставьте оба поля пустыми — будет баннер RYC.')}</p>
       </div>
       <div className="set-sec">
-        <div className="srow">
+        <div className="srow adm-field">
           <label className="srow-k" htmlFor="adm-ban-a">{t('First words (navy)', 'Первые слова (синие)')}</label>
-          <input id="adm-ban-a" className="field" type="text" maxLength={BANNER_MAX} value={a} disabled={busy} onChange={(e) => { setA(e.target.value); setDone(''); }} />
+          <span className="adm-in"><input id="adm-ban-a" className="field" type="text" maxLength={BANNER_MAX} value={a} disabled={busy} onChange={(e) => { setA(e.target.value); setDone(''); }} /><span className="adm-n" aria-hidden="true">{a.length}/{BANNER_MAX}</span></span>
         </div>
-        <div className="srow">
+        <div className="srow adm-field">
           <label className="srow-k" htmlFor="adm-ban-b">{t('Then (red)', 'Затем (красные)')}</label>
-          <input id="adm-ban-b" className="field" type="text" maxLength={BANNER_MAX} value={b} disabled={busy} onChange={(e) => { setB(e.target.value); setDone(''); }} />
+          <span className="adm-in"><input id="adm-ban-b" className="field" type="text" maxLength={BANNER_MAX} value={b} disabled={busy} onChange={(e) => { setB(e.target.value); setDone(''); }} /><span className="adm-n" aria-hidden="true">{b.length}/{BANNER_MAX}</span></span>
         </div>
         <div className="btn-row adm-go">
           <button type="button" className="pill pill-primary pill-xs" disabled={!lines.length || same || busy} onClick={() => write(false)}><span className="btn-t">{busy ? t('Saving…', 'Сохраняю…') : t('Put it on the banner', 'Поставить на баннер')}</span></button>
@@ -154,6 +155,6 @@ export function BannerForm({ lang, current }: { lang: Lang; current: string[] | 
         </div>
         {err ? <p className="err" role="alert">{err}</p> : done ? <p className="hint" role="status">{done}</p> : null}
       </div>
-    </div>
+    </section>
   );
 }

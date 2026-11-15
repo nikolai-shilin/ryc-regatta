@@ -21,7 +21,7 @@ export function AdminSchedule({ lang, today, now = new Date() }: { lang: Lang; t
   const next = Array.from({ length: AHEAD }, (_, i) => dailyRace(new Date(Date.parse(d.day) + (i + 1) * 864e5)));
 
   return (
-    <div className="set-grid adm-day">
+    <div className="set-grid adm adm-day">
       <div className="set-sec">
         <div className="group-k"><IconFlag /><span className="kicker">{t('Today’s race', 'Гонка дня')} · {day(d.day, 'long')}</span></div>
         <div className="srow"><span className="srow-k">{t('Venue', 'Место')}</span><span className="adm-v">{v.name[L]}, {v.place[L]}</span></div>

@@ -7,7 +7,7 @@ import type { Lang } from './lang';
 // search engines each language also has an address of its own: the bare path is English, ?lang=ru is Russian
 // (proxy.ts reads ?lang= ahead of the cookie and keeps it). The canonical and hreflang links point at those, so
 // Google and Yandex index both languages instead of whichever one their crawler happened to be served.
-export const SITE = 'https://regatta.rycrentals.com';
+export const SITE = 'https://upandown.rycrentals.com';
 export const NAME = 'Up and down';
 // The share picture: the race from the drone with today's HUD, 1200 × 630 and under 300 KB, so WhatsApp shows it too.
 export const OG_IMAGE = { url: '/images/og-v3.jpg', width: 1200, height: 630, type: 'image/jpeg' };

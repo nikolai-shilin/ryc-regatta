@@ -3,7 +3,7 @@
 // /indexnow.txt; this checks it is live before sending.
 import { readFile } from 'node:fs/promises';
 
-const SITE = 'https://regatta.rycrentals.com';
+const SITE = 'https://upandown.rycrentals.com';
 const key = (await readFile(new URL('../lib/seo.ts', import.meta.url), 'utf8')).match(/INDEXNOW_KEY = '([0-9a-f]+)'/)?.[1];
 if (!key) throw new Error('no INDEXNOW_KEY in lib/seo.ts');
 const live = await (await fetch(`${SITE}/indexnow.txt`)).text();
