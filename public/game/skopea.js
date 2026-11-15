@@ -933,6 +933,8 @@ function town() {
   const tiles = new Map(), tile = (x, z) => { const k = Math.floor(x / TILE) + ',' + Math.floor(z / TILE); if (!tiles.has(k)) tiles.set(k, { parts: [], houses: new Batch() }); return tiles.get(k); };
   let parts = null;
   const mark = (x, z, rad) => { for (let dx = -rad; dx <= rad; dx += 9) for (let dz = -rad; dz <= rad; dz += 9) taken.add(key(x + dx, z + dz)); };
+  // the landmarks' ground (their `clear`, 30 m round them when not given): no house made up on it
+  for (const L of META.landmarks || []) for (const [x, z, rad] of Array.isArray(L.clear) ? L.clear : L.at ? [[L.at[0], L.at[1], L.clear || 30]] : []) mark(x, z, rad);
   for (const b of buildings()) {
     let cx = 0, cz = 0; for (const [x, z] of b.r) { cx += x; cz += z; } cx /= b.r.length; cz /= b.r.length;
     parts = tile(cx, cz).parts;
@@ -1167,9 +1169,12 @@ function marinas() {
 }
 
 // ---------- the landmarks ----------
-// what the json lists: a steel arch bridge (Sydney Harbour), a suspension bridge (Newport), a tower (Auckland's Sky
-// Tower, Laboe's naval memorial, Galata), a lighthouse, a mosque (Istanbul's), a gilded spire (St Petersburg's), a rostral
-// column, a drawbridge with its spans raised. Each in one colour a part, merged into one mesh.
+// what the json lists: a steel arch bridge (Sydney Harbour), a suspension bridge (Newport's, the Golden Gate), a tower
+// (Auckland's Sky Tower, Laboe's naval memorial, Galata, the Transamerica Pyramid, Torre Glòries), a lighthouse (Trieste's
+// Victory, the Maiden's Tower), a mosque (Istanbul's), a gilded spire (St Petersburg's), a rostral column, a drawbridge
+// with its spans raised, the Opera House, the Sagrada Família, Christ the Redeemer, La Seu, Notre-Dame de la Garde,
+// Carlsten. The famous ones drawn after the real ones, from aerial photographs and their plans, to be known at a glance
+// from the course. Each in one colour a part, merged into one mesh.
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z), XA = V3(1, 0, 0);
 // a beam from a to b, w wide and h deep
 function beam(a, b, w, h, col) {
@@ -1187,6 +1192,305 @@ function wedge(p0, p1, y0, y1, yb, w, col) {
   for (let i = 0; i < a.count; i++) { const t = a.getX(i) + 0.5; a.setXYZ(i, t * len, a.getY(i) > 0 ? y0 + (y1 - y0) * t : yb, a.getZ(i) * w); }
   g.rotateY(-Math.atan2(dz, dx)).translate(p0.x, 0, p0.z); g.computeVertexNormals();
   return tint(g, col);
+}
+// A landmark's own frame: metres `a` along its bearing (L.dir, compass degrees; north when not given), `b` to the right
+// of it and `y` up from y0, into the venue's frame (venues.py to_xz, turned by META.turn); `ang` that bearing there, in
+// radians from +x towards +z as blk() takes it
+function frameOf(L, y0, dir = L.dir || 0) {
+  const t = ((META.turn || 0) * Math.PI) / 180, d = (dir * Math.PI) / 180, CO = Math.cos(t), SI = Math.sin(t), [x0, z0] = L.at;
+  const xz = (a, b) => { const E = a * Math.sin(d) + b * Math.cos(d), N = a * Math.cos(d) - b * Math.sin(d); return [x0 + E * CO - N * SI, z0 - E * SI - N * CO]; };
+  const [x1, z1] = xz(1, 0), ang = Math.atan2(z1 - z0, x1 - x0);
+  return { y0, xz, ang, P: (a, b, y) => { const [x, z] = xz(a, b); return V3(x, y0 + y, z); },
+    box: (a, b, y, h, la, lb, col, turn = 0) => { const [x, z] = xz(a, b); return blk(x, z, y0 + y, h, la, lb, ang + turn, col); } };
+}
+const fromTris = (pos) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return g; };
+// each vertex coloured by where it is: fn(x, y, z) → a colour
+function paintBy(g, fn) {
+  const p = g.attributes.position, a = new Float32Array(p.count * 3), c = new THREE.Color();
+  for (let i = 0; i < p.count; i++) { c.set(fn(p.getX(i), p.getY(i), p.getZ(i))); a.set([c.r, c.g, c.b], i * 3); }
+  g.setAttribute('color', new THREE.BufferAttribute(a, 3));
+  return g;
+}
+// a surface through f(s, t) → a point (s and t from 0 to 1), nu by nv quads, seen from both sides; col a colour, or
+// fn(s, t) → the colour of the quad there (a pattern with sharp edges)
+function sheet(f, nu, nv, col) {
+  const pos = [], cols = [], c = new THREE.Color();
+  for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) {
+    const p = f(i / nu, j / nv), q = f((i + 1) / nu, j / nv), r = f((i + 1) / nu, (j + 1) / nv), s = f(i / nu, (j + 1) / nv);
+    for (const v of [p, q, r, p, r, s, p, r, q, p, s, r]) pos.push(v.x, v.y, v.z);
+    if (typeof col === 'function') { c.set(col((i + 0.5) / nu, (j + 0.5) / nv)); for (let k = 0; k < 12; k++) cols.push(c.r, c.g, c.b); }
+  }
+  const g = fromTris(pos);
+  if (typeof col === 'function') { g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3)); return g; }
+  return tint(g, col);
+}
+// a block on an outline (pts: [a, b] in the frame F) from ya up to yb, seen from all sides
+function slab(F, pts, ya, yb, col) {
+  const v = pts.map(([a, b]) => F.xz(a, b)), pos = [], put = (i, y) => pos.push(v[i][0], F.y0 + y, v[i][1]);
+  for (const [i, j, k] of THREE.ShapeUtils.triangulateShape(pts.map(([a, b]) => new THREE.Vector2(a, b)), [])) for (const y of [ya, yb]) { put(i, y); put(j, y); put(k, y); put(i, y); put(k, y); put(j, y); }
+  for (let i = 0; i < v.length; i++) {
+    const j = (i + 1) % v.length;
+    put(i, ya); put(j, ya); put(j, yb); put(i, ya); put(j, yb); put(i, yb);
+    put(i, ya); put(j, yb); put(j, ya); put(i, ya); put(i, yb); put(j, yb);
+  }
+  return tint(fromTris(pos), col);
+}
+// turned on a profile ([r, y] from the bottom up) round x, z from y0, n sides; col a colour or fn(x, y, z) → one
+const lathe = (x, z, y0, prof, col, n = 16) => {
+  const g = new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), n);
+  return (typeof col === 'function' ? paintBy(g, col) : tint(g, col)).translate(x, y0, z);
+};
+// a block whose section changes as it rises: sec(t) → [a0, a1, b0, b1, y] in the frame F for t from 0 to 1, n rows;
+// its four sides and its top
+function loft(F, sec, n, col) {
+  const at = (t, i) => { const [a0, a1, b0, b1, y] = sec(t); return F.P([a0, a1, a1, a0, a0][i], [b0, b0, b1, b1, b0][i], y); };
+  const top = [0, 1, 2, 3].map((i) => at(1, i)), mix = (p, q, f) => p.clone().lerp(q, f);
+  return [sheet((s, t) => { const i = Math.min(3, Math.floor(s * 4 + 1e-6)), f = s * 4 - i; return mix(at(t, i), at(t, i + 1), f); }, 4, n, col),
+    sheet((s, t) => mix(mix(top[0], top[1], s), mix(top[3], top[2], s), t), 1, 1, col)];
+}
+// a pitched roof along `a` from a0 to a1, w wide, its eaves at y0 and its ridge `rise` over them, with its gable ends
+const gable = (F, a0, a1, w, y0, rise, col, b = 0) => [-1, 1].map((sd) => sheet((s, t) => F.P(a0 + (a1 - a0) * s, b + sd * (w / 2) * (1 - t), y0 + rise * t), 2, 1, col))
+  .concat([a0, a1].map((a) => sheet((s, t) => F.P(a, b + (2 * s - 1) * (w / 2) * (1 - t), y0 + rise * t), 2, 1, col)));
+const bez = (p0, p1, p2, t) => p0 * (1 - t) * (1 - t) + 2 * p1 * t * (1 - t) + p2 * t * t;
+
+// The Sydney Opera House on Bennelong Point: the broadwalk round it, the granite podium, the monumental steps down to
+// the forecourt to the south, and on the podium the shells: the Concert Hall's to the west and the Joan Sutherland
+// Theatre's to the east, splayed a little, each hall three shells nested one behind the other, each taller than the one
+// in front of it, their mouths glazed to the harbour, and a small one at the back over the steps; the restaurant's pair
+// by the steps. Metres east and north of `at`, from the aerial.
+function operaHouse(L, parts) {
+  const F = frameOf(L, 0, 0), EN = (pts) => pts.map(([e, n]) => [n, e]), PD = 18, tile = '#f3f0e8', glass = '#6a5c50', granite = '#d4bba3';
+  parts.push(slab(F, EN([[-50, 130], [45, 133], [68, 112], [76, 84], [60, 0], [40, -70], [-40, -96], [-92, -80], [-86, 0], [-62, 122]]), -3, 3.5, '#cbbba6'));
+  const pod = EN([[-52, 106], [-20, 113], [30, 104], [70, 93], [44, -40], [28, -60], [-64, -58], [-60, 40]]);
+  parts.push(slab(F, pod, 2, PD - 4.5, granite), slab(F, pod, PD - 4.5, PD - 2.6, '#74655b'), slab(F, pod, PD - 2.6, PD, granite));
+  parts.push(wedge(F.P(-57, -16, 0), F.P(-92, -16, 0), PD, 3.6, 0, 74, '#c2a991'));
+  // a hall from its south end (e0, n0) to its north (e1, n1); each shell: its mouth's feet at uf (wf either side of the
+  // middle), its tip at ua, h over the podium, its ridge down to its back foot at ub (behind the mouth: south of it for
+  // the shells facing the harbour, north for the one facing the steps)
+  const hall = (e0, n0, e1, n1, shells) => {
+    const len = Math.hypot(e1 - e0, n1 - n0), ae = (e1 - e0) / len, an = (n1 - n0) / len;
+    const Q = (u, v, y) => F.P(n0 + an * u - ae * v, e0 + ae * u + an * v, PD + y);
+    for (const s of shells) {
+      const back = Math.sign(s.ub - s.uf);
+      const edge = (t) => [bez(s.uf, s.uf + 0.15 * (s.ua - s.uf), s.ua, t), bez(s.wf, 0.97 * s.wf, 0, t), bez(0, 0.62 * s.h, s.h, t)];
+      for (const sd of [-1, 1]) parts.push(sheet((sv, t) => {
+        const ru = bez(s.ub, s.ub + 0.3 * (s.ua - s.ub), s.ua, t), ry = bez(0, 0.85 * s.h, s.h, t), [eu, ev, ey] = edge(t);
+        const k = Math.sin(Math.PI * sv) * Math.sin(Math.PI * Math.min(1, t * 1.25)) * 0.08 * s.wf; // its belly: a piece of a sphere
+        return Q(ru + (eu - ru) * sv, sd * (ev * sv + k * 0.5), ry + (ey - ry) * sv + k);
+      }, 9, 12, tile));
+      // the glass hung in its mouth, set back under the arch and stopping short of its top, the shell's ribbed underside
+      // showing over it
+      parts.push(sheet((sv, t) => { const [eu, ev, ey] = edge(t * 0.72); return Q(eu + back * (2 + 3 * t), (2 * sv - 1) * ev * 0.96, ey); }, 4, 8, glass));
+    }
+  };
+  hall(-16, -24, -13, 99, [{ uf: 123, wf: 28, ua: 120, h: 26, ub: 86 }, { uf: 104, wf: 22, ua: 100, h: 36, ub: 62 }, { uf: 84, wf: 17, ua: 79, h: 49, ub: 36 }, { uf: 7, wf: 17, ua: 12, h: 24, ub: 44 }]);
+  hall(17, -14, 49, 84, [{ uf: 103, wf: 25, ua: 100, h: 22, ub: 72 }, { uf: 88, wf: 20, ua: 84, h: 30, ub: 52 }, { uf: 71, wf: 15, ua: 66, h: 42, ub: 30 }, { uf: 6, wf: 15, ua: 10, h: 20, ub: 36 }]);
+  hall(-41, -50, -43, -10, [{ uf: 40, wf: 11, ua: 37, h: 14, ub: 13 }, { uf: 3, wf: 9, ua: 6, h: 9, ub: 22 }]);
+}
+
+// The Sagrada Família: the nave to the Glory façade (along L.dir), the transept to the Nativity façade (to the left) and
+// the Passion façade (to the right), the apse behind; the eight apostles' bell towers in fours over the two façades,
+// slender paraboloids with their mosaic pinnacles; round the crossing the four Evangelists' towers, Mary's over the apse
+// with its star, and Jesus Christ's in the middle, L.h to the top of its cross
+function sagrada(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), stone = '#d3c4a6', old = '#c2aa85', pale = '#ebe5d8', white = '#faf8f2';
+  parts.push(F.box(25, 0, -1, 46, 72, 44, stone), F.box(0, 0, -1, 46, 32, 70, stone), F.box(62, 0, -1, 34, 6, 46, pale));
+  const [ax, az] = F.xz(-16, 0); parts.push(lathe(ax, az, y - 1, [[18, 0], [18, 44], [10, 56], [0, 60]], stone, 14));
+  // the roofs' ridges: steep, as Gaudí's are
+  parts.push(...gable(F, -10, 60, 44, 45, 18, '#c7b697'), ...gable(frameOf(L, y, (L.dir || 0) + 90), -35, 35, 30, 45, 16, '#c7b697'));
+  // an apostle's bell tower: square at its foot, then round, drawing in to its point, and its pinnacle, the bishop's
+  // mitre in red, gold and white mosaic
+  const bell = (a, b, h, col) => {
+    const [x, z] = F.xz(a, b), r0 = 4.3;
+    parts.push(F.box(a, b, -1, h * 0.28, 2 * r0, 2 * r0, col));
+    parts.push(lathe(x, z, y - 1, [[r0 * 1.02, 0], [r0, h * 0.3], [r0 * 0.94, h * 0.5], [r0 * 0.8, h * 0.64], [r0 * 0.6, h * 0.75], [r0 * 0.38, h * 0.83], [r0 * 0.2, h * 0.88], [0, h * 0.9]], col, 12));
+    parts.push(lathe(x, z, y - 1, [[0, h * 0.875], [r0 * 0.38, h * 0.89], [r0 * 0.55, h * 0.925], [r0 * 0.42, h * 0.96], [0.4, h * 0.985], [0, h]], (px, py) => (py > h * 0.94 ? '#e9e4d6' : py > h * 0.91 ? '#d8a93a' : '#c4452f'), 10));
+    for (let k = 0; k < 4; k++) { const q = (k * Math.PI) / 2, [bx, bz] = F.xz(a + Math.cos(q) * r0 * 0.55, b + Math.sin(q) * r0 * 0.55); parts.push(tint(new THREE.SphereGeometry(0.75, 8, 6).translate(bx, y + h * 0.955, bz), '#f2efe6')); }
+  };
+  for (const [u, h] of [[-17, 98], [-7.5, 107], [7.5, 107], [17, 98]]) bell(u, -36, h, old); // the Nativity façade
+  for (const [u, h] of [[-17, 107], [-7.5, 112], [7.5, 112], [17, 107]]) bell(u, 36, h, '#d4c3a3'); // the Passion façade
+  parts.push(F.box(0, -36, -1, 52, 30, 7, old), F.box(0, 36, -1, 44, 30, 7, '#d4c3a3'));
+  { const [cx, cz] = F.xz(0, -38); parts.push(tint(new THREE.ConeGeometry(3.6, 15, 10).translate(cx, y + 58, cz), '#557a4c')); } // the Nativity's cypress
+  // the crossing's towers
+  const tower = (a, b, prof, top, col) => { const [x, z] = F.xz(a, b); parts.push(lathe(x, z, y - 1, prof, (px, py) => (py > top ? white : col), 12)); return [x, z]; };
+  for (const [a, b] of [[-13, -13], [-13, 13], [13, -13], [13, 13]]) {
+    const [x, z] = tower(a, b, [[5.4, 0], [5.4, 60], [5.1, 92], [4.3, 110], [3.1, 123], [1.7, 130], [0.6, 131.5]], 108, pale);
+    parts.push(tint(new THREE.SphereGeometry(2.6, 10, 8).translate(x, y + 132.5, z), white)); // the Evangelists' symbols
+  }
+  { const [x, z] = tower(-30, 0, [[6.4, 0], [6.4, 62], [6, 96], [4.8, 116], [3.2, 128], [1.6, 134], [0.6, 135]], 112, pale); parts.push(tint(new THREE.IcosahedronGeometry(3.6, 0).translate(x, y + 136, z), '#fbfaf4')); }
+  const H = L.h, [jx, jz] = tower(0, 0, [[9, 0], [9, 62], [8.5, 92], [7.6, 112], [6.4, 130], [4.8, 143], [3.1, 151], [1.9, 156], [1.2, 158]], 126, pale);
+  parts.push(post(jx, jz, y + H - 17, 1.25, 1.25, 17, white, 8)); // the cross: four arms, one to each side
+  for (const turn of [0, Math.PI / 2]) parts.push(blk(jx, jz, y + H - 7.4, 2.4, 13.5, 2.4, F.ang + turn, white));
+}
+
+// Christ the Redeemer on Corcovado's summit, facing L.dir: the pedestal, the robe falling to the feet, the arms out
+// 28 m with the sleeves hanging from them, the head bowed a little
+function redeemer(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), soap = '#dedbd1', S = 8;
+  parts.push(F.box(0, 0, -2, S + 2, 10, 10, '#c3bcb0'), F.box(0, 0, S - 0.6, 0.6, 11, 11, '#b2ab9e'));
+  const [x, z] = F.xz(0, 0);
+  const robe = new THREE.LatheGeometry([[3.1, 0], [2.95, 3], [2.65, 9], [2.5, 14], [2.65, 19], [3.0, 22.5], [3.3, 24.1], [2.6, 25.2], [1.1, 25.7], [0, 25.8]].map(([r, h]) => new THREE.Vector2(r, h)), 18);
+  parts.push(tint(robe.scale(0.6, 1, 1).rotateY(-F.ang).translate(x, y + S, z), soap));
+  for (const sd of [-1, 1]) {
+    const arm = (b0, b1, y0, y1, w, h) => parts.push(beam(F.P(0, sd * b0, y0), F.P(0, sd * b1, y1), w, h, soap));
+    arm(2.4, 8.4, S + 24.6, S + 24.45, 2.3, 2.5); arm(8.4, 12.7, S + 24.45, S + 24.2, 1.7, 1.75); arm(12.7, 14, S + 24.2, S + 24.05, 0.7, 1.5);
+    // the sleeve hanging from it in a curve, from the elbow down to the hip
+    for (const a of [-0.5, 0.5]) parts.push(sheet((s, t) => F.P(a, sd * (2.4 + 6.6 * s), S + (18.8 + 5.4 * s ** 0.7) * (1 - t) + (24.6 - 0.4 * s) * t), 6, 1, soap));
+  }
+  parts.push(post(x, z, y + S + 25.4, 0.9, 1.0, 1.3, soap, 8));
+  const [hx, hz] = F.xz(0.35, 0); parts.push(tint(new THREE.SphereGeometry(1.75, 12, 10).scale(1, 1.15, 0.95).translate(hx, y + S + 28.1, hz), soap));
+}
+// a tower on the Golden Gate's plan (the bridge's towers, L.style 'golden-gate'): two legs stepping in as they rise, the
+// four portal struts above the roadway, the openings between them shorter the higher they are, the X-bracing below it;
+// each on its concrete pier. P(u, y, v) the bridge's frame, ang its direction
+function goldenGateTower(P, ang, u, D, H, col, parts) {
+  const at = (y, v = 0) => P(u, y, v), put = (y0, y1, w, d, v, c = col) => { const p = at(0, v); parts.push(blk(p.x, p.z, y0, y1 - y0, w, d, ang, c)); };
+  put(-3, 13, 36, 52, 0, '#a5a199');
+  for (const v of [-14, 14]) for (const [y0, y1, w, d] of [[13, D, 17, 10.5], [D, D + 46, 14.5, 9], [D + 46, D + 88, 12.5, 7.8], [D + 88, D + 126, 11, 6.8], [D + 126, H + 2, 9.5, 6]]) put(y0, y1, w, d, v);
+  for (const [y0, d] of [[D + 37, 9], [D + 79, 8.5], [D + 116, 8], [H - 12, 9]]) put(y0, y0 + d, 7, 28, 0);
+  for (const sd of [-1, 1]) parts.push(beam(at(14, -13 * sd), at(D - 9, 13 * sd), 3, 3, col));
+  put(D - 9, D - 4, 7, 28, 0); put(12, 16, 9, 28, 0);
+}
+// The Transamerica Pyramid: the white quartz pyramid on its trussed base, the two wings (the lifts' to the east, the
+// stairs' to the west) rising out of its sides to its shoulders, the spire
+function pyramid(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), white = '#dedbd3', APEX = 276, B = 53;
+  const half = (h) => (B / 2) * (1 - h / APEX), [x, z] = F.xz(0, 0);
+  parts.push(F.box(0, 0, -1, 17, 38, 38, '#4c5257'));
+  parts.push(tint(new THREE.CylinderGeometry(half(212) * Math.SQRT2, half(16) * Math.SQRT2, 196, 4).rotateY(Math.PI / 4 - F.ang).translate(x, y + 114, z), white));
+  parts.push(tint(new THREE.CylinderGeometry(0.4, half(212) * Math.SQRT2, L.h - 212, 4).rotateY(Math.PI / 4 - F.ang).translate(x, y + 212 + (L.h - 212) / 2, z), '#e9e8e4'));
+  for (const sd of [-1, 1]) parts.push(...loft(F, (t) => { const h = 96 + 124 * t, b0 = sd * (half(h) - 3), b1 = sd * (half(h) + 5.5); return [-6.5, 6.5, Math.min(b0, b1), Math.max(b0, b1), h]; }, 4, white));
+  for (const sd of [-1, 1]) for (const k of [-1, 0, 1]) parts.push(beam(F.P(k * 17 - 8, sd * 25, 0), F.P(k * 17 + 8, sd * 25, 16), 1.6, 1.6, '#e8e5de'), beam(F.P(k * 17 + 8, sd * 25, 0), F.P(k * 17 - 8, sd * 25, 16), 1.6, 1.6, '#e8e5de'));
+}
+// Torre Glòries: the bullet of glass louvres over its mosaic of coloured panels, reds and oranges low down, blues higher,
+// pale greys towards the dome, scattered as the façade's are
+function glories(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), [x, z] = L.at, H = L.h, NU = 36, NV = 40;
+  const prof = [[19, 0], [19, 0.66], [18.4, 0.73], [16.8, 0.8], [14.3, 0.87], [10.6, 0.93], [5.6, 0.98], [0, 1.006]];
+  const rAt = (t) => { for (let k = 1; k < prof.length; k++) if (t <= prof[k][1]) { const [r0, t0] = prof[k - 1], [r1, t1] = prof[k]; return r0 + ((r1 - r0) * (t - t0)) / (t1 - t0); } return 0; };
+  const warm = ['#b8402f', '#cf6a3a', '#c4503a', '#9b3a2e', '#d98a4a'], cool = ['#4d6e96', '#6b8db2', '#8aa2bb', '#3e5b7f', '#5f7f9c'], pale = ['#c3ccd5', '#dde3e8', '#aab6c2'];
+  const hash = (i, j) => { const v = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return v - Math.floor(v); };
+  parts.push(sheet((s, t) => { const q = s * Math.PI * 2, r = rAt(t * 1.006); return V3(x + Math.cos(q) * r, y - 1 + t * (H + 1), z + Math.sin(q) * r); }, NU, NV, (s, t) => {
+    const i = Math.floor(s * NU), j = Math.floor(t * NV), h = hash(i, j), k = hash(j, i);
+    const set = h < 1.15 - t * 1.9 ? warm : k < 1.55 - t * 1.25 ? cool : pale;
+    return set[Math.floor(hash(i + 7, j + 3) * set.length)];
+  }));
+}
+// Notre-Dame de la Garde on its hilltop: the old fort's walls under the terrace, the striped Romano-Byzantine basilica,
+// its dome, and at its north-west end the belfry carrying the gilded Virgin and Child, L.h to her head
+function garde(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), white = '#eee8da', green = '#a3b2a0', gold = '#d9a62e', H = L.h;
+  // the church's walls in courses of white Calissanne limestone with thinner ones of green Golfolina sandstone, the
+  // domes too (rows of 0.7 m: two white, one green)
+  const band = (k) => (k % 3 === 2 ? green : white);
+  const striped = (a, b, y0, h, la, lb) => loft(F, (t) => [a - la / 2, a + la / 2, b - lb / 2, b + lb / 2, y0 + h * t], Math.round(h / 0.7), (s, t) => band(Math.floor(t * Math.round(h / 0.7))));
+  const dome = (a, r, y0) => {
+    const [dx, dz] = F.xz(a, 0), n = 12;
+    parts.push(...loft(frameOf({ at: [dx, dz] }, y, 0), (t) => [-r * 0.89, r * 0.89, -r * 0.89, r * 0.89, y0 + 5 * t], 7, (s, t) => band(Math.floor(t * 7))));
+    parts.push(sheet((s, t) => { const q = s * Math.PI * 2, e = (t * Math.PI) / 2; return V3(dx + Math.cos(q) * Math.cos(e) * r, y + y0 + 5 + Math.sin(e) * r, dz + Math.sin(q) * Math.cos(e) * r); }, 16, n, (s, t) => band(Math.floor(t * n))));
+    parts.push(post(dx, dz, y + y0 + 4.6 + r, 1, 0.7, 2.6, white, 8), post(dx, dz, y + y0 + 6.9 + r, 0.4, 0.1, 1.8, gold, 6));
+  };
+  parts.push(slab(F, [[-46, -20], [40, -26], [48, 0], [40, 24], [-40, 22], [-50, 4]], -16, 0.5, '#b2a891'));
+  parts.push(...striped(4, 0, 0.5, 17, 30, 16), ...striped(-3, 0, 0.5, 14, 8, 26));
+  dome(10, 6.8, 17); dome(0, 3.8, 14.5);
+  { const [px, pz] = F.xz(19, 0); parts.push(lathe(px, pz, y + 0.5, [[8, 0], [8, 15], [0, 15.5]], white, 14)); }
+  // the belfry: its square tower, the bell stage with its arches, the drum, the statue's pedestal, the Virgin and Child
+  parts.push(F.box(-16, 0, 0.5, H * 0.55, 10.5, 10.5, white), F.box(-16, 0, 0.5 + H * 0.55, H * 0.13, 9.6, 9.6, white), F.box(-16, 0, 0.5 + H * 0.55, 1, 11.2, 11.2, white));
+  for (const k of [0.18, 0.36]) parts.push(F.box(-16, 0, 0.5 + H * k, 0.7, 11, 11, green));
+  for (const [a, b, la, lb] of [[-16, -4.9, 6, 0.6], [-16, 4.9, 6, 0.6], [-20.9, 0, 0.6, 6], [-11.1, 0, 0.6, 6]]) parts.push(F.box(a, b, 0.5 + H * 0.565, H * 0.1, la, lb, '#3f3a35'));
+  const [tx, tz] = F.xz(-16, 0);
+  parts.push(F.box(-16, 0, 0.5 + H * 0.68, 1, 10.6, 10.6, white), post(tx, tz, y + 1.5 + H * 0.68, 4.2, 3.9, H * 0.07, white, 12), post(tx, tz, y + 1.5 + H * 0.75, 3.1, 2.7, H * 0.065, white, 12));
+  parts.push(lathe(tx, tz, y + 0.5 + H * 0.815, [[2.3, 0], [2.0, H * 0.05], [1.5, H * 0.11], [1.75, H * 0.125], [1.0, H * 0.145], [0.95, H * 0.16], [0, H * 0.185]], gold, 12));
+  { const [cx, cz] = F.xz(-15, 0); parts.push(tint(new THREE.SphereGeometry(0.9, 8, 6).translate(cx, y + 0.5 + H * 0.92, cz), gold)); } // the Child in her arms
+}
+// La Seu, Palma's cathedral on the sea wall: the nave and its aisles along L.dir to the apse, the rows of buttresses
+// down both sides with their pinnacles and the flying arches up to the nave, the Royal Chapel and the great rose window
+// at the east end, the west front's corner turrets, the square bell tower on the north side
+function laSeu(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), stone = '#d7bf8e', shade = '#c2a979', H = L.h;
+  parts.push(F.box(-3, 0, -1, H + 1, 110, 20, stone), F.box(-3, 0, -1, 31, 106, 38, stone), F.box(-3, 0, -1, 21, 104, 50, shade));
+  parts.push(...gable(F, -58, 52, 20, H, 4, '#c9ae7c'));
+  for (let k = 0; k < 10; k++) {
+    const a = -52 + k * 11;
+    for (const sd of [-1, 1]) {
+      parts.push(F.box(a, sd * 23, -1, 30, 3.2, 9, stone), F.box(a, sd * 27, -1, 37, 2.6, 2.6, stone));
+      const [px, pz] = F.xz(a, sd * 27); parts.push(tint(new THREE.ConeGeometry(1.9, 9, 4).rotateY(Math.PI / 4 - F.ang).translate(px, y + 40.5, pz), stone));
+      const [qx, qz] = F.xz(a, sd * 19); parts.push(post(qx, qz, y + 30, 1.1, 1.1, 5, stone, 4), tint(new THREE.ConeGeometry(1.2, 6, 4).translate(qx, y + 38, qz), stone));
+      parts.push(beam(F.P(a, sd * 26, 34), F.P(a, sd * 10.5, H - 3), 1.4, 1.6, stone), beam(F.P(a, sd * 25, 27), F.P(a, sd * 18, 30), 1.2, 1.3, stone));
+    }
+  }
+  parts.push(F.box(57.5, 0, -1, 33, 11, 18, stone), F.box(65, 0, -1, 21, 6, 10, stone));
+  for (const sd of [-1, 1]) { const [px, pz] = F.xz(62, sd * 9); parts.push(post(px, pz, y, 1.3, 1.3, 36, stone, 6), tint(new THREE.ConeGeometry(1.5, 7, 6).translate(px, y + 39.5, pz), stone)); }
+  { const [rx, rz] = F.xz(52.3, 0); parts.push(tint(new THREE.CylinderGeometry(6, 6, 0.6, 20).rotateZ(Math.PI / 2).rotateY(-F.ang).translate(rx, y + H - 8, rz), '#4b4e55')); } // the rose window
+  for (const sd of [-1, 1]) { const [px, pz] = F.xz(-57, sd * 11.5); parts.push(post(px, pz, y - 1, 2.6, 2.4, H + 7, stone, 8), tint(new THREE.ConeGeometry(2.6, 8, 8).translate(px, y + H + 10, pz), stone)); }
+  parts.push(F.box(3, -25, -1, 48, 9.5, 9.5, shade), F.box(3, -25, 46.5, 1.6, 10.4, 10.4, stone));
+}
+// The Faro della Vittoria on Gretta's hill: the fort's round bastion, the pedestal, the fluted shaft of white Istrian
+// stone, the gallery, the lantern, the copper cupola and the bronze winged Victory, L.h to her raised arm
+function vittoria(L, parts) {
+  const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), white = '#ecebe5', H = L.h;
+  parts.push(post(x, z, y - 3, 15, 14, 9, '#bdb4a3', 20), post(x, z, y + 6, 7.4, 7.4, 9, white, 8));
+  parts.push(lathe(x, z, y + 15, [[7.6, 0], [7.2, 1.5], [5.5, 3], [4.6, 5.5], [4.4, 7]], white, 24));
+  const shaft = new THREE.CylinderGeometry(3.7, 4.3, 27, 32, 1), p = shaft.attributes.position;
+  for (let i = 0; i < p.count; i++) if ((i % 33) % 2) { p.setX(i, p.getX(i) * 0.88); p.setZ(i, p.getZ(i) * 0.88); }
+  shaft.computeVertexNormals(); parts.push(tint(shaft.translate(x, y + 22 + 13.5, z), white));
+  parts.push(lathe(x, z, y + 49, [[3.7, 0], [4.4, 1.2], [5.4, 2.6], [5.4, 3.4], [4.2, 3.6]], white, 24), post(x, z, y + 52.6, 3.2, 3.2, 1.2, white, 16));
+  parts.push(post(x, z, y + 53.8, 2.9, 2.9, 4, '#3d4a54', 16), post(x, z, y + 57.8, 3.3, 3.3, 0.8, white, 16));
+  parts.push(tint(new THREE.SphereGeometry(3.1, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).translate(x, y + 58.6, z), '#6f9a86'), post(x, z, y + 61.5, 0.9, 0.9, 0.8, '#6f9a86', 8));
+  const bronze = '#57513f', F = frameOf(L, y, 225);
+  parts.push(lathe(x, z, y + 62.3, [[0.9, 0], [0.75, 2.2], [0.55, 3.6], [0.7, 4.1], [0.4, 4.5], [0.45, 4.9], [0, 5.3]], bronze, 8));
+  for (const sd of [-1, 1]) parts.push(sheet((s, t) => F.P(-0.5 - 0.5 * s, sd * (0.4 + (2.6 + 0.2 * t) * s), 64.8 + 1.4 * s + (1.8 + 0.5 * s) * t), 3, 2, bronze)); // her wings, raised
+  parts.push(beam(F.P(0, 0.5, 66.4), F.P(0.3, 0.9, H), 0.35, 0.35, bronze));
+}
+// the Maiden's Tower on its rock off Üsküdar: the islet's quay, the little white house with its red roof, the stone
+// wall, and the tower: the square stone base, the white storey with its balcony, the lead cupola, the flag
+function maiden(L, parts) {
+  const F = frameOf(L, 0, 85), white = '#efe9de', stone = '#b8ac98', H = L.h;
+  parts.push(F.box(-10, 3, -3, 4.6, 44, 26, '#d2cbbe'));
+  parts.push(F.box(-19, 3, 1.6, 4.2, 15, 18, white), ...gable(F, -26.5, -11.5, 19, 5.8, 2.4, '#a7472f', 3));
+  parts.push(F.box(8, 3, 1.6, 5.6, 3, 22, stone), F.box(-5, 14, 1.6, 5.6, 26, 2.6, stone));
+  const [x, z] = L.at;
+  parts.push(F.box(0, 0, 1.6, 10.6, 8.6, 8.6, stone), post(x, z, 12, 4.6, 4.6, 0.5, white, 8), post(x, z, 12.5, 4, 4, 5, white, 8), post(x, z, 17.5, 4.4, 4.4, 0.6, white, 8));
+  for (let k = 0; k < 8; k++) { const q = ((k + 0.5) * Math.PI) / 4; parts.push(blk(x + Math.cos(q) * 3.75, z + Math.sin(q) * 3.75, 13.6, 2.2, 0.6, 1.2, q, '#3a4148')); } // its windows
+  parts.push(lathe(x, z, 18.1, [[4.1, 0], [3.8, 1.2], [2.6, 2.9], [1.1, (H - 18.1) * 0.85], [0.5, H - 18.1]], '#7b8288', 12), post(x, z, H - 0.2, 0.7, 0.5, 1.4, white, 8));
+  parts.push(post(x, z, H + 1.2, 0.12, 0.08, 9, '#d8d4c8', 6), F.box(0, 1.4, H + 7.2, 1.8, 0.12, 2.8, '#d42a26'));
+}
+// the naval memorial at Laboe: the brick tower like a ship's stem, its back upright, its front sweeping down and out
+// towards the fjord (L.dir), the viewing deck on top; the round forecourt behind it
+function laboe(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), brick = '#7e5040', H = L.h;
+  const front = (t) => -4.5 + 9 + 17 * Math.max(0, 1 - (t * H) / 62) ** 2.1, wid = (t) => 5 - 1.4 * t;
+  parts.push(...loft(F, (t) => [-4.5, front(t), -wid(t), wid(t), t * (H - 6)], 18, brick));
+  parts.push(F.box(0.2, 0, H - 6, 6, 9.8, 7.8, brick), F.box(0.2, 0, H - 4.6, 2.6, 10, 8, '#3f3a38'));
+  const [hx, hz] = F.xz(-42, 13); parts.push(post(hx, hz, y - 2, 42, 42, 3.5, '#93776a', 32));
+}
+// Carlsten on Marstrand's top: the round keep with its pale dome at the fortress's corner, its square bastion, the
+// long slate-roofed wings running out from it, the ramparts round all of it, the red house in the courtyard
+function carlsten(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y, 0), stone = '#958b80', slate = '#4b5157', wall = '#b1a99c';
+  const at = (brg, d) => { const q = (brg * Math.PI) / 180; return [d * Math.cos(q), d * Math.sin(q)]; }; // [a north, b east]
+  const [x, z] = L.at;
+  parts.push(slab(F, [at(225, 30), at(315, 28), at(45, 32), at(135, 30)], -3, 9, stone));
+  parts.push(post(x, z, y - 2, 12.6, 12, L.h + 2, stone, 24), post(x, z, y + L.h, 12.8, 12.8, 1.2, '#a59b8f', 24), tint(new THREE.SphereGeometry(10, 20, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.3, 1).translate(x, y + L.h + 1.2, z), '#e2e0d8'));
+  const wing = (b0, b1, d0, d1) => {
+    const [a0, e0] = at(b0, d0), [a1, e1] = at(b1, d1), len = Math.hypot(a1 - a0, e1 - e0);
+    const f = frameOf({ at: F.xz((a0 + a1) / 2, (e0 + e1) / 2) }, y, (Math.atan2(e1 - e0, a1 - a0) * 180) / Math.PI);
+    parts.push(f.box(0, 0, -2, 12, len, 13, wall), ...gable(f, -len / 2, len / 2, 13.6, 10, 4.5, slate));
+  };
+  wing(55, 55, 26, 128); wing(117, 117, 26, 122); wing(55, 117, 128, 122);
+  const ring = [at(240, 40), at(10, 40), at(52, 150), at(85, 150), at(120, 145), at(160, 45)];
+  for (let i = 0; i < ring.length; i++) { const p = ring[i], q = ring[(i + 1) % ring.length]; parts.push(beam(F.P(p[0], p[1], 3), F.P(q[0], q[1], 3), 9, 10, stone)); }
+  const [ra, re] = at(85, 72), R = frameOf({ at: F.xz(ra, re) }, y, 85); parts.push(R.box(0, 0, -1, 9, 24, 13, '#a3432f'), ...gable(R, -12, 12, 13.6, 8, 4, '#3e3c3c'));
+}
+// Green Point's lighthouse: the square tower in its red and white diagonal stripes, the gallery and the lantern
+function greenPoint(L, parts) {
+  const [x, z] = L.at, y = L.ground === 0 ? 0 : Math.max(0, groundAt(x, z)), F = frameOf(L, y, 0), H = L.h, w = 5.2, T = H - 3.4;
+  for (let k = 0; k < 4; k++) {
+    const q = (k * Math.PI) / 2, ca = Math.cos(q), sa = Math.sin(q);
+    parts.push(sheet((s, t) => { const u = (s - 0.5) * w; return F.P(ca * w / 2 - sa * u, sa * w / 2 + ca * u, t * T); }, 16, 40, (s, t) => (((s * w + t * T) / 2.2) % 2 < 1 ? '#c8352c' : '#f3f1ea')));
+  }
+  parts.push(F.box(0, 0, T, 0.5, w + 1.4, w + 1.4, '#f3f1ea'), F.box(0, 0, T + 0.5, 0.9, w + 1.2, w + 1.2, '#3a3f43'));
+  parts.push(post(x, z, y + T + 0.5, 1.7, 1.7, 2.3, '#2c3338', 12), tint(new THREE.ConeGeometry(2, 1.3, 12).translate(x, y + T + 3.45, z), '#c8352c'));
 }
 function landmarks() {
   const parts = [];
@@ -1216,23 +1520,26 @@ function landmarks() {
         for (let i = 0; i <= N; i += 2) { const u = -S / 2 + (S * i) / N; parts.push(beam(P(u, yt(u), -15), P(u, yt(u), 15), 1.4, 1.4, steel)); }
       } else {
         // the towers, the deck rising to them, the main cables and the hangers
-        const D = L.deck, H = L.h, side = S * 0.42, grey = L.color || '#7d8a8f', cable = L.color ? '#8a2a22' : '#3a4144';
+        // (the Golden Gate's own: its side spans 343 m, its deep stiffening trusses, its towers, cables in its orange too)
+        const gg = L.style === 'golden-gate', D = L.deck, H = L.h, side = gg ? 343 : S * 0.42, grey = L.color || '#7d8a8f', cable = gg ? '#b3382c' : L.color ? '#8a2a22' : '#3a4144';
         const deckY = (u) => { const a = Math.abs(u); return a <= S / 2 + side ? D : Math.max(12, D - (a - S / 2 - side) * ((D - 12) / Math.max(1, half - S / 2 - side))); };
-        for (let u = -half; u < half; u += 50) parts.push(beam(P(u, deckY(u)), P(u + 50, deckY(u + 50)), 22, 3, L.color || '#6a7276'));
+        for (let u = -half; u < half; u += 50) parts.push(beam(P(u, deckY(u)), P(u + 50, deckY(u + 50)), gg ? 27 : 22, gg ? 7.6 : 3, L.color || '#6a7276'));
         for (let u = -half + 25; u < half; u += 75) if (Math.abs(u) > S / 2 + side + 20) parts.push(beam(P(u, -2), P(u, deckY(u) - 1.5), 6, 6, grey)); // under the approaches only: the spans hang from the cables
+        const cv = gg ? 14 : 12, cw = gg ? 1.5 : 0.9;
         for (const sd of [-1, 1]) {
+          if (gg) { goldenGateTower(P, Math.atan2(du.z, du.x), (sd * S) / 2, D, H, L.color, parts); continue; }
           for (const v of [-12, 12]) parts.push(beam(P(sd * S / 2, -2, v), P(sd * S / 2, H, v), 5, 5, grey));
           for (const y of [D - 4, H * 0.62, H - 3]) parts.push(beam(P(sd * S / 2, y, -12), P(sd * S / 2, y, 12), 3, 4, grey));
         }
-        for (const v of [-12, 12]) {
+        for (const v of [-cv, cv]) {
           const main = (u) => D + 4 + (H - D - 4) * (2 * u / S) ** 2, sideY = (u) => { const t = (Math.abs(u) - S / 2) / side; return H - (H - D - 2) * t ** 0.8; };
           for (let u = -S / 2; u < S / 2; u += 20) {
-            parts.push(beam(P(u, main(u), v), P(u + 20, main(u + 20), v), 0.9, 0.9, cable));
+            parts.push(beam(P(u, main(u), v), P(u + 20, main(u + 20), v), cw, cw, cable));
             if (u > -S / 2) parts.push(beam(P(u, main(u), v), P(u, D, v), 0.25, 0.25, cable));
           }
           for (const sd of [-1, 1]) for (let t = 0; t < side; t += 20) {
             const u0 = sd * (S / 2 + t), u1 = sd * (S / 2 + Math.min(side, t + 20));
-            parts.push(beam(P(u0, sideY(u0), v), P(u1, sideY(u1), v), 0.9, 0.9, cable));
+            parts.push(beam(P(u0, sideY(u0), v), P(u1, sideY(u1), v), cw, cw, cable));
             if (t > 0) parts.push(beam(P(u0, sideY(u0), v), P(u0, D, v), 0.25, 0.25, cable));
           }
         }
@@ -1269,44 +1576,25 @@ function landmarks() {
           parts.push(beam(p(i), p(i + 1), 1.6, 2.4, steel));
         }
         parts.push(tint(new THREE.SphereGeometry(8, 16, 10).translate(x, y + top + 4, z), '#3b4a55'), post(x, z, y + top + 11, 1.4, 0.4, H - top - 11, steel, 8));
-      } else { // a tapering brick tower, like a ship's stern
-        parts.push(tint(new THREE.CylinderGeometry(4.5, 9, L.h, 4).rotateY(Math.PI / 4).translate(x, y + L.h / 2, z), '#7a5246'), tint(new THREE.BoxGeometry(40, 9, 26).translate(x, y + 4.5, z + 18), '#8a6a5c'));
-      }
+      } else if (L.style === 'pyramid') pyramid(L, parts);
+      else if (L.style === 'glories') glories(L, parts);
+      else if (L.style === 'laboe') laboe(L, parts);
     } else if (L.kind === 'lighthouse') {
       const [x, z] = L.at, y = L.ground === 0 ? 0 : Math.max(0, groundAt(x, z)), h = L.h;
-      if (y <= 0.5) parts.push(post(x, z, -3, 7, 7, 5, '#9a958a'));
-      if (L.style === 'candle') { // Enoshima's Sea Candle: a slim shaft, an open lattice flaring out to the lantern deck
+      if (y <= 0.5 && L.style !== 'maiden') parts.push(post(x, z, -3, 7, 7, 5, '#9a958a'));
+      if (L.style === 'vittoria') vittoria(L, parts);
+      else if (L.style === 'maiden') maiden(L, parts);
+      else if (L.style === 'green-point') greenPoint(L, parts);
+      else if (L.style === 'candle') { // Enoshima's Sea Candle: a slim shaft, an open lattice flaring out to the lantern deck
         parts.push(post(x, z, y, 3, 2.4, h - 10, '#e8e6e0'), post(x, z, y + h - 22, 4, 9, 12, '#d8d6d0', 16), post(x, z, y + h - 10, 7, 7, 6, '#3b4a55', 16), post(x, z, y + h - 4, 7.5, 3, 4, '#e8e6e0', 16));
       } else parts.push(post(x, z, y, 3.6, 2.3, h - 6, '#f2efe8'), post(x, z, y + h - 6, 2.6, 2.6, 3.5, '#2a3238'), tint(new THREE.ConeGeometry(2.9, 2.6, 12).translate(x, y + h - 1.3, z), '#a8322a'));
-    } else if (L.kind === 'spires') {
-      // the Sagrada Família: a nave, and its spires, the tallest in the middle
-      const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), stone = '#ad9670';
-      parts.push(tint(new THREE.BoxGeometry(90, 45, 60).translate(x, y + 22.5, z), stone));
-      const spire = (dx, dz, r, h) => parts.push(post(x + dx, z + dz, y, r, r * 0.8, h * 0.72, stone, 8), tint(new THREE.ConeGeometry(r * 0.8, h * 0.28, 8).translate(x + dx, y + h * 0.86, z + dz), '#c2a878'));
-      spire(0, 0, 11, L.h); spire(0, 32, 8, 138); for (const dx of [-24, 24]) spire(dx, -22, 7, 125);
-      for (const [dx, dz] of [[-40, -30], [-30, -30], [30, -30], [40, -30], [-40, 30], [-30, 30], [30, 30], [40, 30]]) spire(dx, dz, 3.4, 105);
-    } else if (L.kind === 'cathedral') {
-      // Palma's La Seu: a long gothic nave on the sea wall, buttressed, a square belfry at one end
-      const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), stone = '#d6c49c';
-      parts.push(tint(new THREE.BoxGeometry(110, L.h, 36).translate(x, y + L.h / 2, z), stone), tint(new THREE.BoxGeometry(100, 6, 46).translate(x, y + 18, z), stone));
-      for (let k = -4; k <= 4; k++) for (const sd of [-1, 1]) parts.push(tint(new THREE.BoxGeometry(3, L.h + 6, 4).translate(x + k * 12, y + (L.h + 6) / 2, z + sd * 20), stone));
-      parts.push(tint(new THREE.BoxGeometry(12, 52, 12).translate(x + 52, y + 26, z - 24), stone));
-    } else if (L.kind === 'fort') {
-      // Marstrand's Carlsten: a round stone keep on the island's top, inside its low walls
-      const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), stone = '#9a9086';
-      parts.push(post(x, z, y - 2, 13, 12, L.h + 2, stone, 16), post(x, z, y + L.h, 9, 9, 4, '#7d756c', 16));
-      for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3, b = a + Math.PI / 3; parts.push(beam(V3(x + Math.cos(a) * 55, y + 3, z + Math.sin(a) * 55), V3(x + Math.cos(b) * 55, y + 3, z + Math.sin(b) * 55), 8, 8, stone)); }
-    } else if (L.kind === 'basilica') {
-      // Notre-Dame de la Garde on its hilltop: the striped basilica, the bell tower, and the gilded Virgin on top
-      const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), stone = '#e2d8c4';
-      parts.push(tint(new THREE.BoxGeometry(50, 16, 20).translate(x - 25, y + 8, z), stone), post(x - 28, z, y + 16, 7, 7, 8, '#a89a80', 12));
-      parts.push(tint(new THREE.BoxGeometry(12, L.h - 11, 12).translate(x, y + (L.h - 11) / 2, z), stone), post(x, z, y + L.h - 11, 4, 3, 3, stone, 8), post(x, z, y + L.h - 8, 1.6, 1.2, 8, '#d9a62e', 8));
-    } else if (L.kind === 'statue') {
-      // Christ the Redeemer on Corcovado's summit: the pedestal, the robed figure, the arms out 28 m
-      const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), stone = '#e8e4da';
-      parts.push(tint(new THREE.BoxGeometry(12, 8, 12).translate(x, y + 4, z), '#bdb6a8'), post(x, z, y + 8, 4.5, 2.6, 22, stone, 10));
-      parts.push(tint(new THREE.BoxGeometry(28, 2.4, 2.6).translate(x, y + 27.5, z), stone), post(x, z, y + 30, 1.6, 1.6, 3.5, stone, 8));
-    } else if (L.kind === 'spire') {
+    } else if (L.kind === 'spires') sagrada(L, parts);
+    else if (L.kind === 'cathedral') laSeu(L, parts);
+    else if (L.kind === 'fort') carlsten(L, parts);
+    else if (L.kind === 'basilica') garde(L, parts);
+    else if (L.kind === 'statue') redeemer(L, parts);
+    else if (L.kind === 'opera') operaHouse(L, parts);
+    else if (L.kind === 'spire') {
       const [x, z] = L.at, y = Math.max(0, groundAt(x, z));
       if (L.style === 'peter-paul') {
         // the Peter and Paul Cathedral: the belfry at its west end, three tiers of ochre and white, the gilded lantern

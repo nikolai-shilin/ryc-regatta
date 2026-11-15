@@ -48,7 +48,9 @@ import numpy as np
 from PIL import Image, ImageColor, ImageDraw, ImageFilter
 
 # home: the middle of the race area, in clear water; wind: the prevailing wind's compass direction (from);
-# towns: (lat, lon, radius m) where the houses the map lacks are filled in; landmarks: drawn by the game (skopea.js);
+# towns: (lat, lon, radius m) where the houses the map lacks are filled in; landmarks: drawn by the game (skopea.js), each
+# along `dir` (its compass bearing), the map's own buildings within `clear` metres of it left out, the ground within
+# `level`'s radius laid down to its height;
 # bathy: where the sea floor's survey comes from, finer than the elevation tiles' own (EMODnet's in Europe, some 115 m;
 # NOAA's on the US coasts, down to a few metres): the depths the sea is lighter over; flat: the land laid flat at so
 # many metres (a city whose tiles have its roofs for its ground); bank: how many metres across the shore slopes into the
@@ -66,11 +68,13 @@ VENUES = {
                     keep=[(41.4777, -71.3405, 450)],  # Fort Adams
                     landmarks=[dict(kind='suspension', a=(41.5052, -71.3598), b=(41.5046, -71.3318), h=122, span=488, deck=58)]),
     'sydney': dict(home=(-33.8480, 151.2560), wind=45, towns=[(-33.8700, 151.2550, 1500), (-33.8330, 151.2420, 1300), (-33.8380, 151.2830, 1000), (-33.8650, 151.2150, 1200)],
-                   landmarks=[dict(kind='arch', a=(-33.8562, 151.2093), b=(-33.8486, 151.2114), h=134, span=503, deck=49)]),
+                   landmarks=[dict(kind='arch', a=(-33.8562, 151.2093), b=(-33.8486, 151.2114), h=134, span=503, deck=49),
+                              dict(kind='opera', at=(-33.85730, 151.21513), h=67, clear=95, level=(150, 3.5))]),  # the Opera House on Bennelong Point, its shells' mouths to the harbour
     'kiel': dict(bathy='emodnet', home=(54.4300, 10.2050), wind=250, towns=[(54.4150, 10.1570, 900), (54.4100, 10.2250, 900), (54.4310, 10.1760, 600), (54.3700, 10.1500, 1500)],
-                 landmarks=[dict(kind='lighthouse', at=(54.3887, 10.1906), h=32, ground=0), dict(kind='tower', at=(54.4103, 10.2273), h=85, style='memorial')]),
+                 landmarks=[dict(kind='lighthouse', at=(54.3887, 10.1906), h=32, ground=0),
+                            dict(kind='tower', style='laboe', at=(54.41216, 10.23078), h=72, dir=340, clear=14)]),  # the naval memorial, its curved stem to the fjord
     'trieste': dict(bathy='emodnet', home=(45.6720, 13.7280), wind=70, towns=[(45.6500, 13.7700, 1600), (45.6750, 13.7500, 700), (45.6960, 13.7070, 500)],
-                    landmarks=[dict(kind='lighthouse', at=(45.6626, 13.7586), h=68)]),
+                    landmarks=[dict(kind='lighthouse', style='vittoria', at=(45.67563, 13.75698), h=68, clear=15)]),  # the Faro della Vittoria on Gretta's hill
     'porto-cervo': dict(bathy='emodnet', home=(41.1520, 9.5650), wind=315, towns=[(41.1340, 9.5340, 600), (41.1050, 9.5150, 500)]),
     'saint-tropez': dict(bathy='emodnet', home=(43.2900, 6.6700), wind=280, towns=[(43.2710, 6.6390, 800), (43.3090, 6.6360, 1000), (43.2930, 6.5870, 600)]),
     'antigua': dict(home=(16.9890, -61.7700), wind=95, towns=[(17.0080, -61.7640, 500), (17.0180, -61.7820, 700)]),
@@ -78,22 +82,25 @@ VENUES = {
                      landmarks=[dict(kind='tower', at=(-36.84846, 174.76218), h=328, style='sky')]),
     'san-francisco': dict(bathy='noaa', zoom=14, home=(37.8150, -122.4350), wind=255, towns=[(37.8020, -122.4400, 1100), (37.7960, -122.4120, 1100), (37.8580, -122.4850, 800), (37.8730, -122.4570, 700)],
                           keep=[(37.8267, -122.4230, 300)],  # Alcatraz
-                          landmarks=[dict(kind='suspension', a=(37.8077, -122.4750), b=(37.8288, -122.4813), h=227, span=1280, deck=67, color='#c0362c')]),
+                          landmarks=[dict(kind='suspension', style='golden-gate', a=(37.8077, -122.4750), b=(37.8288, -122.4813), h=227, span=1280, deck=67, color='#c0362c'),
+                                     dict(kind='tower', style='pyramid', at=(37.79519, -122.40265), h=260, clear=30)]),  # the Transamerica Pyramid
     'valencia': dict(bathy='emodnet', home=(39.4550, -0.2850), wind=110, towns=[(39.4700, -0.3700, 1200), (39.4700, -0.3250, 1000), (39.4300, -0.3300, 800)]),
-    'barcelona': dict(bathy='emodnet', home=(41.3720, 2.2250), wind=200, towns=[(41.3850, 2.1800, 1100), (41.3950, 2.2050, 1100), (41.3780, 2.1900, 700), (41.4100, 2.2250, 900)],
-                      landmarks=[dict(kind='spires', at=(41.4036, 2.1744), h=172)]),
+    'barcelona': dict(bathy='emodnet', home=(41.3720, 2.2250), wind=200, towns=[(41.3850, 2.1800, 1100), (41.3950, 2.2050, 1100), (41.3780, 2.1900, 700), (41.4100, 2.2250, 900),
+                                                                    (41.4036, 2.1744, 450)],  # the Eixample's blocks round the Sagrada Família
+                      landmarks=[dict(kind='spires', at=(41.4036, 2.1744), h=172.5, dir=135),  # the Sagrada Família: its nave to the Glory façade, south-east
+                                 dict(kind='tower', style='glories', at=(41.40351, 2.18952), h=144, clear=20)]),  # the Torre Glòries
     'palma': dict(bathy='emodnet', home=(39.5350, 2.6300), wind=220, towns=[(39.5700, 2.6500, 1200), (39.5350, 2.7200, 800), (39.5550, 2.6000, 700)],
-                  landmarks=[dict(kind='cathedral', at=(39.5675, 2.6483), h=44)]),
+                  landmarks=[dict(kind='cathedral', at=(39.56760, 2.64832), h=44, dir=120, clear=40)]),  # La Seu, its apse to the east-south-east
     'marstrand': dict(bathy='emodnet', home=(57.8850, 11.5550), wind=225, towns=[(57.8860, 11.5850, 500), (57.8900, 11.6000, 500), (57.8650, 11.6000, 400)],
-                      landmarks=[dict(kind='fort', at=(57.8866, 11.5806), h=24)]),
+                      landmarks=[dict(kind='fort', at=(57.88624, 11.57767), h=28, clear=[(57.88624, 11.57767, 30), (57.88630, 11.57885, 75)])]),  # Carlsten's round keep at the fortress's south-west corner
     'bermuda': dict(home=(32.3050, -64.8400), wind=200, towns=[(32.2930, -64.7830, 900), (32.3250, -64.8350, 500), (32.3100, -64.8650, 600), (32.2850, -64.8150, 700)]),
     'enoshima': dict(home=(35.2850, 139.4950), wind=190, keep=[(35.2990, 139.4805, 500)], towns=[(35.3100, 139.4800, 1200), (35.3100, 139.5300, 1200), (35.3050, 139.5000, 800)],
                      landmarks=[dict(kind='lighthouse', at=(35.2997, 139.4796), h=60, style='candle')]),
     'weymouth': dict(bathy='emodnet', zoom=14, home=(50.6050, -2.4100), wind=225, towns=[(50.6100, -2.4550, 1100), (50.5550, -2.4400, 900), (50.6300, -2.4400, 700)]),
     'marseille': dict(bathy='emodnet', home=(43.2650, 5.3350), wind=315, keep=[(43.2805, 5.3080, 1100), (43.2799, 5.3254, 200)], towns=[(43.2950, 5.3750, 1200), (43.2750, 5.3650, 900), (43.2600, 5.3800, 700), (43.3100, 5.3650, 1000)],
-                      landmarks=[dict(kind='basilica', at=(43.2840, 5.3713), h=52)]),
+                      landmarks=[dict(kind='basilica', at=(43.28400, 5.37116), h=60, dir=130, clear=22)]),  # its belfry at the north-west end, the apse to the south-east
     'rio': dict(home=(-22.9300, -43.1580), wind=150, towns=[(-22.9250, -43.1750, 1200), (-22.9000, -43.1150, 1200), (-22.9450, -43.1800, 900), (-22.9700, -43.1850, 1000)],
-                landmarks=[dict(kind='statue', at=(-22.9519, -43.2105), h=38)]),
+                landmarks=[dict(kind='statue', at=(-22.95168, -43.21181), h=38, dir=100)]),  # facing the bay; on the tiles' summit of Corcovado, 135 m west of its own
     'garda': dict(home=(45.8400, 10.8500), wind=190, lake='Lago di Garda', towns=[(45.8860, 10.8410, 800), (45.8750, 10.8760, 600), (45.7650, 10.8100, 600), (45.8730, 10.8560, 500)]),
     'istanbul': dict(bathy='emodnet', home=(40.9820, 28.9920), wind=35, keep=[(41.0063, 28.9855, 150), (41.0024, 28.9768, 150)], towns=[(40.9900, 29.0270, 1200), (41.0250, 29.0180, 1200), (41.0080, 28.9650, 1500), (41.0330, 28.9800, 1200), (40.9720, 29.0400, 1000),
                                                                  (41.0430, 29.0060, 900), (41.0480, 29.0250, 700), (41.0365, 29.0310, 600), (41.0440, 29.0440, 700)],  # Beşiktaş, Ortaköy, Kuzguncuk, Beylerbeyi: round the bridge
@@ -101,7 +108,8 @@ VENUES = {
                                 dict(kind='mosque', at=(41.0054, 28.9767), h=43, minarets=6, mh=64),  # the Blue Mosque
                                 dict(kind='mosque', at=(41.0085, 28.9799), h=55, minarets=4, mh=60, semis=2, wall='#c99272'),  # Hagia Sophia
                                 dict(kind='mosque', at=(41.0162, 28.9638), h=53, minarets=4, mh=72),  # Süleymaniye
-                                dict(kind='tower', at=(41.0256, 28.9741), h=63, style='galata')]),
+                                dict(kind='tower', at=(41.0256, 28.9741), h=63, style='galata'),
+                                dict(kind='lighthouse', style='maiden', at=(41.02108, 29.00412), h=23, clear=18)]),  # the Maiden's Tower on its rock off Üsküdar
     # the Neva under the Peter and Paul Fortress's walls, between the Trinity and Palace bridges; the city's heights in
     # the tiles are its roofs, not its ground (and the river stands 12 to 20 m up in them), so the land is laid flat
     'st-petersburg': dict(zoom=14, flat=2.2, bank=2.5, most=11000, relations=True, home=(59.9464, 30.3187), wind=245,
@@ -133,7 +141,7 @@ VENUES = {
                                  dict(kind='wheel', at=(22.28530, 114.16175), b=(22.28538, 114.16200), h=60)]),  # the Observation Wheel on Central's waterfront, facing the harbour
     # Table Bay off the V&A Waterfront, in the south-easterly Cape Doctor off Table Mountain
     'cape-town': dict(zoom=14, most=11000, relations=True, plain=(15, 45), paved=True, trees=True, home=(-33.8978, 18.4556), wind=160, towns=[(-33.9050, 18.4200, 1000), (-33.9150, 18.3950, 900), (-33.9230, 18.4250, 1200)],
-                      landmarks=[dict(kind='lighthouse', at=(-33.90142, 18.39992), h=16),
+                      landmarks=[dict(kind='lighthouse', style='green-point', at=(-33.90142, 18.39992), h=16),
                                  dict(kind='wheel', at=(-33.90268, 18.41929), b=(-33.90238, 18.41924), h=40)]),  # the Cape Wheel at the V&A Waterfront, facing the bay
     # the 2004 Olympic waters in Faliro Bay, in the meltemi off the land, the Acropolis upwind
     'athens': dict(bathy='emodnet', zoom=14, most=11000, relations=True, home=(37.9115, 23.6765), wind=30, towns=[(37.9300, 23.6900, 1200), (37.9400, 23.6450, 1200), (37.9120, 23.7080, 1000)],
@@ -350,7 +358,7 @@ def bake(vid, V, fetch_only=False):
     def tile_xy(lat, lon, z):
         n = 2 ** z; r = np.radians(lat)
         return (np.asarray(lon) + 180) / 360 * n, (1 - np.log(np.tan(r) + 1 / np.cos(r)) / math.pi) / 2 * n
-    def mosaic(zoom, reach):
+    def mosaic(zoom, reach, lone=False):
         x0, y0 = tile_xy(LAT0 + reach / MLAT, LON0 - reach / MLON, zoom); x1, y1 = tile_xy(LAT0 - reach / MLAT, LON0 + reach / MLON, zoom)
         TX0, TY0, TX1, TY1 = int(x0), int(y0), int(x1), int(y1)
         IMG = np.zeros(((TY1 - TY0 + 1) * 256, (TX1 - TX0 + 1) * 256), np.float32)
@@ -360,6 +368,16 @@ def bake(vid, V, fetch_only=False):
                 if fetch_only: continue
                 a = np.asarray(Image.open(p).convert('RGB')).astype(np.float32)
                 IMG[(ty - TY0) * 256:(ty - TY0 + 1) * 256, (tx - TX0) * 256:(tx - TX0 + 1) * 256] = a[..., 0] * 256 + a[..., 1] + a[..., 2] / 256 - 32768
+        # lone: the coarse tiles' junk pixels out, one or two together standing hundreds of metres or more above all
+        # round them (gone in the next zoom out, so not the land's); a real summit has its slopes round it, so it
+        # stands at most some 150 m above the second highest of its eight neighbours (Sugarloaf 123, Garda's Alps
+        # 103); a pixel more than 200 m above it (the sea as 0) comes down to it, again till none is
+        while lone and not fetch_only:
+            C = np.maximum(IMG, 0); n_, m_ = C.shape
+            nb2 = np.sort(np.stack([C[1 + di:n_ - 1 + di, 1 + dj:m_ - 1 + dj] for di in (-1, 0, 1) for dj in (-1, 0, 1) if di or dj]), 0)[-2]
+            hit = C[1:-1, 1:-1] - nb2 > 200
+            if not hit.any(): break
+            IMG[1:-1, 1:-1][hit] = nb2[hit]
         def height(x, z):
             lat, lon = to_ll(x, z); tx, ty = tile_xy(lat, lon, zoom)
             px = np.clip((tx - TX0) * 256 - 0.5, 0, IMG.shape[1] - 1.001); py = np.clip((ty - TY0) * 256 - 0.5, 0, IMG.shape[0] - 1.001)
@@ -367,7 +385,7 @@ def bake(vid, V, fetch_only=False):
             return (IMG[b, a] * (1 - fx) + IMG[b, a + 1] * fx) * (1 - fy) + (IMG[b + 1, a] * (1 - fx) + IMG[b + 1, a + 1] * fx) * fy
         return height
     height = mosaic(V.get('zoom', ZOOM), EXTENT * 1.45)
-    far_height = mosaic(FZOOM, FEXT * 1.02)
+    far_height = mosaic(FZOOM, FEXT * 1.02, lone=True)
     if V.get('flat') is not None:
         # a flat city whose tiles have its roofs for its ground: the land at `flat` metres, the sea as the tiles have it;
         # the land beyond less the roofs' 15 m or so, its real hills (Pulkovo's) still standing
@@ -386,6 +404,17 @@ def bake(vid, V, fetch_only=False):
             return np.where((h <= 0.5) | (h >= hi_), h, np.interp(h, [0.5, lo_, hi_], [1.0, 4.5, hi_])).astype(np.float32)
 
     if V.get('dtm') == 'hk': height = hk_dtm(work, fetch_only, to_ll, height, EXTENT * 1.45)
+    # a landmark standing where the tiles have its own roof for ground (radar's, SRTM's): `level` (radius, height), the
+    # ground within the radius laid down to that height, rising back to the tiles' own over half as far again
+    LEVEL = [(*(float(v) for v in to_xz(*lm['at'])), float(lm['level'][0]), float(lm['level'][1])) for lm in V.get('landmarks', []) if lm.get('level')]
+    if LEVEL:
+        raw_l = height
+        def height(x, z, raw_l=raw_l):
+            h = raw_l(x, z)
+            for lx, lz, r, lv in LEVEL:
+                d = np.hypot(np.asarray(x, float) - lx, np.asarray(z, float) - lz)
+                h = np.minimum(h, lv + np.clip((d - r) / (0.5 * r), 0, 1) ** 2 * 400)
+            return np.asarray(h, np.float32)
 
     # ---------- OpenStreetMap ----------
     coastQ = f'way["natural"="coastline"]({bbox(EXTENT * 1.5)});' if not V.get('lake') else f'relation["natural"="water"]["name"="{V["lake"]}"];'
@@ -795,7 +824,9 @@ def bake(vid, V, fetch_only=False):
         except ValueError: c = None
         return tuple(max(1, x) for x in c[:3]) if c else (0, 0, 0)
     # where a landmark is drawn in the map's building's place (`clear`, metres round it), that building is left out
-    CLEAR = [(*to_xz(*lm['at']), lm['clear']) for lm in V.get('landmarks', []) if lm.get('clear')]
+    # (or `clear` a list of (lat, lon, metres), for one that spreads beyond a circle round its `at`)
+    CLEAR = [c for lm in V.get('landmarks', []) if lm.get('clear') for c in
+             ([(*to_xz(*lm['at']), lm['clear'])] if not isinstance(lm['clear'], (list, tuple)) else [(*to_xz(la, lo), r) for la, lo, r in lm['clear']])]
     def add(r, h, roof, t=None):
         cx_ = sum(a for a, _ in r) / len(r); cz_ = sum(b for _, b in r) / len(r)
         if any(math.hypot(cx_ - float(lx), cz_ - float(lz)) < cr for lx, lz, cr in CLEAR): return
@@ -896,6 +927,7 @@ def bake(vid, V, fetch_only=False):
         o = {k: v for k, v in lm.items() if k not in ('a', 'b', 'at')}
         for k in ('a', 'b', 'at'):
             if k in lm: x, z = to_xz(*lm[k]); o[k] = [round(float(x), 1), round(float(z), 1)]
+        if isinstance(lm.get('clear'), (list, tuple)): o['clear'] = [[round(float(v), 1) for v in to_xz(la, lo)] + [r] for la, lo, r in lm['clear']]
         landmarks.append(o)
 
     # ---------- the quadtree: fine on the coast and round the race area, coarse far off ----------
