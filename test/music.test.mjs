@@ -106,3 +106,15 @@ test('every answer is in range', () => {
     assert.ok(['calm', 'tense', 'up', 'dark', 'win', 'lose'].includes(d.mood));
   }
 });
+
+// the race hub and the free race's set-up loop each track's pre-start (components/race-music.tsx): its start and length there
+test('the race screens loop each track’s pre-start where music.js has it', () => {
+  const T = tracks();
+  const src = readFileSync(new URL('../components/race-music.tsx', import.meta.url), 'utf8');
+  const calm = Function(`return (${/export const CALM[^=]*= (\{[\s\S]*?\});/.exec(src)[1]})`)();
+  assert.deepEqual(Object.keys(calm), MUSIC_STYLES);
+  for (const [id, [at, len]] of Object.entries(calm)) {
+    assert.equal(at, T[id].calm[0], `${id} start`);
+    assert.ok(Math.abs(len - T[id].calm[1].reduce((a, b) => a + b, 0)) < 1e-3, `${id} length`);
+  }
+});
