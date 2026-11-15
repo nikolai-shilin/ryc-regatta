@@ -36,7 +36,7 @@ export const YACHTS: Yacht[] = [
     ],
     race: ['Stay on the foils: a slow tack or a bad bear-away drops her into the water, and she has to bear off to build speed and take off again. In light wind, bear away to a reach to get flying. Courses are laid two and a half times longer.', 'Держись на крыльях: медленный поворот или неудачный уваливание роняют её в воду, и придётся увалиться, разогнаться и взлететь снова. В слабый ветер увались до галфвинда, чтобы взлететь. Дистанции в два с половиной раза длиннее.'],
     specs: [
-      { k: ['Length', 'Длина'], v: ['22.86 m', '22,86 м'] }, { k: ['Beam', 'Ширина'], v: ['5 m', '5 м'] },
+      { k: ['Length', 'Длина'], v: ['20.7 m', '20,7 м'] }, { k: ['Beam', 'Ширина'], v: ['5 m', '5 м'] },
       { k: ['Displacement', 'Водоизмещение'], v: ['about 7 t', 'около 7 т'] }, { k: ['Mast', 'Мачта'], v: ['26.5 m', '26,5 м'] },
       { k: ['Crew', 'Экипаж'], v: ['8', '8'] }, { k: ['Top speed', 'Максимальная скорость'], v: ['over 50 kn', 'больше 50 уз'] },
     ],

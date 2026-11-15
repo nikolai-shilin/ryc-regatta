@@ -1,12 +1,13 @@
 # Regatta: the AC75's moulded hull (game/boats3d.js AC75View), modelled here and exported to game/ac75.glb: the hull,
 # a scow aft with a hard chine high on its topsides and a long fine bow, its deck edge turned round a radius; the bustle
-# down the centreline of the bottom faired into it in one surface; the flat deck with the eight crew pods cut into it,
-# four a side, their walls and floors; a pocket let into each side where the foil arm comes out round its bearing; the
-# transom's edge turned round a radius. The foil arms and their bearings, the rudder, the mast and sails, the pods' rims,
-# bikes and wheels, the fittings and the crew stay in boats3d.js (they move, or are made per boat).
+# down the centreline of the bottom faired into it in one surface, from 4 m aft of the bow to the transom; the flat deck
+# with the crew's six pods cut into it, three a side, their walls and floors; a slot let into each side, low on the
+# topsides, where the foil arm comes out; the transom's edge turned round a radius. To the AC75 Class Rule v2: a
+# 20.7 m hull, 5 m beam. The foil arms, the rudder, the mast and sails, the pods' rims, bikes and wheels, the fittings
+# and the crew stay in boats3d.js (they move, or are made per boat).
 #
 # The hull follows boats3d.js's lines for her (A: hullOf with her half-breadth, sheer, depth, sections and chine), so
-# the logo, the sail number, her name and the arms' bearings still lie on it; the deck and the pods (their outlines and
+# the logo, the sail number and her name still lie on it; the deck and the pods (their outlines and
 # floors) are where its rims, bikes, wheels and crew expect them.
 #
 # Materials by name, which boats3d.js swaps for its own: hull (her paint, the underside darker), deck (the flat dark
@@ -20,7 +21,7 @@ from mathutils import Vector
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, '..', 'public', 'game', 'ac75.glb'))
 
-L, B = 22.86, 5.0
+L, B = 20.7, 5.0   # the rule's hull length, no bowsprit
 STERN = L / 2
 FLARE = 0.02
 CROWN = 0.08
@@ -29,7 +30,7 @@ def lerp(a, b, t): return a + (b - a) * t
 def smooth(e0, e1, x): t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t)
 def hb_of(t):
     if t < 0.5: return (B / 2) * (0.86 + 0.14 * math.sin((t / 0.5) * math.pi / 2))
-    return (B / 2) * max(0.0, math.cos(min(1, (t - 0.5) / 0.5) * math.pi / 2)) ** 0.62
+    return (B / 2) * max(0.0, math.cos(min(1, (t - 0.5) / 0.5) * math.pi / 2)) ** 0.72
 def sheer(t): return 1.05 + 0.32 * t ** 2.2
 def depth(t): return 0.62 * math.sin(math.pi * min(1, t * 0.88 + 0.1)) ** 0.6
 def n_of(t): return lerp(3.4, 2.1, clamp((t - 0.4) / 0.6, 0, 1))
@@ -94,17 +95,17 @@ def build_hull(bm, M):
     for r in (rings[0], rings[-1]): bm.faces.new(r).material_index = M['hull']
     return rings[0]
 
-# the bustle, on boats3d.js's curve: its keel line a quadratic from the hull's bottom 6 m aft of amidships, down to
-# 0.75 m under it, up again 6 m forward; a rounded fin 0.48 m wide, narrowing to its ends, rising into the hull
+# the bustle, on boats3d.js's curve (bustleDepth): from the transom, where it ends square and still deep, forward to
+# fair out into the bottom 4 m aft of the bow, deepest a little aft of amidships; a rounded fin 0.48 m wide, narrowing
+# forward, rising into the hull
+def bustle_depth(s): return 0.7 * math.sin(math.pi * min(1, s * 0.9 + 0.1)) ** 0.8
 def build_bustle(bm, M):
-    NZ, top = 48, -0.1
-    bez = lambda s: ((1 - s) ** 2 * -5.5 + s * s * 6.5, 2 * s * (1 - s) * -0.75 + s * s * -0.1)  # (shape x, shape y)
+    NZ, top = 64, -0.1
     secs = []
     for i in range(NZ + 1):
         s = i / NZ
-        sx, sy = bez(s)
-        z, yb = -sx + 0.5, sy - 0.48
-        w = 0.24 * math.sin(math.pi * clamp(s * 1.02, 0, 1)) ** 0.35 + 0.01
+        z, yb = lerp(STERN - 0.02, -STERN + 4, s), -0.48 - bustle_depth(s)
+        w = 0.24 * clamp((1 - s) / 0.35, 0, 1) ** 0.5 + 0.01
         prof = [(w, top), (w, lerp(top, yb, 0.6)), (w * 0.85, yb + 0.07), (w * 0.45, yb + 0.01)]
         ring = [G(x, y, z) for x, y in prof] + [G(0, yb, z)] + [G(-x, y, z) for x, y in reversed(prof)]
         secs.append([bm.verts.new(p) for p in ring])
@@ -153,10 +154,10 @@ bmesh.ops.bevel(bm, geom=list({e for v in transom for e in v.link_edges if all(w
                 segments=3, profile=0.5, affect='EDGES', clamp_overlap=True)
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(hull.data); bm.free()
 
-# the eight pods (boats3d.js), cut 0.9 m down from the deck at their middles: their walls and rubber floors
+# the pods (boats3d.js A.PODS), three a side, cut 0.9 m down from the deck at their middles: their walls and rubber floors
 cut = new_object('pods'); bm = bmesh.new()
 for sx in (-1, 1):
-    for z0, z1 in ((-0.6, 0.8), (1.6, 3.0), (3.8, 5.2), (7.4, 9.2)):
+    for z0, z1 in ((1.9, 3.3), (3.8, 5.0), (5.6, 8.6)):
         x0, x1 = (-2.05, -1.05) if sx < 0 else (1.05, 2.05)
         plan_prism(bm, rounded_rect(x0, x1, z0, z1, 0.22), sheer(t_at((z0 + z1) / 2)) - 0.9, 3.0, IDX['pod'], IDX['rubber'], IDX['pod'])
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(cut.data); bm.free()
@@ -167,12 +168,14 @@ except Exception as e: print('material_mode:', e)
 bpy.context.view_layer.objects.active = hull; bpy.ops.object.modifier_apply(modifier=mod.name)
 bpy.data.objects.remove(cut)
 
-# a pocket let into each side where the foil arm comes out of the hull, round its bearing (boats3d.js A.ARM: the
-# pivot 2.35 m out, 0.85 up, 0.6 forward of amidships): an oval 1.4 m long and 1 m tall, 10 cm deep, lined dark
+# the slot let into each side where the foil arm comes out of the hull, low on the topsides (boats3d.js A.ARM: the
+# cant axis inside the hull, 2.05 m out, 0.52 up, 11 m forward of the transom): an oval 1.2 m long and 0.9 m tall, 10 cm
+# deep, lined dark
+ARM_Y, ARM_Z = 0.62, STERN - 11
 cut = new_object('pockets'); bm = bmesh.new()
 for sx in (-1, 1):
-    tp = t_at(-0.6); xs = round_pt(tp, math.asin(clamp((sheer(tp) - 0.85) / (sheer(tp) + depth(tp)), 0, 1) ** (n_of(tp) / 2)) * 2 / math.pi)[0]
-    ring = [(0.85 + 0.5 * math.sin(2 * math.pi * k / 20), -0.6 + 0.7 * math.cos(2 * math.pi * k / 20)) for k in range(20)]
+    tp = t_at(ARM_Z); xs = round_pt(tp, math.asin(clamp((sheer(tp) - ARM_Y) / (sheer(tp) + depth(tp)), 0, 1) ** (n_of(tp) / 2)) * 2 / math.pi)[0]
+    ring = [(ARM_Y + 0.45 * math.sin(2 * math.pi * k / 20), ARM_Z + 0.6 * math.cos(2 * math.pi * k / 20)) for k in range(20)]
     a = [bm.verts.new(G(sx * (xs - 0.1), y, z)) for y, z in ring]; b = [bm.verts.new(G(sx * (xs + 0.6), y, z)) for y, z in ring]
     for k in range(20): bm.faces.new((a[k], a[(k + 1) % 20], b[(k + 1) % 20], b[k])).material_index = IDX['pod']
     bm.faces.new(list(reversed(a))).material_index = IDX['pod']; bm.faces.new(b).material_index = IDX['pod']

@@ -135,7 +135,7 @@ export const CLASSES = {
   // ahead: no spinnaker, only the double-skinned main and a jib. Off her foils (slow out of a tack, a stop, light air)
   // she is a heavy displacement boat until she builds the speed to take off again. Courses for her are laid longer.
   ac75: {
-    id: 'ac75', loa: 22.86, beam: 5.0, drawnL: 22.86, crew: 8,
+    id: 'ac75', loa: 20.7, beam: 5.0, drawnL: 20.7, crew: 8, // the rule's hull length: no bowsprit since the 37th Cup
     kite: false, zero: false, reef: false, j3: false,
     tau: 3.2, coast: 420, hullV: 60, heelK: 0.35, awsK: 2.6, heelShow: 0.45, courseK: 2.5, lineK: 1.8, startK: 4,
     foil: { takeoff: 9, land: 6.5, dispCoast: 30, disp: [[28, 0], [40, 1.3], [60, 1.55], [90, 1.9], [120, 1.8], [150, 1.3], [180, 0.9]] },

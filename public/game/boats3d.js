@@ -1201,28 +1201,40 @@ class CruiserView extends ClassView {
 }
 
 // ---------- the AC75 ----------
+// to the AC75 Class Rule (v2, the 37th Cup's): a 20.7 m hull without a bowsprit, 5 m beam; the mast stepped 9.15 m
+// forward of the transom, 1.5 m up, raked 5° aft, its forestay 24 m up it and its tack 8.2 m ahead of it; the foil
+// arms' cant axes inside the hull 2.05 m out and 0.52 m up, 11 m forward of the transom, ahead of the mast
 const A = (() => {
-  const L = 22.86, B = 5.0;
+  const L = 20.7, B = 5.0;
   const hull = hullOf({
     L, flare: 0.02,
-    // full aft, a long fine bow that rounds up to a narrow, raked stem
-    hb: (t) => (B / 2) * (t < 0.5 ? 0.86 + 0.14 * Math.sin((t / 0.5) * Math.PI / 2) : Math.max(0, Math.cos(Math.min(1, (t - 0.5) / 0.5) * Math.PI / 2)) ** 0.62),
+    // full aft, a long fine bow that rounds up to a narrow, raked stem (within the rule's 1.6 m half-beam 3.7 m aft
+    // of the bow, 1.0 m at 1.7 m)
+    hb: (t) => (B / 2) * (t < 0.5 ? 0.86 + 0.14 * Math.sin((t / 0.5) * Math.PI / 2) : Math.max(0, Math.cos(Math.min(1, (t - 0.5) / 0.5) * Math.PI / 2)) ** 0.72),
     sheer: (t) => 1.05 + 0.32 * t ** 2.2,
     depth: (t) => 0.62 * Math.sin(Math.PI * Math.min(1, t * 0.88 + 0.1)) ** 0.6,
     n: (t) => lerp(3.4, 2.1, clamp((t - 0.4) / 0.6, 0, 1)), // a flat-bottomed scow aft
     // a hard chine high on the topsides aft, the flat, nearly deadrise-less bottom of a skimming hull below it
     chine: { y: (t) => 0.42 - 0.45 * t, w: (t) => 1 - smooth(0.5, 0.88, t), dead: (t) => lerp(7, 3, clamp(t / 0.4, 0, 1)), flat: 0.92 },
   });
-  const MAST_Z = -2.2, MAST_FOOT = 1.2, MASTHEAD = 27.6, DECK = hull.deckY(MAST_Z);
+  const MAST_Z = hull.STERN - 9.15, MAST_FOOT = 1.5, MASTHEAD = 27.6, RAKE = Math.tan(5 * D2R), DECK = hull.deckY(MAST_Z);
+  const rz = (y) => MAST_Z + (y - MAST_FOOT) * RAKE; // the mast's centre at height y, raked aft
   const FOOT_Y = DECK + 0.15; // the main sweeps the deck: no boom
-  const chord = (f) => lerp(8.6, 2.4, f) + 0.7 * Math.sin(Math.PI * f);
-  const TACK = new THREE.Vector3(0, hull.deckY(hull.BOW + 1.6) + 0.12, hull.BOW + 1.6);
-  const HEAD = new THREE.Vector3(0, 21.5, MAST_Z - 0.35);
-  const CLEW = new THREE.Vector3(0, 0.25, 6.2);
-  const ARM = { x: 2.35, y: 0.85, z: -0.6, len: 5.6 }; // the foil arms' pivots on the topsides, and their length
+  const chord = (f) => lerp(7.2, 2.6, f) + 0.4 * Math.sin(Math.PI * f); // the rule's girths: 7.0–7.4 m at the foot, ≤ 5.8 m half way up
+  const FORESTAY = MAST_FOOT + 24;
+  const TACK = new THREE.Vector3(0, hull.deckY(MAST_Z - 8.2) + 0.12, MAST_Z - 8.2);
+  const HEAD = new THREE.Vector3(0, FORESTAY - 0.3, rz(FORESTAY - 0.3) - 0.35);
+  const CLEW = new THREE.Vector3(0, 0.25, 7.6); // from the tack: the self-tacker's foot, its clew just ahead of the mast
+  const ARM = { x: 2.05, y: 0.52, z: hull.STERN - 11, len: 5.3 }; // the foil arms' cant axes, inside the hull, and their length
+  const PODS = [[1.9, 3.3], [3.8, 5.0], [5.6, 8.6]]; // each side: the helm's, the trimmer's, the two cyclors' in tandem
   const rig = rigOf({ span: MASTHEAD - 0.4 - FOOT_Y, chord, numAt: 0.5, logoAt: 0.7, flagAt: 0.84, mark: 2.6, head: HEAD, tack: TACK, clew: CLEW, ad: 3.6, adH: 1.6 });
-  return { L, B, hull, MAST_Z, MAST_FOOT, MASTHEAD, FOOT_Y, chord, TACK, HEAD, CLEW, ARM, rig };
+  return { L, B, hull, MAST_Z, MAST_FOOT, MASTHEAD, RAKE, rz, FOOT_Y, chord, FORESTAY, TACK, HEAD, CLEW, ARM, PODS, rig, TRAV_Z: hull.STERN - 0.9 };
 })();
+
+// the bustle's depth under the hull's bottom, s = 0 at the transom … 1 where it fairs out 4 m aft of the bow:
+// deepest a little aft of amidships, still deep where it ends square at the transom (blender/ac75.py's on the same curve)
+const bustleDepth = (s) => 0.7 * Math.sin(Math.PI * Math.min(1, s * 0.9 + 0.1)) ** 0.8;
+const CYCLE_Z = [A.PODS[2][0] + 0.7, A.PODS[2][1] - 0.8]; // the bikes in the cyclors' pod, one behind the other
 
 class AC75View extends ClassView {
   constructor({ look = LOOKS.player, label = null, player = false, cls = CLS }) {
@@ -1238,25 +1250,30 @@ class AC75View extends ClassView {
       const moulded = add(new THREE.Group());
       for (const [k, mat] of [['hull', paint], ['deck', deckFinish(look, AC_DECK)], ['pod', podWall], ['rubber', MAT.rubber]]) if (MOD[k]) moulded.add(new THREE.Mesh(MOD[k], mat));
     } else add(new THREE.Mesh(H.geometry(), paint));
-    // the bustle: a long fin down the centreline of the bottom, sealing the main's foot to the water
-    const bus = new THREE.Shape(); bus.moveTo(-5.5, 0); bus.quadraticCurveTo(0, -0.75, 6.5, -0.1); bus.lineTo(6.5, 0.2); bus.lineTo(-5.5, 0.2); bus.closePath();
-    const bg = new THREE.ExtrudeGeometry(bus, { depth: 0.36, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 2 });
-    bg.translate(0, 0, -0.18); bg.rotateY(Math.PI / 2);
-    if (!MOD) add(new THREE.Mesh(bg, paint), 0, -0.48, 0.5); // (faired into the hull, in the model)
-    // the deck, flat and dark, with eight crew pods cut into it, four a side: the cyclors forward, the trimmers, the
-    // helms aft. Each pod has a rubber rim, a floor and its seat or wheel
-    // each a moulded well with rounded corners, its rim in rubber
+    // the bustle: a long fin down the centreline of the bottom, from 4 m aft of the bow to the transom, sealing the
+    // main's foot to the water (faired into the hull, in the model: blender/ac75.py's bustle, on the same curve)
+    if (!MOD) {
+      const bus = new THREE.Shape(), n = 24;
+      for (let i = 0; i <= n; i++) { const s = i / n; bus[i ? 'lineTo' : 'moveTo'](-lerp(H.STERN - 0.02, H.BOW + 4, s), -bustleDepth(s)); }
+      bus.lineTo(-(H.BOW + 4), 0.3); bus.lineTo(-(H.STERN - 0.02), 0.3); bus.closePath();
+      const bg = new THREE.ExtrudeGeometry(bus, { depth: 0.36, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 2 });
+      bg.translate(0, 0, -0.18); bg.rotateY(Math.PI / 2);
+      add(new THREE.Mesh(bg, paint), 0, -0.48, 0);
+    }
+    // the deck, flat and dark, with the crew's pods cut into it, three a side: the helm's forward, the trimmer's, and
+    // the cyclors' aft, two of them in tandem in a long one. Each a moulded well with rounded corners, its rim in
+    // rubber, a floor and its seats, bikes or wheel
     const pods = [];
-    for (const sx of [-1, 1]) for (const [z0, z1] of [[-0.6, 0.8], [1.6, 3.0], [3.8, 5.2], [7.4, 9.2]]) {
+    for (const sx of [-1, 1]) for (const [z0, z1] of A.PODS) {
       const [x0, x1] = sx < 0 ? [-2.05, -1.05] : [1.05, 2.05], tb = H.tub(x0, z0, x1, z1, 0.22, H.deckY((z0 + z1) / 2) - 0.9, { slope: 0.05, crown: 0.08 });
       pods.push(tb.outline);
       if (!MOD) { const w = add(new THREE.Mesh(tb.walls, podWall)); w.userData.detail = false; add(new THREE.Mesh(tb.floor, MAT.rubber)); }
       T.add(tube(tb.outline.map(([x, z]) => [x, H.deckY(z) + 0.1, z]), 0.03, MAT.rubber, true));
     }
     if (!MOD) add(new THREE.Mesh(H.deck(pods, 0.08), deckFinish(look, AC_DECK)));
-    // the cyclors' bikes in the two forward pods each side: a saddle on its post, the crank housing and the bars
+    // the cyclors' bikes, two in the aft pod each side: a saddle on its post, the crank housing and the bars
     this.bikes = [];
-    for (const sx of [-1, 1]) for (const z of [0.1, 2.3]) {
+    for (const sx of [-1, 1]) for (const z of CYCLE_Z) {
       const fy = H.deckY(z) - 0.88;
       add(cyl(0.03, 0.03, 0.6, M.dark, 8), sx * 1.55, fy + 0.3, z + 0.25);
       add(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.05, 0.26), MAT.rubber), sx * 1.55, fy + 0.62, z + 0.22);
@@ -1269,18 +1286,19 @@ class AC75View extends ClassView {
       fit(add, display(0.5, 0.3, sx < 0 ? 0 : 2), sx * 0.62, H.deckY(A.MAST_Z) + 0.45, A.MAST_Z + 0.45, 0, -0.25);
       add(cyl(0.03, 0.04, 0.34, M.dark, 8), sx * 0.62, H.deckY(A.MAST_Z + 0.42) + 0.17, A.MAST_Z + 0.42); // on its post
     }
-    for (const z of [-6.5, 5.9]) add(new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.02, 0.6), M.dark), 0, H.deckY(z) + 0.09, z);
-    // the foil arms: one each side, pivoting in a faired bearing on the topsides; the leeward one down in the water,
-    // the windward one canted up and out. Each is a foil section, ending in a T-wing: two anhedral halves, their flaps
-    // and the ballast pod where they meet
+    for (const z of [-5.6, 4.4]) add(new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.02, 0.6), M.dark), 0, H.deckY(z) + 0.09, z);
+    // the foil arms: one each side, canting about an axis inside the hull and coming out of a slot low in the
+    // topsides; the leeward one down in the water, the windward one canted up and out. Each is a foil section bent
+    // out at its root (the swan neck), then straight down to a T-wing: two anhedral halves, their flaps and the
+    // ballast pod where they meet
     const foilMat = new THREE.MeshPhysicalMaterial({ color: '#23272d', roughness: 0.35, metalness: 0.2, clearcoat: 0.8 });
     const flapMat = new THREE.MeshPhysicalMaterial({ color: look.hull, roughness: 0.3, clearcoat: 0.8 });
     this.arms = [-1, 1].map((sx) => {
-      const bear = add(new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.1, 18).rotateX(Math.PI / 2), paint), sx * (A.ARM.x - 0.05), A.ARM.y, A.ARM.z);
-      bear.scale.set(0.55, 1, 1);
-      const g = add(new THREE.Group(), sx * A.ARM.x, A.ARM.y, A.ARM.z);
-      g.add(new THREE.Mesh(finGeo(A.ARM.len, 0.78, 0.6, 0.2, 0.12), foilMat));
-      const tip = new THREE.Group(); tip.position.set(0, -A.ARM.len, 0.1); g.add(tip);
+      const g = add(new THREE.Group(), sx * A.ARM.x, A.ARM.y, A.ARM.z), NECK = 1.0, BEND = 0.45;
+      const neck = new THREE.Mesh(finGeo(NECK, 0.8, 0.78, 0.2, 0), foilMat); neck.rotation.z = sx * BEND; g.add(neck);
+      const nx = sx * NECK * Math.sin(BEND), ny = -NECK * Math.cos(BEND);
+      g.add(new THREE.Mesh(finGeo(A.ARM.len - NECK, 0.78, 0.6, 0.2, 0.12).translate(nx, ny, 0), foilMat));
+      const tip = new THREE.Group(); tip.position.set(nx, ny - (A.ARM.len - NECK), 0.1); g.add(tip);
       // each half of the wing: out from the pod nearly level, drooping more and more towards its tip (the anhedral
       // that keeps her steady in roll), tapering and swept back, the tip rounded; the flap runs most of its span
       const WING = Array.from({ length: 13 }, (_, i) => i / 12).reduce((st, u, i) => {
@@ -1304,36 +1322,38 @@ class AC75View extends ClassView {
     for (const wx of [-1, 1]) { const e = new THREE.Mesh(finGeo(1.2, 0.5, 0.3, 0.12, 0.12), foilMat); e.position.set(0, -3.95, 0.25); e.rotation.z = wx * Math.PI / 2; this.rudder.add(e); }
     this.rudder.add(new THREE.Mesh(bulbGeo(0.9, 0.09), foilMat).translateY(-3.95).translateZ(0.3));
     mergeGroup(this.rudder);
-    // the helms' wheels, in the aft pods (they turn with the helm)
+    // the helms' wheels, at the front of the forward pods (they turn with the helm)
     this.wheel = add(new THREE.Group(), 0, 0, 0);
+    { const z0 = A.PODS[0][0];
+      for (const sx of [-1, 1]) {
+        const w = wheel(0.3, 5); w.position.set(sx * 1.55, H.deckY(z0) - 0.1, z0 + 0.2); this.wheel.add(w);
+        add(cyl(0.05, 0.07, 0.75, M.dark, 8), sx * 1.55, H.deckY(z0) - 0.5, z0 + 0.35);
+      } }
+    // the mast: a tall D-section stepped on a ball 1.5 m up, raked 5° aft and rotating with the main; the shrouds and
+    // the jumpers, the forestay
+    this.mast = add(new THREE.Group(), 0, A.MAST_FOOT, A.MAST_Z); this.mast.rotation.x = Math.atan(A.RAKE); // raked about its foot; it turns about its own axis (Euler XYZ: the turn first, then the rake)
+    const mast = cyl(0.2, 0.36, A.MASTHEAD - A.MAST_FOOT, CARBON, 20); mast.position.y = (A.MASTHEAD - A.MAST_FOOT) / 2; mast.scale.set(0.75, 1, 1.55); this.mast.add(mast);
+    add(new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, (A.MAST_FOOT - H.deckY(A.MAST_Z)) / 0.5, 1.4), M.dark), 0, H.deckY(A.MAST_Z), A.MAST_Z);
     for (const sx of [-1, 1]) {
-      const w = wheel(0.3, 5); w.position.set(sx * 1.55, H.deckY(7.4) - 0.1, 7.6); this.wheel.add(w);
-      add(cyl(0.05, 0.07, 0.75, M.dark, 8), sx * 1.55, H.deckY(7.4) - 0.5, 7.75);
-    }
-    // the mast: a tall D-section stepped on a ball, rotating with the main; the shrouds and the jumpers, the forestay
-    this.mast = new THREE.Group(); this.mast.position.set(0, 0, -0.35);
-    const mast = cyl(0.2, 0.36, A.MASTHEAD - A.MAST_FOOT, CARBON, 20); mast.position.y = (A.MAST_FOOT + A.MASTHEAD) / 2; mast.scale.set(0.75, 1, 1.55); this.mast.add(mast);
-    add(new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.4, 1.4), M.dark), 0, H.deckY(A.MAST_Z), A.MAST_Z);
-    for (const sx of [-1, 1]) {
-      T.add(line([[0, 22.5, A.MAST_Z], [sx * 1.4, 13, A.MAST_Z + 0.4], [sx * (H.hbAt(A.MAST_Z + 1) - 0.2), H.deckY(A.MAST_Z + 1) + 0.05, A.MAST_Z + 1]]));
-      T.add(line([[0, 13, A.MAST_Z], [sx * (H.hbAt(A.MAST_Z + 0.5) - 0.25), H.deckY(A.MAST_Z + 0.5) + 0.05, A.MAST_Z + 0.5]]));
-      const s = add(new THREE.Mesh(spreaderGeo(1.4, 0.05, 0.028), CARBON), sx * 0.7, 13, A.MAST_Z + 0.2); s.rotation.z = -sx * Math.PI / 2;
+      T.add(line([[0, 22.5, A.rz(22.5)], [sx * 1.4, 13, A.rz(13) + 0.4], [sx * (H.hbAt(A.MAST_Z + 1) - 0.2), H.deckY(A.MAST_Z + 1) + 0.05, A.MAST_Z + 1]]));
+      T.add(line([[0, 13, A.rz(13)], [sx * (H.hbAt(A.MAST_Z + 0.5) - 0.25), H.deckY(A.MAST_Z + 0.5) + 0.05, A.MAST_Z + 0.5]]));
+      const s = add(new THREE.Mesh(spreaderGeo(1.4, 0.05, 0.028), CARBON), sx * 0.7, 13, A.rz(13) + 0.2); s.rotation.z = -sx * Math.PI / 2;
       add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.12), M.steel), sx * (H.hbAt(A.MAST_Z + 1) - 0.2), H.deckY(A.MAST_Z + 1) + 0.04, A.MAST_Z + 1);
     }
-    T.add(line([[0, A.HEAD.y + 0.1, A.MAST_Z], [A.TACK.x, A.TACK.y, A.TACK.z]]));
+    T.add(line([[0, A.FORESTAY, A.rz(A.FORESTAY) - 0.2], [A.TACK.x, A.TACK.y, A.TACK.z]]));
     // the main: two skins round the mast, meeting at the leech; the clew sheeted to a traveller near the stern, no boom
     this.mainsheet = line([[0, 0, 0], [0, 1, 0]]); this.mainsheet.frustumCulled = false; T.add(this.mainsheet);
-    this.travCar = add(new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.1, 0.24), M.dark), 0, H.deckY(6.6) + 0.07, 6.6);
-    add(new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.06, 0.12), M.steel), 0, H.deckY(6.6) + 0.02, 6.6);
+    this.travCar = add(new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.1, 0.24), M.dark), 0, H.deckY(A.TRAV_Z) + 0.07, A.TRAV_Z);
+    add(new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.06, 0.12), M.steel), 0, H.deckY(A.TRAV_Z) + 0.02, A.TRAV_Z); // in its trench across the transom's scoop
     this.mainPivot = add(new THREE.Group(), 0, 0, A.MAST_Z + 0.35);
-    this.mainPivot.add(this.mast);
     const mtex = sailTexture('main', look, A.rig);
     this.main = sailMesh(24, 12, mtex, true, 'main'); this.mainPivot.add(this.main);
     this.main2 = sailMesh(24, 12, mtex, true, 'main'); this.mainPivot.add(this.main2);
     this.clewBoard = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 0.9), M.carbon); this.mainPivot.add(this.clewBoard);
     // the self-tacking jib: its car runs on a curved track across the foredeck
     this.TACK = A.TACK; this.HEAD = A.HEAD; this.CLEW = A.CLEW; this.jibMax = 18; this.jibBelly = 0.09;
-    const trk = []; for (let i = 0; i <= 16; i++) { const a = (i / 16 - 0.5) * 1.1; trk.push([Math.sin(a) * 6.2, H.deckY(A.TACK.z + 6.2 * Math.cos(a)) + 0.04, A.TACK.z + 6.2 * Math.cos(a)]); }
+    const JR = A.CLEW.z, JA = Math.asin(1.6 / JR); // the track's radius (the jib's foot) and how far round it runs, to 1.6 m out
+    const trk = []; for (let i = 0; i <= 16; i++) { const a = (i / 16 - 0.5) * 2 * JA; trk.push([Math.sin(a) * JR, H.deckY(A.TACK.z + JR * Math.cos(a)) + 0.04, A.TACK.z + JR * Math.cos(a)]); }
     T.add(tube(trk, 0.03, M.steel));
     for (const p of [trk[0], trk[16]]) add(new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.12), M.dark), p[0], p[1] + 0.02, p[2]); // its end stops
     fit(add, chainplate([0, A.TACK.y - 0.08, A.TACK.z + 0.05], [0, A.HEAD.y, A.MAST_Z], 0.4, 0.03)); // the jib's tack fitting on the deck
@@ -1351,12 +1371,13 @@ class AC75View extends ClassView {
     { const z = H.STERN - 3.6; T.add(...nameDecal(H, look, z, H.deckY(z) - 0.45, 4.2)); }
     this.windex = windex(add, A.MASTHEAD + 0.05, A.MAST_Z);
     // the broadcast's camera pods: one on a short post on the aft deck looking forward, one high on the mast
-    add(cyl(0.04, 0.05, 0.5, M.dark, 8), 0, H.deckY(10.2) + 0.25, 10.2);
-    add(new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.22, 4, 10).rotateX(Math.PI / 2), M.dark), 0, H.deckY(10.2) + 0.55, 10.15);
-    const cam = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.2, 4, 10).rotateX(Math.PI / 2), M.dark); cam.position.set(0, 18.5, -0.4); this.mast.add(cam);
-    // eight: the two helms aft at their wheels, the two trimmers, and the four cyclors on their bikes forward
+    { const z = H.STERN - 0.3; add(cyl(0.04, 0.05, 0.5, M.dark, 8), 0, H.deckY(z) + 0.25, z);
+      add(new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.22, 4, 10).rotateX(Math.PI / 2), M.dark), 0, H.deckY(z) + 0.55, z - 0.05); }
+    const cam = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.2, 4, 10).rotateX(Math.PI / 2), M.dark); cam.position.set(0, 18.5 - A.MAST_FOOT, -0.4); this.mast.add(cam);
+    // eight: the two helms forward at their wheels, the two trimmers behind them, and the four cyclors aft, heads down
+    // on their bikes, as the 37th Cup's crews sailed
     const m = { ...crewMats(look), helmet: true }, spots = []; // America's Cup crews race in helmets
-    for (const [z, i] of [[8.0, 0], [4.5, 1], [2.3, 3], [0.1, 3]]) for (const sx of [-1, 1]) spots.push([sx, z, i]);
+    for (const [z, i] of [[A.PODS[0][0] + 0.7, 0], [(A.PODS[1][0] + A.PODS[1][1]) / 2, 1], ...CYCLE_Z.map((z) => [z, 3])]) for (const sx of [-1, 1]) spots.push([sx, z, i]);
     this.crew = spots.map(([sx, z0, i], n) => {
       const s = sailor({ ...m, skin: new THREE.MeshStandardMaterial({ color: SKINS[n % SKINS.length], roughness: 0.65 }) });
       T.add(s.g);
@@ -1376,22 +1397,25 @@ class AC75View extends ClassView {
     }
     const sa = b.sail * D2R, luff = b.luff, ph = t * 17;
     this.mainPivot.rotation.y = -this.sailSide * sa;
-    this.mast.rotation.y = -this.sailSide * Math.min(sa, 0.5) * 0.3; // the mast turns a little further than the sail's foot to line up with it
+    this.mast.rotation.y = this.mainPivot.rotation.y - this.sailSide * Math.min(sa, 0.5) * 0.3; // the mast turns a little further than the sail's foot to line up with it
     const belly = -this.sailSide * (1 - luff * 0.85), span = A.rig.span;
     // the double skin: a deep, even camber all the way up, a little twist off at the head; the two skins stand apart
     // round the mast (its width) and close to the leech
+    // the sail turns about the upright through its tack; each height carried aft (in the boat's frame, whichever way
+    // the sail is turned) by the mast's rake there, so the luff stays on the mast
+    const psi = this.mainPivot.rotation.y, rs = -Math.sin(psi), rc = Math.cos(psi);
     for (const [mesh, sk] of [[this.main, 1], [this.main2, -1]]) setSail(mesh, (f, u, v) => {
-      const ch = A.chord(f), tw = -this.sailSide * f * f * 0.9 * u, gap = 0.24 * (1 - 0.5 * f) * (1 - u) ** 1.6;
-      v.set(belly * Math.sin(Math.PI * u ** 0.7) * ch * 0.1 + tw + sk * gap + luff * 0.3 * Math.sin(ph + f * 6 + u * 5) * u, A.FOOT_Y + f * span, u * ch);
+      const ch = A.chord(f), tw = -this.sailSide * f * f * 0.9 * u, gap = 0.24 * (1 - 0.5 * f) * (1 - u) ** 1.6, y = A.FOOT_Y + f * span, o = (y - A.FOOT_Y) * A.RAKE;
+      v.set(belly * Math.sin(Math.PI * u ** 0.7) * ch * 0.1 + tw + sk * gap + luff * 0.3 * Math.sin(ph + f * 6 + u * 5) * u + o * rs, y, u * ch + o * rc);
     });
     const ch0 = A.chord(0), ma = this.mainPivot.rotation.y, ms = this.mainsheet.geometry.attributes.position;
     this.clewBoard.position.set(0, A.FOOT_Y + 0.25, ch0 - 0.3);
-    ms.setXYZ(0, clamp(Math.sin(ma) * ch0 * 0.45, -1.5, 1.5), H.deckY(6.6) + 0.1, 6.6); this.travCar.position.x = ms.getX(0);
+    ms.setXYZ(0, clamp(Math.sin(ma) * ch0 * 0.45, -1.5, 1.5), H.deckY(A.TRAV_Z) + 0.1, A.TRAV_Z); this.travCar.position.x = ms.getX(0);
     ms.setXYZ(1, Math.sin(ma) * ch0, A.FOOT_Y + 0.1, A.MAST_Z + 0.35 + Math.cos(ma) * ch0); ms.needsUpdate = true;
     this.jibAndTells(b, t, side, belly, luff, ph, null);
     // the jib's car follows the clew round its track
     const cw = A.CLEW.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position);
-    const ang = clamp(Math.atan2(cw.x, cw.z - A.TACK.z), -0.55, 0.55), car = [Math.sin(ang) * 6.2, 0, A.TACK.z + 6.2 * Math.cos(ang)];
+    const JR = A.CLEW.z, JA = Math.asin(1.6 / JR), ang = clamp(Math.atan2(cw.x, cw.z - A.TACK.z), -JA, JA), car = [Math.sin(ang) * JR, 0, A.TACK.z + JR * Math.cos(ang)];
     car[1] = H.deckY(car[2]) + 0.1; this.jibCar.position.set(...car);
     const js = this.jibSheet.geometry.attributes.position; js.setXYZ(0, cw.x, cw.y, cw.z); js.setXYZ(1, car[0], car[1] + 0.05, car[2]); js.setXYZ(2, car[0], car[1], car[2]); js.needsUpdate = true;
     // the crew in their pods: the helms at their wheels, the windward trimmer working, the cyclors pedalling (harder
