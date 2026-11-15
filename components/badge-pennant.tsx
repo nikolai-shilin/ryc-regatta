@@ -1,56 +1,61 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties } from 'react';
 import { famOf, type BadgeFam, type BadgeId } from '@/lib/badges';
 
-// A badge as a pennant: its family's colour (gold a result, blue a skill, green the season) in a gradient, the right
-// half shaded, a keyline inset, and its picture in ink. Not yet earned, the same pennant dark with its picture faint.
-// No hooks and no stylesheet: the share card (app/og/passport) draws it too, where only the SVG's own attributes count.
+// A badge as the race's HUD draws its blocks (public/game/hud-bc.js): a dark plate with its corner cut, its family's
+// colour (gold a result, blue a skill, green the season) as the bar down its left, the picture in ink on a chip of
+// that colour, and under it a bar, full once earned. Not yet earned, the same plate grey with its picture faint. Flat,
+// as the HUD is. No hooks and no stylesheet: the share card (app/og/passport) draws it too, where only the SVG's own
+// attributes count.
 export const FAM_COLOUR: Record<BadgeFam, string> = { result: '#f5c400', skill: '#3db8ff', season: '#2ee6a0' };
-const TONES: Record<BadgeFam | 'off', [string, string, string]> = {
-  result: ['#ffe476', '#f5c400', '#c99400'],
-  skill: ['#9adcff', '#3db8ff', '#1785cf'],
-  season: ['#8ff5cc', '#2ee6a0', '#14b57a'],
-  off: ['#1c2738', '#16202f', '#111a27'],
-};
+const PLATE = '#111c2b', CHIP_OFF = '#1a2535', INK_ON = '#04121e';
 
-// each picture on the 120 × 132 pennant, its field centred at 60,58; c the ink, h the pennant's own colour (a hole)
-const ART: Record<BadgeId, (c: string, h: string) => ReactNode> = {
-  // a chequered flag
-  first: (c) => <><path d="M39 30v58" stroke={c} strokeWidth={6} /><path d="M42 30h40v30H42z" fill="none" stroke={c} strokeWidth={4} /><path d="M42 30h10v10H42zM62 30h10v10H62zM52 40h10v10H52zM72 40h10v10H72zM42 50h10v10H42zM62 50h10v10H62z" fill={c} /></>,
-  // a tick in a ring
-  clean: (c) => <><circle cx={60} cy={58} r={29} fill="none" stroke={c} strokeWidth={5} /><path d="M45 58l10 10 20-21" fill="none" stroke={c} strokeWidth={9} /></>,
-  // a stopwatch
-  gun: (c) => <><circle cx={60} cy={62} r={25} fill="none" stroke={c} strokeWidth={6} /><path d="M53 27h14v8H53zM79 35l6 6-4 4-6-6z" fill={c} /><path d="M60 62V46" stroke={c} strokeWidth={5} /><circle cx={60} cy={62} r={4.5} fill={c} /><path d="M60 41v4M81 62h-4M60 83v-4M39 62h4" stroke={c} strokeWidth={3} /></>,
-  // a zigzag up the beat, tacking on the shifts
-  shifts: (c) => <><path d="M34 84l16-24 14 10 14-24" fill="none" stroke={c} strokeWidth={7} /><path d="M70 40l17-9-1 19z" fill={c} /><path d="M80 66h10M80 76h14M80 86h8" stroke={c} strokeWidth={3} strokeOpacity={0.7} /></>,
-  // a speed gauge
-  speed: (c) => <><path d="M31 70a29 29 0 0 1 58 0" fill="none" stroke={c} strokeWidth={6} /><path d="M36 54l5 3M50 43l2 5M70 43l-2 5M84 54l-5 3" stroke={c} strokeWidth={3} /><path d="M60 70l18-20" stroke={c} strokeWidth={5} /><circle cx={60} cy={70} r={6} fill={c} /><path d="M38 82h44" stroke={c} strokeWidth={4} /></>,
-  // a podium with a star
-  podium: (c) => <path d="M50 50h20v36H50zM31 62h18v24H31zM71 70h18v16H71zM60 26l3.5 7 7.5 1-5.5 5 1.5 7.5L60 43l-7 3.5L54.5 39 49 34l7.5-1z" fill={c} />,
+// Each picture as an icon of the set the other RYC apps draw (IYT Test's, Ocean Way's): a 24 × 24 grid, the content
+// inside 2..22, one 2 px line with round caps and joins, at most one solid shape (f), and what is cut out of it in the
+// chip's colour (h a line, hf a shape). Drawn at 2.6×, centred on the chip (62, 55).
+const ring = (cx: number, cy: number, r: number) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`;
+const ART: Record<BadgeId, { l?: string; f?: string; h?: string; hf?: string }> = {
+  // a chequered flag: the pole, the flag, its squares cut out
+  first: { l: 'M6 21V3.5', f: 'M6 4h13v9H6z', hf: 'M10.33 4h4.34v4.5h-4.34zM6 8.5h4.33V13H6zM14.67 8.5H19V13h-4.33z' },
+  // a shield, a tick cut out of it: no fouls, no penalties
+  clean: { f: 'M12 3l7 2.8V11c0 4.6-2.9 8.3-7 10-4.1-1.7-7-5.4-7-10V5.8z', h: 'M8.6 12.2l2.4 2.4 4.6-4.8' },
+  // a stopwatch, its first seconds after the gun filled
+  gun: { l: `${ring(12, 13.5, 7.5)}M10 2.5h4M12 2.5V6M18.5 6.5L20 5`, f: 'M12 13.5V6A7.5 7.5 0 0 1 15.75 7z' },
+  // the beat in tacks, headed up the last, and the wind's lines
+  shifts: { l: 'M4 20l5-6 4 3 5-8M15.5 16.5h5M17.5 20.5h3', f: 'M19.3 6.9L19.6 10.6 15.8 8.2z' },
+  // the sail full, its telltales streaming, the boat's speed behind it
+  speed: { l: 'M12 2.5v17.5M5 20h16M3 9h5M4 12.5h5M6 16h3', f: 'M12 4c5 3.5 7.5 8.5 7.5 14H12z', h: 'M14 10h3M14 14h4' },
+  // the podium, a star over its top step
+  podium: { l: 'M12.00 2.40L12.95 4.69 15.42 4.89 13.54 6.50 14.12 8.91 12.00 7.62 9.88 8.91 10.46 6.50 8.58 4.89 11.05 4.69z', f: 'M3 21v-5h6v-4h6v6h6v3z' },
   // a trophy
-  win: (c) => <><path d="M43 30h34v16c0 11-7.5 19-17 19s-17-8-17-19z" fill={c} /><path d="M43 36h-8c0 10 4 15 10 15M77 36h8c0 10-4 15-10 15" fill="none" stroke={c} strokeWidth={4} /><path d="M56 64h8v11h-8zM45 75h30v8H45z" fill={c} /></>,
-  // two chevrons up, the lower fainter
-  comeback: (c) => <><path d="M38 82l22-20 22 20" fill="none" stroke={c} strokeWidth={8} strokeOpacity={0.55} /><path d="M38 62l22-20 22 20" fill="none" stroke={c} strokeWidth={8} /></>,
-  // a 7 over a wave
-  streak7: (c) => <><path d="M42 30h36v9L62 78H50l16-37H42z" fill={c} /><path d="M32 88c7-6 11-6 14 0s7 6 14 0 11-6 14 0 7 6 14 0" fill="none" stroke={c} strokeWidth={4} /></>,
-  // a compass rose
-  venues7: (c, h) => <><circle cx={60} cy={58} r={27} fill="none" stroke={c} strokeWidth={4} /><path d="M60 26l7 25 25 7-25 7-7 25-7-25-25-7 25-7z" fill={c} /><circle cx={60} cy={58} r={4} fill={h} /></>,
-  // a globe
-  venues28: (c) => <><circle cx={60} cy={58} r={28} fill="none" stroke={c} strokeWidth={5} /><ellipse cx={60} cy={58} rx={12} ry={28} fill="none" stroke={c} strokeWidth={4} /><path d="M32 58h56M36 44h48M36 72h48" stroke={c} strokeWidth={3.5} /></>,
-  // three stars, a drill's best
-  drills: (c) => <path d="M60 26l5.5 11.5 12.5 1.7-9.1 8.8 2.2 12.5L60 54.5l-11.1 6 2.2-12.5-9.1-8.8 12.5-1.7zM36 58l4 8.4 9.2 1.3-6.6 6.4 1.6 9.1L36 78.8l-8.2 4.4 1.6-9.1-6.6-6.4 9.2-1.3zM84 58l4 8.4 9.2 1.3-6.6 6.4 1.6 9.1L84 78.8l-8.2 4.4 1.6-9.1-6.6-6.4 9.2-1.3z" fill={c} />,
+  win: { l: 'M8 21h8M12 14v7M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3', f: 'M7 4h10v5a5 5 0 0 1-10 0z' },
+  // the way turned back up and ahead
+  comeback: { l: 'M6 21v-6a6 6 0 0 1 6-6h4', f: 'M15.5 5l5 4-5 4z' },
+  // a week's calendar, a 7 on it
+  streak7: { l: 'M4 6h16v15H4zM8 3v4M16 3v4M9.5 13h5l-3 5.5', f: 'M4 6h16v4H4z' },
+  // a compass, its needle
+  venues7: { l: `${ring(12, 12, 9)}M12 3v2M12 19v2M3 12h2M19 12h2`, f: 'M15.5 8.5l-2 5-5 2 2-5z' },
+  // a globe, the way round it
+  venues28: { l: `${ring(12, 12, 9)}M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18`, f: 'M15.5 9.8L19 12l-3.5 2.2z' },
+  // three stars, a drill's best: the middle one solid
+  drills: { l: 'M5.60 13.40L6.50 15.56 8.83 15.75 7.06 17.27 7.60 19.55 5.60 18.33 3.60 19.55 4.14 17.27 2.37 15.75 4.70 15.56zM18.40 13.40L19.30 15.56 21.63 15.75 19.86 17.27 20.40 19.55 18.40 18.33 16.40 19.55 16.94 17.27 15.17 15.75 17.50 15.56z', f: 'M12.00 3.20L13.27 6.25 16.57 6.52 14.05 8.67 14.82 11.88 12.00 10.16 9.18 11.88 9.95 8.67 7.43 6.52 10.73 6.25z' },
 };
 
 type Props = { id: BadgeId; on: boolean; fam?: BadgeFam; width?: number; height?: number; className?: string; style?: CSSProperties };
 export function BadgePennant({ id, on, fam = famOf(id), width, height, className, style }: Props) {
-  const [a, b, c] = TONES[on ? fam : 'off'], g = `bp-${id}-${on ? fam : 'off'}`;
+  const c = on ? FAM_COLOUR[fam] : '#2a3546', chip = on ? FAM_COLOUR[fam] : CHIP_OFF, ink = on ? INK_ON : '#ffffff', art = ART[id];
   return (
     <svg viewBox="0 0 120 132" width={width} height={height} className={className} style={style} aria-hidden="true">
-      <defs><linearGradient id={g} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={a} /><stop offset="0.55" stopColor={b} /><stop offset="1" stopColor={c} /></linearGradient></defs>
-      <path d="M8 4h104v88l-52 36L8 92z" fill={`url(#${g})`} />
-      <path d="M60 4h52v88l-52 36z" fill="#000000" fillOpacity={on ? 0.12 : 0.18} />
-      <path d="M8 4h104v6H8z" fill="#ffffff" fillOpacity={on ? 0.35 : 0.05} />
-      <path d="M18 16h84v70l-42 29-42-29z" fill="none" stroke={on ? '#04121e' : '#ffffff'} strokeOpacity={on ? 0.28 : 0.09} strokeWidth={2} />
-      <g opacity={on ? 1 : 0.26}>{ART[id](on ? '#04121e' : '#ffffff', b)}</g>
+      <path d="M2 2h116v112l-16 16H2z" fill={PLATE} stroke="#ffffff" strokeOpacity={0.1} strokeWidth={1.5} />
+      <path d="M2 2h7v128H2z" fill={c} />
+      <path d="M22 16h80v78H22z" fill={chip} stroke={on ? 'none' : '#ffffff'} strokeOpacity={0.12} strokeWidth={1.5} />
+      <g opacity={on ? 1 : 0.38} transform="translate(30.8 23.8) scale(2.6)" fill="none" stroke={ink} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        {art.f ? <path d={art.f} fill={ink} /> : null}
+        {art.l ? <path d={art.l} /> : null}
+        {art.h ? <path d={art.h} stroke={chip} /> : null}
+        {art.hf ? <path d={art.hf} fill={chip} stroke="none" /> : null}
+      </g>
+      <path d="M22 106h80v6H22z" fill="#ffffff" fillOpacity={0.12} />
+      {on ? <path d="M22 106h80v6H22z" fill={c} /> : null}
     </svg>
   );
 }

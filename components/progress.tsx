@@ -105,13 +105,13 @@ export function RaceBadges({ lang, at }: { lang: Lang; at: number }) {
   );
 }
 
-// the hub's rows: the drills (a gold pennant, your stars of all) and the badges (your last three earned fanned, how
-// many, a pip each)
+// the hub's rows: the drills (a gold plate, your stars of all) and the badges (the last you earned, how many, a pip
+// each)
 export function ProgressRows({ lang }: { lang: Lang }) {
   const t = tx(lang), got = useDrills(), log = useLog();
   const stars = got ? DRILLS.reduce((a, d) => a + (got[d.id] || 0), 0) : null;
   const n = log ? BADGES.filter((b) => log.b[b.id]).length : null;
-  const last = log ? (Object.entries(log.b) as [BadgeId, number][]).filter(([id]) => BADGES.some((b) => b.id === id)).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => id) : [];
+  const last = log ? (Object.entries(log.b) as [BadgeId, number][]).filter(([id]) => BADGES.some((b) => b.id === id)).sort((a, b) => b[1] - a[1])[0]?.[0] : undefined;
   return (
     <>
       <Link className="bt-row pg-row" href="/race/drills">
@@ -120,9 +120,7 @@ export function ProgressRows({ lang }: { lang: Lang }) {
         {stars == null ? null : <span className="pg-row-stars" aria-hidden="true">{Array.from({ length: DRILLS.length * 3 }, (_, i) => <i key={i} className={i < stars ? 'on' : undefined}>★</i>)}</span>}
       </Link>
       <Link className="bt-row pg-row" href="/race/badges">
-        <span className="pg-row-ico pg-row-fan" aria-hidden="true">
-          {last.length ? last.map((id, i) => <BadgePennant key={id} id={id} on style={{ left: i * 11, zIndex: 3 - i }} />) : <BadgePennant id="first" on={false} />}
-        </span>
+        <span className="pg-row-ico" aria-hidden="true">{last ? <BadgePennant id={last} on /> : <BadgePennant id="first" on={false} />}</span>
         <span className="pg-row-t">{t('Badges', 'Значки')}{n == null ? null : <small>{lang === 'ru' ? <>Получено <b>{n}</b> из {BADGES.length}</> : <><b>{n}</b> of {BADGES.length} earned</>}</small>}</span>
         {n == null ? null : <Pips got={log?.b} className="pg-row-pips" />}
       </Link>
