@@ -8,7 +8,8 @@
 //   The drills: a minute or two each, from /race/drills (/play?race=free&drill=<id>). A computer skipper sails your
 //     boat to the moment the drill is about (or not, for the start), hands her over, and the drill ends when it's
 //     done: stars for how it went, kept on this device (localStorage regatta-drills), never posted as a race.
-//   The analytics: the race's moments as Vercel Web Analytics events (the pages send theirs with @vercel/analytics):
+//   The analytics: the race's moments as Vercel Web Analytics events (/play loads its script; the pages send theirs
+//   with @vercel/analytics):
 //     a race started, a race left before the finish, a drill done.
 import { makeBoatView } from './boats3d.js';
 import { LOOKS, playerLook } from './yacht.js';
@@ -22,11 +23,8 @@ const fmt = (s) => { const a = Math.abs(s), m = Math.floor(a / 60), r = a - m * 
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 
 // ---------- analytics ----------
-// Vercel Web Analytics' own script, as the pages have it (they load it with @vercel/analytics); not on a local copy.
+// Vercel Web Analytics: /play loads its script itself (play/index.html), with the queue below for what's sent first
 window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-if (!/^(localhost|127\.|\[::1\])/.test(location.hostname)) {
-  document.head.append(Object.assign(document.createElement('script'), { src: '/_vercel/insights/script.js', defer: true }));
-}
 export const track = (name, data) => { try { window.va('event', { name, data }); } catch (e) {} };
 
 // ---------- the drills ----------
@@ -35,7 +33,7 @@ export const track = (name, data) => { try { window.va('event', { name, data });
 export const DRILLS = {
   start: { race: { preset: 'medium', fleet: 6, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' } },
   mark: { race: { preset: 'medium', fleet: 6, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' } },
-  beat: { race: { preset: 'light', fleet: 6, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' } },
+  beat: { race: { preset: 'medium', fleet: 6, length: 'short', laps: 1, start: 1, current: 0, course: 'wl' } },
 };
 export const DRILL_ORDER = ['start', 'mark', 'beat'];
 const drillId = q.get('drill') && DRILLS[q.get('drill')] ? q.get('drill') : null;
@@ -173,7 +171,9 @@ function startDrill(race) {
   // the minute before: yours. The others: a computer skipper sails her to the moment, then she's yours
   if (drillId !== 'start') {
     P.ai = { ...(race.boats.find((b) => b.ai)?.ai || {}), skill: 0.92, lineT: 0.5, lastTack: -999, go: false, wp: 0, dirtyT: 0, hailT: -99, port: false, dare: 0, loiter: 1 };
-    const until = drillId === 'mark' ? () => P.leg >= 1 && race.distToNext(P) < 130 : () => race.clock > 4;
+    // the beat: halfway up it (from the middle of the line to the windward mark), so what's left is a couple of minutes
+    const C = race.course, beat = Math.hypot(C.windward.x - (C.pin.x + C.committee.x) / 2, C.windward.z - (C.pin.z + C.committee.z) / 2);
+    const until = drillId === 'mark' ? () => P.leg >= 1 && race.distToNext(P) < 130 : () => P.leg >= 1 && race.distToNext(P) < beat * 0.5;
     for (let n = 0; n < 60 * 600 && !until(); n++) race.step(1 / 60);
     delete P.ai; P.auto = null;
     race.messages.length = 0; for (const b of race.boats) if (b.events) b.events.length = 0; // what was said on the way: not said now
@@ -215,8 +215,8 @@ function drillFrame(race) {
   } else {
     stars = P.leg < 2 ? 0 : place <= 2 && !pens ? 3 : place <= Math.ceil(n / 2) ? 2 : 1;
     line = P.leg < 2 ? tr('Not at the mark in time.', 'Не дошёл до знака вовремя.')
-      : tr(`${ord(place)} of ${n} at the top mark, ${fmt(race.clock)} after the gun. ${stars === 3 ? 'You played the shifts.' : 'Three stars: first or second there. Tack on the headers.'}`,
-        `${place}-е из ${n} у верхнего знака, через ${fmt(race.clock)} после старта. ${stars === 3 ? 'Ты сыграл на сдвигах.' : 'Три звезды: первым или вторым. Поворачивай на заходах.'}`);
+      : tr(`${ord(dr.place0)} halfway up, ${ord(place)} of ${n} at the top mark. ${stars === 3 ? 'You played the shifts.' : 'Three stars: first or second there. Tack on the headers.'}`,
+        `${dr.place0}-е на половине лавировки, ${place}-е из ${n} у верхнего знака. ${stars === 3 ? 'Ты сыграл на сдвигах.' : 'Три звезды: первым или вторым. Поворачивай на заходах.'}`);
   }
   const all = read('regatta-drills') || {}, was = all[dr.id] || 0;
   if (stars > was) { all[dr.id] = stars; try { localStorage.setItem('regatta-drills', JSON.stringify(all)); } catch (e) {} }

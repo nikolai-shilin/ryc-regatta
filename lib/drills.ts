@@ -9,7 +9,7 @@ export const DRILLS: { id: string; name: Pair; what: Pair; three: Pair; min: num
     what: ['You take over 130 m from the windward mark, boats round you. Round it and bear away to the gate.', 'Ты берёшь лодку в 130 м от верхнего знака, вокруг другие лодки. Обогни его и уходи к воротам.'],
     three: ['A place gained at the mark (or the lead kept), and no penalty.', 'Выигранное у знака место (или удержанное первое) и без штрафа.'] },
   { id: 'beat', name: ['The shifts', 'Сдвиги ветра'], min: 2,
-    what: ['From just after the gun, one beat in a light, shifty breeze. Tack on the headers.', 'Сразу после старта — одна лавировка в слабом переменчивом ветре. Поворачивай на заходах.'],
+    what: ['Halfway up the first beat in a shifty breeze, the fleet round you. Tack on the headers to the windward mark.', 'Половина первой лавировки в переменчивом ветре, вокруг флот. Поворачивай на заходах до верхнего знака.'],
     three: ['First or second at the windward mark, with no penalty.', 'Первым или вторым у верхнего знака и без штрафа.'] },
 ];
 export const DRILL_IDS = DRILLS.map((d) => d.id);
