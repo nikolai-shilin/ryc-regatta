@@ -144,15 +144,19 @@ export function RivalRow({ lang }: { lang: Lang }) {
   );
 }
 
-// the rating page, over your month: the same, in a line
+// the rating page, over your month: the same, as the race's split strip: who, by how much, and where you stand
 export function RivalLine({ lang }: { lang: Lang }) {
   const t = tx(lang), r = useRival();
   if (!r) return null;
+  const ordW = (n: number) => t(`${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`, `${n}-е`);
   return (
-    <p className="pg-rival-l">
+    <div className={`pg-rv${r.rival ? '' : ' lead'}`} role="status">
+      <span className="k">{r.rival ? t('Your rival', 'Соперник') : t('You lead', 'Ты лидер')}</span>
       {r.rival
-        ? <>{t(`You: ${r.place}${['th', 'st', 'nd', 'rd'][(r.place % 100 > 10 && r.place % 100 < 14) || r.place % 10 > 3 ? 0 : r.place % 10]} this month, ${pts(r.mine, lang)}. Next up: `, `Ты: ${r.place}-е в месяце, ${pts(r.mine, lang)}. Следующий: `)}<b>{r.rival.name || t('No name', 'Без имени')}</b>{t(`, ${r.rival.pts - r.mine} ahead.`, `, впереди на ${r.rival.pts - r.mine}.`)}</>
-        : <>{t(`You lead this month with ${pts(r.mine, lang)}.`, `Ты лидер месяца: ${pts(r.mine, lang)}.`)}</>}
-    </p>
+        ? <b className="t"><Who fl={r.rival.fl} name={r.rival.name || t('No name', 'Без имени')} lang={lang} /></b>
+        : <b className="t">{t('The month', 'Месяц')}</b>}
+      <span className="v">{r.rival ? `+${pts(r.rival.pts - r.mine, lang)}` : r.lead ? `+${pts(r.mine - r.lead.pts, lang)}` : pts(r.mine, lang)}</span>
+      <span className="g">{t(`You ${ordW(r.place)} · ${pts(r.mine, lang)}`, `Ты ${r.place}-й · ${pts(r.mine, lang)}`)}</span>
+    </div>
   );
 }
