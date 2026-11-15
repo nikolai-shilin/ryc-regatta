@@ -7,7 +7,7 @@ import { readFile } from 'node:fs/promises';
 
 globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))));
 const sim = await import('../public/game/sim.js');
-const { D2R, HULL, lineD, lineT, wrap } = sim;
+const { D2R, HULL, clamp, lineD, lineT, wrap } = sim;
 const sgn = (v) => (v < 0 ? -1 : 1);
 
 const HUMANS = [{ id: 'h', name: 'Host' }, { id: 'g', name: 'Guest' }];
@@ -306,4 +306,208 @@ function sailScripted(opts) {
 const GOLDEN_4242 = [null, 285, 280.2, 237.2, 270.7];
 test('a free race is unchanged by the match code', () => {
   assert.deepEqual(sailScripted({ preset: 'medium', length: 'short', laps: 1, fleet: 5, seed: 4242 }), GOLDEN_4242);
+});
+
+// ---------- the umpire: the standard situations, each scripted to happen as the book draws it ----------
+// Each boat is placed exactly and sailed on a script: her heading as a function of the seconds since the situation
+// began (her helm), her speed held, so a gust or a lull can't change what happens. Then the umpire's call is checked:
+// who owes, by which rule, or no call.
+const BEAM = sim.CLS.beam;
+const gapOf = (p, q) => sim.hullGap(p, q).d - BEAM; // metres between the two hulls
+const fwd = (h) => ({ x: Math.sin(h), z: -Math.cos(h) }), stbd = (h) => ({ x: Math.cos(h), z: Math.sin(h) });
+const off = (p, v, k) => ({ x: p.x + v.x * k, z: p.z + v.z * k });
+// sail boat b from p, heading h, at v m/s held; her helm: helm(s) the heading s seconds from now (none: straight on).
+// Her rate of turn goes with it, as a boat turning has one (less the step's easing of it: see Boat.step's YAW_LAG)
+function sail(r, b, p, h, v, helm) {
+  const t0 = r.clock, dt = 1 / 60; helm ||= () => h;
+  put(r, b, p, h, v); b.hist = null; b.boom = 0;
+  steer(b, (r, o) => { const s = r.clock - t0; Object.assign(o, { h: wrap(helm(s)), v, rudder: 0, yawRate: (wrap(helm(s + dt) - helm(s)) / dt) * Math.exp(dt / 0.55) }); });
+}
+// how soon the two hulls touch if both hold their course and speed (Infinity: they don't in `max` s)
+function meetIn(p, q, max = 10) {
+  const at = (b, t) => ({ x: b.x + Math.sin(b.h) * b.v * t, z: b.z - Math.cos(b.h) * b.v * t, h: b.h });
+  for (let t = 0; t <= max; t += 0.02) if (gapOf(at(p, t), at(q, t)) <= 0) return t;
+  return Infinity;
+}
+// run for `secs`, keeping the closest the hulls came
+function closest(r, p, q, secs) {
+  let min = Infinity;
+  runUntil(r, () => { min = Math.min(min, gapOf(p, q)); return false; }, secs);
+  return min;
+}
+// a crossing halfway up the beat: starboard (yellow, g) and port (blue, h) close-hauled, 45° off the wind, at V; the
+// starboard boat reaches the crossing point X in `T` s, the port boat `lead` s before her
+const V = 3.4;
+function crossing({ lead = 0, T = 8, sHelm = null, pHelm = null } = {}) {
+  const r = matchRace(), [P, S] = r.humans, c = r.course;
+  afterGun(r, 30);
+  const X = midBeat(c), W = r.wind.at(X.x, X.z).dir, hs = W - 45 * D2R, hp = W + 45 * D2R;
+  sail(r, S, off(X, fwd(hs), -V * T), hs, V, sHelm && ((s) => sHelm(s, hs, S, P)));
+  sail(r, P, off(X, fwd(hp), -V * (T - lead)), hp, V, pHelm && ((s) => pHelm(s, hp, P, S)));
+  return { r, P, S, W };
+}
+// side by side on starboard, 50° off the wind, overlapped: leeward (yellow, g) at X, windward (blue, h) `gap` m off her
+// starboard side, both at V
+function sideBySide({ gap = 3, lHelm = null, wHelm = null } = {}) {
+  const r = matchRace(), [Wb, L] = r.humans, c = r.course;
+  afterGun(r, 30);
+  const X = midBeat(c), W = r.wind.at(X.x, X.z).dir, h = W - 50 * D2R;
+  sail(r, L, X, h, V, lHelm && ((s) => lHelm(s, h)));
+  sail(r, Wb, off(X, stbd(h), BEAM + gap), h, V, wHelm && ((s) => wHelm(s, h)));
+  return { r, L, Wb, W };
+}
+const calls = (r) => r.calls.map((k) => `${k.on} ${k.rule}`);
+
+test('port crosses clear ahead of starboard: no call', () => {
+  const { r, P, S } = crossing({ lead: 6 });
+  const min = closest(r, P, S, 12);
+  assert.ok(min > 5 && min < 7, `6 m clear at the crossing (${min.toFixed(2)})`);
+  assert.equal(r.calls.length, 0, calls(r).join());
+  assert.equal(P.owed, 0); assert.equal(S.owed, 0);
+});
+
+test('port aims at starboard, who bears away at the last moment: port penalised', () => {
+  let turnAt = null; // starboard bears away hard, 30° a second to 40° lower, when they'd touch in 1 s
+  const sHelm = (s, hs, S, P) => { if (turnAt === null && meetIn(S, P) <= 1) turnAt = s; return turnAt === null ? hs : hs - Math.min(40, 30 * (s - turnAt)) * D2R; };
+  const { r, P, S } = crossing({ sHelm });
+  const min = closest(r, P, S, 10);
+  assert.ok(turnAt !== null, 'starboard bore away');
+  assert.ok(min > -0.5, `and (nearly) missed her (${min.toFixed(2)})`);
+  assert.deepEqual(calls(r), [`${P.id} 10`]);
+  assert.equal(P.owed, 1); assert.equal(S.owed, 0);
+  // the call, with its reasons, and both boats told
+  const k = r.calls[0];
+  assert.ok(k.why.gap < 1 && k.why.look >= 0 && k.why.look <= 1.5, JSON.stringify(k));
+  assert.equal(typeof k.why.rowTurned, 'boolean'); assert.ok('rowTurnT' in k.why);
+  for (const b of [P, S]) assert.deepEqual(said(r, 'umpire', b).map((m) => m.arg), [{ rule: '10', on: P.id }]);
+});
+
+test('port ducks starboard close astern: no call', () => {
+  // port bears away 60°, 25° a second, when they'd touch in 3 s, and passes astern (the projection along her heading
+  // of the moment, not her turn, once called this)
+  let duckAt = null;
+  const pHelm = (s, hp, P, S) => { if (duckAt === null && meetIn(P, S) <= 3) duckAt = s; return duckAt === null ? hp : hp + Math.min(60, 25 * (s - duckAt)) * D2R; };
+  const { r, P, S } = crossing({ pHelm });
+  // the closest they came, and where port was then along starboard's course (− astern of her)
+  let min = Infinity, along = 0;
+  runUntil(r, () => { const d = gapOf(P, S); if (d < min) { min = d; const f = fwd(S.h); along = (P.x - S.x) * f.x + (P.z - S.z) * f.z; } return false; }, 12);
+  assert.ok(duckAt !== null, 'port ducked');
+  assert.ok(min > 1.5 && min < 2.5, `2 m astern (${min.toFixed(2)})`);
+  assert.ok(along < 0, `passed astern (${along.toFixed(1)})`);
+  assert.equal(r.calls.length, 0, calls(r).join());
+});
+
+test('leeward luffs slowly, windward answers: no call', () => {
+  // leeward luffs 3° a second for 5 s; windward answers a moment later, turning with her
+  const luff = (s) => clamp(s, 0, 5) * 3 * D2R;
+  const { r, L, Wb } = sideBySide({ lHelm: (s, h) => h + luff(s), wHelm: (s, h) => h + luff(s - 0.3) }), h0 = L.h;
+  const min = closest(r, L, Wb, 8);
+  assert.ok(min > 2.4, `windward kept some 3 m off (${min.toFixed(2)})`);
+  for (const b of [L, Wb]) assert.ok(Math.abs(wrap(b.h - h0 - 15 * D2R)) < 0.5 * D2R, 'both luffed 15°');
+  assert.equal(r.calls.length, 0, calls(r).join());
+});
+
+test('leeward luffs, windward doesn\'t answer: windward penalised', () => {
+  const { r, L, Wb } = sideBySide({ lHelm: (s, h) => h + clamp(s, 0, 10) * 3 * D2R });
+  assert.equal(r.rightOfWay(L, Wb).rule, '11');
+  closest(r, L, Wb, 10);
+  assert.deepEqual(calls(r), [`${Wb.id} 11`]);
+  assert.equal(Wb.owed, 1); assert.equal(L.owed, 0);
+  assert.equal(r.calls[0].why.rowTurned, false);
+});
+
+test('leeward luffs hard with no room for windward to keep clear: leeward penalised', () => {
+  // 2 m apart, leeward luffs 25° in a second; windward answers, luffing away as hard as she can, a moment later
+  const { r, L, Wb } = sideBySide({ gap: 2, lHelm: (s, h) => h + clamp(s, 0, 1) * 25 * D2R, wHelm: (s, h) => h + clamp(s - 0.4, 0, 1.2) * 30 * D2R });
+  closest(r, L, Wb, 6);
+  assert.deepEqual(calls(r), [`${L.id} 16.1`]);
+  assert.equal(L.owed, 1); assert.equal(Wb.owed, 0);
+  assert.equal(r.calls[0].why.rowTurned, true); assert.ok(r.calls[0].why.rowTurnT !== null);
+});
+
+test('the dial-up: head to wind side by side, no closing: no call', () => {
+  const r = matchRace(), [h, g] = r.humans, c = r.course;
+  r.clock = -100; for (const b of r.humans) b.entered = true; // in the box after both entered
+  const X = linePt(c, 0.5, -60), W = r.wind.at(X.x, X.z).dir;
+  // 4 m between their centrelines: the hulls half a metre apart, closer than the umpire's 1 m, but neither closing
+  put(r, g, X, W, 0); still(g);
+  put(r, h, off(X, stbd(W), 4), W, 0); still(h);
+  for (const b of [g, h]) b.hist = null;
+  const min = closest(r, h, g, 10);
+  assert.ok(min > 0 && min < 1, `${min.toFixed(2)}`);
+  assert.equal(r.calls.length, 0, calls(r).join());
+});
+
+test('the zone is two lengths: the inside boat gets room, the outside one that shuts her out is penalised', () => {
+  const r = matchRace(), [A, B] = r.humans, c = r.course;
+  afterGun(r, 200, 2); assert.equal(c.legs[2], 'gate');
+  const M = sim.legAim(c, 2), W = r.wind.at(M.x, M.z).dir, h = W - 160 * D2R; // running on starboard at the gate
+  // A inside and to windward, heading for the gate, 3 lengths out; B outside and to leeward, 3 m off her port side
+  const A0 = off(M, fwd(h), -3 * HULL);
+  let luffAt = null; // B, once in the zone, luffs 4° a second into A, shutting her out from the mark
+  sail(r, A, A0, h, 3);
+  sail(r, B, off(A0, stbd(h), -(BEAM + 3)), h, 3, (s) => { if (luffAt === null && r.zoneOf(A, B)) luffAt = s; return h + (luffAt === null ? 0 : (s - luffAt) * 4 * D2R); });
+  // outside the leeward boat has right of way (rule 11), and at two and a half lengths they aren't in the zone yet
+  r.step(1 / 60); assert.equal(r.rightOfWay(A, B).giver, A); assert.equal(r.rightOfWay(A, B).rule, '11');
+  runUntil(r, () => Math.hypot(A.x - M.x, A.z - M.z) < 2.5 * HULL, 10);
+  assert.equal(r.zoneOf(A, B), null, 'not yet: the zone is two lengths');
+  runUntil(r, () => r.zoneOf(A, B), 10);
+  assert.ok(Math.hypot(A.x - M.x, A.z - M.z) < 2 * HULL + 0.2);
+  assert.equal(r.zoneOf(A, B).entitled, A, 'the inside boat gets mark-room');
+  runUntil(r, () => r.calls.length > 0 || A.leg > 2, 10);
+  assert.deepEqual(calls(r), [`${B.id} 18`]);
+  assert.equal(B.owed, 1); assert.equal(A.owed, 0);
+});
+
+test('one incident, one call', () => {
+  // port aims at starboard and neither alters: the umpire calls it before they touch, and the contact adds nothing
+  const { r, P, S } = crossing();
+  let callAt = null, bumpAt = null;
+  runUntil(r, () => {
+    if (callAt === null && r.calls.length) callAt = r.clock;
+    if (bumpAt === null && said(r, 'bump').length) bumpAt = r.clock;
+    return false;
+  }, 10);
+  assert.ok(callAt !== null && bumpAt !== null && callAt < bumpAt && bumpAt - callAt < 6, `called ${callAt}, touched ${bumpAt}`);
+  assert.deepEqual(calls(r), [`${P.id} 10`]);
+  assert.equal(P.owed, 1); assert.equal(S.owed, 0);
+  assert.equal(said(r, 'umpire', P).length, 1);
+});
+
+test('every duck that passes a metre and a half or more astern: no call; one that hits: port\'s', () => {
+  // bearing away at 15 to 30° a second, 3 to 4 s before they'd touch, to 50–70° lower
+  let clear = 0, hit = 0;
+  for (const rate of [15, 20, 25, 30]) for (const at of [3, 3.5, 4]) for (const ang of [50, 60, 70]) {
+    let duckAt = null;
+    const pHelm = (s, hp, P, S) => { if (duckAt === null && meetIn(P, S) <= at) duckAt = s; return duckAt === null ? hp : hp + Math.min(ang, rate * (s - duckAt)) * D2R; };
+    const { r, P, S } = crossing({ pHelm }), key = `${rate}°/s ${at} s out to ${ang}°`;
+    const min = closest(r, P, S, 14);
+    if (min >= 1.5) { clear++; assert.equal(r.calls.length, 0, `${key}: ${min.toFixed(2)} m astern, ${calls(r)}`); }
+    if (min <= 0) { hit++; assert.deepEqual(calls(r), [`${P.id} 10`], key); }
+  }
+  assert.ok(clear >= 20 && hit >= 1, `${clear} clear, ${hit} hit`);
+});
+
+test('starboard hunts port crossing ahead: with no time to answer it\'s starboard\'s, with time port\'s', () => {
+  // port crosses 2.6 m ahead; starboard luffs 30° at her, 30° a second, when they're `d` m apart; port holds on
+  for (const [d, rule] of [[14, '16.1'], [20, '10']]) {
+    let at = null;
+    const sHelm = (s, hs, S, P) => { if (at === null && Math.hypot(S.x - P.x, S.z - P.z) < d) at = s; return at === null ? hs : hs + Math.min(30, 30 * (s - at)) * D2R; };
+    const { r, P, S } = crossing({ lead: 4.6, sHelm });
+    closest(r, P, S, 14);
+    assert.ok(at !== null, 'she luffed');
+    assert.deepEqual(calls(r), [`${rule === '16.1' ? S.id : P.id} ${rule}`], `from ${d} m`);
+    assert.equal(r.calls[0].why.rowTurned, true);
+  }
+});
+
+test('the umpire is a match\'s only: a free race makes no calls', () => {
+  const r = new sim.Race({ seed: 11, fleet: 2, humans: HUMANS }), [P, S] = r.humans;
+  r.clock = 30;
+  const X = midBeat(r.course), W = r.wind.at(X.x, X.z).dir;
+  sail(r, S, off(X, fwd(W - 45 * D2R), -V * 8), W - 45 * D2R, V);
+  sail(r, P, off(X, fwd(W + 45 * D2R), -V * 8), W + 45 * D2R, V);
+  const min = closest(r, P, S, 6); // up to just before they'd touch: a match's umpire has called it by now
+  assert.ok(min > 0 && min < 3, `${min.toFixed(2)}`);
+  assert.deepEqual(r.calls, []); assert.equal(said(r, 'umpire').length, 0);
 });

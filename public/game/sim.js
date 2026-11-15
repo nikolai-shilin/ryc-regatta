@@ -213,6 +213,7 @@ export class Wind {
 }
 
 // ---------- the boat ----------
+const YAW_LAG = 0.55; // s: how long she takes to start turning, and to stop when the helm is centred
 export class Boat {
   constructor(o = {}) {
     this.name = o.name || 'You';
@@ -472,7 +473,7 @@ export class Boat {
     if (this.heel > 35) yaw += side * Math.min((this.heel - 35) / 20, 1.2) * 0.22; // weather helm rounds her up
     if (a < NO_GO && this.v < 0.8 && !this.auto && !this.pen) yaw -= side * 0.18; // stopped head to wind, the bow blows off
     // she doesn't answer the helm at once: a heavy hull takes a moment to start turning, and a moment to stop
-    this.yawRate += (yaw - this.yawRate) * (1 - Math.exp(-dt / 0.55));
+    this.yawRate += (yaw - this.yawRate) * (1 - Math.exp(-dt / YAW_LAG));
     this.yaw = this.yawRate;
     const prevH = this.h;
     this.h = wrap(this.h + this.yaw * dt);
@@ -639,7 +640,7 @@ const SZ = HULL / CLASSES[DEFAULT_CLASS].loa, SZ_PASS = clamp(SZ, 0.6, 2), SZ_MA
 // for contact a hull is a capsule: a spine along her centreline with a rounded edge half her beam out, so two boats
 // can sail a couple of metres apart side by side, and a bow can touch a mark
 const HALF_B = CLS.beam / 2, SPINE = HULL / 2 - HALF_B;
-function hullGap(p, q) { // the closest approach of two spines: distance, and the direction from p's to q's
+export function hullGap(p, q) { // the closest approach of two spines: distance, and the direction from p's to q's
   const d1x = Math.sin(p.h) * SPINE * 2, d1z = -Math.cos(p.h) * SPINE * 2, d2x = Math.sin(q.h) * SPINE * 2, d2z = -Math.cos(q.h) * SPINE * 2;
   const p1x = p.x - d1x / 2, p1z = p.z - d1z / 2, p2x = q.x - d2x / 2, p2z = q.z - d2z / 2;
   const rx = p1x - p2x, rz = p1z - p2z, a = d1x * d1x + d1z * d1z, e = d2x * d2x + d2z * d2z;
@@ -652,6 +653,36 @@ function hullGap(p, q) { // the closest approach of two spines: distance, and th
 function spinePoint(b, m) { // the point on her spine nearest to m
   const fx = Math.sin(b.h), fz = -Math.cos(b.h), s = clamp((m.x - b.x) * fx + (m.z - b.z) * fz, -SPINE, SPINE);
   return { x: b.x + fx * s, z: b.z + fz * s };
+}
+// a match's umpire (Appendix C) calls a failure to keep clear, contact or not: when, both boats holding their course and
+// speed, their hulls would come within keepClear metres inside `look` seconds. The right-of-way boat that changed
+// course by huntDeg or more in the last huntT seconds, when on her old course they'd have stayed clear and the other
+// had less than huntT seconds to answer it, is the one in the wrong (rule 16.1: she didn't give the other room to keep
+// clear). One call for a pair in callGap seconds, and none while they're still tangled: a contact after a call is the
+// same incident
+// (tuned on scripted ducks, crossings, luffs, hunts and dial-ups, test/match-rules.test.mjs: from 1 m, 1.5 s and 2 s
+// the projection over 1.5 s called ducks that passed 2–3 m astern, and 2 s was too short for a windward boat to answer
+// a hard luff; huntDeg is the fourth value, the course change that counts as a turn)
+export const UMPIRE = { keepClear: 0.8, look: 1.0, huntT: 2.5, huntDeg: 12, callGap: 6 };
+// the closest two hulls come in the next `look` seconds, each holding her course and speed: metres between the hulls,
+// how soon, and how far apart they are now (g0). A boat turning carries her turn on for a moment as the helm is
+// centred (YAW_LAG), as a sailor watching her knows she will: along her heading of the moment alone, a boat ducking
+// astern looks to be aiming at the other. sp, sq: { h, w } a heading and rate of turn instead of her own (as earlier)
+function closing(p, q, sp = null, sq = null) {
+  const dt = 0.05, ha = sp ? sp.h : p.h, hb = sq ? sq.h : q.h, wa = sp ? sp.w : p.yawRate, wb = sq ? sq.w : q.yawRate;
+  const A = { x: p.x, z: p.z, h: ha }, B = { x: q.x, z: q.z, h: hb };
+  const head = (b, h0, w, t) => { b.h = h0 + w * YAW_LAG * (1 - Math.exp(-t / YAW_LAG)); };
+  const g0 = hullGap(A, B).d - 2 * HALF_B;
+  let gap = g0, look = 0;
+  for (let i = 1; i <= UMPIRE.look / dt + 1e-9; i++) {
+    const t = i * dt;
+    head(A, ha, wa, t - dt / 2); head(B, hb, wb, t - dt / 2); // along the heading at the middle of the step
+    A.x += Math.sin(A.h) * p.v * dt; A.z -= Math.cos(A.h) * p.v * dt; B.x += Math.sin(B.h) * q.v * dt; B.z -= Math.cos(B.h) * q.v * dt;
+    head(A, ha, wa, t); head(B, hb, wb, t);
+    const g = hullGap(A, B).d - 2 * HALF_B;
+    if (g < gap) { gap = g; look = t; }
+  }
+  return { gap, look, g0 };
 }
 const KITE_MAX = 26; // the computer boats fly the kite below this true wind speed (knots)
 // her tack, as the rules have it: from the side her boom is on (sailing by the lee she is still on her old tack)
@@ -822,6 +853,10 @@ export class Race {
     this.winner = null; this.margin = null; this.forfeited = null; // a match's: the first home (or the one left), by how much
     this.zoneStates = new Map();
     this.pairs = new Map(); // boats near each other: how their right of way came about (rules 15 and 17)
+    // a match umpire's calls, each with its reasons: { t, on: id, rule, why: { gap (m, projected), look (s ahead),
+    // rowTurned, rowTurnT (the clock when the right-of-way boat began her turn) } }; a contact's, why.contact
+    this.calls = [];
+    this.incidents = new Map(); // each pair's last call: when, and whether they have been apart since (an incident's end)
   }
   get log() { return this.player.log; } // your race, for the debrief (newLog)
   // a match's two boats at the race's first moment (8 s before the warning signal): blue 40 m out beyond the committee
@@ -953,6 +988,7 @@ export class Race {
     for (const b of this.boats) b.step(dt, this);
     this.trackRow();
     this.collide(dt);
+    if (this.match) this.umpire();
     // under U or the black flag: anywhere in the triangle of the line's ends and the first mark in the last minute
     if (this.prepFlag !== 'P' && this.clock >= -60 && this.clock < 0) for (const b of this.boats) {
       if (b.ufd || b.bfd || !this.inTriangle(b)) continue;
@@ -1107,9 +1143,9 @@ export class Race {
       else if (!inZ && b.inZone) Object.assign(b, { inZone: false, zoneGybed: false });
       if (b.inZone && b.sinceTack < 0.05 && this.clock - b.zoneT > 0.1 && b.lastGybe) b.zoneGybed = true;
     }
-    for (const b of bs) { // her recent headings, for rule 16
+    for (const b of bs) { // her recent headings (and how fast she was turning), for rule 16
       const h = b.hist || (b.hist = []);
-      if (!h.length || this.clock - h[h.length - 1][0] > 0.2) h.push([this.clock, b.h]);
+      if (!h.length || this.clock - h[h.length - 1][0] > 0.2) h.push([this.clock, b.h, b.yawRate]);
       while (h.length && h[0][0] < this.clock - 3) h.shift();
     }
     for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
@@ -1127,7 +1163,8 @@ export class Race {
     }
   }
   // who is in the wrong if they touch: Part 2's right of way, then the limits on the boat that holds it
-  judge(p, q) {
+  // (hunt false: leave rule 16 out, for the umpire, who judges it her own way)
+  judge(p, q, hunt = true) {
     const r = this.rightOfWay(p, q);
     if (r.rule === '44') return r;
     const c = this.course, k = c.legs[p.leg];
@@ -1150,7 +1187,7 @@ export class Race {
     const h = this.r20;
     if (h && this.clock - h.t < 10 && ((h.hailer === p && h.hailed === q) || (h.hailer === q && h.hailed === p)) && h.hailed.sinceTack > this.clock - h.t) return { giver: h.hailed, rule: '20' };
     if (st && st.r15 && st.r15.row === row && this.clock < st.r15.until) return { giver: row, rule: '15' };
-    if (this.turnedAt(row, r.giver)) return { giver: row, rule: '16' };
+    if (hunt && this.turnedAt(row, r.giver)) return { giver: row, rule: '16' };
     if (st && st.r17 === row && this.aboveProper(row)) return { giver: row, rule: '17' };
     return r;
   }
@@ -1226,6 +1263,14 @@ export class Race {
     if ((!this.match && g.pen) || g.done) return; // (in a match she can owe more than one)
     // 21: a boat pushed into this contact by another's foul a moment before is exonerated
     if (g.wrongedT !== undefined && this.clock - g.wrongedT < 1.5) { if (g.human) this.say('exonerated', undefined, g); return; }
+    // in a match a contact the umpire has just called is the same incident: one call for it
+    if (this.match) {
+      const key = this.pairKey(p, q);
+      if (this.inIncident(key)) return;
+      this.incidents.set(key, { t: this.clock, apart: false });
+      this.calls.push({ t: this.clock, on: g.id, rule: r.rule, why: { gap: Math.round((hullGap(p, q).d - 2 * HALF_B) * 100) / 100, look: 0, rowTurned: false, rowTurnT: null, contact: true } });
+      for (const b of this.humans) this.say('umpire', { rule: r.rule, on: g.id }, b);
+    }
     // in a match she owes it, and takes it when she chooses (Appendix C); else she takes it now
     if (this.match) g.owed++; else g.pen = { tack: false, gybe: false, dir: 0 };
     g.pens++; other.wrongedT = this.clock;
@@ -1240,6 +1285,50 @@ export class Race {
     if (this.match && other.human) this.say('theyOwe', { who: g.name, rule: r.rule }, other);
   }
 
+  pairKey(p, q) { const i = this.boats.indexOf(p), j = this.boats.indexOf(q); return Math.min(i, j) * 16 + Math.max(i, j); }
+  // a pair called less than callGap s ago, or not yet apart since (still tangled): the same incident, no new call
+  inIncident(key) { const k = this.incidents.get(key); return !!k && (this.clock - k.t < UMPIRE.callGap || !k.apart); }
+  // a match's umpire, from 30 s before the preparatory signal to the finish: for each pair, if holding their course and
+  // speed would bring their hulls within keepClear inside `look` seconds, and nearer than they are now (two boats sitting
+  // still side by side, as in a dial-up, aren't closing), she calls it. On whom: the boat that must keep clear (Part 2,
+  // as judge() has it), unless the closing is the right-of-way boat's own doing: she changed course by huntDeg or more
+  // in the last huntT s, on her old course they would not have closed, and the other had less than huntT s from the
+  // start of her turn to where they meet to answer it. Then it's hers, rule 16.1; with longer, the other had room to
+  // keep clear of her new course and it's the other's. A smaller change that closes them gives the other a moment to
+  // answer: no call yet (if it isn't answered, her old course closes them too, and the call is the other's)
+  umpire() {
+    if (this.clock < this.seq[1].t - 30 || this.over) return;
+    const bs = this.boats, { keepClear, look, huntT, huntDeg } = UMPIRE;
+    for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
+      const p = bs[i], q = bs[j], key = i * 16 + j, inc = this.incidents.get(key);
+      const far = Math.hypot(q.x - p.x, q.z - p.z) > HULL + (Math.abs(p.v) + Math.abs(q.v)) * look + keepClear + 1;
+      // closing: within keepClear, and nearer than they are (two boats sitting still side by side aren't closing)
+      const closes = (k) => k.gap < keepClear && k.gap < k.g0 - 0.05, now = far ? null : closing(p, q);
+      if (inc && (far || (!closes(now) && now.g0 >= keepClear))) inc.apart = true; // clear of each other, and not closing: it's over
+      if (far || p.done || q.done || this.inIncident(key) || !closes(now)) continue;
+      const r = this.judge(p, q, false), giver = r.giver, row = giver === p ? q : p;
+      // the right-of-way boat's heading huntT s ago, how far she has turned from it since, and when she began to turn
+      const hist = row.hist || [], w = hist.findIndex((e) => e[0] >= this.clock - huntT), h0 = w >= 0 ? hist[w][1] : row.h;
+      const rowTurned = Math.abs(wrap(row.h - h0)) >= huntDeg * D2R;
+      const k1 = w < 0 ? -1 : hist.findIndex((e, k) => k >= w && Math.abs(wrap(e[1] - h0)) > 2 * D2R), t1 = k1 > w ? hist[k1 - 1][0] : k1 >= 0 ? hist[k1][0] : null;
+      // had she held her old course, would they have closed? She straight on it, the other as she was sailing when the
+      // turn began (not yet answering it: her heading and any turn of her own she was making then)
+      const ge = t1 === null ? null : (giver.hist || []).find((e) => e[0] >= t1);
+      const before = closing(row, giver, { h: h0, w: 0 }, ge ? { h: ge[1], w: ge[2] ?? 0 } : null);
+      let on, rule;
+      if (closes(before)) { on = giver; rule = r.rule; } // on her old course they'd have closed as well: the keep-clear boat's
+      // her turn did it: if it began less than huntT before they'd meet, the other had no time to answer (no room); else
+      // she had, and it's still the keep-clear boat that didn't keep clear
+      else if (rowTurned) { if (this.clock - t1 + now.look < huntT) { on = row; rule = '16.1'; } else { on = giver; rule = r.rule; } }
+      else continue; // a small change of course: the other has a moment to answer it
+      this.incidents.set(key, { t: this.clock, apart: false });
+      const other = on === p ? q : p;
+      this.calls.push({ t: this.clock, on: on.id, rule, why: { gap: Math.round(now.gap * 100) / 100, look: Math.round(now.look * 100) / 100, rowTurned, rowTurnT: rowTurned ? t1 : null } });
+      on.owed++; on.pens++;
+      if (on.human) on.log.fouls.push({ rule, who: other.name, t: this.clock, x: on.x, z: on.z });
+      for (const b of this.humans) this.say('umpire', { rule, on: on.id }, b);
+    }
+  }
   collide(dt) {
     const bs = this.boats, c = this.course;
     for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
