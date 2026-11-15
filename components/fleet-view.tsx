@@ -90,7 +90,7 @@ export function FleetView({ lang, start, back }: { lang: Lang; start: YachtId | 
   }, [step]);
 
   const race = () => { saveOpts({ yacht: shown }); location.href = `/race/free?yacht=${shown}`; };
-  const kn = (v: number) => `${v} ${t('kn', 'уз')}`;
+  const kn = (v: number) => `${lang === 'ru' ? String(v).replace('.', ',') : v} ${t('kn', 'уз')}`; // 8,1 уз in Russian
   const spec = (k: string) => y.specs.find((s) => s.k[0] === k);
   const n = YACHTS.findIndex((x) => x.id === shown) + 1;
 

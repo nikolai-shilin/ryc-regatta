@@ -54,7 +54,7 @@ export function YachtsView({ lang, start, back }: { lang: Lang; start: YachtId; 
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const race = () => { saveOpts({ yacht: id }); location.href = `/race/free?yacht=${id}`; };
-  const kn = (v: number) => `${v} ${t('kn', 'уз')}`;
+  const kn = (v: number) => `${lang === 'ru' ? String(v).replace('.', ',') : v} ${t('kn', 'уз')}`; // 8,1 уз in Russian
   const spec = (k: string) => y.specs.find((s) => s.k[0] === k);
 
   return (

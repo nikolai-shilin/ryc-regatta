@@ -1384,3 +1384,36 @@
 .bc .pg-pass-b { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: var(--s-8) 0 0; padding: 0; list-style: none; }
 .bc .pg-pass-b svg { display: block; width: 64px; height: 70px; }
 .bc .pg-pass-b span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } /* the name, for a screen reader */
+
+/* ---------- the fleet's strip (/fleet): the tour's controls and the yachts, as the race's HUD draws them ----------
+   The controls: square plates side by side, the one that is on in blue. The yachts: one plate of cells, as the
+   numbers' lower third, each her number, her name and two numbers; the one shown is lit blue with a blue bar along
+   its foot, and while the tour runs the bar fills across her cell until the drone moves on. */
+.bc .fl-strip { gap: var(--s-1); }
+.bc .fl-ctl { gap: 2px; }
+.bc .fl-btn { width: var(--h-m); height: var(--h-m); gap: var(--s-2); border: 0; border-radius: 0; background: var(--panel); color: var(--ink); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  transition: background-color var(--t-quick), color var(--t-quick), scale .12s; }
+.bc .fl-btn:hover { background: var(--panel-2); }
+.bc .fl-btn:active { transform: none; scale: .95; }
+.bc .fl-btn[aria-pressed="true"] { background: var(--you); color: var(--ink-on); }
+.bc .fl-all { width: auto; padding: 0 var(--s-4) 0 var(--s-3); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
+.bc .fl-boats { display: flex; gap: 0; max-width: 760px; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+.bc .fl-boat { flex: 1 1 0; min-width: max-content; gap: var(--s-1); padding: var(--s-3) var(--s-4) var(--s-4); border: 0; border-right: 1px solid var(--rule); border-radius: 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+  transition: background-color var(--t-quick), scale .12s; }
+.bc .fl-boat:last-child { border-right: 0; }
+.bc .fl-boat:hover { background: var(--w-06); }
+.bc .fl-boat:active { transform: none; scale: .98; }
+.bc .fl-boat[aria-checked="true"] { background: color-mix(in srgb, var(--you) 16%, transparent); box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--you) 35%, transparent); }
+.bc .fl-i { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
+.bc .fl-boat[aria-checked="true"] .fl-i { color: var(--you); }
+.bc .fl-boat b { font: 700 var(--fs-title)/1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; }
+.bc .fl-m { font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; color: var(--ink-3); }
+.bc .fl-bar { height: 3px; background: var(--you); opacity: 1; }
+@container scr (orientation: portrait) {
+  .bc .fl-btn { width: 36px; height: 36px; } .bc .fl-all { width: 36px; padding: 0; }
+  .bc .fl-boat { width: 96px; padding: var(--s-2) var(--s-3) var(--s-3); }
+  .bc .fl-boat b { font-size: var(--fs-lead); }
+}
+@container scr (max-height: 500px) and (orientation: landscape) { .bc .fl-boat { padding: var(--s-2) var(--s-3); } .bc .fl-boat b { font-size: var(--fs-lead); } }
+/* sideways but narrow (a tablet, a small window): the cells' numbers go, so the names keep their room */
+@container scr (max-width: 1099px) and (orientation: landscape) { .bc .fl-boat { padding: var(--s-2) var(--s-3) var(--s-3); } .bc .fl-boat b { font-size: var(--fs-lead); } .bc .fl-m { display: none; } }
