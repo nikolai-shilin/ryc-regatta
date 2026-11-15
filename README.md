@@ -121,7 +121,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la Garde, Christ the Redeemer, Enoshima's Sea
   Candle, the lighthouses of Kiel, Trieste, Batumi, Scheveningen and Green Point, Istanbul's Bosphorus Bridge, Galata
   Tower, Blue Mosque, Hagia Sophia and Süleymaniye, St Petersburg's spires, columns and bridges, Batumi's Alphabetic
-  Tower, the big wheels on Batumi's shore and Scheveningen's pier, the Bank of China Tower and the Parthenon (a
+  Tower, the big wheels on Batumi's shore, Scheveningen's pier, Hong Kong's Central and Cape Town's V&A Waterfront, the Bank of China Tower and the Parthenon (a
   landmark with `clear` leaves out the map's own building in its place). `land.js` lays each course in clear water, and not across a bridge too low for a mast (St
   Petersburg's drawbridges); `npm test` sails every course shape at every venue and checks its marks are in clear
   water and on one side of every such bridge; a shape a venue has no room for at a length goes in its `skip`, as does
@@ -131,7 +131,10 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   from Microsoft's Global ML Building Footprints (ODbL), which `venues.py` downloads with the rest. Hong Kong's
   ground is its own 5 m terrain model (`dtm`), not the tiles, whose radar has the towers' roofs for the city's ground:
   the Digital Terrain Model of the Lands Department, Hong Kong SAR Government, from DATA.GOV.HK (free to use with
-  this attribution), which `venues.py` downloads (29 MB) and cuts to the venue.
+  this attribution), which `venues.py` downloads (29 MB) and cuts to the venue. Batumi's shore has more of the map
+  in it: its paved promenades and squares drawn as paving (`paved`), its palm avenues and other rows of trees planted
+  tree by tree where they stand (`trees`, the .bin's `tk` and `txz`), and its plain, whose tiles carry its roofs and
+  trees some 4 to 8 m up, laid down on the shore's floor below the hills (`plain`).
 - **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes
   wrong (a sheet left out or in too hard, a broach, a foul, a collision, aground, stopped after the gun, now and then a
   tack) and through the start (the signals, a boat too close, the line far off, over early, a quick or a late start).
