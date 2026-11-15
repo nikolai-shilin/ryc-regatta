@@ -29,6 +29,12 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     - `regatta-result-<id>` holds each finished race. The game keeps the last 20, then opens `/race/result/<id>`. With it go
       the venue, where the course lay there, and each boat's position, heading and sails the moment you finished, for the
       result page's scene; an older result has only the tracks, and `lib/finish.ts` puts each boat where hers had her then.
+    - `regatta-log` is the player's log (`lib/log.ts`): the days they finished today's race, at their best time that day,
+      and the venues they've raced at, with when they first did. The game keeps a day's best a week and the last 20
+      results, so the pages gather both into it on every visit (`components/bests-sync.tsx`, which merges it with the
+      account's `user_metadata.log` for a signed-in player). From it: the venues stamped on Home and the hub with the
+      streak (days in a row; a day missed doesn't break it, two do), a first race at a venue on its result, and your month
+      on the rating page, each day's best placed against that day's ranked times.
   - The game also posts each finished race to the scores server (below), so a result link opens on any device; there
     it reads as "this boat", not "you", and the page has a Share button for your own races.
 - **The ad on the jib:** every boat in the game (yours, the computer boats, the previews) carries one sponsor's logo

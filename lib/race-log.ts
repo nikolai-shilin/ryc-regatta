@@ -49,3 +49,19 @@ export function bestLeg(boats: LoggedBoat[]) {
   });
   return best as { leg: number; place: number; of: number; by: number } | null;
 }
+
+// Where you lost most to the boat that finished just ahead of you: the start (seg 0, how much later you crossed the
+// line) or a leg (seg n, 1-based), and by how much. null when you won, when there's no such boat or no leg times, or
+// when no part cost half a second or more.
+export function costliest(boats: (LoggedBoat & { name?: string | null })[]) {
+  const me = boats.find((b) => b.me);
+  if (!me || !me.done || me.dsq || me.secs == null || !me.legT?.length) return null;
+  const ahead = boats.filter((b) => !b.me && b.done && !b.dsq && b.secs != null && b.secs <= me.secs! && b.legT?.length)
+    .sort((a, b) => b.secs! - a.secs!)[0];
+  if (!ahead) return null;
+  const mine = legTimes(me), theirs = legTimes(ahead);
+  const segs = [me.legT[0] - ahead.legT![0], ...mine.map((m, i) => (theirs[i] != null ? m - theirs[i] : 0))];
+  let seg = -1, lost = 0.5;
+  segs.forEach((x, i) => { if (x >= lost) { lost = x; seg = i; } });
+  return seg < 0 ? null : { seg, lost, name: ahead.name ?? null, gap: me.secs - ahead.secs! };
+}

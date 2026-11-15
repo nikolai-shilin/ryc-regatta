@@ -1,6 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { BOAT_EVENT, BOAT_KEY, mergeBoat, saveBoat } from '@/lib/boat';
+import { cleanLog, harvest, LOG_EVENT, mergeLog, saveLog, sameLog } from '@/lib/log';
 
 // A signed-in player's personal bests and boat follow them to any device, and to any address of the site (the
 // browser keeps localStorage per address). The game keeps both on the device; the account keeps a copy in its
@@ -12,6 +13,9 @@ import { BOAT_EVENT, BOAT_KEY, mergeBoat, saveBoat } from '@/lib/boat';
 //
 // The boat: localStorage regatta-boat (lib/boat.ts). The one changed last wins (mergeBoat); the boat page tells this
 // to run again after every change, so a boat set on one device is the other's by its next page.
+//
+// The log (lib/log.ts: the days you finished today's race, the venues you've raced): gathered on every page from what
+// the game keeps, signed in or not, and for a signed-in player merged with the account's (user_metadata.log).
 //
 // It runs on every page, and the race is always reached through these pages (the hub, the free race, a result).
 const KEY = 'regatta-pb', WEEK = 7 * 864e5;
@@ -29,6 +33,7 @@ const read = (key: string) => { try { return JSON.parse(localStorage.getItem(key
 // Only a signed-in player has anything to sync, and the session lives in the sb-…-auth-token cookie: without it
 // there's nothing to do, and the Supabase client (~70 KB gzipped) isn't even downloaded. Most visitors are guests.
 export async function syncAccount() {
+  const log = harvest();
   if (!/(?:^|;\s*)sb-[^=]+-auth-token(?:\.\d+)?=/.test(document.cookie)) return;
   const { supabaseBrowser } = await import('@/lib/supabase/client');
   const supabase = supabaseBrowser();
@@ -44,6 +49,10 @@ export async function syncAccount() {
   const boat = mergeBoat(read(BOAT_KEY), user.user_metadata?.boat);
   if (boat.local) { saveBoat(boat.local, boat.local.at); dispatchEvent(new Event(BOAT_EVENT)); }
   if (boat.remote) data.boat = boat.remote;
+
+  const remoteLog = cleanLog(user.user_metadata?.log), both = mergeLog(log, remoteLog);
+  if (!sameLog(both, log)) { saveLog(both); dispatchEvent(new Event(LOG_EVENT)); }
+  if (!sameLog(both, remoteLog)) data.log = both;
 
   if (Object.keys(data).length) await supabase.auth.updateUser({ data }); // merged into the metadata, the name kept
 }

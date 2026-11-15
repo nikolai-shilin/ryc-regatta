@@ -16,7 +16,10 @@ import { courseDistance, fmtDistance, legDistances, shapeOf, SHAPE_NAME, type Sh
 import { finishScene, neighbours, raceVenue, type Pose } from '@/lib/finish';
 import { venueOf } from '@/lib/venues';
 import { readOpts } from '@/lib/opts';
-import { bestLeg, startOf } from '@/lib/race-log';
+import { bestLeg, costliest, startOf } from '@/lib/race-log';
+import { streakOf, todayUtc } from '@/lib/log';
+import { streakWords, useLog } from './passport';
+import { Replay } from './replay';
 import { shortName } from '@/lib/name';
 import { BOAT_EVENT, readBoat } from '@/lib/boat';
 
@@ -66,6 +69,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   // shared: the race isn't on this device, but the game posted it to the server when it finished (stats.js raceResult),
   // so this is someone's link: the page speaks of "this boat", not "you"
   const [shared, setShared] = useState(false);
+  const log = useLog(); // the venues you've raced and your streak, for the note on a first race somewhere or a day in a row
   useEffect(() => {
     let mine: Result | null = null;
     try { mine = JSON.parse(localStorage.getItem('regatta-result-' + id) || 'null'); } catch {}
@@ -137,6 +141,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   const cta = shared
     ? (isToday && me.secs != null && !me.dsq ? { href: '/play?race=today', label: t('Beat this time', 'Побей это время') } : { href: '/race', label: t('Sail today’s race', 'Пройти гонку дня') })
     : { href: again, label: t('Race again', 'Ещё гонку') };
+  const mine = me.secs != null && !me.dsq ? me.secs : null;
   const you = shared ? t('This boat', 'Эта лодка') : t('You', 'Ты');
   // the link to this page, with a line to go with it, for the share sheet (components/share-sheet): each app gets it
   // with its own utm_source, so the analytics say which app a visit came from
@@ -212,6 +217,43 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   // a new best: the one it beat, beside it
   const prev = !shared && res.pb?.isNew && res.pb.prev != null ? res.pb.prev : null;
 
+  // the next target, first thing after the result: today's race, the place above you on today's ranking (and the
+  // podium, when that's further); a free race, the boat that beat you, or your best on the course. And where the time
+  // went: the part of the race you lost most in to the boat that finished just ahead of you.
+  const ordW = (n: number) => t(ordEn(n), `${n}-е`);
+  let target: { v: string; s?: string; go?: string } | null = null;
+  if (!shared && mine != null) {
+    // today's race counts your best of the day (the game's record of it), which may be an earlier race than this one
+    const best = res.daily && res.pb ? Math.min(mine, res.pb.best) : mine;
+    const faster = res.daily && isToday && field ? field.filter((s) => s < best - 0.05).sort((a, b) => a - b) : null;
+    if (faster && faster.length) {
+      const pl = faster.length, need = best - faster[pl - 1] + 0.1;
+      target = { v: t(`${gapS(need)} to ${ordEn(pl)} today`, `${gapS(need)} до ${pl}-го места сегодня`), go: t(`go for ${ordEn(pl)}`, `за ${pl}-м местом`),
+        s: [pl > 3 ? t(`${gapS(best - faster[2] + 0.1)} to the podium`, `${gapS(best - faster[2] + 0.1)} до подиума`) : '',
+          best < mine - 0.05 ? t(`from your best today, ${clock(best)}`, `от твоего лучшего сегодня, ${clock(best)}`) : ''].filter(Boolean).join(' · ') || undefined };
+    } else if (faster && field?.length) {
+      const next = field.filter((s) => s > best + 0.05).sort((a, b) => a - b)[0];
+      target = { v: t('Fastest today', 'Быстрее всех сегодня'), s: next != null ? t(`${gapS(next - best)} clear of 2nd: stretch it`, `${gapS(next - best)} впереди второго — увеличь отрыв`) : t('The first time on today’s ranking', 'Первое время в рейтинге дня') };
+    } else if (nb.ahead && place > 1) {
+      target = { v: t(`${gapS(nb.ahead.gap + 0.1)} to ${ordEn(place - 1)}`, `${gapS(nb.ahead.gap + 0.1)} до ${place - 1}-го места`), go: t(`go for ${ordEn(place - 1)}`, `за ${place - 1}-м местом`), s: nb.ahead.name ? t(`${nb.ahead.name} took it`, `его заняла ${nb.ahead.name}`) : undefined };
+    } else if (res.pb && !res.pb.isNew && mine > res.pb.best) {
+      target = { v: t(`${gapS(mine - res.pb.best)} off your best`, `${gapS(mine - res.pb.best)} до твоего рекорда`), go: t('beat your best', 'побей свой рекорд') };
+    }
+  }
+  // where you lost most to the boat just ahead, a tile of the debrief's beside your best leg
+  const lost = costliest(res.boats);
+  if (lost) tiles.splice(Math.min(2, tiles.length), 0, { k: t('Most lost', 'Больше всего потеряно'), v: num(lost.lost), u: t('s', 'с'),
+    s: cap([lost.seg === 0 ? t('off the start line', 'на старте') : t(`leg ${lost.seg}, to ${legName(res.course.legs[lost.seg]).toLowerCase()}`, `отрезок ${lost.seg}, ${legName(res.course.legs[lost.seg]).toLowerCase()}`),
+      lost.name ? t(`to ${lost.name}`, `от ${lost.name}`) : ''].filter(Boolean).join(', ')) });
+  const ctaLabel = !shared && target?.go ? `${cta.label} · ${target.go}` : cta.label;
+
+  // a first race at this venue (your stamp's race is this one), or a day of a streak
+  const firstHere = !shared && !!log && log.v[where.id] === res.at && !me.dsq && me.done;
+  const strk = !shared && log && res.daily && res.daily === todayUtc() ? streakOf(log.d) : null;
+  const stampN = log ? Object.keys(log.v).length : 0;
+  const logNote = firstHere ? t(`First race at ${where.name[0]} · ${stampN} venues raced`, `Первая гонка в ${where.name[1]} · акваторий: ${stampN}`)
+    : strk && strk.today && strk.n > 1 ? streakWords(strk.n, lang) : null;
+
   // the result as the broadcast lays it out: the finish as it was behind the result and the full table, then, as the
   // page scrolls on, the debrief beside the track and the legs, and today's ranking beside your best and sharing
   const tag = (x: Item) => (x.note ? ['note', t('Note', 'Заметка')] : x.good ? ['ok', t('Good', 'Хорошо')] : ['work', t('Work on it', 'Поработай')]);
@@ -229,6 +271,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
           <div className="bt-kicks">
             <span className="bt-kick">{kicker}</span>
             {pbNote && res.pb?.isNew ? <span className="bt-kick rs-kick-g">{pbNote}</span> : null}
+            {logNote ? <span className="bt-kick rs-kick-s">{logNote}</span> : null}
           </div>
           <h1 className="bt-h">{title}</h1>
           <p className="bt-p">{t(...where.name)}, {t(...where.place)}. {near || t('The boats are where they were at the finish.', 'Лодки там, где были на финише.')}</p>
@@ -238,10 +281,18 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
             <div><span className="bt-sk">{t('Behind', 'Отставание')}</span><b>{winner && winner !== me && me.secs != null && winner.secs != null ? <CountUp v={`+${gapS(me.secs - winner.secs)}`} /> : '—'}</b><span className="bt-sv">{winner && winner !== me ? t(`${winner.name} won`, `победа: ${winner.name}`) : shared ? t('this boat won', 'эта лодка победила') : t('you won', 'ты победил')}</span></div>
             <div><span className="bt-sk">{t('Penalties', 'Штрафы')}</span><b className={L.penT > 1 ? 'is-down' : 'is-up'}><Num v={L.penT > 1 ? `${L.penT} ${t('s', 'с')}` : '0'} /></b><span className="bt-sv">{L.penT > 1 ? t('turning circles', 'штрафные обороты') : t('A clean race', 'Чистая гонка')}</span></div>
           </div>
+          {target ? (
+            <div className="rs-target" role="note" title={target.s}>
+              <span className="bt-sk">{t('Next target', 'Следующая цель')}</span>
+              <b>{target.v}</b>
+              {target.s ? <span className="rs-target-s">{target.s}</span> : null}
+            </div>
+          ) : null}
           <div className="rs-acts">
-            <a className="bt-go" href={cta.href}>{shared ? <IconPlay /> : <IconRestart />}<span>{cta.label}</span></a>
+            <a className="bt-go" href={cta.href}>{shared ? <IconPlay /> : <IconRestart />}<span>{ctaLabel}</span></a>
             {!shared && <ShareButton lang={lang} data={shareData} className="bt-show rs-ghost" title={t('Share your result', 'Поделиться результатом')} />}
             <Link className="bt-show rs-ghost" href="/race">{t('Race hub', 'Меню гонок')}</Link>
+            {res.boats.some((b) => b.track?.length > 1) ? <Replay res={res} myLegs={me.legT} lang={lang} /> : null}
           </div>
         </div>
 

@@ -82,3 +82,20 @@ export function neighbours(r: FinishResult) {
     behind: behind ? { name: behind.name || '', gap: behind.secs - me.secs } : null,
   };
 }
+
+// The race played back (the result page's replay): every boat where her track had her at T (race clock, s), her heading
+// and her speed then (over the second before), for the scene (public/boat-view, { type: 'replay', boats })
+export function posesAt(r: FinishResult, T: number) {
+  const out: { name: string | null; me: boolean; x: number; z: number; h: number; v: number }[] = [];
+  for (const b of r.boats) {
+    const p = along(b.track, b.secs, r.start, T), q = along(b.track, b.secs, r.start, T - 1);
+    if (p) out.push({ name: b.name, me: b.me, x: p.x, z: p.z, h: p.h, v: q ? Math.min(12, Math.hypot(p.x - q.x, p.z - q.z)) : 3 });
+  }
+  return out;
+}
+// what it plays: from a little before the gun to your finish (or the last boat's track, when you didn't finish)
+export function replaySpan(r: FinishResult) {
+  const me = r.boats.find((b) => b.me);
+  const last = Math.max(...r.boats.map((b) => b.secs ?? 0));
+  return { from: -15, to: me?.secs ?? (last || 300) };
+}

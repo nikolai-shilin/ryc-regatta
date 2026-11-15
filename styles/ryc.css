@@ -427,6 +427,7 @@ html[data-me] .hm-av > svg { display: none; }
 .bt-rows .bt-row { margin-top: 0; border-top: 0; text-decoration: none; }
 .bt-rows .bt-row::after { content: ''; width: 7px; height: 7px; margin-left: auto; flex: none; border: solid rgba(255, 255, 255, 0.4); border-width: 1.6px 1.6px 0 0; transform: rotate(45deg); }
 .bt-row-m { margin-left: auto; font: 700 10px/1 var(--f-sans); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.bt-row-risk > span:not(.bt-row-m) { color: #ff8a3d; } /* the streak needs today's race */
 .bt-rows .bt-row:has(.bt-row-m)::after { margin-left: 2px; }
 /* the card's second view, as the pause menu's: Settings in place of what it holds, a row back at the top */
 .bt-view { display: contents; }

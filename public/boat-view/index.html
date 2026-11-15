@@ -118,7 +118,24 @@ if (world) {
   // the finish as it was: the race laid again as it lay (its course, where it was at the venue), every boat posed where
   // she was the moment you crossed the line, and the drone downwind of you, a little off to one side, high enough to
   // see the line and the boats coming down to it over you
-  let fleet = null, look0 = 0, reach = 40;
+  let fleet = null, look0 = 0, reach = 40, byKey = null, held = null, replaying = false;
+  // how a boat sailed, from the game when it kept it, else from her heading in the wind: close-hauled, reaching, or
+  // under the kite
+  const poseOf = (s) => {
+    const twa = s.twa ?? wrap(W - s.h), down = Math.abs(twa) > 1.75, a = Math.abs(twa) * 180 / Math.PI;
+    return { x: s.x, z: s.z, h: s.h, twa, awa: s.awa ?? twa * (down ? 0.8 : 0.6), heel: s.heel ?? (down ? 6 : a < 60 ? 14 : 10),
+      sail: s.sail ?? Math.min(80, Math.max(12, 16 + (a - 41) * 0.52)), kite: s.kite != null ? !!s.kite : down, kiteFill: s.kiteFill ?? (down ? 1 : 0),
+      boom: s.boom ?? (Math.sign(twa) || 1), v: s.v ?? 3, rudder: 0, luff: 0, trim: 'ok', wdir: W, tws: race.wind.p.tws };
+  };
+  // the race again, as the result page plays it back ({ type: 'replay', boats }: each boat where her track had her at
+  // that moment), the drone behind you; { type: 'replay', off: true } puts the finish back as it was
+  const replay = (d) => {
+    if (!fleet) return;
+    if (d.off) { for (const [e, p] of held) e[1] = p; replaying = false; world.camH = P.h; look0 = wrap(W - P.h + 0.5); return; }
+    if (!Array.isArray(d.boats)) return;
+    for (const s of d.boats) { const e = byKey.get(s.me ? '\u0000me' : s.name); if (e) e[1] = poseOf(s); }
+    if (!replaying) { replaying = true; look0 = 0.35; world.intro = null; }
+  };
   const finish = (d) => {
     const r = d.race, c = r.course, pt = ([x, z]) => ({ x, z });
     // its shape: as the game kept it, or for a race kept before the shapes, a triangle if it has a wing mark
@@ -142,17 +159,14 @@ if (world) {
     W = race.wind.dir();
     // the boats, by name: yours is the player, the others the fleet the race was made with
     const byName = new Map(race.boats.filter((b) => b.ai).map((b) => [b.name, b]));
-    fleet = [];
+    fleet = []; byKey = new Map();
     for (const s of d.boats) {
       const b = s.me ? race.player : byName.get(s.name);
       if (!b) continue;
-      const twa = s.twa ?? wrap(W - s.h), down = Math.abs(twa) > 1.75, a = Math.abs(twa) * 180 / Math.PI;
-      // how she sailed, from the game when it kept it, else her point of sail: close-hauled, reaching, or under the kite
-      const pose = { x: s.x, z: s.z, h: s.h, twa, awa: s.awa ?? twa * (down ? 0.8 : 0.6), heel: s.heel ?? (down ? 6 : a < 60 ? 14 : 10),
-        sail: s.sail ?? Math.min(80, Math.max(12, 16 + (a - 41) * 0.52)), kite: s.kite != null ? !!s.kite : down, kiteFill: s.kiteFill ?? (down ? 1 : 0),
-        boom: s.boom ?? (Math.sign(twa) || 1), v: s.v ?? 3, rudder: 0, luff: 0, trim: 'ok', wdir: W, tws: race.wind.p.tws };
-      fleet.push([b, pose]);
+      const e = [b, poseOf(s)];
+      fleet.push(e); byKey.set(s.me ? '\u0000me' : s.name, e);
     }
+    held = fleet.map((e) => [e, e[1]]);
     race.boats = fleet.map(([b]) => b);
     if (!race.boats.includes(race.player)) { race.boats.unshift(race.player); fleet.unshift([race.player, { x: 0, z: 0, h: W + Math.PI, twa: Math.PI, awa: 2.5, heel: 6, sail: 70, kite: true, kiteFill: 1, boom: 1, v: 3, rudder: 0, luff: 0, trim: 'ok', wdir: W, tws: race.wind.p.tws }]); }
     race.player.done = true; // no pointers, laylines or guides: the race is over
@@ -463,6 +477,7 @@ if (world) {
     if (e.data.type === 'pose') pose = e.data.down ? DOWN : UP;
     if (e.data.type === 'inset') { inset = e.data; size(); }
     if (e.data.type === 'finish' && FINISH && !fleet && e.data.race && Array.isArray(e.data.boats)) finish(e.data);
+    if (e.data.type === 'replay' && FINISH) replay(e.data);
     if (e.data.type === 'setup' && SETUP && e.data.race) setupMsg(e.data);
     if (e.data.type === 'wind' && !FINISH && !SETUP && e.data.preset !== wind) { const o = world.orbit, d = world.dist; sail(e.data.preset); world.orbit = o; world.dist = d; }
     if (e.data.type === 'thumbs' && Array.isArray(e.data.items)) shoot(e.data.items);
@@ -482,7 +497,9 @@ if (world) {
       // where it looks from, and comes back to it after you let go
       for (const [b, p] of fleet) Object.assign(b, p);
       race.t = t;
-      const sway = Math.sin(t * 0.06) * 0.35;
+      // played back, the drone turns with you, as it does in the race
+      if (replaying) world.camH += wrap(P.h - world.camH) * Math.min(1, dt * 1.2);
+      const sway = Math.sin(t * 0.06) * (replaying ? 0.12 : 0.35);
       if (idle > 0) { idle -= dt; look0 = world.orbit - sway; } else world.orbit = look0 + sway;
     } else if (SETUP) {
       // the fleet afloat together, each boat posed close-hauled, rolling a little on her own; the breeze goes on

@@ -189,6 +189,31 @@
 .bc .rs-acts .bt-go { position: static; padding: 0 var(--s-12) 0 var(--s-6); box-shadow: none; clip-path: none; }
 .bc .rs-ghost { height: var(--h-l); padding: 0 var(--s-6); text-decoration: none; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
 .bc .rs-ghost:hover { background: var(--panel-2); }
+/* a first race at a venue, a day of a streak (components/passport.tsx) */
+.bc .rs-kick-s { flex: none; white-space: nowrap; background: var(--up); color: var(--ink-on); }
+/* the next target, between the result and the way to race again: the gap to the place above, where the time went */
+.bc .rs-target { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); align-self: flex-start; max-width: 100%; padding: var(--s-2) var(--s-5) var(--s-2) var(--s-4);
+  background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: inset 3px 0 0 var(--gold); pointer-events: auto; }
+.bc .rs-target b { font: 800 var(--fs-lead)/1.05 var(--cond); text-transform: uppercase; color: var(--ink); }
+.bc .rs-target-s { font: 600 var(--fs-small)/1.3 var(--cond); color: var(--ink-2); }
+/* a screen on its side and not tall (a phone, a small tablet): no room for it; the button says it, "go for 3rd" */
+@container scr (orientation: landscape) and (max-height: 699px) { .bc .rs-target { display: none; } }
+@container scr (max-width: 1099px) { .bc .rs-target-s { display: none; } }
+@container scr (orientation: landscape) and (max-width: 1099px) { .bc .rs-replay-go { padding: 0 var(--s-4); } .bc .rs-replay-go span { display: none; } }
+/* the replay: a button, then a bar to play the race back and drag through it */
+.bc .rs-replay { flex: 1 1 100%; display: flex; align-items: center; gap: var(--s-3); width: min(560px, 100%); height: var(--h-l); padding: 0 var(--s-2) 0 0; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); pointer-events: auto; }
+.bc .rs-replay button { flex: none; display: flex; align-items: center; justify-content: center; height: 100%; min-width: var(--h-l); padding: 0 var(--s-2); border: 0; background: none; color: var(--ink); font: 700 var(--fs-small)/1 var(--cond); cursor: pointer; }
+.bc .rs-replay .rs-rp-b { background: var(--you); color: var(--ink-on); }
+.bc .rs-replay button:hover:not(.rs-rp-b) { background: var(--fill-2); }
+.bc .rs-rp-x { font-size: var(--fs-lead) !important; color: var(--ink-2) !important; }
+.bc .rs-rp-r { flex: 1 1 auto; min-width: 60px; height: 24px; margin: 0; background: none; appearance: none; -webkit-appearance: none; cursor: pointer; }
+.bc .rs-rp-r::-webkit-slider-runnable-track { height: 4px; background: linear-gradient(90deg, var(--you) var(--p, 0%), var(--w-14, rgba(255,255,255,.14)) var(--p, 0%)); }
+.bc .rs-rp-r::-moz-range-track { height: 4px; background: linear-gradient(90deg, var(--you) var(--p, 0%), var(--w-14, rgba(255,255,255,.14)) var(--p, 0%)); }
+.bc .rs-rp-r::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%; background: var(--ink); border: 0; }
+.bc .rs-rp-r::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--ink); border: 0; }
+.bc .rs-rp-t { flex: none; display: flex; flex-direction: column; gap: 2px; min-width: 76px; }
+.bc .rs-rp-t b { font: 700 var(--fs-body)/1 var(--cond); font-variant-numeric: tabular-nums; }
+.bc .rs-rp-t small { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-2); }
 .bc .rs-down { position: absolute; right: var(--s-6); bottom: calc(var(--s-4) + var(--sb)); z-index: 3; display: flex; align-items: center; gap: var(--s-2); height: var(--h-s); padding: 0 var(--s-4);
   background: var(--panel); color: var(--ink); font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; text-decoration: none; pointer-events: auto; animation: bc-rise var(--t-in) var(--ease) both .9s; }
 .bc .rs-down:hover { background: var(--panel-2); }
@@ -294,6 +319,7 @@
 }
 @container scr (max-height: 500px) and (orientation: landscape) {
   .bc .rs-acts :is(.bt-go, .rs-ghost) { height: var(--h-m); }
+  .bc .rs-replay { height: var(--h-m); }
   .bc .rs-more { padding: var(--s-10) var(--s-6) var(--s-12); }
   .bc .rs-down { display: none; }
 }
@@ -523,6 +549,18 @@
 .bc .ho-venues li { padding: var(--s-3) var(--s-4); background: var(--fill-1); color: var(--ink-2); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
 .bc .ho-venues li.today { background: var(--you); color: var(--ink-on); }
 .bc .ho-venues li.next { background: none; box-shadow: inset 0 0 0 1px var(--w-35); color: var(--ink); }
+/* the venues you've raced, stamped, and over them how many and your streak (components/passport.tsx) */
+.bc .ho-venues-w { flex: 2 1 520px; min-width: 0; display: flex; flex-direction: column; gap: var(--s-4); }
+.bc .ho-venues-w .ho-venues { flex: none; }
+.bc .ho-venues li { display: inline-flex; align-items: center; gap: var(--s-2); }
+.bc .ho-venues li.raced { background: rgba(46, 230, 160, 0.14); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(46, 230, 160, 0.45); }
+.bc .ho-venues li.raced svg { color: var(--up); flex: none; }
+.bc .ho-venues li.today.raced { background: var(--you); color: var(--ink-on); }
+.bc .ho-venues li.today.raced svg { color: var(--ink-on); }
+.bc .ho-pass { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-4); margin: 0; font: 600 var(--fs-body)/1.3 var(--cond); color: var(--ink-2); }
+.bc .ho-pass b { font: 800 var(--fs-lead)/1 var(--cond); color: var(--ink); text-transform: uppercase; letter-spacing: var(--ls-button); }
+.bc .ho-pass span { color: var(--gold); text-transform: uppercase; letter-spacing: var(--ls-button); font-weight: 700; }
+.bc .ho-pass span.risk { color: var(--down); }
 .bc .ho-rules { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: var(--s-3); }
 /* two halves: racing a friend, the questions */
 .bc .ho-split { flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--s-8) var(--s-12); }
@@ -952,6 +990,24 @@
 .bc .rt-card { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); background: var(--surface); clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%); }
 .bc .rt-card-h { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding-bottom: var(--s-3); border-bottom: 1px solid var(--rule); }
 .bc .rt-card-h .lbl-ink { display: inline-flex; align-items: center; gap: var(--s-2); }
+/* your month (components/my-month.tsx): a bar a day, the share of the field you beat; the days you didn't race empty */
+.bc .rt-mine { display: flex; flex-direction: column; gap: var(--s-3); padding-bottom: var(--s-5); margin-bottom: var(--s-2); border-bottom: 1px solid var(--rule); }
+.bc .rt-mine-s { margin: 0; min-height: 1.4em; font: 500 var(--fs-small)/1.4 var(--sans); color: var(--ink-2); }
+.bc .rt-mine-s b { color: var(--ink); font-weight: 700; }
+.bc .rt-mine-c { display: flex; align-items: flex-end; gap: 2px; height: 92px; }
+.bc .rt-mine-d { flex: 1 1 0; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; gap: 4px; outline: none; }
+.bc .rt-mine-d i { display: block; border-radius: 4px 4px 0 0; background: var(--w-14); }
+.bc .rt-mine-d:not(.has) i { height: 2px !important; border-radius: 0; background: var(--w-10, rgba(255,255,255,.1)); }
+.bc .rt-mine-d.has i { background: var(--you); transition: opacity var(--t-quick); }
+.bc .rt-mine-d.win i { background: var(--gold); }
+.bc .rt-mine-c:has(.hv) .rt-mine-d.has:not(.hv) i { opacity: .45; }
+.bc .rt-mine-d.has { cursor: default; }
+.bc .rt-mine-d:focus-visible i { box-shadow: 0 0 0 2px var(--ink); }
+.bc .rt-mine-d small { text-align: center; font: 600 9px/1 var(--cond); color: var(--ink-3, var(--ink-2)); opacity: .7; font-variant-numeric: tabular-nums; }
+.bc .rt-mine-d.on small { color: var(--ink); opacity: 1; }
+.bc .rt-mine-d:not(.has):not(.on) small { visibility: hidden; }
+.bc .rt-mine-d:nth-child(5n + 1):not(.has) small { visibility: visible; }
+.bc .rt-mine-k { margin: 0; font: 500 var(--fs-label)/1.4 var(--sans); color: var(--ink-2); }
 .bc .rt-lb { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .bc .rt-lb li { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto 64px; align-items: stretch; min-height: 48px; background: var(--fill-1);
   animation: bc-slide-l var(--t-in) var(--ease) both; animation-delay: calc(var(--i, 0) * 40ms + 120ms); }

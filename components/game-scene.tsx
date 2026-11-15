@@ -18,6 +18,11 @@ export type SceneSetup = {
   view: 'boats' | 'wind' | 'current' | 'course';
   labels: Record<string, string>;
 };
+// SCENE_EVENT: a message for the scene from elsewhere on the page (the result page's replay, components/replay.tsx),
+// sent on to it as it is, without the page drawing itself again for each
+export const SCENE_EVENT = 'regatta-scene';
+export const toScene = (msg: object) => dispatchEvent(new CustomEvent(SCENE_EVENT, { detail: msg }));
+
 // `boat`: the class of yacht the scene shows (public/game/classes.js), the club's 40-footer without one; another is a
 // new page too, as another venue is
 export function GameScene({ venue, boat = '', wind, title, finish, setup, loading }: { venue: VenueId; boat?: string; wind: Wind; title: string; finish?: object; setup?: SceneSetup; loading?: string }) {
@@ -61,12 +66,14 @@ export function GameScene({ venue, boat = '', wind, title, finish, setup, loadin
       }
     };
     const fit = () => inset();
+    const relay = (e: Event) => post((e as CustomEvent).detail);
+    addEventListener(SCENE_EVENT, relay);
     addEventListener('message', on);
     addEventListener('resize', fit);
     const ro = new ResizeObserver(fit), { card, info } = parts();
     if (card) ro.observe(card);
     if (info) ro.observe(info);
-    return () => { removeEventListener('message', on); removeEventListener('resize', fit); ro.disconnect(); };
+    return () => { removeEventListener(SCENE_EVENT, relay); removeEventListener('message', on); removeEventListener('resize', fit); ro.disconnect(); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // the bar runs while the venue on top is still coming up
   const busy = !frames[frames.length - 1].live;

@@ -41,3 +41,18 @@ test('the best leg: the best place, then the biggest win or the smallest loss', 
   // a result saved before the leg times: nothing to say
   assert.equal(bestLeg([boat(true, undefined, 100), boat(false, undefined, 110)]), null);
 });
+
+const { costliest } = await import('../lib/race-log.ts');
+
+test('where you lost most to the boat just ahead: the start or a leg, and nothing when you won', () => {
+  const ahead = { ...boat(false, [2, 60, 130], 200), name: 'Nordic Star' };
+  // late off the line by 1 s, then 2 s on leg 1, 6 s on leg 2, 0.5 s on leg 3
+  const me = boat(true, [3, 63, 139], 209.5);
+  assert.deepEqual(costliest([ahead, me]), { seg: 2, lost: 6, name: 'Nordic Star', gap: 9.5 });
+  // 4 s late off the line and level after it: the start
+  assert.equal(costliest([ahead, boat(true, [6, 64, 134], 204)])?.seg, 0);
+  // you won: no one ahead
+  assert.equal(costliest([boat(true, [1, 50, 120], 190), ahead]), null);
+  // a result kept before the leg times
+  assert.equal(costliest([boat(false, undefined, 200), boat(true, undefined, 210)]), null);
+});

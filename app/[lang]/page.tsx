@@ -7,6 +7,7 @@ import { ruBoats } from '@/lib/lang';
 import { todayTop } from '@/lib/today';
 import { dailyRace, raceMinutes, KN } from '@/lib/race';
 import { VENUES, venueOf } from '@/lib/venues';
+import { VenueList } from '@/components/passport';
 import { IconArrow, IconPlay, Num, clock } from '@/components/ui';
 import { MyRow, HeroScene, Countdown, Ticker, Dock } from '@/components/home-client';
 import { CountUp } from '@/components/count-up';
@@ -229,12 +230,8 @@ export default async function Home({ params }: LangParams) {
               <h2 className="ho-h2" id="h-venues">{t(`${VENUES.length} venues, one a day`, `${VENUES.length} акватории, по одной в день`)}</h2>
               <p className="ho-ps">{t(`Each day the race moves to another famous regatta venue, with its own hills, town and wind. Each comes round once every ${VENUES.length} days. Tomorrow’s is revealed at midnight UTC.`, `Каждый день гонка переезжает на другую знаменитую регатную акваторию — со своими холмами, городом и ветром. Каждая возвращается раз в ${VENUES.length} дня. Завтрашняя откроется в полночь по UTC.`)}</p>
             </div>
-            <ul className="ho-venues">
-              {VENUES.map((v) => v.id === d.venue
-                ? <li key={v.id} className="today">{t(`${v.name[0]} · today`, `${v.name[1]} · сегодня`)}</li>
-                : <li key={v.id}>{t(...v.name)}</li>)}
-              <li className="next">{t('Tomorrow · ?', 'Завтра · ?')}</li>
-            </ul>
+            {/* the venues you've raced are stamped, and your streak over them: this device's, drawn in the browser */}
+            <VenueList lang={lang} today={d.venue} />
           </div>
         </section>
 

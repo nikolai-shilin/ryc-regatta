@@ -10,6 +10,7 @@ import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, SHAPE_NAME }
 import { venueOf } from '@/lib/venues';
 import { IconBack, IconPlay, IconTrophy, IconSliders, IconBoats, Num, clock } from '@/components/ui';
 import { BoatRow, FreeQuick } from '@/components/hub-client';
+import { PassportRow } from '@/components/passport';
 import { SceneBrand } from '@/components/scene-brand';
 import { GameScene } from '@/components/game-scene';
 import { PauseCard, SettingsRow, type Who } from '@/components/pause-card';
@@ -90,6 +91,7 @@ export default async function Hub({ params }: LangParams) {
           <FreeQuick lang={lang} />
           <div className="bt-rows">
             <button type="button" className="bt-row" data-lock aria-haspopup="dialog"><IconSliders /><span>{t('Change the wind or course', 'Изменить ветер или дистанцию')}</span><span className="bt-row-m">{t('A free race', 'Свободная гонка')}</span></button>
+            <PassportRow lang={lang} />
             <BoatRow lang={lang} />
             <Link className="bt-row" href="/yachts"><IconBoats s={18} /><span>{t('The yachts', 'Яхты')}</span><span className="bt-row-m">J/70 · RS21 · AC75</span></Link>
             <SettingsRow lang={lang} note />

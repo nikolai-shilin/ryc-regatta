@@ -33,6 +33,9 @@ export const HUD_STRINGS = {
     split: 'split', timeGap: 'Time · gap', due: 'Grey: still to round, metres to the mark', toGo: 'to go',
     squareAt: 'square', veer: 'Veer', back: 'Back', mToLine: (m) => `${m} m to line`,
     hold: (s) => `Hold ${s}, then bear away`, bearNow: 'Bear away now, full speed', late: 'Late: bear away now',
+    mvUp: (n) => (n > 1 ? `Up ${n} places` : 'Up a place'), mvDown: (n) => (n > 1 ? `Down ${n} places` : 'Down a place'),
+    mvPast: (n) => `Past ${n}`, mvBy: (n) => `${n} through`, mvTheirPen: 'Her penalty turn', mvYourPen: 'Your penalty turn',
+    mvMark: 'At the mark', mvShift: 'On the shift',
   },
   ru: {
     title: 'Up and down', daily: 'Гонка дня', free: 'Свободная гонка', live: 'Эфир', startIn: 'До старта', gun: 'Старт',
@@ -54,6 +57,9 @@ export const HUD_STRINGS = {
     split: 'отсечка', timeGap: 'Время · разрыв', due: 'Серым: ещё не обогнули, метров до знака', toGo: 'осталось',
     squareAt: 'ровная при', veer: 'Сдвиг вправо', back: 'Сдвиг влево', mToLine: (m) => `${m} м до линии`,
     hold: (s) => `Выжди ${s}, потом уваливайся`, bearNow: 'Уваливайся сейчас, полный ход', late: 'Опаздываешь: уваливайся сейчас',
+    mvUp: (n) => (n > 1 ? `+${n} места` : '+1 место'), mvDown: (n) => (n > 1 ? `−${n} места` : '−1 место'),
+    mvPast: (n) => `${n} позади`, mvBy: (n) => `${n} впереди`, mvTheirPen: 'Она крутит штраф', mvYourPen: 'Ты крутишь штраф',
+    mvMark: 'На знаке', mvShift: 'На сдвиге ветра',
   },
 };
 
@@ -304,6 +310,17 @@ const CSS = `
 .b-split .v { background: var(--panel); font: 700 var(--fs-row)/1 var(--cond); }
 .b-split .g { padding-right: var(--s-6); background: var(--panel); border-left: 1px solid var(--rule); font: 700 var(--fs-lead)/1 var(--cond); clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); }
 .b-split .g.gold { color: var(--gold); } .b-split .g.up { color: var(--up); } .b-split .g.down { color: var(--down); }
+/* a place won or lost: the split's strip, green up, orange down; who, and why when it's plain */
+.b-move { display: none; align-self: flex-start; align-items: stretch; height: 34px; margin-bottom: var(--s-2); }
+#hud.bc .b-move.on { display: flex; animation: b-split 4.8s var(--ease) both; }
+.b-move > * { display: flex; align-items: center; padding: 0 var(--s-4); white-space: nowrap; }
+.b-move .k { color: var(--ink-on); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.b-move.up .k { background: var(--up); } .b-move.down .k { background: var(--down); }
+.b-move .t { background: var(--ink); color: var(--ink-on); font: 800 var(--fs-row)/1 var(--cond); text-transform: uppercase; }
+.b-move .v { background: var(--panel); font: 700 var(--fs-row)/1 var(--cond); }
+.b-move .g { padding-right: var(--s-6); background: var(--panel); border-left: 1px solid var(--rule); font: 600 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-2); clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); }
+.b-move .v:last-child { clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); padding-right: var(--s-6); }
+.b-move [hidden] { display: none; }
 .b-go, .b-fin { display: none; left: 50%; top: 32%; translate: -50% -50%; pointer-events: none; }
 #hud.bc .b-go.on { display: block; animation: b-go 1.5s var(--ease) both; }
 .b-go { font: 800 180px/0.9 var(--cond); text-transform: uppercase; color: var(--ink); text-shadow: 0 4px 40px rgba(0, 0, 0, 0.55); }
@@ -474,6 +491,8 @@ const CSS = `
   .b-lay { font-size: var(--fs-label); padding: var(--s-2) var(--s-3); }
   .b-split { position: absolute; left: 50%; top: calc(56px + var(--st)); translate: -50% 0; height: 28px; margin: 0; }
   .b-split > * { padding: 0 var(--s-3); font-size: var(--fs-small) !important; } .b-split .k { font-size: var(--fs-label) !important; }
+  .b-move { position: absolute; left: 50%; top: calc(56px + var(--st)); translate: -50% 0; height: 28px; margin: 0; max-width: calc(100vw / var(--hz, 1) - 32px); }
+  .b-move > * { padding: 0 var(--s-3); font-size: var(--fs-small) !important; } .b-move .k, .b-move .g { font-size: var(--fs-label) !important; }
   .b-go { font-size: 110px; } .b-fin b { font-size: var(--fs-h2); }
 }
 /* a phone sideways: pause beside the board, and the call right over the tack button (moved into its column: see
@@ -590,7 +609,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   const map = html(`<div class="bx pn b-map"><div class="b-mh"><span class="lbl-ink">${L.course}</span><span class="lbl b-shape"></span></div></div>`);
   const TACK_SVG = '<svg class="i-tack" viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9c2.5-4.5 9.5-4.5 12 0"/><path d="M12.5 9H16.5V5"/><path d="M10 11.5V17"/></g></svg>';
   const BEAR_SVG = '<svg class="i-bear" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v9M3 7l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const low = html(`<div class="bx b-low"><div class="b-split" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}${BEAR_SVG}<span></span><kbd class="b-key"></kbd></div></div><div class="b-state"></div>
+  const low = html(`<div class="bx b-low"><div class="b-move" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-split" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}${BEAR_SVG}<span></span><kbd class="b-key"></kbd></div></div><div class="b-state"></div>
     <div class="pn b-you pre">
       <div class="c-pos s-run s-done"></div>
       <div class="c-nm s-pre s-run s-done"><img class="b-fl" alt="" hidden><i></i><span class="c-nmt"><span class="n-m"></span><span class="lbl">${L.you}</span></span></div>
@@ -675,6 +694,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   });
   const lay = q(low, '.b-lay'), layT = q(lay, 'span'), layK = q(lay, '.b-key');
   const split = q(low, '.b-split'), SP = { k: q(split, '.k'), t: q(split, '.t'), v: q(split, '.v'), g: q(split, '.g') };
+  const move = q(low, '.b-move'), MV = { k: q(move, '.k'), t: q(move, '.t'), v: q(move, '.v'), g: q(move, '.g') };
 
   // the game's own elements, and where each goes in this HUD
   const btnIds = ['hailBtn', 'jibBtn', 'reefBtn', 'kiteBtn', 'tackBtn']; // top to bottom
@@ -762,6 +782,8 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   // the umpire's card and the split at a mark, while they show (seconds left); the wind's first reading, the start's
   // call as last made
   let umpT = 0, spl = null, wind0 = null, burnK = null;
+  // a place won or lost: the order as last called (your index, the boats ahead of you) and a new place while it holds
+  let mvBase = null, mvHold = null;
   const UMP_S = 7, SPLIT_S = 8;
   // play a one-off animation again: the class off, a reflow, on, and off when it's done
   // a boat's flag (its picture's address, from main.js: the fleet's from their looks, yours from the boat page), yours
@@ -777,10 +799,35 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   const intro = (els = [tag, over, board]) => { clearTimeout(introT); for (const e of els) e.classList.add('b-intro'); introT = setTimeout(() => { for (const e of [tag, over, board]) e.classList.remove('b-intro'); }, 1800); };
   const flash = (el, c, ms) => { el.classList.remove(c, ...({ gain: ['lose'], lose: ['gain'] }[c] || [])); void el.offsetWidth; el.classList.add(c); clearTimeout(el['_f' + c]); el['_f' + c] = setTimeout(() => el.classList.remove(c), ms); };
 
+  // a place won or lost, called as a broadcast calls it: once the new order has held a moment (boats side by side swap
+  // back and forth), the places, who went by, and why when it's plain: a penalty turn, a mark, a wind shift
+  const MV_HOLD = 2.5;
+  function moveCall(race, st, P) {
+    const i = st.indexOf(P);
+    if (!mvBase) { mvBase = { i, ahead: new Set(st.slice(0, i)) }; return; }
+    if (i === mvBase.i) { mvHold = null; return; }
+    if (!mvHold || mvHold.i !== i) { mvHold = { i, at: race.clock }; return; }
+    if (race.clock - mvHold.at < MV_HOLD || split.classList.contains('on') || spl) return; // a mark's split has the place first
+    const ahead = new Set(st.slice(0, i)), up = i < mvBase.i, n = Math.abs(i - mvBase.i);
+    const who = up ? [...mvBase.ahead].filter((b) => !ahead.has(b)) : [...ahead].filter((b) => !mvBase.ahead.has(b));
+    mvBase = { i, ahead }; mvHold = null;
+    const atMarkLately = (b) => atMark.some((m) => m && m.has(b) && race.clock - m.get(b) < 20);
+    const why = up && who.some((b) => b.pen) ? L.mvTheirPen : !up && P.pen ? L.mvYourPen
+      : atMarkLately(P) || who.some(atMarkLately) ? L.mvMark
+      : isBeat(race.course, P.leg) && race.clock - pulseAt < 20 ? L.mvShift : ''; // upwind, a shift just come through: shifts come often, so only then
+    txt(MV.k, `${up ? '▲' : '▼'} ${up ? L.mvUp(n) : L.mvDown(n)}`);
+    txt(MV.t, L.ord(i + 1));
+    const name = who.length === 1 ? who[0].name : '';
+    txt(MV.v, name ? (up ? L.mvPast(name) : L.mvBy(name)) : ''); MV.v.hidden = !name;
+    txt(MV.g, why); MV.g.hidden = !why;
+    move.classList.toggle('up', up); move.classList.toggle('down', !up);
+    flash(move, 'on', 4800);
+  }
+
   function update(P, dt) {
     if (!on) return;
     const race = getRace(), c = race.course, kn = P.v / KN, twa = P.twa, pre = race.clock < 0, done = !!P.done;
-    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; mySail = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); umpT = 0; ump.hidden = true; spl = null; msplit.hidden = true; board.classList.remove('spl'); wind0 = race.wind.dir(); burnK = null; intro(); }
+    if (race !== raceRef) { raceRef = race; hist.length = 0; lastPlace.clear(); pulseAt = -1e9; myFlag = undefined; mySail = undefined; moved.clear(); twaS = null; legOf.clear(); atMark.length = 0; wasPre = true; wasDone = false; split.classList.remove('on'); fin.classList.remove('on'); umpT = 0; ump.hidden = true; spl = null; mvBase = mvHold = null; move.classList.remove('on'); msplit.hidden = true; board.classList.remove('spl'); wind0 = race.wind.dir(); burnK = null; intro(); }
     const leg = c.legs[P.leg], nLegs = c.legs.length - 1;
     // the order: before the gun, nearest the line first; then the race's
     const toLine = (b) => Math.max(0, -race.lineInfo(b).d);
@@ -905,6 +952,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       }
       lastPlace.set(b, i);
     }
+    if (!pre && !done && !P.dsq && race.clock > 20) moveCall(race, st, P); // the first seconds after the gun the order sorts itself out
     rows.forEach((r, n) => {
       const b = show[n];
       r.el.hidden = !b; if (!b) return;
