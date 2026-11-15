@@ -1416,3 +1416,16 @@
 @container scr (max-height: 500px) and (orientation: landscape) { .bc .fl-boat { padding: var(--s-2) var(--s-3); } .bc .fl-boat b { font-size: var(--fs-lead); } }
 /* sideways but narrow (a tablet, a small window): the cells' numbers go, so the names keep their room */
 @container scr (max-width: 1099px) and (orientation: landscape) { .bc .fl-boat { padding: var(--s-2) var(--s-3) var(--s-3); } .bc .fl-boat b { font-size: var(--fs-lead); } .bc .fl-m { display: none; } }
+
+/* the fleet's card: her four numbers as the specifications below them draw theirs, cells on a hairline grid, the
+   figures bold in the condensed face, the word on the wind under them as a label */
+.bc .fl-stats { gap: 1px; padding: 0; background: var(--rule); }
+.bc .fl-stats > div { gap: var(--s-2); padding: var(--s-3) var(--s-4) var(--s-4); background: var(--panel); }
+.bc .fl-stats b { font: 700 var(--fs-h3)/1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; }
+.bc .fl-stats .bt-sv { margin: 0; padding: var(--s-2) var(--s-4); background: var(--panel); font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+@container scr (orientation: portrait) {
+  .bc .fl-stats { grid-template-columns: 1fr 1fr; } /* four in a row would cut 22,86 m */
+  .bc .fl-stats > div { gap: var(--s-1); padding: var(--s-2) var(--s-3); }
+  .bc .fl-stats b { font-size: var(--fs-row); }
+  .bc .fl-stats .bt-sv { display: block; padding: var(--s-2) var(--s-3); }
+}
