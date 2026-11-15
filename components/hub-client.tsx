@@ -7,7 +7,7 @@ import { BOAT_EVENT, readBoat } from '@/lib/boat';
 import { findFlag } from '@/lib/flags';
 import { venueOf } from '@/lib/venues';
 import { KN, type Wind } from '@/lib/race';
-import { IconSail, IconWind } from './ui';
+import { IconBoats, IconSail, IconWind } from './ui';
 
 // The free race in the race hub's card: one tap starts a free race in that wind (with the venue, fleet, course and
 // start you chose last time), as the pause menu's pills.
@@ -32,6 +32,22 @@ export function FreeQuick({ lang }: { lang: Lang }) {
         ))}
       </div>
       <Link className="lb-more" href="/race/free">{t('Set up a free race: place, wind, course', 'Настроить свободную гонку: место, ветер, дистанция')}</Link>
+    </div>
+  );
+}
+
+// The match race, one on one against a friend: a link to send. Until the umpire's calls are signed off it shows only when
+// the hub's address has ?match (the hub is built once for everyone, so the address is read here in the browser).
+export function MatchCard({ lang }: { lang: Lang }) {
+  const t = tx(lang);
+  const [on, setOn] = useState(false);
+  useEffect(() => { setOn(new URLSearchParams(location.search).has('match')); }, []);
+  if (!on) return null;
+  return (
+    <div className="bt-g">
+      <span className="bt-k"><IconBoats s={13} />{t('Match race', 'Матчевая гонка')}</span>
+      <p className="bt-hint">{t('You and a friend, one on one: send a link.', 'Вы и друг, один на один: отправьте ссылку.')}</p>
+      <Link className="lb-more" href="/match/new">{t('Set up a match', 'Настроить матч')}</Link>
     </div>
   );
 }

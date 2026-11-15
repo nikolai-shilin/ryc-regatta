@@ -10,7 +10,7 @@ import { yachtOf } from '@/lib/yachts';
 import { venueOf } from '@/lib/venues';
 import { BackLink } from '@/components/back-link';
 import { IconPlay, IconTrophy, IconSliders, IconBoats, IconSail, Num, clock } from '@/components/ui';
-import { BoatRow, FreeQuick } from '@/components/hub-client';
+import { BoatRow, FreeQuick, MatchCard } from '@/components/hub-client';
 import { PassportRow } from '@/components/passport';
 import { ProgressRows, RivalRow } from '@/components/progress';
 import { SceneBrand } from '@/components/scene-brand';
@@ -93,6 +93,7 @@ export default async function Hub({ params }: LangParams) {
             <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')}</Link>
           </div>
           <FreeQuick lang={lang} />
+          <MatchCard lang={lang} />
           <div className="bt-rows">
             <button type="button" className="bt-row" data-lock aria-haspopup="dialog"><IconSliders /><span>{t('Change the wind or course', 'Изменить ветер или дистанцию')}</span><span className="bt-row-m bt-row-opt">{t('A free race', 'Свободная гонка')}</span></button>
             <PassportRow lang={lang} />
