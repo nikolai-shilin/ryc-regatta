@@ -261,6 +261,7 @@ export class Boat {
     this.kiteGybe = null; // the gennaker being gybed: the crew takes the sheet round the forestay and sets it again
     this.crew = o.crew ?? 0.6; // how likely the crew is to get a hard job wrong (0 never … 1 often)
     this.aAvg = 0; this.waveN = 0; this.waveRhythm = 0; this.stall = 0; // upwind in waves, and pointing too high while slow
+    this.trimBias = 0; // a computer skipper's trim off the ideal, degrees (+ eased too far, − over-trimmed): drive sets it
   }
   // a headsail change, the J1 for the J3 or back: the crew drops one jib and hoists the other — half a minute with
   // little jib up, so slow meanwhile
@@ -379,7 +380,7 @@ export class Boat {
     const full = (fullHeel(this.aws, awa, gen) + (zero ? 5 * (this.aws / 16) ** 1.4 : 0)) * (1 - 0.32 * this.reefFill) * (this.smallJib ? 0.9 : 1), ease = depowerFor(full);
     this.depower = ease;
     const ideal = idealSail(awa);
-    if (this.autoTrim) this.sheet = lerp(this.sheet, sheetFor(ideal + ease), 1 - Math.exp(-dt * 3));
+    if (this.autoTrim) this.sheet = lerp(this.sheet, sheetFor(ideal + ease + (this.ai ? this.trimBias : 0)), 1 - Math.exp(-dt * 3));
     if (!this.split) this.jibSheet = this.sheet; // one sheet works both sails unless the jib has its own
     const sheetAngle = lerp(SHEET_IN, SHEET_OUT, this.sheet), jibAngle = lerp(SHEET_IN, SHEET_OUT, this.jibSheet);
     const err = sheetAngle - ideal, jerr = jibAngle - ideal; // + let out too far (flapping), − pulled in too hard (stalled)
@@ -668,6 +669,26 @@ const lineT = (c, b) => ((b.x - c.pin.x) * c.dir.x + (b.z - c.pin.z) * c.dir.z) 
 
 // the daily race: the same venue, yacht, course and wind for everyone on a given day (UTC), made from the date. The days
 // before SHAPES_FROM are all up and down; from it today's race picks one of the four shapes each day
+// The computer skippers, from beginner to expert. Every fleet gets the whole range: the skills are drawn one to each
+// band of it (a fleet of six has one in each sixth), and the bands dealt out to the boats at random, so the names on
+// the line are a different mix every race. Skill runs from 0.25, a beginner, to 1, an expert who sails like the
+// player's best; it shapes how well she holds the groove and trims (habits), how she times the start, reads the
+// shifts and the laylines, rounds the marks and handles the kite (drive).
+export const SKILL_MIN = 0.25;
+export const LEVELS = [['beginner', 0], ['club', 0.45], ['racer', 0.65], ['expert', 0.85]];
+export const skillLevel = (s) => LEVELS.findLast(([, from]) => s >= from)[0];
+export function fleetSkills(n, rand) {
+  const bands = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [bands[i], bands[j]] = [bands[j], bands[i]]; }
+  return bands.map((k) => +lerp(SKILL_MIN, 1, ((k + rand()) / n) ** 0.8).toFixed(3)); // a little more of the fleet the better half
+}
+// a skipper's habits at the helm and the sheet: slow random wanders (−1…1) of her own, so each boat's mistakes are
+// her own and the race stays the same for the same seed
+function habits(rand) {
+  const seed = () => ({ r: rng(Math.floor(rand() * 2 ** 31) + 1), k: [] });
+  return { helm: seed(), trim: seed() };
+}
+
 export const SHAPES_FROM = '2026-11-20';
 export function dailyRace(date = new Date()) {
   const day = date.toISOString().slice(0, 10), n = Math.floor(Date.parse(day) / 864e5), r = rng(n * 2654435761);
@@ -758,15 +779,20 @@ export class Race {
     const full = fullHeel(this.wind.p.tws * 1.4, 28, false);
     this.player.sheet = sheetFor(idealSail(28) + depowerFor(full));
     const fl = FLEET.slice(0, fleet - 1), n = fl.length;
+    const skills = fleetSkills(n, this.rand);
     this.boats = [this.player];
     fl.forEach(([name, color], i) => {
       const f = n > 1 ? i / (n - 1) : 0.5; // spread them along below the line
       const b = new Boat({ name, x: lerp(-half - 10 * K, half - 10 * K, f) + (i % 2 ? 8 : -8) * K, z: (105 + (i % 3) * 18) * near * SK, h: wrap(W + (i % 2 ? 90 : -90) * D2R), v: 2, autoTrim: true });
-      b.ai = { skill: 0.8 + this.rand() * 0.18, lineT: clamp(0.15 + f * 0.7 + (this.rand() - 0.5) * 0.08, 0.15, 0.85) /* clear of the ends, where the pin and the committee boat catch them */, lastTack: -999, go: false, mean: W, dirtyT: 0, hailT: -99, wp: 0, loiter: i % 2 ? 1 : -1 };
+      b.ai = { skill: skills[i], lineT: clamp(0.15 + f * 0.7 + (this.rand() - 0.5) * 0.08, 0.15, 0.85) /* clear of the ends, where the pin and the committee boat catch them */, lastTack: -999, go: false, mean: W, dirtyT: 0, hailT: -99, wp: 0, loiter: i % 2 ? 1 : -1 };
       b.ai.port = i % 4 === 3; // one boat in four comes in late on port, looking for a gap
       b.ai.dare = (((b.ai.lineT * 97.3) % 1) - 0.65) * 3.4; // seconds: how close to the gun she dares cut it (− bolder)
+      b.ai.lay = this.rand(); // her eye for the layline: 0 tacks on it … 1 sails well past it (how far, by her skill)
+      b.ai.groove = this.rand() * 2 - 1; // upwind, her habit: − sails too low (footing), + too high (pinching)
+      b.level = skillLevel(b.ai.skill);
+      b.habits = habits(this.rand);
       if (this.wind.p.tws >= 19 && i % 2) b.smallJib = true; // in a blow, some start with the J3 up
-      b.color = color; b.crew = 1.5 - b.ai.skill; // the better skippers have the surer crews
+      b.color = color; b.crew = clamp(1.5 - b.ai.skill, 0.5, 1.2); // the better skippers have the surer crews
       this.boats.push(b);
     });
     for (const b of this.boats) Object.assign(b, { leg: 0, ocs: false, done: false, finish: null, track: [], lastD: lineD(this.course, b), lastZ: b.z, rnd: null, dsq: false, touchT: 0, ufd: false, bfd: false,
@@ -1187,10 +1213,18 @@ export class Race {
       if (ai.detour > this.clock) return at(35, k === 'mark' && c.finish && c.finish.through.z < 0 ? -60 : -30);
       // round it to port: come in on its near side with room to spare, cross outside it, leave on the far side
       // a boat that owes another mark-room (rule 18) goes round outside it, wider and a little later
-      const wide = this.owesRoom(b) ? 1 : 0;
+      // and the less sure the skipper, the wider she swings round it (a beginner, some 10 m wide of an expert)
+      const wide = (this.owesRoom(b) ? 1 : 0) + 0.8 * (1 - ai.skill);
       const w0 = at(10 + wide * 12, 9 + wide * 8), w1 = at(-14 - wide * 6, 10 + wide * 6);
       const ah = (b.x - m.x) * o.x + (b.z - m.z) * o.z, sd = (b.x - m.x) * p.x + (b.z - m.z) * p.z;
-      if (ai.wp === 0 && ah > 4 && sd > -3) ai.wp = 1; // clearly outside it: now bear away across
+      // coming up to a windward mark from its far side (on port, for a mark left to port), the way to its near side
+      // runs through the mark itself: she first sails on below it to the near side, then tacks up the layline to it
+      if (isBeat(c, b.leg) && ai.wp === 0) {
+        if (!ai.setup && sd < 0 && ah < -2 && Math.hypot(b.x - m.x, b.z - m.z) < 70) ai.setup = true;
+        else if (ai.setup && (sd > 10 + wide * 12 || ah > 0)) ai.setup = false;
+        if (ai.setup) return at(18 + wide * 12, -8);
+      } else ai.setup = false;
+      if (ai.wp === 0 && ah > 6 && sd > -3) ai.wp = 1; // clearly outside it: now bear away across
       if (ai.wp === 1 && Math.hypot(b.x - w1.x, b.z - w1.z) < 6) ai.wp = 0; // there and still not round: go again
       return ai.wp === 0 ? w0 : w1;
     }
@@ -1217,6 +1251,13 @@ export class Race {
     const ai = b.ai, c = this.course, W = b.wdir;
     ai.mean += wrap(W - ai.mean) * (1 - Math.exp(-dt / 45));
     b.autoTrim = true;
+    // her habits: the less sure the skipper, the more her trim drifts off the ideal — mostly eased too far, the sails
+    // luffing, for half a minute at a time (a beginner's up to 10°) — and the more her heading wanders off the one she
+    // means to sail (some 6°, every few seconds); an expert's hardly at all
+    const slack = 1 - ai.skill, hb = (b.habits ??= habits(this.rand)), ht = this.clock + 900;
+    b.trimBias = slack * (5 + 9 * wander(hb.trim, ht, 25));
+    const helm = slack * 8 * wander(hb.helm, ht, 5) * D2R;
+    if (ai.leg !== b.leg) { ai.leg = b.leg; ai.legAt = this.clock; }
     if (b.pen) {
       // a penalty: first get clear of marks and boats, then spin
       b.setKite(false);
@@ -1232,7 +1273,7 @@ export class Race {
     if (b.auto) return;
     // hailed for room to tack (rule 20): she answers by tacking, after a moment's reaction
     const h20 = this.r20;
-    if (h20 && h20.hailed === b && !h20.answered && this.clock >= (ai.respondT ?? 0)) { h20.answered = true; ai.lastTack = this.clock; b.tackOrGybe(); return; }
+    if (h20 && h20.hailed === b && !h20.answered && this.clock >= (ai.respondT ?? 0)) { h20.answered = true; ai.lastTack = this.clock; this.aiTack(b); return; }
     let tx, tz;
     // her spot on the line: pushed towards the favoured end (the end further upwind, on the wind as she reads it),
     // the more so the better she is and the more it's favoured — so the fleet bunches there
@@ -1268,10 +1309,10 @@ export class Race {
         // too early for the distance left: stop and hold her place (luffed, main out — she backs and stays put);
         // under U or the black flag, a few seconds more careful
         // (the sheet well out, the sails flapping: she slows nearly to a stop without going astern). She goes when the
-        // time left is what she needs from here, plus a second or two the less sure skippers leave — and under U or the
-        // black flag, a few more.
+        // time left is what she needs from here, plus a second or two the less sure skippers leave (a beginner, some
+        // five, and she crosses well after the gun) — and under U or the black flag, a few more.
         // (with the stream behind her, a few seconds more: it carries her on whatever she does)
-        const dl = -lineD(c, b), need = Math.max(0, dl) / sp + lag, margin = (this.prepFlag === 'P' ? 3 * (1 - ai.skill) + ai.dare : 2 + 3 * (1 - ai.skill) + Math.max(0, ai.dare)) + 4 * Math.max(0, curN);
+        const dl = -lineD(c, b), need = Math.max(0, dl) / sp + lag, margin = (this.prepFlag === 'P' ? 3 * slack + ai.dare : 2 + 3 * slack + Math.max(0, ai.dare)) + 7 * slack ** 2 + 4 * Math.max(0, curN);
         if (this.clock < -1 && dl < (16 + margin * 2) * this.startK && (-this.clock > need + margin || dl < (1.5 + margin) * this.startK)) {
           // a stream setting her up to the line would carry her over before the gun while she waits: she bears away
           // and sails back down a little, then comes up to it again
@@ -1302,18 +1343,27 @@ export class Race {
     }
 
     const brg = Math.atan2(tx - b.x, -(tz - b.z)), rel = wrap(brg - W), tack = sgn(b.twa);
-    const up = (beatAngle(b.tws) + 1.5 - ai.skill) * D2R, down = runAngle(b.tws, b.kite || b.tws < KITE_MAX) * D2R;
+    // close-hauled: the expert in the groove, the less sure a few degrees off it, too high or too low (her habit)
+    const up = (beatAngle(b.tws) + 1.5 - ai.skill + slack * 5 * (ai.groove ?? 0)) * D2R, down = runAngle(b.tws, b.kite || b.tws < KITE_MAX) * D2R;
+    // the layline as she sees it: an expert tacks on it, the less sure sail on past it (up to 10° for a beginner) and
+    // reach in to the mark from there, sailing the extra
+    const over = slack * (ai.lay ?? 0.5) * 10 * D2R;
     let want = this.shootMark(b, tx, tz, up);
     if (want !== null) { /* shooting the windward mark */ }
-    else if (Math.abs(rel) < up) {
+    else if (Math.abs(rel) < up || (tack * rel > 0 && tack * rel < up + over)) {
       // on the beat: tack on the layline, on a header, or to get out of another boat's wind
       const since = this.clock - ai.lastTack;
-      const lay = tack > 0 ? rel >= up - 1 * D2R : rel <= -(up - 1 * D2R);
-      const shift = wrap(W - ai.mean) / D2R, header = tack > 0 ? shift < -4 : shift > 4;
+      const lay = tack > 0 ? rel >= up - 1 * D2R + over : rel <= -(up - 1 * D2R + over);
+      // a header: one that lasts, not every flicker of the wind. The expert sees a swing of 5° and tacks on it after
+      // a couple of seconds, a beginner only one of 12° or so, and a good while later. Out of another boat's wind the
+      // same: the expert tacks away from it sooner
+      const see = 5 + 9 * slack, shift = wrap(W - ai.mean) / D2R, header = tack > 0 ? shift < -see : shift > see;
+      ai.hdrT = header ? (ai.hdrT || 0) + dt : 0;
       ai.dirtyT = b.shadow > 0.12 ? ai.dirtyT + dt : 0;
-      const room = Math.abs(rel) < up - 10 * D2R;
-      if (since > 12 && (lay || (room && header && this.rand() < ai.skill * 0.02) || (room && ai.dirtyT > 5 && this.rand() < 0.02)) && this.tackClear(b)) {
-        ai.lastTack = this.clock; ai.dirtyT = 0; b.tackOrGybe(); return;
+      // (near the mark no tacking on shifts or for gains: there she sails to the layline and tacks on it)
+      const room = Math.abs(rel) < up - 10 * D2R && this.distToNext(b) > 2 * ZONE;
+      if (since > 12 && (lay || (room && since > 20 && ai.hdrT > 2 + 10 * slack) || (room && ai.dirtyT > 4 + 10 * slack)) && this.tackClear(b)) {
+        ai.lastTack = this.clock; ai.dirtyT = 0; this.aiTack(b); return;
       }
       if (this.roomToTack(b, ai)) return;
       // the other tack pays more — more pressure that way, a lift there, a better stream — so she goes; looked at every
@@ -1325,14 +1375,14 @@ export class Race {
           const brg = Math.atan2(m.x - px, -(m.z - pz)), cur = this.currentAt(px, pz);
           return polarSpeed(w.tws, beatAngle(w.tws)) * KN * Math.cos(wrap(w.dir - s * up - brg)) + cur.x * Math.sin(brg) - cur.z * Math.cos(brg);
         };
-        if (pay(-tack) > pay(tack) * 1.1 + 0.05 && this.rand() < ai.skill * 0.35 && this.tackClear(b)) { ai.lastTack = this.clock; b.tackOrGybe(); return; }
+        if (pay(-tack) > pay(tack) * 1.1 + 0.05 && this.rand() < ai.skill ** 2 * 0.35 && this.tackClear(b)) { ai.lastTack = this.clock; this.aiTack(b); return; }
       }
       // cover: well ahead of you on the beat when you tack, she often tacks too, to stay between you and the mark
       const you = this.player;
-      if (!you.done && you.leg === b.leg && you.sinceTack < 1.5 && this.clock - (ai.coverT ?? -99) > 10 && since > 8) {
+      if (room && !you.done && you.leg === b.leg && you.sinceTack < 1.5 && this.clock - (ai.coverT ?? -99) > 10 && since > 8) {
         ai.coverT = this.clock;
         const lead = this.distToNext(you) - this.distToNext(b);
-        if (lead > 15 && Math.hypot(you.x - b.x, you.z - b.z) < 150 && sgn(you.twa) !== tack && this.rand() < ai.skill * 0.6 && this.tackClear(b)) { ai.lastTack = this.clock; b.tackOrGybe(); return; }
+        if (lead > 15 && Math.hypot(you.x - b.x, you.z - b.z) < 150 && sgn(you.twa) !== tack && this.rand() < ai.skill * 0.6 && this.tackClear(b)) { ai.lastTack = this.clock; this.aiTack(b); return; }
       }
       // sailing it: a few degrees lower while she's slow, to build speed; in a seaway up the face, down the back
       want = W - tack * (up + (b.stall * ai.skill - 3 * ai.skill * clamp(b.waveN, -1, 1) * clamp(this.wind.p.waves / 0.45, 0, 1)) * D2R);
@@ -1343,6 +1393,7 @@ export class Race {
       want = W - toward * down;
     }
     else want = brg;
+    want += helm; // her hand on the helm (her habits, above)
     // keep off the shore: with land a few seconds' sailing ahead on the heading she wants (further at speed, as an
     // AC75's), she takes the nearest sailable heading on this tack with water ahead; with none, she tacks or gybes
     // onto the other if it has water, else takes the heading with the most
@@ -1356,11 +1407,13 @@ export class Race {
         const w = wet(h), score = w >= 25 ? 1000 - d : w;
         if (sideOf(h) === tack) { if (score > sw) { sw = score; same = h; } } else ow = Math.max(ow, score);
       }
-      if (sw < 1000 && ow > sw && this.clock - ai.lastTack > 5 && this.tackClear(b)) { ai.lastTack = this.clock; b.tackOrGybe(); return; }
+      if (sw < 1000 && ow > sw && this.clock - ai.lastTack > 5 && this.tackClear(b)) { ai.lastTack = this.clock; this.aiTack(b); return; }
       if (same !== null) want = same;
     }
     // don't hit a mark: turn to a heading that can be sailed and clears it, or tack if there is none
-    const marks = this.obstacles();
+    // (rounding, outside the mark and bearing away across it, the mark she is rounding is behind her: dodging it
+    // there only turned her down onto its wrong side, and round it again)
+    const rounding = ai.wp === 1 ? c.marks[c.legs[b.leg]] : null, marks = this.obstacles().filter(([m]) => m !== rounding);
     const markClear = (h) => { // the room a heading leaves to the marks ahead (99: none in the way)
       let c = 99;
       for (const [m, r] of marks) { const dx = m.x - b.x, dz = m.z - b.z, al = dx * Math.sin(h) - dz * Math.cos(h); if (al >= -2 && al <= 32) c = Math.min(c, Math.abs(dx * -Math.cos(h) - dz * Math.sin(h)) - r); }
@@ -1369,7 +1422,7 @@ export class Race {
     if (markClear(want) <= 5) {
       const opts = [25, -25, 50, -50, 80, -80].map((d) => want + d * D2R).filter((h) => this.canSail(h, W, b.tws));
       const best = opts.sort((p, q) => markClear(q) - markClear(p))[0];
-      if (best === undefined || markClear(best) < 3) { if (this.clock - ai.lastTack > 6 && Math.abs(rel) < up + 0.3 && this.tackClear(b)) { ai.lastTack = this.clock; b.tackOrGybe(); return; } if (best !== undefined) want = best; }
+      if (best === undefined || markClear(best) < 3) { if (this.clock - ai.lastTack > 6 && Math.abs(rel) < up + 0.3 && this.tackClear(b)) { ai.lastTack = this.clock; this.aiTack(b); return; } if (best !== undefined) want = best; }
       else want = best;
     }
     // keep clear: of the boats it must keep clear of, the most urgent one; and a boat with right of way still alters
@@ -1380,9 +1433,10 @@ export class Race {
       for (const o of this.boats) {
         if (o === b || o.done) continue;
         const cp = this.cpa(b, o);
-        // how far ahead she looks for trouble: a hail makes her look at once
-        const look = this.clock - (ai.alertT ?? -99) < 6 ? 12 : 7 + 3 * ai.skill;
-        if (cp.now > 70 || cp.d > 18 || cp.t > look) continue;
+        // how far ahead she looks for trouble, and how close a pass worries her: an expert sees it coming some 12 s off
+        // and gives a wide berth, a beginner sees it late and cuts it fine; a hail makes anyone look at once
+        const look = this.clock - (ai.alertT ?? -99) < 6 ? 12 : 6 + 6 * ai.skill;
+        if (cp.now > 70 || cp.d > 12 + 8 * ai.skill || cp.t > look) continue;
         // waiting before the start she simply keeps out of everyone's way, right of way or not
         const waiting = this.clock < 0 && !ai.go, giver = waiting || this.judge(b, o).giver === b;
         if (!giver && !(cp.t < 5 && cp.d < SEP + 4)) continue;
@@ -1412,12 +1466,13 @@ export class Race {
     // the tight reach out to the wing mark in light air: the code zero, furled again before the gybe there
     // (with the gennaker already up and the mark close, not worth the change; nor for the short reach to an offset mark)
     if (k === 'wing' && b.tws < 15 && a > 60 && a < 118 && !(b.kite && b.kiteType === 'gen' && this.distToNext(b) < 120)) { type = 'zero'; wantKite = this.clock > 0 && this.distToNext(b) > 30 + 50 * (1 - ai.skill); }
+    // a beginner's crew takes a while after the mark to get the bow ready and the kite up (up to some ten seconds)
+    if (!kUp && wantKite && this.clock - (ai.legAt ?? -99) < 14 * slack) wantKite = false;
     if (kUp && b.kiteType !== type) wantKite = false; // the other sail is up: down with it first
     if (wantKite !== kUp) b.setKite(wantKite, type);
     // a reef when it blows over 21 knots for a while, shaken out when it eases below 16
     ai.blowT = b.tws > 21.5 ? (ai.blowT || 0) + dt : 0; ai.easeT = b.tws < 16 ? (ai.easeT || 0) + dt : 0;
     if (!b.reef && ai.blowT > 20) b.setReef(true); else if (b.reef && ai.easeT > 30) b.setReef(false);
-    if (b.autoTrim) b.sheet = clamp(b.sheet + (this.rand() - 0.5) * (1 - ai.skill) * 0.05, 0, 1);
   }
   // rule 20, room to tack: close-hauled with you close to windward (so she can't tack) and an obstruction ahead — a
   // boat she must keep clear of, or the committee boat — she hails you; you must tack (or give her room), and when
@@ -1426,7 +1481,7 @@ export class Race {
     const h = this.r20;
     if (h && h.hailer === b) {
       const o = h.hailed;
-      if (!h.tacked && (o.sinceTack < this.clock - h.t || this.clock - h.t > 4)) { h.tacked = true; ai.lastTack = this.clock; b.tackOrGybe(); return true; }
+      if (!h.tacked && (o.sinceTack < this.clock - h.t || this.clock - h.t > 4)) { h.tacked = true; ai.lastTack = this.clock; this.aiTack(b); return true; }
       return false;
     }
     if (!this.rulesOn || (h && this.clock - h.t < 12) || this.clock - (ai.r20T ?? -99) < 20) return false;
@@ -1510,6 +1565,12 @@ export class Race {
     if (ai.shoot === 'build') ai.shoot = null;
     return null;
   }
+  // a computer skipper's tack or gybe: the less sure turn too far through it (a beginner some 10° past close-hauled
+  // on the new tack, bearing away), and come back up to it when the turn is done, losing a little more way
+  aiTack(b) {
+    b.tackOrGybe();
+    if (b.auto && b.ai) b.auto.to += b.auto.dir * (1 - b.ai.skill) * (b.auto.gybe ? 8 : 14) * D2R;
+  }
   steerTo(b, want) { b.rudder = clamp(wrap(want - b.h) * 2.4 - b.yawRate * 1.1, -1, 1); } // meeting her swing, as she doesn't stop turning at once
   // a tack now wouldn't put her across another boat's bow (rule 13: while tacking she keeps clear of everyone)
   tackClear(b) {
@@ -1518,9 +1579,11 @@ export class Race {
       if (o === b || o.done) continue;
       const d = Math.hypot(o.x - b.x, o.z - b.z);
       if (d > 60) continue;
-      if (d < SEP + 8) return false;
+      // the room she wants: an expert tacks or gybes only well clear, a beginner into a tighter gap
+      const k = b.ai ? 0.6 + 0.6 * b.ai.skill : 1;
+      if (d < SEP + 8 * k) return false;
       const c = this.cpa(b, o, h);
-      if (c.d < SEP + 6 && c.t < 12) return false;
+      if (c.d < SEP + 6 * k && c.t < 12) return false;
     }
     return true;
   }

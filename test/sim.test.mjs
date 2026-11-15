@@ -445,8 +445,15 @@ test('a result without the finish kept puts the fleet close to where it was as y
     boats: r.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, done: b.done, dsq: b.dsq, secs: b.done ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track) })) };
   const scene = finishScene(res);
   assert.equal(scene.boats.length, r.boats.length);
+  // a boat that finished well before you has sailed on as she pleased since: the scene can only guess, on beyond her
+  // finish a little (at most 90 m); every other is close to where she was
   for (const s of scene.boats) {
     const b = s.me ? P : r.boats.find((o) => o.name === s.name), was = at.get(b);
+    if (b !== P && b.finish < P.finish - 15) {
+      const end = b.track[b.track.length - 1];
+      assert.ok(Math.hypot(s.x - end[0], s.z - end[1]) <= 91, `${s.name}: ${Math.round(Math.hypot(s.x - end[0], s.z - end[1]))} m beyond her finish`);
+      continue;
+    }
     assert.ok(Math.hypot(s.x - was.x, s.z - was.z) < 40, `${s.name || 'you'}: ${Math.round(Math.hypot(s.x - was.x, s.z - was.z))} m from where she was`);
   }
 });
