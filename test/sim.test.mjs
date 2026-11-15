@@ -294,6 +294,21 @@ test('a watcher follows the first human', () => {
   assert.equal(r.player.id, 'h');
   assert.equal(r.watching, true);
 });
+// a member's own screen steps only her boat (the rest comes from the referee): the clock, the wind and the waves as
+// step has them
+test('stepView moves only the given boat and keeps the clock', () => {
+  const opts = { seed: 7, fleet: 3, humans: [{ id: 'a', name: 'Anna' }, { id: 'b', name: 'Boris' }], me: 'a' };
+  const r = new sim.Race(opts), ref = new sim.Race(opts), me = r.humans[0], others = r.boats.filter((b) => b !== me);
+  assert.ok(others.some((b) => b.ai), 'a computer boat among them');
+  const at = others.map((b) => [b.x, b.z]), mine = [me.x, me.z], c = r.clock, tracks = others.map((b) => b.track.length), t0 = me.track.length, said = r.messages.length;
+  for (let i = 0; i < 360; i++) { r.stepView(1 / 60, me); ref.step(1 / 60); } // past the one-minute signal
+  assert.deepEqual(others.map((b) => [b.x, b.z]), at);
+  assert.notDeepEqual([me.x, me.z], mine);
+  assert.ok(Math.abs(r.clock - (c + 6)) < 1e-9);
+  assert.equal(r.clock, ref.clock); assert.equal(r.t, ref.t); assert.equal(r.wind.t, ref.wind.t); assert.equal(r.wind.dir(), ref.wind.dir());
+  assert.equal(ref.sigI, 1); assert.equal(r.sigI, 0, 'no signals'); assert.equal(r.messages.length, said, 'no news');
+  assert.ok(me.track.length > t0); assert.deepEqual(others.map((b) => b.track.length), tracks);
+});
 test('a human hails a human: the hailed boat is told who', () => {
   const r = new sim.Race({ seed: 7, fleet: 2, humans: [{ id: 'a', name: 'Anna' }, { id: 'b', name: 'Boris' }] });
   const [a, b] = r.humans, c = r.course, W = r.wind.dir(), up = 45 * sim.D2R;
