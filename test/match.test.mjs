@@ -1,8 +1,14 @@
-// The match's waiting room (Room) and score (Match), over the in-memory hub and a fake clock.
+// The match's waiting room (Room) and score (Match), and the race between two screens (Host and Guest), over the
+// in-memory hub and a fake clock.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { memoryRealtime } from './hub.mjs';
-import { makeLink, Room, Match, HOST_KEY } from '../public/game/match.js';
+
+globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u)))); // land.js's bay files, from the disk
+const { makeLink, Room, Match, HOST_KEY, raceFor, Host, Guest } = await import('../public/game/match.js');
+const { controlsOf } = await import('../public/game/wire.js');
+const { D2R, wrap, lineD } = await import('../public/game/sim.js');
 
 const SETTINGS = { venue: 'palma', wind: 12, yacht: 'ac75', length: 'short' };
 const person = (id, name) => ({ id, name, look: { hull: id } });
@@ -236,4 +242,226 @@ test('a join that fails is reported: joined is false and error says why', async 
   const ok = await setup().room(person('g', 'G'), false);
   assert.equal(await ok.joined, true);
   assert.equal(ok.error, null);
+});
+
+// ---------- the race between two screens: the host's game runs it, the guest's follows ----------
+const RACE_SETTINGS = { venue: 'palma', yacht: 'jpk1050', preset: 'medium', length: 'short' };
+const FRAME = 1 / 60;
+
+// a hub that counts every broadcast sent and every one delivered
+function counting(hub) {
+  const n = { sent: 0, delivered: 0 };
+  const rt = {
+    channel(topic, o) {
+      const ch = hub.channel(topic, o), send = ch.send, deliver = ch._deliver;
+      ch.send = (e, p) => { n.sent++; send(e, p); };
+      ch._deliver = (e, p) => { n.delivered++; deliver(e, p); };
+      return ch;
+    },
+    close: () => hub.close(),
+  };
+  return { rt, n };
+}
+
+// a match's first race on two screens: the host's (h) and the guest's (g), each with her own link, over one hub
+async function duel({ rt = memoryRealtime() } = {}) {
+  const clock = { t: 50000 }, now = () => clock.t, code = 'DUEL22';
+  const match = new Match({ start: { settings: RACE_SETTINGS, seed: 4242, race: 1, blue: 'h', host: person('h', 'Host'), guest: person('g', 'Guest') }, now });
+  const hl = makeLink(rt, code), gl = makeLink(rt, code);
+  await hl.all.join(); await gl.all.join(); // (the waiting room's: the Room joins it)
+  const hrace = raceFor(match, 'h'), grace = raceFor(match, 'g');
+  const host = new Host({ race: hrace, link: hl, guestId: 'g', now });
+  const guest = new Guest({ race: grace, link: gl, me: 'g', now });
+  assert.equal(await host.joined, true); assert.equal(await guest.joined, true);
+  const d = {
+    rt, clock, now, match, code, hrace, grace, host, guest,
+    H: hrace.player, Gh: hrace.humans.find((b) => b.id === 'g'), // the host's boat and the guest's, on the host's screen
+    me: guest.me, Hg: grace.humans.find((b) => b.id === 'h'), // the guest's boat and the host's, on the guest's screen
+    heard: [], // what the guest's game is told (as main.js reads race.messages and then clears them)
+    hostHeard: [],
+    // one frame on both screens: fn (the sailors' hands), the host's step, the guest's controls and her frame
+    frame(fn) {
+      clock.t += 1000 * FRAME;
+      fn?.();
+      d.host.tick(FRAME);
+      d.hostHeard.push(...hrace.messages.filter((m) => !m.to || m.to === d.H)); hrace.messages.length = 0;
+      d.guest.input(controlsOf(d.me));
+      d.guest.frame(FRAME);
+      d.heard.push(...d.grace.messages); d.grace.messages.length = 0;
+    },
+    run(secs, fn) { for (let i = 0, n = Math.round(secs / FRAME); i < n; i++) d.frame(fn); },
+  };
+  return d;
+}
+const near = (p, q) => Math.hypot(p.x - q.x, p.z - q.z);
+
+test('the guest steers and the host\'s copy turns; each sees the other within 1 m after 1 s', async () => {
+  const d = await duel();
+  d.run(1);
+  const h0 = d.Gh.h;
+  let worstHost = 0, worstGuest = 0, n = 0;
+  d.run(3, () => {
+    d.me.rudder = 0.5; // the guest's helm, on her screen
+    if (n++ >= 60) { worstGuest = Math.max(worstGuest, near(d.Hg, d.H)); worstHost = Math.max(worstHost, near(d.Gh, d.me)); }
+  });
+  assert.equal(d.Gh.rudder, 0.5, 'the host\'s copy has her helm');
+  assert.ok(Math.abs(wrap(d.Gh.h - h0)) > 20 * D2R, `the host's copy turned ${(wrap(d.Gh.h - h0) / D2R).toFixed(1)}°`);
+  assert.ok(worstGuest < 1, `the guest sees the host's boat within ${worstGuest.toFixed(2)} m`);
+  assert.ok(worstHost < 1, `the host sees the guest's boat within ${worstHost.toFixed(2)} m`);
+  assert.ok(Math.abs(d.grace.clock - d.hrace.clock) < 0.25, 'the clocks agree');
+  assert.equal(d.grace.calls.length, 0);
+});
+
+// a port–starboard crossing halfway up the first beat, after the gun: the host (blue) on port, the guest on
+// starboard, each `secs` from the crossing at V, their helms centred
+function crossing(d, secs = 5, V = 3.4) {
+  const r = d.hrace, c = r.course;
+  r.clock = 30;
+  const X = { x: (c.pin.x + c.committee.x) / 4 + c.windward.x / 2, z: (c.pin.z + c.committee.z) / 4 + c.windward.z / 2 };
+  const W = r.wind.at(X.x, X.z).dir;
+  const put = (b, h) => {
+    Object.assign(b, { x: X.x - Math.sin(h) * V * secs, z: X.z + Math.cos(h) * V * secs, h, v: V, leg: 1, entered: true, owed: 0, auto: null, rudder: 0, yawRate: 0, hist: null, boom: 0 });
+    Object.assign(b, { lastD: lineD(c, b), lastZ: b.z });
+  };
+  put(d.H, W + 45 * D2R); put(d.Gh, W - 45 * D2R);
+}
+
+test('a call is made once, on the host, and each hears her own', async () => {
+  const d = await duel();
+  d.run(1);
+  crossing(d);
+  d.run(12, () => { d.H.rudder = 0; d.me.rudder = 0; });
+  assert.equal(d.hrace.calls.length, 1, JSON.stringify(d.hrace.calls.map((k) => [k.on, k.rule])));
+  const k = d.hrace.calls[0], arg = { rule: k.rule, on: k.on };
+  assert.equal(d.grace.calls.length, 0, 'the guest\'s game makes no calls of its own');
+  const ump = (list) => list.filter((m) => m.key === 'umpire');
+  assert.deepEqual(ump(d.heard).map((m) => [m.arg, m.to === d.me]), [[arg, true]], 'the guest hears it once, as hers');
+  assert.deepEqual(ump(d.hostHeard).map((m) => [m.arg, m.to === d.H]), [[arg, true]], 'and the host once');
+  const owes = k.on === 'g' ? d.me : d.Hg;
+  assert.equal(owes.owed, 1, 'the guest\'s screen shows the penalty owed');
+  assert.ok(d.heard.every((m) => !m.to || m.to === d.me), 'the guest is told only her own news');
+});
+
+test('a silent guest holds course, then the race goes to the host', async () => {
+  const d = await duel();
+  d.run(1, () => { d.me.rudder = 0.6; });
+  d.clock.t += 100; d.me.rudder = 0.65; d.guest.input(controlsOf(d.me)); // her last input
+  let end = null;
+  d.guest.onEnd((e) => { end = e; });
+  // her tab is gone: no input, no frame; the host's game goes on
+  const quiet = (secs) => { for (let i = 0, n = Math.round(secs / FRAME); i < n; i++) { d.clock.t += 1000 * FRAME; d.host.tick(FRAME); } };
+  quiet(2.9);
+  assert.equal(d.Gh.rudder, 0.65, 'under 3 s: her last helm');
+  quiet(0.6);
+  assert.equal(d.Gh.rudder, 0, 'after 3 s: she holds her course');
+  assert.equal(d.Gh.auto, null);
+  quiet(26.3);
+  assert.equal(d.hrace.over, false, 'under 30 s: still racing');
+  assert.equal(end, null);
+  quiet(0.5);
+  assert.equal(d.hrace.over, true);
+  assert.equal(d.hrace.winner, d.H);
+  assert.equal(d.hrace.forfeited, d.Gh);
+  assert.deepEqual(end, { winner: 'h', margin: null, forfeited: 'g' });
+  assert.equal(d.grace.winner, d.Hg);
+  assert.equal(d.grace.over, true);
+  // told again each second while the host's game runs on (for a guest who missed it), heard once
+  let ends = 0;
+  const ear = makeLink(d.rt, d.code).all;
+  await ear.join(); ear.on('end', () => ends++);
+  quiet(2.1);
+  assert.equal(ends, 2);
+  d.guest.frame(FRAME);
+  assert.equal(d.guest.abandoned, false);
+});
+
+test('a host asleep for over a minute abandons the race', async () => {
+  const d = await duel();
+  d.run(2);
+  // the host's tab sleeps: its game stops; the guest's goes on
+  const alone = (secs) => { for (let i = 0, n = Math.round(secs / FRAME); i < n; i++) { d.clock.t += 1000 * FRAME; d.guest.input(controlsOf(d.me)); d.guest.frame(FRAME); } };
+  alone(2.8);
+  assert.equal(d.guest.hostSilent, false);
+  const ahead = d.me.x;
+  assert.notEqual(ahead, d.Gh.x, 'still sailing on her own screen');
+  alone(0.4);
+  assert.equal(d.guest.hostSilent, true, 'after 3 s: waiting for the host');
+  const at = { x: d.me.x, z: d.me.z, clock: d.grace.clock };
+  alone(5);
+  assert.deepEqual({ x: d.me.x, z: d.me.z, clock: d.grace.clock }, at, 'her screen is frozen');
+  assert.equal(d.guest.abandoned, false);
+  // the host's tab wakes over a minute after its last step: the race is abandoned
+  d.clock.t += 61000;
+  const was = d.hrace.clock;
+  d.host.tick(FRAME);
+  assert.equal(d.host.abandoned, true);
+  assert.equal(d.guest.abandoned, true, 'the guest is told');
+  assert.equal(d.hrace.clock, was, 'and the host\'s race went no further');
+  d.host.tick(FRAME);
+  assert.equal(d.hrace.clock, was);
+
+  // a host that never comes back: after 60 s without a snapshot the guest's game abandons it on its own
+  const e = await duel();
+  e.run(2);
+  const alone2 = (secs) => { for (let i = 0, n = Math.round(secs / FRAME); i < n; i++) { e.clock.t += 1000 * FRAME; e.guest.frame(FRAME); } };
+  alone2(59.8);
+  assert.equal(e.guest.hostSilent, true);
+  assert.equal(e.guest.abandoned, false);
+  alone2(0.4);
+  assert.equal(e.guest.abandoned, true);
+});
+
+test('a guest who reloads steers her boat again', async () => {
+  const d = await duel();
+  d.run(1);
+  d.me.tackOrGybe(); d.me.tackN = 1; // she presses tack
+  d.run(0.3);
+  assert.ok(d.Gh.auto, 'the host\'s copy tacks');
+  d.run(8);
+  assert.equal(d.Gh.auto, null);
+  // she reloads: the old page is gone; a new one builds the race again and follows it, with her id
+  d.guest.stop();
+  await new Promise((r) => setTimeout(r, 0));
+  d.clock.t += 2000;
+  for (let i = 0; i < 120; i++) { d.clock.t += 1000 * FRAME; d.host.tick(FRAME); }
+  const link = makeLink(d.rt, d.code);
+  await link.all.join();
+  const grace = raceFor(d.match, 'g');
+  const guest = new Guest({ race: grace, link, me: 'g', now: d.now });
+  assert.equal(await guest.joined, true);
+  const me = guest.me;
+  assert.equal(me.tackN ?? 0, 0);
+  Object.assign(d, { guest, grace, me, Hg: grace.humans.find((b) => b.id === 'h') });
+  d.run(0.3);
+  assert.ok(near(me, d.Gh) < 1, `back where the host has her (${near(me, d.Gh).toFixed(2)} m)`);
+  assert.ok(Math.abs(grace.clock - d.hrace.clock) < 0.25, 'and at the host\'s time');
+  // her presses move the host's copy again: a tack (her count goes on from the host's), then the helm
+  me.tackOrGybe(); me.tackN = (me.tackN || 0) + 1;
+  d.run(0.3);
+  assert.ok(d.Gh.auto, 'the host\'s copy tacks for the reloaded guest');
+  d.run(8);
+  const h0 = d.Gh.h;
+  d.run(2, () => { me.rudder = -0.5; });
+  assert.equal(d.Gh.rudder, -0.5);
+  assert.ok(Math.abs(wrap(d.Gh.h - h0)) > 15 * D2R, 'and turns with her helm');
+});
+
+test('the message budget: one minute of racing under 30 a second', async (t) => {
+  const { rt, n } = counting(memoryRealtime());
+  const d = await duel({ rt });
+  n.sent = n.delivered = 0;
+  // a sailor's hands: the helm moved every half second, a tack every 15 s, a sheet trimmed every 4 s
+  let i = 0;
+  const HELM = [0.2, 0, -0.15, 0.1, 0, -0.3, 0.25, 0, 0.05, -0.1];
+  d.run(60, () => {
+    const s = i++ * FRAME;
+    if (i % 30 === 0) d.me.rudder = HELM[(i / 30) % HELM.length];
+    if (i % 900 === 450) { d.me.tackOrGybe(); d.me.tackN = (d.me.tackN || 0) + 1; }
+    if (i % 240 === 0) d.me.sheet = Math.min(1, Math.max(0, d.me.sheet + (s % 8 < 4 ? 0.05 : -0.05)));
+    d.H.rudder = HELM[Math.floor(s) % HELM.length];
+  });
+  const rate = (n.sent + n.delivered) / 60;
+  t.diagnostic(`${n.sent} sent, ${n.delivered} delivered: ${rate.toFixed(1)} messages a second`);
+  assert.ok(rate < 30, `${rate.toFixed(1)} a second`);
+  assert.ok(n.sent >= 600, 'ten snapshots a second at least');
 });

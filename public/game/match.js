@@ -1,5 +1,9 @@
-// A match race's protocol, with no DOM: the waiting room (Room), the match's score and state (Match), and the two
-// channels a match talks on (makeLink). Race sync (Host / Guest) is added below it. Every clock is the injected now().
+// A match race's protocol, with no DOM: the waiting room (Room), the match's score and state (Match), the two
+// channels a match talks on (makeLink), and the race between the two screens: the host's game runs it (Host), the
+// guest's follows it (Guest). Every clock is the injected now().
+import { Race, wrap } from './sim.js';
+import { applyControls, encodeSnap, applySnap, readBoat, lerpBoat, setBoat } from './wire.js';
+
 export const HOST_KEY = 'regatta-match-host'; // localStorage: { code } of the match this browser hosts
 
 const HELLO_MS = 3000;
@@ -188,5 +192,230 @@ export class Match {
     }
     m._since = now();
     return m;
+  }
+}
+
+// ---------- the race between the two screens ----------
+// 'match:CODE' (link.all): host → guest snap { c, f, w, b } (wire.js) ten times a second; ev { list: [{ key, arg, to:
+// id | null }] }, the race's news; end { winner, margin, forfeited } (ids) once it's over; abandon {} after the host's
+// tab slept over a minute. 'match:CODE:in' (link.input): guest → host input { id, c } (controlsOf), as her controls
+// change, at most every 0.1 s and at least every 0.5 s. The Room joins link.all; Host and Guest join link.input, and
+// stop() leaves it.
+const SNAP_S = 0.1; // a snapshot every 0.1 s of the race
+const HOLD_MS = 3000; // a guest unheard this long holds her course; a host unheard this long: "Waiting for <host>"
+const FORFEIT_MS = 30000; // a guest unheard this long: the race is the host's
+const ASLEEP_MS = 60000; // a host's tab asleep this long, or unheard by the guest this long: the race is abandoned
+const BEHIND_MS = 150; // the guest draws the host's boat this far behind real time, between two snapshots
+const EASE_S = 0.5; // the guest's own boat eased to the host's copy of her, with this time constant…
+const SNAP_M = 20; // …or taken as it is when further off than this, or after one of these on her:
+const SNAP_ON = new Set(['bump', 'aground', 'touched', 'fouled', 'umpire']);
+const INPUT_MIN_MS = 100, INPUT_MAX_MS = 500;
+
+// race n of the match (match.raceN), as both screens build it: the host's settings, the race's seed and colours,
+// the two sailors and their looks; myId the one this screen sails
+export function raceFor(match, myId) {
+  const n = match.raceN, s = match.start, pick = ({ id, name }) => ({ id, name });
+  const race = new Race({ ...s.settings, seed: match.seedOf(n), match: true, humans: [pick(s.host), pick(s.guest)], me: myId, blue: match.blueOf(n) });
+  for (const p of [s.host, s.guest]) race.humans.find((b) => b.id === p.id).look = p.look;
+  return race;
+}
+
+const joinOf = (owner, ch) => ch.join().then(() => true, (e) => { owner.error = e || new Error('join failed'); return false; });
+
+// The host's game: it runs the race. Its own boat is the local UI's; the guest's sails on the inputs that arrive.
+export class Host {
+  constructor({ race, link, guestId, now = Date.now }) {
+    this.race = race;
+    this.link = link;
+    this.now = now;
+    this.guest = race.humans.find((b) => b.id === guestId);
+    this.stopped = false;
+    this.abandoned = false;
+    this.ended = false;
+    this.error = null;
+    this._endAt = -Infinity;
+    this._c = null; // the guest's latest controls
+    this._lastIn = now(); // when they came
+    this._lastTick = null;
+    this._snapT = SNAP_S; // the first tick sends one
+    this._sent = new WeakSet(race.messages); // the race's news so far is the guest's own race's too (same seed)
+    link.input.on('input', (m) => {
+      if (this.stopped || !m || m.id !== guestId || !m.c) return;
+      this._c = m.c; this._lastIn = this.now();
+    });
+    this.joined = joinOf(this, link.input);
+  }
+
+  tick(dt) {
+    if (this.stopped) return;
+    const race = this.race, t = this.now(), all = this.link.all;
+    if (this._lastTick !== null) {
+      const gap = t - this._lastTick;
+      if (gap > ASLEEP_MS) { all.send('abandon', {}); this.abandoned = true; this.stop(); return; }
+      if (gap > HOLD_MS) this._lastIn += gap; // its own sleep isn't the guest's silence
+    }
+    this._lastTick = t;
+    if (race.over) { this._end(); return; }
+    const g = this.guest, quiet = t - this._lastIn;
+    if (quiet >= FORFEIT_MS) race.forfeit(g);
+    else if (quiet >= HOLD_MS) { g.rudder = 0; g.auto = null; } // she holds her course
+    else if (this._c) applyControls(race, g, this._c);
+    if (!race.over) race.step(dt);
+    const list = [];
+    for (const m of race.messages) {
+      if (this._sent.has(m)) continue;
+      this._sent.add(m);
+      list.push({ key: m.key, arg: m.arg ?? null, to: m.to ? m.to.id : null });
+    }
+    if (list.length) all.send('ev', { list });
+    this._snapT += dt;
+    if (this._snapT >= SNAP_S - 1e-6 || race.over) { this._snapT = 0; all.send('snap', encodeSnap(race)); }
+    if (race.over) this._end();
+  }
+  // the end, told at once and again every second it's still ticked, for a guest whose connection blinked
+  _end() {
+    const t = this.now();
+    if (this.ended && t - this._endAt < 1000) return;
+    this.ended = true; this._endAt = t;
+    const r = this.race;
+    this.link.all.send('end', { winner: r.winner?.id ?? null, margin: r.margin ?? null, forfeited: r.forfeited?.id ?? null });
+  }
+  // stop listening and sending (the race is done with, or abandoned)
+  stop() {
+    if (this.stopped) return;
+    this.stopped = true;
+    this.link.input.leave();
+  }
+}
+
+// The guest's game: it follows the host's race. Her own boat is stepped here from her own hands (the helm answers at
+// once) and eased to the host's copy of her; the host's boat is drawn BEHIND_MS behind, between two snapshots; the
+// calls, the signals and the rest of the news are the host's. It never runs the rules.
+export class Guest {
+  constructor({ race, link, me, now = Date.now }) {
+    this.race = race;
+    this.link = link;
+    this.now = now;
+    this.me = typeof me === 'string' ? race.humans.find((b) => b.id === me) : me ?? race.player;
+    this.stopped = false;
+    this.hostSilent = false;
+    this.abandoned = false;
+    this.ended = null; // the end message, once the race is over
+    this.error = null;
+    this._ends = [];
+    this._buf = []; // { at, s }: the snapshots, as they arrived
+    this._lastSnap = now();
+    this._lastFrame = null;
+    this._snapMe = true; // take the host's copy of her as it is at the next snapshot (the first one too)
+    this._sentAt = -Infinity;
+    this._sentKey = null;
+    this._trackC = -Infinity;
+    const all = link.all;
+    all.on('snap', (s) => { if (!this.stopped) this._onSnap(s); });
+    all.on('ev', (e) => { if (!this.stopped) this._onEv(e); });
+    all.on('end', (e) => { if (!this.stopped) this._onEnd(e); });
+    all.on('abandon', () => { if (!this.stopped && !this.ended) this.abandoned = true; });
+    this.joined = joinOf(this, link.input);
+  }
+
+  onEnd(fn) { this._ends.push(fn); }
+  _boat(id) { return id ? this.race.humans.find((b) => b.id === id) ?? null : null; }
+
+  _onSnap(s) {
+    const race = this.race, me = this.me;
+    if (!applySnap(race, s, me)) return;
+    const at = this.now();
+    this._lastSnap = at;
+    this._buf.push({ at, s });
+    while (this._buf.length > 2 && this._buf[1].at < at - 1000) this._buf.shift();
+    const i = race.boats.indexOf(me), mine = readBoat(s.b[i]);
+    me.tackN = Math.max(me.tackN || 0, mine.tackSeen || 0); // a reloaded page's presses count on from the host's
+    me.hailN = Math.max(me.hailN || 0, mine.hailSeen || 0);
+    if (this._snapMe) { this._snapMe = false; this._take(mine); }
+    if (s.c - this._trackC >= 1) { // the other boats' tracks, at 1 Hz (her own is stepView's)
+      this._trackC = s.c;
+      race.boats.forEach((b, k) => { if (b !== me && !b.done) { const o = readBoat(s.b[k]); b.track.push([o.x, o.z]); } });
+    }
+    if (race.clock < s.c - 1) this._catchUp(s.c); // a page just opened, or one that slept: the wind and waves too
+  }
+  _take(o) {
+    const me = this.me;
+    for (const k of ['x', 'z', 'h', 'v', 'heel', 'yawRate']) me[k] = o[k];
+  }
+  _catchUp(c) { for (let d = c - this.race.clock; d > 1e-6; d -= 0.25) this.race.advance(Math.min(0.25, d)); }
+
+  _onEv(e) {
+    const race = this.race, me = this.me;
+    for (const m of e?.list || []) {
+      const to = m.to ? this._boat(m.to) : null;
+      if (m.to && to !== me) continue; // the other boat's news
+      race.messages.push({ key: m.key, arg: m.arg, to });
+      if (SNAP_ON.has(m.key) && (m.key !== 'umpire' || m.arg?.on === me.id)) this._snapMe = true;
+    }
+  }
+
+  _onEnd(e) {
+    if (this.ended) return;
+    const race = this.race;
+    this.ended = e || {};
+    race.over = true;
+    race.winner = this._boat(e?.winner) ?? race.winner;
+    race.margin = e?.margin ?? null;
+    race.forfeited = this._boat(e?.forfeited);
+    for (const fn of this._ends) fn({ winner: e?.winner ?? null, margin: e?.margin ?? null, forfeited: e?.forfeited ?? null });
+  }
+
+  // her controls (controlsOf her boat), each frame: sent when they change, at most every 0.1 s, and at least every 0.5 s
+  input(c) {
+    if (this.stopped) return;
+    const t = this.now(), key = JSON.stringify(c.at ? { ...c, s: 0, j: c.sp ? c.j : 0 } : c); // auto-trim's sheet is the host's to work
+    const since = t - this._sentAt;
+    if ((key !== this._sentKey && since >= INPUT_MIN_MS) || since >= INPUT_MAX_MS) {
+      this._sentAt = t; this._sentKey = key;
+      this.link.input.send('input', { id: this.me.id, c });
+    }
+  }
+
+  frame(dt) {
+    if (this.stopped) return;
+    const race = this.race, me = this.me, t = this.now();
+    if (this._lastFrame !== null && t - this._lastFrame > HOLD_MS) this._lastSnap += t - this._lastFrame; // her own page slept: not the host's silence
+    this._lastFrame = t;
+    if (this.ended) return;
+    const silent = t - this._lastSnap;
+    this.hostSilent = silent >= HOLD_MS;
+    if (silent >= ASLEEP_MS) this.abandoned = true;
+    if (this.hostSilent || this.abandoned) return; // frozen until the host's game is back
+    const n0 = race.messages.length;
+    race.stepView(dt, me);
+    race.messages.length = n0; // her own screen's news (a turn begun) is the host's to tell
+    const L = this._buf[this._buf.length - 1];
+    if (!L) return;
+    // the clock: the host's, as of the latest snapshot and the time since it came
+    const est = L.s.c + (t - L.at) / 1000, off = est - race.clock;
+    if (off > 0.5) this._catchUp(est);
+    else if (off < -0.5) race.clock = est;
+    else race.clock += off * (1 - Math.exp(-dt / EASE_S));
+    // the other boat, BEHIND_MS behind, between the two snapshots around then
+    const rt = t - BEHIND_MS, buf = this._buf;
+    let k = buf.length - 1;
+    while (k > 0 && buf[k].at > rt) k--;
+    const A = buf[k], B = buf[Math.min(k + 1, buf.length - 1)], f = B.at > A.at ? Math.min(1, Math.max(0, (rt - A.at) / (B.at - A.at))) : 1;
+    race.boats.forEach((b, i) => { if (b !== me) setBoat(b, lerpBoat(readBoat(A.s.b[i]), readBoat(B.s.b[i]), f)); });
+    // her own boat: eased to where the host has her now (its copy carried on from the snapshot), or taken as it is
+    const o = readBoat(L.s.b[race.boats.indexOf(me)]), age = (t - L.at) / 1000;
+    const tx = o.x + Math.sin(o.h) * o.v * age, tz = o.z - Math.cos(o.h) * o.v * age;
+    if (Math.hypot(me.x - tx, me.z - tz) > SNAP_M) { this._take(o); me.x = tx; me.z = tz; return; }
+    const e = 1 - Math.exp(-dt / EASE_S);
+    me.x += (tx - me.x) * e; me.z += (tz - me.z) * e;
+    me.h = wrap(me.h + wrap(o.h - me.h) * e);
+    me.v += (o.v - me.v) * e;
+  }
+
+  // stop following (the race is done with, or the page is leaving)
+  stop() {
+    if (this.stopped) return;
+    this.stopped = true;
+    this.link.input.leave();
   }
 }
