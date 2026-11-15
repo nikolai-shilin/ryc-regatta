@@ -281,6 +281,20 @@ def bilinear(A, x0, cell, x, z):
     return (A[i, j] * (1 - u) + A[i, j + 1] * u) * (1 - v) + (A[i + 1, j] * (1 - u) + A[i + 1, j + 1] * u) * v
 
 
+def stretches(mask):
+    """the stretches of a mask (its cells joined side to side), each as the flat indices of its cells"""
+    h, w = mask.shape; m = mask.ravel(); seen = np.zeros(h * w, bool); out = []
+    for s in np.flatnonzero(m):
+        if seen[s]: continue
+        seen[s] = True; todo = [s]; cells = []
+        while todo:
+            k = todo.pop(); cells.append(k); i, j = divmod(int(k), w)
+            for kk, ok in ((k - w, i > 0), (k + w, i < h - 1), (k - 1, j > 0), (k + 1, j < w - 1)):
+                if ok and m[kk] and not seen[kk]: seen[kk] = True; todo.append(kk)
+        out.append(np.array(cells, np.int64))
+    return out
+
+
 def nearest(P, Q, bs=24.0):
     """for each point of Q, the index of the nearest point of P and the distance to it (only P within a bin of it)"""
     lo = min(P.min(0).min(), Q.min(0).min()) - bs
@@ -650,6 +664,7 @@ def bake(vid, V, fetch_only=False):
             shapes.append((t, loops(o), loops(i), el))
     cover = np.zeros((NCC, NCC), np.uint8)
     for cls, tags in LAYERS:
+        if cls == 'water': under = cover.copy().ravel()  # (what the map has under its water, the last of them)
         img = Image.new('L', (NCC, NCC), 0); d = ImageDraw.Draw(img); n = 0
         for t, outer_r, inner_r, el in shapes:
             if not any(t.get(k) in v for k, v in tags.items()): continue
@@ -662,11 +677,24 @@ def bake(vid, V, fetch_only=False):
             a_ = np.asarray(img); m_ = a_ > 0
             cover[m_] = CLASSES.index(cls) | ((a_[m_] - (1 if cls == 'forest' else 0)) << 4).astype(np.uint8)
     Lc = bilinear(HL, -EXTENT, LC, CX, CZ)
+    # The map's water ashore is drawn as still water, mirroring the sky (the game's lakeLight); where it isn't, it is a
+    # pale patch on the land that reads as snow. So only where the water is:
+    # - the sea's own polygons (a harbour, a bay, a lagoon the sea has taken, the water the map has over the sea) are
+    #   the sea, and all of them that lies ashore — up the slopes of its coast, where the map's outline and the
+    #   elevation's shore are apart (Sydney's harbour, Rio's lagoons) — is land, as the map has it under the water
+    W_ = CLASSES.index('water'); flat = cover.ravel(); hf = Lc.ravel(); seaw = banks = 0
+    for r in stretches((cover & 15) == W_):
+        h = hf[r]
+        if (h <= 0).any(): r = r[h > 0]; seaw += len(r); flat[r] = under[r]
     cover[Lc <= 0] = 0
-    # the sea's own polygons (a harbour, a bay the map has as water) lying over the low land of its coast: that land,
-    # not a pond on the shore (the game draws a pond as still water, mirroring the sky)
+    # (and the low land of a coast under a pond's polygon by the sea: its shore, not a pond)
     Sc = bilinear(S, -EXTENT, LC, CX, CZ)
-    cover[((cover & 15) == CLASSES.index('water')) & (Lc > 0) & (Lc < 8) & (Sc < 200)] = 0
+    r = np.flatnonzero(((cover & 15) == W_) & (Lc > 0) & (Lc < 8) & (Sc < 200)); flat[r] = under[r]
+    # - a lake's, a reservoir's, a pond's surface is level: what of its polygon stands more than 2 m above its water
+    #   (the lowest quarter of it) is its banks, the land the map has there
+    for r in stretches(((cover & 15) == W_) & (Lc > 0)):
+        h = hf[r]; up = r[h > np.percentile(h, 25) + 2.0]; banks += len(up); flat[up] = under[up]
+    print(f'  the map\'s water ashore: {seaw} cells of the sea\'s polygons, {banks} of the banks, land', flush=True)
     if V.get('flat') is not None:  # a flat city's river, its polygon over the quays' edge: the quay, not a pond
         cover[((cover & 15) == CLASSES.index('water')) & (Lc > 0)] = CLASSES.index('town')
     print('  cover:', ', '.join(f'{c} {np.mean(cover & 15 == k):.0%}' for k, c in enumerate(CLASSES) if np.mean(cover & 15 == k) >= 0.005), flush=True)
