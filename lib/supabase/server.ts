@@ -39,7 +39,5 @@ export async function getAccount(): Promise<Account> {
   };
 }
 
-export const initials = (name: string, email: string) => {
-  const w = (name || email).trim().split(/[\s.@]+/).filter(Boolean);
-  return ((w[0]?.[0] || '') + (w[1]?.[0] || '')).toUpperCase() || '·';
-};
+// (initials is lib/name.ts's, for the browser too)
+export { initials } from '@/lib/name';

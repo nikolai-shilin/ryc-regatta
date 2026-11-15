@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { getT, titled, type LangParams } from '@/lib/i18n';
 import { ruBoats } from '@/lib/lang';
-import { getAccount, initials } from '@/lib/supabase/server';
 import { todayTop } from '@/lib/today';
 import { Who as LbWho } from '@/components/flag';
 import { DailyLock } from '@/components/daily-lock';
@@ -14,8 +13,12 @@ import { PassportRow } from '@/components/passport';
 import { ProgressRows, RivalRow } from '@/components/progress';
 import { SceneBrand } from '@/components/scene-brand';
 import { GameScene } from '@/components/game-scene';
-import { PauseCard, SettingsRow, type Who } from '@/components/pause-card';
+import { PauseCard, SettingsRow } from '@/components/pause-card';
 import { MyRow } from '@/components/home-client';
+
+// Built for everyone alike and refreshed every five minutes, as Home is (today's fastest move): who is signed in is
+// the browser's to show (lib/me.ts: .if-me, .if-guest, the initials; the pause card's account reads the cookie).
+export const revalidate = 300;
 
 export const generateMetadata = titled('Race hub', 'Меню гонок', {
   path: '/race',
@@ -30,7 +33,7 @@ export const generateMetadata = titled('Race hub', 'Меню гонок', {
 // card the start, today's fastest and a free race one tap away.
 export default async function Hub({ params }: LangParams) {
   const { lang, t } = await getT(params);
-  const [account, today] = await Promise.all([getAccount(), todayTop()]);
+  const today = await todayTop();
   const d = dailyRace(), v = venueOf(d.venue), L = lang === 'ru' ? 1 : 0;
   const date = new Date(d.day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
   const top = today && today.d === d.day ? today.top : [];
@@ -38,10 +41,9 @@ export default async function Hub({ params }: LangParams) {
   const metres = fmtDistance(courseDistance(plannedCourse(d.preset, d.length, d.fleet, d.course), d.laps), lang).split(' · ')[0];
   const breeze = { light: t('Light breeze', 'Слабый ветер'), medium: t('Medium breeze', 'Средний ветер'), strong: t('Strong breeze', 'Сильный ветер') }[d.preset];
   const races = today && today.d === d.day ? today.races : 0;
-  const who: Who = account ? { name: account.name, email: account.email, initials: initials(account.name, account.email), via: account.provider === 'google' ? 'Google' : account.provider === 'telegram' ? 'Telegram' : t('email code', 'код по почте') } : null;
 
   return (
-    <div className="scr bt-scr bc" lang={lang} data-acct={account ? 'signed' : 'guest'}>
+    <div className="scr bt-scr bc" lang={lang}>
       <div className="bt">
         <GameScene venue={d.venue} wind={d.preset} title={t('Today’s venue in 3D', 'Место гонки дня в 3D')} loading={t('Loading the venue', 'Загружаем место гонки')} />
 
@@ -67,12 +69,11 @@ export default async function Hub({ params }: LangParams) {
           </div>
         </div>
 
-        <PauseCard lang={lang} who={who} back="/race" label={t('Today’s race', 'Гонка дня')}>
+        <PauseCard lang={lang} back="/race" label={t('Today’s race', 'Гонка дня')}>
           <div className="bt-card-h">
             <span className="lbl-ink">{t('Today’s race', 'Гонка дня')}</span>
-            {who
-              ? <Link className="bt-acct bt-acct-me" href="/settings" aria-label={t(`Settings, signed in as ${who.name || who.email}`, `Настройки, вход как ${who.name || who.email}`)}>{who.initials}</Link>
-              : <Link className="bt-acct" href="/sign-in?next=/race">{t('Sign in', 'Войти')}</Link>}
+            <Link className="bt-acct bt-acct-me if-me me-ini" href="/settings" aria-label={t('Settings, signed in', 'Настройки, ты вошёл')} />
+            <Link className="bt-acct if-guest" href="/sign-in?next=/race">{t('Sign in', 'Войти')}</Link>
           </div>
           <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Start today’s race', 'Начать гонку дня')}</span></a>
           <div className="bt-g">

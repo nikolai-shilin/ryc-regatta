@@ -24,6 +24,8 @@ import { RaceBadges } from './progress';
 import { track } from '@/lib/track';
 import { shortName } from '@/lib/name';
 import { BOAT_EVENT, readBoat } from '@/lib/boat';
+import { briefUrl, readBrief, SCORES_API } from '@/lib/day-brief';
+import { useWho } from './me';
 
 // What the game keeps for a finished race (public/game/main.js, finishToPage).
 // legT (the clock as she finished each leg, the start's crossing first) and pens (her penalties) came with the finish's
@@ -62,8 +64,9 @@ const ordEn = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n 
 
 // head and foot: the site's header and footer, rendered by the page (server components) and passed in, for a race that
 // can't be found
-export default function ResultView({ id, lang, signedName, head, foot }: { id: string; lang: Lang; signedName: string | null; head?: ReactNode; foot?: ReactNode }) {
+export default function ResultView({ id, lang, head, foot }: { id: string; lang: Lang; head?: ReactNode; foot?: ReactNode }) {
   const t = tx(lang);
+  const who = useWho(lang), signedName = who ? who.name || who.email : null; // from the session cookie (lib/me.ts)
   const [res, setRes] = useState<Result | null | undefined>(undefined);
   const [top, setTop] = useState<Top[] | null>(null);
   // the day's whole field, for "2nd of 37 today": the times of everyone ranked (null until known, or if the server can't say)
@@ -101,11 +104,11 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
     // first three (today's only). Both asked at once.
     const get = (u: string) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     let live = true;
-    Promise.all([get('https://iyt.rycrentals.com/api/game'), get(`https://iyt.rycrentals.com/api/game?day=${encodeURIComponent(res.daily)}`)]).then(([j, day]) => {
+    Promise.all([get(SCORES_API), get(briefUrl(res.daily))]).then(([j, day]) => {
       if (!live) return;
-      const rows: Top[] | null = day && day.d === res.daily && Array.isArray(day.rows) ? day.rows : null, d = j?.daily;
-      if (rows) setField(rows.map((r) => r.s));
-      setTop(rows ? rows.slice(0, 5).map((r) => ({ name: shortName(r.name), s: r.s, fl: r.fl })) : d && d.d === res.daily ? (d.top || []).slice(0, 3) : []);
+      const b = readBrief(day, res.daily!), d = j?.daily;
+      if (b) setField(b.s);
+      setTop(b ? b.top.slice(0, 5).map((r) => ({ name: shortName(r.name), s: r.s, fl: r.fl })) : d && d.d === res.daily ? (d.top || []).slice(0, 3) : []);
     });
     return () => { live = false; };
   }, [res]);
@@ -267,7 +270,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   // page scrolls on, the debrief beside the track and the legs, and today's ranking beside your best and sharing
   const tag = (x: Item) => (x.note ? ['note', t('Note', 'Заметка')] : x.good ? ['ok', t('Good', 'Хорошо')] : ['work', t('Work on it', 'Поработай')]);
   return (
-    <div className="scr bt-scr rs-scr bc" lang={lang} data-acct={signedName ? 'signed' : 'guest'}>
+    <div className="scr bt-scr rs-scr bc" lang={lang}>
       <div className="bt">
         <GameScene venue={where.id} boat={res.yacht} wind={res.preset} finish={scene} title={t('The finish in 3D, as it was', 'Финиш в 3D, как он был')} loading={t('Loading the finish', 'Загружаем финиш')} />
         {!shared && <Soundtrack lang={lang} />}

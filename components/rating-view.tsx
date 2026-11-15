@@ -19,7 +19,8 @@ const href = (d: string) => (d === todayUtc() ? '/race/rating' : `/race/rating/$
 
 // R2 · The day's rating: that day's race (everyone sails the same one), its sailors by their best time with the
 // points each took, and the month's standings, the points added up day by day. Days of the month along the top.
-export function RatingView({ day, data, lang, t, signedIn }: { day: string; data: Rating | null; lang: Lang; t: T; signedIn: boolean }) {
+// (the page is cached for everyone alike: whether you're signed in is the browser's to show, .if-guest; lib/me.ts)
+export function RatingView({ day, data, lang, t }: { day: string; data: Rating | null; lang: Lang; t: T }) {
   const loc = lang === 'ru' ? 'ru-RU' : 'en-GB';
   const today = todayUtc(), isToday = day === today;
   const race = dailyRace(at(day)), venue = venueOf(race.venue);
@@ -88,7 +89,7 @@ export function RatingView({ day, data, lang, t, signedIn }: { day: string; data
               {data.guests > 0 && (
                 <p className="rt-guests">
                   {t(`${data.guests} ${data.guests === 1 ? 'race was' : 'races were'} sailed signed out and ${data.guests === 1 ? 'doesn’t' : 'don’t'} rank.`, `${data.guests} ${ruPlural(data.guests, ['заезд пройден', 'заезда пройдено', 'заездов пройдено'])} без входа и не ${data.guests === 1 ? 'попал' : 'попали'} в рейтинг.`)}
-                  {!signedIn && <> <Link href={`/sign-in?next=${encodeURIComponent(href(day))}`}>{t('Sign in to rank', 'Войди, чтобы попасть в рейтинг')} ›</Link></>}
+                  <span className="if-guest"> <Link href={`/sign-in?next=${encodeURIComponent(href(day))}`}>{t('Sign in to rank', 'Войди, чтобы попасть в рейтинг')} ›</Link></span>
                 </p>
               )}
               {isToday && <a className="rt-go" href="/play?race=today"><IconPlay /><span>{n ? t('Beat these times', 'Побей эти времена') : t('Sail today’s race', 'Пройти гонку дня')}</span></a>}

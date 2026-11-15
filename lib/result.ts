@@ -13,11 +13,12 @@ export type SharedResult = {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// null when there is none (yet): a result goes online as its race finishes, so a miss isn't cached.
+// null when there is none (yet): a result goes online as its race finishes, so a miss isn't cached (Next keeps only a
+// 200 in its data cache), and a hit is kept a day: a posted result never changes.
 export async function getResult(id: string): Promise<SharedResult | null> {
   if (!UUID.test(id)) return null;
   try {
-    const r = await fetch(`https://iyt.rycrentals.com/api/game?race=${id.toLowerCase()}`, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+    const r = await fetch(`https://iyt.rycrentals.com/api/game?race=${id.toLowerCase()}`, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(4000) });
     if (!r.ok) return null;
     const j = await r.json();
     return j && j.v === 1 && Array.isArray(j.boats) && j.boats.some((b: { me?: boolean }) => b.me) ? j : null;

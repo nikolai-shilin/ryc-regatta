@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
+import { connection } from 'next/server';
 import { getT } from '@/lib/i18n';
 import { pageMeta } from '@/lib/seo';
 import { describe, getResult } from '@/lib/result';
-import { getAccount } from '@/lib/supabase/server';
 import ResultView from '@/components/result-view';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 
@@ -26,9 +26,12 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 // scrolls on, the debrief, the track and the legs, today's ranking and your best. The game keeps the race on this
 // device and opens this page at the finish. The site's header and footer are only for a race that can't be found.
 export default async function ResultPage({ params }: { params: Promise<{ lang: string; id: string }> }) {
-  const [{ id }, { lang, t }, account] = await Promise.all([params, getT(params), getAccount()]);
+  // rendered on each visit, not cached as a page: a race not online yet must not keep the plain title once it is (its
+  // record, once found, is cached: lib/result.ts). Who is signed in is the browser's to say (ResultView, useWho).
+  await connection();
+  const [{ id }, { lang, t }] = await Promise.all([params, getT(params)]);
   return (
-    <ResultView id={id} lang={lang} signedName={account ? account.name || account.email : null}
+    <ResultView id={id} lang={lang}
       head={<SiteHead lang={lang} t={t} page="result" />}
       foot={<SiteFoot lang={lang} t={t} back={`/race/result/${id}`} />} />
   );

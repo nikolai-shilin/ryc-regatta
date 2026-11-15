@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Analytics } from '@vercel/analytics/next';
 import { getLang, getT, type LangParams } from '@/lib/i18n';
-import { applyMe } from '@/lib/me';
+import { applyMe, readMe } from '@/lib/me';
 import { pageMeta, SITE, NAME, HOME_TITLE, HOME_DESC } from '@/lib/seo';
 import { TelegramSignIn } from '@/components/telegram-sign-in';
 import { BestsSync } from '@/components/bests-sync';
@@ -52,7 +52,7 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, view
 const KEEP_TG_LAUNCH = `try{var h=new URLSearchParams(location.hash.slice(1));if(h.get('tgWebAppData')){var k='__telegram__initParams',p=JSON.parse(sessionStorage.getItem(k)||'{}')||{};h.forEach(function(v,n){p[n]=v});sessionStorage.setItem(k,JSON.stringify(p));history.replaceState(history.state,'',location.pathname+location.search)}}catch(e){}`;
 
 // The header's avatar and the footer's account link, from the session cookie before the first paint (lib/me.ts).
-const ME = `;(${applyMe.toString()})();`;
+const ME = `;(${applyMe.toString()})(${readMe.toString()});`;
 
 export default async function RootLayout({ children, params }: LangParams & { children: React.ReactNode }) {
   const lang = await getLang(params);

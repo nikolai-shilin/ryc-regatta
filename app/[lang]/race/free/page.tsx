@@ -1,5 +1,4 @@
 import { getT, titled, type LangParams } from '@/lib/i18n';
-import { getAccount, initials } from '@/lib/supabase/server';
 import FreeSetup from '@/components/free-setup';
 
 export const generateMetadata = titled('Free race', 'Свободная гонка', {
@@ -10,7 +9,7 @@ export const generateMetadata = titled('Free race', 'Свободная гонк
 });
 
 export default async function FreeRacePage({ params, searchParams }: LangParams & { searchParams: Promise<{ from?: string }> }) {
-  const [{ lang, t }, sp, account] = await Promise.all([getT(params), searchParams, getAccount()]);
-  const who = account ? { name: account.name, email: account.email, initials: initials(account.name, account.email), via: account.provider === 'google' ? 'Google' : account.provider === 'telegram' ? 'Telegram' : t('email code', 'код по почте') } : null;
-  return <FreeSetup lang={lang} from={sp.from === 'today' ? 'today' : sp.from === 'race' ? 'race' : null} who={who} />;
+  // (who is signed in: the pause card reads the session cookie, components/me.tsx)
+  const [{ lang }, sp] = await Promise.all([getT(params), searchParams]);
+  return <FreeSetup lang={lang} from={sp.from === 'today' ? 'today' : sp.from === 'race' ? 'race' : null} />;
 }

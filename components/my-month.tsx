@@ -4,6 +4,7 @@ import { tx, ruPlural, type Lang } from '@/lib/lang';
 import { placeAmong } from '@/lib/race-log';
 import { shiftDay, todayUtc } from '@/lib/log';
 import { useLog } from './passport';
+import { briefUrl, readBrief } from '@/lib/day-brief';
 
 // Your month on the rating page: for each day of the month you finished today's race, where your best time that day
 // stood among that day's ranked times, as a bar: how much of the field you beat (all of it: first). The times are
@@ -30,8 +31,8 @@ export function useMyDays(day: string) {
     if (!mine) return;
     if (!mine.length) { setDays([]); return; }
     let live = true;
-    Promise.all(mine.map(([d, s]) => fetch(`https://iyt.rycrentals.com/api/game?day=${d}`).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((j) => {
-      const field: number[] = j && j.d === d && Array.isArray(j.rows) ? j.rows.map((r: { s: number }) => r.s) : [];
+    Promise.all(mine.map(([d, s]) => fetch(briefUrl(d)).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((j) => {
+      const field: number[] = readBrief(j, d)?.s || [];
       const listed = field.some((x) => Math.abs(x - s) < 0.05);
       return { d, s, place: placeAmong(field, s), of: field.length + (listed ? 0 : 1), listed };
     }))).then((r) => live && setDays(r));

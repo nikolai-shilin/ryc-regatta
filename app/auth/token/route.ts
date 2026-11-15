@@ -9,8 +9,10 @@ import { supabaseServer } from '@/lib/supabase/server';
 //   GET /auth/token → { token, expires } when signed in, 204 when not
 export async function GET() {
   const supabase = await supabaseServer();
-  const { data: { user } } = await supabase.auth.getUser(); // checked with Supabase, not only read from the cookie
-  if (!user) return new NextResponse(null, { status: 204, headers: { 'cache-control': 'no-store' } });
+  // getClaims, not getUser: the token's signature is checked here against the project's key (ES256, its JWKS cached),
+  // without asking Supabase on every race page. The scores server asks Supabase whose the token is all the same.
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims?.claims?.sub) return new NextResponse(null, { status: 204, headers: { 'cache-control': 'no-store' } });
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return new NextResponse(null, { status: 204, headers: { 'cache-control': 'no-store' } });
   return NextResponse.json({ token: session.access_token, expires: session.expires_at }, { headers: { 'cache-control': 'no-store' } });

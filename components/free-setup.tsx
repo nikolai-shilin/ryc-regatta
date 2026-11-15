@@ -9,7 +9,7 @@ import { lengthOffered, shapeOffered, venueOf, VENUES } from '@/lib/venues';
 import { courseDistance, dailyRace, fmtDistance, pbKey, plannedCourse, raceMinutes, savedShape, KN, SHAPE_NAME, SHAPES, type Length, type Shape, type Wind } from '@/lib/race';
 import { CourseMap } from './course-map';
 import { GameScene, type SceneSetup } from './game-scene';
-import { PauseCard, SettingsRow, type Who } from './pause-card';
+import { PauseCard, SettingsRow } from './pause-card';
 import { IconBack, IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, IconSun, Num, clock } from './ui';
 import { SceneBrand } from './scene-brand';
 
@@ -37,7 +37,7 @@ const GUST: Record<Wind, [number, number]> = { light: [9, 12], medium: [16, 13],
 // (the wind or the current over the course, the course itself), and Show course does too. Start and Show course stay at
 // the card's top, your boat and Settings at its bottom. Start saves the choice where the game reads it and opens the race.
 // from: 'today' (today's race, as a free race), 'race' (the free race you were sailing; the game's Change the race), or none
-export default function FreeSetup({ lang, from, who }: { lang: Lang; from: 'today' | 'race' | null; who: Who }) {
+export default function FreeSetup({ lang, from }: { lang: Lang; from: 'today' | 'race' | null }) {
   const fromToday = from === 'today';
   const t = tx(lang);
   const [p, setP] = useState<Pick>({ venue: 'gocek', yacht: 'club40', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any' });
@@ -155,7 +155,7 @@ export default function FreeSetup({ lang, from, who }: { lang: Lang; from: 'toda
           </div>
         </div>
 
-        <PauseCard lang={lang} who={who} back={fromToday ? '/race/free?from=today' : '/race/free'} label={t('Set up your race', 'Настрой гонку')}
+        <PauseCard lang={lang} back={fromToday ? '/race/free?from=today' : '/race/free'} label={t('Set up your race', 'Настрой гонку')}
           head={<>
             <button type="button" className="bt-go" onClick={go}><IconPlay /><span>{from === 'race' ? t('Restart with these', 'Заново с этими') : t('Start race', 'Начать гонку')}</span></button>
             <button type="button" className="bt-show" aria-pressed={view === 'course'} onClick={() => setView(view === 'course' ? 'boats' : 'course')}>

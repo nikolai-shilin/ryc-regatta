@@ -1,5 +1,6 @@
 import 'server-only';
-import { getRating, todayUtc } from './rating';
+import { todayUtc } from './rating';
+import { briefUrl, readBrief, type DayBrief } from './day-brief';
 import { shortName } from './name';
 
 // the scores API; SCORES_API points the site at another one (a local copy, a stub for testing)
@@ -13,17 +14,19 @@ export type TopRow = { name: string | null; s: number; fl?: string | null }; // 
 export type Today = { d: string; w?: string; races: number; top: TopRow[]; n: number; ranked?: number; tenth?: number | null };
 export const TOP = 5;
 
-// The plain API's daily.top has only the first three, so the top five come from the day's rating (lib/rating.ts,
-// every finisher of the day), asked at the same time; when that fails the first three still show.
+// The plain API's daily.top has only the first three, so the top five come from the day's rating in brief
+// (lib/day-brief.ts: its first rows and every ranked time, not the month), asked at the same time; when that fails the
+// first three still show.
 export async function todayTop(): Promise<Today | null> {
   const plain = fetch(SCORES, { next: { revalidate: 300 } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   const day = todayUtc();
-  const [j, rating] = await Promise.all([plain, getRating(day)]);
+  const brief = fetch(briefUrl(day, SCORES), { next: { revalidate: 300 }, signal: AbortSignal.timeout(6000) })
+    .then((r) => (r.ok ? r.json() : null)).then((j): DayBrief | null => readBrief(j, day)).catch(() => null);
+  const [j, b] = await Promise.all([plain, brief]);
   const d = j && j.daily;
-  if (rating && rating.d === day) {
-    const rows = rating.rows;
-    return { d: day, w: rating.w ?? d?.w, races: rating.races || d?.races || 0, top: rows.slice(0, TOP).map((r) => ({ name: shortName(r.name), s: r.s, fl: r.fl })),
-      n: TOP, ranked: rows.length, tenth: rows.length >= 10 ? rows[9].s : null };
+  if (b) {
+    return { d: day, w: b.w ?? d?.w, races: b.races || d?.races || 0, top: b.top.slice(0, TOP).map((r) => ({ name: shortName(r.name), s: r.s, fl: r.fl })),
+      n: TOP, ranked: b.ranked, tenth: b.s.length >= 10 ? b.s[9] : null };
   }
   return d && Array.isArray(d.top) ? { d: d.d, w: d.w, races: d.races || 0, top: d.top.slice(0, 3), n: 3 } : null;
 }

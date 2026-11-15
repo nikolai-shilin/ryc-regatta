@@ -9,3 +9,9 @@ export const shortName = (name: string | null) => {
   const w = String(name || '').trim().split(/\s+/).filter(Boolean);
   return w.length ? `${w[0].slice(0, 20)}${w[1] ? ` ${[...w[1]][0]}.` : ''}` : null;
 };
+
+// the avatar's letters: the first of the ranking name's first two words, else of the address's
+export const initials = (name: string, email: string) => {
+  const w = (name || email).trim().split(/[\s.@]+/).filter(Boolean);
+  return ((w[0]?.[0] || '') + (w[1]?.[0] || '')).toUpperCase() || '·';
+};

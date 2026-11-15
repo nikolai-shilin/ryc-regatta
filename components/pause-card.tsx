@@ -4,9 +4,8 @@ import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { readOpts, saveOpts, DEFAULTS, type Opts } from '@/lib/opts';
 import { IconScreen, IconSail, IconCrew } from './ui';
+import { useWho } from './me';
 
-// Who is signed in, as the card's settings show them (from the server's account)
-export type Who = { name: string; email: string; via: string; initials: string } | null;
 
 const Open = createContext<(open: boolean) => void>(() => {});
 // whether Settings is open in the card: the row's summary reads the options again when it closes
@@ -17,7 +16,7 @@ const Shown = createContext(false);
 // without leaving the page. back: this page's own path, for the language switch and signing in to come back to.
 // head and foot stay put at the card's top and bottom while what is between them scrolls (the free race: Start and
 // Show course over the choices, your boat and Settings under them); Settings, open, takes the whole card.
-export function PauseCard({ lang, who, back, label, head, foot, children }: { lang: Lang; who: Who; back: string; label: string; head?: ReactNode; foot?: ReactNode; children: ReactNode }) {
+export function PauseCard({ lang, back, label, head, foot, children }: { lang: Lang; back: string; label: string; head?: ReactNode; foot?: ReactNode; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const card = useRef<HTMLElement>(null), body = useRef<HTMLDivElement>(null);
   const docked = !!(head || foot);
@@ -36,14 +35,14 @@ export function PauseCard({ lang, who, back, label, head, foot, children }: { la
             {head && !open && <div className="bt-dock bt-dock-t">{head}</div>}
             <div className="bt-body" ref={body}>
               <div className="bt-view" hidden={open}>{children}</div>
-              {open && <Settings lang={lang} who={who} back={back} close={() => setOpen(false)} />}
+              {open && <Settings lang={lang} back={back} close={() => setOpen(false)} />}
             </div>
             {foot && !open && <div className="bt-dock bt-dock-b">{foot}</div>}
           </>
         ) : (
           <>
             <div className="bt-view" hidden={open}>{children}</div>
-            {open && <Settings lang={lang} who={who} back={back} close={() => setOpen(false)} />}
+            {open && <Settings lang={lang} back={back} close={() => setOpen(false)} />}
           </>
         )}
       </Shown.Provider></Open.Provider>
@@ -69,7 +68,9 @@ export function SettingsRow({ lang, note = false }: { lang: Lang; note?: boolean
 type Keys = 'autoTrim' | 'guides' | 'camera' | 'gfx' | 'sound' | 'voice' | 'vibration' | 'music' | 'musicVol' | 'sea';
 
 // How you sail and how the game runs, as /settings has them: every change is saved at once where the game reads it
-function Settings({ lang, who, back, close }: { lang: Lang; who: Who; back: string; close: () => void }) {
+// the account: who is signed in, read from the session cookie (the pages with this card are cached for everyone)
+function Settings({ lang, back, close }: { lang: Lang; back: string; close: () => void }) {
+  const who = useWho(lang);
   const t = tx(lang), to = encodeURIComponent(back);
   const [o, setO] = useState<Pick<Opts, Keys>>(DEFAULTS);
   const [touch, setTouch] = useState(false);
