@@ -9,6 +9,8 @@ const sim = await import('../public/game/sim.js');
 const site = await import('../lib/race.ts');
 // the beat (start to windward mark) in each wind, as sim.js Race and api/game.mjs have it; and the server's floor (below)
 const BEAT = { light: 200, medium: 260, strong: 280 }, FLOOR = 0.45;
+// …and a faster class's share of the floor, as the server has it (YACHT_FLOOR): the AC75's; every other class, all of it
+const YACHT_FLOOR = { ac75: 0.4 };
 
 // lib/race.ts is a copy of the game's dailyRace for the hub and Home: the same day must give the same race
 test('the site and the game agree on today’s race, every day for a year and more', () => {
@@ -90,7 +92,7 @@ test('today’s race goes round the yachts, a new one every day', async () => {
       assert.equal(new Set(Array.from({ length: len }, (_, i) => dailyYacht(new Date(now + i * 864e5)))).size, len, `${day}: every yacht comes round`);
   }
 });
-// …and each of them sails today's course (one short lap) well above the scores server's floor, which knows no yacht:
+// …and each of them sails today's course (one short lap) well above the scores server's floor for her (her share of it):
 // the fastest of the computer boats, in the medium and the strong wind, half as slow again as the floor at least.
 // Each class in a Node of its own, since the game picks it once, from the address, as the page loads.
 test('every yacht of today’s races finishes well above the server’s floor', async () => {
@@ -111,8 +113,8 @@ test('every yacht of today’s races finishes well above the server’s floor', 
   const runs = await Promise.all(Object.keys(DAILY_YACHTS).filter((id) => id !== 'club40').map(async (boat) =>
     JSON.parse((await promisify(execFile)(process.execPath, ['--input-type=module', '-e', code(boat)], { encoding: 'utf8' })).stdout)));
   for (const { id, out } of runs) for (const [preset, fastest] of Object.entries(out)) {
-    const floor = FLOOR * BEAT[preset] * sim.COURSE_LEN.short;
-    assert.ok(fastest > floor * 1.5, `${id} ${preset}: fastest ${fastest.toFixed(1)} s, floor ${floor} s`);
+    const floor = FLOOR * BEAT[preset] * sim.COURSE_LEN.short * (YACHT_FLOOR[id] ?? 1);
+    assert.ok(fastest > floor * 1.5, `${id} ${preset}: fastest ${fastest.toFixed(1)} s, floor ${floor.toFixed(1)} s`);
   }
 });
 

@@ -141,9 +141,10 @@ export const classById = (id) => CLASSES[id] || CLASSES[DEFAULT_CLASS];
 // them in a shuffled order, every one of them in turn and never the same two days running; the days before the first
 // joined, the club's 40-footer. A class not in DAILY_YACHTS sails only free races. lib/race.ts dailyYacht does the
 // same, and npm test keeps the two in step.
-// Not the AC75 yet: she sails a course in about half the 40-footer's time, under the floor the scores server (api/game.mjs
-// in the iyt-test repo) keeps for a course whatever the yacht, so her best times would never rank (npm test checks it).
-export const DAILY_YACHTS = { club40: '2026-11-16', bavaria46: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16', laser: '2026-11-16' };
+// The AC75 joins on 18 November: she sails a course in under half the 40-footer's time, and the scores server
+// (api/game.mjs in the iyt-test repo) checks her times against her own share of its floor (YACHT_FLOOR) from then on.
+// npm test sails every one of them well above the floor the server keeps for her.
+export const DAILY_YACHTS = { club40: '2026-11-16', bavaria46: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16', laser: '2026-11-16', ac75: '2026-11-18' };
 const dayN = (s) => Math.floor(Date.parse(s) / 864e5);
 export const YACHT_ROUNDS = [...new Set(Object.values(DAILY_YACHTS).map(dayN))].sort((a, b) => a - b)
   .map((n0) => ({ n0, ids: Object.keys(DAILY_YACHTS).filter((id) => dayN(DAILY_YACHTS[id]) <= n0) }));
