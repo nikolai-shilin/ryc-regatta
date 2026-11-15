@@ -1174,3 +1174,10 @@
   .bc.au-scr .bt-kick, .bc .au-today { display: none; }
 }
 @container scr (max-height: 500px) and (orientation: landscape) { .bc .au-today { display: none; } }
+
+/* ---------- the yachts (/yachts): what each is and her numbers, square cells as the stats' row ---------- */
+.bc .yt-about p { font: 500 var(--fs-small)/1.55 var(--sans); color: var(--ink-2); }
+.bc .yt-spec { border-radius: 0; background: var(--rule); }
+.bc .yt-spec > div { padding: var(--s-3) var(--s-4); background: var(--panel); }
+.bc .yt-spec dt { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
+.bc .yt-spec dd { margin-top: var(--s-1); font: 700 var(--fs-row)/1.2 var(--cond); color: var(--ink); }

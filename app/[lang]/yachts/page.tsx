@@ -18,7 +18,7 @@ export default async function YachtsPage({ params, searchParams }: LangParams & 
   const [{ lang, t }, account, q] = await Promise.all([getT(params), getAccount(), searchParams]);
   const back = q.from === 'free' ? '/race/free' : '/race';
   return (
-    <div className="scr bt-scr" lang={lang} data-acct={account ? 'signed' : 'guest'}>
+    <div className="scr bt-scr bc" lang={lang} data-acct={account ? 'signed' : 'guest'}>
       <YachtsView lang={lang} start={isYacht(q.y) ? q.y : 'club40'} back={(
         <Link className="bt-back" href={back} aria-label={back === '/race' ? t('Back to the race hub', 'Назад в меню гонок') : t('Back to the free race', 'Назад к свободной гонке')}><IconBack /></Link>
       )} />

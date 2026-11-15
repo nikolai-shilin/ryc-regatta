@@ -6,6 +6,8 @@ import { readBoat } from '@/lib/boat';
 import { saveOpts } from '@/lib/opts';
 import { YACHTS, yachtOf, type YachtId } from '@/lib/yachts';
 import { IconPlay, IconSail, IconBoats } from './ui';
+import { LoadBar } from './skeleton';
+import { SceneBrand } from './scene-brand';
 
 // The yachts: each class you can race, in the game's own scene (/boat-view?boat=…, Lake Garda on a summer evening) in
 // your colours, as the boat page shows yours, with what she is and how she sails in the game in the boat page's dark
@@ -66,6 +68,7 @@ export function YachtsView({ lang, start, back }: { lang: Lang; start: YachtId; 
 
   return (
     <div className="bt">
+      <LoadBar label={t('Loading the yacht', 'Загружаем яхту')} on={!frames.some((f) => f.live)} />
       {frames.map((f) => (
         <iframe key={f.n} ref={(el) => { if (el) refs.current.set(f.n, el); else refs.current.delete(f.n); }} className={`bt-scene bt-fade ${f.live ? 'on' : ''}`}
           src={`/boat-view?venue=garda&wind=medium${f.id !== 'club40' ? `&boat=${f.id}` : ''}`} title={t(`The ${yachtOf(f.id).name[0]} in 3D`, `${yachtOf(f.id).name[1]} в 3D`)}
@@ -73,7 +76,8 @@ export function YachtsView({ lang, start, back }: { lang: Lang; start: YachtId; 
       ))}
 
       <div className="bt-info" ref={info}>
-        <div className="bt-top">{back}<span className="bt-kick">{t('The yachts', 'Яхты')}</span></div>
+        <div className="bt-top">{back}<SceneBrand /></div>
+        <span className="bt-kick">{t('The yachts', 'Яхты')}</span>
         <h1 className="bt-h">{t(...y.name)}</h1>
         <p className="bt-p">{t(...y.kind)}. {t(...y.tagline)} {t('Drag to circle her.', 'Тяни, чтобы облететь.')}</p>
         <div className="bt-stats">
@@ -84,7 +88,8 @@ export function YachtsView({ lang, start, back }: { lang: Lang; start: YachtId; 
         </div>
       </div>
 
-      <section className="bt-card" ref={card} aria-label={t('The yachts you can race', 'Яхты, на которых можно гоняться')}>
+      <section className="bt-card" ref={card} aria-labelledby="yt-card">
+        <div className="bt-card-h"><span className="lbl-ink" id="yt-card">{t('The yachts you can race', 'Яхты, на которых можно гоняться')}</span></div>
         <button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race the ${y.name[0]}`, `В гонку на ${id === 'club40' ? 'Клубе 40' : y.name[1]}`)}</span></button>
         <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс')}>
           <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд')}</button>
