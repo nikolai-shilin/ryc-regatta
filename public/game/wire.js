@@ -49,8 +49,8 @@ export function applyControls(race, b, c) {
 //           0, 1 to the small one, 2 back
 //   [n+6]   boom (−1, 0, 1)
 // then her race (STATE, the runner's word even for the follower's own boat):
-//   [n+7]   leg; [n+8] penalties owed; [n+9] finish clock or null; [n+10] place or null; [n+11] side: 'blue',
-//           'yellow' or null
+//   [n+7]   leg; [n+8] penalties owed (read as 0–9: no more is ever owed); [n+9] finish clock or null; [n+10]
+//           place or null; [n+11] side: 'blue', 'yellow' or null
 //   [n+12]  bits: ocs, done, dsq, entered, pen (a penalty turn under way)
 //   [n+13]  tacks seen, [n+14] hails seen (a reloaded follower's counts go on from these)
 // and the jobs' clocks (0 with no job): [n+15] kite job t, [n+16] its total, [n+17] a messy drop (0/1); [n+18],
@@ -95,7 +95,7 @@ export function readBoat(row) {
   Object.assign(o, {
     kite: bit(f, 0), kiteType: bit(f, 1) ? 'zero' : 'gen', reef: bit(f, 2), smallJib: bit(f, 3), split: bit(f, 4), autoTrim: bit(f, 5), fly: bit(f, 6), backing: bit(f, 7),
     trim: TRIMS[row[N + 1]] ?? 'ok', autoK: row[N + 2], kiteK: row[N + 3], reefK: row[N + 4], jibK: row[N + 5], boom: row[N + 6],
-    leg: row[N + 7], owed: row[N + 8], finish: row[N + 9], place: row[N + 10], side: row[N + 11],
+    leg: row[N + 7], owed: clamp(Math.floor(num(row[N + 8], 0)), 0, 9), finish: row[N + 9], place: row[N + 10], side: row[N + 11],
     ocs: bit(s, 0), done: bit(s, 1), dsq: bit(s, 2), entered: bit(s, 3), penOn: bit(s, 4), tackSeen: row[N + 13], hailSeen: row[N + 14],
     kiteT: [num(row[N + 15], 1), num(row[N + 16], 1)], kiteMessy: !!row[N + 17], reefT: [num(row[N + 18], 1), num(row[N + 19], 1)], jibT: [num(row[N + 20], 1), num(row[N + 21], 1)],
   });

@@ -213,7 +213,7 @@ export class Wind {
 }
 
 // ---------- the boat ----------
-const YAW_LAG = 0.55; // s: how long she takes to start turning, and to stop when the helm is centred
+export const YAW_LAG = 0.55; // s: how long she takes to start turning, and to stop when the helm is centred
 export class Boat {
   constructor(o = {}) {
     this.name = o.name || 'You';
@@ -1326,11 +1326,11 @@ export class Race {
       if (closes(before)) { on = giver; rule = r.rule; } // on her old course they'd have closed as well: the keep-clear boat's
       // her turn did it: if it began less than huntT before they'd meet, the other had no time to answer (no room); else
       // she had, and it's still the keep-clear boat that didn't keep clear
-      else if (rowTurned) { if (this.clock - t1 + now.look < huntT) { on = row; rule = '16.1'; } else { on = giver; rule = r.rule; } }
+      else if (rowTurned) { if (this.clock - (t1 ?? this.clock) + now.look < huntT) { on = row; rule = '16.1'; } else { on = giver; rule = r.rule; } } // (no t1: her turn is all since the last kept heading, so it began just now)
       else continue; // a small change of course: the other has a moment to answer it
       this.incidents.set(key, { t: this.clock, apart: false });
       const other = on === p ? q : p;
-      this.calls.push({ t: this.clock, on: on.id, rule, why: { gap: Math.round(now.gap * 100) / 100, look: Math.round(now.look * 100) / 100, rowTurned, rowTurnT: rowTurned ? t1 : null } });
+      this.calls.push({ t: this.clock, on: on.id, rule, why: { gap: Math.round(now.gap * 100) / 100, look: Math.round(now.look * 100) / 100, rowTurned, rowTurnT: rowTurned ? t1 ?? this.clock : null } });
       on.owed++; on.pens++;
       if (on.human) on.log.fouls.push({ rule, who: other.name, t: this.clock, x: on.x, z: on.z });
       for (const b of this.humans) this.say('umpire', { rule, on: on.id }, b);
