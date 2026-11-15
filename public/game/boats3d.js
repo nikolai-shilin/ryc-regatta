@@ -421,6 +421,7 @@ class ClassView {
 // transom with no cuddy and no lifelines, a slightly smaller rig and a lifting bulb keel. Each is worked out once, the
 // first time a boat of hers is built.
 const SPORT = {};
+const PED_Z = 0.75; // the RS21's cockpit pedestal
 const sportOf = (RS) => (SPORT[RS] ??= sport(RS));
 const sport = (RS) => {
   const L = RS ? 6.67 : 6.93, B = RS ? 2.2 : 2.25;
@@ -434,12 +435,14 @@ const sport = (RS) => {
     chine: { y: (t) => (RS ? 0.13 : 0.1) - 0.22 * t, w: (t) => 1 - smooth(RS ? 0.4 : 0.28, RS ? 0.8 : 0.64, t),
       dead: (t) => lerp(RS ? 12 : 16, RS ? 7 : 10, clamp(t / 0.35, 0, 1)), flat: 0.85 },
   });
-  const MAST_Z = RS ? -0.95 : -1.05, MAST_FOOT = RS ? 0.66 : 0.78, MASTHEAD = RS ? 9.7 : 10.2, HOUNDS = RS ? 8.0 : 8.4, BOOM_Y = RS ? 1.32 : 1.45;
-  const chord = RS ? (f) => lerp(2.9, 0.45, f) + 0.3 * Math.sin(Math.PI * f) : (f) => lerp(3.05, 0.42, f) + 0.32 * Math.sin(Math.PI * f);
+  // the rigs to the class rules: the J/70's I 8.16 m above the sheer, her main's luff 7.97 m and foot 2.88 m; the
+  // RS21's jib luff 6.8 m
+  const MAST_Z = RS ? -0.95 : -1.05, MAST_FOOT = RS ? 0.66 : 0.78, MASTHEAD = RS ? 9.7 : 9.95, HOUNDS = RS ? 7.4 : 8.8, BOOM_Y = RS ? 1.32 : 1.75;
+  const chord = RS ? (f) => lerp(2.9, 0.45, f) + 0.3 * Math.sin(Math.PI * f) : (f) => lerp(2.88, 0.42, f) + 0.32 * Math.sin(Math.PI * f);
   const TACK = new THREE.Vector3(0, hull.deckY(hull.BOW) + 0.06, hull.BOW + 0.06);
   const HEAD = new THREE.Vector3(0, HOUNDS - 0.2, MAST_Z - 0.07);
   const CLEW = new THREE.Vector3(0, 0.3, RS ? 2.15 : 2.3);
-  const SPRIT = new THREE.Vector3(0, TACK.y + 0.04, hull.BOW - (RS ? 1.6 : 1.5));
+  const SPRIT = new THREE.Vector3(0, TACK.y + 0.04, hull.BOW - 1.5); // at the sprit's end
   const rig = rigOf({ span: MASTHEAD - 0.2 - BOOM_Y, chord, numAt: 0.62, logoAt: 0.78, flagAt: 0.9, mark: 0.85, head: HEAD, tack: TACK, clew: CLEW, ad: 1.1, adH: 0.55 });
   return { L, B, hull, MAST_Z, MAST_FOOT, MASTHEAD, HOUNDS, BOOM_Y, chord, TACK, HEAD, CLEW, SPRIT, rig };
 };
@@ -482,26 +485,32 @@ class SportView extends ClassView {
       add(new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.03, 0.42), M.glass), 0, cudY + 0.21, -1.55);
       add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.025, 0.5), M.alu), 0, cudY + 0.205, -1.55);
     } else {
-      // the RS21 has none: a flush foredeck with a hatch for the kite, and the electric outboard's pod under the transom
+      // the RS21 has none: a flush foredeck with a hatch for the kite; the electric outboard's pod under the hull just
+      // aft of the keel, and the pedestal in the middle of the cockpit that carries the mainsheet and the motor's controls
       add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.025, 0.5), M.dark), 0, H.deckY(-1.9) + 0.03, -1.9);
-      add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 10).rotateX(Math.PI / 2), M.dark), 0, -0.12, H.STERN - 0.55);
+      add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 10).rotateX(Math.PI / 2), M.dark), 0, -0.3, 0.75);
+      add(cyl(0.02, 0.02, 0.22, M.dark, 6), 0, -0.17, 0.75);
+      add(new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.4, 0.32), M.gel), 0, floorY + 0.2, PED_Z);
+      fit(add, display(0.12, 0.09, 1), 0, floorY + 0.36, PED_Z + 0.17, 0, -0.6);
     }
     // foot chocks across the cockpit floor, and the sprit's housing at the stem with its launcher line
     for (const fz of [0.6, 1.3, 2.0]) add(new THREE.Mesh(new THREE.BoxGeometry(cx * 1.7, 0.03, 0.05), M.dark), 0, floorY + 0.035, fz);
     add(new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.12, 12).rotateX(Math.PI / 2), M.dark), 0, J.SPRIT.y, H.BOW + 0.03);
-    // the keel: a tapered fin of a proper foil section with a lead torpedo on its tip (the RS21's lifts: its trunk's
-    // cap shows on the cockpit floor); the spade rudder under the cockpit, its stock up through the floor
-    const finSpan = RS ? 1.1 : 1.18;
+    // the keel: a tapered fin of a proper foil section with a lead torpedo on its tip, 1.45 m down on the J/70, 1.38 m
+    // on the RS21 (hers lifts: its trunk's cap shows on the cockpit floor)
+    const finSpan = RS ? 0.98 : 1.08;
     add(new THREE.Mesh(finGeo(finSpan, 0.58, 0.44, 0.11, 0.1), MAT.fin), 0, -0.2, -0.18);
     add(new THREE.Mesh(bulbGeo(RS ? 1.25 : 1.4, 0.16), MAT.lead), 0, -0.24 - finSpan, -0.02);
-    for (const sx of [-1, 1]) { const w = add(new THREE.Mesh(finGeo(0.16, 0.18, 0.1, 0.1, 0.05), MAT.lead), sx * 0.05, -0.24 - finSpan, 0.58); w.rotation.z = sx * Math.PI / 2; } // the bulb's tail fins
     if (RS) add(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.04, 0.7), M.dark), 0, 0.29, -0.15);
-    add(new THREE.Mesh(finGeo(0.98, 0.38, 0.25, 0.12, 0.07), MAT.fin), 0, -0.1, 2.88);
-    add(cyl(0.035, 0.035, 0.12, M.steel, 10), 0, H.deckY(2.85) + 0.02, 2.85); // the rudder stock's head
-    // the tiller on the rudder stock, its extension forward; it swings with the helm
-    this.wheel = add(new THREE.Group(), 0, H.deckY(2.85) + 0.05, 2.85);
-    const tl = cyl(0.025, 0.035, 1.15, M.teak, 8); tl.rotation.x = Math.PI / 2 - 0.12; tl.position.set(0, 0.07, -0.55); this.wheel.add(tl);
-    const ext = cyl(0.012, 0.012, 0.9, M.dark, 6); ext.rotation.z = Math.PI / 2; ext.position.set(0.45, 0.14, -1.1); this.wheel.add(ext);
+    // the rudder, hung on the transom on its gudgeons, the tiller over the transom's top and its extension forward;
+    // they swing with the helm
+    const RY = H.deckY(H.STERN) + 0.04, RZ = H.STERN + 0.07;
+    for (const y of [RY - 0.12, -0.02]) add(new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.04, 0.08), M.steel), 0, y, H.STERN + 0.02); // the gudgeons
+    this.wheel = add(new THREE.Group(), 0, RY, RZ);
+    this.wheel.add(new THREE.Mesh(finGeo(RY + 0.95, 0.34, 0.24, 0.12, 0.05).translate(0, 0.02, 0.085), MAT.fin));
+    this.wheel.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 0.36), M.dark).translateY(-0.02).translateZ(0.08)); // the rudder head
+    const tl = cyl(0.025, 0.035, 1.15, M.teak, 8); tl.rotation.x = Math.PI / 2 - 0.12; tl.position.set(0, 0.1, -0.55); this.wheel.add(tl);
+    const ext = cyl(0.012, 0.012, 0.9, M.dark, 6); ext.rotation.z = Math.PI / 2; ext.position.set(0.45, 0.17, -1.1); this.wheel.add(ext);
     // toe rails along the sheer; no lifelines but the bow's short pulpit and the stern's
     for (const sx of [-1, 1]) {
       const pts = []; for (let i = 0; i <= 20; i++) { const t = 0.02 + (i / 20) * 0.95; pts.push([sx * (J.hull.hbAt(H.zAt(t)) - 0.015), H.deckY(H.zAt(t)) + 0.02, H.zAt(t)]); }
@@ -516,7 +525,7 @@ class SportView extends ClassView {
       // the jib tracks, on the cuddy's sides (on the RS21's foredeck), with their cars and blocks; the winches by the
       // cockpit and the cam cleats beside them; the chainplates for the shrouds; and a bow light on the pulpit
       const ty = RS ? H.deckY(-0.7) + 0.01 : cudY + 0.18;
-      add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.02, 0.6), M.alu), sx * 0.55, ty, -0.7);
+      add(new THREE.Mesh(RS ? new THREE.BoxGeometry(0.4, 0.02, 0.03) : new THREE.BoxGeometry(0.03, 0.02, 0.6), M.alu), sx * 0.55, ty, RS ? -0.62 : -0.7); // the RS21's athwartships
       add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.09), M.dark), sx * 0.55, ty + 0.02, -0.62);
       fit(add, block(0.028), sx * 0.55, ty + 0.065, -0.62);
       fit(add, winch(0.05, 0.13), sx * 0.82, H.deckY(0.2) + 0.005, 0.2);
@@ -533,7 +542,8 @@ class SportView extends ClassView {
     }
     // the bowsprit, run out for the kite
     this.sprit = add(cyl(0.025, 0.03, 1.6, CARBON, 8), 0, J.SPRIT.y, H.BOW - 0.7); this.sprit.rotation.x = Math.PI / 2;
-    // the rig: a carbon mast through the cuddy, one set of swept spreaders, no backstay
+    // the rig: a carbon mast through the cuddy, one set of swept spreaders; the backstay from the masthead to its
+    // bridle, the two legs down to the transom's corners
     add(new THREE.Mesh(mastGeo(J.MASTHEAD - J.MAST_FOOT, 0.13, 0.085, 0.075, 0.05, (J.HOUNDS - 0.8 - J.MAST_FOOT) / (J.MASTHEAD - J.MAST_FOOT)), CARBON), 0, (J.MAST_FOOT + J.MASTHEAD) / 2, J.MAST_Z);
     // the tactical compass on the back of the mast, under the gooseneck; the halyards' turning blocks at the mast's
     // foot and, on the J/70, their clutches at the aft end of the cuddy, the tails led on into the cockpit
@@ -553,17 +563,22 @@ class SportView extends ClassView {
     for (const sx of [-1, 1]) add(new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 4), M.dark), sx * 0.62, SPR, J.MAST_Z + 0.22);
     for (const sx of [-1, 1]) { const s = add(new THREE.Mesh(spreaderGeo(0.66, 0.022, 0.013), M.carbon), sx * 0.31, SPR, J.MAST_Z + 0.12); s.rotation.z = -sx * Math.PI / 2; s.rotation.y = -sx * 0.35; }
     T.add(line([[0, J.HOUNDS, J.MAST_Z], [J.TACK.x, J.TACK.y, J.TACK.z]]));
+    { const by = H.deckY(H.STERN) + 2.0, bz = H.STERN - 0.35, hx = H.hbAt(H.STERN) - 0.08;
+      T.add(line([[0, J.MASTHEAD - 0.05, J.MAST_Z + 0.06], [0, by, bz]]));
+      for (const sx of [-1, 1]) T.add(line([[0, by, bz], [sx * hx, H.deckY(H.STERN - 0.05) + 0.02, H.STERN - 0.05]])); }
     for (const sx of [-1, 1]) {
       T.add(line([[0, J.HOUNDS, J.MAST_Z], [sx * 0.62, SPR, J.MAST_Z + 0.22], [sx * (H.hbAt(J.MAST_Z + 0.4) - 0.05), H.deckY(J.MAST_Z + 0.4) + 0.02, J.MAST_Z + 0.4]]));
       T.add(line([[0, SPR - 0.1, J.MAST_Z], [sx * (H.hbAt(J.MAST_Z - 0.1) - 0.05), H.deckY(J.MAST_Z - 0.1) + 0.02, J.MAST_Z - 0.1]]));
     }
-    // the mainsheet: a four-part tackle from the ratchet block on the cockpit floor up to the block under the boom
+    // the mainsheet: a four-part tackle from the ratchet block (on the RS21, fixed on top of the pedestal) up to the
+    // block under the boom
     this.mainsheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]); this.mainsheet.frustumCulled = false; T.add(this.mainsheet);
     const rat = new THREE.Group(); rat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.05, 12), M.dark));
     for (const [g, mm] of block(0.035)) { const o = new THREE.Mesh(g, mm); o.position.y = 0.065; rat.add(o); }
-    this.travCar = add(mergeGroup(rat), 0, floorY + 0.04, 0.9); // the mainsheet's ratchet block on its swivel base
+    this.sheetFoot = RS ? [floorY + 0.44, PED_Z] : [floorY + 0.04, 0.9];
+    this.travCar = add(mergeGroup(rat), 0, this.sheetFoot[0], this.sheetFoot[1]); // the mainsheet's ratchet block on its swivel base
     this.mainPivot = add(new THREE.Group(), 0, 0, J.MAST_Z);
-    const BL = RS ? 3.0 : 3.15, boom = cyl(0.04, 0.032, BL, CARBON, 10); boom.rotation.x = Math.PI / 2; boom.position.set(0, J.BOOM_Y, BL / 2 - 0.02); this.mainPivot.add(boom);
+    const BL = RS ? 3.0 : 3.0, boom = cyl(0.04, 0.032, BL, RS ? M.alu : CARBON, 10); // the RS21's boom aluminium boom.rotation.x = Math.PI / 2; boom.position.set(0, J.BOOM_Y, BL / 2 - 0.02); this.mainPivot.add(boom);
     // a rigid kicker from the mast's foot to the boom (its alloy ram in a carbon tube), the outhaul's end fitting and
     // the mainsheet's block under the boom, one mesh a material
     const gear = new THREE.Group(), VA = [0, J.MAST_FOOT + 0.3, 0.07], VB = [0, J.BOOM_Y - 0.05, 0.78], VM = VA.map((v, i) => lerp(v, VB[i], 0.4));
@@ -586,10 +601,9 @@ class SportView extends ClassView {
     this.kiteSheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0]]); T.add(this.jibSheet, this.lazySheet, this.kiteSheet);
     for (const l of [this.jibSheet, this.lazySheet, this.kiteSheet]) l.frustumCulled = false;
     this.windex = windex(add, J.MASTHEAD + 0.02, J.MAST_Z);
-    // four: the helm, the main trimmer, the jib and kite trimmer, and the bow; on the RS21 three, the trimmer forward
-    // for a hoist or a drop
+    // four: the helm, the main trimmer, the jib and kite trimmer, and the bow, who goes forward for a hoist or a drop
     const m = crewMats(look);
-    this.crew = (RS ? [2.1, 1.25, 0.4] : [2.25, 1.45, 0.75, 0.0]).map((z0, i) => {
+    this.crew = (RS ? [2.1, 1.4, 0.7, 0.0] : [2.25, 1.45, 0.75, 0.0]).map((z0, i) => {
       const s = sailor({ ...m, skin: new THREE.MeshStandardMaterial({ color: SKINS[i], roughness: 0.65 }) });
       T.add(s.g);
       return { g: s.g, s, z0, i, x: 0, y: H.deckY(z0), z: z0, yaw: Math.PI, lean: 0, stand: 0, knee: -0.8, reach: 0.5 };
@@ -608,29 +622,31 @@ class SportView extends ClassView {
       v.set(belly * Math.sin(Math.PI * u ** 0.78) * ch * 0.11 * (1 - 0.4 * f) + tw + luff * 0.15 * Math.sin(ph + f * 6 + u * 5) * u + leechFlutter(f, u, t, b.aws || 0), J.BOOM_Y + 0.06 + f * span, u * ch);
     });
     const ma = this.mainPivot.rotation.y, bz = 2.9;
-    this.travCar.position.x = clamp(Math.sin(ma) * bz * 0.4, -0.6, 0.6);
-    purchase(this.mainsheet, [this.travCar.position.x, this.floorY + 0.105, 0.9], [Math.sin(ma) * bz, J.BOOM_Y - 0.085, J.MAST_Z + Math.cos(ma) * bz], 0.03);
+    this.travCar.position.x = RS ? 0 : clamp(Math.sin(ma) * bz * 0.4, -0.6, 0.6);
+    purchase(this.mainsheet, [this.travCar.position.x, this.sheetFoot[0] + 0.065, this.sheetFoot[1]], [Math.sin(ma) * bz, J.BOOM_Y - 0.085, J.MAST_Z + Math.cos(ma) * bz], 0.03);
     const ty = RS ? H.deckY(-0.7) + 0.07 : 0.95;
     this.jibAndTells(b, t, side, belly, luff, ph, (ls) => [[ls * 0.55, ty, -0.62], [ls * 0.82, H.deckY(0.2) + 0.12, 0.2]]);
     { const cw = J.CLEW.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1, lz = this.lazySheet.geometry.attributes.position;
       lz.setXYZ(0, cw.x, cw.y, cw.z); lz.setXYZ(1, 0, cw.y - 0.25, cw.z + 0.15); lz.setXYZ(2, -ls * 0.55, ty, -0.62); lz.setXYZ(3, -ls * 0.82, H.deckY(0.2) + 0.12, 0.2); lz.needsUpdate = true; }
-    // the crew: hiking on the windward rail upwind, legs over the side; downwind sitting in on the side deck, the
-    // trimmer to leeward under the kite; the bow forward to the mast for a hoist or a drop
+    // the crew: upwind on the windward side deck, the J/70's two forward hiking with their legs over the side (her
+    // class allows two; the RS21's none, so hers sit in, feet in the cockpit); downwind sitting in, the trimmer to
+    // leeward under the kite; the bow forward to the mast for a hoist or a drop
     const k = this.crewDt(t), up = Math.abs(b.twa) < 95 * D2R, hike = clamp(b.heel / 18, 0.15, 1), bowBusy = !!b.kiteJob;
     for (const c of this.crew) {
       let x, y, z = c.z0, yaw = Math.PI, lean = 0.12, stand = 0, knee = -0.8, reach = 0.55;
-      if (c.i === 0) { x = side * (H.hbAt(z) - 0.12); y = H.deckY(z) + 0.06; yaw = up ? 0.35 : 1.2; lean = up ? 0.2 + 0.35 * hike : 0.1; knee = up ? -1.7 : -1.2; reach = 0.9; }
-      else if (c.i === (RS ? 2 : 3) && bowBusy) { x = 0.1; z = J.MAST_Z + 0.45; y = H.deckY(z) + 0.2; yaw = Math.PI / 2; stand = 1; lean = 0.3; reach = 0.8; }
-      else if (up) { x = side * (H.hbAt(z) - 0.1); y = H.deckY(z) + 0.07; yaw = 0; lean = 0.15 + 0.5 * hike; knee = -1.85; reach = 0.3; }
+      if (c.i === 0) { x = side * (H.hbAt(z) - 0.2); y = H.deckY(z) + 0.05; yaw = 1.2; lean = up ? 0.15 + 0.15 * hike : 0.1; knee = -1.2; reach = 0.9; }
+      else if (c.i === 3 && bowBusy) { x = 0.1; z = J.MAST_Z + 0.45; y = H.deckY(z) + (RS ? 0.05 : 0.2); yaw = Math.PI / 2; stand = 1; lean = 0.3; reach = 0.8; }
+      else if (up && !RS && c.i >= 2) { x = side * (H.hbAt(z) - 0.1); y = H.deckY(z) + 0.07; yaw = 0; lean = 0.15 + 0.5 * hike; knee = -1.85; reach = 0.3; }
+      else if (up) { x = side * (H.hbAt(z) - 0.22); y = H.deckY(z) + 0.05; yaw = Math.PI - 0.35; lean = 0.1; knee = -1.2; }
       else { const lee = c.i === 2 && b.kite; x = (lee ? -side : side) * (H.hbAt(z) - 0.25); y = H.deckY(z) + 0.05; yaw = lee ? 0.6 : Math.PI - 0.4; }
       this.pose(c, { x, y, z, yaw, lean, stand, knee, reach }, k);
     }
-    // the kite, off the sprit, hoisted to the hounds
+    // the kite, off the sprit, hoisted nearly to the masthead
     const kf = b.kiteFill ?? (b.kite ? 1 : 0), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0)), S = J.SPRIT;
     this.kite.visible = this.kiteSheet.visible = kf > 0.02; this.sprit.visible = kf > 0.02 || !!b.kiteJob;
     if (kf > 0.02) {
       const a = Math.abs(b.twa) / D2R, out = lerp(3.6, 2.0, clamp((a - 95) / 80, 0, 1)) * lerp(0.15, 1, kfill), sd = -this.sailSide;
-      const tk = [S.x, S.y + 0.06, S.z], hd = [0, lerp(S.y + 0.6, J.HOUNDS + 0.25, kf), lerp(S.z, J.MAST_Z - 0.1, kf)], cl = [sd * out, lerp(S.y + 0.3, 1.7, kf), lerp(S.z + 0.5, 1.0, kf)];
+      const tk = [S.x, S.y + 0.06, S.z], hd = [0, lerp(S.y + 0.6, J.MASTHEAD - 0.3, kf), lerp(S.z, J.MAST_Z - 0.1, kf)], cl = [sd * out, lerp(S.y + 0.3, 1.7, kf), lerp(S.z + 0.5, 1.0, kf)];
       setSail(this.kite, (f, u, v) => {
         const lx = sd * Math.sin(Math.PI * f) * 1.4 * kfill, lz = -Math.sin(Math.PI * f) * 1.5 * kfill;
         const p = [lerp(tk[0], hd[0], f) + lx, lerp(tk[1], hd[1], f), lerp(tk[2], hd[2], f) + lz];
