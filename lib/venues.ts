@@ -4,7 +4,7 @@
 // from: the day a venue added later joins today's races (lib/race.ts dailyVenue), as in the game's list.
 export type VenueId = 'gocek' | 'cowes' | 'newport' | 'sydney' | 'kiel' | 'trieste' | 'porto-cervo' | 'saint-tropez' | 'antigua' | 'auckland'
   | 'san-francisco' | 'valencia' | 'barcelona' | 'palma' | 'marstrand' | 'bermuda' | 'enoshima' | 'weymouth' | 'marseille' | 'rio' | 'garda' | 'istanbul'
-  | 'st-petersburg';
+  | 'st-petersburg' | 'batumi' | 'scheveningen' | 'hong-kong' | 'cape-town' | 'athens';
 type Pair = [string, string]; // English, Russian
 
 export const VENUES: { id: VenueId; name: Pair; place: Pair; wind: Pair; skip?: string[]; from?: string; about: Pair }[] = [
@@ -54,6 +54,16 @@ export const VENUES: { id: VenueId; name: Pair; place: Pair; wind: Pair; skip?: 
     about: ['Off Moda at the mouth of the Bosphorus, in the poyraz, the old city’s domes and minarets ashore.', 'У Моды, у входа в Босфор, под северо-восточным пойразом; на берегу — купола и минареты старого города.'] },
   { id: 'st-petersburg', name: ['St Petersburg', 'Санкт-Петербург'], place: ['Russia', 'Россия'], wind: ['WSW', 'ЗЮЗ'], skip: ['tri:medium', 'tri:long'], from: '2026-11-20',
     about: ['The Neva under the walls of the Peter and Paul Fortress, between the raised bridges, in the westerly off the Gulf.', 'Нева под стенами Петропавловской крепости, между разведёнными мостами, под западным ветром с залива.'] },
+  { id: 'batumi', name: ['Batumi', 'Батуми'], place: ['Georgia', 'Грузия'], wind: ['WNW', 'ЗСЗ'], from: '2026-11-20',
+    about: ['Batumi bay in the Black Sea’s afternoon breeze, the city and the Alphabetic Tower on the cape, the mountains of Adjara over the coast.', 'Батумская бухта под дневным бризом Чёрного моря: на мысе — город и Башня алфавита, над берегом — горы Аджарии.'] },
+  { id: 'scheveningen', name: ['Scheveningen', 'Схевенинген'], place: ['The Hague, Netherlands', 'Гаага, Нидерланды'], wind: ['SW', 'ЮЗ'], from: '2026-11-20',
+    about: ['The North Sea of the 2018 Sailing World Championships, off the pier and the Kurhaus, in the south-westerly along the dunes.', 'Северное море чемпионата мира 2018 года, у пирса и Курхауса, под юго-западным ветром вдоль дюн.'] },
+  { id: 'hong-kong', name: ['Hong Kong', 'Гонконг'], place: ['China', 'Китай'], wind: ['ENE', 'ВСВ'], from: '2026-11-20',
+    about: ['Victoria Harbour between Wan Chai and Tsim Sha Tsui, in the easterly, the towers on both shores and the Peak above.', 'Гавань Виктория между Ваньчаем и Цимшацуем, под восточным ветром; небоскрёбы на обоих берегах, над ними — пик Виктория.'] },
+  { id: 'cape-town', name: ['Cape Town', 'Кейптаун'], place: ['South Africa', 'ЮАР'], wind: ['SSE', 'ЮЮВ'], from: '2026-11-20',
+    about: ['Table Bay off the V&A Waterfront, in the Cape Doctor blowing off Table Mountain.', 'Столовый залив у набережной Виктории и Альфреда, под ветром «Кейпский доктор» со Столовой горы.'] },
+  { id: 'athens', name: ['Athens', 'Афины'], place: ['Greece', 'Греция'], wind: ['NNE', 'ССВ'], from: '2026-11-20',
+    about: ['The 2004 Olympic waters in Faliro Bay, in the meltemi off the land, the Parthenon to windward.', 'Олимпийская акватория 2004 года в Фалирском заливе, под мельтеми с берега; на ветре — Парфенон.'] },
 ];
 
 export const venueOf = (id: string | undefined) => VENUES.find((v) => v.id === id) || VENUES[0];

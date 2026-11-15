@@ -74,8 +74,9 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   photos. A free race goes to the venue the set-up chose (`venue`
   in the `regatta` options; `?venue=<id>` in the game's address overrides it): Göcek, Cowes, Newport, Sydney, Kiel,
   Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland, San Francisco, Valencia, Barcelona, Palma, Marstrand, Bermuda,
-  Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda, Istanbul or St Petersburg (the Neva under the
-  Peter and Paul Fortress, its bridges raised). `public/game/venues.js` holds each one's position,
+  Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda, Istanbul, St Petersburg (the Neva under the
+  Peter and Paul Fortress, its bridges raised), Batumi, Scheveningen, Hong Kong, Cape Town or Athens (the last six join
+  today's races together, on 20 November 2026). `public/game/venues.js` holds each one's position,
   prevailing wind, clock and look (its woods, farmland, houses, moored boats and water); `lib/venues.ts` is the set-up
   page's list of them, and `npm test` keeps the two in step. Each venue's land, Göcek's too, is baked by
   `python3 blender/venues.py [work dir] [id ...]` (needs numpy and Pillow; `--fetch` only downloads; the downloads are
@@ -91,7 +92,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     carry survey data) or 20 m; the shore meets the water on OpenStreetMap's coastline to the metre, the map's water
     ashore down at the sea's level (an estuary, a lagoon) is water too, and the bed under the water is as steep as the
     land above it (deep under a cliff, gently shelving off a beach); further out, the sea floor's survey where there is
-    one (EMODnet's round the European venues, Göcek and Istanbul; NOAA's at Newport and San Francisco), else the
+    one (EMODnet's round the European venues, Göcek, Istanbul and Batumi; NOAA's at Newport and San Francisco), else the
     tiles' own depths where deeper;
   - what is on the ground, on a 20 m grid: OpenStreetMap's woods (needle-leaved or broad-leaved, for the trees in
     them), scrub, grass, fields (each its own crop), orchards, towns, industry, beaches, bare rock, wetland, lakes and
@@ -113,12 +114,17 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   The json lists the marinas' pontoons, the towns where the houses the map lacks are filled in, and the landmarks
   `skopea.js` draws: the Harbour Bridge, the Newport Bridge, the Golden Gate, the Sky Tower, Laboe's memorial, the
   Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la Garde, Christ the Redeemer, Enoshima's Sea
-  Candle, the lighthouses of Kiel and Trieste, and Istanbul's Bosphorus Bridge, Galata Tower, Blue Mosque, Hagia
-  Sophia and Süleymaniye. `land.js` lays each course in clear water; `npm test` sails every
+  Candle, the lighthouses of Kiel, Trieste, Batumi, Scheveningen and Green Point, Istanbul's Bosphorus Bridge, Galata
+  Tower, Blue Mosque, Hagia Sophia and Süleymaniye, St Petersburg's spires, columns and bridges, Batumi's Alphabetic
+  Tower, the big wheels on Batumi's shore and Scheveningen's pier, the Bank of China Tower and the Parthenon (a
+  landmark with `clear` leaves out the map's own building in its place). `land.js` lays each course in clear water; `npm test` sails every
   course shape at every venue and checks its marks are in clear water; a shape a venue has no room for at a length
   goes in its `skip`, and the set-up offers only the shapes `shapeOffered()` (`lib/venues.ts`) allows there. Moving between today's race and a free race in the
   game reloads the page when the venue changes. OpenStreetMap has few of Göcek's buildings, so its town also comes
-  from Microsoft's Global ML Building Footprints (ODbL), which `venues.py` downloads with the rest.
+  from Microsoft's Global ML Building Footprints (ODbL), which `venues.py` downloads with the rest. Hong Kong's
+  ground is its own 5 m terrain model (`dtm`), not the tiles, whose radar has the towers' roofs for the city's ground:
+  the Digital Terrain Model of the Lands Department, Hong Kong SAR Government, from DATA.GOV.HK (free to use with
+  this attribution), which `venues.py` downloads (29 MB) and cuts to the venue.
 - **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes
   wrong (a sheet left out or in too hard, a broach, a foul, a collision, aground, stopped after the gun, now and then a
   tack) and through the start (the signals, a boat too close, the line far off, over early, a quick or a late start).

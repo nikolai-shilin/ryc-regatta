@@ -295,6 +295,70 @@ export const VENUES = [
       water: { deep: '#1b313a', scatter: '#3b625f', k: 0.55, shallow: '#4a5446', clear: 0.08 },
     },
   },
+  // the five below join today's races with St Petersburg, on its `from` day
+  {
+    // Batumi bay in the Black Sea's afternoon breeze: the city and the Alphabetic Tower on the cape to the left, the
+    // coast to Green Cape and the wooded mountains of Adjara to the right
+    id: 'batumi', name: ['Batumi', 'Батуми'], lat: 41.672, lon: 41.68, wind: 290, tz: 4, stream: ['flow', 55, 0.4], from: '2026-11-20',
+    look: {
+      haze: 0.85,
+      ground: { forest: ['#264222', '#355a2c', '#4d7238'], scrub: '#6f7f4c', rock: ['#a49c8a', '#857d6e'], town: '#a8a294', shore: '#9b968d', sand: '#9b968d' }, // the beaches are grey pebbles
+      trees: [['broad', 0.6, '#264222', '#4f7a36'], ['palm', 0.15, '#2f4a26', '#5a7a3a'], ['conifer', 0.1, '#22381f', '#36502c'], ['cypress', 0.15, '#25391f', '#3a5230']], treeTop: 1400, woods: 0.75, snow: 2600,
+      walls: ['#efe8da', '#e6dccb', '#f4f1ea', '#d9cdb6', '#e9d8c2', '#c9c4ba'], roofs: ['#a5543a', '#8c4a36', '#6f7478', '#7e7f80'], flat: 0.6,
+      boats: { sail: 0.3, motor: 0.6, big: 0.1, bigKind: 'super' },
+      water: { deep: '#0e2c3c', scatter: '#2a6e78', k: 0.5, shallow: '#4a7f78', clear: 0.15 },
+    },
+  },
+  {
+    // the North Sea off Scheveningen's beach, the pier and the Kurhaus, in the south-westerly along the dunes
+    id: 'scheveningen', name: ['Scheveningen', 'Схевенинген'], lat: 52.1209, lon: 4.2693, wind: 225, tz: 2, stream: ['tide', 30, 1.0], from: '2026-11-20',
+    look: {
+      haze: 0.8,
+      ground: { forest: ['#2e4428', '#3f5a32', '#57703f'], scrub: '#7d8058', rock: ['#a49e90', '#87827a'], town: '#9a9088', shore: '#d8cba8', sand: '#e0d3b0', grass: '#6f8a4a' },
+      fields: ['#6f9a45', '#7fa64e', '#8fae55', '#5f8c3e'],
+      trees: [['broad', 0.6, '#2e4428', '#5a7a3c'], ['conifer', 0.4, '#243b22', '#3a5530']], treeTop: 40, woods: 0.25,
+      walls: ['#8a4a36', '#9c5a42', '#a86c50', '#7d4232', '#ece6da', '#c9b9a0'], roofs: ['#4a4e52', '#5a5e62', '#a5543a', '#7e4a3a'], flat: 0.55,
+      boats: { sail: 0.5, motor: 0.4, big: 0.1, bigKind: 'super' },
+      water: { deep: '#2a4044', scatter: '#4f7468', k: 0.6, shallow: '#7a8a6c', clear: 0.05 },
+    },
+  },
+  {
+    // Victoria Harbour between Wan Chai and Tsim Sha Tsui, in the easterly: the towers on both shores, the Peak above
+    id: 'hong-kong', name: ['Hong Kong', 'Гонконг'], lat: 22.289, lon: 114.176, wind: 80, tz: 8, stream: ['tide', 80, 1.0], from: '2026-11-20',
+    look: {
+      haze: 0.7,
+      ground: { forest: ['#24401f', '#33572a', '#4b7034'], scrub: '#5f7a42', rock: ['#9a9488', '#7b766c'], town: '#9c9890', shore: '#a29c90' },
+      trees: [['broad', 0.85, '#24401f', '#4b7a34'], ['palm', 0.15, '#2f4a26', '#5a7a3a']], treeTop: 950, woods: 0.9,
+      walls: ['#dcdad4', '#cfcac0', '#e8e4dc', '#bfc4c6', '#d6cfc0', '#e6e0d0'], roofs: ['#7e7f80', '#6f7478'], flat: 0.95,
+      fill: 0, // every tower is on the map: none made up
+      boats: { sail: 0.3, motor: 0.6, big: 0.1, bigKind: 'super' },
+      water: { deep: '#123a44', scatter: '#2f6e6a', k: 0.55, shallow: '#4f7a6a', clear: 0.08 },
+    },
+  },
+  {
+    // Table Bay off the V&A Waterfront, in the south-easterly Cape Doctor, Table Mountain to windward
+    id: 'cape-town', name: ['Cape Town', 'Кейптаун'], lat: -33.8978, lon: 18.4556, wind: 160, tz: 2, from: '2026-11-20',
+    look: {
+      haze: 1.15,
+      ground: { forest: ['#2f4428', '#41583a', '#5a7046'], scrub: '#7a7a52', rock: ['#a39d92', '#7f7a72'], town: '#aaa498', shore: '#d9d0bc', sand: '#e6dcc4' },
+      trees: [['stone', 0.4, '#2f4428', '#55703f'], ['eucalypt', 0.3, '#4a5a3a', '#7d8a62'], ['shrub', 0.3, '#5a6a42', '#7f8a5c']], treeTop: 700, woods: 0.3,
+      walls: ['#f3eee4', '#efe6d2', '#ffffff', '#e9dcc0', '#d9d0c0', '#c9c4ba'], roofs: ['#7e7f80', '#a5543a', '#5a5f60', '#9c4f37'], flat: 0.5,
+      boats: { sail: 0.55, motor: 0.35, big: 0.1, bigKind: 'super' },
+      water: { deep: '#0b2f45', scatter: '#1f7a86', k: 0.45, shallow: '#3f8f8a', clear: 0.3 },
+    },
+  },
+  {
+    // the 2004 Olympic waters in Faliro Bay, in the meltemi off the land, the Parthenon on the Acropolis to windward
+    id: 'athens', name: ['Athens', 'Афины'], lat: 37.9115, lon: 23.6765, wind: 30, tz: 3, from: '2026-11-20',
+    look: {
+      haze: 1.2, // the meltemi's clear air: the Acropolis and Hymettus seen across the bay
+      ground: { forest: ['#3a4a2c', '#4c5e36', '#66763f'], scrub: '#8a8458', rock: ['#c2b8a2', '#a09684'], town: '#c4bba8', shore: '#c8bca2' },
+      trees: [['pine', 0.6, '#33472a', '#5a6e3a'], ['olive', 0.25, '#56603e', '#7f8660'], ['cypress', 0.15, '#25391f', '#3a5230']], treeTop: 1000, woods: 0.35,
+      walls: ['#f3eee4', '#efe9dc', '#f6f2ea', '#e9dcc0', '#e6e2da', '#ffffff'], roofs: MED.roofs, flat: 0.85,
+      boats: { sail: 0.55, motor: 0.35, big: 0.1, bigKind: 'super' },
+      water: { deep: '#06304a', scatter: '#1d7f9a', k: 0.45, shallow: '#3faab0', clear: 0.45 },
+    },
+  },
 ];
 
 export const venueById = (id) => VENUES.find((v) => v.id === id) || VENUES[0];

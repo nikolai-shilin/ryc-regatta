@@ -886,6 +886,29 @@ function landmarks() {
         const stone = '#b9ad96';
         parts.push(post(x, z, y - 2, 8.6, 8, L.h * 0.74 + 2, stone, 16), post(x, z, y + L.h * 0.7, 9.6, 9.6, 2, '#a89c86', 16), post(x, z, y + L.h * 0.74, 7.8, 7.8, L.h * 0.06, stone, 16));
         parts.push(tint(new THREE.ConeGeometry(8.6, L.h * 0.2, 16).translate(x, y + L.h * 0.9, z), '#6f777c'));
+      } else if (L.style === 'boc') {
+        // the Bank of China Tower: a square of glass split corner to corner into four triangular shafts, each stopping
+        // higher than the last, its top sloping down from the middle to its corners; the two white masts on the highest. `b` a corner
+        const [bx, bz] = L.b, cx = bx - x, cz = bz - z, glass = '#4c5f70', top = (L.h - 52) / 315;
+        const corner = (k) => { const a = k * Math.PI / 2, c = Math.cos(a), s = Math.sin(a); return [x + cx * c - cz * s, z + cx * s + cz * c]; };
+        const H = [198, 231, 270, 315].map((h) => h * top);
+        for (let k = 0; k < 4; k++) {
+          const [ax, az] = corner(k), [qx, qz] = corner(k + 1), h = H[k];
+          const t0 = [x, y + h, z], t1 = [ax, y + h - 30, az], t2 = [qx, y + h - 30, qz], b0 = [x, y - 2, z], b1 = [ax, y - 2, az], b2 = [qx, y - 2, qz];
+          const pos = [], tri = (a, b, c) => pos.push(...a, ...b, ...c, ...a, ...c, ...b); // both ways round: seen from either side
+          tri(t0, t1, t2); for (const [a, b, ta, tb] of [[b0, b1, t0, t1], [b1, b2, t1, t2], [b2, b0, t2, t0]]) { tri(a, ta, tb); tri(a, tb, b); }
+          const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals();
+          parts.push(tint(g, glass));
+        }
+        for (const k of [3, 4]) { const [mx, mz] = corner(k); parts.push(post(x + (mx - x) * 0.3, z + (mz - z) * 0.3, y + H[3] - 12, 1.1, 0.4, L.h - H[3] + 12, '#e8e8e4', 8)); }
+      } else if (L.style === 'alphabet') { // Batumi's Alphabetic Tower: the core, the double helix of the letters round it, the glass ball, the mast
+        const steel = '#c9cdd0', H = L.h, top = H * 0.78, N = 44;
+        parts.push(post(x, z, y, 3.4, 2.6, top, '#e4e6e6', 10));
+        for (const a0 of [0, Math.PI]) for (let i = 0; i < N; i++) {
+          const p = (k) => { const a = a0 + k * 0.42; return V3(x + Math.cos(a) * 6.5, y + (top - 6) * k / N, z + Math.sin(a) * 6.5); };
+          parts.push(beam(p(i), p(i + 1), 1.6, 2.4, steel));
+        }
+        parts.push(tint(new THREE.SphereGeometry(8, 16, 10).translate(x, y + top + 4, z), '#3b4a55'), post(x, z, y + top + 11, 1.4, 0.4, H - top - 11, steel, 8));
       } else { // a tapering brick tower, like a ship's stern
         parts.push(tint(new THREE.CylinderGeometry(4.5, 9, L.h, 4).rotateY(Math.PI / 4).translate(x, y + L.h / 2, z), '#7a5246'), tint(new THREE.BoxGeometry(40, 9, 26).translate(x, y + 4.5, z + 18), '#8a6a5c'));
       }
@@ -973,6 +996,33 @@ function landmarks() {
           parts.push(beam(P(u0 + (u1 - u0) * t0, rib(t0), v), P(u0 + (u1 - u0) * t1, rib(t1), v), 1.2, 1.4, steel));
         }
       }
+    } else if (L.kind === 'wheel') {
+      // a big wheel on the shore, L.h to its top, turning in the plane through `at` and `b`: the two rims and their
+      // spokes, the legs splayed down to the ground on each side, the gondolas hanging from the rim
+      const [x, z] = L.at, [bx, bz] = L.b, len = Math.hypot(bx - x, bz - z), ux = (bx - x) / len, uz = (bz - z) / len;
+      const y = Math.max(0, groundAt(x, z)) + (L.base || 0), R = L.h / 2 - 2, cy = y + L.h - R - 1.5, white = '#eeeeea', N = 32; // (base: on a pier's deck)
+      const P = (a, r, v) => V3(x + ux * Math.cos(a) * r - uz * v, cy + Math.sin(a) * r, z + uz * Math.cos(a) * r + ux * v);
+      for (const v of [-2.2, 2.2]) for (let i = 0; i < N; i++) {
+        const a0 = (i / N) * Math.PI * 2, a1 = ((i + 1) / N) * Math.PI * 2;
+        parts.push(beam(P(a0, R, v), P(a1, R, v), 0.7, 0.9, white));
+        if (i % 2 === 0) parts.push(beam(P(0, 0, v), P(a0, R, v), 0.25, 0.25, white));
+      }
+      parts.push(beam(P(0, 0, -3), P(0, 0, 3), 1.6, 1.6, '#9a9c9e'));
+      for (const v of [-4.5, 4.5]) for (const s of [-1, 1]) parts.push(beam(P(0, 0, v * 0.6), V3(x + ux * s * R * 0.55 - uz * v, y - 1, z + uz * s * R * 0.55 + ux * v), 1.1, 1.1, white));
+      const cab = ['#d8443a', '#e8a43a', '#3a8ad8', '#4fb06a'];
+      for (let i = 0; i < 16; i++) { const p = P((i / 16) * Math.PI * 2, R, 0); parts.push(tint(new THREE.BoxGeometry(2.4, 2.6, 2.4).translate(p.x, p.y - 2.2, p.z), cab[i % 4])); }
+    } else if (L.kind === 'temple') {
+      // the Parthenon on the Acropolis: the stepped base, the peristyle of marble columns (8 at each end, 17 down each
+      // side), the entablature over them; its long axis from `at` towards `b`
+      const [x, z] = L.at, [bx, bz] = L.b, y = Math.max(0, groundAt(x, z)), marble = '#dccfb2';
+      const len = Math.hypot(bx - x, bz - z), ux = (bx - x) / len, uz = (bz - z) / len, ang = Math.atan2(uz, ux);
+      const W = 69.5, D = 30.9, at = (u, v) => [x + ux * u - uz * v, z + uz * u + ux * v];
+      for (let s = 0; s < 3; s++) parts.push(blk(x, z, y - 2 + s * 0.55, 2.55, W + 4 - s * 1.4, D + 4 - s * 1.4, ang, s ? marble : '#b8ab92'));
+      const cols = [];
+      for (let i = 0; i < 17; i++) for (const sd of [-1, 1]) cols.push([-W / 2 + 1.8 + i * (W - 3.6) / 16, sd * (D / 2 - 1.8)]);
+      for (let i = 1; i < 7; i++) for (const sd of [-1, 1]) cols.push([sd * (W / 2 - 1.8), -D / 2 + 1.8 + i * (D - 3.6) / 7]);
+      for (const [u, v] of cols) { const [cx, cz] = at(u, v); parts.push(post(cx, cz, y + 1.6, 1, 0.8, 10.4, marble, 8)); }
+      parts.push(blk(x, z, y + 12, 3.3, W - 0.6, D - 0.6, ang, marble));
     } else if (L.kind === 'mosque') {
       // Istanbul's imperial mosques on their hills: the square prayer hall, the great dome on its drum (its top L.h up),
       // the half-domes and the corner domes stepping down from it, the pencil minarets with their balconies and lead
