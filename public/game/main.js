@@ -246,6 +246,7 @@ delete opts.undefined; // left by an older pause menu, whose quick switches also
 if (opts.fleetV !== 3) { opts.fleet = 5; opts.fleetV = 3; } // the default changed (10, then 7): start everyone on 5 once
 if (opts.optsV !== 4) { opts.length = 'short'; opts.mode = 'daily'; opts.optsV = 4; } // a short race, today's, is the default now
 if (opts.musicV !== 1) { opts.music = 'racing'; opts.musicV = 1; } // Racing is the default music now: everyone hears it once, then keeps what they pick
+if (opts.ghostV !== 1) { opts.ghost = 0; opts.ghostV = 1; } // the ghost of your best is off now unless you turn it on (Settings): once, then theirs
 if (opts.music !== 'off' && !MUSIC_STYLES.includes(opts.music)) opts.music = 'racing'; // a style that's gone (Ambient, Film, Folk): Racing
 const saveOpts = () => { try { localStorage.setItem('regatta', JSON.stringify(opts)); } catch (e) {} };
 // the race's settings: the menu's, or in today's race the day's own (the same for everyone)

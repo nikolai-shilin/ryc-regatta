@@ -2,7 +2,8 @@
 // is built), start (it starts), frame (each frame, after the race has stepped) and settings (what a drill sails).
 //
 //   The ghost: a boat that sails a race already sailed, see-through and out of the race (no rules, no collisions),
-//     where her track had her at each moment of the clock: your own best in today's race, kept on this device, or the
+//     where her track had her at each moment of the clock: your own best in today's race, kept on this device (only when
+//     Settings › Ghost of your best is on: it's off by default), or the
 //     race a result link names (/play?race=today&ghost=<id>, from the result page's "Race this ghost"). Over the board,
 //     how far ahead or behind her you are: the clock now against hers where she was nearest you on the same leg.
 //   The drills: a minute or two each, from /race/drills (/play?race=free&drill=<id>). A computer skipper sails your
@@ -94,7 +95,8 @@ async function ghostFor(race) {
       return pick(r, false);
     } catch (e) { return null; }
   }
-  if ((read('regatta') || {}).ghost === 0) return null; // Settings › Ghost of your best: off
+  const o = read('regatta') || {};
+  if (o.ghost !== 1 || o.ghostV !== 1) return null; // Settings › Ghost of your best: off unless turned on there
   let best = null;
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
