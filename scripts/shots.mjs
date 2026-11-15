@@ -25,20 +25,20 @@ const LIGHT = 'hour=15.5&sky=clear';
 // world (world.js: mode drone, top or helm; dist, orbit in radians round her, droneEl in degrees down, helmFov, look).
 // out: the picture scaled to that size after it is taken (the share card, kept small for WhatsApp).
 const SHOTS = [
-  { name: 'hud-desk-v5', w: 1200, h: 750, dpr: 2.7, touch: false, call: true, rects: true },
-  { name: 'hud-port-v5', w: 390, h: 844, dpr: 3, touch: true, call: true, rects: true },
-  { name: 'h-start-v5', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: ['.b-top', '#nxTag'] },
-  { name: 'h-steer-v5', w: 640, h: 480, dpr: 3, touch: true, keep: ['#rudderZone'] },
-  { name: 'h-trim-v5', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone'] },
-  { name: 'h-tack-v5', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone', '.b-acts'] },
-  { name: 'drone-desk-v5', w: 1600, h: 1000, dpr: 2.7, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 } },
-  { name: 'drone-port-v5', w: 390, h: 844, dpr: 3, touch: true, keep: [], cam: { mode: 'drone', dist: 26, orbit: 'lee', droneEl: 18 } },
-  { name: 'top-v5', w: 1266, h: 585, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 70 } },
-  { name: 'og-v5', w: 1200, h: 630, dpr: 2, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 }, out: [1200, 630] },
-  { name: 'h-wind-v5', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 9 } },
-  { name: 'h-view-drone-v5', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 22 } },
-  { name: 'h-view-top-v5', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 40 } },
-  { name: 'h-view-helm-v5', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'helm', helmFov: 68, look: 0 } },
+  { name: 'hud-desk-v6', w: 1200, h: 750, dpr: 2.7, touch: false, call: true, rects: true },
+  { name: 'hud-port-v6', w: 390, h: 844, dpr: 3, touch: true, call: true, rects: true },
+  { name: 'h-start-v6', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: ['.b-top', '#nxTag'] },
+  { name: 'h-steer-v6', w: 640, h: 480, dpr: 3, touch: true, keep: ['#rudderZone'] },
+  { name: 'h-trim-v6', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone'] },
+  { name: 'h-tack-v6', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone', '.b-acts'] },
+  { name: 'drone-desk-v6', w: 1600, h: 1000, dpr: 2.7, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 } },
+  { name: 'drone-port-v6', w: 390, h: 844, dpr: 3, touch: true, keep: [], cam: { mode: 'drone', dist: 26, orbit: 'lee', droneEl: 18 } },
+  { name: 'top-v6', w: 1266, h: 585, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 70 } },
+  { name: 'og-v6', w: 1200, h: 630, dpr: 2, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 }, out: [1200, 630] },
+  { name: 'h-wind-v6', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 9 } },
+  { name: 'h-view-drone-v6', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 22 } },
+  { name: 'h-view-top-v6', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 40 } },
+  { name: 'h-view-helm-v6', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'helm', helmFov: 68, look: 0 } },
 ].filter((s) => !only.length || only.includes(s.name));
 
 // the HUD's blocks, for the marks
