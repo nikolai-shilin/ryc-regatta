@@ -25,20 +25,20 @@ const LIGHT = 'hour=15.5&sky=clear';
 // world (world.js: mode drone, top or helm; dist, orbit in radians round her, droneEl in degrees down, helmFov, look).
 // out: the picture scaled to that size after it is taken (the share card, kept small for WhatsApp).
 const SHOTS = [
-  { name: 'hud-desk-v6', w: 1200, h: 750, dpr: 2.7, touch: false, call: true, rects: true },
-  { name: 'hud-port-v6', w: 390, h: 844, dpr: 3, touch: true, call: true, rects: true },
-  { name: 'h-start-v6', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: ['.b-top', '#nxTag'] },
-  { name: 'h-steer-v6', w: 640, h: 480, dpr: 3, touch: true, keep: ['#rudderZone'] },
-  { name: 'h-trim-v6', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone'] },
-  { name: 'h-tack-v6', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone', '.b-acts'] },
-  { name: 'drone-desk-v6', w: 1600, h: 1000, dpr: 2.7, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 } },
-  { name: 'drone-port-v6', w: 390, h: 844, dpr: 3, touch: true, keep: [], cam: { mode: 'drone', dist: 26, orbit: 'lee', droneEl: 18 } },
-  { name: 'top-v6', w: 1266, h: 585, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 70 } },
-  { name: 'og-v6', w: 1200, h: 630, dpr: 2, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 }, out: [1200, 630] },
-  { name: 'h-wind-v6', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 9 } },
-  { name: 'h-view-drone-v6', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 22 } },
-  { name: 'h-view-top-v6', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 40 } },
-  { name: 'h-view-helm-v6', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'helm', helmFov: 68, look: 0 } },
+  { name: 'hud-desk-v7', w: 1200, h: 750, dpr: 2.7, touch: false, call: true, rects: true },
+  { name: 'hud-port-v7', w: 390, h: 844, dpr: 3, touch: true, call: true, rects: true },
+  { name: 'h-start-v7', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: ['.b-top', '#nxTag'] },
+  { name: 'h-steer-v7', w: 640, h: 480, dpr: 3, touch: true, keep: ['#rudderZone'] },
+  { name: 'h-trim-v7', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone'] },
+  { name: 'h-tack-v7', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone', '.b-acts'] },
+  { name: 'drone-desk-v7', w: 1600, h: 1000, dpr: 2.7, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 } },
+  { name: 'drone-port-v7', w: 390, h: 844, dpr: 3, touch: true, keep: [], cam: { mode: 'drone', dist: 26, orbit: 'lee', droneEl: 18, orbitMax: 0.35 } },
+  { name: 'top-v7', w: 1266, h: 585, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 70 } },
+  { name: 'og-v7', w: 1200, h: 630, dpr: 2, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 }, out: [1200, 630] },
+  { name: 'h-wind-v7', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 9 } },
+  { name: 'h-view-drone-v7', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 22 } },
+  { name: 'h-view-top-v7', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 40 } },
+  { name: 'h-view-helm-v7', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'helm', helmFov: 68, look: 0 } },
 ].filter((s) => !only.length || only.includes(s.name));
 
 // the HUD's blocks, for the marks
@@ -114,16 +114,17 @@ async function shoot({ send }, s) {
   }
   // the camera glides there over the next frames. orbit 'lee': the drone off her leeward quarter, looking up to windward
   // past the sails' faces (not along their edges from dead astern), and swung towards the nearest yacht ahead, so she
-  // has company in the picture
+  // has company in the picture (orbitMax: how far it may swing; a tall frame, narrow across, keeps her nearer its middle)
   if (s.cam) await js(`(() => {
-    const W = window.__rg.world, R = window.__rg.race, P = R.player, cam = ${JSON.stringify(s.cam)};
+    const W = window.__rg.world, R = window.__rg.race, P = R.player, cam = ${JSON.stringify(s.cam)}, max = cam.orbitMax || 0.7;
+    delete cam.orbitMax;
     if (cam.orbit === 'lee') {
       const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a)), up = -Math.sign(P.twa || 1);
-      let o = 0.45 * up, best = 160;
+      let o = Math.min(0.45, max) * up, best = 160;
       for (const b of R.boats) {
         if (b === P) continue;
         const d = Math.hypot(b.x - P.x, b.z - P.z), rel = wrap(Math.atan2(b.x - P.x, -(b.z - P.z)) - P.h);
-        if (d < best && Math.abs(rel) < 1.1) { best = d; o = Math.max(-0.7, Math.min(0.7, 0.55 * rel + 0.2 * up)); }
+        if (d < best && Math.abs(rel) < 1.1) { best = d; o = Math.max(-max, Math.min(max, 0.55 * rel + 0.2 * up)); }
       }
       cam.orbit = o;
     }

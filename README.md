@@ -274,11 +274,11 @@ npm run dev
 The app runs at http://localhost:5193 (the game is at http://localhost:5193/play?race=today). `npm run typecheck` and `npm run build`
 check it; `npm test` sails the game's race headless in Node (about 10 seconds).
 
-Every picture of the game on the site (`public/images/*-v6.jpg`: the race screen `hud-*` and its close-ups `h-start`,
+Every picture of the game on the site (`public/images/*-v7.jpg`: the race screen `hud-*` and its close-ups `h-start`,
 `h-steer`, `h-trim`, `h-tack`; the home's hero `drone-*`, the fleet from above `top`, the three views `h-view-*`, the
 wind ring `h-wind` and the share card `og`) is the game's own, taken in headless Chrome with the site running: `node
 scripts/shots.mjs http://localhost:5193` (or a few by name after the address). It prints where each part of the HUD sits
-on the two numbered pictures, for the marks in `app/[lang]/help/page.tsx`. A picture changed is a new file name (`-v7`),
+on the two numbered pictures, for the marks in `app/[lang]/help/page.tsx`. A picture changed is a new file name (`-v8`),
 as the image optimiser caches by name; the race page's loader names the hero's files too (`public/play/index.html`).
 
 ## Environment

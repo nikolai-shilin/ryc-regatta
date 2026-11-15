@@ -34,7 +34,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     title: t('Rounding the marks: the windward mark and the gate', 'Огибание знаков: верхний знак и ворота'),
     short: t('Rounding the marks', 'Огибание знаков'),
     kicker: t('Learn to race · marks', 'Учись гоняться · знаки'),
-    img: shot('top-v6', t('Yachts racing in the game, seen from above, with the marks’ zones dashed at the top', 'Яхты на гонке в игре, вид сверху; вверху пунктиром — зоны знаков'), 3798, 1755),
+    img: shot('top-v7', t('Yachts racing in the game, seen from above, with the marks’ zones dashed at the top', 'Яхты на гонке в игре, вид сверху; вверху пунктиром — зоны знаков'), 3798, 1755),
     description: t(
       'How to round the marks in a sailboat race: approaching the windward mark on the starboard layline, the bear-away, choosing a side of the leeward gate, wide in and tight out, room in the zone and touching a mark.',
       'Как огибать знаки в парусной гонке: подход к верхнему знаку по лейлайну правого галса, поворот на попутный курс, выбор знака в нижних воротах, «широко зайти — узко выйти», место в зоне и касание знака.'),
@@ -134,7 +134,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     title: t('Sail trim and boat speed', 'Настройка парусов и скорость лодки'),
     short: t('Sail trim and speed', 'Настройка и скорость'),
     kicker: t('Learn to race · speed', 'Учись гоняться · скорость'),
-    img: shot('h-trim-v6', t('Your boat sailing upwind in the game, the sheet’s knob in its green band', 'Твоя лодка на лавировке в игре, ползунок шкота в зелёной полосе')),
+    img: shot('h-trim-v7', t('Your boat sailing upwind in the game, the sheet’s knob in its green band', 'Твоя лодка на лавировке в игре, ползунок шкота в зелёной полосе')),
     description: t(
       'How to make a sailboat go fast: trimming the main and jib, steering smoothly, footing for speed upwind, controlling heel, and reefing or changing jibs in a blow.',
       'Как заставить парусную лодку идти быстро: настройка грота и стакселя, плавное рулевое управление, увалиться ради скорости на лавировке, контроль крена, риф и смена стакселя в сильный ветер.'),
@@ -184,7 +184,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     title: t('The racing rules in five minutes', 'Правила парусных гонок за пять минут'),
     short: t('The racing rules in five minutes', 'Правила гонок за пять минут'),
     kicker: t('Learn to race · rules', 'Учись гоняться · правила'),
-    img: shot('h-view-top-v6', t('Your boat and two others close by, seen from above in the game', 'Твоя лодка и ещё две рядом, вид сверху в игре')),
+    img: shot('h-view-top-v7', t('Your boat and two others close by, seen from above in the game', 'Твоя лодка и ещё две рядом, вид сверху в игре')),
     description: t(
       'The Racing Rules of Sailing that decide almost every meeting on the water: port and starboard, windward and leeward, clear astern, tacking, room at the mark, and how to take a penalty.',
       'Правила парусных гонок, которые решают почти каждую встречу на воде: левый и правый галс, наветренная и подветренная, чистая позади, поворот, место у знака и как отработать штраф.'),
@@ -247,7 +247,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     title: t('How to win a sailing start', 'Как выиграть старт в парусной гонке'),
     short: t('How to win the start', 'Как выиграть старт'),
     kicker: t('Learn to race · the start', 'Учись гоняться · старт'),
-    img: shot('h-start-v6', t('The last minute before the start in the game: the countdown, the favoured end and the start line ahead', 'Последняя минута перед стартом в игре: отсчёт, выгодный конец и стартовая линия впереди')),
+    img: shot('h-start-v7', t('The last minute before the start in the game: the countdown, the favoured end and the start line ahead', 'Последняя минута перед стартом в игре: отсчёт, выгодный конец и стартовая линия впереди')),
     description: t(
       'How to start a sailing race well: the flags and signals, finding the favoured end of the line, timing your run, holding your spot, what to do when you are over early, and clear air after the gun.',
       'Как хорошо стартовать в парусной гонке: флаги и сигналы, выгодный конец линии, расчёт разгона, как удержать место, что делать при фальстарте и чистый ветер после сигнала.'),
@@ -307,7 +307,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     title: t('Headers and lifts: how to play the wind shifts', 'Заходы и отходы ветра: как их использовать'),
     short: t('Headers and lifts', 'Заходы и отходы'),
     kicker: t('Learn to race · tactics', 'Учись гоняться · тактика'),
-    img: shot('h-wind-v6', t('The wind ring round your boat in the game, seen from above', 'Кольцо ветра вокруг твоей лодки в игре, вид сверху')),
+    img: shot('h-wind-v7', t('The wind ring round your boat in the game, seen from above', 'Кольцо ветра вокруг твоей лодки в игре, вид сверху')),
     description: t(
       'How to sail the wind shifts upwind: what a header and a lift are, why you tack on the headers, when not to tack, laylines, gusts and lulls, and gybing on the lifts downwind.',
       'Как использовать заходы ветра на лавировке: что такое заход и отход, почему поворачивать на заходе, когда не поворачивать, лейлайны, порывы и затишья и фордевинд на отходе на попутном курсе.'),
