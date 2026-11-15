@@ -46,6 +46,25 @@ for (let o = 0, k = 0; k < META.parts.length; k++) {
   PARTS[p.n] = a; if (p.t === 'bits') PARTS[p.n + 'Len'] = p.len;
   o += n * T.BYTES_PER_ELEMENT; o += (4 - (o % 4)) % 4;
 }
+// The land beyond comes from the coarsest elevation tiles, which have junk pixels here and there: one or two, a
+// kilometre or two up (or down), out on flat land or the sea, which the far grid would stand up as a needle of hill
+// (Auckland's, Sydney's, Rio's). A real summit stands at most some 150 m above the highest of the eight cells round it,
+// 400 m off; a cell more than 200 m above them is brought down to that highest one, again till none is (a needle of
+// two cells goes in two goes).
+function despike(H, n, k) {
+  const up = Math.round(200 / k);
+  for (let pass = 0; pass < 4; pass++) {
+    const fix = [];
+    for (let i = 1; i < n - 1; i++) for (let j = 1; j < n - 1; j++) {
+      const c = i * n + j;
+      const top = Math.max(H[c - n - 1], H[c - n], H[c - n + 1], H[c - 1], H[c + 1], H[c + n - 1], H[c + n], H[c + n + 1]);
+      if (H[c] - top > up) fix.push(c, top);
+    }
+    if (!fix.length) return;
+    for (let q = 0; q < fix.length; q += 2) H[fix[q]] = fix[q + 1];
+  }
+}
+if (PARTS.far) despike(PARTS.far, META.far.n, META.far.k);
 export const SKOPEA = {
   meta: META,
   parts: PARTS,

@@ -493,7 +493,17 @@ for (const v of VENUES) {
         const xz = ms.map((m) => [m.x + r.at.x, m.z + r.at.z]);
         for (const l of low) for (const p of xz) for (const q of xz) if (across(p, q, l.a, l.b)) under = course + ' ' + preset + ' ' + length;
       }
-      console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, legWorst, legWhere, under, corners: MESH.corners, heights: SKOPEA.parts.heights.length }));`;
+      // the land beyond: no cell standing far above all eight round it (the elevation tiles' junk pixels, a needle
+      // of hill a kilometre or two high out on flat land or the sea; a real summit is within some 150 m of the next cell)
+      const F = SKOPEA.meta.far, n = F.n, H = SKOPEA.parts.far;
+      let spike = 0, spikeAt = '';
+      for (let i = 1; i < n - 1; i++) for (let j = 1; j < n - 1; j++) {
+        let top = -Infinity;
+        for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) if (di || dj) top = Math.max(top, H[(i + di) * n + j + dj]);
+        const up = (H[i * n + j] - top) * F.k;
+        if (up > spike) { spike = up; spikeAt = (-F.ext + j * F.cell) + ', ' + (-F.ext + i * F.cell); }
+      }
+      console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, legWorst, legWhere, under, corners: MESH.corners, heights: SKOPEA.parts.heights.length, spike, spikeAt }));`;
     const runs = await Promise.all(['jpk1050', 'bavaria46', 'laser', 'ac75'].map(async (boat) => [boat, JSON.parse((await execFileP(process.execPath, ['--input-type=module', '-e', code(boat)], { encoding: 'utf8' })).stdout)]));
     for (const [boat, out] of runs) {
       assert.deepEqual(out.origin, [v.lat, v.lon], 'baked at the venue’s position');
@@ -502,6 +512,7 @@ for (const v of VENUES) {
       assert.ok(out.legWorst >= 20, `${boat}: a leg only ${Math.round(out.legWorst)} m from the shore (${out.legWhere})`);
       assert.equal(out.under, '', `${boat}: a course across a bridge too low for a mast`);
       assert.equal(out.corners, out.heights, 'the terrain the game builds from the quadtree has a height for each of its corners');
+      assert.ok(out.spike <= 200, `the land beyond has a needle ${Math.round(out.spike)} m above the cells round it, at ${out.spikeAt}`);
     }
   });
 }
