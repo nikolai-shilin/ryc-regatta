@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getT, titled, type LangParams } from '@/lib/i18n';
 import { getAccount, supabaseServer } from '@/lib/supabase/server';
-import { IconBack } from '@/components/ui';
+import { BackLink } from '@/components/back-link';
 import { SiteHead } from '@/components/site-chrome';
 import { AdminForm, BannerForm } from '@/components/admin-form';
 import { AdminSchedule } from '@/components/admin-schedule';
@@ -33,7 +33,7 @@ export default async function AdminPage({ params }: LangParams) {
       <div className="lay page">
         <div className="aph">
           <div className="aph-top">
-            <Link className="round round-s round-muted" href="/settings" aria-label={t('Back to settings', 'Назад в настройки')}><IconBack /></Link>
+            <BackLink className="round round-s round-muted" href="/settings" label={t('Back to settings', 'Назад в настройки')} />
             <span className="kicker">{t('Admin', 'Админка')}</span>
           </div>
           <h1 className="aph-h">{t('The race and the ads', 'Гонка и реклама')}</h1>

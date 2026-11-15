@@ -9,6 +9,7 @@ import { LOOKS, playerLook } from './yacht.js';
 const flagCode = (src) => { const m = typeof src === 'string' && /\/flags\/([a-z]{2}(?:-[a-z]+)?)\.svg$/.exec(src); return m ? m[1] : null; }; // '/flags/gb.svg' → 'gb'
 import { VENUE, venueById, laidLength, lengthOffered } from './venues.js';
 import { classById } from './classes.js';
+import { arriveLoaded, goBack } from './trail.js';
 import { createMusic, direct, MUSIC_STYLES } from './music.js';
 
 const $ = (s) => document.querySelector(s);
@@ -22,6 +23,10 @@ const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.i
 const SITE = 'https://iyt.rycrentals.com';
 // The menus are Next.js pages on this site now: the race hub, the free-race set-up and the race's result page.
 const HUB = '/race';
+// Leaving the race goes back to the page you came from (trail.js, the same as the site's back arrows), the hub if none
+arriveLoaded();
+addEventListener('pageshow', (e) => { if (e.persisted) arriveLoaded({ pop: true }); });
+const leave = () => goBack(HUB, null, { extra: !TG && history.state && history.state.race ? 1 : 0, single: true });
 // From Telegram the app passes its launch data in the hash, as Telegram does (miniapp/app.js in iyt-test); telegram-web-app.js has
 // read and kept it by now, so it comes off the address bar and out of any link the player copies.
 if (TG && /tgWebAppData=/.test(location.hash)) try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
@@ -295,7 +300,7 @@ if (TG) {
   try { if (TG.isVersionAtLeast && TG.isVersionAtLeast('8.0') && /android|iphone|ipad/i.test(navigator.userAgent)) TG.requestFullscreen(); } catch (e) {}
   TG.onEvent && TG.onEvent('themeChanged', () => applyTheme());
   TG.BackButton.show();
-  TG.BackButton.onClick(() => { if (running && !paused) pause(); else location.href = HUB; });
+  TG.BackButton.onClick(() => { if (running && !paused) pause(); else leave(); });
 }
 const haptic = (kind) => {
   if (opts.vibration === 0) return; // Settings › Vibration
@@ -1353,8 +1358,8 @@ function pauseLine(P, place, nx) {
 if (!TG) {
   const guard = () => { try { if (!history.state || !history.state.race) history.pushState({ race: 1 }, ''); } catch (e) {} };
   addEventListener('popstate', () => {
-    if (!running || race.over) { location.href = HUB; return; }
-    if (!confirmEl.hidden) { location.href = HUB; return; }
+    if (!running || race.over) { leave(); return; }
+    if (!confirmEl.hidden) { leave(); return; }
     if (paused) ask('leave'); else pause();
     guard();
   });
@@ -1384,7 +1389,7 @@ $('#pLeave').addEventListener('click', () => ask('leave'));
 $('#cKeep').addEventListener('click', () => { confirmEl.hidden = true; pauseEl.hidden = false; });
 $('#cGo').addEventListener('click', () => {
   if (confirmDo === 'restart') { confirmEl.hidden = true; paused = false; running = false; newRace(); startRace(); return; }
-  location.href = confirmDo === 'change' ? `/race/free?from=${race.settings.daily ? 'today' : 'race'}` : HUB;
+  if (confirmDo === 'change') location.href = `/race/free?from=${race.settings.daily ? 'today' : 'race'}`; else leave();
 });
 pauseEl.addEventListener('click', (e) => {
   const g = e.target.closest('[data-g]');
@@ -1410,7 +1415,10 @@ pauseEl.addEventListener('click', (e) => {
 $('#goBtn').addEventListener('click', startRace);
 $('#resumeBtn').addEventListener('click', resume);
 $('#pauseBtn').addEventListener('click', pause);
-$('#backLink').href = HUB;
+for (const a of [$('#backLink'), $('#lBack')]) { // the menu's back and the loading screen's: where you came from, as the site's arrows
+  a.href = HUB;
+  a.addEventListener('click', (e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; e.preventDefault(); leave(); });
+}
 
 // ---------- the race to sail: from the address (the hub and the set-up page are Next.js pages) ----------
 {
