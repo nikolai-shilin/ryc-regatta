@@ -87,6 +87,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     title: t('Sailing downwind: the gennaker, angles and gybes', 'Попутные курсы: генакер, углы и повороты'),
     short: t('Sailing downwind', 'Попутные курсы'),
     kicker: t('Learn to race · downwind', 'Учись гоняться · попутный'),
+    img: shot('h-run-v7', t('Your boat on the run in the game, her gennaker set, a yacht ahead under hers', 'Твоя лодка на фордевинде в игре под генакером, впереди яхта под своим')),
     description: t(
       'How to sail fast downwind in a race: when to set the gennaker, sailing angles instead of dead downwind, gybing on the lifts, avoiding a crash gybe or a death roll, and surfing waves.',
       'Как быстро идти на попутных курсах в гонке: когда ставить генакер, углы вместо чистого фордевинда, фордевинд на отходе, как избежать самопроизвольного поворота и брочинга, сёрфинг на волне.'),
