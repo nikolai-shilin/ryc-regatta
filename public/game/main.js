@@ -1570,6 +1570,7 @@ function coach(P, a, leg) {
 function handleMessages() {
   const P = race.player;
   for (const m of race.messages) {
+    if (m.to && m.to !== race.player) continue; // another boat's news
     const a = m.arg || {};
     if (m.key === 'signal') {
       audio.horn(a.sound === 'long'); haptic(a.key === 'gun' ? 'heavy' : 'medium'); skipper.signal(a.key, P.ocs);

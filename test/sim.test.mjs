@@ -239,6 +239,72 @@ test('the same seed sails the same race', () => {
   assert.deepEqual(sail(opts), sail(opts));
 });
 
+// a race sailed to the end of the computer boats with you on a fixed script: the helm over (0.3) for 2 s every 20 s,
+// a tack every 45 s from the gun; every boat's finishing time, yours included (null: not finished, or disqualified)
+function sailScripted(opts) {
+  const r = new sim.Race(opts), P = r.player, others = r.boats.filter((b) => b !== P);
+  let tacks = 0;
+  for (let n = 0; n < 60 * 60 * 40 && !others.every((b) => b.done); n++) {
+    const t = r.clock;
+    P.rudder = ((t % 20) + 20) % 20 < 2 ? 0.3 : 0;
+    if (t >= 0 && Math.floor(t / 45) > tacks) { tacks = Math.floor(t / 45); P.tackOrGybe(); }
+    r.step(1 / 60);
+  }
+  return r.boats.map((b) => (b.done && !b.dsq ? Math.round(b.finish * 10) / 10 : null));
+}
+// recorded before the race had more than one human boat in it (sailScripted on the sim as it was)
+const GOLDEN_4242 = [null, 285, 280.2, 237.2, 270.7];
+test('golden: a one-human race is the race it always was', () => {
+  assert.deepEqual(sailScripted({ preset: 'medium', length: 'short', laps: 1, fleet: 5, seed: 4242 }), GOLDEN_4242);
+});
+
+// `secs` seconds of racing with the humans on a fixed script: until 10 s before the gun each steers for a point 40 m
+// below the middle of the line, then for her next mark (the middle of the line first), the nearest she can sail to it
+function run(r, secs) {
+  const c = r.course, below = { x: (c.pin.x + c.committee.x) / 2 - 40 * c.normal.x, z: (c.pin.z + c.committee.z) / 2 - 40 * c.normal.z };
+  for (let n = 0; n < secs * 60; n++) {
+    for (const h of r.humans) {
+      const m = r.clock < -10 ? below : r.nextMark(h);
+      r.steerTo(h, r.sailable(Math.atan2(m.x - h.x, -(m.z - h.z)), r.wind.dir(), r.wind.p.tws));
+    }
+    r.step(1 / 60);
+  }
+}
+test('three humans: they replace computer boats, each hears only her own news', () => {
+  const r = new sim.Race({ seed: 7, fleet: 6, humans: [{ id: 'a', name: 'Anna' }, { id: 'b', name: 'Boris' }, { id: 'c', name: 'Cleo' }], me: 'b' });
+  assert.equal(r.boats.length, 6);
+  assert.deepEqual(r.humans.map((h) => h.id), ['a', 'b', 'c']);
+  assert.equal(r.player.id, 'b');
+  assert.equal(r.boats.filter((b) => b.ai).length, 3);
+  assert.ok(r.humans.every((h, k) => h.human && h.ai === null && r.boats[k] === h), 'human k in boat k’s spot');
+  assert.equal(r.log, r.player.log);
+  run(r, 600);
+  const started = r.messages.filter((m) => m.key === 'started');
+  assert.ok(started.length >= 2 && started.every((m) => m.to && m.to.human), JSON.stringify(started.map((m) => m.to?.id)));
+  assert.ok(r.humans.every((h) => h.log && Array.isArray(h.log.legs)));
+});
+test('two humans and no computer boats', () => {
+  const r = new sim.Race({ seed: 7, fleet: 2, humans: [{ id: 'h', name: 'Host' }, { id: 'g', name: 'Guest' }], me: 'g' });
+  assert.equal(r.boats.length, 2);
+  assert.equal(r.boats.filter((b) => b.ai).length, 0);
+  assert.equal(r.player.id, 'g');
+});
+test('a watcher follows the first human', () => {
+  const r = new sim.Race({ seed: 7, fleet: 3, humans: [{ id: 'h', name: 'Host' }, { id: 'g', name: 'Guest' }], me: null });
+  assert.equal(r.player.id, 'h');
+  assert.equal(r.watching, true);
+});
+test('a human hails a human: the hailed boat is told who', () => {
+  const r = new sim.Race({ seed: 7, fleet: 2, humans: [{ id: 'a', name: 'Anna' }, { id: 'b', name: 'Boris' }] });
+  const [a, b] = r.humans, c = r.course, W = r.wind.dir(), up = 45 * sim.D2R;
+  // halfway up the beat, Anna on starboard and Boris on port, 5 s from meeting
+  const X = { x: (c.pin.x + c.committee.x + 2 * c.windward.x) / 4, z: (c.pin.z + c.committee.z + 2 * c.windward.z) / 4 };
+  for (const [boat, h] of [[a, W - up], [b, W + up]]) Object.assign(boat, { h, v: 3, x: X.x - Math.sin(h) * 15, z: X.z + Math.cos(h) * 15 });
+  r.clock = 20; r.step(1 / 60); r.messages.length = 0;
+  r.hail(a);
+  assert.deepEqual(r.messages.map((m) => [m.key, m.arg, m.to?.id]), [['youHail', { rule: '10' }, 'a'], ['hail', { who: 'Anna', rule: '10' }, 'b']]);
+});
+
 // The scores server (api/game.mjs in the iyt-test repo) keeps no time under FLOOR seconds a metre of beat a lap:
 // half of what the computer boats take, so that no one sailing the game well is ever turned away. Keep the two in step.
 for (const preset of ['light', 'medium', 'strong']) {
