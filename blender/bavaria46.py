@@ -16,8 +16,9 @@
 # fittings and crew expect them.
 #
 # Materials by name, which boats3d.js swaps for its own: hull (the paint, boot-top and antifouling drawn by its
-# shader), deck (non-skid or the player's deck), gel, teak, glass. No UVs: boats3d.js lays the deck's and the teak's
-# out from the plan.
+# shader), deck (the side decks and foredeck: teak, as hers are, or the player's deck in the hull's colour), roof (the
+# coachroof's and the coamings' tops: non-skid), gel, teak, glass. No UVs: boats3d.js lays the deck's, the roof's and
+# the teak's out from the plan.
 #
 #   blender -b --factory-startup -P blender/bavaria46.py
 import bpy, bmesh, math, os
@@ -146,7 +147,7 @@ def build_coachroof(bm, M):
         zc = (zs[i] + zs[i + 1]) / 2
         for j in range(R):
             seg = j if j < half else R - 2 - j                   # the same band on either side (0 below the deck, 2 and 3 the windows)
-            mat = M['gel']
+            mat = M['roof'] if seg >= 7 else M['gel']                                 # the top non-skid, its edge gelcoat
             if seg == 3 and -2.55 < zc < 1.6: mat = M['glass']                         # the long window, its upper half
             if seg == 2 and -2.0 < zc < 1.6: mat = M['glass']                          # and its lower half: it tapers forward
             if seg in (2, 3) and 2.45 < zc < 2.95: mat = M['glass']                    # the small one in the coaming's side
@@ -185,8 +186,8 @@ def new_object(name):
 for o in list(bpy.data.objects): bpy.data.objects.remove(o)
 MAT = {'hull': material('hull', (0.92, 0.92, 0.9), 0.2), 'deck': material('deck', (0.8, 0.79, 0.75), 0.85),
        'gel': material('gel', (0.9, 0.89, 0.86), 0.3), 'teak': material('teak', (0.45, 0.28, 0.13), 0.7),
-       'glass': material('glass', (0.03, 0.04, 0.05), 0.05)}
-ORDER = ['hull', 'deck', 'gel', 'teak', 'glass']
+       'glass': material('glass', (0.03, 0.04, 0.05), 0.05), 'roof': material('roof', (0.86, 0.86, 0.84), 0.85)}
+ORDER = ['hull', 'deck', 'gel', 'teak', 'glass', 'roof']
 IDX = {m: i for i, m in enumerate(ORDER)}
 
 # the hull and the coachroof, one solid

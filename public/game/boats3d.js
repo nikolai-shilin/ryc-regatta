@@ -911,12 +911,14 @@ class CruiserView extends ClassView {
     this.cls = cls;
     const add = this.start(), T = this.tilt, H = BV.hull, C = BV.COACH, [ckz, ckx] = BV.CK;
     this.flyY = 0;
-    const MOD = BV_MODEL, skid = deckFinish(look, SKID);
+    // her side decks and foredeck teak, as the real boat's are, the coachroof's and the coamings' tops white non-skid;
+    // a player who asked for the deck in the hull's colour has it on both
+    const MOD = BV_MODEL, own = look.deck === 'hull', skid = deckFinish(own ? look : { deck: 'teak' }, SKID), roof = own ? skid : SKID;
     if (MOD) {
       // the moulded parts, from the Blender model: in a group of their own, so the boat's merging of her small parts
       // (bake) leaves the shared geometry alone
       const moulded = add(new THREE.Group());
-      for (const [k, mat] of [['hull', hullMaterial(look.hull, look.stripe, look.bottom)], ['deck', skid], ['gel', M.gel], ['teak', M.teak], ['glass', MAT.pane]]) if (MOD[k]) moulded.add(new THREE.Mesh(MOD[k], mat));
+      for (const [k, mat] of [['hull', hullMaterial(look.hull, look.stripe, look.bottom)], ['deck', skid], ['roof', roof], ['gel', M.gel], ['teak', M.teak], ['glass', MAT.pane]]) if (MOD[k]) moulded.add(new THREE.Mesh(MOD[k], mat));
     } else add(new THREE.Mesh(H.geometry(), hullMaterial(look.hull, look.stripe, look.bottom)));
     // the hull windows, small, flush and dark, four a side: one forward, a pair amidships and one aft; the dark stripe
     // along the topsides over them
@@ -991,7 +993,7 @@ class CruiserView extends ClassView {
       { const q = cg.attributes.position; for (let i = 0; i < q.count; i++) q.setX(i, q.getX(i) * (1 - 0.08 * clamp(q.getY(i) / C.h, 0, 1.1))); cg.computeVertexNormals(); }
       add(new THREE.Mesh(cg, M.gel), 0, BV.coachY, 0);
       const top = new THREE.ShapeGeometry(cs, 8).rotateX(-Math.PI / 2).scale(0.88, 1, 0.97);
-      add(new THREE.Mesh(top, skid), 0, BV.ROOF + 0.005, 0.03);
+      add(new THREE.Mesh(top, roof), 0, BV.ROOF + 0.005, 0.03);
       for (const sx of [-1, 1]) { const P = (z, y) => [sx * (halfW(z) * (1 - 0.08 * y / C.h) + 0.06), BV.coachY + y, z]; T.add(quad([P(1.6, 0.16), P(-2.3, 0.16), P(-2.3, 0.38), P(1.6, 0.38)])); }
     }
     for (const [z, s] of [[-2.55, 0.68], [-1.85, 0.5], [-0.45, 0.42], [0.05, 0.42], [0.55, 0.42]]) {
@@ -1417,7 +1419,7 @@ class AC75View extends ClassView {
 // her boat page, the fleet). Here at the end, once every class's lines are laid down: the views read them only when a
 // boat is built, after this module has loaded
 const [BV_MODEL, LZ_MODEL, J70_MODEL, RS21_MODEL, AC75_MODEL] = await Promise.all([
-  CLS.id !== 'bavaria46' && !ON_FLEET ? null : loadModel('bavaria46.glb', BV.hull, [['deck', 1], ['teak', 1 / 0.8]]),
+  CLS.id !== 'bavaria46' && !ON_FLEET ? null : loadModel('bavaria46.glb', BV.hull, [['deck', 1], ['roof', 1], ['teak', 1 / 0.8]]),
   CLS.id !== 'laser' && !ON_FLEET ? null : loadModel('laser.glb', LZ.hull, [['deck', 1]]),
   CLS.id !== 'j70' && !ON_FLEET ? null : loadModel('j70.glb', sportOf(false).hull, [['deck', 1]]),
   CLS.id !== 'rs21' && !ON_FLEET ? null : loadModel('rs21.glb', sportOf(true).hull, [['deck', 1]]),
