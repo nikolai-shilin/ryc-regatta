@@ -62,7 +62,7 @@ export function YachtsView({ lang, start, back }: { lang: Lang; start: YachtId; 
   return (
     <div className="bt">
       <LoadBar label={t('Loading the yachts', 'Загружаем яхты')} on={!live} />
-      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src="/fleet-view?wind=medium" title={t('The yachts in 3D', 'Яхты в 3D')}
+      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src="/fleet-view?wind=light" title={t('The yachts in 3D', 'Яхты в 3D')}
         onLoad={() => post({ type: 'hello' })} />
 
       <div className="bt-info" ref={info}>
