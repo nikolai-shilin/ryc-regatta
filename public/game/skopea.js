@@ -189,9 +189,10 @@ const GROUND_U = {
   uTreeTop: { value: TOP }, uSnow: { value: LOOK.snow || 2900 }, uNear: { value: TE }, uWood: { value: WOOD }, uShare: { value: share },
   uLake: { value: new THREE.Color('#2f5566') },
   uCanopy: { value: 1 }, // the canopy's crowns drawn one by one (0 on the lowest graphics level: only their average)
+  uClear: { value: { scrub: 0, grass: 1, rock: 2 }[LOOK.clearing] ?? 0 }, // what the clearings are (venues.js look.clearing)
 };
 const GROUND_GLSL = /* glsl */ `
-uniform sampler2D uCover, uRoads; uniform vec3 uCol[11], uFields[6], uTowns[8], uNearXf, uShare, uLake; uniform float uNF, uTreeTop, uSnow, uNear, uWood, uCanopy;
+uniform sampler2D uCover, uRoads; uniform vec3 uCol[11], uFields[6], uTowns[8], uNearXf, uShare, uLake; uniform float uNF, uTreeTop, uSnow, uNear, uWood, uCanopy, uClear;
 varying vec3 vLN;
 float gLake; // 1 where groundColour() found a lake's still water
 float lhash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
@@ -292,15 +293,21 @@ vec3 groundColour() {
   else if (cls == 0) {
     // the woods in stands, as the trees are (pines(): woodAt), with grass or fields in the clearings
     float open = (1.0 - smoothstep(uWood - 0.04, uWood + 0.06, lfbm(p.xz * 1.7))) * smoothstep(0.9, 0.97, ny);
-    // (where the venue has no fields, the clearings are the low scrub that grows back — the maquis — not a lawn)
-    c = mix(c, uNF > 0.0 ? parcels(p.xz) : mix(uCol[9], uCol[3], 0.7), open * (y < 160.0 ? 0.9 : 0.5));
+    // where the venue has no fields, what its clearings are (uClear, venues.js look.clearing): the low scrub that grows
+    // back — the maquis, the garrigue, the fynbos — by default; grass in a city's parks and a northern meadow; bare
+    // rock, glacier-smoothed, with heath in its hollows, on a skerry coast
+    float hollow = smoothstep(0.45, 0.7, lnoise(p.xz / 18.0 + lnoise(p.xz / 70.0) * 2.0));
+    vec3 clearing = uClear > 1.5 ? mix(mix(uCol[5], uCol[4], 0.3 + 0.5 * n), mix(uCol[3], uCol[0], 0.3), hollow) : uClear > 0.5 ? uCol[9] * (0.9 + 0.15 * lnoise(p.xz / 30.0)) : mix(uCol[9], uCol[3], 0.7);
+    c = mix(c, uNF > 0.0 ? parcels(p.xz) : clearing, open * (y < 160.0 ? 0.9 : 0.5));
     // where the map has no town, the venue's towns tint the ground
     float t = 0.0;
     for (int i = 0; i < 8; i++) if (uTowns[i].z > 0.0) t = max(t, 1.0 - length(vec2((p.x - uTowns[i].x) / 1.1, p.z - uTowns[i].y)) / uTowns[i].z);
     t = clamp(t, 0.0, 1.0) * 0.7 * smoothstep(0.9, 0.97, ny);
     c = mix(c, uCol[6], t);
     float cleared = open * (y < 160.0 ? 0.9 : 0.5);
-    if (uNF > 0.0) wood = 1.0 - cleared; else if (cleared > 0.45) { wood = 0.75; cell = 3.5; } else wood = 1.0;
+    // (the scrub as bushes, 3.5 m apart; on the rock, a little heath in its hollows; grass and fields: nothing)
+    if (uNF > 0.0 || uClear > 0.5) wood = 1.0 - cleared; else if (cleared > 0.45) { wood = 0.75; cell = 3.5; } else wood = 1.0;
+    if (uNF <= 0.0 && uClear > 1.5 && cleared > 0.45) { wood = 0.6 * hollow; cell = 3.5; }
     wood *= 1.0 - t * 1.4;
   }
   float scrubby = max(steep * 0.55, high * 0.5) * (0.6 + 0.4 * n) * wild;

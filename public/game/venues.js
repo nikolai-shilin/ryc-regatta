@@ -17,6 +17,9 @@
 //   fields: farmland colours, for the low, gentle land outside the woods (none: woods and scrub all over)
 //   trees: [kind, share, dark colour, light colour]; kinds: pine, stone (umbrella pine), broad, conifer, cypress,
 //     palm, eucalypt, olive, shrub
+//   clearing: what is between the woods where the venue has no fields: 'scrub' (the maquis, garrigue or fynbos;
+//     when not given), 'grass' (a city's parks, a northern meadow) or 'rock' (bare, glacier-smoothed, heath in its
+//     hollows)
 //   treeTop: how high the trees go, metres; woods: how much of the land is wooded (0 to 1); snow: the snow line on
 //     the mountains beyond, metres (2900 when not given)
 //   walls, roofs: the houses; flat: the share of flat roofs; towers: the walls of the tall ones (20 m and up, or
@@ -195,7 +198,7 @@ export const VENUES = [
     look: {
       haze: 1.15,
       ground: { forest: ['#2c4224', '#3b5530', '#566d3a'], scrub: '#7a7f56', rock: ['#a8988c', '#857870'], town: '#9c8a80', shore: '#a8988a' },
-      trees: [['conifer', 0.55, '#22381f', '#36502c'], ['broad', 0.3, '#33502a', '#5a7838'], ['shrub', 0.15, '#4a5a34', '#6f7a48']], treeTop: 200, woods: 0.35,
+      trees: [['conifer', 0.55, '#22381f', '#36502c'], ['broad', 0.3, '#33502a', '#5a7838'], ['shrub', 0.15, '#4a5a34', '#6f7a48']], treeTop: 200, woods: 0.35, clearing: 'rock',
       walls: ['#8b2d23', '#a03a2c', '#f4f2ec', '#e8e2d0', '#d8c79a', '#7a2a22'], roofs: ['#3f3a38', '#5a3a33', '#8a3b2e', '#4a4d50'], flat: 0.05,
       boats: { sail: 0.85, motor: 0.15, big: 0 },
       water: { deep: '#0a2a36', scatter: '#24706c', k: 0.6, shallow: '#4f8a7c', clear: 0.3 },
@@ -273,7 +276,7 @@ export const VENUES = [
     look: {
       haze: 0.8,
       ground: { forest: ['#2e4626', '#3f5a2e', '#5a733a'], scrub: '#7c7e54', rock: ['#b0a690', '#8f8674'], town: '#b2a692', shore: '#bfb39a' },
-      trees: [['stone', 0.35, '#2e4626', '#4f6834'], ['broad', 0.4, '#33482a', '#5a7838'], ['cypress', 0.25, '#25391f', '#3a5230']], treeTop: 250, woods: 0.35,
+      trees: [['stone', 0.35, '#2e4626', '#4f6834'], ['broad', 0.4, '#33482a', '#5a7838'], ['cypress', 0.25, '#25391f', '#3a5230']], treeTop: 250, woods: 0.35, clearing: 'grass',
       walls: ['#efe6d2', '#e8dcc4', '#f4f1ea', '#d9c8a8', '#e6d0b8', '#c9c4ba'], roofs: ['#b4603e', '#a5543a', '#9c4f37', '#7e7f80'], flat: 0.45,
       towers: ['#e6dfd0', '#d8d0bf', '#ece6da', '#d2cbbd', '#dfd4c0', '#c8ccce'], // blocks of flats, pale concrete and cream
       boats: { sail: 0.55, motor: 0.35, big: 0.1, bigKind: 'super' },
@@ -290,7 +293,7 @@ export const VENUES = [
     look: {
       haze: 0.8,
       ground: { forest: ['#2b4126', '#3a5530', '#4f6c3a'], scrub: '#6c7d4c', rock: ['#a0968d', '#857c74'], town: '#9a948b', shore: '#9d948b', grass: '#5f7d45' },
-      trees: [['broad', 0.85, '#2b4126', '#557338'], ['conifer', 0.15, '#22371f', '#344f2b']], treeTop: 120, woods: 0.3,
+      trees: [['broad', 0.85, '#2b4126', '#557338'], ['conifer', 0.15, '#22371f', '#344f2b']], treeTop: 120, woods: 0.3, clearing: 'grass',
       // the city's stucco: ochre, pale pink, cream, the Winter Palace's green, grey and white; its roofs painted iron,
       // most of them, whatever their shape; and its palaces 20 to 30 m high, stucco like the rest (a tower from 45 m:
       // the few modern ones)
