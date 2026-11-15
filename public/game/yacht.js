@@ -1262,7 +1262,7 @@ export class BoatView {
   // its own draw — in the view, the sea's reflection and the sun's shadow. Merged per material (and per detail level,
   // so setDetail still hides the small ones far off), a boat costs a dozen draws instead.
   bake() {
-    const moving = new Set([this.travCar, this.wheel, ...this.rudders.map((r) => r.kick), this.sprit, this.mainPivot, this.jibPivot, this.kite, this.windex,
+    const moving = new Set([this.travCar, this.wheel, ...(this.rudders || []).map((r) => r.kick), this.sprit, this.mainPivot, this.jibPivot, this.kite, this.windex,
       this.mainsheet, this.jibSheet, this.lazySheet, this.kiteSheet, ...this.crew.map((c) => c.g)]);
     const sets = new Map();
     for (const o of this.tilt.children) {
@@ -1390,7 +1390,7 @@ export class BoatView {
     }
     // the twin rudders: heeled, the windward one is kicked up aft, clear of the water (it would only drag); upright,
     // both are down
-    for (const r of this.rudders) {
+    for (const r of this.rudders || []) { // (the classes in boats3d.js borrow this view's methods and have none)
       const want = r.sx === side ? clamp((b.heel - 9) / 6, 0, 1) : 0;
       r.lift = first ? want : r.lift + (want - r.lift) * (1 - Math.exp(-dt * 1.5));
       r.kick.rotation.x = -1.5 * r.lift;
