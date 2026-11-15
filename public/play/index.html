@@ -28,6 +28,10 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sofia+Sans+Condensed:wght@500;600;700;800&amp;family=Sofia+Sans:wght@500;600;700&amp;display=swap">
 <link rel="stylesheet" href="/ui/tokens.css">
 <link rel="stylesheet" href="/ui/game.css">
+<!-- Carlito bold, the face the game paints the sail and bow numbers in (yacht.js, boats3d.js), asked for here: the
+     page's text would only ask once it shows, and once the game is building its scene a font comes in slowly. Here,
+     as a script after the stylesheets, it waits for them: they declare the face, and they hold up the first paint. -->
+<script>try { document.fonts.load('700 32px Carlito', '0123456789').catch(function () {}); } catch (e) {}</script>
 <!-- the land round the course (game/land.js): fetched at once, not after the modules that ask for it. Its venue as
      game/venues.js pageVenue() chooses it: ?venue=, else a free race's choice, else today's (dailyVenue, copied here
      with the venues in the same order; npm test runs this script against the game's) -->

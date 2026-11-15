@@ -12,7 +12,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 | `/race` | The race hub: today's race, today's fastest and a free race, in the pause-menu card over today's venue in the game's own scene (`components/game-scene.tsx`) | `app/[lang]/race/page.tsx` |
 | `/race/free` | Set up a free race (venue, wind, fleet, course shape — up and down, triangle, trapezoid or up and down with an upwind finish — length, laps, start, current), in the pause-menu card over the game's own scene at the chosen venue (`/boat-view?venue=&wind=`), which fades to each new place | `components/free-setup.tsx` |
 | `/race/result/[id]` | The result and debrief after a race, in the pause-menu card over the finish as it was: the game's own scene at the race's venue (`/boat-view?finish=1`), the line, the marks and every boat where she was as you crossed it | `components/result-view.tsx`, `lib/finish.ts` |
-| `/boat` | Your boat: colours, logo, sail number and team, in the race's pause-menu card over the game's own scene: your yacht on Lake Garda on a summer evening (`/boat-view`) | `components/boat-editor.tsx` |
+| `/boat` | Your boat: colours (a gennaker in up to three), bottom paint, deck (non-skid, teak or the hull's colour), her name on the quarters, logo, sail number and team, in the race's pause-menu card over the game's own scene: your yacht on Lake Garda on a summer evening (`/boat-view`) | `components/boat-editor.tsx` |
 | `/settings` | Account, sailing, screen and sound, language | `components/settings-form.tsx` |
 | `/admin` | For the site's admins: the ad on every boat's jib, uploaded or removed (not linked from anywhere, not indexed) | `components/admin-form.tsx` |
 | `/help` | How to play, with screenshots | `app/[lang]/help/page.tsx` |
@@ -79,6 +79,10 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   `npm test` says so if it doesn't. On Vercel the build (`prebuild`, `scripts/stamp-game.mjs`) adds each module's
   content hash to its address through the import map, `/game/sim.js?v=…`, which `next.config.ts` caches for good; the
   pages in the repo stay unstamped, and the rest of `/game/` revalidates on every visit.
+- **The first race is built once:** `main.js` takes the race (`?race=today` or `free`) from the address before it builds
+  the first one, so the race under the preloader is the one sailed, and the start keeps it rather than building it
+  again (about half a second on a phone). The exception is a race dressed before Carlito bold came in (the sail and
+  bow numbers' face, which `/play` asks for from an inline script after its stylesheets): the start dresses it again.
 - **Languages:** English and Russian.
   - The address's `?lang=ru` decides (the address search engines index each language by, `lib/seo.ts`), else the `lang`
     cookie (set by `?lang=` and by `/lang?to=ru&back=/somewhere`), else the browser's Accept-Language.

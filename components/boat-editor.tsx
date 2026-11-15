@@ -5,7 +5,7 @@ import { tx, type Lang } from '@/lib/lang';
 import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart, IconFlag } from './ui';
 import { FLAGS, findFlag, flagSrc, type Flag } from '@/lib/flags';
 import { SceneBrand } from './scene-brand';
-import { BOAT_EVENT, DEFAULT_BOAT, DEFAULT_LOGO, PRESETS, SWATCHES, readBoat, saveBoat, shrinkLogo, type Boat, type Logo } from '@/lib/boat';
+import { BOAT_EVENT, DEFAULT_BOAT, DEFAULT_LOGO, NAME_MAX, PRESETS, SWATCHES, cleanName, readBoat, saveBoat, shrinkLogo, type Boat, type Deck, type Logo } from '@/lib/boat';
 import { syncAccount } from './bests-sync';
 
 // The boat page, laid out like the race's pause screen: the game's own scene behind it all (your yacht on Lake Garda,
@@ -95,10 +95,10 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   };
 
   // one setting: a small caps label, then the swatches; a part of a bigger group gets a quieter label
-  const swatches = (k: 'hull' | 'cloth' | 'ink' | 'kite' | 'crew' | 'pants', label: string, sub = false) => (
+  const swatches = (k: 'hull' | 'cloth' | 'ink' | 'kite' | 'kite2' | 'kite3' | 'bottom' | 'crew' | 'pants', label: string, sub = false) => (
     <div className={sub ? 'bt-part' : 'bt-g'}>
       {sub ? <span className="bt-sub" id={`l-${k}`}>{label}</span> : null}
-      <Swatches label={`l-${k}`} value={b[k]} options={SWATCHES[k]} onChange={(v) => { set({ [k]: v }); if (k === 'kite') setDown(true); else if (k !== 'crew' && k !== 'pants') setDown(false); }} t={t} />
+      <Swatches label={`l-${k}`} value={b[k] || ''} options={SWATCHES[k]} onChange={(v) => { set({ [k]: v }); if (k.startsWith('kite')) setDown(true); else if (k !== 'crew' && k !== 'pants') setDown(false); }} t={t} />
     </div>
   );
   const kicker = (id: string, ico: ReactNode, label: string) => <span className="bt-k" id={id}>{ico}{label}</span>;
@@ -108,6 +108,13 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
       {opts.map(([v, l]) => <button key={String(v)} type="button" role="radio" aria-checked={value === v} className="bt-pill" onClick={() => pick(v)}>{l}</button>)}
     </div>
   );
+  // the gennaker in one, two or three colours: a new band takes a colour of the palette the others don't have
+  const bands = b.kite3 ? 3 : b.kite2 ? 2 : 1;
+  const free = (...used: (string | undefined)[]) => ['#b0202b', '#f2c230', '#1f6fb2', ...SWATCHES.kite].find((c) => !used.some((u) => u?.toLowerCase() === c.toLowerCase())) || '#b0202b'; // red, yellow or blue first
+  const setBands = (n: number) => {
+    const k2 = n > 1 ? b.kite2 || (b.kite.toLowerCase() === '#f4f3ef' ? '#1c1f24' : '#f4f3ef') : undefined;
+    set({ kite2: k2, kite3: n > 2 ? b.kite3 || free(b.kite, k2) : undefined }); setDown(true);
+  };
   const preset = PRESETS.find((p) => p.id === b.preset);
   const flag = findFlag(b.flag);
   // a flag on the main: the boat then carries that country's letters too (shown when there's no logo)
@@ -135,7 +142,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
       <section className="bt-card bt-boat" ref={card} aria-labelledby="b-card">
         <div className="bt-card-h">
           <span className="lbl-ink" id="b-card">{t('Colours, logo and sail number', 'Цвета, логотип и номер')}</span>
-          <button type="button" className="bt-mini" onClick={() => { setB({ ...DEFAULT_BOAT, logoImg: b.logoImg }); setDown(false); }}>
+          <button type="button" className="bt-mini" onClick={() => { setB({ ...DEFAULT_BOAT, logoImg: b.logoImg, name: b.name }); setDown(false); }}>
             <IconRestart s={14} /><span>{t('Back to the RYC colours', 'Вернуть цвета RYC')}</span>
           </button>
         </div>
@@ -167,6 +174,11 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
           <div className="bt-g">
             {kicker('l-hull', <IconHull />, t('Hull', 'Корпус'))}
             <Swatches label="l-hull" value={b.hull} options={SWATCHES.hull} onChange={(v) => { set({ hull: v }); setDown(false); }} t={t} />
+            {swatches('bottom', t('Bottom paint', 'Днище'), true)}
+            <div className="bt-part">
+              <span className="bt-sub" id="l-deck">{t('Deck', 'Палуба')}</span>
+              {tags('l-deck', b.deck, [['nonskid', t('Non-skid', 'Нескользящая')], ['teak', t('Teak', 'Тик')], ['hull', t('Hull colour', 'В цвет корпуса')]] as [Deck, string][], (v) => { set({ deck: v }); setDown(false); })}
+            </div>
           </div>
 
           <div className="bt-g">
@@ -177,7 +189,14 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
 
           <div className="bt-g">
             {kicker('l-kite', <IconKite />, t('Gennaker', 'Геннакер'))}
-            <Swatches label="l-kite" value={b.kite} options={SWATCHES.kite} onChange={(v) => { set({ kite: v }); setDown(true); }} t={t} />
+            {tags('l-kite', String(bands), [['1', t('One colour', 'Один цвет')], ['2', t('Two', 'Два')], ['3', t('Three', 'Три')]] as [string, string][], (v) => setBands(Number(v)))}
+            {bands === 1
+              ? <Swatches label="l-kite" value={b.kite} options={SWATCHES.kite} onChange={(v) => { set({ kite: v }); setDown(true); }} t={t} />
+              : <>
+                {swatches('kite', t('First', 'Первый'), true)}
+                {swatches('kite2', t('Second', 'Второй'), true)}
+                {bands === 3 && swatches('kite3', t('Third', 'Третий'), true)}
+              </>}
           </div>
 
           <div className="bt-g">
@@ -214,6 +233,12 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
           </div>
         </div>
         {swatches('ink', t('Sail number colour', 'Цвет номера'), true)}
+
+        <div className="bt-g">
+          <label className="bt-k" htmlFor="b-name"><IconHull />{t('Name on the hull', 'Имя на корпусе')}</label>
+          <input id="b-name" className="num-in boat-name" value={b.name || ''} maxLength={NAME_MAX} placeholder={t('No name', 'Без имени')} autoComplete="off" spellCheck={false}
+            onChange={(e) => { set({ name: cleanName(e.target.value) || undefined }); setDown(false); }} onBlur={() => { const n = b.name?.trim(); if (n !== b.name) set({ name: n || undefined }); }} />
+        </div>
 
         {err && <p className="bt-err" role="alert">{err}</p>}
         <p className="bt-saved">{t('Saved on this device, and in your account when you’re signed in. You race in her from the next start.', 'Сохранено на этом устройстве, а если ты вошёл — и в аккаунте. В гонке — со следующего старта.')}</p>
@@ -307,7 +332,7 @@ function Swatches({ label, value, options, onChange, t }: { label: string; value
 const NAMES: Record<string, [string, string]> = {
   '#ffffff': ['White', 'Белый'], '#1d1d1d': ['Black', 'Чёрный'], '#f4f2ea': ['Sailcloth white', 'Белая парусина'], '#ebe3cd': ['Cream', 'Кремовый'],
   '#dfe4e8': ['Mylar', 'Майлар'], '#868c93': ['Grey laminate', 'Серый ламинат'], '#3a3d42': ['Charcoal', 'Графит'], '#2a2c30': ['Carbon', 'Карбон'],
-  '#262a31': ['Dark grey', 'Тёмно-серый'],
+  '#262a31': ['Dark grey', 'Тёмно-серый'], '#5b1f24': ['Antifouling red', 'Тёмно-красный'],
 };
 function colourName(c: string, t: (en: string, ru: string) => string) {
   const k = c.toLowerCase(), p = PRESETS.find((x) => x.boat.hull.toLowerCase() === k), n = NAMES[k];

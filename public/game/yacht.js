@@ -41,10 +41,10 @@ function section(t, s) {
 // hull paint: gloss gelcoat with a boot-top, antifouling below it and a cove stripe under the sheer, drawn crisp in the shader.
 // The topsides are lacquered: a clear coat over the colour, so a hull (a dark one most of all) shows its shape by what
 // it mirrors — a band of sky along the topsides, the sea below it, the sun's highlight. The antifouling is matt.
-export function hullMaterial(hull, stripe) {
+export function hullMaterial(hull, stripe, bottom = '#5b1f24') { // bottom: the antifouling, the player's choice (dark red on the others)
   const m = new THREE.MeshPhysicalMaterial({ color: hull, roughness: 0.32, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.1, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
-    sh.uniforms.uStripe = { value: new THREE.Color(stripe) }; sh.uniforms.uBottom = { value: new THREE.Color('#5b1f24') };
+    sh.uniforms.uStripe = { value: new THREE.Color(stripe) }; sh.uniforms.uBottom = { value: new THREE.Color(bottom) };
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float band; varying float vBand; varying float vY;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBand = band; vY = position.y;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uStripe, uBottom; varying float vBand; varying float vY;')
@@ -192,11 +192,26 @@ const DECK_AO = (() => {
   t.repeat.set(1 / AO_W, 1 / AO_L); t.offset.set(0.5, 0.5); // the deck's UVs are its plan in metres (x, −z)
   return t;
 })();
-function deckMaterial() {
-  const m = new THREE.MeshStandardMaterial({ map: NONSKID, roughness: 0.85, aoMap: DECK_AO, aoMapIntensity: 1 });
+function deckMaterial(map = NONSKID, color = '#ffffff', roughness = 0.85) {
+  const m = new THREE.MeshStandardMaterial({ map, color, roughness, aoMap: DECK_AO, aoMapIntensity: 1 });
   // the baked shade also dims the sunlit deck a little, not only the sky's light
   m.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n  diffuseColor.rgb *= mix(1.0, texture2D(aoMap, vAoMapUv).r, 0.45);'); };
   return m;
+}
+// the deck the player chose (look.deck): base, the class's own moulded non-skid, for 'nonskid' (and for every other
+// boat); teak planks laid fore and aft; or the non-skid in the hull's colour. shaded: with the club boat's baked shade
+// (her deck's UVs fit it), else plain. One material a finish and colour, kept for every boat that asks for it again.
+const TEAK_DECK = TEAK.clone(); TEAK_DECK.repeat.set(1 / 0.8, 1 / 0.8); TEAK_DECK.needsUpdate = true; // the deck's UVs are metres: a plank 10 cm wide
+const DECKS = new Map();
+export function deckFinish(look, base, shaded = false) {
+  const d = look && look.deck;
+  if (d !== 'teak' && d !== 'hull') return base;
+  const k = `${d}:${d === 'hull' ? look.hull : ''}:${shaded}`;
+  if (!DECKS.has(k)) {
+    const [map, color, rough] = d === 'teak' ? [TEAK_DECK, '#ffffff', 0.7] : [NONSKID, look.hull, 0.8];
+    DECKS.set(k, shaded ? deckMaterial(map, color, rough) : new THREE.MeshStandardMaterial({ map, color, roughness: rough }));
+  }
+  return DECKS.get(k);
 }
 // carbon spars under a clear lacquer, so a mast reads as round: a long sheen down it and the sky in it
 const carbon = () => new THREE.MeshPhysicalMaterial({ color: '#2d3238', roughness: 0.42, metalness: 0.25, clearcoat: 1, clearcoatRoughness: 0.12, envMapIntensity: 1 });
@@ -350,6 +365,17 @@ export function bowNumberMaterial(look) {
   const dark = new THREE.Color(look.hull).getHSL({}).l < 0.45;
   x.fillStyle = dark ? '#f4f4f0' : '#15181c'; x.font = '900 110px Carlito, Lato, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
   x.fillText(text, 256, 68, 500);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  return new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.4, roughness: 0.3, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
+}
+
+// her name on both quarters, in italics as a yacht's name is lettered, white on a dark hull and black on a light one:
+// its material, for a decal 8 times as wide as it's high
+export function nameMaterial(look) {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 128;
+  const x = c.getContext('2d'), dark = new THREE.Color(look.hull).getHSL({}).l < 0.45;
+  x.fillStyle = dark ? '#f4f4f0' : '#15181c'; x.font = 'italic 800 92px Carlito, Lato, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(look.name, 512, 66, 1000);
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
   return new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.4, roughness: 0.3, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
 }
@@ -634,7 +660,7 @@ export const LOOKS = {
 };
 
 // the player's own boat, as the boat page (/boat) saves it in localStorage 'regatta-boat': the colours of the hull, the
-// sails, the gennaker and the crew, the sail number, the logo and the flag. lookFrom turns it into a look; anything missing or
+// sails, the gennaker (up to three) and the crew, the bottom paint, the deck, her name, the sail number, the logo and the flag. lookFrom turns it into a look; anything missing or
 // malformed keeps the default boat's (all black).
 export const BOAT_KEY = 'regatta-boat';
 const DEFAULT_LOGO = '/images/ryc-rentals-bot.png';
@@ -645,8 +671,12 @@ export function lookFrom(b) {
   if (!b || typeof b !== 'object') return L;
   for (const k of ['hull', 'cloth', 'ink', 'crew', 'pants']) if (isHex(b[k])) L[k] = b[k];
   L.stripe = L.hull; // no stripe of its own: the sheer stripe and the boot-top are the hull's colour
-  const kite = Array.isArray(b.kite) ? b.kite[0] : b.kite; // the player's gennaker is one colour (older saves kept three panels: the top one)
+  const kite = Array.isArray(b.kite) ? b.kite[0] : b.kite; // the gennaker's first colour (older saves kept three panels: the top one)
   if (isHex(kite)) L.kite = [kite];
+  L.kite = [L.kite[0], ...[b.kite2, b.kite3].filter(isHex)]; // then its second and third, in bands
+  if (isHex(b.bottom)) L.bottom = b.bottom;
+  if (b.deck === 'teak' || b.deck === 'hull') L.deck = b.deck;
+  if (typeof b.name === 'string') { const n = b.name.replace(/[^\p{L}\p{N} .'’&-]/gu, '').trim().slice(0, 16); if (n) L.name = n; } // as lib/boat.ts cleanName
   if (typeof b.laminate === 'boolean') L.laminate = b.laminate;
   L.tape = darker(L.cloth, L.laminate ? 0.28 : 0.12); L.batten = darker(L.cloth, L.laminate ? 0.3 : 0.14); // the luff tape and battens: a shade darker than the cloth
   if (typeof b.num === 'string' && b.num.trim()) L.num = b.num.trim().slice(0, 3);
@@ -958,11 +988,11 @@ export class BoatView {
     // hull, deck, cockpit, coachroof: the Blender model, or built here from the lines
     const cr = { position: new THREE.Vector3(0, deckY(-0.3) - 0.02, 0) }; // the coachroof's base (its top is 0.46 above)
     if (MODEL) {
-      const mats = { hull: hullMaterial(look.hull, look.stripe), deck: M.deck, gel: M.gel, teak: M.teak, glass: M.glass };
+      const mats = { hull: hullMaterial(look.hull, look.stripe, look.bottom), deck: deckFinish(look, M.deck, true), gel: M.gel, teak: M.teak, glass: M.glass };
       for (const [k, g] of Object.entries(MODEL)) if (mats[k]) add(new THREE.Mesh(g, mats[k]));
     } else {
-      add(new THREE.Mesh(hullGeometry(), hullMaterial(look.hull, look.stripe)));
-      add(new THREE.Mesh(deckGeometry(), M.deck));
+      add(new THREE.Mesh(hullGeometry(), hullMaterial(look.hull, look.stripe, look.bottom)));
+      add(new THREE.Mesh(deckGeometry(), deckFinish(look, M.deck, true)));
       add(new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.5, 3.25), M.well), 0, deckY(3.1) - 0.25, 3.12);
       for (const sx of [-1, 1]) {
         add(new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.06, 2.3), M.teak), sx * 0.72, deckY(3) - 0.3, 2.65); // benches
@@ -1067,6 +1097,7 @@ export class BoatView {
     }
     // the sail number on both bows, forward of the logo, and the instrument displays either side of the companionway
     { const mat = bowNumberMaterial(look); for (const sx of [-1, 1]) T.add(hullDecal(sx, BOW_Z + 1.1, 0.74, 0.8, 0.22, mat)); }
+    if (look.name) { const mat = nameMaterial(look); for (const sx of [-1, 1]) T.add(hullDecal(sx, STERN_Z - 1.65, 0.7, 2.24, 0.28, mat)); } // her name on the quarters
     for (const sx of [-1, 1]) fit(add, display(0.22, 0.16, sx < 0 ? 1 : 2), sx * 0.6, cr.position.y + 0.25, 1.53);
     // bowsprit for the gennaker
     this.sprit = add(cyl(0.035, 0.045, 1.5, M.carbon, 8), 0, SPRIT.y, BOW_Z - 0.65);

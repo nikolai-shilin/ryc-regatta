@@ -12,6 +12,9 @@ import { classById } from './classes.js';
 import { createMusic, direct, MUSIC_STYLES } from './music.js';
 
 const $ = (s) => document.querySelector(s);
+// Carlito bold, the face the sail and bow numbers are painted in (yacht.js, boats3d.js); play/index.html asks for it
+// before the game's code is in. Whether it's here when the boats are dressed decides if the start dresses them again.
+const carlitoIn = () => !document.fonts || document.fonts.check('700 32px Carlito', '0123456789');
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null;
 // The game is a site of its own (this repo, the Vercel project ryc-regatta, at upandown.rycrentals.com); the app,
 // its rule articles, its fonts and the race scores (api/game.mjs in the iyt-test repo) stay on iyt.rycrentals.com, which lets this site
@@ -1089,7 +1092,14 @@ function newRace() {
   world.resetView();
   hints = {}; lastClockInt = null; coachSeen = {}; skipper.reset(); asides.reset(); committee.reset(); score.reset();
 }
+// the race to sail is the address's (the hub and the set-up page are Next.js pages): taken before the first race is
+// built, so the one dressed and compiled under the preloader is the one you sail, and the start doesn't build it again
+opts.mode = new URLSearchParams(location.search).get('race') === 'free' ? 'free' : 'daily';
+let firstStart = true;
 newRace();
+// dressed before Carlito came in (a first visit on a slow line), the boats are dressed again at the start, as every
+// start did before; with it here, the race built now is the one you sail
+const dressed = carlitoIn();
 
 // ---------- controls ----------
 const input = { rudderHeld: false, rudder: 0, keys: {}, lastSheet: 0 };
@@ -1269,8 +1279,9 @@ function startRace() {
   const day = dailyRace();
   // a new day: a new daily race, and at another venue its land needs the page loaded again
   if (race.settings.daily && race.settings.daily !== day.day && day.venue !== VENUE.id && !new URLSearchParams(location.search).get('venue')) { location.href = '/play?race=today'; return; }
-  if (running || menuChanged || race.over || (race.settings.daily && race.settings.daily !== day.day)) newRace();
-  menuChanged = false;
+  if (running || menuChanged || race.over || (race.settings.daily && race.settings.daily !== day.day) || (firstStart && !dressed)) newRace();
+  else if (firstStart) world.resetView(); // the race built at load: the drone has circled her under the preloader
+  menuChanged = false; firstStart = false;
   opts.played = (opts.played || 0) + 1; saveOpts();
   race.coach = opts.played <= 3; // the first three races: tips as you go
   menu.hidden = true; hud.hidden = false;
@@ -1397,9 +1408,7 @@ $('#backLink').href = HUB;
 
 // ---------- the race to sail: from the address (the hub and the set-up page are Next.js pages) ----------
 {
-  const want = new URLSearchParams(location.search).get('race');
-  opts.mode = want === 'free' ? 'free' : 'daily';
-  paintOpts(); // the menu as this race has it (the note on today's race, its place and wind)
+  paintOpts(); // the menu as this race has it (the note on today's race, its place and wind; opts.mode is the address's, above)
   // the loading screen names the race now it's known: the venue in its title, the wind, the course and the fleet under it
   const s = settings(), tr = (en, ru) => (LANG === 'ru' ? ru : en), boats = s.fleet - 1;
   window.rycLoader?.race?.(VENUE.name[LANG === 'ru' ? 1 : 0], [
@@ -1407,7 +1416,7 @@ $('#backLink').href = HUB;
     [tr('Course', 'Дистанция'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
     [tr('Fleet', 'Флот'), s.fleet, '', tr(`You and ${boats} boats`, `Ты и ${boats} ${boats === 1 ? 'лодка' : boats < 5 ? 'лодки' : 'лодок'}`)],
   ], tr(`${s.start}-minute start sequence`, `стартовая процедура ${s.start} мин`)); // what's coming up, in the ticker
-  menu.hidden = true; menuChanged = true;
+  menu.hidden = true;
   // the preloader in play/index.html has counted the files in; the scene is built, so it fills its bar and fades into the race
   // …once the shaders are compiled too (world.prepare), so the first frame of the race doesn't stall
   world.ready().then(() => {

@@ -1,17 +1,22 @@
 import { findFlag } from './flags.ts'; // with its extension, so npm test's Node finds it too
 
-// The player's boat: its colours, sail number, logo and flag. The boat page (/boat) saves it in localStorage 'regatta-boat',
+// The player's boat: its colours (the gennaker's up to three), the bottom paint and the deck, her name, sail number, logo and flag. The boat page (/boat) saves it in localStorage 'regatta-boat',
 // where the game reads it for your yacht at the start of every race (public/game/yacht.js, lookFrom / playerLook).
 // A signed-in player's boat also lives in the account (user_metadata.boat, components/bests-sync.tsx), so it follows
 // them to another device or address: localStorage is kept per address, and a new one starts with the default boat.
 
 export type Logo = 'ryc' | 'custom' | 'none';
+export type Deck = 'nonskid' | 'teak' | 'hull';
 export type Boat = {
   preset?: string;
   hull: string;                          // the topsides, the stripe under the sheer and the boot-top all in one colour
   cloth: string; laminate: boolean;      // the mainsail and jib: their colour, and laminate (fibres, a sheen) or Dacron
   ink: string;                           // the sail number (and its letters, without a logo)
-  kite: string;                          // the gennaker: one colour
+  kite: string;                          // the gennaker: its first colour
+  kite2?: string; kite3?: string;        // and its second and third, for a gennaker in bands of two or three (none: one colour)
+  bottom: string;                        // the antifouling under the waterline
+  deck: Deck;                            // moulded non-skid (the class's own), teak planks, or non-skid in the hull's colour
+  name?: string;                         // her name on both quarters, in letters that show up against the hull; none for no name
   crew: string; pants: string;           // the team: jackets and trousers
   logo: Logo; logoImg?: string;          // the logo on the main and the bows; logoImg: your own picture as a data: URL
                                          // ('custom' without one shows DEFAULT_LOGO)
@@ -24,7 +29,7 @@ export const BOAT_KEY = 'regatta-boat';
 // the picture 'Yours' shows until you upload one: the RYC Rentals Bot badge (public/game/yacht.js has the same path)
 export const DEFAULT_LOGO = '/images/ryc-rentals-bot.png';
 
-export type Preset = { id: string; en: string; ru: string; boat: Omit<Boat, 'logo' | 'logoImg' | 'nat' | 'num' | 'preset' | 'flag'> };
+export type Preset = { id: string; en: string; ru: string; boat: Omit<Boat, 'logo' | 'logoImg' | 'nat' | 'num' | 'preset' | 'flag' | 'bottom' | 'deck' | 'name'> };
 
 // one-colour schemes: the hull, the gennaker and the team jackets in one colour, on white sails, with a sail number
 // that shows up against it. Picking one keeps your number and logo.
@@ -35,7 +40,8 @@ const light = (hex: string) => {
 function mono(id: string, en: string, ru: string, c: string, dark = false): Preset {
   const mark = light(c) ? '#1d1d1d' : '#ffffff';
   const cloth = dark ? '#2a2c30' : '#f4f2ea';
-  return { id, en, ru, boat: { hull: c, cloth, laminate: dark, ink: dark || light(c) ? mark : c, kite: c, crew: c, pants: dark ? c : '#262a31' } };
+  // a one-colour gennaker: kite2 and kite3 there, unset, so picking a preset clears them
+  return { id, en, ru, boat: { hull: c, cloth, laminate: dark, ink: dark || light(c) ? mark : c, kite: c, kite2: undefined, kite3: undefined, crew: c, pants: dark ? c : '#262a31' } };
 }
 export const PRESETS: Preset[] = [
   mono('white', 'White', 'Белая', '#f4f3ef'),
@@ -53,10 +59,14 @@ export const PRESETS: Preset[] = [
 ];
 
 // the boat you start with, and what Reset brings back: all black (the Black preset), with the club's red RYC badge
-// on the main and the bows and the sail number in white
+// on the main and the bows and the sail number in white, dark red antifouling and the moulded non-skid deck
+export const BOTTOM = '#5b1f24';
 export const DEFAULT_BOAT: Boat = {
-  preset: 'black', ...PRESETS.find((p) => p.id === 'black')!.boat, logo: 'ryc', nat: 'RYC', num: '1',
+  preset: 'black', ...PRESETS.find((p) => p.id === 'black')!.boat, bottom: BOTTOM, deck: 'nonskid', logo: 'ryc', nat: 'RYC', num: '1',
 };
+// a boat's name: letters of any alphabet, digits, spaces and a little punctuation, up to 16
+export const NAME_MAX = 16;
+export const cleanName = (v: string) => v.replace(/[^\p{L}\p{N} .'’&-]/gu, '').replace(/\s+/g, ' ').slice(0, NAME_MAX);
 
 // the colours to choose from: the presets' own, so every colour a preset (or the club's boat) sets, its team's jackets
 // and trousers among them, is one of the swatches and can be picked again
@@ -68,7 +78,9 @@ export const SWATCHES = {
   hull: PALETTE,
   cloth: uniq([...PRESETS.map((p) => p.boat.cloth), '#ebe3cd', '#dfe4e8', '#868c93', '#3a3d42']),
   ink: MARKS,
-  kite: PALETTE,
+  kite: PALETTE, kite2: PALETTE, kite3: PALETTE,
+  // the antifouling: the usual dark red, black, navy, blue, silver and white
+  bottom: uniq([BOTTOM, '#1c1f24', '#16325c', '#1f6fb2', '#b9bec4', '#f4f3ef']),
   crew: PALETTE,
   pants: uniq([...PRESETS.map((p) => p.boat.pants), '#16325c', '#f4f3ef', '#b9bec4']),
 };
@@ -83,6 +95,12 @@ export function cleanBoat(b: unknown): Boat | null {
   for (const k of ['hull', 'cloth', 'ink', 'crew', 'pants'] as const) if (isHex(r[k])) out[k] = r[k];
   const kite = Array.isArray(r.kite) ? r.kite[0] : r.kite; // saved before the gennaker went one colour: its top panel
   if (isHex(kite)) out.kite = kite;
+  const more = [r.kite2, r.kite3].filter(isHex); // a third colour without a second moves up
+  out.kite2 = more[0]; out.kite3 = more[1];
+  if (isHex(r.bottom)) out.bottom = r.bottom;
+  if (r.deck === 'nonskid' || r.deck === 'teak' || r.deck === 'hull') out.deck = r.deck;
+  const name = typeof r.name === 'string' ? cleanName(r.name).trim() : '';
+  if (name) out.name = name;
   if (typeof r.laminate === 'boolean') out.laminate = r.laminate;
   if (r.logo === 'ryc' || r.logo === 'none' || r.logo === 'custom') out.logo = r.logo;
   if (typeof r.logoImg === 'string' && r.logoImg.startsWith('data:image/')) out.logoImg = r.logoImg;
@@ -99,7 +117,7 @@ export function readBoat(): Boat {
 }
 
 // what she looks like, without when she was saved or which preset she came from
-const LOOK = ['hull', 'cloth', 'laminate', 'ink', 'kite', 'crew', 'pants', 'logo', 'nat', 'num', 'flag'] as const;
+const LOOK = ['hull', 'cloth', 'laminate', 'ink', 'kite', 'kite2', 'kite3', 'bottom', 'deck', 'name', 'crew', 'pants', 'logo', 'nat', 'num', 'flag'] as const;
 const sameLook = (a: Boat, b: Boat) => LOOK.every((k) => a[k] === b[k]);
 
 // The account's boat and this device's, made one: the one changed last wins. A boat the player changed carries the

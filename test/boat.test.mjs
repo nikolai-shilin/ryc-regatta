@@ -57,3 +57,24 @@ test('a broken boat in the account is cleaned', () => {
   assert.equal(b.nat, 'ABC');
   assert.equal(b.at, undefined);
 });
+
+test('the gennaker’s colours, the bottom paint, the deck and the name are kept, and cleaned', () => {
+  const b = cleanBoat({ kite: '#1c1f24', kite2: '#f2c230', kite3: '#b0202b', bottom: '#16325c', deck: 'teak', name: '  Bora <b>Bora</b>  ' });
+  assert.equal(b.kite2, '#f2c230');
+  assert.equal(b.kite3, '#b0202b');
+  assert.equal(b.bottom, '#16325c');
+  assert.equal(b.deck, 'teak');
+  assert.equal(b.name, 'Bora bBorab');
+  const d = cleanBoat({ kite3: '#b0202b', bottom: 'blue', deck: 'gold', name: '   ' });
+  assert.equal(d.kite2, '#b0202b'); // a third colour without a second moves up
+  assert.equal(d.kite3, undefined);
+  assert.equal(d.bottom, DEFAULT_BOAT.bottom);
+  assert.equal(d.deck, 'nonskid');
+  assert.equal(d.name, undefined);
+  assert.equal(cleanBoat({ name: 'Ласточка-2 of the North Sea' }).name, 'Ласточка-2 of th');
+});
+
+test('a new name or deck is a change the account takes', () => {
+  assert.equal(mergeBoat({ ...DEFAULT_BOAT, name: 'Bora' }, undefined, 5).remote.name, 'Bora');
+  assert.equal(mergeBoat({ ...DEFAULT_BOAT, deck: 'teak' }, undefined, 5).remote.deck, 'teak');
+});

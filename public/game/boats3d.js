@@ -8,7 +8,7 @@
 // Local frame as yacht.js: +x starboard, +y up, −z forward (the bow), the waterline at y = 0.
 import * as THREE from 'three';
 import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, sailor, labelSprite, THIGH, SHIN, LOOKS,
-  fit, bar, winch, block, clutches, wheel, chainplate, display, purchase, mergeGroup, bowNumberMaterial, mastGeo, spreaderGeo } from './yacht.js';
+  fit, bar, winch, block, clutches, wheel, chainplate, display, purchase, mergeGroup, bowNumberMaterial, nameMaterial, deckFinish, mastGeo, spreaderGeo } from './yacht.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CLS } from './classes.js';
 import { D2R, clamp, lerp, waveHeight } from './sim.js';
@@ -170,6 +170,13 @@ function bowNumber(hull, look, z0, y0, W, H) {
   return [-1, 1].map((sd) => hull.decal(sd, z0, y0, W, H, mat));
 }
 
+// her name on both quarters (yacht.js nameMaterial), W × W/8, centred z0 and y0
+function nameDecal(hull, look, z0, y0, W) {
+  if (!look.name) return [];
+  const mat = nameMaterial(look);
+  return [-1, 1].map((sd) => hull.decal(sd, z0, y0, W, W / 8, mat));
+}
+
 function logoDecal(hull, side, logo, z0, y0, W, H) {
   const c = document.createElement('canvas'); c.width = 512; c.height = 256;
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
@@ -259,6 +266,7 @@ function bulbGeo(len, r, seg = 14) {
 const camGeo = () => mergeGeometries([new THREE.BoxGeometry(0.06, 0.012, 0.09), new THREE.BoxGeometry(0.014, 0.03, 0.06).translate(-0.018, 0.02, 0), new THREE.BoxGeometry(0.014, 0.03, 0.06).translate(0.018, 0.02, 0)]);
 // the deck's moulded non-skid (in metres, as the club boat's, without her baked shade) and its smooth gelcoat
 const SKID = new THREE.MeshStandardMaterial({ map: NONSKID, roughness: 0.85 });
+const AC_DECK = new THREE.MeshStandardMaterial({ color: '#2b2f35', roughness: 0.55, metalness: 0.15 }); // the AC75's: flat and dark
 const GEL2 = new THREE.MeshStandardMaterial({ color: '#f1f0eb', roughness: 0.28, envMapIntensity: 0.8, side: THREE.DoubleSide });
 // carbon spars under clear lacquer, the 2×2 twill of the cloth faintly showing through
 const WEAVE = canvasTex(64, 64, (x, w, h) => {
@@ -419,16 +427,17 @@ class SportView extends ClassView {
     const RS = this.RS = cls.id === 'rs21', J = this.J = sportOf(RS);
     const add = this.start(), T = this.tilt, H = J.hull;
     this.flyY = 0;
-    add(new THREE.Mesh(H.geometry(), hullMaterial(look.hull, look.stripe)));
+    add(new THREE.Mesh(H.geometry(), hullMaterial(look.hull, look.stripe, look.bottom)));
     // the deck, the open cockpit cut out of it from the cuddy (on the RS21, from just aft of the mast) to the open
     // transom, and its floor and sides
     const cz0 = RS ? -0.5 : -0.35, cx = RS ? 0.8 : 0.74, floorY = RS ? 0.26 : 0.3;
     // the cockpit: a moulded well, its walls sloping in to a non-skid floor and open to the transom, notched out of
     // the deck; the deck non-skid inside a smooth gelcoat border along the sheer
     const ck = H.tub(-cx, cz0, cx, H.STERN, 0.2, floorY, { slope: 0.09, crown: 0.03, openAft: true });
-    add(new THREE.Mesh(H.deck([], 0.03, ck.outline), SKID));
+    const skid = deckFinish(look, SKID); // the player's deck: the non-skid, teak or the hull's colour
+    add(new THREE.Mesh(H.deck([], 0.03, ck.outline), skid));
     const walls = add(new THREE.Mesh(ck.walls, GEL2)); walls.userData.detail = false;
-    add(new THREE.Mesh(ck.floor, SKID));
+    add(new THREE.Mesh(ck.floor, skid));
     T.add(H.border(0.08, GEL2, 0.03));
     // the cuddy: a low, rounded coachroof forward of the cockpit, with a small hatch, and the mast through it
     const cud = new THREE.Shape(), a = 0.62, f = 0.4, za = -0.35, zf = -2.0, r = 0.18;
@@ -540,6 +549,7 @@ class SportView extends ClassView {
     this.makeTells(player);
     if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, H.BOW + 1.3, 0.5, 0.8, 0.3));
     T.add(...bowNumber(H, look, H.BOW + 0.62, 0.48, 0.62, 0.17));
+    { const z = H.STERN - 0.85; T.add(...nameDecal(H, look, z, H.deckY(z) - 0.15, 1.0)); }
     // the jib sheets, the working one taut and the lazy one slack; the kite's sheet and its tack line to the sprit
     this.jibSheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0]]); this.lazySheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]);
     this.kiteSheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0]]); T.add(this.jibSheet, this.lazySheet, this.kiteSheet);
@@ -652,7 +662,7 @@ class AC75View extends ClassView {
       add(new THREE.Mesh(tb.floor, MAT.rubber));
       T.add(tube(tb.outline.map(([x, z]) => [x, H.deckY(z) + 0.1, z]), 0.03, MAT.rubber, true));
     }
-    add(new THREE.Mesh(H.deck(pods, 0.08), new THREE.MeshStandardMaterial({ color: '#2b2f35', roughness: 0.55, metalness: 0.15 })));
+    add(new THREE.Mesh(H.deck(pods, 0.08), deckFinish(look, AC_DECK)));
     // the cyclors' bikes in the two forward pods each side: a saddle on its post, the crank housing and the bars
     this.bikes = [];
     for (const sx of [-1, 1]) for (const z of [0.1, 2.3]) {
@@ -747,6 +757,7 @@ class AC75View extends ClassView {
     this.makeTells(player);
     if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, H.BOW + 4.6, 0.75, 2.6, 0.95));
     T.add(...bowNumber(H, look, H.BOW + 2.3, 0.95, 2.0, 0.5));
+    { const z = H.STERN - 3.6; T.add(...nameDecal(H, look, z, H.deckY(z) - 0.45, 4.2)); }
     this.windex = windex(add, A.MASTHEAD + 0.05, A.MAST_Z);
     // the broadcast's camera pods: one on a short post on the aft deck looking forward, one high on the mast
     add(cyl(0.04, 0.05, 0.5, M.dark, 8), 0, H.deckY(10.2) + 0.25, 10.2);
