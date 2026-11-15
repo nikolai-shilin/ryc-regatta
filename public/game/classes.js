@@ -143,7 +143,7 @@ export const classById = (id) => CLASSES[id] || CLASSES[DEFAULT_CLASS];
 // same, and npm test keeps the two in step.
 // Not the AC75 yet: she sails a course in about half the 40-footer's time, under the floor the scores server (api/game.mjs
 // in the iyt-test repo) keeps for a course whatever the yacht, so her best times would never rank (npm test checks it).
-export const DAILY_YACHTS = { club40: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16' };
+export const DAILY_YACHTS = { club40: '2026-11-16', bavaria46: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16', laser: '2026-11-16' };
 const dayN = (s) => Math.floor(Date.parse(s) / 864e5);
 export const YACHT_ROUNDS = [...new Set(Object.values(DAILY_YACHTS).map(dayN))].sort((a, b) => a - b)
   .map((n0) => ({ n0, ids: Object.keys(DAILY_YACHTS).filter((id) => dayN(DAILY_YACHTS[id]) <= n0) }));
