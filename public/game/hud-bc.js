@@ -8,7 +8,7 @@
 //   on the water  the mark you're sailing to, labelled
 // It takes the game's own controls and readouts (the same elements, so main.js drives them as before) and moves them
 // into these blocks.
-import { D2R, KN, NO_GO, clamp, wrap, idealSail, sheetFor, beatAngle, polarSpeed, legTargets, legAim, isBeat } from './sim.js';
+import { D2R, KN, NO_GO, clamp, wrap, idealSail, sheetFor, beatAngle, polarSpeed, legTargets, legAim, isBeat, LEVELS } from './sim.js';
 import { VENUE } from './venues.js';
 
 // "place" counted in Russian: 1 место, 2–4 места, 5 and on мест (11–14 мест too)
@@ -30,6 +30,7 @@ export const HUD_STRINGS = {
     advantage: 'Advantage',
     camName: { drone: 'Drone camera', top: 'Top camera', helm: 'Helm camera' },
     space: 'Space', boardFoot: (n) => `The boats round you · ${n} in all`,
+    level: { beginner: 'Beginner', club: 'Club', racer: 'Racer', expert: 'Expert' },
     toLeg: { lineStart: 'To the start line', mark: 'To the windward mark', mark1: 'To mark 1', wing: 'To the wing mark', mark2: 'To mark 2', offset: 'To the offset mark', gate: 'To the leeward gate', finish: 'To the finish' },
     go: 'Go', leads: 'Leads', afterGun: 'after the gun', ord: (n) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`,
     umpire: 'Umpire · penalty', oneTurn: 'one turn', ruleN: (r) => `Rule ${r}`, against: (n) => `Against ${n}`, againstYou: 'Against you', pen: 'Pen',
@@ -54,6 +55,7 @@ export const HUD_STRINGS = {
     advantage: 'Выигрыш',
     camName: { drone: 'Камера с дрона', top: 'Камера сверху', helm: 'Камера у штурвала' },
     space: 'Пробел', boardFoot: (n) => `Лодки рядом с тобой · всего ${n}`,
+    level: { beginner: 'Новичок', club: 'Клуб', racer: 'Гонщик', expert: 'Эксперт' },
     toLeg: { lineStart: 'К линии старта', mark: 'К верхнему знаку', mark1: 'К знаку 1', wing: 'К боковому знаку', mark2: 'К знаку 2', offset: 'К знаку смещения', gate: 'К нижним воротам', finish: 'К финишу' },
     go: 'Старт!', leads: 'Лидирует', afterGun: 'после сигнала', ord: (n) => `${n}-й`,
     umpire: 'Судья · штраф', oneTurn: 'один оборот', ruleN: (r) => `Правило ${r}`, against: (n) => `Против ${n}`, againstYou: 'Против тебя', pen: 'Штраф',
@@ -397,6 +399,13 @@ const CSS = `
 .b-ump .b-umpr { font: 500 var(--fs-body)/1.3 var(--sans); color: var(--ink-2); }
 .b-timer { height: 3px; background: var(--w-10); }
 .b-timer > i { display: block; height: 100%; background: var(--w-62); }
+/* a computer skipper's level on her row of the board: four pips, lit to her level, and the word (on a phone the pips) */
+.b-lv { flex: none; display: inline-flex; align-items: center; gap: 2px; height: 18px; margin-right: var(--s-2); padding: 0 var(--s-2); border: 1px solid var(--rule); color: var(--ink-3); font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
+.b-lv[hidden] { display: none; }
+.b-lv > i { width: 3px; height: 8px; background: var(--w-14); }
+.b-lv.l1 > i:nth-child(-n+1), .b-lv.l2 > i:nth-child(-n+2), .b-lv.l3 > i:nth-child(-n+3), .b-lv.l4 > i { background: var(--ink-2); }
+.b-lv > span { margin-left: var(--s-1); }
+.b-lv.l4 { color: var(--ink-2); }
 /* a boat with a penalty to do: PEN, on her row of the board and on her tag */
 .b-pen { flex: none; display: inline-flex; align-items: center; align-self: center; height: 18px; padding: 0 var(--s-2); margin-right: var(--s-2); background: var(--live); color: var(--ink); font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
 .b-btag .b-pen { align-self: stretch; height: auto; margin: 0; padding: 0 var(--s-3); }
@@ -434,6 +443,7 @@ const CSS = `
   .b-msplit .b-row .b-pos { width: 22px; }
   .b-msplit .b-row .b-gp { min-width: 0; }
   .b-pen { height: 14px; padding: 0 var(--s-1); margin-right: var(--s-1); }
+  .b-lv { height: 14px; gap: 1px; padding: 0; border: 0; margin: 0 var(--s-1); } .b-lv > span { display: none; } .b-lv > i { width: 2px; height: 7px; }
   #hud.bc .b-bug, #hud.bc .b-state, #hud.bc .b-board .b-bh, #hud.bc .b-board .b-bf, #hud.bc .b-map .b-mh, #hud.bc .b-gunc, #hud.bc .b-bias, #hud.bc .b-legs, #hud.bc .b-wind .b-wt > .lbl:first-child, #hud.bc .b-dir { display: none !important; }
   #hud.bc .b-tr, #hud.bc .b-low { display: contents !important; }
   .b-wind { position: absolute; left: calc(16px + var(--sl)); top: calc(12px + var(--st)); height: 36px; gap: var(--s-2); padding: 0 var(--s-3) 0 var(--s-2); margin: 0; pointer-events: none; animation: bc-slide-l var(--t-in) var(--ease) both ${AT(0)}; }
@@ -657,9 +667,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   };
   // six rows on the board (three on a phone), made once and refilled
   const rows = Array.from({ length: 6 }, () => {
-    const r = html(`<div class="b-row"><b class="b-pos"></b><i class="b-bar"></i><img class="b-fl" alt="" hidden><span class="b-nm"></span><b class="b-pen" hidden>${L.pen}</b><span class="b-mv"></span><span class="b-gp"></span><span class="b-x"></span></div>`);
+    const r = html(`<div class="b-row"><b class="b-pos"></b><i class="b-bar"></i><img class="b-fl" alt="" hidden><span class="b-nm"></span><span class="b-lv" hidden><i></i><i></i><i></i><i></i><span></span></span><b class="b-pen" hidden>${L.pen}</b><span class="b-mv"></span><span class="b-gp"></span><span class="b-x"></span></div>`);
     B.rows.append(r);
-    return { el: r, pos: q(r, '.b-pos'), bar: q(r, '.b-bar'), fl: q(r, '.b-fl'), nm: q(r, '.b-nm'), pen: q(r, '.b-pen'), mv: q(r, '.b-mv'), gp: q(r, '.b-gp'), x: q(r, '.b-x') };
+    return { el: r, pos: q(r, '.b-pos'), bar: q(r, '.b-bar'), fl: q(r, '.b-fl'), nm: q(r, '.b-nm'), lv: q(r, '.b-lv'), pen: q(r, '.b-pen'), mv: q(r, '.b-mv'), gp: q(r, '.b-gp'), x: q(r, '.b-x') };
   });
   // the camera button cycles the three views, and says which for a moment
   let sayT = 0;
@@ -795,6 +805,12 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   const flagOf = (b, me) => (me ? (myFlag === undefined ? (myFlag = lookFlag(b, true)) : myFlag) : lookFlag(b, false));
   // your sail number (from the boat page), read once a race too; "You" when there's none
   const sailNo = () => (mySail === undefined ? (mySail = sailOf() || t('you')) : mySail);
+  // a computer skipper's level (sim.js LEVELS): four pips, as many lit as she is good, and the word
+  const showLevel = (el, lv) => {
+    if (el._lv === lv) return; el._lv = lv; el.hidden = !lv; if (!lv) return;
+    const n = LEVELS.findIndex(([k]) => k === lv) + 1;
+    el.className = `b-lv l${n}`; el.title = L.level[lv]; txt(el.lastChild, L.level[lv]);
+  };
   const showPen = (el, b) => { const on = !!b.pen && !b.done; if (el.hidden === on) el.hidden = !on; }; // PEN while she has a penalty to do
   const setFlag = (img, src) => { if (img._s === src) return; img._s = src; img.hidden = !src; if (src) img.src = src; else img.removeAttribute('src'); };
   // the entrance's last part, as a race comes on: the tags, and the board's rows one by one
@@ -963,7 +979,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       cls(r.el, `b-row${me ? ' me' : ''}${i === 1 && !pre ? ' first' : ''}${cx.includes(b) ? '' : ' cxh'}`);
       txt(r.pos, b.dsq ? '–' : String(i));
       r.bar.style.setProperty('--c', hex(b.color));
-      txt(r.nm, me ? t('you') : b.name); setFlag(r.fl, flagOf(b, me)); showPen(r.pen, b);
+      txt(r.nm, me ? t('you') : b.name); setFlag(r.fl, flagOf(b, me)); showPen(r.pen, b); showLevel(r.lv, me ? null : b.level);
       const mv = moved.get(b), mvOn = mv && race.clock < mv[1];
       txt(r.mv, mvOn ? (mv[0] === 'u' ? '▲' : '▼') : ''); cls(r.mv, `b-mv${mvOn ? ' ' + mv[0] : ''}`);
       if (mvOn && r.el._mv !== mv) { r.el._mv = mv; flash(r.el, mv[0] === 'u' ? 'gain' : 'lose', 1600); }
