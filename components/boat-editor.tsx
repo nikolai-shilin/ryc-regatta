@@ -62,7 +62,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
     return () => { ro.disconnect(); removeEventListener('resize', inset); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // the preview says when it's up: then it gets the boat as it is now, and draws the presets' pictures (once a visit:
-  // they're kept for the session, until the presets or the pictures' version, v3, change)
+  // they're kept for the session, until the presets or the pictures' version, v4, change)
   useEffect(() => {
     let cached: Record<string, string> | null = null, asked = false;
     try { const c = JSON.parse(sessionStorage.getItem(SHOTS_KEY) || 'null'); if (c?.v === SHOTS_V) { cached = c.shots; setShots(c.shots); } } catch {}
@@ -315,7 +315,7 @@ function FlagPicker({ value, onChange, t }: { value?: string; onChange: (code: s
   );
 }
 
-const SHOTS_KEY = 'regatta-boat-shots', SHOTS_V = 'v3:' + PRESETS.map((p) => p.id + JSON.stringify(p.boat)).join('|');
+const SHOTS_KEY = 'regatta-boat-shots', SHOTS_V = 'v4:' + PRESETS.map((p) => p.id + JSON.stringify(p.boat)).join('|');
 
 // a row of colour swatches, named for the screen reader and on hover by the preset that colour comes from
 function Swatches({ label, value, options, onChange, t }: { label: string; value: string; options: string[]; onChange: (v: string) => void; t: (en: string, ru: string) => string }) {

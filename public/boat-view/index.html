@@ -12,8 +12,8 @@
      It says ({ type: 'live' }) once its first frame is up, so a page can fade it in over the last one.
      The page sends the look to show, postMessage({ type: 'look', boat }), the point of sail ({ type: 'pose', down }),
      and the part of the frame its choices cover ({ type: 'inset', l, r, t, b }: fractions of the width and height), so
-     the boat stands in the part left clear. ({ type: 'thumbs', items }) draws the presets' pictures, on the old studio
-     backdrop, and sends them back.
+     the boat stands in the part left clear. ({ type: 'thumbs', items }) takes the presets' pictures, each afloat in
+     this same scene, and sends them back.
      With ?finish=1 it is the result page's scene instead: the finish of a race as it was the moment you crossed the
      line, and nothing shows until the page sends it ({ type: 'finish', race, boats }: the race's settings, its course and
      where it lay, and each boat where she was, her heading and how she sailed). The marks, the line and the committee
@@ -70,7 +70,6 @@ import { World } from '/game/world.js';
 import { Race, beatAngle, legAim, SHAPES } from '/game/sim.js';
 import { placeCourse } from '/game/land.js';
 import { lookFrom } from '/game/yacht.js';
-import { makeBoatView } from '/game/boats3d.js';
 import { CLS } from '/game/classes.js';
 import { HOURS, skyAt, dayHour } from '/game/light.js';
 import { OVERLAY } from '/game/post.js';
@@ -473,15 +472,45 @@ if (world) {
   addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data) return;
     if (e.data.type === 'hello') say({ type: 'ready' }); // the page came up after this did
-    if (e.data.type === 'look') pending = lookFrom(e.data.boat); // dressed on the next frame, so dragging a colour stays smooth
+    if (e.data.type === 'look') pending = curLook = lookFrom(e.data.boat); // dressed on the next frame, so dragging a colour stays smooth
     if (e.data.type === 'pose') pose = e.data.down ? DOWN : UP;
     if (e.data.type === 'inset') { inset = e.data; size(); }
     if (e.data.type === 'finish' && FINISH && !fleet && e.data.race && Array.isArray(e.data.boats)) finish(e.data);
     if (e.data.type === 'replay' && FINISH) replay(e.data);
     if (e.data.type === 'setup' && SETUP && e.data.race) setupMsg(e.data);
     if (e.data.type === 'wind' && !FINISH && !SETUP && e.data.preset !== wind) { const o = world.orbit, d = world.dist; sail(e.data.preset); world.orbit = o; world.dist = d; }
-    if (e.data.type === 'thumbs' && Array.isArray(e.data.items)) shoot(e.data.items);
+    if (e.data.type === 'thumbs' && Array.isArray(e.data.items) && !FINISH && !SETUP) thumbs = e.data.items; // taken on the next frame
   });
+
+  // the presets' pictures, taken here, in this scene: each scheme on her afloat where you see her, the gennaker up, in
+  // the same evening light over the same sea and hills, the drone off her windward bow, square. All in one go between two
+  // frames: the picture is drawn smaller, copied off, and your boat, the drone and the size are put back before the
+  // frame you see is drawn, so nothing flickers.
+  let thumbs = null, curLook = null;
+  const THUMB = { orbit: -2.3, dist: 24.5, el: 5, aim: 7.6 }; // off her windward bow: the hull, the main and the gennaker beyond
+  const shoot = (items, t) => {
+    const r = world.renderer, cv = r.domElement, S = 400, pr = r.getPixelRatio();
+    const keep = { orbit: world.orbit, dist: world.dist, droneEl: world.droneEl, droneAim: world.droneAim, camH: world.camH, _camLast: world._camLast, intro: world.intro };
+    const at = world.camera.position.clone();
+    world.intro = null;
+    world.camera.clearViewOffset();
+    world.resize(S / pr, S / pr);
+    const c = document.createElement('canvas'); c.width = c.height = S;
+    const g = c.getContext('2d'), out = {};
+    for (const { id, boat } of items) {
+      world.setPlayerLook(lookFrom(boat));
+      Object.assign(P, DOWN, { x: X, z: Z, h: wrap(W - DOWN.twa), boom: Math.sign(DOWN.twa), wdir: W, tws: race.wind.p.tws });
+      race.t = t;
+      Object.assign(world, { orbit: THUMB.orbit, dist: THUMB.dist * SIZE, droneEl: THUMB.el, droneAim: THUMB.aim * SIZE, _camLast: null }); // the drone straight there
+      world.frame(0, t);
+      g.drawImage(cv, 0, 0, cv.width, cv.height, 0, 0, S, S);
+      out[id] = c.toDataURL('image/webp', 0.86);
+    }
+    world.setPlayerLook(curLook);
+    Object.assign(world, keep); world.camera.position.copy(at);
+    size();
+    say({ type: 'thumbs', shots: out });
+  };
 
   // the loop starts once the race is laid and its land is in (for the finish, once the page has sent it)
   let last = performance.now(), t = 0, started = false;
@@ -514,6 +543,7 @@ if (world) {
       Object.assign(P, pose, { heel: pose.heel * heel, x: X, z: Z, h: wrap(W - pose.twa), boom: Math.sign(pose.twa), wdir: W, tws: race.wind.p.tws });
       race.t = t;
       if (idle > 0) idle -= dt; else world.orbit += dt * 0.05;
+      if (thumbs && !world.preparing) { const it = thumbs; thumbs = null; shoot(it, t); Object.assign(P, pose, { heel: pose.heel * heel, h: wrap(W - pose.twa), boom: Math.sign(pose.twa) }); }
     }
     world.frame(dt, t);
     if (!canvas.classList.contains('live')) { canvas.classList.add('live'); say({ type: 'live' }); }
@@ -521,38 +551,6 @@ if (world) {
 }
 say({ type: 'ready' });
 
-// the presets' pictures: each scheme on the game's yacht with her gennaker up, seen from the windward bow quarter, cut
-// at the waterline on a clear background, in a little studio of their own (another canvas, let go of once done)
-function shoot(items, w = 300, h = 300) {
-  const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const r = new THREE.WebGLRenderer({ canvas: c, antialias: true, alpha: true, preserveDrawingBuffer: true });
-  r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05; r.setClearColor(0x000000, 0);
-  r.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, 1, 0), 0.02)];
-  const scene = new THREE.Scene(), SUN = new THREE.Vector3(-0.45, 0.8, -0.4).normalize();
-  scene.add(new THREE.HemisphereLight('#e4f0ff', '#2c4a5c', 0.95));
-  const sun = new THREE.DirectionalLight('#fff1dc', 3); sun.position.copy(SUN).multiplyScalar(40); scene.add(sun, sun.target);
-  const env = new THREE.Scene();
-  env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.ShaderMaterial({
-    side: THREE.BackSide,
-    vertexShader: 'varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'varying vec3 vP; void main(){ float h = normalize(vP).y; vec3 c = h > 0.0 ? mix(vec3(0.86,0.93,0.97), vec3(0.42,0.66,0.88), pow(h, 0.6)) : vec3(0.1,0.3,0.42); gl_FragColor = vec4(c, 1.0); }',
-  })));
-  const pm = new THREE.PMREMGenerator(r); scene.environment = pm.fromScene(env, 0.02).texture; pm.dispose();
-  const cam = new THREE.PerspectiveCamera(30, w / h, 0.3, 500); cam.position.set(31, 11.5, -18); cam.lookAt(-0.5, 8.6, -1);
-  const DOWN_SHOT = { x: 0, z: 0, h: 0, twa: 2.55, awa: 2.1, heel: 5, rudder: 0, sail: 68, luff: 0, trim: 'ok', kite: true, kiteFill: 1 };
-  const out = {};
-  for (const { id, boat: b } of items) {
-    const v = makeBoatView({ look: lookFrom(b) });
-    scene.add(v.root);
-    for (let i = 0; i < 40; i++) v.update(DOWN_SHOT, i * 0.1, [], false, { cam: cam.position, sun: SUN }); // let the crew settle on the rail
-    r.render(scene, cam);
-    out[id] = c.toDataURL('image/webp', 0.9);
-    scene.remove(v.root);
-    v.root.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
-  }
-  scene.environment.dispose(); r.dispose(); r.forceContextLoss();
-  say({ type: 'thumbs', shots: out });
-}
 </script>
 </body>
 </html>
