@@ -270,7 +270,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
     <div className="scr bt-scr rs-scr bc" lang={lang} data-acct={signedName ? 'signed' : 'guest'}>
       <div className="bt">
         <GameScene venue={where.id} boat={res.yacht} wind={res.preset} finish={scene} title={t('The finish in 3D, as it was', 'Финиш в 3D, как он был')} loading={t('Loading the finish', 'Загружаем финиш')} />
-        {!shared && <Soundtrack />}
+        {!shared && <Soundtrack lang={lang} />}
 
         <div className="bt-info">
           <div className="bt-top">

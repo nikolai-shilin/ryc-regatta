@@ -1,12 +1,13 @@
 'use client';
 import { useEffect } from 'react';
 import { readOpts, OPTS_EVENT } from '@/lib/opts';
+import type { Lang } from '@/lib/lang';
 
-// The site's soundtrack, "Hold the Line, Chase the Wind", on the home page and under the result of your own race: it
-// fades in, loops, and follows Settings as the race's music does (public/game/main.js, score.style): Sound or Music off
+// The site's soundtrack, "Hold the Line, Chase the Wind" (sung in Russian on the Russian pages), on the home page and
+// under the result of your own race: it fades in, loops, and follows Settings as the race's music does (public/game/main.js, score.style): Sound or Music off
 // is silence, Music volume its level, and a change in the settings is heard at once. A browser that won't play before
 // a tap starts it on the first one. It runs through a gain node, as iOS ignores an audio element's own volume.
-const SRC = '/game/music-finish.m4a';
+const SRC: Record<Lang, string> = { en: '/game/music-finish.m4a', ru: '/game/music-finish-ru.m4a' };
 const VOL = { loud: 1.6, normal: 1, quiet: 0.4 } as const; // MUSIC_VOL in main.js
 const FADE = 2.5; // s
 
@@ -15,11 +16,11 @@ const level = () => {
   return !o.sound || o.music === 'off' ? 0 : 0.5 * (VOL[o.musicVol] ?? 1);
 };
 
-export function Soundtrack() {
+export function Soundtrack({ lang }: { lang: Lang }) {
   useEffect(() => {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return;
-    const el = new Audio(SRC);
+    const el = new Audio(SRC[lang] ?? SRC.en);
     el.loop = true; el.preload = 'auto';
     let ctx: AudioContext | null = null, gain: GainNode | null = null, on = false;
 
@@ -64,6 +65,6 @@ export function Soundtrack() {
       el.pause(); el.removeAttribute('src'); el.load();
       ctx?.close().catch(() => {});
     };
-  }, []);
+  }, [lang]);
   return null;
 }
