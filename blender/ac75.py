@@ -1,7 +1,8 @@
 # Regatta: the AC75's moulded hull (game/boats3d.js AC75View), modelled here and exported to game/ac75.glb: the hull,
 # a scow aft with a hard chine high on its topsides and a long fine bow, its deck edge turned round a radius; the bustle
 # down the centreline of the bottom faired into it in one surface; the flat deck with the eight crew pods cut into it,
-# four a side, their walls and floors. The foil arms and their bearings, the rudder, the mast and sails, the pods' rims,
+# four a side, their walls and floors; a pocket let into each side where the foil arm comes out round its bearing; the
+# transom's edge turned round a radius. The foil arms and their bearings, the rudder, the mast and sails, the pods' rims,
 # bikes and wheels, the fittings and the crew stay in boats3d.js (they move, or are made per boat).
 #
 # The hull follows boats3d.js's lines for her (A: hullOf with her half-breadth, sheer, depth, sections and chine), so
@@ -69,7 +70,7 @@ def edge_arc(t):
     return s_r, arc, x_r - r
 
 def build_hull(bm, M):
-    N, KH, KD = 120, 28, 10
+    N, KH, KD = 160, 34, 12
     ss = lambda j: j / KH if j / KH <= SPLIT else SPLIT + (1 - SPLIT) * ((j / KH - SPLIT) / (1 - SPLIT)) ** 1.15
     rings = []
     for i in range(N + 1):
@@ -91,6 +92,7 @@ def build_hull(bm, M):
         for j in range(R):
             bm.faces.new((a[j], a[(j + 1) % R], b[(j + 1) % R], b[j])).material_index = M['hull'] if j < nh - 1 else M['deck']
     for r in (rings[0], rings[-1]): bm.faces.new(r).material_index = M['hull']
+    return rings[0]
 
 # the bustle, on boats3d.js's curve: its keel line a quadratic from the hull's bottom 6 m aft of amidships, down to
 # 0.75 m under it, up again 6 m forward; a rounded fin 0.48 m wide, narrowing to its ends, rising into the hull
@@ -144,7 +146,11 @@ def new_object(nm):
     return ob
 
 hull = new_object('ac75')
-bm = bmesh.new(); build_hull(bm, IDX); build_bustle(bm, IDX)
+bm = bmesh.new(); transom = build_hull(bm, IDX); build_bustle(bm, IDX)
+# the transom's edge turned round a 4 cm radius rather than left a knife edge
+tv = set(transom)
+bmesh.ops.bevel(bm, geom=list({e for v in transom for e in v.link_edges if all(w in tv for w in e.verts)}), offset=0.04, offset_type='OFFSET',
+                segments=3, profile=0.5, affect='EDGES', clamp_overlap=True)
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(hull.data); bm.free()
 
 # the eight pods (boats3d.js), cut 0.9 m down from the deck at their middles: their walls and rubber floors
@@ -156,6 +162,22 @@ for sx in (-1, 1):
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(cut.data); bm.free()
 mod = hull.modifiers.new('pods', 'BOOLEAN'); mod.operation = 'DIFFERENCE'; mod.object = cut; mod.solver = 'EXACT'
 mod.use_self = True   # the hull and the bustle are two shells: merge them as it cuts
+try: mod.material_mode = 'TRANSFER'
+except Exception as e: print('material_mode:', e)
+bpy.context.view_layer.objects.active = hull; bpy.ops.object.modifier_apply(modifier=mod.name)
+bpy.data.objects.remove(cut)
+
+# a pocket let into each side where the foil arm comes out of the hull, round its bearing (boats3d.js A.ARM: the
+# pivot 2.35 m out, 0.85 up, 0.6 forward of amidships): an oval 1.4 m long and 1 m tall, 10 cm deep, lined dark
+cut = new_object('pockets'); bm = bmesh.new()
+for sx in (-1, 1):
+    tp = t_at(-0.6); xs = round_pt(tp, math.asin(clamp((sheer(tp) - 0.85) / (sheer(tp) + depth(tp)), 0, 1) ** (n_of(tp) / 2)) * 2 / math.pi)[0]
+    ring = [(0.85 + 0.5 * math.sin(2 * math.pi * k / 20), -0.6 + 0.7 * math.cos(2 * math.pi * k / 20)) for k in range(20)]
+    a = [bm.verts.new(G(sx * (xs - 0.1), y, z)) for y, z in ring]; b = [bm.verts.new(G(sx * (xs + 0.6), y, z)) for y, z in ring]
+    for k in range(20): bm.faces.new((a[k], a[(k + 1) % 20], b[(k + 1) % 20], b[k])).material_index = IDX['pod']
+    bm.faces.new(list(reversed(a))).material_index = IDX['pod']; bm.faces.new(b).material_index = IDX['pod']
+bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(cut.data); bm.free()
+mod = hull.modifiers.new('pockets', 'BOOLEAN'); mod.operation = 'DIFFERENCE'; mod.object = cut; mod.solver = 'EXACT'
 try: mod.material_mode = 'TRANSFER'
 except Exception as e: print('material_mode:', e)
 bpy.context.view_layer.objects.active = hull; bpy.ops.object.modifier_apply(modifier=mod.name)
