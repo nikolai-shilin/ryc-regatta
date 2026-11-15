@@ -52,12 +52,36 @@ THREE.ShaderChunk.fog_fragment = `#ifdef USE_FOG
 const hazeLength = (L) => L.fogFar * 2.4 * (VENUE.look.haze ?? 1);
 const hazeHeight = (L) => 700 + (140 - 700) * (L.mist || 0);
 
+// The boats' own waves, drawn into a square of sea round your boat each frame (WakeField): the Kelvin wake's arms,
+// the wash's trough, the bow wave, the trough along her middle and her quarter wave, as heights the water mesh is
+// raised by and slopes it is shaded with, and where the wash has smoothed the ripples. What the water, the wake's
+// ribbons, the hull's contact patch and the foam include, to sit on that water and not under it.
+const WAKE_RES = 256, WAKE_SIZE = 128; // texels across; metres across (0.5 m a texel)
+const WAKE_GLSL = /* glsl */ `
+uniform sampler2D uWakeTex; uniform vec4 uWakeXf; // its centre (x, z), 1 / its size in metres, on (1) or off (0)
+vec2 wakeUV(vec2 xz) { return (xz - uWakeXf.xy) * uWakeXf.z + 0.5; }
+float wakeK(vec2 uv) { vec2 e = abs(uv - 0.5) * 2.0; return uWakeXf.w * (1.0 - smoothstep(0.75, 0.98, max(e.x, e.y))); } // faded out at its edge
+float wakeH(vec2 xz) { if (uWakeXf.w < 0.5) return 0.0; vec2 uv = wakeUV(xz); return texture2D(uWakeTex, uv).r * wakeK(uv); }
+// x: the height, y: how smooth the wash has left the water, zw: the slopes (dh/dx, dh/dz)
+vec4 wakeAt(vec2 xz) {
+  if (uWakeXf.w < 0.5) return vec4(0.0);
+  vec2 uv = wakeUV(xz); float k = wakeK(uv);
+  if (k <= 0.0) return vec4(0.0);
+  float e = 1.0 / ${WAKE_RES}.0;
+  vec4 c = texture2D(uWakeTex, uv);
+  float hx = texture2D(uWakeTex, uv + vec2(e, 0.0)).r - texture2D(uWakeTex, uv - vec2(e, 0.0)).r;
+  float hz = texture2D(uWakeTex, uv + vec2(0.0, e)).r - texture2D(uWakeTex, uv - vec2(0.0, e)).r;
+  float m = 2.0 * e / uWakeXf.z; // the step, metres
+  return vec4(c.r, c.g, hx / m, hz / m) * k;
+}`;
+
 // the waves (sim.js) drive the water shader, the boats and the buoys alike
 const NW = 8, NV = 5; // wave trains shaded / wave trains that move the surface (the short ones would alias on the mesh)
 // the chop from the FFT (ocean.js) rides on top of the swell; it fades out far off, where the mesh is too coarse for it
 const WATER_VS = /* glsl */ `
 uniform float uTime; uniform vec4 uW[8]; uniform float uWs[8], uQ[8]; uniform vec3 uCam;
 ${OCEAN_GLSL}
+${WAKE_GLSL}
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
 void main() {
   vec4 wp = modelMatrix * vec4(position, 1.0);
@@ -69,6 +93,7 @@ void main() {
   }
   vH = off.y;
   off += fftDisp(xz) * (1.0 - smoothstep(180.0, 420.0, length(xz - uCam.xz)));
+  off.y += wakeH(xz); // the boats' own waves
   wp.xyz += off; vWorld = wp.xyz; vXZ = xz;
   gl_Position = projectionMatrix * viewMatrix * wp;
 }`;
@@ -76,12 +101,15 @@ const WATER_FS = /* glsl */ `
 uniform float uTime, uFogNear, uFogFar, uChop, uAmp, uWhite, uGlint, uReflOn; uniform vec4 uW[8]; uniform float uWs[8], uQ[8];
 uniform vec3 uCam, uDeep, uScatter, uFoamCol; uniform vec4 uGust[12]; uniform vec2 uWind, uPivot;
 uniform sampler2D uRefl; uniform mat4 uReflMat;
+// what lies under the surface (Under): the hulls' and keels' colour as the light reaches them there, and how deep
+uniform sampler2D uUnder; uniform float uUnderOn; uniform vec2 uScreenInv; uniform vec3 uExtinct;
 // the land's (skopea.js): the depth over its square, the hills' shadow, and where the venue's frame is
 uniform sampler2D uSeabed, uShadeTex, uShore, uCalm; uniform vec3 uGridXf, uShadeXf, uLandAt, uShallow, uNearXf; uniform float uShallowK;
 varying vec3 vWorld; varying vec2 vXZ; varying float vH;
 ${SKY_GLSL}
 ${CLOUD_GLSL}
 ${OCEAN_GLSL}
+${WAKE_GLSL}
 vec4 hash42(vec2 p) { // Dave Hoskins' hash, steady for the course's sizes of coordinate
   vec4 p4 = fract(vec4(p.xyxy) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
   p4 += dot(p4, p4.wzxy + 33.33);
@@ -108,8 +136,8 @@ void main() {
     float ph = k * dot(d, p) - uWs[i] * uTime + float(i) * 1.7, c = cos(ph), s = sin(ph);
     n.xz -= d * k * A * c; n.y -= uQ[i] * k * A * s;
   }
-  // the chop: its slopes and where it folds (J < 1 at a sharpening crest)
-  vec3 ch = fftSlope(p);
+  // the chop: its slopes, where it folds (J < 1 at a sharpening crest) and the foam its breaking crests left
+  vec4 ch = fftSlope(p);
   // gusts: rougher water
   float gust = 0.0;
   for (int i = 0; i < 12; i++) {
@@ -136,26 +164,50 @@ void main() {
   vec2 q1 = vec2(dot(p, wq), dot(p, uWind) - uTime * 1.0) / 19.0;
   vec2 q2 = (vec2(dot(p, a2), dot(p, b2)) - uTime * 0.8 * vec2(0.6, 0.8)) / 6.5;
   vec4 t1 = texture2D(uRipple, q1);
-  vec2 rw = ((t1.x * 2.0 - 1.0) * wq + (t1.y * 2.0 - 1.0) * uWind) * (1.0 - 0.55 * uFftOn); // ripple slope in world x/z (the chop takes over its band)
+  // the noise ripples stand in for the sea's short waves where there are no FFT layers for them (Low), and only far
+  // off where there are (past where the short layers' tiles fade)
+  float noiseK = uFftN > 1.5 ? 0.6 * smoothstep(300.0, 900.0, dist) : 1.0 - 0.55 * uFftOn;
+  vec2 rw = ((t1.x * 2.0 - 1.0) * wq + (t1.y * 2.0 - 1.0) * uWind) * noiseK; // ripple slope in world x/z
 #ifdef LOW_Q
   rw *= 1.3;
 #else
   vec4 t2 = texture2D(uRipple, q2);
-  rw += ((t2.x * 2.0 - 1.0) * a2 + (t2.y * 2.0 - 1.0) * b2) * 0.7;
+  rw += ((t2.x * 2.0 - 1.0) * a2 + (t2.y * 2.0 - 1.0) * b2) * 0.7 * noiseK;
 #endif
   // big, slow patches of rougher and smoother water, so the chop never reads as one repeating tile; they drift downwind
   vec2 pr = vec2(dot(p, vec2(0.83, 0.56)), dot(p, vec2(-0.56, 0.83)));
   vec2 prw = vec2(dot(uWind, vec2(0.83, 0.56)), dot(uWind, vec2(-0.56, 0.83))); // the wind in the same axes
   float patchy = texture2D(uRipple, (pr - prw * uTime * 0.17) / 83.0).w;
-  float rs = uChop * (1.0 + 1.6 * gust) * (0.55 + 0.9 * patchy) * (0.7 + 0.8 * lane) / (1.0 + dist / 140.0);
+  // the wake's own water (wakeAt): its waves' height (x), how far the wash has smoothed the ripples (y), its slopes (zw)
+  vec4 wake = wakeAt(p);
+  float calm = 1.0 - 0.8 * clamp(wake.y, 0.0, 1.0);
+  float rs = uChop * (1.0 + 1.6 * gust) * (0.55 + 0.9 * patchy) * (0.7 + 0.8 * lane) / (1.0 + dist / 140.0) * calm;
   // the chop's slopes: rougher in a gust and in the rough patches, gone far off where its tile would show
-  float fk = (0.75 + 0.6 * gust) * (0.7 + 0.6 * patchy) * (1.0 - smoothstep(350.0, 1100.0, dist));
-  n = normalize(vec3(n.x + rw.x * rs - ch.x * fk, n.y, n.z + rw.y * rs - ch.y * fk));
+  float fk = (0.75 + 0.6 * gust) * (0.7 + 0.6 * patchy) * (1.0 - smoothstep(350.0, 1100.0, dist)) * calm;
+  // the wavelets and ripples (the FFT's short layers): rougher in a gust, in the lanes and the rough patches. Each
+  // fades out before its tile, seen from further off, could show as a pattern: the 2 m one by 160 m, the 9 m by 900 m
+  float wmod = (1.0 + 0.9 * gust) * (0.65 + 0.7 * patchy) * (0.8 + 0.5 * lane) * calm;
+  vec2 fine = fftFine(p, vec2(1.0 - smoothstep(300.0, 900.0, dist), 1.0 - smoothstep(30.0, 160.0, dist)) * wmod);
+  n = normalize(vec3(n.x + rw.x * rs - ch.x * fk - fine.x - wake.z, n.y, n.z + rw.y * rs - ch.y * fk - fine.y - wake.w));
   vec3 V = normalize(uCam - vWorld);
-  float cosT = max(dot(n, V), 0.0);
-  float F = 0.02 + 0.98 * pow(1.0 - cosT, 5.0);
+  // The slopes the drawn surface leaves out: the ripples finer than the FFT's layers reach, the layers faded off
+  // with the distance, and what changes faster than a pixel (nv). All of the sea's slope is there in the Cox–Munk
+  // measure (mss, more in a gust); 'lost' is the share of it not drawn here. That much roughness, unseen, still
+  // shapes what the water shows: seen low across it, a rough surface turns facets towards you, so it mirrors less
+  // of the sky and shows more of the water; and the sky it mirrors is a blur reaching some degrees higher than the
+  // true reflection. So far water is darker and bluer than a smooth mirror of the horizon, as the sea is.
+  vec3 fw = fwidth(n); float nv = clamp(dot(fw, fw), 0.0, 1.0);
+  float U = max(0.0, (uChop - 0.1) * 60.0) * 0.514; // the wind, m/s
+  float mss = (0.003 + 0.00512 * U) * (1.0 + 0.6 * gust);
+  float lost = uFftN > 2.5 ? 0.1 + 0.4 * smoothstep(30.0, 160.0, dist) + 0.45 * smoothstep(300.0, 900.0, dist)
+             : uFftN > 1.5 ? 0.3 + 0.6 * smoothstep(300.0, 900.0, dist) : 0.55 + 0.4 * smoothstep(150.0, 800.0, dist);
+  float sig = sqrt(mss * lost * calm + nv * 0.5);
+  float cosT = max(dot(n, V), 0.0), cosE = min(1.0, cosT + 0.6 * sig);
+  float F = 0.02 + 0.98 * pow(1.0 - cosE, 5.0);
   vec3 R = reflect(-V, n);
   vec3 refl = skyAt(R);
+  vec3 R1 = normalize(R + vec3(0.0, 1.2 * sig, 0.0)), R2 = normalize(R + vec3(0.0, 2.6 * sig, 0.0));
+  refl = mix(refl, mix(refl, 0.5 * (skyBase(R1) + skyBase(R2)), 0.75), clamp(sig * 5.0, 0.0, 0.85));
   // the boats, marks and the land in the water: the mirror's picture, rippled by the surface; the sky where it shows none.
   // On water the wind ruffles it is no clean mirror: each point shows what lies some degrees above or below the true
   // reflection, as the ripples tilt it, so a picture is smeared up and down — a hill's dark reflection a soft,
@@ -168,7 +220,7 @@ void main() {
     vec2 vf = normalize(vWorld.xz - uCam.xz + 1e-4), sf = vec2(-vf.y, vf.x);
     vec2 sq = vec2(dot(vWorld.xz, sf) / (30.0 + dist * 0.15), dot(vWorld.xz, vf) / (2.5 + dist * 0.025));
     float jit = (texture2D(uRipple, sq + vec2(0.0, uTime * 0.05)).w - 0.5) * 0.7 + (texture2D(uRipple, sq * 2.7 + vec2(0.31, -uTime * 0.07)).w - 0.5) * 0.3;
-    float sp = (0.004 + 0.045 * wk) * (0.35 + 0.65 * farK);
+    float sp = (0.004 + 0.045 * wk) * (0.35 + 0.65 * farK) + sig * 0.2; // (and blurred more as the unseen ripples roughen it)
     vec2 ruv = rc.xy / rc.w + n.xz * 0.4 / (1.0 + dist * 0.07) + vec2(0.0, jit * 2.5 * sp);
     vec4 rt = texture2D(uRefl, ruv) * 0.36 + (texture2D(uRefl, ruv + vec2(0.0, sp)) + texture2D(uRefl, ruv - vec2(0.0, sp))) * 0.22
       + (texture2D(uRefl, ruv + vec2(0.0, 2.1 * sp)) + texture2D(uRefl, ruv - vec2(0.0, 2.1 * sp))) * 0.1;
@@ -186,6 +238,18 @@ void main() {
   float sss = crest * (0.35 + 0.65 * max(0.0, dot(-V, sunFlat))) * (1.0 - cosT * 0.5) * (0.6 + 0.8 * patchy) * lsun;
   vec3 body = uDeep * (0.75 + 0.25 * max(dot(n, uSun), 0.0) * lsun) + uScatter * sss * 0.45;
   body = mix(body, uShallow * (0.5 + 0.5 * lsun * max(dot(n, uSun), 0.0)), shal);
+  // a hull, a keel, a rudder under the surface (Under): seen through the water, bent by the surface's tilt, and
+  // dimmed and turned blue-green by the water between — red is lost within a metre or two, blue goes furthest —
+  // with the water's own glow filling in what it takes away. The view's path through the water: the depth over the
+  // cosine of the refracted ray.
+  if (uUnderOn > 0.5) {
+    vec4 u = texture2D(uUnder, gl_FragCoord.xy * uScreenInv + n.xz * 0.05 / (1.0 + dist * 0.04));
+    if (u.a > 0.0) {
+      float cosR = sqrt(max(1.0 - (1.0 - cosT * cosT) / 1.78, 0.05));
+      vec3 Tr = exp(-uExtinct * u.a / cosR);
+      body = body * (1.0 - Tr) + u.rgb * Tr;
+    }
+  }
   vec3 col = mix(body, refl, F);
   // the sun: a sharp glint and a broader glitter
   // the sun's glitter. What glints are facets far smaller than the waves drawn here — capillary ripples — each a
@@ -194,11 +258,9 @@ void main() {
   // the wind (Cox–Munk), more in a gust, and more again where the drawn surface itself changes faster than a pixel
   // (nv, specular antialiasing). Close by, the facets are points that flash and go; far off, where many share a
   // pixel, they become their average: the soft glitter path. Both have the same mean, so the change can't be seen.
-  vec3 fw = fwidth(n); float nv = clamp(dot(fw, fw), 0.0, 1.0);
   vec3 Hh = normalize(uSun + V);
   float Fh = 0.02 + 0.98 * pow(1.0 - max(dot(V, Hh), 0.0), 5.0);
   vec2 dS = -Hh.xz / max(Hh.y, 0.05) + n.xz / max(n.y, 0.05);
-  float U = max(0.0, (uChop - 0.1) * 60.0) * 0.514; // the wind, m/s
   float sm2 = (0.0012 + 0.0011 * U) * (1.0 + 0.8 * gust) + nv * 0.5; // the facets' slope spread (per axis)
   const float SS2 = 0.00035; // the sun's own size, as a spread of slope
   float glit = SS2 / (sm2 + SS2) * exp(-dot(dS, dS) / (2.0 * (sm2 + SS2)));
@@ -234,15 +296,29 @@ void main() {
   float edge = texture2D(uRipple, vec2(pa.x / 9.0, pa.y / 3.2) - vec2(0.0, uTime * 0.03)).w;
 #endif
   float brk = texture2D(uRipple, vec2(pa.x / 46.0, pa.y / 20.0) - vec2(0.0, uTime * 0.012)).w; // where a wave is breaking now
-  float fold = smoothstep(0.9, 0.35, ch.z); // the chop folding over its own crest
-  float wv = 1.3 * crest + 3.0 * brk + 2.0 * edge + 0.4 * gust + 1.4 * fold;
-  float cap = smoothstep(4.45, 4.95, wv) * uWhite * (0.4 + 0.45 * t1.w); // a soft edge; foam isn't flat white
-  float halo = smoothstep(4.2, 4.6, wv) * uWhite; // the aerated, paler water just round a breaking crest
+  float cap, halo;
+  if (uFftOn > 0.5) {
+    // the FFT's own whitecaps (ocean.js): foam made where a crest folds over, left on the water as the crest runs on,
+    // spreading and fading over seconds. Some stretches of sea break more than others (the slow patches, a gust), so
+    // the 40 m tile's foam never repeats; and it is a lace of bubbles drifting with the surface water, not a sheet:
+    // thick and white where it is fresh, a thin lace where it is old
+    float fm = ch.w * (0.3 + 0.95 * smoothstep(0.3, 0.75, brk * 0.75 + patchy * 0.3 + gust * 0.35));
+    vec2 fq = p - uWind * uTime * 0.35, fa = vec2(dot(fq, wq), dot(fq, uWind));
+    float lace = texture2D(uRipple, fq / 1.7).w * 0.45 + texture2D(uRipple, fq / 0.55 + 0.3).w * 0.35 + texture2D(uRipple, fq / 0.21 + 0.7).w * 0.2;
+    float drawn = texture2D(uRipple, vec2(fa.x / 0.9, fa.y / 7.0)).w; // old foam is drawn out downwind into streaks
+    cap = max(smoothstep(0.4, 0.95, fm + (lace - 0.5) * 0.9 + (edge - 0.5) * 0.3) * (0.6 + 0.4 * lace),
+              smoothstep(0.1, 0.5, fm) * smoothstep(0.5, 0.8, lace * 0.5 + drawn * 0.5) * 0.4);
+    halo = smoothstep(0.08, 0.45, fm); // the aerated, paler water round and under the foam
+  } else {
+    float wv = 1.3 * crest + 3.0 * brk + 2.0 * edge + 0.4 * gust;
+    cap = smoothstep(4.45, 4.95, wv) * uWhite * (0.4 + 0.45 * t1.w); // a soft edge; foam isn't flat white
+    halo = smoothstep(4.2, 4.6, wv) * uWhite; // the aerated, paler water just round a breaking crest
+  }
   col = mix(col, col * 0.7 + uScatter * 0.45, halo * 0.3);
   // old foam: thin streaks lying downwind of the breakers
   float streak = texture2D(uRipple, vec2(pa.x / 4.5, pa.y / 45.0 - uTime * 0.005)).w;
   float wisp = smoothstep(0.66, 0.86, 0.6 * brk + 0.4 * streak) * smoothstep(0.5, 0.7, patchy) * uWhite * 0.12 * (1.0 - smoothstep(60.0, 350.0, dist));
-  col = mix(col, vec3(0.86, 0.91, 0.94) * uFoamCol, clamp(cap * 0.7 + wisp, 0.0, 1.0));
+  col = mix(col, vec3(0.86, 0.91, 0.94) * uFoamCol * (0.75 + 0.25 * lsun), clamp(cap * 0.7 + wisp, 0.0, 1.0)); // (foam in a shadow is greyer)
   col = mix(col, col * 1.2 + vec3(0.03, 0.045, 0.06), lane * 0.55); // the lanes catch a little more light
   col *= 1.0 - 0.22 * gust; // a gust reads as a darker patch
   // the surf: along the shore (how far out from it: uShore, round the race area), the swell breaking in lines that run
@@ -439,16 +515,18 @@ function rippleTexture(N = 256) {
 // and a darker line, broken into short crests, with a little white only close under the bow at speed.
 const WAKE_N = 64, WAKE_DT = 0.3, WAKE_AGE = WAKE_N * WAKE_DT; // samples, seconds apart, seconds of wake
 const WAKE_VS = /* glsl */ `
-attribute float aAge, aSide, aKind, aStr; attribute vec3 aAcross; varying float vAge, vSide, vKind, vStr; varying vec2 vXZ; varying vec3 vAcross, vW;
+attribute float aAge, aSide, aKind, aStr; attribute vec3 aAcross; varying float vAge, vSide, vKind, vStr, vIn; varying vec2 vXZ; varying vec3 vAcross, vW;
 ${OCEAN_GLSL}
+${WAKE_GLSL}
 void main() {
   vAge = aAge; vSide = aSide; vKind = aKind; vStr = aStr; vAcross = aAcross;
-  vec4 wp = modelMatrix * vec4(position, 1.0); vXZ = wp.xz; wp.y += fftDisp(wp.xz).y; vW = wp.xyz;
+  vec4 wp = modelMatrix * vec4(position, 1.0); vXZ = wp.xz; wp.y += fftDisp(wp.xz).y + wakeH(wp.xz); vW = wp.xyz;
+  vIn = uWakeXf.w * wakeK(wakeUV(wp.xz)); // inside the wake field the water itself is shaped by these waves
   gl_Position = projectionMatrix * viewMatrix * wp;
 }`;
 const WAKE_FS = /* glsl */ `
 uniform sampler2D uRipple; uniform float uTime, uMax; uniform vec2 uWind; uniform vec3 uFoamCol, uTop, uHorizon, uSun, uSunCol, uDeep;
-varying float vAge, vSide, vKind, vStr; varying vec2 vXZ; varying vec3 vAcross, vW;
+varying float vAge, vSide, vKind, vStr, vIn; varying vec2 vXZ; varying vec3 vAcross, vW;
 vec3 sky(vec3 d) { d.y = abs(d.y); return mix(uHorizon, uTop, pow(d.y, 0.5)) + uSunCol * pow(max(dot(d, uSun), 0.0), 10.0) * 0.25; }
 float fres(vec3 n, vec3 V) { return 0.02 + 0.98 * pow(1.0 - max(dot(n, V), 0.0), 5.0); }
 float lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
@@ -468,12 +546,14 @@ void main() {
   float n1 = texture2D(uRipple, (vXZ - uWind * uTime * 0.25) / 3.2).w, n2 = texture2D(uRipple, (vXZ - uWind * uTime * 0.35) / 1.1).w;
   float a; vec3 col;
   if (vKind < 0.5) {
-    // the wash: aerated turquoise water under foam that breaks up within seconds, more and longer the faster she goes
-    float fresh = exp(-vAge / (2.0 + 3.0 * vStr));
-    float foam = smoothstep(0.45, 0.8, n1 * 0.55 + n2 * 0.45 + fresh * 0.5 - (1.0 - edge) * 0.6) * fresh;
-    float aer = edge * edge * fresh * 0.14;
-    col = mix(vec3(0.22, 0.45, 0.52) * (0.5 + 0.5 * uFoamCol), vec3(0.93, 0.96, 0.98) * uFoamCol, step(aer, foam));
-    a = max(foam * 0.95, aer) * smoothstep(0.0, 0.25, edge);
+    // the wash: churned, aerated water, turquoise with the bubbles in it, under a lace of foam with holes torn in it
+    // that opens up and breaks into patches within seconds — more and longer the faster she goes
+    float fresh = exp(-vAge / (1.6 + 2.6 * vStr));
+    float lace = n1 * 0.5 + n2 * 0.5 + (edge - 0.6) * 0.35;
+    float foam = smoothstep(0.6 - 0.2 * fresh, 0.78 - 0.14 * fresh, lace) * fresh;
+    float aer = smoothstep(0.1, 0.8, edge) * fresh * (0.08 + 0.3 * n1 * n2);
+    col = mix(vec3(0.24, 0.55, 0.58) * (0.5 + 0.5 * uFoamCol), vec3(0.93, 0.96, 0.98) * uFoamCol, step(aer, foam * 0.9));
+    a = max(foam * 0.88, aer) * smoothstep(0.0, 0.25, edge);
     // then the slick: the level sea's mirror, smoother than the water round it
     float slick = smoothstep(0.0, 0.6, edge) * (1.0 - k) * (1.0 - fresh) * 0.16 * (0.75 + 0.5 * n1);
     if (slick > a) { col = sky(reflect(-V, vec3(0.0, 1.0, 0.0))); a = slick; }
@@ -481,7 +561,7 @@ void main() {
     // a Kelvin arm: a crest some decimetres high, lower as it spreads, in short broken lengths (the echelon)
     float s = vSide, h = 0.16 * (1.0 - k) * (1.0 - k) * smoothstep(0.25, 0.75, n1 * 0.7 + n2 * 0.5);
     vec4 t = tilted(-6.0 * s * exp(-3.0 * s * s) * h / max(vAcross.z, 0.1), V);
-    col = t.rgb; a = t.a * 1.4;
+    col = t.rgb; a = t.a * 1.4 * (1.0 - 0.85 * vIn); // (where the water is raised into them, its own shading shows them)
     // white only where the newest crest breaks, under the bow
     float lip = pow(edge, 3.0) * smoothstep(0.45, 0.75, n2) * exp(-vAge / 0.9) * smoothstep(0.45, 0.9, vStr);
     if (lip * 0.7 > a) { col = vec3(0.92, 0.95, 0.97) * uFoamCol; a = lip * 0.7; }
@@ -491,7 +571,7 @@ void main() {
   gl_FragColor = vec4(col, a);
 }`;
 class Wake {
-  constructor(scene, uniforms) {
+  constructor(scene, uniforms, field) {
     this.trail = []; this.acc = 0;
     const n = 3 * WAKE_N * 2, g = new THREE.BufferGeometry(); // 3 ribbons, two edges each
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
@@ -503,8 +583,9 @@ class Wake {
     this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ uniforms, vertexShader: WAKE_VS, fragmentShader: WAKE_FS, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
     this.mesh.frustumCulled = false; this.mesh.renderOrder = 2;
     scene.add(this.mesh);
+    this.field = field; this.hmesh = field?.add(new THREE.Mesh(g, field.ribbonMat)); // the same ribbons, as the water's heights
   }
-  dispose(scene) { scene.remove(this.mesh); this.mesh.geometry.dispose(); }
+  dispose(scene) { scene.remove(this.mesh); if (this.hmesh) this.field.scene.remove(this.hmesh); this.mesh.geometry.dispose(); }
   update(b, dt, t, W) {
     // a new sample every WAKE_DT seconds; the newest point always rides with the boat
     this.acc += dt;
@@ -539,7 +620,8 @@ class Wake {
 const CONTACT_VS = /* glsl */ `
 attribute vec2 aL; varying vec2 vL, vXZ;
 ${OCEAN_GLSL}
-void main() { vL = aL; vXZ = position.xz; gl_Position = projectionMatrix * viewMatrix * vec4(position + vec3(0.0, fftDisp(position.xz).y, 0.0), 1.0); }`;
+${WAKE_GLSL}
+void main() { vL = aL; vXZ = position.xz; gl_Position = projectionMatrix * viewMatrix * vec4(position + vec3(0.0, fftDisp(position.xz).y + wakeH(position.xz), 0.0), 1.0); }`;
 const CONTACT_FS = /* glsl */ `
 uniform sampler2D uRipple; uniform float uTime, uSpd; uniform vec2 uWind; uniform vec3 uFoamCol; varying vec2 vL, vXZ;
 const float HL = 5.6, HB = 1.75; // half the waterline's length and beam
@@ -560,8 +642,10 @@ void main() {
   if (a < 0.01) discard;
   gl_FragColor = vec4(mix(vec3(0.02, 0.08, 0.11), vec3(0.93, 0.96, 0.98) * uFoamCol, foam / max(foam + shade, 0.001)), a);
 }`;
+// the sea's uniforms a patch riding it needs: the FFT's and the wake field's
+const seaUniforms = (u) => Object.fromEntries(Object.entries(u).filter(([k]) => k.startsWith('uFft') || k.startsWith('uWake')));
 class HullContact {
-  constructor(scene, uniforms) {
+  constructor(scene, uniforms, field) {
     const NA = 28, NC = 10, A0 = -7.8, A1 = 8.4, C = 4.0, aL = [], idx = [];
     for (let i = 0; i <= NA; i++) for (let j = 0; j <= NC; j++) aL.push(lerp(A0, A1, i / NA), lerp(-C, C, j / NC));
     for (let i = 0; i < NA; i++) for (let j = 0; j < NC; j++) { const a = i * (NC + 1) + j, b = a + NC + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
@@ -569,19 +653,22 @@ class HullContact {
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(aL.length * 1.5), 3));
     g.setAttribute('aL', new THREE.Float32BufferAttribute(aL, 2));
     g.setIndex(idx);
-    this.u = { uRipple: uniforms.uRipple, uTime: uniforms.uTime, uWind: uniforms.uWind, uFoamCol: uniforms.uFoamCol, uSpd: { value: 0 },
-      uFftD: uniforms.uFftD, uFftS: uniforms.uFftS, uFftOn: uniforms.uFftOn, uFftL: uniforms.uFftL, uFftW: uniforms.uFftW };
+    this.u = { uRipple: uniforms.uRipple, uTime: uniforms.uTime, uWind: uniforms.uWind, uFoamCol: uniforms.uFoamCol, uSpd: { value: 0 }, ...seaUniforms(uniforms) };
     this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ uniforms: this.u, vertexShader: CONTACT_VS, fragmentShader: CONTACT_FS, transparent: true, depthWrite: false }));
     this.mesh.frustumCulled = false; this.mesh.renderOrder = 2;
     scene.add(this.mesh);
+    this.uK = { value: 1 }; this.field = field; // her bow wave and quarter wave, as the water's heights
+    this.hmesh = field?.add(new THREE.Mesh(g, field.hullMat(this.u.uSpd, this.uK)));
   }
-  dispose(scene) { scene.remove(this.mesh); this.mesh.geometry.dispose(); this.mesh.material.dispose(); }
+  dispose(scene) { scene.remove(this.mesh); this.mesh.geometry.dispose(); this.mesh.material.dispose(); if (this.hmesh) { this.field.scene.remove(this.hmesh); this.hmesh.material.dispose(); } }
   update(b, t, W) {
     // another class's hull is laid HULL / 12.2 times the club boat's size (a boat of a class of her own, b.cls, at
     // hers); a foiler flying has none in the water
     this.mesh.visible = !(b.ride > 0.5);
+    if (this.hmesh) this.hmesh.visible = this.mesh.visible;
     if (!this.mesh.visible) return;
     const g = this.mesh.geometry, P = g.attributes.position, L = g.attributes.aL, S = (b.cls?.loa ?? HULL) / 12.2;
+    this.uK.value = S;
     const fx = Math.sin(b.h), fz = -Math.cos(b.h), rx = Math.cos(b.h), rz = Math.sin(b.h);
     for (let i = 0; i < P.count; i++) {
       const a = L.getX(i) * S, c = L.getY(i) * S, x = b.x + fx * a + rx * c, z = b.z + fz * a + rz * c;
@@ -592,6 +679,158 @@ class HullContact {
   }
 }
 
+// ---------- the boats' own waves, as the water's heights (WakeField) ----------
+// Each boat's wake ribbons and hull patch are drawn a second time, from straight above, into a square of sea round
+// your boat (WAKE_SIZE metres): added up as heights and how smooth the wash has left the water. The water mesh is
+// raised by them and shaded with their slopes (WAKE_GLSL), so the Kelvin wake's arms and the bow wave are real
+// waves near you, which a low camera sees standing up, and not only light and dark lines painted on the sea.
+// The vertex shaders place each point by its world x, z in that square; no camera.
+const WAKEH_VS = /* glsl */ `
+attribute float aAge, aSide, aKind, aStr; uniform vec4 uWakeXf;
+varying float vAge, vSide, vKind, vStr; varying vec2 vXZ;
+void main() {
+  vAge = aAge; vSide = aSide; vKind = aKind; vStr = aStr;
+  vec4 wp = modelMatrix * vec4(position, 1.0); vXZ = wp.xz;
+  gl_Position = vec4((wp.xz - uWakeXf.xy) * uWakeXf.z * 2.0, 0.0, 1.0);
+}`;
+const WAKEH_FS = /* glsl */ `
+uniform sampler2D uRipple; uniform float uTime, uMax; uniform vec2 uWind;
+varying float vAge, vSide, vKind, vStr; varying vec2 vXZ;
+void main() {
+  float k = clamp(vAge / uMax, 0.0, 1.0), s = vSide, edge = clamp(1.0 - abs(s), 0.0, 1.0);
+  float n1 = texture2D(uRipple, (vXZ - uWind * uTime * 0.25) / 3.2).w, n2 = texture2D(uRipple, (vXZ - uWind * uTime * 0.35) / 1.1).w;
+  vec2 o = vec2(0.0);
+  if (vKind < 0.5) {
+    // the wash: a shallow trough of churned water straight behind her, lumpy while it is fresh; then the slick, the
+    // water the turbulence has left smoother than the sea round it, for as long as the wake lasts
+    float fresh = exp(-vAge / (2.0 + 3.0 * vStr));
+    o.x = (-0.07 + 0.08 * (n2 - 0.5)) * fresh * smoothstep(0.0, 0.5, edge);
+    o.y = smoothstep(0.0, 0.6, edge) * (1.0 - k) * (0.55 + 0.45 * fresh);
+  } else {
+    // a Kelvin arm: a crest a couple of decimetres high under the bow, lower as it spreads and travels, broken into
+    // short lengths (the echelon of the divergent waves)
+    float h = 0.24 * (1.0 - k) * (1.0 - k) * smoothstep(0.25, 0.75, n1 * 0.7 + n2 * 0.5);
+    o.x = h * exp(-3.0 * s * s);
+  }
+  o *= vStr * min(1.0, vAge * 3.0 + 0.4);
+  gl_FragColor = vec4(o, 0.0, 1.0);
+}`;
+// the water along the hull, local coordinates aL as the contact patch's (CONTACT_FS): the bow wave climbing the stem,
+// the trough along her middle and the quarter wave, as the hull paint's wet line draws them (yacht.js), so the
+// water meets her white water there; spreading out from her side and dying away within a few metres
+const HULLH_VS = /* glsl */ `
+attribute vec2 aL; uniform vec4 uWakeXf; varying vec2 vL;
+void main() { vL = aL; gl_Position = vec4((position.xz - uWakeXf.xy) * uWakeXf.z * 2.0, 0.0, 1.0); }`;
+const HULLH_FS = /* glsl */ `
+uniform float uSpd, uK; varying vec2 vL;
+const float HL = 5.6, HB = 1.75; // half the waterline's length and beam
+void main() {
+  float s = vL.x / HL, ay = abs(vL.y), d;
+  if (s > 1.0) d = length(vec2(vL.x - HL, vL.y)); // ahead of the stem
+  else if (s < -1.0) d = max(ay - HB * 0.88, -vL.x - HL); // behind the transom
+  else d = ay - (s > 0.0 ? HB * sqrt(max(0.0, 1.0 - s * s)) : HB * (1.0 - 0.12 * s * s)); // metres outside the hull
+  float along = 0.26 * smoothstep(0.3, 0.9, s) * (1.0 - smoothstep(0.97, 1.35, s))
+              - 0.08 * exp(-pow((s + 0.05) / 0.42, 2.0))
+              + 0.08 * smoothstep(-0.55, -0.95, s) * (1.0 - smoothstep(-1.0, -1.45, s));
+  float h = uSpd * uK * along * exp(-max(d, 0.0) / (0.6 + 1.4 * uSpd));
+  h *= (1.0 - smoothstep(2.6, 4.0, ay)) * smoothstep(-7.8, -6.2, vL.x) * (1.0 - smoothstep(7.0, 8.4, vL.x)); // to nothing at the patch's edge
+  gl_FragColor = vec4(h, 0.0, 0.0, 1.0);
+}`;
+const ADDITIVE = { transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide, blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor };
+class WakeField {
+  // U: the uniforms it fills (uWakeTex, uWakeXf); wakeU: the wake ribbons' (their noise, time, wind and age)
+  constructor(U, wakeU) {
+    this.U = U; this.rt = null;
+    this.scene = new THREE.Scene(); this.cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    this.ribbonMat = new THREE.ShaderMaterial({ uniforms: { uRipple: wakeU.uRipple, uTime: wakeU.uTime, uWind: wakeU.uWind, uMax: wakeU.uMax, uWakeXf: U.uWakeXf }, vertexShader: WAKEH_VS, fragmentShader: WAKEH_FS, ...ADDITIVE });
+  }
+  hullMat(uSpd, uK) { return new THREE.ShaderMaterial({ uniforms: { uSpd, uK, uWakeXf: this.U.uWakeXf }, vertexShader: HULLH_VS, fragmentShader: HULLH_FS, ...ADDITIVE }); }
+  add(mesh) { mesh.frustumCulled = false; this.scene.add(mesh); return mesh; }
+  setOn(on) {
+    if (on && !this.rt) this.rt = new THREE.WebGLRenderTarget(WAKE_RES, WAKE_RES, { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false, stencilBuffer: false });
+    if (!on && this.rt) { this.rt.dispose(); this.rt = null; }
+    this.U.uWakeXf.value.w = 0; this.U.uWakeTex.value = blankOcean();
+  }
+  // round (x, z): your boat. The square moves a whole texel at a time, so the heights don't shimmer as it follows her
+  render(r, x, z) {
+    if (!this.rt) return;
+    const step = WAKE_SIZE / WAKE_RES;
+    this.U.uWakeXf.value.set(Math.round(x / step) * step, Math.round(z / step) * step, 1 / WAKE_SIZE, 1);
+    const prev = r.getRenderTarget(), cc = r.getClearColor(this._cc || (this._cc = new THREE.Color())), ca = r.getClearAlpha();
+    r.setRenderTarget(this.rt); r.setClearColor(0x000000, 0); r.clear(true, false, false);
+    r.render(this.scene, this.cam);
+    r.setClearColor(cc, ca); r.setRenderTarget(prev);
+    this.U.uWakeTex.value = this.rt.texture;
+  }
+}
+
+// ---------- what lies under the surface (Under) ----------
+// The hulls, keels and rudders drawn again from the camera (only what is in the UNDER layer: the parts of each
+// boat that reach down to the water), each in its own colour (its bottom paint, or its own material's), lit as
+// daylight reaches it through the water above it, and only where it is under the surface: the depth there in alpha.
+// The water shader then shows it through itself (uUnder). Nearest filtering: a blend of a hull's texel with an
+// empty one would be a darker, shallower hull at its outline.
+const UNDER = 5;
+const UNDER_VS = /* glsl */ `
+varying vec3 vW, vN;
+void main() { vec4 wp = modelMatrix * vec4(position, 1.0); vW = wp.xyz; vN = mat3(modelMatrix) * normal; gl_Position = projectionMatrix * viewMatrix * wp; }`;
+const UNDER_FS = /* glsl */ `
+uniform float uTime; uniform vec4 uW[8]; uniform float uWs[8]; uniform vec3 uAlbedo, uSun, uSunCol, uTop, uExtinct;
+varying vec3 vW, vN;
+${OCEAN_GLSL}
+${WAKE_GLSL}
+void main() {
+  float h = 0.0;
+  for (int i = 0; i < ${NV}; i++) h += uW[i].w * sin(uW[i].z * dot(uW[i].xy, vW.xz) - uWs[i] * uTime + float(i) * 1.7);
+  float d = h + fftDisp(vW.xz).y + wakeH(vW.xz) - vW.y; // how deep under the surface
+  if (d <= 0.0) discard;
+  vec3 n = normalize(vN) * (gl_FrontFacing ? 1.0 : -1.0);
+  vec3 sun = uSunCol * max(dot(n, uSun), 0.0) * exp(-uExtinct * d / max(uSun.y, 0.25)); // the sun, through the water over it
+  vec3 sky = uTop * (0.35 + 0.3 * n.y) * exp(-uExtinct * d); // the sky's light from above
+  gl_FragColor = vec4(uAlbedo * (sun * 0.8 + sky), max(d, 0.003));
+}`;
+class Under {
+  constructor(renderer, uniforms) {
+    this.r = renderer; this.scale = 1;
+    this.rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
+    this.mat = new THREE.ShaderMaterial({ uniforms: { ...uniforms, uAlbedo: { value: new THREE.Color() } }, vertexShader: UNDER_VS, fragmentShader: UNDER_FS, side: THREE.DoubleSide });
+    this._v = new THREE.Vector2(); this._cc = new THREE.Color();
+  }
+  setScale(s) { this.scale = s; }
+  render(scene, cam) {
+    const r = this.r, v = r.getDrawingBufferSize(this._v), w = Math.max(1, Math.round(v.x * this.scale)), h = Math.max(1, Math.round(v.y * this.scale));
+    if (this.rt.width !== w || this.rt.height !== h) this.rt.setSize(w, h);
+    const mask = cam.layers.mask, om = scene.overrideMaterial, sm = r.shadowMap.autoUpdate, prev = r.getRenderTarget(), cc = r.getClearColor(this._cc), ca = r.getClearAlpha();
+    cam.layers.set(UNDER); scene.overrideMaterial = this.mat; r.shadowMap.autoUpdate = false;
+    r.setRenderTarget(this.rt); r.setClearColor(0x000000, 0); r.clear();
+    r.render(scene, cam);
+    r.setClearColor(cc, ca); r.setRenderTarget(prev);
+    cam.layers.mask = mask; scene.overrideMaterial = om; r.shadowMap.autoUpdate = sm;
+  }
+  dispose() { this.rt.dispose(); this.mat.dispose(); }
+}
+// put the parts of a boat that reach into the water (the hull, keel, rudder: whatever solid comes within 0.3 m of
+// the waterline in her own frame and stands no taller than a hull) into the UNDER layer, each with the colour it
+// shows there: the hull its bottom paint. Not the crew (skinned: the one material drawn in place of theirs would
+// draw them unposed) nor the sails (laid out as she sails; built empty)
+function underParts(root, bottom, world) {
+  const col = new THREE.Color(bottom || '#5b1f24'), box = new THREE.Box3(), size = new THREE.Vector3();
+  root.updateMatrixWorld(true);
+  root.traverse((o) => {
+    if (!o.isMesh || o.isSprite || o.isSkinnedMesh || o.isInstancedMesh || o.morphTargetInfluences) return;
+    box.setFromObject(o);
+    if (box.isEmpty() || box.getSize(size).y < 0.05 || box.min.y > 0.3 || box.max.y > 4.5) return;
+    const m = Array.isArray(o.material) ? o.material[0] : o.material;
+    o.layers.enable(UNDER);
+    o.userData.underCol = m?.userData?.sea ? col : m?.color ? m.color.clone().multiplyScalar(m.map ? 0.7 : 1) : new THREE.Color(0.4, 0.4, 0.4);
+    const prev = o.onBeforeRender;
+    o.onBeforeRender = function (r, s, c, g, mat, grp) {
+      if (mat === world.under?.mat) { mat.uniforms.uAlbedo.value.copy(this.userData.underCol); mat.uniformsNeedUpdate = true; }
+      else prev.call(this, r, s, c, g, mat, grp);
+    };
+  });
+}
+
 // the sails' shadow on the sea: each sail's own cloth, cast along the sun onto the waves (the water takes no shadow
 // map). It is laid on the same wave trains that move the water mesh, a little above them; the stencil darkens each
 // pixel once, so where main and jib (and both faces of a sail) overlap the shade doesn't double.
@@ -599,6 +838,7 @@ const SEASHADE_VS = /* glsl */ `
 uniform float uTime; uniform vec4 uW[8]; uniform float uWs[8]; uniform vec3 uSun;
 varying float vUp; varying vec3 vPos;
 ${OCEAN_GLSL}
+${WAKE_GLSL}
 float seaY(vec2 xz) {
   float h = 0.0;
   for (int i = 0; i < ${NV}; i++) h += uW[i].w * sin(uW[i].z * dot(uW[i].xy, xz) - uWs[i] * uTime + float(i) * 1.7);
@@ -609,7 +849,7 @@ void main() {
   vec2 xz = wp.xz - uSun.xz * wp.y / uSun.y; // onto the level sea
   float h = seaY(xz);
   xz = wp.xz - uSun.xz * (wp.y - h) / uSun.y; // and again onto the wave there
-  vUp = wp.y - h; vPos = vec3(xz.x, seaY(xz) + fftDisp(xz).y + 0.15, xz.y);
+  vUp = wp.y - h; vPos = vec3(xz.x, seaY(xz) + fftDisp(xz).y + wakeH(xz) + 0.15, xz.y);
   gl_Position = projectionMatrix * viewMatrix * vec4(vPos, 1.0);
 }`;
 // the shade: what a shadow dims is the light from under the surface, not the sky the sea reflects — so it is faint
@@ -643,7 +883,8 @@ class SeaShadows {
 // foam and spray as soft points, each with its own size and fade
 const FOAM_VS = /* glsl */ `
 attribute float aAlpha, aSize; uniform float uScale; varying float vA;
-void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); vA = aAlpha; gl_PointSize = aSize * uScale / max(-mv.z, 0.5); gl_Position = projectionMatrix * mv; }`;
+${WAKE_GLSL}
+void main() { vec4 mv = modelViewMatrix * vec4(position + vec3(0.0, wakeH(position.xz), 0.0), 1.0); /* on the bow wave, not under it */ vA = aAlpha; gl_PointSize = aSize * uScale / max(-mv.z, 0.5); gl_Position = projectionMatrix * mv; }`;
 const FOAM_FS = /* glsl */ `
 uniform sampler2D uMap; uniform vec3 uFoamCol; varying float vA;
 void main() { vec4 t = texture2D(uMap, gl_PointCoord); if (t.a * vA < 0.01) discard; gl_FragColor = vec4(vec3(0.95, 0.97, 1.0) * uFoamCol, t.a * vA); }`;
@@ -761,8 +1002,7 @@ class MarkContact {
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(aL.length * 1.5), 3));
     g.setAttribute('aL', new THREE.Float32BufferAttribute(aL, 2));
     g.setIndex(idx);
-    this.u = { uRipple: uniforms.uRipple, uTime: uniforms.uTime, uWind: uniforms.uWind, uFoamCol: uniforms.uFoamCol, uR: { value: R },
-      uFftD: uniforms.uFftD, uFftS: uniforms.uFftS, uFftOn: uniforms.uFftOn, uFftL: uniforms.uFftL, uFftW: uniforms.uFftW };
+    this.u = { uRipple: uniforms.uRipple, uTime: uniforms.uTime, uWind: uniforms.uWind, uFoamCol: uniforms.uFoamCol, uR: { value: R }, ...seaUniforms(uniforms) };
     this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ uniforms: this.u, vertexShader: CONTACT_VS, fragmentShader: MARK_FS, transparent: true, depthWrite: false }));
     this.mesh.frustumCulled = false; this.mesh.renderOrder = 2;
   }
@@ -847,9 +1087,9 @@ function drapeGuides(G, W, t) {
 // reflects only the sky); fft: the chop as a real sea spectrum
 const PHONE = /android|iphone|ipad/i.test(navigator.userAgent);
 export const QUALITY = {
-  high:   { ratio: 1.75, shadow: PHONE ? 1024 : 2048, rings: 200, segs: 256, foam: 1600, post: { bloomLevels: 5, samples: 4 }, mirror: PHONE ? 0.35 : 0.5, fft: 128 },
-  medium: { ratio: 1.3,  shadow: 1024, rings: 140, segs: 192, foam: 900, post: { bloomLevels: 4, samples: 2 }, mirror: 0, fft: 64 },
-  low:    { ratio: 1.0,  shadow: 0,    rings: 100, segs: 128, foam: 450, low: true, post: null, mirror: 0, fft: 0 }, // no shadows, simpler water, straight to the screen
+  high:   { ratio: 1.75, shadow: PHONE ? 1024 : 2048, rings: 200, segs: 256, foam: 1600, post: { bloomLevels: 5, samples: 4 }, mirror: PHONE ? 0.35 : 0.5, fft: 128, seas: [40, 9.1, 2.3], wake: true, under: PHONE ? 0.5 : 1 },
+  medium: { ratio: 1.3,  shadow: 1024, rings: 140, segs: 192, foam: 900, post: { bloomLevels: 4, samples: 2 }, mirror: 0, fft: 64, seas: [40, 5.5], wake: true, under: 0.5 },
+  low:    { ratio: 1.0,  shadow: 0,    rings: 100, segs: 128, foam: 450, low: true, post: null, mirror: 0, fft: 0, seas: [], wake: false, under: 0 }, // no shadows, simpler water, straight to the screen
 };
 export const defaultQuality = () => (PHONE ? 'medium' : 'high');
 
@@ -905,6 +1145,12 @@ export class World {
     this.oceanU = oceanUniforms();
     this.reflU = { uRefl: { value: null }, uReflMat: { value: new THREE.Matrix4() }, uReflOn: { value: 0 } };
     this.ocean = null; this.mirror = null; this.post = null;
+    // the boats' own waves as the water's heights (WakeField), and the hulls under the surface (Under): switched on by
+    // the graphics level too. uExtinct: how fast the water takes each colour of light (per metre: red first), as
+    // clear as the venue's water is (setRace)
+    this.wakeFU = { uWakeTex: { value: blankOcean() }, uWakeXf: { value: new THREE.Vector4(0, 0, 1 / WAKE_SIZE, 0) } };
+    this.underU = { uUnder: { value: blankOcean() }, uUnderOn: { value: 0 }, uScreenInv: { value: new THREE.Vector2(1, 1) }, uExtinct: { value: new THREE.Vector3(0.45, 0.09, 0.07) } };
+    this.under = null;
 
     this.waterU = {
       uTime: { value: 0 }, uW: { value: Array.from({ length: NW }, () => new THREE.Vector4()) }, uWs: { value: new Array(NW).fill(0) }, uQ: { value: new Array(NW).fill(0) },
@@ -912,14 +1158,14 @@ export class World {
       uDeep: { value: new THREE.Color('#062a40') }, uScatter: { value: new THREE.Color('#1aa3a0') },
       uFogNear: { value: FOG_NEAR }, uFogFar: { value: FOG_FAR }, uChop: { value: 0.15 }, uAmp: { value: 0.4 }, uWhite: { value: 0 }, uGlint: { value: 1 },
       uGust: { value: Array.from({ length: 12 }, () => new THREE.Vector4()) }, uWind: { value: new THREE.Vector2(0, 1) }, uPivot: { value: new THREE.Vector2() },
-      ...this.skyU, ...this.oceanU, ...this.reflU,
+      ...this.skyU, ...this.oceanU, ...this.reflU, ...this.wakeFU, ...this.underU,
     };
     SEA.uW.value = this.waterU.uW.value; SEA.uWs.value = this.waterU.uWs.value; // the hulls' wet line rides the same seas (yacht.js)
     this.water = new THREE.Mesh(waterGeometry(), new THREE.ShaderMaterial({ uniforms: this.waterU, vertexShader: WATER_VS, fragmentShader: WATER_FS, defines: { WAVES: NW }, extensions: { derivatives: true } }));
     this.water.frustumCulled = false;
     this.scene.add(this.water);
     this.shadeMat = new THREE.ShaderMaterial({
-      uniforms: { uTime: this.waterU.uTime, uW: this.waterU.uW, uWs: this.waterU.uWs, uSun: this.waterU.uSun, uShade: { value: 1 }, ...this.oceanU },
+      uniforms: { uTime: this.waterU.uTime, uW: this.waterU.uW, uWs: this.waterU.uWs, uSun: this.waterU.uSun, uShade: { value: 1 }, ...this.oceanU, ...this.wakeFU },
       vertexShader: SEASHADE_VS, fragmentShader: SEASHADE_FS, transparent: true, depthWrite: false, side: THREE.DoubleSide,
       stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp,
     });
@@ -949,7 +1195,7 @@ export class World {
     fg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.foamN * 3), 3));
     fg.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(this.foamN), 1));
     fg.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array(this.foamN), 1));
-    this.foamU = { uMap: { value: foamSprite() }, uScale: { value: 400 }, uFoamCol: this.skyU.uFoamCol };
+    this.foamU = { uMap: { value: foamSprite() }, uScale: { value: 400 }, uFoamCol: this.skyU.uFoamCol, ...this.wakeFU };
     this.foamPts = new THREE.Points(fg, new THREE.ShaderMaterial({ uniforms: this.foamU, vertexShader: FOAM_VS, fragmentShader: FOAM_FS, transparent: true, depthWrite: false }));
     this.foamPts.frustumCulled = false;
     this.scene.add(this.foamPts);
@@ -965,8 +1211,9 @@ export class World {
     this.ships = new Ships(this.skyU);
     this.scene.add(this.ships.group);
 
-    this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uWind: this.waterU.uWind, uFoamCol: this.skyU.uFoamCol, uMax: { value: WAKE_AGE }, ...this.oceanU,
+    this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uWind: this.waterU.uWind, uFoamCol: this.skyU.uFoamCol, uMax: { value: WAKE_AGE }, ...this.oceanU, ...this.wakeFU,
       uTop: this.skyU.uTop, uHorizon: this.skyU.uHorizon, uSun: this.skyU.uSun, uSunCol: this.skyU.uSunCol, uDeep: this.waterU.uDeep };
+    this.wakeField = new WakeField(this.wakeFU, this.wakeU);
     this.wakes = []; this.contacts = [];
     this.showGuides = true; this.guides = null;
     this.mode = 'drone';
@@ -1018,6 +1265,10 @@ export class World {
     this.waterU.uAmp.value = race.wind.p.waves;
     this.waterU.uPivot.value.set(race.course.windward.x, race.course.windward.z / 2); // the wind lanes turn about the middle of the course
     this.waterU.uWhite.value = clamp((race.wind.p.tws - 10) / 9, 0, 1); // whitecaps from about force 4
+    // how far you see into the water: the venue's clarity (as its shallows show their bed, skopea.js) scales how fast
+    // it takes the light: pure water's red, green and blue, with a little scattering
+    const clear = clamp(0.45 / Math.max(this.waterU.uShallowK?.value ?? 0.45, 0.12), 0.6, 3);
+    this.underU.uExtinct.value.set(0.6, 0.12, 0.085).multiplyScalar(clear);
     this.setLight(pickSky(race));
     // the chop is raised by the race's mean wind and keeps its heading (the sea lags the shifts)
     if (this.ocean) this.ocean.setWind(race.wind.p.tws);
@@ -1034,12 +1285,14 @@ export class World {
   // both fly their blue or yellow flag on the stern.
   boatView(b, look) {
     const other = !b.ai && b.human && this.race?.match && b !== this.race.player; // (no look sent: the default boat's)
+    const lk = b.ai ? LOOKS[b.name] || LOOKS.Aurora : other ? lookFrom(b.look) : look || playerLook();
     const v = b.ai
-      ? makeBoatView({ look: LOOKS[b.name] || LOOKS.Aurora, label: { text: b.name, color: b.color } }, b.cls)
-      : other ? makeBoatView({ look: lookFrom(b.look), label: { text: b.name, color: b.color ?? 0xffffff } }, b.cls)
-      : makeBoatView({ look: look || playerLook(), player: true }, b.cls);
+      ? makeBoatView({ look: lk, label: { text: b.name, color: b.color } }, b.cls)
+      : other ? makeBoatView({ look: lk, label: { text: b.name, color: b.color ?? 0xffffff } }, b.cls)
+      : makeBoatView({ look: lk, player: true }, b.cls);
     if (b.side) sternFlag(v, b.side);
     v.root.scale.setScalar((b.cls?.loa ?? HULL) / (v.drawnL || 10.45)); // every class drawn at her own length (the JPK 1050 10.45 m)
+    underParts(v.root, lk?.bottom, this); // her hull, keel and rudder, seen through the water
     mirrored(v.root);
     // …but not the crew (eleven parts a sailor) or the wires: too small to make out in a half-size, rippled reflection
     for (const c of v.crew) c.g.traverse((o) => o.layers.disable(MIRRORED));
@@ -1116,10 +1369,10 @@ export class World {
     this.guides = guides(race.wind.p.tws); this.scene.add(this.guides);
     for (const f of this.foam) f.age = 99;
     for (const w of this.wakes) w.dispose(this.scene);
-    this.wakes = race.boats.map(() => new Wake(this.scene, this.wakeU));
-    this.juryWake?.dispose(this.scene); this.juryWake = new Wake(this.scene, this.wakeU);
+    this.wakes = race.boats.map(() => new Wake(this.scene, this.wakeU, this.wakeField));
+    this.juryWake?.dispose(this.scene); this.juryWake = new Wake(this.scene, this.wakeU, this.wakeField);
     for (const h of this.contacts || []) h.dispose(this.scene);
-    this.contacts = race.boats.map(() => new HullContact(this.scene, this.wakeU));
+    this.contacts = race.boats.map(() => new HullContact(this.scene, this.wakeU, this.wakeField));
     this.wild.reset(race);
     this.plane.reset(race, (x, z) => groundAt(x + race.at.x, z + race.at.z)); // the land is laid round race.at
     this.jets.reset(race);
@@ -1141,6 +1394,9 @@ export class World {
       jobs.push(r.compileAsync(this.scene, this.camera));
       // the sea's mirror: its camera sees only the MIRRORED layer, no lights among it, so its programs are variants of their own
       if (this.mirror) { r.setRenderTarget(this.mirror.rt); jobs.push(r.compileAsync(this.scene, this.mirror.cam)); }
+      // the wake field's heights, and the hulls under the surface (drawn with one material in place of their own)
+      if (this.wakeField.rt) { r.setRenderTarget(this.wakeField.rt); jobs.push(r.compileAsync(this.wakeField.scene, this.wakeField.cam)); }
+      if (this.under) { const us = new THREE.Scene(); us.add(new THREE.Mesh(new THREE.BoxGeometry(), this.under.mat)); r.setRenderTarget(this.under.rt); jobs.push(r.compileAsync(us, this.camera)); }
       // the full-screen passes (the chop's FFT, the bloom) each swap a material onto one quad: set them out side by side.
       // All draw into targets but the bloom's composite, which draws to the screen.
       for (const pass of [this.ocean, this.post]) {
@@ -1185,21 +1441,33 @@ export class World {
     if (Q.mirror > 0 && Post.supported(r)) { if (!this.mirror) this.mirror = new Mirror(r); this.mirror.setScale(Q.mirror); }
     else if (this.mirror) { this.mirror.dispose(); this.mirror = null; }
     this.reflU.uReflOn.value = 0;
-    // the chop
+    // the sea: its FFT layers
+    const O = this.oceanU;
     if (Q.fft && Ocean.supported(r)) {
-      if (!this.ocean || this.ocean.N !== Q.fft) {
+      if (!this.ocean || this.ocean.N !== Q.fft || this.ocean.Ls.join() !== Q.seas.join()) {
         if (this.ocean) this.ocean.dispose();
-        this.ocean = new Ocean(r, Q.fft, 40);
+        this.ocean = new Ocean(r, Q.fft, Q.seas);
         if (this.race) this.ocean.setWind(this.race.wind.p.tws);
       }
-      this.oceanU.uFftD.value = this.ocean.disp.texture; this.oceanU.uFftS.value = this.ocean.slope.texture;
-      this.oceanU.uFftL.value = this.ocean.L; this.oceanU.uFftOn.value = 1;
+      O.uFftD.value = this.ocean.disp.texture; this.oceanSlopes();
+      O.uFftL.value.set(Q.seas[0], Q.seas[1] || 1, Q.seas[2] || 1); O.uFftOn.value = 1; O.uFftN.value = Q.seas.length;
     } else {
       if (this.ocean) { this.ocean.dispose(); this.ocean = null; }
-      this.oceanU.uFftOn.value = 0; this.oceanU.uFftD.value = this.oceanU.uFftS.value = blankOcean();
+      O.uFftOn.value = 0; O.uFftN.value = 0; O.uFftD.value = O.uFftS.value = O.uFftS1.value = O.uFftS2.value = blankOcean();
     }
+    // the boats' waves in the water, and the hulls under it
+    this.wakeField.setOn(Q.wake && Post.supported(r));
+    if (Q.under && Post.supported(r)) { if (!this.under) this.under = new Under(r, { ...this.waterU }); this.under.setScale(Q.under); }
+    else if (this.under) { this.under.dispose(); this.under = null; }
+    this.underU.uUnderOn.value = 0;
     if (hadShadow !== sh) this.scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); }); // shadows on/off: recompile
     if (this.race) this.prepare(); // a new level, new shader variants: compiled aside while the race goes on
+  }
+
+  // the FFT layers' slopes: the textures written this frame (the 40 m layer's alternate, for its foam)
+  oceanSlopes() {
+    const O = this.oceanU, oc = this.ocean;
+    O.uFftS.value = oc.slope(0); O.uFftS1.value = oc.slope(1) || blankOcean(); O.uFftS2.value = oc.slope(2) || blankOcean();
   }
 
   resize(w, h) {
@@ -1476,12 +1744,19 @@ export class World {
     if (this.preparing) return; // shaders still compiling (prepare)
     const at = this.race?.at; // the camera's place in the venue's frame, for the clouds (light.js)
     this.skyU.uSkyAt.value.set(cam.position.x + (at?.x || 0), cam.position.y, cam.position.z + (at?.z || 0));
-    if (this.ocean) this.ocean.update(this.waterU.uTime.value);
+    if (this.ocean) { this.ocean.update(this.waterU.uTime.value); this.oceanSlopes(); }
+    const P = this.race?.player;
+    if (P) this.wakeField.render(r, P.x, P.z); // the boats' waves round yours
     sc.updateMatrixWorld(); cam.updateMatrixWorld();
     const au = sc.matrixWorldAutoUpdate; sc.matrixWorldAutoUpdate = false; // once is enough for all the passes
     const on = !!this.mirror && this.mode !== 'top' && this.mirror.render(sc, cam); // from straight above the sea reflects next to nothing
     this.reflU.uReflOn.value = on ? 1 : 0;
     if (on) { this.reflU.uRefl.value = this.mirror.rt.texture; this.reflU.uReflMat.value.copy(this.mirror.matrix); }
+    if (this.under) { // the hulls under the surface, for the water to show through itself
+      this.under.render(sc, cam);
+      const v = r.getDrawingBufferSize(this._dbs || (this._dbs = new THREE.Vector2()));
+      this.underU.uUnder.value = this.under.rt.texture; this.underU.uScreenInv.value.set(1 / v.x, 1 / v.y); this.underU.uUnderOn.value = 1;
+    }
     if (this.post) {
       this.post.render(sc, cam, () => {
         const ac = r.autoClear, sm = r.shadowMap.autoUpdate;
