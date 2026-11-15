@@ -49,11 +49,11 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
       <div className="hm-page hm-head-in">
         <Link className="hm-brand" href="/" aria-label="RYC · Up and down"><Logo /><span className="hm-brand-t">Up and down</span></Link>
         <nav className="hm-nav" aria-label={t('Main', 'Главное')}>
-          <Link className="hm-tab" href="/help" {...cur('help')}>{t('How to play', 'Как играть')}</Link>
           <Link className="hm-tab" href="/race" {...cur('race')}>{t('Today’s race', 'Гонка дня')}</Link>
           <Link className="hm-tab" href="/race/rating" {...cur('rating')}>{t('Rating', 'Рейтинг')}</Link>
           <Link className="hm-tab" href="/race/free" {...cur('free')}>{t('Free race', 'Свободная гонка')}</Link>
           <Link className="hm-tab hm-tab-x" href="/boat" {...cur('boat')}>{t('Your boat', 'Твоя яхта')}</Link>
+          <Link className="hm-tab" href="/help" {...cur('help')}>{t('How to play', 'Как играть')}</Link>
           <Link className="hm-tab" href="/learn" {...cur('learn')}>{t('Learn to race', 'Учись гоняться')}</Link>
           <Link className="hm-tab" href="/faq" {...cur('faq')}>{t('Questions', 'Вопросы')}</Link>
           <Link className="hm-tab hm-tab-x" href="/iyt" {...cur('iyt')}>{'Sailing Certification Test'}</Link>
