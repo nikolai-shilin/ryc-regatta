@@ -1243,8 +1243,9 @@ export class World {
     // boats
     const cp = this.camera.position, farD = this.mode === 'top' ? 1e9 : 85;
     race.boats.forEach((b, i) => {
-      const v = this.boatViews[i];
-      v.setDetail(b === P || Math.hypot(b.x - cp.x, b.z - cp.z) < farD * (this.quality === 'low' ? 0.6 : 1) && this.mode !== 'top');
+      const v = this.boatViews[i], d = Math.hypot(b.x - cp.x, b.z - cp.z);
+      v.setDetail(b === P || d < farD * (this.quality === 'low' ? 0.6 : 1) && this.mode !== 'top');
+      v.setCrewNear(this.quality !== 'low' && Math.hypot(d, cp.y) < 25); // the full figures only close up, and never on Low
       v.update(b, t, this.W, this.mode === 'drone');
       if (v.crew) v.crew[0].g.visible = !(b === P && this.mode === 'helm'); // at the helm, you are the helmsman
       this.settle(v, dt);

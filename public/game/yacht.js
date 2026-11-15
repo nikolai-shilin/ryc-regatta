@@ -744,50 +744,52 @@ function shell(rings, p, a0, a1, low, high, out, nA = 28, nY = 6) {
   return g;
 }
 const ELBOW = 1.15; // the forearm bent forward
-const SAILOR = (() => {
-  const R = (y, r, x = 0) => [y, r, r, r, x]; // a round ring
+// lo: the plain figure for far off (fewer sides to every part, and no ears, lips, brows, frames, knuckles or button)
+function crewParts(lo) {
+  const S = (n) => (lo ? Math.max(4, Math.round(n / 2)) : n), hi = (g) => (lo ? null : g);
   // the legs hang from the hip joint: the thigh broad at the top and lean at the knee, the shin with its calf behind,
   // and a sea boot to mid-calf (a low deck shoe under shorts) on a sole with a heel and a rounded toe
-  const thigh = loft([[0.06, 0, 0, 0, -0.01], [0.04, 0.078, 0.076, 0.088], [-0.02, 0.096, 0.095, 0.1], [-0.14, 0.092, 0.097, 0.088], [-0.27, 0.078, 0.085, 0.074], [-0.38, 0.063, 0.068, 0.06], [-0.45, 0.057, 0.06, 0.053], [-0.48, 0, 0, 0]], 12);
-  const knee = new THREE.SphereGeometry(0.056, 10, 7).scale(1.08, 1, 0.98);
-  const shin = loft([[0.02, 0, 0, 0], [0, 0.053, 0.055, 0.052], [-0.08, 0.057, 0.052, 0.076], [-0.16, 0.055, 0.048, 0.072], [-0.27, 0.045, 0.042, 0.05], [-0.38, 0.036, 0.037, 0.038], [-0.45, 0.036, 0.037, 0.038], [-0.47, 0, 0, 0]], 10);
-  const footGeo = loft([[-0.075, 0, 0, 0], [-0.065, 0.036, 0.03, 0.05], [-0.035, 0.046, 0.034, 0.064], [0.03, 0.05, 0.034, 0.054], [0.11, 0.054, 0.034, 0.036], [0.18, 0.048, 0.032, 0.025], [0.21, 0.034, 0.028, 0.016], [0.222, 0, 0, 0, -0.008]], 10)
+  const thigh = loft([[0.06, 0, 0, 0, -0.01], [0.04, 0.078, 0.076, 0.088], [-0.02, 0.096, 0.095, 0.1], [-0.14, 0.092, 0.097, 0.088], [-0.27, 0.078, 0.085, 0.074], [-0.38, 0.063, 0.068, 0.06], [-0.45, 0.057, 0.06, 0.053], [-0.48, 0, 0, 0]], S(12));
+  const knee = new THREE.SphereGeometry(0.056, S(10), S(7)).scale(1.08, 1, 0.98);
+  const shin = loft([[0.02, 0, 0, 0], [0, 0.053, 0.055, 0.052], [-0.08, 0.057, 0.052, 0.076], [-0.16, 0.055, 0.048, 0.072], [-0.27, 0.045, 0.042, 0.05], [-0.38, 0.036, 0.037, 0.038], [-0.45, 0.036, 0.037, 0.038], [-0.47, 0, 0, 0]], S(10));
+  const footGeo = loft([[-0.075, 0, 0, 0], [-0.065, 0.036, 0.03, 0.05], [-0.035, 0.046, 0.034, 0.064], [0.03, 0.05, 0.034, 0.054], [0.11, 0.054, 0.034, 0.036], [0.18, 0.048, 0.032, 0.025], [0.21, 0.034, 0.028, 0.016], [0.222, 0, 0, 0, -0.008]], S(10))
     .rotateZ(-Math.PI / 2).translate(0, -SHIN - 0.035, 0);
-  const boot = mergeGeometries([footGeo, loft([[-SHIN - 0.04, 0.046, 0.046, 0.05], [-SHIN + 0.04, 0.043, 0.044, 0.048], [-0.28, 0.05, 0.05, 0.06], [-0.268, 0.052, 0.052, 0.062]], 10)]);
-  const shoe = mergeGeometries([footGeo, loft([[-SHIN - 0.04, 0.044, 0.044, 0.048], [-SHIN, 0.04, 0.042, 0.044], [-SHIN + 0.012, 0.039, 0.04, 0.042]], 10)]);
+  const boot = mergeGeometries([footGeo, loft([[-SHIN - 0.04, 0.046, 0.046, 0.05], [-SHIN + 0.04, 0.043, 0.044, 0.048], [-0.28, 0.05, 0.05, 0.06], [-0.268, 0.052, 0.052, 0.062]], S(10))]);
+  const shoe = mergeGeometries([footGeo, loft([[-SHIN - 0.04, 0.044, 0.044, 0.048], [-SHIN, 0.04, 0.042, 0.044], [-SHIN + 0.012, 0.039, 0.04, 0.042]], S(10))]);
   const sole = new THREE.BoxGeometry(0.3, 0.022, 0.1).translate(0.07, -SHIN - 0.064, 0);
   // the pelvis on the body (it stays as the body leans): the seat behind, the hips either side
-  const pelvis = loft([[-0.03, 0, 0, 0, -0.01], [-0.01, 0.12, 0.06, 0.09], [0.03, 0.165, 0.085, 0.115], [0.09, 0.168, 0.095, 0.11], [0.15, 0.16, 0.1, 0.105]], 16);
+  const pelvis = loft([[-0.03, 0, 0, 0, -0.01], [-0.01, 0.12, 0.06, 0.09], [0.03, 0.165, 0.085, 0.115], [0.09, 0.168, 0.095, 0.11], [0.15, 0.16, 0.1, 0.105]], S(16));
   // the torso in its jacket: hem, waist, the chest deeper and broader, the shoulders sloping in to a high collar
-  const torso = loft([[0.03, 0, 0, 0], [0.04, 0.155, 0.1, 0.105], [0.08, 0.172, 0.112, 0.118], [0.17, 0.164, 0.112, 0.11], [0.27, 0.172, 0.124, 0.112], [0.36, 0.186, 0.134, 0.114], [0.42, 0.194, 0.126, 0.112], [0.465, 0.2, 0.11, 0.1], [0.5, 0.17, 0.088, 0.084], [0.525, 0.115, 0.074, 0.07], [0.545, 0.08, 0.068, 0.066], [0.6, 0.067, 0.064, 0.062], [0.6, 0, 0, 0]], 16, 2.3);
+  const torso = loft([[0.03, 0, 0, 0], [0.04, 0.155, 0.1, 0.105], [0.08, 0.172, 0.112, 0.118], [0.17, 0.164, 0.112, 0.11], [0.27, 0.172, 0.124, 0.112], [0.36, 0.186, 0.134, 0.114], [0.42, 0.194, 0.126, 0.112], [0.465, 0.2, 0.11, 0.1], [0.5, 0.17, 0.088, 0.084], [0.525, 0.115, 0.074, 0.07], [0.545, 0.08, 0.068, 0.066], [0.6, 0.067, 0.064, 0.062], [0.6, 0, 0, 0]], S(16), 2.3);
   // the lifejacket: an inflatable's two lobes down the chest, over the shoulders and round the back of the neck, and
   // its waist belt with the buckle in front
   const yoke = new THREE.CatmullRomCurve3([[0.12, 0.22, 0.07], [0.14, 0.34, 0.082], [0.112, 0.45, 0.1], [0.035, 0.515, 0.112], [-0.055, 0.52, 0.094], [-0.082, 0.54, 0.04], [-0.082, 0.54, -0.04], [-0.055, 0.52, -0.094], [0.035, 0.515, -0.112], [0.112, 0.45, -0.1], [0.14, 0.34, -0.082], [0.12, 0.22, -0.07]].map((v) => new THREE.Vector3(...v)));
   const vest = mergeGeometries([
-    sweep(yoke, 40, 0.033, 0.017, new THREE.Vector3(0, 0.34, 0)),
-    loft([[0.118, 0.17, 0.116, 0.118], [0.146, 0.172, 0.118, 0.12]], 18, 2.3),
+    sweep(yoke, S(40), 0.033, 0.017, new THREE.Vector3(0, 0.34, 0), S(8)),
+    loft([[0.118, 0.17, 0.116, 0.118], [0.146, 0.172, 0.118, 0.12]], S(18), 2.3),
     new THREE.BoxGeometry(0.03, 0.045, 0.06).translate(0.122, 0.132, 0),
   ]);
   // arms from the shoulder joint: the deltoid, the upper arm to the elbow, the forearm bent forward to the cuff
-  const upperArm = loft([[0.04, 0, 0, 0, -0.004], [0.028, 0.04, 0.042, 0.044], [0.004, 0.056, 0.056, 0.056], [-0.06, 0.054, 0.056, 0.052], [-0.16, 0.047, 0.051, 0.045], [-0.25, 0.043, 0.045, 0.043], [-0.29, 0, 0, 0]], 10);
-  const elbowJ = new THREE.SphereGeometry(0.045, 8, 6).translate(0, -0.27, 0);
+  const upperArm = loft([[0.04, 0, 0, 0, -0.004], [0.028, 0.04, 0.042, 0.044], [0.004, 0.056, 0.056, 0.056], [-0.06, 0.054, 0.056, 0.052], [-0.16, 0.047, 0.051, 0.045], [-0.25, 0.043, 0.045, 0.043], [-0.29, 0, 0, 0]], S(10));
+  const elbowJ = new THREE.SphereGeometry(0.045, S(8), S(6)).translate(0, -0.27, 0);
   const bend = (g) => g.rotateZ(ELBOW).translate(0, -0.27, 0);
-  const forearm = bend(loft([[0.02, 0, 0, 0], [0, 0.044, 0.046, 0.044], [-0.07, 0.046, 0.05, 0.046], [-0.16, 0.038, 0.04, 0.036], [-0.2, 0.04, 0.042, 0.04], [-0.225, 0.042, 0.044, 0.042], [-0.23, 0, 0, 0]], 10));
+  const forearm = bend(loft([[0.02, 0, 0, 0], [0, 0.044, 0.046, 0.044], [-0.07, 0.046, 0.05, 0.046], [-0.16, 0.038, 0.04, 0.036], [-0.2, 0.04, 0.042, 0.04], [-0.225, 0.042, 0.044, 0.042], [-0.23, 0, 0, 0]], S(10)));
   // a gloved hand gripping: flat across (the palm faces in), the fingers curled into a fist, the thumb forward
   const hand = bend(mergeGeometries([
-    loft([[-0.2, 0.026, 0.028, 0.028], [-0.24, 0.024, 0.042, 0.036], [-0.28, 0.024, 0.046, 0.032, 0.004], [-0.31, 0.02, 0.036, 0.026, 0.008], [-0.325, 0, 0, 0, 0.012]], 10),
-    new THREE.CapsuleGeometry(0.012, 0.03, 2, 6).rotateZ(0.9).translate(0.04, -0.255, 0),
-    ...[-0.016, 0.002, 0.019, 0.034].map((x, i) => new THREE.SphereGeometry(0.0125, 6, 4).translate(x, -0.304 + Math.abs(i - 1.5) * 0.004, 0)), // the knuckles of the fingers curled round
+    loft([[-0.2, 0.026, 0.028, 0.028], [-0.24, 0.024, 0.042, 0.036], [-0.28, 0.024, 0.046, 0.032, 0.004], [-0.31, 0.02, 0.036, 0.026, 0.008], [-0.325, 0, 0, 0, 0.012]], S(10)),
+    ...(lo ? [] : [
+      new THREE.CapsuleGeometry(0.012, 0.03, 2, 6).rotateZ(0.9).translate(0.04, -0.255, 0),
+      ...[-0.016, 0.002, 0.019, 0.034].map((x, i) => new THREE.SphereGeometry(0.0125, 6, 4).translate(x, -0.304 + Math.abs(i - 1.5) * 0.004, 0)), // the knuckles of the fingers curled round
+    ]),
   ]));
   // the neck and the head: jaw and chin, cheekbones, brow, the back of the skull; a nose, ears
-  const neck = loft([[0.5, 0.054, 0.054, 0.054], [0.58, 0.052, 0.05, 0.055, -0.005], [0.635, 0.054, 0.05, 0.056, -0.008]], 10);
+  const neck = loft([[0.5, 0.054, 0.054, 0.054], [0.58, 0.052, 0.05, 0.055, -0.005], [0.635, 0.054, 0.05, 0.056, -0.008]], S(10));
   const HEAD_RINGS = [[0.592, 0, 0, 0, 0.055], [0.598, 0.036, 0.028, 0.022, 0.05], [0.614, 0.064, 0.055, 0.054, 0.028], [0.64, 0.073, 0.072, 0.074, 0.012], [0.67, 0.075, 0.087, 0.09, 0.004], [0.705, 0.078, 0.09, 0.095], [0.745, 0.075, 0.084, 0.094, -0.004], [0.773, 0.062, 0.066, 0.08, -0.008], [0.792, 0.036, 0.036, 0.048, -0.01], [0.798, 0, 0, 0, -0.012]];
   const head = mergeGeometries([
-    loft(HEAD_RINGS, 14, 2.15),
-    loft([[0.703, 0.008, 0.004, 0.006, 0.088], [0.688, 0.01, 0.009, 0.008, 0.088], [0.672, 0.013, 0.015, 0.008, 0.087], [0.661, 0.016, 0.017, 0.01, 0.087], [0.655, 0.012, 0.01, 0.01, 0.088], [0.652, 0, 0, 0, 0.088]], 8), // the nose
-    ...[1, -1].map((sz) => new THREE.SphereGeometry(1, 8, 6).scale(0.012, 0.022, 0.0065).rotateX(sz * 0.22).rotateZ(0.12).translate(-0.006, 0.682, sz * 0.077)), // the ears
+    loft(HEAD_RINGS, S(14), 2.15),
+    loft([[0.703, 0.008, 0.004, 0.006, 0.088], [0.688, 0.01, 0.009, 0.008, 0.088], [0.672, 0.013, 0.015, 0.008, 0.087], [0.661, 0.016, 0.017, 0.01, 0.087], [0.655, 0.012, 0.01, 0.01, 0.088], [0.652, 0, 0, 0, 0.088]], S(8)), // the nose
+    ...(lo ? [] : [1, -1]).map((sz) => new THREE.SphereGeometry(1, 8, 6).scale(0.012, 0.022, 0.0065).rotateX(sz * 0.22).rotateZ(0.12).translate(-0.006, 0.682, sz * 0.077)), // the ears
   ]);
-  // short hair round the back and the sides under the cap; a beard on some
   // the hair hugs the skull: down to the nape behind, up and over the ears, a sideburn in front of each, and the
   // hairline at the temples; above it all goes under the cap
   const hair = shell(HEAD_RINGS, 2.15, 1.34, Math.PI * 2 - 1.34, (a) => {
@@ -795,12 +797,12 @@ const SAILOR = (() => {
     if (d < 1.46) return 0.672; // the sideburn
     if (d < 1.78) return 0.703; // over the ear
     return THREE.MathUtils.lerp(0.69, 0.646, THREE.MathUtils.smoothstep(d, 1.78, Math.PI)); // down to the nape
-  }, 0.762, 0.0035, 32);
+  }, 0.762, 0.0035, S(32), S(6));
   // a short, trimmed beard on the jaw and the chin (its back inside the neck), and the mouth
-  const beard = loft([[0.59, 0, 0, 0, 0.055], [0.596, 0.038, 0.03, 0.022, 0.05], [0.613, 0.066, 0.058, 0.03, 0.029], [0.632, 0.075, 0.074, 0.03, 0.013], [0.645, 0.076, 0.08, 0.03, 0.009]], 14, 2.15);
-  const mouth = new THREE.SphereGeometry(1, 10, 4).scale(0.004, 0.0028, 0.016).translate(0.0828, 0.637, 0);
+  const beard = loft([[0.59, 0, 0, 0, 0.055], [0.596, 0.038, 0.03, 0.022, 0.05], [0.613, 0.066, 0.058, 0.03, 0.029], [0.632, 0.075, 0.074, 0.03, 0.013], [0.645, 0.076, 0.08, 0.03, 0.009]], S(14), 2.15);
+  const mouth = hi(new THREE.SphereGeometry(1, 10, 4).scale(0.004, 0.0028, 0.016).translate(0.0828, 0.637, 0));
   // the eyebrows, just showing between the glasses and the cap
-  const brows = mergeGeometries([1, -1].map((sz) => new THREE.CapsuleGeometry(0.0035, 0.024, 2, 4).rotateX(Math.PI / 2 + sz * 0.15).translate(0.0875, 0.72, sz * 0.031)));
+  const brows = hi(mergeGeometries([1, -1].map((sz) => new THREE.CapsuleGeometry(0.0035, 0.024, 2, 4).rotateX(Math.PI / 2 + sz * 0.15).translate(0.0875, 0.72, sz * 0.031))));
   // sport sunglasses: two lenses wrapped round the face (a rounded-square outline, deeper at the outer edge), each on a
   // thin frame, a bridge over the nose and the arms back to the ears. The lenses bring their own colours: a mirror
   // that is darker at the top, where it shows the sky's deep blue, than at the bottom
@@ -823,15 +825,15 @@ const SAILOR = (() => {
   }));
   const LENSES = [lens('#10151c', '#3b4654'), lens('#14284a', '#4f86b8'), lens('#3a1a0c', '#c0602a')]; // smoke, blue mirror, fire mirror
   const tube = (pts, r, closed = false) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, closed), closed ? 24 : 12, r, 4, closed);
-  const frame = mergeGeometries([
+  const frame = hi(mergeGeometries([
     ...[1, -1].map((sz) => tube(outline(sz, 1.04).map(([phi, y]) => onFace(phi, y, 0.001)), 0.0024, true)),
     tube([onFace(0.11, 0.706, 0.001), onFace(0, 0.703, 0.003), onFace(-0.11, 0.706, 0.001)], 0.0028), // the bridge
     ...[1, -1].map((sz) => tube([onFace(sz * 0.83, 0.705, 0.002), onFace(sz * 1.05, 0.705, 0.003), onFace(sz * 1.35, 0.702, 0.0), onFace(sz * 1.62, 0.69, -0.008)], 0.0026)), // the arms
-  ]);
+  ]));
   // a cap: the crown, its brim curved down at the sides and sloping down in front (a top and an underside joined at
   // the edge), and the button on top
   const brim = (() => {
-    const pos = [], uv = [], idx = [], NA = 20, NR = 3, T = 0.005, SPAN = 1.2;
+    const pos = [], uv = [], idx = [], NA = S(20), NR = lo ? 2 : 3, T = 0.005, SPAN = 1.2;
     for (const side of [0, 1]) for (let i = 0; i <= NA; i++) for (let j = 0; j <= NR; j++) {
       const th = (i / NA * 2 - 1) * SPAN, c = Math.cos(th), sn = Math.sin(th), r = j / NR, z = 0.09 * sn * (1 + 0.04 * r);
       const len = ((c - Math.cos(SPAN)) / (1 - Math.cos(SPAN))) ** 0.7; // the bill: longest in front, gone at its ends
@@ -852,17 +854,20 @@ const SAILOR = (() => {
     return g;
   })();
   const cap = mergeGeometries([
-    new THREE.SphereGeometry(1, 16, 7, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.104, 0.082, 0.09).translate(-0.008, 0.724, 0),
-    new THREE.CylinderGeometry(1, 1, 0.006, 16, 1, true).scale(0.105, 1, 0.091).translate(-0.008, 0.727, 0), // the sweatband's seam
+    new THREE.SphereGeometry(1, S(16), S(7), 0, Math.PI * 2, 0, Math.PI / 2).scale(0.104, 0.082, 0.09).translate(-0.008, 0.724, 0),
     brim,
-    new THREE.SphereGeometry(0.011, 8, 4).scale(1, 0.5, 1).translate(-0.01, 0.806, 0), // the button
+    ...(lo ? [] : [
+      new THREE.CylinderGeometry(1, 1, 0.006, 16, 1, true).scale(0.105, 1, 0.091).translate(-0.008, 0.727, 0), // the sweatband's seam
+      new THREE.SphereGeometry(0.011, 8, 4).scale(1, 0.5, 1).translate(-0.01, 0.806, 0), // the button
+    ]),
   ]);
   const helmet = mergeGeometries([
-    new THREE.SphereGeometry(1, 16, 9, 0, Math.PI * 2, 0, Math.PI * 0.6).scale(0.12, 0.12, 0.104).rotateZ(0.4).translate(-0.012, 0.708, 0),
-    new THREE.CylinderGeometry(0.09, 0.09, 0.01, 14, 1, false, 0, Math.PI).scale(0.7, 1, 0.95).rotateY(-Math.PI / 2).rotateZ(-0.2).translate(0.09, 0.742, 0),
+    new THREE.SphereGeometry(1, S(16), S(9), 0, Math.PI * 2, 0, Math.PI * 0.6).scale(0.12, 0.12, 0.104).rotateZ(0.4).translate(-0.012, 0.708, 0),
+    new THREE.CylinderGeometry(0.09, 0.09, 0.01, S(14), 1, false, 0, Math.PI).scale(0.7, 1, 0.95).rotateY(-Math.PI / 2).rotateZ(-0.2).translate(0.09, 0.742, 0),
   ]);
   return { thigh, knee, shin, boot, shoe, sole, pelvis, torso, vest, upperArm, elbowJ, forearm, hand, neck, head, hair, beard, mouth, brows, LENSES, frame, cap, helmet };
-})();
+}
+const SAILOR = crewParts(false), SAILOR_LO = crewParts(true);
 // A sailor is one draw (skin.js): the joints (body, upper body, hips, knees, arms) are bones. The parts' colours ride
 // on the vertices, each from the material it was given, so all the sailors in the race share this one.
 const CREW_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75 });
@@ -884,28 +889,49 @@ export function sailor(m) {
   m = { ...m, jacket, vest, cap };
   const g = new THREE.Group(), body = new THREE.Bone(), upper = new THREE.Bone();
   body.add(upper);
-  const bones = [body, upper], parts = []; // [geometry, its bone, the material it would have had]
-  const wide = (geo) => geo.clone().scale(1, 1, build); // a broader or a slighter build: wider across, not taller
-  parts.push([wide(SAILOR.pelvis), body, m.trousers]);
   const legs = [-1, 1].map((sz) => {
     const hip = new THREE.Bone(), knee = new THREE.Bone();
     hip.position.set(0, 0.07, sz * 0.095 * build); knee.position.y = -THIGH; hip.add(knee); body.add(hip);
-    bones.push(hip, knee);
-    parts.push([SAILOR.thigh, hip, m.trousers], [SAILOR.knee, knee, m.trousers], [SAILOR.shin, knee, shins], [shorts ? SAILOR.shoe : SAILOR.boot, knee, BOOT], [SAILOR.sole, knee, SOLE]);
     return { hip, knee };
   });
-  parts.push([wide(SAILOR.torso), upper, m.jacket], [wide(SAILOR.vest), upper, m.vest], [SAILOR.neck, upper, m.skin], [SAILOR.head, upper, m.skin],
-    [SAILOR.hair, upper, hair], [SAILOR.brows, upper, hair], [SAILOR.mouth, upper, m.skin.color.clone().offsetHSL(-0.02, 0.08, -0.26)], [m.helmet ? SAILOR.helmet : SAILOR.cap, upper, m.cap], [SAILOR.LENSES[(n * 5) % 3], upper, null], [SAILOR.frame, upper, frameCol]);
-  if (n % 5 === 1) parts.push([SAILOR.beard, upper, hair]);
   const arms = [-1, 1].map((sz) => {
     const a = new THREE.Bone(); a.position.set(0, 0.47, sz * 0.2 * build); a.rotation.x = -sz * 0.12; upper.add(a);
-    bones.push(a); parts.push([SAILOR.upperArm, a, m.jacket], [SAILOR.elbowJ, a, m.jacket], [SAILOR.forearm, a, m.jacket], [SAILOR.hand, a, hands]);
     return a;
   });
-  const mesh = rigidSkin(parts.map(([geo, bone, mat]) => [geo, bone, mat && (mat.isColor ? mat : col(mat))]), bones, body, CREW_MAT, SAILOR_SPHERE);
-  mesh.userData.detail = true; // small: hidden far off with the fittings (setDetail)
-  g.add(mesh);
-  return { g, body, upper, legs, arms, mesh };
+  const bones = [body, upper, ...legs.flatMap((l) => [l.hip, l.knee]), ...arms];
+  // the joints bend as one surface: near a joint a part follows the bone across it too, half at the joint itself and
+  // all of it d beyond (t: how far past the joint, along the part). The waist bends between the hips and the chest as
+  // she leans, and the top of the arm stays with the shoulder as the arm swings. The top of the thigh, inside the
+  // pelvis, goes with the pelvis (blended below the joint it would dent the front of the hip); the knees stay rigid,
+  // their round caps already filling the bend however far it goes
+  const joint = (t, d) => 0.5 + 0.5 * Math.sign(t) * THREE.MathUtils.smoothstep(Math.abs(t), 0, d);
+  const waist = () => (x, y) => [[body, joint(0.12 - y, 0.12)]];
+  const thighBlend = () => (x, y) => [[body, y > 0 ? THREE.MathUtils.smoothstep(y, 0, 0.05) : 0]];
+  const shoulder = () => (x, y) => [[upper, joint(y + 0.02, 0.14)]];
+  const wide = (geo) => geo.clone().scale(1, 1, build); // a broader or a slighter build: wider across, not taller
+  const mouth = m.skin.color.clone().offsetHSL(-0.02, 0.08, -0.26);
+  // the parts of a figure: [geometry, its bone, the material it would have had (or a colour), how it bends]
+  const dress = (P) => [
+    [wide(P.pelvis), body, m.trousers],
+    ...legs.flatMap((l) => [[P.thigh, l.hip, m.trousers, thighBlend()], [P.knee, l.knee, m.trousers], [P.shin, l.knee, shins], [shorts ? P.shoe : P.boot, l.knee, BOOT], [P.sole, l.knee, SOLE]]),
+    [wide(P.torso), upper, m.jacket, waist()], [wide(P.vest), upper, m.vest, waist()], [P.neck, upper, m.skin], [P.head, upper, m.skin], [P.hair, upper, hair],
+    [P.brows, upper, hair], [P.mouth, upper, mouth], [m.helmet ? P.helmet : P.cap, upper, m.cap], [P.LENSES[(n * 5) % 3], upper, null], [P.frame, upper, frameCol],
+    ...(n % 5 === 1 ? [[P.beard, upper, hair]] : []),
+    ...arms.flatMap((a) => [[P.upperArm, a, m.jacket, shoulder()], [P.elbowJ, a, m.jacket], [P.forearm, a, m.jacket], [P.hand, a, hands]]),
+  ].filter(([geo]) => geo).map(([geo, bone, mat, blend]) => [geo, bone, mat && (mat.isColor ? mat : col(mat)), blend]);
+  // both figures ride the same bones; level() shows one: 2 the full figure, 1 the plain one, 0 neither
+  const mesh = rigidSkin(dress(SAILOR), bones, body, CREW_MAT, SAILOR_SPHERE), lo = rigidSkin(dress(SAILOR_LO), bones, body, CREW_MAT, SAILOR_SPHERE);
+  for (const x of [mesh, lo]) x.userData.detail = false; // the boat hides them far off itself (crewLevel), not with the fittings
+  lo.visible = false;
+  g.add(mesh, lo);
+  const level = (l) => { mesh.visible = l === 2; lo.visible = l === 1; };
+  return { g, body, upper, legs, arms, mesh, lo, level };
+}
+
+// which figure a boat's crew show: none far off (with the small fittings), the plain ones beyond near, the full ones close
+function crewLevel(v) {
+  const l = v.detailOn === false ? 0 : v.crewNear === false ? 1 : 2;
+  for (const c of v.crew || []) c.s.level(l);
 }
 
 // ---------- the boat ----------
@@ -1190,6 +1216,14 @@ export class BoatView {
     }
     for (const o of this.small) o.visible = on;
     this.detailOn = on;
+    crewLevel(this);
+  }
+  // the crew within a few tens of metres of the camera get their full figures; further off the plain ones, where a
+  // nose or a lens would be a pixel
+  setCrewNear(near) {
+    if (this.crewNear === near) return;
+    this.crewNear = near;
+    crewLevel(this);
   }
   update(b, t, W, showLabel) {
     const y = waveHeight(W, b.x, b.z, t), fx = Math.sin(b.h), fz = -Math.cos(b.h);

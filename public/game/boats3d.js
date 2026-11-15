@@ -316,6 +316,7 @@ class ClassView {
   }
   bake() { BoatView.prototype.bake.call(this); }
   setDetail(on) { BoatView.prototype.setDetail.call(this, on); }
+  setCrewNear(near) { BoatView.prototype.setCrewNear.call(this, near); }
   // afloat (or flying), heeled and pitched by the sea; side: the boom's side
   place(b, t, W, ride = 0) {
     const y = waveHeight(W, b.x, b.z, t), fx = Math.sin(b.h), fz = -Math.cos(b.h), L = this.drawnL * 0.4;

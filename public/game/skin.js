@@ -5,15 +5,22 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-// parts: [geometry, bone, colour?] — a colour (a THREE.Color) paints the part's vertices for a vertexColors material;
-// without one the geometry brings its own. root: the top bone (it goes in the mesh); sphere: bounds every pose.
+// parts: [geometry, bone, colour?, blend?] — a colour (a THREE.Color) paints the part's vertices for a vertexColors
+// material; without one the geometry brings its own. A blend lets a part bend across a joint instead of meeting the
+// next part there as two rigid pieces overlapping: blend(x, y, z), at the vertex in the part's own frame (its bone's),
+// gives the other bones it follows as [[bone, weight], …], up to three; what weight is left stays with the part's
+// bone. root: the top bone (it goes in the mesh); sphere: bounds every pose.
 export function rigidSkin(parts, bones, root, material, sphere) {
   const mesh = new THREE.SkinnedMesh(new THREE.BufferGeometry(), material);
   mesh.add(root); mesh.updateMatrixWorld(true); // the rest pose: where each part sits on its bone
-  mesh.geometry = mergeGeometries(parts.map(([geo, bone, c]) => {
-    const p = geo.clone().applyMatrix4(bone.matrixWorld), n = p.attributes.position.count, b = bones.indexOf(bone);
+  mesh.geometry = mergeGeometries(parts.map(([geo, bone, c, blend]) => {
+    const p = geo.clone().applyMatrix4(bone.matrixWorld), n = p.attributes.position.count, b = bones.indexOf(bone), at = geo.attributes.position;
     const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
-    for (let i = 0; i < n; i++) { si[i * 4] = b; sw[i * 4] = 1; }
+    for (let i = 0; i < n; i++) {
+      let own = 1;
+      if (blend) blend(at.getX(i), at.getY(i), at.getZ(i)).forEach(([o, w], k) => { si[i * 4 + 1 + k] = bones.indexOf(o); sw[i * 4 + 1 + k] = w; own -= w; });
+      si[i * 4] = b; sw[i * 4] = own;
+    }
     p.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4));
     p.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
     if (c) {
