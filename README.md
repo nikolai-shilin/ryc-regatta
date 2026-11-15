@@ -47,7 +47,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   starts and every frame. The ghost is a see-through boat out of the race, sailing a finished race's track
   (`public/game/track.js`, in step with `lib/finish.ts`, which `npm test` checks): your best today on this device (off in
   Settings), or the race of a result link (`/play?race=today&ghost=<id>`, a shared result's button), with the gap to her
-  on the board. A drill (`/play?race=free&drill=start|mark|beat`) is a free race of its own; a computer skipper sails
+  on the board. A drill (`/play?race=free&drill=start|mark|beat|run|finish`) is a free race of its own; a computer skipper sails
   your boat to the moment it's about, hands her over, and it ends with stars; it's never posted as a race. The game
   sends its moments to Vercel Web Analytics (Race start, Race left, Ghost, Drill done) and the pages theirs
   (`@vercel/analytics` `track`: Race finish, Race again, Challenge taken, Replay, Share).

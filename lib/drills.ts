@@ -11,6 +11,12 @@ export const DRILLS: { id: string; name: Pair; what: Pair; three: Pair; min: num
   { id: 'beat', name: ['The shifts', 'Сдвиги ветра'], min: 2,
     what: ['Halfway up the first beat in a shifty breeze, the fleet round you. Tack on the headers to the windward mark.', 'Половина первой лавировки в переменчивом ветре, вокруг флот. Поворачивай на заходах до верхнего знака.'],
     three: ['First or second at the windward mark, with no penalty.', 'Первым или вторым у верхнего знака и без штрафа.'] },
+  { id: 'run', name: ['The run', 'Фордевинд'], min: 2,
+    what: ['You take over just round the windward mark, the fleet round you. Sail the run in clear air, gybe on the shifts and pick your gate mark.', 'Ты берёшь лодку сразу за верхним знаком, вокруг флот. Пройди фордевинд в чистом ветре, делай повороты фордевинд на сдвигах и выбери знак ворот.'],
+    three: ['A place gained through the gate (or the lead kept), and no penalty.', 'Выигранное в воротах место (или удержанное первое) и без штрафа.'] },
+  { id: 'finish', name: ['The finish', 'Финиш'], min: 1,
+    what: ['The last 150 m of the race, boats round you. Find the end of the line that pays and cross ahead of them.', 'Последние 150 м гонки, вокруг лодки. Найди выгодный конец финишной линии и пересеки её впереди них.'],
+    three: ['A place gained at the line (or the lead kept), and no penalty.', 'Выигранное на финише место (или удержанное первое) и без штрафа.'] },
 ];
 export const DRILL_IDS = DRILLS.map((d) => d.id);
 export const DRILLS_KEY = 'regatta-drills';

@@ -38,7 +38,7 @@ export function Trail({ t, crumbs }: { t: T; crumbs: Crumb[] }) {
 
 // The site's header, as on rycrentals.com: the logo, the site's pages in the middle (from 1100 px wide), and the menu
 // (the burger and your avatar) at the right. On a page in the broadcast look (.bc, styles/broadcast.css) it is the
-// broadcast's bar: the name with the blue mark, the pages as tabs (from 1280 px wide; the two marked hm-tab-x from
+// broadcast's bar: the name with the blue mark, the pages as tabs (from 1280 px wide; those marked hm-tab-x from
 // 1600), Sign in (a guest's) and Play now beside the menu. On every page: the scrolling ones (home, help, the race result) and the
 // app screens, where it sits over the screen and stays short on a phone held sideways.
 // Who is signed in isn't known here (the pages are cached): the avatar and the account link are filled in by lib/me.ts.
@@ -53,11 +53,10 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
           <Link className="hm-tab" href="/race" {...cur('race')}>{t('Today’s race', 'Гонка дня')}</Link>
           <Link className="hm-tab" href="/race/rating" {...cur('rating')}>{t('Rating', 'Рейтинг')}</Link>
           <Link className="hm-tab" href="/race/free" {...cur('free')}>{t('Free race', 'Свободная гонка')}</Link>
-          <Link className="hm-tab hm-tab-x" href="/fleet">{t('The fleet', 'Флот')}</Link>
-          <Link className="hm-tab hm-tab-x" href="/boat" {...cur('boat')}>{t('Your boat', 'Твоя яхта')}</Link>
+          <Link className="hm-tab" href="/race/drills" {...cur('drills')}>{t('Drills', 'Тренировки')}</Link>
           <Link className="hm-tab" href="/help" {...cur('help')}>{t('How to play', 'Как играть')}</Link>
           <Link className="hm-tab" href="/learn" {...cur('learn')}>{t('Learn to race', 'Учись гоняться')}</Link>
-          <Link className="hm-tab" href="/faq" {...cur('faq')}>{t('Questions', 'Вопросы')}</Link>
+          <Link className="hm-tab hm-tab-x" href="/faq" {...cur('faq')}>{t('Questions', 'Вопросы')}</Link>
           <Link className="hm-tab hm-tab-x" href="/iyt" {...cur('iyt')}>{'Sailing Certification Test'}</Link>
         </nav>
         {/* a guest's way to sign in, in the bar where there's room (else in the menu); signed in, the avatar says who */}

@@ -464,8 +464,8 @@
 .bc .hm-signin:hover { background: var(--w-14); }
 @container help (min-width: 600px) { .bc .hm-signin { display: inline-flex; } .bc .hm-mi-signin { display: none; } }
 @container scr (min-width: 600px) { .bc .hm-signin { display: inline-flex; } .bc .hm-mi-signin { display: none; } }
-/* the tabs need the room: none under 1280px wide (they're in the menu), and Your boat and the exam trainer only from
-   1600px (Your boat is in the menu anyway; the trainer goes there between) */
+/* the tabs need the room: none under 1280px wide (they're in the menu), and Questions and the exam trainer only from
+   1600px (they go there between). The fleet and Your boat are always in the menu, never tabs */
 @container help (max-width: 1279px) { .bc .hm-nav { display: none; } .bc .hm-menu-nav { display: flex; } }
 @container scr (max-width: 1279px) { .bc .hm-nav { display: none; } .bc .hm-menu-nav { display: flex; } }
 @container help (max-width: 1599px) { .bc .hm-tab-x { display: none; } }
