@@ -116,7 +116,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la Garde, Christ the Redeemer, Enoshima's Sea
   Candle, the lighthouses of Kiel, Trieste, Batumi, Scheveningen and Green Point, Istanbul's Bosphorus Bridge, Galata
   Tower, Blue Mosque, Hagia Sophia and Süleymaniye, St Petersburg's spires, columns and bridges, Batumi's Alphabetic
-  Tower, the big wheels on Batumi's shore and Scheveningen's pier, the Bank of China Tower and the Parthenon (a
+  Tower, the big wheels on Batumi's shore, Scheveningen's pier, Hong Kong's Central and Cape Town's V&A Waterfront, the Bank of China Tower and the Parthenon (a
   landmark with `clear` leaves out the map's own building in its place). `land.js` lays each course in clear water, and not across a bridge too low for a mast (St
   Petersburg's drawbridges); `npm test` sails every course shape at every venue and checks its marks are in clear
   water and on one side of every such bridge; a shape a venue has no room for at a length goes in its `skip`, as does

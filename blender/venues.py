@@ -109,24 +109,26 @@ VENUES = {
                                      dict(kind='drawbridge', a=(59.93340, 30.29095), b=(59.93612, 30.28831), deck=9, w=37, n=8, open=[6], leaves=2, color='#4f5653')]),  # Blagoveshchensky: raised by Vasilievsky Island
     # Batumi bay, north-east of the cape, in the Black Sea's afternoon breeze: the city, its towers and the Alphabetic
     # Tower on the cape to the left, the coast to Green Cape and the wooded mountains of Adjara to the right
-    'batumi': dict(bathy='emodnet', home=(41.6720, 41.6800), wind=290,
+    'batumi': dict(bathy='emodnet', zoom=14, most=11000, relations=True, home=(41.6720, 41.6800), wind=290,
                    towns=[(41.6480, 41.6400, 1000), (41.6400, 41.6250, 1100), (41.6280, 41.6150, 1000), (41.6500, 41.6560, 700), (41.6700, 41.7080, 900), (41.6900, 41.7180, 800)],
                    landmarks=[dict(kind='tower', at=(41.65596, 41.63935), h=130, style='alphabet'),
                               dict(kind='wheel', at=(41.65535, 41.64260), b=(41.65560, 41.64420), h=55),  # the Batumi Wheel, turning along the shore
                               dict(kind='lighthouse', at=(41.65590, 41.64107), h=21)]),  # the lighthouse of 1882 beside it
     # the North Sea off Scheveningen's beach, the pier and the Kurhaus, in the south-westerly along the shore
-    'scheveningen': dict(bathy='emodnet', home=(52.1209, 4.2693), wind=225, towns=[(52.1110, 4.2840, 1000), (52.1000, 4.2700, 900), (52.0900, 4.3000, 1300)],
+    'scheveningen': dict(bathy='emodnet', zoom=14, most=11000, relations=True, home=(52.1209, 4.2693), wind=225, towns=[(52.1110, 4.2840, 1000), (52.1000, 4.2700, 900), (52.0900, 4.3000, 1300)],
                          landmarks=[dict(kind='lighthouse', at=(52.10414, 4.26828), h=49),
                                     dict(kind='wheel', at=(52.11734, 4.28104), b=(52.11760, 4.28066), h=40, base=8)]),  # the pier's big wheel, on its deck
     # Victoria Harbour between Wan Chai and Tsim Sha Tsui, in the easterly; every tower on the map, none made up. The
     # tiles' land is the towers' roofs (SRTM's radar), so the ground is Hong Kong's own survey's (`dtm`, hk_dtm)
-    'hong-kong': dict(dtm='hk', home=(22.2890, 114.1760), wind=80, towns=[(22.2830, 114.1580, 1200), (22.2960, 114.1700, 1000), (22.3030, 114.1620, 900), (22.2800, 114.1800, 1000), (22.2900, 114.1950, 900)],
-                      landmarks=[dict(kind='tower', style='boc', at=(22.279265, 114.16157), b=(22.27956, 114.16139), h=367, clear=40)]),  # the Bank of China Tower, `b` a corner
+    'hong-kong': dict(dtm='hk', zoom=14, most=11000, relations=True, home=(22.2890, 114.1760), wind=80, towns=[(22.2830, 114.1580, 1200), (22.2960, 114.1700, 1000), (22.3030, 114.1620, 900), (22.2800, 114.1800, 1000), (22.2900, 114.1950, 900)],
+                      landmarks=[dict(kind='tower', style='boc', at=(22.279265, 114.16157), b=(22.27956, 114.16139), h=367, clear=40),  # the Bank of China Tower, `b` a corner
+                                 dict(kind='wheel', at=(22.28530, 114.16175), b=(22.28538, 114.16200), h=60)]),  # the Observation Wheel on Central's waterfront, facing the harbour
     # Table Bay off the V&A Waterfront, in the south-easterly Cape Doctor off Table Mountain
-    'cape-town': dict(home=(-33.8978, 18.4556), wind=160, towns=[(-33.9050, 18.4200, 1000), (-33.9150, 18.3950, 900), (-33.9230, 18.4250, 1200)],
-                      landmarks=[dict(kind='lighthouse', at=(-33.90142, 18.39992), h=16)]),
+    'cape-town': dict(zoom=14, most=11000, relations=True, home=(-33.8978, 18.4556), wind=160, towns=[(-33.9050, 18.4200, 1000), (-33.9150, 18.3950, 900), (-33.9230, 18.4250, 1200)],
+                      landmarks=[dict(kind='lighthouse', at=(-33.90142, 18.39992), h=16),
+                                 dict(kind='wheel', at=(-33.90268, 18.41929), b=(-33.90238, 18.41924), h=40)]),  # the Cape Wheel at the V&A Waterfront, facing the bay
     # the 2004 Olympic waters in Faliro Bay, in the meltemi off the land, the Acropolis upwind
-    'athens': dict(bathy='emodnet', home=(37.9115, 23.6765), wind=30, towns=[(37.9300, 23.6900, 1200), (37.9400, 23.6450, 1200), (37.9120, 23.7080, 1000)],
+    'athens': dict(bathy='emodnet', zoom=14, most=11000, relations=True, home=(37.9115, 23.6765), wind=30, towns=[(37.9300, 23.6900, 1200), (37.9400, 23.6450, 1200), (37.9120, 23.7080, 1000)],
                    landmarks=[dict(kind='temple', at=(37.97150, 23.72662), b=(37.97158, 23.72738), h=14)]),  # the Parthenon, its long axis to the east
 }
 
