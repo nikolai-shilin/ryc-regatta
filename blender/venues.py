@@ -115,12 +115,12 @@ VENUES = {
                               dict(kind='wheel', at=(41.65535, 41.64260), b=(41.65560, 41.64420), h=55),  # the Batumi Wheel, turning along the shore
                               dict(kind='lighthouse', at=(41.65590, 41.64107), h=21)]),  # the lighthouse of 1882 beside it
     # the North Sea off Scheveningen's beach, the pier and the Kurhaus, in the south-westerly along the shore
-    'scheveningen': dict(bathy='emodnet', zoom=14, most=11000, relations=True, home=(52.1209, 4.2693), wind=225, towns=[(52.1110, 4.2840, 1000), (52.1000, 4.2700, 900), (52.0900, 4.3000, 1300)],
+    'scheveningen': dict(bathy='emodnet', zoom=14, most=11000, relations=True, home=(52.1228, 4.2662), wind=225, towns=[(52.1110, 4.2840, 1000), (52.1000, 4.2700, 900), (52.0900, 4.3000, 1300)],
                          landmarks=[dict(kind='lighthouse', at=(52.10414, 4.26828), h=49),
                                     dict(kind='wheel', at=(52.11734, 4.28104), b=(52.11760, 4.28066), h=40, base=8)]),  # the pier's big wheel, on its deck
     # Victoria Harbour between Wan Chai and Tsim Sha Tsui, in the easterly; every tower on the map, none made up. The
     # tiles' land is the towers' roofs (SRTM's radar), so the ground is Hong Kong's own survey's (`dtm`, hk_dtm)
-    'hong-kong': dict(dtm='hk', zoom=14, most=11000, relations=True, home=(22.2890, 114.1760), wind=80, towns=[(22.2830, 114.1580, 1200), (22.2960, 114.1700, 1000), (22.3030, 114.1620, 900), (22.2800, 114.1800, 1000), (22.2900, 114.1950, 900)],
+    'hong-kong': dict(dtm='hk', zoom=14, most=11000, relations=True, home=(22.2884, 114.1781), wind=80, towns=[(22.2830, 114.1580, 1200), (22.2960, 114.1700, 1000), (22.3030, 114.1620, 900), (22.2800, 114.1800, 1000), (22.2900, 114.1950, 900)],
                       landmarks=[dict(kind='tower', style='boc', at=(22.279265, 114.16157), b=(22.27956, 114.16139), h=367, clear=40),  # the Bank of China Tower, `b` a corner
                                  dict(kind='wheel', at=(22.28530, 114.16175), b=(22.28538, 114.16200), h=60)]),  # the Observation Wheel on Central's waterfront, facing the harbour
     # Table Bay off the V&A Waterfront, in the south-easterly Cape Doctor off Table Mountain
