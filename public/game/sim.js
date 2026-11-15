@@ -5,7 +5,7 @@
 
 import { placeCourse, roomAt, VENUE, SKOPEA } from './land.js';
 import { dailyVenue, shapeOffered, laidLength } from './venues.js';
-import { CLS, dailyYacht } from './classes.js';
+import { CLS, CLASSES, DEFAULT_CLASS, dailyYacht } from './classes.js';
 export { CLS };
 
 export const KN = 0.514444; // m/s per knot
@@ -617,6 +617,10 @@ export const SHAPES = ['wl', 'tri', 'trap', 'wlu'];
 export const laidShape = (course, length) => (SHAPES.includes(course) && shapeOffered(VENUE, course, length) ? course : 'wl');
 export const ZONE = 3 * HULL; // the zone round a mark: three hull lengths
 const SEP = HULL * 0.78; // the computer skippers keep the centres this far apart, and then some
+// how big her boats are against the club's: the computer skippers' sense of a close pass and of room to tack scales
+// with it (SZ_PASS, a dinghy's tighter, a cruiser's wider), and their path round a mark grows with it but never
+// shrinks, as every class turns at the same rate (SZ_MARK). Both 1 for the club's boat, which sails as she always has
+const SZ = HULL / CLASSES[DEFAULT_CLASS].loa, SZ_PASS = clamp(SZ, 0.6, 2), SZ_MARK = Math.max(1, SZ);
 // for contact a hull is a capsule: a spine along her centreline with a rounded edge half her beam out, so two boats
 // can sail a couple of metres apart side by side, and a bow can touch a mark
 const HALF_B = CLS.beam / 2, SPINE = HULL / 2 - HALF_B;
@@ -1193,7 +1197,7 @@ export class Race {
     if (c.marks[k]) {
       // o: the mark's outside (upwind, for a mark at the top of a beat), p: square to it, the side she comes in on
       const m = c.marks[k], o = c.legInfo[b.leg].out || { x: 0, z: -1 }, p = { x: -o.z, z: o.x };
-      const at = (fp, fo) => ({ x: m.x + p.x * fp + o.x * fo, z: m.z + p.z * fp + o.z * fo });
+      const at = (fp, fo) => ({ x: m.x + (p.x * fp + o.x * fo) * SZ_MARK, z: m.z + (p.z * fp + o.z * fo) * SZ_MARK });
       // tangled up at the mark (circling it without getting round): sail clear out on the side she comes in on, and
       // come in again from there, as a skipper would (at the windward mark with an upwind finish line just below it,
       // out below the line)
@@ -1210,11 +1214,11 @@ export class Race {
       // runs through the mark itself: she first sails on below it to the near side, then tacks up the layline to it
       if (isBeat(c, b.leg) && ai.wp === 0) {
         if (!ai.setup && sd < 0 && ah < -2 && Math.hypot(b.x - m.x, b.z - m.z) < 70) ai.setup = true;
-        else if (ai.setup && (sd > 10 + wide * 12 || ah > 0)) ai.setup = false;
+        else if (ai.setup && (sd > (10 + wide * 12) * SZ_MARK || ah > 0)) ai.setup = false;
         if (ai.setup) return at(18 + wide * 12, -8);
       } else ai.setup = false;
-      if (ai.wp === 0 && ah > 6 && sd > -3) ai.wp = 1; // clearly outside it: now bear away across
-      if (ai.wp === 1 && Math.hypot(b.x - w1.x, b.z - w1.z) < 6) ai.wp = 0; // there and still not round: go again
+      if (ai.wp === 0 && ah > 6 * SZ_MARK && sd > -3 * SZ_MARK) ai.wp = 1; // clearly outside it: now bear away across
+      if (ai.wp === 1 && Math.hypot(b.x - w1.x, b.z - w1.z) < 6 * SZ_MARK) ai.wp = 0; // there and still not round: go again
       return ai.wp === 0 ? w0 : w1;
     }
     if (k === 'gate') { // through the gate from above; below it without having gone through: back up and try again
@@ -1426,10 +1430,10 @@ export class Race {
         // how far ahead she looks for trouble, and how close a pass worries her: an expert sees it coming some 12 s off
         // and gives a wide berth, a beginner sees it late and cuts it fine; a hail makes anyone look at once
         const look = this.clock - (ai.alertT ?? -99) < 6 ? 12 : 6 + 6 * ai.skill;
-        if (cp.now > 70 || cp.d > 12 + 8 * ai.skill || cp.t > look) continue;
+        if (cp.now > 70 || cp.d > (12 + 8 * ai.skill) * SZ_PASS || cp.t > look) continue;
         // waiting before the start she simply keeps out of everyone's way, right of way or not
         const waiting = this.clock < 0 && !ai.go, giver = waiting || this.judge(b, o).giver === b;
-        if (!giver && !(cp.t < 5 && cp.d < SEP + 4)) continue;
+        if (!giver && !(cp.t < 5 && cp.d < SEP + 4 * SZ_PASS)) continue;
         if (!threat || cp.t < threat.t) threat = { o, t: cp.t, giver };
       }
       if (threat) {
@@ -1582,9 +1586,9 @@ export class Race {
       if (d > 60) continue;
       // the room she wants: an expert tacks or gybes only well clear, a beginner into a tighter gap
       const k = b.ai ? 0.6 + 0.6 * b.ai.skill : 1;
-      if (d < SEP + 8 * k) return false;
+      if (d < SEP + 8 * k * SZ_PASS) return false;
       const c = this.cpa(b, o, h);
-      if (c.d < SEP + 6 * k && c.t < 12) return false;
+      if (c.d < SEP + 6 * k * SZ_PASS && c.t < 12) return false;
     }
     return true;
   }

@@ -35,9 +35,9 @@ export const CLASSES = {
       [7.74, 8.11, 8.81, 9.95, 11.84, 13.41, 15.25, 14.62, 10.21, 8.95],
     ],
   },
-  // the Bavaria 46: a 46-foot cruising yacht, the charter fleets' boat — some eleven tonnes, a furling genoa and a
-  // main in a lazy bag, a cruising gennaker tacked to a short sprit at the bow. Heavier and a little slower than the
-  // JPK 1050 everywhere, slow to get going and slow to lose way; a reef for a blow, no code zero and no J3. Her
+  // the Bavaria 46: the Farr-designed Cruiser 46, the charter fleets' boat — some fourteen tonnes as she sails, a
+  // furling genoa and an in-mast furling main, a cruising gennaker tacked to a short sprit at the bow. Slow to get
+  // going and slow to lose way; a reef (a few turns of the main rolled away) for a blow, no code zero and no J3. Her
   // courses are the JPK 1050's length, laid 1.3 times as wide (the line, the room at the marks) for a fleet of 14 m
   // boats that turn and stop slowly.
   bavaria46: {
@@ -45,18 +45,20 @@ export const CLASSES = {
     kite: true, zero: false, reef: true, j3: false,
     tau: 7, coast: 50, hullV: 8.6, heelK: 1.1, awsK: 1, heelShow: 1, courseK: 1, lineK: 1.3, startK: 1.3,
     tws: TWS, twa: TWA,
-    beat: [47, 45, 43.5, 42, 41, 40.5, 40.5, 41, 42],
-    beatV: [3.4, 4.6, 5.4, 5.9, 6.2, 6.35, 6.45, 6.5, 6.45],
+    // the median of 29 ORC Club certificates of the Farr-designed Cruiser 46 (data.orc.org, 2026), all with a
+    // gennaker; 4 and 24 knots extended from 6 and 20
+    beat: [49, 47.1, 45.7, 44.1, 43.0, 41.9, 41.3, 41.2, 41.5],
+    beatV: [2.9, 4.16, 5.15, 5.85, 6.41, 6.83, 7.11, 7.29, 7.35],
     v: [
-      [3.8, 4.1, 4.3, 4.2, 3.9, 3.7, 3.2, 2.6, 2.3, 2.1],
-      [5.2, 5.5, 5.75, 5.65, 5.4, 5.2, 4.6, 3.9, 3.4, 3.1],
-      [6.15, 6.4, 6.65, 6.6, 6.5, 6.3, 5.75, 4.95, 4.4, 4.05],
-      [6.7, 6.95, 7.2, 7.2, 7.15, 7.05, 6.6, 5.85, 5.25, 4.9],
-      [7.0, 7.25, 7.5, 7.6, 7.6, 7.5, 7.15, 6.5, 6.0, 5.6],
-      [7.15, 7.4, 7.7, 7.85, 7.95, 7.9, 7.6, 7.0, 6.55, 6.2],
-      [7.25, 7.5, 7.85, 8.05, 8.25, 8.25, 8.0, 7.45, 7.0, 6.7],
-      [7.35, 7.6, 8.0, 8.35, 8.7, 8.8, 8.65, 8.2, 7.75, 7.45],
-      [7.4, 7.65, 8.1, 8.55, 9.05, 9.25, 9.25, 8.9, 8.45, 8.15],
+      [3.05, 3.3, 3.45, 3.7, 3.8, 3.7, 3.3, 2.8, 2.45, 2.25],
+      [4.48, 4.85, 5.08, 5.45, 5.63, 5.47, 4.86, 4.09, 3.6, 3.3],
+      [5.61, 5.98, 6.23, 6.73, 6.96, 6.78, 6.15, 5.28, 4.65, 4.25],
+      [6.44, 6.8, 7.08, 7.66, 7.9, 7.75, 7.2, 6.3, 5.6, 5.1],
+      [7.08, 7.42, 7.69, 8.24, 8.46, 8.36, 7.96, 7.16, 6.4, 5.85],
+      [7.56, 7.86, 8.1, 8.56, 8.88, 8.81, 8.48, 7.83, 7.1, 6.5],
+      [7.88, 8.15, 8.4, 8.72, 9.26, 9.23, 8.9, 8.3, 7.8, 7.2],
+      [8.1, 8.41, 8.79, 8.96, 9.81, 10.06, 9.78, 9.01, 8.4, 7.7],
+      [8.2, 8.55, 8.95, 9.15, 10.2, 10.6, 10.5, 9.7, 9.0, 8.3],
     ],
   },
   // the J/70: a 22-foot sportboat with a retractable bowsprit and an asymmetric spinnaker, sailed by three to five and
@@ -110,20 +112,22 @@ export const CLASSES = {
   laser: {
     id: 'laser', loa: 4.19, beam: 1.39, drawnL: 4.19, crew: 1,
     kite: false, zero: false, reef: false, j3: false, jib: false,
-    tau: 1.8, coast: 14, hullV: 13, heelK: 1.2, awsK: 1, heelShow: 1, courseK: 0.6, lineK: 0.6, startK: 0.6,
+    tau: 1.8, coast: 11, hullV: 13, heelK: 1.2, awsK: 1, heelShow: 1, courseK: 0.6, lineK: 0.6, startK: 0.6,
     tws: TWS, twa: TWA,
-    beat: [46, 45, 44, 43, 42.5, 42.5, 43, 44, 45],
-    beatV: [2.5, 3.3, 3.95, 4.4, 4.7, 4.85, 4.95, 5.05, 5.0],
+    // from measured speeds: GPS tracks of World Cup and Olympic races (Pan & Sun 2022), the tank-validated VPP of
+    // Day (2017) and Binns' measured polars (2002) — upwind VMG some 3.2 kn in 8 knots, 3.7 in 12; downwind she surfs
+    beat: [44, 43, 41.5, 41, 41, 42, 43, 44, 45],
+    beatV: [2.75, 3.65, 4.35, 4.8, 4.95, 5.1, 5.2, 5.3, 5.25],
     v: [
-      [2.9, 3.05, 3.2, 3.25, 3.15, 3.05, 2.8, 2.5, 2.3, 2.2],
-      [3.75, 3.95, 4.15, 4.25, 4.15, 4.0, 3.7, 3.35, 3.1, 3.0],
-      [4.35, 4.6, 4.9, 5.1, 5.05, 4.9, 4.5, 4.1, 3.8, 3.7],
-      [4.75, 5.0, 5.45, 5.9, 6.0, 5.8, 5.3, 4.8, 4.45, 4.3],
-      [5.0, 5.3, 5.9, 6.8, 7.2, 6.9, 6.2, 5.5, 5.0, 4.85],
-      [5.15, 5.5, 6.4, 7.8, 8.4, 8.1, 7.2, 6.2, 5.6, 5.35],
-      [5.25, 5.65, 6.9, 8.7, 9.5, 9.2, 8.2, 7.0, 6.2, 5.9],
-      [5.35, 5.8, 7.6, 10.0, 11.2, 10.9, 9.8, 8.4, 7.4, 7.0],
-      [5.3, 5.8, 8.0, 10.8, 12.4, 12.2, 11.0, 9.6, 8.5, 8.0],
+      [3.0, 3.15, 3.3, 3.35, 3.25, 3.15, 2.95, 2.7, 2.5, 2.4],
+      [3.95, 4.15, 4.35, 4.45, 4.4, 4.25, 4.0, 3.7, 3.45, 3.35],
+      [4.65, 4.9, 5.2, 5.4, 5.4, 5.3, 5.0, 4.75, 4.45, 4.3],
+      [5.1, 5.4, 5.85, 6.3, 6.5, 6.35, 5.9, 5.5, 5.2, 5.0],
+      [5.35, 5.7, 6.3, 7.2, 7.5, 7.3, 6.9, 6.6, 6.2, 6.0],
+      [5.5, 5.9, 6.8, 8.1, 8.6, 8.4, 7.9, 7.4, 6.9, 6.6],
+      [5.6, 6.05, 7.3, 9.0, 9.7, 9.5, 8.9, 8.3, 7.6, 7.2],
+      [5.7, 6.2, 8.0, 10.3, 11.4, 11.2, 10.5, 9.6, 8.7, 8.2],
+      [5.7, 6.25, 8.4, 11.0, 12.6, 12.5, 11.8, 10.8, 9.8, 9.2],
     ],
   },
   // the AC75: the America's Cup's 75-foot foiling monohull. Two canting foil arms lift her clear of the water from
