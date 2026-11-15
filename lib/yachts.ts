@@ -1,9 +1,9 @@
-// The yachts you can race (public/game/classes.js has the same ids, in the same order, and sails them): what the
+// The yachts you can race (public/game/classes.js has the same ids and sails them), the biggest first: what the
 // yachts page (/yachts), the fleet page (/fleet) and the free race's set-up say about each. Today's race is sailed
 // in a new one every day (lib/race.ts dailyYacht); a free race in any.
 
 export type YachtId = 'jpk1050' | 'bavaria46' | 'j70' | 'rs21' | 'laser' | 'ac75';
-export const YACHT_IDS: readonly YachtId[] = ['jpk1050', 'bavaria46', 'j70', 'rs21', 'laser', 'ac75'];
+export const YACHT_IDS: readonly YachtId[] = ['ac75', 'bavaria46', 'jpk1050', 'j70', 'rs21', 'laser']; // by size, the biggest first: every list of them is in this order
 export const DEFAULT_YACHT: YachtId = 'jpk1050';
 export const isYacht = (v: unknown): v is YachtId => typeof v === 'string' && (YACHT_IDS as readonly string[]).includes(v);
 
@@ -21,6 +21,46 @@ export type Yacht = {
 };
 
 export const YACHTS: Yacht[] = [
+  {
+    id: 'ac75',
+    name: ['AC75', 'AC75'],
+    kind: ['75-foot foiling America’s Cup monohull', '75-футовый монокорпус Кубка Америки на подводных крыльях'],
+    tagline: ['The America’s Cup boat: flies on foils at three times the wind’s speed.', 'Яхта Кубка Америки: летит на крыльях втрое быстрее ветра.'],
+    about: [
+      ['Raced in the America’s Cup since 2021, the AC75 has no keel at all. Two canting arms swing T-foils down into the water; once she is going fast enough the leeward foil lifts the whole 7-tonne hull clear and she flies, sailing upwind at 30–40 knots and downwind at close to 50. The windward arm is lifted out of the water, its weight working as ballast.',
+        'Гоняется в Кубке Америки с 2021 года и вообще не имеет киля. Два поворотных рычага опускают в воду Т-образные крылья; набрав скорость, подветренное крыло поднимает весь семитонный корпус из воды, и она летит — 30–40 узлов на лавировке и почти 50 на полных курсах. Наветренный рычаг поднят из воды и работает как балласт.'],
+      ['Her mainsail is a double skin on a D-shaped mast that sweeps the deck, with no boom; there is no spinnaker, because at those speeds the apparent wind is always ahead. Eight sail her from pods sunk into the deck: two helms, trimmers, a flight controller keeping her at the right height, and the cyclists powering the hydraulics.',
+        'Грот — двойной, на D-образной мачте, без гика, нижней шкаториной до самой палубы; спинакера нет, потому что на таких скоростях вымпельный ветер всегда дует спереди. Экипаж из восьми сидит в кокпитах, утопленных в палубу: два рулевых, триммеры, «пилот полёта», держащий нужную высоту, и велосипедисты, питающие гидравлику.'],
+      ['The boat in the game is a virtual model, inspired by the design of today’s AC75-class foiling yachts.',
+        'Виртуальная модель, созданная по мотивам конструкции современных фойловых яхт класса AC75.'],
+    ],
+    race: ['Stay on the foils: a slow tack or a bad bear-away drops her into the water, and she has to bear off to build speed and take off again. In light wind, bear away to a reach to get flying. Courses are laid two and a half times longer.', 'Держись на крыльях: медленный поворот или неудачный уваливание роняют её в воду, и придётся увалиться, разогнаться и взлететь снова. В слабый ветер увались до галфвинда, чтобы взлететь. Дистанции в два с половиной раза длиннее.'],
+    specs: [
+      { k: ['Length', 'Длина'], v: ['22.86 m', '22,86 м'] }, { k: ['Beam', 'Ширина'], v: ['5 m', '5 м'] },
+      { k: ['Displacement', 'Водоизмещение'], v: ['about 7 t', 'около 7 т'] }, { k: ['Mast', 'Мачта'], v: ['26.5 m', '26,5 м'] },
+      { k: ['Crew', 'Экипаж'], v: ['8', '8'] }, { k: ['Top speed', 'Максимальная скорость'], v: ['over 50 kn', 'больше 50 уз'] },
+    ],
+    speed: { up: 35, down: 40 }, courseK: 2.5, lineK: 1.8, timeK: 0.55,
+  },
+  {
+    id: 'bavaria46',
+    name: ['Bavaria 46', 'Bavaria 46'],
+    kind: ['46-foot cruising yacht', '46-футовая крейсерская яхта'],
+    tagline: ['The charter fleets’ boat: race the yacht you take on holiday.', 'Яхта чартерных флотов: гоняйся на той, что берёшь в отпуск.'],
+    about: [
+      ['Bavaria Yachtbau of Giebelstadt, in Germany, builds more cruising yachts than almost anyone, and its 46-footer is one of the boats you are most likely to charter in the Mediterranean: high topsides with long hull windows, three or four double cabins under a long low coachroof, a cockpit with a table between two wheels and a bathing platform that folds down out of the transom. The rig is a deck-stepped aluminium mast with swept spreaders, a main that rolls away inside the mast and a furling genoa, the main sheeted by two tackles from the boom to the coachroof.',
+        'Верфь Bavaria Yachtbau из Гибельштадта в Германии строит больше крейсерских яхт, чем почти кто-либо, а её 46-футовик — одна из лодок, которые чаще всего берут в чартер на Средиземном море: высокий борт с длинными корпусными окнами, три-четыре двухместные каюты под длинной низкой рубкой, кокпит со столом между двумя штурвалами и купальная платформа, откидывающаяся из транца. Рангоут — алюминиевая мачта на палубе с отогнутыми назад краспицами, грот, закручивающийся внутрь мачты, и закручивающаяся генуя; грот работает на двух талях от гика к рубке.'],
+      ['Some fourteen tonnes as she sails, she carries her way through a tack and takes her time to get going again. No racer, but quick for a cruiser on a reach, and charter crews race them across the Mediterranean in flotilla and corporate regattas, the whole fleet in the same boat.',
+        'Около четырнадцати тонн на ходу: она хорошо несёт инерцию в повороте и не спеша разгоняется снова. Не гоночная яхта, но для крейсера быстрая на полных курсах, и чартерные экипажи гоняются на них по всему Средиземноморью в флотилиях и корпоративных регатах — весь флот на одинаковых лодках.'],
+    ],
+    race: ['Five crew: trim the main and the genoa, hoist the cruising gennaker on the runs and roll away some of the main when it blows. Heavy and steady, slow to speed up and slow to stop; the line and the marks are laid a little wider for her. No code zero, no change of jib.', 'Экипаж из пяти: настраивай грот и геную, ставь круизный генакер на полных курсах и в сильный ветер закручивай часть грота. Тяжёлая и устойчивая, медленно разгоняется и медленно останавливается; линия старта и знаки для неё чуть шире. Без код зеро и без смены стакселя.'],
+    specs: [
+      { k: ['Length', 'Длина'], v: ['14.27 m', '14,27 м'] }, { k: ['Beam', 'Ширина'], v: ['4.35 m', '4,35 м'] },
+      { k: ['Displacement', 'Водоизмещение'], v: ['about 11 t empty', 'около 11 т порожняя'] }, { k: ['Draft', 'Осадка'], v: ['2.1 m', '2,1 м'] },
+      { k: ['Crew', 'Экипаж'], v: ['5', '5'] }, { k: ['Sails', 'Паруса'], v: ['Furling main and genoa, cruising gennaker', 'Закручивающиеся грот и генуя, круизный генакер'] },
+    ],
+    speed: { up: 6.4, down: 8.5 }, courseK: 1, lineK: 1.3, timeK: 1.16,
+  },
   {
     id: 'jpk1050',
     name: ['JPK 1050', 'JPK 1050'],
@@ -41,25 +81,6 @@ export const YACHTS: Yacht[] = [
       { k: ['Crew', 'Экипаж'], v: ['4', '4'] }, { k: ['Sails', 'Паруса'], v: ['Main, jib, J3, gennaker, code zero', 'Грот, стаксель, J3, генакер, код зеро'] },
     ],
     speed: { up: 6.7, down: 8.6 }, courseK: 1, lineK: 1, timeK: 1,
-  },
-  {
-    id: 'bavaria46',
-    name: ['Bavaria 46', 'Bavaria 46'],
-    kind: ['46-foot cruising yacht', '46-футовая крейсерская яхта'],
-    tagline: ['The charter fleets’ boat: race the yacht you take on holiday.', 'Яхта чартерных флотов: гоняйся на той, что берёшь в отпуск.'],
-    about: [
-      ['Bavaria Yachtbau of Giebelstadt, in Germany, builds more cruising yachts than almost anyone, and its 46-footer is one of the boats you are most likely to charter in the Mediterranean: high topsides with long hull windows, three or four double cabins under a long low coachroof, a cockpit with a table between two wheels and a bathing platform that folds down out of the transom. The rig is a deck-stepped aluminium mast with swept spreaders, a main that rolls away inside the mast and a furling genoa, the main sheeted by two tackles from the boom to the coachroof.',
-        'Верфь Bavaria Yachtbau из Гибельштадта в Германии строит больше крейсерских яхт, чем почти кто-либо, а её 46-футовик — одна из лодок, которые чаще всего берут в чартер на Средиземном море: высокий борт с длинными корпусными окнами, три-четыре двухместные каюты под длинной низкой рубкой, кокпит со столом между двумя штурвалами и купальная платформа, откидывающаяся из транца. Рангоут — алюминиевая мачта на палубе с отогнутыми назад краспицами, грот, закручивающийся внутрь мачты, и закручивающаяся генуя; грот работает на двух талях от гика к рубке.'],
-      ['Some fourteen tonnes as she sails, she carries her way through a tack and takes her time to get going again. No racer, but quick for a cruiser on a reach, and charter crews race them across the Mediterranean in flotilla and corporate regattas, the whole fleet in the same boat.',
-        'Около четырнадцати тонн на ходу: она хорошо несёт инерцию в повороте и не спеша разгоняется снова. Не гоночная яхта, но для крейсера быстрая на полных курсах, и чартерные экипажи гоняются на них по всему Средиземноморью в флотилиях и корпоративных регатах — весь флот на одинаковых лодках.'],
-    ],
-    race: ['Five crew: trim the main and the genoa, hoist the cruising gennaker on the runs and roll away some of the main when it blows. Heavy and steady, slow to speed up and slow to stop; the line and the marks are laid a little wider for her. No code zero, no change of jib.', 'Экипаж из пяти: настраивай грот и геную, ставь круизный генакер на полных курсах и в сильный ветер закручивай часть грота. Тяжёлая и устойчивая, медленно разгоняется и медленно останавливается; линия старта и знаки для неё чуть шире. Без код зеро и без смены стакселя.'],
-    specs: [
-      { k: ['Length', 'Длина'], v: ['14.27 m', '14,27 м'] }, { k: ['Beam', 'Ширина'], v: ['4.35 m', '4,35 м'] },
-      { k: ['Displacement', 'Водоизмещение'], v: ['about 11 t empty', 'около 11 т порожняя'] }, { k: ['Draft', 'Осадка'], v: ['2.1 m', '2,1 м'] },
-      { k: ['Crew', 'Экипаж'], v: ['5', '5'] }, { k: ['Sails', 'Паруса'], v: ['Furling main and genoa, cruising gennaker', 'Закручивающиеся грот и генуя, круизный генакер'] },
-    ],
-    speed: { up: 6.4, down: 8.5 }, courseK: 1, lineK: 1.3, timeK: 1.16,
   },
   {
     id: 'j70',
@@ -118,26 +139,5 @@ export const YACHTS: Yacht[] = [
     ],
     speed: { up: 5.0, down: 7.5 }, courseK: 0.6, lineK: 0.6, timeK: 0.9,
   },
-  {
-    id: 'ac75',
-    name: ['AC75', 'AC75'],
-    kind: ['75-foot foiling America’s Cup monohull', '75-футовый монокорпус Кубка Америки на подводных крыльях'],
-    tagline: ['The America’s Cup boat: flies on foils at three times the wind’s speed.', 'Яхта Кубка Америки: летит на крыльях втрое быстрее ветра.'],
-    about: [
-      ['Raced in the America’s Cup since 2021, the AC75 has no keel at all. Two canting arms swing T-foils down into the water; once she is going fast enough the leeward foil lifts the whole 7-tonne hull clear and she flies, sailing upwind at 30–40 knots and downwind at close to 50. The windward arm is lifted out of the water, its weight working as ballast.',
-        'Гоняется в Кубке Америки с 2021 года и вообще не имеет киля. Два поворотных рычага опускают в воду Т-образные крылья; набрав скорость, подветренное крыло поднимает весь семитонный корпус из воды, и она летит — 30–40 узлов на лавировке и почти 50 на полных курсах. Наветренный рычаг поднят из воды и работает как балласт.'],
-      ['Her mainsail is a double skin on a D-shaped mast that sweeps the deck, with no boom; there is no spinnaker, because at those speeds the apparent wind is always ahead. Eight sail her from pods sunk into the deck: two helms, trimmers, a flight controller keeping her at the right height, and the cyclists powering the hydraulics.',
-        'Грот — двойной, на D-образной мачте, без гика, нижней шкаториной до самой палубы; спинакера нет, потому что на таких скоростях вымпельный ветер всегда дует спереди. Экипаж из восьми сидит в кокпитах, утопленных в палубу: два рулевых, триммеры, «пилот полёта», держащий нужную высоту, и велосипедисты, питающие гидравлику.'],
-      ['The boat in the game is a virtual model, inspired by the design of today’s AC75-class foiling yachts.',
-        'Виртуальная модель, созданная по мотивам конструкции современных фойловых яхт класса AC75.'],
-    ],
-    race: ['Stay on the foils: a slow tack or a bad bear-away drops her into the water, and she has to bear off to build speed and take off again. In light wind, bear away to a reach to get flying. Courses are laid two and a half times longer.', 'Держись на крыльях: медленный поворот или неудачный уваливание роняют её в воду, и придётся увалиться, разогнаться и взлететь снова. В слабый ветер увались до галфвинда, чтобы взлететь. Дистанции в два с половиной раза длиннее.'],
-    specs: [
-      { k: ['Length', 'Длина'], v: ['22.86 m', '22,86 м'] }, { k: ['Beam', 'Ширина'], v: ['5 m', '5 м'] },
-      { k: ['Displacement', 'Водоизмещение'], v: ['about 7 t', 'около 7 т'] }, { k: ['Mast', 'Мачта'], v: ['26.5 m', '26,5 м'] },
-      { k: ['Crew', 'Экипаж'], v: ['8', '8'] }, { k: ['Top speed', 'Максимальная скорость'], v: ['over 50 kn', 'больше 50 уз'] },
-    ],
-    speed: { up: 35, down: 40 }, courseK: 2.5, lineK: 1.8, timeK: 0.55,
-  },
 ];
-export const yachtOf = (id: unknown): Yacht => YACHTS.find((y) => y.id === id) || YACHTS[0];
+export const yachtOf = (id: unknown): Yacht => YACHTS.find((y) => y.id === id) || YACHTS.find((y) => y.id === DEFAULT_YACHT)!;
