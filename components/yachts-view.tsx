@@ -2,57 +2,48 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
-import { readBoat } from '@/lib/boat';
 import { saveOpts } from '@/lib/opts';
 import { YACHTS, yachtOf, type YachtId } from '@/lib/yachts';
 import { IconPlay, IconSail, IconBoats } from './ui';
 import { LoadBar } from './skeleton';
 import { SceneBrand } from './scene-brand';
 
-// The yachts: each class you can race, in the game's own scene (/boat-view?boat=…, Lake Garda on a summer evening) in
-// your colours, as the boat page shows yours, with what she is and how she sails in the game in the boat page's dark
-// glass card. Another yacht is another scene, faded in over the last once its first frame is up. Today's race is
-// always the club's 40-footer; Race her opens a free race set up in the one shown.
+// The yachts: each class you can race, all afloat together in the game's own scene (/fleet-view, Lake Garda on a summer
+// evening) in your colours, with what she is and how she sails in the game in the boat page's dark glass card. Another
+// yacht is the same scene: the drone flies over to her (up and out until both are in the frame, across, and down).
+// Today's race is always the club's 40-footer; Race her opens a free race set up in the one shown.
 export function YachtsView({ lang, start, back }: { lang: Lang; start: YachtId; back: ReactNode }) {
   const t = tx(lang);
   const [id, setId] = useState<YachtId>(start);
   const [down, setDown] = useState(false);
-  const [frames, setFrames] = useState<{ n: number; id: YachtId; live: boolean }[]>(() => [{ n: 0, id: start, live: false }]);
-  const refs = useRef(new Map<number, HTMLIFrameElement>());
+  const [live, setLive] = useState(false);
+  const frame = useRef<HTMLIFrameElement>(null);
   const card = useRef<HTMLElement>(null), info = useRef<HTMLDivElement>(null);
-  const downNow = useRef(down); downNow.current = down;
+  const now = useRef({ id, down }); now.current = { id, down };
   const y = yachtOf(id);
 
-  const post = (msg: object, n?: number) => refs.current.forEach((f, k) => { if (n == null || n === k) f.contentWindow?.postMessage(msg, location.origin); });
-  const inset = (n?: number) => {
+  const post = (msg: object) => frame.current?.contentWindow?.postMessage(msg, location.origin);
+  const inset = () => {
     const c = card.current?.getBoundingClientRect(), h = info.current?.getBoundingClientRect(), W = innerWidth, H = innerHeight;
     const p = info.current?.querySelector('.bt-p')?.getBoundingClientRect(), st = info.current?.querySelector('.bt-stats')?.getBoundingClientRect();
     if (!c || !h) return;
     const tall = c.width > W * 0.7, head = (p && p.height ? p.bottom : h.top + 120) / H;
-    post({ type: 'inset', l: 0, r: tall ? 0 : (W - c.left) / W, t: Math.min(0.4, tall ? h.bottom / H : head * 0.6), b: tall ? (H - c.top) / H : st ? (H - st.top) / H * 0.5 : 0 }, n);
+    post({ type: 'inset', l: 0, r: tall ? 0 : (W - c.left) / W, t: Math.min(0.4, tall ? h.bottom / H : head * 0.6), b: tall ? (H - c.top) / H : st ? (H - st.top) / H * 0.5 : 0 });
   };
-  // another yacht: a new scene beside the one showing (or in place of one still loading); the address follows
+  // another yacht: the drone flies over to her; the address follows
   const pick = (next: YachtId) => {
+    if (next === id) return;
     setId(next);
-    setFrames((fs) => {
-      const top = fs[fs.length - 1];
-      if (top.id === next) return fs;
-      const f = { n: top.n + 1, id: next, live: false };
-      return top.live ? [...fs.filter((x) => x.live), f] : [...fs.filter((x) => x !== top), f];
-    });
+    post({ type: 'focus', id: next });
     try { history.replaceState(null, '', `${location.pathname}?y=${next}`); } catch {}
   };
   useEffect(() => { post({ type: 'pose', down }); }, [down]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
+    // the scene is up: it opens on the yacht shown, posed as chosen, in the part of the frame the words leave clear
     const on = (e: MessageEvent) => {
-      if (e.origin !== location.origin) return;
-      const n = [...refs.current].find(([, f]) => f.contentWindow === e.source)?.[0];
-      if (n == null) return;
-      if (e.data?.type === 'ready') { post({ type: 'look', boat: readBoat() }, n); post({ type: 'pose', down: downNow.current }, n); inset(n); }
-      if (e.data?.type === 'live') {
-        setFrames((fs) => fs.map((f) => (f.n === n ? { ...f, live: true } : f)));
-        setTimeout(() => setFrames((fs) => fs.filter((f) => f.n >= n)), 900);
-      }
+      if (e.origin !== location.origin || e.source !== frame.current?.contentWindow) return;
+      if (e.data?.type === 'ready') { post({ type: 'focus', id: now.current.id }); post({ type: 'pose', down: now.current.down }); inset(); }
+      if (e.data?.type === 'live') setLive(true);
     };
     const fit = () => inset();
     addEventListener('message', on); addEventListener('resize', fit);
@@ -68,12 +59,9 @@ export function YachtsView({ lang, start, back }: { lang: Lang; start: YachtId; 
 
   return (
     <div className="bt">
-      <LoadBar label={t('Loading the yacht', 'Загружаем яхту')} on={!frames.some((f) => f.live)} />
-      {frames.map((f) => (
-        <iframe key={f.n} ref={(el) => { if (el) refs.current.set(f.n, el); else refs.current.delete(f.n); }} className={`bt-scene bt-fade ${f.live ? 'on' : ''}`}
-          src={`/boat-view?venue=garda&wind=medium${f.id !== 'club40' ? `&boat=${f.id}` : ''}`} title={t(`The ${yachtOf(f.id).name[0]} in 3D`, `${yachtOf(f.id).name[1]} в 3D`)}
-          onLoad={() => post({ type: 'hello' }, f.n)} />
-      ))}
+      <LoadBar label={t('Loading the yachts', 'Загружаем яхты')} on={!live} />
+      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src="/fleet-view?wind=medium" title={t('The yachts in 3D', 'Яхты в 3D')}
+        onLoad={() => post({ type: 'hello' })} />
 
       <div className="bt-info" ref={info}>
         <div className="bt-top">{back}<SceneBrand /></div>
