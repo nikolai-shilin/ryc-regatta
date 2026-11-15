@@ -899,14 +899,6 @@ function loadModel(file, hull, uvs) {
     }, undefined, () => done(null));
   });
 }
-// the Bavaria's (blender/bavaria46.py), the Laser's (blender/laser.py) and the sportboats' (blender/sportboats.py),
-// each asked for only on a page that will build her (her races, her boat page, the fleet)
-const [BV_MODEL, LZ_MODEL, J70_MODEL, RS21_MODEL] = await Promise.all([
-  CLS.id !== 'bavaria46' && !ON_FLEET ? null : loadModel('bavaria46.glb', BV.hull, [['deck', 1], ['teak', 1 / 0.8]]),
-  CLS.id !== 'laser' && !ON_FLEET ? null : loadModel('laser.glb', LZ.hull, [['deck', 1]]),
-  CLS.id !== 'j70' && !ON_FLEET ? null : loadModel('j70.glb', sportOf(false).hull, [['deck', 1]]),
-  CLS.id !== 'rs21' && !ON_FLEET ? null : loadModel('rs21.glb', sportOf(true).hull, [['deck', 1]]),
-]);
 
 class CruiserView extends ClassView {
   constructor({ look = LOOKS.player, label = null, player = false, cls = CLS }) {
@@ -1241,25 +1233,30 @@ class AC75View extends ClassView {
     this.cls = cls;
     const add = this.start(), T = this.tilt, H = A.hull;
     this.flyY = 1.7;
-    const paint = foilerMaterial(look.hull);
-    add(new THREE.Mesh(H.geometry(), paint));
+    const paint = foilerMaterial(look.hull), MOD = AC75_MODEL;
+    const podWall = new THREE.MeshStandardMaterial({ color: '#3a3f46', roughness: 0.6, side: THREE.DoubleSide });
+    if (MOD) {
+      // the hull with its bustle faired in, the deck and the pods, moulded (blender/ac75.py), in a group of their own so
+      // the boat's merging of her small parts (bake) leaves the shared geometry alone
+      const moulded = add(new THREE.Group());
+      for (const [k, mat] of [['hull', paint], ['deck', deckFinish(look, AC_DECK)], ['pod', podWall], ['rubber', MAT.rubber]]) if (MOD[k]) moulded.add(new THREE.Mesh(MOD[k], mat));
+    } else add(new THREE.Mesh(H.geometry(), paint));
     // the bustle: a long fin down the centreline of the bottom, sealing the main's foot to the water
     const bus = new THREE.Shape(); bus.moveTo(-5.5, 0); bus.quadraticCurveTo(0, -0.75, 6.5, -0.1); bus.lineTo(6.5, 0.2); bus.lineTo(-5.5, 0.2); bus.closePath();
     const bg = new THREE.ExtrudeGeometry(bus, { depth: 0.36, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 2 });
     bg.translate(0, 0, -0.18); bg.rotateY(Math.PI / 2);
-    add(new THREE.Mesh(bg, paint), 0, -0.48, 0.5);
+    if (!MOD) add(new THREE.Mesh(bg, paint), 0, -0.48, 0.5); // (faired into the hull, in the model)
     // the deck, flat and dark, with eight crew pods cut into it, four a side: the cyclors forward, the trimmers, the
     // helms aft. Each pod has a rubber rim, a floor and its seat or wheel
     // each a moulded well with rounded corners, its rim in rubber
-    const pods = [], podWall = new THREE.MeshStandardMaterial({ color: '#3a3f46', roughness: 0.6, side: THREE.DoubleSide });
+    const pods = [];
     for (const sx of [-1, 1]) for (const [z0, z1] of [[-0.6, 0.8], [1.6, 3.0], [3.8, 5.2], [7.4, 9.2]]) {
       const [x0, x1] = sx < 0 ? [-2.05, -1.05] : [1.05, 2.05], tb = H.tub(x0, z0, x1, z1, 0.22, H.deckY((z0 + z1) / 2) - 0.9, { slope: 0.05, crown: 0.08 });
       pods.push(tb.outline);
-      const w = add(new THREE.Mesh(tb.walls, podWall)); w.userData.detail = false;
-      add(new THREE.Mesh(tb.floor, MAT.rubber));
+      if (!MOD) { const w = add(new THREE.Mesh(tb.walls, podWall)); w.userData.detail = false; add(new THREE.Mesh(tb.floor, MAT.rubber)); }
       T.add(tube(tb.outline.map(([x, z]) => [x, H.deckY(z) + 0.1, z]), 0.03, MAT.rubber, true));
     }
-    add(new THREE.Mesh(H.deck(pods, 0.08), deckFinish(look, AC_DECK)));
+    if (!MOD) add(new THREE.Mesh(H.deck(pods, 0.08), deckFinish(look, AC_DECK)));
     // the cyclors' bikes in the two forward pods each side: a saddle on its post, the crank housing and the bars
     this.bikes = [];
     for (const sx of [-1, 1]) for (const z of [0.1, 2.3]) {
@@ -1417,3 +1414,15 @@ class AC75View extends ClassView {
     this.showLabel(b, showLabel);
   }
 }
+
+// the moulded parts of the Bavaria (blender/bavaria46.py), the Laser (blender/laser.py), the J/70 and the RS21
+// (blender/sportboats.py) and the AC75 (blender/ac75.py), each asked for only on a page that will build her (her races,
+// her boat page, the fleet). Here at the end, once every class's lines are laid down: the views read them only when a
+// boat is built, after this module has loaded
+const [BV_MODEL, LZ_MODEL, J70_MODEL, RS21_MODEL, AC75_MODEL] = await Promise.all([
+  CLS.id !== 'bavaria46' && !ON_FLEET ? null : loadModel('bavaria46.glb', BV.hull, [['deck', 1], ['teak', 1 / 0.8]]),
+  CLS.id !== 'laser' && !ON_FLEET ? null : loadModel('laser.glb', LZ.hull, [['deck', 1]]),
+  CLS.id !== 'j70' && !ON_FLEET ? null : loadModel('j70.glb', sportOf(false).hull, [['deck', 1]]),
+  CLS.id !== 'rs21' && !ON_FLEET ? null : loadModel('rs21.glb', sportOf(true).hull, [['deck', 1]]),
+  CLS.id !== 'ac75' && !ON_FLEET ? null : loadModel('ac75.glb', A.hull, [['deck', 1]]),
+]);
