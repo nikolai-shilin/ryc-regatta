@@ -20,6 +20,8 @@ import { bestLeg, costliest, startOf } from '@/lib/race-log';
 import { streakOf, todayUtc } from '@/lib/log';
 import { streakWords, useLog } from './passport';
 import { Replay } from './replay';
+import { RaceBadges } from './progress';
+import { track } from '@vercel/analytics';
 import { shortName } from '@/lib/name';
 import { BOAT_EVENT, readBoat } from '@/lib/boat';
 
@@ -70,6 +72,13 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   // so this is someone's link: the page speaks of "this boat", not "you"
   const [shared, setShared] = useState(false);
   const log = useLog(); // the venues you've raced and your streak, for the note on a first race somewhere or a day in a row
+  // the analytics: a race of yours just finished (the game opens this page as it does), once
+  useEffect(() => {
+    if (!res || shared || Date.now() - res.at > 10 * 60e3) return;
+    try { if (sessionStorage.getItem('tracked-' + res.id)) return; sessionStorage.setItem('tracked-' + res.id, '1'); } catch {}
+    const me = res.boats.find((b) => b.me)!, place = res.boats.indexOf(me) + 1;
+    track('Race finish', { race: res.daily ? 'daily' : 'free', place: me.dsq ? 'dsq' : `${place}/${res.boats.length}`, pb: res.pb?.isNew ? 1 : 0, venue: res.venue || '' });
+  }, [res, shared]);
   useEffect(() => {
     let mine: Result | null = null;
     try { mine = JSON.parse(localStorage.getItem('regatta-result-' + id) || 'null'); } catch {}
@@ -139,7 +148,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   const isToday = res.daily === new Date().toISOString().slice(0, 10); // the daily race's day is the UTC date, as the game's
   // someone else's race: beat their time if it's today's, else today's race
   const cta = shared
-    ? (isToday && me.secs != null && !me.dsq ? { href: '/play?race=today', label: t('Beat this time', 'Побей это время') } : { href: '/race', label: t('Sail today’s race', 'Пройти гонку дня') })
+    ? (isToday && me.secs != null && !me.dsq ? { href: `/play?race=today&ghost=${encodeURIComponent(res.id)}`, label: t('Race this boat’s ghost', 'Гоняйся с её призраком') } : { href: '/race', label: t('Sail today’s race', 'Пройти гонку дня') })
     : { href: again, label: t('Race again', 'Ещё гонку') };
   const mine = me.secs != null && !me.dsq ? me.secs : null;
   const you = shared ? t('This boat', 'Эта лодка') : t('You', 'Ты');
@@ -272,6 +281,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
             <span className="bt-kick">{kicker}</span>
             {pbNote && res.pb?.isNew ? <span className="bt-kick rs-kick-g">{pbNote}</span> : null}
             {logNote ? <span className="bt-kick rs-kick-s">{logNote}</span> : null}
+            {!shared ? <RaceBadges lang={lang} at={res.at} /> : null}
           </div>
           <h1 className="bt-h">{title}</h1>
           <p className="bt-p">{t(...where.name)}, {t(...where.place)}. {near || t('The boats are where they were at the finish.', 'Лодки там, где были на финише.')}</p>
@@ -289,7 +299,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
             </div>
           ) : null}
           <div className="rs-acts">
-            <a className="bt-go" href={cta.href}>{shared ? <IconPlay /> : <IconRestart />}<span>{ctaLabel}</span></a>
+            <a className="bt-go" href={cta.href} onClick={() => track(shared ? 'Challenge taken' : 'Race again', { race: res.daily ? 'daily' : 'free', ...(target?.go && { target: 1 }) })}>{shared ? <IconPlay /> : <IconRestart />}<span>{ctaLabel}</span></a>
             {!shared && <ShareButton lang={lang} data={shareData} className="bt-show rs-ghost" title={t('Share your result', 'Поделиться результатом')} />}
             <Link className="bt-show rs-ghost" href="/race">{t('Race hub', 'Меню гонок')}</Link>
             {res.boats.some((b) => b.track?.length > 1) ? <Replay res={res} myLegs={me.legT} lang={lang} /> : null}

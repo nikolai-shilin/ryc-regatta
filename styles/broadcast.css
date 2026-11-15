@@ -1251,3 +1251,43 @@
 .bc .yt-spec > div { padding: var(--s-3) var(--s-4); background: var(--panel); }
 .bc .yt-spec dt { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
 .bc .yt-spec dd { margin-top: var(--s-1); font: 700 var(--fs-row)/1.2 var(--cond); color: var(--ink); }
+
+/* ---------- progress beyond a race (components/progress.tsx): the drills, the badges, the rival ---------- */
+.bc .pg-drills { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
+.bc .pg-card { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); background: var(--surface); clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%); }
+.bc .pg-card-h { display: flex; align-items: center; gap: var(--s-3); }
+.bc .pg-card-h h2 { flex: 1 1 auto; margin: 0; font: 800 var(--fs-title)/1 var(--cond); text-transform: uppercase; }
+.bc .pg-n { flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--you); color: var(--ink-on); font: 800 var(--fs-lead)/1 var(--cond); }
+.bc .pg-min { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-2); }
+.bc .pg-card p { margin: 0; font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+.bc .pg-three b { color: var(--gold); font-weight: 700; }
+.bc .pg-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-top: auto; padding-top: var(--s-2); }
+.bc .pg-go { margin: 0; }
+.bc .pg-stars { display: inline-flex; gap: 4px; font-size: 26px; line-height: 1; }
+.bc .pg-stars i { font-style: normal; color: var(--w-14); } .bc .pg-stars i.on { color: var(--gold); }
+.bc .pg-count { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-4); }
+.bc .pg-count p { margin: 0; font: 800 var(--fs-lead)/1 var(--cond); text-transform: uppercase; letter-spacing: var(--ls-button); }
+.bc .pg-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.bc .pg-badge { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); padding: var(--s-5); background: var(--surface); opacity: .62; }
+.bc .pg-badge.on { opacity: 1; box-shadow: inset 0 3px 0 var(--gold); }
+.bc .pg-badge b { font: 800 var(--fs-lead)/1.1 var(--cond); text-transform: uppercase; }
+.bc .pg-badge span { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-2); }
+.bc .pg-badge small { margin-top: auto; font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-2); }
+.bc .pg-badge.on small { color: var(--gold); }
+.bc .pg-mark { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex: none; }
+.bc .pg-mark svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--w-14); }
+.bc .pg-badge.on .pg-mark svg, .bc .pg-kick .pg-mark svg { fill: var(--gold); }
+.bc .pg-mark i { position: relative; top: -3px; font: 800 17px/1 var(--cond); font-style: normal; color: var(--ink-2); }
+.bc .pg-badge.on .pg-mark i, .bc .pg-kick .pg-mark i { color: var(--ink-on); }
+/* a badge a result earned, as its kick */
+.bc .pg-kick { flex: none; display: inline-flex; align-items: center; gap: var(--s-2); white-space: nowrap; background: var(--panel-2); color: var(--ink); text-decoration: none; box-shadow: inset 0 -2px 0 var(--gold); pointer-events: auto; }
+.bc .pg-kick .pg-mark { width: 20px; height: 20px; } .bc .pg-kick .pg-mark i { top: -2px; font-size: 10px; }
+/* the hub's rows */
+.bc .pg-ico { width: 18px; flex: none; text-align: center; font: 700 15px/1 var(--cond); color: var(--gold); }
+.bc .pg-rival-m { display: inline-flex; align-items: center; gap: 6px; text-transform: none; }
+.bc .pg-rival-m .lb-who { display: inline-flex; align-items: center; gap: 4px; }
+.bc .pg-rival-l { margin: 0 0 var(--s-3); padding: var(--s-3) var(--s-4); background: var(--fill-1); font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-2); box-shadow: inset 3px 0 0 var(--gold); }
+.bc .pg-rival-l b { color: var(--ink); }
+/* the passport's share, on Home; a shared passport's venues */
+.bc .ho-pass .ho-pass-share { height: var(--h-s); margin-left: auto; }
+.bc .pg-pass { margin-top: var(--s-4); }

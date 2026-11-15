@@ -4,6 +4,10 @@ import { createPortal } from 'react-dom';
 import { tx, type Lang } from '@/lib/lang';
 import { SHARE_TARGETS, canSms, copyText, nativeShare, openShare, shareHref, tagged, type ShareData, type ShareTarget } from '@/lib/share';
 import { IconSend, IconCheck } from './ui';
+import { track } from '@vercel/analytics';
+
+// what was shared (its path: /race/result, /passport) and where to, for the analytics
+const shared = (url: string, via: string) => { try { track('Share', { what: new URL(url).pathname.split('/').slice(0, 3).join('/'), via }); } catch {} };
 
 // The apps' marks, white on each app's colour (24px grid)
 const F = { fill: 'currentColor' };
@@ -51,12 +55,12 @@ export function ShareButton({ lang, data, className = 'bt-show', title }: { lang
 
   const copy = async () => {
     if (!open) return;
-    if (await copyText(`${open.text} ${tagged(open.url, 'copy')}`)) { setCopied(true); setTimeout(() => setCopied(false), 2500); }
+    if (await copyText(`${open.text} ${tagged(open.url, 'copy')}`)) { shared(open.url, 'copy'); setCopied(true); setTimeout(() => setCopied(false), 2500); }
   };
   const native = async () => {
     if (!open) return;
     const r = await nativeShare(open);
-    if (r) close();
+    if (r) { shared(open.url, 'native'); close(); }
   };
 
   const targets = SHARE_TARGETS.filter((a) => a.id !== 'sms' || sms);
@@ -71,7 +75,7 @@ export function ShareButton({ lang, data, className = 'bt-show', title }: { lang
         <div className="shr-g">
           {targets.map((a) => (
             <a key={a.id} className="shr-a" href={shareHref(a.id, open)} target={a.id === 'email' || a.id === 'sms' ? undefined : '_blank'} rel="noopener noreferrer"
-              onClick={(e) => { if (openShare(a.id, open)) e.preventDefault(); close(); }}>
+              onClick={(e) => { shared(open.url, a.id); if (openShare(a.id, open)) e.preventDefault(); close(); }}>
               <span className="shr-i" style={{ background: a.color }}><svg viewBox="0 0 24 24" width={22} height={22} aria-hidden="true">{MARKS[a.id]}</svg></span>
               <span>{a.id === 'email' ? t('Email', 'Почта') : a.name}</span>
             </a>
@@ -107,7 +111,8 @@ export function CopyLink({ lang, data, className = 'bt-show' }: { lang: Lang; da
   const t = tx(lang);
   const [copied, setCopied] = useState(false);
   const copy = async () => {
-    if (await copyText(tagged(data().url, 'copy'))) { setCopied(true); setTimeout(() => setCopied(false), 2500); }
+    const d = data();
+    if (await copyText(tagged(d.url, 'copy'))) { shared(d.url, 'copy'); setCopied(true); setTimeout(() => setCopied(false), 2500); }
   };
   return (
     <button type="button" className={className} onClick={copy}>

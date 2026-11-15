@@ -9,6 +9,7 @@ import { IconPlay, IconTrophy } from './ui';
 import { Who } from './flag';
 import { CountUp } from './count-up';
 import { MyMonth } from './my-month';
+import { RivalLine } from './progress';
 
 type T = (en: string, ru: string) => string;
 const clock = (s: number) => { const m = Math.floor(s / 60), r = s - m * 60; return `${m}:${r.toFixed(1).padStart(4, '0')}`; };
@@ -94,6 +95,7 @@ export function RatingView({ day, data, lang, t, signedIn }: { day: string; data
             </section>
 
             <aside className="rt-card rt-month" aria-labelledby="rt-month-h">
+              {isToday ? <RivalLine lang={lang} /> : null}
               <MyMonth day={day} lang={lang} />
               <div className="rt-card-h"><span className="lbl-ink" id="rt-month-h">{t(`${month} standings`, `Итоги: ${month}`)}</span><span className="lbl">{t(`${data.month.days} race ${data.month.days === 1 ? 'day' : 'days'}`, `${data.month.days} ${ruPlural(data.month.days, ['день', 'дня', 'дней'])} гонок`)}</span></div>
               {data.month.rows.length ? (

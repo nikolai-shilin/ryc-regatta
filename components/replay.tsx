@@ -4,6 +4,7 @@ import { tx, type Lang } from '@/lib/lang';
 import { posesAt, replaySpan, type FinishResult } from '@/lib/finish';
 import { toScene } from './game-scene';
 import { IconPlay } from './ui';
+import { track } from '@vercel/analytics';
 
 // The race played back in the scene behind the result page (public/boat-view, { type: 'replay' }): every boat where
 // her track had her, the drone behind you. A button, then a bar: play or pause, a slider to drag through the race, the
@@ -40,7 +41,7 @@ export function Replay({ res, myLegs = [], lang }: { res: FinishResult; myLegs?:
 
   if (!on) {
     return (
-      <button type="button" className="bt-show rs-ghost rs-replay-go" title={t('Watch the race again', 'Посмотреть гонку заново')} aria-label={t('Watch the race again', 'Посмотреть гонку заново')} onClick={() => { setOn(true); setT(span.from); send(span.from); setPlaying(true); }}>
+      <button type="button" className="bt-show rs-ghost rs-replay-go" title={t('Watch the race again', 'Посмотреть гонку заново')} aria-label={t('Watch the race again', 'Посмотреть гонку заново')} onClick={() => { setOn(true); setT(span.from); send(span.from); setPlaying(true); track('Replay'); }}>
         <IconPlay s={16} /><span>{t('Replay', 'Повтор')}</span>
       </button>
     );

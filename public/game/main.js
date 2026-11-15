@@ -2,6 +2,7 @@
 import { Race, CLS, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone, laidShape } from './sim.js';
 import { World, defaultQuality, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
 import { raceStarted, raceFinished, raceResult } from './stats.js';
+import { initExtras, onStart, onFrame, drill, drillSettings } from './extras.js'; // the ghost, the drills, the analytics
 import { createHud } from './hud-bc.js';
 import { mapPalette, placeLabels } from './course-map.js';
 import { LOOKS, playerLook } from './yacht.js';
@@ -247,7 +248,7 @@ const saveOpts = () => { try { localStorage.setItem('regatta', JSON.stringify(op
 // the race's settings: the menu's, or in today's race the day's own (the same for everyone)
 const DAILY_KEYS = ['preset', 'fleet', 'length', 'laps', 'start', 'current', 'course'];
 // (a free race's length the venue hasn't room for: the longest it has)
-const settings = () => { if (opts.mode !== 'daily') return { ...opts, length: laidLength(VENUE, opts.length), daily: null }; const d = dailyRace(); return { ...opts, ...d, daily: d.day }; };
+const settings = () => { if (drill) return { ...opts, ...drillSettings(), length: laidLength(VENUE, drillSettings().length), daily: null }; if (opts.mode !== 'daily') return { ...opts, length: laidLength(VENUE, opts.length), daily: null }; const d = dailyRace(); return { ...opts, ...d, daily: d.day }; };
 const windName = (p) => t(p);
 const SHAPE_KEY = { wl: 'shapeWl', tri: 'shapeTri', trap: 'shapeTrap', wlu: 'shapeWlu' };
 const paintOpts = () => {
@@ -1261,6 +1262,7 @@ const bcHud = createHud({ t, LANG, fmt, world, getRace: () => race, setCam, flag
 
 // ---------- menus ----------
 const menu = $('#menu'), hud = $('#hud');
+initExtras({ LANG, world, getRace: () => race, isRunning: () => running, stop: () => { running = false; hud.hidden = true; } });
 if (!opts.played) $('#howD').open = true; // how to play: open until the first race
 function startRace() {
   audio.init(); audio.setOn(!!opts.sound); skipper.load(); crews.load(); asides.load(); calls.load(); score.style();
@@ -1275,7 +1277,8 @@ function startRace() {
   running = true; paused = false;
   applyTrimMode();
   setCam(world.mode);
-  raceStarted(race, race.settings); // counted for the admins' Overview and the leaderboards (stats.js)
+  if (!drill) raceStarted(race, race.settings); // counted for the admins' Overview and the leaderboards (stats.js); a drill isn't a race
+  onStart(race); // the ghost, a drill's set-up, the analytics (extras.js)
 }
 // ---------- pause: the race stays in view; resume, change the race, restart or leave (each of the last three asks first) ----------
 const pauseEl = $('#pauseCard'), confirmEl = $('#confirmCard');
@@ -1830,6 +1833,7 @@ function loop(now) {
     if (!P.auto) P.rudder = input.rudder; else input.rudder = 0;
     acc += dt * timeScale;
     while (acc >= STEP) { race.step(STEP); acc -= STEP; }
+    onFrame(race, dt, race.t); // the ghost where she was, a drill's end (extras.js)
     handleMessages();
     updateHud(dt);
     if (world.quality === 'high' || frameN++ % 3 === 0) drawMap(mctx, 240, false);

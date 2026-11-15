@@ -35,7 +35,20 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
       results, so the pages gather both into it on every visit (`components/bests-sync.tsx`, which merges it with the
       account's `user_metadata.log` for a signed-in player). From it: the venues stamped on Home and the hub with the
       streak (days in a row; a day missed doesn't break it, two do), a first race at a venue on its result, and your month
-      on the rating page, each day's best placed against that day's ranked times.
+      on the rating page, each day's best placed against that day's ranked times. It keeps the badges too
+      (`lib/badges.ts`, `/race/badges`), at the race that first earned each: a race's own from every result the device
+      has (a clean race, a start on the gun, tacking on headers…), the log's from the streak, the venues and the drills.
+    - `regatta-drills` holds the drills' best stars (`/race/drills`, `lib/drills.ts`).
+- **The ghost, the drills and the analytics in the game:** `public/game/extras.js`, which `main.js` calls as a race
+  starts and every frame. The ghost is a see-through boat out of the race, sailing a finished race's track
+  (`public/game/track.js`, in step with `lib/finish.ts`, which `npm test` checks): your best today on this device (off in
+  Settings), or the race of a result link (`/play?race=today&ghost=<id>`, a shared result's button), with the gap to her
+  on the board. A drill (`/play?race=free&drill=start|mark|beat`) is a free race of its own; a computer skipper sails
+  your boat to the moment it's about, hands her over, and it ends with stars; it's never posted as a race. The game
+  sends its moments to Vercel Web Analytics (Race start, Race left, Ghost, Drill done) and the pages theirs
+  (`@vercel/analytics` `track`: Race finish, Race again, Challenge taken, Replay, Share).
+- **A passport to share:** `/passport?s=&v=&b=&vs=&n=` (`lib/passport-share.ts`; its card `app/og/passport`): the streak,
+  the venues raced and the badges as the sharer sent them, from Share on Home's venues and on the badges page.
   - The game also posts each finished race to the scores server (below), so a result link opens on any device; there
     it reads as "this boat", not "you", and the page has a Share button for your own races.
 - **The ad on the jib:** every boat in the game (yours, the computer boats, the previews) carries one sponsor's logo

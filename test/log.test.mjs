@@ -25,7 +25,7 @@ test('the streak: days in a row, one missed day forgiven, two not', () => {
 
 test('the log: a day at its fastest, a venue at its first race, from the game’s records and the account’s', () => {
   const l = cleanLog({ d: { '2026-11-10': 240, 'junk': 3 }, v: { cowes: 100, atlantis: 5 } });
-  assert.deepEqual(l, { d: { '2026-11-10': 240 }, v: { cowes: 100 } });
+  assert.deepEqual(l, { d: { '2026-11-10': 240 }, v: { cowes: 100 }, b: {} });
   addDay(l, '2026-11-10', 230);
   addDay(l, '2026-11-10', 250);
   assert.equal(l.d['2026-11-10'], 230);
@@ -48,4 +48,45 @@ test('the log: a day at its fastest, a venue at its first race, from the game’
   assert.equal(m.v.kiel, 50);
   assert.deepEqual([...passport(m).raced].sort(), ['cowes', 'kiel', v].sort());
   assert.equal(passport(m).of, 28);
+});
+
+test('the ghost in the game and the replay on the result page put a boat in the same place', async () => {
+  const { along, ghostGap } = await import('../public/game/track.js');
+  const { posesAt } = await import('../lib/finish.ts');
+  // a boat sailing up the course at 3 m/s from the gun, a point a second, finished at 200 s
+  const track = []; for (let i = 0; i < 270; i++) { const T = -64 + (i + 1) * 61 / 60; track.push([0, -Math.max(0, T) * 3]); }
+  const thin = track.filter((_, i) => i % 2 === 0);
+  const r = { daily: null, preset: 'light', length: 'short', laps: 1, start: 1, current: false, course: {}, boats: [{ name: null, me: true, done: true, dsq: false, secs: 200, track: thin }] };
+  for (const T of [-30, 0, 47.3, 120, 199]) {
+    const a = along(thin, 200, 1, T), b = posesAt(r, T)[0];
+    assert.ok(Math.abs(a.x - b.x) < 1e-9 && Math.abs(a.z - b.z) < 1e-9, `at ${T}`);
+  }
+  // at 100 s she was 300 m up; a boat there at 104 s is 4 s behind her, one there at 97 s 3 s ahead
+  const g = { track: thin, secs: 200, start: 1, legT: [0, 200] };
+  assert.ok(Math.abs(ghostGap(g, 0, -300, 1, 104) - 4) < 1.1);
+  assert.ok(Math.abs(ghostGap(g, 0, -300, 1, 97) + 3) < 1.1);
+  assert.equal(ghostGap(g, 0, -300, 0, 97), null); // before the start: no gap
+});
+
+test('the badges: what a race earned, and what the log and the drills have', async () => {
+  const { raceBadges, logBadges } = await import('../lib/badges.ts');
+  const { addResult, cleanLog, mergeLog } = await import('../lib/log.ts');
+  const boats = (place, n = 6) => Array.from({ length: n }, (_, i) => ({ me: i === place - 1, done: true, dsq: false, secs: 200 + i, pens: 0 }));
+  const log = { ocs: false, startDsq: null, startT: 1.2, gunV: 5.1, head: 3, lift: 0, pct: 96, fouls: [], hails: {}, legPlaces: [2, 5, 2], penT: 0 };
+  assert.deepEqual(raceBadges({ boats: boats(2), log }).sort(), ['clean', 'comeback', 'first', 'gun', 'podium', 'shifts', 'speed'].sort());
+  assert.deepEqual(raceBadges({ boats: boats(1), log: { ...log, startT: 6, lift: 1, pct: 80, hails: { 10: 1 }, legPlaces: [1, 1, 1] } }).sort(), ['first', 'podium', 'win'].sort());
+  // three boats: no podium for third; over early: no gun; a dsq earns nothing
+  assert.ok(!raceBadges({ boats: boats(3, 3), log }).includes('podium'));
+  assert.ok(!raceBadges({ boats: boats(2), log: { ...log, ocs: true } }).includes('gun'));
+  assert.deepEqual(raceBadges({ boats: boats(1).map((b) => ({ ...b, dsq: b.me })), log }), []);
+  assert.deepEqual(logBadges({ streak: 7, venues: 28, of: 28, drills: { start: 3, mark: 3, beat: 3 }, drillIds: ['start', 'mark', 'beat'] }).sort(), ['drills', 'streak7', 'venues28', 'venues7'].sort());
+  assert.deepEqual(logBadges({ streak: 6, venues: 6, of: 28, drills: { start: 3, mark: 2 }, drillIds: ['start', 'mark', 'beat'] }), []);
+  // kept in the log at the first race that earned them, merged with the account's at the earlier
+  const l = cleanLog(null);
+  addResult(l, { at: 500, daily: null, venue: 'kiel', boats: boats(1), log });
+  addResult(l, { at: 300, daily: null, venue: 'kiel', boats: boats(4), log });
+  assert.equal(l.b.win, 500);
+  assert.equal(l.b.first, 300);
+  assert.equal(mergeLog(l, { d: {}, v: {}, b: { win: 100, nonsense: 1 } }).b.win, 100);
+  assert.equal(cleanLog({ b: { win: 100, nonsense: 1 } }).b.nonsense, undefined);
 });

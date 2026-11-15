@@ -47,7 +47,7 @@ export function NameRow({ lang, name: saved }: { lang: Lang; name: string }) {
   );
 }
 
-type Keys = 'autoTrim' | 'guides' | 'camera' | 'gfx' | 'sound' | 'voice' | 'vibration' | 'music' | 'musicVol' | 'sea';
+type Keys = 'autoTrim' | 'guides' | 'ghost' | 'camera' | 'gfx' | 'sound' | 'voice' | 'vibration' | 'music' | 'musicVol' | 'sea';
 
 // One of the settings' cards over the scene: its name on top, its rows under it
 function Card({ id, title, wide = false, children }: { id: string; title: string; wide?: boolean; children: React.ReactNode }) {
@@ -102,7 +102,7 @@ export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: 
       {hint && <p className="hint">{hint}</p>}
     </div>
   );
-  const sw = (k: 'guides' | 'sound' | 'voice' | 'vibration', label: string, cls = '') => (
+  const sw = (k: 'guides' | 'ghost' | 'sound' | 'voice' | 'vibration', label: string, cls = '') => (
     <div className={`srow ${cls}`}>
       <span className="srow-k" id={`l-${k}`}>{label}</span>
       <button type="button" className="tgl" role="switch" aria-checked={!!o[k]} aria-labelledby={`l-${k}`} onClick={() => set(k, o[k] ? 0 : 1)}><i /></button>
@@ -122,6 +122,7 @@ export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: 
         {seg('autoTrim', t('Sails', 'Паруса'), [[0, t('I trim', 'Сам')], [1, t('Auto', 'Авто')], [2, t('Main + jib', 'Грот + стаксель')]])}
         {seg('camera', t('First camera', 'Камера'), [['drone', t('Drone', 'Дрон')], ['top', t('Top', 'Сверху')], ['helm', t('Helm', 'Штурвал')]])}
         {sw('guides', t('Guides on the water', 'Подсказки на воде'))}
+        {sw('ghost', t('Ghost of your best today', 'Призрак твоего лучшего сегодня'))}
       </Card>
       <Card id="st-screen" title={t('Screen and sound', 'Экран и звук')} wide>
         <div className="st-cols">

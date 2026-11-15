@@ -4,6 +4,18 @@ import Link from 'next/link';
 import { tx, ruPlural, type Lang } from '@/lib/lang';
 import { VENUES, type VenueId } from '@/lib/venues';
 import { harvest, LOG_EVENT, passport, streakOf, type Log } from '@/lib/log';
+import { passportQuery } from '@/lib/passport-share';
+import { ShareButton } from './share-sheet';
+
+// your passport as a link to share (/passport, its card app/og/passport): the numbers, and your name when signed in
+export function passportShare(log: Log, lang: Lang) {
+  const t = tx(lang), p = passport(log), st = streakOf(log.d).n, b = Object.keys(log.b || {}).length;
+  const name = typeof document === 'undefined' ? '' : getComputedStyle(document.documentElement).getPropertyValue('--me-name').trim().replace(/^"|"$/g, '').split(/[\s@]/)[0];
+  const url = `${location.origin}/passport?${passportQuery({ streak: st, raced: p.raced, badges: b, name })}${lang === 'ru' ? '&lang=ru' : ''}`;
+  const text = st >= 2 ? t(`${st} days in a row on the water, ${p.n} of ${p.of} venues raced. Can you keep up?`, `${st} дней подряд на воде, ${p.n} из ${p.of} акваторий. Догонишь?`)
+    : t(`${p.n} of ${p.of} regatta venues raced. Can you get further?`, `Пройдено ${p.n} из ${p.of} регатных акваторий. Сможешь дальше?`);
+  return { title: 'Up and down', text, url };
+}
 
 // The player's log (lib/log.ts) on this device, gathered from what the game keeps as the page comes up, and again when
 // the account's has just been merged in. null until then: the pages are cached, so the server can't know it.
@@ -37,6 +49,7 @@ export function VenueList({ lang, today }: { lang: Lang; today: VenueId }) {
         <p className="ho-pass" role="status">
           <b>{t(`${p.n} of ${p.of} raced`, `Пройдено ${p.n} из ${p.of}`)}</b>
           {st && st.n > 1 ? <span className={st.risk ? 'risk' : ''}>{streakWords(st.n, lang)}{st.risk ? t(' · race today to keep it', ' · пройди сегодня, чтобы не прервать') : ''}</span> : null}
+          {log ? <ShareButton lang={lang} data={() => passportShare(log, lang)} className="bt-show ho-pass-share" title={t('Share your passport', 'Поделиться паспортом')} /> : null}
         </p>
       ) : null}
       <ul className="ho-venues">

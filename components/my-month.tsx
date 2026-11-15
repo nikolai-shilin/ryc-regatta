@@ -9,15 +9,21 @@ import { useLog } from './passport';
 // stood among that day's ranked times, as a bar: how much of the field you beat (all of it: first). The times are
 // this device's log (lib/log.ts; for a signed-in player, the account's too); the days' fields are the scores API's.
 // The board names no one by account, so it's your times placed against it, as the result page places them.
-type Day = { d: string; s: number; place: number; of: number };
+// a day of yours: your best that day, its place among that day's ranked times and how many there are (with yours if it
+// isn't on the board), and whether it is (a signed-in player's are: those earn the month's points)
+export type MyDay = { d: string; s: number; place: number; of: number; listed: boolean };
 const clock = (s: number) => { const m = Math.floor(s / 60), r = s - m * 60; return `${m}:${r.toFixed(1).padStart(4, '0')}`; };
+export const monthOf = (day: string) => {
+  const today = todayUtc(), first = day.slice(0, 8) + '01';
+  const e = new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7), 0)).toISOString().slice(0, 10);
+  return { first, end: e < today ? e : today };
+};
 
-export function MyMonth({ day, lang }: { day: string; lang: Lang }) {
-  const t = tx(lang), log = useLog();
-  const [days, setDays] = useState<Day[] | null>(null);
-  const [hover, setHover] = useState<string | null>(null);
-  const first = day.slice(0, 8) + '01', today = todayUtc();
-  const end = (() => { const e = new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7), 0)).toISOString().slice(0, 10); return e < today ? e : today; })();
+// your days of the month that `day` is in, each placed on that day's ranking (null until known)
+export function useMyDays(day: string) {
+  const log = useLog();
+  const [days, setDays] = useState<MyDay[] | null>(null);
+  const { first, end } = monthOf(day);
   const mine = log ? Object.entries(log.d).filter(([d]) => d >= first && d <= end).sort(([a], [b]) => (a < b ? -1 : 1)) : null;
   const key = mine ? `m|${mine.map(([d, s]) => `${d}:${s}`).join(',')}` : ''; // m|: the log is in, with or without days
   useEffect(() => {
@@ -27,16 +33,24 @@ export function MyMonth({ day, lang }: { day: string; lang: Lang }) {
     Promise.all(mine.map(([d, s]) => fetch(`https://iyt.rycrentals.com/api/game?day=${d}`).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((j) => {
       const field: number[] = j && j.d === d && Array.isArray(j.rows) ? j.rows.map((r: { s: number }) => r.s) : [];
       const listed = field.some((x) => Math.abs(x - s) < 0.05);
-      return { d, s, place: placeAmong(field, s), of: field.length + (listed ? 0 : 1) };
+      return { d, s, place: placeAmong(field, s), of: field.length + (listed ? 0 : 1), listed };
     }))).then((r) => live && setDays(r));
     return () => { live = false; };
   }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  return log ? days : null;
+}
+// the month's points your listed days earned: on a day with N ranked, place p takes N − p + 1 (lib/rating.ts)
+export const myPoints = (days: MyDay[]) => days.filter((x) => x.listed).reduce((a, x) => a + x.of - x.place + 1, 0);
 
+export function MyMonth({ day, lang }: { day: string; lang: Lang }) {
+  const t = tx(lang), log = useLog(), days = useMyDays(day);
+  const [hover, setHover] = useState<string | null>(null);
+  const { first, end } = monthOf(day);
   if (!log || !days) return null;
   const loc = lang === 'ru' ? 'ru-RU' : 'en-GB';
   const all: string[] = []; for (let d = first; d <= end; d = shiftDay(d, 1)) all.push(d);
   const by = new Map(days.map((x) => [x.d, x]));
-  const share = (x: Day) => (x.of <= 1 ? 1 : (x.of - x.place) / (x.of - 1)); // of the field beaten: 1 first, 0 last
+  const share = (x: MyDay) => (x.of <= 1 ? 1 : (x.of - x.place) / (x.of - 1)); // of the field beaten: 1 first, 0 last
   const ord = (n: number) => t(`${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`, `${n}-е`);
   const best = days.length ? days.reduce((a, b) => (share(b) > share(a) || (share(b) === share(a) && b.place < a.place) ? b : a)) : null;
   const wins = days.filter((x) => x.place === 1).length, podiums = days.filter((x) => x.place <= 3).length;
