@@ -97,7 +97,7 @@ export function FleetView({ lang, start, back }: { lang: Lang; start: YachtId | 
   return (
     <div className="bt fl-view">
       <LoadBar label={t('Loading the fleet', 'Загружаем флот')} on={!live} />
-      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src="/fleet-view?wind=medium" title={t('The fleet in 3D', 'Флот в 3D')}
+      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src="/fleet-view?wind=light" title={t('The fleet in 3D', 'Флот в 3D')}
         onLoad={() => post({ type: 'hello' })} />
 
       <div className="bt-info" ref={info}>

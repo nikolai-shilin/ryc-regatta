@@ -124,7 +124,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   return (
     <div className="bt">
       <LoadBar label={t('Loading your boat', 'Загружаем яхту')} on={!live} />
-      <iframe ref={frame} className="bt-scene" src="/boat-view" onLoad={() => post({ type: 'hello' })} title={t('Your boat in 3D', 'Твоя яхта в 3D')} />
+      <iframe ref={frame} className="bt-scene" src="/boat-view?wind=light" onLoad={() => post({ type: 'hello' })} title={t('Your boat in 3D', 'Твоя яхта в 3D')} />
 
       <div className="bt-info" ref={info}>
         <div className="bt-top">{back}<SceneBrand /></div>
