@@ -8,7 +8,7 @@ import { memoryRealtime } from './hub.mjs';
 globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u)))); // land.js's bay files, from the disk
 const { makeLink, Room, Match, HOST_KEY, raceFor, Host, Guest } = await import('../public/game/match.js');
 const { controlsOf } = await import('../public/game/wire.js');
-const { D2R, wrap, lineD } = await import('../public/game/sim.js');
+const { D2R, wrap, lineD, sheetFor, idealSail } = await import('../public/game/sim.js');
 
 const SETTINGS = { venue: 'palma', wind: 12, yacht: 'ac75', length: 'short' };
 const person = (id, name) => ({ id, name, look: { hull: id } });
@@ -264,6 +264,15 @@ function counting(hub) {
   return { rt, n };
 }
 
+// both boats sailing, on a reach away from their ends at 2 m/s, the same on each screen (a match starts them luffing,
+// nearly stopped: these tests are of the helm and the sails between the screens, which want a boat with way on)
+function underWay(r) {
+  const c = r.course;
+  for (const b of r.humans) {
+    const out = b.side === 'blue' ? 1 : -1;
+    Object.assign(b, { h: Math.atan2(c.dir.x * out, -c.dir.z * out), v: 2, sheet: sheetFor(idealSail(60)), jibSheet: sheetFor(idealSail(60)) });
+  }
+}
 // a match's first race on two screens: the host's (h) and the guest's (g), each with her own link, over one hub
 // (latency: ms each way); rooms: each screen's waiting room too, paused for the race as the game pauses it
 async function duel({ rt = null, hub = null, latency = 0, rooms = false } = {}) {
@@ -279,6 +288,7 @@ async function duel({ rt = null, hub = null, latency = 0, rooms = false } = {}) 
     hroom.pause(true); groom.pause(true);
   } else { await hl.all.join(); await gl.all.join(); } // (the waiting room's: the Room joins it)
   const hrace = raceFor(match, 'h'), grace = raceFor(match, 'g');
+  for (const r of [hrace, grace]) underWay(r);
   const host = new Host({ race: hrace, link: hl, guestId: 'g', now });
   const guest = new Guest({ race: grace, link: gl, me: 'g', now });
   assert.equal(await host.joined, true); assert.equal(await guest.joined, true);

@@ -861,15 +861,22 @@ export class Race {
   get log() { return this.player.log; } // your race, for the debrief (newLog)
   // a match's two boats at the race's first moment (8 s before the warning signal): blue 40 m out beyond the committee
   // boat's end of the line and 40 m up on the course side, yellow as far beyond the pin's, each outside the line square
-  // to the starting line through her end (Appendix C3.1); each reaching away from her end along the line's extension,
-  // blue on port, yellow on starboard. Sailed straight on she never comes inside her line before the preparatory
-  // signal; to enter (C3.2) her skipper turns back and runs in across the line after it
+  // to the starting line through her end (Appendix C3.1). Each waits as match boats do outside their ends: nearly
+  // stopped, luffing 30° off the wind with her sheets well out (not quite all the way: let right out she would back
+  // her main and gather way astern, down across the extension). Left alone she creeps a little, on the tack that has
+  // clear water ahead (away from her end unless the shore is near that way), and stays afloat and above the line; to
+  // enter (C3.2) her skipper bears away, sails to her end and runs in across the line after the preparatory signal
   placeMatch(blue) {
-    const c = this.course;
+    const c = this.course, W = this.wind.dir(), LUFF = 30 * D2R, EASED = 0.85;
     for (const b of this.humans) {
       const side = b.id === blue ? 'blue' : 'yellow', out = side === 'blue' ? 1 : -1, end = side === 'blue' ? c.committee : c.pin;
-      Object.assign(b, { side, x: end.x + (c.dir.x * out + c.normal.x) * 40, z: end.z + (c.dir.z * out + c.normal.z) * 40, h: Math.atan2(c.dir.x * out, -c.dir.z * out), v: 2,
-        sheet: sheetFor(idealSail(60)), entered: false, owed: 0, pen: null, forcedT: 0 }); // (trimmed for the reach: some 60° apparent)
+      const x = end.x + (c.dir.x * out + c.normal.x) * 40, z = end.z + (c.dir.z * out + c.normal.z) * 40;
+      // the open water ahead on a heading: the least room in the next 150 m
+      const clear = (h) => { let m = Infinity; for (let d = 0; d <= 150; d += 10) m = Math.min(m, this.roomAt(x + Math.sin(h) * d, z - Math.cos(h) * d)); return m; };
+      const away = (h) => Math.sin(h) * c.dir.x * out - Math.cos(h) * c.dir.z * out;
+      const [o, i] = [W - LUFF, W + LUFF].sort((p, q) => away(q) - away(p)); // the tack heading away from her end, the other
+      const h = clear(o) >= 60 || clear(o) >= clear(i) ? o : i;
+      Object.assign(b, { side, x, z, h, v: 0.3, sheet: EASED, jibSheet: EASED, entered: false, owed: 0, pen: null, forcedT: 0 });
       b.lastD = lineD(c, b); b.lastZ = b.z;
     }
   }

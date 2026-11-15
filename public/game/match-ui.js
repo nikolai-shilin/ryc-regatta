@@ -438,7 +438,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     const full = !!room && room.full;
     const h = room ? room.host : isHost ? { id: myId, name: myName || '…' } : null, g = room && room.guest;
     const rows = [[h, BLUE, L.hostTag], [full ? null : g, YELLOW, '']];
-    const k = JSON.stringify(rows.map(([p]) => p && [p.id, p.name])) + full;
+    const k = JSON.stringify(rows.map(([p]) => p && [p.id, p.name])) + full + !!room;
     if (R.ppl._k !== k) {
       R.ppl._k = k; R.ppl.textContent = '';
       for (const [p, col, tag] of rows) {

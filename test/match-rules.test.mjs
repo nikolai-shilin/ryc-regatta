@@ -41,12 +41,12 @@ test('a match is two boats, blue at the committee boat, yellow at the pin, each 
   assert.equal(r.match, true); assert.equal(r.course.type, 'wl'); assert.equal(r.course.laps, 2); assert.equal(r.prepFlag, 'P');
   assert.equal(r.clock, -308); assert.deepEqual(r.current, { x: 0, z: 0 });
   assert.ok(lineD(r.course, h) > 0 && lineD(r.course, g) > 0, 'both on the course side');
+  // each waiting as match boats do: nearly stopped, luffing 30° off the wind, her sheets well out (not backing)
   const W = r.wind.dir();
-  assert.ok(wrap(W - h.h) < 0, 'blue on port'); assert.ok(wrap(W - g.h) > 0, 'yellow on starboard');
-  // each heading away from her end along the line's extension, on a reach
-  const c = r.course, along = (b) => Math.sin(b.h) * c.dir.x - Math.cos(b.h) * c.dir.z;
-  assert.ok(along(h) > 0.99 && along(g) < -0.99, 'along the extension, away from her end');
-  assert.ok(Math.abs(wrap(W - h.h)) > 70 * D2R && Math.abs(wrap(W - h.h)) < 110 * D2R, 'a reach');
+  for (const b of r.humans) {
+    assert.ok(Math.abs(Math.abs(wrap(W - b.h)) - 30 * D2R) < 1e-9, `${b.side} luffing`);
+    assert.ok(b.v < 0.5 && b.sheet >= 0.8 && b.sheet <= 0.9 && b.jibSheet === b.sheet, `${b.side} stopped, sheets out`);
+  }
   assert.ok(r.roomAt(h.x, h.z) > 20 && r.roomAt(g.x, g.z) > 20, 'both in open water');
   assert.ok(r.humans.every((b) => b.owed === 0 && b.pen === null && !b.entered));
   // blue can be the guest
@@ -92,6 +92,8 @@ test('left alone, each boat owes one for a late entry and none for an early one'
   }
 });
 
+// (from the start, luffing outside her end: she bears away to a spot just outside her end on the course side, waits
+// there head to wind, then runs in across the line after the preparatory signal)
 test('turning back and running in through her own end enters, on both sides, in every wind', () => {
   for (const preset of ['light', 'medium', 'strong']) for (const seed of [1, 5, 9, 12]) {
     const r = matchRace({ preset, seed }), c = r.course, key = `${preset} ${seed}`;
@@ -105,6 +107,42 @@ test('turning back and running in through her own end enters, on both sides, in 
     runUntil(r, () => r.clock >= -119);
     for (const b of r.humans) { assert.ok(b.entered, `${key} ${b.side} entered`); assert.equal(b.owed, 0, `${key} ${b.side} owes nothing`); }
   }
+});
+
+// Left alone from the start to −2:00 (no hands on her: the rudder amidships), a match boat must stay afloat at every
+// venue and in every wind, in the two classes whose courses differ most: the JPK 1050 (the club's) and the AC75 (the
+// biggest course, and the boat that creeps furthest). Each venue and class in a process of its own (they're the page's,
+// from its address), eight at a time
+test('left alone till 2:00, both boats stay afloat at every venue, in every wind, owing one (late) each', async () => {
+  const { VENUES } = await import('../public/game/venues.js');
+  const { execFile } = await import('node:child_process');
+  const code = (venue, boat) => `
+    import { readFile } from 'node:fs/promises';
+    globalThis.location = { search: '?venue=${venue}&boat=${boat}' };
+    globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))));
+    const sim = await import(${JSON.stringify(new URL('../public/game/sim.js', import.meta.url).href)});
+    const { VENUE, lengthOffered } = await import(${JSON.stringify(new URL('../public/game/venues.js', import.meta.url).href)});
+    const bad = [];
+    for (const length of ['short', 'medium']) if (lengthOffered(VENUE, length)) for (const preset of ['light', 'medium', 'strong']) {
+      const r = new sim.Race({ preset, length, seed: 1, match: true, humans: [{ id: 'h', name: 'H' }, { id: 'g', name: 'G' }], me: 'h' });
+      let aground = false, room = Infinity, early = 0, late = 0;
+      while (r.clock < -119) {
+        for (const b of r.humans) b.rudder = 0;
+        r.step(1 / 60);
+        for (const b of r.humans) room = Math.min(room, r.roomAt(b.x, b.z));
+        for (const m of r.messages) { if (m.key === 'aground') aground = true; if (m.key === 'entryEarly') early++; if (m.key === 'entryLate') late++; }
+        r.messages.length = 0;
+      }
+      const owed = r.humans.map((b) => b.owed + (b.entered ? 'E' : '')).join();
+      if (aground || room <= 0 || early || late !== 2 || owed !== '1,1') bad.push({ length, preset, aground, room: Math.round(room), early, late, owed });
+    }
+    console.log(JSON.stringify(bad));`;
+  const jobs = VENUES.flatMap((v) => ['jpk1050', 'ac75'].map((boat) => [v.id, boat])), queue = [...jobs], out = [];
+  const run = ([venue, boat]) => new Promise((res, rej) => execFile(process.execPath, ['--input-type=module', '-e', code(venue, boat)], { encoding: 'utf8' },
+    (e, stdout) => (e ? rej(e) : res(out.push({ venue, boat, bad: JSON.parse(stdout) })))));
+  await Promise.all(Array.from({ length: 8 }, async () => { while (queue.length) await run(queue.shift()); }));
+  assert.equal(out.length, jobs.length);
+  for (const o of out) assert.deepEqual(o.bad, [], `${o.venue} ${o.boat}: ${JSON.stringify(o.bad)}`);
 });
 
 test('inside her end at the preparatory signal: a penalty', () => {

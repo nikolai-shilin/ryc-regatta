@@ -1951,7 +1951,19 @@ function personalBest(key, secs) {
 let last = performance.now(), acc = 0;
 const STEP = 1 / 60;
 let frameN = 0;
+// In a match a frame that throws costs that frame, not the race: the next one is asked for first, and the frame's
+// news is dropped (a message that threw would throw again). A dead loop sends no inputs, so the guest would be
+// forfeited after 30 s, and a host's guest frozen and her race abandoned after 60. Today's race and a free race keep
+// the plain loop.
 function loop(now) {
+  if (!MATCH) { frame(now); requestAnimationFrame(loop); return; }
+  requestAnimationFrame(loop);
+  try { frame(now); } catch (e) {
+    console.error(e);
+    if (race) { race.messages.length = 0; for (const b of race.boats) b.events.length = 0; }
+  }
+}
+function frame(now) {
   const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now;
   if (window.__slow) { const t0 = performance.now(); while (performance.now() - t0 < window.__slow); } // debug: pretend to be a slow phone
   const P = race.player;
@@ -1981,7 +1993,6 @@ function loop(now) {
     engine.update(true);
   }
   world.frame(running && (!paused || mx) ? dt * timeScale : 0, race.t); // foam and wakes keep pace with the race
-  requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, get mx() { return mx; }, get running() { return running; }, get paused() { return paused; }, world, audio, skipper, crews, asides, engine };
