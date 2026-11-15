@@ -10,7 +10,7 @@ const PANEL = { w: 400, h: 502 };
 
 // Merriweather Light and Carlito Bold, the site's own, cut to the letters on the card (Google Fonts serves TrueType to
 // a client that isn't a browser, which is what the renderer reads). Without them it falls back to its own font.
-async function font(family: string, weight: 300 | 700, text: string) {
+export async function font(family: string, weight: 300 | 700 | 800, text: string) {
   try {
     const css = await (await fetch(`https://fonts.googleapis.com/css2?family=${family}:wght@${weight}&text=${encodeURIComponent(text)}`)).text();
     const url = css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/)?.[1];

@@ -5,6 +5,8 @@ import { ruPlural } from '@/lib/lang';
 import { pageMeta } from '@/lib/seo';
 import { VENUES } from '@/lib/venues';
 import { readPassport } from '@/lib/passport-share';
+import { BADGES } from '@/lib/badges';
+import { BadgePennant } from '@/components/badge-pennant';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 
 type Props = { params: Promise<{ lang: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -16,7 +18,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const p = readPassport(sp);
   const title = p.n ? t(`${p.n}’s passport`, `Паспорт: ${p.n}`) : t('A sailor’s passport', 'Паспорт гонщика');
   const meta = pageMeta(lang, { title, description: t(`${p.v} of ${VENUES.length} venues raced${p.s >= 2 ? `, ${p.s} days in a row` : ''}. A free 3D sailing race in your browser, a new venue every day.`, `Пройдено ${p.v} из ${VENUES.length} акваторий${p.s >= 2 ? `, ${p.s} дней подряд` : ''}. Бесплатная 3D-парусная гонка в браузере, каждый день новая акватория.`), index: false });
-  const qs = new URLSearchParams(Object.entries(sp).flatMap(([k, v]) => (typeof v === 'string' && ['s', 'v', 'b', 'vs', 'n'].includes(k) ? [[k, v]] : [])));
+  const qs = new URLSearchParams(Object.entries(sp).flatMap(([k, v]) => (typeof v === 'string' && ['s', 'v', 'b', 'vs', 'bb', 'n'].includes(k) ? [[k, v]] : [])));
   if (lang === 'ru') qs.set('lang', 'ru');
   const card = { url: `/og/passport?${qs}`, width: 1200, height: 630, alt: title };
   return { ...meta, openGraph: { ...meta.openGraph, images: [card] }, twitter: { ...meta.twitter, images: [card] } };
@@ -38,6 +40,11 @@ export default async function Passport({ params, searchParams }: Props) {
         <ul className="ho-venues pg-pass">
           {VENUES.map((v, i) => <li key={v.id} className={p.raced[i] ? 'raced' : undefined}>{v.name[L]}</li>)}
         </ul>
+        {p.got.some(Boolean) ? (
+          <ul className="pg-pass-b" aria-label={t('Badges earned', 'Полученные значки')}>
+            {BADGES.map((b, i) => <li key={b.id} title={t(...b.name)}><BadgePennant id={b.id} on={p.got[i]} /><span>{t(...b.name)}{p.got[i] ? '' : t(' (not yet)', ' (ещё нет)')}</span></li>)}
+          </ul>
+        ) : null}
       </main>
       <SiteFoot lang={lang} t={t} back="/" />
     </div>

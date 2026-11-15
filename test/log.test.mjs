@@ -90,3 +90,20 @@ test('the badges: what a race earned, and what the log and the drills have', asy
   assert.equal(mergeLog(l, { d: {}, v: {}, b: { win: 100, nonsense: 1 } }).b.win, 100);
   assert.equal(cleanLog({ b: { win: 100, nonsense: 1 } }).b.nonsense, undefined);
 });
+
+test('the passport link carries which badges, and an older link only how many', async () => {
+  const { passportQuery, readPassport } = await import('../lib/passport-share.ts');
+  const { BADGES } = await import('../lib/badges.ts');
+  const q = Object.fromEntries(new URLSearchParams(passportQuery({ streak: 5, raced: new Set(['cowes', 'kiel']), badges: ['first', 'podium', 'streak7', 'nonsense'], name: 'Anna' })));
+  const p = readPassport(q);
+  assert.equal(p.b, 3);
+  assert.deepEqual(BADGES.filter((_, i) => p.got[i]).map((b) => b.id), ['first', 'podium', 'streak7']);
+  assert.equal(p.v, 2);
+  // a link from before: the count, none lit
+  const old = readPassport({ s: '5', v: '2', b: '4', vs: q.vs });
+  assert.equal(old.b, 4);
+  assert.ok(!old.got.some(Boolean));
+  assert.ok(!readPassport({ bb: '!!' }).got.some(Boolean));
+  // every badge has its family
+  assert.ok(BADGES.every((b) => ['result', 'skill', 'season'].includes(b.fam)));
+});

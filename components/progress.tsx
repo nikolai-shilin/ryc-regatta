@@ -1,8 +1,9 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { tx, ruPlural, type Lang } from '@/lib/lang';
-import { BADGES, type BadgeId } from '@/lib/badges';
+import { BADGES, FAMS, type BadgeFam, type BadgeId } from '@/lib/badges';
+import { BadgePennant, FAM_COLOUR } from './badge-pennant';
 import { DRILLS, DRILLS_KEY } from '@/lib/drills';
 import { todayUtc } from '@/lib/log';
 import { passportShare, useLog } from './passport';
@@ -47,20 +48,26 @@ export function DrillsList({ lang }: { lang: Lang }) {
   );
 }
 
-// /race/badges: every badge, those you have lit with when, the rest with how
+// /race/badges: every badge as its pennant, those you have lit with when, the rest dark with how; over them how many,
+// a pip each in its family's colour
 export function BadgesGrid({ lang }: { lang: Lang }) {
   const t = tx(lang), log = useLog(), loc = lang === 'ru' ? 'ru-RU' : 'en-GB';
   const n = log ? BADGES.filter((b) => log.b[b.id]).length : 0;
   return (
     <>
-      <div className="pg-count"><p role="status">{log ? t(`${n} of ${BADGES.length} earned`, `Получено ${n} из ${BADGES.length}`) : ' '}</p>
-        {log && n ? <ShareButton lang={lang} data={() => passportShare(log, lang)} className="bt-show" title={t('Share your badges and venues', 'Поделиться значками и акваториями')} /> : null}</div>
+      <div className="pg-count">
+        <p role="status">{log ? (lang === 'ru' ? <>Получено <b>{n}</b> из {BADGES.length}</> : <><b>{n}</b> of {BADGES.length} earned</>) : ' '}</p>
+        <Pips got={log?.b} />
+        <span className="pg-legend">{FAMS.map((f) => <span key={f.id} style={fam(f.id)}>{t(...f.many)}</span>)}</span>
+        {log && n ? <ShareButton lang={lang} data={() => passportShare(log, lang)} className="bt-show" title={t('Share your badges and venues', 'Поделиться значками и акваториями')} /> : null}
+      </div>
       <ul className="pg-badges">
         {BADGES.map((b) => {
           const at = log?.b[b.id];
           return (
-            <li key={b.id} className={`pg-badge${at ? ' on' : ''}`}>
-              <BadgeMark id={b.id} />
+            <li key={b.id} className={`pg-badge${at ? ' on' : ''}`} style={fam(b.fam)}>
+              <span className="pg-fam">{t(...FAMS.find((f) => f.id === b.fam)!.name)}</span>
+              <BadgePennant id={b.id} on={!!at} className="pg-emb" />
               <b>{t(...b.name)}</b>
               <span>{t(...b.how)}</span>
               <small>{at ? new Date(at).toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' }) : t('Not yet', 'Ещё нет')}</small>
@@ -71,32 +78,54 @@ export function BadgesGrid({ lang }: { lang: Lang }) {
     </>
   );
 }
-// each badge's mark: a pennant with its initial, coloured as earned or not by CSS
-function BadgeMark({ id }: { id: BadgeId }) {
-  const glyph: Record<BadgeId, string> = { first: '1', clean: '✓', gun: '⏱', shifts: '↗', speed: '»', podium: '3', win: '★', comeback: '↑', streak7: '7', venues7: '⚓', venues28: '◎', drills: '✦' };
-  return <span className="pg-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M6 4h28v24L20 36 6 28z" /></svg><i>{glyph[id]}</i></span>;
-}
+// a family's colour, for the CSS
+const fam = (f: BadgeFam) => ({ '--c': FAM_COLOUR[f] }) as CSSProperties;
+// a pip a badge, lit in its family's colour once earned
+const Pips = ({ got, className = 'pg-pips' }: { got?: Partial<Record<string, number>>; className?: string }) => (
+  <span className={className} aria-hidden="true">{BADGES.map((b) => <i key={b.id} className={got?.[b.id] ? 'on' : undefined} style={fam(b.fam)} />)}</span>
+);
 
-// the result page: the badges this race earned first (the log keeps each at the race that first earned it)
+// the result page: the badges this race earned first (the log keeps each at the race that first earned it), as a
+// banner under the result's kicks: one, its pennant, name and how; several (a first race often earns three), their
+// pennants side by side and their names, so the result stays in sight on a phone
 export function RaceBadges({ lang, at }: { lang: Lang; at: number }) {
   const t = tx(lang), log = useLog();
   const won = log ? BADGES.filter((b) => b.race && log.b[b.id] === at) : [];
   if (!won.length) return null;
-  // as the result's kicks, beside a new best: one each
-  return <>{won.map((b) => <Link key={b.id} href="/race/badges" className="bt-kick pg-kick"><BadgeMark id={b.id} />{t('New badge', 'Новый значок')} · {t(...b.name)}</Link>)}</>;
+  const one = won.length === 1 ? won[0] : null;
+  return (
+    <Link href="/race/badges" className={`pg-kick${one ? '' : ' many'}`} style={fam(won[0].fam)}>
+      <span className="pg-kick-embs">{won.map((b) => <BadgePennant key={b.id} id={b.id} on className="pg-kick-emb" style={fam(b.fam)} />)}</span>
+      <span className="pg-kick-t">
+        <em>{one ? t('New badge', 'Новый значок') : lang === 'ru' ? `${won.length} ${ruPlural(won.length, ['новый значок', 'новых значка', 'новых значков'])}` : `${won.length} new badges`}</em>
+        <strong>{won.map((b) => t(...b.name)).join(' · ')}</strong>
+        {one ? <span>{t(...one.how)}</span> : null}
+      </span>
+    </Link>
+  );
 }
 
-// the hub's rows: the drills (your stars of all) and the badges (how many)
+// the hub's rows: the drills (a gold pennant, your stars of all) and the badges (your last three earned fanned, how
+// many, a pip each)
 export function ProgressRows({ lang }: { lang: Lang }) {
   const t = tx(lang), got = useDrills(), log = useLog();
   const stars = got ? DRILLS.reduce((a, d) => a + (got[d.id] || 0), 0) : null;
   const n = log ? BADGES.filter((b) => log.b[b.id]).length : null;
+  const last = log ? (Object.entries(log.b) as [BadgeId, number][]).filter(([id]) => BADGES.some((b) => b.id === id)).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => id) : [];
   return (
     <>
-      <Link className="bt-row" href="/race/drills"><span className="pg-ico" aria-hidden="true">★</span><span>{t('Drills', 'Тренировки')}</span>
-        <span className="bt-row-m">{stars == null ? '' : t(`${stars} of ${DRILLS.length * 3} stars · 1–2 min`, `${stars} из ${DRILLS.length * 3} звёзд · 1–2 мин`)}</span></Link>
-      <Link className="bt-row" href="/race/badges"><span className="pg-ico" aria-hidden="true">✦</span><span>{t('Badges', 'Значки')}</span>
-        <span className="bt-row-m">{n == null ? '' : t(`${n} of ${BADGES.length}`, `${n} из ${BADGES.length}`)}</span></Link>
+      <Link className="bt-row pg-row" href="/race/drills">
+        <span className="pg-row-ico" aria-hidden="true"><BadgePennant id="drills" fam="result" on /></span>
+        <span className="pg-row-t">{t('Drills', 'Тренировки')}{stars == null ? null : <small>{lang === 'ru' ? <><b>{stars}</b> из {DRILLS.length * 3} звёзд</> : <><b>{stars}</b> of {DRILLS.length * 3} stars</>}</small>}</span>
+        {stars == null ? null : <span className="pg-row-stars" aria-hidden="true">{Array.from({ length: DRILLS.length * 3 }, (_, i) => <i key={i} className={i < stars ? 'on' : undefined}>★</i>)}</span>}
+      </Link>
+      <Link className="bt-row pg-row" href="/race/badges">
+        <span className="pg-row-ico pg-row-fan" aria-hidden="true">
+          {last.length ? last.map((id, i) => <BadgePennant key={id} id={id} on style={{ left: i * 11, zIndex: 3 - i }} />) : <BadgePennant id="first" on={false} />}
+        </span>
+        <span className="pg-row-t">{t('Badges', 'Значки')}{n == null ? null : <small>{lang === 'ru' ? <>Получено <b>{n}</b> из {BADGES.length}</> : <><b>{n}</b> of {BADGES.length} earned</>}</small>}</span>
+        {n == null ? null : <Pips got={log?.b} className="pg-row-pips" />}
+      </Link>
     </>
   );
 }
