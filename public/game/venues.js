@@ -20,6 +20,8 @@
 //   clearing: what is between the woods where the venue has no fields: 'scrub' (the maquis, garrigue or fynbos;
 //     when not given), 'grass' (a city's parks, a northern meadow) or 'rock' (bare, glacier-smoothed, heath in its
 //     hollows)
+//   coast: what the shore is along the water where the map has no beach: shingle when not given, 'rock' (bare,
+//     wave-washed: a granite or limestone coast; always so where the clearings are rock)
 //   treeTop: how high the trees go, metres; woods: how much of the land is wooded (0 to 1); snow: the snow line on
 //     the mountains beyond, metres (2900 when not given)
 //   walls, roofs: the houses; flat: the share of flat roofs; towers: the walls of the tall ones (20 m and up, or
@@ -105,7 +107,7 @@ export const VENUES = [
     look: {
       haze: 1.35,
       ground: { forest: ['#3e4d2c', '#4f5f34', '#68743f'], scrub: '#7c7a50', rock: ['#c4a58c', '#a08670'], town: '#c2a88a', shore: '#d8c3a4' },
-      trees: [['shrub', 0.75, '#3e4d2c', '#6a7640'], ['olive', 0.15, '#56603e', '#7f8660'], ['stone', 0.1, '#33482a', '#4f6634']], treeTop: 700, woods: 0.6,
+      trees: [['shrub', 0.75, '#3e4d2c', '#6a7640'], ['olive', 0.15, '#56603e', '#7f8660'], ['stone', 0.1, '#33482a', '#4f6634']], treeTop: 700, woods: 0.6, coast: 'rock',
       walls: ['#e8c7a0', '#e3b58f', '#efe2cc', '#f2d9b8', '#d9a87c', '#f6efe2'], roofs: ['#b4603e', '#a5543a', '#c0704a', '#9c4f37'], flat: 0.15,
       boats: { sail: 0.55, motor: 0.3, big: 0.15, bigKind: 'super' },
       water: { deep: '#03304e', scatter: '#14b3aa', k: 0.5, shallow: '#38c4b4', clear: 0.75 },
@@ -244,7 +246,7 @@ export const VENUES = [
     look: {
       haze: 1.2,
       ground: { forest: ['#3a4c2c', '#4a5e34', '#647440'], scrub: '#8a8a5c', rock: ['#d8d2c2', '#b8b0a0'], town: '#c2b8a6', shore: '#d6cfbe' },
-      trees: [['pine', 0.4, '#2c4224', '#566d3a'], ['shrub', 0.45, '#3e4d2c', '#6a7640'], ['stone', 0.15, '#2e4626', '#4f6834']], treeTop: 600, woods: 0.45,
+      trees: [['pine', 0.4, '#2c4224', '#566d3a'], ['shrub', 0.45, '#3e4d2c', '#6a7640'], ['stone', 0.15, '#2e4626', '#4f6834']], treeTop: 600, woods: 0.45, coast: 'rock',
       walls: ['#efe3c8', '#e6d2a8', '#f2ebe0', '#d9c39b', '#eadbc0', '#f6f1e6'], roofs: ['#b4603e', '#a5543a', '#c0704a', '#9c4f37'], flat: 0.3,
       boats: { sail: 0.75, motor: 0.25, big: 0 },
       water: { deep: '#04304c', scatter: '#18a6a8', k: 0.35, shallow: '#3cb4aa', clear: 0.6 },
@@ -337,7 +339,7 @@ export const VENUES = [
     look: {
       haze: 0.7,
       ground: { forest: ['#24401f', '#33572a', '#4b7034'], scrub: '#5f7a42', rock: ['#9a9488', '#7b766c'], town: '#9c9890', shore: '#a29c90' },
-      trees: [['broad', 0.85, '#24401f', '#4b7a34'], ['palm', 0.15, '#2f4a26', '#5a7a3a']], treeTop: 950, woods: 0.9,
+      trees: [['broad', 0.85, '#24401f', '#4b7a34'], ['palm', 0.15, '#2f4a26', '#5a7a3a']], treeTop: 950, woods: 0.9, coast: 'rock',
       walls: ['#dcdad4', '#cfcac0', '#e8e4dc', '#bfc4c6', '#d6cfc0', '#e6e0d0'], roofs: ['#7e7f80', '#6f7478'], flat: 0.95,
       fill: 0, // every tower is on the map: none made up
       boats: { sail: 0.3, motor: 0.6, big: 0.1, bigKind: 'super' },
@@ -350,7 +352,7 @@ export const VENUES = [
     look: {
       haze: 1.15,
       ground: { forest: ['#2f4428', '#41583a', '#5a7046'], scrub: '#7a7a52', rock: ['#a39d92', '#7f7a72'], town: '#aaa498', shore: '#d9d0bc', sand: '#e6dcc4' },
-      trees: [['stone', 0.4, '#2f4428', '#55703f'], ['eucalypt', 0.3, '#4a5a3a', '#7d8a62'], ['shrub', 0.3, '#5a6a42', '#7f8a5c']], treeTop: 700, woods: 0.3,
+      trees: [['stone', 0.4, '#2f4428', '#55703f'], ['eucalypt', 0.3, '#4a5a3a', '#7d8a62'], ['shrub', 0.3, '#5a6a42', '#7f8a5c']], treeTop: 700, woods: 0.3, coast: 'rock',
       walls: ['#f3eee4', '#efe6d2', '#ffffff', '#e9dcc0', '#d9d0c0', '#c9c4ba'], roofs: ['#7e7f80', '#a5543a', '#5a5f60', '#9c4f37'], flat: 0.5,
       boats: { sail: 0.55, motor: 0.35, big: 0.1, bigKind: 'super' },
       water: { deep: '#0b2f45', scatter: '#1f7a86', k: 0.45, shallow: '#3f8f8a', clear: 0.3 },

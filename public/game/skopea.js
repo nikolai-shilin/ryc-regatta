@@ -215,6 +215,7 @@ const GROUND_U = {
   uLake: { value: new THREE.Color('#2f5566') },
   uCanopy: { value: 1 }, // the canopy's crowns drawn one by one (0 on the lowest graphics level: only their average)
   uClear: { value: { scrub: 0, grass: 1, rock: 2 }[LOOK.clearing] ?? 0 }, // what the clearings are (venues.js look.clearing)
+  uCoast: { value: LOOK.coast === 'rock' || LOOK.clearing === 'rock' ? 1 : 0 }, // a rocky coast (venues.js look.coast)
   uLiftMask: { value: null }, uLiftOn: { value: 1 }, // the canopy's height (LIFT_VS): where the houses keep it off, and whether it's drawn
   // how far from the shore (land.js roomAt: + at sea, − ashore, in steps of 4 m, on its 20 m grid round the race area)
   uRoom: { value: (() => {
@@ -237,7 +238,7 @@ const GROUND_GLSL = /* glsl */ `
 #define GROUND_Y vLand.y
 #endif
 ${ROOM_GLSL}
-uniform sampler2D uCover, uRoads; uniform vec3 uCol[11], uFields[6], uTowns[8], uNearXf, uShare, uLake; uniform float uNF, uTreeTop, uSnow, uNear, uWood, uCanopy, uClear;
+uniform sampler2D uCover, uRoads; uniform vec3 uCol[11], uFields[6], uTowns[8], uNearXf, uShare, uLake; uniform float uNF, uTreeTop, uSnow, uNear, uWood, uCanopy, uClear, uCoast;
 varying vec3 vLN;
 float gLake; // 1 where groundColour() found a lake's still water
 float gWet; // how wet the shore is here (groundColour()): darker, and glossy (LAKE_LIGHT)
@@ -422,8 +423,8 @@ vec3 groundColour() {
   float shF = max(1.0 - smoothstep(0.35, 0.8, y), sd > 900.0 ? shH : (1.0 - smoothstep(3.0 + 3.0 * bn, 5.0 + 3.0 * bn, -sd)) * (1.0 - smoothstep(1.5, 3.0, y)));
   float sh = mix(shF, shH, rocky);
   float blocks = lnoise(p.xz / 1.8 + bn * 3.0), cracks = smoothstep(0.08, 0.0, abs(lnoise(p.xz / 3.5 + 9.0) - 0.5));
-  // (on a skerry coast, uClear: rock, the low shore is the bare, wave-washed rock, not shingle)
-  float rk = uClear > 1.5 ? max(rocky, 0.85) : rocky;
+  // (on a rocky coast, uCoast, the low shore is the bare, wave-washed rock, not shingle)
+  float rk = uCoast > 0.5 ? max(rocky, 0.85) : rocky;
   vec3 sc = cls == 8 ? uCol[8] : cls == 12 ? c : mix(uCol[7] * (0.9 + 0.15 * lnoise(p.xz / 1.2)), mix(uCol[7], uCol[4], 0.35) * (0.72 + 0.45 * blocks) * (1.0 - 0.45 * cracks) * rm, rk);
   c = mix(c, sc, 0.9 * sh);
   // and wet just above the water: as high as the waves run up it, each in its turn along the shore, every few seconds

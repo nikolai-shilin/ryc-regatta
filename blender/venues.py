@@ -789,7 +789,7 @@ def bake(vid, V, fetch_only=False):
         if any(math.hypot(cx_ - float(lx), cz_ - float(lz)) < cr for lx, lz, cr in CLEAR): return
         near = min([math.hypot(cx_ - MID[0], cz_ - MID[1])] + [math.hypot(cx_ - tx, cz_ - tz) * 1.5 for tx, tz in TOWN_XZ])
         found.append({'r': r, 'h': round(min(h, 560), 1), 'roof': roof, 'd': near - min(h, 200) * 20, 'c': (cx_, cz_),
-                      'wc': colour((t or {}).get('building:colour')), 'rc': colour((t or {}).get('roof:colour'))})
+                      'wc': colour((t or {}).get('building:colour')), 'rc': colour((t or {}).get('roof:colour')), 'nm': (t or {}).get('name', '')})
     def keyhole(el):
         # a relation's outer ring with its courtyards cut in: each inner ring joined to the outer one at their nearest
         # corners and walked the other way round, so that one ring of corners draws the building with its holes
@@ -850,9 +850,25 @@ def bake(vid, V, fetch_only=False):
     built = (near >= 5) & (Lc > 0) & ~np.isin(cover & 15, [CLASSES.index(c) for c in ('sand', 'rock', 'industry', 'water')])
     cover[built] = CLASSES.index('town')
     print(f'  town from the buildings: {built.mean():.1%}', flush=True)
-    # the nearest, and the tall ones from further: the town round the race area and the skyline beyond it
+    # the nearest, and the tall ones from further: the town round the race area and the skyline beyond it; and before
+    # a town's back streets, what stands on the water within sight of the course — the waterfront, the islands' forts
+    # and lighthouses — which is what is seen from it (an island's buildings, further off than a town's middle, were
+    # the first a big city's count left out)
+    if found:
+        cs = np.array([b['c'] for b in found], float)
+        ashore = bilinear(sd10, -G + CELL / 2, CELL, cs[:, 0], cs[:, 1])
+        dm = np.hypot(cs[:, 0] - MID[0], cs[:, 1] - MID[1])
+        front = 1500.0 * np.clip(1.0 - np.maximum(ashore, 0.0) / 150.0, 0.0, 1.0) * (dm < 3500.0)
+        for b, f in zip(found, front): b['d'] -= float(f)
     found.sort(key=lambda b: b['d'])
-    found = [b for b in found if b['d'] < 6000][:V.get('most', 8000)]  # (beyond some 4 km of the race area and the towns, the tall ones only)
+    kept = [b for b in found if b['d'] < 6000][:V.get('most', 8000)]  # (beyond some 4 km of the race area and the towns, the tall ones only)
+    # what that leaves out within 3 km of the race area, where it would be missed (an island's fort, a lighthouse): a
+    # venue's `towns` can take it in
+    gone = [b for b in found[len(kept):] if math.hypot(b['c'][0] - MID[0], b['c'][1] - MID[1]) < 3000]
+    if gone:
+        named = sorted({b['nm'] for b in gone if b['nm']})
+        print(f'  left out within 3 km of the race area: {len(gone)}' + (f" (named: {', '.join(named[:12])}{' …' if len(named) > 12 else ''})" if named else ''), flush=True)
+    found = kept
     bn = np.array([min(len(b['r']), 255) for b in found], np.uint8)
     bh = np.array([round(b['h'] * 10) for b in found], np.uint16)
     broof = np.array([b['roof'] for b in found], np.uint8)
