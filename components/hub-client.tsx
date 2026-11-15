@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { ruBoats, tx, type Lang } from '@/lib/lang';
 import Link from 'next/link';
 import { readOpts, saveOpts } from '@/lib/opts';
-import { readBoat } from '@/lib/boat';
+import { BOAT_EVENT, readBoat } from '@/lib/boat';
 import { findFlag } from '@/lib/flags';
 import { venueOf } from '@/lib/venues';
 import { KN, type Wind } from '@/lib/race';
@@ -41,8 +41,13 @@ export function BoatRow({ lang }: { lang: Lang }) {
   const t = tx(lang);
   const [note, setNote] = useState('');
   useEffect(() => {
-    const b = readBoat(), f = findFlag(b.flag);
-    setNote([`${b.nat} ${b.num || '1'}`.trim(), f ? t(f.en, f.ru) : ''].filter(Boolean).join(' · '));
+    const load = () => {
+      const b = readBoat(), f = findFlag(b.flag);
+      setNote([`${b.nat} ${b.num || '1'}`.trim(), f ? t(f.en, f.ru) : ''].filter(Boolean).join(' · '));
+    };
+    load();
+    addEventListener(BOAT_EVENT, load); // the account's boat, just brought to this device
+    return () => removeEventListener(BOAT_EVENT, load);
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
   return <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span>{note && <span className="bt-row-m">{note}</span>}</Link>;
 }

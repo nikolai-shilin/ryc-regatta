@@ -1,11 +1,19 @@
 'use client';
 import { useEffect } from 'react';
+import { BOAT_EVENT, BOAT_KEY, mergeBoat, saveBoat } from '@/lib/boat';
 
-// Personal bests follow a signed-in player to any device. The game keeps them on the device, in localStorage under
-// regatta-pb ({ course key: seconds }, public/game/main.js personalBest); the account keeps a copy in its
-// user_metadata.pb. On every page the two are merged, the faster time of each course winning, and each side gets what
-// it lacks. The race is always reached through these pages (the hub, the free race, a result), so a best set on one
-// device is on the other by its next race. Daily bests older than a week are dropped, as the game drops them.
+// A signed-in player's personal bests and boat follow them to any device, and to any address of the site (the
+// browser keeps localStorage per address). The game keeps both on the device; the account keeps a copy in its
+// user_metadata, pb and boat.
+//
+// Personal bests: localStorage regatta-pb ({ course key: seconds }, public/game/main.js personalBest). The two are
+// merged, the faster time of each course winning, and each side gets what it lacks. Daily bests older than a week are
+// dropped, as the game drops them.
+//
+// The boat: localStorage regatta-boat (lib/boat.ts). The one changed last wins (mergeBoat); the boat page tells this
+// to run again after every change, so a boat set on one device is the other's by its next page.
+//
+// It runs on every page, and the race is always reached through these pages (the hub, the free race, a result).
 const KEY = 'regatta-pb', WEEK = 7 * 864e5;
 type Bests = Record<string, number>;
 
@@ -16,24 +24,31 @@ const clean = (b: unknown): Bests => {
   return out;
 };
 const same = (a: Bests, b: Bests) => Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((k) => a[k] === b[k]);
+const read = (key: string) => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } };
+
+// Only a signed-in player has anything to sync, and the session lives in the sb-…-auth-token cookie: without it
+// there's nothing to do, and the Supabase client (~70 KB gzipped) isn't even downloaded. Most visitors are guests.
+export async function syncAccount() {
+  if (!/(?:^|;\s*)sb-[^=]+-auth-token(?:\.\d+)?=/.test(document.cookie)) return;
+  const { supabaseBrowser } = await import('@/lib/supabase/client');
+  const supabase = supabaseBrowser();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const data: Record<string, unknown> = {};
+
+  const local = clean(read(KEY)), remote = clean(user.user_metadata?.pb), merged: Bests = { ...remote };
+  for (const [k, v] of Object.entries(local)) if (!(merged[k] <= v)) merged[k] = v;
+  if (!same(merged, local)) try { localStorage.setItem(KEY, JSON.stringify(merged)); } catch {}
+  if (!same(merged, remote)) data.pb = merged;
+
+  const boat = mergeBoat(read(BOAT_KEY), user.user_metadata?.boat);
+  if (boat.local) { saveBoat(boat.local, boat.local.at); dispatchEvent(new Event(BOAT_EVENT)); }
+  if (boat.remote) data.boat = boat.remote;
+
+  if (Object.keys(data).length) await supabase.auth.updateUser({ data }); // merged into the metadata, the name kept
+}
 
 export function BestsSync() {
-  useEffect(() => {
-    let local: Bests = {};
-    try { local = clean(JSON.parse(localStorage.getItem(KEY) || '{}')); } catch {}
-    // Only a signed-in player has anything to sync, and the session lives in the sb-…-auth-token cookie: without it
-    // there's nothing to do, and the Supabase client (~70 KB gzipped) isn't even downloaded. Most visitors are guests.
-    if (!/(?:^|;\s*)sb-[^=]+-auth-token(?:\.\d+)?=/.test(document.cookie)) return;
-    (async () => {
-      const { supabaseBrowser } = await import('@/lib/supabase/client');
-      const supabase = supabaseBrowser();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const remote = clean(user.user_metadata?.pb), merged: Bests = { ...remote };
-      for (const [k, v] of Object.entries(local)) if (!(merged[k] <= v)) merged[k] = v;
-      if (!same(merged, local)) try { localStorage.setItem(KEY, JSON.stringify(merged)); } catch {}
-      if (!same(merged, remote)) await supabase.auth.updateUser({ data: { pb: merged } }); // merged into the metadata, the name kept
-    })().catch(() => {});
-  }, []);
+  useEffect(() => { syncAccount().catch(() => {}); }, []);
   return null;
 }

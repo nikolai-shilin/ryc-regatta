@@ -5,12 +5,15 @@ import { tx, type Lang } from '@/lib/lang';
 import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart, IconFlag } from './ui';
 import { FLAGS, findFlag, flagSrc, type Flag } from '@/lib/flags';
 import { SceneBrand } from './scene-brand';
-import { DEFAULT_BOAT, DEFAULT_LOGO, PRESETS, SWATCHES, readBoat, saveBoat, shrinkLogo, type Boat, type Logo } from '@/lib/boat';
+import { BOAT_EVENT, DEFAULT_BOAT, DEFAULT_LOGO, PRESETS, SWATCHES, readBoat, saveBoat, shrinkLogo, type Boat, type Logo } from '@/lib/boat';
+import { syncAccount } from './bests-sync';
 
 // The boat page, laid out like the race's pause screen: the game's own scene behind it all (your yacht on Lake Garda,
 // /boat-view), her name and numbers over it, and the choices (the ready schemes, the hull, the sails, the gennaker, the
 // logo, the sail number and the team) in the pause menu's dark glass card. The scene is told what the card and the
-// heading cover, so she stands in the part left clear. Every change shows at once and is saved where the game reads it.
+// heading cover, so she stands in the part left clear. Every change shows at once and is saved where the game reads it,
+// and, for a signed-in player, a moment later in the account. Only a change is saved: the boat as it was read (from this
+// device, or from the account when the sync brings it) isn't, so a first visit doesn't stamp the default as a choice.
 export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   const t = tx(lang);
   const [b, setB] = useState<Boat>(DEFAULT_BOAT);
@@ -24,13 +27,22 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   const file = useRef<HTMLInputElement>(null);
   const latest = useRef({ b, down });
   latest.current = { b, down };
+  const fromStore = useRef(true), push = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const post = (msg: object) => frame.current?.contentWindow?.postMessage(msg, location.origin);
-  useEffect(() => { setB(readBoat()); setReady(true); }, []);
+  useEffect(() => {
+    const load = () => { fromStore.current = true; setB(readBoat()); };
+    load(); setReady(true);
+    addEventListener(BOAT_EVENT, load); // the account's boat, just brought to this device
+    return () => { removeEventListener(BOAT_EVENT, load); clearTimeout(push.current); };
+  }, []);
   useEffect(() => {
     if (!ready) return;
     post({ type: 'look', boat: b });
+    if (fromStore.current) { fromStore.current = false; return; }
     setErr(saveBoat(b) ? '' : t('This browser didn’t keep it: try a smaller logo.', 'Браузер не сохранил: попробуй логотип поменьше.'));
+    clearTimeout(push.current);
+    push.current = setTimeout(() => { syncAccount().catch(() => {}); }, 1200); // once the swatches stop changing
   }, [b, ready]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { post({ type: 'pose', down }); }, [down]);
   // what the card and the heading cover, so the scene stands her in the rest: beside the card on a wide screen, between
@@ -204,7 +216,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         {swatches('ink', t('Sail number colour', 'Цвет номера'), true)}
 
         {err && <p className="bt-err" role="alert">{err}</p>}
-        <p className="bt-saved">{t('Saved on this device. You race in her from the next start.', 'Сохранено на этом устройстве. В гонке — со следующего старта.')}</p>
+        <p className="bt-saved">{t('Saved on this device, and in your account when you’re signed in. You race in her from the next start.', 'Сохранено на этом устройстве, а если ты вошёл — и в аккаунте. В гонке — со следующего старта.')}</p>
       </section>
     </div>
   );

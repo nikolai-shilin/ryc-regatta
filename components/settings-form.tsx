@@ -5,7 +5,7 @@ import { readOpts, saveOpts, DEFAULTS, type Opts } from '@/lib/opts';
 import { cleanName, NAME_MAX } from '@/lib/name';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { readBoat } from '@/lib/boat';
+import { BOAT_EVENT, readBoat } from '@/lib/boat';
 import { findFlag, flagSrc } from '@/lib/flags';
 import { IconArrow } from './ui';
 
@@ -64,8 +64,13 @@ function BoatLine({ lang }: { lang: Lang }) {
   const t = tx(lang);
   const [b, setB] = useState<{ name: string; flag?: string; land?: string } | null>(null);
   useEffect(() => {
-    const x = readBoat(), f = findFlag(x.flag);
-    setB({ name: `${x.nat} ${x.num || '1'}`.trim(), flag: f?.code, land: f ? t(f.en, f.ru) : undefined });
+    const load = () => {
+      const x = readBoat(), f = findFlag(x.flag);
+      setB({ name: `${x.nat} ${x.num || '1'}`.trim(), flag: f?.code, land: f ? t(f.en, f.ru) : undefined });
+    };
+    load();
+    addEventListener(BOAT_EVENT, load); // the account's boat, just brought to this device
+    return () => removeEventListener(BOAT_EVENT, load);
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <Link className="st-boat" href="/boat?from=settings" aria-label={t('Edit your boat', 'Изменить яхту')}>

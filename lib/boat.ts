@@ -1,7 +1,9 @@
-import { findFlag } from './flags';
+import { findFlag } from './flags.ts'; // with its extension, so npm test's Node finds it too
 
 // The player's boat: its colours, sail number, logo and flag. The boat page (/boat) saves it in localStorage 'regatta-boat',
 // where the game reads it for your yacht at the start of every race (public/game/yacht.js, lookFrom / playerLook).
+// A signed-in player's boat also lives in the account (user_metadata.boat, components/bests-sync.tsx), so it follows
+// them to another device or address: localStorage is kept per address, and a new one starts with the default boat.
 
 export type Logo = 'ryc' | 'custom' | 'none';
 export type Boat = {
@@ -15,6 +17,7 @@ export type Boat = {
                                          // ('custom' without one shows DEFAULT_LOGO)
   nat: string; num: string;              // the letters (shown without a logo) and the number on the main
   flag?: string;                         // the country flag on the main, high under the head (lib/flags.ts), or none
+  at?: number;                           // when the player last changed her (ms); none on a boat saved before the sync
 };
 
 export const BOAT_KEY = 'regatta-boat';
@@ -72,30 +75,62 @@ export const SWATCHES = {
 
 const isHex = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
 
-export function readBoat(): Boat {
-  try {
-    const b = JSON.parse(localStorage.getItem(BOAT_KEY) || 'null');
-    if (!b || typeof b !== 'object') return { ...DEFAULT_BOAT };
-    const out: Boat = { ...DEFAULT_BOAT, preset: typeof b.preset === 'string' ? b.preset : undefined };
-    for (const k of ['hull', 'cloth', 'ink', 'crew', 'pants'] as const) if (isHex(b[k])) out[k] = b[k];
-    const kite = Array.isArray(b.kite) ? b.kite[0] : b.kite; // saved before the gennaker went one colour: its top panel
-    if (isHex(kite)) out.kite = kite;
-    if (typeof b.laminate === 'boolean') out.laminate = b.laminate;
-    if (b.logo === 'ryc' || b.logo === 'none' || b.logo === 'custom') out.logo = b.logo;
-    if (typeof b.logoImg === 'string' && b.logoImg.startsWith('data:image/')) out.logoImg = b.logoImg;
-    if (typeof b.nat === 'string') out.nat = b.nat;
-    if (typeof b.num === 'string') out.num = b.num;
-    if (findFlag(b.flag)) out.flag = b.flag;
-    return out;
-  } catch {
-    return { ...DEFAULT_BOAT };
-  }
+// a boat as saved (on this device or in the account), its unknown or broken parts filled in from the default; null for none
+export function cleanBoat(b: unknown): Boat | null {
+  if (!b || typeof b !== 'object') return null;
+  const r = b as Record<string, unknown>;
+  const out: Boat = { ...DEFAULT_BOAT, preset: typeof r.preset === 'string' ? r.preset : undefined };
+  for (const k of ['hull', 'cloth', 'ink', 'crew', 'pants'] as const) if (isHex(r[k])) out[k] = r[k];
+  const kite = Array.isArray(r.kite) ? r.kite[0] : r.kite; // saved before the gennaker went one colour: its top panel
+  if (isHex(kite)) out.kite = kite;
+  if (typeof r.laminate === 'boolean') out.laminate = r.laminate;
+  if (r.logo === 'ryc' || r.logo === 'none' || r.logo === 'custom') out.logo = r.logo;
+  if (typeof r.logoImg === 'string' && r.logoImg.startsWith('data:image/')) out.logoImg = r.logoImg;
+  if (typeof r.nat === 'string') out.nat = r.nat.slice(0, 3);
+  if (typeof r.num === 'string') out.num = r.num.slice(0, 3);
+  if (typeof r.flag === 'string' && findFlag(r.flag)) out.flag = r.flag;
+  if (typeof r.at === 'number' && r.at > 0) out.at = r.at;
+  return out;
 }
 
-// false when the browser wouldn't keep it (a full or blocked storage)
-export function saveBoat(b: Boat): boolean {
-  try { localStorage.setItem(BOAT_KEY, JSON.stringify(b)); return true; } catch { return false; }
+export function readBoat(): Boat {
+  try { return cleanBoat(JSON.parse(localStorage.getItem(BOAT_KEY) || 'null')) || { ...DEFAULT_BOAT }; }
+  catch { return { ...DEFAULT_BOAT }; }
 }
+
+// what she looks like, without when she was saved or which preset she came from
+const LOOK = ['hull', 'cloth', 'laminate', 'ink', 'kite', 'crew', 'pants', 'logo', 'nat', 'num', 'flag'] as const;
+const sameLook = (a: Boat, b: Boat) => LOOK.every((k) => a[k] === b[k]);
+
+// The account's boat and this device's, made one: the one changed last wins. A boat the player changed carries the
+// time (at); one with no time that still looks like the default is the boat page's first visit on this address, not
+// a choice, so any boat in the account beats it, and it's never sent there. The picture of your own logo stays on the
+// device (a data: URL of up to 480 px would swell the session cookie the metadata rides in): the account keeps only
+// that the logo is yours, and a device without the picture shows DEFAULT_LOGO.
+// Returns what to write: local for this device's localStorage, remote for user_metadata.boat; either may be absent.
+export function mergeBoat(localRaw: unknown, remoteRaw: unknown, now = Date.now()): { local?: Boat; remote?: Boat } {
+  const local = cleanBoat(localRaw), remote = cleanBoat(remoteRaw);
+  const chosen = !!local && (!!local.at || !sameLook(local, DEFAULT_BOAT));
+  const la = local?.at || 0, ra = remote?.at || 0;
+  if (remote && (!chosen || ra > la)) {
+    const { logoImg: _, ...r } = remote;
+    const next: Boat = { ...r, ...(local?.logoImg ? { logoImg: local.logoImg } : {}) };
+    return local && sameLook(local, next) && la === ra ? {} : { local: next };
+  }
+  if (local && chosen && (!remote || la > ra)) {
+    const at = la || now, { logoImg: _, ...r } = local;
+    return { remote: { ...r, at }, ...(la ? {} : { local: { ...local, at } }) };
+  }
+  return {};
+}
+
+// false when the browser wouldn't keep it (a full or blocked storage). A change the player made is stamped with its
+// time, so the account sync knows it's the newest; a boat taken from the account keeps the time it had.
+export function saveBoat(b: Boat, at: number | undefined = Date.now()): boolean {
+  try { localStorage.setItem(BOAT_KEY, JSON.stringify({ ...b, at })); return true; } catch { return false; }
+}
+// told on this page when the sync brought the account's boat to this device, so the boat page shows it
+export const BOAT_EVENT = 'regatta-boat';
 
 // a picture the player chose, made small enough to keep: at most 480 px on its longer side, as a PNG (keeps transparency)
 export function shrinkLogo(file: File): Promise<string> {
