@@ -671,16 +671,19 @@ const LZ = (() => {
   const L = 4.19, B = 1.39;
   const hull = hullOf({
     L, flare: 0.06,
-    hb: (t) => (B / 2) * (t < 0.5 ? 0.72 + 0.28 * Math.sin((t / 0.5) * Math.PI / 2) : Math.max(0, Math.cos(Math.min(1, (t - 0.5) / 0.5) * Math.PI / 2)) ** 0.72),
+    // the widest a little aft of the middle; the forefoot raked up clear of the water (3.81 m on the waterline)
+    hb: (t) => (B / 2) * (t < 0.42 ? 0.72 + 0.28 * Math.sin((t / 0.42) * Math.PI / 2) : Math.max(0, Math.cos(Math.min(1, (t - 0.42) / 0.58) * Math.PI / 2)) ** 0.72),
     sheer: (t) => 0.3 + 0.07 * t ** 1.6,
-    depth: (t) => 0.13 * Math.sin(Math.PI * Math.min(1, t * 0.93 + 0.05)) ** 0.7,
+    depth: (t) => 0.13 * Math.sin(Math.PI * Math.min(1, t * 0.93 + 0.05)) ** 0.7 - 0.22 * Math.max(0, (t - 0.88) / 0.12) ** 1.5,
     n: (t) => lerp(2.6, 1.9, clamp((t - 0.4) / 0.6, 0, 1)),
   });
-  const MAST_Z = hull.BOW + 1.0, MAST_FOOT = hull.deckY(MAST_Z) + 0.07, MASTHEAD = MAST_FOOT + 6.1, BOOM_Y = MAST_FOOT + 0.68, BL = 2.7; // the mast's foot on the deck's 5 cm crown
+  // to the ILCA rules: the two-piece mast 6.16 m long, some 0.36 m of it down in its step, the joint 2.5 m above the
+  // deck; the gooseneck 0.945 m up from the mast's foot, so the luff 5.13 m; the boom 2.74 m
+  const MAST_Z = hull.BOW + 1.0, MAST_FOOT = hull.deckY(MAST_Z) + 0.07, MASTHEAD = MAST_FOOT + 5.78, BOOM_Y = MAST_FOOT + 0.57, BL = 2.7, JOINT = MAST_FOOT + 2.5; // the mast's foot on the deck's 5 cm crown
   const chord = (f) => lerp(2.45, 0.15, f) + 0.12 * Math.sin(Math.PI * f);
   const span = MASTHEAD - 0.08 - BOOM_Y;
   const rig = rigOf({ span, chord, numAt: 0.5, logoAt: 0.7, flagAt: 0.86, mark: 0.5, head: new THREE.Vector3(0, MASTHEAD, MAST_Z), tack: new THREE.Vector3(0, BOOM_Y, MAST_Z), clew: new THREE.Vector3(0, 0, BL), ad: 0.5, adH: 0.3 });
-  return { L, B, hull, MAST_Z, MAST_FOOT, MASTHEAD, BOOM_Y, BL, chord, span, rig, CK: [0.05, 1.55], FLOOR: 0.13, TRAV_Z: hull.STERN - 0.2 };
+  return { L, B, hull, MAST_Z, MAST_FOOT, MASTHEAD, JOINT, BOOM_Y, BL, chord, span, rig, CK: [0.05, 1.36], FLOOR: 0.13, TRAV_Z: hull.STERN - 0.26, MID_Z: 1.09 }; // the boom's middle block 1.09 m from the gooseneck
 })();
 
 class LaserView extends ClassView {
@@ -718,9 +721,10 @@ class LaserView extends ClassView {
     // the hiking strap down the middle of the cockpit floor, from its front to the shock cord at the back
     const strap = MAT.strap;
     T.add(tube([[0, LZ.FLOOR + 0.02, cz0 + 0.1], [0, LZ.FLOOR + 0.07, cz0 + 0.5], [0, LZ.FLOOR + 0.07, cz1 - 0.35], [0, LZ.FLOOR + 0.03, cz1 - 0.05]], 0.02, strap));
-    // the daggerboard: a slim foil down through its case in the deck, its head and handle standing proud
+    // the daggerboard: a parallel-chord foil down through its case in the deck, 0.79 m below the water, its head and
+    // handle standing proud
     const DBZ = cz0 - 0.2;
-    add(new THREE.Mesh(finGeo(0.9, 0.31, 0.26, 0.08, 0.04), MAT.fin), 0, -0.08, DBZ);
+    add(new THREE.Mesh(finGeo(0.7, 0.34, 0.34, 0.08, 0), MAT.fin), 0, -0.08, DBZ);
     add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.16, 0.31), MAT.fin), 0, deckAt(0, DBZ) + 0.06, DBZ);
     if (!MOD) add(new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.025, 0.36), GEL2), 0, deckAt(0, DBZ) + 0.005, DBZ); // the case's lip in the deck (moulded, in the model)
     T.add(tube([[0, deckAt(0, DBZ) + 0.14, DBZ - 0.12], [0, deckAt(0, DBZ) + 0.21, DBZ - 0.06], [0, deckAt(0, DBZ) + 0.21, DBZ + 0.08], [0, deckAt(0, DBZ) + 0.14, DBZ + 0.13]], 0.012, M.dark)); // its handle
@@ -737,7 +741,7 @@ class LaserView extends ClassView {
     const head = new THREE.Shape(); head.moveTo(0, 0); head.lineTo(0.22, 0); head.quadraticCurveTo(0.25, 0.2, 0.18, 0.36); head.lineTo(0.02, 0.36); head.lineTo(0, 0);
     const hg = new THREE.ExtrudeGeometry(head, { depth: 0.07, bevelEnabled: true, bevelThickness: 0.008, bevelSize: 0.008, bevelSegments: 2 }).translate(0, 0, -0.035).rotateY(-Math.PI / 2);
     add(new THREE.Mesh(hg, M.dark), 0, 0.02, RZ - 0.02); // the rudder head: a black alloy stock, the blade pinned in its jaws
-    add(new THREE.Mesh(finGeo(0.82, 0.25, 0.18, 0.09, 0.07), MAT.fin), 0, 0.02, RZ + 0.1);
+    add(new THREE.Mesh(finGeo(0.6, 0.205, 0.2, 0.09, 0.05), MAT.fin), 0, 0.02, RZ + 0.08); // the blade 0.55 m below the water
     for (const y of [0.1, 0.3]) { add(new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.025, 0.06), M.steel), 0, y, H.STERN + 0.02); add(cyl(0.008, 0.008, 0.07, M.steel, 6), 0, y - 0.02, H.STERN + 0.05); } // gudgeons and pintles
     // the tiller over the aft deck and its extension, swinging with the helm
     this.wheel = add(new THREE.Group(), 0, deckAt(0, H.STERN) + 0.04, RZ);
@@ -758,29 +762,31 @@ class LaserView extends ClassView {
     for (const [g, mm] of block(0.028)) { const o = new THREE.Mesh(g, mm); o.position.y = 0.07; rat.add(o); }
     add(mergeGroup(rat), 0, LZ.FLOOR + 0.03, cz0 + 0.12);
     add(new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.006, 6, 12), M.steel), 0, deckAt(0, H.BOW + 0.15) + 0.01, H.BOW + 0.15);
-    // the mast: two alloy sections, unstayed, the top one thinner; its step a collar in the deck
-    add(new THREE.Mesh(mastGeo(LZ.MASTHEAD - LZ.MAST_FOOT, 0.064, 0.064, 0.046, 0.046, 0.5), M.alu), 0, (LZ.MAST_FOOT + LZ.MASTHEAD) / 2, LZ.MAST_Z);
+    // the mast: two alloy sections, unstayed, the top one thinner and tapering, sleeved into the bottom one at the
+    // joint; its step a collar in the deck
+    add(cyl(0.032, 0.032, LZ.JOINT - LZ.MAST_FOOT, M.alu, 12), 0, (LZ.MAST_FOOT + LZ.JOINT) / 2, LZ.MAST_Z);
+    add(cyl(0.019, 0.026, LZ.MASTHEAD - LZ.JOINT, M.alu, 12), 0, (LZ.JOINT + LZ.MASTHEAD) / 2, LZ.MAST_Z);
     add(cyl(0.045, 0.05, 0.04, M.dark, 12), 0, LZ.MAST_FOOT, LZ.MAST_Z);
-    add(cyl(0.036, 0.036, 0.06, M.dark, 10), 0, LZ.MAST_FOOT + 3.1, LZ.MAST_Z); // the joint
+    add(cyl(0.034, 0.034, 0.05, M.dark, 10), 0, LZ.JOINT, LZ.MAST_Z); // the joint
     // the boom, its kicker (a tackle from the mast's foot) and its outhaul, turning with the sail
     this.mainPivot = add(new THREE.Group(), 0, 0, LZ.MAST_Z);
     const gear = new THREE.Group();
     const boom = cyl(0.025, 0.025, LZ.BL, M.alu, 10); boom.rotation.x = Math.PI / 2; boom.position.set(0, LZ.BOOM_Y, LZ.BL / 2 + 0.03); gear.add(boom);
     // the kicker: a tackle from a block at the mast's foot to its strop on the boom, the falls between them
     for (const [g, mm] of block(0.018)) { const o = new THREE.Mesh(g, mm); o.position.set(0, LZ.MAST_FOOT + 0.1, 0.06); gear.add(o); }
-    for (const [g, mm] of block(0.018)) { const o = new THREE.Mesh(g, mm); o.position.set(0, LZ.BOOM_Y - 0.08, 0.6); gear.add(o); }
-    const VA = [0, LZ.MAST_FOOT + 0.12, 0.07], VB = [0, LZ.BOOM_Y - 0.1, 0.59];
+    for (const [g, mm] of block(0.018)) { const o = new THREE.Mesh(g, mm); o.position.set(0, LZ.BOOM_Y - 0.08, 0.46); gear.add(o); }
+    const VA = [0, LZ.MAST_FOOT + 0.12, 0.07], VB = [0, LZ.BOOM_Y - 0.1, 0.45]; // its key 0.45 m along the boom
     this.mainPivot.add(line([0, 1, 2, 3, 4, 5].map((i) => { const e = i % 2 ? VB : VA, dx = (i / 5 - 0.5) * 0.03; return [e[0] + dx, e[1], e[2]]; })));
     // the outhaul along the boom from the clew to its turning block at the gooseneck
     this.mainPivot.add(line([[0.02, LZ.BOOM_Y + 0.04, LZ.BL - 0.05], [0.02, LZ.BOOM_Y + 0.02, 0.1], [0.06, LZ.MAST_FOOT + 0.05, 0.06]]));
     gear.add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.05, 0.06), M.dark).translateY(LZ.BOOM_Y + 0.04).translateZ(LZ.BL - 0.04)); // the clew's strap
     gear.add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.09), M.dark).translateY(LZ.BOOM_Y).translateZ(0.04)); // the gooseneck
     for (const [g, mm] of block(0.02)) { const o = new THREE.Mesh(g, mm); o.position.set(0, LZ.BOOM_Y - 0.05, LZ.BL - 0.06); gear.add(o); }
-    for (const [g, mm] of block(0.02)) { const o = new THREE.Mesh(g, mm); o.position.set(0, LZ.BOOM_Y - 0.05, 1.45); gear.add(o); }
+    for (const [g, mm] of block(0.02)) { const o = new THREE.Mesh(g, mm); o.position.set(0, LZ.BOOM_Y - 0.05, LZ.MID_Z); gear.add(o); }
     this.mainPivot.add(mergeGroup(gear));
-    // the window low in the sail, clear plastic sewn in to see to leeward under the boom
+    // the window low in the sail, 0.2–0.4 m above the foot, clear plastic sewn in to see to leeward under the boom
     const wtex = onCloth(sailTexture('main', look, LZ.rig), (x, w, h, X) => {
-      const y0 = h * (1 - 0.23), y1 = h * (1 - 0.12), x0 = Math.min(X(0.36), X(0.64)), x1 = Math.max(X(0.36), X(0.64)); // even about the middle: both faces read one canvas
+      const y0 = h * (1 - 0.4 / LZ.span), y1 = h * (1 - 0.19 / LZ.span), x0 = Math.min(X(0.36), X(0.64)), x1 = Math.max(X(0.36), X(0.64)); // even about the middle: both faces read one canvas
       x.fillStyle = 'rgba(96, 118, 132, 0.7)'; x.fillRect(x0, y0, x1 - x0, y1 - y0);
       x.strokeStyle = 'rgba(0,0,0,.35)'; x.lineWidth = 6; x.strokeRect(x0, y0, x1 - x0, y1 - y0);
     });
@@ -823,7 +829,7 @@ class LaserView extends ClassView {
     const ma = this.mainPivot.rotation.y, at = (z, dy) => [Math.sin(ma) * z, LZ.BOOM_Y - dy, LZ.MAST_Z + Math.cos(ma) * z];
     this.travCar.position.x = clamp(Math.sin(ma) * 1.6, -0.36, 0.36);
     const ms = this.mainsheet.geometry.attributes.position, ty = H.deckY(LZ.TRAV_Z) + 0.13;
-    [[this.travCar.position.x, ty, LZ.TRAV_Z], at(LZ.BL - 0.06, 0.07), at(LZ.BL - 0.06, 0.05), at(1.45, 0.07), [0, LZ.FLOOR + 0.12, LZ.CK[0] + 0.12]].forEach((p, i) => ms.setXYZ(i, ...p));
+    [[this.travCar.position.x, ty, LZ.TRAV_Z], at(LZ.BL - 0.06, 0.07), at(LZ.BL - 0.06, 0.05), at(LZ.MID_Z, 0.07), [0, LZ.FLOOR + 0.12, LZ.CK[0] + 0.12]].forEach((p, i) => ms.setXYZ(i, ...p));
     ms.needsUpdate = true;
     this.windex.rotation.y = -b.awa;
     for (const tt of this.tells) {

@@ -24,11 +24,11 @@ STERN = L / 2
 FLARE = 0.06
 def clamp(v, a, b): return max(a, min(b, v))
 def lerp(a, b, t): return a + (b - a) * t
-def hb_of(t):
-    if t < 0.5: return (B / 2) * (0.72 + 0.28 * math.sin((t / 0.5) * math.pi / 2))
-    return (B / 2) * max(0.0, math.cos(min(1, (t - 0.5) / 0.5) * math.pi / 2)) ** 0.72
+def hb_of(t):  # the widest a little aft of the middle, as the class's plan draws it
+    if t < 0.42: return (B / 2) * (0.72 + 0.28 * math.sin((t / 0.42) * math.pi / 2))
+    return (B / 2) * max(0.0, math.cos(min(1, (t - 0.42) / 0.58) * math.pi / 2)) ** 0.72
 def sheer(t): return 0.3 + 0.07 * t ** 1.6
-def depth(t): return 0.13 * math.sin(math.pi * min(1, t * 0.93 + 0.05)) ** 0.7
+def depth(t): return 0.13 * math.sin(math.pi * min(1, t * 0.93 + 0.05)) ** 0.7 - 0.22 * max(0, (t - 0.88) / 0.12) ** 1.5  # the forefoot raked up clear of the water: 3.81 m on the waterline
 def n_of(t): return lerp(2.6, 1.9, clamp((t - 0.4) / 0.6, 0, 1))
 def z_at(t): return STERN - t * L
 def t_at(z): return clamp((STERN - z) / L, 0, 1)
@@ -127,7 +127,7 @@ bm = bmesh.new(); build_hull(bm, IDX)
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(hull.data); bm.free()
 
 # the cockpit well (boats3d.js LZ.CK, LZ.FLOOR), its floor the deck's non-skid
-CK0, CK1, FLOOR = 0.05, 1.55, 0.13
+CK0, CK1, FLOOR = 0.05, 1.36, 0.13   # its aft end at the strap's eyes, 0.7 m from the transom
 cut_out(hull, rounded_rect(-0.3, 0.3, CK0, CK1, 0.14), FLOOR, 1.0, 'gel', 'deck')
 # the daggerboard's slot, through deck and hull just forward of the cockpit, lined
 DBZ = CK0 - 0.2
