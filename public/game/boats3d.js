@@ -451,20 +451,27 @@ class SportView extends ClassView {
     super();
     this.cls = cls;
     const RS = this.RS = cls.id === 'rs21', J = this.J = sportOf(RS);
-    const add = this.start(), T = this.tilt, H = J.hull;
+    const add = this.start(), T = this.tilt, H = J.hull, MOD = RS ? RS21_MODEL : J70_MODEL;
     this.flyY = 0;
-    add(new THREE.Mesh(H.geometry(), hullMaterial(look.hull, look.stripe, look.bottom)));
+    const skid = deckFinish(look, SKID); // the player's deck: the non-skid, teak or the hull's colour
+    if (MOD) {
+      // the hull, deck, cockpit and (on the J/70) the cuddy, moulded (blender/sportboats.py), in a group of their own so
+      // the boat's merging of her small parts (bake) leaves the shared geometry alone
+      const moulded = add(new THREE.Group());
+      for (const [k, mat] of [['hull', hullMaterial(look.hull, look.stripe, look.bottom)], ['deck', skid], ['gel', M.gel]]) if (MOD[k]) moulded.add(new THREE.Mesh(MOD[k], mat));
+    } else add(new THREE.Mesh(H.geometry(), hullMaterial(look.hull, look.stripe, look.bottom)));
     // the deck, the open cockpit cut out of it from the cuddy (on the RS21, from just aft of the mast) to the open
     // transom, and its floor and sides
     const cz0 = RS ? -0.5 : -0.35, cx = RS ? 0.8 : 0.74, floorY = RS ? 0.26 : 0.3;
     // the cockpit: a moulded well, its walls sloping in to a non-skid floor and open to the transom, notched out of
     // the deck; the deck non-skid inside a smooth gelcoat border along the sheer
-    const ck = H.tub(-cx, cz0, cx, H.STERN, 0.2, floorY, { slope: 0.09, crown: 0.03, openAft: true });
-    const skid = deckFinish(look, SKID); // the player's deck: the non-skid, teak or the hull's colour
-    add(new THREE.Mesh(H.deck([], 0.03, ck.outline), skid));
-    const walls = add(new THREE.Mesh(ck.walls, GEL2)); walls.userData.detail = false;
-    add(new THREE.Mesh(ck.floor, skid));
-    T.add(H.border(0.08, GEL2, 0.03));
+    if (!MOD) {
+      const ck = H.tub(-cx, cz0, cx, H.STERN, 0.2, floorY, { slope: 0.09, crown: 0.03, openAft: true });
+      add(new THREE.Mesh(H.deck([], 0.03, ck.outline), skid));
+      const walls = add(new THREE.Mesh(ck.walls, GEL2)); walls.userData.detail = false;
+      add(new THREE.Mesh(ck.floor, skid));
+      T.add(H.border(0.08, GEL2, 0.03));
+    }
     // the cuddy: a low, rounded coachroof forward of the cockpit, with a small hatch, and the mast through it
     const cud = new THREE.Shape(), a = 0.62, f = 0.4, za = -0.35, zf = -2.0, r = 0.18;
     cud.moveTo(-a + r, -za); cud.lineTo(a - r, -za); cud.quadraticCurveTo(a, -za, a, -za - r); cud.lineTo(f, -zf - r); cud.quadraticCurveTo(f, -zf, f - r, -zf);
@@ -473,7 +480,7 @@ class SportView extends ClassView {
     cg.rotateX(-Math.PI / 2);
     const cudY = H.deckY(-1.2) - 0.02;
     if (!RS) {
-      add(new THREE.Mesh(cg, M.gel), 0, cudY, 0);
+      if (!MOD) add(new THREE.Mesh(cg, M.gel), 0, cudY, 0); // (moulded, in the model)
       add(new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.03, 0.42), M.glass), 0, cudY + 0.21, -1.55);
       add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.025, 0.5), M.alu), 0, cudY + 0.205, -1.55);
     } else {
@@ -892,11 +899,13 @@ function loadModel(file, hull, uvs) {
     }, undefined, () => done(null));
   });
 }
-// the Bavaria's (blender/bavaria46.py) and the Laser's (blender/laser.py), each asked for only on a page that will
-// build her (her races, her boat page, the fleet)
-const [BV_MODEL, LZ_MODEL] = await Promise.all([
+// the Bavaria's (blender/bavaria46.py), the Laser's (blender/laser.py) and the sportboats' (blender/sportboats.py),
+// each asked for only on a page that will build her (her races, her boat page, the fleet)
+const [BV_MODEL, LZ_MODEL, J70_MODEL, RS21_MODEL] = await Promise.all([
   CLS.id !== 'bavaria46' && !ON_FLEET ? null : loadModel('bavaria46.glb', BV.hull, [['deck', 1], ['teak', 1 / 0.8]]),
   CLS.id !== 'laser' && !ON_FLEET ? null : loadModel('laser.glb', LZ.hull, [['deck', 1]]),
+  CLS.id !== 'j70' && !ON_FLEET ? null : loadModel('j70.glb', sportOf(false).hull, [['deck', 1]]),
+  CLS.id !== 'rs21' && !ON_FLEET ? null : loadModel('rs21.glb', sportOf(true).hull, [['deck', 1]]),
 ]);
 
 class CruiserView extends ClassView {
