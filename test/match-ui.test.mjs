@@ -31,3 +31,18 @@ test('a match loads its own modules only when it runs: none of them is in the pa
   }
   assert.match(main, /import\('\.\/match-ui\.js'\)/);
 });
+
+test('seconds are said in each language\'s own unit ("через 45 с", not "45 s")', async () => {
+  const { MATCH_STRINGS: S } = await import('../public/game/match-ui.js');
+  assert.equal(S.en.sec, 's');
+  assert.equal(S.ru.sec, 'с');
+  const ui = readFileSync(new URL('../public/game/match-ui.js', import.meta.url), 'utf8');
+  // every call of fmtS (not its definition) gives the unit
+  for (let i = ui.indexOf('fmtS('); i >= 0; i = ui.indexOf('fmtS(', i + 1)) {
+    if (ui.slice(i - 6, i) === 'const ') continue;
+    let d = 0, j = i + 4;
+    do { if (ui[j] === '(') d++; else if (ui[j] === ')') d--; j++; } while (d > 0);
+    assert.match(ui.slice(i, j), /, L\.sec\)$/, ui.slice(i, j));
+  }
+});
+

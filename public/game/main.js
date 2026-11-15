@@ -38,6 +38,14 @@ let mx = null, matchUi = null;
 // leaving in a match leaves it on both screens (match-ui.js tells the other), and goes to the hub: back would be the
 // set-up or the link's page, which opens a match again
 const quit = () => (MATCH && matchUi ? matchUi.leaveMatch() : leave());
+// In a match, back (the browser's, Telegram's) never ends it at once: on the water it opens the menu, then the race's
+// question, and goes back from that question to the menu; with no race on the water (the waiting room, a card, just
+// after a finish) it asks the match's own question (match-ui.js askLeave), and asked again it stays. Out of a match,
+// back is as it always was
+function matchBack() {
+  if (running && !race.over) { if (!paused) pause(); else if (confirmEl.hidden) ask('leave'); else { confirmEl.hidden = true; pauseEl.hidden = false; } }
+  else matchUi.askLeave();
+}
 // From Telegram the app passes its launch data in the hash, as Telegram does (miniapp/app.js in iyt-test); telegram-web-app.js has
 // read and kept it by now, so it comes off the address bar and out of any link the player copies.
 if (TG && /tgWebAppData=/.test(location.hash)) try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
@@ -145,7 +153,7 @@ const T = {
     penStart: 'Penalty turn begun — now back onto your course', penNow: 'Two penalties owed — take one now', finishOwed: 'A penalty still owed — take it, then cross the line again',
     raceWon: 'You win the race!', raceLost: (w) => `${w} wins the race`, matchWon: (s) => `You win the match ${s}`, matchLost: (w, s) => `${w} wins the match ${s}`,
     waitingHost: (n) => `Waiting for ${n}…`, guestGone: (n) => `${n} isn’t answering — her boat holds her course; 30 s and the race is yours`,
-    abandoned: 'Race abandoned — not scored', full: 'This match is full',
+    abandoned: 'Race abandoned — not scored', full: 'This match is full', matchFail: 'Couldn’t connect to the match', tryAgain: 'Try again',
     touchedM: 'You touched the mark — you owe a penalty turn', penTurn: 'Penalty turn under way', timeMatch: 'match race',
     'r16.1': 'Right of way, but give room to keep clear', 'x16.1': 'A boat with right of way that changes course must give the other boat room to keep clear.',
   },
@@ -247,7 +255,7 @@ const T = {
     penStart: 'Штрафной разворот начат — теперь возвращайся на курс', penNow: 'Два штрафа — выполни один немедленно', finishOwed: 'Штраф не выполнен — выполни его и пересеки линию снова',
     raceWon: 'Гонка твоя!', raceLost: (w) => `Гонку выигрывает ${w}`, matchWon: (s) => `Матч твой: ${s}`, matchLost: (w, s) => `Матч выигрывает ${w}: ${s}`,
     waitingHost: (n) => `${n} не на связи — ждём…`, guestGone: (n) => `${n} не на связи — лодка идёт прежним курсом; через 30 с гонка твоя`,
-    abandoned: 'Гонка прекращена — не засчитывается', full: 'В этом матче уже двое',
+    abandoned: 'Гонка прекращена — не засчитывается', full: 'В этом матче уже двое', matchFail: 'Не удалось подключиться к матчу', tryAgain: 'Ещё раз',
     touchedM: 'Касание знака — за тобой штрафной разворот', penTurn: 'Штрафной разворот', timeMatch: 'матчевая гонка',
     'r16.1': 'Право дороги — но дай место уступить', 'x16.1': 'Лодка с правом дороги, меняя курс, должна дать другой лодке место, чтобы уступить.',
   },
@@ -328,7 +336,7 @@ if (TG) {
   try { if (TG.isVersionAtLeast && TG.isVersionAtLeast('8.0') && /android|iphone|ipad/i.test(navigator.userAgent)) TG.requestFullscreen(); } catch (e) {}
   TG.onEvent && TG.onEvent('themeChanged', () => applyTheme());
   TG.BackButton.show();
-  TG.BackButton.onClick(() => { if (running && !paused) pause(); else quit(); });
+  TG.BackButton.onClick(() => { if (MATCH && matchUi) matchBack(); else if (running && !paused) pause(); else quit(); });
 }
 const haptic = (kind) => {
   if (opts.vibration === 0) return; // Settings › Vibration
@@ -1162,7 +1170,22 @@ function startMatchFlow() {
     matchUi = m;
     return m.startMatch({ code: MATCH, t, LANG, venue: VENUE, cls: CLS, onRace: onMatchRace, onIdle: onMatchIdle, onEnd: () => { location.href = HUB; }, toast: (s) => toast(s, 3.5),
       yachtName: (id) => yachtName(id), venueName: (id) => venueById(id).name[LANG === 'ru' ? 1 : 0] });
-  }).catch((e) => { console.error(e); });
+  }).catch((e) => { console.error(e); matchFailed(); });
+}
+// match-ui.js itself didn't load (or threw before it could say so): the game's own question card says it, with Try
+// again (a reload) and Leave
+function matchFailed() {
+  if (document.querySelector('#mWrap .m-retry:not([hidden])')) return; // (match-ui.js is up and already saying it)
+  document.querySelector('#mWrap')?.remove(); // (or up, and stuck on "Connecting…")
+  const el = document.createElement('div');
+  el.className = 'overlay bc'; el.id = 'matchFail';
+  el.innerHTML = '<div class="card c-card" role="alertdialog" aria-modal="true" aria-labelledby="mfH"><h2 id="mfH"></h2><div class="c-btns"><button class="go"></button><button class="go ghost"></button></div></div>';
+  el.querySelector('h2').textContent = t('matchFail');
+  const [again, out] = el.querySelectorAll('button');
+  again.textContent = t('tryAgain'); out.textContent = t('doLeave');
+  again.addEventListener('click', () => location.reload());
+  out.addEventListener('click', () => { location.href = HUB; });
+  document.body.append(el);
 }
 // the race to sail is the address's (the hub and the set-up page are Next.js pages): taken before the first race is
 // built, so the one dressed and compiled under the preloader is the one you sail, and the start doesn't build it again
@@ -1429,6 +1452,7 @@ function pauseLine(P, place, nx) {
 if (!TG) {
   const guard = () => { try { if (!history.state || !history.state.race) history.pushState({ race: 1 }, ''); } catch (e) {} };
   addEventListener('popstate', () => {
+    if (MATCH && matchUi) { matchBack(); guard(); return; }
     if (!running || race.over) { quit(); return; }
     if (!confirmEl.hidden) { quit(); return; }
     if (paused) ask('leave'); else pause();

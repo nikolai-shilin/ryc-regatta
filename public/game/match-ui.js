@@ -37,6 +37,9 @@ export const MATCH_STRINGS = {
     enter: (end) => `Enter at ${end}, 4:00 to 2:00: across the line from the course side`, entered: 'Entered ✓',
     penHow: 'Penalty owed: on a beat bear away and gybe, then back up to close-hauled; on a run tack, then bear away', loadingRace: (w) => `Waiting for ${w} to load the race…`,
     umpireK: 'Umpire’s calls', noCalls: 'no calls yet', contact: 'contact', turned: (s) => `turned at ${s}`, gap: (m) => `gap ${m} m`, look: (s) => `in ${s} s`,
+    sec: 's', waitHost: 'Waiting for the host…', stale: 'The game was updated: reload to join', reload: 'Reload',
+    badSet: 'This match is set at a venue or on a yacht this page can’t open', askK: 'Leave the match?',
+    askT: 'It ends on both screens, at the score it has.', stay: 'Stay',
   },
   ru: {
     kick: 'Матчевая гонка', room: 'Зал ожидания', linkK: 'Отправь другу эту ссылку', share: 'Поделиться', copy: 'Скопировать', copied: 'Скопировано',
@@ -54,6 +57,9 @@ export const MATCH_STRINGS = {
     enter: (end) => `Вход ${end}, с 4:00 до 2:00: пересеки линию со стороны дистанции`, entered: 'Вход ✓',
     penHow: 'Штраф: на лавировке уваливайся и делай фордевинд, потом приводись до бейдевинда; на фордевинде — оверштаг, потом уваливайся', loadingRace: (w) => `${w} загружает гонку…`,
     umpireK: 'Решения судьи', noCalls: 'решений пока нет', contact: 'касание', turned: (s) => `поворот в ${s}`, gap: (m) => `зазор ${m} м`, look: (s) => `через ${s} с`,
+    sec: 'с', waitHost: 'Ждём хозяина матча…', stale: 'Игра обновилась: перезагрузи страницу, чтобы войти', reload: 'Перезагрузить',
+    badSet: 'Этот матч в месте или на яхте, которых эта страница не открывает', askK: 'Выйти из матча?',
+    askT: 'Матч закончится на обоих экранах, со счётом как есть.', stay: 'Остаться',
   },
 };
 
@@ -63,7 +69,7 @@ const CSS = `
   display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%); animation: m-in var(--t-in) var(--ease) both; }
 @keyframes m-in { from { opacity: 0; transform: translate(-50%, calc(-50% + 14px)); } }
-#mWrap .m-card[hidden], #mWrap [hidden] { display: none; }
+#mWrap .m-card[hidden], #mWrap [hidden] { display: none !important; } /* (over any display a class gives) */
 #mWrap .m-kick { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 #mWrap h2 { margin: 0; font: 700 var(--fs-title)/1.1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; }
 #mWrap p { margin: 0; font: 500 var(--fs-small)/1.35 var(--sans); color: var(--ink-2); }
@@ -111,12 +117,23 @@ const CSS = `
 const html = (s) => { const d = document.createElement('div'); d.innerHTML = s.trim(); return d.firstChild; };
 const clean = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
 const store = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} return null; };
-const fmtS = (s) => { s = Math.max(0, Math.round(s)); return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `${s} s`; };
+const fmtS = (s, unit = 's') => { s = Math.max(0, Math.round(s)); return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `${s} ${unit}`; };
+// a host's match, kept in localStorage['regatta-match-' + code] as { at, m } for six hours (a tab closed and the link
+// opened again finds its score); Leave or Done clears it, and an open page sweeps away any other code's gone stale
+const SAVED_MS = 6 * 3600 * 1000, SAVED_RE = /^regatta-match-[A-HJ-KM-NP-Z2-9]{6}$/;
+const savedMatch = (code) => {
+  let v = null; try { v = JSON.parse(localStorage.getItem('regatta-match-' + code) || 'null'); } catch (e) {}
+  return v && v.m && v.m.start && Date.now() - v.at < SAVED_MS ? v.m : null;
+};
+const sweepSaved = () => { try { for (const k of Object.keys(localStorage)) if (SAVED_RE.test(k)) { let v = null; try { v = JSON.parse(localStorage.getItem(k)); } catch (e) {} if (!v || !(Date.now() - v.at < SAVED_MS)) localStorage.removeItem(k); } } catch (e) {} };
 const fmtC = (c) => `${c < 0 ? '−' : ''}${Math.floor(Math.abs(c) / 60)}:${(Math.abs(c) % 60).toFixed(1).padStart(4, '0')}`;
 
-let api = null; // the match on this page, for main.js's leaveMatch()
-// Leave the match: on both screens it's over (main.js's pause menu, the back button)
+let api = null; // the match on this page, for main.js's leaveMatch() and askLeave()
+// Leave the match: on both screens it's over (main.js's pause menu's Leave, asked and answered)
 export function leaveMatch() { if (api) api.leave(); }
+// Back, or Telegram's back button, with no race on the water (between races, just after a finish): the match's own
+// question, Leave or Stay; asked again, it's Stay. With no match yet, or one over, it simply leaves
+export function askLeave() { if (api) api.ask(); }
 
 // The match at `code` on this page. t: main.js's words (the T keys); world, venue and cls: the page's; onRace(session)
 // puts a race on screen ({ race, step(dt), isGuest }), onIdle() takes it off (a card, the waiting room); onEnd() leaves
@@ -145,6 +162,10 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
       <button type="button" class="m-prim m-go"></button>
       <div class="m-btns"><button type="button" class="m-leave"></button></div>
     </div>
+    <div class="m-card" id="mAsk" role="alertdialog" aria-labelledby="mAskH" hidden>
+      <span class="m-kick"></span><h2 id="mAskH"></h2><p class="m-sub"></p>
+      <div class="m-btns"><button type="button" class="m-prim m-stay"></button><button type="button" class="m-out"></button></div>
+    </div>
     <div id="mBanner" hidden></div>
   </div>`);
   document.body.append(wrap);
@@ -153,7 +174,9 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   const dbg = debug ? html('<div id="mDbg"></div>') : null;
   if (dbg) document.body.append(dbg);
   const q = (root, s) => root.querySelector(s);
-  const R = { card: q(wrap, '#mRoom') }, C = { card: q(wrap, '#mCard') }, banner = q(wrap, '#mBanner');
+  const R = { card: q(wrap, '#mRoom') }, C = { card: q(wrap, '#mCard') }, A = { card: q(wrap, '#mAsk') }, banner = q(wrap, '#mBanner');
+  for (const k of ['kick', 'sub', 'stay', 'out']) A[k] = q(A.card, '.m-' + k);
+  A.h = q(A.card, 'h2');
   for (const k of ['kick', 'set', 'linkK', 'ppl', 'nameBox', 'nameK', 'sides', 'st', 'start', 'retry', 'leave', 'share', 'join']) R[k] = q(R.card, '.m-' + k);
   R.h = q(R.card, 'h2'); R.link = q(R.card, '.m-link input'); R.name = q(R.card, '.m-name input'); R.linkBox = q(R.card, '.m-linkBox');
   for (const k of ['kick', 'sub', 'score', 'races', 'st', 'go', 'leave']) C[k] = q(C.card, '.m-' + k);
@@ -163,6 +186,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   R.kick.textContent = C.kick.textContent = L.kick; R.h.textContent = L.room; R.linkK.textContent = L.linkK; R.nameK.textContent = L.nameK;
   R.name.placeholder = L.namePh; R.join.textContent = L.join; R.start.textContent = L.start; R.leave.textContent = L.leave; R.retry.textContent = L.retry;
   R.sides.textContent = L.sides; C.leave.textContent = L.done;
+  A.kick.textContent = L.kick; A.h.textContent = L.askK; A.sub.textContent = L.askT; A.stay.textContent = L.stay; A.out.textContent = L.leave;
   R.link.value = `${location.origin}/match/${code}?v=${encodeURIComponent(venue.id)}&b=${encodeURIComponent(cls.id)}`;
   R.share.textContent = navigator.share ? L.share : L.copy;
 
@@ -171,28 +195,30 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   if (typeof myId !== 'string' || !/^[a-z0-9]{8,24}$/.test(myId)) { myId = Array.from(crypto.getRandomValues(new Uint8Array(8)), (x) => (x % 36).toString(36)).join('') + Date.now().toString(36).slice(-4); store(ME_KEY, myId); }
   let boat = null; try { boat = JSON.parse(localStorage.getItem('regatta-boat') || 'null'); } catch (e) {}
   const look = boat && typeof boat === 'object' ? Object.fromEntries(Object.entries(boat).filter(([k]) => k !== 'logoImg')) : null; // her look, less her own logo's picture
-  const { HOST_KEY } = await import('./match.js');
-  const isHost = (store(HOST_KEY) || {}).code === code;
-  const mySet = isHost ? store(SETTINGS_KEY) : null;
-  const hostSettings = mySet && typeof mySet === 'object' ? { venue: String(mySet.venue || venue.id), yacht: String(mySet.yacht || cls.id), preset: ['light', 'medium', 'strong'].includes(mySet.preset) ? mySet.preset : 'medium', length: mySet.length === 'medium' ? 'medium' : 'short' }
-    : isHost ? { venue: venue.id, yacht: cls.id, preset: 'medium', length: 'short' } : null;
+  let isHost = false, hostSettings = null; // (known once match.js is in: connect())
+  sweepSaved();
 
   // ---------- the state of the screen ----------
-  let rt = null, link = null, room = null, M = null, W = null;
-  let match = null; // Match: the host's own; the guest's a copy of the host's
+  let rt = null, link = null, room = null, M = null, W = null, K = null; // K: the host's Keeper (match.js)
+  let match = null; // Match: the host's own (K.match); the guest's a copy of the host's
   let cur = null; // the race on screen: { n, seed (its match's), race, H | G, acc, at, endedAt, told, gotSnap, loadedAt }
   let phase = 'room'; // 'room' | 'race' | 'card'
-  let error = null, left = false;
-  let readyIds = new Set(), readySent = 0, wantReady = null, cardOpenAt = 0, absent = false, lastIn = 0, lastHostAt = Date.now(), lastState = 0, stateKey = '';
-  let guestLoaded = { seed: null, n: 0 }; // the host: the last race the guest's screen has built
-  let quietFrom = 0, heardAt = 0; // the host: since when the guest, silent at the end of a race, hasn't been heard; her last hello
+  let error = null, left = false, joined = false, build = null, asking = false, badSet = false;
+  let readyIds = new Set(), readySent = 0, wantReady = null, lastHostAt = Date.now(), lastState = 0, stateKey = '', kicked = 0;
   let pendingStart = null, autoLeft = null; // the guest: a start heard before any mstate; the host's seconds to the automatic start
   let myName = clean(store(NAME_KEY) || '');
 
   const nameOf = (id) => (match ? (id === match.hostId ? match.start.host.name : id === match.guestId ? match.start.guest.name : '') : '') || '—';
   const onScreen = () => !!cur && cur.n === match.raceN && cur.seed === match.start.seed; // the match's race is the one on screen
   const otherId = () => (match ? (myId === match.hostId ? match.guestId : match.hostId) : null);
-  const saveMatch = () => { if (isHost && match) try { sessionStorage.setItem('regatta-match-' + code, JSON.stringify(match.toJSON())); } catch (e) {} };
+  const saveMatch = () => { if (isHost && match) store('regatta-match-' + code, { at: Date.now(), m: match.toJSON() }); };
+  const ready = () => (isHost && K ? K.ready : readyIds);
+  // the other screen runs another build of the game: never raced; both screens ask for a reload
+  const stale = () => {
+    if (!room || !build) return false;
+    const o = isHost ? (match ? room.peer(match.guestId) : room.guest) : room.host;
+    return !!(o && o.build && o.build !== build);
+  };
 
   R.share.addEventListener('click', async () => {
     const url = R.link.value;
@@ -206,52 +232,88 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     left = true;
     try { link?.all.send('leave', { id: myId }); } catch (e) {}
     cur?.H?.stop(); cur?.G?.stop();
-    if (isHost) try { sessionStorage.removeItem('regatta-match-' + code); } catch (e) {}
+    if (isHost) try { localStorage.removeItem('regatta-match-' + code); } catch (e) {}
     try { room?.leave(); } catch (e) {}
     clearInterval(timer);
     setTimeout(() => { try { rt?.close(); } catch (e) {} }, 400);
     onEnd();
   };
-  for (const b of [R.leave, C.leave]) b.addEventListener('click', leave);
+  // the match's question: Leave, or Stay (asked again, Stay)
+  const ask = () => {
+    if (left) return;
+    if (!match || match.state === 'over') { leave(); return; }
+    asking = !asking; beat();
+    if (asking) A.stay.focus();
+  };
+  R.leave.addEventListener('click', leave);
+  C.leave.addEventListener('click', () => (match && match.state !== 'over' ? ask() : leave())); // between races, asked; Done, at once
+  A.out.addEventListener('click', leave);
+  A.stay.addEventListener('click', () => { asking = false; beat(); });
   R.retry.addEventListener('click', () => location.reload());
   addEventListener('pagehide', () => { if (!left) try { room?.leave(); } catch (e) {} });
+  // the link checked at once when the page comes back to the front or the network comes back: a phone drops a
+  // background tab's socket, and the old one may be half-open
+  const relink = () => { if (rt && !left) { kicked = Date.now(); rt.reconnect(); } };
+  addEventListener('online', relink);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') relink(); });
 
   // ---------- connecting ----------
   const connect = async () => {
-    let cfg = null;
-    try { cfg = await fetch('/connect', { cache: 'no-store', credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)); } catch (e) {}
-    if (!cfg || !cfg.url || !cfg.key) { error = 'connect'; return; }
-    if (cfg.name) myName = clean(cfg.name) || myName; // signed in: the account's name
-    [{ realtime: rt }, M, W] = await Promise.all([import('./net.js'), import('./match.js'), import('./wire.js')]);
-    rt = rt({ url: cfg.url, key: cfg.key });
-    link = M.makeLink(rt, code);
-    if (myName) openRoom();
+    try {
+      let cfg = null;
+      try { cfg = await fetch('/connect', { cache: 'no-store', credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)); } catch (e) {}
+      if (!cfg || !cfg.url || !cfg.key) { error = 'connect'; return; }
+      if (cfg.name) myName = clean(cfg.name) || myName; // signed in: the account's name
+      build = typeof cfg.build === 'string' ? cfg.build : null;
+      let net;
+      [net, M, W] = await Promise.all([import('./net.js'), import('./match.js'), import('./wire.js')]);
+      isHost = (store(M.HOST_KEY) || {}).code === code;
+      const mySet = isHost ? store(SETTINGS_KEY) : null;
+      hostSettings = mySet && typeof mySet === 'object' ? { venue: String(mySet.venue || venue.id), yacht: String(mySet.yacht || cls.id), preset: ['light', 'medium', 'strong'].includes(mySet.preset) ? mySet.preset : 'medium', length: mySet.length === 'medium' ? 'medium' : 'short' }
+        : isHost ? { venue: venue.id, yacht: cls.id, preset: 'medium', length: 'short' } : null;
+      if (isHost && !settingsHere(hostSettings)) return; // (another page: the host's own venue and yacht)
+      R.link.value = `${location.origin}/match/${code}?v=${encodeURIComponent(hostSettings ? hostSettings.venue : venue.id)}&b=${encodeURIComponent(hostSettings ? hostSettings.yacht : cls.id)}`;
+      rt = net.realtime({ url: cfg.url, key: cfg.key });
+      rt.setHeartbeat(5000); // a match notices a dead link in under 10 s
+      link = M.makeLink(rt, code);
+      if (myName) openRoom();
+    } catch (e) { console.error(e); error = 'connect'; } // a module that didn't load, or anything else: Try again
+  };
+  // This page's venue and yacht must be the match's (another venue or yacht is another page): sent there once, with
+  // fix=1 in the address; on that page still not the match's (a venue or yacht this build hasn't), the host races what
+  // the page has (the guest follows its settings), and the guest is told she can't join. True if this page will do.
+  const settingsHere = (s) => {
+    if (!s || ((!s.venue || s.venue === venue.id) && (!s.yacht || s.yacht === cls.id))) return true;
+    const u = new URLSearchParams(location.search);
+    if (u.get('fix') !== '1') {
+      u.set('venue', s.venue); u.set('boat', s.yacht); u.set('fix', '1');
+      try { room?.leave(); } catch (e) {}
+      left = true; location.replace(`/play?${u}`); return false;
+    }
+    if (isHost) { s.venue = venue.id; s.yacht = cls.id; store(SETTINGS_KEY, { ...(store(SETTINGS_KEY) || {}), venue: venue.id, yacht: cls.id }); return true; }
+    badSet = true; // the guest can't sail this match here: out of its room, so the host never takes her for its guest
+    try { room?.leave(); } catch (e) {}
+    return false;
   };
   const openRoom = () => {
     if (room) return;
     store(NAME_KEY, myName);
-    room = new M.Room({ link, me: { id: myId, name: myName, look }, host: isHost, settings: hostSettings });
-    room.joined.then((ok) => { if (!ok) error = 'connect'; });
+    room = new M.Room({ link, me: { id: myId, name: myName, look, build }, host: isHost, settings: hostSettings });
+    room.joined.then((ok) => { if (!ok) error = 'connect'; else joined = true; });
     room.onStart((m) => onStartMsg(m));
+    if (isHost) K = new M.Keeper({ room, link, build, onChange: () => sendState() });
     link.all.on('mstate', (s) => { if (!isHost && !left) onState(s); });
-    // (each names its match by its seed: a rematch's race 1 isn't the last match's)
-    link.all.on('loaded', (m) => { if (isHost && match && m && m.id === match.guestId && m.seed === match.start.seed) guestLoaded = { seed: m.seed, n: m.n | 0 }; });
-    link.all.on('ready', (m) => {
-      if (!isHost || !match || !m || m.id !== match.guestId || m.seed !== match.start.seed || match.state !== 'between' || (m.n | 0) !== match.nextN) return;
-      readyIds.add(m.id); match.ready(m.id); sendState();
-    });
     link.all.on('leave', (m) => {
       if (!match || !m || m.id !== otherId()) return;
       if (isHost) { match.leave(m.id); saveMatch(); sendState(); } else { match.state = 'over'; match.leftBy = m.id; }
     });
     link.all.on('snap', () => { lastHostAt = Date.now(); if (cur && !cur.gotSnap && cur.G) { cur.gotSnap = true; room.pause(true); } });
     link.all.on('ev', () => { lastHostAt = Date.now(); });
-    link.input.on('input', (m) => { if (isHost && match && m && m.id === match.guestId) lastIn = Date.now(); });
-    link.all.on('hello', (h) => { if (isHost && match && h && h.id === match.guestId) heardAt = Date.now(); });
-    // a reloaded host: the match goes on from its saved score, the race that was on abandoned (it lived in that tab)
+    // a reloaded host, or one whose tab was closed and the link opened again: the match goes on from its saved score,
+    // the race that was on abandoned (it lived in that tab)
     if (isHost) {
-      let saved = null; try { saved = JSON.parse(sessionStorage.getItem('regatta-match-' + code) || 'null'); } catch (e) {}
-      if (saved && saved.start) try { match = M.Match.from(saved); readyIds = new Set(); cardOpenAt = Date.now(); saveMatch(); } catch (e) { match = null; }
+      const saved = savedMatch(code);
+      if (saved) try { match = M.Match.from(saved); K.set(match); saveMatch(); } catch (e) { match = null; }
     }
   };
   R.join.addEventListener('click', () => submitName());
@@ -266,15 +328,14 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   // ---------- the match: the host's, sent to the guest ----------
   const onStartMsg = (m) => {
     if (match && match.start.seed === m.seed) return;
-    if (isHost) { match = new M.Match({ start: m }); readyIds = new Set(); saveMatch(); sendState(); enterRace(); return; }
+    if (isHost) { match = new M.Match({ start: m }); K.set(match); saveMatch(); sendState(); enterRace(); return; }
     pendingStart = { m, at: Date.now() }; // the guest: the host's mstate, if it comes at once, says where the match is
   };
   const sendState = () => {
     if (!isHost || !match || !link) return;
     lastState = Date.now();
     const c = onScreen() ? cur.race.calls : [];
-    const leftS = match.state === 'between' && present() ? Math.max(0, 60 - (Date.now() - cardOpenAt) / 1000) : null;
-    link.all.send('mstate', { ...match.toJSON(), ready: [...readyIds], left: leftS, calls: c.slice(-20) });
+    link.all.send('mstate', { ...match.toJSON(), ready: [...K.ready], left: K.left(), calls: c.slice(-20) });
   };
   let hostCalls = [];
   const onState = (s) => {
@@ -284,16 +345,10 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     if (!match || match.start.seed !== s.start.seed) { match = new M.Match({ start: s.start }); wantReady = null; } // a new match: the first, or a rematch
     Object.assign(match, { state: s.state, raceN: s.raceN, score: s.score, races: s.races, leftBy: s.leftBy ?? null });
     readyIds = new Set(s.ready || []); hostCalls = Array.isArray(s.calls) ? s.calls : []; autoLeft = s.left ?? null;
-    if (match.state === 'race' && !onScreen()) enterRace();
+    if (match.state === 'race' && !onScreen() && !stale()) enterRace();
   };
-  // the host's view of the guest: in a race her inputs say it; else the room, which (its hellos resumed after a race)
-  // gives everyone ten seconds: a guest already silent as the race ended isn't here till she's heard again
-  const present = () => {
-    if (!match) return false;
-    if (cur && cur.H && !cur.H.stopped) return Date.now() - lastIn < 30000;
-    const g = room && room.guest;
-    return !!g && g.id === match.guestId && !(quietFrom && Math.max(heardAt, lastIn) < quietFrom);
-  };
+  // the host's view of the guest (Keeper: her inputs in a race, the room between them)
+  const present = () => !!K && K.present();
 
   // ---------- a race ----------
   const enterRace = () => {
@@ -303,8 +358,8 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     for (const b of race.humans) b.color = SIDE_HEX[b.side];
     race.settings = { ...match.start.settings, laps: 2, start: 5, fleet: 2, course: 'wl', current: 0, daily: null, match: true };
     cur = { n, seed: match.start.seed, race, H: null, G: null, acc: 0, at: Date.now(), endedAt: 0, told: false, gotSnap: false, loadedAt: 0 };
-    phase = 'race'; show(R.card, false); show(C.card, false);
-    if (isHost) { lastIn = Date.now(); saveMatch(); sendState(); }
+    phase = 'race'; asking = false; show(R.card, false); show(C.card, false); show(A.card, false);
+    if (isHost) { K.lastIn = Date.now(); saveMatch(); sendState(); }
     else {
       cur.G = new M.Guest({ race, link, me: myId });
       cur.G.onEnd(() => { if (!cur.endedAt) cur.endedAt = Date.now(); });
@@ -315,15 +370,15 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   const sendLoaded = () => { if (cur && cur.G && !cur.gotSnap) { cur.loadedAt = Date.now(); link.all.send('loaded', { id: myId, n: cur.n, seed: match.start.seed }); } };
   // the host's race starts once the guest's screen has it built
   const startHost = () => {
-    if (!isHost || !cur || cur.H || cur.endedAt || match.state !== 'race' || guestLoaded.seed !== match.start.seed || guestLoaded.n < cur.n) return;
-    lastIn = Date.now();
-    cur.H = new M.Host({ race: cur.race, link, guestId: match.guestId });
+    if (!isHost || !cur || cur.H || cur.endedAt || match.state !== 'race' || K.loaded.seed !== match.start.seed || K.loaded.n < cur.n) return;
+    K.raceOn();
+    cur.H = new M.Host({ race: cur.race, link, guestId: match.guestId, alive: () => Date.now() - rt.lastHeard() < 7000 });
     room.pause(true);
   };
   const session = {
     get race() { return cur?.race; },
     get isGuest() { return !isHost; },
-    get debug() { return { cur, phase, match, room, link }; }, // (main.js's window.__rg.mx, under ?debug)
+    get debug() { return { cur, phase, match, room, link, K, rt }; }, // (main.js's window.__rg.mx, under ?debug)
     // a frame of the race: the host steps it (once the guest has it), the guest follows the host's
     step(dt) {
       if (!cur) return;
@@ -332,9 +387,8 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
       else if (cur.G) { cur.G.input(W.controlsOf(P)); cur.acc += dt; while (cur.acc >= STEP) { cur.G.frame(STEP); cur.acc -= STEP; } }
       if (isHost && cur.H && !cur.endedAt && (cur.race.over || cur.H.abandoned)) {
         cur.endedAt = Date.now();
-        if (cur.H.abandoned) match.endRace({ abandoned: true });
-        else match.endRace({ winner: cur.race.winner?.id ?? null, margin: cur.race.margin ?? null });
-        readyIds = new Set(); cardOpenAt = Date.now(); saveMatch(); sendState();
+        K.raceEnded(cur.H.abandoned ? { abandoned: true } : { winner: cur.race.winner?.id ?? null, margin: cur.race.margin ?? null });
+        saveMatch(); sendState();
       }
       paintHud();
     },
@@ -372,7 +426,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   // ---------- the cards ----------
   const raceLine = (r, i) => {
     const w = r.abandoned ? L.abandonedR : r.winner === myId ? t('you') : r.winner ? nameOf(r.winner) : '—';
-    return [L.raceN(i + 1), r.abandoned ? '' : r.margin != null ? L.by(fmtS(r.margin)) : r.winner && !r.abandoned && r.margin == null ? L.forfeitR : '', w];
+    return [L.raceN(i + 1), r.abandoned ? '' : r.margin != null ? L.by(fmtS(r.margin, L.sec)) : r.winner && !r.abandoned && r.margin == null ? L.forfeitR : '', w];
   };
   const paintScore = () => {
     const me = myId, o = otherId(), side = (id) => (match.blueOf(match.nextN) === id ? BLUE : YELLOW);
@@ -395,7 +449,14 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   const paintCard = () => {
     const o = otherId(), last = match.races[match.races.length - 1], n = match.races.length, oName = nameOf(o);
     paintScore(); paintRaces();
-    const here = isHost ? present() : Date.now() - lastHostAt < 6000;
+    const here = isHost ? present() : Date.now() - lastHostAt < 6000, old = stale();
+    txt(C.leave, match.state === 'over' ? L.done : L.leave);
+    if (old) { // another build on the other screen: a reload, not a race
+      show(C.go, true); txt(C.go, L.reload); C.go.disabled = false; C.go.classList.remove('on');
+      txt(C.st, L.stale); C.st.classList.add('bad');
+      return;
+    }
+    C.st.classList.remove('bad');
     if (match.state === 'over') {
       const me = match.score[myId] ?? 0, them = match.score[o] ?? 0, s = `${Math.max(me, them)}–${Math.min(me, them)}`;
       txt(C.kick, L.matchK);
@@ -408,27 +469,28 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     }
     txt(C.kick, L.kick);
     txt(C.h, !last ? L.raceN(match.nextN) : last.abandoned ? L.abandonedN(n) : last.winner === myId ? L.youWin(n) : last.winner ? L.theyWin(oName, n) : L.abandonedN(n));
-    const by = last && !last.abandoned ? (last.margin != null ? L.by(fmtS(last.margin)) : last.winner ? L.forfeit(last.winner === myId ? oName : t('you')) : '') : '';
+    const by = last && !last.abandoned ? (last.margin != null ? L.by(fmtS(last.margin, L.sec)) : last.winner ? L.forfeit(last.winner === myId ? oName : t('you')) : '') : '';
     const side = match.blueOf(match.nextN) === myId ? 'blue' : 'yellow';
     txt(C.sub, [by, L.next(match.nextN, L[side], L[side + 'End'])].filter(Boolean).join(' · '));
-    const mine = readyIds.has(myId) || wantReady === `${match.start.seed}|${match.nextN}`;
+    const R0 = ready(), mine = R0.has(myId) || wantReady === `${match.start.seed}|${match.nextN}`;
     show(C.go, true); txt(C.go, mine ? L.readyOn : L.ready); C.go.classList.toggle('on', mine); C.go.disabled = mine;
-    const leftS = isHost ? (here ? Math.max(0, 60 - (Date.now() - cardOpenAt) / 1000) : null) : autoLeft;
-    txt(C.st, !here ? t('waitingHost', oName) : readyIds.has(o) ? L.theyReady(oName) : leftS != null ? L.autoIn(fmtS(leftS)) : L.waitBoth);
+    const leftS = isHost ? K.left() : autoLeft;
+    txt(C.st, !here ? t('waitingHost', oName) : R0.has(o) ? L.theyReady(oName) : leftS != null ? L.autoIn(fmtS(leftS, L.sec)) : L.waitBoth);
   };
   C.go.addEventListener('click', () => {
     if (!match) return;
+    if (stale()) { location.reload(); return; }
     if (match.state === 'over') { if (isHost) rematch(); return; }
-    if (match.state !== 'between' || readyIds.has(myId)) return;
-    if (isHost) { readyIds.add(myId); match.ready(myId); sendState(); }
+    if (match.state !== 'between' || ready().has(myId)) return;
+    if (isHost) K.readyMe(); // (its onChange sends the state)
     else { wantReady = `${match.start.seed}|${match.nextN}`; sendReady(); }
     paintCard();
   });
   const sendReady = () => { readySent = Date.now(); link.all.send('ready', { id: myId, n: match.nextN, seed: match.start.seed }); };
   const rematch = () => {
     if (!isHost || !room.canStart()) return;
-    const m = room.start(); // the same code, the same settings, a new seed; the guest takes it from the mstate
-    match = new M.Match({ start: m }); readyIds = new Set(); saveMatch(); sendState(); enterRace();
+    const m = room.start(); // the same code, the same settings, a new seed, the same guest; she takes it from the mstate
+    match = new M.Match({ start: m }); K.set(match); saveMatch(); sendState(); enterRace();
   };
 
   // ---------- the waiting room ----------
@@ -438,7 +500,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     const full = !!room && room.full;
     const h = room ? room.host : isHost ? { id: myId, name: myName || '…' } : null, g = room && room.guest;
     const rows = [[h, BLUE, L.hostTag], [full ? null : g, YELLOW, '']];
-    const k = JSON.stringify(rows.map(([p]) => p && [p.id, p.name])) + full + !!room;
+    const k = JSON.stringify(rows.map(([p]) => p && [p.id, p.name])) + full + !!room + joined;
     if (R.ppl._k !== k) {
       R.ppl._k = k; R.ppl.textContent = '';
       for (const [p, col, tag] of rows) {
@@ -448,27 +510,30 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
           row.append(chip, Object.assign(document.createElement('span'), { textContent: clean(p.name) || '—' }));
           const tags = [p.id === myId ? L.youTag : '', tag].filter(Boolean).join(' · ');
           if (tags) row.append(Object.assign(document.createElement('span'), { className: 't', textContent: tags }));
-        } else row.textContent = isHost ? L.waitFriend : L.connecting;
+        } else row.textContent = isHost ? L.waitFriend : joined ? L.waitHost : L.connecting; // (the guest: joined, the host just isn't there)
         if (p || (room && !full && row.textContent)) R.ppl.append(row); // (before the room is open, or a full one: only who is known)
       }
     }
     show(R.linkBox, isHost);
-    show(R.nameBox, !room || !full);
+    show(R.nameBox, (!room || !full) && !badSet); show(R.ppl, !badSet); // (a match this page can't sail: only why)
     if (document.activeElement !== R.name && !R.name.value) R.name.value = myName;
-    show(R.retry, !!error);
+    const old = stale();
+    show(R.retry, !!error || old); txt(R.retry, old ? L.reload : L.retry);
     let st = '', bad = false;
-    if (error) { st = L.noConnect; bad = true; }
+    if (badSet) { st = L.badSet; bad = true; }
+    else if (error) { st = L.noConnect; bad = true; }
+    else if (old) { st = L.stale; bad = true; }
     else if (!link) st = L.connecting;
     else if (!room) st = L.nameFirst;
     else if (full) { st = t('full'); bad = true; }
     else if (isHost) st = ''; // (alone, the friend's row says it)
-    else st = h ? L.waitStart(clean(h.name)) : L.connecting;
+    else st = h ? L.waitStart(clean(h.name)) : joined ? '' : L.connecting; // (no host yet: its row says so)
     txt(R.st, st); R.st.classList.toggle('bad', bad); show(R.st, !!st);
     show(R.start, isHost && !error);
-    R.start.disabled = !(room && room.canStart());
-    show(R.sides, !full && !error);
+    R.start.disabled = !(room && room.canStart()) || old;
+    show(R.sides, !full && !error && !badSet);
   };
-  R.start.addEventListener('click', () => { if (room && room.canStart() && !match) room.start(); });
+  R.start.addEventListener('click', () => { if (room && room.canStart() && !match && !stale()) room.start(); });
 
   // ---------- the umpire's calls, with their reasons (&debug=umpire) ----------
   const paintDbg = () => {
@@ -485,26 +550,16 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   const beat = () => {
     if (left) return;
     const now = Date.now();
-    // the guest's settings must be the host's: another venue or yacht is another page
-    if (!isHost && room && room.settings && !match) {
-      const s = room.settings;
-      if ((s.venue && s.venue !== venue.id) || (s.yacht && s.yacht !== cls.id)) {
-        const u = new URLSearchParams(location.search); u.set('venue', s.venue); u.set('boat', s.yacht);
-        try { room.leave(); } catch (e) {}
-        left = true; location.replace(`/play?${u}`); return;
-      }
-    }
+    // the guest's settings must be the host's: another venue or yacht is another page (sent there once)
+    if (!isHost && room && room.settings && !match && !badSet && !settingsHere(room.settings) && left) return;
     if (!isHost && pendingStart && now - pendingStart.at > 1500 && (!match || match.start.seed !== pendingStart.m.seed)) {
       const m = pendingStart.m; pendingStart = null; match = new M.Match({ start: m }); enterRace();
     }
     if (isHost && match) {
-      const here = present();
-      if (match.state === 'between' && here && absent) cardOpenAt = Math.max(cardOpenAt, now); // back: the minute starts again (as Match counts it)
-      absent = !here;
-      match.present(match.guestId, here); match.tick();
+      K.beat(); // her presence to the match, which starts the next race when its rules say
       if (match.state === 'race' && !onScreen()) enterRace();
       startHost();
-      const key = `${match.state}|${match.raceN}|${match.races.length}|${[...readyIds].join()}`;
+      const key = `${match.state}|${match.raceN}|${match.races.length}|${[...K.ready].join()}`;
       if (key !== stateKey || now - lastState > (match.state === 'race' ? 2000 : 1000)) { if (key !== stateKey) saveMatch(); stateKey = key; sendState(); }
     }
     if (!isHost && match) {
@@ -512,13 +567,16 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
       if (match.state === 'between' && !readyIds.has(myId) && wantReady === `${match.start.seed}|${match.nextN}` && now - readySent > 1000) sendReady();
       if (match.state !== 'over' && now - lastHostAt > 300000) match.state = 'over'; // her host gone five minutes: over
     }
+    // a race gone quiet 3 s (no snapshot on the guest's screen, no input on the host's): the link checked, at once and
+    // then every 10 s while it stays quiet (a half-open socket would otherwise take a heartbeat or two to notice)
+    if (cur && phase === 'race' && !cur.endedAt && (cur.G ? cur.gotSnap && now - lastHostAt > 3000 : cur.H && now - K.lastIn > 3000) && now - kicked > 10000) relink();
     // the race ends: its last moments on the water, then its card
     if (cur && phase === 'race') {
       const done = match.state !== 'race' || !onScreen(); // the match has moved on: the race was sailed, abandoned or the match left
       if (!cur.endedAt && done) cur.endedAt = now;
       if (cur.endedAt && !cur.told) { cur.told = true; tell(); }
       if (cur.endedAt && done && now - cur.endedAt >= CARD_MS) {
-        if (isHost) quietFrom = cur.H && now - lastIn > 3000 ? now : 0;
+        if (isHost) K.raceOff();
         cur.H?.stop(); cur.G?.stop();
         room?.pause(false);
         phase = 'card'; show(hudEl, false); onIdle();
@@ -527,12 +585,14 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     if (phase === 'card' && match && match.state === 'race' && !onScreen()) enterRace();
     if (phase === 'room' && match && match.state !== 'race') { phase = 'card'; show(R.card, false); } // a reloaded page, between races or after the match
     // what's on screen
-    if (phase === 'room') { show(R.card, true); paintRoom(); }
-    if (phase === 'card' && match) { show(C.card, true); paintCard(); }
+    show(A.card, asking && !!match && match.state !== 'over');
+    if (asking && (!match || match.state === 'over')) asking = false;
+    show(R.card, phase === 'room' && !asking); if (phase === 'room') paintRoom();
+    show(C.card, phase === 'card' && !!match && !asking); if (phase === 'card' && match) paintCard();
     let b = '';
     if (phase === 'race' && cur) {
       if (isHost && !cur.H && !cur.endedAt) b = L.loadingRace(nameOf(match.guestId));
-      else if (isHost && cur.H && !cur.endedAt && now - lastIn > 3000) b = t('guestGone', nameOf(match.guestId));
+      else if (isHost && cur.H && !cur.endedAt && now - K.lastIn > 3000) b = t('guestGone', nameOf(match.guestId));
       else if (!isHost && cur.G && !cur.endedAt && cur.G.abandoned) b = t('abandoned');
       else if (!isHost && cur.G && !cur.endedAt && (cur.G.hostSilent || (!cur.gotSnap && now - cur.at > 4000))) b = t('waitingHost', nameOf(match.hostId));
     }
@@ -541,7 +601,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   };
   const timer = setInterval(beat, 250);
 
-  api = { leave };
+  api = { leave, ask };
   paintRoom();
   await connect();
   // a reloaded host goes straight to the card it was on
