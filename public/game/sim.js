@@ -1288,16 +1288,16 @@ export class Race {
   pairKey(p, q) { const i = this.boats.indexOf(p), j = this.boats.indexOf(q); return Math.min(i, j) * 16 + Math.max(i, j); }
   // a pair called less than callGap s ago, or not yet apart since (still tangled): the same incident, no new call
   inIncident(key) { const k = this.incidents.get(key); return !!k && (this.clock - k.t < UMPIRE.callGap || !k.apart); }
-  // a match's umpire, from 30 s before the preparatory signal to the finish: for each pair, if holding their course and
-  // speed would bring their hulls within keepClear inside `look` seconds, and nearer than they are now (two boats sitting
-  // still side by side, as in a dial-up, aren't closing), she calls it. On whom: the boat that must keep clear (Part 2,
+  // a match's umpire, from the preparatory signal (as the rules and contact's fouls) to the finish: for each pair, if
+  // holding their course and speed would bring their hulls within keepClear inside `look` seconds, and nearer than they
+  // are now (two boats sitting still side by side, as in a dial-up, aren't closing), she calls it. On whom: the boat that must keep clear (Part 2,
   // as judge() has it), unless the closing is the right-of-way boat's own doing: she changed course by huntDeg or more
   // in the last huntT s, on her old course they would not have closed, and the other had less than huntT s from the
   // start of her turn to where they meet to answer it. Then it's hers, rule 16.1; with longer, the other had room to
   // keep clear of her new course and it's the other's. A smaller change that closes them gives the other a moment to
   // answer: no call yet (if it isn't answered, her old course closes them too, and the call is the other's)
   umpire() {
-    if (this.clock < this.seq[1].t - 30 || this.over) return;
+    if (!this.rulesOn || this.over) return;
     const bs = this.boats, { keepClear, look, huntT, huntDeg } = UMPIRE;
     for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
       const p = bs[i], q = bs[j], key = i * 16 + j, inc = this.incidents.get(key);

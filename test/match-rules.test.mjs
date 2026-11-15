@@ -338,9 +338,9 @@ function closest(r, p, q, secs) {
 // a crossing halfway up the beat: starboard (yellow, g) and port (blue, h) close-hauled, 45° off the wind, at V; the
 // starboard boat reaches the crossing point X in `T` s, the port boat `lead` s before her
 const V = 3.4;
-function crossing({ lead = 0, T = 8, sHelm = null, pHelm = null } = {}) {
+function crossing({ lead = 0, T = 8, sHelm = null, pHelm = null, clock = 30, leg = 1 } = {}) {
   const r = matchRace(), [P, S] = r.humans, c = r.course;
-  afterGun(r, 30);
+  afterGun(r, clock, leg);
   const X = midBeat(c), W = r.wind.at(X.x, X.z).dir, hs = W - 45 * D2R, hp = W + 45 * D2R;
   sail(r, S, off(X, fwd(hs), -V * T), hs, V, sHelm && ((s) => sHelm(s, hs, S, P)));
   sail(r, P, off(X, fwd(hp), -V * (T - lead)), hp, V, pHelm && ((s) => pHelm(s, hp, P, S)));
@@ -510,4 +510,17 @@ test('the umpire is a match\'s only: a free race makes no calls', () => {
   const min = closest(r, P, S, 6); // up to just before they'd touch: a match's umpire has called it by now
   assert.ok(min > 0 && min < 3, `${min.toFixed(2)}`);
   assert.deepEqual(r.calls, []); assert.equal(said(r, 'umpire').length, 0);
+});
+
+test('the umpire starts with the rules, at the preparatory signal: a near-miss before it makes no call, after it one', () => {
+  // port crosses starboard's bow half a metre clear, and they don't touch: the same near-miss on each side of the signal
+  const prep = matchRace().seq[1].t;
+  for (const [clock, n] of [[prep - 20, 0], [prep + 2, 1]]) {
+    const { r, P, S } = crossing({ lead: 3.75, clock, leg: 0 });
+    const min = closest(r, P, S, 12);
+    assert.ok(min > 0.3 && min < 0.8, `a near-miss (${min.toFixed(2)})`);
+    assert.equal(said(r, 'bump').length, 0, 'no contact');
+    assert.ok(n ? r.calls[0].t > prep : r.clock < prep, 'all on its side of the signal');
+    assert.deepEqual(calls(r), n ? [`${P.id} 10`] : [], `placed at ${clock}`);
+  }
 });
