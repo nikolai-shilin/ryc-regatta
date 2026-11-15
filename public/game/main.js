@@ -1803,7 +1803,7 @@ function finishToPage() {
       marks: Object.fromEntries(Object.entries(c.marks).map(([k, m]) => [k, xz(m)])), ...(c.finish && { finish: [xz(c.finish.a), xz(c.finish.b)] }) },
     boats: race.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, color: typeof b.color === 'number' ? '#' + b.color.toString(16).padStart(6, '0') : null, flag: flagCode(b === P ? playerLook().flag : LOOKS[b.name] && LOOKS[b.name].flag),
       done: !!b.done, dsq: !!b.dsq, secs: b.done ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track || []), ...(race._fin?.get(b) && { at: race._fin.get(b) }),
-      legT: (b.legT || []).map((x) => Math.round(x * 10) / 10), pens: b.pens || 0 })), // the clock as she finished each leg, and her penalties
+      legT: (b.legT || []).map((x) => Math.round(x * 10) / 10), pens: b.pens || 0, ...(b !== P && b.level && { level: b.level }) })), // the clock as she finished each leg, her penalties, and a computer skipper's level
     log: { gunD: L.gunD, gunV: L.gunV, ocs: !!L.ocs, startDsq: L.startDsq || null, startT: L.startT, sailing: L.sailing, pct: L.sailing > 20 && L.polar ? Math.round((L.v / L.polar) * 100) : null,
       head, lift, tacks: L.tacks.length, gybes: L.gybes, dirty: Math.round(L.dirty), penT: Math.round(L.penT), hails: L.hails, legs: L.legs, legPlaces: L.legPlaces || [],
       startAt: L.startAt, top: Math.round(L.top * 10) / 10, topLeg: L.topLeg, topKite: !!L.topKite,

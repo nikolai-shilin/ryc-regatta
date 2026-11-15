@@ -391,8 +391,15 @@
 .bc .rs-lb .hm-t { flex: none; min-width: 56px; text-align: right; }
 .bc .rs-gap { flex: none; min-width: 52px; text-align: right; font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-3); }
 .bc .rs-share-b { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+/* a computer skipper's level in the table: four pips lit to it, as the race's board shows them (the table is narrow:
+   the pips alone, the level's name for a pointer and a screen reader, and the key under the table) */
+.bc .rs-lv { flex: none; display: inline-flex; align-items: center; gap: 2px; width: 18px; height: 20px; }
+.bc .rs-lv > i, .bc .rs-key i { width: 3px; height: 9px; background: var(--w-14); }
+.bc .rs-lv.l1 > i:nth-child(-n+1), .bc .rs-lv.l2 > i:nth-child(-n+2), .bc .rs-lv.l3 > i:nth-child(-n+3), .bc .rs-lv.l4 > i, .bc .rs-key i.on { background: var(--ink-2); }
+.bc .rs-key { display: inline-flex; align-items: center; gap: 2px; vertical-align: middle; }
 /* each boat's penalties in the table, and the race in four numbers above the debrief: two a row on a phone */
 .bc .rs-pen { flex: none; font: 600 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--live); white-space: nowrap; }
+.bc .rs-lv ~ .rs-pen { min-width: 44px; text-align: right; } /* with the levels beside it, a column of its own, so their pips line up */
 /* the debrief's tiles fill their rows whatever their number: three a row (five: three, then two halves), four two by
    two; on a phone two a row, an odd last one across both */
 .bc .rs-tiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--s-2); }

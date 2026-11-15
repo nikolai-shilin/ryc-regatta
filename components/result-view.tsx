@@ -32,7 +32,20 @@ import { useWho } from './me';
 // legT (the clock as she finished each leg, the start's crossing first) and pens (her penalties) came with the finish's
 // tiles: a result saved before them has neither, and the page leaves out what it can't say
 type Boat = { name: string | null; me: boolean; color: string | null; flag?: string | null; done: boolean; dsq: boolean; secs: number | null; track: [number, number][]; at?: Pose;
-  legT?: number[]; pens?: number };
+  legT?: number[]; pens?: number; level?: string };
+
+// a computer skipper's level (public/game/sim.js LEVELS): four pips lit to it and its name, as the race's board shows it
+const LEVEL: Record<string, [number, string, string]> = { beginner: [1, 'Beginner', 'Новичок'], club: [2, 'Club', 'Клуб'], racer: [3, 'Racer', 'Гонщик'], expert: [4, 'Expert', 'Эксперт'] };
+const Pips = ({ n }: { n: number }) => <span className="rs-key" aria-hidden="true">{[1, 2, 3, 4].map((k) => <i key={k} className={k <= n ? 'on' : ''} />)}</span>;
+function Level({ lv, t }: { lv?: string; t: (en: string, ru: string) => string }) {
+  const L = lv ? LEVEL[lv] : undefined;
+  if (!L) return <span className="rs-lv" aria-hidden="true" />;
+  return (
+    <span className={`rs-lv l${L[0]}`} title={t(L[1], L[2])} role="img" aria-label={t(L[1], L[2])}>
+      <i /><i /><i /><i />
+    </span>
+  );
+}
 type Foul = { rule: string; who: string | null; t: number | null; x: number | null; z: number | null };
 type Result = {
   v: 1; id: string; at: number; daily: string | null; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
@@ -227,6 +240,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
       s: pens ? t(`${pens} ${pens === 1 ? 'penalty' : 'penalties'}`, `Штрафов: ${pens}`) : t('No penalties', 'Без штрафов') } : null,
   ] as (Tile | null)[]).filter((x): x is Tile => !!x);
   const hasPens = res.boats.some((b) => b.pens != null);
+  const hasLevels = res.boats.some((b) => b.level && LEVEL[b.level]); // a race kept before the skippers had levels has none
   // a new best: the one it beat, beside it
   const prev = !shared && res.pb?.isNew && res.pb.prev != null ? res.pb.prev : null;
 
@@ -319,6 +333,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
                 <li key={i} className={`${b.me ? 'me' : ''} ${i === 0 && !b.dsq ? 'first' : ''}`}>
                   <span className="hm-n">{b.dsq ? '–' : i + 1}</span>
                   <span className="rs-name"><span className="rs-dot" style={{ background: b.me ? 'var(--you)' : b.color || 'rgba(255,255,255,.4)' }} /><FlagImg code={b.flag} lang={lang} />{b.me ? you : b.name}</span>
+                  {hasLevels && <Level lv={b.level} t={t} />}
                   {hasPens && <span className="rs-pen" title={b.pens ? t('Penalties she got', 'Сколько штрафов получила') : undefined}>{b.pens ? t(`${b.pens} pen`, `${b.pens} штр.`) : ''}</span>}
                   <span className="hm-t">{b.dsq ? 'DSQ' : b.secs != null ? clock(b.secs) : '—'}</span>
                   <span className="rs-gap">{b.secs != null && winner?.secs != null && b !== winner && !b.dsq ? `+${(b.secs - winner.secs).toFixed(1)}` : ''}</span>
@@ -326,6 +341,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
               ))}
             </ol>
           </div>
+          {hasLevels && <p className="bt-hint rs-hint">{t('Computer skippers:', 'Компьютерные шкиперы:')} <Pips n={1} /> {t('beginner to', 'от новичка до')} <Pips n={4} /> {t('expert', 'эксперта')}</p>}
           <p className="bt-hint rs-hint">{res.daily ? t('Today’s race is the one that ranks: everyone sails the same one.', 'В рейтинг идёт гонка дня: у всех она одна.') : t('Free races stay with you; today’s race is the one that ranks.', 'Свободные гонки остаются у тебя; в рейтинг идёт гонка дня.')}</p>
         </section>
         <a className="rs-down" href="#debrief" aria-label={t('The debrief', 'Разбор')}><span>{t('The debrief', 'Разбор')}</span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" /></svg></a>
