@@ -14,7 +14,10 @@ playing it again from the top doesn't jump.
 """
 import json
 import os
+import shutil
+import subprocess
 import sys
+import tempfile
 
 import numpy as np
 import soundfile as sf
@@ -188,7 +191,14 @@ def main():
     y = np.concatenate(out)
     y *= 0.95 / max(1e-9, np.abs(y).max())
     path = os.path.join(os.path.dirname(__file__), '..', 'public', 'game', f'music-{tid}.mp3')
-    sf.write(path, y, sr, format='MP3')
+    # 96 kbps joint stereo (LAME picks 32 kHz for it): some 2 MB a track, which every new player downloads; libsndfile's
+    # own MP3 when lame isn't installed (about half as big again)
+    if shutil.which('lame'):
+        with tempfile.NamedTemporaryFile(suffix='.wav') as tmp:
+            sf.write(tmp.name, y, sr, subtype='PCM_16')
+            subprocess.run(['lame', '--quiet', '--abr', '96', '-m', 'j', tmp.name, path], check=True)
+    else:
+        sf.write(path, y, sr, format='MP3')
     print('bpm', round(60 / np.diff(b[:16]).mean(), 1), '..', round(60 / np.diff(b[-16:]).mean(), 1), file=sys.stderr)
     print(json.dumps(meta))
 

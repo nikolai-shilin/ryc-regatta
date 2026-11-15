@@ -9,14 +9,17 @@
 import { VENUE, landFiles, venueById } from './venues.js';
 export { VENUE };
 
-const base = new URL('./', import.meta.url), [JSON_FILE, BIN_FILE] = landFiles();
+// a file next to this module, by the address the page's import map gives it: its content's hash after a deploy
+// (scripts/stamp-game.mjs), so it is cached for good; the plain address where there is none (npm run dev)
+const fileAt = (f) => (import.meta.resolve ? import.meta.resolve(`./${f}`) : new URL(f, import.meta.url).href);
+const [JSON_FILE, BIN_FILE] = landFiles();
 // skopea.bin comes gzipped (a host sends a .bin as it is), unless the host has already unpacked it on the way
 async function unpack(r) {
   const b = await r.arrayBuffer(), u = new Uint8Array(b, 0, 2);
   if (u[0] !== 0x1f || u[1] !== 0x8b) return b;
   return new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
 }
-const load = ([json, bin]) => Promise.all([fetch(new URL(json, base)).then((r) => r.json()), fetch(new URL(bin, base)).then(unpack)]);
+const load = ([json, bin]) => Promise.all([fetch(fileAt(json)).then((r) => r.json()), fetch(fileAt(bin)).then(unpack)]);
 let [META, BIN] = await load([JSON_FILE, BIN_FILE]);
 // A venue blender/venues.py hasn't baked again yet still has its old files, without `parts`, which this can't read:
 // until it is baked, its race is sailed in Göcek's land (under its own name, wind, light and colours), so the game

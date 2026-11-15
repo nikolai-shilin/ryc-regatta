@@ -8,6 +8,9 @@ import { rigidSkin } from './skin.js';
 import { sponsor } from './sponsor.js';
 import { D2R, clamp, lerp, waveHeight } from './sim.js';
 import { VENUE } from './venues.js';
+// a file next to this module, by the address the page's import map gives it: its content's hash after a deploy
+// (scripts/stamp-game.mjs), so it is cached for good; the plain address where there is none (npm run dev)
+const fileAt = (f) => (import.meta.resolve ? import.meta.resolve(`./${f}`) : new URL(f, import.meta.url).href);
 
 export const L = 10.4, B = 3.35, MAST_Z = -0.9;
 const BOW_Z = -L / 2, STERN_Z = L / 2;
@@ -114,7 +117,7 @@ function coachroofGeometry() {
 // lines above instead.
 const MODEL = await new Promise((res) => {
   const done = (v) => { clearTimeout(timer); res(v); }, timer = setTimeout(() => res(null), 8000);
-  new GLTFLoader().load(new URL('./yacht.glb', import.meta.url).href, (g) => {
+  new GLTFLoader().load(fileAt('yacht.glb'), (g) => {
     const parts = {};
     g.scene.updateMatrixWorld(true);
     g.scene.traverse((o) => { if (o.isMesh) { const geo = o.geometry.clone().applyMatrix4(o.matrixWorld); parts[o.material.name] = geo; } });

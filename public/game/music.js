@@ -4,6 +4,9 @@
 // into the dials and the mood; main.js adds the accents at the big moments (sting) and the build to the gun (riser,
 // breath). A track loads the first time it's chosen.
 
+// a file next to this module, by the address the page's import map gives it: its content's hash after a deploy
+// (scripts/stamp-game.mjs), so it is cached for good; the plain address where there is none (npm run dev)
+const fileAt = (f) => (import.meta.resolve ? import.meta.resolve(`./${f}`) : new URL(f, import.meta.url).href);
 export const MUSIC_STYLES = ['racing', 'groove', 'riff', 'openwater'];
 
 // Each track is cut on its bar lines by scripts/music.py into music-<id>.mp3: loops for the moods, the build that lands
@@ -137,7 +140,7 @@ export function createMusic(ctx, out) {
   const buf = () => style && bufs[style];
   function load(id) {
     if (bufs[id] || loading[id]) return; loading[id] = true;
-    fetch(new URL(`music-${id}.mp3`, import.meta.url)).then((r) => r.arrayBuffer())
+    fetch(fileAt(`music-${id}.mp3`)).then((r) => r.arrayBuffer())
       .then((b) => new Promise((res, rej) => ctx.decodeAudioData(b, res, rej)))
       .then((b) => {
         // the blip at 0.2 s: where this browser's decoder put the file's start

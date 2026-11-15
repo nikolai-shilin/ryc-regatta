@@ -3,14 +3,16 @@
 // public/hero-view): the import map sends every import of /game/sim.js there, the <link rel="modulepreload"> lists and
 // /play's <script src> name it, and next.config.ts serves an address with ?v= as immutable. So a returning visitor's
 // browser takes the modules from its cache without asking the server again, and a deploy that changes a module changes
-// its address: a page can't get yesterday's sim.js with today's world.js. The rest of /game/ (the land, the sounds, the
-// yacht) is fetched relative to the modules, without ?v=, and still revalidates every time.
+// its address: a page can't get yesterday's sim.js with today's world.js. The game's files that aren't modules (the
+// land, the music, the yacht: some 2 MB each) get the same in the import map, and the modules that fetch them ask it
+// for their address (import.meta.resolve: land.js, music.js, yacht.js), so a returning player doesn't ask for them again
+// either. The rest (main.js's voices and calls) is fetched relative to the modules, without ?v=, and revalidates.
 //
 // Off Vercel it does nothing, so a local build leaves the checked-in pages as they are (and npm run dev never sees
 // it); `node scripts/stamp-game.mjs --force [public dir]` stamps anyway. It is idempotent: a stamped page stamped
 // again comes out the same. test/preload.test.mjs uses reach() to check the pages' preload lists.
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 export const PAGES = ['/play/index.html', '/boat-view/index.html', '/hero-view/index.html'];
@@ -47,8 +49,14 @@ export function reach(dir, page) {
   return { html, reached: [...seen].sort(), preloaded };
 }
 
+// the game's files that aren't modules, by path: what the modules fetch (the land, the music, the yacht)
+const ASSET = /\.(mp3|m4a|glb|bin|json)$/;
+export const assetsOf = (dir) => readdirSync(`${dir}/game`, { recursive: true }).map(String).filter((f) => ASSET.test(f)).map((f) => `/game/${f.split('\\').join('/')}`).sort();
+
 export function stamp(dir) {
   const read = reader(dir);
+  const hash = (p) => createHash('sha256').update(readFileSync(`${dir}${p}`)).digest('hex').slice(0, 10);
+  const files = Object.fromEntries(assetsOf(dir).map((p) => [p, `${p}?v=${hash(p)}`]));
   for (const page of PAGES) {
     const { html, reached } = reach(dir, page);
     const v = Object.fromEntries(reached.filter((p) => p.startsWith('/game/'))
@@ -56,7 +64,7 @@ export function stamp(dir) {
     const out = html
       .replace(/(<script type="importmap">)(.*?)(<\/script>)/, (_, a, json, b) => {
         const map = JSON.parse(json);
-        map.imports = { ...Object.fromEntries(Object.entries(map.imports).filter(([k]) => !k.startsWith('/game/'))), ...v };
+        map.imports = { ...Object.fromEntries(Object.entries(map.imports).filter(([k]) => !k.startsWith('/game/'))), ...v, ...files };
         return a + JSON.stringify(map) + b;
       })
       .replace(/(<link rel="modulepreload" href="|<script type="module" src=")([^"]+)"/g, (m, a, href) => (v[bare(href)] ? `${a}${v[bare(href)]}"` : m));
