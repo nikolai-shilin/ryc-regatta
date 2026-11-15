@@ -373,7 +373,7 @@ function Ranking({ t, lang, top, field, id, daily, me, signedName, you }: { t: (
         {top && !top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
         <li className="me"><span className="hm-n">{listed ? place : '·'}</span><span>{you || (signedName ? `${signedName} (${t('you', 'ты')})` : t('You', 'Ты'))}</span><span className="hm-t">{me.secs != null && !me.dsq ? clock(me.secs) : '—'}</span></li>
       </ol>
-      {daily && <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')} ›</Link>}
+      {daily && <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')}</Link>}
       {!signedName && !you && (
         <div className="rs-sign">
           <span className="rs-ps"><b>{t('Not on the ranking', 'Не в рейтинге')}</b> · {t('sign in and your times go on it.', 'войди — и время попадёт в рейтинг.')}</span>

@@ -31,7 +31,7 @@ export function FreeQuick({ lang }: { lang: Lang }) {
           <button key={w} type="button" className="bt-pill bt-pill-go" onClick={() => go(w)}>{label} <small>{KN[w]} {t('kn', 'уз')}</small></button>
         ))}
       </div>
-      <Link className="lb-more" href="/race/free">{t('Set up a free race: place, wind, course', 'Настроить свободную гонку: место, ветер, дистанция')} ›</Link>
+      <Link className="lb-more" href="/race/free">{t('Set up a free race: place, wind, course', 'Настроить свободную гонку: место, ветер, дистанция')}</Link>
     </div>
   );
 }

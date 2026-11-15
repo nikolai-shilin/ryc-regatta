@@ -919,8 +919,13 @@
 .bc .lb-who { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
 .bc .lb-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bc .rs-name .fl { width: 21px; height: 14px; }
-.bc .lb-more { align-self: flex-start; font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--you); text-decoration: none; padding: var(--s-3) 0 0; }
-.bc .lb-more:hover { color: var(--ink); }
+/* The way to the full rating: the board's last row, its words under the names */
+.bc .lb-more { display: flex; align-items: center; gap: var(--s-3); min-height: var(--h-m); padding: 0 var(--cp) 0 calc(40px + var(--s-3)); border-bottom: 1px solid var(--rule-2); font: 700 var(--fs-body)/1.2 var(--cond); letter-spacing: var(--ls-name); color: var(--you); text-decoration: none; transition: background var(--t-quick) var(--ease), color var(--t-quick) var(--ease); }
+.bc .lb-more::after { content: ''; flex: none; width: 7px; height: 7px; margin-left: auto; border: solid currentColor; border-width: 1.6px 1.6px 0 0; transform: rotate(45deg); opacity: .7; }
+.bc .lb-more:hover { background: var(--w-06); color: var(--ink); }
+.bc .bt-g > .lb-more { margin: calc(-1 * var(--s-3)) calc(-1 * var(--cp)) 0; }
+.bc .lb-more + .ho-tick { border-top: 0; }
+.bc .bt-pills + .lb-more { padding-left: var(--cp); } /* no names above it: its words line up with the pills */
 .bc .hm-lb .sk-li { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: var(--s-3); }
 
 /* ---------- R2 · the day's rating ---------- */

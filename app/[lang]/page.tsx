@@ -143,7 +143,7 @@ export default async function Home({ params }: LangParams) {
               {!top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
               <MyRow lang={lang} day={d.day} top={top} cap={live?.n} />
             </ol>
-            <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')} ›</Link>
+            <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')}</Link>
             <div className="ho-tick" aria-live="polite"><span className="dot-live" /><Ticker lines={lines} /></div>
           </aside>
         </div>
