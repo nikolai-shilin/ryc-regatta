@@ -11,6 +11,9 @@
 import { D2R, KN, NO_GO, clamp, wrap, idealSail, sheetFor, beatAngle, polarSpeed, legTargets, legAim, isBeat } from './sim.js';
 import { VENUE } from './venues.js';
 
+// "place" counted in Russian: 1 место, 2–4 места, 5 and on мест (11–14 мест too)
+const ruPlaces = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'место' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'места' : 'мест');
+
 // the HUD's own words; test/ui.test.mjs checks both languages have them all
 export const HUD_STRINGS = {
   en: {
@@ -57,7 +60,7 @@ export const HUD_STRINGS = {
     split: 'отсечка', timeGap: 'Время · разрыв', due: 'Серым: ещё не обогнули, метров до знака', toGo: 'осталось',
     squareAt: 'ровная при', veer: 'Сдвиг вправо', back: 'Сдвиг влево', mToLine: (m) => `${m} м до линии`,
     hold: (s) => `Выжди ${s}, потом уваливайся`, bearNow: 'Уваливайся сейчас, полный ход', late: 'Опаздываешь: уваливайся сейчас',
-    mvUp: (n) => (n > 1 ? `+${n} места` : '+1 место'), mvDown: (n) => (n > 1 ? `−${n} места` : '−1 место'),
+    mvUp: (n) => `+${n} ${ruPlaces(n)}`, mvDown: (n) => `−${n} ${ruPlaces(n)}`,
     mvPast: (n) => `${n} позади`, mvBy: (n) => `${n} впереди`, mvTheirPen: 'Она крутит штраф', mvYourPen: 'Ты крутишь штраф',
     mvMark: 'На знаке', mvShift: 'На сдвиге ветра',
   },

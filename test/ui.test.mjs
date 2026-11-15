@@ -69,6 +69,9 @@ test('the broadcast HUD has every word in both languages, and the game uses it',
   assert.deepEqual(keys(S.ru), keys(S.en));
   for (const [k, v] of Object.entries(S.en)) if (v && typeof v === 'object') assert.deepEqual(keys(S.ru[k]), keys(v), k); // the course shapes, the legs, the cameras
   for (const [k, v] of Object.entries(S.ru)) if (typeof v === 'function') assert.match(v(1, 4), /1/, k);
+  // a place won or lost, counted as Russian counts: 1 место, 2–4 места, 5 and on мест
+  assert.deepEqual([1, 2, 4, 5, 6, 11, 21].map(S.ru.mvUp), ['+1 место', '+2 места', '+4 места', '+5 мест', '+6 мест', '+11 мест', '+21 место']);
+  assert.deepEqual([1, 3, 5].map(S.en.mvDown), ['Down a place', 'Down 3 places', 'Down 5 places']);
   const main = read('public/game/main.js'), play = read('public/play/index.html');
   assert.match(main, /import \{ createHud \} from '\.\/hud-bc\.js'/);
   assert.match(play, /\['\/game\/hud-bc\.js', \d+\]/); // the loader counts it in

@@ -251,7 +251,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   const firstHere = !shared && !!log && log.v[where.id] === res.at && !me.dsq && me.done;
   const strk = !shared && log && res.daily && res.daily === todayUtc() ? streakOf(log.d) : null;
   const stampN = log ? Object.keys(log.v).length : 0;
-  const logNote = firstHere ? t(`First race at ${where.name[0]} · ${stampN} venues raced`, `Первая гонка в ${where.name[1]} · акваторий: ${stampN}`)
+  const logNote = firstHere ? t(`First race at ${where.name[0]} · ${stampN} ${stampN === 1 ? 'venue' : 'venues'} raced`,`Первая гонка в ${where.name[1]} · акваторий: ${stampN}`)
     : strk && strk.today && strk.n > 1 ? streakWords(strk.n, lang) : null;
 
   // the result as the broadcast lays it out: the finish as it was behind the result and the full table, then, as the
