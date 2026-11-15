@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { realtime } from '../public/game/net.js';
 import { memoryRealtime } from './hub.mjs';
 
-const { newCode, CODE_RE } = await import('../lib/code.ts');
+const { newCode, CODE_RE, parseCode } = await import('../lib/code.ts');
 
 class FakeSocket {
   static all = [];
@@ -113,17 +113,103 @@ test('an unanswered heartbeat closes the socket, then reconnects and rejoins', a
   } finally { mock.timers.reset(); }
 });
 
-test('a phx_error on a joined channel rejoins it, and sends wait for the ack', async (t) => {
-  const { rt, ch, joined, sock } = setup();
-  t.after(() => rt.close());
-  const s = sock(); s.open(); ackJoin(s); await joined;
-  s.recv({ topic: 'realtime:match:ABC123', event: 'phx_error', payload: {}, ref: '9' });
-  assert.equal(frames(s, 'phx_join').length, 2);
-  ch.send('lost', {});
-  assert.equal(frames(s, 'broadcast').length, 0);
-  ackJoin(s);
-  ch.send('back', {});
-  assert.equal(frames(s, 'broadcast').length, 1);
+test('a phx_error on a joined channel rejoins it after a second, and sends wait for the ack', async () => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  try {
+    const { rt, ch, joined, sock } = setup();
+    const s = sock(); s.open(); ackJoin(s); await joined;
+    s.recv({ topic: 'realtime:match:ABC123', event: 'phx_error', payload: {}, ref: '9' });
+    ch.send('lost', {}); // dropped: the channel isn't joined
+    assert.equal(frames(s, 'broadcast').length, 0);
+    mock.timers.tick(999);
+    assert.equal(frames(s, 'phx_join').length, 1, 'not at once');
+    mock.timers.tick(1);
+    assert.equal(frames(s, 'phx_join').length, 2);
+    ch.send('lost', {});
+    assert.equal(frames(s, 'broadcast').length, 0);
+    ackJoin(s);
+    ch.send('back', {});
+    assert.equal(frames(s, 'broadcast').length, 1);
+    rt.close();
+  } finally { mock.timers.reset(); }
+});
+
+test('a channel the server keeps dropping is joined again after 1, 2, 5, then every 10 s', async () => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  try {
+    const { rt, joined, sock } = setup();
+    const s = sock(); s.open(); ackJoin(s); await joined;
+    rt.setHeartbeat(3600000); // (no heartbeat to answer in this test)
+    for (const d of [1000, 2000, 5000, 10000, 10000]) {
+      const n = frames(s, 'phx_join').length;
+      ackJoin(s); // (joined, then at once dropped again: the ladder goes on)
+      s.recv({ topic: 'realtime:match:ABC123', event: 'phx_close', payload: {}, ref: frames(s, 'phx_join').at(-1).ref });
+      mock.timers.tick(d - 1);
+      assert.equal(frames(s, 'phx_join').length, n, `nothing before ${d} ms`);
+      mock.timers.tick(1);
+      assert.equal(frames(s, 'phx_join').length, n + 1, `joined again at ${d} ms`);
+    }
+    // joined for half a minute, the next drop starts the ladder again
+    ackJoin(s);
+    mock.timers.tick(31000);
+    const n = frames(s, 'phx_join').length;
+    s.recv({ topic: 'realtime:match:ABC123', event: 'phx_error', payload: {}, ref: '99' });
+    mock.timers.tick(1000);
+    assert.equal(frames(s, 'phx_join').length, n + 1);
+    rt.close();
+  } finally { mock.timers.reset(); }
+});
+
+test('in a match the heartbeat is every 5 s: a dead link is dropped within 10 s, and lastHeard says when the server last spoke', async () => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  try {
+    const { rt, joined, sock } = setup();
+    const s1 = sock(); s1.open(); ackJoin(s1); await joined;
+    const t0 = Date.now();
+    assert.equal(rt.lastHeard(), t0);
+    rt.setHeartbeat(5000);
+    mock.timers.tick(5000);
+    assert.equal(frames(s1, 'heartbeat').length, 1);
+    mock.timers.tick(200); answerHb(s1);
+    assert.equal(rt.lastHeard(), t0 + 5200, 'the answer counts');
+    mock.timers.tick(4800);
+    assert.equal(frames(s1, 'heartbeat').length, 2); // unanswered from here: the link went dead
+    mock.timers.tick(4999);
+    assert.equal(s1.readyState, 1);
+    mock.timers.tick(1);
+    assert.equal(s1.readyState, 3, 'dropped 10 s after the last answer');
+    mock.timers.tick(1000);
+    assert.equal(FakeSocket.all.length, 2, 'and connected again');
+    const s2 = sock(); s2.open();
+    mock.timers.tick(5000);
+    assert.equal(frames(s2, 'heartbeat').length, 1, 'the new socket beats every 5 s too');
+    rt.close();
+  } finally { mock.timers.reset(); }
+});
+
+test('reconnect() drops the socket and connects again at once, rejoining every channel', async () => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  try {
+    const { rt, ch, joined, sock } = setup();
+    const s1 = sock(); s1.open(); ackJoin(s1); await joined;
+    const other = rt.channel('match:ABC123:in');
+    const j2 = other.join(); ackJoin(s1); await j2;
+    rt.reconnect();
+    assert.equal(s1.readyState, 3, 'the old socket closed');
+    assert.equal(FakeSocket.all.length, 2, 'a new one at once');
+    ch.send('gap', {}); // not joined yet: dropped
+    const s2 = sock(); s2.open();
+    assert.deepEqual(frames(s2, 'phx_join').map((f) => f.topic).sort(), ['realtime:match:ABC123', 'realtime:match:ABC123:in']);
+    for (const f of frames(s2, 'phx_join')) s2.recv({ topic: f.topic, event: 'phx_reply', payload: { status: 'ok', response: {} }, ref: f.ref, join_ref: f.ref });
+    ch.send('back', {}); other.send('in', {});
+    assert.equal(frames(s2, 'broadcast').length, 2);
+    s1.recv({ topic: 'realtime:match:ABC123', event: 'broadcast', payload: { type: 'broadcast', event: 'x', payload: 1 } }); // the old socket is deaf
+    mock.timers.tick(60000);
+    assert.equal(FakeSocket.all.length, 2, 'no retry left over from the old socket');
+    rt.close();
+    rt.reconnect();
+    assert.equal(FakeSocket.all.length, 2, 'nothing once closed');
+  } finally { mock.timers.reset(); }
 });
 
 test('left and joined again at once, the old join\'s close is no news; the new join\'s close rejoins', async (t) => {
@@ -141,7 +227,8 @@ test('left and joined again at once, the old join\'s close is no news; the new j
   ch.send('on', {});
   assert.equal(frames(s, 'broadcast').length, 1);
   s.recv({ topic: 'realtime:match:ABC123', event: 'phx_close', payload: {}, ref: frames(s, 'phx_join').at(-1).ref });
-  assert.equal(frames(s, 'phx_join').length, 3, 'the current join closed: joined again');
+  await new Promise((r) => setTimeout(r, 1050));
+  assert.equal(frames(s, 'phx_join').length, 3, 'the current join closed: joined again (after a second)');
 });
 
 test('join rejects after 10 s without an ack, and a later ack still joins', async () => {
@@ -218,3 +305,10 @@ test('the memory hub delivers between clients and honours self', async () => {
 test('newCode makes six characters from the alphabet', () => {
   for (let i = 0; i < 1000; i++) assert.match(newCode(), CODE_RE);
 });
+
+test('a link\'s code is read from its address, and a malformed one is no code (not a throw: /match/% is a 404)', () => {
+  assert.equal(parseCode('k7m2qz'), 'K7M2QZ');
+  assert.equal(parseCode('%4B7M2QZ'), 'K7M2QZ');
+  for (const bad of ['%', '%E0%A4%A', 'K7M2Q', 'K7M2QZZ', 'I0O1LZ', '']) assert.equal(parseCode(bad), null, bad);
+});
+

@@ -9,3 +9,11 @@ export function newCode(): string {
   for (const b of bytes) s += CODE_ALPHABET[b % CODE_ALPHABET.length];
   return s;
 }
+
+// The code in a link's address (/match/k7m2qz, /match/%4B7M2QZ), or null: never a throw for a malformed escape (/match/%)
+export function parseCode(raw: string): string | null {
+  let c: string;
+  try { c = decodeURIComponent(raw); } catch { return null; }
+  c = c.toUpperCase();
+  return CODE_RE.test(c) ? c : null;
+}
