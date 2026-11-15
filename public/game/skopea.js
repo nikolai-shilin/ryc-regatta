@@ -1172,9 +1172,10 @@ function marinas() {
 // what the json lists: a steel arch bridge (Sydney Harbour), a suspension bridge (Newport's, the Golden Gate), a tower
 // (Auckland's Sky Tower, Laboe's naval memorial, Galata, the Transamerica Pyramid, Torre Glòries), a lighthouse (Trieste's
 // Victory, the Maiden's Tower), a mosque (Istanbul's), a gilded spire (St Petersburg's), a rostral column, a drawbridge
-// with its spans raised, the Opera House, the Sagrada Família, Christ the Redeemer, La Seu, Notre-Dame de la Garde,
-// Carlsten. The famous ones drawn after the real ones, from aerial photographs and their plans, to be known at a glance
-// from the course. Each in one colour a part, merged into one mesh.
+// with its spans raised, a hilltop castle (Marmaris's, Fethiye's ruin), Fethiye's rock tombs, the Opera House, the
+// Sagrada Família, Christ the Redeemer, La Seu, Notre-Dame de la Garde, Carlsten. The famous ones drawn after the real
+// ones, from aerial photographs and their plans, to be known at a glance from the course. Each in one colour a part,
+// merged into one mesh.
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z), XA = V3(1, 0, 0);
 // a beam from a to b, w wide and h deep
 function beam(a, b, w, h, col) {
@@ -1681,6 +1682,47 @@ function landmarks() {
       for (let i = 1; i < 7; i++) for (const sd of [-1, 1]) cols.push([sd * (W / 2 - 1.8), -D / 2 + 1.8 + i * (D - 3.6) / 7]);
       for (const [u, v] of cols) { const [cx, cz] = at(u, v); parts.push(post(cx, cz, y + 1.6, 1, 0.8, 10.4, marble, 8)); }
       parts.push(blk(x, z, y + 12, 3.3, W - 0.6, D - 0.6, ang, marble));
+    } else if (L.kind === 'castle') {
+      // a hilltop castle of the Turkish coast (Marmaris's, Suleiman's of 1522; Fethiye's, the Knights'): its curtain wall
+      // round the summit, L.h high, square towers at its corners, the merlons along the top; `ruin`, broken down in
+      // stretches, a tower standing taller than the rest. Each piece of wall on the hill's own ground
+      const [x, z] = L.at, stone = L.ruin ? '#a8987c' : '#c2b296', dark = L.ruin ? '#8e806a' : '#a89a80', H = L.h;
+      const ring = [[-34, -16], [-18, -27], [12, -25], [33, -12], [36, 10], [18, 24], [-10, 26], [-31, 12]];
+      const gy = (px, pz) => Math.max(0, groundAt(px, pz));
+      ring.forEach(([ax, az], i) => {
+        const [bx, bz] = ring[(i + 1) % ring.length], len = Math.hypot(bx - ax, bz - az), ang = Math.atan2(bz - az, bx - ax);
+        const n = Math.max(1, Math.round(len / 8));
+        for (let k = 0; k < n; k++) {
+          const u0 = k / n, u1 = (k + 1) / n, cx = x + ax + (bx - ax) * (u0 + u1) / 2, cz = z + az + (bz - az) * (u0 + u1) / 2;
+          const broken = L.ruin && ((i * 7 + k * 3) % 5 === 0), h = broken ? H * 0.3 : L.ruin ? H * (0.65 + 0.35 * (((i + k) * 5) % 3) / 2) : H;
+          const y0 = gy(cx, cz) - 3; parts.push(blk(cx, cz, y0, h + 3, len / n + 0.6, 2.6, ang, stone));
+          if (!L.ruin) for (const s of [0.25, 0.75]) { const u = u0 + (u1 - u0) * s; parts.push(blk(x + ax + (bx - ax) * u, z + az + (bz - az) * u, y0 + h + 3, 1.2, 1.4, 2.6, ang, stone)); }
+        }
+        if (i % 2 === 0 || !L.ruin) { const tx = x + ax, tz = z + az, th = L.ruin && i === 2 ? H * 1.7 : H + 3.5; parts.push(blk(tx, tz, gy(tx, tz) - 3, th + 3, 7.5, 7.5, ang, dark)); }
+      });
+      if (!L.ruin) { const y = gy(x, z); parts.push(blk(x - 4, z + 2, y - 2, 7, 18, 10, 0.3, '#d8ccb4'), blk(x - 4, z + 2, y + 5, 0.6, 19, 11, 0.3, '#b4603e')); } // the museum's house inside
+    } else if (L.kind === 'tombs') {
+      // Fethiye's Lycian rock tombs: temple fronts cut into the face of the cliff above the town, the Tomb of Amyntas
+      // (L.h high, two Ionic columns between its pilasters under the pediment, the doorway dark behind) and its smaller
+      // neighbours along the face, each in its cut of the hill's rock, facing down the hill
+      const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), rock = '#bcb09a', face = '#d4c8ae', dark = '#4a4238', H = L.h;
+      const e = 12, gx = groundAt(x + e, z) - groundAt(x - e, z), gz = groundAt(x, z + e) - groundAt(x, z - e), gl = Math.hypot(gx, gz) || 1;
+      const nx = -gx / gl, nz = -gz / gl, ang = Math.atan2(nx, -nz); // outwards, down the slope; the front's length across it
+      const at = (u, v) => [x + nz * -u + nx * v, z + nx * u + nz * v]; // u along the cliff, v out from it
+      const front = (u, w, h, y0, cols) => {
+        const [cx, cz] = at(u, 0), [dx, dz] = at(u, 0.6), [rx, rz] = at(u, -3);
+        parts.push(blk(rx, rz, y0 - 4, h + 7, w + 7, 6, ang, rock)); // the rock it is cut in, its back in the slope
+        parts.push(blk(cx, cz, y0, h * 0.12, w + 1, 2.4, ang, face)); // the steps
+        for (const s of [-1, 1]) { const [px, pz] = at(u + s * (w / 2 - 0.6), 0.9); parts.push(blk(px, pz, y0 + h * 0.12, h * 0.6, 1.2, 1.2, ang, face)); }
+        for (let k = 0; k < cols; k++) { const [px, pz] = at(u + (k + 1) * w / (cols + 1) - w / 2, 1.2); parts.push(post(px, pz, y0 + h * 0.12, w * 0.05, w * 0.045, h * 0.6, face, 10)); }
+        parts.push(blk(dx, dz, y0 + h * 0.12, h * 0.6, w - 1.4, 0.4, ang, dark)); // the porch's shade, the doorway
+        parts.push(blk(cx, cz, y0 + h * 0.72, h * 0.1, w + 0.6, 2.8, ang, face));
+        const p0 = V3(-w / 2 - 0.3, 0, 0), p1 = V3(w / 2 + 0.3, 0, 0), p2 = V3(0, h * 0.18, 0);
+        const g = new THREE.BufferGeometry().setFromPoints([p0, p1, p2, p0, p2, p1]); // (both faces)
+        const [qx, qz] = at(u, 1.4); g.rotateY(-ang).translate(qx, y0 + h * 0.82, qz); g.computeVertexNormals(); parts.push(tint(g, face)); // the pediment
+      };
+      front(0, H * 0.85, H, y, 2);
+      for (const [u, s, dy] of [[-17, 0.6, 3], [-29, 0.5, 1], [15, 0.55, 0], [26, 0.45, 4]]) front(u, H * 0.85 * s, H * s, Math.max(0, groundAt(...at(u, 0))) + dy, 0); // (each on its own ground, some up the face)
     } else if (L.kind === 'mosque') {
       // Istanbul's imperial mosques on their hills: the square prayer hall, the great dome on its drum (its top L.h up),
       // the half-domes and the corner domes stepping down from it, the pencil minarets with their balconies and lead

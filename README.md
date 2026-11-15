@@ -113,7 +113,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   in the `regatta` options; `?venue=<id>` in the game's address overrides it): Göcek, Cowes, Newport, Sydney, Kiel,
   Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland, San Francisco, Valencia, Barcelona, Palma, Marstrand, Bermuda,
   Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda, Istanbul, St Petersburg (the Neva under the
-  Peter and Paul Fortress, its bridges raised), Batumi, Scheveningen, Hong Kong, Cape Town or Athens (the last six join
+  Peter and Paul Fortress, its bridges raised), Batumi, Scheveningen, Hong Kong, Cape Town, Athens, Marmaris or Fethiye (the last eight join
   today's races together, on 20 November 2026). `public/game/venues.js` holds each one's position,
   prevailing wind, clock and look (its woods, farmland, houses, moored boats and water); `lib/venues.ts` is the set-up
   page's list of them, and `npm test` keeps the two in step. Each venue's land, Göcek's too, is baked by
@@ -130,7 +130,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     carry survey data) or 20 m; the shore meets the water on OpenStreetMap's coastline to the metre, the map's water
     ashore down at the sea's level (an estuary, a lagoon) is water too, and the bed under the water is as steep as the
     land above it (deep under a cliff, gently shelving off a beach); further out, the sea floor's survey where there is
-    one (EMODnet's round the European venues, Göcek, Istanbul and Batumi; NOAA's at Newport and San Francisco), else the
+    one (EMODnet's round the European venues, Göcek, Istanbul, Batumi, Marmaris and Fethiye; NOAA's at Newport and San Francisco), else the
     tiles' own depths where deeper;
   - what is on the ground, on a 20 m grid: OpenStreetMap's woods (needle-leaved or broad-leaved, for the trees in
     them), scrub, grass, fields (each its own crop), orchards, towns, industry, beaches, bare rock, wetland, lakes and
@@ -154,7 +154,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la Garde, Christ the Redeemer, Enoshima's Sea
   Candle, the lighthouses of Kiel, Trieste, Batumi, Scheveningen and Green Point, Istanbul's Bosphorus Bridge, Galata
   Tower, Blue Mosque, Hagia Sophia and Süleymaniye, St Petersburg's spires, columns and bridges, Batumi's Alphabetic
-  Tower, the big wheels on Batumi's shore, Scheveningen's pier, Hong Kong's Central and Cape Town's V&A Waterfront, the Bank of China Tower and the Parthenon (a
+  Tower, the big wheels on Batumi's shore, Scheveningen's pier, Hong Kong's Central and Cape Town's V&A Waterfront, the Bank of China Tower, the Parthenon, Marmaris castle, the Knights' castle in Fethiye and the Lycian rock tombs over it (a
   landmark with `clear` leaves out the map's own building in its place). `land.js` lays each course in clear water (its marks, its line, the water below it where the
   fleet waits, the beat out towards the laylines, and every leg from end to end, all on the baked map of the sea
   room), and not across a bridge too low for a mast (St Petersburg's drawbridges). An AC75's course, 2.5 times as
@@ -168,7 +168,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   from Microsoft's Global ML Building Footprints (ODbL), which `venues.py` downloads with the rest. Hong Kong's
   ground is its own 5 m terrain model (`dtm`), not the tiles, whose radar has the towers' roofs for the city's ground:
   the Digital Terrain Model of the Lands Department, Hong Kong SAR Government, from DATA.GOV.HK (free to use with
-  this attribution), which `venues.py` downloads (29 MB) and cuts to the venue. Batumi's and Cape Town's shores have
+  this attribution), which `venues.py` downloads (29 MB) and cuts to the venue. Batumi's, Cape Town's, Marmaris's and Fethiye's shores have
   more of the map in them: its paved promenades and squares drawn as paving (`paved`), its palm avenues and other rows of trees planted
   tree by tree where they stand (`trees`, the .bin's `tk` and `txz`), and their plains, whose tiles carry the roofs and
   trees some 4 to 8 m up, laid down on the shore's floor below the hills (`plain`; in Cape Town that lets the V&A's

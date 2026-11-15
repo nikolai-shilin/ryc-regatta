@@ -370,6 +370,34 @@ export const VENUES = [
       water: { deep: '#06304a', scatter: '#1d7f9a', k: 0.45, shallow: '#3faab0', clear: 0.45 },
     },
   },
+  {
+    // Marmaris bay in the westerly over İçmeler, the castle above the old town and Netsel's pontoons to leeward, the
+    // red-pine mountains all round
+    id: 'marmaris', name: ['Marmaris', 'Мармарис'], lat: 36.83, lon: 28.262, wind: 255, tz: 3, from: '2026-11-20',
+    look: {
+      haze: 1.15,
+      ground: { forest: ['#2b4123', '#3a5430', '#536b39'], scrub: '#78794f', rock: ['#a09684', '#7f776a'], town: '#a89f8a', shore: '#b3a88f' },
+      trees: [['pine', 0.8, '#2b4123', '#536b39'], ['cypress', 0.08, '#25391f', '#3a5230'], ['olive', 0.07, '#56603e', '#7f8660'], ['palm', 0.05, '#3d5a2c', '#5f7a3a']], treeTop: 750, woods: 0.95,
+      ...MED, flat: 0.6,
+      water: { shallow: '#3fb0a0', clear: 0.6 },
+      boats: { sail: 0.6, motor: 0.26, big: 0.14, bigKind: 'gulet' },
+    },
+  },
+  {
+    // the Gulf of Fethiye off Çalış beach in the afternoon westerly: Şövalye island and the harbour to leeward, the
+    // castle and the Lycian tombs over the town, Babadağ above
+    id: 'fethiye', name: ['Fethiye', 'Фетхие'], lat: 36.656, lon: 29.075, wind: 285, tz: 3, from: '2026-11-20',
+    look: {
+      haze: 1.1,
+      ground: { forest: ['#2d4325', '#3d5631', '#586f3c'], scrub: '#7d7c52', rock: ['#a89e8c', '#857c6e'], town: '#a89f8a', shore: '#b9ae96', sand: '#cdbfa0' },
+      fields: ['#6f8a42', '#7f9548', '#5f7f3c', '#8f9a52', '#a8a466', '#c9c9c0'], // the plain's fields, citrus groves and greenhouses
+      trees: [['pine', 0.7, '#2d4325', '#586f3c'], ['olive', 0.12, '#56603e', '#7f8660'], ['cypress', 0.08, '#25391f', '#3a5230'], ['palm', 0.05, '#3d5a2c', '#5f7a3a'], ['broad', 0.05, '#33482a', '#5f7a3c']],
+      treeTop: 1500, woods: 0.75, snow: 3200,
+      ...MED, flat: 0.65,
+      water: { shallow: '#40ac9e', clear: 0.5 },
+      boats: { sail: 0.5, motor: 0.28, big: 0.22, bigKind: 'gulet' },
+    },
+  },
 ];
 
 export const venueById = (id) => VENUES.find((v) => v.id === id) || VENUES[0];

@@ -146,6 +146,17 @@ VENUES = {
     # the 2004 Olympic waters in Faliro Bay, in the meltemi off the land, the Acropolis upwind
     'athens': dict(bathy='emodnet', zoom=14, most=11000, relations=True, home=(37.9115, 23.6765), wind=30, towns=[(37.9300, 23.6900, 1200), (37.9400, 23.6450, 1200), (37.9120, 23.7080, 1000)],
                    landmarks=[dict(kind='temple', at=(37.97150, 23.72662), b=(37.97158, 23.72738), h=14)]),  # the Parthenon, its long axis to the east
+    # Marmaris bay, of the Race Week and the winter series, in the westerly over İçmeler: the castle on its hill above
+    # the old town and Netsel's pontoons to leeward, the pine mountains all round the bay
+    'marmaris': dict(bathy='emodnet', zoom=14, relations=True, paved=True, trees=True, home=(36.8300, 28.2620), wind=255,
+                     towns=[(36.8530, 28.2720, 1100), (36.8560, 28.2500, 900), (36.8460, 28.2950, 900), (36.8060, 28.2370, 900), (36.8230, 28.3080, 500)],
+                     landmarks=[dict(kind='castle', at=(36.85057, 28.27409), h=9, clear=45)]),
+    # the Gulf of Fethiye off Çalış beach, in the afternoon westerly: Şövalye island and the harbour to leeward, the
+    # town, its castle and the Lycian tombs cut in the cliff over it, Babadağ above
+    'fethiye': dict(bathy='emodnet', zoom=14, relations=True, paved=True, trees=True, home=(36.6560, 29.0750), wind=285,
+                    towns=[(36.6220, 29.1130, 1100), (36.6250, 29.0950, 700), (36.6650, 29.1100, 1000), (36.6380, 29.1300, 900)],
+                    landmarks=[dict(kind='castle', at=(36.61824, 29.11297), h=7, ruin=True, clear=45),
+                               dict(kind='tombs', at=(36.61869, 29.11814), h=11)]),  # the Tomb of Amyntas, the others beside it
 }
 
 # what is on the ground (the cover part), from OpenStreetMap's land use; 0 where the map has nothing, which the game
@@ -203,8 +214,9 @@ def fetch(path, url, data=None, tries=6):
     raise SystemExit('could not fetch ' + url)
 
 
-# the main server turns a busy minute away (502, 504) but answers a retry; the mirrors are slower to fail, so tried less
-MIRRORS = ['https://overpass-api.de/api/interpreter'] * 3 + ['https://overpass.private.coffee/api/interpreter']
+# the main server turns a busy minute away (502, 504) but answers a retry; VK's mirror answers when it is at capacity
+# for hours; the other is slower to fail, so tried less
+MIRRORS = ['https://overpass-api.de/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'] * 2 + ['https://overpass.private.coffee/api/interpreter']
 
 
 def overpass(work, name, q):
