@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { tx, type Lang } from '@/lib/lang';
 import { SHARE_TARGETS, canSms, copyText, nativeShare, openShare, shareHref, tagged, type ShareData, type ShareTarget } from '@/lib/share';
 import { IconSend, IconCheck } from './ui';
-import { track } from '@vercel/analytics';
+import { track } from '@/lib/track';
 
 // what was shared (its path: /race/result, /passport) and where to, for the analytics
 const shared = (url: string, via: string) => { try { track('Share', { what: new URL(url).pathname.split('/').slice(0, 3).join('/'), via }); } catch {} };

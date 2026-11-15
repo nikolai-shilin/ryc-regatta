@@ -21,7 +21,7 @@ import { streakOf, todayUtc } from '@/lib/log';
 import { streakWords, useLog } from './passport';
 import { Replay } from './replay';
 import { RaceBadges } from './progress';
-import { track } from '@vercel/analytics';
+import { track } from '@/lib/track';
 import { shortName } from '@/lib/name';
 import { BOAT_EVENT, readBoat } from '@/lib/boat';
 

@@ -1082,13 +1082,12 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
 
   // the boats' tags: yours, and before the start the two nearest the line, then the leader and the boat just ahead (or
   // just behind, when you lead); halfway up each mast. Not yours from the helm.
-  // the HUD's blocks a tag on the water would hide under (the calls, the map, the board), in the tags' own scaled
-  // pixels, read once a frame
+  // the HUD's blocks a tag on the water would hide under (the calls, the map, the board), as the screen has them,
+  // read once a frame
   let blocks = [];
   function readBlocks() {
-    const hz = parseFloat(over.style.getPropertyValue('--hz')) || 1;
-    blocks = [...calls.children, map, board].filter((e) => e && !e.hidden && e.offsetParent).map((e) => e.getBoundingClientRect())
-      .filter((r) => r.width && r.height).map((r) => ({ l: r.left / hz - 4, r: r.right / hz + 4, t: r.top / hz - 4, b: r.bottom / hz + 4 }));
+    blocks = [...calls.children, map, board].filter((e) => e && !e.hidden).map((e) => e.getBoundingClientRect())
+      .filter((r) => r.width && r.height).map((r) => ({ l: r.left - 4, r: r.right + 4, t: r.top - 4, b: r.bottom + 4 }));
   }
   function placeBoats(race, P, st, pre) {
     readBlocks();
@@ -1108,13 +1107,13 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       txt(g.v, pre && !me ? L.mToLine(Math.round(Math.max(0, -race.lineInfo(b).d))) : `${nf(b.v / KN)} ${t('kn')}`); // a rival before the start: how far from the line
       showPen(g.pen, b);
       // its box slid back onto the screen when the boat is near an edge (its width read now and then, not every frame)
-      if (!g.w || ++g.f % 30 === 0) { g.w = g.box.offsetWidth; g.h = g.box.offsetHeight; }
+      if (!g.w || ++g.f % 30 === 0) g.w = g.box.offsetWidth;
       const half = g.w / 2, edge = 8, dx = Math.min(0, innerWidth - edge - (at[0] + half)) + Math.max(0, edge - (at[0] - half));
       const tr = dx ? `calc(-50% + ${dx.toFixed(0)}px) -22px` : '';
       if (g.box._tr !== tr) { g.box._tr = tr; g.box.style.translate = tr; }
-      // under one of the HUD's blocks it would only peek out from beneath it: then it isn't shown
-      const x0 = at[0] + dx - half, y0 = at[1] - 22;
-      if (blocks.some((r) => x0 < r.r && x0 + g.w > r.l && y0 < r.b && y0 + (g.h || 24) > r.t)) g.el.classList.remove('on');
+      // under one of the HUD's blocks it would only peek out from beneath it: then it isn't shown (its box as the
+      // screen has it: it hangs above the point, lifted off it)
+      if (blocks.length) { const r = g.box.getBoundingClientRect(); if (blocks.some((k) => r.left < k.r && r.right > k.l && r.top < k.b && r.bottom > k.t)) g.el.classList.remove('on'); }
     });
   }
 

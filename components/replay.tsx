@@ -4,7 +4,7 @@ import { tx, type Lang } from '@/lib/lang';
 import { posesAt, replaySpan, type FinishResult } from '@/lib/finish';
 import { toScene } from './game-scene';
 import { IconPlay } from './ui';
-import { track } from '@vercel/analytics';
+import { track } from '@/lib/track';
 
 // The race played back in the scene behind the result page (public/boat-view, { type: 'replay' }): every boat where
 // her track had her, the drone behind you. A button, then a bar: play or pause, a slider to drag through the race, the
