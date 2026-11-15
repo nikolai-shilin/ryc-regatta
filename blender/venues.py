@@ -752,6 +752,16 @@ def bake(vid, V, fetch_only=False):
     fx = -FEXT + np.arange(NF) * FCELL
     FXX, FZZ = np.meshgrid(fx, fx)
     farh = (np.clip(np.round((far_height(FXX, FZZ) - level) / 2), -25, 4500) * 2).astype(np.int32)
+    # the coarse tiles have junk pixels here and there, one or two a kilometre or two up out on flat land or the sea,
+    # which would stand up as needles of hill (Auckland's, Sydney's, Rio's); a real summit is at most some 150 m above
+    # the highest of the eight cells round it, so a cell more than 200 m above them comes down to that, again till none
+    # is (a needle of two cells goes in two goes). The game does the same to a venue baked before this (land.js).
+    for _ in range(4):
+        inner = farh[1:-1, 1:-1]
+        top = np.max([farh[1 + di:NF - 1 + di, 1 + dj:NF - 1 + dj] for di in (-1, 0, 1) for dj in (-1, 0, 1) if di or dj], axis=0)
+        spike = inner - top > 200
+        if not spike.any(): break
+        inner[spike] = top[spike]
 
     # ---------- the marinas, the piers and the buildings ----------
     def poly(g):
