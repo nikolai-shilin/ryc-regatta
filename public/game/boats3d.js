@@ -655,7 +655,7 @@ const LZ = (() => {
     depth: (t) => 0.13 * Math.sin(Math.PI * Math.min(1, t * 0.93 + 0.05)) ** 0.7,
     n: (t) => lerp(2.6, 1.9, clamp((t - 0.4) / 0.6, 0, 1)),
   });
-  const MAST_Z = hull.BOW + 1.0, MAST_FOOT = hull.deckY(MAST_Z) + 0.02, MASTHEAD = MAST_FOOT + 6.1, BOOM_Y = MAST_FOOT + 0.68, BL = 2.7;
+  const MAST_Z = hull.BOW + 1.0, MAST_FOOT = hull.deckY(MAST_Z) + 0.07, MASTHEAD = MAST_FOOT + 6.1, BOOM_Y = MAST_FOOT + 0.68, BL = 2.7; // the mast's foot on the deck's 5 cm crown
   const chord = (f) => lerp(2.45, 0.15, f) + 0.12 * Math.sin(Math.PI * f);
   const span = MASTHEAD - 0.08 - BOOM_Y;
   const rig = rigOf({ span, chord, numAt: 0.5, logoAt: 0.7, flagAt: 0.86, mark: 0.5, head: new THREE.Vector3(0, MASTHEAD, MAST_Z), tack: new THREE.Vector3(0, BOOM_Y, MAST_Z), clew: new THREE.Vector3(0, 0, BL), ad: 0.5, adH: 0.3 });
@@ -668,23 +668,31 @@ class LaserView extends ClassView {
     this.cls = cls;
     const add = this.start(), T = this.tilt, H = LZ.hull, [cz0, cz1] = LZ.CK;
     this.flyY = 0;
-    add(new THREE.Mesh(H.geometry(), hullMaterial(look.hull, look.stripe, look.bottom)));
-    // the deck, crowned, and the cockpit sunk into it: a small well with a non-skid floor, its walls sloping in
-    const skid = deckFinish(look, SKID);
-    const ck = H.tub(-0.3, cz0, 0.3, cz1, 0.14, LZ.FLOOR, { slope: 0.05, crown: 0.05 });
-    add(new THREE.Mesh(H.deck([ck.outline], 0.05), skid));
-    const walls = add(new THREE.Mesh(ck.walls, GEL2)); walls.userData.detail = false;
-    add(new THREE.Mesh(ck.floor, skid));
-    T.add(H.border(0.06, GEL2, 0.05));
-    // the gunwale: the hull-to-deck joint's rolled lip, a pale grey line round the boat just under the deck edge
-    const lip = MAT.lip;
-    for (const sx of [-1, 1]) {
-      const pts = []; for (let i = 0; i <= 18; i++) { const t = 0.004 + (i / 18) * 0.985, y = H.deckY(H.zAt(t)) - 0.012; pts.push([sx * (H.xAt(t, y) + 0.004), y, H.zAt(t)]); }
-      T.add(tube(pts, 0.011, lip));
+    const MOD = LZ_MODEL, skid = deckFinish(look, SKID);
+    // the deck's surface at (x, z): the sheer and the crown on it, which the fittings stand on
+    const deckAt = (x, z) => H.deckY(z) + 0.05 * (1 - Math.min(1, Math.abs(x) / Math.max(H.hbAt(z), 0.2)) ** 2);
+    if (MOD) {
+      // the hull, deck, cockpit, flange and daggerboard slot, moulded (blender/laser.py), in a group of their own so the
+      // boat's merging of her small parts (bake) leaves the shared geometry alone
+      const moulded = add(new THREE.Group());
+      for (const [k, mat] of [['hull', hullMaterial(look.hull, look.stripe, look.bottom)], ['deck', skid], ['gel', MAT.lip]]) if (MOD[k]) moulded.add(new THREE.Mesh(MOD[k], mat));
+    } else {
+      add(new THREE.Mesh(H.geometry(), hullMaterial(look.hull, look.stripe, look.bottom)));
+      // the deck, crowned, and the cockpit sunk into it: a small well with a non-skid floor, its walls sloping in
+      const ck = H.tub(-0.3, cz0, 0.3, cz1, 0.14, LZ.FLOOR, { slope: 0.05, crown: 0.05 });
+      add(new THREE.Mesh(H.deck([ck.outline], 0.05), skid));
+      const walls = add(new THREE.Mesh(ck.walls, GEL2)); walls.userData.detail = false;
+      add(new THREE.Mesh(ck.floor, skid));
+      T.add(H.border(0.06, GEL2, 0.05));
+      // the gunwale: the hull-to-deck joint's rolled lip, a pale grey line round the boat just under the deck edge
+      for (const sx of [-1, 1]) {
+        const pts = []; for (let i = 0; i <= 18; i++) { const t = 0.004 + (i / 18) * 0.985, y = H.deckY(H.zAt(t)) - 0.012; pts.push([sx * (H.xAt(t, y) + 0.004), y, H.zAt(t)]); }
+        T.add(tube(pts, 0.011, MAT.lip));
+      }
     }
     // the bow's handle and eye, the drain bung in the transom
     const bz = H.BOW + 0.32;
-    T.add(tube([[-0.07, H.deckY(bz), bz], [-0.06, H.deckY(bz) + 0.05, bz], [0.06, H.deckY(bz) + 0.05, bz], [0.07, H.deckY(bz), bz]], 0.009, M.steel));
+    T.add(tube([[-0.07, deckAt(0.07, bz) - 0.01, bz], [-0.06, deckAt(0, bz) + 0.05, bz], [0.06, deckAt(0, bz) + 0.05, bz], [0.07, deckAt(0.07, bz) - 0.01, bz]], 0.009, M.steel));
     add(cyl(0.022, 0.022, 0.02, M.dark, 10), 0.18, 0.2, H.STERN + 0.005).rotation.x = Math.PI / 2;
     // the hiking strap down the middle of the cockpit floor, from its front to the shock cord at the back
     const strap = MAT.strap;
@@ -692,16 +700,16 @@ class LaserView extends ClassView {
     // the daggerboard: a slim foil down through its case in the deck, its head and handle standing proud
     const DBZ = cz0 - 0.2;
     add(new THREE.Mesh(finGeo(0.9, 0.31, 0.26, 0.08, 0.04), MAT.fin), 0, -0.08, DBZ);
-    add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.16, 0.31), MAT.fin), 0, H.deckY(DBZ) + 0.06, DBZ);
-    add(new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.025, 0.36), GEL2), 0, H.deckY(DBZ) + 0.005, DBZ); // the case's lip in the deck
-    T.add(tube([[0, H.deckY(DBZ) + 0.14, DBZ - 0.12], [0, H.deckY(DBZ) + 0.21, DBZ - 0.06], [0, H.deckY(DBZ) + 0.21, DBZ + 0.08], [0, H.deckY(DBZ) + 0.14, DBZ + 0.13]], 0.012, M.dark)); // its handle
-    T.add(line([[0, H.deckY(DBZ) + 0.15, DBZ - 0.13], [0, LZ.MAST_FOOT + 0.06, LZ.MAST_Z + 0.06]])); // the shock cord that holds it down
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.16, 0.31), MAT.fin), 0, deckAt(0, DBZ) + 0.06, DBZ);
+    if (!MOD) add(new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.025, 0.36), GEL2), 0, deckAt(0, DBZ) + 0.005, DBZ); // the case's lip in the deck (moulded, in the model)
+    T.add(tube([[0, deckAt(0, DBZ) + 0.14, DBZ - 0.12], [0, deckAt(0, DBZ) + 0.21, DBZ - 0.06], [0, deckAt(0, DBZ) + 0.21, DBZ + 0.08], [0, deckAt(0, DBZ) + 0.14, DBZ + 0.13]], 0.012, M.dark)); // its handle
+    T.add(line([[0, deckAt(0, DBZ) + 0.15, DBZ - 0.13], [0, LZ.MAST_FOOT + 0.06, LZ.MAST_Z + 0.06]])); // the shock cord that holds it down
     // the control lines, the cunningham and the outhaul: from their fairleads at the mast's foot aft along the deck
     // through the cam cleats either side of the daggerboard case, the tails into the cockpit
     for (const sx of [-1, 1]) {
       fit(add, block(0.016), sx * 0.07, LZ.MAST_FOOT + 0.03, LZ.MAST_Z + 0.08, sx * 0.5);
-      const cz = DBZ + 0.06, cx = sx * 0.2, c = add(new THREE.Mesh(camGeo(), M.dark), cx, H.deckY(cz) + 0.012, cz); c.rotation.y = sx * 0.15;
-      T.add(line([[sx * 0.075, LZ.MAST_FOOT + 0.04, LZ.MAST_Z + 0.1], [cx * 0.8, H.deckY(cz - 0.4) + 0.02, cz - 0.4], [cx, H.deckY(cz) + 0.035, cz], [cx * 0.85, H.deckY(cz + 0.2) + 0.01, cz + 0.2], [sx * 0.18, LZ.FLOOR + 0.03, cz + 0.45]]));
+      const cz = DBZ + 0.06, cx = sx * 0.2, c = add(new THREE.Mesh(camGeo(), M.dark), cx, deckAt(cx, cz) + 0.006, cz); c.rotation.y = sx * 0.15;
+      T.add(line([[sx * 0.075, LZ.MAST_FOOT + 0.04, LZ.MAST_Z + 0.1], [cx * 0.8, deckAt(cx * 0.8, cz - 0.4) + 0.015, cz - 0.4], [cx, deckAt(cx, cz) + 0.03, cz], [cx * 0.85, deckAt(cx * 0.85, cz + 0.2) + 0.01, cz + 0.2], [sx * 0.18, LZ.FLOOR + 0.03, cz + 0.45]]));
     }
     // the kick-up rudder on its gudgeons on the transom: the alloy stock, the blade down under the hull
     const RZ = H.STERN + 0.06;
@@ -711,24 +719,24 @@ class LaserView extends ClassView {
     add(new THREE.Mesh(finGeo(0.82, 0.25, 0.18, 0.09, 0.07), MAT.fin), 0, 0.02, RZ + 0.1);
     for (const y of [0.1, 0.3]) { add(new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.025, 0.06), M.steel), 0, y, H.STERN + 0.02); add(cyl(0.008, 0.008, 0.07, M.steel, 6), 0, y - 0.02, H.STERN + 0.05); } // gudgeons and pintles
     // the tiller over the aft deck and its extension, swinging with the helm
-    this.wheel = add(new THREE.Group(), 0, H.deckY(H.STERN) + 0.04, RZ);
+    this.wheel = add(new THREE.Group(), 0, deckAt(0, H.STERN) + 0.04, RZ);
     const tl = cyl(0.016, 0.02, 0.95, M.alu, 8); tl.rotation.x = Math.PI / 2 + 0.05; tl.position.set(0, 0.04, -0.47); this.wheel.add(tl);
     const uj = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.06, 8), M.dark); uj.position.set(0, 0.06, -0.94); this.wheel.add(uj); // the extension's universal joint
     const grip = cyl(0.022, 0.022, 0.13, M.dark, 8); grip.rotation.x = Math.PI / 2; grip.position.set(0, 0.04, -0.12); this.wheel.add(grip);
     this.ext = cyl(0.01, 0.01, 1.1, M.dark, 6); this.ext.rotation.set(0, 0.5, Math.PI / 2); this.ext.position.set(0.45, 0.06, -1.15); this.wheel.add(this.ext); // to the side she sits
     // the rope traveller across the aft deck between its fairleads, its block riding it
-    const TZ = LZ.TRAV_Z, ty = H.deckY(TZ);
+    const TZ = LZ.TRAV_Z, ty = deckAt(0.42, TZ), ty0 = deckAt(0, TZ);
     for (const sx of [-1, 1]) add(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.03, 0.05), M.dark), sx * 0.42, ty + 0.015, TZ);
-    { const c = add(new THREE.Mesh(camGeo(), M.dark), 0.26, H.deckY(TZ - 0.18) + 0.01, TZ - 0.18); c.rotation.y = Math.PI / 2; } // the traveller's cleat
-    T.add(line([[0.42, ty + 0.03, TZ], [0.34, H.deckY(TZ - 0.1) + 0.02, TZ - 0.1], [0.26, H.deckY(TZ - 0.18) + 0.03, TZ - 0.18], [0.2, H.deckY(TZ - 0.3) + 0.01, TZ - 0.3]]));
-    T.add(line([[-0.42, ty + 0.03, TZ], [0, ty + 0.11, TZ], [0.42, ty + 0.03, TZ]]));
+    { const c = add(new THREE.Mesh(camGeo(), M.dark), 0.26, deckAt(0.26, TZ - 0.18) + 0.006, TZ - 0.18); c.rotation.y = Math.PI / 2; } // the traveller's cleat
+    T.add(line([[0.42, ty + 0.03, TZ], [0.34, deckAt(0.34, TZ - 0.1) + 0.02, TZ - 0.1], [0.26, deckAt(0.26, TZ - 0.18) + 0.03, TZ - 0.18], [0.2, deckAt(0.2, TZ - 0.3) + 0.01, TZ - 0.3]]));
+    T.add(line([[-0.42, ty + 0.03, TZ], [0, ty0 + 0.11, TZ], [0.42, ty + 0.03, TZ]]));
     const tb = new THREE.Group(); for (const [g, mm] of block(0.022)) tb.add(new THREE.Mesh(g, mm));
-    this.travCar = add(mergeGroup(tb), 0, ty + 0.13, TZ);
+    this.travCar = add(mergeGroup(tb), 0, ty0 + 0.13, TZ);
     // the mainsheet's ratchet block at the front of the cockpit, and the bow's eye and drain
     const rat = new THREE.Group(); rat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.06, 12), M.dark));
     for (const [g, mm] of block(0.028)) { const o = new THREE.Mesh(g, mm); o.position.y = 0.07; rat.add(o); }
     add(mergeGroup(rat), 0, LZ.FLOOR + 0.03, cz0 + 0.12);
-    add(new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.006, 6, 12), M.steel), 0, H.deckY(H.BOW + 0.15) + 0.03, H.BOW + 0.15);
+    add(new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.006, 6, 12), M.steel), 0, deckAt(0, H.BOW + 0.15) + 0.01, H.BOW + 0.15);
     // the mast: two alloy sections, unstayed, the top one thinner; its step a collar in the deck
     add(new THREE.Mesh(mastGeo(LZ.MASTHEAD - LZ.MAST_FOOT, 0.064, 0.064, 0.046, 0.046, 0.5), M.alu), 0, (LZ.MAST_FOOT + LZ.MASTHEAD) / 2, LZ.MAST_Z);
     add(cyl(0.045, 0.05, 0.04, M.dark, 12), 0, LZ.MAST_FOOT, LZ.MAST_Z);
@@ -859,26 +867,37 @@ const BV = (() => {
 // she is built from the lines in code instead.
 const fileAt = (f) => (import.meta.resolve ? import.meta.resolve(`./${f}`) : new URL(f, import.meta.url).href);
 const ON_FLEET = /fleet-view/.test(globalThis.location?.pathname || ''); // the fleet page: every yacht in your colours, the cruiser's sails too
-const BV_MODEL = CLS.id !== 'bavaria46' && !ON_FLEET ? null : await new Promise((res) => {
-  const done = (v) => { clearTimeout(timer); res(v); }, timer = setTimeout(() => res(null), 8000);
-  new GLTFLoader().load(fileAt('bavaria46.glb'), (g) => {
-    const parts = {};
-    g.scene.updateMatrixWorld(true);
-    g.scene.traverse((o) => { if (o.isMesh) parts[o.material.name] = o.geometry.clone().applyMatrix4(o.matrixWorld); });
-    const p = parts.hull?.attributes.position;
-    if (!p || !parts.deck) return done(null);
-    const band = new Float32Array(p.count); // the hull's paint bands: the depth under the sheer
-    for (let i = 0; i < p.count; i++) band[i] = BV.hull.deckY(p.getZ(i)) - p.getY(i);
-    parts.hull.setAttribute('band', new THREE.BufferAttribute(band, 1));
-    for (const [k, sc] of [['deck', 1], ['teak', 1 / 0.8]]) { // the deck's and the teak's UVs: their plan in metres
-      const g2 = parts[k]; if (!g2) continue;
-      const q = g2.attributes.position, uv = new Float32Array(q.count * 2);
-      for (let i = 0; i < q.count; i++) { uv[2 * i] = q.getX(i) * sc; uv[2 * i + 1] = -q.getZ(i) * sc; }
-      g2.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
-    }
-    done(parts);
-  }, undefined, () => done(null));
-});
+// a class's moulded parts from its file: the meshes by material name, the hull's paint bands (its depth under the
+// sheer, on the class's own lines) and the plan-in-metres UVs of the parts that take a texture; null if the file doesn't
+// come in 8 s, and the class is built from its lines in code instead
+function loadModel(file, hull, uvs) {
+  return new Promise((res) => {
+    const done = (v) => { clearTimeout(timer); res(v); }, timer = setTimeout(() => res(null), 8000);
+    new GLTFLoader().load(fileAt(file), (g) => {
+      const parts = {};
+      g.scene.updateMatrixWorld(true);
+      g.scene.traverse((o) => { if (o.isMesh) parts[o.material.name] = o.geometry.clone().applyMatrix4(o.matrixWorld); });
+      const p = parts.hull?.attributes.position;
+      if (!p || !parts.deck) return done(null);
+      const band = new Float32Array(p.count);
+      for (let i = 0; i < p.count; i++) band[i] = hull.deckY(p.getZ(i)) - p.getY(i);
+      parts.hull.setAttribute('band', new THREE.BufferAttribute(band, 1));
+      for (const [k, sc] of uvs) {
+        const g2 = parts[k]; if (!g2) continue;
+        const q = g2.attributes.position, uv = new Float32Array(q.count * 2);
+        for (let i = 0; i < q.count; i++) { uv[2 * i] = q.getX(i) * sc; uv[2 * i + 1] = -q.getZ(i) * sc; }
+        g2.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+      }
+      done(parts);
+    }, undefined, () => done(null));
+  });
+}
+// the Bavaria's (blender/bavaria46.py) and the Laser's (blender/laser.py), each asked for only on a page that will
+// build her (her races, her boat page, the fleet)
+const [BV_MODEL, LZ_MODEL] = await Promise.all([
+  CLS.id !== 'bavaria46' && !ON_FLEET ? null : loadModel('bavaria46.glb', BV.hull, [['deck', 1], ['teak', 1 / 0.8]]),
+  CLS.id !== 'laser' && !ON_FLEET ? null : loadModel('laser.glb', LZ.hull, [['deck', 1]]),
+]);
 
 class CruiserView extends ClassView {
   constructor({ look = LOOKS.player, label = null, player = false, cls = CLS }) {

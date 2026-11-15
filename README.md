@@ -101,7 +101,8 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 - **The yacht:** `public/game/yacht.glb` is made by `blender/yacht.py`. Run it in Blender; it writes the file in place.
   The Bavaria 46's moulded parts (hull, deck, coachroof, cockpit) are `public/game/bavaria46.glb`, made the same way by
   `blender/bavaria46.py` (`blender -b --factory-startup -P blender/bavaria46.py`); `boats3d.js` builds her from its own
-  lines if the file doesn't load. The other classes are built in code (`public/game/boats3d.js`).
+  lines if the file doesn't load. The Laser's hull and deck are `public/game/laser.glb`, from `blender/laser.py`, likewise.
+  The other classes are built in code (`public/game/boats3d.js`).
 - **The venues:** today's race goes to a venue a day (`dailyVenue()` in `public/game/venues.js`, copied in
   `lib/race.ts` and in `public/play/index.html`'s preloader, which `npm test` checks): the days go round all of them
   in a shuffled order, so each comes once a round and none two days running. A new venue goes in all three lists in
