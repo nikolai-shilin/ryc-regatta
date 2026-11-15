@@ -188,9 +188,10 @@ const GROUND_U = {
   uTowns: { value: Array.from({ length: 8 }, (_, i) => TOWNS[i] ? new THREE.Vector3(TOWNS[i].x, TOWNS[i].z, TOWNS[i].r) : new THREE.Vector3(0, 0, -1)) },
   uTreeTop: { value: TOP }, uSnow: { value: LOOK.snow || 2900 }, uNear: { value: TE }, uWood: { value: WOOD }, uShare: { value: share },
   uLake: { value: new THREE.Color('#2f5566') },
+  uCanopy: { value: 1 }, // the canopy's crowns drawn one by one (0 on the lowest graphics level: only their average)
 };
 const GROUND_GLSL = /* glsl */ `
-uniform sampler2D uCover, uRoads; uniform vec3 uCol[11], uFields[6], uTowns[8], uNearXf, uShare, uLake; uniform float uNF, uTreeTop, uSnow, uNear, uWood;
+uniform sampler2D uCover, uRoads; uniform vec3 uCol[11], uFields[6], uTowns[8], uNearXf, uShare, uLake; uniform float uNF, uTreeTop, uSnow, uNear, uWood, uCanopy;
 varying vec3 vLN;
 float gLake; // 1 where groundColour() found a lake's still water
 float lhash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
@@ -207,6 +208,45 @@ vec3 slopeRelief(vec3 wn, vec2 q, float d, float near) {
   return normalize(wn - t * 0.55 * k);
 }
 float lfbm(vec2 p) { return 0.55 * lnoise(p / 220.0) + 0.3 * lnoise(p / 70.0) + 0.15 * lnoise(p / 22.0); }
+// The canopy: a wood seen from off the water is a roof of crowns, not a green lawn, and the instanced trees are far too
+// few to make it. So the ground under a wood is drawn as one: crowns a cell apart (7 m in a wood, 3.5 m in scrub),
+// packed but each placed and sized its own way, each its own shade, with the dark ground between them; each a dome
+// whose tilt goes to the light (gCrownK, gCrownN: the terrain's normal hook), so the side away from the sun is in
+// shade and a wooded slope is bumpy against the light. Where a crown shrinks to a pixel or two the detail gives way to
+// its average, so it doesn't shimmer.
+float gCrownK; vec3 gCrownN;
+vec4 crowns(vec2 q, float cell) { // xy: from the crown's middle to here, over its radius; z: how far out (1, its edge); w: its own shade
+  vec2 s = q / cell, i = floor(s), f = fract(s);
+  vec4 best = vec4(0.0, 0.0, 9.0, 0.0);
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 g = vec2(float(x), float(y)), id = i + g;
+    if (lhash(id + 3.3) < 0.12) continue; // a gap in the wood
+    vec2 d = f - g - 0.1 - 0.8 * vec2(lhash(id), lhash(id + 17.31));
+    float r = 0.58 + 0.38 * lhash(id + 41.7), e = length(d) / r;
+    if (e < best.z) best = vec4(d / r, e, lhash(id + 7.7));
+  }
+  best.z *= 0.86 + 0.28 * lnoise(s * 3.1); // ragged, not round
+  return best;
+}
+vec3 canopy(vec3 c, vec2 q, float w, float cell) {
+  gCrownK = 0.0;
+  if (w <= 0.0) return c;
+  float px = length(fwidth(q)), kd = (1.0 - smoothstep(cell * 0.18, cell * 0.5, px)) * uCanopy;
+  vec3 avg = c * 0.82; // the crowns and the shade between them, as they average out
+  if (kd <= 0.0) return mix(c, avg, w);
+  vec4 cr = crowns(q, cell);
+  float on = 1.0 - smoothstep(0.8, 1.0, cr.z);
+  // inside a crown, its clumps of leaves, each lit on its top and shaded under it (only while they are bigger than a
+  // pixel): a little relief of its own for the light, and darker in the hollows between them
+  float kc = 1.0 - smoothstep(cell * 0.05, cell * 0.14, px), f = 5.5 / cell, e = 0.35 / f;
+  vec2 cq = q * f + cr.w * 40.0;
+  float n0 = lnoise(cq), nx = lnoise(cq + vec2(0.35, 0.0)), nz = lnoise(cq + vec2(0.0, 0.35));
+  vec3 tone = mix(vec3(1.0), vec3(1.07, 1.05, 0.84), cr.w) * (0.78 + 0.4 * lhash(vec2(cr.w * 91.0, 3.0))); // each tree its own green
+  vec3 det = mix(c * 0.38, c * tone * (1.0 - 0.18 * cr.z * cr.z) * mix(1.0, 0.68 + 0.6 * n0, kc), on);
+  gCrownK = kd * w * on;
+  gCrownN = normalize(vec3(cr.x - (nx - n0) / e * 0.9 * kc, 1.5 * sqrt(max(1.0 - min(cr.z * cr.z, 1.0), 0.0)), cr.y - (nz - n0) / e * 0.9 * kc));
+  return mix(c, mix(avg, det, kd), w);
+}
 vec3 crop(int k) { vec3 c = uFields[0]; for (int i = 1; i < 6; i++) if (i == k) c = uFields[i]; return c; }
 // fields where the map has none: parcels some 140 by 95 m, their lines turning slowly across the country
 vec3 parcels(vec2 p) {
@@ -232,8 +272,9 @@ vec3 groundColour() {
   gLake = 0.0;
   vec3 forest = mix(mix(uCol[0], uCol[1], n), uCol[2], max(0.0, n - 0.62) * 1.6);
   vec3 c = forest; float wild = 1.0; // how far the slope and the height turn it to scrub and rock
-  if (cls == 1) c = forest * (v == 1.0 ? vec3(0.86, 0.93, 0.92) : v == 2.0 ? vec3(1.05, 1.06, 0.98) : vec3(1.0));
-  else if (cls == 2) c = mix(uCol[3], forest, 0.3 * n);
+  float wood = 0.0, cell = 7.0; // how much of it is under the canopy, and the crowns' spacing (canopy())
+  if (cls == 1) { c = forest * (v == 1.0 ? vec3(0.86, 0.93, 0.92) : v == 2.0 ? vec3(1.05, 1.06, 0.98) : vec3(1.0)); wood = 1.0; }
+  else if (cls == 2) { c = mix(uCol[3], forest, 0.3 * n); wood = 0.7; cell = 3.5; }
   else if (cls == 3) c = uCol[9] * (0.88 + 0.2 * lnoise(p.xz / 40.0));
   else if (cls == 4) { c = uNF > 0.0 ? sown(p.xz, v) : uCol[9] * (0.9 + 0.03 * v); wild = 0.6; }
   else if (cls == 5) c = mix(uCol[9], uCol[0], 0.3 + 0.35 * step(0.55, fract((p.x * 0.6 + p.z * 0.8) / 6.0)));
@@ -251,22 +292,42 @@ vec3 groundColour() {
   else if (cls == 0) {
     // the woods in stands, as the trees are (pines(): woodAt), with grass or fields in the clearings
     float open = (1.0 - smoothstep(uWood - 0.04, uWood + 0.06, lfbm(p.xz * 1.7))) * smoothstep(0.9, 0.97, ny);
-    c = mix(c, uNF > 0.0 ? parcels(p.xz) : mix(uCol[9], uCol[3], 0.4), open * (y < 160.0 ? 0.9 : 0.5));
+    // (where the venue has no fields, the clearings are the low scrub that grows back — the maquis — not a lawn)
+    c = mix(c, uNF > 0.0 ? parcels(p.xz) : mix(uCol[9], uCol[3], 0.7), open * (y < 160.0 ? 0.9 : 0.5));
     // where the map has no town, the venue's towns tint the ground
     float t = 0.0;
     for (int i = 0; i < 8; i++) if (uTowns[i].z > 0.0) t = max(t, 1.0 - length(vec2((p.x - uTowns[i].x) / 1.1, p.z - uTowns[i].y)) / uTowns[i].z);
-    c = mix(c, uCol[6], clamp(t, 0.0, 1.0) * 0.7 * smoothstep(0.9, 0.97, ny));
+    t = clamp(t, 0.0, 1.0) * 0.7 * smoothstep(0.9, 0.97, ny);
+    c = mix(c, uCol[6], t);
+    float cleared = open * (y < 160.0 ? 0.9 : 0.5);
+    if (uNF > 0.0) wood = 1.0 - cleared; else if (cleared > 0.45) { wood = 0.75; cell = 3.5; } else wood = 1.0;
+    wood *= 1.0 - t * 1.4;
   }
-  c = mix(c, uCol[3], max(steep * 0.55, high * 0.5) * (0.6 + 0.4 * n) * wild);
+  float scrubby = max(steep * 0.55, high * 0.5) * (0.6 + 0.4 * n) * wild;
+  c = mix(c, uCol[3], scrubby);
   // bare rock on the crags, in layers (the strata, a little wavy) where it's steep
   float strata = 0.86 + 0.14 * smoothstep(0.35, 0.65, fract(y / 6.5 + lnoise(p.xz / 55.0) * 1.5));
-  c = mix(c, (n > 0.5 ? uCol[4] : uCol[5]) * mix(1.0, strata, steep), max(smoothstep(0.5, 0.75, 1.0 - ny), high * 0.7) * (0.55 + 0.45 * lnoise(p.xz / 40.0)) * (wild > 0.0 ? max(wild, 0.5) : 0.0));
+  float bare = max(smoothstep(0.5, 0.75, 1.0 - ny), high * 0.7) * (0.55 + 0.45 * lnoise(p.xz / 40.0)) * (wild > 0.0 ? max(wild, 0.5) : 0.0);
+  c = mix(c, (n > 0.5 ? uCol[4] : uCol[5]) * mix(1.0, strata, steep), bare);
+  wood *= (1.0 - 0.5 * scrubby) * (1.0 - bare);
   // the roads round the race area: asphalt, paler in town
   vec2 rg = (p.xz - uNearXf.xy) * uNearXf.z;
-  if (rg.x > 0.0 && rg.y > 0.0 && rg.x < 1.0 && rg.y < 1.0) c = mix(c, cls == 6 ? vec3(0.36, 0.36, 0.35) : vec3(0.27, 0.28, 0.28), smoothstep(0.35, 0.75, texture2D(uRoads, rg).r) * 0.9);
-  // the shore: a narrow band of the beach's sand, the mud, or rock, down into the water
-  c = mix(c, cls == 8 ? uCol[8] : cls == 12 ? c : uCol[7], 0.85 * (1.0 - smoothstep(1.3, 2.3, y)));
-  return c;
+  if (rg.x > 0.0 && rg.y > 0.0 && rg.x < 1.0 && rg.y < 1.0) {
+    float road = smoothstep(0.35, 0.75, texture2D(uRoads, rg).r) * 0.9;
+    c = mix(c, cls == 6 ? vec3(0.36, 0.36, 0.35) : vec3(0.27, 0.28, 0.28), road);
+    wood *= 1.0 - road;
+  }
+  // the shore: the sea's mark on it, a band of bare stone (or the beach's sand, or the mud) up from the water —
+  // higher where the coast is steep and the waves run up it, ragged along its top, the stone in blocks — dark and wet
+  // at the waterline
+  // (on a low, flat shore, where a few centimetres of height are metres of ground, it is shingle: plain, and even)
+  float rocky = smoothstep(0.1, 0.35, 1.0 - ny), bn = lnoise(p.xz / 6.0 + lnoise(p.xz / 23.0) * 2.0);
+  float top = 1.4 + 1.7 * steep + 0.9 * (bn - 0.5) * rocky, sh = 1.0 - smoothstep(top - 0.25, top + 0.25, y);
+  float blocks = lnoise(p.xz / 1.8 + bn * 3.0), cracks = smoothstep(0.08, 0.0, abs(lnoise(p.xz / 3.5 + 9.0) - 0.5));
+  vec3 sc = cls == 8 ? uCol[8] : cls == 12 ? c : mix(uCol[7] * (0.9 + 0.15 * lnoise(p.xz / 1.2)), mix(uCol[7], uCol[4], 0.35) * (0.72 + 0.45 * blocks) * (1.0 - 0.45 * cracks), rocky);
+  c = mix(c, sc * mix(0.55, 1.0, smoothstep(0.05, 0.6, y)), 0.9 * sh);
+  wood *= 1.0 - sh;
+  return canopy(c, p.xz, wood, cell);
 }
 `;
 
@@ -303,6 +364,10 @@ if (gLake > 0.5) {
 // share the corners and their normals
 // the slopes' relief (GROUND_GLSL's slopeRelief), on the terrain and the land beyond
 const RELIEF = '{ normal = normalize((viewMatrix * vec4(slopeRelief(normalize(vLN), vLand.xz, length(vHz), 600.0), 0.0)).xyz); }';
+// …and on the terrain the canopy's crowns too (GROUND_GLSL's canopy(): each a dome on the slope, tilted to the light)
+const RELIEF_CROWNS = `{ vec3 wn = slopeRelief(normalize(vLN), vLand.xz, length(vHz), 600.0);
+  if (gCrownK > 0.0) wn = normalize(mix(wn, normalize(wn * gCrownN.y + vec3(gCrownN.x, 0.0, gCrownN.z)), gCrownK * 0.75));
+  normal = normalize((viewMatrix * vec4(wn, 0.0)).xyz); }`;
 function terrain() {
   const all = new THREE.BufferGeometry(), pos = new THREE.BufferAttribute(MESH.pos, 3);
   all.setAttribute('position', pos); all.setIndex(new THREE.BufferAttribute(MESH.idx, 1)); all.computeVertexNormals();
@@ -314,7 +379,7 @@ function terrain() {
     const list = tiles.get(key), t0 = MESH.tri0[k];
     for (let t = t0; t < t0 + MESH.triN[k]; t++) list.push(MESH.idx[t * 3], MESH.idx[t * 3 + 1], MESH.idx[t * 3 + 2]);
   }
-  const mat = landMat(new THREE.MeshLambertMaterial(), 1, { key: 'ground', colour: 'groundColour()', uniforms: GROUND_U, fsHead: GROUND_GLSL, vsHead: 'varying vec3 vLN;', vs: 'vLN = objectNormal;', emis: LAKE_LIGHT, nrm: RELIEF });
+  const mat = landMat(new THREE.MeshLambertMaterial(), 1, { key: 'ground', colour: 'groundColour()', uniforms: GROUND_U, fsHead: GROUND_GLSL, vsHead: 'varying vec3 vLN;', vs: 'vLN = objectNormal;', emis: LAKE_LIGHT, nrm: RELIEF_CROWNS });
   const group = new THREE.Group(), box = new THREE.Box3(), v = new THREE.Vector3();
   for (const list of tiles.values()) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', pos); g.setAttribute('normal', nrm); g.setIndex(list);
@@ -441,8 +506,12 @@ function pines(count, far = false) {
   if (!sorts[2].length) sorts[2] = [{ kind: 'broad', share: 1, dark: C(GR.forest[0]), light: C(GR.forest[2]) }];
   const pickFrom = (list) => { let pick = r() * list.reduce((a, k) => a + k.share, 0), k = list[0]; for (const q of list) { k = q; if ((pick -= q.share) <= 0) break; } return k; };
   let n = 0, tries = 0;
-  const put = (k, x, y, z, s) => {
-    o.position.set(x, y - 0.6, z); o.rotation.set(0, r() * 6.28, 0); o.scale.set(s, s * (0.85 + r() * 0.35), s); o.updateMatrix();
+  // In a wood the trees stand shoulder to shoulder and their trunks are hidden: the ground there is drawn as the
+  // canopy's roof (GROUND_GLSL's canopy()), so a tree in it is sunk to where its crown meets that roof, a bump in it
+  // (and in a ridge's outline) rather than a lollipop on a bare stalk. By how much, metres, for each kind:
+  const SINK = { pine: 5.4, stone: 7.6, broad: 3, conifer: 2.2, eucalypt: 7.5, olive: 1.2 };
+  const put = (k, x, y, z, s, sink = 0) => {
+    o.position.set(x, y - 0.6 - sink * s, z); o.rotation.set(0, r() * 6.28, 0); o.scale.set(s, s * (0.85 + r() * 0.35), s); o.updateMatrix();
     const key = k.kind + ':' + Math.floor(x / TILE) + ',' + Math.floor(z / TILE);
     if (!tiles.has(key)) tiles.set(key, { k, list: [] });
     tiles.get(key).list.push([o.matrix.clone(), c.copy(k.dark).lerp(k.light, r() * 0.7).multiplyScalar(0.9 + r() * 0.2).clone()]);
@@ -475,7 +544,8 @@ function pines(count, far = false) {
     else if (cl === CLS.forest && (coverCell(x, z) >> 4) === 1) k = pickFrom(sorts[1]);
     else if (cl === CLS.forest && (coverCell(x, z) >> 4) === 2) k = pickFrom(sorts[2]);
     else k = pickFrom(kinds);
-    put(k, x, y, z, (0.75 + r() * 0.65 - Math.min(0.3, y / (TOP * 3))) * (cl === CLS.scrub && !shrub ? 0.6 : 1));
+    const inWood = !far && (cl === CLS.forest || (p < 0 && woodAt(x, z) >= WOOD + 0.02 && townness(x, z) <= 0));
+    put(k, x, y, z, (0.75 + r() * 0.65 - Math.min(0.3, y / (TOP * 3))) * (cl === CLS.scrub && !shrub ? 0.6 : 1), inWood ? (SINK[k.kind] || 0) * (0.75 + 0.35 * r()) : 0);
     n++;
   }
   const geos = {}, mat = landMat(new THREE.MeshLambertMaterial({ vertexColors: true }), 1, { key: 'trees' }), g = new THREE.Group();
@@ -1164,7 +1234,7 @@ export class Skopea {
   constructor(skyU) {
     SKY_U = skyU;
     this.group = new THREE.Group();
-    this.land = terrain(); this.far = far(); this.trees = pines(12000); this.farTrees = pines(9000, true); this.town = town(); this.boats = marinas();
+    this.land = terrain(); this.far = far(); this.trees = pines(16000); this.farTrees = pines(9000, true); this.town = town(); this.boats = marinas();
     this.landmarks = landmarks(); if (this.landmarks) this.town.add(this.landmarks);
     this.group.add(this.far, this.land, this.trees, this.farTrees, this.town, this.boats);
     this.group.traverse((o) => { if (o.isMesh) o.matrixAutoUpdate = false; });
@@ -1201,5 +1271,6 @@ export class Skopea {
     for (const m of this.trees.children) m.count = Math.round(m.userData.max * f);
     for (const m of this.farTrees.children) m.count = Math.round(m.userData.max * ff);
     this.far.geometry.setIndex(q === 'high' ? this.far.userData.full : this.far.userData.coarse);
+    GROUND_U.uCanopy.value = q === 'low' ? 0 : 1;
   }
 }
