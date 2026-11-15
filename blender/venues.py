@@ -59,7 +59,8 @@ from PIL import Image, ImageColor, ImageDraw, ImageFilter
 # lighthouse by the course, further off than a big city's middle, which would fill the count first); plain: (low, high) metres, a coastal plain whose tiles have its roofs and trees for its ground
 # (SRTM's radar): the land up to `low` laid down on the shore's floor and from there back up to the tiles' own at `high`,
 # the hills above it as they are; paved: the map's paved squares and promenades drawn as paving; trees: the map's rows
-# of trees and its single trees planted where they stand
+# of trees and its single trees planted where they stand; palms: (streets, metres), a seafront's palms the map lacks, along
+# those of its streets that run within so many metres of the water
 VENUES = {
     'gocek': dict(bathy='emodnet', origin=(36.7525, 28.9395), mid=(-400, 700), wind=195, zoom=14, out='skopea', towns=[(36.7564, 28.9402, 650)],
                   build=(36.705, 28.875, 36.795, 29.005), footprints=('Turkey', '122101223')),
@@ -148,15 +149,24 @@ VENUES = {
                    landmarks=[dict(kind='temple', at=(37.97150, 23.72662), b=(37.97158, 23.72738), h=14)]),  # the Parthenon, its long axis to the east
     # Marmaris bay, of the Race Week and the winter series, in the westerly over İçmeler: the castle on its hill above
     # the old town and Netsel's pontoons to leeward, the pine mountains all round the bay
-    'marmaris': dict(bathy='emodnet', zoom=14, relations=True, paved=True, trees=True, home=(36.8300, 28.2620), wind=255,
+    'marmaris': dict(bathy='emodnet', zoom=14, relations=True, paved=True, trees=True, palms=(['Atatürk Caddesi', 'Kordon Caddesi', 'Gezi Yolu Caddesi', 'Barbaros Caddesi', '207. Sokak'], 45),
+                     home=(36.8300, 28.2620), wind=265,  # (Windfinder's station: W June to September, WSW in May and October)
                      towns=[(36.8530, 28.2720, 1100), (36.8560, 28.2500, 900), (36.8460, 28.2950, 900), (36.8060, 28.2370, 900), (36.8230, 28.3080, 500)],
-                     landmarks=[dict(kind='castle', at=(36.85057, 28.27409), h=9, clear=45)]),
-    # the Gulf of Fethiye off Çalış beach, in the afternoon westerly: Şövalye island and the harbour to leeward, the
-    # town, its castle and the Lycian tombs cut in the cliff over it, Babadağ above
-    'fethiye': dict(bathy='emodnet', zoom=14, relations=True, paved=True, trees=True, home=(36.6560, 29.0750), wind=285,
+                     landmarks=[dict(kind='castle', at=(36.85056, 28.27426), h=9, clear=40, ring=[(36.850350, 28.274480), (36.850353, 28.274388), (36.850414, 28.274388), (36.850417, 28.274168), (36.850378, 28.274168), (36.850374, 28.274072), (36.850696, 28.274016), (36.850730, 28.274265), (36.850777, 28.274273), (36.850769, 28.274375), (36.850724, 28.274375), (36.850711, 28.274477), (36.850468, 28.274463), (36.850436, 28.274504)]),  # its walls, the map's outline of it
+                                dict(kind='monument', at=(36.852946, 28.270857), h=4.5)]),  # Atatürk's statue on the seafront square
+    # Fethiye's bay inside Şövalye island, in the afternoon westerly (Windfinder's station: W March to October): the town all round to leeward, its castle and the
+    # Lycian tombs cut in the hill over the harbour, Babadağ above
+    'fethiye': dict(bathy='emodnet', zoom=14, most=15000, relations=True, paved=True, trees=True, palms=(['Fevzi Çakmak Caddesi', 'Yürüyüş Yolu Caddesi', 'Cahit Gündüz Caddesi', 'Mustafa Kemal Bulvarı'], 45),
+                    home=(36.6340, 29.1100), wind=275, build=(36.600, 29.060, 36.680, 29.150), footprints=('Turkey', '122101223'),  # (Göcek's quadkey)
                     towns=[(36.6220, 29.1130, 1100), (36.6250, 29.0950, 700), (36.6650, 29.1100, 1000), (36.6380, 29.1300, 900)],
-                    landmarks=[dict(kind='castle', at=(36.61824, 29.11297), h=7, ruin=True, clear=45),
-                               dict(kind='tombs', at=(36.61869, 29.11814), h=11)]),  # the Tomb of Amyntas, the others beside it
+                    landmarks=[dict(kind='castle', at=(36.61860, 29.11340), h=7, ruin=True, clear=75, keep=(36.61862, 29.11358),  # the tower's stump at `keep`
+                                    ring=[(36.618457, 29.112578), (36.618810, 29.112657), (36.618909, 29.112813), (36.618954, 29.113082), (36.619072, 29.113295), (36.619126, 29.113697), (36.619090, 29.114011), (36.618963, 29.114179), (36.618412, 29.114067), (36.618150, 29.113798), (36.618222, 29.113216), (36.618240, 29.112892)]),
+                               dict(kind='tombs', at=(36.61869, 29.11814), h=11),  # the Tomb of Amyntas, the others beside it
+                               dict(kind='theatre', at=(36.621162, 29.105859), b=(36.620750, 29.105880), r=31, clear=[(36.620900, 29.105870, 38)]),  # Telmessos's theatre on the harbour front, its seats up the slope from `at` towards `b`
+                               dict(kind='sarcophagus', at=(36.622588, 29.111847), dir=20),  # the Lycian sarcophagus in the street by the town hall
+                               dict(kind='sarcophagus', at=(36.620413, 29.117517), dir=70), dict(kind='sarcophagus', at=(36.620051, 29.117267), dir=150),
+                               dict(kind='sarcophagus', at=(36.620678, 29.116730), dir=110),  # and those on the slope under the rock tombs
+                               dict(kind='monument', at=(36.623932, 29.112759), h=4.5)]),  # Atatürk's statue on the harbour front
 }
 
 # what is on the ground (the cover part), from OpenStreetMap's land use; 0 where the map has nothing, which the game
@@ -936,9 +946,10 @@ def bake(vid, V, fetch_only=False):
         x, z = to_xz(lat, lon); towns.append({'at': [round(float(x)), round(float(z))], 'r': r})
     landmarks = []
     for lm in V.get('landmarks', []):
-        o = {k: v for k, v in lm.items() if k not in ('a', 'b', 'at')}
-        for k in ('a', 'b', 'at'):
+        o = {k: v for k, v in lm.items() if k not in ('a', 'b', 'at', 'keep', 'ring')}
+        for k in ('a', 'b', 'at', 'keep'):
             if k in lm: x, z = to_xz(*lm[k]); o[k] = [round(float(x), 1), round(float(z), 1)]
+        if lm.get('ring'): o['ring'] = [[round(float(v), 1) for v in to_xz(la, lo)] for la, lo in lm['ring']]  # a wall's corners (a castle's)
         if isinstance(lm.get('clear'), (list, tuple)): o['clear'] = [[round(float(v), 1) for v in to_xz(la, lo)] + [r] for la, lo, r in lm['clear']]
         landmarks.append(o)
 
@@ -1046,6 +1057,25 @@ def bake(vid, V, fetch_only=False):
         for a, b in zip(r[:-1], r[1:]):
             L = math.hypot(b[0] - a[0], b[1] - a[1]); m = max(1, int(L // step))
             for i in range(m): f = (i + 0.5) / m; tpts.append((a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, k))
+    if V.get('palms'):
+        # the palms of a seafront the map has no trees on (`palms`: its streets' names, and how far from the water): every
+        # 8 m along each such street where it runs within that of the shore, set towards the water, 4 m short of it
+        names, reach = V['palms']
+        C = np.array([a + (b - a) * f for r in coast for a, b in zip(r[:-1], r[1:]) for f in np.linspace(0, 1, max(2, int(np.hypot(*(b - a)) // 8) + 1))[:-1]])  # the shore every 8 m
+        cand = []
+        for el in extra:
+            if el.get('tags', {}).get('name') not in names or not el.get('geometry'): continue
+            r = line(el['geometry'])
+            for a, b in zip(r[:-1], r[1:]):
+                L = math.hypot(b[0] - a[0], b[1] - a[1]); m = max(1, int(L // 8))
+                cand += [a + (b - a) * (i + 0.5) / m for i in range(m)]
+        if cand:
+            Q = np.array(cand); idx, d = nearest(C, Q, bs=float(reach)); n0 = len(tpts)
+            for q, i, dd in zip(Q, idx, d):
+                if i < 0 or not dd < reach: continue
+                c = C[i]; s = min(6.0, max(0.0, dd - 4.0)) / max(dd, 1e-6)
+                tpts.append((q[0] + (c[0] - q[0]) * s, q[1] + (c[1] - q[1]) * s, 1))
+            print(f'  palms along the seafront: {len(tpts) - n0}', flush=True)
     tpts = [(float(x), float(z), k) for x, z, k in tpts if abs(x) < 5000 and abs(z) < 5000 and bilinear(HL, -EXTENT, LC, np.array([x]), np.array([z]))[0] > 0.3]
     tpts.sort(key=lambda p: math.hypot(p[0] - MID[0], p[1] - MID[1])); tpts = tpts[:6000]
     tk = np.array([k for _, _, k in tpts], np.uint8); txz = np.array([[round(x * 2), round(z * 2)] for x, z, _ in tpts], np.int32).ravel()

@@ -373,7 +373,7 @@ export const VENUES = [
   {
     // Marmaris bay in the westerly over İçmeler, the castle above the old town and Netsel's pontoons to leeward, the
     // red-pine mountains all round
-    id: 'marmaris', name: ['Marmaris', 'Мармарис'], lat: 36.83, lon: 28.262, wind: 255, tz: 3, from: '2026-11-20',
+    id: 'marmaris', name: ['Marmaris', 'Мармарис'], lat: 36.83, lon: 28.262, wind: 265, tz: 3, from: '2026-11-20',
     look: {
       haze: 1.15,
       ground: { forest: ['#2b4123', '#3a5430', '#536b39'], scrub: '#78794f', rock: ['#a09684', '#7f776a'], town: '#a89f8a', shore: '#b3a88f' },
@@ -384,9 +384,9 @@ export const VENUES = [
     },
   },
   {
-    // the Gulf of Fethiye off Çalış beach in the afternoon westerly: Şövalye island and the harbour to leeward, the
-    // castle and the Lycian tombs over the town, Babadağ above
-    id: 'fethiye', name: ['Fethiye', 'Фетхие'], lat: 36.656, lon: 29.075, wind: 285, tz: 3, from: '2026-11-20',
+    // Fethiye's bay inside Şövalye island in the afternoon westerly: the town all round to leeward, the castle, the
+    // theatre and the Lycian tombs over the harbour, Babadağ above
+    id: 'fethiye', name: ['Fethiye', 'Фетхие'], lat: 36.634, lon: 29.11, wind: 275, tz: 3, from: '2026-11-20',
     look: {
       haze: 1.1,
       ground: { forest: ['#2d4325', '#3d5631', '#586f3c'], scrub: '#7d7c52', rock: ['#a89e8c', '#857c6e'], town: '#a89f8a', shore: '#b9ae96', sand: '#cdbfa0' },

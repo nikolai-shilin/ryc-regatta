@@ -1172,10 +1172,10 @@ function marinas() {
 // what the json lists: a steel arch bridge (Sydney Harbour), a suspension bridge (Newport's, the Golden Gate), a tower
 // (Auckland's Sky Tower, Laboe's naval memorial, Galata, the Transamerica Pyramid, Torre Glòries), a lighthouse (Trieste's
 // Victory, the Maiden's Tower), a mosque (Istanbul's), a gilded spire (St Petersburg's), a rostral column, a drawbridge
-// with its spans raised, a hilltop castle (Marmaris's, Fethiye's ruin), Fethiye's rock tombs, the Opera House, the
-// Sagrada Família, Christ the Redeemer, La Seu, Notre-Dame de la Garde, Carlsten. The famous ones drawn after the real
-// ones, from aerial photographs and their plans, to be known at a glance from the course. Each in one colour a part,
-// merged into one mesh.
+// with its spans raised, a hilltop castle (Marmaris's, Fethiye's ruin), Fethiye's rock tombs, theatre and sarcophagi, a
+// statue on its pedestal, the Opera House, the Sagrada Família, Christ the Redeemer, La Seu, Notre-Dame de la Garde,
+// Carlsten. The famous ones drawn after the real ones, from aerial photographs and their plans, to be known at a glance
+// from the course. Each in one colour a part, merged into one mesh.
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z), XA = V3(1, 0, 0);
 // a beam from a to b, w wide and h deep
 function beam(a, b, w, h, col) {
@@ -1685,9 +1685,10 @@ function landmarks() {
     } else if (L.kind === 'castle') {
       // a hilltop castle of the Turkish coast (Marmaris's, Suleiman's of 1522; Fethiye's, the Knights'): its curtain wall
       // round the summit, L.h high, square towers at its corners, the merlons along the top; `ruin`, broken down in
-      // stretches, a tower standing taller than the rest. Each piece of wall on the hill's own ground
+      // stretches, its keep's stump (`keep`) standing taller than the rest. The walls' corners traced from the air (`ring`;
+      // without one, a summit's ring of some 70 by 50 m). Each piece of wall on the hill's own ground
       const [x, z] = L.at, stone = L.ruin ? '#a8987c' : '#c2b296', dark = L.ruin ? '#8e806a' : '#a89a80', H = L.h;
-      const ring = [[-34, -16], [-18, -27], [12, -25], [33, -12], [36, 10], [18, 24], [-10, 26], [-31, 12]];
+      const ring = L.ring ? L.ring.map(([px, pz]) => [px - x, pz - z]) : [[-34, -16], [-18, -27], [12, -25], [33, -12], [36, 10], [18, 24], [-10, 26], [-31, 12]];
       const gy = (px, pz) => Math.max(0, groundAt(px, pz));
       ring.forEach(([ax, az], i) => {
         const [bx, bz] = ring[(i + 1) % ring.length], len = Math.hypot(bx - ax, bz - az), ang = Math.atan2(bz - az, bx - ax);
@@ -1698,8 +1699,11 @@ function landmarks() {
           const y0 = gy(cx, cz) - 3; parts.push(blk(cx, cz, y0, h + 3, len / n + 0.6, 2.6, ang, stone));
           if (!L.ruin) for (const s of [0.25, 0.75]) { const u = u0 + (u1 - u0) * s; parts.push(blk(x + ax + (bx - ax) * u, z + az + (bz - az) * u, y0 + h + 3, 1.2, 1.4, 2.6, ang, stone)); }
         }
-        if (i % 2 === 0 || !L.ruin) { const tx = x + ax, tz = z + az, th = L.ruin && i === 2 ? H * 1.7 : H + 3.5; parts.push(blk(tx, tz, gy(tx, tz) - 3, th + 3, 7.5, 7.5, ang, dark)); }
+        // a tower at a corner between two long walls (not at every jog of a traced outline); a ruin's at every other one
+        const [px, pz] = ring[(i + ring.length - 1) % ring.length], long = len >= 7 && Math.hypot(ax - px, az - pz) >= 7;
+        if (long && (i % 2 === 0 || !L.ruin)) { const tx = x + ax, tz = z + az, th = L.ruin ? H * 0.9 : H + 3.5, tw = L.ring && !L.ruin ? 5.5 : 7.5; parts.push(blk(tx, tz, gy(tx, tz) - 3, th + 3, tw, tw, ang, dark)); }
       });
+      if (L.keep) { const [kx, kz] = L.keep; parts.push(blk(kx, kz, gy(kx, kz) - 3, H * 1.7 + 3, 9, 9, 0.2, dark)); }
       if (!L.ruin) { const y = gy(x, z); parts.push(blk(x - 4, z + 2, y - 2, 7, 18, 10, 0.3, '#d8ccb4'), blk(x - 4, z + 2, y + 5, 0.6, 19, 11, 0.3, '#b4603e')); } // the museum's house inside
     } else if (L.kind === 'tombs') {
       // Fethiye's Lycian rock tombs: temple fronts cut into the face of the cliff above the town, the Tomb of Amyntas
@@ -1723,6 +1727,35 @@ function landmarks() {
       };
       front(0, H * 0.85, H, y, 2);
       for (const [u, s, dy] of [[-17, 0.6, 3], [-29, 0.5, 1], [15, 0.55, 0], [26, 0.45, 4]]) front(u, H * 0.85 * s, H * s, Math.max(0, groundAt(...at(u, 0))) + dy, 0); // (each on its own ground, some up the face)
+    } else if (L.kind === 'theatre') {
+      // an ancient theatre (Telmessos's, on Fethiye's harbour front): the half round of its seats, L.r across, rising in
+      // tiers up the slope from the orchestra at `at` towards `b`, the stage's foundations across its open side
+      const [x, z] = L.at, [bx, bz] = L.b, y = Math.max(0, groundAt(x, z)), stone = '#cfc3a6', R = L.r, n = 9;
+      const ang = Math.atan2(bz - z, bx - x); // towards the seats
+      for (let k = 0; k < n; k++) {
+        const r0 = R * (0.3 + 0.7 * k / n), r1 = R * (0.3 + 0.7 * (k + 1) / n), sh = new THREE.Shape();
+        sh.absarc(0, 0, r1, -Math.PI / 2, Math.PI / 2, false); sh.absarc(0, 0, r0, Math.PI / 2, -Math.PI / 2, true);
+        const g = new THREE.ExtrudeGeometry(sh, { depth: 0.9 * (k + 1) + 3, bevelEnabled: false, curveSegments: 16 });
+        g.rotateX(-Math.PI / 2).translate(0, y - 3, 0).rotateY(-ang).translate(x, 0, z); // (the shape's +x, its middle, towards the seats)
+        parts.push(tint(g, k % 2 ? stone : '#c4b89b'));
+      }
+      parts.push(blk(x - Math.cos(ang) * 4, z - Math.sin(ang) * 4, y - 1, 2.2, 5, R * 1.7, ang, '#b8ab90')); // the stage
+    } else if (L.kind === 'sarcophagus') {
+      // a Lycian sarcophagus (Fethiye's, in its streets and under the rock tombs): the stepped plinth, the chest, and its
+      // pointed lid like an upturned boat's hull, its ridge along L.dir
+      const y = Math.max(0, groundAt(...L.at)), F = frameOf(L, y), stone = '#c9bda4';
+      parts.push(F.box(0, 0, -1, 2.6, 4.2, 3, '#b3a68c'), F.box(0, 0, 1.6, 2.2, 3.2, 2, stone), F.box(0, 0, 3.8, 0.35, 3.6, 2.4, stone));
+      const arch = new THREE.Shape().moveTo(-1.25, 0).quadraticCurveTo(-1.15, 1.2, 0, 1.9).quadraticCurveTo(1.15, 1.2, 1.25, 0).lineTo(-1.25, 0);
+      const lid = new THREE.ExtrudeGeometry(arch, { depth: 3.5, bevelEnabled: false, curveSegments: 6 }).translate(0, 0, -1.75).rotateY(Math.PI / 2);
+      const [lx, lz] = F.xz(0, 0); lid.rotateY(-F.ang).translate(lx, y + 4.15, lz); parts.push(tint(lid, stone)); // (its ridge along L.dir)
+    } else if (L.kind === 'monument') {
+      // a statue on its square (Atatürk's, on Marmaris's and Fethiye's seafronts): the stone pedestal, the bronze figure, L.h tall
+      const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), bronze = '#4f4a3e';
+      parts.push(blk(x, z, y - 1, 1.6, 6, 6, 0, '#c8c0b0'), blk(x, z, y + 0.6, 3.4, 2.6, 2.6, 0, '#ddd6c8'));
+      const F = frameOf(L, y + 4), H = L.h; // the figure standing, facing L.dir: legs, the coat over the body, the shoulders, the head
+      for (const b of [-0.22, 0.22]) parts.push(F.box(0, b, 0, H * 0.47, 0.34, 0.3, bronze));
+      parts.push(F.box(0, 0, H * 0.3, H * 0.5, 0.5, 0.95, bronze), F.box(0, 0, H * 0.72, H * 0.08, 0.5, 1.25, bronze));
+      { const [hx, hz] = F.xz(0, 0); parts.push(tint(new THREE.SphereGeometry(H * 0.065, 10, 8).translate(hx, y + 4 + H * 0.88, hz), bronze)); }
     } else if (L.kind === 'mosque') {
       // Istanbul's imperial mosques on their hills: the square prayer hall, the great dome on its drum (its top L.h up),
       // the half-domes and the corner domes stepping down from it, the pencil minarets with their balconies and lead

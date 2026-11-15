@@ -65,10 +65,10 @@ export const VENUES: { id: VenueId; name: Pair; place: Pair; wind: Pair; skip?: 
     about: ['Table Bay off the V&A Waterfront, in the Cape Doctor blowing off Table Mountain.', 'Столовый залив у набережной Виктории и Альфреда, под ветром «Кейпский доктор» со Столовой горы.'] },
   { id: 'athens', name: ['Athens', 'Афины'], place: ['Greece', 'Греция'], wind: ['NNE', 'ССВ'], from: '2026-11-20',
     about: ['The 2004 Olympic waters in Faliro Bay, in the meltemi off the land, the Parthenon to windward.', 'Олимпийская акватория 2004 года в Фалирском заливе, под мельтеми с берега; на ветре — Парфенон.'] },
-  { id: 'marmaris', name: ['Marmaris', 'Мармарис'], place: ['Turkey', 'Турция'], wind: ['WSW', 'ЗЮЗ'], from: '2026-11-20',
+  { id: 'marmaris', name: ['Marmaris', 'Мармарис'], place: ['Turkey', 'Турция'], wind: ['W', 'З'], from: '2026-11-20',
     about: ['The bay of Marmaris Race Week, ringed by pine mountains, in the westerly, the castle above the old town and the marina to leeward.', 'Бухта Недели гонок Мармариса в кольце сосновых гор, под западным ветром; под ветром — крепость над старым городом и марина.'] },
-  { id: 'fethiye', name: ['Fethiye', 'Фетхие'], place: ['Turkey', 'Турция'], wind: ['WNW', 'ЗСЗ'], from: '2026-11-20',
-    about: ['The Gulf of Fethiye off Çalış beach, in the afternoon westerly, the Lycian rock tombs in the cliff over the town and Babadağ above.', 'Фетхийский залив у пляжа Чалыш, под дневным западным ветром; над городом — ликийские гробницы в скале и гора Бабадаг.'] },
+  { id: 'fethiye', name: ['Fethiye', 'Фетхие'], place: ['Turkey', 'Турция'], wind: ['W', 'З'], from: '2026-11-20',
+    about: ['The bay inside Şövalye island, in the afternoon westerly, the town all round, the Lycian rock tombs in the cliff over the harbour and Babadağ above.', 'Бухта за островом Шовалье, под дневным западным ветром; вокруг город, над гаванью — ликийские гробницы в скале и гора Бабадаг.'] },
 ];
 
 export const venueOf = (id: string | undefined) => VENUES.find((v) => v.id === id) || VENUES[0];
