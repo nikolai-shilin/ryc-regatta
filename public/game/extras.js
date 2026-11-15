@@ -55,9 +55,10 @@ const css = `
 .drill-end { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(4, 9, 16, 0.55); }
 .drill-end .in { width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--s-4, 16px); padding: var(--s-6, 24px); background: var(--panel-2, #0d1724); color: var(--ink, #fff); box-shadow: 0 20px 60px rgba(0,0,0,.5); }
 .drill-end .k { font: 700 var(--fs-small, 14px)/1 var(--cond, sans-serif); letter-spacing: var(--ls-label, .08em); text-transform: uppercase; color: var(--ink-2, #aab); }
-.drill-end h2 { margin: 0; font: 800 var(--fs-title, 28px)/1 var(--cond, sans-serif); text-transform: uppercase; }
+.drill-end h2 { margin: 0; font: 700 var(--fs-h3, 32px)/1 var(--cond, sans-serif); text-transform: uppercase; }
 .drill-end .st { display: flex; gap: 6px; font-size: 34px; line-height: 1; color: rgba(255,255,255,.18); } .drill-end .st .on { color: var(--gold, #f5c400); }
 .drill-end p { margin: 0; font: 500 var(--fs-body, 16px)/1.45 var(--sans, sans-serif); color: var(--ink-2, #ccd); }
+.drill-end a:focus-visible { outline: 2px solid var(--ink, #fff); outline-offset: 2px; }
 .drill-end .bs { display: flex; flex-wrap: wrap; gap: 8px; }
 .drill-end a { border-radius: 0; display: inline-flex; align-items: center; height: 44px; padding: 0 18px; background: var(--fill-2, rgba(255,255,255,.12)); color: var(--ink, #fff); font: 700 var(--fs-small, 14px)/1 var(--cond, sans-serif); letter-spacing: var(--ls-button, .04em); text-transform: uppercase; text-decoration: none; }
 .drill-end a.go { background: var(--you, #3db8ff); color: var(--ink-on, #070d16); }
@@ -107,7 +108,7 @@ async function ghostFor(race) {
 function makeGhost(g) {
   const { world } = ctx;
   const look = g.own ? playerLook() : LOOKS.Aurora;
-  const name = g.own ? tr('Your best', 'Твой лучший') : tr('Ghost', 'Призрак');
+  const name = g.own ? tr('Your best', 'Твой лучший') : tr('Ghost', 'Призрак'), short = g.own ? tr('Best', 'Лучший') : tr('Ghost', 'Призрак');
   const v = makeBoatView({ look, label: { text: `${name} ${fmt(g.secs)}`, color: 0xffffff } });
   // see-through, and never hiding what's behind her
   v.root.traverse((o) => {
@@ -119,7 +120,7 @@ function makeGhost(g) {
   // her own boat, posed each frame: your boat's properties, then where the track had her
   const P = ctx.getRace().player, b = Object.assign(Object.create(Object.getPrototypeOf(P)), P);
   const el = document.createElement('div'); el.className = 'b-ghost';
-  el.innerHTML = `<i></i><span>${name} · ${fmt(g.secs)}</span><b></b>`;
+  el.innerHTML = `<i></i><span title="${name} · ${fmt(g.secs)}">${short} ${fmt(g.secs)}</span><b></b>`; // the board's row: short, for a phone's
   document.querySelector('.b-board')?.append(el);
   return { ...g, v, b, el, gapEl: el.querySelector('b'), lastGap: 0 };
 }
@@ -179,7 +180,7 @@ function startDrill(race) {
     race.messages.length = 0; for (const b of race.boats) if (b.events) b.events.length = 0; // what was said on the way: not said now
   }
   dr.t0 = race.clock; dr.place0 = race.standings().indexOf(P) + 1; dr.pens0 = P.pens || 0;
-  const k = document.createElement('div'); k.className = 'drill-k';
+  const k = document.createElement('div'); k.className = 'drill-k bc';
   k.innerHTML = `<b>${tr('Drill', 'Тренировка')}</b><span>${drillName(drillId)} · ${{ start: tr('cross at the gun, at speed', 'пересеки линию со стартом, на скорости'), mark: tr('round it, gain a place', 'обогни и выиграй место'), beat: tr('to the top mark', 'до верхнего знака') }[drillId]}</span>`;
   document.body.append(k); dr.k = k;
 }
@@ -224,7 +225,7 @@ function drillFrame(race) {
   ctx.stop();
   dr.k?.remove();
   const next = DRILL_ORDER[DRILL_ORDER.indexOf(dr.id) + 1];
-  const el = document.createElement('div'); el.className = 'drill-end'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+  const el = document.createElement('div'); el.className = 'drill-end bc'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
   el.innerHTML = `<div class="in"><span class="k">${tr('Drill', 'Тренировка')} · ${drillName(dr.id)}</span>
     <h2>${stars === 3 ? tr('Three stars', 'Три звезды') : stars ? tr(`${stars} ${stars === 1 ? 'star' : 'stars'}`, `${stars} ${stars === 1 ? 'звезда' : 'звезды'}`) : tr('Try again', 'Ещё раз')}</h2>
     <div class="st" aria-label="${stars} / 3">${[1, 2, 3].map((i) => `<span class="${i <= stars ? 'on' : ''}">★</span>`).join('')}</div>

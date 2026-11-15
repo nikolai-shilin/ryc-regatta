@@ -79,6 +79,8 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
         <nav className="hm-foot-links" aria-label={t('More', 'Ещё')}>
           <Link href="/help">{t('How to play', 'Как играть')}</Link>
           <Link href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
+          <Link href="/race/drills">{t('Drills', 'Тренировки')}</Link>
+          <Link href="/race/badges">{t('Badges', 'Значки')}</Link>
           <Link href="/faq">{t('Questions', 'Вопросы')}</Link>
           <Link href="/iyt">{'Sailing Certification Test'}</Link>
           <Link className="if-me me-name" href="/settings" /><Link className="if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link>

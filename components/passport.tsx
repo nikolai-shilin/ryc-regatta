@@ -71,8 +71,8 @@ export function VenueList({ lang, today }: { lang: Lang; today: VenueId }) {
 export function PassportRow({ lang }: { lang: Lang }) {
   const t = tx(lang), log = useLog();
   const p = log ? passport(log) : null, st = log ? streakOf(log.d) : null;
-  const meta = !p ? '' : !p.n ? t(`0 of ${p.of} venues`, `0 из ${p.of} акваторий`)
-    : [t(`${p.n} of ${p.of} venues`, `${p.n} из ${p.of} акваторий`), st && st.n > 1 ? streakWords(st.n, lang) : ''].filter(Boolean).join(' · ');
+  // short, for a phone's row (the row says they're venues): 3 of 28 · 4 in a row
+  const meta = !p ? '' : [t(`${p.n} of ${p.of}`, `${p.n} из ${p.of}`), st && st.n > 1 ? t(`${st.n} in a row`, `${st.n} подряд`) : ''].filter(Boolean).join(' · ');
   return (
     <Link className={`bt-row${st?.risk ? ' bt-row-risk' : ''}`} href="/#h-venues">
       <IconStamp /><span>{st?.risk ? t('Race today to keep your streak', 'Пройди сегодня — не прерви серию') : t('Venues you’ve raced', 'Твои акватории')}</span>

@@ -1082,7 +1082,16 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
 
   // the boats' tags: yours, and before the start the two nearest the line, then the leader and the boat just ahead (or
   // just behind, when you lead); halfway up each mast. Not yours from the helm.
+  // the HUD's blocks a tag on the water would hide under (the calls, the map, the board), in the tags' own scaled
+  // pixels, read once a frame
+  let blocks = [];
+  function readBlocks() {
+    const hz = parseFloat(over.style.getPropertyValue('--hz')) || 1;
+    blocks = [...calls.children, map, board].filter((e) => e && !e.hidden && e.offsetParent).map((e) => e.getBoundingClientRect())
+      .filter((r) => r.width && r.height).map((r) => ({ l: r.left / hz - 4, r: r.right / hz + 4, t: r.top / hz - 4, b: r.bottom / hz + 4 }));
+  }
   function placeBoats(race, P, st, pre) {
+    readBlocks();
     const i = st.indexOf(P);
     const others = pre ? st.filter((b) => b !== P).slice(0, 2) : [st[0], st[i - 1] || st[i + 1]].filter((b) => b && b !== P);
     const list = [...(world.mode === 'helm' ? [] : [P]), ...new Set(others)].slice(0, 3);
@@ -1099,10 +1108,13 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       txt(g.v, pre && !me ? L.mToLine(Math.round(Math.max(0, -race.lineInfo(b).d))) : `${nf(b.v / KN)} ${t('kn')}`); // a rival before the start: how far from the line
       showPen(g.pen, b);
       // its box slid back onto the screen when the boat is near an edge (its width read now and then, not every frame)
-      if (!g.w || ++g.f % 30 === 0) g.w = g.box.offsetWidth;
+      if (!g.w || ++g.f % 30 === 0) { g.w = g.box.offsetWidth; g.h = g.box.offsetHeight; }
       const half = g.w / 2, edge = 8, dx = Math.min(0, innerWidth - edge - (at[0] + half)) + Math.max(0, edge - (at[0] - half));
       const tr = dx ? `calc(-50% + ${dx.toFixed(0)}px) -22px` : '';
       if (g.box._tr !== tr) { g.box._tr = tr; g.box.style.translate = tr; }
+      // under one of the HUD's blocks it would only peek out from beneath it: then it isn't shown
+      const x0 = at[0] + dx - half, y0 = at[1] - 22;
+      if (blocks.some((r) => x0 < r.r && x0 + g.w > r.l && y0 < r.b && y0 + (g.h || 24) > r.t)) g.el.classList.remove('on');
     });
   }
 
@@ -1155,6 +1167,13 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       let dx = sx - W / 2, dy = sy - H / 2; if (behind) { dx = -dx; dy = -dy; }
       const hw = W / 2 - lw, hh = H / 2 - 150, k = Math.min(hw / Math.abs(dx || 1e-6), hh / Math.abs(dy || 1e-6));
       sx = W / 2 + dx * k; sy = H / 2 + dy * k; rot = Math.atan2(dy, dx);
+      // the umpire's card and the calls are under it there (it stands over the HUD): below them instead
+      for (const e of [ump, ...calls.children]) {
+        if (!e || e.hidden || !e.offsetParent) continue;
+        const r = e.getBoundingClientRect(); if (!r.height) continue;
+        const l = r.left / hz, rr = r.right / hz, t2 = r.top / hz, b = r.bottom / hz;
+        if (sx + lw > l && sx - lw < rr && sy + 22 > t2 && sy - 22 < b) sy = Math.min(H - 150, b + 30);
+      }
     }
     tag.style.transform = `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px)`;
     tagPtr.style.transform = `rotate(${(rot / D2R).toFixed(0)}deg)`;

@@ -99,6 +99,10 @@
 #pauseCard.bc .p-row { height: var(--h-m); padding: 0 var(--s-5); border-radius: 0; border-bottom: 1px solid var(--rule-2); font: 700 var(--fs-lead)/1 var(--cond); letter-spacing: var(--ls-name); }
 #pauseCard.bc .p-row:hover { background: var(--w-06); }
 #pauseCard.bc .p-row::before { color: var(--ink-3); opacity: 1; }
+/* each row's icon (play/index.html draws it through --ic, which only Resume had): the race's set-up, again, out */
+#pauseCard #pChange { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h10M18 7h2M4 17h4M12 17h8'/%3E%3Ccircle cx='16' cy='7' r='2'/%3E%3Ccircle cx='10' cy='17' r='2'/%3E%3C/svg%3E"); }
+#pauseCard #pRestart { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4'/%3E%3C/svg%3E"); }
+#pauseCard #pLeave { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 12H5M11 6l-6 6 6 6'/%3E%3C/svg%3E"); }
 #pauseCard.bc .p-row .meta { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
 #pauseCard.bc .p-card > .meta, #confirmCard.bc .kicker { margin: var(--s-3) 0 var(--s-1); font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 /* quick switches: on/off with a green mark; graphics: one of four, the picked one blue */

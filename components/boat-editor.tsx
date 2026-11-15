@@ -125,7 +125,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         {/* her flag and sail number, as the race calls her */}
         <h1 className="bt-h bt-h-boat">{/* eslint-disable-next-line @next/next/no-img-element */}{flag && <img className="bt-h-flag" src={flagSrc(flag.code)} alt={t(flag.en, flag.ru)} />}<span>{`${b.nat} ${b.num || '1'}`.trim()}</span></h1>
         <p className="bt-p">{t('Lake Garda, a summer evening. Drag to circle her.', 'Озеро Гарда, летний вечер. Тяни, чтобы облететь яхту.')}</p>
-        <div className="bt-stats">
+        <div className="bt-stats bt-stats-fit">
           <div><span className="bt-sk">{t('Colours', 'Цвета')}</span><b>{preset ? t(preset.en, preset.ru) : t('Your own', 'Свои')}</b></div>
           <div><span className="bt-sk">{t('Sails', 'Паруса')}</span><b>{b.laminate ? t('Laminate', 'Ламинат') : t('Dacron', 'Дакрон')}</b></div>
           <div><span className="bt-sk">{t('Logo', 'Логотип')}</span><b>{logoName}</b></div>

@@ -237,7 +237,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
     const faster = res.daily && isToday && field ? field.filter((s) => s < best - 0.05).sort((a, b) => a - b) : null;
     if (faster && faster.length) {
       const pl = faster.length, need = best - faster[pl - 1] + 0.1;
-      target = { v: t(`${gapS(need)} to ${ordEn(pl)} today`, `${gapS(need)} до ${pl}-го места сегодня`), go: t(`go for ${ordEn(pl)}`, `за ${pl}-м местом`),
+      target = { v: t(`${gapS(need)} to ${ordEn(pl)} on today’s ranking`, `${gapS(need)} до ${pl}-го места в рейтинге дня`), go: t('climb the ranking', 'вверх по рейтингу'),
         s: [pl > 3 ? t(`${gapS(best - faster[2] + 0.1)} to the podium`, `${gapS(best - faster[2] + 0.1)} до подиума`) : '',
           best < mine - 0.05 ? t(`from your best today, ${clock(best)}`, `от твоего лучшего сегодня, ${clock(best)}`) : ''].filter(Boolean).join(' · ') || undefined };
     } else if (faster && field?.length) {
@@ -252,8 +252,8 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   // where you lost most to the boat just ahead, a tile of the debrief's beside your best leg
   const lost = costliest(res.boats);
   if (lost) tiles.splice(Math.min(2, tiles.length), 0, { k: t('Most lost', 'Больше всего потеряно'), v: num(lost.lost), u: t('s', 'с'),
-    s: cap([lost.seg === 0 ? t('off the start line', 'на старте') : t(`leg ${lost.seg}, to ${legName(res.course.legs[lost.seg]).toLowerCase()}`, `отрезок ${lost.seg}, ${legName(res.course.legs[lost.seg]).toLowerCase()}`),
-      lost.name ? t(`to ${lost.name}`, `от ${lost.name}`) : ''].filter(Boolean).join(', ')) });
+    s: [lost.seg === 0 ? t('Off the start line', 'На старте') : t(`Leg ${lost.seg} (${legName(res.course.legs[lost.seg]).toLowerCase()})`, `Отрезок ${lost.seg} (${legName(res.course.legs[lost.seg]).toLowerCase()})`),
+      lost.name ? t(`against ${lost.name}`, `против ${lost.name}`) : ''].filter(Boolean).join(', ') });
   const ctaLabel = !shared && target?.go ? `${cta.label} · ${target.go}` : cta.label;
 
   // a first race at this venue (your stamp's race is this one), or a day of a streak
@@ -418,7 +418,7 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
         </section>
 
         <nav className="rs-card rs-next" aria-label={t('Where next', 'Куда дальше')}>
-          <Link className="bt-row" href={again}><IconRestart s={18} /><span>{res.daily ? t('Today’s race again', 'Гонка дня ещё раз') : t('The same race again', 'Эту же гонку ещё раз')}</span></Link>
+          <a className="bt-row" href={again}><IconRestart s={18} /><span>{res.daily ? t('Today’s race again', 'Гонка дня ещё раз') : t('The same race again', 'Эту же гонку ещё раз')}</span></a>
           <Link className="bt-row" href={res.daily ? '/race/free?from=today' : '/race/free'}><IconSliders /><span>{res.daily ? t('A free race in these conditions', 'Свободная гонка в этих условиях') : t('Free race', 'Свободная гонка')}</span><span className="bt-row-m">{t('Set it up', 'Настроить')}</span></Link>
           <Link className="bt-row" href="/race"><IconFlag s={18} /><span>{t('Race hub', 'Меню гонок')}</span></Link>
           <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>

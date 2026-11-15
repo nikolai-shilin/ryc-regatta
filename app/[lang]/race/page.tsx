@@ -91,7 +91,7 @@ export default async function Hub({ params }: LangParams) {
           </div>
           <FreeQuick lang={lang} />
           <div className="bt-rows">
-            <button type="button" className="bt-row" data-lock aria-haspopup="dialog"><IconSliders /><span>{t('Change the wind or course', 'Изменить ветер или дистанцию')}</span><span className="bt-row-m">{t('A free race', 'Свободная гонка')}</span></button>
+            <button type="button" className="bt-row" data-lock aria-haspopup="dialog"><IconSliders /><span>{t('Change the wind or course', 'Изменить ветер или дистанцию')}</span><span className="bt-row-m bt-row-opt">{t('A free race', 'Свободная гонка')}</span></button>
             <PassportRow lang={lang} />
             <RivalRow lang={lang} />
             <ProgressRows lang={lang} />

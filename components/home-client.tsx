@@ -33,6 +33,8 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня')}</Link>
           <Link className="hm-mi" href="/race/rating">{t('Rating', 'Рейтинг')}</Link>
           <Link className="hm-mi" href="/race/free">{t('Free race', 'Свободная гонка')}</Link>
+          <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки')}</Link>
+          <Link className="hm-mi" href="/race/badges">{t('Badges', 'Значки')}</Link>
           <Link className="hm-mi" href="/help">{t('How to play', 'Как играть')}</Link>
           <Link className="hm-mi" href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
           <Link className="hm-mi" href="/faq">{t('Questions', 'Вопросы')}</Link>
