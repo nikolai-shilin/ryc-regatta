@@ -126,18 +126,21 @@ void main() {
   vec3 R = reflect(-V, n);
   vec3 refl = skyAt(R);
   // the boats, marks and the land in the water: the mirror's picture, rippled by the surface; the sky where it shows none.
-  // On water the wind ruffles it is no clean mirror: each picture is drawn out up and down the more the wind and the
-  // further off (a hill's dark reflection a soft, streaked band, not a sharp-edged shape), and broken by the ripples
-  // there too, where the drawn ones have faded out.
+  // On water the wind ruffles it is no clean mirror: each point shows what lies some degrees above or below the true
+  // reflection, as the ripples tilt it, so a picture is smeared up and down — a hill's dark reflection a soft,
+  // streaked band and not a sharp-edged shape — the more the wind and the further off; and broken into streaks lying
+  // across the line of sight, as the ripples run (their scale growing with the distance, so they never get finer than
+  // a pixel and shimmer).
   if (uReflOn > 0.5) {
     vec4 rc = uReflMat * vec4(vWorld.x, 0.0, vWorld.z, 1.0);
-    float wk = clamp((uChop - 0.1) * 6.0, 0.0, 1.0), farK = smoothstep(40.0, 900.0, dist); // the wind, 0 to 10 m/s; how far off
-    vec2 vf = normalize(vWorld.xz - uCam.xz + 1e-4); // (the streaks lie across the line of sight: long sideways, thin towards you)
-    float streak = texture2D(uRipple, vec2(dot(vWorld.xz, vec2(-vf.y, vf.x)) / 90.0, dot(vWorld.xz, vf) / 7.0) + uTime * 0.01).w - 0.5;
-    vec2 ruv = rc.xy / rc.w + n.xz * 0.4 / (1.0 + dist * 0.07) + vec2(streak * 0.012 * wk * farK, 0.0);
-    float sp = (0.002 + 0.016 * wk) * (0.3 + 0.7 * farK);
-    vec4 rt = texture2D(uRefl, ruv) * 0.3 + (texture2D(uRefl, ruv + vec2(0.0, sp)) + texture2D(uRefl, ruv - vec2(0.0, sp))) * 0.25
-      + (texture2D(uRefl, ruv + vec2(0.0, 2.2 * sp)) + texture2D(uRefl, ruv - vec2(0.0, 2.2 * sp))) * 0.1;
+    float wk = clamp((uChop - 0.1) * 6.0, 0.0, 1.0), farK = smoothstep(30.0, 900.0, dist); // the wind, 0 to 10 m/s; how far off
+    vec2 vf = normalize(vWorld.xz - uCam.xz + 1e-4), sf = vec2(-vf.y, vf.x);
+    vec2 sq = vec2(dot(vWorld.xz, sf) / (30.0 + dist * 0.15), dot(vWorld.xz, vf) / (2.5 + dist * 0.025));
+    float jit = (texture2D(uRipple, sq + vec2(0.0, uTime * 0.05)).w - 0.5) * 0.7 + (texture2D(uRipple, sq * 2.7 + vec2(0.31, -uTime * 0.07)).w - 0.5) * 0.3;
+    float sp = (0.004 + 0.045 * wk) * (0.35 + 0.65 * farK);
+    vec2 ruv = rc.xy / rc.w + n.xz * 0.4 / (1.0 + dist * 0.07) + vec2(0.0, jit * 2.5 * sp);
+    vec4 rt = texture2D(uRefl, ruv) * 0.36 + (texture2D(uRefl, ruv + vec2(0.0, sp)) + texture2D(uRefl, ruv - vec2(0.0, sp))) * 0.22
+      + (texture2D(uRefl, ruv + vec2(0.0, 2.1 * sp)) + texture2D(uRefl, ruv - vec2(0.0, 2.1 * sp))) * 0.1;
     refl = mix(refl, rt.rgb, rt.a * uReflOn * (1.0 - smoothstep(0.96, 1.0, max(abs(ruv.x - 0.5), abs(ruv.y - 0.5)) * 2.0)));
   }
   // the water body: deep blue, lit turquoise where the crests let the sun through
@@ -222,7 +225,9 @@ void main() {
   }
   // the haze: the sky's own colour at the horizon in that direction, so the sea melts into it (warmer towards the sun)
   vec3 hz = normalize(vec3(-V.x, 0.0, -V.z) + vec3(0.0, 0.001, 0.0));
-  col = mix(col, skyBase(hz), smoothstep(uFogNear, uFogFar, dist));
+  // (thinner seen from higher up, through less of the low, thick air, as the land's is: skopea.js hazeAir)
+  float camY = max(uCam.y, 1.0), air = 0.25 + 0.75 * 700.0 * (1.0 - exp(-camY / 700.0)) / camY;
+  col = mix(col, skyBase(hz), smoothstep(uFogNear, uFogFar, dist * air));
   gl_FragColor = vec4(col, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>

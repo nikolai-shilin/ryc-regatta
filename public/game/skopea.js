@@ -254,15 +254,32 @@ vec3 slopeRelief(vec3 wn, vec2 q, float d, float near) {
   vec3 t = vec3(gully(q + vec2(e, 0.0), s) - h, 0.0, gully(q + vec2(0.0, e), s) - h) / e;
   return normalize(wn - t * 0.55 * k);
 }
+// bare rock up close: slabs each a shade of their own, the cracks between them, and lichen in patches — as a tint on
+// the rock's colour, fading to its average where it's finer than a few pixels (so the cracks don't shimmer)
+vec3 rockMod(vec2 q) {
+  float k = 1.0 - smoothstep(0.6, 3.0, length(fwidth(q)));
+  if (k <= 0.0) return vec3(1.0);
+  float slab = lnoise(q / 6.0 + lnoise(q / 21.0) * 1.6);
+  // (its joints: two sets of near-straight cracks across each other, some 7 and 11 m apart, each broken into lengths)
+  float wa = dot(q, vec2(0.8, 0.6)) / 7.0 + lnoise(q / 17.0) * 0.6, wb = dot(q, vec2(-0.6, 0.8)) / 11.0 + lnoise(q / 23.0 + 4.0) * 0.6;
+  float crack = smoothstep(0.035, 0.0, abs(fract(wa) - 0.5)) * smoothstep(0.35, 0.5, lnoise(q / 9.0 + 1.3))
+    + smoothstep(0.025, 0.0, abs(fract(wb) - 0.5)) * smoothstep(0.4, 0.55, lnoise(q / 12.0 + 7.7));
+  crack = min(crack, 1.0);
+  float lich = smoothstep(0.6, 0.7, lnoise(q / 1.4 + 2.0)) * smoothstep(0.35, 0.65, lnoise(q / 11.0 + 5.0));
+  vec3 m = vec3(0.86 + 0.28 * slab) * mix(vec3(1.0), vec3(1.12, 1.05, 0.72), lich * 0.7) * (1.0 - 0.45 * crack);
+  return mix(vec3(1.0), m, k);
+}
 float lfbm(vec2 p) { return 0.55 * lnoise(p / 220.0) + 0.3 * lnoise(p / 70.0) + 0.15 * lnoise(p / 22.0); }
 // The canopy: a wood seen from off the water is a roof of crowns, not a green lawn, and the instanced trees are far too
 // few to make it. So the ground under a wood is drawn as one: crowns a cell apart (7 m in a wood, 3.5 m in scrub),
 // packed but each placed and sized its own way, each its own shade, with the dark ground between them; each a dome
-// whose tilt goes to the light (gCrownK, gCrownN: the terrain's normal hook), so the side away from the sun is in
-// shade and a wooded slope is bumpy against the light. Where a crown shrinks to a pixel or two the detail gives way to
-// its average, so it doesn't shimmer. And each crown shades the ones beside it and the ground between, away from the
+// whose tilt goes to the light (gCrownK, gCrownO, gCrownH: the terrain's normal hook), so the side away from the sun is
+// in shade and a wooded slope is bumpy against the light. Where a crown shrinks to a pixel or two the detail gives way
+// to its average, so it doesn't shimmer. And each crown shades the ones beside it and the ground between, away from the
 // sun, the longer the lower it is (gCrownSh, on the sunlight; on average, from far off, a wood darker in a low sun).
-float gCrownK, gCrownSh = 1.0; vec3 gCrownN;
+// The crowns are laid out on the slope, not as seen from above: a steep one's are read from the side too (as the rock's
+// noise is, triplanar), so they keep their shape there rather than drawn out down it.
+float gCrownK, gCrownSh = 1.0, gCrownH = 1.0; vec3 gCrownO;
 vec4 crowns(vec2 q, float cell) { // xy: from the crown's middle to here, over its radius; z: how far out (1, its edge); w: its own shade
   vec2 s = q / cell, i = floor(s), f = fract(s);
   vec4 best = vec4(0.0, 0.0, 9.0, 0.0);
@@ -276,31 +293,44 @@ vec4 crowns(vec2 q, float cell) { // xy: from the crown's middle to here, over i
   best.z *= 0.86 + 0.28 * lnoise(s * 3.1); // ragged, not round
   return best;
 }
-vec3 canopy(vec3 c, vec2 q, float w, float cell) {
-  gCrownK = 0.0; gCrownSh = 1.0;
-  if (w <= 0.0) return c;
-  float px = length(fwidth(q)), kd = (1.0 - smoothstep(cell * 0.18, cell * 0.5, px)) * uCanopy;
-  vec3 avg = c * 0.82; // the crowns and the shade between them, as they average out
-  float lowSun = 1.0 - smoothstep(0.15, 0.9, uSun.y), shAvg = 1.0 - w * (0.1 + 0.35 * lowSun);
-  if (kd <= 0.0) { gCrownSh = shAvg; return mix(c, avg, w); }
-  vec4 cr = crowns(q, cell);
-  float on = 1.0 - smoothstep(0.8, 1.0, cr.z);
-  // the sun's line from here, risen a third of a cell (the crowns stand some half a cell above the ground between
-  // them): if another crown is higher than that there, it shades this point
-  vec4 c2 = crowns(q + uSun.xz / max(uSun.y, 0.12) * cell * 0.33, cell);
-  float h0 = on * sqrt(max(1.0 - min(cr.z * cr.z, 1.0), 0.0)) - 0.25 * (1.0 - on);
-  float h1 = (1.0 - smoothstep(0.8, 1.0, c2.z)) * sqrt(max(1.0 - min(c2.z * c2.z, 1.0), 0.0));
-  float shd = smoothstep(0.3, 0.75, h1 - h0) * step(0.001, abs(c2.w - cr.w));
-  gCrownSh = mix(shAvg, 1.0 - 0.7 * w * shd, kd); // (not all of it: the leaves let some through)
+// the crowns on one plane: their colour; how much of here is a crown (on); its bump, in the plane's own two axes, and
+// how high it stands there (h); cr, the crown itself
+vec3 crownLook(vec3 c, vec2 q, float cell, float kc, out float on, out vec2 bump, out float h, out vec4 cr) {
+  cr = crowns(q, cell);
+  on = 1.0 - smoothstep(0.8, 1.0, cr.z);
   // inside a crown, its clumps of leaves, each lit on its top and shaded under it (only while they are bigger than a
   // pixel): a little relief of its own for the light, and darker in the hollows between them
-  float kc = 1.0 - smoothstep(cell * 0.05, cell * 0.14, px), f = 5.5 / cell, e = 0.35 / f;
+  float f = 5.5 / cell, e = 0.35 / f;
   vec2 cq = q * f + cr.w * 40.0;
   float n0 = lnoise(cq), nx = lnoise(cq + vec2(0.35, 0.0)), nz = lnoise(cq + vec2(0.0, 0.35));
   vec3 tone = mix(vec3(1.0), vec3(1.07, 1.05, 0.84), cr.w) * (0.78 + 0.4 * lhash(vec2(cr.w * 91.0, 3.0))); // each tree its own green
-  vec3 det = mix(c * 0.46, c * tone * (1.0 - 0.18 * cr.z * cr.z) * mix(1.0, 0.68 + 0.6 * n0, kc), on);
-  gCrownK = kd * w * on;
-  gCrownN = normalize(vec3(cr.x - (nx - n0) / e * 0.9 * kc, 1.5 * sqrt(max(1.0 - min(cr.z * cr.z, 1.0), 0.0)), cr.y - (nz - n0) / e * 0.9 * kc));
+  h = sqrt(max(1.0 - min(cr.z * cr.z, 1.0), 0.0));
+  bump = vec2(cr.x - (nx - n0) / e * 0.9 * kc, cr.y - (nz - n0) / e * 0.9 * kc);
+  return mix(c * 0.46, c * tone * (1.0 - 0.18 * cr.z * cr.z) * mix(1.0, 0.68 + 0.6 * n0, kc), on);
+}
+vec3 canopy(vec3 c, vec3 p, vec3 nrm, float w, float cell) {
+  gCrownK = 0.0; gCrownSh = 1.0; gCrownH = 1.0; gCrownO = vec3(0.0);
+  if (w <= 0.0) return c;
+  float px = length(fwidth(p)), kd = (1.0 - smoothstep(cell * 0.18, cell * 0.5, px)) * uCanopy;
+  vec3 avg = c * 0.82; // the crowns and the shade between them, as they average out
+  float lowSun = 1.0 - smoothstep(0.15, 0.9, uSun.y), shAvg = 1.0 - w * (0.1 + 0.35 * lowSun);
+  if (kd <= 0.0) { gCrownSh = shAvg; return mix(c, avg, w); }
+  float kc = 1.0 - smoothstep(cell * 0.05, cell * 0.14, px);
+  vec3 tw = pow(abs(nrm), vec3(12.0)); tw *= step(0.06, tw / (tw.x + tw.y + tw.z)); tw /= tw.x + tw.y + tw.z; // (how much each plane: from above, from the east, from the south; none that's only a trace)
+  vec3 det = vec3(0.0), off = vec3(0.0); float on = 0.0, hg = 0.0, shd = 0.0, o, h; vec2 b; vec4 cr;
+  if (tw.y > 0.0) {
+    det += crownLook(c, p.xz, cell, kc, o, b, h, cr) * tw.y; on += o * tw.y; hg += h * tw.y; off += vec3(b.x, 0.0, b.y) * tw.y;
+    // the sun's line from here, risen a third of a cell (the crowns stand some half a cell above the ground between
+    // them): if another crown is higher than that there, it shades this point
+    vec4 c2 = crowns(p.xz + uSun.xz / max(uSun.y, 0.12) * cell * 0.33, cell);
+    float h0 = o * h - 0.25 * (1.0 - o);
+    float h1 = (1.0 - smoothstep(0.8, 1.0, c2.z)) * sqrt(max(1.0 - min(c2.z * c2.z, 1.0), 0.0));
+    shd = smoothstep(0.3, 0.75, h1 - h0) * step(0.001, abs(c2.w - cr.w)) * tw.y;
+  }
+  if (tw.x > 0.0) { det += crownLook(c, p.zy, cell, kc, o, b, h, cr) * tw.x; on += o * tw.x; hg += h * tw.x; off += vec3(0.0, b.y, b.x) * tw.x; }
+  if (tw.z > 0.0) { det += crownLook(c, p.xy, cell, kc, o, b, h, cr) * tw.z; on += o * tw.z; hg += h * tw.z; off += vec3(b.x, b.y, 0.0) * tw.z; }
+  gCrownSh = mix(shAvg, 1.0 - 0.7 * w * shd, kd); // (not all of it: the leaves let some through)
+  gCrownK = kd * w * on; gCrownO = off; gCrownH = 1.5 * hg;
   return mix(c, mix(avg, det, kd), w);
 }
 vec3 crop(int k) { vec3 c = uFields[0]; for (int i = 1; i < 6; i++) if (i == k) c = uFields[i]; return c; }
@@ -324,6 +354,8 @@ vec3 groundColour() {
   // on steep faces the noise is read from the side too (triplanar), so a cliff isn't streaked straight down
   vec3 an = abs(normalize(vLN)); float n = lfbm(p.xz);
   if (an.y < 0.85) { vec3 tw = pow(an, vec3(4.0)); tw /= tw.x + tw.y + tw.z; n = tw.y * n + tw.x * lfbm(p.zy) + tw.z * lfbm(p.xy); }
+  vec2 rq = an.y > 0.6 ? p.xz : an.x > an.z ? p.zy : p.xy; // (the rock's detail read on its face, not down a cliff)
+  vec3 rm = rockMod(rq); // (once: the bare rock, the crags and the shore's rock all take it)
   float steep = smoothstep(0.32, 0.6, 1.0 - ny), high = smoothstep(uTreeTop * 0.65, uTreeTop * 1.26, y);
   gLake = 0.0; gWet = 0.0;
   vec3 forest = mix(mix(uCol[0], uCol[1], n), uCol[2], max(0.0, n - 0.62) * 1.6);
@@ -339,7 +371,7 @@ vec3 groundColour() {
   else if (cls == 8) { c = uCol[8] * (0.93 + 0.12 * lnoise(p.xz / 9.0)); wild = 0.0; }
   else if (cls == 9) { // bare rock and scree: never quite bare, streaked, with scrub in its gullies
     float st = lnoise(vec2(p.x / 14.0, p.z / 14.0) + lnoise(p.xz / 60.0) * 3.0);
-    c = mix(mix(uCol[5], uCol[4], 0.35 + 0.5 * st), mix(uCol[3], forest, 0.5), smoothstep(0.55, 0.8, lnoise(p.xz / 45.0)) * 0.6);
+    c = mix(mix(uCol[5], uCol[4], 0.35 + 0.5 * st) * rm, mix(uCol[3], forest, 0.5), smoothstep(0.55, 0.8, lnoise(p.xz / 45.0)) * 0.6);
   }
   else if (cls == 10) c = uCol[10];
   else if (cls == 11 && ny > 0.97) { c = uLake; wild = 0.0; gLake = 1.0; } // a lake, a reservoir: its surface mirrors the sky (lakeLight)
@@ -352,7 +384,7 @@ vec3 groundColour() {
     // back — the maquis, the garrigue, the fynbos — by default; grass in a city's parks and a northern meadow; bare
     // rock, glacier-smoothed, with heath in its hollows, on a skerry coast
     float hollow = smoothstep(0.45, 0.7, lnoise(p.xz / 18.0 + lnoise(p.xz / 70.0) * 2.0));
-    vec3 clearing = uClear > 1.5 ? mix(mix(uCol[5], uCol[4], 0.3 + 0.5 * n), mix(uCol[3], uCol[0], 0.3), hollow) : uClear > 0.5 ? uCol[9] * (0.9 + 0.15 * lnoise(p.xz / 30.0)) : mix(uCol[9], uCol[3], 0.7);
+    vec3 clearing = uClear > 1.5 ? mix(mix(uCol[5], uCol[4], 0.3 + 0.5 * n) * rm, mix(uCol[3], uCol[0], 0.3), hollow) : uClear > 0.5 ? uCol[9] * (0.9 + 0.15 * lnoise(p.xz / 30.0)) : mix(uCol[9], uCol[3], 0.7);
     c = mix(c, uNF > 0.0 ? parcels(p.xz) : clearing, open * (y < 160.0 ? 0.9 : 0.5));
     // where the map has no town, the venue's towns tint the ground
     float t = 0.0;
@@ -370,7 +402,7 @@ vec3 groundColour() {
   // bare rock on the crags, in layers (the strata, a little wavy) where it's steep
   float strata = 0.86 + 0.14 * smoothstep(0.35, 0.65, fract(y / 6.5 + lnoise(p.xz / 55.0) * 1.5));
   float bare = max(smoothstep(0.5, 0.75, 1.0 - ny), high * 0.7) * (0.55 + 0.45 * lnoise(p.xz / 40.0)) * (wild > 0.0 ? max(wild, 0.5) : 0.0);
-  c = mix(c, (n > 0.5 ? uCol[4] : uCol[5]) * mix(1.0, strata, steep), bare);
+  c = mix(c, (n > 0.5 ? uCol[4] : uCol[5]) * mix(1.0, strata, steep) * rm, bare);
   wood *= (1.0 - 0.5 * scrubby) * (1.0 - bare);
   // the roads round the race area: asphalt, paler in town
   vec2 rg = (p.xz - uNearXf.xy) * uNearXf.z;
@@ -390,7 +422,9 @@ vec3 groundColour() {
   float shF = max(1.0 - smoothstep(0.35, 0.8, y), sd > 900.0 ? shH : (1.0 - smoothstep(3.0 + 3.0 * bn, 5.0 + 3.0 * bn, -sd)) * (1.0 - smoothstep(1.5, 3.0, y)));
   float sh = mix(shF, shH, rocky);
   float blocks = lnoise(p.xz / 1.8 + bn * 3.0), cracks = smoothstep(0.08, 0.0, abs(lnoise(p.xz / 3.5 + 9.0) - 0.5));
-  vec3 sc = cls == 8 ? uCol[8] : cls == 12 ? c : mix(uCol[7] * (0.9 + 0.15 * lnoise(p.xz / 1.2)), mix(uCol[7], uCol[4], 0.35) * (0.72 + 0.45 * blocks) * (1.0 - 0.45 * cracks), rocky);
+  // (on a skerry coast, uClear: rock, the low shore is the bare, wave-washed rock, not shingle)
+  float rk = uClear > 1.5 ? max(rocky, 0.85) : rocky;
+  vec3 sc = cls == 8 ? uCol[8] : cls == 12 ? c : mix(uCol[7] * (0.9 + 0.15 * lnoise(p.xz / 1.2)), mix(uCol[7], uCol[4], 0.35) * (0.72 + 0.45 * blocks) * (1.0 - 0.45 * cracks) * rm, rk);
   c = mix(c, sc, 0.9 * sh);
   // and wet just above the water: as high as the waves run up it, each in its turn along the shore, every few seconds
   // (higher on a steep rocky shore, where they break against it and splash), darker and with a sheen — not on the low
@@ -399,7 +433,7 @@ vec3 groundColour() {
   gWet = (1.0 - smoothstep(run - 0.12, run + 0.08, y)) * (sd > 900.0 ? 1.0 : 1.0 - smoothstep(5.0, 16.0, -sd)) * (cls == 12 || cls == 11 ? 0.0 : 1.0);
   c *= 1.0 - 0.45 * gWet;
   wood *= 1.0 - sh;
-  return canopy(c, p.xz, wood, cell);
+  return canopy(c, p, normalize(vLN), wood, cell);
 }
 `;
 
@@ -501,7 +535,7 @@ float canopyLift(vec3 p, vec3 n) {
 }`;
 // …and on the terrain the canopy's crowns too (GROUND_GLSL's canopy(): each a dome on the slope, tilted to the light)
 const RELIEF_CROWNS = `{ vec3 wn = slopeRelief(normalize(vLN), vLand.xz, length(vHz), 600.0);
-  if (gCrownK > 0.0) wn = normalize(mix(wn, normalize(wn * gCrownN.y + vec3(gCrownN.x, 0.0, gCrownN.z)), gCrownK * 0.75));
+  if (gCrownK > 0.0) wn = normalize(mix(wn, normalize(wn * gCrownH + gCrownO - wn * dot(gCrownO, wn)), gCrownK * 0.75)); // (its bump along the slope)
   normal = normalize((viewMatrix * vec4(wn, 0.0)).xyz); }`;
 function terrain() {
   const all = new THREE.BufferGeometry(), pos = new THREE.BufferAttribute(MESH.pos, 3);
