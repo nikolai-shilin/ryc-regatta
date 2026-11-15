@@ -867,7 +867,9 @@ const BV = (() => {
   const CLEW = new THREE.Vector3(0, 0.6, 5.8); // from the tack: a 106% genoa, its clew just aft of the mast
   const SPRIT = new THREE.Vector3(0, hull.deckY(hull.BOW) + 0.2, hull.BOW - 0.45);
   const FLOOR = hull.deckY(4.5) - 0.49, CK = [COACH.za, 1.13], HELM = [5.35, 1.42], PLAT = 1.0; // the cockpit: its sole, where it starts and its half-width; where it widens for the wheels, and to what; the bathing platform's half-width
-  const rig = rigOf({ span: MASTHEAD - 0.45 - BOOM_Y, chord, numAt: 0.6, logoAt: 0.76, flagAt: 0.88, mark: 2.0, head: HEAD, tack: TACK, clew: CLEW, ad: 2.4, adH: 1.2 });
+  // the logo and the flag 1.2 m wide: the furling main's head is narrow (1.5 m across where the logo goes), and her
+  // number is small on it
+  const rig = rigOf({ span: MASTHEAD - 0.45 - BOOM_Y, chord, numAt: 0.6, logoAt: 0.76, flagAt: 0.88, mark: 1.2, head: HEAD, tack: TACK, clew: CLEW, ad: 2.4, adH: 1.2 });
   return { L, B, hull, COACH, coachY, ROOF, SHEET_Z, MAST_Z, MAST_FOOT, MASTHEAD, HOUNDS, BOOM_Y, BL, SPR, chord, TACK, HEAD, CLEW, SPRIT, FLOOR, CK, HELM, PLAT, rig, WHEEL_Z: 5.95, WHEEL_X: 0.88, WINCH_Z: 4.9, WINCH_X: 1.34, FEET_Z: MAST_Z + 2.95 };
 })();
 const coamY = (z) => BV.hull.deckY(z) + BV.COACH.coam + 0.035; // the coamings' top, where the primary winches stand

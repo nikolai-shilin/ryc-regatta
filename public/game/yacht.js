@@ -506,12 +506,30 @@ export function sailTexture(kind, look, rig = null) {
       x.save(); x.translate(W * u, H * (1 - f)); x.scale(W / chordAt(f), H / span); draw(); x.restore();
       t.needsUpdate = true; // the clone on the other side shares the canvas
     };
-    // the country flag, SAIL_MARK m wide and 3:2, m metres up the luff
-    const flagAt = (onCloth, m) => logoImage(look.flag).then((img) => img && onCloth(m, () => {
-      const w = R.mark, h = w / 1.5;
-      x.drawImage(img, -w / 2, -h / 2, w, h);
-      x.strokeStyle = 'rgba(0,0,0,.22)'; x.lineWidth = 0.008; x.strokeRect(-w / 2, -h / 2, w, h); // an edge, for a white flag on white cloth
-    }));
+    // the country flag, its full SAIL_MARK m wide and 3:2, centred m metres up the luff and z metres aft of it: drawn a
+    // row of the canvas at a time, each row scaled by the chord there, so it comes out an upright rectangle on the sail
+    // (not narrowing as the sail does), with an edge for a white flag on white cloth
+    const flagAt = (m, z) => logoImage(look.flag).then((img) => {
+      if (!img) return;
+      const w = R.mark, h = w / 1.5, iw = 300, ih = 200;
+      const fc = document.createElement('canvas'); fc.width = iw; fc.height = ih; // the flag at a size to slice (an SVG may have none)
+      fc.getContext('2d').drawImage(img, 0, 0, iw, ih);
+      const j0 = Math.round(H * (1 - (m + h / 2) / R.span)), j1 = Math.round(H * (1 - (m - h / 2) / R.span));
+      for (let j = j0 - 1; j <= j1; j++) {
+        const f = 1 - (j + 0.5) / H, k = W / R.chord(f), x0 = (z - w / 2) * k, x1 = (z + w / 2) * k, edge = j < j0 || j === j1;
+        x.fillStyle = 'rgba(0,0,0,.22)'; x.fillRect(x0 - 1, j, x1 - x0 + 2, 1);
+        if (!edge) x.drawImage(fc, 0, ((j - j0) / (j1 - j0)) * ih, iw, ih / (j1 - j0), x0, j, x1 - x0, 1);
+      }
+      t.needsUpdate = true;
+    });
+    // where the flag goes: the highest it can, up to m metres up the luff, with its whole width on the cloth (clear of
+    // the luff and leech tapes) — a narrow head would otherwise cut it off. Gives [m, z], z its middle aft of the luff
+    const flagPlace = (m) => {
+      const w = R.mark, h = w / 1.5, MARGIN = 0.06, room = (mm) => R.chord(Math.min(1, (mm + h / 2) / R.span)) * (1 - 2 * MARGIN);
+      for (; m > h && room(m) < w; m -= 0.02);
+      const ct = R.chord(Math.min(1, (m + h / 2) / R.span)), z = clamp(0.47 * R.chord(m / R.span), ct * MARGIN + w / 2, ct * (1 - MARGIN) - w / 2);
+      return [m, z];
+    };
     // laminate: fine fibres; cloth: panel seams
     if (look.laminate) {
       x.strokeStyle = 'rgba(255,255,255,.07)'; x.lineWidth = 1;
@@ -553,10 +571,12 @@ export function sailTexture(kind, look, rig = null) {
       else { x.fillText(look.nat, 0, -82); x.fillText(look.num, 0, 70); }
       x.restore();
       // the logo and the country flag above it, the same width on the cloth (SAIL_MARK m), evenly spaced between the
-      // number and the top batten
+      // number and the top batten. Where the head is too narrow for the flag it comes down to where it fits, and the
+      // logo with it, kept a third of the flag's width below it
       const onCloth = clothAt(R.span, R.chord, 0.47);
-      if (look.logo) logoImage(look.logo).then((img) => img && onCloth(R.logoM, () => drawContain(x, img, 0, 0, R.mark, R.mark))); // a wide logo fills the width, a square one is SAIL_MARK square
-      if (look.flag) flagAt(onCloth, R.flagM);
+      const [fm, fz] = flagPlace(R.flagM), logoM = look.flag ? Math.min(R.logoM, fm - R.mark / 3 - R.mark * (0.5 + 1 / 3)) : R.logoM;
+      if (look.logo) logoImage(look.logo).then((img) => img && onCloth(logoM, () => drawContain(x, img, 0, 0, R.mark, R.mark))); // a wide logo fills the width, a square one is SAIL_MARK square
+      if (look.flag) flagAt(fm, fz);
     } else {
       x.fillStyle = look.batten; x.fillRect(W * 0.7, H * 0.35, W * 0.3, 16); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 16);
       // the ad, low on the jib under the battens, at most JIB_AD wide and JIB_AD_H tall. The cloth maps (u along the
