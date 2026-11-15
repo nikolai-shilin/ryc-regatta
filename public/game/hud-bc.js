@@ -406,6 +406,7 @@ const CSS = `
 .b-lv.l1 > i:nth-child(-n+1), .b-lv.l2 > i:nth-child(-n+2), .b-lv.l3 > i:nth-child(-n+3), .b-lv.l4 > i { background: var(--ink-2); }
 .b-lv > span { margin-left: var(--s-1); }
 .b-lv.l4 { color: var(--ink-2); }
+.b-row:has(.b-pen:not([hidden])) .b-lv > span { display: none; } /* with PEN beside it, the pips alone, so her name keeps its room */
 /* a boat with a penalty to do: PEN, on her row of the board and on her tag */
 .b-pen { flex: none; display: inline-flex; align-items: center; align-self: center; height: 18px; padding: 0 var(--s-2); margin-right: var(--s-2); background: var(--live); color: var(--ink); font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
 .b-btag .b-pen { align-self: stretch; height: auto; margin: 0; padding: 0 var(--s-3); }
@@ -419,6 +420,7 @@ const CSS = `
 .b-msplit .b-row.me .b-pos { background: var(--you); color: var(--ink-on); }
 .b-msplit .b-tm { width: 56px; text-align: right; font: 600 var(--fs-row)/1 var(--cond); color: var(--ink-2); }
 .b-msplit .b-row .b-gp { min-width: 66px; }
+.b-msplit .b-lv { padding: 0; border: 0; } .b-msplit .b-lv > span { display: none; } /* tight here beside the times: the pips alone */
 .b-msplit .b-row.due .b-nm, .b-msplit .b-row.due .b-tm, .b-msplit .b-row.due .b-gp { color: var(--ink-3); }
 .b-msplit .b-row.due .b-fl { opacity: .6; }
 .b-msplit .b-bf { padding: var(--s-2) var(--s-4) var(--s-3); border-top: 1px solid var(--rule-2); }
@@ -647,9 +649,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     <div class="b-bf"><span class="lbl">${L.due}</span></div><div class="b-timer" aria-hidden="true"><i></i></div></div>`);
   const MS = { k: q(msplit, '.lbl-ink'), bar: q(msplit, '.b-timer i'), rows: [] };
   for (let n = 0; n < 6; n++) {
-    const r = html(`<div class="b-row"><b class="b-pos"></b><img class="b-fl" alt="" hidden><span class="b-nm"></span><b class="b-pen" hidden>${L.pen}</b><span class="b-tm"></span><span class="b-gp"></span></div>`);
+    const r = html(`<div class="b-row"><b class="b-pos"></b><img class="b-fl" alt="" hidden><span class="b-nm"></span><span class="b-lv" hidden><i></i><i></i><i></i><i></i><span></span></span><b class="b-pen" hidden>${L.pen}</b><span class="b-tm"></span><span class="b-gp"></span></div>`);
     q(msplit, '.b-rows').append(r);
-    MS.rows.push({ el: r, pos: q(r, '.b-pos'), fl: q(r, '.b-fl'), nm: q(r, '.b-nm'), pen: q(r, '.b-pen'), tm: q(r, '.b-tm'), gp: q(r, '.b-gp') });
+    MS.rows.push({ el: r, pos: q(r, '.b-pos'), fl: q(r, '.b-fl'), nm: q(r, '.b-nm'), lv: q(r, '.b-lv'), pen: q(r, '.b-pen'), tm: q(r, '.b-tm'), gp: q(r, '.b-gp') });
   }
   hud.append(bug, calls, top, tr, board, msplit, map, low, acts, goEl, fin);
   const windBox = q(tr, '.b-wind');
@@ -1249,7 +1251,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       const me = x.b === P, i = rows.indexOf(x) + 1, lead = i === 1 && !x.due;
       cls(r.el, `b-row${me ? ' me' : ''}${x.due ? ' due' : ' rd'}${lead ? ' first' : ''}${cx.includes(x) ? '' : ' cxh'}`);
       txt(r.pos, String(i));
-      txt(r.nm, me ? t('you') : x.b.name); setFlag(r.fl, flagOf(x.b, me)); showPen(r.pen, x.b);
+      txt(r.nm, me ? t('you') : x.b.name); setFlag(r.fl, flagOf(x.b, me)); showPen(r.pen, x.b); showLevel(r.lv, me ? null : x.b.level);
       txt(r.tm, x.due ? (x.d == null ? '—' : `${Math.round(x.d)} ${M}`) : fmt(x.t));
       txt(r.gp, x.due ? (x.d == null ? '' : L.toGo) : x.gap == null ? '—' : lead ? L.leads : `+${fmt(x.gap)}`); r.gp.classList.toggle('dim', lead || x.due);
     });
