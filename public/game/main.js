@@ -46,7 +46,7 @@ const T = {
     timeFree: 'free race', timeDaily: 'today’s race', inStart: 'In the start sequence.', notOver: 'Still to cross the start line.', notOverYou: 'You haven’t crossed the start line yet.',
     kick: 'Game', title: 'Up and down', fun: 'Just for fun — take a break and relax between tests.', sub: 'A race round the marks against the computer boats, under the racing rules. Steer, trim, tack, read the wind.',
     modeK: 'Race', daily: 'Today’s race', free: 'Free race', howK: 'How to play',
-    dailyNote: (w, at, sh) => `The same place, course and wind for everyone today — ${at}, ${sh}, ${w} — so times compare fairly. The fastest are on the Home page.`,
+    dailyNote: (w, at, sh, y) => `The same place, yacht, course and wind for everyone today — ${at}, the ${y}, ${sh}, ${w} — so times compare fairly. A new yacht every day. The fastest are on the Home page.`,
     shapeWl: 'Up and down', shapeTri: 'Triangle', shapeTrap: 'Trapezoid', shapeWlu: 'Up and down, upwind finish',
     dbK: 'Your race', dGun: (d, v) => `At the gun: ${d} m from the line at ${v} kn`, dGunOver: 'At the gun: over the line — you had to go back',
     dStartLate: (s) => `You crossed the line ${s} s after the gun`, tipStart: 'Aim to be a boat length behind the line, at full speed, as the gun goes.',
@@ -140,7 +140,7 @@ const T = {
     timeFree: 'свободная гонка', timeDaily: 'гонка дня', inStart: 'Идёт стартовая процедура.', notOver: 'Стартовая линия ещё впереди.', notOverYou: 'Ты ещё не пересёк стартовую линию.',
     kick: 'Игра', title: 'Up and down', fun: 'Просто для удовольствия — отдохни и расслабься между тестами.', sub: 'Гонка вокруг знаков против компьютерных лодок по правилам. Рули, работай шкотом, делай повороты, читай ветер.',
     modeK: 'Гонка', daily: 'Гонка дня', free: 'Свободная', howK: 'Как играть',
-    dailyNote: (w, at, sh) => `Сегодня у всех одно место, одна дистанция и один ветер — ${at}, ${sh}, ${w}, — так что время честно сравнивается. Самые быстрые — на главной.`,
+    dailyNote: (w, at, sh, y) => `Сегодня у всех одно место, одна яхта, одна дистанция и один ветер — ${at}, ${y}, ${sh}, ${w}, — так что время честно сравнивается. Каждый день — новая яхта. Самые быстрые — на главной.`,
     shapeWl: 'Апвинд — даунвинд', shapeTri: 'Треугольник', shapeTrap: 'Трапеция', shapeWlu: 'Апвинд — даунвинд, финиш наверху',
     dbK: 'Твоя гонка', dGun: (d, v) => `На сигнале старта: ${d} м до линии, ${v} уз`, dGunOver: 'На сигнале старта: за линией — пришлось возвращаться',
     dStartLate: (s) => `Линию пересёк через ${s} с после сигнала`, tipStart: 'Цель — быть в корпусе от линии на полной скорости в момент сигнала.',
@@ -253,6 +253,9 @@ const DAILY_KEYS = ['preset', 'fleet', 'length', 'laps', 'start', 'current', 'co
 // (a free race's length the venue hasn't room for: the longest it has)
 const settings = () => { if (drill) return { ...opts, ...drillSettings(), length: laidLength(VENUE, drillSettings().length), daily: null }; if (opts.mode !== 'daily') return { ...opts, length: laidLength(VENUE, opts.length), daily: null }; const d = dailyRace(); return { ...opts, ...d, daily: d.day }; };
 const windName = (p) => t(p);
+// the yachts' names, as lib/yachts.ts has them (another class: its id)
+const YACHT_NAMES = { club40: ['Club 40', 'Клуб 40'], bavaria46: ['Bavaria 46', 'Bavaria 46'], j70: ['J/70', 'J/70'], rs21: ['RS21', 'RS21'], laser: ['Laser (ILCA)', 'Laser (ILCA)'], ac75: ['AC75', 'AC75'] };
+const yachtName = (id) => (YACHT_NAMES[id] || [id, id])[LANG === 'ru' ? 1 : 0];
 const SHAPE_KEY = { wl: 'shapeWl', tri: 'shapeTri', trap: 'shapeTrap', wlu: 'shapeWlu' };
 const paintOpts = () => {
   const s = settings();
@@ -261,7 +264,7 @@ const paintOpts = () => {
     g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(s[g.dataset.opt]) === b.dataset.v));
     if (g.dataset.opt === 'length') g.querySelectorAll('button').forEach((b) => { b.hidden = !lengthOffered(VENUE, b.dataset.v); });
   });
-  const n = $('#dailyNote'); if (n) { n.hidden = opts.mode !== 'daily'; n.textContent = t('dailyNote', windName(s.preset), venueById(s.venue).name[LANG === 'ru' ? 1 : 0], t(SHAPE_KEY[laidShape(s.course, s.length)])); } // the shape the race is laid in (sim.js), not only the one asked for
+  const n = $('#dailyNote'); if (n) { n.hidden = opts.mode !== 'daily'; n.textContent = t('dailyNote', windName(s.preset), venueById(s.venue).name[LANG === 'ru' ? 1 : 0], t(SHAPE_KEY[laidShape(s.course, s.length)]), yachtName(CLS.id)); } // the shape the race is laid in (sim.js), not only the one asked for
 };
 // a third way to trim: the main and the jib each on their own sheet
 { const g = document.querySelector('.choice[data-opt="autoTrim"]'); if (g && !g.querySelector('[data-v="2"]')) { const b = document.createElement('button'); b.dataset.v = '2'; b.innerHTML = t('split'); g.append(b); } }
@@ -270,11 +273,11 @@ for (const g of document.querySelectorAll('.choice[data-opt]')) {
   const k = g.dataset.opt;
   g.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    if (opts.mode === 'daily' && DAILY_KEYS.includes(k)) { Object.assign(opts, Object.fromEntries(DAILY_KEYS.map((x) => [x, settings()[x]]))); opts.mode = 'free'; } // changing today's settings makes it a free race
+    if (opts.mode === 'daily' && DAILY_KEYS.includes(k)) { Object.assign(opts, Object.fromEntries(DAILY_KEYS.map((x) => [x, settings()[x]]))); opts.yacht = CLS.id; opts.mode = 'free'; } // changing today's settings makes it a free race, in today's yacht
     opts[k] = k === 'preset' || k === 'gfx' || k === 'length' || k === 'mode' || k === 'course' ? b.dataset.v : +b.dataset.v; paintOpts(); saveOpts();
     // today's race is at the day's venue, a free race where the set-up chose: another venue's land needs the page loaded again
-    // …and so does another class of yacht: today's race is sailed in the club's 40-footer, a free race in the one chosen (classes.js)
-    if (k === 'mode' && !new URLSearchParams(location.search).get('boat') && (opts.mode === 'daily' ? 'club40' : classById(opts.yacht).id) !== CLS.id) { location.href = '/play?race=' + (opts.mode === 'daily' ? 'today' : 'free'); return; }
+    // …and so does another class of yacht: today's race is sailed in the day's, a free race in the one chosen (classes.js)
+    if (k === 'mode' && !new URLSearchParams(location.search).get('boat') && (opts.mode === 'daily' ? dailyRace().yacht : classById(opts.yacht).id) !== CLS.id) { location.href = '/play?race=' + (opts.mode === 'daily' ? 'today' : 'free'); return; }
     if (k === 'mode' && !new URLSearchParams(location.search).get('venue') && (opts.mode === 'daily' ? dailyRace().venue : venueById(opts.venue).id) !== VENUE.id) { location.href = '/play?race=' + (opts.mode === 'daily' ? 'today' : 'free'); return; }
     if (k === 'gfx') { world.setQuality(startQuality()); perf.settle = 2; }
     if (k === 'guides') world.showGuides = !!opts.guides;
@@ -1277,8 +1280,9 @@ if (!opts.played) $('#howD').open = true; // how to play: open until the first r
 function startRace() {
   audio.init(); audio.setOn(!!opts.sound); skipper.load(); crews.load(); asides.load(); calls.load(); score.style();
   const day = dailyRace();
-  // a new day: a new daily race, and at another venue its land needs the page loaded again
-  if (race.settings.daily && race.settings.daily !== day.day && day.venue !== VENUE.id && !new URLSearchParams(location.search).get('venue')) { location.href = '/play?race=today'; return; }
+  // a new day: a new daily race, and at another venue its land needs the page loaded again, in another yacht her model
+  const q = new URLSearchParams(location.search);
+  if (race.settings.daily && race.settings.daily !== day.day && ((day.venue !== VENUE.id && !q.get('venue')) || (day.yacht !== CLS.id && !q.get('boat')))) { location.href = '/play?race=today'; return; }
   if (running || menuChanged || race.over || (race.settings.daily && race.settings.daily !== day.day) || (firstStart && !dressed)) newRace();
   else if (firstStart) world.resetView(); // the race built at load: the drone has circled her under the preloader
   menuChanged = false; firstStart = false;

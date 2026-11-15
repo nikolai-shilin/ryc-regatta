@@ -1,7 +1,7 @@
-// The yachts you can race: the club's 40-footer (the default, and the only one in today's race), the J/70 and RS21
+// The yachts you can race: the club's 40-footer (the default), the J/70 and RS21
 // sportboats and the AC75 foiling monohull. A race is one-design: every boat in it is the same class, so the class is chosen for
 // the page, as the venue is (venues.js pageVenue): ?boat= in the address wins; a free race sails what its set-up chose
-// (localStorage 'regatta', yacht); today's race, and every other page, the club's 40-footer.
+// (localStorage 'regatta', yacht); today's race the day's (dailyYacht, below); every other page the club's 40-footer.
 // lib/yachts.ts has the same ids and the words the site shows about them.
 
 // a polar: knots by true wind speed (tws, the columns) and true wind angle (twa, the rows); beat: the close-hauled
@@ -90,11 +90,38 @@ export const CLASS_IDS = Object.keys(CLASSES);
 export const DEFAULT_CLASS = 'club40';
 export const classById = (id) => CLASSES[id] || CLASSES[DEFAULT_CLASS];
 
+// Today's race's yacht, a new one every day: from the day each joins today's races (DAILY_YACHTS) the days go round
+// them in a shuffled order, every one of them in turn and never the same two days running; the days before the first
+// joined, the club's 40-footer. A class not in DAILY_YACHTS sails only free races. lib/race.ts dailyYacht does the
+// same, and npm test keeps the two in step.
+// Not the AC75 yet: she sails a course in about half the 40-footer's time, under the floor the scores server (api/game.mjs
+// in the iyt-test repo) keeps for a course whatever the yacht, so her best times would never rank (npm test checks it).
+export const DAILY_YACHTS = { club40: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16' };
+const dayN = (s) => Math.floor(Date.parse(s) / 864e5);
+export const YACHT_ROUNDS = [...new Set(Object.values(DAILY_YACHTS).map(dayN))].sort((a, b) => a - b)
+  .map((n0) => ({ n0, ids: Object.keys(DAILY_YACHTS).filter((id) => dayN(DAILY_YACHTS[id]) <= n0) }));
+function yachtRound(ids, k) {
+  let s = ((k + 1) * 69069 + 4111) >>> 0 || 1; // the venues' generator (venues.js), seeded on its own
+  const r = () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+  const a = ids.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function yachtOn(n) {
+  if (n < YACHT_ROUNDS[0].n0) return DEFAULT_CLASS;
+  let e = YACHT_ROUNDS.length - 1; while (e > 0 && n < YACHT_ROUNDS[e].n0) e--;
+  const { n0, ids } = YACHT_ROUNDS[e], len = ids.length, k = Math.floor((n - n0) / len), a = yachtRound(ids, k);
+  if (len > 1 && a[0] === (k > 0 ? yachtRound(ids, k - 1)[len - 1] : yachtOn(n0 - 1))) [a[0], a[1]] = [a[1], a[0]];
+  return a[n - n0 - k * len];
+}
+export const dailyYacht = (date = new Date()) => yachtOn(dayN(date.toISOString().slice(0, 10)));
+
 export function pageClass() {
   try {
     const q = new URLSearchParams(location.search);
     if (q.get('boat')) return classById(q.get('boat'));
     if (q.get('race') === 'free') return classById(JSON.parse(localStorage.getItem('regatta') || '{}').yacht);
+    if (/^\/play/.test(location.pathname) && !q.get('drill')) return classById(dailyYacht()); // a drill: the club's boat
   } catch (e) {}
   return CLASSES[DEFAULT_CLASS];
 }

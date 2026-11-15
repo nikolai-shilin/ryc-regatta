@@ -49,7 +49,7 @@ export default function FreeSetup({ lang, from }: { lang: Lang; from: 'today' | 
     const venue = venueOf(o.venue).id, daytime = DAYTIMES.includes(o.daytime) ? o.daytime : 'any';
     // a yacht asked for in the address (the yachts page's Race her), else the one last raced
     const asked = new URLSearchParams(location.search).get('yacht'), yacht = isYacht(asked) ? asked : isYacht(o.yacht) ? o.yacht : 'club40';
-    const start: Pick = fromToday ? { venue: d.venue, yacht, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course, daytime }
+    const start: Pick = fromToday ? { venue: d.venue, yacht: d.yacht, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course, daytime }
       : { venue, yacht, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: savedShape(o.course), daytime };
     setP(start); if (from) setBase(start);
     setNear([d.venue, venue]);

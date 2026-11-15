@@ -15,7 +15,7 @@ export const DAYTIMES: readonly Daytime[] = ['any', 'morning', 'midday', 'aftern
 export type Opts = {
   mode: 'daily' | 'free';
   venue: VenueId; // where a free race is sailed (public/game/venues.js); today's race goes to the day's venue
-  yacht: YachtId; // the class a free race is sailed in (public/game/classes.js); today's race is always the club's 40-footer
+  yacht: YachtId; // the class a free race is sailed in (public/game/classes.js); today's race, the day's (lib/race.ts dailyYacht)
   preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape;
   daytime: Daytime; // the time of day a free race is sailed at (public/game/light.js: DAYTIMES); 'any' a new hour every race
   autoTrim: number; // 0 I trim · 1 auto · 2 main + jib

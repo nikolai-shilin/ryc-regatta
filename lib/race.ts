@@ -1,6 +1,8 @@
-// Today's race and the race options, as the game has them (public/game/sim.js: dailyRace and the option values).
+// Today's race and the race options, as the game has them (public/game/sim.js: dailyRace and the option values;
+// classes.js: dailyYacht).
 // The same date gives the same race on the hub and in the game.
 import { VENUES, type VenueId } from './venues.ts'; // with its extension, so npm test's Node finds it too
+import type { YachtId } from './yachts.ts';
 
 function rng(seed: number) {
   // exactly as sim.js, signed shift included, so the numbers match the game's
@@ -11,7 +13,7 @@ function rng(seed: number) {
 export type Wind = 'light' | 'medium' | 'strong';
 export type Length = 'short' | 'medium' | 'long';
 export type Shape = 'wl' | 'tri' | 'trap' | 'wlu';
-export type Daily = { day: string; seed: number; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape; venue: VenueId };
+export type Daily = { day: string; seed: number; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape; venue: VenueId; yacht: YachtId };
 
 // today's venue, as public/game/venues.js dailyVenue: the days go round all the venues in a shuffled order, a venue
 // added later (`from`) among them from its day, the days before going round the ones there were then
@@ -31,6 +33,26 @@ function venueOn(n: number): VenueId {
 }
 export const dailyVenue = (date = new Date()): VenueId => venueOn(Math.floor(Date.parse(date.toISOString().slice(0, 10)) / 864e5));
 
+// today's yacht, as public/game/classes.js dailyYacht: from the day each joins today's races (DAILY_YACHTS) the days go
+// round them in a shuffled order, never the same two days running; the days before the first joined, the Club 40
+// (not the AC75 yet: her times would fall under the scores server's floor)
+export const DAILY_YACHTS: Partial<Record<YachtId, string>> = { club40: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16' };
+const YACHT_ROUNDS = [...new Set(Object.values(DAILY_YACHTS).map((s) => dayN(s!)))].sort((a, b) => a - b)
+  .map((n0) => ({ n0, ids: (Object.keys(DAILY_YACHTS) as YachtId[]).filter((id) => dayN(DAILY_YACHTS[id]!) <= n0) }));
+function yachtRound(ids: YachtId[], k: number) {
+  const a = ids.slice(), r = rng((k + 1) * 69069 + 4111);
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function yachtOn(n: number): YachtId {
+  if (n < YACHT_ROUNDS[0].n0) return 'club40';
+  let e = YACHT_ROUNDS.length - 1; while (e > 0 && n < YACHT_ROUNDS[e].n0) e--;
+  const { n0, ids } = YACHT_ROUNDS[e], len = ids.length, k = Math.floor((n - n0) / len), a = yachtRound(ids, k);
+  if (len > 1 && a[0] === (k > 0 ? yachtRound(ids, k - 1)[len - 1] : yachtOn(n0 - 1))) [a[0], a[1]] = [a[1], a[0]];
+  return a[n - n0 - k * len];
+}
+export const dailyYacht = (date = new Date()): YachtId => yachtOn(dayN(date.toISOString().slice(0, 10)));
+
 // the days before SHAPES_FROM are all up and down; from it today's race picks one of the four shapes each day
 export const SHAPES_FROM = '2026-11-20';
 export function dailyRace(date = new Date()): Daily {
@@ -39,7 +61,7 @@ export function dailyRace(date = new Date()): Daily {
   // the draws stay in this order: the wind, the current, then the shape, so the days that came before don't move
   const preset = (['light', 'medium', 'strong'] as const)[Math.floor(r() * 3)], current = r() < 0.3 ? 1 : 0, shape = r();
   const course: Shape = day < SHAPES_FROM ? 'wl' : shape < 0.4 ? 'wl' : shape < 0.6 ? 'tri' : shape < 0.8 ? 'trap' : 'wlu';
-  return { day, seed: (n * 7919) % 100000, preset, fleet: 5, length: 'short', laps: 1, start: 1, current, course, venue: dailyVenue(date) };
+  return { day, seed: (n * 7919) % 100000, preset, fleet: 5, length: 'short', laps: 1, start: 1, current, course, venue: dailyVenue(date), yacht: dailyYacht(date) };
 }
 
 export const KN: Record<Wind, number> = { light: 7, medium: 12, strong: 19 };

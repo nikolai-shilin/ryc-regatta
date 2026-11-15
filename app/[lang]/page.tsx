@@ -6,6 +6,7 @@ import { pageMeta, jsonLd, SITE, NAME, OG_IMAGE, HOME_TITLE, HOME_DESC } from '@
 import { ruBoats } from '@/lib/lang';
 import { todayTop } from '@/lib/today';
 import { dailyRace, raceMinutes, KN } from '@/lib/race';
+import { yachtOf } from '@/lib/yachts';
 import { VENUES, venueOf } from '@/lib/venues';
 import { VenueList } from '@/components/passport';
 import { IconArrow, IconPlay, Num, clock } from '@/components/ui';
@@ -56,8 +57,8 @@ function siteLd(lang: 'en' | 'ru', t: (en: string, ru: string) => string) {
 export default async function Home({ params }: LangParams) {
   const { lang, t } = await getT(params);
   const today = await todayTop();
-  const d = dailyRace(), where = venueOf(d.venue).name[lang === 'ru' ? 1 : 0];
-  const kn = KN[d.preset], mins = raceMinutes(d);
+  const d = dailyRace(), where = venueOf(d.venue).name[lang === 'ru' ? 1 : 0], boat = yachtOf(d.yacht), yacht = t(...boat.name);
+  const kn = KN[d.preset], mins = raceMinutes({ ...d, timeK: boat.timeK }); // at today's yacht's own pace
   const windName = { light: t('Light', 'Слабый'), medium: t('Medium', 'Средний'), strong: t('Strong', 'Сильный') }[d.preset];
   const live = today && today.d === d.day ? today : null;
   const top = live ? live.top : [];
@@ -70,7 +71,8 @@ export default async function Home({ params }: LangParams) {
     races ? t(`${races} ${races === 1 ? 'race' : 'races'} sailed today`, `Сегодня заездов: ${races}`) : t('Nobody has finished today’s race yet', 'Гонку дня ещё никто не прошёл'),
     best ? t(`${name(best.name)} holds the time to beat · ${beat}`, `Время, которое надо побить, у ${name(best.name)} · ${beat}`) : '',
     best && top[1] ? t(`${name(top[1].name)} is ${(top[1].s - best.s).toFixed(1)} s off the lead`, `${name(top[1].name)} отстаёт от лидера на ${(top[1].s - best.s).toFixed(1).replace('.', ',')} с`) : '',
-    t(`${where} · ${windName.toLowerCase()} ${kn} kn · ${d.fleet} boats`, `${where} · ${windName.toLowerCase()} ${kn} уз · ${ruBoats(d.fleet)}`),
+    t(`${where} · the ${yacht} · ${windName.toLowerCase()} ${kn} kn · ${d.fleet} boats`, `${where} · ${yacht} · ${windName.toLowerCase()} ${kn} уз · ${ruBoats(d.fleet)}`),
+    t('A new yacht every day', 'Каждый день — новая яхта'),
     t('A new race every midnight UTC', 'Новая гонка — каждую полночь по UTC'),
   ].filter(Boolean);
 
@@ -117,7 +119,7 @@ export default async function Home({ params }: LangParams) {
         <Soundtrack lang={lang} />
         <div className="ho-in">
           <div className="ho-info">
-            <span className="ho-kick"><span className="dot-live" />{t(`Live · today’s race · ${where}`, `Эфир · гонка дня · ${where}`)}</span>
+            <span className="ho-kick"><span className="dot-live" />{t(`Live · today’s race · ${where} · ${yacht}`, `Эфир · гонка дня · ${where} · ${yacht}`)}</span>
             <h1 className="ho-h1" id="home-h1">{beat ? t(`Beat ${beat} today`, `Побей ${beat} сегодня`) : t('Set today’s time to beat', 'Задай время дня')}</h1>
             <p className="ho-lead">{t(
               `A free sailing race game in your browser, under the real racing rules. One race for everyone today, so your time sits right next to theirs. About ${mins} minutes, no sign-up to start.`,

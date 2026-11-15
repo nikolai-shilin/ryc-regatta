@@ -6,6 +6,7 @@ import { Who as LbWho } from '@/components/flag';
 import { DailyLock } from '@/components/daily-lock';
 import { ruPlural } from '@/lib/lang';
 import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, SHAPE_NAME } from '@/lib/race';
+import { yachtOf } from '@/lib/yachts';
 import { venueOf } from '@/lib/venues';
 import { BackLink } from '@/components/back-link';
 import { IconPlay, IconTrophy, IconSliders, IconBoats, IconSail, Num, clock } from '@/components/ui';
@@ -29,24 +30,24 @@ export const generateMetadata = titled('Race hub', 'Меню гонок', {
     'Гонка дня: одинаковые место, ветер, дистанция и флот для всех, новая — каждую полночь по UTC. Проходи сколько хочешь, побей лучшие времена дня или настрой свою свободную гонку.'],
 });
 
-// I1 · The race hub, as the race's pause screen: today's venue in the game's own scene behind it all (your yacht afloat
+// I1 · The race hub, as the race's pause screen: today's venue in the game's own scene behind it all (today's yacht afloat
 // there on a clear evening, in today's wind), the race's place and numbers over it, and in the pause menu's glass
 // card the start, today's fastest and a free race one tap away.
 export default async function Hub({ params }: LangParams) {
   const { lang, t } = await getT(params);
   const today = await todayTop();
-  const d = dailyRace(), v = venueOf(d.venue), L = lang === 'ru' ? 1 : 0;
+  const d = dailyRace(), v = venueOf(d.venue), L = lang === 'ru' ? 1 : 0, boat = yachtOf(d.yacht);
   const date = new Date(d.day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
   const top = today && today.d === d.day ? today.top : [];
   const best = top[0];
-  const metres = fmtDistance(courseDistance(plannedCourse(d.preset, d.length, d.fleet, d.course), d.laps), lang).split(' · ')[0];
+  const metres = fmtDistance(courseDistance(plannedCourse(d.preset, d.length, d.fleet, d.course, boat), d.laps), lang).split(' · ')[0];
   const breeze = { light: t('Light breeze', 'Слабый ветер'), medium: t('Medium breeze', 'Средний ветер'), strong: t('Strong breeze', 'Сильный ветер') }[d.preset];
   const races = today && today.d === d.day ? today.races : 0;
 
   return (
     <div className="scr bt-scr bc" lang={lang}>
       <div className="bt">
-        <GameScene venue={d.venue} wind={d.preset} title={t('Today’s venue in 3D', 'Место гонки дня в 3D')} loading={t('Loading the venue', 'Загружаем место гонки')} />
+        <GameScene venue={d.venue} boat={d.yacht} wind={d.preset} title={t('Today’s venue in 3D', 'Место гонки дня в 3D')} loading={t('Loading the venue', 'Загружаем место гонки')} />
 
         <div className="bt-info">
           <div className="bt-top">
@@ -57,11 +58,11 @@ export default async function Hub({ params }: LangParams) {
               <Link className="bt-ico" href="/help" aria-label={t('How to play', 'Как играть')} title={t('How to play', 'Как играть')}>?</Link>
             </span>
           </div>
-          <span className="bt-kick">{t('Today’s race', 'Гонка дня')}</span>
+          <span className="bt-kick">{t('Today’s race', 'Гонка дня')} · {boat.name[L]}</span>
           <h1 className="bt-h bt-hero">{v.name[L]}</h1>
           <p className="bt-p">{v.place[L]}. {v.about[L]} {best
-            ? t(`The same race for everyone today: ${races} sailed so far.`, `Сегодня у всех одна гонка: уже ${races} ${ruPlural(races, ['заезд', 'заезда', 'заездов'])}.`)
-            : t('The same race for everyone today. Nobody has finished it yet.', 'Сегодня у всех одна гонка. Её ещё никто не прошёл.')}</p>
+            ? t(`The same race for everyone today, in the ${boat.name[0]}: ${races} sailed so far.`, `Сегодня у всех одна гонка, на ${boat.name[1]}: уже ${races} ${ruPlural(races, ['заезд', 'заезда', 'заездов'])}.`)
+            : t(`The same race for everyone today, in the ${boat.name[0]}. Nobody has finished it yet.`, `Сегодня у всех одна гонка, на ${boat.name[1]}. Её ещё никто не прошёл.`)} {t('A new yacht every day.', 'Каждый день — новая яхта.')}</p>
           <div className="bt-stats bt-stats-lock">
             <div data-lock role="button" tabIndex={0} aria-haspopup="dialog"><span className="bt-sk">{t('Wind', 'Ветер')}</span><b><Num v={`${KN[d.preset]} ${t('kn', 'уз')}`} /></b><span className="bt-sv">{t(`${breeze}, shifting`, `${breeze}, переменчивый`)}</span></div>
             <div data-lock role="button" tabIndex={0} aria-haspopup="dialog"><span className="bt-sk">{t('Course', 'Дистанция')}</span><b><Num v={metres} /></b><span className="bt-sv">{t(`${SHAPE_NAME[d.course][0]} · ${d.laps} lap`, `${SHAPE_NAME[d.course][1]} · ${d.laps} круг`)}</span></div>
@@ -104,7 +105,7 @@ export default async function Hub({ params }: LangParams) {
           </div>
         </PauseCard>
       </div>
-      <DailyLock lang={lang} chips={[`${t(...venueOf(d.venue).name)}`, `${breeze} ${KN[d.preset]} ${t('kn', 'уз')}`, `${t(...SHAPE_NAME[d.course])} · ${metres}`, t(`${d.fleet} boats`, `${d.fleet} лодок`), t(`${d.start} min start`, `старт ${d.start} мин`), d.current ? t('Current on', 'С течением') : t('No current', 'Без течения')]} />
+      <DailyLock lang={lang} chips={[`${t(...venueOf(d.venue).name)}`, t(...boat.name), `${breeze} ${KN[d.preset]} ${t('kn', 'уз')}`, `${t(...SHAPE_NAME[d.course])} · ${metres}`, t(`${d.fleet} boats`, `${d.fleet} лодок`), t(`${d.start} min start`, `старт ${d.start} мин`), d.current ? t('Current on', 'С течением') : t('No current', 'Без течения')]} />
     </div>
   );
 }

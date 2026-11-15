@@ -1,5 +1,6 @@
 import { isLang, ruBoats, tx, type Lang } from '@/lib/lang';
 import { dailyRace, plannedCourse, KN, BEAT_ANGLE, SHAPE_NAME } from '@/lib/race';
+import { yachtOf } from '@/lib/yachts';
 import { venueOf } from '@/lib/venues';
 import { todayTop } from '@/lib/today';
 import { card, CourseSvg } from '@/lib/og';
@@ -21,12 +22,12 @@ export async function GET(request: Request) {
   const shape = t(...SHAPE_NAME[d.course]).toLowerCase();
   const races = today && today.d === d.day && today.races ? t(` · ${today.races} races sailed`, ` · пройдено гонок: ${today.races}`) : '';
   const img = await card({
-    kind: `${t('Today’s race', 'Гонка дня')} · ${date} · ${t(...venueOf(d.venue).name)}`,
+    kind: `${t('Today’s race', 'Гонка дня')} · ${date} · ${t(...venueOf(d.venue).name)} · ${t(...yachtOf(d.yacht).name)}`,
     headline: best ? t(`Time to beat: ${clock(best.s)}`, `Побей ${clock(best.s)}`) : t('Be first today', 'Будь первым'),
     detail: `${wind} ${KN[d.preset]} ${t('kn', 'уз')} · ${t(`${d.fleet} boats`, ruBoats(d.fleet))} · ${shape} · ${len}${races}`,
     call: t('Sail today’s race', 'Пройди гонку дня'),
     windLabel: `${KN[d.preset]} ${t('kn', 'уз')}`,
-    panel: <CourseSvg course={plannedCourse(d.preset, d.length, d.fleet, d.course)} route={BEAT_ANGLE[d.preset]} wind />,
+    panel: <CourseSvg course={plannedCourse(d.preset, d.length, d.fleet, d.course, yachtOf(d.yacht))} route={BEAT_ANGLE[d.preset]} wind />,
   });
   img.headers.set('cache-control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=3600'); // the time to beat moves
   return img;

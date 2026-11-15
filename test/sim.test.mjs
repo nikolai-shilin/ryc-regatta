@@ -72,6 +72,50 @@ test('today’s race goes round the venues, and the play page preloads the day�
   }
 });
 
+// today's yacht: the club's 40-footer until the classes join, then each in turn, never the same two days running
+test('today’s race goes round the yachts, a new one every day', async () => {
+  const { DAILY_YACHTS, YACHT_ROUNDS, CLASSES, dailyYacht } = await import('../public/game/classes.js');
+  const { YACHT_IDS } = await import('../lib/yachts.ts');
+  assert.deepEqual(site.DAILY_YACHTS, DAILY_YACHTS);
+  for (const id of Object.keys(DAILY_YACHTS)) assert.ok(CLASSES[id] && YACHT_IDS.includes(id), id);
+  const first = Math.min(...Object.values(DAILY_YACHTS).map((s) => Date.parse(s)));
+  for (let t = Date.UTC(2026, 0, 1); t < first; t += 864e5) assert.equal(dailyYacht(new Date(t)), 'club40');
+  let prev = 'club40';
+  for (let d = 0; d < 400; d++) {
+    const now = first + d * 864e5, y = dailyYacht(new Date(now)), day = new Date(now).toISOString().slice(0, 10);
+    assert.notEqual(y, prev, `${day}: not yesterday’s yacht`); prev = y;
+    assert.equal(sim.dailyRace(new Date(now)).yacht, y, day);
+    const n = Math.floor(now / 864e5), e = YACHT_ROUNDS.findLastIndex((r) => n >= r.n0), { n0, ids } = YACHT_ROUNDS[e], len = ids.length;
+    if ((n - n0) % len === 0 && !(YACHT_ROUNDS[e + 1] && n + len > YACHT_ROUNDS[e + 1].n0))
+      assert.equal(new Set(Array.from({ length: len }, (_, i) => dailyYacht(new Date(now + i * 864e5)))).size, len, `${day}: every yacht comes round`);
+  }
+});
+// …and each of them sails today's course (one short lap) well above the scores server's floor, which knows no yacht:
+// the fastest of the computer boats, in the medium and the strong wind, half as slow again as the floor at least.
+// Each class in a Node of its own, since the game picks it once, from the address, as the page loads.
+test('every yacht of today’s races finishes well above the server’s floor', async () => {
+  const { DAILY_YACHTS } = await import('../public/game/classes.js');
+  const { execFile } = await import('node:child_process'), { promisify } = await import('node:util');
+  const code = (boat) => `
+    import { readFile } from 'node:fs/promises';
+    globalThis.location = { search: '?boat=${boat}', pathname: '/x' };
+    globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))));
+    const sim = await import(${JSON.stringify(new URL('../public/game/sim.js', import.meta.url).href)});
+    const out = {};
+    for (const preset of ['medium', 'strong']) {
+      const r = new sim.Race({ preset, length: 'short', laps: 1, fleet: 5, seed: 11 }), others = r.boats.filter((b) => b !== r.player);
+      for (let n = 0; n < 60 * 60 * 40 && !others.every((b) => b.done); n++) r.step(1 / 60);
+      out[preset] = Math.min(...others.filter((b) => b.done && !b.dsq).map((b) => b.finish));
+    }
+    console.log(JSON.stringify({ id: sim.CLS.id, out }));`;
+  const runs = await Promise.all(Object.keys(DAILY_YACHTS).filter((id) => id !== 'club40').map(async (boat) =>
+    JSON.parse((await promisify(execFile)(process.execPath, ['--input-type=module', '-e', code(boat)], { encoding: 'utf8' })).stdout)));
+  for (const { id, out } of runs) for (const [preset, fastest] of Object.entries(out)) {
+    const floor = FLOOR * BEAT[preset] * sim.COURSE_LEN.short;
+    assert.ok(fastest > floor * 1.5, `${id} ${preset}: fastest ${fastest.toFixed(1)} s, floor ${floor} s`);
+  }
+});
+
 test('the site’s course numbers are the game’s', () => {
   assert.deepEqual(site.COURSE_LEN, sim.COURSE_LEN);
   assert.deepEqual(site.BEAT_LEN, BEAT);

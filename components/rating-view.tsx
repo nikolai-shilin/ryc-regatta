@@ -4,6 +4,7 @@ import { ruPlural } from '@/lib/lang';
 import type { Rating } from '@/lib/rating';
 import { todayUtc } from '@/lib/rating';
 import { dailyRace, KN } from '@/lib/race';
+import { yachtOf } from '@/lib/yachts';
 import { venueOf } from '@/lib/venues';
 import { IconPlay, IconTrophy } from './ui';
 import { Who } from './flag';
@@ -42,7 +43,7 @@ export function RatingView({ day, data, lang, t }: { day: string; data: Rating |
         <span className="kicker">{isToday ? t('Today’s rating', 'Рейтинг дня') : t('Rating', 'Рейтинг')}</span>
         <h1 className="hm-ph-h">{title}</h1>
         <p className="hm-text">
-          {t(...venue.name)} · {wind} {KN[race.preset]} {t('kn', 'уз')}
+          {t(...venue.name)} · {t(...yachtOf(race.yacht).name)} · {wind} {KN[race.preset]} {t('kn', 'уз')}
           {data ? <> · {races(data.races)}{n ? <>, {t(`${n} ranked`, `в рейтинге ${n}`)}</> : null}</> : null}
         </p>
         <nav className="rt-days" aria-label={t('Days of the month', 'Дни месяца')}>

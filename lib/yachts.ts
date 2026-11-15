@@ -1,5 +1,5 @@
 // The yachts you can race (public/game/classes.js has the same ids and sails them): what the yachts page (/yachts)
-// and the free race's set-up say about each. Today's race is always sailed in the club's 40-footer; a free race in any.
+// and the free race's set-up say about each. Today's race is sailed in a new one every day (lib/race.ts dailyYacht); a free race in any.
 
 export type YachtId = 'club40' | 'j70' | 'rs21' | 'ac75';
 export const YACHT_IDS: readonly YachtId[] = ['club40', 'j70', 'rs21', 'ac75'];
@@ -24,7 +24,7 @@ export const YACHTS: Yacht[] = [
     id: 'club40',
     name: ['Club 40', 'Клуб 40'],
     kind: ['40-foot racer-cruiser', '40-футовая крейсерско-гоночная яхта'],
-    tagline: ['The club’s own boat, and the one for today’s race.', 'Яхта клуба — на ней идёт гонка дня.'],
+    tagline: ['The club’s own boat, the one most clubs race on weekends.', 'Яхта клуба — на таких гоняются по выходным.'],
     about: [
       ['A 40-foot racer-cruiser of the kind most clubs race on weekends: a lofted hull with a chine aft, a coachroof and a wheel, a carbon rig with two sets of swept spreaders, a square-top main, a jib and an asymmetric gennaker on a bowsprit, and a code zero for light-air reaching.',
         '40-футовая крейсерско-гоночная яхта — на таких гоняется большинство клубов по выходным: корпус со скулой в корме, рубка и штурвал, карбоновая мачта с двумя ярусами краспиц, грот с квадратной головой, стаксель и асимметричный генакер на бушприте, а для слабого ветра — код зеро.'],

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { saveOpts } from '@/lib/opts';
 import { YACHTS, yachtOf, type YachtId } from '@/lib/yachts';
+import { DAILY_YACHTS, dailyYacht } from '@/lib/race';
 import { IconPlay, IconSail, IconBoats } from './ui';
 import { LoadBar } from './skeleton';
 import { SceneBrand } from './scene-brand';
@@ -11,10 +12,11 @@ import { SceneBrand } from './scene-brand';
 // The yachts: each class you can race, all afloat together in the game's own scene (/fleet-view, Lake Garda on a summer
 // evening) in your colours, with what she is and how she sails in the game in the boat page's dark glass card. Another
 // yacht is the same scene: the drone flies over to her (up and out until both are in the frame, across, and down).
-// Today's race is always the club's 40-footer; Race her opens a free race set up in the one shown.
+// Today's race is sailed in a new one every day (lib/race.ts dailyYacht); Race her opens a free race set up in the one shown.
 export function YachtsView({ lang, start, back }: { lang: Lang; start: YachtId; back: ReactNode }) {
   const t = tx(lang);
   const [id, setId] = useState<YachtId>(start);
+  const [today] = useState<YachtId>(() => dailyYacht()); // today's race's yacht, fixed for the page's life
   const [down, setDown] = useState(false);
   const [live, setLive] = useState(false);
   const frame = useRef<HTMLIFrameElement>(null);
@@ -89,9 +91,11 @@ export function YachtsView({ lang, start, back }: { lang: Lang; start: YachtId; 
           <div className="bt-pills" role="radiogroup" aria-labelledby="yt-pick">
             {YACHTS.map((x) => <button key={x.id} type="button" role="radio" aria-checked={x.id === id} className="bt-pill" onClick={() => pick(x.id)}>{t(...x.name)}</button>)}
           </div>
-          <p className="bt-hint">{id === 'club40'
-            ? t('Today’s race is sailed in her, the same boat for everyone. Any yacht can sail a free race.', 'Гонка дня идёт на ней — у всех одна и та же лодка. В свободной гонке — любая яхта.')
-            : t('In a free race, the whole fleet sails her. Today’s race is always sailed in the Club 40.', 'В свободной гонке на ней идёт весь флот. Гонка дня — всегда на Клубе 40.')}</p>
+          <p className="bt-hint">{id === today
+            ? t('Today’s race is sailed in her, the same boat for everyone. A new yacht every day; any can sail a free race.', 'Сегодня гонка дня идёт на ней — у всех одна и та же лодка. Каждый день — новая яхта; в свободной гонке — любая.')
+            : id in DAILY_YACHTS
+              ? t(`In a free race, the whole fleet sails her, and today’s race does on her days: a new yacht every day, today the ${yachtOf(today).name[0]}.`, `В свободной гонке на ней идёт весь флот, а в её дни — и гонка дня: каждый день новая яхта, сегодня ${yachtOf(today).name[1]}.`)
+              : t(`In a free race, the whole fleet sails her. Today’s race is sailed in a new yacht every day: today the ${yachtOf(today).name[0]}.`, `В свободной гонке на ней идёт весь флот. Гонка дня — каждый день на новой яхте: сегодня ${yachtOf(today).name[1]}.`)}</p>
         </div>
 
         <div className="bt-g yt-about">
@@ -112,7 +116,7 @@ export function YachtsView({ lang, start, back }: { lang: Lang; start: YachtId; 
         </div>
 
         <div className="bt-rows">
-          {id === 'club40' && <a className="bt-row" href="/play?race=today"><IconPlay /><span>{t('Today’s race', 'Гонка дня')}</span></a>}
+          {id === today && <a className="bt-row" href="/play?race=today"><IconPlay /><span>{t('Today’s race', 'Гонка дня')}</span></a>}
           <Link className="bt-row" href={`/fleet?y=${id}`}><IconBoats s={18} /><span>{t('The whole fleet', 'Весь флот')}</span><span className="bt-row-m">{t('Together', 'Вместе')}</span></Link>
           <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your colours', 'Твои цвета')}</span><span className="bt-row-m">{t('Every yacht', 'Для всех яхт')}</span></Link>
         </div>
