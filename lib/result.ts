@@ -29,7 +29,8 @@ export const ordEn = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 1
 const clock = (s: number) => { const m = Math.floor(s / 60), r = s - m * 60; return `${m}:${r.toFixed(1).padStart(4, '0')}`; };
 
 // The race in words, for the title, the description and the card: "2nd in 3:45.7", "Race of the day · Fri 13 Nov",
-// "Light breeze 7 kn · 6 boats · short course, 1 lap".
+// "Light breeze 7 kn · 6 boats · short course, 1 lap"; and the same facts one by one for the card's cells: the day, the
+// wind in knots, the course's length and shape, the boats.
 export function describe(res: SharedResult, lang: Lang) {
   const t = tx(lang);
   const me = res.boats.find((b) => b.me)!, place = res.boats.indexOf(me) + 1;
@@ -45,5 +46,6 @@ export function describe(res: SharedResult, lang: Lang) {
   const detail = `${wind} ${kn} ${t('kn', 'уз')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length))} · ${shape}${len ? `, ${len}` : ''}, ${laps}`;
   const isToday = res.daily === new Date().toISOString().slice(0, 10);
   const call = time && res.daily && isToday ? t('Beat this time', 'Побей это время') : t('Sail today’s race', 'Пройди гонку дня');
-  return { me, place, time, headline, kind, detail, call };
+  const length = ({ short: t('Short', 'Короткая'), medium: t('Medium', 'Средняя'), long: t('Long', 'Длинная') } as Record<string, string>)[res.length] || '';
+  return { me, place, time, headline, kind, detail, call, date, kn, length, shape: t(...SHAPE_NAME[shapeOf(res.course)]), boats: res.boats.length };
 }
