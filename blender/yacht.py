@@ -1,16 +1,20 @@
 # Regatta: the game's JPK 1050 (game/yacht.js), the hard parts modelled here and exported to
-# game/yacht.glb: the hull (scow-inspired: full sections forward and a forefoot that lifts clear of the water, the
-# waterline starting about a metre aft of the near-plumb stem; her beam carried aft to a wide transom over a hard
-# chine), a T-keel with its lead bulb, twin rudders hung on the transom, the deck
-# with an open-transom cockpit cut into it, seats and coamings, and a coachroof with a raked front and a window band.
-# The sails, rig, lifelines, winches, wheel, hatches and decals stay in yacht.js (they move, or are made per boat).
+# game/yacht.glb, to JPK's drawings (the half-breadth plan, the deck plan and the brochure's profile): the hull
+# (scow-inspired: a rounded spoon bow whose forefoot lifts clear of the water, the waterline starting a metre aft of
+# the stem; the beam carried aft to a wide, slightly raked transom whose bottom sits clear of the water at rest; a hard
+# chine the whole length), a T-keel (a slim fin under a long lead bulb), the deck with the cockpit cut into it behind a
+# closed transom (a footwell narrowing forward to the companionway, foot braces on its floor) and the long coachroof,
+# tapering forward and ramping down into the foredeck, a porthole in each side.
+# The sails, rig, lifelines, winches, tiller, twin rudders, hatches and decals stay in yacht.js (they move, or are
+# made per boat).
 #
 # The topsides above the chine follow yacht.js's own lines (halfBeam, sheerAt, canoe, section), so the logo and
-# hull-window decals it wraps onto the hull still lie on this surface; the sheer, deck outline, cockpit opening and
+# name decals it wraps onto the hull still lie on this surface; the sheer, deck outline, cockpit opening and
 # the coachroof's footprint and top are where yacht.js's fittings expect them.
 #
 # Materials by name, which yacht.js swaps for its own: hull (paint, boot-top and antifouling drawn by its shader),
-# deck (non-skid), gel, teak, glass. No UVs: yacht.js lays the deck's and the teak's out from the plan itself.
+# deck (non-skid: the deck and the cockpit's floor, no teak aboard), gel, glass. No UVs: yacht.js lays the deck's
+# out from the plan itself.
 #
 #   /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P docs/design/blender/game_yacht.py
 import bpy, bmesh, math, os
@@ -25,12 +29,25 @@ STERN_Z = L / 2
 def clamp(v, a, b): return max(a, min(b, v))
 def lerp(a, b, t): return a + (b - a) * t
 def smooth(e0, e1, x): t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t)
-def half_beam(t):  # the beam carried well aft: the transom 92% of the widest, which is 38% of the way forward
-    if t < 0.38: return (B / 2) * (0.92 + 0.08 * math.sin((t / 0.38) * math.pi / 2))
-    return (B / 2) * max(0.0, math.cos(min(1, (t - 0.38) / 0.62) * math.pi / 2)) ** 0.8
+def spline(P, t):  # a smooth curve through the points (t, v): cubic Hermite, the slopes from the neighbours
+    t = clamp(t, P[0][0], P[-1][0]); i = 0
+    while i < len(P) - 2 and t > P[i + 1][0]: i += 1
+    (t0, v0), (t1, v1) = P[i], P[i + 1]; h = t1 - t0; u = (t - t0) / h
+    sl = lambda k: (P[min(k + 1, len(P) - 1)][1] - P[max(k - 1, 0)][1]) / (P[min(k + 1, len(P) - 1)][0] - P[max(k - 1, 0)][0])
+    m0, m1 = sl(i) * h, sl(i + 1) * h
+    return (2 * u ** 3 - 3 * u * u + 1) * v0 + (u ** 3 - 2 * u * u + u) * m0 + (-2 * u ** 3 + 3 * u * u) * v1 + (u ** 3 - u * u) * m1
+# the deck's half-breadth as a share of the widest, t = 0 at the transom … 1 at the stem: read off JPK's half-breadth
+# plan. The widest a quarter of the way forward, the transom 95% of it, and the bow full to a rounded nose
+HB = [(0, 0.95), (0.05, 0.96), (0.1, 0.976), (0.15, 0.988), (0.2, 0.996), (0.25, 1), (0.3, 1), (0.35, 0.992), (0.4, 0.98),
+      (0.45, 0.96), (0.5, 0.929), (0.55, 0.893), (0.6, 0.842), (0.65, 0.787), (0.7, 0.719), (0.75, 0.644), (0.8, 0.557),
+      (0.85, 0.455), (0.9, 0.344), (0.95, 0.213), (0.98, 0.12), (1, 0)]
+def half_beam(t): return (B / 2) * max(0.0, spline(HB, t))
 def sheer(t): return 1.04 + 0.17 * t ** 1.6
-def canoe(t):  # the canoe body's depth; forward of t = 0.75 the forefoot lifts, out of the water at the stem
-    return 0.62 * math.sin(math.pi * min(1, t * 0.93 + 0.05)) ** 0.75 - 0.4 * smooth(0.75, 1, t)
+# the keel line, metres below the water (− above it), off the brochure's profile: the transom's bottom 0.24 clear of
+# the water, 0.4 deep amidships, the waterline starting a metre aft of the stem and the forefoot 0.32 up at the stem
+CANOE = [(0, -0.24), (0.1, -0.07), (0.2, 0.04), (0.3, 0.17), (0.4, 0.33), (0.5, 0.4), (0.6, 0.38), (0.7, 0.31),
+         (0.8, 0.21), (0.9, 0.0), (0.95, -0.13), (1, -0.32)]
+def canoe(t): return spline(CANOE, t)
 def z_at(t): return STERN_Z - t * L
 def t_at(z): return clamp((STERN_Z - z) / L, 0, 1)
 def deck_y(z, x=0.0):
@@ -42,16 +59,16 @@ def section(t, s):  # yacht.js's section(): s = 0 at the deck edge ... 1 at the 
     hb, sy, d, n = half_beam(t), sheer(t), canoe(t), n_of(t)
     phi = s * math.pi / 2; c, sn = math.cos(phi), math.sin(phi); yr = sn ** (2 / n)
     x = hb * c ** (2 / n) * (1 - FLARE * sn)
-    dz = 0.1 * yr * ((t - 0.9) / 0.1) ** 2 if t > 0.9 else 0.0  # a stem near plumb: the forefoot hardly aft of its head
+    dz = 0.38 * yr ** 1.6 * ((t - 0.88) / 0.12) ** 2 if t > 0.88 else 0.0  # the spoon bow: its foot curving back under it
+    if t < 0.03: dz -= 0.1 * yr * (1 - t / 0.03)  # the transom raked: its bottom 10 cm forward of its top
     return x, sy - (sy + d) * yr, dz
 
 def G(x, y, z): return Vector((x, -z, y))  # game -> Blender (Z up, +Y forward); the glTF export turns it back
 
-# ---------- the hull section: yacht.js's topsides down to the chine, then a flat-ish bottom aft ----------
+# ---------- the hull section: yacht.js's topsides down to the chine, then a flat-ish bottom ----------
 SPLIT = 0.5           # share of the section's samples above the chine
-def chine_y(t): return 0.24 - 0.3 * t
-def chine_w(t): return 1 - smooth(0.45, 0.86, t)   # 1: a hard chine aft ... 0: yacht.js's round sections forward; it runs
-                                                   # most of her length, diving under the water forward
+def chine_y(t): return 0.5 - 0.05 * t   # half a metre above the water, the whole length (the profile's line)
+def chine_w(t): return 1 - smooth(0.96, 1.0, t)   # 1: hard … easing only into the stem
 def hull_point(t, s):
     hb, sy, d, n = half_beam(t), sheer(t), canoe(t), n_of(t)
     yc = chine_y(t)
@@ -63,7 +80,7 @@ def hull_point(t, s):
     xc, yc2, _ = section(t, sc)
     u = (s - SPLIT) / (1 - SPLIT)
     d2 = d * 0.86
-    dr = math.radians(lerp(22, 12, clamp(t / 0.35, 0, 1)))  # deadrise at the chine
+    dr = math.radians(lerp(10, 20, clamp(t, 0, 1)))  # deadrise at the chine: a flat run aft, a little more forward
     k = xc * 0.42
     P0 = (xc, yc2); P1 = (xc - k * math.cos(dr), yc2 - k * math.sin(dr)); P2 = (xc * 0.38, -d2); P3 = (0.0, -d2)
     a, b2, c2, e = (1 - u) ** 3, 3 * u * (1 - u) ** 2, 3 * u * u * (1 - u), u ** 3
@@ -137,21 +154,27 @@ def bulb(bm, mat, z0, z1, yc, R, NL=22, NR=16):
         bm.faces.new((tip0, rings[0][(k + 1) % NR], rings[0][k])).material_index = mat
         bm.faces.new((tip1, rings[-1][k], rings[-1][(k + 1) % NR])).material_index = mat
 
-# ---------- the coachroof: lofted sections, aft (z = 1.51) to the raked front (z = -2.06) ----------
-CR_A, CR_F, CR_ZA, CR_ZF, CR_TOP = 1.18, 0.78, 1.51, -2.06, 1.52   # yacht.js's footprint (with its bevel) and top
-GLASS_LO, GLASS_HI = 1.27, 1.39
+# ---------- the coachroof: lofted sections, aft (z = 1.96) to where it runs out on the foredeck (z = -3.15) ----------
+# Off the deck plan and the profile: 2.2 m wide at its aft face, tapering forward to 0.6 m, its top 1.71 above the
+# water aft and level to the mast, then ramping down into the deck. yacht.js has the same (roofTop, roofHalf).
+CR_ZA, CR_ZF = 1.96, -3.15
+CR_W = [(0, 1.09), (1.96, 0.85), (3.91, 0.6), (4.61, 0.52), (5.11, 0.3)]   # half-width at its foot, by metres forward of its aft face
+def cr_half(z): return spline(CR_W, CR_ZA - z)
+def cr_top(z):
+    if z > -0.34: return lerp(1.71, 1.65, (CR_ZA - z) / 2.3)
+    return lerp(1.65, deck_y(z) + 0.04, smooth(-0.34, CR_ZF, z))
+GLASS_LO, GLASS_HI = 1.3, 1.44
 def build_coachroof(bm, mats):
-    NZ = 40
+    NZ = 48
     secs, meta = [], []
     for i in range(NZ + 1):
         f = i / NZ
-        z = lerp(CR_ZA, CR_ZF, f ** 0.9)
-        w0 = lerp(CR_A, CR_F, (CR_ZA - z) / (CR_ZA - CR_ZF))
-        rf = clamp((-1.88 - z) / 0.18, 0, 1); w0 *= math.sqrt(max(0.0, 1 - 0.45 * rf * rf))  # round the front corners
+        z = lerp(CR_ZA, CR_ZF, f)
+        w0 = cr_half(z)
         yd = deck_y(z, w0)
-        ht = CR_TOP - (CR_TOP - (deck_y(z) + 0.16)) * smooth(-1.25, CR_ZF, z) ** 1.25
+        ht = max(cr_top(z), yd + 0.04)
         wt = w0 - 0.11 * clamp((ht - yd) / 0.45, 0.25, 1)    # tumblehome
-        rr = 0.07
+        rr = min(0.07, 0.4 * (ht - yd))
         ys = [0.5, yd]
         side_top = ht - rr
         lo, hi = min(GLASS_LO, lerp(yd, side_top, 0.45)), min(GLASS_HI, lerp(yd, side_top, 0.75))
@@ -159,8 +182,8 @@ def build_coachroof(bm, mats):
         prof = [(w0, ys[0]), (w0, ys[1])]
         for y in ys[2:]: prof.append((lerp(w0, wt, (y - yd) / max(1e-3, side_top - yd)), y))
         prof += [(wt - rr * 0.29, ht - rr * 0.29), (wt - rr, ht)]
-        for x in (0.5, 0.25):
-            prof.append((x, ht + 0.03 * (1 - (x / wt) ** 2)))
+        for k in (0.6, 0.3):
+            prof.append((wt * k, ht + 0.03 * (1 - k * k)))
         half = prof
         ring = [G(x, y, z) for x, y in half] + [G(0, ht + 0.03, z)] + [G(-x, y, z) for x, y in reversed(half)]
         secs.append([bm.verts.new(p) for p in ring]); meta.append(z)
@@ -170,8 +193,7 @@ def build_coachroof(bm, mats):
         for j in range(M):
             mat = mats['gel']
             seg = j if j <= 8 else 17 - j              # the same segment on either side: 0 below the deck, 2 the window band
-            if seg == 2 and -1.45 < zc < 1.2: mat = mats['glass']
-            if seg in (7, 8) and -1.95 < zc < -1.4: mat = mats['glass']  # the raked front windows
+            if seg == 2 and -0.3 < zc < 0.9: mat = mats['glass']   # a porthole each side, abreast the saloon
             bm.faces.new((secs[i][j], secs[i][(j + 1) % M], secs[i + 1][(j + 1) % M], secs[i + 1][j])).material_index = mat
     bm.faces.new(list(reversed(secs[0]))).material_index = mats['gel']
     bm.faces.new(secs[-1]).material_index = mats['gel']
@@ -207,9 +229,8 @@ def material(name, color, rough=0.5):
 
 for o in list(bpy.data.objects): bpy.data.objects.remove(o)
 MAT = {'hull': material('hull', (0.92, 0.92, 0.9), 0.2), 'deck': material('deck', (0.8, 0.79, 0.75), 0.85),
-       'gel': material('gel', (0.9, 0.89, 0.86), 0.3), 'teak': material('teak', (0.45, 0.28, 0.13), 0.7),
-       'glass': material('glass', (0.03, 0.04, 0.05), 0.05)}
-ORDER = ['hull', 'deck', 'gel', 'teak', 'glass']
+       'gel': material('gel', (0.9, 0.89, 0.86), 0.3), 'glass': material('glass', (0.03, 0.04, 0.05), 0.05)}
+ORDER = ['hull', 'deck', 'gel', 'glass']
 IDX = {m: i for i, m in enumerate(ORDER)}
 
 # the hull and the coachroof, one solid
@@ -217,10 +238,13 @@ hull = new_object('yacht', ORDER)
 bm = bmesh.new(); build_hull(bm, IDX); build_coachroof(bm, IDX)
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(hull.data); bm.free()
 
-# the cockpit, cut out of it: from the coachroof's aft face out through the transom, its sole 0.52 above the water
+# the cockpit, cut out of it (the deck plan): from the companionway in the coachroof's aft face, 1.3 m wide, out to
+# 2 m wide abreast the primaries and 2.6 m at the closed transom; its floor 0.62 above the water
+COCKPIT = [(0.66, CR_ZA - 0.005), (1.0, 2.9), (1.0, 3.95), (1.3, STERN_Z - 0.17)]
+COCKPIT_FLOOR = 0.62
 cut = new_object('cockpit', ORDER)
 bm = bmesh.new()
-plan_prism(bm, rounded_rect(-0.95, 0.95, 1.505, 6.5, 0.18, corners=(1, 0, 0, 1)), 0.52, 3.0, IDX['gel'], IDX['teak'], IDX['gel'])
+plan_prism(bm, [(x, z) for x, z in COCKPIT] + [(-x, z) for x, z in reversed(COCKPIT)], COCKPIT_FLOOR, 3.0, IDX['gel'], IDX['deck'], IDX['gel'])
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(cut.data); bm.free()
 mod = hull.modifiers.new('cockpit', 'BOOLEAN'); mod.operation = 'DIFFERENCE'; mod.object = cut; mod.solver = 'EXACT'
 mod.use_self = True   # the hull and the coachroof are two shells, one inside the other: merge them as it cuts
@@ -229,19 +253,14 @@ except Exception as e: print('material_mode:', e)
 bpy.context.view_layer.objects.active = hull; bpy.ops.object.modifier_apply(modifier=mod.name)
 bpy.data.objects.remove(cut)
 
-# appendages, seats and coamings, joined in
+# the keel and the cockpit's foot braces, joined in
 bm = bmesh.new(); bm.from_mesh(hull.data)
 H = IDX['hull']
-foil(bm, H, 0.15, -1.86, 1.12, 0.74, -0.78, -0.5, 0.12)                     # the keel
-bulb(bm, H, -1.02, 1.16, -1.96, 0.24)                                          # its bulb
-for sx in (-1, 1):  # the twin rudders, hung on the transom and toed out 12° at the tips: high-aspect lifting blades
-    foil(bm, H, 0.55, -1.3, 0.4, 0.28, STERN_Z - 0.08, STERN_Z - 0.04, 0.11, NS=6, x0=sx * 0.82, cant=12)
+foil(bm, H, 0.15, -2.05, 1.2, 0.64, -0.98, -0.74, 0.12)                    # the fin: 1.2 m of chord at the hull, 0.64 at the bulb
+bulb(bm, H, -1.25, 0.71, -2.13, 0.22)                                          # the lead bulb, 2 m long: 2.24 m draft
 for sx in (-1, 1):
-    xs = sorted([sx * 0.53, sx * 0.96])   # the seats, into the cockpit's side walls
-    plan_prism(bm, rounded_rect(xs[0], xs[1], 1.505, 3.75, 0.06), 0.52, 0.76, IDX['gel'], IDX['gel'], IDX['teak'])
-    xc = sorted([sx * 0.94, sx * 1.025])  # the coamings, standing on the deck at the cockpit's edge
-    yb = deck_y(2.6, 1.0)
-    plan_prism(bm, rounded_rect(xc[0], xc[1], 1.5, 3.65, 0.03), yb - 0.05, yb + 0.17, IDX['gel'], IDX['gel'], IDX['gel'])
+    xs = sorted([sx * 0.43, sx * 0.66])   # the foot braces moulded into the floor, for the crew to brace against heeled
+    plan_prism(bm, rounded_rect(xs[0], xs[1], 2.95, 4.14, 0.05), COCKPIT_FLOOR - 0.01, COCKPIT_FLOOR + 0.12, IDX['gel'], IDX['gel'], IDX['deck'])
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
 bm.to_mesh(hull.data); bm.free()

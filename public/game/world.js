@@ -1385,7 +1385,7 @@ export class World {
       if (this.lookHold <= 0) this.look *= Math.exp(-dt * 1.5); else this.lookHold -= dt;
       const v = this.boatViews[0], side = P.twa >= 0 ? 1 : -1;
       v.tilt.updateMatrixWorld(true);
-      const [ex, ey, ez] = v.eye || [1.38, 2.65, 3.58]; // the helm's eye on the JPK 1050, at the tiller on the side deck; another class's own (boats3d.js)
+      const [ex, ey, ez] = v.eye || [1.4, 2.65, 4.4]; // the helm's eye on the JPK 1050, at the tiller on the side deck; another class's own (boats3d.js)
       const eye = new THREE.Vector3(side * ex, ey, ez).applyMatrix4(v.tilt.matrixWorld);
       cam.position.copy(eye);
       cam.rotation.set(-0.1, -P.h + this.look - side * 0.22, side * P.heel * D2R * 0.4);
