@@ -18,6 +18,7 @@ import { venueOf } from '@/lib/venues';
 import { readOpts } from '@/lib/opts';
 import { bestLeg, startOf } from '@/lib/race-log';
 import { shortName } from '@/lib/name';
+import { BOAT_EVENT, readBoat } from '@/lib/boat';
 
 // What the game keeps for a finished race (public/game/main.js, finishToPage).
 // legT (the clock as she finished each leg, the start's crossing first) and pens (her penalties) came with the finish's
@@ -46,6 +47,12 @@ const RULE_LINK: Record<string, string> = { 10: 'rightofway#sec-r10', 11: 'right
   15: 'limits#sec-r15', 16: 'limits#sec-r16-1', 17: 'limits#sec-r17', 20: 'obstructions#sec-tack', 31: 'penalties#sec-how', 44: 'penalties#sec-how',
   '18.3': 'marks#sec-tack', '18.4': 'marks#sec-gybe', 19: 'obstructions#sec-room' };
 const rule = (k: string, lang: Lang) => (RULES as Record<string, { en: string; ru: string }>)[k]?.[lang] || '';
+// Your own race, kept on this device, flies your boat's flag where it was started without one (a boat set on another
+// device or address, before the account brought it here): the flag you fly now, as the rating shows it too
+const withMyFlag = (r: Result): Result => {
+  const f = readBoat().flag;
+  return f && r.boats.some((b) => b.me && !b.flag) ? { ...r, boats: r.boats.map((b) => (b.me && !b.flag ? { ...b, flag: f } : b)) } : r;
+};
 const ordEn = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`;
 
 // head and foot: the site's header and footer, rendered by the page (server components) and passed in, for a race that
@@ -62,7 +69,12 @@ export default function ResultView({ id, lang, signedName, head, foot }: { id: s
   useEffect(() => {
     let mine: Result | null = null;
     try { mine = JSON.parse(localStorage.getItem('regatta-result-' + id) || 'null'); } catch {}
-    if (mine) { setRes(mine); return; }
+    if (mine) {
+      setRes(withMyFlag(mine));
+      const on = () => setRes((r) => (r ? withMyFlag(r) : r)); // the account's boat, just brought to this device
+      addEventListener(BOAT_EVENT, on);
+      return () => removeEventListener(BOAT_EVENT, on);
+    }
     let live = true;
     fetch(`https://iyt.rycrentals.com/api/game?race=${encodeURIComponent(id)}`).then((r) => (r.ok ? r.json() : null)).then((j: Result | null) => {
       if (!live) return;
