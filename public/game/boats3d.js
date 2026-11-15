@@ -8,7 +8,7 @@
 // the one asked for (the fleet page, /fleet-view, has one of each afloat together).
 // Local frame as yacht.js: +x starboard, +y up, −z forward (the bow), the waterline at y = 0.
 import * as THREE from 'three';
-import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, sailor, labelSprite, THIGH, SHIN, LOOKS,
+import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, clothState, flog, mainCloth, kiteCurl, hullSea, sailor, labelSprite, THIGH, SHIN, LOOKS,
   fit, bar, winch, block, clutches, cleat, wheel, chainplate, display, purchase, mergeGroup, bowNumberMaterial, nameMaterial, deckFinish, mastGeo, spreaderGeo } from './yacht.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -338,6 +338,7 @@ class ClassView {
   finish(label, labelY) {
     if (label) { this.label = labelSprite(label.color); this.labelText = label.text; this.label.position.set(0, labelY, 0); this.root.add(this.label); }
     this.root.traverse((o) => { if (o.isMesh) { o.castShadow = !(o.userData.flat || o.parent?.userData.flat); o.receiveShadow = true; } });
+    this.hullSea = hullSea(this, this.drawnL / 2);
     this.bake();
   }
   bake() { BoatView.prototype.bake.call(this); }
@@ -354,19 +355,23 @@ class ClassView {
     this.root.position.set(b.x, (y * 0.85 - 0.05) * sea + ride * this.flyY, b.z);
     this.root.rotation.y = -b.h;
     this.tilt.rotation.x = pitch - ride * 0.02; // flying: the bow a touch up
-    this.tilt.rotation.z = side * b.heel * this.cls.heelShow * D2R + roll;
+    // the sea's own roll, which the crew's bodies take out (pose); the heel alone, for the next frame's
+    this.sway = this.sea ? clamp(this.sea.rz - (this.heelZ ?? 0), -0.35, 0.35) * 0.6 : 0;
+    this.tilt.rotation.z = (this.heelZ = side * b.heel * this.cls.heelShow * D2R) + roll;
+    clothState(this, b, t); // how her sails set this frame (yacht.js): this.cloth
     return side;
   }
   // the jib on its stay, its sheets, the telltales and the masthead vane: as on the JPK 1050
   jibAndTells(b, t, side, belly, luff, ph, sheetTo) {
     const ja = Math.min((b.jibSail ?? b.sail) * D2R * 0.8 + 3 * D2R, (this.jibMax ?? 30) * D2R);
     this.jibPivot.quaternion.setFromAxisAngle(this.jibAxis, -this.sailSide * ja);
-    const head = this.HEAD.clone().sub(this.TACK), clew = this.CLEW, k = this.jibBelly ?? 0.125;
+    const head = this.HEAD.clone().sub(this.TACK), clew = this.CLEW, sc = this.cloth, ss = this.sailSide, k = (this.jibBelly ?? 0.125) * sc.depth;
+    const jBelly = -ss * (1 - sc.flogJ * 0.85); // the jib flaps on its own sheet
     setSail(this.jib, (f, u, v) => {
       const lx = head.x * f, ly = head.y * f, lz = head.z * f;
       const ex = lerp(clew.x, head.x, f), ey = lerp(clew.y, head.y, f), ez = lerp(clew.z, head.z, f);
       const len = Math.hypot(ex - lx, ey - ly, ez - lz);
-      v.set(lerp(lx, ex, u) + belly * Math.sin(Math.PI * u ** 0.72) * len * k + luff * 0.25 * Math.sin(ph * 1.2 + f * 7 + u * 4) * u + leechFlutter(f, u, t + 0.4, b.aws || 0), lerp(ly, ey, u), lerp(lz, ez, u));
+      v.set(lerp(lx, ex, u) + jBelly * Math.sin(Math.PI * u ** 0.72) * len * k + flog(f, u, t, sc.flogJ, len, sc.aws, ss, sc.ph + 1.3) + leechFlutter(f, u, t + 0.4, sc.aws), lerp(ly, ey, u), lerp(lz, ez, u));
     });
     if (sheetTo) {
       const cw = clew.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1;
@@ -401,7 +406,7 @@ class ClassView {
   pose(c, want, k) {
     for (const key of ['x', 'y', 'z', 'yaw', 'lean', 'stand', 'knee', 'reach']) c[key] += (want[key] - c[key]) * k;
     const sd = c.x >= 0 ? 1 : -1, s = c.s;
-    c.g.position.set(c.x, c.y, c.z); c.g.scale.x = sd;
+    c.g.position.set(c.x, c.y, c.z); c.g.scale.x = sd; c.g.rotation.z = -(this.sway || 0);
     s.body.rotation.y = c.yaw; s.body.position.y = c.stand * (THIGH + SHIN + 0.02);
     s.upper.rotation.z = -c.lean;
     for (const l of s.legs) { l.hip.rotation.z = (1 - c.stand) * Math.PI / 2; l.knee.rotation.z = (1 - c.stand) * c.knee; }
@@ -610,10 +615,10 @@ class SportView extends ClassView {
     this.wheel.rotation.y = b.rudder * 0.5;
     const sa = b.sail * D2R, luff = b.luff, ph = t * 17;
     this.mainPivot.rotation.y = -this.sailSide * sa;
-    const belly = -this.sailSide * (1 - luff * 0.85), span = J.rig.span;
+    const sc = this.cloth, ss = this.sailSide, belly = -ss * (1 - sc.flogM * 0.85), span = J.rig.span;
     setSail(this.main, (f, u, v) => {
-      const ch = J.chord(f), tw = -this.sailSide * f * f * 0.35 * u;
-      v.set(belly * Math.sin(Math.PI * u ** 0.78) * ch * 0.11 * (1 - 0.4 * f) + tw + luff * 0.15 * Math.sin(ph + f * 6 + u * 5) * u + leechFlutter(f, u, t, b.aws || 0), J.BOOM_Y + 0.06 + f * span, u * ch);
+      const ch = J.chord(f), tw = -ss * f * f * 0.35 * u * sc.twist;
+      v.set(belly * Math.sin(Math.PI * u ** 0.78) * ch * 0.11 * sc.depth * (1 - 0.4 * f) + tw + mainCloth(sc, f, u, t, ch, ss) + leechFlutter(f, u, t, sc.aws), J.BOOM_Y + 0.06 + f * span, u * ch);
     });
     const ma = this.mainPivot.rotation.y, bz = 2.9;
     this.travCar.position.x = RS ? 0 : clamp(Math.sin(ma) * bz * 0.4, -0.6, 0.6);
@@ -645,8 +650,8 @@ class SportView extends ClassView {
         const lx = sd * Math.sin(Math.PI * f) * 1.4 * kfill, lz = -Math.sin(Math.PI * f) * 1.5 * kfill;
         const p = [lerp(tk[0], hd[0], f) + lx, lerp(tk[1], hd[1], f), lerp(tk[2], hd[2], f) + lz];
         const q = [lerp(cl[0], hd[0], f), lerp(cl[1], hd[1], f), lerp(cl[2], hd[2], f)];
-        const bul = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, f * 1.08)) * 1.65 * kfill;
-        v.set(lerp(p[0], q[0], u) + sd * bul, lerp(p[1], q[1], u), lerp(p[2], q[2], u) - bul * 0.9);
+        const bul = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, f * 1.08)) * 1.65 * kfill, cu = kiteCurl(this.cloth, f, u) * 0.9 * kfill; // the luff folding in
+        v.set(lerp(p[0], q[0], u) + sd * (bul - cu), lerp(p[1], q[1], u), lerp(p[2], q[2], u) - bul * 0.9 + cu * 0.6);
       });
       const kp = this.kiteSheet.geometry.attributes.position;
       kp.setXYZ(0, cl[0], cl[1], cl[2]); kp.setXYZ(1, sd * 0.9, H.deckY(2.6) + 0.08, 2.6); kp.setXYZ(2, sd * 0.82, H.deckY(0.2) + 0.12, 0.2); kp.needsUpdate = true;
@@ -814,10 +819,10 @@ class LaserView extends ClassView {
     const sa = b.sail * D2R, luff = b.luff, ph = t * 17;
     this.mainPivot.rotation.y = -this.sailSide * sa;
     // the sleeve round the mast gives the luff an even entry; the full sail sets deep low down and flattens up high
-    const belly = -this.sailSide * (1 - luff * 0.85), span = LZ.span, shape = (f, u) => belly * Math.sin(Math.PI * u ** 0.75) * LZ.chord(f) * 0.12 * (1 - 0.45 * f);
+    const sc = this.cloth, ss = this.sailSide, belly = -ss * (1 - sc.flogM * 0.85), span = LZ.span, shape = (f, u) => belly * Math.sin(Math.PI * u ** 0.75) * LZ.chord(f) * 0.12 * sc.depth * (1 - 0.45 * f);
     setSail(this.main, (f, u, v) => {
-      const ch = LZ.chord(f), tw = -this.sailSide * f * f * 0.3 * u;
-      v.set(shape(f, u) + tw + luff * 0.12 * Math.sin(ph + f * 6 + u * 5) * u + leechFlutter(f, u, t, b.aws || 0), LZ.BOOM_Y + 0.06 + f * span, u * ch + 0.03);
+      const ch = LZ.chord(f), tw = -ss * f * f * 0.3 * u * sc.twist;
+      v.set(shape(f, u) + tw + mainCloth(sc, f, u, t, ch, ss) + leechFlutter(f, u, t, sc.aws), LZ.BOOM_Y + 0.06 + f * span, u * ch + 0.03);
     });
     // the sheet: traveller → boom end → middle block → ratchet, the block on the traveller riding to leeward
     const ma = this.mainPivot.rotation.y, at = (z, dy) => [Math.sin(ma) * z, LZ.BOOM_Y - dy, LZ.MAST_Z + Math.cos(ma) * z];
@@ -1168,10 +1173,10 @@ class CruiserView extends ClassView {
     this.wheel.children.forEach((w) => { w.rotation.z = -b.rudder * 1.4; });
     const sa = b.sail * D2R, luff = b.luff, ph = t * 17;
     this.mainPivot.rotation.y = -this.sailSide * sa;
-    const belly = -this.sailSide * (1 - luff * 0.85), span = BV.rig.span;
+    const sc = this.cloth, ss = this.sailSide, belly = -ss * (1 - sc.flogM * 0.85), span = BV.rig.span;
     setSail(this.main, (f, u, v) => {
-      const ch = BV.chord(f), tw = -this.sailSide * f * f * 0.6 * u;
-      v.set(belly * Math.sin(Math.PI * u ** 0.78) * ch * 0.11 * (1 - 0.4 * f) + tw + luff * 0.25 * Math.sin(ph + f * 6 + u * 5) * u + leechFlutter(f, u, t, b.aws || 0), BV.BOOM_Y + 0.1 + f * span, u * ch + 0.17);
+      const ch = BV.chord(f), tw = -ss * f * f * 0.6 * u * sc.twist;
+      v.set(belly * Math.sin(Math.PI * u ** 0.78) * ch * 0.11 * sc.depth * (1 - 0.4 * f) + tw + mainCloth(sc, f, u, t, ch, ss) + leechFlutter(f, u, t, sc.aws), BV.BOOM_Y + 0.1 + f * span, u * ch + 0.17);
     });
     // the mainsheet's two tackles, from their blocks on the coachroof up to the bail under the boom
     const ma = this.mainPivot.rotation.y, bail = [Math.sin(ma) * BV.SHEET_Z, BV.BOOM_Y - 0.17, BV.MAST_Z + Math.cos(ma) * BV.SHEET_Z];
@@ -1205,8 +1210,8 @@ class CruiserView extends ClassView {
         const lx = sd * Math.sin(Math.PI * f) * 2.6 * kfill, lz = -Math.sin(Math.PI * f) * 2.8 * kfill;
         const p = [lerp(tk[0], hd[0], f) + lx, lerp(tk[1], hd[1], f), lerp(tk[2], hd[2], f) + lz];
         const q = [lerp(cl[0], hd[0], f), lerp(cl[1], hd[1], f), lerp(cl[2], hd[2], f)];
-        const bul = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, f * 1.08)) * 3.0 * kfill;
-        v.set(lerp(p[0], q[0], u) + sd * bul, lerp(p[1], q[1], u), lerp(p[2], q[2], u) - bul * 0.9);
+        const bul = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, f * 1.08)) * 3.0 * kfill, cu = kiteCurl(this.cloth, f, u) * 1.6 * kfill; // the luff folding in
+        v.set(lerp(p[0], q[0], u) + sd * (bul - cu), lerp(p[1], q[1], u), lerp(p[2], q[2], u) - bul * 0.9 + cu * 0.6);
       });
       const kp = this.kiteSheet.geometry.attributes.position, qz = H.STERN - 0.7;
       kp.setXYZ(0, cl[0], cl[1], cl[2]); kp.setXYZ(1, sd * (H.hbAt(qz) - 0.1), H.deckY(qz) + 0.1, qz); kp.setXYZ(2, sd * BV.WINCH_X, wy, BV.WINCH_Z); kp.needsUpdate = true;
@@ -1413,15 +1418,15 @@ class AC75View extends ClassView {
     const sa = b.sail * D2R, luff = b.luff, ph = t * 17;
     this.mainPivot.rotation.y = -this.sailSide * sa;
     this.mast.rotation.y = this.mainPivot.rotation.y - this.sailSide * Math.min(sa, 0.5) * 0.3; // the mast turns a little further than the sail's foot to line up with it
-    const belly = -this.sailSide * (1 - luff * 0.85), span = A.rig.span;
+    const sc = this.cloth, ss = this.sailSide, belly = -ss * (1 - sc.flogM * 0.85), span = A.rig.span;
     // the double skin: a deep, even camber all the way up, a little twist off at the head; the two skins stand apart
     // round the mast (its width) and close to the leech
     // the sail turns about the upright through its tack; each height carried aft (in the boat's frame, whichever way
     // the sail is turned) by the mast's rake there, so the luff stays on the mast
     const psi = this.mainPivot.rotation.y, rs = -Math.sin(psi), rc = Math.cos(psi);
     for (const [mesh, sk] of [[this.main, 1], [this.main2, -1]]) setSail(mesh, (f, u, v) => {
-      const ch = A.chord(f), tw = -this.sailSide * f * f * 0.9 * u, gap = 0.24 * (1 - 0.5 * f) * (1 - u) ** 1.6, y = A.FOOT_Y + f * span, o = (y - A.FOOT_Y) * A.RAKE;
-      v.set(belly * Math.sin(Math.PI * u ** 0.7) * ch * 0.1 + tw + sk * gap + luff * 0.3 * Math.sin(ph + f * 6 + u * 5) * u + o * rs, y, u * ch + o * rc);
+      const ch = A.chord(f), tw = -ss * f * f * 0.9 * u * sc.twist, gap = 0.24 * (1 - 0.5 * f) * (1 - u) ** 1.6, y = A.FOOT_Y + f * span, o = (y - A.FOOT_Y) * A.RAKE;
+      v.set(belly * Math.sin(Math.PI * u ** 0.7) * ch * 0.1 * sc.depth + tw + sk * gap + flog(f, u, t, sc.flogM, ch, sc.aws, ss, sc.ph) * 0.6 + o * rs, y, u * ch + o * rc);
     });
     const ch0 = A.chord(0), ma = this.mainPivot.rotation.y, ms = this.mainsheet.geometry.attributes.position;
     this.clewBoard.position.set(0, A.FOOT_Y + 0.25, ch0 - 0.3);

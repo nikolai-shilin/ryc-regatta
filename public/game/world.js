@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { D2R, wrap, clamp, lerp, waveHeight, waveSlope, beatAngle, runAngle, HULL, ZONE, legTargets, legAim, isBeat, hasZone } from './sim.js';
 const SC = HULL / 10.45; // the model is drawn 10.45 m long, the JPK 1050 as she is
-import { LOOKS, playerLook, lookFrom } from './yacht.js';
+import { LOOKS, playerLook, lookFrom, SEA } from './yacht.js';
 import { makeBoatView } from './boats3d.js';
 import { CommitteeBoat } from './committee.js';
 import { JuryBoat } from './jury.js';
@@ -914,6 +914,7 @@ export class World {
       uGust: { value: Array.from({ length: 12 }, () => new THREE.Vector4()) }, uWind: { value: new THREE.Vector2(0, 1) }, uPivot: { value: new THREE.Vector2() },
       ...this.skyU, ...this.oceanU, ...this.reflU,
     };
+    SEA.uW.value = this.waterU.uW.value; SEA.uWs.value = this.waterU.uWs.value; // the hulls' wet line rides the same seas (yacht.js)
     this.water = new THREE.Mesh(waterGeometry(), new THREE.ShaderMaterial({ uniforms: this.waterU, vertexShader: WATER_VS, fragmentShader: WATER_FS, defines: { WAVES: NW }, extensions: { derivatives: true } }));
     this.water.frustumCulled = false;
     this.scene.add(this.water);
@@ -1316,7 +1317,7 @@ export class World {
         v.label.visible = !!st && this.mode !== 'helm'; if (st) v.label.userData.set(`${b.name} ${st}`, true);
       }
       if (v.crew) v.crew[0].g.visible = !(b === P && this.mode === 'helm'); // at the helm, you are the helmsman
-      this.settle(v, dt);
+      this.settle(v, dt, b, t);
       this.seaShadows[i]?.update(this.quality !== 'low'); // Low: no shadows anywhere
     });
     // buoys bob and tilt with the sea under them; in a current a mark leans downstream on its mooring and trails a
@@ -1460,7 +1461,7 @@ export class World {
     // the water disc follows what the camera looks at
     this.water.position.set(Math.round(P.x / 4) * 4, 0, Math.round(P.z / 4) * 4);
     const u = this.waterU;
-    u.uTime.value = t; u.uCam.value.copy(cam.position);
+    u.uTime.value = SEA.uTime.value = t; u.uCam.value.copy(cam.position);
     const bw = wind.dir() + Math.PI; u.uWind.value.set(Math.sin(bw), -Math.cos(bw));
     for (let i = 0; i < this.W.length; i++) u.uW.value[i].w = this.W[i].A; // the chop builds and dies with the wind (sim.js)
     // the sea shows twelve gusts: the nearest to you (a long course has more)
@@ -1497,15 +1498,36 @@ export class World {
 
   // a 12-metre boat has weight: she doesn't follow every wave at once but lags the sea a little and overshoots it,
   // heaving, pitching and rolling on springs (the model puts her where the sea would; she gets there here)
-  settle(v, dt) {
+  // How a hull moves on the sea. Her update() puts her where the swell would (afloat at its height, pitched and rolled
+  // by its slopes, heeled by the wind); here she gets there as a hull with weight does, on springs whose periods grow
+  // with the square root of her length (a Laser bobs, a 46-footer heaves slowly: the JPK 1050's a 2.4 s heave, 2.1 s
+  // pitch and 2.6 s roll), so she lags, overshoots and pitches through the seas rather than gluing to them. Under way
+  // she squats and lifts her bow towards hull speed and rises as she planes; off the wind the sails stop damping her
+  // roll, so she rolls in the swell, and the seas under her quarter push her stern round a few degrees either way.
+  // Her hull's wet line (yacht.js's hullMaterial) gets her speed.
+  settle(v, dt, b, t) {
     const R = v.root, T = v.tilt;
     let s = v.sea;
-    if (!s || dt > 0.1) s = v.sea = { y: R.position.y, vy: 0, px: T.rotation.x, vp: 0, rz: T.rotation.z, vr: 0 }; // first frame, or after a pause
-    const h = Math.min(dt, 1 / 30), spring = (x, vx, to, k, c) => { vx += (k * (to - x) - c * vx) * h; return [x + vx * h, vx]; };
-    [s.y, s.vy] = spring(s.y, s.vy, R.position.y, 7, 2.9); // about a 2.4 s heave, damped to ~0.55 of critical
-    [s.px, s.vp] = spring(s.px, s.vp, T.rotation.x, 9, 3.3);
-    [s.rz, s.vr] = spring(s.rz, s.vr, T.rotation.z, 6, 2.7);
-    R.position.y = s.y; T.rotation.x = s.px; T.rotation.z = s.rz;
+    if (!s || dt > 0.5 || dt < 0) s = v.sea = { y: R.position.y, vy: 0, px: T.rotation.x, vp: 0, rz: T.rotation.z, vr: 0, yaw: 0, vw: 0, ph: Math.random() * 6.3 }; // first frame, or after a pause
+    const L = v.drawnL || b.cls?.loa || HULL, sl = Math.sqrt(L / 10.45), fly = (b.ride || 0) > 0.5;
+    const sm = (e0, e1, x) => { const q = clamp((x - e0) / (e1 - e0), 0, 1); return q * q * (3 - 2 * q); };
+    const fn = Math.max(0, b.v) / Math.sqrt(9.81 * L), run = fly ? 0 : sm(110, 160, Math.abs(b.twa || 0) / D2R), blow = clamp(((b.aws || 0) - 4) / 14, 0, 1);
+    const w = (T0) => 2 * Math.PI / (T0 * sl), wh = w(2.4), wp = w(2.1), wr = w(2.6), ww = w(3.2), zr = lerp(0.55, 0.3, run);
+    const yT = R.position.y + (fly ? 0 : sl * (-0.05 * sm(0.12, 0.4, fn) + 0.12 * sm(0.45, 0.9, fn)));
+    const pT = T.rotation.x + (fly ? 0 : D2R * (1.4 * sm(0.15, 0.42, fn) - 0.7 * sm(0.5, 0.9, fn)));
+    const rT = T.rotation.z + run * D2R * (1.2 + 2.3 * blow) * Math.sin(wr * t + s.ph) * (0.6 + 0.4 * Math.sin(0.21 * t + 2 * s.ph));
+    const seaRoll = T.rotation.z - (v.heelZ ?? T.rotation.z);
+    const yawT = run * clamp(-1.2 * seaRoll + D2R * 1.5 * Math.sin(0.5 * wr * t + 3 * s.ph), -5 * D2R, 5 * D2R);
+    const n = Math.max(1, Math.ceil(dt * 60)), h = dt / n;
+    const spring = (x, vx, to, om, z) => { vx += (om * om * (to - x) - 2 * z * om * vx) * h; return [x + vx * h, vx]; };
+    for (let i = 0; i < n; i++) {
+      [s.y, s.vy] = spring(s.y, s.vy, yT, wh, 0.55);
+      [s.px, s.vp] = spring(s.px, s.vp, pT, wp, 0.5);
+      [s.rz, s.vr] = spring(s.rz, s.vr, rT, wr, zr);
+      [s.yaw, s.vw] = spring(s.yaw, s.vw, yawT, ww, 0.7);
+    }
+    R.position.y = s.y; T.rotation.x = s.px; T.rotation.z = s.rz; R.rotation.y += s.yaw;
+    for (const u of v.hullSea || []) u.uSpd.value = fly ? 0 : clamp(fn / 0.42, 0, 1);
   }
 
   // camera gestures

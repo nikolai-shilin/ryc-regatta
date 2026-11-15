@@ -9,7 +9,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { rigidSkin } from './skin.js';
 import { sponsor } from './sponsor.js';
-import { D2R, clamp, lerp, waveHeight } from './sim.js';
+import { D2R, NO_GO, clamp, lerp, waveHeight } from './sim.js';
 import { VENUE } from './venues.js';
 // a file next to this module, by the address the page's import map gives it: its content's hash after a deploy
 // (scripts/stamp-game.mjs), so it is cached for good; the plain address where there is none (npm run dev)
@@ -98,25 +98,54 @@ function section(t, s) {
 // hull paint: gloss gelcoat with a boot-top, antifouling below it and a cove stripe under the sheer, drawn crisp in the shader.
 // The topsides are lacquered: a clear coat over the colour, so a hull (a dark one most of all) shows its shape by what
 // it mirrors — a band of sky along the topsides, the sea below it, the sun's highlight. The antifouling is matt.
+//
+// Where the hull meets the sea it is wet: the long swell (the same wave trains the boats ride, SEA, which world.js
+// points at its water's) runs up and down the topsides and leaves them dark and glossy for a hand's width above it;
+// under way the bow wave climbs the stem as a sheet of white water, higher the faster she goes, and a lower one wraps
+// the quarters. uSpd (0–1) and uHalfL (half her drawn length) are each boat's own (hullSea, set in world.js's settle).
+export const SEA = { uTime: { value: 0 }, uW: { value: Array.from({ length: 8 }, () => new THREE.Vector4()) }, uWs: { value: new Array(8).fill(0) } };
 export function hullMaterial(hull, stripe, bottom = '#5b1f24') { // bottom: the antifouling, the player's choice (dark red on the others)
   const m = new THREE.MeshPhysicalMaterial({ color: hull, roughness: 0.32, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.1, side: THREE.DoubleSide });
+  const sea = (m.userData.sea = { uSpd: { value: 0 }, uHalfL: { value: L / 2 } });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uStripe = { value: new THREE.Color(stripe) }; sh.uniforms.uBottom = { value: new THREE.Color(bottom) };
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float band; varying float vBand; varying float vY;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBand = band; vY = position.y;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uStripe, uBottom; varying float vBand; varying float vY;')
+    Object.assign(sh.uniforms, SEA, sea);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float band; varying float vBand; varying float vY; varying vec3 vWP, vLP;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBand = band; vY = position.y; vLP = position; vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+      uniform vec3 uStripe, uBottom; uniform float uTime, uSpd, uHalfL; uniform vec4 uW[8]; uniform float uWs[8];
+      varying float vBand; varying float vY; varying vec3 vWP, vLP;
+      float hullSea(vec2 xz) { float h = 0.0; for (int i = 0; i < 5; i++) h += uW[i].w * sin(uW[i].z * dot(uW[i].xy, xz) - uWs[i] * uTime + float(i) * 1.7); return h; }`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         float aa = fwidth(vY) * 1.2, ab = fwidth(vBand) * 1.2;
         float boot = smoothstep(0.07 - aa, 0.07 + aa, vY) * (1.0 - smoothstep(0.19 - aa, 0.19 + aa, vY));
         float under = 1.0 - smoothstep(0.07 - aa, 0.07 + aa, vY);
         float cove = smoothstep(0.1 - ab, 0.1 + ab, vBand) * (1.0 - smoothstep(0.135 - ab, 0.135 + ab, vBand));
         diffuseColor.rgb = mix(diffuseColor.rgb, uStripe, max(boot, cove));
-        diffuseColor.rgb = mix(diffuseColor.rgb, uBottom, under);`)
+        diffuseColor.rgb = mix(diffuseColor.rgb, uBottom, under);
+        // the sea against her: s runs −1 at the transom to 1 at the stem; the bow wave and the quarter wave raise the
+        // water's line along her, the wet band reaches above it, and the white water fills up to it, broken in streaks
+        float hS = -vLP.z / uHalfL, hK = uHalfL / 5.2;
+        float bowW = uSpd * hK * (0.26 * smoothstep(0.3, 0.9, hS) * (1.0 - smoothstep(0.97, 1.08, hS)) + 0.08 * smoothstep(-0.55, -0.95, hS));
+        float dh = vWP.y - hullSea(vWP.xz) - bowW; // above the raised line (+) or in the white water below it
+        float wet = 1.0 - smoothstep(0.0, 0.08 + 0.18 * uSpd * hK, dh);
+        float n1 = 0.5 + 0.5 * sin(vLP.z * 11.0 + vLP.y * 17.0 - uTime * 5.0 + 2.0 * sin(vLP.z * 4.3 + uTime * 1.7));
+        float n2 = 0.5 + 0.5 * sin(vLP.z * 6.7 - vLP.y * 23.0 + uTime * 3.1);
+        float froth = smoothstep(0.3, 0.75, n1 * 0.6 + n2 * 0.4); // the foam torn into patches, running aft
+        float white = (1.0 - smoothstep(-0.02, 0.03, dh)) * (0.3 + 0.7 * smoothstep(-0.1, 0.0, dh)) * smoothstep(0.03, 0.16, bowW) * smoothstep(0.2, 0.6, hS) * froth;
+        diffuseColor.rgb *= 1.0 - 0.28 * wet * (1.0 - under * 0.5);
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92, 0.95, 0.97), clamp(white, 0.0, 0.75));`)
       .replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>
-        material.clearcoat *= 1.0 - under; material.roughness = mix(material.roughness, 0.75, under);`);
+        material.clearcoat *= max(1.0 - under, wet); material.roughness = mix(mix(material.roughness, 0.75, under), 0.12, wet * 0.8);`);
   };
   m.customProgramCacheKey = () => 'hull';
   return m;
+}
+// each hull's wet-line uniforms, found once on a built boat (world.js sets their speed every frame)
+export function hullSea(view, halfL) {
+  const list = [];
+  view.root.traverse((o) => { const s = o.material?.userData?.sea; if (s && !list.includes(s)) { s.uHalfL.value = halfL; list.push(s); } });
+  return list;
 }
 
 export function hullGeometry() {
@@ -695,6 +724,41 @@ export function leechFlutter(f, u, t, aws) {
   const w = THREE.MathUtils.smoothstep(u, 0.72, 1);
   return w * w * (0.01 + 0.0025 * aws) * Math.sin(t * (19 + aws * 0.4) + f * 13) * (0.6 + 0.4 * Math.sin(t * 3.1 + f * 5));
 }
+// How a boat's sails set this frame, from the sim (b), kept on the view: depth, fuller in light air and off the wind
+// and flatter as it blows up (the backstay and the outhaul on); twist, the head falling off more in a breeze and
+// eased; back, upwind and overpowered, the main eased to keep her on her feet lifts behind its luff in the jib's
+// wash; flogM, flogJ, how hard the main and the jib flap, built and let die over a fraction of a second, so a tack's
+// luffing grows as the bow comes up to the wind and stops as the new side fills; curl, the gennaker's luff, which a
+// good trimmer keeps on the edge of curling and which folds right in when it's over-eased or collapses in a gybe
+export function clothState(view, b, t) {
+  const c = view.cloth || (view.cloth = { t, flogM: 0, flogJ: 0, ph: Math.random() * 20 });
+  const dt = clamp(t - c.t, 0, 0.25); c.t = t;
+  const aws = b.aws || 0, a = Math.abs(b.twa || 0) / D2R, off = smoothstep(70, 150, a), ease = b.depower || 0;
+  c.depth = lerp(1.18, 0.82, smoothstep(5, 20, aws)) * (1 + 0.18 * off);
+  c.twist = lerp(0.75, 1.35, smoothstep(6, 22, aws)) * (1 + 0.35 * off);
+  c.back = (1 - off) * clamp((ease - 3) / 10, 0, 1);
+  const mainLuff = a < NO_GO ? 1 : b.trimErr === undefined ? b.luff || 0 : clamp((b.trimErr - ease - 5) / 18, 0, 1);
+  const to = (x, want) => x + (want - x) * (1 - Math.exp(-dt * (want > x ? 7 : 2.5)));
+  c.flogM = to(c.flogM, mainLuff); c.flogJ = to(c.flogJ, b.luff || 0);
+  c.curl = clamp(0.1 + 0.22 * Math.max(0, Math.sin(t * 0.8 + c.ph)) ** 3 + 0.75 * (b.kiteCollapse || 0) + 0.6 * smoothstep(0.2, 0.8, b.luff || 0), 0, 1);
+  c.aws = aws;
+  return c;
+}
+// the cloth's sideways offset at (f up the luff, u aft along the chord) when it isn't drawing: k how hard it flaps
+// (0–1), chord the sail's width there, s the side the boom is on. A sail just luffing lifts — a bubble backed behind
+// the luff; with the wind right along it, it flogs: waves run aft from the luff, growing to the leech, quicker and
+// harder the more it blows
+export function flog(f, u, t, k, chord, aws, s, ph = 0) {
+  if (k < 0.005) return 0;
+  const bubble = s * Math.min(k * 3, 1) * (1 - smoothstep(0.35, 0.95, k)) * chord * 0.05 * Math.sin(Math.PI * Math.min(u / 0.45, 1));
+  const w = 2 * Math.PI * (1.5 + 0.07 * Math.min(aws, 30)), q = smoothstep(0.25, 0.85, k);
+  const amp = chord * (0.07 + 0.004 * Math.min(aws, 25)) * q * u ** 1.15 * (0.35 + 0.65 * Math.sin(Math.PI * Math.min(f * 1.15, 1)));
+  return bubble + amp * (Math.sin(w * t - 6.5 * u - 2.2 * f + ph) + 0.45 * Math.sin(1.7 * w * t - 11 * u + 3.1 * f + 2 * ph));
+}
+// a main's cloth beyond its cut: flogging, and backed behind the luff when she's overpowered (s: the boom's side)
+export const mainCloth = (c, f, u, t, chord, s) => flog(f, u, t, c.flogM, chord, c.aws, s, c.ph) + s * c.back * chord * 0.045 * Math.sin(Math.PI * Math.min(u / 0.35, 1)) * Math.sin(Math.PI * (0.15 + 0.7 * f));
+// the gennaker's luff folding in (0–1 of its curl, at f up the luff and u aft): times the sail's size, towards the boat
+export const kiteCurl = (c, f, u) => c.curl * (1 - smoothstep(0, 0.3, u)) ** 2 * Math.sin(Math.PI * Math.min(1, f * 1.1));
 export function setSail(m, fn) {
   const { rows, cols, g } = m.userData, a = g.attributes.position, v = new THREE.Vector3();
   for (let i = 0; i <= rows; i++) for (let j = 0; j <= cols; j++) { fn(i / rows, j / cols, v); a.setXYZ(i * (cols + 1) + j, v.x, v.y, v.z); }
@@ -1276,12 +1340,12 @@ export class BoatView {
     const VA = [0, MAST_FOOT + 0.27, 0.1], VB = [0, BOOM_Y - 0.06, 1.2], VM = VA.map((v, i) => lerp(v, VB[i], 0.42));
     boom.add(bar(VA, VM, 0.018, 0.018, M.alu), bar(VM, VB, 0.032, 0.028, M.carbon));
     this.mainPivot.add(mergeGroup(boom));
-    this.main = sailMesh(14, 8, sailTexture('main', look), look.laminate, 'main'); this.mainPivot.add(this.main);
+    this.main = sailMesh(20, 12, sailTexture('main', look), look.laminate, 'main'); this.mainPivot.add(this.main);
     // jib on the forestay, swung about the stay itself
     this.jibPivot = add(new THREE.Group(), TACK.x, TACK.y, TACK.z);
     this.jibAxis = HEAD.clone().sub(TACK).normalize();
-    this.jib = sailMesh(12, 6, sailTexture('jib', look), look.laminate, 'jib'); this.jibPivot.add(this.jib);
-    this.kite = sailMesh(12, 8, sailTexture('kite', look), false, 'kite'); this.kite.visible = false; T.add(this.kite);
+    this.jib = sailMesh(16, 9, sailTexture('jib', look), look.laminate, 'jib'); this.jibPivot.add(this.jib);
+    this.kite = sailMesh(16, 10, sailTexture('kite', look), false, 'kite'); this.kite.visible = false; T.add(this.kite);
 
     // telltales on the jib luff (they matter at the helm)
     this.tells = [];
@@ -1318,6 +1382,7 @@ export class BoatView {
 
     // everything solid casts and catches the sun's shadow (sails on the deck and on each other)
     this.root.traverse((o) => { if (o.isMesh) { o.castShadow = !(o.userData.flat || o.parent?.userData.flat); o.receiveShadow = true; } });
+    this.hullSea = hullSea(this, L / 2);
     this.bake();
   }
 
@@ -1360,6 +1425,14 @@ export class BoatView {
     }
   }
 
+  // what a sailor stands on at (x, z): the coachroof's top (and the hatch garage on it), the cockpit's floor, or the deck
+  surfaceAt(x, z) {
+    const ax = Math.abs(x);
+    if (z < CR_ZA && z > CR_ZF && ax < roofHalf(z)) return roofTop(z) + (ax < GARAGE.x && z > GARAGE.z0 && z < GARAGE.z1 ? GARAGE.h : 0);
+    if (z >= CR_ZA && ax < cockpitHalf(z)) return FLOOR;
+    return deckY(z);
+  }
+
   // far away, the small fittings (winches, hatches, lines, blocks) aren't worth their draw calls
   setDetail(on) {
     if (this.detailOn === on) return;
@@ -1394,18 +1467,18 @@ export class BoatView {
     this.root.position.set(b.x, y * 0.85 - 0.05, b.z);
     this.root.rotation.y = -b.h;
     this.tilt.rotation.x = pitch;
-    this.tilt.rotation.z = side * b.heel * D2R + roll;
+    this.tilt.rotation.z = (this.heelZ = side * b.heel * D2R) + roll;
     this.wheel.rotation.y = b.rudder * 0.5;
     this.ext.rotation.set(0.35, 0, -side * 1.05); // the tiller extension, up and out to the helm's side
 
-    const sa = b.sail * D2R, luff = b.luff, ph = t * 17;
-    this.mainPivot.rotation.y = -this.sailSide * sa;
-    const belly = -this.sailSide * (1 - luff * 0.85);
+    const sa = b.sail * D2R, cl = clothState(this, b, t), ss = this.sailSide;
+    this.mainPivot.rotation.y = -ss * sa;
+    const belly = -ss * (1 - cl.flogM * 0.85), jBelly = -ss * (1 - cl.flogJ * 0.85);
     const reefDrop = (b.reefFill || 0) * 2.4; // a reef: the head comes 2.4 m down the mast, the sail is that much smaller
     // square-top main: the chord narrows up the mast to a wide head, with roach on the leech; twist opens the top
     setSail(this.main, (f, u, v) => {
-      const chord = mainChord(f), tw = -this.sailSide * f * f * 0.5 * u;
-      v.set(belly * Math.sin(Math.PI * u ** 0.78) * chord * 0.11 * (1 - 0.4 * f) + tw + luff * 0.22 * Math.sin(ph + f * 6 + u * 5) * u + leechFlutter(f, u, t, b.aws || 0), BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), u * chord);
+      const chord = mainChord(f), tw = -ss * f * f * 0.5 * u * cl.twist;
+      v.set(belly * Math.sin(Math.PI * u ** 0.78) * chord * 0.11 * cl.depth * (1 - 0.4 * f) + tw + mainCloth(cl, f, u, t, chord, ss) + leechFlutter(f, u, t, cl.aws), BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), u * chord);
     });
     // the mainsheet, from the block on the traveller's car to the one under the boom
     const ma = this.mainPivot.rotation.y, bz = SHEET_B;
@@ -1418,7 +1491,7 @@ export class BoatView {
       const lx = head.x * f, ly = head.y * f, lz = head.z * f;
       const ex = lerp(clew.x, head.x, f), ey = lerp(clew.y, head.y, f), ez = lerp(clew.z, head.z, f);
       const len = Math.hypot(ex - lx, ey - ly, ez - lz);
-      v.set(lerp(lx, ex, u) + belly * Math.sin(Math.PI * u ** 0.72) * len * 0.125 + luff * 0.25 * Math.sin(ph * 1.2 + f * 7 + u * 4) * u + leechFlutter(f, u, t + 0.4, b.aws || 0), lerp(ly, ey, u), lerp(lz, ez, u));
+      v.set(lerp(lx, ex, u) + jBelly * Math.sin(Math.PI * u ** 0.72) * len * 0.125 * cl.depth + flog(f, u, t, cl.flogJ, len, cl.aws, ss, cl.ph + 1.3) + leechFlutter(f, u, t + 0.4, cl.aws), lerp(ly, ey, u), lerp(lz, ez, u));
     });
     // the jib sheets: from the clew to the car on the leeward side deck and on to the winch; the lazy one slack
     const cw = clew.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1;
@@ -1433,19 +1506,39 @@ export class BoatView {
     // tack or gybe over a second or two.
     const first = this.crewT === undefined, dt = clamp(t - (this.crewT ?? t), 0, 0.1); this.crewT = t; // the first time, straight to their places
     const up = Math.abs(b.twa) < 95 * D2R, hike = clamp(b.heel / 18, 0.15, 1), bowBusy = !!(b.kiteJob || b.jibJob || b.reefJob);
+    if (this.tackSide !== side) { if (this.tackSide !== undefined) this.tackT = t; this.tackSide = side; } // when she last tacked or gybed
+    const sinceTack = t - (this.tackT ?? -99);
+    // the sea's own roll, which the crew's bodies take out (a sailor sits up straight while the boat rolls under her)
+    const sway = first ? 0 : clamp((this.sea?.rz ?? this.tilt.rotation.z) - (this.heelZ ?? 0), -0.35, 0.35) * 0.6;
     for (const c of this.crew) {
+      // each crosses in her own time in a tack: the helm with the tiller, the bow and the main trimmer, the jib
+      // trimmer last, once she has the new sheet made
+      if (first || c.side === undefined) c.side = c.goal = side;
+      if (side !== c.goal) { c.goal = side; c.at = t + [0.25, 0.45, 0.85, 0.35][c.i]; }
+      if (c.side !== c.goal && t >= c.at) c.side = c.goal;
+      const cs = c.side;
       // yaw turns a sailor (0 faces outboard, π/2 forward, π inboard); lean tips the body forward, out over the
       // lifelines when she faces outboard; knee bends the knees (the thighs lie level when seated); reach swings the arms
       let x, y, z = c.z0, yaw = Math.PI, lean = 0.12, stand = 0, knee = -0.8, reach = 0.55;
-      if (c.i === 0) { x = side * (hbAt(z) - 0.22); y = deckY(z) + 0.06; yaw = 2.3; lean = up ? 0.05 - 0.2 * hike : 0.12; knee = -1.3; reach = 0.9; } // the helm: on the windward side deck, the tiller extension in hand
+      if (c.i === 0) { x = cs * (hbAt(z) - 0.22); y = deckY(z) + 0.06; yaw = 2.3; lean = up ? 0.05 - 0.2 * hike : 0.12; knee = -1.3; reach = 0.9 + clamp(b.rudder * 0.4, -0.3, 0.3) * cs; } // the helm: on the windward side deck, the tiller extension in hand, her arm moving with it
       else if (c.i === 3 && bowBusy) { x = 0.12; z = b.reefJob ? MAST_Z + 0.55 : -3.4; y = b.reefJob ? this.roofY : deckY(z) + 0.02; yaw = Math.PI / 2; stand = 1; lean = 0.15; reach = 0.7; } // forward to work
-      else if (up) { x = side * (hbAt(z) - 0.12); y = deckY(z) + 0.09; yaw = 0; lean = 0.12 + 0.45 * hike; knee = -1.85; reach = 0.3; } // on the rail, legs over the side, hiking out
-      else { x = (c.i === 3 || (c.i === 2 && b.kite) ? -side : side) * 0.72; z = c.i === 3 ? 3.3 : c.z0; y = FLOOR + 0.2; } // in the cockpit on its foot braces, the kite trimmer to leeward
+      else if (c.i === 2 && up && sinceTack < 3.8) { z = PRIMARY[1] + 0.45; x = -side * (PRIMARY[0] - 0.12); y = deckY(z) + 0.06; yaw = 2.0; lean = 0.5; knee = -1.2; reach = 1.0 + 0.45 * Math.sin(t * 8.5); } // after a tack: grinding the new sheet in on the leeward primary
+      else if (up) { x = cs * (hbAt(z) - 0.12); y = deckY(z) + 0.09; yaw = 0; lean = 0.12 + 0.45 * hike; knee = -1.85; reach = 0.3; } // on the rail, legs over the side, hiking out
+      else { x = (c.i === 3 || (c.i === 2 && b.kite) ? -cs : cs) * 0.72; z = c.i === 3 ? 3.3 : c.z0; y = FLOOR + 0.2; } // in the cockpit on its foot braces, the kite trimmer to leeward
       const k = first ? 1 : 1 - Math.exp(-dt * 2.2);
-      c.x += (x - c.x) * k; c.y += (y - c.y) * k; c.z += (z - c.z) * k; c.yaw += (yaw - c.yaw) * k;
-      c.lean += (lean - c.lean) * k; c.stand += (stand - c.stand) * k; c.knee += (knee - c.knee) * k; c.reach += (reach - c.reach) * k;
+      // on the move she goes crouched over what's in the way — up across the coachroof's top, down through the
+      // cockpit — not through it, her feet on what's under her and a step ahead of her
+      const mx = x - c.x, mz = z - c.z, md = Math.hypot(mx, mz), moving = !first && md > 0.3;
+      if (moving) {
+        const under = Math.max(this.surfaceAt(c.x, c.z), this.surfaceAt(c.x + (mx / md) * 0.4, c.z + (mz / md) * 0.4));
+        y = under + 0.02; stand = 0.45; lean = 0.55; knee = -1.5; reach = 0.75;
+      }
+      c.x += mx * k; c.z += mz * k; c.yaw += (yaw - c.yaw) * k;
+      c.y += (y - c.y) * (moving ? 1 - Math.exp(-dt * 14) : k);
+      if (moving) c.y = Math.max(c.y, this.surfaceAt(c.x, c.z));
+      c.lean += (lean - c.lean) * k; c.stand += (stand - c.stand) * k; c.knee += (knee - c.knee) * k; c.reach += (reach - c.reach) * (c.i === 2 && sinceTack < 3.8 ? 1 - Math.exp(-dt * 12) : k);
       const sd = c.x >= 0 ? 1 : -1, s = c.s; // the side she's on: the port side's sailors are mirrored, so +x is always outboard
-      c.g.position.set(c.x, c.y, c.z); c.g.scale.x = sd;
+      c.g.position.set(c.x, c.y, c.z); c.g.scale.x = sd; c.g.rotation.z = -sway;
       s.body.rotation.y = c.yaw; s.body.position.y = c.stand * (THIGH + SHIN + 0.02);
       s.upper.rotation.z = -c.lean;
       for (const l of s.legs) { l.hip.rotation.z = (1 - c.stand) * Math.PI / 2; l.knee.rotation.z = (1 - c.stand) * c.knee; }
@@ -1471,7 +1564,8 @@ export class BoatView {
         const p = [lerp(tk[0], hd[0], f) + lx, lerp(tk[1], hd[1], f), lerp(tk[2], hd[2], f) + lz];
         const q = [lerp(cl[0], hd[0], f), lerp(cl[1], hd[1], f), lerp(cl[2], hd[2], f)];
         const bul = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, f * 1.08)) * 2.8 * kfill;
-        v.set(lerp(p[0], q[0], u) + sd * bul, lerp(p[1], q[1], u), lerp(p[2], q[2], u) - bul * 0.9);
+        const cu = kiteCurl(cl, f, u) * 1.5 * kfill; // the luff folding in, aft and into the sail's hollow
+        v.set(lerp(p[0], q[0], u) + sd * (bul - cu), lerp(p[1], q[1], u), lerp(p[2], q[2], u) - bul * 0.9 + cu * 0.6);
       });
       const kp = this.kiteSheet.geometry.attributes.position;
       kp.setXYZ(0, cl[0], cl[1], cl[2]); kp.setXYZ(1, sd * 1.3, deckY(4.6) + 0.1, 4.6); kp.needsUpdate = true;
