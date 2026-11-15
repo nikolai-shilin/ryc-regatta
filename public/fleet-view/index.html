@@ -175,9 +175,10 @@ if (world) {
     const d = Math.exp(camS.ld), c = Math.cos(camS.el), sw = 0.01 * d, cam = world.camera;
     cam.position.set(camS.tx - Math.sin(camS.az) * d * c + Math.sin(t * 0.37) * sw, camS.ty + 1 + d * Math.sin(camS.el) + Math.sin(t * 0.53) * sw * 0.5, camS.tz + Math.cos(camS.az) * d * c + Math.cos(t * 0.29) * sw);
     cam.up.set(0, 1, 0); cam.lookAt(camS.tx, camS.ty, camS.tz); cam.fov = 55;
-    // the haze drawn back as the drone climbs, so the fleet reads from up there
+    // the sea's haze drawn back as the drone climbs, so the fleet reads from up there (the boats' and the land's thin
+    // with the height themselves: world.js)
     const hi = Math.max(0, d - 70), L = world.light, fn = L.fogNear + hi * 0.6, ff = L.fogFar + hi * 2.2;
-    world.scene.fog.near = fn; world.scene.fog.far = ff; world.waterU.uFogNear.value = fn; world.waterU.uFogFar.value = ff;
+    world.waterU.uFogNear.value = fn; world.waterU.uFogFar.value = ff;
   };
 
   const size = () => {

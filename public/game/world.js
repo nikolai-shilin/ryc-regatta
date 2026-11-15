@@ -14,12 +14,43 @@ import { Post, Mirror, OVERLAY, MIRRORED } from './post.js';
 import { Ocean, OCEAN_GLSL, oceanUniforms, blankOcean } from './ocean.js';
 import { skyAt, pickSky, SKY_GLSL, skyUniforms } from './light.js';
 import { Skopea, groundAt, inLandShadow, CLOUD_GLSL } from './skopea.js';
+import { VENUE } from './venues.js';
 export { flagTexture } from './committee.js';
 
 // the sky's colours and the sun: one set of objects that every shader shares; setLight() changes them in place
 const SKY_TOP = new THREE.Color('#4f8fcb'), SKY_HORIZON = new THREE.Color('#d6e7f0');
 const SUN = new THREE.Vector3(-0.41, 0.57, 0.71).normalize(); // a clear day: from the south-west, behind a boat beating north
-const FOG_NEAR = 150, FOG_FAR = 3200;
+const FOG_NEAR = 150, FOG_FAR = 3200; // the sea's haze (its shader: it melts into the sky by the far end)
+
+// The haze on everything else three.js draws with the scene's fog (the yachts, the marks, the committee boat, the
+// birds): the land's own (skopea.js), so a boat 2 km off is as hazy as the shore 2 km off, not lost in the sky while
+// the hills behind her stand clear. Thicker with the distance, over the venue's haze length (the fog's `far`), and
+// thinner seen from higher up, the haze thinning upwards over the fog's `near` metres (700, 140 in a morning's mist).
+// Three's own linear fog is put back with this, in the same uniforms, for every material.
+THREE.ShaderChunk.fog_pars_vertex = '#ifdef USE_FOG\n\tvarying vec3 vFogRel;\n#endif';
+THREE.ShaderChunk.fog_vertex = '#ifdef USE_FOG\n\tvFogRel = mvPosition.xyz;\n#endif';
+THREE.ShaderChunk.fog_pars_fragment = `#ifdef USE_FOG
+	uniform vec3 fogColor; varying vec3 vFogRel;
+	#ifdef FOG_EXP2
+		uniform float fogDensity;
+	#else
+		uniform float fogNear; uniform float fogFar;
+		float fogAir(float a, float b, float H) { float d = b - a; return abs(d) < 1.0 ? exp(-a / H) : H * (exp(-a / H) - exp(-b / H)) / d; }
+	#endif
+#endif`;
+THREE.ShaderChunk.fog_fragment = `#ifdef USE_FOG
+	#ifdef FOG_EXP2
+		float fogFactor = 1.0 - exp( - fogDensity * fogDensity * dot( vFogRel, vFogRel ) );
+	#else
+		vec3 fogW = ( vec4( vFogRel, 0.0 ) * viewMatrix ).xyz; // from the eye, turned back to the world's way up
+		float fogA = 0.25 + 0.75 * fogAir( max( cameraPosition.y, 0.0 ), max( cameraPosition.y + fogW.y, 0.0 ), fogNear );
+		float fogFactor = 0.92 * ( 1.0 - exp( - length( fogW ) / fogFar * fogA ) );
+	#endif
+	gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );
+#endif`;
+// the haze length in this light (as the land's, skopea.js setLight) and the height it thins over
+const hazeLength = (L) => L.fogFar * 2.4 * (VENUE.look.haze ?? 1);
+const hazeHeight = (L) => 700 + (140 - 700) * (L.mist || 0);
 
 // the waves (sim.js) drive the water shader, the boats and the buoys alike
 const NW = 8, NV = 5; // wave trains shaded / wave trains that move the surface (the short ones would alias on the mesh)
@@ -818,7 +849,7 @@ export class World {
     this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const phone = /android|iphone|ipad/i.test(navigator.userAgent);
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.Fog(SKY_HORIZON, FOG_NEAR, FOG_FAR);
+    this.scene.fog = new THREE.Fog(SKY_HORIZON, 700, FOG_FAR * 2.4); // (the land's haze, set by the light: setLight)
     // out to 9 km: as far as the venue's terrain goes (8.5 km), so a landmark or a hill behind the course is drawn
     // (the mountains beyond are pulled in to just inside it: skopea.js)
     this.camera = new THREE.PerspectiveCamera(55, 1, 0.3, 9000);
@@ -946,7 +977,7 @@ export class World {
     U.uMie.value = L.mie; U.uCloud.value = L.cloud; U.uFoamCol.value.copy(L.foam); this.discU.value = L.disc;
     this.sun.color.copy(L.sun); this.sun.intensity = L.sunI;
     this.hemi.color.copy(L.hemiSky); this.hemi.groundColor.copy(L.hemiGround); this.hemi.intensity = L.hemiI;
-    this.scene.fog.color.copy(SKY_HORIZON); this.scene.fog.near = L.fogNear; this.scene.fog.far = L.fogFar;
+    this.scene.fog.color.copy(SKY_HORIZON); this.scene.fog.near = hazeHeight(L); this.scene.fog.far = hazeLength(L);
     const W = this.waterU;
     W.uFogNear.value = L.fogNear; W.uFogFar.value = L.fogFar;
     W.uDeep.value.copy(L.deep); W.uScatter.value.copy(L.scatter); W.uGlint.value = L.glint;
