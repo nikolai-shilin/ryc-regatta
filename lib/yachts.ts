@@ -1,8 +1,9 @@
-// The yachts you can race (public/game/classes.js has the same ids and sails them): what the yachts page (/yachts)
-// and the free race's set-up say about each. Today's race is sailed in a new one every day (lib/race.ts dailyYacht); a free race in any.
+// The yachts you can race (public/game/classes.js has the same ids, in the same order, and sails them): what the
+// yachts page (/yachts), the fleet page (/fleet) and the free race's set-up say about each. Today's race is sailed
+// in a new one every day (lib/race.ts dailyYacht); a free race in any.
 
-export type YachtId = 'club40' | 'j70' | 'rs21' | 'ac75';
-export const YACHT_IDS: readonly YachtId[] = ['club40', 'j70', 'rs21', 'ac75'];
+export type YachtId = 'club40' | 'bavaria46' | 'j70' | 'rs21' | 'laser' | 'ac75';
+export const YACHT_IDS: readonly YachtId[] = ['club40', 'bavaria46', 'j70', 'rs21', 'laser', 'ac75'];
 export const DEFAULT_YACHT: YachtId = 'club40';
 export const isYacht = (v: unknown): v is YachtId => typeof v === 'string' && (YACHT_IDS as readonly string[]).includes(v);
 
@@ -38,6 +39,25 @@ export const YACHTS: Yacht[] = [
       { k: ['Sails', 'Паруса'], v: ['Main, jib, J3, gennaker, code zero', 'Грот, стаксель, J3, генакер, код зеро'] },
     ],
     speed: { up: 6.6, down: 8.1 }, courseK: 1, lineK: 1, timeK: 1,
+  },
+  {
+    id: 'bavaria46',
+    name: ['Bavaria 46', 'Bavaria 46'],
+    kind: ['46-foot cruising yacht', '46-футовая крейсерская яхта'],
+    tagline: ['The charter fleets’ boat: race the yacht you take on holiday.', 'Яхта чартерных флотов: гоняйся на той, что берёшь в отпуск.'],
+    about: [
+      ['Bavaria Yachtbau of Giebelstadt, in Germany, builds more cruising yachts than almost anyone, and its 46-footer is one of the boats you are most likely to charter in the Mediterranean: high topsides with long hull windows, three or four double cabins under a long low coachroof, a cockpit with a table between two wheels and a bathing platform that folds down out of the transom. The rig is a deck-stepped aluminium mast with swept spreaders, a main that drops into a lazy bag on the boom and a furling genoa.',
+        'Верфь Bavaria Yachtbau из Гибельштадта в Германии строит больше крейсерских яхт, чем почти кто-либо, а её 46-футовик — одна из лодок, которые чаще всего берут в чартер на Средиземном море: высокий борт с длинными корпусными окнами, три-четыре двухместные каюты под длинной низкой рубкой, кокпит со столом между двумя штурвалами и купальная платформа, откидывающаяся из транца. Рангоут — алюминиевая мачта на палубе с отогнутыми назад краспицами, грот, который падает в лэйзи-бэг на гике, и закручивающаяся генуя.'],
+      ['Some eleven tonnes, she carries her way through a tack and takes her time to get going again. No racer, but quick for a cruiser on a reach, and charter crews race them across the Mediterranean in flotilla and corporate regattas, the whole fleet in the same boat.',
+        'Около одиннадцати тонн: она хорошо несёт инерцию в повороте и не спеша разгоняется снова. Не гоночная яхта, но для крейсера быстрая на полных курсах, и чартерные экипажи гоняются на них по всему Средиземноморью в флотилиях и корпоративных регатах — весь флот на одинаковых лодках.'],
+    ],
+    race: ['Five crew: trim the main and the genoa, hoist the cruising gennaker on the runs and tie in a reef when it blows. Heavy and steady, slow to speed up and slow to stop; the line and the marks are laid a little wider for her. No code zero, no change of jib.', 'Экипаж из пяти: настраивай грот и геную, ставь круизный генакер на полных курсах и бери риф в сильный ветер. Тяжёлая и устойчивая, медленно разгоняется и медленно останавливается; линия старта и знаки для неё чуть шире. Без код зеро и без смены стакселя.'],
+    specs: [
+      { k: ['Length', 'Длина'], v: ['14.27 m', '14,27 м'] }, { k: ['Beam', 'Ширина'], v: ['4.35 m', '4,35 м'] },
+      { k: ['Displacement', 'Водоизмещение'], v: ['about 11 t', 'около 11 т'] }, { k: ['Draft', 'Осадка'], v: ['2.1 m', '2,1 м'] },
+      { k: ['Crew', 'Экипаж'], v: ['5', '5'] }, { k: ['Sails', 'Паруса'], v: ['Main, furling genoa, cruising gennaker', 'Грот, закручивающаяся генуя, круизный генакер'] },
+    ],
+    speed: { up: 6.2, down: 7.6 }, courseK: 1, lineK: 1.3, timeK: 1.1,
   },
   {
     id: 'j70',
@@ -76,6 +96,25 @@ export const YACHTS: Yacht[] = [
       { k: ['Crew', 'Экипаж'], v: ['2–4', '2–4'] }, { k: ['Sails', 'Паруса'], v: ['Main 16.2 m², jib 8.4 m², gennaker 40 m²', 'Грот 16,2 м², стаксель 8,4 м², генакер 40 м²'] },
     ],
     speed: { up: 5.85, down: 8.8 }, courseK: 0.8, lineK: 0.8, timeK: 0.97,
+  },
+  {
+    id: 'laser',
+    name: ['Laser (ILCA)', 'Laser (ILCA)'],
+    kind: ['14-foot single-handed Olympic dinghy', '14-футовый одноместный олимпийский швертбот'],
+    tagline: ['One sailor, one sail: the most raced dinghy there is.', 'Один гонщик, один парус: самый массовый гоночный швертбот.'],
+    about: [
+      ['Designed by Bruce Kirby and Ian Bruce and launched in 1970, the Laser was made to be simple: a 59 kg hull, a daggerboard, a kick-up rudder and one sail sleeved over an unstayed two-part mast, with nothing to adjust but the sheet, the kicker, the outhaul and the downhaul. More than 200,000 have been built, and she has been an Olympic class since 1996. Since a dispute over the name, the class and its boats are called ILCA, and the full rig is the ILCA 7.',
+        'Спроектирован Брюсом Кирби и Яном Брюсом и спущен в 1970 году. Laser задуман простым: корпус 59 кг, выдвижной шверт, откидной руль и один парус, надетый карманом на мачту из двух колен без вант; настраиваются только шкот, оттяжка гика, аутхол и каннингхэм. Построено больше 200 000 лодок, с 1996 года это олимпийский класс. После спора об имени класс и лодки называются ILCA, а полное вооружение — ILCA 7.'],
+      ['One sails her, hiked out flat over the side with the feet under the strap. Light as she is, she stops in a tack and goes again at once; from about 12 knots of wind she planes on a reach and surfs down the waves, and a fleet of them racing is the closest racing there is.',
+        'Ходят на ней в одиночку, откренившись над водой и зацепившись ногами за ремень. Лодка лёгкая: в повороте почти останавливается и тут же снова идёт, а с 12 узлов ветра на галфвинде выходит на глиссирование и серфит на волне. Флот лазеров — самые плотные гонки, какие бывают.'],
+    ],
+    race: ['Alone: one sail and one sheet, no kite, no jib, no reef. Quick through a tack and quick to lose way; hike hard upwind and steer the waves on the reaches. Courses are laid 0.6 times as long.', 'В одиночку: один парус и один шкот, без спинакера, без стакселя, без рифа. Быстро проходит поворот и быстро теряет ход; на лавировке откренивайся, а на галфвинде веди по волне. Дистанции в 0,6 раза короче.'],
+    specs: [
+      { k: ['Length', 'Длина'], v: ['4.19 m', '4,19 м'] }, { k: ['Beam', 'Ширина'], v: ['1.39 m', '1,39 м'] },
+      { k: ['Hull weight', 'Вес корпуса'], v: ['59 kg', '59 кг'] }, { k: ['Mast', 'Мачта'], v: ['6.43 m', '6,43 м'] },
+      { k: ['Crew', 'Экипаж'], v: ['1', '1'] }, { k: ['Sail', 'Парус'], v: ['7.06 m² (ILCA 7)', '7,06 м² (ILCA 7)'] },
+    ],
+    speed: { up: 4.7, down: 7.2 }, courseK: 0.6, lineK: 0.6, timeK: 0.9,
   },
   {
     id: 'ac75',

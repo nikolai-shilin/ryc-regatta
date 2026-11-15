@@ -27,7 +27,7 @@
 </style>
 <!-- the venue, before the game's modules read it from the address, and its land fetched at once -->
 <script>(function () {
-  // ?boat=j70|rs21|ac75: that class of yacht (public/game/classes.js), the whole fleet in it; the club's 40-footer without it
+  // ?boat=bavaria46|j70|rs21|laser|ac75: that class of yacht (public/game/classes.js), the whole fleet in it; the club's 40-footer without it
   var q = new URLSearchParams(location.search), v = q.get('venue') || 'garda', w = q.get('wind') || 'light', fin = q.get('finish') === '1' ? '&finish=1' : q.get('setup') === '1' ? '&setup=1' : '', y = q.get('boat') || '';
   if (!/^[a-z-]+$/.test(v)) v = 'garda';
   if (!/^[a-z]+$/.test(w)) w = 'light';
@@ -89,8 +89,9 @@ let UP = { twa: 0.72, awa: 0.42, heel: 14, rudder: 0, sail: 16, luff: 0, trim: '
 let DOWN = { twa: 2.45, awa: 1.95, heel: 6, rudder: 0, sail: 68, luff: 0, trim: 'ok', kite: true, kiteFill: 1, v: 3.6 };
 // a foiler flies, the apparent wind far ahead of her on every point of sail: the sails sheeted in, no kite
 if (CLS.foil) { UP = { ...UP, awa: 0.24, sail: 7, v: 16, ride: 1 }; DOWN = { ...DOWN, awa: 0.52, sail: 17, kite: false, kiteFill: 0, v: 19, ride: 1 }; }
+else if (!CLS.kite) DOWN = { ...DOWN, sail: 80, kite: false, kiteFill: 0 }; // a class with no kite (the Laser): the boom right out
 // how tall she stands against the club's boat, so the drone frames her
-const SIZE = { j70: 0.62, rs21: 0.6, ac75: 1.55 }[CLS.id] || 1;
+const SIZE = { j70: 0.62, rs21: 0.6, laser: 0.42, bavaria46: 1.1, ac75: 1.55 }[CLS.id] || 1;
 let pose = UP, pending = null, inset = { l: 0, r: 0, t: 0, b: 0 };
 
 let world;

@@ -75,9 +75,11 @@ const smoother = (x) => { x = clamp(x, 0, 1); return x * x * x * (x * (x * 6 - 1
 const UP = { twa: 0.72, awa: 0.42, heel: 14, rudder: 0, sail: 16, luff: 0, trim: 'ok', kite: false, kiteFill: 0, v: 3.1 };
 const DOWN = { twa: 2.45, awa: 1.95, heel: 6, rudder: 0, sail: 68, luff: 0, trim: 'ok', kite: true, kiteFill: 1, v: 3.6 };
 const FOIL_UP = { ...UP, awa: 0.24, sail: 7, v: 16, ride: 1 }, FOIL_DOWN = { ...DOWN, awa: 0.52, sail: 17, kite: false, kiteFill: 0, v: 19, ride: 1 };
+const BARE_DOWN = { ...DOWN, sail: 80, kite: false, kiteFill: 0 }; // a class with no kite (the Laser): the boom right out
 // where each sails in the echelon (metres across to starboard, and ahead, of the club's boat): the big foiler out to
-// windward and ahead, the sportboats stepping down to leeward and astern
-const SLOT = { ac75: [52, 26], club40: [0, 0], j70: [-30, -12], rs21: [-54, -24] };
+// windward and ahead, the cruiser between it and the club's boat, the sportboats and the dinghy stepping down to
+// leeward and astern
+const SLOT = { ac75: [56, 28], bavaria46: [27, 12], club40: [0, 0], j70: [-30, -12], rs21: [-54, -24], laser: [-74, -34] };
 
 let world;
 try { world = new World(canvas); } catch (e) { say({ type: 'ready' }); } // no WebGL: the page's own picture shows
@@ -225,7 +227,7 @@ if (world) {
     t += dt;
     // each posed where she sails, in the wind as it is, rolling a little on her own
     for (const e of fleet) {
-      const p = e.cls.foil ? (down ? FOIL_DOWN : FOIL_UP) : down ? DOWN : UP;
+      const p = e.cls.foil ? (down ? FOIL_DOWN : FOIL_UP) : down ? (e.cls.kite ? DOWN : BARE_DOWN) : UP;
       Object.assign(e.b, p, { heel: p.heel * heel * (e.cls.foil ? 0.6 : 1) + Math.sin(t * 0.7 + e.ph) * 1.1, x: e.x, z: e.z, h: wrap(W - p.twa), boom: Math.sign(p.twa), wdir: W, tws: race.wind.p.tws });
     }
     race.t = t; race.wind.step(dt);

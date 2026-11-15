@@ -99,7 +99,7 @@ export default async function Hub({ params }: LangParams) {
             <RivalRow lang={lang} />
             <ProgressRows lang={lang} />
             <BoatRow lang={lang} />
-            <Link className="bt-row" href="/yachts"><IconBoats s={18} /><span>{t('The yachts', 'Яхты')}</span><span className="bt-row-m">J/70 · RS21 · AC75</span></Link>
+            <Link className="bt-row" href="/yachts"><IconBoats s={18} /><span>{t('The yachts', 'Яхты')}</span><span className="bt-row-m">Bavaria 46 · J/70 · RS21 · Laser · AC75</span></Link>
             <Link className="bt-row" href="/fleet"><IconSail s={18} /><span>{t('The fleet', 'Флот')}</span><span className="bt-row-m">{t('All together in 3D', 'Все вместе в 3D')}</span></Link>
             <SettingsRow lang={lang} note />
           </div>

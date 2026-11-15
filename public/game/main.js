@@ -1130,10 +1130,11 @@ document.head.append(Object.assign(document.createElement('style'), { textConten
   #sheetZone.split, #hud #sheetZone.split { width: 124px; } #sheetZone.split #jibSheet { display: block; }
   #hud.split-trim #tackBtn, #hud.split-trim #kiteBtn { right: calc(136px + var(--sr)); } /* moved over for the second slider */
   #hud #jibSheet { width: 18px; border-width: 1.5px; margin-right: 26px; } #hud #jibSheet .knob { left: -8px; width: 30px; height: 16px; border-width: 1.5px; box-shadow: none; } #hud #jibSheet .cap { font-size: 10px; }` }));
-// the Sails setting on the player's boat: 0 one sheet, 1 auto-trim, 2 main and jib apart
+// the Sails setting on the player's boat: 0 one sheet, 1 auto-trim, 2 main and jib apart (a class with no jib, the
+// Laser, has the one sheet: classes.js jib)
 function applyTrimMode() {
   const P = race && race.player; if (!P) return;
-  P.autoTrim = opts.autoTrim === 1; P.split = opts.autoTrim === 2;
+  P.autoTrim = opts.autoTrim === 1; P.split = opts.autoTrim === 2 && CLS.jib !== false;
   if (P.split) P.jibSheet = P.sheet;
   sz.classList.toggle('split', P.split); hud.classList.toggle('split-trim', P.split);
   sheetEl.querySelector('.cap.t').innerHTML = t(P.split ? 'mainCap' : 'in');
@@ -1555,7 +1556,7 @@ function coach(P, a, leg) {
   const shift = (P.twa < 0 ? -1 : 1) * wrap(P.wdir - race.wind.mean()) / D2R;
   once('cHeader', c > 20 && beat && a < 70 && shift <= -5 && !P.auto);
   once('cMark', leg === 'mark' && d < 90);
-  once('cKite', c > 0 && !beat && leg !== 'start' && a > 110 && !P.kite);
+  once('cKite', CLS.kite && c > 0 && !beat && leg !== 'start' && a > 110 && !P.kite); // only a class that has one
   once('cGate', leg === 'gate' && d < 90);
   const fi = cs.legs.length - 1;
   if (!cs.finish) once('cFinish', leg === 'finish' && d < 90);

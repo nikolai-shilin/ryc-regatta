@@ -104,7 +104,7 @@ export function FleetView({ lang, start, back }: { lang: Lang; start: YachtId | 
         <div className="bt-top">{back}<SceneBrand /></div>
         <span className="bt-kick">{t('The fleet', 'Флот')} <span className="fl-n">{id ? `${String(n).padStart(2, '0')} / ${String(YACHTS.length).padStart(2, '0')}` : t('All yachts', 'Все яхты')}</span></span>
         <h1 className="bt-h fl-h" key={shown}>{id ? t(...y.name) : t('Every yacht', 'Все яхты')}</h1>
-        <p className="bt-p">{id ? <>{t(...y.kind)}. {t(...y.tagline)}</> : t('Four yachts afloat together, from a 22-foot sportboat to the America’s Cup’s foiler. Pick one to fly to her.', 'Четыре яхты на воде вместе — от 22-футового спортбота до летающей яхты Кубка Америки. Выбери, чтобы подлететь к ней.')}</p>
+        <p className="bt-p">{id ? <>{t(...y.kind)}. {t(...y.tagline)}</> : t('Six yachts afloat together, from a 14-foot dinghy to the America’s Cup’s foiler. Pick one to fly to her.', 'Шесть яхт на воде вместе — от 14-футового швертбота до летающей яхты Кубка Америки. Выбери, чтобы подлететь к ней.')}</p>
 
         <div className="fl-strip" ref={strip}>
           <div className="fl-ctl">

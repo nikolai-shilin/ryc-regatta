@@ -344,8 +344,9 @@ test('trapezoid mark 2 counts only when rounded to port', () => {
 // baked by blender/venues.py, must be there, at the venue's own position and turned to its wind; and every course,
 // in every shape the venue offers at each length and in every wind, must be laid with its marks, gate, line and
 // finish line well clear of the shore, and every leg sailed from one to the next in clear water too. In the club's
-// 40-footer and in the AC75, whose courses are laid 2.5 times as long (classes.js): each venue and class is sailed in a
-// Node of its own, since the game picks both once, from the address, as the page loads.
+// 40-footer, in the Bavaria 46, whose courses are laid 1.3 times as wide, in the Laser, whose are 0.6 times the size,
+// and in the AC75, whose are laid 2.5 times as long (classes.js): each venue and class is sailed in a Node of its own,
+// since the game picks both once, from the address, as the page loads.
 test('the set-up page lists the game’s venues', async () => {
   const { VENUES } = await import('../public/game/venues.js');
   const page = await readFile(new URL('../lib/venues.ts', import.meta.url), 'utf8');
@@ -410,7 +411,7 @@ for (const v of VENUES) {
         for (const l of low) for (const p of xz) for (const q of xz) if (across(p, q, l.a, l.b)) under = course + ' ' + preset + ' ' + length;
       }
       console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, legWorst, legWhere, under, corners: MESH.corners, heights: SKOPEA.parts.heights.length }));`;
-    const runs = await Promise.all(['club40', 'ac75'].map(async (boat) => [boat, JSON.parse((await execFileP(process.execPath, ['--input-type=module', '-e', code(boat)], { encoding: 'utf8' })).stdout)]));
+    const runs = await Promise.all(['club40', 'bavaria46', 'laser', 'ac75'].map(async (boat) => [boat, JSON.parse((await execFileP(process.execPath, ['--input-type=module', '-e', code(boat)], { encoding: 'utf8' })).stdout)]));
     for (const [boat, out] of runs) {
       assert.deepEqual(out.origin, [v.lat, v.lon], 'baked at the venue’s position');
       assert.equal(out.turn, v.wind, 'turned to the venue’s wind');

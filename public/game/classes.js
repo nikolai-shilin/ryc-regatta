@@ -1,5 +1,5 @@
-// The yachts you can race: the club's 40-footer (the default), the J/70 and RS21
-// sportboats and the AC75 foiling monohull. A race is one-design: every boat in it is the same class, so the class is chosen for
+// The yachts you can race: the club's 40-footer (the default), the Bavaria 46
+// cruiser, the J/70 and RS21 sportboats, the Laser (ILCA) single-handed dinghy and the AC75 foiling monohull. A race is one-design: every boat in it is the same class, so the class is chosen for
 // the page, as the venue is (venues.js pageVenue): ?boat= in the address wins; a free race sails what its set-up chose
 // (localStorage 'regatta', yacht); today's race the day's (dailyYacht, below); every other page the club's 40-footer.
 // lib/yachts.ts has the same ids and the words the site shows about them.
@@ -16,6 +16,30 @@ export const CLASSES = {
     id: 'club40', loa: 12.2, beam: 3.7, drawnL: 10.4, crew: 4,
     kite: true, zero: true, reef: true, j3: true,
     tau: 6, coast: 40, hullV: 8, heelK: 1, awsK: 1, heelShow: 1, courseK: 1, lineK: 1, startK: 1,
+  },
+  // the Bavaria 46: a 46-foot cruising yacht, the charter fleets' boat — some eleven tonnes, a furling genoa and a
+  // main in a lazy bag, a cruising gennaker tacked to a short sprit at the bow. Heavier and a little slower than the
+  // 40-footer everywhere, slow to get going and slow to lose way; a reef for a blow, no code zero and no J3. Her
+  // courses are the 40-footer's length, laid 1.3 times as wide (the line, the room at the marks) for a fleet of 14 m
+  // boats that turn and stop slowly.
+  bavaria46: {
+    id: 'bavaria46', loa: 14.27, beam: 4.35, drawnL: 14.27, crew: 5,
+    kite: true, zero: false, reef: true, j3: false,
+    tau: 7, coast: 50, hullV: 8.6, heelK: 1.1, awsK: 1, heelShow: 1, courseK: 1, lineK: 1.3, startK: 1.3,
+    tws: TWS, twa: TWA,
+    beat: [47, 45, 43.5, 42, 41, 40.5, 40.5, 41, 42],
+    beatV: [3.4, 4.6, 5.4, 5.9, 6.2, 6.35, 6.45, 6.5, 6.45],
+    v: [
+      [3.8, 4.1, 4.3, 4.2, 3.9, 3.7, 3.2, 2.6, 2.3, 2.1],
+      [5.2, 5.5, 5.75, 5.65, 5.4, 5.2, 4.6, 3.9, 3.4, 3.1],
+      [6.15, 6.4, 6.65, 6.6, 6.5, 6.3, 5.75, 4.95, 4.4, 4.05],
+      [6.7, 6.95, 7.2, 7.2, 7.15, 7.05, 6.6, 5.85, 5.25, 4.9],
+      [7.0, 7.25, 7.5, 7.6, 7.6, 7.5, 7.15, 6.5, 6.0, 5.6],
+      [7.15, 7.4, 7.7, 7.85, 7.95, 7.9, 7.6, 7.0, 6.55, 6.2],
+      [7.25, 7.5, 7.85, 8.05, 8.25, 8.25, 8.0, 7.45, 7.0, 6.7],
+      [7.35, 7.6, 8.0, 8.35, 8.7, 8.8, 8.65, 8.2, 7.75, 7.45],
+      [7.4, 7.65, 8.1, 8.55, 9.05, 9.25, 9.25, 8.9, 8.45, 8.15],
+    ],
   },
   // the J/70: a 22-foot sportboat with a retractable bowsprit and an asymmetric spinnaker, sailed by three to five and
   // hiked hard; light (some 800 kg with her crew), quick to accelerate and to lose way, and planing off the wind from
@@ -59,6 +83,29 @@ export const CLASSES = {
       [6.7, 7.05, 7.95, 9.3, 11.3, 11.8, 11.2, 9.5, 8.7, 7.9],
       [6.85, 7.25, 8.5, 10.6, 13.1, 13.8, 13.6, 11.8, 10.7, 9.7],
       [6.9, 7.4, 9.0, 11.7, 14.5, 15.3, 15.5, 14.0, 12.8, 11.6],
+    ],
+  },
+  // the Laser (ILCA 7): the 14-foot single-handed Olympic dinghy — one sail on an unstayed mast, no jib (jib: false: one
+  // sheet, never split), no kite. Some 60 kg of hull and one sailor hiking: she stops in a tack and goes again at once,
+  // and from about 12 knots planes on the reaches. Slow upwind beside the keelboats: her courses are laid 0.6 times as
+  // long.
+  laser: {
+    id: 'laser', loa: 4.19, beam: 1.39, drawnL: 4.19, crew: 1,
+    kite: false, zero: false, reef: false, j3: false, jib: false,
+    tau: 1.8, coast: 14, hullV: 13, heelK: 1.2, awsK: 1, heelShow: 1, courseK: 0.6, lineK: 0.6, startK: 0.6,
+    tws: TWS, twa: TWA,
+    beat: [46, 45, 44, 43, 42.5, 42.5, 43, 44, 45],
+    beatV: [2.5, 3.3, 3.95, 4.4, 4.7, 4.85, 4.95, 5.05, 5.0],
+    v: [
+      [2.9, 3.05, 3.2, 3.25, 3.15, 3.05, 2.8, 2.5, 2.3, 2.2],
+      [3.75, 3.95, 4.15, 4.25, 4.15, 4.0, 3.7, 3.35, 3.1, 3.0],
+      [4.35, 4.6, 4.9, 5.1, 5.05, 4.9, 4.5, 4.1, 3.8, 3.7],
+      [4.75, 5.0, 5.45, 5.9, 6.0, 5.8, 5.3, 4.8, 4.45, 4.3],
+      [5.0, 5.3, 5.9, 6.8, 7.2, 6.9, 6.2, 5.5, 5.0, 4.85],
+      [5.15, 5.5, 6.4, 7.8, 8.4, 8.1, 7.2, 6.2, 5.6, 5.35],
+      [5.25, 5.65, 6.9, 8.7, 9.5, 9.2, 8.2, 7.0, 6.2, 5.9],
+      [5.35, 5.8, 7.6, 10.0, 11.2, 10.9, 9.8, 8.4, 7.4, 7.0],
+      [5.3, 5.8, 8.0, 10.8, 12.4, 12.2, 11.0, 9.6, 8.5, 8.0],
     ],
   },
   // the AC75: the America's Cup's 75-foot foiling monohull. Two canting foil arms lift her clear of the water from

@@ -1372,7 +1372,8 @@ export class World {
       if (this.lookHold <= 0) this.look *= Math.exp(-dt * 1.5); else this.lookHold -= dt;
       const v = this.boatViews[0], side = P.twa >= 0 ? 1 : -1;
       v.tilt.updateMatrixWorld(true);
-      const eye = new THREE.Vector3(side * 1.0, 2.75, 4.45).applyMatrix4(v.tilt.matrixWorld);
+      const [ex, ey, ez] = v.eye || [1.0, 2.75, 4.45]; // the helm's eye on the club's boat; another class's own (boats3d.js)
+      const eye = new THREE.Vector3(side * ex, ey, ez).applyMatrix4(v.tilt.matrixWorld);
       cam.position.copy(eye);
       cam.rotation.set(-0.1, -P.h + this.look - side * 0.22, side * P.heel * D2R * 0.4);
       cam.fov = this.helmFov;
