@@ -302,16 +302,16 @@ export class Boat {
       }
     }
   }
-  // a match's penalty turn (Appendix C), taken when she chooses once she has started: on a beat a gybe (her stern
-  // through the wind) and back up to close-hauled; on a run a tack (her bow through it) and back down to a run, 90° or
-  // more off the wind. `pen` is the turn under way
+  // a match's penalty turn (Appendix C5.2), taken when she chooses once she has started: on a beat a gybe (her stern
+  // through the wind) and back up to close-hauled; on a run a tack (her bow through it) and back down to a run, more
+  // than 90° off the wind (C5.2: "more than ninety degrees from the true wind"). `pen` is the turn under way
   matchTurn(race, prevH) {
     if (!(this.owed > 0) || race.clock < 0 || !this.leg || this.done) return;
     const beat = isBeat(race.course, this.leg), t0 = wrap(this.wdir - prevH), t1 = wrap(this.wdir - this.h);
     if (!this.pen) {
       const gybe = Math.abs(t1) >= Math.PI / 2;
       if (t0 && t1 && sgn(t0) !== sgn(t1) && gybe === beat) { this.pen = { mr: true }; race.say('penStart', null, this); }
-    } else if (beat ? Math.abs(t1) <= (beatAngle(this.tws) + 10) * D2R : Math.abs(t1) >= Math.PI / 2) {
+    } else if (beat ? Math.abs(t1) <= (beatAngle(this.tws) + 10) * D2R : Math.abs(t1) > Math.PI / 2) { // (C5.2)
       this.owed--; this.pen = null; this.events.push('penaltyDone');
     }
   }
@@ -826,15 +826,15 @@ export class Race {
   get log() { return this.player.log; } // your race, for the debrief (newLog)
   // a match's two boats at the race's first moment (8 s before the warning signal): blue 40 m out beyond the committee
   // boat's end of the line and 40 m up on the course side, yellow as far beyond the pin's, each outside the line square
-  // to the starting line through her end; blue running down at it on port, yellow on starboard. Sailed straight on
-  // they'd cross the line's extension before the entry opens at the preparatory signal (Appendix C3), so each waits
-  // out there the minute or so, as match racers do, and runs in after the signal
+  // to the starting line through her end (Appendix C3.1); each reaching away from her end along the line's extension,
+  // blue on port, yellow on starboard. Sailed straight on she never comes inside her line before the preparatory
+  // signal; to enter (C3.2) her skipper turns back and runs in across the line after it
   placeMatch(blue) {
-    const c = this.course, W = this.wind.dir(), run = 160 * D2R;
+    const c = this.course;
     for (const b of this.humans) {
       const side = b.id === blue ? 'blue' : 'yellow', out = side === 'blue' ? 1 : -1, end = side === 'blue' ? c.committee : c.pin;
-      Object.assign(b, { side, x: end.x + (c.dir.x * out + c.normal.x) * 40, z: end.z + (c.dir.z * out + c.normal.z) * 40, h: wrap(W + out * run), v: 2,
-        sheet: sheetFor(idealSail(150)), entered: false, owed: 0, pen: null, forcedT: 0 });
+      Object.assign(b, { side, x: end.x + (c.dir.x * out + c.normal.x) * 40, z: end.z + (c.dir.z * out + c.normal.z) * 40, h: Math.atan2(c.dir.x * out, -c.dir.z * out), v: 2,
+        sheet: sheetFor(idealSail(60)), entered: false, owed: 0, pen: null, forcedT: 0 }); // (trimmed for the reach: some 60° apparent)
       b.lastD = lineD(c, b); b.lastZ = b.z;
     }
   }
@@ -1019,8 +1019,9 @@ export class Race {
   }
 
   // a match's entry (Appendix C3): at the preparatory signal each boat outside the line square to the starting line
-  // through her end; in the two minutes after it, across the starting line or its extension at her own end, from the
-  // course side to the pre-start side. Inside at the signal, or not across in time: a penalty each
+  // through her end (C3.1); in the two minutes after it, across the starting line at her own end, from the course side
+  // to the pre-start side (C3.2: she shall "cross and clear the starting line"; her own half of it or the extension
+  // beyond her end counts). Inside at the signal, or not across in time: a penalty each
   entry(before) {
     const c = this.course, prep = this.seq[1].t, late = prep + 120;
     for (const b of this.humans) {

@@ -43,6 +43,10 @@ test('a match is two boats, blue at the committee boat, yellow at the pin, each 
   assert.ok(lineD(r.course, h) > 0 && lineD(r.course, g) > 0, 'both on the course side');
   const W = r.wind.dir();
   assert.ok(wrap(W - h.h) < 0, 'blue on port'); assert.ok(wrap(W - g.h) > 0, 'yellow on starboard');
+  // each heading away from her end along the line's extension, on a reach
+  const c = r.course, along = (b) => Math.sin(b.h) * c.dir.x - Math.cos(b.h) * c.dir.z;
+  assert.ok(along(h) > 0.99 && along(g) < -0.99, 'along the extension, away from her end');
+  assert.ok(Math.abs(wrap(W - h.h)) > 70 * D2R && Math.abs(wrap(W - h.h)) < 110 * D2R, 'a reach');
   assert.ok(r.roomAt(h.x, h.z) > 20 && r.roomAt(g.x, g.z) > 20, 'both in open water');
   assert.ok(r.humans.every((b) => b.owed === 0 && b.pen === null && !b.entered));
   // blue can be the guest
@@ -73,6 +77,34 @@ test('a boat that enters through her own end in the window owes nothing; one tha
   assert.equal(said(r, 'entryEarly').length, 0);
   assert.ok(!g.entered); assert.equal(g.owed, 1);
   assert.equal(said(r, 'entryLate', g).length, 1); assert.equal(said(r, 'entryLate').length, 1, 'only to yellow');
+});
+
+test('left alone, each boat owes one for a late entry and none for an early one', () => {
+  for (const preset of ['light', 'medium', 'strong']) for (const seed of [11, 12, 13]) {
+    const r = matchRace({ preset, seed }), key = `${preset} ${seed}`;
+    for (const b of r.humans) steer(b, (r, o) => { o.rudder = 0; });
+    runUntil(r, () => r.clock >= -119);
+    for (const b of r.humans) {
+      assert.equal(b.owed, 1, `${key} ${b.side} owes one`); assert.ok(!b.entered, key);
+      assert.equal(said(r, 'entryLate', b).length, 1, key);
+    }
+    assert.equal(said(r, 'entryEarly').length, 0, `${key}: no early entry`);
+  }
+});
+
+test('turning back and running in through her own end enters, on both sides, in every wind', () => {
+  for (const preset of ['light', 'medium', 'strong']) for (const seed of [1, 5, 9, 12]) {
+    const r = matchRace({ preset, seed }), c = r.course, key = `${preset} ${seed}`;
+    for (const b of r.humans) {
+      const t = b.side === 'blue' ? 1 + 25 / c.len : -25 / c.len, hold = linePt(c, t, 15), across = linePt(c, t, -30);
+      steer(b, (r, o) => {
+        if (r.clock < -240) { if (Math.hypot(hold.x - o.x, hold.z - o.z) > 10) toward(r, o, hold); else r.steerTo(o, o.wdir); }
+        else toward(r, o, across);
+      });
+    }
+    runUntil(r, () => r.clock >= -119);
+    for (const b of r.humans) { assert.ok(b.entered, `${key} ${b.side} entered`); assert.equal(b.owed, 0, `${key} ${b.side} owes nothing`); }
+  }
 });
 
 test('inside her end at the preparatory signal: a penalty', () => {
@@ -151,7 +183,7 @@ test('on a run a tack and back to a run pays one', () => {
   assert.ok(tackedAt !== null, 'she tacked');
   assert.equal(said(r, 'penStart', g).length, 1);
   assert.equal(g.pen, null); assert.ok(g.events.includes('penaltyDone'));
-  assert.ok(Math.abs(g.twa) >= 90 * D2R - 0.05, 'back off the wind');
+  assert.ok(Math.abs(wrap(g.wdir - g.h)) > 90 * D2R, 'more than 90° off the wind (C5.2)');
 });
 
 test('owing a penalty keeps her right of way; turning one gives it away', () => {
