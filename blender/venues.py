@@ -107,6 +107,27 @@ VENUES = {
                                      dict(kind='drawbridge', a=(59.94522, 30.30317), b=(59.94735, 30.30362), deck=7, w=24, n=3, open=[1], leaves=2, color='#5d625f'),  # Exchange
                                      dict(kind='drawbridge', a=(59.95012, 30.34896), b=(59.95358, 30.34979), deck=10, w=34, n=6, open=[1], leaves=1, color='#4f5a57'),  # Liteyny
                                      dict(kind='drawbridge', a=(59.93340, 30.29095), b=(59.93612, 30.28831), deck=9, w=37, n=8, open=[6], leaves=2, color='#4f5653')]),  # Blagoveshchensky: raised by Vasilievsky Island
+    # Batumi bay, north-east of the cape, in the Black Sea's afternoon breeze: the city, its towers and the Alphabetic
+    # Tower on the cape to the left, the coast to Green Cape and the wooded mountains of Adjara to the right
+    'batumi': dict(bathy='emodnet', home=(41.6720, 41.6800), wind=290,
+                   towns=[(41.6480, 41.6400, 1000), (41.6400, 41.6250, 1100), (41.6280, 41.6150, 1000), (41.6500, 41.6560, 700), (41.6700, 41.7080, 900), (41.6900, 41.7180, 800)],
+                   landmarks=[dict(kind='tower', at=(41.65596, 41.63935), h=130, style='alphabet'),
+                              dict(kind='wheel', at=(41.65535, 41.64260), b=(41.65560, 41.64420), h=55),  # the Batumi Wheel, turning along the shore
+                              dict(kind='lighthouse', at=(41.65590, 41.64107), h=21)]),  # the lighthouse of 1882 beside it
+    # the North Sea off Scheveningen's beach, the pier and the Kurhaus, in the south-westerly along the shore
+    'scheveningen': dict(bathy='emodnet', home=(52.1209, 4.2693), wind=225, towns=[(52.1110, 4.2840, 1000), (52.1000, 4.2700, 900), (52.0900, 4.3000, 1300)],
+                         landmarks=[dict(kind='lighthouse', at=(52.10414, 4.26828), h=49),
+                                    dict(kind='wheel', at=(52.11734, 4.28104), b=(52.11760, 4.28066), h=40, base=8)]),  # the pier's big wheel, on its deck
+    # Victoria Harbour between Wan Chai and Tsim Sha Tsui, in the easterly; every tower on the map, none made up. The
+    # tiles' land is the towers' roofs (SRTM's radar), so the ground is Hong Kong's own survey's (`dtm`, hk_dtm)
+    'hong-kong': dict(dtm='hk', home=(22.2890, 114.1760), wind=80, towns=[(22.2830, 114.1580, 1200), (22.2960, 114.1700, 1000), (22.3030, 114.1620, 900), (22.2800, 114.1800, 1000), (22.2900, 114.1950, 900)],
+                      landmarks=[dict(kind='tower', style='boc', at=(22.279265, 114.16157), b=(22.27956, 114.16139), h=367, clear=40)]),  # the Bank of China Tower, `b` a corner
+    # Table Bay off the V&A Waterfront, in the south-easterly Cape Doctor off Table Mountain
+    'cape-town': dict(home=(-33.8978, 18.4556), wind=160, towns=[(-33.9050, 18.4200, 1000), (-33.9150, 18.3950, 900), (-33.9230, 18.4250, 1200)],
+                      landmarks=[dict(kind='lighthouse', at=(-33.90142, 18.39992), h=16)]),
+    # the 2004 Olympic waters in Faliro Bay, in the meltemi off the land, the Acropolis upwind
+    'athens': dict(bathy='emodnet', home=(37.9115, 23.6765), wind=30, towns=[(37.9300, 23.6900, 1200), (37.9400, 23.6450, 1200), (37.9120, 23.7080, 1000)],
+                   landmarks=[dict(kind='temple', at=(37.97150, 23.72662), b=(37.97158, 23.72738), h=14)]),  # the Parthenon, its long axis to the east
 }
 
 # what is on the ground (the cover part), from OpenStreetMap's land use; 0 where the map has nothing, which the game
@@ -182,6 +203,52 @@ def overpass(work, name, q):
         else: raise SystemExit('Overpass gave nothing for ' + name)
     with open(p) as f: return json.load(f)['elements']
 
+
+def hk80(lat, lon):
+    """WGS 84 to the HK1980 Grid (easting, northing): the datum's shift as the Lands Department gives it, then the
+    transverse Mercator on the International 1924 ellipsoid from its origin by the Hong Kong Observatory"""
+    a, f = 6378388.0, 1 / 297.0; e2 = 2 * f - f * f; ep2 = e2 / (1 - e2)
+    p = np.radians(np.asarray(lat, float) + 5.5 / 3600); l = np.radians(np.asarray(lon, float) - 8.8 / 3600)
+    p0, l0 = math.radians(22 + 18 / 60 + 43.68 / 3600), math.radians(114 + 10 / 60 + 42.80 / 3600)
+    def M(q): return a * ((1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256) * q - (3 * e2 / 8 + 3 * e2 ** 2 / 32 + 45 * e2 ** 3 / 1024) * np.sin(2 * q)
+                          + (15 * e2 ** 2 / 256 + 45 * e2 ** 3 / 1024) * np.sin(4 * q) - 35 * e2 ** 3 / 3072 * np.sin(6 * q))
+    N = a / np.sqrt(1 - e2 * np.sin(p) ** 2); T = np.tan(p) ** 2; C = ep2 * np.cos(p) ** 2; A = (l - l0) * np.cos(p)
+    x = N * (A + (1 - T + C) * A ** 3 / 6 + (5 - 18 * T + T * T + 72 * C - 58 * ep2) * A ** 5 / 120)
+    y = M(p) - M(p0) + N * np.tan(p) * (A ** 2 / 2 + (5 - T + 9 * C + 4 * C * C) * A ** 4 / 24)
+    return 836694.05 + x, 819069.80 + y
+
+def hk_dtm(work, fetch_only, to_ll, tiles, reach):
+    """Hong Kong's own 5 m terrain model (Lands Department, from DATA.GOV.HK): its ground under the city's towers,
+    where the tiles (SRTM's radar) have their roofs. The heights are metres above Principal Datum, some 1.2 m under the
+    mean sea; 0 is the sea, where the tiles' heights (their depths) stay. Cut once to the venue's square, kept as .npy."""
+    zp = fetch(os.path.join(work, 'Whole_HK_DTM_5m.zip'), 'https://www.landsd.gov.hk/landsd_psi_data/SMO/data/Whole_HK_DTM_5m.zip')
+    if fetch_only: return tiles
+    cut = os.path.join(work, 'dtm.npz')
+    if not os.path.exists(cut):
+        import io, zipfile
+        lat, lon = to_ll(np.array([-reach, reach, reach, -reach]), np.array([-reach, -reach, reach, reach]))
+        E_, N_ = hk80(lat, lon); e0, e1, n0, n1 = E_.min() - 50, E_.max() + 50, N_.min() - 50, N_.max() + 50
+        with zipfile.ZipFile(zp) as z, io.TextIOWrapper(z.open('Whole_HK_DTM_5m.asc')) as f:
+            hd = {}
+            for _ in range(6): k, v = f.readline().split(); hd[k.lower()] = float(v)
+            nc, nr, cs = int(hd['ncols']), int(hd['nrows']), hd['cellsize']
+            x0, y0 = hd['xllcorner'] + cs / 2, hd['yllcorner'] + cs / 2  # the first cell's middle
+            j0, j1 = max(0, int((e0 - x0) / cs)), min(nc, int((e1 - x0) / cs) + 2)
+            i0, i1 = max(0, int((y0 + (nr - 1) * cs - n1) / cs)), min(nr, int((y0 + (nr - 1) * cs - n0) / cs) + 2)  # rows from the north
+            rows = [np.array(line.split()[j0:j1], np.float32) for i, line in enumerate(f) if i0 <= i < i1]
+        G = np.where(np.array(rows) <= -9998, np.nan, np.array(rows))
+        np.savez_compressed(cut, g=G, e=x0 + j0 * cs, n=y0 + (nr - 1 - i0) * cs, cs=cs)
+    d = np.load(cut); G, ge, gn, cs = d['g'], float(d['e']), float(d['n']), float(d['cs'])
+    print('  the ground from Hong Kong\'s own survey, its highest', round(float(np.nanmax(G)), 1), 'm', flush=True)
+    def height(x, z):
+        E_, N_ = hk80(*to_ll(x, z))
+        fx = (E_ - ge) / cs; fy = (gn - N_) / cs
+        inside = (fx >= 0) & (fy >= 0) & (fx < G.shape[1] - 1) & (fy < G.shape[0] - 1)
+        j = np.clip(fx, 0, G.shape[1] - 1.001).astype(int); i = np.clip(fy, 0, G.shape[0] - 1.001).astype(int); u = fx - j; v = fy - i
+        h = (G[i, j] * (1 - u) + G[i, j + 1] * u) * (1 - v) + (G[i + 1, j] * (1 - u) + G[i + 1, j + 1] * u) * v
+        land = inside & np.isfinite(h) & (h > 1.5)
+        return np.where(land, np.nan_to_num(h) - 1.2, tiles(x, z)).astype(np.float32)
+    return height
 
 def shift(a, di, dj, fill):
     o = np.full_like(a, fill)
@@ -282,6 +349,8 @@ def bake(vid, V, fetch_only=False):
         f0, raw, raw_far = float(V['flat']), height, far_height
         height = lambda x, z: (lambda h: np.where(h <= 0.5, h, f0).astype(np.float32))(raw(x, z))
         far_height = lambda x, z: (lambda h: np.where(h <= 0.5, h, f0 + np.maximum(0, h - 15)).astype(np.float32))(raw_far(x, z))
+
+    if V.get('dtm') == 'hk': height = hk_dtm(work, fetch_only, to_ll, height, EXTENT * 1.45)
 
     # ---------- OpenStreetMap ----------
     coastQ = f'way["natural"="coastline"]({bbox(EXTENT * 1.5)});' if not V.get('lake') else f'relation["natural"="water"]["name"="{V["lake"]}"];'
@@ -728,10 +797,13 @@ def bake(vid, V, fetch_only=False):
         try: c = ImageColor.getrgb(v.strip()) if v else None
         except ValueError: c = None
         return tuple(max(1, x) for x in c[:3]) if c else (0, 0, 0)
+    # where a landmark is drawn in the map's building's place (`clear`, metres round it), that building is left out
+    CLEAR = [(*to_xz(*lm['at']), lm['clear']) for lm in V.get('landmarks', []) if lm.get('clear')]
     def add(r, h, roof, t=None):
         cx_ = sum(a for a, _ in r) / len(r); cz_ = sum(b for _, b in r) / len(r)
+        if any(math.hypot(cx_ - float(lx), cz_ - float(lz)) < cr for lx, lz, cr in CLEAR): return
         near = min([math.hypot(cx_ - MID[0], cz_ - MID[1])] + [math.hypot(cx_ - tx, cz_ - tz) * 1.5 for tx, tz in TOWN_XZ])
-        found.append({'r': r, 'h': round(min(h, 400), 1), 'roof': roof, 'd': near - min(h, 200) * 20, 'c': (cx_, cz_),
+        found.append({'r': r, 'h': round(min(h, 560), 1), 'roof': roof, 'd': near - min(h, 200) * 20, 'c': (cx_, cz_),
                       'wc': colour((t or {}).get('building:colour')), 'rc': colour((t or {}).get('roof:colour'))})
     def keyhole(el):
         # a relation's outer ring with its courtyards cut in: each inner ring joined to the outer one at their nearest
