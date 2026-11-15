@@ -60,14 +60,22 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   waiting room, the score, the host's and the guest's sides of a race) and `wire.js` (a boat's controls and the race's
   snapshot as they travel). Nobody sailing today's race or a free race downloads any of it.
   - **The host's game runs the race** (`sim.js` with `match: true`, the only copy that counts) on channel
-    `match:<code>`; the guest's inputs come on `match:<code>:in` as they change (2–5 a second), and the host sends both
-    boats ten times a second with the race's news (each umpire call, signal, rounding and finish, named for its boat),
-    so every call is the same on both screens. The guest's own boat is stepped on her own screen from her hands and eased
-    to the host's copy of her; the host's is drawn 0.15 s behind, between snapshots. The host also sends the match
+    `match:<code>`; the guest's inputs come on `match:<code>:in` as they change (2–5 a second, at once for a tack, a
+    gybe or a big helm change, never more than ten), and the host sends both boats ten times a second with the race's
+    news (each umpire call, signal, rounding and finish, named for its boat), so every call is the same on both screens;
+    the guest's game never judges the rules itself. The guest's own boat is stepped on her own screen from her hands;
+    each snapshot's copy of her is compared with where she was herself at the same moment (her own last two seconds,
+    matched to when her input reached the host, on a clock smoothed against the network's jitter) and the difference
+    eased away, so the delay never pulls her helm; a contact, a penalty or a jump over 20 m takes the host's copy as it
+    is. The host's boat is drawn where it is now, carried on from the last snapshot by half the measured round trip.
+    Both screens must be on the same build (`/connect` gives the deployment's commit; another build is asked to
+    reload). The host decides who the guest is and keeps her; a third person with the link sees "This match is full".
+    The host also sends the match
     (`mstate`: the score, the races, who is ready, and the race's umpire calls with their reasons), every second between
     races and every two in one; the guest's screen copies it, so a reloaded guest finds her place.
   - **The rules it judges:** blue (the committee boat end, the host in race 1, swapping each race) and yellow (the pin);
-    the entry, across the line at her own end from the course side between 4:00 and 2:00; an umpire that calls a
+    the entry, across the line at her own end from the course side between 4:00 and 2:00 (both start 40 m beyond their
+    ends, luffing, so a boat left alone stays afloat and owes one for not entering); an umpire that calls a
     failure to keep clear without contact as well as a contact (rule 16.1 when the right-of-way boat's own turn did it);
     the two-length zone; penalties owed and taken when the boat chooses (a gybe and back to close-hauled on a beat, a
     tack and back to a run), one at once with two owed, none to finish with; two laps up and down, the five-minute
@@ -76,13 +84,19 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     umpire's calls with its reasons (the projected gap, how far ahead, whether the right-of-way boat had turned), on both
     screens.
   - **When someone drops:** a guest unheard 3 s holds her course, and after 30 s the race is the host's; a host unheard
-    3 s freezes the guest's screen ("Waiting for …"), and after 60 s the race is abandoned, not scored. A host's reloaded
-    tab keeps the match (sessionStorage `regatta-match-<code>`) but loses the race that was on. Between races the next
-    starts when both press Ready, or 60 s after the card opens with both there, never with one missing; Leave, or five
-    minutes gone, ends the match. The host's race starts only once the guest's screen has it built, so a slow phone isn't
-    dropped while it loads.
+    3 s freezes the guest's screen ("Waiting for …"), and after 60 s the host's game abandons the race, not scored (the
+    guest's screen waits for its word). In a match the link's heartbeat is every 5 s, so a dead socket is noticed within
+    about 10 s, and it reconnects at once when the phone comes back online, the tab becomes visible or the race channel
+    has gone quiet for 3 s; the host's own outage never counts against the guest. A host's reloaded or reopened tab keeps
+    the match (localStorage `regatta-match-<code>`, for six hours) but loses the race that was on. Between races the
+    next starts when both press Ready, or 60 s after the card opens with both there, never with one missing; Leave, or
+    five minutes gone, ends the match, and Back (the browser's or Telegram's) asks first. The host's race starts only
+    once the guest's screen has it built, so a slow phone isn't dropped while it loads. In a match a frame that throws
+    is logged and skipped, so one error doesn't lose the race.
   - **Nothing is kept:** no result page, no ranking, nothing posted to the scores server (`stats.js` skips a match), and
-    the match is gone from the host's sessionStorage when it's left.
+    the match is gone from the host's localStorage when it's left or done.
+  - **Not on the hub yet:** the race hub's Match race card shows only with `?match` in its address, until the umpire's
+    calls have been signed off in test matches; `/match/new` works for anyone with the address.
 - **A passport to share:** `/passport?s=&v=&b=&vs=&bb=&n=` (`lib/passport-share.ts`; its card `app/og/passport`): the
   streak, the venues raced and the badges (which, `bb`, as well as how many) as the sharer sent them, from Share on Home's
   venues and on the badges page.

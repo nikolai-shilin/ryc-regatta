@@ -1,6 +1,7 @@
 # Match race: you and a friend, by a link
 
-Status: draft for approval, 2026-11-15.
+Status: approved 2026-11-15; built the same day. This text says what was built, including where the build refined
+the first draft.
 
 ## Intent
 
@@ -113,8 +114,9 @@ differs; these are the behaviours the match must have.
   host is blue in race 1; they swap each race.
 - **Entry:** at the preparatory signal each boat must be outside the extension of the line at her own end. Within
   two minutes after it (4:00 to 2:00) she must cross the starting line through her own end from the course side to
-  the pre-start side. The boats are placed at the start where they can make it: yellow coming in on starboard, blue
-  on port, so they meet head-on in the box. Late or wrong entry: a penalty.
+  the pre-start side. The boats start where they can make it: each 40 m beyond her own end on the course side, nearly
+  stopped and luffing, as match boats wait outside their ends, so a boat left alone stays afloat and outside her line
+  (and owes one for not entering). Late or wrong entry: a penalty.
 - **The umpire calls a failure to keep clear, not only contact.** Today the game penalises only a collision. In a
   match, a boat that must keep clear and makes the right-of-way boat alter course to avoid her is penalised, contact
   or not. This is the part that makes the dial-up work and the part most likely to be judged wrong; the builder
@@ -133,24 +135,29 @@ differs; these are the behaviours the match must have.
 
 ## Who's who, and what travels
 
-- **Host:** the browser that made the match. It keeps a private token for the code (session storage), runs the race,
-  and is the only one that can press Start. If the host closes the tab and opens the link again, the token makes it
-  the host again.
-- **Guest:** the one other browser to join. A third person opening the link sees "This match is full".
+- **Host:** the browser that made the match. It marks the code as its own (local storage), runs the race, and is the
+  only one that can press Start. If the host closes the tab and opens the link again, the mark makes it the host again.
+- **Guest:** the one other browser to join. The host's game decides who that is and keeps her, even while she is
+  briefly unheard; a third person opening the link sees "This match is full".
+- **The same build:** both screens must run the same deployment of the game (`/connect` says which); a screen on
+  another build is asked to reload before it can start or join a race.
 - Over Supabase Realtime broadcast, on channel `match:<code>`, and a second one only the host listens on for the
   guest's inputs (as in the club race design, so inputs aren't echoed back to the sender).
   - **Waiting room:** each says hello every 3 s with its name, boat colours and whether it's the host; the host's
     hello carries the settings.
   - **Start:** the host sends the race's settings and seed; both build the same course and scenery from them.
-  - **Inputs, guest → host:** helm, sheets, tack or gybe, kite, reef, jib, take-penalty, hail, sent as they change
-    and at least twice a second.
+  - **Inputs, guest → host:** helm, sheets, tack or gybe, kite, reef, jib, hail, sent as they change (at most five a
+    second, at once for a tack, a gybe or a big helm change, never more than ten) and at least twice a second. There
+    is no take-penalty button: a penalty turn is the boat's own gybe or tack, which the game recognises.
   - **Snapshots, host → guest:** about 10 times a second: both boats' position, heading, speed, heel, sails and state
     (leg, entry done, penalties outstanding, finished), the clock, the flags and the wind.
   - **Events, host → guest:** each call the umpire makes, each signal, each rounding and finish, named for the boat
     it's about, so the guest's game speaks and shows its own.
-- **The guest's screen:** your own boat is stepped locally from your inputs, so the helm answers at once, and eased
-  back toward the host's copy softly, so it never visibly jumps, except after a penalty or a contact, where the
-  host's copy is taken as it is. The host's boat is drawn a little behind real time, smoothed between snapshots.
+- **The guest's screen:** your own boat is stepped locally from your inputs, so the helm answers at once. Each
+  snapshot's copy of her is compared with where she herself was at the same moment (her own recent past, matched to
+  when her input reached the host), and the difference is eased away softly, so the network's delay never pulls her
+  helm; after a penalty, a contact or a jump of more than 20 m, the host's copy is taken as it is. The host's boat is
+  drawn where it is now, carried on from the last snapshot by half the measured round trip.
 - **The host's screen:** both boats from its own race; the guest's moves as the guest's inputs arrive.
 
 ## When someone drops
@@ -160,10 +167,16 @@ differs; these are the behaviours the match must have.
   30 s the race goes to the host; the guest can reconnect for the next race.
 - **Host's game stops** (no snapshot for 3 s, e.g. the host switched apps and the phone froze the tab): the guest's
   screen says "Waiting for <host>" and freezes. When the host's game comes back, the race carries on from where the
-  host's copy was. After 60 s, the race is abandoned and not scored, and the next race can start when both are back.
-- **The host's tab is reloaded or closed and opened again** (the token brings it back as host): the race that was
+  host's copy was. After 60 s the host's game abandons the race, not scored, and the next race can start when both
+  are back; the guest's screen waits for the host's word rather than deciding on its own, so the two never disagree.
+- **A dead connection** (a network switch, a half-open socket) is noticed within about 10 s, and the game reconnects
+  at once when the phone comes back online, the tab becomes visible, or the race channel has gone quiet for 3 s. The
+  host's own outage never counts against the guest.
+- **The host's tab is reloaded or closed and opened again** (the mark brings it back as host): the race that was
   on is abandoned and not scored, since it lived only in that tab. The score and the settings are kept in the host's
-  session storage, so the match goes on with the next race. No save and restore of the race itself.
+  local storage (for six hours, removed on Leave or Done), so the match goes on with the next race. No save and
+  restore of the race itself.
+- **Back** (the browser's, or Telegram's) asks before it leaves a match, at any point.
 - **Between races** the next race starts when both have pressed Ready, or 60 s after the card opens *if both are
   there*. It never starts with one of them missing; it waits.
 - **Either leaves for good:** pressing **Leave** ends the match at the score it had, on both screens. So does being
@@ -171,7 +184,8 @@ differs; these are the behaviours the match must have.
 
 ## Entry points
 
-- The race hub (`/race`) gets a **Match race** card next to today's race and the free race.
+- The race hub (`/race`) gets a **Match race** card next to today's race and the free race. Until the host has
+  signed off the umpire's calls in test matches, it shows only with `?match` in the hub's address.
 - `/match/new` is the set-up (the free race's set-up, cut to the match's choices: venue, wind, yacht class, length),
   which makes the code and opens the waiting room.
 - `/match/<code>` is the link. It opens the game with the code (`/play?match=<code>`), where the waiting room, the
