@@ -99,7 +99,7 @@ def edge_arc(t):
     return s_r, arc, x_r - r
 
 def build_hull(bm, mats):
-    N, KH, KD = 72, 22, 7
+    N, KH, KD = 112, 30, 10
     rings = []
     ss = lambda j: j / KH if j / KH <= SPLIT else SPLIT + (1 - SPLIT) * ((j / KH - SPLIT) / (1 - SPLIT)) ** 1.15
     for i in range(N + 1):
@@ -121,8 +121,10 @@ def build_hull(bm, mats):
         a, b = rings[i], rings[i + 1]
         for j in range(M):
             f = bm.faces.new((a[j], a[(j + 1) % M], b[(j + 1) % M], b[j]))
-            f.material_index = mats['hull'] if j < nh - 1 else mats['deck']
+            # the deck's non-skid inside a smooth gelcoat margin along each edge (its outermost strip, some 15 cm)
+            f.material_index = mats['hull'] if j < nh - 1 else mats['gel'] if j in (nh - 1, M - 1) else mats['deck']
     for r in (rings[0], rings[-1]): bm.faces.new(r).material_index = mats['hull']  # transom, stem
+    return rings[0]
 
 # ---------- foils: the keel and the rudder ----------
 def naca(u, th):  # half-thickness of a NACA 00xx at chord fraction u
@@ -165,7 +167,7 @@ def cr_top(z):
     return lerp(1.65, deck_y(z) + 0.04, smooth(-0.34, CR_ZF, z))
 GLASS_LO, GLASS_HI = 1.3, 1.44
 def build_coachroof(bm, mats):
-    NZ = 48
+    NZ = 64
     secs, meta = [], []
     for i in range(NZ + 1):
         f = i / NZ
@@ -194,6 +196,7 @@ def build_coachroof(bm, mats):
             mat = mats['gel']
             seg = j if j <= 8 else 17 - j              # the same segment on either side: 0 below the deck, 2 the window band
             if seg == 2 and -0.3 < zc < 0.9: mat = mats['glass']   # a porthole each side, abreast the saloon
+            if seg >= 7 and zc > CR_ZF + 0.6: mat = mats['deck']     # its top non-skid, inside a margin of smooth gelcoat
             bm.faces.new((secs[i][j], secs[i][(j + 1) % M], secs[i + 1][(j + 1) % M], secs[i + 1][j])).material_index = mat
     bm.faces.new(list(reversed(secs[0]))).material_index = mats['gel']
     bm.faces.new(secs[-1]).material_index = mats['gel']
@@ -235,7 +238,10 @@ IDX = {m: i for i, m in enumerate(ORDER)}
 
 # the hull and the coachroof, one solid
 hull = new_object('yacht', ORDER)
-bm = bmesh.new(); build_hull(bm, IDX); build_coachroof(bm, IDX)
+bm = bmesh.new(); transom = build_hull(bm, IDX); build_coachroof(bm, IDX)
+# the transom's edge turned round a 3 cm radius, as the deck edge is, rather than left a knife edge
+edges = list({e for v in transom for e in v.link_edges if all(w in set(transom) for w in e.verts)})
+bmesh.ops.bevel(bm, geom=edges, offset=0.03, offset_type='OFFSET', segments=3, profile=0.5, affect='EDGES', clamp_overlap=True)
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(hull.data); bm.free()
 
 # the cockpit, cut out of it (the deck plan): from the companionway in the coachroof's aft face, 1.3 m wide, out to
@@ -253,10 +259,29 @@ except Exception as e: print('material_mode:', e)
 bpy.context.view_layer.objects.active = hull; bpy.ops.object.modifier_apply(modifier=mod.name)
 bpy.data.objects.remove(cut)
 
+# the cockpit's two drains, out through the transom just above the floor, lined dark: a cut of their own
+cut = new_object('drains', ORDER)
+bm = bmesh.new()
+for sx in (-1, 1):
+    ring = [(sx * 0.62 + 0.045 * math.cos(2 * math.pi * k / 12), COCKPIT_FLOOR + 0.06 + 0.045 * math.sin(2 * math.pi * k / 12)) for k in range(12)]
+    a = [bm.verts.new(G(x, y, STERN_Z - 0.3)) for x, y in ring]; b = [bm.verts.new(G(x, y, STERN_Z + 0.3)) for x, y in ring]
+    for k in range(12): bm.faces.new((a[k], a[(k + 1) % 12], b[(k + 1) % 12], b[k])).material_index = IDX['glass']
+    bm.faces.new(list(reversed(a))).material_index = IDX['glass']; bm.faces.new(b).material_index = IDX['glass']
+bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(cut.data); bm.free()
+mod = hull.modifiers.new('drains', 'BOOLEAN'); mod.operation = 'DIFFERENCE'; mod.object = cut; mod.solver = 'EXACT'
+try: mod.material_mode = 'TRANSFER'
+except Exception as e: print('material_mode:', e)
+bpy.context.view_layer.objects.active = hull; bpy.ops.object.modifier_apply(modifier=mod.name)
+bpy.data.objects.remove(cut)
+
 # the keel and the cockpit's foot braces, joined in
 bm = bmesh.new(); bm.from_mesh(hull.data)
 H = IDX['hull']
 foil(bm, H, 0.15, -2.05, 1.2, 0.64, -0.98, -0.74, 0.12)                    # the fin: 1.2 m of chord at the hull, 0.64 at the bulb
+# the fairings: at the root, flaring the fin into the hull, and where it meets the bulb; each ends on the fin's own
+# section (its chord and leading edge there), only a touch thicker, so it blends in rather than steps
+foil(bm, H, 0.15, -0.3, 1.34, 1.09, -1.05, -0.93, 0.13, NS=4)
+foil(bm, H, -1.85, -2.08, 0.7, 0.86, -0.765, -0.82, 0.13, NS=3)
 bulb(bm, H, -1.25, 0.71, -2.13, 0.22)                                          # the lead bulb, 2 m long: 2.24 m draft
 for sx in (-1, 1):
     xs = sorted([sx * 0.43, sx * 0.66])   # the foot braces moulded into the floor, for the crew to brace against heeled
