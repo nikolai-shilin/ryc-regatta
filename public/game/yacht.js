@@ -202,12 +202,131 @@ export const M = {
   glass: new THREE.MeshStandardMaterial({ color: '#2a3540', roughness: 0.05, metalness: 0.55, envMapIntensity: 1.4 }),
   alu: new THREE.MeshStandardMaterial({ color: '#c3c8cd', roughness: 0.35, metalness: 0.85, envMapIntensity: 1 }), // hatch frames
   dark: new THREE.MeshStandardMaterial({ color: '#2a2f36', roughness: 0.6 }),
+  // an instrument's screen: a reading in big lit figures over its label, behind glass; four readings, one a quarter of
+  // the picture (display() picks one)
+  screen: new THREE.MeshStandardMaterial({ color: '#05080b', roughness: 0.12, metalness: 0.3, emissive: '#ffffff', emissiveIntensity: 0.55,
+    emissiveMap: canvasTex(256, 192, (x, w, h) => {
+      x.fillStyle = '#000'; x.fillRect(0, 0, w, h); x.fillStyle = '#d8e6ef'; x.textAlign = 'center';
+      [['7.4', 'BSP KTS'], ['14.2', 'TWS KTS'], ['41°', 'TWA'], ['318°', 'HDG']].forEach(([v, k], i) => {
+        const cx = (i % 2) * 128 + 64, cy = Math.floor(i / 2) * 96;
+        x.font = '700 50px Arial, sans-serif'; x.fillText(v, cx, cy + 60); x.font = '700 16px Arial, sans-serif'; x.fillText(k, cx, cy + 86);
+      });
+    }) }),
   well: [0, 1, 2, 3, 4, 5].map((i) => new THREE.MeshStandardMaterial(i === 3 ? { map: TEAK, roughness: 0.75, side: THREE.BackSide } : { color: '#e4e1d8', roughness: 0.8, side: THREE.BackSide })),
 };
 const wireMat = new THREE.LineBasicMaterial({ color: 0x4d555e, transparent: true, opacity: 0.8 }); // grey and a touch see-through, so the thin lines don't crawl dark against the sky
 export const line = (pts) => new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map((p) => new THREE.Vector3(...p))), wireMat);
 export const tube = (pts, r, mat, closed = false) => new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)), closed), Math.max(8, pts.length * 6), r, 6, closed), mat);
 export const cyl = (r0, r1, h, mat, seg = 10) => new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, seg), mat);
+
+// ---------- fittings ----------
+// The deck hardware and rig fittings every class shares (boats3d.js builds the others' with them). Each is a list of
+// [geometry, material] parts in its own frame; fit() adds them as plain meshes straight onto the boat, where bake()
+// folds each into the boat's one mesh of its material — detail that costs triangles, not draws.
+export function fit(add, parts, x = 0, y = 0, z = 0, ry = 0, rx = 0) {
+  for (const [g, m] of parts) { const o = add(new THREE.Mesh(g, m), x, y, z); o.rotation.set(rx, ry, 0, 'YXZ'); }
+}
+const V2 = (p) => p.map(([x, y]) => new THREE.Vector2(x, y));
+// a round bar from a to b (a strut, a rail), r0 its radius at a and r1 at b
+export function bar(a, b, r0, r1, mat, seg = 8) {
+  const A = new THREE.Vector3(...a), d = new THREE.Vector3(...b).sub(A), len = d.length();
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, len, seg), mat);
+  m.position.copy(A).addScaledVector(d, 0.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
+  return m;
+}
+// a self-tailing winch, r its drum's radius and h its height: the chromed base and drum, ribbed for grip, under the
+// black self-tailer and its cap
+export function winch(r, h) {
+  const drum = [[0, 0], [r * 1.32, 0], [r * 1.3, h * 0.05], [r * 1.12, h * 0.1], [r * 0.93, h * 0.17]];
+  for (let i = 0; i < 3; i++) { const y = h * (0.22 + i * 0.12); drum.push([r * 0.9, y], [r * 0.95, y + h * 0.035], [r * 0.9, y + h * 0.07]); }
+  drum.push([r * 0.9, h * 0.6], [0.001, h * 0.6]);
+  const tailer = [[0.001, h * 0.6], [r * 0.95, h * 0.6], [r * 1.1, h * 0.64], [r * 1.12, h * 0.73], [r * 0.96, h * 0.77], [r * 1.06, h * 0.81], [r * 1.0, h * 0.88], [r * 0.6, h * 0.95], [r * 0.32, h], [r * 0.14, h * 0.97], [0.001, h * 0.97]];
+  return [[new THREE.LatheGeometry(V2(drum), 14), M.steel], [new THREE.LatheGeometry(V2(tailer), 14), M.dark]];
+}
+// a block, r its sheave's radius: the sheave between two cheeks, turning about x, and the shackle over it
+export function block(r) {
+  const cheek = (sx) => new THREE.CylinderGeometry(r * 1.15, r * 1.15, r * 0.16, 14).rotateZ(Math.PI / 2).translate(sx * r * 0.33, 0, 0);
+  return [
+    [mergeGeometries([cheek(-1), cheek(1)]), M.dark],
+    [new THREE.CylinderGeometry(r * 0.85, r * 0.85, r * 0.5, 14).rotateZ(Math.PI / 2), M.alu],
+    [new THREE.TorusGeometry(r * 0.42, r * 0.1, 6, 12, Math.PI).rotateY(Math.PI / 2).translate(0, r * 1.05, 0), M.steel],
+  ];
+}
+// a bank of n rope clutches side by side, their levers up; the lines run through them along z
+export function clutches(n, pitch = 0.075) {
+  const base = [], lever = [];
+  for (let i = 0; i < n; i++) {
+    const x = (i - (n - 1) / 2) * pitch;
+    base.push(new THREE.BoxGeometry(pitch * 0.78, 0.04, 0.17).translate(x, 0.02, 0));
+    lever.push(new THREE.BoxGeometry(pitch * 0.66, 0.018, 0.12).rotateX(0.22).translate(x, 0.056, -0.01));
+  }
+  return [[mergeGeometries(base), M.dark], [mergeGeometries(lever), M.alu]];
+}
+// a mooring cleat, len long along z: two tapering horns on a pair of waisted feet
+export function cleat(len = 0.2) {
+  const foot = (z) => new THREE.CylinderGeometry(0.016, 0.024, 0.04, 8).translate(0, 0.02, z);
+  return [[mergeGeometries([
+    new THREE.CapsuleGeometry(0.014, len - 0.028, 3, 8).rotateX(Math.PI / 2).scale(1, 0.85, 1).translate(0, 0.046, 0),
+    foot(-len * 0.2), foot(len * 0.2),
+  ]), M.alu]];
+}
+// a racing wheel, R its radius: the leather-gripped rim, n carbon spokes tapering out from the hub and its chromed
+// cap; in the wheel's plane (x, y), turning about z. One mesh a material, to turn as one
+export function wheel(R, n = 6, rim = M.dark, spokes = M.carbon) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.TorusGeometry(R, R * 0.05, 8, 48), rim));
+  for (let i = 0; i < n; i++) {
+    const s = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.024, R * 0.045, R * 0.9, 6).translate(0, R * 0.52, 0), spokes);
+    s.rotation.z = (i / n) * Math.PI * 2; g.add(s);
+  }
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(R * 0.12, R * 0.15, R * 0.2, 16).rotateX(Math.PI / 2), M.steel));
+  return mergeGroup(g);
+}
+// a stay's foot: the chainplate on the deck at a, and the rigging screw on it, len long up the stay towards b
+export function chainplate(a, b, len = 0.3, r = 0.016) {
+  const A = new THREE.Vector3(...a), q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...b).sub(A).normalize());
+  const screw = mergeGeometries([
+    new THREE.CylinderGeometry(r * 0.5, r * 0.5, len, 6).translate(0, len / 2, 0), // the threaded studs and the toggle
+    new THREE.CylinderGeometry(r, r, len * 0.45, 8).translate(0, len * 0.52, 0), // the body
+  ]).applyQuaternion(q).translate(A.x, A.y, A.z);
+  return [[mergeGeometries([screw, new THREE.BoxGeometry(r * 2.2, r * 3, r * 6).translate(A.x, A.y + r * 1.2, A.z)]), M.steel]];
+}
+// an instrument display, w × h: its case and the lit screen on its face, towards +z, showing reading k (0 boat speed,
+// 1 wind speed, 2 wind angle, 3 heading)
+export function display(w, h, k = 0) {
+  const s = new THREE.PlaneGeometry(w * 0.86, h * 0.78).translate(0, 0, 0.0185), uv = s.attributes.uv;
+  const u0 = (k % 2) / 2, v0 = k < 2 ? 0.5 : 0; // its quarter of the picture (the picture's top row is v 0.5 … 1)
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, u0 + uv.getX(i) / 2, v0 + uv.getY(i) / 2);
+  return [[new THREE.BoxGeometry(w, h, 0.035), M.dark], [s, M.screen]];
+}
+// a tackle's falls between its two blocks, a and b: the line (n + 1 points) runs a → b → a …, the parts a little apart
+export function purchase(l, a, b, spread = 0.035) {
+  const p = l.geometry.attributes.position, n = p.count - 1;
+  for (let i = 0; i <= n; i++) { const e = i % 2 ? b : a, dx = (i / n - 0.5) * spread; p.setXYZ(i, e[0] + dx, e[1], e[2]); }
+  p.needsUpdate = true;
+}
+// a moving assembly (a foil arm, the rudder, a wheel, the boom and its fittings) as one mesh a material, so it costs
+// a draw or two, not a dozen
+export function mergeGroup(g) {
+  g.updateMatrixWorld(true);
+  const inv = g.matrixWorld.clone().invert(), by = new Map();
+  g.traverse((o) => { if (o.isMesh) { if (!by.has(o.material)) by.set(o.material, []); by.get(o.material).push(o.geometry.clone().applyMatrix4(inv.clone().multiply(o.matrixWorld))); } });
+  for (const c of [...g.children]) g.remove(c);
+  const plain = (x) => { x = x.index ? x.toNonIndexed() : x; for (const k of Object.keys(x.attributes)) if (k !== 'position' && k !== 'normal') x.deleteAttribute(k); return x; }; // the same attributes, so they merge
+  for (const [mat, geos] of by) g.add(new THREE.Mesh(mergeGeometries(geos.map(plain)), mat));
+  return g;
+}
+// the sail number on both bows, as racing boats carry it, in white on a dark hull and black on a light one: its
+// material, for a decal wrapped onto the topsides
+export function bowNumberMaterial(look) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+  const x = c.getContext('2d'), text = `${look.nat && !look.logo ? look.nat + ' ' : ''}${look.num || ''}`.trim();
+  const dark = new THREE.Color(look.hull).getHSL({}).l < 0.45;
+  x.fillStyle = dark ? '#f4f4f0' : '#15181c'; x.font = '900 110px Carlito, Lato, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(text, 256, 68, 500);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  return new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.4, roughness: 0.3, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
+}
 
 // ---------- the logo ----------
 // the club's logo (the white RYC pennant on a red square, public/images/ryc-badge.svg) or the player's own picture
@@ -638,18 +757,30 @@ export class BoatView {
     add(new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.055, 0.8), M.alu), 0, deckY(-2.9) + 0.055, -2.9);
     // teak handrails along the coachroof top
     for (const sx of [-1, 1]) T.add(tube([[sx * 0.62, top, 1.3], [sx * 0.62, top + 0.07, 1.15], [sx * 0.6, top + 0.07, -1.2], [sx * 0.58, top, -1.35]], 0.02, M.teak));
-    // winches: primaries on the coamings, halyard winches on the coachroof
+    // winches: self-tailing primaries on the coamings for the jib sheets, the secondaries aft of them for the gennaker,
+    // halyard winches on the coachroof
     for (const sx of [-1, 1]) {
-      add(cyl(0.1, 0.12, 0.17, M.steel, 16), sx * 1.02, deckY(2.0) + 0.24, 2.0);
-      add(cyl(0.075, 0.09, 0.13, M.steel, 14), sx * 0.55, cr.position.y + 0.52, 1.25);
+      fit(add, winch(0.09, 0.2), sx * 1.02, deckY(2.0) + 0.155, 2.0);
+      fit(add, winch(0.075, 0.17), sx * 1.02, deckY(3.2) + 0.155, 3.2);
+      fit(add, winch(0.062, 0.15), sx * 0.55, top - 0.005, 1.25);
     }
-    // traveller across the forward end of the cockpit; wheel on a pedestal aft
+    // the traveller across the forward end of the cockpit, its track with its end stops and the mainsheet's car on it,
+    // a block on the car
     add(new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.04, 0.07), M.steel), 0, deckY(1.7) - 0.04, 1.62);
-    this.travCar = add(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.07, 0.12), M.dark), 0, deckY(1.7) + 0.01, 1.62); // the mainsheet's car on it
-    add(cyl(0.055, 0.08, 0.8, M.dark), 0, deckY(4) - 0.1, 4.05);
-    add(new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 8), M.dark), 0, deckY(4) + 0.32, 4.05); // binnacle
-    this.wheel = add(new THREE.Mesh(new THREE.TorusGeometry(0.47, 0.025, 8, 36), M.steel), 0, deckY(4) + 0.32, 4.15);
-    for (let i = 0; i < 3; i++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.02, 0.02), M.steel); sp.rotation.z = (i * Math.PI) / 3; this.wheel.add(sp); }
+    for (const sx of [-1, 1]) add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.09), M.dark), sx * 0.8, deckY(1.7) - 0.02, 1.62);
+    const car = new THREE.Group(); car.add(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.06, 0.12), M.dark));
+    for (const [g, mm] of block(0.04)) { const o = new THREE.Mesh(g, mm); o.position.y = 0.085; car.add(o); }
+    this.travCar = add(mergeGroup(car), 0, deckY(1.7) + 0.01, 1.62);
+    // the wheel on its pedestal aft: the binnacle on the column, the compass under its dome on top and the helm's
+    // display tilted towards her, the guard rail round it forward
+    const fl = deckY(4) - 0.5, bin = deckY(4) + 0.32; // the cockpit floor there, and the wheel's axle
+    add(cyl(0.055, 0.08, bin - 0.1 - fl, M.dark), 0, (fl + bin - 0.1) / 2, 4.05);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.2, 0.2), M.dark), 0, bin, 4.04);
+    add(new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), M.glass), 0, bin + 0.1, 4.0);
+    fit(add, display(0.22, 0.15, 3), 0, bin + 0.08, 4.12, 0, -0.75);
+    add(cyl(0.02, 0.02, 0.12, M.steel, 8), 0, bin, 4.12).rotation.x = Math.PI / 2; // the axle
+    T.add(tube([[-0.22, fl, 3.86], [-0.22, bin + 0.18, 3.86], [-0.18, bin + 0.27, 3.9], [0.18, bin + 0.27, 3.9], [0.22, bin + 0.18, 3.86], [0.22, fl, 3.86]], 0.016, M.steel));
+    this.wheel = add(wheel(0.47, 6), 0, bin, 4.18);
     // toe rails, pulpit, pushpit, stanchions, lifelines
     for (const sx of [-1, 1]) {
       const pts = []; for (let i = 0; i <= 24; i++) { const t = 0.01 + (i / 24) * 0.96; pts.push([sx * (halfBeam(t) - 0.02), sheerAt(t) + 0.03, zAt(t)]); }
@@ -683,17 +814,29 @@ export class BoatView {
     const TRK = 1.28, trackRise = Math.atan2(deckY(-0.5) - deckY(1.0), 1.5);
     for (const sx of [-1, 1]) {
       const tr = add(new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.025, 1.5), M.alu), sx * TRK, deckY(0.25) + 0.035, 0.25); tr.rotation.x = trackRise;
-      add(new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.15), M.dark), sx * TRK, deckY(0.4) + 0.07, 0.4);
+      add(new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.15), M.dark), sx * TRK, deckY(0.4) + 0.065, 0.4);
+      fit(add, block(0.035), sx * TRK, deckY(0.4) + 0.13, 0.4);
+      for (const dz of [-0.5, 1.0]) add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.05), M.dark), sx * TRK, deckY(dz) + 0.045, dz); // the track's end stops
+      fit(add, clutches(3), sx * 0.355, top + 0.03, 0.98);
+      for (const t of [0.9, 0.04]) { const [x, y, z] = at(t, 0, t > 0.5 ? 0.22 : 0.3); fit(add, cleat(0.22), sx * x, y + 0.01, z); }
+    }
+    // the halyards' leads: from the front of the mast down to the turning blocks at its foot, aft along the coachroof
+    // through the clutches to the halyard winches, three a side
+    for (const sx of [-1, 1]) {
+      fit(add, block(0.028), sx * 0.13, top + 0.04, MAST_Z + 0.02, sx * 0.5);
       for (let k = 0; k < 3; k++) {
-        add(new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.06, 0.15), M.dark), sx * (0.28 + k * 0.075), top + 0.06, 0.98);
-        add(new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.02, 0.08), M.alu), sx * (0.28 + k * 0.075), top + 0.095, 0.96);
-      }
-      for (const t of [0.9, 0.04]) {
-        const [x, y, z] = at(t, 0, t > 0.5 ? 0.22 : 0.3);
-        add(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.045, 0.07), M.alu), sx * x, y + 0.045, z);
-        add(new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.028, 0.22), M.alu), sx * x, y + 0.08, z);
+        const x = sx * (0.28 + k * 0.075);
+        T.add(line([[sx * 0.12, top + 0.04, MAST_Z + 0.05], [x, top + 0.05, 0.88], [x, top + 0.05, 1.07], [sx * 0.55 - sx * 0.07, top + 0.06, 1.22]]));
       }
     }
+    // the hull-to-deck joint's aluminium rubbing strake, just under the sheer
+    for (const sx of [-1, 1]) {
+      const pts = []; for (let i = 0; i <= 14; i++) { const t = 0.006 + (i / 14) * 0.97, y = sheerAt(t) - 0.025; pts.push([sx * (hullX(t, y) + 0.006), y, zAt(t)]); }
+      T.add(tube(pts, 0.012, M.alu));
+    }
+    // the sail number on both bows, forward of the logo, and the instrument displays either side of the companionway
+    { const mat = bowNumberMaterial(look); for (const sx of [-1, 1]) T.add(hullDecal(sx, BOW_Z + 1.1, 0.74, 0.8, 0.22, mat)); }
+    for (const sx of [-1, 1]) fit(add, display(0.22, 0.16, sx < 0 ? 1 : 2), sx * 0.6, cr.position.y + 0.25, 1.53);
     // bowsprit for the gennaker
     this.sprit = add(cyl(0.035, 0.045, 1.5, M.carbon, 8), 0, SPRIT.y, BOW_Z - 0.65);
     this.sprit.rotation.x = Math.PI / 2;
@@ -705,18 +848,42 @@ export class BoatView {
       const s = add(cyl(0.02, 0.03, l, M.carbon, 6), sx * l / 2 * 0.95, y, MAST_Z + l * 0.16);
       s.rotation.z = Math.PI / 2; s.rotation.y = -sx * 0.32;
     }
+    // the mast's collar where it goes through the coachroof, the spreaders' tips, the masthead crane carrying the
+    // backstay aft of the mast, the tricolour and the VHF aerial on top, and a display under the gooseneck
+    add(cyl(0.13, 0.15, 0.06, M.dark, 16), 0, top + 0.03, MAST_Z);
+    for (const sx of [-1, 1]) for (const p of [[sx * 0.95, 7.2, MAST_Z + 0.32], [sx * 0.68, 11.8, MAST_Z + 0.23]]) add(new THREE.Mesh(new THREE.CapsuleGeometry(0.022, 0.05, 3, 8), M.dark), ...p);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.52), M.carbon), 0, MASTHEAD - 0.04, MAST_Z + 0.24);
+    add(cyl(0.03, 0.035, 0.08, M.dark, 10), 0, MASTHEAD + 0.04, MAST_Z);
+    T.add(line([[0.03, MASTHEAD, MAST_Z - 0.02], [0.03, MASTHEAD + 0.95, MAST_Z - 0.02]]));
+    fit(add, display(0.3, 0.17), 0, 1.98, MAST_Z + 0.12);
     T.add(line([[0, HOUNDS, MAST_Z], [TACK.x, TACK.y, TACK.z]]));
-    T.add(line([[0, MASTHEAD - 0.1, MAST_Z], [0, sheerAt(0) + 0.05, STERN_Z - 0.15]]));
+    const BACKSTAY = [0, sheerAt(0) + 0.05, STERN_Z - 0.15];
+    T.add(line([[0, MASTHEAD - 0.06, MAST_Z + 0.48], BACKSTAY]));
+    fit(add, chainplate(BACKSTAY, [0, MASTHEAD, MAST_Z + 0.48], 0.32));
     for (const sx of [-1, 1]) {
-      T.add(line([[0, HOUNDS, MAST_Z], [sx * 0.68, 11.8, MAST_Z + 0.23], [sx * 0.95, 7.2, MAST_Z + 0.32], [sx * 1.5, deckY(MAST_Z + 0.5) + 0.02, MAST_Z + 0.5]]));
-      T.add(line([[0, 7.1, MAST_Z], [sx * 1.5, deckY(MAST_Z - 0.1) + 0.02, MAST_Z - 0.1]]));
+      const cap = [sx * 1.5, deckY(MAST_Z + 0.5) + 0.02, MAST_Z + 0.5], low = [sx * 1.5, deckY(MAST_Z - 0.1) + 0.02, MAST_Z - 0.1];
+      T.add(line([[0, HOUNDS, MAST_Z], [sx * 0.68, 11.8, MAST_Z + 0.23], [sx * 0.95, 7.2, MAST_Z + 0.32], cap]));
+      T.add(line([[0, 7.1, MAST_Z], low]));
+      fit(add, chainplate(cap, [sx * 0.95, 7.2, MAST_Z + 0.32]));
+      fit(add, chainplate(low, [0, 7.1, MAST_Z]));
     }
-    this.mainsheet = line([[0, 0, 0], [0, 1, 0]]); this.mainsheet.frustumCulled = false; T.add(this.mainsheet);
+    // the stemhead: the fitting the forestay and the jib's tack come down to
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 0.34), M.steel), 0, sheerAt(1) + 0.02, BOW_Z + 0.2);
+    fit(add, chainplate([0, sheerAt(1) + 0.06, BOW_Z + 0.1], [0, HOUNDS, MAST_Z], 0.14, 0.014));
+    // the mainsheet: a four-part tackle from the traveller's car up to the block under the boom
+    this.mainsheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]); this.mainsheet.frustumCulled = false; T.add(this.mainsheet);
 
-    // boom and mainsail swing on a pivot at the mast
+    // boom and mainsail swing on a pivot at the mast: the boom with its gooseneck, its end fitting, the mainsheet's
+    // block under it and the rigid vang from the foot of the mast, one mesh a material
     this.mainPivot = add(new THREE.Group(), 0, 0, MAST_Z);
-    const boom = cyl(0.065, 0.05, 4.9, M.carbon, 8); boom.rotation.x = Math.PI / 2; boom.position.set(0, BOOM_Y, 2.45); this.mainPivot.add(boom);
-    this.mainPivot.add(line([[0, MAST_FOOT + 0.25, 0.1], [0, BOOM_Y - 0.05, 1.2]])); // vang
+    const boom = new THREE.Group();
+    const spar = cyl(0.065, 0.05, 4.9, M.carbon, 12); spar.rotation.x = Math.PI / 2; spar.position.set(0, BOOM_Y, 2.45); boom.add(spar);
+    const gn = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.14, 0.16), M.alu); gn.position.set(0, BOOM_Y, 0.08); boom.add(gn);
+    const end = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.13, 0.1), M.alu); end.position.set(0, BOOM_Y, 4.9); boom.add(end);
+    for (const [g, mm] of block(0.045)) { const o = new THREE.Mesh(g, mm); o.position.set(0, BOOM_Y - 0.115, 2.52); boom.add(o); }
+    const VA = [0, MAST_FOOT + 0.27, 0.1], VB = [0, BOOM_Y - 0.06, 1.2], VM = VA.map((v, i) => lerp(v, VB[i], 0.42));
+    boom.add(bar(VA, VM, 0.018, 0.018, M.alu), bar(VM, VB, 0.032, 0.028, M.carbon));
+    this.mainPivot.add(mergeGroup(boom));
     this.main = sailMesh(14, 8, sailTexture('main', look), look.laminate, 'main'); this.mainPivot.add(this.main);
     // jib on the forestay, swung about the stay itself
     this.jibPivot = add(new THREE.Group(), TACK.x, TACK.y, TACK.z);
@@ -840,11 +1007,10 @@ export class BoatView {
       const chord = mainChord(f), tw = -this.sailSide * f * f * 0.5 * u;
       v.set(belly * Math.sin(Math.PI * u ** 0.78) * chord * 0.11 * (1 - 0.4 * f) + tw + luff * 0.22 * Math.sin(ph + f * 6 + u * 5) * u + leechFlutter(f, u, t, b.aws || 0), BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), u * chord);
     });
-    // the mainsheet, from the traveller to the end of the boom
-    const ma = this.mainPivot.rotation.y, bz = 2.52, ms = this.mainsheet.geometry.attributes.position;
-    ms.setXYZ(0, clamp(Math.sin(ma) * bz * 0.6, -0.75, 0.75), deckY(1.7) + 0.04, 1.62);
-    this.travCar.position.x = ms.getX(0);
-    ms.setXYZ(1, Math.sin(ma) * bz, BOOM_Y - 0.05, MAST_Z + Math.cos(ma) * bz); ms.needsUpdate = true;
+    // the mainsheet, from the block on the traveller's car to the one under the boom
+    const ma = this.mainPivot.rotation.y, bz = 2.52;
+    this.travCar.position.x = clamp(Math.sin(ma) * bz * 0.6, -0.75, 0.75);
+    purchase(this.mainsheet, [this.travCar.position.x, deckY(1.7) + 0.095, 1.62], [Math.sin(ma) * bz, BOOM_Y - 0.115, MAST_Z + Math.cos(ma) * bz]);
     const ja = Math.min((b.jibSail ?? b.sail) * D2R * 0.8 + 3 * D2R, 30 * D2R); // on its own sheet when the jib has one
     this.jibPivot.quaternion.setFromAxisAngle(this.jibAxis, -this.sailSide * ja);
     const head = HEAD.clone().sub(TACK), clew = JIB_CLEW;
