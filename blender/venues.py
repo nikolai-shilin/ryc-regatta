@@ -60,7 +60,10 @@ from PIL import Image, ImageColor, ImageDraw, ImageFilter
 # (SRTM's radar): the land up to `low` laid down on the shore's floor and from there back up to the tiles' own at `high`,
 # the hills above it as they are; paved: the map's paved squares and promenades drawn as paving; trees: the map's rows
 # of trees and its single trees planted where they stand; palms: (streets, metres), a seafront's palms the map lacks, along
-# those of its streets that run within so many metres of the water
+# those of its streets that run within so many metres of the water; gulets: (streets, metres), a town quay the gulets lie
+# along stern-to, the shore by those streets; routes: the ferries' and the water taxis' ways across the bay, (lat, lon)
+# each; kites: the line off a beach the kitesurfers ride along, and how many; footbox: where the footprints are taken
+# when it isn't the buildings' own box (`build`)
 VENUES = {
     'gocek': dict(bathy='emodnet', origin=(36.7525, 28.9395), mid=(-400, 700), wind=195, zoom=14, out='skopea', towns=[(36.7564, 28.9402, 650)],
                   build=(36.705, 28.875, 36.795, 29.005), footprints=('Turkey', '122101223')),
@@ -149,14 +152,27 @@ VENUES = {
                    landmarks=[dict(kind='temple', at=(37.97150, 23.72662), b=(37.97158, 23.72738), h=14)]),  # the Parthenon, its long axis to the east
     # Marmaris bay, of the Race Week and the winter series, in the westerly over İçmeler: the castle on its hill above
     # the old town and Netsel's pontoons to leeward, the pine mountains all round the bay
-    'marmaris': dict(bathy='emodnet', zoom=14, relations=True, paved=True, trees=True, palms=(['Atatürk Caddesi', 'Kordon Caddesi', 'Gezi Yolu Caddesi', 'Barbaros Caddesi', '207. Sokak'], 45),
+    'marmaris': dict(bathy='emodnet', zoom=14, most=15000, relations=True, footprints=('Turkey', '122101222'), footbox=(36.790, 28.210, 36.870, 28.330),
+                     gulets=(['Barbaros Caddesi'], 30),
+                     routes=[dict(kind='ferry', pts=[(36.84051, 28.28226), (36.83471, 28.27726), (36.82178, 28.27416), (36.81245, 28.27066), (36.80327, 28.26524), (36.78466, 28.26275)]),  # to Rhodes, out by the bay's south mouth
+                             dict(kind='taxi', pts=[(36.80186, 28.23892), (36.81487, 28.24697), (36.83002, 28.24938), (36.84038, 28.25468), (36.84694, 28.26016), (36.84919, 28.27152)]),  # İçmeler to the old town, along the west shore
+                             dict(kind='taxi', pts=[(36.84624, 28.27601), (36.83613, 28.28195), (36.82149, 28.28940)])],  # to the island in the bay
+                     paved=True, trees=True, palms=(['Atatürk Caddesi', 'Kordon Caddesi', 'Gezi Yolu Caddesi', 'Barbaros Caddesi', '207. Sokak'], 45),
                      home=(36.8300, 28.2620), wind=265,  # (Windfinder's station: W June to September, WSW in May and October)
                      towns=[(36.8530, 28.2720, 1100), (36.8560, 28.2500, 900), (36.8460, 28.2950, 900), (36.8060, 28.2370, 900), (36.8230, 28.3080, 500)],
                      landmarks=[dict(kind='castle', at=(36.85056, 28.27426), h=9, clear=40, ring=[(36.850350, 28.274480), (36.850353, 28.274388), (36.850414, 28.274388), (36.850417, 28.274168), (36.850378, 28.274168), (36.850374, 28.274072), (36.850696, 28.274016), (36.850730, 28.274265), (36.850777, 28.274273), (36.850769, 28.274375), (36.850724, 28.274375), (36.850711, 28.274477), (36.850468, 28.274463), (36.850436, 28.274504)]),  # its walls, the map's outline of it
-                                dict(kind='monument', at=(36.852946, 28.270857), h=4.5)]),  # Atatürk's statue on the seafront square
+                                dict(kind='monument', at=(36.852946, 28.270857), h=4.5),  # Atatürk's statue on the seafront square
+                                dict(kind='flag', at=(36.85062, 28.27424), h=18, w=8),  # the flag over the castle
+                                dict(kind='flag', at=(36.84639, 28.25444), h=12, w=4), dict(kind='flag', at=(36.84641, 28.25443), h=12, w=4),
+                                dict(kind='boatyard', at=(36.81760, 28.30700), ring=[(36.818695, 28.305466), (36.818786, 28.307823), (36.818134, 28.309541), (36.817230, 28.308048), (36.816452, 28.306005), (36.817528, 28.303861)])]),  # the yachts ashore on their cradles at Adaköy
     # Fethiye's bay inside Şövalye island, in the afternoon westerly (Windfinder's station: W March to October): the town all round to leeward, its castle and the
     # Lycian tombs cut in the hill over the harbour, Babadağ above
-    'fethiye': dict(bathy='emodnet', zoom=14, most=15000, relations=True, paved=True, trees=True, palms=(['Fevzi Çakmak Caddesi', 'Yürüyüş Yolu Caddesi', 'Cahit Gündüz Caddesi', 'Mustafa Kemal Bulvarı'], 45),
+    'fethiye': dict(bathy='emodnet', zoom=14, most=15000, relations=True, gulets=(['Fevzi Çakmak Caddesi'], 30),
+                    routes=[dict(kind='ferry', pts=[(36.62286, 29.10318), (36.62754, 29.09863), (36.63650, 29.10038), (36.64486, 29.09769), (36.65015, 29.08703), (36.65682, 29.06977), (36.66137, 29.05678)]),  # to Rhodes, out between the island and the point
+                            dict(kind='taxi', pts=[(36.62286, 29.10318), (36.63738, 29.10070), (36.64732, 29.10133), (36.65343, 29.10873), (36.65946, 29.10939), (36.66282, 29.10806)]),  # the harbour to Çalış, round the north of the bay
+                            dict(kind='taxi', pts=[(36.62321, 29.10209), (36.62750, 29.09918), (36.63738, 29.10070), (36.64739, 29.10044)])],  # to Şövalye's jetties
+                    kites=dict(a=(36.65600, 29.10750), b=(36.67660, 29.09400), n=7),  # off Çalış beach
+                    paved=True, trees=True, palms=(['Fevzi Çakmak Caddesi', 'Yürüyüş Yolu Caddesi', 'Cahit Gündüz Caddesi', 'Mustafa Kemal Bulvarı'], 45),
                     home=(36.6340, 29.1100), wind=275, build=(36.600, 29.060, 36.680, 29.150), footprints=('Turkey', '122101223'),  # (Göcek's quadkey)
                     towns=[(36.6220, 29.1130, 1100), (36.6250, 29.0950, 700), (36.6650, 29.1100, 1000), (36.6380, 29.1300, 900)],
                     landmarks=[dict(kind='castle', at=(36.61860, 29.11340), h=7, ruin=True, clear=75, keep=(36.61862, 29.11358),  # the tower's stump at `keep`
@@ -166,7 +182,8 @@ VENUES = {
                                dict(kind='sarcophagus', at=(36.622588, 29.111847), dir=20),  # the Lycian sarcophagus in the street by the town hall
                                dict(kind='sarcophagus', at=(36.620413, 29.117517), dir=70), dict(kind='sarcophagus', at=(36.620051, 29.117267), dir=150),
                                dict(kind='sarcophagus', at=(36.620678, 29.116730), dir=110),  # and those on the slope under the rock tombs
-                               dict(kind='monument', at=(36.623932, 29.112759), h=4.5)]),  # Atatürk's statue on the harbour front
+                               dict(kind='monument', at=(36.623932, 29.112759), h=4.5),  # Atatürk's statue on the harbour front
+                               dict(kind='flag', at=(36.618043, 29.112548), h=25, w=12)]),  # the great flag on the castle's hill
 }
 
 # what is on the ground (the cover part), from OpenStreetMap's land use; 0 where the map has nothing, which the game
@@ -709,6 +726,9 @@ def bake(vid, V, fetch_only=False):
     shapes = []  # (tags, outer rings, inner rings, the element)
     paved_areas = [dict(el, tags={'paved': 'yes'}) for el in paved_els if el['type'] == 'way' and len(el.get('geometry') or []) > 3
                    and el['geometry'][0] == el['geometry'][-1]]
+    # a boatyard's ground (a `boatyard` landmark's ring) is paved too, under the yachts on their cradles
+    paved_areas += [{'type': 'way', 'id': 0, 'tags': {'paved': 'yes'}, 'geometry': [{'lat': la, 'lon': lo} for la, lo in lm['ring'] + lm['ring'][:1]]}
+                    for lm in V.get('landmarks', []) if lm['kind'] == 'boatyard']
     for el in cover_els + [e for e in extra if 'highway' not in e.get('tags', {})] + paved_areas:
         t = el.get('tags', {})
         if el['type'] == 'way' and el.get('geometry'): shapes.append((t, [line(el['geometry'])], [], el))
@@ -890,7 +910,7 @@ def bake(vid, V, fetch_only=False):
     if os.path.exists(foot):
         # a footprint where OSM has no building (none of OSM's within 12 m of its middle), ashore, sure and house-sized
         taken = {(int(a // 12), int(b // 12)) for f in found for a, b in f['r']}
-        s, w, n_, e = V['build']; added = 0
+        s, w, n_, e = V.get('footbox') or V['build']; added = 0  # (the footprints' box: `footbox`, or the buildings' own)
         with gzip.open(foot, 'rt') as f:
             for ln in f:
                 el = json.loads(ln); ring = el['geometry']['coordinates'][0]
@@ -1077,6 +1097,91 @@ def bake(vid, V, fetch_only=False):
                 tpts.append((q[0] + (c[0] - q[0]) * s, q[1] + (c[1] - q[1]) * s, 1))
             print(f'  palms along the seafront: {len(tpts) - n0}', flush=True)
     tpts = [(float(x), float(z), k) for x, z, k in tpts if abs(x) < 5000 and abs(z) < 5000 and bilinear(HL, -EXTENT, LC, np.array([x]), np.array([z]))[0] > 0.3]
+    # a town quay where the gulets lie stern-to (`gulets`: its streets' names, and how far from the water): the shore
+    # along those streets, every 4 m of it within that of one, in runs (the game moors them on its water side)
+    moor = []
+    if V.get('gulets'):
+        names, reach = V['gulets']
+        S = np.array([a + (b - a) * (i + 0.5) / max(1, int(np.hypot(*(b - a)) // 6)) for el in extra if el.get('tags', {}).get('name') in names and el.get('geometry')
+                      for r in [line(el['geometry'])] for a, b in zip(r[:-1], r[1:]) for i in range(max(1, int(np.hypot(*(b - a)) // 6)))])
+        for r in coast:
+            run = []
+            for a, b in zip(r[:-1], r[1:]):
+                for f in np.linspace(0, 1, max(2, int(np.hypot(*(b - a)) // 4) + 1))[:-1]:
+                    q = a + (b - a) * f
+                    if len(S) and np.min(np.hypot(*(S - q).T)) < reach: run.append([round(float(q[0]), 1), round(float(q[1]), 1)])
+                    elif len(run) > 3: moor.append(run); run = []
+                    else: run = []
+            if len(run) > 3: moor.append(run)
+        print(f'  quays for the gulets: {len(moor)} runs, {sum(len(m) for m in moor) * 4} m', flush=True)
+    # the boats that come and go on their routes (`routes`: a ferry's, a water taxi's) and the kitesurfers off a beach
+    # (`kites`: the line they ride along, and how many): the game moves them (skopea.js)
+    xz = lambda la, lo: [round(float(v), 1) for v in to_xz(la, lo)]
+    # Each route's way between its points found on the water: the cheapest on the sea room's grid that keeps 30 m off
+    # the shore and the piers (dearer within 80 m) and goes round the race area if it can (the course's marks with 300 m to spare, from the home, the
+    # course laid there as land.js lays it), then pulled straight wherever a straight line keeps to that; beyond the
+    # grid (the open sea) straight
+    import heapq
+    AV = (-1067.0, 370.0, -776.0, 786.0)  # the race area round the home, x and z (every shape and length's marks, + 300 m)
+    ok = (room > 30)
+    gxs = MX0 + np.arange(MW) * SC; gzs = MZ0 + np.arange(MH) * SC
+    inav = ((gxs[None, :] - MID[0] > AV[0]) & (gxs[None, :] - MID[0] < AV[1]) & (gzs[:, None] - MID[1] > AV[2]) & (gzs[:, None] - MID[1] < AV[3]))
+    dx_ = gxs[None, :] - MID[0]; dz_ = gzs[:, None] - MID[1]
+    depth_ = np.where(inav, np.minimum(np.minimum(dx_ - AV[0], AV[1] - dx_), np.minimum(dz_ - AV[2], AV[3] - dz_)), 0.0)  # how far into it
+    cost = (1.0 + 40.0 * np.clip(depth_ / 300.0, 0, 1)) * np.where(room < 80, 2.0, 1.0)  # (dearer the deeper: no wall, a narrow bay's way skirts it)
+    def cellof(q): return int(round((q[1] - MZ0) / SC)), int(round((q[0] - MX0) / SC))
+    def inside(c): return 0 <= c[0] < MH and 0 <= c[1] < MW
+    def nearest_ok(c):
+        for rr in range(0, 40):
+            best = None
+            for di in range(-rr, rr + 1):
+                for dj in range(-rr, rr + 1):
+                    if max(abs(di), abs(dj)) != rr: continue
+                    cc = (c[0] + di, c[1] + dj)
+                    if inside(cc) and ok[cc] and (best is None or di * di + dj * dj < best[0]): best = (di * di + dj * dj, cc)
+            if best: return best[1]
+        return c
+    def astar(a, b):
+        D8 = [(-1, 0, 1), (1, 0, 1), (0, -1, 1), (0, 1, 1), (-1, -1, 1.414), (-1, 1, 1.414), (1, -1, 1.414), (1, 1, 1.414)]
+        h = lambda c: math.hypot(c[0] - b[0], c[1] - b[1])
+        g = {a: 0.0}; came = {}; pq = [(h(a), a)]
+        while pq:
+            _, c = heapq.heappop(pq)
+            if c == b: break
+            for di, dj, w in D8:
+                n = (c[0] + di, c[1] + dj)
+                if not inside(n) or not ok[n]: continue
+                ng = g[c] + w * cost[n]
+                if ng < g.get(n, 1e18): g[n] = ng; came[n] = c; heapq.heappush(pq, (ng + h(n), n))
+        if b not in came and a != b: return None
+        path = [b]
+        while path[-1] != a: path.append(came[path[-1]])
+        return path[::-1]
+    def clear(p, q):
+        L = math.hypot(q[0] - p[0], q[1] - p[1]); n = max(1, int(L / 10))
+        for k in range(n + 1):
+            c = cellof((p[0] + (q[0] - p[0]) * k / n, p[1] + (q[1] - p[1]) * k / n))
+            if inside(c) and (not ok[c] or inav[c]): return False
+        return True
+    def water_way(pts):
+        out = [pts[0]]
+        for a, b in zip(pts[:-1], pts[1:]):
+            ca, cb = cellof(a), cellof(b)
+            if not (inside(ca) and inside(cb)): out.append(b); continue
+            pa, pb = nearest_ok(ca), nearest_ok(cb); path = astar(pa, pb)
+            if path is None: print('  no way on the water from', a, 'to', b, flush=True); out.append(b); continue
+            out += [(MX0 + j * SC, MZ0 + i * SC) for i, j in path] + [b]
+        way = [out[0]]; i = 0  # pulled straight
+        while i < len(out) - 1:
+            j = len(out) - 1
+            while j > i + 1 and not clear(out[i], out[j]): j -= 1
+            way.append(out[j]); i = j
+        return [[round(float(x), 1), round(float(z), 1)] for x, z in way]
+    routes = [{'kind': r_['kind'], 'pts': water_way([tuple(xz(*q)) for q in r_['pts']])} for r_ in V.get('routes', [])]
+    for r_ in routes:
+        deep = max([0.0] + [min(x - MID[0] - AV[0], AV[1] - x + MID[0], z - MID[1] - AV[2], AV[3] - z + MID[1]) for x, z in r_['pts']])
+        print(f"  a {r_['kind']}'s way: {len(r_['pts'])} points, at most {deep:.0f} m into the race area's margin", flush=True)
+    kites = {'a': xz(*V['kites']['a']), 'b': xz(*V['kites']['b']), 'n': V['kites']['n']} if V.get('kites') else None
     tpts.sort(key=lambda p: math.hypot(p[0] - MID[0], p[1] - MID[1])); tpts = tpts[:6000]
     tk = np.array([k for _, _, k in tpts], np.uint8); txz = np.array([[round(x * 2), round(z * 2)] for x, z, _ in tpts], np.int32).ravel()
     if tree_els: print(f'  trees one by one: {len(tpts)} ({int((tk == 1).sum())} palms)', flush=True)
@@ -1109,7 +1214,7 @@ def bake(vid, V, fetch_only=False):
         'origin': [LAT0, LON0], 'turn': V['wind'], 'home': [round(float(MID[0]), 1), round(float(MID[1]), 1)], 'mid': [float(MID[0]), float(MID[1])], 'lake': bool(V.get('lake')),
         'terrain': {'ext': EXTENT, 'n': N}, 'grid': {'x0': -EXTENT, 'cell': CC, 'n': NCC}, 'ao': {'cell': CC * 2, 'n': NCC // 2, 'k': 4}, 'far': {'ext': FEXT, 'cell': FCELL, 'n': NF, 'k': 2}, 'near': {'x0': -NE * EC / 2, 'cell': EC, 'n': NE},
         'room': {'x0': MX0, 'z0': MZ0, 'cell': SC, 'nx': MW, 'nz': MH}, 'classes': CLASSES, 'parts': desc,
-        'marinas': marinas, 'pierKinds': PIERS, 'towns': towns, 'landmarks': landmarks,
+        'marinas': marinas, 'pierKinds': PIERS, 'towns': towns, 'landmarks': landmarks, **({'moor': moor} if moor else {}), **({'routes': routes} if routes else {}), **({'kites': kites} if kites else {}),
     }
     with open(jpath, 'w') as f: json.dump(meta, f, separators=(',', ':'))
     print(f'{vid}: {os.path.getsize(jpath[:-5] + ".bin") // 1024} kB + {os.path.getsize(jpath) // 1024} kB | sea {(room > 0).mean():.0%} of the middle | marinas {len(marinas)} | piers {len(piers)} | buildings {len(found)}', flush=True)

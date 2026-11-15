@@ -1155,6 +1155,29 @@ function marinas() {
       }
     }
   }
+  // the town quays where the gulets lie stern-to (venues.py `gulets`, the json's moor): one every berth along the shore
+  // there, its bow out over the water; a motor yacht now and then, a berth empty here and there
+  const gk = superBig ? (kinds[3] = { geo: guletGeo(), L: 27, B: 6.4, gap: 7.4, list: [] }) : kinds[2];
+  for (const run of META.moor || []) {
+    let u = 0;
+    for (let i = 0; i + 1 < run.length; i++) {
+      const [ax, az] = run[i], [bx, bz] = run[i + 1], l = Math.hypot(bx - ax, bz - az); if (l < 0.5) continue;
+      const tx = (bx - ax) / l, tz = (bz - az) / l;
+      for (; u < l; ) {
+        const k = r() < 0.85 ? gk : kinds[1], sc = 0.85 + r() * 0.3, L = k.L * sc, gap = k.gap * sc, x = ax + tx * u, z = az + tz * u;
+        u += gap;
+        if (r() > 0.85) continue;
+        for (const side of [1, -1]) { // the side the water is
+          const nx = -tz * side, nz = tx * side, sx = x + nx * 2, sz = z + nz * 2, mx = sx + nx * L * 0.5, mz = sz + nz * L * 0.5, bwx = sx + nx * L, bwz = sz + nz * L;
+          if (!(groundAt(mx, mz) < -1.5 && groundAt(bwx, bwz) < -1.5) || near(mx, mz, gap * 0.9) || near(bwx, bwz, gap * 0.9)) continue;
+          if (segsNear(mx, mz).some((o2) => segDist(mx, mz, o2) < width(o2.p) / 2 + k.B * sc / 2)) continue;
+          k.list.push([sx, sz, Math.atan2(-nx, -nz) + (r() - 0.5) * 0.06, sc]); place(mx, mz); place(bwx, bwz); place(sx + nx * L * 0.2, sz + nz * L * 0.2);
+          break;
+        }
+      }
+      u -= l;
+    }
+  }
   const o = new THREE.Object3D(), c = new THREE.Color();
   kinds.forEach((k, ki) => {
     if (!k.list.length) return;
@@ -1165,6 +1188,88 @@ function marinas() {
     });
     group.add(m);
   });
+  return group;
+}
+
+// ---------- the boats that come and go ----------
+// The ferries and the water taxis on their ways across the bay (venues.py `routes`, found on the water there, round the
+// race area) and the kitesurfers off a beach (`kites`), moved on the race's clock: each boat out and back along its way,
+// waiting a while at each end; each kitesurfer across the breeze and back, the kite high downwind of them, swinging.
+// All picture: the race knows nothing of them.
+function fastFerryGeo() { // a fast catamaran of some 40 m, white, her windows in a dark band, bow towards −z
+  const L = 40, B = 11;
+  return mergeGeometries([
+    ...[-1, 1].map((sd) => at(hull(L, 2.8, 2.6, '#f4f4f1', '#e2ded4'), sd * (B / 2 - 1.4), 0, 0)),
+    paint(at(new THREE.BoxGeometry(B, 3.6, L * 0.86), 0, 2.9, -L * 0.47), '#f6f6f3', '#dcd8cf'), // the body over the hulls, down to the spray
+    tint(at(new THREE.BoxGeometry(B + 0.06, 1.0, L * 0.74), 0, 3.4, -L * 0.45), '#1f3346'), // the saloon's windows
+    tint(at(new THREE.BoxGeometry(B + 0.1, 0.45, L * 0.8), 0, 1.75, -L * 0.47), '#1e5a9c'), // her company's stripe
+    paint(at(new THREE.BoxGeometry(B * 0.7, 2.0, L * 0.3), 0, 5.7, -L * 0.62), '#f6f6f3'),
+    tint(at(new THREE.BoxGeometry(B * 0.7 + 0.06, 0.8, L * 0.3 + 0.06), 0, 5.9, -L * 0.62), '#1f3346'),
+  ].map(strip));
+}
+function taxiGeo() { // a bay's wooden passenger boat, some 14 m, its canopy over the benches
+  const L = 14, B = 4.2;
+  return mergeGeometries([
+    hull(L, B, 1.6, '#3f6f8f', '#b88c5c'),
+    tint(at(new THREE.BoxGeometry(B * 0.92, 0.12, L * 0.6), 0, 3.4, -L * 0.42), '#f2ede2'), // the canopy
+    ...[-1, 1].flatMap((sd) => [0.2, 0.5].map((f) => tint(at(new THREE.CylinderGeometry(0.06, 0.06, 2.1, 4), sd * B * 0.42, 2.3, -L * f), '#d9d4c8'))),
+    paint(at(new THREE.BoxGeometry(2.0, 1.5, 2.2), 0, 1.9, -L * 0.82), '#f4efe4'), // the wheelhouse forward
+  ].map(strip));
+}
+function movers() {
+  const group = new THREE.Group(), list = [], mat = landMat(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0 }), 1); // (as the moored boats')
+  const geo = { ferry: fastFerryGeo(), taxi: taxiGeo() }, SPEED = { ferry: 9, taxi: 4.5 }, WAIT = { ferry: 240, taxi: 90 };
+  (META.routes || []).forEach((r, ri) => {
+    const pts = r.pts, cum = [0];
+    for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    const len = cum[cum.length - 1], n = r.kind === 'ferry' ? 1 : 2; if (len < 50) return;
+    for (let k = 0; k < n; k++) {
+      const m = new THREE.Mesh(geo[r.kind], mat); m.matrixAutoUpdate = false; group.add(m);
+      list.push({ m, pts, cum, len, v: SPEED[r.kind], wait: WAIT[r.kind], phase: (k / n + ri * 0.37) % 1 });
+    }
+  });
+  const posAt = (b, d) => { // the point d along a way, and its heading
+    let i = 1; while (i < b.cum.length - 1 && b.cum[i] < d) i++;
+    const [ax, az] = b.pts[i - 1], [bx, bz] = b.pts[i], f = (d - b.cum[i - 1]) / Math.max(1e-6, b.cum[i] - b.cum[i - 1]);
+    return [ax + (bx - ax) * f, az + (bz - az) * f];
+  };
+  // the kitesurfers: each along the line off the beach and back, some way out from it, the kite downwind (+z) and up
+  const kites = [], K = META.kites;
+  if (K) {
+    const KC = ['#e8402c', '#f2b51d', '#1f8fd6', '#38b46a', '#d13a8c', '#ff7a1a', '#7a4fd8'];
+    for (let i = 0; i < K.n; i++) {
+      const g = new THREE.Group(), c = KC[i % KC.length];
+      const rider = new THREE.Mesh(mergeGeometries([tint(new THREE.BoxGeometry(1.5, 0.08, 0.45).translate(0, 0.05, 0), '#f4f4f0'), tint(new THREE.BoxGeometry(0.45, 1.5, 0.35).translate(0, 0.9, 0), '#20252a'), tint(new THREE.SphereGeometry(0.16, 8, 6).translate(0, 1.8, 0), '#d9b08c')].map(strip)), mat);
+      const kite = new THREE.Mesh(strip(tint(new THREE.TorusGeometry(5, 0.9, 4, 12, Math.PI).scale(1, 1, 0.35), c)), mat);
+      const lines = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: '#3a3a3a', transparent: true, opacity: 0.6 }));
+      g.add(rider, kite, lines); group.add(g);
+      kites.push({ g, rider, kite, lines, off: 40 + (i * 53) % 220, ph: i * 1.7, sp: 6 + (i % 3) });
+    }
+  }
+  const lineLen = K ? Math.hypot(K.b[0] - K.a[0], K.b[1] - K.a[1]) : 0;
+  group.userData.update = (t) => {
+    for (const b of list) {
+      const cycle = 2 * (b.len / b.v + b.wait), u = ((t / cycle + b.phase) % 1) * cycle, run = b.len / b.v;
+      // out (moving), waiting at the far end, back, waiting at home
+      let d, dir;
+      if (u < run) { d = u * b.v; dir = 1; } else if (u < run + b.wait) { d = b.len; dir = 0; } else if (u < 2 * run + b.wait) { d = b.len - (u - run - b.wait) * b.v; dir = -1; } else { d = 0; dir = 0; }
+      const [x, z] = posAt(b, d), ahead = posAt(b, Math.min(b.len, Math.max(0, d + (dir >= 0 ? 12 : -12)))), back = posAt(b, Math.min(b.len, Math.max(0, d - (dir >= 0 ? 12 : -12))));
+      const hx = dir === 0 ? x - back[0] || 1 : ahead[0] - x, hz = dir === 0 ? z - back[1] : ahead[1] - z;
+      b.m.position.set(x, Math.sin(t * 1.3 + b.phase * 9) * 0.08 - 0.05, z); b.m.rotation.set(Math.sin(t * 0.9 + b.phase * 5) * 0.012, Math.atan2(-hx, -hz), 0); b.m.updateMatrix();
+    }
+    for (const k of kites) {
+      const f = 0.5 + 0.48 * Math.sin((t * k.sp) / Math.max(200, lineLen) + k.ph), dx = (K.b[0] - K.a[0]) / lineLen, dz = (K.b[1] - K.a[1]) / lineLen;
+      const going = Math.cos((t * k.sp) / Math.max(200, lineLen) + k.ph) > 0 ? 1 : -1;
+      // out from the beach: the line's normal on the sea's side (the one away from the land)
+      let nx = -dz, nz = dx; const mx = K.a[0] + dx * lineLen * 0.5, mz = K.a[1] + dz * lineLen * 0.5; if (groundAt(mx + nx * 300, mz + nz * 300) > groundAt(mx - nx * 300, mz - nz * 300)) { nx = -nx; nz = -nz; }
+      const x = K.a[0] + dx * lineLen * f + nx * k.off, z = K.a[1] + dz * lineLen * f + nz * k.off;
+      k.g.position.set(x, 0, z);
+      k.rider.rotation.set(0, Math.atan2(-dx * going, -dz * going) + Math.PI / 2, 0.25 * going);
+      const sw = Math.sin(t * 0.7 + k.ph) * 0.5, kx = Math.sin(sw) * 18, ky = 16 + Math.cos(sw) * 6, kz = 14;
+      k.kite.position.set(kx, ky, kz); k.kite.rotation.set(-0.3, 0, sw);
+      const pa = k.lines.geometry.attributes.position; pa.setXYZ(0, 0, 1.2, 0); pa.setXYZ(1, kx, ky, kz); pa.needsUpdate = true;
+    }
+  };
   return group;
 }
 
@@ -1756,6 +1861,34 @@ function landmarks() {
       for (const b of [-0.22, 0.22]) parts.push(F.box(0, b, 0, H * 0.47, 0.34, 0.3, bronze));
       parts.push(F.box(0, 0, H * 0.3, H * 0.5, 0.5, 0.95, bronze), F.box(0, 0, H * 0.72, H * 0.08, 0.5, 1.25, bronze));
       { const [hx, hz] = F.xz(0, 0); parts.push(tint(new THREE.SphereGeometry(H * 0.065, 10, 8).translate(hx, y + 4 + H * 0.88, hz), bronze)); }
+    } else if (L.kind === 'flag') {
+      // a Turkish flag on its pole (the great ones over Marmaris's and Fethiye's castles): red, the white crescent and
+      // star near the hoist, L.w long, flying out downwind (the race's wind is from −z) in a gentle ripple
+      const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), H = L.h, w = L.w, fh = w * 2 / 3;
+      parts.push(post(x, z, y - 1, 0.06 * H ** 0.5, 0.035 * H ** 0.5, H + 1, '#d8d8d4', 8), tint(new THREE.SphereGeometry(0.05 * H ** 0.5 + 0.08, 8, 6).translate(x, y + H + 0.1, z), '#d6a43a'));
+      const wave = (u) => Math.sin(u * Math.PI * 2.2) * 0.07 * w * u; // across the cloth, more towards the fly
+      const cloth = new THREE.BoxGeometry(w, fh, 0.06, 16, 1, 1).translate(w / 2, 0, 0), q = cloth.attributes.position;
+      for (let i = 0; i < q.count; i++) q.setZ(i, q.getZ(i) + wave(q.getX(i) / w));
+      const put = (g, u, yy) => g.translate(0, yy, wave(u)).rotateY(-Math.PI / 2).translate(x, y + H - fh / 2 - 0.2, z);
+      parts.push(tint(put(cloth, 0, 0), '#d6201e'));
+      const disc = (r0, cx, cy, th, col) => parts.push(tint(put(new THREE.CylinderGeometry(r0, r0, th, 20).rotateX(Math.PI / 2).translate(cx, 0, 0), cx / w, cy), col));
+      disc(fh * 0.25, fh * 0.5, 0, 0.1, '#f6f2ea'); disc(fh * 0.2, fh * 0.5625, 0, 0.14, '#d6201e'); // the crescent: a white disc, a red one over it
+      disc(fh * 0.07, fh * 0.86, 0, 0.12, '#f6f2ea'); // (the star, round at this size)
+    } else if (L.kind === 'boatyard') {
+      // a yard's yachts ashore on their cradles, in rows across its ground (`ring`), masts up: sailing yachts mostly
+      const ring = L.ring, ins = (px, pz) => { let c = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, zi] = ring[i], [xj, zj] = ring[j]; if ((zi > pz) !== (zj > pz) && px < ((xj - xi) * (pz - zi)) / (zj - zi) + xi) c = !c; } return c; };
+      const [ax, az] = ring[0], [bx, bz] = ring[1], ang = Math.atan2(bz - az, bx - ax), ux = Math.cos(ang), uz = Math.sin(ang); // the rows along its first side
+      const xs = ring.map((p) => p[0]), zs = ring.map((p) => p[1]), R = Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs));
+      const [cx, cz] = L.at, rr = rng(77), sail = sailboatGeo(), motor = motorGeo(), cradle = '#4c5258';
+      for (let a = -R; a < R; a += 16) for (let b = -R; b < R; b += 6) {
+        const px = cx + ux * a - uz * b, pz = cz + uz * a + ux * b;
+        if (!ins(px, pz) || !ins(px + ux * 7, pz + uz * 7) || !ins(px - ux * 7, pz - uz * 7) || rr() < 0.22) continue;
+        const gy = groundAt(px, pz), isSail = rr() < 0.75, sc = 0.8 + rr() * 0.3, len = (isSail ? 13 : 15) * sc;
+        const g = (isSail ? sail : motor).clone().scale(sc, sc, sc).translate(0, 0, len / 2).rotateY(-ang - Math.PI / 2 + (rr() < 0.5 ? 0 : Math.PI)).translate(px, gy + 1.6, pz);
+        parts.push(g);
+        for (const s2 of [-1, 1]) parts.push(blk(px + ux * s2 * len * 0.25, pz + uz * s2 * len * 0.25, gy - 0.5, 1.8, 0.4, 2.8, ang + Math.PI / 2, cradle));
+        if (isSail) parts.push(blk(px, pz, gy, 1.4, 2.6 * sc, 0.3, ang, '#3a3f44')); // the keel on its block
+      }
     } else if (L.kind === 'mosque') {
       // Istanbul's imperial mosques on their hills: the square prayer hall, the great dome on its drum (its top L.h up),
       // the half-domes and the corner domes stepping down from it, the pencil minarets with their balconies and lead
@@ -1843,6 +1976,7 @@ export class Skopea {
     GROUND_U.uLiftMask.value = liftMask();
     this.group.add(this.far, this.land, this.trees, this.farTrees, this.town, this.boats);
     this.group.traverse((o) => { if (o.isMesh) o.matrixAutoUpdate = false; });
+    this.movers = movers(); this.group.add(this.movers); // (after: the boats moved each frame keep their own matrices)
     // what casts the shadows on the land (shadows()): the terrain, the buildings and the trees, not the land beyond
     for (const g of [this.land, this.town, this.trees]) g.traverse((o) => o.layers.enable(SHADOW_LAYER));
     // what the sea needs of the land: the depth (lighter over the shallows), the shadows, how far from the shore (the surf)
@@ -1866,6 +2000,7 @@ export class Skopea {
   // each frame: the near trees' tiles far from the camera drawn as plain crowns; the clouds' shadows on the race's clock
   update(cam, t = 0) {
     CLOUD_U.uCsT.value = t;
+    this.movers.userData.update(t);
     const gp = this.group.position;
     for (const m of this.trees.children) {
       const lod = m.userData.lod; if (!lod) continue;

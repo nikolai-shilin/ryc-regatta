@@ -188,7 +188,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la Garde, Christ the Redeemer, Enoshima's Sea
   Candle, the lighthouses of Kiel, Trieste, Batumi, Scheveningen and Green Point, Istanbul's Bosphorus Bridge, Galata
   Tower, Blue Mosque, Hagia Sophia and Süleymaniye, St Petersburg's spires, columns and bridges, Batumi's Alphabetic
-  Tower, the big wheels on Batumi's shore, Scheveningen's pier, Hong Kong's Central and Cape Town's V&A Waterfront, the Bank of China Tower, the Parthenon, Marmaris castle on the map's outline of it, the Knights' castle in Fethiye on walls traced from the air (`ring`), Fethiye's Lycian rock tombs, Telmessos's theatre and the sarcophagi in its streets, and Atatürk's statues on both seafronts (a
+  Tower, the big wheels on Batumi's shore, Scheveningen's pier, Hong Kong's Central and Cape Town's V&A Waterfront, the Bank of China Tower, the Parthenon, Marmaris castle on the map's outline of it, the Knights' castle in Fethiye on walls traced from the air (`ring`), Fethiye's Lycian rock tombs, Telmessos's theatre and the sarcophagi in its streets, Atatürk's statues on both seafronts, the great Turkish flags over both castles and the yachts ashore on their cradles in Marmaris's Adaköy yard (a
   landmark with `clear` leaves out the map's own building in its place). `land.js` lays each course in clear water (its marks, its line, the water below it where the
   fleet waits, the beat out towards the laylines, and every leg from end to end, all on the baked map of the sea
   room), and not across a bridge too low for a mast (St Petersburg's drawbridges). An AC75's course, 2.5 times as
@@ -198,7 +198,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   Bavaria 46, the Laser and the AC75, and checks its marks and legs are in clear water and on one side of every such bridge; a shape a venue has no room for at a length goes in its `skip`, as does
   a length it has no room for at all (St Petersburg's long course: a long request is sailed at the longest it has), and
   the set-up offers only the shapes and lengths `shapeOffered()` and `lengthOffered()` (`lib/venues.ts`) allow there. Moving between today's race and a free race in the
-  game reloads the page when the venue changes. OpenStreetMap has few of Göcek's and Fethiye's buildings, so their towns also come
+  game reloads the page when the venue changes. OpenStreetMap has few of Göcek's, Fethiye's and Marmaris's buildings, so their towns also come
   from Microsoft's Global ML Building Footprints (ODbL), which `venues.py` downloads with the rest. Hong Kong's
   ground is its own 5 m terrain model (`dtm`), not the tiles, whose radar has the towers' roofs for the city's ground:
   the Digital Terrain Model of the Lands Department, Hong Kong SAR Government, from DATA.GOV.HK (free to use with
@@ -207,7 +207,11 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   tree by tree where they stand (`trees`, the .bin's `tk` and `txz`; Marmaris's and Fethiye's seafront palms, which the map
   lacks, planted every 8 m along the streets `palms` names where they run by the water), and their plains, whose tiles carry the roofs and
   trees some 4 to 8 m up, laid down on the shore's floor below the hills (`plain`; in Cape Town that lets the V&A's
-  basins and Milnerton's lagoon down to the sea's level as water).
+  basins and Milnerton's lagoon down to the sea's level as water). Marmaris and Fethiye have their gulets moored
+  stern-to along the town quays (`gulets`: the shore by the streets it names, the json's `moor`), and boats that come
+  and go, moved by `skopea.js` on the race's clock, all picture: the fast ferries to Rhodes and the water taxis on their
+  `routes` (each found on the water by the bake, the cheapest way on the sea room's grid that keeps off the shore and
+  skirts the race area) and Fethiye's kitesurfers off Çalış beach (`kites`).
 - **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes
   wrong (a sheet left out or in too hard, a broach, a foul, a collision, aground, stopped after the gun, now and then a
   tack) and through the start (the signals, a boat too close, the line far off, over early, a quick or a late start).

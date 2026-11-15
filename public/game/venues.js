@@ -392,7 +392,7 @@ export const VENUES = [
       ground: { forest: ['#2d4325', '#3d5631', '#586f3c'], scrub: '#7d7c52', rock: ['#a89e8c', '#857c6e'], town: '#a89f8a', shore: '#b9ae96', sand: '#cdbfa0' },
       fields: ['#6f8a42', '#7f9548', '#5f7f3c', '#8f9a52', '#a8a466', '#c9c9c0'], // the plain's fields, citrus groves and greenhouses
       trees: [['pine', 0.7, '#2d4325', '#586f3c'], ['olive', 0.12, '#56603e', '#7f8660'], ['cypress', 0.08, '#25391f', '#3a5230'], ['palm', 0.05, '#3d5a2c', '#5f7a3a'], ['broad', 0.05, '#33482a', '#5f7a3c']],
-      treeTop: 1500, woods: 0.75, snow: 3200,
+      treeTop: 1150, woods: 0.75, snow: 3200, // (Babadağ's top bare limestone above the pines)
       ...MED, flat: 0.65,
       water: { shallow: '#40ac9e', clear: 0.5 },
       boats: { sail: 0.5, motor: 0.28, big: 0.22, bigKind: 'gulet' },
