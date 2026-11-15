@@ -284,10 +284,9 @@ const MAT = {
   rubber: new THREE.MeshStandardMaterial({ color: '#15171a', roughness: 0.9 }),
   red: new THREE.MeshStandardMaterial({ color: '#d0202a', emissive: '#5a0006', roughness: 0.4 }),
   green: new THREE.MeshStandardMaterial({ color: '#13a24a', emissive: '#003a14', roughness: 0.4 }),
-  // the cruiser's and the dinghy's own, shared by every boat of theirs: smoked windows, navy cloth, the buoy,
+  // the cruiser's and the dinghy's own, shared by every boat of theirs: smoked windows, the buoy,
   // the dinghy's gunwale and strap
   pane: new THREE.MeshPhysicalMaterial({ color: '#10151b', roughness: 0.06, metalness: 0.3, clearcoat: 1, envMapIntensity: 1.3, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 }),
-  navy: new THREE.MeshStandardMaterial({ color: '#22304a', roughness: 0.92, side: THREE.DoubleSide }),
   buoy: new THREE.MeshStandardMaterial({ color: '#ef6a1f', roughness: 0.7 }),
   lip: new THREE.MeshStandardMaterial({ color: '#d4d6d3', roughness: 0.45 }),
   strap: new THREE.MeshStandardMaterial({ color: '#1d2a44', roughness: 0.8 }),
@@ -949,7 +948,7 @@ class CruiserView extends ClassView {
       T.add(line([[-x0, y0, zo], [x0, y0, zo], [x0, y1, zo], [-x0, y1, zo], [-x0, y0, zo]]));
       for (const sx of [-1, 1]) add(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.05, 0.05), M.steel), sx * (x0 - 0.35), y0 + 0.02, zo);
       T.add(tube([[-0.25, y1 - 0.05, zo], [-0.22, y1 - 0.05, zo + 0.05], [0.22, y1 - 0.05, zo + 0.05], [0.25, y1 - 0.05, zo]], 0.012, M.steel)); }
-    // the seats down both sides, teak on gelcoat, the coamings outboard of them with the primary winches on top; the
+    // the seats down both sides, bare teak on gelcoat as hers are, the coamings outboard of them with the primary winches on top; the
     // helms' seats outboard aft, either side of the bathing platform; the table between the seats, its leaves folded,
     // its grab rail over it
     const [hz, hx] = BV.HELM, benchZ = (ckz + 0.2 + hz - 0.15) / 2, benchL = hz - 0.15 - ckz - 0.2;
@@ -1016,9 +1015,6 @@ class CruiserView extends ClassView {
       fit(add, block(0.03), sx * 0.15, BV.ROOF + 0.04, BV.MAST_Z + 0.02, sx * 0.5);
       for (let k = 0; k < 3; k++) { const x = sx * (0.48 + k * 0.07); T.add(line([[sx * 0.14, BV.ROOF + 0.05, BV.MAST_Z + 0.05], [x, BV.ROOF + 0.05, 1.75], [x, BV.ROOF + 0.05, 2.0], [sx * 0.85, BV.ROOF + 0.06, 2.45]])); }
     }
-    // cushions on the benches, two a side
-    const cushion = MAT.navy;
-    for (const sx of [-1, 1]) for (const dz of [-0.25, 0.25]) add(new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.06, benchL / 2 - 0.04).translate(0, 0.03, 0), cushion), sx * (ckx - 0.24), BV.FLOOR + 0.42, benchZ + dz * benchL);
     // two mushroom vents on the foredeck
     for (const sx of [-1, 1]) { const z = BV.COACH.zf - 0.45; add(new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 0.05, 16), M.steel), sx * 0.45, H.deckY(z) + 0.03, z); }
     // the stemhead: the anchor in its roller, the genoa's furling drum, the sprit for the gennaker
@@ -1175,8 +1171,8 @@ class CruiserView extends ClassView {
     for (const c of this.crew) {
       let x, y, z = c.z0, yaw = Math.PI, lean = 0.12, stand = 0, knee = -1.4, reach = 0.55;
       if (c.i === 0) { x = side * BV.WHEEL_X; y = BV.FLOOR + 0.02; yaw = Math.PI / 2 + 0.25; stand = 1; lean = 0.1; knee = -0.3; reach = 1.0; }
-      else if (c.i === 1) { x = side * (BV.CK[1] - 0.3); y = BV.FLOOR + 0.48; yaw = Math.PI - 0.5; reach = 0.8; }
-      else if (c.i === 2) { const lee = !up && b.kite; x = (lee ? -side : side) * (BV.CK[1] - 0.25); y = BV.FLOOR + 0.48; yaw = Math.PI - 0.9; reach = 0.9; }
+      else if (c.i === 1) { x = side * (BV.CK[1] - 0.3); y = BV.FLOOR + 0.43; yaw = Math.PI - 0.5; reach = 0.8; }
+      else if (c.i === 2) { const lee = !up && b.kite; x = (lee ? -side : side) * (BV.CK[1] - 0.25); y = BV.FLOOR + 0.43; yaw = Math.PI - 0.9; reach = 0.9; }
       else if (c.i === 4 && bowBusy) { x = 0.25; z = BV.MAST_Z + 0.45; y = BV.ROOF + 0.02; yaw = Math.PI / 2; stand = 1; lean = 0.3; reach = 0.8; }
       else if (up) { x = side * (H.hbAt(z) - 0.12); y = H.deckY(z) + 0.07; yaw = 0; lean = 0.2; knee = -1.85; reach = 0.3; }
       else { x = side * (H.hbAt(z) - 0.45); y = H.deckY(z) + 0.06; yaw = Math.PI - 0.5; knee = -1.2; }
