@@ -53,6 +53,8 @@ export function applyControls(race, b, c) {
 //           'yellow' or null
 //   [n+12]  bits: ocs, done, dsq, entered, pen (a penalty turn under way)
 //   [n+13]  tacks seen, [n+14] hails seen (a reloaded follower's counts go on from these)
+// and the jobs' clocks (0 with no job): [n+15] kite job t, [n+16] its total, [n+17] a messy drop (0/1); [n+18],
+// [n+19] the reef job's t and total; [n+20], [n+21] the jib job's
 const NUM = [['x', 100], ['z', 100], ['h', 1e4], ['v', 100], ['heel', 10], ['yawRate', 1e3], ['rudder', 100], ['sheet', 1e3],
   ['jibSheet', 1e3], ['sail', 10], ['jibSail', 10], ['kiteFill', 100], ['kiteCollapse', 100], ['twa', 1e3], ['awa', 1e3],
   ['aws', 10], ['tws', 10], ['wdir', 1e3], ['gust', 100], ['shadow', 100], ['luff', 100], ['reefFill', 100],
@@ -76,6 +78,8 @@ function rowOf(b) {
     b.leg || 0, b.owed || 0, b.finish ?? null, b.place ?? null, b.side ?? null,
     bits([b.ocs, b.done, b.dsq, b.entered, b.pen]),
     b.tackSeen || 0, b.hailSeen || 0,
+    q(b.kiteJob?.t, 100), q(b.kiteJob?.total, 100), b.kiteJob?.messy ? 1 : 0,
+    q(b.reefJob?.t, 100), q(b.reefJob?.total, 100), q(b.jibJob?.t, 100), q(b.jibJob?.total, 100),
   ];
 }
 
@@ -93,6 +97,7 @@ export function readBoat(row) {
     trim: TRIMS[row[N + 1]] ?? 'ok', autoK: row[N + 2], kiteK: row[N + 3], reefK: row[N + 4], jibK: row[N + 5], boom: row[N + 6],
     leg: row[N + 7], owed: row[N + 8], finish: row[N + 9], place: row[N + 10], side: row[N + 11],
     ocs: bit(s, 0), done: bit(s, 1), dsq: bit(s, 2), entered: bit(s, 3), penOn: bit(s, 4), tackSeen: row[N + 13], hailSeen: row[N + 14],
+    kiteT: [num(row[N + 15], 1), num(row[N + 16], 1)], kiteMessy: !!row[N + 17], reefT: [num(row[N + 18], 1), num(row[N + 19], 1)], jibT: [num(row[N + 20], 1), num(row[N + 21], 1)],
   });
   return o;
 }
@@ -104,6 +109,16 @@ export function lerpBoat(a, b, f) {
   return o;
 }
 
+// the sails she has and is changing, and her sheets, from a read row (a follower's own boat takes these once, from
+// the first snapshot after her page opens; the other boats with every one)
+export function setSails(b, o) {
+  Object.assign(b, { kite: o.kite, kiteType: o.kiteType, reef: o.reef, smallJib: o.smallJib, split: o.split, autoTrim: o.autoTrim, sheet: o.sheet, jibSheet: o.jibSheet });
+  const t = ([t, total]) => ({ t: Math.max(t, 0), total: Math.max(total, 1e-3) });
+  b.kiteJob = o.kiteK ? { ...t(o.kiteT), messy: o.kiteMessy, up: o.kiteK === 1 } : null;
+  b.reefJob = o.reefK ? { ...t(o.reefT), on: o.reefK === 1 } : null;
+  b.jibJob = o.jibK ? { ...t(o.jibT), small: o.jibK === 1 } : null;
+}
+
 // put a read row on boat b: her race always; her pose, sails and jobs too unless `pose` is false (a follower's own
 // boat, which her own screen steps)
 export function setBoat(b, o, pose = true) {
@@ -112,11 +127,9 @@ export function setBoat(b, o, pose = true) {
   b.pen = o.penOn ? b.pen || { mr: true } : null;
   if (!pose) return;
   for (const [k] of NUM) b[k] = o[k];
-  Object.assign(b, { kite: o.kite, kiteType: o.kiteType, reef: o.reef, smallJib: o.smallJib, split: o.split, autoTrim: o.autoTrim, fly: o.fly, backing: o.backing, trim: o.trim, boom: o.boom });
+  setSails(b, o);
+  Object.assign(b, { fly: o.fly, backing: o.backing, trim: o.trim, boom: o.boom });
   b.auto = o.autoK ? { ...(b.auto || { to: b.h, dir: 1 }), gybe: o.autoK === 2 } : null;
-  b.kiteJob = o.kiteK ? { t: 1, total: 1, messy: false, ...b.kiteJob, up: o.kiteK === 1 } : null;
-  b.reefJob = o.reefK ? { t: 1, total: 1, ...b.reefJob, on: o.reefK === 1 } : null;
-  b.jibJob = o.jibK ? { t: 1, total: 1, ...b.jibJob, small: o.jibK === 1 } : null;
 }
 
 // the snapshot on the follower's race: the flags, the winner, and every boat (skip: her own, whose pose is her own
