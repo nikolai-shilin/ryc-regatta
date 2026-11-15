@@ -339,6 +339,7 @@ class ClassView {
     this.drawnL = this.cls.drawnL;
     this.sailSide = 1;
     this.tells = [];
+    this.rudders = []; // the JPK 1050's kick-up rudders turn on their own (yacht.js); bake(), shared with her, asks for them
     const T = this.tilt;
     return (o, x = 0, y = 0, z = 0) => { o.position.set(x, y, z); T.add(o); return o; };
   }
