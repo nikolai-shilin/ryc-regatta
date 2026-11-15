@@ -33,11 +33,12 @@ def t_at(z): return clamp((STERN_Z - z) / L, 0, 1)
 def deck_y(z, x=0.0):
     hb = max(half_beam(t_at(z)), 0.3)
     return sheer(t_at(z)) + 0.05 * (1 - (x / hb) ** 2)
+FLARE = 0.09  # the topsides' flare: the waterline this much narrower than the deck (yacht.js's FLARE)
 def n_of(t): return lerp(2.9, 1.6, clamp((t - 0.45) / 0.55, 0, 1))
 def section(t, s):  # yacht.js's section(): s = 0 at the deck edge ... 1 at the keel -> (x, y, dz)
     hb, sy, d, n = half_beam(t), sheer(t), canoe(t), n_of(t)
     phi = s * math.pi / 2; c, sn = math.cos(phi), math.sin(phi); yr = sn ** (2 / n)
-    x = hb * c ** (2 / n) * (1 - 0.05 * sn)
+    x = hb * c ** (2 / n) * (1 - FLARE * sn)
     dz = 0.4 * yr * ((t - 0.88) / 0.12) ** 2 if t > 0.88 else 0.0
     return x, sy - (sy + d) * yr, dz
 
@@ -46,7 +47,8 @@ def G(x, y, z): return Vector((x, -z, y))  # game -> Blender (Z up, +Y forward);
 # ---------- the hull section: yacht.js's topsides down to the chine, then a flat-ish bottom aft ----------
 SPLIT = 0.5           # share of the section's samples above the chine
 def chine_y(t): return 0.24 - 0.3 * t
-def chine_w(t): return 1 - smooth(0.34, 0.7, t)    # 1: a hard chine aft ... 0: yacht.js's round sections forward
+def chine_w(t): return 1 - smooth(0.45, 0.86, t)   # 1: a hard chine aft ... 0: yacht.js's round sections forward; it runs
+                                                   # most of her length, diving under the water forward
 def hull_point(t, s):
     hb, sy, d, n = half_beam(t), sheer(t), canoe(t), n_of(t)
     yc = chine_y(t)
@@ -66,22 +68,33 @@ def hull_point(t, s):
     by = a * P0[1] + b2 * P1[1] + c2 * P2[1] + e * P3[1]
     return lerp(fx, bx, w), lerp(fy, by, w), dz
 
+# the deck edge isn't a knife: the topsides turn onto the deck round a radius, as a moulded hull's do
+def edge_arc(t):
+    """the turn of the deck edge at station t: (where the topsides start below it, the arc's points from the deck down)"""
+    hb, sy, d, n = half_beam(t), sheer(t), canoe(t), n_of(t)
+    r = min(0.045, hb * 0.25)
+    s_r = math.asin(clamp(r / (sy + d), 0, 1) ** (n / 2)) * 2 / math.pi  # the section's s at r below the sheer
+    x_r, y_r, dz = hull_point(t, s_r)
+    arc = [(x_r - r + r * math.cos(a), y_r + r * math.sin(a), dz) for a in (math.pi / 2 * k / 4 for k in range(4, 0, -1))]
+    return s_r, arc, x_r - r
+
 def build_hull(bm, mats):
     N, KH, KD = 72, 22, 7
     rings = []
+    ss = lambda j: j / KH if j / KH <= SPLIT else SPLIT + (1 - SPLIT) * ((j / KH - SPLIT) / (1 - SPLIT)) ** 1.15
     for i in range(N + 1):
         t = min(0.995, (i / N) ** 0.85)
-        z = z_at(t); hb = half_beam(t)
-        ring = []
-        for j in range(KH + 1):  # starboard, deck edge -> keel
-            s = j / KH; s = s if s <= SPLIT else SPLIT + (1 - SPLIT) * ((s - SPLIT) / (1 - SPLIT)) ** 1.15
-            x, y, dz = hull_point(t, s); ring.append(G(x, y, z + dz))
+        z = z_at(t)
+        s_r, arc, xd = edge_arc(t)
+        ring = [G(x, y, z + dz) for x, y, dz in arc]  # starboard: round the deck edge
+        for j in range(KH + 1):  # then deck edge -> keel
+            x, y, dz = hull_point(t, ss(j) if j else s_r); ring.append(G(x, y, z + dz))
         for j in range(KH - 1, -1, -1):  # port, keel -> deck edge
-            x, y, dz = hull_point(t, j / KH if j / KH <= SPLIT else SPLIT + (1 - SPLIT) * ((j / KH - SPLIT) / (1 - SPLIT)) ** 1.15)
-            ring.append(G(-x, y, z + dz))
+            x, y, dz = hull_point(t, ss(j) if j else s_r); ring.append(G(-x, y, z + dz))
+        ring += [G(-x, y, z + dz) for x, y, dz in reversed(arc)]  # and round onto the deck
         nh = len(ring)
-        for k in range(-(KD - 1), KD):  # the deck, port -> starboard
-            x = hb * k / KD; ring.append(G(x, sheer(t) + 0.05 * (1 - (k / KD) ** 2), z))
+        for k in range(-(KD - 1), KD):  # the deck, port -> starboard, inside the turn of its edges
+            x = xd * k / KD; ring.append(G(x, sheer(t) + 0.05 * (1 - (k / KD) ** 2), z))
         rings.append([bm.verts.new(p) for p in ring])
     M = len(rings[0])
     for i in range(N):

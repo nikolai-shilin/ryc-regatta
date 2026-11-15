@@ -25,20 +25,24 @@ const tAt = (z) => clamp((STERN_Z - z) / L, 0, 1);
 const deckY = (z) => sheerAt(tAt(z));
 const hbAt = (z) => halfBeam(tAt(z));
 
+// the topsides' flare, as blender/yacht.py's FLARE: at the waterline the hull is this much narrower than at the deck
+const FLARE = 0.09;
 // one point of a section: s = 0 at the deck edge … 1 at the keel; a superellipse, boxy aft and V-shaped forward
 function section(t, s) {
   const hb = halfBeam(t), sy = sheerAt(t), d = canoe(t), n = lerp(2.9, 1.6, clamp((t - 0.45) / 0.55, 0, 1));
   const phi = (s * Math.PI) / 2, c = Math.cos(phi), sn = Math.sin(phi), yr = sn ** (2 / n);
-  const x = hb * c ** (2 / n) * (1 - 0.05 * sn); // a little flare in the topsides
+  const x = hb * c ** (2 / n) * (1 - FLARE * sn); // flare in the topsides: the waterline narrower than the deck
   let dz = 0;
   if (t > 0.88) dz = 0.4 * yr * ((t - 0.88) / 0.12) ** 2; // the stem rakes: the forefoot sits aft of the stem head
   // the transom stays vertical, as on a modern racer
   return [x, sy - (sy + d) * yr, dz];
 }
 
-// hull paint: gloss gelcoat with a boot-top, antifouling below it and a cove stripe under the sheer, drawn crisp in the shader
+// hull paint: gloss gelcoat with a boot-top, antifouling below it and a cove stripe under the sheer, drawn crisp in the shader.
+// The topsides are lacquered: a clear coat over the colour, so a hull (a dark one most of all) shows its shape by what
+// it mirrors — a band of sky along the topsides, the sea below it, the sun's highlight. The antifouling is matt.
 export function hullMaterial(hull, stripe) {
-  const m = new THREE.MeshStandardMaterial({ color: hull, roughness: 0.22, metalness: 0, envMapIntensity: 0.9, side: THREE.DoubleSide });
+  const m = new THREE.MeshPhysicalMaterial({ color: hull, roughness: 0.32, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.1, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uStripe = { value: new THREE.Color(stripe) }; sh.uniforms.uBottom = { value: new THREE.Color('#5b1f24') };
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float band; varying float vBand; varying float vY;')
@@ -50,8 +54,11 @@ export function hullMaterial(hull, stripe) {
         float under = 1.0 - smoothstep(0.07 - aa, 0.07 + aa, vY);
         float cove = smoothstep(0.1 - ab, 0.1 + ab, vBand) * (1.0 - smoothstep(0.135 - ab, 0.135 + ab, vBand));
         diffuseColor.rgb = mix(diffuseColor.rgb, uStripe, max(boot, cove));
-        diffuseColor.rgb = mix(diffuseColor.rgb, uBottom, under);`);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uBottom, under);`)
+      .replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>
+        material.clearcoat *= 1.0 - under; material.roughness = mix(material.roughness, 0.75, under);`);
   };
+  m.customProgramCacheKey = () => 'hull';
   return m;
 }
 
@@ -226,6 +233,22 @@ export const cyl = (r0, r1, h, mat, seg = 10) => new THREE.Mesh(new THREE.Cylind
 // The deck hardware and rig fittings every class shares (boats3d.js builds the others' with them). Each is a list of
 // [geometry, material] parts in its own frame; fit() adds them as plain meshes straight onto the boat, where bake()
 // folds each into the boat's one mesh of its material — detail that costs triangles, not draws.
+// a carbon mast from its foot to the masthead: an oval section, deeper fore and aft than it is wide (d, w at the foot),
+// parallel up to the upper spreaders (taper0, a share of its height) and tapering above them to d1, w1 at the head
+export function mastGeo(len, d0, w0, d1, w1, taper0 = 0.68, seg = 18) {
+  const g = new THREE.CylinderGeometry(0.5, 0.5, len, seg, 24), p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const f = (p.getY(i) + len / 2) / len, k = clamp((f - taper0) / (1 - taper0), 0, 1), e = k * k * (3 - 2 * k);
+    p.setX(i, p.getX(i) * lerp(w0, w1, e)); p.setZ(i, p.getZ(i) * lerp(d0, d1, e));
+  }
+  g.computeVertexNormals();
+  return g;
+}
+// a spreader: an aerofoil strut (a flat ellipse: chord fore and aft, thin up and down), tapering to its tip. Lying
+// along +x from its middle when the mesh is turned rotation.z = −sx·π/2 for side sx
+export function spreaderGeo(len, r0, r1) {
+  return new THREE.CylinderGeometry(r1, r0, len, 12).scale(0.42, 1, 1.7);
+}
 export function fit(add, parts, x = 0, y = 0, z = 0, ry = 0, rx = 0) {
   for (const [g, m] of parts) { const o = add(new THREE.Mesh(g, m), x, y, z); o.rotation.set(rx, ry, 0, 'YXZ'); }
 }
@@ -361,7 +384,7 @@ function jibAd() {
 function hullX(t, y) { // the hull's half-breadth at station t, height y
   const hb = halfBeam(t), sy = sheerAt(t), d = canoe(t), n = lerp(2.9, 1.6, clamp((t - 0.45) / 0.55, 0, 1));
   const sn = clamp((sy - y) / (sy + d), 0, 1) ** (n / 2), c = Math.sqrt(Math.max(0, 1 - sn * sn));
-  return hb * c ** (2 / n) * (1 - 0.05 * sn);
+  return hb * c ** (2 / n) * (1 - FLARE * sn);
 }
 function hullDecal(side, z0, y0, W, H, material) {
   const nu = 12, nv = 4, pos = [], uv = [], idx = [];
@@ -786,7 +809,7 @@ export class BoatView {
     this.wheel = add(wheel(0.47, 6), 0, bin, 4.18);
     // toe rails, pulpit, pushpit, stanchions, lifelines
     for (const sx of [-1, 1]) {
-      const pts = []; for (let i = 0; i <= 24; i++) { const t = 0.01 + (i / 24) * 0.96; pts.push([sx * (halfBeam(t) - 0.02), sheerAt(t) + 0.03, zAt(t)]); }
+      const pts = []; for (let i = 0; i <= 24; i++) { const t = 0.01 + (i / 24) * 0.96; pts.push([sx * (halfBeam(t) - 0.02), sheerAt(t) + 0.018, zAt(t)]); } // on the rounded deck edge
       T.add(tube(pts, 0.025, M.teak));
     }
     // the pulpit (open at the front, as on a racer, so the jib's tack and the gennaker's sit clear of it) and the
@@ -845,11 +868,11 @@ export class BoatView {
     this.sprit.rotation.x = Math.PI / 2;
 
     // rig: carbon mast, two sets of swept spreaders, standing rigging
-    add(cyl(0.055, 0.1, MASTHEAD - MAST_FOOT, M.carbon), 0, (MAST_FOOT + MASTHEAD) / 2, MAST_Z);
+    add(new THREE.Mesh(mastGeo(MASTHEAD - MAST_FOOT, 0.2, 0.13, 0.11, 0.07, (11.8 - MAST_FOOT) / (MASTHEAD - MAST_FOOT)), M.carbon), 0, (MAST_FOOT + MASTHEAD) / 2, MAST_Z);
     const spr = [[7.2, 1.0], [11.8, 0.72]];
     for (const [y, l] of spr) for (const sx of [-1, 1]) {
-      const s = add(cyl(0.02, 0.03, l, M.carbon, 6), sx * l / 2 * 0.95, y, MAST_Z + l * 0.16);
-      s.rotation.z = Math.PI / 2; s.rotation.y = -sx * 0.32;
+      const s = add(new THREE.Mesh(spreaderGeo(l, 0.03, 0.017), M.carbon), sx * l / 2 * 0.95, y, MAST_Z + l * 0.16);
+      s.rotation.z = -sx * Math.PI / 2; s.rotation.y = -sx * 0.32;
     }
     // the mast's collar where it goes through the coachroof, the spreaders' tips, the masthead crane carrying the
     // backstay aft of the mast, the tricolour and the VHF aerial on top, and a display under the gooseneck

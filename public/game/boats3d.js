@@ -8,7 +8,7 @@
 // Local frame as yacht.js: +x starboard, +y up, −z forward (the bow), the waterline at y = 0.
 import * as THREE from 'three';
 import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, sailor, labelSprite, THIGH, SHIN, LOOKS,
-  fit, bar, winch, block, clutches, wheel, chainplate, display, purchase, mergeGroup, bowNumberMaterial } from './yacht.js';
+  fit, bar, winch, block, clutches, wheel, chainplate, display, purchase, mergeGroup, bowNumberMaterial, mastGeo, spreaderGeo } from './yacht.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CLS } from './classes.js';
 import { D2R, clamp, lerp, waveHeight } from './sim.js';
@@ -179,7 +179,7 @@ function logoDecal(hull, side, logo, z0, y0, W, H) {
 
 // a foiler's hull paint: one gloss colour, its underside (seen when she flies) a shade darker
 function foilerMaterial(hull) {
-  const m = new THREE.MeshStandardMaterial({ color: hull, roughness: 0.2, metalness: 0.05, envMapIntensity: 1, side: THREE.DoubleSide });
+  const m = new THREE.MeshPhysicalMaterial({ color: hull, roughness: 0.3, metalness: 0.05, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.1, side: THREE.DoubleSide }); // lacquered, as yacht.js's hullMaterial
   m.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vY;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvY = position.y;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vY;')
@@ -208,6 +208,38 @@ function finGeo(span, c0, c1, th, sweep = 0, n = 12) {
     for (const [x, sd] of sec) pos.push(sd * naca(x) * th * c, y, dz + (x - 0.25) * c);
     const ci = pos.length / 3; pos.push(0, y, dz + 0.25 * c);
     for (let i = 0; i < m; i++) r ? idx.push(ci, base + (i + 1) % m, base + i) : idx.push(ci, base + i, base + (i + 1) % m);
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  return g;
+}
+// a wing lofted along a curving span: stations { x, y } (the span's line, across and up), c (the chord), s (the quarter
+// chord's distance aft), each a foil section square to the span, th thick. part: the share of the chord it is — a
+// wing's main element (0 … 0.72), its flap behind (0.74 … 1) — each its own foil section; deflect turns the part's
+// trailing edge down (rad). side −1 builds it to port, the mirror of the starboard one.
+function wingGeo(st, th, part = [0, 1], deflect = 0, side = 1, n = 10) {
+  const sec = [];
+  for (let i = 0; i <= n; i++) sec.push([(1 + Math.cos((Math.PI * i) / n)) / 2, 1]);
+  for (let i = 1; i < n; i++) sec.push([(1 - Math.cos((Math.PI * i) / n)) / 2, -1]);
+  const m = sec.length, pos = [], idx = [], k = part[1] - part[0];
+  const up = (i) => { const a = st[Math.max(0, i - 1)], b = st[Math.min(st.length - 1, i + 1)], l = Math.hypot(b.x - a.x, b.y - a.y); return [-(b.y - a.y) / l, (b.x - a.x) / l]; };
+  const ring = (w, i) => {
+    const [nx, ny] = up(i), cc = w.c * k;
+    for (const [x, sd] of sec) {
+      const h = sd * naca(x) * th * cc - x * cc * Math.sin(deflect); // up the section's normal
+      pos.push(side * (w.x + nx * h), w.y + ny * h, w.s + (part[0] + x * k - 0.25) * w.c);
+    }
+  };
+  st.forEach(ring);
+  const tri = (a, b, c) => (side > 0 ? idx.push(a, b, c) : idx.push(a, c, b));
+  for (let r = 0; r < st.length - 1; r++) for (let i = 0; i < m; i++) {
+    const a = r * m + i, b = r * m + (i + 1) % m; tri(a, a + m, b); tri(b, a + m, b + m);
+  }
+  // the root and the tip closed flat, on vertices of their own
+  [0, st.length - 1].forEach((j, r) => {
+    const base = pos.length / 3; ring(st[j], j);
+    const w = st[j], ci = pos.length / 3; pos.push(side * w.x, w.y, w.s + (part[0] + k / 2 - 0.25) * w.c);
+    for (let i = 0; i < m; i++) r ? tri(ci, base + (i + 1) % m, base + i) : tri(ci, base + i, base + (i + 1) % m);
   });
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
@@ -461,7 +493,7 @@ class SportView extends ClassView {
     // the bowsprit, run out for the kite
     this.sprit = add(cyl(0.025, 0.03, 1.6, CARBON, 8), 0, J.SPRIT.y, H.BOW - 0.7); this.sprit.rotation.x = Math.PI / 2;
     // the rig: a carbon mast through the cuddy, one set of swept spreaders, no backstay
-    add(cyl(0.04, 0.065, J.MASTHEAD - J.MAST_FOOT, CARBON, 14), 0, (J.MAST_FOOT + J.MASTHEAD) / 2, J.MAST_Z);
+    add(new THREE.Mesh(mastGeo(J.MASTHEAD - J.MAST_FOOT, 0.13, 0.085, 0.075, 0.05, (J.HOUNDS - 0.8 - J.MAST_FOOT) / (J.MASTHEAD - J.MAST_FOOT)), CARBON), 0, (J.MAST_FOOT + J.MASTHEAD) / 2, J.MAST_Z);
     // the tactical compass on the back of the mast, under the gooseneck; the halyards' turning blocks at the mast's
     // foot and, on the J/70, their clutches at the aft end of the cuddy, the tails led on into the cockpit
     fit(add, display(0.15, 0.12, 3), 0, J.BOOM_Y - 0.27, J.MAST_Z + 0.08);
@@ -478,7 +510,7 @@ class SportView extends ClassView {
     for (const dx of [-0.03, 0.03]) T.add(line([[dx, J.HOUNDS + (dx > 0 ? 0.6 : 0), J.MAST_Z - 0.06], [dx, J.MAST_FOOT + 0.3, J.MAST_Z - 0.07]]));
     T.add(line([[0, J.MASTHEAD - 0.1, J.MAST_Z + 0.06], [0, J.BOOM_Y + 0.3, J.MAST_Z + 0.06]]));
     for (const sx of [-1, 1]) add(new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 4), M.dark), sx * 0.62, SPR, J.MAST_Z + 0.22);
-    for (const sx of [-1, 1]) { const s = add(cyl(0.015, 0.022, 0.66, M.carbon, 6), sx * 0.31, SPR, J.MAST_Z + 0.12); s.rotation.z = Math.PI / 2; s.rotation.y = -sx * 0.35; }
+    for (const sx of [-1, 1]) { const s = add(new THREE.Mesh(spreaderGeo(0.66, 0.022, 0.013), M.carbon), sx * 0.31, SPR, J.MAST_Z + 0.12); s.rotation.z = -sx * Math.PI / 2; s.rotation.y = -sx * 0.35; }
     T.add(line([[0, J.HOUNDS, J.MAST_Z], [J.TACK.x, J.TACK.y, J.TACK.z]]));
     for (const sx of [-1, 1]) {
       T.add(line([[0, J.HOUNDS, J.MAST_Z], [sx * 0.62, SPR, J.MAST_Z + 0.22], [sx * (H.hbAt(J.MAST_Z + 0.4) - 0.05), H.deckY(J.MAST_Z + 0.4) + 0.02, J.MAST_Z + 0.4]]));
@@ -647,9 +679,17 @@ class AC75View extends ClassView {
       const g = add(new THREE.Group(), sx * A.ARM.x, A.ARM.y, A.ARM.z);
       g.add(new THREE.Mesh(finGeo(A.ARM.len, 0.78, 0.6, 0.2, 0.12), foilMat));
       const tip = new THREE.Group(); tip.position.set(0, -A.ARM.len, 0.1); g.add(tip);
+      // each half of the wing: out from the pod nearly level, drooping more and more towards its tip (the anhedral
+      // that keeps her steady in roll), tapering and swept back, the tip rounded; the flap runs most of its span
+      const WING = Array.from({ length: 13 }, (_, i) => i / 12).reduce((st, u, i) => {
+        const p = st[i - 1] || { x: 0.12, y: 0, u: 0 }, a = (3 + 38 * u ** 2.2) * D2R, ds = 2.25 / 12;
+        st.push({ u, x: i ? p.x + ds * Math.cos(a) : p.x, y: i ? p.y - ds * Math.sin(a) : p.y, c: Math.max(0.1, 0.86 * (1 - 0.42 * u) * Math.sqrt(1 - u ** 6)), s: 0.05 + 0.36 * u ** 1.6 });
+        return st;
+      }, []);
+      const FLAP = WING.filter((w) => w.u > 0.04 && w.u < 0.9);
       for (const wx of [-1, 1]) {
-        const half = new THREE.Mesh(finGeo(2.05, 0.72, 0.38, 0.13, 0.28), foilMat); half.rotation.z = wx * (Math.PI / 2 - 0.12); tip.add(half);
-        const flap = new THREE.Mesh(finGeo(1.85, 0.2, 0.12, 0.09, 0.22), flapMat); flap.position.z = 0.52; flap.rotation.z = wx * (Math.PI / 2 - 0.12); tip.add(flap);
+        tip.add(new THREE.Mesh(wingGeo(WING, 0.13, [0, 0.72], 0, wx), foilMat));
+        tip.add(new THREE.Mesh(wingGeo(FLAP, 0.11, [0.74, 1], 0.1, wx), flapMat));
       }
       tip.add(new THREE.Mesh(bulbGeo(2.6, 0.24), foilMat));
       mergeGroup(g);
@@ -675,7 +715,7 @@ class AC75View extends ClassView {
     for (const sx of [-1, 1]) {
       T.add(line([[0, 22.5, A.MAST_Z], [sx * 1.4, 13, A.MAST_Z + 0.4], [sx * (H.hbAt(A.MAST_Z + 1) - 0.2), H.deckY(A.MAST_Z + 1) + 0.05, A.MAST_Z + 1]]));
       T.add(line([[0, 13, A.MAST_Z], [sx * (H.hbAt(A.MAST_Z + 0.5) - 0.25), H.deckY(A.MAST_Z + 0.5) + 0.05, A.MAST_Z + 0.5]]));
-      const s = add(cyl(0.03, 0.05, 1.4, CARBON, 6), sx * 0.7, 13, A.MAST_Z + 0.2); s.rotation.z = Math.PI / 2;
+      const s = add(new THREE.Mesh(spreaderGeo(1.4, 0.05, 0.028), CARBON), sx * 0.7, 13, A.MAST_Z + 0.2); s.rotation.z = -sx * Math.PI / 2;
       add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.12), M.steel), sx * (H.hbAt(A.MAST_Z + 1) - 0.2), H.deckY(A.MAST_Z + 1) + 0.04, A.MAST_Z + 1);
     }
     T.add(line([[0, A.HEAD.y + 0.1, A.MAST_Z], [A.TACK.x, A.TACK.y, A.TACK.z]]));
