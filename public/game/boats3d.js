@@ -6,7 +6,7 @@
 // D-section mast, a self-tacking jib and eight in their pods). makeBoatView gives the page's class (classes.js CLS).
 // Local frame as yacht.js: +x starboard, +y up, −z forward (the bow), the waterline at y = 0.
 import * as THREE from 'three';
-import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, sailor, labelSprite, THIGH, SHIN, LOOKS } from './yacht.js';
+import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, sailor, labelSprite, THIGH, SHIN, LOOKS } from './yacht.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CLS } from './classes.js';
 import { D2R, clamp, lerp, waveHeight } from './sim.js';
@@ -329,7 +329,7 @@ class ClassView {
       const lx = head.x * f, ly = head.y * f, lz = head.z * f;
       const ex = lerp(clew.x, head.x, f), ey = lerp(clew.y, head.y, f), ez = lerp(clew.z, head.z, f);
       const len = Math.hypot(ex - lx, ey - ly, ez - lz);
-      v.set(lerp(lx, ex, u) + belly * Math.sin(Math.PI * u ** 0.72) * len * k + luff * 0.25 * Math.sin(ph * 1.2 + f * 7 + u * 4) * u, lerp(ly, ey, u), lerp(lz, ez, u));
+      v.set(lerp(lx, ex, u) + belly * Math.sin(Math.PI * u ** 0.72) * len * k + luff * 0.25 * Math.sin(ph * 1.2 + f * 7 + u * 4) * u + leechFlutter(f, u, t + 0.4, b.aws || 0), lerp(ly, ey, u), lerp(lz, ez, u));
     });
     if (sheetTo) {
       const cw = clew.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1;
@@ -527,7 +527,7 @@ class SportView extends ClassView {
     const belly = -this.sailSide * (1 - luff * 0.85), span = J.rig.span;
     setSail(this.main, (f, u, v) => {
       const ch = J.chord(f), tw = -this.sailSide * f * f * 0.35 * u;
-      v.set(belly * Math.sin(Math.PI * u ** 0.78) * ch * 0.11 * (1 - 0.4 * f) + tw + luff * 0.15 * Math.sin(ph + f * 6 + u * 5) * u, J.BOOM_Y + 0.06 + f * span, u * ch);
+      v.set(belly * Math.sin(Math.PI * u ** 0.78) * ch * 0.11 * (1 - 0.4 * f) + tw + luff * 0.15 * Math.sin(ph + f * 6 + u * 5) * u + leechFlutter(f, u, t, b.aws || 0), J.BOOM_Y + 0.06 + f * span, u * ch);
     });
     const ma = this.mainPivot.rotation.y, bz = 2.9, ms = this.mainsheet.geometry.attributes.position;
     ms.setXYZ(0, clamp(Math.sin(ma) * bz * 0.4, -0.6, 0.6), this.floorY + 0.06, 0.9); this.travCar.position.x = ms.getX(0);

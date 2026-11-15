@@ -7,6 +7,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { rigidSkin } from './skin.js';
 import { sponsor } from './sponsor.js';
 import { D2R, clamp, lerp, waveHeight } from './sim.js';
+import { VENUE } from './venues.js';
 
 export const L = 10.4, B = 3.35, MAST_Z = -0.9;
 const BOW_Z = -L / 2, STERN_Z = L / 2;
@@ -303,6 +304,20 @@ export function sailTexture(kind, look, rig = null) {
       for (let i = -H; i < W; i += 9) { x.beginPath(); x.moveTo(i, H); x.lineTo(i + H * 0.7, 0); x.stroke(); }
       for (let i = 0; i < W + H; i += 14) { x.beginPath(); x.moveTo(W, i); x.lineTo(0, i - W * 0.5); x.stroke(); }
     }
+    // the panels: each cut from its own run of cloth, so each a shade lighter or darker than the next (seen at any
+    // distance, it is what keeps a sail from looking like one flat sheet), and the load-bearing laminate's darker
+    // fibres fanning from the clew and the head
+    let ps = 7 + kind.length; const prnd = () => ((ps = (ps * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 10; i++) {
+      const d = (prnd() - 0.5) * (look.laminate ? 0.09 : 0.06);
+      x.fillStyle = d > 0 ? `rgba(255,255,255,${d})` : `rgba(0,0,0,${-d})`;
+      x.beginPath(); x.moveTo(0, (i * H) / 10 + 20); x.lineTo(W, (i * H) / 10 - 30); x.lineTo(W, ((i + 1) * H) / 10 - 30); x.lineTo(0, ((i + 1) * H) / 10 + 20); x.closePath(); x.fill();
+    }
+    if (look.laminate) {
+      x.strokeStyle = 'rgba(0,0,0,.05)'; x.lineWidth = 3;
+      for (let i = 0; i < 9; i++) { x.beginPath(); x.moveTo(W, H); x.quadraticCurveTo(W * (0.55 - i * 0.05), H * (0.7 - i * 0.04), W * (0.05 + i * 0.02), H * (0.1 + i * 0.09)); x.stroke(); }
+      for (let i = 0; i < 6; i++) { x.beginPath(); x.moveTo(W * 0.04, 0); x.quadraticCurveTo(W * (0.3 + i * 0.05), H * (0.2 + i * 0.03), W * (0.9 - i * 0.04), H * (0.35 + i * 0.07)); x.stroke(); }
+    }
     x.strokeStyle = look.laminate ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.08)'; x.lineWidth = 2;
     for (let i = 1; i < 10; i++) { x.beginPath(); x.moveTo(0, (i * H) / 10 + 20); x.lineTo(W, (i * H) / 10 - 30); x.stroke(); }
     // creases: faint wrinkles fanning from the clew (bottom right) and from the head, each a shadow with a highlight
@@ -427,6 +442,12 @@ export function sailMesh(rows, cols, tex, shiny = false, kind = 'main') {
   grp.userData = { rows, cols, g };
   return grp;
 }
+// the leech never stands quite still: the cloth's free edge flutters in the apparent wind (aws, knots) a few
+// centimetres either way, more the harder it blows; the sideways offset at (f up the luff, u along the chord)
+export function leechFlutter(f, u, t, aws) {
+  const w = THREE.MathUtils.smoothstep(u, 0.72, 1);
+  return w * w * (0.01 + 0.0025 * aws) * Math.sin(t * (19 + aws * 0.4) + f * 13) * (0.6 + 0.4 * Math.sin(t * 3.1 + f * 5));
+}
 export function setSail(m, fn) {
   const { rows, cols, g } = m.userData, a = g.attributes.position, v = new THREE.Vector3();
   for (let i = 0; i <= rows; i++) for (let j = 0; j <= cols; j++) { fn(i / rows, j / cols, v); a.setXYZ(i * (cols + 1) + j, v.x, v.y, v.z); }
@@ -531,14 +552,24 @@ const SAILOR = (() => {
 // colours ride on the vertices, each from the material it was given, so all the sailors in the race share this one.
 const CREW_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75 });
 const SAILOR_SPHERE = new THREE.Sphere(new THREE.Vector3(0, 0.4, 0), 1.6); // round every pose, seated to standing
+// no two sailors dressed quite alike, even in team kit: the jacket a little more or less faded, a white cap or a dark
+// one, the lifejacket's colour, and where it is warm (within 42° of the equator) some of them in shorts
+let SAILORS = 0;
+const WARM = Math.abs(VENUE.lat) < 42;
 export function sailor(m) {
+  const n = SAILORS++, col = (mat) => mat.color;
+  const jacket = { color: m.jacket.color.clone().offsetHSL(0, 0, (((n * 37) % 7) - 3) * 0.014) };
+  const shins = WARM && n % 3 === 1 ? m.skin : m.trousers;
+  const vest = n % 2 ? { color: new THREE.Color('#2f3a48') } : m.vest;
+  const cap = !m.helmet && n % 4 === 2 ? { color: new THREE.Color(m.cap.color.getHSL({}).l > 0.5 ? '#22262c' : '#efeee9') } : m.cap;
+  m = { ...m, jacket, vest, cap };
   const g = new THREE.Group(), body = new THREE.Bone(), upper = new THREE.Bone();
   body.add(upper);
   const bones = [body, upper], parts = []; // [geometry, its bone, the material it would have had]
   const legs = [-1, 1].map((sz) => {
     const hip = new THREE.Bone(), knee = new THREE.Bone();
     hip.position.set(0, 0.07, sz * 0.1); knee.position.y = -THIGH; hip.add(knee); body.add(hip);
-    bones.push(hip, knee); parts.push([SAILOR.thigh, hip, m.trousers], [SAILOR.shin, knee, m.trousers]);
+    bones.push(hip, knee); parts.push([SAILOR.thigh, hip, m.trousers], [SAILOR.shin, knee, shins]);
     return { hip, knee };
   });
   parts.push([SAILOR.torso, upper, m.jacket], [SAILOR.collar, upper, m.vest], [SAILOR.head, upper, m.skin], [m.helmet ? SAILOR.helmet : SAILOR.cap, upper, m.cap], [SAILOR.glasses, upper, M.dark]);
@@ -547,7 +578,7 @@ export function sailor(m) {
     bones.push(a); parts.push([SAILOR.arm, a, m.jacket]);
     return a;
   });
-  const mesh = rigidSkin(parts.map(([geo, bone, mat]) => [geo, bone, mat.color]), bones, body, CREW_MAT, SAILOR_SPHERE);
+  const mesh = rigidSkin(parts.map(([geo, bone, mat]) => [geo, bone, col(mat)]), bones, body, CREW_MAT, SAILOR_SPHERE);
   mesh.userData.detail = true; // small: hidden far off with the fittings (setDetail)
   g.add(mesh);
   return { g, body, upper, legs, arms, mesh };
@@ -807,7 +838,7 @@ export class BoatView {
     // square-top main: the chord narrows up the mast to a wide head, with roach on the leech; twist opens the top
     setSail(this.main, (f, u, v) => {
       const chord = mainChord(f), tw = -this.sailSide * f * f * 0.5 * u;
-      v.set(belly * Math.sin(Math.PI * u ** 0.78) * chord * 0.11 * (1 - 0.4 * f) + tw + luff * 0.22 * Math.sin(ph + f * 6 + u * 5) * u, BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), u * chord);
+      v.set(belly * Math.sin(Math.PI * u ** 0.78) * chord * 0.11 * (1 - 0.4 * f) + tw + luff * 0.22 * Math.sin(ph + f * 6 + u * 5) * u + leechFlutter(f, u, t, b.aws || 0), BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), u * chord);
     });
     // the mainsheet, from the traveller to the end of the boom
     const ma = this.mainPivot.rotation.y, bz = 2.52, ms = this.mainsheet.geometry.attributes.position;
@@ -821,7 +852,7 @@ export class BoatView {
       const lx = head.x * f, ly = head.y * f, lz = head.z * f;
       const ex = lerp(clew.x, head.x, f), ey = lerp(clew.y, head.y, f), ez = lerp(clew.z, head.z, f);
       const len = Math.hypot(ex - lx, ey - ly, ez - lz);
-      v.set(lerp(lx, ex, u) + belly * Math.sin(Math.PI * u ** 0.72) * len * 0.125 + luff * 0.25 * Math.sin(ph * 1.2 + f * 7 + u * 4) * u, lerp(ly, ey, u), lerp(lz, ez, u));
+      v.set(lerp(lx, ex, u) + belly * Math.sin(Math.PI * u ** 0.72) * len * 0.125 + luff * 0.25 * Math.sin(ph * 1.2 + f * 7 + u * 4) * u + leechFlutter(f, u, t + 0.4, b.aws || 0), lerp(ly, ey, u), lerp(lz, ez, u));
     });
     // the jib sheets: from the clew to the car on the leeward side deck and on to the winch; the lazy one slack
     const cw = clew.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1;

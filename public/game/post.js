@@ -159,7 +159,9 @@ export class Post {
 
 // The sea's mirror: the camera reflected in the plane of the sea, its frustum clipped at the surface (an oblique
 // near plane), drawing only what is on the MIRRORED layer into a half-size HDR target. The water shader projects
-// each of its points with `matrix` and ripples the look-up with its normal.
+// each of its points with `matrix` and ripples the look-up with its normal. It sees a little more than the camera does
+// (OVER, at the same detail), so a ripple at the screen's edge still finds the land there, not a strip of bare sky.
+const OVER = 1.2;
 export class Mirror {
   constructor(renderer) {
     this.r = renderer;
@@ -176,7 +178,7 @@ export class Mirror {
 
   render(scene, camera) {
     const r = this.r, N = new THREE.Vector3(0, 1, 0);
-    const v = r.getDrawingBufferSize(this._v), w = Math.max(1, Math.round(v.x * this.scale)), h = Math.max(1, Math.round(v.y * this.scale));
+    const v = r.getDrawingBufferSize(this._v), w = Math.max(1, Math.round(v.x * this.scale * OVER)), h = Math.max(1, Math.round(v.y * this.scale * OVER));
     if (this.rt.width !== w || this.rt.height !== h) this.rt.setSize(w, h);
     const camPos = this._p.setFromMatrixPosition(camera.matrixWorld);
     if (camPos.y <= 0.05) return false; // under the surface (it never happens): no mirror
@@ -189,6 +191,7 @@ export class Mirror {
     vc.far = camera.far; vc.near = camera.near;
     vc.updateMatrixWorld();
     vc.projectionMatrix.copy(camera.projectionMatrix);
+    { const p = vc.projectionMatrix.elements; p[0] /= OVER; p[5] /= OVER; p[8] /= OVER; p[9] /= OVER; } // the wider view
     // the oblique near plane at the sea (a hand's breadth under it, so a hull's waterline doesn't flicker)
     this._plane.setFromNormalAndCoplanarPoint(N, this._t.set(0, -0.15, 0)).applyMatrix4(vc.matrixWorldInverse);
     const c = this._clip.set(this._plane.normal.x, this._plane.normal.y, this._plane.normal.z, this._plane.constant), e = vc.projectionMatrix.elements;

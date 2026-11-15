@@ -373,35 +373,62 @@ function rippleTexture(N = 256) {
 
 // ---------- the wake ----------
 // Ribbons laid along each boat's real track (sampled as she sails, so the wake curves when she turns):
-// the wash — churned, aerated water with broken foam straight behind the stern, widening and fading — and the two
-// arms of the Kelvin wake, thin broken foam lines spreading at about 19.5° either side from the bow.
+// the wash — churned, aerated water with broken foam straight behind the stern that soon breaks up, leaving a long
+// smooth slick (the turbulence has flattened the ripples, so it mirrors the sky more cleanly than the sea round it) —
+// and the two arms of the Kelvin wake spreading at about 19.5° either side from the bow. Those are waves, not foam:
+// each arm is a low crest whose two faces tilt the water towards the sky and away from it, so it shows as a lighter
+// and a darker line, broken into short crests, with a little white only close under the bow at speed.
 const WAKE_N = 64, WAKE_DT = 0.3, WAKE_AGE = WAKE_N * WAKE_DT; // samples, seconds apart, seconds of wake
 const WAKE_VS = /* glsl */ `
-attribute float aAge, aSide, aKind, aStr; varying float vAge, vSide, vKind, vStr; varying vec2 vXZ;
+attribute float aAge, aSide, aKind, aStr; attribute vec3 aAcross; varying float vAge, vSide, vKind, vStr; varying vec2 vXZ; varying vec3 vAcross, vW;
 ${OCEAN_GLSL}
-void main() { vAge = aAge; vSide = aSide; vKind = aKind; vStr = aStr; vec4 wp = modelMatrix * vec4(position, 1.0); vXZ = wp.xz; wp.y += fftDisp(wp.xz).y; gl_Position = projectionMatrix * viewMatrix * wp; }`;
+void main() {
+  vAge = aAge; vSide = aSide; vKind = aKind; vStr = aStr; vAcross = aAcross;
+  vec4 wp = modelMatrix * vec4(position, 1.0); vXZ = wp.xz; wp.y += fftDisp(wp.xz).y; vW = wp.xyz;
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}`;
 const WAKE_FS = /* glsl */ `
-uniform sampler2D uRipple; uniform float uTime, uMax; uniform vec2 uWind; uniform vec3 uFoamCol;
-varying float vAge, vSide, vKind, vStr; varying vec2 vXZ;
+uniform sampler2D uRipple; uniform float uTime, uMax; uniform vec2 uWind; uniform vec3 uFoamCol, uTop, uHorizon, uSun, uSunCol, uDeep;
+varying float vAge, vSide, vKind, vStr; varying vec2 vXZ; varying vec3 vAcross, vW;
+vec3 sky(vec3 d) { d.y = abs(d.y); return mix(uHorizon, uTop, pow(d.y, 0.5)) + uSunCol * pow(max(dot(d, uSun), 0.0), 10.0) * 0.25; }
+float fres(vec3 n, vec3 V) { return 0.02 + 0.98 * pow(1.0 - max(dot(n, V), 0.0), 5.0); }
+float lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+// what the water there shows when its surface is tilted by slope across the ribbon, as a change to what it shows
+// level: darker as black laid over it, lighter as the tilted face's sky laid over it (so the sea's own detail stays)
+vec4 tilted(float slope, vec3 V) {
+  vec3 up = vec3(0.0, 1.0, 0.0), n = normalize(vec3(-slope * vAcross.x, 1.0, -slope * vAcross.y));
+  vec3 s1 = sky(reflect(-V, n));
+  float L0 = lum(mix(uDeep, sky(reflect(-V, up)), fres(up, V))), L1 = lum(mix(uDeep, s1, fres(n, V)));
+  if (L1 < L0) return vec4(0.0, 0.0, 0.0, clamp(1.0 - L1 / max(L0, 1e-4), 0.0, 0.6));
+  return vec4(s1, clamp((L1 - L0) / max(lum(s1) - L0, 1e-3), 0.0, 0.6));
+}
 void main() {
   float k = clamp(vAge / uMax, 0.0, 1.0), edge = clamp(1.0 - abs(vSide), 0.0, 1.0); // clamped: pow() of a hair below 0 is NaN
+  vec3 V = normalize(cameraPosition - vW);
   // the foam's texture drifts slowly downwind with the surface water
   float n1 = texture2D(uRipple, (vXZ - uWind * uTime * 0.25) / 3.2).w, n2 = texture2D(uRipple, (vXZ - uWind * uTime * 0.35) / 1.1).w;
   float a; vec3 col;
   if (vKind < 0.5) {
-    // the wash: aerated turquoise water under foam that breaks up and thins as it ages and spreads
-    float foam = smoothstep(0.42, 0.78, n1 * 0.55 + n2 * 0.45 + (1.0 - k) * 0.42 - (1.0 - edge) * 0.55);
-    float aer = edge * edge * (1.0 - k) * (1.0 - k) * 0.1 * (1.0 - smoothstep(0.0, 1.0, k * 2.0));
-    col = mix(vec3(0.22, 0.45, 0.52) * (0.5 + 0.5 * uFoamCol), vec3(0.93, 0.96, 0.98) * uFoamCol, foam);
-    a = max(foam * (1.0 - k) * 0.95, aer) * smoothstep(0.0, 0.25, edge);
+    // the wash: aerated turquoise water under foam that breaks up within seconds, more and longer the faster she goes
+    float fresh = exp(-vAge / (2.0 + 3.0 * vStr));
+    float foam = smoothstep(0.45, 0.8, n1 * 0.55 + n2 * 0.45 + fresh * 0.5 - (1.0 - edge) * 0.6) * fresh;
+    float aer = edge * edge * fresh * 0.14;
+    col = mix(vec3(0.22, 0.45, 0.52) * (0.5 + 0.5 * uFoamCol), vec3(0.93, 0.96, 0.98) * uFoamCol, step(aer, foam));
+    a = max(foam * 0.95, aer) * smoothstep(0.0, 0.25, edge);
+    // then the slick: the level sea's mirror, smoother than the water round it
+    float slick = smoothstep(0.0, 0.6, edge) * (1.0 - k) * (1.0 - fresh) * 0.16 * (0.75 + 0.5 * n1);
+    if (slick > a) { col = sky(reflect(-V, vec3(0.0, 1.0, 0.0))); a = slick; }
   } else {
-    // a Kelvin arm: a thin crest line, broken by the noise
-    float line = pow(edge, 2.2) * smoothstep(0.3, 0.7, n2 * 0.7 + n1 * 0.4);
-    col = vec3(0.9, 0.94, 0.97) * uFoamCol;
-    a = line * (1.0 - k) * (1.0 - k) * 0.55;
+    // a Kelvin arm: a crest some decimetres high, lower as it spreads, in short broken lengths (the echelon)
+    float s = vSide, h = 0.16 * (1.0 - k) * (1.0 - k) * smoothstep(0.25, 0.75, n1 * 0.7 + n2 * 0.5);
+    vec4 t = tilted(-6.0 * s * exp(-3.0 * s * s) * h / max(vAcross.z, 0.1), V);
+    col = t.rgb; a = t.a * 1.4;
+    // white only where the newest crest breaks, under the bow
+    float lip = pow(edge, 3.0) * smoothstep(0.45, 0.75, n2) * exp(-vAge / 0.9) * smoothstep(0.45, 0.9, vStr);
+    if (lip * 0.7 > a) { col = vec3(0.92, 0.95, 0.97) * uFoamCol; a = lip * 0.7; }
   }
   a *= vStr * min(1.0, vAge * 3.0 + 0.4);
-  if (a < 0.01) discard;
+  if (a < 0.005) discard;
   gl_FragColor = vec4(col, a);
 }`;
 class Wake {
@@ -410,6 +437,7 @@ class Wake {
     const n = 3 * WAKE_N * 2, g = new THREE.BufferGeometry(); // 3 ribbons, two edges each
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
     for (const a of ['aAge', 'aSide', 'aKind', 'aStr']) g.setAttribute(a, new THREE.BufferAttribute(new Float32Array(n), 1));
+    g.setAttribute('aAcross', new THREE.BufferAttribute(new Float32Array(n * 3), 3)); // the ribbon's across, in the world, and its half-width
     const idx = [];
     for (let r = 0; r < 3; r++) for (let i = 0; i < WAKE_N - 1; i++) { const a = (r * WAKE_N + i) * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
     g.setIndex(idx);
@@ -424,7 +452,7 @@ class Wake {
     const here = { x: b.x, z: b.z, h: b.h, v: b.v, born: t, fly: b.ride || 0 };
     if (!this.trail.length || this.acc >= WAKE_DT) { this.acc = 0; this.trail.unshift(here); if (this.trail.length > WAKE_N) this.trail.pop(); }
     else this.trail[0] = here;
-    const g = this.mesh.geometry, P = g.attributes.position, AG = g.attributes.aAge, SD = g.attributes.aSide, KD = g.attributes.aKind, ST = g.attributes.aStr;
+    const g = this.mesh.geometry, P = g.attributes.position, AG = g.attributes.aAge, SD = g.attributes.aSide, KD = g.attributes.aKind, ST = g.attributes.aStr, AC = g.attributes.aAcross;
     for (let r = 0; r < 3; r++) for (let i = 0; i < WAKE_N; i++) {
       const s = this.trail[Math.min(i, this.trail.length - 1)], age = Math.max(0, t - s.born);
       const fx = Math.sin(s.h), fz = -Math.cos(s.h), rx = Math.cos(s.h), rz = Math.sin(s.h);
@@ -434,15 +462,15 @@ class Wake {
       if (r === 0) { cx = s.x - fx * 5.0 * SC; cz = s.z - fz * 5.0 * SC; half = 0.7 + age * 0.12; } // wash, from the transom
       else {
         const side = r === 1 ? 1 : -1, out = 1.0 + 0.354 * s.v * age; // tan 19.5° ≈ 0.354: the arms spread as the waves travel
-        cx = s.x + fx * 4.2 * SC + rx * side * out; cz = s.z + fz * 4.2 * SC + rz * side * out; half = 0.28 + age * 0.04;
+        cx = s.x + fx * 4.2 * SC + rx * side * out; cz = s.z + fz * 4.2 * SC + rz * side * out; half = 0.7 + age * 0.09; // a crest's width, broadening as it travels
       }
       for (let e = 0; e < 2; e++) {
         const o = (r * WAKE_N + i) * 2 + e, sd = e ? 1 : -1, x = cx + rx * sd * half, z = cz + rz * sd * half;
         P.setXYZ(o, x, waveHeight(W, x, z, t) + 0.07, z);
-        AG.setX(o, age); SD.setX(o, sd); KD.setX(o, r ? 1 : 0); ST.setX(o, str);
+        AG.setX(o, age); SD.setX(o, sd); KD.setX(o, r ? 1 : 0); ST.setX(o, str); AC.setXYZ(o, rx, rz, half); // across (the way aSide runs) in the world
       }
     }
-    P.needsUpdate = AG.needsUpdate = SD.needsUpdate = KD.needsUpdate = ST.needsUpdate = true;
+    P.needsUpdate = AG.needsUpdate = SD.needsUpdate = KD.needsUpdate = ST.needsUpdate = AC.needsUpdate = true;
   }
 }
 
@@ -876,7 +904,8 @@ export class World {
     this.ships = new Ships(this.skyU);
     this.scene.add(this.ships.group);
 
-    this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uWind: this.waterU.uWind, uFoamCol: this.skyU.uFoamCol, uMax: { value: WAKE_AGE }, ...this.oceanU };
+    this.wakeU = { uRipple: this.waterU.uRipple, uTime: this.waterU.uTime, uWind: this.waterU.uWind, uFoamCol: this.skyU.uFoamCol, uMax: { value: WAKE_AGE }, ...this.oceanU,
+      uTop: this.skyU.uTop, uHorizon: this.skyU.uHorizon, uSun: this.skyU.uSun, uSunCol: this.skyU.uSunCol, uDeep: this.waterU.uDeep };
     this.wakes = []; this.contacts = [];
     this.showGuides = true; this.guides = null;
     this.mode = 'drone';
@@ -1128,6 +1157,18 @@ export class World {
       f.vx = -fz * side * spread * (0.6 + b.v * 0.12) + fx * 0.15; f.vz = fx * side * spread * (0.6 + b.v * 0.12) + fz * 0.15;
       f.age = 0; f.life = (kind === 'wash' ? 6 : 3.5) + Math.random() * 3 + b.v * 0.8; f.spray = false;
       f.life = 1.5 + Math.random() * 1.5; f.s0 = 0.6; f.s1 = 1.6; f.a = Math.min(0.55, 0.1 + b.v * 0.07);
+    }
+    // fast, the bow wave throws a low sheet of droplets out sideways from the shoulders, which falls back within a second
+    if (b.v < 3.2 || b.ride > 0.5) return;
+    b._sheet = (b._sheet || 0) + dt * (b.v - 3.2) * 14;
+    while (b._sheet > 1) {
+      b._sheet -= 1;
+      const f = this.foam[this.foamI]; this.foamI = (this.foamI + 1) % this.foamMax;
+      const fx = Math.sin(b.h), fz = -Math.cos(b.h), side = Math.random() < 0.5 ? -1 : 1, along = (2.2 + Math.random() * 1.6) * SC;
+      f.x = b.x + fx * along - fz * side * 1.3 * SC; f.z = b.z + fz * along + fx * side * 1.3 * SC; f.y = 0.25;
+      const out = 1.2 + Math.random() * 1.6 + b.v * 0.15;
+      f.vx = fx * b.v * 0.35 - fz * side * out; f.vz = fz * b.v * 0.35 + fx * side * out;
+      f.vy = 0.9 + Math.random() * 1.1; f.age = 0; f.life = 0.45 + Math.random() * 0.4; f.spray = true; f.s0 = 0.18; f.s1 = 0.45; f.a = 0.6;
     }
   }
 

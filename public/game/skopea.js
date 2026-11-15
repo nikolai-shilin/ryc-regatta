@@ -156,6 +156,7 @@ function landMat(m, k = 1, o = {}) {
     if (o.colour) fs = fs.replace('vec4 diffuseColor = vec4( diffuse, opacity );', `vec4 diffuseColor = vec4( ${o.colour}, opacity );`);
     if (o.after) fs = fs.replace('#include <color_fragment>', '#include <color_fragment>\n' + o.after);
     if (o.emis) fs = fs.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + o.emis);
+    if (o.nrm) fs = fs.replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n' + o.nrm);
     if (!o.unlit) fs = fs.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
       { float sun = landSun(vLand.xz), sky = texture2D(uAO, (vLand.xz - uAOXf.xy) * uAOXf.z).r * (255.0 / 252.0);
         reflectedLight.directDiffuse *= sun; reflectedLight.directSpecular *= sun; reflectedLight.indirectDiffuse *= 0.3 + 0.7 * sky; }`);
@@ -195,6 +196,16 @@ float gLake; // 1 where groundColour() found a lake's still water
 float lhash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 float lnoise(vec2 x) { vec2 i = floor(x), f = fract(x), u = f * f * (3.0 - 2.0 * f);
   return mix(mix(lhash(i), lhash(i + vec2(1.0, 0.0)), u.x), mix(lhash(i + vec2(0.0, 1.0)), lhash(i + vec2(1.0, 1.0)), u.x), u.y); }
+// the relief a mesh too coarse to carry it leaves out — gullies and spurs down the slopes, a few hundred metres apart,
+// the farther the broader — as a tilt of the slope's normal, faded in with the distance (near, the mesh has them)
+float gully(vec2 q, float s) { return (1.0 - abs(2.0 * lnoise(q / s) - 1.0)) * 0.18 * s + (1.0 - abs(2.0 * lnoise(q / (s * 0.37) + 3.1) - 1.0)) * 0.06 * s; }
+vec3 slopeRelief(vec3 wn, vec2 q, float d, float near) {
+  float k = smoothstep(0.06, 0.3, 1.0 - wn.y) * smoothstep(near, near * 3.0, d);
+  if (k <= 0.0) return wn;
+  float s = 220.0 + d * 0.035, e = s * 0.2, h = gully(q, s);
+  vec3 t = vec3(gully(q + vec2(e, 0.0), s) - h, 0.0, gully(q + vec2(0.0, e), s) - h) / e;
+  return normalize(wn - t * 0.55 * k);
+}
 float lfbm(vec2 p) { return 0.55 * lnoise(p / 220.0) + 0.3 * lnoise(p / 70.0) + 0.15 * lnoise(p / 22.0); }
 vec3 crop(int k) { vec3 c = uFields[0]; for (int i = 1; i < 6; i++) if (i == k) c = uFields[i]; return c; }
 // fields where the map has none: parcels some 140 by 95 m, their lines turning slowly across the country
@@ -290,6 +301,8 @@ if (gLake > 0.5) {
 }`;
 // in 64 tiles of some 2 km (the quadtree's squares three levels down), so the ones out of view aren't drawn; they
 // share the corners and their normals
+// the slopes' relief (GROUND_GLSL's slopeRelief), on the terrain and the land beyond
+const RELIEF = '{ normal = normalize((viewMatrix * vec4(slopeRelief(normalize(vLN), vLand.xz, length(vHz), 600.0), 0.0)).xyz); }';
 function terrain() {
   const all = new THREE.BufferGeometry(), pos = new THREE.BufferAttribute(MESH.pos, 3);
   all.setAttribute('position', pos); all.setIndex(new THREE.BufferAttribute(MESH.idx, 1)); all.computeVertexNormals();
@@ -301,7 +314,7 @@ function terrain() {
     const list = tiles.get(key), t0 = MESH.tri0[k];
     for (let t = t0; t < t0 + MESH.triN[k]; t++) list.push(MESH.idx[t * 3], MESH.idx[t * 3 + 1], MESH.idx[t * 3 + 2]);
   }
-  const mat = landMat(new THREE.MeshLambertMaterial(), 1, { key: 'ground', colour: 'groundColour()', uniforms: GROUND_U, fsHead: GROUND_GLSL, vsHead: 'varying vec3 vLN;', vs: 'vLN = objectNormal;', emis: LAKE_LIGHT });
+  const mat = landMat(new THREE.MeshLambertMaterial(), 1, { key: 'ground', colour: 'groundColour()', uniforms: GROUND_U, fsHead: GROUND_GLSL, vsHead: 'varying vec3 vLN;', vs: 'vLN = objectNormal;', emis: LAKE_LIGHT, nrm: RELIEF });
   const group = new THREE.Group(), box = new THREE.Box3(), v = new THREE.Vector3();
   for (const list of tiles.values()) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', pos); g.setAttribute('normal', nrm); g.setIndex(list);
@@ -354,7 +367,7 @@ function far() {
   for (let i = 0; i < nf.length; i += 3) if (!nf[i] && !nf[i + 1] && !nf[i + 2]) nf.set(nc.subarray(i, i + 3), i);
   const m = new THREE.Mesh(g, landMat(new THREE.MeshLambertMaterial({ depthTest: false, depthWrite: false }), 1, {
     key: 'far', colour: 'farColour()', unlit: true, uniforms: GROUND_U, fsHead: GROUND_GLSL + FAR_GLSL, project: FAR_PROJECT,
-    vsHead: 'varying vec3 vLN; varying float vFarZ;', vs: 'vLN = objectNormal; vFarZ = -(viewMatrix * lwp).z;',
+    vsHead: 'varying vec3 vLN; varying float vFarZ;', vs: 'vLN = objectNormal; vFarZ = -(viewMatrix * lwp).z;', nrm: RELIEF,
   }));
   m.frustumCulled = false; m.renderOrder = -1; m.userData.full = idx; m.userData.coarse = coarse;
   return m;
@@ -369,16 +382,36 @@ function tint(geo, color) {
 }
 const strip = (g) => { g = g.index ? g.toNonIndexed() : g; for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'color'].includes(k)) g.deleteAttribute(k); return g; };
 // each a few dozen triangles: there are thousands of them. The crowns are white, tinted by each tree's own colour.
-const blob = (sx, sy, sz, x, y, z) => tint(new THREE.IcosahedronGeometry(1, 0).scale(sx, sy, sz).translate(x, y, z), '#ffffff');
+// a crown: lumpy, not a smooth ball; its normals round (shaded soft, not in facets) and tipped up a little, as the
+// leaves on top catch the sky; darker underneath and inside, where the leaves shade each other
+const lumpH = (x, y, z) => { const v = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453; return v - Math.floor(v); };
+function leafy(g, lump = 0.28) {
+  g = g.index ? g.toNonIndexed() : g;
+  g.computeBoundingBox();
+  const b = g.boundingBox, c = b.getCenter(new THREE.Vector3()), s = b.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+  const P = g.attributes.position, nrm = new Float32Array(P.count * 3), col = new Float32Array(P.count * 3), v = new THREE.Vector3(), u = new THREE.Vector3();
+  for (let i = 0; i < P.count; i++) {
+    v.fromBufferAttribute(P, i).sub(c); u.copy(v).divide(s);
+    const k = 1 + (lumpH(Math.round(u.x * 50), Math.round(u.y * 50), Math.round(u.z * 50)) - 0.5) * lump; // the same for a corner every face shares
+    P.setXYZ(i, c.x + v.x * k, c.y + v.y * k, c.z + v.z * k);
+    const n = new THREE.Vector3(u.x / s.x, u.y / s.y, u.z / s.z).normalize(); n.y += 0.35; n.normalize();
+    nrm.set([n.x, n.y, n.z], i * 3);
+    const ao = 0.62 + 0.5 * THREE.MathUtils.smoothstep(u.y, -1, 0.9); // about as bright as the plain crown was, on the whole
+    col.set([ao, ao, ao], i * 3);
+  }
+  g.setAttribute('normal', new THREE.BufferAttribute(nrm, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return g;
+}
+const blob = (sx, sy, sz, x, y, z) => leafy(new THREE.IcosahedronGeometry(1, 0).scale(sx, sy, sz).translate(x, y, z));
 const trunk = (r0, r1, h, col = '#5a4636', y = 0) => tint(new THREE.CylinderGeometry(r0, r1, h, 3, 1, true).translate(0, y + h / 2, 0), col);
 const TREES = {
-  pine: () => [trunk(0.22, 0.32, 7), blob(3.3, 2.6, 3.3, 0, 8, 0)],
-  stone: () => [trunk(0.28, 0.4, 9), blob(5.6, 1.7, 5.6, 0, 9.6, 0)], // the umbrella pine: a flat crown up high
+  pine: () => [trunk(0.22, 0.32, 7), blob(3.3, 2.6, 3.3, 0, 8, 0), blob(2.1, 1.5, 2.1, 1.5, 9.3, 0.7)],
+  stone: () => [trunk(0.28, 0.4, 9), blob(5.6, 1.7, 5.6, 0, 9.6, 0), blob(3, 1.1, 3, -2.2, 10.4, 1.2)], // the umbrella pine: a flat crown up high
   broad: () => [trunk(0.35, 0.5, 4), blob(4.2, 3.6, 4.2, 0, 6.6, 0), blob(3, 2.6, 3, 1.8, 8.2, -1)],
-  conifer: () => [trunk(0.2, 0.3, 2.5), tint(new THREE.ConeGeometry(2.6, 11, 6).translate(0, 7.5, 0), '#ffffff')],
-  cypress: () => [trunk(0.15, 0.25, 1.5), tint(new THREE.ConeGeometry(1.25, 12, 6).translate(0, 7, 0), '#ffffff'), blob(1.25, 2.4, 1.25, 0, 3.8, 0)],
+  conifer: () => [trunk(0.2, 0.3, 2.5), leafy(new THREE.ConeGeometry(2.6, 11, 7).translate(0, 7.5, 0), 0.18)],
+  cypress: () => [trunk(0.15, 0.25, 1.5), leafy(new THREE.ConeGeometry(1.25, 12, 6).translate(0, 7, 0), 0.12), blob(1.25, 2.4, 1.25, 0, 3.8, 0)],
   eucalypt: () => [trunk(0.3, 0.45, 12, '#cfc6b4'), blob(3.4, 2.3, 3.4, 0, 12.5, 0), blob(2.5, 1.8, 2.5, 2.2, 9.8, 1), blob(2.6, 2, 2.6, -1.8, 10.8, -1.2)],
-  olive: () => [trunk(0.35, 0.45, 2.4, '#6b5a48'), blob(2.6, 1.9, 2.6, 0, 3.4, 0)],
+  olive: () => [trunk(0.35, 0.45, 2.4, '#6b5a48'), blob(2.6, 1.9, 2.6, 0, 3.4, 0), blob(1.6, 1.2, 1.6, 1.3, 4.3, -0.6)],
   shrub: () => [blob(1.9, 1.1, 1.9, 0, 0.7, 0), blob(1.3, 0.8, 1.3, 1.3, 0.5, 0.7)],
   palm: () => {
     const lean = 0.09, top = 9, g = [tint(new THREE.CylinderGeometry(0.2, 0.32, top, 4, 1, true).translate(0, top / 2, 0).rotateZ(-lean), '#8a7a5e')];
