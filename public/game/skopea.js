@@ -113,13 +113,16 @@ const QSCENE = new THREE.Scene().add(QUAD), QCAM = new THREE.OrthographicCamera(
 const HCAM = new THREE.OrthographicCamera(-TE, TE, TE, -TE, 1, 20000); HCAM.up.set(0, 0, -1); HCAM.layers.set(SHADOW_LAYER);
 function shadows(renderer, group, sun) {
   const parent = group.parent, tmp = new THREE.Scene(), was = renderer.getRenderTarget(), clear = renderer.getClearColor(new THREE.Color()), alpha = renderer.getClearAlpha();
-  tmp.overrideMaterial = HEIGHT_MAT; tmp.add(group);
+  // (the terrain with its woods as high as their canopy, so a wood's edge shades the field beside it; the rest as it is)
+  const mats = []; group.traverse((o) => { if (o.material) { mats.push([o, o.material]); o.material = o.userData.heightMat || HEIGHT_MAT; } });
+  tmp.add(group);
   HCAM.position.set(group.position.x, 10000, group.position.z); HCAM.lookAt(group.position.x, 0, group.position.z); HCAM.updateMatrixWorld();
   renderer.setClearColor(0x000000, 1);
   renderer.setRenderTarget(HEIGHTS); renderer.clear(); renderer.render(tmp, HCAM);
   SHADE_MAT.uniforms.uSunD.value.copy(sun);
   renderer.setRenderTarget(SHADE); renderer.render(QSCENE, QCAM);
   renderer.setRenderTarget(was); renderer.setClearColor(clear, alpha);
+  for (const [o, m] of mats) o.material = m;
   if (parent) parent.add(group);
 }
 // what every land material shares (the world sets the haze and the place; setLight the shadows)
@@ -177,7 +180,7 @@ function landMat(m, k = 1, o = {}) {
     if (o.emis) fs = fs.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + o.emis);
     if (o.nrm) fs = fs.replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n' + o.nrm);
     if (!o.unlit) fs = fs.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
-      { float sun = landSun(vLand.xz) * cloudShade(vLand), sky = texture2D(uAO, (vLand.xz - uAOXf.xy) * uAOXf.z).r * (255.0 / 252.0);
+      { float sun = landSun(vLand.xz) * cloudShade(vLand)${o.sun ? ' * ' + o.sun : ''}, sky = texture2D(uAO, (vLand.xz - uAOXf.xy) * uAOXf.z).r * (255.0 / 252.0);
         reflectedLight.directDiffuse *= sun; reflectedLight.directSpecular *= sun; reflectedLight.indirectDiffuse *= 0.3 + 0.7 * sky; }`);
     sh.fragmentShader = fs.replace('#include <tonemapping_fragment>', `{
         // (as thick as the sea's at the sea, thinner up the hills: over 700 m, or 140 m in a morning's mist (uMist,
@@ -237,6 +240,7 @@ ${ROOM_GLSL}
 uniform sampler2D uCover, uRoads; uniform vec3 uCol[11], uFields[6], uTowns[8], uNearXf, uShare, uLake; uniform float uNF, uTreeTop, uSnow, uNear, uWood, uCanopy, uClear;
 varying vec3 vLN;
 float gLake; // 1 where groundColour() found a lake's still water
+float gWet; // how wet the shore is here (groundColour()): darker, and glossy (LAKE_LIGHT)
 float lhash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 float lnoise(vec2 x) { vec2 i = floor(x), f = fract(x), u = f * f * (3.0 - 2.0 * f);
   return mix(mix(lhash(i), lhash(i + vec2(1.0, 0.0)), u.x), mix(lhash(i + vec2(0.0, 1.0)), lhash(i + vec2(1.0, 1.0)), u.x), u.y); }
@@ -256,8 +260,9 @@ float lfbm(vec2 p) { return 0.55 * lnoise(p / 220.0) + 0.3 * lnoise(p / 70.0) + 
 // packed but each placed and sized its own way, each its own shade, with the dark ground between them; each a dome
 // whose tilt goes to the light (gCrownK, gCrownN: the terrain's normal hook), so the side away from the sun is in
 // shade and a wooded slope is bumpy against the light. Where a crown shrinks to a pixel or two the detail gives way to
-// its average, so it doesn't shimmer.
-float gCrownK; vec3 gCrownN;
+// its average, so it doesn't shimmer. And each crown shades the ones beside it and the ground between, away from the
+// sun, the longer the lower it is (gCrownSh, on the sunlight; on average, from far off, a wood darker in a low sun).
+float gCrownK, gCrownSh = 1.0; vec3 gCrownN;
 vec4 crowns(vec2 q, float cell) { // xy: from the crown's middle to here, over its radius; z: how far out (1, its edge); w: its own shade
   vec2 s = q / cell, i = floor(s), f = fract(s);
   vec4 best = vec4(0.0, 0.0, 9.0, 0.0);
@@ -272,20 +277,28 @@ vec4 crowns(vec2 q, float cell) { // xy: from the crown's middle to here, over i
   return best;
 }
 vec3 canopy(vec3 c, vec2 q, float w, float cell) {
-  gCrownK = 0.0;
+  gCrownK = 0.0; gCrownSh = 1.0;
   if (w <= 0.0) return c;
   float px = length(fwidth(q)), kd = (1.0 - smoothstep(cell * 0.18, cell * 0.5, px)) * uCanopy;
   vec3 avg = c * 0.82; // the crowns and the shade between them, as they average out
-  if (kd <= 0.0) return mix(c, avg, w);
+  float lowSun = 1.0 - smoothstep(0.15, 0.9, uSun.y), shAvg = 1.0 - w * (0.1 + 0.35 * lowSun);
+  if (kd <= 0.0) { gCrownSh = shAvg; return mix(c, avg, w); }
   vec4 cr = crowns(q, cell);
   float on = 1.0 - smoothstep(0.8, 1.0, cr.z);
+  // the sun's line from here, risen a third of a cell (the crowns stand some half a cell above the ground between
+  // them): if another crown is higher than that there, it shades this point
+  vec4 c2 = crowns(q + uSun.xz / max(uSun.y, 0.12) * cell * 0.33, cell);
+  float h0 = on * sqrt(max(1.0 - min(cr.z * cr.z, 1.0), 0.0)) - 0.25 * (1.0 - on);
+  float h1 = (1.0 - smoothstep(0.8, 1.0, c2.z)) * sqrt(max(1.0 - min(c2.z * c2.z, 1.0), 0.0));
+  float shd = smoothstep(0.3, 0.75, h1 - h0) * step(0.001, abs(c2.w - cr.w));
+  gCrownSh = mix(shAvg, 1.0 - 0.7 * w * shd, kd); // (not all of it: the leaves let some through)
   // inside a crown, its clumps of leaves, each lit on its top and shaded under it (only while they are bigger than a
   // pixel): a little relief of its own for the light, and darker in the hollows between them
   float kc = 1.0 - smoothstep(cell * 0.05, cell * 0.14, px), f = 5.5 / cell, e = 0.35 / f;
   vec2 cq = q * f + cr.w * 40.0;
   float n0 = lnoise(cq), nx = lnoise(cq + vec2(0.35, 0.0)), nz = lnoise(cq + vec2(0.0, 0.35));
   vec3 tone = mix(vec3(1.0), vec3(1.07, 1.05, 0.84), cr.w) * (0.78 + 0.4 * lhash(vec2(cr.w * 91.0, 3.0))); // each tree its own green
-  vec3 det = mix(c * 0.38, c * tone * (1.0 - 0.18 * cr.z * cr.z) * mix(1.0, 0.68 + 0.6 * n0, kc), on);
+  vec3 det = mix(c * 0.46, c * tone * (1.0 - 0.18 * cr.z * cr.z) * mix(1.0, 0.68 + 0.6 * n0, kc), on);
   gCrownK = kd * w * on;
   gCrownN = normalize(vec3(cr.x - (nx - n0) / e * 0.9 * kc, 1.5 * sqrt(max(1.0 - min(cr.z * cr.z, 1.0), 0.0)), cr.y - (nz - n0) / e * 0.9 * kc));
   return mix(c, mix(avg, det, kd), w);
@@ -312,7 +325,7 @@ vec3 groundColour() {
   vec3 an = abs(normalize(vLN)); float n = lfbm(p.xz);
   if (an.y < 0.85) { vec3 tw = pow(an, vec3(4.0)); tw /= tw.x + tw.y + tw.z; n = tw.y * n + tw.x * lfbm(p.zy) + tw.z * lfbm(p.xy); }
   float steep = smoothstep(0.32, 0.6, 1.0 - ny), high = smoothstep(uTreeTop * 0.65, uTreeTop * 1.26, y);
-  gLake = 0.0;
+  gLake = 0.0; gWet = 0.0;
   vec3 forest = mix(mix(uCol[0], uCol[1], n), uCol[2], max(0.0, n - 0.62) * 1.6);
   vec3 c = forest; float wild = 1.0; // how far the slope and the height turn it to scrub and rock
   float wood = 0.0, cell = 7.0; // how much of it is under the canopy, and the crowns' spacing (canopy())
@@ -378,7 +391,13 @@ vec3 groundColour() {
   float sh = mix(shF, shH, rocky);
   float blocks = lnoise(p.xz / 1.8 + bn * 3.0), cracks = smoothstep(0.08, 0.0, abs(lnoise(p.xz / 3.5 + 9.0) - 0.5));
   vec3 sc = cls == 8 ? uCol[8] : cls == 12 ? c : mix(uCol[7] * (0.9 + 0.15 * lnoise(p.xz / 1.2)), mix(uCol[7], uCol[4], 0.35) * (0.72 + 0.45 * blocks) * (1.0 - 0.45 * cracks), rocky);
-  c = mix(c, sc * mix(0.55, 1.0, smoothstep(0.05, 0.6, y)), 0.9 * sh);
+  c = mix(c, sc, 0.9 * sh);
+  // and wet just above the water: as high as the waves run up it, each in its turn along the shore, every few seconds
+  // (higher on a steep rocky shore, where they break against it and splash), darker and with a sheen — not on the low
+  // flat land further back from the water, nor on the tidal mud, which is wet all over already
+  float run = 0.22 + 0.3 * (0.5 + 0.5 * sin(uCsT * 0.75 + dot(p.xz, vec2(0.011, 0.016)) + lnoise(p.xz / 40.0) * 9.0)) + 0.5 * rocky;
+  gWet = (1.0 - smoothstep(run - 0.12, run + 0.08, y)) * (sd > 900.0 ? 1.0 : 1.0 - smoothstep(5.0, 16.0, -sd)) * (cls == 12 || cls == 11 ? 0.0 : 1.0);
+  c *= 1.0 - 0.45 * gWet;
   wood *= 1.0 - sh;
   return canopy(c, p.xz, wood, cell);
 }
@@ -407,6 +426,11 @@ vec3 farColour() {
 // ---------- the hills ----------
 // a lake's still water: the sky it mirrors (more of it the flatter it's seen) and the sun's glint, little of its own
 const LAKE_LIGHT = /* glsl */ `
+if (gWet > 0.01) { // the wet shore: the sky in it, a little, and the sun's glint
+  vec3 vd = normalize(vHz), rd = reflect(vd, normalize(vLN));
+  float fr = 0.03 + 0.97 * pow(1.0 - max(dot(-vd, normalize(vLN)), 0.0), 5.0);
+  totalEmissiveRadiance += gWet * (skyBase(rd) * fr * 0.4 + uSunCol * pow(max(dot(rd, uSun), 0.0), 80.0) * 0.8 * landSun(vLand.xz));
+}
 if (gLake > 0.5) {
   vec3 vd = normalize(vHz), rd = reflect(vd, vec3(0.0, 1.0, 0.0));
   float fr = 0.04 + 0.96 * pow(1.0 - max(-vd.y, 0.0), 5.0);
@@ -469,7 +493,11 @@ float canopyLift(vec3 p, vec3 n) {
   h *= (1.0 - smoothstep(0.2, 0.6, texture2D(uRoads, rg).r)) * (1.0 - texture2D(uLiftMask, rg).r);
   float sd = shoreDist(p.xz); // (rising from the shore's rocks over the first 40 m ashore, whatever the ground's height)
   h *= (sd > 900.0 ? smoothstep(2.5, 9.0, y) : smoothstep(-4.0, -40.0, sd)) * smoothstep(1.2, 3.0, y) * smoothstep(0.0, 0.06, min(min(rg.x, rg.y), min(1.0 - rg.x, 1.0 - rg.y)));
+#ifdef LIFT_EVEN
+  return h * aFine * 8.5; // (for the shadows' height map: a roof's outline, not each crown's, which its cells are too big for)
+#else
   return h * aFine * 8.5 * (0.8 + 0.4 * vhash(floor(p.xz / 7.0) + 0.5));
+#endif
 }`;
 // …and on the terrain the canopy's crowns too (GROUND_GLSL's canopy(): each a dome on the slope, tilted to the light)
 const RELIEF_CROWNS = `{ vec3 wn = slopeRelief(normalize(vLN), vLand.xz, length(vHz), 600.0);
@@ -506,15 +534,20 @@ function terrain() {
   }
   const mat = landMat(new THREE.MeshLambertMaterial(), 1, {
     key: 'ground', colour: 'groundColour()', uniforms: GROUND_U, fsHead: '#define GROUND_Y vGroundY\nvarying float vGroundY;\n' + GROUND_GLSL,
-    vsHead: 'varying vec3 vLN;\n' + LIFT_VS, vs: 'vLN = objectNormal;', emis: LAKE_LIGHT, nrm: RELIEF_CROWNS,
+    vsHead: 'varying vec3 vLN;\n' + LIFT_VS, vs: 'vLN = objectNormal;', emis: LAKE_LIGHT, nrm: RELIEF_CROWNS, sun: 'gCrownSh',
     project: 'vGroundY = transformed.y; transformed.y += canopyLift(transformed, normalize(objectNormal));\n#include <project_vertex>', // (the ground's own height, for its colour)
+  });
+  // its height for the shadows (shadows()): with the canopy's, as it is drawn
+  const heightMat = new THREE.ShaderMaterial({
+    uniforms: { ...LAND_U, ...GROUND_U }, defines: { LIFT_EVEN: 1 }, fragmentShader: HEIGHT_MAT.fragmentShader,
+    vertexShader: LIFT_VS + '\nvarying float vY;\nvoid main() {\n  vec3 tp = position; tp.y += canopyLift(tp, normalize(normal));\n  vec4 p = modelMatrix * vec4(tp, 1.0); vY = p.y;\n  gl_Position = projectionMatrix * viewMatrix * p;\n}',
   });
   const group = new THREE.Group(), box = new THREE.Box3(), v = new THREE.Vector3();
   for (const list of tiles.values()) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', pos); g.setAttribute('normal', nrm); g.setAttribute('aFine', fineA); g.setIndex(list);
     box.makeEmpty(); for (const i of list) box.expandByPoint(v.fromBufferAttribute(pos, i));
     g.boundingSphere = box.getBoundingSphere(new THREE.Sphere()); g.boundingBox = box.clone();
-    group.add(new THREE.Mesh(g, mat));
+    const m = new THREE.Mesh(g, mat); m.userData.heightMat = heightMat; group.add(m);
   }
   return group;
 }

@@ -149,7 +149,7 @@ export function pickSky(race) {
 
 // The sky, shared by the sky dome, the sea's reflection of it and the haze on the water: a gradient from the
 // horizon up to the zenith, the bright Mie haze round the sun (strongest low down, through more air), and the
-// fair-weather cumulus on a layer overhead, made from the ripple noise (uRipple), lit from the sun's side. The
+// fair-weather cumulus on a layer overhead, made from the ripple noise (uRipple), lit as cumulus are (withClouds). The
 // layer is 1500 m up and fixed to the venue (uSkyAt: the camera's place in the venue's frame, world.js render), as
 // the clouds' shadows on the land and the sea are (skopea.js cloudShade), so each cloud is over its shadow and stays
 // put as a boat sails under it.
@@ -162,19 +162,32 @@ vec3 skyBase(vec3 d) {
   c += uSunCol * hg * uMie * (0.35 + 0.65 * exp(-y * 5.0));
   return c;
 }
-float cloudDen(vec3 d, float t) {
+float cloudN(vec3 d, float t) {
   // (where the ray meets the layer; low down, where it would meet it ever further off, nearer, as a flatter dome)
   float dy = max(d.y, 0.0);
   vec2 p = (uSkyAt.xz + d.xz * (1500.0 - uSkyAt.y) / (dy + 0.1 * (1.0 - dy))) * 0.0002 + vec2(t * 0.0016, t * 0.0007);
-  float n = texture2D(uRipple, p).w * 0.62 + texture2D(uRipple, p * 2.3 + 0.31).w * 0.28 + texture2D(uRipple, p * 6.1 + 0.67).w * 0.1;
-  return smoothstep(0.52 - uCloud, 0.74 - uCloud * 0.5, n) * smoothstep(0.02, 0.16, d.y);
+  return texture2D(uRipple, p).w * 0.6 + texture2D(uRipple, p * 2.3 + 0.31).w * 0.26 + texture2D(uRipple, p * 6.1 + 0.67).w * 0.1 + texture2D(uRipple, p * 14.3 + 0.19).w * 0.04;
 }
+float cloudDen(vec3 d, float t) { return smoothstep(0.52 - uCloud, 0.74 - uCloud * 0.5, cloudN(d, t)) * smoothstep(0.02, 0.16, d.y); }
+// Each cloud lit as a cumulus is: seen from under it, overhead, a flat base, grey where it is thick and bright where
+// the light comes through its thin edges; seen from beside, low down, its domed top white where the sun is on it (the
+// more, the more the sun is behind you), its base a grey line under it, and its side towards the sun brighter. (Its
+// top and its base on the screen: where it thins upwards, and where it thickens.)
 vec4 withClouds(vec3 col, vec3 d, vec3 sun, float t, bool cheap) {
   if (d.y <= 0.0) return vec4(col, 0.0);
-  float c = cloudDen(d, t);
+  // (its edge crisper than its shadow's: a cumulus's outline is sharp, in billows)
+  float lo = 0.52 - uCloud, hi = 0.74 - uCloud * 0.5, n = cloudN(d, t);
+  float c = smoothstep(lo, mix(lo, hi, 0.55), n) * smoothstep(0.02, 0.16, d.y);
   if (c <= 0.0) return vec4(col, 0.0);
-  float lit = 0.8;
-  if (!cheap) lit = clamp(0.62 + (c - cloudDen(normalize(d + sun * 0.035), t)) * 1.6, 0.35, 1.0);
+  float core = smoothstep(lo + 0.06, hi + 0.2, n), side = 1.0 - smoothstep(0.06, 0.4, d.y), lit = 0.8 - 0.3 * core * (1.0 - side);
+  if (!cheap) {
+    float toSun = clamp((c - cloudDen(normalize(d + sun * 0.035), t)) * 1.6, -1.0, 1.0);
+    float up = n - cloudN(normalize(d + vec3(0.0, 0.01 + 0.02 * side, 0.0)), t); // > 0 at its top, < 0 at its base
+    float away = 0.5 - 0.5 * dot(normalize(d.xz + 1e-5), normalize(sun.xz + 1e-5)); // 1 with the sun behind you
+    float under = 0.92 - 0.55 * core + 0.3 * toSun;
+    float beside = 0.55 + 0.3 * away + 0.5 * clamp(up * 14.0, 0.0, 1.0) - 0.6 * clamp(-up * 14.0, 0.0, 1.0) + 0.25 * toSun - 0.2 * core * (1.0 - away);
+    lit = clamp(mix(under, beside, side), 0.2, 1.05);
+  }
   vec3 cc = mix(uCloudDark, uCloudLit, lit);
   cc += uSunCol * pow(max(dot(d, sun), 0.0), 8.0) * (1.0 - c) * 0.6; // a bright rim near the sun
   return vec4(mix(col, cc, c * 0.92), c);
