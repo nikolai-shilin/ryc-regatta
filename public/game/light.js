@@ -43,11 +43,11 @@ const COLOURS = ['sun', 'hemiSky', 'hemiGround', 'top', 'horizon', 'cloudLit', '
 
 const lerp = (a, b, k) => a + (b - a) * k;
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-function mix(A, B, k) { // two looks blended: numbers straight, colours as THREE.Colors (in linear light)
+function mix(A, B, k) { // two looks blended: numbers straight, colours as THREE.Colors (in linear light); what only A has (the morning's mist, under the cloud deck), A's
   const o = {};
   for (const n in A) {
     if (COLOURS.includes(n)) o[n] = new THREE.Color(A[n]).lerp(new THREE.Color(B[n]), k);
-    else if (typeof A[n] === 'number') o[n] = lerp(A[n], B[n], k);
+    else if (typeof A[n] === 'number') o[n] = typeof B[n] === 'number' ? lerp(A[n], B[n], k) : A[n];
   }
   return o;
 }
