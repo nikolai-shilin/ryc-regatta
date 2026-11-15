@@ -5,7 +5,7 @@ import { raceStarted, raceFinished, raceResult } from './stats.js';
 import { initExtras, onStart, onFrame, drill, drillSettings } from './extras.js'; // the ghost, the drills, the analytics
 import { createHud } from './hud-bc.js';
 import { mapPalette, placeLabels } from './course-map.js';
-import { LOOKS, playerLook } from './yacht.js';
+import { LOOKS, playerLook, lookFrom } from './yacht.js';
 const flagCode = (src) => { const m = typeof src === 'string' && /\/flags\/([a-z]{2}(?:-[a-z]+)?)\.svg$/.exec(src); return m ? m[1] : null; }; // '/flags/gb.svg' → 'gb'
 import { VENUE, venueById, laidLength, lengthOffered } from './venues.js';
 import { classById } from './classes.js';
@@ -27,6 +27,14 @@ const HUB = '/race';
 arriveLoaded();
 addEventListener('pageshow', (e) => { if (e.persisted) arriveLoaded({ pop: true }); });
 const leave = () => goBack(HUB, null, { extra: !TG && history.state && history.state.race ? 1 : 0, single: true });
+// A match race against a friend (/play?match=<code>, from /match/new and the match's link): the waiting room, the races
+// and the cards between them are match-ui.js's, loaded only then (with the Realtime client it brings). mx: the race on
+// screen while one is sailed ({ race, step(dt), isGuest }); matchUi: the module, once it's in.
+const MATCH = (() => { const c = (new URLSearchParams(location.search).get('match') || '').toUpperCase(); return /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/.test(c) ? c : null; })();
+let mx = null, matchUi = null;
+// leaving in a match leaves it on both screens (match-ui.js tells the other), and goes to the hub: back would be the
+// set-up or the link's page, which opens a match again
+const quit = () => (MATCH && matchUi ? matchUi.leaveMatch() : leave());
 // From Telegram the app passes its launch data in the hash, as Telegram does (miniapp/app.js in iyt-test); telegram-web-app.js has
 // read and kept it by now, so it comes off the address bar and out of any link the player copies.
 if (TG && /tgWebAppData=/.test(location.hash)) try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
@@ -128,6 +136,15 @@ const T = {
     zAhead: (n) => `Zone · clear ahead of ${n} — you get room`, zAstern: (n) => `Zone · clear astern of ${n} — keep clear`, tackCall: 'Ready about… Lee-oh!', gybeCall: 'Stand by to gybe… Gybe-oh!',
     results: 'Results', again: 'Race again', menu: 'Menu', racing: 'racing…', you: 'You', dsq: 'DSQ',
     gfxDown: (q) => `Graphics set to ${q} to keep it smooth`, place: ord, finished: (n) => `Finished ${ord(n)}!`, finishedDsq: 'Finished without taking your penalty — DSQ',
+    // a match race (Appendix C): the entry, the umpire, the penalties owed, the result, and the link between the two screens
+    entered: 'Entered — you’re in the start box', entryEarly: 'Inside the line at the preparatory signal — penalty', entryLate: 'Not entered by 2:00 — penalty',
+    umpire: (r, who, you) => (you ? `Umpire: penalty on you — rule ${r}` : `Umpire: penalty on ${who} — rule ${r}`), theyOwe: (who, r) => `${who} owes a penalty — rule ${r}`,
+    penStart: 'Penalty turn begun — now back onto your course', penNow: 'Two penalties owed — take one now', finishOwed: 'A penalty still owed — take it, then cross the line again',
+    raceWon: 'You win the race!', raceLost: (w) => `${w} wins the race`, matchWon: (s) => `You win the match ${s}`, matchLost: (w, s) => `${w} wins the match ${s}`,
+    waitingHost: (n) => `Waiting for ${n}…`, guestGone: (n) => `${n} isn’t answering — her boat holds her course; 30 s and the race is yours`,
+    abandoned: 'Race abandoned — not scored', full: 'This match is full',
+    touchedM: 'You touched the mark — you owe a penalty turn', penTurn: 'Penalty turn under way', timeMatch: 'match race',
+    'r16.1': 'Right of way, but give room to keep clear', 'x16.1': 'A boat with right of way that changes course must give the other boat room to keep clear.',
   },
   ru: {
     pausedK: 'Пауза', legOf: (a, b) => `Отрезок ${a} из ${b}`, nextK: (m) => `Дальше: ${m}`, placeK: 'Место', ofN: (n) => `из ${n}`, timeK: 'Время', penK: 'Штрафы', penNone: 'пока чисто', penS: 'штрафные обороты',
@@ -222,6 +239,14 @@ const T = {
     zAhead: (n) => `Зона · не связаны, ты впереди ${n} — тебе дают место`, zAstern: (n) => `Зона · не связаны, ты позади ${n} — держись в стороне`, tackCall: 'К повороту оверштаг… Поворот!', gybeCall: 'К повороту фордевинд… Поворот!',
     results: 'Результаты', again: 'Ещё гонку', menu: 'Меню', racing: 'в гонке…', you: 'Вы', dsq: 'DSQ',
     gfxDown: (q) => `Графика: «${q}» — для плавности`, place: (n) => `${n}-е`, finished: (n) => `Финиш: ${n}-е место!`, finishedDsq: 'Финиш без штрафа — дисквалификация (DSQ)',
+    entered: 'Вход выполнен — ты в стартовой зоне', entryEarly: 'На подготовительном сигнале внутри линии — штраф', entryLate: 'Нет входа до 2:00 — штраф',
+    umpire: (r, who, you) => (you ? `Судья: штраф тебе — правило ${r}` : `Судья: штраф — ${who}, правило ${r}`), theyOwe: (who, r) => `${who}: штраф, правило ${r}`,
+    penStart: 'Штрафной разворот начат — теперь возвращайся на курс', penNow: 'Два штрафа — выполни один немедленно', finishOwed: 'Штраф не выполнен — выполни его и пересеки линию снова',
+    raceWon: 'Гонка твоя!', raceLost: (w) => `Гонку выигрывает ${w}`, matchWon: (s) => `Матч твой: ${s}`, matchLost: (w, s) => `Матч выигрывает ${w}: ${s}`,
+    waitingHost: (n) => `${n} не на связи — ждём…`, guestGone: (n) => `${n} не на связи — лодка идёт прежним курсом; через 30 с гонка твоя`,
+    abandoned: 'Гонка прекращена — не засчитывается', full: 'В этом матче уже двое',
+    touchedM: 'Касание знака — за тобой штрафной разворот', penTurn: 'Штрафной разворот', timeMatch: 'матчевая гонка',
+    'r16.1': 'Право дороги — но дай место уступить', 'x16.1': 'Лодка с правом дороги, меняя курс, должна дать другой лодке место, чтобы уступить.',
   },
 };
 const urlLang = new URLSearchParams(location.search).get('lang');
@@ -300,7 +325,7 @@ if (TG) {
   try { if (TG.isVersionAtLeast && TG.isVersionAtLeast('8.0') && /android|iphone|ipad/i.test(navigator.userAgent)) TG.requestFullscreen(); } catch (e) {}
   TG.onEvent && TG.onEvent('themeChanged', () => applyTheme());
   TG.BackButton.show();
-  TG.BackButton.onClick(() => { if (running && !paused) pause(); else leave(); });
+  TG.BackButton.onClick(() => { if (running && !paused) pause(); else quit(); });
 }
 const haptic = (kind) => {
   if (opts.vibration === 0) return; // Settings › Vibration
@@ -1093,6 +1118,7 @@ function watchFps(raw) {
 
 let race = null, running = false, paused = false, menuChanged = false, hints = {}, lastClockInt = null, coachSeen = {};
 function newRace() {
+  if (MATCH) { matchView(); return; }
   const s = settings();
   race = new Race({ preset: s.preset, laps: s.laps, autoTrim: opts.autoTrim === 1, start: s.start, current: !!s.current, fleet: s.fleet, length: s.length, course: s.course, seed: s.daily ? s.seed : undefined });
   race.settings = s;
@@ -1100,6 +1126,40 @@ function newRace() {
   world.setRace(race);
   world.resetView();
   hints = {}; lastClockInt = null; coachSeen = {}; skipper.reset(); asides.reset(); committee.reset(); score.reset();
+}
+// in a match, until its first race: the two boats at their ends of the line, in the host's wind and length if this is
+// the host's screen (the set-up page's), else the usual
+function matchView() {
+  let s = null; try { s = JSON.parse(localStorage.getItem('regatta-match-settings') || 'null'); } catch (e) {}
+  race = new Race({ preset: ['light', 'medium', 'strong'].includes(s?.preset) ? s.preset : 'medium', length: s?.length === 'medium' ? 'medium' : 'short', match: true, seed: 1,
+    humans: [{ id: 'blue', name: '' }, { id: 'yellow', name: '' }], me: 'blue' });
+  race.settings = { daily: null, match: true, preset: s?.preset || 'medium', laps: 2, start: 5, fleet: 2, length: s?.length || 'short', course: 'wl' };
+  world.setRace(race); world.resetView();
+}
+// a race of the match on screen (match-ui.js): its race in place of the last, the HUD up
+function onMatchRace(s) {
+  mx = s; race = s.race;
+  world.setRace(race); world.resetView();
+  hints = {}; lastClockInt = null; coachSeen = {}; skipper.reset(); asides.reset(); committee.reset(); score.reset(); flagsKey = '';
+  race.coach = false;
+  menu.hidden = true; hud.hidden = false; pauseEl.hidden = true; confirmEl.hidden = true; overWater(true);
+  running = true; paused = false;
+  applyTrimMode(); setCam(world.mode);
+  raceStarted(race, race.settings); // (stats.js posts nothing for a match)
+}
+// …and off it: a card between the races, or at the end
+function onMatchIdle() { running = false; paused = false; hud.hidden = true; pauseEl.hidden = true; confirmEl.hidden = true; overWater(false); }
+// the HUD's tags on the water (hud-bc.js: the next mark's, the boats'), which live outside #hud
+const overWater = (on) => { for (const id of ['#nxTag', '#bOver']) { const e = $(id); if (e) e.style.visibility = on ? '' : 'hidden'; } };
+function startMatchFlow() {
+  audio.init(); audio.setOn(!!opts.sound); skipper.load(); crews.load(); asides.load(); calls.load(); score.style();
+  menu.hidden = true; hud.hidden = true; speedBtn.hidden = true; overWater(false);
+  for (const id of ['#pChange', '#pRestart']) $(id).style.display = 'none'; // a match isn't restarted or changed: only left
+  import('./match-ui.js').then((m) => {
+    matchUi = m;
+    return m.startMatch({ code: MATCH, t, LANG, venue: VENUE, cls: CLS, onRace: onMatchRace, onIdle: onMatchIdle, onEnd: () => { location.href = HUB; }, toast: (s) => toast(s, 3.5),
+      yachtName: (id) => yachtName(id), venueName: (id) => venueById(id).name[LANG === 'ru' ? 1 : 0] });
+  }).catch((e) => { console.error(e); });
 }
 // the race to sail is the address's (the hub and the set-up page are Next.js pages): taken before the first race is
 // built, so the one dressed and compiled under the preloader is the one you sail, and the start doesn't build it again
@@ -1169,7 +1229,12 @@ const sheetUp = (e) => { if (e.pointerId === sheetPtr) sheetPtr = null; };
 sz.addEventListener('pointerup', sheetUp); sz.addEventListener('pointercancel', sheetUp);
 
 const tackBtn = $('#tackBtn'), kiteBtn = $('#kiteBtn');
-const doTack = () => { if (!running || paused) return; race.player.tackOrGybe(); haptic('medium'); };
+const doTack = () => {
+  if (!running || paused) return;
+  const P = race.player, n = P.events.length;
+  P.tackOrGybe(); haptic('medium');
+  if (mx && P.events.length > n) P.tackN = (P.tackN || 0) + 1; // a match: the guest's tack is sent as a count (wire.js controlsOf)
+};
 // the kite: a tap starts the crew hoisting it (or getting it down); a tap during a hoist calls it off
 const doKite = () => {
   if (!running || paused) return;
@@ -1207,7 +1272,9 @@ const doJib = () => { if (!running || paused) return; const P = race.player; if 
 const doHail = () => {
   if (!running || paused) return;
   const h = race.youCanHail();
-  race.hail(); haptic('medium');
+  if (mx && mx.isGuest) race.player.hailN = (race.player.hailN || 0) + 1; // the guest's hail is the host's to make: its word comes back from there
+  else race.hail();
+  haptic('medium');
   if (!h) toast(t('hailNone'), 1.4);
 };
 jibBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doJib(); });
@@ -1251,6 +1318,7 @@ for (const [id, f] of [['#zoomIn', 1 / 1.06], ['#zoomOut', 1.06]]) {
 const SPEEDS = [1, 1.5, 2, 3], speedBtn = $('#speedBtn');
 let timeScale = 1;
 const cycleSpeed = () => {
+  if (MATCH) return; // a match is sailed at the speed of the clock: two screens, one race
   timeScale = SPEEDS[(SPEEDS.indexOf(timeScale) + 1) % SPEEDS.length];
   speedBtn.textContent = `${timeScale}×`; speedBtn.classList.toggle('fast', timeScale > 1); haptic('light');
 };
@@ -1277,7 +1345,7 @@ function setCam(m) { world.mode = m; camSeg.querySelectorAll('button').forEach((
 camSeg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setCam(b.dataset.cam); });
 setCam(['drone', 'top', 'helm'].includes(opts.camera) ? opts.camera : 'drone'); // Settings › First camera
 // the HUD, as a sailing broadcast lays it out (hud-bc.js)
-const bcHud = createHud({ t, LANG, fmt, world, getRace: () => race, setCam, flagOf: (b, me) => (me ? playerLook().flag : LOOKS[b.name] && LOOKS[b.name].flag) || null,
+const bcHud = createHud({ t, LANG, fmt, world, getRace: () => race, setCam, flagOf: (b, me) => (me ? playerLook().flag : b.human ? lookFrom(b.look).flag : LOOKS[b.name] && LOOKS[b.name].flag) || null, // (the other sailor in a match: her own)
   sailOf: () => { const l = playerLook(); return `${l.nat} ${l.num}`.trim(); } }); // your flag and sail number, as the boat page sets them
 
 // ---------- menus ----------
@@ -1319,7 +1387,7 @@ function paintPause() {
   $('#pNext').textContent = P.leg < legs.length ? t('nextAt', t(legKey(race.course, nx)), Math.round(P.leg < 1 ? Math.max(0, -race.lineInfo(P).d) : race.distToNext(P))) : '';
   $('#pHow').textContent = P.leg < legs.length ? t(howKey(race.course, nx)) : '';
   $('#pLine').textContent = pauseLine(P, place, nx);
-  $('#pTimeD').textContent = race.settings.daily ? t('timeDaily') : t('timeFree');
+  $('#pTimeD').textContent = race.match ? t('timeMatch') : race.settings.daily ? t('timeDaily') : t('timeFree');
   $('#pNext').classList.toggle('mark', !!race.course.marks[nx] || nx === 'gate'); // as its tag on the water
   $('#pPen').parentNode.className = L.penT > 1 ? 'pen' : 'clean';
   $('.p-esc').innerHTML = `<kbd>Esc</kbd>${t('escResumes').replace(/^Esc\s*(—\s*)?/, '')}`;
@@ -1358,13 +1426,14 @@ function pauseLine(P, place, nx) {
 if (!TG) {
   const guard = () => { try { if (!history.state || !history.state.race) history.pushState({ race: 1 }, ''); } catch (e) {} };
   addEventListener('popstate', () => {
-    if (!running || race.over) { leave(); return; }
-    if (!confirmEl.hidden) { leave(); return; }
+    if (!running || race.over) { quit(); return; }
+    if (!confirmEl.hidden) { quit(); return; }
     if (paused) ask('leave'); else pause();
     guard();
   });
   addEventListener('pointerdown', guard, { once: true }); // a browser keeps an entry only after the page is used
 }
+// (in a match the menu opens, but the race runs on under it: two screens, one race)
 function pause() { if (!running || race.over) return; paused = true; paintPause(); pauseEl.hidden = false; confirmEl.hidden = true; }
 function resume() { paused = false; pauseEl.hidden = true; confirmEl.hidden = true; }
 let confirmDo = null;
@@ -1389,7 +1458,7 @@ $('#pLeave').addEventListener('click', () => ask('leave'));
 $('#cKeep').addEventListener('click', () => { confirmEl.hidden = true; pauseEl.hidden = false; });
 $('#cGo').addEventListener('click', () => {
   if (confirmDo === 'restart') { confirmEl.hidden = true; paused = false; running = false; newRace(); startRace(); return; }
-  if (confirmDo === 'change') location.href = `/race/free?from=${race.settings.daily ? 'today' : 'race'}`; else leave();
+  if (confirmDo === 'change') location.href = `/race/free?from=${race.settings.daily ? 'today' : 'race'}`; else quit();
 });
 pauseEl.addEventListener('click', (e) => {
   const g = e.target.closest('[data-g]');
@@ -1424,8 +1493,13 @@ for (const a of [$('#backLink'), $('#lBack')]) { // the menu's back and the load
 {
   paintOpts(); // the menu as this race has it (the note on today's race, its place and wind; opts.mode is the address's, above)
   // the loading screen names the race now it's known: the venue in its title, the wind, the course and the fleet under it
-  const s = settings(), tr = (en, ru) => (LANG === 'ru' ? ru : en), boats = s.fleet - 1;
-  window.rycLoader?.race?.(VENUE.name[LANG === 'ru' ? 1 : 0], [
+  const s = MATCH ? race.settings : settings(), tr = (en, ru) => (LANG === 'ru' ? ru : en), boats = s.fleet - 1;
+  if (MATCH) window.rycLoader?.race?.(VENUE.name[LANG === 'ru' ? 1 : 0], [
+    [tr('Match', 'Матч'), 3, tr('races', 'гонки'), tr('First to two wins', 'До двух побед')],
+    [tr('Course', 'Дистанция'), 2, tr('laps', 'круга'), t('shapeWl')],
+    [tr('Boats', 'Лодки'), 2, '', tr('You and a friend', 'Ты и друг')],
+  ], tr('5-minute start sequence', 'стартовая процедура 5 мин'));
+  else window.rycLoader?.race?.(VENUE.name[LANG === 'ru' ? 1 : 0], [
     [tr('Wind', 'Ветер'), { light: 7, medium: 12, strong: 19 }[s.preset], tr('kn', 'уз'), { light: tr('Light breeze', 'Слабый ветер'), medium: tr('Medium breeze', 'Средний ветер'), strong: tr('Strong breeze', 'Сильный ветер') }[s.preset]],
     [tr('Course', 'Дистанция'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
     [tr('Fleet', 'Флот'), s.fleet, '', tr(`You and ${boats} boats`, `Ты и ${boats} ${boats === 1 ? 'лодка' : boats < 5 ? 'лодки' : 'лодок'}`)],
@@ -1434,8 +1508,9 @@ for (const a of [$('#backLink'), $('#lBack')]) { // the menu's back and the load
   // the preloader in play/index.html has counted the files in; the scene is built, so it fills its bar and fades into the race
   // …once the shaders are compiled too (world.prepare), so the first frame of the race doesn't stall
   world.ready().then(() => {
-    if (window.rycLoader) window.rycLoader.done(startRace);
-    else { $('#loading').hidden = true; startRace(); }
+    const go = MATCH ? startMatchFlow : startRace;
+    if (window.rycLoader) window.rycLoader.done(go);
+    else { $('#loading').hidden = true; go(); }
   });
 }
 
@@ -1516,7 +1591,7 @@ function updateHud(dt) {
   }
   // chips: penalty, dirty air, surfing
   const chips = [];
-  if (P.pen) chips.push(['bad', t('pen', P.pen.tack, P.pen.gybe), 'pen']);
+  if (P.pen) chips.push(['bad', P.pen.mr ? t('penTurn') : t('pen', P.pen.tack, P.pen.gybe), 'pen']); // (a match's turn is one, Appendix C)
   if (P.shadow > 0.08) chips.push(['warn', `${t('dirty')} −${Math.round(P.shadow * 100)}%`, 'dirty']);
   if (P.surf > 0) chips.push(['ok', t('surf'), 'surf']);
   if (P.byLee > 3) chips.push([P.byLee > 8 ? 'bad' : 'warn', t('byLee', Math.round(P.byLee)), 'byLee']);
@@ -1578,9 +1653,13 @@ function coach(P, a, leg) {
 // messages from the race and the boat
 function handleMessages() {
   const P = race.player;
+  // in a match a contact is called by the umpire on both screens: his call is the one said (its fouled, theyFouled and
+  // theyOwe are the same incident)
+  const ump = race.match && race.messages.some((n) => n.key === 'umpire');
   for (const m of race.messages) {
     if (m.to && m.to !== race.player) continue; // another boat's news
     const a = m.arg || {};
+    if (race.match && matchMessage(m, a, P, ump)) continue;
     if (m.key === 'signal') {
       audio.horn(a.sound === 'long'); haptic(a.key === 'gun' ? 'heavy' : 'medium'); skipper.signal(a.key, P.ocs);
       score.sting(a.key !== 'gun' ? 'swell' : race.messages.some((n) => n.key === 'genRecall') ? 'hit' : P.ocs ? 'loss' : 'gun'); // the music: a swell at each signal, the gun's hit
@@ -1646,6 +1725,35 @@ function handleMessages() {
   // slow on the beat and pointing as if at full speed: foot to build it; in a seaway, steer the waves
   if (race.clock > 0 && !P.auto && !P.pen && P.trim !== 'irons' && P.stall > 2.5 && Math.abs(P.twa) / D2R < beatAngle(P.tws) + 3) { hint('foot', t('foot'), 30); skipper.shout('foot'); }
   if (race.clock > 20 && race.wind.p.waves >= 0.45 && Math.abs(P.twa) / D2R < 60 && P.waveRhythm < -0.15) hint('waves', t('waveTip'), 90);
+}
+
+// a match's own news (Appendix C), and the race's that a match says its own way; false for the rest. In the voices where
+// a recorded line fits: the umpire's whistle, and his word on the other boat's penalty; the committee at the finish
+function matchMessage(m, a, P, ump) {
+  const whistle = () => { if (audio.ctx && audio.on && audio.ctx.state === 'running') committee.whistle(audio.ctx.currentTime); };
+  switch (m.key) {
+    case 'umpire': {
+      const on = race.humans.find((b) => b.id === a.on), you = on === P, other = race.humans.find((b) => b !== P);
+      bcHud.umpire(you ? 'fouled' : 'theyFouled', { who: you ? other?.name : on?.name, rule: a.rule }); // the umpire's card (hud-bc.js)
+      toast(t('umpire', a.rule, on ? on.name : '', you), 3.5); score.sting(you ? 'loss' : 'hit'); haptic(you ? 'warn' : 'medium');
+      if (you) { whistle(); skipper.shout('foul'); } else { committee.call('uThem', 4); skipper.cue('protest'); }
+      return true;
+    }
+    case 'fouled': case 'theyFouled': return true; // (the umpire's call says it)
+    case 'theyOwe': if (!ump) { toast(t('theyOwe', a.who, a.rule), 3); committee.call('uThem', 4); } return true;
+    case 'touched': bcHud.umpire('touched', a); toast(t('touchedM'), 3); skipper.shout('foul'); score.sting('loss'); committee.call('uMark', 4); return true;
+    case 'entered': toast(t('entered'), 2.6); haptic('light'); score.sting('gain'); return true;
+    case 'entryEarly': case 'entryLate': toast(t(m.key), 3.5); haptic('warn'); whistle(); score.sting('loss'); return true;
+    case 'penStart': toast(t('penStart'), 2.6); return true;
+    case 'penNow': case 'finishOwed': toast(t(m.key), 3.5); haptic('warn'); return true;
+    case 'finished': case 'finishedDsq': case 'finishedStartDsq': { // no result page: the match's card comes after
+      const won = race.winner ? race.winner === P : m.arg === 1;
+      toast(won ? t('raceWon') : t('raceLost', race.winner ? race.winner.name : race.humans.find((b) => b !== P)?.name), 3.5);
+      audio.horn(); haptic('heavy'); score.sting(won ? 'win' : 'lose'); committee.call(won ? 'cFin1' : 'cFin', 1.5);
+      return true;
+    }
+  }
+  return false;
 }
 
 // ---------- minimap ----------
@@ -1722,7 +1830,7 @@ function drawMap(ctx, size, full) {
   ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
   for (const m of zoneMarks(c)) { // the three-length zone (none at a mark reached on a beat: no mark-room there)
     ctx.strokeStyle = inZone.includes(m) ? INK.w78 : INK.w25;
-    ctx.beginPath(); ctx.arc(X(m.x), Z(m.z), ZONE * s, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(X(m.x), Z(m.z), (race.zone ?? ZONE) * s, 0, 7); ctx.stroke();
   }
   ctx.setLineDash([]);
   for (const m of [...Object.values(c.marks), ...c.gate, c.pin, c.committee, ...(c.finish ? [c.finish.a, c.finish.b] : [])]) {
@@ -1847,7 +1955,7 @@ function loop(now) {
   const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now;
   if (window.__slow) { const t0 = performance.now(); while (performance.now() - t0 < window.__slow); } // debug: pretend to be a slow phone
   const P = race.player;
-  if (running && !paused) {
+  if (running && (!paused || mx)) { // (a match runs on under the pause menu)
     const kl = input.keys.ArrowLeft, kr = input.keys.ArrowRight;
     if (kl || kr) { input.rudderHeld = true; input._key = true; input.rudder = clamp(input.rudder + (kr ? 1 : -1) * dt * 2.5, -1, 1); P.auto = null; }
     else if (input._key) { input._key = false; input.rudderHeld = rudderPtr !== null; }
@@ -1855,9 +1963,12 @@ function loop(now) {
     if (input.keys.ArrowDown || input.keys.KeyS) setSheet(P.sheet + dt * 0.6);
     if (!input.rudderHeld) input.rudder *= Math.exp(-dt * 5);
     if (!P.auto) P.rudder = input.rudder; else input.rudder = 0;
-    acc += dt * timeScale;
-    while (acc >= STEP) { race.step(STEP); acc -= STEP; }
-    onFrame(race, dt, race.t); // the ghost where she was, a drill's end (extras.js)
+    if (mx) mx.step(dt); // a match: the host's game runs the race, the guest's follows it (match-ui.js)
+    else {
+      acc += dt * timeScale;
+      while (acc >= STEP) { race.step(STEP); acc -= STEP; }
+      onFrame(race, dt, race.t); // the ghost where she was, a drill's end (extras.js)
+    }
     handleMessages();
     updateHud(dt);
     if (world.quality === 'high' || frameN++ % 3 === 0) drawMap(mctx, 240, false);
@@ -1869,9 +1980,9 @@ function loop(now) {
     score.update(P, dt); // paused or between races: the music fades out
     engine.update(true);
   }
-  world.frame(running && !paused ? dt * timeScale : 0, race.t); // foam and wakes keep pace with the race
+  world.frame(running && (!paused || mx) ? dt * timeScale : 0, race.t); // foam and wakes keep pace with the race
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, world, audio, skipper, crews, asides, engine };
-document.addEventListener('visibilitychange', () => { if (document.hidden && running && !paused && !window.__rg) pause(); }); // not in debug: test screenshots hide the tab
+if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, get mx() { return mx; }, get running() { return running; }, get paused() { return paused; }, world, audio, skipper, crews, asides, engine };
+document.addEventListener('visibilitychange', () => { if (document.hidden && running && !paused && !window.__rg && !MATCH) pause(); }); // not in debug: test screenshots hide the tab; nor in a match, which runs on

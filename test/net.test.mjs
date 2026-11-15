@@ -126,6 +126,24 @@ test('a phx_error on a joined channel rejoins it, and sends wait for the ack', a
   assert.equal(frames(s, 'broadcast').length, 1);
 });
 
+test('left and joined again at once, the old join\'s close is no news; the new join\'s close rejoins', async (t) => {
+  // as the live server does it: the leave answered, the old join closed (ref: the old join's), the new join answered
+  const { rt, ch, joined, sock } = setup();
+  t.after(() => rt.close());
+  const s = sock(); s.open(); ackJoin(s); await joined;
+  const old = frames(s, 'phx_join').at(-1).ref;
+  ch.leave();
+  const again = ch.join();
+  assert.equal(frames(s, 'phx_join').length, 2);
+  s.recv({ topic: 'realtime:match:ABC123', event: 'phx_close', payload: {}, ref: old });
+  assert.equal(frames(s, 'phx_join').length, 2, 'no join on the old close');
+  ackJoin(s); await again;
+  ch.send('on', {});
+  assert.equal(frames(s, 'broadcast').length, 1);
+  s.recv({ topic: 'realtime:match:ABC123', event: 'phx_close', payload: {}, ref: frames(s, 'phx_join').at(-1).ref });
+  assert.equal(frames(s, 'phx_join').length, 3, 'the current join closed: joined again');
+});
+
 test('join rejects after 10 s without an ack, and a later ack still joins', async () => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
   try {

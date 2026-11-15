@@ -47,6 +47,9 @@ export function realtime({ url, key, WebSocket = globalThis.WebSocket }) {
       if (f.event === 'phx_reply' && f.ref === c.joinRef) {
         if (f.payload?.status === 'ok') { c.joined = true; clearTimeout(c.timer); c.resolve?.(); c.resolve = c.reject = null; }
         else if (c.reject) { clearTimeout(c.timer); c.reject(new Error('join refused: ' + JSON.stringify(f.payload?.response ?? f.payload))); c.resolve = c.reject = null; }
+      } else if (f.event === 'phx_close' && f.ref && f.ref !== c.joinRef) {
+        // an earlier join's close: a channel left and joined again at once is closed on the server after the new join
+        // is answered (its ref is the old join's). Joining again on it would close the new join, and so on for ever
       } else if (f.event === 'phx_error' || f.event === 'phx_close') {
         sendJoin(c); // the server dropped this channel: join it again
       } else if (f.event === 'broadcast' && f.payload) {

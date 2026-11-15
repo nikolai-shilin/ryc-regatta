@@ -576,10 +576,11 @@
   var t = function (en, r) { return ru ? r : en; };
   document.documentElement.lang = ru ? 'ru' : 'en';
   document.title = t('Race', 'Гонка') + ' · Up and down';
-  var free = q.get('race') === 'free';
+  var free = q.get('race') === 'free', match = !!q.get('match');
   var day = new Date().toLocaleDateString(ru ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-  $('lKick').textContent = free ? t('Free race', 'Свободная гонка') : t('Today’s race', 'Гонка дня') + ' · ' + day;
-  $('lSub').textContent = free
+  $('lKick').textContent = match ? t('Match race', 'Матчевая гонка') : free ? t('Free race', 'Свободная гонка') : t('Today’s race', 'Гонка дня') + ' · ' + day;
+  $('lSub').textContent = match ? t('You and a friend, one on one, under the match-racing rules.', 'Ты и друг, один на один, по правилам матчевых гонок.')
+    : free
     ? t('Your wind, your fleet, your course — against the computer boats, under the racing rules.', 'Твой ветер, твой флот, твоя дистанция — против компьютерных лодок, по правилам.')
     : t('The same race for everyone today, so the times compare fairly.', 'Сегодня у всех одна гонка, поэтому время сравнивается честно.');
   $('lTick').textContent = t('Coming up', 'Дальше');

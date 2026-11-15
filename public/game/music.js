@@ -154,7 +154,8 @@ export function createMusic(ctx, out) {
     const s = ctx.createBufferSource(), g = ctx.createGain(), c = ctx.createGain(), n = now(), skip = Math.max(0, n - (t - fadeIn));
     s.buffer = bufs[style]; s.connect(g).connect(c).connect(dest);
     g.gain.setValueAtTime(0, t - fadeIn); g.gain.linearRampToValueAtTime(gain, t + fadeIn); g.gain.setValueAtTime(gain, t + len - fadeOut); g.gain.linearRampToValueAtTime(0, t + len + fadeOut);
-    s.start(t - fadeIn + skip, Math.max(0, at + shifts[style] - fadeIn + skip), len + fadeIn + fadeOut - skip + 0.01);
+    // (a stretch already over, scheduled from a cue that fell due while the page had no frames: a moment, silent, not a throw)
+    s.start(t - fadeIn + skip, Math.max(0, at + shifts[style] - fadeIn + skip), Math.max(0.001, len + fadeIn + fadeOut - skip + 0.01));
     const live = R.live, v = { s, c, t, end: t + len }; live.push(v); s.onended = () => { const i = live.indexOf(v); if (i >= 0) live.splice(i, 1); };
     return v;
   }

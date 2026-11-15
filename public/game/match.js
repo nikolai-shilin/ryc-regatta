@@ -118,6 +118,11 @@ export class Room {
     return msg;
   }
   onStart(fn) { this._starts.push(fn); }
+  // a name typed in the waiting room: in every hello from now on (and told at once)
+  rename(name) {
+    this.me.name = name; this._hello.name = name;
+    if (!this._left && !this._paused) this._sendHello();
+  }
 
   leave() {
     if (this._left) return;

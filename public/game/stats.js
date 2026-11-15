@@ -46,7 +46,7 @@ function myFlag() {
 // the day of today's race (the same wind for everyone), whose times rank on the game card on Home. Only the start
 // names the player (the finish finds its row), so it waits for the token if it is still on its way.
 export function raceStarted(race, opts) {
-  if (!race || race._rid) return;
+  if (!race || race._rid || race.match) return; // a match race is kept nowhere: nothing is posted from one
   race._rid = uuid();
   // (and the class of yacht, when not the JPK 1050: a J/70's or an AC75's times aren't the same race's)
   const body = { ev: 'start', id: race._rid, wind: opts.preset, laps: opts.laps, length: opts.length, shape: race.course.type, boats: race.boats.length, ...(opts.daily && { daily: opts.daily }), ...(myFlag() && { flag: myFlag() }), ...(CLS.id !== 'jpk1050' && { yacht: CLS.id }) };
@@ -56,7 +56,7 @@ export function raceStarted(race, opts) {
 // The player crossed the finish line (place is null when disqualified).
 export function raceFinished(race) {
   const P = race && race.player;
-  if (!P || !race._rid || race._sent) return;
+  if (!P || !race._rid || race._sent || race.match) return;
   race._sent = true;
   send({ ev: 'finish', id: race._rid, place: P.dsq ? null : P.place, boats: race.boats.length, secs: P.finish, dsq: !!P.dsq });
 }
@@ -64,7 +64,7 @@ export function raceFinished(race) {
 // The result page's record (main.js finishToPage), kept on the server too, so its link works on any device. A
 // keepalive post carries at most 64 kB, and the page is left at once: a bigger record stays on this device only.
 export function raceResult(race, result) {
-  if (!race || !race._rid || !result) return;
+  if (!race || !race._rid || !result || race.match) return;
   const body = { ev: 'result', id: race._rid, result };
   if (JSON.stringify(body).length < 60000) send(body, null);
 }
