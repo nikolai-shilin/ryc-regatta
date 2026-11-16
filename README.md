@@ -227,6 +227,16 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   and go, moved by `skopea.js` on the race's clock, all picture: the fast ferries to Rhodes and the water taxis on their
   `routes` (each found on the water by the bake, the cheapest way on the sea room's grid that keeps off the shore and
   skirts the race area) and Fethiye's kitesurfers off Çalış beach (`kites`).
+- **The sounds of the boat and the sea:** made as they go, not recorded (`public/game/sfx.js`), each from what makes
+  the real one: the wind a roar of brown noise and a hiss of pink in stereo, its gusts swelling on a slow random walk,
+  from where the apparent wind comes, and from about 13 knots the rigging's moan; the water a rush that brightens with
+  speed over a bed of bubbles, each a ringing upward chirp (Minnaert's); a sail flogging in cracks, a thump and a snap
+  each time it fills the other way, with the leech's flutter between; the hull slamming onto a sea, a thud, a boom and
+  the splash; the winch's pawl a struck bit of steel ringing; the sheet's rasp as it's eased; the start timer's piezo
+  beep. The committee boat's horn is an air horn's reed, sliding up to pitch and sagging as it stops, heard from where
+  she lies: late by the distance, duller and quieter the further off. Anything heard across the water (the horn, the
+  other crews, the umpire, the gulls, the plane) has the land's echo under it; another crew's voice is late by the
+  distance too, and carried to you or blown away by the wind between. Our own crew and the VHF are heard on deck.
 - **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes
   wrong (a sheet left out or in too hard, a broach, a foul, a collision, aground, stopped after the gun, now and then a
   tack) and through the start (the signals, a boat too close, the line far off, over early, a quick or a late start).

@@ -11,6 +11,7 @@ import { VENUE, venueById, laidLength, lengthOffered } from './venues.js';
 import { classById } from './classes.js';
 import { arriveLoaded, goBack } from './trail.js';
 import { createMusic, direct, MUSIC_STYLES } from './music.js';
+import { createSfx } from './sfx.js';
 
 const $ = (s) => document.querySelector(s);
 // a file of the game's (a voice, the calls, the gulls) at the address the page's import map gives it, with its hash
@@ -354,63 +355,52 @@ const seaK = () => SEA[opts.sea] ?? 1;
 const MUSIC_VOL = { loud: 1.6, normal: 1, quiet: 0.4 };
 const audio = {
   ctx: null, on: !!opts.sound,
-  noise(ctx) {
-    const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-    return buf;
-  },
-  chain(type, freq, q) {
-    const src = this.ctx.createBufferSource(); src.buffer = this.buf; src.loop = true; src.loopStart = Math.random();
-    const f = this.ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; if (q) f.Q.value = q;
-    const g = this.ctx.createGain(); g.gain.value = 0;
-    src.connect(f).connect(g).connect(this.master); src.start();
-    return g;
-  },
   init() {
     if (this.ctx) { this.ctx.resume(); return; }
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-      this.buf = this.noise(this.ctx);
       this.master = this.ctx.createGain(); this.master.gain.value = this.on ? 1 : 0; this.master.connect(this.ctx.destination);
-      this.windG = this.chain('lowpass', 500); this.waterG = this.chain('bandpass', 1500, 0.6); this.flapG = this.chain('bandpass', 320, 1.2);
+      // the wind, the water, the sails, the winch, the horn (sfx.js), made from what makes the real ones
+      this.sfx = createSfx(this.ctx, this.master); this.buf = this.sfx.white;
       // the voices (skipper, crews, committee, umpire) on a bus of their own, measured, so the music bows out under them
       this.voice = this.ctx.createGain(); this.voice.connect(this.master);
       this.meter = this.ctx.createAnalyser(); this.meter.fftSize = 512; this.voice.connect(this.meter); this.meterBuf = new Float32Array(512);
+      // a voice on board, and the VHF's speaker in the cockpit, heard on deck in the open: no studio's boom under it
+      // (a man shouting has none), and the faint first reflection off the sails and the coachroof a few ms after
+      const c = this.ctx; this.deck = c.createBiquadFilter(); this.deck.type = 'highpass'; this.deck.frequency.value = 110; this.deck.Q.value = 0.6;
+      const ref = c.createDelay(0.05), rl = c.createBiquadFilter(), rg = c.createGain();
+      ref.delayTime.value = 0.011; rl.type = 'lowpass'; rl.frequency.value = 2600; rg.gain.value = 0.16;
+      this.deck.connect(this.voice); this.deck.connect(ref).connect(rl).connect(rg).connect(this.voice);
       this.music = createMusic(this.ctx, this.master); // the soundtrack (music.js), in the style Settings › Music chose
     } catch (e) { this.ctx = null; }
   },
   // how loud the voices are now, 0..1 (the peak of the last ~10 ms)
   voiceLevel() { if (!this.meter) return 0; this.meter.getFloatTimeDomainData(this.meterBuf); let m = 0; for (const x of this.meterBuf) m = Math.max(m, Math.abs(x)); return m; },
   setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; if (!v) { skipper.stop(); asides.stop(); committee.stop(); } },
-  set(g, v, tc = 0.25) { if (g && this.ctx) g.gain.setTargetAtTime(v, this.ctx.currentTime, tc); },
   update(P, paused) {
-    if (!this.ctx) return;
-    const k = paused ? 0 : 1, sea = k * seaK();
-    this.set(this.windG, sea * Math.min(0.45, 0.03 + P.aws / 80));
-    this.set(this.waterG, sea * Math.min(0.35, P.v / 22 + (P.surf > 0 ? 0.1 : 0)));
-    // what your boat's picture is doing (yacht.js): her sails' flogging, her pitching, her trimmer at the winch
-    const v = world && race ? world.boatViews[race.boats.indexOf(P)] : null, cl = v?.cloth, s = v?.sea, now = this.ctx.currentTime;
+    if (!this.ctx || !this.sfx) return;
+    const k = paused ? 0 : 1, sea = k * seaK(), now = this.ctx.currentTime;
     const dt = clamp(now - (this.lastT ?? now), 0, 0.1); this.lastT = now;
+    // the wind from where it comes, as the boat's moving makes it (the apparent wind), left or right of the camera
+    const th = (P.awa || 0) + (P.h || 0), cv = world.camera.getWorldDirection(this._cv || (this._cv = world.camera.position.clone())), r = Math.hypot(cv.x, cv.z) || 1;
+    this.sfx.wind.update(P.aws, (Math.sin(th) * -cv.z - Math.cos(th) * cv.x) / r, sea, dt);
+    // what your boat's picture is doing (yacht.js): her sails' flogging, her pitching, her trimmer at the winch
+    const v = world && race ? world.boatViews[race.boats.indexOf(P)] : null, cl = v?.cloth, s = v?.sea;
+    this.sfx.water.update(P.v, P.surf > 0, s ? clamp(Math.abs(s.vp) * 3, 0, 1) : 0, sea);
     // a sail flogging cracks in time with the cloth, twice a cycle (it snaps over each way), quicker the harder it blows
     const flog = cl ? Math.max(cl.flogM, cl.flogJ) : P.trim === 'irons' ? 1 : P.luff;
-    this.flapPh = (this.flapPh || 0) + dt * 2 * Math.PI * (1.5 + 0.07 * Math.min(P.aws || 0, 30));
-    this.set(this.flapG, k * flog * (0.04 + 0.6 * Math.abs(Math.sin(this.flapPh)) ** 10), 0.012);
+    this.sfx.sails(flog || 0, P.aws, k, dt);
     if (paused) return;
     // the hull slapping down onto a sea: her bow dropping fast under way
     const drop = s ? -s.vp : 0;
     if (s && P.v > 1.5 && drop > 0.1 && now - (this.slapT ?? 0) > 0.45) { this.slapT = now; this.slap(clamp((drop - 0.1) / 0.2, 0.15, 1) * sea); }
     // the winch's pawl clicking away while the jib trimmer grinds the new sheet in after a tack
-    if (v?.grinding && now - (this.grindT ?? 0) > 0.085) { this.grindT = now; this.click(); }
+    if (v?.grinding && now - (this.grindT ?? 0) > 0.085) { this.grindT = now + Math.random() * 0.03; this.click(); }
   },
-  slap(vol) { // the hull slapping onto a sea: a dull thud in the hull and the water's splash off it
-    if (!this.ctx) return;
-    const n = this.ctx.currentTime;
-    for (const [type, f, peak, dur] of [['lowpass', 220, 0.5, 0.22], ['bandpass', 1100, 0.16, 0.3]]) {
-      const s = this.ctx.createBufferSource(), fl = this.ctx.createBiquadFilter(), g = this.ctx.createGain();
-      s.buffer = this.buf; fl.type = type; fl.frequency.value = f; g.gain.setValueAtTime(peak * vol, n); g.gain.exponentialRampToValueAtTime(0.001, n + dur);
-      s.connect(fl).connect(g).connect(this.master); s.start(n, Math.random(), dur + 0.05);
-    }
-  },
+  slap(vol) { if (this.sfx) this.sfx.slap(vol); }, // the hull slapping onto a sea
+  click() { if (this.sfx) this.sfx.click(); }, // a winch pawl
+  // the sheet eased: the rope's rasp as it runs out round the drum, not oftener than every 70 ms
+  ease() { if (!this.sfx) return; const n = this.ctx.currentTime; if (n - (this.easeT ?? 0) > 0.07) { this.easeT = n; this.sfx.ease(); } },
   tone(freq, dur, type = 'sine', vol = 0.25) {
     if (!this.ctx) return;
     const o = this.ctx.createOscillator(), g = this.ctx.createGain(), n = this.ctx.currentTime;
@@ -418,12 +408,13 @@ const audio = {
     g.gain.setValueAtTime(0, n); g.gain.linearRampToValueAtTime(vol, n + 0.02); g.gain.setValueAtTime(vol, n + dur - 0.05); g.gain.linearRampToValueAtTime(0, n + dur);
     o.connect(g).connect(this.master); o.start(n); o.stop(n + dur + 0.02);
   },
-  horn(long) { const d = long ? 2.2 : 1.0; this.tone(233, d, 'sawtooth', 0.12); this.tone(466, d, 'square', 0.035); },
-  click() { // a winch pawl
-    if (!this.ctx) return;
-    const s = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain(), n = this.ctx.currentTime;
-    s.buffer = this.buf; f.type = 'highpass'; f.frequency.value = 3500; g.gain.setValueAtTime(0.25, n); g.gain.exponentialRampToValueAtTime(0.001, n + 0.03);
-    s.connect(f).connect(g).connect(this.master); s.start(n, Math.random(), 0.04);
+  // the committee boat's horn, from where she lies (at: the line's committee end, or the finish boat), heard late and
+  // dulled by the distance; `when`: seconds from now (the second of a general recall's two)
+  horn(long, at, when = 0) {
+    if (!this.sfx) return;
+    let d = 120, pan = 0;
+    try { const c = race.course, b = at || c.committee; if (b) ({ d, pan } = crews.place(b)); } catch (e) {}
+    this.sfx.horn(long, d, pan, when);
   },
   // a file of recorded lines, decoded into the audio context: resolves to its buffer, or null if it can't be had
   fetch(file) {
@@ -733,7 +724,7 @@ const skipper = {
   play(k, from) { // from: another boat, whose call comes from where she is, in her skipper's own voice (crews.say)
     if (from) { const r = crews.say(from, k, 0.9, true); this.stop(); this.src = r.src; return r.len; }
     const ctx = audio.ctx, { buf, at, len } = lineOf(k), s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 0.9;
-    s.buffer = buf; s.connect(g).connect(audio.voice); s.start(ctx.currentTime, Math.max(0, at - 0.03), len + 0.09);
+    s.buffer = buf; s.connect(g).connect(audio.deck); s.start(ctx.currentTime, Math.max(0, at - 0.03), len + 0.09);
     this.stop(); this.src = s;
     return len;
   },
@@ -838,9 +829,9 @@ const crews = {
   // one of her events (sim.js): the sound of it, and her crew's call
   hear(b, e) {
     if (!audio.ctx || !audio.on || paused || audio.ctx.state !== 'running') return;
-    const { near, pan } = this.place(b); if (near <= 0) return;
+    const { d, near, pan } = this.place(b); if (near <= 0) return;
     const v = near * near, ctx = audio.ctx, now = ctx.currentTime;
-    if (e === 'tacking' || e === 'gybing') { this.flog(v, pan, 1.6); this.winch(v, pan, 1.5); }
+    if (e === 'tacking' || e === 'gybing') { this.flog(v, pan, 1.6, d / 343); this.winch(v, pan, 1.5 + d / 343); }
     const list = (this.calls[LANG] || {})[e];
     if (!list || !(this.buf || skipper.buf) || !opts.voice || now < this.talkTill || now < skipper.speakTill || committee.busy() || now - (this.last.get(b) ?? -1e9) < 10) return;
     const { len } = this.say(b, this.pick(b, list), 0.8 * Math.max(v, 0.08));
@@ -868,43 +859,41 @@ const crews = {
     return from[Math.floor(Math.random() * from.length)];
   },
   // play line k as boat b's skipper says it, from where she is: { src, len } (len in seconds as heard)
+  // Heard across the water as a voice is: late by the distance (a sixth of a second at 60 m), carried to you by a
+  // wind blowing from her to you and blown away by one blowing from you to her (louder and clearer, or fainter and
+  // duller), and echoed back off the land the more the further she is.
   say(b, k, gain, hail) {
-    const ctx = audio.ctx, ln = this.line(k), v = this.voice(b), { near, pan } = this.place(b);
+    const ctx = audio.ctx, ln = this.line(k), v = this.voice(b), { d, near, pan } = this.place(b), P = race.player;
     const { at, len } = ln, rate = ln.own ? 1 + (v.rate - 1) / 2 : v.rate;
+    const carry = d > 1 ? clamp(((P.x - b.x) * -Math.sin(P.wdir || 0) + (P.z - b.z) * Math.cos(P.wdir || 0)) / d, -1, 1) * Math.min(1, (P.tws || 0) / 14) : 0;
     const s = ctx.createBufferSource(), sh = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter();
     s.buffer = ln.buf; s.playbackRate.value = rate;
     sh.type = 'highshelf'; sh.frequency.value = 2200; sh.gain.value = v.tone;
-    lp.type = 'lowpass'; lp.frequency.value = (hail ? 3000 : 1500) + 6000 * near; // across the water a voice loses its top; a hail is shouted
-    s.connect(sh).connect(lp).connect(this.out(gain, pan * (hail ? 0.7 : 1), audio.voice));
-    s.start(ctx.currentTime, Math.max(0, at - 0.03), len + 0.09); // the duration is the file's, whatever the rate
-    return { src: s, len: len / rate };
+    lp.type = 'lowpass'; lp.frequency.value = ((hail ? 3000 : 1500) + 6000 * near) * (1 + 0.3 * carry); // across the water a voice loses its top; a hail is shouted
+    const o = this.out(gain * (1 + 0.4 * carry), pan * (hail ? 0.7 : 1), audio.voice);
+    s.connect(sh).connect(lp).connect(o); audio.sfx.send(lp, gain * (0.12 + 0.3 * (1 - near)));
+    const late = d / 343;
+    s.start(ctx.currentTime + late, Math.max(0, at - 0.03), len + 0.09); // the duration is the file's, whatever the rate
+    return { src: s, len: len / rate + late };
   },
   // sails flogging through the wind: noise in cracks, dying away
-  flog(v, pan, dur) {
+  flog(v, pan, dur, late = 0) {
     if (v < 0.01) return;
-    const ctx = audio.ctx, n = ctx.currentTime + 0.15, s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-    s.buffer = audio.buf; s.loop = true; f.type = 'bandpass'; f.frequency.value = 320; f.Q.value = 1.2; g.gain.value = 0;
-    for (let t = 0; t < dur; t += 0.04) g.gain.setValueAtTime((Math.random() < 0.45 ? 0.5 : 0.04) * v * (1 - t / dur), n + t);
-    g.gain.setValueAtTime(0, n + dur);
-    s.connect(f).connect(g).connect(this.out(1, pan)); s.start(n - 0.15, Math.random()); s.stop(n + dur + 0.05);
+    const n = audio.ctx.currentTime + 0.15 + late, top = 0.75 * v;
+    for (let t = 0; t < dur; t += 0.13 + Math.random() * 0.12) audio.sfx.crack(top * (1 - t / dur) * (0.5 + Math.random() * 0.5), pan * 0.85, audio.master, n + t);
   },
   // the new sheet ground in on a winch: a run of pawl clicks
   winch(v, pan, delay) {
     if (v < 0.02) return;
-    const ctx = audio.ctx, o = this.out(1, pan);
-    for (let i = 0, t = ctx.currentTime + delay; i < 9; i++, t += 0.08 + Math.random() * 0.04) {
-      const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-      s.buffer = audio.buf; f.type = 'highpass'; f.frequency.value = 3500; g.gain.setValueAtTime(0.22 * v, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
-      s.connect(f).connect(g).connect(o); s.start(t, Math.random(), 0.04);
-    }
+    for (let i = 0, t = audio.ctx.currentTime + delay; i < 9; i++, t += 0.08 + Math.random() * 0.04) audio.sfx.click(v, pan * 0.85, audio.master, t);
   },
   // every frame: the nearest boat's bow wave and wash, while she's within forty metres
   update(P, still) {
     if (!audio.ctx) return;
     if (!this.wash) {
       const ctx = audio.ctx, s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(), p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
-      s.buffer = audio.buf; s.loop = true; s.loopStart = Math.random(); f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 0.7; g.gain.value = 0;
-      s.connect(f).connect(g); if (p) g.connect(p).connect(audio.master); else g.connect(audio.master); s.start();
+      s.buffer = audio.sfx.pink; s.loop = true; f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 0.7; g.gain.value = 0;
+      s.connect(f).connect(g); if (p) g.connect(p).connect(audio.master); else g.connect(audio.master); s.start(0, Math.random() * 3);
       this.wash = { g, p };
     }
     let best = null, bd = 40;
@@ -932,6 +921,7 @@ const engine = {
     w.connect(wf).connect(wg).connect(g);
     const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
     if (p) g.connect(p).connect(audio.master); else g.connect(audio.master);
+    audio.sfx.send(g, 0.3); // and echoed back off the land
     for (const x of [o, sub, thr]) x.start(); w.start(0, Math.random());
     this.n = { o, sub, lp, g, p };
   },
@@ -1020,7 +1010,7 @@ const asides = {
   say(k) {
     const b = this.buf[k]; if (!b || !this.live() || !opts.voice) return false;
     const ctx = audio.ctx, now = ctx.currentTime, s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 0.9;
-    s.buffer = b; s.connect(g).connect(audio.voice); s.start(now); this.stop(); this.src = s;
+    s.buffer = b; s.connect(g).connect(audio.deck); s.start(now); this.stop(); this.src = s;
     this.last[k] = now; skipper.speakTill = Math.max(skipper.speakTill, now + b.duration + 0.4); skipper.busyTill = Math.max(skipper.busyTill, now + b.duration + 6);
     return true;
   },
@@ -1032,7 +1022,7 @@ const asides = {
     lp.type = 'lowpass'; lp.frequency.value = 2200 + 8000 * near; lp.Q.value = 0.5; lp.connect(out);
     const echo = ctx.createDelay(0.5), eg = ctx.createGain(), el = ctx.createBiquadFilter(); // off the water and the hulls round about
     echo.delayTime.value = 0.05 + 0.12 * (1 - near); eg.gain.value = 0.18 + 0.2 * (1 - near); el.type = 'lowpass'; el.frequency.value = 2600;
-    lp.connect(echo).connect(el).connect(eg).connect(out);
+    lp.connect(echo).connect(el).connect(eg).connect(out); audio.sfx.send(lp, 0.08 + 0.2 * (1 - near));
     const t0 = ctx.currentTime + 0.03 + Math.random() * 0.08 + d / 343;
     const end = gulls.play(ctx, lp, t0, n, alarm, 0.8 * Math.max(v, 0.03));
     if (end === null) { lp.disconnect(); return; }
@@ -1093,7 +1083,8 @@ const committee = {
     let t = ctx.currentTime;
     if (ump) { this.whistle(t); t += 0.6; }
     const s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = ump ? 0.8 : 0.7; // a handset in the cockpit
-    s.buffer = calls.buf; s.connect(g).connect(ump ? crews.out(1, 0.35, audio.voice) : audio.voice); s.start(t, Math.max(0, at - 0.03), len + 0.09);
+    s.buffer = calls.buf; s.connect(g).connect(ump ? crews.out(1, 0.35, audio.voice) : audio.deck); s.start(t, Math.max(0, at - 0.03), len + 0.09);
+    if (ump) audio.sfx.send(g, 0.3); // the loudhailer off the water and the land
     this.src = s; this.till = t + len + 0.3;
     skipper.busyTill = Math.max(skipper.busyTill, this.till + 2);
   },
@@ -1104,7 +1095,7 @@ const committee = {
       const o = ctx.createOscillator(), lfo = ctx.createOscillator(), dep = ctx.createGain(), g = ctx.createGain(), a = t + at;
       o.frequency.value = 2900 + Math.random() * 150; lfo.frequency.value = 26 + Math.random() * 6; dep.gain.value = 220; // the pea
       g.gain.setValueAtTime(0, a); g.gain.linearRampToValueAtTime(0.12, a + 0.015); g.gain.setValueAtTime(0.12, a + dur - 0.04); g.gain.linearRampToValueAtTime(0, a + dur);
-      lfo.connect(dep).connect(o.frequency); o.connect(g).connect(out);
+      lfo.connect(dep).connect(o.frequency); o.connect(g).connect(out); audio.sfx.send(g, 0.35);
       o.start(a); lfo.start(a); o.stop(a + dur + 0.02); lfo.stop(a + dur + 0.02);
     }
   },
@@ -1267,7 +1258,7 @@ const autoOff = () => {
 const setSheet = (v) => {
   const P = race.player; v = clamp(v, 0, 1);
   if (v < input.lastSheet - 0.012) { audio.click(); input.lastSheet = v; } // trimming in: the winch clicks
-  else if (v > input.lastSheet) input.lastSheet = v;
+  else if (v > input.lastSheet + 0.006) { audio.ease(); input.lastSheet = v; } // easing: the sheet runs out round the drum
   if (sheetWhich === 'jib') P.jibSheet = v; else P.sheet = v;
 };
 const setSheetFrom = (y) => { const r = (sheetWhich === 'jib' ? jibEl : sheetEl).getBoundingClientRect(); setSheet((y - r.top) / r.height); };
@@ -1670,7 +1661,7 @@ function updateHud(dt) {
   el.count.classList.toggle('final', race.clock < 0 && left <= 10);
   const ci = Math.ceil(-race.clock);
   if (race.clock < 0 && ci !== lastClockInt) {
-    if (lastClockInt !== null && ci <= 10 && ci > 0) { if (!skipper.count(ci)) audio.tone(ci <= 3 ? 1046 : 880, 0.12); if (ci <= 3) haptic('light'); } // the count: a voice, or beeps
+    if (lastClockInt !== null && ci <= 10 && ci > 0) { if (!skipper.count(ci) && audio.sfx) audio.sfx.beep(ci <= 3); if (ci <= 3) haptic('light'); } // the count: a voice, or beeps
     lastClockInt = ci;
   }
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) el.toast.classList.remove('show'); }
@@ -1719,7 +1710,7 @@ function handleMessages() {
       if (a.key === 'gun' && P.ocs) continue;
       toast(t(a.key, Math.round(-a.t / 60), race.prepFlag), 3);
     } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') {
-      race._fin = finishScene(race); raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(); haptic('heavy');
+      race._fin = finishScene(race); raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(false, race.course.finishBoat); haptic('heavy');
       score.sting(m.key !== 'finished' ? 'lose' : m.arg === 1 ? 'win' : m.arg <= Math.max(2, Math.ceil(race.boats.length / 3)) ? 'gain' : 'lose');
       // the committee's word at the finish, heard out before the result
       const end = committee.call(m.key === 'finishedDsq' ? 'cFinDsq' : m.key === 'finishedStartDsq' ? 'cFinOut' : m.arg === 1 ? 'cFin1' : 'cFin', 1.5);
@@ -1731,7 +1722,7 @@ function handleMessages() {
     else if (m.key === 'hail') { const h = t('hail' + a.rule), who = race.boats.find((b) => b.name === a.who); toast(`${a.who}: “${h}”`, 2.2); skipper.cue('hail' + a.rule, who, true); asides.hail(); haptic('warn'); }
     else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); skipper.cue('hail' + a.rule, null, true); } }
     else if (m.key === 'seaBreeze') { toast(t('seaBreeze'), 5); committee.call('cBreeze', 20); }
-    else if (m.key === 'genRecall') { score.sting('hit'); toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(); haptic('warn'); committee.stop(); committee.call('cGenRecall'); skipper.shout('lost'); }
+    else if (m.key === 'genRecall') { score.sting('hit'); toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(false, null, 1.25); haptic('warn'); committee.stop(); committee.call('cGenRecall'); skipper.shout('lost'); }
     else if (m.key === 'prepU' || m.key === 'prepB' || m.key === 'ufd' || m.key === 'bfd') {
       toast(t(m.key), 4);
       if (m.key === 'prepU' || m.key === 'prepB') { if (race.seq.length <= 2) committee.call(m.key === 'prepU' ? 'cFlagU' : 'cFlagB', 8); skipper.later('flag'); } // a one-minute start has no preparatory signal to say it
@@ -1798,7 +1789,7 @@ function matchMessage(m, a, P, ump) {
     case 'finished': case 'finishedDsq': case 'finishedStartDsq': { // no result page: the match's card comes after
       const won = race.winner ? race.winner === P : m.arg === 1;
       toast(won ? t('raceWon') : t('raceLost', race.winner ? race.winner.name : race.humans.find((b) => b !== P)?.name), 3.5);
-      audio.horn(); haptic('heavy'); score.sting(won ? 'win' : 'lose'); committee.call(won ? 'cFin1' : 'cFin', 1.5);
+      audio.horn(false, race.course.finishBoat); haptic('heavy'); score.sting(won ? 'win' : 'lose'); committee.call(won ? 'cFin1' : 'cFin', 1.5);
       return true;
     }
   }

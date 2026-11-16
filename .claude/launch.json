@@ -62,6 +62,20 @@
         "5197"
       ],
       "port": 5197
+    },
+    {
+      "name": "game-static-3",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5186",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "public"
+      ],
+      "port": 5186
     }
   ]
 }
