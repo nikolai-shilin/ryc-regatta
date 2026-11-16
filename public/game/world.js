@@ -928,7 +928,7 @@ function underParts(root, bottom, world) {
   const col = new THREE.Color(bottom || '#5b1f24'), box = new THREE.Box3(), size = new THREE.Vector3();
   root.updateMatrixWorld(true);
   root.traverse((o) => {
-    if (!o.isMesh || o.isSprite || o.isSkinnedMesh || o.isInstancedMesh || o.morphTargetInfluences) return;
+    if (!o.isMesh || o.isSprite || o.isSkinnedMesh || o.isInstancedMesh || o.morphTargetInfluences || o.userData.dry) return;
     box.setFromObject(o);
     if (box.isEmpty() || box.getSize(size).y < 0.05 || box.min.y > 0.3 || box.max.y > 4.5) return;
     const m = Array.isArray(o.material) ? o.material[0] : o.material;
@@ -1273,6 +1273,7 @@ export class World {
     SEA.uW.value = this.waterU.uW.value; SEA.uWs.value = this.waterU.uWs.value; // the hulls' wet line rides the same seas (yacht.js)
     this.water = new THREE.Mesh(waterGeometry(), new THREE.ShaderMaterial({ uniforms: this.waterU, vertexShader: WATER_VS, fragmentShader: WATER_FS, defines: { WAVES: NW }, extensions: { derivatives: true } }));
     this.water.frustumCulled = false;
+    this.water.renderOrder = 1; // after the open boats' dry lids (boats3d.js DRY_ORDER), which keep it out of their hulls
     this.scene.add(this.water);
     this.seaShade = new SeaShade(this.renderer, { uTime: this.waterU.uTime, uW: this.waterU.uW, uWs: this.waterU.uWs, uSun: this.waterU.uSun, ...this.oceanU, ...this.wakeFU });
 

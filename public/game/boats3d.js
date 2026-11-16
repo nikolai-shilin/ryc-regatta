@@ -999,6 +999,9 @@ function pillowGeo(w, h, l, puff = 0.55) {
 }
 const BAG = new THREE.MeshPhysicalMaterial({ color: '#efeee8', roughness: 0.38, clearcoat: 0.4, clearcoatRoughness: 0.3, envMapIntensity: 0.9 }); // PVC
 const RUB = new THREE.MeshStandardMaterial({ color: '#2c2f33', roughness: 0.7, side: THREE.DoubleSide });
+// an open boat's dry lid (OptimistView): depth only, drawn after the boats (order 0) and before the sea (world.js)
+export const DRY_ORDER = 0.5;
+const DRY = new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide });
 
 class OptimistView extends ClassView {
   constructor({ look = LOOKS.player, label = null, player = false, cls = CLS }) {
@@ -1035,6 +1038,17 @@ class OptimistView extends ClassView {
       add(new THREE.Mesh(new THREE.BoxGeometry(0.075, O.CASE_TOP - cb, 0.4), GEL2), 0, (O.CASE_TOP + cb) / 2, O.DBZ);
       const mf = O.floorAt(O.MID_Z), mw = O.innerX(O.MID_Z, mf + O.MID_H / 2);
       add(new THREE.Mesh(new THREE.BoxGeometry(2 * mw, O.MID_H, 0.03), GEL2), 0, mf + O.MID_H / 2, O.MID_Z - 0.015);
+    }
+    // her floor lies under the waterline, so the sea's surface, level across her, would be drawn over it and she'd look
+    // swamped: a lid across her gunwale, unseen, that writes only depth after the boat is drawn and before the sea
+    // (world.js draws the water after it), so the sea stops at her gunwale and her inside stays dry
+    {
+      const N = 40, pos = [], idx = [];
+      for (let i = 0; i <= N; i++) { const t = i / N, y = O.sheer(t), z = H.zAt(t), x = O.hb(t) + 0.004; pos.push(-x, y, z, x, y, z); }
+      for (let i = 0; i < N; i++) { const a = 2 * i; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+      const lid = add(new THREE.Mesh(g, DRY));
+      lid.renderOrder = DRY_ORDER; lid.userData.flat = true; lid.userData.dry = true; // no shadow, not seen through the water
     }
     // the bow's towing eye and the painter's bight on the bow transom's top; the transom's drain bung
     add(new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.005, 6, 12), M.steel), 0, O.sheer(1) - 0.05, O.zp(1, O.sheer(1) - 0.05) - 0.008).rotation.y = Math.PI / 2;
