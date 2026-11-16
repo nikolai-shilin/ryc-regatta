@@ -147,6 +147,33 @@ export function pickSky(race) {
   return skyAt(hour, overcast);
 }
 
+// The sky's colour in a direction, without its clouds (its uniforms declared by whoever includes it: SKY_GLSL, and
+// the haze on three's own materials, world.js)
+export const SKY_BASE_GLSL = /* glsl */ `
+// The sky is not the same all round: the air scatters the sun's light most straight on and straight back (Rayleigh's
+// 1 + cos²), so the blue overhead is deepest a quarter of the way round from the sun, and with the sun low the warm
+// band on the horizon is the sun's side only, rising higher there, while the far side's horizon is the pale, cool
+// blue-grey of air lit side-on. (uTop and uHorizon are the sky's average round the compass, as the looks give them.)
+vec3 skyBase(vec3 d) {
+  float y = max(d.y, 0.0), mu = dot(d, uSun);
+  float clear = 1.0 - smoothstep(0.06, 0.18, uCloud); // under a cloud deck the light comes from all of it alike
+  float low = (1.0 - smoothstep(0.05, 0.6, uSun.y)) * clear; // 1 with the sun on the horizon, 0 from about 37° up
+  vec2 hd = d.xz, hs = uSun.xz;
+  float side = dot(hd, hs) * inversesqrt(max(dot(hd, hd) * dot(hs, hs), 1e-8)); // 1 under the sun, -1 opposite
+  vec3 lw = vec3(0.2126, 0.7152, 0.0722);
+  float lh = dot(uHorizon, lw);
+  vec3 cool = mix(vec3(lh), uTop * (lh / max(dot(uTop, lw), 1e-4)), 0.45) * 0.94; // the horizon's brightness in the top's hue
+  float toward = low * max(side, 0.0);
+  vec3 hor = mix(uHorizon, cool, low * 0.85 * smoothstep(0.2, -0.8, side)) * (1.0 + 0.15 * toward);
+  hor *= mix(vec3(1.0), uSunCol / max(dot(uSunCol, lw), 1e-4), 0.4 * toward * toward); // under the sun, the sun's own gold
+  vec3 top = uTop * (1.0 + clear * (0.3 * mu * mu - 0.1));
+  vec3 c = mix(hor, top, pow(y, 0.5 + 0.3 * toward - 0.12 * low * max(-side, 0.0)));
+  float g = 0.8, hg = (1.0 - g * g) / pow(max(1.0 + g * g - 2.0 * g * mu, 1e-4), 1.5) * 0.0796;
+  c += uSunCol * hg * uMie * (0.35 + 0.65 * exp(-y * 5.0));
+  return c;
+}
+`;
+
 // The sky, shared by the sky dome, the sea's reflection of it and the haze on the water: a gradient from the
 // horizon up to the zenith, the bright Mie haze round the sun (strongest low down, through more air), and the
 // fair-weather cumulus on a layer overhead, made from the ripple noise (uRipple), lit as cumulus are (withClouds). The
@@ -155,13 +182,7 @@ export function pickSky(race) {
 // put as a boat sails under it.
 export const SKY_GLSL = /* glsl */ `
 uniform vec3 uTop, uHorizon, uSun, uSunCol, uCloudLit, uCloudDark, uSkyAt; uniform float uMie, uCloud; uniform sampler2D uRipple;
-vec3 skyBase(vec3 d) {
-  float y = max(d.y, 0.0), mu = dot(d, uSun);
-  vec3 c = mix(uHorizon, uTop, pow(y, 0.5));
-  float g = 0.8, hg = (1.0 - g * g) / pow(max(1.0 + g * g - 2.0 * g * mu, 1e-4), 1.5) * 0.0796;
-  c += uSunCol * hg * uMie * (0.35 + 0.65 * exp(-y * 5.0));
-  return c;
-}
+${SKY_BASE_GLSL}
 float cloudN(vec3 d, float t) {
   // (where the ray meets the layer; low down, where it would meet it ever further off, nearer, as a flatter dome)
   float dy = max(d.y, 0.0);

@@ -13,7 +13,7 @@ import { Jets } from './jets.js';
 import { Ships } from './ships.js';
 import { Post, Mirror, OVERLAY, MIRRORED } from './post.js';
 import { Ocean, OCEAN_GLSL, SWELL_GLSL, oceanUniforms, blankOcean } from './ocean.js';
-import { skyAt, pickSky, SKY_GLSL, skyUniforms } from './light.js';
+import { skyAt, pickSky, SKY_GLSL, SKY_BASE_GLSL, skyUniforms } from './light.js';
 import { Skopea, groundAt, inLandShadow, CLOUD_GLSL } from './skopea.js';
 import { VENUE } from './venues.js';
 export { flagTexture } from './committee.js';
@@ -27,7 +27,35 @@ const FOG_NEAR = 150, FOG_FAR = 3200; // the sea's haze (its shader: it melts in
 // birds): the land's own (skopea.js), so a boat 2 km off is as hazy as the shore 2 km off, not lost in the sky while
 // the hills behind her stand clear. Thicker with the distance, over the venue's haze length (the fog's `far`), and
 // thinner seen from higher up, the haze thinning upwards over the fog's `near` metres (700, 140 in a morning's mist).
-// Three's own linear fog is put back with this, in the same uniforms, for every material.
+// Its colour is the sky's at the horizon that way (light.js skyBase), as the land's and the sea's haze are: warm and
+// bright towards a low sun, a cool blue-grey away from it. Three's own linear fog is put back with this, in the same
+// uniforms, for every material; the sky's are handed to three's materials as live views of the world's (FOG_SKY), as
+// plain objects, which three shares between materials where it would copy a Color or a Vector3. Until there is a
+// world, or in a material without them, they read as zero and the haze is the fog's flat colour.
+let FOG_SRC = null; // the world's sky uniforms
+const live = (name, keys) => Object.defineProperties({}, Object.fromEntries(keys.map((k) => [k, { get: () => (FOG_SRC ? FOG_SRC[name].value[k] : 0), enumerable: true }])));
+const FOG_SKY = {
+  fogSkyTop: { value: live('uTop', ['r', 'g', 'b']) }, fogSkyHorizon: { value: live('uHorizon', ['r', 'g', 'b']) },
+  fogSkySun: { value: live('uSun', ['x', 'y', 'z']) }, fogSkySunCol: { value: live('uSunCol', ['r', 'g', 'b']) },
+  fogSkyK: { value: { get x() { return FOG_SRC ? FOG_SRC.uMie.value : 0; }, get y() { return FOG_SRC ? FOG_SRC.uCloud.value : 0; }, z: 0 } },
+};
+for (const k in THREE.ShaderLib) if (THREE.ShaderLib[k].uniforms.fogColor) Object.assign(THREE.ShaderLib[k].uniforms, FOG_SKY);
+const FOG_SKY_GLSL = `uniform vec3 fogSkyTop, fogSkyHorizon, fogSkySun, fogSkySunCol, fogSkyK;
+#define uTop fogSkyTop
+#define uHorizon fogSkyHorizon
+#define uSun fogSkySun
+#define uSunCol fogSkySunCol
+#define uMie fogSkyK.x
+#define uCloud fogSkyK.y
+#define skyBase fogSky
+${SKY_BASE_GLSL}
+#undef uTop
+#undef uHorizon
+#undef uSun
+#undef uSunCol
+#undef uMie
+#undef uCloud
+#undef skyBase`;
 THREE.ShaderChunk.fog_pars_vertex = '#ifdef USE_FOG\n\tvarying vec3 vFogRel;\n#endif';
 THREE.ShaderChunk.fog_vertex = '#ifdef USE_FOG\n\tvFogRel = mvPosition.xyz;\n#endif';
 THREE.ShaderChunk.fog_pars_fragment = `#ifdef USE_FOG
@@ -37,17 +65,20 @@ THREE.ShaderChunk.fog_pars_fragment = `#ifdef USE_FOG
 	#else
 		uniform float fogNear; uniform float fogFar;
 		float fogAir(float a, float b, float H) { float d = b - a; return abs(d) < 1.0 ? exp(-a / H) : H * (exp(-a / H) - exp(-b / H)) / d; }
+		${FOG_SKY_GLSL}
 	#endif
 #endif`;
 THREE.ShaderChunk.fog_fragment = `#ifdef USE_FOG
 	#ifdef FOG_EXP2
 		float fogFactor = 1.0 - exp( - fogDensity * fogDensity * dot( vFogRel, vFogRel ) );
+		vec3 fogC = fogColor;
 	#else
 		vec3 fogW = ( vec4( vFogRel, 0.0 ) * viewMatrix ).xyz; // from the eye, turned back to the world's way up
 		float fogA = 0.25 + 0.75 * fogAir( max( cameraPosition.y, 0.0 ), max( cameraPosition.y + fogW.y, 0.0 ), fogNear );
 		float fogFactor = 0.92 * ( 1.0 - exp( - length( fogW ) / fogFar * fogA ) );
+		vec3 fogC = dot( fogSkyTop, fogSkyTop ) > 0.0 ? fogSky( normalize( vec3( fogW.x, 0.0, fogW.z ) + vec3( 0.0, 1e-4, 0.0 ) ) ) : fogColor;
 	#endif
-	gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );
+	gl_FragColor.rgb = mix( gl_FragColor.rgb, fogC, fogFactor );
 #endif`;
 // the haze length in this light (as the land's, skopea.js setLight) and the height it thins over
 const hazeLength = (L) => L.fogFar * 2.4 * (VENUE.look.haze ?? 1);
@@ -997,7 +1028,12 @@ void main() {
   vec4 cl = withClouds(col, d, uSun, uTime, false);
   col = cl.rgb;
   float s = max(dot(d, uSun), 0.0);
-  col += uSunCol * (pow(s, 800.0) * 6.0 * uDisc * (1.0 - cl.a) + pow(s, 12.0) * 0.25); // the disc hides behind a cloud
+  // the disc as it is, half a degree across (a touch over: a lens spreads it), darker at its limb, too bright for any
+  // exposure (the bloom spreads it); round it the aureole, the haze lit by it, brightest a degree or two out
+  float th = sqrt(max(2.0 - 2.0 * s, 0.0)), R = 0.0065, r = min(th / R, 1.0);
+  float disc = (1.0 - smoothstep(R - 0.0012, R + 0.0012, th)) * (0.4 + 0.6 * sqrt(1.0 - r * r)) * 40.0;
+  float aureole = exp(-th / 0.018) * 1.6 + exp(-th / 0.006) * 2.5;
+  col += uSunCol * uDisc * (disc * (1.0 - cl.a) + aureole * (1.0 - 0.8 * cl.a)) + uSunCol * pow(s, 12.0) * 0.25; // the disc hides behind a cloud
   gl_FragColor = vec4(col, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -1147,6 +1183,7 @@ export class World {
     this.foamTex = { value: foamTexture() }; // the froth of the whitecaps and the wash
     // the sky's uniforms, shared by the dome, the environment map and the water (setLight changes them)
     this.skyU = { ...skyUniforms(), uRipple: { value: ripple } };
+    FOG_SRC = this.skyU; // the haze on three's own materials (FOG_SKY)
     this.skyU.uTop.value = SKY_TOP; this.skyU.uHorizon.value = SKY_HORIZON; this.skyU.uSun.value = SUN;
     this.discU = { value: 1 };
     const skyMat = () => new THREE.ShaderMaterial({
