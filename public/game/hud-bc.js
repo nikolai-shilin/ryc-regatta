@@ -222,7 +222,6 @@ const CSS = `
 #hud.bc .b-you .c-nm .b-fl { width: 30px; height: 20px; }
 .b-you .c-nm .b-fl:not([hidden]) + i { display: none; }
 .b-you .c-nmt { display: flex; flex-direction: column; gap: var(--s-2); white-space: nowrap; }
-.b-you .c-nmt .lbl { color: var(--you); }
 .b-you .c-leg { display: none; }
 .b-you .b-v { display: flex; align-items: baseline; gap: var(--s-2); white-space: nowrap; }
 .b-you .b-g { position: relative; width: 100px; height: 3px; background: var(--fill-3); }
@@ -631,7 +630,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   const low = html(`<div class="bx b-low"><div class="b-move" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-split" role="status"><span class="k"></span><b class="t"></b><span class="v"></span><span class="g"></span></div><div class="b-callrow"><div class="b-lay" role="status">${TACK_SVG}${BEAR_SVG}<span></span><kbd class="b-key"></kbd></div></div><div class="b-state"></div>
     <div class="pn b-you pre">
       <div class="c-pos s-run s-done"></div>
-      <div class="c-nm s-pre s-run s-done"><img class="b-fl" alt="" hidden><i></i><span class="c-nmt"><span class="n-m"></span><span class="lbl">${L.you}</span></span></div>
+      <div class="c-nm s-pre s-run s-done"><img class="b-fl" alt="" hidden><i></i><span class="c-nmt"><span class="n-m"></span></span></div>
       <div class="c-leg s-pre s-run s-done"><svg viewBox="0 0 10 10" aria-hidden="true"><path fill="currentColor"/></svg><span></span></div>
       <div class="c-spd s-pre s-run"><span class="lbl">${L.speed}</span><span class="n-l"><span class="v"></span><span class="unit">${KNU}</span></span></div>
       <div class="c-pct s-run"><span class="lbl">${L.vmg} · ${L.ofTarget.toLowerCase()}</span><span class="b-v"><span class="n-l c-vm"><span class="v"></span><span class="unit">${KNU}</span></span><span class="n-s pv"></span></span><span class="b-g" aria-hidden="true"><i></i></span></div>
