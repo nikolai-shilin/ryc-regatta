@@ -3,17 +3,20 @@
 #
 # Johan Anker's 1929 keelboat, to the International Dragon class rules (World Sailing 2020): 8.90 m over all on 5.66 m
 # of waterline, 1.96 m wide, drawing 1.20 m. Long overhangs, a spoon bow and a counter ending in a small transom raked
-# forward 320 mm from the deck to its foot; a low freeboard with a sweeping sheer, highest at the bow. Her sections are
-# a wine glass: round bilges over a hollow garboard that runs down into the deadwood and the iron keel, one surface, the
-# keel's own section a foil some 15 cm thick that fines to its trailing edge, where the rudder hangs. The keel's flat
-# foot is 1.20 m down, its leading edge a long sweep up into the forefoot, its trailing edge raked aft up to the counter
-# along the rudder's stock. The deck cambered 9.5 mm in every 305 mm of her width, its edge turned on a 9 mm radius.
+# forward 320 mm from the deck to its foot, 0.24 m deep; a low freeboard, 0.56 m at the transom, 0.545 m at its lowest
+# and 0.73 m at the stem. Her profile is taken off the class's sail plan (Wikimedia Commons, "Dragon (keelboat).svg",
+# 128 px to the metre) and checked against photographs of her afloat and ashore. Her sections are a wine glass: round
+# bilges over a hollow garboard that runs down into the deadwood and the iron keel, one surface, the keel's own section
+# a foil some 15 cm thick that fines to its trailing edge, where the rudder hangs. The keel's foot runs 1.44 m, 1.12 m
+# down at its fore end and 1.22 m at its aft, its leading edge dropping steeply from the forefoot to a rounded toe, its
+# trailing edge raked 43° aft up to the counter along the rudder's stock. The deck cambered 9.5 mm in every 305 mm of
+# her width, its edge turned on a 9 mm radius.
 #
 # The cabin and the cockpit coaming are one band of varnished mahogany, a fair curve all round as the rules have it:
 # the cabin's sides 20 cm high, narrowing forward to its rounded front, then aft along the cockpit 13 cm high and round
 # its aft end; the cabin top arched 10 cm over them, ending at station 8 over the cabin's aft face (boats3d.js draws
 # the companionway in it); the cockpit inside the coaming from station 8 to 0.2 m short of station 12, its floorboards
-# 0.47 m under the deck.
+# 0.45 m under the deck.
 #
 # The rudder and tiller, the spars, the sails, the fittings and the crew stay in boats3d.js (they move, or are made per
 # boat). The hull follows boats3d.js's lines for her (DZ: the same functions as below), so the name, the number and the
@@ -59,13 +62,14 @@ def t_at(z): return clamp((STERN - z) / L, 0, 1)
 def hb(t):  # the deck's half-breadth: 0.53 m across the transom, 1.96 m at stations 8–9, 1.834 m at station 6
     if t < 0.44: return (B / 2) * (0.27 + 0.73 * math.sin((t / 0.44) * math.pi / 2) ** 0.9)
     return (B / 2) * max(0.0, math.cos(min(1, (t - 0.44) / 0.56) * math.pi / 2)) ** 0.75
-def sheer(t):  # the deck's height: lowest 0.58 m some 2.7 m from the transom, 0.72 m there and 0.92 m at the stem
-    if t < 0.3: return 0.58 + 0.14 * ((0.3 - t) / 0.3) ** 2
-    return 0.58 + 0.34 * ((t - 0.3) / 0.7) ** 1.8
-# the canoe body's centreline under her (its depth below the water, negative where the overhangs stand clear of it): the
-# waterline from 1.85 m forward of the transom to 1.39 m aft of the stem, 5.66 m long
-YC = spline([(0, 0.38), (0.1, 0.18), (0.208, 0.0), (0.3, -0.155), (0.4, -0.26), (0.5, -0.3), (0.6, -0.275), (0.7, -0.19),
-             (0.78, -0.095), (0.844, 0.0), (0.9, 0.14), (0.95, 0.37), (1.0, 0.87)])
+def sheer(t):  # the deck's height: 0.56 m at the transom, lowest (0.545 m) 3.1 m forward of it, 0.725 m at the stem
+    if t < 0.35: return 0.545 + 0.015 * ((0.35 - t) / 0.35) ** 2
+    return 0.545 + 0.18 * ((t - 0.35) / 0.65) ** 2
+# the canoe body's centreline under her (its depth below the water, negative where the overhangs stand clear of it), off
+# the sail plan: the counter falling straight from the transom's foot to the keel's trailing edge, the waterline from
+# 1.6 m forward of the transom to 1.65 m aft of the stem, the forefoot a long convex curve up to the stem
+YC = spline([(0, 0.32), (0.1, 0.18), (0.155, 0.065), (0.2, -0.035), (0.243, -0.13), (0.3, -0.2), (0.4, -0.27), (0.5, -0.3),
+             (0.6, -0.29), (0.687, -0.25), (0.74, -0.16), (0.814, 0.0), (0.915, 0.23), (0.968, 0.45), (1.0, 0.725)])
 def depth(t): return -YC(t)
 def n_of(t): return lerp(2.3, 1.9, clamp((t - 0.3) / 0.7, 0, 1))  # the sections' squareness: slack round bilges
 FLARE = 0.04
@@ -74,13 +78,17 @@ def deck_y(z, x=0.0):
     h = max(hb(t_at(z)), 0.05)
     return sheer(t_at(z)) + CROWN * 2 * h * (1 - min(1, abs(x) / h) ** 2)
 
-# the keel (the iron keel and the deadwood over it, one foil): its leading edge's z at each height y, sweeping up from
-# its foot into the forefoot; its trailing edge raked along the rudder's stock, from the foot's aft corner up to the
-# counter; its foot flat 1.20 m down. The iron keel's top runs 2.84 m, its aft end 1.317 m aft of station 8
-KEEL_Y = -1.2
-LE = spline([(-1.2, -0.22), (-1.1, -0.5), (-0.95, -0.82), (-0.75, -1.2), (-0.5, -1.7), (-0.25, -2.25), (0.0, -2.85), (0.25, -3.45)])
-TE0, TE_RAKE = 1.42, 1.08 / 1.25  # the trailing edge's z at the foot, and how far aft it runs for each metre up
-def TE(y): return TE0 + (y - KEEL_Y) * TE_RAKE
+# the keel (the iron keel and the deadwood over it, one foil), off the sail plan: its leading edge's z at each height y,
+# rising from its toe steeply to 0.33 m under the water and then in a long, flat sweep into the forefoot; its trailing
+# edge raked along the rudder's stock, from the foot's aft corner up to the counter; its foot from the toe, 1.12 m down,
+# to the aft corner 1.44 m aft of it and 1.22 m down
+KEEL_FWD, KEEL_AFT = -1.12, -1.22
+LE = spline([(-1.12, -0.19), (-1.03, -0.42), (-0.7, -0.73), (-0.47, -1.04), (-0.33, -1.35), (-0.25, -1.7), (-0.12, -2.2), (0.05, -2.85)])
+LE_TOP = 0.05
+TE0, TE_RAKE = 1.25, 1.04 / 1.09  # the trailing edge's z at the foot, and how far aft it runs for each metre up (43°)
+KEEL_Y = KEEL_AFT
+def TE(y): return TE0 + (y - KEEL_AFT) * TE_RAKE
+def foot_y(z): return lerp(KEEL_AFT, KEEL_FWD, clamp((TE0 - z) / (TE0 - LE(KEEL_FWD)), 0, 1))
 def keel_half(z, y):
     """the keel's half-thickness at (z, y): a NACA section between its edges, 15 cm thick in the iron, 12 in the deadwood"""
     le, te = LE(y), TE(y)
@@ -90,19 +98,19 @@ def keel_half(z, y):
     f = 5 * (0.2969 * math.sqrt(c) - 0.126 * c - 0.3516 * c * c + 0.2843 * c ** 3 - 0.1036 * c ** 4) / 0.5
     th = lerp(0.075, 0.06, smooth(-0.8, -0.35, y))
     w = max(th * f, 0.014 * smooth(0.6, 0.85, c))  # the trailing edge left 28 mm thick, hollowed for the rudder's stock
-    return w * math.sqrt(clamp((y - KEEL_Y) / 0.07, 0, 1))  # the foot rounded
+    return w * math.sqrt(clamp((y - foot_y(z)) / 0.07, 0, 1))  # the foot rounded
 def keel_bottom(z):
     """the keel's lowest point at z (None where there's none)"""
-    if z < LE(KEEL_Y):
-        if z < LE(0.25): return None
-        a, b = KEEL_Y, 0.25
+    if z < LE(KEEL_FWD):
+        if z < LE(LE_TOP): return None
+        a, b = KEEL_FWD, LE_TOP
         for _ in range(40):
             m = (a + b) / 2
             if LE(m) > z: a = m
             else: b = m
         return (a + b) / 2
-    if z <= TE0: return KEEL_Y
-    return KEEL_Y + (z - TE0) / TE_RAKE
+    if z <= TE0: return foot_y(z)
+    return KEEL_AFT + (z - TE0) / TE_RAKE
 
 # ---------- the hull's sections ----------
 def round_pt(t, s):  # hullOf's round section: s = 0 at the deck edge ... 1 at the centreline under her
@@ -123,7 +131,8 @@ def section(t):
     for j in range(KH + 1): pts.append(round_pt(t, lerp(s_r, SG, j / KH)))
     # below: the round section on to the centreline, or (over the keel) a hollow garboard curving down into its side
     yk = keel_bottom(z)
-    e = 0.0 if yk is None else max(0.0, yc - yk)
+    if yk is not None and yk >= yc: yk = None  # (over the counter, the keel's edge line runs on above the hull)
+    e = 0.0 if yk is None else yc - yk
     wk = smooth(0.0, 0.3, e)
     G = round_pt(t, SG); G2 = round_pt(t, SG + 0.01)
     tg = Vector((G2[0] - G[0], G2[1] - G[1])); tg.normalize()
@@ -136,14 +145,14 @@ def section(t):
         a, b2, c2, d2 = (1 - u) ** 3, 3 * u * (1 - u) ** 2, 3 * u * u * (1 - u), u ** 3
         bx = a * P[0].x + b2 * P[1].x + c2 * P[2].x + d2 * P[3].x
         by = a * P[0].y + b2 * P[1].y + c2 * P[2].y + d2 * P[3].y
-        rx, ry = round_pt(t, lerp(SG, 1.0, (j / (KB + KS)) ** 1.0))
+        rx, ry = round_pt(t, lerp(SG, 1.0, u))  # (where the keel is shallow, the round bilge on to the centreline)
         pts.append((lerp(rx, bx, wk), lerp(ry, by, wk)))
+    # down the keel's side to its foot, as deep as it is however shallow it stands under the canoe body (its leading and
+    # trailing edges, where it is thin)
     for j in range(1, KS + 1):
         u = j / KS
         y = lerp(yj, yk if yk is not None else yc, 1 - (1 - u) ** 1.4)
-        x = keel_half(z, y) if j < KS else 0.0
-        rx, ry = round_pt(t, lerp(SG, 1.0, (KB + j) / (KB + KS)))
-        pts.append((lerp(rx, x, wk), lerp(ry, y, wk)))
+        pts.append((keel_half(z, y) if yk is not None and j < KS else 0.0, y))
     return pts
 
 # the transom raked: the counter's sections lean forward towards their foot, so the transom's foot stands 320 mm
@@ -178,9 +187,9 @@ def build_hull(bm, M):
     bm.faces.new(list(reversed(rings[-1][0]))).material_index = M['hull']
 
 # ---------- the cabin and the cockpit ----------
-CAB_F, CAB_A = -1.05, 0.45      # the cabin's front and its aft end (station 8 and the 100 mm its top may run past it)
+CAB_F, CAB_A = -0.82, 0.45      # the cabin's front, just aft of the mast, and its aft end (station 8 and the 100 mm its top may run past it)
 CK_A = 2.55                      # the cockpit's aft end, 0.2 m forward of station 12
-FLOOR = 0.14                     # the floorboards
+FLOOR = 0.12                     # the floorboards
 SIDE_H, COAM_H = 0.2, 0.13      # the cabin's sides and the coaming over the deck
 ARCH = 0.1                       # the cabin top's arch over its sides
 WOOD_T = 0.024                   # the mahogany's thickness

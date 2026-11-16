@@ -110,10 +110,17 @@ export const CLASSES = {
   // the mast and a symmetric spinnaker set from a pole. Narrow and deep: she points high and holds her way through a
   // tack, heels readily to her lines and never planes; off the wind she sails at her hull's speed, surfing a little in a
   // blow. Her courses are laid 0.75 times as long, her line and the room at the marks the sportboats'.
+  // How she carries her way and heels, against the JPK 1050 (tau 4.5, coast 32, heelK 1): heavy for her power (27.7 m²
+  // on 1.7 tonnes, a sail area to displacement of 19 to the JPK's 30 and the J/70's 43), she gathers way slowly (tau
+  // 5); narrow and slippery for her weight, she carries it far (coast 38): luffed head to wind from close-hauled in 12
+  // knots, some 26 m, three of her lengths (the JPK 28 m, 2.6 of hers; the J/70 2.2); a tonne of iron 1.2 m down
+  // lets her heel to some 13° in 8 knots and 21° in 12 (the JPK 18° and 28°), rail down and easing her main
+  // from about 15 knots (heelK 0.8); above 6.8 knots, her hull's speed on her waterline lengthened by her overhangs as
+  // she heels, the waves hold her back at once (hullV)
   dragon: {
     id: 'dragon', loa: 8.9, beam: 1.96, drawnL: 8.9, crew: 3,
     kite: true, zero: false, reef: false, j3: false,
-    tau: 3.6, coast: 26, hullV: 7.5, heelK: 1.2, awsK: 1, heelShow: 1, courseK: 0.75, lineK: 0.8, startK: 0.8,
+    tau: 5, coast: 38, hullV: 6.8, heelK: 0.8, awsK: 1, heelShow: 1, courseK: 0.75, lineK: 0.8, startK: 0.8,
     tws: TWS, twa: TWA,
     // from her Portsmouth Number (RYA 986, against the ILCA 7's 1103): round a windward-leeward course some 1.12 times
     // as quick as the Laser in 8–14 knots, and 5% slower than the J/70; upwind VMG some 4.5 kn in 12 knots at 38°

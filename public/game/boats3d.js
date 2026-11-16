@@ -226,6 +226,20 @@ function finGeo(span, c0, c1, th, sweep = 0, n = 12) {
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
   return g;
 }
+// a rudder hung by its leading edge: span m down from y = 0, its chord chord(u) aft from the stock at each share u of
+// the span, th thick as a share of it; both ends closed
+function rudderGeo(span, chord, th, n = 10, rings = 14) {
+  const sec = [];
+  for (let i = 0; i <= n; i++) sec.push([(1 + Math.cos((Math.PI * i) / n)) / 2, 1]);
+  for (let i = 1; i < n; i++) sec.push([(1 - Math.cos((Math.PI * i) / n)) / 2, -1]);
+  const m = sec.length, pos = [], idx = [];
+  for (let r = 0; r <= rings; r++) { const u = r / rings, c = chord(u); for (const [x, sd] of sec) pos.push(sd * naca(x) * th * c, -u * span, x * c); }
+  for (let r = 0; r < rings; r++) for (let i = 0; i < m; i++) { const a = r * m + i, b = r * m + (i + 1) % m; idx.push(a, a + m, b, b, a + m, b + m); }
+  for (const r of [0, rings]) { const ci = pos.length / 3, c = chord(r / rings); pos.push(0, -(r / rings) * span, c / 2); for (let i = 0; i < m; i++) r ? idx.push(ci, r * m + (i + 1) % m, r * m + i) : idx.push(ci, i, (i + 1) % m); }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  return g;
+}
 // a wing lofted along a curving span: stations { x, y } (the span's line, across and up), c (the chord), s (the quarter
 // chord's distance aft), each a foil section square to the span, th thick. part: the share of the chord it is — a
 // wing's main element (0 … 0.72), its flap behind (0.74 … 1) — each its own foil section; deflect turns the part's
@@ -719,18 +733,18 @@ function spline(P) {
 }
 const DZ = (() => {
   const L = 8.9, B = 1.96;
-  const YC = spline([[0, 0.38], [0.1, 0.18], [0.208, 0.0], [0.3, -0.155], [0.4, -0.26], [0.5, -0.3], [0.6, -0.275], [0.7, -0.19], [0.78, -0.095], [0.844, 0.0], [0.9, 0.14], [0.95, 0.37], [1.0, 0.87]]);
+  const YC = spline([[0, 0.32], [0.1, 0.18], [0.155, 0.065], [0.2, -0.035], [0.243, -0.13], [0.3, -0.2], [0.4, -0.27], [0.5, -0.3], [0.6, -0.29], [0.687, -0.25], [0.74, -0.16], [0.814, 0.0], [0.915, 0.23], [0.968, 0.45], [1.0, 0.725]]);
   const hull = hullOf({
     L, flare: 0.04,
     hb: (t) => (B / 2) * (t < 0.44 ? 0.27 + 0.73 * Math.sin((t / 0.44) * Math.PI / 2) ** 0.9 : Math.max(0, Math.cos(Math.min(1, (t - 0.44) / 0.56) * Math.PI / 2)) ** 0.75),
-    sheer: (t) => (t < 0.3 ? 0.58 + 0.14 * ((0.3 - t) / 0.3) ** 2 : 0.58 + 0.34 * ((t - 0.3) / 0.7) ** 1.8),
+    sheer: (t) => (t < 0.35 ? 0.545 + 0.015 * ((0.35 - t) / 0.35) ** 2 : 0.545 + 0.18 * ((t - 0.35) / 0.65) ** 2),
     depth: (t) => -YC(t),
     n: (t) => lerp(2.3, 1.9, clamp((t - 0.3) / 0.7, 0, 1)),
   });
   // the deck's camber, 9.5 mm in every 305 mm of her width: its height at (x, z)
   const deckAt = (x, z) => { const h = Math.max(hull.hbAt(z), 0.05); return hull.deckY(z) + 0.0311 * 2 * h * (1 - Math.min(1, Math.abs(x) / h) ** 2); };
   // the cabin, the cockpit and the band of mahogany round them (blender/dragon.py band_half, band_h)
-  const CAB_F = -1.05, CAB_A = 0.45, CK_A = 2.55, FLOOR = 0.14, WOOD_T = 0.024;
+  const CAB_F = -0.82, CAB_A = 0.45, CK_A = 2.55, FLOOR = 0.12, WOOD_T = 0.024;
   const bandHalf = (z) => {
     if (z < CAB_F || z > CK_A) return 0;
     const n = clamp((z - CAB_F) / 0.3, 0, 1), t = clamp((CK_A - z) / 0.32, 0, 1);
@@ -739,20 +753,21 @@ const DZ = (() => {
   const bandH = (z) => lerp(0.2, 0.13, smooth(CAB_A - 0.05, CAB_A + 0.45, z));
   const coamY = (z) => deckAt(bandHalf(z), z) + bandH(z); // the band's top
   const roofY = (x, z) => coamY(z) + 0.03 + 0.1 * (1 - Math.min(1, (x / Math.max(bandHalf(z), 0.05)) ** 2)); // the cabin top
-  // the keel's trailing edge, raked along the rudder's stock: from its foot's aft corner (z 1.42, 1.20 m down) aft and
-  // up to the counter
-  const TE0 = 1.42, KEEL_Y = -1.2, STOCK = new THREE.Vector3(0, 1.25, 1.08).normalize();
+  // the keel's trailing edge, raked 43° along the rudder's stock: from its foot's aft corner (z 1.25, 1.22 m down) aft
+  // and up to the counter
+  const TE0 = 1.25, KEEL_Y = -1.22, STOCK = new THREE.Vector3(0, 1.09, 1.04).normalize();
   // the rig (the rules' measurements from the mast's lower band, 0.8 m above the deck, where the boom is)
-  const MAST_Z = -1.25, BAND = deckAt(0, MAST_Z) + 0.8;
+  // the mast 5.35 m aft of the stem, at the cabin's front, as the class's plan and photographs of her have it
+  const MAST_Z = -0.9, BAND = deckAt(0, MAST_Z) + 0.8;
   const BOOM_Y = BAND + 0.03, MASTHEAD = BAND + 9.35, HOUNDS = BAND + 6.15, SPR = BAND + 3.4, JUMP = BAND + 6.3, KITE_H = BAND + 6.25, BL = 3.5;
   const chord = (f) => lerp(3.45, 0.12, f) + 0.275 * Math.sin(Math.PI * f); // the rules' widths: 2.06 m half way up, 1.15 m three quarters
-  const STAY_Z = MAST_Z - 1.88; // the forestay's foot
+  const STAY_Z = MAST_Z - 1.9; // the forestay's foot
   const TACK = new THREE.Vector3(0, deckAt(0, STAY_Z) + 0.05, STAY_Z);
   const top = new THREE.Vector3(0, HOUNDS, MAST_Z - 0.06), HEAD = TACK.clone().lerp(top, 6.45 / top.distanceTo(TACK)); // a 6.5 m luff
   const CLEW = new THREE.Vector3(0, 0.22, 3.42); // from the tack: the foot 3.5 m, the clew aft of the mast by the cabin's end
   const rig = rigOf({ span: MASTHEAD - 0.15 - BOOM_Y, chord, numAt: 0.6, logoAt: 0.78, flagAt: 0.9, mark: 0.8, head: HEAD, tack: TACK, clew: CLEW, ad: 1.2, adH: 0.55 });
   return { L, B, hull, deckAt, CAB_F, CAB_A, CK_A, FLOOR, WOOD_T, bandHalf, bandH, coamY, roofY, TE0, KEEL_Y, STOCK, MAST_Z, BAND, BOOM_Y, MASTHEAD, HOUNDS, SPR, JUMP, KITE_H, BL, chord, STAY_Z, TACK, HEAD, CLEW, rig,
-    SHEET_Z: MAST_Z + 2.3, TRAV_Z: MAST_Z + 2.3, POLE: 2.24, WINCH_Z: 1.15, TRACK: [-0.25, 0.75] };
+    SHEET_Z: MAST_Z + 2.3, TRAV_Z: MAST_Z + 2.3, POLE: 2.24, WINCH_Z: 1.4, TRACK: [0.15, 1.05], CAR_Z: 0.68, RUNNER_Z: 3.85 };
 })();
 // varnished mahogany: a warm grain under a deep gloss, laid along the length (the plan's v, as boats3d.js lays its UVs)
 const MAHOG = canvasTex(64, 256, (x, w, h) => {
@@ -802,18 +817,19 @@ class DragonView extends ClassView {
     add(new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.42), M.dark), 0, D.FLOOR + 0.48, ca).rotation.y = Math.PI;
     add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.03), MAT.varnish), 0, D.FLOOR + 0.27, ca + 0.012);
     for (const sx of [-1, 1]) fit(add, display(0.13, 0.11, 3), sx * 0.38, coam(D.CAB_A) - 0.05, ca + 0.02);
-    add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.035, 0.5), M.gel), 0, dk(0, -2.3) + 0.01, -2.3);
-    add(new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.012, 0.4), M.glass), 0, dk(0, -2.3) + 0.03, -2.3);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.035, 0.5), M.gel), 0, dk(0, -1.85) + 0.01, -1.85);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.012, 0.4), M.glass), 0, dk(0, -1.85) + 0.03, -1.85);
     add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.12), M.steel), 0, D.TACK.y - 0.02, D.STAY_Z);
     fit(add, cleat(0.16), 0, dk(0, H.BOW + 0.55), H.BOW + 0.55);
-    // the keel and the rudder: hung on the keel's trailing edge, 1.45 m along its raked stock, its blade fining to a
-    // rounded foot, the stock up through the counter to the tiller over the aft deck and its extension forward
-    const sy = -0.05, sz = D.TE0 + (sy - D.KEEL_Y) * (D.STOCK.z / D.STOCK.y); // where the stock leaves the hull
+    // the keel and the rudder: hung on the keel's trailing edge, 1.45 m along its raked stock, a crescent as the class's
+    // plan draws it (narrow where it leaves the counter, 0.48 m across a little below half way, fining into the keel's
+    // foot), the stock up through the counter to the tiller over the aft deck and its extension forward
+    const sy = -0.12, sz = D.TE0 + (sy - D.KEEL_Y) * (D.STOCK.z / D.STOCK.y); // where the stock leaves the hull
     const deckS = (() => { let y = sy, z = sz; for (let i = 0; i < 40 && y < dk(0, z); i++) { y += D.STOCK.y * 0.025; z += D.STOCK.z * 0.025; } return [y, z]; })();
     this.wheel = add(new THREE.Group(), 0, deckS[0], deckS[1]);
     this.rudderAxis = D.STOCK;
     const blade = new THREE.Group(); blade.position.set(0, sy - deckS[0], sz - deckS[1]); blade.rotation.x = Math.atan2(D.STOCK.z, D.STOCK.y);
-    blade.add(new THREE.Mesh(finGeo(1.45, 0.3, 0.44, 0.1, 0.25 * (0.44 - 0.3)).translate(0, 0, 0.25 * 0.3 + 0.03), MAT.fin));
+    blade.add(new THREE.Mesh(rudderGeo(1.45, (u) => 0.06 + 0.42 * Math.sin(Math.PI * u ** 1.1) ** 0.75, 0.1).translate(0, 0, 0.03), MAT.fin));
     this.wheel.add(blade);
     this.wheel.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.05, 12), M.steel)); // the stock's head on deck
     // the tiller rises from the stock's head over the coaming's aft end, its extension off its end
@@ -824,14 +840,14 @@ class DragonView extends ClassView {
     for (const sx of [-1, 1]) {
       const tx = sx * 0.82, [t0, t1] = D.TRACK;
       add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.02, t1 - t0), M.alu), tx, dk(0.82, (t0 + t1) / 2) + 0.01, (t0 + t1) / 2);
-      add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.09), M.dark), tx, dk(0.82, 0.35) + 0.025, 0.35);
-      fit(add, block(0.026), tx, dk(0.82, 0.35) + 0.065, 0.35);
+      add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.09), M.dark), tx, dk(0.82, D.CAR_Z) + 0.025, D.CAR_Z);
+      fit(add, block(0.026), tx, dk(0.82, D.CAR_Z) + 0.065, D.CAR_Z);
       fit(add, winch(0.045, 0.11), sx * 0.86, dk(0.86, D.WINCH_Z) + 0.005, D.WINCH_Z);
       for (const z of [1.45, 1.75]) { const c = add(new THREE.Mesh(camGeo(), M.dark), sx * (bh(z) + 0.005), coam(z) + 0.002, z); c.rotation.y = sx * 0.2; }
       const foot = (z, x = 0.74) => [sx * x, dk(x, z) + 0.02, z];
       fit(add, chainplate(foot(D.MAST_Z + 0.08), [sx * 0.55, D.SPR, D.MAST_Z], 0.22, 0.011));
       fit(add, chainplate(foot(D.MAST_Z + 0.42), [0, D.SPR - 0.1, D.MAST_Z], 0.2, 0.01));
-      fit(add, chainplate(foot(2.2, H.hbAt(2.2) - 0.1), [0, D.HOUNDS, D.MAST_Z], 0.16, 0.01));
+      fit(add, chainplate(foot(D.RUNNER_Z, H.hbAt(D.RUNNER_Z) - 0.08), [0, D.HOUNDS, D.MAST_Z], 0.16, 0.01));
     }
     // the mast through the deck, its collar and wedges; the gooseneck at the lower band, the halyards down its front
     // and back, the spreaders, the jumper struts and their diamond, the masthead's crane for the backstay
@@ -893,8 +909,8 @@ class DragonView extends ClassView {
     for (const l of [this.jibSheet, this.lazySheet, this.kiteSheet, this.guy]) l.frustumCulled = false;
     this.windex = windex(add, D.MASTHEAD + 0.02, D.MAST_Z);
     // her number on both bows, the logo forward of the cabin, the name on the quarters
-    if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, -1.9, 0.5, 0.8, 0.28));
-    T.add(...bowNumber(H, look, H.BOW + 1.15, 0.62, 0.6, 0.16));
+    if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, -2.0, H.deckY(-2.0) - 0.17, 0.72, 0.24));
+    { const z = H.BOW + 1.15; T.add(...bowNumber(H, look, z, H.deckY(z) - 0.12, 0.56, 0.15)); }
     { const z = H.STERN - 1.25; T.add(...nameDecal(H, look, z, H.deckY(z) - 0.13, 0.95)); }
     // her cockpit's floorboards 14 cm above the water, which the chop's crests overtop: a dry lid over it at the
     // coaming's top
@@ -925,28 +941,28 @@ class DragonView extends ClassView {
     this.travCar.position.x = clamp(Math.sin(ma) * bz * 0.5 + Math.sign(Math.sin(ma)) * clamp((b.depower || 0) / 10, 0, 1) * 0.15, -0.46, 0.46);
     purchase(this.mainsheet, [this.travCar.position.x, TRY + 0.08, D.TRAV_Z], [Math.sin(ma) * bz, D.BOOM_Y - 0.08, D.MAST_Z + Math.cos(ma) * bz], 0.03);
     // the genoa: its sheet through the car on the lee track to the winch
-    const car = (ls) => [[ls * 0.82, dk(0.82, 0.35) + 0.07, 0.35], [ls * 0.86, dk(0.86, D.WINCH_Z) + 0.1, D.WINCH_Z]];
+    const car = (ls) => [[ls * 0.82, dk(0.82, D.CAR_Z) + 0.07, D.CAR_Z], [ls * 0.86, dk(0.86, D.WINCH_Z) + 0.1, D.WINCH_Z]];
     this.jibAndTells(b, t, side, belly, luff, ph, car);
     { const cw = D.CLEW.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1, lz = this.lazySheet.geometry.attributes.position, [a, w] = car(-ls);
       lz.setXYZ(0, cw.x, cw.y, cw.z); lz.setXYZ(1, 0, D.roofY(0, 0.2) + 0.02, 0.25); lz.setXYZ(2, ...a); lz.setXYZ(3, ...w); lz.needsUpdate = true; }
-    // the runners: the windward one set up from the hounds to its quarter, the lee one let go, slack forward along the
-    // shrouds
+    // the runners: the windward one set up from the hounds to its quarter, almost at the transom, the lee one let go,
+    // slack forward along the shrouds
     for (const r of this.runners) {
-      const sx = r.userData.sx, p = r.geometry.attributes.position, wind = sx === side, x = sx * (H.hbAt(2.2) - 0.1), y = dk(Math.abs(x), 2.2) + 0.12;
+      const sx = r.userData.sx, p = r.geometry.attributes.position, wind = sx === side, rz = D.RUNNER_Z, x = sx * (H.hbAt(rz) - 0.08), y = dk(Math.abs(x), rz) + 0.12;
       p.setXYZ(0, sx * 0.04, D.HOUNDS, D.MAST_Z + 0.04);
-      if (wind) { p.setXYZ(1, lerp(sx * 0.04, x, 0.5), lerp(D.HOUNDS, y, 0.5), lerp(D.MAST_Z, 2.2, 0.5)); p.setXYZ(2, x, y, 2.2); }
+      if (wind) { p.setXYZ(1, lerp(sx * 0.04, x, 0.5), lerp(D.HOUNDS, y, 0.5), lerp(D.MAST_Z, rz, 0.5)); p.setXYZ(2, x, y, rz); }
       else { p.setXYZ(1, sx * 0.62, D.SPR - 0.6, D.MAST_Z + 0.35); p.setXYZ(2, sx * 0.72, dk(0.72, D.MAST_Z + 0.6) + 0.4, D.MAST_Z + 0.6); }
       p.needsUpdate = true;
     }
-    // the crew: upwind on the windward side deck, sitting out over it with their feet under the straps in the cockpit,
-    // leaning out as it blows; downwind sitting in, the middle man to leeward on the spinnaker's sheet; the bow at the
+    // the crew: upwind on the windward side deck facing in, their feet under the straps in the cockpit, leaning back out
+    // over the water as it blows; downwind sitting in, the middle man to leeward on the spinnaker's sheet; the bow at the
     // mast for a hoist, a drop or a gybe of the pole
     const k = this.crewDt(t), up = Math.abs(b.twa) < 95 * D2R, hike = clamp(b.heel / 18, 0.15, 1), bowBusy = !!b.kiteJob;
     for (const c of this.crew) {
       let x, y, z = c.z0, yaw = Math.PI, lean = 0.12, stand = 0, knee = -0.8, reach = 0.55;
       if (c.i === 0) { x = side * (H.hbAt(z) - 0.2); y = dk(H.hbAt(z) - 0.2, z) + 0.05; yaw = 1.2; lean = up ? 0.15 + 0.2 * hike : 0.1; knee = -1.2; reach = 0.9; }
       else if (c.i === 2 && bowBusy) { x = 0.15; z = D.MAST_Z + 0.5; y = dk(0.15, z) + 0.02; yaw = Math.PI / 2; stand = 1; lean = 0.3; reach = 0.8; }
-      else if (up) { x = side * (H.hbAt(z) - 0.1); y = dk(H.hbAt(z) - 0.1, z) + 0.06; yaw = 0; lean = 0.15 + 0.55 * hike; knee = -1.85; reach = 0.3; }
+      else if (up) { x = side * (H.hbAt(z) - 0.14); y = dk(H.hbAt(z) - 0.14, z) + 0.05; yaw = Math.PI - 0.2; lean = -(0.1 + 0.55 * hike); knee = -1.45; reach = 0.4; }
       else { const lee = c.i === 1 && b.kite; x = (lee ? -side : side) * (H.hbAt(z) - 0.25); y = dk(H.hbAt(z) - 0.25, z) + 0.05; yaw = lee ? 0.6 : Math.PI - 0.4; }
       this.pose(c, { x, y, z, yaw, lean, stand, knee, reach }, k);
     }
@@ -956,7 +972,7 @@ class DragonView extends ClassView {
     this.kite.visible = this.kiteSheet.visible = this.guy.visible = this.pole.visible = kf > 0.02;
     if (kf > 0.02) {
       const a = Math.abs(b.twa) / D2R, sq = clamp((a - 80) / 100, 0, 1), pa = lerp(0.35, 1.45, sq) * lerp(0.4, 1, kf), wd = this.sailSide, sd = -wd;
-      const P0 = [0, dk(0, D.MAST_Z) + 1.25, D.MAST_Z - 0.06], PE = [P0[0] + wd * Math.sin(pa) * D.POLE, P0[1] + 0.25, P0[2] - Math.cos(pa) * D.POLE];
+      const P0 = [0, dk(0, D.MAST_Z) + 1.45, D.MAST_Z - 0.06], PE = [P0[0] + wd * Math.sin(pa) * D.POLE, P0[1] + 0.15, P0[2] - Math.cos(pa) * D.POLE];
       this.pole.position.set((P0[0] + PE[0]) / 2, (P0[1] + PE[1]) / 2, (P0[2] + PE[2]) / 2);
       this.pole.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(PE[0] - P0[0], PE[1] - P0[1], PE[2] - P0[2]).normalize());
       const out = lerp(2.4, 1.6, sq) * lerp(0.2, 1, kfill);
