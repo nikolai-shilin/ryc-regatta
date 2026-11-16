@@ -42,7 +42,7 @@ function siteLd(lang: 'en' | 'ru', t: (en: string, ru: string) => string) {
       {
         '@type': 'VideoGame', '@id': `${SITE}/#game`, name: NAME, alternateName: t('Up and down sailing race', 'Up and down — парусная гонка'),
         url: `${SITE}/`, description: t(...HOME_DESC), inLanguage: lang, image: `${SITE}${OG_IMAGE.url}`,
-        screenshot: [`${SITE}/images/hud-desk-v7.jpg`, `${SITE}/images/top-v7.jpg`],
+        screenshot: [`${SITE}/images/hud-desk-v8.jpg`, `${SITE}/images/top-v8.jpg`],
         genre: ['Sailing', 'Racing', 'Sports simulation'], gamePlatform: ['Web browser', 'Mobile web browser'],
         applicationCategory: 'GameApplication', operatingSystem: 'Any (runs in a web browser)', playMode: 'SinglePlayer',
         gameLocation: VENUES.map((v) => `${t(...v.name)}, ${t(...v.place)}`), isAccessibleForFree: true,
@@ -97,8 +97,8 @@ export default async function Home({ params }: LangParams) {
   // the hero's still under the game: the wide picture on a wide screen, the upright one on a phone — one <picture>, so
   // a browser fetches only the one it shows
   const hero = { alt: '', fill: true, sizes: '100vw', fetchPriority: 'high', loading: 'eager' } as const;
-  const heroWide = getImageProps({ ...hero, src: '/images/drone-desk-v7.jpg' }).props.srcSet;
-  const { alt: _alt, ...heroNarrow } = getImageProps({ ...hero, src: '/images/drone-port-v7.jpg' }).props;
+  const heroWide = getImageProps({ ...hero, src: '/images/drone-desk-v8.jpg' }).props.srcSet;
+  const { alt: _alt, ...heroNarrow } = getImageProps({ ...hero, src: '/images/drone-port-v8.jpg' }).props;
   const all = faqGroups(t).flatMap((g) => g.items);
   const faq = HOME.map((id) => all.find((f) => f.id === id)!);
   const go = '/play?race=today';
@@ -199,10 +199,10 @@ export default async function Home({ params }: LangParams) {
         <section className="ho-sec ho-new" aria-labelledby="h-path">
           <div className="ho-sec-t"><span className="ho-k">{t('New to racing?', 'Впервые на гонке?')}</span><h2 className="ho-h2" id="h-path">{t('Your first four races', 'Твои первые четыре гонки')}</h2></div>
           <ol className="ho-path">
-            <li className="now"><span className="ho-pic ho-path-pic"><Image src="/images/h-steer-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">1</span><span className="lbl is-you">{t(`Today · ${mins} min`, `Сегодня · ${mins} мин`)}</span><h3 className="ho-h3">{t('Just finish', 'Просто финишируй')}</h3><p className="ho-ps">{t('Sails on Auto, you only steer. Follow the call above your numbers.', 'Паруса на «Авто», ты только рулишь. Следуй подсказке над своими цифрами.')}</p></li>
-            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-start-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">2</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Win the start', 'Выиграй старт')}</h3><p className="ho-ps">{t('Be a boat length behind the line, at full speed, as the gun goes.', 'Будь в корпусе от линии на полном ходу в момент сигнала.')}</p><a className="ho-drill" href="/play?race=free&drill=start" data-cta="path-drill-start">{t('Practise it: the start drill ›', 'Потренируй: упражнение «Старт» ›')}</a></li>
-            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-tack-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">3</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Play the shifts', 'Лови заходы')}</h3><p className="ho-ps">{t('Tack when the wind heads you. Every header you catch is a place.', 'Поворачивай, когда ветер заходит. Каждый пойманный заход — место.')}</p><a className="ho-drill" href="/play?race=free&drill=beat" data-cta="path-drill-beat">{t('Practise it: the shifts drill ›', 'Потренируй: упражнение «Сдвиги ветра» ›')}</a></li>
-            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-trim-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">4</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Race the ranking', 'Гоняйся за рейтингом')}</h3><p className="ho-ps">{t('Trim the sails yourself and go for today’s podium.', 'Настраивай паруса сам и иди в тройку дня.')}</p></li>
+            <li className="now"><span className="ho-pic ho-path-pic"><Image src="/images/h-steer-v8.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">1</span><span className="lbl is-you">{t(`Today · ${mins} min`, `Сегодня · ${mins} мин`)}</span><h3 className="ho-h3">{t('Just finish', 'Просто финишируй')}</h3><p className="ho-ps">{t('Sails on Auto, you only steer. Follow the call above your numbers.', 'Паруса на «Авто», ты только рулишь. Следуй подсказке над своими цифрами.')}</p></li>
+            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-start-v8.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">2</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Win the start', 'Выиграй старт')}</h3><p className="ho-ps">{t('Be a boat length behind the line, at full speed, as the gun goes.', 'Будь в корпусе от линии на полном ходу в момент сигнала.')}</p><a className="ho-drill" href="/play?race=free&drill=start" data-cta="path-drill-start">{t('Practise it: the start drill ›', 'Потренируй: упражнение «Старт» ›')}</a></li>
+            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-tack-v8.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">3</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Play the shifts', 'Лови заходы')}</h3><p className="ho-ps">{t('Tack when the wind heads you. Every header you catch is a place.', 'Поворачивай, когда ветер заходит. Каждый пойманный заход — место.')}</p><a className="ho-drill" href="/play?race=free&drill=beat" data-cta="path-drill-beat">{t('Practise it: the shifts drill ›', 'Потренируй: упражнение «Сдвиги ветра» ›')}</a></li>
+            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-trim-v8.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">4</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Race the ranking', 'Гоняйся за рейтингом')}</h3><p className="ho-ps">{t('Trim the sails yourself and go for today’s podium.', 'Настраивай паруса сам и иди в тройку дня.')}</p></li>
           </ol>
           <div className="ho-acts">
             <a className="ho-go" href={go} data-cta="path-start"><IconPlay /><span>{t('Start race 1', 'Начать гонку 1')}</span></a>
@@ -233,7 +233,7 @@ export default async function Home({ params }: LangParams) {
             <div className="ho-acts"><a className="ho-go" href={go} data-cta="friend">{t('Set a time to send', 'Поставь время, чтобы отправить')}</a><MatchLink lang={lang} /></div>
           </div>
           <figure className="ho-card ho-friend">
-            <span className="ho-pic"><Image src="/images/top-v7.jpg" alt={t('Yachts racing in the game, seen from above', 'Яхты на гонке в игре, вид сверху')} fill sizes="(min-width: 900px) 560px, 100vw" /></span>
+            <span className="ho-pic"><Image src="/images/top-v8.jpg" alt={t('Yachts racing in the game, seen from above', 'Яхты на гонке в игре, вид сверху')} fill sizes="(min-width: 900px) 560px, 100vw" /></span>
             <span className="ho-friend-t"><span className="ho-kick">{t(`Today’s race · ${where}`, `Гонка дня · ${where}`)}</span><b>{t('Can you beat me?', 'Сможешь быстрее?')}</b></span>
             <figcaption><span className="ho-ps">“{t('I finished today’s race. Can you beat my time?', 'Я прошёл гонку дня. Сможешь быстрее?')}”</span><span className="lbl">{t('The link opens on any device', 'Ссылка откроется где угодно')}</span></figcaption>
           </figure>

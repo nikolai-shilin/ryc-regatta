@@ -27,21 +27,21 @@ const LIGHT = 'hour=15.5&sky=clear';
 // own options instead of the minute before the gun (a drill: its computer skipper sails her to the moment, then she's
 // yours), prep run on her (P) once the race is up, and until, on her too, the moment to take it.
 const SHOTS = [
-  { name: 'hud-desk-v7', w: 1200, h: 750, dpr: 2.7, touch: false, call: true, rects: true },
-  { name: 'hud-port-v7', w: 390, h: 844, dpr: 3, touch: true, call: true, rects: true },
-  { name: 'h-start-v7', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: ['.b-top', '#nxTag'] },
-  { name: 'h-steer-v7', w: 640, h: 480, dpr: 3, touch: true, keep: ['#rudderZone'] },
-  { name: 'h-trim-v7', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone'] },
-  { name: 'h-tack-v7', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone', '.b-acts'] },
-  { name: 'drone-desk-v7', w: 1600, h: 1000, dpr: 2.7, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 } },
-  { name: 'drone-port-v7', w: 390, h: 844, dpr: 3, touch: true, keep: [], cam: { mode: 'drone', dist: 26, orbit: 'lee', droneEl: 18, orbitMax: 0.35 } },
-  { name: 'top-v7', w: 1266, h: 585, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 70 } },
-  { name: 'og-v7', w: 1200, h: 630, dpr: 2, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 }, out: [1200, 630] },
-  { name: 'h-wind-v7', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 9 } },
-  { name: 'h-view-drone-v7', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 22 } },
-  { name: 'h-view-top-v7', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 40 } },
-  { name: 'h-run-v7', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: [], q: 'drill=run', prep: 'P.setKite(true)', until: 'P.kite && P.kiteFill > 0.95 && !P.kiteJob', cam: { mode: 'drone', dist: 40, orbit: 'kite', droneEl: 20, orbitMax: 1.1 } },
-  { name: 'h-view-helm-v7', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'helm', helmFov: 68, look: 0 } },
+  { name: 'hud-desk-v8', w: 1200, h: 750, dpr: 2.7, touch: false, call: true, rects: true },
+  { name: 'hud-port-v8', w: 390, h: 844, dpr: 3, touch: true, call: true, rects: true },
+  { name: 'h-start-v8', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: ['.b-top', '#nxTag'] },
+  { name: 'h-steer-v8', w: 640, h: 480, dpr: 3, touch: true, keep: ['#rudderZone'] },
+  { name: 'h-trim-v8', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone'] },
+  { name: 'h-tack-v8', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone', '.b-acts'] },
+  { name: 'drone-desk-v8', w: 1600, h: 1000, dpr: 2.7, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 } },
+  { name: 'drone-port-v8', w: 390, h: 844, dpr: 3, touch: true, keep: [], cam: { mode: 'drone', dist: 26, orbit: 'lee', droneEl: 18, orbitMax: 0.35 } },
+  { name: 'top-v8', w: 1266, h: 585, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 70 } },
+  { name: 'og-v8', w: 1200, h: 630, dpr: 2, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 16 }, out: [1200, 630] },
+  { name: 'h-wind-v8', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 9 } },
+  { name: 'h-view-drone-v8', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 22 } },
+  { name: 'h-view-top-v8', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 40 } },
+  { name: 'h-run-v8', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: [], q: 'drill=run', prep: 'P.setKite(true)', until: 'P.kite && P.kiteFill > 0.95 && !P.kiteJob', cam: { mode: 'drone', dist: 40, orbit: 'kite', droneEl: 20, orbitMax: 1.1 } },
+  { name: 'h-view-helm-v8', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'helm', helmFov: 68, look: 0 } },
 ].filter((s) => !only.length || only.includes(s.name));
 
 // the HUD's blocks, for the marks
