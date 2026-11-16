@@ -292,7 +292,10 @@ void main() {
   float thin = smoothstep(0.5, 2.0, hc) * (1.0 - smoothstep(0.12, 0.55, V.y));
   vec3 Lb = normalize(vec3(uSun.x, uSun.y * 0.35, uSun.z)); // (the light bent down into the water)
   float back = pow(max(0.0, dot(-V, Lb)), 4.0), face = pow(clamp(0.5 - 0.5 * dot(n, Lb), 0.0, 1.0), 2.0);
-  float sss = thin * (0.25 + 0.35 * max(0.0, dot(-V, sunFlat)) + 2.2 * back * face) * (1.0 - cosT * 0.5) * lsun;
+  // (down-sun hardly any; and less the higher the sun: its light, bent steeply down into the water, comes out of a
+  // crest's side only once scattered)
+  float sss = thin * (0.08 + 0.42 * max(0.0, dot(-V, sunFlat)) + 2.2 * back * face) * (1.0 - cosT * 0.5) * lsun
+            * (0.35 + 0.65 * (1.0 - smoothstep(0.2, 0.8, uSun.y)));
   vec3 body = uDeep * (0.75 + 0.25 * max(dot(n, uSun), 0.0) * lsun) + uScatter * sss * 0.4;
   if (shal > 0.01) body = mix(body, uShallow * (0.5 + 0.5 * lsun * max(dot(n, uSun), 0.0) * fftCaustic(p, dep, uSun)), shal); // the bed, under the light its waves focus
   // a hull, a keel, a rudder under the surface (Under): seen through the water, bent by the surface's tilt, and
@@ -357,9 +360,14 @@ void main() {
   if (uFftOn > 0.5) {
     // the FFT's own whitecaps (ocean.js): foam made where a crest folds over, left on the water as the crest runs on,
     // spreading and fading over seconds. Some stretches of sea break more than others (the slow patches, a gust), so
-    // the 40 m tile's foam never repeats; and it is a lace of bubbles drifting with the surface water, not a sheet:
+    // the 40 m tile's foam never repeats (where the sea isn't breaking, none of the tile's breakers show, so they
+    // are never laid out in a grid); and it is a lace of bubbles drifting with the surface water, not a sheet:
     // thick and white where it is fresh, a thin lace where it is old
-    float fm = ch.w * (0.3 + 0.95 * smoothstep(0.3, 0.75, brk * 0.75 + patchy * 0.3 + gust * 0.35));
+    // A crest breaks along a stretch of its length, not at a point: the foam is drawn out a metre or so each way
+    // along the crest (across the wind), so each breaker is a short white line and not a dot.
+    float fw = max(ch.w, 0.85 * max(fftSlope(p + wq * 0.8).w, fftSlope(p - wq * 0.8).w));
+    fw = max(fw, 0.6 * max(fftSlope(p + wq * 1.7).w, fftSlope(p - wq * 1.7).w));
+    float fm = fw * 1.5 * smoothstep(0.38, 0.72, brk * 0.75 + patchy * 0.3 + gust * 0.35);
     vec2 fq = p - uWind * uTime * 0.35, fa = vec2(dot(fq, wq), dot(fq, uWind));
     vec4 fr = froth(fq + (texture2D(uRipple, fq / 6.0).xy - 0.5) * 1.2);
     float drawn = texture2D(uRipple, vec2(fa.x / 0.9, fa.y / 7.0)).w; // old foam is drawn out downwind into streaks
@@ -371,7 +379,8 @@ void main() {
     cap = smoothstep(4.45, 4.95, wv) * uWhite * (0.4 + 0.45 * t1.w); // a soft edge; foam isn't flat white
     halo = smoothstep(4.2, 4.6, wv) * uWhite; // the aerated, paler water just round a breaking crest
   }
-  col = mix(col, col * 0.7 + uScatter * 0.45, halo * 0.3);
+  // the aerated water: the bubbles scatter the light back up, so it is paler and milky, a little green, not a glow
+  col = mix(col, col * 0.75 + (uScatter * 0.12 + uFoamCol * 0.07) * (0.55 + 0.45 * lsun), halo * 0.35);
   // old foam: thin streaks lying downwind of the breakers
   float streak = texture2D(uRipple, vec2(pa.x / 4.5, pa.y / 45.0 - uTime * 0.005)).w;
   float wisp = smoothstep(0.66, 0.86, 0.6 * brk + 0.4 * streak) * smoothstep(0.5, 0.7, patchy) * uWhite * 0.12 * (1.0 - smoothstep(60.0, 350.0, dist));
