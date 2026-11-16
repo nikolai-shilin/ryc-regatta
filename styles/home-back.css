@@ -45,6 +45,16 @@ html[data-back] .bc .ho-new { display: none; }
 
 /* the explainers: open for a first-timer, folded behind one button for a returning player */
 .bc .ho-fold, .bc .ho-fold-in { display: flex; flex-direction: column; gap: inherit; }
+/* Home's ghost buttons are drawn for links: as a <button> (the fold, the reminder) without the browser's own border */
+.bc button.ho-ghost { border: 0; border-radius: 0; cursor: pointer; }
+/* the fold's switch as a HUD bar: the panel with its blue edge, the label, the chevron on its blue chip at the right,
+   the corner cut as the HUD's cards are; open, the blue runs along its foot too */
 .bc .ho-fold-btn { display: none; }
-html[data-back] .bc .ho-fold-btn { display: inline-flex; align-self: flex-start; }
+html[data-back] .bc .ho-fold-btn { display: flex; align-self: stretch; justify-content: space-between; gap: var(--s-4); min-height: var(--h-l); padding: 0 0 0 var(--s-5);
+  background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: inset 4px 0 0 var(--you);
+  font: 700 var(--fs-small)/1.25 var(--cond); letter-spacing: var(--ls-button); text-align: left;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%); }
+html[data-back] .bc .ho-fold-btn:hover { background: var(--panel-2); }
+.bc .ho-fold-btn svg { flex: none; box-sizing: content-box; width: 18px; height: 18px; padding: calc((var(--h-l) - 18px) / 2); background: var(--you); color: var(--ink-on); }
+html[data-back] .bc .ho-fold.open .ho-fold-btn { box-shadow: inset 4px 0 0 var(--you), inset 0 -3px 0 var(--you); }
 html[data-back] .bc .ho-fold:not(.open) .ho-fold-in { display: none; }
