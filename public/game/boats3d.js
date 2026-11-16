@@ -379,7 +379,7 @@ class ClassView {
     const roll = Math.atan2(waveHeight(W, b.x - fz * 1.5, b.z + fx * 1.5, t) - waveHeight(W, b.x + fz * 1.5, b.z - fx * 1.5, t), 3) * 0.5 * sea;
     const side = b.boom || (b.twa >= 0 ? 1 : -1);
     this.sailSide = lerp(this.sailSide, side, Math.abs(b.twa) > 2.1 ? 0.2 : 0.06);
-    // lift: a light dinghy floated higher than the rest, on her own lines at her weight with her sailor aboard
+    // lift: a light dinghy floated higher than the rest
     this.root.position.set(b.x, (y * 0.85 - 0.05 + (this.lift || 0)) * sea + ride * this.flyY, b.z);
     this.root.rotation.y = -b.h;
     this.tilt.rotation.x = pitch - ride * 0.02; // flying: the bow a touch up
@@ -726,7 +726,7 @@ class LaserView extends ClassView {
     const add = this.start(), T = this.tilt, H = LZ.hull, [cz0, cz1] = LZ.CK;
     this.washH = H;
     this.flyY = 0;
-    this.lift = 0.08; // some 150 kg with her sailor: her lines float that 3.5 cm under their datum
+    this.lift = 0.16; // high on the water, her topsides well clear of it
     const MOD = LZ_MODEL, skid = deckFinish(look, SKID);
     // the deck's surface at (x, z): the sheer and the crown on it, which the fittings stand on
     const deckAt = (x, z) => H.deckY(z) + 0.05 * (1 - Math.min(1, Math.abs(x) / Math.max(H.hbAt(z), 0.2)) ** 2);
@@ -1033,7 +1033,7 @@ class OptimistView extends ClassView {
     this.cls = cls;
     const add = this.start(), T = this.tilt, H = OZ.hull, O = OZ;
     this.flyY = 0; // no deck to take water over: no wash
-    this.lift = 0.05; // 90 kg with the child aboard: floated on her lines' own waterline, the floor 7 cm under
+    this.lift = 0.1; // high on the water, the lowest of her floor about level with it
     // one colour all over: a dinghy kept ashore on her trolley has no boot-top and no antifouling
     const MOD = OZ_MODEL, hullMat = hullMaterial(look.hull, look.hull, look.hull), skid = deckFinish(look, SKID);
     if (MOD) {
