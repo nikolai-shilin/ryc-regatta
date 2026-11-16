@@ -97,8 +97,9 @@ void main() {
 //  fftDisp: the 40 m layer's displacement (the shorter ones only tilt the surface; they'd alias on the mesh)
 //  fftSlope: the 40 m layer's slopes (xy), its Jacobian (z) and its foam (w)
 //  fftFine: the slopes of the shorter layers, each weighted (k.x the ~9 m one, k.y the ~2 m one)
+//  uFftH: the 40 m layer's rms height, metres (how high a crest of it stands is its height over this)
 export const OCEAN_GLSL = /* glsl */ `
-uniform sampler2D uFftD, uFftS, uFftS1, uFftS2; uniform float uFftOn, uFftN; uniform vec3 uFftL; uniform vec2 uFftW;
+uniform sampler2D uFftD, uFftS, uFftS1, uFftS2; uniform float uFftOn, uFftN, uFftH; uniform vec3 uFftL; uniform vec2 uFftW;
 vec2 fftAxis(float a) { return vec2(uFftW.x * cos(a) - uFftW.y * sin(a), uFftW.x * sin(a) + uFftW.y * cos(a)); }
 vec2 fftQ(vec2 xz, vec2 w, float L) { return vec2(dot(xz, vec2(-w.y, w.x)), dot(xz, w)) / L; }
 vec2 fftBack(vec2 s, vec2 w) { return s.x * vec2(-w.y, w.x) + s.y * w; }
@@ -147,7 +148,7 @@ export const blankOcean = () => {
 };
 export const oceanUniforms = () => ({
   uFftD: { value: blankOcean() }, uFftS: { value: blankOcean() }, uFftS1: { value: blankOcean() }, uFftS2: { value: blankOcean() },
-  uFftOn: { value: 0 }, uFftN: { value: 0 }, uFftL: { value: new THREE.Vector3(40, 9, 2) }, uFftW: { value: new THREE.Vector2(0, 1) },
+  uFftOn: { value: 0 }, uFftN: { value: 0 }, uFftH: { value: 0.1 }, uFftL: { value: new THREE.Vector3(40, 9, 2) }, uFftW: { value: new THREE.Vector2(0, 1) },
 });
 
 // the sea's spectrum: JONSWAP for a wind of U m/s over a fetch of F metres, as energy per (rad/m)² at the wavenumber
@@ -222,6 +223,7 @@ export class Ocean {
     const gauss = () => { const u = Math.max(rnd(), 1e-7), v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
     // each layer keeps its band: from 4 of the next shorter layer's own wavelengths up, to the next longer's start
     const cut = this.Ls.map((L, i) => (i === 0 ? 0 : (2 * Math.PI) / L * 4)); cut.push(Infinity);
+    let var0 = 0; // the 40 m layer's variance of height (Σ S·dk² over its band)
     this.layers.forEach((layer, c) => {
       const L = layer.L, dk = (2 * Math.PI) / L, data = layer.h0.image.data;
       const re = new Float32Array(N * N), im = new Float32Array(N * N);
@@ -230,7 +232,8 @@ export class Ocean {
         if (Math.abs(mi) === N / 2 || Math.abs(mj) === N / 2) { re[o] = im[o] = 0; continue; } // no partner across the Nyquist row
         const kx = mi * dk, kz = mj * dk, k = Math.hypot(kx, kz);
         // (Var = Σ |h(k)|², and h(k) carries both h0(k) and h0(-k): so E|h0|² is half the band's energy)
-        const a = k < cut[c] || k >= cut[c + 1] ? 0 : Math.sqrt((seaSpectrum(kx, kz, U, fetch) * dk * dk) / 4);
+        const E = k < cut[c] || k >= cut[c + 1] ? 0 : seaSpectrum(kx, kz, U, fetch) * dk * dk, a = Math.sqrt(E / 4);
+        if (c === 0) var0 += E;
         re[o] = gauss() * a; im[o] = gauss() * a;
       }
       for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
@@ -240,6 +243,7 @@ export class Ocean {
       }
       layer.h0.needsUpdate = true;
     });
+    this.rms = Math.sqrt(var0);
     this.chop = -(0.75 + 0.55 * Math.min(1, Math.max(0, (tws - 7) / 12))); // sharper crests in a breeze
     // whitecaps: none in a light breeze; from about 10 knots a few crests break, more as it blows harder. Which
     // crests break is set by the share of the sea that is breaking at any moment: 0.08 % at 10 knots to 0.45 % at

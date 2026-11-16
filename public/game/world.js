@@ -251,14 +251,18 @@ void main() {
   float lsun = (lg.x > 0.0 && lg.y > 0.0 && lg.x < 1.0 && lg.y < 1.0 ? texture2D(uShadeTex, lg).r : 1.0) * cloudShade(vec3(lp.x, 0.0, lp.y));
   float dep = texture2D(uSeabed, (lp - uGridXf.xy) * uGridXf.z).r * 25.5;
   float shal = uShallowK * (1.0 - smoothstep(0.8, 14.0, dep)) * (1.0 - smoothstep(1800.0, 4500.0, dist));
-  // light through the waves: the sun, low behind a wave, shines through its thin top, turquoise-green, plainest on
-  // the face turned from the sun towards you. The swell's crests (vH) and the chop's own (vC: the FFT's height),
-  // which are thin enough for it; and a little of it everywhere the water is lit, scattered back up from inside
-  float thin = max(crest, smoothstep(0.02, 0.22, vC) * (0.55 + 0.45 * uFftOn));
+  // light through the waves: the sun shines through the thin top of a wave, turquoise-green, plainest on the face
+  // turned from the sun towards you, and most when you look towards the sun. Only the tops are thin enough: the
+  // chop's crests standing well over its rms height (vC / uFftH), or with no chop drawn (Low) the swell's highest.
+  // The swell's broad crests are metres of water through and let none of it by, so the sea isn't lit in patches.
+  // And it shows only seen across the water, through a crest's width: looking down into the sea from high up you
+  // see the depths under it, not a crest's edge.
+  float hc = uFftOn > 0.5 ? vC / max(uFftH, 0.02) : 2.5 * vH / max(uAmp, 0.08);
+  float thin = smoothstep(0.5, 2.0, hc) * (1.0 - smoothstep(0.12, 0.55, V.y));
   vec3 Lb = normalize(vec3(uSun.x, uSun.y * 0.35, uSun.z)); // (the light bent down into the water)
   float back = pow(max(0.0, dot(-V, Lb)), 4.0), face = pow(clamp(0.5 - 0.5 * dot(n, Lb), 0.0, 1.0), 2.0);
-  float sss = thin * (0.3 + 0.65 * max(0.0, dot(-V, sunFlat)) + 2.2 * back * face) * (1.0 - cosT * 0.5) * (0.6 + 0.8 * patchy) * lsun;
-  vec3 body = uDeep * (0.75 + 0.25 * max(dot(n, uSun), 0.0) * lsun) + uScatter * sss * 0.45;
+  float sss = thin * (0.25 + 0.35 * max(0.0, dot(-V, sunFlat)) + 2.2 * back * face) * (1.0 - cosT * 0.5) * lsun;
+  vec3 body = uDeep * (0.75 + 0.25 * max(dot(n, uSun), 0.0) * lsun) + uScatter * sss * 0.4;
   if (shal > 0.01) body = mix(body, uShallow * (0.5 + 0.5 * lsun * max(dot(n, uSun), 0.0) * fftCaustic(p, dep, uSun)), shal); // the bed, under the light its waves focus
   // a hull, a keel, a rudder under the surface (Under): seen through the water, bent by the surface's tilt, and
   // dimmed and turned blue-green by the water between — red is lost within a metre or two, blue goes furthest —
@@ -1492,6 +1496,7 @@ export class World {
   oceanSlopes() {
     const O = this.oceanU, oc = this.ocean;
     O.uFftS.value = oc.slope(0); O.uFftS1.value = oc.slope(1) || blankOcean(); O.uFftS2.value = oc.slope(2) || blankOcean();
+    O.uFftH.value = oc.rms || 0.1;
   }
 
   resize(w, h) {
