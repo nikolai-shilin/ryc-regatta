@@ -163,7 +163,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   in the `regatta` options; `?venue=<id>` in the game's address overrides it): Göcek, Cowes, Newport, Sydney, Kiel,
   Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland, San Francisco, Valencia, Barcelona, Palma, Marstrand, Bermuda,
   Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda, Istanbul, St Petersburg (the Neva under the
-  Peter and Paul Fortress, its bridges raised), Batumi, Scheveningen, Hong Kong, Cape Town, Athens, Marmaris or Fethiye (the last eight join
+  Peter and Paul Fortress, its bridges raised), Batumi, Scheveningen, Hong Kong, Cape Town, Athens, Marmaris, Fethiye, Sochi, Melbourne, Gold Coast or New York (the last twelve join
   today's races together, on 20 November 2026). `public/game/venues.js` holds each one's position,
   prevailing wind, clock and look (its woods, farmland, houses, moored boats and water); `lib/venues.ts` is the set-up
   page's list of them, and `npm test` keeps the two in step. Each venue's land, Göcek's too, is baked by
@@ -180,7 +180,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     carry survey data) or 20 m; the shore meets the water on OpenStreetMap's coastline to the metre, the map's water
     ashore down at the sea's level (an estuary, a lagoon) is water too, and the bed under the water is as steep as the
     land above it (deep under a cliff, gently shelving off a beach); further out, the sea floor's survey where there is
-    one (EMODnet's round the European venues, Göcek, Istanbul, Batumi, Marmaris and Fethiye; NOAA's at Newport and San Francisco), else the
+    one (EMODnet's round the European venues, Göcek, Istanbul, Batumi, Marmaris, Fethiye and Sochi; NOAA's at Newport, San Francisco and New York), else the
     tiles' own depths where deeper;
   - what is on the ground, on a 20 m grid: OpenStreetMap's woods (needle-leaved or broad-leaved, for the trees in
     them), scrub, grass, fields (each its own crop), orchards, towns, industry, beaches, bare rock, wetland, lakes and
@@ -204,7 +204,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la Garde, Christ the Redeemer, Enoshima's Sea
   Candle, the lighthouses of Kiel, Trieste, Batumi, Scheveningen and Green Point, Istanbul's Bosphorus Bridge, Galata
   Tower, Blue Mosque, Hagia Sophia and Süleymaniye, St Petersburg's spires, columns and bridges, Batumi's Alphabetic
-  Tower, the big wheels on Batumi's shore, Scheveningen's pier, Hong Kong's Central and Cape Town's V&A Waterfront, the Bank of China Tower, the Parthenon, Marmaris castle on the map's outline of it, the Knights' castle in Fethiye on walls traced from the air (`ring`), Fethiye's Lycian rock tombs, Telmessos's theatre and the sarcophagi in its streets, Atatürk's statues on both seafronts, the great Turkish flags over both castles and the yachts ashore on their cradles in Marmaris's Adaköy yard (a
+  Tower, the big wheels on Batumi's shore, Scheveningen's pier, Hong Kong's Central and Cape Town's V&A Waterfront, the Bank of China Tower, the Parthenon, Marmaris castle on the map's outline of it, the Knights' castle in Fethiye on walls traced from the air (`ring`), Fethiye's Lycian rock tombs, Telmessos's theatre and the sarcophagi in its streets, Atatürk's statues on both seafronts, the great Turkish flags over both castles, the yachts ashore on their cradles in Marmaris's Adaköy yard, Sochi's sea terminal and its spire, the Statue of Liberty on Fort Wood's star, the Verrazzano-Narrows Bridge and the Brooklyn Bridge's granite towers (a
   landmark with `clear` leaves out the map's own building in its place). `land.js` lays each course in clear water (its marks, its line, the water below it where the
   fleet waits, the beat out towards the laylines, and every leg from end to end, all on the baked map of the sea
   room), and not across a bridge too low for a mast (St Petersburg's drawbridges). An AC75's course, 2.5 times as
@@ -218,11 +218,11 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   from Microsoft's Global ML Building Footprints (ODbL), which `venues.py` downloads with the rest. Hong Kong's
   ground is its own 5 m terrain model (`dtm`), not the tiles, whose radar has the towers' roofs for the city's ground:
   the Digital Terrain Model of the Lands Department, Hong Kong SAR Government, from DATA.GOV.HK (free to use with
-  this attribution), which `venues.py` downloads (29 MB) and cuts to the venue. Batumi's, Cape Town's, Marmaris's and Fethiye's shores have
-  more of the map in them: its paved promenades and squares drawn as paving (`paved`), its palm avenues and other rows of trees planted
+  this attribution), which `venues.py` downloads (29 MB) and cuts to the venue. Batumi's, Cape Town's, Marmaris's, Fethiye's, Sochi's, Melbourne's and the Gold Coast's shores have
+  more of the map in them (New York's its paving): its paved promenades and squares drawn as paving (`paved`), its palm avenues and other rows of trees planted
   tree by tree where they stand (`trees`, the .bin's `tk` and `txz`; Marmaris's and Fethiye's seafront palms, which the map
   lacks, planted every 8 m along the streets `palms` names where they run by the water), and their plains, whose tiles carry the roofs and
-  trees some 4 to 8 m up, laid down on the shore's floor below the hills (`plain`; in Cape Town that lets the V&A's
+  trees some 4 to 8 m up, laid down on the shore's floor below the hills (`plain`, in Batumi, Cape Town, Melbourne and the Gold Coast; in Cape Town that lets the V&A's
   basins and Milnerton's lagoon down to the sea's level as water). Marmaris and Fethiye have their gulets moored
   stern-to along the town quays (`gulets`: the shore by the streets it names, the json's `moor`), and boats that come
   and go, moved by `skopea.js` on the race's clock, all picture: the fast ferries to Rhodes and the water taxis on their

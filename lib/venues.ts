@@ -5,7 +5,8 @@
 // from: the day a venue added later joins today's races (lib/race.ts dailyVenue), as in the game's list.
 export type VenueId = 'gocek' | 'cowes' | 'newport' | 'sydney' | 'kiel' | 'trieste' | 'porto-cervo' | 'saint-tropez' | 'antigua' | 'auckland'
   | 'san-francisco' | 'valencia' | 'barcelona' | 'palma' | 'marstrand' | 'bermuda' | 'enoshima' | 'weymouth' | 'marseille' | 'rio' | 'garda' | 'istanbul'
-  | 'st-petersburg' | 'batumi' | 'scheveningen' | 'hong-kong' | 'cape-town' | 'athens' | 'marmaris' | 'fethiye';
+  | 'st-petersburg' | 'batumi' | 'scheveningen' | 'hong-kong' | 'cape-town' | 'athens' | 'marmaris' | 'fethiye'
+  | 'sochi' | 'melbourne' | 'gold-coast' | 'new-york';
 type Pair = [string, string]; // English, Russian
 
 export const VENUES: { id: VenueId; name: Pair; place: Pair; wind: Pair; skip?: string[]; from?: string; about: Pair }[] = [
@@ -69,6 +70,14 @@ export const VENUES: { id: VenueId; name: Pair; place: Pair; wind: Pair; skip?: 
     about: ['The bay of Marmaris Race Week, ringed by pine mountains, in the westerly, the castle above the old town and the marina to leeward.', 'Бухта Недели гонок Мармариса в кольце сосновых гор, под западным ветром; под ветром — крепость над старым городом и марина.'] },
   { id: 'fethiye', name: ['Fethiye', 'Фетхие'], place: ['Turkey', 'Турция'], wind: ['W', 'З'], from: '2026-11-20',
     about: ['The bay inside Şövalye island, in the afternoon westerly, the town all round, the Lycian rock tombs in the cliff over the harbour and Babadağ above.', 'Бухта за островом Шовалье, под дневным западным ветром; вокруг город, над гаванью — ликийские гробницы в скале и гора Бабадаг.'] },
+  { id: 'sochi', name: ['Sochi', 'Сочи'], place: ['Russia', 'Россия'], wind: ['SW', 'ЮЗ'], from: '2026-11-20',
+    about: ['The Black Sea off the sea terminal and its spire, in the afternoon sea breeze, the town along the shore and the Caucasus behind it.', 'Чёрное море у морского вокзала со шпилем, под дневным морским бризом; вдоль берега — город, за ним — Кавказские горы.'] },
+  { id: 'melbourne', name: ['Melbourne', 'Мельбурн'], place: ['Victoria, Australia', 'Виктория, Австралия'], wind: ['SSW', 'ЮЮЗ'], from: '2026-11-20',
+    about: ['Port Phillip off St Kilda, the waters of the 1956 Olympic regatta, in the afternoon sea breeze, the city’s towers to leeward.', 'Залив Порт-Филлип у Сент-Килды, акватория олимпийской регаты 1956 года, под дневным морским бризом; под ветром — небоскрёбы города.'] },
+  { id: 'gold-coast', name: ['Gold Coast', 'Голд-Кост'], place: ['Queensland, Australia', 'Квинсленд, Австралия'], wind: ['E', 'В'], from: '2026-11-20',
+    about: ['The Pacific off the beach and towers of Surfers Paradise, in the easterly sea breeze, the East Australian Current running south.', 'Тихий океан у пляжа и небоскрёбов Серферс-Парадайз, под восточным морским бризом; Восточно-Австралийское течение несёт на юг.'] },
+  { id: 'new-york', name: ['New York', 'Нью-Йорк'], place: ['USA', 'США'], wind: ['SSW', 'ЮЮЗ'], from: '2026-11-20',
+    about: ['The Upper Bay by the Statue of Liberty, in the summer south-westerly, Lower Manhattan and the Brooklyn Bridge to leeward, the Verrazzano to windward.', 'Верхняя бухта у статуи Свободы, под летним юго-западным ветром; под ветром — Нижний Манхэттен и Бруклинский мост, на ветре — мост Верразано.'] },
 ];
 
 export const venueOf = (id: string | undefined) => VENUES.find((v) => v.id === id) || VENUES[0];

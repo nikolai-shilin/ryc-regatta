@@ -200,6 +200,29 @@ VENUES = {
                                dict(kind='sarcophagus', at=(36.620678, 29.116730), dir=110),  # and those on the slope under the rock tombs
                                dict(kind='monument', at=(36.623932, 29.112759), h=4.5),  # Atatürk's statue on the harbour front
                                dict(kind='flag', at=(36.618043, 29.112548), h=25, w=12)]),  # the great flag on the castle's hill
+    # the Black Sea off Sochi's sea terminal, in the afternoon south-westerly off the sea, the town along the shore to
+    # leeward and the Caucasus behind it
+    'sochi': dict(bathy='emodnet', zoom=14, most=15000, relations=True, paved=True, trees=True, home=(43.5640, 39.6970), wind=225,
+                  towns=[(43.5850, 39.7230, 1200), (43.6000, 39.7150, 900), (43.5650, 39.7450, 900)],
+                  landmarks=[dict(kind='spire', style='sochi', at=(43.58045, 39.71061), h=71, dir=225)]),  # the sea terminal's tower and spire over the map's building, its front to the sea
+    # Port Phillip off St Kilda, of the 1956 Olympic regatta, in the afternoon sea breeze off Bass Strait; the city's
+    # towers to leeward. The bay's shores are low and the tiles' radar has their roofs and trees for the ground
+    'melbourne': dict(zoom=14, most=15000, relations=True, plain=(10, 30), paved=True, trees=True, home=(-37.8800, 144.9450), wind=200,
+                      towns=[(-37.8650, 144.9820, 1000), (-37.8400, 144.9400, 1000), (-37.8610, 144.8990, 900), (-37.8820, 144.9880, 900), (-37.8350, 144.9600, 900)]),
+    # the Pacific off Surfers Paradise's beach and towers, in the easterly sea breeze; the coastal plain's ground in the
+    # tiles is its roofs and trees (`plain`)
+    'gold-coast': dict(zoom=14, most=15000, relations=True, plain=(10, 30), paved=True, trees=True, home=(-28.0000, 153.4550), wind=90,
+                       towns=[(-28.0000, 153.4280, 1000), (-27.9750, 153.4270, 900), (-28.0300, 153.4320, 1000), (-27.9700, 153.4050, 1100)]),
+    # the Upper Bay by the Statue of Liberty, in the summer's south-south-westerly up the Narrows: Lower Manhattan, the
+    # Brooklyn Bridge and Jersey City to leeward, the Verrazzano-Narrows Bridge to windward. The tiles here are the
+    # USGS's bare earth, so the ground is the ground (erode=0)
+    'new-york': dict(erode=0, bathy='noaa', zoom=14, most=15000, relations=True, paved=True, home=(40.6750, -74.0350), wind=200,
+                     height_of={'2 World Trade Center': 6},  # (the map has the tower it will be; its site is still only the podium's base)
+                     keep=[(40.7100, -74.0120, 900), (40.6990, -74.0397, 250), (40.6895, -74.0168, 600)],  # Lower Manhattan, Ellis Island, Governors Island
+                     towns=[(40.7080, -74.0100, 1200), (40.7150, -74.0400, 1200), (40.6800, -74.0050, 1200), (40.6650, -74.1000, 1000), (40.6430, -74.0770, 1000)],
+                     landmarks=[dict(kind='statue', style='liberty', at=(40.68925, -74.04454), h=93, dir=135, clear=60),  # on Fort Wood's star, facing the Narrows
+                                dict(kind='suspension', a=(40.60242, -74.05724), b=(40.61058, -74.03206), h=211, span=1298, deck=69),  # the Verrazzano-Narrows
+                                dict(kind='suspension', style='brooklyn', a=(40.70908, -74.00073), b=(40.70222, -73.99211), h=84, span=486, deck=41)]),
 }
 
 # what is on the ground (the cover part), from OpenStreetMap's land use; 0 where the map has nothing, which the game

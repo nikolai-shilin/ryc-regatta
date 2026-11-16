@@ -1711,12 +1711,12 @@ function movers() {
 }
 
 // ---------- the landmarks ----------
-// what the json lists: a steel arch bridge (Sydney Harbour), a suspension bridge (Newport's, the Golden Gate), a tower
+// what the json lists: a steel arch bridge (Sydney Harbour), a suspension bridge (Newport's, the Golden Gate, the Verrazzano-Narrows, the Brooklyn Bridge), a tower
 // (Auckland's Sky Tower, Laboe's naval memorial, Galata, the Transamerica Pyramid, Torre Glòries), a lighthouse (Trieste's
-// Victory, the Maiden's Tower), a mosque (Istanbul's, St Petersburg's), a gilded spire (St Petersburg's), a rostral column,
+// Victory, the Maiden's Tower), a mosque (Istanbul's, St Petersburg's), a spire (St Petersburg's gilded ones, Sochi's sea terminal), a rostral column,
 // the Alexander Column, St Isaac's, the Saviour on the Spilled Blood, the Kazan Cathedral, the Exchange, the Kunstkamera's
 // tower, a drawbridge with its spans raised, a hilltop castle (Marmaris's, Fethiye's ruin), Fethiye's rock tombs, theatre and sarcophagi, a
-// statue on its pedestal, the Opera House, the Sagrada Família, Christ the Redeemer, La Seu, Notre-Dame de la Garde,
+// statue on its pedestal, the Opera House, the Sagrada Família, Christ the Redeemer, the Statue of Liberty, La Seu, Notre-Dame de la Garde,
 // Carlsten. The famous ones drawn after the real ones, from aerial photographs and their plans, to be known at a glance
 // from the course. Each in one colour a part, merged into one mesh.
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z), XA = V3(1, 0, 0);
@@ -1883,6 +1883,32 @@ function redeemer(L, parts) {
   }
   parts.push(post(x, z, y + S + 25.4, 0.9, 1.0, 1.3, soap, 8));
   const [hx, hz] = F.xz(0.35, 0); parts.push(tint(new THREE.SphereGeometry(1.75, 12, 10).scale(1, 1.15, 0.95).translate(hx, y + S + 28.1, hz), soap));
+}
+// The Statue of Liberty (Bartholdi and Eiffel, 1886) on Liberty Island: Fort Wood's eleven-pointed star, the stepped
+// concrete foundation in it and Hunt's granite pedestal, 47 m up in all; on it the copper figure in her robe, green with
+// its patina, the tablet in her left arm, the right raised with the torch and its gilded flame, L.h to its top, and the
+// seven rays of her crown. Facing along L.dir
+function liberty(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), granite = '#a59d8c', fort = '#9b9284', cu = '#79a593', P0 = 47;
+  const star = []; for (let k = 0; k < 22; k++) { const a = (k * Math.PI) / 11, r = k % 2 ? 31 : 46; star.push([Math.cos(a) * r, Math.sin(a) * r]); }
+  parts.push(slab(F, star, -1, 7, fort), slab(F, star.map(([a, b]) => [a * 0.97, b * 0.97]), 7, 7.4, '#6f8a52')); // the fort's walls, the lawn on them
+  parts.push(F.box(0, 0, 6, 6, 28, 28, '#b5ae9f'), F.box(0, 0, 12, 8, 23, 23, '#b5ae9f'));
+  parts.push(F.box(0, 0, 20, 10, 19.5, 19.5, granite), F.box(0, 0, 30, 1.2, 20.5, 20.5, granite), F.box(0, 0, 31.2, 8.8, 16.5, 16.5, granite));
+  for (const sa of [-1, 1]) for (const sb of [-1, 1]) parts.push(F.box(sa * 7.4, sb * 7.4, 31.2, 8.8, 2.2, 2.2, '#b3ab9a')); // the loggias' piers
+  parts.push(F.box(0, 0, 40, 1.4, 18, 18, granite), F.box(0, 0, 41.4, 5.6, 13.5, 13.5, granite), F.box(0, 0, 46.6, 0.6, 14.2, 14.2, '#b3ab9a'));
+  const [x, z] = F.xz(0, 0);
+  const robe = new THREE.LatheGeometry([[6.2, 0], [5.6, 4], [5.1, 10], [4.9, 16], [5.1, 21], [5.5, 25], [5.3, 27.4], [3.3, 28.6], [1.3, 29.2], [0, 29.4]].map(([r, h]) => new THREE.Vector2(r, h)), 18);
+  parts.push(tint(robe.scale(0.68, 1, 1).rotateY(-F.ang).translate(x, y + P0, z), cu));
+  const [hx, hz] = F.xz(0.3, 0), hy = y + P0 + 31.6;
+  parts.push(tint(new THREE.SphereGeometry(2.5, 12, 10).scale(1, 1.15, 0.95).translate(hx, hy, hz), cu), post(hx, hz, hy + 1.2, 2.7, 2.6, 1, cu, 14));
+  for (let k = 0; k < 7; k++) { const a = ((k - 3) * Math.PI) / 7.5; parts.push(beam(F.P(0.3 + Math.cos(a) * 2.2, Math.sin(a) * 2.2, P0 + 33.6), F.P(0.3 + Math.cos(a) * 5.4, Math.sin(a) * 5.4, P0 + 35.2), 0.5, 0.5, cu)); }
+  // the right arm up to the torch, the hand round its handle, the cup and the flame
+  parts.push(beam(F.P(0, 3.9, P0 + 27), F.P(0.4, 4.9, P0 + 34), 2, 2, cu), beam(F.P(0.4, 4.9, P0 + 34), F.P(0.7, 5.6, P0 + 39.6), 1.6, 1.6, cu));
+  const [tx, tz] = F.xz(0.7, 5.6);
+  parts.push(post(tx, tz, y + P0 + 39, 0.9, 0.7, 2.8, cu, 10), post(tx, tz, y + P0 + 41.8, 0.9, 1.7, 1.4, cu, 12), post(tx, tz, y + P0 + 43.2, 1.6, 1.6, 0.4, cu, 12));
+  parts.push(tint(new THREE.ConeGeometry(1.3, 2.6, 10).translate(tx, y + P0 + 44.9, tz), GOLD));
+  // the left forearm across the body and the tablet it holds, its face to the front
+  parts.push(beam(F.P(0, -4.4, P0 + 24.5), F.P(0.9, -4.9, P0 + 18.5), 1.3, 1.3, cu), F.box(0.9, -5.5, P0 + 16.5, 7.2, 4.1, 0.8, cu));
 }
 // a tower on the Golden Gate's plan (the bridge's towers, L.style 'golden-gate'): two legs stepping in as they rise, the
 // four portal struts above the roadway, the openings between them shorter the higher they are, the X-bracing below it;
@@ -2224,6 +2250,13 @@ function landmarks() {
         const cv = gg ? 14 : 12, cw = gg ? 1.5 : 0.9;
         for (const sd of [-1, 1]) {
           if (gg) { goldenGateTower(P, Math.atan2(du.z, du.x), (sd * S) / 2, D, H, L.color, parts); continue; }
+          if (L.style === 'brooklyn') { // Roebling's granite towers: the deep pier, the three piers between the two tall arches, the crown
+            const ang = Math.atan2(du.z, du.x), put = (y0, y1, w, d, v) => { const p = P((sd * S) / 2, 0, v); parts.push(blk(p.x, p.z, y0, y1 - y0, w, d, ang, '#b8aa90')); };
+            put(-3, D - 1, 22, 44, 0);
+            for (const v of [-17.75, 0, 17.75]) put(D - 1, H - 14, 17, 7.5, v);
+            put(H - 14, H, 17, 43, 0); put(H - 2, H - 0.6, 18.4, 44.4, 0);
+            continue;
+          }
           for (const v of [-12, 12]) parts.push(beam(P(sd * S / 2, -2, v), P(sd * S / 2, H, v), 5, 5, grey));
           for (const y of [D - 4, H * 0.62, H - 3]) parts.push(beam(P(sd * S / 2, y, -12), P(sd * S / 2, y, 12), 3, 4, grey));
         }
@@ -2288,6 +2321,7 @@ function landmarks() {
     else if (L.kind === 'cathedral') laSeu(L, parts);
     else if (L.kind === 'fort') carlsten(L, parts);
     else if (L.kind === 'basilica') garde(L, parts);
+    else if (L.kind === 'statue' && L.style === 'liberty') liberty(L, parts);
     else if (L.kind === 'statue') redeemer(L, parts);
     else if (L.kind === 'opera') operaHouse(L, parts);
     else if (L.kind === 'isaac') isaac(L, parts);
@@ -2310,6 +2344,16 @@ function landmarks() {
         parts.push(blk(x, z, y - 1, 33, 19, 19, ang, ochre), blk(x, z, y + 30, 2.5, 20, 20, ang, white), blk(x, z, y + 32, 13, 15, 15, ang, ochre), blk(x, z, y + 44, 2, 16, 16, ang, white));
         parts.push(blk(x, z, y + 46, 11, 11, 11, ang, ochre), post(x, z, y + 57, 5.6, 5.2, 8, white, 8), post(x, z, y + 65, 4.4, 2.6, 15, GOLD, 8));
         parts.push(tint(new THREE.ConeGeometry(2.4, L.h - 84, 8).translate(x, y + 80 + (L.h - 84) / 2, z), GOLD), post(x, z, y + L.h - 4.5, 0.25, 0.25, 4.5, GOLD, 6), blk(x, z, y + L.h - 2.5, 0.5, 3.2, 0.5, ang + Math.PI / 2, GOLD));
+      } else if (L.style === 'sochi') {
+        // Sochi's sea terminal (1955): the square tower over the middle of its colonnades, its arched belfry stage, the
+        // little octagon and the slender spire with its star, L.h to the star's top
+        const F = frameOf(L, y), cream = '#efe6d2', white = '#f6f2ea', H = L.h;
+        parts.push(F.box(0, 0, -1, 24, 12, 12, cream), F.box(0, 0, 23, 1.2, 13, 13, white), F.box(0, 0, 24.2, 8.5, 9.5, 9.5, cream));
+        for (const sa of [-1, 1]) for (const sb of [-1, 1]) parts.push(F.box(sa * 4.1, sb * 4.1, 24.2, 8.5, 1.6, 1.6, white));
+        parts.push(F.box(0, 0, 32.7, 1, 10.4, 10.4, white), post(x, z, y + 33.7, 3.4, 3.2, 3.5, cream, 8), post(x, z, y + 37.2, 3.6, 3.6, 0.6, white, 8));
+        parts.push(tint(new THREE.ConeGeometry(2.4, H - 41.6, 8).translate(x, y + 37.8 + (H - 41.6) / 2, z), '#d9d3c4'));
+        const star = []; for (let k = 0; k < 10; k++) { const a = (k * Math.PI) / 5, r = k % 2 ? 0.75 : 1.9; star.push([0, Math.sin(a) * r]); star[k].push(Math.cos(a) * r); }
+        parts.push(sheet((s_, t) => { const k = Math.min(9, Math.floor(s_ * 10)), q = star[k], q2 = star[(k + 1) % 10], f = s_ * 10 - k; return F.P(0, (q[1] + (q2[1] - q[1]) * f) * t, H - 1.9 + (q[2] + (q2[2] - q[2]) * f) * t); }, 20, 1, '#c4342a'));
       } else {
         // the Admiralty's tower over its arch: the ochre cube, the white colonnade, the gilded dome, lantern and needle
         const ochre = '#e8c46e', white = '#efe9dc';

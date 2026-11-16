@@ -398,6 +398,63 @@ export const VENUES = [
       boats: { sail: 0.5, motor: 0.28, big: 0.22, bigKind: 'gulet' },
     },
   },
+  // the four below join today's races with the others, on the same day
+  {
+    // the Black Sea off Sochi's sea terminal and its spire, in the afternoon south-westerly off the sea: the town along
+    // the shore to leeward, its sanatoria, palms and cypresses, the wooded foothills and the Caucasus behind
+    id: 'sochi', name: ['Sochi', 'Сочи'], lat: 43.564, lon: 39.697, wind: 225, tz: 3, stream: ['flow', 310, 0.4], from: '2026-11-20',
+    look: {
+      haze: 0.9,
+      ground: { forest: ['#243f20', '#33552a', '#4a6e35'], scrub: '#6c7d4a', rock: ['#a09886', '#80786a'], town: '#a09c90', shore: '#a49e93', sand: '#a49e93', grass: '#5a7a3a' }, // grey pebble beaches
+      trees: [['broad', 0.6, '#243f20', '#4c7834'], ['cypress', 0.15, '#25391f', '#3a5230'], ['palm', 0.15, '#2f4a26', '#5a7a3a'], ['conifer', 0.1, '#22381f', '#36502c']], treeTop: 1300, woods: 0.85, snow: 2700,
+      walls: ['#f2ede2', '#ece4d2', '#f6f3ec', '#e3d6bc', '#efe2c8', '#d6d2c8'], roofs: ['#a5543a', '#8c4a36', '#6f7478', '#5f666b'], flat: 0.55,
+      boats: { sail: 0.4, motor: 0.5, big: 0.1, bigKind: 'super' },
+      water: { deep: '#0d2c3e', scatter: '#287482', k: 0.5, shallow: '#4a8680', clear: 0.25 },
+    },
+  },
+  {
+    // Port Phillip off St Kilda, the waters of the 1956 Olympic regatta, in the afternoon sea breeze off Bass Strait:
+    // the beaches of St Kilda and Port Melbourne to leeward, the city's towers beyond
+    id: 'melbourne', name: ['Melbourne', 'Мельбурн'], lat: -37.88, lon: 144.945, wind: 200, tz: 11, from: '2026-11-20',
+    look: {
+      haze: 1.0,
+      ground: { forest: ['#3a4a2c', '#4b5c36', '#66734a'], scrub: '#7e7c56', rock: ['#a89c86', '#877d6c'], town: '#a49a8c', shore: '#d6c6a0', sand: '#ddcca4', grass: '#6f8a48' },
+      fields: ['#8a9a52', '#a3a35e', '#7a8f4a', '#b8ac6a'],
+      trees: [['eucalypt', 0.45, '#4a5a3a', '#7d8a62'], ['broad', 0.4, '#304a28', '#5a7a3a'], ['palm', 0.15, '#3d5a2c', '#5f7a3a']], treeTop: 200, woods: 0.25, clearing: 'grass',
+      walls: ['#a85c45', '#c9b08a', '#efe9dc', '#e6dcc6', '#8f4c38', '#d9d2c4'], roofs: ['#7b8287', '#5f666b', '#a84f36', '#93452f'], flat: 0.4,
+      boats: { sail: 0.75, motor: 0.25, big: 0 },
+      water: { deep: '#0b3340', scatter: '#2a8a86', k: 0.45, shallow: '#5a9a88', clear: 0.3 },
+    },
+  },
+  {
+    // the Pacific off Surfers Paradise, in the easterly sea breeze: the beach and its towers to leeward, the Broadwater
+    // behind them, the East Australian Current running south along the coast
+    id: 'gold-coast', name: ['Gold Coast', 'Голд-Кост'], lat: -28.0, lon: 153.455, wind: 90, tz: 10, stream: ['flow', 175, 0.6], from: '2026-11-20',
+    look: {
+      haze: 1.3,
+      ground: { forest: ['#2f4a26', '#3f6030', '#5a7a3a'], scrub: '#7a8a50', rock: ['#a89a80', '#86786a'], town: '#b0a898', shore: '#eadcb8', sand: '#efe2c0', grass: '#6a8a40' },
+      trees: [['palm', 0.35, '#3d5a2c', '#6a8a3a'], ['eucalypt', 0.35, '#4a5a3a', '#7d8a62'], ['broad', 0.3, '#2f4a26', '#56783a']], treeTop: 400, woods: 0.5, clearing: 'grass',
+      walls: ['#f4f1ea', '#ebe5d8', '#ffffff', '#e6dccb', '#d9d4c8', '#efe6d2'], roofs: ['#7e7f80', '#a5543a', '#5a5f60', '#e8e4dc'], flat: 0.65,
+      towers: ['#e8eaea', '#d8dcde', '#f2f2ee', '#c9d3d8', '#dfe4e6', '#b8c8d0'], // the beachfront's white concrete and pale glass
+      boats: { sail: 0.4, motor: 0.5, big: 0.1, bigKind: 'super' },
+      water: { deep: '#033a5a', scatter: '#1aa4b0', k: 0.5, shallow: '#4cc0b4', clear: 0.6 },
+    },
+  },
+  {
+    // the Upper Bay by the Statue of Liberty, in the summer's south-south-westerly up the Narrows: Lower Manhattan,
+    // the Brooklyn Bridge and Jersey City to leeward, the Verrazzano-Narrows Bridge to windward
+    id: 'new-york', name: ['New York', 'Нью-Йорк'], lat: 40.675, lon: -74.035, wind: 200, tz: -4, stream: ['tide', 15, 1.2], from: '2026-11-20',
+    look: {
+      haze: 0.85,
+      ground: { forest: ['#2b4526', '#3a5a2f', '#557539'], scrub: '#7a8a52', rock: ['#8e8a80', '#6f6c66'], town: '#8f8a82', shore: '#9a948a', grass: '#5f8040' },
+      trees: [['broad', 0.85, '#2b4526', '#58793a'], ['conifer', 0.15, '#22381f', '#36502c']], treeTop: 120, woods: 0.3, clearing: 'grass',
+      // brownstone, red brick, limestone and the grey of the warehouses; the city's roofs flat and tarred
+      walls: ['#7a4a3a', '#9a5a44', '#d9d0bc', '#c9c4ba', '#e6e0d2', '#8a6a5a', '#b0735a'], roofs: ['#4a4d50', '#5a5f60', '#6b6e70', '#3f4448'], flat: 0.85,
+      fill: 0, // every building is on the map: none made up
+      boats: { sail: 0.5, motor: 0.4, big: 0.1, bigKind: 'super' },
+      water: { deep: '#1d3a40', scatter: '#3a6e66', k: 0.55, shallow: '#4f6e5c', clear: 0.08 },
+    },
+  },
 ];
 
 export const venueById = (id) => VENUES.find((v) => v.id === id) || VENUES[0];

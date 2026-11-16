@@ -47,7 +47,7 @@ test('the log: a day at its fastest, a venue at its first race, from the game’
   assert.equal(m.v.cowes, 40);
   assert.equal(m.v.kiel, 50);
   assert.deepEqual([...passport(m).raced].sort(), ['cowes', 'kiel', v].sort());
-  assert.equal(passport(m).of, 30);
+  assert.equal(passport(m).of, 34);
 });
 
 test('the ghost in the game and the replay on the result page put a boat in the same place', async () => {

@@ -13,7 +13,7 @@ export function GET() {
 
 > ${HOME_DESC[0]}
 
-${NAME} is a free 3D sailing race game by RYC that runs in any modern web browser, on a phone or a computer, with nothing to install. You sail a yacht round one of four courses (up and down, a triangle, a trapezoid, or up and down with an upwind finish) at one of 30 famous regatta venues (Göcek, Cowes, Newport, Sydney, San Francisco, Auckland, Hong Kong, Cape Town and more), against up to six computer boats that race by the Racing Rules of Sailing: they hail, give way and do their penalty turns. It is in English and Russian.
+${NAME} is a free 3D sailing race game by RYC that runs in any modern web browser, on a phone or a computer, with nothing to install. You sail a yacht round one of four courses (up and down, a triangle, a trapezoid, or up and down with an upwind finish) at one of 34 famous regatta venues (Göcek, Cowes, Newport, Sydney, San Francisco, Auckland, Hong Kong, Cape Town, New York and more), against up to six computer boats that race by the Racing Rules of Sailing: they hail, give way and do their penalty turns. It is in English and Russian.
 
 ## Key facts
 
