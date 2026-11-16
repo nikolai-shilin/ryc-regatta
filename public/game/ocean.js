@@ -274,7 +274,15 @@ export class Ocean {
     const dt = this.lastT == null ? 0 : Math.min(0.1, Math.max(0, t - this.lastT)); this.lastT = t;
     this.mSpec.uniforms.uT.value = t;
     this.mDisp.uniforms.uChop.value = this.chop ?? -1;
+    // The finer layers (the wavelets and the ripples) every other frame: each layer is 17 small passes on High, and on
+    // a phone's GPU every pass has its cost however small it is (High 51 → 34 a frame, Medium 30 → 23). They only tilt
+    // the surface, so a frame old they move nothing; what shows is the sun's glitter on them, which steps at half the
+    // frame rate. The 40 m layer, which heaves the water the boats sit in and keeps the whitecaps, stays every frame.
+    // The two fine layers take turns (High: 34 passes every frame, not 51 and 17 by turns, which would judder).
+    this.frameN = (this.frameN || 0) + 1;
     this.layers.forEach((layer, c) => {
+      if (c > 0 && layer.made && (this.frameN + c) % 2) return;
+      layer.made = true;
       this.mSpec.uniforms.uH0.value = layer.h0; this.mSpec.uniforms.uL.value = layer.L;
       this.pass(this.mSpec, this.ping);
       let src = this.ping, dst = this.pong;

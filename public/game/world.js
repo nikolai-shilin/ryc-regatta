@@ -1139,8 +1139,29 @@ function currentVee() {
   return m;
 }
 
-// put an object (and all of it: layers are tested per mesh) in what the sea reflects
-function mirrored(obj) { obj.traverse((o) => o.layers.enable(MIRRORED)); return obj; }
+// put an object (and all of it: layers are tested per mesh) in what the sea reflects; but not its parts under a metre
+// across (a fitting, a winch, a flag, a committee boat's crew, a gull): in the half- or quarter-size, rippled
+// reflection they are a pixel or none, yet each costs a draw like a hull. On the Medium graphics, phones', the mirror
+// had come to 190 draws a frame against the picture's own 250; this leaves out a third of them and no change to see
+// (0.14% of the pixels, faint specks). A part's size is its own: its geometry's sphere at its scale in the world now,
+// so a part made at no size yet (a sail not set, scale 0) is kept, as is a batch (an instanced mesh: its sphere is
+// the one shape's, not the batch's).
+const MIRROR_MIN = 1; // m, the radius of the sphere round a part under which it isn't reflected
+const _ms = new THREE.Vector3();
+function mirrored(obj) {
+  obj.updateWorldMatrix(true, true);
+  obj.traverse((o) => {
+    const g = o.geometry;
+    if ((o.isMesh || o.isPoints) && !o.isInstancedMesh && g?.attributes.position) {
+      if (!g.boundingSphere) g.computeBoundingSphere();
+      _ms.setFromMatrixScale(o.matrixWorld);
+      const s = Math.max(Math.abs(_ms.x), Math.abs(_ms.y), Math.abs(_ms.z));
+      if (s > 1e-3 && g.boundingSphere.radius * s < MIRROR_MIN) return;
+    }
+    o.layers.enable(MIRRORED);
+  });
+  return obj;
+}
 
 // ---------- guides around your boat ----------
 // Built with the wind from the north and turned to the wind each frame: a ring, faint enough to read the sea through: red where she can't sail (too close to the wind), green marks
@@ -1282,9 +1303,9 @@ export class World {
     this.skopea = new Skopea(this.skyU);
     this.scene.add(this.skopea.group);
     Object.assign(this.waterU, this.skopea.waterU);
-    // the sea reflects the hills, the town and the moored yachts; not the pines, the most of it to draw a second
-    // time, which the rippled reflection of a green hillside wouldn't show
-    for (const o of [this.skopea.land, this.skopea.town, this.skopea.boats, this.skopea.far]) mirrored(o); // (the far mountains too, in the calm)
+    // the sea reflects the hills and the town; not the pines, the most of it to draw a second time, which the rippled
+    // reflection of a green hillside wouldn't show; nor the moored yachts, a row of specks at the shore's foot in it
+    for (const o of [this.skopea.land, this.skopea.town, this.skopea.far]) mirrored(o); // (the far mountains too, in the calm)
 
     // glare: a soft bloom round the sun when you look towards it (behind a sail or a hill it hides)
     const gc = document.createElement('canvas'); gc.width = gc.height = 128;
