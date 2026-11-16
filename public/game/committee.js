@@ -48,7 +48,7 @@ function paintTexture() {
   return t;
 }
 
-function bannerTexture(text = 'RACE COMMITTEE') {
+export function bannerTexture(text = 'RACE COMMITTEE') {
   const c = document.createElement('canvas'); c.width = 512; c.height = 88;
   const x = c.getContext('2d');
   x.fillStyle = '#fff'; x.fillRect(0, 0, 512, 88);
@@ -171,7 +171,7 @@ function shaded(m) { // the baked shade dims the sunlit deck a little too, not o
 // one set of her finishes for every committee boat (and the jury's): her hull's paint is made per boat (its wet line's
 // speed is hers)
 let FIN = null;
-function finishes() {
+export function finishes() {
   return FIN ||= {
     deck: shaded(new THREE.MeshStandardMaterial({ map: NONSKID, color: '#ffffff', roughness: 0.85 })),
     teak: shaded(deckFinish({ deck: 'teak' }, null).clone()),
@@ -188,7 +188,7 @@ function finishes() {
 }
 
 // a box with its edges and corners rounded to r, centred on the origin: a rounded rectangle extruded, bevelled round
-function RoundedBoxGeometry(w, h, d, seg = 3, r = 0.05) {
+export function RoundedBoxGeometry(w, h, d, seg = 3, r = 0.05) {
   const e = 0.002, a = w / 2 - r - e, b = d / 2 - r - e, s = new THREE.Shape(); // the bevel rounds its corners in plan too
   s.absarc(a, -b, e, -Math.PI / 2, 0); s.absarc(a, b, e, 0, Math.PI / 2); s.absarc(-a, b, e, Math.PI / 2, Math.PI); s.absarc(-a, -b, e, Math.PI, Math.PI * 1.5);
   const g = new THREE.ExtrudeGeometry(s, { depth: h - 2 * r, bevelEnabled: true, bevelSize: r, bevelThickness: r, bevelSegments: seg, curveSegments: 4 });
@@ -207,8 +207,8 @@ function block(lo, hi, yLo, yHi, out = 0) {
   return g;
 }
 
-const tube = (pts, r, closed = false, seg = 6) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)), closed, 'catmullrom', 0.3), Math.max(8, pts.length * 4), r, seg, closed);
-const rod = (a, b, r, seg = 6) => { // a cylinder from point a to point b
+export const tube = (pts, r, closed = false, seg = 6) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)), closed, 'catmullrom', 0.3), Math.max(8, pts.length * 4), r, seg, closed);
+export const rod = (a, b, r, seg = 6) => { // a cylinder from point a to point b
   const A = new THREE.Vector3(...a), Bv = new THREE.Vector3(...b), len = A.distanceTo(Bv);
   const g = new THREE.CylinderGeometry(r, r, len, seg);
   g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), Bv.clone().sub(A).normalize()));
@@ -218,7 +218,7 @@ const rod = (a, b, r, seg = 6) => { // a cylinder from point a to point b
 // ---------- a flag ----------
 // a cloth hoisted by its luff, flying downwind and rippling: the waves run from the hoist to the fly and grow there
 const FLAG_SEG = 10;
-class Flag {
+export class Flag {
   constructor(tex, w, h, pennant = false) {
     this.w = w; this.h = h;
     const g = new THREE.PlaneGeometry(w, h, FLAG_SEG, 3).rotateY(-Math.PI / 2).translate(0, -h / 2, w / 2);
@@ -244,7 +244,7 @@ class Flag {
 
 // ---------- the race officers ----------
 const SKINS = ['#c99272', '#e2b291', '#a36d4c', '#d8a27e', '#b98063'];
-function officer(i, jacketColor, pose) {
+export function officer(i, jacketColor, pose) {
   const m = {
     jacket: new THREE.MeshStandardMaterial({ color: jacketColor, roughness: 0.8 }),
     trousers: new THREE.MeshStandardMaterial({ color: i % 2 ? '#d8cfb8' : '#2b2f38', roughness: 0.85 }),

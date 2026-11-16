@@ -5,6 +5,7 @@ const SC = HULL / 10.45; // the model is drawn 10.45 m long, the JPK 1050 as she
 import { LOOKS, playerLook, lookFrom, SEA } from './yacht.js';
 import { makeBoatView } from './boats3d.js';
 import { CommitteeBoat, COMMITTEE_L, COMMITTEE_BOTTOM as BOTTOM_CB } from './committee.js';
+import { LagoonCommittee, lagoonReady } from './lagoon.js';
 import { buoy } from './marks.js';
 import { JuryBoat } from './jury.js';
 import { Wildlife } from './wildlife.js';
@@ -775,11 +776,11 @@ class HullContact {
     this.mesh.visible = !(b.ride > 0.5);
     if (this.hmesh) this.hmesh.visible = this.mesh.visible;
     if (!this.mesh.visible) return;
-    const g = this.mesh.geometry, P = g.attributes.position, L = g.attributes.aL, S = (b.cls?.loa ?? HULL) / 12.2;
+    const g = this.mesh.geometry, P = g.attributes.position, L = g.attributes.aL, S = (b.cls?.loa ?? HULL) / 12.2, Sc = b.cls?.wlb ? b.cls.wlb / 3.5 : S; // Sc: a narrower hull's across her (a catamaran's)
     this.uK.value = S;
     const fx = Math.sin(b.h), fz = -Math.cos(b.h), rx = Math.cos(b.h), rz = Math.sin(b.h);
     for (let i = 0; i < P.count; i++) {
-      const a = L.getX(i) * S, c = L.getY(i) * S, x = b.x + fx * a + rx * c, z = b.z + fz * a + rz * c;
+      const a = L.getX(i) * S, c = L.getY(i) * Sc, x = b.x + fx * a + rx * c, z = b.z + fz * a + rz * c;
       P.setXYZ(i, x, waveHeight(W, x, z, t) + 0.05, z);
     }
     P.needsUpdate = true;
@@ -1424,19 +1425,26 @@ export class World {
     this.cbContacts = []; // the committee boats' white water and shade where they meet the sea, as the yachts' (HullContact)
     const add = (obj, p, vee) => {
       obj.position.set(p.x, 0, p.z); g.add(mirrored(obj)); if (vee) g.add(vee);
-      underParts(obj, BOTTOM_CB, this); // seen through the water: a mark's skirt, a committee boat's hull and running gear
-      if (obj.userData.boat) this.cbContacts.push(Object.assign(new HullContact(this.scene, this.wakeU, this.wakeField), { at: { x: p.x, z: p.z, h: W0, v: 0, cls: { loa: COMMITTEE_L } } }));
+      const boat = obj.userData.boat;
+      underParts(obj, boat?.bottom || BOTTOM_CB, this); // seen through the water: a mark's skirt, a committee boat's hull and running gear
+      // a committee boat's white water round each of her hulls (a catamaran's two, either side of her middle)
+      if (boat) for (const hl of boat.hulls) this.cbContacts.push(Object.assign(new HullContact(this.scene, this.wakeU, this.wakeField),
+        { at: { x: p.x + Math.cos(W0) * hl.x, z: p.z + Math.sin(W0) * hl.x, h: W0, v: 0, cls: { loa: hl.loa, wlb: hl.wlb } } }));
       const ring = obj.userData.R ? new MarkContact(obj.userData.R, this.wakeU) : null; if (ring) g.add(ring.mesh);
       this.buoys.push({ obj, p, vee, ring });
     };
     for (const m of [...Object.values(c.marks), ...c.gate]) add(buoy(), m, currentVee()); // the rounding marks and the gate
     add(buoy('#ffd21a', 0.85), c.pin, currentVee());
     // a committee boat lies to her anchor head to wind, 5 m beyond her line's end (d: along the line, towards her):
-    // which side of her the pin is, and where along her the line meets her, place her orange flag and her officers
+    // which side of her the pin is, and where along her the line meets her, place her orange flag and her officers.
+    // The club's two take turns from race to race, the motor cruiser and the Lagoon 42 (a finish line's is the other)
     const cbx = Math.cos(W0), cbz = Math.sin(W0);
-    const cboat = (hull, d) => {
-      const ex = -d.x * 5, ez = -d.z * 5, b = new CommitteeBoat(ex * cbx + ez * cbz >= 0 ? 1 : -1, -ex * cbz + ez * cbx);
-      b.root.userData.boat = true; add(b.root, hull); b.root.rotation.y = -W0; return b;
+    const kinds = lagoonReady ? [CommitteeBoat, LagoonCommittee] : [CommitteeBoat];
+    this.cbTurn = (this.cbTurn ?? Math.floor(Math.random() * kinds.length)) + 1;
+    const cboat = (hull, d, Kind) => {
+      const ex = -d.x * 5, ez = -d.z * 5, b = new Kind(ex * cbx + ez * cbz >= 0 ? 1 : -1, -ex * cbz + ez * cbx);
+      b.hulls ||= [{ x: 0, loa: COMMITTEE_L }];
+      b.root.userData.boat = b; b.root.rotation.y = -W0; add(b.root, hull); return b;
     };
     // a line, as a row of floating dashes
     const dashes = (a, b) => {
@@ -1444,7 +1452,7 @@ export class World {
       m.rotation.y = -Math.atan2(b.z - a.z, b.x - a.x); m.position.set((a.x + b.x) / 2, 0.7, (a.z + b.z) / 2);
       g.add(m); return m;
     };
-    this.cb = cboat({ x: c.committee.x + c.dir.x * 5, z: c.committee.z + c.dir.z * 5 }, c.dir);
+    this.cb = cboat({ x: c.committee.x + c.dir.x * 5, z: c.committee.z + c.dir.z * 5 }, c.dir, kinds[this.cbTurn % kinds.length]);
     this.committee = inLandShadow(this.cb.root); this.cbW0 = W0;
     // the jury boat, off the course, going round it
     this.jury ||= new JuryBoat(); this.jury.reset(race);
@@ -1456,7 +1464,7 @@ export class World {
     if (c.finish) {
       const f = c.finish, fl = Math.hypot(f.b.x - f.a.x, f.b.z - f.a.z);
       add(buoy('#ffd21a', 0.85), f.a, currentVee());
-      this.fb = cboat(c.finishBoat, { x: (f.b.x - f.a.x) / fl, z: (f.b.z - f.a.z) / fl }).finishing();
+      this.fb = cboat(c.finishBoat, { x: (f.b.x - f.a.x) / fl, z: (f.b.z - f.a.z) / fl }, kinds[(this.cbTurn + 1) % kinds.length]).finishing();
       dashes(f.a, f.b);
     }
     // the arrows over the next mark
@@ -1703,10 +1711,10 @@ export class World {
       const boat = obj.userData.boat; // a committee boat
       obj.position.y = waveHeight(this.W, p.x, p.z, t) * (boat ? 0.7 : 0.9);
       if (ring) ring.update(p, t, this.W);
-      if (boat) { // she pitches and rolls a little on the swell, being long and heavy
+      if (boat) { // she pitches and rolls a little on the swell, being long and heavy (a catamaran rolls less still)
         const W0 = this.cbW0, fx = Math.sin(W0), fz = -Math.cos(W0);
-        obj.rotation.x = waveSlope(this.W, p.x, p.z, t, fx, fz) * 0.35;
-        obj.rotation.z = waveSlope(this.W, p.x, p.z, t, -fz, fx) * 0.35;
+        obj.rotation.x = waveSlope(this.W, p.x, p.z, t, fx, fz) * (boat.pitch ?? 0.35);
+        obj.rotation.z = waveSlope(this.W, p.x, p.z, t, -fz, fx) * (boat.roll ?? 0.35);
         continue;
       }
       const cur = race.currentAt(p.x, p.z), cs = Math.hypot(cur.x, cur.z); // the stream where this mark lies
