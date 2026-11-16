@@ -151,7 +151,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Sail her in today’s race', 'В гонку дня на ней')}</span></a>
         <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс')}>
           <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд')}</button>
-          <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Gennaker', 'Геннакер')}</button>
+          <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Gennaker', 'Генакер')}</button>
         </div>
 
         <div className="bt-g">
@@ -190,7 +190,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
           </div>
 
           <div className="bt-g">
-            {kicker('l-kite', <IconKite />, t('Gennaker', 'Геннакер'))}
+            {kicker('l-kite', <IconKite />, t('Gennaker', 'Генакер'))}
             {tags('l-kite', String(bands), [['1', t('One colour', 'Один цвет')], ['2', t('Two', 'Два')], ['3', t('Three', 'Три')]] as [string, string][], (v) => setBands(Number(v)))}
             {bands === 1
               ? <Swatches label="l-kite" value={b.kite} options={SWATCHES.kite} onChange={(v) => { set({ kite: v }); setDown(true); }} t={t} />

@@ -204,7 +204,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
   const tracks = res.boats.map((b) => ({ pts: b.track, me: b.me }));
   const fouls = L.fouls.filter((f) => f.x != null && f.z != null).map((f) => [f.x!, f.z!] as [number, number]);
   const legName = (k: string) => ({ start: t('Start', 'Старт'), mark: shape === 'trap' ? t('Mark 1', 'Знак 1') : t('Windward mark', 'Верхний знак'), wing: t('Wing mark', 'Боковой знак'),
-    mark2: t('Mark 2', 'Знак 2'), offset: t('Offset mark', 'Знак смещения'), gate: t('Leeward gate', 'Нижние ворота'), finish: t('Finish', 'Финиш') }[k] || k);
+    mark2: t('Mark 2', 'Знак 2'), offset: t('Offset mark', 'Отбойник'), gate: t('Leeward gate', 'Нижние ворота'), finish: t('Finish', 'Финиш') }[k] || k);
 
   const where = venueOf(raceVenue(res, shared ? 'gocek' : readOpts().venue));
   const scene = finishScene(res);
@@ -236,7 +236,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
         : t(`${ordEn(bl.place)} fastest of ${bl.of}, ${gapS(bl.by)} off`, `${bl.place}-й из ${bl.of}, ${gapS(bl.by)} от лучшего`) },
     L.top ? { k: t('Top speed', 'Макс. скорость'), v: num(L.top), u: t('kn', 'уз'),
       s: cap([L.topKite ? t('under the kite', 'под генакером') : '', L.topLeg ? t(`leg ${L.topLeg}`, `отрезок ${L.topLeg}`) : t('at the start', 'на старте')].filter(Boolean).join(', ')) } : null,
-    L.gybes != null ? { k: t('Tacks · gybes', 'Повороты · фордевинды'), v: `${L.tacks} · ${L.gybes}`,
+    L.gybes != null ? { k: t('Tacks · gybes', 'Оверштаги · фордевинды'), v: `${L.tacks} · ${L.gybes}`,
       s: pens ? t(`${pens} ${pens === 1 ? 'penalty' : 'penalties'}`, `Штрафов: ${pens}`) : t('No penalties', 'Без штрафов') } : null,
   ] as (Tile | null)[]).filter((x): x is Tile => !!x);
   const hasPens = res.boats.some((b) => b.pens != null);

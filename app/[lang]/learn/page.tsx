@@ -10,7 +10,7 @@ export const generateMetadata = titled('Learn to race', 'Учись гонять
   path: '/learn',
   description: [
     'Short guides to sailboat racing: the racing rules, the start, wind shifts, mark roundings, sailing downwind and boat speed, and a glossary. Then try each one in a free 3D sailing race.',
-    'Короткие пособия по парусным гонкам: правила, старт, заходы ветра, огибание знаков, попутные курсы и скорость лодки, а также словарь. А потом попробуй каждое в бесплатной 3D-гонке.'],
+    'Короткие пособия по парусным гонкам: правила, старт, заходы и отходы ветра, огибание знаков, попутные курсы и скорость лодки, а также словарь. А потом попробуй каждое в бесплатной 3D-гонке.'],
 });
 
 // L0 · Learn to race: the guides, one card each (its picture from the game and its number over it; the one without a
@@ -24,7 +24,7 @@ export default async function Learn({ params }: LangParams) {
       <header className="hm-page hm-ph">
         <span className="kicker">{t(`Up and down · ${guides.length} guides`, `Up and down · ${guides.length} ${ruPlural(guides.length, ['пособие', 'пособия', 'пособий'])}`)}</span>
         <h1 className="hm-ph-h">{t('Learn to race', 'Учись гоняться')}</h1>
-        <p className="hm-text">{t('What wins a sailboat race, a few minutes at a time: the rules when boats meet, the start, the wind shifts, the marks, the run and boat speed. Each guide ends on the water, in the game.', 'Что выигрывает парусную гонку — по несколько минут на тему: правила при встрече лодок, старт, заходы ветра, знаки, попутный курс и скорость. Каждое пособие заканчивается на воде, в игре.')}</p>
+        <p className="hm-text">{t('What wins a sailboat race, a few minutes at a time: the rules when boats meet, the start, the wind shifts, the marks, the run and boat speed. Each guide ends on the water, in the game.', 'Что выигрывает парусную гонку — по несколько минут на тему: правила при встрече лодок, старт, заходы и отходы ветра, знаки, попутный курс и скорость. Каждое пособие заканчивается на воде, в игре.')}</p>
       </header>
       <div className="hm-page gd-list">
         {guides.map((g, i) => (
@@ -47,7 +47,7 @@ export default async function Learn({ params }: LangParams) {
           <span className="kicker">{t('Glossary', 'Словарь')}</span>
           <span className="gd-banner-t">
             <span className="card-title">{t('Sailing racing glossary', 'Словарь парусных гонок')}</span>
-            <p>{t('Beat, overlap, clear astern, header, layline, zone, mark-room, OCS: the words of a race course, a sentence or two each.', 'Лавировка, перекрытие, чисто позади, заход ветра, лейлайн, зона, место у знака, фальстарт: слова гоночной дистанции, по паре предложений.')}</p>
+            <p>{t('Beat, overlap, clear astern, header, layline, zone, mark-room, OCS: the words of a race course, a sentence or two each.', 'Лавировка, связанность, чисто позади, заход ветра, лейлайн, зона, место у знака, фальстарт: слова гоночной дистанции, по паре предложений.')}</p>
           </span>
           <span className="gd-banner-go">{t('Read', 'Читать')}<IconArrow s={14} /></span>
         </Link>

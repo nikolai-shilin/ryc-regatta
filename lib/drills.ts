@@ -8,7 +8,7 @@ export type Level = 'beginner' | 'club' | 'racer' | 'expert';
 export const LEVELS: { id: Level; name: Pair; who: Pair }[] = [
   { id: 'beginner', name: ['Beginner', 'Новичок'], who: ['Against beginners: the moments a race turns on, one at a time.', 'Против новичков: моменты, от которых зависит гонка, по одному.'] },
   { id: 'club', name: ['Club', 'Клуб'], who: ['Against club sailors: the tactics, from the line to the finish.', 'Против клубных яхтсменов: тактика от старта до финиша.'] },
-  { id: 'racer', name: ['Racer', 'Гонщик'], who: ['Against racers, in the conditions that make it hard: a stream, a zephyr, a blow, a triangle.', 'Против гонщиков, в условиях посложнее: течение, штиль, свежак, треугольник.'] },
+  { id: 'racer', name: ['Racer', 'Гонщик'], who: ['Against racers, in the conditions that make it hard: a stream, a zephyr, a blow, a triangle.', 'Против гонщиков, в условиях посложнее: течение, слабый ветер, свежак, треугольник.'] },
   { id: 'expert', name: ['Expert', 'Эксперт'], who: ['Against the experts: the port-tack start, a comeback, and a whole race.', 'Против экспертов: старт левым галсом, отыгрыш с последнего места и целая гонка.'] },
 ];
 export const DRILLS: { id: string; level: Level; name: Pair; what: Pair; three: Pair; min: number }[] = [
@@ -42,12 +42,12 @@ export const DRILLS: { id: string; level: Level; name: Pair; what: Pair; three: 
   { id: 'light', level: 'racer', name: ['Light air', 'Слабый ветер'], min: 3,
     what: ['Halfway up the beat in 7 knots, the racers round you. Every tack costs more than it does in a breeze: tack only on the big shifts, and keep her moving.', 'Половина лавировки при 7 узлах, вокруг гонщики. Каждый поворот стоит дороже, чем в ветер: поворачивай только на больших заходах и не теряй ход.'],
     three: ['First or second at the windward mark, with no penalty.', 'Первым или вторым у верхнего знака и без штрафа.'] },
-  { id: 'wing', level: 'racer', name: ['The wing mark', 'Знак на галфвинде'], min: 1,
-    what: ['A triangle: you take over 130 m from the wing mark on the tight reach, the racers round you. Gybe round it and set off down the broad reach.', 'Треугольник: ты берёшь лодку в 130 м от знака на крутом галфвинде, вокруг гонщики. Обогни его поворотом фордевинд и уходи на полный курс.'],
+  { id: 'wing', level: 'racer', name: ['The wing mark', 'Боковой знак'], min: 1,
+    what: ['A triangle: you take over 130 m from the wing mark on the tight reach, the racers round you. Gybe round it and set off down the broad reach.', 'Треугольник: ты берёшь лодку в 130 м от знака на крутом галфвинде, вокруг гонщики. Обогни его поворотом фордевинд и уходи в бакштаг.'],
     three: ['A place gained at the mark (or the lead kept), and no penalty.', 'Выигранное у знака место (или удержанное первое) и без штрафа.'] },
   { id: 'heavy', level: 'racer', name: ['The heavy-air run', 'Фордевинд в свежак'], min: 2,
-    what: ['The run in 19 knots, the kite up, the racers round you. Gybe at full speed, bear away in the gusts, and keep her on her feet to the gate.', 'Фордевинд при 19 узлах, спинакер поднят, вокруг гонщики. Делай повороты на полной скорости, уваливайся в порывах и не положи лодку до ворот.'],
-    three: ['Through the gate without a broach or a wrapped kite, a place gained (or the lead kept), no penalty.', 'Через ворота без брочинга и замотанного спинакера, выигранное место (или удержанное первое), без штрафа.'] },
+    what: ['The run in 19 knots, the kite up, the racers round you. Gybe at full speed, bear away in the gusts, and keep her on her feet to the gate.', 'Фордевинд при 19 узлах, генакер поднят, вокруг гонщики. Делай повороты фордевинд на полной скорости, уваливайся в порывах и не положи лодку до ворот.'],
+    three: ['Through the gate without a broach or a wrapped kite, a place gained (or the lead kept), no penalty.', 'Через ворота без брочинга и замотанного генакера, выигранное место (или удержанное первое), без штрафа.'] },
   { id: 'port', level: 'expert', name: ['The port-tack start', 'Старт левым галсом'], min: 1,
     what: ['A line with the pin well favoured, the experts on it on starboard. Come in on port at the pin and cross them all, or duck the ones you can’t.', 'Пин сильно выгоднее, эксперты на линии правым галсом. Заходи левым у пина и пересеки их всех, а тех, кого не пересечь, обходи за кормой.'],
     three: ['Started on port, in the third of the line by the pin, under 15 m from it at the gun, with no foul.', 'Старт левым галсом, в трети линии у пина, ближе 15 м на сигнале и без нарушений.'] },

@@ -9,7 +9,7 @@ export const generateMetadata = titled('How to play', 'Как играть', {
   path: '/help',
   description: [
     'How to sail Up and down: steer by touch or the arrow keys, trim the main and jib, tack, gybe and hoist the gennaker, win the start and play the wind shifts. The race screen, the camera views and the racing rules, with pictures.',
-    'Как играть в Up and down: руль пальцем или стрелками, настройка грота и стакселя, повороты, генакер, старт и заходы ветра. Экран гонки, виды камеры и правила парусных гонок — с картинками.'],
+    'Как играть в Up and down: руль пальцем или стрелками, настройка грота и стакселя, повороты, генакер, старт, заходы и отходы ветра. Экран гонки, виды камеры и правила парусных гонок — с картинками.'],
 });
 
 // where each numbered part sits on the pictures, as a share of their width and height, in the key's order (the
@@ -47,17 +47,17 @@ export default async function Help({ params }: LangParams) {
     [t('Map', 'Карта'), t('The whole course: the marks, the line, every boat. Tap it to make it bigger.', 'Вся дистанция: знаки, линия, все лодки. Нажми, чтобы увеличить.')],
     [t('Camera, zoom and pause', 'Камера, масштаб и пауза'), t('The camera button switches Drone, Top and Helm; + and − zoom; 1× runs the race faster; the last button pauses.', 'Кнопка камеры переключает Дрон, Сверху и Штурвал; + и − приближают; 1× ускоряет гонку; последняя кнопка — пауза.')],
     [t('Steering arc', 'Руль'), t('On a phone, drag along it with your left thumb. On a computer, ← →.', 'На телефоне веди по дуге левым пальцем. На компьютере — ← →.')],
-    [t('Sheet', 'Шкот'), t('Up pulls the sails in, down eases them; keep the knob in the green band. ↑ ↓ on a keyboard.', 'Вверх — выбрать паруса, вниз — потравить; держи ручку в зелёной полосе. ↑ ↓ на клавиатуре.')],
+    [t('Sheet', 'Шкот'), t('Up pulls the sails in, down eases them; keep the knob in the green band. ↑ ↓ on a keyboard.', 'Вверх — выбрать шкот, вниз — потравить; держи ручку в зелёной полосе. ↑ ↓ на клавиатуре.')],
     [t('Tack', 'Поворот'), t('Turns you through the wind; downwind it gybes. The kite, a reef or a smaller jib come up above it when they’re wanted.', 'Поворот через ветер, на попутном курсе — фордевинд. Генакер, риф и малый стаксель появляются над ней, когда нужны.')],
     [t('Wind ring', 'Кольцо ветра'), t('The angles you can sail, round your boat. See “Reading the wind”.', 'Углы, под которыми можно идти, вокруг лодки. См. «Как читать ветер».')],
     [t('Where next', 'Куда дальше'), t('The line before the start, then each mark, and how far it is.', 'До старта — линия, потом каждый знак, и сколько до него.')],
   ];
   const rules: [string, string, string][] = [
     [t('Rule 10', 'Правило 10'), t('Port keeps clear of starboard', 'Левый галс уступает правому'), t('On opposite tacks, the boat with the wind on her port side keeps clear.', 'На разных галсах уступает лодка, у которой ветер дует в левый борт.')],
-    [t('Rule 11', 'Правило 11'), t('Windward keeps clear of leeward', 'Наветренная уступает подветренной'), t('Overlapped on the same tack, the windward boat keeps clear.', 'На одном галсе с перекрытием уступает наветренная лодка.')],
-    [t('Rule 12', 'Правило 12'), t('Clear astern keeps clear', 'Идущая сзади уступает'), t('On the same tack and not overlapped, the boat behind keeps clear.', 'На одном галсе без перекрытия уступает лодка, идущая сзади.')],
-    [t('Rule 13', 'Правило 13'), t('While tacking, keep clear', 'При повороте уступай'), t('From head to wind until close-hauled, a tacking boat keeps clear of everyone.', 'От линии ветра до бейдевинда поворачивающая лодка уступает всем.')],
-    [t('Rule 18', 'Правило 18'), t('Mark-room', 'Место у знака'), t('At the gate and at a mark you reach off the wind (the wing mark, mark 2, the offset mark), in the zone — the dashed ring, three hull lengths — the inside boat, or the one clear ahead, gets room to round. Not at the windward mark: there nobody gets room, and port keeps clear of starboard.', 'У ворот и у знака, к которому идёшь не в лавировку (боковой знак, знак 2, знак смещения), в зоне — пунктирное кольцо в три корпуса — место получает внутренняя лодка или та, что впереди. У верхнего знака места не требует никто: левый галс уступает правому.')],
+    [t('Rule 11', 'Правило 11'), t('Windward keeps clear of leeward', 'Наветренная уступает подветренной'), t('Overlapped on the same tack, the windward boat keeps clear.', 'Если лодки на одном галсе связаны, уступает наветренная.')],
+    [t('Rule 12', 'Правило 12'), t('Clear astern keeps clear', 'Чисто позади уступает'), t('On the same tack and not overlapped, the boat behind keeps clear.', 'На одном галсе без связанности уступает лодка чисто позади.')],
+    [t('Rule 13', 'Правило 13'), t('While tacking, keep clear', 'При повороте уступай'), t('From head to wind until close-hauled, a tacking boat keeps clear of everyone.', 'От положения левентик до бейдевинда поворачивающая лодка уступает всем.')],
+    [t('Rule 18', 'Правило 18'), t('Mark-room', 'Место у знака'), t('At the gate and at a mark you reach off the wind (the wing mark, mark 2, the offset mark), in the zone — the dashed ring, three hull lengths — the inside boat, or the one clear ahead, gets room to round. Not at the windward mark: there nobody gets room, and port keeps clear of starboard.', 'У ворот и у знака, к которому идёшь не в лавировку (боковой знак, знак 2, отбойник), в зоне — пунктирное кольцо в три корпуса — место получает внутренняя лодка или та, что чисто впереди. У верхнего знака места не требует никто: левый галс уступает правому.')],
     [t('Rules 31 and 44', 'Правила 31 и 44'), t('Penalties', 'Штрафы'), t('Break a rule or touch a mark: one penalty turn, a tack and a gybe. The debrief after the finish shows each one.', 'Нарушил правило или задел знак — штрафной оборот: поворот оверштаг и фордевинд. Разбор после финиша покажет каждый.')],
   ];
   const contents: [string, string][] = [['h-screen', t('The race screen', 'Экран гонки')], ['h-controls', t('Controls', 'Управление')], ['h-wind', t('The wind', 'Ветер')], ['h-start', t('The start', 'Старт')], ['h-rules', t('Rules', 'Правила')], ['h-views', t('Views', 'Виды')], ['h-today', t('Today’s race', 'Гонка дня')]];
@@ -123,7 +123,7 @@ export default async function Help({ params }: LangParams) {
           {sec('h-controls', t('Sailing the boat', 'Как вести лодку'), t('Controls', 'Управление'), (
             <div className="hgrid">
               {item('h-steer-v8', t('The steering arc', 'Дуга руля'), t('Steer', 'Руль'), t('Drag your left thumb along the arc. She turns slowly, so make small moves: every turn of the rudder brakes the boat.', 'Веди левым пальцем по дуге. Яхта поворачивает медленно, так что двигай понемногу: каждый поворот руля тормозит лодку.'), <>{t('Keyboard:', 'Клавиатура:')} <K k="←" /> <K k="→" /></>)}
-              {item('h-trim-v8', t('The sheet slider', 'Ползунок шкота'), t('Trim the sails', 'Настрой паруса'), t('Slide your right thumb up to pull the sails in, down to ease them. Keep the knob in the green band. Rather just steer? Settings › Sails › Auto.', 'Правым пальцем вверх — выбрать паруса, вниз — потравить. Держи ручку в зелёной полосе. Хочешь только рулить? Настройки › Паруса › Авто.'), <>{t('Keyboard:', 'Клавиатура:')} <K k="↑" /> <K k="↓" /></>)}
+              {item('h-trim-v8', t('The sheet slider', 'Ползунок шкота'), t('Trim the sails', 'Настрой паруса'), t('Slide your right thumb up to pull the sails in, down to ease them. Keep the knob in the green band. Rather just steer? Settings › Sails › Auto.', 'Правым пальцем вверх — выбрать шкот, вниз — потравить. Держи ручку в зелёной полосе. Хочешь только рулить? Настройки › Паруса › Авто.'), <>{t('Keyboard:', 'Клавиатура:')} <K k="↑" /> <K k="↓" /></>)}
               {item('h-tack-v8', t('The Tack button', 'Кнопка «Поворот»'), t('Tack, gybe, kite', 'Поворот, фордевинд, генакер'), t('Tack turns the bow through the wind; downwind the same button gybes. On a run, Kite sets the gennaker — drop it in good time before the gate. In a blow, Reef makes the main smaller.', '«Поворот» проводит нос через ветер, на попутном курсе — фордевинд. На попутном «Генакер» ставит генакер — убирай его заранее до ворот. В сильный ветер «Риф» уменьшает грот.'), <>{t('Keyboard:', 'Клавиатура:')} <K k={t('Space', 'Пробел')} /> {t('tack', 'поворот')} · <K k="K" /> {t('kite', 'генакер')}</>)}
             </div>
           ))}
@@ -135,8 +135,8 @@ export default async function Help({ params }: LangParams) {
                 <p className="lead">{t('The ring round your boat shows the angles you can sail, and the wind box at the top of the screen where the wind comes from and how strong it is. It swings ten degrees and more either way every minute or so: in a lift you can point higher; in a header, tack — on the beat the wind box says Lift or Header.', 'Кольцо вокруг лодки показывает, под какими углами можно идти, а окно ветра вверху экрана — откуда и с какой силой дует ветер. Он меняется на десять градусов и больше каждую минуту: когда отходит — иди круче, когда заходит — делай поворот. На лавировке окно ветра так и пишет: «Отход» или «Заход».')}</p>
                 <div className="legend">
                   <span className="lsw lsw-no" /><span>{t('Red: too close to the wind to sail', 'Красный: слишком круто, лодка не идёт')}</span>
-                  <span className="lsw lsw-up" /><span>{t('Green: the best angle upwind', 'Зелёный: лучший угол против ветра')}</span>
-                  <span className="lsw lsw-down" /><span>{t('Blue: the best angle downwind', 'Синий: лучший угол по ветру')}</span>
+                  <span className="lsw lsw-up" /><span>{t('Green: the best angle upwind', 'Зелёный: лучший угол на лавировке')}</span>
+                  <span className="lsw lsw-down" /><span>{t('Blue: the best angle downwind', 'Синий: лучший угол на попутном курсе')}</span>
                 </div>
               </div>
             </div>

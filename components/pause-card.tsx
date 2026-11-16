@@ -58,7 +58,7 @@ export function SettingsRow({ lang, note = false }: { lang: Lang; note?: boolean
   useEffect(() => {
     if (!note || shown) return;
     const o = readOpts();
-    const trim = [t('I trim', 'Трим сам'), t('Auto trim', 'Автотрим'), t('Main + jib', 'Грот + стаксель')][o.autoTrim] || '';
+    const trim = [t('I trim', 'Ручная настройка'), t('Auto trim', 'Автонастройка'), t('Main + jib', 'Грот + стаксель')][o.autoTrim] || '';
     const cam = { drone: t('drone', 'дрон'), top: t('top', 'сверху'), helm: t('helm', 'штурвал') }[o.camera] || '';
     setSum([trim, cam].filter(Boolean).join(' · '));
   }, [note, shown, lang]); // eslint-disable-line react-hooks/exhaustive-deps

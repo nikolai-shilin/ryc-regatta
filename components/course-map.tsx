@@ -141,7 +141,7 @@ export function CourseMap({ lang, geo, preset, W, H, className, route, fleet, tr
             : <text x={X(Wm[0]) - 11} y={Z(Wm[1]) + 3.5} textAnchor="end" {...halo}>{shape === 'trap' ? (ru ? 'ЗНАК 1' : 'MARK 1') : ru ? 'ВЕРХНИЙ ЗНАК' : 'WINDWARD MARK'}</text>}
           {Wg && <text x={X(Wg[0])} y={Z(Wg[1]) - 10} textAnchor="middle" {...halo}>{ru ? 'БОКОВОЙ ЗНАК' : 'WING MARK'}</text>}
           {M2 && <text x={X(M2[0]) - 9} y={Z(M2[1]) + 3.5} textAnchor="end" {...halo}>{ru ? 'ЗНАК 2' : 'MARK 2'}</text>}
-          {Off && <text x={X(Off[0]) - 9} y={Z(Off[1]) + 3.5} textAnchor="end" {...halo}>{ru ? 'ЗНАК СМЕЩЕНИЯ' : 'OFFSET MARK'}</text>}
+          {Off && <text x={X(Off[0]) - 9} y={Z(Off[1]) + 3.5} textAnchor="end" {...halo}>{ru ? 'ОТБОЙНИК' : 'OFFSET MARK'}</text>}
           {/* the trapezoid's gate is out at the left edge: its name goes under it */}
           {shape === 'trap'
             ? <text x={X(G[0])} y={Z(G[1]) + 16} textAnchor="middle" {...halo}>{ru ? `ВОРОТА ${m(gateW).toUpperCase()}` : `GATE ${m(gateW).toUpperCase()}`}</text>

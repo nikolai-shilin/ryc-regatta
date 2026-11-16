@@ -64,10 +64,10 @@ export function glossary(t: T): Term[] {
       'Ветер дует в левый борт, гик вынесен вправо.') },
     { id: 'windward', group: 'right-of-way', term: t('Windward and leeward', 'Наветренный и подветренный'), see: '/learn/rules#r11', def: t(
       'Windward is the side or the boat nearer the wind; leeward is the side or the boat away from it. Overlapped on the same tack, windward keeps clear (rule 11).',
-      'Наветренный — борт или лодка ближе к ветру, подветренный — дальше от него. На одном галсе в перекрытии наветренная уступает (правило 11).') },
-    { id: 'overlap', group: 'right-of-way', term: t('Overlap', 'Перекрытие'), see: '/learn/rules#r11', def: t(
+      'Наветренный — борт или лодка ближе к ветру, подветренный — дальше от него. На одном галсе при связанности наветренная уступает (правило 11).') },
+    { id: 'overlap', group: 'right-of-way', term: t('Overlap', 'Связанность (перекрытие)'), see: '/learn/rules#r11', def: t(
       'Two boats on the same tack are overlapped when neither is clear astern of the other. It decides who keeps clear and who gets room at a mark.',
-      'Две лодки на одном галсе перекрываются, когда ни одна не находится чисто позади другой. Перекрытие решает, кто уступает и кому положено место у знака.') },
+      'Две лодки на одном галсе связаны, когда ни одна не находится чисто позади другой. Связанность решает, кто уступает и кому положено место у знака.') },
     { id: 'clear-astern', group: 'right-of-way', term: t('Clear astern', 'Чисто позади'), see: '/learn/rules#r12', def: t(
       'A boat is clear astern when her hull is behind a line square across the stern of the other boat. Clear astern keeps clear of clear ahead (rule 12).',
       'Лодка чисто позади, когда её корпус целиком за линией, проведённой поперёк через корму другой. Чисто позади уступает чисто впереди (правило 12).') },
@@ -106,10 +106,10 @@ export function glossary(t: T): Term[] {
       'Конец стартовой линии, который ближе к ветру. Лодка, стартовавшая там, впереди той, что ушла с другого конца.') },
     { id: 'ocs', group: 'start', term: t('OCS (over early)', 'Фальстарт (OCS)'), see: '/learn/start#early', def: t(
       'On the course side of the start line at the starting signal. Under the P flag the boat goes back and starts again; the committee flies X.',
-      'Лодка оказалась за стартовой линией в момент сигнала. Под флагом P она возвращается и стартует заново; комитет поднимает флаг X.') },
+      'Лодка оказалась на стороне дистанции от стартовой линии в момент сигнала. Под флагом P она возвращается и стартует заново; комитет поднимает флаг X.') },
     { id: 'general-recall', group: 'start', term: t('General recall', 'Общий отзыв'), see: '/learn/start#early', def: t(
       'The whole start is called off, usually because too many boats were over early to identify, and the fleet starts again.',
-      'Отмена всего старта, обычно потому, что слишком много лодок оказались за линией, и флот стартует заново.') },
+      'Отзыв всего флота со старта, обычно потому, что слишком много лодок оказались за линией, и флот стартует заново.') },
     { id: 'windward-mark', group: 'marks', term: t('Windward mark', 'Верхний знак'), see: '/learn/marks', def: t(
       'The mark at the top of the beat, usually left to port.',
       'Знак в конце лавировки; обычно его оставляют слева.') },
@@ -118,7 +118,7 @@ export function glossary(t: T): Term[] {
       'Два знака в конце попутного курса. Лодка проходит между ними, огибает любой и оттуда начинает следующую лавировку.') },
     { id: 'zone', group: 'marks', term: t('Zone', 'Зона'), see: '/learn/rules#r18', def: t(
       'The area within three hull lengths of a mark. When the first of two overlapped boats enters it, the outside boat owes the inside one mark-room.',
-      'Пространство в пределах трёх корпусов от знака. Когда первая из двух перекрывающихся лодок входит в неё, внешняя должна дать внутренней место у знака.') },
+      'Пространство в пределах трёх корпусов от знака. Когда первая из двух связанных лодок входит в неё, внешняя должна дать внутренней место у знака.') },
     { id: 'mark-room', group: 'marks', term: t('Mark-room', 'Место у знака'), see: '/learn/rules#r18', def: t(
       'Room for a boat to sail to the mark and round it as she should (rule 18).',
       'Место, чтобы подойти к знаку и обогнуть его как положено (правило 18).') },

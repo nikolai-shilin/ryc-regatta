@@ -138,7 +138,7 @@ export function FleetView({ lang, start, back, tour = true }: { lang: Lang; star
         <button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race the ${y.name[0]}`, `В гонку на ${y.name[1]}`)}</span></button>
         <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс')}>
           <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд')}</button>
-          <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Downwind', 'Фордевинд')}</button>
+          <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Downwind', 'Попутный')}</button>
         </div>
 
         <p className="bt-hint">{shown === today
@@ -151,7 +151,7 @@ export function FleetView({ lang, start, back, tour = true }: { lang: Lang; star
           <div><span className="bt-sk">{t('Length', 'Длина')}</span><b>{t(...spec('Length')!.v)}</b></div>
           <div><span className="bt-sk">{t('Crew', 'Экипаж')}</span><b>{t(...spec('Crew')!.v)}</b></div>
           <div><span className="bt-sk">{t('Upwind', 'Бейдевинд')}</span><b>{kn(y.speed.up)}</b></div>
-          <div><span className="bt-sk">{t('Downwind', 'Фордевинд')}</span><b>{kn(y.speed.down)}</b></div>
+          <div><span className="bt-sk">{t('Downwind', 'Попутный')}</span><b>{kn(y.speed.down)}</b></div>
           <span className="bt-sv">{t('Speeds in 12 kn of wind', 'Скорости при ветре 12 уз')}</span>
         </div>
 

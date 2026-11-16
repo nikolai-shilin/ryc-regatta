@@ -81,7 +81,7 @@ export default async function Home({ params }: LangParams) {
   ].filter(Boolean);
 
   const features: [string, string][] = [
-    [t('Wind that won’t sit still', 'Ветер, который не стоит на месте'), t('Shifts of 10° and more a minute, gusts and lulls. Races are won on them.', 'Заходы на 10° и больше каждую минуту, порывы и затишья. На них и выигрывают.')],
+    [t('Wind that won’t sit still', 'Ветер, который не стоит на месте'), t('Shifts of 10° and more a minute, gusts and lulls. Races are won on them.', 'Сдвиги ветра на 10° и больше каждую минуту, порывы и затишья. На них и выигрывают.')],
     [t('A start like the real thing', 'Старт как в жизни'), t('Class flag, P, one minute, then the gun. Over early? Go back.', 'Флаг класса, P, минута — и сигнал. Фальстарт? Назад за линию.')],
     [t('Sails in your hands', 'Паруса в твоих руках'), t('Main and jib on their own sheets, or auto-trim while you steer.', 'Грот и стаксель на своих шкотах или автонастройка, а ты только рулишь.')],
     [t('Rivals who know their rights', 'Соперники знают свои права'), t('Up to six computer boats that hail, give way and do their penalty turns.', 'До шести компьютерных лодок: окликают, уступают и крутят штрафные обороты.')],
@@ -258,7 +258,7 @@ export default async function Home({ params }: LangParams) {
           <dl className="bt-stats ho-nums">
             <div><dt className="bt-sk">{t('Wind', 'Ветер')}</dt><dd><b><Num v={`${KN.light}–${KN.strong} ${t('kn', 'уз')}`} /></b></dd><dd className="bt-sv">{t('From light air to a breeze you reef for', 'От лёгкого ветра до такого, что берут рифы')}</dd></div>
             <div><dt className="bt-sk">{t('Fleet', 'Флот')}</dt><dd><b><CountUp v="3 · 5 · 7" /></b></dd><dd className="bt-sv">{t('Boats on the line, every one sailing by the rules', 'Лодок на линии, и все ходят по правилам')}</dd></div>
-            <div><dt className="bt-sk">{t('Shifts', 'Заходы')}</dt><dd><b><CountUp v="10°+" /></b></dd><dd className="bt-sv">{t('Every minute. Catch them or lose places', 'Каждую минуту. Лови их или теряй места')}</dd></div>
+            <div><dt className="bt-sk">{t('Shifts', 'Сдвиги')}</dt><dd><b><CountUp v="10°+" /></b></dd><dd className="bt-sv">{t('Every minute. Catch them or lose places', 'Каждую минуту. Лови их или теряй места')}</dd></div>
             <div><dt className="bt-sk">{t('Race of the day', 'Гонка дня')}</dt><dd><b>1</b></dd><dd className="bt-sv">{t('One for everyone, a new one every midnight', 'Одна на всех, новая каждую полночь')}</dd></div>
           </dl>
         </section>

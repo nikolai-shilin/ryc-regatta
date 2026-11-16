@@ -43,8 +43,8 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
       'У знаков лодки сходятся вместе, и места там выигрывают и проигрывают чаще, чем где-либо на дистанции. Чистое огибание — это прежде всего прийти правильным галсом, под правильным углом и с правилами на своей стороне.'),
     sections: [
       { id: 'approach', h: t('Come in on starboard', 'Подходи правым галсом'), p: [
-        t('The windward mark is usually left to port, so the last tack into it is on starboard, and a starboard boat has right of way over anyone coming in on port (rule 10). Coming in on port means ducking the starboard boats or tacking under them in the zone — where you must not make a boat that is fetching the mark sail above close-hauled (rule 18.3).',
-          'Верхний знак обычно оставляют слева, поэтому последний галс к нему — правый, а лодка правого галса имеет право дороги над всеми, кто идёт левым (правило 10). Подходить левым — значит проходить за кормой лодок правого галса или поворачивать под ними в зоне, где нельзя заставить лодку, идущую прямо на знак, идти круче бейдевинда (правило 18.3).'),
+        t('The windward mark is usually left to port, so the last tack into it is on starboard, and a starboard boat has right of way over anyone coming in on port (rule 10). Coming in on port means ducking the starboard boats or tacking under them in the zone — where you must not make a boat that has been on starboard since entering the zone sail above close-hauled (rule 18.3).',
+          'Верхний знак обычно оставляют слева, поэтому последний галс к нему — правый, а лодка правого галса имеет право дороги над всеми, кто идёт левым (правило 10). Подходить левым — значит проходить за кормой лодок правого галса или поворачивать под ними в зоне, где нельзя заставить лодку, идущую правым галсом с момента входа в зону, идти круче бейдевинда (правило 18.3).'),
         t('Don’t overstand: tack onto the layline late enough that a shift can’t leave you sailing extra distance, but early enough not to be stuck below it in a crowd.',
           'Не перебирай: выходи на лейлайн достаточно поздно, чтобы сдвиг ветра не заставил идти лишнее, но достаточно рано, чтобы не застрять под ним в толпе.'),
       ], tip: t('Coming in on port in a crowd? Duck the starboard boats and tack onto the layline behind them, outside the zone, rather than in front of them inside it.',
@@ -67,7 +67,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
       ] },
       { id: 'room', h: t('Room in the zone', 'Место в зоне'), p: [
         t('When the first of two overlapped boats reaches the zone, three hull lengths from the mark, the outside boat must give the inside one room to round (rule 18). Get the inside overlap before the zone; an overlap made inside it doesn’t count if you came from clear astern. Between boats on opposite tacks on a beat, at the windward mark, rule 18 doesn’t apply.',
-          'Когда первая из двух перекрывающихся лодок входит в зону — три корпуса от знака, — внешняя должна дать внутренней место, чтобы обогнуть (правило 18). Добейся внутреннего перекрытия до зоны: если ты пришёл чисто позади, перекрытие внутри зоны не считается. Между лодками на разных галсах на лавировке, у верхнего знака, правило 18 не действует.'),
+          'Когда первая из двух связанных лодок входит в зону — три корпуса от знака, — внешняя должна дать внутренней место, чтобы обогнуть (правило 18). Установи внутреннюю связанность до зоны: если ты пришёл чисто позади, связанность, установленная внутри зоны, не считается. Между лодками на разных галсах на лавировке, у верхнего знака, правило 18 не действует.'),
         t('Touch a mark and you take a penalty turn (rule 31) — in the game, one turn through a tack and a gybe.',
           'Коснулся знака — делай штрафной оборот (правило 31); в игре это один оборот через оверштаг и фордевинд.'),
       ], tip: t('Outside at a leeward mark? Rather than sail round her, slow down, drop in behind her and round tight: you come out to windward of her, in clear air.',
@@ -93,7 +93,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
       'Как быстро идти на попутных курсах в гонке: когда ставить генакер, углы вместо чистого фордевинда, фордевинд на отходе, как избежать самопроизвольного поворота и брочинга, сёрфинг на волне.'),
     intro: t(
       'Downwind looks like the easy part: the wind is behind you and the boat feels slower than it is. But the gaps between boats open and close fastest here, with the big sail up, the shifts and the waves.',
-      'Попутный курс кажется лёгким: ветер сзади, и лодка будто идёт медленнее, чем на самом деле. Но именно здесь, с большим парусом, заходами ветра и волной, разрывы между лодками растут и тают быстрее всего.'),
+      'Попутный курс кажется лёгким: ветер сзади, и лодка будто идёт медленнее, чем на самом деле. Но именно здесь, с большим парусом, сдвигами ветра и волной, разрывы между лодками растут и тают быстрее всего.'),
     sections: [
       { id: 'kite', h: t('Set the gennaker', 'Ставь генакер'), p: [
         t('The gennaker is a big, light sail set from the bow, and it is most of a boat’s speed downwind. Set it once you have borne away round the windward mark and are clear of other boats; hoisting and dropping take the crew a few seconds. In light air on a reach, a flatter code zero does the same job closer to the wind.',
@@ -110,11 +110,11 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
           'На попутном сдвиги работают наоборот по сравнению с лавировкой: отход заставляет приводиться, уходя от знака, чтобы сохранить угол к ветру. Сделай поворот фордевинд — и тот же сдвиг снова поведёт тебя к знаку.'),
       ], tip: t('Gybe at full speed, best running down a wave: in a strong breeze a slow gybe is the one that wraps the gennaker round the forestay — in the game too.',
         'Делай фордевинд на полной скорости, лучше всего скатываясь с волны: в сильный ветер именно на медленном повороте генакер заматывается вокруг штага — и в игре тоже.') },
-      { id: 'lee', h: t('Not too far by the lee', 'Не уходи слишком далеко на ветер с кормы'), p: [
+      { id: 'lee', h: t('Not too far by the lee', 'Не уваливайся дальше фордевинда'), p: [
         t('Bear away past dead downwind and the wind gets behind the mainsail: you are sailing by the lee. Go too far and the boom slams across on its own, a crash gybe; with the gennaker up she can roll and round up, a death roll. When the game warns you that you are by the lee, gybe or head up.',
-          'Увалишься дальше чистого фордевинда — ветер зайдёт за грот с другой стороны. Если уйти слишком далеко, гик перебросит сам — самопроизвольный поворот; с генакером лодку может положить и привести — брочинг. Когда игра предупреждает, что ветер заходит с кормы на «неправильный» борт, делай поворот или приводись.'),
+          'Увалишься дальше чистого фордевинда — ветер зайдёт за грот с другой стороны. Если уйти слишком далеко, гик перебросит сам — самопроизвольный поворот; с генакером лодку может положить и привести — брочинг. Когда игра предупреждает, что ты увалился дальше фордевинда, делай поворот фордевинд или приводись.'),
       ], tip: t('The stronger the wind and the bigger the waves, the less by the lee she will take before the boom comes across on its own. In a blow, gybe or head up as soon as the warning shows.',
-        'Чем сильнее ветер и выше волна, тем меньше лодка терпит ветер с «неправильного» борта, прежде чем гик перебросит сам. В сильный ветер делай поворот или приводись, как только появилось предупреждение.') },
+        'Чем сильнее ветер и выше волна, тем меньше можно уваливаться дальше фордевинда, прежде чем гик перебросит сам. В сильный ветер делай поворот фордевинд или приводись, как только появилось предупреждение.') },
       { id: 'waves', h: t('Surf the waves', 'Лови волну'), p: [
         t('In a strong breeze the waves can carry the boat faster than the wind alone. Luff up a little as a wave lifts the stern to catch it, then bear away down its face and ride it as long as you can.',
           'В сильный ветер волна может нести лодку быстрее, чем один ветер. Когда волна поднимает корму, чуть приведись, чтобы поймать её, затем увались вниз по склону и держись на ней сколько получится.'),
@@ -202,29 +202,29 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
         'Пройти за кормой дешевле, чем кажется: увались заранее, целься в её корму и, проходя её, снова приведись в бейдевинд. Поздний поворот прямо перед её носом — так и случаются нарушения.') },
       { id: 'r11', h: t('Windward keeps clear of leeward (rule 11)', 'Наветренная уступает подветренной (правило 11)'), p: [
         t('On the same tack and overlapped — neither boat clear ahead of the other — the windward boat, the one nearer the wind, keeps clear. The leeward boat may luff, turning towards the wind, and the windward boat has to answer.',
-          'На одном галсе, когда лодки перекрываются — ни одна не впереди чисто, — уступает наветренная, та, что ближе к ветру. Подветренная может приводиться, поворачивая к ветру, и наветренная должна отвечать.'),
+          'На одном галсе, когда лодки связаны — ни одна не чисто впереди, — уступает наветренная, та, что ближе к ветру. Подветренная может приводиться, поворачивая к ветру, и наветренная должна отвечать.'),
         t('There is a limit: a boat that became overlapped to leeward from clear astern, within two of her hull lengths, must not sail above her proper course while the overlap lasts (rule 17).',
-          'Но есть предел: если подветренная вошла в перекрытие, будучи чисто позади, ближе двух своих корпусов, она не должна идти выше своего надлежащего курса, пока перекрытие длится (правило 17).'),
+          'Но есть предел: если подветренная стала связанной, будучи до этого чисто позади, ближе двух своих корпусов, она не должна идти выше своего надлежащего курса, пока связанность сохраняется (правило 17).'),
       ], tip: t('To windward, keep far enough away that she can luff without touching you. If she luffs and you can’t keep clear, the foul is yours — unless she turned so fast you had no room to (rule 16).',
         'Будучи наветренной, держись так далеко, чтобы она могла привестись, не задев тебя. Если она привелась, а ты не успел уступить, нарушение твоё — если только она не повернула так резко, что уступить было негде (правило 16).') },
       { id: 'r12', h: t('Clear astern keeps clear of clear ahead (rule 12)', 'Чисто позади уступает чисто впереди (правило 12)'), p: [
         t('On the same tack and not overlapped, the boat behind keeps clear of the boat ahead. Catch up to windward and you are the windward boat; to leeward, and the boat ahead now keeps clear of you — mind rule 17 above.',
-          'На одном галсе и без перекрытия лодка позади уступает лодке впереди. Догнала с наветра — стала наветренной; с подветра — теперь уступает тебе передняя, но помни о правиле 17.'),
+          'На одном галсе и без связанности лодка позади уступает лодке впереди. Догнала с наветра — стала наветренной; с подветра — теперь уступает тебе передняя, но помни о правиле 17.'),
       ] },
       { id: 'r13', h: t('Tacking boats keep clear (rules 13, 15, 16)', 'Поворачивающая уступает (правила 13, 15, 16)'), p: [
         t('From passing head to wind until she is on a close-hauled course, a tacking boat keeps clear of everyone. Tack too close in front of a starboard boat and the foul is yours.',
-          'С момента, когда лодка прошла линию ветра, и пока не легла в бейдевинд, она уступает всем. Повернула слишком близко перед лодкой правого галса — нарушение твоё.'),
+          'С момента, когда лодка прошла положение левентик, и пока не легла в бейдевинд, она уступает всем. Повернула слишком близко перед лодкой правого галса — нарушение твоё.'),
         t('Right of way comes with duties: a boat that gains it must at first give the other room to keep clear (rule 15), and a right-of-way boat that changes course must still leave the other room to keep clear (rule 16).',
           'У права дороги есть обязанности: лодка, получившая его, сначала должна дать другой место, чтобы уступить (правило 15), а лодка с правом дороги, меняя курс, должна оставлять другой место, чтобы уступить (правило 16).'),
       ], tip: t('Before you tack near another boat, make sure you’ll be close-hauled on the new tack before she has to change course to avoid you. If in doubt, sail on a few more lengths.',
         'Прежде чем поворачивать рядом с другой лодкой, убедись, что ляжешь в бейдевинд на новом галсе раньше, чем ей придётся менять курс, чтобы тебя избежать. Сомневаешься — пройди ещё несколько корпусов.') },
       { id: 'r18', h: t('Room at the mark (rule 18)', 'Место у знака (правило 18)'), p: [
         t('Round every mark lies a zone three hull lengths across. When the first of two overlapped boats reaches it, the outside boat must give the inside boat room to sail round the mark. In Up and down that decides the leeward gate, where boats arrive together.',
-          'Вокруг каждого знака — зона в три корпуса. Когда первая из двух перекрывающихся лодок входит в неё, внешняя должна дать внутренней место, чтобы обогнуть знак. В Up and down это решает нижние ворота, куда лодки приходят вместе.'),
-        t('Rule 18 does not apply between boats on opposite tacks on a beat, so at the windward mark the port and starboard rule still decides. And tack inside the zone at your peril: you must not make a boat that is fetching the mark sail above close-hauled (rule 18.3).',
-          'Между лодками на разных галсах на лавировке правило 18 не действует, так что у верхнего знака по-прежнему решает правило галсов. А поворот внутри зоны опасен: нельзя заставить лодку, которая идёт прямо на знак, идти круче бейдевинда (правило 18.3).'),
+          'Вокруг каждого знака — зона в три корпуса. Когда первая из двух связанных лодок входит в неё, внешняя должна дать внутренней место, чтобы обогнуть знак. В Up and down это решает нижние ворота, куда лодки приходят вместе.'),
+        t('Rule 18 does not apply between boats on opposite tacks on a beat, so at the windward mark the port and starboard rule still decides. And tack inside the zone at your peril: you must not make a boat that has been on starboard since entering the zone sail above close-hauled (rule 18.3).',
+          'Между лодками на разных галсах на лавировке правило 18 не действует, так что у верхнего знака по-прежнему решает правило галсов. А поворот внутри зоны опасен: нельзя заставить лодку, которая идёт правым галсом с момента входа в зону, идти круче бейдевинда (правило 18.3).'),
       ], tip: t('Not sure you got the inside overlap before the zone? Assume you didn’t: where there is reasonable doubt, rule 18 presumes the overlap wasn’t made in time.',
-        'Не уверен, что успел войти во внутреннее перекрытие до зоны? Считай, что не успел: при обоснованном сомнении правило 18 исходит из того, что перекрытие вовремя не установлено.') },
+        'Не уверен, что успел установить внутреннюю связанность до зоны? Считай, что не успел: при обоснованном сомнении правило 18 исходит из того, что связанность вовремя не установлена.') },
       { id: 'pen', h: t('Fouls and penalties (rules 21, 31, 44)', 'Нарушения и штрафы (правила 21, 31, 44)'), p: [
         t('Break a rule of Part 2 and you can take a penalty at once instead of a protest: get clear of the other boats and turn through a tack and a gybe. Touching a mark is a foul too (rule 31). Real races usually ask for two turns for a foul between boats and one for a mark, unless the sailing instructions say otherwise; the game asks for one turn either way, and disqualifies a boat that finishes without taking it.',
           'Нарушил правило части 2 — можешь сразу отработать штраф вместо протеста: отойди от других лодок и сделай оборот через поворот оверштаг и фордевинд. Касание знака — тоже нарушение (правило 31). В настоящих гонках за нарушение против лодки обычно положено два оборота, за знак — один, если гоночная инструкция не говорит иначе; в игре — один оборот в любом случае, а лодка, финишировавшая без штрафа, дисквалифицируется.'),
@@ -260,14 +260,14 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
         t('The race committee starts the countdown with flags over the committee boat, each with a sound. In the standard sequence (rule 26) the class flag goes up five minutes before the start, the preparatory flag at four, the preparatory comes down at one minute, and the class flag drops with the gun.',
           'Гоночный комитет ведёт отсчёт флагами на судейском судне, каждый — со звуковым сигналом. В стандартной процедуре (правило 26) флаг класса поднимают за пять минут до старта, подготовительный — за четыре, за минуту подготовительный опускают, а со стартовым сигналом опускают флаг класса.'),
         t('The preparatory flag tells you the rules for the last minute: P — be on the course side and you just go back; U — be in the triangle formed by the line and the first mark in the last minute and you are disqualified; the black flag — the same, even if the start is recalled. Up and down flies all three and lets you set a 1, 3 or 5 minute sequence for a free race.',
-          'Подготовительный флаг говорит, какие правила в последнюю минуту: P — оказался за линией, просто вернись; U — оказался в последнюю минуту в треугольнике между линией и первым знаком — дисквалификация; чёрный флаг — то же, даже если старт отменят. В Up and down есть все три, а в свободной гонке можно выбрать процедуру на 1, 3 или 5 минут.'),
+          'Подготовительный флаг говорит, какие правила в последнюю минуту: P — оказался за линией, просто вернись; U — оказался в последнюю минуту в треугольнике между линией и первым знаком — дисквалификация; чёрный флаг — то же, даже при общем отзыве. В Up and down есть все три, а в свободной гонке можно выбрать процедуру на 1, 3 или 5 минут.'),
       ], tip: t('Under P you can dip back across the line in the last minute and still start; under U or the black flag you can’t, so wait a length or two further back and come in with more speed.',
         'Под флагом P в последнюю минуту можно заскочить за линию, вернуться и всё равно стартовать; под U или чёрным флагом — нельзя, так что жди на корпус-два дальше и разгоняйся сильнее.') },
       { id: 'end', h: t('Start at the favoured end', 'Стартуй у выгодного конца'), p: [
         t('A line is rarely square to the wind. The end further upwind is favoured: start there and you are ahead of everyone who started at the other end, before anyone has sailed a metre. To check, sail along the line, or turn head to wind on it — your bow points nearer the favoured end.',
           'Линия редко стоит ровно поперёк ветра. Выгоден конец, что ближе к ветру: стартовав там, ты впереди всех, кто ушёл с другого конца, ещё не пройдя ни метра. Проверить просто: пройди вдоль линии или встань на ней носом к ветру — нос укажет ближе к выгодному концу.'),
         t('The wind shifts during the sequence, so check again in the last minutes. Up and down says which end is favoured in the bar at the top: the committee boat end or the pin.',
-          'Ветер заходит и во время процедуры, так что проверь ещё раз в последние минуты. Up and down пишет выгодный конец в строке сверху: у судна или у знака.'),
+          'Ветер смещается и во время процедуры, так что проверь ещё раз в последние минуты. Up and down пишет выгодный конец в строке сверху: у судна или у знака.'),
       ], tip: t('When the whole fleet piles in at the favoured end, starting a few lengths along the line, in clear air with a gap to leeward, often beats a slot in the crowd.',
         'Когда весь флот ломится к выгодному концу, старт в нескольких корпусах от него — в чистом ветре и со свободным местом под ветром — часто лучше места в толпе.') },
       { id: 'time', h: t('Time your run', 'Рассчитай разгон'), p: [
@@ -286,7 +286,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
         'Не останавливайся совсем: без хода руль теряет силу, и ты не успеешь ни увалиться в своё окно, ни ответить подветренной, когда она приводится.') },
       { id: 'early', h: t('Over early', 'Фальстарт'), p: [
         t('Over the line at the gun under P, the committee flies X: go back to the pre-start side and start again; the sooner you turn, the less it costs. If too many are over to tell who, the whole start is recalled (two flags, the First Substitute) and you start again.',
-          'Оказался за линией на сигнале под флагом P — комитет поднимает X: вернись на предстартовую сторону и стартуй заново; чем раньше развернёшься, тем меньше потеряешь. Если за линией слишком много лодок, весь старт отменяют (флаг «Первый заменяющий») и стартуют снова.'),
+          'Оказался за линией на сигнале под флагом P — комитет поднимает X: вернись на предстартовую сторону и стартуй заново; чем раньше развернёшься, тем меньше потеряешь. Если за линией слишком много лодок, дают общий отзыв (флаг «Первый заменяющий») и стартуют снова.'),
       ], tip: t('Going back, keep clear of every boat that is starting properly until you are wholly on the pre-start side (rule 22). Turn back where the fewest boats are.',
         'Возвращаясь, уступай всем, кто стартует правильно, пока целиком не окажешься на предстартовой стороне (правило 22). Разворачивайся там, где меньше лодок.'), pen: true },
       { id: 'air', h: t('Clear air after the gun', 'Чистый ветер после старта'), p: [
@@ -311,7 +311,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     img: shot('h-wind-v8', t('The wind ring round your boat in the game, seen from above', 'Кольцо ветра вокруг твоей лодки в игре, вид сверху')),
     description: t(
       'How to sail the wind shifts upwind: what a header and a lift are, why you tack on the headers, when not to tack, laylines, gusts and lulls, and gybing on the lifts downwind.',
-      'Как использовать заходы ветра на лавировке: что такое заход и отход, почему поворачивать на заходе, когда не поворачивать, лейлайны, порывы и затишья и фордевинд на отходе на попутном курсе.'),
+      'Как использовать сдвиги ветра на лавировке: что такое заход и отход, почему поворачивать на заходе, когда не поворачивать, лейлайны, порывы и затишья и фордевинд на отходе на попутном курсе.'),
     intro: t(
       'The wind never blows from one direction for long. It swings a few degrees, then ten or more, back and forth every minute or so. Upwind, a boat that tacks on those shifts sails a shorter way to the mark than one that just sails the same distance on each tack — often by more than any boat speed can make up.',
       'Ветер никогда долго не дует с одного направления. Он гуляет на несколько градусов, потом на десять и больше — туда и обратно примерно каждую минуту. На лавировке лодка, которая поворачивает на этих заходах, проходит до знака более короткий путь, чем та, что просто делает равные галсы, — часто больше, чем можно отыграть скоростью.'),
@@ -346,7 +346,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
         'На одной стороне дистанции ветра часто больше всю гонку — в игре тоже. Выясни на первой лавировке, на какой, и иди туда на следующих.') },
       { id: 'down', h: t('Downwind: gybe on the lifts', 'На попутном: фордевинд на отходе'), p: [
         t('On the run it works the other way round. A lift makes you head up, away from the mark, to keep the same angle to the wind; gybe and the shift points you at the mark again. On a sea-breeze day the wind also builds and swings right as the race goes on, so the right side of the course often pays.',
-          'На попутном всё наоборот. Отход заставляет приводиться, уходя от знака, чтобы сохранить угол к ветру; сделай фордевинд — и тот же сдвиг снова поведёт тебя к знаку. А в день морского бриза ветер к тому же усиливается и заходит вправо по ходу гонки, так что правая сторона дистанции часто выгоднее.'),
+          'На попутном всё наоборот. Отход заставляет приводиться, уходя от знака, чтобы сохранить угол к ветру; сделай фордевинд — и тот же сдвиг снова поведёт тебя к знаку. А в день морского бриза ветер к тому же усиливается и смещается вправо по ходу гонки, так что правая сторона дистанции часто выгоднее.'),
       ] },
     ],
     more: [
@@ -355,6 +355,6 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     ],
     try: { label: t('Sail today’s race', 'Пройди гонку дня'), href: '/race', text: t(
       'Shifts of ten degrees and more, gusts and lulls, five boats to beat to the windward mark.',
-      'Заходы на десять градусов и больше, порывы и затишья и пять лодок, которых надо обойти к верхнему знаку.') },
+      'Сдвиги ветра на десять градусов и больше, порывы и затишья и пять лодок, которых надо обойти к верхнему знаку.') },
   };
 }

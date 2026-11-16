@@ -18,9 +18,9 @@ import { useLog } from './passport';
 
 // the way round each shape but up and down, under its choice
 const SHAPE_HINT: Partial<Record<Shape, [string, string]>> = {
-  tri: ['Up to the windward mark, a tight reach out to the wing mark, a gybe there and a broad reach back.', 'Вверх к верхнему знаку, галфвинд к боковому знаку, там фордевинд и бакштаг обратно.'],
+  tri: ['Up to the windward mark, a tight reach out to the wing mark, a gybe there and a broad reach back.', 'Вверх к верхнему знаку, галфвинд к боковому знаку, там поворот фордевинд и бакштаг обратно.'],
   trap: ['Up to mark 1, a broad reach out to mark 2, a run down to the gate, and a beam reach home to a finish line of its own.', 'Вверх к знаку 1, бакштаг к знаку 2, фордевинд к воротам и галфвинд к своей финишной линии.'],
-  wlu: ['Up to the windward mark, a short reach to the offset mark, a run down through the gate, and a last beat up to a finish line below the windward mark.', 'Вверх к верхнему знаку, короткий галфвинд к знаку смещения, фордевинд через ворота и последняя лавировка к финишу чуть ниже верхнего знака.'],
+  wlu: ['Up to the windward mark, a short reach to the offset mark, a run down through the gate, and a last beat up to a finish line below the windward mark.', 'Вверх к верхнему знаку, короткий галфвинд к отбойнику, фордевинд через ворота и последняя лавировка к финишу чуть ниже верхнего знака.'],
 };
 
 type Pick = { venue: VenueId; yacht: YachtId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape; daytime: Daytime };
@@ -119,7 +119,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
     // the marks' names (on a trapezoid the windward mark is mark 1), and the start line's: the finish too, unless the
     // shape has a finish line of its own
     labels: { windward: p.course === 'trap' ? t('Mark 1', 'Знак 1') : t('Windward mark', 'Верхний знак'), gate: t('Gate', 'Ворота'), wing: t('Wing mark', 'Боковой знак'),
-      mark2: t('Mark 2', 'Знак 2'), offset: t('Offset mark', 'Знак смещения'), finish: t('Finish', 'Финиш'),
+      mark2: t('Mark 2', 'Знак 2'), offset: t('Offset mark', 'Отбойник'), finish: t('Finish', 'Финиш'),
       line: geo.finish ? t('Start', 'Старт') : t('Start · Finish', 'Старт · Финиш'), beat: t(`Beat ${beat} m`, `Лавировка ${beat} м`) },
   };
   // a word on what the scene shows, when it shows more than the boats
@@ -128,7 +128,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
       t(`The streaks run with the breeze down the course. The gold ones are gusts, up to ${GUST[p.preset][0]} kn; the wind swings up to ${GUST[p.preset][1]}° either way.`,
         `Штрихи бегут с ветром вниз по дистанции. Золотые — порывы, до ${GUST[p.preset][0]} уз; ветер гуляет до ${GUST[p.preset][1]}° в каждую сторону.`)],
     current: p.current
-      ? [t('Current · the venue’s own', 'Течение · местное'), t('The water runs as it does there: the tide along the channel, a river downstream, or, where the sea has no tide, the wind’s light drift. Harder in places, and it builds and eases as you race.', 'Вода идёт так, как там на самом деле: прилив вдоль пролива, река вниз по течению, а где прилива нет — лёгкий дрейф по ветру. Где-то сильнее, и то крепчает, то слабеет по ходу гонки.')]
+      ? [t('Current · the venue’s own', 'Течение · местное'), t('The water runs as it does there: the tide along the channel, a river downstream, or, where the sea has no tide, the wind’s light drift. Harder in places, and it builds and eases as you race.', 'Вода идёт так, как там на самом деле: приливное течение вдоль пролива, река вниз по течению, а где прилива нет — лёгкий дрейф по ветру. Где-то сильнее, и то крепчает, то слабеет по ходу гонки.')]
       : [t('No current', 'Без течения'), t('The water stands still. Switch the current on to see the tide run over the course.', 'Вода стоит. Включи течение — и увидишь, как оно идёт по дистанции.')],
     course: [`${shapeName} · ${lapsName} · ${metres}`, {
       wl: `${t('From the start up to the windward mark and down to the gate', 'От старта вверх к верхнему знаку и вниз к воротам')}${p.laps > 1 ? t(', then round again; lap 1 in gold, lap 2 in blue.', ', потом ещё круг; первый круг золотой, второй синий.') : t(', then down to the finish.', ', потом вниз на финиш.')}`,
@@ -136,7 +136,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
       trap: `${t('From the start up to mark 1, a reach out to mark 2 and down to the gate', 'От старта вверх к знаку 1, бакштаг к знаку 2 и вниз к воротам')}${p.laps > 1
         ? t(', then back up to mark 2 and down again; lap 1 in gold, lap 2 in blue. Last, a reach across to the finish line.', ', потом снова вверх к знаку 2 и вниз; первый круг золотой, второй синий. В конце — галфвинд к финишной линии.')
         : t(', then a reach across to the finish line.', ', потом галфвинд к финишной линии.')}`,
-      wlu: `${t('From the start up to the windward mark, out to the offset mark and down to the gate', 'От старта вверх к верхнему знаку, к знаку смещения и вниз к воротам')}${p.laps > 1
+      wlu: `${t('From the start up to the windward mark, out to the offset mark and down to the gate', 'От старта вверх к верхнему знаку, к отбойнику и вниз к воротам')}${p.laps > 1
         ? t(', then round again; lap 1 in gold, lap 2 in blue. Last, a beat up to the finish line below the windward mark.', ', потом ещё круг; первый круг золотой, второй синий. В конце — лавировка к финишу чуть ниже верхнего знака.')
         : t(', then a beat up to the finish line below the windward mark.', ', потом лавировка к финишу чуть ниже верхнего знака.')}`,
     }[p.course]],
@@ -228,7 +228,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
             {!match && tags('laps', <IconLaps />, t('Laps', 'Круги'), [[1, t('1 lap', '1 круг')], [2, t('2 laps', '2 круга')]])}
             {!match && tags('start', <IconFlag />, t('Start', 'Старт'), [[1, t('1 min', '1 мин')], [3, t('3 min', '3 мин')], [5, t('5 min', '5 мин')]])}
             {!match && tags('current', <IconTide />, t('Current', 'Течение'), [[0, t('Off', 'Выкл')], [1, t('On', 'Вкл')]],
-              <p className="bt-hint">{t('On: the venue’s tide, river or drift sets every boat.', 'Вкл: местный прилив, река или дрейф сносит все лодки.')}</p>)}
+              <p className="bt-hint">{t('On: the venue’s tide, river or drift sets every boat.', 'Вкл: местное приливное течение, река или дрейф сносит все лодки.')}</p>)}
           </div>
           <div className="bt-g fs-course-in">
             <span className="bt-k"><IconRoute />{t('Your course', 'Твоя дистанция')}<span className="bt-k-r">{p.course !== 'wl' ? `${shapeName} · ` : ''}{courseName} · {lapsName} · {metres}</span></span>

@@ -11,7 +11,7 @@ export const generateMetadata = titled('Sailing racing glossary', 'Словар�
   path: '/learn/glossary',
   description: [
     'The words of sailboat racing in plain English: beat, close-hauled, tack and gybe, overlap, clear astern, header and lift, layline, zone, mark-room, OCS, penalty turn and more.',
-    'Слова парусных гонок простым языком: лавировка, бейдевинд, оверштаг и фордевинд, перекрытие, чисто позади, заход и отход ветра, лейлайн, зона, место у знака, фальстарт, штрафной оборот и другие.'],
+    'Слова парусных гонок простым языком: лавировка, бейдевинд, оверштаг и фордевинд, связанность, чисто позади, заход и отход ветра, лейлайн, зона, место у знака, фальстарт, штрафной оборот и другие.'],
 });
 
 // L2 · The glossary: every term with a short definition, in six groups (chips with their counts at the top, then a
