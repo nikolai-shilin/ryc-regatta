@@ -4,9 +4,7 @@
 //
 // Each is built from what makes the real one. The wind is a roar of brown noise and a hiss of pink, in stereo, its
 // gusts swelling and dying on a slow random walk, and from about 13 knots the rigging's moan, two narrow tones that
-// climb with the wind. The water is a rush of pink noise that brightens with speed and a bed of bubbles, each one a
-// little ringing chirp (Minnaert's: a bubble rings at its size's pitch and rises as it nears the top), the sound
-// that makes noise sound like water. A sail flogging cracks: a thump of cloth and a snap, every time it fills the
+// climb with the wind. The water is a rush of pink noise that brightens with speed. A sail flogging cracks: a thump of cloth and a snap, every time it fills the
 // other way, with a flutter in the leech between. A winch's pawl is a struck bit of steel ringing in a few modes.
 // The horn is an air horn's reed, brassy and a little driven, sliding up to pitch as it starts and sagging as it
 // stops, heard from where the committee boat is: late by the distance (sound takes a second for 343 m), duller and
@@ -48,26 +46,6 @@ export function noiseBuf(ctx, color, secs = 4, ch = 2) {
     buf.getChannelData(c).set(d.subarray(0, n));
   }
   return level(buf);
-}
-
-// water's bubbles: `rate` a second each side, each a decaying sine that chirps upward (big bubbles low and long,
-// small ones high and short), written round the loop so it has no seam
-function bubbleBuf(ctx, secs = 6, rate = 110) {
-  const sr = ctx.sampleRate, n = Math.floor(sr * secs), buf = ctx.createBuffer(2, n, sr);
-  for (let c = 0; c < 2; c++) {
-    const d = buf.getChannelData(c);
-    for (let j = 0, N = Math.floor(secs * rate); j < N; j++) {
-      const r = Math.random(), f0 = 380 * Math.pow(10, r), tau = 0.004 + 0.014 * (1 - r) * Math.random();
-      // f(t) = f0 (1 + σt), σ a few per cent of f0 a second (van den Doel's bubbles)
-      const sigma = f0 * rnd(0.02, 0.07), len = Math.floor(tau * 5 * sr), dec = Math.exp(-1 / (tau * sr));
-      let e = (0.25 + Math.random() * Math.random()) * (0.35 + 0.65 * (1 - r)), ph = Math.random() * TAU, at = Math.floor(Math.random() * n);
-      for (let i = 0; i < len; i++, e *= dec) {
-        ph += TAU * f0 * (1 + sigma * i / sr) / sr;
-        d[(at + i) % n] += e * Math.sin(ph) * Math.min(1, i / 12); // 12 samples' onset: no click
-      }
-    }
-  }
-  return level(buf, 0.22);
 }
 
 // a winch pawl's tick: a strike of noise and the steel ringing in five modes, each a few per cent off so no two
@@ -124,8 +102,7 @@ function drive() {
 export function createSfx(ctx, master) {
   const white = noiseBuf(ctx, 'white', 2, 1), pink = noiseBuf(ctx, 'pink'), brown = noiseBuf(ctx, 'brown');
   // the slow-to-make ones a moment later, so the first tap that wakes the sound doesn't stutter
-  let bubbles = null, clicks = [];
-  setTimeout(() => { bubbles = bubbleBuf(ctx); water.bubbles(); }, 30);
+  let clicks = [];
   setTimeout(() => { clicks = [clickBuf(ctx), clickBuf(ctx), clickBuf(ctx), clickBuf(ctx)]; }, 60);
 
   const node = {
@@ -176,20 +153,16 @@ export function createSfx(ctx, master) {
 
   // ---- the water along the hull ----
   const water = (() => {
-    const out = node.gain(1), rush = node.gain(), bub = node.gain();
-    const bp = node.filter('bandpass', 700, 0.6), hp = node.filter('highpass', 280, 0.7);
+    const out = node.gain(1), rush = node.gain();
+    const bp = node.filter('bandpass', 700, 0.6);
     const a = node.src(pink); a.connect(bp).connect(rush).connect(out); a.start(0, rnd(0, 3));
-    hp.connect(bub).connect(out); out.connect(master);
-    let bs = null;
+    out.connect(master);
     return {
-      bubbles() { if (bs || !bubbles) return; bs = node.src(bubbles); bs.connect(hp); bs.start(0, rnd(0, 5)); },
-      // v in m/s, surfing or not, lap 0..1 (the hull working in the sea), k the Sea setting (0 paused)
+      // v in m/s, surfing or not, lap 0..1 (the hull working in the sea; unused now), k the Sea setting (0 paused)
       update(v, surf, lap, k) {
         const now = ctx.currentTime;
         rush.gain.setTargetAtTime(k * Math.min(0.22, v / 34 + (surf ? 0.07 : 0)), now, 0.25);
         bp.frequency.setTargetAtTime(420 + 120 * Math.min(v, 14), now, 0.3);
-        bub.gain.setTargetAtTime(k * (0.025 + Math.min(0.2, v / 30) + 0.1 * lap) * (surf ? 1.4 : 1), now, 0.12);
-        if (bs) bs.playbackRate.setTargetAtTime(0.85 + 0.035 * Math.min(v, 12), now, 0.4); // quicker water, quicker bubbles
       },
     };
   })();
@@ -229,13 +202,12 @@ export function createSfx(ctx, master) {
   }
 
   // ---- one-shots ----
-  // the hull slamming onto a sea: a thud in her, her hull's boom, and the splash and its bubbles a moment after
+  // the hull slamming onto a sea: a thud in her, her hull's boom, and the splash a moment after
   function slap(vol) {
     const t = ctx.currentTime;
     burst(brown, node.filter('lowpass', 150, 0.8), vol * 0.7, 0.006, 0.2, master, t);
     burst(pink, node.filter('bandpass', 420, 1.2), vol * 0.22, 0.004, 0.12, master, t);
     burst(pink, node.filter('highpass', 1600, 0.6), vol * 0.16, 0.025, 0.45, master, t + 0.03);
-    if (bubbles) burst(bubbles, node.filter('highpass', 400, 0.6), vol * 0.55, 0.03, 0.55, master, t + 0.05);
   }
   // a pawl clicking: vol, pan, where to, when
   function click(vol = 1, pan = 0, to = master, t = ctx.currentTime) {
@@ -278,5 +250,5 @@ export function createSfx(ctx, master) {
     o.connect(bp).connect(g).connect(master); o.start(t); o.stop(t + dur + 0.02);
   }
 
-  return { white, pink, brown, get bubbles() { return bubbles; }, node, send, wind, water, sails, crack, slap, click, ease, horn, beep };
+  return { white, pink, brown, node, send, wind, water, sails, crack, slap, click, ease, horn, beep };
 }
