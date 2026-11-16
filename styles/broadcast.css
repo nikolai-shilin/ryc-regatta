@@ -1410,7 +1410,10 @@
    The controls: square plates side by side, the one that is on in blue. The yachts: one plate of cells, as the
    numbers' lower third, each her number, her name and two numbers; the one shown is lit blue with a blue bar along
    its foot, and while the tour runs the bar fills across her cell until the drone moves on. */
-.bc .fl-strip { gap: var(--s-1); }
+.bc .fl-strip { gap: var(--s-1); container: fl-strip / inline-size;
+  /* the cells grow with the strip: names from 14px to 24px, their room from 8px to 16px, so seven cells span what
+     the strip has (about 22 names' heights of type and 14 sides of room) and reach full size at about 860px */
+  --fl-f: clamp(14px, 2.9cqi, 24px); --fl-px: clamp(8px, 1.8cqi, 16px); --fl-py: clamp(8px, 1.4cqi, 12px); }
 .bc .fl-ctl { gap: 2px; }
 .bc .fl-btn { width: var(--h-m); height: var(--h-m); gap: var(--s-2); border: 0; border-radius: 0; background: var(--panel); color: var(--ink); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
   transition: background-color var(--t-quick), color var(--t-quick), scale .12s; }
@@ -1418,8 +1421,8 @@
 .bc .fl-btn:active { transform: none; scale: .95; }
 .bc .fl-btn[aria-pressed="true"] { background: var(--you); color: var(--ink-on); }
 .bc .fl-all { width: auto; padding: 0 var(--s-4) 0 var(--s-3); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
-.bc .fl-boats { display: flex; gap: 0; max-width: 760px; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
-.bc .fl-boat { flex: 1 1 0; min-width: max-content; gap: var(--s-1); padding: var(--s-3) var(--s-4) var(--s-4); border: 0; border-right: 1px solid var(--rule); border-radius: 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+.bc .fl-boats { display: flex; gap: 0; width: fit-content; max-width: 100%; overflow-x: auto; scrollbar-width: none; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+.bc .fl-boat { flex: 1 1 0; min-width: max-content; gap: var(--s-1); padding: var(--fl-py) var(--fl-px) calc(var(--fl-py) + var(--s-1)); border: 0; border-right: 1px solid var(--rule); border-radius: 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none;
   transition: background-color var(--t-quick), scale .12s; }
 .bc .fl-boat:last-child { border-right: 0; }
 .bc .fl-boat:hover { background: var(--w-06); }
@@ -1427,17 +1430,30 @@
 .bc .fl-boat[aria-checked="true"] { background: color-mix(in srgb, var(--you) 16%, transparent); box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--you) 35%, transparent); }
 .bc .fl-i { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
 .bc .fl-boat[aria-checked="true"] .fl-i { color: var(--you); }
-.bc .fl-boat b { font: 700 var(--fs-title)/1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; }
+.bc .fl-boat b { font: 700 var(--fl-f)/1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; }
 .bc .fl-m { font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; color: var(--ink-3); }
 .bc .fl-bar { height: 3px; background: var(--you); opacity: 1; }
 @container scr (orientation: portrait) {
   .bc .fl-btn { width: 36px; height: 36px; } .bc .fl-all { width: 36px; padding: 0; }
+  .bc .fl-boats { max-width: none; overflow: visible; }
   .bc .fl-boat { width: 96px; padding: var(--s-2) var(--s-3) var(--s-3); }
   .bc .fl-boat b { font-size: var(--fs-lead); }
 }
-@container scr (max-height: 500px) and (orientation: landscape) { .bc .fl-boat { padding: var(--s-2) var(--s-3); } .bc .fl-boat b { font-size: var(--fs-lead); } }
-/* sideways but narrow (a tablet, a small window): the cells' numbers go, so the names keep their room */
-@container scr (max-width: 1099px) and (orientation: landscape) { .bc .fl-boat { padding: var(--s-2) var(--s-3) var(--s-3); } .bc .fl-boat b { font-size: var(--fs-lead); } .bc .fl-m { display: none; } }
+/* an upright tablet has the room a window has: the controls over the yachts, the cells fluid as they are sideways */
+@container scr (orientation: portrait) and (min-width: 600px) {
+  .bc .fl-strip { flex-direction: column; align-items: stretch; margin: var(--s-2) 0 0; padding: 0; overflow: visible; }
+  .bc .fl-btn { width: var(--h-m); height: var(--h-m); } .bc .fl-all { width: auto; padding: 0 var(--s-4) 0 var(--s-3); } .bc .fl-all span { display: inline; }
+  .bc .fl-boats { max-width: 100%; overflow-x: auto; }
+  .bc .fl-boat { flex: 1 1 0; width: auto; padding: var(--fl-py) var(--fl-px) calc(var(--fl-py) + var(--s-1)); }
+  .bc .fl-boat b { font-size: var(--fl-f); } .bc .fl-m { display: block; }
+}
+/* the plate is as wide as its cells and no wider than the strip; under the cells' full size the numbers under the
+   names go, and only a strip narrower than seven cells at their smallest scrolls */
+.bc .fl-boats::-webkit-scrollbar { display: none; }
+@container fl-strip (max-width: 859px) { .bc .fl-m { display: none; } }
+/* sideways, the text column takes the room up to the card (its paragraph keeps its own measure), so the strip's
+   width is the column's and not the cells' */
+@container scr (orientation: landscape) { .bc .fl-view .bt-info { flex: 1 1 0; } }
 
 /* the fleet's card: her four numbers as the specifications below them draw theirs, cells on a hairline grid, the
    figures bold in the condensed face, the word on the wind under them as a label */
