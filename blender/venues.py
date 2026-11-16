@@ -64,14 +64,16 @@ from PIL import Image, ImageColor, ImageDraw, ImageFilter
 # along stern-to, the shore by those streets; routes: the ferries' and the water taxis' ways across the bay, (lat, lon)
 # each; kites: the line off a beach the kitesurfers ride along, and how many; footbox: where the footprints are taken
 # when it isn't the buildings' own box (`build`)
+# erode: how much of the gullies erode() cuts back into the hills (1 when not given; 0 where the tiles carry a fine
+# survey of their own, whose gullies are already there)
 VENUES = {
     'gocek': dict(bathy='emodnet', origin=(36.7525, 28.9395), mid=(-400, 700), wind=195, zoom=14, out='skopea', towns=[(36.7564, 28.9402, 650)],
                   build=(36.705, 28.875, 36.795, 29.005), footprints=('Turkey', '122101223')),
     'cowes': dict(bathy='emodnet', zoom=14, home=(50.7880, -1.3060), wind=225, towns=[(50.7600, -1.2980, 900), (50.7570, -1.2880, 700)]),
-    'newport': dict(bathy='noaa', zoom=14, home=(41.4570, -71.3600), wind=210, towns=[(41.4850, -71.3150, 1300), (41.4960, -71.3700, 700)],
+    'newport': dict(erode=0, bathy='noaa', zoom=14, home=(41.4570, -71.3600), wind=210, towns=[(41.4850, -71.3150, 1300), (41.4960, -71.3700, 700)],
                     keep=[(41.4777, -71.3405, 450)],  # Fort Adams
                     landmarks=[dict(kind='suspension', a=(41.5052, -71.3598), b=(41.5046, -71.3318), h=122, span=488, deck=58)]),
-    'sydney': dict(home=(-33.8480, 151.2560), wind=45, towns=[(-33.8700, 151.2550, 1500), (-33.8330, 151.2420, 1300), (-33.8380, 151.2830, 1000), (-33.8650, 151.2150, 1200)],
+    'sydney': dict(erode=0, home=(-33.8480, 151.2560), wind=45, towns=[(-33.8700, 151.2550, 1500), (-33.8330, 151.2420, 1300), (-33.8380, 151.2830, 1000), (-33.8650, 151.2150, 1200)],
                    landmarks=[dict(kind='arch', a=(-33.8562, 151.2093), b=(-33.8486, 151.2114), h=134, span=503, deck=49),
                               dict(kind='opera', at=(-33.85730, 151.21513), h=67, clear=95, level=(150, 3.5))]),  # the Opera House on Bennelong Point, its shells' mouths to the harbour
     'kiel': dict(bathy='emodnet', home=(54.4300, 10.2050), wind=250, towns=[(54.4150, 10.1570, 900), (54.4100, 10.2250, 900), (54.4310, 10.1760, 600), (54.3700, 10.1500, 1500)],
@@ -82,9 +84,9 @@ VENUES = {
     'porto-cervo': dict(bathy='emodnet', home=(41.1520, 9.5650), wind=315, towns=[(41.1340, 9.5340, 600), (41.1050, 9.5150, 500)]),
     'saint-tropez': dict(bathy='emodnet', home=(43.2900, 6.6700), wind=280, towns=[(43.2710, 6.6390, 800), (43.3090, 6.6360, 1000), (43.2930, 6.5870, 600)]),
     'antigua': dict(home=(16.9890, -61.7700), wind=95, towns=[(17.0080, -61.7640, 500), (17.0180, -61.7820, 700)]),
-    'auckland': dict(zoom=14, home=(-36.8300, 174.8150), wind=225, towns=[(-36.8480, 174.7650, 1500), (-36.8280, 174.7980, 900), (-36.8500, 174.8100, 1300), (-36.8000, 174.7900, 1500)],
+    'auckland': dict(erode=0, zoom=14, home=(-36.8300, 174.8150), wind=225, towns=[(-36.8480, 174.7650, 1500), (-36.8280, 174.7980, 900), (-36.8500, 174.8100, 1300), (-36.8000, 174.7900, 1500)],
                      landmarks=[dict(kind='tower', at=(-36.84846, 174.76218), h=328, style='sky')]),
-    'san-francisco': dict(bathy='noaa', zoom=14, home=(37.8150, -122.4350), wind=255, towns=[(37.8020, -122.4400, 1100), (37.7960, -122.4120, 1100), (37.8580, -122.4850, 800), (37.8730, -122.4570, 700)],
+    'san-francisco': dict(erode=0, bathy='noaa', zoom=14, home=(37.8150, -122.4350), wind=255, towns=[(37.8020, -122.4400, 1100), (37.7960, -122.4120, 1100), (37.8580, -122.4850, 800), (37.8730, -122.4570, 700)],
                           keep=[(37.8267, -122.4230, 300)],  # Alcatraz
                           landmarks=[dict(kind='suspension', style='golden-gate', a=(37.8077, -122.4750), b=(37.8288, -122.4813), h=227, span=1280, deck=67, color='#c0362c'),
                                      dict(kind='tower', style='pyramid', at=(37.79519, -122.40265), h=260, clear=30)]),  # the Transamerica Pyramid
@@ -329,6 +331,56 @@ def bilinear(A, x0, cell, x, z):
     fx = np.clip((x - x0) / cell, 0, A.shape[1] - 1.001); fz = np.clip((z - x0) / cell, 0, A.shape[0] - 1.001)
     j = fx.astype(int); i = fz.astype(int); u = fx - j; v = fz - i
     return (A[i, j] * (1 - u) + A[i, j + 1] * u) * (1 - v) + (A[i + 1, j] * (1 - u) + A[i + 1, j + 1] * u) * v
+
+
+def erode(H, cell, amount=1.0, iters=8):
+    """The gullies the elevation tiles are too coarse to keep. SRTM's 30 m (and the tiles' bilinear between them) lays
+    a hillside down as a smooth blanket: the streams' V-cut gullies a few hundred metres apart filled in, its spurs and
+    ridges rounded off. They are cut back here as water would: on a lattice of twice the cell (some 17 m, as fine as
+    the quadtree's squares round the race area, so they don't split it all to 8 m), each point drains to its steepest
+    neighbour down the slope, gathers the water of all the land above it, and is worn down by the square root of that
+    area times the slope (the stream power), a little each time, the drainage worked out again in between. Only on the
+    slopes (a plain or a valley's floor is left alone, and a big river isn't trenched: the area counts up to 0.4 km²),
+    never below the point it drains to (no pits), at most CAP metres in all; then the cut is softened over its
+    neighbours, so a gully is a V some 50 m across, not a slot. Ridges and spurs keep their height, sharper for the
+    gullies beside them. amount: how much of it (0 for a venue whose tiles carry its own fine survey)."""
+    if amount <= 0: return H
+    K, A0, AMAX, CAP = 0.06, 4e3, 1e6, 28.0
+    h = H[::2, ::2].astype(np.float64); h0 = h.copy(); c = 2 * cell; n0, n1 = h.shape
+    OFF = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
+    DI = np.array([o[0] for o in OFF]); DJ = np.array([o[1] for o in OFF]); DIST = np.hypot(DI, DJ) * c
+    idx = np.arange(h.size).reshape(h.shape)
+    blur = lambda a: (lambda b: (shift(b, -1, 0, 0) + 2 * b + shift(b, 1, 0, 0)) / 4)((shift(a, 0, -1, 0) + 2 * a + shift(a, 0, 1, 0)) / 4)
+    # (the water finds its way by the ground's own small unevenness too, a metre or so the tiles don't have: without
+    # it, down a plain, even slope it runs in straight rows side by side, and cuts them as a comb)
+    rough = np.random.default_rng(7).standard_normal(h.shape)
+    for _ in range(3): rough = blur(rough)
+    rough *= 1.2 / rough.std()
+    for _ in range(iters):
+        hr = h + rough
+        drop = np.stack([(hr - shift(hr, di, dj, np.inf)) / d for di, dj, d in zip(DI, DJ, DIST)])
+        k = drop.argmax(0); S = np.maximum((h - np.stack([shift(h, di, dj, np.inf) for di, dj in zip(DI, DJ)])[k, idx // n1, idx % n1]) / DIST[k], 0)
+        has = (drop.max(0) > 1e-3) & (h > 0.5)
+        rec = np.where(has, idx + DI[k] * n1 + DJ[k], idx).ravel()
+        # the area each point drains, highest first (each hands what it has gathered on to the one it drains to)
+        A = [1.0] * h.size; R_ = rec.tolist()
+        for i in np.argsort(-hr, axis=None).tolist():
+            r = R_[i]
+            if r != i: A[r] += A[i]
+        # (evened out over the neighbours, so the rows of water down a slope share theirs; a stream's, many times its
+        # neighbours', still stands out) — and only a stream's cuts: a gully starts where 1.5 ha drains to it
+        A = blur(blur(np.asarray(A).reshape(h.shape))) * c * c
+        steep = np.clip((S - 0.04) / 0.14, 0, 1); steep = steep * steep * (3 - 2 * steep)
+        e = K * np.clip(np.sqrt(np.minimum(A, AMAX)) - math.sqrt(A0), 0, None) * S * steep
+        e = np.where(has, np.minimum(e, 0.5 * np.maximum(h - h.ravel()[rec].reshape(h.shape), 0)), 0)
+        h -= e
+    d = np.maximum(h - h0, -CAP)
+    for _ in range(3):  # (softened: a [1 2 1] blur each way, three times)
+        d = (shift(d, 0, -1, 0) + 2 * d + shift(d, 0, 1, 0)) / 4; d = (shift(d, -1, 0, 0) + 2 * d + shift(d, 1, 0, 0)) / 4
+    ar = np.arange(H.shape[0]) / 2.0
+    D = bilinear(d.astype(np.float32), 0.0, 1.0, *np.meshgrid(ar, ar)).astype(np.float32)
+    print(f'  erosion: gullies cut up to {-D.min():.1f} m, {(D < -2).mean():.1%} of the lattice by more than 2 m', flush=True)
+    return np.where(H > 0.5, H + amount * D, H).astype(np.float32)
 
 
 def stretches(mask):
@@ -680,6 +732,9 @@ def bake(vid, V, fetch_only=False):
     LX = (-EXTENT + np.arange(N + 1) * LC).astype(np.float64)
     LXX, LZZ = np.meshgrid(LX, LX)
     th = height(LXX, LZZ).astype(np.float32) - level
+    # (the gullies cut back: not in a flat city, nor where the tiles carry a fine survey of their own — the US's 3DEP,
+    # Geoscience Australia's 5 m, LINZ's 8 m, Hong Kong's 5 m — whose gullies are already there; `erode` 0)
+    if V.get('flat') is None and not V.get('dtm'): th = erode(th, LC, float(V.get('erode', 1.0)))
     # the signed distance to the shore, + ashore: the grid's, to the nearest cell across it, then to the metre near it
     dl = chamfer(land, CELL, 600.0); ds = chamfer(~land, CELL, 600.0)  # (far enough for the bed to shelve to its deepest)
     sd10 = np.where(land, ds - CELL / 2, -(dl - CELL / 2))

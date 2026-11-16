@@ -38,8 +38,8 @@ export const VENUES = [
     id: 'gocek', name: ['Göcek', 'Гёчек'], lat: 36.7525, lon: 28.9395, wind: 195, tz: 3,
     look: {
       haze: 1.1,
-      ground: { forest: ['#2c4224', '#3c5530', '#566d3a'], scrub: '#7b7d55', rock: ['#9a917c', '#7b7465'], town: '#a19a84', shore: '#a39a86' },
-      trees: [['pine', 1, '#2c4224', '#566d3a']], treeTop: 650, woods: 1, ...MED, flat: 0.45,
+      ground: { forest: ['#283d21', '#36502b', '#4e6535'], scrub: '#7b7d55', rock: ['#9a917c', '#7b7465'], town: '#a19a84', shore: '#a39a86' },
+      trees: [['pine', 1, '#2c4224', '#566d3a']], treeTop: 650, woods: 1, coast: 'rock', ...MED, flat: 0.45,
       water: { shallow: '#3fae9e', clear: 0.55 },
       boats: { sail: 0.65, motor: 0.28, big: 0.07, bigKind: 'gulet' },
     },

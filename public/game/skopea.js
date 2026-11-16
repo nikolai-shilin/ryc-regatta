@@ -36,6 +36,15 @@ function vnoise(x, z) {
 const fbm = (x, z) => 0.55 * vnoise(x / 220, z / 220) + 0.3 * vnoise(x / 70, z / 70) + 0.15 * vnoise(x / 22, z / 22);
 
 const slopeAt = (x, z) => { const e = 6; return Math.hypot(groundAt(x + e, z) - groundAt(x - e, z), groundAt(x, z + e) - groundAt(x, z - e)) / (2 * e); };
+// how far a point stands out from its slope, + on a ridge, − in a hollow (CONVEX_GLSL's convexity(), from the same
+// open sky, here read from the bake's grid as the shader reads its texture)
+function convexAt(x, z) {
+  const A = P.ao, n = META.ao.n, fx = (x + TE) / META.ao.cell - 0.5, fz = (z + TE) / META.ao.cell - 0.5;
+  const j = Math.max(0, Math.min(n - 2, Math.floor(fx))), i = Math.max(0, Math.min(n - 2, Math.floor(fz))), u = Math.min(Math.max(fx - j, 0), 1), v = Math.min(Math.max(fz - i, 0), 1);
+  const sky = Math.min(((A[i * n + j] * (1 - u) + A[i * n + j + 1] * u) * (1 - v) + (A[(i + 1) * n + j] * (1 - u) + A[(i + 1) * n + j + 1] * u) * v) / 63, 1);
+  const t = slopeAt(x, z);
+  return sky - (1 - (t / Math.sqrt(1 + t * t) + 1.414 * t / Math.sqrt(1 + 0.5 * t * t)) / 8);
+}
 // what is on the ground there (venues.py's classes; 0 where the map says nothing)
 // (its class: the low four bits of the cover; the high four, a variant of it: for a wood, its trees, 1 needle-leaved,
 // 2 broad-leaved, 3 mixed)
@@ -161,7 +170,21 @@ varying vec3 vLand; varying vec3 vHz;
 ${SKY_GLSL}
 ${CLOUD_GLSL}
 float landSun(vec2 p) { vec2 g = (p - uShadeXf.xy) * uShadeXf.z; return g.x > 0.0 && g.y > 0.0 && g.x < 1.0 && g.y < 1.0 ? texture2D(uShadeTex, g).r : 1.0; }
+// how much of the sky is open there, 0 to 1 (the bake's grid holds it in 64 steps: 63, all of it)
+float landSky(vec2 p) { return min(texture2D(uAO, (p - uAOXf.xy) * uAOXf.z).r * (255.0 / 63.0), 1.0); }
 `;
+// How far a point stands out from the slope it is on: + on a ridge or a spur, − in a hollow or a gully. Its open sky
+// (the bake's: 1 less the sine of how high the land stands, the average of eight ways) against a plain slope's as
+// steep, which has its uphill way and the two beside it hidden that much. On Göcek's hills a quarter of the ground is
+// above −0.025 and a quarter below −0.115 (the mountains round the bay hide a little sky from everything).
+const CONVEX_GLSL = /* glsl */ `
+float convexity(float sky, float ny) {
+  float t = sqrt(max(1.0 - ny * ny, 0.0)) / max(ny, 0.05);
+  return sky - (1.0 - (t / sqrt(1.0 + t * t) + 1.414 * t / sqrt(1.0 + 0.5 * t * t)) / 8.0);
+}
+// the woods thin out over the ridges and the spurs, where the soil is thin and dry: crowns apart, scrub and rock
+// between them, and in the end single trees over the rock
+float ridgeThin(float sky, float ny) { return smoothstep(-0.04, 0.06, convexity(sky, ny)); }`;
 function landMat(m, k = 1, o = {}) {
   m.fog = false;
   const hk = { value: k };
@@ -180,8 +203,10 @@ function landMat(m, k = 1, o = {}) {
     if (o.emis) fs = fs.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + o.emis);
     if (o.nrm) fs = fs.replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n' + o.nrm);
     if (!o.unlit) fs = fs.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
-      { float sun = landSun(vLand.xz) * cloudShade(vLand)${o.sun ? ' * ' + o.sun : ''}, sky = texture2D(uAO, (vLand.xz - uAOXf.xy) * uAOXf.z).r * (255.0 / 252.0);
-        reflectedLight.directDiffuse *= sun; reflectedLight.directSpecular *= sun; reflectedLight.indirectDiffuse *= 0.3 + 0.7 * sky; }`);
+      { float sun = landSun(vLand.xz) * cloudShade(vLand)${o.sun ? ' * ' + o.sun : ''}, sky = landSky(vLand.xz);
+        // (the open ground as bright as the land's colours were set by, when the grid was read as a quarter of
+        // itself; the valleys, the gullies and the hollows as much darker as the sky they miss)
+        reflectedLight.directDiffuse *= sun; reflectedLight.directSpecular *= sun; reflectedLight.indirectDiffuse *= 0.475 * (0.3 + 0.7 * sky); }`);
     sh.fragmentShader = fs.replace('#include <tonemapping_fragment>', `{
         // (as thick as the sea's at the sea, thinner up the hills: over 700 m, or 140 m in a morning's mist (uMist,
         // light.js), when the hills rise out of it; a quarter of it is high and thin, all the way up)
@@ -238,6 +263,7 @@ const GROUND_GLSL = /* glsl */ `
 #define GROUND_Y vLand.y
 #endif
 ${ROOM_GLSL}
+${CONVEX_GLSL}
 uniform sampler2D uCover, uRoads; uniform vec3 uCol[11], uFields[6], uTowns[8], uNearXf, uShare, uLake; uniform float uNF, uTreeTop, uSnow, uNear, uWood, uCanopy, uClear, uCoast;
 varying vec3 vLN;
 float gLake; // 1 where groundColour() found a lake's still water
@@ -281,12 +307,14 @@ float lfbm(vec2 p) { return 0.55 * lnoise(p / 220.0) + 0.3 * lnoise(p / 70.0) + 
 // The crowns are laid out on the slope, not as seen from above: a steep one's are read from the side too (as the rock's
 // noise is, triplanar), so they keep their shape there rather than drawn out down it.
 float gCrownK, gCrownSh = 1.0, gCrownH = 1.0; vec3 gCrownO;
+// how far the wood here thins (over a ridge, a spur: groundColour()'s ridgeThin), and what is between its crowns there
+float gThin = 0.0; vec3 gGapCol = vec3(0.0);
 vec4 crowns(vec2 q, float cell) { // xy: from the crown's middle to here, over its radius; z: how far out (1, its edge); w: its own shade
   vec2 s = q / cell, i = floor(s), f = fract(s);
   vec4 best = vec4(0.0, 0.0, 9.0, 0.0);
   for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
     vec2 g = vec2(float(x), float(y)), id = i + g;
-    if (lhash(id + 3.3) < 0.12) continue; // a gap in the wood
+    if (lhash(id + 3.3) < 0.12 + 0.3 * gThin) continue; // a gap in the wood (more of them where it thins)
     vec2 d = f - g - 0.1 - 0.8 * vec2(lhash(id), lhash(id + 17.31));
     float r = 0.58 + 0.38 * lhash(id + 41.7), e = length(d) / r;
     if (e < best.z) best = vec4(d / r, e, lhash(id + 7.7));
@@ -307,13 +335,13 @@ vec3 crownLook(vec3 c, vec2 q, float cell, float kc, out float on, out vec2 bump
   vec3 tone = mix(vec3(1.0), vec3(1.07, 1.05, 0.84), cr.w) * (0.78 + 0.4 * lhash(vec2(cr.w * 91.0, 3.0))); // each tree its own green
   h = sqrt(max(1.0 - min(cr.z * cr.z, 1.0), 0.0));
   bump = vec2(cr.x - (nx - n0) / e * 0.9 * kc, cr.y - (nz - n0) / e * 0.9 * kc);
-  return mix(c * 0.46, c * tone * (1.0 - 0.18 * cr.z * cr.z) * mix(1.0, 0.68 + 0.6 * n0, kc), on);
+  return mix(mix(c * 0.46, gGapCol, 0.75 * gThin), c * tone * (1.0 - 0.18 * cr.z * cr.z) * mix(1.0, 0.68 + 0.6 * n0, kc), on);
 }
 vec3 canopy(vec3 c, vec3 p, vec3 nrm, float w, float cell) {
   gCrownK = 0.0; gCrownSh = 1.0; gCrownH = 1.0; gCrownO = vec3(0.0);
   if (w <= 0.0) return c;
   float px = length(fwidth(p)), kd = (1.0 - smoothstep(cell * 0.18, cell * 0.5, px)) * uCanopy;
-  vec3 avg = c * 0.82; // the crowns and the shade between them, as they average out
+  vec3 avg = mix(c * 0.82, mix(c, gGapCol, 0.5), gThin * 0.5); // the crowns and the shade between them, as they average out
   float lowSun = 1.0 - smoothstep(0.15, 0.9, uSun.y), shAvg = 1.0 - w * (0.1 + 0.35 * lowSun);
   if (kd <= 0.0) { gCrownSh = shAvg; return mix(c, avg, w); }
   float kc = 1.0 - smoothstep(cell * 0.05, cell * 0.14, px);
@@ -434,6 +462,9 @@ vec3 groundColour() {
   gWet = (1.0 - smoothstep(run - 0.12, run + 0.08, y)) * (sd > 900.0 ? 1.0 : 1.0 - smoothstep(5.0, 16.0, -sd)) * (cls == 12 || cls == 11 ? 0.0 : 1.0);
   c *= 1.0 - 0.45 * gWet;
   wood *= 1.0 - sh;
+  // over the ridges and the spurs the wild wood thins (ridgeThin): scrub and the grey rock between its crowns
+  gThin = ridgeThin(landSky(p.xz), ny) * smoothstep(0.5, 1.0, wild);
+  gGapCol = mix(mix(uCol[3], c, 0.5) * 0.62, mix(uCol[5], uCol[4], n) * rm * 0.62, 0.15 + 0.3 * gThin);
   return canopy(c, p, normalize(vLN), wood, cell);
 }
 `;
@@ -498,10 +529,11 @@ function levelAt(x, z) {
   return lv;
 }
 const LIFT_VS = /* glsl */ `
-uniform sampler2D uCover, uRoads, uLiftMask; uniform vec3 uGridXf, uNearXf, uTowns[8]; uniform float uWood, uNF, uClear, uTreeTop, uLiftOn;
+uniform sampler2D uCover, uRoads, uLiftMask, uAO; uniform vec3 uGridXf, uNearXf, uTowns[8], uAOXf; uniform float uWood, uNF, uClear, uTreeTop, uLiftOn;
 attribute float aFine; // how far this corner may carry it (terrain(): none where the mesh is coarse)
 varying float vGroundY;
 ${ROOM_GLSL}
+${CONVEX_GLSL}
 float vhash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 float vnoise(vec2 x) { vec2 i = floor(x), f = fract(x), u = f * f * (3.0 - 2.0 * f);
   return mix(mix(vhash(i), vhash(i + vec2(1.0, 0.0)), u.x), mix(vhash(i + vec2(0.0, 1.0)), vhash(i + vec2(1.0, 1.0)), u.x), u.y); }
@@ -531,7 +563,12 @@ float canopyLift(vec3 p, vec3 n) {
 #ifdef LIFT_EVEN
   return h * aFine * 8.5; // (for the shadows' height map: a roof's outline, not each crown's, which its cells are too big for)
 #else
-  return h * aFine * 8.5 * (0.8 + 0.4 * vhash(floor(p.xz / 7.0) + 0.5));
+  // (and crown by crown, so a wooded skyline is ragged, not a smooth line: stands of an age taller or lower than the
+  // ones beside them, each crown its own height, a gap now and then — more of them over a ridge, where the wood thins)
+  vec2 cc = floor(p.xz / 7.0) + 0.5;
+  float thin = ridgeThin(min(texture2D(uAO, (p.xz - uAOXf.xy) * uAOXf.z).r * (255.0 / 63.0), 1.0), n.y);
+  float crown = vhash(cc) < 0.08 + 0.25 * thin ? 0.3 : 0.6 + 0.8 * vhash(cc + 9.5);
+  return h * aFine * 8.5 * (0.7 + 0.6 * vnoise(p.xz / 45.0)) * crown;
 #endif
 }`;
 // …and on the terrain the canopy's crowns too (GROUND_GLSL's canopy(): each a dome on the slope, tilted to the light)
@@ -752,6 +789,9 @@ function pines(count, far = false) {
     if (p < 0) { if (woodAt(x, z) < WOOD + 0.25 * r() && r() >= lone) continue; } // in stands, with clearings between (and in farmland, a lone tree now and then)
     else if (r() >= (far ? (cl === CLS.forest ? 1 : 0) : p)) continue;
     if ((p < 0 && r() < townness(x, z) * 1.6) || slopeAt(x, z) > 1.1) continue; // few in the town, none on the crags
+    // (fewer in the hollows, where the canopy's roof hides them, and so more over the ridges and the spurs, where they
+    // stand against the sky one by one, as the wood thins there: GROUND_GLSL's ridgeThin)
+    if (!far && convexAt(x, z) < -0.06 && r() < 0.4) continue;
     let k = kinds[0];
     if (far) k = farKind;
     else if (cl === CLS.scrub && shrub) k = shrub;
