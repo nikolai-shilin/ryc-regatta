@@ -166,9 +166,10 @@ const T = {
     askK: { restart: 'Заново', change: 'Изменить гонку', leave: 'Выход' }, askH: { restart: 'Начать заново?', change: 'Изменить гонку?', leave: 'Выйти из гонки?' },
     askT: { restart: 'Всё начнётся со стартовой процедуры: та же дистанция, тот же ветер.', change: 'Дальше выберешь место, ветер и дистанцию — и гонка начнётся заново.', leave: 'Ты вернёшься в меню гонок.' },
     sailUp: 'Лавировка к', sailDown: (k) => (k ? 'Фордевинд под генакером к' : 'Фордевинд без генакера к'), sailReach: 'Галфвинд к', aheadOf: (n, s) => `${n} впереди на ${s}.`, leadBy: (s) => `Ты лидируешь на ${s}.`, leadAlone: 'Ты лидируешь.',
-    nextAt: (m, d) => `Дальше: ${m} · ${d} м`, howPort: 'Огибай его, оставляя слева — по левому борту.', howGate: 'Пройди между двумя знаками и обогни любой из них.',
+    nextAt: (m, d) => `Дальше: ${m} · ${d} м`, howPort: 'Огибай знак, оставляя его по левому борту.', howGate: 'Пройди между двумя знаками и обогни любой из них.',
     howFinish: 'Пересеки финишную линию между её концами.', howStart: 'Пересеки линию после сигнала, между судейским судном и знаком.',
     whereH: (pl, d, to) => `Ты ${pl}-й, ${d} м до ${to}`,
+    toD: { lineStart: 'линии', mark: 'верхнему знаку', mark1: 'знаку 1', wing: 'боковому знаку', mark2: 'знаку 2', offset: 'отбойнику', gate: 'воротам', finish: 'финишу' },
     toK: { lineStart: 'линии', mark: 'верхнего знака', mark1: 'знака 1', wing: 'бокового знака', mark2: 'знака 2', offset: 'отбойника', gate: 'ворот', finish: 'финиша' },
     mapYou: 'Вы', mapStart: 'Старт',
     timeFree: 'свободная гонка', timeDaily: 'гонка дня', inStart: 'Идёт стартовая процедура.', notOver: 'Стартовая линия ещё впереди.', notOverYou: 'Ты ещё не пересёк стартовую линию.',
@@ -1454,7 +1455,7 @@ const legKind = (c, i) => (isBeat(c, i) ? 'up' : ['wing', 'mark2', 'offset'].inc
 function pauseLine(P, place, nx) {
   if (race.clock < 0) return t('inStart');
   if (P.leg < 1) return t('notOver');
-  const mark = nx ? t(legKey(race.course, nx)).toLowerCase() : '';
+  const mark = nx ? (T[LANG].toD || t('toK'))[legKey(race.course, nx)] || '' : ''; // "к верхнему знаку", "to the windward mark"
   const how = isBeat(race.course, P.leg) ? t('sailUp') : legKind(race.course, P.leg) === 'reach' ? t('sailReach') : t('sailDown', !!P.kite);
   const st = race.standings(), ahead = st[place - 2], behind = st[place], rem = (b) => bcHud.remaining(race, b);
   // the gap in time, at the pace of the boat behind (as the board gives it): "0:12"

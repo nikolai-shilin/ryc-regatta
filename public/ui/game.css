@@ -72,7 +72,8 @@
 #pauseCard.bc .p-info p.mark { --c: var(--buoy); }
 #pauseCard.bc .p-info p.mark::before { background: linear-gradient(var(--buoy), var(--buoy)) center / 9px 13px no-repeat, var(--ink); }
 /* the race in a sentence, as a commentator says it: the leg, and the boat ahead or your lead */
-#pauseCard.bc .p-info p.p-line { display: block; height: auto; max-width: 46ch; padding: 0; background: none; font: 500 var(--fs-lead)/1.45 var(--sans); color: var(--ink-2); text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5); }
+#pauseCard.bc .p-info p.p-line { display: block; height: auto; max-width: 46ch; padding: 0; background: none; font: 500 var(--fs-lead)/1.45 var(--sans); color: var(--ink-2); text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+  backdrop-filter: none; -webkit-backdrop-filter: none; } /* (the tags' frosted glass isn't for running text: it drew a box round each line) */
 #pauseCard.bc .p-info p.p-line::before { display: none; }
 #pauseCard.bc .p-info p.p-line:empty { display: none; }
 /* how to round the next target, in a sentence, close under its tag */
