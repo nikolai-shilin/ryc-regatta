@@ -57,7 +57,10 @@ from PIL import Image, ImageColor, ImageDraw, ImageFilter
 # water (12 when not given; a city's quays, a few, and no surf along them); most: how many buildings at the most (8,000
 # when not given); keep: [(lat, lon, metres)], where every building is kept before any other (an island's fort or
 # lighthouse by the course, further off than a big city's middle, which would fill the count first); height_of: {name:
-# metres}, the height of a building the map names but gives none (or a wrong one); plain: (low, high) metres, a coastal plain whose tiles have its roofs and trees for its ground
+# metres}, the height of a building the map names but gives none (or a wrong one); parts: the tall parts of buildings mapped in three dimensions
+# (building:part) drawn too, where a city's towers are mapped so (the building's own outline the podium's height); quays: (metres, slope), the land along the
+# shore no higher than so many metres at the water, rising at most so much a metre inland (a port whose tiles keep its piers' sheds and
+# terminals as ground, which the map's narrow piers would make cones of); plain: (low, high) metres, a coastal plain whose tiles have its roofs and trees for its ground
 # (SRTM's radar): the land up to `low` laid down on the shore's floor and from there back up to the tiles' own at `high`,
 # the hills above it as they are; paved: the map's paved squares and promenades drawn as paving; trees: the map's rows
 # of trees and its single trees planted where they stand; palms: (streets, metres), a seafront's palms the map lacks, along
@@ -202,26 +205,33 @@ VENUES = {
                                dict(kind='flag', at=(36.618043, 29.112548), h=25, w=12)]),  # the great flag on the castle's hill
     # the Black Sea off Sochi's sea terminal, in the afternoon south-westerly off the sea, the town along the shore to
     # leeward and the Caucasus behind it
-    'sochi': dict(bathy='emodnet', zoom=14, most=15000, relations=True, paved=True, trees=True, home=(43.5640, 39.6970), wind=225,
+    'sochi': dict(bathy='emodnet', zoom=14, most=15000, relations=True, parts=True, paved=True, trees=True, home=(43.5640, 39.6970), wind=225,
+                  palms=(['Несебрская улица', 'улица Круизная гавань'], 45),  # the palms by the sea terminal and the marina
                   towns=[(43.5850, 39.7230, 1200), (43.6000, 39.7150, 900), (43.5650, 39.7450, 900)],
                   landmarks=[dict(kind='spire', style='sochi', at=(43.58045, 39.71061), h=71, dir=225)]),  # the sea terminal's tower and spire over the map's building, its front to the sea
     # Port Phillip off St Kilda, of the 1956 Olympic regatta, in the afternoon sea breeze off Bass Strait; the city's
     # towers to leeward. The bay's shores are low and the tiles' radar has their roofs and trees for the ground
-    'melbourne': dict(zoom=14, most=15000, relations=True, plain=(10, 30), paved=True, trees=True, home=(-37.8800, 144.9450), wind=200,
+    'melbourne': dict(zoom=14, most=15000, relations=True, parts=True, plain=(10, 30), paved=True, trees=True, home=(-37.8800, 144.9450), wind=200,
+                      palms=(['Jacka Boulevard', 'Marine Parade', 'Beaconsfield Parade', 'Fitzroy Street'], 45),  # St Kilda's Canary Island palms
+                      kites=dict(a=(-37.87300, 144.97900), b=(-37.88600, 144.98350), n=6),  # off St Kilda and Elwood beaches in the sea breeze
                       towns=[(-37.8650, 144.9820, 1000), (-37.8400, 144.9400, 1000), (-37.8610, 144.8990, 900), (-37.8820, 144.9880, 900), (-37.8350, 144.9600, 900)]),
     # the Pacific off Surfers Paradise's beach and towers, in the easterly sea breeze; the coastal plain's ground in the
     # tiles is its roofs and trees (`plain`)
-    'gold-coast': dict(zoom=14, most=15000, relations=True, plain=(10, 30), paved=True, trees=True, home=(-28.0000, 153.4550), wind=90,
+    'gold-coast': dict(zoom=14, most=15000, relations=True, parts=True, plain=(10, 30), paved=True, trees=True, home=(-28.0000, 153.4550), wind=90,
+                       palms=(['The Esplanade', 'Esplanade', 'Main Beach Parade'], 140),  # (behind the wide beach)
+                       landmarks=[dict(kind='tower', style='q1', at=(-28.006235, 153.429706), h=322.5, dir=141, la=24.5, lb=18, clear=30)],  # Q1, its glass crown and spire (the map has it 2 storeys high, or a 323 m block)
                        towns=[(-28.0000, 153.4280, 1000), (-27.9750, 153.4270, 900), (-28.0300, 153.4320, 1000), (-27.9700, 153.4050, 1100)]),
     # the Upper Bay by the Statue of Liberty, in the summer's south-south-westerly up the Narrows: Lower Manhattan, the
     # Brooklyn Bridge and Jersey City to leeward, the Verrazzano-Narrows Bridge to windward. The tiles here are the
     # USGS's bare earth, so the ground is the ground (erode=0)
-    'new-york': dict(erode=0, bathy='noaa', zoom=14, most=15000, relations=True, paved=True, home=(40.6750, -74.0350), wind=200,
+    'new-york': dict(erode=0, bathy='noaa', zoom=14, most=15000, relations=True, parts=True, paved=True, quays=(2.5, 0.15), home=(40.6750, -74.0350), wind=200,
+                     routes=[dict(kind='si', pts=[(40.70050, -74.01350), (40.68800, -74.02300), (40.65600, -74.05900), (40.64350, -74.07150)])],  # the Staten Island Ferry, Whitehall to St George
                      height_of={'2 World Trade Center': 6},  # (the map has the tower it will be; its site is still only the podium's base)
                      keep=[(40.7100, -74.0120, 900), (40.6990, -74.0397, 250), (40.6895, -74.0168, 600)],  # Lower Manhattan, Ellis Island, Governors Island
                      towns=[(40.7080, -74.0100, 1200), (40.7150, -74.0400, 1200), (40.6800, -74.0050, 1200), (40.6650, -74.1000, 1000), (40.6430, -74.0770, 1000)],
                      landmarks=[dict(kind='statue', style='liberty', at=(40.68925, -74.04454), h=93, dir=135, clear=60),  # on Fort Wood's star, facing the Narrows
                                 dict(kind='suspension', a=(40.60242, -74.05724), b=(40.61058, -74.03206), h=211, span=1298, deck=69),  # the Verrazzano-Narrows
+                                dict(kind='tower', style='owtc', at=(40.713044, -74.013208), b=(40.713394, -74.013356), h=541, clear=40),  # One World Trade Center, `b` a corner of its base
                                 dict(kind='suspension', style='brooklyn', a=(40.70908, -74.00073), b=(40.70222, -73.99211), h=84, span=486, deck=41)]),
 }
 
@@ -559,6 +569,9 @@ def bake(vid, V, fetch_only=False):
         build = [el for i, b in enumerate(boxes) for el in overpass(work, f'buildings-{i}', f'(way["building"]({b}););out geom tags;')]
     if V.get('relations'): build += overpass(work, 'buildings-rel', '(' + ''.join(f'relation["building"]({b});' for b in boxes) + ');out geom;')  # (out geom alone: see above)
     tall = overpass(work, 'tall', f'(way["building"]["building:levels"~"^([89]|[1-9][0-9])$"]({bbox(8500)});way["building"]["height"~"^([3-9][0-9]|[1-9][0-9][0-9])(\\\\.[0-9]+)?( m)?$"]({bbox(8500)}););out geom tags;')
+    # the tall parts of buildings mapped in three dimensions (`parts`), where the building's own outline has only its
+    # podium's height and its towers stand on the parts
+    tall_parts = overpass(work, 'parts', f'(way["building:part"]["building:levels"~"^([89]|[1-9][0-9])$"]({bbox(8500)});way["building:part"]["height"~"^([3-9][0-9]|[1-9][0-9][0-9])(\\\\.[0-9]+)?( m)?$"]({bbox(8500)}););out geom tags;') if V.get('parts') else []
     cb = bbox(EXTENT * 1.45)
     coverQ = ''.join(f'{t}["{k}"~"^({"|".join(sorted(set(v for _, tags in LAYERS for v in tags.get(k, []))))})$"]({cb});'
                      for k in ('landuse', 'natural', 'leisure') for t in ('way', 'relation'))
@@ -793,6 +806,8 @@ def bake(vid, V, fetch_only=False):
     soft = bilinear(beach.astype(np.float32), -G + CELL / 2, CELL, *np.meshgrid(LX, LX)) > 0.5
     B = np.where(soft, 12.0, float(V.get('bank', 12.0))).astype(np.float32)
     Rl = np.maximum(th, 1.2 + np.clip(S, 0, 60) * 0.06)
+    if V.get('quays'):  # a port city whose tiles keep its pier sheds and terminals as ground: no higher than q0 at the water, rising at most qs a metre inland
+        q0, qs = V['quays']; Rl = np.maximum(np.minimum(Rl, q0 + np.clip(S, 0, None) * qs), 1.2 + np.clip(S, 0, 60) * 0.06)
     if V.get('flat') is not None:  # a flat city's ground all at its height, up to its quays (where the tiles have the river too)
         Rl = np.full_like(Rl, float(V['flat']))
     Ra = np.where(S > 0, Rl, 0).astype(np.float32); Rd = Ra.copy()
@@ -1000,6 +1015,15 @@ def bake(vid, V, fetch_only=False):
         # a fortress's ramparts (a palace the map calls a castle, as St Petersburg's are, is a house like the rest)
         if (t.get('building') in ('castle', 'fortress') or t.get('historic') in ('castle', 'fort', 'citywalls')) and t.get('castle_type') not in ('palace', 'stately', 'manor', 'shloss', 'schloss'): kind, h = 5, h or 11.0
         add(p[:-1] if p[0] == p[-1] else p, h, kind, t)
+    # a tall part, from the ground up (one standing on another, a crown or a spire's base, is left out: the shaft
+    # under it carries the height), where no building already there is as high
+    for el in tall_parts:
+        t = el.get('tags', {}); p = poly(el.get('geometry'))
+        if not p or len(p) < 4 or num(t.get('min_height')) >= 30: continue
+        h = num(t.get('height')) or num(t.get('building:levels')) * 3.1 + 1.0
+        cx_ = sum(a for a, _ in p) / len(p); cz_ = sum(b for _, b in p) / len(p)
+        if any(f['h'] >= h - 1 and min(a for a, _ in f['r']) <= cx_ <= max(a for a, _ in f['r']) and min(b for _, b in f['r']) <= cz_ <= max(b for _, b in f['r']) for f in found): continue
+        add(p[:-1] if p[0] == p[-1] else p, h, ROOFS.get(t.get('roof:shape'), 1), t)
     if os.path.exists(foot):
         # a footprint where OSM has no building (none of OSM's within 12 m of its middle), ashore, sure and house-sized
         taken = {(int(a // 12), int(b // 12)) for f in found for a, b in f['r']}

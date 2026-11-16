@@ -204,7 +204,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   Sagrada Família, Palma's cathedral, Carlsten fortress, Notre-Dame de la Garde, Christ the Redeemer, Enoshima's Sea
   Candle, the lighthouses of Kiel, Trieste, Batumi, Scheveningen and Green Point, Istanbul's Bosphorus Bridge, Galata
   Tower, Blue Mosque, Hagia Sophia and Süleymaniye, St Petersburg's spires, columns and bridges, Batumi's Alphabetic
-  Tower, the big wheels on Batumi's shore, Scheveningen's pier, Hong Kong's Central and Cape Town's V&A Waterfront, the Bank of China Tower, the Parthenon, Marmaris castle on the map's outline of it, the Knights' castle in Fethiye on walls traced from the air (`ring`), Fethiye's Lycian rock tombs, Telmessos's theatre and the sarcophagi in its streets, Atatürk's statues on both seafronts, the great Turkish flags over both castles, the yachts ashore on their cradles in Marmaris's Adaköy yard, Sochi's sea terminal and its spire, the Statue of Liberty on Fort Wood's star, the Verrazzano-Narrows Bridge and the Brooklyn Bridge's granite towers (a
+  Tower, the big wheels on Batumi's shore, Scheveningen's pier, Hong Kong's Central and Cape Town's V&A Waterfront, the Bank of China Tower, the Parthenon, Marmaris castle on the map's outline of it, the Knights' castle in Fethiye on walls traced from the air (`ring`), Fethiye's Lycian rock tombs, Telmessos's theatre and the sarcophagi in its streets, Atatürk's statues on both seafronts, the great Turkish flags over both castles, the yachts ashore on their cradles in Marmaris's Adaköy yard, Sochi's sea terminal and its spire, the Statue of Liberty on Fort Wood's star, the Verrazzano-Narrows Bridge, the Brooklyn Bridge's granite towers, One World Trade Center and the Gold Coast's Q1 (a
   landmark with `clear` leaves out the map's own building in its place). `land.js` lays each course in clear water (its marks, its line, the water below it where the
   fleet waits, the beat out towards the laylines, and every leg from end to end, all on the baked map of the sea
   room), and not across a bridge too low for a mast (St Petersburg's drawbridges). An AC75's course, 2.5 times as
@@ -227,7 +227,10 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   stern-to along the town quays (`gulets`: the shore by the streets it names, the json's `moor`), and boats that come
   and go, moved by `skopea.js` on the race's clock, all picture: the fast ferries to Rhodes and the water taxis on their
   `routes` (each found on the water by the bake, the cheapest way on the sea room's grid that keeps off the shore and
-  skirts the race area) and Fethiye's kitesurfers off Çalış beach (`kites`).
+  skirts the race area), New York's orange Staten Island ferries (`si`), and the kitesurfers off Fethiye's Çalış beach and
+  St Kilda's (`kites`). Melbourne's, the Gold Coast's, New York's and Sochi's towers stand on the map's 3D parts too (`parts`:
+  where a tower is mapped as `building:part`s, its outline carrying only the podium's height), and New York's piers, which the
+  map's coastline makes land and the tiles give their sheds' roofs, are kept low (`quays`).
 - **The sounds of the boat and the sea:** made as they go, not recorded (`public/game/sfx.js`), each from what makes
   the real one: the wind a roar of brown noise and a hiss of pink in stereo, its gusts swelling on a slow random walk,
   from where the apparent wind comes, and from about 13 knots the rigging's moan; the water a rush that brightens with

@@ -1653,9 +1653,28 @@ function taxiGeo() { // a bay's wooden passenger boat, some 14 m: her blue topsi
   frustum(s, ins(wh, 0.06), ins(wh, 0.02), H.deck(0.77) + 1.45, H.deck(0.77) + 1.55, '#f4efe4', '#f4efe4');
   return strip(s.geo());
 }
+// a Staten Island ferry, some 94 m (the Molinari class): double-ended, all in the line's orange, three decks of windows
+// under the white wheelhouses at both ends, her hull's black boot at the water
+function siFerryGeo() {
+  const L = 94, B = 21, s = shell(), orange = '#e86a24', glass = '#232f38';
+  const oct = (hl, hw, e) => [[hw, hl - e], [hw * 0.45, hl], [-hw * 0.45, hl], [-hw, hl - e], [-hw, -hl + e], [-hw * 0.45, -hl], [hw * 0.45, -hl], [hw, -hl + e]];
+  frustum(s, oct(L * 0.47, B * 0.44, 9), oct(L * 0.5, B / 2, 10), -2.5, 0.6, '#1f1f22');
+  frustum(s, oct(L * 0.5, B / 2, 10), oct(L * 0.5, B / 2, 10), 0.6, 3.4, orange, '#c9c2b4');
+  let y = 3.4;
+  for (const [hl, hw] of [[L * 0.44, B / 2 - 0.6], [L * 0.4, B / 2 - 1.1], [L * 0.3, B / 2 - 2.2]]) {
+    const p = oct(hl, hw, 6);
+    frustum(s, p, p, y, y + 0.9, orange); frustum(s, p, p, y + 0.9, y + 2.1, glass); frustum(s, p, p, y + 2.1, y + 2.9, orange, '#d7d0c2');
+    y += 2.9;
+  }
+  for (const sd of [-1, 1]) {
+    box(s, 0, y + 1.1, sd * L * 0.27, 7, 2.2, 5, '#f2f0ea'); box(s, 0, y + 1.2, sd * L * 0.27 + sd * 2.55, 6.4, 1.1, 0.1, glass);
+    spar(s, [0, y + 2.2, sd * L * 0.22], [0, y + 6, sd * L * 0.22], 0.2, 0.12, '#e8e6e0', 5);
+  }
+  return strip(s.geo());
+}
 function movers() {
   const group = new THREE.Group(), list = [], mat = landMat(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0 }), 1); // (as the moored boats')
-  const geo = { ferry: fastFerryGeo(), taxi: taxiGeo() }, SPEED = { ferry: 9, taxi: 4.5 }, WAIT = { ferry: 240, taxi: 90 };
+  const geo = { ferry: fastFerryGeo(), taxi: taxiGeo(), si: siFerryGeo() }, SPEED = { ferry: 9, taxi: 4.5, si: 8 }, WAIT = { ferry: 240, taxi: 90, si: 300 };
   (META.routes || []).forEach((r, ri) => {
     const pts = r.pts, cum = [0];
     for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
@@ -1712,7 +1731,7 @@ function movers() {
 
 // ---------- the landmarks ----------
 // what the json lists: a steel arch bridge (Sydney Harbour), a suspension bridge (Newport's, the Golden Gate, the Verrazzano-Narrows, the Brooklyn Bridge), a tower
-// (Auckland's Sky Tower, Laboe's naval memorial, Galata, the Transamerica Pyramid, Torre Glòries), a lighthouse (Trieste's
+// (Auckland's Sky Tower, Laboe's naval memorial, Galata, the Transamerica Pyramid, Torre Glòries, One World Trade Center, Q1), a lighthouse (Trieste's
 // Victory, the Maiden's Tower), a mosque (Istanbul's, St Petersburg's), a spire (St Petersburg's gilded ones, Sochi's sea terminal), a rostral column,
 // the Alexander Column, St Isaac's, the Saviour on the Spilled Blood, the Kazan Cathedral, the Exchange, the Kunstkamera's
 // tower, a drawbridge with its spans raised, a hilltop castle (Marmaris's, Fethiye's ruin), Fethiye's rock tombs, theatre and sarcophagi, a
@@ -1920,6 +1939,39 @@ function goldenGateTower(P, ang, u, D, H, col, parts) {
   for (const [y0, d] of [[D + 37, 9], [D + 79, 8.5], [D + 116, 8], [H - 12, 9]]) put(y0, y0 + d, 7, 28, 0);
   for (const sd of [-1, 1]) parts.push(beam(at(14, -13 * sd), at(D - 9, 13 * sd), 3, 3, col));
   put(D - 9, D - 4, 7, 28, 0); put(12, 16, 9, 28, 0);
+}
+// both sides of each triangle (a, b, c: [x, y, z]), into one geometry in one colour
+function twoSided(tris, col) {
+  const pos = []; for (const [a, b, c] of tris) pos.push(...a, ...b, ...c, ...a, ...c, ...b);
+  return tint(fromTris(pos), col);
+}
+// One World Trade Center (Childs, 2014): the 57 m cube of its base, 61 m a side (L.b one of its corners); from it the
+// square's edges chamfered away into eight tall triangles of glass, up to the roof's square turned 45°; the parapet,
+// 417 m up, and the spire on it to L.h
+function oneWtc(L, parts) {
+  const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), a0 = Math.atan2(L.b[1] - z, L.b[0] - x), glass = '#8ea4b4', R0 = 43, R1 = 31, Y1 = y + 57, Y2 = y + 404;
+  const pt = (a, r, yy) => [x + Math.cos(a) * r, yy, z + Math.sin(a) * r], Bc = (k, yy) => pt(a0 + (k * Math.PI) / 2, R0, yy), Tc = (k, yy) => pt(a0 + Math.PI / 4 + (k * Math.PI) / 2, R1, yy);
+  const tris = [];
+  for (let k = 0; k < 4; k++) {
+    tris.push([Bc(k, y - 2), Bc(k + 1, y - 2), Bc(k + 1, Y1)], [Bc(k, y - 2), Bc(k + 1, Y1), Bc(k, Y1)]); // the base's walls
+    tris.push([Bc(k, Y1), Bc(k + 1, Y1), Tc(k, Y2)], [Tc(k - 1, Y2), Tc(k, Y2), Bc(k, Y1)]); // the chamfers, up and down
+    tris.push([Tc(k, Y2), Tc(k + 1, Y2), [x, Y2, z]]);
+  }
+  parts.push(twoSided(tris, glass));
+  const ring = []; for (let k = 0; k < 4; k++) ring.push([Tc(k, Y2), Tc(k + 1, Y2), Tc(k + 1, Y2 + 13)], [Tc(k, Y2), Tc(k + 1, Y2 + 13), Tc(k, Y2 + 13)]);
+  parts.push(twoSided(ring, '#c9d2d8'));
+  parts.push(post(x, z, Y2, 7, 5, 13, '#7f8a90', 8), post(x, z, Y2 + 13, 2.2, 0.5, L.h - 417, '#e2e5e6', 8));
+  for (const h of [450, 480]) parts.push(post(x, z, y + h, 3.4, 3.4, 1.2, '#d0d5d8', 10));
+}
+// Q1 on Surfers Paradise (2005): its long oval of pale blue glass, narrowing up to the glass crown over the 78th floor
+// and the spire's white lattice to L.h; along L.dir its oval's length (the map's part, measured)
+function q1(L, parts) {
+  const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), F = frameOf(L, y), [cx, cz] = F.xz(0, 0);
+  const g = new THREE.LatheGeometry([[1, 0], [1, 150], [0.98, 215], [0.9, 235], [0.62, 252], [0.3, 268], [0.08, 276]].map(([r, h]) => new THREE.Vector2(r, h)), 24);
+  g.scale(L.la || 24, 1, L.lb || 16);
+  parts.push(tint(g.rotateY(-F.ang).translate(cx, y - 1, cz), '#7f9fb4'));
+  parts.push(tint(new THREE.LatheGeometry([[1.04, 0], [1.04, 6]].map(([r, h]) => new THREE.Vector2(r, h)), 24).scale(L.la || 24, 1, L.lb || 16).rotateY(-F.ang).translate(cx, y - 1, cz), '#d9d6cf')); // the podium's white band
+  parts.push(post(cx, cz, y + 262, 2.6, 0.35, L.h - 262, '#eceeee', 6));
 }
 // The Transamerica Pyramid: the white quartz pyramid on its trussed base, the two wings (the lifts' to the east, the
 // stairs' to the west) rising out of its sides to its shoulders, the spire
@@ -2305,7 +2357,9 @@ function landmarks() {
           parts.push(beam(p(i), p(i + 1), 1.6, 2.4, steel));
         }
         parts.push(tint(new THREE.SphereGeometry(8, 16, 10).translate(x, y + top + 4, z), '#3b4a55'), post(x, z, y + top + 11, 1.4, 0.4, H - top - 11, steel, 8));
-      } else if (L.style === 'pyramid') pyramid(L, parts);
+      } else if (L.style === 'owtc') oneWtc(L, parts);
+      else if (L.style === 'q1') q1(L, parts);
+      else if (L.style === 'pyramid') pyramid(L, parts);
       else if (L.style === 'glories') glories(L, parts);
       else if (L.style === 'laboe') laboe(L, parts);
     } else if (L.kind === 'lighthouse') {
