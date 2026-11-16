@@ -1823,7 +1823,15 @@ export class World {
       cam.fov = 55;
     } else if (this.mode === 'helm') {
       if (this.lookHold <= 0) this.look *= Math.exp(-dt * 1.5); else this.lookHold -= dt;
-      const v = this.boatViews[0], side = P.twa >= 0 ? 1 : -1;
+      // the helmsman sits to windward and crosses the boat as she tacks or gybes, over a second or so rather than in
+      // one frame; the wind must be 3° on the other side first, so hanging head to wind doesn't throw him to and fro.
+      // Coming to this view (or back to the game) he is already on his side.
+      const tw = P.twa / D2R, H = this.helmX;
+      if (!H || now - H.seen > 250 || H.race !== this.race) this.helmX = { side: tw >= 0 ? 1 : -1, from: tw >= 0 ? 1 : -1, to: tw >= 0 ? 1 : -1, u: 1, seen: now, race: this.race };
+      const X = this.helmX; X.seen = now;
+      if (tw * X.to < -3) { X.from = X.side; X.to = -X.to; X.u = 0; }
+      X.u = Math.min(1, X.u + cdt / 1.2);
+      const side = X.side = lerp(X.from, X.to, X.u * X.u * (3 - 2 * X.u)), v = this.boatViews[0];
       v.tilt.updateMatrixWorld(true);
       const [ex, ey, ez] = v.eye || [1.4, 2.65, 4.4]; // the helm's eye on the JPK 1050, at the tiller on the side deck; another class's own (boats3d.js)
       const eye = new THREE.Vector3(side * ex, ey, ez).applyMatrix4(v.tilt.matrixWorld);
