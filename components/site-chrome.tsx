@@ -57,7 +57,6 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
           <Link className="hm-tab" href="/help" {...cur('help')}>{t('How to play', 'Как играть')}</Link>
           <Link className="hm-tab" href="/learn" {...cur('learn')}>{t('Learn to race', 'Учись гоняться')}</Link>
           <Link className="hm-tab hm-tab-x" href="/faq" {...cur('faq')}>{t('Questions', 'Вопросы')}</Link>
-          <Link className="hm-tab hm-tab-x" href="/iyt" {...cur('iyt')}>{'Sailing Certification Test'}</Link>
         </nav>
         {/* a guest's way to sign in, in the bar where there's room (else in the menu); signed in, the avatar says who */}
         <Link className="hm-signin if-guest" href="/sign-in" {...cur('signin')}>{t('Sign in', 'Войти')}</Link>
@@ -84,7 +83,6 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
           <Link href="/race/drills">{t('Drills', 'Тренировки')}</Link>
           <Link href="/race/badges">{t('Badges', 'Значки')}</Link>
           <Link href="/faq">{t('Questions', 'Вопросы')}</Link>
-          <Link href="/iyt">{'Sailing Certification Test'}</Link>
           <Link className="if-me me-name" href="/settings" /><Link className="if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link>
           <a href="https://www.rycrentals.com/">rycrentals.com</a>
           <a href="https://www.rycsailing.com/">rycsailing.com</a>

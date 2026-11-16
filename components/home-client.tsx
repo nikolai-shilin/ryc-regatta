@@ -40,7 +40,6 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <Link className="hm-mi" href="/help">{t('How to play', 'Как играть')}</Link>
           <Link className="hm-mi" href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
           <Link className="hm-mi hm-mi-x" href="/faq">{t('Questions', 'Вопросы')}</Link>
-          <Link className="hm-mi hm-mi-x" href="/iyt">{'Sailing Certification Test'}</Link>
         </nav>
       </div>
     </details>
