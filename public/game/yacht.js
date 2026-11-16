@@ -101,8 +101,9 @@ function section(t, s) {
 //
 // Where the hull meets the sea it is wet: the long swell (the same wave trains the boats ride, SEA, which world.js
 // points at its water's) runs up and down the topsides and leaves them dark and glossy for a hand's width above it;
-// under way the bow wave climbs the stem as a sheet of white water, higher the faster she goes, and a lower one wraps
-// the quarters. uSpd (0–1) and uHalfL (half her drawn length) are each boat's own (hullSea, set in world.js's settle).
+// under way the bow wave and its spray wet her higher forward, the faster she goes the higher, and the quarter wave
+// a little aft. The white water itself is the sea's (world.js's wake field and hull contact), not painted on her.
+// uSpd (0–1) and uHalfL (half her drawn length) are each boat's own (hullSea, set in world.js's settle).
 export const SEA = { uTime: { value: 0 }, uW: { value: Array.from({ length: 8 }, () => new THREE.Vector4()) }, uWs: { value: new Array(8).fill(0) } };
 export function hullMaterial(hull, stripe, bottom = '#5b1f24') { // bottom: the antifouling, the player's choice (dark red on the others)
   const m = new THREE.MeshPhysicalMaterial({ color: hull, roughness: 0.32, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.1, side: THREE.DoubleSide });
@@ -127,14 +128,9 @@ export function hullMaterial(hull, stripe, bottom = '#5b1f24') { // bottom: the 
         // water's line along her, the wet band reaches above it, and the white water fills up to it, broken in streaks
         float hS = -vLP.z / uHalfL, hK = uHalfL / 5.2;
         float bowW = uSpd * hK * (0.26 * smoothstep(0.3, 0.9, hS) * (1.0 - smoothstep(0.97, 1.08, hS)) + 0.08 * smoothstep(-0.55, -0.95, hS));
-        float dh = vWP.y - hullSea(vWP.xz) - bowW; // above the raised line (+) or in the white water below it
-        float wet = 1.0 - smoothstep(0.0, 0.08 + 0.18 * uSpd * hK, dh);
-        float n1 = 0.5 + 0.5 * sin(vLP.z * 11.0 + vLP.y * 17.0 - uTime * 5.0 + 2.0 * sin(vLP.z * 4.3 + uTime * 1.7));
-        float n2 = 0.5 + 0.5 * sin(vLP.z * 6.7 - vLP.y * 23.0 + uTime * 3.1);
-        float froth = smoothstep(0.3, 0.75, n1 * 0.6 + n2 * 0.4); // the foam torn into patches, running aft
-        float white = (1.0 - smoothstep(-0.02, 0.03, dh)) * (0.3 + 0.7 * smoothstep(-0.1, 0.0, dh)) * smoothstep(0.03, 0.16, bowW) * smoothstep(0.2, 0.6, hS) * froth;
-        diffuseColor.rgb *= 1.0 - 0.28 * wet * (1.0 - under * 0.5);
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92, 0.95, 0.97), clamp(white, 0.0, 0.75));`)
+        float dh = vWP.y - hullSea(vWP.xz) - bowW; // height above the wetted line
+        float wet = 1.0 - smoothstep(-0.04, 0.12 + 0.2 * uSpd * hK, dh);
+        diffuseColor.rgb *= 1.0 - 0.22 * wet * (1.0 - under * 0.5);`)
       .replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>
         material.clearcoat *= max(1.0 - under, wet); material.roughness = mix(mix(material.roughness, 0.75, under), 0.12, wet * 0.8);`);
   };
