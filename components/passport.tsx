@@ -39,7 +39,7 @@ const IconStamp = ({ s = 18 }: { s?: number }) => (
   </svg>
 );
 
-// Home's venues, one a day: each you've raced stamped, today's lit, and over them how many you have and your streak
+// Home's venues, one a day: each you've raced tinted green, today's lit, and over them how many you have and your streak
 export function VenueList({ lang, today }: { lang: Lang; today: VenueId }) {
   const t = tx(lang), log = useLog();
   const p = log ? passport(log) : null, st = log ? streakOf(log.d) : null;
@@ -57,7 +57,7 @@ export function VenueList({ lang, today }: { lang: Lang; today: VenueId }) {
           const raced = !!p?.raced.has(v.id), name = t(...v.name);
           return (
             <li key={v.id} className={`${v.id === today ? 'today' : ''}${raced ? ' raced' : ''}`.trim() || undefined} title={raced ? t(`You’ve raced at ${name}`, `Ты уже гонялся в ${name}`) : undefined}>
-              {raced ? <IconStamp s={12} /> : null}{v.id === today ? t(`${v.name[0]} · today`, `${v.name[1]} · сегодня`) : name}
+              {v.id === today ? t(`${v.name[0]} · today`, `${v.name[1]} · сегодня`) : name}
             </li>
           );
         })}

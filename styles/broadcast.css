@@ -582,9 +582,7 @@
 .bc .ho-venues-w .ho-venues { flex: none; }
 .bc .ho-venues li { display: inline-flex; align-items: center; gap: var(--s-2); }
 .bc .ho-venues li.raced { background: rgba(46, 230, 160, 0.14); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(46, 230, 160, 0.45); }
-.bc .ho-venues li.raced svg { color: var(--up); flex: none; }
 .bc .ho-venues li.today.raced { background: var(--you); color: var(--ink-on); }
-.bc .ho-venues li.today.raced svg { color: var(--ink-on); }
 .bc .ho-pass { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-4); margin: 0; font: 600 var(--fs-body)/1.3 var(--cond); color: var(--ink-2); }
 .bc .ho-pass b { font: 800 var(--fs-lead)/1 var(--cond); color: var(--ink); text-transform: uppercase; letter-spacing: var(--ls-button); }
 .bc .ho-pass span { color: var(--gold); text-transform: uppercase; letter-spacing: var(--ls-button); font-weight: 700; }
