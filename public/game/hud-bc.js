@@ -221,24 +221,17 @@ const CSS = `
 .b-you .c-pos { width: 48px; padding: 0 !important; align-items: center; background: var(--you); color: var(--ink-on); font: 700 var(--fs-h3)/1 var(--cond); }
 .b-you .c-nm { flex-direction: row; align-items: center; gap: var(--s-3); padding-left: var(--s-5); }
 .b-you .c-nm i { width: 6px; height: 30px; background: var(--you); }
-/* your flag and sail number, "You" under them; the blue bar where you fly no flag */
+/* your flag and sail number; the blue bar where you fly no flag */
 #hud.bc .b-you .c-nm .b-fl { width: 30px; height: 20px; }
 .b-you .c-nm .b-fl:not([hidden]) + i { display: none; }
 .b-you .c-nmt { display: flex; flex-direction: column; gap: var(--s-2); white-space: nowrap; }
-.b-you { display: flex; align-items: stretch; height: 78px; }
-.b-you { padding-right: var(--s-1); }
-.b-you > div { display: flex; flex-direction: column; justify-content: center; gap: var(--s-2); padding: 0 var(--s-5); }
-.b-you > div + div { border-left: 1px solid var(--rule); }
-.b-you .c-pos { width: 48px; padding: 0 !important; align-items: center; background: var(--you); color: var(--ink-on); font: 700 var(--fs-h3)/1 var(--cond); }
-.b-you .c-nm { flex-direction: row; align-items: center; gap: var(--s-3); padding-left: var(--s-5); }
-.b-you .c-nm i { width: 6px; height: 30px; background: var(--you); }
-/* your flag and sail number, "You" under them; the blue bar where you fly no flag */
-#hud.bc .b-you .c-nm .b-fl { width: 30px; height: 20px; }
-.b-you .c-nm .b-fl:not([hidden]) + i { display: none; }
-.b-you .c-nmt { display: flex; flex-direction: column; gap: var(--s-2); white-space: nowrap; }
+/* the name on the numbers' line: down by a label's line and the gap under it */
+.b-you .c-nm { padding-top: calc(var(--fs-label) + var(--s-2)); }
 .b-you .c-leg { display: none; }
 .b-you .b-v { display: flex; align-items: baseline; gap: var(--s-2); white-space: nowrap; }
-.b-you .b-g { position: relative; width: 100px; height: 3px; background: var(--fill-3); }
+.b-you .b-g { position: absolute; left: var(--s-5); bottom: 7px; width: 100px; height: 3px; background: var(--fill-3); }
+/* (the bar hangs under the number, out of the flow, so this cell's label and number sit where the others' do) */
+.b-you .c-pct { position: relative; }
 .b-you .b-g i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink); transition: width .6s var(--ease), background-color .4s; }
 .b-you .b-g::after { content: ''; position: absolute; left: 90.9%; top: -3px; width: 2px; height: 9px; background: var(--ink); }
 .b-you .good { color: var(--up); } .b-you .b-g.good i { background: var(--up); }
