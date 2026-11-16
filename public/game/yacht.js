@@ -11,6 +11,7 @@ import { rigidSkin } from './skin.js';
 import { sponsor } from './sponsor.js';
 import { D2R, NO_GO, clamp, lerp, waveHeight } from './sim.js';
 import { VENUE } from './venues.js';
+import { SWELL_GLSL } from './ocean.js';
 // a file next to this module, by the address the page's import map gives it: its content's hash after a deploy
 // (scripts/stamp-game.mjs), so it is cached for good; the plain address where there is none (npm run dev)
 const fileAt = (f) => (import.meta.resolve ? import.meta.resolve(`./${f}`) : new URL(f, import.meta.url).href);
@@ -116,7 +117,8 @@ export function hullMaterial(hull, stripe, bottom = '#5b1f24') { // bottom: the 
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
       uniform vec3 uStripe, uBottom; uniform float uTime, uSpd, uHalfL; uniform vec4 uW[8]; uniform float uWs[8];
       varying float vBand; varying float vY; varying vec3 vWP, vLP;
-      float hullSea(vec2 xz) { float h = 0.0; for (int i = 0; i < 5; i++) h += uW[i].w * sin(uW[i].z * dot(uW[i].xy, xz) - uWs[i] * uTime + float(i) * 1.7); return h; }`)
+      ${SWELL_GLSL}
+      float hullSea(vec2 xz) { float h = 0.0; for (int i = 0; i < 5; i++) h += uW[i].w * swellG(i, xz) * sin(uW[i].z * dot(uW[i].xy, xz) - uWs[i] * uTime + float(i) * 1.7); return h; }`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         float aa = fwidth(vY) * 1.2, ab = fwidth(vBand) * 1.2;
         float boot = smoothstep(0.07 - aa, 0.07 + aa, vY) * (1.0 - smoothstep(0.19 - aa, 0.19 + aa, vY));

@@ -115,6 +115,29 @@ vec2 fftFine(vec2 xz, vec2 k) {
   if (uFftN > 1.5 && k.x > 0.0) { vec2 w = fftAxis(0.41); g += fftBack(texture2D(uFftS1, fftQ(xz, w, uFftL.y) + vec2(0.37, 0.71)).xy, w) * k.x; }
   if (uFftN > 2.5 && k.y > 0.0) { vec2 w = fftAxis(-0.53); g += fftBack(texture2D(uFftS2, fftQ(xz, w, uFftL.z) + vec2(0.13, 0.29)).xy, w) * k.y; }
   return g;
+}
+// Caustics: the light the surface focuses on whatever lies d metres under it. Each wave bends the sun's rays as a
+// lens does (by 1 − 1/1.33 of its tilt), the crests gathering them and the troughs spreading them, so a point lit
+// through a crest's curvature lap (the height's Laplacian) gets 1 / (1 + 0.25·d·lap) of the light. Through the
+// 40 m and 9 m layers (the ripples' focus is finer than anything drawn under the water), traced back towards the
+// sun to where the light came in, and blurred out with the depth (the sun's own size, and the waves' spread).
+vec2 fftGrad(vec2 xz) { return fftSlope(xz).xy + fftFine(xz, vec2(1.0, 0.0)); }
+float fftCaustic(vec2 xz, float d, vec3 sun) {
+  if (uFftOn < 0.5 || d <= 0.0) return 1.0;
+  vec2 q = xz + sun.xz / max(sun.y, 0.25) * d * 0.75;
+  const float e = 0.15;
+  float lap = (fftGrad(q + vec2(e, 0.0)).x - fftGrad(q - vec2(e, 0.0)).x + fftGrad(q + vec2(0.0, e)).y - fftGrad(q - vec2(0.0, e)).y) / (2.0 * e);
+  float I = 1.0 / max(1.0 + 0.25 * d * lap, 0.3);
+  return mix(1.0, clamp(I, 0.35, 2.8), exp(-d / 5.0));
+}`;
+
+// the swell's sets (sim.js waveGroup): train i's height, as a factor, at xz. For the shaders that sum the trains,
+// after their uniforms uW (direction, k, A), uWs (ω) and uTime
+export const SWELL_GLSL = /* glsl */ `
+float swellG(int i, vec2 xz) {
+  vec4 W = uW[i]; float ga = mod(float(i), 2.0) > 0.5 ? 0.2 : -0.2, g = W.z * 0.11;
+  vec2 d = vec2(W.x * cos(ga) - W.y * sin(ga), W.x * sin(ga) + W.y * cos(ga));
+  return 1.0 + (i < 3 ? 0.35 : 0.2) * sin(g * dot(d, xz) - g * uWs[i] / (2.0 * W.z) * uTime + float(i) * 3.91);
 }`;
 
 let black = null;

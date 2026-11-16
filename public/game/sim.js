@@ -36,15 +36,32 @@ export function makeWaves(amp, windFrom) {
     return { dx: Math.sin(a), dz: -Math.cos(a), k, A, w: Math.sqrt(9.81 * k), ph: i * 1.7, Q: A > 0 ? Math.min(1, steep / (k * A * parts.length)) : 0 };
   });
 }
+// A real sea's waves come in sets: each train's height rises and falls along it in groups some nine of its
+// wavelengths long, which travel at half the waves' own speed (the group velocity), the groups' crests turned a
+// little off the waves' own so they are patches and not stripes. So the swell never settles into one repeating
+// pattern. The same in every shader that sums the trains (ocean.js SWELL_GLSL): keep the two alike. Only the
+// picture has them (waveHeight, seaSlope); the boats' speed is the plain trains' (waveSlope).
+export function waveGroup(p, i, x, z, t) {
+  const ga = i % 2 ? 0.2 : -0.2, g = p.k * 0.11, c = Math.cos(ga), s = Math.sin(ga);
+  const dx = p.dx * c - p.dz * s, dz = p.dx * s + p.dz * c;
+  return 1 + (i < 3 ? 0.35 : 0.2) * Math.sin(g * (dx * x + dz * z) - g * (p.w / (2 * p.k)) * t + i * 3.91);
+}
 export function waveHeight(W, x, z, t) {
   let h = 0;
-  for (const p of W) h += p.A * Math.sin(p.k * (p.dx * x + p.dz * z) - p.w * t + p.ph);
+  for (let i = 0; i < W.length; i++) { const p = W[i]; h += p.A * waveGroup(p, i, x, z, t) * Math.sin(p.k * (p.dx * x + p.dz * z) - p.w * t + p.ph); }
   return h;
 }
-// the slope of the sea along a direction (ux, uz): + uphill; `n` only the first n trains (the long swell)
+// the slope of the sea along a direction (ux, uz): + uphill; `n` only the first n trains (the long swell). What the
+// boats feel (their speed, their surfing): the trains without their sets, so a race sails as it always has
 export function waveSlope(W, x, z, t, ux, uz, n = W.length) {
   let s = 0;
   for (let i = 0; i < n; i++) { const p = W[i]; s += p.A * p.k * (p.dx * ux + p.dz * uz) * Math.cos(p.k * (p.dx * x + p.dz * z) - p.w * t + p.ph); }
+  return s;
+}
+// …and as it is drawn, with the sets (waveHeight's): what a hull or a buoy is tilted by
+export function seaSlope(W, x, z, t, ux, uz, n = W.length) {
+  let s = 0;
+  for (let i = 0; i < n; i++) { const p = W[i]; s += p.A * waveGroup(p, i, x, z, t) * p.k * (p.dx * ux + p.dz * uz) * Math.cos(p.k * (p.dx * x + p.dz * z) - p.w * t + p.ph); }
   return s;
 }
 
