@@ -89,7 +89,7 @@ export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: 
   const t = tx(lang);
   const [o, setO] = useState<Pick<Opts, Keys>>(DEFAULTS);
   useEffect(() => { setO(readOpts()); }, []);
-  const set = <K extends Keys>(k: K, v: Opts[K]) => { saveOpts({ [k]: v }); setO((x) => ({ ...x, [k]: v })); };
+  const set = <K extends Keys>(k: K, v: Opts[K]) => { saveOpts({ [k]: v, ...(k === 'autoTrim' && { trimV: 1 }) }); setO((x) => ({ ...x, [k]: v })); };
 
   const seg = <K extends Keys>(k: K, label: string, opts: [Opts[K], string][], hint?: string) => (
     <div className="srow srow-seg">

@@ -26,7 +26,7 @@ export function SiteMenu({ lang }: { lang: Lang }) {
       <summary className="hm-prof" aria-label={t('Menu', 'Меню')}><IconBurger /><span className="hm-av"><IconUser /><span className="me-ini" /></span></summary>
       <div className="hm-menu-pop">
         <Link className="hm-mi hm-mi-signin if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link>
-        <Link className="hm-mi" href="/fleet">{t('The fleet', 'Флот')}</Link>
+        <Link className="hm-mi" href="/yachts">{t('The yachts', 'Яхты')}</Link>
         <Link className="hm-mi" href="/boat">{t('Your boat', 'Твоя яхта')}</Link>
         <Link className="hm-mi" href="/settings">{t('Settings', 'Настройки')}</Link>
         <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы')}>

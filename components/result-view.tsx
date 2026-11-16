@@ -17,7 +17,7 @@ import { courseDistance, fmtDistance, legDistances, shapeOf, SHAPE_NAME, type Sh
 import { finishScene, neighbours, raceVenue, type Pose } from '@/lib/finish';
 import { venueOf } from '@/lib/venues';
 import { readOpts } from '@/lib/opts';
-import { bestLeg, costliest, startOf } from '@/lib/race-log';
+import { costliest, goodLeg, startOf } from '@/lib/race-log';
 import { streakOf, todayUtc } from '@/lib/log';
 import { streakWords, useLog } from './passport';
 import { Replay } from './replay';
@@ -222,7 +222,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
 
   // the race in four numbers, as the broadcast's finish has them: each only when the race kept what it needs (a result
   // saved before the game kept the leg times, the gybes and the top speed shows fewer, or none)
-  const st = startOf(L, res.boats), bl = bestLeg(res.boats), pens = me.pens ?? L.fouls.length;
+  const lost = costliest(res.boats), st = startOf(L, res.boats), bl = goodLeg(res.boats, lost?.seg), pens = me.pens ?? L.fouls.length;
   const num = (x: number) => x.toFixed(1).replace('.', lang === 'ru' ? ',' : '.');
   const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
   const endW = { pin: t('at the pin end', 'у пина'), boat: t('at the boat end', 'у судейского судна'), middle: t('mid-line', 'в середине линии') };
@@ -268,7 +268,6 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
     }
   }
   // where you lost most to the boat just ahead, a tile of the debrief's beside your best leg
-  const lost = costliest(res.boats);
   if (lost) tiles.splice(Math.min(2, tiles.length), 0, { k: t('Most lost', 'Больше всего потеряно'), v: num(lost.lost), u: t('s', 'с'),
     s: [lost.seg === 0 ? t('Off the start line', 'На старте') : t(`Leg ${lost.seg} (${legName(res.course.legs[lost.seg]).toLowerCase()})`, `Отрезок ${lost.seg} (${legName(res.course.legs[lost.seg]).toLowerCase()})`),
       lost.name ? t(`against ${lost.name}`, `против ${lost.name}`) : ''].filter(Boolean).join(', ') });

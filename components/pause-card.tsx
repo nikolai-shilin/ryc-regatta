@@ -75,7 +75,7 @@ function Settings({ lang, back, close }: { lang: Lang; back: string; close: () =
   const [o, setO] = useState<Pick<Opts, Keys>>(DEFAULTS);
   const [touch, setTouch] = useState(false);
   useEffect(() => { setO(readOpts()); setTouch(matchMedia('(pointer: coarse)').matches); }, []);
-  const set = <K extends Keys>(k: K, v: Opts[K]) => { saveOpts({ [k]: v }); setO((x) => ({ ...x, [k]: v })); };
+  const set = <K extends Keys>(k: K, v: Opts[K]) => { saveOpts({ [k]: v, ...(k === 'autoTrim' && { trimV: 1 }) }); setO((x) => ({ ...x, [k]: v })); };
 
   const seg = <K extends Keys>(k: K, label: string, opts: [Opts[K], string][]) => (
     <div className="bt-part">

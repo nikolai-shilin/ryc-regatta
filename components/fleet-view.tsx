@@ -4,23 +4,26 @@ import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { saveOpts } from '@/lib/opts';
 import { YACHTS, yachtOf, type YachtId } from '@/lib/yachts';
+import { DAILY_YACHTS, dailyYacht } from '@/lib/race';
 import { IconPlay, IconSail, IconBoats, IconBack, IconArrow, IconGrid } from './ui';
-import { LoadBar } from './skeleton';
+import { LoadBar, ScenePoster } from './skeleton';
 import { SceneBrand } from './scene-brand';
 
 // The fleet: every yacht you can race afloat together in one scene (/fleet-view, Lake Garda on a summer evening, in
 // your colours), the drone flying from one to the next — up and out until both are in the frame, across, and down to
 // her — with what she is, her numbers and how she sails in the game beside her. It tours the fleet by itself, a yacht
 // every DWELL seconds once the drone is there; picking one, the arrows or taking hold of the view stops the tour, and
-// the play button starts it again. All shows the whole fleet from up and back.
+// the play button starts it again. All shows the whole fleet from up and back. The site's one yachts page, /yachts
+// (/fleet, its old address, comes here too): `tour` false when you came for one yacht (?y=), so it stays on her.
 const DWELL = 9;
 
-export function FleetView({ lang, start, back }: { lang: Lang; start: YachtId | null; back: ReactNode }) {
+export function FleetView({ lang, start, back, tour = true }: { lang: Lang; start: YachtId | null; back: ReactNode; tour?: boolean }) {
   const t = tx(lang);
   const [id, setId] = useState<YachtId | null>(start);
   const [shown, setShown] = useState<YachtId>(start ?? YACHTS[0].id); // the words stay on the last yacht while the fleet shows
   const [down, setDown] = useState(false);
-  const [auto, setAuto] = useState(true);
+  const [auto, setAuto] = useState(tour);
+  const [today] = useState<YachtId>(() => dailyYacht()); // today's race's yacht, fixed for the page's life
   const [live, setLive] = useState(false);
   const [landed, setLanded] = useState(0); // the flights that have landed: the tour's clock restarts on each
   const [there, setThere] = useState(false); // the drone is at the yacht picked, not on its way
@@ -96,13 +99,14 @@ export function FleetView({ lang, start, back }: { lang: Lang; start: YachtId | 
 
   return (
     <div className="bt fl-view">
-      <LoadBar label={t('Loading the fleet', 'Загружаем флот')} on={!live} />
-      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src="/fleet-view?wind=light" title={t('The fleet in 3D', 'Флот в 3D')}
+      <LoadBar label={t('Loading the yachts', 'Загружаем яхты')} on={!live} />
+      <ScenePoster label={t('Loading the yachts', 'Загружаем яхты')} on={!live} />
+      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src="/fleet-view?wind=light" title={t('The yachts in 3D', 'Яхты в 3D')}
         onLoad={() => post({ type: 'hello' })} />
 
       <div className="bt-info" ref={info}>
         <div className="bt-top">{back}<SceneBrand /></div>
-        <span className="bt-kick">{t('The fleet', 'Флот')} <span className="fl-n">{id ? `${String(n).padStart(2, '0')} / ${String(YACHTS.length).padStart(2, '0')}` : t('All yachts', 'Все яхты')}</span></span>
+        <span className="bt-kick">{t('The yachts', 'Яхты')} <span className="fl-n">{id ? `${String(n).padStart(2, '0')} / ${String(YACHTS.length).padStart(2, '0')}` : t('All yachts', 'Все яхты')}</span></span>
         <h1 className="bt-h fl-h" key={shown}>{id ? t(...y.name) : t('Every yacht', 'Все яхты')}</h1>
         <p className="bt-p">{id ? <>{t(...y.kind)}. {t(...y.tagline)}</> : t('Six yachts afloat together, biggest first: from the America’s Cup’s foiler to a 14-foot dinghy. Pick one to fly to her.', 'Шесть яхт на воде вместе, от большой к маленькой: от летающей яхты Кубка Америки до 14-футового швертбота. Выбери, чтобы подлететь к ней.')}</p>
 
@@ -137,6 +141,12 @@ export function FleetView({ lang, start, back }: { lang: Lang; start: YachtId | 
           <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Downwind', 'Фордевинд')}</button>
         </div>
 
+        <p className="bt-hint">{shown === today
+          ? t('Today’s race is sailed in her, the same boat for everyone. A new yacht every day; any can sail a free race.', 'Сегодня гонка дня идёт на ней — у всех одна и та же лодка. Каждый день — новая яхта; в свободной гонке — любая.')
+          : shown in DAILY_YACHTS
+            ? t(`In a free race, the whole fleet sails her, and today’s race does on her days: a new yacht every day, today the ${yachtOf(today).name[0]}.`, `В свободной гонке на ней идёт весь флот, а в её дни — и гонка дня: каждый день новая яхта, сегодня ${yachtOf(today).name[1]}.`)
+            : t(`In a free race, the whole fleet sails her. Today’s race is sailed in a new yacht every day: today the ${yachtOf(today).name[0]}.`, `В свободной гонке на ней идёт весь флот. Гонка дня — каждый день на новой яхте: сегодня ${yachtOf(today).name[1]}.`)}</p>
+
         <div className="fl-stats">
           <div><span className="bt-sk">{t('Length', 'Длина')}</span><b>{t(...spec('Length')!.v)}</b></div>
           <div><span className="bt-sk">{t('Crew', 'Экипаж')}</span><b>{t(...spec('Crew')!.v)}</b></div>
@@ -163,7 +173,7 @@ export function FleetView({ lang, start, back }: { lang: Lang; start: YachtId | 
         </div>
 
         <div className="bt-rows">
-          <Link className="bt-row" href={`/yachts?y=${shown}`}><IconBoats s={18} /><span>{t('On her own', 'Отдельно')}</span><span className="bt-row-m">{t('The yachts', 'Яхты')}</span></Link>
+          {shown === today && <a className="bt-row" href="/play?race=today"><IconPlay /><span>{t('Today’s race', 'Гонка дня')}</span><span className="bt-row-m">{t('In her', 'На ней')}</span></a>}
           <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your colours', 'Твои цвета')}</span><span className="bt-row-m">{t('Every yacht', 'Для всех яхт')}</span></Link>
         </div>
       </section>

@@ -34,12 +34,14 @@ export function legTimes(b: LoggedBoat) {
 // Your best leg against the fleet: the one where your time placed best among the boats that sailed it, and of those
 // the one you won by most (or lost by least). leg is 1-based; by is the margin over the next boat when you were
 // fastest, else how far off the fastest. null without every boat's leg times (a result saved before them).
-export function bestLeg(boats: LoggedBoat[]) {
+// skip: a leg (1-based) not to name, the one the debrief already says cost you most, so the two tiles never name the same
+export function bestLeg(boats: LoggedBoat[], skip?: number) {
   const me = boats.find((b) => b.me);
   if (!me) return null;
   const mine = legTimes(me), all = boats.map(legTimes);
   let best: { leg: number; place: number; of: number; by: number } | null = null;
   mine.forEach((m, i) => {
+    if (i + 1 === skip) return;
     const others = all.filter((x) => x !== all[boats.indexOf(me)] && x[i] != null).map((x) => x[i]);
     if (!others.length) return;
     const place = others.filter((x) => x < m).length + 1, fastest = Math.min(...others);
@@ -48,6 +50,15 @@ export function bestLeg(boats: LoggedBoat[]) {
     if (better) best = { leg: i + 1, place, of: others.length + 1, by };
   });
   return best as { leg: number; place: number; of: number; by: number } | null;
+}
+
+// The debrief's best leg beside where you lost most: never the same leg (the two tiles would contradict each other),
+// and when that leaves only a leg in the back half of the fleet, none (a "best" that placed you last isn't one)
+export function goodLeg(boats: LoggedBoat[], lostSeg?: number) {
+  const bl = bestLeg(boats);
+  if (!bl || bl.leg !== lostSeg) return bl;
+  const next = bestLeg(boats, lostSeg);
+  return next && next.place <= Math.ceil(next.of / 2) ? next : null;
 }
 
 // Where you lost most to the boat that finished just ahead of you: the start (seg 0, how much later you crossed the

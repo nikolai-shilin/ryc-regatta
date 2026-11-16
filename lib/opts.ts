@@ -27,12 +27,12 @@ export type Opts = {
   music: Music; // the soundtrack's track (public/game/music.js), or none
   musicVol: Volume; // how loud the music is (public/game/main.js: MUSIC_VOL)
   sea: Sea; // how loud the sea and the wind are (public/game/main.js: SEA)
-  lastFree?: number; played?: number; fleetV: number; optsV: number; musicV: number;
+  lastFree?: number; played?: number; trimV?: number; fleetV: number; optsV: number; musicV: number;
 };
 
 export const DEFAULTS: Opts = {
   mode: 'daily', venue: 'gocek', yacht: 'jpk1050', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any',
-  autoTrim: 0, sound: 1, guides: 1, ghost: 0, gfx: 'auto', camera: 'drone', vibration: 1, voice: 1, music: 'racing', musicVol: 'normal', sea: 'normal', fleetV: 3, optsV: 4, musicV: 1, ghostV: 1,
+  autoTrim: 1, sound: 1, guides: 1, ghost: 0, gfx: 'auto', camera: 'drone', vibration: 1, voice: 1, music: 'racing', musicVol: 'normal', sea: 'normal', fleetV: 3, optsV: 4, musicV: 1, ghostV: 1,
 };
 
 export function readOpts(): Opts {

@@ -13,6 +13,11 @@ export const LoadBar = ({ label, on = true }: { label: string; on?: boolean }) =
   </div>
 );
 
+// The 3D scene's stand-in while its first frame loads: the sea's colours and what's coming (styles/ryc.css .bt-poster)
+export const ScenePoster = ({ label, on }: { label?: string; on: boolean }) => (
+  <div className={`bt-scene bt-poster${on ? ' on' : ''}`} aria-hidden="true">{label ? <span>{label}</span> : null}</div>
+);
+
 // The result page while its race is fetched: its own layout, the heading, the four numbers, the results card
 export function ResultSkeleton({ label }: { label: string }) {
   return (

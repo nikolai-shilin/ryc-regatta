@@ -90,11 +90,6 @@ export default async function Home({ params }: LangParams) {
     [t('Hold it any way you like', 'Держи как удобно'), t('Phone sideways, phone upright or a computer: the race screen lays itself out for each, and follows the phone if you turn it mid-race.', 'Телефон горизонтально, вертикально или компьютер: экран гонки подстраивается под каждый и поворачивается вместе с телефоном прямо в гонке.'), '/help#h-screen'],
     [t('Three views', 'Три вида'), t('The drone behind the boat, straight down from above, or from the helm. Switch any time; on a keyboard, X, C and V.', 'Дрон за лодкой, прямо сверху или со штурвала. Переключай в любой момент; на клавиатуре — X, C и V.'), '/help#h-views'],
   ];
-  const steps: [string, string, string][] = [
-    ['h-wind-v7', t('Pick a race', 'Выбери гонку'), t('Today’s race is the same for everyone. A free race is yours to set up: the wind, the fleet, the course. Either starts in one tap.', 'Гонка дня одна для всех. Свободную настраиваешь сам: ветер, флот, дистанцию. Любая начинается в одно касание.')],
-    ['h-start-v7', t('Win the start', 'Выиграй старт'), t('Hover below the line while the minute runs down, then cross it at full speed on the gun. Go too soon and the X flag sends you back.', 'Держись под линией, пока идёт минута, и пересеки её на полном ходу с сигналом. Поспешишь — флаг X отправит назад.')],
-    ['h-tack-v7', t('Round the marks', 'Обойди знаки'), t('Work the shifts up to the windward mark, run back down through the gate and take the gun. Signed in, your time goes on today’s ranking.', 'Лови заходы на лавировке к верхнему знаку, спустись через ворота и финишируй. Если ты вошёл, время попадёт в рейтинг дня.')],
-  ];
   // the hero's still under the game: the wide picture on a wide screen, the upright one on a phone — one <picture>, so
   // a browser fetches only the one it shows
   const hero = { alt: '', fill: true, sizes: '100vw', fetchPriority: 'high', loading: 'eager' } as const;
@@ -195,32 +190,18 @@ export default async function Home({ params }: LangParams) {
           </div>
         </section>
 
-        {/* 3 · the first four races: a path, so a first race isn't the last */}
+        {/* 3 · the first four races, each in its picture: a path, so a first race isn't the last (and what a race is) */}
         <section className="ho-sec" aria-labelledby="h-path">
           <div className="ho-sec-t"><span className="ho-k">{t('New to racing?', 'Впервые на гонке?')}</span><h2 className="ho-h2" id="h-path">{t('Your first four races', 'Твои первые четыре гонки')}</h2></div>
           <ol className="ho-path">
-            <li className="now"><span className="ho-n">1</span><span className="lbl is-you">{t(`Today · ${mins} min`, `Сегодня · ${mins} мин`)}</span><h3 className="ho-h3">{t('Just finish', 'Просто финишируй')}</h3><p className="ho-ps">{t('Sails on Auto, you only steer. Follow the call above your numbers.', 'Паруса на «Авто», ты только рулишь. Следуй подсказке над своими цифрами.')}</p></li>
-            <li><span className="ho-n">2</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Win the start', 'Выиграй старт')}</h3><p className="ho-ps">{t('Be a boat length behind the line, at full speed, as the gun goes.', 'Будь в корпусе от линии на полном ходу в момент сигнала.')}</p></li>
-            <li><span className="ho-n">3</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Play the shifts', 'Лови заходы')}</h3><p className="ho-ps">{t('Tack when the wind heads you. Every header you catch is a place.', 'Поворачивай, когда ветер заходит. Каждый пойманный заход — место.')}</p></li>
-            <li><span className="ho-n">4</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Race the ranking', 'Гоняйся за рейтингом')}</h3><p className="ho-ps">{t('Trim the sails yourself and go for today’s podium.', 'Настраивай паруса сам и иди в тройку дня.')}</p></li>
+            <li className="now"><span className="ho-pic ho-path-pic"><Image src="/images/h-steer-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">1</span><span className="lbl is-you">{t(`Today · ${mins} min`, `Сегодня · ${mins} мин`)}</span><h3 className="ho-h3">{t('Just finish', 'Просто финишируй')}</h3><p className="ho-ps">{t('Sails on Auto, you only steer. Follow the call above your numbers.', 'Паруса на «Авто», ты только рулишь. Следуй подсказке над своими цифрами.')}</p></li>
+            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-start-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">2</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Win the start', 'Выиграй старт')}</h3><p className="ho-ps">{t('Be a boat length behind the line, at full speed, as the gun goes.', 'Будь в корпусе от линии на полном ходу в момент сигнала.')}</p></li>
+            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-tack-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">3</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Play the shifts', 'Лови заходы')}</h3><p className="ho-ps">{t('Tack when the wind heads you. Every header you catch is a place.', 'Поворачивай, когда ветер заходит. Каждый пойманный заход — место.')}</p></li>
+            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-trim-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">4</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Race the ranking', 'Гоняйся за рейтингом')}</h3><p className="ho-ps">{t('Trim the sails yourself and go for today’s podium.', 'Настраивай паруса сам и иди в тройку дня.')}</p></li>
           </ol>
           <div className="ho-acts">
             <a className="ho-go" href={go}><IconPlay /><span>{t('Start race 1', 'Начать гонку 1')}</span></a>
             <Link className="ho-ghost" href="/help">{t('How to play, in 3 minutes', 'Как играть — за 3 минуты')}</Link>
-          </div>
-        </section>
-
-        {/* 4 · what a race is, in three pictures */}
-        <section className="ho-sec" aria-labelledby="h-how">
-          <div className="ho-sec-t"><span className="ho-k">{t('How a race goes', 'Как проходит гонка')}</span><h2 className="ho-h2" id="h-how">{t('A minute to the gun, then up and down', 'Минута до старта — и вверх-вниз')}</h2></div>
-          <div className="ho-steps">
-            {steps.map(([img, title, text], i) => (
-              <article className="ho-card ho-step" key={img}>
-                <span className="ho-pic"><Image src={`/images/${img}.jpg`} alt="" fill sizes="(min-width: 900px) 400px, 100vw" /></span>
-                <div className="ho-step-h"><span className="ho-step-n">{i + 1}</span><h3 className="ho-h3">{title}</h3></div>
-                <p className="ho-ps">{text}</p>
-              </article>
-            ))}
           </div>
         </section>
 

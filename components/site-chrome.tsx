@@ -78,7 +78,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
       <footer className="hm-foot">
         <span className="hm-foot-by">{t('Up and down · RYC race office', 'Up and down · офис регаты RYC')}</span>
         <nav className="hm-foot-links" aria-label={t('More', 'Ещё')}>
-          <Link href="/fleet">{t('The fleet', 'Флот')}</Link>
+          <Link href="/yachts">{t('The yachts', 'Яхты')}</Link>
           <Link href="/help">{t('How to play', 'Как играть')}</Link>
           <Link href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
           <Link href="/race/drills">{t('Drills', 'Тренировки')}</Link>

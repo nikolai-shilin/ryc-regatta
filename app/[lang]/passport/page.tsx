@@ -8,6 +8,7 @@ import { readPassport } from '@/lib/passport-share';
 import { BADGES } from '@/lib/badges';
 import { BadgePennant } from '@/components/badge-pennant';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
+import { OwnPassport } from '@/components/own-passport';
 
 type Props = { params: Promise<{ lang: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -47,6 +48,7 @@ export default async function Passport({ params, searchParams }: Props) {
         ) : null}
       </main>
       <SiteFoot lang={lang} t={t} back="/" />
+      {['s', 'v', 'b', 'vs', 'bb', 'n'].some((k) => sp[k] != null) ? null : <OwnPassport lang={lang} />}
     </div>
   );
 }

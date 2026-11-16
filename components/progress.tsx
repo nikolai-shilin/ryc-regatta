@@ -2,10 +2,11 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { tx, ruPlural, type Lang } from '@/lib/lang';
-import { BADGES, FAMS, type BadgeFam, type BadgeId } from '@/lib/badges';
+import { BADGES, FAMS, badgeNear, type BadgeFam, type BadgeId, type Near } from '@/lib/badges';
 import { BadgePennant, FAM_COLOUR } from './badge-pennant';
-import { DRILLS, DRILLS_KEY, LEVELS, levelOf, levelOpen, toOpen } from '@/lib/drills';
-import { todayUtc } from '@/lib/log';
+import { DRILLS, DRILL_IDS, DRILLS_KEY, LEVELS, levelOf, levelOpen, toOpen } from '@/lib/drills';
+import { keptResults, streakOf, todayUtc } from '@/lib/log';
+import { VENUES } from '@/lib/venues';
 import { passportShare, useLog } from './passport';
 import { ShareButton } from './share-sheet';
 import { myPoints, useMyDays } from './my-month';
@@ -76,6 +77,17 @@ export function DrillsList({ lang }: { lang: Lang }) {
 export function BadgesGrid({ lang }: { lang: Lang }) {
   const t = tx(lang), log = useLog(), loc = lang === 'ru' ? 'ru-RU' : 'en-GB';
   const n = log ? BADGES.filter((b) => log.b[b.id]).length : 0;
+  // how near you've come to each you haven't got: from the results this device keeps, the streak, the venues, the drills
+  const [near, setNear] = useState<Partial<Record<BadgeId, Near>>>({});
+  useEffect(() => {
+    if (log) setNear(badgeNear(keptResults(), { streak: streakOf(log.d).n, venues: Object.keys(log.v).length, of: VENUES.length, drills: readDrills(), drillIds: DRILL_IDS }));
+  }, [log]);
+  const ord = (x: number) => (lang === 'ru' ? `${x}-е` : `${x}${['th', 'st', 'nd', 'rd'][x % 100 > 10 && x % 100 < 14 ? 0 : x % 10 < 4 ? x % 10 : 0]}`);
+  const soFar = (x?: Near) => {
+    if (!x) return null;
+    const v = x.unit === 'pct' ? `${x.v}%` : x.unit === 'place' ? ord(x.v) : x.unit === 'hails' ? t(`${x.v} ${x.v === 1 ? 'call' : 'calls'}`, `${x.v} ${ruPlural(x.v, ['замечание', 'замечания', 'замечаний'])}`) : x.unit === 'places' ? `+${x.v}` : String(x.v);
+    return x.of != null && x.unit !== 'pct' ? t(`So far: ${v} of ${x.of}`, `Пока: ${v} из ${x.of}`) : x.unit === 'pct' ? t(`Best so far: ${v} of 95%`, `Лучшее пока: ${v} из 95%`) : x.unit === 'place' ? t(`Best so far: ${v}`, `Лучшее пока: ${v}`) : t(`Closest: ${v}`, `Ближе всего: ${v}`);
+  };
   return (
     <>
       <div className="pg-count">
@@ -93,7 +105,7 @@ export function BadgesGrid({ lang }: { lang: Lang }) {
               <BadgePennant id={b.id} on={!!at} className="pg-emb" />
               <b>{t(...b.name)}</b>
               <span>{t(...b.how)}</span>
-              <small>{at ? new Date(at).toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' }) : t('Not yet', 'Ещё нет')}</small>
+              <small>{at ? new Date(at).toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' }) : soFar(near[b.id]) || t('Not yet', 'Ещё нет')}</small>
             </li>
           );
         })}
@@ -136,13 +148,17 @@ export function ProgressRows({ lang }: { lang: Lang }) {
   // the pips: your level's drills' stars (the whole set's are too many to draw)
   const lv = got ? LEVELS.find((l) => l.id === levelOf(got))! : null, mineDs = lv ? DRILLS.filter((d) => d.level === lv.id) : [];
   const mineStars = got ? mineDs.reduce((a, d) => a + (got[d.id] || 0), 0) : 0;
+  // the level after yours, and the stars at yours that open it: the row's next goal
+  const next = lv ? LEVELS[LEVELS.indexOf(lv) + 1] : undefined;
   const n = log ? BADGES.filter((b) => log.b[b.id]).length : null;
   const last = log ? (Object.entries(log.b) as [BadgeId, number][]).filter(([id]) => BADGES.some((b) => b.id === id)).sort((a, b) => b[1] - a[1])[0]?.[0] : undefined;
   return (
     <>
       <Link className="bt-row pg-row" href="/race/drills">
         <span className="pg-row-ico" aria-hidden="true"><BadgePennant id="drills" fam="result" on /></span>
-        <span className="pg-row-t">{t('Drills', 'Тренировки')}{stars == null || !lv ? null : <small>{lang === 'ru' ? <>{lv.name[1]} · <b>{stars}</b> из {DRILLS.length * 3} звёзд</> : <>{lv.name[0]} · <b>{stars}</b> of {DRILLS.length * 3} stars</>}</small>}</span>
+        <span className="pg-row-t">{t('Drills', 'Тренировки')}{stars == null || !lv ? null : <small>{lang === 'ru'
+          ? <>{lv.name[1]} · <b>{mineStars}</b> из {mineDs.length * 3}{next ? <> · ещё {toOpen(next.id) - mineStars} до уровня «{next.name[1]}»</> : null}</>
+          : <>{lv.name[0]} · <b>{mineStars}</b> of {mineDs.length * 3} stars{next ? <> · {toOpen(next.id) - mineStars} more to open {next.name[0]}</> : null}</>}</small>}</span>
         {stars == null ? null : <span className="pg-row-stars" aria-hidden="true">{Array.from({ length: mineDs.length * 3 }, (_, i) => <i key={i} className={i < mineStars ? 'on' : undefined}>★</i>)}</span>}
       </Link>
       <Link className="bt-row pg-row" href="/race/badges">

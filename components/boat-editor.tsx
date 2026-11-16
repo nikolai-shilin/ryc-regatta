@@ -1,5 +1,5 @@
 'use client';
-import { LoadBar } from './skeleton';
+import { LoadBar, ScenePoster } from './skeleton';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { tx, type Lang } from '@/lib/lang';
 import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart, IconFlag } from './ui';
@@ -125,6 +125,8 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
     <div className="bt">
       <LoadBar label={t('Loading your boat', 'Загружаем яхту')} on={!live} />
       <iframe ref={frame} className="bt-scene" src="/boat-view?wind=light" onLoad={() => post({ type: 'hello' })} title={t('Your boat in 3D', 'Твоя яхта в 3D')} />
+      {/* over the scene, which doesn't fade in: it shows until her first frame, then fades away */}
+      <ScenePoster label={t('Loading your boat', 'Загружаем яхту')} on={!live} />
 
       <div className="bt-info" ref={info}>
         <div className="bt-top">{back}<SceneBrand /></div>

@@ -1451,3 +1451,27 @@
   .bc .fl-stats b { font-size: var(--fs-row); }
   .bc .fl-stats .bt-sv { display: block; padding: var(--s-2) var(--s-3); }
 }
+
+/* the free race's venue pills: a tick on each you've raced, as the passport stamps them */
+.bc .bt-pill.is-raced::after { content: ''; display: inline-block; width: 7px; height: 4px; margin: 0 0 3px 7px; border: solid var(--up); border-width: 0 0 2px 2px; transform: rotate(-45deg); vertical-align: middle; }
+.bc .bt-pill.is-raced[aria-checked="true"]::after { border-color: currentColor; }
+
+/* the replay, watched: while its bar is open the result's words, numbers and board step aside (in place, so the bar
+   doesn't move) and the scrim lifts, leaving the race on the water and the bar to drive it. Closing it brings them back */
+.bc.rs-scr .bt::before { transition: opacity var(--t-in, .3s) var(--ease, ease); }
+.bc.rs-scr > .bt :is(.bt-kicks, .bt-h, .bt-p, .bt-stats, .rs-target, .bt-card, .rs-down, .rs-acts > :not(.rs-replay)) { transition: opacity .3s var(--ease, ease), visibility .3s; }
+.bc.rs-scr:has(.rs-replay) .bt::before { opacity: .25; }
+.bc.rs-scr:has(.rs-replay) > .bt :is(.bt-kicks, .bt-h, .bt-p, .bt-stats, .rs-target, .bt-card, .rs-down, .rs-acts > :not(.rs-replay)) { opacity: 0 !important; visibility: hidden; } /* over the entrance animations' held frames */
+
+/* Home's first four races, each with its picture over it (what was a section of its own, How a race goes) */
+.bc .ho-path li { padding-top: 0; }
+.bc .ho-path .ho-path-pic { height: 150px; margin: 0 calc(var(--s-6) * -1) var(--s-1); }
+.bc .ho-path li:hover .ho-path-pic img { scale: 1.04; }
+.bc .ho-path li.now .ho-path-pic { box-shadow: 0 3px 0 var(--you); }
+/* on a phone each of the four is a row, its picture a thumbnail beside the words, so the path stays short */
+@media (max-width: 600px) {
+  .bc .ho-path li { display: grid; grid-template-columns: 96px 1fr; column-gap: var(--s-4); row-gap: var(--s-2); align-content: start; padding: var(--s-4); }
+  .bc .ho-path li > :not(.ho-path-pic) { grid-column: 2; }
+  .bc .ho-path .ho-path-pic { grid-column: 1; grid-row: 1 / span 4; height: auto; min-height: 96px; margin: 0; }
+  .bc .ho-path li.now .ho-path-pic { box-shadow: inset 0 -3px 0 var(--you); }
+}

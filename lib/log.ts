@@ -88,6 +88,18 @@ export function harvest(): Log {
   return l;
 }
 
+// the results this device's game keeps (the last 20), as they are: for the badges' "so far" (lib/badges.ts badgeNear)
+export function keptResults(): RaceForBadges[] {
+  const out: RaceForBadges[] = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i), r = k && k.startsWith('regatta-result-') ? read(k) : null;
+      if (r && Array.isArray(r.boats)) out.push(r);
+    }
+  } catch {}
+  return out;
+}
+
 // the date n days from a day (UTC), and today's (the daily race's day is the UTC date)
 export const shiftDay = (d: string, n: number) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
 export const todayUtc = () => new Date().toISOString().slice(0, 10);

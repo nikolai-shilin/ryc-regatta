@@ -14,6 +14,7 @@ import { BackLink } from './back-link';
 import { IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, IconSun, Num, clock } from './ui';
 import { SceneBrand } from './scene-brand';
 import { newCode } from '@/lib/code';
+import { useLog } from './passport';
 
 // the way round each shape but up and down, under its choice
 const SHAPE_HINT: Partial<Record<Shape, [string, string]>> = {
@@ -100,6 +101,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
       {hint}
     </div>
   );
+  const log = useLog();
   const [pb, setPb] = useState<Record<string, number>>({});
   useEffect(() => { setPb(readPb()); }, []);
   const best = pb[pbKey(p)];
@@ -168,7 +170,10 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
           <div className="bt-stats">
             <div><span className="bt-sk">{t('Beat', 'Лавировка')}</span><b><Num v={`${beat} ${t('m', 'м')}`} /></b></div>
             <div><span className="bt-sk">{t('About', 'Около')}</span><b><Num v={`${minutes(p)} ${t('min', 'мин')}`} /></b></div>
-            <div><span className="bt-sk">{t('Your best', 'Рекорд')}</span><b className={best != null ? 'is-gold' : ''}>{best != null ? clock(best) : '—'}</b></div>
+            {/* a match is one on one, best of three: a free race's best time says nothing of it */}
+            {match
+              ? <div><span className="bt-sk">{t('Match', 'Матч')}</span><b>{t('Best of 3', 'До 2 побед')}</b></div>
+              : <div><span className="bt-sk">{t('Your best', 'Рекорд')}</span><b className={best != null ? 'is-gold' : ''}>{best != null ? clock(best) : '—'}</b></div>}
           </div>
         </div>
 
@@ -188,9 +193,15 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
             <span className="bt-k" id="fs-venue"><IconPin />{t('Where', 'Где')}{chg('venue')}</span>
             <div className={`fs-where${allPlaces ? '' : ' fs-one'}`}>
               <div className="bt-pills" id="fs-places" role="radiogroup" aria-labelledby="fs-venue">
-                {places.map(([v, l]) => (
-                  <button key={v} type="button" role="radio" aria-checked={p.venue === v} className="bt-pill" onClick={() => { set('venue', v); setAllPlaces(false); }}>{l}</button>
-                ))}
+                {places.map(([v, l]) => {
+                  // the venues you've raced (today's race or a free one) carry a tick, as the passport stamps them
+                  const done = !!log?.v[v];
+                  return (
+                    <button key={v} type="button" role="radio" aria-checked={p.venue === v} className={`bt-pill${done ? ' is-raced' : ''}`} title={done ? t('You’ve raced here', 'Ты здесь уже гонялся') : undefined} onClick={() => { set('venue', v); setAllPlaces(false); }}>
+                      {l}{done ? <span className="vh">{t(' · raced', ' · пройдено')}</span> : null}
+                    </button>
+                  );
+                })}
               </div>
               <button type="button" className="bt-pill fs-all" aria-expanded={allPlaces} aria-controls="fs-places" onClick={() => setAllPlaces(!allPlaces)}>
                 {t(`All ${VENUES.length}`, `Все ${VENUES.length}`)}<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="2" /></svg>
@@ -225,7 +236,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
           </div>
           {base && changed.length ? <p className="bt-what" role="status"><b>{t('What happens', 'Что будет')}</b> {from === 'today' ? t(`A free race with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'} from today’s. It doesn’t go on today’s ranking.`, `Свободная гонка, изменений по сравнению с гонкой дня: ${changed.length}. В рейтинг дня она не идёт.`) : t(`The race starts over, with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'}.`, `Гонка начнётся заново, изменений: ${changed.length}.`)}</p> : null}
           {match ? <p className="bt-saved bt-saved-l">{t('You and a friend, one on one. After you create the match you get a link to send.', 'Вы и друг, один на один. Когда создашь матч, получишь ссылку, чтобы отправить.')}</p> : <p className="bt-saved bt-saved-l">{best != null
-            ? t(`Your best on this course: ${clock(best)}. Beat it and the result page says so.`, `Твой лучший результат на этой дистанции: ${clock(best)}. Побьёшь — страница результата скажет.`)
+            ? t(`Your best in this wind, fleet and course, at any venue: ${clock(best)}. Beat it and the result page says so.`, `Твой лучший результат при этом ветре, флоте и дистанции, на любой акватории: ${clock(best)}. Побьёшь — страница результата скажет.`)
             : t('The game keeps your best time on every course. A free race doesn’t go on today’s ranking.', 'Игра помнит лучшее время на каждой дистанции. Свободная гонка в рейтинг дня не идёт.')}</p>}
         </PauseCard>
       </div>

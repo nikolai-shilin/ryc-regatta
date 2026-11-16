@@ -62,3 +62,30 @@ export function logBadges(o: { streak: number; venues: number; of: number; drill
   if (o.drillIds.length && o.drillIds.every((d) => (o.drills[d] || 0) >= 3)) out.push('drills');
   return out;
 }
+
+// How near you've come to each badge not yet earned: the best this device's kept results (the last 20) and the log
+// have got, as a number and what it's out of, for /race/badges' "so far". Only where there's something to count: a
+// badge none of the results came near has none.
+export type Near = { v: number; of?: number; unit: 'pct' | 'place' | 'n' | 'hails' | 'places' };
+export function badgeNear(results: RaceForBadges[], o: { streak: number; venues: number; of: number; drills: Record<string, number>; drillIds: string[] }) {
+  const near: Partial<Record<BadgeId, Near>> = {};
+  const best = (id: BadgeId, x: Near, better: (a: Near, b: Near) => boolean) => { if (!near[id] || better(x, near[id]!)) near[id] = x; };
+  for (const r of results) {
+    const me = r.boats?.find((b) => b.me);
+    if (!me || !me.done || me.dsq || me.secs == null) continue;
+    const L = r.log || {}, place = r.boats.indexOf(me) + 1;
+    if (L.pct != null) best('speed', { v: Math.round(L.pct), of: 95, unit: 'pct' }, (a, b) => a.v > b.v);
+    if (L.lift === 0 && L.head != null) best('shifts', { v: L.head, of: 2, unit: 'n' }, (a, b) => a.v > b.v);
+    if (r.boats.length >= 4) best('podium', { v: place, unit: 'place' }, (a, b) => a.v < b.v);
+    best('win', { v: place, unit: 'place' }, (a, b) => a.v < b.v);
+    const issues = Object.values(L.hails || {}).reduce((a, b) => a + b, 0) + (L.fouls || []).length + (me.pens ?? 0);
+    best('clean', { v: issues, unit: 'hails' }, (a, b) => a.v < b.v);
+    const atMark = L.legPlaces?.[1];
+    if (atMark) best('comeback', { v: Math.max(0, atMark - place), of: 2, unit: 'places' }, (a, b) => a.v > b.v);
+  }
+  if (o.streak > 0) near.streak7 = { v: o.streak, of: 7, unit: 'n' };
+  if (o.venues > 0) { near.venues7 = { v: o.venues, of: 7, unit: 'n' }; near.venues28 = { v: o.venues, of: o.of, unit: 'n' }; }
+  const three = o.drillIds.filter((d) => (o.drills[d] || 0) >= 3).length;
+  if (three) near.drills = { v: three, of: o.drillIds.length, unit: 'n' };
+  return near;
+}

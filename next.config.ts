@@ -11,6 +11,10 @@ const config: NextConfig = {
   // The game pictures in public/images are rendered at 3–4× and served at quality 90 (every <Image> snaps to the one
   // allowed quality), AVIF where the browser takes it, else WebP. They only change with a new render, so cache them long.
   images: { qualities: [90], formats: ['image/avif', 'image/webp'], minimumCacheTTL: 2678400 },
+  // the fleet and the yachts were two pages of the same scene: one now, /yachts
+  async redirects() {
+    return [{ source: '/fleet', destination: '/yachts', permanent: true }];
+  },
   async rewrites() {
     return [
       { source: '/play', destination: '/play/index.html' },

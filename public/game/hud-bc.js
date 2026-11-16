@@ -526,6 +526,9 @@ const CSS = `
   .b-top { top: calc(144px + var(--st)); }
   .b-callrow { bottom: calc(150px + var(--sb)); }
   #hud.bc #toast { max-width: calc(100vw / var(--hz, 1) - 32px); }
+  /* a long tip (the day's flag, a coach's word) sits over the water just above your thumbs: dark glass, as the other
+     panels, so the race shows round it rather than a white slab over it */
+  #hud.bc #toast.long { background: var(--panel); color: var(--ink); box-shadow: inset 3px 0 0 var(--you); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
   .b-you .c-pct .b-g { display: none; }
 } }
 `;
@@ -1113,6 +1116,8 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     const i = st.indexOf(P);
     const others = pre ? st.filter((b) => b !== P).slice(0, 2) : [st[0], st[i - 1] || st[i + 1]].filter((b) => b && b !== P);
     const list = [...(world.mode === 'helm' ? [] : [P]), ...new Set(others)].slice(0, 3);
+    // the next mark's tag, where it stands this frame: a boat's tag that would sit on it is lifted clear above it
+    const nx = tag.classList.contains('on') ? tagIn.getBoundingClientRect() : null, hz = parseFloat(over.style.getPropertyValue('--hz')) || 1;
     btags.forEach((g, n) => {
       const b = list[n], at = b && !b.done && onScreen(b.x, 9, b.z, 40); // halfway up the mast
       g.el.classList.toggle('on', !!at);
@@ -1128,8 +1133,15 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       // its box slid back onto the screen when the boat is near an edge (its width read now and then, not every frame)
       if (!g.w || ++g.f % 30 === 0) g.w = g.box.offsetWidth;
       const half = g.w / 2, edge = 8, dx = Math.min(0, innerWidth - edge - (at[0] + half)) + Math.max(0, edge - (at[0] - half));
-      const tr = dx ? `calc(-50% + ${dx.toFixed(0)}px) -22px` : '';
-      if (g.box._tr !== tr) { g.box._tr = tr; g.box.style.translate = tr; }
+      // the lift: measured from where the box would be without last frame's, so it settles rather than see-saws
+      let lift = 0;
+      if (nx && nx.width) {
+        const r = g.box.getBoundingClientRect(), was = (g.lift || 0) * hz, top = r.top + was, bot = r.bottom + was;
+        if (r.left < nx.right + 4 && r.right > nx.left - 4 && top < nx.bottom + 4 && bot > nx.top - 4) lift = Math.min(80, Math.round((bot - nx.top + 6) / hz));
+      }
+      g.lift = lift;
+      const tr = dx || lift ? `calc(-50% + ${dx.toFixed(0)}px) ${-22 - lift}px` : '';
+      if (g.box._tr !== tr) { g.box._tr = tr; g.box.style.translate = tr; const stem = g.el.firstElementChild; if (stem) stem.style.height = lift ? `${22 + lift}px` : ''; }
       // under one of the HUD's blocks it would only peek out from beneath it: then it isn't shown (its box as the
       // screen has it: it hangs above the point, lifted off it)
       if (blocks.length) { const r = g.box.getBoundingClientRect(); if (blocks.some((k) => r.left < k.r && r.right > k.l && r.top < k.b && r.bottom > k.t)) g.el.classList.remove('on'); }

@@ -721,3 +721,14 @@ html[data-me] .hm-av > svg { display: none; }
   .fl-boat b { font-size: 22px; } .fl-stats b { font-size: 30px; }
 }
 @media (prefers-reduced-motion: reduce) { .fl-h { animation: none; } .fl-bar.run { animation: none; transform: scaleX(1); opacity: .4; } }
+
+/* the scene's stand-in while its first frame loads (components/game-scene.tsx): a dusk sea's colours, a horizon's glow,
+   and what's coming, quietly pulsing; it fades out under the scene */
+.bt-scene.bt-poster { pointer-events: none; opacity: 0; transition: opacity .8s ease; background:
+  radial-gradient(90% 40% at 62% 46%, rgba(120, 160, 190, 0.22), transparent 70%),
+  linear-gradient(180deg, #1c2c3c 0%, #2b4053 40%, #12304a 47%, #0b1d2e 70%, #060d16 100%); }
+.bt-scene.bt-poster.on { opacity: 1; }
+.bt-scene.bt-poster span { position: absolute; left: 52%; top: 52%; translate: -50% 0; font: 700 12px/1 var(--cond, sans-serif); letter-spacing: .14em; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); animation: poster-pulse 1.6s ease-in-out infinite; white-space: nowrap; }
+@media (max-width: 760px) { .bt-scene.bt-poster span { left: 50%; top: 44%; } }
+@keyframes poster-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .bt-scene.bt-poster span { animation: none; } }

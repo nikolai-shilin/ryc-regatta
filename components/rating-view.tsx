@@ -107,7 +107,7 @@ export function RatingView({ day, data, lang, t }: { day: string; data: Rating |
                       <span className="rt-n">{i + 1}</span>
                       <span className="rt-mw">
                         <Who fl={r.fl} name={r.name || t('No name', 'Без имени')} lang={lang} />
-                        <small>{t(`${r.days} ${r.days === 1 ? 'day' : 'days'}`, `${r.days} ${ruPlural(r.days, ['день', 'дня', 'дней'])}`)}{r.wins ? <> · <span className="is-gold">{t(`${r.wins} ${r.wins === 1 ? 'win' : 'wins'}`, `${r.wins} ${ruPlural(r.wins, ['победа', 'победы', 'побед'])}`)}</span></> : null}{r.podiums - r.wins > 0 ? <> · {t(`${r.podiums} podiums`, `подиумов: ${r.podiums}`)}</> : null}</small>
+                        <small>{t(`${r.days} ${r.days === 1 ? 'day' : 'days'}`, `${r.days} ${ruPlural(r.days, ['день', 'дня', 'дней'])}`)}{r.wins ? <> · <span className="is-gold">{t(`${r.wins} ${r.wins === 1 ? 'win' : 'wins'}`, `${r.wins} ${ruPlural(r.wins, ['победа', 'победы', 'побед'])}`)}</span></> : null}{r.podiums - r.wins > 0 ? <> · {t(`${r.podiums} ${r.podiums === 1 ? 'podium' : 'podiums'}`, `подиумов: ${r.podiums}`)}</> : null}</small>
                       </span>
                       <span className="rt-p"><b><CountUp v={String(r.pts)} /></b><small>{t(r.pts === 1 ? 'pt' : 'pts', ruPlural(r.pts, ['очко', 'очка', 'очков']))}</small></span>
                     </li>

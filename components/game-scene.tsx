@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { VenueId } from '@/lib/venues';
 import type { Wind } from '@/lib/race';
-import { LoadBar } from './skeleton';
+import { LoadBar, ScenePoster } from './skeleton';
 
 // The scene behind the pages laid out as the race's pause screen (the race hub, the free race's set-up): the game at a
 // venue (public/boat-view), your yacht afloat there on a clear evening. Another venue is a new page, loaded beside the
@@ -77,7 +77,12 @@ export function GameScene({ venue, boat = '', wind, title, finish, setup, loadin
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // the bar runs while the venue on top is still coming up
   const busy = !frames[frames.length - 1].live;
-  return <>{loading ? <LoadBar label={loading} on={busy} /> : null}{frames.map((f) => (
+  // before the first frame of any venue is up: the sea's colours and the words, so the page isn't a blank dark screen
+  // for the seconds a scene takes; faded out under the scene as it comes
+  const none = !frames.some((f) => f.live);
+  return <>{loading ? <LoadBar label={loading} on={busy} /> : null}
+    <ScenePoster label={loading} on={none} />
+    {frames.map((f) => (
     <iframe key={f.id} ref={(el) => { if (el) refs.current.set(f.id, el); else refs.current.delete(f.id); }} className={`bt-scene bt-fade ${f.live ? 'on' : ''}`}
       src={`/boat-view?venue=${f.venue}&wind=${f.wind}${finish ? '&finish=1' : setup ? '&setup=1' : ''}${f.boat && f.boat !== 'jpk1050' ? `&boat=${f.boat}` : ''}`} title={title} onLoad={() => post({ type: 'hello' }, f.id)} />
   ))}</>;

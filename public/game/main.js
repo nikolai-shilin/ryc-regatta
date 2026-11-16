@@ -281,12 +281,14 @@ applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 
 // ---------- settings ----------
-const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 0, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', guides: 1, music: 'racing', musicVol: 'normal', sea: 'normal', played: 0 };
+const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 1, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', guides: 1, music: 'racing', musicVol: 'normal', sea: 'normal', played: 0 };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
 delete opts.undefined; // left by an older pause menu, whose quick switches also ran the menu's choice handler
 if (opts.fleetV !== 3) { opts.fleet = 5; opts.fleetV = 3; } // the default changed (10, then 7): start everyone on 5 once
 if (opts.optsV !== 4) { opts.length = 'short'; opts.mode = 'daily'; opts.optsV = 4; } // a short race, today's, is the default now
 if (opts.musicV !== 1) { opts.music = 'racing'; opts.musicV = 1; } // Racing is the default music now: everyone hears it once, then keeps what they pick
+// a first race on Auto (Home's first four races promise it): you only steer. Whoever hasn't raced yet starts there, once
+if (!opts.played && opts.trimV !== 1) { opts.autoTrim = 1; opts.trimV = 1; }
 if (opts.ghostV !== 1) { opts.ghost = 0; opts.ghostV = 1; } // the ghost of your best is off now unless you turn it on (Settings): once, then theirs
 if (opts.music !== 'off' && !MUSIC_STYLES.includes(opts.music)) opts.music = 'racing'; // a style that's gone (Ambient, Film, Folk): Racing
 const saveOpts = () => { try { localStorage.setItem('regatta', JSON.stringify(opts)); } catch (e) {} };

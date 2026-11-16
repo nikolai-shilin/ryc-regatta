@@ -17,6 +17,8 @@ function at(v: string, k: number) {
   });
 }
 
+const SR = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clipPath: 'inset(50%)', whiteSpace: 'nowrap' } as const;
+
 export function CountUp({ v, ms = 900 }: { v: string; ms?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
@@ -39,5 +41,12 @@ export function CountUp({ v, ms = 900 }: { v: string; ms?: number }) {
     io.observe(el);
     return () => { io.disconnect(); cancelAnimationFrame(raf); el.textContent = v; };
   }, [v, ms]);
-  return <span ref={ref}>{v}</span>;
+  // the real value stays in the page for screen readers (and find-in-page), unseen; the copy that counts is hidden from
+  // them, as it reads 0 until it comes into view
+  return (
+    <span>
+      <span style={SR}>{v}</span>
+      <span ref={ref} aria-hidden="true">{v}</span>
+    </span>
+  );
 }
