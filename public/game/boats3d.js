@@ -323,6 +323,29 @@ function windex(add, y, z) {
   return w;
 }
 
+// ---------- a dry lid ----------
+// Where a boat's inside lies low (the Optimist's floor under the waterline, the Laser's cockpit 13 cm above it, which
+// the drawn chop's crests overtop: the boats feel only the swell), the sea's surface would be drawn across it and she'd
+// look swamped. A lid over the opening, unseen, writes only depth, after the boats are drawn (order 0) and before the
+// sea (world.js draws the water after it), so the sea stops at her rim and her inside stays dry. No shadow, and not
+// among the parts seen through the water (world.js underParts)
+export const DRY_ORDER = 0.5;
+const DRY = new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide });
+function dryLid(pos, idx) {
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+  const lid = new THREE.Mesh(g, DRY);
+  lid.renderOrder = DRY_ORDER; lid.userData.flat = true; lid.userData.dry = true;
+  return lid;
+}
+// a lid over a closed rim of [x, y, z] points, a fan from its middle
+function rimLid(rim) {
+  const n = rim.length, c = [0, 0, 0], pos = [], idx = [];
+  for (const p of rim) { pos.push(...p); for (let k = 0; k < 3; k++) c[k] += p[k] / n; }
+  pos.push(...c);
+  for (let i = 0; i < n; i++) idx.push(n, i, (i + 1) % n);
+  return dryLid(pos, idx);
+}
+
 // ---------- what both share with the JPK 1050 ----------
 class ClassView {
   start() {
@@ -724,6 +747,8 @@ class LaserView extends ClassView {
         T.add(tube(pts, 0.011, MAT.lip));
       }
     }
+    // her cockpit's floor 13 cm above the water, which the chop's crests overtop: a dry lid over it, at its rim
+    add(rimLid(H.tub(-0.3, cz0, 0.3, cz1, 0.14, LZ.FLOOR).outline.map(([x, z]) => [x * 1.01, deckAt(x, z) - 0.005, z])));
     // the bow's handle and eye, the drain bung in the transom
     const bz = H.BOW + 0.32;
     T.add(tube([[-0.07, deckAt(0.07, bz) - 0.01, bz], [-0.06, deckAt(0, bz) + 0.05, bz], [0.06, deckAt(0, bz) + 0.05, bz], [0.07, deckAt(0.07, bz) - 0.01, bz]], 0.009, M.steel));
@@ -999,9 +1024,6 @@ function pillowGeo(w, h, l, puff = 0.55) {
 }
 const BAG = new THREE.MeshPhysicalMaterial({ color: '#efeee8', roughness: 0.38, clearcoat: 0.4, clearcoatRoughness: 0.3, envMapIntensity: 0.9 }); // PVC
 const RUB = new THREE.MeshStandardMaterial({ color: '#2c2f33', roughness: 0.7, side: THREE.DoubleSide });
-// an open boat's dry lid (OptimistView): depth only, drawn after the boats (order 0) and before the sea (world.js)
-export const DRY_ORDER = 0.5;
-const DRY = new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide });
 
 class OptimistView extends ClassView {
   constructor({ look = LOOKS.player, label = null, player = false, cls = CLS }) {
@@ -1039,16 +1061,12 @@ class OptimistView extends ClassView {
       const mf = O.floorAt(O.MID_Z), mw = O.innerX(O.MID_Z, mf + O.MID_H / 2);
       add(new THREE.Mesh(new THREE.BoxGeometry(2 * mw, O.MID_H, 0.03), GEL2), 0, mf + O.MID_H / 2, O.MID_Z - 0.015);
     }
-    // her floor lies under the waterline, so the sea's surface, level across her, would be drawn over it and she'd look
-    // swamped: a lid across her gunwale, unseen, that writes only depth after the boat is drawn and before the sea
-    // (world.js draws the water after it), so the sea stops at her gunwale and her inside stays dry
+    // her floor lies under the waterline: a dry lid across her gunwale keeps the sea out of her
     {
       const N = 40, pos = [], idx = [];
       for (let i = 0; i <= N; i++) { const t = i / N, y = O.sheer(t), z = H.zAt(t), x = O.hb(t) + 0.004; pos.push(-x, y, z, x, y, z); }
       for (let i = 0; i < N; i++) { const a = 2 * i; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
-      const lid = add(new THREE.Mesh(g, DRY));
-      lid.renderOrder = DRY_ORDER; lid.userData.flat = true; lid.userData.dry = true; // no shadow, not seen through the water
+      add(dryLid(pos, idx));
     }
     // the bow's towing eye and the painter's bight on the bow transom's top; the transom's drain bung
     add(new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.005, 6, 12), M.steel), 0, O.sheer(1) - 0.05, O.zp(1, O.sheer(1) - 0.05) - 0.008).rotation.y = Math.PI / 2;
