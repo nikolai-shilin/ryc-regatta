@@ -567,8 +567,9 @@ function lineOf(k) {
 }
 
 // ---------- the skipper: recorded voices on board ----------
-// In Russian, a skipper from Odessa who shouts at the crew when they've earned it; in English, a crew's racing calls: the
-// hails, protest, bear away, and the count down to the gun. Each language's lines are in one file, skipper-<lang>.mp3,
+// In Russian, a skipper from Odessa who shouts at the crew when they've earned it, and a crewman's racing calls (the
+// hails, protest, bear away, head up, trim and ease, the call for a tack or a gybe, the finish); in English, a crew's
+// racing calls: the hails, protest, bear away, and the count down to the gun. Each language's lines are in one file, skipper-<lang>.mp3,
 // loaded once the race starts. He says one line at a time, and not every time he could: half the time he lets a moment
 // go, and after a line he keeps quiet for twenty seconds or more. He doesn't repeat a line within a few minutes, and of
 // the lines that fit he picks at random, likelier the longer since he said it; a call that must be heard now (a hail,
@@ -604,12 +605,25 @@ const VOICES = { ru: {
     // with feeling
     sank: [92.915, 4.239], // Что ж вы за люди такие? Что ж вы ботик потопили, гады?
     pull4: [104.855, 3.157], // Я вас очень сильно матом прошу, доберите!
+    // a crewman's racing calls, recorded after him (a real voice where the man's hails in calls-ru.mp3 are Piper's)
+    starboard: [109.322, 0.98], port: [110.902, 1.015], keepClear: [112.517, 0.83], // Правый галс! Левый галс! Дорогу!
+    bearAway: [113.947, 0.655], leeward: [115.202, 0.85], // Увались! Подветренный!
+    headUp1: [116.652, 0.815], headUp2: [118.067, 0.855], // Приводись! (twice)
+    turn: [119.522, 0.625], tackGo: [120.747, 1.36], gybeGo: [122.707, 1.26], // Поворот! Поворот оверштаг! Поворот фордевинд!
+    trim: [124.567, 0.75], easeIt: [125.917, 0.705], // Набивай! Потрави!
+    proper: [127.222, 1.835], noBlock: [129.657, 0.895], room: [131.152, 1.24], // Увались на надлежащий курс! Не мешай! Место у знака!
+    protest: [132.992, 0.745], clear: [134.337, 0.63], finish: [135.567, 0.635], // Протест! Чисто! Финиш!
   },
   // the lines for each situation: most have a few that fit, so the same moment doesn't always get the same line
   pools: {
-    pull: ['pull1', 'pull2', 'pull3', 'pull4', 'people'], // the sails flapping, the sheet left out
-    ease: ['ease2'], // sheeted in too hard
-    heel: ['ease2', 'hold'], // heeled over: ease!
+    pull: ['trim', 'pull1', 'pull2', 'pull3', 'pull4', 'people'], // the sails flapping, the sheet left out
+    ease: ['easeIt', 'ease2'], // sheeted in too hard
+    heel: ['easeIt', 'ease2', 'hold'], // heeled over: ease!
+    headUp: ['headUp1', 'headUp2'], // well by the lee
+    bearAway: ['bearAway'], irons: ['bearAway'], foot: ['bearAway'], // the windward mark rounded; in irons; pinching on the beat
+    protest: ['protest'], // a foul, ours or theirs
+    clearAhead: ['clear'], clearAstern: ['clear'], // at the zone of a mark, not overlapped
+    finish: ['finish'], // across the finishing line
     fiddle: ['hands'], // the sheet worked in and out, in and out
     chaos: ['hold', 'people', 'clue'], // a broach, a crash gybe, a death roll, a wrapped or collapsed kite
     tack: ['tack1', 'tack2'], // a tack or a gybe, now and then
@@ -628,10 +642,13 @@ const VOICES = { ru: {
     ready: ['ready', 'clean'], // across the line within three seconds of the gun
     clean: ['clean'], // a start without fuss, or the windward mark with no fouls
     late: ['late', 'column'], // across the line more than ten seconds after the gun
-    // in calls-ru.mp3: the hails by rule, a man's (h…) and a woman's (g…), and the call for a tack or a gybe
-    ...Object.fromEntries(['10', '11', '12', '13', '15', '16', '17', '18', '18.3', '18.4', '19', '20', '44']
-      .map((r) => ['hail' + r, ['h', 'g'].map((p) => p + r.replace('.', '_'))])),
-    tackCall: ['hTack', 'gTack'], gybeCall: ['hGybe', 'gGybe'],
+    // the hails by rule: the man's recorded above where he has one that fits, else his in calls-ru.mp3 (h…); the
+    // woman's (g…) in calls-ru.mp3
+    ...Object.fromEntries(Object.entries({
+      10: ['starboard', 'port'], 11: ['keepClear', 'leeward'], 12: ['keepClear'], 13: ['keepClear'], 15: ['keepClear'],
+      16: ['noBlock'], 17: ['proper'], 18: ['room'], 18.3: ['keepClear'], 18.4: ['h18_4'], 19: ['h19'], 20: ['h20'], 44: ['keepClear'],
+    }).map(([r, his]) => ['hail' + r, [...his, 'g' + r.replace('.', '_')]])),
+    tackCall: ['tackGo', 'turn', 'gTack'], gybeCall: ['gybeGo', 'turn', 'gGybe'],
   },
 }, en: {
   // a crew's racing calls in skipper-en.mp3, a man's and a woman's (g…), and the count to the gun: [start, length] in seconds
@@ -1717,7 +1734,8 @@ function handleMessages() {
     } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') {
       race._fin = finishScene(race); raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(false, race.course.finishBoat); haptic('heavy');
       score.sting(m.key !== 'finished' ? 'lose' : m.arg === 1 ? 'win' : m.arg <= Math.max(2, Math.ceil(race.boats.length / 3)) ? 'gain' : 'lose');
-      // the committee's word at the finish, heard out before the result
+      // the crew's word as she crosses (in Russian), and the committee's after it, heard out before the result
+      if (m.key === 'finished') skipper.cue('finish');
       const end = committee.call(m.key === 'finishedDsq' ? 'cFinDsq' : m.key === 'finishedStartDsq' ? 'cFinOut' : m.arg === 1 ? 'cFin1' : 'cFin', 1.5);
       setTimeout(finishToPage, end ? Math.max(2500, (end - audio.ctx.currentTime) * 1000 + 600) : 2500);
     }
