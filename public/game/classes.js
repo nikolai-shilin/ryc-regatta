@@ -133,7 +133,7 @@ export const CLASSES = {
   // the Optimist: the 2.3 m single-handed pram most racing sailors learn in, raced up to the age of 15 — a flat-floored
   // box with a transom at the bow too, one spritsail on a short unstayed mast, no jib (jib: false: one sheet) and no
   // kite. Some 35 kg of hull and a child aboard: she stops in a tack and goes again at once, slow but nimble. A short
-  // waterline holds her to about 3 knots upwind and 5–6 on a broad reach in a blow, where her sailor, overpowered,
+  // waterline holds her to some 3½ knots upwind and 5–6 on a broad reach in a blow, where her sailor, overpowered,
   // eases and hikes to keep her flat; she lifts onto a plane only on the biggest reaching gusts. Her courses are laid
   // 0.3 times as long, as many of her lengths as the Laser's are of hers; her start line as long as the Laser's (a
   // fleet of them starts in a crowd, and the computer skippers need the room to come through it).
@@ -142,20 +142,22 @@ export const CLASSES = {
     kite: false, zero: false, reef: false, j3: false, jib: false,
     tau: 1.4, coast: 6, hullV: 4.2, heelK: 1.1, awsK: 1, heelShow: 1, courseK: 0.3, lineK: 0.6, startK: 0.6,
     tws: TWS, twa: TWA,
-    // a displacement hull 2.2 m on the waterline: upwind VMG some 2.1 kn in 8 knots, 2.3 in 12, falling off as she is
-    // overpowered; downwind no faster than her hull lets her, but for a reach in a breeze
+    // a displacement hull 1.9 m on the waterline (2.18 m of floor): upwind VMG some 2.25 kn in 8 knots, 2.5 in 12,
+    // falling off as she is overpowered; downwind no faster than her hull lets her, but for a reach in a breeze. Round a
+    // course she takes some 1.5 times the Laser's time in 8–12 knots, as the Portsmouth Yardstick has it (Optimist
+    // 1640, ILCA 7 1103)
     beat: [47, 46, 45, 45, 45, 46, 47, 48, 50],
-    beatV: [1.85, 2.5, 2.95, 3.2, 3.3, 3.3, 3.3, 3.15, 2.95],
+    beatV: [2.0, 2.7, 3.2, 3.45, 3.55, 3.5, 3.45, 3.25, 3.0],
     v: [
-      [2.0, 2.15, 2.3, 2.3, 2.2, 2.1, 1.9, 1.7, 1.5, 1.4],
-      [2.7, 2.85, 3.0, 3.05, 2.95, 2.85, 2.6, 2.3, 2.1, 2.0],
-      [3.15, 3.3, 3.5, 3.6, 3.55, 3.45, 3.2, 2.9, 2.65, 2.55],
-      [3.4, 3.55, 3.8, 3.95, 4.0, 3.9, 3.65, 3.35, 3.1, 3.0],
-      [3.5, 3.7, 4.0, 4.25, 4.4, 4.35, 4.1, 3.75, 3.45, 3.35],
-      [3.55, 3.75, 4.1, 4.5, 4.8, 4.75, 4.5, 4.1, 3.8, 3.65],
-      [3.55, 3.75, 4.15, 4.7, 5.2, 5.15, 4.9, 4.45, 4.1, 3.95],
-      [3.4, 3.65, 4.1, 4.9, 5.7, 5.7, 5.4, 4.9, 4.5, 4.3],
-      [3.2, 3.5, 4.0, 4.9, 5.9, 6.0, 5.7, 5.2, 4.8, 4.5],
+      [2.15, 2.3, 2.5, 2.5, 2.4, 2.25, 2.05, 1.85, 1.6, 1.5],
+      [2.9, 3.1, 3.25, 3.3, 3.2, 3.1, 2.8, 2.5, 2.25, 2.15],
+      [3.4, 3.55, 3.8, 3.9, 3.85, 3.75, 3.45, 3.15, 2.85, 2.75],
+      [3.65, 3.85, 4.1, 4.25, 4.3, 4.2, 3.95, 3.6, 3.35, 3.25],
+      [3.8, 4.0, 4.3, 4.6, 4.75, 4.7, 4.45, 4.05, 3.75, 3.6],
+      [3.75, 4.0, 4.35, 4.75, 5.1, 5.05, 4.75, 4.35, 4.05, 3.85],
+      [3.75, 3.95, 4.35, 4.95, 5.45, 5.4, 5.15, 4.65, 4.3, 4.15],
+      [3.5, 3.75, 4.2, 5.05, 5.85, 5.85, 5.55, 5.05, 4.65, 4.45],
+      [3.25, 3.55, 4.1, 5.0, 6.0, 6.1, 5.8, 5.3, 4.9, 4.6],
     ],
   },
   // the AC75: the America's Cup's 75-foot foiling monohull. Two canting foil arms lift her clear of the water from

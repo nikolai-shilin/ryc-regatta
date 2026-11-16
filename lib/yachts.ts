@@ -152,11 +152,11 @@ export const YACHTS: Yacht[] = [
     ],
     race: ['Alone: one sail and one sheet, no kite, no jib, no reef. Slow but quick through a tack; keep her flat in a breeze. Courses are laid 0.3 times as long.', 'В одиночку: один парус и один шкот, без спинакера, без стакселя, без рифа. Медленный, но быстро проходит поворот; на свежем ветре держи лодку ровно. Дистанции в 0,3 раза короче.'],
     specs: [
-      { k: ['Length', 'Длина'], v: ['2.31 m', '2,31 м'] }, { k: ['Beam', 'Ширина'], v: ['1.13 m', '1,13 м'] },
-      { k: ['Hull weight', 'Вес корпуса'], v: ['35 kg', '35 кг'] }, { k: ['Mast', 'Мачта'], v: ['2.26 m', '2,26 м'] },
+      { k: ['Length', 'Длина'], v: ['2.30 m', '2,30 м'] }, { k: ['Beam', 'Ширина'], v: ['1.13 m', '1,13 м'] },
+      { k: ['Hull weight', 'Вес корпуса'], v: ['35 kg', '35 кг'] }, { k: ['Mast', 'Мачта'], v: ['2.35 m', '2,35 м'] },
       { k: ['Crew', 'Экипаж'], v: ['1', '1'] }, { k: ['Sail', 'Парус'], v: ['3.3 m², spritsail', '3,3 м², шпринтовый'] },
     ],
-    speed: { up: 3.3, down: 4.4 }, courseK: 0.3, lineK: 0.6, timeK: 1.0,
+    speed: { up: 3.55, down: 4.75 }, courseK: 0.3, lineK: 0.6, timeK: 0.93,
   },
 ];
 export const yachtOf = (id: unknown): Yacht => YACHTS.find((y) => y.id === id) || YACHTS.find((y) => y.id === DEFAULT_YACHT)!;
