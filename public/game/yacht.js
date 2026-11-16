@@ -739,11 +739,13 @@ export function sailMesh(rows, cols, tex, shiny = false, kind = 'main') {
   grp.userData = { rows, cols, g };
   return grp;
 }
-// the leech never stands quite still: the cloth's free edge flutters in the apparent wind (aws, knots) a few
-// centimetres either way, more the harder it blows; the sideways offset at (f up the luff, u along the chord)
-export function leechFlutter(f, u, t, aws) {
+// the leech never stands quite still: the cloth's free edge flutters in the apparent wind a few centimetres either
+// way, more the harder it blows, up to about 25 knots of it; the sideways offset at (f up the luff, u along the chord),
+// from the sail's cloth state c (clothState: its flutter's own clock, the wind, how much this boat's sails flutter)
+// and off, a phase of its own for another sail
+export function leechFlutter(f, u, c, off = 0) {
   const w = THREE.MathUtils.smoothstep(u, 0.72, 1);
-  return w * w * (0.01 + 0.0025 * aws) * Math.sin(t * (19 + aws * 0.4) + f * 13) * (0.6 + 0.4 * Math.sin(t * 3.1 + f * 5));
+  return w * w * (0.01 + 0.0025 * Math.min(c.aws, 25)) * c.flutter * Math.sin(c.lf + off + f * 13) * (0.6 + 0.4 * Math.sin(c.t * 3.1 + f * 5));
 }
 // How a boat's sails set this frame, from the sim (b), kept on the view: depth, fuller in light air and off the wind
 // and flatter as it blows up (the backstay and the outhaul on); twist, the head falling off more in a breeze and
@@ -764,6 +766,12 @@ export function clothState(view, b, t) {
   c.flogM = to(c.flogM, mainLuff); c.flogJ = to(c.flogJ, b.luff || 0);
   c.curl = clamp(0.1 + 0.22 * Math.max(0, Math.sin(t * 0.8 + c.ph)) ** 3 + 0.75 * (b.kiteCollapse || 0) + 0.6 * smoothstep(0.2, 0.8, b.luff || 0), 0, 1);
   c.aws = aws;
+  // the flutter's and the flog's own clocks, each run on at its rate for this wind: the wind changing changes how
+  // fast the cloth goes, never where it is (a rate times the race's time would throw it about at the smallest change
+  // in the wind, the further into the race the wilder: a shiver all over the sail)
+  c.lf = (c.lf ?? c.ph) + dt * (19 + 0.4 * Math.min(aws, 25));
+  c.fp = (c.fp ?? c.ph) + dt * 2 * Math.PI * (1.5 + 0.07 * Math.min(aws, 30));
+  c.flutter = view.flutter ?? 1; // a foiler's sails, sheeted hard, hardly flutter
   // the cloth's creases: pulled out of a sail loaded up and drawing, standing out in light air and in one luffing or
   // flogging; a gennaker's the more its luff curls
   const light = smoothstep(9, 3, aws), crease = (grp, k) => { if (grp) for (const m of grp.children) m.material.normalScale?.setScalar(k); };
@@ -825,18 +833,18 @@ export function deckWash(hbAt, deckY, z0, z1, w = 0.45) {
   return mesh;
 }
 // the cloth's sideways offset at (f up the luff, u aft along the chord) when it isn't drawing: k how hard it flaps
-// (0–1), chord the sail's width there, s the side the boom is on. A sail just luffing lifts — a bubble backed behind
-// the luff; with the wind right along it, it flogs: waves run aft from the luff, growing to the leech, quicker and
-// harder the more it blows
-export function flog(f, u, t, k, chord, aws, s, ph = 0) {
+// (0–1), chord the sail's width there, s the side the boom is on, p the flog's clock (clothState's fp). A sail just
+// luffing lifts — a bubble backed behind the luff; with the wind right along it, it flogs: waves run aft from the
+// luff, growing to the leech, quicker (the clock) and harder the more it blows
+export function flog(f, u, p, k, chord, aws, s, ph = 0) {
   if (k < 0.005) return 0;
   const bubble = s * Math.min(k * 3, 1) * (1 - smoothstep(0.35, 0.95, k)) * chord * 0.05 * Math.sin(Math.PI * Math.min(u / 0.45, 1));
-  const w = 2 * Math.PI * (1.5 + 0.07 * Math.min(aws, 30)), q = smoothstep(0.25, 0.85, k);
+  const q = smoothstep(0.25, 0.85, k);
   const amp = chord * (0.07 + 0.004 * Math.min(aws, 25)) * q * u ** 1.15 * (0.35 + 0.65 * Math.sin(Math.PI * Math.min(f * 1.15, 1)));
-  return bubble + amp * (Math.sin(w * t - 6.5 * u - 2.2 * f + ph) + 0.45 * Math.sin(1.7 * w * t - 11 * u + 3.1 * f + 2 * ph));
+  return bubble + amp * (Math.sin(p - 6.5 * u - 2.2 * f + ph) + 0.45 * Math.sin(1.7 * p - 11 * u + 3.1 * f + 2 * ph));
 }
 // a main's cloth beyond its cut: flogging, and backed behind the luff when she's overpowered (s: the boom's side)
-export const mainCloth = (c, f, u, t, chord, s) => flog(f, u, t, c.flogM, chord, c.aws, s, c.ph) + s * c.back * chord * 0.045 * Math.sin(Math.PI * Math.min(u / 0.35, 1)) * Math.sin(Math.PI * (0.15 + 0.7 * f));
+export const mainCloth = (c, f, u, chord, s) => flog(f, u, c.fp, c.flogM, chord, c.aws, s, c.ph) + s * c.back * chord * 0.045 * Math.sin(Math.PI * Math.min(u / 0.35, 1)) * Math.sin(Math.PI * (0.15 + 0.7 * f));
 // the gennaker's luff folding in (0–1 of its curl, at f up the luff and u aft): times the sail's size, towards the boat
 export const kiteCurl = (c, f, u) => c.curl * (1 - smoothstep(0, 0.3, u)) ** 2 * Math.sin(Math.PI * Math.min(1, f * 1.1));
 export function setSail(m, fn) {
@@ -1607,7 +1615,7 @@ export class BoatView {
     // square-top main: the chord narrows up the mast to a wide head, with roach on the leech; twist opens the top
     setSail(this.main, (f, u, v) => {
       const chord = mainChord(f), tw = -ss * f * f * 0.5 * u * cl.twist;
-      v.set(belly * Math.sin(Math.PI * u ** 0.78) * chord * 0.11 * cl.depth * (1 - 0.4 * f) + tw + mainCloth(cl, f, u, t, chord, ss) + leechFlutter(f, u, t, cl.aws), BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), u * chord);
+      v.set(belly * Math.sin(Math.PI * u ** 0.78) * chord * 0.11 * cl.depth * (1 - 0.4 * f) + tw + mainCloth(cl, f, u, chord, ss) + leechFlutter(f, u, cl), BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), u * chord);
     });
     // the mainsheet, from the block on the traveller's car to the one under the boom
     const ma = this.mainPivot.rotation.y, bz = SHEET_B;
@@ -1620,7 +1628,7 @@ export class BoatView {
       const sg = sag * Math.sin(Math.PI * f), lx = head.x * f - ss * sg, ly = head.y * f, lz = head.z * f + sg * 0.5; // the luff on the sagging stay
       const ex = lerp(clew.x, head.x, f), ey = lerp(clew.y, head.y, f), ez = lerp(clew.z, head.z, f);
       const len = Math.hypot(ex - lx, ey - ly, ez - lz);
-      v.set(lerp(lx, ex, u) + jBelly * Math.sin(Math.PI * u ** 0.72) * len * 0.125 * cl.depth + flog(f, u, t, cl.flogJ, len, cl.aws, ss, cl.ph + 1.3) + leechFlutter(f, u, t + 0.4, cl.aws), lerp(ly, ey, u), lerp(lz, ez, u));
+      v.set(lerp(lx, ex, u) + jBelly * Math.sin(Math.PI * u ** 0.72) * len * 0.125 * cl.depth + flog(f, u, cl.fp, cl.flogJ, len, cl.aws, ss, cl.ph + 1.3) + leechFlutter(f, u, cl, 7.6), lerp(ly, ey, u), lerp(lz, ez, u));
     });
     // the jib sheets: from the clew to the car on the leeward side deck and on to the winch; the lazy one slack
     const cw = clew.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1;
