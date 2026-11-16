@@ -447,13 +447,26 @@ vec3 groundColour() {
   // measured from the shore — the waterline, and a strip some 4 to 7 m wide inland of it (shoreDist) — not by the
   // height, which on flat land would band the low ground far back from the water too)
   float rocky = smoothstep(0.1, 0.35, 1.0 - ny), bn = lnoise(p.xz / 6.0 + lnoise(p.xz / 23.0) * 2.0);
-  float top = 1.4 + 1.7 * steep + 0.9 * (bn - 0.5) * rocky, shH = 1.0 - smoothstep(top - 0.25, top + 0.25, y), sd = shoreDist(p.xz);
+  // (its stone read on its face where the shore is steep, as the rock's is (rq), not squeezed into a strip as seen
+  // from above; its top higher and lower along the shore, as the exposure to the waves is)
+  vec2 sq = rocky > 0.5 ? rq : p.xz;
+  float top = 1.4 + 1.7 * steep + 0.9 * (bn - 0.5) * rocky + 1.1 * (lnoise(p.xz / 38.0 + 5.0) - 0.5) * rocky, shH = 1.0 - smoothstep(top - 0.25, top + 0.25, y), sd = shoreDist(p.xz);
   float shF = max(1.0 - smoothstep(0.35, 0.8, y), sd > 900.0 ? shH : (1.0 - smoothstep(3.0 + 3.0 * bn, 5.0 + 3.0 * bn, -sd)) * (1.0 - smoothstep(1.5, 3.0, y)));
   float sh = mix(shF, shH, rocky);
-  float blocks = lnoise(p.xz / 1.8 + bn * 3.0), cracks = smoothstep(0.08, 0.0, abs(lnoise(p.xz / 3.5 + 9.0) - 0.5));
+  float blocks = lnoise(sq / 1.8 + bn * 3.0), cracks = smoothstep(0.08, 0.0, abs(lnoise(sq / 3.5 + 9.0) - 0.5));
+  // the boulders in it, each its own shade, dark in the gaps between them (only while they are bigger than a few pixels)
+  float spx = length(fwidth(p)), kb = 1.0 - smoothstep(0.12, 0.4, spx);
+  vec4 bo = crowns(sq, 1.3); float bon = 1.0 - smoothstep(0.6, 0.95, bo.z);
+  float boulder = mix(0.8, mix(0.42, 0.72 + 0.5 * bo.w - 0.25 * bo.z * bo.z, bon), kb);
+  // the shingle's pebbles, where it isn't rock
+  float peb = mix(0.5, lhash(floor(p.xz / 0.35)), 1.0 - smoothstep(0.05, 0.25, spx));
   // (on a rocky coast, uCoast, the low shore is the bare, wave-washed rock, not shingle)
   float rk = uCoast > 0.5 ? max(rocky, 0.85) : rocky;
-  vec3 sc = cls == 8 ? uCol[8] : cls == 12 ? c : mix(uCol[7] * (0.9 + 0.15 * lnoise(p.xz / 1.2)), mix(uCol[7], uCol[4], 0.35) * (0.72 + 0.45 * blocks) * (1.0 - 0.45 * cracks) * rm, rk);
+  vec3 sc = cls == 8 ? uCol[8] : cls == 12 ? c : mix(uCol[7] * (0.9 + 0.15 * lnoise(p.xz / 1.2)) * (0.86 + 0.28 * peb), mix(uCol[7], uCol[4], 0.35) * (0.72 + 0.45 * blocks) * (1.0 - 0.45 * cracks) * rm * boulder, rk);
+  // the rock's bands up from the sea: dark with the weed and the film the sea leaves, as high as it washes over it, then
+  // pale and bare in the splash, up to the band's top
+  float dark = (1.0 - smoothstep(0.35 + 0.4 * rocky, 0.6 + 0.6 * rocky, y + 0.35 * (bn - 0.5))) * rk * (cls == 8 || cls == 12 ? 0.0 : 1.0);
+  sc = mix(sc * mix(1.0, 0.82, rk), vec3(0.17, 0.165, 0.13) * (0.8 + 0.4 * blocks), dark * 0.8);
   c = mix(c, sc, 0.9 * sh);
   // and wet just above the water: as high as the waves run up it, each in its turn along the shore, every few seconds
   // (higher on a steep rocky shore, where they break against it and splash), darker and with a sheen — not on the low
@@ -1544,6 +1557,62 @@ function marinas() {
 const BOATS_NEAR = 320; // metres from a tile of moored boats within which they are drawn as they are
 const NOWHERE = new THREE.Matrix4().makeScale(0, 0, 0); // (a boat out of her batch)
 
+// ---------- the rocks along the shore ----------
+// Where the land meets the sea it is rarely the ground's smooth edge: boulders and rocks lie along it, fallen from the
+// cliffs and rolled by the waves, half in the water and half out. Along every cell of the shore (the bake's 8 m grid of
+// how far out from it: venues.py `shore`) that isn't a beach, mud, a town's or a port's built edge, a few of them where
+// the ground is between 1.5 m under the water and 2.5 m over it; many more on a steep or rocky coast. One rock, lumpy
+// and faceted, each its own stretch and turn and its own shade of the venue's rock; darkened by the sea and the weed
+// on it up to where the waves run. In tiles of 250 m, drawn only within ROCKS_NEAR of the camera (half of them on the
+// middle graphics level, none on the lowest): further off they are
+// a few pixels, and the shore's own colours carry them.
+function rockGeo() {
+  const g = new THREE.IcosahedronGeometry(1, 1), P = g.attributes.position, v = new THREE.Vector3();
+  const lump = (x, y, z) => 1 + 0.22 * Math.sin(x * 3.1 + y * 1.7) * Math.cos(z * 2.3 - x * 1.1) + 0.12 * Math.sin(y * 5.3 + z * 4.1);
+  for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i); const k = lump(v.x, v.y, v.z); P.setXYZ(i, v.x * k, (v.y < 0 ? v.y * 0.45 : v.y * 0.75) * k, v.z * k); }
+  g.computeVertexNormals(); // (each face flat: the icosahedron's corners aren't shared)
+  return tint(g, '#ffffff');
+}
+function shoreRocks() {
+  const group = new THREE.Group(), tiles = new Map(), TILE = 250;
+  if (!P.shore) { group.userData.tiles = []; return group; }
+  const n = NEAR.n, cell = NEAR.cell, x0 = NEAR.x0, S = P.shore, K = P.calm, r = rng(31), rock = (GR.rock || ['#9a917c', '#7b7465']).map(C);
+  const skip = new Set([CLS.sand, CLS.town, CLS.paved, CLS.industry, CLS.mud].filter((x) => x !== undefined));
+  const o = new THREE.Object3D(), c = new THREE.Color();
+  for (let i = 1; i < n - 1; i++) for (let j = 1; j < n - 1; j++) {
+    const k = i * n + j;
+    if (S[k] !== 0 || (S[k + 1] === 0 && S[k - 1] === 0 && S[k + n] === 0 && S[k - n] === 0)) continue; // (ashore, with the sea beside it)
+    if (K && K[k] > 128) continue; // a quay, a port's or a town's built shore
+    const cx = x0 + (j + 0.5) * cell, cz = x0 + (i + 0.5) * cell;
+    if (skip.has(coverAt(cx, cz))) continue;
+    // (how rocky: by how steeply the land rises behind the shore, 20 m in; the bake lays the shore itself as a low bank)
+    const gc = groundAt(cx, cz), behind = Math.max(groundAt(cx + 20, cz), groundAt(cx - 20, cz), groundAt(cx, cz + 20), groundAt(cx, cz - 20)) - gc;
+    const rocky = Math.max(LOOK.coast === 'rock' ? 0.55 : 0.12, Math.min(1, behind / 14)), m = Math.floor(rocky * 12 * r() + rocky * 4);
+    for (let q = 0, put = 0; q < m * 2 && put < m; q++) { // (another try where one falls too deep or too high)
+      const x = cx + (r() - 0.5) * cell * 1.8, z = cz + (r() - 0.5) * cell * 1.8, gy = groundAt(x, z);
+      if (gy < -1.5 || gy > 2.5) continue;
+      const big = r(), sz = (0.35 + big * big * 2.6) * (0.6 + 0.7 * rocky);
+      o.position.set(x, gy - sz * (0.15 + 0.3 * r()), z); o.rotation.set((r() - 0.5) * 0.5, r() * 6.28, (r() - 0.5) * 0.5);
+      o.scale.set(sz * (0.8 + 0.5 * r()), sz * (0.6 + 0.5 * r()), sz * (0.8 + 0.5 * r())); o.updateMatrix();
+      c.copy(rock[0]).lerp(rock[1], r()).multiplyScalar(0.62 + 0.32 * r());
+      const key = Math.floor(x / TILE) + ',' + Math.floor(z / TILE);
+      if (!tiles.has(key)) tiles.set(key, { list: [], x: (Math.floor(x / TILE) + 0.5) * TILE, z: (Math.floor(z / TILE) + 0.5) * TILE, r: TILE * 0.71 });
+      tiles.get(key).list.push([o.matrix.clone(), c.clone()]); put++;
+    }
+  }
+  const geo = rockGeo(), mat = landMat(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0 }), 1, {
+    key: 'rocks', after: '{ float wy = vLand.y; diffuseColor.rgb *= mix(vec3(0.3, 0.3, 0.24), vec3(1.0), smoothstep(0.0, 0.9, wy)); }', // (wet, and the weed on it, up to where the waves run)
+  });
+  for (const t of tiles.values()) {
+    const m = new THREE.InstancedMesh(geo, mat, t.list.length);
+    t.list.forEach(([m4, col], i) => { m.setMatrixAt(i, m4); m.setColorAt(i, col); });
+    m.computeBoundingSphere(); m.visible = false; m.userData.max = t.list.length; group.add(m); t.mesh = m; delete t.list;
+  }
+  group.userData.tiles = [...tiles.values()];
+  return group;
+}
+const ROCKS_NEAR = 400; // metres from a tile of the shore's rocks within which they are drawn
+
 // ---------- the boats that come and go ----------
 // The ferries and the water taxis on their ways across the bay (venues.py `routes`, found on the water there, round the
 // race area) and the kitesurfers off a beach (`kites`), moved on the race's clock: each boat out and back along its way,
@@ -2342,6 +2411,7 @@ export class Skopea {
     Object.assign(CLOUD_U, { uCsRipple: skyU.uRipple, uCsCloud: skyU.uCloud, uCsSun: skyU.uSun }); // the sky's own, shared
     this.group = new THREE.Group();
     this.land = terrain(); this.far = far(); this.trees = pines(16000); this.farTrees = pines(9000, true); this.town = town(); this.boats = marinas();
+    this.rocks = shoreRocks(); this.boats.add(this.rocks); // (with the boats: what the sea mirrors along its edge)
     this.landmarks = landmarks(); if (this.landmarks) this.town.add(this.landmarks);
     GROUND_U.uLiftMask.value = liftMask();
     this.group.add(this.far, this.land, this.trees, this.farTrees, this.town, this.boats);
@@ -2372,6 +2442,7 @@ export class Skopea {
     CLOUD_U.uCsT.value = t;
     this.movers.userData.update(t);
     const gp = this.group.position;
+    for (const t of this.rocks.userData.tiles) t.mesh.visible = this.rocksOn !== false && Math.hypot(t.x + gp.x - cam.x, t.z + gp.z - cam.z) - t.r < ROCKS_NEAR;
     for (const b of this.boats.userData.tiles) { // (a tile's boats near: drawn as they are, and out of their batch)
       const near = Math.hypot(b.x + gp.x - cam.x, b.z + gp.z - cam.z) - b.r < BOATS_NEAR;
       for (const m of b.near) m.visible = near && (!m.userData.rig || this.rigging !== false);
@@ -2393,5 +2464,7 @@ export class Skopea {
     this.far.geometry.setIndex(q === 'high' ? this.far.userData.full : this.far.userData.coarse);
     GROUND_U.uCanopy.value = q === 'low' ? 0 : 1;
     this.rigging = q !== 'low'; // (the moored boats' rigging: not on the lowest)
+    this.rocksOn = q !== 'low'; // (nor the rocks along the shore; half of them on the middle one)
+    for (const t of this.rocks.userData.tiles) t.mesh.count = Math.round(t.mesh.userData.max * (q === 'high' ? 1 : 0.5));
   }
 }
