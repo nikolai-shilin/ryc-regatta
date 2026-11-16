@@ -20,6 +20,7 @@ export type Opts = {
   daytime: Daytime; // the time of day a free race is sailed at (public/game/light.js: DAYTIMES); 'any' a new hour every race
   autoTrim: number; // 0 I trim · 1 auto · 2 main + jib
   sound: number; guides: number; gfx: 'auto' | 'high' | 'medium' | 'low';
+  saver: number; // 1: the battery saver, the race drawn at 30 frames a second (public/game/main.js: loop)
   ghost: number; // 1: today's race again has the ghost of your best today in it (public/game/extras.js); off unless chosen
   ghostV: number; // 1: ghost is the player's own choice (before, it was on for everyone)
   camera: 'drone' | 'top' | 'helm'; vibration: number;
@@ -32,7 +33,7 @@ export type Opts = {
 
 export const DEFAULTS: Opts = {
   mode: 'daily', venue: 'gocek', yacht: 'jpk1050', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any',
-  autoTrim: 1, sound: 1, guides: 1, ghost: 0, gfx: 'auto', camera: 'drone', vibration: 1, voice: 1, music: 'racing', musicVol: 'normal', sea: 'normal', fleetV: 3, optsV: 4, musicV: 1, ghostV: 1,
+  autoTrim: 1, sound: 1, guides: 1, ghost: 0, gfx: 'auto', saver: 0, camera: 'drone', vibration: 1, voice: 1, music: 'racing', musicVol: 'normal', sea: 'normal', fleetV: 3, optsV: 4, musicV: 1, ghostV: 1,
 };
 
 export function readOpts(): Opts {

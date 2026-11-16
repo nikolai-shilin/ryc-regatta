@@ -56,7 +56,7 @@ const ord = (n) => `${n}${['st', 'nd', 'rd'][n - 1] || 'th'}`;
 const T = {
   en: {
     pausedK: 'Paused', legOf: (a, b) => `Leg ${a} of ${b}`, nextK: (m) => `Next: ${m}`, placeK: 'Place', ofN: (n) => `of ${n}`, timeK: 'Race time', penK: 'Penalties', penNone: 'clean so far', penS: 'spinning turns',
-    changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', camK: 'Camera', sAuto: 'Auto', guidesSw: 'Guides on the water', voiceSw: 'Voice on board', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
+    changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', camK: 'Camera', sAuto: 'Auto', guidesSw: 'Guides on the water', voiceSw: 'Voice on board', saverK: 'Battery saver', saverSw: 'Battery saver · 30 fps', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
     leaveK: 'Leave this race?', leaveTxt: (pl, leg) => `You are ${pl} on leg ${leg}.`, keepRacing: 'Keep racing', doRestart: 'Restart', doChange: 'Change it', doLeave: 'Leave',
     inSeq: 'You are in the start sequence.', notKept: 'This race’s time and place are not kept.',
     askK: { restart: 'Restart', change: 'Change the race', leave: 'Leave' }, askH: { restart: 'Restart this race?', change: 'Change the race?', leave: 'Leave this race?' },
@@ -160,7 +160,7 @@ const T = {
   },
   ru: {
     pausedK: 'Пауза', legOf: (a, b) => `Отрезок ${a} из ${b}`, nextK: (m) => `Дальше: ${m}`, placeK: 'Место', ofN: (n) => `из ${n}`, timeK: 'Время', penK: 'Штрафы', penNone: 'пока чисто', penS: 'штрафные обороты',
-    changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', camK: 'Камера', sAuto: 'Авто', guidesSw: 'Подсказки на воде', voiceSw: 'Голос шкипера', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
+    changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', camK: 'Камера', sAuto: 'Авто', guidesSw: 'Подсказки на воде', voiceSw: 'Голос шкипера', saverK: 'Экономия батареи', saverSw: 'Экономия батареи · 30 к/с', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
     leaveK: 'Выйти из гонки?', leaveTxt: (pl, leg) => `Ты ${pl}-й на ${leg}-м отрезке.`, keepRacing: 'Продолжить', doRestart: 'Заново', doChange: 'Изменить', doLeave: 'Выйти',
     inSeq: 'Идёт стартовая процедура.', notKept: 'Время и место этой гонки не сохранятся.',
     askK: { restart: 'Заново', change: 'Изменить гонку', leave: 'Выход' }, askH: { restart: 'Начать заново?', change: 'Изменить гонку?', leave: 'Выйти из гонки?' },
@@ -283,7 +283,7 @@ applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 
 // ---------- settings ----------
-const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 1, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', guides: 1, music: 'racing', musicVol: 'normal', sea: 'normal', played: 0 };
+const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 1, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', saver: 0, guides: 1, music: 'racing', musicVol: 'normal', sea: 'normal', played: 0 };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
 delete opts.undefined; // left by an older pause menu, whose quick switches also ran the menu's choice handler
 if (opts.fleetV !== 3) { opts.fleet = 5; opts.fleetV = 3; } // the default changed (10, then 7): start everyone on 5 once
@@ -327,6 +327,7 @@ for (const g of document.querySelectorAll('.choice[data-opt]')) {
     if (k === 'mode' && !new URLSearchParams(location.search).get('venue') && (opts.mode === 'daily' ? dailyRace().venue : venueById(opts.venue).id) !== VENUE.id) { location.href = '/play?race=' + (opts.mode === 'daily' ? 'today' : 'free'); return; }
     if (k === 'gfx') { world.setQuality(startQuality()); perf.settle = 2; }
     if (k === 'guides') world.showGuides = !!opts.guides;
+    if (k === 'saver') Object.assign(perf, { settle: 2, t: 0, d: [] }); // (the frame rate it watches changes with it)
     if (k === 'sound') audio.setOn(!!opts.sound);
     if (k === 'autoTrim' && race && running) applyTrimMode();
     if (k === 'preset' || k === 'laps' || k === 'start' || k === 'current' || k === 'mode' || k === 'fleet' || k === 'length' || k === 'course') { if (!running) newRace(); else menuChanged = true; }
@@ -1094,7 +1095,8 @@ world.showGuides = !!opts.guides;
 // Auto: watch the frame rate while racing; under 45 fps, step down a level and remember it for this device.
 // It goes by the middle frame of each 3 s, not their average: one stall (the tab away in a match, which runs on
 // unpaused; a notification; a frame that waited on the disk) would pull a steady 60 fps under 45 by itself, and leave
-// a fast machine on Low for GFX_DAYS. A frame over 0.25 s is such a stall, and isn't counted at all.
+// a fast machine on Low for GFX_DAYS. A frame over 0.25 s is such a stall, and isn't counted at all. With the battery
+// saver on, the frames come at 30 a second by choice: then a level down only if it can't hold some 27.
 const perf = { t: 0, d: [], settle: 3 };
 function watchFps(raw) {
   if (opts.gfx !== 'auto' || world.quality === 'low') return;
@@ -1103,7 +1105,7 @@ function watchFps(raw) {
   perf.t += raw; perf.d.push(raw);
   if (perf.t < 3) return;
   const d = perf.d.sort((a, b) => a - b), mid = d[d.length >> 1]; perf.t = 0; perf.d = [];
-  if (mid <= 1 / 45) return;
+  if (mid <= 1 / (opts.saver ? 27 : 45)) return;
   const q = world.quality === 'high' ? 'medium' : 'low';
   world.setQuality(q); perf.settle = 2;
   try { localStorage.setItem(GFX_KEY, `${q}|${Date.now()}`); } catch (e) {}
@@ -1489,6 +1491,7 @@ pauseEl.addEventListener('click', (e) => {
   if (k === 'sound') audio.setOn(!!opts.sound);
   if (k === 'voice' && !opts.voice) { skipper.stop(); asides.stop(); asides.pend = null; }
   if (k === 'guides') world.showGuides = !!opts.guides;
+  if (k === 'saver') Object.assign(perf, { settle: 2, t: 0, d: [] });
   saveOpts(); paintPause();
 });
 $('#goBtn').addEventListener('click', startRace);
@@ -1966,7 +1969,15 @@ let frameN = 0;
 // news is dropped (a message that threw would throw again). A dead loop sends no inputs, so the guest would be
 // forfeited after 30 s, and a host's guest frozen and her race abandoned after 60. Today's race and a free race keep
 // the plain loop.
+// The battery saver (Settings): a frame drawn every 1/30 s, whatever the screen's rate (60, 90, 120 Hz), the ones
+// between let go. The race still moves in its 1/60 s steps, two to a frame, so it sails the same; the phone does half
+// the work or less, runs cooler and so doesn't slow itself down when it heats up. (4 ms short of 1/30 s: the
+// screen's ticks wander, and at 60 Hz the second one after a frame must count, not the third.)
+const SAVER_MS = 1000 / 30 - 4;
+let drawnAt = 0;
 function loop(now) {
+  if (opts.saver && now - drawnAt < SAVER_MS) { requestAnimationFrame(loop); return; }
+  drawnAt = now;
   if (!MATCH) { frame(now); requestAnimationFrame(loop); return; }
   requestAnimationFrame(loop);
   try { frame(now); } catch (e) {

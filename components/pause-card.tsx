@@ -65,7 +65,7 @@ export function SettingsRow({ lang, note = false }: { lang: Lang; note?: boolean
   return <button type="button" className="bt-row" onClick={() => open(true)}><IconScreen /><span>{t('Settings', 'Настройки')}</span>{sum && <span className="bt-row-m">{sum}</span>}</button>;
 }
 
-type Keys = 'autoTrim' | 'guides' | 'camera' | 'gfx' | 'sound' | 'voice' | 'vibration' | 'music' | 'musicVol' | 'sea';
+type Keys = 'autoTrim' | 'guides' | 'camera' | 'gfx' | 'saver' | 'sound' | 'voice' | 'vibration' | 'music' | 'musicVol' | 'sea';
 
 // How you sail and how the game runs, as /settings has them: every change is saved at once where the game reads it
 // the account: who is signed in, read from the session cookie (the pages with this card are cached for everyone)
@@ -85,7 +85,7 @@ function Settings({ lang, back, close }: { lang: Lang; back: string; close: () =
       </div>
     </div>
   );
-  const sw = (k: 'guides' | 'sound' | 'voice' | 'vibration', label: string) => (
+  const sw = (k: 'guides' | 'saver' | 'sound' | 'voice' | 'vibration', label: string) => (
     <button key={k} type="button" role="switch" aria-checked={!!o[k]} className="bt-pill" onClick={() => set(k, o[k] ? 0 : 1)}>{label}</button>
   );
 
@@ -107,6 +107,7 @@ function Settings({ lang, back, close }: { lang: Lang; back: string; close: () =
         {seg('musicVol', t('Music volume', 'Громкость музыки'), [['loud', t('Loud', 'Громко')], ['normal', t('Normal', 'Обычно')], ['quiet', t('Quiet', 'Тихо')]])}
         {seg('sea', t('Sea', 'Море'), [['loud', t('Loud', 'Громко')], ['normal', t('Normal', 'Обычно')], ['quiet', t('Quiet', 'Тихо')], ['off', t('Off', 'Выкл')]])}
         <div className="bt-pills">
+          {sw('saver', t('Battery saver · 30 fps', 'Экономия батареи · 30 к/с'))}
           {sw('sound', t('Sound', 'Звук'))}
           {sw('voice', t('Voice on board', 'Голос шкипера'))}
           {touch && sw('vibration', t('Vibration', 'Вибрация'))}

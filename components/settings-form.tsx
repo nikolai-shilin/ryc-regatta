@@ -48,7 +48,7 @@ export function NameRow({ lang, name: saved }: { lang: Lang; name: string }) {
   );
 }
 
-type Keys = 'autoTrim' | 'guides' | 'ghost' | 'camera' | 'gfx' | 'sound' | 'voice' | 'vibration' | 'music' | 'musicVol' | 'sea';
+type Keys = 'autoTrim' | 'guides' | 'ghost' | 'camera' | 'gfx' | 'saver' | 'sound' | 'voice' | 'vibration' | 'music' | 'musicVol' | 'sea';
 
 // One of the settings' cards over the scene: its name on top, its rows under it
 function Card({ id, title, wide = false, children }: { id: string; title: string; wide?: boolean; children: React.ReactNode }) {
@@ -142,7 +142,7 @@ export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: 
       {hint && <p className="hint">{hint}</p>}
     </div>
   );
-  const sw = (k: 'guides' | 'ghost' | 'sound' | 'voice' | 'vibration', label: string, cls = '') => (
+  const sw = (k: 'guides' | 'ghost' | 'saver' | 'sound' | 'voice' | 'vibration', label: string, cls = '') => (
     <div className={`srow ${cls}`}>
       <span className="srow-k" id={`l-${k}`}>{label}</span>
       <button type="button" className="tgl" role="switch" aria-checked={!!o[k]} aria-labelledby={`l-${k}`} onClick={() => set(k, o[k] ? 0 : 1)}><i /></button>
@@ -170,6 +170,7 @@ export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: 
           <div>
             {seg('gfx', t('Graphics', 'Графика'), [['auto', t('Auto', 'Авто')], ['high', t('High', 'Макс.')], ['medium', t('Medium', 'Сред.')], ['low', t('Low', 'Мин.')]],
               t('On Auto the game lowers the detail by itself when the frame rate drops, and remembers it for this device.', 'На «Авто» игра сама снижает детализацию, если падает частота кадров, и запоминает это для устройства.'))}
+            {sw('saver', t('Battery saver · 30 fps', 'Экономия батареи · 30 к/с'))}
             {sw('sound', t('Sound', 'Звук'))}
             {sw('voice', t('Voice on board', 'Голос шкипера'))}
             {sw('vibration', t('Vibration', 'Вибрация'), 'no-desk')}
