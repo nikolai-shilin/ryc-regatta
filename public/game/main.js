@@ -2038,7 +2038,7 @@ function frame(now) {
   // helm view, bolted to the hull, would judder with her. So the picture is drawn where they are between their last
   // two steps, as far on as the time left over says (a step behind at most), and the race is put back as it was.
   const lerped = running && !paused && !mx && between(acc / STEP);
-  world.frame(running && (!paused || mx) ? dt * timeScale : 0, lerped ? race.t - STEP + acc : race.t); // foam and wakes keep pace with the race
+  world.frame(running && (!paused || mx) ? dt * timeScale : 0, lerped ? race.t - STEP + acc : race.t, dt); // foam and wakes keep pace with the race; the cameras on the frame's clock
   if (lerped) putBack();
 }
 // what the picture takes from each boat between two steps: where she is, her heading, her heel, how high she flies

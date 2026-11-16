@@ -1690,7 +1690,7 @@ export class World {
     j.cb.update(t, dt, null, null, j.h - Math.atan2(-ax, az), Math.hypot(ax, az));
   }
 
-  frame(dt, t) {
+  frame(dt, t, wall) {
     const race = this.race, P = race.player, wind = race.wind;
     // boats
     const cp = this.camera.position, farD = this.mode === 'top' ? 1e9 : 85;
@@ -1788,9 +1788,14 @@ export class World {
       if (G.visible) drapeGuides(G, this.W, t);
     }
     // cameras: they move on the wall clock, not the race's (behind the menu or paused the race gives dt = 0, and a
-    // camera on dt would sit where it was made, at the origin on the water's surface); the first frame puts it in place
-    const now = performance.now(), cdt = this._camLast == null ? 0 : Math.min(0.1, (now - this._camLast) / 1000);
-    const first = this._camLast == null; this._camLast = now;
+    // camera on dt would sit where it was made, at the origin on the water's surface); the first frame puts it in place.
+    // wall: the time since the last frame by the frame's own clock (the race page's, which moves the boats on it).
+    // The moment this code happens to run wanders by a few milliseconds from frame to frame; a camera eased on that
+    // clock while the boat moves on the frame's would shake against her, by her speed times the wander: nothing at
+    // 5 knots, centimetres at an AC75's 40, a jitter close up. Pages that don't give it use the moment.
+    const now = performance.now(), first = this._camLast == null;
+    const cdt = first ? 0 : Math.min(0.1, wall != null ? Math.max(0, wall) : (now - this._camLast) / 1000);
+    this._camLast = now;
     const cl = (k) => (first ? 1 : 1 - Math.exp(-cdt * k));
     this.camH += wrap(P.h - this.camH) * cl(1.6);
     const cam = this.camera;
