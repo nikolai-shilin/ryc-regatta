@@ -63,6 +63,17 @@
 .bc .bt-sub { margin: 0; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 .bc .bt-hint, .bc .bt-saved { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-3); }
 .bc .bt-err { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--live); }
+/* the boat page's Save: stuck to the foot of the card as it scrolls, on the card's own dark ground so the rows going by
+   under it are covered; the button lit in the broadcast's blue while there's a change to keep, quiet once it's kept */
+.bc .bt-savebar { position: sticky; bottom: calc(-1 * var(--cp)); z-index: 2; display: flex; align-items: center; gap: var(--s-3); flex: none;
+  margin: auto calc(-1 * var(--cp)) calc(-1 * var(--cp)); padding: var(--s-3) var(--cp) var(--cp); background: rgb(8, 13, 21); border-top: 1px solid var(--rule); }
+.bc .bt-savebar .bt-saved { flex: 1 1 auto; min-width: 0; margin: 0; }
+.bc .bt-save { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); flex: none; min-width: 128px; height: var(--h-m); padding: 0 var(--s-4);
+  border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink-3); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; cursor: pointer; }
+.bc .bt-save.on { background: var(--you); color: var(--ink-on); }
+.bc .bt-save.on:hover { filter: brightness(1.08); }
+.bc .bt-save.on:active { scale: .97; }
+.bc .bt-save:disabled { cursor: default; }
 
 /* rankings: a position block, the name, the time, rows to the card's edges */
 .bc .bt-lb { margin-inline: calc(-1 * var(--cp)); border-top: 1px solid var(--rule); }

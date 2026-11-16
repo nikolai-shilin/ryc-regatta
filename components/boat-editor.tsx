@@ -2,7 +2,7 @@
 import { LoadBar, ScenePoster } from './skeleton';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { tx, type Lang } from '@/lib/lang';
-import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart, IconFlag } from './ui';
+import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart, IconFlag, IconCheck } from './ui';
 import { FLAGS, findFlag, flagSrc, type Flag } from '@/lib/flags';
 import { SceneBrand } from './scene-brand';
 import { BOAT_EVENT, DEFAULT_BOAT, DEFAULT_LOGO, NAME_MAX, PRESETS, SWATCHES, cleanName, readBoat, saveBoat, shrinkLogo, type Boat, type Deck, type Logo } from '@/lib/boat';
@@ -11,9 +11,11 @@ import { syncAccount } from './bests-sync';
 // The boat page, laid out like the race's pause screen: the game's own scene behind it all (your yacht on Lake Garda,
 // /boat-view), her name and numbers over it, and the choices (the ready schemes, the hull, the sails, the gennaker, the
 // logo, the sail number and the team) in the pause menu's dark glass card. The scene is told what the card and the
-// heading cover, so she stands in the part left clear. Every change shows at once and is saved where the game reads it,
-// and, for a signed-in player, a moment later in the account. Only a change is saved: the boat as it was read (from this
-// device, or from the account when the sync brings it) isn't, so a first visit doesn't stamp the default as a choice.
+// heading cover, so she stands in the part left clear. Every change shows on her at once, and is kept when you press
+// Save (at the foot of the card): then it's saved where the game reads it and, for a signed-in player, in the account.
+// Until then Save stands out and leaving asks first; going to race in her saves her on the way. The boat as it was read
+// (from this device, or from the account when the sync brings it) is never saved back, so a first visit doesn't stamp
+// the default as a choice.
 export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   const t = tx(lang);
   const [b, setB] = useState<Boat>(DEFAULT_BOAT);
@@ -27,23 +29,42 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   const file = useRef<HTMLInputElement>(null);
   const latest = useRef({ b, down });
   latest.current = { b, down };
-  const fromStore = useRef(true), push = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // the boat as she was last kept (saved here, or read): Save has something to do while what you see differs from it
+  const [kept, setKept] = useState(() => lookKey(DEFAULT_BOAT));
+  const [justSaved, setJustSaved] = useState(false);
+  const dirty = ready && lookKey(b) !== kept;
+  const dirtyRef = useRef(false); dirtyRef.current = dirty;
 
   const post = (msg: object) => frame.current?.contentWindow?.postMessage(msg, location.origin);
   useEffect(() => {
-    const load = () => { fromStore.current = true; setB(readBoat()); };
-    load(); setReady(true);
-    addEventListener(BOAT_EVENT, load); // the account's boat, just brought to this device
-    return () => { removeEventListener(BOAT_EVENT, load); clearTimeout(push.current); };
+    // the account's boat, just brought to this device: shown, unless you're in the middle of changing her (then Save
+    // keeps your changes over it)
+    const load = (first = false) => { const s = readBoat(); setKept(lookKey(s)); if (first || !dirtyRef.current) setB(s); };
+    load(true); setReady(true);
+    const synced = () => load();
+    addEventListener(BOAT_EVENT, synced);
+    return () => removeEventListener(BOAT_EVENT, synced);
   }, []);
+  useEffect(() => { if (ready) post({ type: 'look', boat: b }); setJustSaved(false); }, [b, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  const save = () => {
+    if (!saveBoat(b)) { setErr(t('This browser didn’t keep it: try a smaller logo.', 'Браузер не сохранил: попробуй логотип поменьше.')); return false; }
+    setErr(''); setKept(lookKey(b)); setJustSaved(true); dirtyRef.current = false; // kept: going on to race asks nothing
+    syncAccount().catch(() => {});
+    return true;
+  };
+  // leaving with changes not saved asks first: closing the tab or reloading, and the page's own links
   useEffect(() => {
-    if (!ready) return;
-    post({ type: 'look', boat: b });
-    if (fromStore.current) { fromStore.current = false; return; }
-    setErr(saveBoat(b) ? '' : t('This browser didn’t keep it: try a smaller logo.', 'Браузер не сохранил: попробуй логотип поменьше.'));
-    clearTimeout(push.current);
-    push.current = setTimeout(() => { syncAccount().catch(() => {}); }, 1200); // once the swatches stop changing
-  }, [b, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!dirty) return;
+    const unload = (e: BeforeUnloadEvent) => { if (dirtyRef.current) { e.preventDefault(); e.returnValue = ''; } };
+    const link = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement)?.closest?.('a[href]');
+      if (!a || a.classList.contains('bt-go') || e.defaultPrevented) return;
+      if (!confirm(t('Leave without saving your boat? Your changes will be lost.', 'Уйти, не сохранив яхту? Изменения пропадут.'))) { e.preventDefault(); e.stopPropagation(); }
+    };
+    addEventListener('beforeunload', unload);
+    document.addEventListener('click', link, true);
+    return () => { removeEventListener('beforeunload', unload); document.removeEventListener('click', link, true); };
+  }, [dirty]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { post({ type: 'pose', down }); }, [down]);
   // what the card and the heading cover, so the scene stands her in the rest: beside the card on a wide screen, between
   // the heading and the card upright
@@ -148,7 +169,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
             <IconRestart s={14} /><span>{t('Back to the RYC colours', 'Вернуть цвета RYC')}</span>
           </button>
         </div>
-        <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Sail her in today’s race', 'В гонку дня на ней')}</span></a>
+        <a className="bt-go" href="/play?race=today" onClick={(e) => { if (dirty && !save()) e.preventDefault(); }}><IconPlay /><span>{t('Sail her in today’s race', 'В гонку дня на ней')}</span></a>
         <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс')}>
           <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд')}</button>
           <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Gennaker', 'Генакер')}</button>
@@ -243,7 +264,17 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         </div>
 
         {err && <p className="bt-err" role="alert">{err}</p>}
-        <p className="bt-saved">{t('Saved on this device, and in your account when you’re signed in. You race in her from the next start.', 'Сохранено на этом устройстве, а если ты вошёл — и в аккаунте. В гонке — со следующего старта.')}</p>
+        {/* Save, at the foot of the card wherever it's scrolled to */}
+        <div className="bt-savebar">
+          <p className="bt-saved" role="status">{dirty
+            ? t('Changes not saved yet.', 'Изменения ещё не сохранены.')
+            : justSaved
+              ? t('Saved. You race in her from the next start.', 'Сохранено. В гонке — со следующего старта.')
+              : t('Kept on this device, and in your account when you’re signed in.', 'Хранится на этом устройстве, а если ты вошёл — и в аккаунте.')}</p>
+          <button type="button" className={`bt-save${dirty ? ' on' : ''}`} onClick={save} disabled={!dirty}>
+            {dirty ? <span>{t('Save', 'Сохранить')}</span> : <><IconCheck s={16} /><span>{t('Saved', 'Сохранено')}</span></>}
+          </button>
+        </div>
       </section>
     </div>
   );
@@ -316,6 +347,9 @@ function FlagPicker({ value, onChange, t }: { value?: string; onChange: (code: s
     </div>
   );
 }
+
+// the boat as a key to compare by: everything she is but when she was saved, in one order
+const lookKey = ({ at: _, ...r }: Boat) => JSON.stringify(r, Object.keys(r).sort());
 
 const SHOTS_KEY = 'regatta-boat-shots', SHOTS_V = 'v4:' + PRESETS.map((p) => p.id + JSON.stringify(p.boat)).join('|');
 
