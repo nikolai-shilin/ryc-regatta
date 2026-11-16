@@ -2018,7 +2018,7 @@ function frame(now) {
     if (mx) mx.step(dt); // a match: the host's game runs the race, the guest's follows it (match-ui.js)
     else {
       acc += dt * timeScale;
-      while (acc >= STEP) { race.step(STEP); acc -= STEP; }
+      while (acc >= STEP) { keepPrev(); race.step(STEP); acc -= STEP; }
       onFrame(race, dt, race.t); // the ghost where she was, a drill's end (extras.js)
     }
     handleMessages();
@@ -2032,8 +2032,31 @@ function frame(now) {
     score.update(P, dt); // paused or between races: the music fades out
     engine.update(true);
   }
-  world.frame(running && (!paused || mx) ? dt * timeScale : 0, race.t); // foam and wakes keep pace with the race
+  // The race moves in steps of 1/60 s, the screen at 60, 120 or whatever the display runs at: drawn as the last step
+  // left them, the boats would move on one frame and stand still on the next (at 120 Hz, every other frame), and the
+  // helm view, bolted to the hull, would judder with her. So the picture is drawn where they are between their last
+  // two steps, as far on as the time left over says (a step behind at most), and the race is put back as it was.
+  const lerped = running && !paused && !mx && between(acc / STEP);
+  world.frame(running && (!paused || mx) ? dt * timeScale : 0, lerped ? race.t - STEP + acc : race.t); // foam and wakes keep pace with the race
+  if (lerped) putBack();
 }
+// what the picture takes from each boat between two steps: where she is, her heading, her heel, how high she flies
+const LERP = ['x', 'z', 'h', 'heel', 'ride'];
+function keepPrev() { for (const b of race.boats) { const p = b._prev || (b._prev = {}); for (const k of LERP) p[k] = b[k]; p.t = race.t; } }
+function between(a) {
+  if (!(a >= 0 && a < 1)) return false; // (at 0 the picture is the step before: drawing the last one would jump a step)
+  let any = false;
+  for (const b of race.boats) {
+    const p = b._prev;
+    if (!p || Math.abs(p.t + STEP - race.t) > 1e-6) { b._now = null; continue; } // no step behind her yet (a new race)
+    const n = b._now || (b._now = {});
+    for (const k of LERP) n[k] = b[k];
+    for (const k of LERP) if (typeof p[k] === 'number' && typeof n[k] === 'number') b[k] = k === 'h' ? p.h + wrap(n.h - p.h) * a : p[k] + (n[k] - p[k]) * a;
+    any = true;
+  }
+  return any;
+}
+function putBack() { for (const b of race.boats) if (b._now) { for (const k of LERP) b[k] = b._now[k]; b._now = null; } }
 requestAnimationFrame(loop);
 if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, get mx() { return mx; }, get running() { return running; }, get paused() { return paused; }, world, audio, skipper, crews, asides, engine };
 document.addEventListener('visibilitychange', () => { if (document.hidden && running && !paused && !window.__rg && !MATCH) pause(); }); // not in debug: test screenshots hide the tab; nor in a match, which runs on
