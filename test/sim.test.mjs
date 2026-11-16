@@ -9,8 +9,9 @@ const sim = await import('../public/game/sim.js');
 const site = await import('../lib/race.ts');
 // the beat (start to windward mark) in each wind, as sim.js Race and api/game.mjs have it; and the server's floor (below)
 const BEAT = { light: 200, medium: 260, strong: 280 }, FLOOR = 0.45;
-// …and a faster class's share of the floor, as the server has it (YACHT_FLOOR): the AC75's; every other class, all of it
-const YACHT_FLOOR = { ac75: 0.4 };
+// …and a class's share of the floor, as the server has it (YACHT_FLOOR): the AC75's, and the Optimist's on her short
+// courses; every other class, all of it
+const YACHT_FLOOR = { ac75: 0.4, optimist: 0.6 };
 
 // lib/race.ts is a copy of the game's dailyRace for the hub and Home: the same day must give the same race
 test('the site and the game agree on today’s race, every day for a year and more', () => {

@@ -228,11 +228,11 @@ export const classById = (id) => CLASSES[id] || CLASSES[DEFAULT_CLASS];
 // same, and npm test keeps the two in step.
 // The AC75 joins on 18 November: she sails a course in under half the JPK 1050's time, and the scores server
 // (api/game.mjs in the iyt-test repo) checks her times against her own share of its floor (YACHT_FLOOR) from then on.
-// The Dragon joins on 17 November, the day after the first, so its Laser stays the Laser. The Optimist sails only
-// free races until the scores server gives her a share of its floor: her course is sized to her, and in 12 knots her
-// computer boats finish only 1.16 times its floor.
+// The Dragon and the Optimist join on 17 November, the day after the first, so its Laser stays the Laser: every class
+// sails today's races from then on. The Optimist's course is sized to her, so short that in 12 knots her computer boats
+// sail it in 1.16 times the 40-footer's floor: the server keeps 0.6 of it for her.
 // npm test sails every one of them well above the floor the server keeps for her.
-export const DAILY_YACHTS = { jpk1050: '2026-11-16', bavaria46: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16', laser: '2026-11-16', dragon: '2026-11-17', ac75: '2026-11-18' };
+export const DAILY_YACHTS = { jpk1050: '2026-11-16', bavaria46: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16', laser: '2026-11-16', dragon: '2026-11-17', optimist: '2026-11-17', ac75: '2026-11-18' };
 const dayN = (s) => Math.floor(Date.parse(s) / 864e5);
 export const YACHT_ROUNDS = [...new Set(Object.values(DAILY_YACHTS).map(dayN))].sort((a, b) => a - b)
   .map((n0) => ({ n0, ids: Object.keys(DAILY_YACHTS).filter((id) => dayN(DAILY_YACHTS[id]) <= n0) }));
