@@ -1068,65 +1068,346 @@ function paint(geo, wall, top = wall) {
   return g;
 }
 
-// ---------- the marinas ----------
-// the boats, drawn bow towards −z with the stern at the origin, a waterline at y = 0
-function hullShape(L, B, bow = 0.62) {
-  const s = new THREE.Shape();
-  s.moveTo(-B * 0.42, 0); s.lineTo(B * 0.42, 0); s.quadraticCurveTo(B * 0.52, L * 0.25, B / 2, L * 0.45);
-  s.quadraticCurveTo(B * 0.46, L * bow + L * 0.12, 0, L); s.quadraticCurveTo(-B * 0.46, L * bow + L * 0.12, -B / 2, L * 0.45);
-  s.quadraticCurveTo(-B * 0.52, L * 0.25, -B * 0.42, 0);
-  return s;
+// ---------- the boats ----------
+// Each drawn as a builder draws her: bow towards −z, the transom at the origin, the waterline at y = 0. The hull is
+// lofted: stations from the transom (t = 0) to the stem (t = 1), each a section from the deck edge down the topsides,
+// flaring out a little above the water, and round the bilge (or over a hard chine) to the keel; the deck edge rising
+// forward with the sheer; the bottom sweeping up into a raked stem forward and into the transom aft. Its faces take
+// their colours by height (the topsides, the boot stripe along the waterline, the antifouling under it) and by what
+// they are: the deck, the bulwark's inside and its rail, the transom. What stands on deck is built of frustums (a cabin
+// is its plan at its foot and a smaller one at its top, so its sides lean in and its windscreen rakes), spars, and the
+// rigging as lines. Each kind comes twice: as she is, for near the camera, and as a handful of faces for further off.
+const smooth01 = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+// faces with their colours, each turned outwards from a point inside the solid (ref); the normals given, or flat
+function shell() {
+  const pos = [], nrm = [], col = [], e1 = new THREE.Vector3(), e2 = new THREE.Vector3(), n = new THREE.Vector3(), cache = new Map();
+  const colour = (h) => { if (!cache.has(h)) cache.set(h, C(h)); return cache.get(h); };
+  return {
+    tri(a, b, c, h, ref, na, nb, nc) {
+      e1.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]); e2.set(c[0] - a[0], c[1] - a[1], c[2] - a[2]); n.crossVectors(e1, e2);
+      if (n.lengthSq() < 1e-10) return;
+      const mx = (a[0] + b[0] + c[0]) / 3 - ref[0], my = (a[1] + b[1] + c[1]) / 3 - ref[1], mz = (a[2] + b[2] + c[2]) / 3 - ref[2];
+      if (n.x * mx + n.y * my + n.z * mz < 0) { [b, c] = [c, b]; [nb, nc] = [nc, nb]; n.negate(); }
+      n.normalize(); const k = colour(h);
+      for (const [p, q] of [[a, na], [b, nb], [c, nc]]) { pos.push(p[0], p[1], p[2]); if (q) nrm.push(q[0], q[1], q[2]); else nrm.push(n.x, n.y, n.z); col.push(k.r, k.g, k.b); }
+    },
+    quad(a, b, c, d, h, ref) { this.tri(a, b, c, h, ref); this.tri(a, c, d, h, ref); },
+    add(g, h) { // a three.js geometry, in one colour
+      g = g.index ? g.toNonIndexed() : g; g.computeVertexNormals();
+      const P = g.attributes.position.array, N = g.attributes.normal.array, k = colour(h);
+      for (let i = 0; i < P.length; i += 3) { pos.push(P[i], P[i + 1], P[i + 2]); nrm.push(N[i], N[i + 1], N[i + 2]); col.push(k.r, k.g, k.b); }
+    },
+    geo() {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      return g;
+    },
+  };
 }
-const hull = (L, B, F, color, deck) => paint(new THREE.ExtrudeGeometry(hullShape(L, B), { depth: F, bevelEnabled: false, curveSegments: 4 }).rotateX(-Math.PI / 2).translate(0, -0.4, 0), color, deck);
-const at = (g, x, y, z) => g.translate(x, y, z);
-function sailboatGeo() {
-  const L = 13, B = 4.1;
-  return mergeGeometries([
-    hull(L, B, 1.45, '#f7f7f4', '#d9d2c2'),
-    paint(at(new THREE.BoxGeometry(2.5, 0.75, 4.2), 0, 1.4, -5.2), '#f4f4f0'),
-    paint(at(new THREE.BoxGeometry(2.3, 0.18, 1.6), 0, 1.86, -4.2), '#2a3540'), // the coachroof's windows
-    tint(at(new THREE.CylinderGeometry(0.08, 0.12, 17, 5), 0, 9.5, -7.4), '#cfd3d6'),
-    tint(at(new THREE.BoxGeometry(0.42, 0.42, 4.6), 0, 2.75, -5.2), '#22355a'), // the main furled on the boom under its cover
-  ].map(strip));
+// The hull, into the shell s. L on deck, B her beam, F the deck's height at the transom; sheer how much higher it is at
+// the stem (aft: how much it rises again aft, a gulet's); D how deep her body is under the water; tr the transom's width
+// over the beam, full how full the bow is; stemLen of her length the stem sweeps up over, stemExp how plumb it is (high,
+// plumb; low, a long raked curve); tb the transom's foot over the water; rake how far its foot is forward of its top
+// for each metre of it (less than 0, a modern reverse transom); flare how much wider the deck is than the waterline;
+// hard a motor boat's hard chine; bulwark how high the topsides stand above the deck; bands the heights a colour changes
+// at along the topsides (paint: [y0, y1, t0, t1, colour], a hull's windows, a stripe). Returns her lines, for what
+// stands on her: half(t), deck(t) (where the deck is, under any bulwark) and z(t).
+function loftHull(s, h) {
+  const { L, B, F, sheer = 0.4, aft = 0, D = 0.5, tr = 0.8, full = 0.85, stemLen = 0.15, stemExp = 2.5, tb = 0.05, rake = 0, flare = 0.06,
+    hard = false, N = 16, bulwark = 0, paint: pnt = [], col } = h;
+  const K = h.K ?? (hard ? 1 : 5), BOOT = 0.14, CH = -0.06; // the boot stripe's top; the topsides' foot, just under the water
+  const half = (t) => (B / 2) * (t < 0.42 ? tr + (1 - tr) * Math.sin((t / 0.42) * Math.PI / 2) : Math.pow(Math.max(0, Math.cos(((t - 0.42) / 0.58) * Math.PI / 2)), full));
+  const yd = (t) => F + sheer * t * t + aft * (1 - t) * (1 - t);
+  const yb = (t) => (t > 1 - stemLen ? -D + (yd(1) + D) * Math.pow((t - 1 + stemLen) / stemLen, stemExp) : tb + (-D - tb) * smooth01(0, 0.28, t));
+  const z = (t) => -t * L;
+  const bands = [...new Set([...(h.bands || []), ...pnt.flatMap((p) => [p[0], p[1]]), BOOT])].sort((a, b) => b - a);
+  const T = (i) => 1 - Math.pow(1 - i / N, 1.5); // (the stations closer together forward, where the bottom sweeps up into the stem)
+  // the stations, and each one's section as a ring from the port deck edge round under the keel to the starboard one
+  const rows = [];
+  for (let i = 0; i <= N; i++) {
+    const t = T(i), hd = half(t), d = yd(t), b = Math.min(yb(t), d), hc = hd * (1 - flare), yc = Math.min(d, Math.max(b, CH));
+    const pts = [[hd, d]];
+    for (const y of bands) { const yy = Math.min(d, Math.max(yc, y)); pts.push([hd + (hc - hd) * ((d - yy) / Math.max(1e-6, d - yc)), yy]); }
+    pts.push([hc, yc]);
+    for (let k = 1; k <= K; k++) { const a = (k / K) * Math.PI / 2; pts.push([hc * Math.cos(a), yc - (yc - b) * (hard ? k / K : Math.sin(a))]); }
+    const zz = (y) => z(t) + (i === 0 ? -rake * (d - y) : 0);
+    rows.push([...pts.map(([x, y]) => [-x, y, zz(y)]), ...pts.slice(0, -1).reverse().map(([x, y]) => [x, y, zz(y)])]);
+  }
+  const R = rows[0].length, inside = (p) => [0, Math.min(F * 0.4, (yd(-p[2] / L) + yb(-p[2] / L)) / 2), p[2]];
+  const face = (p) => { // a face's colour by where it is
+    const t = -p[2] / L;
+    for (const [y0, y1, t0, t1, c] of pnt) if (p[1] > y0 && p[1] < y1 && t > t0 && t < t1) return c;
+    return p[1] < CH + 0.01 ? col.bottom : p[1] < BOOT ? col.boot : col.top;
+  };
+  const mid = (a, b, c) => [(a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3, (a[2] + b[2] + c[2]) / 3];
+  // the topsides and the bottom, shaded round (each corner's normal the average of its faces')
+  const acc = rows.map((r) => r.map(() => [0, 0, 0])), quads = [];
+  const nrm = (a, b, c, ref) => { const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]], m = mid(a, b, c);
+    let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    if (n[0] * (m[0] - ref[0]) + n[1] * (m[1] - ref[1]) + n[2] * (m[2] - ref[2]) < 0) n = n.map((q) => -q);
+    return n; };
+  for (let i = 0; i < N; i++) for (let j = 0; j < R - 1; j++) {
+    const a = rows[i][j], b = rows[i + 1][j], c = rows[i + 1][j + 1], d = rows[i][j + 1], ref = inside(mid(a, b, c));
+    const n1 = nrm(a, b, c, ref), n2 = nrm(a, c, d, ref);
+    for (const [ii, jj, n] of [[i, j, n1], [i + 1, j, n1], [i + 1, j + 1, n1], [i, j, n2], [i + 1, j + 1, n2], [i, j + 1, n2]]) { const q = acc[ii][jj]; q[0] += n[0]; q[1] += n[1]; q[2] += n[2]; }
+    quads.push([i, j, ref]);
+  }
+  const unit = (q) => { const l = Math.hypot(q[0], q[1], q[2]) || 1; return [q[0] / l, q[1] / l, q[2] / l]; };
+  // a face cut along the waterline's colours (the antifouling's top and the boot stripe's), each piece in its own: where
+  // the bottom sweeps up into the stem a face may run from under the water to well above it
+  const cuts = [CH, BOOT], lerp = (p, q, f) => p && q ? p.map((v, k) => v + (q[k] - v) * f) : null;
+  const banded = (a, b, c, na, nb, nc, ref, k = 0) => {
+    if (k === cuts.length) { s.tri(a, b, c, face(mid(a, b, c)), ref, na, nb, nc); return; }
+    const y = cuts[k], v = [[a, na], [b, nb], [c, nc]], up = v.filter(([p]) => p[1] > y), dn = v.filter(([p]) => p[1] <= y);
+    if (!up.length || !dn.length) { banded(a, b, c, na, nb, nc, ref, k + 1); return; }
+    const [one, two] = up.length === 1 ? [up, dn] : [dn, up], [[p, np]] = one, [[q, nq], [r, nr]] = two;
+    const fq = (y - p[1]) / (q[1] - p[1]), fr = (y - p[1]) / (r[1] - p[1]), pq = lerp(p, q, fq), pr = lerp(p, r, fr), npq = lerp(np, nq, fq), npr = lerp(np, nr, fr);
+    banded(p, pq, pr, np, npq, npr, ref, k + 1); banded(pq, q, r, npq, nq, nr, ref, k + 1); banded(pq, r, pr, npq, nr, npr, ref, k + 1);
+  };
+  for (const [i, j, ref] of quads) {
+    const a = rows[i][j], b = rows[i + 1][j], c = rows[i + 1][j + 1], d = rows[i][j + 1];
+    banded(a, b, c, unit(acc[i][j]), unit(acc[i + 1][j]), unit(acc[i + 1][j + 1]), ref);
+    banded(a, c, d, unit(acc[i][j]), unit(acc[i + 1][j + 1]), unit(acc[i][j + 1]), ref);
+  }
+  // the transom: its ring, across
+  const r0 = rows[0], cT = r0.reduce((m, p) => [m[0] + p[0] / R, m[1] + p[1] / R, m[2] + p[2] / R], [0, 0, 0]);
+  for (let j = 0; j < R - 1; j++) banded(cT, r0[j], r0[j + 1], null, null, null, [0, cT[1], cT[2] - 1]);
+  // the deck, inside the bulwark (its inner face and its rail) or along the deck edge
+  const th = bulwark ? 0.14 : 0, deck = (t) => yd(t) - bulwark;
+  for (let i = 0; i < N; i++) {
+    const t0 = T(i), t1 = T(i + 1), w0 = Math.max(0, half(t0) - th), w1 = Math.max(0, half(t1) - th);
+    const P0 = [-w0, deck(t0), z(t0)], S0 = [w0, deck(t0), z(t0)], P1 = [-w1, deck(t1), z(t1)], S1 = [w1, deck(t1), z(t1)];
+    s.quad(P0, S0, S1, P1, col.deck, [0, deck(t0) - 1, z(t0)]);
+    if (!bulwark) continue;
+    for (const sd of [-1, 1]) {
+      const o0 = [sd * half(t0), yd(t0), z(t0)], o1 = [sd * half(t1), yd(t1), z(t1)], i0 = [sd * w0, yd(t0), z(t0)], i1 = [sd * w1, yd(t1), z(t1)];
+      s.quad(o0, o1, i1, i0, col.rail, [sd * w0, yd(t0) - 1, z(t0)]);
+      s.quad(i0, i1, [sd * w1, deck(t1), z(t1)], [sd * w0, deck(t0), z(t0)], col.inside, [sd * (w0 + 1), deck(t0), z(t0)]);
+    }
+  }
+  return { half, deck, z, yd, yb };
 }
-function motorGeo() {
-  const L = 15, B = 4.6;
-  return mergeGeometries([
-    hull(L, B, 2.0, '#fbfbf9', '#e6e1d6'),
-    paint(at(new THREE.BoxGeometry(3.6, 1.5, 7.2), 0, 2.3, -6.2), '#f6f6f3'),
-    tint(at(new THREE.BoxGeometry(3.66, 0.55, 6.6), 0, 2.4, -6.3), '#1d2730'), // the saloon's dark glass
-    paint(at(new THREE.BoxGeometry(3.0, 0.9, 3.6), 0, 3.5, -5.2), '#f2f2ee'),
-    tint(at(new THREE.BoxGeometry(3.06, 0.32, 3.2), 0, 3.55, -5.3), '#1d2730'),
-    tint(at(new THREE.CylinderGeometry(0.05, 0.05, 2.2, 4), 0, 5.0, -5.6), '#dddddd'),
-  ].map(strip));
+// a frustum: a plan [[x, z], …] at y0 and a smaller one (as many corners) at y1, its sides in a colour, its top in another
+function frustum(s, base, top, y0, y1, h, cap) {
+  const n = base.length, cx = base.reduce((m, p) => m + p[0] / n, 0), cz = base.reduce((m, p) => m + p[1] / n, 0), ref = [cx, (y0 + y1) / 2, cz];
+  for (let k = 0; k < n; k++) { const a = base[k], b = base[(k + 1) % n], c = top[(k + 1) % n], d = top[k]; s.quad([a[0], y0, a[1]], [b[0], y0, b[1]], [c[0], y1, c[1]], [d[0], y1, d[1]], h, ref); }
+  if (!cap) return;
+  const tx = top.reduce((m, p) => m + p[0] / n, 0), tz = top.reduce((m, p) => m + p[1] / n, 0);
+  for (let k = 0; k < n; k++) { const a = top[k], b = top[(k + 1) % n]; s.tri([tx, y1, tz], [a[0], y1, a[1]], [b[0], y1, b[1]], cap, [tx, y1 - 1, tz]); }
 }
-function guletGeo() {
-  const L = 25, B = 6.4;
-  return mergeGeometries([
-    hull(L, B, 2.3, '#6e4024', '#b88c5c'),
-    tint(at(new THREE.BoxGeometry(B * 0.9, 0.35, 0.3), 0, 1.75, -0.2), '#f2ede2'), // the transom's rail
-    paint(at(new THREE.BoxGeometry(4.6, 1.1, 11), 0, 2.2, -9), '#f1ead9', '#a8774a'),
-    tint(at(new THREE.BoxGeometry(4.0, 0.12, 6), 0, 3.4, -3.4), '#f4efe4'), // the aft deck's awning
-    tint(at(new THREE.CylinderGeometry(0.14, 0.2, 19, 5), 0, 11, -15.5), '#8a6440'),
-    tint(at(new THREE.CylinderGeometry(0.11, 0.16, 14, 5), 0, 8.5, -6.5), '#8a6440'),
-    tint(at(new THREE.CylinderGeometry(0.1, 0.12, 6, 4).rotateX(Math.PI / 2 - 0.15), 0, 2.4, -L - 1.8), '#8a6440'), // the bowsprit
-  ].map(strip));
+// a cabin's plan, from z0 aft to z1 forward (z1 < z0), half as wide as w0 aft and w1 forward, its forward corners
+// rounded over r
+function plan(z0, z1, w0, w1, r = 0) {
+  const p = [[w0, z0]];
+  if (r > 0) for (let k = 0; k <= 3; k++) { const a = (k / 3) * Math.PI / 2; p.push([w1 - r + r * Math.cos(a), z1 + r - r * Math.sin(a)]); }
+  else p.push([w1, z1]);
+  return [...p, ...p.map(([x, zz]) => [-x, zz]).reverse()];
 }
-// a superyacht: some 40 m, three decks of white and dark glass
-function superGeo() {
-  const L = 40, B = 8.4;
-  return mergeGeometries([
-    hull(L, B, 3.2, '#fbfbf9', '#c9a77c'),
-    paint(at(new THREE.BoxGeometry(6.8, 2.6, 22), 0, 4.1, -15), '#f6f6f3'),
-    tint(at(new THREE.BoxGeometry(6.9, 1.0, 20), 0, 4.2, -15.5), '#1d2730'),
-    paint(at(new THREE.BoxGeometry(5.8, 2.4, 14), 0, 6.6, -16), '#f6f6f3'),
-    tint(at(new THREE.BoxGeometry(5.9, 0.9, 12.5), 0, 6.7, -16.5), '#1d2730'),
-    paint(at(new THREE.BoxGeometry(4.6, 2.2, 7), 0, 8.9, -17), '#f2f2ee'),
-    tint(at(new THREE.BoxGeometry(4.66, 0.8, 6), 0, 9.0, -17.4), '#1d2730'),
-    tint(at(new THREE.CylinderGeometry(0.12, 0.18, 4, 5), 0, 11.8, -18), '#dddddd'),
-  ].map(strip));
+// a spar from p to q, r0 thick at p, r1 at q
+function spar(s, p, q, r0, r1, h, seg = 6) {
+  const d = new THREE.Vector3(q[0] - p[0], q[1] - p[1], q[2] - p[2]), l = d.length();
+  const g = new THREE.CylinderGeometry(r1, r0, l, seg, 1, true).translate(0, l / 2, 0); // (open ended: its ends are never seen)
+  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize())).translate(p[0], p[1], p[2]);
+  s.add(g, h);
 }
+const box = (s, x, y, z, w, hh, l, h) => s.add(new THREE.BoxGeometry(w, hh, l).translate(x, y, z), h);
+// a keel, a rudder: a foil from its root (zAft, zFwd at y0) to its tip (at y1), th thick
+function foil(s, ra, rf, y0, ta, tf, y1, th, h) {
+  const g = new THREE.BoxGeometry(1, 1, 1), P = g.attributes.position;
+  for (let i = 0; i < P.count; i++) {
+    const top = P.getY(i) > 0, aftEnd = P.getZ(i) > 0, x = P.getX(i) * th * (top ? 1 : 0.6);
+    P.setXYZ(i, x, top ? y0 : y1, top ? (aftEnd ? ra : rf) : aftEnd ? ta : tf);
+  }
+  s.add(g, h);
+}
+// the lines along a path (a polyline), into a list of segments
+const path = (out, ...pts) => { for (let i = 0; i + 1 < pts.length; i++) out.push(...pts[i], ...pts[i + 1]); };
+// the guardrails: stanchions at the given stations, a wire at their tops and one halfway, a pulpit round the bow
+function rails(out, H, ts, ht, inset = 0.08) {
+  for (const sd of [-1, 1]) {
+    const at = ts.map((t) => [sd * (H.half(t) - inset), H.deck(t), H.z(t)]);
+    for (const p of at) path(out, p, [p[0], p[1] + ht, p[2]]);
+    path(out, ...at.map((p) => [p[0], p[1] + ht, p[2]])); path(out, ...at.map((p) => [p[0], p[1] + ht / 2, p[2]]));
+  }
+  const tb = ts[ts.length - 1], tp = 0.985; // the pulpit
+  path(out, [-(H.half(tb) - inset), H.deck(tb) + ht, H.z(tb)], [0, H.deck(tp) + ht, H.z(tp)], [H.half(tb) - inset, H.deck(tb) + ht, H.z(tb)]);
+}
+// her lines to the quay astern (stern-to) and her lazy line forward, down into the water
+function moored(out, H, L, sternW) {
+  for (const sd of [-1, 1]) path(out, [sd * sternW, H.deck(0) + 0.15, 0.05], [sd * (sternW + 0.4), 0.75, 1.35]);
+  path(out, [0, H.deck(1) + 0.1, -L], [0, -0.5, -L - 5]);
+}
+
+// a sailing yacht of some 13 m, as a charter fleet's are: a wide transom, a plumb bow, the coachroof and its windows,
+// the sprayhood and the bimini, a fin keel and a spade rudder; her mast deck-stepped, two spreaders, the main furled on
+// the boom under its cover and the genoa rolled on the forestay
+function sailYacht(top = '#f7f7f4', far = false) {
+  const L = 13, B = 4.1, s = shell(), lines = [];
+  const H = loftHull(s, { L, B, F: 1.15, sheer: 0.32, D: 0.6, tr: 0.86, full: 0.78, stemLen: 0.08, stemExp: 3.5, tb: 0.1, rake: -0.12, flare: 0.05,
+    N: far ? 6 : 12, K: far ? 1 : 3, col: { top, boot: '#22344a', bottom: '#2a2f38', deck: '#ebe5d7' } });
+  const z = H.z, cr = H.deck(0.46), roof = cr + 0.55, mz = z(0.6);
+  // the coachroof: its foot, its band of windows, its roof
+  const p0 = plan(z(0.3), z(0.64), 1.32, 1.0, 0.55), inset = (p, dx, dzf) => p.map(([x, zz]) => [x - Math.sign(x) * dx, zz < z(0.47) ? zz + dzf : zz]);
+  if (far) frustum(s, p0, inset(p0, 0.2, 0.5), cr, roof, '#f3f1ea', '#f1eee6');
+  else {
+    frustum(s, p0, inset(p0, 0.04, 0.12), cr, cr + 0.16, '#f3f1ea');
+    frustum(s, inset(p0, 0.04, 0.12), inset(p0, 0.16, 0.4), cr + 0.16, cr + 0.42, '#1e2a34');
+    frustum(s, inset(p0, 0.16, 0.4), inset(p0, 0.2, 0.5), cr + 0.42, roof, '#f3f1ea', '#f1eee6');
+    // the cockpit: its teak, its coamings, the wheel; the sprayhood over the companionway and the bimini over the helm
+    frustum(s, plan(z(0.03), z(0.3), 1.25, 1.3), plan(z(0.03), z(0.3), 1.25, 1.3), H.deck(0.15), H.deck(0.15) + 0.03, '#a97c4f', '#a97c4f');
+    for (const sd of [-1, 1]) box(s, sd * 1.3, H.deck(0.17) + 0.18, (z(0.06) + z(0.3)) / 2, 0.08, 0.36, z(0.06) - z(0.3), '#f3f1ea');
+    const wy = H.deck(0.06) + 0.75; s.add(new THREE.TorusGeometry(0.52, 0.03, 3, 10).translate(0, wy, z(0.07)), '#2b2f33');
+    spar(s, [0, wy - 0.7, z(0.075)], [0, wy, z(0.075)], 0.06, 0.05, '#c9ced2', 5);
+    frustum(s, plan(z(0.25), z(0.31), 1.15, 1.15), plan(z(0.26), z(0.295), 1.0, 1.0), roof - 0.05, roof + 0.62, '#2a3b52', '#2a3b52');
+    box(s, 0, roof + 0.58, (z(0.07) + z(0.24)) / 2, 2.5, 0.06, z(0.07) - z(0.24), '#2f3e52');
+    for (const sd of [-1, 1]) for (const t of [0.07, 0.24]) path(lines, [sd * 1.2, H.deck(t), z(t)], [sd * 1.2, roof + 0.56, z(t)]);
+    // under the water: the fin keel with its bulb, and the rudder
+    foil(s, z(0.42), z(0.55), H.yb(0.48) + 0.1, z(0.45), z(0.53), -2.05, 0.2, '#2a2f38');
+    box(s, 0, -2.05, z(0.49), 0.42, 0.32, 1.9, '#2a2f38');
+    foil(s, z(0.07), z(0.115), H.yb(0.09) + 0.1, z(0.075), z(0.105), -1.55, 0.09, '#2a2f38');
+    // the swim platform let down off the transom
+    box(s, 0, 0.42, 0.45, 1.9, 0.07, 0.85, '#a97c4f');
+  }
+  // the rig: the mast, the spreaders, the boom with the main under its cover, the genoa furled on the forestay
+  const mh = 18.6, sw = 0.28;
+  spar(s, [0, roof, mz], [0, mh, mz], far ? 0.12 : 0.11, 0.06, '#d3d7da', far ? 4 : 6);
+  spar(s, [0, roof + 1.05, mz + 0.15], [0, roof + 1.15, z(0.24)], 0.08, 0.07, '#d3d7da', far ? 4 : 6);
+  box(s, 0, roof + 1.42, (mz + z(0.25)) / 2 + 0.1, 0.36, 0.5, mz - z(0.25) - 0.3, '#2a3b52');
+  if (!far) {
+    for (const [y, w] of [[7.6, 1.32], [13.2, 0.95]]) for (const sd of [-1, 1]) spar(s, [0, y, mz], [sd * w, y + 0.05, mz + sw], 0.045, 0.03, '#d3d7da', 4);
+    spar(s, [0, H.deck(1) + 0.35, z(0.985)], [0, mh - 0.9, mz - 0.05], 0.085, 0.035, '#34475f', 5);
+    // the standing rigging: forestay, the split backstay, the cap shrouds over the spreaders, the lowers
+    path(lines, [0, mh, mz], [0, H.deck(1) + 0.12, z(0.995)]);
+    for (const sd of [-1, 1]) {
+      path(lines, [0, mh, mz], [0, 6.5, -0.4], [sd * 0.75, H.deck(0) + 0.1, 0.0]);
+      const cp = [sd * (H.half(0.6) - 0.12), H.deck(0.6), mz + 0.25];
+      path(lines, [0, mh - 0.6, mz], [sd * 0.95, 13.25, mz + sw], [sd * 1.32, 7.65, mz + sw], cp);
+      path(lines, [0, 7.6, mz], [sd * (H.half(0.62) - 0.12), H.deck(0.62), z(0.66)]);
+      path(lines, [0, 7.6, mz], [sd * (H.half(0.56) - 0.12), H.deck(0.56), z(0.53)]);
+    }
+    rails(lines, H, [0.04, 0.17, 0.3, 0.44, 0.58, 0.72, 0.86], 0.62);
+    for (const sd of [-1, 1]) path(lines, [sd * (H.half(0.04) - 0.08), H.deck(0.04) + 0.62, z(0.04)], [sd * 0.6, H.deck(0) + 0.7, z(0.01)]);
+    moored(lines, H, L, 1.6);
+  }
+  return { geo: strip(s.geo()), lines };
+}
+// a flybridge motor yacht of some 15 m: a deep V with a hard chine and a raked, flared bow, her hull windows, the swim
+// platform, the saloon with its raked windscreen, the flybridge under its hardtop
+function motorYacht(top = '#fbfbf9', far = false) {
+  const L = 15, B = 4.6, s = shell(), lines = [];
+  const H = loftHull(s, { L, B, F: 1.75, sheer: 0.55, D: 0.85, tr: 0.93, full: 0.72, stemLen: 0.24, stemExp: 1.7, tb: 0.12, flare: 0.1, hard: true, bulwark: far ? 0 : 0.25,
+    N: far ? 6 : 12, paint: far ? [] : [[0.95, 1.28, 0.42, 0.68, '#1b2731']], col: { top, boot: '#1c2630', bottom: '#2c3a46', deck: '#e8e2d4', inside: '#f4f2ec', rail: '#f4f2ec' } });
+  const z = H.z, d0 = H.deck(0.38), white = '#f6f6f3', glass = '#1b2731';
+  const sal = plan(z(0.08), z(0.66), 1.95, 1.55, 0.7), ins = (p, dx, front, back = 0) => p.map(([x, zz]) => [x - Math.sign(x) * dx, zz < z(0.4) ? zz + front : zz - back]);
+  if (far) { frustum(s, sal, ins(sal, 0.15, 1.6), d0, d0 + 1.5, white, white); frustum(s, ins(sal, 0.35, 2.5, 1.2), ins(sal, 0.45, 2.8, 1.2), d0 + 1.5, d0 + 2.1, white, white); }
+  else {
+    frustum(s, sal, ins(sal, 0.03, 0.25), d0, d0 + 0.42, white);
+    frustum(s, ins(sal, 0.03, 0.25), ins(sal, 0.12, 1.55), d0 + 0.42, d0 + 1.38, glass); // the saloon's glass, its windscreen raked
+    frustum(s, ins(sal, 0.12, 1.55), ins(sal, 0.1, 1.6), d0 + 1.38, d0 + 1.52, white, white);
+    // the flybridge: its coaming, its helm, the hardtop on its posts, the radar on its arch
+    const fb = plan(z(0.14), z(0.52), 1.55, 1.35, 0.6), fy = d0 + 1.52;
+    frustum(s, fb, ins(fb, 0.06, 0.1), fy, fy + 0.62, white, '#e4ded2');
+    box(s, 0, fy + 0.95, z(0.47), 1.3, 0.7, 0.8, white);
+    box(s, 0, fy + 1.2, z(0.475), 1.2, 0.25, 0.4, glass);
+    box(s, 0, fy + 2.25, (z(0.18) + z(0.44)) / 2, 2.9, 0.1, z(0.18) - z(0.44), white);
+    for (const sd of [-1, 1]) for (const t of [0.19, 0.43]) box(s, sd * 1.32, fy + 1.4, z(t), 0.07, 1.6, 0.07, '#d9dcdf');
+    spar(s, [0, fy + 2.3, z(0.36)], [0, fy + 3.3, z(0.38)], 0.05, 0.04, '#d9dcdf', 4);
+    s.add(new THREE.CylinderGeometry(0.3, 0.3, 0.22, 10).translate(0, fy + 2.45, z(0.25)), white); // the radome
+    // the foredeck's sunpad, the swim platform, the bow rail
+    box(s, 0, H.deck(0.76) + 0.12, z(0.76), 2.0, 0.22, 1.9, '#e9e1cf');
+    box(s, 0, 0.38, 0.6, B * 0.86, 0.12, 1.2, '#a97c4f');
+    rails(lines, H, [0.68, 0.78, 0.88, 0.95], 0.55, 0.12);
+    foil(s, z(0.12), z(0.2), -0.6, z(0.13), z(0.19), -1.05, 0.06, '#2c3a46');
+    moored(lines, H, L, 1.8);
+  }
+  return { geo: strip(s.geo()), lines };
+}
+// a Turkish gulet of some 25 m: a varnished (or white) wooden hull with a strong sheer, its counter stern and its long
+// raked stem with the bowsprit off it, high bulwarks with a varnished rail; the deckhouse and the wheelhouse, the aft
+// deck under its awning; two masts, their sails furled on the booms
+function gulet(varnish = true, far = false, flag = false) {
+  const L = 25, B = 6.4, s = shell(), lines = [], wood = '#7a4a2a', spars = '#8a6440', cream = '#ece4d2';
+  const H = loftHull(s, { L, B, F: 1.75, sheer: 1.1, aft: 0.25, D: 1.4, tr: 0.62, full: 0.95, stemLen: 0.3, stemExp: 1.8, tb: 0.7, rake: 0.42, flare: 0.04,
+    bulwark: far ? 0 : 0.7, N: far ? 6 : 14, K: far ? 1 : 3,
+    col: { top: varnish ? '#5e3520' : '#f3f0e8', boot: varnish ? '#f2ede2' : '#2a4d7a', bottom: '#7d2b22', deck: '#b58958', inside: '#f1ece2', rail: wood } });
+  const z = H.z, dh = H.deck(0.5), house = varnish ? wood : '#f4efe4';
+  const p0 = plan(z(0.34), z(0.64), 1.95, 1.7, 0.6), ins = (p, dx, front) => p.map(([x, zz]) => [x - Math.sign(x) * dx, zz < z(0.5) ? zz + front : zz]);
+  frustum(s, p0, ins(p0, 0.03, 0.03), dh, dh + 0.5, house);
+  frustum(s, ins(p0, 0.03, 0.03), ins(p0, 0.05, 0.05), dh + 0.5, dh + 0.9, far ? house : '#1e2a34');
+  frustum(s, ins(p0, 0.05, 0.05), ins(p0, 0.02, 0), dh + 0.9, dh + 1.05, house, cream);
+  const wh = plan(z(0.35), z(0.43), 1.15, 1.1, 0.2);
+  frustum(s, wh, ins(wh, 0.04, 0.05), dh + 1.05, dh + 1.5, house);
+  frustum(s, ins(wh, 0.04, 0.05), ins(wh, 0.06, 0.08), dh + 1.5, dh + 1.95, far ? house : '#1e2a34');
+  frustum(s, ins(wh, 0.06, 0.08), ins(wh, 0.02, 0), dh + 1.95, dh + 2.08, house, cream);
+  // the awning over the aft deck, on its posts
+  const aw = H.deck(0.1) + 2.25;
+  box(s, 0, aw, (z(0.01) + z(0.32)) / 2, B * 0.86, 0.08, z(0.01) - z(0.32), cream);
+  // the masts, the booms with the sails furled on them under their covers, the bowsprit
+  const mm = z(0.74), mi = z(0.5), mt = dh + 17.5, it = dh + 12.5, bow = [0, H.yd(1) - 0.15, z(1)], bs = [0, H.yd(1) + 0.75, z(1) - 4.4];
+  spar(s, [0, H.deck(0.74), mm], [0, mt, mm], 0.2, 0.1, spars, far ? 4 : 7);
+  spar(s, [0, dh + 1.05, mi], [0, it, mi], 0.16, 0.08, spars, far ? 4 : 7);
+  spar(s, bow, bs, 0.15, 0.09, spars, far ? 4 : 6);
+  box(s, 0, H.deck(0.74) + 2.3, (mm + z(0.47)) / 2, 0.5, 0.55, mm - z(0.47), cream);
+  box(s, 0, aw + 0.75, (mi + z(0.2)) / 2, 0.42, 0.45, mi - z(0.2), cream);
+  if (!far) {
+    spar(s, [0, H.deck(0.74) + 1.9, mm + 0.2], [0, H.deck(0.74) + 1.95, z(0.47)], 0.1, 0.09, spars, 6);
+    spar(s, [0, aw + 0.4, mi + 0.2], [0, aw + 0.45, z(0.2)], 0.09, 0.08, spars, 6);
+    for (const sd of [-1, 1]) for (const t of [0.02, 0.17, 0.31]) path(lines, [sd * (H.half(t) - 0.3), H.deck(t), z(t)], [sd * (H.half(t) - 0.3), aw, z(t)]);
+    // the rigging: the forestays to the bowsprit and the stem, its bobstay, the triatic between the mastheads, the
+    // mizzen's backstay, the shrouds
+    path(lines, [0, mt, mm], bs); path(lines, [0, mt - 3, mm], [0, H.yd(1), z(0.99)]); path(lines, bs, [0, 0.4, z(0.97)]);
+    path(lines, [0, mt - 0.5, mm], [0, it, mi]); path(lines, [0, it, mi], [0, H.yd(0) + 0.3, -0.3]);
+    for (const sd of [-1, 1]) {
+      path(lines, [0, mt - 0.8, mm], [sd * (H.half(0.72) - 0.05), H.yd(0.72), mm + 0.6]); path(lines, [0, mt - 6, mm], [sd * (H.half(0.76) - 0.05), H.yd(0.76), mm - 0.6]);
+      path(lines, [0, it - 0.6, mi], [sd * (H.half(0.5) - 0.05), H.yd(0.5), mi + 0.5]);
+      for (let k = 0; k < 5; k++) { const t = 0.42 + k * 0.06; path(lines, [sd * (H.half(t) - 0.05), H.yd(t), z(t)], [sd * (H.half(t + 0.06) - 0.05), H.yd(t + 0.06), z(t + 0.06)]); }
+    }
+    foil(s, z(0.0) - 0.4, z(0.06), H.yb(0.03) + 0.2, z(0.0) - 0.3, z(0.06), -1.3, 0.14, '#7d2b22');
+    if (flag) { spar(s, [0, H.yd(0), 0.2], [0, H.yd(0) + 2.0, 0.8], 0.03, 0.02, '#d9d4c8', 4); box(s, 0.0, H.yd(0) + 1.6, 1.25, 0.04, 0.75, 1.1, '#d6201e'); }
+    moored(lines, H, L, 2.0);
+  }
+  return { geo: strip(s.geo()), lines };
+}
+// a superyacht: some 40 m, three decks of white and dark glass over a sharp, raked hull, her hull windows in a row
+function superYacht(far = false) {
+  const L = 40, B = 8.4, s = shell(), lines = [], white = '#f6f6f3', glass = '#1b2731';
+  const H = loftHull(s, { L, B, F: 2.6, sheer: 0.9, D: 1.7, tr: 0.9, full: 0.68, stemLen: 0.2, stemExp: 1.5, tb: 0.2, rake: -0.18, flare: 0.08, hard: true, bulwark: far ? 0 : 0.9,
+    N: far ? 7 : 14, paint: far ? [] : [[1.2, 1.65, 0.36, 0.62, glass]], col: { top: '#fbfbf9', boot: '#1c2630', bottom: '#2c3a46', deck: '#c9a77c', inside: white, rail: '#c9a77c' } });
+  const z = H.z, ins = (p, dx, front) => p.map(([x, zz]) => [x - Math.sign(x) * dx, zz < z(0.4) ? zz + front : zz]);
+  let y = H.deck(0.4);
+  for (const [t0, t1, w, rk] of [[0.05, 0.68, 3.6, 2.4], [0.12, 0.6, 3.3, 2.6], [0.24, 0.52, 2.8, 2.2]]) {
+    const p = plan(z(t0), z(t1), w, w * 0.84, 1.4);
+    if (far) frustum(s, p, ins(p, 0.2, rk), y, y + 2.2, white, white);
+    else {
+      frustum(s, p, ins(p, 0.02, 0.3), y, y + 0.35, white);
+      frustum(s, ins(p, 0.02, 0.3), ins(p, 0.12, rk), y + 0.35, y + 1.95, glass);
+      frustum(s, ins(p, 0.12, rk), ins(p, 0.1, rk + 0.1), y + 1.95, y + 2.2, white, white);
+    }
+    y += 2.2;
+  }
+  spar(s, [0, y, z(0.4)], [0, y + 3.5, z(0.41)], 0.14, 0.08, '#d9dcdf', far ? 4 : 6);
+  if (!far) {
+    for (const k of [-1, 1]) s.add(new THREE.SphereGeometry(0.55, 10, 6).translate(k * 1.2, y + 1.4, z(0.36)), white); // her domes
+    box(s, 0, 0.45, 0.9, B * 0.8, 0.14, 1.8, '#c9a77c');
+    moored(lines, H, L, 2.4);
+  }
+  return { geo: strip(s.geo()), lines };
+}
+// what the boatyard and the rest take: the yachts as they are
+const sailboatGeo = () => sailYacht().geo, motorGeo = () => motorYacht().geo;
 const TINTS = ['#ffffff', '#f4f6f8', '#fbf6ec', '#e8ecef']; // the whole boat is tinted, so only a shade either way
+// each kind as she is near and far, in her colours: the yachts mostly white, some dark blue or grey; a gulet varnished
+// or white
+function variants(kind) {
+  const both = (f, ...a) => { const n = f(...a, false), fr = f(...a, true); return { geo: n.geo, far: fr.geo, lines: n.lines.length ? new Float32Array(n.lines) : null }; };
+  const turk = ['gocek', 'marmaris', 'fethiye'].includes(VENUE.id);
+  if (kind === 'sail') return [[0.78, both(sailYacht, '#f7f7f4')], [0.13, both(sailYacht, '#1f3550')], [0.09, both(sailYacht, '#8d969c')]];
+  if (kind === 'motor') return [[0.82, both(motorYacht, '#fbfbf9')], [0.12, both(motorYacht, '#23344c')], [0.06, both(motorYacht, '#5f6a72')]];
+  if (kind === 'gulet') return [[0.55, both((f) => gulet(true, f, turk))], [0.45, both((f) => gulet(false, f, turk))]];
+  return [[1, both(superYacht)]];
+}
+
+// ---------- the marinas ----------
 
 function marinas() {
   const r = rng(5), group = new THREE.Group();
@@ -1146,9 +1427,9 @@ function marinas() {
   // the yachts, stern-to along both sides: sailing yachts mostly, motor yachts, and gulets where a long one fits
   const BO = LOOK.boats, superBig = BO.bigKind === 'super';
   const kinds = [
-    { geo: sailboatGeo(), L: 13, B: 4.1, gap: 4.7, list: [] },
-    { geo: motorGeo(), L: 15, B: 4.6, gap: 5.2, list: [] },
-    superBig ? { geo: superGeo(), L: 40, B: 8.4, gap: 10, list: [] } : { geo: guletGeo(), L: 27, B: 6.4, gap: 7.4, list: [] },
+    { v: variants('sail'), L: 13, B: 4.1, gap: 4.7, list: [] },
+    { v: variants('motor'), L: 15, B: 4.6, gap: 5.2, list: [] },
+    superBig ? { v: variants('super'), L: 40, B: 8.4, gap: 10, list: [] } : { v: variants('gulet'), L: 27, B: 6.4, gap: 7.4, list: [] },
   ];
   // which boat a berth gets: on a quay mostly the big ones; on a pontoon the venue's mix
   const pickKind = (quay) => {
@@ -1197,7 +1478,7 @@ function marinas() {
   }
   // the town quays where the gulets lie stern-to (venues.py `gulets`, the json's moor): one every berth along the shore
   // there, its bow out over the water; a motor yacht now and then, a berth empty here and there
-  const gk = superBig ? (kinds[3] = { geo: guletGeo(), L: 27, B: 6.4, gap: 7.4, list: [] }) : kinds[2];
+  const gk = superBig ? (kinds[3] = { v: variants('gulet'), L: 27, B: 6.4, gap: 7.4, list: [] }) : kinds[2];
   for (const run of META.moor || []) {
     let u = 0;
     for (let i = 0; i + 1 < run.length; i++) {
@@ -1218,43 +1499,90 @@ function marinas() {
       u -= l;
     }
   }
-  const o = new THREE.Object3D(), c = new THREE.Color();
-  kinds.forEach((k, ki) => {
-    if (!k.list.length) return;
-    const m = new THREE.InstancedMesh(k.geo, landMat(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0 }), 1), k.list.length);
-    k.list.forEach(([x, z, a, sc], i) => {
-      o.position.set(x, 0, z); o.rotation.set(0, a, 0); o.scale.setScalar(sc); o.updateMatrix(); m.setMatrixAt(i, o.matrix);
-      m.setColorAt(i, c.set(TINTS[Math.floor(r() * TINTS.length)]));
+  // Each kind's boats drawn as a handful of faces each, all of one colour in one batch; and in tiles of 400 m as they are,
+  // with their rigging, near the camera (update(): within BOATS_NEAR of the tile's edge), when they leave the batch.
+  const o = new THREE.Object3D(), c = new THREE.Color(), v = new THREE.Vector3(), tiles = new Map(), TILE = 400;
+  const mat = landMat(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0 }), 1);
+  const rig = landMat(new THREE.LineBasicMaterial({ color: '#45494d', transparent: true, opacity: 0.6 }), 1, { key: 'rig', unlit: true });
+  const tileOf = (x, z) => {
+    const key = Math.floor(x / TILE) + ',' + Math.floor(z / TILE);
+    if (!tiles.has(key)) tiles.set(key, { near: [], far: [], pts: [], isNear: false });
+    return tiles.get(key);
+  };
+  for (const k of kinds) {
+    const byVariant = k.v.map(() => []);
+    for (const e of k.list) { let u = r() * k.v.reduce((m, q) => m + q[0], 0), vi = 0; while (vi < k.v.length - 1 && (u -= k.v[vi][0]) > 0) vi++; byVariant[vi].push(e); }
+    k.v.forEach(([, va], vi) => {
+      const its = byVariant[vi]; if (!its.length) return;
+      const fm = new THREE.InstancedMesh(va.far, mat, its.length), byTile = new Map();
+      its.forEach(([x, z, a, sc], i) => {
+        o.position.set(x, 0, z); o.rotation.set(0, a, 0); o.scale.setScalar(sc); o.updateMatrix(); c.set(TINTS[Math.floor(r() * TINTS.length)]);
+        fm.setMatrixAt(i, o.matrix); fm.setColorAt(i, c);
+        const t = tileOf(x, z); t.far.push([fm, i, o.matrix.clone()]); t.pts.push([x, z]);
+        if (!byTile.has(t)) byTile.set(t, []); byTile.get(t).push([o.matrix.clone(), c.clone()]);
+      });
+      fm.computeBoundingSphere(); group.add(fm);
+      for (const [t, list] of byTile) {
+        const dm = new THREE.InstancedMesh(va.geo, mat, list.length), n = va.lines ? va.lines.length : 0, seg = n ? new Float32Array(list.length * n) : null;
+        list.forEach(([m4, col], i) => {
+          dm.setMatrixAt(i, m4); dm.setColorAt(i, col);
+          for (let q = 0; q < n; q += 3) { v.set(va.lines[q], va.lines[q + 1], va.lines[q + 2]).applyMatrix4(m4); seg[i * n + q] = v.x; seg[i * n + q + 1] = v.y; seg[i * n + q + 2] = v.z; }
+        });
+        dm.computeBoundingSphere(); dm.visible = false; t.near.push(dm); group.add(dm);
+        if (seg) { const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(seg, 3)); const ls = new THREE.LineSegments(lg, rig); ls.userData.rig = true; ls.visible = false; t.near.push(ls); group.add(ls); }
+      }
     });
-    group.add(m);
-  });
+  }
+  for (const t of tiles.values()) {
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (const [x, z] of t.pts) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+    Object.assign(t, { x: (x0 + x1) / 2, z: (z0 + z1) / 2, r: Math.hypot(x1 - x0, z1 - z0) / 2 + 45 }); delete t.pts;
+  }
+  group.userData.tiles = [...tiles.values()];
   return group;
 }
+const BOATS_NEAR = 320; // metres from a tile of moored boats within which they are drawn as they are
+const NOWHERE = new THREE.Matrix4().makeScale(0, 0, 0); // (a boat out of her batch)
 
 // ---------- the boats that come and go ----------
 // The ferries and the water taxis on their ways across the bay (venues.py `routes`, found on the water there, round the
 // race area) and the kitesurfers off a beach (`kites`), moved on the race's clock: each boat out and back along its way,
 // waiting a while at each end; each kitesurfer across the breeze and back, the kite high downwind of them, swinging.
 // All picture: the race knows nothing of them.
-function fastFerryGeo() { // a fast catamaran of some 40 m, white, her windows in a dark band, bow towards −z
-  const L = 40, B = 11;
-  return mergeGeometries([
-    ...[-1, 1].map((sd) => at(hull(L, 2.8, 2.6, '#f4f4f1', '#e2ded4'), sd * (B / 2 - 1.4), 0, 0)),
-    paint(at(new THREE.BoxGeometry(B, 3.6, L * 0.86), 0, 2.9, -L * 0.47), '#f6f6f3', '#dcd8cf'), // the body over the hulls, down to the spray
-    tint(at(new THREE.BoxGeometry(B + 0.06, 1.0, L * 0.74), 0, 3.4, -L * 0.45), '#1f3346'), // the saloon's windows
-    tint(at(new THREE.BoxGeometry(B + 0.1, 0.45, L * 0.8), 0, 1.75, -L * 0.47), '#1e5a9c'), // her company's stripe
-    paint(at(new THREE.BoxGeometry(B * 0.7, 2.0, L * 0.3), 0, 5.7, -L * 0.62), '#f6f6f3'),
-    tint(at(new THREE.BoxGeometry(B * 0.7 + 0.06, 0.8, L * 0.3 + 0.06), 0, 5.9, -L * 0.62), '#1f3346'),
-  ].map(strip));
+function fastFerryGeo() { // a fast catamaran of some 40 m, white, two slim hard-chined hulls under her body, bow towards −z
+  const L = 40, B = 11, parts = [];
+  for (const sd of [-1, 1]) {
+    const s = shell();
+    loftHull(s, { L, B: 2.8, F: 2.4, sheer: 0.5, D: 1.2, tr: 0.92, full: 0.55, stemLen: 0.1, stemExp: 3, tb: 0.35, hard: true, N: 12, col: { top: '#f4f4f1', boot: '#1e5a9c', bottom: '#2c3a46', deck: '#e2ded4' } });
+    parts.push(s.geo().translate(sd * (B / 2 - 1.4), 0, 0));
+  }
+  const s = shell(), white = '#f6f6f3', glass = '#1f3346', ins = (p, dx, front) => p.map(([x, zz]) => [x - Math.sign(x) * dx, zz < -L * 0.5 ? zz + front : zz]);
+  const body = plan(0.2, -L * 0.9, B / 2, B / 2 * 0.86, 3);
+  frustum(s, body, body, 1.6, 2.6, white); // her body over the tunnel between the hulls
+  box(s, 0, 2.15, -L * 0.45, B + 0.08, 0.45, L * 0.82, '#1e5a9c'); // her company's stripe
+  frustum(s, body, ins(body, 0.05, 0.4), 2.6, 3.0, white);
+  frustum(s, ins(body, 0.05, 0.4), ins(body, 0.15, 2.4), 3.0, 4.0, glass);
+  frustum(s, ins(body, 0.15, 2.4), ins(body, 0.15, 2.5), 4.0, 4.3, white, '#dcd8cf');
+  const top = plan(-L * 0.42, -L * 0.8, B * 0.35, B * 0.3, 1.5);
+  frustum(s, top, ins(top, 0.05, 0.2), 4.3, 4.7, white);
+  frustum(s, ins(top, 0.05, 0.2), ins(top, 0.12, 1.4), 4.7, 5.6, glass);
+  frustum(s, ins(top, 0.12, 1.4), ins(top, 0.12, 1.5), 5.6, 5.85, white, white);
+  spar(s, [0, 5.85, -L * 0.6], [0, 8.2, -L * 0.62], 0.08, 0.05, '#d9dcdf', 4);
+  parts.push(s.geo());
+  return mergeGeometries(parts.map(strip));
 }
-function taxiGeo() { // a bay's wooden passenger boat, some 14 m, its canopy over the benches
-  const L = 14, B = 4.2;
-  return mergeGeometries([
-    hull(L, B, 1.6, '#3f6f8f', '#b88c5c'),
-    tint(at(new THREE.BoxGeometry(B * 0.92, 0.12, L * 0.6), 0, 3.4, -L * 0.42), '#f2ede2'), // the canopy
-    ...[-1, 1].flatMap((sd) => [0.2, 0.5].map((f) => tint(at(new THREE.CylinderGeometry(0.06, 0.06, 2.1, 4), sd * B * 0.42, 2.3, -L * f), '#d9d4c8'))),
-    paint(at(new THREE.BoxGeometry(2.0, 1.5, 2.2), 0, 1.9, -L * 0.82), '#f4efe4'), // the wheelhouse forward
-  ].map(strip));
+function taxiGeo() { // a bay's wooden passenger boat, some 14 m: her blue topsides, its canopy over the benches, the wheelhouse forward
+  const L = 14, B = 4.2, s = shell();
+  const H = loftHull(s, { L, B, F: 1.25, sheer: 0.6, aft: 0.15, D: 0.8, tr: 0.62, full: 0.95, stemLen: 0.25, stemExp: 1.8, tb: 0.45, rake: 0.3, bulwark: 0.45, N: 12,
+    col: { top: '#3f6f8f', boot: '#f2ede2', bottom: '#7d2b22', deck: '#b88c5c', inside: '#f2ede2', rail: '#7a4a2a' } });
+  const ay = H.deck(0.3) + 2.05;
+  box(s, 0, ay, -L * 0.36, B * 0.88, 0.1, L * 0.62, '#f2ede2'); // the canopy
+  for (const sd of [-1, 1]) for (const t of [0.07, 0.36, 0.64]) box(s, sd * B * 0.4, ay - 1.0, -L * t, 0.07, 2.0, 0.07, '#d9d4c8');
+  const wh = plan(-L * 0.7, -L * 0.85, 0.95, 0.85, 0.3), ins = (p, dx) => p.map(([x, zz]) => [x - Math.sign(x) * dx, zz]);
+  frustum(s, wh, wh, H.deck(0.77), H.deck(0.77) + 0.9, '#f4efe4');
+  frustum(s, wh, ins(wh, 0.06), H.deck(0.77) + 0.9, H.deck(0.77) + 1.45, '#1e2a34');
+  frustum(s, ins(wh, 0.06), ins(wh, 0.02), H.deck(0.77) + 1.45, H.deck(0.77) + 1.55, '#f4efe4', '#f4efe4');
+  return strip(s.geo());
 }
 function movers() {
   const group = new THREE.Group(), list = [], mat = landMat(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0 }), 1); // (as the moored boats')
@@ -1924,10 +2252,12 @@ function landmarks() {
         const px = cx + ux * a - uz * b, pz = cz + uz * a + ux * b;
         if (!ins(px, pz) || !ins(px + ux * 7, pz + uz * 7) || !ins(px - ux * 7, pz - uz * 7) || rr() < 0.22) continue;
         const gy = groundAt(px, pz), isSail = rr() < 0.75, sc = 0.8 + rr() * 0.3, len = (isSail ? 13 : 15) * sc;
-        const g = (isSail ? sail : motor).clone().scale(sc, sc, sc).translate(0, 0, len / 2).rotateY(-ang - Math.PI / 2 + (rr() < 0.5 ? 0 : Math.PI)).translate(px, gy + 1.6, pz);
+        // (a sailing yacht stands on her keel on its block, a motor yacht on her cradle; her cradle's pads up to her bilges)
+        const lift = isSail ? 0.3 + 2.37 * sc : 1.4 + 0.85 * sc;
+        const g = (isSail ? sail : motor).clone().scale(sc, sc, sc).translate(0, 0, len / 2).rotateY(-ang - Math.PI / 2 + (rr() < 0.5 ? 0 : Math.PI)).translate(px, gy + lift, pz);
         parts.push(g);
-        for (const s2 of [-1, 1]) parts.push(blk(px + ux * s2 * len * 0.25, pz + uz * s2 * len * 0.25, gy - 0.5, 1.8, 0.4, 2.8, ang + Math.PI / 2, cradle));
-        if (isSail) parts.push(blk(px, pz, gy, 1.4, 2.6 * sc, 0.3, ang, '#3a3f44')); // the keel on its block
+        for (const s2 of [-1, 1]) parts.push(blk(px + ux * s2 * len * 0.25, pz + uz * s2 * len * 0.25, gy - 0.5, lift + 0.5 - 0.45 * sc, 0.4, 2.8, ang + Math.PI / 2, cradle));
+        if (isSail) parts.push(blk(px, pz, gy, 0.3, 2.6 * sc, 0.4, ang, '#3a3f44')); // the keel on its block
       }
     } else if (L.kind === 'mosque') {
       // Istanbul's imperial mosques on their hills: the square prayer hall, the great dome on its drum (its top L.h up),
@@ -2042,6 +2372,13 @@ export class Skopea {
     CLOUD_U.uCsT.value = t;
     this.movers.userData.update(t);
     const gp = this.group.position;
+    for (const b of this.boats.userData.tiles) { // (a tile's boats near: drawn as they are, and out of their batch)
+      const near = Math.hypot(b.x + gp.x - cam.x, b.z + gp.z - cam.z) - b.r < BOATS_NEAR;
+      for (const m of b.near) m.visible = near && (!m.userData.rig || this.rigging !== false);
+      if (near === b.isNear) continue;
+      b.isNear = near;
+      for (const [fm, i, m4] of b.far) { fm.setMatrixAt(i, near ? NOWHERE : m4); fm.instanceMatrix.needsUpdate = true; }
+    }
     for (const m of this.trees.children) {
       const lod = m.userData.lod; if (!lod) continue;
       const c = m.boundingSphere.center, near = Math.hypot(c.x + gp.x - cam.x, c.z + gp.z - cam.z) - m.boundingSphere.radius < 1200;
@@ -2055,5 +2392,6 @@ export class Skopea {
     for (const m of this.farTrees.children) m.count = Math.round(m.userData.max * ff);
     this.far.geometry.setIndex(q === 'high' ? this.far.userData.full : this.far.userData.coarse);
     GROUND_U.uCanopy.value = q === 'low' ? 0 : 1;
+    this.rigging = q !== 'low'; // (the moored boats' rigging: not on the lowest)
   }
 }
