@@ -1749,6 +1749,15 @@ export class World {
     this.glare.position.copy(cam.position).addScaledVector(SUN, 3000);
     this.glare.material.opacity = 0.55 * this.glareK * Math.max(0, look.dot(SUN)) ** 6;
     this.glare.visible = this.glare.material.opacity > 0.01;
+    // and the camera stops down looking into the sun, as one does for the glare and the sea's glitter under it: the
+    // boats then show as the shapes against the light they are, their shaded sides dark. Facing the sun's way (its
+    // bearing, wherever the camera tilts), the lower it stands the more; none under a cloud deck; eased over a second
+    // or so, as an eye or a camera adapts.
+    const lh = Math.hypot(look.x, look.z), sh = Math.hypot(SUN.x, SUN.z);
+    const into = lh > 1e-3 && sh > 1e-3 ? (look.x * SUN.x + look.z * SUN.z) / (lh * sh) : 0;
+    const stop = THREE.MathUtils.smoothstep(into, 0.3, 0.95) * this.glareK * (1 - THREE.MathUtils.smoothstep(this.light.elevation, 40, 70));
+    this.stopDown = lerp(this.stopDown || 0, stop, Math.min(1, dt * 1.5));
+    this.renderer.toneMappingExposure = this.light.exposure * (1 - 0.3 * this.stopDown);
     this.sun.target.position.set(P.x, 2, P.z); this.sun.position.set(P.x + SUN.x * 70, 2 + SUN.y * 70, P.z + SUN.z * 70);
     // the water disc follows what the camera looks at
     this.water.position.set(Math.round(P.x / 4) * 4, 0, Math.round(P.z / 4) * 4);

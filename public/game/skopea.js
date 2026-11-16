@@ -2357,6 +2357,12 @@ function landmarks() {
 // ---------- the land's shadows on everything else ----------
 // The yachts, the marks and the committee boat: their lit materials dimmed where the land's shadow falls (shadows()),
 // as the land and the sea are, so a boat sailing under a cliff at sunset goes into its shade; and under a cloud's.
+// And their sky light (the environment map's and the hemisphere's) cut as the land's is (LAND_FS: 0.475), so the
+// side away from the sun is the shade it is: the sky map is drawn as bright as the eye sees the sky, which as light
+// is far too much against the sun's, and a white hull seen against the sun stayed nearly as white as in it. Under a
+// clear sky the shade is about a fifth of the sunlit side; under a cloud deck the sky is all the light there is, and
+// keeps more of it (setLight).
+const FILL_U = { uSkyFill: { value: 1 } };
 export function inLandShadow(root) {
   root.traverse((o) => {
     if (!o.isMesh) return;
@@ -2366,16 +2372,20 @@ export function inLandShadow(root) {
       const prev = m.onBeforeCompile, key = m.customProgramCacheKey;
       m.onBeforeCompile = function (sh, r) {
         if (prev) prev.call(this, sh, r);
-        Object.assign(sh.uniforms, { uShadeTex: LAND_U.uShadeTex, uShadeXf: LAND_U.uShadeXf, uLandShadeAt: LAND_U.uAt }, CLOUD_U);
+        Object.assign(sh.uniforms, { uShadeTex: LAND_U.uShadeTex, uShadeXf: LAND_U.uShadeXf, uLandShadeAt: LAND_U.uAt }, CLOUD_U, FILL_U);
         sh.vertexShader = 'uniform vec3 uLandShadeAt; varying vec2 vSunXZ;\n' + sh.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
           { vec4 sw = vec4(transformed, 1.0);
           #ifdef USE_INSTANCING
             sw = instanceMatrix * sw;
           #endif
             sw = modelMatrix * sw; vSunXZ = sw.xz + uLandShadeAt.xz; }`);
-        sh.fragmentShader = 'uniform sampler2D uShadeTex; uniform vec3 uShadeXf; varying vec2 vSunXZ;\n' + CLOUD_GLSL + '\n' + sh.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+        sh.fragmentShader = 'uniform sampler2D uShadeTex; uniform vec3 uShadeXf; uniform float uSkyFill; varying vec2 vSunXZ;\n' + CLOUD_GLSL + '\n' + sh.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
           { vec2 g = (vSunXZ - uShadeXf.xy) * uShadeXf.z; float sun = (g.x > 0.0 && g.y > 0.0 && g.x < 1.0 && g.y < 1.0 ? texture2D(uShadeTex, g).r : 1.0) * cloudShade(vec3(vSunXZ.x, 0.0, vSunXZ.y));
-            reflectedLight.directDiffuse *= sun; reflectedLight.directSpecular *= sun; }`);
+            reflectedLight.directDiffuse *= sun; reflectedLight.directSpecular *= sun;
+          #ifdef STANDARD
+            reflectedLight.indirectDiffuse *= uSkyFill;
+          #endif
+          }`);
       };
       m.customProgramCacheKey = function () { return (key ? key.call(this) : '') + '|landshade'; };
       m.needsUpdate = true;
@@ -2434,6 +2444,7 @@ export class Skopea {
   setLight(L, renderer) {
     LAND_U.uHazeL.value = L.fogFar * 2.4 * (LOOK.haze ?? 1); // (how clear the venue's air is: venues.js)
     LAND_U.uMist.value = L.mist || 0;
+    FILL_U.uSkyFill.value = 1 - 0.65 * (L.shade ?? 1); // the boats' sky light (inLandShadow): 0.35 under a clear sky, most of it under cloud
     GROUND_U.uLake.value.copy(L.deep).lerp(L.horizon, 0.35);
     if (renderer) shadows(renderer, this.group, L.sunDir);
   }
