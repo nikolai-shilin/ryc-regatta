@@ -149,7 +149,8 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 - **The yacht:** `public/game/yacht.glb` is made by `blender/yacht.py`. Run it in Blender; it writes the file in place.
   The Bavaria 46's moulded parts (hull, deck, coachroof, cockpit) are `public/game/bavaria46.glb`, made the same way by
   `blender/bavaria46.py` (`blender -b --factory-startup -P blender/bavaria46.py`); `boats3d.js` builds her from its own
-  lines if the file doesn't load. The Laser's hull and deck are `public/game/laser.glb`, from `blender/laser.py`, and the
+  lines if the file doesn't load. The Laser's hull and deck are `public/game/laser.glb`, from `blender/laser.py`, the
+  Optimist's open shell `public/game/optimist.glb`, from `blender/optimist.py`, the
   J/70's and the RS21's `public/game/j70.glb` and `rs21.glb`, from `blender/sportboats.py`, and the AC75's
   `public/game/ac75.glb`, from `blender/ac75.py`, likewise.
 - **The venues:** today's race goes to a venue a day (`dailyVenue()` in `public/game/venues.js`, copied in
@@ -209,7 +210,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   long, that has no room as asked is laid up and down, then shorter, then smaller, its fleet starting nearer the line
   where the water below it runs out (`sim.js` Race); and the computer skippers keep off the shore, tacking or gybing
   away from land a few seconds' sailing ahead. `npm test` sails every course shape at every venue, in the JPK 1050, the
-  Bavaria 46, the Laser and the AC75, and checks its marks and legs are in clear water and on one side of every such bridge; a shape a venue has no room for at a length goes in its `skip`, as does
+  Bavaria 46, the Laser, the Optimist and the AC75, and checks its marks and legs are in clear water and on one side of every such bridge; a shape a venue has no room for at a length goes in its `skip`, as does
   a length it has no room for at all (St Petersburg's long course: a long request is sailed at the longest it has), and
   the set-up offers only the shapes and lengths `shapeOffered()` and `lengthOffered()` (`lib/venues.ts`) allow there. Moving between today's race and a free race in the
   game reloads the page when the venue changes. OpenStreetMap has few of Göcek's, Fethiye's and Marmaris's buildings, so their towns also come

@@ -298,7 +298,7 @@ const DAILY_KEYS = ['preset', 'fleet', 'length', 'laps', 'start', 'current', 'co
 const settings = () => { if (drill) return { ...opts, ...drillSettings(), length: laidLength(VENUE, drillSettings().length), daily: null }; if (opts.mode !== 'daily') return { ...opts, length: laidLength(VENUE, opts.length), daily: null }; const d = dailyRace(); return { ...opts, ...d, daily: d.day }; };
 const windName = (p) => t(p);
 // the yachts' names, as lib/yachts.ts has them (another class: its id)
-const YACHT_NAMES = { jpk1050: ['JPK 1050', 'JPK 1050'], bavaria46: ['Bavaria 46', 'Bavaria 46'], j70: ['J/70', 'J/70'], rs21: ['RS21', 'RS21'], laser: ['Laser (ILCA)', 'Laser (ILCA)'], ac75: ['AC75', 'AC75'] };
+const YACHT_NAMES = { jpk1050: ['JPK 1050', 'JPK 1050'], bavaria46: ['Bavaria 46', 'Bavaria 46'], j70: ['J/70', 'J/70'], rs21: ['RS21', 'RS21'], laser: ['Laser (ILCA)', 'Laser (ILCA)'], optimist: ['Optimist', 'Оптимист'], ac75: ['AC75', 'AC75'] };
 const yachtName = (id) => (YACHT_NAMES[id] || [id, id])[LANG === 'ru' ? 1 : 0];
 const SHAPE_KEY = { wl: 'shapeWl', tri: 'shapeTri', trap: 'shapeTrap', wlu: 'shapeWlu' };
 const paintOpts = () => {
@@ -1245,7 +1245,7 @@ document.head.append(Object.assign(document.createElement('style'), { textConten
   #hud.split-trim #tackBtn, #hud.split-trim #kiteBtn { right: calc(136px + var(--sr)); } /* moved over for the second slider */
   #hud #jibSheet { width: 18px; border-width: 1.5px; margin-right: 26px; } #hud #jibSheet .knob { left: -8px; width: 30px; height: 16px; border-width: 1.5px; box-shadow: none; } #hud #jibSheet .cap { font-size: 10px; }` }));
 // the Sails setting on the player's boat: 0 one sheet, 1 auto-trim, 2 main and jib apart (a class with no jib, the
-// Laser, has the one sheet: classes.js jib)
+// Laser or the Optimist, has the one sheet: classes.js jib)
 function applyTrimMode() {
   const P = race && race.player; if (!P) return;
   P.autoTrim = opts.autoTrim === 1; P.split = opts.autoTrim === 2 && CLS.jib !== false;

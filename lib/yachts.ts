@@ -2,8 +2,8 @@
 // yachts page (/yachts), the fleet page (/fleet) and the free race's set-up say about each. Today's race is sailed
 // in a new one every day (lib/race.ts dailyYacht); a free race in any.
 
-export type YachtId = 'jpk1050' | 'bavaria46' | 'j70' | 'rs21' | 'laser' | 'ac75';
-export const YACHT_IDS: readonly YachtId[] = ['ac75', 'bavaria46', 'jpk1050', 'j70', 'rs21', 'laser']; // by size, the biggest first: every list of them is in this order
+export type YachtId = 'jpk1050' | 'bavaria46' | 'j70' | 'rs21' | 'laser' | 'optimist' | 'ac75';
+export const YACHT_IDS: readonly YachtId[] = ['ac75', 'bavaria46', 'jpk1050', 'j70', 'rs21', 'laser', 'optimist']; // by size, the biggest first: every list of them is in this order
 export const DEFAULT_YACHT: YachtId = 'jpk1050';
 export const isYacht = (v: unknown): v is YachtId => typeof v === 'string' && (YACHT_IDS as readonly string[]).includes(v);
 
@@ -138,6 +138,25 @@ export const YACHTS: Yacht[] = [
       { k: ['Crew', 'Экипаж'], v: ['1', '1'] }, { k: ['Sail', 'Парус'], v: ['7.06 m² (ILCA 7)', '7,06 м² (ILCA 7)'] },
     ],
     speed: { up: 5.0, down: 7.5 }, courseK: 0.6, lineK: 0.6, timeK: 0.9,
+  },
+  {
+    id: 'optimist',
+    name: ['Optimist', 'Оптимист'],
+    kind: ['7-foot single-handed children’s pram dinghy', 'детский одноместный швертбот-прам длиной 2,3 м'],
+    tagline: ['Where racing sailors start: the boat most of them learned in.', 'С него начинают: на нём учились гоняться почти все.'],
+    about: [
+      ['Clark Mills drew the Optimist in 1947 in Clearwater, Florida, as a boat a child could sail and a parent could build from a few sheets of plywood. She is a pram: a flat-floored box with a small transom at the bow as well as the stern, a daggerboard, a rudder on the transom and one spritsail laced to a short mast, its peak held up by a diagonal sprit. Today she is moulded in GRP to the same lines, and sailed by children up to the age of 15 all over the world.',
+        'Кларк Миллс нарисовал Оптимист в 1947 году во Флориде как лодку, на которой может ходить ребёнок и которую родитель соберёт из пары листов фанеры. Это прам: плоскодонный ящик с маленьким транцем не только на корме, но и на носу, выдвижной шверт, навесной руль и один шпринтовый парус, пришнурованный к короткой мачте; его верхний угол держит диагональный шпринт. Сегодня корпус формуют из стеклопластика по тем же обводам, и на нём ходят дети до 15 лет по всему миру.'],
+      ['One sails her, sat on the gunwale with the feet under the strap and hiking out as the breeze builds. She is slow but nimble: she turns on the spot, stops in a tack and goes again at once. Three buoyancy bags keep her afloat, and in a chop she takes water over the bow — every Optimist carries a bailer tied in.',
+        'Ходят на нём в одиночку: сидя на борту, ноги под ремнём, а со свежим ветром — откренившись за борт. Лодка медленная, но вёрткая: разворачивается на месте, в повороте почти встаёт и тут же снова идёт. На плаву её держат три надувных мешка, а на волне она черпает носом — поэтому в каждом Оптимисте привязан черпак.'],
+    ],
+    race: ['Alone: one sail and one sheet, no kite, no jib, no reef. Slow but quick through a tack; keep her flat in a breeze. Courses are laid 0.3 times as long.', 'В одиночку: один парус и один шкот, без спинакера, без стакселя, без рифа. Медленный, но быстро проходит поворот; на свежем ветре держи лодку ровно. Дистанции в 0,3 раза короче.'],
+    specs: [
+      { k: ['Length', 'Длина'], v: ['2.31 m', '2,31 м'] }, { k: ['Beam', 'Ширина'], v: ['1.13 m', '1,13 м'] },
+      { k: ['Hull weight', 'Вес корпуса'], v: ['35 kg', '35 кг'] }, { k: ['Mast', 'Мачта'], v: ['2.26 m', '2,26 м'] },
+      { k: ['Crew', 'Экипаж'], v: ['1', '1'] }, { k: ['Sail', 'Парус'], v: ['3.3 m², spritsail', '3,3 м², шпринтовый'] },
+    ],
+    speed: { up: 3.3, down: 4.4 }, courseK: 0.3, lineK: 0.6, timeK: 1.0,
   },
 ];
 export const yachtOf = (id: unknown): Yacht => YACHTS.find((y) => y.id === id) || YACHTS.find((y) => y.id === DEFAULT_YACHT)!;

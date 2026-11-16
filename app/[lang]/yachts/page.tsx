@@ -6,8 +6,8 @@ import { isYacht } from '@/lib/yachts';
 export const generateMetadata = titled('The yachts', 'Яхты', {
   path: '/yachts',
   description: [
-    'Every yacht you can race in Up and down, afloat together in 3D in your colours: the JPK 1050 offshore racer, the Bavaria 46 cruiser, the J/70 and RS21 sportboats, the Laser (ILCA) dinghy and the AC75, the America’s Cup’s foiling monohull, with what each is and how she sails.',
-    'Все яхты, на которых можно гоняться в Up and down, вместе на воде в 3D в твоих цветах: офшорная гоночная JPK 1050, крейсерская Bavaria 46, спортботы J/70 и RS21, швертбот Laser (ILCA) и AC75 — монокорпус Кубка Америки на подводных крыльях, что это за лодки и как они ходят.'],
+    'Every yacht you can race in Up and down, afloat together in 3D in your colours: the JPK 1050 offshore racer, the Bavaria 46 cruiser, the J/70 and RS21 sportboats, the Laser (ILCA) and Optimist dinghies and the AC75, the America’s Cup’s foiling monohull, with what each is and how she sails.',
+    'Все яхты, на которых можно гоняться в Up and down, вместе на воде в 3D в твоих цветах: офшорная гоночная JPK 1050, крейсерская Bavaria 46, спортботы J/70 и RS21, швертботы Laser (ILCA) и Оптимист и AC75 — монокорпус Кубка Америки на подводных крыльях, что это за лодки и как они ходят.'],
 });
 
 // The yachts: every class you can race in one scene, the drone flying from one to the next (components/fleet-view).

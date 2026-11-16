@@ -654,6 +654,9 @@ const SEP = HULL * 0.78; // the computer skippers keep the centres this far apar
 // with it (SZ_PASS, a dinghy's tighter, a cruiser's wider), and their path round a mark grows with it but never
 // shrinks, as every class turns at the same rate (SZ_MARK). Both 1 for the club's boat, which sails as she always has
 const SZ = HULL / CLASSES[DEFAULT_CLASS].loa, SZ_PASS = clamp(SZ, 0.6, 2), SZ_MARK = Math.max(1, SZ);
+// how long near a mark before a computer skipper takes herself to be tangled up there: a boat slower upwind than the
+// Laser takes the longer to sail the path round it
+const TANGLED_T = 50 * Math.max(1, 4.8 / CLS.beatV[CLS.tws.indexOf(12)]); // her speed close-hauled in 12 knots
 // for contact a hull is a capsule: a spine along her centreline with a rounded edge half her beam out, so two boats
 // can sail a couple of metres apart side by side, and a bow can touch a mark
 const HALF_B = CLS.beam / 2, SPINE = HULL / 2 - HALF_B;
@@ -1421,7 +1424,7 @@ export class Race {
       // come in again from there, as a skipper would (at the windward mark with an upwind finish line just below it,
       // out below the line)
       ai.nearT = Math.hypot(b.x - m.x, b.z - m.z) < 45 ? (ai.nearT || 0) + (this.lastDt || 0) : 0;
-      if (ai.nearT > 50) { ai.nearT = 0; ai.detour = this.clock + 30; ai.wp = 0; }
+      if (ai.nearT > TANGLED_T) { ai.nearT = 0; ai.detour = this.clock + 30; ai.wp = 0; }
       if (ai.detour > this.clock) return at(35, k === 'mark' && c.finish && c.finish.through.z < 0 ? -60 : -30);
       // round it to port: come in on its near side with room to spare, cross outside it, leave on the far side
       // a boat that owes another mark-room (rule 18) goes round outside it, wider and a little later

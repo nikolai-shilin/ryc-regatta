@@ -2,7 +2,7 @@
 // your colours, sail number, logo and flag, the sponsor's ad on the jib. Each is drawn at her real size (drawnL in
 // classes.js): the sportboats — the J/70 (tiller, cuddy, retractable sprit and asymmetric kite, four hiking on the
 // rail) and the RS21 (the same idea with a wide open cockpit, no cuddy, three aboard) — the Laser (ILCA) dinghy (one
-// sail on an unstayed mast, one sailor hiking), the Bavaria 46 cruiser (a long coachroof, twin wheels, a furling
+// sail on an unstayed mast, one sailor hiking), the Optimist pram (an open shell, a spritsail, a child hiking), the Bavaria 46 cruiser (a long coachroof, twin wheels, a furling
 // genoa and a cruising gennaker, five aboard) and the AC75 foiling monohull (a scow-bowed hull flying on canting T-foil arms, a deck-sweeping double-skin main on a
 // D-section mast, a self-tacking jib and eight in their pods). makeBoatView gives the page's class (classes.js CLS), or
 // the one asked for (the fleet page, /fleet-view, has one of each afloat together).
@@ -19,6 +19,7 @@ export function makeBoatView(o, cls = CLS) {
   if (cls.id === 'j70' || cls.id === 'rs21') return new SportView({ ...o, cls });
   if (cls.id === 'ac75') return new AC75View({ ...o, cls });
   if (cls.id === 'laser') return new LaserView({ ...o, cls });
+  if (cls.id === 'optimist') return new OptimistView({ ...o, cls });
   if (cls.id === 'bavaria46') return new CruiserView({ ...o, cls });
   return new BoatView(o);
 }
@@ -867,6 +868,329 @@ class LaserView extends ClassView {
   }
 }
 
+// ---------- the Optimist ----------
+// a 2.31 m pram for one child: a flat floor with a little rocker, hard chines, flared topsides and a raked transom at
+// each end; no deck, an open GRP shell with its gunwale turned in as an inwale and a rubbing strake round it, the mast
+// thwart across the bow and the daggerboard case amidships. Three buoyancy bags strapped in (one across the bow, one
+// down each side), the hiking straps along the floor, a bailer on its line. One spritsail laced to an unstayed alloy
+// mast and a low boom, its peak spread above the masthead by the sprit; the kicker, the outhaul, the sprit's snotter;
+// the mainsheet from a bridle across the stern to the boom's end, along it and down to the ratchet block on the floor.
+// A rudder hung on the transom, its tiller and extension. No jib and no kite (the parts the game asks for are there,
+// never shown). One sailor, a child, hiking from the gunwale.
+// Her lines are blender/optimist.py's (the same functions there): t = 0 at the stern's gunwale … 1 at the bow's.
+const OZ = (() => {
+  const L = 2.31, STERN = L / 2, BOW = -STERN;
+  const zAt = (t) => STERN - t * L, tAt = (z) => clamp((STERN - z) / L, 0, 1);
+  // the gunwale's half-breadth: 0.88 m across the stern, 1.13 m a little aft of the middle, 0.6 m across the bow
+  const hb = (t) => (t < 0.45 ? 0.44 + 0.125 * Math.sin((t / 0.45) * Math.PI / 2) : 0.3 + 0.265 * Math.max(0, Math.cos(Math.min(1, (t - 0.45) / 0.55) * Math.PI / 2)) ** 0.9);
+  const sheer = (t) => 0.29 + 0.11 * t ** 2.2 - 0.02 * Math.sin(Math.PI * t);
+  const keel = (t) => (t < 0.4 ? -0.12 + 0.09 * ((0.4 - t) / 0.4) ** 2 : -0.12 + 0.22 * ((t - 0.4) / 0.6) ** 1.8); // the floor's rocker
+  const DEAD = 0.035, FLARE = 0.36, CHINE_R = 0.025, K_STERN = STERN - 0.1, K_BOW = BOW + 0.19;
+  const chineY = (t) => keel(t) + DEAD, hc = (t) => hb(t) - FLARE * (sheer(t) - chineY(t));
+  // each section leans between its gunwale and its keel: the transoms raked, the rocker one curve into the bow
+  const zp = (t, y) => lerp(zAt(t), lerp(K_STERN, K_BOW, t), (sheer(t) - y) / (sheer(t) - keel(t)));
+  // the topsides' half-breadth at height y; under the chine, the floor's
+  const xAt = (t, y) => (y >= chineY(t) ? hb(t) - FLARE * (sheer(t) - y) : hc(t) * clamp((y - keel(t)) / DEAD, 0, 1));
+  // the corner C between the lines from P0 and to P1, turned round radius r: the arc's points
+  const fillet = (P0, C, P1, r, n = 4) => {
+    let [ax, ay] = [P0[0] - C[0], P0[1] - C[1]], la = Math.hypot(ax, ay); ax /= la; ay /= la;
+    let [bx, by] = [P1[0] - C[0], P1[1] - C[1]], lb = Math.hypot(bx, by); bx /= lb; by /= lb;
+    const th = Math.acos(clamp(ax * bx + ay * by, -1, 1)), d = r / Math.tan(th / 2), mx = ax + bx, my = ay + by, lm = Math.hypot(mx, my), k = r / Math.sin(th / 2);
+    const O = [C[0] + (mx / lm) * k, C[1] + (my / lm) * k];
+    let a0 = Math.atan2(C[1] + ay * d - O[1], C[0] + ax * d - O[0]), a1 = Math.atan2(C[1] + by * d - O[1], C[0] + bx * d - O[0]);
+    if (a1 - a0 > Math.PI) a1 -= 2 * Math.PI; if (a0 - a1 > Math.PI) a1 += 2 * Math.PI;
+    return Array.from({ length: n + 1 }, (_, i) => [O[0] + r * Math.cos(lerp(a0, a1, i / n)), O[1] + r * Math.sin(lerp(a0, a1, i / n))]);
+  };
+  // the starboard half of the section at t, gunwale to centreline (the Blender script's section(); inset: the inside
+  // skin that much in, floor: and the floor that much up, top: cut off at that height)
+  const section = (t, inset = 0, floor = 0, top = null) => {
+    const sy = sheer(t), yc = chineY(t) + floor, lean = Math.hypot(1, FLARE);
+    let G0 = [hb(t) - inset * lean, sy]; const C0 = [hc(t) - inset * lean, yc + inset * 0.3], K = [0, keel(t) + floor];
+    if (top !== null) G0 = [G0[0] + FLARE * (top - sy), top];
+    const pts = [G0, ...[1, 2, 3].map((i) => [lerp(G0[0], C0[0], i / 4), lerp(G0[1], C0[1], i / 4)])];
+    pts.push(...fillet(G0, C0, K, inset ? CHINE_R * 0.6 : CHINE_R));
+    for (let i = 1; i <= 5; i++) pts.push([lerp(C0[0], K[0], i / 5), lerp(C0[1], K[1], i / 5)]);
+    return pts;
+  };
+  // a skin lofted through sections, both halves (band: the depth under the gunwale, for the hull's paint); ends: cap
+  // the transoms, flat fans from the middle of each outline
+  const loft = (sec, t0 = 0, t1 = 1, ends = false, N = 48) => {
+    const pos = [], band = [], idx = [];
+    let W = 0;
+    for (let i = 0; i <= N; i++) {
+      const t = lerp(t0, t1, 0.5 - 0.5 * Math.cos((Math.PI * i) / N)), half = sec(t), ring = [...half, ...half.slice(0, -1).reverse().map(([x, y]) => [-x, y])];
+      W = ring.length;
+      for (const [x, y] of ring) { pos.push(x, y, zp(t, y)); band.push(sheer(t) - y); }
+    }
+    for (let i = 0; i < N; i++) for (let k = 0; k < W - 1; k++) { const a = i * W + k, b = a + 1, c = a + W, d = c + 1; idx.push(a, b, c, b, d, c); }
+    if (ends) for (const [r, flip] of [[0, true], [N, false]]) {
+      const o = r * W; let cx = 0, cy = 0, cz = 0;
+      for (let k = 0; k < W; k++) { cx += pos[(o + k) * 3]; cy += pos[(o + k) * 3 + 1]; cz += pos[(o + k) * 3 + 2]; }
+      const base = pos.length / 3;
+      for (let k = 0; k < W; k++) { pos.push(pos[(o + k) * 3], pos[(o + k) * 3 + 1], pos[(o + k) * 3 + 2]); band.push(1); }
+      const ci = pos.length / 3; pos.push(cx / W, cy / W, cz / W); band.push(1);
+      for (let k = 0; k < W - 1; k++) flip ? idx.push(ci, base + k + 1, base + k) : idx.push(ci, base + k, base + k + 1);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('band', new THREE.Float32BufferAttribute(band, 1));
+    g.setIndex(idx); g.computeVertexNormals();
+    return g;
+  };
+  // a picture on the topsides (side +1 starboard), centred z0 and y0, W × H metres
+  const decal = (side, z0, y0, Wd, Hd, material) => {
+    const nu = 12, nv = 4, pos = [], uv = [], idx = [];
+    for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++) {
+      const u = i / nu, v = j / nv, z = z0 - side * (u - 0.5) * Wd, y = y0 + (v - 0.5) * Hd;
+      pos.push(side * (xAt(tAt(z), y) + 0.006), y, z); uv.push(u, v);
+    }
+    for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) { const a = j * (nu + 1) + i, b = a + 1, c = a + nu + 1, d = c + 1; idx.push(a, b, c, b, d, c); }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, material); m.userData.flat = true;
+    return m;
+  };
+  const deckY = (z) => sheer(tAt(z)), hbAt = (z) => hb(tAt(z));
+  const hull = { zAt, tAt, xAt, decal, deckY, hbAt, BOW, STERN, geometry: () => loft((t) => section(t), 0, 1, true) };
+  const SKIN = 0.012, FLOOR_T = 0.016, FLANGE = 0.045, LIP = 0.022;
+  // inside: the floor's height and the topsides' half-breadth at height y, on the inside of the skin
+  // (the floor's stations by where its keel is, the sections leaning)
+  const floorAt = (z, x = 0) => { const t = clamp((K_STERN - z) / (K_STERN - K_BOW), 0, 1); return keel(t) + FLOOR_T + DEAD * Math.min(1, Math.abs(x) / Math.max(hc(t), 0.1)); };
+  const innerX = (z, y) => { const t = tAt(z); return hb(t) - SKIN * Math.hypot(1, FLARE) - FLARE * (sheer(t) - y); };
+  // the rig (the class rules' 3.3 m² spritsail): the mast 2.26 m from its step on the floor, the boom 0.58 m above the
+  // water; the luff 1.62 m up the mast to the throat, the foot 1.85 m along the boom, the peak 1.55 m aft of the mast
+  // and 2.2 m above the foot, spread there by the sprit from its heel low on the mast
+  const MAST_Z = BOW + 0.48, MAST_FOOT = floorAt(MAST_Z), MASTHEAD = MAST_FOOT + 2.26, BOOM_Y = 0.58, BL = 1.9;
+  const LUFF0 = BOOM_Y + 0.04, LUFF = 1.62, FOOT = 1.85, PEAK = [1.55, LUFF0 + 2.2], SPRIT_Y = BOOM_Y + 0.45;
+  const THWART_Y = sheer(tAt(MAST_Z + 0.085)) - 0.002; // the mast thwart's top (blender/optimist.py)
+  const DBZ = -0.06, CASE_TOP = 0.16, TRAV_Z = STERN - 0.04; // the daggerboard case's middle and top; the bridle's
+  // the sail's point at f up its luff (0 at the foot … 1 at the head, the throat to the peak) and u across from the luff
+  const luffAt = (f) => [LUFF0 + f * LUFF, 0.035], leechAt = (f) => [lerp(LUFF0, PEAK[1], f), lerp(FOOT, PEAK[0], f)];
+  const chord = (f) => { const a = luffAt(f), b = leechAt(f); return Math.hypot(b[0] - a[0], b[1] - a[1]); };
+  const span = (LUFF + PEAK[1] - LUFF0) / 2; // its height about where its number is, halfway between luff and leech
+  const rig = rigOf({ span, chord, numAt: 0.42, logoAt: 0.66, flagAt: 0.84, mark: 0.36, head: new THREE.Vector3(0, PEAK[1], MAST_Z + PEAK[0]), tack: new THREE.Vector3(0, LUFF0, MAST_Z), clew: new THREE.Vector3(0, 0, FOOT), ad: 0.4, adH: 0.2 });
+  rig.numK *= 0.7; // her number some 0.3 m tall, as the class has it: the wide sail would draw it half as tall again
+  return { L, hull, section, loft, sheer, keel, hb, zp, SKIN, FLOOR_T, FLANGE, LIP, FLARE, floorAt, innerX, MAST_Z, MAST_FOOT, MASTHEAD, BOOM_Y, BL, LUFF0, LUFF, FOOT, PEAK, SPRIT_Y, THWART_Y, DBZ, CASE_TOP, TRAV_Z, luffAt, leechAt, chord, span, rig, K_STERN, K_BOW };
+})();
+// a soft, blown-up bag: a box of w × h × l, its faces bulging and its edges and corners rounded off
+function pillowGeo(w, h, l, puff = 0.55) {
+  const g = new THREE.BoxGeometry(2, 2, 2, 8, 6, 10), p = g.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i);
+    const s = v.clone().normalize().multiplyScalar(Math.sqrt(3) * 0.62);
+    v.lerp(s, puff * Math.min(1, s.length() / v.length()));
+    p.setXYZ(i, (v.x * w) / 2, (v.y * h) / 2, (v.z * l) / 2);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+const BAG = new THREE.MeshPhysicalMaterial({ color: '#efeee8', roughness: 0.38, clearcoat: 0.4, clearcoatRoughness: 0.3, envMapIntensity: 0.9 }); // PVC
+const RUB = new THREE.MeshStandardMaterial({ color: '#2c2f33', roughness: 0.7, side: THREE.DoubleSide });
+
+class OptimistView extends ClassView {
+  constructor({ look = LOOKS.player, label = null, player = false, cls = CLS }) {
+    super();
+    this.cls = cls;
+    const add = this.start(), T = this.tilt, H = OZ.hull, O = OZ;
+    this.flyY = 0; // no deck to take water over: no wash
+    const MOD = OZ_MODEL, hullMat = hullMaterial(look.hull, look.stripe, look.bottom), skid = deckFinish(look, SKID);
+    if (MOD) {
+      // the shell, inwale, strake, thwart and case, moulded (blender/optimist.py), in a group of their own so the
+      // boat's merging of her small parts (bake) leaves the shared geometry alone
+      const moulded = add(new THREE.Group());
+      for (const [k, mat] of [['hull', hullMat], ['deck', skid], ['gel', GEL2], ['rub', RUB]]) if (MOD[k]) moulded.add(new THREE.Mesh(MOD[k], mat));
+    } else {
+      // from her lines in code: the outside, the inside skin (its floor the non-skid's), the inwale's top between them,
+      // the thwart and the case as plain boxes, the strake a tube
+      add(new THREE.Mesh(H.geometry(), hullMat));
+      const t0 = 0.018 / O.L, inSec = (t) => O.section(t, O.SKIN, O.FLOOR_T, O.sheer(t) - 0.004);
+      add(new THREE.Mesh(O.loft(inSec, t0, 1 - t0, false), GEL2));
+      const floor = O.loft((t) => O.section(t, O.SKIN, O.FLOOR_T + 0.002).slice(8), t0, 1 - t0, false);
+      const fp = floor.attributes.position, fuv = new Float32Array(fp.count * 2);
+      for (let i = 0; i < fp.count; i++) { fuv[2 * i] = fp.getX(i); fuv[2 * i + 1] = -fp.getZ(i); }
+      floor.setAttribute('uv', new THREE.BufferAttribute(fuv, 2)); add(new THREE.Mesh(floor, skid));
+      for (const sx of [-1, 1]) {
+        const pts = []; for (let i = 0; i <= 24; i++) { const t = 0.004 + (i / 24) * 0.992, y = O.sheer(t) - 0.018; pts.push([sx * (O.hb(t) - O.FLARE * 0.018 + 0.006), y, H.zAt(t)]); }
+        T.add(tube(pts, 0.012, RUB));
+      }
+      const tw = O.innerX(O.MAST_Z, O.THWART_Y);
+      add(new THREE.Mesh(new THREE.BoxGeometry(2 * tw, 0.035, 0.17), GEL2), 0, O.THWART_Y - 0.0175, O.MAST_Z);
+      const cb = O.floorAt(O.DBZ);
+      add(new THREE.Mesh(new THREE.BoxGeometry(0.075, O.CASE_TOP - cb, 0.36), GEL2), 0, (O.CASE_TOP + cb) / 2, O.DBZ);
+    }
+    // the bow's towing eye and the painter's bight on the bow transom's top; the transom's drain bung
+    add(new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.005, 6, 12), M.steel), 0, O.sheer(1) - 0.05, O.zp(1, O.sheer(1) - 0.05) - 0.008).rotation.y = Math.PI / 2;
+    add(cyl(0.016, 0.016, 0.015, M.dark, 10), 0.22, 0.05, O.zp(0, 0.05) + 0.004).rotation.x = Math.PI / 2 - 0.3;
+    // the buoyancy bags: one across the bow under the thwart, one high down each side, each held by its webbing straps
+    const strapM = MAT.strap;
+    {
+      // forward of the mast and under the thwart, its foot on the floor as it sweeps up to the bow transom
+      const z0 = O.MAST_Z - 0.03, z1 = z0 - 0.25, f0 = O.floorAt(z0), f1 = O.floorAt(z1), h = 0.21, l = 0.25, w = 0.56, z = (z0 + z1) / 2;
+      const bag = add(new THREE.Group(), 0, (f0 + f1) / 2 + h / 2 + 0.006, z); bag.rotation.x = Math.atan2(f1 - f0, z0 - z1);
+      bag.add(new THREE.Mesh(pillowGeo(w, h, l), BAG));
+      for (const sz of [-0.065, 0.065]) { const s = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, h * 1.02, 0.03), strapM); s.position.z = sz; s.scale.x = 0.98; bag.add(s); }
+    }
+    for (const sx of [-1, 1]) {
+      const z = 0.2, h = 0.2, w = 0.15, l = 0.6, y = O.sheer(H.tAt(z)) - 0.07 - h / 2, x = O.innerX(z, y) - w / 2 - 0.004; // clear of her legs
+      const bag = add(new THREE.Group(), sx * x, y, z); bag.rotation.z = -sx * Math.atan(O.FLARE);
+      bag.add(new THREE.Mesh(pillowGeo(w, h, l), BAG));
+      for (const sz of [-0.18, 0.18]) { const s = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, h * 1.02, 0.035), strapM); s.position.set(-sx * 0.012, 0, sz); bag.add(s); }
+    }
+    // the hiking straps: from the back of the daggerboard case aft along the floor to the stern, held up a little by
+    // their shock cord
+    for (const sx of [-1, 1]) {
+      const z0 = O.DBZ + 0.2, z1 = O.K_STERN - 0.05;
+      T.add(tube([[sx * 0.04, O.floorAt(z0) + 0.05, z0], [sx * 0.09, O.floorAt(z0 + 0.3) + 0.08, z0 + 0.3], [sx * 0.15, O.floorAt(z1 - 0.3) + 0.08, z1 - 0.3], [sx * 0.19, O.floorAt(z1) + 0.03, z1]], 0.017, strapM));
+    }
+    // the daggerboard: a parallel-chord foil down through its case, 0.5 m below the floor, its head standing proud
+    // with its handle; the shock cord that keeps it down, to the thwart
+    const DBZ = O.DBZ;
+    const DB0 = O.floorAt(DBZ) - 0.02, DB1 = O.CASE_TOP + 0.1;
+    add(new THREE.Mesh(finGeo(0.6, 0.27, 0.27, 0.065, 0), MAT.fin), 0, DB0, DBZ);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.017, DB1 - DB0, 0.27), MAT.fin), 0, (DB0 + DB1) / 2, DBZ);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.29), M.dark), 0, O.CASE_TOP + 0.015, DBZ); // its stop on the case
+    T.add(tube([[0, O.CASE_TOP + 0.09, DBZ - 0.1], [0, O.CASE_TOP + 0.16, DBZ - 0.05], [0, O.CASE_TOP + 0.16, DBZ + 0.05], [0, O.CASE_TOP + 0.09, DBZ + 0.1]], 0.01, M.dark));
+    T.add(line([[0, O.CASE_TOP + 0.08, DBZ - 0.14], [0, O.THWART_Y - 0.01, O.MAST_Z + 0.09]]));
+    // the bailer on its line, on the floor at the bow bag's foot
+    { const z = O.MAST_Z + 0.25, x = -0.22, y = O.floorAt(z, x);
+      const b = add(new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.065, 0.12, 14, 1, true, 0, Math.PI * 1.4), new THREE.MeshStandardMaterial({ color: '#3a7bd5', roughness: 0.5, side: THREE.DoubleSide })), x, y + 0.07, z);
+      b.rotation.set(Math.PI / 2 - 0.25, 0.6, 0);
+      T.add(line([[x + 0.03, y + 0.08, z - 0.05], [-0.15, O.floorAt(O.MAST_Z + 0.12) + 0.02, O.MAST_Z + 0.12], [-0.12, O.THWART_Y - 0.03, O.MAST_Z + 0.09]])); }
+    // the rudder hung on the stern transom, its blade 0.5 m below the floor and its head up to the tiller; tiller and
+    // blade turning together on the pintles
+    const RZ = H.STERN + 0.035, RY = O.sheer(0) + 0.05;
+    for (const y of [0.04, 0.22]) { // the gudgeons, standing out from the raked transom to the rudder's pintles
+      const zt = O.zp(0, y), len = RZ - 0.02 - zt;
+      add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.018, len), M.steel), 0, y, zt + len / 2);
+    }
+    this.wheel = add(new THREE.Group(), 0, 0, RZ);
+    const blade = new THREE.Mesh(finGeo(0.62, 0.24, 0.2, 0.09, 0.06), MAT.fin); blade.position.set(0, -0.02, 0.04); this.wheel.add(blade);
+    const head = new THREE.Shape(); head.moveTo(-0.02, -0.02); head.lineTo(0.2, -0.02); head.quadraticCurveTo(0.17, 0.2, 0.08, RY + 0.02); head.lineTo(-0.02, RY + 0.02); head.lineTo(-0.02, -0.02);
+    const hg = new THREE.ExtrudeGeometry(head, { depth: 0.024, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 1 }).translate(0, 0, -0.012).rotateY(-Math.PI / 2);
+    this.wheel.add(new THREE.Mesh(hg, MAT.fin));
+    for (const y of [0.04, 0.22]) { const p = cyl(0.006, 0.006, 0.06, M.steel, 6); p.position.set(0, y - 0.02, -0.02); this.wheel.add(p); } // the pintles
+    const tl = cyl(0.014, 0.017, 0.8, M.alu, 8); tl.rotation.x = Math.PI / 2 + 0.06; tl.position.set(0, RY + 0.01, -0.42); this.wheel.add(tl);
+    const grip = cyl(0.018, 0.018, 0.12, M.dark, 8); grip.rotation.x = Math.PI / 2; grip.position.set(0, RY + 0.01, -0.12); this.wheel.add(grip);
+    const uj = cyl(0.012, 0.012, 0.05, M.dark, 8); uj.position.set(0, RY - 0.01, -0.8); this.wheel.add(uj); // the extension's joint
+    this.ext = cyl(0.009, 0.009, 0.75, M.dark, 6); this.ext.rotation.set(0, 0.5, Math.PI / 2); this.ext.position.set(0.3, RY - 0.01, -0.95); this.wheel.add(this.ext);
+    // the bridle across the stern between the transom's corners, its block riding it
+    const TZ = O.TRAV_Z, ty = O.sheer(0) + 0.01, tx = O.hb(0) - 0.05;
+    for (const sx of [-1, 1]) add(new THREE.Mesh(new THREE.TorusGeometry(0.014, 0.004, 6, 10), M.steel), sx * tx, ty, TZ).rotation.y = Math.PI / 2;
+    this.bridle = line([[-tx, ty, TZ], [0, ty + 0.15, TZ], [tx, ty, TZ]]); this.bridle.frustumCulled = false;
+    add(new THREE.Group()).add(this.bridle); // in a group, so bake() leaves it to move
+    const tb = new THREE.Group(); for (const [g, mm] of block(0.02)) tb.add(new THREE.Mesh(g, mm));
+    this.travCar = add(mergeGroup(tb), 0, ty + 0.15, TZ);
+    // the mainsheet's ratchet block on the floor aft of the case, in front of the sailor
+    const RAT_Z = O.DBZ + 0.32, rat = new THREE.Group(); rat.add(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.05, 12), M.dark));
+    for (const [g, mm] of block(0.026)) { const o = new THREE.Mesh(g, mm); o.position.y = 0.06; rat.add(o); }
+    add(mergeGroup(rat), 0, O.floorAt(RAT_Z) + 0.025, RAT_Z);
+    this.ratY = O.floorAt(RAT_Z) + 0.1; this.ratZ = RAT_Z;
+    // the mast: one alloy tube, unstayed, stepped on the floor and held in the thwart by its clamp
+    add(cyl(0.024, 0.024, O.MASTHEAD - O.MAST_FOOT, M.alu, 12), 0, (O.MAST_FOOT + O.MASTHEAD) / 2, O.MAST_Z);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.04, 0.07), M.dark), 0, O.MAST_FOOT + 0.02, O.MAST_Z); // the step
+    add(cyl(0.032, 0.032, 0.03, M.dark, 12), 0, O.THWART_Y + 0.015, O.MAST_Z); // the clamp
+    add(cyl(0.026, 0.02, 0.03, M.dark, 12), 0, O.MASTHEAD + 0.01, O.MAST_Z); // its cap
+    // the boom, the sprit, the kicker, the outhaul, the snotter and the sail's ties, turning with the sail
+    this.mainPivot = add(new THREE.Group(), 0, 0, O.MAST_Z);
+    const gear = new THREE.Group();
+    const boom = cyl(0.021, 0.021, O.BL, M.alu, 10); boom.rotation.x = Math.PI / 2; boom.position.set(0, O.BOOM_Y, O.BL / 2 + 0.03); gear.add(boom);
+    gear.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.08), M.dark).translateY(O.BOOM_Y).translateZ(0.03)); // the jaws round the mast
+    gear.add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.045, 0.06), M.dark).translateY(O.BOOM_Y + 0.035).translateZ(O.FOOT)); // the clew's strap
+    const VB = [0, O.BOOM_Y - 0.03, 0.42], VA = [0, O.THWART_Y + 0.07, 0.04]; // the kicker, mast to boom, its blocks and falls
+    for (const p of [VA, VB]) for (const [g, mm] of block(0.015)) { const o = new THREE.Mesh(g, mm); o.position.set(...p); gear.add(o); }
+    this.mainPivot.add(line([0, 1, 2, 3].map((i) => { const e = i % 2 ? VB : VA, dx = (i / 3 - 0.5) * 0.025; return [e[0] + dx, e[1], e[2]]; })));
+    this.mainPivot.add(line([[0.02, O.BOOM_Y + 0.03, O.FOOT], [0.02, O.BOOM_Y + 0.02, O.BL], [0.02, O.BOOM_Y + 0.02, O.BL - 0.35]])); // the outhaul round the boom's end
+    for (const z of [O.BL - 0.06, 0.9]) for (const [g, mm] of block(0.018)) { const o = new THREE.Mesh(g, mm); o.position.set(0, O.BOOM_Y - 0.045, z); gear.add(o); }
+    // the sprit from its heel in the snotter on the mast to the peak, a little to port of the sail
+    const SX = -0.03, heel = new THREE.Vector3(SX, O.SPRIT_Y, 0.03), peak = new THREE.Vector3(SX, O.PEAK[1], O.PEAK[0]);
+    const sp = cyl(0.011, 0.014, heel.distanceTo(peak), M.alu, 8); sp.position.copy(heel).add(peak).multiplyScalar(0.5);
+    sp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), peak.clone().sub(heel).normalize()); gear.add(sp);
+    gear.add(new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.05, 0.04), M.dark).translateX(SX * 0.5).translateY(O.SPRIT_Y).translateZ(0.02)); // the snotter's fitting
+    this.mainPivot.add(line([[SX * 0.5, O.SPRIT_Y - 0.01, 0.03], [0.02, O.SPRIT_Y - 0.25, 0.025], [0.025, O.SPRIT_Y - 0.4, 0.025]])); // its line down to the cleat
+    // the ties lacing the luff to the mast and the foot to the boom
+    const tie = new THREE.TorusGeometry(0.03, 0.0035, 4, 10);
+    for (let i = 0; i <= 6; i++) { const o = new THREE.Mesh(tie, M.dark); o.rotation.x = Math.PI / 2; o.scale.set(1, 1.25, 1); o.position.set(0, O.LUFF0 + 0.05 + (i / 6) * (O.LUFF - 0.1), 0.012); gear.add(o); }
+    for (let i = 1; i <= 6; i++) { const o = new THREE.Mesh(tie, M.dark); o.rotation.y = Math.PI / 2; o.scale.set(0.9, 1.15, 1); o.position.set(0, O.BOOM_Y + 0.012, (i / 7) * O.FOOT); gear.add(o); }
+    this.mainPivot.add(mergeGroup(gear));
+    // the sail: the number and the marks above it
+    this.main = sailMesh(24, 16, sailTexture('main', look, OZ.rig), look.laminate, 'main'); this.mainPivot.add(this.main);
+    this.spritX = SX;
+    // the telltales near the luff
+    if (player) for (const [f, sx] of [[0.35, 1], [0.35, -1], [0.65, 1], [0.65, -1]]) {
+      const tt = new THREE.Mesh(new THREE.PlaneGeometry(0.025, 0.2).translate(0, -0.1, 0), new THREE.MeshBasicMaterial({ color: '#2ecc71', side: THREE.DoubleSide }));
+      tt.userData = { f, sx }; this.mainPivot.add(tt); this.tells.push(tt);
+    }
+    // the mainsheet: from the bridle's block up to the boom's end, along it to the middle block and down to the ratchet
+    this.mainsheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]); this.mainsheet.frustumCulled = false; T.add(this.mainsheet);
+    // no jib and no kite: the parts the game asks for, never shown
+    const none = sailTexture('kite', look);
+    this.jib = sailMesh(2, 2, none, false, 'jib'); this.jib.visible = false;
+    this.kite = sailMesh(2, 2, none, false, 'kite'); this.kite.visible = false;
+    this.sprit = new THREE.Group(); this.kiteSheet = new THREE.Group(); this.lazySheet = new THREE.Group(); this.jibSheet = new THREE.Group();
+    if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, H.BOW + 0.55, O.sheer(0.76) - 0.1, 0.3, 0.11));
+    { const z = H.STERN - 0.4; T.add(...nameDecal(H, look, z, O.sheer(H.tAt(z)) - 0.07, 0.34)); }
+    this.windex = windex(add, O.MASTHEAD + 0.02, O.MAST_Z);
+    this.windex.scale.setScalar(0.6);
+    // her one sailor, a child: drawn at the crew's figure, four-fifths their size
+    const m = crewMats(look), s = sailor({ ...m, skin: new THREE.MeshStandardMaterial({ color: SKINS[1], roughness: 0.65 }) });
+    const kid = new THREE.Group(); s.g.scale.setScalar(0.78); kid.add(s.g); T.add(kid);
+    const z0 = 0.62;
+    this.crew = [{ g: kid, s, z0, i: 0, x: 0, y: O.sheer(H.tAt(z0)), z: z0, yaw: Math.PI, lean: 0, stand: 0, knee: -0.8, reach: 0.5 }];
+    this.eye = [0.62, 0.8, 0.62]; // the helm view: her head as she hikes
+    this.finish(label, 4.2);
+  }
+  // the sail's surface at (f, u): between luff and leech, bellied to leeward; the sprit, on the sail's port side, holds
+  // the cloth back where the sail fills to port, the crease it makes along it
+  sailPoint(f, u, t, v) {
+    const O = OZ, sc = this.cloth, ss = this.sailSide, a = O.luffAt(f), b = O.leechAt(f), ch = O.chord(f);
+    const y = lerp(a[0], b[0], u), z = lerp(a[1], b[1], u);
+    const belly = -ss * (1 - sc.flogM * 0.85) * Math.sin(Math.PI * u ** 0.75) * ch * 0.12 * sc.depth * (1 - 0.3 * f);
+    let x = belly - ss * f * f * 0.25 * u * sc.twist + mainCloth(sc, f, u, t, ch, ss) + leechFlutter(f, u, t, sc.aws);
+    const hy = O.SPRIT_Y, hz = 0.03, dy = O.PEAK[1] - hy, dz = O.PEAK[0] - hz, k = clamp(((y - hy) * dy + (z - hz) * dz) / (dy * dy + dz * dz), 0, 1);
+    const d = Math.hypot(y - hy - k * dy, z - hz - k * dz), w = Math.exp(-((d / 0.2) ** 2));
+    x += w * Math.max(0, this.spritX + 0.03 - x); // pressed out to the sprit's side of it, the cloth easing back either side
+    return v.set(x, y, z);
+  }
+  update(b, t, W, showLabel) {
+    const O = OZ, H = O.hull, side = this.place(b, t, W);
+    this.wheel.rotation.y = b.rudder * 0.5;
+    this.ext.position.x = side * 0.3; this.ext.rotation.y = side * 0.5;
+    this.mainPivot.rotation.y = -this.sailSide * b.sail * D2R;
+    setSail(this.main, (f, u, v) => this.sailPoint(f, u, t, v));
+    // the sheet: bridle → boom end → middle block → ratchet, the block on the bridle riding to leeward, pulling it up
+    const ma = this.mainPivot.rotation.y, at = (z, dy) => [Math.sin(ma) * z, O.BOOM_Y - dy, O.MAST_Z + Math.cos(ma) * z];
+    const cx = clamp(Math.sin(ma) * 1.2, -0.3, 0.3), ty = O.sheer(0) + 0.01, tx = O.hb(0) - 0.05, cy = ty + 0.15 - Math.abs(cx) * 0.12;
+    this.travCar.position.set(cx, cy, O.TRAV_Z);
+    const bp = this.bridle.geometry.attributes.position; bp.setXYZ(1, cx, cy, O.TRAV_Z); bp.needsUpdate = true;
+    const ms = this.mainsheet.geometry.attributes.position;
+    [[cx, cy, O.TRAV_Z], at(O.BL - 0.06, 0.06), at(O.BL - 0.06, 0.045), at(0.9, 0.06), [0, this.ratY, this.ratZ]].forEach((p, i) => ms.setXYZ(i, ...p));
+    ms.needsUpdate = true;
+    this.windex.rotation.y = -b.awa;
+    const v = new THREE.Vector3();
+    for (const tt of this.tells) {
+      const { f, sx } = tt.userData, windward = sx === side;
+      this.sailPoint(f, 0.3 / O.chord(f), t, v); tt.position.set(v.x + sx * 0.015, v.y, v.z);
+      let rot = Math.PI / 2 + Math.sin(t * 9 + f * 10) * 0.12, ok = true;
+      if (b.trim === 'in' && windward) { rot = Math.PI / 2 + 1.0 + Math.sin(t * 13) * 0.5; ok = false; }
+      if (b.trim === 'out' && !windward) { rot = 0.25 + Math.sin(t * 5 + f) * 0.2; ok = false; }
+      if (b.trim === 'irons') { rot = Math.sin(t * 15 + f * 3) * 1.4; ok = false; }
+      tt.rotation.x = -rot;
+      tt.material.color.set(ok ? '#2ecc71' : '#ff4d3d');
+    }
+    // the sailor: upwind sat on the windward gunwale, feet under the strap, leaning out over the water the harder it
+    // blows; in light air and off the wind sat further in on it, leaning in, ducking under the boom in a gybe; working
+    // the boat through the waves, back as the bow rises and forward as it drops
+    const k = this.crewDt(t), up = Math.abs(b.twa) < 100 * D2R, c = this.crew[0];
+    const out = clamp(((b.aws || 8) - 5) / 8, 0, 1) * clamp(b.heel / 8, 0.3, 1), pitch = this.tilt.rotation.x;
+    const z = c.z0 + (up ? 0 : 0.12), hb = H.hbAt(z), y = O.sheer(H.tAt(z)) + 0.02, work = clamp(pitch * 2.5, -0.15, 0.15);
+    const want = up
+      ? { x: side * lerp(hb - 0.07, hb + 0.04, out), y, z, yaw: Math.PI - lerp(0.75, 0.5, out), lean: lerp(0.3, -0.9, out) - work, stand: 0, knee: lerp(-1.25, -0.55, out), reach: lerp(0.7, 0.35, out) }
+      : { x: side * (hb - 0.08), y, z, yaw: Math.PI - 0.7, lean: 0.2 - work, stand: 0, knee: -1.3, reach: 0.6 };
+    this.pose(c, want, k);
+    this.showLabel(b, showLabel);
+  }
+}
+
 // ---------- the Bavaria 46 ----------
 // the Farr-designed Cruiser 46 (2014), to Bavaria's figures: a 13.60 m hull (14.27 m over her bow roller and sprit),
 // 4.35 m beam. High topsides with a chine aft, a dark stripe along them and four small hull windows a side; a long
@@ -1467,13 +1791,15 @@ class AC75View extends ClassView {
   }
 }
 
-// the moulded parts of the Bavaria (blender/bavaria46.py), the Laser (blender/laser.py), the J/70 and the RS21
+// the moulded parts of the Bavaria (blender/bavaria46.py), the Laser (blender/laser.py), the Optimist
+// (blender/optimist.py), the J/70 and the RS21
 // (blender/sportboats.py) and the AC75 (blender/ac75.py), each asked for only on a page that will build her (her races,
 // her boat page, the fleet). Here at the end, once every class's lines are laid down: the views read them only when a
 // boat is built, after this module has loaded
-const [BV_MODEL, LZ_MODEL, J70_MODEL, RS21_MODEL, AC75_MODEL] = await Promise.all([
+const [BV_MODEL, LZ_MODEL, OZ_MODEL, J70_MODEL, RS21_MODEL, AC75_MODEL] = await Promise.all([
   CLS.id !== 'bavaria46' && !ON_FLEET ? null : loadModel('bavaria46.glb', BV.hull, [['deck', 1], ['roof', 1], ['teak', 1 / 0.8]]),
   CLS.id !== 'laser' && !ON_FLEET ? null : loadModel('laser.glb', LZ.hull, [['deck', 1]]),
+  CLS.id !== 'optimist' && !ON_FLEET ? null : loadModel('optimist.glb', OZ.hull, [['deck', 1]]),
   CLS.id !== 'j70' && !ON_FLEET ? null : loadModel('j70.glb', sportOf(false).hull, [['deck', 1]]),
   CLS.id !== 'rs21' && !ON_FLEET ? null : loadModel('rs21.glb', sportOf(true).hull, [['deck', 1]]),
   CLS.id !== 'ac75' && !ON_FLEET ? null : loadModel('ac75.glb', A.hull, [['deck', 1]]),
