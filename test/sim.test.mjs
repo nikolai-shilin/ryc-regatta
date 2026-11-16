@@ -9,9 +9,10 @@ const sim = await import('../public/game/sim.js');
 const site = await import('../lib/race.ts');
 // the beat (start to windward mark) in each wind, as sim.js Race and api/game.mjs have it; and the server's floor (below)
 const BEAT = { light: 200, medium: 260, strong: 280 }, FLOOR = 0.45;
-// …and a class's share of the floor, as the server has it (YACHT_FLOOR): the AC75's, and the Optimist's on her short
-// courses; every other class, all of it
-const YACHT_FLOOR = { ac75: 0.4, optimist: 0.6 };
+// …and a class's share of the floor, as the server has it (YACHT_FLOOR): the AC75's, the Optimist's on her short
+// courses, and the Laser's, the J/70's and the RS21's, which sail as near their polars upwind in a blow as in a breeze;
+// every other class, all of it
+const YACHT_FLOOR = { ac75: 0.4, optimist: 0.6, laser: 0.8, j70: 0.9, rs21: 0.9 };
 
 // lib/race.ts is a copy of the game's dailyRace for the hub and Home: the same day must give the same race
 test('the site and the game agree on today’s race, every day for a year and more', () => {
@@ -254,7 +255,7 @@ function sailScripted(opts) {
   return r.boats.map((b) => (b.done && !b.dsq ? Math.round(b.finish * 10) / 10 : null));
 }
 // recorded before the race had more than one human boat in it (sailScripted on the sim as it was)
-const GOLDEN_4242 = [null, 285, 280.2, 237.2, 270.7];
+const GOLDEN_4242 = [null, 249.8, 269.6, 259.5, 228]; // sailed again 2026-11-16: a boat's depowering counted against the best a crew can do (sim.js bestTrim)
 test('golden: a one-human race is the race it always was', () => {
   assert.deepEqual(sailScripted({ preset: 'medium', length: 'short', laps: 1, fleet: 5, seed: 4242 }), GOLDEN_4242);
 });

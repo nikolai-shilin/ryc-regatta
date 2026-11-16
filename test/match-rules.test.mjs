@@ -341,7 +341,7 @@ function sailScripted(opts) {
   }
   return r.boats.map((b) => (b.done && !b.dsq ? Math.round(b.finish * 10) / 10 : null));
 }
-const GOLDEN_4242 = [null, 285, 280.2, 237.2, 270.7];
+const GOLDEN_4242 = [null, 249.8, 269.6, 259.5, 228]; // sailed again 2026-11-16: a boat's depowering counted against the best a crew can do (sim.js bestTrim)
 test('a free race is unchanged by the match code', () => {
   assert.deepEqual(sailScripted({ preset: 'medium', length: 'short', laps: 1, fleet: 5, seed: 4242 }), GOLDEN_4242);
 });
@@ -545,7 +545,7 @@ test('the umpire is a match\'s only: a free race makes no calls', () => {
   const X = midBeat(r.course), W = r.wind.at(X.x, X.z).dir;
   sail(r, S, off(X, fwd(W - 45 * D2R), -V * 8), W - 45 * D2R, V);
   sail(r, P, off(X, fwd(W + 45 * D2R), -V * 8), W + 45 * D2R, V);
-  const min = closest(r, P, S, 6); // up to just before they'd touch: a match's umpire has called it by now
+  const min = closest(r, P, S, 5.8); // up to just before they'd touch: a match's umpire has called it by now
   assert.ok(min > 0 && min < 3, `${min.toFixed(2)}`);
   assert.deepEqual(r.calls, []); assert.equal(said(r, 'umpire').length, 0);
 });

@@ -5,7 +5,11 @@
 // lib/yachts.ts has the same ids and the words the site shows about them.
 
 // a polar: knots by true wind speed (tws, the columns) and true wind angle (twa, the rows); beat: the close-hauled
-// angle and beatV the speed there, for each tws
+// angle and beatV the speed there, for each tws. It is the speed with the sails trimmed, depowered and reefed as well
+// as a crew can (sim.js bestTrim): a good crew sails it in a blow as in a breeze.
+// How she turns, against the JPK 1050: turn, her rate of turn for the helm put over (a dinghy spins round, a 14-tonne
+// cruiser takes her time), and yawLag, the seconds she takes to start turning and to stop (sim.js YAW_LAG).
+// heelShow: how much of her heel is drawn (a dinghy is sailed flat, her sailor's weight out over the side holding her up)
 const TWS = [4, 6, 8, 10, 12, 14, 16, 20, 24];
 const TWA = [52, 60, 75, 90, 110, 120, 135, 150, 165, 180];
 
@@ -19,7 +23,7 @@ export const CLASSES = {
   jpk1050: {
     id: 'jpk1050', loa: 10.45, beam: 3.54, drawnL: 10.45, crew: 4,
     kite: true, zero: true, reef: true, j3: true,
-    tau: 4.5, coast: 32, hullV: 12, heelK: 1, awsK: 1, heelShow: 1, courseK: 1, lineK: 1, startK: 1,
+    tau: 4.5, coast: 32, hullV: 12, heelK: 1, awsK: 1, heelShow: 1, turn: 1, yawLag: 0.55, courseK: 1, lineK: 1, startK: 1,
     tws: TWS, twa: TWA,
     beat: [45.8, 43, 40.4, 40, 39.2, 38.5, 38.4, 39.2, 40],
     beatV: [3.92, 5.22, 6.01, 6.53, 6.71, 6.77, 6.84, 6.94, 7.0],
@@ -43,7 +47,7 @@ export const CLASSES = {
   bavaria46: {
     id: 'bavaria46', loa: 14.27, beam: 4.35, drawnL: 14.27, crew: 5,
     kite: true, zero: false, reef: true, j3: false,
-    tau: 7, coast: 50, hullV: 8.6, heelK: 1.1, awsK: 1, heelShow: 1, courseK: 1, lineK: 1.3, startK: 1.3,
+    tau: 7, coast: 50, hullV: 8.6, heelK: 1.1, awsK: 1, heelShow: 1, turn: 0.85, yawLag: 0.7, courseK: 1, lineK: 1.3, startK: 1.3,
     tws: TWS, twa: TWA,
     // the median of 29 ORC Club certificates of the Farr-designed Cruiser 46 (data.orc.org, 2026), all with a
     // gennaker; 4 and 24 knots extended from 6 and 20
@@ -67,7 +71,7 @@ export const CLASSES = {
   j70: {
     id: 'j70', loa: 6.93, beam: 2.25, drawnL: 6.93, crew: 4,
     kite: true, zero: false, reef: false, j3: false,
-    tau: 2.6, coast: 18, hullV: 15, heelK: 1.1, awsK: 1, heelShow: 1, courseK: 0.8, lineK: 0.8, startK: 0.8,
+    tau: 2.6, coast: 18, hullV: 15, heelK: 1.1, awsK: 1, heelShow: 1, turn: 1.2, yawLag: 0.45, courseK: 0.8, lineK: 0.8, startK: 0.8,
     tws: TWS, twa: TWA,
     beat: [45, 43, 41, 40, 39.5, 39.5, 40, 41, 42],
     beatV: [3.3, 4.4, 5.2, 5.7, 6.0, 6.15, 6.25, 6.4, 6.45],
@@ -89,7 +93,7 @@ export const CLASSES = {
   rs21: {
     id: 'rs21', loa: 6.67, beam: 2.2, drawnL: 6.67, crew: 3,
     kite: true, zero: false, reef: false, j3: false,
-    tau: 2.4, coast: 17, hullV: 15, heelK: 1.15, awsK: 1, heelShow: 1, courseK: 0.8, lineK: 0.8, startK: 0.8,
+    tau: 2.4, coast: 17, hullV: 15, heelK: 1.15, awsK: 1, heelShow: 1, turn: 1.2, yawLag: 0.45, courseK: 0.8, lineK: 0.8, startK: 0.8,
     tws: TWS, twa: TWA,
     beat: [45, 43.5, 41.5, 40.5, 40, 40, 40.5, 41.5, 42.5],
     beatV: [3.2, 4.3, 5.1, 5.55, 5.85, 6.0, 6.1, 6.25, 6.3],
@@ -120,7 +124,7 @@ export const CLASSES = {
   dragon: {
     id: 'dragon', loa: 8.9, beam: 1.96, drawnL: 8.9, crew: 3,
     kite: true, zero: false, reef: false, j3: false,
-    tau: 5, coast: 38, hullV: 6.8, heelK: 0.8, awsK: 1, heelShow: 1, courseK: 0.75, lineK: 0.8, startK: 0.8,
+    tau: 5, coast: 38, hullV: 6.8, heelK: 0.8, awsK: 1, heelShow: 1, turn: 0.85, yawLag: 0.65, courseK: 0.75, lineK: 0.8, startK: 0.8,
     tws: TWS, twa: TWA,
     // from her Portsmouth Number (RYA 986, against the ILCA 7's 1103): round a windward-leeward course some 1.12 times
     // as quick as the Laser in 8–14 knots, and 5% slower than the J/70; upwind VMG some 4.5 kn in 12 knots at 38°
@@ -145,7 +149,7 @@ export const CLASSES = {
   laser: {
     id: 'laser', loa: 4.19, beam: 1.39, drawnL: 4.19, crew: 1,
     kite: false, zero: false, reef: false, j3: false, jib: false,
-    tau: 1.8, coast: 11, hullV: 13, heelK: 1.2, awsK: 1, heelShow: 1, courseK: 0.6, lineK: 0.6, startK: 0.6,
+    tau: 1.8, coast: 11, hullV: 13, heelK: 1.2, awsK: 1, heelShow: 0.35, turn: 1.5, yawLag: 0.3, courseK: 0.6, lineK: 0.6, startK: 0.6,
     tws: TWS, twa: TWA,
     // from measured speeds: GPS tracks of World Cup and Olympic races (Pan & Sun 2022), the tank-validated VPP of
     // Day (2017) and Binns' measured polars (2002) — upwind VMG some 3.2 kn in 8 knots, 3.7 in 12; downwind she surfs
@@ -173,7 +177,7 @@ export const CLASSES = {
   optimist: {
     id: 'optimist', loa: 2.31, beam: 1.13, drawnL: 2.31, crew: 1,
     kite: false, zero: false, reef: false, j3: false, jib: false,
-    tau: 1.4, coast: 6, hullV: 4.2, heelK: 1.1, awsK: 1, heelShow: 1, courseK: 0.3, lineK: 0.6, startK: 0.6,
+    tau: 1.4, coast: 6, hullV: 4.2, heelK: 1.1, awsK: 1, heelShow: 0.4, turn: 1.6, yawLag: 0.25, courseK: 0.3, lineK: 0.6, startK: 0.6,
     tws: TWS, twa: TWA,
     // a displacement hull 1.9 m on the waterline (2.18 m of floor): upwind VMG some 2.25 kn in 8 knots, 2.5 in 12,
     // falling off as she is overpowered; downwind no faster than her hull lets her, but for a reach in a breeze. Round a
@@ -194,14 +198,18 @@ export const CLASSES = {
     ],
   },
   // the AC75: the America's Cup's 75-foot foiling monohull. Two canting foil arms lift her clear of the water from
-  // about 9 knots of boat speed, and then she sails at three times the wind's speed and more, the apparent wind always
-  // ahead: no spinnaker, only the double-skinned main and a jib. Off her foils (slow out of a tack, a stop, light air)
-  // she is a heavy displacement boat until she builds the speed to take off again. Courses for her are laid longer.
+  // some 16 knots of boat speed, and then she sails at three times the wind's speed and more, the apparent wind always
+  // ahead: no spinnaker, only the double-skinned main and a jib. Below some 13 knots she comes down off her foils (a
+  // tack in a lull, a stop), and is a heavy displacement boat until she builds the speed to take off again: on a beam
+  // reach, where the hull lifts first, in 7 knots of wind and more (the 37th Cup raced in 6.5 to 21; in Barcelona the
+  // boats took off at 14–20 knots of boat speed, and a tack below 7 knots of wind seldom stayed up). Upwind or deep
+  // downwind in a lull she can't; the computer skippers bear away or come up to fly again. Courses for her are laid
+  // longer.
   ac75: {
     id: 'ac75', loa: 20.7, beam: 5.0, drawnL: 20.7, crew: 8, // the rule's hull length: no bowsprit since the 37th Cup
     kite: false, zero: false, reef: false, j3: false,
-    tau: 3.2, coast: 420, hullV: 60, heelK: 0.35, awsK: 2.6, heelShow: 0.45, courseK: 2.5, lineK: 1.8, startK: 4,
-    foil: { takeoff: 9, land: 6.5, dispCoast: 30, disp: [[28, 0], [40, 1.3], [60, 1.55], [90, 1.9], [120, 1.8], [150, 1.3], [180, 0.9]] },
+    tau: 3.2, coast: 420, hullV: 60, heelK: 0.35, awsK: 2.6, heelShow: 0.45, turn: 1, yawLag: 0.55, courseK: 2.5, lineK: 1.8, startK: 4,
+    foil: { takeoff: 16, land: 13, dispCoast: 30, disp: [[28, 0], [40, 1.5], [60, 1.9], [90, 2.6], [120, 2.5], [150, 1.6], [180, 0.9]] },
     tws: TWS, twa: TWA,
     beat: [48, 46, 44, 43, 42, 42, 42, 43, 44],
     beatV: [14, 22, 28, 32, 35, 37, 39, 41, 42],

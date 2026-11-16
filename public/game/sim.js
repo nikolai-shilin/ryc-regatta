@@ -130,6 +130,32 @@ const HEEL_SIDE = [[0, 0.3], [18, 0.3], [22, 1], [50, 1], [100, 0.5], [180, 0.12
 const HEEL_K = CLS.heelK, AWS_K = CLS.awsK;
 export const fullHeel = (aws, awa, kite) => { aws /= AWS_K; return HEEL_K * (24 * (aws / 16) ** 1.4 * table(HEEL_SIDE, awa) + (kite ? 8 * (aws / 16) ** 1.4 : 0)); };
 export const depowerFor = (full) => (full > 24 ? 28 * (1 - 24 / full) : 0);
+// what a sheet off its ideal angle costs: e degrees out (+ eased, flapping) or in (− stalled); its drive (heel), the same
+const effOf = (e) => clamp(e > 0 ? 1 - (e / 28) ** 2 : 1 - (e / 35) ** 2, e > 0 ? 0.08 : 0.25, 1);
+const powOf = (e) => (e > 0 ? clamp(1 - e / 28, 0.05, 1) : 1 + -e / 80);
+// heeled past 25° she drags her hull and slips: a third off at 40°
+const heelPen = (heel) => clamp(1 - (heel - 25) / 45, 0.3, 1);
+// the sail plan's own cost: a reef, a big loss in light air and next to nothing in a blow; the J3 a loss in light air,
+// about even in a blow
+const planK = (tws, reef, j3) => (1 - reef * clamp(0.16 - (tws - 12) * 0.018, 0.02, 0.16)) * (j3 ? 1 - clamp(0.1 - (tws - 12) * 0.012, 0, 0.1) : 1);
+// how much of her polar the best a crew can do here keeps: the sheets eased just enough (depowerFor), in her best sail
+// plan for the wind (a reef, the J3, where the class has them). A polar (an ORC certificate's, a fleet's measured
+// speeds) is already the speed with the boat depowered and reefed as well as she can be, so a boat's trim, heel and
+// sail plan are counted against this, not against none at all: trimmed and reefed as she should be she sails her
+// polar in any wind, where she had sailed some 60% of it upwind in 20 knots and half of it in 24. A crew that hasn't
+// reefed when it pays flattens the full sails as far as they go: at most a tenth slower than with the reef in
+export function bestTrim(aws, awa, tws, gen, zero) {
+  const kiteK = gen ? 0.7 : zero ? 0.35 : 0, base = fullHeel(aws, awa, gen) + (zero ? 5 * (aws / 16) ** 1.4 : 0);
+  let best = 0, full0 = 0;
+  for (const [reef, j3] of [[0, false], [1, false], [0, true], [1, true]]) {
+    if ((reef && !CLS.reef) || (j3 && !CLS.j3)) continue;
+    const full = base * (1 - 0.32 * reef) * (j3 ? 0.9 : 1), e = depowerFor(full);
+    const k = lerp(effOf(e), 1, kiteK) * heelPen(full * lerp(powOf(e), 1, kiteK)) * planK(tws, reef, j3);
+    if (!reef && !j3) full0 = k;
+    if (k > best) best = k;
+  }
+  return Math.min(best, full0 / 0.9);
+}
 
 // ---------- wind ----------
 // a smooth random wander in −1…1: a new value every `step` seconds from the generator, eased from one to the next
@@ -230,7 +256,10 @@ export class Wind {
 }
 
 // ---------- the boat ----------
-export const YAW_LAG = 0.55; // s: how long she takes to start turning, and to stop when the helm is centred
+// s: how long she takes to start turning, and to stop when the helm is centred; and how fast she turns, against the
+// JPK 1050 — each class her own (classes.js turn, yawLag): a dinghy spins round, a 14-tonne cruiser takes her time
+export const YAW_LAG = CLS.yawLag ?? 0.55;
+const TURN = CLS.turn ?? 1;
 export class Boat {
   constructor(o = {}) {
     this.name = o.name || 'You';
@@ -397,8 +426,6 @@ export class Boat {
     this.trim = a < NO_GO ? 'irons' : ms !== 'ok' ? ms : js;
     // the main and the jib share the drive; the main heels her more, so easing it in a gust with the jib kept in
     // costs less speed than it saves heel. With the gennaker up the crew trims it and it does most of the driving.
-    const effOf = (e) => clamp(e > 0 ? 1 - (e / 28) ** 2 : 1 - (e / 35) ** 2, e > 0 ? 0.08 : 0.25, 1);
-    const powOf = (e) => (e > 0 ? clamp(1 - e / 28, 0.05, 1) : 1 + -e / 80);
     const kiteK = gen ? 0.7 : zero ? 0.35 : 0;
     const eff = lerp(0.5 * effOf(err) + 0.5 * effOf(jerr), 1, kiteK);
     this.eff = eff;
@@ -406,7 +433,6 @@ export class Boat {
 
     // heel
     this.heel = lerp(this.heel, full * power, 1 - Math.exp(-dt / 1.1));
-    const heelPen = clamp(1 - (this.heel - 25) / 45, 0.3, 1);
 
     // the sea: upwind it knocks her back, downwind in a breeze she surfs
     const W = race.waves;
@@ -433,19 +459,17 @@ export class Boat {
 
     // speed: the target from the polar, and momentum to get there
     this.polar = polarSpeed(w.tws, a, gen || a < 100);
-    let target = polarSpeed(w.tws, a, gen) * eff * heelPen * chop * (1 - PINCH * pinch) * KN;
+    // (her trim, heel and sail plan against the best a crew can do in this wind: bestTrim)
+    const trimK = Math.min(1, (eff * heelPen(this.heel) * planK(w.tws, this.reefFill, this.smallJib)) / bestTrim(this.aws, awa, w.tws, gen, zero));
+    let target = polarSpeed(w.tws, a, gen) * trimK * chop * (1 - PINCH * pinch) * KN;
     if (this.byLee > 0) target *= 1 - 0.012 * this.byLee; // by the lee: the wind gets behind the main
     if (this.kiteGybe) target *= this.kiteType === 'zero' ? 0.85 : 0.88; // the kite barely pulls while it's gybed
     // a code zero on a reach in light air: up to 14% more, best about 85° off the wind and fading above 15 knots
     if (zero) target *= 1 + 0.14 * clamp((15 - w.tws) / 7, 0, 1) * clamp(1 - Math.abs(a - 85) / 45, 0, 1);
-    // the J3: a loss in light air, about even in a blow; changing jibs, little drive meanwhile
-    if (this.smallJib) target *= 1 - clamp(0.1 - (w.tws - 12) * 0.012, 0, 0.1);
-    if (this.jibJob) target *= 0.8;
+    if (this.jibJob) target *= 0.8; // changing jibs, little drive meanwhile
     if (this.broachT > 0) { target *= 0.35; this.broachT -= dt; }
     if (this.kiteJob) target *= this.kiteJob.messy ? 0.62 : this.kiteJob.up ? 0.93 : 0.88; // crew off the rail, the kite half-set or flogging
-    // less sail with a reef: a big loss in light air, next to nothing in a blow; tying it in costs more while it's done
-    target *= 1 - this.reefFill * clamp(0.16 - (w.tws - 12) * 0.018, 0.02, 0.16);
-    if (this.reefJob) target *= 0.85;
+    if (this.reefJob) target *= 0.85; // tying a reef in (or shaking it out) costs more while it's done
     // a foiler: on her foils from takeoff speed until she slows below landing speed; off them, a displacement boat
     if (CLS.foil) {
       const kn = this.v / KN;
@@ -478,15 +502,15 @@ export class Boat {
     if (this.auto) {
       const left = wrap(this.auto.to - this.h);
       this.auto.t = (this.auto.t || 0) + dt;
-      if ((Math.abs(left) < 3 * D2R && Math.abs(this.yawRate) < 0.1) || sgn(left) !== this.auto.dir || this.auto.t > 9) { this.auto = null; this.rudder = 0; this.sinceTack = 0; this.events.push('tacked'); }
+      if ((Math.abs(left) < 3 * D2R && Math.abs(this.yawRate) < 0.1) || sgn(left) !== this.auto.dir || this.auto.t > 9 / Math.min(1, TURN)) { this.auto = null; this.rudder = 0; this.sinceTack = 0; this.events.push('tacked'); }
       // hard over, then ease the helm early and meet her, as she keeps turning for a moment after the rudder centres
       else if (Math.abs(left) > 20 * D2R) this.rudder = this.auto.dir * clamp(Math.abs(left) / (25 * D2R), 0.35, 1);
-      else this.rudder = clamp(wrap(left - this.yawRate * 0.55) / (20 * D2R), -1, 1);
+      else this.rudder = clamp(wrap(left - this.yawRate * YAW_LAG) / (20 * D2R), -1, 1);
     }
     let rud = this.rudder;
     if (this.heel > 40) rud *= 0.5;
     const grip = clamp(0.55 + this.v / 3, 0.55, 1.25);
-    let yaw = rud * 0.42 * grip * (this.v < -0.05 ? -0.6 : 1); // going astern the rudder works the other way, and weakly
+    let yaw = rud * 0.42 * TURN * grip * (this.v < -0.05 ? -0.6 : 1); // going astern the rudder works the other way, and weakly
     if (this.heel > 35) yaw += side * Math.min((this.heel - 35) / 20, 1.2) * 0.22; // weather helm rounds her up
     if (a < NO_GO && this.v < 0.8 && !this.auto && !this.pen) yaw -= side * 0.18; // stopped head to wind, the bow blows off
     // she doesn't answer the helm at once: a heavy hull takes a moment to start turning, and a moment to stop
@@ -1610,6 +1634,9 @@ export class Race {
     }
     else want = brg;
     want += helm; // her hand on the helm (her habits, above)
+    // a foiler off her foils where she can't build the speed to fly again (upwind, or deep downwind, in a lull): she
+    // comes to a beam reach, where she can, as the AC75s do, and goes on with her leg once she's up
+    if (CLS.foil && !b.fly && this.clock > 0 && dispSpeed(b.tws, Math.abs(wrap(W - want)) / D2R) < CLS.foil.takeoff + 1) want = W - sgn(b.twa) * 95 * D2R;
     // keep off the shore: with land a few seconds' sailing ahead on the heading she wants (further at speed, as an
     // AC75's), she takes the nearest sailable heading on this tack with water ahead; with none, she tacks or gybes
     // onto the other if it has water, else takes the heading with the most
