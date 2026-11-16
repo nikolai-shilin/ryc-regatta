@@ -218,6 +218,11 @@ const CSS = `
 .b-you { padding-right: var(--s-1); }
 .b-you > div { display: flex; flex-direction: column; justify-content: center; gap: var(--s-2); padding: 0 var(--s-5); }
 .b-you > div + div { border-left: 1px solid var(--rule); }
+/* each number's cell held at its own width (holdWidths) and gliding to a new one, its content clipped at its edge while
+   it opens; figures of one width where the font has them (Sofia Sans Condensed doesn't yet: the 8 px steps take it) */
+.b-you { font-variant-numeric: tabular-nums; }
+.b-you > .hw { flex: none; overflow-x: clip; }
+.b-you > .hw > * { width: max-content; }
 .b-you .c-pos { width: 48px; padding: 0 !important; align-items: center; background: var(--you); color: var(--ink-on); font: 700 var(--fs-h3)/1 var(--cond); }
 .b-you .c-nm { flex-direction: row; align-items: center; gap: var(--s-3); padding-left: var(--s-5); }
 .b-you .c-nm i { width: 6px; height: 30px; background: var(--you); }
@@ -793,7 +798,37 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   for (const m of MOVES) m.to.append(m.el);
   const tackB = $('#tackBtn'); if (tackB) tackB.dataset.key = L.space;
   scale();
-  glideWidths([B.you, B.state, tagIn, ...btags.map((g) => g.box), split, move, lay]);
+  glideWidths([B.state, tagIn, ...btags.map((g) => g.box), split, move, lay]); // (your strip: its cells hold their own widths, below)
+
+  // Your strip's number cells, each as wide as what it says and steady. Widths go in steps of 8 px, so a number that
+  // grows by a pixel (the font's figures aren't all one width) moves nothing; a cell opens a step to fit a longer number
+  // or word in about a third of a second, and closes on a shorter one only once it has stayed shorter for three seconds,
+  // then to the widest it was in that time, over 0.6 s: so a number flicking between two lengths (9,9 ↔ 10,0) holds the
+  // wider, and nothing shivers. The widths are read once a frame, after the frame's writes; a cell coming into view,
+  // and a new screen size, take theirs at once; with reduced motion they don't glide.
+  const holdCells = [...B.you.children].filter((d) => !d.matches('.c-pos, .c-nm'));
+  for (const d of holdCells) d.classList.add('hw');
+  const calmQ = matchMedia('(prefers-reduced-motion: reduce)');
+  const setW = (d, w, ms) => { d.style.transition = ms && !calmQ.matches ? `width ${ms}ms cubic-bezier(0.2, 0.8, 0.2, 1)` : 'none'; d.style.width = `${w}px`; };
+  addEventListener('resize', () => { for (const d of holdCells) d._hw = 0; });
+  function holdWidths() {
+    const now = performance.now(), on = holdCells.filter((d) => d.getClientRects().length);
+    const need = on.map((d) => { // read: the widest thing in it, and its padding and rule
+      if (!d._hw) { const cs = getComputedStyle(d); d._pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth); }
+      let m = 0; for (const k of d.children) if (!k.classList.contains('b-g') && k.getClientRects().length) m = Math.max(m, k.offsetWidth);
+      return Math.ceil((m + d._pad) / 8) * 8;
+    });
+    on.forEach((d, i) => { // write
+      const n = need[i];
+      if (!d._hw) { d._hw = n; d._lo = 0; setW(d, n, 0); return; }
+      if (n > d._hw) { d._hw = n; d._lo = 0; setW(d, n, 320); }
+      else if (n < d._hw) {
+        if (!d._lo) { d._lo = now; d._mx = n; } else d._mx = Math.max(d._mx, n);
+        if (now - d._lo > 3000) { d._hw = d._mx; d._lo = 0; setW(d, d._hw, 600); }
+      } else d._lo = 0;
+    });
+    for (const d of holdCells) if (!on.includes(d)) d._hw = 0;
+  }
 
   const txt = (e, s) => { if (e._t !== s) { e._t = s; e.textContent = s; } };
   // (a flash running on it stays: see flash below)
@@ -1091,6 +1126,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       txt(Y.time, P.dsq ? t('dsq') : fmt(P.finish));
       Y.legP.setAttribute('d', ARROW.down); txt(Y.legT, L.finished);
     }
+    holdWidths();
 
     // the call: short ones as the broadcast's capitals, a sentence in its own case
     toastEl.classList.toggle('long', (toastEl.textContent || '').length > 44);
