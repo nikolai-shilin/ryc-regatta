@@ -2,8 +2,8 @@
 // yachts page (/yachts), the fleet page (/fleet) and the free race's set-up say about each. Today's race is sailed
 // in a new one every day (lib/race.ts dailyYacht); a free race in any.
 
-export type YachtId = 'jpk1050' | 'bavaria46' | 'j70' | 'rs21' | 'laser' | 'optimist' | 'ac75';
-export const YACHT_IDS: readonly YachtId[] = ['ac75', 'bavaria46', 'jpk1050', 'j70', 'rs21', 'laser', 'optimist']; // by size, the biggest first: every list of them is in this order
+export type YachtId = 'jpk1050' | 'bavaria46' | 'dragon' | 'j70' | 'rs21' | 'laser' | 'optimist' | 'ac75';
+export const YACHT_IDS: readonly YachtId[] = ['ac75', 'bavaria46', 'jpk1050', 'dragon', 'j70', 'rs21', 'laser', 'optimist']; // by size, the biggest first: every list of them is in this order
 export const DEFAULT_YACHT: YachtId = 'jpk1050';
 export const isYacht = (v: unknown): v is YachtId => typeof v === 'string' && (YACHT_IDS as readonly string[]).includes(v);
 
@@ -81,6 +81,25 @@ export const YACHTS: Yacht[] = [
       { k: ['Crew', 'Экипаж'], v: ['4', '4'] }, { k: ['Sails', 'Паруса'], v: ['Main, jib, J3, gennaker, code zero', 'Грот, стаксель, J3, генакер, код-зеро'] },
     ],
     speed: { up: 6.7, down: 8.6 }, courseK: 1, lineK: 1, timeK: 1,
+  },
+  {
+    id: 'dragon',
+    name: ['Dragon', 'Дракон'],
+    kind: ['29-foot classic three-man keelboat', 'классическая 29-футовая килевая яхта на троих'],
+    tagline: ['A 1929 design still raced at the top: long overhangs, varnished wood and a spinnaker on a pole.', 'Проект 1929 года, на котором до сих пор гоняются на высшем уровне: длинные свесы, лакированное дерево и спинакер на гике.'],
+    about: [
+      ['Johan Anker drew the Dragon in Norway in 1929 as a cheap boat with two berths for weekend cruising. Instead she became one of the great racing classes: Olympic from 1948 to 1972, raced since in strong fleets from Europe to Australia, her Gold Cup sailed every year since 1937. Built in wood for decades and in GRP since 1973, every one still has the same lines: long overhangs, a spoon bow and a small raked transom, a low freeboard, and a deep keel moulded into the hull with the rudder hung on its trailing edge.',
+        'Юхан Анкер нарисовал Дракона в Норвегии в 1929 году как недорогую лодку с двумя койками для походов на выходные. А стала она одним из великих гоночных классов: олимпийский с 1948 по 1972 год, сильные флоты от Европы до Австралии, «Золотой кубок» разыгрывается каждый год с 1937-го. Десятилетиями её строили из дерева, с 1973 года — из стеклопластика, но обводы у всех те же: длинные свесы, ложкообразный нос и маленький наклонный транец, низкий надводный борт и глубокий киль, переходящий в корпус, с рулём на задней кромке.'],
+      ['Three sail her, their weight capped at 285 kg: the helm aft on the tiller, the middle man on the main and the running backstays, the bow on the genoa and the spinnaker. A tonne of iron in her keel makes her stiff to sail and slow to stop; she points high upwind and carries her way through a tack, and downwind she sails at her hull’s speed under a big symmetric spinnaker set from a pole.',
+        'Ходят на ней втроём, вес экипажа ограничен 285 кг: рулевой на корме с румпелем, средний — на гроте и бакштагах, баковый — на генуе и спинакере. Тонна чугуна в киле делает её остойчивой и инертной: на лавировке она идёт круто к ветру и проносит ход через поворот, а на полных курсах идёт со скоростью своего корпуса под большим симметричным спинакером на спинакер-гике.'],
+    ],
+    race: ['Three aboard: a genoa, a spinnaker, no reef. Heavy for her size: she keeps her way through a tack and is slow to get going again after a stop. Courses are laid 0.75 times as long.', 'Экипаж из трёх: генуя, спинакер, без рифа. Тяжёлая для своего размера: проносит ход через поворот и медленно разгоняется после остановки. Дистанции в 0,75 раза короче.'],
+    specs: [
+      { k: ['Length', 'Длина'], v: ['8.9 m', '8,9 м'] }, { k: ['Beam', 'Ширина'], v: ['1.96 m', '1,96 м'] },
+      { k: ['Displacement', 'Водоизмещение'], v: ['about 1,700 kg', 'около 1700 кг'] }, { k: ['Draft', 'Осадка'], v: ['1.2 m', '1,2 м'] },
+      { k: ['Crew', 'Экипаж'], v: ['3', '3'] }, { k: ['Sails', 'Паруса'], v: ['Main and genoa 27.7 m², spinnaker 23.6 m²', 'Грот и генуя 27,7 м², спинакер 23,6 м²'] },
+    ],
+    speed: { up: 5.8, down: 7.0 }, courseK: 0.75, lineK: 0.8, timeK: 0.97,
   },
   {
     id: 'j70',

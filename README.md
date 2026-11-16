@@ -150,7 +150,8 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   The Bavaria 46's moulded parts (hull, deck, coachroof, cockpit) are `public/game/bavaria46.glb`, made the same way by
   `blender/bavaria46.py` (`blender -b --factory-startup -P blender/bavaria46.py`); `boats3d.js` builds her from its own
   lines if the file doesn't load. The Laser's hull and deck are `public/game/laser.glb`, from `blender/laser.py`, the
-  Optimist's open shell `public/game/optimist.glb`, from `blender/optimist.py`, the
+  Optimist's open shell `public/game/optimist.glb`, from `blender/optimist.py`, the Dragon's hull with her keel
+  moulded in, her deck, cabin, coaming and cockpit `public/game/dragon.glb`, from `blender/dragon.py`, the
   J/70's and the RS21's `public/game/j70.glb` and `rs21.glb`, from `blender/sportboats.py`, and the AC75's
   `public/game/ac75.glb`, from `blender/ac75.py`, likewise.
 - **The venues:** today's race goes to a venue a day (`dailyVenue()` in `public/game/venues.js`, copied in

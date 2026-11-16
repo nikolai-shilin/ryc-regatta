@@ -1,5 +1,5 @@
 // The yachts you can race: the JPK 1050 offshore racer (the default), the Bavaria 46
-// cruiser, the J/70 and RS21 sportboats, the Laser (ILCA) single-handed dinghy, the Optimist children's pram and the AC75 foiling monohull. A race is one-design: every boat in it is the same class, so the class is chosen for
+// cruiser, the J/70 and RS21 sportboats, the Dragon classic keelboat, the Laser (ILCA) single-handed dinghy, the Optimist children's pram and the AC75 foiling monohull. A race is one-design: every boat in it is the same class, so the class is chosen for
 // the page, as the venue is (venues.js pageVenue): ?boat= in the address wins; a free race sails what its set-up chose
 // (localStorage 'regatta', yacht); today's race the day's (dailyYacht, below); every other page the JPK 1050.
 // lib/yachts.ts has the same ids and the words the site shows about them.
@@ -103,6 +103,32 @@ export const CLASSES = {
       [6.7, 7.05, 7.95, 9.3, 11.3, 11.8, 11.2, 9.5, 8.7, 7.9],
       [6.85, 7.25, 8.5, 10.6, 13.1, 13.8, 13.6, 11.8, 10.7, 9.7],
       [6.9, 7.4, 9.0, 11.7, 14.5, 15.3, 15.5, 14.0, 12.8, 11.6],
+    ],
+  },
+  // the Dragon: Johan Anker's 1929 three-man keelboat, Olympic from 1948 to 1972 and raced in fleets round the world
+  // since — 8.9 m with long overhangs, a tonne of iron in her keel (some 1,700 kg as she sails), a genoa overlapping
+  // the mast and a symmetric spinnaker set from a pole. Narrow and deep: she points high and holds her way through a
+  // tack, heels readily to her lines and never planes; off the wind she sails at her hull's speed, surfing a little in a
+  // blow. Her courses are laid 0.75 times as long, her line and the room at the marks the sportboats'.
+  dragon: {
+    id: 'dragon', loa: 8.9, beam: 1.96, drawnL: 8.9, crew: 3,
+    kite: true, zero: false, reef: false, j3: false,
+    tau: 3.6, coast: 26, hullV: 7.5, heelK: 1.2, awsK: 1, heelShow: 1, courseK: 0.75, lineK: 0.8, startK: 0.8,
+    tws: TWS, twa: TWA,
+    // from her Portsmouth Number (RYA 986, against the ILCA 7's 1103): round a windward-leeward course some 1.12 times
+    // as quick as the Laser in 8–14 knots, and 5% slower than the J/70; upwind VMG some 4.5 kn in 12 knots at 38°
+    beat: [43, 41, 39.5, 38.5, 38, 38, 38.5, 39.5, 41],
+    beatV: [3.15, 4.25, 5.0, 5.5, 5.8, 5.95, 6.05, 6.15, 6.2],
+    v: [
+      [3.45, 3.65, 3.8, 3.8, 3.75, 3.65, 3.35, 2.95, 2.55, 2.35],
+      [4.55, 4.8, 5.05, 5.1, 5.15, 5.05, 4.7, 4.15, 3.6, 3.35],
+      [5.3, 5.55, 5.85, 6.0, 6.1, 6.05, 5.75, 5.15, 4.65, 4.35],
+      [5.7, 5.95, 6.25, 6.5, 6.65, 6.65, 6.45, 5.95, 5.5, 5.15],
+      [5.9, 6.15, 6.5, 6.75, 7.0, 7.05, 6.9, 6.55, 6.1, 5.8],
+      [6.0, 6.25, 6.65, 6.9, 7.25, 7.35, 7.25, 6.95, 6.6, 6.25],
+      [6.05, 6.3, 6.75, 7.05, 7.45, 7.65, 7.6, 7.3, 6.95, 6.65],
+      [6.1, 6.35, 6.85, 7.25, 7.85, 8.1, 8.15, 7.9, 7.5, 7.2],
+      [6.15, 6.45, 6.9, 7.35, 8.1, 8.45, 8.6, 8.4, 8.05, 7.7],
     ],
   },
   // the Laser (ILCA 7): the 14-foot single-handed Olympic dinghy — one sail on an unstayed mast, no jib (jib: false: one

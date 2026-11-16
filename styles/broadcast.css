@@ -1420,9 +1420,10 @@
    numbers' lower third, each her number, her name and two numbers; the one shown is lit blue with a blue bar along
    its foot, and while the tour runs the bar fills across her cell until the drone moves on. */
 .bc .fl-strip { gap: var(--s-1); container: fl-strip / inline-size;
-  /* the cells grow with the strip: names from 14px to 24px, their room from 8px to 16px, so seven cells span what
-     the strip has (about 22 names' heights of type and 14 sides of room) and reach full size at about 860px */
-  --fl-f: clamp(14px, 2.9cqi, 24px); --fl-px: clamp(8px, 1.8cqi, 16px); --fl-py: clamp(8px, 1.4cqi, 12px); }
+  /* the cells grow with the strip: names from 13px to 24px, their room from 7px to 16px, so eight cells span what
+     the strip has (about 25 names' heights of type and 16 sides of room), fit a 450px strip at their smallest and
+     reach full size at about 920px */
+  --fl-f: clamp(13px, 2.6cqi, 24px); --fl-px: clamp(7px, 1.6cqi, 16px); --fl-py: clamp(8px, 1.4cqi, 12px); }
 .bc .fl-ctl { gap: 2px; }
 .bc .fl-btn { width: var(--h-m); height: var(--h-m); gap: var(--s-2); border: 0; border-radius: 0; background: var(--panel); color: var(--ink); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
   transition: background-color var(--t-quick), color var(--t-quick), scale .12s; }
@@ -1457,9 +1458,9 @@
   .bc .fl-boat b { font-size: var(--fl-f); } .bc .fl-m { display: block; }
 }
 /* the plate is as wide as its cells and no wider than the strip; under the cells' full size the numbers under the
-   names go, and only a strip narrower than seven cells at their smallest scrolls */
+   names go, and only a strip narrower than eight cells at their smallest scrolls */
 .bc .fl-boats::-webkit-scrollbar { display: none; }
-@container fl-strip (max-width: 859px) { .bc .fl-m { display: none; } }
+@container fl-strip (max-width: 919px) { .bc .fl-m { display: none; } }
 /* sideways, the text column takes the room up to the card (its paragraph keeps its own measure), so the strip's
    width is the column's and not the cells' */
 @container scr (orientation: landscape) { .bc .fl-view .bt-info { flex: 1 1 0; } }
