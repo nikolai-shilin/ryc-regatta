@@ -373,6 +373,40 @@ def chamfer(src, cell, reach):
     return np.minimum(d, reach)
 
 
+SEEN_EYE, SEEN_REACH, SEEN_TOP = 120.0, 5500.0, 15.0  # the highest a race's camera is, how far out a race goes, a roof's or a crown's height
+def out_of_sight(H, S, mid, f=4):
+    """How far below every race's line of sight the land lies, metres (0 or less where it can be seen): looked at
+    from every point of the race's water within SEEN_REACH of the race area's middle (40 m off any shore, every
+    400 m), SEEN_EYE up (the drone zoomed out; at the helm, and the drone lower, see less), along rays out across the
+    land, on a grid f cells across (some 33 m), each cell by its highest ground under the line over everything nearer.
+    Each cell then takes the least of the cells two round it too, for where the rays fan out wider than a cell."""
+    n = H.shape[0] // f
+    blk = np.maximum(H[:n * f, :n * f].reshape(n, f, n, f), 0)
+    occ = blk.mean((1, 3)).ravel().astype(np.float32); top = blk.max((1, 3)).ravel().astype(np.float32)
+    c = 2 * EXTENT / n
+    step = int(400 // LC)
+    vi, vj = np.mgrid[0:S.shape[0]:step, 0:S.shape[1]:step]
+    vx, vz = -EXTENT + vj * LC, -EXTENT + vi * LC
+    ok = (S[vi, vj] < -40) & (np.hypot(vx - mid[0], vz - mid[1]) < SEEN_REACH)
+    vps = np.stack([vx[ok], vz[ok]], 1)
+    rays, dstep, reach = 1440, c / 2, 2 * EXTENT * 1.2
+    a = np.arange(rays) * (2 * np.pi / rays); d = np.arange(1, int(reach / dstep)) * dstep
+    DX = (np.cos(a)[:, None] * d[None, :]).astype(np.float32); DZ = (np.sin(a)[:, None] * d[None, :]).astype(np.float32)
+    D = d.astype(np.float32)[None, :]
+    under = np.full(n * n, np.inf, np.float32)
+    for x, z in vps:
+        j = np.floor((x + DX + EXTENT) / c).astype(np.int32); i = np.floor((z + DZ + EXTENT) / c).astype(np.int32)
+        inside = (i >= 0) & (j >= 0) & (i < n) & (j < n)
+        k = np.where(inside, i * n + j, 0)
+        t = np.where(inside, (occ[k] - SEEN_EYE) / D, -np.inf)
+        line = SEEN_EYE + D * np.concatenate([np.full((rays, 1), -np.inf, np.float32), np.maximum.accumulate(t, 1)[:, :-1]], 1)
+        np.minimum.at(under, k[inside], (line - top[k])[inside])
+    u = under.reshape(n, n)
+    for _ in range(2): u = np.minimum.reduce([u, shift(u, 1, 0, np.inf), shift(u, -1, 0, np.inf), shift(u, 0, 1, np.inf), shift(u, 0, -1, np.inf)])
+    print(f'  looked at from {len(vps)} points of the race\'s water', flush=True)
+    return np.kron(np.minimum(u, 1e4), np.ones((f, f), np.float32))
+
+
 def bilinear(A, x0, cell, x, z):
     """A sampled between its points: A[i, j] stands at (x0 + j·cell, x0 + i·cell)"""
     fx = np.clip((x - x0) / cell, 0, A.shape[1] - 1.001); fz = np.clip((z - x0) / cell, 0, A.shape[0] - 1.001)
@@ -1105,6 +1139,11 @@ def bake(vid, V, fetch_only=False):
     inner = np.abs(lx) < NE * EC / 2 * 0.9
     veg = vc[vi[:, None], vi[None, :]] & inner[:, None] & inner[None, :] & (HL[:-1, :-1] > 1.0)
     he = np.maximum(HL, -1.0)
+    # (where no race can see the land, behind the hills from all of the water: split for its heights alone, and only
+    # where a square misses them by more than it lies under the line of sight, less what stands on it (SEEN_TOP), so the
+    # coarser land stays out of sight as well)
+    under = out_of_sight(HL, S, MID)
+    print(f'  out of sight: {(under[HL[:-1, :-1] > 0] > SEEN_TOP).mean():.0%} of the land', flush=True)
     c4 = lambda f: f(f(HL[:-1, :-1], HL[1:, :-1]), f(HL[:-1, 1:], HL[1:, 1:]))
     cmax, cmin = c4(np.maximum), c4(np.minimum)
     want, nmax = [], []
@@ -1114,8 +1153,9 @@ def bake(vid, V, fetch_only=False):
         c = -EXTENT + (np.arange(n) + 0.5) * Sz
         dx = np.maximum(np.abs(c[None, :] - MID[0]) - Sz / 2, 0); dz = np.maximum(np.abs(c[:, None] - MID[1]) - Sz / 2, 0)
         d = np.hypot(dx, dz)
-        w = (mx > 0) & ((Sz > np.clip(0.06 * d, 66, 1100)) | ((mn <= 0) & (Sz > np.maximum(LC, 0.0032 * d) + 0.1)))
-        if Sz > 17: w |= (mx > 0) & veg.reshape(n, s, n, s).any((1, 3)) & ((Sz > 34) | (d < 3000))
+        low = under.reshape(n, s, n, s).min((1, 3)) - SEEN_TOP; hid = low > 0
+        w = (mx > 0) & ((Sz > np.where(hid, 1100, np.clip(0.06 * d, 66, 1100))) | ((mn <= 0) & (Sz > np.maximum(LC, 0.0032 * d) + 0.1)))
+        if Sz > 17: w |= (mx > 0) & ~hid & veg.reshape(n, s, n, s).any((1, 3)) & ((Sz > 34) | (d < 3000))
         if s >= 2 and Lv < LEV:
             C = he[::s, ::s]; u = (np.arange(s) / s).astype(np.float32)
             blk = he[:N, :N].reshape(n, s, n, s)
@@ -1124,7 +1164,7 @@ def bake(vid, V, fetch_only=False):
                    + C[1:, None, :-1, None] * u[None, :, None, None] * (1 - u)[None, None, None, :]
                    + C[1:, None, 1:, None] * u[None, :, None, None] * u[None, None, None, :])
             err = np.abs(blk - fit).max((1, 3))
-            w |= (mx > 0) & (err > 0.4 + 0.0012 * d)
+            w |= (mx > 0) & (err > np.maximum(low, 0.4 + 0.0012 * d))
         if Lv == LEV: w[:] = False
         want.append(w)
     def grow(split):
