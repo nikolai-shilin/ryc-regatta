@@ -1713,8 +1713,9 @@ function movers() {
 // ---------- the landmarks ----------
 // what the json lists: a steel arch bridge (Sydney Harbour), a suspension bridge (Newport's, the Golden Gate), a tower
 // (Auckland's Sky Tower, Laboe's naval memorial, Galata, the Transamerica Pyramid, Torre Glòries), a lighthouse (Trieste's
-// Victory, the Maiden's Tower), a mosque (Istanbul's), a gilded spire (St Petersburg's), a rostral column, a drawbridge
-// with its spans raised, a hilltop castle (Marmaris's, Fethiye's ruin), Fethiye's rock tombs, theatre and sarcophagi, a
+// Victory, the Maiden's Tower), a mosque (Istanbul's, St Petersburg's), a gilded spire (St Petersburg's), a rostral column,
+// the Alexander Column, St Isaac's, the Saviour on the Spilled Blood, the Kazan Cathedral, the Exchange, the Kunstkamera's
+// tower, a drawbridge with its spans raised, a hilltop castle (Marmaris's, Fethiye's ruin), Fethiye's rock tombs, theatre and sarcophagi, a
 // statue on its pedestal, the Opera House, the Sagrada Família, Christ the Redeemer, La Seu, Notre-Dame de la Garde,
 // Carlsten. The famous ones drawn after the real ones, from aerial photographs and their plans, to be known at a glance
 // from the course. Each in one colour a part, merged into one mesh.
@@ -2035,6 +2036,158 @@ function greenPoint(L, parts) {
   parts.push(F.box(0, 0, T, 0.5, w + 1.4, w + 1.4, '#f3f1ea'), F.box(0, 0, T + 0.5, 0.9, w + 1.2, w + 1.2, '#3a3f43'));
   parts.push(post(x, z, y + T + 0.5, 1.7, 1.7, 2.3, '#2c3338', 12), tint(new THREE.ConeGeometry(2, 1.3, 12).translate(x, y + T + 3.45, z), '#c8352c'));
 }
+// ---- St Petersburg's: what stands over its roofs from the Neva, after aerial photographs and their builders' figures ----
+// an onion dome, r round at its widest, h from its foot to its point; col a colour or fn(x, y, z) → one (its own frame)
+const onion = (x, z, y0, r, h, col, n = 14) => lathe(x, z, y0, [[0.42, 0], [0.8, 0.1], [1, 0.3], [0.94, 0.5], [0.62, 0.72], [0.22, 0.88], [0.07, 0.97], [0, 1]].map(([a, b]) => [a * r, b * h]), col, n);
+// a ring of n columns round x, z at radius rr, from y0 up h, each r thick
+const colonnade = (parts, x, z, rr, n, y0, h, r, col, a0 = 0, a1 = Math.PI * 2) => {
+  for (let i = 0; i < n; i++) { const a = a0 + ((a1 - a0) * (a1 - a0 < 6.28 ? i / (n - 1) : i / n)); parts.push(post(x + Math.cos(a) * rr, z + Math.sin(a) * rr, y0, r, r * 0.88, h, col, 8)); }
+};
+// a dome of revolution over x, z from y0: its rise h, its foot r round (half a sphere drawn out or squashed to h)
+const cupola = (x, z, y0, r, h, col, n = 18) => lathe(x, z, y0, Array.from({ length: 9 }, (_, i) => { const e = (i / 8) * Math.PI / 2; return [Math.cos(e) * r, Math.sin(e) * h]; }), col, n);
+// St Isaac's Cathedral (Montferrand, 1818–58): the grey marble block, its four porticos of red granite columns under
+// their pediments (the north and south ones three rows deep, the west and east ones two), the belfries with their
+// gilded cupolas at its corners, and on the roof the drum ringed by its 24 columns, the gilded dome, the lantern and
+// the cross, L.h to its top. Along L.dir its west–east axis
+function isaac(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), G = frameOf(L, y, (L.dir || 0) + 90);
+  const grey = '#aaa69b', light = '#c3beb2', granite = '#8f7266', roof = '#5e8b7c', H = L.h, [x, z] = L.at;
+  parts.push(F.box(0, 0, -1, 30, 60, 50, grey), F.box(0, 0, 29, 3.5, 58, 48, light), ...gable(F, -29, 29, 48, 32.5, 3, roof));
+  // the porticos: on the stylobate's steps, eight columns across, the entablature, the pediment's roof
+  const portico = (P, sd, depth, rows) => {
+    const a0 = sd * 30, a1 = sd * (30 + depth);
+    parts.push(P.box((a0 + a1) / 2, 0, -1, 4.5, depth, 42, '#9d978c'), P.box((a0 + a1) / 2, 0, 20.5, 3.5, depth, 40, light));
+    for (let row = 0; row < rows; row++) for (let i = 0; i < 8; i++) { const [cx, cz] = P.xz(a1 - sd * (2.2 + row * 6.5), -17.5 + i * 5); parts.push(post(cx, cz, y + 3.5, 0.95, 0.85, 17, granite, 10)); }
+    parts.push(...gable(P, Math.min(a0, a1), Math.max(a0, a1), 40, 24, 6.5, roof));
+  };
+  for (const sd of [-1, 1]) { portico(F, sd, 10, 2); portico(G, sd, 22, 3); }
+  // the belfries at the corners: a square stage, a round one of columns, the gilded cupola
+  for (const sa of [-1, 1]) for (const sb of [-1, 1]) {
+    const [bx, bz] = F.xz(sa * 24, sb * 19);
+    parts.push(F.box(sa * 24, sb * 19, 32, 5, 8, 8, light), post(bx, bz, y + 37, 3.2, 3.2, 6, grey, 12), post(bx, bz, y + 43, 3.7, 3.7, 0.8, light, 12));
+    parts.push(cupola(bx, bz, y + 43.8, 3.4, 3.2, GOLD, 12), post(bx, bz, y + 47, 0.5, 0.3, 2.5, GOLD, 6));
+  }
+  // the drum: its podium, the 24 columns round the wall, the attic, the dome, the lantern and its own columns, the cross
+  parts.push(post(x, z, y + 31, 19, 19, 10, grey, 24), post(x, z, y + 41, 13.6, 13.6, 18, light, 24), post(x, z, y + 41, 19.4, 19.4, 0.8, light, 24));
+  colonnade(parts, x, z, 16.6, 24, y + 41.8, 14, 0.8, granite);
+  parts.push(post(x, z, y + 55.8, 17.6, 17.6, 2.2, light, 24), post(x, z, y + 58, 14.2, 14.2, 6, grey, 24));
+  parts.push(cupola(x, z, y + 64, 13.6, 15, GOLD, 24));
+  parts.push(post(x, z, y + 78, 3.6, 3.6, 1, light, 12), post(x, z, y + 79, 2.6, 2.6, 8, grey, 12));
+  colonnade(parts, x, z, 3.4, 8, y + 79, 8, 0.35, light);
+  parts.push(post(x, z, y + 87, 3.8, 3.8, 0.8, light, 12), cupola(x, z, y + 87.8, 3.3, 3.6, GOLD, 12), post(x, z, y + 91, 0.7, 0.35, H - 91, GOLD, 6));
+  { const [cx, cz] = F.xz(0, 0); parts.push(blk(cx, cz, y + H - 3.8, 0.45, 2.6, 0.45, F.ang + Math.PI / 2, GOLD)); }
+}
+// The Church of the Saviour on the Spilled Blood (Parland, 1883–1907): the red brick and white stone, the belfry over
+// the canal at its west end with its gilded onion, the tent roof on its drum over the middle with its own little
+// onion, L.h to the cross; the four onion domes round it in their stripes and spirals of enamel, the apses to the east
+// under their gilded onions
+function saviour(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), brick = '#9b4d3b', white = '#e6dfd0', roof = '#5f7d6c', H = L.h;
+  const P = (a, b) => F.xz(a, b);
+  parts.push(F.box(1, 0, -1, 25, 30, 30, brick), F.box(1, 0, 10, 1.2, 30.6, 30.6, white), F.box(1, 0, 23, 1.4, 30.8, 30.8, white));
+  parts.push(...loft(F, (t) => [-14 + 5 * t, 16 - 5 * t, -15 + 5 * t, 15 - 5 * t, 24 + 4 * t], 1, roof));
+  for (const sb of [-1, 1]) parts.push(F.box(-4, sb * 17.5, -1, 15, 12, 6, brick), ...gable(F, -10, 2, 6, 14, 3.5, roof, sb * 17.5));
+  // the kokoshniki along the cornice: the rows of round-headed gables
+  for (const sb of [-1, 1]) for (let k = 0; k < 5; k++) { const [kx, kz] = P(-11 + k * 6, sb * 15.2); parts.push(tint(new THREE.CylinderGeometry(2.6, 2.6, 0.8, 12, 1, false, 0, Math.PI).rotateZ(Math.PI / 2).rotateY(-F.ang + Math.PI / 2).translate(kx, y + 24, kz), k % 2 ? white : '#d7a842')); }
+  // the belfry at the west end, over the place where the Emperor fell
+  { const [bx, bz] = P(-20, 0);
+    parts.push(F.box(-20, 0, -1, 40, 10, 10, brick), F.box(-20, 0, 18, 1, 10.6, 10.6, white), F.box(-20, 0, 33, 1.2, 10.8, 10.8, white));
+    parts.push(post(bx, bz, y + 39, 4.4, 3.8, 6, white, 8), post(bx, bz, y + 45, 3, 3, 4, brick, 8), onion(bx, bz, y + 49, 3.3, 10, GOLD), post(bx, bz, y + 59, 0.25, 0.25, H * 0.77 - 59, GOLD, 6)); }
+  // the apses to the east, three, the middle one the biggest, and their gilded onions
+  for (const [b, r, h] of [[0, 7, 19], [-10, 4.6, 16], [10, 4.6, 16]]) {
+    const [ax, az] = P(16, b); parts.push(post(ax, az, y - 1, r, r, h + 1, brick, 16), post(ax, az, y + h, r + 0.3, r * 0.4, 3, roof, 16));
+  }
+  for (const [a, b, d, o] of [[21, 0, 22, 26], [12, -10, 32, 35], [12, 10, 32, 35]]) {
+    const [ox, oz] = P(a, b); parts.push(post(ox, oz, y + 18, 2.1, 2.1, d - 18, brick, 10), onion(ox, oz, y + d, 2.6, o - d + 6, GOLD, 12));
+  }
+  // the four onions round the tent, each in its own enamel
+  const enamel = [['#2f6fa6', '#e9e6dc'], ['#3d8a4e', '#e3c24a'], ['#c8463a', '#e9e6dc'], ['#3d8a4e', '#3a6a9e']];
+  [[-8, -8.5], [-8, 8.5], [8, -8.5], [8, 8.5]].forEach(([a, b], k) => {
+    const [ox, oz] = P(a, b), [c0, c1] = enamel[k], twist = k % 2 ? 0.6 : 0;
+    parts.push(post(ox, oz, y + 24, 3, 3, 13, brick, 12), post(ox, oz, y + 31, 3.3, 3.3, 1, white, 12));
+    parts.push(onion(ox, oz, y + 37, 4.2, 12, (px, py, pz) => (Math.floor((Math.atan2(pz, px) / Math.PI + 1) * 6 + py * twist) % 2 ? c0 : c1), 16), post(ox, oz, y + 49, 0.2, 0.2, 3, GOLD, 6));
+  });
+  // the tent: its octagonal drum with the windows, the tent itself in bands of enamel, the lantern, the onion, the cross
+  const [cx, cz] = P(1, 0);
+  parts.push(post(cx, cz, y + 24, 7.6, 7.6, 16, brick, 8), post(cx, cz, y + 33, 7.9, 7.9, 1, white, 8));
+  { const T = H * 0.37, n = 12, band = ['#e6dfd0', '#4f8466', '#e6dfd0', '#d6a43a'];
+    // (each band its own two rows of corners, the colour changing between them and not across the tent's whole rise)
+    const prof = []; for (let i = 0; i < n; i++) for (const t of [i / n, (i + 1) / n - 0.002]) prof.push([7.8 + (1.3 - 7.8) * t, T * t]);
+    parts.push(lathe(cx, cz, y + 40, prof, (px, py) => band[Math.min(n - 1, Math.floor((py / T) * n + 0.001)) % 4], 8)); }
+  parts.push(post(cx, cz, y + 40 + H * 0.37, 1.4, 1.4, 2.5, white, 8), onion(cx, cz, y + 42.5 + H * 0.37, 2.2, 6, GOLD, 12), post(cx, cz, y + 48.5 + H * 0.37, 0.2, 0.2, H - 48.5 - H * 0.37, GOLD, 6));
+}
+// The Kazan Cathedral (Voronikhin, 1801–11): its Latin cross of grey Pudost stone, the colonnade of four rows of
+// Corinthian columns curving out from its north side towards Nevsky Prospect with a portico at each end, the drum,
+// the dome and the lantern, L.h to the cross. Along L.dir from the dome to the north portico
+function kazan(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), G = frameOf(L, y, (L.dir || 0) + 90), stone = '#c4b79c', roof = '#6f8a83', H = L.h;
+  parts.push(F.box(-4, 0, -1, 23, 66, 26, stone), G.box(0, 0, -1, 23, 82, 26, stone), ...gable(F, -37, 29, 26, 22, 5, roof), ...gable(G, -41, 41, 26, 22, 5, roof));
+  // the colonnade: an arc of radius 61.5 m round a point 102 m out, from the north portico to its two end porticos
+  const C = 102, R = 61.5, th = Math.asin(54 / R), arc = (t, r) => { const q = Math.PI - th + 2 * th * t; return [C + Math.cos(q) * r, Math.sin(q) * r]; };
+  for (const r of [R, R - 3.6]) for (let i = 0; i <= 23; i++) { const [a, b] = arc(i / 23, r), [px, pz] = F.xz(a, b); parts.push(post(px, pz, y + 1.5, 0.75, 0.66, 13, stone, 8)); }
+  for (let i = 0; i < 24; i++) { const [a0, b0] = arc(i / 24, R - 1.8), [a1, b1] = arc((i + 1) / 24, R - 1.8); parts.push(beam(F.P(a0, b0, 15.5), F.P(a1, b1, 15.5), 5.4, 3, stone)); }
+  for (const t of [0, 1]) { const [a, b] = arc(t, R - 1.8); parts.push(F.box(a, b, -1, 22, 10, 14, stone)); }
+  parts.push(F.box(33, 0, -1, 23, 12, 22, stone), ...gable(F, 26, 40, 22, 22, 5, roof));
+  // the drum, the dome, the lantern, the cross
+  const [x, z] = L.at;
+  parts.push(post(x, z, y + 22, 12.4, 12.4, 3, stone, 20), post(x, z, y + 25, 10.6, 10.6, 13, stone, 20));
+  colonnade(parts, x, z, 11.6, 16, y + 25, 11, 0.5, stone);
+  parts.push(post(x, z, y + 36, 12, 12, 1.4, stone, 20), cupola(x, z, y + 37.4, 11, 14, roof, 20), post(x, z, y + 51, 2.6, 2.4, 8, stone, 10), cupola(x, z, y + 59, 2.6, 3, roof, 10), post(x, z, y + 62, 0.3, 0.3, H - 62, GOLD, 6));
+  parts.push(blk(x, z, y + H - 3, 0.35, 2.2, 0.35, F.ang + Math.PI / 2, GOLD));
+}
+// The Exchange on the Strelka (Thomas de Thomon, 1805–10): the granite stylobate, the 44 white Doric columns round
+// it (ten at each end, fourteen down each side), the entablature, and over the colonnade's roof the great hall with
+// its semicircular windows at each end, L.h to its ridge. Along L.dir towards the Strelka
+function bourse(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), white = '#ece6d8', walls = '#e3d7b8', H = L.h;
+  parts.push(F.box(0, 0, -1, 4.5, 100, 78, '#9e958a'), F.box(0, 0, 3.5, 13.5, 84, 60, walls));
+  for (let i = 0; i < 14; i++) for (const sb of [-1, 1]) { const [cx, cz] = F.xz(-46 + i * (92 / 13), sb * 35); parts.push(post(cx, cz, y + 3.5, 1.15, 1, 12, white, 10)); }
+  for (let i = 1; i < 9; i++) for (const sa of [-1, 1]) { const [cx, cz] = F.xz(sa * 46, -35 + i * (70 / 9)); parts.push(post(cx, cz, y + 3.5, 1.15, 1, 12, white, 10)); }
+  for (const sb of [-1, 1]) parts.push(F.box(0, sb * 35, 15.5, 3, 96, 3, white));
+  for (const sa of [-1, 1]) parts.push(F.box(sa * 46, 0, 15.5, 3, 3, 73, white));
+  parts.push(F.box(0, 0, 17, 1.2, 96, 73, '#a9aaa4'));
+  // the hall: its walls, the attic over each end, the windows, the low roof
+  parts.push(F.box(0, 0, 17, H - 23, 64, 38, walls), F.box(0, 0, H - 6.5, 1, 65, 39, white), ...gable(F, -32.5, 32.5, 39, H - 5.5, 5.5, '#9aa09c'));
+  for (const sa of [-1, 1]) { const [wx, wz] = F.xz(sa * 32.2, 0); parts.push(tint(new THREE.CylinderGeometry(8, 8, 0.6, 20, 1, false, -Math.PI / 2, Math.PI).rotateX(Math.PI / 2).rotateY(-F.ang + Math.PI / 2).translate(wx, y + 17.5, wz), '#4d5256')); }
+}
+// The Kunstkamera's tower over the middle of its front to the Neva: the square stage rising out of the roof, the
+// second over it with its pilasters, the octagon, its cupola and the armillary sphere on top, L.h to the sphere's top
+function kunstkamera(L, parts) {
+  const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), F = frameOf(L, y), green = '#8fb4a6', white = '#ebe6da', roof = '#a7b0ad', H = L.h;
+  parts.push(F.box(0, 0, -1, 23, 13, 13, green), F.box(0, 0, 21.5, 1, 13.6, 13.6, white), F.box(0, 0, 22, 7, 10, 10, green), F.box(0, 0, 28.5, 0.8, 10.6, 10.6, white));
+  for (const sa of [-1, 1]) for (const sb of [-1, 1]) parts.push(F.box(sa * 4.6, sb * 4.6, 22, 6.5, 1, 1, white));
+  parts.push(post(x, z, y + 29.3, 4.3, 4.3, 5.5, green, 8), post(x, z, y + 34.8, 4.6, 4.6, 0.6, white, 8), lathe(x, z, y + 35.4, [[4.4, 0], [3.6, 1.6], [2, 3], [0.9, 3.6], [0, 3.8]], roof, 8));
+  const cy = y + H - 2;
+  parts.push(post(x, z, y + 38.6, 0.5, 0.5, cy - y - 38.6, GOLD, 6));
+  for (const [rx, ry] of [[0, 0], [Math.PI / 2, 0], [Math.PI / 2, Math.PI / 2], [0.41, 0]]) parts.push(tint(new THREE.TorusGeometry(1.9, 0.12, 5, 20).rotateX(rx).rotateY(ry).translate(x, cy, z), GOLD));
+}
+// St Petersburg's Cathedral Mosque (Vasilyev and von Gogen, 1910–21): grey granite, the portal at its north end,
+// the turquoise dome on its drum over the hall, L.h to its top, and the two minarets at the north corners, L.mh high.
+// Along L.dir from the portal to the back of the hall
+function spbMosque(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), granite = '#8f8b86', tile = '#3e8aa0', H = L.h;
+  parts.push(F.box(0, 0, -1, 20, 41, 31, granite), F.box(-19, 0, -1, 26, 5, 15, granite), F.box(-21.6, 0, 3, 18, 0.4, 9, '#3f6f80'));
+  const [dx, dz] = F.xz(3, 0);
+  parts.push(post(dx, dz, y + 19, 10.5, 10.5, 3, granite, 16), post(dx, dz, y + 22, 8.8, 8.8, 5, tile, 20));
+  parts.push(lathe(dx, dz, y + 27, [[9.2, 0], [9, 3.5], [7.8, 7], [5.2, 9.6], [2, 11.2], [0, H - 27 - 0.5]], (px, py, pz) => (Math.floor((Math.atan2(pz, px) / Math.PI + 1) * 12) % 2 ? tile : '#4f9cb0'), 24));
+  parts.push(post(dx, dz, y + H - 1, 0.25, 0.15, 2, GOLD, 6));
+  for (const sb of [-1, 1]) {
+    const [mx, mz] = F.xz(-18.5, sb * 15.8), mh = L.mh;
+    parts.push(post(mx, mz, y - 1, 2.1, 1.7, mh * 0.8 + 1, granite, 12), post(mx, mz, y + mh * 0.8, 2.6, 2.6, 1.2, granite, 12), post(mx, mz, y + mh * 0.8 + 1.2, 1.4, 1.4, mh * 0.08, tile, 12));
+    parts.push(cupola(mx, mz, y + mh * 0.88 + 1.2, 1.5, mh * 0.12 - 2, tile, 12), post(mx, mz, y + mh - 0.8, 0.15, 0.1, 0.8, GOLD, 6));
+  }
+}
+// The Alexander Column on Palace Square (Montferrand, 1834): the red granite pedestal on its steps, the monolith shaft,
+// the bronze capital, the drum and the angel holding up the cross, L.h to its top
+function alexander(L, parts) {
+  const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), F = frameOf(L, y), granite = '#8d665a', bronze = '#4f4a3c', H = L.h;
+  parts.push(F.box(0, 0, -1, 1.6, 12, 12, '#7d746b'), F.box(0, 0, 0.6, 5.4, 7.6, 7.6, granite), F.box(0, 0, 6, 0.7, 8.4, 8.4, granite));
+  parts.push(post(x, z, y + 6.7, 2.3, 2, 1.4, granite, 16), post(x, z, y + 8.1, 1.83, 1.58, 25.6, '#a57d70', 16));
+  parts.push(post(x, z, y + 33.7, 1.6, 2.4, 2.6, bronze, 12), F.box(0, 0, 36.3, 0.8, 5, 5, bronze), post(x, z, y + 37.1, 1.4, 1.3, 3.6, bronze, 12));
+  parts.push(post(x, z, y + 40.7, 0.8, 0.45, 3.6, bronze, 8), tint(new THREE.SphereGeometry(0.42, 8, 6).translate(x, y + 44.6, z), bronze));
+  for (const sb of [-1, 1]) parts.push(beam(F.P(-0.3, sb * 0.4, 43.4), F.P(-0.8, sb * 1.6, 41.2), 0.15, 1.4, bronze));
+  parts.push(beam(F.P(0.5, 0, 42.8), F.P(0.5, 0, H), 0.2, 0.2, bronze), beam(F.P(0.5, -0.7, H - 1.4), F.P(0.5, 0.7, H - 1.4), 0.18, 0.18, bronze));
+}
 function landmarks() {
   const parts = [];
   for (const L of META.landmarks || []) {
@@ -2137,6 +2290,13 @@ function landmarks() {
     else if (L.kind === 'basilica') garde(L, parts);
     else if (L.kind === 'statue') redeemer(L, parts);
     else if (L.kind === 'opera') operaHouse(L, parts);
+    else if (L.kind === 'isaac') isaac(L, parts);
+    else if (L.kind === 'saviour') saviour(L, parts);
+    else if (L.kind === 'kazan') kazan(L, parts);
+    else if (L.kind === 'bourse') bourse(L, parts);
+    else if (L.kind === 'kunstkamera') kunstkamera(L, parts);
+    else if (L.kind === 'mosque' && L.style === 'petersburg') spbMosque(L, parts);
+    else if (L.kind === 'column' && L.style === 'alexander') alexander(L, parts);
     else if (L.kind === 'spire') {
       const [x, z] = L.at, y = Math.max(0, groundAt(x, z));
       if (L.style === 'peter-paul') {

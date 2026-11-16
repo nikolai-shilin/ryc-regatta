@@ -56,7 +56,8 @@ from PIL import Image, ImageColor, ImageDraw, ImageFilter
 # many metres (a city whose tiles have its roofs for its ground); bank: how many metres across the shore slopes into the
 # water (12 when not given; a city's quays, a few, and no surf along them); most: how many buildings at the most (8,000
 # when not given); keep: [(lat, lon, metres)], where every building is kept before any other (an island's fort or
-# lighthouse by the course, further off than a big city's middle, which would fill the count first); plain: (low, high) metres, a coastal plain whose tiles have its roofs and trees for its ground
+# lighthouse by the course, further off than a big city's middle, which would fill the count first); height_of: {name:
+# metres}, the height of a building the map names but gives none (or a wrong one); plain: (low, high) metres, a coastal plain whose tiles have its roofs and trees for its ground
 # (SRTM's radar): the land up to `low` laid down on the shore's floor and from there back up to the tiles' own at `high`,
 # the hills above it as they are; paved: the map's paved squares and promenades drawn as paving; trees: the map's rows
 # of trees and its single trees planted where they stand; palms: (streets, metres), a seafront's palms the map lacks, along
@@ -119,10 +120,23 @@ VENUES = {
     # the Neva under the Peter and Paul Fortress's walls, between the Trinity and Palace bridges; the city's heights in
     # the tiles are its roofs, not its ground (and the river stands 12 to 20 m up in them), so the land is laid flat
     'st-petersburg': dict(zoom=14, flat=2.2, bank=2.5, most=11000, relations=True, home=(59.9464, 30.3187), wind=245,
+                          height_of={'Адмиралтейство': 20},  # (the map has none: its two tall storeys over the basement)
                           towns=[(59.9420, 30.2850, 1000), (59.9580, 30.3050, 900), (59.9370, 30.3250, 1100), (59.9590, 30.3420, 800), (59.9480, 30.3500, 700)],
                           landmarks=[dict(kind='spire', style='peter-paul', at=(59.95010, 30.31603), b=(59.95024, 30.31700), h=122.5),  # the cathedral's belfry, the apse to the east
                                      dict(kind='spire', style='admiralty', at=(59.93757, 30.30862), h=72.5),
-                                     dict(kind='column', at=(59.94431, 30.30690), h=32), dict(kind='column', at=(59.94467, 30.30503), h=32),  # the rostral columns
+                                     dict(kind='column', at=(59.94310, 30.30690), h=32, clear=12), dict(kind='column', at=(59.94467, 30.30503), h=32, clear=12),  # the rostral columns
+                                     # what stands over the roofs from the river, each in the map's building's place: St Isaac's, its west–east
+                                     # axis to the south-east as the city's grid runs; the Saviour on the Spilled Blood, its belfry to the canal
+                                     # (west); the Kazan Cathedral's dome, its colonnade's portico to the north-north-east; the Exchange, its front
+                                     # to the Strelka; the Kunstkamera's tower over its front to the Neva; the mosque, its portal and minarets to
+                                     # the north; the Alexander Column
+                                     dict(kind='isaac', at=(59.93408, 30.30616), dir=144, h=101.5, clear=55),
+                                     dict(kind='saviour', at=(59.94009, 30.32884), dir=100, h=81, clear=32),
+                                     dict(kind='kazan', at=(59.93416, 30.32434), dir=26, h=71.6, clear=[(59.93446, 30.32477, 70)]),
+                                     dict(kind='bourse', at=(59.94349, 30.30460), dir=59, h=31.9, clear=55),
+                                     dict(kind='kunstkamera', at=(59.94154, 30.30451), dir=46, h=44),
+                                     dict(kind='mosque', style='petersburg', at=(59.95519, 30.32392), dir=164, h=39, mh=48, clear=26),
+                                     dict(kind='column', style='alexander', at=(59.93904, 30.31582), h=47.5, clear=9),
                                      # the bridges, their spans open for the yachts (n spans, `open` the ones raised, `leaves` each)
                                      dict(kind='drawbridge', a=(59.94649, 30.32951), b=(59.95103, 30.32544), deck=9, w=24, n=7, open=[1], leaves=1, color='#5a6863'),  # Trinity: raised by the left bank
                                      dict(kind='drawbridge', a=(59.94024, 30.30935), b=(59.94214, 30.30682), deck=7, w=28, n=5, open=[2], leaves=2, color='#56645f'),  # Palace
@@ -958,6 +972,7 @@ def bake(vid, V, fetch_only=False):
         p = poly(el.get('geometry')) if el['type'] == 'way' else keyhole(el)
         if not p or len(p) < 4: continue
         t = el.get('tags', {}); h = num(t.get('height')) or (num(t.get('building:levels')) * 3.1 + 1.0 if t.get('building:levels') else 0)
+        h = V.get('height_of', {}).get(t.get('name'), h)  # (a building the map gives no height, or a wrong one, by its name)
         kind = 3 if t.get('building') in ('church', 'chapel', 'cathedral') else 4 if t.get('building') == 'mosque' else ROOFS.get(t.get('roof:shape'), 0)
         # a fortress's ramparts (a palace the map calls a castle, as St Petersburg's are, is a house like the rest)
         if (t.get('building') in ('castle', 'fortress') or t.get('historic') in ('castle', 'fort', 'citywalls')) and t.get('castle_type') not in ('palace', 'stately', 'manor', 'shloss', 'schloss'): kind, h = 5, h or 11.0
