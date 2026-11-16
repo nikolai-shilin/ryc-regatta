@@ -1504,3 +1504,36 @@
   .bc .ho-path .ho-path-pic { grid-column: 1; grid-row: 1 / span 4; height: auto; min-height: 96px; margin: 0; }
   .bc .ho-path li.now .ho-path-pic { box-shadow: inset 0 -3px 0 var(--you); }
 }
+
+/* ---------- admin: the game in numbers (components/admin-stats.tsx) ---------- */
+.bc .adm-stats { display: block; margin-top: var(--s-4); }
+.bc .adm-stats .adm-k { flex-wrap: wrap; }
+.bc .adm-range { display: flex; gap: var(--s-1); margin-left: auto; }
+.bc .adm-range a { display: inline-flex; align-items: center; height: var(--h-s, 32px); padding: 0 var(--s-3); background: var(--fill-2); color: var(--ink-2); text-decoration: none;
+  font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; transition: background-color var(--t-quick); }
+.bc .adm-range a:hover { background: var(--fill-3); }
+.bc .adm-range a.on { background: var(--you); color: var(--ink-on); }
+.bc .adm-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--s-2); margin-bottom: var(--s-5); }
+.bc .adm-tile { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3) var(--s-4); background: var(--fill-1, var(--fill-2)); }
+.bc .adm-tile-k { font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .adm-tile b { font: 700 28px/1 var(--cond); color: var(--ink); font-variant-numeric: tabular-nums; }
+.bc .adm-tab, .bc .adm-days { margin: 0 0 var(--s-5); }
+.bc .adm-tab-h { margin: 0 0 var(--s-2); font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .adm-tab-scroll { overflow-x: auto; }
+.bc .adm-tab-scroll:focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
+.bc .adm-tab table { width: 100%; border-collapse: collapse; font: 600 var(--fs-small)/1.3 var(--cond); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.bc .adm-tab th, .bc .adm-tab td { padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--rule-2); text-align: right; white-space: nowrap; }
+.bc .adm-tab th:first-child { text-align: left; padding-left: 0; color: var(--ink); white-space: normal; min-width: 130px; }
+.bc .adm-tab thead th { font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); border-bottom-color: var(--rule); }
+.bc .adm-tab tbody tr:hover { background: var(--fill-2); }
+.bc .adm-days svg { display: block; width: 100%; height: auto; }
+.bc .adm-days-bar { fill: var(--you); }
+.bc .adm-days-hit { fill: transparent; }
+.bc .adm-days-hit:hover + .adm-days-bar { filter: brightness(1.2); }
+.bc .adm-days-base { stroke: var(--rule); stroke-width: 1; }
+.bc .adm-days-bar { pointer-events: none; }
+.bc .adm-days-t { display: flex; justify-content: space-between; margin-top: var(--s-1); font: 600 var(--fs-label)/1 var(--cond); letter-spacing: 0.04em; color: var(--ink-3); }
+@media (max-width: 600px) {
+  .bc .adm-range { margin-left: 0; width: 100%; }
+  .bc .adm-tile b { font-size: 22px; }
+}

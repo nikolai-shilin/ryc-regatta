@@ -1,7 +1,7 @@
 // Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
 import { Race, CLS, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone, laidShape } from './sim.js';
 import { World, defaultQuality, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
-import { raceStarted, raceFinished, raceResult } from './stats.js';
+import { raceStarted, raceFinished, raceResult, perfSetup, perfFrame } from './stats.js';
 import { initExtras, onStart, onFrame, drill, drillSettings } from './extras.js'; // the ghost, the drills, the analytics
 import { createHud } from './hud-bc.js';
 import { mapPalette, placeLabels } from './course-map.js';
@@ -1084,6 +1084,11 @@ try { world = new World(canvas); } catch (e) {
 }
 const resize = () => world.resize(window.innerWidth, window.innerHeight);
 window.addEventListener('resize', resize); resize();
+// how the game runs, for the site's /admin (stats.js): the graphics chip's name, as WebGL tells it, and the size drawn
+try {
+  const gl = world.renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info');
+  perfSetup({ gpu: gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER), size: () => [canvas.width, canvas.height] });
+} catch (e) {}
 // Auto remembers a step down as 'medium|<when>' for three days, then tries the device's own level again: one slow
 // race (another tab busy, a hot phone) shouldn't keep the picture down for good. A bare level from before is retried now.
 const GFX_KEY = 'regatta-gfx', GFX_DAYS = 3;
@@ -2013,6 +2018,7 @@ function frame(now) {
     updateHud(dt);
     if (world.quality === 'high' || frameN++ % 3 === 0) drawMap(mctx, 240, false);
     watchFps(raw);
+    perfFrame(race, raw, world.quality, opts.gfx, !!opts.saver); // (stats.js: a race's frames, for the site's /admin)
   } else {
     if (!running) world.orbit += dt * 0.12; // behind the menu the drone circles
     race.idle(dt);
