@@ -1822,15 +1822,19 @@ export class World {
     const cam = this.camera;
     cam.up.set(0, 1, 0);
     if (this.intro && this.mode !== 'drone') this.intro = null; // the fly-in is the drone's
+    // a boat smaller than the JPK 1050 is watched from closer, by her size (her length to the 0.75): the Laser from 17 m
+    // where the JPK is from 34, the Optimist from 11, the J/70 from 25, so she fills the screen as a big boat does and her
+    // speed, more of her lengths a second than a keelboat's, shows as it feels aboard. A bigger one keeps the JPK's view
+    const ck = Math.min(1, ((P.cls?.loa ?? HULL) / 10.45) ** 0.75);
     if (this.mode === 'top') {
       // straight down, your heading up the screen, so steering left turns her left on screen too
-      const hgt = 20 + this.dist * 1.6 * (cam.aspect < 1 ? 1.5 : 1);
+      const hgt = (20 + this.dist * 1.6 * (cam.aspect < 1 ? 1.5 : 1)) * ck;
       cam.position.lerp(new THREE.Vector3(P.x, hgt, P.z), cl(8));
       cam.up.set(Math.sin(this.camH), 0, -Math.cos(this.camH));
       cam.lookAt(P.x, 0, P.z);
       cam.fov = 50;
     } else if (this.mode === 'drone') {
-      let ph = this.camH + this.orbit, el = this.droneEl * D2R, d = this.dist * (cam.aspect < 1 ? 1.75 : 1); // a tall screen needs the drone further back
+      let ph = this.camH + this.orbit, el = this.droneEl * D2R, d = this.dist * ck * (cam.aspect < 1 ? 1.75 : 1); // a tall screen needs the drone further back
       // the fly-in: from high and far off, the drone sweeps three-quarters of the way round her as it comes down
       let intro = 0;
       if (this.intro) {
@@ -1840,13 +1844,13 @@ export class World {
         if (u >= 1) this.intro = null;
       }
       ph -= intro * 1.5 * Math.PI; el += intro * 38 * D2R; d *= 1 + intro * 3.5;
-      const tx = P.x + Math.sin(P.h) * 5, tz = P.z - Math.cos(P.h) * 5;
-      const want = new THREE.Vector3(tx - Math.sin(ph) * d * Math.cos(el), 3 + d * Math.sin(el), tz + Math.cos(ph) * d * Math.cos(el));
+      const tx = P.x + Math.sin(P.h) * 5 * ck, tz = P.z - Math.cos(P.h) * 5 * ck;
+      const want = new THREE.Vector3(tx - Math.sin(ph) * d * Math.cos(el), 3 * ck + d * Math.sin(el), tz + Math.cos(ph) * d * Math.cos(el));
       // a drone in the wind never hangs quite still: a slow sway and a little bob
       const sw = 0.02 * d;
       want.x += Math.sin(t * 0.37) * sw; want.z += Math.cos(t * 0.29) * sw; want.y += Math.sin(t * 0.53) * sw * 0.7 + Math.sin(t * 1.7) * 0.06;
       if (intro > 0) cam.position.copy(want); else cam.position.lerp(want, cl(6));
-      cam.lookAt(tx + Math.sin(t * 0.41) * 0.25, this.droneAim + Math.sin(t * 0.61) * 0.15, tz);
+      cam.lookAt(tx + Math.sin(t * 0.41) * 0.25 * ck, this.droneAim * ck + Math.sin(t * 0.61) * 0.15 * ck, tz);
       cam.fov = 55;
     } else if (this.mode === 'helm') {
       if (this.lookHold <= 0) this.look *= Math.exp(-dt * 1.5); else this.lookHold -= dt;

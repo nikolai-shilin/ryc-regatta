@@ -350,6 +350,8 @@ const haptic = (kind) => {
 };
 
 // ---------- sound: wind, water, flapping sails, winch, horns, voices ----------
+// (audio.wake: a tap ends on touchend or click on iOS, where a touchstart doesn't count as one)
+for (const e of ['pointerup', 'touchend', 'click', 'keydown']) addEventListener(e, () => audio.wake(), { capture: true, passive: true });
 // the sea and the wind, as loud as Settings › Sea says (the pause menu's too)
 const SEA = { loud: 1.6, normal: 1, quiet: 0.4, off: 0 };
 const seaK = () => SEA[opts.sea] ?? 1;
@@ -376,6 +378,10 @@ const audio = {
       this.music = createMusic(this.ctx, this.master); // the soundtrack (music.js), in the style Settings › Music chose
     } catch (e) { this.ctx = null; }
   },
+  // the race starts on its own once the loading screen is done, not on a tap, and a browser keeps a sound made before
+  // the page's first tap silent (Safari and iOS always, Chrome as a rule): the first tap or key wakes it, and any later
+  // one does again if the phone has suspended it (a call, the screen locked)
+  wake() { if (this.ctx && this.ctx.state !== 'running') this.ctx.resume().catch(() => {}); },
   // how loud the voices are now, 0..1 (the peak of the last ~10 ms)
   voiceLevel() { if (!this.meter) return 0; this.meter.getFloatTimeDomainData(this.meterBuf); let m = 0; for (const x of this.meterBuf) m = Math.max(m, Math.abs(x)); return m; },
   setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; if (!v) { skipper.stop(); asides.stop(); committee.stop(); } },
