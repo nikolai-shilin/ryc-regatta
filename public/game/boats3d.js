@@ -379,7 +379,10 @@ class ClassView {
     const roll = Math.atan2(waveHeight(W, b.x - fz * 1.5, b.z + fx * 1.5, t) - waveHeight(W, b.x + fz * 1.5, b.z - fx * 1.5, t), 3) * 0.5 * sea;
     const side = b.boom || (b.twa >= 0 ? 1 : -1);
     this.sailSide = lerp(this.sailSide, side, Math.abs(b.twa) > 2.1 ? 0.2 : 0.06);
-    this.root.position.set(b.x, (y * 0.85 - 0.05) * sea + ride * this.flyY, b.z);
+    // sink: a dinghy set lower, her sailor's weight in her; sinkHeel: the heel (degrees) by which that's gone again, so
+    // an open boat's lee gunwale stays out of the water as she heels
+    const sink = (this.sink || 0) * (this.sinkHeel ? clamp(1 - Math.abs(b.heel * this.cls.heelShow) / this.sinkHeel, 0, 1) : 1);
+    this.root.position.set(b.x, (y * 0.85 - 0.05 - sink) * sea + ride * this.flyY, b.z);
     this.root.rotation.y = -b.h;
     this.tilt.rotation.x = pitch - ride * 0.02; // flying: the bow a touch up
     // the sea's own roll, which the crew's bodies take out (pose); the heel alone, for the next frame's
@@ -725,6 +728,7 @@ class LaserView extends ClassView {
     const add = this.start(), T = this.tilt, H = LZ.hull, [cz0, cz1] = LZ.CK;
     this.washH = H;
     this.flyY = 0;
+    this.sink = 0.1; // her deck some 20 cm off the water at the cockpit, as she sails with her sailor aboard
     const MOD = LZ_MODEL, skid = deckFinish(look, SKID);
     // the deck's surface at (x, z): the sheer and the crown on it, which the fittings stand on
     const deckAt = (x, z) => H.deckY(z) + 0.05 * (1 - Math.min(1, Math.abs(x) / Math.max(H.hbAt(z), 0.2)) ** 2);
@@ -1031,6 +1035,7 @@ class OptimistView extends ClassView {
     this.cls = cls;
     const add = this.start(), T = this.tilt, H = OZ.hull, O = OZ;
     this.flyY = 0; // no deck to take water over: no wash
+    this.sink = 0.06; this.sinkHeel = 15; // sat down 6 cm upright, her gunwale some 15 cm off the water; heeled, as before
     // one colour all over: a dinghy kept ashore on her trolley has no boot-top and no antifouling
     const MOD = OZ_MODEL, hullMat = hullMaterial(look.hull, look.hull, look.hull), skid = deckFinish(look, SKID);
     if (MOD) {
