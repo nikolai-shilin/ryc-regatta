@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { readPb } from '@/lib/opts';
 import { readBoat } from '@/lib/boat';
+import { briefUrl, readBrief } from '@/lib/day-brief';
 import { clock } from './ui';
 import { FlagImg } from './flag';
 
@@ -49,7 +50,8 @@ export function SiteMenu({ lang }: { lang: Lang }) {
 // Your best time in today's race on this device (the game keeps it), or the way onto the ranking. The ranking above it is
 // the server's, and a time the server didn't keep (a finish that never reached it, or one its checks threw out) is in this
 // device's record all the same: the row shows where the time stands against the board, its place when the board has it
-// and its gap to the leader, and says so when a time that would be on the board isn't, rather than sit under slower ones.
+// and its gap to the leader, and says so when a time that would be on the board isn't, rather than sit under slower ones
+// (once the server, asked afresh, confirms it: the board on the page can be minutes old).
 // The board names no one, so "on it" means a ranked time equal to this one.
 // Signed in or not is CSS's to show (.if-me, .if-guest; lib/me.ts), so Home can be a cached page.
 // cap: how many rows the list can hold (lib/today.ts: 5, or 3 when only the plain API answered), for whether a time
@@ -59,10 +61,27 @@ export function MyRow({ lang, day, top = [], cap = 5, next = '/' }: { lang: Lang
   const [best, setBest] = useState<number | null>(null);
   const [fl, setFl] = useState<string | null>(null); // the flag you fly on the boat page, as the rows above show theirs
   useEffect(() => { setBest(readPb()[`daily|${day}`] ?? null); setFl(readBoat().flag ?? null); }, [day]);
-  const listed = best != null && top.some((r) => Math.abs(r.s - best) < 0.05);
-  const place = best != null ? top.filter((r) => r.s < best - 0.05).length + 1 : 0;
-  const missing = best != null && !listed && (top.length < cap || best < top[top.length - 1].s);
-  const gap = best != null && top.length ? best - top[0].s : 0;
+  const near = (s: number) => best != null && Math.abs(s - best) < 0.05;
+  // a time the list should have had and hasn't (an empty list is the scores server not answering, the page passes []
+  // then, not a ranking without you on it)
+  const suspect = best != null && !top.some((r) => near(r.s)) && top.length > 0 && (top.length < cap || best < top[top.length - 1].s);
+  // The list is cached (the page and its fetch five minutes each, the scores API's edge as long again), so a race just
+  // finished isn't on it yet. Before saying a time is missing, the server itself is asked for the day's ranked times,
+  // past every cache: a request of its own, made only for such a time, so seldom. Until it answers, or when it can't,
+  // the row claims nothing. field: undefined not asked, null no answer, else every ranked time, the fastest first.
+  const [field, setField] = useState<number[] | null | undefined>(undefined);
+  useEffect(() => {
+    if (!suspect) return;
+    let live = true;
+    fetch(`${briefUrl(day)}&fresh=${Date.now()}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+      .then((j) => { if (live) setField(readBrief(j, day)?.s ?? null); });
+    return () => { live = false; };
+  }, [suspect, day]);
+  const times = field ?? top.map((r) => r.s);
+  const listed = best != null && times.some(near);
+  const place = best != null ? times.filter((s) => s < best - 0.05).length + 1 : 0;
+  const missing = suspect && Array.isArray(field) && !listed;
+  const gap = best != null && times.length ? best - times[0] : 0;
   return (
     <li className="me">
       <span className="hm-n">{listed ? place : '·'}</span>
