@@ -567,81 +567,33 @@ function lineOf(k) {
 }
 
 // ---------- the skipper: recorded voices on board ----------
-// In Russian, a skipper from Odessa who shouts at the crew when they've earned it, and a crewman's racing calls (the
-// hails, protest, bear away, head up, trim and ease, the call for a tack or a gybe, the finish); in English, a crew's
-// racing calls: the hails, protest, bear away, and the count down to the gun. Each language's lines are in one file, skipper-<lang>.mp3,
+// A crew's racing calls: in Russian a man's, recorded (the hails, protest, bear away, head up, trim and ease, the call
+// for a tack or a gybe, clear at a mark, the finish); in English a man's and a woman's (the hails, protest, bear away,
+// and the count down to the gun). Each language's lines are in one file, skipper-<lang>.mp3,
 // loaded once the race starts. He says one line at a time, and not every time he could: half the time he lets a moment
 // go, and after a line he keeps quiet for twenty seconds or more. He doesn't repeat a line within a few minutes, and of
 // the lines that fit he picks at random, likelier the longer since he said it; a call that must be heard now (a hail,
 // the count) cuts in.
 const VOICES = { ru: {
-  // where each line sits in skipper-ru.mp3: [start, length] in seconds
+  // where each line sits in skipper-ru.mp3: [start, length] in seconds. The man's hails in calls-ru.mp3 are Piper's;
+  // these are a real voice.
   clips: {
-    // on the boat
-    hands: [0.6, 3.772], // Руки убрал! Это шкот, а не твоя личная жизнь!
-    // 4.972–7.833, 97.754–101.647 and 102.248–104.255 are silence: three lines with swearing, taken out
-    pull1: [8.433, 1.181], // Добирай!
-    pull2: [10.214, 2.371], // Не уговаривай верёвку — тяни!
-    hold: [13.185, 4.965], // Кто держит? Кто не держит? Почему вообще никто не держит?!
-    tack1: [18.75, 4.416], // Поворот через три… два… да куда вы уже пошли?!
-    tack2: [23.766, 4.131], // Готовься к повороту! Хотя нет, уже поздно — поворачиваем!
-    ease2: [28.497, 3.43], // Шкот отдай! Не замуж же за него вышла!
-    pull3: [32.527, 3.374], // Добери этот парус, он уже морально распустился!
-    people: [36.501, 3.995], // Что ж вы за люди такие? Я же русским языком ору!
-    column: [41.096, 3.41], // Не стой столбом, у нас тут гонка, а не экскурсия!
-    feet: [45.106, 4.014], // Под ногами не мешайся. Лучше где-нибудь сбоку мешайся!
-    clue: [49.72, 3.435], // Кто-нибудь, сделайте вид, что знает, что происходит!
-    // at the start
-    minute: [53.754, 4.256], // До старта минута! У нас есть время испортить всё красиво!
-    push: [58.61, 2.348], // Не толкайся, мы и так идём не туда!
-    plan: [61.558, 3.195], // Стартуем по плану. План, правда, никто не видел.
-    where: [65.353, 3.251], // Линия старта где? Там, где сейчас чужая яхта?
-    distance: [69.205, 3.115], // Держи дистанцию! Это гонка, а не знакомство!
-    early: [72.92, 2.634], // Рано пошли! Зато уверенно!
-    late: [76.153, 2.48], // Поздно пошли! Зато без суеты!
-    ready: [79.233, 3.457], // Кто дал команду стартовать? Я ещё морально не готов!
-    flag: [83.29, 5.04], // Смотрите на флаг! Хотя бы один из нас должен понимать, что он означает!
-    clean: [88.93, 3.385], // Идём чисто! В смысле, пока никого не задели!
-    // with feeling
-    sank: [92.915, 4.239], // Что ж вы за люди такие? Что ж вы ботик потопили, гады?
-    pull4: [104.855, 3.157], // Я вас очень сильно матом прошу, доберите!
-    // a crewman's racing calls, recorded after him (a real voice where the man's hails in calls-ru.mp3 are Piper's)
-    starboard: [109.322, 0.98], port: [110.902, 1.015], keepClear: [112.517, 0.83], // Правый галс! Левый галс! Дорогу!
-    bearAway: [113.947, 0.655], leeward: [115.202, 0.85], // Увались! Подветренный!
-    headUp1: [116.652, 0.815], headUp2: [118.067, 0.855], // Приводись! (twice)
-    turn: [119.522, 0.625], tackGo: [120.747, 1.36], gybeGo: [122.707, 1.26], // Поворот! Поворот оверштаг! Поворот фордевинд!
-    trim: [124.567, 0.75], easeIt: [125.917, 0.705], // Набивай! Потрави!
-    proper: [127.222, 1.835], noBlock: [129.657, 0.895], room: [131.152, 1.24], // Увались на надлежащий курс! Не мешай! Место у знака!
-    protest: [132.992, 0.745], clear: [134.337, 0.63], finish: [135.567, 0.635], // Протест! Чисто! Финиш!
+    starboard: [0.626, 0.98], port: [2.206, 1.015], keepClear: [3.821, 0.83], // Правый галс! Левый галс! Дорогу!
+    bearAway: [5.251, 0.655], leeward: [6.506, 0.85], // Увались! Подветренный!
+    headUp1: [7.956, 0.815], headUp2: [9.371, 0.855], // Приводись! (twice)
+    turn: [10.826, 0.625], tackGo: [12.051, 1.36], gybeGo: [14.011, 1.26], // Поворот! Поворот оверштаг! Поворот фордевинд!
+    trim: [15.871, 0.75], easeIt: [17.221, 0.705], // Набивай! Потрави!
+    proper: [18.526, 1.835], noBlock: [20.961, 0.895], room: [22.456, 1.24], // Увались на надлежащий курс! Не мешай! Место у знака!
+    protest: [24.296, 0.745], clear: [25.641, 0.63], finish: [26.871, 0.635], // Протест! Чисто! Финиш!
   },
-  // the lines for each situation: most have a few that fit, so the same moment doesn't always get the same line
+  // the lines for each situation
   pools: {
-    pull: ['trim', 'pull1', 'pull2', 'pull3', 'pull4', 'people'], // the sails flapping, the sheet left out
-    ease: ['easeIt', 'ease2'], // sheeted in too hard
-    heel: ['easeIt', 'ease2', 'hold'], // heeled over: ease!
+    pull: ['trim'], ease: ['easeIt'], heel: ['easeIt'], // the sheet left out, or in too hard; heeled over
     headUp: ['headUp1', 'headUp2'], // well by the lee
     bearAway: ['bearAway'], irons: ['bearAway'], foot: ['bearAway'], // the windward mark rounded; in irons; pinching on the beat
     protest: ['protest'], // a foul, ours or theirs
     clearAhead: ['clear'], clearAstern: ['clear'], // at the zone of a mark, not overlapped
     finish: ['finish'], // across the finishing line
-    fiddle: ['hands'], // the sheet worked in and out, in and out
-    chaos: ['hold', 'people', 'clue'], // a broach, a crash gybe, a death roll, a wrapped or collapsed kite
-    tack: ['tack1', 'tack2'], // a tack or a gybe, now and then
-    foul: ['people', 'clue'], // a foul, a touched mark, the wrong side of a mark, a missed gate
-    slow: ['column', 'people', 'clue'], // stopped, or in irons, after the gun
-    contact: ['feet', 'push', 'people'], // a collision after the start, or a boat that fouled us
-    push: ['push', 'feet'], // a collision before the start
-    lost: ['clue', 'people'], // a general recall, disqualified at the start
-    aground: ['sank', 'clue'],
-    plan: ['plan'], // the warning signal
-    flag: ['flag', 'plan'], // the preparatory signal, and the U or black flag today
-    minute: ['minute'], // the one-minute signal
-    where: ['where', 'clue'], // far from the line near the gun, or across it outside the ends
-    distance: ['distance', 'push'], // another boat a few metres off for a while, not touching
-    early: ['early', 'ready'], // over early
-    ready: ['ready', 'clean'], // across the line within three seconds of the gun
-    clean: ['clean'], // a start without fuss, or the windward mark with no fouls
-    late: ['late', 'column'], // across the line more than ten seconds after the gun
     // the hails by rule: the man's recorded above where he has one that fits, else his in calls-ru.mp3 (h…); the
     // woman's (g…) in calls-ru.mp3
     ...Object.fromEntries(Object.entries({
@@ -803,22 +755,18 @@ const skipper = {
 
 // ---------- the other crews: what you hear of a boat when you sail close to her ----------
 // Within about seventy metres: her sails flogging and her winches in a tack or a gybe, her bow wave and wash, and her
-// crew's calls in the game's language (under the Voice switch): in Russian the other skippers have a voice of their own,
-// crews-ru.mp3, the same lines as ours said by another man; in English the voices of skipper-en.mp3. Each comes from
+// crew's calls in the game's language (under the Voice switch), in the voices of skipper-<lang>.mp3. Each comes from
 // where she is (left or right of where the camera looks), quieter and duller the further off she is.
 const crews = {
   R: 70, // metres: out of earshot beyond
   calls: {
-    ru: { tacking: ['tack1', 'tack2'], gybing: ['tack1', 'tack2'], tacked: ['pull1', 'pull2', 'pull3'], broach: ['hold', 'ease2'], crashGybe: ['hold', 'people'], deathRoll: ['hold', 'people'], kiteWrap: ['hold', 'clue'], kitedown: ['hold', 'column'] },
+    ru: { tacking: ['tackGo', 'turn'], gybing: ['gybeGo', 'turn'], tacked: ['trim'], broach: ['easeIt'], kitedown: ['easeIt'] },
     en: { tacking: ['gTacking'], gybing: ['gJibe', 'gHeads'], tacked: ['gTrim'], broach: ['gEase'], crashGybe: ['gHeads'], deathRoll: ['gHeads'], kiteWrap: ['gHeads'], kitedown: ['gEase'] },
   },
   last: new WeakMap(), talkTill: 0, wash: null,
-  // their own voice where there is one: the file, and where each line sits in it, [start, length] in seconds
-  own: { ru: { file: 'crews-ru.mp3', clips: { // 3.62–6.22 is silence: a line with swearing, taken out
-    hands: [0.08, 3.32], pull1: [6.4, 0.66], pull2: [7.3, 2.02], hold: [9.57, 3.85],
-    tack1: [13.73, 3.67], tack2: [17.63, 3.84], ease2: [21.72, 2.75], pull3: [24.68, 2.97], people: [27.87, 3.37],
-    column: [31.47, 2.98], feet: [34.67, 3.31], clue: [38.18, 3.12],
-  } } },
+  // their own voice where there is one, by language: { file, clips: { line: [start, length] in seconds } }. None now:
+  // they speak in ours, each at a pitch of her own
+  own: {},
   buf: null, loading: false,
   load() {
     const o = this.own[LANG]; if (!o || this.buf || this.loading || !audio.ctx) return;
@@ -856,8 +804,8 @@ const crews = {
     this.last.set(b, now); this.talkTill = now + len + 1.5;
   },
   // Each other boat's skipper has a voice of their own: the same recordings, played lower and slower or higher and
-  // quicker (never at our own pitch), darker or brighter; in Russian the other man's, half as far from his own pitch
-  // so he's still himself; in English the man or the woman of skipper-en.mp3 at her helm. Her hails in calls-<lang>.mp3
+  // quicker (never at our own pitch), darker or brighter; in Russian the man of skipper-ru.mp3 (the woman's hails in
+  // calls-ru.mp3); in English the man or the woman of skipper-en.mp3 at her helm. Her hails in calls-<lang>.mp3
   // are her crew's, his or hers, shifted half as far too.
   voices: new WeakMap(),
   RATES: [0.84, 1.12, 0.9, 1.17, 0.8, 1.07, 0.94, 1.14, 0.87, 1.1],

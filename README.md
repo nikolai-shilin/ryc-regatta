@@ -241,14 +241,15 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   she lies: late by the distance, duller and quieter the further off. Anything heard across the water (the horn, the
   other crews, the umpire, the gulls, the plane) has the land's echo under it; another crew's voice is late by the
   distance too, and carried to you or blown away by the wind between. Our own crew and the VHF are heard on deck.
-- **The skipper's voice:** in the Russian game, a recorded skipper from Odessa shouts at the crew when something goes
-  wrong (a sheet left out or in too hard, a broach, a foul, a collision, aground, stopped after the gun, now and then a
-  tack) and through the start (the signals, a boat too close, the line far off, over early, a quick or a late start).
-  In the English game the voice is a crew's racing calls instead, a man's and a woman's: the hails (Starboard!, Keep
+- **The skipper's voice:** a crew's racing calls. In the Russian game a man's, recorded: the hails (Правый галс!,
+  Левый галс!, Дорогу!, Подветренный!, Не мешай!, Увались на надлежащий курс!, Место у знака!), Протест!, Поворот
+  оверштаг!, Поворот фордевинд!, Набивай!, Потрави!, Увались!, Приводись!, Чисто! at a mark's zone and Финиш! at the
+  line; the hails he has no recording for, and the woman's, are in `calls-ru.mp3`. The other boats' crews speak in the
+  same voice, each at a pitch of her own. In the English game a man's and a woman's: the hails (Starboard!, Keep
   clear!, Room at the mark!, Room to tack!), Protest!, Tacking!, Jibe!, Heads!, Trim!, Ease!, Bear away!, Head up!,
   Overlap! or Clear ahead/astern! at a mark's zone, Go, go, go!, and the count from ten to the gun in place of the
   beeps, in one voice per race.
-  Each language's lines (ElevenLabs recordings) are one after another in `public/game/skipper-<lang>.mp3`, mono 32 kbps,
+  Each language's lines (recordings) are one after another in `public/game/skipper-<lang>.mp3`, mono 32 kbps,
   with silence between them; `VOICES` in `main.js` says where each one starts and how long it is, and which lines go
   with which situation. The voice has its own switch, apart from Sound (`voice` in the `regatta` options: Voice in the
   pause menu, Voice on board in Settings); off, the hails and the call for a tack or a gybe are still heard, recorded,
