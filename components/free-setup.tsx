@@ -159,7 +159,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
             <SceneBrand />
           </div>
           <span className="bt-kick bt-kick-w">{match ? t('Match race', 'Матчевая гонка') : from === 'race' ? t('Change the race', 'Изменить гонку') : t('Free race', 'Свободная гонка')}</span>
-          <h1 className="bt-h" id="fs-title">{t(...where.name)}</h1>
+          <h1 className="bt-h" id="fs-title">{t(...where.name)} <span className="bt-h-cc">{where.nation}</span></h1>
           <p className="bt-p">{t(...where.place)} · {t(`prevailing wind ${where.wind[0]}`, `преобладающий ветер ${where.wind[1]}`)}. {t(...where.about)}</p>
           {view !== 'boats' && (
             <div className="bt-cap" role="status">

@@ -59,7 +59,7 @@ export default async function Hub({ params }: LangParams) {
             </span>
           </div>
           <span className="bt-kick">{t('Today’s race', 'Гонка дня')} · {boat.name[L]}</span>
-          <h1 className="bt-h bt-hero">{v.name[L]}</h1>
+          <h1 className="bt-h bt-hero">{v.name[L]} <span className="bt-h-cc">{v.nation}</span></h1>
           <p className="bt-p">{v.place[L]}. {v.about[L]} {best
             ? t(`The same race for everyone today, in the ${boat.name[0]}: ${races} sailed so far.`, `Сегодня у всех одна гонка, на ${boat.name[1]}: уже ${races} ${ruPlural(races, ['заезд', 'заезда', 'заездов'])}.`)
             : t(`The same race for everyone today, in the ${boat.name[0]}. Nobody has finished it yet.`, `Сегодня у всех одна гонка, на ${boat.name[1]}. Её ещё никто не прошёл.`)} {t('A new yacht every day.', 'Каждый день — новая яхта.')}</p>
