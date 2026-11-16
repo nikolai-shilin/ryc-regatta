@@ -9,7 +9,7 @@ import { IconPlay, IconSail, IconBoats, IconBack, IconArrow, IconGrid } from './
 import { LoadBar, ScenePoster } from './skeleton';
 import { SceneBrand } from './scene-brand';
 
-// The fleet: every yacht you can race afloat together in one scene (/fleet-view, Lake Garda on a summer evening, in
+// The fleet: every yacht you can race afloat abreast in one line by length, in one scene (/fleet-view, Lake Garda on a summer evening, in
 // your colours), the drone flying from one to the next — up and out until both are in the frame, across, and down to
 // her — with what she is, her numbers and how she sails in the game beside her. It tours the fleet by itself, a yacht
 // every DWELL seconds once the drone is there; picking one, the arrows or taking hold of the view stops the tour, and
@@ -108,7 +108,7 @@ export function FleetView({ lang, start, back, tour = true }: { lang: Lang; star
         <div className="bt-top">{back}<SceneBrand /></div>
         <span className="bt-kick">{t('The yachts', 'Яхты')} <span className="fl-n">{id ? `${String(n).padStart(2, '0')} / ${String(YACHTS.length).padStart(2, '0')}` : t('All yachts', 'Все яхты')}</span></span>
         <h1 className="bt-h fl-h" key={shown}>{id ? t(...y.name) : t('Every yacht', 'Все яхты')}</h1>
-        <p className="bt-p">{id ? <>{t(...y.kind)}. {t(...y.tagline)}</> : t('Six yachts afloat together, biggest first: from the America’s Cup’s foiler to a 14-foot dinghy. Pick one to fly to her.', 'Шесть яхт на воде вместе, от большой к маленькой: от летающей яхты Кубка Америки до 14-футового швертбота. Выбери, чтобы подлететь к ней.')}</p>
+        <p className="bt-p">{id ? <>{t(...y.kind)}. {t(...y.tagline)}</> : t('Every yacht in one line by length, bows level: from the America’s Cup’s 20.7 m foiler to the 2.3 m Optimist. Pick one to fly to her.', 'Все яхты в одну линию по длине, носы вровень: от 20,7-метровой летающей яхты Кубка Америки до 2,3-метрового Оптимиста. Выбери, чтобы подлететь к ней.')}</p>
 
         <div className="fl-strip" ref={strip}>
           <div className="fl-ctl">

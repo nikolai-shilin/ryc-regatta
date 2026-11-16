@@ -6,8 +6,9 @@
 <meta name="robots" content="noindex">
 <title>The fleet</title>
 <!-- The scene behind the fleet page (/fleet): the game itself (public/game), every yacht you can race afloat together
-     in your colours at Lake Garda on a clear evening, the sun an hour above the hills, lying stopped in a loose
-     echelon, sails set close-hauled on starboard, with no wake or spray. The drone flies from one to the next: up and out until both are in the frame, across,
+     in your colours at Lake Garda on a clear evening, the sun an hour above the hills, lying stopped abreast in one
+     line by length, the longest to windward, bows level, sails set close-hauled on starboard (or broad reaching, the
+     line turned with them), with no wake or spray. The drone flies from one to the next: up and out until both are in the frame, across,
      and down again to her, then circles her slowly; drag to turn it, scroll or pinch to come closer.
      The page sends ({ type: 'focus', id }) for the yacht to fly to (classes.js ids), ({ type: 'overview' }) for the
      whole fleet, the point of sail ({ type: 'pose', down }), and the part of the frame its words cover ({ type:
@@ -82,10 +83,12 @@ const BARE_DOWN = { ...DOWN, sail: 80, kite: false, kiteFill: 0 }; // a class wi
 // down on her hull with both arms lowered, the wind over her the true wind (her windex points into it), and standing
 // all but upright, a degree and a half of heel, rocking a fraction of a degree either side as the swell takes her
 const STILL = { v: 0, ride: 0, surf: 0, heel: 1.5 };
-// where each sails in the echelon (metres across to starboard, and ahead, of the JPK 1050): the big foiler out to
-// windward and ahead, the cruiser between it and the JPK 1050, the sportboats and the dinghy stepping down to
-// leeward and astern
-const SLOT = { ac75: [56, 28], bavaria46: [27, 12], jpk1050: [0, 0], dragon: [-14, -24], j70: [-30, -12], rs21: [-54, -24], laser: [-74, -34], optimist: [-88, -42] };
+// the line: abreast, the longest to windward and each next one shorter to leeward of her, bows level so their lengths
+// read along it; the room between two of them a little over the mean of their lengths, clear of booms and poles
+const BY_LENGTH = [...CLASS_IDS].sort((a, b) => CLASSES[b].loa - CLASSES[a].loa);
+const ACROSS = {};
+BY_LENGTH.forEach((id, i) => { ACROSS[id] = i ? ACROSS[BY_LENGTH[i - 1]] - 0.55 * (CLASSES[BY_LENGTH[i - 1]].loa + CLASSES[id].loa) : 0; });
+const MID = ACROSS[BY_LENGTH[BY_LENGTH.length - 1]] / 2, BOWS = CLASSES[BY_LENGTH[0]].loa / 2;
 
 let world;
 try { world = new World(canvas); } catch (e) { say({ type: 'ready' }); } // no WebGL: the page's own picture shows
@@ -95,14 +98,25 @@ if (world) {
   const wind = new URLSearchParams(location.search).get('wind');
   // a race with only the fleet in it, laid where a race there starts, and never sailed: each yacht is posed each frame
   const race = new Race({ preset: wind, fleet: 2, laps: 1, length: 'short', start: 1, seed: 4242 });
-  const P = race.player, W = race.wind.dir(), H = wrap(W - UP.twa);
-  const fx = Math.sin(H), fz = -Math.cos(H), rx = Math.cos(H), rz = Math.sin(H), X0 = P.x, Z0 = P.z;
+  const P = race.player, W = race.wind.dir(), X0 = P.x, Z0 = P.z;
+  let H = 0, fx = 0, fz = 0;
+  let down = false;
   const fleet = CLASS_IDS.map((id) => {
-    const cls = CLASSES[id], [a, f] = SLOT[id] || [0, 0];
-    const b = id === 'jpk1050' ? P : new P.constructor({ name: id, x: 0, z: 0, h: H, v: 2 });
+    const cls = CLASSES[id];
+    const b = id === 'jpk1050' ? P : new P.constructor({ name: id, x: 0, z: 0, h: wrap(W - UP.twa), v: 2 });
     b.cls = cls; b.ai = false;
-    return { id, b, cls, x: X0 + rx * a + fx * f, z: Z0 + rz * a + fz * f, ph: CLASS_IDS.indexOf(id) * 1.9 };
+    return { id, b, cls, x: X0, z: Z0, ph: CLASS_IDS.indexOf(id) * 1.9 };
   });
+  // the line laid square to the way they head on this point of sail, so they lie abreast on either; the drone's
+  // angles are taken from that heading too, so it sees the line as it did as they bear away
+  const lay = () => {
+    H = wrap(W - (down ? DOWN : UP).twa); fx = Math.sin(H); fz = -Math.cos(H);
+    const rx = Math.cos(H), rz = Math.sin(H);
+    for (const e of fleet) {
+      const a = ACROSS[e.id] - MID, f = BOWS - e.cls.loa / 2;
+      e.x = X0 + rx * a + fx * f; e.z = Z0 + rz * a + fz * f;
+    }
+  };
   race.boats = fleet.map((e) => e.b);
   world.setRace(race);
   if (world.marks) world.marks.visible = false; // no marks, no line, no committee boat
@@ -113,7 +127,8 @@ if (world) {
     const v = world.boatViews[i]; box.setFromObject(v.root);
     e.tall = box.max.y; e.long = e.cls.loa;
   });
-  let down = false, inset = { l: 0, r: 0, t: 0, b: 0 };
+  let inset = { l: 0, r: 0, t: 0, b: 0 };
+  lay();
 
   // ---------- the drone ----------
   // where it wants to be: round one yacht, close enough that she fills the part of the frame the page leaves clear,
@@ -126,7 +141,7 @@ if (world) {
     return { tx: e.x + fx * e.long * 0.12, tz: e.z + fz * e.long * 0.12, ty: e.tall * 0.42, ld: Math.log(d), el: 6 * D2R, az: H + 2.3 };
   };
   const span = (es) => {
-    const asp = innerWidth / innerHeight, az = H + 2.15, ax = Math.cos(az), azz = Math.sin(az), ux = Math.sin(az), uz = -Math.cos(az);
+    const asp = innerWidth / innerHeight, az = H + 2.55, ax = Math.cos(az), azz = Math.sin(az), ux = Math.sin(az), uz = -Math.cos(az);
     let cx = 0, cz = 0; for (const e of es) { cx += e.x / es.length; cz += e.z / es.length; }
     let U = 0, V = 0, T = 0;
     for (const e of es) {
@@ -216,7 +231,7 @@ if (world) {
     if (d.type === 'hello') say({ type: 'ready' }); // the page came up after this did
     if (d.type === 'focus') { const f = fleet.find((x) => x.id === d.id); if (f && camG) flyTo(f); else if (f) focus = f; }
     if (d.type === 'overview') { if (camG) flyTo(null); else focus = null; }
-    if (d.type === 'pose') down = !!d.down;
+    if (d.type === 'pose' && !!d.down !== down) { down = !!d.down; lay(); }
     if (d.type === 'inset') { inset = d; size(); }
   });
 
