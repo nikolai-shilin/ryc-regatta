@@ -8,7 +8,7 @@
 // the one asked for (the fleet page, /fleet-view, has one of each afloat together).
 // Local frame as yacht.js: +x starboard, +y up, −z forward (the bow), the waterline at y = 0.
 import * as THREE from 'three';
-import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, clothState, flog, mainCloth, kiteCurl, hullSea, sailor, labelSprite, THIGH, SHIN, LOOKS,
+import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, clothState, flog, mainCloth, kiteCurl, hullSea, staySag, deckWash, lookAt, glance, sailor, labelSprite, THIGH, SHIN, LOOKS,
   fit, bar, winch, block, clutches, cleat, wheel, chainplate, display, purchase, mergeGroup, bowNumberMaterial, nameMaterial, deckFinish, mastGeo, spreaderGeo } from './yacht.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -337,11 +337,14 @@ class ClassView {
   }
   finish(label, labelY) {
     if (label) { this.label = labelSprite(label.color); this.labelText = label.text; this.label.position.set(0, labelY, 0); this.root.add(this.label); }
+    const WH = this.washH; // her hull, where she can take water over the rail
+    if (WH) { this.wash = deckWash(WH.hbAt, WH.deckY, WH.BOW + this.drawnL * 0.12, WH.STERN - 0.25, Math.min(0.45, this.cls.beam * 0.13)); this.tilt.add(this.wash); }
     this.root.traverse((o) => { if (o.isMesh) { o.castShadow = !(o.userData.flat || o.parent?.userData.flat); o.receiveShadow = true; } });
     this.hullSea = hullSea(this, this.drawnL / 2);
     this.bake();
   }
   bake() { BoatView.prototype.bake.call(this); }
+  wire(moving) { BoatView.prototype.wire.call(this, moving); }
   setDetail(on) { BoatView.prototype.setDetail.call(this, on); }
   setCrewNear(near) { BoatView.prototype.setCrewNear.call(this, near); }
   // afloat (or flying), heeled and pitched by the sea; side: the boom's side
@@ -357,6 +360,7 @@ class ClassView {
     this.tilt.rotation.x = pitch - ride * 0.02; // flying: the bow a touch up
     // the sea's own roll, which the crew's bodies take out (pose); the heel alone, for the next frame's
     this.sway = this.sea ? clamp(this.sea.rz - (this.heelZ ?? 0), -0.35, 0.35) * 0.6 : 0;
+    this.wash?.userData.set(this.sea?.rz ?? 0, t, b.v);
     this.tilt.rotation.z = (this.heelZ = side * b.heel * this.cls.heelShow * D2R) + roll;
     clothState(this, b, t); // how her sails set this frame (yacht.js): this.cloth
     return side;
@@ -365,10 +369,10 @@ class ClassView {
   jibAndTells(b, t, side, belly, luff, ph, sheetTo) {
     const ja = Math.min((b.jibSail ?? b.sail) * D2R * 0.8 + 3 * D2R, (this.jibMax ?? 30) * D2R);
     this.jibPivot.quaternion.setFromAxisAngle(this.jibAxis, -this.sailSide * ja);
-    const head = this.HEAD.clone().sub(this.TACK), clew = this.CLEW, sc = this.cloth, ss = this.sailSide, k = (this.jibBelly ?? 0.125) * sc.depth;
+    const head = this.HEAD.clone().sub(this.TACK), clew = this.CLEW, sc = this.cloth, ss = this.sailSide, k = (this.jibBelly ?? 0.125) * sc.depth, sag = staySag(head.length(), sc.aws);
     const jBelly = -ss * (1 - sc.flogJ * 0.85); // the jib flaps on its own sheet
     setSail(this.jib, (f, u, v) => {
-      const lx = head.x * f, ly = head.y * f, lz = head.z * f;
+      const sg = sag * Math.sin(Math.PI * f), lx = head.x * f - ss * sg, ly = head.y * f, lz = head.z * f + sg * 0.5;
       const ex = lerp(clew.x, head.x, f), ey = lerp(clew.y, head.y, f), ez = lerp(clew.z, head.z, f);
       const len = Math.hypot(ex - lx, ey - ly, ez - lz);
       v.set(lerp(lx, ex, u) + jBelly * Math.sin(Math.PI * u ** 0.72) * len * k + flog(f, u, t, sc.flogJ, len, sc.aws, ss, sc.ph + 1.3) + leechFlutter(f, u, t + 0.4, sc.aws), lerp(ly, ey, u), lerp(lz, ez, u));
@@ -411,6 +415,10 @@ class ClassView {
     s.upper.rotation.z = -c.lean;
     for (const l of s.legs) { l.hip.rotation.z = (1 - c.stand) * Math.PI / 2; l.knee.rotation.z = (1 - c.stand) * c.knee; }
     for (const a of s.arms) a.rotation.z = c.reach;
+    const gl = glance(this.crewT ?? 0, c.i ?? 0);
+    let lw = want.look ?? (c.yaw < 0.8 ? 1.0 : 1.7), lu = want.up ?? 0.1;
+    if (gl === 1) { lw = 2.4; lu = 0.6; } else if (gl === 2) lw -= 0.9;
+    if (c.s.head) lookAt(c, lw, lu, k);
   }
   crewDt(t) { const first = this.crewT === undefined, dt = clamp(t - (this.crewT ?? t), 0, 0.1); this.crewT = t; return first ? 1 : 1 - Math.exp(-dt * 2.2); }
 }
@@ -452,6 +460,7 @@ class SportView extends ClassView {
     this.cls = cls;
     const RS = this.RS = cls.id === 'rs21', J = this.J = sportOf(RS);
     const add = this.start(), T = this.tilt, H = J.hull, MOD = RS ? RS21_MODEL : J70_MODEL;
+    this.washH = H;
     this.flyY = 0;
     const skid = deckFinish(look, SKID); // the player's deck: the non-skid, teak or the hull's colour
     if (MOD) {
@@ -621,7 +630,7 @@ class SportView extends ClassView {
       v.set(belly * Math.sin(Math.PI * u ** 0.78) * ch * 0.11 * sc.depth * (1 - 0.4 * f) + tw + mainCloth(sc, f, u, t, ch, ss) + leechFlutter(f, u, t, sc.aws), J.BOOM_Y + 0.06 + f * span, u * ch);
     });
     const ma = this.mainPivot.rotation.y, bz = 2.9;
-    this.travCar.position.x = RS ? 0 : clamp(Math.sin(ma) * bz * 0.4, -0.6, 0.6);
+    this.travCar.position.x = RS ? 0 : clamp(Math.sin(ma) * bz * 0.4 + Math.sign(Math.sin(ma)) * clamp((b.depower || 0) / 10, 0, 1) * 0.2, -0.6, 0.6);
     purchase(this.mainsheet, [this.travCar.position.x, this.sheetFoot[0] + 0.065, this.sheetFoot[1]], [Math.sin(ma) * bz, J.BOOM_Y - 0.085, J.MAST_Z + Math.cos(ma) * bz], 0.03);
     const ty = RS ? H.deckY(-0.7) + 0.07 : 0.95;
     this.jibAndTells(b, t, side, belly, luff, ph, (ls) => [[ls * 0.55, ty, -0.62], [ls * 0.82, H.deckY(0.2) + 0.12, 0.2]]);
@@ -690,6 +699,7 @@ class LaserView extends ClassView {
     super();
     this.cls = cls;
     const add = this.start(), T = this.tilt, H = LZ.hull, [cz0, cz1] = LZ.CK;
+    this.washH = H;
     this.flyY = 0;
     const MOD = LZ_MODEL, skid = deckFinish(look, SKID);
     // the deck's surface at (x, z): the sheer and the crown on it, which the fittings stand on
@@ -932,6 +942,7 @@ class CruiserView extends ClassView {
     super();
     this.cls = cls;
     const add = this.start(), T = this.tilt, H = BV.hull, C = BV.COACH, [ckz, ckx] = BV.CK;
+    this.washH = H;
     this.flyY = 0;
     // her side decks and foredeck teak, as the real boat's are, the coachroof's and the coamings' tops white non-skid;
     // a player who asked for the deck in the hull's colour has it on both

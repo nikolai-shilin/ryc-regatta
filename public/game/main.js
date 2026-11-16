@@ -386,8 +386,28 @@ const audio = {
     const k = paused ? 0 : 1, sea = k * seaK();
     this.set(this.windG, sea * Math.min(0.45, 0.03 + P.aws / 80));
     this.set(this.waterG, sea * Math.min(0.35, P.v / 22 + (P.surf > 0 ? 0.1 : 0)));
-    const flog = P.trim === 'irons' ? 1 : P.luff;
-    this.set(this.flapG, k * flog * (Math.random() < 0.45 ? 0.55 : 0.04), 0.012); // a sail flogging cracks
+    // what your boat's picture is doing (yacht.js): her sails' flogging, her pitching, her trimmer at the winch
+    const v = world && race ? world.boatViews[race.boats.indexOf(P)] : null, cl = v?.cloth, s = v?.sea, now = this.ctx.currentTime;
+    const dt = clamp(now - (this.lastT ?? now), 0, 0.1); this.lastT = now;
+    // a sail flogging cracks in time with the cloth, twice a cycle (it snaps over each way), quicker the harder it blows
+    const flog = cl ? Math.max(cl.flogM, cl.flogJ) : P.trim === 'irons' ? 1 : P.luff;
+    this.flapPh = (this.flapPh || 0) + dt * 2 * Math.PI * (1.5 + 0.07 * Math.min(P.aws || 0, 30));
+    this.set(this.flapG, k * flog * (0.04 + 0.6 * Math.abs(Math.sin(this.flapPh)) ** 10), 0.012);
+    if (paused) return;
+    // the hull slapping down onto a sea: her bow dropping fast under way
+    const drop = s ? -s.vp : 0;
+    if (s && P.v > 1.5 && drop > 0.1 && now - (this.slapT ?? 0) > 0.45) { this.slapT = now; this.slap(clamp((drop - 0.1) / 0.2, 0.15, 1) * sea); }
+    // the winch's pawl clicking away while the jib trimmer grinds the new sheet in after a tack
+    if (v?.grinding && now - (this.grindT ?? 0) > 0.085) { this.grindT = now; this.click(); }
+  },
+  slap(vol) { // the hull slapping onto a sea: a dull thud in the hull and the water's splash off it
+    if (!this.ctx) return;
+    const n = this.ctx.currentTime;
+    for (const [type, f, peak, dur] of [['lowpass', 220, 0.5, 0.22], ['bandpass', 1100, 0.16, 0.3]]) {
+      const s = this.ctx.createBufferSource(), fl = this.ctx.createBiquadFilter(), g = this.ctx.createGain();
+      s.buffer = this.buf; fl.type = type; fl.frequency.value = f; g.gain.setValueAtTime(peak * vol, n); g.gain.exponentialRampToValueAtTime(0.001, n + dur);
+      s.connect(fl).connect(g).connect(this.master); s.start(n, Math.random(), dur + 0.05);
+    }
   },
   tone(freq, dur, type = 'sine', vol = 0.25) {
     if (!this.ctx) return;

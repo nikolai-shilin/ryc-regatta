@@ -1562,7 +1562,7 @@ export class World {
       f.x = b.x + fx * along - fz * side * 1.3 * SC; f.z = b.z + fz * along + fx * side * 1.3 * SC; f.y = 0.25;
       const out = 1.2 + Math.random() * 1.6 + b.v * 0.15;
       f.vx = fx * b.v * 0.35 - fz * side * out; f.vz = fz * b.v * 0.35 + fx * side * out;
-      f.vy = 0.9 + Math.random() * 1.1; f.age = 0; f.life = 0.45 + Math.random() * 0.4; f.spray = true; f.s0 = 0.18; f.s1 = 0.45; f.a = 0.6;
+      f.vy = 0.9 + Math.random() * 1.1; f.age = 0; f.life = 0.45 + Math.random() * 0.4; f.spray = true; f.s0 = 0.18; f.s1 = 0.45; f.a = 0.92;
     }
   }
 
@@ -1595,7 +1595,7 @@ export class World {
       f.x = b.x + fx * 4.4 * SC + -fz * side * 0.8; f.z = b.z + fz * 4.4 * SC + fx * side * 0.8; f.y = 0.8;
       f.vx = fx * b.v * 0.6 - fz * side * (0.5 + Math.random()) - Math.sin(wind) * 2.5;
       f.vz = fz * b.v * 0.6 + fx * side * (0.5 + Math.random()) + Math.cos(wind) * 2.5;
-      f.vy = 2 + Math.random() * 2.5; f.age = 0; f.life = 0.9 + Math.random() * 0.5; f.spray = true; f.s0 = 0.25; f.s1 = 0.6; f.a = 0.8;
+      f.vy = 2 + Math.random() * 2.5; f.age = 0; f.life = 0.9 + Math.random() * 0.5; f.spray = true; f.s0 = 0.25; f.s1 = 0.6; f.a = 0.95;
     }
   }
 
@@ -1848,7 +1848,7 @@ export class World {
     const fn = Math.max(0, b.v) / Math.sqrt(9.81 * L), run = fly ? 0 : sm(110, 160, Math.abs(b.twa || 0) / D2R), blow = clamp(((b.aws || 0) - 4) / 14, 0, 1);
     const w = (T0) => 2 * Math.PI / (T0 * sl), wh = w(2.4), wp = w(2.1), wr = w(2.6), ww = w(3.2), zr = lerp(0.55, 0.3, run);
     const yT = R.position.y + (fly ? 0 : sl * (-0.05 * sm(0.12, 0.4, fn) + 0.12 * sm(0.45, 0.9, fn)));
-    const pT = T.rotation.x + (fly ? 0 : D2R * (1.4 * sm(0.15, 0.42, fn) - 0.7 * sm(0.5, 0.9, fn)));
+    const pT = T.rotation.x + (fly ? 0 : D2R * (1.4 * sm(0.15, 0.42, fn) - 0.7 * sm(0.5, 0.9, fn) + 0.6 * (v.crewAft || 0) / (sl * sl)));
     const rT = T.rotation.z + run * D2R * (1.2 + 2.3 * blow) * Math.sin(wr * t + s.ph) * (0.6 + 0.4 * Math.sin(0.21 * t + 2 * s.ph));
     const seaRoll = T.rotation.z - (v.heelZ ?? T.rotation.z);
     const yawT = run * clamp(-1.2 * seaRoll + D2R * 1.5 * Math.sin(0.5 * wr * t + 3 * s.ph), -5 * D2R, 5 * D2R);
