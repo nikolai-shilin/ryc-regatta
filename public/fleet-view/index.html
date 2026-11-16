@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex">
 <title>The fleet</title>
 <!-- The scene behind the fleet page (/fleet): the game itself (public/game), every yacht you can race afloat together
-     in your colours at Lake Garda on a clear evening, the sun an hour above the hills, sailing in a loose echelon
-     close-hauled on starboard. The drone flies from one to the next: up and out until both are in the frame, across,
+     in your colours at Lake Garda on a clear evening, the sun an hour above the hills, lying stopped in a loose
+     echelon, sails set close-hauled on starboard, with no wake or spray. The drone flies from one to the next: up and out until both are in the frame, across,
      and down again to her, then circles her slowly; drag to turn it, scroll or pinch to come closer.
      The page sends ({ type: 'focus', id }) for the yacht to fly to (classes.js ids), ({ type: 'overview' }) for the
      whole fleet, the point of sail ({ type: 'pose', down }), and the part of the frame its words cover ({ type:
@@ -78,6 +78,9 @@ const UP = { twa: 0.72, awa: 0.42, heel: 14, rudder: 0, sail: 16, luff: 0, trim:
 const DOWN = { twa: 2.45, awa: 1.95, heel: 6, rudder: 0, sail: 68, luff: 0, trim: 'ok', kite: true, kiteFill: 1, v: 3.6 };
 const FOIL_UP = { ...UP, awa: 0.24, sail: 7, v: 16, ride: 1 }, FOIL_DOWN = { ...DOWN, awa: 0.52, sail: 17, kite: false, kiteFill: 0, v: 19, ride: 1 };
 const BARE_DOWN = { ...DOWN, sail: 80, kite: false, kiteFill: 0 }; // a class with no kite (the Laser): the boom right out
+// shown stopped, as on a mooring with her sails up: no way on her, so no wake, bow wave, spray or wet line, a foiler
+// down on her hull with both arms lowered, and the wind over her the true wind (her windex points into it)
+const STILL = { v: 0, ride: 0, surf: 0 };
 // where each sails in the echelon (metres across to starboard, and ahead, of the JPK 1050): the big foiler out to
 // windward and ahead, the cruiser between it and the JPK 1050, the sportboats and the dinghy stepping down to
 // leeward and astern
@@ -108,7 +111,7 @@ if (world) {
   const box = new THREE.Box3();
   fleet.forEach((e, i) => {
     const v = world.boatViews[i]; box.setFromObject(v.root);
-    e.tall = box.max.y + (e.cls.foil ? v.flyY || 0 : 0); e.long = e.cls.loa;
+    e.tall = box.max.y; e.long = e.cls.loa;
   });
   let down = false, inset = { l: 0, r: 0, t: 0, b: 0 };
 
@@ -228,10 +231,10 @@ if (world) {
   }
   function step(dt) {
     t += dt;
-    // each posed where she sails, in the wind as it is, rolling a little on her own
+    // each posed where she lies, stopped, in the wind as it is, rolling a little on her own
     for (const e of fleet) {
       const p = e.cls.foil ? (down ? FOIL_DOWN : FOIL_UP) : down ? (e.cls.kite ? DOWN : BARE_DOWN) : UP;
-      Object.assign(e.b, p, { heel: p.heel * heel * (e.cls.foil ? 0.6 : 1) + Math.sin(t * 0.7 + e.ph) * 1.1, x: e.x, z: e.z, h: wrap(W - p.twa), boom: Math.sign(p.twa), wdir: W, tws: race.wind.p.tws });
+      Object.assign(e.b, p, STILL, { awa: p.twa, heel: p.heel * heel * (e.cls.foil ? 0.6 : 1) + Math.sin(t * 0.7 + e.ph) * 1.1, x: e.x, z: e.z, h: wrap(W - p.twa), boom: Math.sign(p.twa), wdir: W, tws: race.wind.p.tws });
     }
     race.t = t; race.wind.step(dt);
     if (idle > 0) idle -= dt; else if (!flight) orbit += dt * 0.035;
