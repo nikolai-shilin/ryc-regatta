@@ -82,7 +82,7 @@ export class Post {
     this.cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2)); this.quad.frustumCulled = false;
     this.scene.add(this.quad);
-    this.rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4, depthBuffer: true, stencilBuffer: true });
+    this.rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4, depthBuffer: true, stencilBuffer: false });
     this.mips = [];
     const mat = (fs, uniforms, extra = {}) => new THREE.ShaderMaterial({ vertexShader: QUAD_VS, fragmentShader: fs, uniforms, depthTest: false, depthWrite: false, ...extra });
     this.mPre = mat(PREFILTER_FS, { uIn: { value: null }, uTexel: { value: new THREE.Vector2() }, uThr: { value: 2.2 }, uKnee: { value: 0.9 } });

@@ -685,12 +685,30 @@ function sailRelief(kind, battens = MAIN_BATTENS) {
   return (RELIEF[key] = t);
 }
 // the sun through the cloth: lit from behind as you look at it, a sail glows with the light it lets through, tinted
-// by the cloth and darker where the seams, battens and number are (the colour squared: light crossing a dye)
+// by the cloth and darker where the seams, battens and number are (the colour squared: light crossing a dye). The
+// cloth scatters it forward, so the glow is brightest round where the sun stands behind it. And only where the sun
+// reaches the far side: whatever stands between shows through as its shadow — the mast and the boom dark bands, the
+// other sail's outline a dimmer shape (its cloth lets a little through). The shadow map's own test, made from this
+// side of the cloth, would find the cloth itself in the way, so it is made again a hand's width towards the sun
+// (along the light, which in the sun's orthographic shadow map is its depth alone: the camera's 1–140 m, world.js).
 function translucent(m, amount) {
   m.onBeforeCompile = (sh) => {
     sh.fragmentShader = sh.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
 #if NUM_DIR_LIGHTS > 0
-      reflectedLight.directDiffuse += diffuseColor.rgb * diffuseColor.rgb * directionalLights[0].color * max(-dot(normal, directionalLights[0].direction), 0.0) * ${amount.toFixed(2)};
+      {
+        vec3 Ls = directionalLights[0].direction;
+        float through = max(-dot(normal, Ls), 0.0);
+        float lit = 1.0;
+  #if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
+        if (through > 0.0 && receiveShadow) {
+          vec4 sc = vDirectionalShadowCoord[0]; sc.z -= 0.15 / 139.0;
+          DirectionalLightShadow ds = directionalLightShadows[0];
+          lit = mix(0.3, 1.0, getShadow(directionalShadowMap[0], ds.shadowMapSize, ds.shadowBias, ds.shadowRadius, sc));
+        }
+  #endif
+        float fwd = pow(max(dot(-geometryViewDir, Ls), 0.0), 6.0);
+        reflectedLight.directDiffuse += diffuseColor.rgb * diffuseColor.rgb * directionalLights[0].color * (through + 0.6 * fwd * through) * lit * ${amount.toFixed(2)};
+      }
 #endif`);
   };
   m.customProgramCacheKey = () => `sail${amount}`;
