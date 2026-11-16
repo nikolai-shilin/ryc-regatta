@@ -94,8 +94,8 @@ if (CLS.foil) { UP = { ...UP, awa: 0.24, sail: 7, v: 16, ride: 1 }; DOWN = { ...
 else if (!CLS.kite) DOWN = { ...DOWN, sail: 80, kite: false, kiteFill: 0 }; // a class with no kite (the Laser): the boom right out
 // on the boat page (and in the presets' pictures) she is shown stopped, as on a mooring with her sails up: no way on
 // her, so no wake, bow wave, spray or wet line, a foiler down on her hull with both arms lowered, and her windex
-// pointing into the true wind
-const STILL = (p) => ({ ...p, v: 0, ride: 0, surf: 0, awa: p.twa });
+// pointing into the true wind; and standing all but upright, a degree and a half of heel whatever the breeze
+const STILL = (p) => ({ ...p, v: 0, ride: 0, surf: 0, awa: p.twa, heel: 1.5 });
 // how tall she stands against the JPK 1050, so the drone frames her
 const SIZE = { j70: 0.62, rs21: 0.6, laser: 0.42, optimist: 0.3, bavaria46: 1.1, ac75: 1.55 }[CLS.id] || 1;
 let pose = UP, pending = null, inset = { l: 0, r: 0, t: 0, b: 0 };
@@ -636,10 +636,10 @@ if (world) {
       decoStep(dt);
     } else {
       // posed where she started, stopped, in the wind as it is
-      Object.assign(P, STILL(pose), { heel: pose.heel * heel, x: X, z: Z, h: wrap(W - pose.twa), boom: Math.sign(pose.twa), wdir: W, tws: race.wind.p.tws });
+      Object.assign(P, STILL(pose), { x: X, z: Z, h: wrap(W - pose.twa), boom: Math.sign(pose.twa), wdir: W, tws: race.wind.p.tws });
       race.t = t;
       if (idle > 0) idle -= dt; else world.orbit += dt * 0.05;
-      if (thumbs && !world.preparing) { const it = thumbs; thumbs = null; shoot(it, t); Object.assign(P, STILL(pose), { heel: pose.heel * heel, h: wrap(W - pose.twa), boom: Math.sign(pose.twa) }); }
+      if (thumbs && !world.preparing) { const it = thumbs; thumbs = null; shoot(it, t); Object.assign(P, STILL(pose), { h: wrap(W - pose.twa), boom: Math.sign(pose.twa) }); }
     }
     world.frame(dt, t);
     if (!canvas.classList.contains('live')) { canvas.classList.add('live'); say({ type: 'live' }); }

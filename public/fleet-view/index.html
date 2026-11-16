@@ -79,8 +79,9 @@ const DOWN = { twa: 2.45, awa: 1.95, heel: 6, rudder: 0, sail: 68, luff: 0, trim
 const FOIL_UP = { ...UP, awa: 0.24, sail: 7, v: 16, ride: 1 }, FOIL_DOWN = { ...DOWN, awa: 0.52, sail: 17, kite: false, kiteFill: 0, v: 19, ride: 1 };
 const BARE_DOWN = { ...DOWN, sail: 80, kite: false, kiteFill: 0 }; // a class with no kite (the Laser): the boom right out
 // shown stopped, as on a mooring with her sails up: no way on her, so no wake, bow wave, spray or wet line, a foiler
-// down on her hull with both arms lowered, and the wind over her the true wind (her windex points into it)
-const STILL = { v: 0, ride: 0, surf: 0 };
+// down on her hull with both arms lowered, the wind over her the true wind (her windex points into it), and standing
+// all but upright, a degree and a half of heel, rocking a fraction of a degree either side as the swell takes her
+const STILL = { v: 0, ride: 0, surf: 0, heel: 1.5 };
 // where each sails in the echelon (metres across to starboard, and ahead, of the JPK 1050): the big foiler out to
 // windward and ahead, the cruiser between it and the JPK 1050, the sportboats and the dinghy stepping down to
 // leeward and astern
@@ -92,7 +93,6 @@ if (world) {
   world.showGuides = false;
   world.setQuality(/android|iphone|ipad/i.test(navigator.userAgent) ? 'medium' : 'high');
   const wind = new URLSearchParams(location.search).get('wind');
-  const heel = { light: 1, medium: 1.35, strong: 1.7 }[wind] || 1.35;
   // a race with only the fleet in it, laid where a race there starts, and never sailed: each yacht is posed each frame
   const race = new Race({ preset: wind, fleet: 2, laps: 1, length: 'short', start: 1, seed: 4242 });
   const P = race.player, W = race.wind.dir(), H = wrap(W - UP.twa);
@@ -234,7 +234,7 @@ if (world) {
     // each posed where she lies, stopped, in the wind as it is, rolling a little on her own
     for (const e of fleet) {
       const p = e.cls.foil ? (down ? FOIL_DOWN : FOIL_UP) : down ? (e.cls.kite ? DOWN : BARE_DOWN) : UP;
-      Object.assign(e.b, p, STILL, { awa: p.twa, heel: p.heel * heel * (e.cls.foil ? 0.6 : 1) + Math.sin(t * 0.7 + e.ph) * 1.1, x: e.x, z: e.z, h: wrap(W - p.twa), boom: Math.sign(p.twa), wdir: W, tws: race.wind.p.tws });
+      Object.assign(e.b, p, STILL, { awa: p.twa, heel: STILL.heel + Math.sin(t * 0.7 + e.ph) * 0.3, x: e.x, z: e.z, h: wrap(W - p.twa), boom: Math.sign(p.twa), wdir: W, tws: race.wind.p.tws });
     }
     race.t = t; race.wind.step(dt);
     if (idle > 0) idle -= dt; else if (!flight) orbit += dt * 0.035;
