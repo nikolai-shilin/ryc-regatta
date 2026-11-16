@@ -28,6 +28,10 @@ const hbD = (t) => (t <= BOW0 ? 0.84 + 0.02 * sstep(0, 0.2, t) : 0.86 * Math.max
 const sheer = (t) => 1.6 + 0.04 * t * t;
 const knuckle = (t) => 0.72 + 0.16 * t; // the chine, with the dark pinstripe along it
 const deckY = (z) => sheer(tAt(z));
+const topsidesX = (t, y) => { // the topsides' half-breadth at height y, over the chine (blender/lagoon42.py's topsides_x)
+  const v = clamp((y - knuckle(t)) / (sheer(t) - knuckle(t)), 0, 1), hb = hbD(t);
+  return lerp(hb * 0.92, hb, v) + 0.02 * Math.sin(Math.PI * v) * (hb / 0.86);
+};
 const halfB = (z) => hbD(tAt(z)); // a hull's half-breadth at the deck, about its own centreline
 const floorY = (z) => deckY(z) + 0.03; // the bridgedeck's top: the cockpit's sole, the forward deck
 // the transoms: their walls raked down from the deck to the swim platform, the steps let in between them
@@ -127,22 +131,29 @@ function netTexture() {
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / 0.24, 1 / 0.24); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
   return t;
 }
-// the jib rolled on its foil: the sacrificial strip's navy round it, a seam and a darker band spiralling up it
+// the jib rolled on its foil: its dark sacrificial strip round it, the white cloth showing in a spiral between the turns
 const JIB = canvasTex(64, 128, (x, w, h) => {
-  x.fillStyle = '#2d4262'; x.fillRect(0, 0, w, h);
+  x.fillStyle = '#26292e'; x.fillRect(0, 0, w, h);
   for (let k = -2; k < 4; k++) {
-    x.fillStyle = 'rgba(15,25,40,.35)'; x.beginPath(); x.moveTo(0, k * 48); x.lineTo(w, k * 48 + 40); x.lineTo(w, k * 48 + 52); x.lineTo(0, k * 48 + 12); x.fill();
-    x.fillStyle = 'rgba(210,220,235,.22)'; x.beginPath(); x.moveTo(0, k * 48 + 24); x.lineTo(w, k * 48 + 64); x.lineTo(w, k * 48 + 66); x.lineTo(0, k * 48 + 26); x.fill();
+    x.fillStyle = 'rgba(232,232,228,.9)'; x.beginPath(); x.moveTo(0, k * 48 + 20); x.lineTo(w, k * 48 + 60); x.lineTo(w, k * 48 + 68); x.lineTo(0, k * 48 + 28); x.fill();
+    x.fillStyle = 'rgba(0,0,0,.25)'; x.beginPath(); x.moveTo(0, k * 48); x.lineTo(w, k * 48 + 40); x.lineTo(w, k * 48 + 44); x.lineTo(0, k * 48 + 4); x.fill();
   }
 }, 1, 14);
-// the stack pack's canvas: its zip down the top, the seams where the lazy jacks are sewn in
+// the stack pack's white canvas: its zip down the top, the seams where the lazy jacks are sewn in
 const BAG = canvasTex(128, 256, (x, w, h) => {
-  x.fillStyle = '#2b3a52'; x.fillRect(0, 0, w, h);
-  x.fillStyle = 'rgba(255,255,255,.07)'; for (let v = 0; v < h; v += 32) x.fillRect(0, v, w, 2);
-  x.fillStyle = 'rgba(0,0,0,.25)'; for (let u = 18; u < w; u += 28) x.fillRect(u, 0, 1, h);
-  x.fillStyle = '#15191f'; x.fillRect(0, 0, 4, h); x.fillRect(w - 4, 0, 4, h);
-  x.fillStyle = '#9aa3ad'; x.fillRect(0, 0, 1, h); x.fillRect(w - 1, 0, 1, h);
+  x.fillStyle = '#e6e7e3'; x.fillRect(0, 0, w, h);
+  x.fillStyle = 'rgba(0,0,0,.05)'; for (let v = 0; v < h; v += 32) x.fillRect(0, v, w, 2);
+  x.fillStyle = 'rgba(0,0,0,.08)'; for (let u = 18; u < w; u += 28) x.fillRect(u, 0, 1, h);
+  x.fillStyle = '#5b6168'; x.fillRect(0, 0, 3, h); x.fillRect(w - 3, 0, 3, h);
 });
+// the model's number on each aft quarter, in dark grey
+const DECAL = (() => {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 80;
+  const x = c.getContext('2d'); x.fillStyle = '#4a5057'; x.font = '300 66px Carlito, Lato, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText('42', 64, 44);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
+})();
 
 let LF = null;
 function lagoonFinishes() {
@@ -157,7 +168,8 @@ function lagoonFinishes() {
     // her mast and boom in white paint, a clear coat over it
     spar: new THREE.MeshPhysicalMaterial({ color: '#eceeee', roughness: 0.35, clearcoat: 0.7, clearcoatRoughness: 0.15, envMapIntensity: 0.9 }),
     // the stack pack's canvas, the furled jib
-    bag: new THREE.MeshStandardMaterial({ map: BAG, roughness: 0.92 }),
+    bag: new THREE.MeshStandardMaterial({ map: BAG, roughness: 0.9 }),
+    decal: new THREE.MeshStandardMaterial({ map: DECAL, transparent: true, roughness: 0.35, polygonOffset: true, polygonOffsetFactor: -2, depthWrite: false }),
     jib: new THREE.MeshStandardMaterial({ map: JIB, roughness: 0.85 }),
     // her cushions: a grey-taupe outdoor fabric
     cushion: new THREE.MeshStandardMaterial({ color: '#a69e8e', roughness: 0.95 }),
@@ -228,7 +240,7 @@ export class LagoonCommittee {
     const hm = hullMaterial('#f3f4f3', '#16191d', BOTTOM);
     this.sea = hm.userData.sea; this.sea.uHalfL.value = L / 2;
     root.add(new THREE.Mesh(MODEL.hull, hm));
-    for (const k of ['deck', 'teak', 'roof', 'gel', 'glass', 'net', 'cushion', 'tube', 'dark']) if (MODEL[k]) root.add(new THREE.Mesh(MODEL[k], M[k]));
+    for (const k of ['deck', 'teak', 'roof', 'gel', 'glass', 'net', 'cushion', 'tube', 'dark', 'steel']) if (MODEL[k]) root.add(new THREE.Mesh(MODEL[k], M[k]));
 
     // ---- the hulls' fittings ----
     for (const sx of [-1, 1]) {
@@ -245,7 +257,7 @@ export class LagoonCommittee {
       for (const z of [-3.4, -4.4, -5.3]) { const x = inner(z); top.push([x, deckY(z) + 0.66, z]); posts.push([x, deckY(z), z]); }
       for (let i = 0; i <= 6; i++) { const a = (i / 6) * Math.PI, z = -5.75 - 0.45 * Math.sin(a); top.push([X - sx * Math.cos(a) * (halfB(z) - 0.1), deckY(z) + 0.66, z]); }
       posts.push([X, deckY(-6.2), -6.2]);
-      for (const z of [-5.3, -4.3, -3.1, -1.9, -0.7, 0.5, 1.7, 2.9, 4.0]) { const x = edge(z); top.push([x, deckY(z) + 0.66, z]); posts.push([x, deckY(z), z]); }
+      for (const z of [-5.3, -4.3, -3.1, -1.9, -0.7, 0.5, 1.7, 2.9, 4.0, 5.05]) { const x = edge(z); top.push([x, deckY(z) + 0.66, z]); posts.push([x, deckY(z), z]); }
       put('steel', tube(top, 0.022, false, 8));
       put('steel', tube(top.slice(10).map(([x, y, z]) => [x, y - 0.33, z]), 0.008, false, 4));
       put('steel', tube(top.slice(0, 3).map(([x, y, z]) => [x, y - 0.33, z]), 0.008, false, 4));
@@ -268,6 +280,8 @@ export class LagoonCommittee {
         put('steel', new RoundedBoxGeometry(hs + 0.08, 0.05, hs + 0.08, 2, 0.02).translate(hx, deckY(hz) + 0.04, hz));
         put('glass', new THREE.BoxGeometry(hs, 0.02, hs).translate(hx, deckY(hz) + 0.065, hz));
       }
+      // '42' on the aft quarter
+      { const dz = 4.45, dy = 1.24; put('decal', new THREE.PlaneGeometry(0.42, 0.26).rotateY(sx * Math.PI / 2).translate(X + sx * (topsidesX(tAt(dz), dy) + 0.008), dy, dz)); }
       // the rails down the transom's steps, on the inner wall
       const xi = (z) => X - sx * (halfB(z) - 0.08);
       const rail = [[xi(5.15), deckY(5.15) + 0.75, 5.15], [xi(5.5), 1.24 + 0.8, 5.5], [xi(5.8), 0.88 + 0.8, 5.8], [xi(6.1), PLAT + 0.8, 6.1]];
@@ -322,10 +336,12 @@ export class LagoonCommittee {
       put('glass', new THREE.BoxGeometry(0.54, 0.02, 0.54).translate(hx, roofTop(hz) + 0.045, hz));
     }
     for (const sx of [-1, 1]) put('steel', tube([[sx * 2.6, roofTop(-1.8), -1.8], [sx * 2.6, roofTop(-1.7) + 0.08, -1.7], [sx * 2.6, roofTop(0.9) + 0.08, 0.9], [sx * 2.6, roofTop(1.0), 1.0]], 0.016, false, 6));
-    put('cushion', new RoundedBoxGeometry(1.7, 0.08, 1.05, 2, 0.035).rotateX(-0.12).translate(0, roofTop(-1.0) + 0.05, -1.0));
-    for (const pz of [-1.5, -0.45]) {
-      put('steel', new THREE.BoxGeometry(0.98, 0.03, 0.96).rotateX(-0.12).translate(-1.75, roofTop(pz) + 0.025, pz));
-      put('solar', new THREE.BoxGeometry(0.92, 0.02, 0.9).rotateX(-0.12).translate(-1.75, roofTop(pz) + 0.045, pz));
+    // the sunpad on the roof just aft of the mast, and two solar panels side by side to starboard aft of it
+    const slope = (z) => Math.atan((roofTop(z + 0.1) - roofTop(z - 0.1)) / 0.2);
+    put('cushion', new RoundedBoxGeometry(1.7, 0.08, 1.1, 2, 0.035).rotateX(-slope(1.1)).translate(0, roofTop(1.1) + 0.05, 1.1));
+    for (const px of [1.24, 1.76]) {
+      put('steel', new THREE.BoxGeometry(0.5, 0.03, 1.02).rotateX(-slope(1.75)).translate(px, roofTop(1.75) + 0.025, 1.75));
+      put('solar', new THREE.BoxGeometry(0.46, 0.02, 0.98).rotateX(-slope(1.75)).translate(px, roofTop(1.75) + 0.045, 1.75));
     }
     // ---- the helm: its wheel and screens on the console, the throttles; the two winches and the clutches on the roof's
     // edge beside it, where every line from the mast comes; the hatches in its hard top ----
@@ -431,11 +447,11 @@ export class LagoonCommittee {
     put('dark', new THREE.CylinderGeometry(0.006, 0.008, 0.8, 4).translate(-0.06, MTOP + 0.45, MZ + 0.1));
 
     // ---- the signals ----
-    // the four signal halyards from blocks on the lower spreaders down to the roof by the mast. Starboard outer: the
+    // the four signal halyards from blocks on the lower spreaders down to the roof just forward of the mast. Starboard outer: the
     // class flag; port outer: P (or U, or black); starboard inner: X; port inner: the first substitute
     this.flags = {};
-    const hal = { cls: [SPR1.w - 0.05, 1.95], P: [-(SPR1.w - 0.05), -1.95], X: [0.8, 1.05], sub: [-0.8, -1.05] };
-    const hz = MZ + 0.9, hy = roofTop(hz) + 0.02;
+    const hal = { cls: [SPR1.w - 0.05, 1.9], P: [-(SPR1.w - 0.05), -1.9], X: [0.8, 1.0], sub: [-0.8, -1.0] };
+    const hz = MZ - 0.5, hy = roofTop(hz) + 0.02;
     for (const [k, [xt, xb]] of Object.entries(hal)) {
       const zt = MZ + SPR1.aft * Math.abs(xt) / SPR1.w + 0.02;
       const topP = new THREE.Vector3(xt, SPR1.y - 0.12, zt), bot = new THREE.Vector3(xb, hy, hz);
@@ -465,7 +481,7 @@ export class LagoonCommittee {
     const face = side > 0 ? 0 : Math.PI; // they face the line
     const crew = [
       { at: [-2.06, HELM.y, 2.45], jacket: '#1d3557', pose: 'glasses', yaw: face },
-      { at: [side * 0.6, roofTop(MZ + 0.7), MZ + 0.7], jacket: '#c8342b', pose: 'halyard', yaw: face },
+      { at: [side * 0.55, roofTop(MZ - 0.45), MZ - 0.45], jacket: '#c8342b', pose: 'halyard', yaw: face },
       { at: [side * (XC + halfB(oz) - 0.55), oy, oz - 0.4], jacket: '#ff7a1a', pose: 'glasses', yaw: face - side * 0.35 },
       { at: [side > 0 ? 0.1 : -1.0, floorY(4.45), 4.45], jacket: '#1d3557', pose: 'horn', yaw: face + side * 0.25 },
       { at: [side > 0 ? -0.9 : 1.2, roofTop(2.3), 2.3], jacket: '#f2f1ec', pose: 'board', yaw: face + side * 0.5 },

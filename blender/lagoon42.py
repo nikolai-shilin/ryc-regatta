@@ -28,7 +28,7 @@
 # Materials by name, which lagoon.js swaps for its own: hull (the paint, boot-top and antifouling drawn by yacht.js's
 # shader), deck (non-skid: the hulls' decks and the bridgedeck forward of the saloon), roof (non-skid: the roof's top),
 # teak (the cockpit, the hulls' aft decks, the steps, the helm station), gel, glass, net (the trampolines), cushion,
-# tube (the tender's hypalon), dark. No UVs: lagoon.js lays the decks', the teak's and the net's out from the plan.
+# tube (the tender's hypalon), dark, steel (the helm top's tubes). No UVs: lagoon.js lays the decks', the teak's and the net's out from the plan.
 #
 #   blender -b --factory-startup -P blender/lagoon42.py
 import bpy, bmesh, math, os
@@ -256,7 +256,7 @@ def build_bridgedeck(bm, M):
 # its top: 3.05 m over the water at the saloon's front, rising aft to 3.58 over the helm, a little lower again at its
 # aft end; 0.2 thick. Its plan: a visor out over the windscreen, its sides out beyond the saloon's, its corners rounded;
 # a gap cut out of it to port over the helm
-RF_F, RF_A, RF_W, RF_T = -2.27, 4.9, 2.92, 0.2
+RF_F, RF_A, RF_W, RF_T, RF_TE = -2.27, 4.9, 2.92, 0.2, 0.08
 RF_RF, RF_RA = 1.1, 0.7
 GAP = dict(x=-1.3, z0=1.5, z1=3.08)
 def roof_top(z):
@@ -279,12 +279,17 @@ def build_roof(bm, M):
         w = max(roof_halfw(z), 0.3)
         xl = GAP['x'] if GAP['z0'] <= z <= GAP['z1'] else -w
         xr = w
-        yt, yb = roof_top(z), roof_top(z) - RF_T
+        yt = roof_top(z)
+        dz = min(z - RF_F, RF_A - z)
+        # its edge thin, thickening inboard to RF_T: the underside sweeps up to a sharp lip all round
+        th = lambda dx: RF_TE + (RF_T - RF_TE) * smooth(0.05, 0.45, min(dx, dz))
+        yb = yt - th(0)
         crown = lambda x: 0.04 * (1 - ((x - (xl + xr) / 2) / ((xr - xl) / 2)) ** 2)
         top = [(lerp(xl + e, xr - e, i / NX), yt + crown(lerp(xl + e, xr - e, i / NX))) for i in range(NX + 1)]
         right = [(xr - e + e * math.cos(a), yt - e + e * math.sin(a)) for a in (math.pi / 2 * (1 - k / 3) for k in range(1, 4))]
         right += [(xr, yb + e)] + [(xr - e + e * math.cos(a), yb + e - e * math.sin(a)) for a in (math.pi / 2 * k / 3 for k in range(1, 4))]
-        bot = [(lerp(xr - e, xl + e, i / 6), yb) for i in range(1, 6)]
+        bxs = [xr - 0.1, xr - 0.25, xr - 0.42] + [lerp(xr - 0.6, xl + 0.6, i / 4) for i in range(5)] + [xl + 0.42, xl + 0.25, xl + 0.1]
+        bot = [(x, yt - th(min(xr - x, x - xl))) for x in bxs]
         left = [(xl + e - e * math.cos(a), yb + e - e * math.sin(a)) for a in (math.pi / 2 * (1 - k / 3) for k in range(0, 3))]
         left += [(xl, yt - e)] + [(xl + e - e * math.cos(a), yt - e + e * math.sin(a)) for a in (math.pi / 2 * k / 3 for k in range(1, 3))]
         rings.append([(x, y, z) for x, y in top + right + bot + left])
@@ -330,7 +335,7 @@ def cr_outline(u):
 def build_saloon(bm, M):
     win1 = lambda z: roof_top(z) - RF_T - 0.1
     hs = [lambda x, z: 1.5, lambda x, z: floor_y(z) + 0.06, lambda x, z: 1.95, lambda x, z: WIN_F, lambda x, z: 2.25,
-          lambda x, z: WIN0, lambda x, z: (WIN0 + win1(z)) / 2, lambda x, z: win1(z), lambda x, z: roof_top(z) - RF_T + 0.03]
+          lambda x, z: WIN0, lambda x, z: (WIN0 + win1(z)) / 2, lambda x, z: win1(z), lambda x, z: roof_top(z) - 0.12]
     levels, tags0 = [], None
     for li, h in enumerate(hs):
         u = li / (len(hs) - 1)
@@ -356,7 +361,7 @@ def build_saloon(bm, M):
 
 # ---------- the helm: raised to port against the saloon's aft face, under its own hard top ----------
 HELM = dict(x0=-2.76, x1=-1.38, z0=1.66, z1=2.96, y=2.5)
-HT = dict(x0=-3.02, x1=-1.18, z0=1.36, z1=3.2, y0=4.5, y1=4.63)
+HT = dict(x0=-2.98, x1=-1.22, z0=1.45, z1=3.12, y0=4.52, y1=4.58)
 def build_helm(bm, M):
     h = HELM
     edged_slab(bm, rounded_rect(h['x0'], h['x1'], h['z0'], h['z1'], (0.02, 0.08, 0.08, 0.02), 3), 1.5, h['y'], M['gel'], M['gel'], M['teak'], 0.0, 0.02, 0.03)
@@ -378,10 +383,11 @@ def build_helm(bm, M):
     edged_slab(bm, rounded_rect(-2.7, -1.46, 2.86, 2.95, 0.04, 3), h['y'] + 0.55, h['y'] + 0.95, M['cushion'], M['cushion'], M['cushion'], 0.01, 0.03, 0.03)
     # its hard top, over the gap in the roof, on posts: two outboard down to the hull's deck, two inboard on the roof
     t = HT
-    edged_slab(bm, rounded_rect(t['x0'], t['x1'], t['z0'], t['z1'], (0.35, 0.35, 0.5, 0.5), 6), t['y0'], t['y1'], M['gel'], M['gel'], M['roof'], 0.03, 0.04, 0.045)
-    for x, z, y0 in ((-2.86, 1.5, deck_y(1.5)), (-2.86, 3.06, deck_y(3.06)), (-1.22, 1.5, roof_top(1.5)), (-1.22, 3.06, roof_top(3.06))):
-        secs = [[(x + 0.045 * math.cos(a), y, z + 0.045 * math.sin(a)) for a in (2 * math.pi * k / 12 for k in range(12))] for y in (y0 - 0.02, t['y0'] + 0.02)]
-        loft(bm, secs, lambda i, k: M['gel'], M['gel'], M['gel'])
+    edged_slab(bm, rounded_rect(t['x0'], t['x1'], t['z0'], t['z1'], (0.35, 0.35, 0.5, 0.5), 6), t['y0'], t['y1'], M['gel'], M['gel'], M['roof'], 0.015, 0.02, 0.025)
+    # on four slim stainless tubes up from the helm station's corners
+    for x, z in ((-2.7, 1.72), (-2.7, 2.92), (-1.44, 1.72), (-1.44, 2.92)):
+        secs = [[(x + 0.022 * math.cos(a), y, z + 0.022 * math.sin(a)) for a in (2 * math.pi * k / 10 for k in range(10))] for y in (HELM['y'] - 0.02, t['y0'] + 0.02)]
+        loft(bm, secs, lambda i, k: M['steel'], M['steel'], M['steel'])
 
 # ---------- the cockpit: the table and its seats to starboard, a seat to port, the aft beam's bench, the lockers ----------
 def build_cockpit(bm, M):
@@ -528,8 +534,9 @@ MAT = {'hull': material('hull', (0.92, 0.92, 0.9), 0.2), 'deck': material('deck'
        'gel': material('gel', (0.9, 0.89, 0.86), 0.3), 'teak': material('teak', (0.45, 0.28, 0.13), 0.7),
        'glass': material('glass', (0.03, 0.04, 0.05), 0.05), 'roof': material('roof', (0.86, 0.86, 0.84), 0.85),
        'net': material('net', (0.1, 0.11, 0.12), 0.8), 'cushion': material('cushion', (0.85, 0.84, 0.8), 0.8),
-       'tube': material('tube', (0.5, 0.52, 0.54), 0.6), 'dark': material('dark', (0.12, 0.13, 0.14), 0.5)}
-ORDER = ['hull', 'deck', 'gel', 'teak', 'glass', 'roof', 'net', 'cushion', 'tube', 'dark']
+       'tube': material('tube', (0.5, 0.52, 0.54), 0.6), 'dark': material('dark', (0.12, 0.13, 0.14), 0.5),
+       'steel': material('steel', (0.8, 0.82, 0.84), 0.25)}
+ORDER = ['hull', 'deck', 'gel', 'teak', 'glass', 'roof', 'net', 'cushion', 'tube', 'dark', 'steel']
 IDX = {m: i for i, m in enumerate(ORDER)}
 
 me = bpy.data.meshes.new('lagoon42'); ob = bpy.data.objects.new('lagoon42', me); bpy.context.scene.collection.objects.link(ob)
