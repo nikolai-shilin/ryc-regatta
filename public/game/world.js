@@ -4,7 +4,7 @@ import { D2R, wrap, clamp, lerp, waveHeight, seaSlope as waveSlope, beatAngle, r
 const SC = HULL / 10.45; // the model is drawn 10.45 m long, the JPK 1050 as she is
 import { LOOKS, playerLook, lookFrom, SEA } from './yacht.js';
 import { makeBoatView } from './boats3d.js';
-import { CommitteeBoat } from './committee.js';
+import { CommitteeBoat, COMMITTEE_L, COMMITTEE_BOTTOM as BOTTOM_CB } from './committee.js';
 import { buoy } from './marks.js';
 import { JuryBoat } from './jury.js';
 import { Wildlife } from './wildlife.js';
@@ -924,7 +924,7 @@ function underParts(root, bottom, world) {
     if (box.isEmpty() || box.getSize(size).y < 0.05 || box.min.y > 0.3 || box.max.y > 4.5) return;
     const m = Array.isArray(o.material) ? o.material[0] : o.material;
     o.layers.enable(UNDER);
-    o.userData.underCol = m?.userData?.sea ? col : m?.color ? m.color.clone().multiplyScalar(m.map ? 0.7 : 1) : new THREE.Color(0.4, 0.4, 0.4);
+    o.userData.underCol = m?.userData?.under ? new THREE.Color(m.userData.under) : m?.userData?.sea ? col : m?.color ? m.color.clone().multiplyScalar(m.map ? 0.7 : 1) : new THREE.Color(0.4, 0.4, 0.4);
     const prev = o.onBeforeRender;
     o.onBeforeRender = function (r, s, c, g, mat, grp) {
       if (mat === world.under?.mat) { mat.uniforms.uAlbedo.value.copy(this.userData.underCol); mat.uniformsNeedUpdate = true; }
@@ -1394,8 +1394,12 @@ export class World {
   setMarks(race) {
     const c = race.course, g = new THREE.Group(), W0 = race.wind.dir();
     this.buoys = [];
+    for (const h of this.cbContacts || []) h.dispose(this.scene);
+    this.cbContacts = []; // the committee boats' white water and shade where they meet the sea, as the yachts' (HullContact)
     const add = (obj, p, vee) => {
       obj.position.set(p.x, 0, p.z); g.add(mirrored(obj)); if (vee) g.add(vee);
+      underParts(obj, BOTTOM_CB, this); // seen through the water: a mark's skirt, a committee boat's hull and running gear
+      if (obj.userData.boat) this.cbContacts.push(Object.assign(new HullContact(this.scene, this.wakeU, this.wakeField), { at: { x: p.x, z: p.z, h: W0, v: 0, cls: { loa: COMMITTEE_L } } }));
       const ring = obj.userData.R ? new MarkContact(obj.userData.R, this.wakeU) : null; if (ring) g.add(ring.mesh);
       this.buoys.push({ obj, p, vee, ring });
     };
@@ -1633,13 +1637,17 @@ export class World {
   juryFrame(dt, t) {
     const j = this.jury, o = j.root;
     j.update(dt, t);
-    if (!j.on) return;
+    if (!this.juryContact) { this.juryContact = new HullContact(this.scene, this.wakeU, this.wakeField); underParts(o, BOTTOM_CB, this); }
+    const jc = this.juryContact;
+    if (!j.on) { jc.mesh.visible = false; if (jc.hmesh) jc.hmesh.visible = false; return; }
     const fx = Math.sin(j.h), fz = -Math.cos(j.h);
     o.position.set(j.x, waveHeight(this.W, j.x, j.z, t) * 0.7, j.z);
     o.rotation.y = -j.h;
     o.rotation.x = waveSlope(this.W, j.x, j.z, t, fx, fz) * 0.35 + clamp(j.v / 6, 0, 1) * 0.045;
     o.rotation.z = waveSlope(this.W, j.x, j.z, t, -fz, fx) * 0.35 - j.yawRate * j.v * 0.06; // she leans into a turn
     this.juryWake.update(j, dt, t, this.W);
+    jc.update({ x: j.x, z: j.z, h: j.h, v: j.v, cls: { loa: COMMITTEE_L } }, t, this.W); // her bow wave and white water
+    if (j.cb.sea) j.cb.sea.uSpd.value = clamp(j.v / 4.5, 0, 1); // and the wet line on her topsides
     // her burgee flies to the wind she makes as well as the wind there is
     const W = this.race.wind.dir(), tw = this.race.wind.p.tws * 0.514;
     const ax = -tw * Math.sin(W) - fx * j.v, az = tw * Math.cos(W) - fz * j.v; // the air going past her
@@ -1696,6 +1704,7 @@ export class World {
       }
     }
     this.juryFrame(dt, t);
+    for (const h of this.cbContacts) h.update(h.at, t, this.W);
     const c = race.course, k = c.legs[P.leg];
     this.zones.update(this.W, t, P.done || !hasZone(c, P.leg) ? [] : legTargets(c, P.leg).map((m) => this.zoneM.indexOf(m)));
     this.cb.update(t, dt, race.flags, race.prepFlag, this.cbW0 - race.wind.dir(), race.wind.p.tws * 0.514); // flags fly downwind

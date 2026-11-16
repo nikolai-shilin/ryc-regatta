@@ -2,12 +2,21 @@
 // line. The race officers run the start from her: the signal flags go up and down halyards on the yardarm of her
 // signal mast, the orange flag on a staff marks her end of the line, and an officer on the side deck sights along the
 // line to the pin.
+//
+// She is finished as the yachts are (yacht.js): her hull, deckhouse, hardtop and console moulded in Blender
+// (blender/committee.py → committee.glb), the hull under yacht.js's lacquer with its boot-top, antifouling and the
+// sea's wet line on it, the gelcoat clear-coated, the decks moulded non-skid with the shade baked in where the
+// deckhouse stands on them, the aft deck and the swim platform teak, and her fittings in stainless.
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { clamp, lerp } from './sim.js';
-import { sailor } from './yacht.js';
+import { sailor, hullMaterial, NONSKID, deckFinish, cleat, wheel, M as YM } from './yacht.js';
 
 const L = 13, B = 4.3, DRAFT = 0.85;
+export const COMMITTEE_L = L;
+const BOTTOM = '#7d2b28'; // her antifouling
+export const COMMITTEE_BOTTOM = BOTTOM;
 const FLY = 3.3; // the flybridge floor
 const Y0 = -1.2, Y1 = 2.2; // the hull's paint is a strip of colour by height, from Y0 to Y1
 
@@ -100,6 +109,90 @@ function hullGeometry() {
   const deck = new THREE.BufferGeometry();
   deck.setAttribute('position', new THREE.Float32BufferAttribute(dp, 3)); deck.setIndex(di); deck.computeVertexNormals();
   return { hull, deck };
+}
+
+// her moulded parts, by material name (blender/committee.py), by the address the import map gives the file (its hash
+// after a deploy, as yacht.js's yacht.glb); the hull's paint bands (its depth under the sheer) and the plan-in-metres
+// UVs of what takes a texture. If it doesn't come in 8 s she is built from the lines above in code instead.
+const fileAt = (f) => (import.meta.resolve ? import.meta.resolve(`./${f}`) : new URL(f, import.meta.url).href);
+const MODEL = await new Promise((res) => {
+  const done = (v) => { clearTimeout(timer); res(v); }, timer = setTimeout(() => res(null), 8000);
+  new GLTFLoader().load(fileAt('committee.glb'), (g) => {
+    const parts = {};
+    g.scene.updateMatrixWorld(true);
+    g.scene.traverse((o) => { if (o.isMesh) parts[o.material.name] = o.geometry.clone().applyMatrix4(o.matrixWorld); });
+    const p = parts.hull?.attributes.position;
+    if (!p || !parts.deck) return done(null);
+    const band = new Float32Array(p.count);
+    for (let i = 0; i < p.count; i++) band[i] = deckY(p.getZ(i)) - p.getY(i);
+    parts.hull.setAttribute('band', new THREE.BufferAttribute(band, 1));
+    for (const k of ['deck', 'teak', 'roof']) {
+      const q = parts[k]?.attributes.position; if (!q) continue;
+      const uv = new Float32Array(q.count * 2);
+      for (let i = 0; i < q.count; i++) { uv[2 * i] = q.getX(i); uv[2 * i + 1] = -q.getZ(i); }
+      parts[k].setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    }
+    done(parts);
+  }, undefined, () => done(null));
+});
+
+// the shade baked into her decks, in plan: soft and dark round the deckhouse's foot and in along the rail, as
+// yacht.js's deck has it. Metres to pixels; each shape is drawn off the canvas and only its blurred shadow lands on it
+const AO_W = 4.6, AO_L = 15, AO_S = 32;
+let deckAO = null;
+function deckShade() {
+  if (deckAO) return deckAO;
+  const c = document.createElement('canvas'); c.width = AO_W * AO_S; c.height = AO_L * AO_S;
+  const x = c.getContext('2d'), X = (v) => (v + AO_W / 2) * AO_S, Y = (z) => (z + AO_L / 2) * AO_S;
+  x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+  const soft = (path, blur, alpha, stroke = 0) => {
+    x.save(); x.shadowColor = `rgba(0,0,0,${alpha})`; x.shadowBlur = blur * AO_S; x.shadowOffsetX = 4000; x.translate(-4000, 0);
+    x.beginPath(); path(); if (stroke) { x.lineWidth = stroke * AO_S; x.strokeStyle = '#000'; x.stroke(); } else { x.fillStyle = '#000'; x.fill(); }
+    x.restore();
+  };
+  // the deckhouse's foot (blender/committee.py's dh_outline at its foot): the nose rounded, the sides out to the aft face
+  const foot = [];
+  for (let i = 0; i <= 12; i++) { const ph = (Math.PI / 2) * (1 - i / 12); foot.push([1.42 * Math.cos(ph) ** (2 / 2.6), -1.7 + (1 - Math.sin(ph) ** (2 / 2.6))]); }
+  foot.push([1.55, 2.4]);
+  soft(() => { foot.forEach(([fx, fz], i) => x[i ? 'lineTo' : 'moveTo'](X(fx + 0.03), Y(fz - 0.03))); for (let i = foot.length - 1; i >= 0; i--) x.lineTo(X(-foot[i][0] - 0.03), Y(foot[i][1] - 0.03)); x.closePath(); }, 0.32, 0.6);
+  soft(() => { for (let i = 0; i <= 40; i++) { const t = i / 40, s = station(t); x[i ? 'lineTo' : 'moveTo'](X(s.hb - 0.02), Y(s.z)); }
+    for (let i = 40; i >= 0; i--) { const t = i / 40, s = station(t); x.lineTo(X(-(s.hb - 0.02)), Y(s.z)); } }, 0.12, 0.4, 0.05);
+  soft(() => { for (const sx of [-1, 1]) { x.moveTo(X(sx * 1.42 + 0.07), Y(4.4)); x.arc(X(sx * 1.42), Y(4.4), 0.07 * AO_S, 0, Math.PI * 2); } }, 0.12, 0.6); // the hardtop's posts
+  const t = new THREE.CanvasTexture(c);
+  t.repeat.set(1 / AO_W, 1 / AO_L); t.offset.set(0.5, 0.5); // the deck's UVs are its plan in metres (x, −z)
+  return (deckAO = t);
+}
+function shaded(m) { // the baked shade dims the sunlit deck a little too, not only the sky's light
+  m.aoMap = deckShade(); m.aoMapIntensity = 1;
+  m.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n  diffuseColor.rgb *= mix(1.0, texture2D(aoMap, vAoMapUv).r, 0.45);'); };
+  m.customProgramCacheKey = () => 'cbDeck';
+  return m;
+}
+// one set of her finishes for every committee boat (and the jury's): her hull's paint is made per boat (its wet line's
+// speed is hers)
+let FIN = null;
+function finishes() {
+  return FIN ||= {
+    deck: shaded(new THREE.MeshStandardMaterial({ map: NONSKID, color: '#ffffff', roughness: 0.85 })),
+    teak: shaded(deckFinish({ deck: 'teak' }, null).clone()),
+    roof: new THREE.MeshStandardMaterial({ map: NONSKID, color: '#ffffff', roughness: 0.85 }),
+    // gelcoat under a clear coat: the deckhouse and the hardtop show their curves by the sky they mirror
+    gel: new THREE.MeshPhysicalMaterial({ color: '#f3f3ef', roughness: 0.34, clearcoat: 0.8, clearcoatRoughness: 0.08, envMapIntensity: 0.9 }),
+    // tinted glass, the sky in it
+    glass: new THREE.MeshPhysicalMaterial({ color: '#1c252d', roughness: 0.04, metalness: 0.2, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 1.5 }),
+    steel: YM.steel, bronze: new THREE.MeshStandardMaterial({ color: '#b08a4e', roughness: 0.3, metalness: 1 }),
+    fender: new THREE.MeshPhysicalMaterial({ color: '#1d3557', roughness: 0.45, clearcoat: 0.4, clearcoatRoughness: 0.3 }),
+    cushion: new THREE.MeshStandardMaterial({ color: '#eceae3', roughness: 0.75 }),
+    rope: new THREE.MeshStandardMaterial({ color: '#e8e2d0', roughness: 0.9 }),
+  };
+}
+
+// a box with its edges and corners rounded to r, centred on the origin: a rounded rectangle extruded, bevelled round
+function RoundedBoxGeometry(w, h, d, seg = 3, r = 0.05) {
+  const e = 0.002, a = w / 2 - r - e, b = d / 2 - r - e, s = new THREE.Shape(); // the bevel rounds its corners in plan too
+  s.absarc(a, -b, e, -Math.PI / 2, 0); s.absarc(a, b, e, 0, Math.PI / 2); s.absarc(-a, b, e, Math.PI / 2, Math.PI); s.absarc(-a, -b, e, Math.PI, Math.PI * 1.5);
+  const g = new THREE.ExtrudeGeometry(s, { depth: h - 2 * r, bevelEnabled: true, bevelSize: r, bevelThickness: r, bevelSegments: seg, curveSegments: 4 });
+  return g.rotateX(-Math.PI / 2).translate(0, -(h - 2 * r) / 2, 0);
 }
 
 // a six-sided block whose plan (front and aft z, half-breadths) changes linearly from its foot to its top: the
@@ -203,60 +296,122 @@ export class CommitteeBoat {
       teak: new THREE.MeshStandardMaterial({ color: '#a8804f', roughness: 0.75 }),
       banner: new THREE.MeshStandardMaterial({ map: bannerTexture(banner), roughness: 0.8, side: THREE.DoubleSide }),
     };
+    const F = finishes();
+    Object.assign(M, { wood: YM.teak, deck: F.deck, teak: F.teak, roof: F.roof, gel: F.gel, glass: F.glass, bronze: F.bronze, fender: F.fender, cushion: F.cushion, rope: F.rope });
     const bin = {}; // static parts, merged per material
     const put = (k, g) => (bin[k] ||= []).push(g);
     const lines = [];
 
-    const H = hullGeometry();
-    put('hull', H.hull); put('deck', H.deck);
-    // the rubbing strake round the sheer, and the swim platform at the transom
-    const strake = [];
-    for (let i = 0; i <= 20; i++) { const s = station(i / 20); strake.push([s.hb + 0.04, s.sy - 0.07, s.z]); }
-    for (let i = 19; i >= 0; i--) { const s = station(i / 20); strake.push([-s.hb - 0.04, s.sy - 0.07, s.z]); }
-    put('navy', tube(strake, 0.06, true, 5));
-    put('teak', new THREE.BoxGeometry(B * 0.84, 0.08, 0.9).translate(0, 0.38, L / 2 + 0.42));
-    put('steel', rod([0.9, 0.42, L / 2 + 0.85], [0.9, -0.4, L / 2 + 0.95], 0.02)); put('steel', rod([1.2, 0.42, L / 2 + 0.85], [1.2, -0.4, L / 2 + 0.95], 0.02)); // the boarding ladder
-
-    // the deckhouse: windows all round, the windscreen raked aft, a glass door into the aft deck
     const lo = { f: -1.7, a: 2.4, wf: 1.42, wa: 1.55 }, hi = { f: -0.75, a: 2.3, wf: 1.22, wa: 1.42 };
-    const at = (y) => { const u = (y - 1.0) / (3.15 - 1.0); return { f: lerp(lo.f, hi.f, u), a: lerp(lo.a, hi.a, u), wf: lerp(lo.wf, hi.wf, u), wa: lerp(lo.wa, hi.wa, u) }; };
-    put('gel', block(lo, hi, 1.0, 3.15));
-    put('glass', block(at(2.15), at(2.95), 2.15, 2.95, 0.02));
-    put('glass', new THREE.BoxGeometry(0.95, 1.6, 0.14).translate(0, deckY(lo.a) + 0.8, lo.a - 0.03));
-    // the hardtop, roofing the deckhouse and the aft deck, on two posts; the flybridge is on it
-    const topF = hi.f - 0.2, topA = 4.6, topW = 1.62;
-    const shape = new THREE.Shape(), r = 0.55;
-    shape.moveTo(-topW + r, topF); shape.lineTo(topW - r, topF); shape.quadraticCurveTo(topW, topF, topW, topF + r);
-    shape.lineTo(topW, topA); shape.lineTo(-topW, topA); shape.lineTo(-topW, topF + r); shape.quadraticCurveTo(-topW, topF, -topW + r, topF);
-    put('gel', new THREE.ExtrudeGeometry(shape, { depth: 0.16, bevelEnabled: false, curveSegments: 6 }).rotateX(Math.PI / 2).translate(0, FLY, 0));
-    for (const sx of [-1, 1]) put('gel', rod([sx * 1.42, deckY(4.4), 4.4], [sx * 1.42, FLY - 0.15, 4.4], 0.07, 8));
-    // on the flybridge: the helm console with its little screen and the seat behind it
+    const topF = hi.f - 0.2, topA = 4.6, topW = 1.62, r = 0.55;
     const conZ = topF + 0.75;
-    put('gel', new THREE.BoxGeometry(1.4, 0.85, 0.6).translate(0, FLY + 0.42, conZ));
-    put('glass', new THREE.BoxGeometry(1.3, 0.28, 0.04).rotateX(-0.45).translate(0, FLY + 0.98, conZ - 0.22));
-    put('dark', new THREE.BoxGeometry(1.2, 0.45, 0.55).translate(0, FLY + 0.22, conZ + 1.0));
+    if (MODEL) {
+      // the moulded hull, deck, deckhouse, hardtop, console and swim platform; the hull in yacht.js's paint, her wet
+      // line her own (this.sea: the jury's boat runs)
+      const hm = hullMaterial('#f4f4f0', '#1d3557', BOTTOM);
+      this.sea = hm.userData.sea; this.sea.uHalfL.value = L / 2;
+      root.add(new THREE.Mesh(MODEL.hull, hm));
+      for (const k of ['deck', 'teak', 'roof', 'gel', 'glass']) if (MODEL[k]) root.add(new THREE.Mesh(MODEL[k], M[k]));
+      // the glass door into the deckhouse from the aft deck, in its stainless frame
+      put('glass', new THREE.BoxGeometry(0.9, 1.62, 0.05).translate(0, deckY(lo.a) + 0.84, lo.a - 0.04));
+      put('steel', new THREE.BoxGeometry(0.98, 1.7, 0.03).translate(0, deckY(lo.a) + 0.85, lo.a - 0.05));
+      put('steel', rod([0.36, deckY(lo.a) + 0.8, lo.a + 0.01], [0.36, deckY(lo.a) + 1.1, lo.a + 0.01], 0.012, 6)); // its handle
+      // on the flybridge console: its screens set into the dash, a small wheel, the throttles and a smoked windscreen
+      const dash = (z) => FLY + 0.78 + 0.22 * clamp((conZ + 0.3 - z) / 0.6, 0, 1), slope = Math.atan2(0.22, 0.6);
+      put('glass', new THREE.BoxGeometry(0.95, 0.02, 0.3).rotateX(slope).translate(-0.1, dash(conZ) + 0.012, conZ));
+      put('glass', new THREE.BoxGeometry(1.32, 0.3, 0.02).rotateX(-0.35).translate(0, dash(conZ - 0.3) + 0.13, conZ - 0.32));
+      const w = wheel(0.22, 5, YM.dark, F.steel);
+      w.rotation.x = -slope - 0.25; w.position.set(0.32, dash(conZ + 0.2) + 0.12, conZ + 0.33); root.add(w);
+      for (const dx of [0.42, 0.49]) put('steel', rod([dx, dash(conZ + 0.1), conZ + 0.1], [dx, dash(conZ + 0.1) + 0.14, conZ + 0.14], 0.01, 6));
+      // the helm seat, cushioned, on its moulded box
+      put('gel', new RoundedBoxGeometry(1.3, 0.42, 0.55, 3, 0.06).translate(0, FLY + 0.21, conZ + 1.0));
+      put('cushion', new RoundedBoxGeometry(1.24, 0.1, 0.5, 3, 0.045).translate(0, FLY + 0.46, conZ + 1.0));
+      put('cushion', new RoundedBoxGeometry(1.24, 0.42, 0.1, 3, 0.045).rotateX(-0.2).translate(0, FLY + 0.7, conZ + 1.27));
+      // the swim platform's boarding ladder, folded up on it, and the stern's running gear under the water: two
+      // shafts, their bronze propellers, two rudders
+      for (const sx of [-1, 1]) {
+        put('steel', rod([sx * 0.8, -0.28, 4.0], [sx * 0.8, -0.62, 5.0], 0.035, 8));
+        const prop = new THREE.Group();
+        for (let k = 0; k < 3; k++) {
+          const blade = new THREE.Mesh(new THREE.SphereGeometry(0.17, 8, 6).scale(1, 0.12, 0.5).translate(0.17, 0, 0), F.bronze);
+          blade.rotation.set(0.35 * sx, 0, (k * Math.PI * 2) / 3); prop.add(blade);
+        }
+        prop.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.18, 10).rotateX(Math.PI / 2), F.bronze));
+        prop.position.set(sx * 0.8, -0.64, 5.05); root.add(prop);
+        put('steel', new THREE.BoxGeometry(0.04, 0.5, 0.42).translate(sx * 0.8, -0.58, 5.6));
+      }
+    } else {
+      const H = hullGeometry();
+      put('hull', H.hull); put('deck', H.deck);
+      put('teak', new THREE.BoxGeometry(B * 0.84, 0.08, 0.9).translate(0, 0.38, L / 2 + 0.42));
+      // the deckhouse: windows all round, the windscreen raked aft, a glass door into the aft deck
+      const at = (y) => { const u = (y - 1.0) / (3.15 - 1.0); return { f: lerp(lo.f, hi.f, u), a: lerp(lo.a, hi.a, u), wf: lerp(lo.wf, hi.wf, u), wa: lerp(lo.wa, hi.wa, u) }; };
+      put('gel', block(lo, hi, 1.0, 3.15));
+      put('glass', block(at(2.15), at(2.95), 2.15, 2.95, 0.02));
+      put('glass', new THREE.BoxGeometry(0.95, 1.6, 0.14).translate(0, deckY(lo.a) + 0.8, lo.a - 0.03));
+      // the hardtop, roofing the deckhouse and the aft deck; the flybridge is on it
+      const shape = new THREE.Shape();
+      shape.moveTo(-topW + r, topF); shape.lineTo(topW - r, topF); shape.quadraticCurveTo(topW, topF, topW, topF + r);
+      shape.lineTo(topW, topA); shape.lineTo(-topW, topA); shape.lineTo(-topW, topF + r); shape.quadraticCurveTo(-topW, topF, -topW + r, topF);
+      put('gel', new THREE.ExtrudeGeometry(shape, { depth: 0.16, bevelEnabled: false, curveSegments: 6 }).rotateX(Math.PI / 2).translate(0, FLY, 0));
+      // on the flybridge: the helm console with its little screen and the seat behind it
+      put('gel', new THREE.BoxGeometry(1.4, 0.85, 0.6).translate(0, FLY + 0.42, conZ));
+      put('glass', new THREE.BoxGeometry(1.3, 0.28, 0.04).rotateX(-0.45).translate(0, FLY + 0.98, conZ - 0.22));
+      put('dark', new THREE.BoxGeometry(1.2, 0.45, 0.55).translate(0, FLY + 0.22, conZ + 1.0));
+    }
+    // the rubbing strake round the sheer, and the boarding ladder off the swim platform
+    const strake = [];
+    for (let i = 0; i <= 40; i++) { const s = station(i / 40); strake.push([s.hb + 0.035, s.sy - 0.075, s.z]); }
+    for (let i = 39; i >= 0; i--) { const s = station(i / 40); strake.push([-s.hb - 0.035, s.sy - 0.075, s.z]); }
+    put('navy', tube(strake, 0.055, true, 10));
+    for (const x of [0.9, 1.2]) put('steel', rod([x, 0.42, L / 2 + 0.85], [x, -0.4, L / 2 + 0.95], 0.02, 8));
+    for (let k = 0; k < 3; k++) put('steel', rod([0.9, 0.2 - k * 0.26, L / 2 + 0.87 + k * 0.03], [1.2, 0.2 - k * 0.26, L / 2 + 0.87 + k * 0.03], 0.016, 6));
+    // the hardtop's two posts
+    for (const sx of [-1, 1]) put('gel', rod([sx * 1.42, deckY(4.4), 4.4], [sx * 1.42, FLY - 0.15, 4.4], 0.07, 16));
     // the flybridge rail, round her but open at the ladder, and the ladder down to the aft deck
     const railPts = [], rH = FLY + 0.85;
     const perim = [[-topW + 0.12, topA - 0.12], [-topW + 0.12, topF + r], [-topW + r, topF + 0.12], [topW - r, topF + 0.12], [topW - 0.12, topF + r], [topW - 0.12, topA - 0.12], [-0.6, topA - 0.12]]
       .map(([x, z]) => [x * side, z]); // the gap is over the ladder, on the far side from the line
     for (const [x, z] of perim) railPts.push([x, rH, z]);
-    put('steel', tube(railPts, 0.022, false, 5));
-    for (const [x, z] of perim) put('steel', rod([x, FLY, z], [x, rH, z], 0.018, 5));
+    put('steel', tube(railPts, 0.022, false, 8));
+    for (const [x, z] of perim) put('steel', rod([x, FLY, z], [x, rH, z], 0.018, 8));
     const ladX = -side * 1.0;
-    for (const dx of [-0.25, 0.25]) put('steel', rod([ladX + dx, deckY(5.6), 5.7], [ladX + dx, FLY + 0.9, topA - 0.1], 0.022, 5));
-    for (let k = 1; k <= 6; k++) { const u = k / 7, y = lerp(deckY(5.6), FLY, u), z = lerp(5.7, topA - 0.1, u); put('teak', new THREE.BoxGeometry(0.5, 0.04, 0.12).translate(ladX, y, z)); }
+    for (const dx of [-0.25, 0.25]) put('steel', rod([ladX + dx, deckY(5.6), 5.7], [ladX + dx, FLY + 0.9, topA - 0.1], 0.022, 8));
+    for (let k = 1; k <= 6; k++) { const u = k / 7, y = lerp(deckY(5.6), FLY, u), z = lerp(5.7, topA - 0.1, u); put('wood', new THREE.BoxGeometry(0.5, 0.04, 0.12).translate(ladX, y, z)); }
 
     // the guardrail round the main deck, open at the transom; a lifebuoy on it aft
     const gr = [], posts = [];
     for (let i = 1; i <= 24; i++) { const t = i / 24, s = station(t); const x = Math.max(s.hb - 0.08, 0); gr.push([x, s.sy + 0.72 - 0.08 * t, s.z]); if (i % 3 === 1) posts.push([x, s.sy, s.z, s.sy + 0.72 - 0.08 * t]); }
     for (let i = 23; i >= 1; i--) gr.push([-gr[i - 1][0], gr[i - 1][1], gr[i - 1][2]]);
-    put('steel', tube(gr, 0.025, false, 5));
-    put('steel', tube(gr.map(([x, y, z]) => [x * 1.005, y - 0.36, z]), 0.012, false, 4));
-    for (const [x, y0, z, y1] of posts) for (const sx of [-1, 1]) put('steel', rod([sx * x, y0, z], [sx * x, y1, z], 0.02, 5));
+    put('steel', tube(gr, 0.025, false, 8));
+    put('steel', tube(gr.map(([x, y, z]) => [x * 1.005, y - 0.36, z]), 0.012, false, 6));
+    for (const [x, y0, z, y1] of posts) for (const sx of [-1, 1]) {
+      put('steel', rod([sx * x, y0, z], [sx * x, y1, z], 0.02, 8));
+      put('steel', new THREE.CylinderGeometry(0.035, 0.045, 0.03, 10).translate(sx * x, y0 + 0.015, z)); // its base
+    }
     const rz = 5.2;
-    put('orange', new THREE.TorusGeometry(0.3, 0.07, 6, 16).rotateY(Math.PI / 2).translate(side * (halfB(rz) - 0.02), deckY(rz) + 0.42, rz));
-    // fenders out on her other side, for the mark boats coming alongside
-    for (const z of [-0.5, 2.6]) put('navy', new THREE.CylinderGeometry(0.12, 0.12, 0.62, 10).translate(-side * (halfB(z) + 0.14), deckY(z) - 0.55, z));
+    put('orange', new THREE.TorusGeometry(0.3, 0.07, 10, 28).rotateY(Math.PI / 2).translate(side * (halfB(rz) - 0.02), deckY(rz) + 0.42, rz));
+    for (let k = 0; k < 4; k++) { // its four white reflective bands
+      const a = (k * Math.PI) / 2 + Math.PI / 4;
+      put('cushion', new THREE.TorusGeometry(0.068, 0.014, 6, 14).translate(0, 0.3, 0).applyMatrix4(new THREE.Matrix4().makeRotationX(a)).translate(side * (halfB(rz) - 0.02), deckY(rz) + 0.42, rz));
+    }
+    // fenders out on her other side, for the mark boats coming alongside: each hung on its line from the rail (under
+    // way, they're in)
+    const fenderGeo = new THREE.LatheGeometry([[0, -0.36], [0.06, -0.35], [0.11, -0.3], [0.125, -0.2], [0.125, 0.2], [0.11, 0.3], [0.06, 0.35], [0, 0.36]].map(([x, y]) => new THREE.Vector2(x, y)), 16);
+    for (const z of underway ? [] : [-0.5, 1.2, 2.9]) {
+      const fx = -side * (halfB(z) + 0.15), fy = deckY(z) - 0.58;
+      put('fender', fenderGeo.clone().translate(fx, fy, z));
+      put('rope', rod([fx, fy + 0.36, z], [-side * (halfB(z) - 0.08), deckY(z) + 0.36, z], 0.008, 4));
+    }
+    // cleats: at the bow, at the shoulders, amidships and on the quarters
+    for (const [cx, cz, ry] of [[0.45, -4.7, 0], [-0.45, -4.7, 0], [1, 0.4, 0], [-1, 0.4, 0], [1, 5.8, 0], [-1, 5.8, 0]]) {
+      const x = cx === Math.sign(cx) ? cx * (halfB(cz) - 0.18) : cx, gx = new THREE.Group();
+      cleat(0.26).forEach(([g, m]) => gx.add(new THREE.Mesh(g, m)));
+      gx.position.set(x, deckY(cz) + 0.02, cz); gx.rotation.y = ry; root.add(gx);
+    }
+    // the hatch on the foredeck: its alloy frame, the smoked acrylic in it
+    put('steel', new RoundedBoxGeometry(0.7, 0.05, 0.7, 2, 0.02).translate(0, deckY(-3.0) + 0.04, -3.0));
+    put('glass', new THREE.BoxGeometry(0.6, 0.02, 0.6).translate(0, deckY(-3.0) + 0.065, -3.0));
 
     // "RACE COMMITTEE" on banners lashed to the guardrails, both sides
     for (const sx of [-1, 1]) {
@@ -308,7 +463,15 @@ export class CommitteeBoat {
 
     // the anchor rode from the bow roller down into the sea ahead
     const bow = station(1);
-    put('steel', new THREE.BoxGeometry(0.14, 0.12, 0.55).translate(0, bow.sy - 0.02, bow.z - 0.1));
+    put('steel', new THREE.BoxGeometry(0.16, 0.1, 0.62).translate(0, bow.sy + 0.02, bow.z + 0.05)); // the bow roller's cheeks
+    put('steel', new THREE.CylinderGeometry(0.05, 0.05, 0.14, 12).rotateZ(Math.PI / 2).translate(0, bow.sy + 0.03, bow.z - 0.24)); // the roller
+    // the windlass on the foredeck, the chain from it to the roller, and the anchor home on the roller
+    put('steel', new THREE.CylinderGeometry(0.11, 0.13, 0.2, 16).translate(0, deckY(-5.3) + 0.1, -5.3));
+    put('steel', new THREE.CylinderGeometry(0.07, 0.07, 0.24, 16).rotateZ(Math.PI / 2).translate(0, deckY(-5.3) + 0.2, -5.3));
+    put('dark', rod([0, deckY(-5.3) + 0.12, -5.42], [0, bow.sy + 0.07, bow.z - 0.1], 0.02, 5));
+    const fluke = new THREE.ConeGeometry(0.16, 0.34, 3).scale(1, 1, 0.35).rotateX(Math.PI / 2).rotateZ(Math.PI);
+    put('steel', fluke.translate(0, bow.sy - 0.12, bow.z - 0.42));
+    put('steel', rod([0, bow.sy + 0.06, bow.z - 0.05], [0, bow.sy - 0.08, bow.z - 0.32], 0.025, 8)); // its shank
     if (!underway) {
       const rode = [];
       for (let i = 0; i <= 8; i++) { const u = i / 8; rode.push([0, lerp(bow.sy - 0.05, -0.6, u) - 0.5 * Math.sin(Math.PI * u) * 0.6, bow.z - 0.3 - u * 11]); }

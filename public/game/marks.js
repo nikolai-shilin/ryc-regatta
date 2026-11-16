@@ -5,7 +5,11 @@
 // the panels not quite one shade, the top bleached by the sun, slack creases low down where the pressure tells least,
 // the crimps at the top weld, black scuffs at rubbing-strake height where the boats have leant on it, and a greenish
 // film at the waterline with its streaks. R: its radius; it is 2.2 R tall above the water.
+// The sea is on it as it is on the yachts' hulls (yacht.js): the swell runs up and down its skirt and leaves the PVC
+// darker and glossier for a hand's width above it; under the water its skirt and its mooring line show through.
 import * as THREE from 'three';
+import { SEA } from './yacht.js';
+import { SWELL_GLSL } from './ocean.js';
 
 const PANELS = 8, SEGS = PANELS * 12;
 const TW = 1024, TH = 1024, NW = 512, NH = 512; // the colour and roughness textures; the normal map
@@ -165,6 +169,27 @@ function relief() {
   return t;
 }
 
+// the swell against it: the PVC dark and glossy up to a ragged line a hand above the water, which rises and falls as
+// the chop slaps round it (the same wave trains as the water's: yacht.js's SEA, which world.js points at them)
+function wetLine(m) {
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, SEA);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+      uniform float uTime; uniform vec4 uW[8]; uniform float uWs[8]; varying vec3 vWP;
+      ${SWELL_GLSL}
+      float markSea(vec2 xz) { float h = 0.0; for (int i = 0; i < 5; i++) h += uW[i].w * swellG(i, xz) * sin(uW[i].z * dot(uW[i].xy, xz) - uWs[i] * uTime + float(i) * 1.7); return h; }`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        float slap = 0.05 * sin(uTime * 2.3 + vWP.x * 1.7 + vWP.z * 2.1) + 0.03 * sin(uTime * 3.7 + vWP.x * 4.0 - vWP.z * 3.0);
+        float wet = 1.0 - smoothstep(-0.02, 0.1 + slap, vWP.y - markSea(vWP.xz));
+        diffuseColor.rgb *= 1.0 - 0.2 * wet;`)
+      .replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>
+        material.roughness = mix(material.roughness, 0.08, wet * 0.85); material.clearcoat = mix(material.clearcoat, 1.0, wet);`);
+  };
+  m.customProgramCacheKey = () => 'markWet';
+}
+
 let geo = null, normalMap = null;
 const looks = new Map();
 function body(color) {
@@ -191,15 +216,19 @@ function body(color) {
   }
   if (!looks.has(color)) {
     const { map, roughnessMap } = surface(color);
-    looks.set(color, new THREE.MeshPhysicalMaterial({
+    const m = new THREE.MeshPhysicalMaterial({
       map, roughnessMap, normalMap, normalScale: new THREE.Vector2(0.7, 0.7), roughness: 1, metalness: 0,
       clearcoat: 0.55, clearcoatRoughness: 0.18, envMapIntensity: 1.1, // the sheen of wet PVC
-    }));
+    });
+    m.userData.under = new THREE.Color(color).multiplyScalar(0.55).lerp(new THREE.Color('#4a5a2a'), 0.35); // its skirt under the water, filmed green
+    wetLine(m);
+    looks.set(color, m);
   }
   return new THREE.Mesh(geo, looks.get(color));
 }
 
 const rubber = new THREE.MeshStandardMaterial({ color: '#202327', roughness: 0.85 });
+const ropeMat = new THREE.MeshStandardMaterial({ color: '#6b6650', roughness: 0.9 });
 const steel = new THREE.MeshStandardMaterial({ color: '#c8ccd0', roughness: 0.25, metalness: 1 });
 export function buoy(color = '#ff7314', R = 1.05) {
   const g = new THREE.Group(), turn = new THREE.Group(); // turn: each mark set out with its scuffs somewhere else
@@ -223,6 +252,9 @@ export function buoy(color = '#ff7314', R = 1.05) {
     d.position.set(Math.cos(a) * 1.035 * R, 0.33 * R, Math.sin(a) * 1.035 * R);
     d.rotation.order = 'YXZ'; d.rotation.set(0.25, -a - Math.PI / 2, Math.PI); turn.add(d); // flat on the side, hanging
   }
+  // its mooring line, from the ring under its skirt down and away into the water
+  const moor = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([[0, BASE * R, 0], [0.15, BASE * R - 1.2, 0.05], [0.55, BASE * R - 3, 0.15], [1.1, BASE * R - 5, 0.3]].map((p) => new THREE.Vector3(...p))), 16, 0.02 * R, 5), ropeMat);
+  g.add(moor);
   g.userData.R = R;
   return g;
 }
