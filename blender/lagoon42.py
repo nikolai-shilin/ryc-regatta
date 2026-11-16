@@ -40,7 +40,7 @@ def smooth(e0, e1, x): t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 
 def t_at(z): return clamp((ZS - z) / L, 0, 1)    # 0 at the transom ... 1 at the stem
 def hb_d(t):     # a hull's half-breadth at the deck: full for most of her length, fine at the plumb stem
     if t < 0.55: return 0.86 + 0.08 * math.sin((t / 0.55) * math.pi / 2)
-    return 0.94 * max(0.0, math.cos(((t - 0.55) / 0.45) * math.pi / 2)) ** 0.85 + 0.015
+    return 0.94 * max(0.0, math.cos(((t - 0.55) / 0.45) * math.pi / 2)) ** 0.85 + 0.008
 def sheer(t): return 1.5 + 0.28 * t ** 2
 def knuckle(t): return 0.46 + 0.32 * t ** 1.2          # the knuckle's height: low aft, rising to the bow
 def hb_k(t): return hb_d(t) * 0.86                     # and its half-breadth: the topsides flare out above it
@@ -97,7 +97,7 @@ def hull_stations():
     zs = [6.40, 6.28, 6.17, 6.15, 6.05, 5.95, 5.93, 5.82, 5.72, 5.70, 5.58, 5.47]
     N = 76
     for i in range(N + 1):
-        t = 0.074 + (0.997 - 0.074) * (i / N) ** 0.92  # 5.45 forward to just short of the stem
+        t = 0.074 + (0.9992 - 0.074) * (i / N) ** 0.92  # 5.45 forward to just short of the stem
         zs.append(ZS - t * L)
     return zs
 def build_hull(bm, M, sx):
@@ -120,10 +120,17 @@ def build_hull(bm, M, sx):
             bm.faces.new(q if sx > 0 else tuple(reversed(q))).material_index = M['hull'] if j < nh - 1 else dm
     bm.faces.new(rings[0]).material_index = M['hull']                 # the transom under the platform
     bm.faces.new(list(reversed(rings[-1]))).material_index = M['hull']  # the stem's narrow face
+    # the knuckle and the reverse chine's flat are hard edges all the way to the stem, however shallow they get there
+    ns = nh // 2  # the keel's index: the half section's length
+    for j in (4 + KT, 5 + KT, 2 * ns - 4 - KT, 2 * ns - 5 - KT):
+        for i in range(len(rings) - 1):
+            e = bm.edges.get((rings[i][j], rings[i + 1][j]))
+            if e: e.smooth = False
 
 # ---------- the hull windows: two long slots a side in the outer topsides, tinted, on the hull's own surface ----------
 def build_hull_windows(bm, M, sx):
-    for z0, z1, h0, h1, y0 in ((-1.35, 2.75, 0.22, 0.2, 1.06), (-4.15, -2.25, 0.14, 0.2, 1.17)):
+    # the long window aft, the forward cabin's window, and a small portlight each in the forepeak and the aft cabin
+    for z0, z1, h0, h1, y0 in ((-1.35, 2.75, 0.22, 0.2, 1.06), (-4.15, -2.25, 0.14, 0.2, 1.17), (-5.35, -4.85, 0.1, 0.1, 1.33), (3.25, 3.75, 0.1, 0.1, 1.1)):
         NZ, NY = 40, 4
         grid = []
         for i in range(NZ + 1):
@@ -213,7 +220,7 @@ def build_bridgedeck(bm, M):
 # its foot from z = -2.42 (the front, on the centreline) to 1.85 (its aft face), its sides 3.02 out at the foot, 2.94 at
 # the top; the glass from WIN0 to WIN1 round its front and down its sides between pillars; its top at CR_TOP, under
 # the roof slab (3.12 - 3.26) that overhangs it
-CR_F, CR_A, CR_W, CR_TOP, WIN0, WIN1 = -2.42, 1.85, 3.02, 3.14, 2.3, 2.96
+CR_F, CR_A, CR_W, CR_TOP, WIN_F, WIN0, WIN1 = -2.42, 1.85, 3.02, 3.14, 2.0, 2.3, 2.96
 ROOF0, ROOF1 = 3.12, 3.26
 def cr_front(x, w, f): return f + 0.34 * (x / w) ** 2      # the front bowed: its corners further aft
 def cr_outline(u):
@@ -245,7 +252,7 @@ def cr_outline(u):
     ftag = stags + atags + list(reversed(stags[1:]))
     return full, ftag
 def build_saloon(bm, M):
-    hs = [1.45, None, 2.2, WIN0, 2.63, WIN1, 3.05, CR_TOP]
+    hs = [1.45, None, 1.93, WIN_F, 2.2, WIN0, 2.63, WIN1, 3.05, CR_TOP]
     levels, tags0 = [], None
     for li, h in enumerate(hs):
         u = (CR_TOP - 1.45) and ((h or 1.62) - 1.45) / (CR_TOP - 1.45)
@@ -255,7 +262,7 @@ def build_saloon(bm, M):
     o = [(p[0], p[2]) for p in levels[0]]
     if area(o) > 0: levels = [list(reversed(l)) for l in levels]; tags0 = list(reversed(tags0))
     def mat(i, k):
-        if not (3 <= i <= 4): return M['gel']  # the bands between WIN0 and WIN1 are the glass
+        if not (3 <= i <= 6): return M['gel']  # the bands between WIN_F (the front's) or WIN0 (the sides') and WIN1 are the glass
         a, b = levels[i][k], levels[i][(k + 1) % n]
         xm, zm = (a[0] + b[0]) / 2, (a[2] + b[2]) / 2
         ta, tb = tags0[k], tags0[(k + 1) % n]
@@ -263,6 +270,7 @@ def build_saloon(bm, M):
         ax = abs(xm)
         if tag == 'front': return M['gel'] if (0.86 < ax < 0.98) or (1.86 < ax < 1.98) else M['glass']
         if tag == 'corner': return M['glass']
+        if i < 5: return M['gel']  # the sides' and the aft face's glass from WIN0 up
         if tag == 'side': return M['gel'] if (-1.3 < zm < -1.18) or (-0.42 < zm < -0.3) or (0.55 < zm < 0.67) or zm > 1.38 else M['glass']
         if tag == 'aft': return M['glass'] if (1.45 < xm < 2.55) or (-2.55 < xm < -0.3) else M['gel']
         return M['gel']
@@ -307,9 +315,9 @@ def build_helm(bm, M):
     for k, (z0, z1, y) in enumerate(((2.86, 3.12, 1.84),)):
         edged_slab(bm, rounded_rect(2.3, 3.1, z0 - 0.02, z1, 0.06, 3), 1.45, y, M['gel'], M['gel'], M['teak'], 0.0, 0.015, 0.03)
     # the console against the saloon's aft face, its dash sloping down aft to the wheel
-    cz0, cz1 = h['z0'] - 0.02, 2.18
-    o = ccw(rounded_rect(2.3, 3.08, cz0, cz1, (0.02, 0.08, 0.08, 0.02), 3))
-    dash = lambda z: 3.02 - 0.3 * clamp((z - cz0) / (cz1 - cz0), 0, 1)
+    cz0, cz1 = h['z0'] - 0.02, 2.12
+    o = ccw(rounded_rect(2.36, 3.04, cz0, cz1, (0.02, 0.06, 0.06, 0.02), 3))
+    dash = lambda z: 2.98 - 0.24 * clamp((z - cz0) / (cz1 - cz0), 0, 1)
     levels = [[(x, h['y'] - 0.02, z) for x, z in o], [(x, dash(z) - 0.05, z) for x, z in o]]
     levels.append([(lerp(2.69, x, 0.97), dash(z) - 0.012, lerp((cz0 + cz1) / 2, z, 0.96)) for x, z in o])
     levels.append([(lerp(2.69, x, 0.9), dash(z), lerp((cz0 + cz1) / 2, z, 0.88)) for x, z in o])
@@ -418,9 +426,23 @@ def build_tender(bm, M):
     o = ccw(offset(ccw(o), -0.12))
     vs = loft(bm, [[(x, cy - 0.24, z) for x, z in offset(o, -0.25)], [(x, cy - 0.12, z) for x, z in o], [(x, cy - 0.05, z) for x, z in o]], lambda i, k: M['gel'], M['gel'], M['dark'])
     edged_slab(bm, rounded_rect(cx + Lt / 2 - 0.12, cx + Lt / 2 - 0.02, cz - Bt / 2 + 0.2, cz + Bt / 2 - 0.2, 0.02, 2), cy - 0.25, cy + 0.12, M['gel'], M['gel'], M['gel'], 0, 0, 0.02)
-    ox = cx + Lt / 2 + 0.05
-    edged_slab(bm, rounded_rect(ox - 0.04, ox + 0.36, cz - 0.17, cz + 0.17, 0.1, 4), cy + 0.05, cy + 0.42, M['dark'], M['dark'], M['dark'], 0.02, 0.05, 0.05)
-    edged_slab(bm, rounded_rect(ox + 0.02, ox + 0.14, cz - 0.05, cz + 0.05, 0.03, 2), cy - 0.45, cy + 0.07, M['dark'], M['dark'], M['dark'], 0.0, 0.0, 0.02)
+    # the outboard on her transom: its cowling, rounded, over the midsection and the clamp bracket; the leg, a foil,
+    # down to the cavitation plate, the gearcase's torpedo and the skeg under it
+    ox = cx + Lt / 2 + 0.02
+    def sect(xc, y, ax, az, p=2.6, n=16):
+        return [(xc + ax * math.copysign(abs(math.cos(a)) ** (2 / p), math.cos(a)), y, cz + az * math.copysign(abs(math.sin(a)) ** (2 / p), math.sin(a))) for a in (2 * math.pi * k / n for k in range(n))]
+    cow = [(0.06, 0.15, 0.12, 2.2), (0.1, 0.19, 0.15, 2.8), (0.32, 0.22, 0.16, 3.0), (0.43, 0.2, 0.15, 2.8), (0.49, 0.15, 0.115, 2.4), (0.515, 0.08, 0.06, 2.2)]
+    loft(bm, [sect(ox + 0.2 + 0.02 * (y > 0.3), cy + y, ax, az, p) for y, ax, az, p in cow], lambda i, k: M['dark'], M['dark'], M['dark'])
+    loft(bm, [sect(ox + 0.17, cy + y, ax, az, 2.4) for y, ax, az in ((-0.06, 0.08, 0.06), (0.08, 0.1, 0.075))], lambda i, k: M['dark'], M['dark'], M['dark'])
+    edged_slab(bm, rounded_rect(ox - 0.03, ox + 0.06, cz - 0.09, cz + 0.09, 0.02, 2), cy - 0.02, cy + 0.14, M['dark'], M['dark'], M['dark'], 0.0, 0.0, 0.015)
+    loft(bm, [sect(ox + 0.17, cy + y, 0.075, 0.028, 2.0, 12) for y in (-0.47, -0.05)], lambda i, k: M['dark'], M['dark'], M['dark'])
+    edged_slab(bm, rounded_rect(ox + 0.04, ox + 0.33, cz - 0.11, cz + 0.11, (0.02, 0.02, 0.08, 0.08), 3), cy - 0.405, cy - 0.39, M['dark'], M['dark'], M['dark'], 0.0, 0.0, 0.006)
+    tor = []
+    for i in range(9):
+        u = i / 8; x = lerp(ox + 0.05, ox + 0.36, u); r = 0.05 * math.sin(math.pi * clamp(u * 1.15, 0.05, 1)) ** 0.5 + 0.004
+        tor.append([(x, cy - 0.5 + r * math.cos(a), cz + r * math.sin(a)) for a in (2 * math.pi * k / 10 for k in range(10))])
+    loft(bm, tor, lambda i, k: M['dark'], M['dark'], M['dark'])
+    edged_slab(bm, rounded_rect(ox + 0.1, ox + 0.26, cz - 0.01, cz + 0.01, 0.005, 1), cy - 0.6, cy - 0.5, M['dark'], M['dark'], M['dark'], 0.0, 0.0, 0.005)
 
 def material(name, color, rough=0.5):
     m = bpy.data.materials.new(name); m.use_nodes = True

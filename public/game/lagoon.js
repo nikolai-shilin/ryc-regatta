@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { clamp, lerp } from './sim.js';
-import { hullMaterial, NONSKID, cleat, wheel, display, M as YM } from './yacht.js';
+import { hullMaterial, NONSKID, canvasTex, cleat, wheel, display, winch, block, clutches, chainplate, mastGeo, spreaderGeo, M as YM } from './yacht.js';
 import { CommitteeBoat, flagTexture, bannerTexture, finishes, RoundedBoxGeometry, tube, rod, Flag, officer } from './committee.js';
 
 // ---------- her lines (blender/lagoon42.py's) ----------
@@ -28,11 +28,16 @@ const halfB = (z) => hbD(tAt(z)); // a hull's half-breadth at the deck, about it
 const floorY = (z) => deckY(z) + 0.03; // the bridgedeck's top: the cockpit's sole, the deck forward of the saloon
 const CR_F = -2.42, CR_A = 1.85, ROOF1 = 3.26; // the saloon's front and aft faces, its roof's top
 const HT_A = 5.55, HT1 = 3.7; // the hardtop's aft edge, its top
+const NOTCH = { x: 1.95, z: 2.88 }; // the hatch in the hardtop over the helm: its inboard edge, its aft edge
+// the hulls' tops aft: the deck, then the transom's steps down to the swim platform
+const cutAt = (z) => (z <= 5.45 ? deckY(z) : z <= 5.7 ? 1.18 : z <= 5.93 ? 0.92 : z <= 6.15 ? 0.7 : 0.52);
 const HELM = { x: 2.67, y: 2.12, z: 2.4 }; // where the helmsman stands, on the raised station
 const BEAM_Z = -5.45, LONG_F = -6.2; // the crossbeam; the longeron's tip, where the forestay comes down
 const TD = { y: 1.22, z: 6.12, L: 2.9 }; // the tender on the davits
-const MZ = -1.5, MTOP = 21.0; // the mast's step on the saloon's roof; the masthead
-const SPR1 = { y: 10.0, w: 1.6, aft: 0.3 }, SPR2 = { y: 15.6, w: 1.1, aft: 0.22 }; // the spreaders: height, half-span, sweep
+const MZ = -0.55, MTOP = 21.0; // the mast's step on the saloon's roof, near its middle; the masthead
+const SPR1 = { y: 9.6, w: 1.55, aft: 0.32 }, SPR2 = { y: 15.0, w: 1.05, aft: 0.24 }; // the spreaders: height, half-span, sweep
+const bz0 = MZ + 0.2, bz1 = 5.2, by0 = 4.55, by1 = 4.72; // the boom: from the gooseneck to its end over the hardtop's aft edge
+const boomY = (z) => lerp(by0, by1, (z - bz0) / (bz1 - bz0));
 
 // her moulded parts, by material name, by the address the import map gives the file; the hulls' paint bands and the
 // plan-in-metres UVs of what takes a texture. If it doesn't come in 8 s she isn't sent out (lagoonReady false) and
@@ -110,6 +115,23 @@ function netTexture() {
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / 0.24, 1 / 0.24); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
   return t;
 }
+// the jib rolled on its foil: the sacrificial strip's navy round it, a seam and a darker band spiralling up it
+const JIB = canvasTex(64, 128, (x, w, h) => {
+  x.fillStyle = '#2d4262'; x.fillRect(0, 0, w, h);
+  for (let k = -2; k < 4; k++) {
+    x.fillStyle = 'rgba(15,25,40,.35)'; x.beginPath(); x.moveTo(0, k * 48); x.lineTo(w, k * 48 + 40); x.lineTo(w, k * 48 + 52); x.lineTo(0, k * 48 + 12); x.fill();
+    x.fillStyle = 'rgba(210,220,235,.22)'; x.beginPath(); x.moveTo(0, k * 48 + 24); x.lineTo(w, k * 48 + 64); x.lineTo(w, k * 48 + 66); x.lineTo(0, k * 48 + 26); x.fill();
+  }
+}, 1, 14);
+// the stack pack's canvas: its zip down the top, the seams where the lazy jacks are sewn in
+const BAG = canvasTex(128, 256, (x, w, h) => {
+  x.fillStyle = '#2b3a52'; x.fillRect(0, 0, w, h);
+  x.fillStyle = 'rgba(255,255,255,.07)'; for (let v = 0; v < h; v += 32) x.fillRect(0, v, w, 2);
+  x.fillStyle = 'rgba(0,0,0,.25)'; for (let u = 18; u < w; u += 28) x.fillRect(u, 0, 1, h);
+  x.fillStyle = '#15191f'; x.fillRect(0, 0, 4, h); x.fillRect(w - 4, 0, 4, h);
+  x.fillStyle = '#9aa3ad'; x.fillRect(0, 0, 1, h); x.fillRect(w - 1, 0, 1, h);
+});
+
 let LF = null;
 function lagoonFinishes() {
   const F = finishes();
@@ -122,9 +144,16 @@ function lagoonFinishes() {
     dark: new THREE.MeshStandardMaterial({ color: '#202429', roughness: 0.5 }),
     // her mast and boom in white paint, a clear coat over it
     spar: new THREE.MeshPhysicalMaterial({ color: '#eceeee', roughness: 0.35, clearcoat: 0.7, clearcoatRoughness: 0.15, envMapIntensity: 0.9 }),
-    // the stack pack's canvas, and the furled jib's sacrificial strip
-    bag: new THREE.MeshStandardMaterial({ color: '#2b3a52', roughness: 0.9 }),
-    strip: new THREE.MeshStandardMaterial({ color: '#33465f', roughness: 0.85 }),
+    // the stack pack's canvas, the furled jib, the bimini over the helm
+    bag: new THREE.MeshStandardMaterial({ map: BAG, roughness: 0.92 }),
+    jib: new THREE.MeshStandardMaterial({ map: JIB, roughness: 0.85 }),
+    canvas: new THREE.MeshStandardMaterial({ color: '#3a4554', roughness: 0.9, side: THREE.DoubleSide }),
+    // her cushions: a grey-taupe outdoor fabric
+    cushion: new THREE.MeshStandardMaterial({ color: '#a69e8e', roughness: 0.95 }),
+    // the lights: the masthead's and the spreaders' white lenses, the bow lights' red and green
+    lamp: new THREE.MeshPhysicalMaterial({ color: '#f4f2ea', roughness: 0.15, clearcoat: 1, emissive: '#ffffff', emissiveIntensity: 0.05 }),
+    port: new THREE.MeshStandardMaterial({ color: '#c0161a', roughness: 0.2, emissive: '#c0161a', emissiveIntensity: 0.25 }),
+    starboard: new THREE.MeshStandardMaterial({ color: '#0e9a3a', roughness: 0.2, emissive: '#0e9a3a', emissiveIntensity: 0.25 }),
     // the solar panels on the hardtop: dark cells under glass, the sky in it
     solar: new THREE.MeshPhysicalMaterial({ color: '#141c2a', roughness: 0.1, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.3 }),
     rail: new THREE.MeshStandardMaterial({ color: '#4a5058', roughness: 0.5 }), // the rubbing strakes
@@ -132,20 +161,21 @@ function lagoonFinishes() {
 }
 
 // a surface lofted through sections of n points each, closed round; the ends capped
-function loftGeometry(secs, capped = true) {
-  const n = secs[0].length, pos = [], idx = [];
-  for (const s of secs) for (const p of s) pos.push(...p);
+function loftGeometry(secs, capped = true, uvs = false) { // uvs: u round each section (its seam at its first point), v along
+  const m = uvs ? secs[0].length + 1 : secs[0].length, n = secs[0].length, pos = [], uv = [], idx = [];
+  secs.forEach((s, i) => { for (let k = 0; k < m; k++) { pos.push(...s[k % n]); uv.push(k / n, i / (secs.length - 1)); } });
   for (let i = 0; i < secs.length - 1; i++) for (let k = 0; k < n; k++) {
-    const a = i * n + k, b = i * n + ((k + 1) % n), c = a + n, d = b + n;
+    const a = i * m + k, b = i * m + (uvs ? k + 1 : (k + 1) % n), c = a + m, d = b + m;
     idx.push(a, c, b, b, c, d);
   }
   if (capped) for (const [i, flip] of [[0, true], [secs.length - 1, false]]) {
-    const ctr = secs[i].reduce((m, p) => [m[0] + p[0] / n, m[1] + p[1] / n, m[2] + p[2] / n], [0, 0, 0]);
-    const ci = pos.length / 3; pos.push(...ctr);
-    for (let k = 0; k < n; k++) { const a = i * n + k, b = i * n + ((k + 1) % n); idx.push(...(flip ? [ci, b, a] : [ci, a, b])); }
+    const ctr = secs[i].reduce((q, p) => [q[0] + p[0] / n, q[1] + p[1] / n, q[2] + p[2] / n], [0, 0, 0]);
+    const ci = pos.length / 3; pos.push(...ctr); uv.push(0.5, i ? 1 : 0);
+    for (let k = 0; k < n; k++) { const a = i * m + k, b = i * m + (uvs ? k + 1 : (k + 1) % n); idx.push(...(flip ? [ci, b, a] : [ci, a, b])); }
   }
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx); g.computeVertexNormals();
   return g;
 }
 // a cone from a (radius ra) to b (radius rb)
@@ -169,12 +199,18 @@ export class LagoonCommittee {
     this.bottom = BOTTOM; this.roll = 0.16; this.pitch = 0.3;
     const F = finishes(), G = lagoonFinishes();
     const M = {
-      ...G, gel: F.gel, glass: F.glass, steel: YM.steel, cushion: F.cushion, rope: F.rope, fender: F.fender, wood: YM.teak,
+      ...G, gel: F.gel, glass: F.glass, steel: YM.steel, rope: F.rope, fender: F.fender, wood: YM.teak,
       orange: new THREE.MeshStandardMaterial({ color: '#ff6a10', roughness: 0.55 }),
       banner: new THREE.MeshStandardMaterial({ map: bannerTexture(), roughness: 0.8, side: THREE.DoubleSide }),
     };
     const bin = {}; // static parts, merged per material
     const put = (k, g) => (bin[k] ||= []).push(g);
+    // yacht.js's fittings ([geometry, material] parts in their own frame), placed and folded in by material
+    const mbin = new Map();
+    const bake = (parts, x, y, z, ry = 0, rx = 0) => {
+      const mx = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, 0, 'YXZ')), new THREE.Vector3(1, 1, 1));
+      for (const [g, mat] of parts) { if (!mbin.has(mat)) mbin.set(mat, []); mbin.get(mat).push(g.clone().applyMatrix4(mx)); }
+    };
     const lines = [];
 
     // the moulded parts; the hulls in yacht.js's paint, a charcoal boot-top and cove line, her own wet line
@@ -261,19 +297,39 @@ export class LagoonCommittee {
       const gr = [[hx * 1.65, ROOF1, -1.6], [hx * 1.65, ROOF1 + 0.08, -1.5], [hx * 1.65, ROOF1 + 0.08, 0.9], [hx * 1.65, ROOF1, 1.0]];
       put('steel', tube(gr, 0.016, false, 6));
     }
-    // ---- on the hardtop: four solar panels, the mainsheet's traveller ----
+    // ---- on the hardtop: four solar panels ----
     for (const px of [-2.25, -0.75, 0.75, 2.25]) {
       put('steel', new THREE.BoxGeometry(1.38, 0.03, 1.55).translate(px, HT1 + 0.025, 4.0));
       put('solar', new THREE.BoxGeometry(1.32, 0.02, 1.49).translate(px, HT1 + 0.045, 4.0));
     }
-    put('steel', new THREE.BoxGeometry(2.6, 0.04, 0.08).translate(0, HT1 + 0.03, 2.75));
-    put('dark', new THREE.BoxGeometry(0.16, 0.08, 0.12).translate(0, HT1 + 0.08, 2.75));
-    // ---- the helm: its wheel, the screen and the throttles on the console ----
+    // ---- the helm: its wheel, the plotter and the throttles on the console; the winches and the clutches on the
+    // saloon roof's aft edge beside it, where every line from the mast comes; the bimini over the helm's hatch ----
     const w = wheel(0.34, 6, YM.dark, YM.steel);
-    w.rotation.x = -0.35; w.position.set(2.69, 2.72, 2.27); root.add(w);
-    const disp = new THREE.Group(); display(0.32, 0.22, 3).forEach(([g, m]) => disp.add(new THREE.Mesh(g, m)));
-    disp.rotation.x = -0.9; disp.position.set(2.5, 2.92, 2.05); root.add(disp);
-    for (const dx of [2.95, 3.02]) put('steel', rod([dx, 2.86, 2.1], [dx, 2.98, 2.15], 0.01, 6));
+    w.rotation.x = -0.35; w.position.set(2.7, 2.7, 2.22); root.add(w);
+    bake(display(0.34, 0.24, 3), 2.52, 2.88, 2.0, 0, -0.85);
+    bake(display(0.2, 0.14, 0), 2.92, 2.9, 1.98, 0, -0.85);
+    for (const dx of [2.9, 2.97]) put('steel', rod([dx, 2.82, 2.08], [dx, 2.95, 2.12], 0.01, 6));
+    for (const wx of [1.62, 2.02]) bake(winch(0.07, 0.17), wx, ROOF1 + 0.005, 1.62);
+    bake(clutches(5), 1.0, ROOF1 + 0.005, 1.45);
+    for (let k = 0; k < 5; k++) { // the halyards and reefing lines from the mast's foot aft over the roof to the clutches
+      const x0 = 0.12 + k * 0.04, x1 = 1.0 + (k - 2) * 0.075;
+      lines.push(x0 * 0.6, ROOF1 + 0.35, MZ + 0.15, x0, ROOF1 + 0.03, MZ + 0.5, x0, ROOF1 + 0.03, MZ + 0.5, x1, ROOF1 + 0.03, 1.25);
+    }
+    { // the bimini: its canvas over two stainless bows, a little domed
+      const x0 = NOTCH.x - 0.02, x1 = 3.2, z0 = 1.6, z1 = NOTCH.z + 0.04, yb = HT1 + 0.52, pos = [], idx = [], NX = 8, NZ = 6;
+      for (let i = 0; i <= NZ; i++) for (let j = 0; j <= NX; j++) {
+        const u = j / NX, v = i / NZ;
+        pos.push(lerp(x0, x1, u), yb + 0.08 * Math.sin(Math.PI * u) - 0.05 * Math.abs(2 * v - 1) ** 3, lerp(z0, z1, v));
+      }
+      for (let i = 0; i < NZ; i++) for (let j = 0; j < NX; j++) { const a0 = i * (NX + 1) + j; idx.push(a0, a0 + NX + 1, a0 + 1, a0 + 1, a0 + NX + 1, a0 + NX + 2); }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+      put('canvas', g);
+      for (const z of [z0 + 0.06, z1 - 0.06]) {
+        const bow = [];
+        for (let j = 0; j <= 8; j++) { const u = j / 8; bow.push([lerp(x0 + 0.02, x1 - 0.02, u), yb - 0.02 + 0.08 * Math.sin(Math.PI * u) - 0.05, z]); }
+        put('steel', tube([[x0 + 0.02, HT1, z], ...bow, [x1 - 0.02, HT1, z]], 0.014, false, 6));
+      }
+    }
     // ---- the davits: an arm from each side of the aft beam, the tender hung on them ----
     for (const dx of [-1.05, 1.05]) {
       const a = [dx, floorY(5.5) + 0.5, 5.48], b = [dx, 2.32, 5.9], c = [dx, 2.36, 6.18];
@@ -281,69 +337,101 @@ export class LagoonCommittee {
       put('steel', new THREE.CylinderGeometry(0.05, 0.05, 0.08, 10).rotateZ(Math.PI / 2).translate(dx, 2.32, 6.18));
       lines.push(dx, 2.3, 6.18, dx * 0.9, TD.y + 0.18, TD.z);
     }
+    // ---- the rails down the transom steps, inboard, and the navigation lights on the bow pulpits ----
+    for (const sx of [-1, 1]) {
+      const xi = (z) => sx * (XC - halfB(z) + 0.14);
+      const rail = [[xi(5.2), deckY(5.2) + 0.78, 5.2], [xi(5.5), 1.18 + 0.8, 5.6], [xi(5.85), 0.92 + 0.8, 5.85], [xi(6.1), 0.7 + 0.8, 6.08], [xi(6.25), 0.52 + 0.75, 6.25]];
+      put('steel', tube(rail, 0.017, false, 8));
+      for (const [x, y, z] of [rail[0], rail[2], rail[4]]) put('steel', rod([x, y, z], [x, cutAt(z), z], 0.016, 6));
+      const nz = -6.08, nx = sx * (XC + halfB(nz) * 0.4), ny = deckY(nz) + 0.68;
+      put(sx > 0 ? 'starboard' : 'port', new RoundedBoxGeometry(0.07, 0.06, 0.1, 1, 0.01).translate(nx + sx * 0.03, ny + 0.04, nz));
+      put('dark', new THREE.BoxGeometry(0.05, 0.075, 0.12).translate(nx + sx * 0.005, ny + 0.04, nz));
+      // the trampoline laced to the hull along its inner edge
+      const lace = [];
+      for (let i = 0; i <= 24; i++) {
+        const z = lerp(-5.33, -3.3, i / 24), xe = sx * (XC - halfB(z));
+        lace.push(xe + sx * (i % 2 ? 0.0 : 0.05), deckY(z) - (i % 2 ? 0.06 : 0.09), z);
+      }
+      for (let i = 0; i < lace.length - 3; i += 3) lines.push(lace[i], lace[i + 1], lace[i + 2], lace[i + 3], lace[i + 4], lace[i + 5]);
+      put('dark', tube(Array.from({ length: 9 }, (_, i) => { const z = lerp(-5.33, -3.3, i / 8); return [sx * (XC - halfB(z) + 0.05), deckY(z) - 0.09, z]; }), 0.013, false, 5));
+    }
 
     // ---- the rig ----
-    // the mast: a pear section, deeper fore and aft than wide, tapering to the masthead
-    const mastSecs = [];
-    for (let i = 0; i <= 8; i++) {
-      const u = i / 8, y = lerp(ROOF1, MTOP, u), k = 1 - 0.38 * Math.max(0, (u - 0.55) / 0.45) ** 1.5;
-      const ring = [];
-      for (let j = 0; j < 14; j++) { const a = (j / 14) * Math.PI * 2; ring.push([Math.sin(a) * 0.09 * k, y, MZ - Math.cos(a) * 0.16 * k * (Math.cos(a) > 0 ? 1 : 0.8)]); }
-      mastSecs.push(ring);
-    }
-    put('spar', loftGeometry(mastSecs));
-    put('steel', new THREE.BoxGeometry(0.3, 0.1, 0.42).translate(0, ROOF1 + 0.05, MZ)); // its step
-    // two pairs of spreaders, swept aft; the shrouds over their tips to the chainplates on the hulls' decks
+    // the mast: a pear section, deeper fore and aft than wide, tapering above the upper spreaders; stepped on the
+    // saloon's roof near its middle, further aft than most cruising cats, as the 42's is
+    put('spar', mastGeo(MTOP - ROOF1, 0.3, 0.17, 0.17, 0.11, 0.72).translate(0, (ROOF1 + MTOP) / 2, MZ));
+    put('steel', new RoundedBoxGeometry(0.34, 0.12, 0.46, 2, 0.03).translate(0, ROOF1 + 0.06, MZ)); // its step
+    put('dark', new THREE.BoxGeometry(0.2, 0.14, 0.12).translate(0, by0 + 0.02, MZ + 0.2)); // the gooseneck
+    // two pairs of spreaders, swept aft, aerofoil struts; their lights under the lower pair
     const tip = (S, sx) => [sx * S.w, S.y, MZ + S.aft];
     for (const S of [SPR1, SPR2]) for (const sx of [-1, 1]) {
-      put('spar', taper([sx * 0.08, S.y, MZ], tip(S, sx), 0.04, 0.02, 8));
+      const r0 = [sx * 0.08, S.y, MZ], t1 = tip(S, sx), len = Math.hypot(t1[0] - r0[0], t1[2] - r0[2]);
+      put('spar', spreaderGeo(len, 0.03, 0.018).rotateZ(-sx * Math.PI / 2).rotateY(-sx * Math.atan2(S.aft, S.w - 0.08)).translate((r0[0] + t1[0]) / 2, S.y, (r0[2] + t1[2]) / 2));
     }
-    const chain = (sx) => [sx * 3.25, deckY(-0.9) + 0.03, -0.9];
+    for (const sx of [-1, 1]) put('lamp', new THREE.BoxGeometry(0.06, 0.03, 0.08).translate(sx * 0.35, SPR1.y - 0.04, MZ + 0.07));
+    put('lamp', new THREE.BoxGeometry(0.1, 0.05, 0.05).translate(0, 11.2, MZ - 0.17)); // the steaming light
+    // the shrouds: the caps over both spreaders' tips to the hounds, the intermediates over the lower ones, the lowers;
+    // all to chainplates on the hulls' decks a little aft of the mast
+    const hounds = 18.4, chain = (sx) => [sx * 3.3, deckY(MZ + 0.7) + 0.03, MZ + 0.7], chainL = (sx) => [sx * 3.08, deckY(MZ + 0.25) + 0.03, MZ + 0.25];
     for (const sx of [-1, 1]) {
-      const c = chain(sx), a = tip(SPR1, sx), b = tip(SPR2, sx);
-      lines.push(...c, ...a, ...a, ...b, ...b, 0, MTOP - 1.6, MZ); // the cap shroud
+      const c = chain(sx), cl = chainL(sx), a = tip(SPR1, sx), b = tip(SPR2, sx);
+      lines.push(...c, ...a, ...a, ...b, ...b, 0, hounds, MZ); // the cap shroud
       lines.push(...c, ...a, ...a, 0, SPR2.y - 0.1, MZ); // the intermediate
-      lines.push(sx * 2.9, deckY(-1.6) + 0.03, -1.7, 0, SPR1.y - 0.15, MZ); // the lower
-      put('steel', rod(c, [c[0] - sx * 0.02, c[1] + 0.32, c[2]], 0.016, 6));
+      lines.push(...cl, 0, SPR1.y - 0.15, MZ); // the lower
+      bake(chainplate(c, a), 0, 0, 0); bake(chainplate(cl, [0, SPR1.y, MZ]), 0, 0, 0);
     }
-    // the forestay to the longeron's tip, the jib furled round it, its drum
-    const tack = [0, ty + 0.2, LONG_F + 0.12], head = [0, MTOP - 1.4, MZ - 0.12];
+    // the forestay from the hounds to the longeron's tip, the jib furled round it over its drum; its sheet from the
+    // furled clew to the car on the self-tacking track across the roof ahead of the mast, and on to the mast's foot
+    const tack = [0, ty + 0.2, LONG_F + 0.12], head = [0, hounds, MZ - 0.14];
     lines.push(...tack, ...head);
-    put('dark', new THREE.CylinderGeometry(0.11, 0.11, 0.2, 14).translate(...tack).translate(0, 0.1, 0));
+    put('dark', new THREE.CylinderGeometry(0.12, 0.12, 0.2, 16).translate(...tack).translate(0, 0.1, 0));
     const dir = new THREE.Vector3(...head).sub(new THREE.Vector3(...tack)), fl = dir.length(); dir.normalize();
     const along = (u) => [tack[0] + dir.x * fl * u, tack[1] + dir.y * fl * u, tack[2] + dir.z * fl * u];
-    put('strip', taper(along(0.05), along(0.42), 0.12, 0.09, 12));
-    put('strip', taper(along(0.42), along(0.86), 0.09, 0.05, 12));
-    for (let k = 1; k <= 7; k++) put('strip', taper(along(0.05 + k * 0.1), along(0.05 + k * 0.1 + 0.012), 0.125 - k * 0.008, 0.125 - k * 0.008, 12)); // the wraps' edges
-    // the boom, the mainsail stowed in its bag along the top of it, the lazy jacks that hold the bag up
-    const bz0 = MZ + 0.2, bz1 = 4.55, by0 = 4.6, by1 = 4.78;
-    const boomY = (z) => lerp(by0, by1, (z - bz0) / (bz1 - bz0));
-    put('spar', new RoundedBoxGeometry(0.14, 0.26, bz1 - bz0, 2, 0.05).rotateX(-Math.atan2(by1 - by0, bz1 - bz0)).translate(0, (by0 + by1) / 2, (bz0 + bz1) / 2));
-    put('spar', rod([0, ROOF1 + 1.0, MZ + 0.15], [0, by0 - 0.05, bz0 + 0.6], 0.03, 8)); // the vang
+    put('jib', taper(along(0.03), along(0.3), 0.1, 0.125, 16));
+    put('jib', taper(along(0.3), along(0.75), 0.125, 0.075, 16));
+    put('jib', taper(along(0.75), along(0.93), 0.075, 0.03, 16));
+    const trackR = 4.6, track = [];
+    for (let i = 0; i <= 12; i++) { const x = lerp(-1.4, 1.4, i / 12); track.push([x, ROOF1 + 0.025, tack[2] + Math.sqrt(trackR * trackR - x * x)]); }
+    put('steel', tube(track, 0.022, false, 6));
+    const car = [0, ROOF1 + 0.06, tack[2] + trackR];
+    put('dark', new RoundedBoxGeometry(0.12, 0.06, 0.1, 1, 0.015).translate(...car));
+    const clew = along(0.07);
+    lines.push(clew[0] + 0.05, clew[1], clew[2] + 0.1, ...car, ...car, 0.1, ROOF1 + 0.3, MZ - 0.15);
+    // the boom, high over the hardtop; the mainsail stowed in its bag on it, held up by the lazy jacks; the mainsheet's
+    // tackle down to its traveller on the hardtop's aft end, and the topping lift
+    put('spar', new RoundedBoxGeometry(0.15, 0.27, bz1 - bz0, 2, 0.05).rotateX(-Math.atan2(by1 - by0, bz1 - bz0)).translate(0, (by0 + by1) / 2, (bz0 + bz1) / 2));
+    put('dark', new RoundedBoxGeometry(0.17, 0.25, 0.12, 2, 0.03).translate(0, by1, bz1 + 0.02)); // its end fitting
+    const bagTop = (z) => { const u = clamp((z - bz0) / (bz1 - bz0), 0, 1); return boomY(z) + 0.1 + lerp(0.78, 0.36, u) * (1 - 0.65 * (1 - Math.min(1, (u + 0.05) * 7)) ** 2); };
     const bag = [];
-    for (let i = 0; i <= 14; i++) {
-      const u = i / 14, z = lerp(bz0 + 0.05, bz1 - 0.15, u), hw = lerp(0.3, 0.2, u), hh = lerp(0.62, 0.32, u) * (1 - 0.6 * (1 - Math.min(1, (u + 0.08) * 6)) ** 2);
-      const yb = boomY(z) + 0.12, ring = [];
-      for (let j = 0; j < 16; j++) {
-        const a = (j / 16) * Math.PI * 2, cx = Math.sin(a), cy = Math.cos(a);
-        const sq = Math.sign(cx) * Math.abs(cx) ** 0.6, h = cy > 0 ? yb + hh * cy ** 0.8 : yb + 0.03 * cy;
-        ring.push([sq * hw * (cy > 0 ? 1 - 0.35 * cy ** 3 : 1), h, z]);
+    for (let i = 0; i <= 18; i++) {
+      const u = i / 18, z = lerp(bz0 + 0.04, bz1 - 0.08, u), y0 = boomY(z) + 0.1, h = bagTop(z) - y0, hw = lerp(0.22, 0.16, u) * (1 - 0.5 * (1 - Math.min(1, u * 9)) ** 2), ring = [];
+      for (let j = 0; j < 20; j++) {
+        const a = (j / 20) * Math.PI * 2, cx = Math.sin(a), cy = Math.cos(a); // a = 0 at the top, along its zip
+        const yy = y0 + h * (0.5 + 0.5 * Math.sign(cy) * Math.abs(cy) ** 0.55), f = (yy - y0) / Math.max(h, 0.01);
+        ring.push([Math.sign(cx) * Math.abs(cx) ** 0.5 * hw * (0.5 + 0.5 * Math.sin(Math.PI * Math.min(1, f * 1.15 + 0.1))), yy, z]);
       }
       bag.push(ring);
     }
-    put('bag', loftGeometry(bag));
-    put('dark', new THREE.BoxGeometry(0.04, 0.02, bz1 - bz0 - 0.3).translate(0, boomY((bz0 + bz1) / 2) + 0.12 + 0.62 * 0.8, (bz0 + bz1) / 2 - 0.1)); // its zip
-    for (const sx of [-1, 1]) for (const z of [0.6, 2.4]) {
-      const hh = lerp(0.62, 0.32, (z - bz0) / (bz1 - bz0));
-      lines.push(sx * 0.25, boomY(z) + 0.12 + hh * 0.5, z, sx * 0.3, 8.0, MZ + 0.15);
+    put('bag', loftGeometry(bag, true, true));
+    for (const sx of [-1, 1]) {
+      const legs = [0.5, 1.9, 3.4].map((z) => [sx * 0.19, bagTop(z) - 0.06, z]), j1 = [sx * 0.42, 6.6, 0.9], j2 = [sx * 0.3, 7.6, 2.2], top = [sx * 0.12, 8.6, MZ + 0.12];
+      lines.push(...legs[0], ...j1, ...legs[1], ...j1, ...j1, ...top, ...legs[1], ...j2, ...legs[2], ...j2, ...j2, ...top);
     }
-    // the mainsheet from the boom down to its traveller, and the topping lift
-    lines.push(0, by0 + 0.02, 2.75, 0, HT1 + 0.1, 2.75);
-    lines.push(0, by1, bz1 - 0.05, 0, MTOP - 0.1, MZ + 0.05);
-    // at the masthead: the wind vane, the VHF aerial, the light
-    put('dark', new THREE.CylinderGeometry(0.008, 0.008, 1.0, 4).translate(0.05, MTOP + 0.5, MZ));
-    put('steel', rod([0, MTOP + 0.05, MZ], [0, MTOP + 0.05, MZ + 0.45], 0.008, 4));
-    put('dark', new THREE.BoxGeometry(0.01, 0.14, 0.22).translate(0, MTOP + 0.12, MZ + 0.5));
+    const ms = [0, HT1 + 0.08, 5.05], mb = [0, boomY(5.05) - 0.16, 5.05];
+    put('steel', new THREE.BoxGeometry(2.8, 0.035, 0.07).translate(0, HT1 + 0.02, 5.05)); // the traveller
+    put('dark', new RoundedBoxGeometry(0.16, 0.05, 0.1, 1, 0.015).translate(0, HT1 + 0.055, 5.05));
+    bake(block(0.05), ...mb); bake(block(0.05), ...ms);
+    for (let k = 0; k < 4; k++) { const dx = (k - 1.5) * 0.022; lines.push(dx, mb[1] - 0.04, 5.05, dx, ms[1] + 0.05, 5.05); }
+    lines.push(0, by1, bz1, 0, MTOP - 0.1, MZ + 0.05);
+    // at the masthead: its crane, the tricolour and anchor light, the wind vane on its stalk, the wind sensor, the VHF whip
+    put('spar', new RoundedBoxGeometry(0.14, 0.12, 0.42, 2, 0.03).translate(0, MTOP + 0.04, MZ + 0.08));
+    put('lamp', new THREE.CylinderGeometry(0.04, 0.045, 0.12, 10).translate(0, MTOP + 0.16, MZ - 0.02));
+    put('steel', rod([0, MTOP + 0.06, MZ + 0.25], [0, MTOP + 0.4, MZ + 0.42], 0.008, 4));
+    put('dark', new THREE.BoxGeometry(0.008, 0.02, 0.36).translate(0, MTOP + 0.42, MZ + 0.42)); // the vane's arrow
+    for (const sx of [-1, 1]) put('dark', new THREE.BoxGeometry(0.006, 0.12, 0.1).translate(sx * 0.03, MTOP + 0.42, MZ + 0.58));
+    put('steel', rod([0.05, MTOP + 0.06, MZ + 0.2], [0.05, MTOP + 0.35, MZ + 0.2], 0.008, 4));
+    put('dark', new THREE.CylinderGeometry(0.045, 0.045, 0.06, 10).translate(0.05, MTOP + 0.38, MZ + 0.2));
+    put('dark', new THREE.CylinderGeometry(0.006, 0.008, 1.0, 4).translate(-0.06, MTOP + 0.55, MZ + 0.1));
 
     // ---- the signals ----
     // the four signal halyards from blocks on the lower spreaders down to the saloon's roof. Starboard outer: the
@@ -365,9 +453,9 @@ export class LagoonCommittee {
     this.burgee.pivot.position.set(0, MTOP + 0.95, MZ); root.add(this.burgee.pivot);
     put('dark', new THREE.CylinderGeometry(0.01, 0.01, 0.95, 4).translate(0, MTOP + 0.48, MZ));
     // the black ball forward of the mast, the day shape of a vessel at anchor
-    const ballY = 7.6, ballZ = MZ - 1.2;
+    const ballY = 7.4, ballZ = MZ - 1.45;
     put('dark', new THREE.SphereGeometry(0.3, 12, 9).translate(0, ballY, ballZ));
-    lines.push(0, ballY + 0.3, ballZ, 0, SPR1.y - 0.2, MZ - 0.1, 0, ballY - 0.3, ballZ, 0, floorY(-2.8) + 0.05, -2.8);
+    lines.push(0, ballY + 0.3, ballZ, 0, SPR1.y - 0.2, MZ - 0.12, 0, ballY - 0.3, ballZ, 0, ROOF1 + 0.02, -2.1);
     // the orange flag on its staff at the stern of the hull nearer the line: her end of the starting line
     const oz = clamp(lineZ, 3.6, 4.6), ox = side * (XC + halfB(oz) - 0.12), oy = deckY(oz);
     put('steel', rod([ox, oy, oz], [ox, oy + 3.6, oz], 0.03, 6));
@@ -383,7 +471,7 @@ export class LagoonCommittee {
       { at: [side * 0.75, ROOF1, MZ + 0.75], jacket: '#c8342b', pose: 'halyard', yaw: face },
       { at: [side * (XC + halfB(oz) - 0.55), oy, oz + 0.5], jacket: '#ff7a1a', pose: 'glasses', yaw: face - side * 0.35 },
       { at: [side > 0 ? 1.0 : -0.3, floorY(4.6), 4.6], jacket: '#1d3557', pose: 'horn', yaw: face + side * 0.25 },
-      { at: [-side * 1.1, ROOF1, 0.6], jacket: '#f2f1ec', pose: 'board', yaw: face + side * 0.5 },
+      { at: [-side * 1.45, ROOF1, 1.2], jacket: '#f2f1ec', pose: 'board', yaw: face + side * 0.5 },
     ];
     crew.forEach((c, i) => {
       const s = officer(i, c.jacket, c.pose);
@@ -392,10 +480,9 @@ export class LagoonCommittee {
     });
 
     // put it together
-    for (const [k, gs] of Object.entries(bin)) {
-      const g = mergeGeometries(gs.map((x) => (x.index ? x.toNonIndexed() : x)).map((x) => { for (const n of Object.keys(x.attributes)) if (!['position', 'normal', 'uv'].includes(n)) x.deleteAttribute(n); if (!x.attributes.uv) x.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(x.attributes.position.count * 2), 2)); return x; }));
-      root.add(new THREE.Mesh(g, M[k]));
-    }
+    const plain = (x) => { x = x.index ? x.toNonIndexed() : x; for (const n of Object.keys(x.attributes)) if (!['position', 'normal', 'uv'].includes(n)) x.deleteAttribute(n); if (!x.attributes.uv) x.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(x.attributes.position.count * 2), 2)); return x; };
+    for (const [k, gs] of Object.entries(bin)) root.add(new THREE.Mesh(mergeGeometries(gs.map(plain)), M[k]));
+    for (const [mat, gs] of mbin) root.add(new THREE.Mesh(mergeGeometries(gs.map(plain)), mat));
     const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
     root.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: '#3a3f46' })));
     root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = !o.material.alphaTest; } });
