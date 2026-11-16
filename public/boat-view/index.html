@@ -208,19 +208,47 @@ if (world) {
   const DOT = flat(new THREE.CircleGeometry(1, 28));
   const shape = (pts) => { const s = new THREE.Shape(); pts.forEach(([x, y], i) => (i ? s.lineTo(x, y) : s.moveTo(x, y))); s.closePath(); return new THREE.ShapeGeometry(s); };
   const CHEV = flat(shape([[-0.5, -0.45], [0.5, 0], [-0.5, 0.45], [-0.2, 0]])); // points along +x
-  const ARROW = flat(shape([[-0.05, -0.5], [0.05, -0.5], [0.05, 0.18], [0.2, 0.18], [0, 0.5], [-0.2, 0.18], [-0.05, 0.18]])); // points along −z
   const flatMat = (color, o) => { const m = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, depthWrite: false, depthTest: false, fog: false, side: THREE.DoubleSide }); m.userData.o = o; return m; };
 
-  // a field of streaks drifting over the water with the flow (the wind, or the tide), each living a few seconds
+  // the flow drawn on the water (the wind, or the tide): streaks of light carried along with it, each trailing a tail
+  // of where it has just been, so a gust's fan and a stream's bend read as curves. A streak lives a few seconds, grows
+  // its tail as it goes and fades at both ends; all of a field's ribbons are one mesh laid again each frame, a bright
+  // core in a soft glow, fading down the tail
   const dummy = new THREE.Object3D(), col = new THREE.Color();
-  class Field {
-    constructor(n, flow) {
-      this.n = n; this.flow = flow; this.f = 0;
-      const m = this.mesh = new THREE.InstancedMesh(ARROW, new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, fog: false, side: THREE.DoubleSide }), n);
-      m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * 3), 3);
+  const GLSL_OUT = '#include <tonemapping_fragment>\n#include <colorspace_fragment>\n';
+  const glowMat = (vert, frag) => new THREE.ShaderMaterial({ uniforms: { uOp: { value: 0 } }, vertexShader: vert, fragmentShader: frag,
+    transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  const RIBBON = glowMat(
+    'attribute vec3 tint; attribute float across; varying vec3 vT; varying float vA;\n'
+    + 'void main() { vT = tint; vA = across; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    'uniform float uOp; varying vec3 vT; varying float vA;\n'
+    + 'void main() { float a = vA * vA; gl_FragColor = vec4(vT * (exp(-a * 10.0) + 0.3 * exp(-a * 2.5)) * uOp, 1.0);\n' + GLSL_OUT + '}');
+  class Trails {
+    // n streaks, each N points long (its head and N − 1 places it has been, one every `every` seconds); flow(x, z, d)
+    // says how the stream runs there: { vx, vz } (m/s on the screen's scale), W its half-width, c its colour. heads:
+    // a chevron on each, pointing the way it goes
+    constructor(n, N, every, flow, heads) {
+      Object.assign(this, { n, N, every, flow, f: 0, acc: 0, r: 0 });
+      const M = N - 1, V = n * N * 2, g = new THREE.BufferGeometry(), across = new Float32Array(V), idx = new Uint32Array(n * M * 6);
+      this.pos = new Float32Array(V * 3); this.tint = new Float32Array(V * 3);
+      for (let v = 0; v < V; v++) across[v] = v % 2 ? 1 : -1;
+      for (let i = 0, k = 0; i < n; i++) for (let j = 0; j < M; j++, k += 6) { const a = (i * N + j) * 2; idx.set([a, a + 1, a + 2, a + 1, a + 3, a + 2], k); }
+      g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
+      g.setAttribute('tint', new THREE.BufferAttribute(this.tint, 3).setUsage(THREE.DynamicDrawUsage));
+      g.setAttribute('across', new THREE.BufferAttribute(across, 1));
+      g.setIndex(new THREE.BufferAttribute(idx, 1));
+      const m = this.mesh = new THREE.Mesh(g, RIBBON.clone());
       m.frustumCulled = false; m.renderOrder = 4; m.visible = false;
-      this.p = Array.from({ length: n }, () => ({ x: 0, z: 0, age: 1, life: 0, fresh: true }));
       world.scene.add(m);
+      if (heads) {
+        const h = this.heads = new THREE.InstancedMesh(CHEV, new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, fog: false, side: THREE.DoubleSide }), n);
+        h.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * 3), 3);
+        h.frustumCulled = false; h.renderOrder = 4; h.visible = false;
+        world.scene.add(h);
+      }
+      this.hx = new Float32Array(n * M); this.hz = new Float32Array(n * M);
+      this.px = new Float32Array(N); this.pz = new Float32Array(N);
+      this.p = Array.from({ length: n }, () => ({ x: 0, z: 0, age: 1, life: 0, fresh: true, cnt: 0, wet: 0, ashore: false }));
     }
     spawn(q) {
       const A = area;
@@ -228,40 +256,99 @@ if (world) {
         q.x = A.x0 + Math.random() * (A.x1 - A.x0); q.z = A.z0 + Math.random() * (A.z1 - A.z0);
         if (race.roomAt(q.x, q.z) > 6) break; // on the water, not over the land
       }
-      q.life = 2.4 + Math.random() * 2.6; q.age = q.fresh ? Math.random() * q.life : 0; q.fresh = false;
-      q.wet = race.roomAt(q.x, q.z) > 6;
+      q.life = 2.6 + Math.random() * 2.8; q.age = q.fresh ? Math.random() * q.life : 0; q.fresh = false;
+      q.ashore = race.roomAt(q.x, q.z) <= 6; q.wet = q.ashore ? 0 : 1; q.cnt = 0;
     }
     step(dt, want, d) {
       this.f += (want - this.f) * (1 - Math.exp(-dt * 3));
-      const m = this.mesh;
-      m.visible = this.f > 0.01; m.material.opacity = this.f;
-      if (!m.visible || !area) { for (const q of this.p) q.fresh = true; return; }
-      for (let i = 0; i < this.n; i++) {
+      const m = this.mesh, H = this.heads, on = this.f > 0.01;
+      m.visible = on; m.material.uniforms.uOp.value = this.f;
+      if (H) { H.visible = on; H.material.opacity = this.f; }
+      if (!on || !area) { for (const q of this.p) q.fresh = true; return; }
+      const { n, N, hx, hz, px, pz, pos, tint } = this, M = N - 1;
+      this.acc += dt;
+      const push = this.acc >= this.every;
+      if (push) { this.acc %= this.every; this.r = (this.r + 1) % M; }
+      for (let i = 0; i < n; i++) {
         const q = this.p[i];
         q.age += dt;
         if (q.age >= q.life) this.spawn(q);
+        if (push) { hx[i * M + this.r] = q.x; hz[i * M + this.r] = q.z; q.cnt = Math.min(M, q.cnt + 1); }
         const w = this.flow(q.x, q.z, d);
         q.x += w.vx * dt; q.z += w.vz * dt;
-        if (q.wet && race.roomAt(q.x, q.z) < 2) q.wet = false; // run ashore: gone
-        const a = q.wet && w.L > 0 ? Math.sin((Math.PI * q.age) / q.life) : 0;
-        dummy.position.set(q.x, 1.5, q.z); dummy.rotation.set(0, -Math.atan2(w.vx, -w.vz), 0); dummy.scale.set(w.L * 0.75, 1, w.L || 0.001); dummy.updateMatrix();
-        m.setMatrixAt(i, dummy.matrix);
-        col.copy(w.c).multiplyScalar(a); m.setColorAt(i, col);
+        if (!q.ashore && race.roomAt(q.x, q.z) < 2) q.ashore = true; // run onto the land: it fades there
+        q.wet += ((q.ashore ? 0 : 1) - q.wet) * (1 - Math.exp(-dt * 8));
+        const a = w.W > 0 ? Math.min(1, q.age / 0.7) * Math.min(1, (q.life - q.age) / 1.1) * q.wet : 0;
+        // the line: the head, then where it has been, newest first (a fresh one's tail still folded into its head)
+        px[0] = q.x; pz[0] = q.z;
+        for (let j = 1; j < N; j++) {
+          const k = Math.min(j - 1, q.cnt - 1);
+          if (k < 0) { px[j] = q.x; pz[j] = q.z; continue; }
+          const s = i * M + ((this.r - k + M) % M); px[j] = hx[s]; pz[j] = hz[s];
+        }
+        const sp = Math.hypot(w.vx, w.vz) || 1, fx = w.vx / sp, fz = w.vz / sp;
+        for (let j = 0; j < N; j++) {
+          const u = j / M, j0 = Math.max(0, j - 1), j1 = Math.min(M, j + 1);
+          let tx = px[j0] - px[j1], tz = pz[j0] - pz[j1];
+          const tl = Math.hypot(tx, tz);
+          if (tl < 1e-3) { tx = fx; tz = fz; } else { tx /= tl; tz /= tl; }
+          const hw = w.W * Math.pow(1 - u, 0.55) + 0.02, b = a * Math.pow(1 - u, 1.5), o = (i * N + j) * 6;
+          pos[o] = px[j] + tz * hw; pos[o + 1] = 1.5; pos[o + 2] = pz[j] - tx * hw;
+          pos[o + 3] = px[j] - tz * hw; pos[o + 4] = 1.5; pos[o + 5] = pz[j] + tx * hw;
+          tint[o] = tint[o + 3] = w.c.r * b; tint[o + 1] = tint[o + 4] = w.c.g * b; tint[o + 2] = tint[o + 5] = w.c.b * b;
+        }
+        if (H) {
+          const s = w.W * 2.4;
+          dummy.position.set(q.x + fx * s * 0.35, 1.55, q.z + fz * s * 0.35); dummy.rotation.set(0, Math.atan2(-fz, fx), 0); dummy.scale.set(s, 1, s); dummy.updateMatrix();
+          H.setMatrixAt(i, dummy.matrix); H.setColorAt(i, col.copy(w.c).multiplyScalar(a * 1.3));
+        }
       }
-      m.instanceMatrix.needsUpdate = true; m.instanceColor.needsUpdate = true;
+      m.geometry.attributes.position.needsUpdate = true; m.geometry.attributes.tint.needsUpdate = true;
+      if (H) { H.instanceMatrix.needsUpdate = true; H.instanceColor.needsUpdate = true; }
     }
   }
-  const COOL = new THREE.Color(0.8, 0.9, 1), GOLD = new THREE.Color(1, 0.78, 0.22), TIDE = new THREE.Color(0.3, 0.9, 1), c0 = new THREE.Color();
-  const winds = SETUP && new Field(/android|iphone|ipad/i.test(navigator.userAgent) ? 420 : 640, (x, z, d) => {
-    const w = race.wind.at(x, z), k = w.tws / 12, s = d * 0.032 * k;
-    return { vx: -Math.sin(w.dir) * s, vz: Math.cos(w.dir) * s, L: d * 0.024 * (0.7 + 0.3 * k) * (1 + 0.6 * w.gust), c: c0.copy(COOL).lerp(GOLD, Math.min(1, w.gust * 1.4)) };
+  const COOL = new THREE.Color('#d6ecff'), GOLD = new THREE.Color('#ffc23a'), TIDE = new THREE.Color('#3ee8d8'), c0 = new THREE.Color();
+  const PHONE = /android|iphone|ipad/i.test(navigator.userAgent);
+  // the wind: fine, quick streaks, cool white in the breeze and gold in the gusts, longer and quicker the harder it blows
+  const winds = SETUP && new Trails(PHONE ? 300 : 420, 30, 0.065, (x, z, d) => {
+    const w = race.wind.at(x, z), k = w.tws / 12, s = d * 0.034 * k, g = Math.min(1, w.gust * 1.4);
+    return { vx: -Math.sin(w.dir) * s, vz: Math.cos(w.dir) * s, W: d * 0.0024 * (0.8 + 0.2 * k) * (1 + 0.8 * g), c: c0.copy(COOL).lerp(GOLD, g).multiplyScalar(0.8 + 0.5 * g) };
   });
-  const tides = SETUP && new Field(/android|iphone|ipad/i.test(navigator.userAgent) ? 320 : 480, (x, z, d) => {
+  // the tide: broader, slower ribbons of teal, each with a chevron at its head, brighter where the stream is harder
+  const tides = SETUP && new Trails(PHONE ? 180 : 260, 16, 0.1, (x, z, d) => {
     const c = race.currentAt(x, z), cs = Math.hypot(c.x, c.z), k = cs / 0.31; // the 0.6 kn stream: 1
-    if (k < 0.02) return { vx: 0, vz: 0, L: 0, c: TIDE };
-    const s = d * 0.03 * k;
-    return { vx: (c.x / cs) * s, vz: (c.z / cs) * s, L: d * 0.024 * Math.min(1.6, Math.max(0.5, k)), c: c0.copy(TIDE).multiplyScalar(0.6 + 0.4 * Math.min(1, k)) };
-  });
+    if (k < 0.02) return { vx: 0, vz: 0, W: 0, c: TIDE };
+    const s = d * 0.022 * k;
+    return { vx: (c.x / cs) * s, vz: (c.z / cs) * s, W: d * 0.0042 * Math.min(1.4, Math.max(0.6, k)), c: c0.copy(TIDE).multiplyScalar(0.5 + 0.5 * Math.min(1.2, k)) };
+  }, true);
+  // the gusts themselves, as a pressure chart has them: a warm glow on the water where each blows, drawn out down the
+  // wind as a gust is, with two fine contours round it; they come and go with the wind's view, as its streaks do
+  const pressure = SETUP && (() => {
+    const cap = 48, m = new THREE.InstancedMesh(SEG, glowMat(
+      'varying vec2 vU; varying vec3 vC;\n'
+      + 'void main() { vU = uv * 2.0 - 1.0; vC = instanceColor; gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0); }',
+      'uniform float uOp; varying vec2 vU; varying vec3 vC;\n'
+      + 'void main() { float r = length(vU); if (r > 1.0) discard; float fw = fwidth(r) * 1.4;\n'
+      + '  float line = 1.0 - smoothstep(0.0, fw, abs(r - 0.82)); line += 0.6 * (1.0 - smoothstep(0.0, fw, abs(r - 0.52)));\n'
+      + '  float fill = pow(1.0 - r, 1.8) * 0.4;\n'
+      + '  gl_FragColor = vec4(vC * (fill + 0.32 * line * smoothstep(1.0, 0.85, r)) * uOp, 1.0);\n' + GLSL_OUT + '}'), cap);
+    m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
+    m.frustumCulled = false; m.renderOrder = 3; m.visible = false; m.count = 0;
+    world.scene.add(m);
+    let f = 0;
+    return (dt, want) => {
+      f += (want - f) * (1 - Math.exp(-dt * 3));
+      m.visible = f > 0.01; m.material.uniforms.uOp.value = f;
+      if (!m.visible) return;
+      const W = race.wind, d0 = W.dir(), th = Math.atan2(-Math.cos(d0), -Math.sin(d0)), gs = W.gusts.slice(0, cap);
+      gs.forEach((g, i) => {
+        const r = g.r || 60;
+        dummy.position.set(g.x, 1.4, g.z); dummy.rotation.set(0, th, 0); dummy.scale.set(2.7 * r, 1, 2 * r); dummy.updateMatrix();
+        m.setMatrixAt(i, dummy.matrix); m.setColorAt(i, col.copy(GOLD).multiplyScalar((g.k || 0) * Math.min(1, g.s / W.p.gustStr) * Math.min(1, Math.max(0, race.roomAt(g.x, g.z) / 40)))); // none over the land
+      });
+      m.count = gs.length; m.instanceMatrix.needsUpdate = true; m.instanceColor.needsUpdate = true;
+    };
+  })();
 
   // the course drawn for the drone over it: the route lap by lap (each lap its own colour, side by side where they
   // run together), arrows along it the way it is sailed, the line, a dot on each mark, and their names
@@ -428,6 +515,7 @@ if (world) {
     fRoute += ((view === 'course' && arrived(0.6) ? 1 : 0) - fRoute) * k;
     fMarks += ((view !== 'boats' && arrived(0.35) ? 1 : 0) - fMarks) * k;
     winds.step(dt, view === 'wind' && arrived(0.55) ? 1 : 0, d);
+    pressure(dt, view === 'wind' && arrived(0.45) ? 1 : 0);
     tides.step(dt, view === 'current' && (race.current.x || race.current.z) && arrived(0.55) ? 1 : 0, d);
     if (!deco) return;
     const U = deco.userData, wd = Math.max(1.2, d * 0.005);
