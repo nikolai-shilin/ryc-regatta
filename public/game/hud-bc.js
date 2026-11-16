@@ -211,6 +211,20 @@ const CSS = `
 #hud.bc #toast.show { animation: bc-call 1.1s var(--ease) both; }
 .b-state { align-self: flex-start; padding: var(--s-2) var(--s-8) var(--s-2) var(--s-4); background: var(--you); color: var(--ink-on); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - var(--cut)) 100%, 0 100%); transition: background-color .4s; }
 .b-state.bad { background: var(--live); color: var(--ink); }
+/* a box gliding to a new width (glideWidths): its content at its own size on one line, shown as the box opens */
+[data-glide] { overflow-x: clip; white-space: nowrap; }
+[data-glide] > * { flex-shrink: 0; }
+.b-you { display: flex; align-items: stretch; height: 78px; }
+.b-you { padding-right: var(--s-1); }
+.b-you > div { display: flex; flex-direction: column; justify-content: center; gap: var(--s-2); padding: 0 var(--s-5); }
+.b-you > div + div { border-left: 1px solid var(--rule); }
+.b-you .c-pos { width: 48px; padding: 0 !important; align-items: center; background: var(--you); color: var(--ink-on); font: 700 var(--fs-h3)/1 var(--cond); }
+.b-you .c-nm { flex-direction: row; align-items: center; gap: var(--s-3); padding-left: var(--s-5); }
+.b-you .c-nm i { width: 6px; height: 30px; background: var(--you); }
+/* your flag and sail number, "You" under them; the blue bar where you fly no flag */
+#hud.bc .b-you .c-nm .b-fl { width: 30px; height: 20px; }
+.b-you .c-nm .b-fl:not([hidden]) + i { display: none; }
+.b-you .c-nmt { display: flex; flex-direction: column; gap: var(--s-2); white-space: nowrap; }
 .b-you { display: flex; align-items: stretch; height: 78px; }
 .b-you { padding-right: var(--s-1); }
 .b-you > div { display: flex; flex-direction: column; justify-content: center; gap: var(--s-2); padding: 0 var(--s-5); }
@@ -593,6 +607,42 @@ const legKind = (c, i) => (isBeat(c, i) ? 'up' : ['wing', 'mark2', 'offset'].inc
 const CAMS = ['drone', 'top', 'helm'];
 const hex = (n) => (typeof n === 'number' ? '#' + n.toString(16).padStart(6, '0') : '');
 
+// Boxes as wide as what they say (your strip, the state over it, the tags on the water) glide to a new width rather
+// than jump when their words or numbers change. Whatever changes in one this frame, its width is read once after the
+// frame's writes (the observer's turn comes then), from where it stood (mid-glide, where the glide had got to), and it
+// is drawn from there to its new width; while it glides its content keeps its own size and is shown as the box
+// opens (data-glide, in the CSS). It comes up at its width when first shown, and with reduced motion it doesn't glide.
+function glideWidths(els) {
+  const reg = new Set(els.filter(Boolean)), dirty = new Set(), calm = matchMedia('(prefers-reduced-motion: reduce)');
+  const width = (e) => { const w = parseFloat(getComputedStyle(e).width); return Number.isFinite(w) && w > 0 ? w : null; };
+  const settle = () => {
+    const list = [...dirty]; dirty.clear();
+    const from = list.map((e) => (e._ga ? width(e) : e._gw)); // read
+    const at = list.map((e) => e._ga && e._ga.currentTime);
+    for (const e of list) if (e._ga) e._ga.cancel(); // write
+    const to = list.map(width); // read
+    list.forEach((e, i) => {
+      e._gw = to[i];
+      const a0 = e._ga;
+      // still on its way to this width (a number in it changed, not its size): the glide goes on from where it was
+      if (a0 && to[i] != null && Math.abs(to[i] - e._gto) < 0.5) { a0.currentTime = at[i]; a0.play(); return; }
+      e._ga = null;
+      if (from[i] == null || to[i] == null || Math.abs(to[i] - from[i]) < 1 || calm.matches) { delete e.dataset.glide; return; }
+      e.dataset.glide = ''; e._gto = to[i];
+      const a = e._ga = e.animate([{ width: `${from[i]}px` }, { width: `${to[i]}px` }], { duration: 280, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+      a.onfinish = () => { if (e._ga === a) { e._ga = null; delete e.dataset.glide; } };
+    });
+  };
+  const mo = new MutationObserver((recs) => {
+    for (const r of recs) { let n = r.target; while (n && !reg.has(n)) n = n.parentNode; if (n) dirty.add(n); }
+    if (dirty.size) settle();
+  });
+  // (class and hidden only: the glide's own data-glide, and the translate the tags are placed by, aren't changes)
+  for (const e of reg) mo.observe(e, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'hidden'] });
+  // a new screen size sets new sizes: nothing glides to them
+  addEventListener('resize', () => { for (const e of reg) { if (e._ga) { e._ga.cancel(); e._ga = null; } e._gw = null; delete e.dataset.glide; } });
+}
+
 export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFlag = () => null, sailOf = () => '' }) {
   const L = HUD_STRINGS[LANG] || HUD_STRINGS.en;
   const $ = (s) => document.querySelector(s);
@@ -750,6 +800,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   for (const m of MOVES) m.to.append(m.el);
   const tackB = $('#tackBtn'); if (tackB) tackB.dataset.key = L.space;
   scale();
+  glideWidths([B.you, B.state, tagIn, ...btags.map((g) => g.box), split, move, lay]);
 
   const txt = (e, s) => { if (e._t !== s) { e._t = s; e.textContent = s; } };
   // (a flash running on it stays: see flash below)
