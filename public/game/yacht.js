@@ -602,9 +602,9 @@ export function sailTexture(kind, look, rig = null) {
     // tapes along the luff and foot, the leech line
     x.fillStyle = look.tape; x.fillRect(0, 0, 10, H); x.fillRect(0, H - 10, W, 10); x.fillRect(W - 6, 0, 6, H);
     if (kind === 'main') {
-      // battens: the top two full length, the rest from the leech
+      // battens: the top two full length, the rest from the leech (or the class's own: rig.battens)
       x.fillStyle = look.batten;
-      [[0.9, 1], [0.76, 1], [0.6, 0.45], [0.42, 0.4], [0.24, 0.35]].forEach(([v, len]) => x.fillRect(W * (1 - len), H * (1 - v) - 5, W * len, 10));
+      (R.battens || MAIN_BATTENS).forEach(([v, len]) => x.fillRect(W * (1 - len), H * (1 - v) - 5, W * len, 10));
       // the sail number (and on our boat the RYC logo above it), squashed to come out the right shape on the sail
       x.save(); x.translate(W * 0.47, H * (1 - R.numAt)); x.scale(1, 0.44 * R.numK);
       x.fillStyle = look.ink; x.font = '900 128px Carlito, Lato, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
@@ -644,14 +644,18 @@ export function sailTexture(kind, look, rig = null) {
   }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.wrapS = THREE.RepeatWrapping;
   if (sideB) { sideB.colorSpace = t.colorSpace; sideB.anisotropy = t.anisotropy; sideB.wrapS = t.wrapS; t.back = sideB; }
+  if (kind === 'main' && R.battens) t.battens = R.battens; // for its relief (sailMesh)
   return t;
 }
 // the cloth's relief, as a normal map: the panel seams (raised where two panels overlap and are stitched), the
 // batten pockets, and soft wrinkles fanning from the clew and the head; a spinnaker's seams run out from its head.
 // Drawn as a height field with the sail texture's own layout, then turned into normals.
 const RELIEF = {};
-function sailRelief(kind) {
-  if (RELIEF[kind]) return RELIEF[kind];
+// the main's battens: [how far up the luff, how much of the chord in from the leech]
+const MAIN_BATTENS = [[0.9, 1], [0.76, 1], [0.6, 0.45], [0.42, 0.4], [0.24, 0.35]];
+function sailRelief(kind, battens = MAIN_BATTENS) {
+  const key = battens === MAIN_BATTENS ? kind : kind + JSON.stringify(battens);
+  if (RELIEF[key]) return RELIEF[key];
   const W = 256, H = kind === 'main' ? 512 : kind === 'jib' ? 384 : 256;
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d');
@@ -666,7 +670,7 @@ function sailRelief(kind) {
     for (let i = 0; i < 7; i++) line(W - 3, H - 3, W * (0.6 - i * 0.06), H * (0.84 - i * 0.06), 6, `rgba(0,0,0,${0.1 - i * 0.008})`); // from the clew
     for (let i = 0; i < 5; i++) line(W * 0.04, 3, W * (0.2 + i * 0.06), H * (0.1 + i * 0.025), 4, 'rgba(0,0,0,.08)'); // from the head
     x.fillStyle = 'rgba(255,255,255,.7)';
-    if (kind === 'main') [[0.9, 1], [0.76, 1], [0.6, 0.45], [0.42, 0.4], [0.24, 0.35]].forEach(([v, len]) => x.fillRect(W * (1 - len), H * (1 - v) - 3, W * len, 6));
+    if (kind === 'main') battens.forEach(([v, len]) => x.fillRect(W * (1 - len), H * (1 - v) - 3, W * len, 6));
     else { x.fillRect(W * 0.7, H * 0.35, W * 0.3, 4); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 4); }
     x.fillRect(0, 0, 5, H); x.fillRect(0, H - 5, W, 5); // the tapes along the luff and the foot
   }
@@ -678,7 +682,7 @@ function sailRelief(kind) {
   }
   x.putImageData(out, 0, 0);
   const t = new THREE.CanvasTexture(c); t.anisotropy = 4; t.wrapS = THREE.RepeatWrapping;
-  return (RELIEF[kind] = t);
+  return (RELIEF[key] = t);
 }
 // the sun through the cloth: lit from behind as you look at it, a sail glows with the light it lets through, tinted
 // by the cloth and darker where the seams, battens and number are (the colour squared: light crossing a dye)
@@ -705,7 +709,7 @@ export function sailMesh(rows, cols, tex, shiny = false, kind = 'main') {
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   g.setIndex(idx);
   const back = tex.back || tex.clone(); back.repeat.x = -1; back.offset.x = 1; back.needsUpdate = true;
-  const relief = sailRelief(kind), reliefBack = relief.clone(); reliefBack.repeat.x = -1; reliefBack.offset.x = 1; reliefBack.needsUpdate = true;
+  const relief = sailRelief(kind, tex.battens), reliefBack = relief.clone(); reliefBack.repeat.x = -1; reliefBack.offset.x = 1; reliefBack.needsUpdate = true;
   // laminate (shiny) sails catch a soft sheen and let less light through than woven cloth; a spinnaker's thin nylon
   // the most. A little emissive stands for the light bounced off the sea into the cloth's shaded side.
   const mat = (map, nmap, side) => translucent(new THREE.MeshStandardMaterial({

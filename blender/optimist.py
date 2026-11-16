@@ -179,7 +179,8 @@ loft(bm, TL, 1 - TL, lip_ring, 48, 'gel')
 finish_mesh(lip, bm); cut(hull, lip)
 
 # the mast thwart: a moulded beam across the bow, its top flush with the inwale's, the mast's hole through it
-MAST_Z = -STERN + 0.48  # boats3d.js OZ.MAST_Z
+MAST_Z = -STERN + 0.4  # boats3d.js OZ.MAST_Z
+MAST_AT = MAST_Z + 0.009  # where the mast, raked 1.5° aft about its foot on the floor, comes through the thwart
 tm = t_at(MAST_Z)
 def inner_x(t, y): return hb(t) - SKIN * math.hypot(1, FLARE) - FLARE * (sheer(t) - y)
 TH_W, TH_D = 0.17, 0.035
@@ -190,7 +191,7 @@ ends = [(inner_x(t_at(z), ty - TH_D) + 0.004, z) for z in edge_z]
 thwart = prism_object('thwart', [(x, z) for x, z in ends] + [(-x, z) for x, z in reversed(ends)], ty - TH_D, ty, 'gel', 'gel', 'gel')
 union(hull, thwart)
 hole = new_object('hole'); bm = bmesh.new()
-plan_prism(bm, [(0.027 * math.cos(a), MAST_Z + 0.027 * math.sin(a)) for a in (2 * math.pi * k / 20 for k in range(20))], ty - 0.1, ty + 0.1, 'gel', 'gel', 'gel')
+plan_prism(bm, [(0.027 * math.cos(a), MAST_AT + 0.027 * math.sin(a)) for a in (2 * math.pi * k / 20 for k in range(20))], ty - 0.1, ty + 0.1, 'gel', 'gel', 'gel')
 finish_mesh(hole, bm); cut(hull, hole)
 
 # the daggerboard case on the centreline, standing up from the floor amidships, its slot through it and the hull
