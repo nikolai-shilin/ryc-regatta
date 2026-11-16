@@ -17,6 +17,10 @@ import { SiteHead, SiteFoot } from '@/components/site-chrome';
 import { Soundtrack } from '@/components/soundtrack';
 import { FaqList } from '@/components/faq-list';
 import { faqGroups, HOME } from '@/lib/faq';
+import { DRILLS } from '@/lib/drills';
+import { BADGES } from '@/lib/badges';
+import { BackStrip, PushButton, CtaTrack, Fold, MatchLink } from '@/components/home-back';
+import '@/styles/home-back.css';
 
 // Built per language and rebuilt in the background at most every five minutes, for today's fastest (lib/today.ts
 // caches them as long). Just after midnight UTC one visitor can still get yesterday's race while the new one builds.
@@ -116,15 +120,16 @@ export default async function Home({ params }: LangParams) {
           <div className="ho-info">
             <span className="ho-kick"><span className="dot-live" />{t(`Live · today’s race · ${where} · ${yacht}`, `Эфир · гонка дня · ${where} · ${yacht}`)}</span>
             <h1 className="ho-h1" id="home-h1">{beat ? t(`Beat ${beat} today`, `Побей ${beat} сегодня`) : t('Set today’s time to beat', 'Задай время дня')}</h1>
-            <p className="ho-lead">{t(
+            <BackStrip lang={lang} day={d.day} top={top} cap={live?.n} />
+            <p className="ho-lead ho-new">{t(
               `A free sailing race game in your browser, under the real racing rules. One race for everyone today, so your time sits right next to theirs. About ${mins} minutes, no sign-up to start.`,
               `Бесплатная парусная гонка в браузере, по настоящим правилам. Сегодня у всех одна гонка, так что твоё время встанет рядом с остальными. Около ${mins} минут, без регистрации.`)}</p>
             <div className="ho-acts ho-hero-acts">
-              <a className="ho-go ho-go-xl" href={go}><IconPlay s={22} /><span>{t('Sail today’s race', 'Пройти гонку дня')}</span></a>
-              <Link className="ho-ghost ho-go-xl" href="/race/free">{t('Practise first', 'Сначала потренироваться')}</Link>
+              <a className="ho-go ho-go-xl" href={go} data-cta="hero"><IconPlay s={22} /><span>{t('Sail today’s race', 'Пройти гонку дня')}</span></a>
+              <Link className="ho-ghost ho-go-xl ho-new" href="/race/free" data-cta="hero-practise">{t('Practise first', 'Сначала потренироваться')}</Link>
             </div>
-            <Link className="ho-how" href="/help">{t('New to it? How to play, in 3 minutes', 'Впервые? Как играть — за 3 минуты')} ›</Link>
-            <ul className="ho-trust">
+            <Link className="ho-how ho-new" href="/help" data-cta="hero-how">{t('New to it? How to play, in 3 minutes', 'Впервые? Как играть — за 3 минуты')} ›</Link>
+            <ul className="ho-trust ho-new">
               <li>{t('Free', 'Бесплатно')}</li><li>{t('No install', 'Без установки')}</li><li>{t('No sign-up to play', 'Без регистрации')}</li><li>{t('Phone or keyboard', 'Телефон или клавиатура')}</li><li>English · Русский</li>
             </ul>
           </div>
@@ -141,7 +146,7 @@ export default async function Home({ params }: LangParams) {
               {!top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов')}</span><span /></li>}
               <MyRow lang={lang} day={d.day} top={top} cap={live?.n} />
             </ol>
-            <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')}</Link>
+            <Link className="lb-more" href="/race/rating" data-cta="rank-more">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц')}</Link>
             <div className="ho-tick" aria-live="polite"><span className="dot-live" /><Ticker lines={lines} /></div>
           </aside>
         </div>
@@ -155,7 +160,7 @@ export default async function Home({ params }: LangParams) {
             <span className="lbl">{t('Reset at midnight UTC with the race', 'Обновляются в полночь по UTC вместе с гонкой')}</span>
           </div>
           <div className="ho-goals">
-            <a className="ho-goal" href={go}>
+            <a className="ho-goal" href={go} data-cta="goal-finish">
               <span className="ho-medal">✓</span>
               <span className="lbl is-you">{t('Everyone', 'Для всех')}</span>
               <h3 className="ho-h3">{t('Finish the race', 'Пройди гонку')}</h3>
@@ -164,7 +169,7 @@ export default async function Home({ params }: LangParams) {
             </a>
             {/* with ten ranked today the club racer's target is the top ten, under the 10th time; else the podium */}
             {tenth != null ? (
-              <a className="ho-goal" href={go}>
+              <a className="ho-goal" href={go} data-cta="goal-podium">
                 <span className="ho-medal ho-medal-w">10</span>
                 <span className="lbl is-you">{t('Club racer', 'Клубный гонщик')}</span>
                 <h3 className="ho-h3">{t(`Top ten under ${clock(tenth)}`, `В десятку быстрее ${clock(tenth)}`)}</h3>
@@ -172,7 +177,7 @@ export default async function Home({ params }: LangParams) {
                 <span className="lbl-ink ho-foot">{t(`Today: ${clock(tenth)} is 10th of ${ranked} ›`, `Сегодня: ${clock(tenth)} — 10-е место из ${ranked} ›`)}</span>
               </a>
             ) : (
-              <a className="ho-goal" href={go}>
+              <a className="ho-goal" href={go} data-cta="goal-podium">
                 <span className="ho-medal ho-medal-w">3</span>
                 <span className="lbl is-you">{t('Club racer', 'Клубный гонщик')}</span>
                 <h3 className="ho-h3">{t('Make the podium', 'Попади в тройку')}</h3>
@@ -180,7 +185,7 @@ export default async function Home({ params }: LangParams) {
                 <span className="lbl-ink ho-foot">{top[2] ? t(`Today: ${clock(top[2].s)} is 3rd ›`, `Сегодня: ${clock(top[2].s)} — третье место ›`) : t('The podium is still open ›', 'В тройке ещё есть места ›')}</span>
               </a>
             )}
-            <a className="ho-goal" href={go}>
+            <a className="ho-goal" href={go} data-cta="goal-win">
               <span className="ho-medal ho-medal-g">1</span>
               <span className="lbl is-you">{t('The time to beat', 'Время, которое надо побить')}</span>
               <h3 className="ho-h3">{beat ? t(`Beat ${beat}`, `Побей ${beat}`) : t('Set the time to beat', 'Задай время дня')}</h3>
@@ -191,17 +196,17 @@ export default async function Home({ params }: LangParams) {
         </section>
 
         {/* 3 · the first four races, each in its picture: a path, so a first race isn't the last (and what a race is) */}
-        <section className="ho-sec" aria-labelledby="h-path">
+        <section className="ho-sec ho-new" aria-labelledby="h-path">
           <div className="ho-sec-t"><span className="ho-k">{t('New to racing?', 'Впервые на гонке?')}</span><h2 className="ho-h2" id="h-path">{t('Your first four races', 'Твои первые четыре гонки')}</h2></div>
           <ol className="ho-path">
             <li className="now"><span className="ho-pic ho-path-pic"><Image src="/images/h-steer-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">1</span><span className="lbl is-you">{t(`Today · ${mins} min`, `Сегодня · ${mins} мин`)}</span><h3 className="ho-h3">{t('Just finish', 'Просто финишируй')}</h3><p className="ho-ps">{t('Sails on Auto, you only steer. Follow the call above your numbers.', 'Паруса на «Авто», ты только рулишь. Следуй подсказке над своими цифрами.')}</p></li>
-            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-start-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">2</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Win the start', 'Выиграй старт')}</h3><p className="ho-ps">{t('Be a boat length behind the line, at full speed, as the gun goes.', 'Будь в корпусе от линии на полном ходу в момент сигнала.')}</p></li>
-            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-tack-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">3</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Play the shifts', 'Лови заходы')}</h3><p className="ho-ps">{t('Tack when the wind heads you. Every header you catch is a place.', 'Поворачивай, когда ветер заходит. Каждый пойманный заход — место.')}</p></li>
+            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-start-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">2</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Win the start', 'Выиграй старт')}</h3><p className="ho-ps">{t('Be a boat length behind the line, at full speed, as the gun goes.', 'Будь в корпусе от линии на полном ходу в момент сигнала.')}</p><a className="ho-drill" href="/play?race=free&drill=start" data-cta="path-drill-start">{t('Practise it: the start drill ›', 'Потренируй: упражнение «Старт» ›')}</a></li>
+            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-tack-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">3</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Play the shifts', 'Лови заходы')}</h3><p className="ho-ps">{t('Tack when the wind heads you. Every header you catch is a place.', 'Поворачивай, когда ветер заходит. Каждый пойманный заход — место.')}</p><a className="ho-drill" href="/play?race=free&drill=beat" data-cta="path-drill-beat">{t('Practise it: the shifts drill ›', 'Потренируй: упражнение «Сдвиги ветра» ›')}</a></li>
             <li><span className="ho-pic ho-path-pic"><Image src="/images/h-trim-v7.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">4</span><span className="lbl">{t('Then', 'Потом')}</span><h3 className="ho-h3">{t('Race the ranking', 'Гоняйся за рейтингом')}</h3><p className="ho-ps">{t('Trim the sails yourself and go for today’s podium.', 'Настраивай паруса сам и иди в тройку дня.')}</p></li>
           </ol>
           <div className="ho-acts">
-            <a className="ho-go" href={go}><IconPlay /><span>{t('Start race 1', 'Начать гонку 1')}</span></a>
-            <Link className="ho-ghost" href="/help">{t('How to play, in 3 minutes', 'Как играть — за 3 минуты')}</Link>
+            <a className="ho-go" href={go} data-cta="path-start"><IconPlay /><span>{t('Start race 1', 'Начать гонку 1')}</span></a>
+            <Link className="ho-ghost" href="/help" data-cta="path-how">{t('How to play, in 3 minutes', 'Как играть — за 3 минуты')}</Link>
           </div>
         </section>
 
@@ -212,6 +217,7 @@ export default async function Home({ params }: LangParams) {
               <span className="ho-k">{t('Come back tomorrow', 'Возвращайся завтра')}</span>
               <h2 className="ho-h2" id="h-venues">{t(`${VENUES.length} venues, one a day`, `${VENUES.length} акватории, по одной в день`)}</h2>
               <p className="ho-ps">{t(`Each day the race moves to another famous regatta venue, with its own hills, town and wind. Each comes round once every ${VENUES.length} days. Tomorrow’s is revealed at midnight UTC.`, `Каждый день гонка переезжает на другую знаменитую регатную акваторию — со своими холмами, городом и ветром. Каждая возвращается раз в ${VENUES.length} дня. Завтрашняя откроется в полночь по UTC.`)}</p>
+              <PushButton lang={lang} where="venues" />
             </div>
             {/* the venues you've raced are stamped, and your streak over them: this device's, drawn in the browser */}
             <VenueList lang={lang} today={d.venue} />
@@ -224,7 +230,7 @@ export default async function Home({ params }: LangParams) {
             <span className="ho-k">{t('Race a friend', 'Гоняйся с другом')}</span>
             <h2 className="ho-h2" id="h-friend">{t('Same wind. Same course. Who’s faster?', 'Тот же ветер. Та же дистанция. Кто быстрее?')}</h2>
             <p className="ho-ps">{t('Everyone sails the same race today, so a result link is a challenge. Send yours after the finish; it opens on any device.', 'Сегодня у всех одна гонка, так что ссылка на результат — это вызов. Отправь свою после финиша: она откроется на любом устройстве.')}</p>
-            <div className="ho-acts"><a className="ho-go" href={go}>{t('Set a time to send', 'Поставь время, чтобы отправить')}</a></div>
+            <div className="ho-acts"><a className="ho-go" href={go} data-cta="friend">{t('Set a time to send', 'Поставь время, чтобы отправить')}</a><MatchLink lang={lang} /></div>
           </div>
           <figure className="ho-card ho-friend">
             <span className="ho-pic"><Image src="/images/top-v7.jpg" alt={t('Yachts racing in the game, seen from above', 'Яхты на гонке в игре, вид сверху')} fill sizes="(min-width: 900px) 560px, 100vw" /></span>
@@ -233,6 +239,16 @@ export default async function Home({ params }: LangParams) {
           </figure>
         </section>
 
+        {/* 6½ · between races: the drills and the badges */}
+        <section className="ho-sec" aria-labelledby="h-more">
+          <div className="ho-sec-t"><span className="ho-k">{t('Between races', 'Между гонками')}</span><h2 className="ho-h2" id="h-more">{t('Practise the moments. Collect the badges.', 'Тренируй моменты. Собирай значки.')}</h2></div>
+          <div className="ho-feats ho-feats-2">
+            <Link className="ho-feat ho-feat-a" href="/race/drills" data-cta="drills"><i aria-hidden="true" /><div><h3 className="ho-h3">{t(`${DRILLS.length} drills`, `Упражнений: ${DRILLS.length}`)}</h3><p className="ho-ps">{t('The start, the top mark, the shifts, a comeback: each a minute or two, three stars to win, from beginner to expert.', 'Старт, верхний знак, сдвиги ветра, отыгрыш: каждое на минуту-две, три звезды, от новичка до эксперта.')}</p></div></Link>
+            <Link className="ho-feat ho-feat-a" href="/race/badges" data-cta="badges"><i aria-hidden="true" /><div><h3 className="ho-h3">{t(`${BADGES.length} badges`, `Значков: ${BADGES.length}`)}</h3><p className="ho-ps">{t('A clean race, a win from behind, a week on the water, every venue raced. Each says how near you are.', 'Чистая гонка, победа с отыгрышем, неделя на воде, все акватории. Каждый показывает, сколько осталось.')}</p></div></Link>
+          </div>
+        </section>
+
+        <Fold lang={lang}>
         {/* 7 · why it is worth it */}
         <section className="ho-sec" aria-labelledby="h-parts">
           <div className="ho-sec-t"><span className="ho-k">{t('Inside the game', 'Внутри игры')}</span><h2 className="ho-h2" id="h-parts">{t('Everything a real race throws at you', 'Всё, чем встречает настоящая гонка')}</h2></div>
@@ -251,7 +267,7 @@ export default async function Home({ params }: LangParams) {
         <section className="ho-sec" aria-labelledby="h-way">
           <div className="ho-sec-t"><span className="ho-k">{t('Your race, your way', 'Твоя гонка — по-твоему')}</span><h2 className="ho-h2" id="h-way">{t('Set it up, sail it, read it back', 'Настрой, пройди, разбери')}</h2></div>
           <div className="ho-feats ho-feats-4">
-            {way.map(([title, text, href]) => <Link className="ho-feat ho-feat-a" href={href} key={title}><i aria-hidden="true" /><div><h3 className="ho-h3">{title}</h3><p className="ho-ps">{text}</p></div></Link>)}
+            {way.map(([title, text, href]) => <Link className="ho-feat ho-feat-a" href={href} key={title} data-cta={`way-${href}`}><i aria-hidden="true" /><div><h3 className="ho-h3">{title}</h3><p className="ho-ps">{text}</p></div></Link>)}
           </div>
         </section>
 
@@ -261,7 +277,7 @@ export default async function Home({ params }: LangParams) {
             <span className="ho-k">{t('Before you sail', 'Перед стартом')}</span>
             <h2 className="ho-h2" id="h-faq">{t('In short', 'Коротко')}</h2>
             <p className="ho-ps">{t(`The questions people ask before their first race. ${all.length - faq.length} more are on the Questions page.`, `Вопросы, которые задают перед первой гонкой. Ещё ${all.length - faq.length} — на странице «Вопросы».`)}</p>
-            <Link className="ho-ghost" href="/faq">{t('All questions', 'Все вопросы')}<IconArrow s={16} /></Link>
+            <Link className="ho-ghost" href="/faq" data-cta="faq">{t('All questions', 'Все вопросы')}<IconArrow s={16} /></Link>
           </div>
           <div className="ho-faq"><FaqList items={faq} openFirst /></div>
         </section>
@@ -273,7 +289,7 @@ export default async function Home({ params }: LangParams) {
               <span className="ho-k">Sailing Certification Test</span>
               <h2 className="ho-h2" id="h-rules">{t('Learn the rules there, race by them here', 'Учи правила там, гоняйся по ним здесь')}</h2>
               <p className="ho-ps">{t('Up and down comes from RYC, the team behind Sailing Certification Test, the free trainer for sailing certificate exams. The computer boats give way by the same rules the exam asks about, so every race is revision you can feel on the water.', 'Up and down делает RYC — команда, которая сделала Sailing Certification Test, бесплатный тренажёр к экзаменам на яхтенные сертификаты. Компьютерные лодки уступают по тем же правилам, что спрашивают на экзамене, так что каждая гонка — повторение, которое чувствуешь на воде.')}</p>
-              <Link className="ho-ghost" href="/iyt">{t('Exam practice · 6100 questions', 'Подготовка к экзамену · 6100 вопросов')}<IconArrow s={16} /></Link>
+              <Link className="ho-ghost" href="/iyt" data-cta="iyt">{t('Exam practice · 6100 questions', 'Подготовка к экзамену · 6100 вопросов')}<IconArrow s={16} /></Link>
             </div>
             <div className="ho-rules">
               <span className="lbl">{t('Rules you meet on the first beat', 'Правила, которые встретишь на первой лавировке')}</span>
@@ -285,14 +301,16 @@ export default async function Home({ params }: LangParams) {
             </div>
           </div>
         </section>
+        </Fold>
       </main>
+      <CtaTrack />
 
       <SiteFoot lang={lang} t={t} back="/" />
 
       {/* the button that never goes away, once the hero's own have scrolled by */}
       <Dock watch=".ho-hero-acts">
         <div className="ho-dock-t"><span className="dot-live" /><b>{beat ? <><span className="ho-dock-w">{t(`Today’s race · ${where} · `, `Гонка дня · ${where} · `)}</span>{t(`beat ${beat}`, `побей ${beat}`)}</> : t(`Today’s race · ${where}`, `Гонка дня · ${where}`)}</b><span className="lbl">{t('closes in', 'закроется через')}</span><Countdown className="ho-dock-cd" /></div>
-        <a className="ho-go" href={go}><IconPlay /><span>{t('Sail today’s race', 'Пройти гонку дня')}</span></a>
+        <a className="ho-go" href={go} data-cta="dock"><IconPlay /><span>{t('Sail today’s race', 'Пройти гонку дня')}</span></a>
       </Dock>
     </div>
   );

@@ -5,6 +5,7 @@ import { applyMe, readMe } from '@/lib/me';
 import { pageMeta, SITE, NAME, HOME_TITLE, HOME_DESC } from '@/lib/seo';
 import { TelegramSignIn } from '@/components/telegram-sign-in';
 import { BestsSync } from '@/components/bests-sync';
+import { PushSync } from '@/components/home-back';
 import { Me } from '@/components/me';
 import { NavTrail } from '@/components/back-link';
 import '@/styles/tokens.css';
@@ -55,18 +56,24 @@ const KEEP_TG_LAUNCH = `try{var h=new URLSearchParams(location.hash.slice(1));if
 // The header's avatar and the footer's account link, from the session cookie before the first paint (lib/me.ts).
 const ME = `;(${applyMe.toString()})(${readMe.toString()});`;
 
+// Has this device raced before (lib/log.ts's log has a day, or the game keeps a result): <html data-back> before the
+// first paint, so Home shows a returning player their strip and folds the explainers without a flash
+// (components/home-back.tsx, styles/home-back.css).
+const BACK = `;try{var s=localStorage,l=JSON.parse(s.getItem('regatta-log')||'null'),b=!!(l&&l.d&&Object.keys(l.d).length);for(var i=0;!b&&i<s.length;i++)b=/^regatta-result-/.test(s.key(i)||'');if(b)document.documentElement.setAttribute('data-back','')}catch(e){}`;
+
 export default async function RootLayout({ children, params }: LangParams & { children: React.ReactNode }) {
   const lang = await getLang(params);
   return (
     // suppressHydrationWarning: the head script marks <html> (data-me, --me-ini) before React sees it
     <html lang={lang} className={FONT_VARS} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: KEEP_TG_LAUNCH + ME }} />
+        <script dangerouslySetInnerHTML={{ __html: KEEP_TG_LAUNCH + ME + BACK }} />
       </head>
       <body>
         {children}
         <TelegramSignIn />
         <BestsSync />
+        <PushSync lang={lang} />
         <Me />
         <NavTrail />
         <Analytics />

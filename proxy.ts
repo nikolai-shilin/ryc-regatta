@@ -20,8 +20,9 @@ export async function proxy(request: NextRequest) {
   }
   const q = url.searchParams.get('lang');
   const urlLang = isLang(q) ? q : null;
-  // the route handlers (sign-in callbacks, /lang, the jib's ad /sponsor) answer at their own address; everything else is a page
-  const page = !/^\/(auth\/|lang$|sponsor$|_)/.test(url.pathname);
+  // the route handlers (sign-in callbacks, /lang, the jib's ad /sponsor, the daily reminder's /push/…) answer at their own
+  // address; everything else is a page
+  const page = !/^\/(auth\/|lang$|sponsor$|push\/|_)/.test(url.pathname);
   const target = url.clone();
   const hadLang = request.cookies.get('lang')?.value;
   if (page) {
@@ -61,5 +62,5 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // not for the game's files (and ui/, the design system's stylesheets it shares with the site), the pictures, Next's
   // own assets or the files for crawlers
-  matcher: ['/((?!_next/static|_next/image|_vercel|game/|ui/|vendor/|connect|play|boat-view|hero-view|fleet-view|images/|flags/|favicon.ico|logo-black.svg|og/|robots.txt|sitemap.xml|llms.txt|indexnow.txt|manifest.webmanifest|apple-icon|icon).*)'],
+  matcher: ['/((?!_next/static|_next/image|_vercel|game/|ui/|vendor/|connect|play|boat-view|hero-view|fleet-view|images/|flags/|favicon.ico|sw.js|logo-black.svg|og/|robots.txt|sitemap.xml|llms.txt|indexnow.txt|manifest.webmanifest|apple-icon|icon).*)'],
 };
