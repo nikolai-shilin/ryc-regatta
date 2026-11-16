@@ -1126,15 +1126,19 @@ function startQuality() {
 }
 world.setQuality(startQuality());
 world.showGuides = !!opts.guides;
-// Auto: watch the frame rate while racing; under 45 fps, step down a level and remember it for this device
-const perf = { t: 0, n: 0, settle: 3 };
+// Auto: watch the frame rate while racing; under 45 fps, step down a level and remember it for this device.
+// It goes by the middle frame of each 3 s, not their average: one stall (the tab away in a match, which runs on
+// unpaused; a notification; a frame that waited on the disk) would pull a steady 60 fps under 45 by itself, and leave
+// a fast machine on Low for GFX_DAYS. A frame over 0.25 s is such a stall, and isn't counted at all.
+const perf = { t: 0, d: [], settle: 3 };
 function watchFps(raw) {
   if (opts.gfx !== 'auto' || world.quality === 'low') return;
+  if (raw > 0.25) return;
   if (perf.settle > 0) { perf.settle -= raw; return; }
-  perf.t += raw; perf.n++;
+  perf.t += raw; perf.d.push(raw);
   if (perf.t < 3) return;
-  const fps = perf.n / perf.t; perf.t = perf.n = 0;
-  if (fps >= 45) return;
+  const d = perf.d.sort((a, b) => a - b), mid = d[d.length >> 1]; perf.t = 0; perf.d = [];
+  if (mid <= 1 / 45) return;
   const q = world.quality === 'high' ? 'medium' : 'low';
   world.setQuality(q); perf.settle = 2;
   try { localStorage.setItem(GFX_KEY, `${q}|${Date.now()}`); } catch (e) {}

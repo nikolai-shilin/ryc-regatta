@@ -145,8 +145,9 @@ export function createMusic(ctx, out) {
       .then((b) => {
         // the blip at 0.2 s: where this browser's decoder put the file's start
         const d = b.getChannelData(0); let i = 0; while (i < d.length && Math.abs(d[i]) < 0.1) i++;
-        shifts[id] = i < ctx.sampleRate ? i / b.sampleRate - 0.2 : 0; bufs[id] = b;
-        if (style === id) { R.nextT = now() + 0.05; setLevel(paused ? 0 : M.volume, 0.5); }
+        shifts[id] = i < ctx.sampleRate ? i / b.sampleRate - 0.2 : 0; loading[id] = false;
+        if (style !== id) return; // the player chose another while it came in: not kept (see setStyle)
+        bufs[id] = b; R.nextT = now() + 0.05; setLevel(paused ? 0 : M.volume, 0.5);
       }, () => { loading[id] = false; });
   }
   // a stretch of the file (at, len) into the bus from t, faded in at its start and out at its end; returns its handle
@@ -218,6 +219,10 @@ export function createMusic(ctx, out) {
       id = MUSIC_STYLES.includes(id) ? id : null;
       if (id === style) return;
       if (cur) retire(cur.bus);
+      // the old track let go: decoded, a track is some 65 MB (three minutes of stereo floats), and on a phone that
+      // counts against the same memory as the scene. Its bars still fading out hold their own reference till they end;
+      // choosing it again fetches it again (from the cache).
+      if (style) delete bufs[style];
       style = id; cur = null; R.live = [];
       if (!id) return;
       cur = { bus: newBus() };
