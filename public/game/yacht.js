@@ -449,21 +449,12 @@ export function bowNumberMaterial(look) {
 }
 
 // her name on both quarters, in italics as a yacht's name is lettered, white on a dark hull and black on a light one:
-// its material, for a decal `aspect` times as wide as it's high. The letters stand the decal's full height and the
-// name runs its full length: a long name is narrowed to fit, a short one drawn out (up to 1.6 times as wide) and then
-// spaced, letter by letter, from end to end
-export const nameBox = (L, freeboard, k = 0.5, len = 0.5) => ({ W: L * len, H: freeboard * k }); // half the hull's length, the letters half her freeboard aft
-export function nameMaterial(look, aspect = 8) {
-  const c = document.createElement('canvas'); c.width = 2048; c.height = Math.max(64, Math.round(2048 / aspect));
-  const x = c.getContext('2d'), dark = new THREE.Color(look.hull).getHSL({}).l < 0.45, ch = c.height, span = c.width * 0.98;
-  x.fillStyle = dark ? '#f4f4f0' : '#15181c'; x.font = `italic 800 ${Math.round(ch * 0.8)}px Carlito, Lato, Arial, sans-serif`; x.textBaseline = 'middle';
-  const chars = Array.from(look.name), widths = chars.map((s) => x.measureText(s).width), w = widths.reduce((a, b) => a + b, 0);
-  if (w >= span || chars.length < 2) { x.textAlign = 'center'; x.fillText(look.name, c.width / 2, ch * 0.52, span); }
-  else {
-    const sx = Math.min(1.6, span / w), gap = (span - w * sx) / (chars.length - 1);
-    let at = (c.width - span) / 2;
-    chars.forEach((s, i) => { x.save(); x.translate(at, ch * 0.52); x.scale(sx, 1); x.fillText(s, 0, 0); x.restore(); at += widths[i] * sx + gap; });
-  }
+// its material, for a decal 8 times as wide as it's high
+export function nameMaterial(look) {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 128;
+  const x = c.getContext('2d'), dark = new THREE.Color(look.hull).getHSL({}).l < 0.45;
+  x.fillStyle = dark ? '#f4f4f0' : '#15181c'; x.font = 'italic 800 92px Carlito, Lato, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(look.name, 512, 66, 1000);
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
   return new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.4, roughness: 0.3, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
 }
@@ -1394,10 +1385,7 @@ export class BoatView {
     }
     // the sail number on both bows, forward of the logo, and the instrument displays either side of the companionway
     { const mat = bowNumberMaterial(look); for (const sx of [-1, 1]) T.add(hullDecal(sx, BOW_Z + 1.1, 0.74, 0.8, 0.22, mat)); }
-    if (look.name) { // her name on the quarters, half her length from 0.3 m ahead of the transom, under the rubbing strake
-      const { W, H } = nameBox(L, sheerAt(0)), mat = nameMaterial(look, W / H);
-      for (const sx of [-1, 1]) T.add(hullDecal(sx, STERN_Z - 0.3 - W / 2, sheerAt(0) - 0.08 - H / 2, W, H, mat));
-    }
+    if (look.name) { const mat = nameMaterial(look); for (const sx of [-1, 1]) T.add(hullDecal(sx, STERN_Z - 1.65, 0.7, 2.24, 0.28, mat)); } // her name on the quarters
     for (const sx of [-1, 1]) fit(add, display(0.22, 0.16, sx < 0 ? 1 : 2), sx * 0.62, roofTop(CR_ZA) - 0.28, CR_ZA + 0.01);
     // the fixed carbon bowsprit for the gennaker, and its bobstay down to the stem's foot
     this.sprit = add(cyl(0.04, 0.055, 1.55, M.carbon, 10), 0, SPRIT.y, BOW_Z - 0.33);

@@ -9,7 +9,7 @@
 // Local frame as yacht.js: +x starboard, +y up, −z forward (the bow), the waterline at y = 0.
 import * as THREE from 'three';
 import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, clothState, flog, mainCloth, kiteCurl, hullSea, staySag, deckWash, lookAt, glance, sailor, labelSprite, THIGH, SHIN, LOOKS,
-  fit, bar, winch, block, clutches, cleat, wheel, chainplate, display, purchase, mergeGroup, bowNumberMaterial, nameMaterial, nameBox, deckFinish, mastGeo, spreaderGeo } from './yacht.js';
+  fit, bar, winch, block, clutches, cleat, wheel, chainplate, display, purchase, mergeGroup, bowNumberMaterial, nameMaterial, deckFinish, mastGeo, spreaderGeo } from './yacht.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CLS } from './classes.js';
@@ -175,12 +175,11 @@ function bowNumber(hull, look, z0, y0, W, H) {
   return [-1, 1].map((sd) => hull.decal(sd, z0, y0, W, H, mat));
 }
 
-// her name on both quarters (yacht.js nameMaterial): `len` of her length (half) forward from `aft` of it ahead of the
-// transom, the letters k of her freeboard there, their tops `top` of it under the sheer
-function nameDecal(hull, look, { aft = 0.03, top = 0.08, k = 0.5, len = 0.5 } = {}) {
+// her name on both quarters (yacht.js nameMaterial), W × W/8, centred z0 and y0
+function nameDecal(hull, look, z0, y0, W) {
   if (!look.name) return [];
-  const L = 2 * hull.STERN, z1 = hull.STERN - aft * L, fb = hull.deckY(z1), { W, H } = nameBox(L, fb, k, len), mat = nameMaterial(look, W / H);
-  return [-1, 1].map((sd) => hull.decal(sd, z1 - W / 2, fb * (1 - top) - H / 2, W, H, mat));
+  const mat = nameMaterial(look);
+  return [-1, 1].map((sd) => hull.decal(sd, z0, y0, W, W / 8, mat));
 }
 
 function logoDecal(hull, side, logo, z0, y0, W, H) {
@@ -605,7 +604,7 @@ class SportView extends ClassView {
     this.makeTells(player);
     if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, H.BOW + 1.3, 0.5, 0.8, 0.3));
     T.add(...bowNumber(H, look, H.BOW + 0.62, 0.48, 0.62, 0.17));
-    T.add(...nameDecal(H, look));
+    { const z = H.STERN - 0.85; T.add(...nameDecal(H, look, z, H.deckY(z) - 0.15, 1.0)); }
     // the jib sheets, the working one taut and the lazy one slack; the kite's sheet and its tack line to the sprit
     this.jibSheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0]]); this.lazySheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]);
     this.kiteSheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0]]); T.add(this.jibSheet, this.lazySheet, this.kiteSheet);
@@ -815,7 +814,7 @@ class LaserView extends ClassView {
     this.kite = sailMesh(2, 2, none, false, 'kite'); this.kite.visible = false;
     this.sprit = new THREE.Group(); this.kiteSheet = new THREE.Group(); this.lazySheet = new THREE.Group(); this.jibSheet = new THREE.Group();
     if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, H.BOW + 0.95, 0.19, 0.42, 0.15));
-    T.add(...nameDecal(H, look));
+    { const z = H.STERN - 0.55; T.add(...nameDecal(H, look, z, H.deckY(z) - 0.09, 0.5)); }
     this.windex = windex(add, LZ.MASTHEAD + 0.02, LZ.MAST_Z);
     // her one sailor
     const m = crewMats(look), s = sailor({ ...m, skin: new THREE.MeshStandardMaterial({ color: SKINS[0], roughness: 0.65 }) });
@@ -1169,7 +1168,7 @@ class OptimistView extends ClassView {
     this.kite = sailMesh(2, 2, none, false, 'kite'); this.kite.visible = false;
     this.sprit = new THREE.Group(); this.kiteSheet = new THREE.Group(); this.lazySheet = new THREE.Group(); this.jibSheet = new THREE.Group();
     if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, H.BOW + 0.55, O.sheer(0.76) - 0.1, 0.3, 0.11));
-    T.add(...nameDecal(H, look));
+    { const z = H.STERN - 0.4; T.add(...nameDecal(H, look, z, O.sheer(H.tAt(z)) - 0.07, 0.34)); }
     this.windex = windex(add, O.MASTHEAD + 0.02, O.MAST_Z);
     this.windex.scale.setScalar(0.6); rig.add(this.windex); // on the raked masthead
     // her one sailor, a child: drawn at the crew's figure, four-fifths their size
@@ -1530,7 +1529,7 @@ class CruiserView extends ClassView {
     this.makeTells(player);
     if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, H.BOW + 2.4, 1.15, 1.3, 0.48));
     T.add(...bowNumber(H, look, H.BOW + 1.05, 1.25, 0.95, 0.26));
-    T.add(...nameDecal(H, look, { top: 0.46, k: 0.3 })); // under the hull windows
+    { const z = H.STERN - 1.4; T.add(...nameDecal(H, look, z, H.deckY(z) - 0.25, 1.7)); }
     this.jibSheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0]]); this.lazySheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]);
     this.kiteSheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0]]); T.add(this.jibSheet, this.lazySheet, this.kiteSheet);
     for (const l of [this.jibSheet, this.lazySheet, this.kiteSheet]) l.frustumCulled = false;
@@ -1766,7 +1765,7 @@ class AC75View extends ClassView {
     this.makeTells(player);
     if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, H.BOW + 4.6, 0.75, 2.6, 0.95));
     T.add(...bowNumber(H, look, H.BOW + 2.3, 0.95, 2.0, 0.5));
-    T.add(...nameDecal(H, look, { aft: 0.02, len: 0.44 })); // ending clear of the foil arms' fairings, 11 m from the transom
+    { const z = H.STERN - 3.6; T.add(...nameDecal(H, look, z, H.deckY(z) - 0.45, 4.2)); }
     this.windex = windex(add, A.MASTHEAD + 0.05, A.MAST_Z);
     // the broadcast's camera pods: one on a short post on the aft deck looking forward, one high on the mast
     { const z = H.STERN - 0.3; add(cyl(0.04, 0.05, 0.5, M.dark, 8), 0, H.deckY(z) + 0.25, z);
