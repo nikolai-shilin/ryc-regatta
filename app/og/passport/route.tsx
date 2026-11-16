@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     cells: [
       { label: t('Streak', 'Серия'), value: p.s, unit: t(p.s === 1 ? 'day' : 'days', ruPlural(p.s, ['день', 'дня', 'дней'])) },
       { label: t('Venues', 'Акватории'), value: p.v, unit: `/ ${VENUES.length}` },
-      { label: t('Badges', 'Значки'), value: p.b, unit: `/ ${BADGES.length}` },
+      { label: t('Badges', 'Достижения'), value: p.b, unit: `/ ${BADGES.length}` },
     ],
     strip: (
       <div style={{ display: 'flex', gap: 5 }}>
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     ),
     call: t('Sail today’s race', 'Пройди гонку дня'),
     panel: {
-      title: t('Badges', 'Значки'), aside: `${p.b} / ${BADGES.length}`, asideColor: C.gold,
+      title: t('Badges', 'Достижения'), aside: `${p.b} / ${BADGES.length}`, asideColor: C.gold,
       body: (
         <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-around' /* the renderer has no space-evenly */, padding: '10px 14px 18px', width: PANEL.w }}>
           {rows.map((row, r) => (

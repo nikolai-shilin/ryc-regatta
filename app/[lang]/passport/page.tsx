@@ -34,7 +34,7 @@ export default async function Passport({ params, searchParams }: Props) {
       <header className="hm-page hm-ph rt-head">
         <span className="kicker">{p.n ? t(`${p.n}’s passport`, `Паспорт: ${p.n}`) : t('A sailor’s passport', 'Паспорт гонщика')}</span>
         <h1 className="hm-ph-h">{p.s >= 2 ? t(`${p.s} days in a row`, `${p.s} ${ruPlural(p.s, ['день', 'дня', 'дней'])} подряд`) : t(`${p.v} of ${VENUES.length} venues`, `${p.v} из ${VENUES.length} акваторий`)}</h1>
-        <p className="hm-text">{t(`Every day the race moves to another of ${VENUES.length} famous regatta venues, the same race for everyone. ${p.v} raced so far${p.b ? `, ${p.b} ${p.b === 1 ? 'badge' : 'badges'} earned` : ''}. Can you get further?`, `Каждый день гонка переезжает на другую из ${VENUES.length} знаменитых регатных акваторий, и она у всех одна. Пройдено ${p.v}${p.b ? `, значков: ${p.b}` : ''}. Сможешь дальше?`)}</p>
+        <p className="hm-text">{t(`Every day the race moves to another of ${VENUES.length} famous regatta venues, the same race for everyone. ${p.v} raced so far${p.b ? `, ${p.b} ${p.b === 1 ? 'badge' : 'badges'} earned` : ''}. Can you get further?`, `Каждый день гонка переезжает на другую из ${VENUES.length} знаменитых регатных акваторий, и она у всех одна. Пройдено ${p.v}${p.b ? `, достижений: ${p.b}` : ''}. Сможешь дальше?`)}</p>
         <div className="ho-acts"><a className="ho-go" href="/play?race=today">{t('Sail today’s race', 'Пройди гонку дня')}</a><Link className="lb-more" href="/">{t('What the game is', 'Что это за игра')}</Link></div>
       </header>
       <main className="hm-page rt">
@@ -42,7 +42,7 @@ export default async function Passport({ params, searchParams }: Props) {
           {VENUES.map((v, i) => <li key={v.id} className={p.raced[i] ? 'raced' : undefined}>{v.name[L]}</li>)}
         </ul>
         {p.got.some(Boolean) ? (
-          <ul className="pg-pass-b" aria-label={t('Badges earned', 'Полученные значки')}>
+          <ul className="pg-pass-b" aria-label={t('Badges earned', 'Полученные достижения')}>
             {BADGES.map((b, i) => <li key={b.id} title={t(...b.name)}><BadgePennant id={b.id} on={p.got[i]} /><span>{t(...b.name)}{p.got[i] ? '' : t(' (not yet)', ' (ещё нет)')}</span></li>)}
           </ul>
         ) : null}

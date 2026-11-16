@@ -67,7 +67,7 @@ export function BackStrip({ lang, day, top, cap = 5 }: { lang: Lang; day: string
         </>}
       </div>
       <Link className="ho-back-i ho-back-a" href="/race/badges" data-cta="back-badge">
-        <span className="lbl">{badge ? t('Nearest badge', 'Ближайший значок') : t('Badges', 'Значки')}</span>
+        <span className="lbl">{badge ? t('Nearest badge', 'Ближайшее достижение') : t('Badges', 'Достижения')}</span>
         <b>{badge ? t(...badge.name) : t(`${earned} of ${BADGES.length}`, `${earned} из ${BADGES.length}`)}</b>
         <small>{near ? t(`${near.v} of ${near.of} ›`, `${near.v} из ${near.of} ›`) : t('See what each one takes ›', 'Что нужно для каждого ›')}</small>
       </Link>

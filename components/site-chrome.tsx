@@ -14,7 +14,7 @@ const CRUMBS: Partial<Record<Page, [en: string, ru: string, path: string]>> = {
   help: ['How to play', 'Как играть', '/help'], faq: ['Questions', 'Вопросы', '/faq'], race: ['Today’s race', 'Гонка дня', '/race'],
   free: ['Free race', 'Свободная гонка', '/race/free'], boat: ['Your boat', 'Твоя яхта', '/boat'],
   iyt: ['Sailing Certification Test', 'Sailing Certification Test', '/iyt'], learn: ['Learn to race', 'Учись гоняться', '/learn'],
-  drills: ['Drills', 'Тренировки', '/race/drills'], badges: ['Badges', 'Значки', '/race/badges'],
+  drills: ['Drills', 'Тренировки', '/race/drills'], badges: ['Badges', 'Достижения', '/race/badges'],
 };
 function Breadcrumbs({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Page; crumbs?: Crumb[] }) {
   const c = CRUMBS[page];
@@ -81,7 +81,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
           <Link href="/help">{t('How to play', 'Как играть')}</Link>
           <Link href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
           <Link href="/race/drills">{t('Drills', 'Тренировки')}</Link>
-          <Link href="/race/badges">{t('Badges', 'Значки')}</Link>
+          <Link href="/race/badges">{t('Badges', 'Достижения')}</Link>
           <Link href="/faq">{t('Questions', 'Вопросы')}</Link>
           <Link className="if-me me-name" href="/settings" /><Link className="if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link>
           <a href="https://www.rycrentals.com/">rycrentals.com</a>

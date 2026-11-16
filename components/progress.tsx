@@ -94,7 +94,7 @@ export function BadgesGrid({ lang }: { lang: Lang }) {
         <p role="status">{log ? (lang === 'ru' ? <>Получено <b>{n}</b> из {BADGES.length}</> : <><b>{n}</b> of {BADGES.length} earned</>) : ' '}</p>
         <Pips got={log?.b} />
         <span className="pg-legend">{FAMS.map((f) => <span key={f.id} style={fam(f.id)}>{t(...f.many)}</span>)}</span>
-        {log && n ? <ShareButton lang={lang} data={() => passportShare(log, lang)} className="bt-show" title={t('Share your badges and venues', 'Поделиться значками и акваториями')} /> : null}
+        {log && n ? <ShareButton lang={lang} data={() => passportShare(log, lang)} className="bt-show" title={t('Share your badges and venues', 'Поделиться достижениями и акваториями')} /> : null}
       </div>
       <ul className="pg-badges">
         {BADGES.map((b) => {
@@ -132,7 +132,7 @@ export function RaceBadges({ lang, at }: { lang: Lang; at: number }) {
     <Link href="/race/badges" className={`pg-kick${one ? '' : ' many'}`} style={fam(won[0].fam)}>
       <span className="pg-kick-embs">{won.map((b) => <BadgePennant key={b.id} id={b.id} on className="pg-kick-emb" style={fam(b.fam)} />)}</span>
       <span className="pg-kick-t">
-        <em>{one ? t('New badge', 'Новый значок') : lang === 'ru' ? `${won.length} ${ruPlural(won.length, ['новый значок', 'новых значка', 'новых значков'])}` : `${won.length} new badges`}</em>
+        <em>{one ? t('New badge', 'Новое достижение') : lang === 'ru' ? `${won.length} ${ruPlural(won.length, ['новое достижение', 'новых достижения', 'новых достижений'])}` : `${won.length} new badges`}</em>
         <strong>{won.map((b) => t(...b.name)).join(' · ')}</strong>
         {one ? <span>{t(...one.how)}</span> : null}
       </span>
@@ -163,7 +163,7 @@ export function ProgressRows({ lang }: { lang: Lang }) {
       </Link>
       <Link className="bt-row pg-row" href="/race/badges">
         <span className="pg-row-ico" aria-hidden="true">{last ? <BadgePennant id={last} on /> : <BadgePennant id="first" on={false} />}</span>
-        <span className="pg-row-t">{t('Badges', 'Значки')}{n == null ? null : <small>{lang === 'ru' ? <>Получено <b>{n}</b> из {BADGES.length}</> : <><b>{n}</b> of {BADGES.length} earned</>}</small>}</span>
+        <span className="pg-row-t">{t('Badges', 'Достижения')}{n == null ? null : <small>{lang === 'ru' ? <>Получено <b>{n}</b> из {BADGES.length}</> : <><b>{n}</b> of {BADGES.length} earned</>}</small>}</span>
         {n == null ? null : <Pips got={log?.b} className="pg-row-pips" />}
       </Link>
     </>

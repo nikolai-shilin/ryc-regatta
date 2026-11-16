@@ -8,18 +8,18 @@ export type BadgeId = 'first' | 'clean' | 'gun' | 'shifts' | 'speed' | 'podium' 
 export type BadgeFam = 'result' | 'skill' | 'season';
 type Pair = [en: string, ru: string];
 export const BADGES: { id: BadgeId; fam: BadgeFam; name: Pair; how: Pair; race?: boolean }[] = [
-  { id: 'first', fam: 'result', race: true, name: ['First finish', 'Первый финиш'], how: ['Finish a race.', 'Дойди до финиша.'] },
-  { id: 'clean', fam: 'skill', race: true, name: ['Clean race', 'Чистая гонка'], how: ['Finish with no fouls, no penalties and no hails.', 'Финишируй без нарушений, штрафов и окликов.'] },
-  { id: 'gun', fam: 'skill', race: true, name: ['On the gun', 'Точно по сигналу'], how: ['Cross the line within 2 seconds of the gun, at speed, and not over early.', 'Пересеки линию в пределах 2 секунд после сигнала, на скорости и без фальстарта.'] },
-  { id: 'shifts', fam: 'skill', race: true, name: ['Shift player', 'Мастер сдвигов'], how: ['Tack on two headers or more in a race, and never on a lift.', 'Сделай не меньше двух поворотов на заходах ветра и ни одного на отходе.'] },
-  { id: 'speed', fam: 'skill', race: true, name: ['In the groove', 'На целевой скорости'], how: ['Sail at 95% of target speed or better over a race.', 'Держи в среднем 95% целевой скорости или больше.'] },
-  { id: 'podium', fam: 'result', race: true, name: ['Podium', 'Подиум'], how: ['Finish in the first three of a fleet of four or more.', 'Финишируй в тройке флота из четырёх лодок или больше.'] },
-  { id: 'win', fam: 'result', race: true, name: ['Line honours', 'Первым на финише'], how: ['Win a race.', 'Выиграй гонку.'] },
-  { id: 'comeback', fam: 'skill', race: true, name: ['Comeback', 'Прорыв'], how: ['Finish two places or more ahead of where you rounded the first mark.', 'Финишируй на два места или больше выше, чем огибал первый знак.'] },
-  { id: 'streak7', fam: 'season', name: ['Week on the water', 'Неделя на воде'], how: ['Finish today’s race seven days in a row.', 'Пройди гонку дня семь дней подряд.'] },
-  { id: 'venues7', fam: 'season', name: ['Explorer', 'Путешественник'], how: ['Race at seven venues.', 'Проведи гонки на семи акваториях.'] },
-  { id: 'venues28', fam: 'season', name: ['Round the world', 'Вокруг света'], how: ['Race at every venue.', 'Проведи гонки на всех акваториях.'] },
-  { id: 'drills', fam: 'season', name: ['Drilled', 'Отработано'], how: ['Get three stars on every drill.', 'Получи три звезды во всех тренировках.'] },
+  { id: 'first', fam: 'result', race: true, name: ['First finish', 'Первый финиш'], how: ['Finish a race.', 'Финиш в любой гонке.'] },
+  { id: 'clean', fam: 'skill', race: true, name: ['Clean race', 'Чистая гонка'], how: ['Finish with no fouls, no penalties and no hails.', 'Финиш без нарушений, штрафов и окликов.'] },
+  { id: 'gun', fam: 'skill', race: true, name: ['On the gun', 'Старт по сигналу'], how: ['Cross the line within 2 seconds of the gun, at speed, and not over early.', 'Пересечение линии в пределах 2 секунд после сигнала, на скорости и без фальстарта.'] },
+  { id: 'shifts', fam: 'skill', race: true, name: ['Shift player', 'Игра на сдвигах'], how: ['Tack on two headers or more in a race, and never on a lift.', 'Не меньше двух поворотов на заходах ветра за гонку и ни одного на отходе.'] },
+  { id: 'speed', fam: 'skill', race: true, name: ['In the groove', 'Целевая скорость'], how: ['Sail at 95% of target speed or better over a race.', 'В среднем 95% целевой скорости или больше за гонку.'] },
+  { id: 'podium', fam: 'result', race: true, name: ['Podium', 'Подиум'], how: ['Finish in the first three of a fleet of four or more.', 'Место в первой тройке во флоте из четырёх лодок или больше.'] },
+  { id: 'win', fam: 'result', race: true, name: ['Line honours', 'Победа'], how: ['Win a race.', 'Первое место в гонке.'] },
+  { id: 'comeback', fam: 'skill', race: true, name: ['Comeback', 'Прорыв'], how: ['Finish two places or more ahead of where you rounded the first mark.', 'Финиш на два места или больше выше, чем на огибании первого знака.'] },
+  { id: 'streak7', fam: 'season', name: ['Week on the water', 'Неделя на воде'], how: ['Finish today’s race seven days in a row.', 'Гонка дня семь дней подряд.'] },
+  { id: 'venues7', fam: 'season', name: ['Explorer', 'Семь акваторий'], how: ['Race at seven venues.', 'Гонки на семи разных акваториях.'] },
+  { id: 'venues28', fam: 'season', name: ['Round the world', 'Все акватории'], how: ['Race at every venue.', 'Гонки на каждой акватории игры.'] },
+  { id: 'drills', fam: 'season', name: ['Drilled', 'Все тренировки'], how: ['Get three stars on every drill.', 'Три звезды в каждой тренировке.'] },
 ];
 export const FAMS: { id: BadgeFam; name: Pair; many: Pair }[] = [
   { id: 'result', name: ['Result', 'Результат'], many: ['Results', 'Результаты'] },
