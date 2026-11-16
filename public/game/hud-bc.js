@@ -375,7 +375,6 @@ const CSS = `
 .b-btag.me .in { box-shadow: inset 0 -3px 0 var(--you); clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
 .b-btag .c { width: 4px; background: var(--c, var(--fill-3)); }
 .b-btag .n { display: flex; align-items: center; gap: var(--s-2); padding: 0 var(--s-3); font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-name); }
-.b-btag .b-me { color: var(--you); } .b-btag .b-me:empty { display: none; }
 .b-btag .v { display: flex; align-items: center; padding: 0 var(--s-3); border-left: 1px solid var(--rule); font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-2); }
 .b-btag .stem { position: absolute; left: -1px; bottom: 0; width: 2px; height: 22px; background: linear-gradient(var(--w-90), var(--w-14)); transform-origin: top; animation: bc-pin .35s var(--ease) both .3s; }
 /* the HUD's entrance: the tags on the water drop in last, after every block, their pins after them; the board's rows
@@ -706,9 +705,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   document.body.append(over);
   const advLine = q(over, '.adv'), advLab = q(over, '.b-advl');
   const btags = Array.from({ length: 3 }, () => {
-    const el = html(`<div class="b-btag"><span class="stem"></span><div class="in"><b class="p"></b><i class="c"></i><span class="n"><img class="b-fl" alt="" hidden><span class="nt"></span><span class="lbl b-me"></span><span class="b-lv" hidden><i></i><i></i><i></i><i></i><span></span></span></span><span class="v"></span><b class="b-pen" hidden>${L.pen}</b></div></div>`);
+    const el = html(`<div class="b-btag"><span class="stem"></span><div class="in"><b class="p"></b><i class="c"></i><span class="n"><img class="b-fl" alt="" hidden><span class="nt"></span><span class="b-lv" hidden><i></i><i></i><i></i><i></i><span></span></span></span><span class="v"></span><b class="b-pen" hidden>${L.pen}</b></div></div>`);
     over.append(el);
-    return { el, box: q(el, '.in'), p: q(el, '.p'), c: q(el, '.c'), n: q(el, '.n .nt'), me: q(el, '.b-me'), fl: q(el, '.b-fl'), lv: q(el, '.b-lv'), v: q(el, '.v'), pen: q(el, '.b-pen'), w: 0, f: 0 };
+    return { el, box: q(el, '.in'), p: q(el, '.p'), c: q(el, '.c'), n: q(el, '.n .nt'), fl: q(el, '.b-fl'), lv: q(el, '.b-lv'), v: q(el, '.v'), pen: q(el, '.b-pen'), w: 0, f: 0 };
   });
   const lay = q(low, '.b-lay'), layT = q(lay, 'span'), layK = q(lay, '.b-key');
   const split = q(low, '.b-split'), SP = { k: q(split, '.k'), t: q(split, '.t'), v: q(split, '.v'), g: q(split, '.g') };
@@ -984,7 +983,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       cls(r.el, `b-row${me ? ' me' : ''}${i === 1 && !pre ? ' first' : ''}${cx.includes(b) ? '' : ' cxh'}`);
       txt(r.pos, b.dsq ? '–' : String(i));
       r.bar.style.setProperty('--c', hex(b.color));
-      txt(r.nm, me ? t('you') : b.name); setFlag(r.fl, flagOf(b, me)); showPen(r.pen, b); showLevel(r.lv, me ? null : b.level);
+      txt(r.nm, me ? sailNo() : b.name); setFlag(r.fl, flagOf(b, me)); showPen(r.pen, b); showLevel(r.lv, me ? null : b.level);
       const mv = moved.get(b), mvOn = mv && race.clock < mv[1];
       txt(r.mv, mvOn ? (mv[0] === 'u' ? '▲' : '▼') : ''); cls(r.mv, `b-mv${mvOn ? ' ' + mv[0] : ''}`);
       if (mvOn && r.el._mv !== mv) { r.el._mv = mv; flash(r.el, mv[0] === 'u' ? 'gain' : 'lose', 1600); }
@@ -1126,7 +1125,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       g.el.style.transform = `translate(${at[0].toFixed(1)}px, ${at[1].toFixed(1)}px)`;
       txt(g.p, pre ? '·' : String(place));
       g.c.style.setProperty('--c', me ? 'var(--you)' : hex(b.color));
-      txt(g.n, me ? sailNo() : b.name); txt(g.me, me ? L.you : ''); setFlag(g.fl, flagOf(b, me)); showLevel(g.lv, me ? null : b.level);
+      txt(g.n, me ? sailNo() : b.name); setFlag(g.fl, flagOf(b, me)); showLevel(g.lv, me ? null : b.level);
       txt(g.v, pre && !me ? L.mToLine(Math.round(Math.max(0, -race.lineInfo(b).d))) : `${nf(b.v / KN)} ${t('kn')}`); // a rival before the start: how far from the line
       showPen(g.pen, b);
       // its box slid back onto the screen when the boat is near an edge (its width read now and then, not every frame)
@@ -1262,7 +1261,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       const me = x.b === P, i = rows.indexOf(x) + 1, lead = i === 1 && !x.due;
       cls(r.el, `b-row${me ? ' me' : ''}${x.due ? ' due' : ' rd'}${lead ? ' first' : ''}${cx.includes(x) ? '' : ' cxh'}`);
       txt(r.pos, String(i));
-      txt(r.nm, me ? t('you') : x.b.name); setFlag(r.fl, flagOf(x.b, me)); showPen(r.pen, x.b); showLevel(r.lv, me ? null : x.b.level);
+      txt(r.nm, me ? sailNo() : x.b.name); setFlag(r.fl, flagOf(x.b, me)); showPen(r.pen, x.b); showLevel(r.lv, me ? null : x.b.level);
       txt(r.tm, x.due ? (x.d == null ? '—' : `${Math.round(x.d)} ${M}`) : fmt(x.t));
       txt(r.gp, x.due ? (x.d == null ? '' : L.toGo) : x.gap == null ? '—' : lead ? L.leads : `+${fmt(x.gap)}`); r.gp.classList.toggle('dim', lead || x.due);
     });
