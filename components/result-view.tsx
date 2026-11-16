@@ -388,7 +388,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
             <div className="rs-card rs-pad">
               <CourseMap className="cmap rs-track" lang={lang} geo={res.course} preset={res.preset} W={320} H={320} tracks={tracks} fouls={fouls} />
               <div className="rs-key"><span className="is-you">— {shared ? t('this boat', 'эта лодка') : t('you', 'ты')}</span><span>— {t('fleet', 'соперники')}</span>
-                <span>{t('Course', 'Дистанция')} {fmtDistance(courseDistance(res.course, res.laps), lang)}</span>{L.fouls.length ? <span>{t('orange rings mark the fouls', 'оранжевые кольца — нарушения')}</span> : null}</div>
+                <span>{t('Course', 'Дистанция')} {fmtDistance(courseDistance(res.course, res.laps), lang)}</span>{L.fouls.length ? <span>{t('red rings mark the fouls', 'красные кольца — нарушения')}</span> : null}</div>
             </div>
             {!!legs.length && (
               <ol className="rs-card rs-legs">
