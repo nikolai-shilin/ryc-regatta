@@ -5,6 +5,7 @@ const SC = HULL / 10.45; // the model is drawn 10.45 m long, the JPK 1050 as she
 import { LOOKS, playerLook, lookFrom, SEA } from './yacht.js';
 import { makeBoatView } from './boats3d.js';
 import { CommitteeBoat } from './committee.js';
+import { buoy } from './marks.js';
 import { JuryBoat } from './jury.js';
 import { Wildlife } from './wildlife.js';
 import { BannerPlane } from './plane.js';
@@ -998,42 +999,6 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
-// an inflatable racing mark: a glossy PVC cylinder in eight panels, each blown out a little between its seams, its
-// top rounded over to a slight dome with a lifting handle on it, sitting a fifth of its height in the water, with a
-// wet, greener band at the waterline (it lives out there). R: its radius; it is 2.1 R tall above the water.
-const BUOY_PANELS = 8;
-function buoy(color = '#ff7a1a', R = 1.05) {
-  const g = new THREE.Group();
-  const H = 2.1 * R, base = -0.45 * R, fil = 0.32 * R, pts = [];
-  pts.push(new THREE.Vector2(0.001, base), new THREE.Vector2(R * 0.82, base), new THREE.Vector2(R * 0.97, base + 0.08 * R));
-  for (let i = 0; i <= 10; i++) pts.push(new THREE.Vector2(R, base + 0.16 * R + (H - fil - base - 0.16 * R) * (i / 10)));
-  for (let i = 1; i <= 8; i++) { const a = (i / 8) * Math.PI / 2; pts.push(new THREE.Vector2(R - fil + Math.cos(a) * fil, H - fil + Math.sin(a) * fil)); }
-  for (let i = 1; i <= 4; i++) { const f = i / 4; pts.push(new THREE.Vector2((R - fil) * (1 - f) + 0.001, H + 0.07 * R * Math.sin(f * Math.PI / 2))); }
-  const geo = new THREE.LatheGeometry(pts, BUOY_PANELS * 8);
-  const P = geo.attributes.position, col = [], c0 = new THREE.Color(color), wet = new THREE.Color(color).multiplyScalar(0.55).lerp(new THREE.Color('#4d5a2e'), 0.35), c = new THREE.Color();
-  for (let i = 0; i < P.count; i++) {
-    const x = P.getX(i), y = P.getY(i), z = P.getZ(i), r = Math.hypot(x, z);
-    if (r > 0.05) { // the panels: full in the middle, drawn in at the seams
-      const s = ((Math.atan2(z, x) / (2 * Math.PI)) * BUOY_PANELS + 100) % 1, k = 0.95 + 0.05 * Math.sqrt(Math.sin(Math.PI * s));
-      P.setX(i, x * k); P.setZ(i, z * k);
-    }
-    c.copy(c0).lerp(wet, 1 - THREE.MathUtils.smoothstep(y, -0.05, 0.12)); // the waterline
-    c.multiplyScalar(1 - 0.12 * (1 - THREE.MathUtils.smoothstep(y, 0.1, 0.45))); // still wet just above it
-    col.push(c.r, c.g, c.b);
-  }
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  geo.computeVertexNormals();
-  const body = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.42, clearcoat: 0.6, clearcoatRoughness: 0.28 }));
-  body.castShadow = body.receiveShadow = true; g.add(body);
-  const rubber = new THREE.MeshStandardMaterial({ color: '#23262b', roughness: 0.7 });
-  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.17 * R, 0.035 * R, 8, 20, Math.PI), rubber);
-  handle.position.y = H + 0.06 * R; g.add(handle);
-  const valve = new THREE.Mesh(new THREE.CylinderGeometry(0.07 * R, 0.08 * R, 0.05 * R, 12), rubber);
-  valve.position.set(0.32 * R, H + 0.03 * R, 0.1 * R); g.add(valve);
-  g.userData.R = R;
-  return g;
-}
-
 // where a mark meets the sea: a ring of water round it that rides the waves, darker against the PVC, with a band of
 // foam where the chop slaps against it — wider on the side the wind and the waves come from
 const MARK_FS = /* glsl */ `
@@ -1385,7 +1350,7 @@ export class World {
       this.buoys.push({ obj, p, vee, ring });
     };
     for (const m of [...Object.values(c.marks), ...c.gate]) add(buoy(), m, currentVee()); // the rounding marks and the gate
-    add(buoy('#ffb000', 0.85), c.pin, currentVee());
+    add(buoy('#ffd21a', 0.85), c.pin, currentVee());
     // a committee boat lies to her anchor head to wind, 5 m beyond her line's end (d: along the line, towards her):
     // which side of her the pin is, and where along her the line meets her, place her orange flag and her officers
     const cbx = Math.cos(W0), cbz = Math.sin(W0);
@@ -1410,7 +1375,7 @@ export class World {
     this.fb = null;
     if (c.finish) {
       const f = c.finish, fl = Math.hypot(f.b.x - f.a.x, f.b.z - f.a.z);
-      add(buoy('#ffb000', 0.85), f.a, currentVee());
+      add(buoy('#ffd21a', 0.85), f.a, currentVee());
       this.fb = cboat(c.finishBoat, { x: (f.b.x - f.a.x) / fl, z: (f.b.z - f.a.z) / fl }).finishing();
       dashes(f.a, f.b);
     }
