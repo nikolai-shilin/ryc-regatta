@@ -61,5 +61,16 @@ export function pageMeta(lang: Lang, { title, description, path, index = true, a
   };
 }
 
+// Who writes the guides and the venue pages: the byline under each one's title and the author in its Article data.
+// sameAs: the author's public profiles, so search engines and AI assistants can tell who he is.
+export const AUTHOR = { name: ['Nikolai Shilin', 'Николай Шилин'] as [string, string], org: 'RYC', sameAs: [] as string[] };
+export const RYC_LD = { '@type': 'Organization', '@id': `${SITE}/#ryc`, name: 'RYC', url: 'https://www.rycrentals.com/', logo: { '@type': 'ImageObject', url: `${SITE}/logo-black.svg` } };
+export const AUTHOR_LD = {
+  '@type': 'Person', '@id': `${SITE}/#author`, name: AUTHOR.name[0], alternateName: AUTHOR.name[1], worksFor: RYC_LD,
+  ...(AUTHOR.sameAs.length && { sameAs: AUTHOR.sameAs }),
+};
+// a date as the bylines say it: 17 November 2026, 17 ноября 2026 г.
+export const longDate = (day: string, lang: Lang) => new Date(day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+
 // Escaped for a <script type="application/ld+json">: no "</script>" can close it early.
 export const jsonLd = (data: unknown) => ({ __html: JSON.stringify(data).replace(/</g, '\\u003c') });

@@ -5,6 +5,10 @@ import { IconArrow } from '@/components/ui';
 import { AppMark } from '@/components/app-marks';
 import { ShareGame } from '@/components/social-share';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
+import { READING_VIEWPORT } from '@/lib/no-zoom';
+
+// text to read: it zooms (lib/no-zoom.ts)
+export const viewport = READING_VIEWPORT;
 
 export const generateMetadata = titled('Follow the game', 'Игра в соцсетях', {
   path: '/social', card: '/og/page/social',

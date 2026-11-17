@@ -5,12 +5,16 @@ import { ruPlural } from '@/lib/lang';
 import { GUIDES, guide } from '@/lib/guides';
 import { IconArrow } from '@/components/ui';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
+import { READING_VIEWPORT } from '@/lib/no-zoom';
+
+// text to read: it zooms (lib/no-zoom.ts)
+export const viewport = READING_VIEWPORT;
 
 export const generateMetadata = titled('Learn to race', 'Учись гоняться', {
   path: '/learn', card: '/og/page/learn',
   description: [
-    'Short guides to sailboat racing: the racing rules, the start, wind shifts, mark roundings, sailing downwind and boat speed, and a glossary. Then try each one in a free 3D sailing race.',
-    'Короткие пособия по парусным гонкам: правила, старт, заходы и отходы ветра, огибание знаков, попутные курсы и скорость лодки, а также словарь. А потом попробуй каждое в бесплатной 3D-гонке.'],
+    'Short guides to sailboat racing: points of sail, tacking and gybing, the racing rules, the start, wind shifts, the marks, downwind and boat speed. Then try them in a free 3D race.',
+    'Короткие пособия по парусным гонкам: курсы относительно ветра, повороты, правила, старт, сдвиги ветра, знаки, попутные курсы и скорость. А потом попробуй их в бесплатной 3D-гонке.'],
 });
 
 // L0 · Learn to race: the guides, one card each (its picture from the game and its number over it; the one without a
@@ -24,7 +28,7 @@ export default async function Learn({ params }: LangParams) {
       <header className="hm-page hm-ph">
         <span className="kicker">{t(`Up and down · ${guides.length} guides`, `Up and down · ${guides.length} ${ruPlural(guides.length, ['пособие', 'пособия', 'пособий'])}`)}</span>
         <h1 className="hm-ph-h">{t('Learn to race', 'Учись гоняться')}</h1>
-        <p className="hm-text">{t('What wins a sailboat race, a few minutes at a time: the rules when boats meet, the start, the wind shifts, the marks, the run and boat speed. Each guide ends on the water, in the game.', 'Что выигрывает парусную гонку — по несколько минут на тему: правила при встрече лодок, старт, заходы и отходы ветра, знаки, попутный курс и скорость. Каждое пособие заканчивается на воде, в игре.')}</p>
+        <p className="hm-text">{t('What wins a sailboat race, a few minutes at a time: the points of sail and the tack, the rules when boats meet, the start, the wind shifts, the marks, the run and boat speed. Each guide ends on the water, in the game.', 'Что выигрывает парусную гонку — по несколько минут на тему: курсы относительно ветра и повороты, правила при встрече лодок, старт, заходы и отходы ветра, знаки, попутный курс и скорость. Каждое пособие заканчивается на воде, в игре.')}</p>
       </header>
       <div className="hm-page gd-list">
         {guides.map((g, i) => (

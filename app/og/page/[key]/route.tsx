@@ -27,7 +27,7 @@ const num = (n: number, lang: Lang) => n.toLocaleString(lang === 'ru' ? 'ru-RU' 
 const dayLabel = (day: string, lang: Lang) => new Date(day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/\.$/, '');
 const learn = (t: T) => t('Learn to race', 'Учись гоняться');
 // the picture behind each guide: what it teaches, as the game shows it
-const GUIDE_BG: Record<GuideSlug, Bg> = { rules: 'fleet', start: 'start', shifts: 'wind', marks: 'aerial', downwind: 'fleet', trim: 'trim' };
+const GUIDE_BG: Record<GuideSlug, Bg> = { sail: 'wind', tack: 'helm', rules: 'fleet', start: 'start', shifts: 'wind', marks: 'aerial', downwind: 'fleet', trim: 'trim' };
 
 const CARDS: Record<string, Build> = {
   learn: (t) => ({

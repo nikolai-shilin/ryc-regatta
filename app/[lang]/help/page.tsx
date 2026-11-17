@@ -4,8 +4,12 @@ import { getT, titled, type LangParams } from '@/lib/i18n';
 import { IconArrow } from '@/components/ui';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 import { Toc } from '@/components/toc';
+import { READING_VIEWPORT } from '@/lib/no-zoom';
 
-export const generateMetadata = titled('How to play', 'Как играть', {
+// text to read: it zooms (lib/no-zoom.ts)
+export const viewport = READING_VIEWPORT;
+
+export const generateMetadata = titled('How to play: controls and racing rules', 'Как играть: управление и правила гонок', {
   path: '/help', card: '/og/page/help',
   description: [
     'How to sail Up and down: steer by touch or the arrow keys, trim the main and jib, tack, gybe and hoist the gennaker, win the start and play the wind shifts. The race screen, the camera views and the racing rules, with pictures.',

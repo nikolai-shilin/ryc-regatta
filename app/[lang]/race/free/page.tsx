@@ -1,11 +1,11 @@
 import { getT, titled, type LangParams } from '@/lib/i18n';
 import FreeSetup from '@/components/free-setup';
 
-export const generateMetadata = titled('Free race', 'Свободная гонка', {
+export const generateMetadata = titled('Free race: set up your own regatta', 'Свободная гонка: настрой свою регату', {
   path: '/race/free', card: '/og/page/free',
   description: [
-    'Set up your own sailing race at a famous regatta venue (Göcek, Cowes, Newport, Sydney, Kiel, Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland, San Francisco, Valencia, Barcelona, Palma, Marstrand, Bermuda, Enoshima, Weymouth, Marseille, Rio de Janeiro or Lake Garda): light, medium or strong wind, 3 to 7 boats, up and down, a triangle, a trapezoid or an upwind finish, one or two laps, a 1, 3 or 5 minute start, with or without a current.',
-    'Настрой свою парусную гонку на знаменитой регатной акватории (Гёчек, Каус, Ньюпорт, Сидней, Киль, Триест, Порто-Черво, Сен-Тропе, Антигуа, Окленд, Сан-Франциско, Валенсия, Барселона, Пальма, Марстранд, Бермуды, Эносима, Уэймут, Марсель, Рио-де-Жанейро или озеро Гарда): слабый, средний или сильный ветер, от 3 до 7 лодок, апвинд — даунвинд, треугольник, трапеция или финиш наверху, один или два круга, старт за 1, 3 или 5 минут, с течением или без.'],
+    'Set up your own sailing race at one of 34 regatta venues, from Cowes to Sydney: the yacht, the wind, 3 to 7 boats, the course, laps, the start and the current.',
+    'Настрой свою парусную гонку на одной из 34 регатных акваторий, от Кауса до Сиднея: яхта, ветер, от 3 до 7 лодок, дистанция, круги, старт и течение.'],
 });
 
 export default async function FreeRacePage({ params, searchParams }: LangParams & { searchParams: Promise<{ from?: string }> }) {

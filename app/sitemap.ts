@@ -1,17 +1,32 @@
 import type { MetadataRoute } from 'next';
 import { SITE, langUrl, languages } from '@/lib/seo';
+import { GUIDES, GUIDE_DATES } from '@/lib/guides';
+import { VENUES } from '@/lib/venues';
+import { YACHT_IDS } from '@/lib/yachts';
+import { PAGES_DATE } from '@/lib/venue-guides';
 
 // The pages worth finding, each in English (the bare address) and Russian (?lang=ru), with hreflang links between
-// the two so a search engine shows each reader their own language.
-const PAGES: [string, number][] = [['/', 1], ['/race', 0.9], ['/race/rating', 0.7], ['/race/drills', 0.6], ['/help', 0.8], ['/faq', 0.8], ['/race/free', 0.6], ['/boat', 0.5], ['/yachts', 0.6], ['/players', 0.5], ['/iyt', 0.6], ['/social', 0.4],
-  ['/learn', 0.7], ['/learn/rules', 0.8], ['/learn/start', 0.8], ['/learn/shifts', 0.8],
-  ['/learn/marks', 0.8], ['/learn/downwind', 0.8], ['/learn/trim', 0.8], ['/learn/glossary', 0.7]];
+// the two so a search engine shows each reader their own language. lastmod is when the page's text last changed in
+// substance (Google reads it, and ignores priority and changefreq); the pages that change every day say today, and a
+// page with no date known says none rather than a wrong one.
+//
+// rebuilt hourly, so the daily pages' date turns over soon after midnight
+export const revalidate = 3600;
+
+type Page = [path: string, priority: number, lastmod?: string];
+const today = () => new Date().toISOString().slice(0, 10);
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const day = today();
+  const PAGES: Page[] = [['/', 1, day], ['/race', 0.9, day], ['/race/rating', 0.7, day], ['/race/drills', 0.6], ['/help', 0.8], ['/faq', 0.8], ['/race/free', 0.6], ['/boat', 0.5],
+    ['/yachts', 0.6], ...YACHT_IDS.map((id): Page => [`/yachts/${id}`, 0.6, PAGES_DATE]),
+    ['/venues', 0.7, PAGES_DATE], ...VENUES.map((v): Page => [`/venues/${v.id}`, 0.6, PAGES_DATE]),
+    ['/players', 0.5, day], ['/iyt', 0.6], ['/social', 0.4],
+    ['/learn', 0.7], ...GUIDES.map((g): Page => [`/learn/${g}`, 0.8, GUIDE_DATES[g].modified]), ['/learn/glossary', 0.7]];
   const abs = (p: string) => SITE + p;
-  return PAGES.flatMap(([path, priority]) => {
+  return PAGES.flatMap(([path, priority, lastmod]) => {
     const alternates = { languages: Object.fromEntries(Object.entries(languages(path)).map(([k, v]) => [k, abs(v)])) };
-    const changeFrequency = path === '/race' || path === '/' || path === '/race/rating' ? 'daily' as const : 'weekly' as const;
-    return (['en', 'ru'] as const).map((lang) => ({ url: abs(langUrl(path, lang)), changeFrequency, priority, alternates }));
+    const changeFrequency = lastmod === day ? 'daily' as const : 'weekly' as const;
+    return (['en', 'ru'] as const).map((lang) => ({ url: abs(langUrl(path, lang)), ...(lastmod && { lastModified: lastmod }), changeFrequency, priority, alternates }));
   });
 }

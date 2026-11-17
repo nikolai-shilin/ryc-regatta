@@ -5,8 +5,12 @@ import { faqGroups } from '@/lib/faq';
 import { IconArrow } from '@/components/ui';
 import { FaqList } from '@/components/faq-list';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
+import { READING_VIEWPORT } from '@/lib/no-zoom';
 
-export const generateMetadata = titled('Questions', 'Вопросы', {
+// text to read: it zooms (lib/no-zoom.ts)
+export const viewport = READING_VIEWPORT;
+
+export const generateMetadata = titled('Sailing game FAQ: today’s race, controls, rules', 'Вопросы о парусной игре: гонка дня, управление, правила', {
   path: '/faq', card: '/og/page/faq',
   description: [
     'Questions about Up and down, the free sailing race game: does it work on a phone, how today’s race and the ranking work, sailing the boat, the racing rules the computer boats follow.',

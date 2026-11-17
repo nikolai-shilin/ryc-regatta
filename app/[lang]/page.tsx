@@ -219,6 +219,7 @@ export default async function Home({ params }: LangParams) {
               <h2 className="ho-h2" id="h-venues">{t(`${VENUES.length} venues, one a day`, `${VENUES.length} акватории, по одной в день`)}</h2>
               <p className="ho-ps">{t(`Each day the race moves to another famous regatta venue, with its own hills, town and wind. Each comes round once every ${VENUES.length} days. Tomorrow’s is revealed at midnight UTC.`, `Каждый день гонка переезжает на другую знаменитую регатную акваторию — со своими холмами, городом и ветром. Каждая возвращается раз в ${VENUES.length} дня. Завтрашняя откроется в полночь по UTC.`)}</p>
               <PushButton lang={lang} where="venues" />
+              <p className="ho-ps"><Link className="hm-src" href="/venues" data-cta="venues">{t('The venues: the water, the wind and the regattas of each', 'Акватории: вода, ветер и регаты каждой')}<IconArrow s={14} /></Link></p>
             </div>
             {/* the venues you've raced are stamped, and your streak over them: this device's, drawn in the browser */}
             <VenueList lang={lang} today={d.venue} />

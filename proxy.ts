@@ -9,6 +9,11 @@ import { validDay } from '@/lib/day';
 // cookie, so the next page and the game speak it too. /ru/help typed in goes to its real address, /help?lang=ru.
 //
 // It also keeps the Supabase session fresh: reads the auth cookies, refreshes an expiring token and writes it back.
+
+// search engines' and AI answer engines' crawlers, by their user agents (not the chat apps' link previews: a link
+// shared in Telegram or WhatsApp still previews in the sharer's language, as it always has)
+const CRAWLER = /googlebot|google-inspectiontool|googleother|storebot-google|bingbot|yandex|duckduckbot|baiduspider|applebot|petalbot|seznambot|slurp|gptbot|oai-searchbot|chatgpt-user|claudebot|claude-user|claude-searchbot|perplexitybot|perplexity-user|ccbot|amazonbot|meta-externalagent|bytespider|ahrefsbot|semrushbot|mj12bot/i;
+
 export async function proxy(request: NextRequest) {
   const url = request.nextUrl;
   const seg = /^\/(en|ru)(\/.*)?$/.exec(url.pathname);
@@ -30,7 +35,10 @@ export async function proxy(request: NextRequest) {
     // only say so after its loading screen has gone out with a 200: no page answers /404, so app/global-not-found does
     const day = /^\/race\/rating\/([^/]+)$/.exec(url.pathname)?.[1];
     const path = day && !validDay(day) ? '/404' : url.pathname;
-    const lang = pickLang(q, hadLang, request.headers.get('accept-language'));
+    // a crawler gets the address's own language (the bare address English, ?lang=ru Russian), whatever its
+    // Accept-Language: YandexBot asks for Russian, and served Russian at /help it would take the English address for a
+    // copy of /help?lang=ru, the page's canonical, and never index the English
+    const lang = pickLang(q, hadLang, CRAWLER.test(request.headers.get('user-agent') || '') ? null : request.headers.get('accept-language'));
     target.pathname = `/${lang}${path === '/' ? '' : path}`;
     target.searchParams.delete('lang');
     // the language chosen, as the request's cookie: the 404 (app/global-not-found.tsx) has no [lang] to read it from
@@ -62,5 +70,5 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // not for the game's files (and ui/, the design system's stylesheets it shares with the site), the pictures, Next's
   // own assets or the files for crawlers (/play and its folder, not /players)
-  matcher: ['/((?!_next/static|_next/image|_vercel|game/|ui/|vendor/|connect|play(?:/|$)|boat-view|hero-view|fleet-view|images/|flags/|favicon.ico|sw.js|logo-black.svg|og/|robots.txt|sitemap.xml|llms.txt|indexnow.txt|manifest.webmanifest|apple-icon|icon).*)'],
+  matcher: ['/((?!_next/static|_next/image|_vercel|game/|ui/|vendor/|connect|play(?:/|$)|boat-view|hero-view|fleet-view|images/|flags/|favicon.ico|sw.js|logo-black.svg|og/|robots.txt|sitemap.xml|llms.txt|llms-full.txt|indexnow.txt|manifest.webmanifest|apple-icon|icon).*)'],
 };

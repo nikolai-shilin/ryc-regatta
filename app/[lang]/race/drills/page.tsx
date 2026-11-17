@@ -2,11 +2,11 @@ import { getT, titled, type LangParams } from '@/lib/i18n';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 import { DrillsList } from '@/components/progress';
 
-export const generateMetadata = titled('Drills', 'Тренировки', {
+export const generateMetadata = titled('Sailing drills: starts, shifts and marks', 'Парусные тренировки: старт, сдвиги ветра, знаки', {
   path: '/race/drills', card: '/og/page/drills',
   description: [
-    'Sailing drills in the browser at four skipper levels, against computer fleets of each: from the start, the top mark, the layline and the penalty turn for beginners, through the favoured end, the shifts, the run and the finish, a tide start, light air, the wing mark and a heavy-air run, to a port-tack start, a comeback from last and a whole race against the experts. Three stars for each.',
-    'Парусные тренировки в браузере на четырёх уровнях, против компьютерных флотов каждого: от старта, верхнего знака, лейлайна и штрафного оборота для новичков, через выгодный конец линии, сдвиги ветра, фордевинд и финиш, старт в течение, слабый ветер, знак на галфвинде и фордевинд в свежак, до старта левым галсом, отыгрыша с последнего места и целой гонки против экспертов. По три звезды за каждую.'],
+    'Sailing drills in your browser at four levels: the start, the top mark, laylines, wind shifts, penalty turns and a heavy-air run, against computer fleets.',
+    'Парусные тренировки в браузере на четырёх уровнях: старт, верхний знак, лейлайн, сдвиги ветра, штрафной оборот и фордевинд в свежак — против компьютерных флотов.'],
 });
 
 // The drills (lib/drills.ts; the game's side in public/game/extras.js): the moments a race is won in, one at a time,

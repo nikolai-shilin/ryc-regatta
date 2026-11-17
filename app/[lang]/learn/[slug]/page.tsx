@@ -3,16 +3,19 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getT } from '@/lib/i18n';
-import { pageMeta, jsonLd, langUrl, SITE, OG_IMAGE } from '@/lib/seo';
-import { GUIDES, guide, guideNo, isGuide } from '@/lib/guides';
+import { pageMeta, jsonLd, langUrl, longDate, SITE, OG_IMAGE, AUTHOR, AUTHOR_LD, RYC_LD } from '@/lib/seo';
+import { GUIDES, GUIDE_DATES, guide, guideNo, isGuide } from '@/lib/guides';
 import { IconArrow } from '@/components/ui';
 import { SiteHead, SiteFoot, Trail, type Crumb } from '@/components/site-chrome';
 import { Toc } from '@/components/toc';
 import { GuideFigure } from '@/components/guide-figure';
+import '@/styles/reading.css';
+import { READING_VIEWPORT } from '@/lib/no-zoom';
+
+// text to read: it zooms (lib/no-zoom.ts)
+export const viewport = READING_VIEWPORT;
 
 type Props = { params: Promise<{ lang: string; slug: string }> };
-// when the guides were written, and last changed: for the Article data below
-const PUBLISHED = '2026-11-14', MODIFIED = '2026-11-14';
 
 // every guide, in both languages, built at deploy; any other slug is a 404
 export const generateStaticParams = () => GUIDES.map((slug) => ({ slug }));
@@ -23,7 +26,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isGuide(slug)) return {};
   const g = guide(slug, t, lang);
   const meta = pageMeta(lang, { title: g.title, description: g.description, path: `/learn/${slug}`, card: `/og/page/guide?g=${slug}` });
-  return { ...meta, openGraph: { ...meta.openGraph, type: 'article', publishedTime: PUBLISHED, modifiedTime: MODIFIED, authors: ['RYC'] } };
+  const d = GUIDE_DATES[slug];
+  return { ...meta, authors: [{ name: t(...AUTHOR.name) }], openGraph: { ...meta.openGraph, type: 'article', publishedTime: d.published, modifiedTime: d.modified, authors: [t(...AUTHOR.name)] } };
 }
 
 // L1 · A guide: its number, the title and the intro over its picture from the game (where it has one), the sections one after another (the contents beside them on a wide screen),
@@ -32,6 +36,7 @@ export default async function GuidePage({ params }: Props) {
   const [{ slug }, { lang, t }] = await Promise.all([params, getT(params)]);
   if (!isGuide(slug)) notFound();
   const g = guide(slug, t, lang);
+  const dates = GUIDE_DATES[slug];
   const crumbs: Crumb[] = [[t('Learn to race', 'Учись гоняться'), '/learn'], [g.short, `/learn/${slug}`]];
   const contents: [string, string][] = g.sections.map((s) => [s.id, s.h.replace(/ \(rules? [^)]*\)| \(правил[ао] [^)]*\)/, '')]);
   // Read more: the guide's first further reading, its glossary link (or the glossary), then the next guide in order (the
@@ -58,6 +63,7 @@ export default async function GuidePage({ params }: Props) {
       <span className="kicker">{kicker}</span>
       <h1 className="hm-ph-h">{g.title}</h1>
       <p className="hm-text">{g.intro}</p>
+      <p className="gd-by">{t('By ', '')}<span>{t(...AUTHOR.name)}</span>, {AUTHOR.org} · {dates.modified === dates.published ? t('Published ', 'Опубликовано ') : t('Updated ', 'Обновлено ')}<time dateTime={dates.modified}>{longDate(dates.modified, lang)}</time></p>
       <nav className="hm-ph-nav rd-chips" aria-label={t('Contents', 'Содержание')}>
         {contents.map(([id, h]) => <a key={id} className="hm-chip" href={`#${id}`}>{h}</a>)}
       </nav>
@@ -65,9 +71,8 @@ export default async function GuidePage({ params }: Props) {
   );
   const ld = {
     '@context': 'https://schema.org', '@type': 'Article', headline: g.title, description: g.description, inLanguage: lang,
-    url, mainEntityOfPage: url, image: SITE + (g.img?.src || OG_IMAGE.url), datePublished: PUBLISHED, dateModified: MODIFIED,
-    author: { '@type': 'Organization', name: 'RYC', url: 'https://www.rycrentals.com/' },
-    publisher: { '@type': 'Organization', name: 'RYC', url: 'https://www.rycrentals.com/', logo: { '@type': 'ImageObject', url: `${SITE}/logo-black.svg` } },
+    url, mainEntityOfPage: url, image: SITE + (g.img?.src || OG_IMAGE.url), datePublished: dates.published, dateModified: dates.modified,
+    author: AUTHOR_LD, publisher: RYC_LD,
     about: ['Sailboat racing', 'Racing Rules of Sailing'],
   };
 

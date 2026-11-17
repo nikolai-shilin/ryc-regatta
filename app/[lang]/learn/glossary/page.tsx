@@ -6,6 +6,10 @@ import { glossaryGroups, seeLabel } from '@/lib/glossary';
 import { GUIDES } from '@/lib/guides';
 import { IconArrow } from '@/components/ui';
 import { SiteHead, SiteFoot, Trail, type Crumb } from '@/components/site-chrome';
+import { READING_VIEWPORT } from '@/lib/no-zoom';
+
+// text to read: it zooms (lib/no-zoom.ts)
+export const viewport = READING_VIEWPORT;
 
 export const generateMetadata = titled('Sailing racing glossary', 'Словарь парусных гонок', {
   path: '/learn/glossary', card: '/og/page/glossary',

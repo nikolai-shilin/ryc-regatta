@@ -1,0 +1,22 @@
+/* The reading pages' own bits, on top of broadcast.css: a guide's or a venue's byline, and the venue and yacht pages
+   (app/[lang]/venues, app/[lang]/yachts/[id]). */
+
+/* the byline under a guide's or a venue's intro: who wrote it, and when */
+.bc .gd-by { margin: var(--s-3) 0 0; font: 600 var(--fs-label)/1.4 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .gd-by span { color: var(--ink-2); }
+
+/* the game's facts about a venue or a yacht: a row of label and value pairs */
+.bc .vn-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; margin: 0; background: var(--rule); border: 1px solid var(--rule); }
+.bc .vn-facts > div { padding: 12px 14px; background: var(--panel); }
+.bc .vn-facts dt { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .vn-facts dd { margin: 6px 0 0; font: 600 var(--fs-row)/1.2 var(--cond); color: var(--ink); }
+
+/* the venues: a list of cards, a few to a row on a wide screen */
+.bc .vn-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; padding-bottom: 32px; }
+.bc .vn-card { display: flex; flex-direction: column; gap: 6px; padding: 16px; background: var(--panel); border: 1px solid var(--rule); color: inherit; text-decoration: none; }
+.bc .vn-card:hover { border-color: var(--w-16); }
+.bc .vn-card p { margin: 0; font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-2); }
+.bc .vn-card .lbl { display: flex; gap: 8px; }
+
+/* the call to race here: a button that keeps the venue or the yacht for the free race's set-up */
+.bc .vn-go { cursor: pointer; border: 0; }

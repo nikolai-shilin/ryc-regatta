@@ -1,7 +1,9 @@
 import { faqGroups } from '@/lib/faq';
 import { CHANNELS } from '@/lib/social';
 import { tx } from '@/lib/lang';
-import { SITE, NAME, HOME_DESC } from '@/lib/seo';
+import { SITE, NAME, HOME_DESC, AUTHOR } from '@/lib/seo';
+import { VENUES } from '@/lib/venues';
+import { YACHTS } from '@/lib/yachts';
 
 // /llms.txt: the site in plain Markdown for AI assistants and answer engines (llmstxt.org), so that when someone asks
 // for a sailing game they can say what this one is, quote it right and link the right page. The questions and answers
@@ -23,7 +25,8 @@ ${NAME} is a free 3D sailing race game by RYC that runs in any modern web browse
 - Today's race: a new race every midnight UTC, the same venue, wind, course and fleet for every player (the venues take turns), so times compare fairly; ranked for signed-in players.
 - Free race: light (7 kn), medium (12 kn) or strong (19 kn) wind; 3, 5 or 7 boats; up and down, triangle, trapezoid or up and down with an upwind finish; short, medium or long; 1 or 2 laps; a 1, 3 or 5 minute start; current on or off.
 - Sailing: main and jib on their own sheets or auto-trim, tacks, gybes and a gennaker downwind; wind shifts of 10° and more, gusts and lulls; a real start sequence with the class flag, P, one minute and the gun.
-- Made by RYC (https://www.rycrentals.com/), alongside Sailing Certification Test, an app for sailing certification exam practice.
+- Made by RYC (https://www.rycrentals.com/), alongside Sailing Certification Test, an app for sailing certification exam practice. The guides and the venue pages are written by ${AUTHOR.name[0]} of RYC.
+- The full text of the guides, the glossary, the venues, the yachts and the questions in one file: ${SITE}/llms-full.txt
 
 ## Pages
 
@@ -34,6 +37,8 @@ ${NAME} is a free 3D sailing race game by RYC that runs in any modern web browse
 - [Questions](${SITE}/faq): every question about the game, today's race, sailing and the rules
 - [Your boat](${SITE}/boat): hull and sail colours, logo and sail number
 - [Learn to race](${SITE}/learn): short guides to sailboat racing
+  - [Points of sail](${SITE}/learn/sail): close-hauled, reaching and running, the no-go zone, apparent wind, which point of sail is fastest
+  - [How to tack and gybe a sailboat](${SITE}/learn/tack): the steps of a tack and a gybe, the crash gybe, when to choose each, rule 13
   - [The racing rules in five minutes](${SITE}/learn/rules): port and starboard, windward and leeward, clear astern, tacking, room at the mark, penalties
   - [How to win a sailing start](${SITE}/learn/start): the signals, the favoured end, timing the run, holding your spot, over early, clear air
   - [Headers and lifts](${SITE}/learn/shifts): tacking on the wind shifts, laylines, gusts and lulls, gybing on the lifts downwind
@@ -42,6 +47,10 @@ ${NAME} is a free 3D sailing race game by RYC that runs in any modern web browse
   - [Sail trim and boat speed](${SITE}/learn/trim): the sheets, steering, footing for speed, heel, reefing in a blow
   - [Sailing racing glossary](${SITE}/learn/glossary): beat, overlap, clear astern, header, lift, layline, zone, mark-room, OCS and more
 - [Sailing certification exam practice](${SITE}/iyt): RYC's free practice app for sailing certification theory exams
+- [The venues](${SITE}/venues): the 34 regatta venues, each with the water, the wind, its regattas and how to race it
+${VENUES.map((v) => `  - [${v.name[0]}, ${v.place[0]}](${SITE}/venues/${v.id})`).join('\n')}
+- [The yachts](${SITE}/yachts): the nine yachts in 3D, each with a page of her own
+${YACHTS.map((y) => `  - [${y.name[0]}](${SITE}/yachts/${y.id}): ${y.kind[0]}`).join('\n')}
 - [The players](${SITE}/players): everyone who races signed in, the most races first: their races, wins and podiums, the yachts and venues they sail, and their boat in 3D in their colours
 - [Follow the game](${SITE}/social): where the game posts its news and best races (${CHANNELS.map((c) => `${c.name} ${c.url}`).join(', ')}), and sending it to a friend
 

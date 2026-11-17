@@ -5,7 +5,7 @@ import { SITE, jsonLd, langUrl } from '@/lib/seo';
 import { Logo, Langs } from './ui';
 import { SiteMenu } from './home-client';
 
-type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt' | 'learn' | 'rating' | 'drills' | 'badges' | 'social' | 'players';
+type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt' | 'learn' | 'rating' | 'drills' | 'badges' | 'social' | 'players' | 'venues' | 'yachts';
 
 // Where each page sits under Home, for the breadcrumb trail search engines show instead of the bare address
 // (BreadcrumbList). A guide passes its own trail: Home › Learn to race › the guide.
@@ -16,6 +16,7 @@ const CRUMBS: Partial<Record<Page, [en: string, ru: string, path: string]>> = {
   iyt: ['Sailing Certification Test', 'Sailing Certification Test', '/iyt'], learn: ['Learn to race', 'Учись гоняться', '/learn'],
   drills: ['Drills', 'Тренировки', '/race/drills'], badges: ['Badges', 'Достижения', '/race/badges'],
   social: ['Follow the game', 'Игра в соцсетях', '/social'], players: ['The players', 'Игроки', '/players'],
+  venues: ['The venues', 'Акватории', '/venues'], yachts: ['The yachts', 'Яхты', '/yachts'],
 };
 function Breadcrumbs({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Page; crumbs?: Crumb[] }) {
   const c = CRUMBS[page];
@@ -79,6 +80,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
         <span className="hm-foot-by">{t('Up and down · RYC race office', 'Up and down · офис регаты RYC')}</span>
         <nav className="hm-foot-links" aria-label={t('More', 'Ещё')}>
           <Link href="/yachts">{t('The yachts', 'Яхты')}</Link>
+          <Link href="/venues">{t('The venues', 'Акватории')}</Link>
           <Link href="/players">{t('The players', 'Игроки')}</Link>
           <Link href="/help">{t('How to play', 'Как играть')}</Link>
           <Link href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>

@@ -5,6 +5,10 @@ import { IytSample } from '@/components/iyt-sample';
 import { iytSample } from '@/lib/iyt-sample';
 import { IYT_LEVELS } from '@/lib/iyt';
 import type { Lang, T } from '@/lib/lang';
+import { READING_VIEWPORT } from '@/lib/no-zoom';
+
+// text to read: it zooms (lib/no-zoom.ts)
+export const viewport = READING_VIEWPORT;
 
 export const generateMetadata = titled('Sailing certification exam practice', 'Тренажёр к экзамену на яхтенный сертификат', {
   path: '/iyt', card: '/og/page/iyt',

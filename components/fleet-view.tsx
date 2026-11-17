@@ -158,6 +158,7 @@ export function FleetView({ lang, start, back, tour = true }: { lang: Lang; star
         <div className="bt-g yt-about">
           <span className="bt-k"><IconSail s={14} />{t('About her', 'О яхте')}</span>
           {y.about.map((p, i) => <p key={i}>{t(...p)}</p>)}
+          <p><Link className="hm-src" href={`/yachts/${y.id}`}>{t(`The ${y.name[0]}’s own page`, `Страница яхты ${y.name[1]}`)}</Link></p>
         </div>
 
         <div className="bt-g yt-about">

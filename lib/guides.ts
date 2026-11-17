@@ -1,4 +1,5 @@
 import type { T, Lang } from './lang';
+import { moreGuide } from './guides-more';
 
 // The guides at /learn: short, plain pages on the things a race is won by, each ending in the game, where you can try
 // it. Written for people who search for them (and for the AI assistants that answer them), so each one teaches the
@@ -19,16 +20,25 @@ export type Guide = {
 // the rules guide on the Sailing Certification Test site, rule by rule
 const rr = (lang: Lang, page: string) => `https://iyt.rycrentals.com${lang === 'ru' ? '/ru' : ''}/racing-rules/${page}`;
 
-export const GUIDES = ['rules', 'start', 'shifts', 'marks', 'downwind', 'trim'] as const;
+// the basics first (points of sail, tacking and gybing: lib/guides-more.ts), then the race from the rules to boat speed
+export const GUIDES = ['sail', 'tack', 'rules', 'start', 'shifts', 'marks', 'downwind', 'trim'] as const;
 export type GuideSlug = (typeof GUIDES)[number];
+// when each guide was first published and last changed in substance: its byline, its Article data and the sitemap
+export const GUIDE_DATES: Record<GuideSlug, { published: string; modified: string }> = {
+  sail: { published: '2026-11-17', modified: '2026-11-17' }, tack: { published: '2026-11-17', modified: '2026-11-17' },
+  rules: { published: '2026-11-14', modified: '2026-11-14' }, start: { published: '2026-11-14', modified: '2026-11-14' },
+  shifts: { published: '2026-11-14', modified: '2026-11-14' }, marks: { published: '2026-11-14', modified: '2026-11-14' },
+  downwind: { published: '2026-11-14', modified: '2026-11-14' }, trim: { published: '2026-11-14', modified: '2026-11-14' },
+};
 export const isGuide = (s: string): s is GuideSlug => (GUIDES as readonly string[]).includes(s);
-// its number, as the card and the head say it: "Guide 4 of 6"
+// its number, as the card and the head say it: "Guide 6 of 8"
 export const guideNo = (slug: GuideSlug) => GUIDES.indexOf(slug) + 1;
 
 // the game's pictures, 1920 × 1440 unless said
 const shot = (src: string, alt: string, width = 1920, height = 1440) => ({ src: `/images/${src}.jpg`, width, height, alt });
 
 export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
+  if (slug === 'sail' || slug === 'tack') return moreGuide(slug, t, lang);
   if (slug === 'marks') return {
     slug,
     title: t('Rounding the marks: the windward mark and the gate', 'Огибание знаков: верхний знак и ворота'),

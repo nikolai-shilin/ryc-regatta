@@ -22,7 +22,7 @@ import { MyRow } from '@/components/home-client';
 // the browser's to show (lib/me.ts: .if-me, .if-guest, the initials; the pause card's account reads the cookie).
 export const revalidate = 300;
 
-export const generateMetadata = titled('Race hub', 'Меню гонок', {
+export const generateMetadata = titled('Race hub: today’s sailing race and free races', 'Меню гонок: парусная гонка дня и свободные гонки', {
   path: '/race',
   today: true,
   description: [

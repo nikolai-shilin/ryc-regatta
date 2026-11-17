@@ -61,7 +61,7 @@ export const VENUES: { id: VenueId; nation: string; name: Pair; place: Pair; win
   { id: 'batumi', nation: 'GEO', name: ['Batumi', 'Батуми'], place: ['Georgia', 'Грузия'], wind: ['WNW', 'ЗСЗ'], from: '2026-11-20',
     about: ['Batumi bay in the Black Sea’s afternoon breeze, the city and the Alphabetic Tower on the cape, the mountains of Adjara over the coast.', 'Батумская бухта под дневным бризом Чёрного моря: на мысе — город и Башня алфавита, над берегом — горы Аджарии.'] },
   { id: 'scheveningen', nation: 'NED', name: ['Scheveningen', 'Схевенинген'], place: ['The Hague, Netherlands', 'Гаага, Нидерланды'], wind: ['SW', 'ЮЗ'], from: '2026-11-20',
-    about: ['The North Sea of the 2018 Sailing World Championships, off the pier and the Kurhaus, in the south-westerly along the dunes.', 'Северное море чемпионата мира 2018 года, у пирса и Курхауса, под юго-западным ветром вдоль дюн.'] },
+    about: ['The North Sea of the 2023 Sailing World Championships, off the pier and the Kurhaus, in the south-westerly along the dunes.', 'Северное море чемпионата мира 2023 года, у пирса и Курхауса, под юго-западным ветром вдоль дюн.'] },
   { id: 'hong-kong', nation: 'HKG', name: ['Hong Kong', 'Гонконг'], place: ['China', 'Китай'], wind: ['ENE', 'ВСВ'], from: '2026-11-20',
     about: ['Victoria Harbour between Wan Chai and Tsim Sha Tsui, in the easterly, the towers on both shores and the Peak above.', 'Гавань Виктория между Ваньчаем и Цимшацуем, под восточным ветром; небоскрёбы на обоих берегах, над ними — пик Виктория.'] },
   { id: 'cape-town', nation: 'RSA', name: ['Cape Town', 'Кейптаун'], place: ['South Africa', 'ЮАР'], wind: ['SSE', 'ЮЮВ'], from: '2026-11-20',
