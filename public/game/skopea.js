@@ -2622,8 +2622,8 @@ function landmarks() {
 // And their sky light (the environment map's and the hemisphere's) cut as the land's is (LAND_FS: 0.475), so the
 // side away from the sun is the shade it is: the sky map is drawn as bright as the eye sees the sky, which as light
 // is far too much against the sun's, and a white hull seen against the sun stayed nearly as white as in it. Under a
-// clear sky the shade is about a fifth of the sunlit side; under a cloud deck the sky is all the light there is, and
-// keeps more of it (setLight).
+// high sun the shade is about a fifth of the sunlit side, and darker the lower the sun; under a cloud deck the sky is
+// all the light there is, and keeps more of it (setLight, light.js fill).
 const FILL_U = { uSkyFill: { value: 1 } };
 export function inLandShadow(root) {
   root.traverse((o) => {
@@ -2706,7 +2706,7 @@ export class Skopea {
   setLight(L, renderer) {
     LAND_U.uHazeL.value = L.fogFar * 2.4 * (LOOK.haze ?? 1); // (how clear the venue's air is: venues.js)
     LAND_U.uMist.value = L.mist || 0;
-    FILL_U.uSkyFill.value = 1 - 0.65 * (L.shade ?? 1); // the boats' sky light (inLandShadow): 0.35 under a clear sky, most of it under cloud
+    FILL_U.uSkyFill.value = L.fill ?? 0.35; // the boats' sky light (inLandShadow, light.js fill): a third with the sun high, less as it sets, most of it under cloud
     GROUND_U.uLake.value.copy(L.deep).lerp(L.horizon, 0.35);
     if (renderer) shadows(renderer, this.group, L.sunDir);
   }

@@ -16,29 +16,34 @@ const WATER = VENUE.look.water;
 const MIN_E = 3; // degrees: the earliest and latest a race goes, the sun just clear of the horizon
 
 // The looks at a few heights of the sun (degrees); the hours between are blended from them.
+// fill: how much of the sky's light (the environment map's and the hemisphere's) reaches the boats, the marks and the
+// committee boat (skopea.js inLandShadow), and so how dark their sides away from the sun and their shadows are: about a
+// third with the sun high, where the shade is about a fifth of the sunlit side; less the lower it is, as the sky away
+// from a low sun is dim and the light comes from one side, so a hull's far side and the shadows go dark at sunset;
+// and most of it under a cloud deck, where the sky is all the light there is.
 const KEYS = [
   { e: 3, sun: '#ff8c48', sunI: 1.7, hemiSky: '#aeb3d2', hemiGround: '#3a3040', hemiI: 0.52, top: '#365383', horizon: '#f0ae80',
     mie: 0.66, cloud: 0.04, cloudLit: '#ffa86e', cloudDark: '#6e6782', deep: '#0a1d2d', scatter: '#2a6c72', exposure: 1.24, glint: 1.5,
-    shade: 0.55, fogNear: 120, fogFar: 2500, thr: 1.7, str: 0.42 },
+    fill: 0.17, fogNear: 120, fogFar: 2500, thr: 1.7, str: 0.42 },
   { e: 6, sun: '#ffa660', sunI: 2.2, hemiSky: '#bcc4dc', hemiGround: '#3c3742', hemiI: 0.58, top: '#4469a0', horizon: '#f2c39c',
     mie: 0.52, cloud: 0.03, cloudLit: '#ffc590', cloudDark: '#7f7b8f', deep: '#0a2334', scatter: '#2a8080', exposure: 1.16, glint: 1.35,
-    shade: 0.7, fogNear: 130, fogFar: 2700, thr: 1.9, str: 0.38 },
+    fill: 0.2, fogNear: 130, fogFar: 2700, thr: 1.9, str: 0.38 },
   { e: 10, sun: '#ffb874', sunI: 2.6, hemiSky: '#c6d0e4', hemiGround: '#3c3a44', hemiI: 0.62, top: '#4f74a8', horizon: '#efd3b4',
     mie: 0.42, cloud: 0.02, cloudLit: '#ffd9ad', cloudDark: '#8a8899', deep: '#0a2638', scatter: '#2a8a86', exposure: 1.12, glint: 1.25,
-    shade: 0.8, fogNear: 140, fogFar: 2900, thr: 2.0, str: 0.36 },
+    fill: 0.24, fogNear: 140, fogFar: 2900, thr: 2.0, str: 0.36 },
   { e: 20, sun: '#ffe2c0', sunI: 2.7, hemiSky: '#d6e3f2', hemiGround: '#34505c', hemiI: 0.85, top: '#5a8dc4', horizon: '#e4e5e3',
     mie: 0.22, cloud: -0.03, cloudLit: '#fff3e4', cloudDark: '#a2adbd', deep: '#08304a', scatter: '#1d9aa0', exposure: 1.08, glint: 1,
-    shade: 0.9, fogNear: 120, fogFar: 2600, thr: 2.2, str: 0.3 },
+    fill: 0.3, fogNear: 120, fogFar: 2600, thr: 2.2, str: 0.3 },
   { e: 35, sun: '#fff1dc', sunI: 3.2, hemiSky: '#dbeaff', hemiGround: '#2c4a5c', hemiI: 0.9, top: '#4f8fcb', horizon: '#d6e7f0',
     mie: 0.12, cloud: 0, cloudLit: '#fffbf3', cloudDark: '#99a8bd', deep: '#062a40', scatter: '#1aa3a0', exposure: 1.05, glint: 1,
-    shade: 1, fogNear: 150, fogFar: 3200, thr: 2.4, str: 0.28 },
+    fill: 0.35, fogNear: 150, fogFar: 3200, thr: 2.4, str: 0.28 },
   { e: 72, sun: '#fff7ee', sunI: 3.4, hemiSky: '#d4e6ff', hemiGround: '#264658', hemiI: 0.95, top: '#3c7fc6', horizon: '#cfe3ef',
     mie: 0.08, cloud: -0.02, cloudLit: '#ffffff', cloudDark: '#9eb0c6', deep: '#04283f', scatter: '#14aaa6', exposure: 1.0, glint: 0.9,
-    shade: 1, fogNear: 160, fogFar: 3300, thr: 2.5, str: 0.26 },
+    fill: 0.35, fogNear: 160, fogFar: 3300, thr: 2.5, str: 0.26 },
 ];
 const OVERCAST = { sun: '#e9eef2', sunI: 0.95, hemiSky: '#e6ebf0', hemiGround: '#4a5961', hemiI: 1.75, top: '#8f9eab', horizon: '#c6cdd3',
   mie: 0.05, cloud: 0.24, cloudLit: '#d9dee3', cloudDark: '#8d96a0', deep: '#0f2c38', scatter: '#2c7c80', exposure: 1.0, glint: 0.12,
-  shade: 0.22, fogNear: 100, fogFar: 2300, thr: 2.6, str: 0.18 };
+  fill: 0.86, fogNear: 100, fogFar: 2300, thr: 2.6, str: 0.18 };
 const COLOURS = ['sun', 'hemiSky', 'hemiGround', 'top', 'horizon', 'cloudLit', 'cloudDark', 'deep', 'scatter'];
 
 const lerp = (a, b, k) => a + (b - a) * k;
@@ -117,6 +122,9 @@ export function skyAt(hour, overcast = false) {
   L.foam = foamLight(L, e);
   L.disc = overcast ? 0 : 1;
   L.bloom = { threshold: L.thr, strength: L.str };
+  // how much a shadow on the water darkens it (world.js): the sun's share of the light going into the sea, against
+  // the sky's, as a shadow takes only the sun's; a little at sunset, when the sky lights the water as much as the sun
+  L.seaShadow = 0.55 * L.sunI * Math.max(dir.y, 0) / (L.sunI * Math.max(dir.y, 0) + L.hemiI);
   L.sunDir = dir; L.elevation = e; L.hour = hour; L.overcast = overcast;
   return L;
 }
