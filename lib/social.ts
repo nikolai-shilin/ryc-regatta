@@ -7,7 +7,7 @@ export type Channel = { app: ShareTarget; name: string; handle: string; url: str
 
 export const CHANNELS: Channel[] = [
   {
-    app: 'telegram', name: 'Telegram', handle: '@ryc_up_and_down', url: 'https://t.me/ryc_up_and_down', lang: 'ru',
+    app: 'telegram', name: 'Telegram', handle: '@sailupanddown', url: 'https://t.me/sailupanddown', lang: 'ru',
     what: ['The game’s news, the day’s best races and the racing rules, a situation at a time.', 'Новости игры, лучшие гонки дня и разборы ситуаций по гоночным правилам.'],
   },
 ];
