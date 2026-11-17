@@ -9,7 +9,7 @@ import { LOOKS, playerLook, lookFrom } from './yacht.js';
 const flagCode = (src) => { const m = typeof src === 'string' && /\/flags\/([a-z]{2}(?:-[a-z]+)?)\.svg$/.exec(src); return m ? m[1] : null; }; // '/flags/gb.svg' → 'gb'
 import { VENUE, venueById, laidLength, lengthOffered } from './venues.js';
 import { classById } from './classes.js';
-import { arriveLoaded, goBack } from './trail.js';
+import { arriveLoaded, goBack, outOfRace } from './trail.js';
 import { createMusic, direct, MUSIC_STYLES } from './music.js';
 import { createSfx } from './sfx.js';
 
@@ -31,6 +31,18 @@ const HUB = '/race';
 arriveLoaded();
 addEventListener('pageshow', (e) => { if (e.persisted) arriveLoaded({ pop: true }); });
 const leave = () => goBack(HUB, null, { extra: !TG && history.state && history.state.race ? 1 : 0, single: true });
+// Out of the race to a page of the race's own making (its result, the free race's set-up, the hub after a match): that
+// page takes the race's place in the history, so the browser's back from it goes where the race was started from. A
+// link would leave the race behind it, and back would load the whole game again and start a new race on the way (and
+// a second back, from the race's own entry, another). The race's own entry (the pause menu's, below) is gone back
+// over first, and the page put in place of the one the race was loaded on.
+let replacing = null;
+function replaceRace(to) {
+  if (replacing != null) return; // (once: the way out is under way)
+  replacing = to; outOfRace(to);
+  const go = () => { if (replacing === to) { replacing = ''; location.replace(to); } };
+  if (!TG && history.state && history.state.race) { history.back(); setTimeout(go, 400); } else go(); // (popstate, below, goes on arrival)
+}
 // A match race against a friend (/play?match=<code>, from /match/new and the match's link): the waiting room, the races
 // and the cards between them are match-ui.js's, loaded only then (with the Realtime client it brings). mx: the race on
 // screen while one is sailed ({ race, step(dt), isGuest }); matchUi: the module, once it's in.
@@ -1175,7 +1187,7 @@ function startMatchFlow() {
   for (const id of ['#pChange', '#pRestart']) $(id).style.display = 'none'; // a match isn't restarted or changed: only left
   import('./match-ui.js').then((m) => {
     matchUi = m;
-    return m.startMatch({ code: MATCH, t, LANG, venue: VENUE, cls: CLS, onRace: onMatchRace, onIdle: onMatchIdle, onEnd: () => { location.href = HUB; }, toast: (s) => toast(s, 3.5),
+    return m.startMatch({ code: MATCH, t, LANG, venue: VENUE, cls: CLS, onRace: onMatchRace, onIdle: onMatchIdle, onEnd: () => replaceRace(HUB), toast: (s) => toast(s, 3.5),
       yachtName: (id) => yachtName(id), venueName: (id) => venueById(id).name[LANG === 'ru' ? 1 : 0] });
   }).catch((e) => { console.error(e); matchFailed(); });
 }
@@ -1191,7 +1203,7 @@ function matchFailed() {
   const [again, out] = el.querySelectorAll('button');
   again.textContent = t('tryAgain'); out.textContent = t('doLeave');
   again.addEventListener('click', () => location.reload());
-  out.addEventListener('click', () => { location.href = HUB; });
+  out.addEventListener('click', () => replaceRace(HUB));
   document.body.append(el);
 }
 // the race to sail is the address's (the hub and the set-up page are Next.js pages): taken before the first race is
@@ -1462,6 +1474,7 @@ function pauseLine(P, place, nx) {
 if (!TG) {
   const guard = () => { try { if (!history.state || !history.state.race) history.pushState({ race: 1 }, ''); } catch (e) {} };
   addEventListener('popstate', () => {
+    if (replacing != null) { if (replacing) { const to = replacing; replacing = ''; location.replace(to); } return; } // on the way out (replaceRace)
     if (MATCH && matchUi) { matchBack(); guard(); return; }
     if (!running || race.over) { quit(); return; }
     if (!confirmEl.hidden) { quit(); return; }
@@ -1496,7 +1509,7 @@ $('#cKeep').addEventListener('click', () => { confirmEl.hidden = true; pauseEl.h
 $('#cGo').addEventListener('click', () => {
   raceEnded(race, confirmDo === 'restart' ? 'restart' : confirmDo === 'change' ? 'change' : 'menu'); // (stats.js: how the race ended)
   if (confirmDo === 'restart') { confirmEl.hidden = true; paused = false; running = false; newRace(); startRace(); return; }
-  if (confirmDo === 'change') location.href = `/race/free?from=${race.settings.daily ? 'today' : 'race'}`; else quit();
+  if (confirmDo === 'change') replaceRace(`/race/free?from=${race.settings.daily ? 'today' : 'race'}`); else quit();
 });
 pauseEl.addEventListener('click', (e) => {
   const g = e.target.closest('[data-g]');
@@ -1974,7 +1987,7 @@ function finishToPage() {
     localStorage.setItem('regatta-result-' + id, JSON.stringify(res));
   } catch (e) {}
   raceResult(race, res); // and on the server, so the result's link opens on any device (stats.js)
-  location.href = '/race/result/' + encodeURIComponent(id);
+  replaceRace('/race/result/' + encodeURIComponent(id));
 }
 
 

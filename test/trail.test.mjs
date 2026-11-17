@@ -2,7 +2,7 @@
 // npm test.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { step, back } from '../public/game/trail.js';
+import { step, back, dropRace } from '../public/game/trail.js';
 
 const walk = (...moves) => moves.reduce((t, [p, how]) => step(t, p, how), []);
 const link = (p) => [p, {}];
@@ -60,4 +60,14 @@ test('the browser’s own back and forward keep the trail in step', () => {
   assert.deepEqual(walk(load('/settings', '/race')), [{ p: '/race', n: 0 }, { p: '/settings', n: 1 }]);
   // a reload changes nothing
   assert.deepEqual(step(t, '/settings', { full: true, reload: true, from: '/race' }), t);
+});
+
+test('the result takes the race’s place: back from it is the browser’s back to the page before the race', () => {
+  const t = walk(link('/'), link('/race/rating'), load('/play?race=today', '/race/rating'));
+  // the race replaced by its result (main.js replaceRace): its step goes, and the result is one entry on from the page before
+  const r = step(dropRace(t), '/race/result/abc', { full: true });
+  assert.deepEqual(back(r, '/race/result/abc', '/race'), { trail: t.slice(0, 2), go: 1, to: '/race/rating' });
+  // a race loaded again in place (a new day) leaves no step of it behind either
+  const again = step(t, '/play?race=today', { full: true, from: '/play?race=today' });
+  assert.deepEqual(dropRace(again), t.slice(0, 2));
 });

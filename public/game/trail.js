@@ -56,6 +56,14 @@ export function back(trail, here, fallback) {
   return { trail: kept, to: kept[i].p };
 }
 
+// the trail once the race's page is replaced by another (main.js replaceRace): its steps go, so the page that takes its
+// place is one step on from the page the race was started from
+export function dropRace(trail) {
+  const t = trail.map((s) => ({ ...s }));
+  while (t.length && isRace(t[t.length - 1].p)) t.pop();
+  return t;
+}
+
 // ---------- in the browser ----------
 let mem = [];
 export function load() {
@@ -87,6 +95,12 @@ export function arriveLoaded(o = {}) {
 // this page, reached within the site's app (a link, or the browser's back: { pop: true })
 export function arriveWithin(o = {}) { save(step(load(), address(), { pop: !ours() && !!o.pop })); }
 
+// out of the race to a page that takes its place in the history (its result, the free race's set-up): the race's step
+// goes, and its arrival there is ours, not a link from the race
+export function outOfRace(to) {
+  save(dropRace(load()));
+  try { sessionStorage.setItem(GOING, to); } catch (e) {}
+}
 // go back from here; navigate(to) goes to a page (the app's router), without it location.href. The race passes { extra }:
 // the history entry it adds of its own (main.js keeps the browser's back for its pause menu), and { single }: only the
 // browser's back over one page, as a race loaded again in place (a new day) leaves entries it can't count.
