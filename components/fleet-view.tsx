@@ -15,9 +15,12 @@ import { SceneBrand } from './scene-brand';
 // every DWELL seconds once the drone is there; picking one, the arrows or taking hold of the view stops the tour, and
 // the play button starts it again. All shows the whole fleet from up and back. The site's one yachts page, /yachts
 // (/fleet, its old address, comes here too): `tour` false when you came for one yacht (?y=), so it stays on her.
+// A yacht's own page, /yachts/<id>, is this too (`own`): opened on her, its address follows the yacht picked
+// (/yachts/<id>, and /yachts for the whole fleet), the yachts in the strip are links to their pages, and `foot` (her
+// page's byline) closes the card.
 const DWELL = 9;
 
-export function FleetView({ lang, start, back, tour = true }: { lang: Lang; start: YachtId | null; back: ReactNode; tour?: boolean }) {
+export function FleetView({ lang, start, back, tour = true, own = false, foot }: { lang: Lang; start: YachtId | null; back: ReactNode; tour?: boolean; own?: boolean; foot?: ReactNode }) {
   const t = tx(lang);
   const [id, setId] = useState<YachtId | null>(start);
   const [shown, setShown] = useState<YachtId>(start ?? YACHTS[0].id); // the words stay on the last yacht while the fleet shows
@@ -44,8 +47,13 @@ export function FleetView({ lang, start, back, tour = true }: { lang: Lang; star
     setId(next); setThere(false);
     if (next) setShown(next);
     post(next ? { type: 'focus', id: next } : { type: 'overview' });
-    try { history.replaceState(null, '', next ? `${location.pathname}?y=${next}` : location.pathname); } catch {}
-  }, [post]);
+    try {
+      const q = new URLSearchParams(location.search); q.delete('y');
+      if (next && !own) q.set('y', next);
+      const path = own ? (next ? `/yachts/${next}` : '/yachts') : location.pathname, s = q.toString();
+      history.replaceState(null, '', s ? `${path}?${s}` : path);
+    } catch {}
+  }, [post, own]);
   const step = useCallback((k: number) => {
     const i = YACHTS.findIndex((x) => x.id === (now.current.id ?? shown));
     go(YACHTS[(i + k + YACHTS.length) % YACHTS.length].id);
@@ -121,14 +129,19 @@ export function FleetView({ lang, start, back, tour = true }: { lang: Lang; star
             <button type="button" className="fl-btn fl-all" onClick={() => pick(null)} aria-pressed={!id}><IconGrid s={14} /><span>{t('All', 'Все')}</span></button>
           </div>
           <div className="fl-boats" role="radiogroup" aria-label={t('Yacht', 'Яхта')}>
-            {YACHTS.map((x, i) => (
-              <button key={x.id} type="button" role="radio" aria-checked={x.id === id} className="fl-boat" onClick={() => pick(x.id)}>
+            {YACHTS.map((x, i) => {
+              const cell = <>
                 <span className="fl-i">{String(i + 1).padStart(2, '0')}</span>
                 <b>{t(...x.name)}</b>
                 <span className="fl-m">{t(...x.specs[0].v)} · {kn(x.speed.down)}</span>
                 {x.id === id && auto && <i className={`fl-bar ${there ? 'run' : ''}`} key={landed} style={{ animationDuration: `${DWELL}s` }} aria-hidden="true" />}
-              </button>
-            ))}
+              </>;
+              // on a yacht's page each is a link to hers (read by search engines), flown to here rather than followed
+              return own
+                ? <a key={x.id} href={`/yachts/${x.id}${lang === 'ru' ? '?lang=ru' : ''}`} role="radio" aria-checked={x.id === id} className="fl-boat"
+                    onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; e.preventDefault(); pick(x.id); }}>{cell}</a>
+                : <button key={x.id} type="button" role="radio" aria-checked={x.id === id} className="fl-boat" onClick={() => pick(x.id)}>{cell}</button>;
+            })}
           </div>
         </div>
       </div>
@@ -158,7 +171,7 @@ export function FleetView({ lang, start, back, tour = true }: { lang: Lang; star
         <div className="bt-g yt-about">
           <span className="bt-k"><IconSail s={14} />{t('About her', 'О яхте')}</span>
           {y.about.map((p, i) => <p key={i}>{t(...p)}</p>)}
-          <p><Link className="hm-src" href={`/yachts/${y.id}`}>{t(`The ${y.name[0]}’s own page`, `Страница яхты ${y.name[1]}`)}</Link></p>
+          {!own && <p><Link className="hm-src" href={`/yachts/${y.id}`}>{t(`The ${y.name[0]}’s own page`, `Страница яхты ${y.name[1]}`)}</Link></p>}
         </div>
 
         <div className="bt-g yt-about">
@@ -177,6 +190,7 @@ export function FleetView({ lang, start, back, tour = true }: { lang: Lang; star
           {shown === today && <a className="bt-row" href="/play?race=today"><IconPlay /><span>{t('Today’s race', 'Гонка дня')}</span><span className="bt-row-m">{t('In her', 'На ней')}</span></a>}
           <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your colours', 'Твои цвета')}</span><span className="bt-row-m">{t('Every yacht', 'Для всех яхт')}</span></Link>
         </div>
+        {foot}
       </section>
     </div>
   );

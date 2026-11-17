@@ -1449,6 +1449,7 @@
 .bc .fl-boat:last-child { border-right: 0; }
 .bc .fl-boat:hover { background: var(--w-06); }
 .bc .fl-boat:active { transform: none; scale: .98; }
+.bc a.fl-boat { color: inherit; text-decoration: none; } /* a yacht's page: the cells are links to theirs */
 .bc .fl-boat[aria-checked="true"] { background: color-mix(in srgb, var(--you) 16%, transparent); box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--you) 35%, transparent); }
 .bc .fl-i { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
 .bc .fl-boat[aria-checked="true"] .fl-i { color: var(--you); }
