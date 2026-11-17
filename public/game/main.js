@@ -167,6 +167,8 @@ const T = {
     raceWon: 'You win the race!', raceLost: (w) => `${w} wins the race`, matchWon: (s) => `You win the match ${s}`, matchLost: (w, s) => `${w} wins the match ${s}`,
     waitingHost: (n) => `Waiting for ${n}…`, guestGone: (n) => `${n} isn’t answering — her boat holds her course; 30 s and the race is yours`,
     abandoned: 'Race abandoned — not scored', full: 'This match is full', matchFail: 'Couldn’t connect to the match', tryAgain: 'Try again',
+    noGl: 'The browser won’t start the 3D graphics just now. Close other tabs and apps, or restart the browser, and try again.',
+    glLostK: 'The picture was lost', glLostTxt: 'The device took the graphics back, most often when it runs short of memory. Reload to sail on, on lighter graphics.', doReload: 'Reload',
     touchedM: 'You touched the mark — you owe a penalty turn', penTurn: 'Penalty turn under way', timeMatch: 'match race',
     'r16.1': 'Right of way, but give room to keep clear', 'x16.1': 'A boat with right of way that changes course must give the other boat room to keep clear.',
   },
@@ -270,6 +272,8 @@ const T = {
     raceWon: 'Гонка твоя!', raceLost: (w) => `Гонку выигрывает ${w}`, matchWon: (s) => `Матч твой: ${s}`, matchLost: (w, s) => `Матч выигрывает ${w}: ${s}`,
     waitingHost: (n) => `${n} не на связи — ждём…`, guestGone: (n) => `${n} не на связи — лодка идёт прежним курсом; через 30 с гонка твоя`,
     abandoned: 'Гонка прекращена — не засчитывается', full: 'В этом матче уже двое', matchFail: 'Не удалось подключиться к матчу', tryAgain: 'Ещё раз',
+    noGl: 'Браузер сейчас не запускает 3D-графику. Закрой другие вкладки и приложения или перезапусти браузер — и попробуй ещё раз.',
+    glLostK: 'Картинка пропала', glLostTxt: 'Устройство забрало графику — чаще всего, когда не хватает памяти. Перезагрузи, чтобы плыть дальше на облегчённой графике.', doReload: 'Перезагрузить',
     touchedM: 'Касание знака — за тобой штрафной оборот', penTurn: 'Штрафной оборот', timeMatch: 'матчевая гонка',
     'r16.1': 'Право дороги — но дай место уступить', 'x16.1': 'Лодка с правом дороги, меняя курс, должна дать другой лодке место, чтобы уступить.',
   },
@@ -1100,8 +1104,13 @@ const committee = {
 // ---------- the world ----------
 const canvas = $('#gl');
 let world;
+// No WebGL to be had: the preloader's own failure (Try again, the hub) says so. Most often it isn't the device but the
+// browser holding it back for a while after the graphics were reset (a context lost, below): Chrome turns WebGL off
+// for the site, Safari when short of memory, so the way out is other tabs closed or the browser restarted. (The page
+// wiped for a line of black text left the page's dark blue and nothing readable on it: a blue screen.)
 try { world = new World(canvas); } catch (e) {
-  document.body.innerHTML = '<p style="padding:24px;font-size:18px">This game needs WebGL, which this browser or device doesn\'t offer.</p>';
+  if (window.rycLoader?.fail) window.rycLoader.fail('webgl: ' + (e && e.message), t('noGl'));
+  else document.body.innerHTML = `<p style="padding:24px;font:18px/1.5 sans-serif;color:#fff">${t('noGl')}</p>`;
   throw e;
 }
 const resize = () => world.resize(window.innerWidth, window.innerHeight);
@@ -1145,6 +1154,38 @@ function watchFps(raw) {
   try { localStorage.setItem(GFX_KEY, `${q}|${Date.now()}`); } catch (e) {}
   toast(t('gfxDown', t(q === 'medium' ? 'gMedium' : 'gLow')), 2.5);
 }
+// The GPU took the picture away (webglcontextlost: a phone short of memory, the graphics driver reset): three.js stops
+// drawing, the canvas shows the page's dark blue under the HUD, and the race sailed on blind. Now the race is paused
+// at once (a match runs on: the other boat can't wait). three.js asks for the context back and, given it
+// (webglcontextrestored), builds what it draws again: the race is there under the pause menu, on Auto a level lighter.
+// Not given it in 2 s (Safari short of memory, Chrome after one reset too many) a card says so, with a reload. On Auto
+// the level down is remembered for this device at once, as a slow race's is (watchFps), so the reload starts lighter.
+let glLost = false, glCard = null, glT = 0;
+function lostCard() {
+  if (glCard || !glLost) return;
+  if (running && !paused && !mx) pause();
+  const el = glCard = document.createElement('div');
+  el.className = 'overlay bc'; el.id = 'glLost';
+  el.innerHTML = '<div class="card c-card" role="alertdialog" aria-modal="true" aria-labelledby="glH"><h2 id="glH"></h2><p></p><div class="c-btns"><button class="go"></button><button class="go ghost"></button></div></div>';
+  el.querySelector('h2').textContent = t('glLostK'); el.querySelector('p').textContent = t('glLostTxt');
+  const [again, out] = el.querySelectorAll('button');
+  again.textContent = t('doReload'); out.textContent = t('doLeave');
+  again.addEventListener('click', () => location.reload());
+  out.addEventListener('click', () => quit());
+  document.body.append(el);
+}
+canvas.addEventListener('webglcontextlost', () => {
+  glLost = true;
+  if (running && !paused && !mx) pause();
+  if (opts.gfx === 'auto' && world.quality !== 'low') try { localStorage.setItem(GFX_KEY, `${world.quality === 'high' ? 'medium' : 'low'}|${Date.now()}`); } catch (e) {}
+  clearTimeout(glT); glT = setTimeout(lostCard, 2000);
+});
+canvas.addEventListener('webglcontextrestored', () => {
+  glLost = false; clearTimeout(glT);
+  if (glCard) { glCard.remove(); glCard = null; }
+  const q = startQuality();
+  if (q !== world.quality) world.setQuality(q, opts.gfxD); else world.prepare(); // (setQuality compiles the shaders again itself)
+});
 
 let race = null, running = false, paused = false, menuChanged = false, hints = {}, lastClockInt = null, coachSeen = {};
 function newRace() {
@@ -2030,6 +2071,7 @@ function frame(now) {
   const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now;
   if (window.__slow) { const t0 = performance.now(); while (performance.now() - t0 < window.__slow); } // debug: pretend to be a slow phone
   const P = race.player;
+  if (glLost && running && !paused && !mx) pause(); // a race begun with the picture gone (webglcontextlost, above) waits for it
   if (running && (!paused || mx)) { // (a match runs on under the pause menu)
     const kl = input.keys.ArrowLeft, kr = input.keys.ArrowRight;
     if (kl || kr) { input.rudderHeld = true; input._key = true; input.rudder = clamp(input.rudder + (kr ? 1 : -1) * dt * 2.5, -1, 1); P.auto = null; }

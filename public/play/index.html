@@ -346,7 +346,7 @@
   .c-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
 
   /* the pause and confirm cards in the sailing HUD's look: dark glass, a hairline edge, small bold sans, icons */
-  #pauseCard .card, #confirmCard .card {
+  #pauseCard .card, #confirmCard .card, #glLost .card {
     --bg: rgba(8, 14, 20, 0.58); --ink: #ffffff; --muted: rgba(255, 255, 255, 0.62); --line: rgba(255, 255, 255, 0.12);
     --accent: #35b0f2; --on-accent: #00131f; --ok: #2ee6a0; --ease: cubic-bezier(.2, .8, .2, 1);
     background: var(--bg); color: var(--ink); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 22px;
@@ -356,9 +356,9 @@
   @keyframes pc-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }
   #pauseCard .p-card { width: 300px; gap: 6px; padding: 14px; }
 
-  #pauseCard .go, #confirmCard .go { height: 44px; margin: 0; gap: 8px; border: 0; border-radius: 54px; font: 700 13px var(--sans); text-transform: uppercase; letter-spacing: .04em; transition: transform .12s, background-color .2s, filter .2s; }
-  #pauseCard .go:hover, #confirmCard .go:hover { filter: brightness(1.08); }
-  #pauseCard .go:active, #confirmCard .go:active, #pauseCard .p-row:active, #pauseCard .choice button:active { transform: scale(.97); }
+  #pauseCard .go, #confirmCard .go, #glLost .go { height: 44px; margin: 0; gap: 8px; border: 0; border-radius: 54px; font: 700 13px var(--sans); text-transform: uppercase; letter-spacing: .04em; transition: transform .12s, background-color .2s, filter .2s; }
+  #pauseCard .go:hover, #confirmCard .go:hover, #glLost .go:hover { filter: brightness(1.08); }
+  #pauseCard .go:active, #confirmCard .go:active, #pauseCard .p-row:active, #pauseCard .choice button:active, #glLost .go:active { transform: scale(.97); }
   #pauseCard .p-card > * { flex: none; } /* a short screen scrolls the card rather than squashing Resume */
   #pauseCard .p-esc { align-self: flex-start; font: 700 10.5px var(--sans); letter-spacing: .06em; color: rgba(255, 255, 255, .62); text-shadow: none; }
   #pauseCard #pResume::before { content: ''; width: 12px; height: 12px; background: currentColor; -webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat;
@@ -390,6 +390,7 @@
      the next target as the chip it wears on the water (yellow for a line, orange for a mark) */
   #pauseCard { z-index: 10; background: radial-gradient(120% 90% at 30% 40%, rgba(4,10,16,.25) 0%, rgba(4,10,16,.7) 100%); backdrop-filter: blur(3px) saturate(.9); -webkit-backdrop-filter: blur(3px) saturate(.9); }
   #confirmCard { z-index: 10; }
+  #glLost { z-index: 20; } /* the picture lost (main.js): over the pause menu, under the preloader */
 
   #pauseCard .p-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 12px 0 10px; border-radius: 54px; border: 1px solid var(--line);
     background: rgba(8, 14, 20, .5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); font: 700 11px var(--sans); letter-spacing: .08em; text-shadow: none; }
@@ -430,7 +431,7 @@
     #pauseCard .p-stats { gap: 12px; margin-top: 32px; }
 
   }
-  #confirmCard .c-card { width: min(400px, 100%); padding: 18px; gap: 8px; }
+  #confirmCard .c-card, #glLost .c-card { width: min(400px, 100%); padding: 18px; gap: 8px; }
 
 </style>
 <script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
@@ -675,6 +676,8 @@
   $('lRetry').addEventListener('click', function () { location.reload(); });
 
   window.rycLoader = {
+    // main.js, when it can't go on (no WebGL to be had): the failure, with what to do about it under the race's name
+    fail: function (why, say) { if (say) $('lSub').textContent = say; fail(why); },
     // main.js, once it knows the race: its venue as the title, and its numbers under it ([label, value, unit, line] each);
     // the ticker says what's coming up: the venue, then (next) the start sequence
     race: function (venue, cells, next) {
