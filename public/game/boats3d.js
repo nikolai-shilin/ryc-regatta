@@ -8,7 +8,7 @@
 // the one asked for (the fleet page, /fleet-view, has one of each afloat together).
 // Local frame as yacht.js: +x starboard, +y up, −z forward (the bow), the waterline at y = 0.
 import * as THREE from 'three';
-import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, clothState, flog, mainCloth, kiteCurl, hullSea, staySag, deckWash, lookAt, glance, sailor, labelSprite, THIGH, SHIN, LOOKS,
+import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, clothState, flog, mainCloth, kiteCurl, hullSea, staySag, deckWash, lookAt, glance, sailor, labelSprite, THIGH, SHIN, LOOKS, jibStow, stowJib, stowTells, kiteHoist,
   fit, bar, winch, block, clutches, cleat, wheel, chainplate, display, purchase, mergeGroup, bowNumberMaterial, nameMaterial, deckFinish, mastGeo, spreaderGeo } from './yacht.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -409,7 +409,10 @@ class ClassView {
   }
   // the jib on its stay, its sheets, the telltales and the masthead vane: as on the JPK 1050
   jibAndTells(b, t, side, belly, luff, ph, sheetTo) {
-    const ja = Math.min((b.jibSail ?? b.sail) * D2R * 0.8 + 3 * D2R, (this.jibMax ?? 30) * D2R);
+    // under the kite the jib is put away: furled on its stay, or (jibLowers: a hanked one) lowered to the foredeck,
+    // where it lies along her middle
+    const st = this.jibStowed = jibStow(b), lower = !!this.jibLowers;
+    const ja = Math.min((b.jibSail ?? b.sail) * D2R * 0.8 + 3 * D2R, (this.jibMax ?? 30) * D2R) * (lower ? 1 - st : 1);
     this.jibPivot.quaternion.setFromAxisAngle(this.jibAxis, -this.sailSide * ja);
     const head = this.HEAD.clone().sub(this.TACK), clew = this.CLEW, sc = this.cloth, ss = this.sailSide, k = (this.jibBelly ?? 0.125) * sc.depth, sag = staySag(head.length(), sc.aws);
     const jBelly = -ss * (1 - sc.flogJ * 0.85); // the jib flaps on its own sheet
@@ -418,9 +421,11 @@ class ClassView {
       const ex = lerp(clew.x, head.x, f), ey = lerp(clew.y, head.y, f), ez = lerp(clew.z, head.z, f);
       const len = Math.hypot(ex - lx, ey - ly, ez - lz);
       v.set(lerp(lx, ex, u) + jBelly * Math.sin(Math.PI * u ** 0.72) * len * k + flog(f, u, sc.fp, sc.flogJ, len, sc.aws, ss, sc.ph + 1.3) + leechFlutter(f, u, sc, 7.6), lerp(ly, ey, u), lerp(lz, ez, u));
+      stowJib(v, st, lower, lx, ly, lz);
     });
+    stowTells(this.tells, st);
     if (sheetTo) {
-      const cw = clew.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1;
+      const cw = this.jibClew(), ls = cw.x < 0 ? -1 : 1;
       const js = this.jibSheet.geometry.attributes.position, [p1, p2] = sheetTo(ls);
       js.setXYZ(0, cw.x, cw.y, cw.z); js.setXYZ(1, ...p1); js.setXYZ(2, ...p2); js.needsUpdate = true;
     }
@@ -436,6 +441,8 @@ class ClassView {
       tt.material.color.set(ok ? '#2ecc71' : '#ff4d3d');
     }
   }
+  // the jib's clew in her frame, as it's set or put away
+  jibClew() { return stowJib(this.CLEW.clone(), this.jibStowed || 0, !!this.jibLowers).applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position); }
   makeTells(player) {
     if (player) for (const [f, sx] of [[0.3, 1], [0.3, -1], [0.52, 1], [0.52, -1]]) {
       const t = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.4).translate(0, -0.2, 0), new THREE.MeshBasicMaterial({ color: '#2ecc71', side: THREE.DoubleSide }));
@@ -676,7 +683,7 @@ class SportView extends ClassView {
     purchase(this.mainsheet, [this.travCar.position.x, this.sheetFoot[0] + 0.065, this.sheetFoot[1]], [Math.sin(ma) * bz, J.BOOM_Y - 0.085, J.MAST_Z + Math.cos(ma) * bz], 0.03);
     const ty = RS ? H.deckY(-0.7) + 0.07 : 0.95;
     this.jibAndTells(b, t, side, belly, luff, ph, (ls) => [[ls * 0.55, ty, -0.62], [ls * 0.82, H.deckY(0.2) + 0.12, 0.2]]);
-    { const cw = J.CLEW.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1, lz = this.lazySheet.geometry.attributes.position;
+    { const cw = this.jibClew(), ls = cw.x < 0 ? -1 : 1, lz = this.lazySheet.geometry.attributes.position;
       lz.setXYZ(0, cw.x, cw.y, cw.z); lz.setXYZ(1, 0, cw.y - 0.25, cw.z + 0.15); lz.setXYZ(2, -ls * 0.55, ty, -0.62); lz.setXYZ(3, -ls * 0.82, H.deckY(0.2) + 0.12, 0.2); lz.needsUpdate = true; }
     // the crew: upwind on the windward side deck, the J/70's two forward hiking with their legs over the side (her
     // class allows two; the RS21's none, so hers sit in, feet in the cockpit); downwind sitting in, the trimmer to
@@ -692,7 +699,7 @@ class SportView extends ClassView {
       this.pose(c, { x, y, z, yaw, lean, stand, knee, reach }, k);
     }
     // the kite, off the sprit, hoisted nearly to the masthead
-    const kf = b.kiteFill ?? (b.kite ? 1 : 0), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0)), S = J.SPRIT;
+    const kf = kiteHoist(b), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0)), S = J.SPRIT;
     this.kite.visible = this.kiteSheet.visible = kf > 0.02; this.sprit.visible = kf > 0.02 || !!b.kiteJob;
     if (kf > 0.02) {
       const a = Math.abs(b.twa) / D2R, out = lerp(3.6, 2.0, clamp((a - 95) / 80, 0, 1)) * lerp(0.15, 1, kfill), sd = -this.sailSide;
@@ -897,7 +904,7 @@ class DragonView extends ClassView {
     this.travCar = add(mergeGroup(car), 0, TRY + 0.02, D.TRAV_Z);
     this.mainsheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]); this.mainsheet.frustumCulled = false; T.add(this.mainsheet);
     // the genoa on the forestay, its sheets to the cars and on to the winches
-    this.TACK = D.TACK; this.HEAD = D.HEAD; this.CLEW = D.CLEW; this.jibMax = 24; this.jibBelly = 0.12;
+    this.TACK = D.TACK; this.HEAD = D.HEAD; this.CLEW = D.CLEW; this.jibMax = 24; this.jibBelly = 0.12; this.jibLowers = true; // hanked on: down to the foredeck under the spinnaker
     this.jibPivot = add(new THREE.Group(), D.TACK.x, D.TACK.y, D.TACK.z);
     this.jibAxis = D.HEAD.clone().sub(D.TACK).normalize();
     this.jib = sailMesh(16, 8, sailTexture('jib', look, D.rig), look.laminate, 'jib'); this.jibPivot.add(this.jib);
@@ -945,7 +952,7 @@ class DragonView extends ClassView {
     // the genoa: its sheet through the car on the lee track to the winch
     const car = (ls) => [[ls * 0.82, dk(0.82, D.CAR_Z) + 0.07, D.CAR_Z], [ls * 0.86, dk(0.86, D.WINCH_Z) + 0.1, D.WINCH_Z]];
     this.jibAndTells(b, t, side, belly, luff, ph, car);
-    { const cw = D.CLEW.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1, lz = this.lazySheet.geometry.attributes.position, [a, w] = car(-ls);
+    { const cw = this.jibClew(), ls = cw.x < 0 ? -1 : 1, lz = this.lazySheet.geometry.attributes.position, [a, w] = car(-ls);
       lz.setXYZ(0, cw.x, cw.y, cw.z); lz.setXYZ(1, 0, D.roofY(0, 0.2) + 0.02, 0.25); lz.setXYZ(2, ...a); lz.setXYZ(3, ...w); lz.needsUpdate = true; }
     // the runners: the windward one set up from the hounds to its quarter, almost at the transom, the lee one let go,
     // slack forward along the shrouds
@@ -970,7 +977,7 @@ class DragonView extends ClassView {
     }
     // the spinnaker: its tack at the pole's end, the pole squared aft to the wind as she bears away; its head at the
     // halyard's sheave, its clew out to leeward
-    const kf = b.kiteFill ?? (b.kite ? 1 : 0), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0));
+    const kf = kiteHoist(b), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0));
     this.kite.visible = this.kiteSheet.visible = this.guy.visible = this.pole.visible = kf > 0.02;
     if (kf > 0.02) {
       const a = Math.abs(b.twa) / D2R, sq = clamp((a - 80) / 100, 0, 1), pa = lerp(0.35, 1.45, sq) * lerp(0.4, 1, kf), wd = this.sailSide, sd = -wd;
@@ -1262,7 +1269,7 @@ class JClassView extends ClassView {
     this.travCar = add(mergeGroup(car), 0, TRY + 0.06, D.TRAV_Z);
     this.mainsheet = line(Array.from({ length: 7 }, () => [0, 0, 0])); this.mainsheet.frustumCulled = false; T.add(this.mainsheet);
     // the jib topsail on the forestay, its sheet to the lead on the rail and on to the primary
-    this.TACK = D.TACK; this.HEAD = D.HEAD; this.CLEW = D.CLEW; this.jibMax = 20; this.jibBelly = 0.11;
+    this.TACK = D.TACK; this.HEAD = D.HEAD; this.CLEW = D.CLEW; this.jibMax = 20; this.jibBelly = 0.11; this.jibLowers = true; // the yankee comes down under the spinnaker
     this.jibPivot = add(new THREE.Group(), D.TACK.x, D.TACK.y, D.TACK.z);
     this.jibAxis = D.HEAD.clone().sub(D.TACK).normalize();
     this.jib = sailMesh(22, 10, sailTexture('jib', look, D.rig), look.laminate, 'jib'); this.jibPivot.add(this.jib);
@@ -1320,19 +1327,20 @@ class JClassView extends ClassView {
     // the jib topsail: its sheet through the lead on the lee rail to the primary
     const lead = (ls) => { const x = ls * (H.hbAt(D.LEAD_Z) - 0.3); return [[x, dk(Math.abs(x), D.LEAD_Z) + 0.25, D.LEAD_Z], [ls * 2.35, dk(2.35, D.PRIM_Z) + 0.35, D.PRIM_Z]]; };
     this.jibAndTells(b, t, side, belly, luff, ph, lead);
-    { const cw = D.CLEW.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1, lz = this.lazySheet.geometry.attributes.position, [a, w] = lead(-ls);
+    { const cw = this.jibClew(), ls = cw.x < 0 ? -1 : 1, lz = this.lazySheet.geometry.attributes.position, [a, w] = lead(-ls);
       lz.setXYZ(0, cw.x, cw.y, cw.z); lz.setXYZ(1, ...a); lz.setXYZ(2, ...w); lz.needsUpdate = true; }
-    // the staysail on its own stay, trimmed with the yankee
+    // the staysail on its own stay, trimmed with the yankee, and lowered with it under the spinnaker
     {
-      const ja = Math.min((b.jibSail ?? b.sail) * D2R * 0.75 + 4 * D2R, 22 * D2R);
+      const st = this.jibStowed, ja = Math.min((b.jibSail ?? b.sail) * D2R * 0.75 + 4 * D2R, 22 * D2R) * (1 - st);
       this.stayPivot.quaternion.setFromAxisAngle(this.stayAxis, -ss * ja);
       const head = D.SHEAD.clone().sub(D.STACK), clew = D.SCLEW, sag = staySag(head.length(), sc.aws), jB = -ss * (1 - sc.flogJ * 0.85);
       setSail(this.stay, (f, u, v) => {
         const sg = sag * Math.sin(Math.PI * f), lx = -ss * sg, ly = head.y * f, lz = head.z * f + sg * 0.5;
         const ex = lerp(clew.x, head.x, f), ey = lerp(clew.y, head.y, f), ez = lerp(clew.z, head.z, f), len = Math.hypot(ex - lx, ey - ly, ez - lz);
         v.set(lerp(lx, ex, u) + jB * Math.sin(Math.PI * u ** 0.72) * len * 0.11 + flog(f, u, sc.fp, sc.flogJ, len, sc.aws, ss, sc.ph + 0.7), lerp(ly, ey, u), lerp(lz, ez, u));
+        stowJib(v, st, true);
       });
-      const cw = D.SCLEW.clone().applyQuaternion(this.stayPivot.quaternion).add(this.stayPivot.position), ls = cw.x < 0 ? -1 : 1, p = this.staySheet.geometry.attributes.position;
+      const cw = stowJib(D.SCLEW.clone(), st, true).applyQuaternion(this.stayPivot.quaternion).add(this.stayPivot.position), ls = cw.x < 0 ? -1 : 1, p = this.staySheet.geometry.attributes.position;
       p.setXYZ(0, cw.x, cw.y, cw.z); p.setXYZ(1, ls * 1.9, dk(1.9, D.SLEAD_Z) + 0.2, D.SLEAD_Z); p.setXYZ(2, ls * 2.2, dk(2.2, 1.4) + 0.3, 1.4); p.needsUpdate = true;
     }
     // the runners: the windward one set up from the hounds to its quarter, its checkstay to the masthead's third; the
@@ -1376,7 +1384,7 @@ class JClassView extends ClassView {
     }
     // the spinnaker: its tack at the pole's end, the pole squared aft to the wind as she bears away; its head at the
     // masthead, its clew out to leeward
-    const kf = b.kiteFill ?? (b.kite ? 1 : 0), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0));
+    const kf = kiteHoist(b), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0));
     this.kite.visible = this.kiteSheet.visible = this.guy.visible = this.pole.visible = kf > 0.02;
     if (kf > 0.02) {
       const a = Math.abs(b.twa) / D2R, sq = clamp((a - 80) / 100, 0, 1), pa = lerp(0.35, 1.45, sq) * lerp(0.4, 1, kf), wd = this.sailSide, sd = -wd;
@@ -2302,7 +2310,7 @@ class CruiserView extends ClassView {
     // the genoa and its sheets: the working one through the car to the winch, the lazy one slack across the foredeck
     const gz = BV.MAST_Z + 1.4, gx = (s) => s * (H.hbAt(gz) - 0.4), wy = coamY(BV.WINCH_Z) + 0.18, wx = (s) => s * BV.WINCH_X;
     this.jibAndTells(b, t, side, belly, luff, ph, (ls) => [[gx(ls), H.deckY(gz) + 0.1, gz], [wx(ls), wy, BV.WINCH_Z]]);
-    { const cw = BV.CLEW.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1, lz = this.lazySheet.geometry.attributes.position;
+    { const cw = this.jibClew(), ls = cw.x < 0 ? -1 : 1, lz = this.lazySheet.geometry.attributes.position;
       lz.setXYZ(0, cw.x, cw.y, cw.z); lz.setXYZ(1, 0, cw.y - 0.5, cw.z + 0.4); lz.setXYZ(2, gx(-ls), H.deckY(gz) + 0.1, gz); lz.setXYZ(3, wx(-ls), wy, BV.WINCH_Z); lz.needsUpdate = true; }
     // the crew: the helm stands behind the windward wheel; the trimmers sit to windward upwind, the gennaker's
     // trimmer to leeward off the wind; the two forward sit out on the windward side deck, legs over the side, and one
@@ -2319,7 +2327,7 @@ class CruiserView extends ClassView {
       this.pose(c, { x, y, z, yaw, lean, stand, knee, reach }, k);
     }
     // the gennaker, tacked to the sprit and hoisted to the hounds
-    const kf = b.kiteFill ?? (b.kite ? 1 : 0), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0)), S = BV.SPRIT;
+    const kf = kiteHoist(b), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0)), S = BV.SPRIT;
     this.kite.visible = this.kiteSheet.visible = kf > 0.02;
     if (kf > 0.02) {
       const a = Math.abs(b.twa) / D2R, out = lerp(6.2, 3.6, clamp((a - 95) / 80, 0, 1)) * lerp(0.15, 1, kfill), sd = -this.sailSide;

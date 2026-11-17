@@ -782,6 +782,27 @@ export function clothState(view, b, t) {
 // the forestay sags to leeward and aft under load, a little over half a percent of its length and more as it blows:
 // how far at its middle (len its length, aws the apparent wind, knots); sin(π f) of that at f up it
 export const staySag = (len, aws) => len * (0.005 + 0.0006 * Math.min(aws, 25));
+// the kite's hoist and the jib put away under it (it would only be in the kite's way), one after the other so they
+// never cross: of the time a hoist takes (b.kiteFill, 0–1) the crew spend the first KITE_LEAD furling or lowering the
+// jib and the rest sending the kite up; a drop goes the other way, the kite down and then the jib set again
+const KITE_LEAD = 0.3, kiteFillOf = (b) => b.kiteFill ?? (b.kite ? 1 : 0);
+// how far the kite is up, 0–1, for the picture
+export const kiteHoist = (b) => clamp((kiteFillOf(b) - KITE_LEAD) / (1 - KITE_LEAD), 0, 1);
+// how far the jib is put away, 0–1
+export const jibStow = (b) => smoothstep(0, KITE_LEAD, kiteFillOf(b));
+// a point v of the jib (in its pivot's frame, the tack at 0) put away by s: furled, drawn in onto the luff at its
+// height (lx, ly, lz) to a roll of a few per cent of the chord; lowered (a hanked jib), down the stay to a heap on
+// the foredeck at the tack
+export function stowJib(v, s, lower, lx = 0, ly = 0, lz = 0) {
+  if (s <= 0) return v;
+  if (lower) return v.set(v.x * (1 - 0.8 * s), v.y * (1 - 0.97 * s), v.z * (1 - 0.8 * s));
+  const k = 1 - 0.96 * s;
+  return v.set(lx + (v.x - lx) * k, ly + (v.y - ly) * k, lz + (v.z - lz) * k);
+}
+// the telltales on a jib that's put away: gone with it (scaled, as setDetail owns their visibility)
+export function stowTells(tells, s) {
+  for (const tt of tells) { const k = (tt.userData.k ??= tt.scale.x); tt.scale.setScalar(k * Math.max(1e-4, 1 - smoothstep(0, 0.4, s))); }
+}
 // a rope between a and b (from point i0 of a line's n points, a and b included), sagging sag at its middle (in the
 // boat's frame, down) and, flogging, whipped side to side by whip
 export function drape(attr, i0, n, a, b, sag, whip = 0, t = 0) {
@@ -1623,15 +1644,17 @@ export class BoatView {
     purchase(this.mainsheet, [this.travCar.position.x, FLOOR + 0.155, SHEET_Z], raked(Math.sin(ma) * bz, BOOM_Y - 0.115, MAST_Z + Math.cos(ma) * bz));
     const ja = Math.min((b.jibSail ?? b.sail) * D2R * 0.8 + 3 * D2R, 30 * D2R); // on its own sheet when the jib has one
     this.jibPivot.quaternion.setFromAxisAngle(this.jibAxis, -this.sailSide * ja);
-    const head = HEAD.clone().sub(TACK), clew = JIB_CLEW, sag = staySag(head.length(), cl.aws);
+    const head = HEAD.clone().sub(TACK), clew = JIB_CLEW, sag = staySag(head.length(), cl.aws), st = jibStow(b); // st: furled under the kite
     setSail(this.jib, (f, u, v) => {
       const sg = sag * Math.sin(Math.PI * f), lx = head.x * f - ss * sg, ly = head.y * f, lz = head.z * f + sg * 0.5; // the luff on the sagging stay
       const ex = lerp(clew.x, head.x, f), ey = lerp(clew.y, head.y, f), ez = lerp(clew.z, head.z, f);
       const len = Math.hypot(ex - lx, ey - ly, ez - lz);
       v.set(lerp(lx, ex, u) + jBelly * Math.sin(Math.PI * u ** 0.72) * len * 0.125 * cl.depth + flog(f, u, cl.fp, cl.flogJ, len, cl.aws, ss, cl.ph + 1.3) + leechFlutter(f, u, cl, 7.6), lerp(ly, ey, u), lerp(lz, ez, u));
+      stowJib(v, st, false, lx, ly, lz);
     });
+    stowTells(this.tells, st);
     // the jib sheets: from the clew to the car on the leeward side deck and on to the winch; the lazy one slack
-    const cw = clew.clone().applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1;
+    const cw = stowJib(clew.clone(), st, false).applyQuaternion(this.jibPivot.quaternion).add(this.jibPivot.position), ls = cw.x < 0 ? -1 : 1;
     const js = this.jibSheet.geometry.attributes.position, lz = this.lazySheet.geometry.attributes.position;
     const [gx, gz] = gcar(ls), [lx] = gcar(-ls), wy = deckY(PRIMARY[1]) + 0.2; // through the car on the leeward track to the primary
     // the working sheet hangs between the clew and the car as it's eased, and whips about while the jib flogs; the lazy
@@ -1723,7 +1746,7 @@ export class BoatView {
     // gennaker on the bowsprit
     // kf: how far the gennaker is up — it climbs the mast furled during a hoist and fills only at the top, and comes
     // down collapsing during a drop
-    const kf = b.kiteFill ?? (b.kite ? 1 : 0), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0)); // half collapsed while it's gybed
+    const kf = kiteHoist(b), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0)); // half collapsed while it's gybed
     this.kite.visible = this.kiteSheet.visible = kf > 0.02; // the bowsprit is fixed: it stays
     if (kf > 0.02) {
       const a = Math.abs(b.twa) / D2R, out = lerp(6.2, 3.4, clamp((a - 95) / 80, 0, 1)) * lerp(0.15, 1, kfill), sd = -this.sailSide;
