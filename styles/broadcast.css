@@ -478,14 +478,19 @@
 .bc .hm-signin:hover { background: var(--w-14); }
 @container help (min-width: 600px) { .bc .hm-signin { display: inline-flex; } }
 @container scr (min-width: 600px) { .bc .hm-signin { display: inline-flex; } }
-/* the tabs need the room: none under 1280px wide (they're in the menu), and Questions and the exam trainer only from
-   1600px (they go there between). The fleet and Your boat are always in the menu, never tabs */
+/* the tabs need the room: none under 1280px wide (they're in the menu), Venues and Yachts from 1360px (a 1366 laptop;
+   in Russian the seven need about 1270) and Questions from 1440px (all eight about 1360); between, the ones that don't
+   fit are in the menu. The fleet and Your boat are always in the menu, never tabs */
 @container help (max-width: 1279px) { .bc .hm-nav { display: none; } .bc .hm-menu-nav { display: flex; } }
 @container scr (max-width: 1279px) { .bc .hm-nav { display: none; } .bc .hm-menu-nav { display: flex; } }
-@container help (max-width: 1599px) { .bc .hm-tab-x { display: none; } }
-@container scr (max-width: 1599px) { .bc .hm-tab-x { display: none; } }
-@container help (min-width: 1280px) and (max-width: 1599px) { .bc .hm-menu-nav { display: flex; } .bc .hm-menu-nav > :not(.hm-mi-x, .hm-msep) { display: none; } }
-@container scr (min-width: 1280px) and (max-width: 1599px) and (min-height: 640px) { .bc .hm-menu-nav { display: flex; } .bc .hm-menu-nav > :not(.hm-mi-x, .hm-msep) { display: none; } }
+@container help (max-width: 1359px) { .bc .hm-tab-x { display: none; } }
+@container scr (max-width: 1359px) { .bc .hm-tab-x { display: none; } }
+@container help (max-width: 1439px) { .bc .hm-tab-xx { display: none; } }
+@container scr (max-width: 1439px) { .bc .hm-tab-xx { display: none; } }
+@container help (min-width: 1280px) and (max-width: 1359px) { .bc .hm-menu-nav { display: flex; } .bc .hm-menu-nav > :not(.hm-mi-x, .hm-msep) { display: none; } }
+@container scr (min-width: 1280px) and (max-width: 1359px) { .bc .hm-menu-nav { display: flex; } .bc .hm-menu-nav > :not(.hm-mi-x, .hm-msep) { display: none; } }
+@container help (min-width: 1360px) and (max-width: 1439px) { .bc .hm-menu-nav { display: flex; } .bc .hm-menu-nav > :not(.hm-mi-xx, .hm-msep) { display: none; } }
+@container scr (min-width: 1360px) and (max-width: 1439px) { .bc .hm-menu-nav { display: flex; } .bc .hm-menu-nav > :not(.hm-mi-xx, .hm-msep) { display: none; } }
 .bc .hm-prof { height: var(--h-m); border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink); }
 .bc .hm-menu[open] .hm-prof { box-shadow: inset 0 -3px 0 var(--you); }
 .bc .hm-av { border-radius: 0; background: var(--w-14); color: var(--ink); font-family: var(--cond); }

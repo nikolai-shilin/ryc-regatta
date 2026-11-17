@@ -41,8 +41,8 @@ export function Trail({ t, crumbs }: { t: T; crumbs: Crumb[] }) {
 // The site's header, as on rycrentals.com: the logo, the site's pages in the middle (from 1100 px wide), and the menu
 // (the burger and your avatar) at the right; your account, your boat, passport and badges, How to play and Learn to race
 // are in the menu alone. On a page in the broadcast look (.bc, styles/broadcast.css) it is the
-// broadcast's bar: the name with the blue mark, the pages as tabs (from 1280 px wide; those marked hm-tab-x from
-// 1600), Sign in (a guest's) and Play now beside the menu. On every page: the scrolling ones (home, help, the race result) and the
+// broadcast's bar: the name with the blue mark, the pages as tabs (from 1280 px wide; Venues and Yachts, hm-tab-x,
+// from 1360, and Questions, hm-tab-xx, from 1440), Sign in (a guest's) and Play now beside the menu. On every page: the scrolling ones (home, help, the race result) and the
 // app screens, where it sits over the screen and stays short on a phone held sideways.
 // Who is signed in isn't known here (the pages are cached): the avatar and the account link are filled in by lib/me.ts.
 export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Page; crumbs?: Crumb[] }) {
@@ -60,7 +60,7 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
           <Link className="hm-tab" href="/players" {...cur('players')}>{t('Players', 'Игроки')}</Link>
           <Link className="hm-tab hm-tab-x" href="/venues" {...cur('venues')}>{t('Venues', 'Акватории')}</Link>
           <Link className="hm-tab hm-tab-x" href="/yachts" {...cur('yachts')}>{t('Yachts', 'Яхты')}</Link>
-          <Link className="hm-tab hm-tab-x" href="/faq" {...cur('faq')}>{t('Questions', 'Вопросы')}</Link>
+          <Link className="hm-tab hm-tab-x hm-tab-xx" href="/faq" {...cur('faq')}>{t('Questions', 'Вопросы')}</Link>
         </nav>
         {/* a guest's way to sign in, in the bar where there's room (else in the menu); signed in, the avatar says who */}
         <Link className="hm-signin if-guest" href="/sign-in" {...cur('signin')}>{t('Sign in', 'Войти')}</Link>

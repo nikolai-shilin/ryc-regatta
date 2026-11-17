@@ -60,7 +60,7 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <Link className="hm-mi" href="/players">{t('Players', 'Игроки')}</Link>
           <Link className="hm-mi hm-mi-x" href="/venues">{t('Venues', 'Акватории')}</Link>
           <Link className="hm-mi hm-mi-x" href="/yachts">{t('Yachts', 'Яхты')}</Link>
-          <Link className="hm-mi hm-mi-x" href="/faq">{t('Questions', 'Вопросы')}</Link>
+          <Link className="hm-mi hm-mi-x hm-mi-xx" href="/faq">{t('Questions', 'Вопросы')}</Link>
         </nav>
         <form className="if-me" action="/auth/sign-out" method="post"
           onSubmit={(e) => { (e.currentTarget.elements.namedItem('next') as HTMLInputElement).value = location.pathname + location.search; forgetCard(); }}>
