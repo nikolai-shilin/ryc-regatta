@@ -1,11 +1,13 @@
 import { tx, type Lang } from '@/lib/lang';
 import { Tile } from './admin-stats';
 import { IconCrew, clock } from './ui';
+import { PlayersTable, type Col, type Row } from './admin-players-table';
 
 // The admin's list of the players who began a race in the last `days`, the last seen first (500 at most), from the
 // database's regatta_admin_players (supabase/migrations/20261117150000_regatta_admin_players.sql in the iyt-test repo),
 // which answers an admin alone. A player is a Telegram user, a site account or, for a guest, a browser; a browser that
-// later signed in is that player throughout. Drawn on the server, per request.
+// later signed in is that player throughout. Drawn on the server, per request; the table sorts in the browser by the
+// column clicked (components/admin-players-table.tsx).
 type Num = number | null;
 export type Player = {
   who: string; kind: 'tg' | 'acct' | 'guest'; name: string | null; handle: string | null; first: string; last: string; new: boolean;
@@ -26,8 +28,21 @@ export function AdminPlayers({ lang, data }: { lang: Lang; data: Players }) {
     return tg ? `${name} · Telegram` : name;
   };
   const count = (k: Player['kind']) => P.filter((p) => p.kind === k).length;
-  const head = [t('Races', 'Гонок'), t('Finished', 'Финиш'), t('Top 3', 'Топ-3'), t('DSQ', 'DSQ'), t('Days', 'Дней'), t('Place', 'Место'),
-    t('Best today’s race', 'Лучшее в гонке дня'), t('Rating', 'Оценка'), t('Device', 'Устройство'), t('Last seen', 'Был'), t('First seen', 'Впервые')];
+  const cols: Col[] = [
+    { label: t('Races', 'Гонок') }, { label: t('Finished', 'Финиш') }, { label: t('Top 3', 'Топ-3') },
+    { label: t('DSQ', 'DSQ') }, { label: t('Days', 'Дней') }, { label: t('Place', 'Место'), asc: true },
+    { label: t('Best today’s race', 'Лучшее в гонке дня'), asc: true }, { label: t('Rating', 'Оценка') },
+    { label: t('Device', 'Устройство'), asc: true }, { label: t('Last seen', 'Был') }, { label: t('First seen', 'Впервые') },
+  ];
+  const rows: Row[] = P.map((p) => ({
+    key: p.who,
+    name: p.name || (p.kind === 'guest' ? `${KIND.guest} ${p.who.slice(0, 4)}` : '–'),
+    sub: `${KIND[p.kind]}${p.handle ? ` · ${p.kind === 'tg' ? '@' : ''}${p.handle}` : ''}`,
+    isNew: p.new,
+    cells: [String(p.n), pct(p.fin, p.n), String(p.top3), p.dsq ? String(p.dsq) : '–', String(p.days), p.down == null ? '–' : `${Math.round(100 * p.down)}%`,
+      p.best == null ? '–' : clock(p.best), p.rated ? `${(p.rating ?? 0).toFixed(1)} · ${p.rated}` : '–', dev(p.dev), when(p.last), when(p.first)],
+    vals: [p.n, p.n ? p.fin / p.n : null, p.top3, p.dsq, p.days, p.down, p.best, p.rated ? p.rating : null, p.dev ? dev(p.dev) : null, Date.parse(p.last), Date.parse(p.first)],
+  }));
   return (
     <div className="adm adm-stats">
       <div className="adm-k"><IconCrew /><span className="kicker">{t('The players', 'Игроки')}</span></div>
@@ -40,40 +55,13 @@ export function AdminPlayers({ lang, data }: { lang: Lang; data: Players }) {
       </div>
       {P.length > 0 && (
         <section className="adm-tab">
-          <h3 className="adm-tab-h">{t('Last seen first', 'Сначала недавние')}</h3>
-          <div className="adm-tab-scroll" tabIndex={0} role="region" aria-label={t('The players', 'Игроки')}>
-            <table className="adm-players">
-              <thead><tr><th scope="col">{t('Player', 'Игрок')}</th>{head.map((h) => <th key={h} scope="col">{h}</th>)}</tr></thead>
-              <tbody>
-                {P.map((p) => (
-                  <tr key={p.who}>
-                    <th scope="row">
-                      <span className="adm-pl-name">{p.name || (p.kind === 'guest' ? `${KIND.guest} ${p.who.slice(0, 4)}` : '–')}</span>
-                      <span className="adm-pl-sub">
-                        {KIND[p.kind]}{p.handle ? ` · ${p.kind === 'tg' ? '@' : ''}${p.handle}` : ''}
-                        {p.new && <b className="adm-pl-new">{t('New', 'Новый')}</b>}
-                      </span>
-                    </th>
-                    <td>{p.n}</td>
-                    <td>{pct(p.fin, p.n)}</td>
-                    <td>{p.top3}</td>
-                    <td>{p.dsq || '–'}</td>
-                    <td>{p.days}</td>
-                    <td>{p.down == null ? '–' : `${Math.round(100 * p.down)}%`}</td>
-                    <td>{p.best == null ? '–' : clock(p.best)}</td>
-                    <td>{p.rated ? `${(p.rating ?? 0).toFixed(1)} · ${p.rated}` : '–'}</td>
-                    <td>{dev(p.dev)}</td>
-                    <td>{when(p.last)}</td>
-                    <td>{when(p.first)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <h3 className="adm-tab-h">{t('Click a column to sort by it', 'Нажмите на столбец, чтобы отсортировать')}</h3>
+          <PlayersTable first={{ label: t('Player', 'Игрок'), asc: true }} cols={cols} rows={rows} start={10}
+            label={t('The players', 'Игроки')} newLabel={t('New', 'Новый')} />
         </section>
       )}
-      <p className="hint">{t('Everyone who began a race in the period, the last seen first. A guest is a browser; one who signed in later is counted as that player. Place: the median, 0% first in the fleet, 100% last. Rating: the average of the stars they gave, and how many. Times in UTC; first seen is their first race ever. Guests’ races before 17 November had no browser and aren’t here.',
-        'Все, кто начинал гонку за период, недавние сверху. Гость — это браузер; если он потом вошёл, его гонки считаются за этого игрока. Место — медиана: 0% — первым во флоте, 100% — последним. Оценка — средняя из поставленных звёзд и их число. Время по UTC; «Впервые» — первая гонка вообще. Гонки гостей до 17 ноября без браузера и сюда не попали.')}</p>
+      <p className="hint">{t('Everyone who began a race in the period, the last seen first; click a column’s head to sort by it, again to turn it round. A guest is a browser; one who signed in later is counted as that player. Place: the median, 0% first in the fleet, 100% last. Rating: the average of the stars they gave, and how many. Times in UTC; first seen is their first race ever. Guests’ races before 17 November had no browser and aren’t here.',
+        'Все, кто начинал гонку за период, недавние сверху; нажмите на заголовок столбца, чтобы отсортировать, ещё раз — в обратном порядке. Гость — это браузер; если он потом вошёл, его гонки считаются за этого игрока. Место — медиана: 0% — первым во флоте, 100% — последним. Оценка — средняя из поставленных звёзд и их число. Время по UTC; «Впервые» — первая гонка вообще. Гонки гостей до 17 ноября без браузера и сюда не попали.')}</p>
     </div>
   );
 }
