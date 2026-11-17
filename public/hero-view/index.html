@@ -8,7 +8,8 @@
 <!-- The home page's hero background (app/page.tsx embeds it): the game itself (public/game), a race already under way
      with every boat, yours included, sailed by the game's own skippers, seen from the drone as it slowly circles.
      Nothing to steer. It is today's race's venue and yacht (the home page asks for them: ?venue=, ?boat=, which the
-     game's venues.js and classes.js read), lit at the venue's own hour now. The page shows a still picture behind
+     game's venues.js and classes.js read), lit at the time of day a race is set to (light.js DAYTIMES: morning,
+     midday, afternoon, evening, sunset) nearest the venue's hour now. The page shows a still picture behind
      this until the first frame is drawn. -->
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
@@ -58,10 +59,15 @@
 import { World } from '/game/world.js';
 import { Race } from '/game/sim.js';
 import { VENUE } from '/game/venues.js';
+import { DAYTIMES } from '/game/light.js';
 
-// the hour on the venue's clock now (venues.js tz; light.js keeps it to the racing day, so a night there is its dawn
-// or its dusk)
-const hourNow = () => { const n = new Date(); return (((n.getUTCHours() + n.getUTCMinutes() / 60 + VENUE.tz) % 24) + 24) % 24; };
+// the time of day a race is set to that is nearest the venue's clock now (venues.js tz), round the clock: a night there
+// is its sunset till the small hours, then its morning
+function daytimeNow() {
+  const n = new Date(), h = n.getUTCHours() + n.getUTCMinutes() / 60 + VENUE.tz;
+  const off = (d) => { const x = (((h - DAYTIMES[d]) % 24) + 24) % 24; return Math.min(x, 24 - x); };
+  return Object.keys(DAYTIMES).reduce((a, b) => (off(b) < off(a) ? b : a));
+}
 
 const canvas = document.getElementById('c');
 const STEP = 1 / 60;
@@ -76,7 +82,7 @@ function start() {
   function newRace() {
     ready = false;
     race = new Race({ preset: 'medium', fleet: 5, laps: 1, length: 'short', start: 1, seed: 4242 + Math.floor(Math.random() * 50) });
-    race.settings = { daily: null, hour: hourNow() }; // world.setRace lights her by it (light.js pickSky)
+    race.settings = { daily: null, daytime: daytimeNow() }; // world.setRace lights her by it (light.js pickSky)
     world.setRace(race); // first: the world dresses your boat in your colours because she has no skipper yet
     const P = race.player;
     P.autoTrim = true; P.crew = 0.2;
