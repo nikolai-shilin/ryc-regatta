@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { readPb } from '@/lib/opts';
 import { readBoat } from '@/lib/boat';
+import { readMe } from '@/lib/me';
 import { briefUrl, readBrief } from '@/lib/day-brief';
 import { dailyVenue, dailyYacht } from '@/lib/race';
 import { clock } from './ui';
@@ -16,19 +17,21 @@ const IconUser = () => <svg viewBox="0 0 16 16" width={16} height={16} aria-hidd
 // so whether you are is drawn by CSS, .if-me and .if-guest). At its head who you are: signed in, your initials and name,
 // the way to the account and settings; a guest, the way to sign in and why (at every width, the bar's own button
 // beside it or not). Then what's yours on this device (the boat, the passport, the badges; Settings is the head's
-// once signed in), the reading pages, on a narrow screen (where the header's links are hidden) the site's pages too,
-// and last, signed in, Sign out (back to the page it was on, app/auth/sign-out).
+// once signed in; and, for a player who has raced, their own card on /players), the reading pages, on a narrow screen
+// (where the header's links are hidden) the site's pages too, and last, signed in, Sign out (back to the page it was
+// on, app/auth/sign-out).
 export function SiteMenu({ lang }: { lang: Lang }) {
   const t = tx(lang);
   const ref = useRef<HTMLDetailsElement>(null);
+  const [card, askCard] = useCardKey();
   useEffect(() => {
     const close = (e: Event) => { const d = ref.current; if (d?.open && !(e instanceof KeyboardEvent ? e.key !== 'Escape' : d.contains(e.target as Node))) d.open = false; };
     document.addEventListener('click', close); document.addEventListener('keydown', close);
     return () => { document.removeEventListener('click', close); document.removeEventListener('keydown', close); };
   }, []);
   return (
-    <details className="hm-menu" ref={ref}>
-      <summary className="hm-prof" aria-label={t('Menu', 'Меню')}><IconBurger /><span className="hm-av"><IconUser /><span className="me-ini" /></span></summary>
+    <details className="hm-menu" ref={ref} onToggle={(e) => { if (e.currentTarget.open) askCard(); }}>
+      <summary className="hm-prof" aria-label={t('Menu', 'Меню')} onPointerEnter={askCard} onFocus={askCard}><IconBurger /><span className="hm-av"><IconUser /><span className="me-ini" /></span></summary>
       <div className="hm-menu-pop">
         <Link className="hm-acct if-me" href="/settings">
           <span className="hm-av hm-acct-av me-ini" aria-hidden="true" />
@@ -41,6 +44,7 @@ export function SiteMenu({ lang }: { lang: Lang }) {
         <span className="hm-msep" />
         <Link className="hm-mi" href="/boat">{t('Your boat', 'Твоя яхта')}</Link>
         <Link className="hm-mi" href="/passport">{t('Your passport', 'Твой паспорт')}</Link>
+        {card && <Link className="hm-mi if-me" href={`/players?p=${encodeURIComponent(card)}`}>{t('Your player card', 'Твоя карточка игрока')}</Link>}
         <Link className="hm-mi" href="/race/badges">{t('Badges', 'Достижения')}</Link>
         <Link className="hm-mi if-guest" href="/settings">{t('Settings', 'Настройки')}</Link>
         <span className="hm-msep" />
@@ -58,7 +62,7 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <Link className="hm-mi hm-mi-x" href="/faq">{t('Questions', 'Вопросы')}</Link>
         </nav>
         <form className="if-me" action="/auth/sign-out" method="post"
-          onSubmit={(e) => { (e.currentTarget.elements.namedItem('next') as HTMLInputElement).value = location.pathname + location.search; }}>
+          onSubmit={(e) => { (e.currentTarget.elements.namedItem('next') as HTMLInputElement).value = location.pathname + location.search; forgetCard(); }}>
           <span className="hm-msep" />
           <input type="hidden" name="next" />
           <button className="hm-mi hm-mi-out" type="submit">{t('Sign out', 'Выйти')}</button>
@@ -66,6 +70,37 @@ export function SiteMenu({ lang }: { lang: Lang }) {
       </div>
     </details>
   );
+}
+
+// The key of your own card on /players (?p=<k>), for the menu's row. The scores server makes it from a secret of its
+// own, so it is asked for (app/auth/player, with the session) once you are signed in, when the menu is first opened
+// or pointed at, not on every page load; null until then, and for a guest or an account that has never raced (not a
+// player yet), so the row isn't there. A key found is kept for the tab, under who it is for (as lib/me.ts reads the
+// session), so the next page has the row at once; Sign out forgets it. Not having one is not kept: it is asked again
+// on the next page, so a first race shows the row soon after.
+const CARD = 'regatta-card';
+const cardWho = () => { const m = readMe(); return m ? `${m.provider}|${m.email}|${m.name}` : null; };
+const forgetCard = () => { try { sessionStorage.removeItem(CARD); } catch {} };
+function useCardKey(): [string | null, () => void] {
+  const [k, setK] = useState<string | null>(null);
+  const asked = useRef(false);
+  useEffect(() => {
+    try {
+      const c = JSON.parse(sessionStorage.getItem(CARD) || 'null');
+      if (c && typeof c.k === 'string' && c.who === cardWho()) { setK(c.k); asked.current = true; }
+    } catch {}
+  }, []);
+  const ask = () => {
+    const who = cardWho();
+    if (asked.current || !who) return;
+    asked.current = true;
+    fetch('/auth/player', { cache: 'no-store' }).then((r) => (r.status === 200 ? r.json() : null)).catch(() => null).then((j) => {
+      const key = typeof j?.k === 'string' ? j.k : null;
+      setK(key);
+      if (key) try { sessionStorage.setItem(CARD, JSON.stringify({ who, k: key })); } catch {}
+    });
+  };
+  return [k, ask];
 }
 
 // Your best time in today's race on this device (the game keeps it), or the way onto the ranking. The ranking above it is
