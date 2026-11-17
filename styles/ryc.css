@@ -2,6 +2,15 @@
    App screens (hub, free race, settings, boat, sign-in) fill the window and follow the three layouts;
    home, help and the race result are scrolling pages that follow their width. */
 
+/* ---------- no zoom, no selecting ---------- */
+/* the site is an app, not a document: a double tap doesn't zoom (a pinch is stopped in lib/no-zoom.ts), and text,
+   images and links can't be selected, dragged or long-pressed for the callout; what a player types into stays
+   selectable */
+html { touch-action: manipulation; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+img, svg, a { -webkit-user-drag: none; user-drag: none; }
+input, textarea, [contenteditable]:not([contenteditable="false"]) { user-select: text; -webkit-user-select: text; -webkit-touch-callout: default; }
+
 /* ---------- app screens ---------- */
 .lay { position: absolute; inset: 0; }
 .page { padding: var(--s-5) var(--s-8); display: flex; flex-direction: column; gap: var(--gap); }

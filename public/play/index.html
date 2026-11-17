@@ -85,6 +85,7 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #0b3550; color: var(--ink); overscroll-behavior: none; -webkit-font-smoothing: antialiased; }
   body { font-family: var(--serif); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  input, textarea { user-select: text; -webkit-user-select: text; -webkit-touch-callout: default; }
   #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   button { font: inherit; color: inherit; cursor: pointer; }
   .kicker { font-family: var(--sans); font-weight: 700; font-size: 13px; letter-spacing: -0.02em; text-transform: uppercase; color: var(--ink); }
@@ -470,6 +471,7 @@
 <link rel="modulepreload" href="/game/sfx.js">
 </head>
 <body>
+<script>try{var nz=function(e){e.preventDefault()},o={passive:false},d=document;d.addEventListener('gesturestart',nz,o);d.addEventListener('gesturechange',nz,o);d.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length>1)e.preventDefault()},o);d.addEventListener('wheel',function(e){if(e.ctrlKey)e.preventDefault()},o);d.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&/^(Equal|Minus|Digit0|NumpadAdd|NumpadSubtract|Numpad0)$/.test(e.code))e.preventDefault()})}catch(e){} /* no zoom: lib/no-zoom.ts's copy */</script>
 <canvas id="gl"></canvas>
 
 <div id="hud" hidden>

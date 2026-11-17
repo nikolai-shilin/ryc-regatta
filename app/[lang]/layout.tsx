@@ -13,6 +13,7 @@ import '@/styles/ryc.css';
 import '@/public/ui/tokens.css';
 import '@/styles/broadcast.css';
 import { FONT_VARS } from '@/lib/fonts';
+import { NO_ZOOM } from '@/lib/no-zoom';
 
 // The defaults every page starts from: the site's name and the share card. Each page then gives its own title,
 // description, canonical address and languages (lib/seo.ts, through titled() in lib/i18n.ts).
@@ -43,7 +44,7 @@ export async function generateMetadata({ params }: LangParams): Promise<Metadata
   };
 }
 
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#070d16' }; // the broadcast's ground (public/ui/tokens.css), under the browser's bar
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, maximumScale: 1, userScalable: false, viewportFit: 'cover', themeColor: '#070d16' }; // the broadcast's ground (public/ui/tokens.css), under the browser's bar
 
 // The IYT mini app opens this site with Telegram's launch data in the hash (#tgWebAppData=…), but the race itself is
 // on /play, a page or two later, where the hash is gone. Telegram's own script (loaded by the race page) reads the
@@ -67,7 +68,7 @@ export default async function RootLayout({ children, params }: LangParams & { ch
     // suppressHydrationWarning: the head script marks <html> (data-me, --me-ini) before React sees it
     <html lang={lang} className={FONT_VARS} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: KEEP_TG_LAUNCH + ME + BACK }} />
+        <script dangerouslySetInnerHTML={{ __html: KEEP_TG_LAUNCH + ME + BACK + NO_ZOOM }} />
       </head>
       <body>
         {children}
