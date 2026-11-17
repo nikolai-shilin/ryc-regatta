@@ -1266,6 +1266,17 @@
 .bc .st-card .segc { display: flex; flex-wrap: wrap; }
 .bc .st-card .segc :is(a, button) { flex: 1 1 auto; justify-content: center; height: var(--h-m); }
 .bc .st-card .srow-seg .hint { margin: 0; color: var(--ink-3); }
+/* Graphics › Details and Sound › Details: a disclosure; open, a row a part, its name beside three small buttons (under it on a narrow card) */
+.bc .st-det-t { display: inline-flex; align-self: flex-start; align-items: center; gap: var(--s-2); height: var(--h-s); padding: 0; border: 0; background: none; color: var(--ink-2); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; cursor: pointer; }
+.bc .st-det-t:hover { color: var(--ink); }
+.bc .st-det-t svg { transform: rotate(90deg); transition: transform .15s; }
+.bc .st-det-t[aria-expanded="true"] svg { transform: rotate(-90deg); }
+.bc .st-det-b { display: flex; flex-direction: column; border-top: 1px solid var(--rule-2); }
+.bc .st-card .st-det-r { flex-wrap: wrap; gap: var(--s-1) var(--s-3); min-height: 0; padding: var(--s-2) 0; }
+.bc .st-card .st-det-r .srow-k { flex: 1 1 10em; font-size: var(--fs-small); color: var(--ink-2); }
+.bc .st-card .st-det-r .segc { flex: 0 1 15em; flex-wrap: nowrap; }
+.bc .st-card .st-det-r .segc button { flex: 1 1 0; height: var(--h-s); padding: 0 var(--s-2); }
+.bc .st-card .st-det-4 .st-det-r .segc { flex-basis: 20em; } /* four levels: Loud to Off */
 .bc .st-card .acct-row { margin: var(--s-2) 0 0; padding: var(--s-2) 0 var(--s-3); border-bottom: 0; }
 .bc .st-card .name-row { margin: 0; padding: 0 0 var(--s-2); border-bottom: 0; }
 .bc .avatar-guest { box-shadow: none; font-size: var(--fs-row); }

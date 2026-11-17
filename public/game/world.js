@@ -1242,15 +1242,40 @@ function drapeGuides(G, W, t) {
 }
 
 // ---------- graphics levels ----------
-// High for computers, Medium to start on phones; Auto (main.js) steps down when the frame rate drops.
-// post: the HDR pass with bloom (its blur steps) and multisampling; mirror: the reflection's size (0: the sea
-// reflects only the sky); fft: the chop as a real sea spectrum
+// High for computers, Medium to start on phones; Auto (main.js) steps down when the frame rate drops. A level is
+// nine parts, each high, medium or low (off, for the ones that can be): High, Medium and Low set them all alike, and
+// Custom (Settings › Graphics › Details) any mix of them (setGraphics).
+//   res: the picture's resolution (the most pixels to a CSS pixel)
+//   shadows: the sun's shadow map (texels across; 0: no shadows, on the boats or on the sea)
+//   sea: the water's mesh (rings × segments) and its chop as a real sea spectrum (fft: its size; seas: its layers, m);
+//        low: the simpler water shader, five waves and no spectrum
+//   refl: the reflection's size (0: the sea reflects only the sky)
+//   post: the HDR pass with bloom (its blur steps) and multisampling (null: straight to the screen)
+//   wakes: the boats' waves in the water (the field's texels; 0: none) and the spray and foam (how many flecks)
+//   under: the hulls seen through the water (the pass's scale; 0: none)
+//   land: the trees, rocks and moored boats ashore, and how fine the far land is (skopea.js setQuality)
+//   life: the gulls and dolphins (wildlife.js), the crew drawn in full close by, the boats in detail further off
 const PHONE = /android|iphone|ipad/i.test(navigator.userAgent);
-export const QUALITY = {
-  high:   { ratio: 1.75, shadow: PHONE ? 1024 : 2048, rings: 200, segs: 256, foam: 1600, post: { bloomLevels: 5, samples: 4 }, mirror: PHONE ? 0.35 : 0.5, fft: 128, seas: [40, 9.1, 2.3], wake: 512, under: PHONE ? 0.5 : 1 },
-  medium: { ratio: 1.3,  shadow: 1024, rings: 140, segs: 192, foam: 900, post: { bloomLevels: 4, samples: 2 }, mirror: 0.25, fft: 64, seas: [40, 5.5], wake: 256, under: 0.5 },
-  low:    { ratio: 1.0,  shadow: 0,    rings: 100, segs: 128, foam: 450, low: true, post: null, mirror: 0, fft: 0, seas: [], wake: 0, under: 0 }, // no shadows, simpler water, straight to the screen
+export const GFX_PARTS = ['res', 'shadows', 'sea', 'refl', 'post', 'wakes', 'under', 'land', 'life'];
+export const GFX_LEVELS = ['high', 'medium', 'low'];
+const PART = {
+  res: { high: 1.75, medium: 1.3, low: 1.0 },
+  shadows: { high: PHONE ? 1024 : 2048, medium: 1024, low: 0 },
+  sea: {
+    high: { rings: 200, segs: 256, fft: 128, seas: [40, 9.1, 2.3] },
+    medium: { rings: 140, segs: 192, fft: 64, seas: [40, 5.5] },
+    low: { rings: 100, segs: 128, fft: 0, seas: [], low: true },
+  },
+  refl: { high: PHONE ? 0.35 : 0.5, medium: 0.25, low: 0 },
+  post: { high: { bloomLevels: 5, samples: 4 }, medium: { bloomLevels: 4, samples: 2 }, low: null },
+  wakes: { high: { wake: 512, foam: 1600 }, medium: { wake: 256, foam: 900 }, low: { wake: 0, foam: 450 } },
+  under: { high: PHONE ? 0.5 : 1, medium: 0.5, low: 0 },
 };
+// a level's parts: High, Medium or Low all alike; Custom, the ones given (any part not given or not known: High)
+export function gfxParts(q, custom) {
+  const lv = (v) => (GFX_LEVELS.includes(v) ? v : 'high');
+  return Object.fromEntries(GFX_PARTS.map((k) => [k, q === 'custom' ? lv(custom && custom[k]) : lv(q)]));
+}
 export const defaultQuality = () => (PHONE ? 'medium' : 'high');
 
 // ---------- the world ----------
@@ -1594,52 +1619,69 @@ export class World {
   }
   ready() { return this.preparing || Promise.resolve(); }
 
-  // switch the graphics level: resolution, sun shadows, water mesh and shading, foam
-  setQuality(q) {
-    if (!QUALITY[q] || this.quality === q) return;
-    this.skopea.setQuality(q);
-    const Q = QUALITY[q], hadShadow = this.quality ? QUALITY[this.quality].shadow > 0 : true;
+  // switch the graphics level: High, Medium or Low, or Custom with its parts (gfxParts)
+  setQuality(q, custom) {
+    if (q !== 'custom' && !GFX_LEVELS.includes(q)) return;
+    this.setGraphics(gfxParts(q, custom));
     this.quality = q;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, Q.ratio));
-    if (this.w) this.renderer.setSize(this.w, this.h, false);
-    const sh = Q.shadow > 0;
-    this.renderer.shadowMap.enabled = sh; this.sun.castShadow = sh;
-    if (sh && this.sun.shadow.mapSize.x !== Q.shadow) { this.sun.shadow.mapSize.set(Q.shadow, Q.shadow); if (this.sun.shadow.map) { this.sun.shadow.map.dispose(); this.sun.shadow.map = null; } }
-    this.water.geometry.dispose(); this.water.geometry = waterGeometry(3000, Q.rings, Q.segs);
-    this.water.material.defines = Q.low ? { WAVES: 5, LOW_Q: 1 } : { WAVES: NW };
-    this.water.material.needsUpdate = true;
-    this.foamMax = Q.foam; this.foamI %= Q.foam; this.foamPts.geometry.setDrawRange(0, Q.foam);
-    this.wild.setLevel(q); // fewer gulls and dolphins lower down
-    // the camera's post-processing
+  }
+
+  // set each part of the graphics (GFX_PARTS), touching only those that change: resolution, sun shadows, the water's
+  // mesh and shading, the reflection, the post-processing, the wakes and foam, the hulls under water, the land, the life
+  setGraphics(g) {
+    const was = this.gfx || {}, ch = (k) => was[k] !== g[k];
+    if (!GFX_PARTS.some(ch)) return;
+    this.gfx = { ...g };
     const r = this.renderer;
-    if (Q.post && Post.supported(r)) { if (!this.post) this.post = new Post(r); this.post.setLevel(Q.post); if (this.bloomLook) this.post.setLook(this.bloomLook); }
+    if (ch('land')) this.skopea.setQuality(g.land);
+    if (ch('life')) this.wild.setLevel(g.life); // fewer gulls and dolphins lower down
+    if (ch('res')) { r.setPixelRatio(Math.min(window.devicePixelRatio || 1, PART.res[g.res])); if (this.w) r.setSize(this.w, this.h, false); }
+    // the sun's shadows (and the sea's shade, which goes with them)
+    const shadow = PART.shadows[g.shadows], sh = shadow > 0, hadShadow = was.shadows ? PART.shadows[was.shadows] > 0 : true;
+    r.shadowMap.enabled = sh; this.sun.castShadow = sh;
+    if (sh && this.sun.shadow.mapSize.x !== shadow) { this.sun.shadow.mapSize.set(shadow, shadow); if (this.sun.shadow.map) { this.sun.shadow.map.dispose(); this.sun.shadow.map = null; } }
+    // the water: its mesh and shader
+    const S = PART.sea[g.sea];
+    if (ch('sea')) {
+      this.water.geometry.dispose(); this.water.geometry = waterGeometry(3000, S.rings, S.segs);
+      this.water.material.defines = S.low ? { WAVES: 5, LOW_Q: 1 } : { WAVES: NW };
+      this.water.material.needsUpdate = true;
+    }
+    // the spray and foam
+    const Wk = PART.wakes[g.wakes];
+    this.foamMax = Wk.foam; this.foamI %= Wk.foam; this.foamPts.geometry.setDrawRange(0, Wk.foam);
+    // the camera's post-processing
+    const P = PART.post[g.post];
+    if (P && Post.supported(r)) { if (!this.post) this.post = new Post(r); this.post.setLevel(P); if (this.bloomLook) this.post.setLook(this.bloomLook); }
     else if (this.post) { this.post.dispose(); this.post = null; }
     this.camera.layers.set(0); if (!this.post) this.camera.layers.enable(OVERLAY); // without the post the labels go in with the rest
     // the mirror
-    if (Q.mirror > 0 && Post.supported(r)) { if (!this.mirror) this.mirror = new Mirror(r); this.mirror.setScale(Q.mirror); }
+    const M = PART.refl[g.refl];
+    if (M > 0 && Post.supported(r)) { if (!this.mirror) this.mirror = new Mirror(r); this.mirror.setScale(M); }
     else if (this.mirror) { this.mirror.dispose(); this.mirror = null; }
     this.reflU.uReflOn.value = 0;
     // the sea: its FFT layers
     const O = this.oceanU;
-    if (Q.fft && Ocean.supported(r)) {
-      if (!this.ocean || this.ocean.N !== Q.fft || this.ocean.Ls.join() !== Q.seas.join()) {
+    if (S.fft && Ocean.supported(r)) {
+      if (!this.ocean || this.ocean.N !== S.fft || this.ocean.Ls.join() !== S.seas.join()) {
         if (this.ocean) this.ocean.dispose();
-        this.ocean = new Ocean(r, Q.fft, Q.seas);
+        this.ocean = new Ocean(r, S.fft, S.seas);
         if (this.race) this.ocean.setWind(this.race.wind.p.tws);
       }
       O.uFftD.value = this.ocean.disp.texture; this.oceanSlopes();
-      O.uFftL.value.set(Q.seas[0], Q.seas[1] || 1, Q.seas[2] || 1); O.uFftOn.value = 1; O.uFftN.value = Q.seas.length;
+      O.uFftL.value.set(S.seas[0], S.seas[1] || 1, S.seas[2] || 1); O.uFftOn.value = 1; O.uFftN.value = S.seas.length;
     } else {
       if (this.ocean) { this.ocean.dispose(); this.ocean = null; }
       O.uFftOn.value = 0; O.uFftN.value = 0; O.uFftD.value = O.uFftS.value = O.uFftS1.value = O.uFftS2.value = blankOcean();
     }
     // the boats' waves in the water, and the hulls under it
-    this.wakeField.setOn(Q.wake && Post.supported(r) ? Q.wake : 0);
-    if (Q.under && Post.supported(r)) { if (!this.under) this.under = new Under(r, { ...this.waterU }); this.under.setScale(Q.under); }
+    this.wakeField.setOn(Wk.wake && Post.supported(r) ? Wk.wake : 0);
+    const U = PART.under[g.under];
+    if (U && Post.supported(r)) { if (!this.under) this.under = new Under(r, { ...this.waterU }); this.under.setScale(U); }
     else if (this.under) { this.under.dispose(); this.under = null; }
     this.underU.uUnderOn.value = 0;
     if (hadShadow !== sh) this.scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); }); // shadows on/off: recompile
-    if (this.race) this.prepare(); // a new level, new shader variants: compiled aside while the race goes on
+    if (this.race) this.prepare(); // new parts, new shader variants: compiled aside while the race goes on
   }
 
   // the FFT layers' slopes: the textures written this frame (the 40 m layer's alternate, for its foam)
@@ -1721,7 +1763,7 @@ export class World {
 
   // a splash where an animal breaks the water: foam spreading on the surface and, with up > 0, spray thrown up
   splash(x, z, n, up = 0, size = 1) {
-    n = Math.round(n * (this.quality === 'low' ? 0.4 : this.quality === 'medium' ? 0.7 : 1));
+    n = Math.round(n * (this.gfx?.wakes === 'low' ? 0.4 : this.gfx?.wakes === 'medium' ? 0.7 : 1));
     const t = this.race ? this.race.t : 0;
     for (let k = 0; k < n; k++) {
       const f = this.foam[this.foamI]; this.foamI = (this.foamI + 1) % this.foamMax;
@@ -1760,8 +1802,8 @@ export class World {
     const cp = this.camera.position, farD = this.mode === 'top' ? 1e9 : 85;
     race.boats.forEach((b, i) => {
       const v = this.boatViews[i], d = Math.hypot(b.x - cp.x, b.z - cp.z);
-      v.setDetail(b === P || d < farD * (this.quality === 'low' ? 0.6 : 1) && this.mode !== 'top');
-      v.setCrewNear(this.quality !== 'low' && Math.hypot(d, cp.y) < 25); // the full figures only close up, and never on Low
+      v.setDetail(b === P || d < farD * (this.gfx?.life === 'low' ? 0.6 : 1) && this.mode !== 'top');
+      v.setCrewNear(this.gfx?.life !== 'low' && Math.hypot(d, cp.y) < 25); // the full figures only close up, and never with Life on Low
       v.update(b, t, this.W, this.mode === 'drone');
       if (race.match && v.label && b !== P) { // a match: her penalty turn or OCS by her name (the HUD's tag names her the rest of the time)
         const st = b.pen ? '⟳' : b.ocs ? 'OCS' : '';
@@ -1967,7 +2009,7 @@ export class World {
     if (on) { this.reflU.uRefl.value = this.mirror.rt.texture; this.reflU.uReflMat.value.copy(this.mirror.matrix); }
     const v = r.getDrawingBufferSize(this._dbs || (this._dbs = new THREE.Vector2()));
     this.underU.uScreenInv.value.set(1 / v.x, 1 / v.y);
-    const shade = this.quality !== 'low'; // (Low: no shadows anywhere)
+    const shade = this.gfx?.shadows !== 'low'; // (shadows off: none anywhere, on the sea either)
     if (shade) { this.seaShade.render(sc, cam); this.seaShadeU.uSeaShade.value = this.seaShade.rt.texture; }
     this.seaShadeU.uSeaShadeOn.value = shade ? 1 : 0;
     if (this.under) { // the hulls under the surface, for the water to show through itself

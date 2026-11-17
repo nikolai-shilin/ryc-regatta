@@ -99,7 +99,10 @@ function drive() {
   return (driveCurve = c);
 }
 
-export function createSfx(ctx, master) {
+// bus: where each kind goes, so Settings › Sound can set each apart (main.js audio.init): boat (your sails, the winch,
+// the hull) and signals (the committee's horn, the start timer's beep); either missing: straight to the master
+export function createSfx(ctx, master, bus = {}) {
+  const boat = bus.boat || master, sig = bus.signals || master;
   const white = noiseBuf(ctx, 'white', 2, 1), pink = noiseBuf(ctx, 'pink'), brown = noiseBuf(ctx, 'brown');
   // the slow-to-make ones a moment later, so the first tap that wakes the sound doesn't stutter
   let clicks = [];
@@ -118,7 +121,8 @@ export function createSfx(ctx, master) {
   // the land's echo: a send into it from anything heard across the water
   const air = ctx.createConvolver(); air.buffer = airIR(ctx);
   const airOut = node.gain(0.5); air.connect(airOut).connect(master);
-  const send = (from, amount) => { const g = node.gain(amount); from.connect(g).connect(air); return g; };
+  // (via: the bus the sound itself goes to: its echo is as loud as it is, and none if it's off)
+  const send = (from, amount, via) => { const g = node.gain(amount * (via ? via.gain.value : 1)); from.connect(g).connect(air); return g; };
 
   // ---- the wind ----
   const wind = (() => {
@@ -177,7 +181,7 @@ export function createSfx(ctx, master) {
 
   // ---- the sails ----
   // a crack as she fills the other way: the thump of the cloth and its snap
-  function crack(vol, pan = 0, to = master, t = ctx.currentTime) {
+  function crack(vol, pan = 0, to = boat, t = ctx.currentTime) {
     if (vol < 0.004) return;
     const o = node.pan(pan, to);
     burst(brown, node.filter('lowpass', rnd(160, 260), 0.9), vol * 0.95, 0.004, rnd(0.07, 0.13), o, t);
@@ -187,7 +191,7 @@ export function createSfx(ctx, master) {
   const flutter = (() => {
     const s = node.src(pink), bp = node.filter('bandpass', 650, 1.4), am = node.gain(0.5), depth = node.gain(0.5), g = node.gain(0), lfo = ctx.createOscillator();
     lfo.frequency.value = 17; lfo.connect(depth).connect(am.gain);
-    s.connect(bp).connect(am).connect(g).connect(master); s.start(0, rnd(0, 3)); lfo.start();
+    s.connect(bp).connect(am).connect(g).connect(boat); s.start(0, rnd(0, 3)); lfo.start();
     return { g, lfo };
   })();
   let flogPh = 0;
@@ -198,19 +202,19 @@ export function createSfx(ctx, master) {
     flutter.lfo.frequency.setTargetAtTime(13 + 0.4 * Math.min(aws, 30), now, 0.3);
     const before = Math.floor(flogPh / Math.PI);
     flogPh += dt * TAU * (1.4 + 0.07 * Math.min(aws || 0, 30)) * rnd(0.85, 1.15);
-    if (k && flog > 0.15 && Math.floor(flogPh / Math.PI) !== before) crack(k * 0.65 * flog * rnd(0.55, 1), rnd(-0.15, 0.15), master, now + rnd(0, 0.02));
+    if (k && flog > 0.15 && Math.floor(flogPh / Math.PI) !== before) crack(k * 0.65 * flog * rnd(0.55, 1), rnd(-0.15, 0.15), boat, now + rnd(0, 0.02));
   }
 
   // ---- one-shots ----
   // the hull slamming onto a sea: a thud in her, her hull's boom, and the splash a moment after
   function slap(vol) {
     const t = ctx.currentTime;
-    burst(brown, node.filter('lowpass', 150, 0.8), vol * 0.7, 0.006, 0.2, master, t);
-    burst(pink, node.filter('bandpass', 420, 1.2), vol * 0.22, 0.004, 0.12, master, t);
-    burst(pink, node.filter('highpass', 1600, 0.6), vol * 0.16, 0.025, 0.45, master, t + 0.03);
+    burst(brown, node.filter('lowpass', 150, 0.8), vol * 0.7, 0.006, 0.2, boat, t);
+    burst(pink, node.filter('bandpass', 420, 1.2), vol * 0.22, 0.004, 0.12, boat, t);
+    burst(pink, node.filter('highpass', 1600, 0.6), vol * 0.16, 0.025, 0.45, boat, t + 0.03);
   }
   // a pawl clicking: vol, pan, where to, when
-  function click(vol = 1, pan = 0, to = master, t = ctx.currentTime) {
+  function click(vol = 1, pan = 0, to = boat, t = ctx.currentTime) {
     if (!clicks.length) return;
     const s = node.src(clicks[Math.floor(Math.random() * clicks.length)], false), g = node.gain(0.32 * vol * rnd(0.8, 1.1));
     s.playbackRate.value = rnd(0.95, 1.05); s.connect(g).connect(node.pan(pan, to)); s.start(t);
@@ -218,10 +222,11 @@ export function createSfx(ctx, master) {
   // the sheet running out round the drum as it's eased: a rope's rasp
   function ease(vol = 1) {
     const t = ctx.currentTime;
-    burst(pink, node.filter('bandpass', rnd(1800, 2800), 1.6), 0.28 * vol, 0.012, 0.12, master, t);
+    burst(pink, node.filter('bandpass', rnd(1800, 2800), 1.6), 0.28 * vol, 0.012, 0.12, boat, t);
   }
   // the committee boat's horn: long or short; d metres off, pan where she is, `when` seconds from now (a second horn)
   function horn(long, d = 120, pan = 0, when = 0) {
+    if (bus.signals && bus.signals.gain.value <= 0) return; // (horns off: not even its echo)
     const dur = long ? 2.3 : 0.95, t = ctx.currentTime + 0.02 + when + Math.min(d, 220) / 343; // heard late, as it's far
     const f0 = 392 * rnd(0.994, 1.006), wave = reed(ctx), g = node.gain(0), pre = node.gain(0.45), sh = ctx.createWaveShaper();
     sh.curve = drive(); sh.oversample = '2x';
@@ -239,15 +244,15 @@ export function createSfx(ctx, master) {
     const peak = 0.11 * clamp(110 / Math.max(d, 20), 0.35, 1.4);
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + 0.035); g.gain.setValueAtTime(peak, end - 0.04);
     g.gain.exponentialRampToValueAtTime(0.0005, end + 0.16);
-    pre.connect(sh).connect(hp).connect(f1).connect(f2).connect(lp).connect(g).connect(node.pan(pan * 0.8));
-    send(g, 0.55 + 0.25 * clamp(d / 300, 0, 1));
+    pre.connect(sh).connect(hp).connect(f1).connect(f2).connect(lp).connect(g).connect(node.pan(pan * 0.8, sig));
+    send(g, 0.55 + 0.25 * clamp(d / 300, 0, 1), bus.signals);
   }
   // the start timer's piezo beep, a short one each second and a long one in the last three
   function beep(last) {
     const t = ctx.currentTime, dur = last ? 0.22 : 0.08, o = ctx.createOscillator(), g = node.gain(0), bp = node.filter('bandpass', 3150, 5);
     o.type = 'square'; o.frequency.value = 3150;
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.16, t + 0.004); g.gain.setValueAtTime(0.16, t + dur - 0.01); g.gain.linearRampToValueAtTime(0, t + dur);
-    o.connect(bp).connect(g).connect(master); o.start(t); o.stop(t + dur + 0.02);
+    o.connect(bp).connect(g).connect(sig); o.start(t); o.stop(t + dur + 0.02);
   }
 
   return { white, pink, brown, node, send, wind, water, sails, crack, slap, click, ease, horn, beep };

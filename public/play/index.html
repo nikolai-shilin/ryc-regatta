@@ -378,6 +378,7 @@
   /* graphics: one of four, a segmented track in the chips' colours */
   #pauseCard .p-seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; margin: 0 2px; padding: 3px; border: 1px solid var(--line); border-radius: 54px; background: rgba(255, 255, 255, 0.05); }
   #pauseCard .p-seg.five { grid-template-columns: repeat(5, auto); } /* the music: as wide as each name, "Open water" the longest */
+  #pauseCard .p-seg:has(> [data-g="custom"]:not([hidden])) { grid-template-columns: repeat(5, minmax(0, 1fr)); } /* Custom graphics (set in Settings) as a fifth */
   #pauseCard .p-seg.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   #pauseCard .p-seg button { height: 28px; padding: 0 4px; border: 0; border-radius: 54px; background: transparent; color: rgba(255, 255, 255, 0.72); font: 700 11px var(--sans); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; cursor: pointer; transition: background-color .2s, color .2s, box-shadow .2s, transform .12s; }
   #pauseCard .p-seg button:hover { color: #fff; }
@@ -722,7 +723,7 @@
     <span class="meta" id="pCamK" data-t="camK"></span>
     <div class="p-seg three" role="radiogroup" aria-labelledby="pCamK"><button role="radio" data-pc="drone" data-t="drone" title="X"></button><button role="radio" data-pc="top" data-t="top" title="C"></button><button role="radio" data-pc="helm" data-t="helm" title="V"></button></div>
     <span class="meta" id="pGfxK" data-t="gfx"></span>
-    <div class="p-seg" role="radiogroup" aria-labelledby="pGfxK"><button role="radio" data-g="auto" data-t="gAuto"></button><button role="radio" data-g="high" data-t="gsHigh"></button><button role="radio" data-g="medium" data-t="gsMedium"></button><button role="radio" data-g="low" data-t="gsLow"></button></div>
+    <div class="p-seg" role="radiogroup" aria-labelledby="pGfxK"><button role="radio" data-g="auto" data-t="gAuto"></button><button role="radio" data-g="high" data-t="gsHigh"></button><button role="radio" data-g="medium" data-t="gsMedium"></button><button role="radio" data-g="low" data-t="gsLow"></button><button role="radio" data-g="custom" data-t="gsCustom" hidden></button></div>
     <div class="p-togs">
       <div class="p-tog"><span id="pGuidesL" data-t="guidesSw"></span><button class="sw" role="switch" aria-checked="false" data-q="guides" aria-labelledby="pGuidesL"></button></div>
       <div class="p-tog"><span id="pSoundL" data-t="sound"></span><button class="sw" role="switch" aria-checked="false" data-q="sound" aria-labelledby="pSoundL"></button></div>

@@ -117,7 +117,7 @@ const T = {
     wind: 'Wind', light: 'Light · 7 kn', medium: 'Medium · 12 kn', strong: 'Strong · 19 kn', laps: 'Laps', sails: 'Sails',
     manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', voiceK: 'Voice', musicK: 'Music', muRacing: 'Racing', muGroove: 'Groove', muRiff: 'Riff', muOpenwater: 'Open water', muVolK: 'Music volume', seaK: 'Sea', seaLoud: 'Loud', seaNormal: 'Normal', seaQuiet: 'Quiet', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
     fleetK: 'Boats', lengthK: 'Course', lShort: 'Short', lMedium: 'Medium', lLong: 'Long',
-    currentK: 'Current', guidesK: 'Guides', gfx: 'Graphics', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', gsHigh: 'High', gsMedium: 'Medium', gsLow: 'Low', gfxNow: (q) => `Graphics · ${q} now`, start: 'Start race', resume: 'Resume', restart: 'Restart',
+    currentK: 'Current', guidesK: 'Guides', gfx: 'Graphics', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', gsHigh: 'High', gsMedium: 'Medium', gsLow: 'Low', gsCustom: 'Custom', gfxNow: (q) => `Graphics · ${q} now`, start: 'Start race', resume: 'Resume', restart: 'Restart',
     how1: '<b>Left thumb</b> steers on the arc. <b>Right thumb</b> works the sheet: up pulls the sails in, down lets them out. Keep the telltales green.',
     how2: '<b>Tack</b> turns you through the wind (<b>Gybe</b> downwind). <b>Kite</b> sets the gennaker on a run — the hoist and the drop take the crew a few seconds, so get it down in good time before the gate. In a gust, ease the sheet before she heels too far; in a blow, <b>Reef</b> makes the main smaller. Before the start, head up and let the sheet right out to stop — or even go astern.',
     how3: 'Start after the gun — the class flag comes down. Over early and you must go back. Round the windward mark <b>leaving it to port</b>, finish through the line.',
@@ -221,7 +221,7 @@ const T = {
     wind: 'Ветер', light: 'Слабый · 7 уз', medium: 'Средний · 12 уз', strong: 'Сильный · 19 уз', laps: 'Круги', sails: 'Паруса',
     manual: 'Сам', auto: 'Авто', sound: 'Звук', voiceK: 'Голос', musicK: 'Музыка', muRacing: 'Гонка', muGroove: 'Грув', muRiff: 'Рифф', muOpenwater: 'Простор', muVolK: 'Громкость музыки', seaK: 'Море', seaLoud: 'Громко', seaNormal: 'Обычно', seaQuiet: 'Тихо', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
     fleetK: 'Лодок', lengthK: 'Дистанция', lShort: 'Короткая', lMedium: 'Средняя', lLong: 'Длинная',
-    currentK: 'Течение', guidesK: 'Подсказки', gfx: 'Графика', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', gsHigh: 'Макс.', gsMedium: 'Сред.', gsLow: 'Мин.', gfxNow: (q) => `Графика · сейчас ${q.toLowerCase()}`, start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
+    currentK: 'Течение', guidesK: 'Подсказки', gfx: 'Графика', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', gsHigh: 'Макс.', gsMedium: 'Сред.', gsLow: 'Мин.', gsCustom: 'Своя', gfxNow: (q) => `Графика · сейчас ${q.toLowerCase()}`, start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
     how1: '<b>Левый палец</b> рулит по дуге. <b>Правый</b> работает шкотом: вверх выбрать, вниз потравить. Колдунчики должны быть зелёными.',
     how2: '<b>Поворот</b> — оверштаг через ветер (на полных курсах — <b>фордевинд</b>). <b>Генакер</b> — для попутного ветра; постановка и уборка занимают у экипажа несколько секунд, так что убирай его заранее, до ворот. В порыве трави шкот, пока крен не стал слишком большим; в сильный ветер <b>Риф</b> уменьшает грот. Перед стартом приведись и потрави шкот до конца — лодка остановится или даже пойдёт назад.',
     how3: 'Старт после сигнала — флаг класса спущен. Фальстарт — вернись за линию. Верхний знак огибают, <b>оставляя его слева</b>; финиш — через линию.',
@@ -325,7 +325,7 @@ for (const g of document.querySelectorAll('.choice[data-opt]')) {
     // …and so does another class of yacht: today's race is sailed in the day's, a free race in the one chosen (classes.js)
     if (k === 'mode' && !new URLSearchParams(location.search).get('boat') && (opts.mode === 'daily' ? dailyRace().yacht : classById(opts.yacht).id) !== CLS.id) { location.href = '/play?race=' + (opts.mode === 'daily' ? 'today' : 'free'); return; }
     if (k === 'mode' && !new URLSearchParams(location.search).get('venue') && (opts.mode === 'daily' ? dailyRace().venue : venueById(opts.venue).id) !== VENUE.id) { location.href = '/play?race=' + (opts.mode === 'daily' ? 'today' : 'free'); return; }
-    if (k === 'gfx') { world.setQuality(startQuality()); perf.settle = 2; }
+    if (k === 'gfx') { applyGfx(); perf.settle = 2; }
     if (k === 'guides') world.showGuides = !!opts.guides;
     if (k === 'saver') Object.assign(perf, { settle: 2, t: 0, d: [] }); // (the frame rate it watches changes with it)
     if (k === 'sound') audio.setOn(!!opts.sound);
@@ -357,6 +357,11 @@ const SEA = { loud: 1.6, normal: 1, quiet: 0.4, off: 0 };
 const seaK = () => SEA[opts.sea] ?? 1;
 // and the music, as loud as Settings › Music volume says (Off is under Music)
 const MUSIC_VOL = { loud: 1.6, normal: 1, quiet: 0.4 };
+// and each kind of sound apart, as Settings › Sound › Details has them (lib/opts.ts SOUND_PARTS): the voices (the
+// skipper, the crews, the committee, the umpire), the boats (sails, winches, hulls, yours and the others'), the
+// signals (horns, the start timer, the umpire's whistle) and round about (the gulls, the banner plane)
+const SND = { loud: 1.6, normal: 1, quiet: 0.4, off: 0 };
+const sndK = (k) => SND[opts[k]] ?? 1;
 const audio = {
   ctx: null, on: !!opts.sound,
   init() {
@@ -365,9 +370,13 @@ const audio = {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
       this.master = this.ctx.createGain(); this.master.gain.value = this.on ? 1 : 0; this.master.connect(this.ctx.destination);
       // the wind, the water, the sails, the winch, the horn (sfx.js), made from what makes the real ones
-      this.sfx = createSfx(this.ctx, this.master); this.buf = this.sfx.white;
+      const bus = (k) => { const g = this.ctx.createGain(); g.gain.value = sndK(k); g.connect(this.master); return g; };
+      this.boat = bus('sndBoats'); this.signals = bus('sndSignals'); this.wild = bus('sndAround');
+      this.sfx = createSfx(this.ctx, this.master, { boat: this.boat, signals: this.signals }); this.buf = this.sfx.white;
       // the voices (skipper, crews, committee, umpire) on a bus of their own, measured, so the music bows out under them
-      this.voice = this.ctx.createGain(); this.voice.connect(this.master);
+      // (measured before their own level, so the music bows out under a line however loud it's set)
+      this.voice = this.ctx.createGain(); this.voiceLvl = this.ctx.createGain(); this.voiceLvl.gain.value = sndK('sndVoices');
+      this.voice.connect(this.voiceLvl).connect(this.master);
       this.meter = this.ctx.createAnalyser(); this.meter.fftSize = 512; this.voice.connect(this.meter); this.meterBuf = new Float32Array(512);
       // a voice on board, and the VHF's speaker in the cockpit, heard on deck in the open: no studio's boom under it
       // (a man shouting has none), and the faint first reflection off the sails and the coachroof a few ms after
@@ -853,12 +862,12 @@ const crews = {
   flog(v, pan, dur, late = 0) {
     if (v < 0.01) return;
     const n = audio.ctx.currentTime + 0.15 + late, top = 0.75 * v;
-    for (let t = 0; t < dur; t += 0.13 + Math.random() * 0.12) audio.sfx.crack(top * (1 - t / dur) * (0.5 + Math.random() * 0.5), pan * 0.85, audio.master, n + t);
+    for (let t = 0; t < dur; t += 0.13 + Math.random() * 0.12) audio.sfx.crack(top * (1 - t / dur) * (0.5 + Math.random() * 0.5), pan * 0.85, audio.boat, n + t);
   },
   // the new sheet ground in on a winch: a run of pawl clicks
   winch(v, pan, delay) {
     if (v < 0.02) return;
-    for (let i = 0, t = audio.ctx.currentTime + delay; i < 9; i++, t += 0.08 + Math.random() * 0.04) audio.sfx.click(v, pan * 0.85, audio.master, t);
+    for (let i = 0, t = audio.ctx.currentTime + delay; i < 9; i++, t += 0.08 + Math.random() * 0.04) audio.sfx.click(v, pan * 0.85, audio.boat, t);
   },
   // every frame: the nearest boat's bow wave and wash, while she's within forty metres
   update(P, still) {
@@ -866,7 +875,7 @@ const crews = {
     if (!this.wash) {
       const ctx = audio.ctx, s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(), p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
       s.buffer = audio.sfx.pink; s.loop = true; f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 0.7; g.gain.value = 0;
-      s.connect(f).connect(g); if (p) g.connect(p).connect(audio.master); else g.connect(audio.master); s.start(0, Math.random() * 3);
+      s.connect(f).connect(g); if (p) g.connect(p).connect(audio.boat); else g.connect(audio.boat); s.start(0, Math.random() * 3);
       this.wash = { g, p };
     }
     let best = null, bd = 40;
@@ -893,8 +902,8 @@ const engine = {
     w.buffer = audio.buf; w.loop = true; wf.type = 'bandpass'; wf.frequency.value = 700; wf.Q.value = 0.6; wg.gain.value = 0.5;
     w.connect(wf).connect(wg).connect(g);
     const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
-    if (p) g.connect(p).connect(audio.master); else g.connect(audio.master);
-    audio.sfx.send(g, 0.3); // and echoed back off the land
+    if (p) g.connect(p).connect(audio.wild); else g.connect(audio.wild);
+    audio.sfx.send(g, 0.3, audio.wild); // and echoed back off the land
     for (const x of [o, sub, thr]) x.start(); w.start(0, Math.random());
     this.n = { o, sub, lp, g, p };
   },
@@ -991,11 +1000,12 @@ const asides = {
   cry(p, n, alarm) {
     const ctx = audio.ctx, pl = crews.place(p), d = Math.hypot(pl.d, p.y || 0), near = clamp(1 - d / this.R, 0, 1);
     if (near <= 0) return;
-    const v = near * near, out = crews.out(1, pl.pan), lp = ctx.createBiquadFilter();
+    if (!sndK('sndAround')) return;
+    const v = near * near, out = crews.out(1, pl.pan, audio.wild), lp = ctx.createBiquadFilter();
     lp.type = 'lowpass'; lp.frequency.value = 2200 + 8000 * near; lp.Q.value = 0.5; lp.connect(out);
     const echo = ctx.createDelay(0.5), eg = ctx.createGain(), el = ctx.createBiquadFilter(); // off the water and the hulls round about
     echo.delayTime.value = 0.05 + 0.12 * (1 - near); eg.gain.value = 0.18 + 0.2 * (1 - near); el.type = 'lowpass'; el.frequency.value = 2600;
-    lp.connect(echo).connect(el).connect(eg).connect(out); audio.sfx.send(lp, 0.08 + 0.2 * (1 - near));
+    lp.connect(echo).connect(el).connect(eg).connect(out); audio.sfx.send(lp, 0.08 + 0.2 * (1 - near), audio.wild);
     const t0 = ctx.currentTime + 0.03 + Math.random() * 0.08 + d / 343;
     const end = gulls.play(ctx, lp, t0, n, alarm, 0.8 * Math.max(v, 0.03));
     if (end === null) { lp.disconnect(); return; }
@@ -1063,12 +1073,12 @@ const committee = {
   },
   // the umpire's whistle: a pea whistle's trill, two blasts
   whistle(t) {
-    const ctx = audio.ctx, out = crews.out(1, 0.35);
+    const ctx = audio.ctx, out = crews.out(1, 0.35, audio.signals);
     for (const [at, dur] of [[0, 0.16], [0.22, 0.3]]) {
       const o = ctx.createOscillator(), lfo = ctx.createOscillator(), dep = ctx.createGain(), g = ctx.createGain(), a = t + at;
       o.frequency.value = 2900 + Math.random() * 150; lfo.frequency.value = 26 + Math.random() * 6; dep.gain.value = 220; // the pea
       g.gain.setValueAtTime(0, a); g.gain.linearRampToValueAtTime(0.12, a + 0.015); g.gain.setValueAtTime(0.12, a + dur - 0.04); g.gain.linearRampToValueAtTime(0, a + dur);
-      lfo.connect(dep).connect(o.frequency); o.connect(g).connect(out); audio.sfx.send(g, 0.35);
+      lfo.connect(dep).connect(o.frequency); o.connect(g).connect(out); audio.sfx.send(g, 0.35, audio.signals);
       o.start(a); lfo.start(a); o.stop(a + dur + 0.02); lfo.stop(a + dur + 0.02);
     }
   },
@@ -1093,7 +1103,7 @@ try {
 // race (another tab busy, a hot phone) shouldn't keep the picture down for good. A bare level from before is retried now.
 const GFX_KEY = 'regatta-gfx', GFX_DAYS = 3;
 function startQuality() {
-  if (opts.gfx !== 'auto') return opts.gfx;
+  if (opts.gfx !== 'auto') return opts.gfx; // a level, or Custom (its parts: opts.gfxD)
   try {
     const [q, at] = (localStorage.getItem(GFX_KEY) || '').split('|');
     if (q && Date.now() - at < GFX_DAYS * 864e5) return q;
@@ -1101,7 +1111,8 @@ function startQuality() {
   } catch (e) {}
   return defaultQuality();
 }
-world.setQuality(startQuality());
+const applyGfx = () => world.setQuality(startQuality(), opts.gfxD);
+applyGfx();
 world.showGuides = !!opts.guides;
 // Auto: watch the frame rate while racing; under 45 fps, step down a level and remember it for this device.
 // It goes by the middle frame of each 3 s, not their average: one stall (the tab away in a match, which runs on
@@ -1427,7 +1438,7 @@ function paintPause() {
   for (const b of pauseEl.querySelectorAll('[data-trim]')) b.setAttribute('aria-checked', String(Number(b.dataset.trim) === (opts.autoTrim | 0)));
   for (const b of pauseEl.querySelectorAll('[data-pc]')) b.setAttribute('aria-checked', String(b.dataset.pc === world.mode));
   // graphics: the choice, and on Auto the level it has settled on for this device
-  for (const b of pauseEl.querySelectorAll('[data-g]')) b.setAttribute('aria-checked', String(b.dataset.g === opts.gfx));
+  for (const b of pauseEl.querySelectorAll('[data-g]')) { b.setAttribute('aria-checked', String(b.dataset.g === opts.gfx)); if (b.dataset.g === 'custom') b.hidden = opts.gfx !== 'custom'; } // Custom: shown only while it's the choice (its parts are set in Settings)
   for (const b of pauseEl.querySelectorAll('[data-mv]')) b.setAttribute('aria-checked', String(b.dataset.mv === (opts.musicVol in MUSIC_VOL ? opts.musicVol : 'normal')));
   for (const b of pauseEl.querySelectorAll('[data-sea]')) b.setAttribute('aria-checked', String(b.dataset.sea === (opts.sea in SEA ? opts.sea : 'normal')));
   for (const b of pauseEl.querySelectorAll('[data-mu]')) b.setAttribute('aria-checked', String(b.dataset.mu === (MUSIC_STYLES.includes(opts.music) ? opts.music : 'off')));
@@ -1489,7 +1500,7 @@ $('#cGo').addEventListener('click', () => {
 });
 pauseEl.addEventListener('click', (e) => {
   const g = e.target.closest('[data-g]');
-  if (g) { opts.gfx = g.dataset.g; saveOpts(); world.setQuality(startQuality()); perf.settle = 2; paintOpts(); paintPause(); return; } // as the menu's Graphics does
+  if (g) { opts.gfx = g.dataset.g; saveOpts(); applyGfx(); perf.settle = 2; paintOpts(); paintPause(); return; } // as the menu's Graphics does
   const mu = e.target.closest('[data-mu]');
   if (mu) { opts.music = mu.dataset.mu; saveOpts(); score.style(); paintPause(); return; } // Settings › Music, from here too
   const mv = e.target.closest('[data-mv]');
@@ -2022,7 +2033,7 @@ function frame(now) {
     }
     handleMessages();
     updateHud(dt);
-    if (world.quality === 'high' || frameN++ % 3 === 0) drawMap(mctx, 240, false);
+    if (world.gfx.res === 'high' || frameN++ % 3 === 0) drawMap(mctx, 240, false);
     watchFps(raw);
     perfFrame(race, raw, world.quality, opts.gfx, !!opts.saver); // (stats.js: a race's frames, for the site's /admin)
   } else {
