@@ -61,6 +61,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // not for the game's files (and ui/, the design system's stylesheets it shares with the site), the pictures, Next's
-  // own assets or the files for crawlers
-  matcher: ['/((?!_next/static|_next/image|_vercel|game/|ui/|vendor/|connect|play|boat-view|hero-view|fleet-view|images/|flags/|favicon.ico|sw.js|logo-black.svg|og/|robots.txt|sitemap.xml|llms.txt|indexnow.txt|manifest.webmanifest|apple-icon|icon).*)'],
+  // own assets or the files for crawlers (/play and its folder, not /players)
+  matcher: ['/((?!_next/static|_next/image|_vercel|game/|ui/|vendor/|connect|play(?:/|$)|boat-view|hero-view|fleet-view|images/|flags/|favicon.ico|sw.js|logo-black.svg|og/|robots.txt|sitemap.xml|llms.txt|indexnow.txt|manifest.webmanifest|apple-icon|icon).*)'],
 };

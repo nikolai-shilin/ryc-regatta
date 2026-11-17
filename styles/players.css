@@ -1,0 +1,45 @@
+/* /players (components/players-view.tsx): the players' table in the card over the scene, a page at a time, and one
+   player's numbers in its place. On the broadcast's ground (broadcast.css): hairline rows, the condensed face, the
+   blue for what is picked. */
+
+/* the table: the card's full width, a row a player, the numbers right-aligned in tabular figures */
+.bc .pl-tab { display: flex; flex-direction: column; margin: 0 calc(-1 * var(--cp)); border-top: 1px solid var(--rule); }
+.bc .pl-tr { display: grid; grid-template-columns: 26px minmax(0, 1fr) 46px 40px 44px; align-items: center; gap: var(--s-3); min-height: var(--h-m);
+  padding: var(--s-2) var(--cp); border-bottom: 1px solid var(--rule-2); color: var(--ink); text-decoration: none;
+  font: 700 var(--fs-body)/1.2 var(--cond); letter-spacing: var(--ls-name); font-variant-numeric: tabular-nums;
+  transition: background-color var(--t-quick), box-shadow var(--t-quick); }
+.bc .pl-tr > :nth-child(n+3) { text-align: right; }
+.bc a.pl-tr:hover { background: var(--w-06); }
+.bc a.pl-tr:focus-visible { outline: 2px solid var(--you); outline-offset: -2px; }
+.bc a.pl-tr[aria-busy="true"] { background: color-mix(in srgb, var(--you) 16%, transparent); box-shadow: inset 3px 0 0 var(--you); }
+.bc .pl-th { min-height: 0; padding-top: var(--s-2); padding-bottom: var(--s-2); font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .pl-i { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
+.bc .pl-who { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.bc .pl-who small { padding-left: calc(24px + var(--s-2)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 600 var(--fs-label)/1.1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+
+/* the pages: square buttons as the fleet's, the one shown in the blue */
+.bc .pl-pages { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.bc .pl-pn { display: contents; }
+.bc .pl-pages .fl-btn { width: var(--h-m); height: var(--h-m); border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink); text-decoration: none;
+  font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.bc .pl-pages .fl-btn:hover { background: var(--w-14); }
+.bc .pl-pages .fl-btn[aria-current="page"] { background: var(--you); color: var(--ink-on); }
+.bc .pl-pages .fl-btn[aria-disabled="true"] { opacity: .35; pointer-events: none; }
+.bc .pl-gap { padding: 0 var(--s-1); color: var(--ink-3); }
+
+/* a player: eight numbers in two rows of four, their boat's colours as swatches */
+.bc .pl-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.bc .pl-stats b { font-size: var(--fs-row); }
+.bc .pl-stats .pl-d { font-size: var(--fs-small); white-space: nowrap; }
+.bc .pl-stats .bt-sv { grid-column: 1 / -1; }
+.bc .pl-sws { display: flex; flex-wrap: wrap; gap: 4px; }
+.bc .pl-sws i { width: 16px; height: 16px; box-shadow: 0 0 0 1px var(--w-25); }
+.bc .pl-card[aria-busy="true"] { cursor: progress; }
+.bc .pl-card .lbl-ink { display: inline-flex; align-items: center; gap: var(--s-2); }
+@container scr (orientation: portrait) {
+  .bc .pl-card { max-height: 56%; }
+  .bc .pl-tr { grid-template-columns: 18px minmax(0, 1fr) 34px 30px 32px; gap: var(--s-2); }
+  .bc .pl-th { letter-spacing: 0; }
+  .bc .pl-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
