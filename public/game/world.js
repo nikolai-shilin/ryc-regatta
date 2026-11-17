@@ -4,6 +4,7 @@ import { D2R, wrap, clamp, lerp, waveHeight, seaSlope as waveSlope, beatAngle, r
 const SC = HULL / 10.45; // the model is drawn 10.45 m long, the JPK 1050 as she is
 import { LOOKS, playerLook, lookFrom, SEA } from './yacht.js';
 import { makeBoatView } from './boats3d.js';
+import { CLS } from './classes.js';
 import { CommitteeBoat, COMMITTEE_L, COMMITTEE_BOTTOM as BOTTOM_CB } from './committee.js';
 import { LagoonCommittee, lagoonReady } from './lagoon.js';
 import { buoy } from './marks.js';
@@ -1822,10 +1823,10 @@ export class World {
     const cam = this.camera;
     cam.up.set(0, 1, 0);
     if (this.intro && this.mode !== 'drone') this.intro = null; // the fly-in is the drone's
-    // a boat smaller than the JPK 1050 is watched from closer, by her size (her length to the 0.75): the Laser from 17 m
-    // where the JPK is from 34, the Optimist from 11, the J/70 from 25, so she fills the screen as a big boat does and her
-    // speed, more of her lengths a second than a keelboat's, shows as it feels aboard. A bigger one keeps the JPK's view
-    const ck = Math.min(1, ((P.cls?.loa ?? HULL) / 10.45) ** 0.75);
+    // every boat is watched from as far off as she is tall against the JPK 1050 (classes.js frame, her masthead's
+    // height): the Laser from 13 m where the JPK is from 34, the J Class from 99, the drone aiming as much higher or
+    // lower on her, so each yacht fills the screen as the JPK does
+    const ck = (P.cls ?? CLS).frame ?? 1; // a boat of a class of her own (b.cls), or the page's class
     if (this.mode === 'top') {
       // straight down, your heading up the screen, so steering left turns her left on screen too
       const hgt = (20 + this.dist * 1.6 * (cam.aspect < 1 ? 1.5 : 1)) * ck;

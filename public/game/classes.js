@@ -10,6 +10,10 @@
 // How she turns, against the JPK 1050: turn, her rate of turn for the helm put over (a dinghy spins round, a 14-tonne
 // cruiser takes her time), and yawLag, the seconds she takes to start turning and to stop (sim.js YAW_LAG).
 // heelShow: how much of her heel is drawn (a dinghy is sailed flat, her sailor's weight out over the side holding her up)
+// frame: how big she stands against the JPK 1050, her masthead's height over the water against the JPK's 16.2 m: every
+// camera that watches one boat stands that much further off or nearer and aims that much higher or lower on her
+// (world.js), so each yacht fills the screen as the JPK does (measured on the boat page: the Laser, the Optimist and the
+// J Class within a few per cent of her)
 const TWS = [4, 6, 8, 10, 12, 14, 16, 20, 24];
 const TWA = [52, 60, 75, 90, 110, 120, 135, 150, 165, 180];
 
@@ -21,7 +25,7 @@ export const CLASSES = {
   // She sails to the ORC certificate of SOLENN (FRA 53516, 2026, GPH 581.4): its speeds at each angle; close-hauled,
   // its beat angle (10 knots' smoothed to 40°) at its beat VMG; 165° and 180° from its downwind VMGs there.
   jpk1050: {
-    id: 'jpk1050', loa: 10.45, beam: 3.54, drawnL: 10.45, crew: 4,
+    id: 'jpk1050', loa: 10.45, beam: 3.54, drawnL: 10.45, crew: 4, frame: 1,
     kite: true, zero: true, reef: true, j3: true,
     tau: 4.5, coast: 32, hullV: 12, heelK: 1, awsK: 1, heelShow: 1, turn: 1, yawLag: 0.55, courseK: 1, lineK: 1, startK: 1,
     tws: TWS, twa: TWA,
@@ -45,7 +49,7 @@ export const CLASSES = {
   // courses are the JPK 1050's length, laid 1.3 times as wide (the line, the room at the marks) for a fleet of 14 m
   // boats that turn and stop slowly.
   bavaria46: {
-    id: 'bavaria46', loa: 14.27, beam: 4.35, drawnL: 14.27, crew: 5,
+    id: 'bavaria46', loa: 14.27, beam: 4.35, drawnL: 14.27, crew: 5, frame: 1.3,
     kite: true, zero: false, reef: true, j3: false,
     tau: 7, coast: 50, hullV: 8.6, heelK: 1.1, awsK: 1, heelShow: 1, turn: 0.85, yawLag: 0.7, courseK: 1, lineK: 1.3, startK: 1.3,
     tws: TWS, twa: TWA,
@@ -69,7 +73,7 @@ export const CLASSES = {
   // hiked hard; light (some 800 kg with her crew), quick to accelerate and to lose way, and planing off the wind from
   // about 12 knots
   j70: {
-    id: 'j70', loa: 6.93, beam: 2.25, drawnL: 6.93, crew: 4,
+    id: 'j70', loa: 6.93, beam: 2.25, drawnL: 6.93, crew: 4, frame: 0.61,
     kite: true, zero: false, reef: false, j3: false,
     tau: 2.6, coast: 18, hullV: 15, heelK: 1.1, awsK: 1, heelShow: 1, turn: 1.2, yawLag: 0.45, courseK: 0.8, lineK: 0.8, startK: 0.8,
     tws: TWS, twa: TWA,
@@ -91,7 +95,7 @@ export const CLASSES = {
   // gennaker, raced by two to four. A little lighter (about 650 kg) and a touch slower upwind than the J/70, quicker to
   // plane off the wind in a moderate breeze
   rs21: {
-    id: 'rs21', loa: 6.67, beam: 2.2, drawnL: 6.67, crew: 3,
+    id: 'rs21', loa: 6.67, beam: 2.2, drawnL: 6.67, crew: 3, frame: 0.6,
     kite: true, zero: false, reef: false, j3: false,
     tau: 2.4, coast: 17, hullV: 15, heelK: 1.15, awsK: 1, heelShow: 1, turn: 1.2, yawLag: 0.45, courseK: 0.8, lineK: 0.8, startK: 0.8,
     tws: TWS, twa: TWA,
@@ -122,7 +126,7 @@ export const CLASSES = {
   // from about 15 knots (heelK 0.8); above 6.8 knots, her hull's speed on her waterline lengthened by her overhangs as
   // she heels, the waves hold her back at once (hullV)
   dragon: {
-    id: 'dragon', loa: 8.9, beam: 1.96, drawnL: 8.9, crew: 3,
+    id: 'dragon', loa: 8.9, beam: 1.96, drawnL: 8.9, crew: 3, frame: 0.67,
     kite: true, zero: false, reef: false, j3: false,
     tau: 5, coast: 38, hullV: 6.8, heelK: 0.8, awsK: 1, heelShow: 1, turn: 0.85, yawLag: 0.65, courseK: 0.75, lineK: 0.8, startK: 0.8,
     tws: TWS, twa: TWA,
@@ -147,7 +151,7 @@ export const CLASSES = {
   // and from about 12 knots planes on the reaches. Slow upwind beside the keelboats: her courses are laid 0.6 times as
   // long.
   laser: {
-    id: 'laser', loa: 4.19, beam: 1.39, drawnL: 4.19, crew: 1,
+    id: 'laser', loa: 4.19, beam: 1.39, drawnL: 4.19, crew: 1, frame: 0.38,
     kite: false, zero: false, reef: false, j3: false, jib: false,
     tau: 1.8, coast: 11, hullV: 13, heelK: 1.2, awsK: 1, heelShow: 0.35, turn: 1.5, yawLag: 0.3, courseK: 0.6, lineK: 0.6, startK: 0.6,
     tws: TWS, twa: TWA,
@@ -175,7 +179,7 @@ export const CLASSES = {
   // 0.3 times as long, as many of her lengths as the Laser's are of hers; her start line as long as the Laser's (a
   // fleet of them starts in a crowd, and the computer skippers need the room to come through it).
   optimist: {
-    id: 'optimist', loa: 2.31, beam: 1.13, drawnL: 2.31, crew: 1,
+    id: 'optimist', loa: 2.31, beam: 1.13, drawnL: 2.31, crew: 1, frame: 0.16,
     kite: false, zero: false, reef: false, j3: false, jib: false,
     tau: 1.4, coast: 6, hullV: 4.2, heelK: 1.1, awsK: 1, heelShow: 0.4, turn: 1.6, yawLag: 0.25, courseK: 0.3, lineK: 0.6, startK: 0.6,
     tws: TWS, twa: TWA,
@@ -223,7 +227,7 @@ export const CLASSES = {
   // as much again as it does the JPK (chopK): she is at her best on flat water. Her 47 m rig's wind shadow reaches 2.9
   // times as far as the JPK's 16 m one, and as wide (shadowK).
   jclass: {
-    id: 'jclass', loa: 39.3, beam: 6.55, drawnL: 39.3, crew: 30,
+    id: 'jclass', loa: 39.3, beam: 6.55, drawnL: 39.3, crew: 30, frame: 2.9,
     kite: true, zero: false, reef: false, j3: false,
     tau: 11, coast: 190, hullV: 12.6, heelK: 0.6, awsK: 1, heelShow: 1, turn: 0.5, yawLag: 1.1, courseK: 1.6, lineK: 2.2, startK: 2.5,
     waveL: 27, chopK: 1.5, surfK: 0, shadowK: 2.9,
@@ -243,7 +247,7 @@ export const CLASSES = {
     ],
   },
   ac75: {
-    id: 'ac75', loa: 20.7, beam: 5.0, drawnL: 20.7, crew: 8, // the rule's hull length: no bowsprit since the 37th Cup
+    id: 'ac75', loa: 20.7, beam: 5.0, drawnL: 20.7, crew: 8, frame: 1.7, // the rule's hull length: no bowsprit since the 37th Cup
     kite: false, zero: false, reef: false, j3: false,
     tau: 3.2, coast: 420, hullV: 60, heelK: 0.35, awsK: 2.6, heelShow: 0.45, turn: 1, yawLag: 0.55, courseK: 2.5, lineK: 1.8, startK: 4,
     foil: { takeoff: 16, land: 13, dispCoast: 30, disp: [[28, 0], [40, 1.5], [60, 1.9], [90, 2.6], [120, 2.5], [150, 1.6], [180, 0.9]] },

@@ -1051,6 +1051,9 @@ const JZ = (() => {
     STACK, STOP, SHEAD, SCLEW, rig, stayRig, POLE: 15, WHEEL_Z: 11.3, TRAV_Z: 14.6, SHEET_Z: 13.4 + 0.0, PRIM_Z: 5.6, GRIND_Z: 6.6, LEAD_Z: 2.6, SLEAD_Z: 0.4, RUNNER_Z: 9.2 };
 })();
 
+// a sailor sitting on a flat deck (JClassView sitDown): how far the figure's origin stands over the planking, the
+// hips 12 cm up with the stand of −0.25 lowering them 0.225 m and the hip joint 7 cm over the origin
+const SIT_Y = 0.12 + 0.25 * (THIGH + SHIN + 0.02) - 0.07;
 MAT.bronze = new THREE.MeshStandardMaterial({ color: '#b48a52', roughness: 0.32, metalness: 1, envMapIntensity: 1 }); // the J's deck bronze
 MAT.buoyRed = new THREE.MeshStandardMaterial({ color: '#c8202a', roughness: 0.6 });
 
@@ -1349,8 +1352,12 @@ class JClassView extends ClassView {
     let rail = 0;
     for (const c of this.crew) {
       let x = c.x0, z = c.z0, yaw = Math.PI / 2, lean = 0.05, stand = 1, knee = -0.3, reach = 0.5;
-      // the rail crew sit on deck, their backs to the bulwark
-      const sitRail = () => { const zz = lerp(-10, 5.5, (rail++) / 9); z = zz; x = side * (H.hbAt(zz) - 0.42); yaw = Math.PI - 0.1; lean = -0.12; stand = 0; knee = -1.3; reach = 0.3; };
+      // sitting on her flush deck: on the planking, the thighs raised a little and the shins sloping down to the feet
+      // on the deck (stand below 0 turns the hips past level and lowers them; the figure is raised to match, SIT_Y),
+      // where a cockpit's sailor has his shins hanging into the footwell
+      const sitDown = () => { stand = -0.25; knee = -0.71; };
+      // the rail crew sit on deck, their backs to the bulwark, facing in
+      const sitRail = (sd = side) => { const zz = lerp(-10, 5.5, (rail++) / 9); z = zz; x = sd * (H.hbAt(zz) - 0.42); yaw = Math.PI - 0.1; lean = -0.12; sitDown(); reach = 0.3; };
       if (c.role === 'helm') { x = 0; reach = 1.0; }
       else if (c.role === 'tac') { x = side * 0.55; yaw = Math.PI / 2 + 0.3; }
       else if (c.role === 'nav') { x = 0.45; yaw = Math.PI / 2 - 0.3; reach = 0.2; }
@@ -1360,8 +1367,12 @@ class JClassView extends ClassView {
       else if (c.role === 'trim') { const mine = up ? c.x0 * side < 0 : true; if (mine) { x = (up ? -side : Math.sign(c.x0)) * 2.0; yaw = 0.4; lean = 0.2; reach = 0.9; } else sitRail(); }
       else if ((c.role === 'bow' || c.role === 'mast') && busy) { x = 0.4; z = c.role === 'bow' ? -12 : D.MAST_Z + 0.9; yaw = Math.PI / 2; lean = 0.3; reach = 0.9; }
       else if (up) sitRail();
-      else { x = (c.i % 2 ? 1 : -1) * 0.9; z = lerp(-8, 4, (c.i % 6) / 5); stand = 0; knee = -1.1; yaw = Math.PI / 2 + (c.i % 2 ? 0.4 : -0.4); }
-      this.pose(c, { x, y: dk(Math.abs(x), z) + (stand ? 0.02 : 0.08) + (c.role === 'helm' || c.role === 'tac' || c.role === 'mainT' ? -D.WELL.d * (c.z0 >= D.WELL.f && c.z0 <= D.WELL.a ? 1 : 0) : 0), z, yaw, lean, stand, knee, reach }, k);
+      else { sitRail(c.i % 2 ? side : -side); lean = -0.05; } // downwind: along both side decks, clear of the doghouse
+      // standing on the deck; sitting on it (SIT_Y: the hips 12 cm up, the figure raised by what sitDown lowers it); the
+      // afterguard standing on the helm's well's floor, which is flat (the deck over it rises aft)
+      const inWell = (c.role === 'helm' || c.role === 'tac') && z >= D.WELL.f && z <= D.WELL.a;
+      const y = inWell ? dk(0, D.WELL.f) - D.WELL.d + 0.01 : dk(Math.abs(x), z) + (stand < 0.5 ? SIT_Y : 0.02);
+      this.pose(c, { x, y, z, yaw, lean, stand, knee, reach }, k);
     }
     // the spinnaker: its tack at the pole's end, the pole squared aft to the wind as she bears away; its head at the
     // masthead, its clew out to leeward
