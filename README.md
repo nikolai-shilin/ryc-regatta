@@ -327,6 +327,7 @@ In the Supabase project (`iyt-test`), Authentication needs:
 - **Redirect URLs:**
   - `http://localhost:5193/**`
   - `https://www.sailupdown.com/**`
+  - `https://upandown.rycrentals.com/**` and `https://regatta.rycrentals.com/**` (old addresses, now redirects to the site)
   - **Site URL:** `https://www.sailupdown.com`. Supabase sends a sign-in here when its return address isn't on the list
     above, and email templates read it as `{{ .SiteURL }}`. The project is shared with the iyt app, so this affects it too.
 - **Email code:** the "Magic link" email template must include `{{ .Token }}`, so the email carries the 6-digit code. The link in the
