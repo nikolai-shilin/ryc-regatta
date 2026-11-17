@@ -17,7 +17,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-export const PAGES = ['/play/index.html', '/boat-view/index.html', '/hero-view/index.html', '/fleet-view/index.html', '/venue-view/index.html'];
+export const PAGES = ['/play/index.html', '/boat-view/index.html', '/hero-view/index.html', '/fleet-view/index.html', '/venue-view/index.html', '/venues-view/index.html'];
 const THREE = '/vendor/three@0.160.0/build/three.module.min.js';
 const ADDONS = '/vendor/three@0.160.0/examples/jsm/';
 

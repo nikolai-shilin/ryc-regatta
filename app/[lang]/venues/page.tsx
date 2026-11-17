@@ -1,15 +1,9 @@
-import Link from 'next/link';
 import { getT, titled, type LangParams } from '@/lib/i18n';
 import { jsonLd, langUrl, SITE } from '@/lib/seo';
 import { VENUES } from '@/lib/venues';
 import { dailyVenue } from '@/lib/race';
-import { IconArrow } from '@/components/ui';
-import { SiteHead, SiteFoot } from '@/components/site-chrome';
-import '@/styles/reading.css';
-import { READING_VIEWPORT } from '@/lib/no-zoom';
-
-// text to read: it zooms (lib/no-zoom.ts)
-export const viewport = READING_VIEWPORT;
+import { BackLink } from '@/components/back-link';
+import { VenuesList } from '@/components/venues-list';
 
 export const generateMetadata = titled('The venues: 34 regatta waters to race', 'Акватории: 34 регатных места для гонок', {
   path: '/venues',
@@ -21,7 +15,9 @@ export const generateMetadata = titled('The venues: 34 regatta waters to race', 
 // rebuilt hourly, for the venue of today's race at the head
 export const revalidate = 3600;
 
-// V0 · The venues: today's race's first, then the rest in the game's order, a card each with where it is and its line.
+// The venues, as /players: the game's scene behind the page (components/venues-list: your yacht at the venue of today's
+// race, the drone pulling away from her into a wide circuit of the water), the list in its card, today's race's first,
+// then the rest in the game's order, each a link to its own page. As one of the 3D screens it doesn't zoom (lib/no-zoom.ts).
 export default async function Venues({ params }: LangParams) {
   const { lang, t } = await getT(params);
   const today = dailyVenue();
@@ -31,25 +27,10 @@ export default async function Venues({ params }: LangParams) {
     itemListElement: list.map((v, i) => ({ '@type': 'ListItem', position: i + 1, name: t(...v.name), url: SITE + langUrl(`/venues/${v.id}`, lang) })),
   };
   return (
-    <div className="scr help hp bc" lang={lang}>
+    <div className="scr bt-scr bc" lang={lang}>
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
-      <SiteHead lang={lang} t={t} page="venues" />
-      <header className="hm-page hm-ph">
-        <span className="kicker">{t(`Up and down · ${VENUES.length} venues`, `Up and down · ${VENUES.length} акватории`)}</span>
-        <h1 className="hm-ph-h">{t('The venues', 'Акватории')}</h1>
-        <p className="hm-text">{t('Every place you can race in the game is a real one, laid out from the map: the famous regatta waters of the Solent, Newport, Sydney Harbour, the Mediterranean and beyond. Each page says what the water and the wind are like there, which regattas are sailed on it, and how to race it.', 'Каждое место для гонки в игре — настоящее, построенное по карте: знаменитые регатные акватории Солента, Ньюпорта, гавани Сиднея, Средиземного моря и не только. На странице каждой — какие там вода и ветер, какие регаты на ней проходят и как на ней гоняться.')}</p>
-      </header>
-      <div className="hm-page vn-list">
-        {list.map((v) => (
-          <Link key={v.id} className="vn-card" href={`/venues/${v.id}`}>
-            <span className="lbl"><span>{t(...v.place)}</span>{v.id === today && <span>· {t('Today’s race', 'Гонка дня')}</span>}</span>
-            <span className="card-title">{t(...v.name)}</span>
-            <p>{t(...v.about)}</p>
-            <span className="hm-src">{t('Read', 'Читать')}<IconArrow s={14} /></span>
-          </Link>
-        ))}
-      </div>
-      <SiteFoot lang={lang} t={t} back="/venues" />
+      <VenuesList lang={lang} today={today} back={<BackLink href="/" label={t('Home', 'На главную')} />}
+        list={list.map(({ id, name, place, wind, nation, about }) => ({ id, name, place, wind, nation, about }))} />
     </div>
   );
 }

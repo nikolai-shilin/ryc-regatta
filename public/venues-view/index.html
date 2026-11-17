@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>The venues</title>
+<!-- The scene behind the list of venues (/venues, components/venues-list.tsx): the game itself (public/game) at one
+     venue (?venue=, Lake Garda unless the address says), your yacht sailing upwind there on a clear evening. The drone
+     starts close by her, as on /players, holds a moment, then pulls up and away from her into a wide, slow circuit of
+     the whole water and the land round it, drifting, climbing and coming down a little as it goes round. Drag to turn
+     it, scroll or pinch to come closer.
+     The page sends the look to show, ({ type: 'look', boat }), and the part of the frame its words cover ({ type:
+     'inset', l, r, t, b }: fractions of the width and height), so what the drone looks at stands in the part left
+     clear. It says ({ type: 'ready' }) when it can take them and ({ type: 'live' }) once its first frame is up. -->
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1b2a3a; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; outline: 0; opacity: 0; transition: opacity 0.8s ease; }
+  canvas.live { opacity: 1; }
+  canvas:active { cursor: grabbing; }
+</style>
+<!-- the venue, before the game's modules read it from the address, and its land fetched at once -->
+<script>(function () {
+  var v = 'garda';
+  try { v = new URLSearchParams(location.search).get('venue') || v; } catch (e) {}
+  if (!/^[a-z-]+$/.test(v)) v = 'garda';
+  history.replaceState(null, '', location.pathname + '?venue=' + v + '&wind=light&sky=clear');
+  var f = v === 'gocek' ? ['/game/skopea.bin', '/game/skopea.json'] : ['/game/venues/' + v + '.bin', '/game/venues/' + v + '.json'];
+  f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
+<script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
+<!-- every module the page will load, asked for at once rather than an import at a time, and the yacht with them
+     (game/yacht.js); npm test keeps the list in step with the imports -->
+<link rel="preload" as="fetch" href="/game/yacht.glb" crossorigin>
+<link rel="modulepreload" href="/vendor/three@0.160.0/build/three.module.min.js">
+<link rel="modulepreload" href="/game/world.js">
+<link rel="modulepreload" href="/game/sim.js">
+<link rel="modulepreload" href="/game/land.js">
+<link rel="modulepreload" href="/game/venues.js">
+<link rel="modulepreload" href="/game/classes.js">
+<link rel="modulepreload" href="/game/yacht.js">
+<link rel="modulepreload" href="/vendor/three@0.160.0/examples/jsm/loaders/GLTFLoader.js">
+<link rel="modulepreload" href="/vendor/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js">
+<link rel="modulepreload" href="/game/skin.js">
+<link rel="modulepreload" href="/game/sponsor.js">
+<link rel="modulepreload" href="/game/boats3d.js">
+<link rel="modulepreload" href="/game/committee.js">
+<link rel="modulepreload" href="/game/lagoon.js">
+<link rel="modulepreload" href="/game/marks.js">
+<link rel="modulepreload" href="/game/jury.js">
+<link rel="modulepreload" href="/game/wildlife.js">
+<link rel="modulepreload" href="/game/plane.js">
+<link rel="modulepreload" href="/game/jets.js">
+<link rel="modulepreload" href="/game/light.js">
+<link rel="modulepreload" href="/game/ships.js">
+<link rel="modulepreload" href="/game/post.js">
+<link rel="modulepreload" href="/game/ocean.js">
+<link rel="modulepreload" href="/game/skopea.js">
+</head>
+<body>
+<canvas id="c" aria-label="The venue from the drone, turn the view by dragging"></canvas>
+<script type="module">
+import { World } from '/game/world.js';
+import { Race } from '/game/sim.js';
+import { lookFrom } from '/game/yacht.js';
+import { CLS } from '/game/classes.js';
+import { HOURS } from '/game/light.js';
+
+// the light: an hour and a half before the sun goes down there, as /players' (the race's sky reads it from the address)
+history.replaceState(null, '', location.search + '&hour=' + (HOURS[1] - 1.5).toFixed(2));
+
+const canvas = document.getElementById('c');
+const say = (msg) => parent.postMessage(msg, location.origin);
+const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const ease = (x) => { x = clamp(x, 0, 1); return x * x * x * (x * (x * 6 - 15) + 10); }; // smootherstep: still at both ends
+const D2R = Math.PI / 180, TAN = Math.tan(27.5 * D2R);
+const HOLD = 3.2, FLIGHT = 9; // seconds close by her, then the flight up and away
+
+// close-hauled, as boat-view's UP; a foiler flies, the apparent wind far ahead
+let UP = { twa: 0.72, awa: 0.42, heel: 15, rudder: 0, sail: 16, luff: 0, trim: 'ok', kite: false, kiteFill: 0, v: 3.1 };
+if (CLS.foil) UP = { ...UP, awa: 0.24, sail: 7, v: 16, ride: 1 };
+const FRAME = CLS.frame ?? 1;
+
+let world;
+try { world = new World(canvas); } catch (e) { say({ type: 'ready' }); } // no WebGL: the page's own picture shows
+if (world) {
+  world.framePow = world.framePowSmall = 1;
+  world.showGuides = false;
+  world.setQuality(/android|iphone|ipad/i.test(navigator.userAgent) ? 'medium' : 'high');
+
+  // ---------- her: a race with only her in it, never started; she is sailed here, upwind, tacking off the shore ----------
+  const race = new Race({ preset: 'light', fleet: 2, laps: 1, length: 'short', start: 1, seed: 4242 });
+  race.boats = [race.player];
+  world.setRace(race);
+  if (world.marks) world.marks.visible = false; // no marks, no line, no committee boat
+  world.mode = 'set-up'; // the drone is flown here (camStep), not by the world
+  const P = race.player, W = race.wind.dir();
+  let X = P.x, Z = P.z, tack = 1;
+  const head = () => wrap(W - UP.twa * tack);
+  const sailStep = (dt) => {
+    let h = head();
+    // the shore (or the end of the water) close ahead on this tack: over onto the other
+    const room = race.roomAt(X + Math.sin(h) * 70, Z - Math.cos(h) * 70);
+    if (room < 30) { tack = -tack; h = head(); }
+    X += Math.sin(h) * UP.v * dt; Z -= Math.cos(h) * UP.v * dt;
+    Object.assign(P, UP, { twa: UP.twa * tack, awa: UP.awa * tack, x: X, z: Z, h, boom: tack, wdir: W, tws: race.wind.p.tws });
+  };
+
+  // ---------- the drone ----------
+  // where it looks (tx, ty, tz), how far off it is (ld, the log of the distance), how high it stands (el, its elevation)
+  // and from which way (az: the way it looks, 0 looking up the course from behind the line)
+  let inset = { l: 0, r: 0, t: 0, b: 0 };
+  const clearW = () => Math.max(0.25, 1 - inset.l - inset.r), clearH = () => Math.max(0.2, 1 - inset.t - inset.b);
+  const KEYS = ['tx', 'tz', 'ty', 'ld', 'el', 'az'];
+  const camS = { tx: 0, tz: 0, ty: 0, ld: 3, el: 0.2, az: 0 }, camG = { ...camS }, camV = { tx: 0, tz: 0, ty: 0, ld: 0, el: 0, az: 0 };
+  let LAND = null, phase = 'close', since = 0, flight = null, wideT = 0, spin = 0, zoomK = 1, first = true, idle = 0, az0 = 0;
+  // close by her, off her lee bow, low, the sails and the hills behind her; as near as the part left clear allows
+  const near = () => {
+    const tall = innerWidth < innerHeight, d = clamp(26 / clearH() / (tall ? 1.6 : 1), 18, 80) * FRAME;
+    return { tx: X, tz: Z, ty: 4.5 * FRAME, ld: Math.log(d * zoomK), el: 7 * D2R, az: P.h + 2.55 * tack + spin };
+  };
+  // the whole water: round the middle of the course, far enough off that the land round it is in the frame, the
+  // drone drifting over it, rising and coming down a little, going slowly round
+  // the middle of it: the course's, drawn a third of the way towards the land round it (where the shore is, sampled
+  // out to 2.4 km), so the drone takes in the coast and not only open sea; and it starts looking in from the sea
+  const C = race.course, beat = -C.windward.z, R = clamp(beat * 4.2, 1100, 1700);
+  let CX = 0, CZ = -beat / 2;
+  {
+    let lx = 0, lz = 0, n = 0;
+    for (let x = -2400; x <= 2400; x += 160) for (let z = -2400; z <= 2400; z += 160) {
+      const px = CX + x, pz = CZ + z;
+      if (Math.hypot(x, z) <= 2400 && race.roomAt(px, pz) < 4) { lx += px; lz += pz; n++; }
+    }
+    if (n > 8) { lx /= n; lz /= n; LAND = Math.atan2(lx - CX, -(lz - CZ)); CX += (lx - CX) * 0.33; CZ += (lz - CZ) * 0.33; }
+  }
+  const wide = (s) => {
+    const tall = innerWidth < innerHeight ? 1.3 : 1;
+    return {
+      tx: CX + 260 * Math.sin(s * 0.021), tz: CZ + 190 * Math.sin(s * 0.016 + 1.3), ty: 0,
+      ld: Math.log(R * tall * zoomK) + 0.22 * Math.sin(s * 0.041 + 0.4),
+      el: (21 + 6 * Math.sin(s * 0.029 + 0.6)) * D2R, az: az0 + s * 0.032 + spin,
+    };
+  };
+  const camStep = (dt, t) => {
+    if (first) { first = false; Object.assign(camG, near()); Object.assign(camS, camG); az0 = camG.az + 0.9; }
+    if (phase === 'close') {
+      since += dt;
+      const w = near(), k = 1 - Math.exp(-dt * 2.5);
+      for (const key of KEYS) camG[key] += (key === 'az' ? wrap(w.az - camG.az) : w[key] - camG[key]) * k;
+      if (since > HOLD && idle <= 0) { phase = 'flight'; az0 = (LAND ?? camG.az + 0.9) - spin; flight = { u: 0, from: { ...camG } }; }
+    } else {
+      if (idle <= 0) wideT += dt;
+      const w = wide(wideT);
+      if (flight) {
+        // up and away: the drone climbs first and looks back at her a moment, then slides over the water and turns
+        const f = flight.from, u = flight.u = Math.min(1, flight.u + dt / FLIGHT);
+        const sz = ease(u / 0.8), sp = ease((u - 0.18) / 0.82);
+        camG.ld = f.ld + (w.ld - f.ld) * sz;
+        camG.tx = f.tx + (w.tx - f.tx) * sp; camG.tz = f.tz + (w.tz - f.tz) * sp; camG.ty = f.ty + (w.ty - f.ty) * sp;
+        camG.el = f.el + (w.el - f.el) * ease(u / 0.6); camG.az = f.az + wrap(w.az - f.az) * sp;
+        if (u >= 1) { flight = null; phase = 'wide'; }
+      } else {
+        const k = 1 - Math.exp(-dt * 2.2);
+        for (const key of KEYS) camG[key] += (key === 'az' ? wrap(w.az - camG.az) : w[key] - camG[key]) * k;
+      }
+    }
+    // the drone follows that path on a short, critically damped spring, so nothing it does ever jerks
+    const om = 6, h = Math.min(dt, 1 / 30);
+    for (const k of KEYS) {
+      const e = k === 'az' ? wrap(camG.az - camS.az) : camG[k] - camS[k];
+      camV[k] += (om * om * e - 2 * om * camV[k]) * h; camS[k] += camV[k] * h;
+    }
+    const d = Math.exp(camS.ld), c = Math.cos(camS.el), sw = 0.01 * d, cam = world.camera;
+    cam.position.set(camS.tx - Math.sin(camS.az) * d * c + Math.sin(t * 0.37) * sw, camS.ty + 1 + d * Math.sin(camS.el) + Math.sin(t * 0.53) * sw * 0.5, camS.tz + Math.cos(camS.az) * d * c + Math.cos(t * 0.29) * sw);
+    cam.up.set(0, 1, 0); cam.lookAt(camS.tx, camS.ty, camS.tz); cam.fov = 55;
+    // the sea's haze drawn back as the drone climbs, so the water reads from up there
+    const hi = Math.max(0, cam.position.y - 30), L = world.light;
+    world.waterU.uFogNear.value = L.fogNear + hi * 0.8; world.waterU.uFogFar.value = L.fogFar + hi * 3;
+  };
+
+  const size = () => {
+    world.resize(innerWidth, innerHeight);
+    const w = innerWidth, h = innerHeight, cx = w * (inset.l + clearW() / 2), cy = h * (inset.t + clearH() / 2);
+    world.camera.setViewOffset(w, h, w / 2 - cx, h / 2 - cy, w, h);
+    world.camera.updateProjectionMatrix();
+  };
+  size(); addEventListener('resize', size);
+
+  // drag to circle, wheel or pinch to come closer; the drone goes on round by itself a while after you let go
+  let drag = null, pinch = 0;
+  const touches = new Map();
+  canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); touches.set(e.pointerId, e.clientX); drag = e.clientX; idle = 5; });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!touches.has(e.pointerId)) return;
+    touches.set(e.pointerId, e.clientX);
+    if (touches.size === 2) { const [a, b] = [...touches.values()], d = Math.abs(a - b); if (pinch) zoomK = clamp(zoomK * pinch / Math.max(d, 1), 0.35, 2.2); pinch = d; idle = 5; return; }
+    if (drag != null) { spin -= (e.clientX - drag) * 0.006; drag = e.clientX; idle = 5; }
+  });
+  const up = (e) => { touches.delete(e.pointerId); pinch = 0; drag = touches.size ? [...touches.values()][0] : null; };
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('wheel', (e) => { e.preventDefault(); zoomK = clamp(zoomK * Math.exp(e.deltaY * 0.001), 0.35, 2.2); idle = 5; }, { passive: false });
+
+  let pending = null;
+  addEventListener('message', (e) => {
+    if (e.origin !== location.origin || !e.data) return;
+    const d = e.data;
+    if (d.type === 'hello') say({ type: 'ready' }); // the page came up after this did
+    if (d.type === 'look' && d.boat) pending = lookFrom(d.boat); // dressed on the next frame
+    if (d.type === 'inset') { inset = d; size(); }
+  });
+
+  // the loop starts once the land is in
+  let last = performance.now(), t = 0;
+  world.ready().then(() => { last = performance.now(); requestAnimationFrame(loop); });
+  function loop(now) {
+    requestAnimationFrame(loop);
+    if (document.hidden) { last = now; return; }
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+    if (pending) { world.setPlayerLook(pending); pending = null; }
+    if (idle > 0) idle -= dt;
+    sailStep(dt);
+    race.t = t; race.wind.step(dt);
+    camStep(dt, t);
+    world.frame(dt, t);
+    if (!canvas.classList.contains('live')) { canvas.classList.add('live'); say({ type: 'live' }); }
+  }
+}
+say({ type: 'ready' });
+</script>
+</body>
+</html>

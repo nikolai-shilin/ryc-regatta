@@ -22,6 +22,7 @@ const config: NextConfig = {
       { source: '/hero-view', destination: '/hero-view/index.html' }, // the home page's hero: a race the game sails by itself
       { source: '/fleet-view', destination: '/fleet-view/index.html' }, // the fleet page's scene: every yacht afloat together
       { source: '/venue-view', destination: '/venue-view/index.html' }, // a venue page's scene: the drone over a race on its course
+      { source: '/venues-view', destination: '/venues-view/index.html' }, // the list of venues' scene: the drone off your boat and round the water
     ];
   },
   async headers() {
@@ -31,6 +32,7 @@ const config: NextConfig = {
       { source: '/hero-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/fleet-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/venue-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
+      { source: '/venues-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/game/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=0, must-revalidate' }] },
       // a module at its hashed address (scripts/stamp-game.mjs, at the build): a new version has a new address
       { source: '/game/:path*', has: [{ type: 'query', key: 'v' }], headers: [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }] },
