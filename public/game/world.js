@@ -154,6 +154,8 @@ uniform sampler2D uUnder; uniform float uUnderOn; uniform vec2 uScreenInv; unifo
 uniform sampler2D uSeaShade; uniform float uSeaShadeOn;
 // the land's (skopea.js): the depth over its square, the hills' shadow, and where the venue's frame is
 uniform sampler2D uSeabed, uShadeTex, uShore, uCalm; uniform vec3 uGridXf, uShadeXf, uLandAt, uShallow, uNearXf; uniform float uShallowK;
+// the light reaching a shallow bed, against noon's (light.js bedSky, bedSun)
+uniform vec3 uBedSky, uBedSun;
 varying vec3 vWorld; varying vec2 vXZ; varying float vH, vC;
 ${SKY_GLSL}
 ${CLOUD_GLSL}
@@ -307,7 +309,9 @@ void main() {
   // looking down into the sea, much of its blue is the sun's light scattered back up out of the depths, and a shadow
   // takes that away too: the more the higher the sun (a boat's shadow plain under her, seen from above)
   body *= 1.0 - 0.3 * (1.0 - lsun) * smoothstep(0.05, 0.45, uSun.y);
-  if (shal > 0.01) body = mix(body, uShallow * (0.5 + 0.5 * lsun * max(dot(n, uSun), 0.0) * fftCaustic(p, dep, uSun)), shal); // the bed, under the light its waves focus
+  // the bed, under the light its waves focus: lit by the sky and the sun as they are at this hour (its colour,
+  // uShallow, is noon's), so at sunset the shallows go dim and warm with the rest of the sea and don't glow turquoise
+  if (shal > 0.01) body = mix(body, uShallow * (0.5 * uBedSky + 0.5 * uBedSun * lsun * max(dot(n, uSun), 0.0) * fftCaustic(p, dep, uSun)), shal);
   // a hull, a keel, a rudder under the surface (Under): seen through the water, bent by the surface's tilt, and
   // dimmed and turned blue-green by the water between — red is lost within a metre or two, blue goes furthest —
   // with the water's own glow filling in what it takes away. The view's path through the water: the depth over the
@@ -1288,6 +1292,7 @@ export class World {
       uTime: { value: 0 }, uW: { value: Array.from({ length: NW }, () => new THREE.Vector4()) }, uWs: { value: new Array(NW).fill(0) }, uQ: { value: new Array(NW).fill(0) },
       uCam: { value: new THREE.Vector3() },
       uDeep: { value: new THREE.Color('#062a40') }, uScatter: { value: new THREE.Color('#1aa3a0') },
+      uBedSky: { value: new THREE.Color(1, 1, 1) }, uBedSun: { value: new THREE.Color(1, 1, 1) },
       uFogNear: { value: FOG_NEAR }, uFogFar: { value: FOG_FAR }, uChop: { value: 0.15 }, uAmp: { value: 0.4 }, uWhite: { value: 0 }, uGlint: { value: 1 },
       uGust: { value: Array.from({ length: 12 }, () => new THREE.Vector4()) }, uWind: { value: new THREE.Vector2(0, 1) }, uPivot: { value: new THREE.Vector2() },
       ...this.skyU, ...this.oceanU, ...this.reflU, ...this.wakeFU, ...this.underU, ...this.seaShadeU, uFoamTex: this.foamTex,
@@ -1371,6 +1376,7 @@ export class World {
     const W = this.waterU;
     W.uFogNear.value = L.fogNear; W.uFogFar.value = L.fogFar;
     W.uDeep.value.copy(L.deep); W.uScatter.value.copy(L.scatter); W.uGlint.value = L.glint;
+    W.uBedSky.value.copy(L.bedSky); W.uBedSun.value.copy(L.bedSun);
     this.renderer.toneMappingExposure = L.exposure;
     this.glare.material.color.copy(L.sun); this.glareK = L.disc;
     this.bloomLook = L.bloom; if (this.post) this.post.setLook(L.bloom);

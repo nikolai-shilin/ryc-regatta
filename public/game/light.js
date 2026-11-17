@@ -42,6 +42,16 @@ const OVERCAST = { sun: '#e9eef2', sunI: 0.95, hemiSky: '#e6ebf0', hemiGround: '
 const COLOURS = ['sun', 'hemiSky', 'hemiGround', 'top', 'horizon', 'cloudLit', 'cloudDark', 'deep', 'scatter'];
 
 const lerp = (a, b, k) => a + (b - a) * k;
+// the high sun's look, which the venues' sea colours and the shallows' bed are given in (linear light)
+const NOON = (() => { const K = KEYS[KEYS.length - 1], c = (h) => new THREE.Color(h);
+  return { deep: c(K.deep), scatter: c(K.scatter), sky: c(K.hemiSky).multiplyScalar(K.hemiI), sun: c(K.sun).multiplyScalar(K.sunI) }; })();
+// a colour given as it is at noon (v), as it is at another hour: noon's own colour there (now, against base) times
+// the venue's against noon's, channel by channel (kept within a few times, as a dark channel's ratio runs away)
+function tinted(now, base, v) {
+  const o = new THREE.Color(v);
+  for (const ch of ['r', 'g', 'b']) o[ch] = now[ch] * Math.min(Math.max(o[ch] / Math.max(base[ch], 1e-4), 0.25), 4);
+  return o;
+}
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 function mix(A, B, k) { // two looks blended: numbers straight, colours as THREE.Colors (in linear light); what only A has (the morning's mist, under the cloud deck), A's
   const o = {};
@@ -61,15 +71,19 @@ function sunAt(solar) {
   const x = E, z = -N, c = Math.cos(TURN), s = Math.sin(TURN);
   return { dir: new THREE.Vector3(x * c + z * s, U, z * c - x * s).normalize(), e: Math.asin(U) / D };
 }
+// how many hours from its highest the sun stands e degrees up (sun's time)
+const fromNoon = (e) => Math.acos(Math.min(1, Math.max(-1, (Math.sin(e * D) - Math.sin(LAT) * Math.sin(DECL)) / (Math.cos(LAT) * Math.cos(DECL))))) / D / 15;
 // the first and last hour (sun's time) of racing: the sun MIN_E degrees up
-const H0 = Math.acos((Math.sin(MIN_E * D) - Math.sin(LAT) * Math.sin(DECL)) / (Math.cos(LAT) * Math.cos(DECL))) / D / 15;
+const H0 = fromNoon(MIN_E);
 export const HOURS = [12 - H0 + CLOCK, 12 + H0 + CLOCK]; // on the clock: about 6:20 to 19:50
 
-// the times of day a free race can be set to (lib/opts.ts: daytime), as hours of the venue's clock: two and a half
-// hours after the sun is up, half an hour past its highest, the afternoon three hours on, an hour and a bit before
-// it goes down (the set-up's own golden light), and sunset, the last of the racing day, the sun on the horizon (MIN_E
-// up, the latest a race goes); 'any' is none of them, a new hour every race
-export const DAYTIMES = { morning: HOURS[0] + 2.5, midday: 12.5 + CLOCK, afternoon: 15.5 + CLOCK, evening: HOURS[1] - 1.1, sunset: HOURS[1] };
+// the times of day a free race can be set to (lib/opts.ts: daytime), as hours of the venue's clock. The morning and
+// the evening are set by how high the sun is, not by the clock, as the sun climbs and sets far faster in the tropics
+// than in the Baltic: the morning with it 14° up, low in the east with the night's mist still on the water; midday
+// half an hour past its highest and the afternoon three hours on; the evening with it 9° up, its light gone gold (the
+// set-up's own); and sunset, the last of the racing day, the sun on the horizon (MIN_E up, the latest a race goes).
+// 'any' is none of them, a new hour every race.
+export const DAYTIMES = { morning: 12 - fromNoon(14) + CLOCK, midday: 12.5 + CLOCK, afternoon: 15.5 + CLOCK, evening: 12 + fromNoon(9) + CLOCK, sunset: HOURS[1] };
 export const dayHour = (d) => DAYTIMES[d] ?? null;
 
 // The light at an hour of the clock (local time, 6.5 = 6:30), clear or overcast: the sun's direction (sunDir) and
@@ -93,7 +107,13 @@ export function skyAt(hour, overcast = false) {
     L.horizon.lerp(new THREE.Color('#c9a68e').multiplyScalar(k), 0.25 * warm);
     L.hemiI *= k; L.sunI *= k; L.exposure += 0.15 * (1 - k);
   }
-  if (WATER && WATER.deep) { L.deep.lerp(new THREE.Color(WATER.deep), WATER.k); L.scatter.lerp(new THREE.Color(WATER.scatter), WATER.k); }
+  // the venue's own sea (its colours as they are at noon): the hour's colours tinted towards it, so a low sun darkens
+  // and warms its water as it does the rest of the sea, and its noon blue doesn't light it up at sunset
+  if (WATER && WATER.deep) { L.deep.lerp(tinted(L.deep, NOON.deep, WATER.deep), WATER.k); L.scatter.lerp(tinted(L.scatter, NOON.scatter, WATER.scatter), WATER.k); }
+  // the light that reaches a shallow bed and comes back up through the water (the shallows, world.js), against
+  // noon's: the sky's (the hemisphere's) and the sun's, in their colours, so the bed dims and warms with the hour
+  L.bedSky = new THREE.Color(L.hemiSky).multiplyScalar(L.hemiI); L.bedSky.r /= NOON.sky.r; L.bedSky.g /= NOON.sky.g; L.bedSky.b /= NOON.sky.b;
+  L.bedSun = new THREE.Color(L.sun).multiplyScalar(L.sunI); L.bedSun.r /= NOON.sun.r; L.bedSun.g /= NOON.sun.g; L.bedSun.b /= NOON.sun.b;
   L.foam = foamLight(L, e);
   L.disc = overcast ? 0 : 1;
   L.bloom = { threshold: L.thr, strength: L.str };
@@ -109,10 +129,10 @@ function foamIn(L, e) {
   const k = L.sunI * (0.25 + 0.75 * Math.sin(Math.max(e, 0) * D));
   return new THREE.Color(L.sun).multiplyScalar(k).add(new THREE.Color(L.hemiSky).multiplyScalar(L.hemiI)).add(new THREE.Color(L.horizon).multiplyScalar(0.5 * L.hemiI));
 }
-let NOON = null;
+let NOON_FOAM = null;
 function foamLight(L, e) {
-  if (!NOON) { const K = KEYS[KEYS.length - 1]; NOON = foamIn(mix(K, K, 0), K.e); }
-  const c = foamIn(L, e); c.r /= NOON.r; c.g /= NOON.g; c.b /= NOON.b;
+  if (!NOON_FOAM) { const K = KEYS[KEYS.length - 1]; NOON_FOAM = foamIn(mix(K, K, 0), K.e); }
+  const c = foamIn(L, e); c.r /= NOON_FOAM.r; c.g /= NOON_FOAM.g; c.b /= NOON_FOAM.b;
   const m = Math.max(c.r, c.g, c.b, 1e-4), b = 0.5 + 0.5 * Math.min(1, m) ** 0.7;
   // the tone mapping (ACES) bleaches bright colours towards white, so the hue is pushed a little past the light's own
   const g = (c.r + c.g + c.b) / (3 * m);
