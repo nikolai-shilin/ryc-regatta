@@ -13,7 +13,7 @@ export type Yacht = {
   name: T2; kind: T2; tagline: T2;
   about: T2[]; // paragraphs
   race: T2; // how she sails in the game
-  specs: { k: T2; v: T2 }[];
+  specs: { k: T2; v: T2 }[]; // six; Length and Crew among them, which the yachts page's summary reads by name (components/fleet-view.tsx)
   speed: { up: number; down: number }; // knots, close-hauled and at her best downwind angle, in 12 knots of breeze (classes.js)
   // the free race: courses laid this many times longer than the JPK 1050's (classes.js courseK), and how long a race
   // takes her against it
@@ -35,8 +35,8 @@ export const YACHTS: Yacht[] = [
     race: ['A train under sail: she takes a long time to gather way and carries it far. A tack takes her twice as long as the JPK 1050 and getting going again some twenty seconds, so plan each one. Her best is a beam reach. Courses are laid 1.6 times as long and the line 2.2 times as wide.', 'Поезд под парусами: долго разгоняется и далеко проносит ход. Поворот занимает вдвое больше времени, чем у JPK 1050, а разгон после него — секунд двадцать, так что каждый поворот стоит продумать. Лучше всего она идёт галфвиндом. Дистанции в 1,6 раза длиннее, линия старта в 2,2 раза шире.'],
     specs: [
       { k: ['Length', 'Длина'], v: ['39.3 m', '39,3 м'] }, { k: ['Beam', 'Ширина'], v: ['6.55 m', '6,55 м'] },
-      { k: ['Displacement', 'Водоизмещение'], v: ['about 175 t', 'около 175 т'] }, { k: ['Draft', 'Осадка'], v: ['4.55 m', '4,55 м'] },
-      { k: ['Mast', 'Мачта'], v: ['45.5 m above the deck', '45,5 м над палубой'] }, { k: ['Sails', 'Паруса'], v: ['860 m² upwind', '860 м² на лавировке'] },
+      { k: ['Displacement', 'Водоизмещение'], v: ['about 175 t', 'около 175 т'] }, { k: ['Mast', 'Мачта'], v: ['45.5 m above the deck', '45,5 м над палубой'] },
+      { k: ['Crew', 'Экипаж'], v: ['about 30', 'около 30'] }, { k: ['Sails', 'Паруса'], v: ['860 m² upwind', '860 м² на лавировке'] },
     ],
     speed: { up: 7.6, down: 8.0 }, courseK: 1.6, lineK: 2.2, timeK: 1.65,
   },
