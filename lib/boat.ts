@@ -58,11 +58,13 @@ export const PRESETS: Preset[] = [
   mono('purple', 'Purple', 'Фиолетовая', '#5b2a86'),
 ];
 
-// the boat you start with, and what Reset brings back: all black (the Black preset), with the club's red RYC badge
-// on the main and the bows and the sail number in white, dark red antifouling and the moulded non-skid deck
-export const BOTTOM = '#5b1f24';
+// the boat you start with (and a signed-out player races in), and what Reset brings back: the club's own boat, all
+// black (the Black preset's hull, laminate sails and jackets) with a black and white gennaker in two bands, black
+// antifouling and the moulded non-skid deck, no logo, so the main carries RYC 1 in white. Your name, flag and number
+// stay yours: she has none of them but the club's letters.
+export const BOTTOM = '#5b1f24'; // the usual dark red antifouling, the first of its swatches
 export const DEFAULT_BOAT: Boat = {
-  preset: 'black', ...PRESETS.find((p) => p.id === 'black')!.boat, bottom: BOTTOM, deck: 'nonskid', logo: 'ryc', nat: 'RYC', num: '1',
+  ...PRESETS.find((p) => p.id === 'black')!.boat, kite2: '#f4f3ef', bottom: '#1c1f24', deck: 'nonskid', logo: 'none', nat: 'RYC', num: '1',
 };
 // a boat's name: letters of any alphabet, digits, spaces and a little punctuation, up to 16
 export const NAME_MAX = 16;

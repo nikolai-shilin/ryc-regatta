@@ -896,7 +896,7 @@ export function labelSprite(color) {
 }
 // the looks: hull paint, sail cloth and number, gennaker panels
 export const LOOKS = {
-  player: { hull: '#1c1f24', stripe: '#1c1f24', cloth: '#2a2c30', laminate: true, tape: '#1e1f22', batten: '#1d1f22', ink: '#ffffff', nat: 'RYC', num: '1', logo: true, kite: ['#1c1f24'], crew: '#1c1f24', pants: '#1c1f24' }, // all black, the sail number white (lib/boat.ts DEFAULT_BOAT)
+  player: { hull: '#1c1f24', stripe: '#1c1f24', cloth: '#2a2c30', laminate: true, tape: '#1e1f22', batten: '#1d1f22', ink: '#ffffff', nat: 'RYC', num: '1', logo: false, kite: ['#1c1f24', '#f4f3ef'], bottom: '#1c1f24', crew: '#1c1f24', pants: '#1c1f24' }, // all black, a black and white gennaker, no logo, RYC 1 in white (lib/boat.ts DEFAULT_BOAT)
   Aurora: { hull: '#a8202a', stripe: '#f4f2ec', cloth: '#7f858c', laminate: true, tape: '#5f646b', batten: '#5a5f66', ink: '#ffffff', nat: 'GBR', flag: '/flags/gb.svg', num: '52', kite: ['#e63946', '#ffffff'] },
   Kestrel: { hull: '#14503c', stripe: '#e9e3cf', cloth: '#2a2c30', laminate: true, tape: '#18191c', batten: '#1c1d20', ink: '#f2c230', nat: 'FRA', flag: '/flags/fr.svg', num: '7', kite: ['#2a9d8f', '#f2c230'] },
   Nomad: { hull: '#2b2f36', stripe: '#e8c547', cloth: '#ebe3cd', tape: '#cfc5aa', batten: '#d2c9b0', ink: '#b3262b', nat: 'ITA', flag: '/flags/it.svg', num: '33', kite: ['#f4a261', '#1d1d1d'] },
@@ -910,7 +910,7 @@ export const LOOKS = {
 
 // the player's own boat, as the boat page (/boat) saves it in localStorage 'regatta-boat': the colours of the hull, the
 // sails, the gennaker (up to three) and the crew, the bottom paint, the deck, her name, the sail number, the logo and the flag. lookFrom turns it into a look; anything missing or
-// malformed keeps the default boat's (all black).
+// malformed keeps the default boat's (all black, a black and white gennaker, no logo).
 export const BOAT_KEY = 'regatta-boat';
 const DEFAULT_LOGO = '/images/ryc-rentals-bot.png';
 const isHex = (v) => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
@@ -931,7 +931,7 @@ export function lookFrom(b) {
   if (typeof b.num === 'string' && b.num.trim()) L.num = b.num.trim().slice(0, 3);
   if (typeof b.nat === 'string' && b.nat.trim()) L.nat = b.nat.trim().toUpperCase().slice(0, 3);
   const own = typeof b.logoImg === 'string' && b.logoImg.startsWith('data:image/') ? b.logoImg : DEFAULT_LOGO; // 'Yours' before an upload: the RYC Rentals Bot badge
-  L.logo = b.logo === 'none' ? false : b.logo === 'custom' ? own : true;
+  if (b.logo === 'none' || b.logo === 'custom' || b.logo === 'ryc') L.logo = b.logo === 'none' ? false : b.logo === 'custom' ? own : true;
   if (typeof b.flag === 'string' && /^[a-z]{2}$/.test(b.flag)) L.flag = `/flags/${b.flag}.svg`; // public/flags, lib/flags.ts
   return L;
 }
