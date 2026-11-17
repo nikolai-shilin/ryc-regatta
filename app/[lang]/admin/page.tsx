@@ -6,17 +6,18 @@ import { SiteHead } from '@/components/site-chrome';
 import { AdminForm, BannerForm } from '@/components/admin-form';
 import { AdminSchedule } from '@/components/admin-schedule';
 import { AdminStats, STAT_DAYS, type Stats } from '@/components/admin-stats';
+import { AdminInsight, type Insight } from '@/components/admin-insight';
 import { todayTop } from '@/lib/today';
 
 export const generateMetadata = titled('Admin', 'Админка', { index: false });
 
-// The site's admin: today's race and the days after it (components/admin-schedule.tsx), the ad on every boat's jib and the words on the banner the plane tows over the course, and the game in numbers: how the players race and how the game runs on their devices over the last ?days= (components/admin-stats.tsx, from the database's regatta_admin_stats, which answers an admin alone). Who is an admin is the list public.regatta_admins (by email), which
+// The site's admin: today's race and the days after it (components/admin-schedule.tsx), the ad on every boat's jib and the words on the banner the plane tows over the course, and the game in numbers: how the players race and how the game runs on their devices over the last ?days= (components/admin-stats.tsx, from the database's regatta_admin_stats, which answers an admin alone), and how they like it: why races are left, whether they come back, their ratings, how far a visit gets, what they set, how hard it is (components/admin-insight.tsx, regatta_admin_insight). Who is an admin is the list public.regatta_admins (by email), which
 // only the database's owner edits; the table and the bucket only take an admin's writes (row-level security), so this
 // page only hides the form from everyone else.
 export default async function AdminPage({ params, searchParams }: LangParams & { searchParams: Promise<{ days?: string }> }) {
   const [{ lang, t }, account, today, q] = await Promise.all([getT(params), getAccount(), todayTop(), searchParams]);
   const days = (STAT_DAYS as readonly number[]).includes(Number(q.days)) ? Number(q.days) : 30;
-  let admin = false, jib: { url: string; path?: string } | null = null, banner: string[] | null = null, stats: Stats | null = null, statsErr: string | null = null;
+  let admin = false, jib: { url: string; path?: string } | null = null, banner: string[] | null = null, stats: Stats | null = null, statsErr: string | null = null, insight: Insight | null = null, insightErr: string | null = null;
   if (account) {
     const supabase = await supabaseServer();
     const [{ data: isAdmin }, { data: row }, { data: bannerRow }] = await Promise.all([
@@ -26,8 +27,9 @@ export default async function AdminPage({ params, searchParams }: LangParams & {
     ]);
     admin = isAdmin === true;
     if (admin) {
-      const { data, error } = await supabase.rpc('regatta_admin_stats', { days });
-      stats = error ? null : (data as Stats); statsErr = error ? error.message : null;
+      const [st, ins] = await Promise.all([supabase.rpc('regatta_admin_stats', { days }), supabase.rpc('regatta_admin_insight', { days })]);
+      stats = st.error ? null : (st.data as Stats); statsErr = st.error ? st.error.message : null;
+      insight = ins.error ? null : (ins.data as Insight); insightErr = ins.error ? ins.error.message : null;
     }
     const lines = bannerRow?.value?.lines;
     banner = Array.isArray(lines) ? lines.filter((l: unknown): l is string => typeof l === 'string') : null;
@@ -59,6 +61,7 @@ export default async function AdminPage({ params, searchParams }: LangParams & {
           <>
             <AdminSchedule lang={lang} today={today} />
             <AdminStats lang={lang} days={days} stats={stats} error={statsErr} />
+            <AdminInsight lang={lang} data={insight} error={insightErr} />
             <AdminForm lang={lang} current={jib} />
             <BannerForm lang={lang} current={banner} />
           </>

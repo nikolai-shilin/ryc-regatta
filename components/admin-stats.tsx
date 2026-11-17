@@ -115,11 +115,11 @@ export function AdminStats({ lang, days, stats, error }: { lang: Lang; days: num
   );
 }
 
-function Tile({ k, v }: { k: string; v: string }) {
+export function Tile({ k, v }: { k: string; v: string }) {
   return <div className="adm-tile"><span className="adm-tile-k">{k}</span><b>{v}</b></div>;
 }
 
-function Table({ title, first, head, rows }: { title: string; first: string; head: string[]; rows: { key: string; name: string; cells: string[] }[] }) {
+export function Table({ title, first, head, rows }: { title: string; first: string; head: string[]; rows: { key: string; name: string; cells: string[] }[] }) {
   if (!rows.length) return null;
   return (
     <section className="adm-tab">

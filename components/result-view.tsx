@@ -27,6 +27,7 @@ import { shortName } from '@/lib/name';
 import { BOAT_EVENT, readBoat } from '@/lib/boat';
 import { briefUrl, readBrief, SCORES_API } from '@/lib/day-brief';
 import { useWho } from './me';
+import { RateRace } from './rate-race';
 
 // What the game keeps for a finished race (public/game/main.js, finishToPage).
 // legT (the clock as she finished each leg, the start's crossing first) and pens (her penalties) came with the finish's
@@ -343,6 +344,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
           {hasLevels && <p className="bt-hint rs-hint">{t('Computer skippers:', 'Компьютерные шкиперы:')} <Pips n={1} /> {t('beginner to', 'от новичка до')} <Pips n={4} /> {t('expert', 'эксперта')}</p>}
           <p className="bt-hint rs-hint">{res.daily ? t('Today’s race is the one that ranks: everyone sails the same one.', 'В рейтинг идёт гонка дня: у всех она одна.') : t('Free races stay with you; today’s race is the one that ranks.', 'Свободные гонки остаются у тебя; в рейтинг идёт гонка дня.')}</p>
         </section>
+        {!shared && Date.now() - res.at < 864e5 && <RateRace id={res.id} lang={lang} />}{/* how was it: your own race, just sailed */}
         <a className="rs-down" href="#debrief" aria-label={t('The debrief', 'Разбор')}><span>{t('The debrief', 'Разбор')}</span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" /></svg></a>
       </div>
 

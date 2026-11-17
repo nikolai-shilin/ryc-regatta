@@ -1537,3 +1537,33 @@
   .bc .adm-range { margin-left: 0; width: 100%; }
   .bc .adm-tile b { font-size: 22px; }
 }
+
+/* ---------- the result page: how was the race (components/rate-race.tsx) ---------- */
+.bc .rr { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); margin-top: var(--s-4); padding: var(--s-5) var(--s-6); }
+.bc .rr-q { font: 700 var(--fs-row)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink); }
+.bc .rr-stars { display: flex; gap: var(--s-1); }
+.bc .rr-stars button { display: inline-flex; align-items: center; justify-content: center; width: var(--h-m); height: var(--h-m); padding: 0; border: 0; background: var(--fill-2); color: var(--ink-3); cursor: pointer; transition: background-color var(--t-quick), color var(--t-quick); }
+.bc .rr-stars button svg { fill: currentColor; }
+.bc .rr-stars button:hover:not(:disabled), .bc .rr-stars button.on { color: var(--you); background: var(--fill-3); }
+.bc .rr-stars button:disabled { cursor: default; opacity: 1; }
+.bc .rr-stars button:focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
+.bc .rr-more { display: flex; flex-direction: column; align-items: stretch; gap: var(--s-2); width: 100%; }
+.bc .rr-l { font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .rr-l span { color: var(--ink-3); opacity: .7; margin-left: var(--s-2); }
+.bc .rr-text { width: 100%; min-height: 64px; resize: vertical; font: 500 var(--fs-small)/1.4 var(--sans); }
+.bc .rr-send { align-self: flex-start; }
+.bc .rr-thanks { margin: 0; font: 600 var(--fs-small)/1.4 var(--sans); color: var(--ink-2); }
+/* the stars and the funnel: a bar a row, its label and its count either side */
+.bc .adm-stars, .bc .adm-funnel { margin: 0 0 var(--s-5); display: flex; flex-direction: column; gap: var(--s-2); }
+.bc .adm-star { display: grid; grid-template-columns: 110px minmax(0, 1fr) 90px; align-items: center; gap: var(--s-3); font: 600 var(--fs-small)/1.2 var(--cond); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.bc .adm-star-k { color: var(--ink); letter-spacing: 0.08em; }
+.bc .adm-funnel .adm-star { grid-template-columns: 150px minmax(0, 1fr) 90px; }
+.bc .adm-star-bar { height: 12px; background: var(--fill-2); }
+.bc .adm-star-bar i { display: block; height: 100%; background: var(--you); }
+.bc .adm-star-v { text-align: right; }
+.bc .adm-comments { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.bc .adm-comments li { padding: var(--s-3) 0; border-bottom: 1px solid var(--rule-2); }
+.bc .adm-comments p { margin: var(--s-1) 0 0; font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.bc .adm-c-meta { font: 600 var(--fs-label)/1.3 var(--cond); letter-spacing: 0.04em; color: var(--ink-3); }
+.bc .adm-sets { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 var(--s-6); }
+@media (max-width: 600px) { .bc .adm-star, .bc .adm-funnel .adm-star { grid-template-columns: 96px minmax(0, 1fr) 72px; gap: var(--s-2); } }

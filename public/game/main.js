@@ -1,7 +1,7 @@
 // Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
 import { Race, CLS, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone, laidShape } from './sim.js';
 import { World, defaultQuality, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
-import { raceStarted, raceFinished, raceResult, perfSetup, perfFrame } from './stats.js';
+import { raceStarted, raceFinished, raceResult, perfSetup, perfFrame, statsContext, raceIncident, raceEnded, visitSend } from './stats.js';
 import { initExtras, onStart, onFrame, drill, drillSettings } from './extras.js'; // the ghost, the drills, the analytics
 import { createHud } from './hud-bc.js';
 import { mapPalette, placeLabels } from './course-map.js';
@@ -1367,6 +1367,9 @@ function setCam(m) { world.mode = m; camSeg.querySelectorAll('button').forEach((
 camSeg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setCam(b.dataset.cam); });
 setCam(['drone', 'top', 'helm'].includes(opts.camera) ? opts.camera : 'drone'); // Settings › First camera
 // the HUD, as a sailing broadcast lays it out (hud-bc.js)
+// what the player has set, read as each race ends (stats.js raceEnded, for the site's /admin)
+statsContext(() => ({ cam: world.mode, trim: opts.autoTrim, sound: opts.sound ? 1 : 0, voice: opts.voice ? 1 : 0, music: opts.music, sea: opts.sea,
+  saver: opts.saver ? 1 : 0, gfx: opts.gfx, q: world.quality, guides: opts.guides ? 1 : 0, speed: timeScale, ghost: opts.ghost ? 1 : 0 }));
 const bcHud = createHud({ t, LANG, fmt, world, getRace: () => race, setCam, flagOf: (b, me) => (me ? playerLook().flag : b.human ? lookFrom(b.look).flag : LOOKS[b.name] && LOOKS[b.name].flag) || null, // (the other sailor in a match: her own)
   sailOf: () => { const l = playerLook(); return `${l.nat} ${l.num}`.trim(); } }); // your flag and sail number, as the boat page sets them
 
@@ -1480,6 +1483,7 @@ $('#pRestart').addEventListener('click', () => ask('restart'));
 $('#pLeave').addEventListener('click', () => ask('leave'));
 $('#cKeep').addEventListener('click', () => { confirmEl.hidden = true; pauseEl.hidden = false; });
 $('#cGo').addEventListener('click', () => {
+  raceEnded(race, confirmDo === 'restart' ? 'restart' : confirmDo === 'change' ? 'change' : 'menu'); // (stats.js: how the race ended)
   if (confirmDo === 'restart') { confirmEl.hidden = true; paused = false; running = false; newRace(); startRace(); return; }
   if (confirmDo === 'change') location.href = `/race/free?from=${race.settings.daily ? 'today' : 'race'}`; else quit();
 });
@@ -1532,6 +1536,7 @@ for (const a of [$('#backLink'), $('#lBack')]) { // the menu's back and the load
   // the preloader in play/index.html has counted the files in; the scene is built, so it fills its bar and fades into the race
   // …once the shaders are compiled too (world.prepare), so the first frame of the race doesn't stall
   world.ready().then(() => {
+    visitSend('loaded'); // (stats.js: the page got as far as the race, for the site's /admin)
     const go = MATCH ? startMatchFlow : startRace;
     if (window.rycLoader) window.rycLoader.done(go);
     else { $('#loading').hidden = true; go(); }
@@ -1682,6 +1687,7 @@ function handleMessages() {
   const ump = race.match && race.messages.some((n) => n.key === 'umpire');
   for (const m of race.messages) {
     if (m.to && m.to !== race.player) continue; // another boat's news
+    raceIncident(race, m.key); // (stats.js: what may make a player give up, for the site's /admin)
     const a = m.arg || {};
     if (race.match && matchMessage(m, a, P, ump)) continue;
     if (m.key === 'signal') {

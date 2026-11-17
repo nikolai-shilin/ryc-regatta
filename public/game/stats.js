@@ -50,9 +50,11 @@ function myFlag() {
 export function raceStarted(race, opts) {
   if (!race || race._rid || race.match) return; // a match race is kept nowhere: nothing is posted from one
   perfSend(); // the race before it, left before its finish: how it ran
+  raceEnded(cur, 'new'); // …and how it ended, if it wasn't said (a race begun from somewhere main.js doesn't name)
   race._rid = uuid();
   // (and the class of yacht, when not the JPK 1050: a J/70's or an AC75's times aren't the same race's)
-  const body = { ev: 'start', id: race._rid, wind: opts.preset, laps: opts.laps, length: opts.length, shape: race.course.type, boats: race.boats.length, ...(opts.daily && { daily: opts.daily }), ...(myFlag() && { flag: myFlag() }), ...(CLS.id !== 'jpk1050' && { yacht: CLS.id }), venue: VENUE.id };
+  cur = race; race._t0 = performance.now(); race._inc = { n: {}, last: null, at: 0 }; visit.races++;
+  const body = { ev: 'start', id: race._rid, vid: VID, visit: VISIT, wind: opts.preset, laps: opts.laps, length: opts.length, shape: race.course.type, boats: race.boats.length, ...(opts.daily && { daily: opts.daily }), ...(myFlag() && { flag: myFlag() }), ...(CLS.id !== 'jpk1050' && { yacht: CLS.id }), venue: VENUE.id };
   account().then((tok) => send(body, tok));
 }
 
@@ -62,6 +64,8 @@ export function raceFinished(race) {
   if (!P || !race._rid || race._sent || race.match) return;
   race._sent = true;
   send({ ev: 'finish', id: race._rid, place: P.dsq ? null : P.place, boats: race.boats.length, secs: P.finish, dsq: !!P.dsq });
+  visit.finished++;
+  raceEnded(race, 'finish');
   perfSend();
 }
 
@@ -137,5 +141,57 @@ function perfSend() {
 }
 // the page left, or put away (a phone often closes it from there without a pagehide); a race that then goes on keeps
 // what was posted (the server takes one a race)
-addEventListener('pagehide', perfSend);
-document.addEventListener('visibilitychange', () => { if (document.hidden) perfSend(); });
+addEventListener('pagehide', () => { perfSend(); raceEnded(cur, 'close'); visitSend('left'); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { perfSend(); raceEnded(cur, 'hidden'); visitSend('left'); } });
+
+// ---------- how a race ended, the visit, what went wrong: for the site's /admin ----------
+// VID: this browser, a random id kept in localStorage (so a guest who comes back another day counts as one coming
+// back); VISIT: this page's opening, made by the loading screen (play/index.html), which posted it first ({ ev: 'open' }).
+// Neither names anyone.
+const VID = (() => { try { let v = localStorage.getItem('regatta-vid'); if (!v || !/^[0-9a-f-]{36}$/.test(v)) localStorage.setItem('regatta-vid', (v = uuid())); return v; } catch (e) { return null; } })();
+const VISIT = (window.rycVisit && window.rycVisit.id) || uuid();
+const visit = { races: 0, finished: 0, howto: 0, errors: [], lost: 0 };
+let cur = null, context = () => ({});
+// main.js: what the player has set (the camera, the sails' trim, the sound, the speed …), read as a race ends
+export function statsContext(fn) { context = fn; }
+// the incidents that may make a player give up, as the race says them (main.js handleMessages): counted, and the
+// last one remembered with when
+const BAD = new Set(['ocs', 'fouled', 'touched', 'bump', 'aground', 'penNow', 'missedLine', 'missedGate', 'wrongSide', 'genRecall', 'barging', 'finishOwed']);
+export function raceIncident(race, key) {
+  const I = race && race._inc;
+  if (!I || !BAD.has(key)) return;
+  I.n[key] = (I.n[key] || 0) + 1; I.last = key; I.at = performance.now();
+}
+// The race is over for the player: how (finish, restart, change: to the set-up, menu: back to the hub, close: the page
+// left, hidden: put away, new: another race begun), where (the leg and the race's clock, her place then), the
+// incidents, the last one and how many seconds before, and what she had set. Once a race (the server keeps the first).
+export function raceEnded(race, how) {
+  if (!race || !race._rid || race._ended || race.match) return;
+  race._ended = true;
+  const P = race.player, I = race._inc || { n: {} }, st = race.standings ? race.standings() : [];
+  let use = {}; try { use = context() || {}; } catch (e) {}
+  send({ ev: 'end', id: race._rid, end: {
+    how, leg: P.leg ?? null, legs: race.course && race.course.legs ? race.course.legs.length - 1 : null, clock: Math.round(race.clock),
+    place: Math.max(1, st.indexOf(P) + 1), boats: race.boats.length, done: P.done ? 1 : 0,
+    inc: I.n, last: I.last, ago: I.last ? Math.round((performance.now() - I.at) / 1000) : null, pens: P.pens || 0,
+    mins: Math.round((performance.now() - (race._t0 || performance.now())) / 6000) / 10, use } }, null);
+}
+// what went wrong on the page: the first five different errors (the message and where), a lost WebGL context
+function noteError(m, src) {
+  m = String(m || 'error').slice(0, 140); src = String(src || '').replace(/^.*\/(?=[^/]+$)/, '').slice(0, 60);
+  const e = visit.errors.find((x) => x.m === m && x.src === src);
+  if (e) e.n++; else if (visit.errors.length < 5) visit.errors.push({ m, src, n: 1 });
+}
+addEventListener('error', (e) => { if (e.message) noteError(e.message, e.filename ? `${e.filename}:${e.lineno}` : ''); });
+addEventListener('unhandledrejection', (e) => noteError(e.reason && (e.reason.message || e.reason), e.reason && e.reason.stack ? String(e.reason.stack).split('\n')[1] : ''));
+document.querySelector('#gl')?.addEventListener('webglcontextlost', () => { visit.lost = 1; });
+document.querySelector('#howD')?.addEventListener('toggle', (e) => { if (e.target.open) visit.howto = 1; });
+// The visit, as it stands, each time the page is left or put away (and when the race is first under way: it loaded):
+// the races begun and finished, the minutes on the page, how to play opened, a drill or a ghost, the errors
+export function visitSend(stage) {
+  if (!VISIT) return;
+  const q = new URLSearchParams(location.search);
+  send({ ev: 'visit', id: VISIT, visit: { stage, vid: VID, races: visit.races, finished: visit.finished, mins: Math.round(performance.now() / 6000) / 10,
+    howto: visit.howto, drill: q.get('drill') ? 1 : 0, ghost: q.get('ghost') ? 1 : 0, errors: visit.errors, lost: visit.lost,
+    ...(stage === 'loaded' && { load: Math.round(performance.now() / 100) / 10 }) } }, null);
+}
