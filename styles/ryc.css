@@ -741,7 +741,7 @@ html[data-me] .hm-av > svg { display: none; }
 @media (prefers-reduced-motion: reduce) { .fl-h { animation: none; } .fl-bar.run { animation: none; transform: scaleX(1); opacity: .4; } }
 
 /* ---------- a venue (/venues/<id>): the drone over a race on its course, as the fleet's; the guide in the card ---------- */
-.vn-shots { grid-template-columns: repeat(5, minmax(0, 1fr)); max-width: 760px; }
+.vn-shots { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 620px; }
 .vn-view h3.bt-k { margin: 0 2px; }
 .vn-guide { display: flex; flex-direction: column; gap: 16px; }
 .vn-title { margin: 4px 2px 0; font: 400 22px/1.15 var(--f-serif); letter-spacing: -0.01em; color: #fff; text-wrap: balance; }

@@ -9,8 +9,7 @@
      venue (?venue=), in the afternoon under a clear sky, a race on its course sailed by the game's own skippers, your
      boat among them in your colours, from a minute before the start; a new one once it is over. A drone flies over it
      from one shot to the next (SHOTS): high over the whole water with the land round it, slowly circling; down the
-     course from behind the start; along the line; over the windward mark, looking back down the beat; and alongside
-     the leader. Drag to turn it, scroll or pinch to come closer.
+     course from behind the start; along the line; and over the windward mark, looking back down the beat. Drag to turn it, scroll or pinch to come closer.
      The page sends ({ type: 'focus', id }) for the shot to fly to, and the part of the frame its words cover ({ type:
      'inset', l, r, t, b }: fractions of the width and height), so what the drone looks at stands in the part left
      clear. It says ({ type: 'ready' }) when it can take them, ({ type: 'live' }) once its first frame is up, ({ type:
@@ -113,7 +112,6 @@ if (world) {
     const c = race.course, beat = -c.windward.z, lx = (c.pin.x + c.committee.x) / 2, lz = (c.pin.z + c.committee.z) / 2;
     return { c, beat, lx, lz, len: Math.hypot(c.committee.x - c.pin.x, c.committee.z - c.pin.z), loa: race.player.cls?.loa ?? 10.5 };
   };
-  const leader = () => race.standings().find((b) => !b.done) || race.player;
   const SHOTS = {
     // high over the water, the land round it: the course small in the middle of it (further back on an upright screen)
     waters: () => { const { beat } = course(); return { tx: 0, tz: -beat / 2, ty: 0, ld: Math.log(Math.max(1100, beat * 4) * (innerWidth < innerHeight ? 1.6 : 1)), el: 33 * D2R, az: 0.5, spin: 0.045 }; },
@@ -123,8 +121,6 @@ if (world) {
     start: () => { const { lx, lz, len } = course(); return { tx: lx, tz: lz - 10, ty: 2, ld: Math.log(Math.max(70, fit(len * 1.15, 18))), el: 13 * D2R, az: 0.95 }; },
     // the windward mark, from beyond it, looking back down the beat at the fleet coming up
     windward: () => { const { c, beat } = course(); return { tx: c.windward.x, tz: c.windward.z + 25, ty: 1, ld: Math.log(clamp(beat * 0.45, 110, 260)), el: 15 * D2R, az: Math.PI - 0.35 }; },
-    // alongside the boat in the lead, on her windward bow
-    fleet: () => { const b = leader(), { loa } = course(); return { tx: b.x + Math.sin(b.h) * loa, tz: b.z - Math.cos(b.h) * loa, ty: 3, ld: Math.log(Math.max(45, loa * 5)), el: 12 * D2R, az: b.h + 2.4 }; },
   };
   const KEYS = ['tx', 'tz', 'ty', 'ld', 'el', 'az'];
   const camS = { tx: 0, tz: 0, ty: 0, ld: 7, el: 0.5, az: 0 }, camV = { tx: 0, tz: 0, ty: 0, ld: 0, el: 0, az: 0 };

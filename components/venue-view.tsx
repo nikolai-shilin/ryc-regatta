@@ -10,8 +10,8 @@ import { SceneBrand } from './scene-brand';
 
 // A venue (/venues/<id>), as the yachts page shows a yacht: the game's own scene there (/venue-view), a race on its
 // course sailed by the game's skippers, and a drone flying over it from one shot to the next (SHOTS) — high over the
-// whole water and the land round it, down the course from behind the start, along the line, over the windward mark and
-// alongside the leader — with what the place is beside it: the facts, the guide's sections (the water and the wind,
+// whole water and the land round it, down the course from behind the start, along the line and over the windward mark —
+// with what the place is beside it: the facts, the guide's sections (the water and the wind,
 // its regattas, how to race it), racing here, and the other venues. It tours the shots by itself, one every DWELL
 // seconds once the drone is there (the first a little longer); picking one, the arrows or taking hold of the view stops
 // the tour, and the play button starts it again.
@@ -22,7 +22,6 @@ const SHOTS: { id: string; name: Pair; note: Pair }[] = [
   { id: 'course', name: ['The course', 'Дистанция'], note: ['From behind the start', 'Из-за линии старта'] },
   { id: 'start', name: ['The start', 'Старт'], note: ['Along the line', 'Вдоль линии'] },
   { id: 'windward', name: ['The top mark', 'Верхний знак'], note: ['Down the beat', 'Вниз по лавировке'] },
-  { id: 'fleet', name: ['The leader', 'Лидер'], note: ['Alongside her', 'Рядом с ней'] },
 ];
 type ShotId = string;
 
