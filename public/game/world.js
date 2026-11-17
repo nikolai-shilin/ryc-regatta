@@ -1345,6 +1345,7 @@ export class World {
     this.wakes = []; this.contacts = [];
     this.showGuides = true; this.guides = null;
     this.mode = 'drone';
+    this.framePow = 0.85; this.framePowSmall = 0.5; // how far a boat's size sets the drone's distance, a big one's and a small one's (update: ck)
     this.orbit = 0; this.dist = 26; this.droneEl = 24; this.droneAim = 3.5; this.look = 0; // the drone: how far it looks down (degrees), and how high on her it aims (m) this.lookHold = 0; this.helmFov = 68;
     this.camH = 0;
     this.intro = { t: 0, T: 8 }; // the opening fly-around (frame); flyIn() plays it again
@@ -1824,9 +1825,13 @@ export class World {
     cam.up.set(0, 1, 0);
     if (this.intro && this.mode !== 'drone') this.intro = null; // the fly-in is the drone's
     // every boat is watched from as far off as she is tall against the JPK 1050 (classes.js frame, her masthead's
-    // height): the Laser from 13 m where the JPK is from 34, the J Class from 99, the drone aiming as much higher or
-    // lower on her, so each yacht fills the screen as the JPK does
-    const ck = (P.cls ?? CLS).frame ?? 1; // a boat of a class of her own (b.cls), or the page's class
+    // height), to a power, the drone aiming as much higher or lower on her: at 1 each yacht fills the screen as the JPK
+    // does (the boat page, a showroom). In a race a big one to 0.85 (framePow), so she still stands a little bigger, her
+    // size felt: the J Class watched from 84 m where the JPK is from 34, some 17% bigger on the screen; a small one to 0.5
+    // (framePowSmall), held further off, where a dinghy close up is all her few parts and none of the race round her: the
+    // Optimist from 14 m (40% of the JPK's size on the screen), the Laser from 21, the J/70 from 27, the Dragon from 28
+    const fk = (P.cls ?? CLS).frame ?? 1; // a boat of a class of her own (b.cls), or the page's class
+    const ck = fk ** (fk < 1 ? this.framePowSmall : this.framePow);
     if (this.mode === 'top') {
       // straight down, your heading up the screen, so steering left turns her left on screen too
       const hgt = (20 + this.dist * 1.6 * (cam.aspect < 1 ? 1.5 : 1)) * ck;

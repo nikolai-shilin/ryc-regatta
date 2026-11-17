@@ -104,6 +104,7 @@ let pose = UP, pending = null, inset = { l: 0, r: 0, t: 0, b: 0 };
 
 let world;
 try { world = new World(canvas); } catch (e) { say({ type: 'ready' }); } // no WebGL: the page's own picture shows
+if (world) world.framePow = world.framePowSmall = 1; // every yacht the JPK's size on the screen, as FRAME above takes her
 if (world) {
   world.showGuides = false;
   world.setQuality(/android|iphone|ipad/i.test(navigator.userAgent) ? 'medium' : 'high');
