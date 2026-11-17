@@ -304,6 +304,9 @@ export const M = {
   // smoked acrylic: dark, but with the sky in it
   glass: new THREE.MeshStandardMaterial({ color: '#2a3540', roughness: 0.05, metalness: 0.55, envMapIntensity: 1.4 }),
   alu: new THREE.MeshStandardMaterial({ color: '#c3c8cd', roughness: 0.35, metalness: 0.85, envMapIntensity: 1 }), // hatch frames
+  // the companionway's washboards and the sliding hatch over them: smoked too, but a lighter tint than the windows, so
+  // they read as a closed hatch from the cockpit, not a hole into the cabin
+  board: new THREE.MeshStandardMaterial({ color: '#7a8590', roughness: 0.18, metalness: 0.15, envMapIntensity: 1.2 }),
   dark: new THREE.MeshStandardMaterial({ color: '#2a2f36', roughness: 0.6 }),
   // an instrument's screen: a reading in big lit figures over its label, behind glass; four readings, one a quarter of
   // the picture (display() picks one)
@@ -1296,9 +1299,11 @@ export class BoatView {
     const top = roofTop(MAST_Z); // the coachroof's top at the mast
     const slope = (z) => Math.atan2(roofTop(z - 0.25) - roofTop(z + 0.25), 0.5); // the roof's rise forward there
     const gy = (z) => roofTop(z) + GARAGE.h; // the garage's top
-    add(new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.86, 0.04), M.glass), 0, FLOOR + 0.5, CR_ZA + 0.01);
+    // three washboards stacked in the frame, dark seams between them
+    for (let i = 0; i < 3; i++) add(new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.276, 0.04), M.board), 0, FLOOR + 0.07 + 0.144 + i * 0.286, CR_ZA + 0.01);
+    for (const i of [1, 2]) add(new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.012, 0.034), M.dark), 0, FLOOR + 0.07 + i * 0.286, CR_ZA + 0.008);
     add(new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.96, 0.03), M.alu), 0, FLOOR + 0.5, CR_ZA + 0.002);
-    add(new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.04, 0.7), M.glass), 0, gy(1.62) + 0.035, 1.62);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.04, 0.7), M.board), 0, gy(1.62) + 0.035, 1.62);
     for (const sx of [-1, 1]) add(new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.05, 0.84), M.alu), sx * 0.3, gy(1.58) + 0.025, 1.58);
     for (const [z, w] of [[-1.15, 0.5], [-2.25, 0.6]]) {
       const h = add(new THREE.Mesh(new THREE.BoxGeometry(w, 0.05, w), M.glass), 0, roofTop(z) + 0.02, z); h.rotation.x = slope(z);
