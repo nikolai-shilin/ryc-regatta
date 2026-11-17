@@ -300,7 +300,7 @@ const DAILY_KEYS = ['preset', 'fleet', 'length', 'laps', 'start', 'current', 'co
 const settings = () => { if (drill) return { ...opts, ...drillSettings(), length: laidLength(VENUE, drillSettings().length), daily: null }; if (opts.mode !== 'daily') return { ...opts, length: laidLength(VENUE, opts.length), daily: null }; const d = dailyRace(); return { ...opts, ...d, daily: d.day }; };
 const windName = (p) => t(p);
 // the yachts' names, as lib/yachts.ts has them (another class: its id)
-const YACHT_NAMES = { jpk1050: ['JPK 1050', 'JPK 1050'], bavaria46: ['Bavaria 46', 'Bavaria 46'], j70: ['J/70', 'J/70'], rs21: ['RS21', 'RS21'], laser: ['Laser (ILCA)', 'Laser (ILCA)'], optimist: ['Optimist', 'Оптимист'], dragon: ['Dragon', 'Дракон'], ac75: ['AC75', 'AC75'] };
+const YACHT_NAMES = { jpk1050: ['JPK 1050', 'JPK 1050'], bavaria46: ['Bavaria 46', 'Bavaria 46'], j70: ['J/70', 'J/70'], rs21: ['RS21', 'RS21'], laser: ['Laser (ILCA)', 'Laser (ILCA)'], optimist: ['Optimist', 'Оптимист'], dragon: ['Dragon', 'Дракон'], jclass: ['J Class', 'Класс J'], ac75: ['AC75', 'AC75'] };
 const yachtName = (id) => (YACHT_NAMES[id] || [id, id])[LANG === 'ru' ? 1 : 0];
 const SHAPE_KEY = { wl: 'shapeWl', tri: 'shapeTri', trap: 'shapeTrap', wlu: 'shapeWlu' };
 const paintOpts = () => {

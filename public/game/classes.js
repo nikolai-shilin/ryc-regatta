@@ -1,5 +1,5 @@
 // The yachts you can race: the JPK 1050 offshore racer (the default), the Bavaria 46
-// cruiser, the J/70 and RS21 sportboats, the Dragon classic keelboat, the Laser (ILCA) single-handed dinghy, the Optimist children's pram and the AC75 foiling monohull. A race is one-design: every boat in it is the same class, so the class is chosen for
+// cruiser, the J/70 and RS21 sportboats, the Dragon classic keelboat, the J Class America's Cup yacht of the 1930s, the Laser (ILCA) single-handed dinghy, the Optimist children's pram and the AC75 foiling monohull. A race is one-design: every boat in it is the same class, so the class is chosen for
 // the page, as the venue is (venues.js pageVenue): ?boat= in the address wins; a free race sails what its set-up chose
 // (localStorage 'regatta', yacht); today's race the day's (dailyYacht, below); every other page the JPK 1050.
 // lib/yachts.ts has the same ids and the words the site shows about them.
@@ -205,6 +205,37 @@ export const CLASSES = {
   // boats took off at 14–20 knots of boat speed, and a tack below 7 knots of wind seldom stayed up). Upwind or deep
   // downwind in a lull she can't; the computer skippers bear away or come up to fly again. Courses for her are laid
   // longer.
+  // the J Class: the America's Cup's yachts of 1930–1937 (the Universal Rule's 76-foot rating), a generic one between
+  // Velsheda, Endeavour and Ranger as the J Class Association lists them: 39.3 m over all on 27 m of waterline, some
+  // 175 tonnes, near half of it lead, and 860 m² of sail upwind. A train under sail: she takes a long time to gather
+  // way (tau 11 s, the Bavaria's 7, from the drive her sails have for her mass) and carries it far (coast 190: luffed
+  // head to wind from close-hauled in 12 knots she shoots some 90 m, 2.3 of her lengths), so a tack costs her no more
+  // of her way than the JPK's does, though it takes twice as long (some 9 s), and getting it back takes her some 20 s
+  // to the JPK's 8; she turns slowly (half the JPK's rate, and a second before she answers the helm) and heels to some
+  // 18° in 12 knots, her hull speed 12.6 knots on her waterline. Her polar is the
+  // reconstruction in the J Class simulator reference (from the class's geometry, its 1930s tank tests and the J Class
+  // Association's VPP): close-hauled at 44–46°, a tacking angle of 88–93°, her best on a beam reach, 7.3 knots at 42°
+  // and 10.5 on the beam in 12 knots; 120° between its 110° and 135°, 165° and 180° from its 150°, 4 and 24 knots
+  // carried on from 6 and 20. Her courses are laid 1.6 times as long and the line 2.2 times as wide, for 39 m boats.
+  jclass: {
+    id: 'jclass', loa: 39.3, beam: 6.55, drawnL: 39.3, crew: 30,
+    kite: true, zero: false, reef: false, j3: false,
+    tau: 11, coast: 190, hullV: 12.6, heelK: 0.6, awsK: 1, heelShow: 1, turn: 0.5, yawLag: 1.1, courseK: 1.6, lineK: 2.2, startK: 2.5,
+    tws: TWS, twa: TWA,
+    beat: [48, 46.5, 45.5, 45, 44.5, 44, 44, 45, 46],
+    beatV: [3.59, 5.3, 6.15, 6.93, 7.6, 8.22, 8.82, 9.56, 9.97],
+    v: [
+      [3.83, 4.16, 4.49, 4.62, 4.49, 4.33, 4.09, 3.76, 3.44, 3.23],
+      [5.8, 6.3, 6.8, 7, 6.8, 6.56, 6.2, 5.7, 5.22, 4.9],
+      [6.8, 7.4, 8, 8.3, 8.1, 7.78, 7.3, 6.8, 6.22, 5.85],
+      [7.7, 8.4, 9.1, 9.5, 9.2, 8.8, 8.2, 7.5, 6.86, 6.45],
+      [8.5, 9.2, 10.1, 10.5, 10.1, 9.62, 8.9, 8, 7.32, 6.88],
+      [9.1, 10, 11, 11.5, 11, 10.44, 9.6, 8.6, 7.87, 7.4],
+      [9.7, 10.6, 11.8, 12.4, 11.8, 11.16, 10.2, 9, 8.23, 7.74],
+      [10.4, 11.4, 12.8, 13.6, 12.8, 12.08, 11, 9.6, 8.78, 8.26],
+      [10.71, 11.74, 13.18, 14.01, 13.18, 12.44, 11.33, 9.89, 9.05, 8.51],
+    ],
+  },
   ac75: {
     id: 'ac75', loa: 20.7, beam: 5.0, drawnL: 20.7, crew: 8, // the rule's hull length: no bowsprit since the 37th Cup
     kite: false, zero: false, reef: false, j3: false,

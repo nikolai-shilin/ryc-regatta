@@ -514,7 +514,7 @@ for (const v of VENUES) {
         if (up > spike) { spike = up; spikeAt = (-F.ext + j * F.cell) + ', ' + (-F.ext + i * F.cell); }
       }
       console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, legWorst, legWhere, under, corners: MESH.corners, heights: SKOPEA.parts.heights.length, spike, spikeAt }));`;
-    const runs = await Promise.all(['jpk1050', 'bavaria46', 'laser', 'optimist', 'ac75'].map(async (boat) => [boat, JSON.parse((await execFileP(process.execPath, ['--input-type=module', '-e', code(boat)], { encoding: 'utf8' })).stdout)]));
+    const runs = await Promise.all(['jpk1050', 'bavaria46', 'laser', 'optimist', 'ac75', 'jclass'].map(async (boat) => [boat, JSON.parse((await execFileP(process.execPath, ['--input-type=module', '-e', code(boat)], { encoding: 'utf8' })).stdout)]));
     for (const [boat, out] of runs) {
       assert.deepEqual(out.origin, [v.lat, v.lon], 'baked at the venue’s position');
       assert.equal(out.turn, v.wind, 'turned to the venue’s wind');

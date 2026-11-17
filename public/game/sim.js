@@ -512,7 +512,9 @@ export class Boat {
     const grip = clamp(0.55 + this.v / 3, 0.55, 1.25);
     let yaw = rud * 0.42 * TURN * grip * (this.v < -0.05 ? -0.6 : 1); // going astern the rudder works the other way, and weakly
     if (this.heel > 35) yaw += side * Math.min((this.heel - 35) / 20, 1.2) * 0.22; // weather helm rounds her up
-    if (a < NO_GO && this.v < 0.8 && !this.auto && !this.pen) yaw -= side * 0.18; // stopped head to wind, the bow blows off
+    // stopped head to wind, the bow blows off: a heavy hull's more slowly, as her helm turns her more slowly (TURN), so
+    // her helm stopped can still bring her through the wind as the JPK's can (a J's would otherwise hang there for good)
+    if (a < NO_GO && this.v < 0.8 && !this.auto && !this.pen) yaw -= side * 0.18 * Math.min(1, TURN);
     // she doesn't answer the helm at once: a heavy hull takes a moment to start turning, and a moment to stop
     this.yawRate += (yaw - this.yawRate) * (1 - Math.exp(-dt / YAW_LAG));
     this.yaw = this.yawRate;
@@ -531,7 +533,10 @@ export class Boat {
         if (pen.tack && pen.gybe) { this.pen = null; this.events.push('penaltyDone'); }
       }
     }
-    this.v -= (Math.abs(this.yaw) * 0.1 + Math.abs(this.rudder) * 0.06) * this.v * dt;
+    // turning costs way: the hull swung through the water, and the rudder's drag while it's over, which slows a heavy
+    // hull the less (its drag against her mass: as her helm turns her the slower, TURN), so a J that takes twice the
+    // JPK's time to tack loses no more of her way through it
+    this.v -= (Math.abs(this.yaw) * 0.1 + Math.abs(this.rudder) * 0.06 * Math.min(1, TURN)) * this.v * dt;
     if (!this.backing) this.v = Math.max(0, this.v);
 
     if (this.heel > 52 && this.broachT <= 0) { this.broachT = 2.5; this.events.push('broach'); this.kite = false; this.kiteJob = null; }

@@ -2,8 +2,8 @@
 // yachts page (/yachts), the fleet page (/fleet) and the free race's set-up say about each. Today's race is sailed
 // in a new one every day (lib/race.ts dailyYacht); a free race in any.
 
-export type YachtId = 'jpk1050' | 'bavaria46' | 'dragon' | 'j70' | 'rs21' | 'laser' | 'optimist' | 'ac75';
-export const YACHT_IDS: readonly YachtId[] = ['ac75', 'bavaria46', 'jpk1050', 'dragon', 'j70', 'rs21', 'laser', 'optimist']; // by size, the biggest first: every list of them is in this order
+export type YachtId = 'jpk1050' | 'bavaria46' | 'dragon' | 'jclass' | 'j70' | 'rs21' | 'laser' | 'optimist' | 'ac75';
+export const YACHT_IDS: readonly YachtId[] = ['jclass', 'ac75', 'bavaria46', 'jpk1050', 'dragon', 'j70', 'rs21', 'laser', 'optimist']; // by size, the biggest first: every list of them is in this order
 export const DEFAULT_YACHT: YachtId = 'jpk1050';
 export const isYacht = (v: unknown): v is YachtId => typeof v === 'string' && (YACHT_IDS as readonly string[]).includes(v);
 
@@ -21,6 +21,25 @@ export type Yacht = {
 };
 
 export const YACHTS: Yacht[] = [
+  {
+    id: 'jclass',
+    name: ['J Class', 'Класс J'],
+    kind: ['39-metre America’s Cup yacht of the 1930s', '39-метровая яхта Кубка Америки 1930-х'],
+    tagline: ['The biggest racing yachts ever built to a rule: 175 tonnes and a mast 45 m tall.', 'Самые большие гоночные яхты, когда-либо построенные по правилу: 175 тонн и мачта в 45 метров.'],
+    about: [
+      ['The J Class raced for the America’s Cup from 1930 to 1937, built to the Universal Rule’s 76-foot rating: Shamrock V, Enterprise, Rainbow, Endeavour, Ranger and their rivals, ten built in all. They are long, narrow and low, with overhangs of six metres at each end, a deep keel moulded into the hull with the rudder hung on its after edge, and a laid teak deck. Three originals survive, rebuilt, and new Js have been built to old lines, so the class races again.',
+        'Яхты класса J разыгрывали Кубок Америки с 1930 по 1937 год и строились под рейтинг 76 футов по Универсальному правилу: Shamrock V, Enterprise, Rainbow, Endeavour, Ranger и их соперники, всего десять. Длинные, узкие и низкие, со свесами по шесть метров с каждого конца, с глубоким килем, переходящим в корпус, рулём на его задней кромке и палубой из тикового настила. Три оригинала сохранились и восстановлены, а по старым чертежам построены новые J, так что класс снова гоняется.'],
+      ['The yacht in the game is a generic J between Velsheda, Endeavour and Ranger: 39.3 m over all on 27 m of waterline, 175 tonnes, near half of it lead, rigged as a cutter with a jib topsail and a staysail, 860 m² of sail upwind. Some thirty sail her: a helmsman at a wheel nearly two metres across, trimmers, grinders on the coffee-grinder winches, the mast and the bow.',
+        'Яхта в игре — обобщённый J между Velsheda, Endeavour и Ranger: 39,3 м длины при 27 м по ватерлинии, 175 тонн, почти половина из них — свинец, вооружение тендера с кливером-топселем и стакселем, 860 м² парусов на лавировке. Экипаж — около тридцати человек: рулевой у штурвала почти двухметрового диаметра, триммеры, грайндеры на лебёдках-«кофемолках», мачтовый и баковый.'],
+    ],
+    race: ['A train under sail: she takes a long time to gather way and carries it far. A tack takes her twice as long as the JPK 1050 and getting going again some twenty seconds, so plan each one. Her best is a beam reach. Courses are laid 1.6 times as long and the line 2.2 times as wide.', 'Поезд под парусами: долго разгоняется и далеко проносит ход. Поворот занимает вдвое больше времени, чем у JPK 1050, а разгон после него — секунд двадцать, так что каждый поворот стоит продумать. Лучше всего она идёт галфвиндом. Дистанции в 1,6 раза длиннее, линия старта в 2,2 раза шире.'],
+    specs: [
+      { k: ['Length', 'Длина'], v: ['39.3 m', '39,3 м'] }, { k: ['Beam', 'Ширина'], v: ['6.55 m', '6,55 м'] },
+      { k: ['Displacement', 'Водоизмещение'], v: ['about 175 t', 'около 175 т'] }, { k: ['Draft', 'Осадка'], v: ['4.55 m', '4,55 м'] },
+      { k: ['Mast', 'Мачта'], v: ['45.5 m above the deck', '45,5 м над палубой'] }, { k: ['Sails', 'Паруса'], v: ['860 m² upwind', '860 м² на лавировке'] },
+    ],
+    speed: { up: 7.6, down: 8.0 }, courseK: 1.6, lineK: 2.2, timeK: 1.65,
+  },
   {
     id: 'ac75',
     name: ['AC75', 'AC75'],
