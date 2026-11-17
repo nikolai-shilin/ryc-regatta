@@ -1501,7 +1501,7 @@ export class Race {
       // come in again from there, as a skipper would (at the windward mark with an upwind finish line just below it,
       // out below the line)
       ai.nearT = Math.hypot(b.x - m.x, b.z - m.z) < 45 ? (ai.nearT || 0) + (this.lastDt || 0) : 0;
-      if (ai.nearT > TANGLED_T) { ai.nearT = 0; ai.detour = this.clock + 30; ai.wp = 0; }
+      if (ai.nearT > TANGLED_T) { ai.nearT = 0; ai.detour = this.clock + 30; ai.wp = 0; ai.retry = b.leg; }
       if (ai.detour > this.clock) return at(35, k === 'mark' && c.finish && c.finish.through.z < 0 ? -60 : -30);
       // round it to port: come in on its near side with room to spare, cross outside it, leave on the far side
       // a boat that owes another mark-room (rule 18) goes round outside it, wider and a little later
@@ -1516,8 +1516,12 @@ export class Race {
         else if (ai.setup && (sd > (10 + wide * 12) * SZ_MARK || ah > 0)) ai.setup = false;
         if (ai.setup) return at(18 + wide * 12, -8);
       } else ai.setup = false;
-      if (ai.wp === 0 && ah > 6 * SZ_MARK && sd > -3 * SZ_MARK) ai.wp = 1; // clearly outside it: now bear away across
-      if (ai.wp === 1 && Math.hypot(b.x - w1.x, b.z - w1.z) < 6 * SZ_MARK) ai.wp = 0; // there and still not round: go again
+      // clearly outside it: now bear away across. Coming in again after a try that didn't get her round (retry), only
+      // once she is right of the line the rounding is counted across (progress: out from the mark on her own wind, at a
+      // windward mark), not just of o: a J-class come in from above the mark on its left in a veered wind turned back
+      // some 45 m up, where that line ran some 11 m right of her, and went round and round above the mark for good
+      if (ai.wp === 0 && ah > 6 * SZ_MARK && sd > -3 * SZ_MARK && (ai.retry !== b.leg || b.rnd > 0)) ai.wp = 1;
+      if (ai.wp === 1 && Math.hypot(b.x - w1.x, b.z - w1.z) < 6 * SZ_MARK) { ai.wp = 0; ai.retry = b.leg; } // there and still not round: go again
       return ai.wp === 0 ? w0 : w1;
     }
     if (k === 'gate') { // through the gate from above; below it without having gone through: back up and try again
