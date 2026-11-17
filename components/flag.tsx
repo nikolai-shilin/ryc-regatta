@@ -2,10 +2,13 @@ import { findFlag, flagSrc } from '@/lib/flags';
 import type { Lang } from '@/lib/lang';
 
 // A sailor's country flag, 3:2, as a broadcast sets it before a name on a leaderboard: the flag they fly on the boat
-// page (lib/flags.ts). Nothing for a sailor who flies none, or a code this site doesn't draw.
+// page (lib/flags.ts). A sailor who flies none, or a code this site doesn't draw, gets a blank flag in its place, so
+// the names line up whether or not they fly one.
+export const NoFlag = ({ className = 'fl' }: { className?: string }) => <span className={`${className} fl-none`} aria-hidden="true" />;
+
 export function FlagImg({ code, lang }: { code: string | null | undefined; lang: Lang }) {
   const f = findFlag(code || undefined);
-  if (!f) return null;
+  if (!f) return <NoFlag />;
   const name = lang === 'ru' ? f.ru : f.en;
   // eslint-disable-next-line @next/next/no-img-element
   return <img className="fl" src={flagSrc(f.code)} alt={name} title={name} width={24} height={16} loading="lazy" decoding="async" />;

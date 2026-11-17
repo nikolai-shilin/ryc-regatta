@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNod
 import { tx, type Lang } from '@/lib/lang';
 import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart, IconFlag, IconCheck } from './ui';
 import { FLAGS, findFlag, flagSrc, type Flag } from '@/lib/flags';
+import { NoFlag } from './flag';
 import { SceneBrand } from './scene-brand';
 import { BOAT_EVENT, DEFAULT_BOAT, DEFAULT_LOGO, NAME_MAX, PRESETS, SWATCHES, cleanName, readBoat, saveBoat, shrinkLogo, type Boat, type Deck, type Logo } from '@/lib/boat';
 import { syncAccount } from './bests-sync';
@@ -153,7 +154,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         <div className="bt-top">{back}<SceneBrand /></div>
         <span className="bt-kick">{t('Your boat', 'Твоя яхта')}</span>
         {/* her flag and sail number, as the race calls her */}
-        <h1 className="bt-h bt-h-boat">{/* eslint-disable-next-line @next/next/no-img-element */}{flag && <img className="bt-h-flag" src={flagSrc(flag.code)} alt={t(flag.en, flag.ru)} />}<span>{`${b.nat} ${b.num || '1'}`.trim()}</span></h1>
+        <h1 className="bt-h bt-h-boat">{/* eslint-disable-next-line @next/next/no-img-element */}{flag ? <img className="bt-h-flag" src={flagSrc(flag.code)} alt={t(flag.en, flag.ru)} /> : <NoFlag className="bt-h-flag" />}<span>{`${b.nat} ${b.num || '1'}`.trim()}</span></h1>
         <p className="bt-p">{t('Lake Garda, a summer evening. Drag to circle her.', 'Озеро Гарда, летний вечер. Тяни, чтобы облететь яхту.')}</p>
         <div className="bt-stats bt-stats-fit">
           <div><span className="bt-sk">{t('Colours', 'Цвета')}</span><b>{preset ? t(preset.en, preset.ru) : t('Your own', 'Свои')}</b></div>

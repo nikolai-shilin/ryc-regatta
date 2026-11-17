@@ -9,6 +9,7 @@ import { BOAT_EVENT, NAME_MAX as BOAT_NAME_MAX, cleanName as cleanBoatName, read
 import { syncAccount } from './bests-sync';
 import { findFlag, flagSrc } from '@/lib/flags';
 import { IconArrow } from './ui';
+import { NoFlag } from './flag';
 
 // The name on the ranking, edited in place. The Supabase client loads only when it's saved, so guests never get it.
 export function NameRow({ lang, name: saved }: { lang: Lang; name: string }) {
@@ -76,7 +77,7 @@ function BoatLine({ lang }: { lang: Lang }) {
   return (
     <Link className="st-boat" href="/boat?from=settings" aria-label={t('Edit your boat', 'Изменить яхту')}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      {b?.flag ? <img className="fl" src={flagSrc(b.flag)} alt={b.land || ''} /> : <span className="st-boat-bar" aria-hidden="true" />}
+      {b?.flag ? <img className="fl" src={flagSrc(b.flag)} alt={b.land || ''} /> : <NoFlag />}
       <b>{b ? b.name : '\u00a0'}</b>
       <span className="st-boat-k">{t('Colours, logo and number', 'Цвета, логотип и номер')}</span>
       <span className="st-boat-e">{t('Edit', 'Изменить')}<IconArrow s={14} /></span>

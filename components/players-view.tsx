@@ -11,7 +11,7 @@ import type { PlayerCard, PlayerList } from '@/lib/players';
 import { IconBack, IconArrow, IconCrew, IconSail, IconTrophy, IconPin, IconKite } from './ui';
 import { LoadBar, ScenePoster } from './skeleton';
 import { SceneBrand } from './scene-brand';
-import { FlagImg } from './flag';
+import { FlagImg, NoFlag } from './flag';
 import '@/styles/players.css';
 
 // The players: the game's own scene (/boat-view: a JPK 1050 on Lake Garda on a summer evening, the drone circling her)
@@ -97,7 +97,7 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
         <div className="bt-top">{back}<SceneBrand /></div>
         <span className="bt-kick">{t('The players', 'Игроки')}</span>
         {player ? (<>
-          <h1 className="bt-h bt-h-boat" key={player.k}>{/* eslint-disable-next-line @next/next/no-img-element */}{player.fl && findFlag(player.fl) && <img className="bt-h-flag" src={flagSrc(findFlag(player.fl)!.code)} alt={t(findFlag(player.fl)!.en, findFlag(player.fl)!.ru)} />}<span>{nameOf(player)}</span></h1>
+          <h1 className="bt-h bt-h-boat" key={player.k}>{/* eslint-disable-next-line @next/next/no-img-element */}{(() => { const f = findFlag(player.fl || undefined); return f ? <img className="bt-h-flag" src={flagSrc(f.code)} alt={t(f.en, f.ru)} /> : <NoFlag className="bt-h-flag" />; })()}<span>{nameOf(player)}</span></h1>
           <p className="bt-p">{player.boat
             ? <>{boat.name ? <><i>{boat.name}</i> · </> : null}{`${boat.nat} ${boat.num || '1'}`.trim()} · {t('Their colours on the JPK 1050. Drag to circle her.', 'Их цвета на JPK 1050. Тяни, чтобы облететь яхту.')}</>
             : t('Their colours aren’t kept online, so this is the boat everyone starts in. Drag to circle her.', 'Их цвета не сохранены онлайн, поэтому здесь яхта, с которой начинают все. Тяни, чтобы облететь её.')}</p>
