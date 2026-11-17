@@ -16,8 +16,8 @@ export const generateMetadata = titled('The venues: 34 regatta waters to race', 
 export const revalidate = 3600;
 
 // The venues, as /players: the game's scene behind the page (components/venues-list: your yacht at the venue of today's
-// race, the drone pulling away from her into a wide circuit of the water), the list in its card, today's race's first,
-// then the rest in the game's order, each a link to its own page. As one of the 3D screens it doesn't zoom (lib/no-zoom.ts).
+// race, the drone pulling away from her into a wide circuit of the water), the list in its card by country, A to Z, each a
+// link to its own page (the ItemList data has today's first, then the game's order). As one of the 3D screens it doesn't zoom (lib/no-zoom.ts).
 export default async function Venues({ params }: LangParams) {
   const { lang, t } = await getT(params);
   const today = dailyVenue();
