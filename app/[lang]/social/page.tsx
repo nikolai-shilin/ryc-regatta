@@ -7,7 +7,7 @@ import { ShareGame } from '@/components/social-share';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 
 export const generateMetadata = titled('Follow the game', 'Игра в соцсетях', {
-  path: '/social',
+  path: '/social', card: '/og/page/social',
   description: [
     'Where Up and down, the free sailing race game, posts: its news, the day’s best races and the racing rules. Follow it, or send the game to a friend.',
     'Где пишет Up and down, бесплатная парусная регата: новости игры, лучшие гонки дня и разборы по правилам. Подпишитесь или отправьте игру другу.'],

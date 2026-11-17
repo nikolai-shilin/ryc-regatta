@@ -4,7 +4,7 @@ import { FleetView } from '@/components/fleet-view';
 import { isYacht } from '@/lib/yachts';
 
 export const generateMetadata = titled('The yachts', 'Яхты', {
-  path: '/yachts',
+  path: '/yachts', card: '/og/page/yachts',
   description: [
     'Every yacht you can race in Up and down, afloat together in 3D in your colours: the JPK 1050 offshore racer, the Bavaria 46 cruiser, the J/70 and RS21 sportboats, the Laser (ILCA) and Optimist dinghies, the Dragon classic keelboat, the J Class of the 1930s America’s Cup and the AC75, today’s foiling Cup monohull, with what each is and how she sails.',
     'Все яхты, на которых можно гоняться в Up and down, вместе на воде в 3D в твоих цветах: офшорная гоночная JPK 1050, крейсерская Bavaria 46, спортботы J/70 и RS21, швертботы Laser (ILCA) и Оптимист, классический килевой Дракон, класс J Кубка Америки 1930-х и AC75 — нынешний монокорпус Кубка Америки на подводных крыльях, что это за лодки и как они ходят.'],

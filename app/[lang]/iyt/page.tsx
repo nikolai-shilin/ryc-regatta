@@ -3,10 +3,11 @@ import { IconArrow, IconSend, IconOut } from '@/components/ui';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 import { IytSample } from '@/components/iyt-sample';
 import { iytSample } from '@/lib/iyt-sample';
+import { IYT_LEVELS } from '@/lib/iyt';
 import type { Lang, T } from '@/lib/lang';
 
 export const generateMetadata = titled('Sailing certification exam practice', 'Тренажёр к экзамену на яхтенный сертификат', {
-  path: '/iyt',
+  path: '/iyt', card: '/og/page/iyt',
   description: [
     'Free practice for the theory of sailing certification exams, VHF Radio Operator to Yachtmaster Ocean: situations in drawings, the reason after every answer, a mock exam.',
     'Бесплатная подготовка к теории экзаменов на яхтенные сертификаты от VHF Radio Operator до Yachtmaster Ocean: ситуации в рисунках, пояснение после ответа, пробный экзамен.'],
@@ -49,17 +50,7 @@ export default async function Iyt({ params }: LangParams) {
       'Пробный экзамен берёт вопросы из всех тем уровня, а прогресс виден по каждой теме — понятно, что повторить.')],
   ];
 
-  const levels: [string, number, string][] = [
-    [t('VHF Radio Operator', 'VHF Radio Operator'), 200, t('Marine VHF radio: channels, procedure, distress, urgency and safety calls.', 'Морская УКВ-радиосвязь: каналы, порядок связи, сигналы бедствия, срочности и безопасности.')],
-    [t('International Crew', 'International Crew'), 200, t('The first step aboard: life on a yacht, ropes and knots, safety and helping the skipper.', 'Первый шаг на борту: жизнь на яхте, концы и узлы, безопасность и помощь шкиперу.')],
-    [t('Flotilla Skipper', 'Flotilla Skipper'), 200, t('Skippering a yacht by day in a flotilla, with a lead boat nearby.', 'Управление яхтой днём во флотилии, рядом с лидирующей лодкой.')],
-    [t('Bareboat Skipper', 'Bareboat Skipper'), 1000, t('Skippering a charter yacht yourself by day in coastal waters, without a hired skipper.', 'Самостоятельное управление чартерной яхтой днём в прибрежных водах — без нанятого шкипера.')],
-    [t('Yachtmaster Coastal', 'Yachtmaster Coastal'), 1000, t('Coastal passages by day and night: navigation, tides, weather and passage planning.', 'Прибрежные переходы днём и ночью: навигация, приливы, погода и планирование перехода.')],
-    [t('Yachtmaster Offshore', 'Yachtmaster Offshore'), 1000, t('Offshore passages out of sight of land, the crew and the boat on longer trips.', 'Морские переходы вне видимости берега, экипаж и яхта в долгом плавании.')],
-    [t('Yachtmaster Ocean', 'Yachtmaster Ocean'), 1000, t('Ocean crossings: celestial navigation, ocean weather and the routine of a long passage.', 'Океанские переходы: астронавигация, погода в океане и распорядок долгого перехода.')],
-    [t('Racing Rules of Sailing', 'Правила парусных гонок'), 1000, t('Right of way between racing boats, marks, starts and penalties.', 'Право дороги между гоночными яхтами, знаки, старт и штрафы.')],
-    [t('Charter check-in', 'Приёмка чартерной яхты'), 500, t('Taking over a charter yacht: inventory, engine, sails, safety gear and the paperwork.', 'Как принять яхту в чартер: инвентарь, двигатель, паруса, снаряжение безопасности и документы.')],
-  ];
+  const levels: [string, number, string][] = IYT_LEVELS.map((l) => [t(...l.name), l.n, t(...l.text)]);
   const total = levels.reduce((a, l) => a + l[1], 0);
 
   const ld = {

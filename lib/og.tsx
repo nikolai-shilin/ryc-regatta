@@ -75,6 +75,35 @@ export function CourseSvg({ course: c, tracks, route, wind, w = PANEL.w, h = PAN
   );
 }
 
+// The plate's body as the HUD's leaderboard: a row each on hairline rules, a plate before it (the place, a guide's
+// number) and its figure at the right; a line in grey under the words where it says more, a bar where the rows compare (a yacht's length, a count), and a
+// row with only a head is a heading over the rows after it. Sized to share the plate's height.
+export type Row = { lead?: string; leadBg?: string; text: string; sub?: string; value?: string | number; valueColor?: string; bar?: number; head?: boolean };
+export function Rows({ rows, keys = false, size }: { rows: Row[]; keys?: boolean; size?: number }) {
+  const h = (PANEL.h - PANEL.head - (keys ? PANEL.foot : 0) - 20) / rows.length;
+  const fs = size || Math.max(17, Math.min(28, Math.round(h * 0.5)));
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', width: PANEL.w, padding: '10px 0' }}>
+      {rows.map((r, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', height: h, padding: '0 24px', gap: 14, borderTop: i && !r.head ? `1px solid ${C.rule}` : 'none' }}>
+          {r.head ? <div style={{ display: 'flex', fontSize: Math.round(fs * 0.62), fontWeight: 800, letterSpacing: 2.4, textTransform: 'uppercase', color: C.you, alignSelf: 'flex-end', paddingBottom: 6 }}>{r.text}</div> : null}
+          {!r.head && r.lead !== undefined ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: Math.round(fs * 1.5), height: Math.round(fs * 1.4), padding: '0 6px', background: r.leadBg || C.plate2, color: r.leadBg ? C.inkOn : '#fff', fontSize: Math.round(fs * 0.86), fontWeight: 800 }}>{r.lead}</div>
+          ) : null}
+          {!r.head ? (
+            <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, flexShrink: 1, gap: 6, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', fontSize: fs, fontWeight: 700, lineHeight: 1.05, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.text}</div>
+              {r.sub ? <div style={{ display: 'flex', fontSize: Math.round(fs * 0.68), fontWeight: 700, color: C.ink3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.sub}</div> : null}
+              {r.bar !== undefined ? <div style={{ display: 'flex', width: `${Math.max(2, Math.round(r.bar * 100))}%`, height: 5, background: C.you }} /> : null}
+            </div>
+          ) : null}
+          {!r.head && r.value !== undefined ? <div style={{ display: 'flex', fontSize: fs, fontWeight: 800, color: r.valueColor || '#fff', whiteSpace: 'nowrap' }}>{String(r.value)}</div> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // The map's key, as the HUD's map labels its foot: a swatch (a line, a dot or the wind's arrow) and a word each
 export type Key = { kind: 'line' | 'dot' | 'arrow'; color: string; label: string };
 const Swatch = ({ kind, color }: Key) =>
@@ -84,7 +113,8 @@ const Swatch = ({ kind, color }: Key) =>
 
 export type Cell = { label: string; value: string | number; unit?: string; color?: string };
 // the big figure: its label over it, and before it, when there is one, a plate (the place, as the leaderboard's)
-export type Hero = { label: string; value: string; color?: string; plate?: { text: string; bg: string } };
+// wrap: a page's name rather than a figure, sized to take up to two lines
+export type Hero = { label: string; value: string; color?: string; plate?: { text: string; bg: string }; wrap?: boolean };
 type Card = {
   kind: string; // the race (or the passport), under UP AND DOWN
   tag?: { text: string; live?: boolean }; // the slanted tag beside the title: the day, with the red dot while it's on
@@ -97,7 +127,19 @@ type Card = {
 export async function card({ kind, tag, hero, cells, strip, call, panel }: Card) {
   const fonts = await loadFaces();
   const plateW = hero.plate ? 40 + hero.plate.text.length * 64 : 0;
-  const size = Math.min(150, Math.floor((LEFT - plateW) / (Math.max(hero.value.length, 3) * 0.5)));
+  // a figure on one line; a name on two at most, the biggest size its words still break into two lines at (a capital
+  // takes about 0.56 of the size, a Cyrillic one a little more than a Latin)
+  const fits = (sz: number) => {
+    const per = (LEFT - plateW) / (sz * 0.56);
+    let lines = 1, line = 0;
+    for (const w of hero.value.split(' ')) {
+      if (w.length > per) return false;
+      if (line && line + 1 + w.length > per) { lines++; line = w.length; } else line += (line ? 1 : 0) + w.length;
+    }
+    return lines <= 2;
+  };
+  let size = Math.min(150, Math.floor((LEFT - plateW) / (Math.max(hero.value.length, 3) * 0.5)));
+  if (hero.wrap) { size = 112; while (size > 48 && !fits(size)) size -= 4; }
   const label = { fontSize: 16, fontWeight: 700, letterSpacing: 2.6, textTransform: 'uppercase' as const, color: C.ink3 };
   return new ImageResponse(
     (
@@ -127,7 +169,7 @@ export async function card({ kind, tag, hero, cells, strip, call, panel }: Card)
               {hero.plate ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: Math.round(size * 0.8), padding: '0 20px', background: hero.plate.bg, color: C.inkOn, fontSize: Math.round(size * 0.52), fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>{hero.plate.text}</div>
               ) : null}
-              <div style={{ display: 'flex', fontSize: size, fontWeight: 800, lineHeight: 0.86, letterSpacing: -1, textTransform: 'uppercase', color: hero.color || '#fff' }}>{hero.value}</div>
+              <div style={{ display: 'flex', fontSize: size, fontWeight: 800, lineHeight: hero.wrap ? 0.92 : 0.86, letterSpacing: -1, textTransform: 'uppercase', color: hero.color || '#fff' }}>{hero.value}</div>
             </div>
           </div>
 

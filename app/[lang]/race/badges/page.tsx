@@ -3,7 +3,7 @@ import { SiteHead, SiteFoot } from '@/components/site-chrome';
 import { BadgesGrid } from '@/components/progress';
 
 export const generateMetadata = titled('Badges', 'Достижения', {
-  path: '/race/badges',
+  path: '/race/badges', card: '/og/page/badges',
   description: [
     'The badges in Up and down: each for something a good sailor does, from a clean race and a start on the gun to tacking on the headers and racing at every venue.',
     'Достижения в Up and down: каждое — за то, что умеет хороший гонщик, от чистой гонки и старта точно по сигналу до поворотов на заходах ветра и гонок на всех акваториях.'],

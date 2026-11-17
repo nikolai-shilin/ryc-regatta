@@ -3,7 +3,7 @@ import { BackLink } from '@/components/back-link';
 import { BoatEditor } from '@/components/boat-editor';
 
 export const generateMetadata = titled('Your boat', 'Твоя яхта', {
-  path: '/boat',
+  path: '/boat', card: '/og/page/boat',
   description: [
     'Make the yacht yours: hull and sail colours, a logo and a sail number, seen in 3D, for every race you sail in Up and down.',
     'Сделай яхту своей: цвета корпуса и парусов, логотип и номер на парусе — в 3D, для каждой гонки в Up and down.'],

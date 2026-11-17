@@ -6,7 +6,7 @@ import { SiteHead, SiteFoot } from '@/components/site-chrome';
 import { Toc } from '@/components/toc';
 
 export const generateMetadata = titled('How to play', 'Как играть', {
-  path: '/help',
+  path: '/help', card: '/og/page/help',
   description: [
     'How to sail Up and down: steer by touch or the arrow keys, trim the main and jib, tack, gybe and hoist the gennaker, win the start and play the wind shifts. The race screen, the camera views and the racing rules, with pictures.',
     'Как играть в Up and down: руль пальцем или стрелками, настройка грота и стакселя, повороты, генакер, старт, заходы и отходы ветра. Экран гонки, виды камеры и правила парусных гонок — с картинками.'],

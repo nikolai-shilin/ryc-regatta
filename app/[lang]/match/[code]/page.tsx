@@ -10,9 +10,13 @@ import { IconPlay } from '@/components/ui';
 // The page a match's link opens: /match/K7M2QZ?v=cowes&b=jpk1050. A tap on Join (the tap lets the game start its sound)
 // opens the game at the match, in the host's venue and on the boat he picked. Never indexed.
 
-export async function generateMetadata({ params }: LangParams): Promise<Metadata> {
-  const { lang, t } = await getT(params);
-  return pageMeta(lang, { title: t('Race me: a match race', 'Сыграем матч: матчевая гонка'), description: t('Race me: a match race', 'Сыграем матч: матчевая гонка'), index: false });
+// the share card names the match's code, venue and boat, and lays the course she'll sail (app/og/page/[key], match)
+export async function generateMetadata({ params, searchParams }: LangParams & { params: Promise<{ lang: string; code: string }>; searchParams: Promise<{ v?: string | string[]; b?: string | string[] }> }): Promise<Metadata> {
+  const [{ lang, t }, { code: raw }, sp] = await Promise.all([getT(params), params, searchParams]);
+  const one = (x?: string | string[]) => { const s = Array.isArray(x) ? x[0] : x; return s && /^[a-z0-9_-]{1,32}$/i.test(s) ? s : ''; };
+  const code = parseCode(raw), v = one(sp.v), b = one(sp.b);
+  const card = `/og/page/match?${new URLSearchParams({ ...(code && { c: code }), ...(v && { v }), ...(b && { b }) })}`;
+  return pageMeta(lang, { title: t('Race me: a match race', 'Сыграем матч: матчевая гонка'), description: t('You and a friend, one on one: join the match.', 'Вы и друг, один на один: войдите в матч.'), index: false, card });
 }
 
 export default async function MatchPage({ params, searchParams }: LangParams & { params: Promise<{ lang: string; code: string }>; searchParams: Promise<{ v?: string | string[]; b?: string | string[] }> }) {

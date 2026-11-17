@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [{ slug }, { lang, t }] = await Promise.all([params, getT(params)]);
   if (!isGuide(slug)) return {};
   const g = guide(slug, t, lang);
-  const meta = pageMeta(lang, { title: g.title, description: g.description, path: `/learn/${slug}` });
+  const meta = pageMeta(lang, { title: g.title, description: g.description, path: `/learn/${slug}`, card: `/og/page/guide?g=${slug}` });
   return { ...meta, openGraph: { ...meta.openGraph, type: 'article', publishedTime: PUBLISHED, modifiedTime: MODIFIED, authors: ['RYC'] } };
 }
 

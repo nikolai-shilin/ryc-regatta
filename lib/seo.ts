@@ -32,15 +32,21 @@ type PageMeta = {
   index?: boolean; // false: noindex (account pages, a result that lives on one device)
   absolute?: boolean; // the title as is, without " · Up and down"
   today?: boolean; // the share card is today's race (app/og/today), not the site's picture: home and Today's race
+  // the page's own drawn share card (app/og/page/[key]): its address without the language, e.g. '/og/page/yachts' or
+  // '/og/page/player?p=…'; live ones (the rating, the players) carry the day too, so chat apps fetch the new day's
+  card?: string; live?: boolean;
 };
 
-export function pageMeta(lang: Lang, { title, description, path, index = true, absolute = false, today = false }: PageMeta): Metadata {
+export function pageMeta(lang: Lang, { title, description, path, index = true, absolute = false, today = false, card, live = false }: PageMeta): Metadata {
   const full = absolute ? title : `${title} · ${NAME}`;
   const url = path ? langUrl(path, lang) : undefined;
   const alt = today ? (lang === 'ru' ? 'Гонка дня: ветер, дистанция и время, которое нужно побить' : 'Today’s race: the wind, the course and the time to beat')
-    : (lang === 'ru' ? 'Гонка в игре' : 'A race in the game');
+    : card ? full : (lang === 'ru' ? 'Гонка в игре' : 'A race in the game');
   // today's card carries the day in its address, so a chat app fetches the new day's instead of its cached one
-  const image = today ? { url: `/og/today?lang=${lang}&d=${new Date().toISOString().slice(0, 10)}`, width: 1200, height: 630, type: 'image/png' } : OG_IMAGE;
+  const day = new Date().toISOString().slice(0, 10);
+  const drawn = (u: string) => ({ url: u, width: 1200, height: 630, type: 'image/png' });
+  const image = today ? drawn(`/og/today?lang=${lang}&d=${day}`)
+    : card ? drawn(`${card}${card.includes('?') ? '&' : '?'}lang=${lang}${live ? `&d=${day}` : ''}`) : OG_IMAGE;
   return {
     title: absolute ? { absolute: title } : title,
     ...(description && { description }),

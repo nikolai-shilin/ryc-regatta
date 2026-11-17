@@ -8,7 +8,7 @@ import { IconArrow } from '@/components/ui';
 import { SiteHead, SiteFoot, Trail, type Crumb } from '@/components/site-chrome';
 
 export const generateMetadata = titled('Sailing racing glossary', 'Словарь парусных гонок', {
-  path: '/learn/glossary',
+  path: '/learn/glossary', card: '/og/page/glossary',
   description: [
     'The words of sailboat racing in plain English: beat, close-hauled, tack and gybe, overlap, clear astern, header and lift, layline, zone, mark-room, OCS, penalty turn and more.',
     'Слова парусных гонок простым языком: лавировка, бейдевинд, оверштаг и фордевинд, связанность, чисто позади, заход и отход ветра, лейлайн, зона, место у знака, фальстарт, штрафной оборот и другие.'],

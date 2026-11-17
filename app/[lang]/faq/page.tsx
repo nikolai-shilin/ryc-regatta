@@ -7,7 +7,7 @@ import { FaqList } from '@/components/faq-list';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 
 export const generateMetadata = titled('Questions', 'Вопросы', {
-  path: '/faq',
+  path: '/faq', card: '/og/page/faq',
   description: [
     'Questions about Up and down, the free sailing race game: does it work on a phone, how today’s race and the ranking work, sailing the boat, the racing rules the computer boats follow.',
     'Вопросы об Up and down, бесплатной парусной гонке: работает ли на телефоне, как устроены гонка дня и рейтинг, управление лодкой, правила, по которым гоняются компьютерные лодки.'],

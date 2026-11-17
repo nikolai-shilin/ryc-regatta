@@ -7,7 +7,7 @@ import { IconArrow } from '@/components/ui';
 import { SiteHead, SiteFoot } from '@/components/site-chrome';
 
 export const generateMetadata = titled('Learn to race', 'Учись гоняться', {
-  path: '/learn',
+  path: '/learn', card: '/og/page/learn',
   description: [
     'Short guides to sailboat racing: the racing rules, the start, wind shifts, mark roundings, sailing downwind and boat speed, and a glossary. Then try each one in a free 3D sailing race.',
     'Короткие пособия по парусным гонкам: правила, старт, заходы и отходы ветра, огибание знаков, попутные курсы и скорость лодки, а также словарь. А потом попробуй каждое в бесплатной 3D-гонке.'],

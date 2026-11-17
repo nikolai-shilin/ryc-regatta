@@ -7,7 +7,7 @@ import { SiteHead, SiteFoot } from '@/components/site-chrome';
 export const revalidate = 300;
 
 export const generateMetadata = titled('Today’s rating', 'Рейтинг дня', {
-  path: '/race/rating',
+  path: '/race/rating', card: '/og/page/rating', live: true,
   description: [
     'Today’s race ranked: every sailor’s best time in the day’s race, the points each took, and the month’s standings, with the flags they fly.',
     'Гонка дня в рейтинге: лучшее время каждого гонщика, очки за день и итоги месяца, с флагами, под которыми они ходят.',
