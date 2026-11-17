@@ -104,8 +104,9 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   - The game also posts each finished race to the scores server (below), so a result link opens on any device; there
     it reads as "this boat", not "you", and the page has a Share button for your own races.
 - **Every page's own share card:** home and the race hub show today's race (`app/og/today`), a result its race
-  (`app/og/result`), the passport its streak and badges; the rest draw theirs in `app/og/page/[key]`, as the race's HUD
-  draws, from what the page is about: a guide its sections, the rating the day's top five, `/players` the most points
+  (`app/og/result`), the passport its streak and badges; the rest draw theirs in `app/og/page/[key]`. All are made as
+  the logo is (`lib/og.tsx`): the blue bar down the left edge, UP / AND / DOWN stacked beside it, square blocks; each
+  shows what its page is about: a guide its sections, the rating the day's top five, `/players` the most points
   and `/players?p=` that player's numbers, the yachts by length, the drills by level, a match its code, venue and
   course. A page names its card with `card:` in `titled()` / `pageMeta()` (`lib/seo.ts`); account pages keep the
   site's picture.

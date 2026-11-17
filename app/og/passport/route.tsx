@@ -6,7 +6,7 @@ import { card, C, PANEL } from '@/lib/og';
 import { BadgePennant } from '@/components/badge-pennant';
 
 // /og/passport?s=5&v=12&b=4&vs=…&bb=…&n=Anna&lang=ru — the share card of a player's passport (lib/passport-share.ts),
-// as the race's HUD draws (lib/og.tsx): their name under the title, their streak (or their venues) as the big figure in
+// in the logo's look (lib/og.tsx): their name beside the wordmark, their streak (or their venues) as the big figure in
 // gold, the streak, the venues and the badges as the lower third with the venues raced a square each under them, and on
 // the right the twelve badges as their plates, those earned lit.
 export async function GET(request: Request) {
@@ -26,8 +26,9 @@ export async function GET(request: Request) {
       { label: t('Badges', 'Достижения'), value: p.b, unit: `/ ${BADGES.length}` },
     ],
     strip: (
-      <div style={{ display: 'flex', gap: 5 }}>
-        {VENUES.map((v, i) => <div key={v.id} style={{ display: 'flex', width: 14, height: 14, background: p.raced[i] ? C.you : 'rgba(255,255,255,0.12)' }} />)}
+      <div style={{ display: 'flex', gap: 4, flexGrow: 1 }}>
+        {/* a mark each, sharing the plate's width (there are more venues than squares of 14 px would fit) */}
+        {VENUES.map((v, i) => <div key={v.id} style={{ display: 'flex', flexGrow: 1, flexBasis: 0, height: 14, background: p.raced[i] ? C.you : 'rgba(255,255,255,0.12)' }} />)}
       </div>
     ),
     call: t('Sail today’s race', 'Пройди гонку дня'),

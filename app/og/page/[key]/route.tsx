@@ -15,8 +15,8 @@ import { parseCode } from '@/lib/code';
 import { card, CourseSvg, Rows, C, PANEL, type Row } from '@/lib/og';
 import { BadgePennant } from '@/components/badge-pennant';
 
-// /og/page/<key>?lang=ru — the share card of a page that has no race or passport of its own, drawn as the race's HUD
-// draws (lib/og.tsx) with what that page is about: a guide's sections, the day's top five, a player's numbers, the
+// /og/page/<key>?lang=ru — the share card of a page that has no race or passport of its own, drawn in the logo's
+// look (lib/og.tsx) with what that page is about: a guide's sections, the day's top five, a player's numbers, the
 // fleet by length, the drills by level… The page names it in its metadata (lib/seo.ts pageMeta's card). An unknown key
 // gets the site's own picture.
 type Q = URLSearchParams;

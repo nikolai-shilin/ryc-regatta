@@ -3,21 +3,23 @@ import type { ReactNode } from 'react';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { CourseGeo, XZ } from './race';
+import { WORDMARK } from './og-wordmark';
 
-// The drawn share cards (app/og/…): 1200 × 630, laid out as the race's HUD lays out its blocks (public/game/hud-bc.js,
-// public/ui/tokens.css): the title plate with the blue bar down its left and the race under it, the one big figure as
-// the start clock's, the numbers as the lower third's cells on hairline rules, the slanted blue call, and on the right
-// a square plate as the course map's, its corner cut. Drawn rather than a photo, so the PNG stays small enough for
-// WhatsApp (under 300 KB).
+// The drawn share cards (app/og/…): 1200 × 630, made as the game's logo is made (public/images/brand-icon.svg): the
+// flat dark ground, the blue bar down the whole left edge and UP / AND / DOWN stacked beside it, the race (or the page)
+// and its day set by the wordmark; then the one big figure in the logo's bold capitals, the numbers as the HUD's lower
+// third (public/game/hud-bc.js), the blue call, and on the right a square plate with what the card is about. All of it
+// square-cut, as the logo is. Drawn rather than a photo, so the PNG stays small enough for WhatsApp (under 300 KB).
 export const W = 1200, H = 630;
 export const C = {
-  ground: '#070d16', plate: '#0b1420', plate2: '#111c2b', you: '#3db8ff', gold: '#f5c400', up: '#2ee6a0', live: '#ff3b30', buoy: '#ff7a1a',
+  ground: '#060d16', plate: '#0b1420', plate2: '#111c2b', you: '#3db8ff', gold: '#f5c400', up: '#2ee6a0', live: '#ff3b30', buoy: '#ff7a1a',
   inkOn: '#04121e', ink2: 'rgba(255,255,255,0.78)', ink3: 'rgba(255,255,255,0.62)', rule: 'rgba(255,255,255,0.14)', grid: 'rgba(255,255,255,0.06)',
 };
 const FACE = 'Sofia Sans Condensed';
 const M = 48; // the margin round the card
+const BAR = 30; // the logo's blue bar down the left edge: 38 of its 512
 export const PANEL = { w: 440, h: H - 2 * M, head: 56, foot: 48 };
-const LEFT = W - 2 * M - PANEL.w - 48; // the left column's width
+const LEFT = W - BAR - 2 * M - PANEL.w - 40; // the left column's width
 export const URL_LABEL = 'sailupdown.com';
 
 // Sofia Sans Condensed, the HUD's face, in the two weights the cards use, read from lib/og-fonts (next.config.ts ships
@@ -27,14 +29,6 @@ let faces: Promise<{ name: string; data: Buffer; weight: 700 | 800; style: 'norm
 const loadFaces = () => (faces ??= Promise.all(([700, 800] as const).map(async (weight) => (
   { name: FACE, data: await readFile(join(process.cwd(), 'lib/og-fonts', `SofiaSansCondensed-${weight}.ttf`)), weight, style: 'normal' as const }
 ))));
-
-// a block with its right edge cut on the slant, as the HUD's tags and buttons
-export const Slant = ({ bg, h, children, style }: { bg: string; h: number; children: ReactNode; style?: object }) => (
-  <div style={{ display: 'flex', alignSelf: 'flex-start' }}>
-    <div style={{ display: 'flex', alignItems: 'center', height: h, background: bg, ...style }}>{children}</div>
-    <svg width={Math.round(h * 0.3)} height={h} viewBox={`0 0 ${Math.round(h * 0.3)} ${h}`}><path d={`M0 0H${Math.round(h * 0.3)}L0 ${h}Z`} fill={bg} /></svg>
-  </div>
-);
 
 // The course to scale, the windward mark up, as the HUD's course map draws it: a hairline grid, the start line gold
 // between its two ends (and a finish line of its own, dashed, when the course has one), the marks in the buoys' orange;
@@ -116,8 +110,8 @@ export type Cell = { label: string; value: string | number; unit?: string; color
 // wrap: a page's name rather than a figure, sized to take up to two lines
 export type Hero = { label: string; value: string; color?: string; plate?: { text: string; bg: string }; wrap?: boolean };
 type Card = {
-  kind: string; // the race (or the passport), under UP AND DOWN
-  tag?: { text: string; live?: boolean }; // the slanted tag beside the title: the day, with the red dot while it's on
+  kind: string; // the race (or the page), set beside the wordmark
+  tag?: { text: string; live?: boolean }; // under it: the day, with the red dot while it's on
   hero: Hero; cells: Cell[];
   strip?: ReactNode; // a row under the cells, in the same plate
   call: string;
@@ -139,27 +133,27 @@ export async function card({ kind, tag, hero, cells, strip, call, panel }: Card)
     return lines <= 2;
   };
   let size = Math.min(150, Math.floor((LEFT - plateW) / (Math.max(hero.value.length, 3) * 0.5)));
-  if (hero.wrap) { size = 112; while (size > 48 && !fits(size)) size -= 4; }
+  if (hero.wrap) { size = 104; while (size > 48 && !fits(size)) size -= 4; }
+  const mark = 92, markW = Math.round((mark * WORDMARK.w) / WORDMARK.h); // the wordmark's height on the card
   const label = { fontSize: 16, fontWeight: 700, letterSpacing: 2.6, textTransform: 'uppercase' as const, color: C.ink3 };
   return new ImageResponse(
     (
-      <div style={{ width: W, height: H, display: 'flex', position: 'relative', fontFamily: FACE, color: '#fff', backgroundColor: C.ground, backgroundImage: 'linear-gradient(210deg, #0d2a44 0%, #070d16 52%)' }}>
-        <div style={{ position: 'absolute', left: M, top: M, bottom: M, width: LEFT, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          {/* the title plate, as the HUD's top left: UP AND DOWN by the blue bar, the race under it, the day on a slanted tag */}
-          <div style={{ display: 'flex', alignItems: 'stretch', height: 78 }}>
-            <div style={{ display: 'flex', background: C.plate }}>
-              <div style={{ display: 'flex', width: 6, background: C.you }} />
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 24px', gap: 6 }}>
-                <div style={{ display: 'flex', fontSize: 30, fontWeight: 800, letterSpacing: 3, lineHeight: 1 }}>UP AND DOWN</div>
-                <div style={{ display: 'flex', ...label, fontSize: 15, lineHeight: 1 }}>{kind}</div>
-              </div>
+      <div style={{ width: W, height: H, display: 'flex', position: 'relative', fontFamily: FACE, color: '#fff', backgroundColor: C.ground }}>
+        {/* the logo's blue bar, the card's whole height */}
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: BAR, display: 'flex', background: C.you }} />
+        <div style={{ position: 'absolute', left: BAR + M, top: M, bottom: M, width: LEFT, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          {/* the wordmark, UP / AND / DOWN as the logo stacks it, and beside it what this card is and its day */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 26 }}>
+            <svg width={markW} height={mark} viewBox={`${WORDMARK.x} ${WORDMARK.y} ${WORDMARK.w} ${WORDMARK.h}`}><path d={WORDMARK.d} fill="#ffffff" /></svg>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingLeft: 24, borderLeft: `1px solid ${C.rule}`, paddingBottom: 2 }}>
+              {tag ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 22, fontWeight: 700, letterSpacing: 2.6, textTransform: 'uppercase', lineHeight: 1 }}>
+                  {tag.live ? <div style={{ display: 'flex', width: 11, height: 11, borderRadius: 6, background: C.live }} /> : null}
+                  {tag.text}
+                </div>
+              ) : null}
+              <div style={{ display: 'flex', ...label, fontSize: 16, lineHeight: 1.25, maxWidth: LEFT - markW - 60 }}>{kind}</div>
             </div>
-            {tag && (
-              <Slant bg={C.plate2} h={78} style={{ padding: '0 6px 0 22px', gap: 10, fontSize: 22, fontWeight: 800, letterSpacing: 2.6, textTransform: 'uppercase' }}>
-                {tag.live ? <div style={{ display: 'flex', width: 11, height: 11, borderRadius: 6, background: C.live }} /> : null}
-                {tag.text}
-              </Slant>
-            )}
           </div>
 
           {/* the one big figure, as the start clock */}
@@ -169,7 +163,7 @@ export async function card({ kind, tag, hero, cells, strip, call, panel }: Card)
               {hero.plate ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: Math.round(size * 0.8), padding: '0 20px', background: hero.plate.bg, color: C.inkOn, fontSize: Math.round(size * 0.52), fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>{hero.plate.text}</div>
               ) : null}
-              <div style={{ display: 'flex', fontSize: size, fontWeight: 800, lineHeight: hero.wrap ? 0.92 : 0.86, letterSpacing: -1, textTransform: 'uppercase', color: hero.color || '#fff' }}>{hero.value}</div>
+              <div style={{ display: 'flex', fontSize: size, fontWeight: 700, lineHeight: hero.wrap ? 0.92 : 0.86, letterSpacing: 1, textTransform: 'uppercase', color: hero.color || '#fff' }}>{hero.value}</div>
             </div>
           </div>
 
@@ -189,18 +183,15 @@ export async function card({ kind, tag, hero, cells, strip, call, panel }: Card)
             {strip ? <div style={{ display: 'flex', borderTop: `1px solid ${C.rule}`, padding: '14px 20px' }}>{strip}</div> : null}
           </div>
 
-          {/* the one action, blue and cut on the slant, and where it goes */}
+          {/* the one action, a blue block, and where it goes */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 26 }}>
-            <Slant bg={C.you} h={62} style={{ padding: '0 10px 0 28px', color: C.inkOn, fontSize: 26, fontWeight: 800, letterSpacing: 2.2, textTransform: 'uppercase' }}>{`${call} →`}</Slant>
+            <div style={{ display: 'flex', alignItems: 'center', height: 62, padding: '0 28px', background: C.you, color: C.inkOn, fontSize: 26, fontWeight: 800, letterSpacing: 2.2, textTransform: 'uppercase' }}>{`${call} →`}</div>
             <div style={{ display: 'flex', ...label, fontSize: 20, letterSpacing: 2 }}>{URL_LABEL}</div>
           </div>
         </div>
 
-        {/* the plate on the right, as the HUD's course map: its name and what it shows, the picture, its key */}
-        <div style={{ position: 'absolute', right: M, top: M, width: PANEL.w, height: PANEL.h, display: 'flex', flexDirection: 'column' }}>
-          <svg width={PANEL.w} height={PANEL.h} viewBox={`0 0 ${PANEL.w} ${PANEL.h}`} style={{ position: 'absolute', left: 0, top: 0 }}>
-            <path d={`M0 0H${PANEL.w}V${PANEL.h - 22}L${PANEL.w - 22} ${PANEL.h}H0Z`} fill={C.plate} />
-          </svg>
+        {/* the plate on the right, square as the logo: its name and what it shows, the picture, its key */}
+        <div style={{ position: 'absolute', right: M, top: M, width: PANEL.w, height: PANEL.h, display: 'flex', flexDirection: 'column', background: C.plate }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: PANEL.head, padding: '0 24px', borderBottom: `1px solid ${C.rule}` }}>
             <div style={{ display: 'flex', fontSize: 18, fontWeight: 800, letterSpacing: 3, textTransform: 'uppercase' }}>{panel.title}</div>
             {panel.aside ? <div style={{ display: 'flex', fontSize: panel.asideColor ? 28 : 16, fontWeight: panel.asideColor ? 800 : 700, letterSpacing: panel.asideColor ? 0 : 2.4, textTransform: 'uppercase', color: panel.asideColor || C.ink3 }}>{panel.aside}</div> : null}

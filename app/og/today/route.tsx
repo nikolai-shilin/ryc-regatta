@@ -5,7 +5,7 @@ import { venueOf } from '@/lib/venues';
 import { todayTop } from '@/lib/today';
 import { card, CourseSvg, C } from '@/lib/og';
 
-// /og/today?lang=ru&d=2026-11-14 — the share card of the home page and Today's race, as the race's HUD draws (lib/og.tsx):
+// /og/today?lang=ru&d=2026-11-14 — the share card of the home page and Today's race, in the logo's look (lib/og.tsx):
 // today's race and its day, the time to beat so far as the start clock in gold, the wind, the fleet, the length and
 // the races sailed as the lower third, and the course on the map. A new picture every day (and as the time to beat
 // falls), so a link to the game shared today doesn't look like one shared last week; `d` is only there so chat apps,

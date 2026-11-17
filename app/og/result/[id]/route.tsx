@@ -3,7 +3,7 @@ import { describe, getResult, ordEn } from '@/lib/result';
 import { card, CourseSvg, C } from '@/lib/og';
 import { OG_IMAGE } from '@/lib/seo';
 
-// /og/result/<id>?lang=ru — the picture a shared result link shows in Telegram, WhatsApp, X…, as the race's HUD draws
+// /og/result/<id>?lang=ru — the picture a shared result link shows in Telegram, WhatsApp, X…, in the logo's look
 // (lib/og.tsx): the place on its plate as the leaderboard's and the time beside it, the wind, the fleet, the laps and
 // the length as the lower third, the call to beat it, and every boat's track on the course map, yours in blue. A race
 // that isn't online (yet) gets the site's own picture. The result page names it in its metadata
