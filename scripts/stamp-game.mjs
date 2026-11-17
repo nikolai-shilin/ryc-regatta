@@ -6,7 +6,9 @@
 // its address: a page can't get yesterday's sim.js with today's world.js. The game's files that aren't modules (the
 // land, the music, the yacht: some 2 MB each) get the same in the import map, and the modules that fetch them ask it
 // for their address (import.meta.resolve: land.js, music.js, yacht.js, boats3d.js), so a returning player doesn't ask
-// for them again either, and main.js asks the same for its voices, calls and gulls.
+// for them again either, and main.js asks the same for its voices, calls and gulls. /play's own stylesheets
+// (/ui/tokens.css, /ui/game.css, which hold up its first paint) and the RYC logo on its cards get the same ?v=, so a
+// returning player's page doesn't wait on the server to say they haven't changed.
 //
 // Off Vercel it does nothing, so a local build leaves the checked-in pages as they are (and npm run dev never sees
 // it); `node scripts/stamp-game.mjs --force [public dir]` stamps anyway. It is idempotent: a stamped page stamped
@@ -53,6 +55,9 @@ export function reach(dir, page) {
 const ASSET = /\.(mp3|m4a|glb|bin|json)$/;
 export const assetsOf = (dir) => readdirSync(`${dir}/game`, { recursive: true }).map(String).filter((f) => ASSET.test(f)).map((f) => `/game/${f.split('\\').join('/')}`).sort();
 
+// a page's stylesheets from /ui/ and the logo, where a page names them (stamped already or not)
+const PLAIN = /(<link rel="stylesheet" href="|<img [^>]*?src=")(\/ui\/[^"?]+\.css|\/logo-black\.svg)(?:\?v=[0-9a-f]+)?"/g;
+
 export function stamp(dir) {
   const read = reader(dir);
   const hash = (p) => createHash('sha256').update(readFileSync(`${dir}${p}`)).digest('hex').slice(0, 10);
@@ -67,7 +72,8 @@ export function stamp(dir) {
         map.imports = { ...Object.fromEntries(Object.entries(map.imports).filter(([k]) => !k.startsWith('/game/'))), ...v, ...files };
         return a + JSON.stringify(map) + b;
       })
-      .replace(/(<link rel="modulepreload" href="|<script type="module" src=")([^"]+)"/g, (m, a, href) => (v[bare(href)] ? `${a}${v[bare(href)]}"` : m));
+      .replace(/(<link rel="modulepreload" href="|<script type="module" src=")([^"]+)"/g, (m, a, href) => (v[bare(href)] ? `${a}${v[bare(href)]}"` : m))
+      .replace(PLAIN, (_, a, p) => `${a}${p}?v=${hash(p)}"`);
     writeFileSync(`${dir}${page}`, out);
   }
 }

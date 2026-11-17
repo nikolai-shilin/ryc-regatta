@@ -33,6 +33,9 @@ const config: NextConfig = {
       // a module at its hashed address (scripts/stamp-game.mjs, at the build): a new version has a new address
       { source: '/game/:path*', has: [{ type: 'query', key: 'v' }], headers: [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }] },
       { source: '/ui/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=0, must-revalidate' }] }, // the design system's, as the game's
+      // /play's stylesheets and the logo on its cards at their hashed address (scripts/stamp-game.mjs), as the game's modules
+      { source: '/ui/:path*', has: [{ type: 'query', key: 'v' }], headers: [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }] },
+      { source: '/logo-black.svg', has: [{ type: 'query', key: 'v' }], headers: [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }] },
       // three.js, served from here rather than a CDN (the version is in the path, so a file there never changes)
       { source: '/vendor/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }] },
       // the country flags (the flag picker shows some 250 at once) and the pictures as they are, outside next/image (the

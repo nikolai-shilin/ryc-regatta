@@ -54,6 +54,11 @@ test("stamped, each page's game modules carry their content's hash, in the impor
       for (const p of reached.filter((p) => p.startsWith('/vendor/'))) assert.ok(html.includes(`<link rel="modulepreload" href="${p}">`), p);
     }
     assert.match(once[0], /<script type="module" src="\/game\/main\.js\?v=[0-9a-f]{10}"><\/script>/);
+    // /play's stylesheets and logo too, every one of them, at their content's hash
+    const at = (p) => `${p}?v=${createHash('sha256').update(readFileSync(join(pub, p))).digest('hex').slice(0, 10)}`;
+    for (const p of ['/ui/tokens.css', '/ui/game.css']) assert.ok(once[0].includes(`<link rel="stylesheet" href="${at(p)}">`), p);
+    assert.doesNotMatch(once[0], /href="\/ui\/[^"?]+"|src="\/logo-black\.svg"/, 'a stylesheet or a logo left unstamped');
+    assert.ok(once[0].includes(`src="${at('/logo-black.svg')}"`), 'the logo');
     stamp(dir);
     assert.deepEqual(PAGES.map((p) => readFileSync(join(dir, p), 'utf8')), once, 'stamping twice changes nothing');
   } finally {
@@ -67,6 +72,11 @@ test('an address with ?v= is cached for good, the rest of /game/ still revalidat
   const versioned = config.indexOf("{ source: '/game/:path*', has: [{ type: 'query', key: 'v' }]");
   assert.ok(plain >= 0 && versioned > plain, 'the ?v= rule comes after the plain one, so it wins');
   assert.match(config.slice(versioned, config.indexOf('\n', versioned)), /max-age=31536000, immutable/);
+  const ui = config.indexOf("{ source: '/ui/:path*', headers");
+  const uiv = config.indexOf("{ source: '/ui/:path*', has: [{ type: 'query', key: 'v' }]");
+  assert.ok(ui >= 0 && uiv > ui, "/ui/'s ?v= rule comes after its plain one");
+  assert.match(config.slice(uiv, config.indexOf('\n', uiv)), /max-age=31536000, immutable/);
+  assert.match(config, /\{ source: '\/logo-black\.svg', has: \[\{ type: 'query', key: 'v' \}\], headers: \[\{ key: 'cache-control', value: 'public, max-age=31536000, immutable' \}\] \}/);
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   assert.equal(pkg.scripts.prebuild, 'node scripts/stamp-game.mjs');
 });
