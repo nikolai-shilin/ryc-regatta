@@ -740,6 +740,19 @@ html[data-me] .hm-av > svg { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .fl-h { animation: none; } .fl-bar.run { animation: none; transform: scaleX(1); opacity: .4; } }
 
+/* ---------- a venue (/venues/<id>): the drone over a race on its course, as the fleet's; the guide in the card ---------- */
+.vn-shots { grid-template-columns: repeat(5, minmax(0, 1fr)); max-width: 760px; }
+.vn-view h3.bt-k { margin: 0 2px; }
+.vn-guide { display: flex; flex-direction: column; gap: 16px; }
+.vn-title { margin: 4px 2px 0; font: 400 22px/1.15 var(--f-serif); letter-spacing: -0.01em; color: #fff; text-wrap: balance; }
+.vn-guide .gd-by { margin: -8px 2px 0; font: 700 10px/1.4 var(--f-sans); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.vn-guide .gd-by span { color: rgba(255, 255, 255, 0.75); }
+.vn-guide .yt-about p { font: 400 14px/1.5 var(--f-serif); color: rgba(255, 255, 255, 0.86); margin: 0; }
+.vn-intro { margin: 0 2px; font: 400 15px/1.5 var(--f-serif); color: #fff; }
+.vn-stats .vn-wide { grid-column: 1 / -1; }
+.vn-stats .vn-wide b { font-size: 20px; white-space: normal; line-height: 1.15; }
+@container scr (orientation: portrait) { .vn-stats { grid-template-columns: 1fr 1fr; } .vn-stats .vn-wide b { font-size: 15px; } }
+
 /* the scene's stand-in while its first frame loads (components/game-scene.tsx): a dusk sea's colours, a horizon's glow,
    and what's coming, quietly pulsing; it fades out under the scene */
 .bt-scene.bt-poster { pointer-events: none; opacity: 0; transition: opacity .8s ease; background:

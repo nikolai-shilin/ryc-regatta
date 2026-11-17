@@ -1,4 +1,4 @@
-// The four pages that run the game's scene (public/play, public/boat-view, public/hero-view, public/fleet-view) name every module they
+// The five pages that run the game's scene (public/play, public/boat-view, public/hero-view, public/fleet-view, public/venue-view) name every module they
 // will load in <link rel="modulepreload">, so the browser asks for them all at once instead of one level of imports at
 // a time (five round trips deep from main.js). npm test walks each page's imports and checks its list is exactly the
 // modules it reaches: a module added to the game goes in the lists too, and one taken out leaves them. And on Vercel,
