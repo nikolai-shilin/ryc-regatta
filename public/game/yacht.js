@@ -105,6 +105,60 @@ function section(t, s) {
 // under way the bow wave and its spray wet her higher forward, the faster she goes the higher, and the quarter wave
 // a little aft. The white water itself is the sea's (world.js's wake field and hull contact), not painted on her.
 // uSpd (0–1) and uHalfL (half her drawn length) are each boat's own (hullSea, set in world.js's settle).
+// The sea's light on her, moving as the sea does (the environment map has the sea's mean, held still):
+// - seaShimmer: what her clear coat mirrors of the water — the point of the sea her mirror ray meets — broken into
+//   ripples drifting across it (streaks lying across the line of sight, as on the water itself), and where that
+//   point is in the sun's glitter path, into sparkles that flash and go. Both have a mean of 1, so the map's
+//   average stays; past where a sparkle would be under a pixel, they fade to it.
+// - seaBounce: the sun reflected up off the water onto the faces turned to it and down (a stern, the topsides on the
+//   sun's side, a flare): as much as the water reflects at the sun's height, gathered by the ripples into the bright
+//   lines that run over a hull near the water, sharpest just over it.
+// (World-space directions; vWP, uTime from the hull's own. A cheap value noise, steady at the course's sizes.)
+const HULL_LIGHT_GLSL = /* glsl */ `
+float hl_h(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+float hl_n(vec2 p) {
+  vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hl_h(i), hl_h(i + vec2(1.0, 0.0)), f.x), mix(hl_h(i + vec2(0.0, 1.0)), hl_h(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+vec3 seaShimmer(vec3 R, vec3 S, float hgt) {
+  float seaK = smoothstep(-0.01, -0.08, R.y);
+  if (seaK <= 0.0) return vec3(1.0);
+  float dn = hgt / max(-R.y, 0.03); // how far off the water she mirrors here is
+  vec2 Q = vWP.xz + R.xz * dn;
+  // the ripples, as her curved side (a convex mirror, squeezing the sea up her side) shows them: thin bands along her,
+  // wavering and running aft, laid on her own surface (vLP: along her, up her side); under a pixel, their mean
+  vec2 hp = vec2(vLP.z / 1.4 + uTime * 0.35, vLP.y / 0.07);
+  hp.y += 0.6 * sin(vLP.z * 2.3 - uTime * 1.6);
+  float ripH = hl_n(hp) + hl_n(hp * vec2(1.7, 1.9) + vec2(0.41, -uTime * 0.5)); // mean 1
+  float m = mix(1.0, ripH, seaK * 0.4 * (1.0 - smoothstep(0.15, 0.4, length(fwidth(hp * 1.9)))));
+  // the glitter: how near this look is to the facets the sun glints in (the environment map's lobe), broken into
+  // sparkles — the sea's facets, or squeezed so, points of light on her own skin — that flash and go
+  vec3 h = normalize(S - R);
+  float gl = S.y > 0.0 ? exp(-dot(h.xz, h.xz) / (h.y * h.y) / 0.03) : 0.0;
+  if (gl > 0.01) {
+    vec2 g = Q * 7.0, gH = vec2(vLP.z, vLP.y) * vec2(9.0, 30.0);
+    float wq = 1.0 - smoothstep(0.15, 0.45, length(fwidth(g * 1.37))), wh = 1.0 - smoothstep(0.2, 0.5, length(fwidth(gH * 1.37)));
+    vec2 gg = wq > 0.5 ? g : gH;
+    float a = hl_n(gg + vec2(uTime * 2.1, -uTime * 1.4)), b = hl_n(gg * 1.37 + vec2(-uTime * 1.7, uTime * 2.3));
+    float sp = pow(a * b, 3.0) * 27.0; // mean about 1: most of the time dark, now and then a flash many times over
+    m *= mix(1.0, sp, gl * seaK * (wq > 0.5 ? wq : wh));
+  }
+  return vec3(m);
+}
+float seaBounce(vec3 N, vec3 S, float hgt) {
+  if (S.y <= 0.0 || hgt < -0.02) return 0.0;
+  vec3 Ld = vec3(S.x, -S.y, S.z); // the sun's image in the water, where the light comes up from
+  float c = max(dot(N, Ld), 0.0);
+  if (c <= 0.0) return 0.0;
+  float Fs = 0.02 + 0.98 * pow(1.0 - S.y, 5.0), hg = max(hgt, 0.0);
+  vec2 Q = vWP.xz + S.xz / max(S.y, 0.08) * hg; // the water that sends it here
+  vec2 w1 = vec2(uTime * 0.55, uTime * 0.31), w2 = vec2(-uTime * 0.42, uTime * 0.6);
+  float r1 = 1.0 - abs(hl_n(Q * 1.6 + w1) * 2.0 - 1.0), r2 = 1.0 - abs(hl_n(Q * 2.3 + w2) * 2.0 - 1.0);
+  float caus = pow(r1 * r2, 5.0) * 15.0; // mean about 1, in bright threads
+  float sharp = exp(-hg / 1.1) * (1.0 - smoothstep(0.5, 2.0, length(fwidth(Q * 2.0))));
+  return c * Fs * mix(1.0, caus, sharp) * exp(-hg / 3.0) * smoothstep(-0.02, 0.04, hgt);
+}`;
+
 export const SEA = { uTime: { value: 0 }, uW: { value: Array.from({ length: 8 }, () => new THREE.Vector4()) }, uWs: { value: new Array(8).fill(0) } };
 export function hullMaterial(hull, stripe, bottom = '#5b1f24') { // bottom: the antifouling, the player's choice (dark red on the others)
   const m = new THREE.MeshPhysicalMaterial({ color: hull, roughness: 0.32, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.1, side: THREE.DoubleSide });
@@ -118,7 +172,8 @@ export function hullMaterial(hull, stripe, bottom = '#5b1f24') { // bottom: the 
       uniform vec3 uStripe, uBottom; uniform float uTime, uSpd, uHalfL; uniform vec4 uW[8]; uniform float uWs[8];
       varying float vBand; varying float vY; varying vec3 vWP, vLP;
       ${SWELL_GLSL}
-      float hullSea(vec2 xz) { float h = 0.0; for (int i = 0; i < 5; i++) h += uW[i].w * swellG(i, xz) * sin(uW[i].z * dot(uW[i].xy, xz) - uWs[i] * uTime + float(i) * 1.7); return h; }`)
+      float hullSea(vec2 xz) { float h = 0.0; for (int i = 0; i < 5; i++) h += uW[i].w * swellG(i, xz) * sin(uW[i].z * dot(uW[i].xy, xz) - uWs[i] * uTime + float(i) * 1.7); return h; }
+      ${HULL_LIGHT_GLSL}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         float aa = fwidth(vY) * 1.2, ab = fwidth(vBand) * 1.2;
         float boot = smoothstep(0.07 - aa, 0.07 + aa, vY) * (1.0 - smoothstep(0.19 - aa, 0.19 + aa, vY));
@@ -134,7 +189,16 @@ export function hullMaterial(hull, stripe, bottom = '#5b1f24') { // bottom: the 
         float wet = 1.0 - smoothstep(-0.04, 0.12 + 0.2 * uSpd * hK, dh);
         diffuseColor.rgb *= 1.0 - 0.22 * wet * (1.0 - under * 0.5);`)
       .replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>
-        material.clearcoat *= max(1.0 - under, wet); material.roughness = mix(mix(material.roughness, 0.75, under), 0.12, wet * 0.8);`);
+        material.clearcoat *= max(1.0 - under, wet); material.roughness = mix(mix(material.roughness, 0.75, under), 0.12, wet * 0.8);`)
+      .replace('#include <lights_fragment_maps>', `#include <lights_fragment_maps>
+        #if defined( USE_CLEARCOAT ) && NUM_DIR_LIGHTS > 0
+        clearcoatRadiance *= seaShimmer(reflect(-geometryViewDir, geometryClearcoatNormal), (vec4(directionalLights[0].direction, 0.0) * viewMatrix).xyz, max(dh, 0.02));
+        #endif`)
+      .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+        #if NUM_DIR_LIGHTS > 0
+        reflectedLight.directDiffuse += directionalLights[0].color * BRDF_Lambert(material.diffuseColor) * (1.0 - under)
+          * seaBounce((vec4(geometryNormal, 0.0) * viewMatrix).xyz, (vec4(directionalLights[0].direction, 0.0) * viewMatrix).xyz, dh);
+        #endif`);
   };
   m.customProgramCacheKey = () => 'hull';
   return m;
