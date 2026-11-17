@@ -1553,6 +1553,11 @@
 @media (max-width: 600px) {
   .bc .adm-hub-a > svg { top: var(--s-4); right: var(--s-4); }
 }
+/* the players, one by one (components/admin-players.tsx): the name over how they play and who they are */
+.bc .adm-players th[scope="row"] { min-width: 180px; }
+.bc .adm-pl-name { display: block; overflow-wrap: anywhere; }
+.bc .adm-pl-sub { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); margin-top: 2px; font: 600 var(--fs-label)/1.3 var(--cond); letter-spacing: 0.04em; color: var(--ink-3); overflow-wrap: anywhere; }
+.bc .adm-pl-new { padding: 1px var(--s-1); background: var(--you); color: var(--ink-on); font: 700 10px/1.3 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
 /* ---------- the result page: how was the race (components/rate-race.tsx) ---------- */
 .bc .rr { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); margin-top: var(--s-4); padding: var(--s-5) var(--s-6); }
 .bc .rr-q { font: 700 var(--fs-row)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink); }

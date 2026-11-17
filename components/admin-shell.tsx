@@ -19,7 +19,7 @@ export const ADMIN_PAGES = [
   { id: 'ads', Icon: IconImage, name: ['Ads', 'Реклама'], h: ['The ads in the game', 'Реклама в игре'],
     goal: ['The logo every boat carries on her jib, and the words on the banner the plane tows over the course.', 'Логотип на стакселе каждой яхты и слова на баннере, который самолёт проносит над дистанцией.'] },
   { id: 'players', Icon: IconCrew, name: ['Players', 'Игроки'], h: ['Do they come and stay', 'Приходят ли и остаются'],
-    goal: ['How far a visit gets, from opening the game to a finish, and whether the players come back.', 'Как далеко заходит визит, от открытия игры до финиша, и возвращаются ли игроки.'] },
+    goal: ['Who plays, how far a visit gets from opening the game to a finish, and whether the players come back.', 'Кто играет, как далеко заходит визит, от открытия игры до финиша, и возвращаются ли игроки.'] },
   { id: 'game', Icon: IconTrophy, name: ['The game', 'Игра'], h: ['Is it fun and fair', 'Интересно ли и честно'],
     goal: ['How the races go by yacht, wind, venue and course; how hard they are as a player learns; why races are left; what the players say and what they set.', 'Как идут гонки по яхтам, ветру, месту и дистанции; насколько они сложны по мере опыта; почему их бросают; что говорят игроки и что выставляют.'] },
   { id: 'tech', Icon: IconDevice, name: ['Performance', 'Производительность'], h: ['Does it run well', 'Хорошо ли работает'],
@@ -48,7 +48,7 @@ export async function adminLoad<D = null>(params: LangParams['params'], load?: (
 }
 
 // one of the database's sums for an admin over the last `days`, or why it didn't come
-export async function adminRpc<D>(sb: Supabase, fn: 'regatta_admin_stats' | 'regatta_admin_insight', days: number): Promise<{ data: D | null; error: string | null }> {
+export async function adminRpc<D>(sb: Supabase, fn: 'regatta_admin_stats' | 'regatta_admin_insight' | 'regatta_admin_players', days: number): Promise<{ data: D | null; error: string | null }> {
   const r = await sb.rpc(fn, { days });
   return r.error ? { data: null, error: r.error.message } : { data: r.data as D, error: null };
 }
