@@ -58,6 +58,8 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
           <Link className="hm-tab" href="/race/drills" {...cur('drills')}>{t('Drills', 'Тренировки')}</Link>
           <Link className="hm-tab" href="/race/rating" {...cur('rating')}>{t('Rating', 'Рейтинг')}</Link>
           <Link className="hm-tab" href="/players" {...cur('players')}>{t('Players', 'Игроки')}</Link>
+          <Link className="hm-tab hm-tab-x" href="/venues" {...cur('venues')}>{t('Venues', 'Акватории')}</Link>
+          <Link className="hm-tab hm-tab-x" href="/yachts" {...cur('yachts')}>{t('Yachts', 'Яхты')}</Link>
           <Link className="hm-tab hm-tab-x" href="/faq" {...cur('faq')}>{t('Questions', 'Вопросы')}</Link>
         </nav>
         {/* a guest's way to sign in, in the bar where there's room (else in the menu); signed in, the avatar says who */}

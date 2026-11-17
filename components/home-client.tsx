@@ -48,7 +48,6 @@ export function SiteMenu({ lang }: { lang: Lang }) {
         <Link className="hm-mi" href="/race/badges">{t('Badges', 'Достижения')}</Link>
         <Link className="hm-mi if-guest" href="/settings">{t('Settings', 'Настройки')}</Link>
         <span className="hm-msep" />
-        <Link className="hm-mi" href="/yachts">{t('The yachts', 'Яхты')}</Link>
         <Link className="hm-mi" href="/help">{t('How to play', 'Как играть')}</Link>
         <Link className="hm-mi" href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
         <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы')}>
@@ -59,6 +58,8 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки')}</Link>
           <Link className="hm-mi" href="/race/rating">{t('Rating', 'Рейтинг')}</Link>
           <Link className="hm-mi" href="/players">{t('Players', 'Игроки')}</Link>
+          <Link className="hm-mi hm-mi-x" href="/venues">{t('Venues', 'Акватории')}</Link>
+          <Link className="hm-mi hm-mi-x" href="/yachts">{t('Yachts', 'Яхты')}</Link>
           <Link className="hm-mi hm-mi-x" href="/faq">{t('Questions', 'Вопросы')}</Link>
         </nav>
         <form className="if-me" action="/auth/sign-out" method="post"
