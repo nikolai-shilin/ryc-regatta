@@ -54,14 +54,32 @@ function yachtOn(n: number): YachtId {
 }
 export const dailyYacht = (date = new Date()): YachtId => yachtOn(dayN(date.toISOString().slice(0, 10)));
 
-// the days before SHAPES_FROM are all up and down; from it today's race picks one of the four shapes each day
-export const SHAPES_FROM = '2026-11-20';
+export const SHAPES_FROM = '2026-11-18';
+// From SHAPES_FROM today's race goes round the four shapes as it goes round the venues and the yachts: each round of
+// four days takes them in an order of its own (shuffled, seeded by the round), and never the same shape two days
+// running (where a round would start with the last one's, its first two swap). The days before are all up and down.
+const SHAPE_ORDER: Shape[] = ['wl', 'tri', 'trap', 'wlu'];
+function shapeRound(k: number): Shape[] {
+  let s = ((k + 1) * 48271 + 7) >>> 0 || 1; // a generator of its own, as the venues' and the yachts' rounds
+  const r = () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+  const a = SHAPE_ORDER.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function shapeOn(n: number): Shape {
+  const n0 = Math.floor(Date.parse(SHAPES_FROM) / 864e5);
+  if (n < n0) return 'wl';
+  const k = Math.floor((n - n0) / 4), a = shapeRound(k);
+  if (a[0] === (k > 0 ? shapeRound(k - 1)[3] : 'wl')) [a[0], a[1]] = [a[1], a[0]];
+  return a[n - n0 - k * 4];
+}
 export function dailyRace(date = new Date()): Daily {
   const day = date.toISOString().slice(0, 10), n = Math.floor(Date.parse(day) / 864e5), r = rng(n * 2654435761);
   r(); r();
-  // the draws stay in this order: the wind, the current, then the shape, so the days that came before don't move
-  const preset = (['light', 'medium', 'strong'] as const)[Math.floor(r() * 3)], current = r() < 0.3 ? 1 : 0, shape = r();
-  const course: Shape = day < SHAPES_FROM ? 'wl' : shape < 0.4 ? 'wl' : shape < 0.6 ? 'tri' : shape < 0.8 ? 'trap' : 'wlu';
+  // the draws stay in this order: the wind, the current (the shape's draw after them is no longer used), so the days
+  // that came before don't move
+  const preset = (['light', 'medium', 'strong'] as const)[Math.floor(r() * 3)], current = r() < 0.3 ? 1 : 0;
+  const course: Shape = shapeOn(n);
   return { day, seed: (n * 7919) % 100000, preset, fleet: 5, length: 'short', laps: 1, start: 1, current, course, venue: dailyVenue(date), yacht: dailyYacht(date) };
 }
 

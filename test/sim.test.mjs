@@ -34,16 +34,23 @@ test('today’s wind and current don’t move', async () => {
 });
 
 test('before SHAPES_FROM every day is up and down', () => {
-  assert.equal(sim.SHAPES_FROM, '2026-11-20');
+  assert.equal(sim.SHAPES_FROM, '2026-11-18');
   assert.equal(site.SHAPES_FROM, sim.SHAPES_FROM);
   for (let t = Date.UTC(2026, 0, 1); t < Date.parse(sim.SHAPES_FROM); t += 864e5) assert.equal(sim.dailyRace(new Date(t)).course, 'wl');
 });
 
-test('the shapes come round in about the weights', () => {
-  const count = { wl: 0, tri: 0, trap: 0, wlu: 0 }, from = Date.parse(sim.SHAPES_FROM);
-  for (let d = 0; d < 365; d++) count[sim.dailyRace(new Date(from + d * 864e5)).course]++;
-  assert.ok(count.wl / 365 >= 0.3 && count.wl / 365 <= 0.5, JSON.stringify(count));
-  for (const k of ['tri', 'trap', 'wlu']) assert.ok(count[k] / 365 >= 0.12 && count[k] / 365 <= 0.28, JSON.stringify(count));
+// from SHAPES_FROM today's race goes round the four shapes: each once in every four days from it, never one two days
+// running (nor the first after the days of up and down); the site's copy the same
+test('today’s race goes round the shapes, each once in four days, never two days running', () => {
+  const from = Date.parse(sim.SHAPES_FROM);
+  let prev = sim.dailyRace(new Date(from - 864e5)).course;
+  assert.equal(prev, 'wl');
+  for (let d = 0; d < 400; d++) {
+    const day = new Date(from + d * 864e5), c = sim.dailyRace(day).course;
+    assert.notEqual(c, prev, `${day.toISOString().slice(0, 10)}: not yesterday’s shape`); prev = c;
+    assert.equal(site.dailyRace(day).course, c, day.toISOString().slice(0, 10));
+    if (d % 4 === 3) assert.deepEqual(new Set([0, 1, 2, 3].map((i) => sim.dailyRace(new Date(from + (d - i) * 864e5)).course)), new Set(['wl', 'tri', 'trap', 'wlu']), `the round to ${day.toISOString().slice(0, 10)}`);
+  }
 });
 
 // today's venue: every venue in turn, never the same two days running; and the play page's preloader (an inline copy
