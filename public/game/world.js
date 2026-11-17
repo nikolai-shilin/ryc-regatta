@@ -1091,6 +1091,30 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
+// The sea in the environment map (seen from just over it, as from a hull's side): the water's own colour, the sky
+// mirrored over it by the Fresnel share — rough water mirrors a little less at a grazing look, and a blur reaching
+// higher than the true reflection, as the water shader has it — and the sun's glitter: the light of the ripples'
+// facets tilted to send the sun this way (Cox–Munk, a moderate breeze's spread of slopes), its radiance the sun's
+// irradiance times the facets' share over the foreshortening, capped so the map has no single blazing texel.
+const ENV_SEA_FS = /* glsl */ `
+uniform float uTime, uGlint; uniform vec3 uDeep; varying vec3 vDir;
+${SKY_GLSL}
+void main() {
+  vec3 d = normalize(vDir);
+  float c = max(-d.y, 1e-3), mss = 0.03, sig = sqrt(mss * 0.5);
+  vec3 r = vec3(d.x, c, d.z), r1 = normalize(r + vec3(0.0, 1.5 * sig, 0.0));
+  float F = 0.02 + 0.98 * pow(1.0 - min(1.0, c + 0.6 * sig), 5.0);
+  vec3 refl = withClouds(mix(skyBase(r), skyBase(r1), 0.5), r, uSun, uTime, true).rgb;
+  vec3 col = mix(uDeep, refl, F);
+  if (uSun.y > 0.0) {
+    vec3 h = normalize(uSun - d);
+    float t2 = dot(h.xz, h.xz) / (h.y * h.y), p = exp(-t2 / mss) / (3.14159 * mss);
+    float Fh = 0.02 + 0.98 * pow(1.0 - max(dot(-d, h), 0.0), 5.0);
+    col += uSunCol * uGlint * 2.0 * min(Fh * p / (4.0 * c * h.y * h.y * h.y * h.y), 24.0) * smoothstep(0.0, 0.03, uSun.y);
+  }
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
 // where a mark meets the sea: a ring of water round it that rides the waves, darker against the PVC, with a band of
 // foam where the chop slaps against it — wider on the side the wind and the waves come from
 const MARK_FS = /* glsl */ `
@@ -1275,8 +1299,16 @@ export class World {
     // it; made again whenever the light changes
     this.env = new THREE.Scene();
     this.env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), skyMat()));
-    this.envSea = new THREE.Mesh(new THREE.CircleGeometry(10, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#1b5676' }));
-    this.envSea.position.y = -0.4; this.env.add(this.envSea);
+    // Its sea is the sea as a hull at the waterline sees it: the sky it mirrors, more of it the lower it is seen (so
+    // the lower topsides, turned to the water, show a bright band of it, not a dark one), and the sun's glitter path
+    // under the sun, bright as the glitter is — a lacquered hull shows it where she turns towards the sun.
+    this.envSea = new THREE.Mesh(new THREE.CircleGeometry(10, 64).rotateX(-Math.PI / 2), new THREE.ShaderMaterial({
+      side: THREE.DoubleSide, depthWrite: false, fog: false,
+      uniforms: { ...this.skyU, uTime: { value: 0 }, uDeep: { value: new THREE.Color('#062a40') }, uGlint: { value: 1 } },
+      vertexShader: 'varying vec3 vDir; void main(){ vDir = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+      fragmentShader: ENV_SEA_FS,
+    }));
+    this.envSea.position.y = -0.05; this.env.add(this.envSea);
 
     // the chop (an FFT ocean, where the GPU can do it), the mirror and the camera's post-processing: switched on by
     // the graphics level (setQuality)
@@ -1383,7 +1415,7 @@ export class World {
     this.renderer.toneMappingExposure = L.exposure;
     this.glare.material.color.copy(L.sun); this.glareK = L.disc;
     this.bloomLook = L.bloom; if (this.post) this.post.setLook(L.bloom);
-    this.envSea.material.color.copy(L.deep).lerp(SKY_HORIZON, 0.2);
+    this.envSea.material.uniforms.uDeep.value.copy(L.deep); this.envSea.material.uniforms.uGlint.value = L.glint;
     if (this.skopea) this.skopea.setLight(L, this.renderer);
     if (this.ships) this.ships.setLight(L);
     const pm = new THREE.PMREMGenerator(this.renderer), old = this.scene.environment;
