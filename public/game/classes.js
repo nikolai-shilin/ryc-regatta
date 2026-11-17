@@ -9,6 +9,10 @@
 // as a crew can (sim.js bestTrim): a good crew sails it in a blow as in a breeze.
 // How she turns, against the JPK 1050: turn, her rate of turn for the helm put over (a dinghy spins round, a 14-tonne
 // cruiser takes her time), and yawLag, the seconds she takes to start turning and to stop (sim.js YAW_LAG).
+// The sea, the gybe and the heel, against the JPK where a class doesn't say (sim.js): chopK, how much a short sea stops
+// her upwind (by her size); surfK, how readily she rides a sea downwind; gybeT and gybeK, the seconds her kite takes to
+// gybe and the drive she keeps meanwhile; heelMax, the heel her crew eases her at; latG, the sideways g a hard turn can
+// hold her to at speed (the AC75's).
 // heelShow: how much of her heel is drawn (a dinghy is sailed flat, her sailor's weight out over the side holding her up)
 // frame: how big she stands against the JPK 1050, her masthead's height over the water against the JPK's 16.2 m: every
 // camera that watches one boat stands that much further off or nearer and aims that much higher or lower on her
@@ -52,6 +56,9 @@ export const CLASSES = {
     id: 'bavaria46', loa: 14.27, beam: 4.35, drawnL: 14.27, crew: 5, frame: 1.3,
     kite: true, zero: false, reef: true, j3: false,
     tau: 7, coast: 50, hullV: 8.6, heelK: 1.1, awsK: 1, heelShow: 1, turn: 0.85, yawLag: 0.7, courseK: 1, lineK: 1.3, startK: 1.3,
+    surfK: 0.25, // fourteen tonnes on a displacement hull: a sea lifts her along now and then, no more
+    gybeT: 9, gybeK: 0.7, // a cruising crew takes the gennaker round the forestay in its own time
+    heelMax: 20, // a cruising crew eases her at 20°, where a racing crew holds the JPK to 24°
     tws: TWS, twa: TWA,
     // the median of 29 ORC Club certificates of the Farr-designed Cruiser 46 (data.orc.org, 2026), all with a
     // gennaker; 4 and 24 knots extended from 6 and 20
@@ -76,9 +83,14 @@ export const CLASSES = {
     id: 'j70', loa: 6.93, beam: 2.25, drawnL: 6.93, crew: 4, frame: 0.61,
     kite: true, zero: false, reef: false, j3: false,
     tau: 2.6, coast: 18, hullV: 15, heelK: 1.1, awsK: 1, heelShow: 1, turn: 1.2, yawLag: 0.45, courseK: 0.8, lineK: 0.8, startK: 0.8,
+    surfK: 2.5, // light and flat-run aft: she catches a sea and rides it, some 7% quicker downwind in a blow and a seaway
+    gybeT: 5, gybeK: 0.75, // a small gennaker, quick round the forestay
+    heelMax: 17, // sailed flat, the crew hiked hard: they ease her from some 17°
     tws: TWS, twa: TWA,
     beat: [45, 43, 41, 40, 39.5, 39.5, 40, 41, 42],
     beatV: [3.3, 4.4, 5.2, 5.7, 6.0, 6.15, 6.25, 6.4, 6.45],
+    // from 16 knots she planes downwind: hotter, at 135–150°, she goes so much quicker that it pays over sailing deep
+    // (her best way down 145–150° in a blow, where she had soaked to 160°), as the RS21 does
     v: [ // a row per tws, a speed per twa above
       [3.9, 4.2, 4.4, 4.4, 4.3, 4.2, 3.7, 3.1, 2.7, 2.4],
       [5.1, 5.4, 5.7, 5.8, 5.8, 5.7, 5.2, 4.4, 3.8, 3.4],
@@ -86,9 +98,9 @@ export const CLASSES = {
       [6.4, 6.7, 7.0, 7.3, 7.7, 7.7, 7.4, 6.6, 5.9, 5.4],
       [6.6, 6.95, 7.4, 7.8, 8.6, 8.7, 8.3, 7.4, 6.8, 6.3],
       [6.75, 7.1, 7.7, 8.4, 9.8, 10.0, 9.4, 8.2, 7.6, 7.0],
-      [6.85, 7.2, 8.0, 9.2, 11.0, 11.4, 10.8, 9.2, 8.5, 7.8],
-      [7.0, 7.4, 8.6, 10.6, 13.0, 13.6, 13.4, 11.6, 10.6, 9.6],
-      [7.1, 7.6, 9.2, 11.8, 14.6, 15.4, 15.6, 14.0, 12.8, 11.6],
+      [6.85, 7.2, 8.0, 9.2, 11.0, 11.4, 11.6, 9.9, 8.5, 7.8],
+      [7.0, 7.4, 8.6, 10.6, 13.0, 13.6, 14.4, 12.6, 10.6, 9.6],
+      [7.1, 7.6, 9.2, 11.8, 14.6, 15.4, 16.6, 14.8, 12.8, 11.6],
     ],
   },
   // the RS21: RS Sailing's 21-foot one-design keelboat — a wide-open cockpit, a lifting bulb keel, a sprit and a big
@@ -98,6 +110,9 @@ export const CLASSES = {
     id: 'rs21', loa: 6.67, beam: 2.2, drawnL: 6.67, crew: 3, frame: 0.6,
     kite: true, zero: false, reef: false, j3: false,
     tau: 2.4, coast: 17, hullV: 15, heelK: 1.15, awsK: 1, heelShow: 1, turn: 1.2, yawLag: 0.45, courseK: 0.8, lineK: 0.8, startK: 0.8,
+    surfK: 2.5, // as the J/70
+    gybeT: 5, gybeK: 0.75,
+    heelMax: 17,
     tws: TWS, twa: TWA,
     beat: [45, 43.5, 41.5, 40.5, 40, 40, 40.5, 41.5, 42.5],
     beatV: [3.2, 4.3, 5.1, 5.55, 5.85, 6.0, 6.1, 6.25, 6.3],
@@ -108,9 +123,9 @@ export const CLASSES = {
       [6.25, 6.55, 6.95, 7.35, 7.95, 8.0, 7.7, 6.8, 6.05, 5.5],
       [6.45, 6.8, 7.35, 7.95, 9.0, 9.2, 8.8, 7.7, 7.0, 6.4],
       [6.6, 6.95, 7.65, 8.6, 10.2, 10.5, 9.9, 8.5, 7.8, 7.1],
-      [6.7, 7.05, 7.95, 9.3, 11.3, 11.8, 11.2, 9.5, 8.7, 7.9],
-      [6.85, 7.25, 8.5, 10.6, 13.1, 13.8, 13.6, 11.8, 10.7, 9.7],
-      [6.9, 7.4, 9.0, 11.7, 14.5, 15.3, 15.5, 14.0, 12.8, 11.6],
+      [6.7, 7.05, 7.95, 9.3, 11.3, 11.8, 11.9, 10.2, 8.7, 7.9],
+      [6.85, 7.25, 8.5, 10.6, 13.1, 13.8, 14.6, 12.8, 10.7, 9.7],
+      [6.9, 7.4, 9.0, 11.7, 14.5, 15.3, 16.5, 14.9, 12.8, 11.6],
     ],
   },
   // the Dragon: Johan Anker's 1929 three-man keelboat, Olympic from 1948 to 1972 and raced in fleets round the world
@@ -121,7 +136,7 @@ export const CLASSES = {
   // How she carries her way and heels, against the JPK 1050 (tau 4.5, coast 32, heelK 1): heavy for her power (27.7 m²
   // on 1.7 tonnes, a sail area to displacement of 19 to the JPK's 30 and the J/70's 43), she gathers way slowly (tau
   // 5); narrow and slippery for her weight, she carries it far (coast 38): luffed head to wind from close-hauled in 12
-  // knots, some 26 m, three of her lengths (the JPK 28 m, 2.6 of hers; the J/70 2.2); a tonne of iron 1.2 m down
+  // knots, some 22 m, two and a half of her lengths (the JPK 24 m, 2.3 of hers; the J/70 2.0); a tonne of iron 1.2 m down
   // lets her heel to some 13° in 8 knots and 21° in 12 (the JPK 18° and 28°), rail down and easing her main
   // from about 15 knots (heelK 0.8); above 6.8 knots, her hull's speed on her waterline lengthened by her overhangs as
   // she heels, the waves hold her back at once (hullV)
@@ -129,6 +144,8 @@ export const CLASSES = {
     id: 'dragon', loa: 8.9, beam: 1.96, drawnL: 8.9, crew: 3, frame: 0.67,
     kite: true, zero: false, reef: false, j3: false,
     tau: 5, coast: 38, hullV: 6.8, heelK: 0.8, awsK: 1, heelShow: 1, turn: 0.85, yawLag: 0.65, courseK: 0.75, lineK: 0.8, startK: 0.8,
+    surfK: 0.45, // a heavy narrow hull: a sea lifts her now and then, no more
+    gybeT: 8, gybeK: 0.7, // a symmetric spinnaker: the pole comes off the old guy and goes on the new, end for end
     tws: TWS, twa: TWA,
     // from her Portsmouth Number (RYA 986, against the ILCA 7's 1103): round a windward-leeward course some 1.12 times
     // as quick as the Laser in 8–14 knots, and 5% slower than the J/70; upwind VMG some 4.5 kn in 12 knots at 38°
@@ -154,6 +171,7 @@ export const CLASSES = {
     id: 'laser', loa: 4.19, beam: 1.39, drawnL: 4.19, crew: 1, frame: 0.38,
     kite: false, zero: false, reef: false, j3: false, jib: false,
     tau: 1.8, coast: 11, hullV: 13, heelK: 1.2, awsK: 1, heelShow: 0.35, turn: 1.5, yawLag: 0.3, courseK: 0.6, lineK: 0.6, startK: 0.6,
+    surfK: 2.5, // pumped onto a wave and riding it: some 7% quicker downwind in a blow and a seaway
     tws: TWS, twa: TWA,
     // from measured speeds: GPS tracks of World Cup and Olympic races (Pan & Sun 2022), the tank-validated VPP of
     // Day (2017) and Binns' measured polars (2002) — upwind VMG some 3.2 kn in 8 knots, 3.7 in 12; downwind she surfs
@@ -182,6 +200,7 @@ export const CLASSES = {
     id: 'optimist', loa: 2.31, beam: 1.13, drawnL: 2.31, crew: 1, frame: 0.16,
     kite: false, zero: false, reef: false, j3: false, jib: false,
     tau: 1.4, coast: 6, hullV: 4.2, heelK: 1.1, awsK: 1, heelShow: 0.4, turn: 1.6, yawLag: 0.25, courseK: 0.3, lineK: 0.6, startK: 0.6,
+    surfK: 0.6, // a pram's bluff bow: she rides a sea only a little
     tws: TWS, twa: TWA,
     // a displacement hull 1.9 m on the waterline (2.18 m of floor): upwind VMG some 2.25 kn in 8 knots, 2.5 in 12,
     // falling off as she is overpowered; downwind no faster than her hull lets her, but for a reach in a breeze. Round a
@@ -213,9 +232,10 @@ export const CLASSES = {
   // Velsheda, Endeavour and Ranger as the J Class Association lists them: 39.3 m over all on 27 m of waterline, some
   // 175 tonnes, near half of it lead, and 860 m² of sail upwind. A train under sail: she takes a long time to gather
   // way (tau 11 s, the Bavaria's 7, from the drive her sails have for her mass) and carries it far (coast 190: luffed
-  // head to wind from close-hauled in 12 knots she shoots some 90 m, 2.3 of her lengths), so a tack costs her no more
-  // of her way than the JPK's does, though it takes twice as long (some 9 s), and getting it back takes her some 20 s
-  // to the JPK's 8; she turns slowly (half the JPK's rate, and a second before she answers the helm) and heels to some
+  // head to wind from close-hauled in 12 knots she shoots some 70 m, 1.8 of her lengths), so a tack costs her no more
+  // of her way than the JPK's does, though it takes three times as long (some 11 s), and getting it back takes her some 20 s
+  // to the JPK's 8; she turns slowly (a third of the JPK's rate, and a second before she answers the helm: her full-helm circle
+  // some three quarters of her length across each way, as the JPK's) and heels to some
   // 18° in 12 knots, her hull speed 12.6 knots on her waterline. Her polar is the
   // reconstruction in the J Class simulator reference (from the class's geometry, its 1930s tank tests and the J Class
   // Association's VPP): close-hauled at 44–46°, a tacking angle of 88–93°, her best on a beam reach, 7.3 knots at 42°
@@ -223,14 +243,15 @@ export const CLASSES = {
   // carried on from 6 and 20. Her courses are laid 1.6 times as long and the line 2.2 times as wide, for 39 m boats.
   // The sea: she lies across the short seas, feeling their slope as its mean along her 27 m waterline (waveL), so she
   // can't be steered through each one as a light boat is, and 175 tonnes don't surf (surfK 0: downwind in a blow she
-  // carries her sail at her hull's pace, the polar's), and a short sea stops her upwind half
-  // as much again as it does the JPK (chopK): she is at her best on flat water. Her 47 m rig's wind shadow reaches 2.9
+  // carries her sail at her hull's pace, the polar's); 175 tonnes on a 27 m waterline punch through a short sea that
+  // stops a 10 m boat, so it costs her upwind half what it costs the JPK (chopK by her size). Her 47 m rig's wind shadow reaches 2.9
   // times as far as the JPK's 16 m one, and as wide (shadowK).
   jclass: {
     id: 'jclass', loa: 39.3, beam: 6.55, drawnL: 39.3, crew: 30, frame: 2.9,
     kite: true, zero: false, reef: false, j3: false,
-    tau: 11, coast: 190, hullV: 12.6, heelK: 0.6, awsK: 1, heelShow: 1, turn: 0.5, yawLag: 1.1, courseK: 1.6, lineK: 2.2, startK: 2.5,
-    waveL: 27, chopK: 1.5, surfK: 0, shadowK: 2.9,
+    tau: 11, coast: 190, hullV: 12.6, heelK: 0.6, awsK: 1, heelShow: 1, turn: 0.35, yawLag: 1.1, courseK: 1.6, lineK: 2.2, startK: 2.5,
+    waveL: 27, surfK: 0, shadowK: 2.9,
+    gybeT: 20, gybeK: 0.6, // a dip-pole gybe of a 1,000 m² spinnaker by thirty crew
     tws: TWS, twa: TWA,
     beat: [48, 46.5, 45.5, 45, 44.5, 44, 44, 45, 46],
     beatV: [3.59, 5.3, 6.15, 6.93, 7.6, 8.22, 8.82, 9.56, 9.97],
@@ -250,6 +271,8 @@ export const CLASSES = {
     id: 'ac75', loa: 20.7, beam: 5.0, drawnL: 20.7, crew: 8, frame: 1.7, // the rule's hull length: no bowsprit since the 37th Cup
     kite: false, zero: false, reef: false, j3: false,
     tau: 3.2, coast: 420, hullV: 60, heelK: 0.35, awsK: 2.6, heelShow: 0.45, turn: 1, yawLag: 0.55, courseK: 2.5, lineK: 1.8, startK: 4,
+    surfK: 0, chopK: 0.3, // flying, her hull is clear of the sea: it neither checks her upwind nor carries her down
+    latG: 0.6, // a hard turn at 45 knots holds her crew at 0.6 g: a bear-away is an arc of some 100 m, no pirouette
     foil: { takeoff: 16, land: 13, dispCoast: 30, disp: [[28, 0], [40, 1.5], [60, 1.9], [90, 2.6], [120, 2.5], [150, 1.6], [180, 0.9]] },
     tws: TWS, twa: TWA,
     beat: [48, 46, 44, 43, 42, 42, 42, 43, 44],

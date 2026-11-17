@@ -262,7 +262,7 @@ function sailScripted(opts) {
   return r.boats.map((b) => (b.done && !b.dsq ? Math.round(b.finish * 10) / 10 : null));
 }
 // recorded before the race had more than one human boat in it (sailScripted on the sim as it was)
-const GOLDEN_4242 = [null, 249.8, 269.6, 259.5, 228]; // sailed again 2026-11-16: a boat's depowering counted against the best a crew can do (sim.js bestTrim)
+const GOLDEN_4242 = [null, 259.8, 271.1, 281.5, 229.7]; // sailed again 2026-11-17: a gybe costs the kite's crew its time and the main a moment (sim.js GYBE_T, boomGybe)
 test('golden: a one-human race is the race it always was', () => {
   assert.deepEqual(sailScripted({ preset: 'medium', length: 'short', laps: 1, fleet: 5, seed: 4242 }), GOLDEN_4242);
 });

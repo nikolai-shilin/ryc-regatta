@@ -130,16 +130,17 @@ const FOOT = 8, PINCH = 0.06; // slow upwind: up to 8° to foot, 4% a degree for
 export const idealSail = (awa) => clamp(awa * 0.45 - 2, SHEET_IN, SHEET_OUT);
 export const sheetFor = (angle) => clamp((angle - SHEET_IN) / (SHEET_OUT - SHEET_IN), 0, 1);
 const HEEL_SIDE = [[0, 0.3], [18, 0.3], [22, 1], [50, 1], [100, 0.5], [180, 0.12]];
-// heel with the sails full; above about 24° a good crew eases (depowers) to keep her on her feet
+// heel with the sails full; above HEEL_MAX a good crew eases (depowers) to keep her on her feet: 24° for most, less
+// for a sportboat sailed flat with her crew hiked out or a cruiser sailed comfortably (classes.js heelMax)
 // (another class: heelK as much, and a foiler's apparent wind, three times the true, counts as awsK times less)
-const HEEL_K = CLS.heelK, AWS_K = CLS.awsK;
+const HEEL_K = CLS.heelK, AWS_K = CLS.awsK, HEEL_MAX = CLS.heelMax ?? 24;
 export const fullHeel = (aws, awa, kite) => { aws /= AWS_K; return HEEL_K * (24 * (aws / 16) ** 1.4 * table(HEEL_SIDE, awa) + (kite ? 8 * (aws / 16) ** 1.4 : 0)); };
-export const depowerFor = (full) => (full > 24 ? 28 * (1 - 24 / full) : 0);
+export const depowerFor = (full) => (full > HEEL_MAX ? 28 * (1 - HEEL_MAX / full) : 0);
 // what a sheet off its ideal angle costs: e degrees out (+ eased, flapping) or in (− stalled); its drive (heel), the same
 const effOf = (e) => clamp(e > 0 ? 1 - (e / 28) ** 2 : 1 - (e / 35) ** 2, e > 0 ? 0.08 : 0.25, 1);
 const powOf = (e) => (e > 0 ? clamp(1 - e / 28, 0.05, 1) : 1 + -e / 80);
-// heeled past 25° she drags her hull and slips: a third off at 40°
-const heelPen = (heel) => clamp(1 - (heel - 25) / 45, 0.3, 1);
+// heeled past what she's sailed at she drags her hull and slips: past 25° the JPK, a third off at 40°
+const heelPen = (heel) => clamp(1 - (heel - (HEEL_MAX + 1)) / 45, 0.3, 1);
 // the sail plan's own cost: a reef, a big loss in light air and next to nothing in a blow; the J3 a loss in light air,
 // about even in a blow
 const planK = (tws, reef, j3) => (1 - reef * clamp(0.16 - (tws - 12) * 0.018, 0.02, 0.16)) * (j3 ? 1 - clamp(0.1 - (tws - 12) * 0.012, 0, 0.1) : 1);
@@ -149,6 +150,8 @@ const planK = (tws, reef, j3) => (1 - reef * clamp(0.16 - (tws - 12) * 0.018, 0.
 // sail plan are counted against this, not against none at all: trimmed and reefed as she should be she sails her
 // polar in any wind, where she had sailed some 60% of it upwind in 20 knots and half of it in 24. A crew that hasn't
 // reefed when it pays flattens the full sails as far as they go: at most a tenth slower than with the reef in
+// (footing a degree or so, as a slow boat should: held at her close-hauled angle, she sails as one pinching (stall), and
+// that is some 5% more)
 export function bestTrim(aws, awa, tws, gen, zero) {
   const kiteK = gen ? 0.7 : zero ? 0.35 : 0, base = fullHeel(aws, awa, gen) + (zero ? 5 * (aws / 16) ** 1.4 : 0);
   let best = 0, full0 = 0;
@@ -265,9 +268,19 @@ export class Wind {
 // JPK 1050 — each class her own (classes.js turn, yawLag): a dinghy spins round, a 14-tonne cruiser takes her time
 export const YAW_LAG = CLS.yawLag ?? 0.55;
 const TURN = CLS.turn ?? 1;
+// the gennaker's gybe (classes.js gybeT, gybeK): the seconds it takes the crew, more in a breeze, and how much of her
+// drive she keeps meanwhile. An asymmetric on a sprit goes round the forestay in some 6 s; a symmetric spinnaker's pole
+// is taken off one corner and put on the other, slower; the J Class's dip-pole gybe takes her thirty crew some 20 s
+const GYBE_T = CLS.gybeT ?? 6, GYBE_K = CLS.gybeK ?? 0.75;
+// the most sideways acceleration a hard turn can give her, in g: half a g, but for a foiler (classes.js latG)
+const LAT_G = CLS.latG ?? 0.5;
 // the sea under her (classes.js): waveL, the metres of waterline over which she feels its slope (none: a point, as
-// the JPK 1050 is sailed); chopK, how much more a short sea stops her upwind than it does the JPK
-const WAVE_L = CLS.waveL ?? 0, CHOP_K = CLS.chopK ?? 1, SURF_K = CLS.surfK ?? 1; // surfK: how readily she surfs down a sea (0: not at all)
+// the JPK 1050 is sailed); chopK, how much more a short sea stops her upwind than it does the JPK: by her size unless
+// the class says (a short chop stops a small, light boat and hardly checks a big one: the Optimist twice as much as the
+// JPK, the J Class half); surfK, how readily she catches a sea and rides it downwind against the JPK (0: not at all)
+const WAVE_L = CLS.waveL ?? 0, CHOP_K = CLS.chopK ?? Math.sqrt(CLASSES[DEFAULT_CLASS].loa / CLS.loa), SURF_K = CLS.surfK ?? 1;
+// and the way she needs on to catch a sea: 3 m/s, less for a small boat as her speeds are (the Optimist 1.4)
+const SURF_V = 3 * Math.min(1, Math.sqrt(CLS.loa / CLASSES[DEFAULT_CLASS].loa));
 // her rig's wind shadow and backwind, as far and as wide as her rig is tall against the JPK 1050's (classes.js shadowK)
 const SHADOW_K = CLS.shadowK ?? 1;
 export class Boat {
@@ -340,7 +353,7 @@ export class Boat {
   // forestay and has to come down: likelier in a gust, when she's slow, with a less sure crew, and in a crash gybe.
   flipBoom(crash) {
     const race = this._race, tws = this.tws, r = race ? race.rand() : 0.5;
-    this.boom = -this.boom; this.byLee = 0;
+    this.boom = -this.boom; this.byLee = 0; this.boomGybe = 1.5;
     if (crash) {
       const kiteUp = this.kite && this.kiteType !== 'zero';
       if (tws >= 14 && kiteUp) {
@@ -350,7 +363,7 @@ export class Boat {
       else { this.events.push('crashGybe'); this.v *= 0.9; }
     }
     if (this.kite && !(this.kiteJob && !this.kiteJob.up)) {
-      const zero = this.kiteType === 'zero', t = zero ? 9 : 4 + tws * 0.15;
+      const zero = this.kiteType === 'zero', t = zero ? 9 : GYBE_T + tws * 0.15;
       this.kiteGybe = { t, total: t };
       if (!zero) {
         const polar = polarSpeed(tws, Math.abs(this.twa) / D2R) * KN;
@@ -473,7 +486,8 @@ export class Boat {
     const trimK = Math.min(1, (eff * heelPen(this.heel) * planK(w.tws, this.reefFill, this.smallJib)) / bestTrim(this.aws, awa, w.tws, gen, zero));
     let target = polarSpeed(w.tws, a, gen) * trimK * chop * (1 - PINCH * pinch) * KN;
     if (this.byLee > 0) target *= 1 - 0.012 * this.byLee; // by the lee: the wind gets behind the main
-    if (this.kiteGybe) target *= this.kiteType === 'zero' ? 0.85 : 0.88; // the kite barely pulls while it's gybed
+    if (this.kiteGybe) target *= this.kiteType === 'zero' ? 0.85 : GYBE_K; // the kite barely pulls while it's gybed
+    if (this.boomGybe > 0) { target *= 0.8; this.boomGybe -= dt; } // the main empties as the boom comes across, and fills again
     // a code zero on a reach in light air: up to 14% more, best about 85° off the wind and fading above 15 knots
     if (zero) target *= 1 + 0.14 * clamp((15 - w.tws) / 7, 0, 1) * clamp(1 - Math.abs(a - 85) / 45, 0, 1);
     if (this.jibJob) target *= 0.8; // changing jibs, little drive meanwhile
@@ -505,7 +519,7 @@ export class Boat {
     } else this.v = Math.max(target, this.v - coast(this.v, this.aws * KN, a, target, CLS.foil && !this.fly ? CLS.foil.dispCoast : COAST) * dt);
     this.v -= 9.81 * slope * 0.3 * dt;
     this.surf = 0;
-    if (SURF_K && a > 110 && w.tws > 13 && slope < 0 && this.v > 3 && this.v < target * 1.4) { const s = -slope * 9.81 * 0.35 * SURF_K * dt; this.v += s; this.surf = s / dt; }
+    if (SURF_K && a > 110 && w.tws > 13 && slope < 0 && this.v > SURF_V && this.v < target * 1.4) { const s = -slope * 9.81 * 0.35 * SURF_K * dt; this.v += s; this.surf = s / dt; }
     this.v = Math.max(this.backing ? -0.6 : 0, this.v);
 
     // steering: the button's tack or gybe drives the rudder; a penalty turn spins her round
@@ -521,6 +535,10 @@ export class Boat {
     if (this.heel > 40) rud *= 0.5;
     const grip = clamp(0.55 + this.v / 3, 0.55, 1.25);
     let yaw = rud * 0.42 * TURN * grip * (this.v < -0.05 ? -0.6 : 1); // going astern the rudder works the other way, and weakly
+    // fast, the turn is held by what her keel, foils and crew can bear sideways (LAT_G): her circle opens with her speed
+    // squared, as a foiler's bear-away at 45 knots is a wide arc and no pirouette (the others are never that quick)
+    const latMax = (LAT_G * 9.81) / Math.max(Math.abs(this.v), 0.5);
+    yaw = clamp(yaw, -latMax, latMax);
     if (this.heel > 35) yaw += side * Math.min((this.heel - 35) / 20, 1.2) * 0.22; // weather helm rounds her up
     // stopped head to wind, the bow blows off: a heavy hull's more slowly, as her helm turns her more slowly (TURN), so
     // her helm stopped can still bring her through the wind as the JPK's can (a J's would otherwise hang there for good)
