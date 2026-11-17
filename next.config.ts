@@ -6,8 +6,8 @@ import type { NextConfig } from 'next';
 const config: NextConfig = {
   // the site's 404 as a document of its own (app/global-not-found.tsx): the root layout under app/[lang]/ can't render one
   experimental: { globalNotFound: true },
-  // the share cards' face, read from disk as they're drawn (lib/og.tsx)
-  outputFileTracingIncludes: { '/og/**/*': ['./lib/og-fonts/*.ttf'] },
+  // what the share cards are drawn from, read from disk (lib/og.tsx): the face, the game's pictures behind them, the logo
+  outputFileTracingIncludes: { '/og/**/*': ['./lib/og-fonts/*.ttf', './lib/og-bg/*.jpg', './public/images/brand-icon.svg'] },
   // The game pictures in public/images are rendered at 3–4× and served at quality 90 (every <Image> snaps to the one
   // allowed quality), AVIF where the browser takes it, else WebP. They only change with a new render, so cache them long.
   images: { qualities: [90], formats: ['image/avif', 'image/webp'], minimumCacheTTL: 2678400 },

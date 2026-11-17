@@ -44,7 +44,7 @@ export function pageMeta(lang: Lang, { title, description, path, index = true, a
     : card ? full : (lang === 'ru' ? 'Гонка в игре' : 'A race in the game');
   // today's card carries the day in its address, so a chat app fetches the new day's instead of its cached one
   const day = new Date().toISOString().slice(0, 10);
-  const drawn = (u: string) => ({ url: u, width: 1200, height: 630, type: 'image/png' });
+  const drawn = (u: string) => ({ url: u, width: 1200, height: 630, type: 'image/jpeg' });
   const image = today ? drawn(`/og/today?lang=${lang}&d=${day}`)
     : card ? drawn(`${card}${card.includes('?') ? '&' : '?'}lang=${lang}${live ? `&d=${day}` : ''}`) : OG_IMAGE;
   return {
