@@ -115,7 +115,7 @@ export default async function Home({ params }: LangParams) {
           <img className="ho-bg" {...heroNarrow} alt="" />
         </picture>
         <HeroScene title={t('A race in the game', 'Гонка в игре')} />
-        <Soundtrack lang={lang} />
+        <Soundtrack />
         <div className="ho-in">
           <div className="ho-info">
             <span className="ho-kick"><span className="dot-live" />{t(`Live · today’s race · ${where} · ${yacht}`, `Эфир · гонка дня · ${where} · ${yacht}`)}</span>
