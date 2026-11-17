@@ -5,6 +5,7 @@ import { tx, type Lang } from '@/lib/lang';
 import { readPb } from '@/lib/opts';
 import { readBoat } from '@/lib/boat';
 import { briefUrl, readBrief } from '@/lib/day-brief';
+import { dailyVenue, dailyYacht } from '@/lib/race';
 import { clock } from './ui';
 import { FlagImg } from './flag';
 
@@ -105,11 +106,14 @@ export function HeroScene({ title }: { title: string }) {
   useEffect(() => {
     const net = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || net?.saveData || /(^|-)(2g|3g)$/.test(net?.effectiveType || '')) return;
+    // today's race as the game has it, by this browser's clock (the page is cached, and may be from yesterday): the
+    // day's venue and yacht; the view lights it at the venue's own hour now
+    const url = `/hero-view?venue=${dailyVenue()}&boat=${dailyYacht()}`;
     let idle = 0, timer = 0;
     const go = () => {
       const ric = window.requestIdleCallback;
-      if (ric) idle = ric(() => setSrc('/hero-view'), { timeout: 2000 });
-      else timer = window.setTimeout(() => setSrc('/hero-view'), 200);
+      if (ric) idle = ric(() => setSrc(url), { timeout: 2000 });
+      else timer = window.setTimeout(() => setSrc(url), 200);
     };
     if (document.readyState === 'complete') go(); else window.addEventListener('load', go, { once: true });
     return () => { window.removeEventListener('load', go); if (idle) window.cancelIdleCallback(idle); clearTimeout(timer); };

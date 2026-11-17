@@ -126,10 +126,11 @@ export const clockText = (hour) => { const m = Math.round(hour * 60); return `${
 // morning, golden, overcast still work); otherwise a new hour every start, any hour of the racing day alike but at
 // least two hours from the last one (remembered across visits), and overcast about one race in seven. A free race set
 // to a time of day (race.settings.daytime) is sailed at that hour, under a clear sky; today's race keeps the random one.
+// A race given an hour of its own (race.settings.hour: the home page's view, at the venue's hour now) is sailed then.
 let last = null;
 try { last = parseFloat(localStorage.getItem('regatta.hour')); } catch (e) {}
 export function pickSky(race) {
-  const s = race && race.settings, chosen = s && !s.daily ? dayHour(s.daytime) : null;
+  const s = race && race.settings, chosen = s && !s.daily ? (Number.isFinite(s.hour) ? s.hour : dayHour(s.daytime)) : null;
   let hour;
   do hour = HOURS[0] + Math.random() * (HOURS[1] - HOURS[0]);
   while (Number.isFinite(last) && Math.abs(hour - last) < 2);

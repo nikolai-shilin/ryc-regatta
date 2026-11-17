@@ -7,16 +7,22 @@
 <title>Race view</title>
 <!-- The home page's hero background (app/page.tsx embeds it): the game itself (public/game), a race already under way
      with every boat, yours included, sailed by the game's own skippers, seen from the drone as it slowly circles.
-     Nothing to steer. The page shows a still picture behind this until the first frame is drawn. -->
+     Nothing to steer. It is today's race's venue and yacht (the home page asks for them: ?venue=, ?boat=, which the
+     game's venues.js and classes.js read), lit at the venue's own hour now. The page shows a still picture behind
+     this until the first frame is drawn. -->
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
   canvas { display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 0.8s ease; }
   canvas.live { opacity: 1; }
   @media (prefers-reduced-motion: reduce) { canvas { display: none; } }
 </style>
-<!-- the land round the course (game/land.js): fetched at once, not after the modules that ask for it -->
-<link rel="preload" as="fetch" href="/game/skopea.bin" crossorigin>
-<link rel="preload" as="fetch" href="/game/skopea.json" crossorigin>
+<!-- the land round the course (game/land.js, the venue's: venues.js landFiles): fetched at once, not after the modules
+     that ask for it -->
+<script>(function () { var v = 'gocek';
+  try { v = new URLSearchParams(location.search).get('venue') || v; } catch (e) {}
+  if (!/^[a-z-]+$/.test(v)) v = 'gocek';
+  var f = v === 'gocek' ? ['/game/skopea.bin', '/game/skopea.json'] : ['/game/venues/' + v + '.bin', '/game/venues/' + v + '.json'];
+  f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
 <script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
 <!-- every module the page will load, asked for at once rather than an import at a time, and the yacht with them
      (game/yacht.js); npm test keeps the list in step with the imports -->
@@ -51,6 +57,11 @@
 <script type="module">
 import { World } from '/game/world.js';
 import { Race } from '/game/sim.js';
+import { VENUE } from '/game/venues.js';
+
+// the hour on the venue's clock now (venues.js tz; light.js keeps it to the racing day, so a night there is its dawn
+// or its dusk)
+const hourNow = () => { const n = new Date(); return (((n.getUTCHours() + n.getUTCMinutes() / 60 + VENUE.tz) % 24) + 24) % 24; };
 
 const canvas = document.getElementById('c');
 const STEP = 1 / 60;
@@ -65,6 +76,7 @@ function start() {
   function newRace() {
     ready = false;
     race = new Race({ preset: 'medium', fleet: 5, laps: 1, length: 'short', start: 1, seed: 4242 + Math.floor(Math.random() * 50) });
+    race.settings = { daily: null, hour: hourNow() }; // world.setRace lights her by it (light.js pickSky)
     world.setRace(race); // first: the world dresses your boat in your colours because she has no skipper yet
     const P = race.player;
     P.autoTrim = true; P.crew = 0.2;
