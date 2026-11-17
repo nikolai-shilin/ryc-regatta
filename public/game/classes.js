@@ -217,10 +217,16 @@ export const CLASSES = {
   // Association's VPP): close-hauled at 44–46°, a tacking angle of 88–93°, her best on a beam reach, 7.3 knots at 42°
   // and 10.5 on the beam in 12 knots; 120° between its 110° and 135°, 165° and 180° from its 150°, 4 and 24 knots
   // carried on from 6 and 20. Her courses are laid 1.6 times as long and the line 2.2 times as wide, for 39 m boats.
+  // The sea: she lies across the short seas, feeling their slope as its mean along her 27 m waterline (waveL), so she
+  // can't be steered through each one as a light boat is, and 175 tonnes don't surf (surfK 0: downwind in a blow she
+  // carries her sail at her hull's pace, the polar's), and a short sea stops her upwind half
+  // as much again as it does the JPK (chopK): she is at her best on flat water. Her 47 m rig's wind shadow reaches 2.9
+  // times as far as the JPK's 16 m one, and as wide (shadowK).
   jclass: {
     id: 'jclass', loa: 39.3, beam: 6.55, drawnL: 39.3, crew: 30,
     kite: true, zero: false, reef: false, j3: false,
     tau: 11, coast: 190, hullV: 12.6, heelK: 0.6, awsK: 1, heelShow: 1, turn: 0.5, yawLag: 1.1, courseK: 1.6, lineK: 2.2, startK: 2.5,
+    waveL: 27, chopK: 1.5, surfK: 0, shadowK: 2.9,
     tws: TWS, twa: TWA,
     beat: [48, 46.5, 45.5, 45, 44.5, 44, 44, 45, 46],
     beatV: [3.59, 5.3, 6.15, 6.93, 7.6, 8.22, 8.82, 9.56, 9.97],

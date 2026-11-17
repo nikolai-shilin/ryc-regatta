@@ -52,10 +52,15 @@ export function waveHeight(W, x, z, t) {
   return h;
 }
 // the slope of the sea along a direction (ux, uz): + uphill; `n` only the first n trains (the long swell). What the
-// boats feel (their speed, their surfing): the trains without their sets, so a race sails as it always has
-export function waveSlope(W, x, z, t, ux, uz, n = W.length) {
+// boats feel (their speed, their surfing): the trains without their sets, so a race sails as it always has. `len`: the
+// slope's mean along that many metres of hull (a long hull lies across the short seas, which cancel under her): each
+// train's slope times sin(q)/q, q half its phase along her
+export function waveSlope(W, x, z, t, ux, uz, n = W.length, len = 0) {
   let s = 0;
-  for (let i = 0; i < n; i++) { const p = W[i]; s += p.A * p.k * (p.dx * ux + p.dz * uz) * Math.cos(p.k * (p.dx * x + p.dz * z) - p.w * t + p.ph); }
+  for (let i = 0; i < n; i++) {
+    const p = W[i], a = p.dx * ux + p.dz * uz, q = (p.k * a * len) / 2;
+    s += p.A * p.k * a * (Math.abs(q) > 1e-6 ? Math.sin(q) / q : 1) * Math.cos(p.k * (p.dx * x + p.dz * z) - p.w * t + p.ph);
+  }
   return s;
 }
 // …and as it is drawn, with the sets (waveHeight's): what a hull or a buoy is tilted by
@@ -260,6 +265,11 @@ export class Wind {
 // JPK 1050 — each class her own (classes.js turn, yawLag): a dinghy spins round, a 14-tonne cruiser takes her time
 export const YAW_LAG = CLS.yawLag ?? 0.55;
 const TURN = CLS.turn ?? 1;
+// the sea under her (classes.js): waveL, the metres of waterline over which she feels its slope (none: a point, as
+// the JPK 1050 is sailed); chopK, how much more a short sea stops her upwind than it does the JPK
+const WAVE_L = CLS.waveL ?? 0, CHOP_K = CLS.chopK ?? 1, SURF_K = CLS.surfK ?? 1; // surfK: how readily she surfs down a sea (0: not at all)
+// her rig's wind shadow and backwind, as far and as wide as her rig is tall against the JPK 1050's (classes.js shadowK)
+const SHADOW_K = CLS.shadowK ?? 1;
 export class Boat {
   constructor(o = {}) {
     this.name = o.name || 'You';
@@ -436,19 +446,19 @@ export class Boat {
 
     // the sea: upwind it knocks her back, downwind in a breeze she surfs
     const W = race.waves;
-    const slope = W ? waveSlope(W, this.x, this.z, race.t, fx, fz) : 0;
+    const slope = W ? waveSlope(W, this.x, this.z, race.t, fx, fz, W.length, WAVE_L) : 0;
     this.slope = slope;
     // upwind the swell stops her when she meets a face square on. The way through: luff up a little as the bow climbs
     // the face and bear away down the back, so she meets each one at an angle and picks up speed going down. waveN is
     // the swell's slope under her (+ climbing), waveRhythm how well her steering follows it (+1 well, −1 against it)
     const amp = race.wind.p.waves, upW = clamp((75 - a) / 35, 0, 1) * amp;
-    const swell = W ? waveSlope(W, this.x, this.z, race.t, fx, fz, 3) : 0;
+    const swell = W ? waveSlope(W, this.x, this.z, race.t, fx, fz, 3, WAVE_L) : 0;
     this.waveN = clamp(swell / (amp * 0.12 + 1e-3), -1.5, 1.5);
     this.aAvg += (a - this.aAvg) * (1 - Math.exp(-dt / 6));
     const dev = this.aAvg - a; // + she's higher than her average heading
     const fit = clamp(dev / 4, -1, 1) * clamp(this.waveN, -1, 1);
     this.waveRhythm += (fit - this.waveRhythm) * (1 - Math.exp(-dt / 4));
-    const chop = 1 - upW * (0.05 + 0.06 * Math.max(0, this.waveN) - 0.05 * fit);
+    const chop = 1 - upW * CHOP_K * (0.05 + 0.06 * Math.max(0, this.waveN) - 0.05 * fit);
 
     // slow, the keel hasn't the grip to point: until she's back up to speed she sails as if pinching. Footing a few
     // degrees lower, sheets a touch eased, gets her going again far sooner (after a tack, a stop, a bad set)
@@ -495,7 +505,7 @@ export class Boat {
     } else this.v = Math.max(target, this.v - coast(this.v, this.aws * KN, a, target, CLS.foil && !this.fly ? CLS.foil.dispCoast : COAST) * dt);
     this.v -= 9.81 * slope * 0.3 * dt;
     this.surf = 0;
-    if (a > 110 && w.tws > 13 && slope < 0 && this.v > 3 && this.v < target * 1.4) { const s = -slope * 9.81 * 0.35 * dt; this.v += s; this.surf = s / dt; }
+    if (SURF_K && a > 110 && w.tws > 13 && slope < 0 && this.v > 3 && this.v < target * 1.4) { const s = -slope * 9.81 * 0.35 * SURF_K * dt; this.v += s; this.surf = s / dt; }
     this.v = Math.max(this.backing ? -0.6 : 0, this.v);
 
     // steering: the button's tack or gybe drives the rudder; a penalty turn spins her round
@@ -988,10 +998,10 @@ export class Race {
     for (const o of this.boats) {
       if (o === b) continue;
       const dx = b.x - o.x, dz = b.z - o.z, along = dx * ux + dz * uz;
-      if (along < 3 || along > 80) continue;
-      const lat = dx * uz - dz * ux, width = 6 + along * 0.22;
+      if (along < 3 * SHADOW_K || along > 80 * SHADOW_K) continue;
+      const lat = dx * uz - dz * ux, width = 6 * SHADOW_K + along * 0.22;
       if (Math.abs(lat) > width) continue;
-      const f = (1 - along / 80) * (1 - Math.abs(lat) / width);
+      const f = (1 - along / (80 * SHADOW_K)) * (1 - Math.abs(lat) / width);
       deficit += 0.32 * f; bend += f * 5 * D2R * sgn(o.twa); // the wind is bent off the other boat's sails
     }
     // backwind: a boat close ahead and to leeward bends her wind back onto you — less of it, and from further ahead
@@ -1000,8 +1010,9 @@ export class Race {
     if (Math.abs(twaB) < 70 * D2R) for (const o of this.boats) {
       if (o === b || Math.abs(wrap(w.dir - o.h)) > 70 * D2R) continue;
       const dx = o.x - b.x, dz = o.z - b.z, down = dx * ux + dz * uz, ahead = dx * fx + dz * fz;
-      if (down < 2 || down > 22 || ahead < -2 || ahead > 20 || dx * dx + dz * dz > 625) continue;
-      const f = (1 - down / 22) * (1 - Math.max(0, ahead) / 20);
+      const K = SHADOW_K;
+      if (down < 2 * K || down > 22 * K || ahead < -2 * K || ahead > 20 * K || dx * dx + dz * dz > 625 * K * K) continue;
+      const f = (1 - down / (22 * K)) * (1 - Math.max(0, ahead) / (20 * K));
       deficit += 0.18 * f; bend -= f * 6 * D2R * sgn(twaB); // headed, in lighter air
     }
     deficit = Math.min(deficit, 0.45);
