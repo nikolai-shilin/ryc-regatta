@@ -1538,6 +1538,21 @@
   .bc .adm-tile b { font-size: 22px; }
 }
 
+/* ---------- admin: a page for each goal, and /admin listing them (components/admin-shell.tsx) ---------- */
+.bc .adm-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); }
+.bc .adm-nav { display: flex; flex-wrap: wrap; }
+.bc .adm-hub { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
+.bc .adm-hub li { display: flex; }
+.bc .adm-hub-a { position: relative; display: flex; flex-direction: column; gap: var(--s-3); width: 100%; color: inherit; text-decoration: none; transition: background-color var(--t-quick); }
+.bc .adm-hub-a .adm-k { margin-bottom: 0; }
+.bc .adm-hub-a:hover { background: var(--fill-2); }
+.bc .adm-hub-a:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--you); }
+.bc .adm-hub-h { padding-right: var(--s-8); font: 700 var(--fs-h3)/1 var(--cond); text-transform: uppercase; color: var(--ink); }
+.bc .adm-hub-a > svg { position: absolute; top: var(--s-6); right: var(--s-6); color: var(--ink-3); transition: translate var(--t-quick), color var(--t-quick); }
+.bc .adm-hub-a:hover > svg { translate: 4px 0; color: var(--you); }
+@media (max-width: 600px) {
+  .bc .adm-hub-a > svg { top: var(--s-4); right: var(--s-4); }
+}
 /* ---------- the result page: how was the race (components/rate-race.tsx) ---------- */
 .bc .rr { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); margin-top: var(--s-4); padding: var(--s-5) var(--s-6); }
 .bc .rr-q { font: 700 var(--fs-row)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink); }
