@@ -1,6 +1,6 @@
 # Regatta
 
-Up and down is a 3D sailing game at https://upandown.rycrentals.com. You race round the marks against computer boats, under the
+Up and down is a 3D sailing game at https://www.sailupdown.com. You race round the marks against computer boats, under the
 racing rules. It is a Next.js app (App Router) around a static Three.js game, deployed by the Vercel project
 `ryc-regatta` on every push to `main`.
 
@@ -301,6 +301,14 @@ scripts/shots.mjs http://localhost:5193` (or a few by name after the address). I
 on the two numbered pictures, for the marks in `app/[lang]/help/page.tsx`. A picture changed is a new file name (`-v9`),
 as the image optimiser caches by name; the race page's loader names the hero's files too (`public/play/index.html`).
 
+## Domains
+
+The site is `https://www.sailupdown.com` (lib/seo.ts `SITE`: canonical links, the sitemap, IndexNow). Every other address
+of the Vercel project redirects there with a 308, path and query kept: `sailupdown.com`, `sailupanddown.com`,
+`www.sailupanddown.com`, `upandown.rycrentals.com`, `regatta.rycrentals.com` and `ud.rycrentals.com` (Settings → Domains;
+`ryc-regatta.vercel.app` stays as is). The browser keeps localStorage and the sign-in cookies per address, so a guest's
+bests on an old address stay there; a signed-in player's come back with the account (components/bests-sync.tsx).
+
 ## Environment
 
 `.env.local` (and the Vercel project) need:
@@ -318,9 +326,8 @@ In the Supabase project (`iyt-test`), Authentication needs:
   the client, paste it into Supabase, then disable and delete the old one.
 - **Redirect URLs:**
   - `http://localhost:5193/**`
-  - `https://regatta.rycrentals.com/**` (the old address, still served)
-  - `https://upandown.rycrentals.com/**`
-  - **Site URL:** `https://upandown.rycrentals.com`. Supabase sends a sign-in here when its return address isn't on the list
+  - `https://www.sailupdown.com/**`
+  - **Site URL:** `https://www.sailupdown.com`. Supabase sends a sign-in here when its return address isn't on the list
     above, and email templates read it as `{{ .SiteURL }}`. The project is shared with the iyt app, so this affects it too.
 - **Email code:** the "Magic link" email template must include `{{ .Token }}`, so the email carries the 6-digit code. The link in the
   default template also works: it goes through `/auth/callback`.

@@ -18,7 +18,7 @@ const FACE = 'Sofia Sans Condensed';
 const M = 48; // the margin round the card
 export const PANEL = { w: 440, h: H - 2 * M, head: 56, foot: 48 };
 const LEFT = W - 2 * M - PANEL.w - 48; // the left column's width
-export const URL_LABEL = 'upandown.rycrentals.com';
+export const URL_LABEL = 'sailupdown.com';
 
 // Sofia Sans Condensed, the HUD's face, in the two weights the cards use, read from lib/og-fonts (next.config.ts ships
 // them with the /og functions). From disk rather than Google Fonts: the renderer lays out nothing without a font, so a

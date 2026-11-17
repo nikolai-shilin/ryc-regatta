@@ -50,11 +50,11 @@ test('each shape has its own best-time key, up and down none', () => {
 
 test('after signing in, only a path on this site', async () => {
   const { safeNext } = await import('../lib/next-path.ts');
-  const base = 'https://upandown.rycrentals.com';
+  const base = 'https://www.sailupdown.com';
   for (const ok of ['/race', '/race/result/abc?lang=ru', '/admin', '/settings#sound']) assert.equal(safeNext(ok), ok);
   // each of these would leave the site once the browser parses it
   for (const bad of ['//evil.com', '/\\evil.com', '/\t/evil.com', '/\n/evil.com', '/\r/evil.com', '\\/evil.com', 'https://evil.com', '', null, undefined]) {
     assert.equal(safeNext(bad), '/race', JSON.stringify(bad));
   }
-  for (const v of ['/race', '/ /evil.com', '/%2F%2Fevil.com', '/%09/evil.com']) assert.equal(new URL(safeNext(v), base).host, 'upandown.rycrentals.com', v);
+  for (const v of ['/race', '/ /evil.com', '/%2F%2Fevil.com', '/%09/evil.com']) assert.equal(new URL(safeNext(v), base).host, 'www.sailupdown.com', v);
 });
