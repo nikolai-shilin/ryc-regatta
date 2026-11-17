@@ -8,14 +8,15 @@ import { findFlag, flagSrc } from '@/lib/flags';
 import { yachtOf, isYacht } from '@/lib/yachts';
 import { VENUES } from '@/lib/venues';
 import type { PlayerCard, PlayerList } from '@/lib/players';
-import { IconBack, IconArrow, IconCrew, IconSail, IconTrophy, IconPin, IconKite, IconPlay } from './ui';
+import { IconBack, IconArrow, IconCrew, IconSail, IconTrophy, IconPin, IconKite } from './ui';
 import { LoadBar, ScenePoster } from './skeleton';
 import { SceneBrand } from './scene-brand';
 import { Who } from './flag';
 import '@/styles/players.css';
 
 // The players: the game's own scene (/boat-view: a JPK 1050 on Lake Garda on a summer evening, the drone circling her)
-// behind the page, as on /yachts and /boat, the players' table in the card on the right, a page at a time. Picking one
+// behind the page, as on /yachts and /boat, the players' table in the card on the right, a page at a time, the most
+// points first (the rating's, every day of today's race added up). Picking one
 // (?p=<k>, a navigation the server answers, so the address can be shared) dresses the yacht in their colours and turns
 // the card to their numbers: the races, the wins and podiums, today's race, the yachts and venues they sail, their
 // boat. A player whose boat the site never kept (one who only races inside Telegram) is shown the boat everyone starts in.
@@ -75,7 +76,8 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
 
   const go = (to: string, k: string | null) => { setGoing(k); start(() => router.push(to, { scroll: false })); };
 
-  const num = (n: number) => n.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB');
+  // a number the API may not send yet (an answer cached from before it did) is a dash, not an error
+  const num = (n: number | undefined) => (typeof n === 'number' ? n.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB') : '–');
   const place = (p: number | null) => (p == null ? '–' : lang === 'ru' ? `${p}-е` : `${p}${p % 10 === 1 && p % 100 !== 11 ? 'st' : p % 10 === 2 && p % 100 !== 12 ? 'nd' : p % 10 === 3 && p % 100 !== 13 ? 'rd' : 'th'}`);
   const date = (s: string, year = true) => new Date(s).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'short', ...(year && { year: 'numeric' }), timeZone: 'UTC' });
   const races = (n: number) => (lang === 'ru' ? `${num(n)} ${ruPlural(n, ['гонка', 'гонки', 'гонок'])}` : `${num(n)} race${n === 1 ? '' : 's'}`);
@@ -100,6 +102,7 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
             ? <>{boat.name ? <><i>{boat.name}</i> · </> : null}{`${boat.nat} ${boat.num || '1'}`.trim()} · {t('Their colours on the JPK 1050. Drag to circle her.', 'Их цвета на JPK 1050. Тяни, чтобы облететь яхту.')}</>
             : t('Their colours aren’t kept online, so this is the boat everyone starts in. Drag to circle her.', 'Их цвета не сохранены онлайн, поэтому здесь яхта, с которой начинают все. Тяни, чтобы облететь её.')}</p>
           <div className="bt-stats bt-stats-fit">
+            <div><span className="bt-sk">{t('Points', 'Очков')}</span><b>{num(player.pts)}</b></div>
             <div><span className="bt-sk">{t('Races', 'Гонок')}</span><b>{num(player.n)}</b></div>
             <div><span className="bt-sk">{t('Wins', 'Побед')}</span><b>{num(player.wins)}</b></div>
             <div><span className="bt-sk">{t('Podiums', 'Подиумов')}</span><b>{num(player.podiums)}</b></div>
@@ -108,7 +111,7 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
           <h1 className="bt-h">{t('The players', 'Игроки')}</h1>
           <p className="bt-p">{missing
             ? t('That player isn’t on the list any more. Pick one from the table to see their numbers and their boat.', 'Этого игрока больше нет в списке. Выбери игрока в таблице, чтобы увидеть его цифры и яхту.')
-            : t('Everyone who races signed in, the most races first. Pick a player to see their numbers and their boat in their own colours.', 'Все, кто гоняется со входом в аккаунт, — больше всего гонок сверху. Выбери игрока, чтобы увидеть его цифры и яхту в его цветах.')}</p>
+            : t('Everyone who races signed in, the most points first. Pick a player to see their numbers and their boat in their own colours.', 'Все, кто гоняется со входом в аккаунт, — больше всего очков сверху. Выбери игрока, чтобы увидеть его цифры и яхту в его цветах.')}</p>
           {list && (
             <div className="bt-stats bt-stats-fit">
               <div><span className="bt-sk">{t('Players', 'Игроков')}</span><b>{num(list.total)}</b></div>
@@ -147,10 +150,10 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
             <span className="bt-k"><IconTrophy s={14} />{t('Today’s race', 'Гонка дня')}</span>
             {player.daily.n ? (
               <dl className="yt-spec pl-spec">
-                <div><dt>{t('Finished', 'Финишей')}</dt><dd>{num(player.daily.n)}</dd></div>
-                <div><dt>{t('Days', 'Дней')}</dt><dd>{num(player.daily.days)}</dd></div>
-                <div><dt>{t('Won', 'Побед')}</dt><dd>{num(player.daily.wins)}</dd></div>
-                <div><dt>{t('Best place', 'Лучшее место')}</dt><dd>{place(player.daily.best)}</dd></div>
+                <div><dt>{t('Points', 'Очков')}</dt><dd>{num(player.pts)}</dd></div>
+                <div><dt>{t('Days ranked', 'Дней в рейтинге')}</dt><dd>{num(player.daily.days)}</dd></div>
+                <div><dt>{t('Days won', 'Дней первым')}</dt><dd>{num(player.daily.wins)}</dd></div>
+                <div><dt>{t('Days in the top 3', 'Дней в топ-3')}</dt><dd>{num(player.daily.podiums)}</dd></div>
               </dl>
             ) : <p className="bt-hint">{t('Not sailed yet: every day a new race, the same for everyone.', 'Ещё не ходил: каждый день новая гонка, одна для всех.')}</p>}
           </div>
@@ -196,7 +199,6 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
             <span className="lbl-ink" id="pl-card"><IconCrew s={13} />{t('The players', 'Игроки')}{list ? ` · ${num(list.total)}` : ''}</span>
             {list && list.pages > 1 && <span className="lbl">{t(`Page ${page} of ${list.pages}`, `Страница ${page} из ${list.pages}`)}</span>}
           </div>
-          <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Race today’s race', 'В гонку дня')}</span></a>
 
           {!list ? (
             <p className="bt-hint">{t('The players can’t be had just now. Try again in a minute.', 'Список игроков сейчас недоступен. Попробуй через минуту.')}</p>
@@ -207,6 +209,7 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
               <div className="pl-tr pl-th" role="row">
                 <span role="columnheader">#</span>
                 <span role="columnheader">{t('Player', 'Игрок')}</span>
+                <span role="columnheader" title={t('Points in the rating, every day added up', 'Очки рейтинга за все дни')} aria-sort="descending">{t('Pts', 'Очки')}</span>
                 <span role="columnheader" title={t('Races', 'Гонок')}>{t('Races', 'Гонок')}</span>
                 <span role="columnheader" title={t('Wins', 'Побед')}>{t('Wins', 'Побед')}</span>
                 <span role="columnheader" title={t('Podiums', 'Подиумов')}>{t('Top 3', 'Топ-3')}</span>
@@ -221,6 +224,7 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
                       <Who fl={r.fl} name={nameOf(r)} lang={lang} />
                       <small>{r.yacht ? yachtName(r.yacht) : t(`${r.days} day${r.days === 1 ? '' : 's'} racing`, `${r.days} ${ruPlural(r.days, ['день', 'дня', 'дней'])} в гонках`)}</small>
                     </span>
+                    <span role="cell" className="pl-pts">{num(r.pts)}</span>
                     <span role="cell">{num(r.n)}</span>
                     <span role="cell">{r.wins ? num(r.wins) : '–'}</span>
                     <span role="cell">{r.podiums ? num(r.podiums) : '–'}</span>
@@ -243,7 +247,7 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
                   onClick={(e) => { e.preventDefault(); if (page < list.pages) go(href(page + 1), null); }} aria-label={t('Next page', 'Следующая страница')}><IconArrow s={16} /></Link>
               </nav>
             )}
-            <p className="bt-hint">{t('Guests aren’t on it: sign in and race to be. Wins and podiums count every race, free races too.', 'Гостей здесь нет: войди и пройди гонку, чтобы попасть сюда. Победы и подиумы — во всех гонках, и в свободных тоже.')}</p>
+            <p className="bt-hint">{t('Points are the rating’s, every day of today’s race added up: of N players ranked on a day, the first gets N and the last 1. Wins and podiums count every race, free races too. Guests aren’t on it: sign in and race to be.', 'Очки — рейтинговые, за все дни гонки дня: из N игроков в рейтинге дня первый получает N, последний — 1. Победы и подиумы — во всех гонках, и в свободных тоже. Гостей здесь нет: войди и пройди гонку, чтобы попасть сюда.')}</p>
           </>)}
         </>)}
       </section>

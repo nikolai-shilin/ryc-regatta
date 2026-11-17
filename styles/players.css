@@ -4,7 +4,7 @@
 
 /* the table: the card's full width, a row a player, the numbers right-aligned in tabular figures */
 .bc .pl-tab { display: flex; flex-direction: column; margin: 0 calc(-1 * var(--cp)); border-top: 1px solid var(--rule); }
-.bc .pl-tr { display: grid; grid-template-columns: 26px minmax(0, 1fr) 46px 40px 44px; align-items: center; gap: var(--s-3); min-height: var(--h-m);
+.bc .pl-tr { display: grid; grid-template-columns: 26px minmax(0, 1fr) 44px 44px 38px 40px; align-items: center; gap: var(--s-3); min-height: var(--h-m);
   padding: var(--s-2) var(--cp); border-bottom: 1px solid var(--rule-2); color: var(--ink); text-decoration: none;
   font: 700 var(--fs-body)/1.2 var(--cond); letter-spacing: var(--ls-name); font-variant-numeric: tabular-nums;
   transition: background-color var(--t-quick), box-shadow var(--t-quick); }
@@ -13,6 +13,7 @@
 .bc a.pl-tr:focus-visible { outline: 2px solid var(--you); outline-offset: -2px; }
 .bc a.pl-tr[aria-busy="true"] { background: color-mix(in srgb, var(--you) 16%, transparent); box-shadow: inset 3px 0 0 var(--you); }
 .bc .pl-th { min-height: 0; padding-top: var(--s-2); padding-bottom: var(--s-2); font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .pl-pts { color: var(--you); }
 .bc .pl-i { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
 .bc .pl-who { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .bc .pl-who small { padding-left: calc(24px + var(--s-2)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -39,7 +40,7 @@
 .bc .pl-card .lbl-ink { display: inline-flex; align-items: center; gap: var(--s-2); }
 @container scr (orientation: portrait) {
   .bc .pl-card { max-height: 56%; }
-  .bc .pl-tr { grid-template-columns: 18px minmax(0, 1fr) 34px 30px 32px; gap: var(--s-2); }
+  .bc .pl-tr { grid-template-columns: 18px minmax(0, 1fr) 30px 32px 28px 30px; gap: var(--s-2); }
   .bc .pl-th { letter-spacing: 0; }
   .bc .pl-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }

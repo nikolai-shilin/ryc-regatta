@@ -11,7 +11,7 @@ export const generateMetadata = titled('The players', 'Игроки', {
 });
 
 // The players: the game's own scene behind the page (a JPK 1050 on Lake Garda, public/boat-view), the players' table in
-// its card, PER a page (?page=), the most races first (lib/players.ts, the scores API). ?p=<k> is one player: the card
+// its card, PER a page (?page=), the most points first (lib/players.ts, the scores API). ?p=<k> is one player: the card
 // shows their numbers, and the yacht in the scene is dressed in their colours, as their account keeps them.
 export default async function PlayersPage({ params, searchParams }: LangParams & { searchParams: Promise<{ page?: string; p?: string }> }) {
   const [{ lang, t }, q] = await Promise.all([getT(params), searchParams]);
