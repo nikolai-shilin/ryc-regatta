@@ -4,14 +4,9 @@
 .bc .vs-now { display: inline-flex; align-items: center; gap: var(--s-2); margin-top: var(--s-2); color: var(--ink-2);
   font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
 
-/* the list: the card's full width, by country, a heading with its flag over a row a venue, its name and where in
-   the country it is, its wind */
-.bc .vs-tab { display: flex; flex-direction: column; margin: 0 calc(-1 * var(--cp)); }
-.bc .vs-g ol { margin: 0; padding: 0; list-style: none; }
-.bc .vs-gh { display: flex; align-items: center; gap: var(--s-2); margin: 0; padding: var(--s-3) var(--cp) var(--s-2); border-bottom: 1px solid var(--rule);
-  font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-2); }
-.bc .vs-g + .vs-g .vs-gh { margin-top: var(--s-2); }
-.bc .vs-gn { margin-left: auto; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+/* the list: the card's full width, by country and then by name, a row a venue: its flag, its name and where it is,
+   its wind */
+.bc .vs-tab { display: flex; flex-direction: column; margin: 0 calc(-1 * var(--cp)); padding: 0; list-style: none; border-top: 1px solid var(--rule); }
 .bc .vs-tr { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto 14px; align-items: center; gap: var(--s-3); min-height: var(--h-m);
   padding: var(--s-2) var(--cp); border-bottom: 1px solid var(--rule-2); color: var(--ink); text-decoration: none;
   font: 700 var(--fs-body)/1.2 var(--cond); letter-spacing: var(--ls-name); font-variant-numeric: tabular-nums;
@@ -22,6 +17,7 @@
 .bc .vs-tr:focus-visible { outline: 2px solid var(--you); outline-offset: -2px; }
 .bc .vs-tr[aria-current="true"] { background: color-mix(in srgb, var(--you) 14%, transparent); box-shadow: inset 3px 0 0 var(--you); }
 .bc .vs-i { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
+.bc .vs-who { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
 .bc .vs-fl { flex: none; display: flex; width: 24px; }
 .bc .vs-nm { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .bc .vs-nm b { font: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

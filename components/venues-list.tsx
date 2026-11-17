@@ -8,12 +8,12 @@ import type { VenueId } from '@/lib/venues';
 import { IconPin, IconArrow, IconSail, IconBook } from './ui';
 import { LoadBar, ScenePoster } from './skeleton';
 import { SceneBrand } from './scene-brand';
-import { FlagImg, NoFlag } from './flag';
+import { FlagImg } from './flag';
 import '@/styles/venues.css';
 
 // The venues (/venues), as /players: the game's own scene behind the page (/venues-view: your yacht sailing at the
 // venue of today's race, the drone starting close by her, then pulling up and away into a slow, wide circuit of the
-// water and the land round it), and every venue in the card on the right, by country, A to Z. Each row is the
+// water and the land round it), and every venue in the card on the right, by country and name, A to Z. Each row is the
 // venue's own page (/venues/<id>), so search engines find every one from here.
 type Pair = [string, string];
 export type VenueRow = { id: VenueId; name: Pair; place: Pair; wind: Pair; nation: string; about: Pair };
@@ -49,23 +49,14 @@ export function VenuesList({ lang, list, today, back }: { lang: Lang; list: Venu
     return () => { removeEventListener('message', on); removeEventListener('resize', inset); ro.disconnect(); };
   }, [inset, post]);
 
-  // by country, the countries A to Z and the venues A to Z in each, in the page's language. The country is the one the
-  // venue's sail letters fly (lib/flags.ts); one with none drawn (Hong Kong) has the last part of its place, and no flag
+  // by country, the countries A to Z and the venues A to Z in each, in the page's language, one list with each row's
+  // flag. The country is the one the venue's sail letters fly (lib/flags.ts); one with none drawn (Hong Kong) goes by
+  // the last part of its place, and has no flag
   const abc = new Intl.Collator(lang === 'ru' ? 'ru' : 'en').compare;
-  const groups = (() => {
-    const by = new Map<string, { name: string; flag: string | null; venues: VenueRow[] }>();
-    for (const v of list) {
-      const f = FLAGS.find((x) => x.ioc === v.nation), name = f ? t(f.en, f.ru) : t(...v.place).split(', ').pop()!;
-      if (!by.has(name)) by.set(name, { name, flag: f?.code ?? null, venues: [] });
-      by.get(name)!.venues.push(v);
-    }
-    const gs = [...by.values()].sort((a, b) => abc(a.name, b.name));
-    for (const g of gs) g.venues.sort((a, b) => abc(t(...a.name), t(...b.name)));
-    return gs;
-  })();
-  // under its name, where in the country it is ("Isle of Wight"), when its place says more than the country
-  const region = (v: VenueRow) => { const p = t(...v.place).split(', '); return p.length > 1 ? p.slice(0, -1).join(', ') : null; };
-  let n = 0;
+  const rows = list.map((v) => {
+    const f = FLAGS.find((x) => x.ioc === v.nation);
+    return { v, flag: f?.code ?? null, country: f ? t(f.en, f.ru) : t(...v.place).split(', ').pop()!, name: t(...v.name) };
+  }).sort((a, b) => abc(a.country, b.country) || abc(a.name, b.name));
 
   return (
     <div className="bt vs-view">
@@ -87,32 +78,21 @@ export function VenuesList({ lang, list, today, back }: { lang: Lang; list: Venu
           <span className="lbl-ink" id="vs-card"><IconPin s={13} />{t('The venues', 'Акватории')} · {list.length}</span>
         </div>
 
-        <div className="vs-tab">
-          {groups.map((g) => (
-            <section key={g.name} className="vs-g" aria-label={g.name}>
-              <h2 className="vs-gh">
-                <span className="vs-fl">{g.flag ? <FlagImg code={g.flag} lang={lang} /> : <NoFlag />}</span>
-                <span>{g.name}</span>
-                <span className="vs-gn">{g.venues.length}</span>
-              </h2>
-              <ol>
-                {g.venues.map((v) => {
-                  const r = region(v);
-                  return (
-                    <li key={v.id}>
-                      <Link href={`/venues/${v.id}`} className="vs-tr" aria-current={v.id === today ? 'true' : undefined} title={t(...v.about)}>
-                        <span className="vs-i">{String(++n).padStart(2, '0')}</span>
-                        <span className="vs-nm"><b>{t(...v.name)}</b>{r && <small>{r}</small>}</span>
-                        {v.id === today ? <span className="vs-today">{t('Today', 'Сегодня')}</span> : <span className="vs-wind">{t(...v.wind)}</span>}
-                        <IconArrow s={14} />
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ol>
-            </section>
+        <ol className="vs-tab" aria-label={t('The venues', 'Акватории')}>
+          {rows.map(({ v, flag, name }, i) => (
+            <li key={v.id}>
+              <Link href={`/venues/${v.id}`} className="vs-tr" aria-current={v.id === today ? 'true' : undefined} title={t(...v.about)}>
+                <span className="vs-i">{String(i + 1).padStart(2, '0')}</span>
+                <span className="vs-who">
+                  <span className="vs-fl"><FlagImg code={flag} lang={lang} /></span>
+                  <span className="vs-nm"><b>{name}</b><small>{t(...v.place)}</small></span>
+                </span>
+                {v.id === today ? <span className="vs-today">{t('Today', 'Сегодня')}</span> : <span className="vs-wind">{t(...v.wind)}</span>}
+                <IconArrow s={14} />
+              </Link>
+            </li>
           ))}
-        </div>
+        </ol>
         <p className="bt-hint">{t('The wind is the one the game gives each venue, its usual breeze. Today’s race goes to a new venue every day, each in turn.', 'Ветер — тот, что игра даёт каждой акватории, её обычный бриз. Гонка дня каждый день идёт на новую акваторию, по очереди.')}</p>
 
         <div className="bt-rows">
