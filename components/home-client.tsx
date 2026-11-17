@@ -13,8 +13,11 @@ const IconBurger = () => <svg viewBox="0 0 24 24" width={20} height={20} fill="n
 const IconUser = () => <svg viewBox="0 0 16 16" width={16} height={16} aria-hidden="true"><circle cx="8" cy="5.2" r="2.8" fill="currentColor" /><path d="M2.5 14.5c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6z" fill="currentColor" /></svg>;
 
 // The header's menu: the burger and your avatar (your initials once signed in, from lib/me.ts: the pages are cached,
-// so whether you are is drawn by CSS, .if-me and .if-guest). It holds the account pages (Sign in too, where the bar has
-// no room for its own button), the yachts, How to play and Learn to race always, and on a narrow screen, where the header's links are hidden, the site's pages too.
+// so whether you are is drawn by CSS, .if-me and .if-guest). At its head who you are: signed in, your initials and name,
+// the way to the account and settings; a guest, the way to sign in and why (at every width, the bar's own button
+// beside it or not). Then what's yours on this device (the boat, the passport, the badges; Settings is the head's
+// once signed in), the reading pages, on a narrow screen (where the header's links are hidden) the site's pages too,
+// and last, signed in, Sign out (back to the page it was on, app/auth/sign-out).
 export function SiteMenu({ lang }: { lang: Lang }) {
   const t = tx(lang);
   const ref = useRef<HTMLDetailsElement>(null);
@@ -27,23 +30,39 @@ export function SiteMenu({ lang }: { lang: Lang }) {
     <details className="hm-menu" ref={ref}>
       <summary className="hm-prof" aria-label={t('Menu', 'Меню')}><IconBurger /><span className="hm-av"><IconUser /><span className="me-ini" /></span></summary>
       <div className="hm-menu-pop">
-        <Link className="hm-mi hm-mi-signin if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link>
+        <Link className="hm-acct if-me" href="/settings">
+          <span className="hm-av hm-acct-av me-ini" aria-hidden="true" />
+          <span className="hm-acct-t"><span className="hm-acct-n me-name" /><span className="hm-acct-s">{t('Account and settings', 'Аккаунт и настройки')}</span></span>
+        </Link>
+        <Link className="hm-acct if-guest" href="/sign-in">
+          <span className="hm-av hm-acct-av" aria-hidden="true"><IconUser /></span>
+          <span className="hm-acct-t"><span className="hm-acct-n">{t('Sign in', 'Войти')}</span><span className="hm-acct-s">{t('To be ranked and keep your times', 'Чтобы попасть в рейтинг и сохранить результаты')}</span></span>
+        </Link>
+        <span className="hm-msep" />
+        <Link className="hm-mi" href="/boat">{t('Your boat', 'Твоя яхта')}</Link>
+        <Link className="hm-mi" href="/passport">{t('Your passport', 'Твой паспорт')}</Link>
+        <Link className="hm-mi" href="/race/badges">{t('Badges', 'Достижения')}</Link>
+        <Link className="hm-mi if-guest" href="/settings">{t('Settings', 'Настройки')}</Link>
+        <span className="hm-msep" />
         <Link className="hm-mi" href="/yachts">{t('The yachts', 'Яхты')}</Link>
         <Link className="hm-mi" href="/help">{t('How to play', 'Как играть')}</Link>
         <Link className="hm-mi" href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
-        <Link className="hm-mi" href="/boat">{t('Your boat', 'Твоя яхта')}</Link>
-        <Link className="hm-mi" href="/settings">{t('Settings', 'Настройки')}</Link>
         <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы')}>
           <span className="hm-msep" />
           <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня')}</Link>
           <Link className="hm-mi" href="/race/free">{t('Free race', 'Свободная гонка')}</Link>
+          <Link className="hm-mi" href="/match/new">{t('Match race a friend', 'Матч с другом')}</Link>
           <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки')}</Link>
           <Link className="hm-mi" href="/race/rating">{t('Rating', 'Рейтинг')}</Link>
           <Link className="hm-mi" href="/players">{t('Players', 'Игроки')}</Link>
-          <Link className="hm-mi" href="/race/badges">{t('Badges', 'Достижения')}</Link>
           <Link className="hm-mi hm-mi-x" href="/faq">{t('Questions', 'Вопросы')}</Link>
-          <Link className="hm-mi" href="/social">{t('Follow the game', 'Игра в соцсетях')}</Link>
         </nav>
+        <form className="if-me" action="/auth/sign-out" method="post"
+          onSubmit={(e) => { (e.currentTarget.elements.namedItem('next') as HTMLInputElement).value = location.pathname + location.search; }}>
+          <span className="hm-msep" />
+          <input type="hidden" name="next" />
+          <button className="hm-mi hm-mi-out" type="submit">{t('Sign out', 'Выйти')}</button>
+        </form>
       </div>
     </details>
   );

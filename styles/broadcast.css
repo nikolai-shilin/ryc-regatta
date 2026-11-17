@@ -472,12 +472,12 @@
 .bc .hm-play { display: inline-flex; align-items: center; flex: none; min-height: var(--h-m); padding: 0 var(--s-8) 0 var(--s-4); background: var(--you); color: var(--ink-on); text-decoration: none; white-space: nowrap;
   font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
 .bc .hm-play:hover { filter: brightness(1.08); }
-/* Sign in, a quiet button beside Play now where the bar has room (from 600px wide; on a phone it's in the menu) */
+/* Sign in, a quiet button beside Play now where the bar has room (from 600px wide); the menu's head has it at every width */
 .bc .hm-signin { display: none; align-items: center; flex: none; min-height: var(--h-m); padding: 0 var(--s-4); background: var(--fill-2); color: var(--ink); text-decoration: none; white-space: nowrap;
   font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; transition: background-color var(--t-quick); }
 .bc .hm-signin:hover { background: var(--w-14); }
-@container help (min-width: 600px) { .bc .hm-signin { display: inline-flex; } .bc .hm-mi-signin { display: none; } }
-@container scr (min-width: 600px) { .bc .hm-signin { display: inline-flex; } .bc .hm-mi-signin { display: none; } }
+@container help (min-width: 600px) { .bc .hm-signin { display: inline-flex; } }
+@container scr (min-width: 600px) { .bc .hm-signin { display: inline-flex; } }
 /* the tabs need the room: none under 1280px wide (they're in the menu), and Questions and the exam trainer only from
    1600px (they go there between). The fleet and Your boat are always in the menu, never tabs */
 @container help (max-width: 1279px) { .bc .hm-nav { display: none; } .bc .hm-menu-nav { display: flex; } }
@@ -493,6 +493,14 @@
 .bc .hm-mi { border-radius: 0; color: var(--ink); text-decoration: none; font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-name); }
 .bc .hm-mi:hover { background: var(--w-06); }
 .bc .hm-msep { background: var(--rule); }
+.bc .hm-acct { border-radius: 0; }
+.bc .hm-acct:hover { background: var(--w-06); }
+.bc .hm-acct-av { border-radius: 0; background: var(--fill-2); box-shadow: inset 0 -3px 0 var(--you); font: 700 var(--fs-small)/1 var(--cond); }
+.bc .if-guest > .hm-acct-av { box-shadow: none; }
+.bc .hm-acct-n { font: 700 var(--fs-body)/1.15 var(--cond); letter-spacing: var(--ls-name); }
+.bc .hm-acct-s { font: 500 var(--fs-small)/1.3 var(--sans); color: var(--ink-2); }
+.bc .hm-mi-out { color: var(--ink-2); }
+.bc .hm-mi-out:hover { color: var(--ink); }
 
 /* the footer: one bar, who makes it, a row of links, the languages; room under it for the bar that stays at the foot
    of the screen */

@@ -38,7 +38,8 @@ export function Trail({ t, crumbs }: { t: T; crumbs: Crumb[] }) {
 }
 
 // The site's header, as on rycrentals.com: the logo, the site's pages in the middle (from 1100 px wide), and the menu
-// (the burger and your avatar) at the right; How to play and Learn to race are in the menu alone. On a page in the broadcast look (.bc, styles/broadcast.css) it is the
+// (the burger and your avatar) at the right; your account, your boat, passport and badges, How to play and Learn to race
+// are in the menu alone. On a page in the broadcast look (.bc, styles/broadcast.css) it is the
 // broadcast's bar: the name with the blue mark, the pages as tabs (from 1280 px wide; those marked hm-tab-x from
 // 1600), Sign in (a guest's) and Play now beside the menu. On every page: the scrolling ones (home, help, the race result) and the
 // app screens, where it sits over the screen and stays short on a phone held sideways.
@@ -83,6 +84,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
           <Link href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
           <Link href="/race/drills">{t('Drills', 'Тренировки')}</Link>
           <Link href="/race/badges">{t('Badges', 'Достижения')}</Link>
+          <Link href="/passport">{t('Your passport', 'Твой паспорт')}</Link>
           <Link href="/faq">{t('Questions', 'Вопросы')}</Link>
           <Link href="/social">{t('Follow the game', 'Игра в соцсетях')}</Link>
           <Link className="if-me me-name" href="/settings" /><Link className="if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link>
