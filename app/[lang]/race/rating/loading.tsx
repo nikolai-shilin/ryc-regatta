@@ -10,7 +10,7 @@ export default function Loading() {
           <Sk w={140} h={24} />
           <Sk className="sk-h" w="min(620px, 80%)" />
           <Sk w="min(420px, 70%)" h={18} />
-          <div className="rt-strip">{Array.from({ length: 10 }, (_, i) => <Sk key={i} w={52} h={56} />)}</div>
+          <div className="rt-days"><div className="rt-strip">{Array.from({ length: 10 }, (_, i) => <Sk key={i} w={52} h={56} />)}</div></div>
         </header>
         <main className="hm-page rt">
           <div className="rt-grid">

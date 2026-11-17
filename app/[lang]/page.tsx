@@ -189,7 +189,7 @@ export default async function Home({ params }: LangParams) {
               <span className="ho-medal ho-medal-g">1</span>
               <span className="lbl is-you">{t('The time to beat', 'Время, которое надо побить')}</span>
               <h3 className="ho-h3">{beat ? t(`Beat ${beat}`, `Побей ${beat}`) : t('Set the time to beat', 'Задай время дня')}</h3>
-              <p className="ho-ps">{best ? t(`${name(best.name)} holds it. A clean start and two good shifts get you close.`, `Оно у ${name(best.name)}. Чистый старт и два пойманных захода — и ты рядом.`) : t('Nobody has finished today’s race yet: the first time home is the one to beat.', 'Гонку дня ещё никто не прошёл: первое время и станет тем, что будут бить.')}</p>
+              <p className="ho-ps">{best ? t(`${name(best.name)} holds it. A clean start and two good shifts get you close.`, `Оно у ${name(best.name).replace(/\.$/, '')}. Чистый старт и два пойманных захода — и ты рядом.`) : t('Nobody has finished today’s race yet: the first time home is the one to beat.', 'Гонку дня ещё никто не прошёл: первое время и станет тем, что будут бить.')}</p>
               <span className="lbl-ink ho-foot">{t('Take the top spot ›', 'Займи первое место ›')}</span>
             </a>
           </div>
