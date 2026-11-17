@@ -8,7 +8,7 @@
 // the one asked for (the fleet page, /fleet-view, has one of each afloat together).
 // Local frame as yacht.js: +x starboard, +y up, −z forward (the bow), the waterline at y = 0.
 import * as THREE from 'three';
-import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, clothState, flog, mainCloth, kiteCurl, hullSea, staySag, deckWash, lookAt, glance, sailor, labelSprite, THIGH, SHIN, LOOKS, jibStow, stowJib, stowTells, kiteHoist,
+import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, clothState, flog, mainCloth, kiteCurl, hullSea, staySag, deckWash, lookAt, glance, sailor, drive, feel, holdExtension, labelSprite, THIGH, SHIN, LOOKS, jibStow, stowJib, stowTells, kiteHoist,
   fit, bar, winch, block, clutches, cleat, wheel, chainplate, display, purchase, mergeGroup, bowNumberMaterial, nameMaterial, deckFinish, mastGeo, spreaderGeo } from './yacht.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -455,21 +455,32 @@ class ClassView {
     this.label.visible = showLabel && !!status;
     if (status) this.label.userData.set(status, true);
   }
-  // a sailor eased towards where she should be: x, y, z, yaw (0 outboard … π inboard), lean, stand, knee, reach
+  // a sailor eased towards where she should be: x, y, z, yaw (0 outboard … π inboard), lean, stand, knee, reach; and
+  // posed (yacht.js drive), stepping if she moves, giving to the boat's motion, her hands on what want.hands holds
   pose(c, want, k) {
     for (const key of ['x', 'y', 'z', 'yaw', 'lean', 'stand', 'knee', 'reach']) c[key] += (want[key] - c[key]) * k;
-    const sd = c.x >= 0 ? 1 : -1, s = c.s;
-    c.g.position.set(c.x, c.y, c.z); c.g.scale.x = sd; c.g.rotation.z = -(this.sway || 0);
-    s.body.rotation.y = c.yaw; s.body.position.y = c.stand * (THIGH + SHIN + 0.02);
-    s.upper.rotation.z = -c.lean;
-    for (const l of s.legs) { l.hip.rotation.z = (1 - c.stand) * Math.PI / 2; l.knee.rotation.z = (1 - c.stand) * c.knee; }
-    for (const a of s.arms) a.rotation.z = c.reach;
+    c.first = k === 1;
+    drive(this, c, this.crewStep ?? 0, want.hands);
     const gl = glance(this.crewT ?? 0, c.i ?? 0);
     let lw = want.look ?? (c.yaw < 0.8 ? 1.0 : 1.7), lu = want.up ?? 0.1;
     if (gl === 1) { lw = 2.4; lu = 0.6; } else if (gl === 2) lw -= 0.9;
     if (c.s.head) lookAt(c, lw, lu, k);
   }
-  crewDt(t) { const first = this.crewT === undefined, dt = clamp(t - (this.crewT ?? t), 0, 0.1); this.crewT = t; return first ? 1 : 1 - Math.exp(-dt * 2.2); }
+  crewDt(t) {
+    const first = this.crewT === undefined, dt = clamp(t - (this.crewT ?? t), 0, 0.1); this.crewT = t; this.crewStep = dt;
+    feel(this, dt);
+    return first ? 1 : 1 - Math.exp(-dt * 2.2);
+  }
+  // when she last tacked or gybed (the boom's side changing), and how long since
+  sinceTack(t, side) { if (this.tackSide !== side) { if (this.tackSide !== undefined) this.tackT = t; this.tackSide = side; } return t - (this.tackT ?? -99); }
+  // two hands on a wheel's rim (R its radius; at: the wheel's position, in her frame; spin: the wheel itself, turning
+  // about its z), at angles a (from its +x, sx mirroring them to her other side); the hands go some way round with it
+  rim(at, spin, R, sx, a) {
+    const turn = clamp(spin.rotation.z, -0.6, 0.6) * 0.7, p = at.position;
+    return a.map((ai) => { const an = sx > 0 ? ai + turn : Math.PI - ai + turn; return new THREE.Vector3(p.x + R * Math.cos(an), p.y + R * Math.sin(an), p.z + 0.03); });
+  }
+  // a hand on the mast at height y, hauling hand over hand (a halyard, a reef): the two hands by turns
+  haul(x, y, z, t) { return [0, 1].map((j) => new THREE.Vector3(x, y + j * 0.3 + 0.15 * Math.sin(t * 5 + j * Math.PI), z)); }
 }
 
 // ---------- the sportboats: the J/70 and the RS21 ----------
@@ -567,7 +578,8 @@ class SportView extends ClassView {
     this.wheel.add(new THREE.Mesh(finGeo(RY + 0.95, 0.34, 0.24, 0.12, 0.05).translate(0, 0.02, 0.085), MAT.fin));
     this.wheel.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 0.36), M.dark).translateY(-0.02).translateZ(0.08)); // the rudder head
     const tl = cyl(0.025, 0.035, 1.15, M.teak, 8); tl.rotation.x = Math.PI / 2 - 0.12; tl.position.set(0, 0.1, -0.55); this.wheel.add(tl);
-    const ext = cyl(0.012, 0.012, 0.9, M.dark, 6); ext.rotation.z = Math.PI / 2; ext.position.set(0.45, 0.17, -1.1); this.wheel.add(ext);
+    this.ext = new THREE.Group(); this.ext.position.set(0, 0.05, -1.1); this.ext.rotation.set(0.3, 0, -1.2); this.wheel.add(this.ext); // swung to the helm's hand (yacht.js holdExtension)
+    { const e = cyl(0.012, 0.012, 0.9, M.dark, 6); e.position.y = 0.45; this.ext.add(e); }
     // toe rails along the sheer; no lifelines but the bow's short pulpit and the stern's
     for (const sx of [-1, 1]) {
       const pts = []; for (let i = 0; i <= 20; i++) { const t = 0.02 + (i / 20) * 0.95; pts.push([sx * (J.hull.hbAt(H.zAt(t)) - 0.015), H.deckY(H.zAt(t)) + 0.02, H.zAt(t)]); }
@@ -691,12 +703,13 @@ class SportView extends ClassView {
     const k = this.crewDt(t), up = Math.abs(b.twa) < 95 * D2R, hike = clamp(b.heel / 18, 0.15, 1), bowBusy = !!b.kiteJob;
     for (const c of this.crew) {
       let x, y, z = c.z0, yaw = Math.PI, lean = 0.12, stand = 0, knee = -0.8, reach = 0.55;
-      if (c.i === 0) { x = side * (H.hbAt(z) - 0.2); y = H.deckY(z) + 0.05; yaw = 1.2; lean = up ? 0.15 + 0.15 * hike : 0.1; knee = -1.2; reach = 0.9; }
-      else if (c.i === 3 && bowBusy) { x = 0.1; z = J.MAST_Z + 0.45; y = H.deckY(z) + (RS ? 0.05 : 0.2); yaw = Math.PI / 2; stand = 1; lean = 0.3; reach = 0.8; }
+      let hands = null;
+      if (c.i === 0) { x = side * (H.hbAt(z) - 0.2); y = H.deckY(z) + 0.05; yaw = 1.2; lean = up ? 0.15 + 0.15 * hike : 0.1; knee = -1.2; reach = 0.9; hands = (c, M) => [holdExtension(this.ext, 0.9, c, M)]; }
+      else if (c.i === 3 && bowBusy) { x = 0.1; z = J.MAST_Z + 0.45; y = H.deckY(z) + (RS ? 0.05 : 0.2); yaw = Math.PI / 2; stand = 1; lean = 0.3; reach = 0.8; hands = this.haul(0, y + 1.0, J.MAST_Z + 0.085, t); } // jumping the halyard at the mast
       else if (up && !RS && c.i >= 2) { x = side * (H.hbAt(z) - 0.1); y = H.deckY(z) + 0.07; yaw = 0; lean = 0.15 + 0.5 * hike; knee = -1.85; reach = 0.3; }
       else if (up) { x = side * (H.hbAt(z) - 0.22); y = H.deckY(z) + 0.05; yaw = Math.PI - 0.35; lean = 0.1; knee = -1.2; }
       else { const lee = c.i === 2 && b.kite; x = (lee ? -side : side) * (H.hbAt(z) - 0.25); y = H.deckY(z) + 0.05; yaw = lee ? 0.6 : Math.PI - 0.4; }
-      this.pose(c, { x, y, z, yaw, lean, stand, knee, reach }, k);
+      this.pose(c, { x, y, z, yaw, lean, stand, knee, reach, hands }, k);
     }
     // the kite, off the sprit, hoisted nearly to the masthead
     const kf = kiteHoist(b), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0)), S = J.SPRIT;
@@ -718,6 +731,7 @@ class SportView extends ClassView {
   }
 }
 
+const CRANK = 0.26; // the J Class's grinders' cranks, the axle to the grip
 // ---------- the Dragon ----------
 // Johan Anker's 1929 three-man keelboat, to the International Dragon class rules: 8.90 m over all on 5.66 m of
 // waterline, 1.96 m wide, 1.20 m draught and some 1,700 kg, a tonne of it the iron keel. Long overhangs, a spoon bow
@@ -843,7 +857,8 @@ class DragonView extends ClassView {
     this.wheel.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.05, 12), M.steel)); // the stock's head on deck
     // the tiller rises from the stock's head over the coaming's aft end, its extension off its end
     const TA = 0.32, TL = 1.25, tl = cyl(0.022, 0.034, TL, MAT.varnish, 8); tl.rotation.x = Math.PI / 2 + TA; tl.position.set(0, 0.07 + (TL / 2) * Math.sin(TA), -(TL / 2) * Math.cos(TA)); this.wheel.add(tl);
-    const ext = cyl(0.011, 0.011, 0.85, M.dark, 6); ext.rotation.z = Math.PI / 2; ext.position.set(0.42, 0.07 + TL * Math.sin(TA), -TL * Math.cos(TA) + 0.02); this.wheel.add(ext);
+    this.ext = new THREE.Group(); this.ext.position.set(0, 0.07 + TL * Math.sin(TA), -TL * Math.cos(TA)); this.ext.rotation.set(0.3, 0, -1.2); this.wheel.add(this.ext); // swung to the helm's hand
+    { const e = cyl(0.011, 0.011, 0.85, M.dark, 6); e.position.y = 0.425; this.ext.add(e); }
     // the genoa's tracks on the side decks with their cars and blocks, the sheet winches abreast of the cockpit and the
     // cam cleats on the coaming; the shrouds' chainplates 0.72 m out from the centreline, the runners' on the quarters
     for (const sx of [-1, 1]) {
@@ -969,11 +984,12 @@ class DragonView extends ClassView {
     const k = this.crewDt(t), up = Math.abs(b.twa) < 95 * D2R, hike = clamp(b.heel / 18, 0.15, 1), bowBusy = !!b.kiteJob;
     for (const c of this.crew) {
       let x, y, z = c.z0, yaw = Math.PI, lean = 0.12, stand = 0, knee = -0.8, reach = 0.55;
-      if (c.i === 0) { x = side * (H.hbAt(z) - 0.2); y = dk(H.hbAt(z) - 0.2, z) + 0.05; yaw = 1.2; lean = up ? 0.15 + 0.2 * hike : 0.1; knee = -1.2; reach = 0.9; }
-      else if (c.i === 2 && bowBusy) { x = 0.15; z = D.MAST_Z + 0.5; y = dk(0.15, z) + 0.02; yaw = Math.PI / 2; stand = 1; lean = 0.3; reach = 0.8; }
+      let hands = null;
+      if (c.i === 0) { x = side * (H.hbAt(z) - 0.2); y = dk(H.hbAt(z) - 0.2, z) + 0.05; yaw = 1.2; lean = up ? 0.15 + 0.2 * hike : 0.1; knee = -1.2; reach = 0.9; hands = (c, M) => [holdExtension(this.ext, 0.85, c, M)]; }
+      else if (c.i === 2 && bowBusy) { x = 0.15; z = D.MAST_Z + 0.5; y = dk(0.15, z) + 0.02; yaw = Math.PI / 2; stand = 1; lean = 0.3; reach = 0.8; hands = this.haul(0, y + 1.0, D.MAST_Z + 0.075, t); } // the spinnaker's halyard at the mast
       else if (up) { x = side * (H.hbAt(z) - 0.14); y = dk(H.hbAt(z) - 0.14, z) + 0.05; yaw = Math.PI - 0.2; lean = -(0.1 + 0.55 * hike); knee = -1.45; reach = 0.4; }
       else { const lee = c.i === 1 && b.kite; x = (lee ? -side : side) * (H.hbAt(z) - 0.25); y = dk(H.hbAt(z) - 0.25, z) + 0.05; yaw = lee ? 0.6 : Math.PI - 0.4; }
-      this.pose(c, { x, y, z, yaw, lean, stand, knee, reach }, k);
+      this.pose(c, { x, y, z, yaw, lean, stand, knee, reach, hands }, k);
     }
     // the spinnaker: its tack at the pole's end, the pole squared aft to the wind as she bears away; its head at the
     // halyard's sheave, its clew out to leeward
@@ -1169,7 +1185,7 @@ class JClassView extends ClassView {
     blade.add(new THREE.Mesh(rudderGeo(4.6, (u) => 0.35 + 1.25 * Math.sin(Math.PI * Math.min(1, u * 0.9 + 0.1)) ** 0.6, 0.12).translate(0, 0, 0.1), hullMaterial(look.hull, look.stripe, look.bottom))); // some 18 cm thick at its widest, as the keel's after edge it hangs on
     this.wheel.add(blade);
     // the helm: the wheel on its pedestal at the well's forward end, the binnacle before it; the stock's head on deck
-    const wy = dk(0, D.WELL.f) - D.WELL.d, hw = add(new THREE.Group(), 0, wy + 1.15, D.WHEEL_Z);
+    const wy = dk(0, D.WELL.f) - D.WELL.d, hw = this.hw = add(new THREE.Group(), 0, wy + 1.15, D.WHEEL_Z);
     add(cyl(0.16, 0.22, 1.1, MAT.varnish, 12), 0, wy + 0.55, D.WHEEL_Z - 0.25);
     add(cyl(0.18, 0.2, 0.22, MAT.bronze, 16), 0, wy + 1.25, D.WHEEL_Z - 0.55);                   // the binnacle
     add(new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), M.glass), 0, wy + 1.36, D.WHEEL_Z - 0.55); // its compass's dome
@@ -1187,10 +1203,12 @@ class JClassView extends ClassView {
       const gx = sx * 0.9, gy = dk(0.9, D.GRIND_Z);
       add(cyl(0.12, 0.18, 0.95, M.dark, 12), gx, gy + 0.47, D.GRIND_Z);
       add(cyl(0.05, 0.05, 0.62, M.steel, 10), gx, gy + 1.0, D.GRIND_Z).rotation.z = Math.PI / 2; // the crank's axle athwartships
+      const crank = add(new THREE.Group(), gx, gy + 1.0, D.GRIND_Z); // turning on it when they grind (update())
       for (const hx of [-1, 1]) { // a crank each side, half a turn apart, its grip turned out
-        T.add(bar([gx + hx * 0.31, gy + 1.0, D.GRIND_Z], [gx + hx * 0.31, gy + 1.0 + hx * 0.26, D.GRIND_Z], 0.022, 0.022, M.steel, 6));
-        T.add(bar([gx + hx * 0.31, gy + 1.0 + hx * 0.26, D.GRIND_Z], [gx + hx * 0.47, gy + 1.0 + hx * 0.26, D.GRIND_Z], 0.03, 0.03, M.dark, 8));
+        crank.add(bar([hx * 0.31, 0, 0], [hx * 0.31, hx * CRANK, 0], 0.022, 0.022, M.steel, 6));
+        crank.add(bar([hx * 0.31, hx * CRANK, 0], [hx * 0.47, hx * CRANK, 0], 0.03, 0.03, M.dark, 8));
       }
+      (this.spin ??= []).push(crank); (this.cranks ??= []).push(crank);
       const lx = sx * (H.hbAt(D.LEAD_Z) - 0.3);
       fit(add, block(0.09), lx, dk(Math.abs(lx), D.LEAD_Z) + 0.18, D.LEAD_Z);
       add(new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 4.0), M.alu), lx, dk(Math.abs(lx), D.LEAD_Z) + 0.05, D.LEAD_Z);
@@ -1299,7 +1317,7 @@ class JClassView extends ClassView {
     // companionway, the runners' trimmer aft and four on the rail
     const m = crewMats(look);
     this.crew = [
-      ['helm', 0, 12.3], ['tac', 0.55, 12.7], ['mainT', 0.8, 13.8], ['grind', 0.9, 7.1], ['grind', -0.9, 7.1], ['trim', 2.2, 6.4], ['trim', -2.2, 6.4],
+      ['helm', 0, 12.3], ['tac', 0.55, 12.7], ['mainT', 0.8, 13.8], ['grind', 0.9, 6.98], ['grind', -0.9, 6.98], ['trim', 2.2, 6.4], ['trim', -2.2, 6.4],
       ['pit', 0.6, 0.0], ['mast', 0.5, -2.0], ['bow', 0.4, -12], ['rail', 2.6, -5.5], ['rail', 2.6, -8.5], ['rail', 2.6, -2.0], ['rail', 2.6, 1.0],
       ['nav', 0.45, 5.0], ['runner', 2.0, 10.2],
     ].map(([role, x0, z0], i) => {
@@ -1357,6 +1375,9 @@ class JClassView extends ClassView {
     // the deck; downwind the trimmers on the spinnaker's sheet and guy, the rest down the middle; the bow on the
     // foredeck and the mast man at the mast for a hoist, a drop or a gybe of the pole
     const k = this.crewDt(t), up = Math.abs(b.twa) < 95 * D2R, busy = !!b.kiteJob;
+    // the grinders wind the cranks after a tack or a gybe and for a hoist or a drop; otherwise their hands rest on them
+    const winding = this.sinceTack(t, side) < 7 || busy;
+    for (const cr of this.cranks) cr.rotation.x += (winding ? 6.5 : 0) * (this.crewStep ?? 0);
     let rail = 0;
     for (const c of this.crew) {
       let x = c.x0, z = c.z0, yaw = Math.PI / 2, lean = 0.05, stand = 1, knee = -0.3, reach = 0.5;
@@ -1366,21 +1387,22 @@ class JClassView extends ClassView {
       const sitDown = () => { stand = -0.25; knee = -0.71; };
       // the rail crew sit on deck, their backs to the bulwark, facing in
       const sitRail = (sd = side) => { const zz = lerp(-10, 5.5, (rail++) / 9); z = zz; x = sd * (H.hbAt(zz) - 0.42); yaw = Math.PI - 0.1; lean = -0.12; sitDown(); reach = 0.3; };
-      if (c.role === 'helm') { x = 0; reach = 1.0; }
+      let hands = null;
+      if (c.role === 'helm') { x = side * 0.75; z = D.WHEEL_Z + 0.42; yaw = Math.PI / 2 + 0.25; lean = 0.15; reach = 1.0; hands = this.rim(this.hw, this.helmWheel, 0.95, side, [-0.05, 0.6]); } // to windward of the wheel, to see the jib's luff
       else if (c.role === 'tac') { x = side * 0.55; yaw = Math.PI / 2 + 0.3; }
       else if (c.role === 'nav') { x = 0.45; yaw = Math.PI / 2 - 0.3; reach = 0.2; }
       else if (c.role === 'runner') { x = side * 2.0; yaw = Math.PI - 0.5; lean = 0.15; reach = 0.8; }
       else if (c.role === 'mainT') { x = side * 0.9; yaw = Math.PI / 2 + 0.6; reach = 0.8; }
-      else if (c.role === 'grind') { x = c.x0; yaw = Math.PI / 2; lean = 0.45; reach = 1.2; }
+      else if (c.role === 'grind') { x = c.x0; yaw = Math.PI / 2; lean = 0.45; reach = 1.2; const cr = this.cranks[c.x0 < 0 ? 0 : 1]; hands = [-1, 1].map((hx) => { const a = cr.rotation.x + (hx > 0 ? 0 : Math.PI); return new THREE.Vector3(cr.position.x + hx * 0.4, cr.position.y + CRANK * Math.cos(a), cr.position.z + CRANK * Math.sin(a)); }); }
       else if (c.role === 'trim') { const mine = up ? c.x0 * side < 0 : true; if (mine) { x = (up ? -side : Math.sign(c.x0)) * 2.0; yaw = 0.4; lean = 0.2; reach = 0.9; } else sitRail(); }
-      else if ((c.role === 'bow' || c.role === 'mast') && busy) { x = 0.4; z = c.role === 'bow' ? -12 : D.MAST_Z + 0.9; yaw = Math.PI / 2; lean = 0.3; reach = 0.9; }
+      else if ((c.role === 'bow' || c.role === 'mast') && busy) { x = 0.4; z = c.role === 'bow' ? -12 : D.MAST_Z + 0.9; yaw = Math.PI / 2; lean = 0.3; reach = 0.9; if (c.role === 'mast') hands = this.haul(0.12, dk(0.4, z) + 1.0, D.MAST_Z + 0.36, t); } // the mast man sweats the halyard
       else if (up) sitRail();
       else { sitRail(c.i % 2 ? side : -side); lean = -0.05; } // downwind: along both side decks, clear of the doghouse
       // standing on the deck; sitting on it (SIT_Y: the hips 12 cm up, the figure raised by what sitDown lowers it); the
       // afterguard standing on the helm's well's floor, which is flat (the deck over it rises aft)
       const inWell = (c.role === 'helm' || c.role === 'tac') && z >= D.WELL.f && z <= D.WELL.a;
       const y = inWell ? dk(0, D.WELL.f) - D.WELL.d + 0.01 : dk(Math.abs(x), z) + (stand < 0.5 ? SIT_Y : 0.02);
-      this.pose(c, { x, y, z, yaw, lean, stand, knee, reach }, k);
+      this.pose(c, { x, y, z, yaw, lean, stand, knee, reach, hands }, k);
     }
     // the spinnaker: its tack at the pole's end, the pole squared aft to the wind as she bears away; its head at the
     // masthead, its clew out to leeward
@@ -1500,7 +1522,8 @@ class LaserView extends ClassView {
     const tl = cyl(0.016, 0.02, 0.95, M.alu, 8); tl.rotation.x = Math.PI / 2 + 0.05; tl.position.set(0, 0.04, -0.47); this.wheel.add(tl);
     const uj = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.06, 8), M.dark); uj.position.set(0, 0.06, -0.94); this.wheel.add(uj); // the extension's universal joint
     const grip = cyl(0.022, 0.022, 0.13, M.dark, 8); grip.rotation.x = Math.PI / 2; grip.position.set(0, 0.04, -0.12); this.wheel.add(grip);
-    this.ext = cyl(0.01, 0.01, 1.1, M.dark, 6); this.ext.rotation.set(0, 0.5, Math.PI / 2); this.ext.position.set(0.45, 0.06, -1.15); this.wheel.add(this.ext); // to the side she sits
+    this.ext = new THREE.Group(); this.ext.position.set(0, 0.06, -0.94); this.ext.rotation.set(0.3, 0, -1.2); this.wheel.add(this.ext); // from its joint to her aft hand, to the side she sits
+    { const e = cyl(0.01, 0.01, 1.1, M.dark, 6); e.position.y = 0.55; this.ext.add(e); }
     // the rope traveller across the aft deck between its fairleads, its block riding it
     const TZ = LZ.TRAV_Z, ty = deckAt(0.42, TZ), ty0 = deckAt(0, TZ);
     for (const sx of [-1, 1]) add(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.03, 0.05), M.dark), sx * 0.42, ty + 0.015, TZ);
@@ -1549,7 +1572,7 @@ class LaserView extends ClassView {
       tt.userData = { f, sx }; this.mainPivot.add(tt); this.tells.push(tt);
     }
     // the mainsheet: from the traveller up to the boom's end, along it to the middle block and down to the ratchet
-    this.mainsheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]); this.mainsheet.frustumCulled = false; T.add(this.mainsheet);
+    this.mainsheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]); this.mainsheet.frustumCulled = false; T.add(this.mainsheet);
     // no jib and no kite: the parts the game asks for, never shown
     const none = sailTexture('kite', look);
     this.jib = sailMesh(2, 2, none, false, 'jib'); this.jib.visible = false;
@@ -1561,14 +1584,13 @@ class LaserView extends ClassView {
     // her one sailor
     const m = crewMats(look), s = sailor({ ...m, skin: new THREE.MeshStandardMaterial({ color: SKINS[0], roughness: 0.65 }) });
     T.add(s.g);
-    this.crew = [{ g: s.g, s, z0: 1.05, i: 0, x: 0, y: H.deckY(1.05), z: 1.05, yaw: Math.PI, lean: 0, stand: 0, knee: -0.8, reach: 0.5 }];
+    this.crew = [{ g: s.g, s, z0: 1.05, i: 0, x: 0, y: H.deckY(1.05), z: 1.05, yaw: Math.PI, lean: 0, stand: 0, knee: -0.8, reach: 0.5, trackHands: true }];
     this.eye = [0.85, 1.2, 1.15]; // the helm view: her head as she hikes
     this.finish(label, 8);
   }
   update(b, t, W, showLabel) {
     const H = LZ.hull, side = this.place(b, t, W);
     this.wheel.rotation.y = b.rudder * 0.5;
-    this.ext.position.x = side * 0.45; this.ext.rotation.y = side * 0.5;
     const sa = b.sail * D2R, luff = b.luff, ph = t * 17;
     this.mainPivot.rotation.y = -this.sailSide * sa;
     // the sleeve round the mast gives the luff an even entry; the full sail sets deep low down and flattens up high
@@ -1605,7 +1627,10 @@ class LaserView extends ClassView {
     const want = up
       ? { x: side * lerp(hb - 0.18, hb + 0.03, out), y: H.deckY(z) + 0.06, z, yaw: Math.PI - lerp(0.75, 0.5, out), lean: lerp(0.25, -0.95, out) - work, stand: 0, knee: lerp(-1.2, -0.5, out), reach: lerp(0.7, 0.35, out) }
       : { x: side * 0.4, y: H.deckY(z) + 0.04, z, yaw: Math.PI - 0.7, lean: 0.12 - work, stand: 0, knee: -1.25, reach: 0.6 };
+    want.hands = (c, M) => [holdExtension(this.ext, 1.1, c, M)]; // the extension in her aft hand
     this.pose(c, want, k);
+    // the sheet's tail, from the ratchet block to her other hand
+    { const j = c.hw[0] < c.hw[1] ? 0 : 1, ms = this.mainsheet.geometry.attributes.position; ms.setXYZ(5, c.hand[j].x, c.hand[j].y, c.hand[j].z); ms.needsUpdate = true; }
     this.showLabel(b, showLabel);
   }
 }
@@ -1858,7 +1883,8 @@ class OptimistView extends ClassView {
     const tl = cyl(0.014, 0.017, 0.7, M.alu, 8); tl.rotation.x = Math.PI / 2 + 0.06; tl.position.set(0, RY + 0.01, -0.37); this.wheel.add(tl);
     const grip = cyl(0.018, 0.018, 0.12, M.dark, 8); grip.rotation.x = Math.PI / 2; grip.position.set(0, RY + 0.01, -0.12); this.wheel.add(grip);
     const uj = cyl(0.012, 0.012, 0.05, M.dark, 8); uj.position.set(0, RY - 0.01, -0.7); this.wheel.add(uj); // the extension's joint
-    this.ext = cyl(0.009, 0.009, 0.5, M.dark, 6); this.ext.rotation.set(0, 0.5, Math.PI / 2); this.ext.position.set(0.22, RY - 0.01, -0.82); this.wheel.add(this.ext);
+    this.ext = new THREE.Group(); this.ext.position.set(0, RY - 0.01, -0.7); this.ext.rotation.set(0.3, 0, -1.2); this.wheel.add(this.ext); // from its joint to her aft hand
+    { const e = cyl(0.009, 0.009, 0.5, M.dark, 6); e.position.y = 0.25; this.ext.add(e); }
     // the mainsheet's two blocks on the floor behind the midship frame, where the rules fix them: the plain block aft,
     // the ratchet block forward, in front of the sailor
     { const fb = new THREE.Group(); fb.add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.012, 0.03), M.dark));
@@ -1911,7 +1937,7 @@ class OptimistView extends ClassView {
     }
     // the mainsheet: made fast at the boom's end, down to the block on the floor, up to the block at the boom's end,
     // along the boom to its middle block and down to the ratchet
-    this.mainsheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]); this.mainsheet.frustumCulled = false; T.add(this.mainsheet);
+    this.mainsheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]); this.mainsheet.frustumCulled = false; T.add(this.mainsheet);
     // no jib and no kite: the parts the game asks for, never shown
     const none = sailTexture('kite', look);
     this.jib = sailMesh(2, 2, none, false, 'jib'); this.jib.visible = false;
@@ -1925,7 +1951,7 @@ class OptimistView extends ClassView {
     const m = crewMats(look), s = sailor({ ...m, skin: new THREE.MeshStandardMaterial({ color: SKINS[1], roughness: 0.65 }) });
     const kid = new THREE.Group(); s.g.scale.setScalar(0.78); kid.add(s.g); T.add(kid);
     const z0 = 0.62;
-    this.crew = [{ g: kid, s, z0, i: 0, x: 0, y: O.sheer(H.tAt(z0)), z: z0, yaw: Math.PI, lean: 0, stand: 0, knee: -0.8, reach: 0.5 }];
+    this.crew = [{ g: kid, s, z0, i: 0, x: 0, y: O.sheer(H.tAt(z0)), z: z0, yaw: Math.PI, lean: 0, stand: 0, knee: -0.8, reach: 0.5, trackHands: true }];
     this.eye = [0.62, 0.8, 0.62]; // the helm view: her head as she hikes
     this.finish(label, 4.2);
   }
@@ -1947,7 +1973,6 @@ class OptimistView extends ClassView {
   update(b, t, W, showLabel) {
     const O = OZ, H = O.hull, side = this.place(b, t, W);
     this.wheel.rotation.y = b.rudder * 0.5;
-    this.ext.position.x = side * 0.22; this.ext.rotation.y = side * 0.5;
     this.mainPivot.rotation.y = -this.sailSide * b.sail * D2R;
     setSail(this.main, (f, u, v) => this.sailPoint(f, u, t, v));
     // the sheet: boom end → the block on the floor → the boom end's block → the middle block → the ratchet
@@ -1977,7 +2002,10 @@ class OptimistView extends ClassView {
     const want = up
       ? { x: side * lerp(hb - 0.07, hb + 0.04, out), y, z, yaw: Math.PI - lerp(0.75, 0.5, out), lean: lerp(0.3, -0.9, out) - work, stand: 0, knee: lerp(-1.25, -0.55, out), reach: lerp(0.7, 0.35, out) }
       : { x: side * (hb - 0.08), y, z, yaw: Math.PI - 0.7, lean: 0.2 - work, stand: 0, knee: -1.3, reach: 0.6 };
+    want.hands = (c, M) => [holdExtension(this.ext, 0.5, c, M)]; // the extension in her aft hand
     this.pose(c, want, k);
+    // the sheet's tail, from the ratchet block to her other hand
+    { const j = c.hw[0] < c.hw[1] ? 0 : 1, ms = this.mainsheet.geometry.attributes.position; ms.setXYZ(5, c.hand[j].x, c.hand[j].y, c.hand[j].z); ms.needsUpdate = true; }
     this.showLabel(b, showLabel);
   }
 }
@@ -2318,13 +2346,14 @@ class CruiserView extends ClassView {
     const k = this.crewDt(t), up = Math.abs(b.twa) < 95 * D2R, bowBusy = !!b.kiteJob;
     for (const c of this.crew) {
       let x, y, z = c.z0, yaw = Math.PI, lean = 0.12, stand = 0, knee = -1.4, reach = 0.55;
-      if (c.i === 0) { x = side * BV.WHEEL_X; y = BV.FLOOR + 0.02; yaw = Math.PI / 2 + 0.25; stand = 1; lean = 0.1; knee = -0.3; reach = 1.0; }
+      let hands = null;
+      if (c.i === 0) { x = side * BV.WHEEL_X; z = BV.WHEEL_Z + 0.42; y = BV.FLOOR + 0.02; yaw = Math.PI / 2; stand = 1; lean = 0.15; knee = -0.3; reach = 1.0; const w = this.wheel.children[side > 0 ? 1 : 0]; hands = this.rim(w, w, 0.52, 1, [Math.PI / 2 - 0.85, Math.PI / 2 + 0.85]); }
       else if (c.i === 1) { x = side * (BV.CK[1] - 0.3); y = BV.FLOOR + 0.43; yaw = Math.PI - 0.5; reach = 0.8; }
       else if (c.i === 2) { const lee = !up && b.kite; x = (lee ? -side : side) * (BV.CK[1] - 0.25); y = BV.FLOOR + 0.43; yaw = Math.PI - 0.9; reach = 0.9; }
-      else if (c.i === 4 && bowBusy) { x = 0.25; z = BV.MAST_Z + 0.45; y = BV.ROOF + 0.02; yaw = Math.PI / 2; stand = 1; lean = 0.3; reach = 0.8; }
+      else if (c.i === 4 && bowBusy) { x = 0.25; z = BV.MAST_Z + 0.45; y = BV.ROOF + 0.02; yaw = Math.PI / 2; stand = 1; lean = 0.3; reach = 0.8; hands = this.haul(0.05, y + 1.0, BV.MAST_Z + 0.18, t); }
       else if (up) { x = side * (H.hbAt(z) - 0.12); y = H.deckY(z) + 0.07; yaw = 0; lean = 0.2; knee = -1.85; reach = 0.3; }
       else { x = side * (H.hbAt(z) - 0.45); y = H.deckY(z) + 0.06; yaw = Math.PI - 0.5; knee = -1.2; }
-      this.pose(c, { x, y, z, yaw, lean, stand, knee, reach }, k);
+      this.pose(c, { x, y, z, yaw, lean, stand, knee, reach, hands }, k);
     }
     // the gennaker, tacked to the sprit and hoisted to the hounds
     const kf = kiteHoist(b), kfill = kf * kf * (1 - 0.65 * (b.kiteCollapse || 0)), S = BV.SPRIT;
@@ -2575,7 +2604,8 @@ class AC75View extends ClassView {
         c.cyc = (c.cyc || 0) + cad * (t - (c.ct ?? t)); c.ct = t;
         c.s.legs.forEach((l, j) => { const a = c.cyc + c.ph + j * Math.PI; l.hip.rotation.z = Math.PI / 2 * 0.72 + 0.32 * Math.sin(a); l.knee.rotation.z = -1.25 + 0.5 * Math.sin(a + 0.9); });
       } else {
-        this.pose(c, { x: c.sx * 1.55, y: fy - 0.05, z: c.z0, yaw: c.i === 0 ? Math.PI / 2 + 0.35 : wind ? 0.9 : Math.PI / 2, stand: 1, knee: -0.4,
+        const w = this.wheel.children[c.sx > 0 ? 1 : 0];
+        this.pose(c, { x: c.sx * 1.55, y: fy - 0.05, z: c.z0, yaw: c.i === 0 ? Math.PI / 2 : wind ? 0.9 : Math.PI / 2, stand: 1, knee: -0.4, hands: c.i === 0 ? this.rim(w, w, 0.3, 1, [Math.PI / 2 - 0.9, Math.PI / 2 + 0.9]) : null,
           lean: c.i === 1 && wind ? 0.35 + 0.1 * Math.sin(t * 3 + c.ph) : 0.2, reach: c.i === 0 ? 1.0 : wind ? 1.1 + 0.25 * Math.sin(t * 2.5 + c.ph) : 0.7 }, k);
       }
     }

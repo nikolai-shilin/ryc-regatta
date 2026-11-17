@@ -1025,7 +1025,8 @@ function shell(rings, p, a0, a1, low, high, out, nA = 28, nY = 6) {
   g.setIndex(idx); g.computeVertexNormals();
   return g;
 }
-const ELBOW = 1.15; // the forearm bent forward
+const ELBOW = 1.15; // the forearm bent forward, at rest
+const UPPER_ARM = 0.27, FOREARM = 0.27; // the shoulder's joint to the elbow's, the elbow's to the middle of the fist
 // lo: the plain figure for far off (fewer sides to every part, and no ears, lips, brows, frames, knuckles or button)
 function crewParts(lo) {
   const S = (n) => (lo ? Math.max(4, Math.round(n / 2)) : n), hi = (g) => (lo ? null : g);
@@ -1051,13 +1052,13 @@ function crewParts(lo) {
     loft([[0.118, 0.17, 0.116, 0.118], [0.146, 0.172, 0.118, 0.12]], S(18), 2.3),
     new THREE.BoxGeometry(0.03, 0.045, 0.06).translate(0.122, 0.132, 0),
   ]);
-  // arms from the shoulder joint: the deltoid, the upper arm to the elbow, the forearm bent forward to the cuff
+  // arms from the shoulder joint: the deltoid, the upper arm to the elbow; the forearm and the hand from the elbow's
+  // joint, drawn straight down from it (the elbow's bone bends them)
   const upperArm = loft([[0.04, 0, 0, 0, -0.004], [0.028, 0.04, 0.042, 0.044], [0.004, 0.056, 0.056, 0.056], [-0.06, 0.054, 0.056, 0.052], [-0.16, 0.047, 0.051, 0.045], [-0.25, 0.043, 0.045, 0.043], [-0.29, 0, 0, 0]], S(10));
-  const elbowJ = new THREE.SphereGeometry(0.045, S(8), S(6)).translate(0, -0.27, 0);
-  const bend = (g) => g.rotateZ(ELBOW).translate(0, -0.27, 0);
-  const forearm = bend(loft([[0.02, 0, 0, 0], [0, 0.044, 0.046, 0.044], [-0.07, 0.046, 0.05, 0.046], [-0.16, 0.038, 0.04, 0.036], [-0.2, 0.04, 0.042, 0.04], [-0.225, 0.042, 0.044, 0.042], [-0.23, 0, 0, 0]], S(10)));
+  const elbowJ = new THREE.SphereGeometry(0.045, S(8), S(6)).translate(0, -UPPER_ARM, 0);
+  const forearm = (loft([[0.02, 0, 0, 0], [0, 0.044, 0.046, 0.044], [-0.07, 0.046, 0.05, 0.046], [-0.16, 0.038, 0.04, 0.036], [-0.2, 0.04, 0.042, 0.04], [-0.225, 0.042, 0.044, 0.042], [-0.23, 0, 0, 0]], S(10)));
   // a gloved hand gripping: flat across (the palm faces in), the fingers curled into a fist, the thumb forward
-  const hand = bend(mergeGeometries([
+  const hand = (mergeGeometries([
     loft([[-0.2, 0.026, 0.028, 0.028], [-0.24, 0.024, 0.042, 0.036], [-0.28, 0.024, 0.046, 0.032, 0.004], [-0.31, 0.02, 0.036, 0.026, 0.008], [-0.325, 0, 0, 0, 0.012]], S(10)),
     ...(lo ? [] : [
       new THREE.CapsuleGeometry(0.012, 0.03, 2, 6).rotateZ(0.9).translate(0.04, -0.255, 0),
@@ -1150,7 +1151,7 @@ function crewParts(lo) {
   return { thigh, knee, shin, boot, shoe, sole, pelvis, torso, vest, upperArm, elbowJ, forearm, hand, neck, head, hair, beard, mouth, brows, LENSES, frame, cap, helmet };
 }
 const SAILOR = crewParts(false), SAILOR_LO = crewParts(true);
-// A sailor is one draw (skin.js): the joints (body, upper body, hips, knees, arms) are bones. The parts' colours ride
+// A sailor is one draw (skin.js): the joints (body, upper body, hips, knees, shoulders, elbows) are bones. The parts' colours ride
 // on the vertices, each from the material it was given, so all the sailors in the race share this one.
 const CREW_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75 });
 const SAILOR_SPHERE = new THREE.Sphere(new THREE.Vector3(0, 0.4, 0), 1.6); // round every pose, seated to standing
@@ -1181,7 +1182,8 @@ export function sailor(m) {
     const a = new THREE.Bone(); a.position.set(0, 0.47, sz * 0.2 * build); a.rotation.x = -sz * 0.12; upper.add(a);
     return a;
   });
-  const bones = [body, upper, head, ...legs.flatMap((l) => [l.hip, l.knee]), ...arms];
+  const elbows = arms.map((a) => { const e = new THREE.Bone(); e.position.y = -UPPER_ARM; e.rotation.z = ELBOW; a.add(e); return e; });
+  const bones = [body, upper, head, ...legs.flatMap((l) => [l.hip, l.knee]), ...arms, ...elbows];
   // the joints bend as one surface: near a joint a part follows the bone across it too, half at the joint itself and
   // all of it d beyond (t: how far past the joint, along the part). The waist bends between the hips and the chest as
   // she leans, and the top of the arm stays with the shoulder as the arm swings. The top of the thigh, inside the
@@ -1200,7 +1202,7 @@ export function sailor(m) {
     [wide(P.torso), upper, m.jacket, waist()], [wide(P.vest), upper, m.vest, waist()], [P.neck, upper, m.skin], [onHead(P.head), head, m.skin], [onHead(P.hair), head, hair],
     [onHead(P.brows), head, hair], [onHead(P.mouth), head, mouth], [onHead(m.helmet ? P.helmet : P.cap), head, m.cap], [onHead(P.LENSES[(n * 5) % 3]), head, null], [onHead(P.frame), head, frameCol],
     ...(n % 5 === 1 ? [[onHead(P.beard), head, hair]] : []),
-    ...arms.flatMap((a) => [[P.upperArm, a, m.jacket, shoulder()], [P.elbowJ, a, m.jacket], [P.forearm, a, m.jacket], [P.hand, a, hands]]),
+    ...arms.flatMap((a, j) => [[P.upperArm, a, m.jacket, shoulder()], [P.elbowJ, a, m.jacket], [P.forearm, elbows[j], m.jacket], [P.hand, elbows[j], hands]]),
   ].filter(([geo]) => geo).map(([geo, bone, mat, blend]) => [geo, bone, mat && (mat.isColor ? mat : col(mat)), blend]);
   // both figures ride the same bones; level() shows one: 2 the full figure, 1 the plain one, 0 neither
   const mesh = rigidSkin(dress(SAILOR), bones, body, CREW_MAT, SAILOR_SPHERE), lo = rigidSkin(dress(SAILOR_LO), bones, body, CREW_MAT, SAILOR_SPHERE);
@@ -1208,7 +1210,7 @@ export function sailor(m) {
   lo.visible = false;
   g.add(mesh, lo);
   const level = (l) => { mesh.visible = l === 2; lo.visible = l === 1; };
-  return { g, body, upper, head, legs, arms, mesh, lo, level };
+  return { g, body, upper, head, legs, arms, elbows, mesh, lo, level };
 }
 // the head's parts are drawn in the chest's frame: moved down by the neck's height, they sit on the head's own joint
 let NECK_Y = null;
@@ -1225,13 +1227,157 @@ function onHead(geo) {
 // where a sailor looks: want, the way (0 outboard, π/2 forward, π inboard, as her yaw) and up (+ above the horizon);
 // her head turns there from her body, as far as a neck turns, and eases round
 export function lookAt(c, want, up, k) {
-  const hy = clamp(want - c.yaw, -1.35, 1.35);
+  const hy = clamp(want - (c.yawShown ?? c.yaw), -1.35, 1.35);
   c.hy = (c.hy ?? 0) + (hy - (c.hy ?? 0)) * k; c.hp = (c.hp ?? 0) + (up - (c.hp ?? 0)) * k;
   c.s.head.rotation.set(0, c.hy, c.hp);
 }
 // a sailor's glances: mostly where her job has her look, now and then up at the sails or round to windward for the
 // next gust — each on her own clock (i)
 export const glance = (t, i, every = 0.37) => Math.sin(t * every + i * 1.9) > 0.78 ? 1 : Math.sin(t * every * 0.71 + i * 4.3 + 1) > 0.85 ? 2 : 0;
+
+// ---------- the crew in motion ----------
+// What the boat does to them: her acceleration where they sit (a metre over her deck), in her own frame (x to
+// starboard, y up, z aft), smoothed a little. A slam into a wave, the way she loses in a tack, a turn at speed or a
+// collision throws their bodies about (drive). Called once a frame, after the hull is placed.
+const _m = new THREE.Matrix4(), _mi = new THREE.Matrix4(), _ma = new THREE.Matrix4(), _mb = new THREE.Matrix4();
+const _p = new THREE.Vector3(), _v = new THREE.Vector3(), _d = new THREE.Vector3(), _q = new THREE.Quaternion(), _qa = new THREE.Quaternion();
+const A1 = new THREE.Vector3(), A2 = new THREE.Vector3(), A3 = new THREE.Vector3(), B1 = new THREE.Vector3(), B2 = new THREE.Vector3(), B3 = new THREE.Vector3();
+export function feel(v, dt) {
+  v.root.updateMatrix(); v.tilt.updateMatrix();
+  const p = _p.set(0, 1, 0).applyMatrix4(_m.multiplyMatrices(v.root.matrix, v.tilt.matrix));
+  v.acc ??= new THREE.Vector3(); v.fa ??= new THREE.Vector3();
+  if (!(dt > 0)) return;
+  if (!v.fp || p.distanceTo(v.fp) > 10) { v.fp = p.clone(); v.fv = null; v.fa.set(0, 0, 0); v.acc.set(0, 0, 0); return; } // a new race, or put back
+  const vel = _v.subVectors(p, v.fp).divideScalar(dt); v.fp.copy(p);
+  if (!v.fv) { v.fv = vel.clone(); return; }
+  const acc = _d.subVectors(vel, v.fv).divideScalar(dt).clampLength(0, 15); v.fv.copy(vel);
+  v.fa.lerp(acc, 1 - Math.exp(-dt * 12));
+  _q.multiplyQuaternions(v.root.quaternion, v.tilt.quaternion).invert();
+  v.acc.copy(v.fa).applyQuaternion(_q).clampLength(0, 7);
+}
+
+// an arm reaching for a point (in her chest's frame, the upper body's bone): the elbow bends so that shoulder to fist
+// spans the distance, and the shoulder turns the arm at it, the elbow out towards the pole (down, out to her side and
+// a little back, as an elbow goes). q: the shoulder's turn; returns the elbow's bend
+const POLE = new THREE.Vector3(-0.35, -0.8, 0.5);
+function reach(S, T, sz, q) {
+  _d.subVectors(T, S);
+  const d = clamp(_d.length(), 0.08, UPPER_ARM + FOREARM - 0.003);
+  const bend = clamp(Math.acos(clamp((d * d - UPPER_ARM * UPPER_ARM - FOREARM * FOREARM) / (2 * UPPER_ARM * FOREARM), -1, 1)), 0.05, 2.55);
+  A1.set(FOREARM * Math.sin(bend), -UPPER_ARM - FOREARM * Math.cos(bend), 0).normalize(); // the fist from the shoulder, in the arm's own frame
+  A2.set(0, -UPPER_ARM, 0); A2.addScaledVector(A1, -A2.dot(A1)).normalize(); // and the elbow, square to it
+  A3.crossVectors(A1, A2);
+  B1.copy(_d).normalize();
+  B2.set(POLE.x, POLE.y, POLE.z * sz); B2.addScaledVector(B1, -B2.dot(B1));
+  if (B2.lengthSq() < 1e-6) B2.set(0, 0, sz).addScaledVector(B1, -B1.z * sz);
+  B2.normalize(); B3.crossVectors(B1, B2);
+  _mb.makeBasis(B1, B2, B3).multiply(_ma.makeBasis(A1, A2, A3).transpose());
+  q.setFromRotationMatrix(_mb);
+  return bend;
+}
+
+// A sailor posed: c carries where the boat wants her, eased (x, y, z, yaw, lean, stand, knee, reach: see the JPK's
+// update); drive turns that into her bones, and adds what she does on the way and with her hands:
+// - crossing the middle of the boat (where the figure is mirrored, so +x is always outboard) she keeps facing the way
+//   she was, rather than flipping round;
+// - moving over the deck she steps: she turns towards where she's going, her legs swing and her knees lift by turns,
+//   her arms swing against them and she bobs a little with each step, the quicker she goes the more;
+// - her body gives to the boat's motion (feel): it sways forward as the boat slows, back as she drives off a wave, to
+//   the side in a hard turn, and sags at a slam; on a spring, so it overshoots once and settles;
+// - hands: up to two points in the boat's frame (or a function of her, given her chest's frame, that returns them),
+//   which her nearest free hand reaches for — a tiller extension, a wheel's rim, a winch handle, the mast. A hand
+//   comes to its hold and lets go over a few tenths of a second. c.hand, when asked for (c.trackHands), is where
+//   her fists are, in the boat's frame.
+const STEP = 0.34; // a step, crouched on a moving deck
+const wrapPi = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+export function drive(v, c, dt, hands) {
+  const s = c.s, sd = c.x >= 0 ? 1 : -1;
+  if (c.sd !== undefined && sd !== c.sd) { c.yaw = Math.PI - c.yaw; c.hy = -(c.hy ?? 0); c.is = -(c.is ?? 0); c.vs = -(c.vs ?? 0); }
+  c.sd = sd;
+  // walking
+  const moved = c.px === undefined ? 0 : Math.hypot(c.x - c.px, c.z - c.pz), mx = c.x - (c.px ?? c.x), mz = c.z - (c.pz ?? c.z);
+  c.px = c.x; c.pz = c.z;
+  const spd = dt > 0 && moved < 1.5 ? moved / dt : 0;
+  c.spd = (c.spd ?? 0) + (Math.min(spd, 3) - (c.spd ?? 0)) * (1 - Math.exp(-dt * 8));
+  const w = smoothstep(0.2, 0.7, c.spd);
+  c.gp = (c.gp ?? (c.i ?? 0) * 1.7) + (moved < 1.5 ? moved / STEP : 0) * Math.PI;
+  if (w > 0.01 && moved > 1e-4) c.wy = Math.atan2(-mz, mx * sd); // the way she's going, as a yaw
+  const yaw = c.yaw + (c.wy === undefined ? 0 : wrapPi(c.wy - c.yaw) * w * 0.8);
+  c.yawShown = yaw;
+  // the boat's motion on her body: the push she feels (against the acceleration) along and across her facing
+  const a = v.acc, cy = Math.cos(yaw), sy = Math.sin(yaw);
+  const fx = a ? -a.x * sd : 0, fz = a ? -a.z : 0;
+  const tf = clamp(0.055 * (fx * cy - fz * sy), -0.4, 0.4), ts = clamp(0.05 * (fx * sy + fz * cy), -0.3, 0.3), tu = clamp(0.035 * (a ? a.y : 0), -0.18, 0.18);
+  const om = 7 + ((c.i ?? 0) % 3), ze = 0.42;
+  for (let n = 0, h = dt / 2; n < 2 && dt > 0; n++) {
+    c.vf = (c.vf ?? 0) + (om * om * (tf - (c.if ?? 0)) - 2 * ze * om * (c.vf ?? 0)) * h; c.if = (c.if ?? 0) + c.vf * h;
+    c.vs = (c.vs ?? 0) + (om * om * (ts - (c.is ?? 0)) - 2 * ze * om * (c.vs ?? 0)) * h; c.is = (c.is ?? 0) + c.vs * h;
+    c.vu = (c.vu ?? 0) + (om * om * (tu - (c.iu ?? 0)) - 2 * ze * om * (c.vu ?? 0)) * h; c.iu = (c.iu ?? 0) + c.vu * h;
+  }
+  const sag = clamp(c.iu ?? 0, -0.2, 0.2);
+  // the bones
+  const st0 = c.stand + (Math.max(c.stand, 0.45) - c.stand) * w, st = st0 - (st0 > 0.4 ? sag * 0.8 : 0), bob = -0.025 * w * Math.cos(2 * c.gp);
+  c.g.position.set(c.x, c.y, c.z); c.g.scale.x = sd; c.g.rotation.z = -(v.sway || 0);
+  s.body.rotation.y = yaw; s.body.position.y = st * (THIGH + SHIN + 0.02) + bob;
+  s.upper.rotation.set(clamp(c.is ?? 0, -0.35, 0.35), 0, -(c.lean + clamp(c.if ?? 0, -0.45, 0.45) + sag * 0.6));
+  s.legs.forEach((l, j) => {
+    const ph = c.gp + j * Math.PI;
+    l.hip.rotation.z = (1 - st) * Math.PI / 2 + 0.5 * w * Math.sin(ph);
+    l.knee.rotation.z = (1 - st) * c.knee - 0.9 * w * Math.max(0, Math.cos(ph));
+  });
+  s.arms.forEach((arm, j) => { arm.rotation.set(-(j * 2 - 1) * 0.12, 0, c.reach - 0.35 * w * Math.sin(c.gp + j * Math.PI)); s.elbows[j].rotation.z = ELBOW; });
+  // the hands
+  const shown = s.mesh.visible || s.lo.visible;
+  c.g.updateMatrix(); s.body.updateMatrix(); s.upper.updateMatrix();
+  const M = (c.M ??= new THREE.Matrix4()).copy(c.g.matrix);
+  if (s.g !== c.g) { s.g.updateMatrix(); M.multiply(s.g.matrix); } // a child, her figure scaled down in a group of its own
+  M.multiply(s.body.matrix).multiply(s.upper.matrix);
+  const T = typeof hands === 'function' ? hands(c, M) : hands;
+  c.hw ??= [0, 0]; c.ht ??= [new THREE.Vector3(), new THREE.Vector3()];
+  const got = [false, false];
+  if (T) {
+    _mi.copy(M).invert();
+    const pts = T.filter(Boolean).slice(0, 2).map((p) => p.clone().applyMatrix4(_mi));
+    if (pts.length === 2) { const lo = pts[0].z <= pts[1].z ? 0 : 1; c.ht[0].copy(pts[lo]); c.ht[1].copy(pts[1 - lo]); got[0] = got[1] = true; }
+    else if (pts.length === 1) { // the hand it asks for (arm: 0 or 1), or the nearer, the one already on it unless the other is clearly nearer
+      const p0 = T.find(Boolean), d = [0, 1].map((j) => pts[0].distanceTo(s.arms[j].position) - 0.12 * c.hw[j]);
+      const j = p0.arm ?? (d[0] <= d[1] ? 0 : 1); c.ht[j].copy(pts[0]); got[j] = true;
+    }
+  }
+  const kh = c.first ? 1 : 1 - Math.exp(-dt * 7);
+  s.arms.forEach((arm, j) => {
+    c.hw[j] += ((got[j] ? 1 : 0) - c.hw[j]) * kh;
+    if (c.hw[j] < 0.002 || !shown) return;
+    _qa.copy(arm.quaternion);
+    const bend = reach(arm.position, c.ht[j], j * 2 - 1, _q);
+    arm.quaternion.slerpQuaternions(_qa, _q, c.hw[j]);
+    s.elbows[j].rotation.z = lerp(ELBOW, bend, c.hw[j]);
+  });
+  if (c.trackHands) {
+    c.hand ??= [new THREE.Vector3(), new THREE.Vector3()];
+    s.arms.forEach((arm, j) => { arm.updateMatrix(); s.elbows[j].updateMatrix(); c.hand[j].set(0, -FOREARM, 0).applyMatrix4(s.elbows[j].matrix).applyMatrix4(arm.matrix).applyMatrix4(M); });
+  }
+}
+// in the boat's frame, a point given in a sailor's chest frame (M from drive): where her shoulder is, or a hand at rest
+export const chestPoint = (M, x, y, z) => new THREE.Vector3(x, y, z).applyMatrix4(M);
+// a tiller's extension, hinged at the tiller's end (pivot: a group whose +y runs along it, len long), swung to where
+// the helm's hand is (at rest, in front of her at her middle, on the aft arm's side) and held there: the grip is as far along it
+// as her hand, short of its end
+const _ax = new THREE.Vector3(0, 1, 0);
+export function holdExtension(pivot, len, c, M) {
+  const aft = chestPoint(M, 0, 0.47, -0.2).z > chestPoint(M, 0, 0.47, 0.2).z ? -1 : 1; // which of her shoulders is aft
+  const want = chestPoint(M, 0.34, 0.3, aft * 0.24);
+  // the pivot's frame in the boat's: up through its parents to the one the crew stand in
+  _mb.identity(); for (let o = pivot.parent; o && o !== c.g.parent; o = o.parent) { o.updateMatrix(); _mb.premultiply(o.matrix); }
+  const base = _p.copy(pivot.position).applyMatrix4(_mb);
+  const dir = _v.subVectors(want, base), dist = dir.length();
+  _ma.copy(_mb).invert(); // the direction into the pivot's parent's frame (rotation only)
+  const local = dir.clone().transformDirection(_ma);
+  pivot.quaternion.setFromUnitVectors(_ax, local);
+  const grip = base.clone().addScaledVector(dir.normalize(), Math.min(len - 0.06, Math.max(0.2, dist)));
+  grip.arm = aft < 0 ? 0 : 1; // in her aft hand (arm 0 is on her −z side)
+  return grip;
+}
 
 // which figure a boat's crew show: none far off (with the small fittings), the plain ones beyond near, the full ones close
 function crewLevel(v) {
@@ -1271,6 +1417,7 @@ const GTRACK = [[1.0, 0.75], [1.45, 0.5]]; // the transverse genoa tracks on the
 const GCAR = 0.55; // where the car sits along its track
 const gcar = (sx) => { const [[x0, z0], [x1, z1]] = GTRACK; return [sx * lerp(x0, x1, GCAR), lerp(z0, z1, GCAR)]; };
 const PRIMARY = [1.22, 2.82]; // the jib sheets' winches (ST46), on the side decks abreast the front of the cockpit
+const HANDLE_R = 0.25; // a winch handle's reach, the socket to the grip
 const BACKSTAY_W = [1.4, 3.74]; // the backstays' winches (ST40), aft of the primaries at the helm's hand
 // this boat's sails, as sailTexture lays out the marks on them (numAt, numK: the number's height up the main and its size)
 const RIG = () => ({ span: MAIN_SPAN, chord: mainChord, logoM: 9.8, flagM: 11.56, mark: SAIL_MARK, numAt: 0.64, numK: 1, hd: HEAD.clone().sub(TACK), clew: JIB_CLEW, ad: JIB_AD, adH: JIB_AD_H });
@@ -1351,6 +1498,12 @@ export class BoatView {
     const grip = cyl(0.03, 0.03, 0.3, M.dark, 8); grip.rotation.x = -(Math.PI / 2 - 0.1); grip.position.set(0, (TL - 0.2) * 0.1, -(TL - 0.2)); this.wheel.add(grip);
     this.ext = new THREE.Group(); this.ext.position.set(0, TL * 0.1, -TL); this.wheel.add(this.ext);
     const ext = cyl(0.012, 0.012, 1.3, M.dark, 6); ext.position.y = 0.65; this.ext.add(ext);
+    // a winch handle, shipped in the leeward primary while the jib's sheet is ground in (update()): a 25 cm arm and its
+    // grip, turning
+    this.handle = add(new THREE.Group()); this.handle.visible = false;
+    { const arm = new THREE.Mesh(new THREE.BoxGeometry(HANDLE_R + 0.03, 0.018, 0.035), M.alu); arm.position.x = HANDLE_R / 2; this.handle.add(arm);
+      const gp = cyl(0.017, 0.017, 0.11, M.dark, 8); gp.position.set(HANDLE_R, 0.065, 0); this.handle.add(gp); }
+    this.spin = [this.handle];
     // a low moulded toe rail, pulpit, pushpits, stanchions, lifelines
     for (const sx of [-1, 1]) {
       const pts = []; for (let i = 0; i <= 24; i++) { const t = 0.01 + (i / 24) * 0.96; pts.push([sx * (halfBeam(t) - 0.02), sheerAt(t) + 0.01, zAt(t)]); } // on the rounded deck edge
@@ -1529,7 +1682,7 @@ export class BoatView {
   // so setDetail still hides the small ones far off), a boat costs a dozen draws instead.
   bake() {
     const moving = new Set([this.travCar, this.wheel, ...(this.rudders || []).map((r) => r.kick), this.sprit, this.mainRake, this.mainPivot, this.jibPivot, this.kite, this.windex,
-      this.mainsheet, this.jibSheet, this.lazySheet, this.kiteSheet, this.forestay, this.wash, ...this.crew.map((c) => c.g)]);
+      this.mainsheet, this.jibSheet, this.lazySheet, this.kiteSheet, this.forestay, this.wash, ...this.crew.map((c) => c.g), ...(this.spin || [])]);
     if (this.tells?.length) this.wire(moving); // your own boat: her rigging as wire when you're close (setCrewNear)
     const sets = new Map();
     for (const o of this.tilt.children) {
@@ -1620,6 +1773,8 @@ export class BoatView {
     this.crewNear = near;
     crewLevel(this);
   }
+  // the grip of the winch handle, dy above its middle, in her frame
+  handleGrip(dy) { const h = this.handle, a = h.rotation.y; return new THREE.Vector3(h.position.x + HANDLE_R * Math.cos(a), h.position.y + 0.065 + dy, h.position.z - HANDLE_R * Math.sin(a)); }
   update(b, t, W, showLabel) {
     const y = waveHeight(W, b.x, b.z, t), fx = Math.sin(b.h), fz = -Math.cos(b.h);
     const pitch = Math.atan2(waveHeight(W, b.x + fx * 4, b.z + fz * 4, t) - waveHeight(W, b.x - fx * 4, b.z - fz * 4, t), 8);
@@ -1631,7 +1786,7 @@ export class BoatView {
     this.tilt.rotation.x = pitch;
     this.tilt.rotation.z = (this.heelZ = side * b.heel * D2R) + roll;
     this.wheel.rotation.y = b.rudder * 0.5;
-    this.ext.rotation.set(0.35, 0, -side * 1.05); // the tiller extension, up and out to the helm's side
+    if (this.crewT === undefined) this.ext.rotation.set(0.35, 0, -side * 1.05); // the tiller extension, up and out to the helm's side (then where her hand holds it)
     this.wash.userData.set(this.sea?.rz ?? this.tilt.rotation.z, t, b.v);
 
     const sa = b.sail * D2R, cl = clothState(this, b, t), ss = this.sailSide;
@@ -1689,9 +1844,14 @@ export class BoatView {
     const light = up && cl.aws < 7.5 && b.heel < 9, fn = Math.max(0, b.v) / Math.sqrt(9.81 * L), aft = up ? 0 : smoothstep(0.36, 0.55, fn) * 0.7 + (b.surf > 0 ? 0.2 : 0);
     const gybing = !up && (sinceTack < 2.4 || (!!b.auto && Math.abs(b.twa) > 165 * D2R)); // from just before the boom comes across
     this.grinding = up && sinceTack < 3.8;
+    const grind = this.grinding;
+    // the winch handle, in the leeward primary while the jib's sheet is ground in, its arm going round
+    this.handle.visible = grind && this.detailOn !== false;
+    this.handle.position.set(-side * PRIMARY[0], deckY(PRIMARY[1]) + 0.25, PRIMARY[1]); this.handle.rotation.y = -t * 8.5 * side;
     const kh = first ? 1 : 1 - Math.exp(-dt * 4);
     // the sea's own roll, which the crew's bodies take out (a sailor sits up straight while the boat rolls under her)
-    const sway = first ? 0 : clamp((this.sea?.rz ?? this.tilt.rotation.z) - (this.heelZ ?? 0), -0.35, 0.35) * 0.6;
+    const sway = this.sway = first ? 0 : clamp((this.sea?.rz ?? this.tilt.rotation.z) - (this.heelZ ?? 0), -0.35, 0.35) * 0.6;
+    feel(this, dt);
     for (const c of this.crew) {
       // each crosses in her own time in a tack: the helm with the tiller, the bow and the main trimmer, the jib
       // trimmer last, once she has the new sheet made
@@ -1721,12 +1881,14 @@ export class BoatView {
       c.y += (y - c.y) * (moving ? 1 - Math.exp(-dt * 14) : k);
       if (moving) c.y = Math.max(c.y, this.surfaceAt(c.x, c.z));
       c.lean += (lean - c.lean) * k; c.stand += (stand - c.stand) * k; c.knee += (knee - c.knee) * k; c.reach += (reach - c.reach) * (c.i === 2 && sinceTack < 3.8 ? 1 - Math.exp(-dt * 12) : k);
-      const sd = c.x >= 0 ? 1 : -1, s = c.s; // the side she's on: the port side's sailors are mirrored, so +x is always outboard
-      c.g.position.set(c.x, c.y, c.z); c.g.scale.x = sd; c.g.rotation.z = -sway;
-      s.body.rotation.y = c.yaw; s.body.position.y = c.stand * (THIGH + SHIN + 0.02);
-      s.upper.rotation.z = -c.lean;
-      for (const l of s.legs) { l.hip.rotation.z = (1 - c.stand) * Math.PI / 2; l.knee.rotation.z = (1 - c.stand) * c.knee; }
-      for (const a of s.arms) a.rotation.z = c.reach;
+      // her hands: the helm's on the tiller's extension; grinding, both on the winch handle; reefing at the mast, the
+      // bow hauls the luff down hand over hand
+      let hands = null;
+      if (c.i === 0) hands = (c, M) => [holdExtension(this.ext, 1.3, c, M)];
+      else if (c.i === 2 && grind) hands = [this.handleGrip(0.05), this.handleGrip(-0.04)];
+      else if (c.i === 3 && bowBusy && b.reefJob) hands = [0, 1].map((j) => new THREE.Vector3(...raked(0, this.roofY + 1.3 + j * 0.32 + 0.14 * Math.sin(t * 4.5 + j * Math.PI), MAST_Z + 0.09)));
+      c.first = first;
+      drive(this, c, dt, hands);
       // where she looks: the helm at the telltales, now and then to windward for the next gust; on the rail ahead and
       // up the course; the jib trimmer at the jib while she grinds; the kite trimmer at the gennaker's luff; the bow at
       // her work; and each now and then up at the sails
