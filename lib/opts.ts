@@ -9,8 +9,8 @@ export const TRACKS: readonly Music[] = ['racing', 'groove', 'riff', 'openwater'
 export type Sea = 'loud' | 'normal' | 'quiet' | 'off';
 export type Volume = 'loud' | 'normal' | 'quiet';
 
-export type Daytime = 'any' | 'morning' | 'midday' | 'afternoon' | 'evening';
-export const DAYTIMES: readonly Daytime[] = ['any', 'morning', 'midday', 'afternoon', 'evening'];
+export type Daytime = 'any' | 'morning' | 'midday' | 'afternoon' | 'evening' | 'sunset';
+export const DAYTIMES: readonly Daytime[] = ['any', 'morning', 'midday', 'afternoon', 'evening', 'sunset'];
 
 export type Opts = {
   mode: 'daily' | 'free';

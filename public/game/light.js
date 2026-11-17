@@ -66,9 +66,10 @@ const H0 = Math.acos((Math.sin(MIN_E * D) - Math.sin(LAT) * Math.sin(DECL)) / (M
 export const HOURS = [12 - H0 + CLOCK, 12 + H0 + CLOCK]; // on the clock: about 6:20 to 19:50
 
 // the times of day a free race can be set to (lib/opts.ts: daytime), as hours of the venue's clock: two and a half
-// hours after the sun is up, half an hour past its highest, the afternoon three hours on, and an hour and a bit before
-// it goes down (the set-up's own golden light); 'any' is none of them, a new hour every race
-export const DAYTIMES = { morning: HOURS[0] + 2.5, midday: 12.5 + CLOCK, afternoon: 15.5 + CLOCK, evening: HOURS[1] - 1.1 };
+// hours after the sun is up, half an hour past its highest, the afternoon three hours on, an hour and a bit before
+// it goes down (the set-up's own golden light), and sunset, the last of the racing day, the sun on the horizon (MIN_E
+// up, the latest a race goes); 'any' is none of them, a new hour every race
+export const DAYTIMES = { morning: HOURS[0] + 2.5, midday: 12.5 + CLOCK, afternoon: 15.5 + CLOCK, evening: HOURS[1] - 1.1, sunset: HOURS[1] };
 export const dayHour = (d) => DAYTIMES[d] ?? null;
 
 // The light at an hour of the clock (local time, 6.5 = 6:30), clear or overcast: the sun's direction (sunDir) and
