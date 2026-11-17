@@ -1592,3 +1592,23 @@
 .bc .adm-c-meta { font: 600 var(--fs-label)/1.3 var(--cond); letter-spacing: 0.04em; color: var(--ink-3); }
 .bc .adm-sets { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 var(--s-6); }
 @media (max-width: 600px) { .bc .adm-star, .bc .adm-funnel .adm-star { grid-template-columns: 96px minmax(0, 1fr) 72px; gap: var(--s-2); } }
+
+/* ---------- the social page (/social): the game's channels, a card each, and sending the game to a friend ---------- */
+.bc .so-chs { list-style: none; margin: var(--s-6) 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: var(--s-4); }
+.bc .so-ch { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-4) var(--s-5); align-items: start; height: 100%; padding: var(--s-6); background: var(--surface); color: inherit; text-decoration: none;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%); transition: background-color var(--t-quick); }
+.bc .so-ch:hover { background: var(--fill-2); }
+.bc .so-ch:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--you); }
+.bc .so-ch-i { display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; color: #fff; }
+.bc .so-ch-t { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
+.bc .so-ch-t .hm-h3 { overflow-wrap: anywhere; }
+.bc .so-ch-t .hm-text { margin: 0; color: var(--ink-2); }
+.bc .so-ch-go { grid-column: 2; display: inline-flex; align-items: center; gap: var(--s-2); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; color: var(--you); }
+.bc .so-ch-go svg { transition: translate var(--t-quick); }
+.bc .so-ch:hover .so-ch-go svg { translate: 4px 0; }
+.bc .so-share { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }
+@media (max-width: 600px) {
+  .bc .so-ch { grid-template-columns: 1fr; padding: var(--s-5); }
+  .bc .so-ch-go { grid-column: 1; }
+  .bc .so-ch-i { width: 48px; height: 48px; }
+}

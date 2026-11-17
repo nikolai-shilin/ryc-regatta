@@ -17,6 +17,7 @@ import { SiteHead, SiteFoot } from '@/components/site-chrome';
 import { Soundtrack } from '@/components/soundtrack';
 import { FaqList } from '@/components/faq-list';
 import { faqGroups, HOME } from '@/lib/faq';
+import { CHANNELS } from '@/lib/social';
 import { DRILLS } from '@/lib/drills';
 import { BADGES } from '@/lib/badges';
 import { BackStrip, PushButton, CtaTrack, Fold, MatchLink } from '@/components/home-back';
@@ -38,7 +39,7 @@ function siteLd(lang: 'en' | 'ru', t: (en: string, ru: string) => string) {
     '@context': 'https://schema.org',
     '@graph': [
       org,
-      { '@type': 'WebSite', '@id': `${SITE}/#site`, url: `${SITE}/`, name: NAME, inLanguage: ['en', 'ru'], publisher: { '@id': org['@id'] } },
+      { '@type': 'WebSite', '@id': `${SITE}/#site`, url: `${SITE}/`, name: NAME, inLanguage: ['en', 'ru'], publisher: { '@id': org['@id'] }, sameAs: CHANNELS.map((c) => c.url) },
       {
         '@type': 'VideoGame', '@id': `${SITE}/#game`, name: NAME, alternateName: t('Up and down sailing race', 'Up and down — парусная гонка'),
         url: `${SITE}/`, description: t(...HOME_DESC), inLanguage: lang, image: `${SITE}${OG_IMAGE.url}`,

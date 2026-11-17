@@ -1,4 +1,5 @@
 import { faqGroups } from '@/lib/faq';
+import { CHANNELS } from '@/lib/social';
 import { tx } from '@/lib/lang';
 import { SITE, NAME, HOME_DESC } from '@/lib/seo';
 
@@ -41,6 +42,7 @@ ${NAME} is a free 3D sailing race game by RYC that runs in any modern web browse
   - [Sail trim and boat speed](${SITE}/learn/trim): the sheets, steering, footing for speed, heel, reefing in a blow
   - [Sailing racing glossary](${SITE}/learn/glossary): beat, overlap, clear astern, header, lift, layline, zone, mark-room, OCS and more
 - [Sailing certification exam practice](${SITE}/iyt): RYC's free practice app for sailing certification theory exams
+- [Follow the game](${SITE}/social): where the game posts its news and best races (${CHANNELS.map((c) => `${c.name} ${c.url}`).join(', ')}), and sending it to a friend
 
 Every page is also in Russian: add ?lang=ru to the address (for example ${SITE}/faq?lang=ru).
 
