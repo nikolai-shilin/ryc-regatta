@@ -15,8 +15,13 @@
 .bc .pl-th { min-height: 0; padding-top: var(--s-2); padding-bottom: var(--s-2); font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 .bc .pl-pts { color: var(--you); }
 .bc .pl-i { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
-.bc .pl-who { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.bc .pl-who small { padding-left: calc(24px + var(--s-2)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+/* the flag in a slot of its own (kept for a player who flies none, so the names line up), centred on the name and the
+   line under it */
+.bc .pl-who { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.bc .pl-fl { flex: none; display: flex; width: 24px; }
+.bc .pl-nm { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.bc .pl-nm b { font: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc .pl-nm small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font: 600 var(--fs-label)/1.1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 
 /* the pages: square buttons as the fleet's, the one shown in the blue */

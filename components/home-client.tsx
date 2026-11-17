@@ -14,7 +14,7 @@ const IconUser = () => <svg viewBox="0 0 16 16" width={16} height={16} aria-hidd
 
 // The header's menu: the burger and your avatar (your initials once signed in, from lib/me.ts: the pages are cached,
 // so whether you are is drawn by CSS, .if-me and .if-guest). It holds the account pages (Sign in too, where the bar has
-// no room for its own button), and on a narrow screen, where the header's links are hidden, the site's pages too.
+// no room for its own button), the yachts, How to play and Learn to race always, and on a narrow screen, where the header's links are hidden, the site's pages too.
 export function SiteMenu({ lang }: { lang: Lang }) {
   const t = tx(lang);
   const ref = useRef<HTMLDetailsElement>(null);
@@ -29,6 +29,8 @@ export function SiteMenu({ lang }: { lang: Lang }) {
       <div className="hm-menu-pop">
         <Link className="hm-mi hm-mi-signin if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link>
         <Link className="hm-mi" href="/yachts">{t('The yachts', 'Яхты')}</Link>
+        <Link className="hm-mi" href="/help">{t('How to play', 'Как играть')}</Link>
+        <Link className="hm-mi" href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
         <Link className="hm-mi" href="/boat">{t('Your boat', 'Твоя яхта')}</Link>
         <Link className="hm-mi" href="/settings">{t('Settings', 'Настройки')}</Link>
         <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы')}>
@@ -37,9 +39,8 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <Link className="hm-mi" href="/race/free">{t('Free race', 'Свободная гонка')}</Link>
           <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки')}</Link>
           <Link className="hm-mi" href="/race/rating">{t('Rating', 'Рейтинг')}</Link>
+          <Link className="hm-mi" href="/players">{t('Players', 'Игроки')}</Link>
           <Link className="hm-mi" href="/race/badges">{t('Badges', 'Достижения')}</Link>
-          <Link className="hm-mi" href="/help">{t('How to play', 'Как играть')}</Link>
-          <Link className="hm-mi" href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
           <Link className="hm-mi hm-mi-x" href="/faq">{t('Questions', 'Вопросы')}</Link>
           <Link className="hm-mi" href="/social">{t('Follow the game', 'Игра в соцсетях')}</Link>
         </nav>

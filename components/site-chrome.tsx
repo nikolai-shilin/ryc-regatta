@@ -5,7 +5,7 @@ import { SITE, jsonLd, langUrl } from '@/lib/seo';
 import { Logo, Langs } from './ui';
 import { SiteMenu } from './home-client';
 
-type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt' | 'learn' | 'rating' | 'drills' | 'badges' | 'social';
+type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt' | 'learn' | 'rating' | 'drills' | 'badges' | 'social' | 'players';
 
 // Where each page sits under Home, for the breadcrumb trail search engines show instead of the bare address
 // (BreadcrumbList). A guide passes its own trail: Home › Learn to race › the guide.
@@ -15,7 +15,7 @@ const CRUMBS: Partial<Record<Page, [en: string, ru: string, path: string]>> = {
   free: ['Free race', 'Свободная гонка', '/race/free'], boat: ['Your boat', 'Твоя яхта', '/boat'],
   iyt: ['Sailing Certification Test', 'Sailing Certification Test', '/iyt'], learn: ['Learn to race', 'Учись гоняться', '/learn'],
   drills: ['Drills', 'Тренировки', '/race/drills'], badges: ['Badges', 'Достижения', '/race/badges'],
-  social: ['Follow the game', 'Игра в соцсетях', '/social'],
+  social: ['Follow the game', 'Игра в соцсетях', '/social'], players: ['The players', 'Игроки', '/players'],
 };
 function Breadcrumbs({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Page; crumbs?: Crumb[] }) {
   const c = CRUMBS[page];
@@ -38,7 +38,7 @@ export function Trail({ t, crumbs }: { t: T; crumbs: Crumb[] }) {
 }
 
 // The site's header, as on rycrentals.com: the logo, the site's pages in the middle (from 1100 px wide), and the menu
-// (the burger and your avatar) at the right. On a page in the broadcast look (.bc, styles/broadcast.css) it is the
+// (the burger and your avatar) at the right; How to play and Learn to race are in the menu alone. On a page in the broadcast look (.bc, styles/broadcast.css) it is the
 // broadcast's bar: the name with the blue mark, the pages as tabs (from 1280 px wide; those marked hm-tab-x from
 // 1600), Sign in (a guest's) and Play now beside the menu. On every page: the scrolling ones (home, help, the race result) and the
 // app screens, where it sits over the screen and stays short on a phone held sideways.
@@ -55,8 +55,7 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
           <Link className="hm-tab" href="/race/free" {...cur('free')}>{t('Free race', 'Свободная гонка')}</Link>
           <Link className="hm-tab" href="/race/drills" {...cur('drills')}>{t('Drills', 'Тренировки')}</Link>
           <Link className="hm-tab" href="/race/rating" {...cur('rating')}>{t('Rating', 'Рейтинг')}</Link>
-          <Link className="hm-tab" href="/help" {...cur('help')}>{t('How to play', 'Как играть')}</Link>
-          <Link className="hm-tab" href="/learn" {...cur('learn')}>{t('Learn to race', 'Учись гоняться')}</Link>
+          <Link className="hm-tab" href="/players" {...cur('players')}>{t('Players', 'Игроки')}</Link>
           <Link className="hm-tab hm-tab-x" href="/faq" {...cur('faq')}>{t('Questions', 'Вопросы')}</Link>
         </nav>
         {/* a guest's way to sign in, in the bar where there's room (else in the menu); signed in, the avatar says who */}

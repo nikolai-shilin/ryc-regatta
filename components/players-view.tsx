@@ -11,7 +11,7 @@ import type { PlayerCard, PlayerList } from '@/lib/players';
 import { IconBack, IconArrow, IconCrew, IconSail, IconTrophy, IconPin, IconKite } from './ui';
 import { LoadBar, ScenePoster } from './skeleton';
 import { SceneBrand } from './scene-brand';
-import { Who } from './flag';
+import { FlagImg } from './flag';
 import '@/styles/players.css';
 
 // The players: the game's own scene (/boat-view: a JPK 1050 on Lake Garda on a summer evening, the drone circling her)
@@ -101,23 +101,11 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
           <p className="bt-p">{player.boat
             ? <>{boat.name ? <><i>{boat.name}</i> · </> : null}{`${boat.nat} ${boat.num || '1'}`.trim()} · {t('Their colours on the JPK 1050. Drag to circle her.', 'Их цвета на JPK 1050. Тяни, чтобы облететь яхту.')}</>
             : t('Their colours aren’t kept online, so this is the boat everyone starts in. Drag to circle her.', 'Их цвета не сохранены онлайн, поэтому здесь яхта, с которой начинают все. Тяни, чтобы облететь её.')}</p>
-          <div className="bt-stats bt-stats-fit">
-            <div><span className="bt-sk">{t('Points', 'Очков')}</span><b>{num(player.pts)}</b></div>
-            <div><span className="bt-sk">{t('Races', 'Гонок')}</span><b>{num(player.n)}</b></div>
-            <div><span className="bt-sk">{t('Wins', 'Побед')}</span><b>{num(player.wins)}</b></div>
-            <div><span className="bt-sk">{t('Podiums', 'Подиумов')}</span><b>{num(player.podiums)}</b></div>
-          </div>
         </>) : (<>
           <h1 className="bt-h">{t('The players', 'Игроки')}</h1>
           <p className="bt-p">{missing
             ? t('That player isn’t on the list any more. Pick one from the table to see their numbers and their boat.', 'Этого игрока больше нет в списке. Выбери игрока в таблице, чтобы увидеть его цифры и яхту.')
             : t('Everyone who races signed in, the most points first. Pick a player to see their numbers and their boat in their own colours.', 'Все, кто гоняется со входом в аккаунт, — больше всего очков сверху. Выбери игрока, чтобы увидеть его цифры и яхту в его цветах.')}</p>
-          {list && (
-            <div className="bt-stats bt-stats-fit">
-              <div><span className="bt-sk">{t('Players', 'Игроков')}</span><b>{num(list.total)}</b></div>
-              <div><span className="bt-sk">{t('Page', 'Страница')}</span><b>{`${page} / ${list.pages}`}</b></div>
-            </div>
-          )}
         </>)}
       </div>
 
@@ -221,8 +209,8 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
                     onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); go(to, r.k); }}>
                     <span role="cell" className="pl-i">{(page - 1) * list.per + i + 1}</span>
                     <span role="cell" className="pl-who">
-                      <Who fl={r.fl} name={nameOf(r)} lang={lang} />
-                      <small>{r.yacht ? yachtName(r.yacht) : t(`${r.days} day${r.days === 1 ? '' : 's'} racing`, `${r.days} ${ruPlural(r.days, ['день', 'дня', 'дней'])} в гонках`)}</small>
+                      <span className="pl-fl"><FlagImg code={r.fl} lang={lang} /></span>
+                      <span className="pl-nm"><b>{nameOf(r)}</b><small>{r.yacht ? yachtName(r.yacht) : t(`${r.days} day${r.days === 1 ? '' : 's'} racing`, `${r.days} ${ruPlural(r.days, ['день', 'дня', 'дней'])} в гонках`)}</small></span>
                     </span>
                     <span role="cell" className="pl-pts">{num(r.pts)}</span>
                     <span role="cell">{num(r.n)}</span>
