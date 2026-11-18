@@ -2611,6 +2611,55 @@ function wrestPoint(L, parts) {
   parts.push(blk(x, z, y - 2, 11, 62, 44, 0.3, '#d9d6cc'), post(x, z, y, R, R, H - 3, '#e8e6de', 24), post(x, z, y + H - 3, R * 0.7, R * 0.6, 3, '#c9c8c0', 20));
   for (let k = 12; k < H - 5; k += 3.4) parts.push(post(x, z, y + k, R + 0.15, R + 0.15, 1.5, '#39505e', 24));
 }
+// A cruise ship alongside her berth, `len` metres, her bow along `dir`: the dark hull narrowing to the stem, the white
+// decks banded with balconies, the lifeboats along her sides, the bridge's wings, the pool and the funnel
+function cruiseShip(L, parts) {
+  const F = frameOf(L, 0), S = (L.len || 300) / 300, white = '#f1f1ec', navy = L.hull || '#1f3550', glass = '#3f5666';
+  const box = (a0, a1, b, y0, h, w, col) => parts.push(F.box(((a0 + a1) / 2) * S, b * S, y0 * S, h * S, (a1 - a0) * S, w * S, col));
+  box(-150, 112, 0, -4, 12, 36, navy); box(-150, 112, 0, 8, 10, 36, white);
+  for (let i = 0; i < 6; i++) { const t0 = i / 6, a0 = 112 + 38 * t0, a1 = 112 + (38 * (i + 1)) / 6, w = 36 * (1 - t0 * t0 * 0.92); box(a0, a1, 0, -4, 12, w, navy); box(a0, a1, 0, 8, 10 + i * 0.5, w, white); }
+  box(-132, 92, 0, 18, 30, 34, white); box(-104, 66, 0, 48, 10, 29, white); box(50, 68, 0, 45, 4, 41, white); box(54, 66, 0, 41, 4, 35, glass);
+  for (let k = 0; k < 8; k++) box(-130, 90, 0, 20 + k * 3.5, 1.2, 34.6, glass);
+  for (let a = -116; a <= 76; a += 16) for (const b of [-17.8, 17.8]) box(a, a + 10, b, 13, 3, 2.6, '#e8792c');
+  box(-24, 18, 0, 58, 0.5, 15, '#4aa8c8');
+  box(-82, -60, 0, 58, 16, 11, L.color || '#c23a30'); box(-82, -60, 0, 74, 2, 11.6, '#22262a');
+}
+// Atlantis The Palm at the crown of the crescent: its two coral wings stepping down from the great arch between its towers
+function atlantis(L, parts) {
+  const F = frameOf(L, Math.max(0, groundAt(L.at[0], L.at[1]))), coral = '#e0a48e', sand = '#ecd6bc', gold = '#c9a860', H = L.h || 92;
+  parts.push(F.box(0, 0, -2, 14, 540, 74, sand));
+  for (const s of [-1, 1]) {
+    for (let i = 0; i < 6; i++) { const h = H - 8 - i * 11; parts.push(F.box(s * (66 + i * 34), 0, 10, h, 36, 34, i % 2 ? sand : coral), F.box(s * (66 + i * 34), 0, 10 + h, 2, 38, 36, gold)); }
+    parts.push(F.box(s * 36, 0, 10, H, 26, 44, coral), F.box(s * 36, 0, 10 + H, 5, 20, 36, gold));
+    const [x, z] = F.xz(s * 36, 0); parts.push(tint(new THREE.ConeGeometry(11, 15, 8).translate(x, F.y0 + 10 + H + 12, z), gold));
+  }
+  parts.push(F.box(0, 0, 10 + H * 0.68, H * 0.32, 48, 26, sand), F.box(0, 0, 10 + H, 3, 50, 28, gold));
+}
+// The Jumeirah Beach Hotel: its glass wave rising along `dir` to the crest at the far end, in steps of a few storeys each
+function waveHotel(L, parts) {
+  const F = frameOf(L, Math.max(0, groundAt(L.at[0], L.at[1]))), N = 13, H = L.h, len = L.len;
+  for (let i = 0; i < N; i++) {
+    const t = i / N, l = len * (1 - t ** 1.7), w = 42 - 16 * t;
+    parts.push(F.box(len / 2 - l / 2, 0, t * H, H / N, l, w, i % 2 ? '#dfe9ee' : '#c3d7e2'));
+  }
+}
+// Miami Marine Stadium of 1963: the concrete stands facing the basin along `dir`, under the folded plates of the roof
+// that lean out over them from eight slanted columns
+function marineStadium(L, parts) {
+  const F = frameOf(L, Math.max(0, groundAt(L.at[0], L.at[1]))), c = '#dad7cd';
+  for (let i = 0; i < 10; i++) parts.push(F.box(8 - i * 3.2, 0, -1, 2.5 + i * 1.3, 3.2, 96, c));
+  for (let k = -4; k < 4; k++) {
+    const b = (k + 0.5) * 12, up = k % 2 ? 1.4 : 0;
+    parts.push(F.box(-5, b, 19 + up, 0.8, 50, 11.8, c), F.box(19.5, b, 18 + up, 2.2, 1, 11.8, c)); // a plate of the fold, and its edge over the water
+    parts.push(beam(F.P(-22, b, 0), F.P(-10, b, 19), 1.6, 1.6, c));
+  }
+}
+// A lone wind turbine on its headland, its rotor turned to `dir`
+function windTurbine(L, parts) {
+  const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), H = L.h, F = frameOf(L, y), R = H * 0.42, white = '#eeeeea';
+  parts.push(post(x, z, y - 1, H * 0.05, H * 0.028, H + 1, white), F.box(0.4, 0, H - 0.8, 1.7, 4, 1.7, white));
+  for (let i = 0; i < 3; i++) { const a = 0.5 + (i * 2 * Math.PI) / 3; parts.push(beam(F.P(2.6, 0, H), F.P(2.6, R * Math.cos(a), H + R * Math.sin(a)), 0.9, 0.22, white)); }
+}
 function landmarks() {
   const parts = [];
   for (const L of META.landmarks || []) {
@@ -2713,6 +2762,11 @@ function landmarks() {
       else if (L.style === 'tbilisi-tv' || L.style === 'lattice') tbilisiTv(L, parts);
       else if (L.style === 'wrest-point') wrestPoint(L, parts);
     } else if (L.kind === 'liner') queenMary(L, parts);
+    else if (L.kind === 'cruise') cruiseShip(L, parts);
+    else if (L.kind === 'atlantis') atlantis(L, parts);
+    else if (L.kind === 'wave-hotel') waveHotel(L, parts);
+    else if (L.kind === 'marine-stadium') marineStadium(L, parts);
+    else if (L.kind === 'turbine') windTurbine(L, parts);
     else if (L.kind === 'chronicle') chronicle(L, parts);
     else if (L.kind === 'dome') dome(L, parts);
     else if (L.kind === 'steeple') steeple(L, parts);

@@ -243,7 +243,13 @@ VENUES = {
                    height_of={"Castel dell'Ovo": 24, "Castel Sant'Elmo": 22, 'Castel Nuovo': 32},  # (the map has them with no height)
                    keep=[(40.8283, 14.2478, 300), (40.8437, 14.2388, 300), (40.8384, 14.2533, 250)],  # Castel dell'Ovo, Sant'Elmo over the city, Castel Nuovo
                    routes=[dict(kind='ferry', pts=[(40.83850, 14.26000), (40.83650, 14.27600), (40.82800, 14.27900), (40.80000, 14.27000), (40.75500, 14.25200)])],  # the hydrofoils from the Molo Beverello to Capri
-                   landmarks=[dict(kind='lighthouse', style='plain', at=(40.83285, 14.27213), h=22, ground=0, foot=4, tower='#e9e4d8', band='#b5362c')],  # the light on the end of the Molo San Vincenzo
+                   landmarks=[dict(kind='castle', at=(40.82802, 14.24776), h=16, clear=110, ring=[(40.82837, 14.24719), (40.82824, 14.24725), (40.82786, 14.24754), (40.8278, 14.2476), (40.8269, 14.24868), (40.827, 14.24891), (40.82783, 14.24832), (40.82825, 14.248), (40.82859, 14.24767), (40.8286, 14.2475), (40.82843, 14.24723), (40.82839, 14.24719)]),  # Castel dell'Ovo on its islet off Santa Lucia
+                              dict(kind='castle', at=(40.84367, 14.23929), h=22, clear=115, ring=[(40.84405, 14.23802), (40.84317, 14.23876), (40.8428, 14.23968), (40.84337, 14.24055), (40.844, 14.23992), (40.84464, 14.23879)]),  # Castel Sant'Elmo's star over the city on the Vomero
+                              dict(kind='castle', at=(40.83831, 14.25325), h=28, clear=75, ring=[(40.83817, 14.25258), (40.83777, 14.25325), (40.83777, 14.25341), (40.83797, 14.25386), (40.83848, 14.25408), (40.83866, 14.25395), (40.83886, 14.2529), (40.83879, 14.25272), (40.83831, 14.2525)]),  # Castel Nuovo, the Maschio Angioino, by the port
+                              dict(kind='cruise', at=(40.83688, 14.25949), dir=105, len=300, color='#1f4f8a'),  # a cruise ship at the Molo Angioino
+                              dict(kind='lighthouse', style='plain', at=(40.82959, 14.25031), h=10, ground=0, foot=3, tower='#d9483a'),  # Santa Lucia's breakwater lights
+                              dict(kind='lighthouse', style='plain', at=(40.82935, 14.25127), h=10, ground=0, foot=3, tower='#3f9a58'),
+                              dict(kind='lighthouse', style='plain', at=(40.83285, 14.27213), h=22, ground=0, foot=4, tower='#e9e4d8', band='#b5362c')],  # the light on the end of the Molo San Vincenzo
                    towns=[(40.8350, 14.2450, 1300), (40.8450, 14.2650, 1200), (40.8250, 14.2100, 1000), (40.8200, 14.3000, 1200)]),
     # San Pedro Bay outside the Federal Breakwater, the 2028 Olympic waters, in the afternoon westerly: the Port of Los
     # Angeles, Long Beach and the Queen Mary to leeward, the Palos Verdes hills to windward
@@ -251,8 +257,11 @@ VENUES = {
                         aprons=[(33.7325, -118.2100, 33.7480, -118.1835), (33.7220, -118.2650, 33.7440, -118.2380), (33.7440, -118.2650, 33.7650, -118.2150), (33.7440, -118.2150, 33.7700, -118.1960)],  # Pier J, Piers 300 and 400, Terminal Island, Piers F to T
                         palms=(['East Ocean Boulevard', 'West Ocean Boulevard', 'Shoreline Drive', 'Harbor Boulevard'], 150),
                         kites=dict(a=(33.75350, -118.14400), b=(33.74900, -118.11700), n=8),  # off Belmont Shore, the 2028 Games' kite and windsurfing beach
-                        routes=[dict(kind='ferry', pts=[(33.74960, -118.27450), (33.73000, -118.27000), (33.71450, -118.25400), (33.69000, -118.27500), (33.66500, -118.31000)])],  # the Catalina Express out by Angels Gate
-                        landmarks=[dict(kind='liner', at=(33.75280, -118.18960), dir=350, clear=[(33.75280, -118.18960, 175)]),  # the Queen Mary at Pier J
+                        routes=[dict(kind='ferry', pts=[(33.71500, -118.25700), (33.70000, -118.25300), (33.66523, -118.31000)])],  # the Catalina Express out by Angels Gate
+                        landmarks=[dict(kind='cruise', at=(33.75130, -118.18584), dir=0, len=290, color='#c23a30'),  # a cruise ship at the Long Beach terminal, by the Queen Mary
+                                   dict(kind='lighthouse', style='plain', at=(33.76024, -118.19411), h=20, tower='#f4f1e8', clear=10),  # the Lions Lighthouse at Rainbow Harbor
+                                   dict(kind='wheel', at=(33.76389, -118.19359), b=(33.76389, -118.19300), h=30),  # the Pike's wheel
+                                   dict(kind='liner', at=(33.75280, -118.18960), dir=350, clear=[(33.75280, -118.18960, 175)]),  # the Queen Mary at Pier J
                                    dict(kind='suspension', a=(33.74960, -118.27900), b=(33.74930, -118.26650), h=111, span=457, deck=56, color='#4f8f78', cable='#4a7f6c'),  # the Vincent Thomas Bridge, in its green
                                    dict(kind='cablestay', a=(33.76483, -118.22245), b=(33.76483, -118.21915), h=157, deck=62),  # the Long Beach International Gateway
                                    dict(kind='cranes', a=(33.73640, -118.19480), b=(33.73640, -118.18680), n=8, color='#2e6da4'),  # Pier J's container quay, facing the breakwater
@@ -264,8 +273,11 @@ VENUES = {
     # between La Chaume and the Remblai's long beach to leeward
     'les-sables': dict(bathy='emodnet', zoom=14, most=15000, relations=True, plain=(8, 25), paved=True, trees=True, home=(46.4750, -1.8350), wind=285,
                        keep=[(46.4939, -1.7957, 300), (46.4899, -1.7947, 250)],  # La Chaume's keep and the Prieuré Saint-Nicolas
-                       routes=[dict(kind='taxi', pts=[(46.49285, -1.79342), (46.49460, -1.79380), (46.49612, -1.79487)])],  # le passeur, across the channel to La Chaume
-                       landmarks=[dict(kind='lighthouse', style='arundel', at=(46.49390, -1.79572), h=26, clear=14),  # the Tour d'Arundel
+                       routes=[dict(kind='taxi', pts=[(46.49600, -1.79600), (46.49440, -1.79480)])],  # le passeur, across the channel to La Chaume
+                       landmarks=[dict(kind='steeple', at=(46.49583, -1.78600), h=42, w=9, color='#d8d0bd', spire='#6a6e72', clear=14),  # Notre-Dame de Bon-Port
+                                  dict(kind='steeple', at=(46.49722, -1.79760), h=24, w=7, color='#e6e0d0', spire='#7c7f80', clear=10),  # Saint-Nicolas at La Chaume
+                                  dict(kind='lighthouse', style='plain', at=(46.49292, -1.77044), h=18, tower='#f2efe6', band='#c23a30', clear=8),  # the Potence light
+                                  dict(kind='lighthouse', style='arundel', at=(46.49390, -1.79572), h=26, clear=14),  # the Tour d'Arundel
                                   dict(kind='lighthouse', style='plain', at=(46.49505, -1.84166), h=25, ground=0, tower='#b8b2a4', foot=10),  # the Phare des Barges on its reef
                                   dict(kind='lighthouse', style='plain', at=(46.48983, -1.80477), h=39, sides=6, tower='#f4f2ea', cap='#b5362c', clear=12),  # l'Armandèche
                                   dict(kind='lighthouse', style='plain', at=(46.48723, -1.79199), h=9, ground=0, foot=3, tower='#f0eee6', band='#2e8a4f'),  # the channel's two jetty lights, green
@@ -273,12 +285,14 @@ VENUES = {
                        towns=[(46.4980, -1.7850, 1000), (46.5000, -1.7980, 700), (46.5050, -1.7700, 1000)]),
     # the Gulf off Jumeirah in the shamal: the Burj Al Arab, the Palm and the towers of the Marina on one side, the
     # World's islands on the other, the Burj Khalifa over the city
-    'dubai': dict(zoom=14, most=15000, relations=True, parts=True, plain=(8, 25), paved=True, trees=True, home=(25.1680, 55.1750), wind=315,
+    'dubai': dict(mapshore=True, zoom=14, most=15000, relations=True, parts=True, plain=(8, 25), paved=True, trees=True, home=(25.1680, 55.1750), wind=315,
                   palms=(['Jumeirah Beach Road', 'Al Mina Street', 'Palm Jumeirah Road'], 400),
                   kites=dict(a=(25.15650, 55.19900), b=(25.17000, 55.21300), n=8),  # Kite Beach in the shamal
-                  routes=[dict(kind='ferry', pts=[(25.14050, 55.19300), (25.19500, 55.23000), (25.24500, 55.26500), (25.26500, 55.27500)])],  # the Dubai Ferry along the coast to the old creek
+                  routes=[dict(kind='ferry', pts=[(25.15000, 55.17800), (25.17500, 55.18600), (25.20500, 55.20800), (25.24000, 55.23500), (25.26435, 55.26000)])],  # the Dubai Ferry along the coast to the old creek
                   keep=[(25.1412, 55.1853, 300), (25.1383, 55.1278, 400)],  # the Burj Al Arab's island, Atlantis The Royal
-                  landmarks=[dict(kind='tower', style='burj-al-arab', at=(25.14119, 55.18555), h=321, dir=135, clear=80),  # the sail bellying towards the shore
+                  landmarks=[dict(kind='atlantis', at=(25.13040, 55.11710), dir=38, h=92, clear=[(25.13040, 55.11710, 170)]),  # Atlantis The Palm, at the crown of the crescent
+                             dict(kind='wave-hotel', at=(25.14167, 55.19076), dir=26, h=104, len=280, clear=150),  # the Jumeirah Beach Hotel, beside the Burj Al Arab
+                             dict(kind='tower', style='burj-al-arab', at=(25.14119, 55.18555), h=321, dir=135, clear=80),  # the sail bellying towards the shore
                              dict(kind='tower', style='khalifa', at=(25.19704, 55.27421), h=828, dir=20, clear=90),
                              dict(kind='wheel', at=(25.08005, 55.12379), b=(25.08030, 55.12550), h=250, base=2)],  # Ain Dubai on Bluewaters
                   towns=[(25.1350, 55.2000, 1300), (25.1900, 55.2500, 1400), (25.0800, 55.1400, 1200)]),
@@ -288,7 +302,8 @@ VENUES = {
                   palms=(['South Bayshore Drive', 'Bayshore Drive', 'Brickell Avenue', 'Crandon Boulevard'], 300),
                   kites=dict(a=(25.74450, -80.17850), b=(25.74250, -80.16900), n=7),  # off Hobie Beach on the Rickenbacker Causeway
                   routes=[dict(kind='taxi', pts=[(25.72650, -80.23100), (25.72200, -80.22650), (25.71900, -80.22000)])],  # the launch out to Dinner Key's mooring field
-                  landmarks=[dict(kind='lighthouse', style='plain', at=(25.66659, -80.15596), h=29, tower='#f6f4ec', clear=10),  # the Cape Florida Light of 1825
+                  landmarks=[dict(kind='marine-stadium', at=(25.74285, -80.16989), dir=30, clear=40),  # Miami Marine Stadium, facing the basin and the skyline
+                             dict(kind='lighthouse', style='plain', at=(25.66659, -80.15596), h=29, tower='#f6f4ec', clear=10),  # the Cape Florida Light of 1825
                              dict(kind='stilt', at=(25.65350, -80.17520), dir=40, color='#e8d9b8'), dict(kind='stilt', at=(25.65200, -80.17380), dir=120, color='#d9e4dc'),  # Stiltsville, on the flats
                              dict(kind='stilt', at=(25.65080, -80.17220), dir=75, color='#efe4c8'), dict(kind='stilt', at=(25.64900, -80.17120), dir=10, color='#cfdde6'),
                              dict(kind='stilt', at=(25.64720, -80.17000), dir=150, color='#e6cdb8')],
@@ -299,7 +314,9 @@ VENUES = {
                   palms=(['Obala hrvatskog narodnog preporoda', 'Obala Lazareta'], 60),  # the Riva's palms
                   keep=[(43.5083, 16.4400, 320)],  # Diocletian's palace
                   routes=[dict(kind='ferry', pts=[(43.50370, 16.43960), (43.49500, 16.44500), (43.44000, 16.50000), (43.39200, 16.55200)])],  # the ferry to Supetar on Brač
-                  landmarks=[dict(kind='tower', style='domnius', at=(43.50809, 16.44027), h=60, dir=268, clear=32),  # the cathedral's bell tower, the mausoleum to its east
+                  landmarks=[dict(kind='lighthouse', style='plain', at=(43.50089, 16.44318), h=33, tower='#eae6da', clear=8),  # the Pomorac, the seafarers' monument and light
+                             dict(kind='lighthouse', style='plain', at=(43.48855, 16.39205), h=12, tower='#f2efe6', band='#c23a30', ground=0, foot=4),  # the light off Marjan
+                             dict(kind='tower', style='domnius', at=(43.50809, 16.44027), h=60, dir=268, clear=32),  # the cathedral's bell tower, the mausoleum to its east
                              dict(kind='lighthouse', style='plain', at=(43.50114, 16.43622), h=13, ground=0, foot=4, tower='#f0eee6', band='#2e8a4f')],  # the harbour breakwater's light
                   towns=[(43.5100, 16.4450, 1300), (43.5100, 16.4800, 1200), (43.4300, 16.6900, 800), (43.3800, 16.3500, 600)]),
     # the Ligurian Sea off Port Hercule in the sea breeze: the Rock, Monte Carlo's towers and the Alps' last cliffs
@@ -307,8 +324,11 @@ VENUES = {
                    palms=(['Boulevard Albert 1er', 'Quai Albert 1er', 'Avenue de la Porte Neuve'], 90),
                    height_of={'Tour Odéon': 170},
                    keep=[(43.7315, 7.4230, 520), (43.7392, 7.4280, 300), (43.7480, 7.4302, 200)],  # the Rock, the Casino's square, the Tour Odéon
-                   routes=[dict(kind='taxi', pts=[(43.73400, 7.42050), (43.73520, 7.42250), (43.73650, 7.42450)])],  # the bateau-bus across Port Hercule
-                   landmarks=[dict(kind='oceano', at=(43.73066, 7.42553), dir=150, h=85, clear=48),  # the Oceanographic Museum's front, on the cliff over the sea
+                   routes=[dict(kind='taxi', pts=[(43.73620, 7.42400), (43.73390, 7.42400)])],  # the bateau-bus across Port Hercule
+                   landmarks=[dict(kind='castle', at=(43.73135, 7.42021), h=14, clear=80, ring=[(43.73138, 7.41941), (43.73076, 7.41993), (43.73068, 7.42003), (43.73102, 7.42048), (43.73108, 7.42056), (43.73131, 7.42088), (43.73133, 7.42089), (43.73148, 7.42084), (43.73184, 7.42014), (43.73187, 7.41997), (43.73186, 7.41985), (43.73163, 7.41953)]),  # the Prince's Palace on the Rock
+                              dict(kind='castle', at=(43.73309, 7.42796), h=6, ring=[(43.73305, 7.42775), (43.73294, 7.42804), (43.73301, 7.42811), (43.7331, 7.42811), (43.73316, 7.42803), (43.73318, 7.42798), (43.73318, 7.42787), (43.73313, 7.42778)]),  # Fort Antoine at the Rock's seaward end
+                              dict(kind='steeple', at=(43.73013, 7.42273), dir=0, nave=62, h=32, w=11, color='#ece4d0', spire='#c9bfa8', split=0.8, clear=[(43.73043, 7.42273, 50)]),  # Saint Nicholas Cathedral's white stone
+                              dict(kind='oceano', at=(43.73066, 7.42553), dir=150, h=85, clear=48),  # the Oceanographic Museum's front, on the cliff over the sea
                               dict(kind='casino', at=(43.73916, 7.42802), dir=130, clear=48)],  # its twin towers to the sea
                    towns=[(43.7350, 7.4200, 700), (43.7420, 7.4300, 800), (43.7500, 7.4450, 800)]),
     # Gage Roads off Fremantle, of the 1987 America's Cup, in the south-westerly Fremantle Doctor: the port's moles and
@@ -318,7 +338,11 @@ VENUES = {
                       kites=dict(a=(-32.03000, 115.74800), b=(-32.01800, 115.75000), n=7),  # off Leighton Beach in the Doctor
                       keep=[(-32.0560, 115.7414, 420)],  # the West End and the Round House
                       routes=[dict(kind='ferry', pts=[(-32.05281, 115.74043), (-32.05500, 115.72900), (-32.02500, 115.70500), (-31.99500, 115.56000)])],  # the Rottnest ferry from B Shed, north of the race area
-                      landmarks=[dict(kind='cranes', a=(-32.04560, 115.74310), b=(-32.04090, 115.74770), n=6, color='#2f77b5'),  # North Quay's container cranes
+                      landmarks=[dict(kind='castle', at=(-32.05612, 115.74127), h=6, ring=[(-32.05612, 115.74118), (-32.05616, 115.74119), (-32.05619, 115.74123), (-32.0562, 115.74129), (-32.05619, 115.74133), (-32.05615, 115.74136), (-32.05611, 115.74137), (-32.05607, 115.74135), (-32.05604, 115.74131), (-32.05604, 115.74127), (-32.05605, 115.74122), (-32.05608, 115.74119)], clear=14),  # the Round House of 1831
+                                 dict(kind='steeple', at=(-32.05423, 115.74766), h=22, w=6, color='#d6c7a4', spire='#8a7a5e', split=0.85, clear=8),  # the Fremantle Bell Tower
+                                 dict(kind='steeple', at=(-32.05097, 115.75000), h=40, w=8, color='#cdbd9c', spire='#5f6468', clear=12),  # St Patrick's Basilica
+                                 dict(kind='wheel', at=(-32.05837, 115.74465), b=(-32.05837, 115.74520), h=27),  # the Esplanade's wheel
+                                 dict(kind='cranes', a=(-32.04560, 115.74310), b=(-32.04090, 115.74770), n=6, color='#2f77b5'),  # North Quay's container cranes
                                  dict(kind='lighthouse', style='plain', at=(-32.05388, 115.72455), h=14, ground=0, foot=5, tower='#c23a30'),  # the North Mole's red light
                                  dict(kind='lighthouse', style='plain', at=(-32.05587, 115.73253), h=14, ground=0, foot=5, tower='#2e8a4f')],  # the South Mole's green one
                       towns=[(-32.0550, 115.7500, 1200), (-32.0200, 115.7550, 1100), (-32.0900, 115.7600, 1000)]),
@@ -327,20 +351,27 @@ VENUES = {
     'sint-maarten': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(18.0120, -63.1050), wind=95,
                          palms=(['Front Street', 'Waterfront Road', 'Airport Road', 'Welfare Road'], 120),
                          routes=[dict(kind='taxi', pts=[(18.02300, -63.04800), (18.01900, -63.05200), (18.01700, -63.05500)])],  # Great Bay's water taxis to the cruise pier
-                         landmarks=[dict(kind='runway', a=(18.03952, -63.11876), b=(18.04245, -63.09822), w=45),  # Princess Juliana's, the airliners coming in over Maho Beach
+                         landmarks=[dict(kind='cruise', at=(18.01103, -63.04716), dir=35, len=330, color='#c23a30'),  # the cruise ships at Pointe Blanche
+                                    dict(kind='cruise', at=(18.0129, -63.04804), dir=49, len=300, color='#1f4f8a'),
+                                    dict(kind='castle', at=(18.07079, -63.08538), h=8),  # Fort Louis over Marigot
+                                    dict(kind='lighthouse', style='plain', at=(18.07103, -63.08650), h=10, tower='#f2efe6', clear=6),
+                                    dict(kind='steeple', at=(18.03867, -63.09735), h=20, w=6, color='#f0ece0', spire='#a34a36', clear=10),  # Mary Star of the Sea at Simpson Bay
+                                    dict(kind='runway', a=(18.03952, -63.11876), b=(18.04245, -63.09822), w=45),  # Princess Juliana's, the airliners coming in over Maho Beach
                                     dict(kind='castle', at=(18.01540, -63.05930), h=5, ruin=True, clear=40)],  # Fort Amsterdam's walls, on the point between Great Bay and Little Bay
                          towns=[(18.0350, -63.0950, 900), (18.0250, -63.0500, 900), (18.0400, -63.1200, 600)]),
     # the Andaman Sea off Kata and Karon, of the King's Cup, in the winter's north-easterly monsoon: the beaches and
     # the Big Buddha's hill to windward
     'phuket': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(7.7850, 98.2550), wind=60,
                    palms=(['Patak Road', 'Kata Noi Road', 'Karon Soi 2 Road'], 300),
-                   routes=[dict(kind='taxi', pts=[(7.81850, 98.29500), (7.81500, 98.29200), (7.81300, 98.28900)])],  # the longtails from Kata Beach out to Ko Pu
-                   landmarks=[dict(kind='statue', style='buddha', at=(7.82768, 98.31324), h=45, dir=90, clear=120),  # the Big Buddha on Nakkerd Hill, facing Chalong Bay
+                   routes=[dict(kind='taxi', pts=[(7.80600, 98.29550), (7.80450, 98.28800), (7.80000, 98.28000)]), dict(kind='taxi', pts=[(7.81850, 98.29500), (7.81500, 98.29200), (7.81300, 98.28900)])],  # the longtails from Kata Beach out to Ko Pu
+                   landmarks=[dict(kind='turbine', at=(7.77050, 98.30651), h=30, dir=240),  # the wind turbine on the headland over Ya Nui
+                              dict(kind='statue', style='buddha', at=(7.82768, 98.31324), h=45, dir=90, clear=120),  # the Big Buddha on Nakkerd Hill, facing Chalong Bay
                               dict(kind='lighthouse', style='plain', at=(7.76220, 98.30560), h=12, tower='#f4f2ea', clear=10)],  # Promthep Cape's light
                    towns=[(7.8200, 98.3000, 800), (7.8450, 98.2950, 900), (7.8900, 98.2950, 1000)]),
     # the Tbilisi Sea, the reservoir in the dry hills over the city, its length laid along the north-westerly that blows
     # down it: the Chronicle of Georgia's pillars on the hill at its head, the TV tower on Mtatsminda beyond the ridge
     'tbilisi-sea': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(41.7500, 44.8405), wind=305, lake='თბილისის წყალსაცავი',
+                        routes=[dict(kind='taxi', pts=[(41.73790, 44.85560), (41.74300, 44.85000), (41.75000, 44.84300), (41.75600, 44.83500)])],  # the pleasure boats from the Tbilisi Sea Club
                         landmarks=[dict(kind='chronicle', at=(41.77059, 44.81039), h=35, ring=[(41.77040, 44.81082), (41.77033, 44.81026), (41.77047, 44.80998), (41.77057, 44.80996), (41.77076, 44.81014), (41.77084, 44.81072)]),  # its sixteen pillars, along the map's outline of them, open to the east
                                    dict(kind='tower', style='tbilisi-tv', at=(41.69582, 44.78495), h=274.5, clear=30)],  # the lattice tower of 1972
                         towns=[(41.7568, 44.8505, 800), (41.7779, 44.8474, 900), (41.7357, 44.8159, 900), (41.7119, 44.8658, 900)]),
