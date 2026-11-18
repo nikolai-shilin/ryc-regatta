@@ -51,11 +51,11 @@ export function VenuesList({ lang, list, today, back }: { lang: Lang; list: Venu
   }, [inset, post]);
 
   // by country, the countries A to Z and the venues A to Z in each, in the page's language, one list with each row's
-  // flag. The country is the one the venue's sail letters fly (lib/flags.ts), and Hong Kong, whose boats carry HKG on
-  // their sails, is listed under China with China's flag; one with no flag drawn goes by the last part of its place
+  // flag. The country is the one the venue's sail letters fly (lib/flags.ts); one with no flag drawn goes by the last
+  // part of its place
   const abc = new Intl.Collator(lang === 'ru' ? 'ru' : 'en').compare;
   const rows = list.map((v) => {
-    const f = FLAGS.find((x) => x.ioc === (v.nation === 'HKG' ? 'CHN' : v.nation));
+    const f = FLAGS.find((x) => x.ioc === v.nation);
     return { v, flag: f?.code ?? null, country: f ? t(f.en, f.ru) : t(...v.place).split(', ').pop()!, name: t(...v.name) };
   }).sort((a, b) => abc(a.country, b.country) || abc(a.name, b.name));
 
