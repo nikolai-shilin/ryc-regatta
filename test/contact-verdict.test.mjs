@@ -1,4 +1,4 @@
-// A contact in a free race sailed with DSQ for it (public/game/sim.js verdict), judged as sailors asked: the rudder of the
+// A contact in a custom race sailed with DSQ for it (public/game/sim.js verdict), judged as sailors asked: the rudder of the
 // boat that had to keep clear is read, and the boat with right of way can be at fault too. Also how far a boat carries
 // her way, and the seconds a mile upwind the yacht pages show.
 import { test } from 'node:test';

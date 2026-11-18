@@ -37,7 +37,7 @@ export function describe(res: SharedResult, lang: Lang) {
   const time = me.secs != null && !me.dsq ? clock(me.secs) : null;
   const headline = me.dsq || !time ? t('Disqualified', 'Дисквалификация') : t(`${ordEn(place)} in ${time}`, `${place}-е место · ${time}`);
   const date = new Date(res.at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-  const kind = res.daily ? `${t('Race of the day', 'Гонка дня')} · ${date}` : t('Free race', 'Свободная гонка');
+  const kind = res.daily ? `${t('Race of the day', 'Гонка дня')} · ${date}` : t('Custom race', 'Своя гонка');
   const wind = { light: t('Light breeze', 'Слабый ветер'), medium: t('Medium breeze', 'Средний ветер'), strong: t('Strong breeze', 'Сильный ветер') }[res.preset];
   const kn = { light: 7, medium: 12, strong: 19 }[res.preset];
   const len = ({ short: t('short', 'короткая'), medium: t('medium', 'средняя'), long: t('long', 'длинная') } as Record<string, string>)[res.length] || '';

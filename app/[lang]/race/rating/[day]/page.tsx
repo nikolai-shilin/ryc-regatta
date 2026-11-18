@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
   const [{ day }, { lang, t }] = await Promise.all([params, getT(params)]);
   const date = validDay(day) ? new Date(day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
   // one day's table: kept out of search, the rating page itself is the one to find
-  return pageMeta(lang, { title: t(`Rating · ${date}`, `Рейтинг · ${date}`), index: false, ...(validDay(day) && { card: `/og/page/rating?day=${day}` }) });
+  return pageMeta(lang, { title: t(`Leaderboard · ${date}`, `Рейтинг · ${date}`), index: false, ...(validDay(day) && { card: `/og/page/rating?day=${day}` }) });
 }
 
 // R2 · A day's rating, the days before today (today's is /race/rating)

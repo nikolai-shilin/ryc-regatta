@@ -16,7 +16,7 @@ export function moreGuide(slug: 'sail' | 'tack', t: T, lang: Lang): Guide {
     slug,
     title: t('Points of sail: from close-hauled to a run', 'Курсы относительно ветра: от бейдевинда до фордевинда'),
     short: t('Points of sail', 'Курсы относительно ветра'),
-    kicker: t('Learn to race · points of sail', 'Учись гоняться · курсы'),
+    kicker: t('Racing guides · points of sail', 'Пособия по гонкам · курсы'),
     img: shot('gd-sail-v1', t('Your boat close-hauled in the game, the fleet sailing upwind around her', 'Твоя лодка идёт в бейдевинд в игре, вокруг неё флот на лавировке'), 3840, 1600),
     description: t(
       'The points of sail: the no-go zone, close-hauled, reaching and running, how the sails are set on each, true and apparent wind, and which point is fastest.',
@@ -74,15 +74,15 @@ export function moreGuide(slug: 'sail' | 'tack', t: T, lang: Lang): Guide {
       { label: t('Sailing downwind', 'Попутные курсы'), href: '/learn/downwind' },
     ],
     try: { label: t('Sail a triangle', 'Пройди треугольник'), href: '/race/free', text: t(
-      'Pick the triangle in a free race: a beat, a tight reach out to the wing mark, a gybe there and a broad reach back — every point of sail in one lap.',
-      'Выбери треугольник в свободной гонке: лавировка, крутой галфвинд к боковому знаку, там поворот фордевинд и бакштаг обратно — все курсы за один круг.') },
+      'Pick the triangle in a custom race: a beat, a tight reach out to the wing mark, a gybe there and a broad reach back — every point of sail in one lap.',
+      'Выбери треугольник в своей гонке: лавировка, крутой галфвинд к боковому знаку, там поворот фордевинд и бакштаг обратно — все курсы за один круг.') },
   };
 
   return {
     slug,
     title: t('How to tack and gybe a sailboat', 'Как делать поворот оверштаг и фордевинд'),
     short: t('Tacking and gybing', 'Оверштаг и фордевинд'),
-    kicker: t('Learn to race · tacking', 'Учись гоняться · повороты'),
+    kicker: t('Racing guides · tacking', 'Пособия по гонкам · повороты'),
     img: shot('gd-tack-v1', t('Your boat head to wind in the middle of a tack in the game', 'Твоя лодка стоит носом к ветру в середине поворота оверштаг в игре'), 3840, 1600),
     description: t(
       'How to tack and gybe a sailboat step by step: the calls, how far to turn, keeping speed, roll tacks, avoiding a crash gybe, which to choose and rule 13.',

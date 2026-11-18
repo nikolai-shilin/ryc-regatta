@@ -599,7 +599,7 @@
   visitPost({ ev: 'open', id: window.rycVisit.id, open: { vid: vid, ref: ref, kind: match ? 'match' : q.get('drill') ? 'drill' : free ? 'free' : 'today', tg: TG ? 1 : 0,
     dev: matchMedia('(pointer: coarse)').matches ? (Math.min(screen.width, screen.height) < 600 ? 'phone' : 'tablet') : 'desktop' } });
   var day = new Date().toLocaleDateString(ru ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-  $('lKick').textContent = match ? t('1-on-1 race', 'Гонка один на один') : free ? t('Free race', 'Свободная гонка') : t('Today’s race', 'Гонка дня') + ' · ' + day;
+  $('lKick').textContent = match ? t('1-on-1 race', 'Гонка 1 на 1') : free ? t('Custom race', 'Своя гонка') : t('Today’s race', 'Гонка дня') + ' · ' + day;
   $('lSub').textContent = match ? t('You and a friend in one race, under the rules of today’s race.', 'Ты и друг в одной гонке, по правилам гонки дня.')
     : free
     ? t('Your wind, your fleet, your course — against the computer boats, under the racing rules.', 'Твой ветер, твой флот, твоя дистанция — против компьютерных лодок, по правилам.')

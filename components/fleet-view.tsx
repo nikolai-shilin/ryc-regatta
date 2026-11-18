@@ -160,10 +160,10 @@ export function FleetView({ lang, start, back, tour = true, own = false, foot }:
         </div>
 
         <p className="bt-hint">{shown === today
-          ? t('Today’s race is sailed in her, the same boat for everyone. A new yacht every day; any can sail a free race.', 'Сегодня гонка дня идёт на ней — у всех одна и та же лодка. Каждый день — новая яхта; в свободной гонке — любая.')
+          ? t('Today’s race is sailed in her, the same boat for everyone. A new yacht every day; any can sail a custom race.', 'Сегодня гонка дня идёт на ней — у всех одна и та же лодка. Каждый день — новая яхта; в своей гонке — любая.')
           : shown in DAILY_YACHTS
-            ? t(`In a free race, the whole fleet sails her, and today’s race does on her days: a new yacht every day, today the ${yachtOf(today).name[0]}.`, `В свободной гонке на ней идёт весь флот, а в её дни — и гонка дня: каждый день новая яхта, сегодня ${yachtOf(today).name[1]}.`)
-            : t(`In a free race, the whole fleet sails her. Today’s race is sailed in a new yacht every day: today the ${yachtOf(today).name[0]}.`, `В свободной гонке на ней идёт весь флот. Гонка дня — каждый день на новой яхте: сегодня ${yachtOf(today).name[1]}.`)}</p>
+            ? t(`In a custom race, the whole fleet sails her, and today’s race does on her days: a new yacht every day, today the ${yachtOf(today).name[0]}.`, `В своей гонке на ней идёт весь флот, а в её дни — и гонка дня: каждый день новая яхта, сегодня ${yachtOf(today).name[1]}.`)
+            : t(`In a custom race, the whole fleet sails her. Today’s race is sailed in a new yacht every day: today the ${yachtOf(today).name[0]}.`, `В своей гонке на ней идёт весь флот. Гонка дня — каждый день на новой яхте: сегодня ${yachtOf(today).name[1]}.`)}</p>
 
         <div className="fl-stats">
           <div><span className="bt-sk">{t('Length', 'Длина')}</span><b>{t(...spec('Length')!.v)}</b></div>

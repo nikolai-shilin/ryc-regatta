@@ -29,7 +29,7 @@ for (const lang of LANGS) {
 
   test(`/learn (${lang}) has a card for every guide, in order, and the way to the glossary`, async () => {
     const h = await html(index, lang);
-    assert.ok(h.includes(esc(t('Learn to race', 'Учись гоняться'))));
+    assert.ok(h.includes(esc(t('Racing guides', 'Пособия по гонкам'))));
     const cards = [...h.matchAll(/href="\/learn\/([a-z]+)" class="gd-card"/g)].map((m) => m[1]);
     assert.deepEqual(cards, [...GUIDES]);
     for (const slug of GUIDES) {
@@ -48,8 +48,8 @@ test('/learn counts its guides in the words of each language', async () => {
 
 test('/learn is titled, described and addressed for each language', async () => {
   const [en, ru] = await Promise.all(LANGS.map((l) => index.generateMetadata(props(l))));
-  assert.equal(en.title, 'Learn to race');
-  assert.equal(ru.title, 'Учись гоняться');
+  assert.equal(en.title, 'Racing guides');
+  assert.equal(ru.title, 'Пособия по гонкам');
   assert.match(en.description, /Short guides to sailboat racing/);
   assert.match(ru.description, /Короткие пособия/);
   assert.equal(en.alternates.canonical, '/learn');

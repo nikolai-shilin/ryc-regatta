@@ -169,7 +169,7 @@ test('the pages laid out as the pause screen are in the broadcast look', () => {
   // the home is in it too, and its header's Play now and name stay hidden on the pages not yet moved over
   assert.match(read('app/[lang]/page.tsx'), /className="scr help home bc"/);
   // and the reading pages
-  for (const f of ['help', 'faq', 'learn', 'iyt', 'learn/[slug]', 'learn/glossary', 'learn/rulebook']) assert.match(read(`app/[lang]/${f}/page.tsx`), /className="scr help hp[^"]*\bbc"/, f);
+  for (const f of ['help', 'faq', 'learn', 'iyt', 'learn/[slug]', 'learn/glossary', 'rulebook']) assert.match(read(`app/[lang]/${f}/page.tsx`), /className="scr help hp[^"]*\bbc"/, f);
   assert.match(read('styles/ryc.css'), /\.hm-brand-t, \.hm-play \{ display: none; \}/);
   // the layer reaches only the pages that opt in: every selector starts at .bc
   const layer = read('styles/broadcast.css').replace(/\/\*[\s\S]*?\*\//g, '').replace(/@[^{]+\{/g, '');

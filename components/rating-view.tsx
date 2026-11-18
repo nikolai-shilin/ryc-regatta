@@ -40,7 +40,7 @@ export function RatingView({ day, data, lang, t }: { day: string; data: Rating |
   return (
     <>
       <header className="hm-page hm-ph rt-head">
-        <span className="kicker">{isToday ? t('Today’s rating', 'Рейтинг дня') : t('Rating', 'Рейтинг')}</span>
+        <span className="kicker">{isToday ? t('Today’s leaderboard', 'Рейтинг дня') : t('Leaderboard', 'Рейтинг')}</span>
         <h1 className="hm-ph-h">{title}</h1>
         <p className="hm-text">
           {t(...venue.name)} · {t(...yachtOf(race.yacht).name)} · {wind} {KN[race.preset]} {t('kn', 'уз')}
@@ -62,7 +62,7 @@ export function RatingView({ day, data, lang, t }: { day: string; data: Rating |
       <main className="hm-page rt">
         {!data ? (
           <section className="rt-card rt-empty">
-            <span className="lbl-ink">{t('The rating can’t be loaded right now', 'Рейтинг сейчас не загружается')}</span>
+            <span className="lbl-ink">{t('The leaderboard can’t be loaded right now', 'Рейтинг сейчас не загружается')}</span>
             <p>{t('The scores server didn’t answer. Times are still being kept: try again in a minute.', 'Сервер результатов не ответил. Время всё равно записывается — попробуй через минуту.')}</p>
             <a className="rt-go" href="/play?race=today"><IconPlay /><span>{t('Sail today’s race', 'Пройти гонку дня')}</span></a>
           </section>
@@ -123,7 +123,7 @@ export function RatingView({ day, data, lang, t }: { day: string; data: Rating |
           </div>
         )}
         {/* the flags, for a sailor wondering where theirs is */}
-        <p className="rt-foot">{t('The flag is the one you fly on ', 'Флаг — тот, что ты поднял на странице ')}<Link href="/boat">{t('your boat', 'своей яхты')}</Link>.</p>
+        <p className="rt-foot">{t('The flag is the one you fly on ', 'Флаг — тот, что ты поднял на странице ')}<Link href="/boat">{t('your yacht', 'своей яхты')}</Link>.</p>
       </main>
     </>
   );

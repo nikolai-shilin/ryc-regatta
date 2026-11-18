@@ -20,6 +20,7 @@ const config: NextConfig = {
       { source: '/passport', has: [{ type: 'query', key: 'v' }], destination: '/players', permanent: true },
       { source: '/passport', destination: '/players?me=1', permanent: true },
       { source: '/race/badges', destination: '/race', permanent: true },
+      { source: '/learn/rulebook', destination: '/rulebook', permanent: true }, // the rule book's first address
     ];
   },
   async rewrites() {

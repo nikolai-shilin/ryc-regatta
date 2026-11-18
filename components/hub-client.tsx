@@ -23,13 +23,13 @@ export function FreeQuick({ lang }: { lang: Lang }) {
   const winds: [Wind, string][] = [['light', t('Light', 'Слабый')], ['medium', t('Medium', 'Средний')], ['strong', t('Strong', 'Сильный')]];
   return (
     <div className="bt-g">
-      <span className="bt-k" id="fq-k"><IconWind s={13} />{t('Free race', 'Свободная гонка')}{last && <span className="bt-k-r" title={last}>{last}</span>}</span>
+      <span className="bt-k" id="fq-k"><IconWind s={13} />{t('Custom race', 'Своя гонка')}{last && <span className="bt-k-r" title={last}>{last}</span>}</span>
       <div className="bt-pills" role="group" aria-labelledby="fq-k">
         {winds.map(([w, label]) => (
           <button key={w} type="button" className="bt-pill bt-pill-go" onClick={() => go(w)}>{label} <small>{KN[w]} {t('kn', 'уз')}</small></button>
         ))}
       </div>
-      <Link className="lb-more" href="/race/free">{t('Set up a free race: place, wind, course', 'Настроить свободную гонку: место, ветер, дистанция')}</Link>
+      <Link className="lb-more" href="/race/free">{t('Set up a custom race: place, wind, course', 'Настроить свою гонку: место, ветер, дистанция')}</Link>
     </div>
   );
 }
@@ -43,9 +43,9 @@ export function MatchCard({ lang }: { lang: Lang }) {
   if (!on) return null;
   return (
     <div className="bt-g">
-      <span className="bt-k"><IconBoats s={13} />{t('1-on-1 race', 'Гонка один на один')}</span>
+      <span className="bt-k"><IconBoats s={13} />{t('1-on-1 race', 'Гонка 1 на 1')}</span>
       <p className="bt-hint">{t('You and a friend, one on one: send a link.', 'Вы и друг, один на один: отправьте ссылку.')}</p>
-      <Link className="lb-more" href="/match/new">{t('Set up a 1-on-1 race', 'Настроить гонку один на один')}</Link>
+      <Link className="lb-more" href="/match/new">{t('Set up a 1-on-1 race', 'Настроить гонку 1 на 1')}</Link>
     </div>
   );
 }

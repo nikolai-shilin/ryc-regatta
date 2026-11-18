@@ -63,7 +63,7 @@ test('after signing in, only a path on this site', async () => {
 
 test('the 1-on-1 race is named as such, and its set-up offers all but the fleet', () => {
   for (const f of ['components/hub-client.tsx', 'components/home-back.tsx', 'components/home-client.tsx', 'app/og/page/[key]/route.tsx', 'app/[lang]/match/[code]/page.tsx', 'app/[lang]/match/new/page.tsx']) {
-    assert.match(read(f), /1-on-1 race|1-on-1/, f); assert.match(read(f), /Гонка один на один|гонку один на один|один на один/, f);
+    assert.match(read(f), /1-on-1 race|1-on-1/, f); assert.match(read(f), /1 на 1|один на один/, f);
     assert.doesNotMatch(read(f), /Match race|Матчевая|Best of 3|До 2 побед/, f);
   }
   const setup = read('components/free-setup.tsx');
@@ -76,7 +76,7 @@ test('the 1-on-1 race is named as such, and its set-up offers all but the fleet'
 test('the result page shows a 1-on-1 race as such', () => {
   const view = read('components/result-view.tsx');
   assert.match(view, /oneOnOne\?: boolean/); assert.match(view, /dnf\?: boolean/);
-  assert.match(view, /'1-on-1 race', 'Гонка один на один'/); assert.match(view, /'Did not finish'/);
+  assert.match(view, /'1-on-1 race', 'Гонка 1 на 1'/); assert.match(view, /'Did not finish'/);
   assert.match(view, /one \? '\/match\/new'/);
   assert.match(view, /!shared && !one && <ShareButton/);
 });
@@ -96,7 +96,7 @@ test('a 1-on-1 race posts no rating, and its button is counted as its own', () =
 
 test('the loading screen names the 1-on-1 race, under today\'s rules', () => {
   const play = read('public/play/index.html');
-  assert.match(play, /match \? t\('1-on-1 race', 'Гонка один на один'\)/);
+  assert.match(play, /match \? t\('1-on-1 race', 'Гонка 1 на 1'\)/);
   assert.doesNotMatch(play, /Match race|Матчевая гонка|match-racing rules|правилам матчевых гонок/);
   assert.match(play, /under the rules of today’s race/); assert.match(play, /по правилам гонки дня/);
 });

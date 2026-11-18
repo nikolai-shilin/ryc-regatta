@@ -67,7 +67,7 @@ export function AdminRacing({ lang, stats }: { lang: Lang; stats: Stats }) {
       <Table title={t('By wind', 'По ветру')} first={t('Wind', 'Ветер')} head={raceHead} rows={raceRows('wind', wind)} />
       <Table title={t('By venue', 'По месту')} first={t('Venue', 'Место')} head={raceHead} rows={raceRows('venue', venueName, () => true)} />
       <Table title={t('By course and race', 'По дистанции и виду гонки')} first={t('Course', 'Дистанция')} head={raceHead}
-        rows={[...raceRows('shape', shape), ...raceRows('kind', (v) => (v === 'daily' ? t('Today’s race', 'Гонка дня') : t('Free race', 'Свободная гонка')))]} />
+        rows={[...raceRows('shape', shape), ...raceRows('kind', (v) => (v === 'daily' ? t('Today’s race', 'Гонка дня') : t('Custom race', 'Своя гонка')))]} />
       <p className="hint">{t('Finished and DSQ: of the races started. Top 3: of the races finished. Place: the median, 0% first in the fleet, 100% last. FPS: the median frame rate of the races measured.',
         'Финиш и DSQ — от начатых гонок. Топ-3 — от финишировавших. Место — медиана: 0% — первым во флоте, 100% — последним. FPS — медианная частота кадров в измеренных гонках.')}</p>
     </div>

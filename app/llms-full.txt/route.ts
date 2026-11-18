@@ -41,7 +41,7 @@ export function GET() {
 
 This is the reading on ${SITE} in one file: the guides to sailboat racing, the glossary, the regatta venues, the yachts and the questions about the game. The short version, with the site's pages, is ${SITE}/llms.txt. Every page is also in Russian at the same address with ?lang=ru.
 
-# Learn to race: the guides
+# Racing guides
 
 ${guides}
 # Sailing racing glossary
@@ -50,7 +50,7 @@ ${glossary}
 
 # The racing rules, rule by rule
 
-${SITE}/learn/rulebook · a summary in our own words of the Racing Rules of Sailing 2025–2028, not the official text, which is World Sailing's: ${RULEBOOK_SOURCE}
+${SITE}/rulebook · a summary in our own words of the Racing Rules of Sailing 2025–2028, not the official text, which is World Sailing's: ${RULEBOOK_SOURCE}
 
 ${rules}
 # The venues
@@ -59,7 +59,7 @@ ${venues}
 # The yachts
 
 ${yachts}
-# Questions
+# FAQ
 
 ${faq}`;
   return new Response(body, { headers: { 'content-type': 'text/markdown; charset=utf-8', 'cache-control': 'public, max-age=3600' } });

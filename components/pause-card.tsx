@@ -9,7 +9,7 @@ import { SailingOpts } from './sailing-opts';
 
 // what a panel's foot leads to: your boat, the yachts (the yachts' own page has the venues there instead), and Settings
 const FOOT = {
-  boat: { href: '/boat', ico: <IconSail s={18} />, name: ['Your boat', 'Твоя яхта'] },
+  boat: { href: '/boat', ico: <IconSail s={18} />, name: ['Your yacht', 'Твоя яхта'] },
   yachts: { href: '/yachts', ico: <IconBoats s={18} />, name: ['The yachts', 'Яхты'] },
   venues: { href: '/venues', ico: <IconPin s={18} />, name: ['The venues', 'Акватории'] },
 } as const;

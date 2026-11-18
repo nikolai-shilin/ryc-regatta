@@ -44,21 +44,22 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <span className="hm-acct-t"><span className="hm-acct-n">{t('Sign in', 'Войти')}</span><span className="hm-acct-s">{t('To be ranked and keep your times', 'Чтобы попасть в рейтинг и сохранить результаты')}</span></span>
         </Link>
         <span className="hm-msep" />
-        <Link className="hm-mi" href="/boat">{t('Your boat', 'Твоя яхта')}</Link>
+        <Link className="hm-mi" href="/boat">{t('Your yacht', 'Твоя яхта')}</Link>
         <Link className="hm-mi" href={card ? `/players?p=${encodeURIComponent(card)}` : '/players?me=1'}>{t('Your player card', 'Твоя карточка игрока')}</Link>
         <Link className="hm-mi if-guest" href="/settings">{t('Settings', 'Настройки')}</Link>
         <AvMenuItem lang={lang} />
         <span className="hm-msep" />
         <Link className="hm-mi" href="/help">{t('How to play', 'Как играть')}</Link>
-        <Link className="hm-mi" href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
-        <Link className="hm-mi" href="/faq">{t('Questions', 'Вопросы')}</Link>
+        <Link className="hm-mi" href="/learn">{t('Racing guides', 'Пособия по гонкам')}</Link>
+        <Link className="hm-mi" href="/rulebook">{t('Racing rules', 'Правила гонок')}</Link>
+        <Link className="hm-mi" href="/faq">{t('FAQ', 'Вопросы и ответы')}</Link>
         <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы')}>
           <span className="hm-msep" />
           <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня')}</Link>
-          <Link className="hm-mi" href="/race/free">{t('Free race', 'Свободная гонка')}</Link>
-          <Link className="hm-mi" href="/match/new">{t('1-on-1 race with a friend', 'Гонка с другом один на один')}</Link>
+          <Link className="hm-mi" href="/race/free">{t('Custom race', 'Своя гонка')}</Link>
+          <Link className="hm-mi" href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1')}</Link>
           <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки')}</Link>
-          <Link className="hm-mi" href="/race/rating">{t('Rating', 'Рейтинг')}</Link>
+          <Link className="hm-mi" href="/race/rating">{t('Leaderboard', 'Рейтинг')}</Link>
           <Link className="hm-mi" href="/players">{t('Players', 'Игроки')}</Link>
           <Link className="hm-mi hm-mi-x" href="/venues">{t('Venues', 'Акватории')}</Link>
           <Link className="hm-mi hm-mi-x" href="/yachts">{t('Yachts', 'Яхты')}</Link>

@@ -139,8 +139,8 @@ export function VenueView({ lang, v, back }: { lang: Lang; v: VenueCard; back: R
           ? <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Sail today’s race here', 'Пройди гонку дня здесь')}</span></a>
           : <button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race at ${name}`, 'Гоняться здесь')}</span></button>}>
         <p className="bt-hint">{v.today
-          ? t('Today’s race is sailed here: the same course and wind for everyone. Or set up a free race here, your yacht, wind and fleet.', 'Гонка дня сегодня здесь: одна дистанция и ветер для всех. Или настрой здесь свободную гонку — со своей яхтой, ветром и флотом.')
-          : t('A free race here: the yacht, the wind, the fleet and the course are yours to choose. Free, on a phone or a computer, with nothing to install.', 'Свободная гонка здесь: яхту, ветер, флот и дистанцию выбираешь ты. Бесплатно, на телефоне или компьютере, ничего не нужно устанавливать.')}</p>
+          ? t('Today’s race is sailed here: the same course and wind for everyone. Or set up a custom race here, your yacht, wind and fleet.', 'Гонка дня сегодня здесь: одна дистанция и ветер для всех. Или настрой здесь свою гонку — со своей яхтой, ветром и флотом.')
+          : t('A custom race here: the yacht, the wind, the fleet and the course are yours to choose. Free, on a phone or a computer, with nothing to install.', 'Своя гонка здесь: яхту, ветер, флот и дистанцию выбираешь ты. Бесплатно, на телефоне или компьютере, ничего не нужно устанавливать.')}</p>
 
         <div className="fl-stats vn-stats">
           <div><span className="bt-sk">{t('Wind in the game', 'Ветер в игре')}</span><b>{t(...v.wind)}</b></div>

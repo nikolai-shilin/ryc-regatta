@@ -27,7 +27,7 @@ const AU = FLAGS.find((f) => f.code === 'au');
 
 test('a first visit shows the club’s boat and saves nothing', async () => {
   const v = await editor();
-  assert.equal(v.$('h1').textContent.trim(), 'Your boat: RYC 1');
+  assert.equal(v.$('h1').textContent.trim(), 'Your yacht: RYC 1');
   assert.equal(localStorage.getItem(BOAT_KEY), null);
   assert.equal(saveBtn(v).disabled, true);
   assert.equal(saveBtn(v).textContent, 'Saved');
@@ -72,7 +72,7 @@ test('a browser that won’t keep her says so, and she stays unsaved', async () 
   await click(swatch(v, 'l-hull'));
   dom.storageBlocked = true;
   await click(saveBtn(v));
-  assert.match(v.$('[role=alert]').textContent, /didn’t keep your boat/);
+  assert.match(v.$('[role=alert]').textContent, /didn’t keep your yacht/);
   assert.equal(saveBtn(v).disabled, false);
 });
 
@@ -282,7 +282,7 @@ test('leaving with changes asks first, and staying stays', async () => {
   await click(swatch(v, 'l-hull'));
   dom.confirmAnswer = false;
   await click(v.$('a[href="/yachts"]'));
-  assert.deepEqual(dom.confirms, ['Leave without saving your boat? Your changes will be lost.']);
+  assert.deepEqual(dom.confirms, ['Leave without saving your yacht? Your changes will be lost.']);
   assert.deepEqual(dom.followed, []);
   dom.confirmAnswer = true;
   await click(v.$('a[href="/yachts"]'));
@@ -795,7 +795,7 @@ const settings = (p = {}) => mount(h(SettingsForm, { lang: 'en', langSeg: h('nav
 test('Settings holds the account, your boat, how you sail and Audio & graphics', async () => {
   const v = await settings();
   assert.ok(v.$('#acct') && v.$('#seg'));
-  for (const w of ['Account', 'Your boat', 'Language', 'Sailing', 'Audio & graphics']) assert.ok(v.text().includes(w), w);
+  for (const w of ['Account', 'Your yacht', 'Language', 'Sailing', 'Audio & graphics']) assert.ok(v.text().includes(w), w);
   assert.equal(v.text().includes('Yacht name'), false, 'her name is set on the boat page');
 });
 

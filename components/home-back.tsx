@@ -156,5 +156,5 @@ export function MatchLink({ lang }: { lang: Lang }) {
   const [on, setOn] = useState(false);
   useEffect(() => { setOn(new URLSearchParams(location.search).has('match')); }, []);
   if (!on) return null;
-  return <Link className="ho-ghost" href="/match/new" data-cta="friend-match">{t('Race a friend, 1-on-1', 'Гонка с другом один на один')}</Link>;
+  return <Link className="ho-ghost" href="/match/new" data-cta="friend-match">{t('Race a friend, 1-on-1', 'Гонка с другом 1 на 1')}</Link>;
 }

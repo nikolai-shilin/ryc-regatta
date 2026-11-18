@@ -670,7 +670,7 @@ test('how they race: the totals and a table for each way of cutting it', () => {
   assert.equal(tableOf(html, 'By yacht')[1][0], 'unknownboat', 'a yacht it doesn’t know goes by its id');
   assert.deepEqual(tableOf(html, 'By wind').map((r) => r[0]), ['Light'], 'a race with no wind kept is left out');
   assert.deepEqual(tableOf(html, 'By venue').map((r) => r[0]), ['Not kept (older races)', 'Göcek']);
-  assert.deepEqual(tableOf(html, 'By course and race').map((r) => r[0]), ['Triangle', 'Today’s race', 'Free race']);
+  assert.deepEqual(tableOf(html, 'By course and race').map((r) => r[0]), ['Triangle', 'Today’s race', 'Custom race']);
 });
 
 test('a bar a day, an empty slot for a day with no races, from the period’s start to today', () => {

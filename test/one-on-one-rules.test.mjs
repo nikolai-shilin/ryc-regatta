@@ -198,7 +198,7 @@ function sailScripted(opts) {
   return r.boats.map((b) => (b.done && !b.dsq ? Math.round(b.finish * 10) / 10 : null));
 }
 const GOLDEN_4242 = [ null, 286.1, 242.3, 241.8, 242.8 ]; // sailed again 2026-11-18: the leeward boat is the one on the other's leeward side (sim.js windward)
-test('a free race is unchanged by the 1-on-1 race', () => {
+test('a custom race is unchanged by the 1-on-1 race', () => {
   assert.deepEqual(sailScripted({ preset: 'medium', length: 'short', laps: 1, fleet: 5, seed: 4242 }), GOLDEN_4242);
 });
 

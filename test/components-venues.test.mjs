@@ -49,10 +49,10 @@ test('a venue with no race of the day coming leaves that line out', () => {
   assert.doesNotMatch(plain(page({ next: null })), /Race of the day here/);
 });
 
-test('on another day the button sets up a free race here', async () => {
+test('on another day the button sets up a custom race here', async () => {
   const v = await venue();
   assert.equal(v.$('.bt-go').textContent, 'Race at Göcek');
-  assert.match(v.text(), /A free race here: the yacht, the wind/);
+  assert.match(v.text(), /A custom race here: the yacht, the wind/);
   await click(v.$('.bt-go'));
   assert.equal(JSON.parse(localStorage.getItem('regatta')).venue, 'gocek');
   assert.deepEqual(location.assigned, ['/race/free']);
@@ -269,7 +269,7 @@ test('a message from another page is ignored by the list too', async () => {
   assert.deepEqual(dom.reported, []);
 });
 
-test('the list leads on to a free race and the guides', () => {
+test('the list leads on to a custom race and the guides', () => {
   const links = hrefs(ssr(list()));
   assert.ok(links.includes('/race/free') && links.includes('/learn'));
 });

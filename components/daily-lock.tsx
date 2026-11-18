@@ -30,10 +30,10 @@ export function DailyLock({ lang, chips }: { lang: Lang; chips: string[] }) {
         <h2 className="dl-h" id="dl-h">{t('Today’s race is fixed', 'Гонка дня неизменна')}</h2>
         <p className="dl-p">{t('Everyone sails today’s race in the same place, wind and course, so the times compare fairly. A race in other conditions doesn’t go on today’s ranking.', 'Сегодня все проходят гонку в одном месте, при одном ветре и на одной дистанции — так время сравнивается честно. Гонка в других условиях в рейтинг дня не идёт.')}</p>
         <ul className="dl-chips" aria-label={t('Today’s conditions', 'Условия сегодня')}>{chips.map((c) => <li key={c}>{c}</li>)}</ul>
-        <p className="dl-p dl-s">{t('To change them, make it a free race: it opens with today’s settings, for you to change.', 'Чтобы их изменить, сделай свободную гонку: она откроется с сегодняшними настройками, и их можно поменять.')}</p>
+        <p className="dl-p dl-s">{t('To change them, make it a custom race: it opens with today’s settings, for you to change.', 'Чтобы их изменить, сделай свою гонку: она откроется с сегодняшними настройками, и их можно поменять.')}</p>
         <div className="dl-btns">
           <button type="button" className="dl-keep" onClick={() => dlg.current?.close()} autoFocus>{t('Keep today’s race', 'Остаться в гонке дня')}</button>
-          <a className="dl-free" href="/race/free?from=today">{t('Make it a free race', 'Сделать свободной')}</a>
+          <a className="dl-free" href="/race/free?from=today">{t('Make it a custom race', 'Сделать своей')}</a>
         </div>
       </div>
     </dialog>

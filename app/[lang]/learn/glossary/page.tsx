@@ -35,14 +35,14 @@ export default async function Glossary({ params }: LangParams) {
   const terms = groups.flatMap((g) => g.terms);
   const img = guide('sail', t, lang).img!;
   const url = SITE + langUrl('/learn/glossary', lang);
-  const crumbs: Crumb[] = [[t('Learn to race', 'Учись гоняться'), '/learn'], [t('Glossary', 'Словарь'), '/learn/glossary']];
+  const crumbs: Crumb[] = [[t('Racing guides', 'Пособия по гонкам'), '/learn'], [t('Glossary', 'Словарь'), '/learn/glossary']];
   const n = GUIDES.length;
   const ld = {
     '@context': 'https://schema.org', '@type': 'DefinedTermSet', '@id': url, name: t('Sailing racing glossary', 'Словарь парусных гонок'), inLanguage: lang, url,
     hasDefinedTerm: terms.map((x) => ({ '@type': 'DefinedTerm', '@id': `${url}#${x.id}`, name: x.term, description: x.def, inDefinedTermSet: url })),
   };
   const cards: [string, string, string][] = [
-    [t('Rule book', 'Все правила'), t('The racing rules, rule by rule', 'Правила гонок, правило за правилом'), '/learn/rulebook'],
+    [t('Racing rules', 'Правила гонок'), t('The racing rules, rule by rule', 'Правила гонок, правило за правилом'), '/rulebook'],
     [t('Further reading', 'Подробнее'), guide('rules', t, lang).short, '/learn/rules'],
     [t('On the water', 'На воде'), t('Today’s race', 'Гонка дня'), '/race'],
   ];
@@ -54,7 +54,7 @@ export default async function Glossary({ params }: LangParams) {
         <Image className="gd-hero-bg" src={img.src} width={img.width} height={img.height} sizes="100vw" fetchPriority="high" loading="eager" alt={img.alt} />
         <div className="hm-page hm-ph">
           <Trail t={t} crumbs={crumbs} />
-          <span className="kicker">{t('Learn to race · glossary', 'Учись гоняться · словарь')}</span>
+          <span className="kicker">{t('Racing guides · glossary', 'Пособия по гонкам · словарь')}</span>
           <h1 className="hm-ph-h">{t('Sailing racing glossary', 'Словарь парусных гонок')}</h1>
           <p className="hm-text">{t(`The ${terms.length} words you hear most on a race course, each in a sentence or two. The guides go further.`, `${terms.length} слов, которые чаще всего слышно на гоночной дистанции, — каждое в паре предложений. Подробнее — в пособиях.`)}</p>
           <p className="gd-by">{t('By ', '')}<span>{t(...AUTHOR.name)}</span>, {AUTHOR.org}</p>
@@ -94,7 +94,7 @@ export default async function Glossary({ params }: LangParams) {
               <h2 className="hm-h2" id="gl-guides">{t(`${EN_N[n] || n} guides, each ending in a race`, `${RU_N[n] || n} ${ruPlural(n, ['пособие', 'пособия', 'пособий'])}, и каждое заканчивается гонкой`)}</h2>
               <p>{t('Up and down is free, on a phone or a computer, with nothing to install.', 'Up and down бесплатна, на телефоне или компьютере, ничего не нужно устанавливать.')}</p>
             </div>
-            <Link className="gd-try-go" href="/learn">{t('Learn to race', 'Учись гоняться')}<IconArrow /></Link>
+            <Link className="gd-try-go" href="/learn">{t('Racing guides', 'Пособия по гонкам')}<IconArrow /></Link>
           </section>
 
           <section className="gd-more" aria-labelledby="gd-more">

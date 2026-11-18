@@ -5,7 +5,7 @@
 .bc .gd-by { margin: var(--s-3) 0 0; font: 600 var(--fs-label)/1.4 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 .bc .gd-by span { color: var(--ink-2); }
 
-/* the rule book and the glossary (app/[lang]/learn/rulebook, learn/glossary), a guide's sections with the rules or the terms one under another: a section's name, and each rule's number beside its name */
+/* the rule book and the glossary (app/[lang]/rulebook, learn/glossary), a guide's sections with the rules or the terms one under another: a section's name, and each rule's number beside its name */
 .bc .gd-tip a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .bc .rb-rules { display: flex; flex-direction: column; gap: var(--s-8); margin: var(--s-4) 0 0; min-width: 0; }
 .bc dl.rb-rules { gap: var(--s-6); }

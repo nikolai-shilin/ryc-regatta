@@ -160,10 +160,10 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
   const shape = shapeOf(res.course), shapeW = shape === 'wl' ? null : t(...SHAPE_NAME[shape]).toLowerCase();
   const one = !!res.oneOnOne; // a 1-on-1 race: two people, no ranking, no best time, no link to share
   const kicker = one
-    ? `${t('1-on-1 race', 'Гонка один на один')} · ${windW} ${kn} ${t('kn', 'уз')} · ${shapeW ? `${shapeW} · ` : ''}${res.laps} ${t(res.laps > 1 ? 'laps' : 'lap', res.laps > 1 ? 'круга' : 'круг')}`
+    ? `${t('1-on-1 race', 'Гонка 1 на 1')} · ${windW} ${kn} ${t('kn', 'уз')} · ${shapeW ? `${shapeW} · ` : ''}${res.laps} ${t(res.laps > 1 ? 'laps' : 'lap', res.laps > 1 ? 'круга' : 'круг')}`
     : res.daily
     ? `${shared ? t('Race of the day', 'Гонка дня') : t('Today’s race', 'Гонка дня')} · ${date} · ${windW} ${kn} ${t('kn', 'уз')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length))}${shapeW ? ` · ${shapeW}` : ''}`
-    : `${t('Free race', 'Свободная гонка')} · ${windW} ${kn} ${t('kn', 'уз')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length))} · ${shapeW ? `${shapeW} · ` : ''}${res.laps} ${t(res.laps > 1 ? 'laps' : 'lap', res.laps > 1 ? 'круга' : 'круг')}`;
+    : `${t('Custom race', 'Своя гонка')} · ${windW} ${kn} ${t('kn', 'уз')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length))} · ${shapeW ? `${shapeW} · ` : ''}${res.laps} ${t(res.laps > 1 ? 'laps' : 'lap', res.laps > 1 ? 'круга' : 'круг')}`;
   const rival = res.boats.find((b) => !b.me)?.name || t('The other boat', 'Соперник'); // (a 1-on-1 race's: the one who dropped out)
   const title = ended === 'dsq' ? t('Disqualified', 'Дисквалификация') : ended === 'dnf' ? t('Did not finish', 'Не финишировал') : ended === 'won' ? t(`You won: ${rival} dropped out`, `Ты победил: ${rival} — сход`) : shared ? t(`Finished ${ordEn(place)}`, `${place}-е место на финише`) : t(`You finished ${ordEn(place)}`, `${place}-е место на финише`);
   const gap = me.secs != null && winner?.secs != null && winner !== me ? `+${(me.secs - winner.secs).toFixed(1)} ${t('s', 'с')}` : '—';
@@ -172,7 +172,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
   // someone else's race: today's race, for you to sail
   const cta = shared
     ? { href: '/race', label: t('Sail today’s race', 'Пройти гонку дня') }
-    : { href: again, label: one ? t('Another 1-on-1 race', 'Ещё одна гонка один на один') : t('Race again', 'Ещё гонку') };
+    : { href: again, label: one ? t('Another 1-on-1 race', 'Ещё одна гонка 1 на 1') : t('Race again', 'Ещё гонку') };
   const mine = me.secs != null && !me.dsq ? me.secs : null;
   const you = shared ? t('This boat', 'Эта лодка') : t('You', 'Ты');
   // the link to this page, with a line to go with it, for the share sheet (components/share-sheet): each app gets it
@@ -343,7 +343,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
             ))}
           </ol>
           {hasLevels && <p className="bt-hint rs-hint">{t('Computer skippers:', 'Компьютерные шкиперы:')} <Pips n={1} /> {t('beginner to', 'от новичка до')} <Pips n={4} /> {t('expert', 'эксперта')}</p>}
-          {!one && <p className="bt-hint rs-hint">{res.daily ? t('Today’s race is the one that ranks: everyone sails the same one.', 'В рейтинг идёт гонка дня: у всех она одна.') : t('Free races stay with you; today’s race is the one that ranks.', 'Свободные гонки остаются у тебя; в рейтинг идёт гонка дня.')}</p>}
+          {!one && <p className="bt-hint rs-hint">{res.daily ? t('Today’s race is the one that ranks: everyone sails the same one.', 'В рейтинг идёт гонка дня: у всех она одна.') : t('Custom races stay with you; today’s race is the one that ranks.', 'Свои гонки остаются у тебя; в рейтинг идёт гонка дня.')}</p>}
           {!shared && !one && Date.now() - res.at < 864e5 && <RateRace id={res.id} lang={lang} />}{/* how was it: your own race, just sailed */}
         </PauseCard>
         <a className="rs-down" href="#debrief" aria-label={t('The debrief', 'Разбор')}><span>{t('The debrief', 'Разбор')}</span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" /></svg></a>
@@ -440,10 +440,10 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
         </section>
 
         <nav className="rs-card rs-next" aria-label={t('Where next', 'Куда дальше')}>
-          <a className="bt-row" href={again}><IconRestart s={18} /><span>{one ? t('Another 1-on-1 race', 'Ещё одна гонка один на один') : res.daily ? t('Today’s race again', 'Гонка дня ещё раз') : t('The same race again', 'Эту же гонку ещё раз')}</span></a>
-          {!one && <Link className="bt-row" href={res.daily ? '/race/free?from=today' : '/race/free'}><IconSliders /><span>{res.daily ? t('A free race in these conditions', 'Свободная гонка в этих условиях') : t('Free race', 'Свободная гонка')}</span><span className="bt-row-m">{t('Set it up', 'Настроить')}</span></Link>}
+          <a className="bt-row" href={again}><IconRestart s={18} /><span>{one ? t('Another 1-on-1 race', 'Ещё одна гонка 1 на 1') : res.daily ? t('Today’s race again', 'Гонка дня ещё раз') : t('The same race again', 'Эту же гонку ещё раз')}</span></a>
+          {!one && <Link className="bt-row" href={res.daily ? '/race/free?from=today' : '/race/free'}><IconSliders /><span>{res.daily ? t('A custom race in these conditions', 'Своя гонка в этих условиях') : t('Custom race', 'Своя гонка')}</span><span className="bt-row-m">{t('Set it up', 'Настроить')}</span></Link>}
           <Link className="bt-row" href="/race"><IconFlag s={18} /><span>{t('Race hub', 'Меню гонок')}</span></Link>
-          <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
+          <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your yacht', 'Твоя яхта')}</span></Link>
         </nav>
       </div>
     </div>

@@ -173,7 +173,7 @@ export default async function Help({ params }: LangParams) {
               <div className="hm-help-main">
                 <span className="kicker">{t('Once a day', 'Раз в день')}</span>
                 <h2 className="hm-h2" id="h-today-t">{t('Today’s race', 'Гонка дня')}</h2>
-                <p className="hm-text">{t('Once a day everyone sails the same race: the same wind, course and fleet, so times compare fairly. Sign in and your time goes on today’s ranking. A free race lets you choose everything; its times stay with you.', 'Раз в день у всех одна гонка: один ветер, дистанция и флот, поэтому время сравнивается честно. Войди — и твоё время попадёт в рейтинг дня. В свободной гонке выбираешь всё сам, а результаты остаются у тебя.')}</p>
+                <p className="hm-text">{t('Once a day everyone sails the same race: the same wind, course and fleet, so times compare fairly. Sign in and your time goes on today’s ranking. A custom race lets you choose everything; its times stay with you.', 'Раз в день у всех одна гонка: один ветер, дистанция и флот, поэтому время сравнивается честно. Войди — и твоё время попадёт в рейтинг дня. В своей гонке выбираешь всё сам, а результаты остаются у тебя.')}</p>
                 <Link className="pill pill-primary hm-cta" href="/race"><span className="btn-t">{t('To the race hub', 'В меню гонок')}</span><IconArrow /></Link>
               </div>
             </section>

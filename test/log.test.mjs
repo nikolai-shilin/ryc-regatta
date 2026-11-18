@@ -37,7 +37,7 @@ test('the log: a day at its fastest, a venue at its first race, from the game’
   addResult(l, { at: Date.parse('2026-11-10T09:00:00Z'), daily: '2026-11-10', boats: [{ me: true, done: true, dsq: false, secs: 228 }] });
   assert.equal(l.v[v], Date.parse('2026-11-10T09:00:00Z'));
   assert.equal(l.d['2026-11-10'], 228);
-  // a free race stamps its venue but isn't a day; a race not finished stamps nothing
+  // a custom race stamps its venue but isn't a day; a race not finished stamps nothing
   addResult(l, { at: 50, daily: null, venue: 'kiel', boats: [{ me: true, done: true, dsq: false, secs: 300 }] });
   addResult(l, { at: 60, daily: null, venue: 'sydney', boats: [{ me: true, done: false, dsq: false, secs: null }] });
   assert.equal(l.v.kiel, 50);

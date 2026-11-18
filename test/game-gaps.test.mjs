@@ -119,7 +119,7 @@ test('the sky is the light of its own hour', () => {
 });
 
 for (const [daytime, hour] of Object.entries(DAYTIMES)) {
-  test(`a free race set to the ${daytime} is sailed at that hour under a clear sky`, () => {
+  test(`a custom race set to the ${daytime} is sailed at that hour under a clear sky`, () => {
     randoms(0.5, 0); // the dice said overcast
     const s = pickSky({ settings: { daytime } });
     restore();
@@ -127,7 +127,7 @@ for (const [daytime, hour] of Object.entries(DAYTIMES)) {
   });
 }
 
-test('a free race at any time of day has the hour the dice give it', () => {
+test('a custom race at any time of day has the hour the dice give it', () => {
   pickSky({ settings: { daytime: 'midday' } });
   randoms(0, 0.9);
   const s = pickSky({ settings: { daytime: 'any' } });
@@ -192,7 +192,7 @@ test('?sky= in the address decides the cloud', () => {
   assert.equal(s.overcast, false);
 });
 
-test('?sky= overrules a free race set to a clear time of day', () => {
+test('?sky= overrules a custom race set to a clear time of day', () => {
   const s = addressed('?sky=overcast', { settings: { daytime: 'midday' } });
   assert.deepEqual([s.hour, s.overcast], [DAYTIMES.midday, true]);
 });

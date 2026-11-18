@@ -231,7 +231,7 @@ test('the host\'s room in Russian', async () => {
   fresh();
   const h = await page('Хозяйка', { host: true, lang: 'ru', settings: { laps: 2, start: 5 } });
   run(0.5, h);
-  assert.equal(h.says('#mRoom .m-kick'), 'Гонка один на один');
+  assert.equal(h.says('#mRoom .m-kick'), 'Гонка 1 на 1');
   assert.equal(h.says('#mRoomH'), 'Зал ожидания');
   assert.equal(h.says('.m-linkK'), 'Отправь другу эту ссылку');
   assert.match(h.says('.m-set'), / · 2 круга · старт 5 мин$/);
@@ -1098,7 +1098,7 @@ test('the card\'s words in English: the title, the buttons, the gap', async () =
 
 test('the card\'s words in Russian', async () => {
   const x = await carded({ lang: 'ru' }, { lang: 'ru' });
-  assert.equal(x.h.says('#mCard .m-kick'), 'Гонка один на один');
+  assert.equal(x.h.says('#mCard .m-kick'), 'Гонка 1 на 1');
   assert.equal(x.h.says('#mCard .m-full'), 'Полный результат');
   assert.equal(x.h.says('#mCard .m-leave'), 'Закончить');
   until(() => x.h.shows('#mCard .m-go'), x.h, x.g);
@@ -1411,7 +1411,7 @@ test('the sign-in question is in Russian too', async () => {
   const h = await page('Host', { host: true, lang: 'ru', cfg: { canHost: false } });
   run(0.5, h);
   assert.equal(h.says('#mRoom h2'), 'Войди, чтобы создать гонку');
-  assert.equal(h.says('#mRoom .m-set'), 'Чтобы создать гонку один на один, нужен аккаунт. Чтобы войти в гонку друга, он не нужен.');
+  assert.equal(h.says('#mRoom .m-set'), 'Чтобы создать гонку 1 на 1, нужен аккаунт. Чтобы войти в гонку друга, он не нужен.');
   assert.equal(h.says('.m-signin'), 'Войти');
   h.gone();
 });

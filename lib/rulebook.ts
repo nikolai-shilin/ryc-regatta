@@ -1,7 +1,7 @@
 import type { T } from './lang';
 
 // Every rule of The Racing Rules of Sailing 2025–2028 (with World Sailing's changes and corrections to 20 April 2026),
-// for /learn/rulebook: each in a sentence or a few of our own words, in the book's order. A summary to find your way
+// for /rulebook: each in a sentence or a few of our own words, in the book's order. A summary to find your way
 // by, not the official text, which is World Sailing's (RULEBOOK_SOURCE); the page says so.
 export const RULEBOOK_DATE = '2026-11-18';
 export const RULEBOOK_SOURCE = 'https://www.sailing.org/racingrules';

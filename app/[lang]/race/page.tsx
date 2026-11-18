@@ -22,12 +22,12 @@ import { MyRow } from '@/components/home-client';
 // the browser's to show (lib/me.ts: .if-me, .if-guest, the initials; the pause card's account reads the cookie).
 export const revalidate = 300;
 
-export const generateMetadata = titled('Race hub: today’s sailing race and free races', 'Меню гонок: парусная гонка дня и свободные гонки', {
+export const generateMetadata = titled('Race hub: today’s sailing race and custom races', 'Меню гонок: парусная гонка дня и свои гонки', {
   path: '/race',
   today: true,
   description: [
-    'Today’s race: the same venue, wind, course and fleet for every player, a new one at midnight UTC. Sail it as often as you like, beat today’s fastest times, or set up a free race of your own.',
-    'Гонка дня: одинаковые место, ветер, дистанция и флот для всех, новая — каждую полночь по UTC. Проходи сколько хочешь, побей лучшие времена дня или настрой свою свободную гонку.'],
+    'Today’s race: the same venue, wind, course and fleet for every player, a new one at midnight UTC. Sail it as often as you like, beat today’s fastest times, or set up a custom race of your own.',
+    'Гонка дня: одинаковые место, ветер, дистанция и флот для всех, новая — каждую полночь по UTC. Проходи сколько хочешь, побей лучшие времена дня или настрой свою гонку.'],
 });
 
 // I1 · The race hub, as the race's pause screen: today's venue in the game's own scene behind it all (today's yacht afloat
@@ -94,7 +94,7 @@ export default async function Hub({ params }: LangParams) {
           <FreeQuick lang={lang} />
           <MatchCard lang={lang} />
           <div className="bt-rows">
-            <button type="button" className="bt-row" data-lock aria-haspopup="dialog"><IconSliders /><span>{t('Change the wind or course', 'Изменить ветер или дистанцию')}</span><span className="bt-row-m bt-row-opt">{t('A free race', 'Свободная гонка')}</span></button>
+            <button type="button" className="bt-row" data-lock aria-haspopup="dialog"><IconSliders /><span>{t('Change the wind or course', 'Изменить ветер или дистанцию')}</span><span className="bt-row-m bt-row-opt">{t('A custom race', 'Своя гонка')}</span></button>
             <PassportRow lang={lang} />
             <RivalRow lang={lang} />
             <ProgressRows lang={lang} />

@@ -189,7 +189,7 @@ test('the race in words, in English', () => {
   const d = describe(result(), 'en');
   assert.equal(d.place, 2); assert.equal(d.time, '3:45.7');
   assert.equal(d.headline, '2nd in 3:45.7');
-  assert.equal(d.kind, 'Free race');
+  assert.equal(d.kind, 'Custom race');
   assert.equal(d.detail, 'Medium breeze 12 kn · 3 boats · up and down, short, 1 lap');
   assert.equal(d.call, 'Sail today’s race');
   assert.equal(d.kn, 12); assert.equal(d.length, 'Short'); assert.equal(d.boats, 3);
@@ -198,7 +198,7 @@ test('the race in words, in English', () => {
 test('the race in words, in Russian', () => {
   const d = describe(result({ preset: 'strong', length: 'long', laps: 2 }), 'ru');
   assert.equal(d.headline, '2-е место · 3:45.7');
-  assert.equal(d.kind, 'Свободная гонка');
+  assert.equal(d.kind, 'Своя гонка');
   assert.match(d.detail, /^Сильный ветер 19 уз · 3 лодки · .*, длинная, 2 круга$/);
   assert.equal(d.length, 'Длинная');
 });

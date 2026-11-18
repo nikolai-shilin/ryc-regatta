@@ -105,7 +105,7 @@ for (const lang of LANGS) {
     const h = await html(lang);
     assert.ok(h.includes(t(`${VENUES.length} venues, one a day`, `${VENUES.length} акватор`)), 'the venues');
     assert.ok(h.includes(t(`${DRILLS.length} drills`, `Упражнений: ${DRILLS.length}`)), 'the drills');
-    assert.ok(h.includes(`${IYT_TOTAL}`) && h.includes(t(`Exam practice · ${IYT_TOTAL} questions`, `Подготовка к экзамену · ${IYT_TOTAL} вопросов`)), 'the exam');
+    assert.ok(h.includes(`${IYT_TOTAL}`) && h.includes(t(`Sailing exam practice · ${IYT_TOTAL} questions`, `Тренажёр к яхтенному экзамену · ${IYT_TOTAL} вопросов`)), 'the exam');
   });
 
   test(`home (${lang}) tells search engines what the game is, in the page's language`, async () => {

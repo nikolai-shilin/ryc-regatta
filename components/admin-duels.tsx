@@ -115,7 +115,7 @@ export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days
   return (
     <div className="adm adm-stats">
       <div className="adm-k">
-        <IconCrew /><span className="kicker">{t('1-on-1 races', 'Гонки один на один')}</span>
+        <IconCrew /><span className="kicker">{t('1-on-1 races', 'Гонки 1 на 1')}</span>
         <nav className="adm-range" aria-label={t('Period', 'Период')}>
           {PERIODS.map((p) => (
             <Link key={p.label} href={p.d ? `/admin/duels?days=${p.d}` : '/admin/duels'} scroll={false} aria-current={p.d === days ? 'page' : undefined} className={p.d === days ? 'on' : undefined}>{p.label}</Link>

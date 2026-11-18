@@ -10,7 +10,7 @@ import { READING_VIEWPORT } from '@/lib/no-zoom';
 // text to read: it zooms (lib/no-zoom.ts)
 export const viewport = READING_VIEWPORT;
 
-export const generateMetadata = titled('Follow the game', 'Игра в соцсетях', {
+export const generateMetadata = titled('Social media', 'Соцсети', {
   path: '/social', card: '/og/page/social',
   description: [
     'Where Up and down, the free sailing race game, posts: its news, the day’s best races and the racing rules. Follow it, or send the game to a friend.',
@@ -30,7 +30,7 @@ export default async function Social({ params }: LangParams) {
       <SiteHead lang={lang} t={t} page="social" />
       <header className="hm-page hm-ph">
         <span className="kicker">Up and down</span>
-        <h1 className="hm-ph-h">{t('Follow the game', 'Игра в соцсетях')}</h1>
+        <h1 className="hm-ph-h">{t('Social media', 'Соцсети')}</h1>
         <p className="hm-text">{t('The game’s news as it comes, the day’s best races and the racing rules, a situation at a time. Follow it where you read.', 'Новости игры, лучшие гонки дня и разборы ситуаций по гоночным правилам. Подписывайтесь там, где удобно.')}</p>
       </header>
 

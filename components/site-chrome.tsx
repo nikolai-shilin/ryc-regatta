@@ -5,19 +5,19 @@ import { SITE, jsonLd, langUrl } from '@/lib/seo';
 import { Logo, Langs } from './ui';
 import { SiteMenu } from './home-client';
 
-type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt' | 'learn' | 'rating' | 'drills' | 'social' | 'players' | 'venues' | 'yachts' | 'sponsorship';
+type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt' | 'learn' | 'rating' | 'drills' | 'social' | 'players' | 'venues' | 'yachts' | 'sponsorship' | 'rulebook';
 
 // Where each page sits under Home, for the breadcrumb trail search engines show instead of the bare address
-// (BreadcrumbList). A guide passes its own trail: Home › Learn to race › the guide.
+// (BreadcrumbList). A guide passes its own trail: Home › Racing guides › the guide.
 export type Crumb = [name: string, path: string];
 const CRUMBS: Partial<Record<Page, [en: string, ru: string, path: string]>> = {
-  help: ['How to play', 'Как играть', '/help'], faq: ['Questions', 'Вопросы', '/faq'], race: ['Today’s race', 'Гонка дня', '/race'],
-  free: ['Free race', 'Свободная гонка', '/race/free'], boat: ['Your boat', 'Твоя яхта', '/boat'],
-  iyt: ['Sailing Certification Test', 'Sailing Certification Test', '/iyt'], learn: ['Learn to race', 'Учись гоняться', '/learn'],
+  help: ['How to play', 'Как играть', '/help'], faq: ['FAQ', 'Вопросы и ответы', '/faq'], race: ['Today’s race', 'Гонка дня', '/race'],
+  free: ['Custom race', 'Своя гонка', '/race/free'], boat: ['Your yacht', 'Твоя яхта', '/boat'],
+  iyt: ['Sailing exam practice', 'Тренажёр к яхтенному экзамену', '/iyt'], learn: ['Racing guides', 'Пособия по гонкам', '/learn'],
   drills: ['Drills', 'Тренировки', '/race/drills'],
-  social: ['Follow the game', 'Игра в соцсетях', '/social'], players: ['The players', 'Игроки', '/players'],
+  social: ['Social media', 'Соцсети', '/social'], players: ['The players', 'Игроки', '/players'],
   venues: ['The venues', 'Акватории', '/venues'], yachts: ['The yachts', 'Яхты', '/yachts'],
-  sponsorship: ['Sponsorship', 'Спонсорство', '/sponsorship'],
+  sponsorship: ['Sponsorship', 'Спонсорство', '/sponsorship'], rulebook: ['Racing rules', 'Правила гонок', '/rulebook'],
 };
 function Breadcrumbs({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Page; crumbs?: Crumb[] }) {
   const c = CRUMBS[page];
@@ -40,8 +40,8 @@ export function Trail({ t, crumbs }: { t: T; crumbs: Crumb[] }) {
 }
 
 // The site's header, as on rycrentals.com: the logo, the site's pages in the middle (from 1100 px wide), and the menu
-// (the burger and your avatar) at the right; your account, your boat and passport, How to play, Learn to race
-// and Questions are in the menu alone. On a page in the broadcast look (.bc, styles/broadcast.css) it is the
+// (the burger and your avatar) at the right; your account, your boat and passport, How to play, Racing guides,
+// Racing rules and FAQ are in the menu alone. On a page in the broadcast look (.bc, styles/broadcast.css) it is the
 // broadcast's bar: the name with the blue mark, the pages as tabs (from 1280 px wide; Venues and Yachts, hm-tab-x,
 // from 1360), Sign in (a guest's) and Play now beside the menu. On every page: the scrolling ones (home, help, the race result) and the
 // app screens, where it sits over the screen and stays short on a phone held sideways.
@@ -55,10 +55,10 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
         <Link className="hm-brand" href="/" aria-label="RYC · Up and down"><Logo /><span className="hm-brand-t">Up and down</span></Link>
         <nav className="hm-nav" aria-label={t('Main', 'Главное')}>
           <Link className="hm-tab" href="/race" {...cur('race')}>{t('Today’s race', 'Гонка дня')}</Link>
-          <Link className="hm-tab" href="/race/free" {...cur('free')}>{t('Free race', 'Свободная гонка')}</Link>
-          <Link className="hm-tab" href="/match/new">{t('1-on-1', '1 на 1')}</Link>
+          <Link className="hm-tab" href="/race/free" {...cur('free')}>{t('Custom race', 'Своя гонка')}</Link>
+          <Link className="hm-tab" href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1')}</Link>
           <Link className="hm-tab" href="/race/drills" {...cur('drills')}>{t('Drills', 'Тренировки')}</Link>
-          <Link className="hm-tab" href="/race/rating" {...cur('rating')}>{t('Rating', 'Рейтинг')}</Link>
+          <Link className="hm-tab" href="/race/rating" {...cur('rating')}>{t('Leaderboard', 'Рейтинг')}</Link>
           <Link className="hm-tab" href="/players" {...cur('players')}>{t('Players', 'Игроки')}</Link>
           <Link className="hm-tab hm-tab-x" href="/venues" {...cur('venues')}>{t('Venues', 'Акватории')}</Link>
           <Link className="hm-tab hm-tab-x" href="/yachts" {...cur('yachts')}>{t('Yachts', 'Яхты')}</Link>
@@ -82,7 +82,7 @@ function FootLink({ href, only, children }: { href: string; only?: 'if-guest'; c
 
 // The site's footer, the map of the site: the name, who makes it and the language switch, then every page that stands
 // on its own in five columns (a venue, a yacht or a guide is found from its list); under them, that the game has nothing
-// to do with the America's Cup, whose boat it sails (the AC75). Your game follows the menu: signed in, your name opens
+// to do with the America's Cup, whose boat it sails (the AC75). Your account follows the menu: signed in, your name opens
 // the settings; a guest gets Sign in and Settings.
 export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) {
   return (
@@ -96,35 +96,36 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
         <nav className="hm-foot-map" aria-label={t('All pages', 'Все страницы')}>
           <FootGroup title={t('Race', 'Гонки')}>
             <FootLink href="/race">{t('Today’s race', 'Гонка дня')}</FootLink>
-            <FootLink href="/race/free">{t('Free race', 'Свободная гонка')}</FootLink>
-            <FootLink href="/match/new">{t('1-on-1', '1 на 1')}</FootLink>
+            <FootLink href="/race/free">{t('Custom race', 'Своя гонка')}</FootLink>
+            <FootLink href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1')}</FootLink>
             <FootLink href="/race/drills">{t('Drills', 'Тренировки')}</FootLink>
           </FootGroup>
           <FootGroup title={t('Explore', 'Мир игры')}>
-            <FootLink href="/race/rating">{t('Rating', 'Рейтинг')}</FootLink>
+            <FootLink href="/race/rating">{t('Leaderboard', 'Рейтинг')}</FootLink>
             <FootLink href="/players">{t('Players', 'Игроки')}</FootLink>
             <FootLink href="/venues">{t('Venues', 'Акватории')}</FootLink>
             <FootLink href="/yachts">{t('Yachts', 'Яхты')}</FootLink>
           </FootGroup>
           <FootGroup title={t('Learn', 'Обучение')}>
             <FootLink href="/help">{t('How to play', 'Как играть')}</FootLink>
-            <FootLink href="/learn">{t('Learn to race', 'Учись гоняться')}</FootLink>
+            <FootLink href="/learn">{t('Racing guides', 'Пособия по гонкам')}</FootLink>
+            <FootLink href="/rulebook">{t('Racing rules', 'Правила гонок')}</FootLink>
             <FootLink href="/learn/glossary">{t('Glossary', 'Словарь')}</FootLink>
-            <FootLink href="/iyt">{t('Exam practice', 'Подготовка к экзамену')}</FootLink>
-            <FootLink href="/faq">{t('Questions', 'Вопросы')}</FootLink>
+            <FootLink href="/iyt">{t('Sailing exam practice', 'Тренажёр к яхтенному экзамену')}</FootLink>
+            <FootLink href="/faq">{t('FAQ', 'Вопросы и ответы')}</FootLink>
           </FootGroup>
-          <FootGroup title={t('Your game', 'Твоя игра')}>
+          <FootGroup title={t('Your account', 'Твой аккаунт')}>
             <li className="if-me"><Link className="me-name" href="/settings" /></li>
             <FootLink href="/sign-in" only="if-guest">{t('Sign in', 'Войти')}</FootLink>
-            <FootLink href="/boat">{t('Your boat', 'Твоя яхта')}</FootLink>
+            <FootLink href="/boat">{t('Your yacht', 'Твоя яхта')}</FootLink>
             <FootLink href="/players?me=1">{t('Your player card', 'Твоя карточка игрока')}</FootLink>
             <FootLink href="/settings" only="if-guest">{t('Settings', 'Настройки')}</FootLink>
           </FootGroup>
-          <FootGroup title={t('More', 'Ещё')}>
-            <FootLink href="/social">{t('Follow the game', 'Игра в соцсетях')}</FootLink>
+          <FootGroup title={t('About', 'О проекте')}>
+            <FootLink href="/social">{t('Social media', 'Соцсети')}</FootLink>
             <FootLink href="/sponsorship">{t('Sponsorship', 'Спонсорство')}</FootLink>
-            <li><a href="https://www.rycrentals.com/">rycrentals.com</a></li>
-            <li><a href="https://www.rycsailing.com/">rycsailing.com</a></li>
+            <li><a href="https://www.rycrentals.com/">RYC Rentals</a></li>
+            <li><a href="https://www.rycsailing.com/">RYC Sailing</a></li>
           </FootGroup>
         </nav>
         <p className="hm-foot-note">{t('This simulator is an independent project and is not affiliated with, sponsored by, or endorsed by America’s Cup or its organizers.',

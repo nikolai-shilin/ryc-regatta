@@ -48,7 +48,7 @@ export default async function Sponsorship({ params }: LangParams) {
   const channel = CHANNELS[0];
   const made: [title: string, text: string][] = [
     [t('Name on the race marks', 'Имя на знаках'), t('Your name on the white band round every mark the boats race to.', 'Ваше имя на белой полосе каждого знака, который огибают лодки.')],
-    [t('Race of the day partner', 'Партнёр гонки дня'), t('Your name on the day’s race and its rating, on the days you choose.', 'Ваше имя на гонке дня и в её рейтинге в выбранные вами дни.')],
+    [t('Race of the day partner', 'Партнёр гонки дня'), t('Your name on the day’s race and its leaderboard, on the days you choose.', 'Ваше имя на гонке дня и в её рейтинге в выбранные вами дни.')],
     [t('Venue partner', 'Партнёр акватории'), t(`Your name at one of the game’s ${VENUES.length} venues, or your own waters built as a new one, for a marina, a sailing club or a tourist board.`,
       `Ваше имя на одной из ${VENUES.length} акваторий игры или ваша акватория как новая: для марины, яхт-клуба или туристической организации.`)],
     [t('Your yacht in the game', 'Ваша яхта в игре'), t('Your boat modelled in 3D and added to the fleet, for a yacht builder or a class association.', 'Ваша лодка в 3D в составе флота игры: для верфи или классовой ассоциации.')],

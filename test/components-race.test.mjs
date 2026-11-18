@@ -1,4 +1,4 @@
-// The pages round a race: the day's rating and your month, the drills and your rival, the free race's set-up and the
+// The pages round a race: the day's rating and your month, the drills and your rival, the custom race's set-up and the
 // course map, the replay, the question after the race, and the music. npm test.
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -42,13 +42,13 @@ const rating = (p = {}) => { const lang = p.lang ?? 'en'; return ssr(h(RatingVie
 
 test('today’s rating says what today’s race is', () => {
   const r = dailyRace(new Date(TODAY + 'T12:00:00Z')), words = plain(rating());
-  assert.match(words, /^Today’s rating Wednesday,? 18 November/);
+  assert.match(words, /^Today’s leaderboard Wednesday,? 18 November/);
   assert.ok(words.includes(`${venueOf(r.venue).name[0]} · ${yachtOf(r.yacht).name[0]} · Light breeze ${KN[r.preset]} kn · 12 races, 4 ranked`));
 });
 
 test('another day is just the rating, with the way to the day after', () => {
   const html = rating({ day: '2026-11-10' });
-  assert.match(plain(html), /^Rating Tuesday,? 10 November/);
+  assert.match(plain(html), /^Leaderboard Tuesday,? 10 November/);
   assert.ok(hrefs(html).includes('/race/rating/2026-11-09'));
   assert.ok(hrefs(html).includes('/race/rating/2026-11-11'));
 });
@@ -151,7 +151,7 @@ test('today’s rating dares you to beat the times', () => {
 
 test('when the scores server doesn’t answer the page says so and offers the race', () => {
   const html = rating({ data: null });
-  assert.match(plain(html), /The rating can’t be loaded right now/);
+  assert.match(plain(html), /The leaderboard can’t be loaded right now/);
   assert.ok(hrefs(html).includes('/play?race=today'));
   assert.doesNotMatch(plain(html), /ranked/);
 });
@@ -403,8 +403,8 @@ test('the strip for the leader, in Russian', async () => {
   assert.match(v.text(), /Ты лидер Месяц \+1 очко Ты 1-й · 2 очка/);
 });
 
-// ---------- the hub's free race ----------
-test('one tap starts a free race in that wind', async () => {
+// ---------- the hub's custom race ----------
+test('one tap starts a custom race in that wind', async () => {
   const v = await mount(h(FreeQuick, { lang: 'en' }));
   assert.deepEqual(v.$$('.bt-pill-go').map((b) => plain(b.innerHTML)), ['Light 7 kn', 'Medium 12 kn', 'Strong 19 kn']);
   await click(v.$$('.bt-pill-go')[2]);
@@ -413,7 +413,7 @@ test('one tap starts a free race in that wind', async () => {
   assert.deepEqual(location.assigned, ['/play?race=free']);
 });
 
-test('the last free race is recalled once there has been one', async () => {
+test('the last custom race is recalled once there has been one', async () => {
   let v = await mount(h(FreeQuick, { lang: 'en' }));
   assert.equal(v.$('.bt-k-r'), null);
   await v.unmount();
@@ -422,7 +422,7 @@ test('the last free race is recalled once there has been one', async () => {
   assert.equal(v.$('.bt-k-r').textContent, `Last: ${venueOf('gocek').name[0]}, light, 7 boats, 2 laps`);
 });
 
-test('the last free race in Russian counts its boats properly', async () => {
+test('the last custom race in Russian counts its boats properly', async () => {
   localStorage.setItem('regatta', JSON.stringify({ lastFree: 1, venue: 'gocek', preset: 'strong', fleet: 3, laps: 1 }));
   const v = await mount(h(FreeQuick, { lang: 'ru' }));
   assert.equal(v.$('.bt-k-r').textContent, `Прошлая: ${venueOf('gocek').name[1]}, сильный, 3 лодки`);
@@ -436,11 +436,11 @@ test('the 1-on-1 race shows only at an address that asks for it', async () => {
   reset({ url: 'https://updown.test/race?match' });
   v = await mount(h(MatchCard, { lang: 'ru' }));
   assert.equal(v.$('a').getAttribute('href'), '/match/new');
-  assert.match(v.text(), /Гонка один на один Вы и друг, один на один: отправьте ссылку\./);
-  assert.equal(v.$('a').textContent, 'Настроить гонку один на один');
+  assert.match(v.text(), /Гонка 1 на 1 Вы и друг, один на один: отправьте ссылку\./);
+  assert.equal(v.$('a').textContent, 'Настроить гонку 1 на 1');
 });
 
-// ---------- the free race's set-up ----------
+// ---------- the custom race's set-up ----------
 const setup = (p = {}) => mount(h(FreeSetup, { lang: 'en', from: null, ...p }));
 const pill = (v, id, label) => v.$$(`[aria-labelledby="${id}"] button`).find((b) => b.textContent.startsWith(label));
 const on = (v, id) => v.$$(`[aria-labelledby="${id}"] button`).filter((b) => b.getAttribute('aria-checked') === 'true').map((b) => b.textContent);
@@ -583,7 +583,7 @@ test('opened from today’s race it starts on today’s settings and counts what
   assert.equal(v.$('#fs-title').childNodes[0].textContent, venueOf(d.venue).name[0]);
   assert.equal(v.$('.bt-what'), null, 'nothing changed yet');
   await click(pill(v, 'fs-preset', d.preset === 'strong' ? 'Light' : 'Strong'));
-  assert.match(v.$('.bt-what').textContent, /A free race with 1 change from today’s\. It doesn’t go on today’s ranking\./);
+  assert.match(v.$('.bt-what').textContent, /A custom race with 1 change from today’s\. It doesn’t go on today’s ranking\./);
   assert.ok(v.$('#fs-preset .bt-chg'), 'the choice changed is marked');
   await click(pill(v, 'fs-fleet', '7 boats'));
   assert.match(v.$('.bt-what').textContent, /with 2 changes from today’s/);
@@ -624,7 +624,7 @@ test('the scene is told the race and what to show', async () => {
   assert.deepEqual([next.view, next.labels.windward, next.labels.line], ['course', 'Mark 1', 'Start']);
 });
 
-test('a 1-on-1 race is set up as a free race is, but for the number of boats', async () => {
+test('a 1-on-1 race is set up as a custom race is, but for the number of boats', async () => {
   const v = await setup({ match: true });
   assert.match(v.text(), /1-on-1 race/);
   assert.equal(v.$('.bt-go').textContent, 'Create the race');
@@ -669,7 +669,7 @@ test('the 1-on-1 race’s set-up describes one race, not a best of three', async
 
 test('the set-up in Russian', async () => {
   const v = await setup({ lang: 'ru' });
-  for (const w of ['Свободная гонка', 'Настрой гонку', 'Начать гонку', 'Дистанция', 'Слабый 7 уз', '5 лодок', '1 круг', 'Твоя дистанция', 'Лавировка', 'Рекорд']) assert.ok(v.text().includes(w), w);
+  for (const w of ['Своя гонка', 'Настрой гонку', 'Начать гонку', 'Дистанция', 'Слабый 7 уз', '5 лодок', '1 круг', 'Твоя дистанция', 'Лавировка', 'Рекорд']) assert.ok(v.text().includes(w), w);
   for (const w of ['Start race', 'Show course', 'Your course', 'Light 7 kn', '5 boats', 'Time of day']) assert.ok(!v.text().includes(w), w);
   assert.match(v.$('.bt-p').textContent, /преобладающий ветер/);
 });
@@ -962,7 +962,7 @@ test('every track’s calm piece has somewhere to start and a length', () => {
   for (const [id, [at, len]] of Object.entries(CALM)) { assert.ok(at >= 0 && len > 10, id); }
 });
 
-test('the music plays only on the hub and the free race’s set-up', async () => {
+test('the music plays only on the hub and the custom race’s set-up', async () => {
   withSound({ music: 'racing' });
   for (const p of ['/', '/race/rating', '/boat', '/race/drills']) { here(p); const v = await mount(h(RaceMusic)); await v.unmount(); }
   assert.equal(sound.contexts.length, 0);

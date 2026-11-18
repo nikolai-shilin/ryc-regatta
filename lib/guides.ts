@@ -43,7 +43,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     slug,
     title: t('Rounding the marks: the windward mark and the gate', 'Огибание знаков: верхний знак и ворота'),
     short: t('Rounding the marks', 'Огибание знаков'),
-    kicker: t('Learn to race · marks', 'Учись гоняться · знаки'),
+    kicker: t('Racing guides · marks', 'Пособия по гонкам · знаки'),
     img: shot('gd-marks-v1', t('Your boat rounding the windward mark in the game, with yachts close on either side', 'Твоя лодка огибает верхний знак в игре, рядом идут другие яхты'), 3840, 1600),
     description: t(
       'How to round the marks in a sailboat race: approaching the windward mark on the starboard layline, the bear-away, choosing a side of the leeward gate, wide in and tight out, room in the zone and touching a mark.',
@@ -96,7 +96,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     slug,
     title: t('Sailing downwind: the gennaker, angles and gybes', 'Попутные курсы: генакер, углы и повороты'),
     short: t('Sailing downwind', 'Попутные курсы'),
-    kicker: t('Learn to race · downwind', 'Учись гоняться · попутный'),
+    kicker: t('Racing guides · downwind', 'Пособия по гонкам · попутный'),
     img: shot('gd-downwind-v1', t('Your boat on the run in the game under her gennaker, another yacht alongside under hers', 'Твоя лодка на попутном курсе в игре под генакером, рядом другая яхта под своим'), 3840, 1600),
     description: t(
       'How to sail fast downwind in a race: when to set the gennaker, sailing angles instead of dead downwind, gybing on the lifts, avoiding a crash gybe or a death roll, and surfing waves.',
@@ -133,18 +133,18 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     ],
     more: [
       { label: t('Headers and lifts', 'Заходы и отходы ветра'), href: '/learn/shifts#down' },
-      { label: t('Questions: crash gybe and death roll', 'Вопросы: самопроизвольный поворот и брочинг'), href: '/faq' },
+      { label: t('FAQ: crash gybe and death roll', 'Вопросы и ответы: самопроизвольный поворот и брочинг'), href: '/faq' },
     ],
     try: { label: t('Race in a strong breeze', 'Гонка в сильный ветер'), href: '/race/free', text: t(
-      'Set a strong breeze in a free race: the gennaker, the waves to surf and a boom that bites back.',
-      'Поставь сильный ветер в свободной гонке: генакер, волна для сёрфинга и гик, который может ударить.') },
+      'Set a strong breeze in a custom race: the gennaker, the waves to surf and a boom that bites back.',
+      'Поставь сильный ветер в своей гонке: генакер, волна для сёрфинга и гик, который может ударить.') },
   };
 
   if (slug === 'trim') return {
     slug,
     title: t('Sail trim and boat speed', 'Настройка парусов и скорость лодки'),
     short: t('Sail trim and speed', 'Настройка и скорость'),
-    kicker: t('Learn to race · speed', 'Учись гоняться · скорость'),
+    kicker: t('Racing guides · speed', 'Пособия по гонкам · скорость'),
     img: shot('gd-trim-v1', t('Your boat sailing upwind in the game, her main and jib trimmed in', 'Твоя лодка идёт в лавировку в игре, грот и стаксель выбраны'), 3840, 1600),
     description: t(
       'How to make a sailboat go fast: trimming the main and jib, steering smoothly, footing for speed upwind, controlling heel, and reefing or changing jibs in a blow.',
@@ -185,7 +185,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
       { label: t('How to play: sails in your hands', 'Как играть: паруса в твоих руках'), href: '/help#h-controls' },
       { label: t('Glossary: sheet and trim', 'Словарь: шкот и настройка'), href: '/learn/glossary#sheet' },
     ],
-    try: { label: t('Set up a free race', 'Настрой свободную гонку'), href: '/race/free', text: t(
+    try: { label: t('Set up a custom race', 'Настрой свою гонку'), href: '/race/free', text: t(
       'Turn auto-trim off in Settings, pick a medium breeze and sail on the sheets yourself.',
       'Выключи автонастройку в настройках, выбери средний ветер и работай шкотами сам.') },
   };
@@ -194,7 +194,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     slug,
     title: t('The racing rules in five minutes', 'Правила парусных гонок за пять минут'),
     short: t('The racing rules in five minutes', 'Правила гонок за пять минут'),
-    kicker: t('Learn to race · rules', 'Учись гоняться · правила'),
+    kicker: t('Racing guides · rules', 'Пособия по гонкам · правила'),
     img: shot('gd-rules-v1', t('Yachts on opposite tacks meeting on the beat in the game', 'Яхты на разных галсах сходятся на лавировке в игре'), 3840, 1600),
     description: t(
       'The Racing Rules of Sailing that decide almost every meeting on the water: port and starboard, windward and leeward, clear astern, tacking, room at the mark, and how to take a penalty.',
@@ -257,7 +257,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     slug,
     title: t('How to win a sailing start', 'Как выиграть старт в парусной гонке'),
     short: t('How to win the start', 'Как выиграть старт'),
-    kicker: t('Learn to race · the start', 'Учись гоняться · старт'),
+    kicker: t('Racing guides · the start', 'Пособия по гонкам · старт'),
     img: shot('gd-start-v1', t('The fleet on the start line in the last seconds before the gun in the game', 'Флот на стартовой линии за секунды до сигнала в игре'), 3840, 1600),
     description: t(
       'How to start a sailing race well: the flags and signals, finding the favoured end of the line, timing your run, holding your spot, what to do when you are over early, and clear air after the gun.',
@@ -269,8 +269,8 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
       { id: 'flags', h: t('The signals', 'Сигналы'), p: [
         t('The race committee starts the countdown with flags over the committee boat, each with a sound. In the standard sequence (rule 26) the class flag goes up five minutes before the start, the preparatory flag at four, the preparatory comes down at one minute, and the class flag drops with the gun.',
           'Гоночный комитет ведёт отсчёт флагами на судейском судне, каждый — со звуковым сигналом. В стандартной процедуре (правило 26) флаг класса поднимают за пять минут до старта, подготовительный — за четыре, за минуту подготовительный опускают, а со стартовым сигналом опускают флаг класса.'),
-        t('The preparatory flag tells you the rules for the last minute: P — be on the course side and you just go back; U — be in the triangle formed by the line and the first mark in the last minute and you are disqualified; the black flag — the same, even if the start is recalled. Up and down flies all three and lets you set a 1, 3 or 5 minute sequence for a free race.',
-          'Подготовительный флаг говорит, какие правила в последнюю минуту: P — оказался за линией, просто вернись; U — оказался в последнюю минуту в треугольнике между линией и первым знаком — дисквалификация; чёрный флаг — то же, даже при общем отзыве. В Up and down есть все три, а в свободной гонке можно выбрать процедуру на 1, 3 или 5 минут.'),
+        t('The preparatory flag tells you the rules for the last minute: P — be on the course side and you just go back; U — be in the triangle formed by the line and the first mark in the last minute and you are disqualified; the black flag — the same, even if the start is recalled. Up and down flies all three and lets you set a 1, 3 or 5 minute sequence for a custom race.',
+          'Подготовительный флаг говорит, какие правила в последнюю минуту: P — оказался за линией, просто вернись; U — оказался в последнюю минуту в треугольнике между линией и первым знаком — дисквалификация; чёрный флаг — то же, даже при общем отзыве. В Up and down есть все три, а в своей гонке можно выбрать процедуру на 1, 3 или 5 минут.'),
       ], tip: t('Under P you can dip back across the line in the last minute and still start; under U or the black flag you can’t, so wait a length or two further back and come in with more speed.',
         'Под флагом P в последнюю минуту можно заскочить за линию, вернуться и всё равно стартовать; под U или чёрным флагом — нельзя, так что жди на корпус-два дальше и разгоняйся сильнее.') },
       { id: 'end', h: t('Start at the favoured end', 'Стартуй у выгодного конца'), p: [
@@ -309,15 +309,15 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
       { label: t('How to play: the start', 'Как играть: старт'), href: '/help#h-start' },
     ],
     try: { label: t('Practise the start', 'Потренируй старт'), href: '/race/free', text: t(
-      'Set a 5-minute sequence and a 7-boat fleet in a free race, and start as often as you like.',
-      'Поставь процедуру на 5 минут и флот из 7 лодок в свободной гонке — и стартуй сколько хочешь.') },
+      'Set a 5-minute sequence and a 7-boat fleet in a custom race, and start as often as you like.',
+      'Поставь процедуру на 5 минут и флот из 7 лодок в своей гонке — и стартуй сколько хочешь.') },
   };
 
   return {
     slug,
     title: t('Headers and lifts: how to play the wind shifts', 'Заходы и отходы ветра: как их использовать'),
     short: t('Headers and lifts', 'Заходы и отходы'),
-    kicker: t('Learn to race · tactics', 'Учись гоняться · тактика'),
+    kicker: t('Racing guides · tactics', 'Пособия по гонкам · тактика'),
     img: shot('gd-shifts-v1', t('Your boat sailing upwind in the game, the wind marking the water round her', 'Твоя лодка идёт в лавировку в игре, ветер рисует полосы на воде вокруг неё'), 3840, 1600),
     description: t(
       'How to sail the wind shifts upwind: what a header and a lift are, why you tack on the headers, when not to tack, laylines, gusts and lulls, and gybing on the lifts downwind.',
@@ -361,7 +361,7 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
     ],
     more: [
       { label: t('How to play: wind that won’t sit still', 'Как играть: ветер, который не стоит на месте'), href: '/help#h-wind' },
-      { label: t('Questions: sailing the boat', 'Вопросы: управление лодкой'), href: '/faq' },
+      { label: t('FAQ: sailing the boat', 'Вопросы и ответы: управление лодкой'), href: '/faq' },
     ],
     try: { label: t('Sail today’s race', 'Пройди гонку дня'), href: '/race', text: t(
       'Shifts of ten degrees and more, gusts and lulls, five boats to beat to the windward mark.',

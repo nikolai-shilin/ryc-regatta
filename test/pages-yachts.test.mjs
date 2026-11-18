@@ -47,11 +47,11 @@ test('/yachts?y= with a yacht that does not exist is the plain tour', async () =
   }
 });
 
-test('/yachts goes back to the race hub, or to the free race when it was opened from there', async () => {
+test('/yachts goes back to the race hub, or to the custom race when it was opened from there', async () => {
   assert.deepEqual(backOf(await html(fleet, 'en')), ['/race', 'Back to the race hub']);
   assert.deepEqual(backOf(await html(fleet, 'ru')), ['/race', 'Назад в меню гонок']);
-  assert.deepEqual(backOf(await html(fleet, 'en', {}, { from: 'free' })), ['/race/free', 'Back to the free race']);
-  assert.deepEqual(backOf(await html(fleet, 'ru', {}, { from: 'free' })), ['/race/free', 'Назад к свободной гонке']);
+  assert.deepEqual(backOf(await html(fleet, 'en', {}, { from: 'free' })), ['/race/free', 'Back to the custom race']);
+  assert.deepEqual(backOf(await html(fleet, 'ru', {}, { from: 'free' })), ['/race/free', 'Назад к своей гонке']);
   assert.deepEqual(backOf(await html(fleet, 'en', {}, { from: 'https://evil.example' })), ['/race', 'Back to the race hub']);
 });
 
@@ -148,13 +148,13 @@ test('/boat goes back to the race hub, or to Settings when it was opened from th
 });
 
 test('/boat shows the boat in 3D in the reader\'s language', async () => {
-  assert.ok((await html(boat, 'en')).includes('title="Your boat in 3D"'));
+  assert.ok((await html(boat, 'en')).includes('title="Your yacht in 3D"'));
   assert.match(await html(boat, 'ru'), /<div class="scr bt-scr bc" lang="ru">/);
 });
 
 test('/boat is titled, described and addressed for each language', async () => {
   const [en, ru] = await Promise.all(LANGS.map((l) => boat.generateMetadata(props(l))));
-  assert.match(en.title, /^Your boat/);
+  assert.match(en.title, /^Your yacht/);
   assert.match(ru.title, /^Твоя яхта/);
   assert.notEqual(en.description, ru.description);
   assert.equal(en.alternates.canonical, '/boat');

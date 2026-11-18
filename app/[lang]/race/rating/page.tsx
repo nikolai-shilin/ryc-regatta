@@ -6,7 +6,7 @@ import { SiteHead, SiteFoot } from '@/components/site-chrome';
 // Built for everyone alike, again every five minutes as the scores API's answer is (lib/rating.ts)
 export const revalidate = 300;
 
-export const generateMetadata = titled('Today’s rating', 'Рейтинг дня', {
+export const generateMetadata = titled('Today’s leaderboard', 'Рейтинг дня', {
   path: '/race/rating', card: '/og/page/rating', live: true,
   description: [
     'Today’s race ranked: every sailor’s best time in the day’s race, the points each took, and the month’s standings, with the flags they fly.',

@@ -100,7 +100,7 @@ test('a race left before its finish says where it was left', async () => {
   assert.deepEqual(p.named('Race left')[0].data, { race: 'daily', leg: 2, min: 5 });
 });
 
-test('a free race left before its gun counts no minutes', async () => {
+test('a custom race left before its gun counts no minutes', async () => {
   const p = await open();
   p.race = aRace({ clock: -50, player: { leg: 0 } });
   leaving(p);

@@ -50,7 +50,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   }, []);
   useEffect(() => { if (ready) post({ type: 'look', boat: b }); setJustSaved(false); }, [b, ready]); // eslint-disable-line react-hooks/exhaustive-deps
   const save = () => {
-    if (!saveBoat(b)) { setErr(t('This browser didn’t keep your boat: its storage may be full or blocked.', 'Браузер не сохранил яхту: возможно, его хранилище заполнено или заблокировано.')); return false; }
+    if (!saveBoat(b)) { setErr(t('This browser didn’t keep your yacht: its storage may be full or blocked.', 'Браузер не сохранил яхту: возможно, его хранилище заполнено или заблокировано.')); return false; }
     setErr(''); setKept(lookKey(b)); setJustSaved(true); dirtyRef.current = false; // kept: going on to race asks nothing
     syncAccount().catch(() => {});
     return true;
@@ -62,7 +62,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
     const link = (e: MouseEvent) => {
       const a = (e.target as HTMLElement)?.closest?.('a[href]');
       if (!a || a.classList.contains('bt-go') || e.defaultPrevented) return;
-      if (!confirm(t('Leave without saving your boat? Your changes will be lost.', 'Уйти, не сохранив яхту? Изменения пропадут.'))) { e.preventDefault(); e.stopPropagation(); }
+      if (!confirm(t('Leave without saving your yacht? Your changes will be lost.', 'Уйти, не сохранив яхту? Изменения пропадут.'))) { e.preventDefault(); e.stopPropagation(); }
     };
     addEventListener('beforeunload', unload);
     document.addEventListener('click', link, true);
@@ -137,16 +137,16 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
 
   return (
     <div className="bt">
-      <LoadBar label={t('Loading your boat', 'Загружаем яхту')} on={!live} />
-      <iframe ref={frame} className="bt-scene" src={scene.go ? '/boat-view?wind=light' : undefined} onLoad={() => post({ type: 'hello' })} title={t('Your boat in 3D', 'Твоя яхта в 3D')} />
+      <LoadBar label={t('Loading your yacht', 'Загружаем яхту')} on={!live} />
+      <iframe ref={frame} className="bt-scene" src={scene.go ? '/boat-view?wind=light' : undefined} onLoad={() => post({ type: 'hello' })} title={t('Your yacht in 3D', 'Твоя яхта в 3D')} />
       {/* over the scene, which doesn't fade in: it shows until her first frame, then fades away */}
-      <ScenePoster label={t('Loading your boat', 'Загружаем яхту')} on={!live} />
+      <ScenePoster label={t('Loading your yacht', 'Загружаем яхту')} on={!live} />
 
       <div className="bt-info" ref={info}>
         <div className="bt-top">{back}<SceneBrand /></div>
-        <span className="bt-kick">{t('Your boat', 'Твоя яхта')}</span>
+        <span className="bt-kick">{t('Your yacht', 'Твоя яхта')}</span>
         {/* her flag and sail number, as the race calls her */}
-        <h1 className="bt-h bt-h-boat">{/* eslint-disable-next-line @next/next/no-img-element */}{flag ? <img className="bt-h-flag" src={flagSrc(flag.code)} alt={t(flag.en, flag.ru)} /> : <NoFlag className="bt-h-flag" />}<span className="vh">{t('Your boat: ', 'Твоя яхта: ')}</span><span>{`${b.nat} ${b.num || '1'}`.trim()}</span></h1>
+        <h1 className="bt-h bt-h-boat">{/* eslint-disable-next-line @next/next/no-img-element */}{flag ? <img className="bt-h-flag" src={flagSrc(flag.code)} alt={t(flag.en, flag.ru)} /> : <NoFlag className="bt-h-flag" />}<span className="vh">{t('Your yacht: ', 'Твоя яхта: ')}</span><span>{`${b.nat} ${b.num || '1'}`.trim()}</span></h1>
         <p className="bt-p">{t('Lake Garda, a summer evening. Drag to circle her.', 'Озеро Гарда, летний вечер. Тяни, чтобы облететь яхту.')}</p>
         <div className="bt-stats bt-stats-fit">
           <div><span className="bt-sk">{t('Colours', 'Цвета')}</span><b>{preset ? t(preset.en, preset.ru) : t('Your own', 'Свои')}</b></div>
@@ -154,7 +154,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         </div>
       </div>
 
-      <PauseCard lang={lang} back="/boat" title={t('Your boat', 'Твоя яхта')} className="bt-boat" cardRef={card} foot={['yachts', 'venues']}
+      <PauseCard lang={lang} back="/boat" title={t('Your yacht', 'Твоя яхта')} className="bt-boat" cardRef={card} foot={['yachts', 'venues']}
         tools={<button type="button" className="bt-mini" title={t('Back to the RYC colours', 'Вернуть цвета RYC')} aria-label={t('Back to the RYC colours', 'Вернуть цвета RYC')} onClick={() => { setB({ ...DEFAULT_BOAT, name: b.name }); setDown(false); }}>
           <IconRestart s={14} /><span>{t('RYC colours', 'Цвета RYC')}</span>
         </button>}

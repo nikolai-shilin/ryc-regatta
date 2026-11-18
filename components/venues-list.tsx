@@ -95,8 +95,8 @@ export function VenuesList({ lang, list, today, back }: { lang: Lang; list: Venu
         <p className="bt-hint">{t('The wind is the one the game gives each venue, its usual breeze. Today’s race goes to a new venue every day, each in turn.', 'Ветер — тот, что игра даёт каждой акватории, её обычный бриз. Гонка дня каждый день идёт на новую акваторию, по очереди.')}</p>
 
         <div className="bt-rows">
-          <Link className="bt-row" href="/race/free"><IconSail s={18} /><span>{t('Race anywhere', 'Гоняться где угодно')}</span><span className="bt-row-m">{t('Free race', 'Свободная гонка')}</span></Link>
-          <Link className="bt-row" href="/learn"><IconBook s={18} /><span>{t('The guides', 'Гиды')}</span><span className="bt-row-m">{t('Learn to race', 'Учись гоняться')}</span></Link>
+          <Link className="bt-row" href="/race/free"><IconSail s={18} /><span>{t('Race anywhere', 'Гоняться где угодно')}</span><span className="bt-row-m">{t('Custom race', 'Своя гонка')}</span></Link>
+          <Link className="bt-row" href="/learn"><IconBook s={18} /><span>{t('The guides', 'Гиды')}</span><span className="bt-row-m">{t('Racing guides', 'Пособия по гонкам')}</span></Link>
         </div>
       </PauseCard>
     </div>

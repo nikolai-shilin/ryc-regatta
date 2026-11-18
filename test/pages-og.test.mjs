@@ -74,20 +74,20 @@ const draw = async (key, query) => { reset(); const res = await page(key, query)
 // each card: what it asks for, its picture, the words it must have in each language
 const CARDS = {
   learn: { bg: 'aerial', en: `${GUIDES.length} short guides and a glossary`, ru: `${GUIDES.length} коротких пособий и словарь` },
-  guide: { q: '?g=marks', bg: 'aerial', en: 'Learn to race · Guide 6 of 8', ru: 'Учись гоняться · Пособие 6 из 8' },
+  guide: { q: '?g=marks', bg: 'aerial', en: 'Racing guides · Guide 6 of 8', ru: 'Пособия по гонкам · Пособие 6 из 8' },
   glossary: { bg: 'wind', en: 'The words of sailboat racing', ru: 'Слова парусных гонок' },
   rulebook: { bg: 'fleet', en: 'The Racing Rules of Sailing in plain words', ru: 'Правила парусных гонок простыми словами' },
   yachts: { bg: 'fleet', en: `${YACHTS.length} yachts`, ru: `${YACHTS.length} яхт` },
-  rating: { bg: 'fleet', en: 'Today’s rating', ru: 'Рейтинг дня' },
+  rating: { bg: 'fleet', en: 'Today’s leaderboard', ru: 'Рейтинг дня' },
   players: { bg: 'helm', en: 'Sailors racing signed in', ru: 'Гонщики с аккаунтом' },
   player: { q: `?p=${KEY}`, bg: 'helm', en: 'Player card', ru: 'Карточка игрока' },
   drills: { bg: 'start', en: `${DRILLS.length} drills`, ru: `${DRILLS.length} тренировок` },
-  free: { bg: 'drone', en: `${VENUES.length} venues · ${YACHTS.length} yachts`, ru: 'Свободная гонка' },
+  free: { bg: 'drone', en: `${VENUES.length} venues · ${YACHTS.length} yachts`, ru: 'Своя гонка' },
   match: { bg: 'drone', en: 'You and a friend, one on one', ru: 'Вы и друг, один на один' },
   iyt: { bg: 'helm', en: 'Questions, VHF to Yachtmaster Ocean', ru: 'Вопросов, от VHF до Yachtmaster Ocean' },
   help: { bg: 'trim', en: 'How to play', ru: 'Как играть' },
   faq: { bg: 'drone', en: 'About the game, the race and the rules', ru: 'Об игре, гонке и правилах' },
-  social: { bg: 'fleet', en: 'Follow the game', ru: 'Игра в соцсетях' },
+  social: { bg: 'fleet', en: 'Social media', ru: 'Соцсети' },
   sponsorship: { bg: 'fleet', en: 'Your brand in the race', ru: 'Ваш бренд в гонке' },
   boat: { bg: 'drone', en: 'Hull, sails, flag and number', ru: 'Корпус, паруса, флаг и номер' },
 };
@@ -167,7 +167,7 @@ test('the rating\'s card has the fastest sailor and their time, in gold, however
 test('the rating\'s card says today is on, with its venue and yacht', async () => {
   const d = dailyRace();
   const { text } = await draw('rating');
-  assert.ok(text.includes(`Today’s rating · ${venueOf(d.venue).name[0]} · ${yachtOf(d.yacht).name[0]}`));
+  assert.ok(text.includes(`Today’s leaderboard · ${venueOf(d.venue).name[0]} · ${yachtOf(d.yacht).name[0]}`));
   assert.ok(text.includes('Beat the time'));
   assert.ok(renderToStaticMarkup(globalThis.__drawn.element).includes(`background:${C.live}`), 'the red dot');
 });
@@ -176,14 +176,14 @@ test('the rating\'s card of a day before is about that day, with no red dot', as
   reset({ rating: ratingOf(YESTERDAY, [{ k: 'a', name: 'Old Olga', s: 280 }]) });
   await page('rating', `?day=${YESTERDAY}`);
   const text = drawnText(), d = dailyRace(new Date(`${YESTERDAY}T12:00:00Z`));
-  assert.ok(text.includes(`Rating · ${venueOf(d.venue).name[0]}`));
+  assert.ok(text.includes(`Leaderboard · ${venueOf(d.venue).name[0]}`));
   assert.ok(text.includes('Tue 17 Nov') || text.includes('Tue, 17 Nov'), text);
-  assert.ok(text.includes('See the rating'));
+  assert.ok(text.includes('See the leaderboard'));
   assert.ok(!renderToStaticMarkup(globalThis.__drawn.element).includes(`background:${C.live}`));
 });
 
 test('the rating\'s card ignores a day it can\'t show', async () => {
-  for (const day of ['nope', '2030-01-01', '2026-02-30']) assert.ok((await draw('rating', `?day=${day}`)).text.includes('Today’s rating'), day);
+  for (const day of ['nope', '2030-01-01', '2026-02-30']) assert.ok((await draw('rating', `?day=${day}`)).text.includes('Today’s leaderboard'), day);
 });
 
 test('the rating\'s card invites you to be first when there is no time, or no API', async () => {
@@ -337,10 +337,10 @@ test('first place is on a gold plate, any other on blue', async () => {
   assert.ok(drawnText().includes('Finished 2nd of 2'));
 });
 
-test('a free race and an old race ask you to sail today\'s', async () => {
+test('a custom race and an old race ask you to sail today\'s', async () => {
   reset({ result: shared({ daily: null }) });
   await result(RACE);
-  assert.ok(drawnText().includes('Free race · 2 boats') && drawnText().includes('Sail today’s race'));
+  assert.ok(drawnText().includes('Custom race · 2 boats') && drawnText().includes('Sail today’s race'));
   reset({ result: shared({ daily: YESTERDAY }) });
   await result(RACE);
   assert.ok(drawnText().includes('Sail today’s race') && !drawnText().includes('Beat this time'));

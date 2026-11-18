@@ -80,12 +80,12 @@ test('the header links to the site’s pages and marks the one being read', () =
   for (const to of ['/race', '/race/free', '/race/drills', '/race/rating', '/players', '/venues', '/yachts', '/sign-in', '/play?race=today']) assert.ok(hrefs(html).includes(to), to);
   assert.equal([...html.matchAll(/aria-current="page"/g)].length, 1);
   assert.match(html, /<a href="\/race\/rating"[^>]*aria-current="page"/);
-  assert.match(plain(html), /Today’s race Free race Drills Rating Players Venues Yachts/);
+  assert.match(plain(html), /Today’s race Custom race 1-on-1 race Drills Leaderboard Players Venues Yachts/);
 });
 
 test('the Russian header has no English left but the game’s name', () => {
   const words = plain(ssr(h(SiteHead, { lang: 'ru', t: ru, page: 'home' })));
-  assert.match(words, /Гонка дня Свободная гонка Тренировки Рейтинг Игроки Акватории Яхты/);
+  assert.match(words, /Гонка дня Своя гонка Гонка 1 на 1 Тренировки Рейтинг Игроки Акватории Яхты/);
   assert.match(words, /Играть/);
   assert.deepEqual(englishIn(words), []);
 });
@@ -94,10 +94,10 @@ test('search engines get the page’s place under Home, in the reader’s langua
   const data = (html) => JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/.exec(html)[1]);
   const b = data(ssr(h(SiteHead, { lang: 'ru', t: ru, page: 'faq' })));
   assert.equal(b['@type'], 'BreadcrumbList');
-  assert.deepEqual(b.itemListElement.map((x) => [x.position, x.name]), [[1, 'Главная'], [2, 'Вопросы']]);
+  assert.deepEqual(b.itemListElement.map((x) => [x.position, x.name]), [[1, 'Главная'], [2, 'Вопросы и ответы']]);
   assert.match(b.itemListElement[1].item, /\/faq\?lang=ru$/);
-  const own = data(ssr(h(SiteHead, { lang: 'en', t: en, page: 'learn', crumbs: [['Learn to race', '/learn'], ['Tacking', '/learn/tacking']] })));
-  assert.deepEqual(own.itemListElement.map((x) => x.name), ['Home', 'Learn to race', 'Tacking']);
+  const own = data(ssr(h(SiteHead, { lang: 'en', t: en, page: 'learn', crumbs: [['Racing guides', '/learn'], ['Tacking', '/learn/tacking']] })));
+  assert.deepEqual(own.itemListElement.map((x) => x.name), ['Home', 'Racing guides', 'Tacking']);
 });
 
 test('a page with no place under Home has no breadcrumb data, and a name can’t break out of the data', () => {
@@ -115,7 +115,7 @@ test('the trail over a guide links each step but the last, which is the page its
 
 test('the footer has every page that stands on its own, RYC’s sites, the language switch and the disclaimer', () => {
   const html = ssr(h(SiteFoot, { lang: 'en', t: en, back: '/faq' }));
-  for (const to of ['/', '/race', '/race/free', '/match/new', '/race/drills', '/race/rating', '/players', '/venues', '/yachts', '/help', '/learn', '/learn/glossary', '/iyt', '/faq', '/boat', '/players?me=1', '/settings', '/sign-in', '/social', '/sponsorship', 'https://www.rycrentals.com/', 'https://www.rycsailing.com/', '/faq?lang=ru']) assert.ok(hrefs(html).includes(to), to);
+  for (const to of ['/', '/race', '/race/free', '/match/new', '/race/drills', '/race/rating', '/players', '/venues', '/yachts', '/help', '/learn', '/rulebook', '/learn/glossary', '/iyt', '/faq', '/boat', '/players?me=1', '/settings', '/sign-in', '/social', '/sponsorship', 'https://www.rycrentals.com/', 'https://www.rycsailing.com/', '/faq?lang=ru']) assert.ok(hrefs(html).includes(to), to);
   assert.match(plain(html), /not affiliated with, sponsored by, or endorsed by America’s Cup/);
 });
 
@@ -565,7 +565,7 @@ test('there is one go: a second pick changes nothing', async () => {
 });
 
 // ---------- race-here.tsx ----------
-test('Race here keeps the venue as the free race’s and opens the set-up', async () => {
+test('Race here keeps the venue as the custom race’s and opens the set-up', async () => {
   const v = await mount(h(RaceHere, { venue: 'cowes', label: 'Race here' }));
   assert.equal(v.$('button').className, 'gd-try-go vn-go');
   await click(v.$('button'));

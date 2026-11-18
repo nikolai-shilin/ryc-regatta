@@ -15,13 +15,13 @@ import '@/styles/reading.css';
 export const viewport = READING_VIEWPORT;
 
 export const generateMetadata = titled('The Racing Rules of Sailing, rule by rule', 'Правила парусных гонок: все правила по порядку', {
-  path: '/learn/rulebook', card: '/og/page/rulebook',
+  path: '/rulebook', card: '/og/page/rulebook',
   description: [
     'Every rule of the Racing Rules of Sailing 2025–2028 in plain words: definitions, right of way, mark-room, starts, penalties, protests, appendices and race signals.',
     'Все правила парусных гонок 2025–2028 простыми словами: определения, право дороги, место у знака, старт, наказания, протесты, приложения и гоночные сигналы.'],
 });
 
-// L2 · The rule book, laid out as a guide (learn/[slug]/page.tsx): the title and the intro over the rules guide's picture,
+// L1 · The rule book, a page of its own in the menu and the footer, laid out as a guide (learn/[slug]/page.tsx): the title and the intro over the rules guide's picture,
 // the contents beside the text on a wide screen, then every rule of the Racing Rules of Sailing in the book's order, each
 // linkable (#rule-18-2). The number down the side is the Part's own, so the parts that aren't numbered in the book have
 // none. It says first that it is a summary, and where the official text is; at the foot, the game and three ways on.
@@ -30,9 +30,9 @@ export default async function Rulebook({ params }: LangParams) {
   const parts = rulebook(t);
   const n = ruleCount(parts);
   const img = guide('rules', t, lang).img!;
-  const url = SITE + langUrl('/learn/rulebook', lang);
+  const url = SITE + langUrl('/rulebook', lang);
   const title = t('The racing rules, rule by rule', 'Правила гонок, правило за правилом');
-  const crumbs: Crumb[] = [[t('Learn to race', 'Учись гоняться'), '/learn'], [t('Rule book', 'Все правила'), '/learn/rulebook']];
+  const crumbs: Crumb[] = [[t('Racing rules', 'Правила гонок'), '/rulebook']];
   const ld = {
     '@context': 'https://schema.org', '@type': 'Article', headline: title, inLanguage: lang, url, mainEntityOfPage: url, image: SITE + (img.src || OG_IMAGE.url),
     datePublished: RULEBOOK_DATE, dateModified: RULEBOOK_DATE, author: AUTHOR_LD, publisher: RYC_LD, about: ['Racing Rules of Sailing', 'Sailboat racing'],
@@ -40,7 +40,7 @@ export default async function Rulebook({ params }: LangParams) {
   const cards: [string, string, string][] = [
     [t('Further reading', 'Подробнее'), guide('rules', t, lang).short, '/learn/rules'],
     [t('Glossary', 'Словарь'), t('Sailing racing glossary', 'Словарь парусных гонок'), '/learn/glossary'],
-    [t('All the guides', 'Все пособия'), t('Learn to race', 'Учись гоняться'), '/learn'],
+    [t('All the guides', 'Все пособия'), t('Racing guides', 'Пособия по гонкам'), '/learn'],
   ];
   const rule = (x: RuleEntry, Heading: 'h3' | 'h4') => (
     <div key={x.id} id={x.id} className="rb-rule">
@@ -52,12 +52,12 @@ export default async function Rulebook({ params }: LangParams) {
   return (
     <div className="scr help hp bc" lang={lang}>
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
-      <SiteHead lang={lang} t={t} page="learn" crumbs={crumbs} />
+      <SiteHead lang={lang} t={t} page="rulebook" />
       <header className="gd-hero">
         <Image className="gd-hero-bg" src={img.src} width={img.width} height={img.height} sizes="100vw" fetchPriority="high" loading="eager" alt={img.alt} />
         <div className="hm-page hm-ph">
           <Trail t={t} crumbs={crumbs} />
-          <span className="kicker">{t(`Learn to race · ${n} rules`, `Учись гоняться · ${n} ${ruPlural(n, ['правило', 'правила', 'правил'])}`)}</span>
+          <span className="kicker">{t(`Racing Rules of Sailing · ${n} rules`, `Правила парусных гонок · ${n} ${ruPlural(n, ['правило', 'правила', 'правил'])}`)}</span>
           <h1 className="hm-ph-h">{title}</h1>
           <p className="hm-text">{t('The Racing Rules of Sailing 2025–2028 in plain words, with the definitions, the appendices and the race signals. Look one up, or read a part from the top.', 'Правила парусных гонок 2025–2028 простыми словами, с определениями, приложениями и гоночными сигналами. Найдите нужное правило или прочитайте часть с начала.')}</p>
           <p className="gd-by">{t('By ', '')}<span>{t(...AUTHOR.name)}</span>, {AUTHOR.org} · {t('Published ', 'Опубликовано ')}<time dateTime={RULEBOOK_DATE}>{longDate(RULEBOOK_DATE, lang)}</time></p>
@@ -112,7 +112,7 @@ export default async function Rulebook({ params }: LangParams) {
         </div>
       </div>
 
-      <SiteFoot lang={lang} t={t} back="/learn/rulebook" />
+      <SiteFoot lang={lang} t={t} back="/rulebook" />
     </div>
   );
 }

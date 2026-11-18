@@ -71,7 +71,7 @@ function words(lang: Lang) {
       return tg ? `${name} · Telegram` : name;
     },
     ref: (k: string | null) => of({ tg: 'Telegram', site: t('The site', 'С сайта'), other: t('Another site', 'Другой сайт'), direct: t('Direct', 'Напрямую') }, k),
-    race: (k: string | null) => of({ today: t('Today’s race', 'Гонка дня'), free: t('Free race', 'Свободная гонка'), match: t('1-on-1', '1 на 1'), drill: t('Drill', 'Упражнение') }, k),
+    race: (k: string | null) => of({ today: t('Today’s race', 'Гонка дня'), free: t('Custom race', 'Своя гонка'), match: t('1-on-1 race', 'Гонка 1 на 1'), drill: t('Drill', 'Упражнение') }, k),
     how: (k: string | undefined) => of({ finish: t('Finished', 'Финиш'), restart: t('Restarted', 'Перезапуск'), change: t('Back to the set-up', 'Назад к настройке'), menu: t('Back to the menu', 'Назад в меню'),
       close: t('Closed the page', 'Страница закрыта'), hidden: t('Put the page away', 'Страница свёрнута'), new: t('Began another race', 'Начата другая гонка') }, k),
     incident: (k: string | undefined) => of({ ocs: t('Over early', 'Фальстарт'), fouled: t('Foul', 'Нарушение'), touched: t('Touched a mark', 'Касание знака'), bump: t('Collision', 'Столкновение'),
@@ -117,7 +117,7 @@ function RaceEntry({ w, race: r }: { w: W; race: LogRace }) {
         </summary>
         {r.comment && <p className="adm-log-say">{r.comment}</p>}
         <Facts rows={[
-          [t('Kind of race', 'Тип гонки'), r.daily ? t('Today’s race', 'Гонка дня') : t('Free race', 'Свободная гонка')],
+          [t('Kind of race', 'Тип гонки'), r.daily ? t('Today’s race', 'Гонка дня') : t('Custom race', 'Своя гонка')],
           [t('Wind', 'Ветер'), w.wind(r.wind)],
           [t('Course', 'Дистанция'), [w.shape(r.shape), r.laps != null ? t(`${r.laps} laps`, `Кругов: ${r.laps}`) : null].filter(Boolean).join(' · ')],
           [t('Boats', 'Яхт'), r.boats],

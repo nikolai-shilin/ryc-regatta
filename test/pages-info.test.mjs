@@ -28,10 +28,10 @@ const idsOf = (h) => [...h.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
 
 // each page: its address, share card, and the words its title and heading must have in each language
 const PAGES = [
-  { name: 'faq', mod: faq, path: '/faq', card: 'faq', title: ['Sailing game FAQ: today’s race, controls, rules', 'Вопросы о парусной игре: гонка дня, управление, правила'], h1: ['Questions', 'Вопросы'] },
+  { name: 'faq', mod: faq, path: '/faq', card: 'faq', title: ['Sailing game FAQ: today’s race, controls, rules', 'Вопросы о парусной игре: гонка дня, управление, правила'], h1: ['FAQ', 'Вопросы и ответы'] },
   { name: 'help', mod: help, path: '/help', card: 'help', title: ['How to play: controls and racing rules', 'Как играть: управление и правила гонок'], h1: ['How to play', 'Как играть'] },
   { name: 'iyt', mod: iyt, path: '/iyt', card: 'iyt', title: ['Sailing certification exam practice', 'Тренажёр к экзамену на яхтенный сертификат'], h1: ['Prepare for your sailing certification exam for free', 'Подготовьтесь к экзамену на яхтенный сертификат бесплатно'] },
-  { name: 'social', mod: social, path: '/social', card: 'social', title: ['Follow the game', 'Игра в соцсетях'], h1: ['Follow the game', 'Игра в соцсетях'] },
+  { name: 'social', mod: social, path: '/social', card: 'social', title: ['Social media', 'Соцсети'], h1: ['Social media', 'Соцсети'] },
   { name: 'sponsorship', mod: sponsorship, path: '/sponsorship', card: 'sponsorship', title: ['Sponsor a sailing race game', 'Спонсорство парусной игры'], h1: ['Your brand in the race', 'Ваш бренд в гонке'] },
 ];
 

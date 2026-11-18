@@ -217,7 +217,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
           </div>
 
           <div className="bt-rows">
-            <Link className="bt-row" href="/race/rating"><IconTrophy s={18} /><span>{t('The rating', 'Рейтинг')}</span><span className="bt-row-m">{t('Today and the month', 'День и месяц')}</span></Link>
+            <Link className="bt-row" href="/race/rating"><IconTrophy s={18} /><span>{t('The leaderboard', 'Рейтинг')}</span><span className="bt-row-m">{t('Today and the month', 'День и месяц')}</span></Link>
           </div>
         </>) : (<>
           {!list ? (
@@ -229,7 +229,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
               <div className="pl-tr pl-th" role="row">
                 <span role="columnheader">#</span>
                 <span role="columnheader">{t('Player', 'Игрок')}</span>
-                <span role="columnheader" title={t('Points in the rating, every day added up', 'Очки рейтинга за все дни')} aria-sort="descending">{t('Pts', 'Очки')}</span>
+                <span role="columnheader" title={t('Points on the leaderboard, every day added up', 'Очки рейтинга за все дни')} aria-sort="descending">{t('Pts', 'Очки')}</span>
                 <span role="columnheader" title={t('Races', 'Гонок')}>{t('Races', 'Гонок')}</span>
                 <span role="columnheader" title={t('Wins', 'Побед')}>{t('Wins', 'Побед')}</span>
                 <span role="columnheader" title={t('Podiums', 'Подиумов')}>{t('Top 3', 'Топ-3')}</span>
@@ -267,7 +267,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
                   onClick={(e) => { e.preventDefault(); if (page < list.pages) go(href(page + 1), null); }} aria-label={t('Next page', 'Следующая страница')}><IconArrow s={16} /></Link>
               </nav>
             )}
-            <p className="bt-hint">{t('Points are the rating’s, every day of today’s race added up: of N players ranked on a day, the first gets N and the last 1. Wins and podiums count every race, free races too. Guests aren’t on it: sign in and race to be.', 'Очки — рейтинговые, за все дни гонки дня: из N игроков в рейтинге дня первый получает N, последний — 1. Победы и подиумы — во всех гонках, и в свободных тоже. Гостей здесь нет: войди и пройди гонку, чтобы попасть сюда.')}</p>
+            <p className="bt-hint">{t('Points are the leaderboard’s, every day of today’s race added up: of N players ranked on a day, the first gets N and the last 1. Wins and podiums count every race, custom races too. Guests aren’t on it: sign in and race to be.', 'Очки — рейтинговые, за все дни гонки дня: из N игроков в рейтинге дня первый получает N, последний — 1. Победы и подиумы — во всех гонках, и в свободных тоже. Гостей здесь нет: войди и пройди гонку, чтобы попасть сюда.')}</p>
           </>)}
         </>)}
       </PauseCard>

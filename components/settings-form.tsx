@@ -73,7 +73,7 @@ function BoatLine({ lang }: { lang: Lang }) {
     return () => removeEventListener(BOAT_EVENT, load);
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <Link className="st-boat" href="/boat?from=settings" aria-label={t('Edit your boat', 'Изменить яхту')}>
+    <Link className="st-boat" href="/boat?from=settings" aria-label={t('Edit your yacht', 'Изменить яхту')}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {b?.flag ? <img className="fl" src={flagSrc(b.flag)} alt={b.land || ''} /> : <NoFlag />}
       <b>{b ? b.name : '\u00a0'}</b>
@@ -91,7 +91,7 @@ export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: 
     <div className="st-cards">
       <Card id="st-acct" title={t('Account', 'Аккаунт')}>
         {account}
-        <div className="st-sub"><span className="lbl-ink">{t('Your boat', 'Твоя яхта')}</span></div>
+        <div className="st-sub"><span className="lbl-ink">{t('Your yacht', 'Твоя яхта')}</span></div>
         <BoatLine lang={lang} />
         <div className="st-sub"><span className="lbl-ink" id="l-lang">{t('Language', 'Язык')}</span></div>
         {langSeg}

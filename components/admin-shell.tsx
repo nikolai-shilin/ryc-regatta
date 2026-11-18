@@ -24,8 +24,8 @@ export const ADMIN_PAGES = [
     goal: ['How the races go by yacht, wind, venue and course; how hard they are as a player learns; why races are left; what the players say and what they set.', 'Как идут гонки по яхтам, ветру, месту и дистанции; насколько они сложны по мере опыта; почему их бросают; что говорят игроки и что выставляют.'] },
   { id: 'tech', Icon: IconDevice, name: ['Performance', 'Производительность'], h: ['Does it run well', 'Хорошо ли работает'],
     goal: ['How the game runs on the players’ devices: the frame rate and the stalls, the loads that fail, the errors on the page.', 'Как игра работает на устройствах игроков: частота кадров и рывки, неудачные загрузки, ошибки на странице.'] },
-  { id: 'duels', Icon: IconCrew, name: ['1-on-1 races', 'Гонки один на один'], h: ['Races sailed head to head', 'Гонки один на один'],
-    goal: ['Every 1-on-1 race the players sailed: who raced whom, where, how it ended, and how often a race is left or sailed again.', 'Все гонки один на один: кто с кем, где, чем закончилась и как часто гонку бросают или проводят заново.'] },
+  { id: 'duels', Icon: IconCrew, name: ['1-on-1 races', 'Гонки 1 на 1'], h: ['Races sailed head to head', 'Гонки 1 на 1'],
+    goal: ['Every 1-on-1 race the players sailed: who raced whom, where, how it ended, and how often a race is left or sailed again.', 'Все гонки 1 на 1: кто с кем, где, чем закончилась и как часто гонку бросают или проводят заново.'] },
   { id: 'logs', Icon: IconClock, name: ['Logs', 'Журнал'], h: ['What went wrong, and for whom', 'Что пошло не так и у кого'],
     goal: ['The players who hit a problem, and each one’s visits and races in full, to see what happened to them.', 'Игроки, столкнувшиеся с проблемой, и все их визиты и гонки в подробностях, чтобы понять, что с ними случилось.'] },
 ] as const;

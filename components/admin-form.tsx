@@ -106,7 +106,7 @@ export function SailAdForm({ lang, slot, current }: { lang: Lang; slot: keyof ty
         {err ? <p className="err" role="alert">{err}</p> : done ? <p className="hint" role="status">{done}</p> : null}
         <div className="srow">
           <span className="srow-k">{t('See it on the water', 'Посмотреть на воде')}</span>
-          <a className="srow-link" href="/boat">{t('Your boat', 'Ваша яхта')}<IconArrow s={14} /></a>
+          <a className="srow-link" href="/boat">{t('Your yacht', 'Ваша яхта')}<IconArrow s={14} /></a>
         </div>
       </div>
     </section>

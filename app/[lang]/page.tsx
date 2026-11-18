@@ -133,8 +133,8 @@ export default async function Home({ params }: LangParams) {
               <li>{t('Free', 'Бесплатно')}</li><li>{t('No install', 'Без установки')}</li><li>{t('No sign-up to play', 'Без регистрации')}</li><li>{t('Phone or keyboard', 'Телефон или клавиатура')}</li><li>English · Русский</li>
             </ul>
           </div>
-          <aside className="ho-card ho-rank" aria-label={t('Today’s ranking', 'Рейтинг дня')}>
-            <div className="ho-card-h"><span className="lbl-ink">{t('Today’s ranking', 'Рейтинг дня')}</span><span className="lbl">{races ? t(`${races} ${races === 1 ? 'race' : 'races'}`, `заездов: ${races}`) : windName + ` · ${kn} ${t('kn', 'уз')}`}</span></div>
+          <aside className="ho-card ho-rank" aria-label={t('Today’s leaderboard', 'Рейтинг дня')}>
+            <div className="ho-card-h"><span className="lbl-ink">{t('Today’s leaderboard', 'Рейтинг дня')}</span><span className="lbl">{races ? t(`${races} ${races === 1 ? 'race' : 'races'}`, `заездов: ${races}`) : windName + ` · ${kn} ${t('kn', 'уз')}`}</span></div>
             <div className="ho-cd"><span className="lbl">{t('This race closes, a new one starts in', 'Эта гонка закроется, новая начнётся через')}</span><Countdown /></div>
             <ol className="hm-lb bt-lb">
               {top.map((r, i) => (
@@ -276,7 +276,7 @@ export default async function Home({ params }: LangParams) {
           <div className="ho-split-t ho-faq-side">
             <span className="ho-k">{t('Before you sail', 'Перед стартом')}</span>
             <h2 className="ho-h2" id="h-faq">{t('In short', 'Коротко')}</h2>
-            <p className="ho-ps">{t(`The questions people ask before their first race. ${all.length - faq.length} more are on the Questions page.`, `Вопросы, которые задают перед первой гонкой. Ещё ${all.length - faq.length} — на странице «Вопросы».`)}</p>
+            <p className="ho-ps">{t(`The questions people ask before their first race. ${all.length - faq.length} more are on the FAQ page.`, `Вопросы, которые задают перед первой гонкой. Ещё ${all.length - faq.length} — на странице «Вопросы и ответы».`)}</p>
             <Link className="ho-ghost" href="/faq" data-cta="faq">{t('All questions', 'Все вопросы')}<IconArrow s={16} /></Link>
           </div>
           <div className="ho-faq"><FaqList items={faq} openFirst /></div>
@@ -289,7 +289,7 @@ export default async function Home({ params }: LangParams) {
               <span className="ho-k">Sailing Certification Test</span>
               <h2 className="ho-h2" id="h-rules">{t('Learn the rules there, race by them here', 'Учи правила там, гоняйся по ним здесь')}</h2>
               <p className="ho-ps">{t('Up and down comes from RYC, the team behind Sailing Certification Test, the free trainer for sailing certificate exams. The computer boats give way by the same rules the exam asks about, so every race is revision you can feel on the water.', 'Up and down делает RYC — команда, которая сделала Sailing Certification Test, бесплатный тренажёр к экзаменам на яхтенные сертификаты. Компьютерные лодки уступают по тем же правилам, что спрашивают на экзамене, так что каждая гонка — повторение, которое чувствуешь на воде.')}</p>
-              <Link className="ho-ghost" href="/iyt" data-cta="iyt">{t('Exam practice · 6100 questions', 'Подготовка к экзамену · 6100 вопросов')}<IconArrow s={16} /></Link>
+              <Link className="ho-ghost" href="/iyt" data-cta="iyt">{t('Sailing exam practice · 6100 questions', 'Тренажёр к яхтенному экзамену · 6100 вопросов')}<IconArrow s={16} /></Link>
             </div>
             <div className="ho-rules">
               <span className="lbl">{t('Rules you meet on the first beat', 'Правила, которые встретишь на первой лавировке')}</span>

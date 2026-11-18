@@ -25,7 +25,7 @@ type Build = (t: T, lang: Lang, q: Q) => Promise<Built | null> | Built | null;
 
 const num = (n: number, lang: Lang) => n.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB');
 const dayLabel = (day: string, lang: Lang) => new Date(day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/\.$/, '');
-const learn = (t: T) => t('Learn to race', 'Учись гоняться');
+const learn = (t: T) => t('Racing guides', 'Пособия по гонкам');
 // the picture behind each guide: what it teaches, as the game shows it
 const GUIDE_BG: Record<GuideSlug, Bg> = { sail: 'wind', tack: 'helm', rules: 'fleet', start: 'start', shifts: 'wind', marks: 'aerial', downwind: 'fleet', trim: 'trim' };
 
@@ -56,7 +56,7 @@ const CARDS: Record<string, Build> = {
   rulebook: (t) => {
     const n = ruleCount(rulebook(t));
     return {
-      bg: 'fleet', kind: `${learn(t)} · ${t('Rule book', 'Все правила')}`,
+      bg: 'fleet', kind: t('Racing rules', 'Правила гонок'),
       hero: { label: t('The Racing Rules of Sailing in plain words', 'Правила парусных гонок простыми словами'), value: t(`${n} rules`, `${n} ${ruPlural(n, ['правило', 'правила', 'правил'])}`) },
       call: t('Look a rule up', 'Найди правило'),
     };
@@ -77,12 +77,12 @@ const CARDS: Record<string, Build> = {
     const d = dailyRace(new Date(day + 'T12:00:00Z'));
     const first = (r?.rows || []).slice().sort((a, b) => a.s - b.s)[0];
     return {
-      bg: 'fleet', kind: `${live ? t('Today’s rating', 'Рейтинг дня') : t('Rating', 'Рейтинг')} · ${t(...venueOf(d.venue).name)} · ${t(...yachtOf(d.yacht).name)}`,
+      bg: 'fleet', kind: `${live ? t('Today’s leaderboard', 'Рейтинг дня') : t('Leaderboard', 'Рейтинг')} · ${t(...venueOf(d.venue).name)} · ${t(...yachtOf(d.yacht).name)}`,
       tag: { text: dayLabel(day, lang), live },
       hero: first
         ? { label: t(`First · ${first.name || 'a sailor'}`, `Первое место · ${first.name || 'гонщик'}`), value: clock(first.s), color: C.gold, plate: { text: t('1st', '1'), bg: C.gold } }
         : { label: t('No time yet', 'Пока никто не финишировал'), value: t('Be first', 'Будь первым') },
-      call: live ? t('Beat the time', 'Побей время') : t('See the rating', 'Смотри рейтинг'),
+      call: live ? t('Beat the time', 'Побей время') : t('See the leaderboard', 'Смотри рейтинг'),
     };
   },
   players: async (t, lang) => {
@@ -113,7 +113,7 @@ const CARDS: Record<string, Build> = {
   }),
   free: (t) => ({
     bg: 'drone', kind: t(`${VENUES.length} venues · ${YACHTS.length} yachts`, `${VENUES.length} ${ruPlural(VENUES.length, ['акватория', 'акватории', 'акваторий'])} · ${YACHTS.length} яхт`),
-    hero: { label: t('Your venue, your yacht, your wind', 'Твоя акватория, твоя яхта, твой ветер'), value: t('Free race', 'Свободная гонка'), wrap: true },
+    hero: { label: t('Your venue, your yacht, your wind', 'Твоя акватория, твоя яхта, твой ветер'), value: t('Custom race', 'Своя гонка'), wrap: true },
     call: t('Set up a race', 'Настрой гонку'),
   }),
   // a 1-on-1 race: the host's venue and boat, its code on the tag
@@ -121,7 +121,7 @@ const CARDS: Record<string, Build> = {
     const code = parseCode(q.get('c') || '');
     const v = venueOf(q.get('v') || undefined), y = yachtOf(q.get('b'));
     return {
-      bg: 'drone', kind: `${t('1-on-1 race', 'Гонка один на один')} · ${t(...v.name)} · ${t(...y.name)}`,
+      bg: 'drone', kind: `${t('1-on-1 race', 'Гонка 1 на 1')} · ${t(...v.name)} · ${t(...y.name)}`,
       ...(code ? { tag: { text: code } } : {}),
       hero: { label: t('You and a friend, one on one', 'Вы и друг, один на один'), value: t('Race me', 'Сыграем'), color: C.gold },
       call: t('Join the race', 'Войти в гонку'),
@@ -140,7 +140,7 @@ const CARDS: Record<string, Build> = {
   faq: (t) => {
     const n = faqGroups(t).reduce((a, g) => a + g.items.length, 0);
     return {
-      bg: 'drone', kind: t('Questions', 'Вопросы'),
+      bg: 'drone', kind: t('FAQ', 'Вопросы и ответы'),
       hero: { label: t('About the game, the race and the rules', 'Об игре, гонке и правилах'), value: t(`${n} answers`, `${n} ${ruPlural(n, ['ответ', 'ответа', 'ответов'])}`) },
       call: t('Find the answer', 'Найди ответ'),
     };
@@ -148,7 +148,7 @@ const CARDS: Record<string, Build> = {
   social: (t) => {
     const ch = CHANNELS[0];
     return {
-      bg: 'fleet', kind: t('Follow the game', 'Игра в соцсетях'),
+      bg: 'fleet', kind: t('Social media', 'Соцсети'),
       hero: { label: t(`On ${ch.name}`, `В ${ch.name}`), value: ch.handle, wrap: true },
       call: t('Follow', 'Подписаться'),
     };
@@ -159,9 +159,9 @@ const CARDS: Record<string, Build> = {
     call: t('See the options', 'Посмотреть варианты'),
   }),
   boat: (t) => ({
-    bg: 'drone', kind: t('Your boat', 'Твоя яхта'),
-    hero: { label: t('Hull, sails, flag and number', 'Корпус, паруса, флаг и номер'), value: t('Your boat', 'Твоя яхта'), wrap: true },
-    call: t('Paint your boat', 'Раскрась яхту'),
+    bg: 'drone', kind: t('Your yacht', 'Твоя яхта'),
+    hero: { label: t('Hull, sails, flag and number', 'Корпус, паруса, флаг и номер'), value: t('Your yacht', 'Твоя яхта'), wrap: true },
+    call: t('Paint your yacht', 'Раскрась яхту'),
   }),
 };
 

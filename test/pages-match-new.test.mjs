@@ -25,7 +25,7 @@ test('a visitor who isn\'t signed in is asked to sign in, and comes back to the 
 test('the question is in Russian too', async () => {
   user = null;
   const h = await html('ru');
-  assert.ok(h.includes('Войди, чтобы создать гонку один на один'));
+  assert.ok(h.includes('Войди, чтобы создать гонку 1 на 1'));
   assert.ok(h.includes('Чтобы войти в гонку друга, аккаунт не нужен.'));
   assert.match(h, /class="bt-go" href="\/sign-in\?next=\/match\/new"/);
 });

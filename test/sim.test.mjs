@@ -432,7 +432,7 @@ test('trapezoid mark 2 counts only when rounded to port', () => {
   }
 });
 
-// The venues a free race can go to (public/game/venues.js; the set-up page's list is lib/venues.ts). Each one's land,
+// The venues a custom race can go to (public/game/venues.js; the set-up page's list is lib/venues.ts). Each one's land,
 // baked by blender/venues.py, must be there, at the venue's own position and turned to its wind; and every course,
 // in every shape the venue offers at each length and in every wind, must be laid with its marks, gate, line and
 // finish line well clear of the shore, and every leg sailed from one to the next in clear water too. In the

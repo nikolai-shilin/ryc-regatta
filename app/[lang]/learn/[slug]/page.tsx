@@ -37,7 +37,7 @@ export default async function GuidePage({ params }: Props) {
   if (!isGuide(slug)) notFound();
   const g = guide(slug, t, lang);
   const dates = GUIDE_DATES[slug];
-  const crumbs: Crumb[] = [[t('Learn to race', 'Учись гоняться'), '/learn'], [g.short, `/learn/${slug}`]];
+  const crumbs: Crumb[] = [[t('Racing guides', 'Пособия по гонкам'), '/learn'], [g.short, `/learn/${slug}`]];
   const contents: [string, string][] = g.sections.map((s) => [s.id, s.h.replace(/ \(rules? [^)]*\)| \(правил[ао] [^)]*\)/, '')]);
   // Read more: the guide's first further reading, its glossary link (or the glossary), then the next guide in order (the
   // last one goes back to the first); any other reading under them

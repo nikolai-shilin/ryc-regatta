@@ -20,7 +20,7 @@ export default async function YachtsPage({ params, searchParams }: LangParams & 
   return (
     <div className="scr bt-scr bc" lang={lang}>
       <FleetView lang={lang} start={start} tour={!start} back={(
-        <BackLink href={back} label={back === '/race' ? t('Back to the race hub', 'Назад в меню гонок') : t('Back to the free race', 'Назад к свободной гонке')} />
+        <BackLink href={back} label={back === '/race' ? t('Back to the race hub', 'Назад в меню гонок') : t('Back to the custom race', 'Назад к своей гонке')} />
       )} />
     </div>
   );

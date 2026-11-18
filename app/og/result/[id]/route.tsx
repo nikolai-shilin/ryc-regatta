@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const d = describe(res, lang);
   const img = await card({
     bg: 'drone',
-    kind: `${res.daily ? t('Race of the day', 'Гонка дня') : t('Free race', 'Свободная гонка')} · ${t(`${d.boats} boats`, `${d.boats} ${ruPlural(d.boats, ['лодка', 'лодки', 'лодок'])}`)}`,
+    kind: `${res.daily ? t('Race of the day', 'Гонка дня') : t('Custom race', 'Своя гонка')} · ${t(`${d.boats} boats`, `${d.boats} ${ruPlural(d.boats, ['лодка', 'лодки', 'лодок'])}`)}`,
     tag: { text: d.date.replace(/\.$/, '') },
     hero: d.time
       ? { label: t(`Finished ${ordEn(d.place)} of ${d.boats}`, `Финиш: ${d.place}-е место из ${d.boats}`), value: d.time, plate: { text: t(ordEn(d.place), `${d.place}`), bg: d.place === 1 ? C.gold : C.you } }

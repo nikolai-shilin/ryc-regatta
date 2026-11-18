@@ -156,7 +156,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
             <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок')} />
             <SceneBrand />
           </div>
-          <span className="bt-kick bt-kick-w">{match ? t('1-on-1 race', 'Гонка один на один') : from === 'race' ? t('Change the race', 'Изменить гонку') : t('Free race', 'Свободная гонка')}</span>
+          <span className="bt-kick bt-kick-w">{match ? t('1-on-1 race', 'Гонка 1 на 1') : from === 'race' ? t('Change the race', 'Изменить гонку') : t('Custom race', 'Своя гонка')}</span>
           <h1 className="bt-h" id="fs-title">{t(...where.name)} <span className="bt-h-cc">{where.nation}</span></h1>
           <p className="bt-p">{t(...where.place)} · {t(`prevailing wind ${where.wind[0]}`, `преобладающий ветер ${where.wind[1]}`)}. {t(...where.about)}</p>
           {view !== 'boats' && (
@@ -175,7 +175,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
           </div>
         </div>
 
-        <PauseCard lang={lang} back={match ? '/match/new' : fromToday ? '/race/free?from=today' : '/race/free'} title={match ? t('Set up your 1-on-1 race', 'Настрой гонку один на один') : t('Set up your race', 'Настрой гонку')}
+        <PauseCard lang={lang} back={match ? '/match/new' : fromToday ? '/race/free?from=today' : '/race/free'} title={match ? t('Set up your 1-on-1 race', 'Настрой гонку 1 на 1') : t('Set up your race', 'Настрой гонку')}
           foot={['boat', ['yachts', `/yachts?y=${p.yacht}&from=free`]]}
           action={<>
             <button type="button" className="bt-go" onClick={go}><IconPlay /><span>{match ? t('Create the race', 'Создать гонку') : from === 'race' ? t('Restart with these', 'Заново с этими') : t('Start race', 'Начать гонку')}</span></button>
@@ -231,10 +231,10 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
             <span className="bt-k"><IconRoute />{t('Your course', 'Твоя дистанция')}<span className="bt-k-r">{p.course !== 'wl' ? `${shapeName} · ` : ''}{courseName} · {lapsName} · {metres}</span></span>
             <CourseMap className="cmap bt-map" lang={lang} geo={geo} preset={p.preset} W={250} H={210} route fleet={p.fleet} />
           </div>
-          {base && changed.length ? <p className="bt-what" role="status"><b>{t('What happens', 'Что будет')}</b> {from === 'today' ? t(`A free race with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'} from today’s. It doesn’t go on today’s ranking.`, `Свободная гонка, изменений по сравнению с гонкой дня: ${changed.length}. В рейтинг дня она не идёт.`) : t(`The race starts over, with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'}.`, `Гонка начнётся заново, изменений: ${changed.length}.`)}</p> : null}
+          {base && changed.length ? <p className="bt-what" role="status"><b>{t('What happens', 'Что будет')}</b> {from === 'today' ? t(`A custom race with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'} from today’s. It doesn’t go on today’s ranking.`, `Своя гонка, изменений по сравнению с гонкой дня: ${changed.length}. В рейтинг дня она не идёт.`) : t(`The race starts over, with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'}.`, `Гонка начнётся заново, изменений: ${changed.length}.`)}</p> : null}
           {match ? <p className="bt-saved bt-saved-l">{t('You and a friend, one on one. After you create the race you get a link to send.', 'Вы и друг, один на один. Когда создашь гонку, получишь ссылку, чтобы отправить.')}</p> : <p className="bt-saved bt-saved-l">{best != null
             ? t(`Your best in this wind, fleet and course, at any venue: ${clock(best)}. Beat it and the result page says so.`, `Твой лучший результат при этом ветре, флоте и дистанции, на любой акватории: ${clock(best)}. Побьёшь — страница результата скажет.`)
-            : t('The game keeps your best time on every course. A free race doesn’t go on today’s ranking.', 'Игра помнит лучшее время на каждой дистанции. Свободная гонка в рейтинг дня не идёт.')}</p>}
+            : t('The game keeps your best time on every course. A custom race doesn’t go on today’s ranking.', 'Игра помнит лучшее время на каждой дистанции. Своя гонка в рейтинг дня не идёт.')}</p>}
         </PauseCard>
       </div>
     </div>

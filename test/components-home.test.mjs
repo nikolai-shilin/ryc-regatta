@@ -38,13 +38,13 @@ const openMenu = (v) => doing(() => { v.$('details').open = true; });
 
 test('the menu holds your things, the reading pages and the site’s pages', () => {
   const words = plain(ssr(h(SiteMenu, { lang: 'en' })));
-  for (const w of ['Account and settings', 'Sign in', 'To be ranked and keep your times', 'Your boat', 'Your player card', 'Audio & graphics', 'How to play', 'Learn to race', 'Questions', 'Today’s race', '1-on-1 race with a friend', 'Sign out']) assert.ok(words.includes(w), w);
+  for (const w of ['Account and settings', 'Sign in', 'To be ranked and keep your times', 'Your yacht', 'Your player card', 'Audio & graphics', 'How to play', 'Racing guides', 'Racing rules', 'FAQ', 'Today’s race', '1-on-1 race', 'Sign out']) assert.ok(words.includes(w), w);
 });
 
 test('the menu in Russian', () => {
   const words = plain(ssr(h(SiteMenu, { lang: 'ru' })));
   assert.match(words, /Аккаунт и настройки/);
-  assert.match(words, /Гонка с другом один на один/);
+  assert.match(words, /Гонка 1 на 1/);
   assert.deepEqual(englishIn(words), []);
 });
 
@@ -448,7 +448,7 @@ test('the explainers fold behind one button', async () => {
 
 test('a link to something folded away opens the fold and goes there', async () => {
   reset({ url: 'https://updown.test/#faq' });
-  const v = await mount(h(Fold, { lang: 'ru' }, h('p', { id: 'faq' }, 'Вопросы')));
+  const v = await mount(h(Fold, { lang: 'ru' }, h('p', { id: 'faq' }, 'Вопросы и ответы')));
   assert.ok(v.$('.ho-fold').classList.contains('open'));
   await tick(60);
   assert.equal(v.$('#faq').scrolled.length, 1);
@@ -475,7 +475,7 @@ test('the way to a 1-on-1 race shows only at an address that asks for it', async
   reset({ url: 'https://updown.test/?match' });
   v = await mount(h(MatchLink, { lang: 'ru' }));
   assert.equal(v.$('a').getAttribute('href'), '/match/new');
-  assert.equal(v.$('a').textContent, 'Гонка с другом один на один');
+  assert.equal(v.$('a').textContent, 'Гонка с другом 1 на 1');
 });
 
 // ---------- signing in from Telegram ----------

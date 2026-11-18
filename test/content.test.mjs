@@ -204,9 +204,14 @@ test('every channel is on an app the share sheet knows', () => {
   for (const c of CHANNELS) { assert.ok(apps.includes(c.app), c.app); assert.match(c.url, /^https:\/\//); inLang(c.what[1], 'ru', c.name); }
 });
 
+test('the rule book\'s first address leads to its own', async () => {
+  const { default: config } = await import('../next.config.ts');
+  assert.deepEqual((await config.redirects()).find((r) => r.source === '/learn/rulebook'), { source: '/learn/rulebook', destination: '/rulebook', permanent: true });
+});
+
 // ---------- zooming ----------
 test('the reading pages zoom, and the game\'s screens don\'t', () => {
-  for (const p of ['/learn', '/learn/sail', '/faq', '/help', '/iyt', '/social']) assert.match(p, READING, p);
+  for (const p of ['/learn', '/learn/sail', '/rulebook', '/faq', '/help', '/iyt', '/social']) assert.match(p, READING, p);
   for (const p of ['/', '/race', '/boat', '/yachts', '/venues', '/learning', '/helpful', '/socially']) assert.doesNotMatch(p, READING, p);
   assert.equal(READING_VIEWPORT.userScalable, true);
   assert.ok(READING_VIEWPORT.maximumScale >= 2, 'at least 200%, as accessibility checks ask');
@@ -265,9 +270,9 @@ test('each language has an address of its own', () => {
 });
 
 test('a page\'s meta: the title with the site\'s name, its canonical and both languages', () => {
-  const m = seo.pageMeta('ru', { title: 'Вопросы', description: 'Описание', path: '/faq' });
-  assert.equal(m.title, 'Вопросы');
-  assert.equal(m.openGraph.title, `Вопросы · ${seo.NAME}`);
+  const m = seo.pageMeta('ru', { title: 'Вопросы и ответы', description: 'Описание', path: '/faq' });
+  assert.equal(m.title, 'Вопросы и ответы');
+  assert.equal(m.openGraph.title, `Вопросы и ответы · ${seo.NAME}`);
   assert.equal(m.openGraph.url, '/faq?lang=ru');
   assert.equal(m.openGraph.locale, 'ru_RU'); assert.deepEqual(m.openGraph.alternateLocale, ['en_GB']);
   assert.equal(m.alternates.canonical, '/faq?lang=ru');

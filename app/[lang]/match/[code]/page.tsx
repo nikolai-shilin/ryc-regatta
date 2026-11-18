@@ -16,7 +16,7 @@ export async function generateMetadata({ params, searchParams }: LangParams & { 
   const one = (x?: string | string[]) => { const s = Array.isArray(x) ? x[0] : x; return s && /^[a-z0-9_-]{1,32}$/i.test(s) ? s : ''; };
   const code = parseCode(raw), v = one(sp.v), b = one(sp.b);
   const card = `/og/page/match?${new URLSearchParams({ ...(code && { c: code }), ...(v && { v }), ...(b && { b }) })}`;
-  return pageMeta(lang, { title: t('Race me: a 1-on-1 race', 'Сыграем: гонка один на один'), description: t('You and a friend, one on one: join the race.', 'Вы и друг, один на один: войдите в гонку.'), index: false, card });
+  return pageMeta(lang, { title: t('Race me: a 1-on-1 race', 'Сыграем: гонка 1 на 1'), description: t('You and a friend, one on one: join the race.', 'Вы и друг, один на один: войдите в гонку.'), index: false, card });
 }
 
 export default async function MatchPage({ params, searchParams }: LangParams & { params: Promise<{ lang: string; code: string }>; searchParams: Promise<{ v?: string | string[]; b?: string | string[] }> }) {
@@ -35,7 +35,7 @@ export default async function MatchPage({ params, searchParams }: LangParams & {
             <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок')} />
             <SceneBrand />
           </div>
-          <span className="bt-kick bt-kick-w">{t('1-on-1 race', 'Гонка один на один')}</span>
+          <span className="bt-kick bt-kick-w">{t('1-on-1 race', 'Гонка 1 на 1')}</span>
           <h1 className="bt-h" id="match-title">{t('Race me', 'Сыграем')}</h1>
           <p className="bt-p">{t('You and a friend, one on one.', 'Вы и друг, один на один.')}</p>
           <div className="bt-stats">
