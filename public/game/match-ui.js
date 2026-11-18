@@ -30,8 +30,7 @@ export const MATCH_STRINGS = {
     stillOut: (w) => `${w} is still racing`, stillOutT: (w, s) => `${w} is still racing · ${s} left`, keepOpen: 'Keep this screen open',
     loadingRace: (w) => `Waiting for ${w} to load the race…`,
     sec: 's', waitHost: 'Waiting for the host…', stale: 'The game was updated: reload to join', reload: 'Reload', fullRoom: 'This race already has two sailors',
-    badSet: 'This race is set at a venue or on a yacht this page can’t open', askK: 'Leave the race?',
-    askHost: 'The race is abandoned on both screens.', askGuest: (w) => `You drop out, and the race goes to ${w}.`, askHome: 'Your place stands, and the race runs on to its end.', stay: 'Stay',
+    badSet: 'This race is set at a venue or on a yacht this page can’t open',
   },
   ru: {
     kick: 'Гонка один на один', room: 'Зал ожидания', linkK: 'Отправь другу эту ссылку', share: 'Поделиться', copy: 'Скопировать', copied: 'Скопировано',
@@ -43,8 +42,7 @@ export const MATCH_STRINGS = {
     stillOut: (w) => `${w} ещё в гонке`, stillOutT: (w, s) => `${w} ещё в гонке · осталось ${s}`, keepOpen: 'Не закрывай этот экран',
     loadingRace: (w) => `${w} загружает гонку…`,
     sec: 'с', waitHost: 'Ждём хозяина гонки…', stale: 'Игра обновилась: перезагрузи страницу, чтобы войти', reload: 'Перезагрузить', fullRoom: 'В этой гонке уже двое',
-    badSet: 'Эта гонка в месте или на яхте, которых эта страница не открывает', askK: 'Выйти из гонки?',
-    askHost: 'Гонка прекратится на обоих экранах.', askGuest: (w) => `Ты сходишь, и гонка достаётся: ${w}.`, askHome: 'Твоё место останется за тобой, а гонка дойдёт до конца.', stay: 'Остаться',
+    badSet: 'Эта гонка в месте или на яхте, которых эта страница не открывает',
   },
 };
 
@@ -116,12 +114,9 @@ export function timeLeft(race, limit) {
   return home.length ? Math.max(0, limit - (race.clock - Math.min(...home))) : null;
 }
 
-let api = null; // the race on this page, for main.js's leaveMatch() and askLeave()
-// Leave the race (main.js's pause menu's Leave, asked and answered)
+let api = null; // the race on this page, for main.js's leaveMatch()
+// Leave the race (on the water main.js has asked first: ask('leave'))
 export function leaveMatch() { if (api) api.leave(); }
-// Back, or Telegram's back button, with no race on the water (just after a finish): the race's own question, Leave or
-// Stay; asked again, it's Stay. With no race yet, or one over, it simply leaves
-export function askLeave() { if (api) api.ask(); }
 
 // The race at `code` on this page. t: main.js's words (the T keys); world, venue and cls: the page's; onRace(session)
 // puts the race on screen ({ race, step(dt), isGuest }), onIdle() takes it off (the card); onEnd() leaves the page;
@@ -148,18 +143,12 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
       <button type="button" class="m-prim m-go"></button>
       <div class="m-btns"><button type="button" class="m-full" hidden></button><button type="button" class="m-leave"></button></div>
     </div>
-    <div class="m-card" id="mAsk" role="alertdialog" aria-labelledby="mAskH" hidden>
-      <span class="m-kick"></span><h2 id="mAskH"></h2><p class="m-sub"></p>
-      <div class="m-btns"><button type="button" class="m-prim m-stay"></button><button type="button" class="m-out"></button></div>
-    </div>
     <div id="mBanner" hidden></div>
     <div id="mNote" hidden></div>
   </div>`);
   document.body.append(wrap);
   const q = (root, s) => root.querySelector(s);
-  const R = { card: q(wrap, '#mRoom') }, C = { card: q(wrap, '#mCard') }, A = { card: q(wrap, '#mAsk') }, banner = q(wrap, '#mBanner'), note = q(wrap, '#mNote');
-  for (const k of ['kick', 'sub', 'stay', 'out']) A[k] = q(A.card, '.m-' + k);
-  A.h = q(A.card, 'h2');
+  const R = { card: q(wrap, '#mRoom') }, C = { card: q(wrap, '#mCard') }, banner = q(wrap, '#mBanner'), note = q(wrap, '#mNote');
   for (const k of ['kick', 'set', 'linkK', 'ppl', 'nameBox', 'nameK', 'st', 'start', 'retry', 'leave', 'share', 'join']) R[k] = q(R.card, '.m-' + k);
   R.h = q(R.card, 'h2'); R.link = q(R.card, '.m-link input'); R.name = q(R.card, '.m-name input'); R.linkBox = q(R.card, '.m-linkBox');
   for (const k of ['kick', 'sub', 'rows', 'st', 'go', 'full', 'leave']) C[k] = q(C.card, '.m-' + k);
@@ -169,7 +158,6 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   R.kick.textContent = C.kick.textContent = L.kick; R.h.textContent = L.room; R.linkK.textContent = L.linkK; R.nameK.textContent = L.nameK;
   R.name.placeholder = L.namePh; R.join.textContent = L.join; R.start.textContent = L.start; R.leave.textContent = L.leave; R.retry.textContent = L.retry;
   C.leave.textContent = L.done; C.full.textContent = L.fullResult; C.go.textContent = L.rematch;
-  A.kick.textContent = L.kick; A.h.textContent = L.askK; A.stay.textContent = L.stay; A.out.textContent = L.leave;
   R.link.value = `${location.origin}/match/${code}?v=${encodeURIComponent(venue.id)}&b=${encodeURIComponent(cls.id)}`;
   R.share.textContent = navigator.share ? L.share : L.copy;
 
@@ -186,7 +174,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   let match = null; // Match: the host's own (K.match); the guest's a copy of the host's
   let cur = null; // the race on screen: { seed, race, H | G, acc, at, endedAt, told, gotSnap, loadedAt, rid (its record's id) }
   let phase = 'room'; // 'room' | 'race' | 'card'
-  let error = null, left = false, joined = false, build = null, asking = false, badSet = false;
+  let error = null, left = false, joined = false, build = null, badSet = false;
   let lastHostAt = Date.now(), lastState = 0, stateKey = '', kicked = 0;
   let pendingStart = null; // the guest: a start heard before any mstate
   let myName = clean(store(NAME_KEY) || '');
@@ -225,18 +213,9 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     setTimeout(() => { try { rt?.close(); } catch (e) {} }, 400);
     then();
   };
-  // the race's question: Leave, or Stay (asked again, Stay)
-  const ask = () => {
-    if (left) return;
-    if (!match || match.state === 'over') { leave(); return; }
-    asking = !asking; beat();
-    if (asking) A.stay.focus();
-  };
   R.leave.addEventListener('click', () => leave());
   C.leave.addEventListener('click', () => leave());
   C.full.addEventListener('click', () => { const id = resultId(); if (id) leave(() => openResult(id)); });
-  A.out.addEventListener('click', () => leave());
-  A.stay.addEventListener('click', () => { asking = false; beat(); });
   R.retry.addEventListener('click', () => location.reload());
   addEventListener('pagehide', () => { if (!left) try { room?.leave(); } catch (e) {} });
   // the link checked at once when the page comes back to the front or the network comes back: a phone drops a
@@ -353,7 +332,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     for (const b of race.humans) b.color ??= 0xffffff; // (the first boat has no colour of her own: a computer boat's is never hers)
     race.settings = { ...match.start.settings, fleet: 2, daily: null };
     const c = cur = { seed: match.start.seed, race, H: null, G: null, acc: 0, at: Date.now(), endedAt: 0, told: false, gotSnap: false, loadedAt: 0, rid: null };
-    phase = 'race'; asking = false; show(R.card, false); show(C.card, false); show(A.card, false);
+    phase = 'race'; show(R.card, false); show(C.card, false);
     if (isHost) { K.lastIn = Date.now(); saveMatch(); sendState(); }
     else {
       c.G = new M.Guest({ race, link, me: myId });
@@ -377,7 +356,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     const r = cur.race;
     cur.endedAt = Date.now();
     K.raceEnded(cur.H.abandoned ? { abandoned: true } : { winner: r.winner?.id ?? null, margin: r.margin ?? null, forfeited: r.forfeited?.id ?? null });
-    if (!cur.H.abandoned) keep(cur, W.resultsOf(r));
+    if (!cur.H.abandoned) keep(cur, M.finalResults(r));
     saveMatch(); sendState();
   };
   const session = {
@@ -543,11 +522,8 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     if (G && !G.stopped && phase === 'card' && (G.results || match.result?.abandoned || waited)) G.stop();
     if (phase === 'room' && match && match.state !== 'race') { phase = 'card'; show(R.card, false); } // a reloaded page, after the race
     // what's on screen
-    show(A.card, asking && !!match && match.state !== 'over');
-    if (asking && (!match || match.state === 'over')) asking = false;
-    if (asking) txt(A.sub, isHost ? L.askHost : cur?.race.player.done ? L.askHome : L.askGuest(nameOf(match.hostId)));
-    show(R.card, phase === 'room' && !asking); if (phase === 'room') paintRoom();
-    show(C.card, phase === 'card' && !!match && !asking); if (phase === 'card' && match) paintCard();
+    show(R.card, phase === 'room'); if (phase === 'room') paintRoom();
+    show(C.card, phase === 'card' && !!match); if (phase === 'card' && match) paintCard();
     let b = '';
     if (phase === 'race' && cur) {
       if (isHost && !cur.H && !cur.endedAt) b = L.loadingRace(nameOf(match.guestId));
@@ -560,7 +536,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   };
   const timer = setInterval(beat, 250);
 
-  api = { leave, ask };
+  api = { leave };
   paintRoom();
   await connect();
   // a reloaded host goes straight to the card it was on

@@ -296,6 +296,15 @@ export function raceFor(match, myId) {
   return race;
 }
 
+// The race's results as both screens keep them: the boats in the order of the result, the winner first, then the boats
+// home by their finish, those home disqualified, those out under a flag, and the rest. The host's word, so the two
+// records can't differ with where each screen last had the boats
+export function finalResults(race) {
+  const r = resultsOf(race), winner = race.winner?.id ?? null;
+  const rank = (b) => (b.id === winner ? 0 : b.done && !b.dsq ? 1 : b.done ? 2 : b.dsq ? 3 : 4);
+  return { ...r, boats: [...r.boats].sort((a, b) => rank(a) - rank(b) || (a.finish ?? 0) - (b.finish ?? 0)) };
+}
+
 const joinOf = (owner, ch) => ch.join().then(() => true, (e) => { owner.error = e || new Error('join failed'); return false; });
 
 // The host's game: it runs the race. Its own boat is the local UI's; the guest's sails on the inputs that arrive.
@@ -367,16 +376,16 @@ export class Host {
     this.link.all.send('results', this._results);
   }
   // the end, and the boats as they ended it, told at once and again every second it's still ticked, for a guest whose
-  // connection blinked or whose page has just opened
+  // connection blinked or whose page has just opened; and after them the results, so she keeps those with the race over
   _end() {
-    this._results ??= resultsOf(this.race);
+    const t = this.now(), r = this.race;
+    if (!this.ended || t - this._endAt >= 1000) {
+      this.ended = true; this._endAt = t;
+      this.link.all.send('snap', { ...encodeSnap(r), a: this._ack });
+      this.link.all.send('end', { winner: r.winner?.id ?? null, margin: r.margin ?? null, forfeited: r.forfeited?.id ?? null });
+    }
+    this._results ??= finalResults(r);
     this.flush();
-    const t = this.now();
-    if (this.ended && t - this._endAt < 1000) return;
-    this.ended = true; this._endAt = t;
-    const r = this.race;
-    this.link.all.send('snap', { ...encodeSnap(r), a: this._ack });
-    this.link.all.send('end', { winner: r.winner?.id ?? null, margin: r.margin ?? null, forfeited: r.forfeited?.id ?? null });
   }
   // stop listening and sending (the race is done with, or abandoned)
   stop() {

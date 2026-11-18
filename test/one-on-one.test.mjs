@@ -465,3 +465,82 @@ test('thinTrack keeps the last point and at most 160', () => {
   assert.deepEqual(thinTrack([[7.4, 8.6]]), [[7, 9]]);
   assert.deepEqual(thinTrack([]), []);
 });
+
+// ---------- the end of the race, as each screen keeps it ----------
+// how the race has ended on the host's screen, and what the guest's had when her results came
+function ending(d) {
+  const at = {}, order = [];
+  const ear = makeLink(d.rt, d.code).all;
+  ear.join();
+  for (const k of ['snap', 'end', 'results']) ear.on(k, () => order.push(k));
+  d.guest.onResults(() => Object.assign(at, { over: d.grace.over, winner: d.grace.winner?.id ?? null, boats: Object.fromEntries(d.grace.humans.map((b) => [b.id, { done: b.done, dsq: b.dsq, place: b.place }])) }));
+  return { at, order };
+}
+const ids = (R) => R.boats.map((b) => b.id);
+
+test('the end reaches the guest before the results: her race is over, its last state hers, when she keeps them', async () => {
+  const d = await duel();
+  underWay(d);
+  const { at, order } = ending(d);
+  toFinish(d, d.H); d.H.pen = { tack: false, gybe: false, dir: 0 };
+  d.run(1.5);
+  assert.equal(d.H.dsq, true, 'the host home first, her penalty unserved');
+  toFinish(d, d.Gh);
+  d.run(1.5);
+  assert.equal(d.hrace.over, true);
+  const first = order.indexOf('results');
+  assert.deepEqual(order.slice(first - 2, first + 1), ['snap', 'end', 'results'], 'the last snapshot, the end, then the results');
+  assert.equal(at.over, true); assert.equal(at.winner, 'g');
+  assert.deepEqual(at.boats, { h: { done: true, dsq: true, place: null }, g: { done: true, dsq: false, place: 1 } });
+});
+
+test('the results are in the order of the result, whatever the water says: the winner first, for every ending', async () => {
+  // home first with a penalty unserved: the next boat home wins
+  const a = await duel();
+  underWay(a);
+  toFinish(a, a.H); a.H.pen = { tack: false, gybe: false, dir: 0 };
+  a.run(1.5);
+  toFinish(a, a.Gh);
+  a.run(1.5);
+  assert.deepEqual(ids(a.guest.results), ['g', 'h']);
+
+  // given up with the boat that gave up ahead on the water
+  const b = await duel();
+  underWay(b);
+  b.Gh.leg = b.H.leg + 1;
+  assert.equal(b.hrace.standings()[0], b.Gh, 'she is ahead');
+  b.hrace.forfeit(b.Gh);
+  b.run(0.2);
+  assert.equal(b.hrace.winner, b.H);
+  assert.deepEqual(ids(b.guest.results), ['h', 'g']);
+
+  // both home clean, the guest first
+  const c = await duel();
+  underWay(c);
+  toFinish(c, c.Gh);
+  c.run(1.5);
+  toFinish(c, c.H);
+  c.run(1.5);
+  assert.deepEqual(ids(c.guest.results), ['g', 'h']);
+
+  // still out at the limit, ahead of nobody
+  const e = await duel();
+  underWay(e);
+  toFinish(e, e.Gh);
+  e.run(1.5);
+  e.hrace.clock = e.hrace.validAt + FINISH_LIMIT_S;
+  e.run(0.5);
+  assert.equal(e.H.dnf, true);
+  assert.deepEqual(ids(e.guest.results), ['g', 'h']);
+
+  // nobody a valid finisher: the boat home before the boat that never got there
+  const f = await duel();
+  underWay(f);
+  toFinish(f, f.Gh); f.Gh.pen = { tack: false, gybe: false, dir: 0 };
+  f.run(1.5);
+  assert.equal(f.Gh.dsq, true);
+  f.hrace.forfeit(f.H);
+  f.run(0.5);
+  assert.equal(f.hrace.winner, null);
+  assert.deepEqual(ids(f.guest.results), ['g', 'h']);
+});

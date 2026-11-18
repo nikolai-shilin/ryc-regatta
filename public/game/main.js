@@ -53,13 +53,12 @@ let mx = null, matchUi = null;
 // leaving in a match leaves it on both screens (match-ui.js tells the other), and goes to the hub: back would be the
 // set-up or the link's page, which opens a match again
 const quit = () => (MATCH && matchUi ? matchUi.leaveMatch() : leave());
-// In a match, back (the browser's, Telegram's) never ends it at once: on the water it opens the menu, then the race's
+// In a match, back (the browser's, Telegram's) never ends a race at once: on the water it opens the menu, then the race's
 // question, and goes back from that question to the menu; with no race on the water (the waiting room, a card, just
-// after a finish) it asks the match's own question (match-ui.js askLeave), and asked again it stays. Out of a match,
-// back is as it always was
+// after a finish) it leaves. Out of a match, back is as it always was
 function matchBack() {
   if (running && !race.over) { if (!paused) pause(); else if (confirmEl.hidden) ask('leave'); else { confirmEl.hidden = true; pauseEl.hidden = false; } }
-  else matchUi.askLeave();
+  else quit();
 }
 // From Telegram the app passes its launch data in the hash, as Telegram does (miniapp/app.js in iyt-test); telegram-web-app.js has
 // read and kept it by now, so it comes off the address bar and out of any link the player copies.
@@ -73,6 +72,7 @@ const T = {
     changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', camK: 'Camera', sAuto: 'Auto', guidesSw: 'Guides on the water', ghostSw: 'Ghost of your best today', avK: 'Audio & graphics', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
     leaveK: 'Leave this race?', leaveTxt: (pl, leg) => `You are ${pl} on leg ${leg}.`, keepRacing: 'Keep racing', doRestart: 'Restart', doChange: 'Change it', doLeave: 'Leave',
     inSeq: 'You are in the start sequence.', notKept: 'This race’s time and place are not kept.',
+    leaveHost: 'The race is abandoned on both screens.', leaveGuest: (w) => (w ? `You drop out, and the race goes to ${w}.` : 'You drop out, and the race ends with no winner.'), leaveHome: 'Your place stands, and the race runs on to its end.',
     askK: { restart: 'Restart', change: 'Change the race', leave: 'Leave' }, askH: { restart: 'Restart this race?', change: 'Change the race?', leave: 'Leave this race?' },
     askT: { restart: 'It starts over from the start sequence, the same course in the same wind.', change: 'Next you pick the place, the wind and the course, and the race starts over with them.', leave: 'You go back to the race hub.' },
     sailUp: 'Beating to', sailDown: (k) => (k ? 'Running to' : 'Running, kite down, to'), sailReach: 'Reaching to', aheadOf: (n, s) => `${n} is ${s} ahead.`, leadBy: (s) => `You lead by ${s}.`, leadAlone: 'You lead.',
@@ -179,6 +179,7 @@ const T = {
     changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', camK: 'Камера', sAuto: 'Авто', guidesSw: 'Подсказки на воде', ghostSw: 'Призрак твоего лучшего сегодня', avK: 'Звук и графика', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
     leaveK: 'Выйти из гонки?', leaveTxt: (pl, leg) => `Ты ${pl}-й на ${leg}-м отрезке.`, keepRacing: 'Продолжить', doRestart: 'Заново', doChange: 'Изменить', doLeave: 'Выйти',
     inSeq: 'Идёт стартовая процедура.', notKept: 'Время и место этой гонки не сохранятся.',
+    leaveHost: 'Гонка прекратится на обоих экранах.', leaveGuest: (w) => (w ? `Ты сходишь, и гонка достаётся: ${w}.` : 'Ты сходишь, и гонка закончится без победителя.'), leaveHome: 'Твоё место останется за тобой, а гонка дойдёт до конца.',
     askK: { restart: 'Заново', change: 'Изменить гонку', leave: 'Выход' }, askH: { restart: 'Начать заново?', change: 'Изменить гонку?', leave: 'Выйти из гонки?' },
     askT: { restart: 'Всё начнётся со стартовой процедуры: та же дистанция, тот же ветер.', change: 'Дальше выберешь место, ветер и дистанцию — и гонка начнётся заново.', leave: 'Ты вернёшься в меню гонок.' },
     sailUp: 'Лавировка к', sailDown: (k) => (k ? 'Фордевинд под генакером к' : 'Фордевинд без генакера к'), sailReach: 'Галфвинд к', aheadOf: (n, s) => `${n} впереди на ${s}.`, leadBy: (s) => `Ты лидируешь на ${s}.`, leadAlone: 'Ты лидируешь.',
@@ -1561,7 +1562,11 @@ function resume() { paused = false; pauseEl.hidden = true; confirmEl.hidden = tr
 let confirmDo = null;
 function ask(action) {
   const P = race.player, place = race.standings().indexOf(P) + 1, c = race.course;
-  if (race.clock >= 0 && P.leg >= 1 && !P.done) { // racing: the question in the bar, where you are as the headline
+  if (action === 'leave' && race.multi) { // a race shared by two: what leaving does to it, on the host's tab or the guest's (a boat out herself wins nothing)
+    const o = race.humans.find((b) => b !== P);
+    $('#cKick').textContent = t('askK')[action]; $('#cHead').textContent = t('askH')[action];
+    $('#cTxt').textContent = !mx?.isGuest ? t('leaveHost') : P.done ? t('leaveHome') : t('leaveGuest', o.ufd || o.bfd || o.dsq ? null : o.name);
+  } else if (race.clock >= 0 && P.leg >= 1 && !P.done) { // racing: the question in the bar, where you are as the headline
     $('#cKick').textContent = t('askH')[action];
     $('#cHead').textContent = t('whereH', LANG === 'ru' ? place : ord(place), Math.round(race.distToNext(P)), t('toK')[legKey(c, c.legs[P.leg])]);
     $('#cTxt').textContent = `${t('askT')[action]} ${t('notKept')}`;
@@ -2081,15 +2086,14 @@ function keepResult(res) {
 // its boats' finish, track, leg times and penalties the ones the two screens agreed on (results, wire.js resultsOf), her own log
 // the sailor's. No best, no daily, no computer skipper's level. Returns the record's id
 function keepOneOnOne(race, results) {
-  const by = new Map(results.boats.map((r) => [r.id, r]));
-  const mine = by.get(race.player.id);
-  const res = resultRecord(race, null, mine?.log || race.log);
+  const mine = results.boats.find((r) => r.id === race.player.id);
+  const res = resultRecord(race, null, mine?.log || race.log), seen = race.standings();
   res.oneOnOne = true;
   res.daily = null;
-  res.boats = race.standings().map((b, i) => {
-    const r = by.get(b.id), o = { ...res.boats[i] };
+  // in the results' order, the same on both screens (the result page's places are this order)
+  res.boats = results.boats.map((r) => {
+    const i = seen.findIndex((b) => b.id === r.id), b = seen[i], o = { ...res.boats[i] };
     delete o.level;
-    if (!r) return o;
     const dnf = !!r.dnf, done = !!r.done && !dnf;
     return { ...o, ...(b !== race.player && { flag: flagCode(lookFrom(b.look).flag) }), done, dsq: !!r.dsq, dnf, secs: done && r.finish != null ? Math.round(r.finish * 10) / 10 : null,
       track: r.track.map(([x, z]) => [Math.round(x), Math.round(z)]), legT: (r.legT || []).map((x) => Math.round(x * 10) / 10), pens: r.pens || 0 };

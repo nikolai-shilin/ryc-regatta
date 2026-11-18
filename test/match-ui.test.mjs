@@ -204,6 +204,7 @@ function home(r, b) {
   b.lastD = lineD(c, b); b.lastZ = b.z;
 }
 const CARD_S = 4; // (a race's end stays on the water 3.5 s before its card)
+const HOME_S = 2.5; // (three metres to the finish, in whatever wind the race's seed has drawn, and the word of it on both screens)
 
 test('a race on two screens: the settings reach both, and the seed is the race\'s', async () => {
   const { h, g } = await sailing({ course: 'tri', laps: 2, start: 3, preset: 'strong' });
@@ -240,7 +241,7 @@ test('both home: the finished boat is told who is out and the time left, each sc
   assert.equal(g.shows('#mNote'), false, 'the boat still racing has no such note');
   hr.clock += 10;
   home(hr, G);
-  run(1, h, g);
+  run(HOME_S, h, g);
   assert.equal(hr.over, true);
   assert.equal(h.shows('#mNote'), false);
   assert.equal(h.kept.length, 1, 'the host keeps it at the race\'s end');
@@ -280,7 +281,7 @@ test('after the card opens the host goes on sending the end and the results unti
   let results = 0, ends = 0;
   g.deaf = (e) => { if (e === 'results') results++; if (e === 'end') ends++; return e === 'results'; }; // her line drops the results
   home(hr, H); home(hr, G);
-  run(1 + CARD_S, h, g);
+  run(HOME_S + CARD_S, h, g);
   assert.equal(h.shows('#mCard'), true); assert.equal(g.shows('#mCard'), true);
   assert.equal(h.racing, false, 'the host\'s frames have stopped');
   assert.equal(g.kept.length, 0);
@@ -308,7 +309,7 @@ test('a guest whose results never come: thirty seconds, and the two screens let 
   const { h, g, hr, H, G } = await sailing();
   g.deaf = (e) => e === 'results';
   home(hr, H); home(hr, G);
-  run(1 + CARD_S, h, g);
+  run(HOME_S + CARD_S, h, g);
   run(20, h, g);
   assert.equal(h.cur().H.stopped, false); assert.equal(g.cur().G.stopped, false);
   run(12, h, g);
@@ -335,7 +336,7 @@ test('the guest leaving before her finish forfeits at once: the host has the rac
 test('the guest leaving after her finish: her place stands, and the race runs on for the host', async () => {
   const { h, g, hr, H, G } = await sailing();
   home(hr, G);
-  run(1, h, g);
+  run(HOME_S, h, g);
   assert.equal(G.done, true);
   assert.match(g.says('#mNote'), /Host is still racing/);
   assert.doesNotMatch(g.says('#mNote'), new RegExp(S.en.keepOpen), 'the guest\'s screen isn\'t the race');
@@ -345,7 +346,7 @@ test('the guest leaving after her finish: her place stands, and the race runs on
   assert.equal(hr.forfeited, null);
   assert.equal(h.shows('#mBanner'), false, 'and nobody is said not to be answering');
   home(hr, H);
-  run(1 + CARD_S, h);
+  run(HOME_S + CARD_S, h);
   assert.deepEqual(h.rows().map((r) => r[0]), ['1', '2']);
   assert.equal(h.rows()[0][1], 'Guest');
   assert.equal(h.says('#mCardH'), 'raceLost Guest');
@@ -355,7 +356,7 @@ test('the guest leaving after her finish: her place stands, and the race runs on
 test('the host leaving while the race is on abandons it on both screens: no record, no Full result', async () => {
   const { h, g, hr, H } = await sailing();
   home(hr, H);
-  run(1, h, g);
+  run(HOME_S, h, g);
   assert.equal(H.done, true, 'even with her own finish made');
   on = h; h.mod.leaveMatch();
   assert.equal(h.ended, 1);
@@ -375,7 +376,7 @@ test('a reloaded host: the race on the water is abandoned, the card says so on b
   const seed = h.cur().seed;
   h.gone();
   const back = await page('Host', { ls: h.ls });
-  run(1 + CARD_S, back, g);
+  run(HOME_S + CARD_S, back, g);
   for (const s of [back, g]) { assert.equal(s.shows('#mCard'), true, s.name); assert.equal(s.says('#mCardH'), S.en.abandonedH, s.name); assert.equal(s.shows('#mCard .m-full'), false, s.name); }
   run(4, back, g);
   assert.equal(back.shows('#mCard .m-go'), true, 'Rematch is offered');
@@ -394,7 +395,7 @@ test('a reloaded host: the race on the water is abandoned, the card says so on b
 test('the record survives a reload: the page reloaded after the race still has its Full result, and keeps no second record', async () => {
   const { h, g, hr, H, G } = await sailing();
   home(hr, H); home(hr, G);
-  run(1 + CARD_S, h, g);
+  run(HOME_S + CARD_S, h, g);
   assert.equal(g.kept.length, 1);
   g.gone();
   const back = await page('Guest', { ls: g.ls });
@@ -405,4 +406,64 @@ test('the record survives a reload: the page reloaded after the race still has i
   on = back; back.$('#mCard .m-full').click();
   assert.deepEqual(back.opened, ['Guest-record-1']);
   h.gone(); back.gone();
+});
+
+test('both screens keep the same order: a boat home first with her penalty unserved, and a boat that gave up ahead on the water', async () => {
+  const a = await sailing();
+  home(a.hr, a.H); a.H.pen = { tack: false, gybe: false, dir: 0 };
+  run(HOME_S, a.h, a.g);
+  assert.equal(a.H.dsq, true);
+  home(a.hr, a.G);
+  run(HOME_S, a.h, a.g);
+  for (const s of [a.h, a.g]) assert.deepEqual(s.kept[0].boats.map((b) => b.id), [a.G.id, a.H.id], s.name);
+  a.h.gone(); a.g.gone();
+
+  const b = await sailing();
+  b.G.leg = b.H.leg + 2;
+  assert.equal(b.hr.standings()[0], b.G, 'the guest is ahead as she goes');
+  on = b.g; b.g.mod.leaveMatch();
+  run(0.5, b.h);
+  assert.deepEqual(b.h.kept[0].boats.map((x) => x.id), [b.H.id, b.G.id]);
+  b.h.gone(); b.g.gone();
+});
+
+// main.js can't be loaded here (it is the page): its functions read from its source, with what they call handed in
+const mainSrc = readFileSync(new URL('../public/game/main.js', import.meta.url), 'utf8');
+const between = (from, to) => mainSrc.slice(mainSrc.indexOf(from), mainSrc.indexOf(to, mainSrc.indexOf(from)));
+
+test('the record takes its order from the results, not from where this screen last had the boats', () => {
+  const keep = new Function('resultRecord', 'keepResult', 'flagCode', 'lookFrom', `${between('function keepOneOnOne(', 'const openResult')}; return keepOneOnOne;`);
+  let kept = null;
+  const G = { id: 'g', name: 'Guest', look: {} }, H = { id: 'h', name: 'Host', look: {} };
+  const race = { player: G, log: {}, standings: () => [H, G] }; // (her screen: the host ahead)
+  const record = () => ({ id: 'r1', boats: [{ name: 'Host', me: false, level: 3 }, { name: null, me: true }] });
+  const fn = keep(record, (r) => { kept = r; }, () => 'xx', () => ({ flag: 'x' }));
+  const boat = (id, o) => ({ id, done: true, dsq: false, dnf: false, place: null, finish: 100, pens: 0, legT: [], track: [[1.2, 3.4]], log: {}, ...o });
+  assert.equal(fn(race, { seed: 1, boats: [boat('g', { place: 1, finish: 120 }), boat('h', { dsq: true })] }), 'r1');
+  assert.equal(kept.oneOnOne, true);
+  assert.deepEqual(kept.boats.map((b) => [b.name, b.me, b.dsq, b.secs]), [[null, true, false, 120], ['Host', false, true, 100]], 'the winner first, each boat still herself');
+  assert.equal('level' in kept.boats[1], false);
+});
+
+test('leaving a race on the water says what it does to it, in both languages, and the page has no second question', async () => {
+  const en = mainSrc.slice(mainSrc.indexOf('\n  en: {'), mainSrc.indexOf('\n  ru: {')), ru = mainSrc.slice(mainSrc.indexOf('\n  ru: {'));
+  for (const k of ['leaveHost', 'leaveGuest', 'leaveHome']) for (const src of [en, ru]) assert.match(src, new RegExp(`\\b${k}: `), k);
+  const words = { leaveHost: 'HOST', leaveGuest: (w) => `GUEST ${w}`, leaveHome: 'HOME', askK: { leave: 'k' }, askH: { leave: 'h' }, askT: { leave: 'hub' }, notKept: 'NOT KEPT', inSeq: 'seq', doLeave: 'Leave', toK: {}, whereH: () => 'where' };
+  const asked = (me, other, isGuest, clock = 60) => {
+    const els = {}, $ = (id) => (els[id] ||= {});
+    const P = { id: 'p', leg: 1, ...me }, O = { id: 'o', name: 'Rival', ...other };
+    const race = { multi: true, player: P, humans: [P, O], clock, course: { legs: ['start', 'w'] }, standings: () => [P, O], distToNext: () => 10 };
+    const t = (k, ...a) => (typeof words[k] === 'function' ? words[k](...a) : words[k]);
+    new Function('race', 'mx', 't', 'LANG', 'ord', 'legKey', '$', 'pauseEl', 'confirmEl', `${between('let confirmDo = null;', "$('#pResume')")}; ask('leave');`)(race, { isGuest }, t, 'en', (n) => n, () => 'w', $, {}, {});
+    return els['#cTxt'].textContent;
+  };
+  assert.equal(asked({}, {}, false), 'HOST');
+  assert.equal(asked({ done: true }, {}, false), 'HOST', 'the host home too: the race lives in her tab');
+  assert.equal(asked({}, {}, true), 'GUEST Rival');
+  assert.equal(asked({}, {}, true, -30), 'GUEST Rival', 'in the start sequence too');
+  assert.equal(asked({}, { bfd: true }, true), 'GUEST null', 'a boat out herself wins nothing');
+  assert.equal(asked({ done: true }, {}, true), 'HOME');
+  const ui = readFileSync(new URL('../public/game/match-ui.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(ui, /mAsk|askLeave/);
+  assert.doesNotMatch(mainSrc, /askLeave/);
 });
