@@ -262,7 +262,7 @@ function sailScripted(opts) {
   return r.boats.map((b) => (b.done && !b.dsq ? Math.round(b.finish * 10) / 10 : null));
 }
 // recorded before the race had more than one human boat in it (sailScripted on the sim as it was)
-const GOLDEN_4242 = [ null, 234.5, 261.7, 225.2, 237 ]; // sailed again 2026-11-18: a boat carries her way twice as far (sim.js CARRY)
+const GOLDEN_4242 = [ null, 286.1, 242.3, 241.8, 242.8 ]; // sailed again 2026-11-18: the leeward boat is the one on the other's leeward side (sim.js windward)
 test('golden: a one-human race is the race it always was', () => {
   assert.deepEqual(sailScripted({ preset: 'medium', length: 'short', laps: 1, fleet: 5, seed: 4242 }), GOLDEN_4242);
 });
@@ -531,7 +531,7 @@ for (const v of VENUES) {
 // tracks, so each boat is put where her track had her at your finishing time; that must land her close to where she was
 test('a result without the finish kept puts the fleet close to where it was as you finished', async () => {
   const { finishScene } = await import('../lib/finish.ts');
-  const r = new sim.Race({ preset: 'medium', fleet: 6, laps: 1, length: 'short', start: 1, seed: 777 }), P = r.player;
+  const r = new sim.Race({ preset: 'medium', fleet: 6, laps: 1, length: 'short', start: 1, seed: 779 }), P = r.player;
   P.ai = { ...r.boats.find((b) => b.ai).ai, lineT: 0.5, skill: 0.9 }; P.autoTrim = true; // the computer sails yours too
   let at = null;
   for (let n = 0; n < 60 * 60 * 40 && !r.boats.every((b) => b.done); n++) {

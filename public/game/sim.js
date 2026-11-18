@@ -1160,8 +1160,13 @@ export class Race {
     if (sp !== sq) return { giver: sp < 0 ? p : q, rule: '10' };
     // same tack: not overlapped → the boat clear astern keeps clear; overlapped → the windward boat
     if (!this.overlapped(p, q)) return { giver: this.clearAhead(p, q) === p ? q : p, rule: '12' };
-    const ux = Math.sin(p.wdir), uz = -Math.cos(p.wdir); // towards the wind
-    return { giver: p.x * ux + p.z * uz > q.x * ux + q.z * uz ? p : q, rule: '11' };
+    return { giver: this.windward(p, q), rule: '11' };
+  }
+  // of two boats on the same tack, the one on the other's windward side: square to their course, as the rules define it.
+  // (Measured along the wind, a leeward boat a little ahead on a beat, or a little behind on a run, came out to windward)
+  windward(p, q) {
+    const c = p.h + wrap(q.h - p.h) / 2; // their mean course; her starboard side lies along (cos c, sin c)
+    return ((q.x - p.x) * Math.cos(c) + (q.z - p.z) * Math.sin(c)) * tackOf(p) > 0 ? q : p;
   }
   // Each step, for the boats near each other: who holds right of way, and how she came by it. Rule 15: a boat that
   // gets it through her own action (finishing a tack or gybe onto it, or sailing up from clear astern into a leeward

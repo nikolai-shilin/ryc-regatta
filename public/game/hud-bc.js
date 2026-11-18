@@ -407,6 +407,7 @@ const CSS = `
 .b-ump .n-m { display: flex; align-items: baseline; gap: var(--s-2); letter-spacing: var(--ls-name); }
 .b-ump .b-me { color: var(--you); } .b-ump .b-me:empty { display: none; }
 .b-ump .b-umpr { font: 500 var(--fs-body)/1.3 var(--sans); color: var(--ink-2); }
+.b-ump.owed .b-timer { display: none; } /* it stays until the turn is done: nothing is running down */
 .b-timer { height: 3px; background: var(--w-10); }
 .b-timer > i { display: block; height: 100%; background: var(--w-62); }
 /* a computer skipper's level on her row of the board: four pips, lit to her level, and the word (on a phone the pips) */
@@ -877,7 +878,8 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   const legOf = new Map(), atMark = [];
   // the umpire's card and the split at a mark, while they show (seconds left); the wind's first reading, the start's
   // call as last made
-  let umpT = 0, spl = null, wind0 = null, burnK = null;
+  // (a penalty of yours holds it until the turn is done: umpOwes, it is yours to do; umpSeen, the boat has been seen owing it)
+  let umpT = 0, umpOwes = false, umpSeen = false, spl = null, wind0 = null, burnK = null;
   // a place won or lost: the order as last called (your index, the boats ahead of you) and a new place while it holds
   let mvBase = null, mvHold = null;
   const UMP_S = 7, SPLIT_S = 8;
@@ -953,8 +955,16 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       flash(split, 'on', 4800);
     }
     if (spl) markSplitShow(race, c, P, dt);
-    // the umpire's card runs down, then goes
-    if (umpT > 0) { umpT -= dt; U.bar.style.width = `${(clamp(umpT / UMP_S, 0, 1) * 100).toFixed(1)}%`; if (umpT <= 0) ump.hidden = true; }
+    // the umpire's card: a penalty of yours stays up, with the rule you broke, until you have done the turn (what is left
+    // of it is on the chip below); any other call runs down, then goes
+    if (umpT > 0) {
+      const owing = umpOwes && !!P.pen && !done;
+      if (owing) umpSeen = true;
+      ump.classList.toggle('owed', owing);
+      if (!owing) umpT = umpSeen ? 0 : umpT - dt;
+      U.bar.style.width = `${(clamp(umpT / UMP_S, 0, 1) * 100).toFixed(1)}%`;
+      if (umpT <= 0) ump.hidden = true;
+    }
     // the finish
     if (done && !wasDone) { txt(q(fin, '.k'), P.out ? L.outDsq : L.finished); txt(q(fin, 'b'), P.dsq ? 'DSQ' : `${L.ord(P.place)} · ${fmt(P.finish)}`); fin.classList.add('on'); }
     if (!done) fin.classList.remove('on');
@@ -1349,9 +1359,11 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
 
   // the umpire's call on a foul that involves you (main.js hands over the race's message: 'fouled', you fouled a.who;
   // 'theyFouled', a.who fouled you; 'touched', you touched a mark): who takes the penalty, one turn (a tack and a gybe,
-  // rule 44.2), the rule in a sentence; a timer runs down and it goes
+  // rule 44.2), the rule in a sentence. Yours stays until you have done the turn (update); the other boat's runs down and goes
   function umpire(key, a = {}) {
     const race = getRace(), P = race.player, mine = key !== 'theyFouled';
+    if (!mine && umpOwes && umpT > 0 && P.pen) return; // the rule you are still answering for stays on the card
+    umpOwes = mine; umpSeen = false;
     const b = mine ? P : race.boats.find((x) => x.name === a.who), you = b === P;
     const rule = key === 'touched' ? '31' : String(a.rule ?? '');
     txt(U.nm, `${you ? sailNo() : b ? b.name : a.who || ''} · ${L.oneTurn}`);
