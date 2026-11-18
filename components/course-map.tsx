@@ -15,7 +15,10 @@ type Props = {
 const HULL = 10.45, ZONE = 3 * HULL; // the JPK 1050's length: the zone is three of them
 // drawn as the race's own course map draws (public/game/course-map.js, main.js drawMap): the broadcast's tokens, with the
 // values they have there for where a page doesn't give them
-const GROUND = '#070d16', BUOY = '#ff7a1a', YOU = '#3db8ff', GOLD = '#f5c400', LIVE = '#ff3b30', INK_ON = '#04121e';
+const GROUND = '#070d16', BUOY = '#ff7a1a', YOU = '#3db8ff', GOLD = '#f5c400', LAY = 'rgba(255,212,0,0.6)', LIVE = '#ff3b30', INK_ON = '#04121e';
+// every line of the course in one dash, as on the water and the race's map (LINE_DASH): the start and finish lines gold,
+// the laylines yellow, the distance lines and the zones white
+const DASH = '4 4';
 const w = (a: number) => `rgba(255,255,255,${a})`;
 const font = { fontFamily: "var(--cond, 'Sofia Sans Condensed'), 'Arial Narrow', sans-serif", fontWeight: 600, letterSpacing: '1.2px' } as const;
 
@@ -67,7 +70,7 @@ export function CourseMap({ lang, geo, preset, W, H, className, route, fleet, tr
       </g>
     );
   };
-  // the laylines to the windward mark, for the course's wind: dashed, faint, down to the start line
+  // the laylines to the windward mark, for the course's wind: yellow, down to the start line
   const lay = (M[1] - Wm[1]) / Math.cos(a);
   const label = ru
     ? `Дистанция сверху, в масштабе: лавировка ${m(beat)}, стартовая линия ${m(lineLen)}, ворота ${m(gateW)}`
@@ -86,16 +89,16 @@ export function CourseMap({ lang, geo, preset, W, H, className, route, fleet, tr
         <rect width={W} height={H} fill={GROUND} />
         <rect width={W} height={H} fill={`url(#gr${id})`} />
 
-        <g stroke={w(0.35)} strokeWidth={1.2} strokeDasharray="4 4">
+        <g stroke={LAY} strokeWidth={1.5} strokeDasharray={DASH}>
           {[-1, 1].map((sd) => <path key={sd} d={`M${X(Wm[0])} ${Z(Wm[1])} L${X(Wm[0] + sd * lay * Math.sin(a))} ${Z(Wm[1] + lay * Math.cos(a))}`} />)}
         </g>
         {ladder.map((d) => {
           const z = Wm[1] + d, hw = Math.min(260, 30 + d * 0.95);
-          return <path key={d} d={`M${X(Wm[0] - hw)} ${Z(z)} H${X(Wm[0] + hw)}`} stroke={w(0.14)} strokeWidth={1} />;
+          return <path key={d} d={`M${X(Wm[0] - hw)} ${Z(z)} H${X(Wm[0] + hw)}`} stroke={w(0.25)} strokeWidth={1} strokeDasharray={DASH} />;
         })}
         {/* the zones where mark-room counts (rule 18): the gate and the marks reached off the wind, none at the
             windward mark (a beat) or a finish line */}
-        {[...geo.gate, ...[Wg, M2, Off].filter((p): p is XZ => !!p)].map((p, i) => <circle key={i} cx={X(p[0])} cy={Z(p[1])} r={ZONE * s} fill="none" stroke={w(0.25)} strokeDasharray="2 3" />)}
+        {[...geo.gate, ...[Wg, M2, Off].filter((p): p is XZ => !!p)].map((p, i) => <circle key={i} cx={X(p[0])} cy={Z(p[1])} r={ZONE * s} fill="none" stroke={w(0.25)} strokeDasharray={DASH} />)}
 
         {route && (
           <g fill="none" stroke={YOU} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round">
@@ -116,7 +119,7 @@ export function CourseMap({ lang, geo, preset, W, H, className, route, fleet, tr
         {(tracks || []).filter((t) => t.me).map((t, i) => <path key={i} d={path(t.pts)} fill="none" stroke={YOU} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />)}
 
         {/* the start line, and a finish line of its own, in the broadcast's gold */}
-        <g stroke={GOLD} strokeWidth={2}>
+        <g stroke={GOLD} strokeWidth={2} strokeDasharray={DASH}>
           <path d={`M${X(geo.pin[0])} ${Z(geo.pin[1])} L${X(geo.committee[0])} ${Z(geo.committee[1])}`} />
           {F && <path d={`M${X(F[0][0])} ${Z(F[0][1])} L${X(F[1][0])} ${Z(F[1][1])}`} />}
         </g>

@@ -4,7 +4,7 @@ import { World, defaultQuality, ladderStep, beatOf, beatFrom, zoneMarks } from '
 import { raceStarted, raceFinished, raceResult, perfSetup, perfFrame, statsContext, raceIncident, raceEnded, visitSend } from './stats.js';
 import { initExtras, onStart, onFrame, drill, drillSettings } from './extras.js'; // the ghost, the drills, the analytics
 import { createHud } from './hud-bc.js';
-import { mapPalette, placeLabels } from './course-map.js';
+import { LINE_DASH, mapPalette, placeLabels } from './course-map.js';
 import { LOOKS, playerLook, lookFrom } from './yacht.js';
 const flagCode = (src) => { const m = typeof src === 'string' && /\/flags\/([a-z]{2}(?:-[a-z]+)?)\.svg$/.exec(src); return m ? m[1] : null; }; // '/flags/gb.svg' → 'gb'
 import { VENUE, venueById, laidLength, lengthOffered } from './venues.js';
@@ -1904,26 +1904,28 @@ function drawMap(ctx, size, full) {
     ctx.beginPath(); ctx.ellipse(X(g.x), Z(g.z), g.r * s, g.r * 1.35 * s, W, 0, 7); ctx.fill(); // longer down the wind than across
   }
   ctx.globalAlpha = 1;
+  // the course's lines as on the water (world.js): every one in the same dash, each kind in its colour, the start and
+  // finish lines gold, the laylines yellow, the distance lines and the zones white (components/course-map.tsx alike)
   // laylines to the beat's mark, for the wind and current now (off a beat, the last beat's, as the ladder below)
   const onBeat = isBeat(c, P.leg), aim = legAim(c, beatOf(c, P.leg));
+  ctx.setLineDash(LINE_DASH);
   if (onBeat || full) {
-    ctx.strokeStyle = INK.w35; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = INK.lay; ctx.lineWidth = 1.5;
     const up = beatAngle(race.wind.p.tws) * D2R;
     for (const sd of [-1, 1]) {
       const hd = W + sd * up, L = 600;
       ctx.beginPath(); ctx.moveTo(X(aim.x), Z(aim.z)); ctx.lineTo(X(aim.x - Math.sin(hd) * L), Z(aim.z + Math.cos(hd) * L)); ctx.stroke();
     }
-    ctx.setLineDash([]);
   }
   ctx.strokeStyle = INK.gold; ctx.lineWidth = 2; // the start line, and a finish line of its own, in the broadcast's gold
   for (const [a, b] of [[c.pin, c.committee], ...(c.finish ? [[c.finish.a, c.finish.b]] : [])]) { ctx.beginPath(); ctx.moveTo(X(a.x), Z(a.z)); ctx.lineTo(X(b.x), Z(b.z)); ctx.stroke(); }
-  if (opts.guides) { // the distance lines across the beat, as on the water, every 100 m here
-    const j = beatOf(c, P.leg), m = legAim(c, j), beat = beatFrom(c, j).z - m.z, st = Math.max(100, ladderStep(beat));
-    ctx.strokeStyle = INK.w14; ctx.lineWidth = 1;
+  if (opts.guides) { // the distance lines across the beat, as on the water
+    const j = beatOf(c, P.leg), m = legAim(c, j), beat = beatFrom(c, j).z - m.z, st = ladderStep(beat);
+    ctx.strokeStyle = INK.w25; ctx.lineWidth = 1;
     for (let d = st; d < beat - 15; d += st) { const z = m.z + d, hw = Math.min(260, 30 + d * 0.95); ctx.beginPath(); ctx.moveTo(X(m.x - hw), Z(z)); ctx.lineTo(X(m.x + hw), Z(z)); ctx.stroke(); }
   }
   const next = legTargets(c, P.leg), inZone = hasZone(c, P.leg) ? next : [];
-  ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
+  ctx.lineWidth = 1;
   for (const m of zoneMarks(c)) { // the three-length zone (none at a mark reached on a beat: no mark-room there)
     ctx.strokeStyle = inZone.includes(m) ? INK.w78 : INK.w25;
     ctx.beginPath(); ctx.arc(X(m.x), Z(m.z), (race.zone ?? ZONE) * s, 0, 7); ctx.stroke();

@@ -3,6 +3,7 @@
 
 // the tokens the map draws in (public/ui/tokens.css), with their values for when the page can't give them
 export const MAP_TOKENS = {
+  lay: ['--lay', 'rgba(255, 212, 0, 0.6)'],
   buoy: ['--buoy', '#ff7a1a'], you: ['--you', '#3db8ff'], gold: ['--gold', '#f5c400'], live: ['--live', '#ff3b30'],
   inkOn: ['--ink-on', '#04121e'], ink: ['--ink', '#ffffff'], panel: ['--panel', 'rgba(5, 10, 18, 0.88)'],
   w06: ['--w-06', 'rgba(255, 255, 255, 0.06)'], w10: ['--w-10', 'rgba(255, 255, 255, 0.1)'], w14: ['--w-14', 'rgba(255, 255, 255, 0.14)'],
@@ -10,6 +11,9 @@ export const MAP_TOKENS = {
   w62: ['--w-62', 'rgba(255, 255, 255, 0.62)'], w78: ['--w-78', 'rgba(255, 255, 255, 0.78)'], w90: ['--w-90', 'rgba(255, 255, 255, 0.9)'],
   cond: ['--cond', "'Sofia Sans Condensed', 'Arial Narrow', sans-serif"],
 };
+// the one dash every line of the course is drawn in on the map, as the water's 5 m dash (world.js); the site's course
+// map (components/course-map.tsx) draws its lines in it too
+export const LINE_DASH = [4, 4];
 // the map's palette, read once (a canvas can't use CSS variables): `read` gives a variable's value, '' when unset
 export function mapPalette(read = () => '') {
   const o = {};

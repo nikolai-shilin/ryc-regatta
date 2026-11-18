@@ -423,10 +423,12 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
-// every line drawn on the water — the start line, the distance lines, the laylines, the zones round the marks — looks
-// the same: white dashes half a metre wide, one every 5 m, faint enough that the sea reads through them
-const LINE_W = 0.5, DASH = 5, DASH_ON = 0.6, LINE_A = 0.2;
-let dashMat = null;
+// every line drawn on the water — the start and finish lines, the distance lines, the laylines, the zones round the
+// marks — is the same dash: half a metre wide, one every 5 m, faint enough that the sea reads through it. Each kind has
+// its colour, the one the course maps draw it in too (main.js drawMap, components/course-map.tsx): the start and finish
+// lines gold and the brightest, the laylines yellow, the distance lines and the zones white
+const LINE_W = 0.5, DASH = 5, DASH_ON = 0.6, LINE_A = 0.2, GOLD_A = 0.42;
+let dashMat = null, goldMat = null; // the gold one: the start and finish lines'
 function lineMat() { // one material for all the straight lines; their UVs count in dashes
   if (dashMat) return dashMat;
   const cv = document.createElement('canvas'); cv.width = 64; cv.height = 4;
@@ -1536,9 +1538,10 @@ export class World {
       b.hulls ||= [{ x: 0, loa: COMMITTEE_L }];
       b.root.userData.boat = b; b.root.rotation.y = -W0; add(b.root, hull); return b;
     };
-    // a line, as a row of floating dashes
+    // the start or finish line, as a row of floating dashes in gold
+    goldMat ||= Object.assign(lineMat().clone(), { opacity: GOLD_A }); goldMat.color.set('#f5c400');
     const dashes = (a, b) => {
-      const m = new THREE.Mesh(lineStrip(Math.hypot(b.x - a.x, b.z - a.z)), lineMat());
+      const m = new THREE.Mesh(lineStrip(Math.hypot(b.x - a.x, b.z - a.z)), goldMat);
       m.rotation.y = -Math.atan2(b.z - a.z, b.x - a.x); m.position.set((a.x + b.x) / 2, 0.7, (a.z + b.z) / 2);
       g.add(m); return m;
     };

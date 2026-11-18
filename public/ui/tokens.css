@@ -57,6 +57,7 @@
   --down: #ff8a3d;     /* losing ground, work on it */
   --live: #ff3b30;     /* live, umpire, penalty */
   --buoy: #ff7a1a;     /* the marks, as they look on the water */
+  --lay: rgba(255, 212, 0, 0.6);           /* the laylines on the course maps, yellow as on the water */
   --scrim: rgba(3, 8, 14, 0.6);            /* over a photo behind text */
   --blur: blur(16px) saturate(1.2);        /* behind every panel over a photo */
 
