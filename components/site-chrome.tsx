@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import Link from 'next/link';
 import type { Lang, T } from '@/lib/lang';
 import { SITE, jsonLd, langUrl } from '@/lib/seo';
@@ -73,30 +73,60 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
   );
 }
 
-// The site's footer, one bar as the broadcast's: who makes it, a short row of links (the reading pages, your account or
-// the way to sign in, RYC's own sites), and the language switch; under them, that the game has nothing to do with the
-// America's Cup, whose boat it sails (the AC75).
+function FootGroup({ title, children }: { title: string; children: ReactNode }) {
+  return <div className="hm-foot-g"><h2 className="hm-foot-h">{title}</h2><ul>{children}</ul></div>;
+}
+function FootLink({ href, only, children }: { href: string; only?: 'if-guest'; children: ReactNode }) {
+  return <li className={only}><Link href={href}>{children}</Link></li>;
+}
+
+// The site's footer, the map of the site: the name, who makes it and the language switch, then every page that stands
+// on its own in five columns (a venue, a yacht or a guide is found from its list); under them, that the game has nothing
+// to do with the America's Cup, whose boat it sails (the AC75). Your game follows the menu: signed in, your name opens
+// the settings; a guest gets Sign in and Settings.
 export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) {
   return (
     <div className="hm-page hm-foot-wrap">
       <footer className="hm-foot">
-        <span className="hm-foot-by">{t('Up and down · RYC race office', 'Up and down · офис регаты RYC')}</span>
-        <nav className="hm-foot-links" aria-label={t('More', 'Ещё')}>
-          <Link href="/yachts">{t('The yachts', 'Яхты')}</Link>
-          <Link href="/venues">{t('The venues', 'Акватории')}</Link>
-          <Link href="/players">{t('The players', 'Игроки')}</Link>
-          <Link href="/help">{t('How to play', 'Как играть')}</Link>
-          <Link href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
-          <Link href="/race/drills">{t('Drills', 'Тренировки')}</Link>
-          <Link href="/players?me=1">{t('Your player card', 'Твоя карточка игрока')}</Link>
-          <Link href="/faq">{t('Questions', 'Вопросы')}</Link>
-          <Link href="/social">{t('Follow the game', 'Игра в соцсетях')}</Link>
-          <Link href="/sponsorship">{t('Sponsorship', 'Спонсорство')}</Link>
-          <Link className="if-me me-name" href="/settings" /><Link className="if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link>
-          <a href="https://www.rycrentals.com/">rycrentals.com</a>
-          <a href="https://www.rycsailing.com/">rycsailing.com</a>
-        </nav>
+        <div className="hm-foot-id">
+          <Link className="hm-brand" href="/" aria-label="RYC · Up and down"><Logo /><span className="hm-brand-t">Up and down</span></Link>
+          <span className="hm-foot-by">{t('RYC race office', 'Офис регаты RYC')}</span>
+        </div>
         <Langs lang={lang} back={back} />
+        <nav className="hm-foot-map" aria-label={t('All pages', 'Все страницы')}>
+          <FootGroup title={t('Race', 'Гонки')}>
+            <FootLink href="/race">{t('Today’s race', 'Гонка дня')}</FootLink>
+            <FootLink href="/race/free">{t('Free race', 'Свободная гонка')}</FootLink>
+            <FootLink href="/match/new">{t('1-on-1', '1 на 1')}</FootLink>
+            <FootLink href="/race/drills">{t('Drills', 'Тренировки')}</FootLink>
+          </FootGroup>
+          <FootGroup title={t('Explore', 'Мир игры')}>
+            <FootLink href="/race/rating">{t('Rating', 'Рейтинг')}</FootLink>
+            <FootLink href="/players">{t('Players', 'Игроки')}</FootLink>
+            <FootLink href="/venues">{t('Venues', 'Акватории')}</FootLink>
+            <FootLink href="/yachts">{t('Yachts', 'Яхты')}</FootLink>
+          </FootGroup>
+          <FootGroup title={t('Learn', 'Обучение')}>
+            <FootLink href="/help">{t('How to play', 'Как играть')}</FootLink>
+            <FootLink href="/learn">{t('Learn to race', 'Учись гоняться')}</FootLink>
+            <FootLink href="/learn/glossary">{t('Glossary', 'Словарь')}</FootLink>
+            <FootLink href="/iyt">{t('Exam practice', 'Подготовка к экзамену')}</FootLink>
+            <FootLink href="/faq">{t('Questions', 'Вопросы')}</FootLink>
+          </FootGroup>
+          <FootGroup title={t('Your game', 'Твоя игра')}>
+            <li className="if-me"><Link className="me-name" href="/settings" /></li>
+            <FootLink href="/sign-in" only="if-guest">{t('Sign in', 'Войти')}</FootLink>
+            <FootLink href="/boat">{t('Your boat', 'Твоя яхта')}</FootLink>
+            <FootLink href="/players?me=1">{t('Your player card', 'Твоя карточка игрока')}</FootLink>
+            <FootLink href="/settings" only="if-guest">{t('Settings', 'Настройки')}</FootLink>
+          </FootGroup>
+          <FootGroup title={t('More', 'Ещё')}>
+            <FootLink href="/social">{t('Follow the game', 'Игра в соцсетях')}</FootLink>
+            <FootLink href="/sponsorship">{t('Sponsorship', 'Спонсорство')}</FootLink>
+            <li><a href="https://www.rycrentals.com/">rycrentals.com</a></li>
+            <li><a href="https://www.rycsailing.com/">rycsailing.com</a></li>
+          </FootGroup>
+        </nav>
         <p className="hm-foot-note">{t('This simulator is an independent project and is not affiliated with, sponsored by, or endorsed by America’s Cup or its organizers.',
           'Этот симулятор — независимый проект, не связанный с America’s Cup и его организаторами, не спонсируемый и не одобренный ими.')}</p>
       </footer>
