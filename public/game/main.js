@@ -145,7 +145,7 @@ const T = {
     roundedTri: 'Mark rounded — bear away onto the reach to the wing mark', roundedWing: 'Wing mark rounded — gybe onto the broad reach',
     roundedTrap: 'Mark 1 rounded — bear away onto the broad reach to mark 2', roundedMark2: 'Mark 2 rounded — bear away onto the run to the gate',
     roundedWlu: 'Mark rounded — bear away to the offset mark', roundedOffset: 'Offset mark rounded — bear away, kite up', gateFinish: 'Through the gate — now for the finish',
-    seaBreeze: 'Sea breeze today — it will build and swing right as you race', kiteWrap: 'The kite wrapped in the gybe — it has to come down', kiteGybed: 'Kite gybed', takeoff: 'Foiling!', splashdown: 'Off the foils — build speed to take off again',
+    seaBreeze: 'Sea breeze today — it will build and swing right as you race', seaBreezeSouth: 'Sea breeze today — it will build and swing left as you race', thermalBreeze: 'Thermal breeze today — it will build and swing right as you race', kiteWrap: 'The kite wrapped in the gybe — it has to come down', kiteGybed: 'Kite gybed', takeoff: 'Foiling!', splashdown: 'Off the foils — build speed to take off again',
     crashGybe: 'Crash gybe! Too far by the lee — the boom slammed across', deathRoll: 'Death roll! By the lee with the kite up — she rolled and rounded up',
     byLee: (d) => `By the lee ${d}° — gybe or head up`, foot: 'Slow — foot a few degrees to build speed', waveTip: 'Waves: luff up the face, bear away down the back', ocsS: 'OCS — return below the line',
     target: 'target', vmg: 'VMG', line: 'line', toLine: 'to line', favPin: 'pin end favoured', favBoat: 'boat end favoured', square: 'line square',
@@ -251,7 +251,7 @@ const T = {
     roundedTri: 'Знак пройден — уваливайся на галфвинд к боковому знаку', roundedWing: 'Боковой знак пройден — поворот фордевинд на бакштаг',
     roundedTrap: 'Знак 1 пройден — уваливайся на бакштаг к знаку 2', roundedMark2: 'Знак 2 пройден — уваливайся на фордевинд к воротам',
     roundedWlu: 'Знак пройден — уваливайся к отбойнику', roundedOffset: 'Отбойник пройден — уваливайся, ставь генакер', gateFinish: 'Ворота пройдены — теперь на финиш',
-    seaBreeze: 'Сегодня бриз — он будет усиливаться и смещаться вправо', kiteWrap: 'Генакер закрутился на повороте — его надо убрать', kiteGybed: 'Генакер переброшен', takeoff: 'Вышли на крылья!', splashdown: 'Сели в воду — разгоняйся, чтобы снова выйти на крылья',
+    seaBreeze: 'Сегодня бриз — он будет усиливаться и смещаться вправо', seaBreezeSouth: 'Сегодня бриз — он будет усиливаться и смещаться влево', thermalBreeze: 'Сегодня термический ветер — он будет усиливаться и смещаться вправо', kiteWrap: 'Генакер закрутился на повороте — его надо убрать', kiteGybed: 'Генакер переброшен', takeoff: 'Вышли на крылья!', splashdown: 'Сели в воду — разгоняйся, чтобы снова выйти на крылья',
     crashGybe: 'Самопроизвольный фордевинд! Увалился дальше фордевинда — гик перебросило', deathRoll: 'Брочинг на ветер! С генакером на «неправильном» борту — её положило и привело',
     byLee: (d) => `Увалился дальше фордевинда на ${d}° — делай фордевинд или приводись`, foot: 'Мало скорости — уваливайся на пару градусов, разгонись', waveTip: 'Волна: приводись на склон, уваливайся с гребня', ocsS: 'Фальстарт — вернись за линию',
     target: 'цель', vmg: 'VMG', line: 'линия', toLine: 'до линии', favPin: 'выгоднее у знака', favBoat: 'выгоднее у судна', square: 'линия ровная',
@@ -1223,7 +1223,7 @@ let race = null, running = false, paused = false, menuChanged = false, hints = {
 function newRace() {
   if (MATCH) { matchView(); return; }
   const s = settings();
-  race = new Race({ preset: s.preset, laps: s.laps, autoTrim: opts.autoTrim === 1, start: s.start, current: !!s.current, fleet: s.fleet, length: s.length, course: s.course, bias: s.bias, level: s.level, seed: s.daily ? s.seed : undefined });
+  race = new Race({ preset: s.preset, laps: s.laps, autoTrim: opts.autoTrim === 1, start: s.start, current: !!s.current, fleet: s.fleet, length: s.length, course: s.course, bias: s.bias, level: s.level, seed: s.daily ? s.seed : undefined, daytime: s.daily ? 'any' : s.daytime });
   race.settings = s;
   race.player.name = t('you');
   world.setRace(race);
@@ -1809,7 +1809,7 @@ function handleMessages() {
     else if (m.key === 'aground') { score.sting('hit'); hint('aground', t('aground'), 3); haptic('heavy'); skipper.shout('aground'); }
     else if (m.key === 'hail') { const h = t('hail' + a.rule), who = race.boats.find((b) => b.name === a.who); toast(`${a.who}: “${h}”`, 2.2); skipper.cue('hail' + a.rule, who, true); asides.hail(); haptic('warn'); }
     else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); skipper.cue('hail' + a.rule, null, true); } }
-    else if (m.key === 'seaBreeze') { toast(t('seaBreeze'), 5); committee.call('cBreeze', 20); }
+    else if (m.key === 'seaBreeze' || m.key === 'seaBreezeSouth' || m.key === 'thermalBreeze') { toast(t(m.key), 5); if (m.key === 'seaBreeze') committee.call('cBreeze', 20); } // (the committee's recording says a sea breeze, veering right)
     else if (m.key === 'genRecall') { score.sting('hit'); toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(false, null, 1.25); haptic('warn'); committee.stop(); committee.call('cGenRecall'); skipper.shout('lost'); }
     else if (m.key === 'prepU' || m.key === 'prepB' || m.key === 'ufd' || m.key === 'bfd') {
       toast(t(m.key), 4);

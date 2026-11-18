@@ -5,6 +5,7 @@
 // nation: the country's letters as a boat from there carries them on her sail (lib/flags.ts ioc), shown after the
 // venue's name on the race pages.
 // from: the day a venue added later joins today's races (lib/race.ts dailyVenue), as in the game's list.
+// runs: a river or a strait, whose water runs in every race whether the current is on or off, as in the game's list.
 export type VenueId = 'gocek' | 'cowes' | 'newport' | 'sydney' | 'kiel' | 'trieste' | 'porto-cervo' | 'saint-tropez' | 'antigua' | 'auckland'
   | 'san-francisco' | 'valencia' | 'barcelona' | 'palma' | 'marstrand' | 'bermuda' | 'enoshima' | 'weymouth' | 'marseille' | 'rio' | 'garda' | 'istanbul'
   | 'st-petersburg' | 'batumi' | 'scheveningen' | 'hong-kong' | 'cape-town' | 'athens' | 'marmaris' | 'fethiye'
@@ -12,16 +13,16 @@ export type VenueId = 'gocek' | 'cowes' | 'newport' | 'sydney' | 'kiel' | 'tries
   | 'naples' | 'los-angeles' | 'les-sables' | 'dubai' | 'miami' | 'split' | 'monaco' | 'fremantle' | 'sint-maarten' | 'phuket';
 type Pair = [string, string]; // English, Russian
 
-export const VENUES: { id: VenueId; nation: string; name: Pair; place: Pair; wind: Pair; skip?: string[]; from?: string; about: Pair }[] = [
+export const VENUES: { id: VenueId; nation: string; name: Pair; place: Pair; wind: Pair; skip?: string[]; from?: string; runs?: boolean; about: Pair }[] = [
   { id: 'gocek', nation: 'TUR', name: ['Göcek', 'Гёчек'], place: ['Turkey', 'Турция'], wind: ['SSW', 'ЮЮЗ'],
     about: ['Pine-clad hills and the gulets of Skopea Marina, where the game began.', 'Сосновые холмы и гулеты марины Скопеа, где игра началась.'] },
   { id: 'cowes', nation: 'GBR', name: ['Cowes', 'Каус'], place: ['Isle of Wight, UK', 'Остров Уайт, Великобритания'], wind: ['SW', 'ЮЗ'],
     about: ['The Solent, home of Cowes Week since 1826, in the south-westerly.', 'Пролив Солент, где с 1826 года проходит Неделя Каус, под юго-западным ветром.'] },
-  { id: 'newport', nation: 'USA', name: ['Newport', 'Ньюпорт'], place: ['Rhode Island, USA', 'Род-Айленд, США'], wind: ['SW', 'ЮЗ'],
+  { id: 'newport', nation: 'USA', name: ['Newport', 'Ньюпорт'], place: ['Rhode Island, USA', 'Род-Айленд, США'], wind: ['SSW', 'ЮЮЗ'],
     about: ['The America’s Cup’s home for 53 years, off Castle Hill, with the Newport Bridge behind.', '53 года дом Кубка «Америка». У мыса Касл-Хилл, за кормой — Ньюпортский мост.'] },
   { id: 'sydney', nation: 'AUS', name: ['Sydney', 'Сидней'], place: ['Australia', 'Австралия'], wind: ['NE', 'СВ'],
     about: ['The harbour of the Boxing Day start, in the nor’easter, with the Harbour Bridge up the harbour.', 'Гавань старта 26 декабря, под северо-восточным бризом, вдали — мост Харбор-Бридж.'] },
-  { id: 'kiel', nation: 'GER', name: ['Kiel', 'Киль'], place: ['Germany', 'Германия'], wind: ['W', 'З'],
+  { id: 'kiel', nation: 'GER', name: ['Kiel', 'Киль'], place: ['Germany', 'Германия'], wind: ['WSW', 'ЗЮЗ'],
     about: ['Kieler Woche’s Olympic waters off Schilksee and Laboe, in the westerly.', 'Олимпийская акватория Кильской недели у Шильксе и Лабё, под западным ветром.'] },
   { id: 'trieste', nation: 'ITA', name: ['Trieste', 'Триест'], place: ['Italy', 'Италия'], wind: ['ENE', 'ВСВ'],
     about: ['The gulf of the Barcolana under the karst cliffs, with the bora off the land.', 'Залив Барколаны под карстовыми скалами, с борой, дующей с берега.'] },
@@ -33,7 +34,7 @@ export const VENUES: { id: VenueId; nation: string; name: Pair; place: Pair; win
     about: ['Off English Harbour and Falmouth, in the steady easterly trade wind.', 'У Инглиш-Харбор и Фалмута, под ровным восточным пассатом.'] },
   { id: 'auckland', nation: 'NZL', name: ['Auckland', 'Окленд'], place: ['New Zealand', 'Новая Зеландия'], wind: ['SW', 'ЮЗ'],
     about: ['The City of Sails: the Waitematā off Rangitoto, with the Sky Tower over the city.', 'Город парусов: гавань Уаитемата у вулкана Рангитото, над городом — башня Скай-Тауэр.'] },
-  { id: 'san-francisco', nation: 'USA', name: ['San Francisco', 'Сан-Франциско'], place: ['California, USA', 'Калифорния, США'], wind: ['W', 'З'],
+  { id: 'san-francisco', nation: 'USA', name: ['San Francisco', 'Сан-Франциско'], place: ['California, USA', 'Калифорния, США'], wind: ['WSW', 'ЗЮЗ'],
     about: ['The bay of the 2013 America’s Cup, off the city front and Alcatraz, the Golden Gate to windward.', 'Залив Кубка «Америка» 2013 года, у набережной и Алькатраса, на ветре — мост Золотые Ворота.'] },
   { id: 'valencia', nation: 'ESP', name: ['Valencia', 'Валенсия'], place: ['Spain', 'Испания'], wind: ['ESE', 'ВЮВ'],
     about: ['Off the port of the 2007 America’s Cup, in the afternoon sea breeze.', 'У порта Кубка «Америка» 2007 года, под дневным морским бризом.'] },
@@ -51,19 +52,19 @@ export const VENUES: { id: VenueId; nation: string; name: Pair; place: Pair; win
     about: ['The 2012 Olympic bay, between the Georgian seafront and the Isle of Portland.', 'Олимпийская бухта 2012 года между набережной Уэймута и островом Портленд.'] },
   { id: 'marseille', nation: 'FRA', name: ['Marseille', 'Марсель'], place: ['France', 'Франция'], wind: ['NW', 'СЗ'],
     about: ['The Paris 2024 Olympic waters, under Notre-Dame de la Garde, in the mistral.', 'Олимпийская акватория 2024 года под собором Нотр-Дам-де-ла-Гард, под мистралем.'] },
-  { id: 'rio', nation: 'BRA', name: ['Rio de Janeiro', 'Рио-де-Жанейро'], place: ['Brazil', 'Бразилия'], wind: ['SE', 'ЮВ'],
+  { id: 'rio', nation: 'BRA', name: ['Rio de Janeiro', 'Рио-де-Жанейро'], place: ['Brazil', 'Бразилия'], wind: ['SSE', 'ЮЮВ'],
     about: ['Guanabara Bay of the 2016 Olympics, under Sugarloaf and Christ the Redeemer.', 'Залив Гуанабара Олимпиады 2016 года, под Сахарной Головой и статуей Христа.'] },
   { id: 'garda', nation: 'ITA', name: ['Lake Garda', 'Озеро Гарда'], place: ['Italy', 'Италия'], wind: ['S', 'Ю'],
     about: ['Fresh water under the Alps, off Riva and Torbole, in the afternoon Ora.', 'Пресная вода у подножия Альп, у Ривы и Торболе, под дневным ветром Ора.'] },
-  { id: 'istanbul', nation: 'TUR', name: ['Istanbul', 'Стамбул'], place: ['Turkey', 'Турция'], wind: ['NE', 'СВ'],
+  { id: 'istanbul', nation: 'TUR', name: ['Istanbul', 'Стамбул'], place: ['Turkey', 'Турция'], wind: ['NE', 'СВ'], runs: true,
     about: ['Off Moda at the mouth of the Bosphorus, in the poyraz, the old city’s domes and minarets ashore.', 'У Моды, у входа в Босфор, под северо-восточным пойразом; на берегу — купола и минареты старого города.'] },
-  { id: 'st-petersburg', nation: 'RUS', name: ['St Petersburg', 'Санкт-Петербург'], place: ['Russia', 'Россия'], wind: ['WSW', 'ЗЮЗ'], skip: ['tri:medium', 'tri:long', 'long'], from: '2026-11-20',
+  { id: 'st-petersburg', nation: 'RUS', name: ['St Petersburg', 'Санкт-Петербург'], place: ['Russia', 'Россия'], wind: ['WSW', 'ЗЮЗ'], runs: true, skip: ['tri:medium', 'tri:long', 'long'], from: '2026-11-20',
     about: ['The Neva under the walls of the Peter and Paul Fortress, between the raised bridges, in the westerly off the Gulf.', 'Нева под стенами Петропавловской крепости, между разведёнными мостами, под западным ветром с залива.'] },
   { id: 'batumi', nation: 'GEO', name: ['Batumi', 'Батуми'], place: ['Georgia', 'Грузия'], wind: ['WNW', 'ЗСЗ'], from: '2026-11-20',
     about: ['Batumi bay in the Black Sea’s afternoon breeze, the city and the Alphabetic Tower on the cape, the mountains of Adjara over the coast.', 'Батумская бухта под дневным бризом Чёрного моря: на мысе — город и Башня алфавита, над берегом — горы Аджарии.'] },
   { id: 'scheveningen', nation: 'NED', name: ['Scheveningen', 'Схевенинген'], place: ['The Hague, Netherlands', 'Гаага, Нидерланды'], wind: ['SW', 'ЮЗ'], from: '2026-11-20',
     about: ['The North Sea of the 2023 Sailing World Championships, off the pier and the Kurhaus, in the south-westerly along the dunes.', 'Северное море чемпионата мира 2023 года, у пирса и Курхауса, под юго-западным ветром вдоль дюн.'] },
-  { id: 'hong-kong', nation: 'HKG', name: ['Hong Kong', 'Гонконг'], place: ['China', 'Китай'], wind: ['ENE', 'ВСВ'], from: '2026-11-20',
+  { id: 'hong-kong', nation: 'HKG', name: ['Hong Kong', 'Гонконг'], place: ['China', 'Китай'], wind: ['E', 'В'], from: '2026-11-20',
     about: ['Victoria Harbour between Wan Chai and Tsim Sha Tsui, in the easterly, the towers on both shores and the Peak above.', 'Гавань Виктория между Ваньчаем и Цимшацуем, под восточным ветром; небоскрёбы на обоих берегах, над ними — пик Виктория.'] },
   { id: 'cape-town', nation: 'RSA', name: ['Cape Town', 'Кейптаун'], place: ['South Africa', 'ЮАР'], wind: ['SSE', 'ЮЮВ'], from: '2026-11-20',
     about: ['Table Bay off the V&A Waterfront, in the Cape Doctor blowing off Table Mountain.', 'Столовый залив у набережной Виктории и Альфреда, под ветром «Кейпский доктор» со Столовой горы.'] },

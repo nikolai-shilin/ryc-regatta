@@ -355,8 +355,8 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
       ], tip: t('One side of the course often has more wind for the whole race, in the game too. Find out which on the first beat, and go there on the next.',
         'На одной стороне дистанции ветра часто больше всю гонку — в игре тоже. Выясни на первой лавировке, на какой, и иди туда на следующих.') },
       { id: 'down', h: t('Downwind: gybe on the lifts', 'На попутном: фордевинд на отходе'), p: [
-        t('On the run it works the other way round. A lift makes you head up, away from the mark, to keep the same angle to the wind; gybe and the shift points you at the mark again. On a sea-breeze day the wind also builds and swings right as the race goes on, so the right side of the course often pays.',
-          'На попутном всё наоборот. Отход заставляет приводиться, уходя от знака, чтобы сохранить угол к ветру; сделай фордевинд — и тот же сдвиг снова поведёт тебя к знаку. А в день морского бриза ветер к тому же усиливается и смещается вправо по ходу гонки, так что правая сторона дистанции часто выгоднее.'),
+        t('On the run it works the other way round. A lift makes you head up, away from the mark, to keep the same angle to the wind; gybe and the shift points you at the mark again. On a sea-breeze day the wind also builds and swings right as the race goes on, so the right side of the course often pays (south of the equator it swings left, and the left side does).',
+          'На попутном всё наоборот. Отход заставляет приводиться, уходя от знака, чтобы сохранить угол к ветру; сделай фордевинд — и тот же сдвиг снова поведёт тебя к знаку. А в день морского бриза ветер к тому же усиливается и смещается вправо по ходу гонки, так что правая сторона дистанции часто выгоднее (южнее экватора он смещается влево, и выгоднее левая).'),
       ] },
     ],
     more: [

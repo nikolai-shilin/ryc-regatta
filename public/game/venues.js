@@ -11,6 +11,8 @@
 // a sea without a real tide (the Med, the Baltic, a lake), where the current is the wind's own light surface drift.
 //
 // The set-up page's list of them, with what each is, is lib/venues.ts; npm test keeps the two in step.
+// runs: true, a river or a strait, whose stream runs in every race and not only with the current on (a match excepted)
+// thermal: false, no sea breeze here: the venue's wind is a gradient wind, or blows off the land (sim.js seaBreeze)
 // look: how the land is drawn (skopea.js)
 //   ground: the colours of the hillsides: forest (dark, mid, light), scrub, rock (light, dark), town, shore; sand
 //     (beaches) and grass (lawns, parks, meadows), when not the defaults (skopea.js)
@@ -80,7 +82,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'kiel', name: ['Kiel', 'Киль'], lat: 54.43, lon: 10.205, wind: 250, tz: 2,
+    id: 'kiel', name: ['Kiel', 'Киль'], lat: 54.43, lon: 10.205, wind: 250, tz: 2, thermal: false,
     look: {
       haze: 0.9,
       ground: { forest: ['#2a4424', '#38582c', '#4f7236'], scrub: '#6f8a48', rock: ['#a49c88', '#8c8676'], town: '#8f7f74', shore: '#cbbd98' },
@@ -92,7 +94,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'trieste', name: ['Trieste', 'Триест'], lat: 45.672, lon: 13.728, wind: 70, tz: 2,
+    id: 'trieste', name: ['Trieste', 'Триест'], lat: 45.672, lon: 13.728, wind: 70, tz: 2, thermal: false,
     look: {
       haze: 1.1,
       ground: { forest: ['#33482a', '#46602f', '#5f7a3c'], scrub: '#7f8656', rock: ['#c8c2b2', '#a7a090'], town: '#b0a48e', shore: '#c9c1ad' },
@@ -103,7 +105,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'porto-cervo', name: ['Porto Cervo', 'Порто-Черво'], lat: 41.152, lon: 9.565, wind: 315, tz: 2,
+    id: 'porto-cervo', name: ['Porto Cervo', 'Порто-Черво'], lat: 41.152, lon: 9.565, wind: 315, tz: 2, thermal: false,
     look: {
       haze: 1.35,
       ground: { forest: ['#3e4d2c', '#4f5f34', '#68743f'], scrub: '#7c7a50', rock: ['#c4a58c', '#a08670'], town: '#c2a88a', shore: '#d8c3a4' },
@@ -114,7 +116,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'saint-tropez', name: ['Saint-Tropez', 'Сен-Тропе'], lat: 43.29, lon: 6.67, wind: 280, tz: 2,
+    id: 'saint-tropez', name: ['Saint-Tropez', 'Сен-Тропе'], lat: 43.29, lon: 6.67, wind: 280, tz: 2, thermal: false,
     look: {
       haze: 1.15,
       ground: { forest: ['#2e4626', '#3f5a2e', '#5a733a'], scrub: '#7a7c52', rock: ['#a69a84', '#857b6a'], town: '#b3a088', shore: '#cdbb98' },
@@ -137,7 +139,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'auckland', name: ['Auckland', 'Окленд'], lat: -36.83, lon: 174.815, wind: 225, tz: 13, stream: ['tide', 230, 1.0],
+    id: 'auckland', name: ['Auckland', 'Окленд'], lat: -36.83, lon: 174.815, wind: 225, tz: 13, thermal: false, stream: ['tide', 230, 1.0],
     look: {
       haze: 1.2,
       ground: { forest: ['#24401f', '#335229', '#4a6b34'], scrub: '#6b7a44', rock: ['#5d5a55', '#45433f'], town: '#9a948a', shore: '#b8a888' },
@@ -242,7 +244,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'marseille', name: ['Marseille', 'Марсель'], lat: 43.265, lon: 5.335, wind: 315, tz: 2,
+    id: 'marseille', name: ['Marseille', 'Марсель'], lat: 43.265, lon: 5.335, wind: 315, tz: 2, thermal: false,
     look: {
       haze: 1.2,
       ground: { forest: ['#3a4c2c', '#4a5e34', '#647440'], scrub: '#8a8a5c', rock: ['#d8d2c2', '#b8b0a0'], town: '#c2b8a6', shore: '#d6cfbe' },
@@ -275,7 +277,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'istanbul', name: ['Istanbul', 'Стамбул'], lat: 40.982, lon: 28.992, wind: 35, tz: 3, stream: ['flow', 185, 1.0],
+    id: 'istanbul', name: ['Istanbul', 'Стамбул'], lat: 40.982, lon: 28.992, wind: 35, tz: 3, thermal: false, stream: ['flow', 185, 1.0], runs: true,
     look: {
       haze: 0.8,
       ground: { forest: ['#2e4626', '#3f5a2e', '#5a733a'], scrub: '#7c7e54', rock: ['#b0a690', '#8f8674'], town: '#b2a692', shore: '#bfb39a' },
@@ -289,7 +291,7 @@ export const VENUES = [
   {
     // the Neva under the Peter and Paul Fortress's walls, in the westerly off the Gulf of Finland; today's race comes
     // here from its `from` day (dailyVenue)
-    id: 'st-petersburg', name: ['St Petersburg', 'Санкт-Петербург'], lat: 59.9464, lon: 30.3187, wind: 245, tz: 3, stream: ['flow', 235, 0.9], from: '2026-11-20',
+    id: 'st-petersburg', name: ['St Petersburg', 'Санкт-Петербург'], lat: 59.9464, lon: 30.3187, wind: 245, tz: 3, thermal: false, stream: ['flow', 235, 0.9], runs: true, from: '2026-11-20',
     // the river is too narrow for the triangle's wing mark, and the long course's beat (the medium wind's, some 900 m
     // and wide) has no reach of it between two of the bridges, too low for a mast
     skip: ['tri:medium', 'tri:long', 'long'],
@@ -348,7 +350,7 @@ export const VENUES = [
   },
   {
     // Table Bay off the V&A Waterfront, in the south-easterly Cape Doctor, Table Mountain to windward
-    id: 'cape-town', name: ['Cape Town', 'Кейптаун'], lat: -33.8978, lon: 18.4556, wind: 160, tz: 2, from: '2026-11-20',
+    id: 'cape-town', name: ['Cape Town', 'Кейптаун'], lat: -33.8978, lon: 18.4556, wind: 160, tz: 2, thermal: false, from: '2026-11-20',
     look: {
       haze: 1.15,
       ground: { forest: ['#2f4428', '#41583a', '#5a7046'], scrub: '#7a7a52', rock: ['#a39d92', '#7f7a72'], town: '#aaa498', shore: '#d9d0bc', sand: '#e6dcc4' },
@@ -360,7 +362,7 @@ export const VENUES = [
   },
   {
     // the 2004 Olympic waters in Faliro Bay, in the meltemi off the land, the Parthenon on the Acropolis to windward
-    id: 'athens', name: ['Athens', 'Афины'], lat: 37.9115, lon: 23.6765, wind: 30, tz: 3, from: '2026-11-20',
+    id: 'athens', name: ['Athens', 'Афины'], lat: 37.9115, lon: 23.6765, wind: 30, tz: 3, thermal: false, from: '2026-11-20',
     look: {
       haze: 1.2, // the meltemi's clear air: the Acropolis and Hymettus seen across the bay
       ground: { forest: ['#3a4a2c', '#4c5e36', '#66763f'], scrub: '#8a8458', rock: ['#c2b8a2', '#a09684'], town: '#c4bba8', shore: '#c8bca2' },
@@ -585,7 +587,7 @@ export const VENUES = [
   {
     // the Andaman Sea off Kata and Karon, of the King's Cup, in the winter's north-easterly monsoon: the beaches, the
     // jungle hills and the Big Buddha on Nakkerd Hill to windward
-    id: 'phuket', name: ['Phuket', 'Пхукет'], lat: 7.785, lon: 98.255, wind: 60, tz: 7, stream: ['tide', 350, 0.4], from: '2026-11-20',
+    id: 'phuket', name: ['Phuket', 'Пхукет'], lat: 7.785, lon: 98.255, wind: 60, tz: 7, thermal: false, stream: ['tide', 350, 0.4], from: '2026-11-20',
     look: {
       haze: 0.95,
       ground: { forest: ['#234a22', '#2f602a', '#4a7f36'], scrub: '#5f8a42', rock: ['#9a9080', '#786f62'], town: '#b5ad9c', shore: '#efe4c6', sand: '#f4ecd2', grass: '#5a8f3a' },

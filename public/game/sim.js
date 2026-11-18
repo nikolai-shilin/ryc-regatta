@@ -179,21 +179,24 @@ export const PRESETS = {
 };
 
 // a sea breeze: on a sunny day with a light gradient the land heats up and draws the wind in off the sea. It fills
-// in during the race, building by a third and swinging steadily to the right (veering) by some 15° over twelve
-// minutes, so the right side pays more and more. Not in a strong wind (the gradient wind rules). From its own
-// generator, so the gusts and shifts of a seed stay as they were.
-export function seaBreeze(seed, preset) {
+// in during the race, building by a third and swinging steadily by some 15° over twelve minutes, as the earth's turning
+// bends it: to the right north of the equator (veering), to the left south of it (backing), so that side pays more and
+// more. Not in a strong wind (the gradient wind rules), not where the venue's own wind is a gradient wind or comes off
+// the land (venues.js thermal), and not in a race set for the morning, the evening or sunset: the sun has to have
+// warmed the land (and on a day with one, light.js keeps the sky clear and the hour in the heat of the day). From its
+// own generator, so the gusts and shifts of a seed stay as they were.
+export function seaBreeze(seed, preset, daytime = 'any') {
   const r = rng(seed * 13 + 3); r(); r();
-  return preset !== 'strong' && r() < 0.45;
+  return preset !== 'strong' && VENUE.thermal !== false && !['morning', 'evening', 'sunset'].includes(daytime) && r() < 0.45;
 }
-const SEA_T = 720, SEA_VEER = 15 * D2R;
+const SEA_T = 720, SEA_VEER = (VENUE.lat < 0 ? -15 : 15) * D2R;
 
 export class Wind {
-  constructor(preset, seed = 1, span = 280, wide = 0) {
+  constructor(preset, seed = 1, span = 280, wide = 0, daytime = 'any') {
     this.p = PRESETS[preset] || PRESETS.medium;
     this.span = span; // how far upwind the course goes: the gusts cover it all
     this.wide = wide; // and how far out to the side (a triangle's wing mark)
-    this.sea = seaBreeze(seed, preset);
+    this.sea = seaBreeze(seed, preset, daytime);
     this.rand = rng(seed);
     this.t = 0;
     this.base = 0; // from the north
@@ -841,7 +844,7 @@ export class Race {
   // humans: the boats people sail, in that order; me: the id of the one this screen sails (null: it only watches).
   // match: a match race (Appendix C) between the two humans, `blue` the id of the one at the committee boat's end: up
   // and down twice, the five-minute sequence, no current, two boats, P always
-  constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl', bias: lineBias = null, level = null,
+  constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl', bias: lineBias = null, level = null, daytime = 'any',
     humans = [{ id: 'you', name: 'You' }], me = humans[0].id, match = false, blue = humans[0].id } = {}) {
     this.match = !!match;
     if (match) { fleet = 2; course = 'wl'; laps = 2; start = 5; current = false; }
@@ -858,7 +861,7 @@ export class Race {
     const lay = (shape, beat) => {
       this.course = K === 1 ? makeCourse(laps, beat, bias, fleet, shape) : scaleCourse(makeCourse(laps, beat / K, bias, fleet, shape), K);
       // the gusts cover the course out to the side too: a triangle's wing mark, a trapezoid's gate
-      this.wind = new Wind(preset, seed, beat, shape === 'tri' ? 0.85 * beat : shape === 'trap' ? -Math.min(...this.course.gate.map((g) => g.x)) : 0);
+      this.wind = new Wind(preset, seed, beat, shape === 'tri' ? 0.85 * beat : shape === 'trap' ? -Math.min(...this.course.gate.map((g) => g.x)) : 0, daytime);
       // laid in the venue's water, in the clear nearest the middle of its race area (land.js): the start is at this point
       this.at = placeCourse(this.course, beatAngle(this.wind.p.tws), this.startK);
     };
@@ -895,12 +898,13 @@ export class Race {
     // the current, when there is one, is the venue's own (venues.js stream): its tide along its line, the flood or the
     // ebb; a river's or an ocean current's steady run; or, where the sea has no real tide, the wind's light surface
     // drift, downwind and some 20° to the right of it (to the left south of the equator). Turned into the land's frame,
-    // where the venue's wind is north.
+    // where the venue's wind is north. A river or a strait runs whatever the race's setting (venues.js runs), but for a
+    // match, which is sailed without a current.
     const ca = this.rand() < 0.5 ? 1 : -1, st = VENUE.stream;
     this.stream = st ? st[0] : 'drift';
     this.current = { x: 0, z: 0 };
-    if (current) {
-      const ebb = this.rand() < 0.5, kn = st ? st[2] : SKOPEA.meta.lake ? 0.15 : 0.3;
+    if (current || (VENUE.runs && !match)) {
+      const ebb = current && this.rand() < 0.5, kn = st ? st[2] : SKOPEA.meta.lake ? 0.15 : 0.3; // (drawn only when it was, so a seed's draws keep in step)
       const to = st ? st[1] + (st[0] === 'tide' && ebb ? 180 : 0) : VENUE.wind + 180 + (VENUE.lat < 0 ? -20 : 20);
       const g = (to - (SKOPEA.meta.turn ?? VENUE.wind)) * D2R;
       this.current = { x: Math.sin(g) * kn * KN, z: -Math.cos(g) * kn * KN };
@@ -950,7 +954,7 @@ export class Race {
     this.trackT = 0;
     this.messages = [];
     if (this.prepFlag !== 'P') this.say('prep' + this.prepFlag); // tell the player what the flag means
-    if (this.wind.sea) this.say('seaBreeze'); // the forecast: a sea breeze coming in
+    if (this.wind.sea) this.say(SKOPEA.meta.lake ? 'thermalBreeze' : VENUE.lat < 0 ? 'seaBreezeSouth' : 'seaBreeze'); // the forecast: a sea breeze coming in (on a lake, the valley's thermal)
     this.over = false;
     this.winner = null; this.margin = null; this.forfeited = null; // a match's: the first home (or the one left), by how much
     this.zoneStates = new Map();
