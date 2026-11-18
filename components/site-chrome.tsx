@@ -56,6 +56,7 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
         <nav className="hm-nav" aria-label={t('Main', 'Главное')}>
           <Link className="hm-tab" href="/race" {...cur('race')}>{t('Today’s race', 'Гонка дня')}</Link>
           <Link className="hm-tab" href="/race/free" {...cur('free')}>{t('Free race', 'Свободная гонка')}</Link>
+          <Link className="hm-tab" href="/match/new">{t('1-on-1', '1 на 1')}</Link>
           <Link className="hm-tab" href="/race/drills" {...cur('drills')}>{t('Drills', 'Тренировки')}</Link>
           <Link className="hm-tab" href="/race/rating" {...cur('rating')}>{t('Rating', 'Рейтинг')}</Link>
           <Link className="hm-tab" href="/players" {...cur('players')}>{t('Players', 'Игроки')}</Link>

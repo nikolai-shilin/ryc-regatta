@@ -512,7 +512,7 @@
 @container help (min-width: 600px) { .bc .hm-signin { display: inline-flex; } }
 @container scr (min-width: 600px) { .bc .hm-signin { display: inline-flex; } }
 /* the tabs need the room: none under 1280px wide (they're in the menu) and Venues and Yachts from 1360px (a 1366 laptop;
-   in Russian the seven need about 1270); between, the ones that don't fit are in the menu. The fleet and Your boat are
+   in Russian the eight need about 1310); between, the ones that don't fit are in the menu. The fleet and Your boat are
    always in the menu, never tabs */
 @container help (max-width: 1279px) { .bc .hm-nav { display: none; } .bc .hm-menu-nav { display: flex; } }
 @container scr (max-width: 1279px) { .bc .hm-nav { display: none; } .bc .hm-menu-nav { display: flex; } }
