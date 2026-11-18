@@ -17,8 +17,8 @@ const IconUser = () => <svg viewBox="0 0 16 16" width={16} height={16} aria-hidd
 // The header's menu: the burger and your avatar (your initials once signed in, from lib/me.ts: the pages are cached,
 // so whether you are is drawn by CSS, .if-me and .if-guest). At its head who you are: signed in, your initials and name,
 // the way to the account and settings; a guest, the way to sign in and why (at every width, the bar's own button
-// beside it or not). Then what's yours on this device (the boat, the passport, the badges; Settings is the head's
-// once signed in; and, for a player who has raced, their own card on /players), the reading pages, on a narrow screen
+// beside it or not). Then what's yours on this device (the boat, the passport; Settings is the head's once signed in;
+// and, for a player who has raced, their own card on /players), the reading pages with the badges, on a narrow screen
 // (where the header's links are hidden) the site's pages too, and last, signed in, Sign out (back to the page it was
 // on, app/auth/sign-out).
 export function SiteMenu({ lang }: { lang: Lang }) {
@@ -46,12 +46,13 @@ export function SiteMenu({ lang }: { lang: Lang }) {
         <Link className="hm-mi" href="/boat">{t('Your boat', 'Твоя яхта')}</Link>
         <Link className="hm-mi" href="/passport">{t('Your passport', 'Твой паспорт')}</Link>
         {card && <Link className="hm-mi if-me" href={`/players?p=${encodeURIComponent(card)}`}>{t('Your player card', 'Твоя карточка игрока')}</Link>}
-        <Link className="hm-mi" href="/race/badges">{t('Badges', 'Достижения')}</Link>
         <Link className="hm-mi if-guest" href="/settings">{t('Settings', 'Настройки')}</Link>
         <AvMenuItem lang={lang} />
         <span className="hm-msep" />
         <Link className="hm-mi" href="/help">{t('How to play', 'Как играть')}</Link>
         <Link className="hm-mi" href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
+        <Link className="hm-mi" href="/race/badges">{t('Badges', 'Достижения')}</Link>
+        <Link className="hm-mi" href="/faq">{t('Questions', 'Вопросы')}</Link>
         <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы')}>
           <span className="hm-msep" />
           <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня')}</Link>
@@ -62,7 +63,6 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <Link className="hm-mi" href="/players">{t('Players', 'Игроки')}</Link>
           <Link className="hm-mi hm-mi-x" href="/venues">{t('Venues', 'Акватории')}</Link>
           <Link className="hm-mi hm-mi-x" href="/yachts">{t('Yachts', 'Яхты')}</Link>
-          <Link className="hm-mi hm-mi-x hm-mi-xx" href="/faq">{t('Questions', 'Вопросы')}</Link>
         </nav>
         <form className="if-me" action="/auth/sign-out" method="post"
           onSubmit={(e) => { (e.currentTarget.elements.namedItem('next') as HTMLInputElement).value = location.pathname + location.search; forgetCard(); }}>
