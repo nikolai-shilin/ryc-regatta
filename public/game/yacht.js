@@ -589,6 +589,17 @@ function logoDecal(side, logo, z0 = -2.55, y0 = 0.64, W = 1.36, H = 0.52) {
 }
 
 // ---------- sails ----------
+// how a kite is cut, on its cloth (x from the luff to the leech, y from the head down to the foot): a band's edge, v of
+// the way down the luff at the luff and arching up towards the middle; and its seams, the panels fanning out of the three
+// corners, where the load is, and running across the sail between them
+const kiteArc = (v, u) => v * (1 - 0.06 * Math.sin(Math.PI * u));
+function kiteSeams(W, H) {
+  const at = (v, u) => [u * W, kiteArc(v, u) * H], seams = [];
+  for (let i = 3; i <= 10; i++) seams.push(Array.from({ length: 17 }, (_, k) => at(i / 16 + 0.1875, k / 16))); // across the middle
+  for (let k = 1; k < 8; k++) seams.push([[(k / 8) * W, 0], at(0.375, k / 8)]); // out of the head
+  for (let k = 1; k < 6; k++) { const u = (k / 6) * 0.5; seams.push([[0, H], at(0.8125, u)], [[W, H], at(0.8125, 1 - u)]); } // out of the tack and the clew
+  return seams;
+}
 // a canvas texture for a sail; u runs luff → leech, v foot → head
 // rig: another class's sails (boats3d.js) — the main's luff (span, m) and its chord up it, where the logo and the flag
 // go on it (m up the luff) and how wide, where the number goes (0 the foot … 1 the head), and the jib's head and clew
@@ -600,10 +611,19 @@ export function sailTexture(kind, look, rig = null) {
   const x = c.getContext('2d');
   let sideB = null; // the jib's back face, when it needs a canvas of its own
   if (kind === 'kite') {
-    const cols = look.kite; // horizontal panels in the boat's colours
-    for (let i = 0; i < 8; i++) { x.fillStyle = cols[i % cols.length]; x.fillRect(0, (i * H) / 8, W, H / 8 + 1); }
-    x.strokeStyle = 'rgba(0,0,0,.12)'; x.lineWidth = 2;
-    for (let i = 1; i < 12; i++) { x.beginPath(); x.moveTo(0, 0); x.lineTo(W, (i * H) / 12); x.stroke(); } // radial seams from the head
+    // the boat's colours in bands across the sail, each arching up from the luff to the leech as the foot does
+    const cols = look.kite;
+    for (let i = 0; i < 8; i++) {
+      x.fillStyle = cols[i % cols.length]; x.beginPath(); x.moveTo(W, H); x.lineTo(0, H);
+      for (let k = 0; k <= 24; k++) x.lineTo((k / 24) * W, kiteArc(i / 8, k / 24) * H);
+      x.closePath(); x.fill();
+    }
+    // the cloth over the colours: its seams, the tapes round its edge, and the patches of extra cloth at its corners
+    x.strokeStyle = 'rgba(0,0,0,.2)'; x.lineWidth = 1.5;
+    for (const seam of kiteSeams(W, H)) { x.beginPath(); seam.forEach(([a, b], k) => (k ? x.lineTo(a, b) : x.moveTo(a, b))); x.stroke(); }
+    x.fillStyle = 'rgba(128,128,128,.28)'; x.fillRect(0, 0, W, H * 0.05);
+    for (const cx of [0, W]) for (const r of [0.2, 0.12]) { x.beginPath(); x.moveTo(cx, H); x.arc(cx, H, W * r, 0, Math.PI * 2); x.fill(); }
+    x.fillStyle = 'rgba(0,0,0,.3)'; x.fillRect(0, 0, 5, H); x.fillRect(W - 5, 0, 5, H); x.fillRect(0, H - 5, W, 5);
   } else {
     x.fillStyle = look.cloth; x.fillRect(0, 0, W, H);
     // draws in metres on the cloth: clothAt(luff length, chord at f, where across the chord) gives onCloth(m, draw),
@@ -729,8 +749,11 @@ function sailRelief(kind, battens = MAIN_BATTENS) {
   x.fillStyle = '#808080'; x.fillRect(0, 0, W, H);
   const line = (x0, y0, x1, y1, w, col) => { x.strokeStyle = col; x.lineWidth = w; x.beginPath(); x.moveTo(x0, y0); x.lineTo(x1, y1); x.stroke(); };
   if (kind === 'kite') {
-    for (let i = 1; i < 8; i++) line(0, (i * H) / 8, W, (i * H) / 8, 2.5, 'rgba(255,255,255,.55)');
-    for (let i = 1; i < 12; i++) line(0, 0, W, (i * H) / 12, 2, 'rgba(255,255,255,.45)');
+    for (const seam of kiteSeams(W, H)) for (let k = 1; k < seam.length; k++) line(seam[k - 1][0], seam[k - 1][1], seam[k][0], seam[k][1], 2.5, 'rgba(255,255,255,.55)');
+    x.strokeStyle = 'rgba(255,255,255,.5)'; x.lineWidth = 2;
+    for (const cx of [0, W]) for (const r of [0.2, 0.12]) { x.beginPath(); x.arc(cx, H, W * r, 0, Math.PI * 2); x.stroke(); } // the corner patches' edges
+    line(0, H * 0.05, W, H * 0.05, 2, 'rgba(255,255,255,.5)');
+    x.fillStyle = 'rgba(255,255,255,.6)'; x.fillRect(0, 0, 3, H); x.fillRect(W - 3, 0, 3, H); x.fillRect(0, H - 3, W, 3); // the tapes
     for (let i = 0; i < 9; i++) line(W * (0.15 + i * 0.09), H, W * (0.05 + i * 0.1), H * 0.55, 7, 'rgba(0,0,0,.08)'); // the foot's soft folds
   } else {
     for (let i = 1; i < 10; i++) line(0, (i * H) / 10 + 10, W, (i * H) / 10 - 15, 3, 'rgba(255,255,255,.6)');
@@ -781,29 +804,43 @@ function translucent(m, amount) {
   m.customProgramCacheKey = () => `sail${amount}`;
   return m;
 }
-// a sail: one grid geometry, drawn twice so the number reads the right way round from both sides
-export function sailMesh(rows, cols, tex, shiny = false, kind = 'main') {
+// a sail: one grid geometry, drawn twice so the number reads the right way round from both sides. rows × cols is how it
+// is drawn from afar; close to the camera (fine, kept by the sail as it is drawn) it has twice as many of each, the
+// curves and creases that a coarse grid can't hold
+const SAIL_NEAR = /android|iphone|ipad/i.test(globalThis.navigator?.userAgent ?? '') ? 3.5 : 5; // a phone keeps the finer grid for the closest boats
+export function sailMesh(rows0, cols0, tex, shiny = false, kind = 'main') {
+  const tiers = rows0 > 2, rows = tiers ? rows0 * 2 : rows0, cols = tiers ? cols0 * 2 : cols0;
   const g = new THREE.BufferGeometry();
-  const pos = new Float32Array((rows + 1) * (cols + 1) * 3), uv = [], idx = [];
+  const pos = new Float32Array((rows + 1) * (cols + 1) * 3), uv = [];
   for (let i = 0; i <= rows; i++) for (let j = 0; j <= cols; j++) uv.push(j / cols, i / rows);
-  for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) {
-    const a = i * (cols + 1) + j, b = a + 1, c = a + cols + 1, d = c + 1;
-    idx.push(a, b, c, b, d, c);
-  }
+  const cells = (st) => {
+    const out = [];
+    for (let i = 0; i < rows; i += st) for (let j = 0; j < cols; j += st) {
+      const a = i * (cols + 1) + j, b = a + st, c = a + st * (cols + 1), d = c + st;
+      out.push(a, b, c, b, d, c);
+    }
+    return new THREE.BufferAttribute(new Uint16Array(out), 1);
+  };
+  const fineI = cells(1), coarseI = tiers ? cells(2) : fineI;
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  g.setIndex(idx);
+  g.setIndex(fineI);
   const back = tex.back || tex.clone(); back.repeat.x = -1; back.offset.x = 1; back.needsUpdate = true;
   const relief = sailRelief(kind, tex.battens), reliefBack = relief.clone(); reliefBack.repeat.x = -1; reliefBack.offset.x = 1; reliefBack.needsUpdate = true;
   // laminate (shiny) sails catch a soft sheen and let less light through than woven cloth; a spinnaker's thin nylon
   // the most. A little emissive stands for the light bounced off the sea into the cloth's shaded side.
   const mat = (map, nmap, side) => translucent(new THREE.MeshStandardMaterial({
-    map, side, normalMap: nmap, normalScale: new THREE.Vector2(0.6, 0.6), roughness: shiny ? 0.45 : 0.72, metalness: shiny ? 0.12 : 0,
+    map, side, normalMap: nmap, normalScale: new THREE.Vector2(0.6, 0.6), roughness: shiny ? 0.45 : kind === 'kite' ? 0.55 : 0.72, metalness: shiny ? 0.12 : 0,
     emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.1,
   }), kind === 'kite' ? 0.6 : shiny ? 0.28 : 0.45);
   const grp = new THREE.Group();
   grp.add(new THREE.Mesh(g, mat(tex, relief, THREE.FrontSide)), new THREE.Mesh(g, mat(back, reliefBack, THREE.BackSide)));
-  grp.userData = { rows, cols, g };
+  grp.userData = { rows, cols, g, tiers, fine: true, step: 1, fineI, coarseI };
+  // near enough to see the finer grid: within a few times the sail's own size, a little further to let it go again
+  if (tiers) grp.children[0].onBeforeRender = (r, s, cam) => {
+    const e = grp.matrixWorld.elements, size = (g.boundingSphere?.radius ?? 5) * Math.hypot(e[0], e[1], e[2]), p = cam.position;
+    grp.userData.fine = Math.hypot(p.x - e[12], p.y - e[13], p.z - e[14]) < size * SAIL_NEAR * (grp.userData.fine ? 1.15 : 1);
+  };
   return grp;
 }
 // the leech never stands quite still: the cloth's free edge flutters in the apparent wind a few centimetres either
@@ -827,11 +864,31 @@ export function clothState(view, b, t) {
   c.depth = lerp(1.18, 0.82, smoothstep(5, 20, aws)) * (1 + 0.18 * off);
   c.twist = lerp(0.75, 1.35, smoothstep(6, 22, aws)) * (1 + 0.35 * off);
   c.twist *= 1 + 0.5 * clamp(ease / 10, 0, 1); // eased to depower, the boom rises and the head falls off
+  // a gust, against the wind of the last few seconds: it flattens the sails, blows their fullness aft and opens the leech
+  c.slow = (c.slow ?? aws) + (aws - (c.slow ?? aws)) * (1 - Math.exp(-dt * 0.4));
+  const gust = clamp((aws - c.slow) / Math.max(c.slow, 4) / 0.6, -1, 1), hard = Math.max(0, gust);
+  c.depth *= 1 - 0.18 * hard + 0.08 * Math.max(0, -gust); c.twist *= 1 + 0.55 * hard;
+  c.mainP = Math.log(0.5) / Math.log(lerp(0.47, 0.42, smoothstep(6, 20, aws)) + 0.04 * hard); // the power that puts the main's deepest point there
+  c.jibP = Math.log(0.5) / Math.log(0.37 + 0.04 * hard);
+  c.hook = (1 - off) * (1 - 0.7 * hard) * smoothstep(3, 10, aws); // sheeted in, the leech turns a little to windward
+  // the boat rolling and pitching swings the rig through the air: how fast the masthead goes, against the wind
+  const tilt = view.tilt, rz = tilt.rotation.z, rx = tilt.rotation.x, tall = view.drawnL ?? 10.45, air = Math.max(aws * 0.514, 1);
+  if (dt > 0) {
+    const k = 1 - Math.exp(-dt * 7);
+    c.rollV = (c.rollV ?? 0) + (clamp((rz - (c.rz ?? rz)) / dt, -1.2, 1.2) - (c.rollV ?? 0)) * k;
+    c.pitchV = (c.pitchV ?? 0) + (clamp((rx - (c.rx ?? rx)) / dt, -1.2, 1.2) - (c.pitchV ?? 0)) * k;
+    c.rz = rz; c.rx = rx;
+  }
+  const rock = clamp((c.rollV ?? 0) * tall / air, -1, 1);
+  c.slat = rock * smoothstep(12, 3, aws); // in a light air and a sea, the cloth slats from side to side
+  // the kite is never still: it breathes with the air, fills in a gust and softens as the rig swings away from the wind
+  c.breath = (c.breath ?? 0) + dt * (0.8 + 0.03 * aws);
+  c.pulse = clamp(0.3 * Math.sin(c.breath + c.ph) + 0.16 * Math.sin(2.7 * c.breath + 1.3 * c.ph) + 0.7 * gust + 0.45 * rock - 0.3 * clamp((c.pitchV ?? 0) * tall / air, -1, 1), -1, 1);
   c.back = (1 - off) * clamp((ease - 3) / 10, 0, 1);
   const mainLuff = a < NO_GO ? 1 : b.trimErr === undefined ? b.luff || 0 : clamp((b.trimErr - ease - 5) / 18, 0, 1);
   const to = (x, want) => x + (want - x) * (1 - Math.exp(-dt * (want > x ? 7 : 2.5)));
   c.flogM = to(c.flogM, mainLuff); c.flogJ = to(c.flogJ, b.luff || 0);
-  c.curl = clamp(0.1 + 0.22 * Math.max(0, Math.sin(t * 0.8 + c.ph)) ** 3 + 0.75 * (b.kiteCollapse || 0) + 0.6 * smoothstep(0.2, 0.8, b.luff || 0), 0, 1);
+  c.curl = clamp(0.1 + 0.22 * Math.max(0, Math.sin(t * 0.8 + c.ph)) ** 3 + 0.75 * (b.kiteCollapse || 0) + 0.6 * smoothstep(0.2, 0.8, b.luff || 0) + 0.22 * Math.max(0, -c.pulse), 0, 1);
   c.aws = aws;
   // the flutter's and the flog's own clocks, each run on at its rate for this wind: the wind changing changes how
   // fast the cloth goes, never where it is (a rate times the race's time would throw it about at the smallest change
@@ -839,11 +896,14 @@ export function clothState(view, b, t) {
   c.lf = (c.lf ?? c.ph) + dt * (19 + 0.4 * Math.min(aws, 25));
   c.fp = (c.fp ?? c.ph) + dt * 2 * Math.PI * (1.5 + 0.07 * Math.min(aws, 30));
   c.flutter = view.flutter ?? 1; // a foiler's sails, sheeted hard, hardly flutter
+  c.wp = (c.wp ?? c.ph) + dt * (0.25 + 0.02 * Math.min(aws, 25)); // the creases' slow drift
+  c.fine = view.main?.userData.fine !== false;
   // the cloth's creases: pulled out of a sail loaded up and drawing, standing out in light air and in one luffing or
   // flogging; a gennaker's the more its luff curls
   const light = smoothstep(9, 3, aws), crease = (grp, k) => { if (grp) for (const m of grp.children) m.material.normalScale?.setScalar(k); };
   crease(view.main, 0.4 + 0.9 * c.flogM + 0.3 * light); crease(view.main2, 0.4 + 0.9 * c.flogM + 0.3 * light);
   crease(view.jib, 0.4 + 0.9 * c.flogJ + 0.3 * light); crease(view.kite, 0.45 + 0.7 * c.curl + 0.3 * light);
+  c.wr = 0.35 + 0.9 * light + 0.7 * Math.max(c.flogM, c.flogJ); // and the same creases in the cloth's shape, seen close to
   return c;
 }
 // the forestay sags to leeward and aft under load, a little over half a percent of its length and more as it blows:
@@ -932,12 +992,69 @@ export function flog(f, u, p, k, chord, aws, s, ph = 0) {
   return bubble + amp * (Math.sin(p - 6.5 * u - 2.2 * f + ph) + 0.45 * Math.sin(1.7 * p - 11 * u + 3.1 * f + 2 * ph));
 }
 // a main's cloth beyond its cut: flogging, and backed behind the luff when she's overpowered (s: the boom's side)
-export const mainCloth = (c, f, u, chord, s) => flog(f, u, c.fp, c.flogM, chord, c.aws, s, c.ph) + s * c.back * chord * 0.045 * Math.sin(Math.PI * Math.min(u / 0.35, 1)) * Math.sin(Math.PI * (0.15 + 0.7 * f));
+export const mainCloth = (c, f, u, chord, s) => flog(f, u, c.fp, c.flogM, chord, c.aws, s, c.ph) + s * c.back * chord * 0.045 * Math.sin(Math.PI * Math.min(u / 0.35, 1)) * Math.sin(Math.PI * (0.15 + 0.7 * f)) + slat(c, f, u, chord) + wrinkle(c, f, u, chord);
+// the cloth slatting as the rig rolls, most at the leech and halfway up
+const slat = (c, f, u, chord) => c.slat * c.flutter * chord * 0.035 * u * u * Math.sin(Math.PI * Math.min(1, f * 1.05));
+// the creases the load puts in the cloth, seen close to: fanning out of the clew and running down from the head
+export function wrinkle(c, f, u, chord) {
+  if (!c.fine) return 0;
+  let w = 0;
+  const r = Math.hypot(1 - u, f * 1.2);
+  if (r < 0.55) w += smoothstep(0.55, 0.22, r) * smoothstep(0.03, 0.12, r) * Math.sin(Math.atan2(f * 1.2, 1 - u) * 14 + r * 5 + c.wp);
+  if (f > 0.7) w += 0.7 * smoothstep(0.7, 0.92, f) * Math.sin(u * 16 + f * 6 - c.wp * 0.7);
+  return w * chord * 0.009 * c.wr * c.flutter;
+}
+// A main at (f up the luff, u aft along its chord ch), sideways (x) and aft of the luff (z); s the boom's side, k its depth
+// as a share of the chord, tw how far its head twists off, battens whether it has any. Deepest a little forward of
+// halfway, flat along the boom, its leech turned a little to windward when sheeted in and, with battens, hollow between them.
+const MAIN_AT = { x: 0, z: 0 }, BATTEN_F = [0, 0.24, 0.42, 0.6, 0.76, 0.9, 1];
+const betweenBattens = (f) => { let i = 1; while (i < 6 && f > BATTEN_F[i]) i++; return Math.sin(Math.PI * clamp((f - BATTEN_F[i - 1]) / (BATTEN_F[i] - BATTEN_F[i - 1]), 0, 1)); };
+export function mainShape(c, f, u, ch, s, k, tw, battens = true) {
+  const aft = smoothstep(0.7, 1, u), shelf = lerp(0.6, 1, smoothstep(0, 0.14, f));
+  MAIN_AT.x = -s * (1 - c.flogM * 0.85) * Math.sin(Math.PI * u ** c.mainP) * ch * k * c.depth * (1 - 0.4 * f) * shelf - s * f * f * tw * u * c.twist
+    + s * c.hook * aft * aft * ch * 0.028 * Math.sin(Math.PI * Math.min(1, f * 1.1)) + mainCloth(c, f, u, ch, s) + leechFlutter(f, u, c);
+  MAIN_AT.z = u * ch * (1 - (battens ? 0.02 * aft * betweenBattens(f) : 0));
+  return MAIN_AT;
+}
+// A jib's offset from the flat between its luff and leech: deepest well forward, flatter up high, twisting off at the
+// head, its leech turned in a little; len its chord there, k its depth, ph its flog's own phase
+export function jibShape(c, f, u, len, s, k, ph) {
+  const aft = smoothstep(0.78, 1, u);
+  return -s * (1 - c.flogJ * 0.85) * Math.sin(Math.PI * u ** c.jibP) * len * k * c.depth * (1 - 0.22 * f) * lerp(0.72, 1, smoothstep(0, 0.16, f)) - s * f * u * len * 0.14 * c.twist
+    + s * c.hook * aft * aft * len * 0.018 + flog(f, u, c.fp, c.flogJ, len, c.aws, s, c.ph + ph) + leechFlutter(f, u, c, 7.6) + 0.7 * slat(c, f, u, len) + wrinkle(c, f, u, len);
+}
+// a jib's leech is cut hollow: how far along its chord a point u of the way aft comes
+export const jibAlong = (f, u) => u * (1 - 0.035 * Math.sin(Math.PI * f) * smoothstep(0.55, 1, u));
 // the gennaker's luff folding in (0–1 of its curl, at f up the luff and u aft): times the sail's size, towards the boat
 export const kiteCurl = (c, f, u) => c.curl * (1 - smoothstep(0, 0.3, u)) ** 2 * Math.sin(Math.PI * Math.min(1, f * 1.1));
+// The kite's whole surface, from its three corners (tack, head and clew, [x, y, z], the guard's clew already set): wide
+// at the shoulders, well up the sail, with a round luff and leech, an arched foot and its belly carried down to the foot.
+// sd the side it flies on; wd for a spinnaker, the pole's side, whose two luffs curve out alike (0 for a gennaker, its
+// luff forward and its leech out along the clew's line); R its depth in metres; k how far it has filled
+export function setKite(view, tk, hd, cl, sd, wd, R, k, guard) {
+  const c = view.cloth, sym = wd !== 0, cx = cl[0] - hd[0], cz = cl[2] - hd[2], cd = Math.hypot(cx, cz) || 1, rx = cx / cd, rz = cz / cd;
+  setSail(view.kite, (f, u, v) => {
+    const sh = Math.sin(Math.PI * f ** (sym ? 1.25 : 1.3)) * R * k;
+    const env = (0.42 + 0.58 * Math.sin(Math.PI * Math.min(1, f * 1.08))) * smoothstep(1, 0.84, f);
+    const bul = Math.sin(Math.PI * u ** 0.9) * env * R * k * (1 + 0.1 * c.pulse), cu = kiteCurl(c, f, u) * 0.55 * R * k;
+    const arch = (1 - smoothstep(0, 0.2, f)) * Math.sin(Math.PI * u) * (sym ? 0.2 : 0.12) * R * k;
+    const edge = c.curl * (1 - smoothstep(0, 0.16, u)) * Math.sin(f * 22 - c.fp + c.ph) * 0.05 * R * k; // the luff's edge rippling as it curls
+    const skin = leechFlutter(f, u, c, 3.1) * R * 0.5 + wrinkle(c, f, u, R * 2) + wrinkle(c, f, 1 - u, R * 2);
+    const ly = lerp(lerp(tk[1], hd[1], f), lerp(cl[1], hd[1], f), u) + arch;
+    if (sym) {
+      const lx = wd * 0.83 * sh, lz = -0.83 * sh;
+      v.set(lerp(lerp(tk[0], hd[0], f) + lx, lerp(cl[0], hd[0], f) - lx, u) + sd * (cu * 0.4 + edge), ly, lerp(lerp(tk[2], hd[2], f), lerp(cl[2], hd[2], f), u) + lz - bul + cu * 0.6 - skin);
+    } else {
+      const round = 0.4 * Math.sin(Math.PI * f ** 1.15) * R * k;
+      v.set(lerp(lerp(tk[0], hd[0], f) + sd * 0.86 * sh, lerp(cl[0], hd[0], f) + rx * round, u) + sd * (bul - cu + edge) + skin, ly, lerp(lerp(tk[2], hd[2], f) - 0.93 * sh, lerp(cl[2], hd[2], f) + rz * round, u) - bul * 0.9 + cu * 0.6 - skin * 0.6);
+    }
+    guard.keep(v);
+  });
+}
 export function setSail(m, fn) {
-  const { rows, cols, g } = m.userData, a = g.attributes.position, v = new THREE.Vector3();
-  for (let i = 0; i <= rows; i++) for (let j = 0; j <= cols; j++) { fn(i / rows, j / cols, v); a.setXYZ(i * (cols + 1) + j, v.x, v.y, v.z); }
+  const d = m.userData, { rows, cols, g } = d, a = g.attributes.position, v = new THREE.Vector3(), st = d.tiers && !d.fine ? 2 : 1;
+  if (st !== d.step) { d.step = st; g.setIndex(st > 1 ? d.coarseI : d.fineI); }
+  for (let i = 0; i <= rows; i += st) for (let j = 0; j <= cols; j += st) { fn(i / rows, j / cols, v); a.setXYZ(i * (cols + 1) + j, v.x, v.y, v.z); }
   a.needsUpdate = true; g.computeVertexNormals(); g.computeBoundingSphere();
 }
 
@@ -952,15 +1069,15 @@ export function kiteGuard(view) {
   toBoat.identity();
   for (let o = view.main; o !== view.kite.parent; o = o.parent) { o.updateMatrix(); toBoat.premultiply(o.matrix); }
   toMain.copy(toBoat).invert();
-  const { rows, cols, g } = view.main.userData, a = g.attributes.position.array, w = cols + 1;
+  const { rows: fullRows, cols: fullCols, g, step: st } = view.main.userData, a = g.attributes.position.array, w = fullCols + 1, rows = fullRows / st, cols = fullCols / st;
   const lee = view.sailSide < 0 ? 1 : -1, ahead = CLEW_AHEAD * Math.min(1, Math.abs(view.sailSide));
-  const y0 = a[1], y1 = a[rows * w * 3 + 1], gap = KITE_GAP * Math.abs(a[cols * 3 + 2] - a[2]), e = toBoat.elements;
+  const y0 = a[1], y1 = a[fullRows * w * 3 + 1], gap = KITE_GAP * Math.abs(a[fullCols * 3 + 2] - a[2]), e = toBoat.elements;
   // across a row of the main, at z: where its cloth lies, and how far aft along the row that is (0 the luff, 1 the leech)
   let rowU = 0;
   const across = (i, z) => {
-    const o = i * w * 3, zl = a[o + 2], u = (z - zl) / (a[o + cols * 3 + 2] - zl), c = clamp(u, 0, 1) * cols, j = Math.min(cols - 1, Math.floor(c));
+    const o = i * st * w * 3, zl = a[o + 2], u = (z - zl) / (a[o + fullCols * 3 + 2] - zl), c = clamp(u, 0, 1) * cols, j = Math.min(cols - 1, Math.floor(c));
     rowU = u;
-    return lerp(a[o + j * 3], a[o + (j + 1) * 3], c - j);
+    return lerp(a[o + j * st * 3], a[o + (j + 1) * st * 3], c - j);
   };
   return {
     clew(c, lead) {
@@ -975,7 +1092,7 @@ export function kiteGuard(view) {
       // leech it's clear, and in between the one eases into the other
       const t = onMain.x / (onMain.x - lx);
       if (t > 0 && t < 1) {
-        const foot = a[cols * 3 + 2], at = lerp(onMain.z, lz, t) / foot, under = (y0 - gap - t * ly) / (1 - t);
+        const foot = a[fullCols * 3 + 2], at = lerp(onMain.z, lz, t) / foot, under = (y0 - gap - t * ly) / (1 - t);
         onMain.y = lerp(onMain.y, Math.min(onMain.y, under), smoothstep(1.15, 1, at));
       }
       onMain.applyMatrix4(toBoat); c[0] = onMain.x; c[1] = onMain.y; c[2] = onMain.z;
@@ -984,14 +1101,16 @@ export function kiteGuard(view) {
       onMain.copy(v).applyMatrix4(toMain);
       const r = clamp((onMain.y - y0) / (y1 - y0), 0, 1) * rows, i = Math.min(rows - 1, Math.floor(r));
       const x0 = across(i, onMain.z), u0 = rowU, x = lerp(x0, across(i + 1, onMain.z), r - i), u = lerp(u0, rowU, r - i);
-      if (u > 0 && u < 0.5 && lee * (onMain.x - x) < 0) { // to windward, just aft of the mast: round ahead of it, the further the further out it lies
-        const back = onMain.z - a[Math.round(r) * w * 3 + 2] + gap + 1.5 * Math.abs(onMain.x - x);
+      // to windward, just aft of the mast: round ahead of it, the further the further out it lies; right on the main it
+      // only lifts, so a point that wavers from one side of the cloth to the other moves no further than it does
+      const side = lee * (onMain.x - x), round = u > 0 && side < 0 ? smoothstep(0, 1.5 * gap, -side) * smoothstep(0.5, 0.35, u) : 0;
+      if (round > 0) {
+        const back = (onMain.z - a[Math.round(r) * st * w * 3 + 2] + gap + 1.5 * Math.abs(onMain.x - x)) * round;
         v.x -= e[8] * back; v.y -= e[9] * back; v.z -= e[10] * back;
-        return;
       }
-      const d = lee * (onMain.x - x) - gap;
+      const d = side - gap;
       if (d >= gap || u <= 0) return;
-      const lift = lee * (gap * gap / (2 * gap - d) - d) * smoothstep(0, 0.12, u); // eased, so the cloth never creases where it starts to lift
+      const lift = lee * (gap * gap / (2 * gap - d) - d) * smoothstep(0, 0.12, u) * (1 - round); // eased, so the cloth never creases where it starts to lift
       v.x += e[0] * lift; v.y += e[1] * lift; v.z += e[2] * lift;
     },
   };
@@ -1911,12 +2030,11 @@ export class BoatView {
 
     const sa = b.sail * D2R, cl = clothState(this, b, t), ss = this.sailSide;
     this.mainPivot.rotation.y = -ss * sa;
-    const belly = -ss * (1 - cl.flogM * 0.85), jBelly = -ss * (1 - cl.flogJ * 0.85);
     const reefDrop = (b.reefFill || 0) * 2.4; // a reef: the head comes 2.4 m down the mast, the sail is that much smaller
     // square-top main: the chord narrows up the mast to a wide head, with roach on the leech; twist opens the top
     setSail(this.main, (f, u, v) => {
-      const chord = mainChord(f), tw = -ss * f * f * 0.5 * u * cl.twist;
-      v.set(belly * Math.sin(Math.PI * u ** 0.78) * chord * 0.11 * cl.depth * (1 - 0.4 * f) + tw + mainCloth(cl, f, u, chord, ss) + leechFlutter(f, u, cl), BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), u * chord);
+      const m = mainShape(cl, f, u, mainChord(f), ss, 0.11, 0.5);
+      v.set(m.x, BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), m.z);
     });
     // the mainsheet, from the block on the traveller's car to the one under the boom
     const ma = this.mainPivot.rotation.y, bz = SHEET_B;
@@ -1928,8 +2046,8 @@ export class BoatView {
     setSail(this.jib, (f, u, v) => {
       const sg = sag * Math.sin(Math.PI * f), lx = head.x * f - ss * sg, ly = head.y * f, lz = head.z * f + sg * 0.5; // the luff on the sagging stay
       const ex = lerp(clew.x, head.x, f), ey = lerp(clew.y, head.y, f), ez = lerp(clew.z, head.z, f);
-      const len = Math.hypot(ex - lx, ey - ly, ez - lz);
-      v.set(lerp(lx, ex, u) + jBelly * Math.sin(Math.PI * u ** 0.72) * len * 0.125 * cl.depth + flog(f, u, cl.fp, cl.flogJ, len, cl.aws, ss, cl.ph + 1.3) + leechFlutter(f, u, cl, 7.6), lerp(ly, ey, u), lerp(lz, ez, u));
+      const len = Math.hypot(ex - lx, ey - ly, ez - lz), al = jibAlong(f, u);
+      v.set(lerp(lx, ex, al) + jibShape(cl, f, u, len, ss, 0.125, 1.3), lerp(ly, ey, al), lerp(lz, ez, al));
       stowJib(v, st, false, lx, ly, lz);
     });
     stowTells(this.tells, st);
@@ -2039,15 +2157,7 @@ export class BoatView {
       const a = Math.abs(b.twa) / D2R, out = lerp(6.2, 3.4, clamp((a - 95) / 80, 0, 1)) * lerp(0.15, 1, kfill), sd = -this.sailSide;
       const tk = [SPRIT.x, SPRIT.y + 0.1, SPRIT.z], hd = [0, lerp(SPRIT.y + 1, KITE_HEAD[1], kf), lerp(SPRIT.z, KITE_HEAD[2], kf)], kl = [sd * out, lerp(SPRIT.y + 0.4, 2.9, kf), lerp(SPRIT.z + 0.8, 1.8, kf)];
       const lead = [sd * 1.3, deckY(4.6) + 0.1, 4.6], guard = kiteGuard(this); guard.clew(kl, lead);
-      setSail(this.kite, (f, u, v) => {
-        const lx = sd * Math.sin(Math.PI * f) * 2.4 * kfill, lz = -Math.sin(Math.PI * f) * 2.6 * kfill;
-        const p = [lerp(tk[0], hd[0], f) + lx, lerp(tk[1], hd[1], f), lerp(tk[2], hd[2], f) + lz];
-        const q = [lerp(kl[0], hd[0], f), lerp(kl[1], hd[1], f), lerp(kl[2], hd[2], f)];
-        const bul = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, f * 1.08)) * 2.8 * kfill;
-        const cu = kiteCurl(cl, f, u) * 1.5 * kfill; // the luff folding in, aft and into the sail's hollow
-        v.set(lerp(p[0], q[0], u) + sd * (bul - cu), lerp(p[1], q[1], u), lerp(p[2], q[2], u) - bul * 0.9 + cu * 0.6);
-        guard.keep(v);
-      });
+      setKite(this, tk, hd, kl, sd, 0, 2.8, kfill, guard);
       const kp = this.kiteSheet.geometry.attributes.position;
       drape(kp, 0, 9, kl, lead, 0.25 + 1.2 * (b.kiteCollapse || 0) + 0.4 * (1 - kfill), 0.25 * (b.kiteCollapse || 0), t); kp.needsUpdate = true;
     }
