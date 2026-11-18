@@ -34,9 +34,9 @@ test('each class gets a view of her own kind', () => {
   assert.equal(boat('j70').constructor, boat('rs21').constructor, 'the two sportboats share one');
 });
 
-test('the two sportboats float 25 cm higher than the Dragon on the same water', () => {
+test('the two sportboats float high over the Dragon on the same water, the J/70\'s deeper hull the higher', () => {
   const floatY = (id) => { const v = boat(id); v.place(still(), 5, W); return v.root.position.y; };
-  for (const id of ['rs21', 'j70']) close(floatY(id) - floatY('dragon'), 0.25, 1e-6, `the ${id}'s height over the Dragon`);
+  for (const [id, over] of [['rs21', 0.25], ['j70', 0.31]]) close(floatY(id) - floatY('dragon'), over, 1e-6, `the ${id}'s height over the Dragon`);
 });
 
 for (const id of OTHERS) {
