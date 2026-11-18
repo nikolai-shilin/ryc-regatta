@@ -4,6 +4,7 @@ import { plainName } from '@/lib/name';
 import { SHAPE_NAME } from '@/lib/race';
 import { VENUES } from '@/lib/venues';
 import { YACHTS } from '@/lib/yachts';
+import { DayChart, type DaySlot } from './admin-days';
 import { Table, Tile } from './admin-stats';
 import { PlayersTable, type Col, type Row } from './admin-players-table';
 import { logHref } from './admin-logs';
@@ -99,8 +100,7 @@ export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days
   const groupRows = (k: Duels['groups'][number]['k'], label: (v: string | null) => string) =>
     data.groups.filter((g) => g.k === k).map((g) => ({ key: `${k}-${g.v}`, name: label(g.v), cells: [String(g.n), pct(g.fin, g.n)] }));
   const head = [t('Races', 'Гонок'), t('Finished', 'Финиш')];
-  const date = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-  // the database returns only the days that had races: the UTC days between the first and the last get a bar of no height
+  // the database returns only the days that had races: the UTC days between the first and the last get an empty track
   const span = (() => {
     const out: { d: string; n: number; fin: number }[] = [], DAY = 864e5;
     const first = Date.parse(`${data.days[0]?.d}T00:00:00Z`), last = Date.parse(`${data.days[data.days.length - 1]?.d}T00:00:00Z`);
@@ -109,7 +109,7 @@ export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days
     for (let at = first; at <= last; at += DAY) { const d = new Date(at).toISOString().slice(0, 10); out.push(by.get(d) ?? { d, n: 0, fin: 0 }); }
     return out.length >= data.days.length ? out : data.days;
   })();
-  const max = Math.max(1, ...span.map((d) => d.n));
+  const slots: DaySlot[] = span.map((d) => ({ d: d.d, n: d.n, tip: [[t('Races', 'Гонок'), String(d.n)], [t('Finished', 'Финиш'), pct(d.fin, d.n)]] }));
   const PERIODS: { d: number | null; label: string }[] = [{ d: null, label: t('All time', 'Всё время') }, ...DUEL_DAYS.map((d) => ({ d, label: t(`${d} days`, `${d} дн.`) }))];
 
   return (
@@ -132,26 +132,7 @@ export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days
         <Tile k={t('Rematches', 'Реваншей')} v={String(T.rematches)} />
         <Tile k={t('Median race', 'Медиана гонки')} v={T.median == null ? '–' : clock(T.median)} />
       </div>
-      {data.days.length > 0 && (
-        <figure className="adm-days">
-          <figcaption className="adm-tab-h">{t('Races a day', 'Гонок в день')} · {t('max', 'максимум')} {max}</figcaption>
-          <svg viewBox="0 0 600 120" role="img" aria-label={t('Races started each day', 'Гонок начато в каждый день')}>
-            <line x1="0" x2="600" y1="119.5" y2="119.5" className="adm-days-base" />
-            {span.map((d, i) => {
-              const n = span.length, bw = Math.max(1, 600 / n - 2), x = i * (600 / n) + 1, h = d.n ? Math.max(2, (d.n / max) * 116) : 0;
-              return (
-                <g key={d.d}>
-                  <rect x={x} y={0} width={bw} height={120} className="adm-days-hit">
-                    <title>{`${date(d.d)}: ${d.n ? t(`${d.n} races, ${pct(d.fin, d.n)} finished`, `${d.n} гонок, финиш ${pct(d.fin, d.n)}`) : t('no races', 'нет гонок')}`}</title>
-                  </rect>
-                  <rect x={x} y={120 - h} width={bw} height={h} rx={Math.min(2, bw / 2)} className="adm-days-bar" />
-                </g>
-              );
-            })}
-          </svg>
-          <div className="adm-days-t"><span>{date(span[0].d)}</span><span>{date(span[span.length - 1].d)}</span></div>
-        </figure>
-      )}
+      {data.days.length > 0 && <DayChart lang={lang} title={t('Races a day', 'Гонок в день')} label={t('Races started each day', 'Гонок начато в каждый день')} slots={slots} />}
       <section className="adm-tab">
         <h3 className="adm-tab-h">{t('How the finished races ended', 'Чем закончились гонки')}</h3>
         <p className="hint">{endings.map(([k, n]) => `${k} ${n}`).join(' · ')}</p>

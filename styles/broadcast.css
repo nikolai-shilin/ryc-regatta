@@ -1560,19 +1560,56 @@
 .bc .adm-tab th:first-child { text-align: left; padding-left: 0; color: var(--ink); white-space: normal; min-width: 130px; }
 .bc .adm-tab thead th { font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); border-bottom-color: var(--rule); }
 .bc .adm-tab tbody tr:hover { background: var(--fill-2); }
-.bc .adm-days svg { display: block; width: 100%; height: auto; }
-.bc .adm-days-bar { fill: var(--you); }
-.bc .adm-days-hit { fill: transparent; }
-.bc .adm-days-hit:hover + .adm-days-bar { filter: brightness(1.2); }
-.bc .adm-days-base { stroke: var(--rule); stroke-width: 1; }
-.bc .adm-days-bar { pointer-events: none; }
-.bc .adm-days-t { display: flex; justify-content: space-between; margin-top: var(--s-1); font: 600 var(--fs-label)/1 var(--cond); letter-spacing: 0.04em; color: var(--ink-3); }
+/* the races a day (components/admin-days.tsx): a gauge of the HUD's, square bars on their tracks */
+.bc .adm-days { --days-y: 40px; --days-h: 200px; --days-bar: 48px; padding: var(--s-4); background: var(--fill-1); }
+.bc .adm-days-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-3) var(--s-6); margin-bottom: var(--s-5); }
+.bc .adm-days-title { font: 700 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink); }
+.bc .adm-days-read { display: flex; margin: 0; }
+.bc .adm-days-read > div { display: flex; flex-direction: column; gap: var(--s-2); padding: 0 var(--s-5); border-left: 1px solid var(--rule); }
+.bc .adm-days-read > div:last-child { padding-right: 0; }
+.bc .adm-days-read dt { font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.bc .adm-days-read dd { margin: 0; font: 700 var(--fs-title)/1 var(--cond); color: var(--ink); font-variant-numeric: tabular-nums; }
+.bc .adm-days-read .peak dd { color: var(--gold); }
+.bc .adm-days-plot { position: relative; height: var(--days-h); margin-top: var(--s-2); }
+.bc .adm-days-y { position: absolute; inset: 0; }
+.bc .adm-days-y span { position: absolute; left: var(--days-y); right: 0; height: 0; border-top: 1px solid var(--rule-2); }
+.bc .adm-days-y span:first-child { border-top-color: var(--w-35); }
+.bc .adm-days-y b { position: absolute; right: 100%; top: 0; translate: -8px -50%; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: 0.04em; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.bc .adm-days-bars, .bc .adm-days-t { display: grid; grid-template-columns: repeat(var(--days), minmax(0, 1fr)); column-gap: var(--day-gap); margin: 0; padding: 0 0 0 var(--days-y); list-style: none; }
+.bc .adm-days-bars { position: absolute; inset: 0; grid-template-rows: minmax(0, 1fr); }
+.bc .adm-days-slot { position: relative; grid-row: 1; outline: 0; cursor: default; }
+.bc .adm-days-slot::before, .bc .adm-days-bar { position: absolute; left: 0; right: 0; bottom: 0; max-width: var(--days-bar); margin-inline: auto; }
+.bc .adm-days-slot::before { content: ''; top: 0; background: var(--fill-1); }
+.bc .adm-days-bar { display: block; min-height: 2px; background: var(--you); }
+.bc .adm-days-slot.peak .adm-days-bar { background: var(--gold); }
+/* the day pointed at: the mouse's, else the one last tapped */
+.bc .adm-days-slot:hover::before, .bc .adm-days-bars:not(:hover) .adm-days-slot:focus::before { background: var(--fill-3); }
+.bc .adm-days-slot:hover .adm-days-bar, .bc .adm-days-bars:not(:hover) .adm-days-slot:focus .adm-days-bar { background: var(--ink); }
+/* the day's numbers: a plate beside its bar, on the side with the room */
+.bc .adm-days-tip { position: absolute; z-index: 2; top: 0; left: calc(50% + min(50%, var(--days-bar) / 2) + var(--s-2)); display: grid; min-width: 136px; padding-bottom: var(--s-2); background: rgb(16, 26, 40); box-shadow: 0 8px 24px rgba(3, 8, 14, 0.6); opacity: 0; pointer-events: none; }
+.bc .adm-days-tip.left { left: auto; right: calc(50% + min(50%, var(--days-bar) / 2) + var(--s-2)); }
+.bc .adm-days-slot:hover .adm-days-tip, .bc .adm-days-bars:not(:hover) .adm-days-slot:focus .adm-days-tip { opacity: 1; }
+.bc .adm-days-tip > b { margin-bottom: var(--s-1); padding: var(--s-2) var(--s-3); background: var(--you); color: var(--ink-on); font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; white-space: nowrap; }
+.bc .adm-days-tip > span { display: flex; justify-content: space-between; gap: var(--s-4); padding: 3px var(--s-3); font: 700 var(--fs-small)/1.2 var(--cond); color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bc .adm-days-tip em { font: 600 var(--fs-small)/1.2 var(--cond); letter-spacing: 0.02em; color: var(--ink-3); }
+/* the dates: a tick under the day, the date under the tick */
+.bc .adm-days-t { height: 26px; }
+.bc .adm-days-t span { position: relative; grid-row: 1; }
+.bc .adm-days-t span::before { content: ''; position: absolute; left: 50%; top: 0; width: 1px; height: 5px; background: var(--w-35); }
+.bc .adm-days-t b { position: absolute; left: 50%; top: 10px; translate: -50% 0; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: 0.04em; color: var(--ink-3); white-space: nowrap; }
+.bc .adm-days-t .first b { left: 0; translate: 0; }
+.bc .adm-days-t .last b { left: auto; right: 0; translate: 0; }
 @media (max-width: 600px) {
   .bc .adm-range { margin-left: 0; width: 100%; }
   .bc .adm-tile b { font-size: 22px; }
 }
 
 /* ---------- admin: a page for each goal, and /admin listing them (components/admin-shell.tsx) ---------- */
+  .bc .adm-days { --days-y: 32px; --days-h: 160px; padding: var(--s-3); }
+  .bc .adm-days-head { flex-direction: column; align-items: stretch; }
+  .bc .adm-days-read > div { flex: 1 1 0; padding: 0 var(--s-3); }
+  .bc .adm-days-read > div:first-child { padding-left: 0; border-left: 0; }
+  .bc .adm-days-t .alt b { display: none; }
 .bc .adm-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); }
 .bc .adm-nav { display: flex; flex-wrap: wrap; }
 .bc .adm-hub { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }

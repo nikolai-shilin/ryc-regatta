@@ -675,13 +675,14 @@ test('how they race: the totals and a table for each way of cutting it', () => {
 
 test('a bar a day, an empty slot for a day with no races, from the period’s start to today', () => {
   const html = ssr(h(AdminRacing, { lang: 'en', stats: STATS }));
-  assert.match(plain(html), /Races started a day · max 8/);
-  assert.equal([...html.matchAll(/class="adm-days-hit"/g)].length, 3);
+  assert.match(plain(html), /Races started a day Peak · 18 Nov 8/);
+  assert.equal([...html.matchAll(/class="adm-days-slot/g)].length, 3);
   assert.equal([...html.matchAll(/class="adm-days-bar"/g)].length, 2);
-  assert.match(html, /<title>16 Nov: 4 races, 50% finished, 3 players, 60 FPS<\/title>/);
-  assert.match(html, /<title>17 Nov: no races<\/title>/);
-  assert.match(html, /<title>18 Nov: 8 races, 100% finished, 5 players, – FPS<\/title>/);
-  assert.match(plain(html.slice(html.indexOf('adm-days-t'))), /16 Nov 18 Nov/);
+  const chart = plain(html.slice(html.indexOf('adm-days-bars'), html.indexOf('adm-days-t"')));
+  assert.match(chart, /16 Nov Races 4 Finished 50% Players 3 FPS 60/);
+  assert.match(chart, /17 Nov No races/);
+  assert.match(chart, /18 Nov Races 8 Finished 100% Players 5 FPS –/);
+  assert.match(plain(html.slice(html.indexOf('adm-days-t"'))), /16 Nov 17 Nov 18 Nov/);
 });
 
 test('how the game runs: the frame rates, stalls and load', () => {

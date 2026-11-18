@@ -166,21 +166,40 @@ test('an admin gets the page, asked for all time unless the address names a peri
   }
 });
 
-test('a day with no races is a gap in the chart, a bar of no height, across a month\'s end', () => {
+const slotsOf = (fig) => fig.split('<li ').slice(1);
+const tipOf = (slot) => plain(/class="adm-days-tip[^"]*">(.*?)<\/li>/.exec(slot)[1]);
+
+test('a day with no races is an empty track in the chart, across a month\'s end', () => {
   const days = [{ d: '2026-01-30', n: 2, fin: 1 }, { d: '2026-02-02', n: 4, fin: 4 }];
   const h = html({ days });
   const fig = /<figure class="adm-days">(.*?)<\/figure>/.exec(h)[1];
-  const bars = [...fig.matchAll(/<rect [^>]*class="adm-days-bar"[^>]*>/g)].map((m) => m[0]);
-  assert.equal(bars.length, 4, '30 and 31 January, 1 and 2 February');
-  const hs = bars.map((b) => Number(/height="([\d.]+)"/.exec(b)[1]));
+  const slots = slotsOf(fig);
+  assert.equal(slots.length, 4, '30 and 31 January, 1 and 2 February');
+  const hs = slots.map((s) => Number(/class="adm-days-bar" style="height:([\d.]+)%"/.exec(s)?.[1] ?? 0));
   assert.ok(hs[0] > 0 && hs[3] > hs[0], 'the days that had races are drawn');
   assert.deepEqual([hs[1], hs[2]], [0, 0], 'the days between are empty');
-  const tips = [...fig.matchAll(/<title>(.*?)<\/title>/g)].map((m) => m[1]);
-  assert.deepEqual(tips, ['30 Jan: 2 races, 50% finished', '31 Jan: no races', '1 Feb: no races', '2 Feb: 4 races, 100% finished']);
-  const xs = bars.map((b) => Number(/ x="([\d.]+)"/.exec(b)[1]));
-  assert.ok(xs[1] > xs[0] && xs[2] > xs[1] && xs[3] > xs[2], 'each day its own place');
-  assert.match(plain(fig), /30 Jan.*2 Feb/, 'the ends are the first and last day that had races');
-  assert.match(html({ days }, 'ru'), /31 янв\.: нет гонок/);
+  assert.deepEqual(slots.map(tipOf), ['30 Jan Races 2 Finished 50%', '31 Jan No races', '1 Feb No races', '2 Feb Races 4 Finished 100%']);
+  const cols = slots.map((s) => Number(/grid-column-start:(\d+)/.exec(s)[1]));
+  assert.ok(cols[1] > cols[0] && cols[2] > cols[1] && cols[3] > cols[2], 'each day its own place');
+  assert.match(plain(fig.slice(fig.indexOf('adm-days-t'))), /30 Jan.*2 Feb/, 'the ends are the first and last day that had races');
+  assert.match(plain(html({ days }, 'ru')), /31 янв\. Нет гонок/);
+});
+
+test('one day of races is a bar in a week\'s room, on the right, its date said once', () => {
+  const fig = /<figure class="adm-days">(.*?)<\/figure>/.exec(html({ days: [{ d: '2026-11-18', n: 1, fin: 1 }] }))[1];
+  assert.match(fig, /--days:7/);
+  assert.match(slotsOf(fig)[0], /grid-column-start:7/);
+  assert.equal(plain(fig.slice(fig.indexOf('adm-days-t"'))).match(/18 Nov/g).length, 1);
+  assert.doesNotMatch(plain(fig), /Last day/, 'the peak is the last day: one number, not the same one twice');
+});
+
+test('the busiest day is called out, the latest of them when days tie, and the scale runs on round numbers', () => {
+  const days = [{ d: '2026-11-15', n: 566, fin: 400 }, { d: '2026-11-16', n: 566, fin: 400 }, { d: '2026-11-17', n: 120, fin: 90 }];
+  const fig = /<figure class="adm-days">(.*?)<\/figure>/.exec(html({ days }))[1];
+  assert.deepEqual(slotsOf(fig).map((s) => /adm-days-slot peak/.test(s)), [false, true, false]);
+  assert.match(plain(fig), /Peak · 16 Nov 566/);
+  assert.match(plain(fig), /Last day · 17 Nov 120/);
+  assert.deepEqual([...fig.matchAll(/<b>(\d+)<\/b><\/span>/g)].map((m) => m[1]), ['0', '200', '400', '600']);
 });
 
 test('days on end with races are not given extra bars', () => {

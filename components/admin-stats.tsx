@@ -2,6 +2,7 @@ import { tx, type Lang } from '@/lib/lang';
 import { VENUES } from '@/lib/venues';
 import { YACHTS } from '@/lib/yachts';
 import { SHAPE_NAME } from '@/lib/race';
+import { DayChart, type DaySlot } from './admin-days';
 import { IconDevice, IconTrophy } from './ui';
 
 // The admin's look at the game: how the players race and how the game runs on their devices, over the last `days`
@@ -130,28 +131,9 @@ function DayBars({ lang, days, since }: { lang: Lang; days: Day[]; since: string
   const t = tx(lang);
   const from = Date.parse(since.slice(0, 10)), to = Date.parse(new Date().toISOString().slice(0, 10));
   const n = Math.max(1, Math.round((to - from) / 864e5) + 1), by = new Map(days.map((d) => [d.d, d]));
-  const slots = Array.from({ length: n }, (_, i) => { const d = new Date(from + i * 864e5).toISOString().slice(0, 10); return { d, x: by.get(d) }; });
-  const max = Math.max(1, ...days.map((d) => d.n));
-  const W = 600, H = 120, gap = 2, bw = Math.max(1, W / n - gap);
-  const date = (d: string) => new Date(d + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-  return (
-    <figure className="adm-days">
-      <figcaption className="adm-tab-h">{t('Races started a day', 'Гонок начато в день')} · {t('max', 'максимум')} {max}</figcaption>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('Races started each day', 'Гонок начато в каждый день')}>
-        <line x1="0" x2={W} y1={H - 0.5} y2={H - 0.5} className="adm-days-base" />
-        {slots.map((s, i) => {
-          const h = s.x ? Math.max(2, (s.x.n / max) * (H - 4)) : 0, x = i * (W / n) + gap / 2;
-          return (
-            <g key={s.d}>
-              <rect x={x} y={0} width={bw} height={H} className="adm-days-hit">
-                <title>{`${date(s.d)}: ${s.x ? t(`${s.x.n} races, ${pct(s.x.fin, s.x.n)} finished, ${s.x.who} players, ${num(s.x.fps)} FPS`, `${s.x.n} гонок, финиш ${pct(s.x.fin, s.x.n)}, игроков ${s.x.who}, ${num(s.x.fps)} FPS`) : t('no races', 'гонок нет')}`}</title>
-              </rect>
-              {h > 0 && <rect x={x} y={H - h} width={bw} height={h} rx={Math.min(2, bw / 2)} className="adm-days-bar" />}
-            </g>
-          );
-        })}
-      </svg>
-      <div className="adm-days-t"><span>{date(slots[0].d)}</span><span>{date(slots[slots.length - 1].d)}</span></div>
-    </figure>
-  );
+  const slots: DaySlot[] = Array.from({ length: n }, (_, i) => {
+    const d = new Date(from + i * 864e5).toISOString().slice(0, 10), x = by.get(d);
+    return { d, n: x?.n ?? 0, tip: x ? [[t('Races', 'Гонок'), String(x.n)], [t('Finished', 'Финиш'), pct(x.fin, x.n)], [t('Players', 'Игроков'), String(x.who)], [t('FPS', 'FPS'), num(x.fps)]] : [] };
+  });
+  return <DayChart lang={lang} title={t('Races started a day', 'Гонок начато в день')} label={t('Races started each day', 'Гонок начато в каждый день')} slots={slots} />;
 }
