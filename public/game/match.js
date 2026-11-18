@@ -309,11 +309,11 @@ export class Keeper {
 // ---------- the race between the two screens ----------
 // 'match:CODE' (link.all): host → guest snap { c, f, w, b, a } (wire.js; a: [g, hc], the guest's latest controls'
 // own clock stamp and the host's clock when they came, or null) ten times a second; ev { list: [{ key, arg, to: id |
-// null }] }, the race's news; end { winner, margin, forfeited } (ids) once it's over, and again every second it's
-// ticked; results (wire.js resultsOf) once it's over, every second until she answers; abandon {} after the host's tab
-// slept over a minute. 'match:CODE:in' (link.input): guest → host input { id, c, g } (controlsOf; g her own clock when
-// they last changed), as they change (see INPUT_MIN_MS); resultsOk { id, seed }, for each results heard. The Room joins
-// link.all; Host and Guest join link.input, and stop() leaves it.
+// null }] }, the race's news; end { winner, margin, forfeited } (ids) once it's over, the last snap before it, both
+// again every second it's ticked; results (wire.js resultsOf) once it's over, every second until she answers; abandon
+// {} after the host's tab slept over a minute. 'match:CODE:in' (link.input): guest → host input { id, c, g } (controlsOf;
+// g her own clock when they last changed), as they change (see INPUT_MIN_MS); resultsOk { id, seed }, for each results
+// heard. The Room joins link.all; Host and Guest join link.input, and stop() leaves it.
 const SNAP_S = 0.1; // a snapshot every 0.1 s of the race
 const HOLD_MS = 3000; // a guest unheard this long holds her course; a host unheard this long: "Waiting for <host>"
 const FORFEIT_MS = 30000; // a guest unheard this long: the race is the host's
@@ -397,7 +397,7 @@ export class Host {
     }
     if (list.length) all.send('ev', { list });
     this._snapT += dt;
-    if (this._snapT >= SNAP_S - 1e-6 || race.over) { this._snapT = 0; all.send('snap', { ...encodeSnap(race), a: this._ack }); }
+    if (this._snapT >= SNAP_S - 1e-6 && !race.over) { this._snapT = 0; all.send('snap', { ...encodeSnap(race), a: this._ack }); } // (the last is _end's)
     if (race.over) this._end();
   }
   // the guest has left the race: before her finish she gives it up at once; after it her place stands (race.forfeit)
@@ -409,7 +409,8 @@ export class Host {
     this._flushAt = t;
     this.link.all.send('results', this._results);
   }
-  // the end, told at once and again every second it's still ticked, for a guest whose connection blinked
+  // the end, and the boats as they ended it, told at once and again every second it's still ticked, for a guest whose
+  // connection blinked or whose page has just opened
   _end() {
     this._results ??= resultsOf(this.race);
     this.flush();
@@ -417,6 +418,7 @@ export class Host {
     if (this.ended && t - this._endAt < 1000) return;
     this.ended = true; this._endAt = t;
     const r = this.race;
+    this.link.all.send('snap', { ...encodeSnap(r), a: this._ack });
     this.link.all.send('end', { winner: r.winner?.id ?? null, margin: r.margin ?? null, forfeited: r.forfeited?.id ?? null });
   }
   // stop listening and sending (the race is done with, or abandoned)

@@ -353,6 +353,87 @@ test('the results reach the guest, and go on until she answers', async () => {
   assert.deepEqual(g.track, plain(thinTrack(d.Gh.track)));
 });
 
+// boat b over the line in the last minute under the race's U or black flag, then the race a minute past the gun
+async function flagged(flag, b = (d) => d.Gh) {
+  const d = await duel({ seed: SEED[flag] }), r = d.hrace, c = r.course, boat = b(d);
+  r.clock = -30;
+  d.run(0.5);
+  Object.assign(boat, { x: (c.pin.x + c.committee.x + c.windward.x) / 3, z: (c.pin.z + c.committee.z + c.windward.z) / 3, v: 1 });
+  d.run(0.5);
+  assert.equal(boat[flag === 'U' ? 'ufd' : 'bfd'], true, 'she is out under the flag');
+  underWay(d);
+  return d;
+}
+
+for (const flag of ['U', 'B']) {
+  test(`the results count a boat out under the ${flag === 'U' ? 'U' : 'black'} flag as disqualified: still out at the limit, or gone`, async () => {
+    const d = await flagged(flag);
+    toFinish(d, d.H);
+    d.run(2, () => { d.me.rudder = 0; });
+    assert.equal(d.hrace.winner, d.H);
+    d.hrace.clock = d.hrace.validAt + FINISH_LIMIT_S - 0.5;
+    d.run(1.5, () => { d.me.rudder = 0; });
+    const late = d.guest.results.boats.find((b) => b.id === 'g');
+    assert.deepEqual([late.done, late.dsq, late.dnf], [false, true, true], 'out at the limit');
+    assert.equal(d.guest.results.boats.find((b) => b.id === 'h').dsq, false, 'and the boat home clean is not');
+
+    const e = await flagged(flag);
+    e.host.guestLeft();
+    e.run(0.5);
+    const gone = e.guest.results.boats.find((b) => b.id === 'g');
+    assert.deepEqual([gone.done, gone.dsq, gone.dnf], [false, true, false], 'gone before her finish');
+  });
+}
+
+test('a boat merely out of time is DNF in the results, not disqualified', async () => {
+  const d = await duel();
+  underWay(d);
+  toFinish(d, d.H);
+  d.run(2, () => { d.me.rudder = 0; });
+  d.hrace.clock = d.hrace.validAt + FINISH_LIMIT_S - 0.5;
+  d.run(1.5, () => { d.me.rudder = 0; });
+  const g = d.guest.results.boats.find((b) => b.id === 'g');
+  assert.deepEqual([g.done, g.dsq, g.dnf], [false, false, true]);
+});
+
+test('the last snapshot lost at the limit: the guest\'s screen has her DNF from the next, after her end', async () => {
+  const d = await duel();
+  underWay(d);
+  toFinish(d, d.H);
+  d.run(2, () => { d.me.rudder = 0; });
+  const send = d.host.link.all.send;
+  let lost = 0;
+  d.host.link.all.send = (e, p) => { if (e === 'snap' && d.hrace.over && !lost++) return; send(e, p); }; // the socket blinks
+  d.hrace.clock = d.hrace.validAt + FINISH_LIMIT_S - 0.5;
+  for (let i = 0; i < 120 && !d.hrace.over; i++) d.frame(() => { d.me.rudder = 0; });
+  assert.equal(d.Gh.dnf, true, 'the host\'s race has her out');
+  assert.equal(lost, 1, 'the snapshot that said so was lost');
+  assert.ok(d.guest.ended, 'her screen has the end');
+  assert.equal(d.me.dnf, false, 'and doesn\'t know yet');
+  d.run(1.1);
+  assert.equal(d.me.dnf, true, 'told with the end\'s next repeat');
+  assert.equal(d.grace.over, true);
+});
+
+test('a page reloaded after the race reads the boats\' final state', async () => {
+  const d = await duel();
+  underWay(d);
+  toFinish(d, d.H);
+  d.run(1, () => { d.me.rudder = 0; });
+  toFinish(d, d.Gh);
+  for (let i = 0; i < 300 && !d.hrace.over; i++) d.frame(() => { d.me.rudder = 0; });
+  assert.equal(d.hrace.over, true);
+  assert.equal(d.Gh.place, 2);
+  d.run(0.5);
+  const fresh = await d.reload();
+  assert.equal(d.me.done, false, 'a new page knows nothing yet');
+  d.run(1.1);
+  assert.equal(fresh.race.over, true);
+  assert.equal(fresh.race.winner, d.Hg);
+  assert.deepEqual([d.me.done, d.me.place, d.me.finish], [true, 2, d.Gh.finish], 'her own boat, as the host has her');
+  assert.deepEqual([d.Hg.done, d.Hg.place, d.Hg.finish], [true, 1, d.H.finish], 'and the host\'s');
+});
+
 test('results of another seed are ignored', async () => {
   const d = await duel();
   const ear = makeLink(d.rt, d.code);

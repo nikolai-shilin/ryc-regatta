@@ -159,10 +159,11 @@ export function thinTrack(track) {
   return Array.from({ length: m }, (_, i) => track[m > 1 ? Math.round((i * (n - 1)) / (m - 1)) : n - 1]).map(([x, z]) => [Math.round(x), Math.round(z)]);
 }
 
-// the race as it ended, for the follower's debrief: each sailor's result, leg times, thinned track and log
+// the race as it ended, for the follower's debrief: each sailor's result (dsq: out under the U or black flag too, home
+// or not), leg times, thinned track and log
 export function resultsOf(race) {
   return {
     seed: race.seed,
-    boats: race.humans.map((b) => ({ id: b.id, done: !!b.done, dsq: !!b.dsq, dnf: !!b.dnf, place: b.place ?? null, finish: b.finish ?? null, pens: b.pens || 0, legT: b.legT, track: thinTrack(b.track), log: b.log })),
+    boats: race.humans.map((b) => ({ id: b.id, done: !!b.done, dsq: !!(b.dsq || b.ufd || b.bfd), dnf: !!b.dnf, place: b.place ?? null, finish: b.finish ?? null, pens: b.pens || 0, legT: b.legT, track: thinTrack(b.track), log: b.log })),
   };
 }
