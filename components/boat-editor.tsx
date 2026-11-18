@@ -234,7 +234,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
             <label className="bt-k" htmlFor="b-num"><IconHash />{t('Sail number', 'Номер на парусе')}</label>
             <div className="num-pair">
               <input className="num-in" aria-label={t('Letters on the sail', 'Буквы на парусе')} value={b.nat} maxLength={3} onChange={(e) => set({ nat: e.target.value.toUpperCase().replace(/[^A-ZА-ЯЁ]/g, '') })} />
-              <input id="b-num" className="num-in" inputMode="numeric" value={b.num} maxLength={3} onChange={(e) => set({ num: e.target.value.replace(/[^0-9]/g, '') })} onBlur={() => { if (!b.num) set({ num: '1' }); }} />
+              <input id="b-num" className="num-in" inputMode="numeric" value={b.num} maxLength={4} onChange={(e) => set({ num: e.target.value.replace(/[^0-9]/g, '') })} onBlur={() => { if (!b.num) set({ num: '1' }); }} />
             </div>
           </div>
         </div>

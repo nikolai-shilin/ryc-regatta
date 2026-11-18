@@ -284,8 +284,10 @@ const LAT_G = CLS.latG ?? 0.5;
 const WAVE_L = CLS.waveL ?? 0, CHOP_K = CLS.chopK ?? Math.sqrt(CLASSES[DEFAULT_CLASS].loa / CLS.loa), SURF_K = CLS.surfK ?? 1;
 // and the way she needs on to catch a sea: 3 m/s, less for a small boat as her speeds are (the Optimist 1.4)
 const SURF_V = 3 * Math.min(1, Math.sqrt(CLS.loa / CLASSES[DEFAULT_CLASS].loa));
-// her rig's wind shadow and backwind, as far and as wide as her rig is tall against the JPK 1050's (classes.js shadowK)
-const SHADOW_K = CLS.shadowK ?? 1;
+// her rig's wind shadow and backwind, as far and as wide as her rig is tall against the JPK 1050's 16.2 m (classes.js
+// frame); the shadow itself runs six and a half mast heights downwind, thinning all the way
+export const shadowReach = (c) => 6.5 * 16.2 * c.frame;
+const SHADOW_K = CLS.frame, SHADOW_L = shadowReach(CLS);
 export class Boat {
   constructor(o = {}) {
     this.name = o.name || 'You';
@@ -1031,10 +1033,10 @@ export class Race {
     for (const o of this.boats) {
       if (o === b || (this.multi && o.done)) continue; // (a boat home casts no shadow)
       const dx = b.x - o.x, dz = b.z - o.z, along = dx * ux + dz * uz;
-      if (along < 3 * SHADOW_K || along > 80 * SHADOW_K) continue;
+      if (along < 3 * SHADOW_K || along > SHADOW_L) continue;
       const lat = dx * uz - dz * ux, width = 6 * SHADOW_K + along * 0.22;
       if (Math.abs(lat) > width) continue;
-      const f = (1 - along / (80 * SHADOW_K)) * (1 - Math.abs(lat) / width);
+      const f = (1 - along / SHADOW_L) * (1 - Math.abs(lat) / width);
       deficit += 0.32 * f; bend += f * 5 * D2R * sgn(o.twa); // the wind is bent off the other boat's sails
     }
     // backwind: a boat close ahead and to leeward bends her wind back onto you — less of it, and from further ahead
@@ -1480,8 +1482,10 @@ export class Race {
         const d = Math.max(g.d, 0.01), nx = g.d > 0.01 ? g.dx / d : Math.sign(q.x - p.x || 1), nz = g.d > 0.01 ? g.dz / d : 0, push = (2 * HALF_B - g.d) / 2;
         p.x -= nx * push; p.z -= nz * push; q.x += nx * push; q.z += nz * push;
         if (p.hit <= 0 && q.hit <= 0) {
+          // how hard: the speed they met at, 6 m/s (12 knots) and over the hardest; the sound of it goes by this (sfx.js collide)
+          const hard = clamp(Math.hypot(p.v * Math.sin(p.h) - q.v * Math.sin(q.h), p.v * Math.cos(p.h) - q.v * Math.cos(q.h)) / 6, 0.2, 1);
           p.v *= 0.75; q.v *= 0.75;
-          for (const b of [p, q]) if (b.human) this.say('bump', undefined, b);
+          for (const b of [p, q]) if (b.human) this.say('bump', hard, b);
           if (this.rulesOn && !p.done && !q.done) this.foul(p, q);
         }
         p.hit = q.hit = 2;

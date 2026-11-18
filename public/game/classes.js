@@ -244,13 +244,12 @@ export const CLASSES = {
   // The sea: she lies across the short seas, feeling their slope as its mean along her 27 m waterline (waveL), so she
   // can't be steered through each one as a light boat is, and 175 tonnes don't surf (surfK 0: downwind in a blow she
   // carries her sail at her hull's pace, the polar's); 175 tonnes on a 27 m waterline punch through a short sea that
-  // stops a 10 m boat, so it costs her upwind half what it costs the JPK (chopK by her size). Her 47 m rig's wind shadow reaches 2.9
-  // times as far as the JPK's 16 m one, and as wide (shadowK).
+  // stops a 10 m boat, so it costs her upwind half what it costs the JPK (chopK by her size).
   jclass: {
     id: 'jclass', loa: 39.3, beam: 6.55, drawnL: 39.3, crew: 30, frame: 2.9,
     kite: true, zero: false, reef: false, j3: false,
     tau: 11, coast: 190, hullV: 12.6, heelK: 0.6, awsK: 1, heelShow: 1, turn: 0.35, yawLag: 1.1, courseK: 1.6, lineK: 2.2, startK: 2.5,
-    waveL: 27, surfK: 0, shadowK: 2.9,
+    waveL: 27, surfK: 0,
     gybeT: 20, gybeK: 0.6, // a dip-pole gybe of a 1,000 m² spinnaker by thirty crew
     tws: TWS, twa: TWA,
     beat: [48, 46.5, 45.5, 45, 44.5, 44, 44, 45, 46],

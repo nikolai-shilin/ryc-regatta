@@ -101,7 +101,7 @@ export function cleanBoat(b: unknown): Boat | null {
   if (name) out.name = name;
   if (typeof r.laminate === 'boolean') out.laminate = r.laminate;
   if (typeof r.nat === 'string') out.nat = r.nat.slice(0, 3);
-  if (typeof r.num === 'string') out.num = r.num.slice(0, 3);
+  if (typeof r.num === 'string') out.num = r.num.slice(0, 4);
   if (typeof r.flag === 'string' && findFlag(r.flag)) out.flag = r.flag;
   if (typeof r.at === 'number' && r.at > 0) out.at = r.at;
   return out;

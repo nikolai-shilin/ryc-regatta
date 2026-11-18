@@ -232,6 +232,15 @@ export function createSfx(ctx, master, bus = {}) {
     burst(pink, node.filter('bandpass', 420, 1.2), vol * 0.22, 0.004, 0.12, boat, t);
     burst(pink, node.filter('highpass', 1600, 0.6), vol * 0.16, 0.025, 0.45, boat, t + 0.03);
   }
+  // two hulls meeting, hard 0..1: the blow felt through her, her hollow hull booming, the laminate's crack, and the
+  // topsides grinding along each other as they part, longer the harder they met
+  function collide(hard = 0.7) {
+    const t = ctx.currentTime, k = clamp(hard, 0.2, 1), vol = 0.3 + 0.7 * k;
+    burst(brown, node.filter('lowpass', rnd(110, 150), 1), vol * 1.1, 0.004, 0.3 + 0.2 * k, boat, t);
+    burst(pink, node.filter('bandpass', rnd(210, 280), 3), vol * 0.55, 0.003, 0.22, boat, t);
+    burst(pink, node.filter('bandpass', rnd(1300, 1900), 1.1), vol * vol * 0.5, 0.001, 0.06, boat, t + 0.006);
+    burst(pink, node.filter('bandpass', rnd(2300, 3100), 2.2), vol * 0.16, 0.05, 0.25 + 0.55 * k, boat, t + 0.05);
+  }
   // a pawl clicking: vol, pan, where to, when
   function click(vol = 1, pan = 0, to = boat, t = ctx.currentTime) {
     if (!clicks.length) return;
@@ -274,5 +283,5 @@ export function createSfx(ctx, master, bus = {}) {
     o.connect(bp).connect(g).connect(sig); o.start(t); o.stop(t + dur + 0.02);
   }
 
-  return { white, pink, brown, node, send, wind, water, sails, crack, slap, click, ease, horn, beep };
+  return { white, pink, brown, node, send, wind, water, sails, crack, slap, collide, click, ease, horn, beep };
 }

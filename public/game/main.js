@@ -433,6 +433,7 @@ const audio = {
     if (v?.grinding && now - (this.grindT ?? 0) > 0.085) { this.grindT = now + Math.random() * 0.03; this.click(); }
   },
   slap(vol) { if (this.sfx) this.sfx.slap(vol); }, // the hull slapping onto a sea
+  collide(hard) { if (this.sfx) this.sfx.collide(hard); }, // two hulls meeting
   click() { if (this.sfx) this.sfx.click(); }, // a winch pawl
   // the sheet eased: the rope's rasp as it runs out round the drum, not oftener than every 70 ms
   ease() { if (!this.sfx) return; const n = this.ctx.currentTime; if (n - (this.easeT ?? 0) > 0.07) { this.easeT = n; this.sfx.ease(); } },
@@ -1813,7 +1814,7 @@ function handleMessages() {
       if (!race.multi) setTimeout(finishToPage, end ? Math.max(2500, (end - audio.ctx.currentTime) * 1000 + 600) : 2500);
     }
     else if (m.key === 'gate') toast(t('gateMsg'));
-    else if (m.key === 'bump') { score.sting('hit'); hint('bump', t('bump'), 3); haptic('heavy'); skipper.shout(race.clock < 0 ? 'push' : 'contact'); }
+    else if (m.key === 'bump') { audio.collide(m.arg); score.sting('hit'); hint('bump', t('bump'), 3); haptic('heavy'); skipper.shout(race.clock < 0 ? 'push' : 'contact'); }
     else if (m.key === 'aground') { score.sting('hit'); hint('aground', t('aground'), 3); haptic('heavy'); skipper.shout('aground'); }
     else if (m.key === 'hail') { const h = t('hail' + a.rule), who = race.boats.find((b) => b.name === a.who); toast(`${a.who}: “${h}”`, 2.2); skipper.cue('hail' + a.rule, who, true); asides.hail(); haptic('warn'); }
     else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); skipper.cue('hail' + a.rule, null, true); } }

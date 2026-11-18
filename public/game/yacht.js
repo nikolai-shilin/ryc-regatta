@@ -1270,7 +1270,7 @@ export function lookFrom(b) {
   if (typeof b.name === 'string') { const n = b.name.replace(/[^\p{L}\p{N} .'’&-]/gu, '').trim().slice(0, 16); if (n) L.name = n; } // as lib/boat.ts cleanName
   if (typeof b.laminate === 'boolean') L.laminate = b.laminate;
   L.tape = darker(L.cloth, L.laminate ? 0.28 : 0.12); L.batten = darker(L.cloth, L.laminate ? 0.3 : 0.14); // the luff tape and battens: a shade darker than the cloth
-  if (typeof b.num === 'string' && b.num.trim()) L.num = b.num.trim().slice(0, 3);
+  if (typeof b.num === 'string' && b.num.trim()) L.num = b.num.trim().slice(0, 4);
   if (typeof b.nat === 'string' && b.nat.trim()) L.nat = b.nat.trim().toUpperCase().slice(0, 3);
   if (typeof b.flag === 'string' && /^[a-z]{2}$/.test(b.flag)) L.flag = `/flags/${b.flag}.svg`; // public/flags, lib/flags.ts
   return L;
