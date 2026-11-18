@@ -473,19 +473,6 @@ export function beatOf(c, i) {
 export const beatFrom = (c, j) => legAim(c, c.legs[j] === 'mark' ? 0 : j - 1);
 // the marks with a zone: the gate, and every mark some leg reaches on a reach or a run (the wing, mark 2, the offset)
 export const zoneMarks = (c) => [...c.gate, ...Object.entries(c.marks).filter(([k]) => c.legs.some((l, i) => l === k && hasZone(c, i))).map(([, m]) => m)];
-// a match boat's flag, blue or yellow (Appendix C), on a staff at her stern: in the drawn model's metres, heeling with her
-const SIDE_COLOURS = { blue: '#2f7dff', yellow: '#f5c400' };
-function sternFlag(v, side) {
-  const L = v.drawnL || 10.45, g = new THREE.Group(), h = 1.1 + L * 0.03, w = 0.5 + L * 0.03;
-  const staff = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, h, 6), new THREE.MeshStandardMaterial({ color: '#d8d8d8', roughness: 0.4, metalness: 0.6 }));
-  staff.position.y = h / 2;
-  const flag = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.66), new THREE.MeshBasicMaterial({ color: SIDE_COLOURS[side] || '#ffffff', side: THREE.DoubleSide, fog: true }));
-  flag.rotation.y = Math.PI / 2; flag.position.set(0, h - w * 0.33, w / 2); // streaming aft from the staff
-  staff.userData.detail = flag.userData.detail = false; // seen from afar too (setDetail)
-  g.add(staff, flag);
-  g.position.set(0, 0.06 * L + 0.35, L * 0.47); // the stern is +z in the model
-  (v.tilt || v.root).add(g);
-}
 // a finish line's committee boat runs no start: she flies the blue flag, on station, for the whole race
 const ON_STATION = { cls: true };
 
@@ -537,7 +524,7 @@ class Laylines {
 // dashed like the other lines: one mesh for all of them; the rings of the mark you sail for now are as bright as the lines, the others fainter
 const RING_ON = LINE_A, RING_OFF = LINE_A * 0.4;
 class ZoneRings {
-  constructor(marks, ZONE) { // ZONE: its radius, the race's (two lengths in a match)
+  constructor(marks, ZONE) { // ZONE: its radius, the race's
     const N = Math.round((2 * Math.PI * ZONE) / DASH), pos = [], col = [], idx = [], hw = LINE_W / 2;
     this.marks = marks; this.v = [];
     marks.forEach((m, k) => {
@@ -1496,16 +1483,14 @@ export class World {
   // a boat's view, added to the scene: a computer boat in her own colours with her name over her, yours in the ones
   // you chose on /boat (or the look given). b.cls, when a boat has one, is her class (classes.js) instead of the
   // page's: the fleet page (/fleet-view) has one of each afloat together.
-  // In a match the other sailor's boat is in her own colours (the look her game sent), her name by her status tag; and
-  // both fly their blue or yellow flag on the stern.
+  // In a 1-on-1 race the other sailor's boat is in her own colours (the look her game sent), her name by her status tag.
   boatView(b, look) {
-    const other = !b.ai && b.human && (this.race?.match || this.race?.multi) && b !== this.race.player; // (no look sent: the default boat's)
+    const other = !b.ai && b.human && this.race?.multi && b !== this.race.player; // (no look sent: the default boat's)
     const lk = b.ai ? LOOKS[b.name] || LOOKS.Aurora : other ? lookFrom(b.look) : look || playerLook();
     const v = b.ai
       ? makeBoatView({ look: lk, label: { text: b.name, color: b.color } }, b.cls)
       : other ? makeBoatView({ look: lk, label: { text: b.name, color: b.color ?? 0xffffff } }, b.cls)
       : makeBoatView({ look: lk, player: true }, b.cls);
-    if (b.side) sternFlag(v, b.side);
     v.root.scale.setScalar((b.cls?.loa ?? HULL) / (v.drawnL || 10.45)); // every class drawn at her own length (the JPK 1050 10.45 m)
     underParts(v.root, lk?.bottom, this); // her hull, keel and rudder, seen through the water
     this.seaShade.add(v); // and her shadow on it
@@ -1834,7 +1819,7 @@ export class World {
       const far = Math.hypot(d, cp.y); // the full figures only close up, never with Life on Low; the finest right by the camera, with Life on High
       v.setCrewNear(this.gfx?.life !== 'low' && far < 25, this.gfx?.life === 'high' && far < (v.crewClose ? 19 : 15));
       v.update(b, t, this.W, this.mode === 'drone');
-      if ((race.match || race.multi) && v.label && b !== P) { // a match: her penalty turn or OCS by her name (the HUD's tag names her the rest of the time)
+      if (race.multi && v.label && b !== P) { // a 1-on-1 race: her penalty turn or OCS by her name (the HUD's tag names her the rest of the time)
         const st = b.pen ? '⟳' : b.ocs ? 'OCS' : '';
         v.label.visible = !!st && this.mode !== 'helm'; if (st) v.label.userData.set(`${b.name} ${st}`, true);
       }

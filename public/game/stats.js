@@ -48,7 +48,7 @@ function myFlag() {
 // the day of today's race (the same wind for everyone), whose times rank on the game card on Home. Only the start
 // names the player (the finish finds its row), so it waits for the token if it is still on its way.
 export function raceStarted(race, opts) {
-  if (!race || race._rid || (race.match || race.multi)) return; // a match race is kept nowhere: nothing is posted from one
+  if (!race || race._rid || race.multi) return; // a 1-on-1 race is kept nowhere: nothing is posted from one
   perfSend(); // the race before it, left before its finish: how it ran
   raceEnded(cur, 'new'); // …and how it ended, if it wasn't said (a race begun from somewhere main.js doesn't name)
   race._rid = uuid();
@@ -61,7 +61,7 @@ export function raceStarted(race, opts) {
 // The player crossed the finish line (place is null when disqualified).
 export function raceFinished(race) {
   const P = race && race.player;
-  if (!P || !race._rid || race._sent || (race.match || race.multi)) return;
+  if (!P || !race._rid || race._sent || race.multi) return;
   race._sent = true;
   send({ ev: 'finish', id: race._rid, place: P.dsq ? null : P.place, boats: race.boats.length, secs: P.finish, dsq: !!P.dsq });
   visit.finished++;
@@ -72,7 +72,7 @@ export function raceFinished(race) {
 // The result page's record (main.js finishToPage), kept on the server too, so its link works on any device. A
 // keepalive post carries at most 64 kB, and the page is left at once: a bigger record stays on this device only.
 export function raceResult(race, result) {
-  if (!race || !race._rid || !result || (race.match || race.multi)) return;
+  if (!race || !race._rid || !result || race.multi) return;
   const body = { ev: 'result', id: race._rid, result };
   if (JSON.stringify(body).length < 60000) send(body, null);
 }
@@ -111,7 +111,7 @@ export const device = () => ({
   mem: navigator.deviceMemory || null,
 });
 export function perfFrame(race, raw, q, gfx, saver) {
-  if (!race || !race._rid || (race.match || race.multi) || !(raw > 0) || raw > 1) return; // (a second and more: the tab was away)
+  if (!race || !race._rid || race.multi || !(raw > 0) || raw > 1) return; // (a second and more: the tab was away)
   if (!pf || pf.rid !== race._rid) {
     perfSend();
     pf = { rid: race._rid, hist: new Uint32Array(NB), n: 0, t: 0, stalls: 0, q0: q, q, gfx, saver: saver ? 1 : 0 };
@@ -156,7 +156,7 @@ let cur = null, context = () => ({});
 export function statsContext(fn) { context = fn; }
 // the incidents that may make a player give up, as the race says them (main.js handleMessages): counted, and the
 // last one remembered with when
-const BAD = new Set(['ocs', 'fouled', 'touched', 'bump', 'aground', 'penNow', 'missedLine', 'missedGate', 'wrongSide', 'genRecall', 'barging', 'finishOwed']);
+const BAD = new Set(['ocs', 'fouled', 'touched', 'bump', 'aground', 'missedLine', 'missedGate', 'wrongSide', 'genRecall', 'barging']);
 export function raceIncident(race, key) {
   const I = race && race._inc;
   if (!I || !BAD.has(key)) return;
@@ -166,7 +166,7 @@ export function raceIncident(race, key) {
 // left, hidden: put away, new: another race begun), where (the leg and the race's clock, her place then), the
 // incidents, the last one and how many seconds before, and what she had set. Once a race (the server keeps the first).
 export function raceEnded(race, how) {
-  if (!race || !race._rid || race._ended || (race.match || race.multi)) return;
+  if (!race || !race._rid || race._ended || race.multi) return;
   race._ended = true;
   const P = race.player, I = race._inc || { n: {} }, st = race.standings ? race.standings() : [];
   let use = {}; try { use = context() || {}; } catch (e) {}

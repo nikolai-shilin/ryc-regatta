@@ -1,4 +1,4 @@
-// A race with two human boats and no computer boats, not a match (public/game/sim.js, `multi`): today's rules and
+// A race with two human boats and no computer boats (public/game/sim.js, `multi`): today's rules and
 // today's start, the first valid finish wins, the other has three minutes more, and a finished boat is out of the
 // other's way. Run headless in Node: npm test.
 import { test } from 'node:test';
@@ -44,10 +44,9 @@ function atFinish(o = {}) {
 test('two humans and no computer boats, on today\'s rules', () => {
   const r = duel();
   assert.equal(r.multi, true); assert.equal(r.boats.length, 2); assert.ok(r.boats.every((b) => b.human));
-  assert.equal(r.zone, sim.ZONE); assert.equal(r.match, false); assert.equal(r.validAt, null);
+  assert.equal(r.zone, sim.ZONE); assert.equal(r.validAt, null);
   assert.equal(new sim.Race({ seed: 11 }).multi, false);
   assert.equal(new sim.Race({ seed: 11, humans: [{ id: 'a', name: 'A' }] }).multi, false);
-  assert.equal(new sim.Race({ seed: 11, humans: HUMANS, match: true }).multi, false, 'a match is not a duel');
   assert.ok(r.boats.every((b) => b.dnf === false));
   assert.equal(sim.FINISH_LIMIT_S, 180);
 });
@@ -60,9 +59,7 @@ test('a contact foul starts a turn at once: one tack and one gybe', () => {
   put(r, g, at(W - 45 * D2R), W - 45 * D2R, V); put(r, h, at(W + 45 * D2R), W + 45 * D2R, V);
   assert.ok(runUntil(r, () => h.pen || g.pen, 6), 'someone fouled');
   assert.deepEqual(h.pen, { tack: false, gybe: false, dir: 0 }, 'port keeps clear'); assert.equal(g.pen, null);
-  assert.equal(h.owed ?? 0, 0, 'no penalty to take later');
   assert.equal(said(r, 'fouled', h).length, 1); assert.equal(said(r, 'theyFouled', g).length, 1);
-  assert.equal(said(r, 'umpire').length, 0, 'no umpire'); assert.equal(r.calls.length, 0);
 });
 
 test('home with a penalty unserved is disqualified, and starts no limit', () => {
@@ -173,11 +170,6 @@ test('the other boat hails a boat that must keep clear', () => {
   r.step(1 / 60); r.step(1 / 60);
   assert.equal(said(r, 'hail', h).length, 1, 'once in seven seconds');
   assert.ok(runUntil(r, () => said(r, 'hail', h).length > 1, 8), 'and again after');
-  // a match's boats don't (the umpire speaks there)
-  const m = new sim.Race({ preset: 'medium', length: 'short', seed: 11, humans: HUMANS, me: 'h', match: true });
-  m.clock = 30; for (const b of m.humans) b.leg = 1;
-  put(m, m.humans[1], at(W - 45 * D2R), W - 45 * D2R, V); put(m, m.humans[0], at(W + 45 * D2R), W + 45 * D2R, V);
-  m.step(1 / 60); assert.equal(said(m, 'hail').length, 0);
 });
 
 test('both over at the gun is a general recall', () => {
@@ -187,4 +179,22 @@ test('both over at the gun is a general recall', () => {
   put(r, h, linePt(c, 0.3, 3), h.h, 0); put(r, g, linePt(c, 0.7, 3), g.h, 0); still(h); still(g);
   runUntil(r, () => r.clock >= 0 || r.recalls > 0, 1);
   assert.equal(r.recalls, 1); assert.equal(r.prepFlag, 'U');
+});
+
+// a race sailed to the end of the computer boats with you on a fixed script: the helm over (0.3) for 2 s every 20 s,
+// a tack every 45 s from the gun (as test/sim.test.mjs has it)
+function sailScripted(opts) {
+  const r = new sim.Race(opts), P = r.player, others = r.boats.filter((b) => b !== P);
+  let tacks = 0;
+  for (let n = 0; n < 60 * 60 * 40 && !others.every((b) => b.done); n++) {
+    const t = r.clock;
+    P.rudder = ((t % 20) + 20) % 20 < 2 ? 0.3 : 0;
+    if (t >= 0 && Math.floor(t / 45) > tacks) { tacks = Math.floor(t / 45); P.tackOrGybe(); }
+    r.step(1 / 60);
+  }
+  return r.boats.map((b) => (b.done && !b.dsq ? Math.round(b.finish * 10) / 10 : null));
+}
+const GOLDEN_4242 = [null, 282.7, 277, 248.7, 229.9]; // sailed again 2026-11-18: the wind shadow runs six and a half mast heights (sim.js shadowReach)
+test('a free race is unchanged by the 1-on-1 race', () => {
+  assert.deepEqual(sailScripted({ preset: 'medium', length: 'short', laps: 1, fleet: 5, seed: 4242 }), GOLDEN_4242);
 });

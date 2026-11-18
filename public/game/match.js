@@ -281,7 +281,7 @@ const CARRY_S = 1; // the host's boat carried on from its last snapshot to the h
 const RTT_N = 10; // the way there and back, the least of the last ten measured (her stamps' sends against their acks)
 const EASE_S = 0.5; // the guest's own boat eased to the host's copy of her, with this time constant…
 const SNAP_M = 20; // …or taken as it is when further off than this, or after one of these on her:
-const SNAP_ON = new Set(['bump', 'aground', 'touched', 'fouled', 'umpire']);
+const SNAP_ON = new Set(['bump', 'aground', 'touched', 'fouled']);
 // her controls go as they change, at most every 0.2 s, and at least every 0.5 s; a tack or gybe pressed, a hail, or
 // the helm moved more than 0.3 since the last went, at once, but never more than ten a second
 const INPUT_MIN_MS = 200, INPUT_MAX_MS = 500, INPUT_NOW_MS = 100, HELM_NOW = 0.3;
@@ -396,8 +396,7 @@ export class Host {
 }
 
 
-// boat o (a read row) t s on: her speed held, and her turn dying away as the helm is taken to be centred (YAW_LAG), as
-// the umpire's closing() projects a boat
+// boat o (a read row) t s on: her speed held, and her turn dying away as the helm is taken to be centred (YAW_LAG)
 function carryOn(o, t) {
   if (!(t > 0)) return o;
   const n = Math.max(1, Math.ceil(t / 0.05)), d = t / n, head = (u) => o.h + o.yawRate * YAW_LAG * (1 - Math.exp(-u / YAW_LAG));
@@ -465,11 +464,11 @@ export class Guest {
   _hostClock(t) { return this._offs.length ? t / 1000 - Math.min(...this._offs.map((o) => o.off)) : null; }
 
   _onSnap(s) {
-    const race = this.race, me = this.me, owed = me.owed, pen = !!me.pen;
+    const race = this.race, me = this.me, pen = !!me.pen;
     if (s?.r !== undefined && s.r !== race.recalls) this._recalled(s);
     if (!applySnap(race, s, me)) return;
     // the host saw her turn done (a turn gone with a disqualification, at the finish, wasn't paid)
-    if (pen && !me.pen && !me.dsq && (race.multi || me.owed < owed)) me.events.push('penaltyDone');
+    if (pen && !me.pen && !me.dsq) me.events.push('penaltyDone');
     const at = this.now();
     this._lastSnap = at;
     this._last = { at, s };
@@ -555,7 +554,7 @@ export class Guest {
       const to = m.to ? this._boat(m.to) : null;
       if (m.to && to !== me) continue; // the other boat's news
       race.messages.push({ key: m.key, arg: m.arg, to });
-      if (SNAP_ON.has(m.key) && (m.key !== 'umpire' || m.arg?.on === me.id)) this._snapMe = true;
+      if (SNAP_ON.has(m.key)) this._snapMe = true;
     }
   }
 
@@ -610,12 +609,12 @@ export class Guest {
     if (this.hostSilent || this.abandoned) return; // frozen until the host's game is back, or says the race is abandoned
     const L = this._last, est = this._hostClock(t);
     // her boat; her penalties are the host's to judge, and her screen's news (a turn begun) the host's to tell
-    const n0 = race.messages.length, ne = me.events.length, owed = me.owed, pen = me.pen && { ...me.pen }; // (a copy: her step works on the turn it finds)
+    const n0 = race.messages.length, ne = me.events.length, pen = me.pen && { ...me.pen }; // (a copy: her step works on the turn it finds)
     if (est !== null && race.clock - est > dt / 2) me.step(dt, race); // ahead of the host: the clock waits, she sails on
     else race.stepView(dt, me);
     this._own += dt;
     race.messages.length = n0;
-    me.owed = owed; me.pen = pen;
+    me.pen = pen;
     if (me.events.length > ne) me.events.splice(ne, me.events.length - ne, ...me.events.slice(ne).filter((e) => e !== 'penaltyDone'));
     if (est !== null && est - race.clock > dt / 2) this._catchUp(est); // behind: forward, the wind and waves with it
     if (!L) return;

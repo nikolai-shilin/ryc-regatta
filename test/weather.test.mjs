@@ -50,7 +50,7 @@ test('a river runs with the current switched off, and other water stands still',
   assert.equal(await inVenue('cowes', race + speed), 0);
 });
 
-test('a match is sailed without a current, even on a river', async () => {
+test('a 1-on-1 race on a river has the river\'s current', async () => {
   const id = VENUES.find((x) => x.runs).id;
-  assert.equal(await inVenue(id, "const r = new sim.Race({ seed: 11, match: true, humans: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], blue: 'a' }); return Math.hypot(r.current.x, r.current.z);"), 0);
+  assert.ok(await inVenue(id, "const r = new sim.Race({ seed: 11, humans: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }] }); return Math.hypot(r.current.x, r.current.z);") > 0);
 });

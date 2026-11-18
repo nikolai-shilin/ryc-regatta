@@ -124,7 +124,7 @@ test('both screens build the same race from the settings', () => {
   assert.equal(a.seq.length, 4); // (warning, preparatory, one minute, gun)
   assert.equal(a.seed, 4242);
   assert.equal(a.boats.length, 2, 'no computer boats');
-  assert.equal(a.multi, true); assert.equal(a.match, false);
+  assert.equal(a.multi, true);
   assert.equal(a.player.id, 'h'); assert.equal(b.player.id, 'g');
   assert.deepEqual(a.humans.find((x) => x.id === 'g').look, { hull: 'g' }, 'each sailor in her own look');
 });
@@ -918,17 +918,5 @@ test('after the race the host\'s tick(0) and flush go on repeating the end and t
   const n = heard.results;
   beat(3);
   assert.equal(heard.results, n, 'answered: the results stop');
-});
-
-test('penalties owed off the wire are read as 0 to 9: a bad number never hangs the HUD', async () => {
-  const d = await duel();
-  const row = encodeSnap(d.hrace).b[0], N = row.length - 24; // (the row's numbers, then its 24 fields after them)
-  const at = (v) => { const r = row.slice(); r[N + 8] = v; return readBoat(r).owed; };
-  assert.equal(at(2), 2);
-  assert.equal(at(1e9), 9);
-  assert.equal(at(-3), 0);
-  assert.equal(at(NaN), 0);
-  assert.equal(at('7'), 0);
-  assert.equal(at(2.7), 2);
 });
 

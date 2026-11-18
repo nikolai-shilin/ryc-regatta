@@ -25,7 +25,7 @@ test("main.js says each of a match's calls in both languages", () => {
   const main = readFileSync(new URL('../public/game/main.js', import.meta.url), 'utf8');
   const ru = main.slice(main.indexOf('\n  ru: {'));
   const en = main.slice(main.indexOf('\n  en: {'), main.indexOf('\n  ru: {'));
-  for (const k of ['entered', 'entryEarly', 'entryLate', 'umpire', 'theyOwe', 'penStart', 'penNow', 'finishOwed', 'raceWon', 'raceLost', 'matchWon', 'matchLost', 'waitingHost', 'guestGone', 'abandoned', 'full']) {
+  for (const k of ['raceWon', 'raceLost', 'waitingHost', 'guestGone', 'abandoned', 'full']) {
     for (const [lang, src] of [['en', en], ['ru', ru]]) assert.match(src, new RegExp(`\\b${k}: `), `${lang}.${k}`);
   }
 });
@@ -466,4 +466,9 @@ test('leaving a race on the water says what it does to it, in both languages, an
   const ui = readFileSync(new URL('../public/game/match-ui.js', import.meta.url), 'utf8');
   assert.doesNotMatch(ui, /mAsk|askLeave/);
   assert.doesNotMatch(mainSrc, /askLeave/);
+});
+
+test('no Appendix C is left in the game', () => {
+  const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
+  for (const f of ['sim', 'wire', 'main', 'world', 'stats']) assert.doesNotMatch(read(`../public/game/${f}.js`), /race\.match|this\.match|\.owed|placeMatch|matchTurn|matchPens|umpire\(\)|UMPIRE|sternFlag|penMr/, f);
 });

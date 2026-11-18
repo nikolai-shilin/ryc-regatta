@@ -162,16 +162,13 @@ const T = {
     zAhead: (n) => `Zone · clear ahead of ${n} — you get room`, zAstern: (n) => `Zone · clear astern of ${n} — keep clear`, tackCall: 'Ready about… Lee-oh!', gybeCall: 'Stand by to gybe… Gybe-oh!',
     results: 'Results', again: 'Race again', menu: 'Menu', racing: 'racing…', you: 'You', dsq: 'DSQ',
     gfxDown: (q) => `Graphics set to ${q} to keep it smooth`, place: ord, finished: (n) => `Finished ${ord(n)}!`, finishedDsq: 'Finished without taking your penalty — DSQ',
-    // a match race (Appendix C): the entry, the umpire, the penalties owed, the result, and the link between the two screens
-    entered: 'Entered — you’re in the start box', entryEarly: 'Inside the line at the preparatory signal — penalty', entryLate: 'Not entered by 2:00 — penalty',
-    umpire: (r, who, you) => (you ? `Umpire: penalty on you — rule ${r}` : `Umpire: penalty on ${who} — rule ${r}`), theyOwe: (who, r) => `${who} owes a penalty — rule ${r}`,
-    penStart: 'Penalty turn begun — now back onto your course', penNow: 'Two penalties owed — take one now', finishOwed: 'A penalty still owed — take it, then cross the line again',
-    raceWon: 'You win the race!', raceLost: (w) => `${w} wins the race`, matchWon: (s) => `You win the match ${s}`, matchLost: (w, s) => `${w} wins the match ${s}`,
+    // a 1-on-1 race: the result, and the link between the two screens
+    raceWon: 'You win the race!', raceLost: (w) => `${w} wins the race`,
     waitingHost: (n) => `Waiting for ${n}…`, guestGone: (n) => `${n} isn’t answering — her boat holds her course; 30 s and the race is yours`,
     abandoned: 'Race abandoned — not scored', full: 'This match is full', matchFail: 'Couldn’t connect to the match', tryAgain: 'Try again',
     noGl: 'The browser won’t start the 3D graphics just now. Close other tabs and apps, or restart the browser, and try again.',
     glLostK: 'The picture was lost', glLostTxt: 'The device took the graphics back, most often when it runs short of memory. Reload to sail on, on lighter graphics.', doReload: 'Reload',
-    touchedM: 'You touched the mark — you owe a penalty turn', penTurn: 'Penalty turn under way', timeMatch: 'match race', timeOne: '1-on-1 race',
+    timeOne: '1-on-1 race',
     'r16.1': 'Right of way, but give room to keep clear', 'x16.1': 'A boat with right of way that changes course must give the other boat room to keep clear.',
   },
   ru: {
@@ -269,15 +266,12 @@ const T = {
     zAhead: (n) => `Зона · не связаны, ты впереди ${n} — тебе дают место`, zAstern: (n) => `Зона · не связаны, ты позади ${n} — держись в стороне`, tackCall: 'К повороту оверштаг… Поворот!', gybeCall: 'К повороту фордевинд… Поворот!',
     results: 'Результаты', again: 'Ещё гонку', menu: 'Меню', racing: 'в гонке…', you: 'Вы', dsq: 'DSQ',
     gfxDown: (q) => `Графика: «${q}» — для плавности`, place: (n) => `${n}-е`, finished: (n) => `Финиш: ${n}-е место!`, finishedDsq: 'Финиш без штрафа — дисквалификация (DSQ)',
-    entered: 'Вход выполнен — ты в стартовой зоне', entryEarly: 'На подготовительном сигнале внутри линии — штраф', entryLate: 'Нет входа до 2:00 — штраф',
-    umpire: (r, who, you) => (you ? `Судья: штраф тебе — правило ${r}` : `Судья: штраф — ${who}, правило ${r}`), theyOwe: (who, r) => `${who}: штраф, правило ${r}`,
-    penStart: 'Штрафной оборот начат — теперь возвращайся на курс', penNow: 'Два штрафа — выполни один немедленно', finishOwed: 'Штраф не выполнен — выполни его и пересеки линию снова',
-    raceWon: 'Гонка твоя!', raceLost: (w) => `Гонку выигрывает ${w}`, matchWon: (s) => `Матч твой: ${s}`, matchLost: (w, s) => `Матч выигрывает ${w}: ${s}`,
+    raceWon: 'Гонка твоя!', raceLost: (w) => `Гонку выигрывает ${w}`,
     waitingHost: (n) => `${n} не на связи — ждём…`, guestGone: (n) => `${n} не на связи — лодка идёт прежним курсом; через 30 с гонка твоя`,
     abandoned: 'Гонка прекращена — не засчитывается', full: 'В этом матче уже двое', matchFail: 'Не удалось подключиться к матчу', tryAgain: 'Ещё раз',
     noGl: 'Браузер сейчас не запускает 3D-графику. Закрой другие вкладки и приложения или перезапусти браузер — и попробуй ещё раз.',
     glLostK: 'Картинка пропала', glLostTxt: 'Устройство забрало графику — чаще всего, когда не хватает памяти. Перезагрузи, чтобы плыть дальше на облегчённой графике.', doReload: 'Перезагрузить',
-    touchedM: 'Касание знака — за тобой штрафной оборот', penTurn: 'Штрафной оборот', timeMatch: 'матчевая гонка', timeOne: 'гонка один на один',
+    timeOne: 'гонка один на один',
     'r16.1': 'Право дороги — но дай место уступить', 'x16.1': 'Лодка с правом дороги, меняя курс, должна дать другой лодке место, чтобы уступить.',
   },
 };
@@ -1513,7 +1507,7 @@ function paintPause() {
   $('#pNext').textContent = P.leg < legs.length ? t('nextAt', t(legKey(race.course, nx)), Math.round(P.leg < 1 ? Math.max(0, -race.lineInfo(P).d) : race.distToNext(P))) : '';
   $('#pHow').textContent = P.leg < legs.length ? t(howKey(race.course, nx)) : '';
   $('#pLine').textContent = pauseLine(P, place, nx);
-  $('#pTimeD').textContent = race.match ? t('timeMatch') : race.multi ? t('timeOne') : race.settings.daily ? t('timeDaily') : t('timeFree');
+  $('#pTimeD').textContent = race.multi ? t('timeOne') : race.settings.daily ? t('timeDaily') : t('timeFree');
   $('#pNext').classList.toggle('mark', !!race.course.marks[nx] || nx === 'gate'); // as its tag on the water
   $('#pPen').parentNode.className = L.penT > 1 ? 'pen' : 'clean';
   $('.p-esc').innerHTML = `<kbd>Esc</kbd>${t('escResumes').replace(/^Esc\s*(—\s*)?/, '')}`;
@@ -1726,7 +1720,7 @@ function updateHud(dt) {
   }
   // chips: penalty, dirty air, surfing
   const chips = [];
-  if (P.pen) chips.push(['bad', P.pen.mr ? t('penTurn') : t('pen', P.pen.tack, P.pen.gybe), 'pen']); // (a match's turn is one, Appendix C)
+  if (P.pen) chips.push(['bad', t('pen', P.pen.tack, P.pen.gybe), 'pen']);
   if (P.shadow > 0.08) chips.push(['warn', `${t('dirty')} −${Math.round(P.shadow * 100)}%`, 'dirty']);
   if (P.surf > 0) chips.push(['ok', t('surf'), 'surf']);
   if (P.byLee > 3) chips.push([P.byLee > 8 ? 'bad' : 'warn', t('byLee', Math.round(P.byLee)), 'byLee']);
@@ -1788,14 +1782,10 @@ function coach(P, a, leg) {
 // messages from the race and the boat
 function handleMessages() {
   const P = race.player;
-  // in a match a contact is called by the umpire on both screens: his call is the one said (its fouled, theyFouled and
-  // theyOwe are the same incident)
-  const ump = race.match && race.messages.some((n) => n.key === 'umpire');
   for (const m of race.messages) {
     if (m.to && m.to !== race.player) continue; // another boat's news
     raceIncident(race, m.key); // (stats.js: what may make a player give up, for the site's /admin)
     const a = m.arg || {};
-    if (race.match && matchMessage(m, a, P, ump)) continue;
     if (m.key === 'signal') {
       audio.horn(a.sound === 'long'); haptic(a.key === 'gun' ? 'heavy' : 'medium'); skipper.signal(a.key, P.ocs);
       score.sting(a.key !== 'gun' ? 'swell' : race.messages.some((n) => n.key === 'genRecall') ? 'hit' : P.ocs ? 'loss' : 'gun'); // the music: a swell at each signal, the gun's hit
@@ -1862,35 +1852,6 @@ function handleMessages() {
   // slow on the beat and pointing as if at full speed: foot to build it; in a seaway, steer the waves
   if (race.clock > 0 && !P.auto && !P.pen && P.trim !== 'irons' && P.stall > 2.5 && Math.abs(P.twa) / D2R < beatAngle(P.tws) + 3) { hint('foot', t('foot'), 30); skipper.shout('foot'); }
   if (race.clock > 20 && race.wind.p.waves >= 0.45 && Math.abs(P.twa) / D2R < 60 && P.waveRhythm < -0.15) hint('waves', t('waveTip'), 90);
-}
-
-// a match's own news (Appendix C), and the race's that a match says its own way; false for the rest. In the voices where
-// a recorded line fits: the umpire's whistle, and his word on the other boat's penalty; the committee at the finish
-function matchMessage(m, a, P, ump) {
-  const whistle = () => { if (audio.ctx && audio.on && audio.ctx.state === 'running') committee.whistle(audio.ctx.currentTime); };
-  switch (m.key) {
-    case 'umpire': {
-      const on = race.humans.find((b) => b.id === a.on), you = on === P, other = race.humans.find((b) => b !== P);
-      bcHud.umpire(you ? 'fouled' : 'theyFouled', { who: you ? other?.name : on?.name, rule: a.rule }); // the umpire's card (hud-bc.js)
-      toast(t('umpire', a.rule, on ? on.name : '', you), 3.5); score.sting(you ? 'loss' : 'hit'); haptic(you ? 'warn' : 'medium');
-      if (you) { whistle(); skipper.shout('foul'); } else { committee.call('uThem', 4); skipper.cue('protest'); }
-      return true;
-    }
-    case 'fouled': case 'theyFouled': return true; // (the umpire's call says it)
-    case 'theyOwe': if (!ump) { toast(t('theyOwe', a.who, a.rule), 3); committee.call('uThem', 4); } return true;
-    case 'touched': bcHud.umpire('touched', a); toast(t('touchedM'), 3); skipper.shout('foul'); score.sting('loss'); committee.call('uMark', 4); return true;
-    case 'entered': toast(t('entered'), 2.6); haptic('light'); score.sting('gain'); return true;
-    case 'entryEarly': case 'entryLate': toast(t(m.key), 3.5); haptic('warn'); whistle(); score.sting('loss'); return true;
-    case 'penStart': toast(t('penStart'), 2.6); return true;
-    case 'penNow': case 'finishOwed': toast(t(m.key), 3.5); haptic('warn'); return true;
-    case 'finished': case 'finishedDsq': case 'finishedStartDsq': { // no result page: the match's card comes after
-      const won = race.winner ? race.winner === P : m.arg === 1;
-      toast(won ? t('raceWon') : t('raceLost', race.winner ? race.winner.name : race.humans.find((b) => b !== P)?.name), 3.5);
-      audio.horn(false, race.course.finishBoat); haptic('heavy'); score.sting(won ? 'win' : 'lose'); committee.call(won ? 'cFin1' : 'cFin', 1.5);
-      return true;
-    }
-  }
-  return false;
 }
 
 // ---------- minimap ----------

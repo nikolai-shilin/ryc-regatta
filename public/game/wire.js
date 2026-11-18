@@ -49,15 +49,14 @@ export function applyControls(race, b, c) {
 //           0, 1 to the small one, 2 back
 //   [n+6]   boom (−1, 0, 1)
 // then her race (STATE, the runner's word even for the follower's own boat):
-//   [n+7]   leg; [n+8] penalties owed (read as 0–9: no more is ever owed); [n+9] finish clock or null; [n+10]
-//           place or null; [n+11] side: 'blue', 'yellow' or null
-//   [n+12]  bits: ocs, done, dsq, entered, pen (a penalty turn under way)
-//   [n+13]  tacks seen, [n+14] hails seen (a reloaded follower's counts go on from these)
-// and the jobs' clocks (0 with no job): [n+15] kite job t, [n+16] its total, [n+17] a messy drop (0/1); [n+18],
-// [n+19] the reef job's t and total; [n+20], [n+21] the jib job's
+//   [n+7]   leg; [n+8] finish clock or null; [n+9] place or null
+//   [n+10]  bits: ocs, done, dsq, pen (a penalty turn under way)
+//   [n+11]  tacks seen, [n+12] hails seen (a reloaded follower's counts go on from these)
+// and the jobs' clocks (0 with no job): [n+13] kite job t, [n+14] its total, [n+15] a messy drop (0/1); [n+16],
+// [n+17] the reef job's t and total; [n+18], [n+19] the jib job's
 // and how her race stands under today's rules:
-//   [n+22]  bits: ufd, bfd, dnf, and the penalty turn's tack done, gybe done, a match's turn
-//   [n+23]  the penalty turn's direction (−1, 0, 1)
+//   [n+20]  bits: ufd, bfd, dnf, and the penalty turn's tack done, gybe done
+//   [n+21]  the penalty turn's direction (−1, 0, 1)
 const NUM = [['x', 100], ['z', 100], ['h', 1e4], ['v', 100], ['heel', 10], ['yawRate', 1e3], ['rudder', 100], ['sheet', 1e3],
   ['jibSheet', 1e3], ['sail', 10], ['jibSail', 10], ['kiteFill', 100], ['kiteCollapse', 100], ['twa', 1e3], ['awa', 1e3],
   ['aws', 10], ['tws', 10], ['wdir', 1e3], ['gust', 100], ['shadow', 100], ['luff', 100], ['reefFill', 100],
@@ -78,12 +77,12 @@ function rowOf(b) {
     b.auto ? (b.auto.gybe ? 2 : 1) : 0,
     job(b.kiteJob, 'up'), job(b.reefJob, 'on'), job(b.jibJob, 'small'),
     b.boom || 0,
-    b.leg || 0, b.owed || 0, b.finish ?? null, b.place ?? null, b.side ?? null,
-    bits([b.ocs, b.done, b.dsq, b.entered, b.pen]),
+    b.leg || 0, b.finish ?? null, b.place ?? null,
+    bits([b.ocs, b.done, b.dsq, b.pen]),
     b.tackSeen || 0, b.hailSeen || 0,
     q(b.kiteJob?.t, 100), q(b.kiteJob?.total, 100), b.kiteJob?.messy ? 1 : 0,
     q(b.reefJob?.t, 100), q(b.reefJob?.total, 100), q(b.jibJob?.t, 100), q(b.jibJob?.total, 100),
-    bits([b.ufd, b.bfd, b.dnf, b.pen?.tack, b.pen?.gybe, b.pen?.mr]),
+    bits([b.ufd, b.bfd, b.dnf, b.pen?.tack, b.pen?.gybe]),
     b.pen?.dir || 0,
   ];
 }
@@ -96,14 +95,14 @@ export function encodeSnap(race) {
 export function readBoat(row) {
   const o = {};
   NUM.forEach(([k], i) => { o[k] = num(row[i], 0); });
-  const f = row[N], s = row[N + 12], u = row[N + 22];
+  const f = row[N], s = row[N + 10], u = row[N + 20];
   Object.assign(o, {
     kite: bit(f, 0), kiteType: bit(f, 1) ? 'zero' : 'gen', reef: bit(f, 2), smallJib: bit(f, 3), split: bit(f, 4), autoTrim: bit(f, 5), fly: bit(f, 6), backing: bit(f, 7),
     trim: TRIMS[row[N + 1]] ?? 'ok', autoK: row[N + 2], kiteK: row[N + 3], reefK: row[N + 4], jibK: row[N + 5], boom: row[N + 6],
-    leg: row[N + 7], owed: clamp(Math.floor(num(row[N + 8], 0)), 0, 9), finish: row[N + 9], place: row[N + 10], side: row[N + 11],
-    ocs: bit(s, 0), done: bit(s, 1), dsq: bit(s, 2), entered: bit(s, 3), penOn: bit(s, 4), tackSeen: row[N + 13], hailSeen: row[N + 14],
-    kiteT: [num(row[N + 15], 1), num(row[N + 16], 1)], kiteMessy: !!row[N + 17], reefT: [num(row[N + 18], 1), num(row[N + 19], 1)], jibT: [num(row[N + 20], 1), num(row[N + 21], 1)],
-    ufd: bit(u, 0), bfd: bit(u, 1), dnf: bit(u, 2), penTack: bit(u, 3), penGybe: bit(u, 4), penMr: bit(u, 5), penDir: num(row[N + 23], 0),
+    leg: row[N + 7], finish: row[N + 8], place: row[N + 9],
+    ocs: bit(s, 0), done: bit(s, 1), dsq: bit(s, 2), penOn: bit(s, 3), tackSeen: row[N + 11], hailSeen: row[N + 12],
+    kiteT: [num(row[N + 13], 1), num(row[N + 14], 1)], kiteMessy: !!row[N + 15], reefT: [num(row[N + 16], 1), num(row[N + 17], 1)], jibT: [num(row[N + 18], 1), num(row[N + 19], 1)],
+    ufd: bit(u, 0), bfd: bit(u, 1), dnf: bit(u, 2), penTack: bit(u, 3), penGybe: bit(u, 4), penDir: num(row[N + 21], 0),
   });
   return o;
 }
@@ -128,10 +127,9 @@ export function setSails(b, o) {
 // put a read row on boat b: her race always; her pose, sails and jobs too unless `pose` is false (a follower's own
 // boat, which her own screen steps)
 export function setBoat(b, o, pose = true) {
-  Object.assign(b, { leg: o.leg, owed: o.owed, finish: o.finish, place: o.place, ocs: o.ocs, done: o.done, dsq: o.dsq, entered: o.entered, tackSeen: o.tackSeen, hailSeen: o.hailSeen, ufd: o.ufd, bfd: o.bfd, dnf: o.dnf });
-  if (o.side) b.side = o.side;
+  Object.assign(b, { leg: o.leg, finish: o.finish, place: o.place, ocs: o.ocs, done: o.done, dsq: o.dsq, tackSeen: o.tackSeen, hailSeen: o.hailSeen, ufd: o.ufd, bfd: o.bfd, dnf: o.dnf });
   // (a fresh object each time: the follower's own step can't change the runner's word)
-  b.pen = o.penOn ? (o.penMr ? b.pen || { mr: true } : { tack: o.penTack, gybe: o.penGybe, dir: o.penDir }) : null;
+  b.pen = o.penOn ? { tack: o.penTack, gybe: o.penGybe, dir: o.penDir } : null;
   if (!pose) return;
   for (const [k] of NUM) b[k] = o[k];
   setSails(b, o);
