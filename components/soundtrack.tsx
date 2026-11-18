@@ -20,7 +20,7 @@ export function Soundtrack() {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return;
     const el = new Audio(SRC);
-    el.loop = true; el.preload = 'auto';
+    el.loop = true; el.preload = 'none'; // 3 MB: fetched when it is to play, not for a visitor who never hears it
     let ctx: AudioContext | null = null, gain: GainNode | null = null, on = false;
 
     const graph = () => {

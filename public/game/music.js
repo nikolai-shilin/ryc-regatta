@@ -11,7 +11,7 @@ export const MUSIC_STYLES = ['racing', 'groove', 'riff', 'openwater'];
 // Settings › Music's first choice: whole songs in rotation (createSongs below), or one of the tracks that follow the race
 export const PLAYLIST = 'playlist';
 export const MUSIC_CHOICES = [PLAYLIST, ...MUSIC_STYLES];
-export const SONGS = ['music-song-1.mp3', 'music-song-2.mp3', 'music-song-3.mp3']; // lib/opts.ts SONGS, which npm test keeps in step
+export const SONGS = ['music-song-1.m4a', 'music-song-2.m4a', 'music-song-3.m4a']; // lib/opts.ts SONGS, which npm test keeps in step
 
 // Each track is cut on its bar lines by scripts/music.py into music-<id>.mp3: loops for the moods, the build that lands
 // its drop on the gun, its ending for a win, and accents made of its crash. Each piece: where it starts in the file (s),
@@ -113,7 +113,7 @@ const SONG_KEY = 'regatta-song', SONG_IN = 1, SONG_OUT = 3, SONG_LEVEL = 1.1; //
 const songNow = () => { try { const i = Math.floor(+localStorage.getItem(SONG_KEY)) || 0; return ((i % SONGS.length) + SONGS.length) % SONGS.length; } catch (e) { return 0; } };
 function createSongs(ctx) {
   const el = new Audio(), fade = ctx.createGain();
-  el.preload = 'auto'; fade.gain.value = 0;
+  el.preload = 'none'; fade.gain.value = 0;
   ctx.createMediaElementSource(el).connect(fade);
   let i = songNow(), on = false, held = false, blocked = false, fresh = false, leaving = false, errors = 0, stopT = 0;
   const ramp = (v, s) => { const n = ctx.currentTime; fade.gain.cancelScheduledValues(n); fade.gain.setValueAtTime(fade.gain.value, n); fade.gain.linearRampToValueAtTime(v, n + s); };
@@ -122,7 +122,9 @@ function createSongs(ctx) {
   const go = () => { if (wanted() && el.paused) el.play()?.catch?.((e) => { if (e?.name !== 'AbortError') blocked = true; }); };
   const cue = (k) => { i = k; fresh = true; leaving = false; fade.gain.cancelScheduledValues(ctx.currentTime); fade.gain.value = 0; el.src = fileAt(SONGS[i]); go(); };
   const next = () => cue((i + 1) % SONGS.length);
-  const sync = () => { clearTimeout(stopT); if (wanted()) go(); else stopT = setTimeout(() => el.pause(), globalThis.document?.hidden ? 0 : 1200); }; // (after the level has faded)
+  // (the first song is only asked for once it is to be heard, so it doesn't take the line from the scene still loading)
+  const resume = () => { if (!wanted()) return; if (el.getAttribute('src')) go(); else cue(i); };
+  const sync = () => { clearTimeout(stopT); if (wanted()) resume(); else stopT = setTimeout(() => el.pause(), globalThis.document?.hidden ? 0 : 1200); }; // (after the level has faded)
   el.addEventListener('playing', () => {
     errors = 0; blocked = false; if (!fresh) return;
     fresh = false; ramp(SONG_LEVEL, SONG_IN);
@@ -134,11 +136,11 @@ function createSongs(ctx) {
   globalThis.document?.addEventListener('visibilitychange', sync); // a hidden tab has no frames to tell it the race has paused
   return {
     get index() { return i; },
-    start(bus) { fade.disconnect(); fade.connect(bus); on = true; if (el.getAttribute('src')) sync(); else cue(i); },
+    start(bus) { fade.disconnect(); fade.connect(bus); on = true; sync(); },
     stop() { on = false; sync(); },
     pause(v) { held = v; sync(); },
-    wake() { blocked = false; errors = 0; go(); }, // inside a tap, as iOS asks
-    update() { if (!blocked && ctx.state === 'running') go(); },
+    wake() { blocked = false; errors = 0; resume(); }, // inside a tap, as iOS asks
+    update() { if (!blocked && ctx.state === 'running') resume(); },
   };
 }
 

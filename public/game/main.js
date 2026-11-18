@@ -462,7 +462,7 @@ const score = {
   t: 0, place: 0, cand: 0, candT: 0, trend: 0, trendUntil: 0, riser: false, breath: false,
   reset() { this.t = 0; this.place = 0; this.cand = 0; this.trend = 0; this.trendUntil = 0; this.riser = this.breath = false; if (audio.music) audio.music.reset(); },
   // Settings › Music: the playlist, one of the tracks, or off (with Sound off the playlist doesn't stream what nobody hears)
-  style() { const m = audio.music; if (!m) return; m.setStyle(MUSIC_CHOICES.includes(opts.music) && (opts.sound || opts.music !== PLAYLIST) ? opts.music : null); m.setVolume(0.5 * (MUSIC_VOL[opts.musicVol] ?? 1)); },
+  style() { const m = audio.music; if (!m) return; m.pause(paused || !running); m.setStyle(MUSIC_CHOICES.includes(opts.music) && (opts.sound || opts.music !== PLAYLIST) ? opts.music : null); m.setVolume(0.5 * (MUSIC_VOL[opts.musicVol] ?? 1)); },
   sting(k) { if (audio.music) audio.music.sting(k); },
   update(P, dt) {
     const m = audio.music; if (!m) return;

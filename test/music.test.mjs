@@ -219,6 +219,16 @@ test('the playlist is the first choice, and its songs are there, the same in the
   assert.deepEqual(Function(`return ${/export const SONGS = (\[.*?\]);/.exec(opts)[1]}`)(), SONGS);
 });
 
+test('no song is asked for while the race is still loading', () => {
+  const { m, els, song, store } = songPlayer();
+  m.pause(true); m.setStyle(PLAYLIST);
+  assert.equal(els[0].attr, null); assert.equal(els[0].preload, 'none');
+  m.update(); m.wake();
+  assert.equal(els[0].attr, null); assert.equal(store.get('regatta-song'), undefined);
+  m.pause(false);
+  assert.equal(song(), 1); assert.ok(!els[0].paused);
+});
+
 test('the songs follow one another and come round again', () => {
   const { m, els, song } = songPlayer();
   m.setStyle(PLAYLIST);

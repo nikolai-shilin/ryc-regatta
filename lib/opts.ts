@@ -7,7 +7,7 @@ import type { YachtId } from './yachts';
 export type Music = 'playlist' | 'racing' | 'groove' | 'riff' | 'openwater' | 'off';
 export const TRACKS: readonly Music[] = ['playlist', 'racing', 'groove', 'riff', 'openwater']; // public/game/music.js: MUSIC_CHOICES
 // the playlist's songs in /game/, and the one coming up (public/game/music.js: SONGS, and it moves the rotation on)
-export const SONGS = ['music-song-1.mp3', 'music-song-2.mp3', 'music-song-3.mp3'];
+export const SONGS = ['music-song-1.m4a', 'music-song-2.m4a', 'music-song-3.m4a'];
 export const songNow = () => {
   try { const i = Math.floor(Number(localStorage.getItem('regatta-song'))) || 0; return ((i % SONGS.length) + SONGS.length) % SONGS.length; } catch { return 0; }
 };
