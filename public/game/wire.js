@@ -151,10 +151,11 @@ export function applySnap(race, s, skip = null) {
 
 // ---------- the results: what only the runner recorded ----------
 const TRACK_MAX = 160;
-// a boat's track for the result, as any race's record keeps it and the result page times it (lib/finish.ts along): every
-// k-th point and the last, some TRACK_MAX in all, in whole metres
+// a boat's track for the result, as any race's record keeps it: every k-th point (trackStep, saved with it for the result
+// page to time it by: lib/finish.ts along) and the last, some TRACK_MAX in all, in whole metres
+export const trackStep = (track) => Math.max(1, Math.ceil(track.length / TRACK_MAX));
 export function thinTrack(track) {
-  const n = track.length, k = Math.max(1, Math.ceil(n / TRACK_MAX));
+  const n = track.length, k = trackStep(track);
   return track.filter((_, i) => i % k === 0 || i === n - 1).map(([x, z]) => [Math.round(x), Math.round(z)]);
 }
 
@@ -164,6 +165,6 @@ export function thinTrack(track) {
 export function resultsOf(race) {
   return {
     seed: race.seed,
-    boats: race.humans.map((b) => ({ id: b.id, done: !!b.done, dsq: !!(b.dsq || b.ufd || b.bfd), dnf: !!b.dnf, place: b.place ?? null, finish: b.finish ?? null, trackEnd: b.done ? null : q(race.trackAt ?? race.clock, 1000), pens: b.pens || 0, legT: b.legT, track: thinTrack(b.track), log: b.log })),
+    boats: race.humans.map((b) => ({ id: b.id, done: !!b.done, dsq: !!(b.dsq || b.ufd || b.bfd), dnf: !!b.dnf, place: b.place ?? null, finish: b.finish ?? null, trackEnd: b.done ? null : q(race.trackAt ?? race.clock, 1000), pens: b.pens || 0, legT: b.legT, track: thinTrack(b.track), trackStep: trackStep(b.track), log: b.log })),
   };
 }

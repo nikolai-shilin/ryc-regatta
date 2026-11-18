@@ -2026,7 +2026,9 @@ function resultRecord(race, pb = null, L = race.log) {
   const id = race._rid || (race._rid = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())));
   const c = race.course, P = race.player, s = race.settings;
   const xz = (m) => [Math.round(m.x), Math.round(m.z)];
-  const thin = (tr) => { const k = Math.max(1, Math.ceil(tr.length / 160)); return tr.filter((_, i) => i % k === 0 || i === tr.length - 1).map(([x, z]) => [Math.round(x), Math.round(z)]); };
+  const stepOf = (tr) => Math.max(1, Math.ceil(tr.length / 160)); // (saved with the track: the result page times its points by it)
+  const ended = (b) => (b.done ? b.finish : race.trackAt); // the clock a track ends at
+  const thin = (tr) => { const k = stepOf(tr); return tr.filter((_, i) => i % k === 0 || i === tr.length - 1).map(([x, z]) => [Math.round(x), Math.round(z)]); };
   const head = L.tacks.filter((x) => x <= -3).length, lift = L.tacks.filter((x) => x >= 3).length;
   const res = {
     v: 1, id, at: Date.now(), daily: s.daily || null, preset: s.preset, length: s.length, laps: s.laps, start: s.start, current: !!s.current,
@@ -2034,7 +2036,7 @@ function resultRecord(race, pb = null, L = race.log) {
     course: { windward: xz(c.windward), gate: c.gate.map(xz), pin: xz(c.pin), committee: xz(c.committee), legs: c.legs, ...(c.wing && { wing: xz(c.wing) }), type: c.type,
       marks: Object.fromEntries(Object.entries(c.marks).map(([k, m]) => [k, xz(m)])), ...(c.finish && { finish: [xz(c.finish.a), xz(c.finish.b)] }) },
     boats: race.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, color: typeof b.color === 'number' ? '#' + b.color.toString(16).padStart(6, '0') : null, flag: flagCode(b === P ? playerLook().flag : LOOKS[b.name] && LOOKS[b.name].flag),
-      done: !!b.done, dsq: !!b.dsq, secs: b.done && !b.out ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track || []), ...(race._fin?.get(b) && { at: race._fin.get(b) }),
+      done: !!b.done, dsq: !!b.dsq, secs: b.done && !b.out ? Math.round(b.finish * 10) / 10 : null, ...(!(b.done && !b.out) && ended(b) != null && { trackEnd: Math.round(ended(b) * 1000) / 1000 }), track: thin(b.track || []), trackStep: stepOf(b.track || []), ...(race._fin?.get(b) && { at: race._fin.get(b) }),
       legT: (b.legT || []).map((x) => Math.round(x * 10) / 10), pens: b.pens || 0, ...(b !== P && b.level && { level: b.level }) })), // the clock as she finished each leg, her penalties, and a computer skipper's level
     log: { gunD: L.gunD, gunV: L.gunV, ocs: !!L.ocs, startDsq: L.startDsq || null, startT: L.startT, sailing: L.sailing, pct: L.sailing > 20 && L.polar ? Math.round((L.v / L.polar) * 100) : null,
       head, lift, tacks: L.tacks.length, gybes: L.gybes, dirty: Math.round(L.dirty), penT: Math.round(L.penT), hails: L.hails, legs: L.legs, legPlaces: L.legPlaces || [],
@@ -2062,11 +2064,11 @@ function keepOneOnOne(race, results) {
   // in the results' order, the same on both screens (the result page's places are this order)
   res.boats = results.boats.map((r) => {
     const i = seen.findIndex((b) => b.id === r.id), b = seen[i], o = { ...res.boats[i] };
-    delete o.level;
+    delete o.level; delete o.trackEnd; // (this screen's: the results say where the track they carry ends)
     const dnf = !!r.dnf, done = !!r.done && !dnf;
     return { ...o, ...(b !== race.player && { flag: flagCode(lookFrom(b.look).flag) }), done, dsq: !!r.dsq, dnf, secs: done && r.finish != null ? Math.round(r.finish * 10) / 10 : null,
       ...(r.id === results.winner && { won: true }), ...(!done && r.trackEnd != null && { trackEnd: r.trackEnd }), // (the winner may never have crossed the line; a boat not home has no finish to time her track by)
-      track: r.track.map(([x, z]) => [Math.round(x), Math.round(z)]), legT: (r.legT || []).map((x) => Math.round(x * 10) / 10), pens: r.pens || 0 };
+      track: r.track.map(([x, z]) => [Math.round(x), Math.round(z)]), trackStep: r.trackStep, legT: (r.legT || []).map((x) => Math.round(x * 10) / 10), pens: r.pens || 0 };
   });
   keepResult(res);
   return res.id;
