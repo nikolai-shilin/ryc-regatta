@@ -1267,7 +1267,7 @@ function drapeGuides(G, W, t) {
 }
 
 // ---------- graphics levels ----------
-// High for computers, Medium to start on phones; Auto (main.js) steps down when the frame rate drops. A level is
+// High for computers, Medium to start on phones; Auto eases off part by part when the frame rate drops (gfx.js GFX_LADDER). A level is
 // nine parts, each high, medium or low (off, for the ones that can be): High, Medium and Low set them all alike, and
 // Custom (Settings › Graphics › Details) any mix of them (setGraphics).
 //   res: the picture's resolution (the most pixels to a CSS pixel)

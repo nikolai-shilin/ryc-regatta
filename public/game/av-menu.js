@@ -5,7 +5,7 @@
 // It doesn't know where the settings live: `read` gives them and `write` saves a change, which the game applies to the
 // race and the site tells the page's music about (lib/opts.ts saveOpts). The views behind the pages hear of it themselves
 // (gfx.js followSettings).
-import { GFX_PARTS, gfxDetail, startQuality } from './gfx.js';
+import { GFX_PARTS, autoEased, gfxDetail, startQuality } from './gfx.js';
 
 const CSS = `
 .av { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: var(--s-4); background: rgba(3, 8, 14, 0.62); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); color: var(--ink); font-family: var(--sans); text-align: left; text-shadow: none; }
@@ -167,7 +167,10 @@ export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClo
   paints.push(() => {
     const g = o.gfx || 'auto';
     if (g === 'custom') hint.textContent = t('Each part as you set it below. Resolution, shadows and reflections cost the most frames.', 'Каждая часть — как задано ниже. Больше всего кадров съедают разрешение, тени и отражения.');
-    else if (g === 'auto') hint.textContent = `${t('Now', 'Сейчас')}: ${pair(LEVEL[(now && now()) || startQuality(o)] || LEVEL.high)}. ${t('The game lowers the detail by itself when the frame rate drops, and remembers it for this device.', 'Игра сама снижает детализацию, если падает частота кадров, и запоминает это для устройства.')}`;
+    else if (g === 'auto') {
+      const eased = autoEased(gfxDetail(o)).map((k) => pair(GFX_NAMES[k]));
+      hint.textContent = `${t('Now', 'Сейчас')}: ${pair(LEVEL[(now && now()) || startQuality(o)] || LEVEL.high)}${eased.length ? ` · ${t('eased off', 'снижено')}: ${eased.join(', ')}` : ''}. ${t('When the frame rate drops the game eases off what shows least first, brings it back when it can, and remembers it for this device.', 'Когда падает частота кадров, игра сначала снижает то, что меньше всего заметно, возвращает это, когда может, и запоминает для устройства.')}`;
+    }
     else hint.textContent = t('The race and every 3D scene on the site draw at this level.', 'Гонка и все 3D-сцены на сайте рисуются с этим качеством.');
   });
   const partLevels = (off) => [['high', t('High', 'Макс.')], ['medium', t('Medium', 'Сред.')], ['low', off ? t('Off', 'Выкл') : t('Low', 'Мин.')]];

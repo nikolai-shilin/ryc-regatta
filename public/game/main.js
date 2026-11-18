@@ -4,7 +4,7 @@ import { World, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
 import { raceStarted, raceFinished, raceResult, perfSetup, perfFrame, statsContext, raceIncident, raceEnded, visitSend } from './stats.js';
 import { initExtras, onStart, onFrame, drill, drillSettings } from './extras.js'; // the ghost, the drills, the analytics
 import { createHud } from './hud-bc.js';
-import { startQuality, GFX_KEY, SAVER_MS } from './gfx.js';
+import { autoBase, autoTuner, gfxLevel, gfxNow, gfxParts, lighterParts, saveAuto, GFX_LEVELS, GFX_PARTS, SAVER_MS } from './gfx.js';
 import { openAvMenu, avSummary } from './av-menu.js'; // Audio & graphics, the site's menu too
 import { LINE_DASH, mapPalette, placeLabels } from './course-map.js';
 import { LOOKS, playerLook, lookFrom } from './yacht.js';
@@ -1121,27 +1121,22 @@ try {
   const gl = world.renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info');
   perfSetup({ gpu: gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER), size: () => [canvas.width, canvas.height] });
 } catch (e) {}
-const applyGfx = () => world.setQuality(startQuality(opts), opts.gfxD); // (gfx.js: a level, Custom's parts, or Auto's level on this device)
+const applyGfx = () => world.setQuality(...gfxNow(opts)); // (gfx.js: a level, Custom's parts, or what Auto draws on this device)
 applyGfx();
 world.showGuides = !!opts.guides;
-// Auto: watch the frame rate while racing; under 45 fps, step down a level and remember it for this device.
-// It goes by the middle frame of each 3 s, not their average: one stall (the tab away in a match, which runs on
-// unpaused; a notification; a frame that waited on the disk) would pull a steady 60 fps under 45 by itself, and leave
-// a fast machine on Low for days (gfx.js GFX_DAYS). A frame over 0.25 s is such a stall, and isn't counted at all. With the battery
-// saver on, the frames come at 30 a second by choice: then a level down only if it can't hold some 27.
-const perf = { t: 0, d: [], settle: 3 };
+// the level for the menu and the site's /admin: on Auto, the one its mix of parts comes closest to
+const levelNow = () => (opts.gfx === 'auto' || !opts.gfx ? gfxLevel(world.gfx) : world.quality);
+// Auto: while racing, ease off what shows least when the frames run slow and bring it back when they hold (gfx.js
+// autoTuner), remembered for this device. Word of it only when the picture comes down a whole level.
+const tuneGfx = autoTuner(autoBase());
+let frameBusy = 0; // how long the last frame kept the CPU (frame, below)
 function watchFps(raw) {
-  if (opts.gfx !== 'auto' || world.quality === 'low') return;
-  if (raw > 0.25) return;
-  if (perf.settle > 0) { perf.settle -= raw; return; }
-  perf.t += raw; perf.d.push(raw);
-  if (perf.t < 3) return;
-  const d = perf.d.sort((a, b) => a - b), mid = d[d.length >> 1]; perf.t = 0; perf.d = [];
-  if (mid <= 1 / (opts.saver ? 27 : 45)) return;
-  const q = world.quality === 'high' ? 'medium' : 'low';
-  world.setQuality(q); perf.settle = 2;
-  try { localStorage.setItem(GFX_KEY, `${q}|${Date.now()}`); } catch (e) {}
-  toast(t('gfxDown', t(q === 'medium' ? 'gMedium' : 'gLow')), 2.5);
+  if ((opts.gfx || 'auto') !== 'auto' || world.preparing) return; // (new shaders compiling: those frames say nothing)
+  const next = tuneGfx(raw, frameBusy, world.gfx, !!opts.saver);
+  if (!next) return;
+  const was = gfxLevel(world.gfx), q = gfxLevel(next);
+  world.setQuality('custom', next); saveAuto(next);
+  if (GFX_LEVELS.indexOf(q) > GFX_LEVELS.indexOf(was)) toast(t('gfxDown', t(q === 'medium' ? 'gMedium' : 'gLow')), 2.5);
 }
 // The GPU took the picture away (webglcontextlost: a phone short of memory, the graphics driver reset): three.js stops
 // drawing, the canvas shows the page's dark blue under the HUD, and the race sailed on blind. Now the race is paused
@@ -1166,14 +1161,14 @@ function lostCard() {
 canvas.addEventListener('webglcontextlost', () => {
   glLost = true;
   if (running && !paused && !mx) pause();
-  if (opts.gfx === 'auto' && world.quality !== 'low') try { localStorage.setItem(GFX_KEY, `${world.quality === 'high' ? 'medium' : 'low'}|${Date.now()}`); } catch (e) {}
+  if ((opts.gfx || 'auto') === 'auto') saveAuto(lighterParts(world.gfx));
   clearTimeout(glT); glT = setTimeout(lostCard, 2000);
 });
 canvas.addEventListener('webglcontextrestored', () => {
   glLost = false; clearTimeout(glT);
   if (glCard) { glCard.remove(); glCard = null; }
-  const q = startQuality(opts);
-  if (q !== world.quality) world.setQuality(q, opts.gfxD); else world.prepare(); // (setQuality compiles the shaders again itself)
+  const p = gfxParts(...gfxNow(opts));
+  if (GFX_PARTS.some((k) => p[k] !== world.gfx[k])) applyGfx(); else world.prepare(); // (setQuality compiles the shaders again itself)
 });
 
 let race = null, running = false, paused = false, menuChanged = false, hints = {}, lastClockInt = null, coachSeen = {};
@@ -1422,7 +1417,7 @@ setCam(['drone', 'top', 'helm'].includes(opts.camera) ? opts.camera : 'drone'); 
 // the HUD, as a sailing broadcast lays it out (hud-bc.js)
 // what the player has set, read as each race ends (stats.js raceEnded, for the site's /admin)
 statsContext(() => ({ cam: world.mode, trim: opts.autoTrim, sound: opts.sound ? 1 : 0, voice: opts.voice ? 1 : 0, music: opts.music, sea: opts.sea,
-  saver: opts.saver ? 1 : 0, gfx: opts.gfx, q: world.quality, guides: opts.guides ? 1 : 0, speed: timeScale, ghost: opts.ghost ? 1 : 0 }));
+  saver: opts.saver ? 1 : 0, gfx: opts.gfx, q: levelNow(), guides: opts.guides ? 1 : 0, speed: timeScale, ghost: opts.ghost ? 1 : 0 }));
 const bcHud = createHud({ t, LANG, fmt, world, getRace: () => race, setCam, flagOf: (b, me) => (me ? playerLook().flag : b.human ? lookFrom(b.look).flag : LOOKS[b.name] && LOOKS[b.name].flag) || null, // (the other sailor in a match: her own)
   sailOf: () => { const l = playerLook(); return `${l.nat} ${l.num}`.trim(); } }); // your flag and sail number, as the boat page sets them
 
@@ -1542,7 +1537,7 @@ function applyAv(p) {
   audio.levels();
 }
 $('#pAv').addEventListener('click', () => {
-  avClose = openAvMenu({ lang: LANG, read: () => opts, write: (p) => { Object.assign(opts, p); saveOpts(); applyAv(p); }, now: () => world.quality, zIndex: 15,
+  avClose = openAvMenu({ lang: LANG, read: () => opts, write: (p) => { Object.assign(opts, p); saveOpts(); applyAv(p); }, now: levelNow, zIndex: 15,
     onClose: () => { avClose = null; if (running && race) paintPause(); } });
 });
 $('#cKeep').addEventListener('click', () => { confirmEl.hidden = true; pauseEl.hidden = false; });
@@ -2055,6 +2050,7 @@ function loop(now) {
   }
 }
 function frame(now) {
+  const began = performance.now();
   const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now;
   if (window.__slow) { const t0 = performance.now(); while (performance.now() - t0 < window.__slow); } // debug: pretend to be a slow phone
   const P = race.player;
@@ -2077,7 +2073,7 @@ function frame(now) {
     updateHud(dt);
     if (world.gfx.res === 'high' || frameN++ % 3 === 0) drawMap(mctx, 240, false);
     watchFps(raw);
-    perfFrame(race, raw, world.quality, opts.gfx, !!opts.saver); // (stats.js: a race's frames, for the site's /admin)
+    perfFrame(race, raw, levelNow(), opts.gfx, !!opts.saver); // (stats.js: a race's frames, for the site's /admin)
   } else {
     if (!running) world.orbit += dt * 0.12; // behind the menu the drone circles
     race.idle(dt);
@@ -2092,6 +2088,7 @@ function frame(now) {
   const lerped = running && !paused && !mx && between(acc / STEP);
   world.frame(running && (!paused || mx) ? dt * timeScale : 0, lerped ? race.t - STEP + acc : race.t, dt); // foam and wakes keep pace with the race; the cameras on the frame's clock
   if (lerped) putBack();
+  frameBusy = (performance.now() - began) / 1000;
 }
 // what the picture takes from each boat between two steps: where she is, her heading, her heel, how high she flies
 const LERP = ['x', 'z', 'h', 'heel', 'ride'];
