@@ -1191,7 +1191,7 @@ function mirrored(obj) {
 // Built with the wind from the north and turned to the wind each frame, as wide as the lines on the water (LINE_W) but
 // solid, and as bright as the start line, these colours being darker on the sea than white or yellow: a red arc where she
 // can't sail (too close to the wind) and a blue one over the slow dead run between the gybes, a short green line across
-// the ring at the best angle upwind on each tack and a blue one at the best angle downwind on each gybe; a white pointer
+// the ring at the best angle upwind on each tack and a blue one at the best angle downwind on each gybe; a white chevron
 // for your heading. Compass c in this frame sits at ring angle π/2 − c.
 const R_RING = 11.45, R_OUT = R_RING + 0.95, GUIDE_A = GOLD_A;
 const glass = (color, opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide, fog: false });
@@ -1219,13 +1219,26 @@ const angleMarks = (c, mat) => {
   const hl = (DASH * DASH_ON) / 2;
   return ringPieces([-1, 1].map((sd) => [sd * c - RING_HW, sd * c + RING_HW, R_RING - hl, R_RING + hl]), mat);
 };
+// your heading: a chevron lying flat on the water, its stroke as wide as the lines there and pointing along −z from its
+// back edge at the origin. One strip, the arms meeting without overlapping (see-through, an overlap would show)
+function headingChevron(mat) {
+  const HW = 1.1, RISE = 0.9, TH = LINE_W * Math.hypot(1, RISE / HW), N = 4, pos = [], idx = [];
+  for (let i = -N; i <= N; i++) {
+    const x = (HW * i) / N, back = -RISE * (1 - Math.abs(i) / N);
+    pos.push(x, 0, back - TH, x, 0, back);
+    if (i < N) { const a = (i + N) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx);
+  return new THREE.Mesh(geo, mat);
+}
 function guides(tws) {
   const g = new THREE.Group(), turn = new THREE.Group(); g.add(turn); // turn: rotated to the wind
   const beat = beatAngle(tws) * D2R, run = runAngle(tws) * D2R, red = glass('#ff4d3d', GUIDE_A), green = glass('#2ee6a0', GUIDE_A), blue = glass('#3aa8ff', GUIDE_A);
   turn.add(ringArc(-beat, beat, red)); // no-go: too close to the wind
   turn.add(ringArc(run, 2 * Math.PI - run, blue)); // the slow dead run between the gybes
   turn.add(angleMarks(beat, green), angleMarks(run, blue)); // best upwind, best downwind
-  const tick = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.4, 3).rotateX(-Math.PI / 2), glass('#ffffff', 0.5)); // your heading
+  const tick = headingChevron(glass('#ffffff', GUIDE_A)); // your heading
   g.add(tick);
   // every piece is draped on the sea each frame (see drapeGuides), so the dial lies on the water as one layer: it
   // rides the waves instead of floating flat above the troughs and being cut by the crests
