@@ -169,7 +169,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   in the `regatta` options; `?venue=<id>` in the game's address overrides it): Göcek, Cowes, Newport, Sydney, Kiel,
   Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland, San Francisco, Valencia, Barcelona, Palma, Marstrand, Bermuda,
   Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda, Istanbul, St Petersburg (the Neva under the
-  Peter and Paul Fortress, its bridges raised), Batumi, Scheveningen, Hong Kong, Cape Town, Athens, Marmaris, Fethiye, Sochi, Melbourne, Gold Coast, New York, Naples, Los Angeles, Les Sables-d'Olonne, Dubai, Miami, Split, Monaco, Fremantle, Sint Maarten or Phuket (the last twenty-two join
+  Peter and Paul Fortress, its bridges raised), Batumi, Scheveningen, Hong Kong, Cape Town, Athens, Marmaris, Fethiye, Sochi, Melbourne, Gold Coast, New York, Naples, Los Angeles, Les Sables-d'Olonne, Dubai, Miami, Split, Monaco, Fremantle, Sint Maarten, Phuket or the Tbilisi Sea (the last twenty-three join
   today's races together, on 20 November 2026). `public/game/venues.js` holds each one's position,
   prevailing wind, clock and look (its woods, farmland, houses, moored boats and water); `lib/venues.ts` is the set-up
   page's list of them, and `npm test` keeps the two in step. Each venue's land, Göcek's too, is baked by

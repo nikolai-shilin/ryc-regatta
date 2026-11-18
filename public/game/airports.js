@@ -36,6 +36,7 @@ export const AIRPORTS = {
   split: { code: 'SPU', name: 'Split', wide: false, runways: [[43.53203, 16.28549, 43.5451, 16.30899]] },
   monaco: { code: 'NCE', name: 'Nice', wide: true, runways: [[43.64674, 7.2025, 43.66559, 7.22843]] },
   'sint-maarten': { code: 'SXM', name: 'Princess Juliana', wide: true, runways: [[18.03952, -63.11876, 18.04245, -63.09822]] },
+  'tbilisi-sea': { code: 'TBS', name: 'Tbilisi', wide: false, runways: [[41.6780596, 44.9398557, 41.6582654, 44.964827]] },
 };
 
 const GLIDE = Math.tan(3 * Math.PI / 180); // the approach's three degrees

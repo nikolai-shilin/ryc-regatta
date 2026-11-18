@@ -10,7 +10,7 @@ export type VenueId = 'gocek' | 'cowes' | 'newport' | 'sydney' | 'kiel' | 'tries
   | 'san-francisco' | 'valencia' | 'barcelona' | 'palma' | 'marstrand' | 'bermuda' | 'enoshima' | 'weymouth' | 'marseille' | 'rio' | 'garda' | 'istanbul'
   | 'st-petersburg' | 'batumi' | 'scheveningen' | 'hong-kong' | 'cape-town' | 'athens' | 'marmaris' | 'fethiye'
   | 'sochi' | 'melbourne' | 'gold-coast' | 'new-york'
-  | 'naples' | 'los-angeles' | 'les-sables' | 'dubai' | 'miami' | 'split' | 'monaco' | 'fremantle' | 'sint-maarten' | 'phuket';
+  | 'naples' | 'los-angeles' | 'les-sables' | 'dubai' | 'miami' | 'split' | 'monaco' | 'fremantle' | 'sint-maarten' | 'phuket' | 'tbilisi-sea';
 type Pair = [string, string]; // English, Russian
 
 export const VENUES: { id: VenueId; nation: string; name: Pair; place: Pair; wind: Pair; skip?: string[]; from?: string; runs?: boolean; about: Pair }[] = [
@@ -102,6 +102,8 @@ export const VENUES: { id: VenueId; nation: string; name: Pair; place: Pair; win
     about: ['The Caribbean of the Heineken Regatta off Simpson Bay, in the trade wind, the airliners landing low over Maho Beach.', 'Карибское море регаты Heineken у залива Симпсон, под пассатом; над пляжем Махо низко заходят на посадку лайнеры.'] },
   { id: 'phuket', nation: 'THA', name: ['Phuket', 'Пхукет'], place: ['Thailand', 'Таиланд'], wind: ['ENE', 'ВСВ'], from: '2026-11-20',
     about: ['The Andaman Sea of the King’s Cup off Kata and Karon, in the north-east monsoon, the Big Buddha on the hill above the beaches.', 'Андаманское море Королевского кубка у Каты и Карона, под северо-восточным муссоном; над пляжами на холме — Большой Будда.'] },
+  { id: 'tbilisi-sea', nation: 'GEO', name: ['Tbilisi Sea', 'Тбилисское море'], place: ['Georgia', 'Грузия'], wind: ['NW', 'СЗ'], from: '2026-11-20',
+    about: ['Fresh water in the dry hills over Georgia’s capital, in the north-westerly, under the bronze pillars of the Chronicle of Georgia.', 'Пресная вода в сухих холмах над столицей Грузии, под северо-западным ветром и бронзовыми колоннами «Хроники Грузии».'] },
 ];
 
 export const venueOf = (id: string | undefined) => VENUES.find((v) => v.id === id) || VENUES[0];

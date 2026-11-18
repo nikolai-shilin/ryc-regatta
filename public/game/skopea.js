@@ -2474,6 +2474,47 @@ function runway(L, parts) {
   for (let v = -18; v <= 18; v += 4) { const [x, z] = at(16, v); parts.push(blk(x, z, gy(16), 0.08, 26, 2, ang, '#e8e8e2')); }
   for (let u = 70; u < len - 50; u += 62) { const [x, z] = at(u, 0); parts.push(blk(x, z, gy(u), 0.08, 30, 0.9, ang, '#e8e8e2')); }
 }
+// The Chronicle of Georgia on its hill over the Tbilisi Sea: sixteen bronze pillars of 30 to 35 m set out along `ring`,
+// each a tall bronze slab on a stone plinth: on both faces the great figures of its upper half, and below them the
+// crowded, uneven scenes of its reliefs
+function chronicle(L, parts) {
+  const R = L.ring, seg = R.slice(1).map((p, i) => Math.hypot(p[0] - R[i][0], p[1] - R[i][1])), len = seg.reduce((s, l) => s + l, 0);
+  const bronze = '#75603f', relief = ['#8a7249', '#7f6a45', '#94794f', '#767458'];
+  for (let i = 0; i < 16; i++) {
+    let u = ((i + 0.5) / 16) * len, k = 0;
+    while (k < seg.length - 1 && u > seg[k]) u -= seg[k++];
+    const [ax, az] = R[k], [bx, bz] = R[k + 1], t = u / seg[k], x = ax + (bx - ax) * t, z = az + (bz - az) * t, ang = Math.atan2(bz - az, bx - ax);
+    const y = groundAt(x, z), H = L.h * (0.86 + 0.14 * fr(i * 0.618)), W = 7, D = 2.2, nx = -Math.sin(ang), nz = Math.cos(ang), ux = Math.cos(ang), uz = Math.sin(ang);
+    const rnd = (n) => fr(Math.sin(n * 127.1 + i * 311.7) * 43758.5453);
+    parts.push(blk(x, z, y - 2, 3.4, W + 2, D + 2, ang, '#a8a294'), blk(x, z, y + 1.4, H - 1.4, W, D, ang, bronze));
+    [-1, 1].forEach((side, f) => {
+      const put = (a, y0, h, w, d, col) => { const o = D / 2 + d / 2 - 0.05; parts.push(blk(x + ux * a + nx * side * o, z + uz * a + nz * side * o, y + y0, h, w, d, ang, col)); };
+      for (let c = 0; c < 3; c++) { // a figure: the robe, the shoulders, the head
+        const a = (c - 1) * 2.25, s = 40 * f + 10 * c, h = H * (0.27 + 0.07 * rnd(s)), y0 = H * 0.5 + H * 0.05 * rnd(s + 1), col = relief[c % 3];
+        put(a, y0, h, 1.5, 0.4, col); put(a, y0 + h - 1.5, 1.5, 2.1, 0.5, col); put(a, y0 + h, 1.7, 0.95, 0.55, col);
+      }
+      for (let n = 0; n < 10; n++) { // the scenes
+        const s = 90 + 40 * f + 7 * n, w = 1 + 1.3 * rnd(s), h = 1.3 + 2.2 * rnd(s + 1);
+        put((rnd(s + 2) - 0.5) * (W - w - 0.4), 3 + (H * 0.46 - 3 - h) * ((n + rnd(s + 3)) / 10), h, w, 0.22 + 0.25 * rnd(s + 4), relief[n % 4]);
+      }
+    });
+  }
+}
+// Tbilisi's TV tower on Mtatsminda: four steel legs drawing in as they rise, braced on every face, its galleries, the mast
+function tbilisiTv(L, parts) {
+  const [x, z] = L.at, y = groundAt(x, z), steel = '#8d959a', top = L.h * 0.68, N = 13;
+  const hw = (t) => 2.6 + 21 * (1 - t) ** 1.7, C = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  const at = (c, t) => V3(x + c[0] * hw(t), y + top * t, z + c[1] * hw(t));
+  for (let i = 0; i < N; i++) {
+    const t0 = i / N, t1 = (i + 1) / N;
+    for (let c = 0; c < 4; c++) {
+      const a = C[c], b = C[(c + 1) % 4];
+      parts.push(beam(at(a, t0), at(a, t1), 1.9, 1.9, steel), beam(at(a, t1), at(b, t1), 0.9, 0.9, steel), beam(at(a, t0), at(b, t1), 0.8, 0.8, steel), beam(at(b, t0), at(a, t1), 0.8, 0.8, steel));
+    }
+  }
+  for (const t of [0.42, 0.68, 1]) parts.push(post(x, z, y + top * t - 1.2, hw(t) + 3, hw(t) + 3, 2.4, '#b6babb', 8));
+  parts.push(post(x, z, y + top, 2.4, 1.5, (L.h - top) * 0.55, steel, 8), post(x, z, y + top + (L.h - top) * 0.55, 1.5, 0.35, (L.h - top) * 0.45, '#c9ccca', 8));
+}
 function landmarks() {
   const parts = [];
   for (const L of META.landmarks || []) {
@@ -2573,7 +2614,9 @@ function landmarks() {
       else if (L.style === 'burj-al-arab') burjAlArab(L, parts);
       else if (L.style === 'khalifa') burjKhalifa(L, parts);
       else if (L.style === 'domnius') domnius(L, parts);
+      else if (L.style === 'tbilisi-tv') tbilisiTv(L, parts);
     } else if (L.kind === 'liner') queenMary(L, parts);
+    else if (L.kind === 'chronicle') chronicle(L, parts);
     else if (L.kind === 'cablestay') cableStayed(L, parts);
     else if (L.kind === 'cranes') cranes(L, parts);
     else if (L.kind === 'stilt') stiltHouse(L, parts);

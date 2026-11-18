@@ -335,6 +335,12 @@ VENUES = {
                    landmarks=[dict(kind='statue', style='buddha', at=(7.82768, 98.31324), h=45, dir=90, clear=120),  # the Big Buddha on Nakkerd Hill, facing Chalong Bay
                               dict(kind='lighthouse', style='plain', at=(7.76220, 98.30560), h=12, tower='#f4f2ea', clear=10)],  # Promthep Cape's light
                    towns=[(7.8200, 98.3000, 800), (7.8450, 98.2950, 900), (7.8900, 98.2950, 1000)]),
+    # the Tbilisi Sea, the reservoir in the dry hills over the city, its length laid along the north-westerly that blows
+    # down it: the Chronicle of Georgia's pillars on the hill at its head, the TV tower on Mtatsminda beyond the ridge
+    'tbilisi-sea': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(41.7500, 44.8405), wind=305, lake='თბილისის წყალსაცავი',
+                        landmarks=[dict(kind='chronicle', at=(41.77059, 44.81039), h=35, ring=[(41.77040, 44.81082), (41.77033, 44.81026), (41.77047, 44.80998), (41.77057, 44.80996), (41.77076, 44.81014), (41.77084, 44.81072)]),  # its sixteen pillars, along the map's outline of them, open to the east
+                                   dict(kind='tower', style='tbilisi-tv', at=(41.69582, 44.78495), h=274.5, clear=30)],  # the lattice tower of 1972
+                        towns=[(41.7568, 44.8505, 800), (41.7779, 44.8474, 900), (41.7357, 44.8159, 900), (41.7119, 44.8658, 900)]),
 }
 
 # what is on the ground (the cover part), from OpenStreetMap's land use; 0 where the map has nothing, which the game

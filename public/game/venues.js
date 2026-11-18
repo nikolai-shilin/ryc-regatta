@@ -598,6 +598,21 @@ export const VENUES = [
       water: { deep: '#06486a', scatter: '#16a0b0', k: 0.55, shallow: '#58ccb8', clear: 0.65 },
     },
   },
+  {
+    // the Tbilisi Sea, the reservoir in the dry hills over Georgia's capital, in the north-westerly that blows down its
+    // length: the Chronicle of Georgia's bronze pillars on the hill at its head, the city's blocks of flats along its banks
+    id: 'tbilisi-sea', name: ['Tbilisi Sea', 'Тбилисское море'], lat: 41.75, lon: 44.8405, wind: 305, tz: 4, thermal: false, from: '2026-11-20',
+    look: {
+      haze: 1.0,
+      ground: { forest: ['#39482a', '#4b5a32', '#69703f'], scrub: '#9b8f5e', rock: ['#bbab8c', '#95876c'], town: '#aca18d', shore: '#b9aa8b', grass: '#a59b63' }, // the steppe's dry grass
+      fields: ['#a89c62', '#9a9458', '#b3a56e'],
+      trees: [['pine', 0.5, '#2f4226', '#55683a'], ['broad', 0.35, '#3c4f2b', '#6a7a40'], ['cypress', 0.15, '#26391f', '#3a5230']], treeTop: 1500, woods: 0.2,
+      walls: ['#d8d2c4', '#c9c4b8', '#e4dccb', '#d2c2a8', '#bfbcb2'], roofs: ['#8c5a44', '#7e7f80', '#9c5f42', '#6f7274'], flat: 0.6,
+      towers: ['#cfcabd', '#bdb9ae', '#d9d3c5', '#c6bfae', '#b4b2a9'], // the Soviet years' concrete blocks of flats
+      boats: { sail: 0.7, motor: 0.3, big: 0 },
+      water: { deep: '#0a3c4a', scatter: '#2a9088', k: 0.45, shallow: '#58a892', clear: 0.35 },
+    },
+  },
 ];
 
 export const venueById = (id) => VENUES.find((v) => v.id === id) || VENUES[0];

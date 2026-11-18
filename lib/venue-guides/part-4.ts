@@ -301,4 +301,33 @@ export const PART_4: Partial<Record<VenueId, VenueGuide>> = {
       ] },
     ],
   },
+  'tbilisi-sea': {
+    title: ['Sailing on the Tbilisi Sea: racing above the city', 'Яхтинг на Тбилисском море: гонки над городом'],
+    description: [
+      'The Tbilisi Sea: the north-westerly, the RS21 summer series, the Chronicle of Georgia and local tactics – and race it free in a 3D sailing game.',
+      'Тбилисское море: северо-западный ветер, летняя серия RS21, «Хроника Грузии» и тактика – и гоняйся здесь бесплатно в 3D-игре.',
+    ],
+    intro: [
+      'The Tbilisi Sea is a reservoir in the dry hills on the north-eastern edge of Georgia’s capital, about 10 km from the city centre. Opened in 1953, it is almost 9 km long and covers 11.6 square kilometres, and the bronze pillars of the Chronicle of Georgia stand on the hill at its northern end.',
+      'Тбилисское море – водохранилище в сухих холмах на северо-восточной окраине столицы Грузии, примерно в 10 км от центра города. Оно открыто в 1953 году, тянется почти на 9 км и занимает 11,6 квадратного километра, а на холме у его северного края стоят бронзовые колонны «Хроники Грузии».',
+    ],
+    sections: [
+      { h: ['The water and the wind', 'Вода и ветер'], p: [
+        ['This is fresh water with no tide, up to 45 m deep and about 27 m on average, in a long, narrow basin that runs from north-west to south-east. The reservoir was made by flooding a chain of salt lakes and belongs to the Samgori irrigation system. Since the Zhinvali reservoir came into service in 1985, most of its water has come from the Aragvi.',
+          'Вода здесь пресная, приливов нет, глубина доходит до 45 м и в среднем составляет около 27 м, а сама длинная и узкая чаша вытянута с северо-запада на юго-восток. Водохранилище появилось на месте затопленных солёных озёр и входит в Самгорскую оросительную систему. С 1985 года, когда заработало Жинвальское водохранилище, основная часть воды поступает из Арагви.'],
+        ['North-west is Tbilisi’s main wind direction. Airport records from 2015 to 2024 put it at about 28 per cent of the time, and it brings more strong winds than any other direction. Those figures come from the airport rather than the lake, but a north-westerly blows straight along the reservoir and gives it its longest beat.',
+          'Главное направление ветра в Тбилиси – северо-западное. По данным аэропорта за 2015–2024 годы на него приходится около 28 процентов времени, и сильных ветров с этой стороны бывает больше, чем с любой другой. Эти цифры относятся к аэропорту, а не к самому озеру, но северо-западный ветер дует точно вдоль водохранилища и даёт самую длинную лавировку.'],
+      ] },
+      { h: ['The regattas', 'Регаты'], p: [
+        ['The Georgian Sailing Club, on the southern shore, races RS21 keelboats. Its ONECLICK Summer Series 2026 runs in five stages from May to September, alongside Wednesday sunset races and the First Lawyers Sailing Cup. The Tbilisi Sailing Club also teaches and races on this water, and the Georgian Sailing Federation has held a cruiser regatta here.',
+          'Georgian Sailing Club на южном берегу гоняется на килевых яхтах RS21. Его серия ONECLICK Summer Series 2026 проходит в пять этапов с мая по сентябрь, а кроме неё есть гонки на закате по средам и First Lawyers Sailing Cup. На этой же воде учит и гоняется Тбилисский парусный клуб, а Федерация парусного спорта Грузии проводила здесь регату крейсерских яхт.'],
+      ] },
+      { h: ['Racing here', 'Как здесь гоняться'], p: [
+        ['The banks are never far away on a beat down the reservoir, so plan your tacks early and keep a way out of each corner. The hills bend the wind near the shore, so compare the pressure on both sides of the course before you commit to one of them.',
+          'На лавировке вдоль водохранилища берег всегда рядом, поэтому планируй повороты заранее и не загоняй себя в угол. У берега холмы искривляют ветер, так что сравни силу ветра по обеим сторонам дистанции, прежде чем выбрать одну из них.'],
+        ['With no tide to plan for, the wind decides the race. Look upwind for the dark patches of gusts coming off the hills, and be ready for short, steep chop when a fresh north-westerly has the whole length of the water to build over.',
+          'Приливов нет, и гонку решает ветер. Ищи с наветра тёмные пятна порывов, идущих с холмов, и будь готов к короткой крутой волне, когда свежий северо-западный ветер разгоняет её по всей длине акватории.'],
+      ] },
+    ],
+  },
 };
