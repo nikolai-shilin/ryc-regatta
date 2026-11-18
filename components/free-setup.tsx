@@ -23,13 +23,13 @@ const SHAPE_HINT: Partial<Record<Shape, [string, string]>> = {
   wlu: ['Up to the windward mark, a short reach to the offset mark, a run down through the gate, and a last beat up to a finish line below the windward mark.', 'Вверх к верхнему знаку, короткий галфвинд к отбойнику, фордевинд через ворота и последняя лавировка к финишу чуть ниже верхнего знака.'],
 };
 
-type Pick = { venue: VenueId; yacht: YachtId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape; daytime: Daytime };
+type Pick = { venue: VenueId; yacht: YachtId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape; daytime: Daytime; contact: 'turn' | 'dsq' };
 
 // a rough guide to the race's length on the water, so a choice shows its effect (lib/race.ts), at the yacht's own pace
 const minutes = (p: Pick) => raceMinutes({ ...p, timeK: yachtOf(p.yacht).timeK });
 // what the scene shows as each choice is made: the fleet, the wind or the current over the course, or the course
 type View = SceneSetup['view'];
-const VIEW_OF: Record<keyof Pick, View> = { venue: 'boats', yacht: 'boats', fleet: 'boats', start: 'boats', preset: 'wind', current: 'current', course: 'course', length: 'course', laps: 'course', daytime: 'boats' };
+const VIEW_OF: Record<keyof Pick, View> = { venue: 'boats', yacht: 'boats', fleet: 'boats', start: 'boats', preset: 'wind', current: 'current', course: 'course', length: 'course', laps: 'course', daytime: 'boats', contact: 'boats' };
 // the breeze as the game blows it (sim.js PRESETS): its gusts' top and how far it swings either way
 const GUST: Record<Wind, [number, number]> = { light: [9, 12], medium: [16, 13], strong: [26, 14] };
 
@@ -45,7 +45,7 @@ const GUST: Record<Wind, [number, number]> = { light: [9, 12], medium: [16, 13],
 export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'today' | 'race' | null; match?: boolean }) {
   const fromToday = from === 'today';
   const t = tx(lang);
-  const [p, setP] = useState<Pick>({ venue: 'gocek', yacht: 'jpk1050', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any' });
+  const [p, setP] = useState<Pick>({ venue: 'gocek', yacht: 'jpk1050', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any', contact: 'turn' });
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const o = readOpts();
@@ -53,8 +53,8 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
     const venue = venueOf(o.venue).id, daytime = DAYTIMES.includes(o.daytime) ? o.daytime : 'any';
     // a yacht asked for in the address (the yachts page's Race her), else the one last raced
     const asked = new URLSearchParams(location.search).get('yacht'), yacht = isYacht(asked) ? asked : isYacht(o.yacht) ? o.yacht : 'jpk1050';
-    const start: Pick = fromToday || match ? { venue: d.venue, yacht: d.yacht, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course, daytime }
-      : { venue, yacht, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: savedShape(o.course), daytime };
+    const start: Pick = fromToday || match ? { venue: d.venue, yacht: d.yacht, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course, daytime, contact: 'turn' }
+      : { venue, yacht, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: savedShape(o.course), daytime, contact: o.contact === 'dsq' ? 'dsq' : 'turn' };
     setP(start); if (from) setBase(start);
     setNear([d.venue, venue]);
     setReady(true);
@@ -224,6 +224,8 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
             {tags('start', <IconFlag />, t('Start', 'Старт'), [[1, t('1 min', '1 мин')], [3, t('3 min', '3 мин')], [5, t('5 min', '5 мин')]])}
             {tags('current', <IconTide />, t('Current', 'Течение'), [[0, t('Off', 'Выкл')], [1, t('On', 'Вкл')]],
               <p className="bt-hint">{where.runs ? t('The water runs here whichever you choose.', 'Вода здесь идёт при любом выборе.') : t('On: the venue’s tide, river or drift sets every boat.', 'Вкл: местное приливное течение, река или дрейф сносит все лодки.')}</p>)}
+            {!match && tags('contact', <IconFlag />, t('Contact', 'Столкновение'), [['turn', t('Penalty turn', 'Штрафной оборот')], ['dsq', 'DSQ']],
+              <p className="bt-hint">{p.contact === 'dsq' ? t('The boat at fault is out of the race at once. The rudder is read, and a boat with right of way can be at fault too.', 'Виновная яхта сразу снимается с гонки. Судья смотрит на угол руля, и яхта с правом дороги тоже может оказаться виновной.') : t('The boat at fault takes a penalty turn and sails on.', 'Виновная яхта делает штрафной оборот и продолжает гонку.')}</p>)}
           </div>
           <div className="bt-g fs-course-in">
             <span className="bt-k"><IconRoute />{t('Your course', 'Твоя дистанция')}<span className="bt-k-r">{p.course !== 'wl' ? `${shapeName} · ` : ''}{courseName} · {lapsName} · {metres}</span></span>

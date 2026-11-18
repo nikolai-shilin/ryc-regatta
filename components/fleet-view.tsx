@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { saveOpts } from '@/lib/opts';
-import { YACHTS, yachtOf, type YachtId } from '@/lib/yachts';
+import { BEAT_SECS, BEAT_TWS, YACHTS, yachtOf, type YachtId } from '@/lib/yachts';
 import { DAILY_YACHTS, dailyYacht } from '@/lib/race';
 import { IconPlay, IconSail, IconBoats, IconBack, IconArrow, IconGrid } from './ui';
 import { LoadBar, ScenePoster } from './skeleton';
@@ -182,6 +182,14 @@ export function FleetView({ lang, start, back, tour = true, own = false, foot }:
         <div className="bt-g yt-about">
           <span className="bt-k"><IconPlay />{t('In the game', 'В игре')}</span>
           <p>{t(...y.race)}</p>
+        </div>
+
+        <div className="bt-g">
+          <span className="bt-k">{t('Seconds a mile upwind', 'Секунд на милю в лавировку')}</span>
+          <dl className="yt-spec yt-beat">
+            {BEAT_TWS.map((w, i) => <div key={w}><dt>{w} {t('kn', 'уз')}</dt><dd>{BEAT_SECS[y.id][i]}</dd></div>)}
+          </dl>
+          <p className="bt-hint">{t('As on an ORC certificate: 3600 / (speed × cos of the wind angle), at her best close-hauled angle in each wind.', 'Как в мерительном сертификате ORC: 3600 / (скорость × cos угла к ветру), на лучшем угле лавировки при каждом ветре.')}</p>
         </div>
 
         <div className="bt-g">

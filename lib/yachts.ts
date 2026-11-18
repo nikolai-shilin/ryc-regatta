@@ -20,6 +20,15 @@ export type Yacht = {
   courseK: number; lineK: number; timeK: number;
 };
 
+// Seconds a mile to windward, as a measurement certificate gives them: 3600 / (V · cos TWA), her close-hauled speed (kn)
+// and angle in each wind of BEAT_TWS (public/game/classes.js beatV and beat; test/contact-verdict.test.mjs holds them equal)
+export const BEAT_TWS = [6, 8, 10, 12, 16, 20] as const;
+export const BEAT_SECS: Record<YachtId, readonly number[]> = {
+  jclass: [987, 835, 735, 664, 567, 533], ac75: [236, 179, 154, 138, 124, 120], bavaria46: [1271, 1001, 857, 768, 674, 656],
+  jpk1050: [943, 787, 720, 692, 672, 669], dragon: [1122, 933, 836, 788, 760, 759], j70: [1119, 917, 824, 778, 752, 745],
+  rs21: [1154, 942, 853, 803, 776, 769], laser: [1349, 1105, 994, 964, 947, 944], optimist: [1919, 1591, 1476, 1434, 1530, 1655],
+};
+
 export const YACHTS: Yacht[] = [
   {
     id: 'jclass',

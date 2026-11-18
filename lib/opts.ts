@@ -28,6 +28,7 @@ export type Opts = {
   yacht: YachtId; // the class a free race is sailed in (public/game/classes.js); today's race, the day's (lib/race.ts dailyYacht)
   preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape;
   daytime: Daytime; // the time of day a free race is sailed at (public/game/light.js: DAYTIMES); 'any' a new hour every race
+  contact: 'turn' | 'dsq'; // a contact in a free race: a penalty turn, or the boat at fault disqualified (public/game/sim.js verdict)
   autoTrim: number; // 0 I trim · 1 auto · 2 main + jib
   sound: number; guides: number; gfx: Gfx;
   gfxD?: Partial<Record<GfxPart, GfxLevel>>; // Custom graphics: each part's level
@@ -49,7 +50,7 @@ export type Opts = {
 };
 
 export const DEFAULTS: Opts = {
-  mode: 'daily', venue: 'gocek', yacht: 'jpk1050', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any',
+  mode: 'daily', venue: 'gocek', yacht: 'jpk1050', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any', contact: 'turn',
   autoTrim: 1, sound: 1, guides: 1, ghost: 0, gfx: 'auto', saver: 0, figures: 1, camera: 'drone', vibration: 1, voice: 1, music: 'playlist', musicVol: 'normal', sea: 'normal', sndVoices: 'normal', sndBoats: 'normal', sndSignals: 'normal', sndAround: 'normal', fleetV: 3, optsV: 4, musicV: 2, ghostV: 1,
 };
 

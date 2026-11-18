@@ -21,7 +21,7 @@ export const HUD_STRINGS = {
     bias: 'Line bias', pinEnd: 'Pin end', boatEnd: 'Boat end', square: 'Square', line: 'Line',
     legOf: (n, N) => `Leg ${n} of ${N}`, legN: (n) => `Leg ${n}`, legShort: (n, N) => `Leg ${n}/${N}`, up: 'Up', down: 'Down', reach: 'Reach',
     upwind: 'upwind', downwind: 'downwind', reaching: 'reach', stbd: 'starboard', port: 'port', preStart: 'Pre-start',
-    finish: 'Finish', finished: 'Finished', trueWind: 'True wind', from: 'From', lift: 'Lift', header: 'Header',
+    finish: 'Finish', finished: 'Finished', outDsq: 'Disqualified', trueWind: 'True wind', from: 'From', lift: 'Lift', header: 'Header',
     onLine: 'On the line', toLineSpd: 'To line · speed', gap: 'Gap', leader: 'Leader', course: 'Course',
     shape: { wl: 'Windward–leeward', tri: 'Triangle', trap: 'Trapezoid', wlu: 'Upwind finish' },
     speed: 'Speed', ofTarget: 'Of target', vmg: 'VMG', toMark: 'To mark', toLine: 'To line', burn: 'Time to burn',
@@ -46,7 +46,7 @@ export const HUD_STRINGS = {
     bias: 'Перекос линии', pinEnd: 'У знака', boatEnd: 'У судна', square: 'Ровная', line: 'Линия',
     legOf: (n, N) => `Отрезок ${n} из ${N}`, legN: (n) => `Отрезок ${n}`, legShort: (n, N) => `Отр. ${n}/${N}`, up: 'Апвинд', down: 'Даунвинд', reach: 'Галфвинд',
     upwind: 'апвинд', downwind: 'даунвинд', reaching: 'галфвинд', stbd: 'правый галс', port: 'левый галс', preStart: 'Предстарт',
-    finish: 'Финиш', finished: 'Финиш пройден', trueWind: 'Истинный ветер', from: 'С', lift: 'Отход', header: 'Заход',
+    finish: 'Финиш', finished: 'Финиш пройден', outDsq: 'Дисквалификация', trueWind: 'Истинный ветер', from: 'С', lift: 'Отход', header: 'Заход',
     onLine: 'На линии', toLineSpd: 'До линии · скорость', gap: 'Разрыв', leader: 'Лидер', course: 'Дистанция',
     shape: { wl: 'Апвинд — даунвинд', tri: 'Треугольник', trap: 'Трапеция', wlu: 'Финиш наверху' },
     speed: 'Скорость', ofTarget: 'От цели', vmg: 'VMG', toMark: 'До знака', toLine: 'До линии', burn: 'Запас времени',
@@ -956,7 +956,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     // the umpire's card runs down, then goes
     if (umpT > 0) { umpT -= dt; U.bar.style.width = `${(clamp(umpT / UMP_S, 0, 1) * 100).toFixed(1)}%`; if (umpT <= 0) ump.hidden = true; }
     // the finish
-    if (done && !wasDone) { txt(q(fin, '.k'), L.finished); txt(q(fin, 'b'), `${L.ord(P.place)} · ${fmt(P.finish)}`); fin.classList.add('on'); }
+    if (done && !wasDone) { txt(q(fin, '.k'), P.out ? L.outDsq : L.finished); txt(q(fin, 'b'), P.dsq ? 'DSQ' : `${L.ord(P.place)} · ${fmt(P.finish)}`); fin.classList.add('on'); }
     if (!done) fin.classList.remove('on');
     wasDone = done;
     const daily = !!race.settings?.daily;

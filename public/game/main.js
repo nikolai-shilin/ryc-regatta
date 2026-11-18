@@ -162,6 +162,8 @@ const T = {
     zAhead: (n) => `Zone · clear ahead of ${n} — you get room`, zAstern: (n) => `Zone · clear astern of ${n} — keep clear`, tackCall: 'Ready about… Lee-oh!', gybeCall: 'Stand by to gybe… Gybe-oh!',
     results: 'Results', again: 'Race again', menu: 'Menu', racing: 'racing…', you: 'You', dsq: 'DSQ',
     gfxDown: (q) => `Graphics set to ${q} to keep it smooth`, place: ord, finished: (n) => `Finished ${ord(n)}!`, finishedDsq: 'Finished without taking your penalty — DSQ',
+    contactDsq: (a) => ({ rudder: `DSQ, rule ${a.rule}: you had to keep clear of ${a.who}, and your rudder was only ${a.deg}° of ${a.max}° over`, late: `DSQ, rule ${a.rule}: you had to keep clear of ${a.who}. Rudder hard over, but too late`, room: `DSQ, rule 14: you had room to avoid ${a.who} and held your course`, turned: `DSQ, rule 16: you turned onto ${a.who}, who was keeping clear`, above: `DSQ, rule 17: above your proper course, into ${a.who}` })[a.why],
+    theyDsq: (a) => `${a.who} disqualified, rule ${a.rule}`,
     // a 1-on-1 race: the result, and the link between the two screens
     raceWon: 'You win the race!', raceLost: (w) => `${w} wins the race`,
     waitingHost: (n) => `Waiting for ${n}…`, guestGone: (n) => `${n} isn’t answering — her boat holds her course; after 30 s of silence she drops out`,
@@ -266,6 +268,8 @@ const T = {
     zAhead: (n) => `Зона · не связаны, ты впереди ${n} — тебе дают место`, zAstern: (n) => `Зона · не связаны, ты позади ${n} — держись в стороне`, tackCall: 'К повороту оверштаг… Поворот!', gybeCall: 'К повороту фордевинд… Поворот!',
     results: 'Результаты', again: 'Ещё гонку', menu: 'Меню', racing: 'в гонке…', you: 'Вы', dsq: 'DSQ',
     gfxDown: (q) => `Графика: «${q}» — для плавности`, place: (n) => `${n}-е`, finished: (n) => `Финиш: ${n}-е место!`, finishedDsq: 'Финиш без штрафа — дисквалификация (DSQ)',
+    contactDsq: (a) => ({ rudder: `DSQ, правило ${a.rule}: нужно было уступить яхте ${a.who}, а руль был повёрнут только на ${a.deg}° из ${a.max}°`, late: `DSQ, правило ${a.rule}: нужно было уступить яхте ${a.who}. Руль положен до конца, но слишком поздно`, room: `DSQ, правило 14: было место уйти от яхты ${a.who}, но курс не изменён`, turned: `DSQ, правило 16: поворот на яхту ${a.who}, которая уступала`, above: `DSQ, правило 17: выше надлежащего курса, столкновение с яхтой ${a.who}` })[a.why],
+    theyDsq: (a) => `${a.who}: дисквалификация, правило ${a.rule}`,
     raceWon: 'Гонка твоя!', raceLost: (w) => `Гонку выигрывает ${w}`,
     waitingHost: (n) => `${n} не на связи — ждём…`, guestGone: (n) => `${n} не на связи — лодка идёт прежним курсом; после 30 с молчания сход`,
     abandoned: 'Гонка прекращена — не засчитывается', full: 'В этой гонке уже двое', matchFail: 'Не удалось подключиться к гонке один на один', tryAgain: 'Ещё раз',
@@ -296,7 +300,7 @@ applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 
 // ---------- settings ----------
-const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 1, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', saver: 0, guides: 1, music: PLAYLIST, musicVol: 'normal', sea: 'normal', played: 0 };
+const opts = { mode: 'daily', contact: 'turn', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 1, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', saver: 0, guides: 1, music: PLAYLIST, musicVol: 'normal', sea: 'normal', played: 0 };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
 delete opts.undefined; // left by an older pause menu, whose quick switches also ran the menu's choice handler
 if (opts.fleetV !== 3) { opts.fleet = 5; opts.fleetV = 3; } // the default changed (10, then 7): start everyone on 5 once
@@ -1219,7 +1223,7 @@ let race = null, running = false, paused = false, menuChanged = false, hints = {
 function newRace() {
   if (MATCH) { matchView(); return; }
   const s = settings();
-  race = new Race({ preset: s.preset, laps: s.laps, autoTrim: opts.autoTrim === 1, start: s.start, current: !!s.current, fleet: s.fleet, length: s.length, course: s.course, bias: s.bias, level: s.level, seed: s.daily ? s.seed : undefined, daytime: s.daily ? 'any' : s.daytime });
+  race = new Race({ preset: s.preset, laps: s.laps, autoTrim: opts.autoTrim === 1, start: s.start, current: !!s.current, fleet: s.fleet, length: s.length, course: s.course, bias: s.bias, level: s.level, seed: s.daily ? s.seed : undefined, daytime: s.daily ? 'any' : s.daytime, contactDsq: !s.daily && !drill && s.contact === 'dsq' });
   race.settings = s;
   race.player.name = t('you');
   world.setRace(race);
@@ -1795,6 +1799,8 @@ function handleMessages() {
       else committee.call({ sigWarn: 'cWarn' + Math.round(-a.t / 60), sigPrep: 'cPrep' + race.prepFlag, sig1: 'c1' }[a.key], 6, true);
       if (a.key === 'gun' && P.ocs) continue;
       toast(t(a.key, Math.round(-a.t / 60), race.prepFlag), 3);
+    } else if (m.key === 'contactDsq') { // out of the race for a contact (sim.js verdict): the reason, and time to read it before the result
+      raceFinished(race); toast(t('contactDsq', a), 5); score.sting('loss'); haptic('heavy'); setTimeout(finishToPage, 5000);
     } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') {
       race._fin = finishScene(race); if (!race.multi) raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(false, race.course.finishBoat); haptic('heavy');
       score.sting(m.key !== 'finished' ? 'lose' : m.arg === 1 ? 'win' : m.arg <= Math.max(2, Math.ceil(race.boats.length / 3)) ? 'gain' : 'lose');
@@ -1805,6 +1811,7 @@ function handleMessages() {
     }
     else if (m.key === 'gate') toast(t('gateMsg'));
     else if (m.key === 'bump') { audio.collide(m.arg); score.sting('hit'); hint('bump', t('bump'), 3); haptic('heavy'); skipper.shout(race.clock < 0 ? 'push' : 'contact'); }
+    else if (m.key === 'theyDsq') { toast(t('theyDsq', a), 3.5); score.sting('gain'); }
     else if (m.key === 'aground') { score.sting('hit'); hint('aground', t('aground'), 3); haptic('heavy'); skipper.shout('aground'); }
     else if (m.key === 'hail') { const h = t('hail' + a.rule), who = race.boats.find((b) => b.name === a.who); toast(`${a.who}: “${h}”`, 2.2); skipper.cue('hail' + a.rule, who, true); asides.hail(); haptic('warn'); }
     else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); skipper.cue('hail' + a.rule, null, true); } }
@@ -2027,7 +2034,7 @@ function resultRecord(race, pb = null, L = race.log) {
     course: { windward: xz(c.windward), gate: c.gate.map(xz), pin: xz(c.pin), committee: xz(c.committee), legs: c.legs, ...(c.wing && { wing: xz(c.wing) }), type: c.type,
       marks: Object.fromEntries(Object.entries(c.marks).map(([k, m]) => [k, xz(m)])), ...(c.finish && { finish: [xz(c.finish.a), xz(c.finish.b)] }) },
     boats: race.standings().map((b) => ({ name: b === P ? null : b.name, me: b === P, color: typeof b.color === 'number' ? '#' + b.color.toString(16).padStart(6, '0') : null, flag: flagCode(b === P ? playerLook().flag : LOOKS[b.name] && LOOKS[b.name].flag),
-      done: !!b.done, dsq: !!b.dsq, secs: b.done ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track || []), ...(race._fin?.get(b) && { at: race._fin.get(b) }),
+      done: !!b.done, dsq: !!b.dsq, secs: b.done && !b.out ? Math.round(b.finish * 10) / 10 : null, track: thin(b.track || []), ...(race._fin?.get(b) && { at: race._fin.get(b) }),
       legT: (b.legT || []).map((x) => Math.round(x * 10) / 10), pens: b.pens || 0, ...(b !== P && b.level && { level: b.level }) })), // the clock as she finished each leg, her penalties, and a computer skipper's level
     log: { gunD: L.gunD, gunV: L.gunV, ocs: !!L.ocs, startDsq: L.startDsq || null, startT: L.startT, sailing: L.sailing, pct: L.sailing > 20 && L.polar ? Math.round((L.v / L.polar) * 100) : null,
       head, lift, tacks: L.tacks.length, gybes: L.gybes, dirty: Math.round(L.dirty), penT: Math.round(L.penT), hails: L.hails, legs: L.legs, legPlaces: L.legPlaces || [],
