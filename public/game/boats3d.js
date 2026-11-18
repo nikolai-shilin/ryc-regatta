@@ -532,7 +532,7 @@ class SportView extends ClassView {
     const add = this.start(), T = this.tilt, H = J.hull, MOD = RS ? RS21_MODEL : J70_MODEL;
     this.washH = H;
     this.flyY = 0;
-    if (RS) this.lift = 0.2; // light and flat-bottomed, she rides high on the water
+    this.lift = 0.25; // light and flat-bottomed, the sportboats ride high on the water
     const skid = deckFinish(look, SKID); // the player's deck: the non-skid, teak or the hull's colour
     if (MOD) {
       // the hull, deck, cockpit and (on the J/70) the cuddy, moulded (blender/sportboats.py), in a group of their own so
