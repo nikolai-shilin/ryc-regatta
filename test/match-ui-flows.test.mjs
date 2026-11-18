@@ -896,7 +896,7 @@ test('with her frames stopped the guest still says so, a moment later', async ()
 
 test('the host abandoning: the guest is told over the water before the card comes', async () => {
   const x = await sailing();
-  on = x.h; x.h.channels[0].send('abandon', {});
+  on = x.h; x.h.channels[0].send('abandon', { seed: x.hr.seed });
   run(0.3, x.g);
   assert.equal(x.g.says('#mBanner'), 'abandoned');
   x.h.gone(); x.g.gone();
@@ -904,7 +904,7 @@ test('the host abandoning: the guest is told over the water before the card come
 
 test('the host abandoning: the card says so, and the guest stops listening', async () => {
   const x = await sailing();
-  on = x.h; x.h.channels[0].send('abandon', {});
+  on = x.h; x.h.channels[0].send('abandon', { seed: x.hr.seed });
   until(() => x.g.shows('#mCard'), x.g);
   assert.equal(x.g.says('#mCardH'), 'Race abandoned');
   assert.equal(x.g.says('#mCard .m-sub'), 'It doesn’t count for either of you');
@@ -914,7 +914,7 @@ test('the host abandoning: the card says so, and the guest stops listening', asy
 
 test('the abandoned card in Russian', async () => {
   const x = await sailing({}, { lang: 'ru' });
-  on = x.h; x.h.channels[0].send('abandon', {});
+  on = x.h; x.h.channels[0].send('abandon', { seed: x.hr.seed });
   until(() => x.g.shows('#mCard'), x.g);
   assert.equal(x.g.says('#mCardH'), 'Гонка прекращена');
   assert.equal(x.g.says('#mCard .m-sub'), 'Она не засчитывается никому из вас');
@@ -1161,7 +1161,7 @@ test('with only what it must be given, the race still runs to its card', async (
 test('an abandoned race has no Full result, even with a record of that race on this device', async () => {
   const x = await sailing();
   x.g.ls.setItem('regatta-match-result', JSON.stringify({ code: CODE, seed: x.hr.seed, id: 'old-record' }));
-  on = x.h; x.h.channels[0].send('abandon', {});
+  on = x.h; x.h.channels[0].send('abandon', { seed: x.hr.seed });
   until(() => x.g.shows('#mCard'), x.g);
   assert.equal(x.g.shows('#mCard .m-full'), false);
   x.h.gone(); x.g.gone();

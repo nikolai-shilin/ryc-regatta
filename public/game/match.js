@@ -2,7 +2,7 @@
 // Keeper), the two channels it talks on (makeLink), and the race between the two screens: the host's game runs it
 // (Host), the guest's follows it (Guest). Every clock is the injected now().
 import { Race, wrap, YAW_LAG } from './sim.js';
-import { applyControls, encodeSnap, applySnap, readBoat, setBoat, setSails, resultsOf } from './wire.js';
+import { applyControls, encodeSnap, applySnap, readBoat, setBoat, setSails, resultsOf, goodSnap, goodControls, goodResults } from './wire.js';
 export { FINISH_LIMIT_S } from './sim.js';
 
 export const HOST_KEY = 'regatta-match-host'; // localStorage: { code } of the match this browser hosts
@@ -20,13 +20,33 @@ export function makeLink(rt, code) {
 // saved or sent (an older set-up's, or a bad one's)
 const CHOICES = { preset: ['medium', 'light', 'strong'], length: ['short', 'medium', 'long'], course: ['wl', 'tri', 'trap', 'wlu'], laps: [1, 2], start: [1, 3, 5], current: [0, 1],
   daytime: ['any', 'morning', 'midday', 'afternoon', 'evening', 'sunset'] };
+const isName = (v) => typeof v === 'string' && v.length > 0 && v.length <= 64;
+const asNumber = (v) => (['number', 'string', 'boolean'].includes(typeof v) ? Number(v) : NaN);
 export function cleanSettings(s, { venue, yacht }) {
-  const o = s && typeof s === 'object' ? s : {}, out = { venue: String(o.venue || venue), yacht: String(o.yacht || yacht) };
+  const o = s && typeof s === 'object' ? s : {}, out = { venue: isName(o.venue) ? o.venue : String(venue), yacht: isName(o.yacht) ? o.yacht : String(yacht) };
   for (const [k, list] of Object.entries(CHOICES)) {
-    const v = typeof list[0] === 'number' ? Number(o[k]) : o[k];
+    const v = typeof list[0] === 'number' ? asNumber(o[k]) : o[k];
     out[k] = list.includes(v) ? v : list[0];
   }
   return out;
+}
+
+// What a message says is checked before it is believed (wire.js has the race's own): a hello, a race's start, its result
+// and the state the host sends. Anything else is nothing to act on.
+const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+const isText = (v) => typeof v === 'string' && v.length <= 200;
+const goodSailor = (p) => isObj(p) && isName(p.id) && isText(p.name);
+const goodSet = (s) => s === null || (isObj(s) && [s.venue, s.yacht].every((v) => v === undefined || isName(v))); // (the choices themselves cleanSettings repairs)
+export const goodStart = (m) => isObj(m) && Number.isSafeInteger(m.seed) && m.seed >= 0 && goodSailor(m.host) && goodSailor(m.guest) && m.host.id !== m.guest.id && goodSet(m.settings);
+const goodHello = (h) => goodSailor(h) && typeof h.host === 'boolean' && Number.isFinite(h.joinedAt) && (h.build == null || isText(h.build)) && (h.guestId == null || isName(h.guestId))
+  && goodSet(h.settings ?? null) && (h.start == null || goodStart(h.start));
+const goodResult = (r, ids) => isObj(r) && (r.abandoned === undefined || typeof r.abandoned === 'boolean') && [r.winner, r.forfeited].every((v) => v === null || ids.includes(v))
+  && (r.margin === null || (Number.isFinite(r.margin) && r.margin >= 0)) && (r.marks === undefined || (isObj(r.marks) && Object.entries(r.marks).every(([id, v]) => ids.includes(id) && (v === 'DSQ' || v === 'DNF'))));
+// the host's state of a race (Match.toJSON)
+export function goodState(s) {
+  if (!isObj(s) || !goodStart(s.start) || (s.state !== 'race' && s.state !== 'over')) return false;
+  const ids = [s.start.host.id, s.start.guest.id];
+  return (s.result === null || goodResult(s.result, ids)) && (s.leftBy === null || ids.includes(s.leftBy));
 }
 
 const byJoin = (a, b) => a.joinedAt - b.joinedAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -51,14 +71,14 @@ export class Room {
     this.error = null;
     const all = link.all;
     all.on('hello', (h) => {
-      if (!h || h.id === me.id) return;
+      if (!goodHello(h) || h.id === me.id) return;
       const known = this._peers.has(h.id);
       this._peers.set(h.id, { hello: h, seen: this.now() });
       if (h.host && h.start && (h.start.guest?.id === me.id || h.start.host?.id === me.id)) this._emitStart(h.start);
       if (!known) this._sendHello(); // answer a newcomer at once rather than on the next beat
     });
     all.on('bye', (b) => { if (b) this._peers.delete(b.id); });
-    all.on('start', (m) => { if (m && (m.host?.id === me.id || m.guest?.id === me.id)) this._emitStart(m); });
+    all.on('start', (m) => { if (goodStart(m) && (m.host.id === me.id || m.guest.id === me.id)) this._emitStart(m); });
     // resolves true once joined, false if the join failed (room.error holds why)
     this.joined = all.join().then(() => { if (!this._left) this._sendHello(); return true; }, (e) => { this.error = e || new Error('join failed'); return false; });
     this._timer = every ? setInterval(() => this.tick(), every) : null;
@@ -160,7 +180,8 @@ export class Room {
   }
 }
 
-// The state of one race: pure, no channels. result: { winner, margin, forfeited, abandoned } (ids) once it is over.
+// The state of one race: pure, no channels. result: { winner, margin, forfeited, abandoned, marks } (ids) once it is over;
+// marks: { id: 'DSQ' | 'DNF' } for a boat without a place (none: no such boat), so a page opened again can still say so.
 export class Match {
   constructor({ start, now = Date.now }) {
     this.start = start;
@@ -173,10 +194,10 @@ export class Match {
     this._absent = { [this.hostId]: null, [this.guestId]: null }; // id -> when they went, or null
   }
 
-  endRace({ winner = null, margin = null, forfeited = null, abandoned = false } = {}) {
+  endRace({ winner = null, margin = null, forfeited = null, abandoned = false, marks = null } = {}) {
     if (this.state !== 'race') return;
     this.state = 'over';
-    this.result = abandoned ? { winner: null, margin: null, forfeited: null, abandoned: true } : { winner, margin, forfeited, abandoned: false };
+    this.result = abandoned ? { winner: null, margin: null, forfeited: null, abandoned: true } : { winner, margin, forfeited, abandoned: false, ...(marks && Object.keys(marks).length && { marks }) };
   }
   // id has gone for good. The race lives in the host's tab, so with her it is abandoned; the guest's going is the race's
   // own to judge (Host.guestLeft: before her finish she gives it up, after it her place stands and it runs on)
@@ -197,12 +218,15 @@ export class Match {
 
   toJSON() { return { start: this.start, state: this.state, result: this.result, leftBy: this.leftBy }; }
   // The host's saved race after a reload: one that was on lived only in that tab, so it is abandoned; one sailed to its
-  // end keeps its result. (A match saved by an older build, with a score and no result, opens as no race at all.)
+  // end keeps its result. (A match saved by an older build, with a score and no result, opens as no race at all; what is
+  // no saved race at all gives null.)
   static from(json, now = Date.now) {
-    const j = JSON.parse(JSON.stringify(json));
-    const m = new Match({ start: j.start, now });
-    m.leftBy = j.leftBy ?? null;
-    m.endRace(j.state === 'over' && j.result ? j.result : { abandoned: true });
+    let j = null;
+    try { j = JSON.parse(JSON.stringify(json)); } catch (e) { return null; }
+    if (!isObj(j) || !goodStart(j.start)) return null;
+    const m = new Match({ start: j.start, now }), ids = [m.hostId, m.guestId];
+    m.leftBy = ids.includes(j.leftBy) ? j.leftBy : null;
+    m.endRace(j.state === 'over' && goodResult(j.result, ids) ? j.result : { abandoned: true });
     return m;
   }
 }
@@ -264,13 +288,14 @@ export class Keeper {
 }
 
 // ---------- the race between the two screens ----------
-// 'match:CODE' (link.all): host → guest snap { c, f, w, b, a } (wire.js; a: [g, hc], the guest's latest controls'
-// own clock stamp and the host's clock when they came, or null) ten times a second; ev { list: [{ key, arg, to: id |
-// null }] }, the race's news; end { winner, margin, forfeited } (ids) once it's over, the last snap before it, both
+// 'match:CODE' (link.all): host → guest snap { seed, c, f, w, b, a } (wire.js; a: [g, hc], the guest's latest controls'
+// own clock stamp and the host's clock when they came, or null) ten times a second; ev { seed, list: [{ key, arg, to: id |
+// null }] }, the race's news; end { seed, winner, margin, forfeited } (ids) once it's over, the last snap before it, both
 // again every second it's ticked; results (wire.js resultsOf) once it's over, every second until she answers; abandon
-// {} after the host's tab slept over a minute, or at its Leave with the race on. 'match:CODE:in' (link.input): guest → host input { id, c, g } (controlsOf;
+// { seed } after the host's tab slept over a minute, or at its Leave with the race on. 'match:CODE:in' (link.input): guest → host input { id, seed, c, g } (controlsOf;
 // g her own clock when they last changed), as they change (see INPUT_MIN_MS); resultsOk { id, seed }, for each results
-// heard. The Room joins link.all; Host and Guest join link.input, and stop() leaves it.
+// heard. Every one names its race by its seed: a word of the race before, come late to a rematch, is no word of this one.
+// The Room joins link.all; Host and Guest join link.input, and stop() leaves it.
 const SNAP_S = 0.1; // a snapshot every 0.1 s of the race
 const HOLD_MS = 3000; // a guest unheard this long holds her course; a host unheard this long: "Waiting for <host>"
 const FORFEIT_MS = 30000; // a guest unheard this long: the race is the host's
@@ -295,6 +320,9 @@ export function raceFor(match, myId) {
   for (const p of [s.host, s.guest]) race.humans.find((b) => b.id === p.id).look = p.look;
   return race;
 }
+
+// what the card says of a boat without a place, for the record of the race's result: the winner has her place
+export const marksOf = (race) => Object.fromEntries(race.humans.filter((b) => b !== race.winner).flatMap((b) => (b.dsq || b.ufd || b.bfd ? [[b.id, 'DSQ']] : b.dnf || !b.done ? [[b.id, 'DNF']] : [])));
 
 // The race's results as both screens keep them: the boats in the order of the result, the winner first, then the boats
 // home by their finish, those home disqualified, those out under a flag, and the rest. The host's word, so the two
@@ -332,7 +360,7 @@ export class Host {
     this._snapT = SNAP_S; // the first tick sends one
     this._sent = new WeakSet(race.messages); // the race's news so far is the guest's own race's too (same seed)
     link.input.on('input', (m) => {
-      if (this.stopped || !m || m.id !== guestId || !m.c) return;
+      if (this.stopped || !m || m.id !== guestId || m.seed !== race.seed || !goodControls(m.c)) return;
       this._c = m.c; this._lastIn = this.now();
       if (Number.isFinite(m.g) && m.g !== this._ack?.[0]) this._ack = [m.g, Math.round(this.race.clock * 1000) / 1000];
     });
@@ -346,7 +374,7 @@ export class Host {
     if (race.over) { this._lastTick = t; this._end(); return; } // a race sailed to its end is never abandoned
     if (this._lastTick !== null) {
       const gap = t - this._lastTick;
-      if (gap > ASLEEP_MS) { all.send('abandon', {}); this.abandoned = true; this.stop(); return; }
+      if (gap > ASLEEP_MS) { all.send('abandon', { seed: race.seed }); this.abandoned = true; this.stop(); return; }
       if (gap > HOLD_MS || !this.alive()) this._lastIn += gap; // its own sleep, or its own link in doubt, isn't the guest's silence
     }
     this._lastTick = t;
@@ -361,9 +389,9 @@ export class Host {
       this._sent.add(m);
       list.push({ key: m.key, arg: m.arg ?? null, to: m.to ? m.to.id : null });
     }
-    if (list.length) all.send('ev', { list });
+    if (list.length) all.send('ev', { seed: race.seed, list });
     this._snapT += dt;
-    if (this._snapT >= SNAP_S - 1e-6 && !race.over) { this._snapT = 0; all.send('snap', { ...encodeSnap(race), a: this._ack }); } // (the last is _end's)
+    if (this._snapT >= SNAP_S - 1e-6 && !race.over) { this._snapT = 0; all.send('snap', { ...encodeSnap(race), seed: race.seed, a: this._ack }); } // (the last is _end's)
     if (race.over) this._end();
   }
   // the guest has left the race: before her finish she gives it up at once; after it her place stands (race.forfeit)
@@ -381,8 +409,8 @@ export class Host {
     const t = this.now(), r = this.race;
     if (!this.ended || t - this._endAt >= 1000) {
       this.ended = true; this._endAt = t;
-      this.link.all.send('snap', { ...encodeSnap(r), a: this._ack });
-      this.link.all.send('end', { winner: r.winner?.id ?? null, margin: r.margin ?? null, forfeited: r.forfeited?.id ?? null });
+      this.link.all.send('snap', { ...encodeSnap(r), seed: r.seed, a: this._ack });
+      this.link.all.send('end', { seed: r.seed, winner: r.winner?.id ?? null, margin: r.margin ?? null, forfeited: r.forfeited?.id ?? null });
     }
     this._results ??= finalResults(r);
     this.flush();
@@ -404,6 +432,13 @@ function carryOn(o, t) {
   for (let i = 1; i <= n; i++) { const h = head((i - 0.5) * d); x += Math.sin(h) * o.v * d; z -= Math.cos(h) * o.v * d; }
   return { ...o, x, z, h: wrap(head(t)) };
 }
+
+// what the guest takes from the host, whole or not at all: the ack on a snapshot, the race's news, and its end
+const goodAck = (a) => a === null || (Array.isArray(a) && a.length === 2 && a.every(Number.isFinite));
+const NEWS_MOST = 64; // (a frame's news is a word or two)
+const goodNews = (race, list) => Array.isArray(list) && list.length <= NEWS_MOST
+  && list.every((m) => isObj(m) && typeof m.key === 'string' && m.key.length > 0 && m.key.length <= 40 && (m.to === null || race.humans.some((b) => b.id === m.to)));
+const goodEnd = (race, e) => [e.winner, e.forfeited].every((id) => id === null || race.humans.some((b) => b.id === id)) && (e.margin === null || (Number.isFinite(e.margin) && e.margin >= 0));
 
 // The guest's game: it follows the host's race. Her own boat is stepped here from her own hands (the helm answers at
 // once), and set against the host's copy of her: each snapshot is compared with where she herself was when her
@@ -448,12 +483,12 @@ export class Guest {
     this._rtts = []; // s: the way to the host and back, as measured
     this._ackG = null;
     this._trackC = -Infinity;
-    const all = link.all;
-    all.on('snap', (s) => { if (!this.stopped) this._onSnap(s); });
-    all.on('ev', (e) => { if (!this.stopped) this._onEv(e); });
-    all.on('end', (e) => { if (!this.stopped) this._onEnd(e); });
+    const all = link.all, ours = (m) => !this.stopped && m?.seed === race.seed; // (this race's: not the one before a rematch)
+    all.on('snap', (s) => { if (ours(s) && goodSnap(race, s) && goodAck(s.a)) this._onSnap(s); });
+    all.on('ev', (e) => { if (ours(e) && goodNews(race, e.list)) this._onEv(e); });
+    all.on('end', (e) => { if (ours(e) && goodEnd(race, e)) this._onEnd(e); });
     all.on('results', (m) => { if (!this.stopped) this._onResults(m); });
-    all.on('abandon', () => { if (!this.stopped && !this.ended) this.abandoned = true; });
+    all.on('abandon', (m) => { if (ours(m) && !this.ended) this.abandoned = true; });
     this.joined = joinOf(this, link.input);
   }
 
@@ -465,7 +500,7 @@ export class Guest {
 
   _onSnap(s) {
     const race = this.race, me = this.me, pen = !!me.pen;
-    if (s?.r !== undefined && s.r !== race.recalls) this._recalled(s);
+    if (s.r !== race.recalls) this._recalled(s);
     if (!applySnap(race, s, me)) return;
     // the host saw her turn done (a turn gone with a disqualification, at the finish, wasn't paid)
     if (pen && !me.pen && !me.dsq) me.events.push('penaltyDone');
@@ -550,7 +585,7 @@ export class Guest {
 
   _onEv(e) {
     const race = this.race, me = this.me;
-    for (const m of e?.list || []) {
+    for (const m of e.list) {
       const to = m.to ? this._boat(m.to) : null;
       if (m.to && to !== me) continue; // the other boat's news
       race.messages.push({ key: m.key, arg: m.arg, to });
@@ -561,18 +596,18 @@ export class Guest {
   _onEnd(e) {
     if (this.ended) return;
     const race = this.race;
-    this.ended = e || {};
+    this.ended = e;
     this.abandoned = false; // the race was sailed to its end: that stands
     race.over = true;
-    race.winner = this._boat(e?.winner) ?? race.winner;
-    race.margin = e?.margin ?? null;
-    race.forfeited = this._boat(e?.forfeited);
-    for (const fn of this._ends) fn({ winner: e?.winner ?? null, margin: e?.margin ?? null, forfeited: e?.forfeited ?? null });
+    race.winner = this._boat(e.winner) ?? race.winner;
+    race.margin = e.margin;
+    race.forfeited = this._boat(e.forfeited);
+    for (const fn of this._ends) fn({ winner: e.winner, margin: e.margin, forfeited: e.forfeited });
   }
 
   // the host's results of this race: the first copy kept, and every copy answered (her last answer may have been lost)
   _onResults(m) {
-    if (!m || m.seed !== this.race.seed) return;
+    if (!goodResults(this.race, m)) return;
     this.link.input.send('resultsOk', { id: this.me.id, seed: m.seed });
     if (this.results) return;
     this.results = m;
@@ -595,7 +630,7 @@ export class Guest {
       this._sentAt = t; this._sentKey = key; this._sentC = c;
       const g = Math.round(this._changedC * 1000) / 1000;
       if (!this._sends.has(g)) { this._sends.set(g, t); if (this._sends.size > 20) this._sends.delete(this._sends.keys().next().value); }
-      this.link.input.send('input', { id: this.me.id, c, g });
+      this.link.input.send('input', { id: this.me.id, seed: this.race.seed, c, g });
     }
   }
 

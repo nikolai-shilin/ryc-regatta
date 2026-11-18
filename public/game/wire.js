@@ -149,6 +149,38 @@ export function applySnap(race, s, skip = null) {
   return true;
 }
 
+// ---------- what comes over the wire is checked before it is believed ----------
+// A message is anybody's to send, and a page may hear one that is damaged or of another build: each check says whether this
+// is the message as a runner or a sailor sends it, whole, or nothing to act on.
+const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+const isNum = (v) => Number.isFinite(v) && Math.abs(v) < 1e9;
+const numOrNull = (v) => v === null || isNum(v);
+const nums = (a, most) => Array.isArray(a) && a.length <= most && a.every(isNum);
+const isCount = (v) => Number.isInteger(v) && v >= 0 && v < 1e6;
+const isHuman = (race, id) => race.humans.some((h) => h.id === id);
+const ROW = N + 22;
+const goodRow = (row, legs) => Array.isArray(row) && row.length === ROW && row.every((v, i) => (i === N + 8 || i === N + 9 ? numOrNull(v) : isNum(v))) && isCount(row[N + 7]) && row[N + 7] < legs;
+// a snapshot of this race
+export function goodSnap(race, s) {
+  return isObj(s) && isNum(s.c) && isNum(s.t) && isCount(s.f) && isCount(s.r) && ['P', 'U', 'B'].includes(s.p) && (s.w === null || isHuman(race, s.w))
+    && Array.isArray(s.b) && s.b.length === race.boats.length && s.b.every((row) => goodRow(row, race.course.legs.length));
+}
+// a sailor's controls (controlsOf)
+export function goodControls(c) {
+  return isObj(c) && isNum(c.r) && isNum(c.s) && isNum(c.j) && ['at', 'sp', 'k', 'rf', 'sj'].every((k) => typeof c[k] === 'boolean') && (c.kt === 'gen' || c.kt === 'zero') && isCount(c.tk) && isCount(c.hl);
+}
+const goodFoul = (f) => isObj(f) && ['string', 'number'].includes(typeof f.rule) && (f.who == null || typeof f.who === 'string') && [f.t ?? null, f.x ?? null, f.z ?? null].every(numOrNull);
+const goodLog = (l) => isObj(l) && ['gunD', 'gunV', 'startT', 'startAt', 'v', 'polar', 'sailing', 'dirty', 'gybes', 'penT', 'leg', 'top', 'topLeg'].every((k) => numOrNull(l[k]))
+  && ['ocs', 'auto', 'topKite'].every((k) => typeof l[k] === 'boolean') && (l.startDsq == null || typeof l.startDsq === 'string') && nums(l.legs, 500) && nums(l.tacks, 5000) && (l.legPlaces === undefined || nums(l.legPlaces, 500))
+  && isObj(l.hails) && Object.values(l.hails).every(isNum) && Array.isArray(l.fouls) && l.fouls.length <= 500 && l.fouls.every(goodFoul);
+const goodResult = (b) => isObj(b) && ['done', 'dsq', 'dnf'].every((k) => typeof b[k] === 'boolean') && numOrNull(b.place) && numOrNull(b.finish) && numOrNull(b.trackEnd) && isNum(b.pens) && isNum(b.trackStep) && b.trackStep > 0
+  && nums(b.legT, 500) && Array.isArray(b.track) && b.track.length <= 400 && b.track.every((p) => nums(p, 2) && p.length === 2) && goodLog(b.log);
+// the results of this race (resultsOf, finalResults), a row for each of its sailors
+export function goodResults(race, m) {
+  return isObj(m) && m.seed === race.seed && (m.winner === undefined || m.winner === null || isHuman(race, m.winner)) && Array.isArray(m.boats) && m.boats.length === race.humans.length
+    && race.humans.every((h) => m.boats.filter((b) => b?.id === h.id).length === 1) && m.boats.every(goodResult);
+}
+
 // ---------- the results: what only the runner recorded ----------
 const TRACK_MAX = 160;
 // a boat's track for the result, as any race's record keeps it: every k-th point (trackStep, saved with it for the result

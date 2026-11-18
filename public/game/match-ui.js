@@ -180,6 +180,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   let error = null, left = false, joined = false, build = null, badSet = false;
   let lastHostAt = Date.now(), lastState = 0, stateKey = '', kicked = 0;
   let pendingStart = null; // the guest: a start heard before any mstate
+  const pastSeeds = new Set(); // the guest: the races before the one she is on
   let myName = clean(store(NAME_KEY) || '');
 
   const here = () => ({ venue: venue.id, yacht: cls.id });
@@ -206,7 +207,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     if (left) return;
     left = true;
     try {
-      if (isHost && match?.state === 'race') link?.all.send('abandon', {});
+      if (isHost && match?.state === 'race') link?.all.send('abandon', { seed: match.start.seed });
       link?.all.send('leave', { id: myId });
     } catch (e) {}
     cur?.H?.stop(); cur?.G?.stop();
@@ -278,13 +279,13 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
       match.leave(m.id);
       if (isHost) { saveMatch(); sendState(); }
     });
-    link.all.on('snap', () => { lastHostAt = Date.now(); if (cur && !cur.gotSnap && cur.G) { cur.gotSnap = true; room.pause(true); } });
-    link.all.on('ev', () => { lastHostAt = Date.now(); });
+    link.all.on('snap', (s) => { if (!cur || s?.seed !== cur.seed) return; lastHostAt = Date.now(); if (!cur.gotSnap && cur.G) { cur.gotSnap = true; room.pause(true); } }); // (this race's: a late one of the race before says nothing of this)
+    link.all.on('ev', (e) => { if (cur && e?.seed === cur.seed) lastHostAt = Date.now(); });
     // a reloaded host, or one whose tab was closed and the link opened again: the race that was on is abandoned (it lived
     // in that tab), one sailed to its end stands
     if (isHost) {
       const saved = savedMatch(code);
-      if (saved) try { match = M.Match.from(saved); K.set(match); saveMatch(); } catch (e) { match = null; }
+      if (saved) try { match = M.Match.from(saved); if (match) { K.set(match); saveMatch(); } } catch (e) { match = null; }
     }
   };
   R.join.addEventListener('click', () => submitName());
@@ -310,10 +311,11 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   // the guest takes the race the host sends as this build can sail it
   const guestMatch = (start) => new M.Match({ start: { ...start, settings: M.cleanSettings(start.settings, here()) } });
   const onState = (s) => {
-    if (!s || !s.start || !s.start.host || !s.start.guest) return;
+    if (!M.goodState(s)) return;
     if (s.start.guest.id !== myId && s.start.host.id !== myId) return; // somebody else's race: this one is full
+    if (pastSeeds.has(s.start.seed)) return; // a late word of a race before this rematch
     lastHostAt = Date.now(); pendingStart = null;
-    if (!match || match.start.seed !== s.start.seed) match = guestMatch(s.start); // a new race: the first, or a rematch
+    if (!match || match.start.seed !== s.start.seed) { if (match) pastSeeds.add(match.start.seed); match = guestMatch(s.start); } // a new race: the first, or a rematch
     if (match.state !== 'over' || s.state === 'over') Object.assign(match, { state: s.state, result: s.result ?? null, leftBy: s.leftBy ?? null }); // (a race over stays over, whatever was on its way)
     if (match.state === 'race' && !onScreen() && !stale()) enterRace();
   };
@@ -358,7 +360,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     if (!isHost || !cur?.H || cur.endedAt || !(cur.race.over || cur.H.abandoned)) return;
     const r = cur.race;
     cur.endedAt = Date.now();
-    K.raceEnded(cur.H.abandoned ? { abandoned: true } : { winner: r.winner?.id ?? null, margin: r.margin ?? null, forfeited: r.forfeited?.id ?? null });
+    K.raceEnded(cur.H.abandoned ? { abandoned: true } : { winner: r.winner?.id ?? null, margin: r.margin ?? null, forfeited: r.forfeited?.id ?? null, marks: M.marksOf(r) });
     if (!cur.H.abandoned) keep(cur, M.finalResults(r));
     saveMatch(); sendState();
   };
@@ -398,7 +400,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   // ---------- the card ----------
   const fmtGap = (s) => (s < 60 ? `${s.toFixed(1)} ${L.sec}` : fmtS(s, L.sec));
   const paintRows = (r) => {
-    const boats = onScreen() ? cur.race.humans : [{ id: match.hostId }, { id: match.guestId }];
+    const boats = onScreen() ? cur.race.humans : [match.hostId, match.guestId].map((id) => ({ id, dsq: r.marks?.[id] === 'DSQ', dnf: r.marks?.[id] === 'DNF' })); // (a page opened again: the result's word for each boat)
     const rows = r.abandoned ? [] : cardRows(boats, r), k = JSON.stringify(rows);
     show(C.rows, rows.length > 0);
     if (C.rows._k === k) return; C.rows._k = k;
