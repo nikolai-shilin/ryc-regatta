@@ -15,7 +15,7 @@
 import { makeBoatView } from './boats3d.js';
 import { LOOKS, playerLook } from './yacht.js';
 import { VENUE } from './venues.js';
-import { along, ghostGap } from './track.js';
+import { ghostAt, ghostGap } from './track.js';
 import { polarSpeed, beatAngle, lineT, KN, D2R } from './sim.js';
 
 const tr = (en, ru) => (ctx?.LANG === 'ru' ? ru : en); // the game's language (main.js), handed over at init
@@ -120,7 +120,7 @@ async function ghostFor(race) {
   const want = q.get('ghost');
   const pick = (r, own) => {
     const b = r && r.daily === day && Array.isArray(r.boats) && r.boats.find((x) => x.me);
-    return b && b.done && !b.dsq && b.secs != null && b.track?.length > 1 ? { track: b.track, secs: b.secs, legT: b.legT || [], start: r.start || 1, own, id: r.id } : null;
+    return b && b.done && !b.dsq && b.secs != null && b.track?.length > 1 ? { track: b.track, step: b.trackStep, secs: b.secs, legT: b.legT || [], start: r.start || 1, own, id: r.id } : null;
   };
   if (want && UUID.test(want)) {
     const mine = read('regatta-result-' + want);
@@ -184,7 +184,7 @@ export async function onStart(race) {
 
 export function onFrame(race, dt, t) {
   if (ghost && race === ctx.getRace()) {
-    const p = along(ghost.track, ghost.secs, ghost.start, race.clock), b = ghost.b, W = race.wind.dir();
+    const p = ghostAt(ghost, race.clock), b = ghost.b, W = race.wind.dir();
     if (p) {
       const twa = Math.atan2(Math.sin(W - p.h), Math.cos(W - p.h)), down = Math.abs(twa) > 1.75, a = Math.abs(twa) * 180 / Math.PI;
       Object.assign(b, { x: p.x, z: p.z, h: p.h, twa, awa: twa * (down ? 0.8 : 0.6), heel: down ? 6 : a < 60 ? 14 : 10, sail: Math.min(80, Math.max(12, 16 + (a - 41) * 0.52)),
