@@ -76,10 +76,10 @@ function planeGeometry() {
   return mergeGeometries(parts);
 }
 
-// the lettering, on a canvas: off-white cloth with a navy hem, the first words in navy, a red dot, the second in red
+// the lettering, on a canvas: plain off-white cloth, the first words in navy, a red dot, the second in red
 // (one part alone: just the navy words)
 function bannerTexture(lines, anisotropy) {
-  const c = document.createElement('canvas'), x = c.getContext('2d'), H = 256, px = 196;
+  const c = document.createElement('canvas'), x = c.getContext('2d'), H = 256, px = 232;
   const font = `900 ${px}px Impact, "Arial Narrow", "Helvetica Neue", Arial, sans-serif`;
   x.font = font;
   const two = lines.length > 1 && !!lines[1];
@@ -88,7 +88,6 @@ function bannerTexture(lines, anisotropy) {
   c.width = Math.ceil(W * k); c.height = H;
   x.scale(k, 1);
   x.fillStyle = '#f7f5ef'; x.fillRect(0, 0, W, H);
-  x.fillStyle = '#0b2a4a'; x.fillRect(0, 0, W, 12); x.fillRect(0, H - 12, W, 12);
   x.font = font; x.textBaseline = 'middle';
   x.fillStyle = '#0b2a4a'; x.fillText(lines[0], pad, H / 2 + 6);
   if (two) {

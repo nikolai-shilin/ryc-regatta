@@ -1232,9 +1232,9 @@
 .bc #adm-file:focus-visible + .adm-pick { outline: 2px solid var(--you); outline-offset: 2px; }
 .bc #adm-file:disabled + .adm-pick { opacity: .5; cursor: default; }
 /* the banner, as the plane tows it: on a line from the left */
-.bc .adm-tow { position: relative; padding-left: var(--s-12); margin: var(--s-2) 0 var(--s-3); }
-.bc .adm-tow::before { content: ''; position: absolute; left: 0; top: 50%; width: var(--s-12); border-top: 2px dashed var(--w-50); }
-.bc .adm-ban { margin: 0; border-radius: 0; font-family: var(--cond); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
+.bc .adm-tow { container-type: inline-size; position: relative; padding-left: var(--s-6); margin: var(--s-2) 0 var(--s-3); }
+.bc .adm-tow::before { content: ''; position: absolute; left: 0; top: 50%; width: var(--s-6); border-top: 2px dashed var(--w-50); }
+.bc .adm-ban { gap: 0.35em; margin: 0; padding: 0.3em 0.4em; border-radius: 0; font-family: var(--cond); font-size: min(6.1cqi, 34px); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
 .bc .adm-in { position: relative; flex: 0 1 60%; min-width: 0; display: flex; }
 .bc .adm-in .field { flex: 1; width: 100%; min-width: 0; padding-right: 56px; }
 .bc .adm-banner .srow .adm-in .field { flex: 1; }
@@ -1246,8 +1246,6 @@
   .bc .adm { padding: var(--s-4); }
   .bc .adm-banner .srow { flex-wrap: wrap; padding-block: var(--s-2); }
   .bc .adm-banner .srow .adm-in { flex: 1 1 100%; }
-  .bc .adm-tow { padding-left: var(--s-6); }
-  .bc .adm-tow::before { width: var(--s-6); }
 }
 /* each section headed by the white kick alone; the banner's words with their labels above the fields */
 .bc .adm-k { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-4); }
