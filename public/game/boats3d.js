@@ -363,6 +363,17 @@ function rimLid(rim) {
 }
 
 // ---------- what both share with the JPK 1050 ----------
+// A running backstay from the mast to the deck: q 1 set up straight, a0 to its quarter a1; q 0 let go, b0 down the front of
+// the mast to b1, between the main and the headsails whatever their trim, hanging in a bow of bow metres
+function setRunner(l, a0, a1, b0, b1, q, bow) {
+  const p = l.geometry.attributes.position, n = p.count - 1, out = Math.sign(a1[0]);
+  for (let k = 0; k <= n; k++) {
+    const s = k / n, d = 4 * s * (1 - s) * (1 - q) * bow;
+    p.setXYZ(k, lerp(lerp(b0[0], b1[0], s), lerp(a0[0], a1[0], s), q) + out * d * 0.4, lerp(lerp(b0[1], b1[1], s), lerp(a0[1], a1[1], s), q) - d, lerp(lerp(b0[2], b1[2], s), lerp(a0[2], a1[2], s), q));
+  }
+  p.needsUpdate = true;
+}
+
 class ClassView {
   start() {
     this.root = new THREE.Group();
@@ -894,7 +905,7 @@ class DragonView extends ClassView {
       T.add(line([[sx * 0.04, D.SPR - 0.12, D.MAST_Z], [sx * 0.74, dk(0.74, D.MAST_Z + 0.42) + 0.18, D.MAST_Z + 0.42]]));
     }
     { const z = H.STERN - 0.12; T.add(line([[0, D.MASTHEAD - 0.02, D.MAST_Z + 0.16], [0, dk(0, z) + 0.05, z]])); }
-    this.runners = [-1, 1].map((sx) => { const l = line([[0, 0, 0], [0, 0, 0], [0, 0, 0]]); l.frustumCulled = false; l.userData.sx = sx; T.add(l); return l; });
+    this.runners = [-1, 1].map((sx) => { const l = line(Array.from({ length: 9 }, () => [0, 0, 0])); l.frustumCulled = false; l.userData.sx = sx; T.add(l); return l; });
     // the boom: alloy, its gooseneck at the lower band; the kicker's tackle from the mast's foot, the outhaul's end
     // fitting, and the mainsheet's block under it 2.3 m aft of the mast, to the traveller across the cockpit floor
     this.mainPivot = add(new THREE.Group(), 0, 0, D.MAST_Z);
@@ -964,13 +975,10 @@ class DragonView extends ClassView {
     { const cw = this.jibClew(), ls = cw.x < 0 ? -1 : 1, lz = this.lazySheet.geometry.attributes.position, [a, w] = car(-ls);
       lz.setXYZ(0, cw.x, cw.y, cw.z); lz.setXYZ(1, 0, D.roofY(0, 0.2) + 0.02, 0.25); lz.setXYZ(2, ...a); lz.setXYZ(3, ...w); lz.needsUpdate = true; }
     // the runners: the windward one set up from the hounds to its quarter, almost at the transom, the lee one let go,
-    // slack forward along the shrouds
-    for (const r of this.runners) {
-      const sx = r.userData.sx, p = r.geometry.attributes.position, wind = sx === side, rz = D.RUNNER_Z, x = sx * (H.hbAt(rz) - 0.08), y = dk(Math.abs(x), rz) + 0.12;
-      p.setXYZ(0, sx * 0.04, D.HOUNDS, D.MAST_Z + 0.04);
-      if (wind) { p.setXYZ(1, lerp(sx * 0.04, x, 0.5), lerp(D.HOUNDS, y, 0.5), lerp(D.MAST_Z, rz, 0.5)); p.setXYZ(2, x, y, rz); }
-      else { p.setXYZ(1, sx * 0.62, D.SPR - 0.6, D.MAST_Z + 0.35); p.setXYZ(2, sx * 0.72, dk(0.72, D.MAST_Z + 0.6) + 0.4, D.MAST_Z + 0.6); }
-      p.needsUpdate = true;
+    // slack forward and tied off at the mast; they change over as the boom comes across
+    if (this.detailOn !== false) for (const r of this.runners) {
+      const sx = r.userData.sx, rz = D.RUNNER_Z, x = sx * (H.hbAt(rz) - 0.08);
+      setRunner(r, [sx * 0.04, D.HOUNDS, D.MAST_Z + 0.04], [x, dk(Math.abs(x), rz) + 0.12, rz], [sx * 0.02, D.HOUNDS, D.MAST_Z - 0.03], [sx * 0.1, D.BOOM_Y - 0.1, D.MAST_Z - 0.08], smooth(-0.3, 0.3, sx * ss), 0.05);
     }
     // the crew: upwind on the windward side deck facing in, their feet under the straps in the cockpit, leaning back out
     // over the water as it blows; downwind sitting in, the middle man to leeward on the spinnaker's sheet; the bow at the
@@ -1246,7 +1254,7 @@ class JClassView extends ClassView {
     // staysail, the spinnaker and its pole
     const dyn = this.dyn = add(new THREE.Group());
     const ln = (n) => { const l = line(Array.from({ length: n }, () => [0, 0, 0])); l.frustumCulled = false; dyn.add(l); return l; };
-    this.runners = [-1, 1].map((sx) => { const l = ln(3); l.userData.sx = sx; return l; });
+    this.runners = [-1, 1].map((sx) => { const l = ln(9); l.userData.sx = sx; return l; });
     this.checks = [-1, 1].map((sx) => { const l = ln(2); l.userData.sx = sx; return l; });
     // the boom: alloy, deep and a little flat-topped, its gooseneck on the mast; the vang from the mast's foot; the
     // mainsheet's blocks under its end to the traveller across the deck aft of the helm
@@ -1351,14 +1359,15 @@ class JClassView extends ClassView {
       p.setXYZ(0, cw.x, cw.y, cw.z); p.setXYZ(1, ls * 1.9, dk(1.9, D.SLEAD_Z) + 0.2, D.SLEAD_Z); p.setXYZ(2, ls * 2.2, dk(2.2, 1.4) + 0.3, 1.4); p.needsUpdate = true;
     }
     // the runners: the windward one set up from the hounds to its quarter, its checkstay to the masthead's third; the
-    // lee one let go forward along the shrouds
-    for (const [r, c] of this.runners.map((r, i) => [r, this.checks[i]])) {
-      const sx = r.userData.sx, p = r.geometry.attributes.position, q = c.geometry.attributes.position, wind = sx === side, rz = D.RUNNER_Z, x = sx * (H.hbAt(rz) - 0.2), y = dk(Math.abs(x), rz) + 0.3;
-      p.setXYZ(0, sx * 0.25, D.HOUNDS, D.MAST_Z + 0.25);
-      if (wind) { p.setXYZ(1, lerp(sx * 0.25, x, 0.5), lerp(D.HOUNDS, y, 0.5), lerp(D.MAST_Z, rz, 0.5)); p.setXYZ(2, x, y, rz); q.setXYZ(0, sx * 0.2, D.MF + 38, D.MAST_Z + 0.3); q.setXYZ(1, x, y, rz); }
-      else { const fx = sx * (H.hbAt(D.MAST_Z + 1.5) - 0.3); p.setXYZ(1, sx * 1.8, D.SPR[0][0] + 6, D.MAST_Z + 1.0); p.setXYZ(2, fx, dk(Math.abs(fx), D.MAST_Z + 1.5) + 1.2, D.MAST_Z + 1.5); q.setXYZ(0, sx * 0.2, D.MF + 38, D.MAST_Z + 0.3); q.setXYZ(1, sx * 1.9, D.SPR[0][0] + 6, D.MAST_Z + 1.0); }
-      p.needsUpdate = true; q.needsUpdate = true;
-    }
+    // lee one let go forward and tied off at the mast, its checkstay with it; they change over as the boom comes across
+    if (this.detailOn !== false) this.runners.forEach((r, i) => {
+      const sx = r.userData.sx, c = this.checks[i].geometry.attributes.position, rz = D.RUNNER_Z, x = sx * (H.hbAt(rz) - 0.2), y = dk(Math.abs(x), rz) + 0.3, set = smooth(-0.3, 0.3, sx * ss);
+      setRunner(r, [sx * 0.25, D.HOUNDS, D.MAST_Z + 0.25], [x, y, rz], [sx * 0.38, D.HOUNDS, D.MAST_Z - 0.12], [sx * 0.46, D.BOOM_Y - 0.4, D.MAST_Z - 0.16], set, 0.15);
+      const m = r.geometry.attributes.position; // the checkstay comes down onto the let-go runner, halfway along it
+      c.setXYZ(0, sx * lerp(0.38, 0.2, set), D.MF + 38, D.MAST_Z + lerp(-0.12, 0.3, set));
+      c.setXYZ(1, lerp(m.getX(4), x, set), lerp(m.getY(4), y, set), lerp(m.getZ(4), rz, set));
+      c.needsUpdate = true;
+    });
     // the crew: the helm behind the wheel, the tactician and the mainsheet's trimmer by him; upwind the grinders at their
     // handles and the windward trimmer at his primary, everyone else sitting on the windward rail facing in, legs over
     // the deck; downwind the trimmers on the spinnaker's sheet and guy, the rest down the middle; the bow on the

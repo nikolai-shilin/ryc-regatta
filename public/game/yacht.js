@@ -2196,6 +2196,7 @@ export class BoatView {
     const sets = new Map();
     for (const o of this.tilt.children) {
       if (moving.has(o) || o.children.length || !(o.isMesh || o.isLine) || Array.isArray(o.material)) continue;
+      if (o.isLine && !o.frustumCulled) continue; // a line that moves isn't culled: its points change every frame
       o.updateMatrix();
       if (o.matrix.determinant() < 0) continue; // mirrored: its faces would turn inside out
       const g = o.geometry;
