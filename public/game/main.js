@@ -12,7 +12,7 @@ const flagCode = (src) => { const m = typeof src === 'string' && /\/flags\/([a-z
 import { VENUE, venueById, laidLength, lengthOffered } from './venues.js';
 import { classById } from './classes.js';
 import { arriveLoaded, goBack, outOfRace } from './trail.js';
-import { createMusic, direct, MUSIC_STYLES } from './music.js';
+import { createMusic, direct, MUSIC_CHOICES, PLAYLIST } from './music.js';
 import { createSfx, AUDIO_TICK } from './sfx.js';
 
 const $ = (s) => document.querySelector(s);
@@ -301,16 +301,16 @@ applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 
 // ---------- settings ----------
-const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 1, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', saver: 0, guides: 1, music: 'racing', musicVol: 'normal', sea: 'normal', played: 0 };
+const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 1, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', saver: 0, guides: 1, music: PLAYLIST, musicVol: 'normal', sea: 'normal', played: 0 };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
 delete opts.undefined; // left by an older pause menu, whose quick switches also ran the menu's choice handler
 if (opts.fleetV !== 3) { opts.fleet = 5; opts.fleetV = 3; } // the default changed (10, then 7): start everyone on 5 once
 if (opts.optsV !== 4) { opts.length = 'short'; opts.mode = 'daily'; opts.optsV = 4; } // a short race, today's, is the default now
-if (opts.musicV !== 1) { opts.music = 'racing'; opts.musicV = 1; } // Racing is the default music now: everyone hears it once, then keeps what they pick
+if (opts.musicV !== 2) { opts.music = PLAYLIST; opts.musicV = 2; } // the playlist is the default music now: everyone hears it once, then keeps what they pick
 // a first race on Auto (Home's first four races promise it): you only steer. Whoever hasn't raced yet starts there, once
 if (!opts.played && opts.trimV !== 1) { opts.autoTrim = 1; opts.trimV = 1; }
 if (opts.ghostV !== 1) { opts.ghost = 0; opts.ghostV = 1; } // the ghost of your best is off now unless you turn it on (Settings): once, then theirs
-if (opts.music !== 'off' && !MUSIC_STYLES.includes(opts.music)) opts.music = 'racing'; // a style that's gone (Ambient, Film, Folk): Racing
+if (opts.music !== 'off' && !MUSIC_CHOICES.includes(opts.music)) opts.music = PLAYLIST; // a style that's gone (Ambient, Film, Folk): the playlist
 const saveOpts = () => { try { localStorage.setItem('regatta', JSON.stringify(opts)); } catch (e) {} };
 // the race's settings: the menu's, or in today's race the day's own (the same for everyone)
 const DAILY_KEYS = ['preset', 'fleet', 'length', 'laps', 'start', 'current', 'course'];
@@ -405,7 +405,7 @@ const audio = {
   // the race starts on its own once the loading screen is done, not on a tap, and a browser keeps a sound made before
   // the page's first tap silent (Safari and iOS always, Chrome as a rule): the first tap or key wakes it, and any later
   // one does again if the phone has suspended it (a call, the screen locked)
-  wake() { if (this.ctx && this.ctx.state !== 'running') this.ctx.resume().catch(() => {}); },
+  wake() { if (this.ctx && this.ctx.state !== 'running') this.ctx.resume().catch(() => {}); this.music?.wake(); },
   // how loud the voices are now, 0..1 (the peak of the last ~10 ms)
   voiceLevel() { if (!this.meter) return 0; this.meter.getFloatTimeDomainData(this.meterBuf); let m = 0; for (const x of this.meterBuf) m = Math.max(m, Math.abs(x)); return m; },
   setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; if (!v) { skipper.stop(); asides.stop(); committee.stop(); } },
@@ -461,8 +461,8 @@ const audio = {
 const score = {
   t: 0, place: 0, cand: 0, candT: 0, trend: 0, trendUntil: 0, riser: false, breath: false,
   reset() { this.t = 0; this.place = 0; this.cand = 0; this.trend = 0; this.trendUntil = 0; this.riser = this.breath = false; if (audio.music) audio.music.reset(); },
-  // Settings › Music: one of the tracks, or off
-  style() { const m = audio.music; if (!m) return; m.setStyle(MUSIC_STYLES.includes(opts.music) ? opts.music : null); m.setVolume(0.5 * (MUSIC_VOL[opts.musicVol] ?? 1)); },
+  // Settings › Music: the playlist, one of the tracks, or off (with Sound off the playlist doesn't stream what nobody hears)
+  style() { const m = audio.music; if (!m) return; m.setStyle(MUSIC_CHOICES.includes(opts.music) && (opts.sound || opts.music !== PLAYLIST) ? opts.music : null); m.setVolume(0.5 * (MUSIC_VOL[opts.musicVol] ?? 1)); },
   sting(k) { if (audio.music) audio.music.sting(k); },
   update(P, dt) {
     const m = audio.music; if (!m) return;
@@ -1580,7 +1580,7 @@ function applyAv(p) {
   if ('gfx' in p || 'gfxD' in p) { applyGfx(); perf.settle = 2; }
   if ('saver' in p) Object.assign(perf, { settle: 2, t: 0, d: [] }); // (the frame rate Auto watches changes with it)
   if ('figures' in p) world.setFigures(p.figures !== 0);
-  if ('music' in p || 'musicVol' in p) score.style();
+  if ('music' in p || 'musicVol' in p || 'sound' in p) score.style();
   if ('sound' in p) audio.setOn(!!opts.sound);
   if (p.voice === 0) { skipper.stop(); asides.stop(); asides.pend = null; }
   audio.levels();

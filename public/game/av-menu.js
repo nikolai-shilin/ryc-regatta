@@ -57,7 +57,7 @@ const CSS = `
 
 const LEVEL = { high: ['High', 'Макс.'], medium: ['Medium', 'Сред.'], low: ['Low', 'Мин.'] };
 const CHOICE = { auto: ['Auto', 'Авто'], ...LEVEL, custom: ['Custom', 'Своя'] };
-const TRACK = { racing: ['Racing', 'Гонка'], groove: ['Groove', 'Грув'], riff: ['Riff', 'Рифф'], openwater: ['Open water', 'Простор'] };
+const TRACK = { playlist: ['Playlist', 'Плейлист'], racing: ['Racing', 'Гонка'], groove: ['Groove', 'Грув'], riff: ['Riff', 'Рифф'], openwater: ['Open water', 'Простор'] };
 // the costliest first: resolution, shadows, the sea and its reflection; the third: whether its lowest is off
 const GFX_NAMES = {
   res: ['Resolution', 'Разрешение', false],
@@ -189,7 +189,7 @@ export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClo
     group(t('Audio', 'Звук'),
       toggle('sound', t('Sound', 'Звук')),
       toggle('voice', t('Voice on board', 'Голос шкипера')),
-      key('music', { name: t('Music', 'Музыка'), list: [...Object.entries(TRACK).map(([v, n]) => [v, pair(n)]), ['off', t('Off', 'Выкл')]] }, 'racing'),
+      key('music', { name: t('Music', 'Музыка'), list: [...Object.entries(TRACK).map(([v, n]) => [v, pair(n)]), ['off', t('Off', 'Выкл')]] }, 'playlist'),
       key('musicVol', { name: t('Music volume', 'Громкость музыки'), list: loud }, 'normal'),
       key('sea', { name: t('Sea', 'Море'), list: level }, 'normal'),
       soundDet.box,

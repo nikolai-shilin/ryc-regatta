@@ -8,6 +8,10 @@
 // (scripts/stamp-game.mjs), so it is cached for good; the plain address where there is none (npm run dev)
 const fileAt = (f) => (import.meta.resolve ? import.meta.resolve(`./${f}`) : new URL(f, import.meta.url).href);
 export const MUSIC_STYLES = ['racing', 'groove', 'riff', 'openwater'];
+// Settings › Music's first choice: whole songs in rotation (createSongs below), or one of the tracks that follow the race
+export const PLAYLIST = 'playlist';
+export const MUSIC_CHOICES = [PLAYLIST, ...MUSIC_STYLES];
+export const SONGS = ['music-song-1.mp3', 'music-song-2.mp3', 'music-song-3.mp3']; // lib/opts.ts SONGS, which npm test keeps in step
 
 // Each track is cut on its bar lines by scripts/music.py into music-<id>.mp3: loops for the moods, the build that lands
 // its drop on the gun, its ending for a win, and accents made of its crash. Each piece: where it starts in the file (s),
@@ -99,6 +103,45 @@ export function direct(s) {
   return { int: Math.min(1, int), ten: Math.min(1, ten), mood };
 }
 
+// ---------- the playlist: whole songs, one after another ----------
+// A song of five minutes would be over 100 MB decoded, so these are streamed by an audio element into the same chain as
+// the tracks (the level, the duck under voices). One element for all of them: iOS lets an element that has played once
+// go on to its next file without another tap. Each song fades in and out, as one of them starts and stops at full level.
+// Where the rotation has got to is kept (localStorage), so the next visit starts on the next song, and the race hub
+// (components/race-music.tsx) plays the one coming up.
+const SONG_KEY = 'regatta-song', SONG_IN = 1, SONG_OUT = 3, SONG_LEVEL = 1.1; // s, s, and as loud as a track's bus (R.out)
+const songNow = () => { try { const i = Math.floor(+localStorage.getItem(SONG_KEY)) || 0; return ((i % SONGS.length) + SONGS.length) % SONGS.length; } catch (e) { return 0; } };
+function createSongs(ctx) {
+  const el = new Audio(), fade = ctx.createGain();
+  el.preload = 'auto'; fade.gain.value = 0;
+  ctx.createMediaElementSource(el).connect(fade);
+  let i = songNow(), on = false, held = false, blocked = false, fresh = false, leaving = false, errors = 0, stopT = 0;
+  const ramp = (v, s) => { const n = ctx.currentTime; fade.gain.cancelScheduledValues(n); fade.gain.setValueAtTime(fade.gain.value, n); fade.gain.linearRampToValueAtTime(v, n + s); };
+  const wanted = () => on && !held && !globalThis.document?.hidden;
+  // (refused before the page's first tap, or the file can't be had: the next tap tries again. AbortError is only the next song taking over)
+  const go = () => { if (wanted() && el.paused) el.play()?.catch?.((e) => { if (e?.name !== 'AbortError') blocked = true; }); };
+  const cue = (k) => { i = k; fresh = true; leaving = false; fade.gain.cancelScheduledValues(ctx.currentTime); fade.gain.value = 0; el.src = fileAt(SONGS[i]); go(); };
+  const next = () => cue((i + 1) % SONGS.length);
+  const sync = () => { clearTimeout(stopT); if (wanted()) go(); else stopT = setTimeout(() => el.pause(), globalThis.document?.hidden ? 0 : 1200); }; // (after the level has faded)
+  el.addEventListener('playing', () => {
+    errors = 0; blocked = false; if (!fresh) return;
+    fresh = false; ramp(SONG_LEVEL, SONG_IN);
+    try { localStorage.setItem(SONG_KEY, String((i + 1) % SONGS.length)); } catch (e) {} // heard, so the next visit moves on
+  });
+  el.addEventListener('timeupdate', () => { if (!leaving && el.duration - el.currentTime < SONG_OUT) { leaving = true; ramp(0, SONG_OUT - 0.1); } });
+  el.addEventListener('ended', next);
+  el.addEventListener('error', () => { if (++errors < SONGS.length) next(); else blocked = true; }); // a song that won't load is skipped; none will, and it waits
+  globalThis.document?.addEventListener('visibilitychange', sync); // a hidden tab has no frames to tell it the race has paused
+  return {
+    get index() { return i; },
+    start(bus) { fade.disconnect(); fade.connect(bus); on = true; if (el.getAttribute('src')) sync(); else cue(i); },
+    stop() { on = false; sync(); },
+    pause(v) { held = v; sync(); },
+    wake() { blocked = false; errors = 0; go(); }, // inside a tap, as iOS asks
+    update() { if (!blocked && ctx.state === 'running') go(); },
+  };
+}
+
 // the player: ctx an AudioContext, out the node it plays into (the game's master, so Sound off silences it too)
 export function createMusic(ctx, out) {
   // the track → its level → the duck (under voices, and the breath before the gun) → a gentle compressor → out
@@ -107,7 +150,7 @@ export function createMusic(ctx, out) {
   const level = ctx.createGain(); level.gain.value = 0; level.connect(duck);
 
   const S = { int: 0.2, ten: 0.2, tInt: 0.2, tTen: 0.2, mood: 'calm', pend: null, cand: null, candT: 0 };
-  let style = null, cur = null, paused = false, lastSting = -1e9, breathUntil = 0, voiceT = -1e9, ducked = null;
+  let style = null, cur = null, songs = null, paused = false, lastSting = -1e9, breathUntil = 0, voiceT = -1e9, ducked = null;
   const M = { volume: 0.5 };
 
   const newBus = () => { const bus = ctx.createGain(); bus.gain.value = 1; bus.connect(level); return bus; };
@@ -223,12 +266,13 @@ export function createMusic(ctx, out) {
 
   Object.defineProperties(M, Object.getOwnPropertyDescriptors({ // (descriptors, so the getter stays a getter)
     get style() { return style; },
-    get state() { return { int: S.int, ten: S.ten, mood: S.mood, pend: S.pend, paused, duck: duck.gain.value, piece: style ? `${R.name} ${R.k}` : null }; }, // for ?debug
-    // one of MUSIC_STYLES, or null for none; a change crossfades
+    get state() { return { int: S.int, ten: S.ten, mood: S.mood, pend: S.pend, paused, duck: duck.gain.value, piece: style === PLAYLIST ? `song ${songs.index + 1}` : style ? `${R.name} ${R.k}` : null }; }, // for ?debug
+    // one of MUSIC_CHOICES, or null for none; a change crossfades
     setStyle(id) {
-      id = MUSIC_STYLES.includes(id) ? id : null;
+      id = MUSIC_CHOICES.includes(id) ? id : null;
       if (id === style) return;
       if (cur) retire(cur.bus);
+      if (style === PLAYLIST) songs.stop();
       // the old track let go: decoded, a track is some 65 MB (three minutes of stereo floats), and on a phone that
       // counts against the same memory as the scene. Its bars still fading out hold their own reference till they end;
       // choosing it again fetches it again (from the cache).
@@ -236,6 +280,7 @@ export function createMusic(ctx, out) {
       style = id; cur = null; R.live = [];
       if (!id) return;
       cur = { bus: newBus() };
+      if (id === PLAYLIST) { songs ??= createSongs(ctx); songs.pause(paused); songs.start(cur.bus); setLevel(paused ? 0 : M.volume, 0.5); return; }
       R.T = TRACKS[id]; R.starts = starts[id];
       R.lp = ctx.createBiquadFilter(); R.lp.type = 'lowpass'; R.lp.frequency.value = 20000; R.lp.Q.value = 0.5;
       R.out = ctx.createGain(); R.out.gain.value = 1.1; R.lp.connect(R.out); R.out.connect(cur.bus);
@@ -250,9 +295,11 @@ export function createMusic(ctx, out) {
       if (style) { R.built = false; filter(20000, 0.05); if (buf()) cue('calm'); }
     },
     // paused, the music fades out; back, it fades in
-    pause(v) { if (v === paused) return; paused = v; setLevel(v ? 0 : M.volume, v ? 0.25 : 0.8); },
+    pause(v) { if (v === paused) return; paused = v; setLevel(v ? 0 : M.volume, v ? 0.25 : 0.8); songs?.pause(v); },
+    // a tap: the playlist may start now, if the browser wouldn't let it before
+    wake() { if (style === PLAYLIST) songs.wake(); },
     // how loud the music is (Settings › Music volume): its level, eased there
-    setVolume(v) { if (v === M.volume) return; M.volume = v; if (buf() && !paused) setLevel(v, 0.3); },
+    setVolume(v) { if (v === M.volume) return; M.volume = v; if ((buf() || style === PLAYLIST) && !paused) setLevel(v, 0.3); },
     // the voices: v 0..1, how loud a voice is now (main.js measures them); the music bows out under them, and stays
     // down through the gaps between the words
     voices(v) {
@@ -280,7 +327,7 @@ export function createMusic(ctx, out) {
       trackSting(kind, t);
     },
     // every frame
-    update() { if (cur && !paused) schedule(); },
+    update() { if (style === PLAYLIST) songs.update(); else if (cur && !paused) schedule(); },
   }));
   return M;
 }

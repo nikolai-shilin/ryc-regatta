@@ -4,8 +4,13 @@ import type { Length, Shape, Wind } from './race';
 import type { VenueId } from './venues';
 import type { YachtId } from './yachts';
 
-export type Music = 'racing' | 'groove' | 'riff' | 'openwater' | 'off';
-export const TRACKS: readonly Music[] = ['racing', 'groove', 'riff', 'openwater']; // public/game/music.js: MUSIC_STYLES
+export type Music = 'playlist' | 'racing' | 'groove' | 'riff' | 'openwater' | 'off';
+export const TRACKS: readonly Music[] = ['playlist', 'racing', 'groove', 'riff', 'openwater']; // public/game/music.js: MUSIC_CHOICES
+// the playlist's songs in /game/, and the one coming up (public/game/music.js: SONGS, and it moves the rotation on)
+export const SONGS = ['music-song-1.mp3', 'music-song-2.mp3', 'music-song-3.mp3'];
+export const songNow = () => {
+  try { const i = Math.floor(Number(localStorage.getItem('regatta-song'))) || 0; return ((i % SONGS.length) + SONGS.length) % SONGS.length; } catch { return 0; }
+};
 export type Sea = 'loud' | 'normal' | 'quiet' | 'off';
 export type Volume = 'loud' | 'normal' | 'quiet';
 
@@ -45,16 +50,16 @@ export type Opts = {
 
 export const DEFAULTS: Opts = {
   mode: 'daily', venue: 'gocek', yacht: 'jpk1050', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any',
-  autoTrim: 1, sound: 1, guides: 1, ghost: 0, gfx: 'auto', saver: 0, figures: 1, camera: 'drone', vibration: 1, voice: 1, music: 'racing', musicVol: 'normal', sea: 'normal', sndVoices: 'normal', sndBoats: 'normal', sndSignals: 'normal', sndAround: 'normal', fleetV: 3, optsV: 4, musicV: 1, ghostV: 1,
+  autoTrim: 1, sound: 1, guides: 1, ghost: 0, gfx: 'auto', saver: 0, figures: 1, camera: 'drone', vibration: 1, voice: 1, music: 'playlist', musicVol: 'normal', sea: 'normal', sndVoices: 'normal', sndBoats: 'normal', sndSignals: 'normal', sndAround: 'normal', fleetV: 3, optsV: 4, musicV: 2, ghostV: 1,
 };
 
 export function readOpts(): Opts {
   try {
     const saved = JSON.parse(localStorage.getItem('regatta') || '{}');
-    const o = { ...DEFAULTS, ...saved, fleetV: 3, optsV: 4, musicV: 1, ghostV: 1 };
-    if (saved.musicV !== 1) o.music = 'racing'; // Racing is the default music now, as in the game: once, then theirs
+    const o = { ...DEFAULTS, ...saved, fleetV: 3, optsV: 4, musicV: 2, ghostV: 1 };
+    if (saved.musicV !== 2) o.music = 'playlist'; // the playlist is the default music now, as in the game: once, then theirs
     if (saved.ghostV !== 1) o.ghost = 0; // the ghost of your best is off now unless you turn it on: once, then theirs
-    if (o.music !== 'off' && !TRACKS.includes(o.music)) o.music = 'racing'; // a style that's gone (Ambient, Film, Folk)
+    if (o.music !== 'off' && !TRACKS.includes(o.music)) o.music = 'playlist'; // a style that's gone (Ambient, Film, Folk)
     delete o.undefined; // junk an older game wrote; dropped on the next save
     return o;
   } catch {

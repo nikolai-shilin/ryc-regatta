@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-const { createMusic, direct, MUSIC_STYLES, piece: pieceFor } = await import('../public/game/music.js');
+const { createMusic, direct, MUSIC_STYLES, MUSIC_CHOICES, PLAYLIST, SONGS, piece: pieceFor } = await import('../public/game/music.js');
 
 const racing = { clock: 120, done: false, place: 3, fleet: 5, dsq: false, ocs: false, pen: false, zone: false, near: 200, toMark: 300, markLeg: true, lastLeg: false, downwind: false, trend: 0 };
 const at = (o) => direct({ ...racing, ...o });
@@ -186,4 +186,89 @@ test('the race screens loop each track’s pre-start where music.js has it', () 
     assert.equal(at, T[id].calm[0], `${id} start`);
     assert.ok(Math.abs(len - T[id].calm[1].reduce((a, b) => a + b, 0)) < 1e-3, `${id} length`);
   }
+});
+
+// ---------- the playlist: whole songs in rotation, streamed by one audio element ----------
+function songPlayer({ stored = null, refuse = false } = {}) {
+  const store = new Map(stored === null ? [] : [['regatta-song', String(stored)]]);
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+  const els = [];
+  globalThis.Audio = class {
+    paused = true; attr = null; on = {}; duration = 300; currentTime = 0; refuse = refuse;
+    constructor() { els.push(this); }
+    set src(u) { this.attr = u; this.paused = true; }
+    getAttribute() { return this.attr; }
+    addEventListener(k, f) { this.on[k] = f; }
+    play() { if (this.refuse) return Promise.reject(Object.assign(new Error('no'), { name: 'NotAllowedError' })); this.paused = false; this.on.playing?.(); return Promise.resolve(); }
+    pause() { this.paused = true; }
+  };
+  const param = () => ({ value: 1, setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, setTargetAtTime() {} });
+  const node = () => ({ connect: (d) => d, disconnect() {}, gain: param(), threshold: param(), ratio: param() });
+  const ctx = { currentTime: 0, state: 'running', createGain: node, createDynamicsCompressor: node, createMediaElementSource: node };
+  const m = createMusic(ctx, node());
+  const song = () => SONGS.findIndex((f) => els[0].attr.endsWith(f)) + 1;
+  return { m, els, store, song, ctx };
+}
+
+test('the playlist is the first choice, and its songs are there, the same in the game and on the site', () => {
+  assert.equal(MUSIC_CHOICES[0], PLAYLIST);
+  assert.deepEqual(MUSIC_CHOICES.slice(1), MUSIC_STYLES);
+  assert.equal(SONGS.length, 3);
+  for (const f of SONGS) assert.ok(readFileSync(new URL(`../public/game/${f}`, import.meta.url)).length > 1e6, f);
+  const opts = readFileSync(new URL('../lib/opts.ts', import.meta.url), 'utf8');
+  assert.deepEqual(Function(`return ${/export const SONGS = (\[.*?\]);/.exec(opts)[1]}`)(), SONGS);
+});
+
+test('the songs follow one another and come round again', () => {
+  const { m, els, song } = songPlayer();
+  m.setStyle(PLAYLIST);
+  assert.equal(els.length, 1);
+  const heard = [song()];
+  for (let i = 0; i < 3; i++) { els[0].on.ended(); heard.push(song()); }
+  assert.deepEqual(heard, [1, 2, 3, 1]);
+  assert.equal(els.length, 1, 'one element for all of them');
+});
+
+test('the next visit starts on the next song', () => {
+  const a = songPlayer(); a.m.setStyle(PLAYLIST);
+  assert.equal(a.song(), 1); assert.equal(a.store.get('regatta-song'), '1');
+  const b = songPlayer({ stored: 2 }); b.m.setStyle(PLAYLIST);
+  assert.equal(b.song(), 3); assert.equal(b.store.get('regatta-song'), '0');
+});
+
+test('a song the browser refuses waits for the first tap, and the rotation doesn’t move on without it', async () => {
+  const { m, els, store } = songPlayer({ refuse: true });
+  m.setStyle(PLAYLIST);
+  await new Promise((r) => setImmediate(r));
+  assert.ok(els[0].paused); assert.equal(store.get('regatta-song'), undefined);
+  els[0].refuse = false; m.wake();
+  assert.ok(!els[0].paused); assert.equal(store.get('regatta-song'), '1');
+});
+
+test('a song that won’t load is skipped, and none loading doesn’t spin', async () => {
+  const { m, els, song, ctx } = songPlayer();
+  m.setStyle(PLAYLIST);
+  els[0].on.error(); assert.equal(song(), 2);
+  els[0].on.error(); assert.equal(song(), 3);
+  els[0].paused = true; els[0].on.error(); // the third in a row: it stops trying
+  let tries = 0; const play = els[0].play; els[0].play = function () { tries++; return play.call(this); };
+  ctx.state = 'running'; m.update(); m.update();
+  assert.equal(tries, 0);
+});
+
+test('paused, the song stops once it has faded; back, it goes on from where it was', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const { m, els } = songPlayer();
+  m.setStyle(PLAYLIST); els[0].currentTime = 42;
+  m.pause(true); assert.ok(!els[0].paused, 'still fading');
+  t.mock.timers.tick(1300); assert.ok(els[0].paused);
+  m.pause(false); assert.ok(!els[0].paused); assert.equal(els[0].currentTime, 42);
+});
+
+test('leaving the playlist for a track stops the song', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  globalThis.fetch = async () => ({ arrayBuffer: async () => new ArrayBuffer(8) });
+  const { m, els } = songPlayer();
+  m.setStyle(PLAYLIST); m.setStyle(null);
+  t.mock.timers.tick(1300); assert.ok(els[0].paused);
 });

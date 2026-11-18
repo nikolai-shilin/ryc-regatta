@@ -1,7 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { readOpts, OPTS_EVENT, TRACKS, type Music } from '@/lib/opts';
+import { readOpts, OPTS_EVENT, TRACKS, SONGS, songNow, type Music } from '@/lib/opts';
 
 // The race hub and the free race's set-up are the race's pause screen, so they sound like it: the pre-start of the
 // track picked in Settings › Music (public/game/music.js, its calm piece: the light verse the start clock runs down
@@ -12,11 +12,12 @@ import { readOpts, OPTS_EVENT, TRACKS, type Music } from '@/lib/opts';
 // browser that won't play before a tap starts it on the first one.
 //
 // It plays the same file the game will, at the address the game's import map gives it (its content's hash after a
-// deploy, scripts/stamp-game.mjs), so by the time Start is pressed the browser has it.
+// deploy, scripts/stamp-game.mjs), so by the time Start is pressed the browser has it. On the playlist it is the song
+// the race will start with, streamed from its top, muffled the same way.
 
 // each track's pre-start in its file: where it starts and how long its bars are together (s); music.js TRACKS[id].calm,
 // which npm test keeps this in step with
-export const CALM: Record<Exclude<Music, 'off'>, [number, number]> = {
+export const CALM: Record<Exclude<Music, 'off' | 'playlist'>, [number, number]> = {
   racing: [0.9, 29.064],
   groove: [0.9, 16.4454],
   riff: [0.9, 24.2799],
@@ -30,9 +31,10 @@ const START = '.bt-go'; // the hub's Start today's race and the free race's Star
 const HERE = /^\/(?:(?:en|ru)\/)?race(?:\/free)?\/?$/;
 
 type Track = keyof typeof CALM;
-const track = (): Track | null => {
+type Choice = Track | 'playlist';
+const track = (): Choice | null => {
   const o = readOpts();
-  return !o.sound || o.music === 'off' || !TRACKS.includes(o.music) ? null : (o.music as Track);
+  return !o.sound || o.music === 'off' || !TRACKS.includes(o.music) ? null : (o.music as Choice);
 };
 const level = () => 0.5 * (VOL[readOpts().musicVol] ?? 1);
 
@@ -54,7 +56,8 @@ export function RaceMusic() {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return;
     let ctx: AudioContext | null = null, master: GainNode | null = null, lp: BiquadFilterNode | null = null;
-    let on = false, open = false, playing: Track | null = null, nextT = 0, timer = 0, gone = false;
+    let on = false, open = false, playing: Choice | null = null, nextT = 0, timer = 0, gone = false;
+    let song: HTMLAudioElement | null = null, songUrl = '';
     const bufs: Partial<Record<Track, Promise<{ b: AudioBuffer; shift: number } | null>>> = {};
     const live: AudioBufferSourceNode[] = [];
 
@@ -91,14 +94,31 @@ export function RaceMusic() {
       s.start(t - X, Math.max(0, at + shift - X), len + 2 * X + 0.01);
       live.push(s); s.onended = () => { const i = live.indexOf(s); if (i >= 0) live.splice(i, 1); };
     };
-    const silence = () => { for (const s of live.splice(0)) try { s.stop(); } catch { /* not started */ } clearInterval(timer); timer = 0; playing = null; };
+    const silence = () => { for (const s of live.splice(0)) try { s.stop(); } catch { /* not started */ } clearInterval(timer); timer = 0; playing = null; song?.pause(); };
 
-    const play = async (id: Track) => {
+    // the playlist's song coming up, streamed (called inside a tap too, as iOS asks; the address is found ahead for that)
+    const findSong = async () => { songUrl = await addressOf(`/game/${SONGS[songNow()]}`); };
+    const playSong = () => {
+      if (!songUrl) return;
+      graph();
+      if (!song) { song = new Audio(); song.loop = true; song.preload = 'auto'; ctx!.createMediaElementSource(song).connect(lp!); }
+      if (song.getAttribute('src') !== songUrl) song.src = songUrl;
+      song.play().catch(() => { /* not before a tap: the next one starts it */ });
+    };
+
+    const play = async (id: Choice) => {
+      if (id === 'playlist') {
+        await findSong();
+        if (!on || gone || track() !== id || playing === id) return;
+        silence(); playing = id; playSong(); gainTo(loud(), 2.5);
+        return;
+      }
       const got = await load(id);
       if (!got || !on || gone || track() !== id || playing === id) return;
       silence(); playing = id;
       nextT = ctx!.currentTime + 0.05;
-      const tick = () => { while (nextT < ctx!.currentTime + 1.5) { pass(got.b, got.shift, CALM[id], nextT); nextT += CALM[id][1]; } };
+      const calm = CALM[id];
+      const tick = () => { while (nextT < ctx!.currentTime + 1.5) { pass(got.b, got.shift, calm, nextT); nextT += calm[1]; } };
       tick(); timer = window.setInterval(tick, 500);
       gainTo(loud(), 2.5);
     };
@@ -138,10 +158,11 @@ export function RaceMusic() {
       if (onStart(e) && !to?.closest?.(START)) lift(false);
     };
 
-    const tap = () => { start(); };
+    const tap = () => { if (track() === 'playlist') playSong(); start(); };
     const bind = () => { for (const k of ['pointerdown', 'keydown', 'touchend'] as const) window.addEventListener(k, tap, { passive: true }); };
     const unbind = () => { for (const k of ['pointerdown', 'keydown', 'touchend'] as const) window.removeEventListener(k, tap); };
 
+    if (track() === 'playlist') findSong();
     bind();
     document.addEventListener('pointerover', over); document.addEventListener('focusin', over);
     document.addEventListener('pointerout', out); document.addEventListener('focusout', out);
@@ -156,7 +177,7 @@ export function RaceMusic() {
       document.removeEventListener('visibilitychange', onVisible);
       // off to another page: it fades rather than stops
       gainTo(0, 0.6);
-      const c = ctx; setTimeout(() => { silence(); c?.close().catch(() => {}); }, 700);
+      const c = ctx; setTimeout(() => { silence(); song?.removeAttribute('src'); song?.load(); c?.close().catch(() => {}); }, 700);
     };
   }, [here]);
   return null;
