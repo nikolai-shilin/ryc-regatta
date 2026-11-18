@@ -2872,8 +2872,8 @@ function landmarks() {
     }
   }
   if (!parts.length) return null;
-  // less haze on them than on the hills: they are what the venue is known by, seen from the course 4 or 5 km off
-  return new THREE.Mesh(mergeGeometries(parts.map(strip)), landMat(new THREE.MeshLambertMaterial({ vertexColors: true }), 0.3));
+  // (in the same air as the town round them: with less haze than its roofs they stood out of the view, dark and sharp)
+  return new THREE.Mesh(mergeGeometries(parts.map(strip)), landMat(new THREE.MeshLambertMaterial({ vertexColors: true }), 1));
 }
 
 // ---------- the land's shadows on everything else ----------
