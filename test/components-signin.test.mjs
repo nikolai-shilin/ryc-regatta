@@ -69,12 +69,15 @@ test('a good address is sent a code and the next step opens', async () => {
   assert.equal(sessionStorage.getItem('regatta-otp-sent'), String(clock.now));
 });
 
-test('too many tries are told apart from any other failure', async () => {
-  auth.otpError = { status: 429 };
+test('the hour\'s emails all gone, an address asking too soon and any other failure each say their own wait', async () => {
+  auth.otpError = { status: 429, message: 'email rate limit exceeded' };
   const v = await signIn();
   await type(v.$('#em'), 'a@b.co');
   await click(v.$('button[type=submit]'));
-  assert.equal(v.$('[role=alert]').textContent, 'Too many tries. Wait a minute.');
+  assert.equal(v.$('[role=alert]').textContent, 'Too many sign-in emails have gone out. Try again in an hour, or continue with Google.');
+  auth.otpError = { status: 429, message: 'For security purposes, you can only request this after 42 seconds.' };
+  await click(v.$('button[type=submit]'));
+  assert.equal(v.$('[role=alert]').textContent, 'Wait 42 seconds, then try again.');
   auth.otpError = { status: 500 };
   await click(v.$('button[type=submit]'));
   assert.equal(v.$('[role=alert]').textContent, 'Couldn’t send the code. Try again.');
@@ -220,6 +223,19 @@ test('a code that can’t be sent again says so', async () => {
   await tick(60000);
   await click(v.$('.hint button'));
   assert.equal(v.$('[role=alert]').textContent, 'Couldn’t send the code. Try again in a minute.');
+});
+
+for (const [lang, message, says] of [
+  ['en', 'email rate limit exceeded', 'Too many sign-in emails have gone out. Try again in an hour, or continue with Google.'],
+  ['ru', 'email rate limit exceeded', 'Отправлено слишком много писем для входа. Попробуй через час или войди через Google.'],
+  ['en', 'For security purposes, you can only request this after 7 seconds.', 'Wait 7 seconds, then try again.'],
+  ['ru', 'For security purposes, you can only request this after 7 seconds.', 'Подожди 7 сек. и попробуй снова.'],
+]) test(`sending a code again says the real wait (${lang}): ${says}`, async () => {
+  auth.otpError = { status: 429, message };
+  const v = await code({ lang });
+  await tick(60000);
+  await click(v.$('.hint button'));
+  assert.equal(v.$('[role=alert]').textContent, says);
 });
 
 test('the code step in Russian', async () => {

@@ -18,7 +18,7 @@ export async function GET() {
   try {
     const r = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/regatta_settings?key=in.(jib_ad,main_logo,plane_banner)&select=key,value`, {
       headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY! },
-      next: { revalidate: 60, tags: ['sponsor'] },
+      next: { revalidate: 60, tags: ['sponsor'] }, signal: AbortSignal.timeout(6000),
     });
     const rows: { key: string; value: Record<string, unknown> }[] = r.ok ? await r.json() : [];
     const val = (k: string) => rows.find((row) => row.key === k)?.value;

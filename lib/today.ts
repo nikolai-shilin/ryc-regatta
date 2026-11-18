@@ -18,7 +18,7 @@ export const TOP = 5;
 // (lib/day-brief.ts: its first rows and every ranked time, not the month), asked at the same time; when that fails the
 // first three still show.
 export async function todayTop(): Promise<Today | null> {
-  const plain = fetch(SCORES, { next: { revalidate: 300 } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const plain = fetch(SCORES, { next: { revalidate: 300 }, signal: AbortSignal.timeout(6000) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   const day = todayUtc();
   const brief = fetch(briefUrl(day, SCORES), { next: { revalidate: 300 }, signal: AbortSignal.timeout(6000) })
     .then((r) => (r.ok ? r.json() : null)).then((j): DayBrief | null => readBrief(j, day)).catch(() => null);

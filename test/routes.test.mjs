@@ -278,6 +278,7 @@ test('/sponsor: an uploaded picture and the site\'s own go on the sails', async 
   assert.deepEqual(await r.json(), { jib: `${BUCKET}jib.png`, main: '/images/ryc-badge.svg', banner: null });
   assert.match(r.headers.get('cache-control'), /s-maxage=60/);
   assert.equal(sent[0].o.headers.apikey, 'pub-key');
+  assert.ok(sent[0].o.signal instanceof AbortSignal, 'it doesn\'t wait on a database that doesn\'t answer');
 });
 
 test('/sponsor: a picture from anywhere else is refused', async () => {

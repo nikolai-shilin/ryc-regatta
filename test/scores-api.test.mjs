@@ -119,6 +119,13 @@ test('today\'s fastest: without the rating, the plain answer\'s first three stil
   }
 });
 
+test('today\'s fastest: neither question waits on a scores server that doesn\'t answer', async () => {
+  both(() => json({}), () => json(brief(1)));
+  await todayTop();
+  assert.equal(asked.length, 2);
+  for (const { url, o } of asked) assert.ok(o.signal instanceof AbortSignal, `${url} has a time limit`);
+});
+
 test('today\'s fastest: nothing to be had is nothing', async () => {
   for (const plain of [down, () => json({}, 500), () => json({}), () => json({ daily: { top: 'x' } })]) {
     both(plain, down);

@@ -3,13 +3,23 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
-import { tx, type Lang } from '@/lib/lang';
+import { tx, type Lang, type T } from '@/lib/lang';
 import { cleanName, NAME_MAX } from '@/lib/name';
 import { placeAmong } from '@/lib/race-log';
 import { IconGoogle, clock } from './ui';
 
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 const callback = (next: string) => `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+
+// Why a code didn't go. A 429 is one of two limits: this address asked again too soon (Supabase names the seconds
+// left), or the project has sent all the emails it may this hour, which no one's waiting a minute will mend.
+function sendFailed(t: T, error: { status?: number; message?: string }, other: string) {
+  if (error.status !== 429) return other;
+  const secs = /after (\d+) second/.exec(error.message || '')?.[1];
+  return secs
+    ? t(`Wait ${secs} seconds, then try again.`, `Подожди ${secs} сек. и попробуй снова.`)
+    : t('Too many sign-in emails have gone out. Try again in an hour, or continue with Google.', 'Отправлено слишком много писем для входа. Попробуй через час или войди через Google.');
+}
 
 // The numbered step at the card's top (1 Email, 2 Code, 3 Name), and on its right a way out of it
 function Step({ n, label, children }: { n: number; label: string; children?: React.ReactNode }) {
@@ -41,7 +51,7 @@ export function SignInForm({ lang, next, failed, signup = false }: { lang: Lang;
     setBusy(true); setErr('');
     const { error } = await supabaseBrowser().auth.signInWithOtp({ email: v, options: { shouldCreateUser: true, emailRedirectTo: callback(next) } });
     setBusy(false);
-    if (error) { setErr(error.status === 429 ? t('Too many tries. Wait a minute.', 'Слишком много попыток. Подожди минуту.') : t('Couldn’t send the code. Try again.', 'Не удалось отправить код. Попробуй ещё раз.')); return; }
+    if (error) { setErr(sendFailed(t, error, t('Couldn’t send the code. Try again.', 'Не удалось отправить код. Попробуй ещё раз.'))); return; }
     try { sessionStorage.setItem('regatta-otp-sent', String(Date.now())); } catch {}
     router.push(`/sign-in/code?email=${encodeURIComponent(v)}&next=${encodeURIComponent(next)}`);
   };
@@ -104,7 +114,7 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
   const resend = async () => {
     setErr('');
     const { error } = await supabaseBrowser().auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: callback(next) } });
-    if (error) { setErr(t('Couldn’t send the code. Try again in a minute.', 'Не удалось отправить код. Попробуй через минуту.')); return; }
+    if (error) { setErr(sendFailed(t, error, t('Couldn’t send the code. Try again in a minute.', 'Не удалось отправить код. Попробуй через минуту.'))); return; }
     sent.current = Date.now();
     try { sessionStorage.setItem('regatta-otp-sent', String(sent.current)); } catch {}
     setWait(60);
