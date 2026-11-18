@@ -37,13 +37,17 @@ const menu = (lang = 'en') => mount(h('div', null, h('p', { id: 'out' }, 'Page')
 const openMenu = (v) => doing(() => { v.$('details').open = true; });
 
 test('the menu holds your things, the reading pages and the site’s pages', () => {
-  const words = plain(ssr(h(SiteMenu, { lang: 'en' })));
-  for (const w of ['Account and settings', 'Sign in', 'To be ranked and keep your times', 'Your yacht', 'Your player card', 'Audio & graphics', 'How to play', 'Racing guides', 'Racing rules', 'FAQ', 'Today’s race', '1-on-1 race', 'Sign out']) assert.ok(words.includes(w), w);
+  const html = ssr(h(SiteMenu, { lang: 'en' }));
+  const words = plain(html);
+  assert.match(html, /hm-acct-s">Settings</, 'under your name, the link says Settings');
+  assert.ok(!words.includes('Account and settings'));
+  for (const w of ['Sign in', 'To be ranked and keep your times', 'Your yacht', 'Your player card', 'Audio & graphics', 'How to play', 'Racing guides', 'Racing rules', 'FAQ', 'Today’s race', '1-on-1 race', 'Sign out']) assert.ok(words.includes(w), w);
 });
 
 test('the menu in Russian', () => {
-  const words = plain(ssr(h(SiteMenu, { lang: 'ru' })));
-  assert.match(words, /Аккаунт и настройки/);
+  const html = ssr(h(SiteMenu, { lang: 'ru' }));
+  const words = plain(html);
+  assert.match(html, /hm-acct-s">Настройки</);
   assert.match(words, /Гонка 1 на 1/);
   assert.deepEqual(englishIn(words), []);
 });

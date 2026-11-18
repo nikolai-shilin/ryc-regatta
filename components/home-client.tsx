@@ -37,7 +37,7 @@ export function SiteMenu({ lang }: { lang: Lang }) {
       <div className="hm-menu-pop">
         <Link className="hm-acct if-me" href="/settings">
           <span className="hm-av hm-acct-av me-ini" aria-hidden="true" />
-          <span className="hm-acct-t"><span className="hm-acct-n me-name" /><span className="hm-acct-s">{t('Account and settings', 'Аккаунт и настройки')}</span></span>
+          <span className="hm-acct-t"><span className="hm-acct-n me-name" /><span className="hm-acct-s">{t('Settings', 'Настройки')}</span></span>
         </Link>
         <Link className="hm-acct if-guest" href="/sign-in">
           <span className="hm-av hm-acct-av" aria-hidden="true"><IconUser /></span>

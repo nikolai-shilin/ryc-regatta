@@ -82,8 +82,8 @@ function FootLink({ href, only, children }: { href: string; only?: 'if-guest'; c
 
 // The site's footer, the map of the site: the name, who makes it and the language switch, then every page that stands
 // on its own in five columns (a venue, a yacht or a guide is found from its list); under them, that the game has nothing
-// to do with the America's Cup, whose boat it sails (the AC75). Your account follows the menu: signed in, your name opens
-// the settings; a guest gets Sign in and Settings.
+// to do with the America's Cup, whose boat it sails (the AC75). Your account follows the menu: Settings for everyone, and
+// Sign in for a guest.
 export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) {
   return (
     <div className="hm-page hm-foot-wrap">
@@ -115,11 +115,10 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
             <FootLink href="/faq">{t('FAQ', 'Вопросы и ответы')}</FootLink>
           </FootGroup>
           <FootGroup title={t('Your account', 'Твой аккаунт')}>
-            <li className="if-me"><Link className="me-name" href="/settings" /></li>
             <FootLink href="/sign-in" only="if-guest">{t('Sign in', 'Войти')}</FootLink>
             <FootLink href="/boat">{t('Your yacht', 'Твоя яхта')}</FootLink>
             <FootLink href="/players?me=1">{t('Your player card', 'Твоя карточка игрока')}</FootLink>
-            <FootLink href="/settings" only="if-guest">{t('Settings', 'Настройки')}</FootLink>
+            <FootLink href="/settings">{t('Settings', 'Настройки')}</FootLink>
           </FootGroup>
           <FootGroup title={t('About', 'О проекте')}>
             <FootLink href="/social">{t('Social media', 'Соцсети')}</FootLink>

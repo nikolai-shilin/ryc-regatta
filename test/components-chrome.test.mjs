@@ -119,6 +119,15 @@ test('the footer has every page that stands on its own, RYC’s sites, the langu
   assert.match(plain(html), /not affiliated with, sponsored by, or endorsed by America’s Cup/);
 });
 
+test('the footer’s link to the settings says Settings, signed in or not', () => {
+  const link = (word) => new RegExp(`<li><a[^>]*href="/settings"[^>]*>${word}</a></li>`);
+  const html = ssr(h(SiteFoot, { lang: 'en', t: en, back: '/' }));
+  assert.match(html, link('Settings'));
+  assert.equal(hrefs(html).filter((to) => to === '/settings').length, 1);
+  assert.doesNotMatch(html, /me-name/);
+  assert.match(ssr(h(SiteFoot, { lang: 'ru', t: ru, back: '/' })), link('Настройки'));
+});
+
 test('the Russian footer is in Russian', () => {
   const words = plain(ssr(h(SiteFoot, { lang: 'ru', t: ru, back: '/' })));
   assert.match(words, /Офис регаты RYC/);
