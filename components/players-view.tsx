@@ -138,7 +138,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
         </>) : player ? (<>
           <h1 className="bt-h bt-h-boat" key={player.k}>{/* eslint-disable-next-line @next/next/no-img-element */}{(() => { const f = findFlag(player.fl || undefined); return f ? <img className="bt-h-flag" src={flagSrc(f.code)} alt={t(f.en, f.ru)} /> : <NoFlag className="bt-h-flag" />; })()}<span>{nameOf(player)}</span></h1>
           <p className="bt-p">{player.boat
-            ? <>{boat.name ? <><i>{boat.name}</i> · </> : null}{`${boat.nat} ${boat.num || '1'}`.trim()} · {t('Their colours on the JPK 1050. Drag to circle her.', 'Их цвета на JPK 1050. Тяни, чтобы облететь яхту.')}</>
+            ? <>{boat.name ? `${boat.name} · ` : null}{`${boat.nat} ${boat.num || '1'}`.trim()} · {t('Their colours on the JPK 1050. Drag to circle her.', 'Их цвета на JPK 1050. Тяни, чтобы облететь яхту.')}</>
             : t('Their colours aren’t kept online, so this is the boat everyone starts in. Drag to circle her.', 'Их цвета не сохранены онлайн, поэтому здесь яхта, с которой начинают все. Тяни, чтобы облететь её.')}</p>
         </>) : (<>
           <h1 className="bt-h">{t('The players', 'Игроки')}</h1>
@@ -195,7 +195,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
             <span className="bt-k"><IconKite s={14} />{t('Their boat', 'Их яхта')}</span>
             {player.boat ? (
               <dl className="yt-spec pl-spec">
-                {boat.name && <div><dt>{t('Name', 'Имя')}</dt><dd><i>{boat.name}</i></dd></div>}
+                {boat.name && <div><dt>{t('Name', 'Имя')}</dt><dd>{boat.name}</dd></div>}
                 <div><dt>{t('Sail number', 'Номер')}</dt><dd>{`${boat.nat} ${boat.num || '1'}`.trim()}</dd></div>
                 <div><dt>{t('Colours', 'Цвета')}</dt><dd className="pl-sws">
                   {[boat.hull, boat.cloth, boat.kite, boat.kite2, boat.kite3, boat.crew].filter(Boolean).map((c, i) => <i key={i} style={{ background: c }} />)}

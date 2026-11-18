@@ -516,12 +516,12 @@ export function bowNumberMaterial(look) {
   return new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.4, roughness: 0.3, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
 }
 
-// her name on both quarters, in italics as a yacht's name is lettered, white on a dark hull and black on a light one:
+// her name on both quarters, upright, white on a dark hull and black on a light one:
 // its material, for a decal 8 times as wide as it's high
 export function nameMaterial(look) {
   const c = document.createElement('canvas'); c.width = 1024; c.height = 128;
   const x = c.getContext('2d'), dark = new THREE.Color(look.hull).getHSL({}).l < 0.45;
-  x.fillStyle = dark ? '#f4f4f0' : '#15181c'; x.font = 'italic 800 92px Carlito, Lato, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillStyle = dark ? '#f4f4f0' : '#15181c'; x.font = '800 92px Carlito, Lato, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
   x.fillText(look.name, 512, 66, 1000);
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
   return new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.4, roughness: 0.3, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });

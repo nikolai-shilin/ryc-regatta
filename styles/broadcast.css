@@ -220,7 +220,7 @@
 .bc .bt-card .sw { width: var(--h-m); height: var(--h-m); border-radius: 0; }
 .bc .bt-card .sw[aria-checked="true"] { box-shadow: var(--hairline), 0 0 0 2px var(--ground), 0 0 0 4px var(--you); }
 .bc .bt-card .num-in { height: var(--h-m); border: 0; border-bottom: 2px solid var(--w-35); border-radius: 0; background: var(--fill-1); font: 700 var(--fs-lead)/1 var(--cond); }
-.bc .bt-card .boat-name { font: italic 600 var(--fs-body)/1 var(--sans); }
+.bc .bt-card .boat-name { font: 600 var(--fs-body)/1 var(--sans); }
 .bc .bt-card .num-in:focus { border-bottom-color: var(--you); background: var(--w-10); }
 .bc .bt-card .logo-thumb { border-radius: 0; }
 

@@ -570,7 +570,7 @@ html[data-me] .hm-av > svg { display: none; }
 .bt-card .num-pair { padding: 0 2px; }
 .bt-card .num-in { width: 72px; height: 36px; border: 1px solid var(--tag-line); background: rgba(255, 255, 255, 0.06); color: #fff; font-size: 17px; }
 .bt-card .num-in:focus { border-color: var(--accent); background: rgba(255, 255, 255, 0.1); }
-.bt-card .boat-name { width: 100%; max-width: 280px; padding: 0 var(--s-3); text-align: left; text-transform: none; font-style: italic; } /* her name: as long as 16 letters, as it's lettered on the hull */
+.bt-card .boat-name { width: 100%; max-width: 280px; padding: 0 var(--s-3); text-align: left; text-transform: none; } /* her name: as long as 16 letters, as it's lettered on the hull */
 .bt-row { display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 10px; margin-top: 2px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; color: #fff; font: 700 14px/1 var(--f-sans); text-align: left; cursor: pointer; transition: background-color .15s, transform .12s; }
 .bt-row svg { width: 18px; height: 18px; opacity: .8; }
 .bt-row:hover { background: rgba(255, 255, 255, 0.07); border-radius: 12px; }
