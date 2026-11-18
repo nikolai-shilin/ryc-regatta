@@ -325,7 +325,7 @@ function crewMats(look) {
   };
 }
 // paint more on a sail's cloth once it is drawn (sailTexture): draw(ctx, w, h) on its canvas, and on its back face's
-// when it has one of its own (the jib's, for the ad), x along the chord from the luff, y down from the head. The back
+// when it has one of its own (the jib's, for the ad; the main's, for the flag), x along the chord from the luff, y down from the head. The back
 // face reads its canvas mirrored: X(u) gives where u falls on whichever canvas is being drawn
 function onCloth(tex, draw) {
   for (const t of [tex, tex.back]) if (t && t.image) { const w = t.image.width, X = t === tex ? (u) => w * u : (u) => w * (1 - u); draw(t.image.getContext('2d'), w, t.image.height, X); t.needsUpdate = true; }
@@ -1545,7 +1545,7 @@ class LaserView extends ClassView {
     this.mainPivot.add(mergeGroup(gear));
     // the window low in the sail, 0.2–0.4 m above the foot, clear plastic sewn in to see to leeward under the boom
     const wtex = onCloth(sailTexture('main', look, LZ.rig), (x, w, h, X) => {
-      const y0 = h * (1 - 0.4 / LZ.span), y1 = h * (1 - 0.19 / LZ.span), x0 = Math.min(X(0.36), X(0.64)), x1 = Math.max(X(0.36), X(0.64)); // even about the middle: both faces read one canvas
+      const y0 = h * (1 - 0.4 / LZ.span), y1 = h * (1 - 0.19 / LZ.span), x0 = Math.min(X(0.36), X(0.64)), x1 = Math.max(X(0.36), X(0.64));
       x.fillStyle = 'rgba(96, 118, 132, 0.7)'; x.fillRect(x0, y0, x1 - x0, y1 - y0);
       x.strokeStyle = 'rgba(0,0,0,.35)'; x.lineWidth = 6; x.strokeRect(x0, y0, x1 - x0, y1 - y0);
     });
