@@ -34,6 +34,11 @@ test('each class gets a view of her own kind', () => {
   assert.equal(boat('j70').constructor, boat('rs21').constructor, 'the two sportboats share one');
 });
 
+test('the RS21 floats 10 cm higher than the J/70 on the same water', () => {
+  const floatY = (id) => { const v = boat(id); v.place(still(), 5, W); return v.root.position.y; };
+  close(floatY('rs21') - floatY('j70'), 0.1, 1e-6, 'her height over the J/70');
+});
+
 for (const id of OTHERS) {
   test(`the ${id} is sound, every part of her`, () => {
     const v = boat(id);
