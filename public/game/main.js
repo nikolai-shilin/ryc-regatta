@@ -45,13 +45,13 @@ function replaceRace(to) {
   const go = () => { if (replacing === to) { replacing = ''; location.replace(to); } };
   if (!TG && history.state && history.state.race) { history.back(); setTimeout(go, 400); } else go(); // (popstate, below, goes on arrival)
 }
-// A match race against a friend (/play?match=<code>, from /match/new and the match's link): the waiting room, the races
-// and the cards between them are match-ui.js's, loaded only then (with the Realtime client it brings). mx: the race on
+// A 1-on-1 race against a friend (/play?match=<code>, from /match/new and the race's link): the waiting room, the race
+// and the card after it are match-ui.js's, loaded only then (with the Realtime client it brings). mx: the race on
 // screen while one is sailed ({ race, step(dt), isGuest }); matchUi: the module, once it's in.
 const MATCH = (() => { const c = (new URLSearchParams(location.search).get('match') || '').toUpperCase(); return /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/.test(c) ? c : null; })();
 let mx = null, matchUi = null;
-// leaving in a match leaves it on both screens (match-ui.js tells the other), and goes to the hub: back would be the
-// set-up or the link's page, which opens a match again
+// leaving a 1-on-1 race leaves it on both screens (match-ui.js tells the other), and goes to the hub: back would be the
+// set-up or the link's page, which opens the race again
 const quit = () => (MATCH && matchUi ? matchUi.leaveMatch() : leave());
 // In a match, back (the browser's, Telegram's) never ends a race at once: on the water it opens the menu, then the race's
 // question, and goes back from that question to the menu; with no race on the water (the waiting room, a card, just
@@ -72,7 +72,7 @@ const T = {
     changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', camK: 'Camera', sAuto: 'Auto', guidesSw: 'Guides on the water', ghostSw: 'Ghost of your best today', avK: 'Audio & graphics', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
     leaveK: 'Leave this race?', leaveTxt: (pl, leg) => `You are ${pl} on leg ${leg}.`, keepRacing: 'Keep racing', doRestart: 'Restart', doChange: 'Change it', doLeave: 'Leave',
     inSeq: 'You are in the start sequence.', notKept: 'This race’s time and place are not kept.',
-    leaveHost: 'The race is abandoned on both screens.', leaveGuest: (w) => (w ? `You drop out, and the race goes to ${w}.` : 'You drop out, and the race ends with no winner.'), leaveHome: 'Your place stands, and the race runs on to its end.',
+    leaveHost: 'The race is abandoned on both screens.', leaveGuest: (w) => (w ? `You drop out, and the race goes to ${w}.` : 'You drop out, and the race ends with no winner.'), leaveHome: 'Your place stands for the other sailor, but if you leave now you won’t get the full result.',
     askK: { restart: 'Restart', change: 'Change the race', leave: 'Leave' }, askH: { restart: 'Restart this race?', change: 'Change the race?', leave: 'Leave this race?' },
     askT: { restart: 'It starts over from the start sequence, the same course in the same wind.', change: 'Next you pick the place, the wind and the course, and the race starts over with them.', leave: 'You go back to the race hub.' },
     sailUp: 'Beating to', sailDown: (k) => (k ? 'Running to' : 'Running, kite down, to'), sailReach: 'Reaching to', aheadOf: (n, s) => `${n} is ${s} ahead.`, leadBy: (s) => `You lead by ${s}.`, leadAlone: 'You lead.',
@@ -162,9 +162,11 @@ const T = {
     zAhead: (n) => `Zone · clear ahead of ${n} — you get room`, zAstern: (n) => `Zone · clear astern of ${n} — keep clear`, tackCall: 'Ready about… Lee-oh!', gybeCall: 'Stand by to gybe… Gybe-oh!',
     results: 'Results', again: 'Race again', menu: 'Menu', racing: 'racing…', you: 'You', dsq: 'DSQ',
     gfxDown: (q) => `Graphics set to ${q} to keep it smooth`, place: ord, finished: (n) => `Finished ${ord(n)}!`, finishedDsq: 'Finished without taking your penalty — DSQ',
+    contactDsq: (a) => ({ rudder: `DSQ, rule ${a.rule}: you had to keep clear of ${a.who}, and your rudder was only ${a.deg}° of ${a.max}° over`, late: `DSQ, rule ${a.rule}: you had to keep clear of ${a.who}. Rudder hard over, but too late`, room: `DSQ, rule 14: you had room to avoid ${a.who} and held your course`, turned: `DSQ, rule 16: you turned onto ${a.who}, who was keeping clear`, above: `DSQ, rule 17: above your proper course, into ${a.who}` })[a.why],
+    theyDsq: (a) => `${a.who} disqualified, rule ${a.rule}`,
     // a 1-on-1 race: the result, and the link between the two screens
     raceWon: 'You win the race!', raceLost: (w) => `${w} wins the race`,
-    waitingHost: (n) => `Waiting for ${n}…`, guestGone: (n) => `${n} isn’t answering — her boat holds her course; 30 s and the race is yours`,
+    waitingHost: (n) => `Waiting for ${n}…`, guestGone: (n) => `${n} isn’t answering — her boat holds her course; after 30 s of silence she drops out`,
     abandoned: 'Race abandoned — not scored', full: 'This 1-on-1 race is full', matchFail: 'Couldn’t connect to the 1-on-1 race', tryAgain: 'Try again',
     noGl: 'The browser won’t start the 3D graphics just now. Close other tabs and apps, or restart the browser, and try again.',
     glLostK: 'The picture was lost', glLostTxt: 'The device took the graphics back, most often when it runs short of memory. Reload to sail on, on lighter graphics.', doReload: 'Reload',
@@ -176,7 +178,7 @@ const T = {
     changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', camK: 'Камера', sAuto: 'Авто', guidesSw: 'Подсказки на воде', ghostSw: 'Призрак твоего лучшего сегодня', avK: 'Звук и графика', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
     leaveK: 'Выйти из гонки?', leaveTxt: (pl, leg) => `Ты ${pl}-й на ${leg}-м отрезке.`, keepRacing: 'Продолжить', doRestart: 'Заново', doChange: 'Изменить', doLeave: 'Выйти',
     inSeq: 'Идёт стартовая процедура.', notKept: 'Время и место этой гонки не сохранятся.',
-    leaveHost: 'Гонка прекратится на обоих экранах.', leaveGuest: (w) => (w ? `Ты сходишь, и гонка достаётся: ${w}.` : 'Ты сходишь, и гонка закончится без победителя.'), leaveHome: 'Твоё место останется за тобой, а гонка дойдёт до конца.',
+    leaveHost: 'Гонка прекратится на обоих экранах.', leaveGuest: (w) => (w ? `Ты сходишь, и гонка достаётся: ${w}.` : 'Ты сходишь, и гонка закончится без победителя.'), leaveHome: 'Для соперника твоё место останется, но если выйдешь сейчас, полного результата не получишь.',
     askK: { restart: 'Заново', change: 'Изменить гонку', leave: 'Выход' }, askH: { restart: 'Начать заново?', change: 'Изменить гонку?', leave: 'Выйти из гонки?' },
     askT: { restart: 'Всё начнётся со стартовой процедуры: та же дистанция, тот же ветер.', change: 'Дальше выберешь место, ветер и дистанцию — и гонка начнётся заново.', leave: 'Ты вернёшься в меню гонок.' },
     sailUp: 'Лавировка к', sailDown: (k) => (k ? 'Фордевинд под генакером к' : 'Фордевинд без генакера к'), sailReach: 'Галфвинд к', aheadOf: (n, s) => `${n} впереди на ${s}.`, leadBy: (s) => `Ты лидируешь на ${s}.`, leadAlone: 'Ты лидируешь.',
@@ -266,8 +268,10 @@ const T = {
     zAhead: (n) => `Зона · не связаны, ты впереди ${n} — тебе дают место`, zAstern: (n) => `Зона · не связаны, ты позади ${n} — держись в стороне`, tackCall: 'К повороту оверштаг… Поворот!', gybeCall: 'К повороту фордевинд… Поворот!',
     results: 'Результаты', again: 'Ещё гонку', menu: 'Меню', racing: 'в гонке…', you: 'Вы', dsq: 'DSQ',
     gfxDown: (q) => `Графика: «${q}» — для плавности`, place: (n) => `${n}-е`, finished: (n) => `Финиш: ${n}-е место!`, finishedDsq: 'Финиш без штрафа — дисквалификация (DSQ)',
+    contactDsq: (a) => ({ rudder: `DSQ, правило ${a.rule}: нужно было уступить яхте ${a.who}, а руль был повёрнут только на ${a.deg}° из ${a.max}°`, late: `DSQ, правило ${a.rule}: нужно было уступить яхте ${a.who}. Руль положен до конца, но слишком поздно`, room: `DSQ, правило 14: было место уйти от яхты ${a.who}, но курс не изменён`, turned: `DSQ, правило 16: поворот на яхту ${a.who}, которая уступала`, above: `DSQ, правило 17: выше надлежащего курса, столкновение с яхтой ${a.who}` })[a.why],
+    theyDsq: (a) => `${a.who}: дисквалификация, правило ${a.rule}`,
     raceWon: 'Гонка твоя!', raceLost: (w) => `Гонку выигрывает ${w}`,
-    waitingHost: (n) => `${n} не на связи — ждём…`, guestGone: (n) => `${n} не на связи — лодка идёт прежним курсом; через 30 с гонка твоя`,
+    waitingHost: (n) => `${n} не на связи — ждём…`, guestGone: (n) => `${n} не на связи — лодка идёт прежним курсом; после 30 с молчания сход`,
     abandoned: 'Гонка прекращена — не засчитывается', full: 'В этой гонке уже двое', matchFail: 'Не удалось подключиться к гонке один на один', tryAgain: 'Ещё раз',
     noGl: 'Браузер сейчас не запускает 3D-графику. Закрой другие вкладки и приложения или перезапусти браузер — и попробуй ещё раз.',
     glLostK: 'Картинка пропала', glLostTxt: 'Устройство забрало графику — чаще всего, когда не хватает памяти. Перезагрузи, чтобы плыть дальше на облегчённой графике.', doReload: 'Перезагрузить',
@@ -296,7 +300,7 @@ applyTheme();
 if (!TG && window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 
 // ---------- settings ----------
-const opts = { mode: 'daily', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 1, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', saver: 0, guides: 1, music: PLAYLIST, musicVol: 'normal', sea: 'normal', played: 0 };
+const opts = { mode: 'daily', contact: 'turn', preset: 'medium', fleet: 5, length: 'short', laps: 1, autoTrim: 1, sound: 1, voice: 1, start: 1, current: 0, course: 'wl', daytime: 'any', gfx: 'auto', saver: 0, guides: 1, music: PLAYLIST, musicVol: 'normal', sea: 'normal', played: 0 };
 try { Object.assign(opts, JSON.parse(localStorage.getItem('regatta') || '{}')); } catch (e) {}
 delete opts.undefined; // left by an older pause menu, whose quick switches also ran the menu's choice handler
 if (opts.fleetV !== 3) { opts.fleet = 5; opts.fleetV = 3; } // the default changed (10, then 7): start everyone on 5 once
@@ -1219,7 +1223,7 @@ let race = null, running = false, paused = false, menuChanged = false, hints = {
 function newRace() {
   if (MATCH) { matchView(); return; }
   const s = settings();
-  race = new Race({ preset: s.preset, laps: s.laps, autoTrim: opts.autoTrim === 1, start: s.start, current: !!s.current, fleet: s.fleet, length: s.length, course: s.course, bias: s.bias, level: s.level, seed: s.daily ? s.seed : undefined, daytime: s.daily ? 'any' : s.daytime });
+  race = new Race({ preset: s.preset, laps: s.laps, autoTrim: opts.autoTrim === 1, start: s.start, current: !!s.current, fleet: s.fleet, length: s.length, course: s.course, bias: s.bias, level: s.level, seed: s.daily ? s.seed : undefined, daytime: s.daily ? 'any' : s.daytime, contactDsq: !s.daily && !drill && s.contact === 'dsq' });
   race.settings = s;
   race.player.name = t('you');
   world.setRace(race);
@@ -1795,6 +1799,8 @@ function handleMessages() {
       else committee.call({ sigWarn: 'cWarn' + Math.round(-a.t / 60), sigPrep: 'cPrep' + race.prepFlag, sig1: 'c1' }[a.key], 6, true);
       if (a.key === 'gun' && P.ocs) continue;
       toast(t(a.key, Math.round(-a.t / 60), race.prepFlag), 3);
+    } else if (m.key === 'contactDsq') { // out of the race for a contact (sim.js verdict): the reason, and time to read it before the result
+      raceFinished(race); toast(t('contactDsq', a), 5); score.sting('loss'); haptic('heavy'); setTimeout(finishToPage, 5000);
     } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') {
       race._fin = finishScene(race); if (!race.multi) raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(false, race.course.finishBoat); haptic('heavy');
       score.sting(m.key !== 'finished' ? 'lose' : m.arg === 1 ? 'win' : m.arg <= Math.max(2, Math.ceil(race.boats.length / 3)) ? 'gain' : 'lose');
@@ -1805,6 +1811,7 @@ function handleMessages() {
     }
     else if (m.key === 'gate') toast(t('gateMsg'));
     else if (m.key === 'bump') { audio.collide(m.arg); score.sting('hit'); hint('bump', t('bump'), 3); haptic('heavy'); skipper.shout(race.clock < 0 ? 'push' : 'contact'); }
+    else if (m.key === 'theyDsq') { toast(t('theyDsq', a), 3.5); score.sting('gain'); }
     else if (m.key === 'aground') { score.sting('hit'); hint('aground', t('aground'), 3); haptic('heavy'); skipper.shout('aground'); }
     else if (m.key === 'hail') { const h = t('hail' + a.rule), who = race.boats.find((b) => b.name === a.who); toast(`${a.who}: “${h}”`, 2.2); skipper.cue('hail' + a.rule, who, true); asides.hail(); haptic('warn'); }
     else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); skipper.cue('hail' + a.rule, null, true); } }
@@ -2058,6 +2065,7 @@ function keepOneOnOne(race, results) {
     delete o.level;
     const dnf = !!r.dnf, done = !!r.done && !dnf;
     return { ...o, ...(b !== race.player && { flag: flagCode(lookFrom(b.look).flag) }), done, dsq: !!r.dsq, dnf, secs: done && r.finish != null ? Math.round(r.finish * 10) / 10 : null,
+      ...(r.id === results.winner && { won: true }), ...(!done && r.trackEnd != null && { trackEnd: r.trackEnd }), // (the winner may never have crossed the line; a boat not home has no finish to time her track by)
       track: r.track.map(([x, z]) => [Math.round(x), Math.round(z)]), legT: (r.legT || []).map((x) => Math.round(x * 10) / 10), pens: r.pens || 0 };
   });
   keepResult(res);

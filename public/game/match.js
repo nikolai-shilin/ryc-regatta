@@ -302,7 +302,7 @@ export function raceFor(match, myId) {
 export function finalResults(race) {
   const r = resultsOf(race), winner = race.winner?.id ?? null;
   const rank = (b) => (b.id === winner ? 0 : b.done && !b.dsq ? 1 : b.done ? 2 : b.dsq ? 3 : 4);
-  return { ...r, boats: [...r.boats].sort((a, b) => rank(a) - rank(b) || (a.finish ?? 0) - (b.finish ?? 0)) };
+  return { ...r, winner, boats: [...r.boats].sort((a, b) => rank(a) - rank(b) || (a.finish ?? 0) - (b.finish ?? 0)) };
 }
 
 const joinOf = (owner, ch) => ch.join().then(() => true, (e) => { owner.error = e || new Error('join failed'); return false; });

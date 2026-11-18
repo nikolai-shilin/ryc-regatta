@@ -261,6 +261,18 @@ test('a guest silent 30 s before her finish forfeits', async () => {
   assert.equal(d.grace.winner, d.Hg);
 });
 
+test('a boat that gives up is DNF on both screens, and the results say who won', async () => {
+  const d = await duel();
+  underWay(d);
+  d.host.guestLeft();
+  d.run(0.5);
+  assert.equal(d.Gh.dnf, true, 'on the host\'s screen'); assert.equal(d.me.dnf, true, 'and on her own');
+  assert.equal(d.H.dnf, false); assert.equal(d.Hg.dnf, false);
+  d.run(1.5);
+  assert.equal(d.guest.results.winner, 'h');
+  assert.equal(d.guest.results.boats.find((b) => b.id === 'g').dnf, true);
+});
+
 test('guestLeft before her finish forfeits at once; after it the race runs on', async () => {
   const d = await duel();
   underWay(d);
@@ -381,7 +393,7 @@ for (const flag of ['U', 'B']) {
     e.host.guestLeft();
     e.run(0.5);
     const gone = e.guest.results.boats.find((b) => b.id === 'g');
-    assert.deepEqual([gone.done, gone.dsq, gone.dnf], [false, true, false], 'gone before her finish');
+    assert.deepEqual([gone.done, gone.dsq, gone.dnf], [false, true, true], 'gone before her finish: out, and she never finished');
   });
 }
 
@@ -452,16 +464,20 @@ test('results of another seed are ignored', async () => {
   assert.equal(d.host.acked, true);
 });
 
-test('thinTrack keeps the last point and at most 160', () => {
+test('thinTrack keeps every k-th point and the last, as a race\'s record does and the result page reads them', () => {
   const long = Array.from({ length: 1000 }, (_, i) => [i + 0.4, -i - 0.6]), t = thinTrack(long);
-  assert.equal(t.length, 160);
+  assert.equal(t.length, 144); // (every 7th, and the last)
   assert.deepEqual(t[0], [0, -1]);
-  assert.deepEqual(t[159], [999, -1000], 'the last point, in whole metres');
+  assert.deepEqual(t[1], [7, -8], 'every k-th, k = ceil(n / 160)');
+  assert.deepEqual(t.at(-1), [999, -1000], 'the last point, in whole metres');
   assert.ok(t.flat().every(Number.isInteger));
   assert.ok(t.every((p, i) => !i || p[0] > t[i - 1][0]), 'in order, none twice');
+  for (const n of [1, 2, 159, 160, 161, 320, 321, 777]) {
+    const tr = Array.from({ length: n }, (_, i) => [i, i]), k = Math.max(1, Math.ceil(n / 160));
+    assert.deepEqual(thinTrack(tr), tr.filter((_, i) => i % k === 0 || i === n - 1), `${n} points`);
+  }
   const short = [[1.2, 2.7], [3.5, 4.1], [5.9, 6.2]];
   assert.deepEqual(thinTrack(short), [[1, 3], [4, 4], [6, 6]], 'a short track keeps every point');
-  assert.deepEqual(thinTrack(Array.from({ length: 161 }, (_, i) => [i, i])).at(-1), [160, 160]);
   assert.deepEqual(thinTrack([[7.4, 8.6]]), [[7, 9]]);
   assert.deepEqual(thinTrack([]), []);
 });

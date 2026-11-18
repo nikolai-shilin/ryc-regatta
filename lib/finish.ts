@@ -8,17 +8,31 @@ import { venueOf, type VenueId } from './venues.ts';
 
 // how a boat sailed at that moment, as the game keeps it
 export type Pose = { x: number; z: number; h: number; twa?: number; awa?: number; heel?: number; sail?: number; kite?: number; kiteFill?: number; boom?: number; v?: number; done?: number };
-type Boat = { name: string | null; me: boolean; done: boolean; dsq: boolean; secs: number | null; track: XZ[]; at?: Pose };
+// dnf, won and trackEnd come with a 1-on-1 race's record only: she didn't finish, she won (home or not), and the clock
+// the track of a boat not home ends at
+type Boat = { name: string | null; me: boolean; done: boolean; dsq: boolean; dnf?: boolean; won?: boolean; secs: number | null; trackEnd?: number; track: XZ[]; at?: Pose };
 // `type`, `marks` and `finish` came with the course shapes: a race kept before them has none, and a wing mark makes it a triangle
 type Course = { windward: XZ; gate: XZ[]; pin: XZ; committee: XZ; legs: string[]; wing?: XZ; type?: Shape; marks?: Record<string, XZ>; finish?: [XZ, XZ] };
 export type FinishResult = {
-  daily: string | null; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
+  daily: string | null; oneOnOne?: boolean; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
   course: Course; boats: Boat[]; venue?: string; origin?: XZ; seed?: number | null;
 };
 export type FinishScene = {
   race: { preset: string; length: string; laps: number; start: number; current: boolean; course: Course; origin: XZ | null; seed: number | null };
   boats: (Pose & { name: string | null; me: boolean })[];
 };
+
+// How a boat's race ended, as the result page names it: a place, DSQ, DNF, or, in a 1-on-1 race, won without crossing the
+// line (the other boat gave up). Only a boat home has a place there; in any other race every boat not out has one
+type Ended = Pick<Boat, 'done' | 'dsq' | 'dnf' | 'won'>;
+export function standing(r: { oneOnOne?: boolean }, b: Ended): 'place' | 'dsq' | 'dnf' | 'won' {
+  if (b.dsq) return 'dsq';
+  if (b.dnf) return 'dnf';
+  if (r.oneOnOne && !b.done) return b.won ? 'won' : 'dnf';
+  return 'place';
+}
+// who won: the boat the race says won, else the first home that isn't disqualified; null if there is none
+export const winnerOf = <B extends Ended>(r: { boats: B[] }): B | null => r.boats.find((b) => b.won) ?? r.boats.find((b) => b.done && !b.dsq) ?? null;
 
 // the daily race's day, as a date (its day is the UTC date)
 const dayOf = (d: string) => new Date(d + 'T12:00:00Z');
@@ -34,6 +48,9 @@ export function raceVenue(r: FinishResult, fallback: VenueId = 'gocek'): VenueId
 // lead-in, and once more as she finishes; the result keeps at most some 160 of them, every k-th and the last
 const TICK = 61 / 60;
 const clock0 = (start: number) => (start === 5 ? -300 - 8 : start === 3 ? -180 - 8 : -60 - 4);
+
+// the clock a boat's track ends at: her finish, or where a 1-on-1 race left her out on the water
+const endOf = (b: Boat) => b.secs ?? b.trackEnd ?? null;
 
 // where a track had its boat at time T (race clock, s), and her heading then (the game's: 0 north, forward (sin, −cos))
 function along(tr: XZ[], end: number | null, start: number, T: number): Pose | null {
@@ -57,10 +74,10 @@ function along(tr: XZ[], end: number | null, start: number, T: number): Pose | n
 
 export function finishScene(r: FinishResult): FinishScene {
   const me = r.boats.find((b) => b.me);
-  const T = me?.secs ?? null;
+  const T = me ? endOf(me) : null;
   const boats: FinishScene['boats'] = [];
   for (const b of r.boats) {
-    const p = b.at ?? (b.me ? along(b.track, b.secs, r.start, b.secs ?? Infinity) : T != null ? along(b.track, b.secs, r.start, T) : null);
+    const p = b.at ?? (b.me ? along(b.track, endOf(b), r.start, endOf(b) ?? Infinity) : T != null ? along(b.track, endOf(b), r.start, T) : null);
     if (p) boats.push({ ...p, name: b.name, me: b.me });
   }
   const seed = r.seed ?? (r.daily ? dailyRace(dayOf(r.daily)).seed : null);
@@ -88,7 +105,7 @@ export function neighbours(r: FinishResult) {
 export function posesAt(r: FinishResult, T: number) {
   const out: { name: string | null; me: boolean; x: number; z: number; h: number; v: number }[] = [];
   for (const b of r.boats) {
-    const p = along(b.track, b.secs, r.start, T), q = along(b.track, b.secs, r.start, T - 1);
+    const p = along(b.track, endOf(b), r.start, T), q = along(b.track, endOf(b), r.start, T - 1);
     if (p) out.push({ name: b.name, me: b.me, x: p.x, z: p.z, h: p.h, v: q ? Math.min(12, Math.hypot(p.x - q.x, p.z - q.z)) : 3 });
   }
   return out;
@@ -96,6 +113,6 @@ export function posesAt(r: FinishResult, T: number) {
 // what it plays: from a little before the gun to your finish (or the last boat's track, when you didn't finish)
 export function replaySpan(r: FinishResult) {
   const me = r.boats.find((b) => b.me);
-  const last = Math.max(...r.boats.map((b) => b.secs ?? 0));
+  const last = Math.max(...r.boats.map((b) => endOf(b) ?? 0));
   return { from: -15, to: me?.secs ?? (last || 300) };
 }

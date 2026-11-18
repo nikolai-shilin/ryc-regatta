@@ -25,6 +25,7 @@ export const MATCH_STRINGS = {
     nameK: 'Your name', namePh: 'Your name', youTag: 'you', hostTag: 'host', laps: (n) => (Number(n) > 1 ? `${n} laps` : `${n} lap`), startMin: (n) => `${n}-minute start`,
     waitFriend: 'Waiting for a friend…', waitStart: (n) => `Waiting for ${n} to start the race…`, start: 'Start the race', leave: 'Leave',
     connecting: 'Connecting…', noConnect: 'Couldn’t connect to the race', retry: 'Try again', nameFirst: 'Type your name to join', join: 'Join',
+    currentOn: 'Current', daytime: (d) => ({ morning: 'Morning', midday: 'Midday', afternoon: 'Afternoon', evening: 'Evening', sunset: 'Sunset' })[d] ?? d,
     by: (s) => `+${s}`, forfeit: (w) => `${w} dropped out`, abandonedH: 'Race abandoned', notScored: 'It doesn’t count for either of you', noWinner: 'No winner',
     rematch: 'Rematch', fullResult: 'Full result', done: 'Done', waitRematch: (w) => `${w} can start a rematch`, left: (w) => `${w} left the race`,
     stillOut: (w) => `${w} is still racing`, stillOutT: (w, s) => `${w} is still racing · ${s} left`, keepOpen: 'Keep this screen open',
@@ -37,6 +38,7 @@ export const MATCH_STRINGS = {
     nameK: 'Твоё имя', namePh: 'Твоё имя', youTag: 'ты', hostTag: 'хозяин', laps: (n) => (Number(n) > 1 ? `${n} круга` : `${n} круг`), startMin: (n) => `старт ${n} мин`,
     waitFriend: 'Ждём соперника…', waitStart: (n) => `Ждём, когда ${n} начнёт гонку…`, start: 'Начать гонку', leave: 'Выйти',
     connecting: 'Подключаемся…', noConnect: 'Не удалось подключиться к гонке', retry: 'Ещё раз', nameFirst: 'Напиши имя, чтобы войти', join: 'Войти',
+    currentOn: 'Течение', daytime: (d) => ({ morning: 'Утро', midday: 'Полдень', afternoon: 'День', evening: 'Вечер', sunset: 'Закат' })[d] ?? d,
     by: (s) => `+${s}`, forfeit: (w) => `${w}: сход`, abandonedH: 'Гонка прекращена', notScored: 'Она не засчитывается никому из вас', noWinner: 'Без победителя',
     rematch: 'Реванш', fullResult: 'Полный результат', done: 'Закончить', waitRematch: (w) => `${w} может начать реванш`, left: (w) => `${w}: выход из гонки`,
     stillOut: (w) => `${w} ещё в гонке`, stillOutT: (w, s) => `${w} ещё в гонке · осталось ${s}`, keepOpen: 'Не закрывай этот экран',
@@ -440,7 +442,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   // ---------- the waiting room ----------
   const paintRoom = () => {
     const raw = (room && room.settings) || hostSettings, s = raw && M ? M.cleanSettings(raw, here()) : null;
-    txt(R.set, s ? [venueName(s.venue), yachtName(s.yacht), t(s.preset), t(LENGTH_KEY[s.length]), t(SHAPE_KEY[s.course]), L.laps(s.laps), L.startMin(s.start)].join(' · ') : '');
+    txt(R.set, s ? [venueName(s.venue), yachtName(s.yacht), t(s.preset), t(LENGTH_KEY[s.length]), t(SHAPE_KEY[s.course]), L.laps(s.laps), L.startMin(s.start), s.current ? L.currentOn : '', s.daytime !== 'any' ? L.daytime(s.daytime) : ''].filter(Boolean).join(' · ') : '');
     const full = !!room && room.full;
     const h = room ? room.host : isHost ? { id: myId, name: myName || '…' } : null, g = room && room.guest;
     const rows = [[h, L.hostTag], [full ? null : g, '']];

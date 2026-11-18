@@ -80,3 +80,23 @@ test('the result page shows a 1-on-1 race as such', () => {
   assert.match(view, /one \? '\/match\/new'/);
   assert.match(view, /!shared && !one && <ShareButton/);
 });
+
+test('the result page tells a win by a boat dropping out, and no winner, in both languages', () => {
+  const view = read('components/result-view.tsx');
+  assert.match(view, /You won: \$\{[^}]+\} dropped out/); assert.match(view, /Ты победил: \$\{[^}]+\} — сход/);
+  assert.match(view, /'No winner', 'Без победителя'/);
+  assert.match(view, /standing\(res, b\) === 'place' \? i \+ 1 : '–'/, 'a place number only for a boat home');
+});
+
+test('a 1-on-1 race posts no rating, and its button is counted as its own', () => {
+  const view = read('components/result-view.tsx');
+  assert.match(view, /!shared && !one && Date\.now\(\) - res\.at < 864e5 && <RateRace/);
+  assert.match(view, /race: one \? 'one-on-one' : res\.daily \? 'daily' : 'free', \.\.\.\(target/);
+});
+
+test('the loading screen names the 1-on-1 race, under today\'s rules', () => {
+  const play = read('public/play/index.html');
+  assert.match(play, /match \? t\('1-on-1 race', 'Гонка один на один'\)/);
+  assert.doesNotMatch(play, /Match race|Матчевая гонка|match-racing rules|правилам матчевых гонок/);
+  assert.match(play, /under the rules of today’s race/); assert.match(play, /по правилам гонки дня/);
+});

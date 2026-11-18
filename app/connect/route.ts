@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 
-// The match race's way to Supabase Realtime: the game (public/game/) is static and has no Supabase client or keys of
+// The 1-on-1 race's way to Supabase Realtime: the game (public/game/) is static and has no Supabase client or keys of
 // its own, so it asks here, on the same origin, for the project's address, its publishable key (public by design, as in
 // the browser's own client), the ranking name of whoever is signed in, and the build the page came from (both screens of
-// a match must run the same game: each says its build in its hellos, and a mismatch asks for a reload). Never cached.
+// a race must run the same game: each says its build in its hellos, and a mismatch asks for a reload). Never cached.
 //
 //   GET /connect → { url, key, name, build }   (name is null for a guest; build is 'dev' off Vercel)
 export async function GET() {

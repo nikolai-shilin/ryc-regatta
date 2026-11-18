@@ -472,3 +472,30 @@ test('no Appendix C is left in the game', () => {
   const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
   for (const f of ['sim', 'wire', 'main', 'world', 'stats']) assert.doesNotMatch(read(`../public/game/${f}.js`), /race\.match|this\.match|\.owed|placeMatch|matchTurn|matchPens|umpire\(\)|UMPIRE|sternFlag|penMr/, f);
 });
+
+test('the waiting room names the current and a chosen time of day, and says nothing of them otherwise', async () => {
+  wire = memoryRealtime();
+  const plain = await page('Host', { host: true });
+  assert.doesNotMatch(plain.says('.m-set'), new RegExp(`${S.en.currentOn}|${S.en.daytime('sunset')}`));
+  plain.gone();
+  wire = memoryRealtime();
+  const h = await page('Host', { host: true, settings: { current: 1, daytime: 'sunset' } }), g = await page('Guest');
+  run(0.5, h, g);
+  for (const s of [h, g]) { assert.ok(s.says('.m-set').includes(S.en.currentOn), s.name); assert.ok(s.says('.m-set').includes(S.en.daytime('sunset')), s.name); }
+  h.gone(); g.gone();
+  for (const d of ['morning', 'midday', 'afternoon', 'evening', 'sunset']) for (const lang of ['en', 'ru']) assert.notEqual(S[lang].daytime(d), d, `${lang}.${d}`);
+});
+
+test('what the screens promise a sailor leaving or gone is what happens', () => {
+  const en = mainSrc.slice(mainSrc.indexOf('\n  en: {'), mainSrc.indexOf('\n  ru: {')), ru = mainSrc.slice(mainSrc.indexOf('\n  ru: {'));
+  const line = (src, k) => src.match(new RegExp(`\\b${k}: [^\\n]*?(?=, \\w+: |,?\\n)`))[0];
+  assert.match(line(en, 'leaveHome'), /full result/i); assert.match(line(ru, 'leaveHome'), /полн\S+ результат/i);
+  assert.doesNotMatch(line(en, 'guestGone'), /race is yours/); assert.doesNotMatch(line(ru, 'guestGone'), /гонка твоя/);
+});
+
+test('the stale words for a match race are gone from the comments', () => {
+  const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
+  assert.doesNotMatch(mainSrc, /A match race against a friend/);
+  assert.doesNotMatch(read('../app/connect/route.ts'), /The match race's way/);
+  assert.doesNotMatch(read('../public/game/wire.js').split('\n')[0], /a match's Host/);
+});

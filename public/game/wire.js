@@ -1,4 +1,4 @@
-// A race one browser runs and others follow, over the wire (a match's Host and Guest; the club race's referee and
+// A race one browser runs and others follow, over the wire (a 1-on-1 race's Host and Guest; the club race's referee and
 // members): a boat's controls as her sailor's game sends them, and a snapshot of the race as the runner sends it.
 // No sim.js import: plain numbers and the Boat's own methods.
 
@@ -151,17 +151,19 @@ export function applySnap(race, s, skip = null) {
 
 // ---------- the results: what only the runner recorded ----------
 const TRACK_MAX = 160;
-// a boat's track for the result: at most TRACK_MAX points, evenly through it, the last always kept, in whole metres
+// a boat's track for the result, as any race's record keeps it and the result page times it (lib/finish.ts along): every
+// k-th point and the last, some TRACK_MAX in all, in whole metres
 export function thinTrack(track) {
-  const n = track.length, m = Math.min(n, TRACK_MAX);
-  return Array.from({ length: m }, (_, i) => track[m > 1 ? Math.round((i * (n - 1)) / (m - 1)) : n - 1]).map(([x, z]) => [Math.round(x), Math.round(z)]);
+  const n = track.length, k = Math.max(1, Math.ceil(n / TRACK_MAX));
+  return track.filter((_, i) => i % k === 0 || i === n - 1).map(([x, z]) => [Math.round(x), Math.round(z)]);
 }
 
 // the race as it ended, for the follower's debrief: each sailor's result (dsq: out under the U or black flag too, home
-// or not), leg times, thinned track and log
+// or not), leg times, thinned track and log; trackEnd: the clock the track of a boat not home ends at (one home ends at
+// her finish)
 export function resultsOf(race) {
   return {
     seed: race.seed,
-    boats: race.humans.map((b) => ({ id: b.id, done: !!b.done, dsq: !!(b.dsq || b.ufd || b.bfd), dnf: !!b.dnf, place: b.place ?? null, finish: b.finish ?? null, pens: b.pens || 0, legT: b.legT, track: thinTrack(b.track), log: b.log })),
+    boats: race.humans.map((b) => ({ id: b.id, done: !!b.done, dsq: !!(b.dsq || b.ufd || b.bfd), dnf: !!b.dnf, place: b.place ?? null, finish: b.finish ?? null, trackEnd: b.done ? null : q(race.trackAt ?? race.clock, 1000), pens: b.pens || 0, legT: b.legT, track: thinTrack(b.track), log: b.log })),
   };
 }

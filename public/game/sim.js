@@ -114,7 +114,8 @@ export function runAngle(tws, kite = true) {
 // near head to wind the rig and the flogging sails add their windage in the apparent wind aws (m/s). Luffed head to
 // wind at 6½ knots in 12 knots of breeze she is down to 2 knots after some 15 s and 2 boat lengths, and stops after
 // about 3 (further in light air, sooner in a blow).
-const COAST = CLS.coast, WINDAGE = 0.0007, HULL_V = CLS.hullV * KN; // m; per m of air; hull speed, about 8 knots on her 11 m waterline
+const CARRY = 2; // how much further she carries her way than her drag alone would have her: sailors' measure of it
+const COAST = CLS.coast * CARRY, WINDAGE = 0.0007 / CARRY, HULL_V = CLS.hullV * KN; // m; per m of air; hull speed, about 8 knots on her 11 m waterline
 export const coast = (v, aws, aDeg, target = 0, k = COAST) => (v * v - target * target) / k + WINDAGE * aws * aws * clamp((NO_GO + 6 - aDeg) / 6, 0, 1);
 // how far she carries her way to windward, luffed head to wind from speed v (m/s) in tws knots, until she's down to
 // steerage way (about 2 knots)
@@ -287,6 +288,9 @@ const SURF_V = 3 * Math.min(1, Math.sqrt(CLS.loa / CLASSES[DEFAULT_CLASS].loa));
 // her rig's wind shadow and backwind, as far and as wide as her rig is tall against the JPK 1050's 16.2 m (classes.js
 // frame); the shadow itself runs six and a half mast heights downwind, thinning all the way
 export const shadowReach = (c) => 6.5 * 16.2 * c.frame;
+// a contact's verdict (Race verdict): the rudder's travel either way, how much of it is hard over, and how long before
+// the contact a boat with right of way could have seen it coming and got out of the way (s)
+const RUDDER_DEG = 35, HARD_OVER = 0.9, AVOID_S = 2.5;
 const SHADOW_K = CLS.frame, SHADOW_L = shadowReach(CLS);
 export class Boat {
   constructor(o = {}) {
@@ -501,14 +505,14 @@ export class Boat {
     this.target = target;
     // momentum: speeding up she follows the target lazily (τ 6 s), the sails having to drive 7½ tonnes. Slowing down,
     // it is the hull's drag that takes the way off (coast()): hard at full speed, ever more gently as she slows — so
-    // luffed head to wind she carries her way two or three boat lengths, enough to shoot a mark. Two things stop her
+    // luffed head to wind she carries her way some five boat lengths, enough to shoot a mark. Two things stop her
     // sooner: above hull speed (off a wave) the wave drag bites at once; and off the wind with the sails let fly, as a
     // crew holds her on the line before the start, they flog and she slides sideways, and the way comes off in seconds.
     const letFly = a > bt && this.luff > 0.5;
     if (target > this.v || this.v < 0 || target < 0 || letFly || (this.v > HULL_V && this.v > target * 1.2)) {
       const tau = target > this.v ? CLS.tau : a < NO_GO ? 3 : this.v > target * 1.2 ? 2 : 4.5;
       this.v += (target - this.v) * (1 - Math.exp(-dt / tau));
-    } else this.v = Math.max(target, this.v - coast(this.v, this.aws * KN, a, target, CLS.foil && !this.fly ? CLS.foil.dispCoast : COAST) * dt);
+    } else this.v = Math.max(target, this.v - coast(this.v, this.aws * KN, a, target, CLS.foil && !this.fly ? CLS.foil.dispCoast * CARRY : COAST) * dt);
     this.v -= 9.81 * slope * 0.3 * dt;
     this.surf = 0;
     if (SURF_K && a > 110 && w.tws > 13 && slope < 0 && this.v > SURF_V && this.v < target * 1.4) { const s = -slope * 9.81 * 0.35 * SURF_K * dt; this.v += s; this.surf = s / dt; }
@@ -801,7 +805,8 @@ const newLog = () => ({ gunD: null, gunV: null, ocs: false, startT: null, startA
 export class Race {
   // humans: the boats people sail, in that order; me: the id of the one this screen sails (null: it only watches)
   constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl', bias: lineBias = null, level = null, daytime = 'any',
-    humans = [{ id: 'you', name: 'You' }], me = humans[0].id } = {}) {
+    humans = [{ id: 'you', name: 'You' }], me = humans[0].id, contactDsq = false } = {}) {
+    this.contactDsq = contactDsq && humans.length === 1; // a free race's rule: a contact is a disqualification, not a penalty turn (verdict)
     this.seed = seed; // (the results of this race, told from another's)
     // more than one human: the first valid finish wins
     this.multi = humans.length > 1; this.validAt = null;
@@ -911,6 +916,7 @@ export class Race {
     if (this.wind.sea) this.say(SKOPEA.meta.lake ? 'thermalBreeze' : VENUE.lat < 0 ? 'seaBreezeSouth' : 'seaBreeze'); // the forecast: a sea breeze coming in (on a lake, the valley's thermal)
     this.over = false;
     this.winner = null; this.margin = null; this.forfeited = null; // a 1-on-1 race's: the first home (or the one left), by how much
+    this.trackAt = null; // the clock at the tracks' latest point (a boat not home: where her track ends, wire.js resultsOf)
     this.zoneStates = new Map();
     this.pairs = new Map(); // boats near each other: how their right of way came about (rules 15 and 17)
   }
@@ -920,7 +926,7 @@ export class Race {
     if (this.multi) { // a boat home, or a race over, can't be given up; else it is the other's, unless she is out too (or a winner is already home)
       if (b.done || this.over) return;
       const o = this.humans.find((h) => h !== b);
-      this.forfeited = b; this.over = true; this.margin = null;
+      this.forfeited = b; this.over = true; this.margin = null; b.dnf = true; // (she never finished, whoever it goes to)
       if (!this.winner) this.winner = o && !(o.ufd || o.bfd || o.dsq) ? o : null;
     }
   }
@@ -952,7 +958,7 @@ export class Race {
     const ux = -Math.sin(w.dir), uz = Math.cos(w.dir); // downwind
     let deficit = 0, bend = 0;
     for (const o of this.boats) {
-      if (o === b || (this.multi && o.done)) continue; // (a boat home casts no shadow)
+      if (o === b || (this.multi && o.done) || o.out) continue; // (a boat home casts no shadow, nor one disqualified)
       const dx = b.x - o.x, dz = b.z - o.z, along = dx * ux + dz * uz;
       if (along < 3 * SHADOW_K || along > SHADOW_L) continue;
       const lat = dx * uz - dz * ux, width = 6 * SHADOW_K + along * 0.22;
@@ -964,7 +970,7 @@ export class Race {
     // (the "safe leeward" position); upwind only
     const fx = Math.sin(b.h), fz = -Math.cos(b.h), twaB = wrap(w.dir - b.h);
     if (Math.abs(twaB) < 70 * D2R) for (const o of this.boats) {
-      if (o === b || (this.multi && o.done) || Math.abs(wrap(w.dir - o.h)) > 70 * D2R) continue;
+      if (o === b || (this.multi && o.done) || o.out || Math.abs(wrap(w.dir - o.h)) > 70 * D2R) continue;
       const dx = o.x - b.x, dz = o.z - b.z, down = dx * ux + dz * uz, ahead = dx * fx + dz * fz;
       const K = SHADOW_K;
       if (down < 2 * K || down > 22 * K || ahead < -2 * K || ahead > 20 * K || dx * dx + dz * dz > 625 * K * K) continue;
@@ -1059,7 +1065,7 @@ export class Race {
     this.hails();
     this.record(dt, before);
     this.trackT += dt;
-    if (this.trackT > 1) { this.trackT = 0; for (const b of this.boats) if (!b.done) b.track.push([b.x, b.z]); }
+    if (this.trackT > 1) { this.trackT = 0; this.trackAt = this.clock; for (const b of this.boats) if (!b.done) b.track.push([b.x, b.z]); }
   }
 
   // legs: crossing the line, rounding the windward mark to port, the gate, the finish
@@ -1169,10 +1175,13 @@ export class Race {
       else if (!inZ && b.inZone) Object.assign(b, { inZone: false, zoneGybed: false });
       if (b.inZone && b.sinceTack < 0.05 && this.clock - b.zoneT > 0.1 && b.lastGybe) b.zoneGybed = true;
     }
-    for (const b of bs) { // her recent headings (and how fast she was turning), for rule 16
+    for (const b of bs) { // her recent headings, for rule 16
       const h = b.hist || (b.hist = []);
-      if (!h.length || this.clock - h[h.length - 1][0] > 0.2) h.push([this.clock, b.h, b.yawRate]);
+      if (!h.length || this.clock - h[h.length - 1][0] > 0.2) h.push([this.clock, b.h]);
       while (h.length && h[0][0] < this.clock - 3) h.shift();
+      const hm = b.helm || (b.helm = []); // and her rudder, for a contact's verdict
+      if (!hm.length || this.clock - hm[hm.length - 1][0] > 0.2) hm.push([this.clock, b.rudder]);
+      while (hm.length && hm[0][0] < this.clock - 3) hm.shift();
     }
     for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
       const p = bs[i], q = bs[j], key = i * 16 + j;
@@ -1282,6 +1291,39 @@ export class Race {
       if (r.giver === P && this.clock - (hs.hailT ?? -99) > 7) { hs.hailT = this.clock; this.say('hail', { who: o.name, rule: r.rule }, P); P.log.hails[r.rule] = (P.log.hails[r.rule] || 0) + 1; }
     }
   }
+  // A contact judged as a protest committee would, in a free race sailed with DSQ for it. `met`: the speed they met at (m/s).
+  // The boat that had to keep clear is at fault, and her rudder is read: not hard over in the last 2 s, she didn't do all
+  // she could. The boat with right of way is at fault too if she altered course onto her (rule 16), sailed above her
+  // proper course, close-hauled on a beat, after the gun (17: before it there is no proper course), or had room to get
+  // out of the way and held on (14). Only a boat with her rudder hard over against one of the first two is cleared.
+  verdict(p, q, met) {
+    const r = this.judge(p, q), base = this.rightOfWay(p, q), turned = r.rule === '16' || r.rule === '17';
+    const keep = turned ? base.giver : r.giver, row = keep === p ? q : p, rule = turned ? base.rule : r.rule;
+    const recent = (h, s) => (h || []).filter((e) => e[0] >= this.clock - s);
+    const over = Math.max(Math.abs(keep.rudder), ...recent(keep.helm, 2).map((e) => Math.abs(e[1]))), hardOver = over >= HARD_OVER;
+    const forced = turned ? r.rule : ['10', '11', '12', '13'].includes(r.rule) && this.aboveProper(row) ? '17' : null;
+    // room: both on these courses for AVOID_S, her helm amidships, and they closed by most of a hull length meanwhile
+    const steady = (b, deg) => { const h = recent(b.hist, AVOID_S); return h.length > 0 && h[0][0] <= this.clock - AVOID_S + 0.5 && h.every((e) => Math.abs(wrap(e[1] - h[0][1])) < deg * D2R); };
+    const room = !forced && met * AVOID_S >= 0.75 * HULL && steady(row, 8) && steady(keep, 20) && recent(row.helm, AVOID_S).every((e) => Math.abs(e[1]) < 0.25);
+    const guilty = [];
+    if (!(forced && hardOver)) guilty.push({ boat: keep, rule, why: hardOver ? 'late' : 'rudder', who: row.name });
+    if (forced || room) guilty.push({ boat: row, rule: forced || '14', why: forced === '16' ? 'turned' : forced ? 'above' : 'room', who: keep.name });
+    return { guilty, keep, row, rudder: Math.round(over * RUDDER_DEG) };
+  }
+  // the verdict carried out: out of the race at once, and out of everyone's way
+  contactOut(p, q, met) {
+    const v = this.verdict(p, q, met);
+    for (const f of v.guilty) {
+      const b = f.boat;
+      Object.assign(b, { dsq: true, done: true, out: true, finish: this.clock, place: null, pen: null, rudder: 0 });
+      b.track.push([b.x, b.z]);
+      if (!b.human) continue;
+      b.log.fouls.push({ rule: f.rule, who: f.who, t: this.clock, x: b.x, z: b.z });
+      this.say('contactDsq', { rule: f.rule, why: f.why, who: f.who, deg: v.rudder, max: RUDDER_DEG }, b);
+      this.over = true;
+    }
+    for (const b of this.humans) if (!b.out) for (const f of v.guilty) this.say('theyDsq', { who: f.boat.name, rule: f.rule }, b);
+  }
   // contact: the boat that should have kept clear takes a one-turn penalty, one tack and one gybe (rule 44.2)
   foul(p, q) {
     const r = this.judge(p, q), g = r.giver, other = g === p ? q : p;
@@ -1304,7 +1346,7 @@ export class Race {
     const bs = this.boats, c = this.course;
     for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
       const p = bs[i], q = bs[j];
-      if (this.multi && (p.done || q.done)) continue; // (a boat home is out of the other's way)
+      if ((this.multi && (p.done || q.done)) || p.out || q.out) continue; // (a boat home is out of the other's way, as is one disqualified)
       if (Math.hypot(q.x - p.x, q.z - p.z) > HULL + 1) continue;
       const g = hullGap(p, q);
       if (g.d < 2 * HALF_B) {
@@ -1312,10 +1354,10 @@ export class Race {
         p.x -= nx * push; p.z -= nz * push; q.x += nx * push; q.z += nz * push;
         if (p.hit <= 0 && q.hit <= 0) {
           // how hard: the speed they met at, 6 m/s (12 knots) and over the hardest; the sound of it goes by this (sfx.js collide)
-          const hard = clamp(Math.hypot(p.v * Math.sin(p.h) - q.v * Math.sin(q.h), p.v * Math.cos(p.h) - q.v * Math.cos(q.h)) / 6, 0.2, 1);
+          const met = Math.hypot(p.v * Math.sin(p.h) - q.v * Math.sin(q.h), p.v * Math.cos(p.h) - q.v * Math.cos(q.h)), hard = clamp(met / 6, 0.2, 1);
           p.v *= 0.75; q.v *= 0.75;
           for (const b of [p, q]) if (b.human) this.say('bump', hard, b);
-          if (this.rulesOn && !p.done && !q.done) this.foul(p, q);
+          if (this.rulesOn && !p.done && !q.done) { if (this.contactDsq) this.contactOut(p, q, met); else this.foul(p, q); }
         }
         p.hit = q.hit = 2;
       }

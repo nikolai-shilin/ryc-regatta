@@ -4,6 +4,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { VENUES } from '../public/game/venues.js';
 
 globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))));
 const sim = await import('../public/game/sim.js');
@@ -197,4 +200,41 @@ function sailScripted(opts) {
 const GOLDEN_4242 = [null, 282.7, 277, 248.7, 229.9]; // sailed again 2026-11-18: the wind shadow runs six and a half mast heights (sim.js shadowReach)
 test('a free race is unchanged by the 1-on-1 race', () => {
   assert.deepEqual(sailScripted({ preset: 'medium', length: 'short', laps: 1, fleet: 5, seed: 4242 }), GOLDEN_4242);
+});
+
+test('a boat\'s recent headings keep only the clock and the heading', () => {
+  const r = duel();
+  for (let n = 0; n < 120; n++) r.step(1 / 60);
+  assert.ok(r.humans[0].hist.length > 0);
+  for (const row of r.humans[0].hist) assert.equal(row.length, 2);
+});
+
+// Both start positions can reach the line by the gun of a one-minute sequence, wherever the race is, in each wind: from
+// each, she holds one close-hauled tack, the better of the two, up to the level of the line and no further than a line's
+// length off either end. The venue is read once, from the address, so each has a process of its own.
+test('both start positions reach the line in time at every venue, on the one-minute sequence', async () => {
+  const run = promisify(execFile), simUrl = new URL('../public/game/sim.js', import.meta.url).href;
+  const late = async (id) => JSON.parse((await run(process.execPath, ['--input-type=module', '-e', `
+    import { readFile } from 'node:fs/promises';
+    globalThis.location = { search: '?venue=${id}' };
+    globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))));
+    const { Race, lineD, lineT } = await import('${simUrl}');
+    const humans = [{ id: 'h', name: 'Host' }, { id: 'g', name: 'Guest' }], out = [];
+    const reaches = (preset, seed, k, side) => {
+      const r = new Race({ preset, seed, fleet: 2, start: 1, autoTrim: true, humans, me: 'h' }), c = r.course, b = r.humans[k];
+      r.humans[1 - k].x += 5000; // (the other boat out of her way: each position is tried by itself)
+      while (r.clock < 0) {
+        r.steerTo(b, r.sailable(b.wdir + side * 0.35, b.wdir, b.tws));
+        r.step(1 / 60);
+        const t = lineT(c, b);
+        if (lineD(c, b) > 0 && t >= -1 && t <= 2) return true;
+      }
+      return false;
+    };
+    for (const preset of ['light', 'medium', 'strong']) for (const seed of [11, 12]) for (const k of [0, 1])
+      if (!reaches(preset, seed, k, 1) && !reaches(preset, seed, k, -1)) out.push([preset, seed, k]);
+    console.log(JSON.stringify(out));`], { maxBuffer: 1e7 })).stdout);
+  const ids = VENUES.map((v) => v.id), bad = [];
+  await Promise.all(Array.from({ length: 4 }, async () => { for (let id; (id = ids.shift());) for (const x of await late(id)) bad.push([id, ...x]); }));
+  assert.deepEqual(bad, []);
 });
