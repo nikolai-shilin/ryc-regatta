@@ -287,6 +287,12 @@ const MODEL = await new Promise((res) => {
       for (let i = 0; i < q.count; i++) { uv[2 * i] = q.getX(i) * s; uv[2 * i + 1] = -q.getZ(i) * s; }
       g2.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     }
+    // the cockpit's front wall from the floor up to the deck: the model has it facing forward, so from the cockpit it
+    // isn't drawn and the inside of the hull shows either side of the companionway. White gelcoat facing aft, over it
+    if (parts.gel) {
+      const wall = new THREE.PlaneGeometry(1.324, 0.6).translate(0, 0.9, 1.955); wall.deleteAttribute('uv');
+      parts.gel = mergeGeometries([parts.gel, wall]) || parts.gel;
+    }
     done(parts);
   }, undefined, () => done(null));
 });
@@ -369,9 +375,9 @@ export const M = {
   // smoked acrylic: dark, but with the sky in it
   glass: new THREE.MeshStandardMaterial({ color: '#2a3540', roughness: 0.05, metalness: 0.55, envMapIntensity: 1.4 }),
   alu: new THREE.MeshStandardMaterial({ color: '#c3c8cd', roughness: 0.35, metalness: 0.85, envMapIntensity: 1 }), // hatch frames
-  // the companionway's washboards and the sliding hatch over them: smoked too, but a lighter tint than the windows, so
-  // they read as a closed hatch from the cockpit, not a hole into the cabin
-  board: new THREE.MeshStandardMaterial({ color: '#7a8590', roughness: 0.18, metalness: 0.15, envMapIntensity: 1.2 }),
+  // the companionway's washboards and the sliding hatch over them: painted solid, a shade under the gelcoat round them
+  // and lit by the sky as it is (the aft face is often out of the sun), so they read as a closed hatch, not a hole
+  board: new THREE.MeshStandardMaterial({ color: '#e4e2da', roughness: 0.45, envMapIntensity: 0.9 }),
   dark: new THREE.MeshStandardMaterial({ color: '#2a2f36', roughness: 0.6 }),
   // an instrument's screen: a reading in big lit figures over its label, behind glass; four readings, one a quarter of
   // the picture (display() picks one)
@@ -1956,6 +1962,9 @@ export class BoatView {
     for (let i = 0; i < 3; i++) add(new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.276, 0.04), M.board), 0, FLOOR + 0.07 + 0.144 + i * 0.286, CR_ZA + 0.01);
     for (const i of [1, 2]) add(new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.012, 0.034), M.dark), 0, FLOOR + 0.07 + i * 0.286, CR_ZA + 0.008);
     add(new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.96, 0.03), M.alu), 0, FLOOR + 0.5, CR_ZA + 0.002);
+    // the top board's pull, a steel bar on a dark backing plate
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 0.008), M.dark), 0, FLOOR + 0.79, CR_ZA + 0.033);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.016, 0.018), M.steel), 0, FLOOR + 0.79, CR_ZA + 0.044);
     add(new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.04, 0.7), M.board), 0, gy(1.62) + 0.035, 1.62);
     for (const sx of [-1, 1]) add(new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.05, 0.84), M.alu), sx * 0.3, gy(1.58) + 0.025, 1.58);
     for (const [z, w] of [[-1.15, 0.5], [-2.25, 0.6]]) {
