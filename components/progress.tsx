@@ -26,6 +26,9 @@ const Stars = ({ n, label }: { n: number; label: string }) => (
 // drills are shown, with what opens them)
 export function DrillsList({ lang }: { lang: Lang }) {
   const t = tx(lang), got = useDrills(), mine = got ? levelOf(got) : null;
+  // the one drill to sail next, the page's one blue button: the first open one not sailed yet, else the first short of three stars
+  const sailable = got ? DRILLS.filter((d) => levelOpen(d.level, got)) : [];
+  const next = (sailable.find((d) => !got?.[d.id]) ?? sailable.find((d) => (got?.[d.id] || 0) < 3))?.id;
   let n = 0;
   return (
     <div className="pg-levels">
@@ -53,7 +56,7 @@ export function DrillsList({ lang }: { lang: Lang }) {
                     <p className="pg-three"><b>{t('Three stars', 'Три звезды')}</b> · {t(...d.three)}</p>
                     <div className="pg-foot">
                       {got ? <Stars n={s} label={t(`Your best: ${s} of 3 stars`, `Твой лучший: ${s} из 3 звёзд`)} /> : <span />}
-                      {open ? <a className="rt-go pg-go" href={`/play?race=free&drill=${d.id}`}>{s ? t('Again', 'Ещё раз') : t('Start', 'Начать')}</a>
+                      {open ? <a className={`rt-go pg-go${d.id === next ? ' pg-next' : ''}`} href={`/play?race=free&drill=${d.id}`}>{s ? t('Again', 'Ещё раз') : t('Start', 'Начать')}</a>
                         : <span className="pg-lock">{t('Not open yet', 'Пока закрыто')}</span>}
                     </div>
                   </li>

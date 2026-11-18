@@ -98,7 +98,7 @@
 .bc .bt-pill[aria-checked="true"]::before { background: var(--up); box-shadow: none; }
 /* a pick among a few (role radio) is the design's segmented choice: no dot, the picked one filled in your colour;
    an on/off (role switch) keeps the dot, green when on */
-.bc .bt-pill[role="radio"] { padding: 0 var(--s-4); }
+.bc .bt-pill[role="radio"] { flex: 1 1 auto; justify-content: center; padding: 0 var(--s-4); } /* a row of choices fills its width */
 .bc .bt-pill[role="radio"]::before { display: none; }
 .bc .bt-pill[role="radio"][aria-checked="true"] { background: var(--you); color: var(--ink-on); box-shadow: none; }
 .bc .bt-pill:active, .bc .bt-row:active { transform: none; scale: .97; }
@@ -198,7 +198,7 @@
 .bc .bt-card .preset-pic img { object-fit: cover; transition: scale var(--t-in) var(--ease); }
 .bc .bt-card .preset:hover .preset-pic img { scale: 1.06; }
 .bc .bt-card .preset-n { display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 var(--s-2); overflow: hidden;
-  font: 700 11px/1 var(--cond); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; color: var(--ink-2);
+  font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; white-space: nowrap; color: var(--ink-2);
   background: var(--w-06); transition: background-color var(--t-quick), color var(--t-quick); }
 .bc .bt-card .preset-n::before { content: ''; flex: none; width: 3px; height: 12px; background: var(--c); box-shadow: 0 0 0 1px var(--w-25); }
 .bc .bt-card .preset:hover .preset-n { color: var(--ink); background: var(--w-10); }
@@ -409,6 +409,7 @@
 
 /* the free race: four places and All, the race's size two to a row on a wide screen in a wider card */
 .bc .fs-where { display: flex; flex-wrap: wrap; gap: var(--s-1); }
+.bc .fs-where > .bt-pills { flex: 1 1 auto; }
 .bc .fs-all { gap: var(--s-2); padding: 0 var(--s-3) 0 var(--s-4); box-shadow: inset 0 0 0 1px var(--w-25); background: none; }
 .bc .fs-all::before { display: none; }
 .bc .fs-all svg { transition: rotate var(--t-quick); }
@@ -1103,7 +1104,7 @@
 .bc .rt-day, .bc .rt-step { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 52px; height: 56px;
   background: var(--fill-1); color: var(--ink-3); text-decoration: none; scroll-snap-align: start; transition: background-color var(--t-quick), color var(--t-quick); }
 .bc .rt-day b { font: 700 var(--fs-row)/1 var(--cond); color: var(--ink-2); }
-.bc .rt-day span { font: 600 10px/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.bc .rt-day span { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
 .bc .rt-day.has { box-shadow: inset 0 -3px 0 var(--w-35); }
 .bc .rt-day.has b { color: var(--ink); }
 .bc .rt-day:hover, .bc .rt-step:hover { background: var(--fill-2); color: var(--ink); }
@@ -1147,8 +1148,10 @@
 .bc .rt-mc-d.alone .rt-mc-st { display: none; }
 /* the days without a race: a tick on the foot, their number only every fifth day (and today's) */
 .bc .rt-mc-d:not(.has)::after { content: ''; position: absolute; left: 50%; bottom: calc(var(--lh) + var(--mk) / 2 - 3px); width: 2px; height: 6px; translate: -50% 0; background: var(--w-14); }
-.bc .rt-mc-d small { position: absolute; left: 50%; bottom: 0; translate: -50% 0; font: 700 10px/1 var(--cond); font-variant-numeric: tabular-nums; color: var(--ink-3); }
+.bc .rt-mc-d small { position: absolute; left: 50%; bottom: 0; translate: -50% 0; font: 700 var(--fs-label)/1 var(--cond); font-variant-numeric: tabular-nums; color: var(--ink-3); }
 .bc .rt-mc-d:not(.has):not(.on):not(:nth-child(5n + 1)) small { visibility: hidden; }
+/* a phone's columns are narrower than two figures: every fifth day, today and the day picked */
+@media (max-width: 600px) { .bc .rt-mc-d:not(.on):not(.sel):not(:nth-child(5n + 1)) small { visibility: hidden; } }
 .bc .rt-mc-d.has small, .bc .rt-mc-d.on small { color: var(--ink); }
 .bc .rt-mc-d.has { cursor: default; }
 .bc .rt-mc-d:focus-visible .rt-mc-mk { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--you); }
@@ -1177,7 +1180,7 @@
   animation: bc-slide-l var(--t-in) var(--ease) both; animation-delay: calc(var(--i, 0) * 40ms + 120ms); }
 .bc .rt-lb li > * { display: flex; align-items: center; }
 .bc .rt-n { justify-content: center; background: var(--fill-2); font: 700 var(--fs-row)/1 var(--cond); }
-.bc .rt-lb li.first .rt-n { background: var(--gold); color: var(--ink-on); }
+.bc .rt-lb li.first .rt-n { background: var(--ink); color: var(--ink-on); }
 .bc .rt-lb li.pod .rt-n { background: var(--w-25); }
 .bc .rt-lb .lb-who { padding: 0 var(--s-3); font: 700 var(--fs-row)/1 var(--cond); letter-spacing: var(--ls-name); }
 .bc .rt-t { gap: var(--s-2); padding-right: var(--s-3); font: 700 var(--fs-row)/1 var(--cond); font-variant-numeric: tabular-nums; }
@@ -1428,12 +1431,15 @@
 .bc .pg-level-who b { color: var(--ink); font-weight: 700; }
 .bc .pg-card.off { opacity: 0.55; }
 .bc .pg-lock { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
-.bc .pg-n { flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--you); color: var(--ink-on); font: 800 var(--fs-lead)/1 var(--cond); }
+.bc .pg-n { flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--fill-2); color: var(--ink); font: 800 var(--fs-lead)/1 var(--cond); }
 .bc .pg-min { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-2); }
 .bc .pg-card p { margin: 0; font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
 .bc .pg-three b { color: var(--gold); font-weight: 700; }
 .bc .pg-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-top: auto; padding-top: var(--s-2); }
 .bc .pg-go { margin: 0; }
+/* blue is for the one action that matters: the drill to sail next. The others wait quietly, uncut */
+.bc .pg-go:not(.pg-next) { padding: 0 var(--s-6); background: var(--fill-2); color: var(--ink); clip-path: none; transition: background-color var(--t-quick); }
+.bc .pg-go:not(.pg-next):hover { background: var(--w-14); }
 .bc .pg-stars { display: inline-flex; gap: 4px; font-size: 26px; line-height: 1; }
 .bc .pg-stars i { font-style: normal; color: var(--w-14); } .bc .pg-stars i.on { color: var(--gold); }
 .bc .pg-ico { width: 18px; flex: none; text-align: center; font: 700 15px/1 var(--cond); color: var(--gold); }

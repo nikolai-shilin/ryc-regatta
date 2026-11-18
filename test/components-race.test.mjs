@@ -282,6 +282,19 @@ test('a drill you have done says your stars and offers it again', async () => {
   assert.equal(v.$$('.pg-card')[1].querySelector('a').textContent, 'Start');
 });
 
+test('one drill wears the blue: the first open one not sailed yet', async () => {
+  const lit = (v) => v.$$('.pg-next').map((a) => a.getAttribute('href'));
+  assert.doesNotMatch(ssr(h(DrillsList, { lang: 'en' })), /pg-next/, 'none before the stars are read');
+  stars({ [first[0].id]: 2 });
+  assert.deepEqual(lit(await mount(h(DrillsList, { lang: 'en' }))), [`/play?race=free&drill=${first[1].id}`]);
+});
+
+test('with every open drill sailed, the blue goes to the first short of three stars', async () => {
+  stars(Object.fromEntries(first.map((d, i) => [d.id, i ? 1 : 3])));
+  const v = await mount(h(DrillsList, { lang: 'en' }));
+  assert.deepEqual(v.$$('.pg-next').map((a) => a.getAttribute('href')), [`/play?race=free&drill=${first[1].id}`]);
+});
+
 test('enough stars open the next level', async () => {
   stars(Object.fromEntries(first.map((d) => [d.id, 3])));
   const v = await mount(h(DrillsList, { lang: 'en' }));
