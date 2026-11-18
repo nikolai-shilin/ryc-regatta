@@ -13,7 +13,7 @@ import { VENUE, venueById, laidLength, lengthOffered } from './venues.js';
 import { classById } from './classes.js';
 import { arriveLoaded, goBack, outOfRace } from './trail.js';
 import { createMusic, direct, MUSIC_CHOICES, PLAYLIST } from './music.js';
-import { createSfx, openAudio, AUDIO_TICK } from './sfx.js';
+import { createSfx, AUDIO_TICK } from './sfx.js';
 
 const $ = (s) => document.querySelector(s);
 // a file of the game's (a voice, the calls, the gulls) at the address the page's import map gives it, with its hash
@@ -382,7 +382,7 @@ const audio = {
   init() {
     if (this.ctx) { this.ctx.resume(); return; }
     try {
-      this.ctx = openAudio(window.AudioContext || window.webkitAudioContext);
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
       this.master = this.ctx.createGain(); this.master.gain.value = this.on ? 1 : 0; this.master.connect(this.ctx.destination);
       // the wind, the water, the sails, the winch, the horn (sfx.js), made from what makes the real ones
       const bus = (k) => { const g = this.ctx.createGain(); g.gain.value = sndK(k); g.connect(this.master); return g; };
