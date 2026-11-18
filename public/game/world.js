@@ -1198,22 +1198,43 @@ function mirrored(obj) {
 }
 
 // ---------- guides around your boat ----------
-// Built with the wind from the north and turned to the wind each frame: a ring, faint enough to read the sea through: red where she can't sail (too close to the wind), green marks
-// at the best angle upwind on each tack, blue marks at the best angle downwind on each gybe; a white pointer for
-// your heading. Compass c in this frame sits at ring angle π/2 − c.
-const R_IN = 10.5, R_OUT = 12.4;
+// Built with the wind from the north and turned to the wind each frame, in the dash of the lines on the water (LINE_W,
+// DASH, DASH_ON), as bright as the start line, these colours being darker on the sea than white or yellow: an arc of red dashes where she can't sail (too close to the wind) and of blue over the slow dead
+// run between the gybes, one green dash across the ring at the best angle upwind on each tack and one blue at the best
+// angle downwind on each gybe; a white pointer for your heading. Compass c in this frame sits at ring angle π/2 − c.
+const R_RING = 11.45, R_OUT = R_RING + 0.95, GUIDE_A = GOLD_A;
 const glass = (color, opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide, fog: false });
-const sector = (r0, r1, c0, c1, mat) => new THREE.Mesh(new THREE.RingGeometry(r0, r1, Math.max(6, Math.ceil(Math.abs(c1 - c0) / (2 * D2R))), 1, Math.PI / 2 - c1, c1 - c0).rotateX(-Math.PI / 2), mat);
+// flat pieces of the ring, one mesh: each [c0, c1, r0, r1] from compass c0 to c1, between the radii r0 and r1
+function ringPieces(pieces, mat) {
+  const pos = [], idx = [];
+  for (const [c0, c1, r0, r1] of pieces) {
+    const n = Math.max(1, Math.ceil(Math.abs(c1 - c0) / (4 * D2R))), o = pos.length / 3;
+    for (let i = 0; i <= n; i++) {
+      const c = c0 + ((c1 - c0) * i) / n;
+      for (const r of [r0, r1]) pos.push(Math.sin(c) * r, 0, -Math.cos(c) * r);
+      if (i < n) { const a = o + i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+  return new THREE.Mesh(g, mat);
+}
+// an arc of the ring in dashes as near the lines' as fit it whole, a dash at each end, so it shows just where it stops
+function dashedArc(c0, c1, mat) {
+  const len = (c1 - c0) * R_RING, n = Math.max(2, Math.round((len + DASH * (1 - DASH_ON)) / DASH)), step = (c1 - c0) / (n - 1 + DASH_ON), hw = LINE_W / 2;
+  return ringPieces(Array.from({ length: n }, (_, i) => [c0 + i * step, c0 + (i + DASH_ON) * step, R_RING - hw, R_RING + hw]), mat);
+}
+// one dash across the ring at compass c, on each side of the wind
+const angleDashes = (c, mat) => {
+  const hl = (DASH * DASH_ON) / 2, hw = LINE_W / 2 / R_RING;
+  return ringPieces([-1, 1].map((sd) => [sd * c - hw, sd * c + hw, R_RING - hl, R_RING + hl]), mat);
+};
 function guides(tws) {
   const g = new THREE.Group(), turn = new THREE.Group(); g.add(turn); // turn: rotated to the wind
-  const beat = beatAngle(tws) * D2R, run = runAngle(tws) * D2R;
-  turn.add(sector(R_IN, R_OUT, -beat, beat, glass('#ff4d3d', 0.14))); // no-go: too close to the wind
-  for (const sd of [-1, 1]) {
-    // thin and half-see-through, only a touch beyond the ring: read at a glance without shouting over the sea
-    turn.add(sector(R_IN - 0.15, R_OUT + 0.25, sd * beat - 1.2 * D2R, sd * beat + 1.2 * D2R, glass('#2ee6a0', 0.22))); // best upwind
-    turn.add(sector(R_IN - 0.15, R_OUT + 0.25, sd * run - 1.2 * D2R, sd * run + 1.2 * D2R, glass('#3aa8ff', 0.22))); // best downwind
-  }
-  turn.add(sector(R_IN, R_OUT, Math.PI - (Math.PI - run), Math.PI + (Math.PI - run), glass('#3aa8ff', 0.06))); // the slow dead run between the gybes
+  const beat = beatAngle(tws) * D2R, run = runAngle(tws) * D2R, red = glass('#ff4d3d', GUIDE_A), green = glass('#2ee6a0', GUIDE_A), blue = glass('#3aa8ff', GUIDE_A);
+  turn.add(dashedArc(-beat, beat, red)); // no-go: too close to the wind
+  turn.add(dashedArc(run, 2 * Math.PI - run, blue)); // the slow dead run between the gybes
+  turn.add(angleDashes(beat, green), angleDashes(run, blue)); // best upwind, best downwind
   const tick = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.4, 3).rotateX(-Math.PI / 2), glass('#ffffff', 0.5)); // your heading
   g.add(tick);
   // every piece is draped on the sea each frame (see drapeGuides), so the dial lies on the water as one layer: it
