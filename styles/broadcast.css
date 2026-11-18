@@ -600,6 +600,9 @@
 .bc .ho-h2 { margin: 0; font: 700 var(--fs-h2)/0.95 var(--cond); text-transform: uppercase; text-wrap: balance; }
 .bc .ho-h3 { margin: 0; font: 700 var(--fs-title)/1.05 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; }
 .bc .ho-ps { margin: 0; font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+/* a link that is a whole sentence wraps: on one line it ran off a phone's screen, and the page scrolled sideways */
+.bc :is(.ho-ps, .gd-also) .hm-src { white-space: normal; line-height: 1.3; }
+.bc :is(.ho-ps, .gd-also) .hm-src svg { flex: none; }
 /* three targets */
 .bc .ho-goals { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 1px; background: var(--rule); }
 .bc .ho-goal { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-6); background: var(--surface); color: var(--ink); text-decoration: none; transition: background-color var(--t-quick), translate var(--t-quick); }
@@ -709,6 +712,19 @@
   .bc .hm-head-in { min-height: 60px; column-gap: var(--s-3); }
   .bc .hm-brand-t { font-size: var(--fs-body); }
   .bc .hm-play { padding: 0 var(--s-6) 0 var(--s-3); font-size: var(--fs-small); }
+}
+/* the narrowest phones: the name, Play and the menu side by side only just fit, closer together */
+@container help (max-width: 359px) {
+  .bc .hm-head-in { column-gap: var(--s-2); }
+  .bc .hm-brand-t { padding: 0 var(--s-2); font-size: var(--fs-small); }
+  .bc .hm-play { padding: 0 var(--s-4) 0 var(--s-2); }
+  .bc .hm-prof { gap: var(--s-1); padding: var(--s-1); }
+}
+@container scr (max-width: 359px) {
+  .bc .hm-head-in { column-gap: var(--s-2); }
+  .bc .hm-brand-t { padding: 0 var(--s-2); font-size: var(--fs-small); }
+  .bc .hm-play { padding: 0 var(--s-4) 0 var(--s-2); }
+  .bc .hm-prof { gap: var(--s-1); padding: var(--s-1); }
 }
 
 /* ---------- the reading pages: how to play, questions, learn, the guides, the glossary, the exam trainer ----------
