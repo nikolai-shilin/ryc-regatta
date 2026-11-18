@@ -54,17 +54,19 @@ export function joinBody(match, code, name) {
 }
 
 // How the race ended. race and results (M.finalResults) are the race on this page; a page opened again has neither, and
-// reports what match.result holds. Each boat: her place, her time, DSQ or DNF as marksOf (match.js) has it, her penalties
+// reports what match.result holds. Each boat: her place, her time, DSQ or DNF as marksOf (match.js) has it, her penalties;
+// an abandoned race isn't scored, so it says none of these of either boat, wherever it is reported from
 export function endBody(match, code, token, race, results) {
   const r = match.result ?? { abandoned: true }, abandoned = !!r.abandoned, winner = abandoned ? null : r.winner ?? null;
   const role = (id) => (id === match.hostId ? 'host' : id === match.guestId ? 'guest' : null);
   const boat = (id) => {
+    if (abandoned) return { place: null, secs: null, mark: null, pens: null };
     const won = id === winner, b = results?.boats?.find((x) => x.id === id) ?? race?.humans?.find((x) => x.id === id);
     if (!b) {
       const mark = r.marks?.[id];
-      return { place: won ? 1 : winner && !abandoned && r.margin != null ? 2 : null, secs: null, mark: mark === 'DSQ' || mark === 'DNF' ? mark : null, pens: null };
+      return { place: won ? 1 : winner && r.margin != null ? 2 : null, secs: null, mark: mark === 'DSQ' || mark === 'DNF' ? mark : null, pens: null };
     }
-    return { place: won ? 1 : !abandoned && b.place != null ? 2 : null, secs: b.done ? span(b.finish) : null,
+    return { place: won ? 1 : b.place != null ? 2 : null, secs: b.done ? span(b.finish) : null,
       mark: won ? null : b.dsq || b.ufd || b.bfd ? 'DSQ' : b.dnf || !b.done ? 'DNF' : null, pens: count(b.pens || 0, MAX_PENS) };
   };
   return { kind: 'end', code, seed: match.start.seed, token, state: abandoned ? 'abandoned' : 'finished', winner: role(winner), margin: abandoned ? null : span(r.margin),

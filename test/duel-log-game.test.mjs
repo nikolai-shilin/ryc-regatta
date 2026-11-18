@@ -64,7 +64,7 @@ const neverLoads = async () => {
 const side = (b) => [b.place, b.mark, b.secs !== null];
 const pick = (e) => ({ state: e.state, winner: e.winner, forfeited: e.forfeited, margin: e.margin === null ? null : e.margin > 0, host: side(e.host), guest: side(e.guest) });
 const FINISHED = { state: 'finished', forfeited: null, margin: null };
-const ABANDONED = { state: 'abandoned', winner: null, forfeited: null, margin: null };
+const ABANDONED = { state: 'abandoned', winner: null, forfeited: null, margin: null, host: [null, null, false], guest: [null, null, false] }; // (it isn't scored)
 
 const ENDINGS = [
   ['both home', afloat, bothHome,
@@ -83,14 +83,10 @@ const ENDINGS = [
     { ...FINISHED, winner: 'host', forfeited: 'guest', host: [1, null, false], guest: [null, 'DNF', false] }],
   ['the guest leaving after her finish', afloat, (x) => { home(x, x.G); leaves(x, x.g); assert.equal(x.hr.over, false); home(x, x.H); },
     { ...FINISHED, winner: 'guest', margin: true, host: [2, null, true], guest: [1, null, true] }],
-  ['the host leaving', afloat, (x) => leaves(x, x.h),
-    { ...ABANDONED, host: [null, 'DNF', false], guest: [null, 'DNF', false] }],
-  ['the host leaving after her finish', afloat, (x) => { home(x, x.H); leaves(x, x.h); },
-    { ...ABANDONED, host: [null, null, true], guest: [null, 'DNF', false] }],
-  ['a sleeping host', afloat, (x) => asleep(x, 61),
-    { ...ABANDONED, host: [null, 'DNF', false], guest: [null, 'DNF', false] }],
-  ['a guest who never loads the race', neverLoads, (x) => run(312, x.h),
-    { ...ABANDONED, host: [null, 'DNF', false], guest: [null, 'DNF', false] }],
+  ['the host leaving', afloat, (x) => leaves(x, x.h), ABANDONED],
+  ['the host leaving after her finish', afloat, (x) => { home(x, x.H); leaves(x, x.h); }, ABANDONED],
+  ['a sleeping host', afloat, (x) => asleep(x, 61), ABANDONED],
+  ['a guest who never loads the race', neverLoads, (x) => run(312, x.h), ABANDONED],
 ];
 
 for (const [name, make, sail, want] of ENDINGS) {
@@ -366,6 +362,29 @@ test('a host back on a page with a saved token reports the abandoned race', asyn
   assert.equal(of('start').length, 1, 'and its start is not told again');
 });
 
+for (const [what, sail] of [['with both boats out', () => {}], ['with the host home', (x) => { x.H.pens = 2; home(x, x.H); }], ['with the guest disqualified at the finish', (x) => homeOwing(x, x.G)]]) {
+  test(`an abandoned race says the same on the host's page and after a reload, ${what}`, async () => {
+    const x = await afloat();
+    sail(x);
+    const saved = x.h.ls.getItem(savedKey);
+    x.h.leave();
+    const { prep, recalls, ...here } = of('end')[0];
+    assert.deepEqual([prep, recalls], ['P', 0], 'the race on the page has its flag and its recalls');
+    assert.deepEqual([here.host, here.guest], [{ place: null, secs: null, mark: null, pens: null }, { place: null, secs: null, mark: null, pens: null }]);
+    assert.deepEqual([here.state, here.winner, here.margin, here.forfeited], ['abandoned', null, null, null]);
+
+    // the same race, as the page opened again finds it
+    x.h.ls.setItem(savedKey, saved);
+    x.h.gone();
+    posts = [];
+    await page('Host', { ls: x.h.ls });
+    await settle();
+    const { prep: prep2, recalls: recalls2, ...back } = of('end')[0];
+    assert.deepEqual([prep2, recalls2], [null, null], 'a reloaded page has no race to read them from');
+    assert.deepEqual(back, here);
+  });
+}
+
 test('a host back on a race whose end never went reports what the race saved', async () => {
   answer = (b) => (b.kind === 'start' ? new Promise(() => {}) : ok());
   const x = await room();
@@ -560,6 +579,12 @@ test('with no race on this page, endBody reports what the result holds', () => {
   const marked = accepted(Log.endBody(matchOf({ winner: 'h1', margin: null, forfeited: 'g1', abandoned: false, marks: { g1: 'DNF' } }), CODE, TOKEN, null, null));
   assert.deepEqual(marked.guest, { place: null, secs: null, mark: 'DNF', pens: null });
   assert.equal(marked.forfeited, 'guest');
+});
+
+test('an abandoned race scores nobody, whatever its boats had done', () => {
+  const b = accepted(Log.endBody(matchOf({ winner: 'h1', margin: 5, forfeited: 'g1', abandoned: true, marks: { g1: 'DNF' } }), CODE, TOKEN, { prepFlag: 'U', recalls: 1 }, { boats: [row('h1', { place: 1, pens: 2 }), row('g1', { dsq: true })] }));
+  assert.deepEqual([b.state, b.winner, b.margin, b.forfeited, b.prep, b.recalls], ['abandoned', null, null, null, 'U', 1]);
+  for (const s of [b.host, b.guest]) assert.deepEqual(s, { place: null, secs: null, mark: null, pens: null });
 });
 
 test('with no result at all a race is abandoned', () => {
