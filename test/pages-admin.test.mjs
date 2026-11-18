@@ -38,12 +38,17 @@ const REPORT = { who: WHO, kind: 'acct', name: 'SECRET-LOGGED', handle: 'logged@
     perf: { fps: 18, low: 9, stall: 4.5, gpu: 'SECRET-GPU', os: 'ios', br: 'safari', dev: 'phone', tg: 1, w: 800, h: 400, dpr: 2, cores: 6, mem: 4, q0: 'high', q: 'low', gfx: 'auto' },
     ended: { how: 'close', leg: 2, legs: 4, clock: 200, place: 5, boats: 8, inc: { ocs: 1 }, last: 'ocs', ago: 30, pens: 1, mins: 3.4 }, rating: 2, comment: 'SECRET-SAID' },
     { id: 'r2', visit: 'gone', at: '2026-11-10T10:01:00Z', finished_at: '2026-11-10T10:09:00Z', wind: 'medium', laps: 1, length: 'short', boats: 6, place: 2, secs: 480, dsq: false, daily: null, shape: 'wl', yacht: null, venue: 'cowes', perf: null, ended: null, rating: null, comment: null }] };
+const DUELS = { since: null, more: false, totals: { races: 3, finished: 2, abandoned: 1, no_result: 0, sailors: 3, seats: 6, signed: 3, rematches: 0, median: 500 },
+  days: [{ d: '2026-11-17', n: 3, fin: 2 }], endings: { forfeit: 0, no_winner: 0, dnf: 0, dsq: 0, both: 2 }, groups: [{ k: 'venue', v: 'cowes', n: 3, fin: 2 }],
+  races: [{ id: 'd1', code: 'SECRET-DUEL', race_no: 1, at: '2026-11-17T10:00:00Z', ended: '2026-11-17T10:09:00Z', state: 'finished', venue: 'cowes', yacht: 'j70', wind: 'light', length: 'short', course: 'wl', laps: 1, start_min: 1,
+    current: false, daytime: null, winner: 'host', margin: 3, forfeited: null, recalls: 0, prep_flag: null, length_s: 500,
+    host: { name: 'SECRET-DUELIST', who: WHO, kind: 'acct', handle: null, place: 1, secs: 497, mark: null, pens: 0 }, guest: { name: 'Guest', who: null, kind: 'guest', handle: null, place: 2, secs: 500, mark: null, pens: 0 } }] };
 const SETTINGS = { jib_ad: { url: 'https://cdn.example/SECRET-JIB.png', path: 'jib.png' }, main_logo: { url: 'https://cdn.example/SECRET-MAIN.png' }, plane_banner: { lines: ['SECRET-BANNER'] } };
 
 // ---------- the database, as the session reading it is answered ----------
 const db = { user: null, isAdmin: { data: false, error: null }, rpc: {}, settings: SETTINGS, calls: [] };
 const ACCOUNT = { id: 'u1', email: 'sailor@example.com', user_metadata: { display_name: 'Anna Sailor' }, app_metadata: { provider: 'email' } };
-const answers = () => ({ regatta_admin_stats: { data: STATS, error: null }, regatta_admin_insight: { data: INSIGHT, error: null }, regatta_admin_players: { data: PLAYERS, error: null }, regatta_admin_logs: { data: LOGS, error: null } });
+const answers = () => ({ regatta_admin_stats: { data: STATS, error: null }, regatta_admin_insight: { data: INSIGHT, error: null }, regatta_admin_players: { data: PLAYERS, error: null }, regatta_admin_logs: { data: LOGS, error: null }, regatta_admin_duels: { data: DUELS, error: null } });
 globalThis.__sb = {
   auth: { getUser: async () => ({ data: { user: db.user } }) },
   rpc: async (fn, args) => {
@@ -74,7 +79,7 @@ const walk = (d) => readdirSync(d).flatMap((f) => { const p = join(d, f); return
 const adminDir = join(ROOT, 'app/[lang]/admin');
 const PAGES = walk(adminDir).filter((f) => f.endsWith('page.tsx')).map((f) => ({ file: f, id: relative(adminDir, f).replace(/\/?page\.tsx$/, '') || 'hub' }));
 // what only an admin's copy of each page has
-const ONLY_ADMIN = { hub: 'adm-hub', ads: 'SECRET-BANNER', game: 'SECRET-COMMENT', players: 'SECRET-PLAYER', tech: 'SECRET-CHIP', race: 'adm-sched', logs: 'SECRET-LOGGED' };
+const ONLY_ADMIN = { hub: 'adm-hub', ads: 'SECRET-BANNER', game: 'SECRET-COMMENT', players: 'SECRET-PLAYER', tech: 'SECRET-CHIP', race: 'adm-sched', logs: 'SECRET-LOGGED', duels: 'SECRET-DUELIST' };
 const SECRETS = /SECRET-|adm-hub|adm-sched|adm-bar|adm-tile/;
 
 const load = (file) => import(file);

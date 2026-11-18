@@ -1,12 +1,12 @@
 'use client';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 
 // The players' table on /admin/players, sorted by the column whose head was clicked (components/admin-players.tsx
 // draws each cell on the server and gives each its value to sort by). A second click turns the order round; a column
 // with nothing in it for a player puts that player last either way. At first: the last seen first.
 export type Col = { label: string; asc?: boolean };   // asc: sorted low to high at its first click
-export type Row = { key: string; name: string; sub: string; isNew: boolean; cells: string[]; vals: (number | string | null)[]; href?: string };   // href: the player's log
+export type Row = { key: string; name: string; sub: string; isNew: boolean; cells: ReactNode[]; vals: (number | string | null)[]; href?: string; sort?: number | string };   // href: the player's log; sort: what the first column sorts by, when not its name
 
 export function PlayersTable({ cols, rows, first, label, newLabel, start }: {
   cols: Col[]; rows: Row[]; first: Col; label: string; newLabel: string; start: number;
@@ -14,7 +14,7 @@ export function PlayersTable({ cols, rows, first, label, newLabel, start }: {
   const all = [first, ...cols];
   const [sort, setSort] = useState<{ i: number; asc: boolean }>({ i: start, asc: false });
   const sorted = useMemo(() => {
-    const val = (r: Row) => (sort.i === 0 ? r.name : r.vals[sort.i - 1]);
+    const val = (r: Row) => (sort.i === 0 ? (r.sort ?? r.name) : r.vals[sort.i - 1]);
     return [...rows].sort((a, b) => {
       const x = val(a), y = val(b);
       if (x == null || y == null) return x == null && y == null ? 0 : x == null ? 1 : -1;
