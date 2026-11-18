@@ -21,8 +21,9 @@ function Step({ n, label, children }: { n: number; label: string; children?: Rea
   );
 }
 
-// A1 · Google, or a one-time 6-digit code by email (no password).
-export function SignInForm({ lang, next, failed }: { lang: Lang; next: string; failed: boolean }) {
+// A1 · Google, or a one-time 6-digit code by email (no password). Either makes the account the first time, so signing
+// up is this same form under its own heading (signup).
+export function SignInForm({ lang, next, failed, signup = false }: { lang: Lang; next: string; failed: boolean; signup?: boolean }) {
   const t = tx(lang);
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -47,9 +48,9 @@ export function SignInForm({ lang, next, failed }: { lang: Lang; next: string; f
   return (
     <>
       <Step n={1} label={t('Email', 'Почта')}><Link className="back-link" href={next}>{t('Not now', 'Не сейчас')}</Link></Step>
-      <h1 className="h-land-s">{t('Sign in to get on the ranking', 'Войди, чтобы попасть в рейтинг')}</h1>
+      <h1 className="h-land-s">{signup ? t('Create your account', 'Создай аккаунт') : t('Sign in to get on the ranking', 'Войди, чтобы попасть в рейтинг')}</h1>
       <p className="lead muted">{t('Your times go on today’s ranking, and your best times follow you to any device.', 'Твоё время попадёт в рейтинг дня, а рекорды будут с тобой на любом устройстве.')}</p>
-      <button type="button" className="pill pill-oauth pill-wide au-google" onClick={google} disabled={busy}><IconGoogle /><span className="btn-t">{t('Continue with Google', 'Войти через Google')}</span></button>
+      <button type="button" className="pill pill-oauth pill-wide au-google" onClick={google} disabled={busy}><IconGoogle /><span className="btn-t">{t('Continue with Google', signup ? 'Продолжить с Google' : 'Войти через Google')}</span></button>
       <div className="or">{t('or by email', 'или по почте')}</div>
       <form className="au-form" onSubmit={send} noValidate>
         <label className="au-lbl" htmlFor="em">{t('Email', 'Почта')}</label>

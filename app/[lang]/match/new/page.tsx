@@ -23,6 +23,7 @@ export default async function NewMatchPage({ params }: LangParams) {
           <h1 className="bt-h">{t('Sign in to host a 1-on-1 race', 'Войди, чтобы создать гонку 1 на 1')}</h1>
           <p className="bt-p">{t('You set the race and send a friend the link. Joining a friend’s race doesn’t take an account.', 'Ты настраиваешь гонку и отправляешь другу ссылку. Чтобы войти в гонку друга, аккаунт не нужен.')}</p>
           <a className="bt-go" href="/sign-in?next=/match/new"><span>{t('Sign in', 'Войти')}</span></a>
+          <a className="bt-show" href="/sign-in?next=/match/new&signup=1"><span>{t('Sign up', 'Зарегистрироваться')}</span></a>
         </div>
       </div>
     </div>

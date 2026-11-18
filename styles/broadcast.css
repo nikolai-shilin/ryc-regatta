@@ -174,6 +174,7 @@
 .bc .bt-k-r { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bc .bt-show { height: var(--h-l); gap: var(--s-2); padding: 0 var(--s-4); border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
 .bc .bt-show:hover { background: var(--w-14); }
+.bc .bt-info > .bt-show { pointer-events: auto; } /* a link right on the panel, which lets the scene behind it take the pointer (/match/new's Sign up) */
 .bc .bt-show[aria-pressed="true"] { background: color-mix(in srgb, var(--gold) 16%, transparent); box-shadow: inset 0 -3px 0 var(--gold); }
 .bc .bt-card .bt-map, .bc .bt-card .rs-track { border-radius: 0; }
 .bc .fp-btn, .bc .fp-pop, .bc .fp-o { border-radius: 0; }

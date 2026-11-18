@@ -31,6 +31,16 @@ test('the first step offers Google or a code, and a way out', () => {
   assert.ok(hrefs(html).includes('/race/rating'));
 });
 
+test('signing up is the same form under its own heading', () => {
+  const en = plain(ssr(h(SignInForm, { lang: 'en', next: '/match/new', failed: false, signup: true })));
+  assert.match(en, /1 Email Not now Create your account/);
+  assert.doesNotMatch(en, /Sign in to get on the ranking/);
+  assert.match(en, /Continue with Google or by email/);
+  const ru = plain(ssr(h(SignInForm, { lang: 'ru', next: '/match/new', failed: false, signup: true })));
+  assert.match(ru, /Создай аккаунт/);
+  assert.match(ru, /Продолжить с Google/);
+});
+
 test('coming back from a failed sign-in says so', () => {
   assert.match(plain(ssr(h(SignInForm, { lang: 'en', next: '/', failed: true }))), /That didn’t work\. Try again\./);
   assert.match(plain(ssr(h(SignInForm, { lang: 'ru', next: '/', failed: true }))), /Не получилось\. Попробуй ещё раз\./);

@@ -10,7 +10,7 @@ import { clock } from '@/components/ui';
 
 export const generateMetadata = titled('Sign in', 'Вход', { index: false });
 
-export default async function SignIn({ params, searchParams }: LangParams & { searchParams: Promise<{ next?: string; error?: string }> }) {
+export default async function SignIn({ params, searchParams }: LangParams & { searchParams: Promise<{ next?: string; error?: string; signup?: string }> }) {
   const [{ lang, t }, sp, account, today] = await Promise.all([getT(params), searchParams, getAccount(), todayTop()]);
   const next = safeNext(sp.next);
   if (account) redirect(next);
@@ -30,7 +30,7 @@ export default async function SignIn({ params, searchParams }: LangParams & { se
   );
   return (
     <AuthShell lang={lang} back={next} aside={aside}>
-      <SignInForm lang={lang} next={next} failed={!!sp.error} />
+      <SignInForm lang={lang} next={next} failed={!!sp.error} signup={sp.signup === '1'} />
     </AuthShell>
   );
 }
