@@ -1507,6 +1507,8 @@
   .bc .fl-boat { flex: 1 1 0; width: auto; padding: var(--fl-py) var(--fl-px) calc(var(--fl-py) + var(--s-1)); }
   .bc .fl-boat b { font-size: var(--fl-f); } .bc .fl-m { display: block; }
 }
+/* a phone, upright or sideways: the cells alone, a tap on one flies there, so the arrows, the tour and All go */
+@container scr (max-width: 599px) or (max-height: 500px) { .bc .fl-ctl { display: none; } }
 /* the plate is as wide as its cells and no wider than the strip; under the cells' full size the numbers under the
    names go, and only a strip narrower than nine cells at their smallest scrolls */
 .bc .fl-boats::-webkit-scrollbar { display: none; }
