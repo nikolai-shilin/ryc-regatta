@@ -4,6 +4,7 @@ import { venueOf } from '@/lib/venues';
 import { yachtOf } from '@/lib/yachts';
 import { todayTop } from '@/lib/today';
 import { SITE } from '@/lib/seo';
+import { clock } from '@/lib/clock';
 import { VAPID_PUBLIC } from '@/lib/push';
 
 // The daily reminder (lib/push.ts), sent by the cron in vercel.json at 17:00 UTC, seven hours before today's race
@@ -17,7 +18,6 @@ export const maxDuration = 300;
 
 type Row = { endpoint: string; p256dh: string; auth: string; lang: 'en' | 'ru'; last_day: string | null; streak: number };
 const shift = (d: string, n: number) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
-const clock = (s: number) => { const m = Math.floor(s / 60), r = s - m * 60; return `${m}:${r.toFixed(1).padStart(4, '0')}`; };
 const ruDays = (n: number) => (n % 10 === 1 && n % 100 !== 11 ? 'день' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'дня' : 'дней');
 
 export async function GET(req: Request) {

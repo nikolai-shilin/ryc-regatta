@@ -169,7 +169,8 @@ export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClo
     if (g === 'custom') hint.textContent = t('Each part as you set it below. Resolution, shadows and reflections cost the most frames.', 'Каждая часть — как задано ниже. Больше всего кадров съедают разрешение, тени и отражения.');
     else if (g === 'auto') {
       const eased = autoEased(gfxDetail(o)).map((k) => pair(GFX_NAMES[k]));
-      hint.textContent = `${t('Now', 'Сейчас')}: ${pair(LEVEL[(now && now()) || startQuality(o)] || LEVEL.high)}${eased.length ? ` · ${t('eased off', 'снижено')}: ${eased.join(', ')}` : ''}. ${t('When the frame rate drops the game eases off what shows least first, brings it back when it can, and remembers it for this device.', 'Когда падает частота кадров, игра сначала снижает то, что меньше всего заметно, возвращает это, когда может, и запоминает для устройства.')}`;
+      const head = `${t('Now', 'Сейчас')}: ${pair(LEVEL[(now && now()) || startQuality(o)] || LEVEL.high)}${eased.length ? ` · ${t('eased off', 'снижено')}: ${eased.join(', ')}` : ''}`;
+      hint.textContent = `${head}${head.endsWith('.') ? '' : '.'} ${t('When the frame rate drops the game eases off what shows least first, brings it back when it can, and remembers it for this device.', 'Когда падает частота кадров, игра сначала снижает то, что меньше всего заметно, возвращает это, когда может, и запоминает для устройства.')}`;
     }
     else hint.textContent = t('The race and every 3D scene on the site draw at this level.', 'Гонка и все 3D-сцены на сайте рисуются с этим качеством.');
   });
@@ -220,7 +221,7 @@ export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClo
     if (e.key === 'Tab') {
       const all = [...card.querySelectorAll('button')].filter((b) => b.tabIndex >= 0 && b.offsetParent !== null);
       const first = all[0], last = all[all.length - 1], at = document.activeElement;
-      if (e.shiftKey ? at === first || !card.contains(at) : at === last) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+      if (!card.contains(at) || at === (e.shiftKey ? first : last)) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
       return;
     }
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];

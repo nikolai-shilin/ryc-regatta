@@ -5,9 +5,11 @@ import { noEmoji } from './name.ts';
 // each in the venues' order, in base 36), for the share card (app/og/passport) and its page. Only what the sharer chose
 // to send: the numbers, and their name if they're signed in.
 export type PassportShare = { s: number; v: number; raced: boolean[]; n: string };
+// (as many base-36 digits as a bit for every venue takes: about one for every 5.2 venues)
+const MAX_DIGITS = Math.ceil(VENUES.length / Math.log2(36));
 const bitsOf = (s: string | undefined) => {
   let bits = 0n;
-  try { if (s && /^[0-9a-z]{1,8}$/.test(s)) for (const ch of s) bits = bits * 36n + BigInt(parseInt(ch, 36)); } catch {}
+  try { if (s && s.length <= MAX_DIGITS && /^[0-9a-z]+$/.test(s)) for (const ch of s) bits = bits * 36n + BigInt(parseInt(ch, 36)); } catch {}
   return bits;
 };
 const clampN = (x: unknown, max: number) => { const n = Math.floor(Number(x)); return Number.isFinite(n) ? Math.max(0, Math.min(max, n)) : 0; };

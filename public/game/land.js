@@ -49,16 +49,23 @@ for (let o = 0, k = 0; k < META.parts.length; k++) {
 // The land beyond comes from the coarsest elevation tiles, which have junk pixels here and there: one or two, a
 // kilometre or two up (or down), out on flat land or the sea, which the far grid would stand up as a needle of hill
 // (Auckland's, Sydney's, Rio's). A real summit stands at most some 150 m above the highest of the eight cells round it,
-// 400 m off; a cell more than 200 m above them is brought down to that highest one, again till none is (a needle of
-// two cells goes in two goes).
+// 400 m off; a cell more than 200 m above them is brought down to that highest one, again till none is. Two cells side by
+// side that both stand so far above everything round the pair are a needle of two: the higher comes down to the lower,
+// then both to what is round them.
 function despike(H, n, k) {
-  const up = Math.round(200 / k);
+  const up = Math.round(200 / k), ROUND = [-n - 1, -n, -n + 1, -1, 1, n - 1, n, n + 1];
+  const inside = (c) => { const i = (c / n) | 0, j = c - i * n; return i > 0 && i < n - 1 && j > 0 && j < n - 1; };
   for (let pass = 0; pass < 4; pass++) {
     const fix = [];
     for (let i = 1; i < n - 1; i++) for (let j = 1; j < n - 1; j++) {
       const c = i * n + j;
-      const top = Math.max(H[c - n - 1], H[c - n], H[c - n + 1], H[c - 1], H[c + 1], H[c + n - 1], H[c + n], H[c + n + 1]);
-      if (H[c] - top > up) fix.push(c, top);
+      let top = -Infinity, at = -1, next = -Infinity; // the highest cell round her, and the next highest
+      for (const d of ROUND) { const h = H[c + d]; if (h > top) { next = top; top = h; at = c + d; } else if (h > next) next = h; }
+      if (H[c] - top > up) { fix.push(c, top); continue; }
+      if (H[c] < top || top - next <= up || !inside(at)) continue;
+      let ring = -Infinity;
+      for (const o of [c, at]) for (const d of ROUND) if (o + d !== c && o + d !== at) ring = Math.max(ring, H[o + d]);
+      if (top - ring > up) fix.push(c, ring, at, ring);
     }
     if (!fix.length) return;
     for (let q = 0; q < fix.length; q += 2) H[fix[q]] = fix[q + 1];

@@ -680,9 +680,10 @@ class SportView extends ClassView {
     this.kiteSheet = line([[0, 0, 0], [0, 0, 0], [0, 0, 0]]); T.add(this.jibSheet, this.lazySheet, this.kiteSheet);
     for (const l of [this.jibSheet, this.lazySheet, this.kiteSheet]) l.frustumCulled = false;
     this.windex = windex(add, J.MASTHEAD + 0.02, J.MAST_Z);
-    // four: the helm, the main trimmer, the jib and kite trimmer, and the bow, who goes forward for a hoist or a drop
+    // the helm, the main trimmer, the jib and kite trimmer, and on the J/70 the bow, who goes forward for a hoist or a drop
+    // (the RS21 races with three: classes.js)
     const m = crewMats(look);
-    this.crew = (RS ? [2.1, 1.4, 0.7, 0.0] : [2.25, 1.45, 0.75, 0.0]).map((z0, i) => {
+    this.crew = (RS ? [2.1, 1.4, 0.7] : [2.25, 1.45, 0.75, 0.0]).map((z0, i) => {
       const s = sailor({ ...m, skin: new THREE.MeshStandardMaterial({ color: SKINS[i], roughness: 0.65 }) });
       T.add(s.g);
       return { g: s.g, s, z0, i, x: 0, y: H.deckY(z0), z: z0, yaw: Math.PI, lean: 0, stand: 0, knee: -0.8, reach: 0.5 };

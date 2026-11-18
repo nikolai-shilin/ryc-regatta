@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ruBoats, tx, type Lang } from '@/lib/lang';
+import { ruBoats, ruBoatsOf, tx, type Lang } from '@/lib/lang';
 import RULES from '@/lib/rules.json';
 import { IconRestart, IconPlay, IconTrophy, IconFlag, IconSail, IconSliders, Num, clock } from './ui';
 import { BackLink } from './back-link';
@@ -308,9 +308,9 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
           <h1 className="bt-h">{title}</h1>
           <p className="bt-p">{t(...where.name)}{where.place[0] !== where.name[0] && `, ${t(...where.place)}`}. {near || t('The boats are where they were at the finish.', 'Лодки там, где были на финише.')}</p>
           <div className="bt-stats">
-            <div><span className="bt-sk">{t('Place', 'Место')}</span><b>{ended === 'dsq' ? 'DSQ' : ended === 'dnf' ? 'DNF' : ended === 'won' ? t('Won', 'Победа') : t(ordEn(place), `${place}-е`)}</b><span className="bt-sv">{ended === 'dsq' ? t('disqualified', 'дисквалификация') : ended === 'dnf' ? t('did not finish', 'не финишировал') : ended === 'won' ? t(`${rival} dropped out`, `${rival}: сход`) : t(`of ${res.boats.length} boats`, `из ${ruBoats(res.boats.length)}`)}</span></div>
+            <div><span className="bt-sk">{t('Place', 'Место')}</span><b>{ended === 'dsq' ? 'DSQ' : ended === 'dnf' ? 'DNF' : ended === 'won' ? t('Won', 'Победа') : t(ordEn(place), `${place}-е`)}</b><span className="bt-sv">{ended === 'dsq' ? t('disqualified', 'дисквалификация') : ended === 'dnf' ? t('did not finish', 'не финишировал') : ended === 'won' ? t(`${rival} dropped out`, `${rival}: сход`) : t(`of ${res.boats.length} boats`, `из ${ruBoatsOf(res.boats.length)}`)}</span></div>
             <div><span className="bt-sk">{t('Time', 'Время')}</span><b className={res.pb?.isNew && !shared ? 'is-gold' : ''}>{me.secs != null && !me.dsq ? <CountUp v={clock(me.secs)} ms={1200} /> : '—'}</b><span className="bt-sv">{pbNote || (one && !me.done ? t('no finish', 'без финиша') : t('at the line', 'на финише'))}</span></div>
-            <div><span className="bt-sk">{t('Behind', 'Отставание')}</span><b>{winner && winner !== me && me.secs != null && winner.secs != null ? <CountUp v={`+${gapS(me.secs - winner.secs)}`} /> : '—'}</b><span className="bt-sv">{winner && winner !== me ? t(`${winner.name} won`, `победа: ${winner.name}`) : one && !winner ? t('No winner', 'Без победителя') : shared ? t('this boat won', 'эта лодка победила') : t('you won', 'ты победил')}</span></div>
+            <div><span className="bt-sk">{t('Behind', 'Отставание')}</span><b>{winner && winner !== me && me.secs != null && winner.secs != null ? <CountUp v={`+${gapS(me.secs - winner.secs)}`} /> : '—'}</b><span className="bt-sv">{winner && winner !== me ? t(`${winner.name} won`, `победа: ${winner.name}`) : !winner ? t('No winner', 'Без победителя') : shared ? t('this boat won', 'эта лодка победила') : t('you won', 'ты победил')}</span></div>
             <div><span className="bt-sk">{t('Penalties', 'Штрафы')}</span><b className={L.penT > 1 ? 'is-down' : 'is-up'}><Num v={L.penT > 1 ? `${L.penT} ${t('s', 'с')}` : '0'} /></b><span className="bt-sv">{L.penT > 1 ? t('turning circles', 'штрафные обороты') : t('A clean race', 'Чистая гонка')}</span></div>
           </div>
           {target ? (

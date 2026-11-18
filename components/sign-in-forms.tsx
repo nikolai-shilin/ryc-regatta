@@ -73,10 +73,11 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
   // after a wrong code, back to the first box, once the boxes are enabled again (a disabled box can't take focus)
   const refocus = useRef(false);
   useEffect(() => { if (!busy && refocus.current) { refocus.current = false; refs.current[0]?.focus(); } }, [busy]);
+  const sent = useRef(0); // when the code last went, so that sending it again starts the minute over
   useEffect(() => {
-    let sent = Date.now();
-    try { sent = Number(sessionStorage.getItem('regatta-otp-sent')) || sent; } catch {}
-    const tick = () => setWait(Math.max(0, 60 - Math.floor((Date.now() - sent) / 1000)));
+    sent.current = Date.now();
+    try { sent.current = Number(sessionStorage.getItem('regatta-otp-sent')) || sent.current; } catch {}
+    const tick = () => setWait(Math.max(0, 60 - Math.floor((Date.now() - sent.current) / 1000)));
     tick(); const id = setInterval(tick, 1000);
     refs.current[0]?.focus();
     return () => clearInterval(id);
@@ -103,7 +104,8 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
     setErr('');
     const { error } = await supabaseBrowser().auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: callback(next) } });
     if (error) { setErr(t('Couldn’t send the code. Try again in a minute.', 'Не удалось отправить код. Попробуй через минуту.')); return; }
-    try { sessionStorage.setItem('regatta-otp-sent', String(Date.now())); } catch {}
+    sent.current = Date.now();
+    try { sessionStorage.setItem('regatta-otp-sent', String(sent.current)); } catch {}
     setWait(60);
   };
   return (

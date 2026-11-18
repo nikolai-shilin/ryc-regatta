@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getT, titled, type LangParams } from '@/lib/i18n';
+import { ruPlural } from '@/lib/lang';
 import { pageMeta } from '@/lib/seo';
 import { VENUES } from '@/lib/venues';
 import { BackLink } from '@/components/back-link';
@@ -38,7 +39,7 @@ export async function generateMetadata(props: LangParams & { searchParams: Promi
   if (!key && inLink.length) {
     const s = readPassport(sp);
     const title = s.n ? t(`${s.n}’s passport`, `Паспорт: ${s.n}`) : t('A sailor’s passport', 'Паспорт гонщика');
-    const meta = pageMeta(lang, { title, description: t(`${s.v} of ${VENUES.length} venues raced${s.s >= 2 ? `, ${s.s} days in a row` : ''}. A free 3D sailing race in your browser, a new venue every day.`, `Пройдено ${s.v} из ${VENUES.length} акваторий${s.s >= 2 ? `, ${s.s} дней подряд` : ''}. Бесплатная 3D-парусная гонка в браузере, каждый день новая акватория.`), index: false });
+    const meta = pageMeta(lang, { title, description: t(`${s.v} of ${VENUES.length} venues raced${s.s >= 2 ? `, ${s.s} days in a row` : ''}. A free 3D sailing race in your browser, a new venue every day.`, `Пройдено ${s.v} из ${VENUES.length} акваторий${s.s >= 2 ? `, ${s.s} ${ruPlural(s.s, ['день', 'дня', 'дней'])} подряд` : ''}. Бесплатная 3D-парусная гонка в браузере, каждый день новая акватория.`), index: false });
     const qs = new URLSearchParams(inLink);
     if (lang === 'ru') qs.set('lang', 'ru');
     const card = { url: `/og/passport?${qs}`, width: 1200, height: 630, alt: title };
@@ -61,7 +62,7 @@ export default async function PlayersPage({ params, searchParams }: LangParams &
   const [rows, player] = await Promise.all([passport ? Promise.resolve(null) : getPlayers(page), key ? getPlayer(key) : Promise.resolve(null)]);
   return (
     <div className="scr bt-scr bc" lang={lang}>
-      <PlayersView lang={lang} list={rows} player={player} missing={!!key && !player} passport={passport} back={(
+      <PlayersView lang={lang} list={rows} player={player} missing={!!key && !player && !!rows} passport={passport} back={(
         <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок')} />
       )} />
     </div>

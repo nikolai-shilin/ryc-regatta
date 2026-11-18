@@ -82,7 +82,7 @@ export class JuryBoat {
       const dx = b.x - this.x, dz = b.z - this.z, d = Math.hypot(dx, dz);
       if (d > 70) continue;
       const ahead = (dx * fwdX(this.h) + dz * fwdZ(this.h)) / (d || 1);
-      if (ahead > 0.2) { want = Math.min(want, lerp(0.4, 2, (d - 25) / 45)); if (steer !== null) steer = this.h - Math.sign(wrap(Math.atan2(dx, -dz) - this.h)) * 0.6; }
+      if (ahead > 0.2) { want = Math.min(want, lerp(0.4, 2, clamp((d - 25) / 45, 0, 1))); if (steer !== null) steer = this.h - Math.sign(wrap(Math.atan2(dx, -dz) - this.h)) * 0.6; }
     }
     // and she never runs at the shore: if what's ahead of her shoals, she turns for deeper water
     const ax = this.x + fwdX(this.h) * 40, az = this.z + fwdZ(this.h) * 40;

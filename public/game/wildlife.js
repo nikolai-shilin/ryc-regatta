@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { waveHeight, clamp, lerp, wrap, KN } from './sim.js';
 import { rigidSkin } from './skin.js';
+import { roomAt, groundAt } from './land.js';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const smooth = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
@@ -469,11 +470,12 @@ export class Wildlife {
       if (!w.seq.length) { w.state = 'deep'; w.timer = rnd(600, 1200); w.g.visible = false; }
     }
   }
-  // somewhere ahead of you and off to one side, 150–380 m away and well clear of every boat, swimming across
+  // somewhere ahead of you and off to one side, 150–380 m away, well clear of every boat and of the shore, in deep water,
+  // swimming across
   place(w, P) {
     for (let i = 0; i < 12; i++) {
       const b = P.h + rnd(-1.2, 1.2), r = rnd(150, 380), x = P.x + fwdX(b) * r, z = P.z + fwdZ(b) * r;
-      if (this.nearestBoat(x, z) < 120) continue;
+      if (this.nearestBoat(x, z) < 120 || roomAt(x, z) < 60 || groundAt(x, z) > -3) continue;
       w.x = x; w.z = z; w.h = b + (Math.random() < 0.5 ? -1 : 1) * Math.PI / 2 + rnd(-0.5, 0.5);
       return true;
     }

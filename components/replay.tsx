@@ -5,12 +5,13 @@ import { posesAt, replaySpan, type FinishResult } from '@/lib/finish';
 import { toScene } from './game-scene';
 import { IconPlay } from './ui';
 import { track } from '@/lib/track';
+import { clock } from '@/lib/clock';
 
 // The race played back in the scene behind the result page (public/boat-view, { type: 'replay' }): every boat where
 // her track had her, the drone behind you. A button, then a bar: play or pause, a slider to drag through the race, the
 // clock and the leg you were on, and how fast it plays. Closed, the finish is put back as it was.
 const SPEEDS = [4, 8, 16];
-const clockOf = (s: number) => { const a = Math.abs(s), m = Math.floor(a / 60), r = a - m * 60; return `${s < 0 ? '−' : ''}${m}:${r.toFixed(1).padStart(4, '0')}`; };
+const clockOf = (s: number) => `${s < 0 ? '−' : ''}${clock(Math.abs(s))}`;
 
 export function Replay({ res, myLegs = [], lang }: { res: FinishResult; myLegs?: number[]; lang: Lang }) {
   const t = tx(lang);

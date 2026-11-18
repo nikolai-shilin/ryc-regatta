@@ -34,7 +34,7 @@ export function AdminSchedule({ lang, today, now = new Date() }: { lang: Lang; t
         <div className="srow">
           <span className="srow-k">{t('Sailed today', 'Пройдено сегодня')}</span>
           <span className="adm-v">{live?.races
-            ? t(`${live.races} races${live.top[0] ? ` · best ${clock(live.top[0].s)}${live.top[0].name ? `, ${live.top[0].name}` : ''}` : ''}`,
+            ? t(`${live.races} ${live.races === 1 ? 'race' : 'races'}${live.top[0] ? ` · best ${clock(live.top[0].s)}${live.top[0].name ? `, ${live.top[0].name}` : ''}` : ''}`,
                 `заездов: ${live.races}${live.top[0] ? ` · лучшее ${clock(live.top[0].s)}${live.top[0].name ? `, ${live.top[0].name}` : ''}` : ''}`)
             : t('No races yet', 'Ещё нет заездов')}</span>
         </div>

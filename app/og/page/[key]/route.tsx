@@ -10,6 +10,7 @@ import { CHANNELS } from '@/lib/social';
 import { IYT_TOTAL } from '@/lib/iyt';
 import { getRating, todayUtc, validDay } from '@/lib/rating';
 import { getPlayer, getPlayers, KEY_RE } from '@/lib/players';
+import { clock } from '@/lib/clock';
 import { parseCode } from '@/lib/code';
 import { card, C, type Bg } from '@/lib/og';
 
@@ -21,7 +22,6 @@ type Q = URLSearchParams;
 type Built = Parameters<typeof card>[0];
 type Build = (t: T, lang: Lang, q: Q) => Promise<Built | null> | Built | null;
 
-const clock = (s: number) => { const m = Math.floor(s / 60), r = s - m * 60; return `${m}:${r.toFixed(1).padStart(4, '0')}`; };
 const num = (n: number, lang: Lang) => n.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB');
 const dayLabel = (day: string, lang: Lang) => new Date(day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/\.$/, '');
 const learn = (t: T) => t('Learn to race', 'Учись гоняться');
@@ -160,7 +160,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ key:
   const { key } = await params;
   const q = new URL(request.url).searchParams;
   const ql = q.get('lang'), lang: Lang = isLang(ql) ? ql : 'en';
-  const build = CARDS[key];
+  const build = Object.hasOwn(CARDS, key) ? CARDS[key] : null; // (not the names every object has: /og/page/constructor)
   const c = build ? await build(tx(lang), lang, q) : null;
   if (!c) return new Response(null, { status: 302, headers: { location: '/images/og-v8.jpg', 'cache-control': 'public, max-age=60' } });
   const img = await card(c);

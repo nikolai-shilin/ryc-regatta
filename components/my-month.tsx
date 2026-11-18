@@ -1,4 +1,5 @@
 'use client';
+import { clock } from '@/lib/clock';
 import { useEffect, useState } from 'react';
 import { tx, ruPlural, type Lang } from '@/lib/lang';
 import { placeAmong } from '@/lib/race-log';
@@ -13,7 +14,6 @@ import { briefUrl, readBrief } from '@/lib/day-brief';
 // a day of yours: your best that day, its place among that day's ranked times and how many there are (with yours if it
 // isn't on the board), and whether it is (a signed-in player's are: those earn the month's points)
 export type MyDay = { d: string; s: number; place: number; of: number; listed: boolean };
-const clock = (s: number) => { const m = Math.floor(s / 60), r = s - m * 60; return `${m}:${r.toFixed(1).padStart(4, '0')}`; };
 export const monthOf = (day: string) => {
   const today = todayUtc(), first = day.slice(0, 8) + '01';
   const e = new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7), 0)).toISOString().slice(0, 10);

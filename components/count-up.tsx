@@ -9,7 +9,7 @@ const TOKEN = /(\d+):(\d{2})(?:([.,])(\d))?|(\d+)(?:([.,])(\d+))?/g;
 function at(v: string, k: number) {
   return v.replace(TOKEN, (_, m, s, tsep, td, n, nsep, nd) => {
     if (m != null) {
-      const total = (+m * 60 + +s + (td ? +td / 10 : 0)) * k, mm = Math.floor(total / 60), ss = total - mm * 60;
+      const total = Number(((+m * 60 + +s + (td ? +td / 10 : 0)) * k).toFixed(1)), mm = Math.floor(total / 60), ss = total - mm * 60;
       return td ? `${mm}:${ss.toFixed(1).padStart(4, '0').replace('.', tsep)}` : `${mm}:${String(Math.floor(ss)).padStart(2, '0')}`;
     }
     const d = nd ? nd.length : 0, x = (+(nd ? `${n}.${nd}` : n) * k).toFixed(d);

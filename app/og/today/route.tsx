@@ -1,3 +1,4 @@
+import { clock } from '@/lib/clock';
 import { isLang, tx, type Lang } from '@/lib/lang';
 import { dailyRace } from '@/lib/race';
 import { yachtOf } from '@/lib/yachts';
@@ -15,7 +16,6 @@ export async function GET(request: Request) {
   const t = tx(lang);
   const d = dailyRace(), today = await todayTop();
   const best = today && today.d === d.day ? today.top[0] : null;
-  const clock = (s: number) => { const m = Math.floor(s / 60), r = s - m * 60; return `${m}:${r.toFixed(1).padStart(4, '0')}`; };
   const date = new Date(d.day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/\.$/, '');
   const img = await card({
     bg: 'drone',

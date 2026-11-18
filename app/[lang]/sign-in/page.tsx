@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getT, titled, type LangParams } from '@/lib/i18n';
 import { getAccount } from '@/lib/supabase/server';
 import { safeNext } from '@/lib/next-path';
+import { todayUtc } from '@/lib/day';
 import { todayTop } from '@/lib/today';
 import { AuthShell } from '@/components/auth-shell';
 import { SignInForm } from '@/components/sign-in-forms';
@@ -13,7 +14,7 @@ export default async function SignIn({ params, searchParams }: LangParams & { se
   const [{ lang, t }, sp, account, today] = await Promise.all([getT(params), searchParams, getAccount(), todayTop()]);
   const next = safeNext(sp.next);
   if (account) redirect(next);
-  const top = (today?.top || []).slice(0, 3);
+  const top = (today?.d === todayUtc() ? today.top : []).slice(0, 3); // (the plain API can still be on yesterday's)
   // why sign in: today's fastest, and a place for you among them
   const aside = (
     <>

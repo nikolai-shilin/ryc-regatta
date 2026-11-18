@@ -49,7 +49,7 @@ export function PassportBlock({ lang, facts, mine, share }: { lang: Lang; facts:
           })}
         </ul>
       ) : n ? null : <p className="bt-hint">{mine ? t('Finish a race and its venue is stamped here.', 'Финишируй в гонке, и её акватория появится здесь.') : t('No venue raced yet.', 'Пока ни одной акватории.')}</p>}
-      <button type="button" className="bt-mini pl-more" aria-expanded={all} onClick={() => setAll(!all)}>{all ? t('Show fewer', 'Свернуть') : t(`All ${of} venues`, `Все ${of} акватории`)}</button>
+      <button type="button" className="bt-mini pl-more" aria-expanded={all} onClick={() => setAll(!all)}>{all ? t('Show fewer', 'Свернуть') : t(`All ${of} venues`, `Все ${of} ${ruPlural(of, ['акватория', 'акватории', 'акваторий'])}`)}</button>
     </div>
     {share ? <div className="pl-share">{share}</div> : null}
   </>);

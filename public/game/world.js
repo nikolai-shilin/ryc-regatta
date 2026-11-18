@@ -1421,7 +1421,8 @@ export class World {
     this.showGuides = true; this.guides = null;
     this.mode = 'drone';
     this.framePow = 0.85; this.framePowSmall = 0.5; // how far a boat's size sets the drone's distance, a big one's and a small one's (update: ck)
-    this.orbit = 0; this.dist = 26; this.droneEl = 24; this.droneAim = 3.5; this.look = 0; // the drone: how far it looks down (degrees), and how high on her it aims (m) this.lookHold = 0; this.helmFov = 68;
+    this.orbit = 0; this.dist = 26; this.droneEl = 24; this.droneAim = 3.5; this.look = 0; // the drone: how far it looks down (degrees), and how high on her it aims (m)
+    this.lookHold = 0; this.helmFov = 68;
     this.camH = 0;
     this.intro = { t: 0, T: 8 }; // the opening fly-around (frame); flyIn() plays it again
     this.boatViews = [];

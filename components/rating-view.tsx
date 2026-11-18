@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Lang } from '@/lib/lang';
 import { ruPlural } from '@/lib/lang';
+import { clock } from '@/lib/clock';
 import type { Rating } from '@/lib/rating';
 import { todayUtc } from '@/lib/rating';
 import { dailyRace, KN } from '@/lib/race';
@@ -13,7 +14,6 @@ import { MyMonth } from './my-month';
 import { RivalLine } from './progress';
 
 type T = (en: string, ru: string) => string;
-const clock = (s: number) => { const m = Math.floor(s / 60), r = s - m * 60; return `${m}:${r.toFixed(1).padStart(4, '0')}`; };
 const at = (d: string) => new Date(d + 'T12:00:00Z');
 const shift = (d: string, n: number) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
 const href = (d: string) => (d === todayUtc() ? '/race/rating' : `/race/rating/${d}`);
@@ -89,7 +89,7 @@ export function RatingView({ day, data, lang, t }: { day: string; data: Rating |
               )}
               {data.guests > 0 && (
                 <p className="rt-guests">
-                  {t(`${data.guests} ${data.guests === 1 ? 'race was' : 'races were'} sailed signed out and ${data.guests === 1 ? 'doesn’t' : 'don’t'} rank.`, `${data.guests} ${ruPlural(data.guests, ['заезд пройден', 'заезда пройдено', 'заездов пройдено'])} без входа и не ${data.guests === 1 ? 'попал' : 'попали'} в рейтинг.`)}
+                  {t(`${data.guests} ${data.guests === 1 ? 'race was' : 'races were'} sailed signed out and ${data.guests === 1 ? 'doesn’t' : 'don’t'} rank.`, `${data.guests} ${ruPlural(data.guests, ['заезд пройден', 'заезда пройдено', 'заездов пройдено'])} без входа и не ${ruPlural(data.guests, ['попал', 'попали', 'попали'])} в рейтинг.`)}
                   <span className="if-guest"> <Link href={`/sign-in?next=${encodeURIComponent(href(day))}`}>{t('Sign in to rank', 'Войди, чтобы попасть в рейтинг')} ›</Link></span>
                 </p>
               )}

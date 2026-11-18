@@ -1,5 +1,6 @@
 import { ruBoats, tx, type Lang } from './lang.ts'; // with their extensions, so npm test's Node finds them too
 import { shapeOf, SHAPE_NAME, type Shape } from './race.ts';
+import { clock } from './clock.ts';
 
 // A finished race as the game posted it for its result link (public/game/stats.js raceResult → iyt.rycrentals.com
 // api/game, which serves it back by id). Only the parts the share card and the page title read.
@@ -26,7 +27,6 @@ export async function getResult(id: string): Promise<SharedResult | null> {
 }
 
 export const ordEn = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`;
-const clock = (s: number) => { const m = Math.floor(s / 60), r = s - m * 60; return `${m}:${r.toFixed(1).padStart(4, '0')}`; };
 
 // The race in words, for the title, the description and the card: "2nd in 3:45.7", "Race of the day · Fri 13 Nov",
 // "Light breeze 7 kn · 6 boats · short course, 1 lap"; and the same facts one by one for the card's cells: the day, the

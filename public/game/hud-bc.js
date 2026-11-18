@@ -707,7 +707,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   const B = {
     sub: q(bug, '.b-sub'), clock: q(bug, '.b-clock'), gun: q(top, '.b-gun'), gunN: q(top, '.b-gunn'), seq: q(top, '.b-seq'), seqI: q(top, '.b-seq i'), seqL: q(top, '.b-seql'),
     bv: q(top, '.b-bv'), bl: q(top, '.b-bl'), legs: q(top, '.b-legs'), legN: q(top, '.b-legn'), legR: q(top, '.b-legr'), lw: q(top, '.b-lw'), lwSvg: q(top, '.b-lw svg'), lwN: q(top, '.b-lw .n-s'), btns: q(tr, '.b-btns'), cam: q(tr, '.b-cam'),
-    nogo: q(tr, '.nogo'), tw: q(tr, '.tw'), tws: q(tr, '.b-tws'), dir: q(tr, '.b-dir'), shift: q(tr, '.b-shift'), windSvg: q(tr, 'svg'),
+    nogo: q(tr, '.nogo'), tw: q(tr, '.tw'), tws: q(tr, '.b-tws'), dir: q(tr, '.b-dir'), shift: q(tr, '.b-shift'), windSvg: q(tr, '.b-wind svg'),
     bt: q(board, '.b-bt'), br: q(board, '.b-br'), rows: q(board, '.b-rows'), bfn: q(board, '.b-bfn'), shape: q(map, '.b-shape'), state: q(low, '.b-state'), you: q(low, '.b-you'),
   };
   const cell = (k) => q(low, `.c-${k}`);
@@ -1210,7 +1210,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       showPen(g.pen, b);
       // its box slid back onto the screen when the boat is near an edge (its width read now and then, not every frame)
       if (!g.w || ++g.f % 30 === 0) g.w = g.box.offsetWidth;
-      const half = g.w / 2, edge = 8, dx = Math.min(0, innerWidth - edge - (at[0] + half)) + Math.max(0, edge - (at[0] - half));
+      const half = g.w / 2, edge = 8, dx = Math.min(0, innerWidth / hz - edge - (at[0] + half)) + Math.max(0, edge - (at[0] - half));
       // the lift: measured from where the box would be without last frame's, so it settles rather than see-saws
       let lift = 0;
       if (nx && nx.width) {

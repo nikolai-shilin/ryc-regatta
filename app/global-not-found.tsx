@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
 import { isLang, type Lang } from '@/lib/lang';
-import { applyMe } from '@/lib/me';
+import { applyMe, readMe } from '@/lib/me';
 import { FONT_VARS } from '@/lib/fonts';
 import { NO_ZOOM } from '@/lib/no-zoom';
 import { NotFoundView } from '@/components/not-found-view';
@@ -31,7 +31,7 @@ export default async function GlobalNotFound() {
   return (
     <html lang={l} className={FONT_VARS} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `;(${applyMe.toString()})();` + NO_ZOOM }} />
+        <script dangerouslySetInnerHTML={{ __html: `;(${applyMe.toString()})(${readMe.toString()});` + NO_ZOOM }} />
       </head>
       <body>
         <NotFoundView lang={l} />

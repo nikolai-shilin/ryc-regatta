@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getT, type LangParams } from '@/lib/i18n';
 import { pageMeta, jsonLd, SITE, NAME, OG_IMAGE, HOME_TITLE, HOME_DESC } from '@/lib/seo';
-import { ruBoats } from '@/lib/lang';
+import { ruBoats, ruPlural } from '@/lib/lang';
 import { todayTop } from '@/lib/today';
 import { dailyRace, raceMinutes, KN } from '@/lib/race';
 import { yachtOf } from '@/lib/yachts';
@@ -215,7 +215,7 @@ export default async function Home({ params }: LangParams) {
           <div className="ho-band">
             <div className="ho-band-t">
               <span className="ho-k">{t('Come back tomorrow', 'Возвращайся завтра')}</span>
-              <h2 className="ho-h2" id="h-venues">{t(`${VENUES.length} venues, one a day`, `${VENUES.length} акватории, по одной в день`)}</h2>
+              <h2 className="ho-h2" id="h-venues">{t(`${VENUES.length} venues, one a day`, `${VENUES.length} ${ruPlural(VENUES.length, ['акватория', 'акватории', 'акваторий'])}, по одной в день`)}</h2>
               <p className="ho-ps">{t(`Each day the race moves to another famous regatta venue, with its own hills, town and wind. Each comes round once every ${VENUES.length} days. Tomorrow’s is revealed at midnight UTC.`, `Каждый день гонка переезжает на другую знаменитую регатную акваторию — со своими холмами, городом и ветром. Каждая возвращается раз в ${VENUES.length} дня. Завтрашняя откроется в полночь по UTC.`)}</p>
               <PushButton lang={lang} where="venues" />
               <p className="ho-ps"><Link className="hm-src" href="/venues" data-cta="venues">{t('The venues: the water, the wind and the regattas of each', 'Акватории: вода, ветер и регаты каждой')}<IconArrow s={14} /></Link></p>

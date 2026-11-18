@@ -10,6 +10,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.mjs",
+    "test:coverage": "node scripts/coverage.mjs",
     "indexnow": "node scripts/indexnow.mjs"
   },
   "dependencies": {

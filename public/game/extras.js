@@ -21,7 +21,7 @@ import { polarSpeed, beatAngle, lineT, KN, D2R } from './sim.js';
 const tr = (en, ru) => (ctx?.LANG === 'ru' ? ru : en); // the game's language (main.js), handed over at init
 const q = new URLSearchParams(location.search);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const fmt = (s) => { const a = Math.abs(s), m = Math.floor(a / 60), r = a - m * 60; return `${m}:${r.toFixed(1).padStart(4, '0')}`; };
+const fmt = (s) => { const a = Number(Math.abs(s).toFixed(1)), m = Math.floor(a / 60), r = a - m * 60; return `${m}:${r.toFixed(1).padStart(4, '0')}`; }; // (the tenths rounded first: 119.97 s is 2:00.0, not 1:60.0)
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 
 // ---------- analytics ----------

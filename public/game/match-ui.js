@@ -531,7 +531,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     if (phase === 'race' && cur) {
       if (isHost && !cur.H && !cur.endedAt) b = L.loadingRace(nameOf(match.guestId));
       else if (isHost && cur.H && !cur.endedAt && !cur.H.guest.done && now - K.lastIn > 3000) b = t('guestGone', nameOf(match.guestId));
-      else if (!isHost && cur.G && !cur.endedAt && cur.G.abandoned) b = t('abandoned');
+      else if (!isHost && cur.G?.abandoned) b = t('abandoned'); // (over the last moments on the water: the race has already ended)
       else if (!isHost && cur.G && !cur.endedAt && (cur.G.hostSilent || (!cur.gotSnap && now - cur.at > 4000))) b = t('waitingHost', nameOf(match.hostId));
     }
     txt(banner, b); show(banner, !!b);

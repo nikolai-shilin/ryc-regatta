@@ -154,7 +154,11 @@ export class Post {
     if (overlay) overlay();
   }
 
-  dispose() { this.rt.dispose(); for (const m of this.mips) m.dispose(); }
+  dispose() {
+    this.rt.dispose(); for (const m of this.mips) m.dispose();
+    for (const m of [this.mPre, this.mDown, this.mUp, this.mComp]) m.dispose();
+    this.quad.geometry.dispose();
+  }
 }
 
 // The sea's mirror: the camera reflected in the plane of the sea, its frustum clipped at the surface (an oblique
