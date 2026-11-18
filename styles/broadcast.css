@@ -144,7 +144,7 @@
 .bc .bt-card-tools > .bt-acct-me, .bc .bt-card-tools > .bt-acct-me:hover { background: var(--you); color: var(--ink-on); }
 .bc .bt-gfx svg { flex: none; width: 16px; height: 16px; color: var(--you); }
 .bc .bt-gfx b { font-weight: 700; color: var(--you); }
-@container scr (max-width: 440px) { .bc .bt-gfx b, .bc .bt-card-n { display: none; } .bc .bt-card-tools > :is(.bt-gfx, .bt-mini, .bt-acct) { padding: 0 var(--s-3); } }
+@container scr (max-width: 440px) { .bc .bt-gfx b, .bc .bt-card-n, .bc .bt-all span { display: none; } .bc .bt-card-tools > :is(.bt-gfx, .bt-mini, .bt-acct) { padding: 0 var(--s-3); } }
 .bc .bt-dock { gap: var(--s-2); padding: var(--s-3) var(--cp); }
 .bc .bt-dock-t { flex-wrap: wrap; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
 .bc .bt-dock-t .bt-go { flex: 1 1 0; }
@@ -1567,7 +1567,7 @@
 @container scr (orientation: portrait) { .bc.rs-scr .bt { height: auto; min-height: 100%; } }
 /* a phone sideways: the panel is narrow, so its head keeps to the title and its controls, and the results to the names and times */
 @container scr (max-height: 500px) and (orientation: landscape) {
-  .bc .bt-gfx b, .bc .bt-card-n { display: none; }
+  .bc .bt-gfx b, .bc .bt-card-n, .bc .bt-all span { display: none; }
   .bc .bt-card-tools > :is(.bt-gfx, .bt-mini, .bt-acct) { padding: 0 var(--s-3); }
   .bc .rs-lb .rs-lv, .bc .rs-lb .rs-pen:empty { display: none; }
   .bc .rs-lv ~ .rs-pen { min-width: 0; }

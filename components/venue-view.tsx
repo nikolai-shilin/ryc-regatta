@@ -132,6 +132,7 @@ export function VenueView({ lang, v, back }: { lang: Lang; v: VenueCard; back: R
       </div>
 
       <PauseCard lang={lang} back={`/venues/${v.id}`} title={name} icon={<IconPin s={14} />} cardRef={card}
+        tools={<Link className="bt-mini bt-all" href="/venues" aria-label={t('All venues', 'Все акватории')}><IconBack s={14} /><span>{t('All venues', 'Все акватории')}</span></Link>}
         action={v.today
           ? <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Sail today’s race here', 'Пройди гонку дня здесь')}</span></a>
           : <button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race at ${name}`, 'Гоняться здесь')}</span></button>}>

@@ -59,7 +59,8 @@ export function FleetView({ lang, start, back, tour = true, own = false, foot }:
     const i = YACHTS.findIndex((x) => x.id === (now.current.id ?? shown));
     go(YACHTS[(i + k + YACHTS.length) % YACHTS.length].id);
   }, [go, shown]);
-  const pick = (next: YachtId | null) => { setAuto(false); go(next); };
+  const fleet = useRef(false); // you asked for the whole fleet: the opening flight to the first yacht stays home
+  const pick = (next: YachtId | null) => { fleet.current = !next; setAuto(false); go(next); };
   const toggle = () => { if (!auto && !id) go(shown); setAuto(!auto); };
 
   // the scene's word: it is up (send it the pose and the frame, and after a moment over the whole fleet, the first
@@ -72,7 +73,7 @@ export function FleetView({ lang, start, back, tour = true, own = false, foot }:
       if (d?.type === 'ready') { post({ type: 'pose', down: now.current.down }); inset(); }
       if (d?.type === 'live' && !now.current.live) {
         setLive(true);
-        first = setTimeout(() => go(now.current.id ?? YACHTS[0].id), 1400);
+        first = setTimeout(() => { if (!fleet.current) go(now.current.id ?? YACHTS[0].id); }, 1400);
       }
       if (d?.type === 'arrived') { setThere(d.id === now.current.id); if (d.id) setLanded((n) => n + 1); }
       if (d?.type === 'touched') setAuto(false);
@@ -148,6 +149,8 @@ export function FleetView({ lang, start, back, tour = true, own = false, foot }:
       </div>
 
       <PauseCard lang={lang} back={own ? `/yachts/${shown}` : '/yachts'} title={t(...y.name)} cardRef={card} foot={['boat', 'venues']}
+        tools={id ? <Link className="bt-mini bt-all" href="/yachts" scroll={false} aria-label={t('All yachts', 'Все яхты')}
+          onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; e.preventDefault(); pick(null); }}><IconBack s={14} /><span>{t('All yachts', 'Все яхты')}</span></Link> : undefined}
         action={<button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race the ${y.name[0]}`, `В гонку на ${y.name[1]}`)}</span></button>}>
         <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс')}>
           <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд')}</button>
