@@ -6,14 +6,34 @@ import { supabaseBrowser } from '@/lib/supabase/client';
 import { sponsorChanged } from '@/app/[lang]/admin/actions';
 import { IconArrow, IconImage } from './ui';
 
-// The ad on every boat's jib (public/game/yacht.js draws it low on the jib, at most 2 × 1 m): a picture in the
-// public bucket regatta-ads and its address in public.regatta_settings 'jib_ad', which /sponsor hands the game.
+// The pictures every boat carries on her sails (public/game/yacht.js): the ad low on the jib, at most 2 × 1 m, and the
+// logo on the mainsail above the sail number, which no player can set. Each is a picture in the public bucket regatta-ads
+// and its address in public.regatta_settings ('jib_ad', 'main_logo'), which /sponsor hands the game.
 // Each upload gets a new name, so no cache anywhere keeps the old one; the old file is removed once the new one is set.
-const BUCKET = 'regatta-ads', KEY = 'jib_ad', MAX = 2 * 1024 * 1024;
+const BUCKET = 'regatta-ads', MAX = 2 * 1024 * 1024;
 const TYPES: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/svg+xml': 'svg' };
+const SLOTS = { jib: { key: 'jib_ad', dir: 'jib' }, main: { key: 'main_logo', dir: 'main' } } as const;
 
-export function AdminForm({ lang, current }: { lang: Lang; current: { url: string; path?: string } | null }) {
+export function SailAdForm({ lang, slot, current }: { lang: Lang; slot: keyof typeof SLOTS; current: { url: string; path?: string } | null }) {
   const t = tx(lang);
+  const { key: KEY, dir } = SLOTS[slot];
+  const words = slot === 'main' ? {
+    kicker: t('On every mainsail', 'На каждом гроте'),
+    none: t('No logo', 'Без логотипа'),
+    hint: t('A square or wide logo on a transparent background reads best: 1.5 m wide on the sail, above the sail number, on your boat and every computer boat. Players can’t change it.', 'Лучше всего читается квадратный или широкий логотип на прозрачном фоне: 1,5 м в ширину, над номером на парусе, на вашей яхте и на всех соперниках. Игроки не могут его изменить.'),
+    saved: t('Saved. Every boat carries it from the next race.', 'Сохранено. Со следующей гонки он на каждой яхте.'),
+    removed: t('Removed. The mainsails carry no logo again.', 'Убрано. На гротах снова нет логотипа.'),
+    put: t('Put it on the mainsails', 'Поставить на гроты'),
+    remove: t('Remove the logo', 'Убрать логотип'),
+  } : {
+    kicker: t('On every jib', 'На каждом стакселе'),
+    none: t('No ad', 'Без рекламы'),
+    hint: t('A wide logo on a transparent background reads best: up to 2 m wide and 1 m tall on the sail, low under the battens, on your boat and every computer boat.', 'Лучше всего читается широкий логотип на прозрачном фоне: до 2 м в ширину и 1 м в высоту, низко под латами, на вашей яхте и на всех соперниках.'),
+    saved: t('Saved. Every boat carries it from the next race.', 'Сохранено. Со следующей гонки она на каждой яхте.'),
+    removed: t('Removed. The jibs are plain again.', 'Убрано. Стаксели снова чистые.'),
+    put: t('Put it on the jibs', 'Поставить на стаксели'),
+    remove: t('Remove the ad', 'Убрать рекламу'),
+  };
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -39,14 +59,14 @@ export function AdminForm({ lang, current }: { lang: Lang; current: { url: strin
     if (!file) return;
     setBusy(true); setErr(''); setDone('');
     const sb = supabaseBrowser();
-    const path = `jib/${Date.now()}.${TYPES[file.type]}`;
+    const path = `${dir}/${Date.now()}.${TYPES[file.type]}`;
     const up = await sb.storage.from(BUCKET).upload(path, file, { contentType: file.type, cacheControl: '31536000', upsert: false });
     if (up.error) { setBusy(false); return setErr(up.error.message); }
     const url = sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
     const row = await sb.from('regatta_settings').upsert({ key: KEY, value: { url, path }, updated_at: new Date().toISOString() });
     if (row.error) { await sb.storage.from(BUCKET).remove([path]); setBusy(false); return setErr(row.error.message); }
     if (current?.path) await sb.storage.from(BUCKET).remove([current.path]);
-    await finish(t('Saved. Every boat carries it from the next race.', 'Сохранено. Со следующей гонки она на каждой яхте.'));
+    await finish(words.saved);
     setBusy(false);
   };
   const clear = async () => {
@@ -55,33 +75,33 @@ export function AdminForm({ lang, current }: { lang: Lang; current: { url: strin
     const row = await sb.from('regatta_settings').delete().eq('key', KEY);
     if (row.error) { setBusy(false); return setErr(row.error.message); }
     if (current?.path) await sb.storage.from(BUCKET).remove([current.path]);
-    await finish(t('Removed. The jibs are plain again.', 'Убрано. Стаксели снова чистые.'));
+    await finish(words.removed);
     setBusy(false);
   };
 
   return (
-    <section className="set-grid adm adm-jib" aria-labelledby="adm-k-jib">
+    <section className={`set-grid adm adm-${slot}`} aria-labelledby={`adm-k-${slot}`}>
       <div className="set-sec">
-        <div className="adm-k"><span className="kicker" id="adm-k-jib">{t('On every jib', 'На каждом стакселе')}</span></div>
-        <div className="adm-prev" aria-label={t('How it reads on white and on black sails', 'Как она смотрится на белых и чёрных парусах')}>
+        <div className="adm-k"><span className="kicker" id={`adm-k-${slot}`}>{words.kicker}</span></div>
+        <div className="adm-prev" aria-label={t('How it reads on white and on black sails', 'Как это смотрится на белых и чёрных парусах')}>
           {['#f4f2ea', '#2a2c30'].map((c) => (
             <div key={c} className="adm-sail" style={{ background: c }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {shown ? <img src={shown} alt="" /> : <span className="hint">{t('No ad', 'Без рекламы')}</span>}
+              {shown ? <img src={shown} alt="" /> : <span className="hint">{words.none}</span>}
             </div>
           ))}
         </div>
-        <p className="hint">{t('A wide logo on a transparent background reads best: up to 2 m wide and 1 m tall on the sail, low under the battens, on your boat and every computer boat.', 'Лучше всего читается широкий логотип на прозрачном фоне: до 2 м в ширину и 1 м в высоту, низко под латами, на вашей яхте и на всех соперниках.')}</p>
+        <p className="hint">{words.hint}</p>
       </div>
       <div className="set-sec">
         <div className="srow">
           <span className="srow-k">{t('Picture', 'Картинка')}</span>
-          <input id="adm-file" className="vh" type="file" accept={Object.keys(TYPES).join(',')} disabled={busy} onChange={(e) => pick(e.target.files?.[0])} />
-          <label className="adm-pick" htmlFor="adm-file"><IconImage /><span>{file ? file.name : t('Choose a picture', 'Выбрать картинку')}</span></label>
+          <input id={`adm-file-${slot}`} className="vh" type="file" accept={Object.keys(TYPES).join(',')} disabled={busy} onChange={(e) => pick(e.target.files?.[0])} />
+          <label className="adm-pick" htmlFor={`adm-file-${slot}`}><IconImage /><span>{file ? file.name : t('Choose a picture', 'Выбрать картинку')}</span></label>
         </div>
         <div className="btn-row adm-go">
-          <button type="button" className="pill pill-primary pill-xs" disabled={!file || busy} onClick={save}><span className="btn-t">{busy && file ? t('Saving…', 'Сохраняю…') : t('Put it on the jibs', 'Поставить на стаксели')}</span></button>
-          {current && <button type="button" className="pill pill-quiet pill-xs" disabled={busy} onClick={clear}><span className="btn-t">{t('Remove the ad', 'Убрать рекламу')}</span></button>}
+          <button type="button" className="pill pill-primary pill-xs" disabled={!file || busy} onClick={save}><span className="btn-t">{busy && file ? t('Saving…', 'Сохраняю…') : words.put}</span></button>
+          {current && <button type="button" className="pill pill-quiet pill-xs" disabled={busy} onClick={clear}><span className="btn-t">{words.remove}</span></button>}
         </div>
         {err ? <p className="err" role="alert">{err}</p> : done ? <p className="hint" role="status">{done}</p> : null}
         <div className="srow">

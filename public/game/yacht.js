@@ -527,8 +527,8 @@ export function nameMaterial(look) {
 }
 
 // ---------- the logo ----------
-// the club's logo (the white RYC pennant on a red square, public/images/ryc-badge.svg) or the player's own picture
-// (a data: URL from the boat page), each drawn as it is
+// a picture for the cloth or the hull, drawn as it is: a flag, or the club's logo (the white RYC pennant on a red
+// square, public/images/ryc-badge.svg)
 const RYC_BADGE = '/images/ryc-badge.svg';
 const logoCache = {};
 export function logoImage(logo) {
@@ -542,14 +542,15 @@ export function drawContain(x, img, cx, cy, w, h) {
   x.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
 }
 
-// the ad on every boat's jib, as the site's admin sets it (/admin, which /sponsor serves): asked for once a page, then
-// the picture itself (from Supabase Storage, so loaded for CORS: a tainted canvas can't go to the GPU). None, no ad.
-let adPromise = null;
-function jibAd() {
-  if (!adPromise) adPromise = sponsor()
-    .then((d) => (d && typeof d.jib === 'string' ? new Promise((res, rej) => { const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => res(img); img.onerror = rej; img.src = d.jib; }) : null))
+// the pictures on every boat's sails, as the site's admin sets them (/admin, which /sponsor serves): 'jib' the ad on the
+// jib, 'main' the logo on the mainsail. Asked for once a page, then the picture itself (from Supabase Storage, so loaded
+// for CORS: a tainted canvas can't go to the GPU). None, nothing on the sail.
+const adPromises = {};
+function sailAd(slot) {
+  if (!adPromises[slot]) adPromises[slot] = sponsor()
+    .then((d) => (d && typeof d[slot] === 'string' ? new Promise((res, rej) => { const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => res(img); img.onerror = rej; img.src = d[slot]; }) : null))
     .catch(() => null);
-  return adPromise;
+  return adPromises[slot];
 }
 
 // a logo decal on the bow, wrapped onto the hull's own surface (side: +1 starboard, −1 port)
@@ -692,18 +693,22 @@ export function sailTexture(kind, look, rig = null) {
       // battens: the top two full length, the rest from the leech (or the class's own: rig.battens)
       x.fillStyle = look.batten;
       (R.battens || MAIN_BATTENS).forEach(([v, len]) => x.fillRect(W * (1 - len), H * (1 - v) - 5, W * len, 10));
-      // the sail number (and on our boat the RYC logo above it), squashed to come out the right shape on the sail
-      x.save(); x.translate(W * 0.47, H * (1 - R.numAt)); x.scale(1, 0.44 * R.numK);
-      x.fillStyle = look.ink; x.font = '900 128px Carlito, Lato, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-      if (look.logo) x.fillText(look.num, 0, 120);
-      else { x.fillText(look.nat, 0, -82); x.fillText(look.num, 0, 70); }
-      x.restore();
-      // the logo and the country flag above it, the same width on the cloth (SAIL_MARK m), evenly spaced between the
-      // number and the top batten. Where the head is too narrow for the flag it comes down to where it fits, and the
+      // the logo and the country flag above the number, the same width on the cloth (SAIL_MARK m), evenly spaced between
+      // the number and the top batten. Where the head is too narrow for the flag it comes down to where it fits, and the
       // logo with it, kept a third of the flag's width below it
       const onCloth = clothAt(R.span, R.chord, 0.47);
       const [fm, fz] = flagPlace(R.flagM), logoM = look.flag ? Math.min(R.logoM, fm - R.mark / 3 - R.mark * (0.5 + 1 / 3)) : R.logoM;
-      if (look.logo) logoImage(look.logo).then((img) => img && onCloth(logoM, () => drawContain(x, img, 0, 0, R.mark, R.mark))); // a wide logo fills the width, a square one is SAIL_MARK square
+      // the admin's logo, on every boat: the number waits for it, as with a logo it stands alone and without one under
+      // her letters, squashed to come out the right shape on the sail
+      sailAd('main').then((img) => {
+        x.save(); x.translate(W * 0.47, H * (1 - R.numAt)); x.scale(1, 0.44 * R.numK);
+        x.fillStyle = look.ink; x.font = '900 128px Carlito, Lato, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+        if (img) x.fillText(look.num, 0, 120);
+        else { x.fillText(look.nat, 0, -82); x.fillText(look.num, 0, 70); }
+        x.restore();
+        t.needsUpdate = true;
+        if (img) onCloth(logoM, () => drawContain(x, img, 0, 0, R.mark, R.mark)); // a wide logo fills the width, a square one is SAIL_MARK square
+      });
       if (look.flag) flagAt(fm, fz);
     } else {
       x.fillStyle = look.batten; x.fillRect(W * 0.7, H * 0.35, W * 0.3, 16); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 16);
@@ -715,7 +720,7 @@ export function sailTexture(kind, look, rig = null) {
       // gets a canvas of its own (t.back, the cloth as drawn so far), the ad on it drawn with the shear the other way round.
       const cb = document.createElement('canvas'); cb.width = W; cb.height = H; cb.getContext('2d').drawImage(c, 0, 0);
       const tb = new THREE.CanvasTexture(cb);
-      jibAd().then((img) => {
+      sailAd('jib').then((img) => {
         if (!img) return;
         const f0 = 0.25, u0 = 0.52, hd = R.hd, CL = R.clew;
         const a = CL.z * (1 - f0), b = CL.y * (1 - f0), cc = hd.z - CL.z * u0, d = hd.y - CL.y * u0, det = a * d - b * cc;
@@ -1151,10 +1156,10 @@ export const LOOKS = {
 };
 
 // the player's own boat, as the boat page (/boat) saves it in localStorage 'regatta-boat': the colours of the hull, the
-// sails, the gennaker (up to three) and the crew, the bottom paint, the deck, her name, the sail number, the logo and the flag. lookFrom turns it into a look; anything missing or
-// malformed keeps the default boat's (all black, a black and white gennaker, no logo).
+// sails, the gennaker (up to three) and the crew, the bottom paint, the deck, her name, the sail number and the flag. lookFrom turns it into a look; anything missing or
+// malformed keeps the default boat's (all black, a black and white gennaker). A logo saved on a boat is not read: the
+// logo on the mainsail is the admin's alone (sailAd).
 export const BOAT_KEY = 'regatta-boat';
-const DEFAULT_LOGO = '/images/ryc-rentals-bot.png';
 const isHex = (v) => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
 const darker = (hex, f) => '#' + new THREE.Color(hex).lerp(new THREE.Color('#000000'), f).getHexString();
 export function lookFrom(b) {
@@ -1172,8 +1177,6 @@ export function lookFrom(b) {
   L.tape = darker(L.cloth, L.laminate ? 0.28 : 0.12); L.batten = darker(L.cloth, L.laminate ? 0.3 : 0.14); // the luff tape and battens: a shade darker than the cloth
   if (typeof b.num === 'string' && b.num.trim()) L.num = b.num.trim().slice(0, 3);
   if (typeof b.nat === 'string' && b.nat.trim()) L.nat = b.nat.trim().toUpperCase().slice(0, 3);
-  const own = typeof b.logoImg === 'string' && b.logoImg.startsWith('data:image/') ? b.logoImg : DEFAULT_LOGO; // 'Yours' before an upload: the RYC Rentals Bot badge
-  if (b.logo === 'none' || b.logo === 'custom' || b.logo === 'ryc') L.logo = b.logo === 'none' ? false : b.logo === 'custom' ? own : true;
   if (typeof b.flag === 'string' && /^[a-z]{2}$/.test(b.flag)) L.flag = `/flags/${b.flag}.svg`; // public/flags, lib/flags.ts
   return L;
 }

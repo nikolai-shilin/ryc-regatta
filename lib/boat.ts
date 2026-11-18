@@ -1,38 +1,34 @@
 import { findFlag } from './flags.ts'; // with its extension, so npm test's Node finds it too
 
-// The player's boat: its colours (the gennaker's up to three), the bottom paint and the deck, her name, sail number, logo and flag. The boat page (/boat) saves it in localStorage 'regatta-boat',
+// The player's boat: its colours (the gennaker's up to three), the bottom paint and the deck, her name, sail number and flag. The boat page (/boat) saves it in localStorage 'regatta-boat',
 // where the game reads it for your yacht at the start of every race (public/game/yacht.js, lookFrom / playerLook).
 // A signed-in player's boat also lives in the account (user_metadata.boat, components/bests-sync.tsx), so it follows
 // them to another device or address: localStorage is kept per address, and a new one starts with the default boat.
+// The logo on the mainsail isn't the player's: an admin sets it for every boat (/admin/ads).
 
-export type Logo = 'ryc' | 'custom' | 'none';
 export type Deck = 'nonskid' | 'teak' | 'hull';
 export type Boat = {
   preset?: string;
   hull: string;                          // the topsides, the stripe under the sheer and the boot-top all in one colour
   cloth: string; laminate: boolean;      // the mainsail and jib: their colour, and laminate (fibres, a sheen) or Dacron
-  ink: string;                           // the sail number (and its letters, without a logo)
+  ink: string;                           // the sail number and its letters
   kite: string;                          // the gennaker: its first colour
   kite2?: string; kite3?: string;        // and its second and third, for a gennaker in bands of two or three (none: one colour)
   bottom: string;                        // the antifouling under the waterline
   deck: Deck;                            // moulded non-skid (the class's own), teak planks, or non-skid in the hull's colour
   name?: string;                         // her name on both quarters, in letters that show up against the hull; none for no name
   crew: string; pants: string;           // the team: jackets and trousers
-  logo: Logo; logoImg?: string;          // the logo on the main and the bows; logoImg: your own picture as a data: URL
-                                         // ('custom' without one shows DEFAULT_LOGO)
-  nat: string; num: string;              // the letters (shown without a logo) and the number on the main
+  nat: string; num: string;              // the letters (shown when the admin has set no logo) and the number on the main
   flag?: string;                         // the country flag on the main, high under the head (lib/flags.ts), or none
   at?: number;                           // when the player last changed her (ms); none on a boat saved before the sync
 };
 
 export const BOAT_KEY = 'regatta-boat';
-// the picture 'Yours' shows until you upload one: the RYC Rentals Bot badge (public/game/yacht.js has the same path)
-export const DEFAULT_LOGO = '/images/ryc-rentals-bot.png';
 
-export type Preset = { id: string; en: string; ru: string; boat: Omit<Boat, 'logo' | 'logoImg' | 'nat' | 'num' | 'preset' | 'flag' | 'bottom' | 'deck' | 'name'> };
+export type Preset = { id: string; en: string; ru: string; boat: Omit<Boat, 'nat' | 'num' | 'preset' | 'flag' | 'bottom' | 'deck' | 'name'> };
 
 // one-colour schemes: the hull, the gennaker and the team jackets in one colour, on white sails, with a sail number
-// that shows up against it. Picking one keeps your number and logo.
+// that shows up against it. Picking one keeps your number.
 const light = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
   return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255 > 0.6;
@@ -60,11 +56,11 @@ export const PRESETS: Preset[] = [
 
 // the boat you start with (and a signed-out player races in), and what Reset brings back: the club's own boat, all
 // black (the Black preset's hull, laminate sails and jackets) with a black and white gennaker in two bands, black
-// antifouling and the moulded non-skid deck, no logo, so the main carries RYC 1 in white. Your name, flag and number
+// antifouling and the moulded non-skid deck, the main carrying RYC 1 in white. Your name, flag and number
 // stay yours: she has none of them but the club's letters.
 export const BOTTOM = '#5b1f24'; // the usual dark red antifouling, the first of its swatches
 export const DEFAULT_BOAT: Boat = {
-  ...PRESETS.find((p) => p.id === 'black')!.boat, kite2: '#f4f3ef', bottom: '#1c1f24', deck: 'nonskid', logo: 'none', nat: 'RYC', num: '1',
+  ...PRESETS.find((p) => p.id === 'black')!.boat, kite2: '#f4f3ef', bottom: '#1c1f24', deck: 'nonskid', nat: 'RYC', num: '1',
 };
 // a boat's name: letters of any alphabet, digits, spaces and a little punctuation, up to 16
 export const NAME_MAX = 16;
@@ -104,8 +100,6 @@ export function cleanBoat(b: unknown): Boat | null {
   const name = typeof r.name === 'string' ? cleanName(r.name).trim() : '';
   if (name) out.name = name;
   if (typeof r.laminate === 'boolean') out.laminate = r.laminate;
-  if (r.logo === 'ryc' || r.logo === 'none' || r.logo === 'custom') out.logo = r.logo;
-  if (typeof r.logoImg === 'string' && r.logoImg.startsWith('data:image/')) out.logoImg = r.logoImg;
   if (typeof r.nat === 'string') out.nat = r.nat.slice(0, 3);
   if (typeof r.num === 'string') out.num = r.num.slice(0, 3);
   if (typeof r.flag === 'string' && findFlag(r.flag)) out.flag = r.flag;
@@ -119,27 +113,21 @@ export function readBoat(): Boat {
 }
 
 // what she looks like, without when she was saved or which preset she came from
-const LOOK = ['hull', 'cloth', 'laminate', 'ink', 'kite', 'kite2', 'kite3', 'bottom', 'deck', 'name', 'crew', 'pants', 'logo', 'nat', 'num', 'flag'] as const;
+const LOOK = ['hull', 'cloth', 'laminate', 'ink', 'kite', 'kite2', 'kite3', 'bottom', 'deck', 'name', 'crew', 'pants', 'nat', 'num', 'flag'] as const;
 const sameLook = (a: Boat, b: Boat) => LOOK.every((k) => a[k] === b[k]);
 
 // The account's boat and this device's, made one: the one changed last wins. A boat the player changed carries the
 // time (at); one with no time that still looks like the default is the boat page's first visit on this address, not
-// a choice, so any boat in the account beats it, and it's never sent there. The picture of your own logo stays on the
-// device (a data: URL of up to 480 px would swell the session cookie the metadata rides in): the account keeps only
-// that the logo is yours, and a device without the picture shows DEFAULT_LOGO.
+// a choice, so any boat in the account beats it, and it's never sent there.
 // Returns what to write: local for this device's localStorage, remote for user_metadata.boat; either may be absent.
 export function mergeBoat(localRaw: unknown, remoteRaw: unknown, now = Date.now()): { local?: Boat; remote?: Boat } {
   const local = cleanBoat(localRaw), remote = cleanBoat(remoteRaw);
   const chosen = !!local && (!!local.at || !sameLook(local, DEFAULT_BOAT));
   const la = local?.at || 0, ra = remote?.at || 0;
-  if (remote && (!chosen || ra > la)) {
-    const { logoImg: _, ...r } = remote;
-    const next: Boat = { ...r, ...(local?.logoImg ? { logoImg: local.logoImg } : {}) };
-    return local && sameLook(local, next) && la === ra ? {} : { local: next };
-  }
+  if (remote && (!chosen || ra > la)) return local && sameLook(local, remote) && la === ra ? {} : { local: remote };
   if (local && chosen && (!remote || la > ra)) {
-    const at = la || now, { logoImg: _, ...r } = local;
-    return { remote: { ...r, at }, ...(la ? {} : { local: { ...local, at } }) };
+    const at = la || now;
+    return { remote: { ...local, at }, ...(la ? {} : { local: { ...local, at } }) };
   }
   return {};
 }
@@ -151,20 +139,3 @@ export function saveBoat(b: Boat, at: number | undefined = Date.now()): boolean 
 }
 // told on this page when the sync brought the account's boat to this device, so the boat page shows it
 export const BOAT_EVENT = 'regatta-boat';
-
-// a picture the player chose, made small enough to keep: at most 480 px on its longer side, as a PNG (keeps transparency)
-export function shrinkLogo(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file), img = new Image();
-    img.onload = () => {
-      const s = Math.min(1, 480 / Math.max(img.naturalWidth || 480, img.naturalHeight || 480));
-      const c = document.createElement('canvas');
-      c.width = Math.max(1, Math.round((img.naturalWidth || 480) * s)); c.height = Math.max(1, Math.round((img.naturalHeight || 240) * s));
-      c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(url);
-      resolve(c.toDataURL('image/png'));
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('not an image')); };
-    img.src = url;
-  });
-}

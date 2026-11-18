@@ -78,7 +78,7 @@ function BoatLine({ lang }: { lang: Lang }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {b?.flag ? <img className="fl" src={flagSrc(b.flag)} alt={b.land || ''} /> : <NoFlag />}
       <b>{b ? b.name : '\u00a0'}</b>
-      <span className="st-boat-k">{t('Colours, logo and number', 'Цвета, логотип и номер')}</span>
+      <span className="st-boat-k">{t('Colours, flag and number', 'Цвета, флаг и номер')}</span>
       <span className="st-boat-e">{t('Edit', 'Изменить')}<IconArrow s={14} /></span>
     </Link>
   );

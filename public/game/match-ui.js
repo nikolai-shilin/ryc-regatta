@@ -194,7 +194,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   let myId = store(ME_KEY);
   if (typeof myId !== 'string' || !/^[a-z0-9]{8,24}$/.test(myId)) { myId = Array.from(crypto.getRandomValues(new Uint8Array(8)), (x) => (x % 36).toString(36)).join('') + Date.now().toString(36).slice(-4); store(ME_KEY, myId); }
   let boat = null; try { boat = JSON.parse(localStorage.getItem('regatta-boat') || 'null'); } catch (e) {}
-  const look = boat && typeof boat === 'object' ? Object.fromEntries(Object.entries(boat).filter(([k]) => k !== 'logoImg')) : null; // her look, less her own logo's picture
+  const look = boat && typeof boat === 'object' ? Object.fromEntries(Object.entries(boat).filter(([k]) => k !== 'logoImg')) : null; // her look, less the picture of a logo saved before the logos became the admin's
   let isHost = false, hostSettings = null; // (known once match.js is in: connect())
   sweepSaved();
 

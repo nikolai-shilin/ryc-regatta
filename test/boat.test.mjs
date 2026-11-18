@@ -40,13 +40,14 @@ test('going back to the RYC colours is a choice too', () => {
   assert.equal(r.remote.flag, undefined);
 });
 
-test('the logo’s picture stays on the device', () => {
+test('a logo saved on a boat is dropped: the mainsail’s logo is the admin’s', () => {
   const img = 'data:image/png;base64,AAAA';
   const up = mergeBoat({ ...mine, logo: 'custom', logoImg: img, at: 200 }, undefined);
-  assert.equal(up.remote.logo, 'custom');
+  assert.equal(up.remote.logo, undefined);
   assert.equal(up.remote.logoImg, undefined);
-  const down = mergeBoat({ ...DEFAULT_BOAT, logoImg: img }, { ...mine, logo: 'custom', at: 100 });
-  assert.equal(down.local.logoImg, img);
+  const down = mergeBoat({ ...DEFAULT_BOAT, logo: 'ryc', logoImg: img }, { ...mine, logo: 'custom', logoImg: img, at: 100 });
+  assert.equal(down.local.logo, undefined);
+  assert.equal(down.local.logoImg, undefined);
 });
 
 test('a broken boat in the account is cleaned', () => {

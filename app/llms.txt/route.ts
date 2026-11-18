@@ -35,7 +35,7 @@ ${NAME} is a free 3D sailing race game by RYC that runs in any modern web browse
 - [Free race](${SITE}/race/free): set up your own wind, fleet, course and start
 - [How to play](${SITE}/help): controls, the race screen, camera views and the racing rules, with pictures
 - [Questions](${SITE}/faq): every question about the game, today's race, sailing and the rules
-- [Your boat](${SITE}/boat): hull and sail colours, logo and sail number
+- [Your boat](${SITE}/boat): hull and sail colours, flag and sail number
 - [Learn to race](${SITE}/learn): short guides to sailboat racing
   - [Points of sail](${SITE}/learn/sail): close-hauled, reaching and running, the no-go zone, apparent wind, which point of sail is fastest
   - [How to tack and gybe a sailboat](${SITE}/learn/tack): the steps of a tack and a gybe, the crash gybe, when to choose each, rule 13

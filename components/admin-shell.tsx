@@ -17,7 +17,7 @@ export const ADMIN_PAGES = [
   { id: 'race', Icon: IconFlag, name: ['Race', 'Гонка'], h: ['Today’s race and the week ahead', 'Гонка дня и неделя вперёд'],
     goal: ['What every player sails today, and what comes on each of the next seven days.', 'Что все игроки проходят сегодня и что ждёт их в каждый из следующих семи дней.'] },
   { id: 'ads', Icon: IconImage, name: ['Ads', 'Реклама'], h: ['The ads in the game', 'Реклама в игре'],
-    goal: ['The logo every boat carries on her jib, and the words on the banner the plane tows over the course.', 'Логотип на стакселе каждой яхты и слова на баннере, который самолёт проносит над дистанцией.'] },
+    goal: ['The logos every boat carries on her mainsail and her jib, and the words on the banner the plane tows over the course.', 'Логотипы на гроте и стакселе каждой яхты и слова на баннере, который самолёт проносит над дистанцией.'] },
   { id: 'players', Icon: IconCrew, name: ['Players', 'Игроки'], h: ['Do they come and stay', 'Приходят ли и остаются'],
     goal: ['Who plays, how far a visit gets from opening the game to a finish, and whether the players come back.', 'Кто играет, как далеко заходит визит, от открытия игры до финиша, и возвращаются ли игроки.'] },
   { id: 'game', Icon: IconTrophy, name: ['The game', 'Игра'], h: ['Is it fun and fair', 'Интересно ли и честно'],

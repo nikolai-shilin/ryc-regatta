@@ -157,7 +157,7 @@ const CARDS: Record<string, Build> = {
   }),
   boat: (t) => ({
     bg: 'drone', kind: t('Your boat', 'Твоя яхта'),
-    hero: { label: t('Hull, sails, logo and number', 'Корпус, паруса, логотип и номер'), value: t('Your boat', 'Твоя яхта'), wrap: true },
+    hero: { label: t('Hull, sails, flag and number', 'Корпус, паруса, флаг и номер'), value: t('Your boat', 'Твоя яхта'), wrap: true },
     call: t('Paint your boat', 'Раскрась яхту'),
   }),
 };

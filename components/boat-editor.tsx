@@ -2,17 +2,17 @@
 import { LoadBar, ScenePoster } from './skeleton';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { tx, type Lang } from '@/lib/lang';
-import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, IconCrew, IconRestart, IconFlag, IconCheck } from './ui';
+import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconHash, IconCrew, IconRestart, IconFlag, IconCheck } from './ui';
 import { FLAGS, findFlag, flagSrc, type Flag } from '@/lib/flags';
 import { NoFlag } from './flag';
 import { SceneBrand } from './scene-brand';
 import { PauseCard } from './pause-card';
-import { BOAT_EVENT, DEFAULT_BOAT, DEFAULT_LOGO, NAME_MAX, PRESETS, SWATCHES, cleanName, readBoat, saveBoat, shrinkLogo, type Boat, type Deck, type Logo } from '@/lib/boat';
+import { BOAT_EVENT, DEFAULT_BOAT, NAME_MAX, PRESETS, SWATCHES, cleanName, readBoat, saveBoat, type Boat, type Deck } from '@/lib/boat';
 import { syncAccount } from './bests-sync';
 
 // The boat page, laid out like the race's pause screen: the game's own scene behind it all (your yacht on Lake Garda,
 // /boat-view), her name and numbers over it, and the choices (the ready schemes, the hull, the sails, the gennaker, the
-// logo, the sail number and the team) in the panel every scene page has (pause-card.tsx). The scene is told what the card and the
+// flag, the sail number and the team) in the panel every scene page has (pause-card.tsx). The scene is told what the card and the
 // heading cover, so she stands in the part left clear. Every change shows on her at once, and is kept when you press
 // Save (beside the way to the race, at the panel's top): then it's saved where the game reads it and, for a signed-in player, in the account.
 // Until then Save stands out and leaving asks first; going to race in her saves her on the way. The boat as it was read
@@ -28,7 +28,6 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   const [live, setLive] = useState(false); // the 3D scene has drawn its first frame
   const frame = useRef<HTMLIFrameElement>(null);
   const card = useRef<HTMLElement>(null), info = useRef<HTMLDivElement>(null);
-  const file = useRef<HTMLInputElement>(null);
   const latest = useRef({ b, down });
   latest.current = { b, down };
   // the boat as she was last kept (saved here, or read): Save has something to do while what you see differs from it
@@ -49,7 +48,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   }, []);
   useEffect(() => { if (ready) post({ type: 'look', boat: b }); setJustSaved(false); }, [b, ready]); // eslint-disable-line react-hooks/exhaustive-deps
   const save = () => {
-    if (!saveBoat(b)) { setErr(t('This browser didn’t keep it: try a smaller logo.', 'Браузер не сохранил: попробуй логотип поменьше.')); return false; }
+    if (!saveBoat(b)) { setErr(t('This browser didn’t keep your boat: its storage may be full or blocked.', 'Браузер не сохранил яхту: возможно, его хранилище заполнено или заблокировано.')); return false; }
     setErr(''); setKept(lookKey(b)); setJustSaved(true); dirtyRef.current = false; // kept: going on to race asks nothing
     syncAccount().catch(() => {});
     return true;
@@ -93,7 +92,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
       if (e.origin !== location.origin || e.source !== frame.current?.contentWindow) return;
       if (e.data?.type === 'ready') {
         post({ type: 'look', boat: latest.current.b }); post({ type: 'pose', down: latest.current.down }); inset();
-        if (!cached && !asked) (asked = true), post({ type: 'thumbs', items: PRESETS.map((p) => ({ id: p.id, boat: { ...p.boat, logo: 'none', nat: '', num: '' } })) });
+        if (!cached && !asked) (asked = true), post({ type: 'thumbs', items: PRESETS.map((p) => ({ id: p.id, boat: { ...p.boat, nat: '', num: '' } })) });
       }
       if (e.data?.type === 'live') setLive(true);
       if (e.data?.type === 'thumbs' && e.data.shots) {
@@ -107,15 +106,6 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   }, []);
 
   const set = (patch: Partial<Boat>) => setB((x) => ({ ...x, ...patch, preset: undefined }));
-  const setLogo = (logo: Logo) => {
-    setB((x) => ({ ...x, logo }));
-  };
-  const onFile = async (f: File | undefined) => {
-    if (!f) return;
-    try { const logoImg = await shrinkLogo(f); setB((x) => ({ ...x, logo: 'custom', logoImg })); setDown(false); }
-    catch { setErr(t('That file isn’t a picture we can use: try a PNG, JPG or SVG.', 'Этот файл не подходит: попробуй PNG, JPG или SVG.')); }
-    if (file.current) file.current.value = '';
-  };
 
   // one setting: a small caps label, then the swatches; a part of a bigger group gets a quieter label
   const swatches = (k: 'hull' | 'cloth' | 'ink' | 'kite' | 'kite2' | 'kite3' | 'bottom' | 'crew' | 'pants', label: string, sub = false) => (
@@ -140,9 +130,8 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   };
   const preset = PRESETS.find((p) => p.id === b.preset);
   const flag = findFlag(b.flag);
-  // a flag on the main: the boat then carries that country's letters too (shown when there's no logo)
+  // a flag on the main: the boat then carries that country's letters too
   const setFlag = (code: string) => { const f = findFlag(code); setB((x) => ({ ...x, flag: f?.code, ...(f ? { nat: f.ioc } : {}) })); setDown(false); };
-  const logoName = b.logo === 'ryc' ? 'RYC' : b.logo === 'custom' ? t('Yours', 'Свой') : t('None', 'Нет');
 
   return (
     <div className="bt">
@@ -160,12 +149,11 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         <div className="bt-stats bt-stats-fit">
           <div><span className="bt-sk">{t('Colours', 'Цвета')}</span><b>{preset ? t(preset.en, preset.ru) : t('Your own', 'Свои')}</b></div>
           <div><span className="bt-sk">{t('Sails', 'Паруса')}</span><b>{b.laminate ? t('Laminate', 'Ламинат') : t('Dacron', 'Дакрон')}</b></div>
-          <div><span className="bt-sk">{t('Logo', 'Логотип')}</span><b>{logoName}</b></div>
         </div>
       </div>
 
       <PauseCard lang={lang} back="/boat" title={t('Your boat', 'Твоя яхта')} className="bt-boat" cardRef={card} foot={['yachts', 'venues']}
-        tools={<button type="button" className="bt-mini" title={t('Back to the RYC colours', 'Вернуть цвета RYC')} aria-label={t('Back to the RYC colours', 'Вернуть цвета RYC')} onClick={() => { setB({ ...DEFAULT_BOAT, logoImg: b.logoImg, name: b.name }); setDown(false); }}>
+        tools={<button type="button" className="bt-mini" title={t('Back to the RYC colours', 'Вернуть цвета RYC')} aria-label={t('Back to the RYC colours', 'Вернуть цвета RYC')} onClick={() => { setB({ ...DEFAULT_BOAT, name: b.name }); setDown(false); }}>
           <IconRestart s={14} /><span>{t('RYC colours', 'Цвета RYC')}</span>
         </button>}
         action={<>
@@ -234,18 +222,6 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
           </div>
         </div>
 
-        <div className="bt-g">
-          {kicker('l-logo', <IconImage />, t('Logo on the sails', 'Логотип на парусах'))}
-          {tags('l-logo', b.logo, [['ryc', 'RYC'], ['custom', t('Yours', 'Свой')], ['none', t('None', 'Нет')]] as [Logo, string][], (v) => { setLogo(v); setDown(false); })}
-          <div className="bt-logo">
-            <span className="logo-thumb" style={{ backgroundColor: b.cloth }}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={b.logoImg || DEFAULT_LOGO} alt={b.logoImg ? t('Your logo', 'Свой логотип') : 'RYC Rentals Bot'} /></span>
-            <p className="bt-hint">{b.logoImg ? t('Your logo. A PNG with a clear background works best.', 'Твой логотип. Лучше всего PNG с прозрачным фоном.') : t('Yours is RYC Rentals Bot until you upload your own.', '«Свой» — это RYC Rentals Bot, пока не загрузишь собственный.')}</p>
-            {b.logoImg && <button type="button" className="bt-mini" onClick={() => { setB((x) => ({ ...x, logoImg: undefined })); setDown(false); }}>{t('Default', 'Стандартный')}</button>}
-            <button type="button" className="bt-mini" onClick={() => file.current?.click()}>{b.logoImg ? t('Change', 'Заменить') : t('Upload', 'Загрузить')}</button>
-            <input ref={file} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" hidden onChange={(e) => onFile(e.target.files?.[0])} />
-          </div>
-        </div>
-
         {/* the flag and the number side by side; the flag's list, open, takes the row */}
         <div className="bt-pair">
           <div className="bt-g">
@@ -255,7 +231,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
           <div className="bt-g">
             <label className="bt-k" htmlFor="b-num"><IconHash />{t('Sail number', 'Номер на парусе')}</label>
             <div className="num-pair">
-              {b.logo === 'none' && <input className="num-in" aria-label={t('Letters on the sail', 'Буквы на парусе')} value={b.nat} maxLength={3} onChange={(e) => set({ nat: e.target.value.toUpperCase().replace(/[^A-ZА-ЯЁ]/g, '') })} />}
+              <input className="num-in" aria-label={t('Letters on the sail', 'Буквы на парусе')} value={b.nat} maxLength={3} onChange={(e) => set({ nat: e.target.value.toUpperCase().replace(/[^A-ZА-ЯЁ]/g, '') })} />
               <input id="b-num" className="num-in" inputMode="numeric" value={b.num} maxLength={3} onChange={(e) => set({ num: e.target.value.replace(/[^0-9]/g, '') })} onBlur={() => { if (!b.num) set({ num: '1' }); }} />
             </div>
           </div>

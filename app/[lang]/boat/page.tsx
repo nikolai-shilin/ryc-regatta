@@ -2,11 +2,11 @@ import { getT, titled, type LangParams } from '@/lib/i18n';
 import { BackLink } from '@/components/back-link';
 import { BoatEditor } from '@/components/boat-editor';
 
-export const generateMetadata = titled('Your boat: colours, logo and sail number', 'Твоя яхта: цвета, логотип и номер на парусе', {
+export const generateMetadata = titled('Your boat: colours, flag and sail number', 'Твоя яхта: цвета, флаг и номер на парусе', {
   path: '/boat', card: '/og/page/boat',
   description: [
-    'Make the yacht yours: hull and sail colours, a logo and a sail number, seen in 3D, for every race you sail in Up and down.',
-    'Сделай яхту своей: цвета корпуса и парусов, логотип и номер на парусе — в 3D, для каждой гонки в Up and down.'],
+    'Make the yacht yours: hull and sail colours, a flag and a sail number, seen in 3D, for every race you sail in Up and down.',
+    'Сделай яхту своей: цвета корпуса и парусов, флаг и номер на парусе — в 3D, для каждой гонки в Up and down.'],
 });
 
 // Your boat: the game's own scene behind the whole page (your yacht on Lake Garda on a summer evening, public/boat-view),
