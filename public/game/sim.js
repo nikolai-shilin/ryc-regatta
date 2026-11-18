@@ -848,6 +848,7 @@ export class Race {
   constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl', bias: lineBias = null, level = null, daytime = 'any',
     humans = [{ id: 'you', name: 'You' }], me = humans[0].id, match = false, blue = humans[0].id } = {}) {
     this.match = !!match;
+    this.seed = seed; // (the results of this race, told from another's)
     // two humans and no computer boats, not a match: today's rules, and the first valid finish wins
     this.multi = humans.length > 1 && !match; this.validAt = null;
     if (match) { fleet = 2; course = 'wl'; laps = 2; start = 5; current = false; }
@@ -991,8 +992,8 @@ export class Race {
   }
   // a match given up by boat b (her sailor gone): the race is the other's
   forfeit(b) {
-    if (this.multi) { // a boat home can't give up; else the race is the other's, unless she is out too (or a winner is already home)
-      if (b.done) return;
+    if (this.multi) { // a boat home, or a race over, can't be given up; else it is the other's, unless she is out too (or a winner is already home)
+      if (b.done || this.over) return;
       const o = this.humans.find((h) => h !== b);
       this.forfeited = b; this.over = true; this.margin = null;
       if (!this.winner) this.winner = o && !(o.ufd || o.bfd || o.dsq) ? o : null;

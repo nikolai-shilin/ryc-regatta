@@ -39,9 +39,9 @@ export function applyControls(race, b, c) {
 }
 
 // ---------- the snapshot: what the other screens draw ----------
-// snap { c: clock, f: flags (bits cls, P, X, sub), w: the winner's id or null, b: one row per boat, in race.boats
-// order (both screens build the same race) }. A row is an array: first NUM's numbers in that order (her pose, sails
-// and wind: what world.js and the HUD read of a boat), then
+// snap { c: clock, t: the race's total time (a recall sets the clock back, not this), f: flags (bits cls, P, X, sub),
+// w: the winner's id or null, p: the preparatory flag, r: the general recalls so far, b: one row per boat, in race.boats order (both screens build the same race) }. A row is an array:
+// first NUM's numbers in that order (her pose, sails and wind: what world.js and the HUD read of a boat), then
 //   [n]     bits: kite, code zero, reef, small jib, split, auto-trim, foiling, backing
 //   [n+1]   trim: TRIMS index
 //   [n+2]   auto (tacking): 0 no, 1 a tack, 2 a gybe
@@ -55,6 +55,9 @@ export function applyControls(race, b, c) {
 //   [n+13]  tacks seen, [n+14] hails seen (a reloaded follower's counts go on from these)
 // and the jobs' clocks (0 with no job): [n+15] kite job t, [n+16] its total, [n+17] a messy drop (0/1); [n+18],
 // [n+19] the reef job's t and total; [n+20], [n+21] the jib job's
+// and how her race stands under today's rules:
+//   [n+22]  bits: ufd, bfd, dnf, and the penalty turn's tack done, gybe done, a match's turn
+//   [n+23]  the penalty turn's direction (−1, 0, 1)
 const NUM = [['x', 100], ['z', 100], ['h', 1e4], ['v', 100], ['heel', 10], ['yawRate', 1e3], ['rudder', 100], ['sheet', 1e3],
   ['jibSheet', 1e3], ['sail', 10], ['jibSail', 10], ['kiteFill', 100], ['kiteCollapse', 100], ['twa', 1e3], ['awa', 1e3],
   ['aws', 10], ['tws', 10], ['wdir', 1e3], ['gust', 100], ['shadow', 100], ['luff', 100], ['reefFill', 100],
@@ -80,24 +83,27 @@ function rowOf(b) {
     b.tackSeen || 0, b.hailSeen || 0,
     q(b.kiteJob?.t, 100), q(b.kiteJob?.total, 100), b.kiteJob?.messy ? 1 : 0,
     q(b.reefJob?.t, 100), q(b.reefJob?.total, 100), q(b.jibJob?.t, 100), q(b.jibJob?.total, 100),
+    bits([b.ufd, b.bfd, b.dnf, b.pen?.tack, b.pen?.gybe, b.pen?.mr]),
+    b.pen?.dir || 0,
   ];
 }
 
 export function encodeSnap(race) {
-  return { c: q(race.clock, 1000), f: bits(FLAGS.map((k) => race.flags[k])), w: race.winner?.id ?? null, b: race.boats.map(rowOf) };
+  return { c: q(race.clock, 1000), t: q(race.t, 1000), f: bits(FLAGS.map((k) => race.flags[k])), w: race.winner?.id ?? null, p: race.prepFlag, r: race.recalls, b: race.boats.map(rowOf) };
 }
 
 // a row as a plain object of the Boat's own fields (for the follower's easing and interpolation)
 export function readBoat(row) {
   const o = {};
   NUM.forEach(([k], i) => { o[k] = num(row[i], 0); });
-  const f = row[N], s = row[N + 12];
+  const f = row[N], s = row[N + 12], u = row[N + 22];
   Object.assign(o, {
     kite: bit(f, 0), kiteType: bit(f, 1) ? 'zero' : 'gen', reef: bit(f, 2), smallJib: bit(f, 3), split: bit(f, 4), autoTrim: bit(f, 5), fly: bit(f, 6), backing: bit(f, 7),
     trim: TRIMS[row[N + 1]] ?? 'ok', autoK: row[N + 2], kiteK: row[N + 3], reefK: row[N + 4], jibK: row[N + 5], boom: row[N + 6],
     leg: row[N + 7], owed: clamp(Math.floor(num(row[N + 8], 0)), 0, 9), finish: row[N + 9], place: row[N + 10], side: row[N + 11],
     ocs: bit(s, 0), done: bit(s, 1), dsq: bit(s, 2), entered: bit(s, 3), penOn: bit(s, 4), tackSeen: row[N + 13], hailSeen: row[N + 14],
     kiteT: [num(row[N + 15], 1), num(row[N + 16], 1)], kiteMessy: !!row[N + 17], reefT: [num(row[N + 18], 1), num(row[N + 19], 1)], jibT: [num(row[N + 20], 1), num(row[N + 21], 1)],
+    ufd: bit(u, 0), bfd: bit(u, 1), dnf: bit(u, 2), penTack: bit(u, 3), penGybe: bit(u, 4), penMr: bit(u, 5), penDir: num(row[N + 23], 0),
   });
   return o;
 }
@@ -122,9 +128,10 @@ export function setSails(b, o) {
 // put a read row on boat b: her race always; her pose, sails and jobs too unless `pose` is false (a follower's own
 // boat, which her own screen steps)
 export function setBoat(b, o, pose = true) {
-  Object.assign(b, { leg: o.leg, owed: o.owed, finish: o.finish, place: o.place, ocs: o.ocs, done: o.done, dsq: o.dsq, entered: o.entered, tackSeen: o.tackSeen, hailSeen: o.hailSeen });
+  Object.assign(b, { leg: o.leg, owed: o.owed, finish: o.finish, place: o.place, ocs: o.ocs, done: o.done, dsq: o.dsq, entered: o.entered, tackSeen: o.tackSeen, hailSeen: o.hailSeen, ufd: o.ufd, bfd: o.bfd, dnf: o.dnf });
   if (o.side) b.side = o.side;
-  b.pen = o.penOn ? b.pen || { mr: true } : null;
+  // (a fresh object each time: the follower's own step can't change the runner's word)
+  b.pen = o.penOn ? (o.penMr ? b.pen || { mr: true } : { tack: o.penTack, gybe: o.penGybe, dir: o.penDir }) : null;
   if (!pose) return;
   for (const [k] of NUM) b[k] = o[k];
   setSails(b, o);
@@ -132,12 +139,30 @@ export function setBoat(b, o, pose = true) {
   b.auto = o.autoK ? { ...(b.auto || { to: b.h, dir: 1 }), gybe: o.autoK === 2 } : null;
 }
 
-// the snapshot on the follower's race: the flags, the winner, and every boat (skip: her own, whose pose is her own
-// screen's). The clock is the follower's to keep (see the match's Guest). False if it isn't this race's.
+// the snapshot on the follower's race: the flags, the preparatory flag, the winner, and every boat (skip: her own,
+// whose pose is her own screen's). The clock is the follower's to keep (see the match's Guest). False if it isn't this
+// race's.
 export function applySnap(race, s, skip = null) {
   if (!s || !Array.isArray(s.b) || s.b.length !== race.boats.length) return false;
   FLAGS.forEach((k, i) => { race.flags[k] = bit(s.f, i); });
+  race.prepFlag = s.p ?? race.prepFlag;
   if (s.w) race.winner = race.humans.find((h) => h.id === s.w) ?? race.winner;
   race.boats.forEach((b, i) => { if (Array.isArray(s.b[i])) setBoat(b, readBoat(s.b[i]), b !== skip); });
   return true;
+}
+
+// ---------- the results: what only the runner recorded ----------
+const TRACK_MAX = 160;
+// a boat's track for the result: at most TRACK_MAX points, evenly through it, the last always kept, in whole metres
+export function thinTrack(track) {
+  const n = track.length, m = Math.min(n, TRACK_MAX);
+  return Array.from({ length: m }, (_, i) => track[m > 1 ? Math.round((i * (n - 1)) / (m - 1)) : n - 1]).map(([x, z]) => [Math.round(x), Math.round(z)]);
+}
+
+// the race as it ended, for the follower's debrief: each sailor's result, leg times, thinned track and log
+export function resultsOf(race) {
+  return {
+    seed: race.seed,
+    boats: race.humans.map((b) => ({ id: b.id, done: !!b.done, dsq: !!b.dsq, dnf: !!b.dnf, place: b.place ?? null, finish: b.finish ?? null, pens: b.pens || 0, legT: b.legT, track: thinTrack(b.track), log: b.log })),
+  };
 }

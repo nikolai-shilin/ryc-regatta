@@ -915,7 +915,7 @@ test('a guest on another build is never raced: the room has her, but she isn\'t 
 
 test('penalties owed off the wire are read as 0 to 9: a bad number never hangs the HUD', async () => {
   const d = await duel();
-  const row = encodeSnap(d.hrace).b[0], N = row.length - 22; // (the row's numbers, then its 22 fields after them)
+  const row = encodeSnap(d.hrace).b[0], N = row.length - 24; // (the row's numbers, then its 24 fields after them)
   const at = (v) => { const r = row.slice(); r[N + 8] = v; return readBoat(r).owed; };
   assert.equal(at(2), 2);
   assert.equal(at(1e9), 9);
