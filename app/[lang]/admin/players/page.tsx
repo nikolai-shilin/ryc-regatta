@@ -16,7 +16,7 @@ export default async function AdminPlayersPage({ params, searchParams }: LangPar
   const { lang, t } = a;
   return (
     <AdminShell {...a} page="players" days={days}>
-      {pl?.data ? <AdminPlayers lang={lang} data={pl.data} /> : <AdminMissing t={t} Icon={IconCrew} title={t('The players', 'Игроки')} error={pl?.error} />}
+      {pl?.data ? <AdminPlayers lang={lang} data={pl.data} days={days} /> : <AdminMissing t={t} Icon={IconCrew} title={t('The players', 'Игроки')} error={pl?.error} />}
       {ins?.data ? (<>
         <InsightVisits lang={lang} data={ins.data} />
         <InsightRetention lang={lang} data={ins.data} />

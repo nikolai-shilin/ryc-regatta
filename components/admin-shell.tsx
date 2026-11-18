@@ -5,7 +5,7 @@ import { getT, titled, type LangParams } from '@/lib/i18n';
 import { getAccount, supabaseServer, type Account } from '@/lib/supabase/server';
 import { BackLink } from './back-link';
 import { SiteHead } from './site-chrome';
-import { IconArrow, IconCrew, IconDevice, IconFlag, IconImage, IconTrophy } from './ui';
+import { IconArrow, IconClock, IconCrew, IconDevice, IconFlag, IconImage, IconTrophy } from './ui';
 
 // The site's admin, a page for each thing an admin comes to do (app/[lang]/admin/*): see the race the players sail
 // today and the week ahead; set the ads in the game; see whether players come and stay; whether the game is fun and
@@ -24,6 +24,8 @@ export const ADMIN_PAGES = [
     goal: ['How the races go by yacht, wind, venue and course; how hard they are as a player learns; why races are left; what the players say and what they set.', 'Как идут гонки по яхтам, ветру, месту и дистанции; насколько они сложны по мере опыта; почему их бросают; что говорят игроки и что выставляют.'] },
   { id: 'tech', Icon: IconDevice, name: ['Performance', 'Производительность'], h: ['Does it run well', 'Хорошо ли работает'],
     goal: ['How the game runs on the players’ devices: the frame rate and the stalls, the loads that fail, the errors on the page.', 'Как игра работает на устройствах игроков: частота кадров и рывки, неудачные загрузки, ошибки на странице.'] },
+  { id: 'logs', Icon: IconClock, name: ['Logs', 'Журнал'], h: ['What went wrong, and for whom', 'Что пошло не так и у кого'],
+    goal: ['The players who hit a problem, and each one’s visits and races in full, to see what happened to them.', 'Игроки, столкнувшиеся с проблемой, и все их визиты и гонки в подробностях, чтобы понять, что с ними случилось.'] },
 ] as const;
 export type AdminPage = (typeof ADMIN_PAGES)[number]['id'];
 const pageOf = (id: AdminPage) => ADMIN_PAGES.find((p) => p.id === id)!;
@@ -31,7 +33,7 @@ const pageOf = (id: AdminPage) => ADMIN_PAGES.find((p) => p.id === id)!;
 // the numbers are over the last 7, 30 or 90 days (?days=), 30 when not said
 export const STAT_DAYS = [7, 30, 90] as const;
 export const pickDays = (q?: string) => ((STAT_DAYS as readonly number[]).includes(Number(q)) ? Number(q) : 30);
-const DATA: AdminPage[] = ['players', 'game', 'tech'];
+const DATA: AdminPage[] = ['players', 'game', 'tech', 'logs'];
 
 export const adminTitle = (id?: AdminPage) => (id ? titled(`Admin · ${pageOf(id).name[0]}`, `Админка · ${pageOf(id).name[1]}`, { index: false }) : titled('Admin', 'Админка', { index: false }));
 
@@ -48,15 +50,15 @@ export async function adminLoad<D = null>(params: LangParams['params'], load?: (
 }
 
 // one of the database's sums for an admin over the last `days`, or why it didn't come
-export async function adminRpc<D>(sb: Supabase, fn: 'regatta_admin_stats' | 'regatta_admin_insight' | 'regatta_admin_players', days: number): Promise<{ data: D | null; error: string | null }> {
-  const r = await sb.rpc(fn, { days });
+export async function adminRpc<D>(sb: Supabase, fn: 'regatta_admin_stats' | 'regatta_admin_insight' | 'regatta_admin_players' | 'regatta_admin_logs', days: number, more?: { person: string | null }): Promise<{ data: D | null; error: string | null }> {
+  const r = await sb.rpc(fn, { days, ...more });
   return r.error ? { data: null, error: r.error.message } : { data: r.data as D, error: null };
 }
 
 const withDays = (path: string, days?: number) => (days && days !== 30 ? `${path}?days=${days}` : path);
 
-export function AdminShell({ lang, t, account, admin, page, days, children }: {
-  lang: Lang; t: T; account: Account; admin: boolean; page?: AdminPage; days?: number; children: ReactNode;
+export function AdminShell({ lang, t, account, admin, page, days, who, children }: {
+  lang: Lang; t: T; account: Account; admin: boolean; page?: AdminPage; days?: number; who?: string | null; children: ReactNode;
 }) {
   const L = lang === 'ru' ? 1 : 0, p = page ? pageOf(page) : null;
   const here = page ? `/admin/${page}` : '/admin';
@@ -84,7 +86,7 @@ export function AdminShell({ lang, t, account, admin, page, days, children }: {
               {page && DATA.includes(page) && days != null && (
                 <nav className="adm-range" aria-label={t('Period', 'Период')}>
                   {STAT_DAYS.map((d) => (
-                    <Link key={d} href={`${here}?days=${d}`} scroll={false} aria-current={d === days ? 'page' : undefined} className={d === days ? 'on' : undefined}>
+                    <Link key={d} href={`${here}?days=${d}${who ? `&who=${encodeURIComponent(who)}` : ''}`} scroll={false} aria-current={d === days ? 'page' : undefined} className={d === days ? 'on' : undefined}>
                       {t(`${d} days`, `${d} дн.`)}
                     </Link>
                   ))}

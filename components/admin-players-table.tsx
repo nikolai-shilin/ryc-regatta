@@ -1,11 +1,12 @@
 'use client';
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 // The players' table on /admin/players, sorted by the column whose head was clicked (components/admin-players.tsx
 // draws each cell on the server and gives each its value to sort by). A second click turns the order round; a column
 // with nothing in it for a player puts that player last either way. At first: the last seen first.
 export type Col = { label: string; asc?: boolean };   // asc: sorted low to high at its first click
-export type Row = { key: string; name: string; sub: string; isNew: boolean; cells: string[]; vals: (number | string | null)[] };
+export type Row = { key: string; name: string; sub: string; isNew: boolean; cells: string[]; vals: (number | string | null)[]; href?: string };   // href: the player's log
 
 export function PlayersTable({ cols, rows, first, label, newLabel, start }: {
   cols: Col[]; rows: Row[]; first: Col; label: string; newLabel: string; start: number;
@@ -40,7 +41,7 @@ export function PlayersTable({ cols, rows, first, label, newLabel, start }: {
           {sorted.map((r) => (
             <tr key={r.key}>
               <th scope="row">
-                <span className="adm-pl-name">{r.name}</span>
+                {r.href ? <Link className="adm-pl-name adm-pl-link" href={r.href}>{r.name}</Link> : <span className="adm-pl-name">{r.name}</span>}
                 <span className="adm-pl-sub">{r.sub}{r.isNew && <b className="adm-pl-new">{newLabel}</b>}</span>
               </th>
               {r.cells.map((c, i) => <td key={i}>{c}</td>)}

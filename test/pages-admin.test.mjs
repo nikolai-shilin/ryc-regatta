@@ -28,12 +28,22 @@ const INSIGHT = { since: '2026-11-01T00:00:00Z',
   difficulty: [{ b: 1, n: 40, fin: 20, top3: 5, dsq: 2, who: 30, down: 0.6, pens: 1.2 }] };
 const PLAYERS = { since: '2026-11-01T00:00:00Z', players: [{ who: 'abcd1234', kind: 'acct', name: 'SECRET-PLAYER', handle: null, first: '2026-11-01T10:00:00Z', last: '2026-11-17T10:00:00Z',
   new: true, n: 5, fin: 4, top3: 2, dsq: 0, days: 2, down: 0.3, best: 312.4, rated: 1, rating: 4, dev: 'phone' }] };
+const WHO = '5f0c1a52-7c1e-4a53-9a44-0d6f1f6f7a10';
+const LOGS = { since: '2026-11-01T00:00:00Z', report: null, totals: { visits: 40, bad: 3, failed: 1, gave_up: 1, lost: 1, errors: 1, slow: 2, low: 1, people: 1 },
+  people: [{ who: WHO, kind: 'acct', name: 'SECRET-LOGGED', handle: 'logged@example.com', last: '2026-11-17T10:00:00Z', visits: 4, bad: 3, failed: 1, gave_up: 1, lost: 1, errors: 1, slow: 2, low: 1, dev: 'phone tg' }] };
+const REPORT = { who: WHO, kind: 'acct', name: 'SECRET-LOGGED', handle: 'logged@example.com', first: '2026-11-01T10:00:00Z', last: '2026-11-17T10:00:00Z',
+  visits: [{ id: 'v1', at: '2026-11-17T10:00:00Z', kind: 'today', ref: 'tg', tg: 1, dev: 'phone', load: 4.2, loaded_at: null, failed_at: '2026-11-17T10:00:05Z', why: 'SECRET-WHY', gave_up_at: null, pct: null,
+    last_at: '2026-11-17T10:05:00Z', races: 1, finished: 0, mins: 5, howto: null, drill: null, ghost: null, lost: 1, errors: [{ m: 'SECRET-STACK', src: 'main.js:12', n: 3 }] }],
+  races: [{ id: 'r1', visit: 'v1', at: '2026-11-17T10:01:00Z', finished_at: null, wind: 'light', laps: 2, length: 'short', boats: 8, place: null, secs: null, dsq: false, daily: '2026-11-17', shape: 'wl', yacht: 'j70', venue: 'cowes',
+    perf: { fps: 18, low: 9, stall: 4.5, gpu: 'SECRET-GPU', os: 'ios', br: 'safari', dev: 'phone', tg: 1, w: 800, h: 400, dpr: 2, cores: 6, mem: 4, q0: 'high', q: 'low', gfx: 'auto' },
+    ended: { how: 'close', leg: 2, legs: 4, clock: 200, place: 5, boats: 8, inc: { ocs: 1 }, last: 'ocs', ago: 30, pens: 1, mins: 3.4 }, rating: 2, comment: 'SECRET-SAID' },
+    { id: 'r2', visit: 'gone', at: '2026-11-10T10:01:00Z', finished_at: '2026-11-10T10:09:00Z', wind: 'medium', laps: 1, length: 'short', boats: 6, place: 2, secs: 480, dsq: false, daily: null, shape: 'wl', yacht: null, venue: 'cowes', perf: null, ended: null, rating: null, comment: null }] };
 const SETTINGS = { jib_ad: { url: 'https://cdn.example/SECRET-JIB.png', path: 'jib.png' }, main_logo: { url: 'https://cdn.example/SECRET-MAIN.png' }, plane_banner: { lines: ['SECRET-BANNER'] } };
 
 // ---------- the database, as the session reading it is answered ----------
 const db = { user: null, isAdmin: { data: false, error: null }, rpc: {}, settings: SETTINGS, calls: [] };
 const ACCOUNT = { id: 'u1', email: 'sailor@example.com', user_metadata: { display_name: 'Anna Sailor' }, app_metadata: { provider: 'email' } };
-const answers = () => ({ regatta_admin_stats: { data: STATS, error: null }, regatta_admin_insight: { data: INSIGHT, error: null }, regatta_admin_players: { data: PLAYERS, error: null } });
+const answers = () => ({ regatta_admin_stats: { data: STATS, error: null }, regatta_admin_insight: { data: INSIGHT, error: null }, regatta_admin_players: { data: PLAYERS, error: null }, regatta_admin_logs: { data: LOGS, error: null } });
 globalThis.__sb = {
   auth: { getUser: async () => ({ data: { user: db.user } }) },
   rpc: async (fn, args) => {
@@ -64,7 +74,7 @@ const walk = (d) => readdirSync(d).flatMap((f) => { const p = join(d, f); return
 const adminDir = join(ROOT, 'app/[lang]/admin');
 const PAGES = walk(adminDir).filter((f) => f.endsWith('page.tsx')).map((f) => ({ file: f, id: relative(adminDir, f).replace(/\/?page\.tsx$/, '') || 'hub' }));
 // what only an admin's copy of each page has
-const ONLY_ADMIN = { hub: 'adm-hub', ads: 'SECRET-BANNER', game: 'SECRET-COMMENT', players: 'SECRET-PLAYER', tech: 'SECRET-CHIP', race: 'adm-sched' };
+const ONLY_ADMIN = { hub: 'adm-hub', ads: 'SECRET-BANNER', game: 'SECRET-COMMENT', players: 'SECRET-PLAYER', tech: 'SECRET-CHIP', race: 'adm-sched', logs: 'SECRET-LOGGED' };
 const SECRETS = /SECRET-|adm-hub|adm-sched|adm-bar|adm-tile/;
 
 const load = (file) => import(file);
@@ -184,6 +194,56 @@ test('/admin/players lists a player, and /admin/tech the errors on the page', as
   const tech = await render(page('tech'));
   assert.match(tech, /SECRET-ERROR/);
   assert.match(tech, /SECRET-LOAD-FAILURE/);
+});
+
+// ---------- /admin/logs: who had a problem, and one player's log ----------
+const logsCall = () => db.calls.find((c) => c[0] === 'regatta_admin_logs');
+
+test('/admin/logs lists the players with a problem, each linked to their log', async () => {
+  admin();
+  const html = await render(page('logs'), 'en', { days: '7' });
+  assert.deepEqual(logsCall(), ['regatta_admin_logs', { days: 7, person: null }]);
+  assert.ok(html.includes(`href="/admin/logs?who=${WHO}&amp;days=7"`), 'the player opens with the period kept');
+  assert.match(html, /3\/40/);
+});
+
+test('/admin/logs?who= asks for that player and shows everything kept of their visits and races', async () => {
+  admin();
+  db.rpc.regatta_admin_logs = { data: { ...LOGS, report: REPORT }, error: null };
+  const html = await render(page('logs'), 'en', { who: WHO.toUpperCase(), days: '90' });
+  assert.deepEqual(logsCall(), ['regatta_admin_logs', { days: 90, person: WHO }]);
+  for (const s of ['SECRET-WHY', 'SECRET-STACK', 'main.js:12', 'SECRET-GPU', 'SECRET-SAID', 'Load failed', '3D lost', '18 FPS', 'Rated 2 of 5', 'Over early × 1', 'Closed the page']) assert.ok(html.includes(s), s);
+  assert.ok(html.includes(`href="/admin/logs?days=90&amp;who=${WHO}"`), 'a change of period stays on this player');
+  assert.ok(html.includes('href="/admin/logs?days=90"'), 'the way back keeps the period');
+  assert.ok(html.indexOf('SECRET-STACK') < html.indexOf('2/6'), 'the latest first; a race whose visit is gone is still listed');
+});
+
+test('/admin/logs takes only a player id from the address', async () => {
+  for (const who of ['abc', "1' or 1=1", '../etc', '1234567890123456789', `${WHO}x`]) {
+    admin();
+    await render(page('logs'), 'en', { who });
+    assert.deepEqual(logsCall(), ['regatta_admin_logs', { days: 30, person: null }], who);
+  }
+  admin();
+  await render(page('logs'), 'en', { who: '123456789' });
+  assert.deepEqual(logsCall(), ['regatta_admin_logs', { days: 30, person: '123456789' }]);
+});
+
+test('/admin/logs says why when the log fails, and when a player has nothing in the period', async () => {
+  admin();
+  db.rpc.regatta_admin_logs = { data: null, error: { message: 'function not found' } };
+  assert.match(await render(page('logs')), /The numbers didn’t load: function not found/);
+  admin();
+  db.rpc.regatta_admin_logs = { data: { ...LOGS, report: { ...REPORT, visits: [], races: [], first: null, last: null } }, error: null };
+  assert.match(await render(page('logs'), 'en', { who: WHO }), /Nothing recorded for this player in this period\./);
+  admin();
+  db.rpc.regatta_admin_logs = { data: { ...LOGS, people: [] }, error: null };
+  assert.match(await render(page('logs')), /No player had a problem in this period\./);
+});
+
+test('/admin/players links each player to their log', async () => {
+  admin();
+  assert.ok((await render(page('players'), 'en', { days: '7' })).includes('href="/admin/logs?who=abcd1234&amp;days=7"'));
 });
 
 test('/admin/ads shows the saved logos and the banner\'s words', async () => {

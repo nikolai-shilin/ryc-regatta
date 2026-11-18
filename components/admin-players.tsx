@@ -3,6 +3,7 @@ import { plainName } from '@/lib/name';
 import { Tile } from './admin-stats';
 import { IconCrew, clock } from './ui';
 import { PlayersTable, type Col, type Row } from './admin-players-table';
+import { logHref } from './admin-logs';
 
 // The admin's list of the players who began a race in the last `days`, the last seen first (500 at most), from the
 // database's regatta_admin_players (supabase/migrations/20261117150000_regatta_admin_players.sql in the iyt-test repo),
@@ -18,7 +19,7 @@ export type Players = { since: string; players: Player[] };
 
 const pct = (a: number, b: number) => (b ? `${Math.round((100 * a) / b)}%` : '–');
 
-export function AdminPlayers({ lang, data }: { lang: Lang; data: Players }) {
+export function AdminPlayers({ lang, data, days = 30 }: { lang: Lang; data: Players; days?: number }) {
   const t = tx(lang), P = data.players;
   const KIND = { tg: 'Telegram', acct: t('Site account', 'Аккаунт на сайте'), guest: t('Guest', 'Гость') };
   const when = (s: string) => new Date(s).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
@@ -37,6 +38,7 @@ export function AdminPlayers({ lang, data }: { lang: Lang; data: Players }) {
   ];
   const rows: Row[] = P.map((p) => ({
     key: p.who,
+    href: logHref(p.who, days),
     name: plainName(p.name) || (p.kind === 'guest' ? `${KIND.guest} ${p.who.slice(0, 4)}` : '–'),
     sub: `${KIND[p.kind]}${p.handle ? ` · ${p.kind === 'tg' ? '@' : ''}${p.handle}` : ''}`,
     isNew: p.new,
