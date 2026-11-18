@@ -1198,10 +1198,11 @@ function mirrored(obj) {
 }
 
 // ---------- guides around your boat ----------
-// Built with the wind from the north and turned to the wind each frame, in the dash of the lines on the water (LINE_W,
-// DASH, DASH_ON), as bright as the start line, these colours being darker on the sea than white or yellow: an arc of red dashes where she can't sail (too close to the wind) and of blue over the slow dead
-// run between the gybes, one green dash across the ring at the best angle upwind on each tack and one blue at the best
-// angle downwind on each gybe; a white pointer for your heading. Compass c in this frame sits at ring angle π/2 − c.
+// Built with the wind from the north and turned to the wind each frame, as wide as the lines on the water (LINE_W) but
+// solid, and as bright as the start line, these colours being darker on the sea than white or yellow: a red arc where she
+// can't sail (too close to the wind) and a blue one over the slow dead run between the gybes, a short green line across
+// the ring at the best angle upwind on each tack and a blue one at the best angle downwind on each gybe; a white pointer
+// for your heading. Compass c in this frame sits at ring angle π/2 − c.
 const R_RING = 11.45, R_OUT = R_RING + 0.95, GUIDE_A = GOLD_A;
 const glass = (color, opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide, fog: false });
 // flat pieces of the ring, one mesh: each [c0, c1, r0, r1] from compass c0 to c1, between the radii r0 and r1
@@ -1219,22 +1220,21 @@ function ringPieces(pieces, mat) {
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
   return new THREE.Mesh(g, mat);
 }
-// an arc of the ring in dashes as near the lines' as fit it whole, a dash at each end, so it shows just where it stops
-function dashedArc(c0, c1, mat) {
-  const len = (c1 - c0) * R_RING, n = Math.max(2, Math.round((len + DASH * (1 - DASH_ON)) / DASH)), step = (c1 - c0) / (n - 1 + DASH_ON), hw = LINE_W / 2;
-  return ringPieces(Array.from({ length: n }, (_, i) => [c0 + i * step, c0 + (i + DASH_ON) * step, R_RING - hw, R_RING + hw]), mat);
-}
-// one dash across the ring at compass c, on each side of the wind
-const angleDashes = (c, mat) => {
-  const hl = (DASH * DASH_ON) / 2, hw = LINE_W / 2 / R_RING;
-  return ringPieces([-1, 1].map((sd) => [sd * c - hw, sd * c + hw, R_RING - hl, R_RING + hl]), mat);
+// half a line's width, as an angle on the ring
+const RING_HW = LINE_W / 2 / R_RING;
+// an arc of the ring from compass c0 to c1, stopping at the edges of the lines across its ends (see-through, they'd show the overlap)
+const ringArc = (c0, c1, mat) => ringPieces([[c0 + RING_HW, c1 - RING_HW, R_RING - LINE_W / 2, R_RING + LINE_W / 2]], mat);
+// a short line across the ring at compass c, on each side of the wind
+const angleMarks = (c, mat) => {
+  const hl = (DASH * DASH_ON) / 2;
+  return ringPieces([-1, 1].map((sd) => [sd * c - RING_HW, sd * c + RING_HW, R_RING - hl, R_RING + hl]), mat);
 };
 function guides(tws) {
   const g = new THREE.Group(), turn = new THREE.Group(); g.add(turn); // turn: rotated to the wind
   const beat = beatAngle(tws) * D2R, run = runAngle(tws) * D2R, red = glass('#ff4d3d', GUIDE_A), green = glass('#2ee6a0', GUIDE_A), blue = glass('#3aa8ff', GUIDE_A);
-  turn.add(dashedArc(-beat, beat, red)); // no-go: too close to the wind
-  turn.add(dashedArc(run, 2 * Math.PI - run, blue)); // the slow dead run between the gybes
-  turn.add(angleDashes(beat, green), angleDashes(run, blue)); // best upwind, best downwind
+  turn.add(ringArc(-beat, beat, red)); // no-go: too close to the wind
+  turn.add(ringArc(run, 2 * Math.PI - run, blue)); // the slow dead run between the gybes
+  turn.add(angleMarks(beat, green), angleMarks(run, blue)); // best upwind, best downwind
   const tick = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.4, 3).rotateX(-Math.PI / 2), glass('#ffffff', 0.5)); // your heading
   g.add(tick);
   // every piece is draped on the sea each frame (see drapeGuides), so the dial lies on the water as one layer: it
