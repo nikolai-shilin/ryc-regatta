@@ -178,6 +178,12 @@ test('the pages laid out as the pause screen are in the broadcast look', () => {
   }
 });
 
+// .bt lets taps through to the scene behind it, so a main button outside a card (/match/[code]'s Join, /match/new's Sign in) must take them back
+test('the main button takes a tap wherever it stands on a scene page', () => {
+  const rule = /(?:^|\n)\.bt-go \{([^}]*)\}/.exec(read('styles/ryc.css'))?.[1] ?? '';
+  assert.match(rule, /pointer-events: auto/);
+});
+
 test('the course map: its colours are the tokens, and the boats\' labels never cover each other', async () => {
   const { mapPalette, placeLabels, MAP_TOKENS } = await import('../public/game/course-map.js');
   // read from the page, or the tokens' own values when it gives none
