@@ -1499,7 +1499,7 @@ export class World {
   // In a match the other sailor's boat is in her own colours (the look her game sent), her name by her status tag; and
   // both fly their blue or yellow flag on the stern.
   boatView(b, look) {
-    const other = !b.ai && b.human && this.race?.match && b !== this.race.player; // (no look sent: the default boat's)
+    const other = !b.ai && b.human && (this.race?.match || this.race?.multi) && b !== this.race.player; // (no look sent: the default boat's)
     const lk = b.ai ? LOOKS[b.name] || LOOKS.Aurora : other ? lookFrom(b.look) : look || playerLook();
     const v = b.ai
       ? makeBoatView({ look: lk, label: { text: b.name, color: b.color } }, b.cls)
@@ -1834,7 +1834,7 @@ export class World {
       const far = Math.hypot(d, cp.y); // the full figures only close up, never with Life on Low; the finest right by the camera, with Life on High
       v.setCrewNear(this.gfx?.life !== 'low' && far < 25, this.gfx?.life === 'high' && far < (v.crewClose ? 19 : 15));
       v.update(b, t, this.W, this.mode === 'drone');
-      if (race.match && v.label && b !== P) { // a match: her penalty turn or OCS by her name (the HUD's tag names her the rest of the time)
+      if ((race.match || race.multi) && v.label && b !== P) { // a match: her penalty turn or OCS by her name (the HUD's tag names her the rest of the time)
         const st = b.pen ? '⟳' : b.ocs ? 'OCS' : '';
         v.label.visible = !!st && this.mode !== 'helm'; if (st) v.label.userData.set(`${b.name} ${st}`, true);
       }

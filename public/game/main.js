@@ -13,7 +13,7 @@ import { VENUE, venueById, laidLength, lengthOffered } from './venues.js';
 import { classById } from './classes.js';
 import { arriveLoaded, goBack, outOfRace } from './trail.js';
 import { createMusic, direct, MUSIC_CHOICES, PLAYLIST } from './music.js';
-import { createSfx, AUDIO_TICK } from './sfx.js';
+import { createSfx, openAudio, AUDIO_TICK } from './sfx.js';
 
 const $ = (s) => document.querySelector(s);
 // a file of the game's (a voice, the calls, the gulls) at the address the page's import map gives it, with its hash
@@ -171,7 +171,7 @@ const T = {
     abandoned: 'Race abandoned — not scored', full: 'This match is full', matchFail: 'Couldn’t connect to the match', tryAgain: 'Try again',
     noGl: 'The browser won’t start the 3D graphics just now. Close other tabs and apps, or restart the browser, and try again.',
     glLostK: 'The picture was lost', glLostTxt: 'The device took the graphics back, most often when it runs short of memory. Reload to sail on, on lighter graphics.', doReload: 'Reload',
-    touchedM: 'You touched the mark — you owe a penalty turn', penTurn: 'Penalty turn under way', timeMatch: 'match race',
+    touchedM: 'You touched the mark — you owe a penalty turn', penTurn: 'Penalty turn under way', timeMatch: 'match race', timeOne: '1-on-1 race',
     'r16.1': 'Right of way, but give room to keep clear', 'x16.1': 'A boat with right of way that changes course must give the other boat room to keep clear.',
   },
   ru: {
@@ -276,7 +276,7 @@ const T = {
     abandoned: 'Гонка прекращена — не засчитывается', full: 'В этом матче уже двое', matchFail: 'Не удалось подключиться к матчу', tryAgain: 'Ещё раз',
     noGl: 'Браузер сейчас не запускает 3D-графику. Закрой другие вкладки и приложения или перезапусти браузер — и попробуй ещё раз.',
     glLostK: 'Картинка пропала', glLostTxt: 'Устройство забрало графику — чаще всего, когда не хватает памяти. Перезагрузи, чтобы плыть дальше на облегчённой графике.', doReload: 'Перезагрузить',
-    touchedM: 'Касание знака — за тобой штрафной оборот', penTurn: 'Штрафной оборот', timeMatch: 'матчевая гонка',
+    touchedM: 'Касание знака — за тобой штрафной оборот', penTurn: 'Штрафной оборот', timeMatch: 'матчевая гонка', timeOne: 'гонка один на один',
     'r16.1': 'Право дороги — но дай место уступить', 'x16.1': 'Лодка с правом дороги, меняя курс, должна дать другой лодке место, чтобы уступить.',
   },
 };
@@ -382,7 +382,7 @@ const audio = {
   init() {
     if (this.ctx) { this.ctx.resume(); return; }
     try {
-      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.ctx = openAudio(window.AudioContext || window.webkitAudioContext);
       this.master = this.ctx.createGain(); this.master.gain.value = this.on ? 1 : 0; this.master.connect(this.ctx.destination);
       // the wind, the water, the sails, the winch, the horn (sfx.js), made from what makes the real ones
       const bus = (k) => { const g = this.ctx.createGain(); g.gain.value = sndK(k); g.connect(this.master); return g; };
@@ -1260,7 +1260,7 @@ function startMatchFlow() {
   for (const id of ['#pChange', '#pRestart']) $(id).style.display = 'none'; // a match isn't restarted or changed: only left
   import('./match-ui.js').then((m) => {
     matchUi = m;
-    return m.startMatch({ code: MATCH, t, LANG, venue: VENUE, cls: CLS, onRace: onMatchRace, onIdle: onMatchIdle, onEnd: () => replaceRace(HUB), toast: (s) => toast(s, 3.5),
+    return m.startMatch({ code: MATCH, t, LANG, venue: VENUE, cls: CLS, onRace: onMatchRace, onIdle: onMatchIdle, onEnd: () => replaceRace(HUB), keepOneOnOne, openResult, toast: (s) => toast(s, 3.5),
       yachtName: (id) => yachtName(id), venueName: (id) => venueById(id).name[LANG === 'ru' ? 1 : 0] });
   }).catch((e) => { console.error(e); matchFailed(); });
 }
@@ -1508,7 +1508,7 @@ function paintPause() {
   $('#pNext').textContent = P.leg < legs.length ? t('nextAt', t(legKey(race.course, nx)), Math.round(P.leg < 1 ? Math.max(0, -race.lineInfo(P).d) : race.distToNext(P))) : '';
   $('#pHow').textContent = P.leg < legs.length ? t(howKey(race.course, nx)) : '';
   $('#pLine').textContent = pauseLine(P, place, nx);
-  $('#pTimeD').textContent = race.match ? t('timeMatch') : race.settings.daily ? t('timeDaily') : t('timeFree');
+  $('#pTimeD').textContent = race.match ? t('timeMatch') : race.multi ? t('timeOne') : race.settings.daily ? t('timeDaily') : t('timeFree');
   $('#pNext').classList.toggle('mark', !!race.course.marks[nx] || nx === 'gate'); // as its tag on the water
   $('#pPen').parentNode.className = L.penT > 1 ? 'pen' : 'clean';
   $('.p-esc').innerHTML = `<kbd>Esc</kbd>${t('escResumes').replace(/^Esc\s*(—\s*)?/, '')}`;
@@ -1797,12 +1797,12 @@ function handleMessages() {
       if (a.key === 'gun' && P.ocs) continue;
       toast(t(a.key, Math.round(-a.t / 60), race.prepFlag), 3);
     } else if (m.key === 'finished' || m.key === 'finishedDsq' || m.key === 'finishedStartDsq') {
-      race._fin = finishScene(race); raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(false, race.course.finishBoat); haptic('heavy');
+      race._fin = finishScene(race); if (!race.multi) raceFinished(race); toast(t(m.key, m.arg), 3); audio.horn(false, race.course.finishBoat); haptic('heavy');
       score.sting(m.key !== 'finished' ? 'lose' : m.arg === 1 ? 'win' : m.arg <= Math.max(2, Math.ceil(race.boats.length / 3)) ? 'gain' : 'lose');
       // the crew's word as she crosses (in Russian), and the committee's after it, heard out before the result
       if (m.key === 'finished') skipper.cue('finish');
       const end = committee.call(m.key === 'finishedDsq' ? 'cFinDsq' : m.key === 'finishedStartDsq' ? 'cFinOut' : m.arg === 1 ? 'cFin1' : 'cFin', 1.5);
-      setTimeout(finishToPage, end ? Math.max(2500, (end - audio.ctx.currentTime) * 1000 + 600) : 2500);
+      if (!race.multi) setTimeout(finishToPage, end ? Math.max(2500, (end - audio.ctx.currentTime) * 1000 + 600) : 2500);
     }
     else if (m.key === 'gate') toast(t('gateMsg'));
     else if (m.key === 'bump') { score.sting('hit'); hint('bump', t('bump'), 3); haptic('heavy'); skipper.shout(race.clock < 0 ? 'push' : 'contact'); }
@@ -2035,12 +2035,21 @@ function finishScene(race) {
 function finishToPage() {
   if (!race.over) return;
   for (let n = 0; !race.boats.every((b) => b.done) && n < 60 * 900; n++) race.step(STEP);
-  const id = race._rid || (race._rid = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())));
-  const c = race.course, P = race.player, L = race.log, s = race.settings;
-  const xz = (m) => [Math.round(m.x), Math.round(m.z)];
-  const thin = (tr) => { const k = Math.max(1, Math.ceil(tr.length / 160)); return tr.filter((_, i) => i % k === 0 || i === tr.length - 1).map(([x, z]) => [Math.round(x), Math.round(z)]); };
+  const P = race.player, s = race.settings;
   let pb = null;
   if (P.done && !P.dsq) pb = personalBest(s.daily ? `daily|${s.daily}` : pbKey(s, race), Math.round(P.finish * 10) / 10);
+  const res = resultRecord(race, pb);
+  keepResult(res);
+  raceResult(race, res); // and on the server, so the result's link opens on any device (stats.js)
+  replaceRace('/race/result/' + encodeURIComponent(res.id));
+}
+// The result of a race as the result page reads it: the record kept on this device and posted. pb is the personal best's
+// answer (null: none), L the log of the sailor it is for
+function resultRecord(race, pb = null, L = race.log) {
+  const id = race._rid || (race._rid = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())));
+  const c = race.course, P = race.player, s = race.settings;
+  const xz = (m) => [Math.round(m.x), Math.round(m.z)];
+  const thin = (tr) => { const k = Math.max(1, Math.ceil(tr.length / 160)); return tr.filter((_, i) => i % k === 0 || i === tr.length - 1).map(([x, z]) => [Math.round(x), Math.round(z)]); };
   const head = L.tacks.filter((x) => x <= -3).length, lift = L.tacks.filter((x) => x >= 3).length;
   const res = {
     v: 1, id, at: Date.now(), daily: s.daily || null, preset: s.preset, length: s.length, laps: s.laps, start: s.start, current: !!s.current,
@@ -2056,14 +2065,36 @@ function finishToPage() {
       fouls: L.fouls.map((f) => ({ rule: String(f.rule), who: f.who || null, t: f.t ?? null, x: f.x == null ? null : Math.round(f.x), z: f.z == null ? null : Math.round(f.z) })) },
     pb: pb && { best: pb.best, isNew: pb.isNew, ...(pb.prev != null && { prev: pb.prev }) },
   };
+  return res;
+}
+function keepResult(res) {
   try {
     const keys = Object.keys(localStorage).filter((k) => k.startsWith('regatta-result-')).sort((a, b) => (JSON.parse(localStorage.getItem(a) || '{}').at || 0) - (JSON.parse(localStorage.getItem(b) || '{}').at || 0));
     while (keys.length >= 20) localStorage.removeItem(keys.shift()); // the last twenty races stay on this device
-    localStorage.setItem('regatta-result-' + id, JSON.stringify(res));
+    localStorage.setItem('regatta-result-' + res.id, JSON.stringify(res));
   } catch (e) {}
-  raceResult(race, res); // and on the server, so the result's link opens on any device (stats.js)
-  replaceRace('/race/result/' + encodeURIComponent(id));
 }
+// A race between two people, kept on this device when it ends and posted nowhere: her record is the one a race has,
+// its boats' finish, track, leg times and penalties the ones the two screens agreed on (results, wire.js resultsOf), her own log
+// the sailor's. No best, no daily, no computer skipper's level. Returns the record's id
+function keepOneOnOne(race, results) {
+  const by = new Map(results.boats.map((r) => [r.id, r]));
+  const mine = by.get(race.player.id);
+  const res = resultRecord(race, null, mine?.log || race.log);
+  res.oneOnOne = true;
+  res.daily = null;
+  res.boats = race.standings().map((b, i) => {
+    const r = by.get(b.id), o = { ...res.boats[i] };
+    delete o.level;
+    if (!r) return o;
+    const dnf = !!r.dnf, done = !!r.done && !dnf;
+    return { ...o, ...(b !== race.player && { flag: flagCode(lookFrom(b.look).flag) }), done, dsq: !!r.dsq, dnf, secs: done && r.finish != null ? Math.round(r.finish * 10) / 10 : null,
+      track: r.track.map(([x, z]) => [Math.round(x), Math.round(z)]), legT: (r.legT || []).map((x) => Math.round(x * 10) / 10), pens: r.pens || 0 };
+  });
+  keepResult(res);
+  return res.id;
+}
+const openResult = (id) => replaceRace('/race/result/' + encodeURIComponent(id));
 
 
 // personal bests, kept on this device: per course on a free race, per day on today's race. A new best's result keeps the

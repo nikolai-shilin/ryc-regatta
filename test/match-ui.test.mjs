@@ -46,3 +46,10 @@ test('seconds are said in each language\'s own unit ("через 45 с", not "45
   }
 });
 
+
+test('a shared race posts nothing and never jumps to the result page at the finish', () => {
+  const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
+  const stats = read('../public/game/stats.js'), main = read('../public/game/main.js');
+  assert.equal((stats.match(/race\.multi/g) || []).length, 5);
+  assert.match(main, /if \(!race\.multi\) setTimeout\(finishToPage/);
+});
