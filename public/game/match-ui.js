@@ -1,6 +1,7 @@
 // A 1-on-1 race on screen: the waiting room, the race against the friend, and the card after it. main.js imports this
-// module only when the address has ?match=<code>, and this module imports the Realtime client and the race's protocol
-// (net.js, match.js, wire.js) only once it runs: nobody sailing today's race or a free race downloads any of it.
+// module only when the address has ?match=<code>, and this module imports the Realtime client, the race's protocol and
+// its reports to the site (net.js, match.js, wire.js, duel-log.js) only once it runs: nobody sailing today's race or a free
+// race downloads any of it.
 //
 // Who runs what: the host's game runs the race (match.js Host) and keeps its state (Match); the guest's follows (Guest)
 // and copies the host's Match from its 'mstate' messages. On 'match:CODE' (link.all), besides the Room's and the race's
@@ -88,12 +89,13 @@ const html = (s) => { const d = document.createElement('div'); d.innerHTML = s.t
 export const clean = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/[#*0-9]️?⃣|[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}][︎️‍\u{E0020}-\u{E007F}]*/gu, '').replace(/\s+/g, ' ').trim().slice(0, 16);
 const store = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} return null; };
 const fmtS = (s, unit = 's') => { s = Math.max(0, Math.round(s)); return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `${s} ${unit}`; };
-// a host's match, kept in localStorage['regatta-match-' + code] as { at, m } for six hours (a tab closed and the link
-// opened again finds its race); Leave or Done clears it, and an open page sweeps away any other code's gone stale
+// a host's match, kept in localStorage['regatta-match-' + code] as { at, m, w } for six hours (a tab closed and the link
+// opened again finds its race; w: its write token, till its end has been reported); Leave or Done clears it, and an open
+// page sweeps away any other code's gone stale
 const SAVED_MS = 6 * 3600 * 1000, SAVED_RE = /^regatta-match-[A-HJ-KM-NP-Z2-9]{6}$/;
 const savedMatch = (code) => {
   let v = null; try { v = JSON.parse(localStorage.getItem('regatta-match-' + code) || 'null'); } catch (e) {}
-  return v && v.m && v.m.start && Date.now() - v.at < SAVED_MS ? v.m : null;
+  return v && v.m && v.m.start && Date.now() - v.at < SAVED_MS ? v : null;
 };
 const sweepSaved = () => { try { for (const k of Object.keys(localStorage)) if (SAVED_RE.test(k)) { let v = null; try { v = JSON.parse(localStorage.getItem(k)); } catch (e) {} if (!v || !(Date.now() - v.at < SAVED_MS)) localStorage.removeItem(k); } } catch (e) {} };
 
@@ -174,6 +176,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
 
   // ---------- the state of the screen ----------
   let rt = null, link = null, room = null, M = null, W = null, K = null; // K: the host's Keeper (match.js)
+  let Log = null; // duel-log.js: what the site is told of the race (not loaded: nothing is told, and the race goes on)
   let match = null; // Match: the host's own (K.match); the guest's a copy of the host's
   let cur = null; // the race on screen: { seed, race, H | G, acc, at, endedAt, told, gotSnap, loadedAt, rid (its record's id) }
   let phase = 'room'; // 'room' | 'race' | 'card'
@@ -181,13 +184,14 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   let lastHostAt = Date.now(), lastState = 0, stateKey = '', kicked = 0;
   let pendingStart = null; // the guest: a start heard before any mstate
   const pastSeeds = new Set(); // the guest: the races before the one she is on
+  const told = new Map(); // what the site has been told, by seed. The host's: { token, settled (its start's tries are over), end (its report, till then) }, the token gone with the end; the guest's: true, she has joined
   let myName = clean(store(NAME_KEY) || '');
 
   const here = () => ({ venue: venue.id, yacht: cls.id });
   const nameOf = (id) => (match ? (id === match.hostId ? match.start.host.name : id === match.guestId ? match.start.guest.name : '') : '') || '—';
   const onScreen = () => !!cur && cur.seed === match.start.seed; // the race of the Match is the one on screen
   const otherId = () => (match ? (myId === match.hostId ? match.guestId : match.hostId) : null);
-  const saveMatch = () => { if (isHost && match) store('regatta-match-' + code, { at: Date.now(), m: match.toJSON() }); };
+  const saveMatch = () => { if (isHost && match) store('regatta-match-' + code, { at: Date.now(), m: match.toJSON(), w: told.get(match.start.seed)?.token ?? undefined }); };
   // the other screen runs another build of the game: never raced; both screens ask for a reload
   const stale = () => {
     if (!room || !build) return false;
@@ -210,6 +214,8 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
       if (isHost && match?.state === 'race') link?.all.send('abandon', { seed: match.start.seed });
       link?.all.send('leave', { id: myId });
     } catch (e) {}
+    if (isHost && match?.state === 'race') match.endRace({ abandoned: true }); // (it lived in this tab)
+    tellEnd(true);
     cur?.H?.stop(); cur?.G?.stop();
     if (isHost) try { localStorage.removeItem('regatta-match-' + code); } catch (e) {}
     try { room?.leave(); } catch (e) {}
@@ -221,7 +227,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   C.leave.addEventListener('click', () => leave());
   C.full.addEventListener('click', () => { const id = resultId(); if (id) leave(() => openResult(id)); });
   R.retry.addEventListener('click', () => location.reload());
-  addEventListener('pagehide', () => { if (!left) try { room?.leave(); } catch (e) {} });
+  addEventListener('pagehide', () => { tellEnd(true); if (!left) try { room?.leave(); } catch (e) {} });
   // the link checked at once when the page comes back to the front or the network comes back: a phone drops a
   // background tab's socket, and the old one may be half-open
   const relink = () => { if (rt && !left) { kicked = Date.now(); rt.reconnect(); } };
@@ -237,7 +243,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
       if (cfg.name) myName = clean(cfg.name) || myName; // signed in: the account's name
       build = typeof cfg.build === 'string' ? cfg.build : null;
       let net;
-      [net, M, W] = await Promise.all([import('./net.js'), import('./match.js'), import('./wire.js')]);
+      [net, M, W, Log] = await Promise.all([import('./net.js'), import('./match.js'), import('./wire.js'), import('./duel-log.js').catch(() => null)]);
       isHost = (store(M.HOST_KEY) || {}).code === code;
       hostSettings = isHost ? M.cleanSettings(store(SETTINGS_KEY), here()) : null;
       if (isHost && !settingsHere(hostSettings)) return; // (another page: the host's own venue and yacht)
@@ -285,7 +291,13 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     // in that tab), one sailed to its end stands
     if (isHost) {
       const saved = savedMatch(code);
-      if (saved) try { match = M.Match.from(saved); if (match) { K.set(match); saveMatch(); } } catch (e) { match = null; }
+      if (saved) try {
+        match = M.Match.from(saved.m);
+        if (match) {
+          if (typeof saved.w === 'string' && /^[0-9a-f]{32,64}$/i.test(saved.w)) told.set(match.start.seed, { token: saved.w, settled: true, end: null }); // (its start was the last page's to tell)
+          K.set(match); saveMatch();
+        }
+      } catch (e) { match = null; }
     }
   };
   R.join.addEventListener('click', () => submitName());
@@ -330,6 +342,42 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   const savedRid = (seed) => { const v = store(RESULT_KEY); return v && v.code === code && v.seed === seed ? v.id : null; };
   const resultId = () => (match ? (onScreen() && cur.rid) || savedRid(match.start.seed) : null);
 
+  // ---------- what the site is told of the race (duel-log.js): in the background, whatever becomes of it ----------
+  // the host: the race's start, once, with the token that will prove its end hers
+  const tellStart = () => {
+    const seed = match.start.seed;
+    if (told.has(seed)) return;
+    try {
+      const l = { token: Log.newToken(), settled: false, end: null };
+      told.set(seed, l);
+      Log.report(Log.startBody(match, code, l.token), { done: () => { l.settled = true; if (l.end) sendEnd(l); } });
+    } catch (e) { console.error(e); }
+  };
+  const sendEnd = (l) => {
+    const body = l.end;
+    l.end = null; l.token = null;
+    if (!left) saveMatch(); // (the token goes with it: a page opened again has nothing more to tell)
+    Log.report(body);
+  };
+  // the host: the race's end, once, by whatever way it ended. It follows its start's tries, for the site can't place an end
+  // that overtakes its start; a page going away (now) can't wait for them
+  const tellEnd = (now = false) => {
+    try {
+      if (isHost && match?.state === 'over') {
+        const l = told.get(match.start.seed), race = onScreen() ? cur.race : null;
+        if (l?.token && !l.end) l.end = Log.endBody(match, code, l.token, race, race && M.finalResults(race));
+      }
+      for (const l of told.values()) if (l.end && (l.settled || now)) sendEnd(l);
+    } catch (e) { console.error(e); }
+  };
+  // the guest: her joining this race, once
+  const tellJoin = () => {
+    const seed = match.start.seed;
+    if (told.has(seed)) return;
+    told.set(seed, true);
+    try { Log.report(Log.joinBody(match, code, myName)); } catch (e) { console.error(e); }
+  };
+
   // ---------- the race ----------
   const enterRace = () => {
     cur?.H?.stop(); cur?.G?.stop();
@@ -338,8 +386,9 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     race.settings = { ...match.start.settings, fleet: 2, daily: null };
     const c = cur = { seed: match.start.seed, race, H: null, G: null, acc: 0, at: Date.now(), endedAt: 0, told: false, gotSnap: false, loadedAt: 0, rid: null };
     phase = 'race'; show(R.card, false); show(C.card, false);
-    if (isHost) { K.lastIn = Date.now(); saveMatch(); sendState(); }
+    if (isHost) { tellStart(); K.lastIn = Date.now(); saveMatch(); sendState(); }
     else {
+      tellJoin();
       c.G = new M.Guest({ race, link, me: myId });
       c.G.onEnd((e) => { if (!c.endedAt) c.endedAt = Date.now(); if (c === cur) match.endRace(e); }); // (the host's word, ahead of its next mstate)
       c.G.onResults((m) => keep(c, m));
@@ -494,6 +543,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
       K.beat(); // her presence to the Match
       startHost();
       hostEnded(); // (a race given up with this tab in the background, its frames stopped)
+      tellEnd();
       const key = `${match.state}|${match.leftBy}`;
       if (key !== stateKey || now - lastState > (match.state === 'race' ? 2000 : 1000)) { if (key !== stateKey) saveMatch(); stateKey = key; sendState(); }
     }

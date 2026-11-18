@@ -33,7 +33,7 @@ test("main.js says each of a match's calls in both languages", () => {
 test('a match loads its own modules only when it runs: none of them is in the page or main.js imports', () => {
   const main = readFileSync(new URL('../public/game/main.js', import.meta.url), 'utf8');
   const play = readFileSync(new URL('../public/play/index.html', import.meta.url), 'utf8');
-  for (const m of ['match-ui', 'match', 'net', 'wire']) {
+  for (const m of ['match-ui', 'match', 'net', 'wire', 'duel-log']) {
     assert.doesNotMatch(main, new RegExp(`^import [^\\n]*'\\./${m}\\.js'`, 'm'), m);
     assert.doesNotMatch(play, new RegExp(`/game/${m}\\.js`), m);
   }
