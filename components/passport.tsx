@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { tx, ruPlural, type Lang } from '@/lib/lang';
 import { VENUES, type VenueId } from '@/lib/venues';
 import { harvest, LOG_EVENT, passport, streakOf, type Log } from '@/lib/log';
@@ -33,12 +32,6 @@ export function useLog() {
 // "5-day streak", "1 day"
 export const streakWords = (n: number, lang: Lang) => tx(lang)(`${n}-day streak`, `${n} ${ruPlural(n, ['день', 'дня', 'дней'])} подряд`);
 
-const IconStamp = ({ s = 18 }: { s?: number }) => (
-  <svg viewBox="0 0 20 20" width={s} height={s} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" aria-hidden="true">
-    <rect x="2.5" y="3.5" width="15" height="13" rx="1.5" /><path d="M6 10.2l2.6 2.6L14 7.4" strokeLinecap="round" />
-  </svg>
-);
-
 // Home's venues, one a day: each you've raced tinted green, today's lit, and over them how many you have and your streak
 export function VenueList({ lang, today }: { lang: Lang; today: VenueId }) {
   const t = tx(lang), log = useLog();
@@ -64,19 +57,5 @@ export function VenueList({ lang, today }: { lang: Lang; today: VenueId }) {
         <li className="next">{t('Tomorrow · ?', 'Завтра · ?')}</li>
       </ul>
     </div>
-  );
-}
-
-// The race hub's row: the venues you've raced and your streak, or what a first race starts
-export function PassportRow({ lang }: { lang: Lang }) {
-  const t = tx(lang), log = useLog();
-  const p = log ? passport(log) : null, st = log ? streakOf(log.d) : null;
-  // short, for a phone's row (the row says they're venues): 3 of 28 · 4 in a row
-  const meta = !p ? '' : [t(`${p.n} of ${p.of}`, `${p.n} из ${p.of}`), st && st.n > 1 ? t(`${st.n} in a row`, `${st.n} подряд`) : ''].filter(Boolean).join(' · ');
-  return (
-    <Link className={`bt-row${st?.risk ? ' bt-row-risk' : ''}`} href="/#h-venues">
-      <IconStamp /><span>{st?.risk ? t('Race today to keep your streak', 'Пройди сегодня — не прерви серию') : t('Venues you’ve raced', 'Твои акватории')}</span>
-      {meta && <span className="bt-row-m">{meta}</span>}
-    </Link>
   );
 }

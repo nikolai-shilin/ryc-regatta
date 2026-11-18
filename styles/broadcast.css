@@ -33,7 +33,7 @@
 /* a narrow screen: a stat's label (and its lock) on one line, tighter; a row's note that only repeats its words, left out */
 /* stats whose words vary in length (the boat's: Black, Laminate, Your own): each as wide as its word */
 .bc .bt-stats-fit > div { flex: 1 1 auto; min-width: max-content; }
-@container scr (max-width: 440px) { .bc .bt-stats .bt-sk { white-space: nowrap; letter-spacing: var(--ls-button); } .bc .bt-row-opt { display: none; } }
+@container scr (max-width: 440px) { .bc .bt-stats .bt-sk { white-space: nowrap; letter-spacing: var(--ls-button); } }
 .bc .bt-sv { font: 500 var(--fs-small)/1.3 var(--sans); color: var(--ink-2); }
 .bc .bt-cap { gap: var(--s-3); padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4); border: 0; border-left: 4px solid var(--gold); border-radius: 0; background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
 .bc .bt-cap-t b { font: 700 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); }
@@ -110,6 +110,7 @@
 
 /* the rows that lead on, as the pause menu's */
 .bc .bt-rows { gap: 0; margin: 0 calc(-1 * var(--cp)); border-top: 1px solid var(--rule); }
+.bc .bt-rows:empty { display: none; } /* the race hub's rival row is drawn only for a player on the ranking: no rule left behind for a guest */
 .bc .bt-row { height: var(--h-m); gap: var(--s-3); margin: 0; padding: 0 var(--cp); border: 0; border-bottom: 1px solid var(--rule-2); border-radius: 0; font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-name); }
 .bc .bt-rows .bt-row:last-child { border-bottom: 0; }
 .bc .bt-row:hover { background: var(--w-06); border-radius: 0; }
@@ -171,8 +172,6 @@
 /* every row's name starts at the same place, whatever stands before it */
 .bc .bt-view .bt-rows .bt-row > svg, .bc .bt-rows .pg-ico { flex: 0 0 24px; }
 .bc .bt-k-r { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* the streak's warning is the row's whole message: it keeps the row to itself */
-.bc .bt-row-risk > .bt-row-m { display: none; }
 .bc .bt-show { height: var(--h-l); gap: var(--s-2); padding: 0 var(--s-4); border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
 .bc .bt-show:hover { background: var(--w-14); }
 .bc .bt-show[aria-pressed="true"] { background: color-mix(in srgb, var(--gold) 16%, transparent); box-shadow: inset 0 -3px 0 var(--gold); }
@@ -1438,11 +1437,6 @@
 .bc .pg-go { margin: 0; }
 .bc .pg-stars { display: inline-flex; gap: 4px; font-size: 26px; line-height: 1; }
 .bc .pg-stars i { font-style: normal; color: var(--w-14); } .bc .pg-stars i.on { color: var(--gold); }
-/* the hub's drills row: the name over your stars */
-.bc .bt-row.pg-row { height: auto; min-height: 60px; }
-.bc .bt-rows .bt-row > .pg-row-t { flex: 1 1 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.bc .pg-row-t small { overflow: hidden; text-overflow: ellipsis; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
-.bc .pg-row-t small b { color: var(--gold); font-weight: 800; }
 .bc .pg-ico { width: 18px; flex: none; text-align: center; font: 700 15px/1 var(--cond); color: var(--gold); }
 .bc .pg-rival-m { display: inline-flex; align-items: center; gap: 6px; text-transform: none; }
 .bc .pg-rival-m .lb-who { display: inline-flex; align-items: center; gap: 4px; }

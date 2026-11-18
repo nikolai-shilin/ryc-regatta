@@ -7,7 +7,7 @@ import { click, clock, doing, dom, done, englishIn, fire, fromFrame, h, hrefs, j
 
 const { RatingView } = await import('../components/rating-view.tsx');
 const { MyMonth, monthOf, myPoints } = await import('../components/my-month.tsx');
-const { DrillsList, ProgressRows, RivalRow, RivalLine } = await import('../components/progress.tsx');
+const { DrillsList, RivalRow, RivalLine } = await import('../components/progress.tsx');
 const { FreeQuick, MatchCard } = await import('../components/hub-client.tsx');
 const { default: FreeSetup } = await import('../components/free-setup.tsx');
 const { CourseMap } = await import('../components/course-map.tsx');
@@ -310,24 +310,6 @@ test('the drills in Russian', async () => {
   assert.match(v.text(), new RegExp(`Откроется с ${toOpen(LEVELS[1].id)} звёздами уровня «${LEVELS[0].name[1]}»`));
   assert.match(v.text(), new RegExp(`0 из ${first.length * 3} звёзд`));
   assert.deepEqual(englishIn(v.text()), []);
-});
-
-test('the hub’s row says your level and what the next one takes', async () => {
-  stars({ [first[0].id]: 3 });
-  const v = await mount(h(ProgressRows, { lang: 'en' }));
-  assert.equal(v.$('a').getAttribute('href'), '/race/drills');
-  assert.equal(plain(v.$('small').innerHTML), `${LEVELS[0].name[0]} · 3 of ${first.length * 3} stars · ${toOpen(LEVELS[1].id) - 3} more to open ${LEVELS[1].name[0]}`);
-});
-
-test('the hub’s row at the top level has nothing further to open', async () => {
-  stars(Object.fromEntries(DRILLS.map((d) => [d.id, 3])));
-  const v = await mount(h(ProgressRows, { lang: 'ru' }));
-  const top = DRILLS.filter((d) => d.level === LEVELS.at(-1).id).length * 3;
-  assert.equal(plain(v.$('small').innerHTML), `${LEVELS.at(-1).name[1]} · ${top} из ${top}`);
-});
-
-test('the hub’s row before the stars are read is just its name', () => {
-  assert.equal(plain(ssr(h(ProgressRows, { lang: 'en' }))), 'Drills');
 });
 
 // ---------- your rival ----------

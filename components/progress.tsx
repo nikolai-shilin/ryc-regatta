@@ -17,11 +17,6 @@ function useDrills() {
   useEffect(() => setD(readDrills()), []);
   return d;
 }
-const IconStar = () => (
-  <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" />
-  </svg>
-);
 const Stars = ({ n, label }: { n: number; label: string }) => (
   <span className="pg-stars" role="img" aria-label={label}>{[1, 2, 3].map((i) => <i key={i} className={i <= n ? 'on' : ''}>★</i>)}</span>
 );
@@ -69,25 +64,6 @@ export function DrillsList({ lang }: { lang: Lang }) {
         );
       })}
     </div>
-  );
-}
-
-// the hub's row: the drills, your level and your stars at it
-export function ProgressRows({ lang }: { lang: Lang }) {
-  const t = tx(lang), got = useDrills();
-  const stars = got ? DRILLS.reduce((a, d) => a + (got[d.id] || 0), 0) : null;
-  // the pips: your level's drills' stars (the whole set's are too many to draw)
-  const lv = got ? LEVELS.find((l) => l.id === levelOf(got))! : null, mineDs = lv ? DRILLS.filter((d) => d.level === lv.id) : [];
-  const mineStars = got ? mineDs.reduce((a, d) => a + (got[d.id] || 0), 0) : 0;
-  // the level after yours, and the stars at yours that open it: the row's next goal
-  const next = lv ? LEVELS[LEVELS.indexOf(lv) + 1] : undefined;
-  return (
-    <Link className="bt-row pg-row" href="/race/drills">
-      <IconStar />
-      <span className="pg-row-t">{t('Drills', 'Тренировки')}{stars == null || !lv ? null : <small>{lang === 'ru'
-        ? <>{lv.name[1]} · <b>{mineStars}</b> из {mineDs.length * 3}{next ? <> · ещё {toOpen(next.id) - mineStars} до уровня «{next.name[1]}»</> : null}</>
-        : <>{lv.name[0]} · <b>{mineStars}</b> of {mineDs.length * 3} stars{next ? <> · {toOpen(next.id) - mineStars} more to open {next.name[0]}</> : null}</>}</small>}</span>
-    </Link>
   );
 }
 

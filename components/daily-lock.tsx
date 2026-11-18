@@ -2,10 +2,10 @@
 import { useEffect, useRef } from 'react';
 import { tx, type Lang } from '@/lib/lang';
 
-// S2 · Today's race is fixed. Today's conditions on the race hub (the numbers under the venue, and "Change the wind or
-// course") open this sheet rather than quietly turning the race into a free one: it says why they can't change, that
-// a race in other conditions doesn't go on today's ranking, and offers the way out, the same race as a free race,
-// prefilled, to change from there. Anything marked data-lock on the page opens it.
+// S2 · Today's race is fixed. Today's conditions on the race hub (the numbers under the venue) open this sheet rather
+// than quietly turning the race into a free one: it says why they can't change, that a race in other conditions
+// doesn't go on today's ranking, and offers the way out, the same race as a free race, prefilled, to change from
+// there. Anything marked data-lock on the page opens it.
 export function DailyLock({ lang, chips }: { lang: Lang; chips: string[] }) {
   const t = tx(lang);
   const dlg = useRef<HTMLDialogElement>(null);
