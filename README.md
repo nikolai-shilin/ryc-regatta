@@ -21,6 +21,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 | `/help` | How to play, with screenshots | `app/[lang]/help/page.tsx` |
 | `/faq` | Questions: 32 in five groups | `lib/faq.ts`, `components/faq-list.tsx` |
 | `/iyt` | The IYT sailing certification test, as rycrentals.com/iyt has it | `app/[lang]/iyt/page.tsx` |
+| `/sponsorship` | What a sponsor can have: the jib's logo, the plane's banner, both, and what would be built to order. No prices; enquiries go by Telegram | `app/[lang]/sponsorship/page.tsx`, `styles/sponsorship.css` |
 | `/sign-in`, `/sign-in/code`, `/sign-in/name` | Supabase sign-in: Google or a 6-digit email code, then a name for the ranking | `components/sign-in-forms.tsx` |
 | `/play?race=today`, `?race=free` or `?match=<code>` | The game itself, a static page | `public/play/index.html`, `public/game/` |
 | Any other address | The site's 404, with its header and a way back, in the reader's language; `proxy.ts` sends a rating day the API can't have (`/race/rating/not-a-day`, a day to come) here too. A document of its own, as the root layout is under `[lang]` (`experimental.globalNotFound`) | `app/global-not-found.tsx`, `components/not-found-view.tsx` |
@@ -173,7 +174,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   in the `regatta` options; `?venue=<id>` in the game's address overrides it): Göcek, Cowes, Newport, Sydney, Kiel,
   Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland, San Francisco, Valencia, Barcelona, Palma, Marstrand, Bermuda,
   Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda, Istanbul, St Petersburg (the Neva under the
-  Peter and Paul Fortress, its bridges raised), Batumi, Scheveningen, Hong Kong, Cape Town, Athens, Marmaris, Fethiye, Sochi, Melbourne, Gold Coast or New York (the last twelve join
+  Peter and Paul Fortress, its bridges raised), Batumi, Scheveningen, Hong Kong, Cape Town, Athens, Marmaris, Fethiye, Sochi, Melbourne, Gold Coast, New York, Naples, Los Angeles, Les Sables-d'Olonne, Dubai, Miami, Split, Monaco, Fremantle, Sint Maarten or Phuket (the last twenty-two join
   today's races together, on 20 November 2026). `public/game/venues.js` holds each one's position,
   prevailing wind, clock and look (its woods, farmland, houses, moored boats and water); `lib/venues.ts` is the set-up
   page's list of them, and `npm test` keeps the two in step. Each venue's land, Göcek's too, is baked by
@@ -240,7 +241,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   skirts the race area), New York's orange Staten Island ferries (`si`), and the kitesurfers off Fethiye's Çalış beach and
   St Kilda's (`kites`). Melbourne's, the Gold Coast's, New York's and Sochi's towers stand on the map's 3D parts too (`parts`:
   where a tower is mapped as `building:part`s, its outline carrying only the podium's height), and New York's piers, which the
-  map's coastline makes land and the tiles give their sheds' roofs, are kept low (`quays`).
+  map's coastline makes land and the tiles give their sheds' roofs, are kept low (`quays`). Los Angeles's and Fremantle's container yards are paved (`aprons`), their cranes and stacked boxes drawn along the quays (`cranes`), and at Sint Maarten an airliner comes in low over Maho Beach to the runway every few minutes (`runway`).
 - **The sounds of the boat and the sea:** made as they go, not recorded (`public/game/sfx.js`), each from what makes
   the real one: the wind a roar of brown noise and a hiss of pink in stereo, its gusts swelling on a slow random walk,
   from where the apparent wind comes, and from about 13 knots the rigging's moan; the water a rush that brightens with

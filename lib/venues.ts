@@ -8,7 +8,8 @@
 export type VenueId = 'gocek' | 'cowes' | 'newport' | 'sydney' | 'kiel' | 'trieste' | 'porto-cervo' | 'saint-tropez' | 'antigua' | 'auckland'
   | 'san-francisco' | 'valencia' | 'barcelona' | 'palma' | 'marstrand' | 'bermuda' | 'enoshima' | 'weymouth' | 'marseille' | 'rio' | 'garda' | 'istanbul'
   | 'st-petersburg' | 'batumi' | 'scheveningen' | 'hong-kong' | 'cape-town' | 'athens' | 'marmaris' | 'fethiye'
-  | 'sochi' | 'melbourne' | 'gold-coast' | 'new-york';
+  | 'sochi' | 'melbourne' | 'gold-coast' | 'new-york'
+  | 'naples' | 'los-angeles' | 'les-sables' | 'dubai' | 'miami' | 'split' | 'monaco' | 'fremantle' | 'sint-maarten' | 'phuket';
 type Pair = [string, string]; // English, Russian
 
 export const VENUES: { id: VenueId; nation: string; name: Pair; place: Pair; wind: Pair; skip?: string[]; from?: string; about: Pair }[] = [
@@ -80,6 +81,26 @@ export const VENUES: { id: VenueId; nation: string; name: Pair; place: Pair; win
     about: ['The Pacific off the beach and towers of Surfers Paradise, in the easterly sea breeze, the East Australian Current running south.', 'Тихий океан у пляжа и небоскрёбов Серферс-Парадайз, под восточным морским бризом; Восточно-Австралийское течение несёт на юг.'] },
   { id: 'new-york', nation: 'USA', name: ['New York', 'Нью-Йорк'], place: ['USA', 'США'], wind: ['SSW', 'ЮЮЗ'], from: '2026-11-20',
     about: ['The Upper Bay by the Statue of Liberty, in the summer south-westerly, Lower Manhattan and the Brooklyn Bridge to leeward, the Verrazzano to windward.', 'Верхняя бухта у статуи Свободы, под летним юго-западным ветром; под ветром — Нижний Манхэттен и Бруклинский мост, на ветре — мост Верразано.'] },
+  { id: 'naples', nation: 'ITA', name: ['Naples', 'Неаполь'], place: ['Italy', 'Италия'], wind: ['SW', 'ЮЗ'], from: '2026-11-20',
+    about: ['The bay of the 2027 America’s Cup, off Posillipo and Castel dell’Ovo, in the afternoon sea breeze, Vesuvius beyond the city.', 'Неаполитанский залив Кубка «Америка» 2027 года, у Позиллипо и замка Кастель-дель-Ово, под дневным морским бризом; за городом — Везувий.'] },
+  { id: 'los-angeles', nation: 'USA', name: ['Los Angeles', 'Лос-Анджелес'], place: ['California, USA', 'Калифорния, США'], wind: ['WSW', 'ЗЮЗ'], from: '2026-11-20',
+    about: ['San Pedro Bay, the sailing waters of the 2028 Olympics, off the Port of Los Angeles and the Queen Mary at Long Beach.', 'Залив Сан-Педро, парусная акватория Олимпиады 2028 года, у порта Лос-Анджелеса и лайнера «Куин Мэри» в Лонг-Бич.'] },
+  { id: 'les-sables', nation: 'FRA', name: ['Les Sables-d’Olonne', 'Ле-Сабль-д’Олон'], place: ['Vendée, France', 'Вандея, Франция'], wind: ['WNW', 'ЗСЗ'], from: '2026-11-20',
+    about: ['The Bay of Biscay off the channel where the Vendée Globe starts and ends, La Chaume’s tower and the long beach to leeward.', 'Бискайский залив у канала, где стартует и финиширует «Вандея Глоб»; под ветром — башня Ла-Шом и длинный пляж.'] },
+  { id: 'dubai', nation: 'UAE', name: ['Dubai', 'Дубай'], place: ['UAE', 'ОАЭ'], wind: ['NW', 'СЗ'], from: '2026-11-20',
+    about: ['The Gulf off Jumeirah in the shamal, between the Burj Al Arab, the Palm and the World, the Burj Khalifa over the city.', 'Персидский залив у Джумейры под ветром шамаль, между Бурдж-эль-Араб, Пальмой и островами Мир; над городом — Бурдж-Халифа.'] },
+  { id: 'miami', nation: 'USA', name: ['Miami', 'Майами'], place: ['Florida, USA', 'Флорида, США'], wind: ['ESE', 'ВЮВ'], from: '2026-11-20',
+    about: ['Biscayne Bay off Coconut Grove, home of the Bacardi Cup, in the trade wind, Key Biscayne to windward and the towers of downtown up the bay.', 'Залив Бискейн у Коконат-Гроув, дом Кубка Bacardi, под пассатом; на ветре — Ки-Бискейн, вдали — небоскрёбы центра.'] },
+  { id: 'split', nation: 'CRO', name: ['Split', 'Сплит'], place: ['Croatia', 'Хорватия'], wind: ['WNW', 'ЗСЗ'], from: '2026-11-20',
+    about: ['The Split Channel in the summer maestral, off Marjan’s wooded hill and Diocletian’s city, Brač and Šolta across the water.', 'Сплитский канал под летним маэстралом, у лесистого холма Марьян и города Диоклетиана; напротив — острова Брач и Шолта.'] },
+  { id: 'monaco', nation: 'MON', name: ['Monaco', 'Монако'], place: ['Côte d’Azur', 'Лазурный Берег'], wind: ['SE', 'ЮВ'], from: '2026-11-20',
+    about: ['The sea off Port Hercule in the afternoon breeze, the Rock and its palace, Monte Carlo’s towers climbing the mountain behind.', 'Море у порта Эркюль под дневным бризом: Скала с дворцом и небоскрёбы Монте-Карло, взбирающиеся на гору.'] },
+  { id: 'fremantle', nation: 'AUS', name: ['Fremantle', 'Фримантл'], place: ['Western Australia', 'Западная Австралия'], wind: ['SW', 'ЮЗ'], from: '2026-11-20',
+    about: ['Gage Roads, the waters of the 1987 America’s Cup, in the south-westerly Fremantle Doctor, the port’s moles and cranes to leeward.', 'Рейд Гейдж, акватория Кубка «Америка» 1987 года, под юго-западным «Фримантлским доктором»; под ветром — молы и краны порта.'] },
+  { id: 'sint-maarten', nation: 'NED', name: ['Sint Maarten', 'Синт-Мартен'], place: ['Caribbean', 'Карибы'], wind: ['E', 'В'], from: '2026-11-20',
+    about: ['The Caribbean of the Heineken Regatta off Simpson Bay, in the trade wind, the airliners landing low over Maho Beach.', 'Карибское море регаты Heineken у залива Симпсон, под пассатом; над пляжем Махо низко заходят на посадку лайнеры.'] },
+  { id: 'phuket', nation: 'THA', name: ['Phuket', 'Пхукет'], place: ['Thailand', 'Таиланд'], wind: ['ENE', 'ВСВ'], from: '2026-11-20',
+    about: ['The Andaman Sea of the King’s Cup off Kata and Karon, in the north-east monsoon, the Big Buddha on the hill above the beaches.', 'Андаманское море Королевского кубка у Каты и Карона, под северо-восточным муссоном; над пляжами на холме — Большой Будда.'] },
 ];
 
 export const venueOf = (id: string | undefined) => VENUES.find((v) => v.id === id) || VENUES[0];

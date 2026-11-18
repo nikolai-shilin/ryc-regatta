@@ -455,6 +455,147 @@ export const VENUES = [
       water: { deep: '#1d3a40', scatter: '#3a6e66', k: 0.55, shallow: '#4f6e5c', clear: 0.08 },
     },
   },
+  // the ten below join today's races with the others, on the same day
+  {
+    // the Bay of Naples off Posillipo and the Via Caracciolo, the America's Cup's waters of 2027, in the afternoon sea
+    // breeze: Castel dell'Ovo and the city climbing to Sant'Elmo to leeward, Vesuvius beyond
+    id: 'naples', name: ['Naples', 'Неаполь'], lat: 40.806, lon: 14.232, wind: 230, tz: 2, from: '2026-11-20',
+    look: {
+      haze: 0.95,
+      ground: { forest: ['#2f4427', '#3f5831', '#5a7040'], scrub: '#78794f', rock: ['#8f8778', '#6d665c'], town: '#b0a48e', shore: '#8a8275', sand: '#6f6a60', grass: '#66803f' }, // the volcanic coast's dark sand
+      fields: ['#6f8a42', '#7f9548', '#8f9a52', '#5f7f3c'],
+      trees: [['stone', 0.45, '#2f4427', '#5a7040'], ['broad', 0.3, '#33482a', '#5f7a3c'], ['olive', 0.15, '#56603e', '#7f8660'], ['palm', 0.1, '#3d5a2c', '#5f7a3a']], treeTop: 1000, woods: 0.45, snow: 3200,
+      // the city's yellow tufo and faded ochre, pink and pale plaster, its flat terraces
+      walls: ['#e3c98f', '#dcb27e', '#e8d7b4', '#d99a78', '#efe6d2', '#c9b48e', '#e5bfa0'], roofs: ['#a5543a', '#b4603e', '#8f8a7e', '#9c4f37'], flat: 0.7,
+      boats: { sail: 0.45, motor: 0.4, big: 0.15, bigKind: 'super' },
+      water: { deep: '#07304c', scatter: '#1b7796', k: 0.45, shallow: '#3a9a9a', clear: 0.4 },
+    },
+  },
+  {
+    // San Pedro Bay outside the Federal Breakwater, the 2028 Olympic waters, in the afternoon westerly: the Port of Los
+    // Angeles's cranes, the Queen Mary and Long Beach's towers to leeward, the Palos Verdes hills to windward
+    id: 'los-angeles', name: ['Los Angeles', 'Лос-Анджелес'], lat: 33.7, lon: -118.195, wind: 255, tz: -7, stream: ['tide', 290, 0.4], from: '2026-11-20',
+    look: {
+      haze: 0.8,
+      ground: { forest: ['#46502f', '#58623a', '#6f7747'], scrub: '#8d8558', rock: ['#a89a80', '#857a68'], town: '#aaa294', shore: '#d4c7a6', sand: '#ddd0ae', grass: '#71843f' },
+      trees: [['palm', 0.35, '#3d5a2c', '#6a8a3a'], ['eucalypt', 0.3, '#4a5a3a', '#7d8a62'], ['shrub', 0.2, '#5a6a42', '#7f8a5c'], ['broad', 0.15, '#3a5230', '#5f7a3c']], treeTop: 450, woods: 0.2, clearing: 'scrub',
+      walls: ['#efe6d2', '#e6dac0', '#f3eee4', '#d9c9a8', '#c9c4ba', '#e8d8c0'], roofs: ['#a5543a', '#8f8678', '#6f7478', '#b4603e'], flat: 0.65,
+      boats: { sail: 0.55, motor: 0.35, big: 0.1, bigKind: 'super' },
+      water: { deep: '#123c4c', scatter: '#35807f', k: 0.5, shallow: '#5a9488', clear: 0.2 },
+    },
+  },
+  {
+    // the Bay of Biscay off Les Sables-d'Olonne, where the Vendée Globe starts and ends, in the westerly: the channel
+    // between La Chaume's tower and the Remblai's long beach to leeward
+    id: 'les-sables', name: ['Les Sables-d’Olonne', 'Ле-Сабль-д’Олон'], lat: 46.475, lon: -1.835, wind: 285, tz: 2, stream: ['tide', 330, 0.5], from: '2026-11-20',
+    look: {
+      haze: 0.95,
+      ground: { forest: ['#2e4428', '#3f5a32', '#57703f'], scrub: '#7d8058', rock: ['#a59c8a', '#857d6e'], town: '#b3ab9c', shore: '#dccfa9', sand: '#e6d9b4', grass: '#6f8a4a' },
+      fields: ['#6f9a45', '#7fa64e', '#a8a85e', '#5f8c3e', '#b9ac68'],
+      trees: [['stone', 0.45, '#2e4428', '#57703f'], ['pine', 0.3, '#2b4123', '#536b39'], ['broad', 0.25, '#33482a', '#5f7a3c']], treeTop: 60, woods: 0.2, clearing: 'grass',
+      // the Vendée's whitewash under low terracotta roofs, the fishermen's blue shutters' town
+      walls: ['#f6f3ea', '#efe9dc', '#ffffff', '#ece4d2', '#e6dfd0'], roofs: ['#b4603e', '#c0704a', '#a5543a', '#9c4f37'], flat: 0.3,
+      boats: { sail: 0.72, motor: 0.23, big: 0.05, bigKind: 'super' },
+      water: { deep: '#1e4250', scatter: '#3f7f7c', k: 0.55, shallow: '#6f9a84', clear: 0.12 },
+    },
+  },
+  {
+    // the Gulf off Jumeirah in the shamal: the Burj Al Arab on its island, the Palm and the Marina's towers along the
+    // shore, the World's islands offshore and the Burj Khalifa over the city
+    id: 'dubai', name: ['Dubai', 'Дубай'], lat: 25.168, lon: 55.175, wind: 315, tz: 4, stream: ['tide', 230, 0.5], from: '2026-11-20',
+    look: {
+      haze: 0.75,
+      ground: { forest: ['#4a5a34', '#5c6c3e', '#74824c'], scrub: '#b3a274', rock: ['#c7b28e', '#a8946f'], town: '#cfc3a8', shore: '#eadcb8', sand: '#e9d7ae', grass: '#7f9448' },
+      trees: [['palm', 0.8, '#3d5a2c', '#6a8a3a'], ['shrub', 0.2, '#6a7446', '#8d9460']], treeTop: 80, woods: 0.05,
+      walls: ['#f1ebdc', '#e8dfca', '#f6f2e8', '#d9cdb0', '#e0d4ba', '#ffffff'], roofs: ['#d8cdb4', '#c9bea4', '#b4603e', '#e8e4dc'], flat: 0.92,
+      towers: ['#9fb6c4', '#b9c9d2', '#d8dee0', '#7f9bad', '#e4e4de', '#a9bcc6'], // glass and pale stone
+      boats: { sail: 0.2, motor: 0.55, big: 0.25, bigKind: 'super' },
+      water: { deep: '#0a4a62', scatter: '#20a4a8', k: 0.5, shallow: '#58c8b4', clear: 0.6 },
+    },
+  },
+  {
+    // Biscayne Bay off Coconut Grove, of the Bacardi Cup, in the south-easterly trade wind: Key Biscayne and Cape
+    // Florida's light to windward, Stiltsville on the flats, the towers of Brickell and downtown up the bay
+    id: 'miami', name: ['Miami', 'Майами'], lat: 25.695, lon: -80.205, wind: 110, tz: -4, stream: ['tide', 320, 0.4], from: '2026-11-20',
+    look: {
+      haze: 0.95,
+      ground: { forest: ['#2f4d28', '#3f6430', '#5a7f3a'], scrub: '#70874a', rock: ['#b8ae94', '#968c76'], town: '#b5ae9e', shore: '#e8dcbc', sand: '#efe4c6', grass: '#5f8a3e' },
+      trees: [['palm', 0.5, '#3d5a2c', '#6a8a3a'], ['broad', 0.5, '#2f4d28', '#587f38']], treeTop: 40, woods: 0.45, clearing: 'grass',
+      walls: ['#f6f3ec', '#efe6d2', '#ffffff', '#f2d9c0', '#d9e6e0', '#ece4d2'], roofs: ['#c0704a', '#d8d4c8', '#a5543a', '#e8e4dc'], flat: 0.6,
+      towers: ['#a8c0cc', '#c8d6dc', '#eeeeea', '#8fabba', '#dfe6e8', '#b6c8d0'],
+      boats: { sail: 0.5, motor: 0.42, big: 0.08, bigKind: 'super' },
+      water: { deep: '#0f5a66', scatter: '#2fb0a4', k: 0.6, shallow: '#7cd0b0', clear: 0.7 },
+    },
+  },
+  {
+    // the Split Channel in the summer's maestral: the Riva and Diocletian's palace behind Marjan's wooded hill, Mosor
+    // over the city, Brač and Šolta across the water
+    id: 'split', name: ['Split', 'Сплит'], lat: 43.465, lon: 16.42, wind: 300, tz: 2, from: '2026-11-20',
+    look: {
+      haze: 1.2,
+      ground: { forest: ['#2f4427', '#41582f', '#5c7040'], scrub: '#7f7f58', rock: ['#d2cbb8', '#aaa390'], town: '#bfb6a2', shore: '#cfc6b0', sand: '#d9d0ba' }, // the Dalmatian coast's white limestone
+      trees: [['pine', 0.55, '#2f4427', '#5c7040'], ['cypress', 0.15, '#25391f', '#3a5230'], ['olive', 0.25, '#56603e', '#7f8660'], ['palm', 0.05, '#3d5a2c', '#5f7a3a']], treeTop: 700, woods: 0.45, coast: 'rock',
+      walls: ['#ece6d6', '#e4dcc8', '#f3eee2', '#d9d0bc', '#e8dfcc'], roofs: ['#b4603e', '#a5543a', '#c0704a', '#9c4f37'], flat: 0.25,
+      boats: { sail: 0.7, motor: 0.22, big: 0.08, bigKind: 'gulet' },
+      water: { deep: '#053454', scatter: '#157fa8', k: 0.45, shallow: '#35b0b4', clear: 0.65 },
+    },
+  },
+  {
+    // the Ligurian Sea off Port Hercule in the sea breeze: the Rock and its palace, Monte Carlo's towers stacked up
+    // the mountain, the Liguro-Provençal current running west along the coast
+    id: 'monaco', name: ['Monaco', 'Монако'], lat: 43.72, lon: 7.44, wind: 135, tz: 2, stream: ['flow', 250, 0.3], from: '2026-11-20',
+    look: {
+      haze: 1.1,
+      ground: { forest: ['#30452a', '#425a33', '#5d7242'], scrub: '#7c7b55', rock: ['#bdb4a0', '#968e7c'], town: '#b9ae9a', shore: '#a89f8c', sand: '#bdb29c' },
+      trees: [['pine', 0.4, '#30452a', '#5d7242'], ['olive', 0.25, '#56603e', '#7f8660'], ['cypress', 0.15, '#25391f', '#3a5230'], ['palm', 0.2, '#3d5a2c', '#5f7a3a']], treeTop: 1100, woods: 0.45, coast: 'rock', snow: 3000,
+      walls: ['#f0e4cc', '#ecd6b4', '#f4ecdc', '#e8c9a8', '#e6dcc8', '#f7f2e6'], roofs: ['#b4603e', '#a5543a', '#c0704a', '#8f8a7e'], flat: 0.6,
+      towers: ['#e6dfd0', '#d9d3c6', '#c9d3d8', '#efe9dc', '#b8c6cc', '#e0d8c8'],
+      boats: { sail: 0.2, motor: 0.45, big: 0.35, bigKind: 'super' },
+      water: { deep: '#04304e', scatter: '#127aa4', k: 0.45, shallow: '#2fa8b4', clear: 0.6 },
+    },
+  },
+  {
+    // Gage Roads off Fremantle, of the 1987 America's Cup, in the south-westerly Fremantle Doctor: the port's moles and
+    // cranes and the long white beaches to leeward, Rottnest on the horizon
+    id: 'fremantle', name: ['Fremantle', 'Фримантл'], lat: -32.045, lon: 115.7, wind: 225, tz: 8, from: '2026-11-20',
+    look: {
+      haze: 1.25,
+      ground: { forest: ['#3f4f30', '#52633a', '#6c7a4a'], scrub: '#88865a', rock: ['#c8bb9c', '#a59878'], town: '#b8ad9a', shore: '#f0e6cc', sand: '#f4ecd6', grass: '#7a8f48' },
+      trees: [['eucalypt', 0.55, '#4a5a3a', '#7d8a62'], ['shrub', 0.25, '#5a6a42', '#7f8a5c'], ['stone', 0.2, '#3f4f30', '#6c7a4a']], treeTop: 120, woods: 0.2, clearing: 'scrub',
+      // the port's limestone and red brick, and its pale tin roofs
+      walls: ['#e6d9bc', '#d9c8a4', '#a85c45', '#efe9dc', '#c9b08a', '#f3eee4'], roofs: ['#8f9498', '#a84f36', '#7b8287', '#c9c6bc'], flat: 0.3,
+      boats: { sail: 0.65, motor: 0.3, big: 0.05, bigKind: 'super' },
+      water: { deep: '#044a70', scatter: '#14a0bc', k: 0.5, shallow: '#5cd0c0', clear: 0.75 },
+    },
+  },
+  {
+    // the Caribbean off Simpson Bay in the easterly trade wind: the airliners coming in over Maho Beach, Cupecoy's
+    // cliffs and the island's green hills ashore
+    id: 'sint-maarten', name: ['Sint Maarten', 'Синт-Мартен'], lat: 18.012, lon: -63.105, wind: 95, tz: -4, stream: ['flow', 285, 0.5], from: '2026-11-20',
+    look: {
+      haze: 1.2,
+      ground: { forest: ['#2f4f28', '#3f6a30', '#5c8a3c'], scrub: '#6f8a48', rock: ['#a89a80', '#857a68'], town: '#c0b8a6', shore: '#efe4c4', sand: '#f4ead0', grass: '#5f8f3e' },
+      trees: [['palm', 0.35, '#3d5a2c', '#6a8a3a'], ['broad', 0.4, '#2f4f28', '#5c8a3c'], ['shrub', 0.25, '#55703a', '#7a8f4e']], treeTop: 420, woods: 0.6,
+      // the islands' painted houses
+      walls: ['#f6f3ec', '#f2d7a8', '#f0b8a0', '#a8d8d0', '#f8e8b0', '#ffffff', '#c8dcec'], roofs: ['#b4603e', '#c23a30', '#3f7f8f', '#d8d4c8'], flat: 0.45,
+      boats: { sail: 0.55, motor: 0.3, big: 0.15, bigKind: 'super' },
+      water: { deep: '#024a78', scatter: '#10a8c4', k: 0.55, shallow: '#54d4c4', clear: 0.8 },
+    },
+  },
+  {
+    // the Andaman Sea off Kata and Karon, of the King's Cup, in the winter's north-easterly monsoon: the beaches, the
+    // jungle hills and the Big Buddha on Nakkerd Hill to windward
+    id: 'phuket', name: ['Phuket', 'Пхукет'], lat: 7.785, lon: 98.255, wind: 60, tz: 7, stream: ['tide', 350, 0.4], from: '2026-11-20',
+    look: {
+      haze: 0.95,
+      ground: { forest: ['#234a22', '#2f602a', '#4a7f36'], scrub: '#5f8a42', rock: ['#9a9080', '#786f62'], town: '#b5ad9c', shore: '#efe4c6', sand: '#f4ecd2', grass: '#5a8f3a' },
+      fields: ['#4f8a3a', '#5f9a42', '#3f7a34'], // rubber and oil-palm plantations
+      trees: [['broad', 0.65, '#234a22', '#4f8638'], ['palm', 0.35, '#3d5a2c', '#6a8a3a']], treeTop: 530, woods: 0.85,
+      walls: ['#f4f0e6', '#ece4d2', '#ffffff', '#f0dcc0', '#dfe6dc', '#e8d8c0'], roofs: ['#b4603e', '#c0704a', '#8f4a36', '#6f7478'], flat: 0.45,
+      boats: { sail: 0.4, motor: 0.5, big: 0.1, bigKind: 'super' },
+      water: { deep: '#06486a', scatter: '#16a0b0', k: 0.55, shallow: '#58ccb8', clear: 0.65 },
+    },
+  },
 ];
 
 export const venueById = (id) => VENUES.find((v) => v.id === id) || VENUES[0];

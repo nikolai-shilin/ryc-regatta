@@ -1676,6 +1676,21 @@ function siFerryGeo() {
   }
   return strip(s.geo());
 }
+// An airliner, 64 m long and 60 across the wings, nose at −z: white, her belly and tail in blue
+function airlinerGeo() {
+  const W = '#f3f4f2', B = '#1f4f8f', parts = [];
+  parts.push(tint(new THREE.CylinderGeometry(3, 3, 46, 12).rotateX(Math.PI / 2).translate(0, 0, 0), W));
+  parts.push(tint(new THREE.SphereGeometry(3, 12, 8).scale(1, 1, 2.6).translate(0, 0, -23), W), tint(new THREE.ConeGeometry(3, 18, 12).rotateX(Math.PI / 2).translate(0, 0.9, 32), W));
+  parts.push(tint(new THREE.BoxGeometry(5.2, 0.6, 46).translate(0, -2.75, 0), B));
+  const wing = (s) => fromTris([s * 2.5, -1, -6, s * 30, 0.8, 8, s * 2.5, -1, 10, s * 2.5, -1, -6, s * 2.5, -1, 10, s * 30, 0.8, 8, s * 30, 0.8, 8, s * 30, 0.8, 11, s * 2.5, -1, 10, s * 30, 0.8, 8, s * 2.5, -1, 10, s * 30, 0.8, 11]);
+  const tail = (s) => fromTris([s * 1, 1, 26, s * 12, 2, 34, s * 1, 1, 33, s * 1, 1, 26, s * 1, 1, 33, s * 12, 2, 34]);
+  for (const s of [-1, 1]) {
+    parts.push(tint(wing(s), W), tint(tail(s), W));
+    parts.push(tint(new THREE.CylinderGeometry(1.7, 1.5, 5.5, 10).rotateX(Math.PI / 2).translate(s * 11, -2.6, -2), '#c9ccce'));
+  }
+  parts.push(tint(fromTris([0, 2, 24, 0, 13, 36, 0, 2, 33, 0, 2, 24, 0, 2, 33, 0, 13, 36]), B));
+  return mergeGeometries(parts.map(strip));
+}
 function movers() {
   const group = new THREE.Group(), list = [], mat = landMat(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0 }), 1); // (as the moored boats')
   const geo = { ferry: fastFerryGeo(), taxi: taxiGeo(), si: siFerryGeo() }, SPEED = { ferry: 9, taxi: 4.5, si: 8 }, WAIT = { ferry: 240, taxi: 90, si: 300 };
@@ -1706,6 +1721,11 @@ function movers() {
       kites.push({ g, rider, kite, lines, off: 40 + (i * 53) % 220, ph: i * 1.7, sp: 6 + (i % 3) });
     }
   }
+  // the airliner coming in over the beach to the runway (a landmark of the venue's): down the 3° slope from the sea, her
+  // wheels on the threshold, the roll-out, and a few minutes till the next
+  const rw = (META.landmarks || []).find((L) => L.kind === 'runway');
+  let jet = null;
+  if (rw) { jet = new THREE.Mesh(airlinerGeo(), mat); jet.matrixAutoUpdate = false; jet.visible = false; jet.frustumCulled = false; group.add(jet); }
   const lineLen = K ? Math.hypot(K.b[0] - K.a[0], K.b[1] - K.a[1]) : 0;
   group.userData.update = (t) => {
     for (const b of list) {
@@ -1716,6 +1736,15 @@ function movers() {
       const [x, z] = posAt(b, d), ahead = posAt(b, Math.min(b.len, Math.max(0, d + (dir >= 0 ? 12 : -12)))), back = posAt(b, Math.min(b.len, Math.max(0, d - (dir >= 0 ? 12 : -12))));
       const hx = dir === 0 ? x - back[0] || 1 : ahead[0] - x, hz = dir === 0 ? z - back[1] : ahead[1] - z;
       b.m.position.set(x, Math.sin(t * 1.3 + b.phase * 9) * 0.08 - 0.05, z); b.m.rotation.set(Math.sin(t * 0.9 + b.phase * 5) * 0.012, Math.atan2(-hx, -hz), 0); b.m.updateMatrix();
+    }
+    if (jet) {
+      const [ax, az] = rw.a, [bx, bz] = rw.b, len = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / len, uz = (bz - az) / len, V = 70, APP = 7000, tA = APP / V, tR = 36, u = t % 210;
+      jet.visible = u < tA + tR + 8;
+      if (jet.visible) {
+        const d = u < tA ? u * V - APP : (() => { const r = Math.min(tR, u - tA); return V * r - (V * r * r) / (2 * tR); })();
+        const g = Math.max(0.3, groundAt(ax, az)) + 3, alt = d < 0 ? g + -d * Math.tan((3 * Math.PI) / 180) : g;
+        jet.position.set(ax + ux * d, alt, az + uz * d); jet.rotation.set(d < 0 ? 0.05 : 0.02, Math.atan2(-ux, -uz), 0, 'YXZ'); jet.updateMatrix();
+      }
     }
     for (const k of kites) {
       const f = 0.5 + 0.48 * Math.sin((t * k.sp) / Math.max(200, lineLen) + k.ph), dx = (K.b[0] - K.a[0]) / lineLen, dz = (K.b[1] - K.a[1]) / lineLen;
@@ -2270,6 +2299,181 @@ function alexander(L, parts) {
   for (const sb of [-1, 1]) parts.push(beam(F.P(-0.3, sb * 0.4, 43.4), F.P(-0.8, sb * 1.6, 41.2), 0.15, 1.4, bronze));
   parts.push(beam(F.P(0.5, 0, 42.8), F.P(0.5, 0, H), 0.2, 0.2, bronze), beam(F.P(0.5, -0.7, H - 1.4), F.P(0.5, 0.7, H - 1.4), 0.18, 0.18, bronze));
 }
+// ---------- the landmarks of Naples's, Los Angeles's, Les Sables's, Dubai's, Miami's, Split's, Monaco's, Fremantle's, Sint Maarten's and Phuket's waters ----------
+// a rounded mass, sx along the frame's bearing, sy up and sz across it
+const massAt = (F, a, b, y, sx, sy, sz, col) => { const [x, z] = F.xz(a, b); return tint(new THREE.SphereGeometry(1, 16, 10).scale(sx, sy, sz).rotateY(-F.ang).translate(x, F.y0 + y, z), col); };
+// The Burj Al Arab (Wright, 1999), on its island off Jumeirah: the white fabric sail bellying out between the two wings
+// (L.dir the way it bellies), the glass behind it, the steel X-braces up its back, the mast to L.h, the helipad and
+// the Skyview bar cantilevered out on each side near the top
+function burjAlArab(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), T = 262, white = '#f3f3ee', steel = '#e1e4e4';
+  const w = (t) => 34 * (1 - t ** 1.75), back = (t) => -36 + 42 * t, belly = (t) => back(t) + 76 * (1 - t) ** 0.6;
+  parts.push(F.box(0, 0, -2, 7, 135, 112, '#dcd5c4'));
+  parts.push(sheet((s, t) => { const q = 2 * s - 1; return F.P(back(t) + (belly(t) - back(t)) * (1 - q * q), w(t) * q, 4 + t * T); }, 16, 20, white));
+  parts.push(sheet((s, t) => F.P(back(t), w(t) * (2 * s - 1), 4 + t * T), 4, 14, '#c9d6dc'));
+  for (let i = 0; i < 7; i++) {
+    const t0 = (i / 7) * 0.92, t1 = ((i + 1) / 7) * 0.92;
+    for (const sd of [-1, 1]) {
+      parts.push(beam(F.P(back(t0) - 4, sd * (w(t0) + 2), 4 + t0 * T), F.P(back(t1) - 4, -sd * (w(t1) + 2), 4 + t1 * T), 2.4, 2.4, steel));
+      parts.push(beam(F.P(back(t0) - 4, sd * (w(t0) + 2), 4 + t0 * T), F.P(back(t1) - 4, sd * (w(t1) + 2), 4 + t1 * T), 3, 3, steel));
+    }
+  }
+  parts.push(beam(F.P(back(0.9) - 3, 0, 4 + 0.9 * T), F.P(back(1), 0, L.h), 2.2, 2.2, steel));
+  const [hx, hz] = F.xz(back(0.76) - 30, 0);
+  parts.push(post(hx, hz, y + 208, 12.5, 12.5, 1.4, '#e6e6e0', 24), beam(F.P(back(0.76) - 30, 0, 207), F.P(back(0.72), 0, 196), 3, 3, steel));
+  parts.push(F.box(back(0.8) + 4, 0, 200, 8, 15, 62, '#d5dcdf'));
+}
+// The Burj Khalifa (Smith, SOM, 2010): the three wings of its Y round the hexagonal core, each stepping back in its
+// turn as it climbs, the silver cladding, the spire to L.h
+function burjKhalifa(L, parts) {
+  const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), a0 = ((L.dir || 0) * Math.PI) / 180, N = 30, TOP = 600, cols = ['#a8b6bf', '#b6c3ca'];
+  parts.push(blk(x, z, y - 1, 12, 120, 120, a0, '#8f9aa0'));
+  for (let i = 0; i < N; i++) {
+    const h0 = TOP * (i / N) ** 0.94, h1 = TOP * ((i + 1) / N) ** 0.94, f = 1 - i / N, col = cols[i % 2];
+    parts.push(post(x, z, y + h0, 7 + 13 * f, 7 + 13 * f, h1 - h0 + 0.4, col, 6));
+    for (let k = 0; k < 3; k++) {
+      const a = a0 + (k * 2 * Math.PI) / 3, len = (12 + 50 * f) * (1 - 0.2 * ((i + k) % 3) * (i > 3 ? 1 : 0)), wd = 8 + 16 * f;
+      if (len > 8) parts.push(blk(x + (Math.cos(a) * len) / 2, z + (Math.sin(a) * len) / 2, y + h0, h1 - h0 + 0.4, len, wd, a, col));
+    }
+  }
+  parts.push(post(x, z, y + TOP, 7, 3.4, 110, '#c9d2d6', 8), post(x, z, y + TOP + 110, 3.4, 0.5, L.h - TOP - 110, '#d5dbde', 6));
+}
+// The Queen Mary, at her berth in Long Beach since 1967: the black hull, the white decks, the three raked red funnels
+// with their black tops, the two masts. L.dir: the way her bow points
+function queenMary(L, parts) {
+  const F = frameOf(L, 0), A = 155, B = 18.5, hull = [[-A, -B * 0.74], [-A + 12, -B], [A * 0.5, -B], [A - 12, -B * 0.42], [A, 0], [A - 12, B * 0.42], [A * 0.5, B], [-A + 12, B], [-A, B * 0.74]];
+  parts.push(slab(F, hull.map(([a, b]) => [a, b * 1.005]), -2, 0.8, '#8c2f26'), slab(F, hull, 0.8, 18, '#1b1d20'));
+  const white = '#eeede8';
+  parts.push(F.box(-8, 0, 18, 7, 225, 33, white), F.box(-12, 0, 25, 6, 176, 28, white), F.box(6, 0, 31, 4.5, 118, 23, white), F.box(74, 0, 31, 9, 13, 36, white));
+  for (const a of [46, 2, -42]) {
+    parts.push(beam(F.P(a, 0, 34), F.P(a - 5, 0, 54), 7, 11, '#c5372a'), beam(F.P(a - 5, 0, 54), F.P(a - 6.5, 0, 60), 7.2, 11.2, '#17191b'));
+  }
+  for (const [a, h] of [[102, 62], [-104, 58]]) parts.push(beam(F.P(a, 0, 18), F.P(a - 4, 0, h), 1, 1, '#c9a66a'));
+}
+// A cable-stayed bridge (Long Beach's International Gateway, 2020): the towers at `a` and `b`, the deck hung from fans
+// of stays each side of them, the approaches sloping down to the ground
+function cableStayed(L, parts) {
+  const [ax, az] = L.a, [bx, bz] = L.b, S = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / S, uz = (bz - az) / S, mx = (ax + bx) / 2, mz = (az + bz) / 2, D = L.deck, H = L.h, side = S * 0.5, white = '#eef0ee';
+  const P = (u, y, v = 0) => V3(mx + ux * u - uz * v, y, mz + uz * u + ux * v), far = S / 2 + side + 420;
+  const deckY = (u) => { const a = Math.abs(u); return a <= S / 2 + side ? D : Math.max(6, D - ((a - S / 2 - side) * (D - 6)) / 420); };
+  for (let u = -far; u < far; u += 40) parts.push(beam(P(u, deckY(u)), P(u + 40, deckY(u + 40)), 32, 3.2, '#c4c7c4'));
+  for (let u = -far + 20; u < far; u += 60) if (Math.abs(u) > S / 2 + 10) parts.push(beam(P(u, -2), P(u, deckY(u) - 1.5), 7, 4, '#cfd1cc'));
+  for (const sd of [-1, 1]) {
+    for (const v of [-13, 13]) parts.push(beam(P((sd * S) / 2, -3, v * 1.5), P((sd * S) / 2, D - 2, v), 7, 7, white), beam(P((sd * S) / 2, D - 2, v), P((sd * S) / 2, H, v * 0.3), 5.5, 5.5, white));
+    parts.push(beam(P((sd * S) / 2, D - 3, -14), P((sd * S) / 2, D - 3, 14), 5, 4, white));
+    for (let k = 1; k <= 11; k++) for (const v of [-13, 13]) for (const dirn of [-1, 1]) {
+      const u = (sd * S) / 2 + (dirn * k * S) / 24, top = D + (H - D) * (0.42 + (0.56 * k) / 11);
+      parts.push(beam(P((sd * S) / 2, top, v * 0.3), P(u, D + 1, v), 0.4, 0.4, '#e4e6e4'));
+    }
+  }
+}
+// The ship-to-shore cranes along a container quay, from `a` to `b`: the portal's four legs, the boom out over the water
+// (and back over the yard), the A-frame and its stays
+function cranes(L, parts) {
+  const [ax, az] = L.a, [bx, bz] = L.b, len = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / len, uz = (bz - az) / len, n = L.n || 5, col = L.color || '#2e6da4';
+  let nx = -uz, nz = ux; const mx = (ax + bx) / 2, mz = (az + bz) / 2;
+  if (groundAt(mx + nx * 90, mz + nz * 90) > groundAt(mx - nx * 90, mz - nz * 90)) { nx = -nx; nz = -nz; }
+  for (let i = 0; i < n; i++) {
+    const cx = ax + (ux * len * (i + 0.5)) / n, cz = az + (uz * len * (i + 0.5)) / n, y = Math.max(0, groundAt(cx, cz));
+    const P = (s, v, h) => V3(cx + nx * s + ux * v, y + h, cz + nz * s + uz * v);
+    for (const s of [-16, 14]) for (const v of [-9, 9]) parts.push(beam(P(s, v, 0), P(s, v, 42), 1.7, 1.7, col));
+    for (const v of [-9, 9]) parts.push(beam(P(-16, v, 42), P(14, v, 42), 1.5, 2, col), beam(P(-16, v, 20), P(14, v, 20), 1, 1.2, col));
+    for (const s of [-16, 14]) parts.push(beam(P(s, -9, 42), P(s, 9, 42), 1.5, 2, col));
+    parts.push(beam(P(-52, 0, 45), P(62, 0, 45), 2.6, 3, col));
+    for (const v of [-5, 5]) parts.push(beam(P(-14, v, 43), P(0, 0, 78), 1.4, 1.4, col), beam(P(14, v, 43), P(0, 0, 78), 1.4, 1.4, col));
+    parts.push(beam(P(0, 0, 78), P(62, 0, 46), 0.5, 0.5, '#d8dbdc'), beam(P(0, 0, 78), P(-52, 0, 46), 0.5, 0.5, '#d8dbdc'));
+    parts.push(tint(new THREE.BoxGeometry(4, 3.4, 3).translate(cx + nx * 20, y + 41, cz + nz * 20), '#e9e9e4'));
+  }
+  // the yard behind the quay: the containers stacked two to five high, in their lines' colours
+  const BOX = ['#b5432f', '#2f6b9a', '#3f7f5a', '#c98a2e', '#7d8488', '#8a3f35', '#d8d6cc', '#35506f'], ang = Math.atan2(uz, ux);
+  for (let row = 0; row < 6; row++) for (let u = 12; u < len - 12; u += 27) {
+    const k = (row * 7 + Math.round(u) * 3) % 11; if (k === 0) continue; // a gap here and there
+    const cx = ax + ux * u - nx * (46 + row * 19), cz = az + uz * u - nz * (46 + row * 19), y = Math.max(0, groundAt(cx, cz));
+    parts.push(blk(cx, cz, y, 2.6 * (2 + (k % 4)), 24, 14, ang, BOX[k % BOX.length]));
+  }
+}
+// The Tour d'Arundel, La Chaume's square keep and its light: the stone tower, its machicolations, the lantern on its
+// terrace
+function arundel(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), H = L.h, stone = '#c9bda4';
+  parts.push(F.box(0, 0, -2, H - 3, 11, 11, stone), F.box(0, 0, H - 5, 3, 12.6, 12.6, '#b9ad94'));
+  for (const s of [-1, 1]) for (let k = -2; k <= 2; k++) parts.push(F.box(s * 6, k * 2.5, H - 2, 1.3, 0.9, 1.3, stone), F.box(k * 2.5, s * 6, H - 2, 1.3, 1.3, 0.9, stone));
+  const [x, z] = F.xz(0, 0);
+  parts.push(post(x, z, y + H - 2, 1.8, 1.8, 3, '#2a3238'), tint(new THREE.ConeGeometry(2.2, 1.6, 10).translate(x, y + H + 1.8, z), '#a8322a'));
+}
+// Le Phare des Barges on its reef, of grey granite, the keeper's gallery and the black lantern; and any plain light
+// in its colours: `tower`, `band`, the lantern's roof
+function plainLight(L, parts) {
+  const [x, z] = L.at, y = L.ground === 0 ? 0 : Math.max(0, groundAt(x, z)), H = L.h, tower = L.tower || '#f2efe8', n = L.sides || 16;
+  if (y <= 0.5) parts.push(post(x, z, -3, L.foot || 7, (L.foot || 7) * 0.9, 5, '#8f8a7e', 16));
+  const y0 = y <= 0.5 ? 2 : y, r = Math.max(1.6, H * 0.1);
+  parts.push(post(x, z, y0, r, r * 0.68, H - y0 + y - 5, tower, n));
+  if (L.band) parts.push(post(x, z, y0 + (H - y0 + y) * 0.62, r * 0.8, r * 0.76, (H - y0 + y) * 0.2, L.band, n));
+  parts.push(post(x, z, y + H - 5.4, r * 0.95, r * 0.95, 0.5, '#3a3f42', n), post(x, z, y + H - 5, r * 0.55, r * 0.55, 3.2, '#2a3238', 10), tint(new THREE.ConeGeometry(r * 0.66, 1.8, 10).translate(x, y + H - 0.9, z), L.cap || '#2a3238'));
+}
+// Stiltsville's wooden houses standing in the flats of Biscayne Bay: the piles, the deck, the painted walls, the roof
+function stiltHouse(L, parts) {
+  const F = frameOf(L, 0), wall = L.color || '#e8d9b8';
+  for (const a of [-7, 0, 7]) for (const b of [-5, 5]) { const [x, z] = F.xz(a, b); parts.push(post(x, z, -3, 0.42, 0.42, 8.5, '#6f6252', 6)); }
+  parts.push(F.box(0, 0, 5, 0.6, 19, 14, '#8b7a62'), F.box(0, 0, 5.6, 4.4, 14, 9.5, wall), F.box(0, 0, 10, 0.5, 16, 11.5, '#7d746a'));
+}
+// The bell tower of St Domnius (Split), of white Brač limestone: its Romanesque storeys narrowing as they climb, each
+// with its arcades, the pyramid on top; beside it Diocletian's octagonal mausoleum that became the cathedral
+function domnius(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), stone = '#ddd4c0', dark = '#5f5a50';
+  const tiers = [[0, 15, 10], [15, 12, 9.2], [27, 10, 8.4], [37, 8, 7.4]];
+  for (const [h0, dh, w] of tiers) {
+    parts.push(F.box(0, 0, h0 - (h0 ? 0 : 2), dh + (h0 ? 0 : 2), w, w, stone), F.box(0, 0, h0 + dh - 0.5, 0.7, w + 0.8, w + 0.8, '#c8bfaa'));
+    if (h0) for (const s of [-1, 1]) for (const k of [-1, 0, 1]) { parts.push(F.box(s * (w / 2 + 0.05), (k * w) / 3.4, h0 + 2, dh - 4, 0.2, w / 5.5, dark), F.box((k * w) / 3.4, s * (w / 2 + 0.05), h0 + 2, dh - 4, w / 5.5, 0.2, dark)); }
+  }
+  const [x, z] = F.xz(0, 0);
+  parts.push(post(x, z, y + 45, 3.1, 2.9, 5, stone, 8), tint(new THREE.ConeGeometry(3.3, L.h - 51, 8).translate(x, y + 50 + (L.h - 51) / 2, z), '#cfc6b0'));
+  const [mx, mz] = F.xz(-24, 2);
+  parts.push(post(mx, mz, y - 2, 14, 13, 19, stone, 8), tint(new THREE.ConeGeometry(14, 7, 8).translate(mx, y + 20.5, mz), '#a8583c'));
+}
+// The Oceanographic Museum (Delefortrie, 1910), its great white front rising 85 m out of the sea on the Rock's cliff:
+// the plinth of the cliff, the tall windows of its two main storeys, the columns, the cornice, the cupola over the middle
+function oceano(L, parts) {
+  const F = frameOf(L, 2), stone = '#e6dfcd', dark = '#55574f', H = L.h - 2, W = 92;
+  parts.push(F.box(-12, 0, -3, H * 0.52, 34, W + 8, '#c9c1ad'), F.box(-14, 0, H * 0.5, H * 0.43, 30, W, stone), F.box(-1, 0, H * 0.5, H * 0.34, 5, 40, stone));
+  for (let k = -5; k <= 5; k++) parts.push(F.box(1.2, k * 8, H * 0.58, H * 0.2, 0.6, 3.6, dark), F.box(1.3, k * 8 + 4, H * 0.55, H * 0.28, 1.4, 1.2, '#f1ecdf'));
+  parts.push(F.box(-14, 0, H * 0.92, 2, 33, W + 3, '#d3ccb9'));
+  const [x, z] = F.xz(-14, 0);
+  parts.push(post(x, z, F.y0 + H * 0.93, 11, 10, 6, stone, 16), tint(new THREE.SphereGeometry(10.4, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.8, 1).translate(x, F.y0 + H * 0.93 + 6, z), '#7f9088'));
+}
+// The Casino de Monte-Carlo (Garnier, 1879): the pale front to the sea, its two square towers with their cupolas
+function casino(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), stone = '#eadfc6', roof = '#6f8279';
+  parts.push(F.box(0, 0, -2, 22, 34, 62, stone), F.box(0, 0, 20, 4, 30, 56, roof), F.box(16, 0, 3, 10, 2, 40, '#c9bfa6'));
+  for (const b of [-22, 22]) {
+    const [x, z] = F.xz(14, b);
+    parts.push(F.box(14, b, -2, 34, 11, 11, stone), post(x, z, y + 32, 5.4, 5, 4, stone, 12), tint(new THREE.SphereGeometry(5.2, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2).translate(x, y + 36, z), roof), post(x, z, y + 41, 0.3, 0.1, 5, GOLD, 6));
+  }
+}
+// Phuket's Big Buddha on Nakkerd Hill (45 m, of white Burmese marble): seated in the earth-witnessing pose on his
+// lotus, the right hand down over the knee. L.dir: the way he faces
+function bigBuddha(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), m = '#f4f1e9', shade = '#e6e1d4', S = L.h / 45, [x, z] = F.xz(0, 0);
+  parts.push(post(x, z, y - 2, 15.5 * S, 15 * S, 4 * S, '#dcd6c8', 20), post(x, z, y + 2 * S, 14.5 * S, 13.5 * S, 2.5 * S, shade, 20));
+  parts.push(massAt(F, 1.5 * S, 0, 8 * S, 10.5 * S, 3.4 * S, 13 * S, shade)); // the lotus he sits on
+  parts.push(massAt(F, 3 * S, 0, 11 * S, 9.5 * S, 3.6 * S, 12.8 * S, m), massAt(F, 6.5 * S, -6 * S, 11 * S, 5.5 * S, 2.8 * S, 6.5 * S, m), massAt(F, 6.5 * S, 6 * S, 11 * S, 5.5 * S, 2.8 * S, 6.5 * S, m)); // the crossed legs
+  parts.push(tint(new THREE.CylinderGeometry(8.2 * S, 8.8 * S, 16 * S, 18).scale(0.86, 1, 1.28).rotateY(-F.ang).translate(x, y + 20.5 * S, z), m));
+  parts.push(massAt(F, 0, 0, 28.5 * S, 6.6 * S, 3.4 * S, 11.6 * S, m), massAt(F, 0.6 * S, 0, 32 * S, 2.6 * S, 2.8 * S, 2.6 * S, m)); // the shoulders, the neck
+  parts.push(massAt(F, 1 * S, 0, 37 * S, 5.2 * S, 6 * S, 5.2 * S, m), massAt(F, 0.6 * S, 0, 41.6 * S, 3 * S, 2.2 * S, 3 * S, shade)); // the head, the topknot's base
+  const [hx, hz] = F.xz(0.8 * S, 0);
+  parts.push(tint(new THREE.ConeGeometry(1.5 * S, 3.6 * S, 10).translate(hx, y + 45 * S - 1.8 * S, hz), GOLD));
+  const P = (a, b, h) => F.P(a * S, b * S, h * S);
+  parts.push(beam(P(0, 11, 28), P(3, 13.5, 18), 4 * S, 4 * S, m), beam(P(3, 13.5, 18), P(10, 9, 10.5), 3.2 * S, 3.2 * S, m), beam(P(0, -11, 28), P(3, -13, 18), 4 * S, 4 * S, m), beam(P(3, -13, 18), P(8, -2, 14), 3.2 * S, 3.2 * S, m));
+}
+// The runway by the beach (Princess Juliana's, its threshold `a` right behind Maho Beach): the tarmac, the threshold's
+// bars, the white centre line. The airliners that land on it are movers()'s
+function runway(L, parts) {
+  const [ax, az] = L.a, [bx, bz] = L.b, len = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / len, uz = (bz - az) / len, ang = Math.atan2(uz, ux), W = L.w || 45;
+  const at = (u, v) => [ax + ux * u - uz * v, az + uz * u + ux * v], gy = (u) => Math.max(0.3, groundAt(...at(u, 0))) + 0.25;
+  for (let u = 0; u < len; u += 60) { const [x, z] = at(u + 30, 0); parts.push(blk(x, z, gy(u + 30) - 1.6, 1.6, 62, W, ang, '#3d4042')); }
+  for (let v = -18; v <= 18; v += 4) { const [x, z] = at(16, v); parts.push(blk(x, z, gy(16), 0.08, 26, 2, ang, '#e8e8e2')); }
+  for (let u = 70; u < len - 50; u += 62) { const [x, z] = at(u, 0); parts.push(blk(x, z, gy(u), 0.08, 30, 0.9, ang, '#e8e8e2')); }
+}
 function landmarks() {
   const parts = [];
   for (const L of META.landmarks || []) {
@@ -2299,7 +2503,7 @@ function landmarks() {
       } else {
         // the towers, the deck rising to them, the main cables and the hangers
         // (the Golden Gate's own: its side spans 343 m, its deep stiffening trusses, its towers, cables in its orange too)
-        const gg = L.style === 'golden-gate', D = L.deck, H = L.h, side = gg ? 343 : S * 0.42, grey = L.color || '#7d8a8f', cable = gg ? '#b3382c' : L.color ? '#8a2a22' : '#3a4144';
+        const gg = L.style === 'golden-gate', D = L.deck, H = L.h, side = gg ? 343 : S * 0.42, grey = L.color || '#7d8a8f', cable = gg ? '#b3382c' : L.cable || (L.color ? '#8a2a22' : '#3a4144');
         const deckY = (u) => { const a = Math.abs(u); return a <= S / 2 + side ? D : Math.max(12, D - (a - S / 2 - side) * ((D - 12) / Math.max(1, half - S / 2 - side))); };
         for (let u = -half; u < half; u += 50) parts.push(beam(P(u, deckY(u)), P(u + 50, deckY(u + 50)), gg ? 27 : 22, gg ? 7.6 : 3, L.color || '#6a7276'));
         for (let u = -half + 25; u < half; u += 75) if (Math.abs(u) > S / 2 + side + 20) parts.push(beam(P(u, -2), P(u, deckY(u) - 1.5), 6, 6, grey)); // under the approaches only: the spans hang from the cables
@@ -2366,7 +2570,19 @@ function landmarks() {
       else if (L.style === 'pyramid') pyramid(L, parts);
       else if (L.style === 'glories') glories(L, parts);
       else if (L.style === 'laboe') laboe(L, parts);
-    } else if (L.kind === 'lighthouse') {
+      else if (L.style === 'burj-al-arab') burjAlArab(L, parts);
+      else if (L.style === 'khalifa') burjKhalifa(L, parts);
+      else if (L.style === 'domnius') domnius(L, parts);
+    } else if (L.kind === 'liner') queenMary(L, parts);
+    else if (L.kind === 'cablestay') cableStayed(L, parts);
+    else if (L.kind === 'cranes') cranes(L, parts);
+    else if (L.kind === 'stilt') stiltHouse(L, parts);
+    else if (L.kind === 'oceano') oceano(L, parts);
+    else if (L.kind === 'casino') casino(L, parts);
+    else if (L.kind === 'runway') runway(L, parts);
+    else if (L.kind === 'lighthouse' && L.style === 'arundel') arundel(L, parts);
+    else if (L.kind === 'lighthouse' && L.style === 'plain') plainLight(L, parts);
+    else if (L.kind === 'lighthouse') {
       const [x, z] = L.at, y = L.ground === 0 ? 0 : Math.max(0, groundAt(x, z)), h = L.h;
       if (y <= 0.5 && L.style !== 'maiden') parts.push(post(x, z, -3, 7, 7, 5, '#9a958a'));
       if (L.style === 'vittoria') vittoria(L, parts);
@@ -2380,6 +2596,7 @@ function landmarks() {
     else if (L.kind === 'fort') carlsten(L, parts);
     else if (L.kind === 'basilica') garde(L, parts);
     else if (L.kind === 'statue' && L.style === 'liberty') liberty(L, parts);
+    else if (L.kind === 'statue' && L.style === 'buddha') bigBuddha(L, parts);
     else if (L.kind === 'statue') redeemer(L, parts);
     else if (L.kind === 'opera') operaHouse(L, parts);
     else if (L.kind === 'isaac') isaac(L, parts);
