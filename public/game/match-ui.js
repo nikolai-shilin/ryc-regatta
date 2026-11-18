@@ -87,7 +87,7 @@ export const clean = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f<>]/g, 
 const store = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} return null; };
 const fmtS = (s, unit = 's') => { s = Math.max(0, Math.round(s)); return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `${s} ${unit}`; };
 // a host's match, kept in localStorage['regatta-match-' + code] as { at, m } for six hours (a tab closed and the link
-// opened again finds its score); Leave or Done clears it, and an open page sweeps away any other code's gone stale
+// opened again finds its race); Leave or Done clears it, and an open page sweeps away any other code's gone stale
 const SAVED_MS = 6 * 3600 * 1000, SAVED_RE = /^regatta-match-[A-HJ-KM-NP-Z2-9]{6}$/;
 const savedMatch = (code) => {
   let v = null; try { v = JSON.parse(localStorage.getItem('regatta-match-' + code) || 'null'); } catch (e) {}

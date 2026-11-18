@@ -32,7 +32,7 @@ import { PauseCard } from './pause-card';
 // What the game keeps for a finished race (public/game/main.js, finishToPage).
 // legT (the clock as she finished each leg, the start's crossing first) and pens (her penalties) came with the finish's
 // tiles: a result saved before them has neither, and the page leaves out what it can't say
-type Boat = { name: string | null; me: boolean; color: string | null; flag?: string | null; done: boolean; dsq: boolean; secs: number | null; track: [number, number][]; at?: Pose;
+type Boat = { name: string | null; me: boolean; color: string | null; flag?: string | null; done: boolean; dsq: boolean; dnf?: boolean; secs: number | null; track: [number, number][]; at?: Pose;
   legT?: number[]; pens?: number; level?: string };
 
 // a computer skipper's level (public/game/sim.js LEVELS): four pips lit to it and its name, as the race's board shows it
@@ -49,7 +49,7 @@ function Level({ lv, t }: { lv?: string; t: (en: string, ru: string) => string }
 }
 type Foul = { rule: string; who: string | null; t: number | null; x: number | null; z: number | null };
 type Result = {
-  v: 1; id: string; at: number; daily: string | null; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
+  v: 1; id: string; at: number; daily: string | null; oneOnOne?: boolean; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
   // `type`, `marks` (every rounding mark, by the leg that goes to it) and `finish` (a finish line of its own) came with the
   // course shapes: a result saved before them has none, and a wing mark makes it a triangle
   course: { windward: [number, number]; gate: [number, number][]; pin: [number, number]; committee: [number, number]; legs: string[]; wing?: [number, number];
@@ -95,7 +95,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
     if (!res || shared || Date.now() - res.at > 10 * 60e3) return;
     try { if (sessionStorage.getItem('tracked-' + res.id)) return; sessionStorage.setItem('tracked-' + res.id, '1'); } catch {}
     const me = res.boats.find((b) => b.me)!, place = res.boats.indexOf(me) + 1;
-    track('Race finish', { race: res.daily ? 'daily' : 'free', place: me.dsq ? 'dsq' : `${place}/${res.boats.length}`, pb: res.pb?.isNew ? 1 : 0, venue: res.venue || '' });
+    track('Race finish', { race: res.oneOnOne ? 'one-on-one' : res.daily ? 'daily' : 'free', place: me.dsq ? 'dsq' : me.dnf ? 'dnf' : `${place}/${res.boats.length}`, pb: res.pb?.isNew ? 1 : 0, venue: res.venue || '' });
   }, [res, shared]);
   useEffect(() => {
     let mine: Result | null = null;
@@ -157,17 +157,20 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
   const date = new Date(res.at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   // the course's shape, named unless it's up and down
   const shape = shapeOf(res.course), shapeW = shape === 'wl' ? null : t(...SHAPE_NAME[shape]).toLowerCase();
-  const kicker = res.daily
+  const one = !!res.oneOnOne; // a 1-on-1 race: two people, no ranking, no best time, no link to share
+  const kicker = one
+    ? `${t('1-on-1 race', 'Гонка один на один')} · ${windW} ${kn} ${t('kn', 'уз')} · ${shapeW ? `${shapeW} · ` : ''}${res.laps} ${t(res.laps > 1 ? 'laps' : 'lap', res.laps > 1 ? 'круга' : 'круг')}`
+    : res.daily
     ? `${shared ? t('Race of the day', 'Гонка дня') : t('Today’s race', 'Гонка дня')} · ${date} · ${windW} ${kn} ${t('kn', 'уз')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length))}${shapeW ? ` · ${shapeW}` : ''}`
     : `${t('Free race', 'Свободная гонка')} · ${windW} ${kn} ${t('kn', 'уз')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length))} · ${shapeW ? `${shapeW} · ` : ''}${res.laps} ${t(res.laps > 1 ? 'laps' : 'lap', res.laps > 1 ? 'круга' : 'круг')}`;
-  const title = me.dsq ? t('Disqualified', 'Дисквалификация') : shared ? t(`Finished ${ordEn(place)}`, `${place}-е место на финише`) : t(`You finished ${ordEn(place)}`, `${place}-е место на финише`);
+  const title = me.dsq ? t('Disqualified', 'Дисквалификация') : me.dnf ? t('Did not finish', 'Не финишировал') : shared ? t(`Finished ${ordEn(place)}`, `${place}-е место на финише`) : t(`You finished ${ordEn(place)}`, `${place}-е место на финише`);
   const gap = me.secs != null && winner?.secs != null && winner !== me ? `+${(me.secs - winner.secs).toFixed(1)} ${t('s', 'с')}` : '—';
-  const again = res.daily ? '/play?race=today' : '/play?race=free';
+  const again = one ? '/match/new' : res.daily ? '/play?race=today' : '/play?race=free';
   const isToday = res.daily === new Date().toISOString().slice(0, 10); // the daily race's day is the UTC date, as the game's
   // someone else's race: beat their time if it's today's, else today's race
   const cta = shared
     ? (isToday && me.secs != null && !me.dsq ? { href: `/play?race=today&ghost=${encodeURIComponent(res.id)}`, label: t('Race this boat’s ghost', 'Гоняйся с её призраком') } : { href: '/race', label: t('Sail today’s race', 'Пройти гонку дня') })
-    : { href: again, label: t('Race again', 'Ещё гонку') };
+    : { href: again, label: one ? t('Another 1-on-1 race', 'Ещё одна гонка один на один') : t('Race again', 'Ещё гонку') };
   const mine = me.secs != null && !me.dsq ? me.secs : null;
   const you = shared ? t('This boat', 'Эта лодка') : t('You', 'Ты');
   // the link to this page, with a line to go with it, for the share sheet (components/share-sheet): each app gets it
@@ -212,7 +215,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
   const nb = neighbours(res);
   const gapS = (g: number) => `${g.toFixed(1).replace('.', lang === 'ru' ? ',' : '.')} ${t('s', 'с')}`;
   // the finish in a line: who crossed just before and just after, as the scene shows them
-  const near = me.dsq || me.secs == null ? ''
+  const near = me.dsq || me.dnf || me.secs == null ? ''
     : nb.ahead && nb.behind ? t(`${shared ? 'This boat' : 'You'} crossed ${gapS(nb.ahead.gap)} after ${nb.ahead.name} and ${gapS(nb.behind.gap)} before ${nb.behind.name}.`, `${shared ? 'Эта лодка пересекла' : 'Ты пересёк'} линию через ${gapS(nb.ahead.gap)} после ${nb.ahead.name} и за ${gapS(nb.behind.gap)} до ${nb.behind.name}.`)
     : nb.behind ? t(`First across the line, ${gapS(nb.behind.gap)} ahead of ${nb.behind.name}.`, `Первым на финише, на ${gapS(nb.behind.gap)} раньше ${nb.behind.name}.`)
     : nb.ahead ? t(`Last across the line, ${gapS(nb.ahead.gap)} after ${nb.ahead.name}.`, `Последним на финише, через ${gapS(nb.ahead.gap)} после ${nb.ahead.name}.`) : '';
@@ -250,7 +253,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
   // went: the part of the race you lost most in to the boat that finished just ahead of you.
   const ordW = (n: number) => t(ordEn(n), `${n}-е`);
   let target: { v: string; s?: string; go?: string } | null = null;
-  if (!shared && mine != null) {
+  if (!shared && !one && mine != null) {
     // today's race counts your best of the day (the game's record of it), which may be an earlier race than this one
     const best = res.daily && res.pb ? Math.min(mine, res.pb.best) : mine;
     const faster = res.daily && isToday && field ? field.filter((s) => s < best - 0.05).sort((a, b) => a - b) : null;
@@ -303,7 +306,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
           <h1 className="bt-h">{title}</h1>
           <p className="bt-p">{t(...where.name)}{where.place[0] !== where.name[0] && `, ${t(...where.place)}`}. {near || t('The boats are where they were at the finish.', 'Лодки там, где были на финише.')}</p>
           <div className="bt-stats">
-            <div><span className="bt-sk">{t('Place', 'Место')}</span><b>{me.dsq ? 'DSQ' : t(ordEn(place), `${place}-е`)}</b><span className="bt-sv">{me.dsq ? t('disqualified', 'дисквалификация') : t(`of ${res.boats.length} boats`, `из ${ruBoats(res.boats.length)}`)}</span></div>
+            <div><span className="bt-sk">{t('Place', 'Место')}</span><b>{me.dsq ? 'DSQ' : me.dnf ? 'DNF' : t(ordEn(place), `${place}-е`)}</b><span className="bt-sv">{me.dsq ? t('disqualified', 'дисквалификация') : me.dnf ? t('did not finish', 'не финишировал') : t(`of ${res.boats.length} boats`, `из ${ruBoats(res.boats.length)}`)}</span></div>
             <div><span className="bt-sk">{t('Time', 'Время')}</span><b className={res.pb?.isNew && !shared ? 'is-gold' : ''}>{me.secs != null && !me.dsq ? <CountUp v={clock(me.secs)} ms={1200} /> : '—'}</b><span className="bt-sv">{pbNote || t('at the line', 'на финише')}</span></div>
             <div><span className="bt-sk">{t('Behind', 'Отставание')}</span><b>{winner && winner !== me && me.secs != null && winner.secs != null ? <CountUp v={`+${gapS(me.secs - winner.secs)}`} /> : '—'}</b><span className="bt-sv">{winner && winner !== me ? t(`${winner.name} won`, `победа: ${winner.name}`) : shared ? t('this boat won', 'эта лодка победила') : t('you won', 'ты победил')}</span></div>
             <div><span className="bt-sk">{t('Penalties', 'Штрафы')}</span><b className={L.penT > 1 ? 'is-down' : 'is-up'}><Num v={L.penT > 1 ? `${L.penT} ${t('s', 'с')}` : '0'} /></b><span className="bt-sv">{L.penT > 1 ? t('turning circles', 'штрафные обороты') : t('A clean race', 'Чистая гонка')}</span></div>
@@ -317,7 +320,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
           ) : null}
           <div className="rs-acts">
             <a className="bt-go" href={cta.href} onClick={() => track(shared ? 'Challenge taken' : 'Race again', { race: res.daily ? 'daily' : 'free', ...(target?.go && { target: 1 }) })}>{shared ? <IconPlay /> : <IconRestart />}<span>{ctaLabel}</span></a>
-            {!shared && <ShareButton lang={lang} data={shareData} className="bt-show rs-ghost" title={t('Share your result', 'Поделиться результатом')} />}
+            {!shared && !one && <ShareButton lang={lang} data={shareData} className="bt-show rs-ghost" title={t('Share your result', 'Поделиться результатом')} />}
             <Link className="bt-show rs-ghost" href="/race">{t('Race hub', 'Меню гонок')}</Link>
             {res.boats.some((b) => b.track?.length > 1) ? <Replay res={res} myLegs={me.legT} lang={lang} /> : null}
           </div>
@@ -327,18 +330,18 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
         <PauseCard lang={lang} back={`/race/result/${res.id}`} title={t('Results', 'Результаты')} icon={<IconTrophy s={14} />} note={t('Time · gap', 'Время · разрыв')}>
           <ol className="hm-lb bt-lb rs-lb">
             {res.boats.map((b, i) => (
-              <li key={i} className={`${b.me ? 'me' : ''} ${i === 0 && !b.dsq ? 'first' : ''}`}>
-                <span className="hm-n">{b.dsq ? '–' : i + 1}</span>
+              <li key={i} className={`${b.me ? 'me' : ''} ${i === 0 && !b.dsq && !b.dnf ? 'first' : ''}`}>
+                <span className="hm-n">{b.dsq || b.dnf ? '–' : i + 1}</span>
                 <span className="rs-name"><span className="rs-dot" style={{ background: b.me ? 'var(--you)' : b.color || 'rgba(255,255,255,.4)' }} /><FlagImg code={b.flag} lang={lang} />{b.me ? you : b.name}</span>
                 {hasLevels && <Level lv={b.level} t={t} />}
                 {hasPens && <span className="rs-pen" title={b.pens ? t('Penalties she got', 'Сколько штрафов получила') : undefined}>{b.pens ? t(`${b.pens} pen`, `${b.pens} штр.`) : ''}</span>}
-                <span className="hm-t">{b.dsq ? 'DSQ' : b.secs != null ? clock(b.secs) : '—'}</span>
+                <span className="hm-t">{b.dsq ? 'DSQ' : b.dnf ? 'DNF' : b.secs != null ? clock(b.secs) : '—'}</span>
                 <span className="rs-gap">{b.secs != null && winner?.secs != null && b !== winner && !b.dsq ? `+${(b.secs - winner.secs).toFixed(1)}` : ''}</span>
               </li>
             ))}
           </ol>
           {hasLevels && <p className="bt-hint rs-hint">{t('Computer skippers:', 'Компьютерные шкиперы:')} <Pips n={1} /> {t('beginner to', 'от новичка до')} <Pips n={4} /> {t('expert', 'эксперта')}</p>}
-          <p className="bt-hint rs-hint">{res.daily ? t('Today’s race is the one that ranks: everyone sails the same one.', 'В рейтинг идёт гонка дня: у всех она одна.') : t('Free races stay with you; today’s race is the one that ranks.', 'Свободные гонки остаются у тебя; в рейтинг идёт гонка дня.')}</p>
+          {!one && <p className="bt-hint rs-hint">{res.daily ? t('Today’s race is the one that ranks: everyone sails the same one.', 'В рейтинг идёт гонка дня: у всех она одна.') : t('Free races stay with you; today’s race is the one that ranks.', 'Свободные гонки остаются у тебя; в рейтинг идёт гонка дня.')}</p>}
           {!shared && Date.now() - res.at < 864e5 && <RateRace id={res.id} lang={lang} />}{/* how was it: your own race, just sailed */}
         </PauseCard>
         <a className="rs-down" href="#debrief" aria-label={t('The debrief', 'Разбор')}><span>{t('The debrief', 'Разбор')}</span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" /></svg></a>
@@ -412,7 +415,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
               <Ranking t={t} lang={lang} top={top} field={field} id={res.id} daily={!!res.daily} me={me} signedName={shared ? null : signedName} you={shared ? you : null} />
             </div>
           ) : null}
-          {!shared && (
+          {!shared && !one && (
             <div className="rs-col">
               <span className="rs-kick">{t('Your best', 'Твой рекорд')}</span>
               <h2 className="rs-h2">{t('On this course', 'На этой дистанции')}</h2>
@@ -435,8 +438,8 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
         </section>
 
         <nav className="rs-card rs-next" aria-label={t('Where next', 'Куда дальше')}>
-          <a className="bt-row" href={again}><IconRestart s={18} /><span>{res.daily ? t('Today’s race again', 'Гонка дня ещё раз') : t('The same race again', 'Эту же гонку ещё раз')}</span></a>
-          <Link className="bt-row" href={res.daily ? '/race/free?from=today' : '/race/free'}><IconSliders /><span>{res.daily ? t('A free race in these conditions', 'Свободная гонка в этих условиях') : t('Free race', 'Свободная гонка')}</span><span className="bt-row-m">{t('Set it up', 'Настроить')}</span></Link>
+          <a className="bt-row" href={again}><IconRestart s={18} /><span>{one ? t('Another 1-on-1 race', 'Ещё одна гонка один на один') : res.daily ? t('Today’s race again', 'Гонка дня ещё раз') : t('The same race again', 'Эту же гонку ещё раз')}</span></a>
+          {!one && <Link className="bt-row" href={res.daily ? '/race/free?from=today' : '/race/free'}><IconSliders /><span>{res.daily ? t('A free race in these conditions', 'Свободная гонка в этих условиях') : t('Free race', 'Свободная гонка')}</span><span className="bt-row-m">{t('Set it up', 'Настроить')}</span></Link>}
           <Link className="bt-row" href="/race"><IconFlag s={18} /><span>{t('Race hub', 'Меню гонок')}</span></Link>
           <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
         </nav>

@@ -107,15 +107,15 @@ const CARDS: Record<string, Build> = {
     hero: { label: t('Your venue, your yacht, your wind', 'Твоя акватория, твоя яхта, твой ветер'), value: t('Free race', 'Свободная гонка'), wrap: true },
     call: t('Set up a race', 'Настрой гонку'),
   }),
-  // a match: the host's venue and boat, its code on the tag
+  // a 1-on-1 race: the host's venue and boat, its code on the tag
   match: (t, _lang, q) => {
     const code = parseCode(q.get('c') || '');
     const v = venueOf(q.get('v') || undefined), y = yachtOf(q.get('b'));
     return {
-      bg: 'drone', kind: `${t('Match race', 'Матчевая гонка')} · ${t(...v.name)} · ${t(...y.name)}`,
+      bg: 'drone', kind: `${t('1-on-1 race', 'Гонка один на один')} · ${t(...v.name)} · ${t(...y.name)}`,
       ...(code ? { tag: { text: code } } : {}),
-      hero: { label: t('You and a friend, one on one', 'Вы и друг, один на один'), value: t('Race me', 'Сыграем матч'), color: C.gold },
-      call: t('Join the match', 'Войти в матч'),
+      hero: { label: t('You and a friend, one on one', 'Вы и друг, один на один'), value: t('Race me', 'Сыграем'), color: C.gold },
+      call: t('Join the race', 'Войти в гонку'),
     };
   },
   iyt: (t, lang) => ({

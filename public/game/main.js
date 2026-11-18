@@ -165,7 +165,7 @@ const T = {
     // a 1-on-1 race: the result, and the link between the two screens
     raceWon: 'You win the race!', raceLost: (w) => `${w} wins the race`,
     waitingHost: (n) => `Waiting for ${n}…`, guestGone: (n) => `${n} isn’t answering — her boat holds her course; 30 s and the race is yours`,
-    abandoned: 'Race abandoned — not scored', full: 'This match is full', matchFail: 'Couldn’t connect to the match', tryAgain: 'Try again',
+    abandoned: 'Race abandoned — not scored', full: 'This 1-on-1 race is full', matchFail: 'Couldn’t connect to the 1-on-1 race', tryAgain: 'Try again',
     noGl: 'The browser won’t start the 3D graphics just now. Close other tabs and apps, or restart the browser, and try again.',
     glLostK: 'The picture was lost', glLostTxt: 'The device took the graphics back, most often when it runs short of memory. Reload to sail on, on lighter graphics.', doReload: 'Reload',
     timeOne: '1-on-1 race',
@@ -268,7 +268,7 @@ const T = {
     gfxDown: (q) => `Графика: «${q}» — для плавности`, place: (n) => `${n}-е`, finished: (n) => `Финиш: ${n}-е место!`, finishedDsq: 'Финиш без штрафа — дисквалификация (DSQ)',
     raceWon: 'Гонка твоя!', raceLost: (w) => `Гонку выигрывает ${w}`,
     waitingHost: (n) => `${n} не на связи — ждём…`, guestGone: (n) => `${n} не на связи — лодка идёт прежним курсом; через 30 с гонка твоя`,
-    abandoned: 'Гонка прекращена — не засчитывается', full: 'В этом матче уже двое', matchFail: 'Не удалось подключиться к матчу', tryAgain: 'Ещё раз',
+    abandoned: 'Гонка прекращена — не засчитывается', full: 'В этой гонке уже двое', matchFail: 'Не удалось подключиться к гонке один на один', tryAgain: 'Ещё раз',
     noGl: 'Браузер сейчас не запускает 3D-графику. Закрой другие вкладки и приложения или перезапусти браузер — и попробуй ещё раз.',
     glLostK: 'Картинка пропала', glLostTxt: 'Устройство забрало графику — чаще всего, когда не хватает памяти. Перезагрузи, чтобы плыть дальше на облегчённой графике.', doReload: 'Перезагрузить',
     timeOne: 'гонка один на один',

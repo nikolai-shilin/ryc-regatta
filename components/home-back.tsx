@@ -149,12 +149,12 @@ export function Fold({ lang, children }: { lang: Lang; children: ReactNode }) {
   );
 }
 
-// Home's way to a match race against a friend, behind the same gate as the hub's (components/hub-client.tsx MatchCard):
-// until the umpire's calls are signed off it shows only when the address has ?match.
+// Home's way to a 1-on-1 race against a friend, behind the same gate as the hub's (components/hub-client.tsx MatchCard):
+// until the owner's test race it shows only when the address has ?match.
 export function MatchLink({ lang }: { lang: Lang }) {
   const t = tx(lang);
   const [on, setOn] = useState(false);
   useEffect(() => { setOn(new URLSearchParams(location.search).has('match')); }, []);
   if (!on) return null;
-  return <Link className="ho-ghost" href="/match/new" data-cta="friend-match">{t('Match race a friend, one on one', 'Матчевая гонка с другом, один на один')}</Link>;
+  return <Link className="ho-ghost" href="/match/new" data-cta="friend-match">{t('Race a friend, 1-on-1', 'Гонка с другом один на один')}</Link>;
 }

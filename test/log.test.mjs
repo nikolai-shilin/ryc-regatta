@@ -101,3 +101,12 @@ test('the drills: the page lists the game\'s, in the game\'s order', async () =>
   assert.ok(!levelOpen('racer', { end: 3, beat: 3, run: 3, finish: 3 })); // club's stars, but club isn't open
   assert.equal(levelOf(Object.fromEntries(DRILLS.map((d) => [d.id, 2]))), 'expert');
 });
+
+test('a 1-on-1 race finished earns the venue\'s stamp, and one not finished doesn\'t', () => {
+  const l = cleanLog({});
+  addResult(l, { at: 70, daily: null, oneOnOne: true, venue: 'kiel', boats: [{ me: true, done: true, dsq: false, secs: 300 }] });
+  assert.equal(l.v.kiel, 70);
+  addResult(l, { at: 80, daily: null, oneOnOne: true, venue: 'sydney', boats: [{ me: true, done: false, dsq: false, dnf: true, secs: null }] });
+  assert.equal(l.v.sydney, undefined);
+  assert.equal(Object.keys(l.d).length, 0);
+});

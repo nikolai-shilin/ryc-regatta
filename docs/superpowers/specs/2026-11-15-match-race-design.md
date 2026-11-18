@@ -1,3 +1,5 @@
+Status: replaced by 2026-11-18-one-on-one-race-design.md.
+
 # Match race: you and a friend, by a link
 
 Status: approved 2026-11-15; built the same day. This text says what was built, including where the build refined

@@ -40,8 +40,8 @@ const GUST: Record<Wind, [number, number]> = { light: [9, 12], medium: [16, 13],
 // (the wind or the current over the course, the course itself), and Show course does too. Start and Show course stay at
 // the card's top, your boat and Settings at its bottom. Start saves the choice where the game reads it and opens the race.
 // from: 'today' (today's race, as a free race), 'race' (the free race you were sailing; the game's Change the race), or none
-// match: a match race's set-up (/match/new): only the venue, yacht, wind and length (short or medium, as the venue offers),
-// and the button makes the match: a code, saved here as the host's, and the game opens at it.
+// match: the 1-on-1 race's set-up (/match/new): everything a free race offers but the number of boats, opening with today's
+// settings, and the button makes the race: a code, saved here as the host's, and the game opens at it.
 export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'today' | 'race' | null; match?: boolean }) {
   const fromToday = from === 'today';
   const t = tx(lang);
@@ -53,12 +53,12 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
     const venue = venueOf(o.venue).id, daytime = DAYTIMES.includes(o.daytime) ? o.daytime : 'any';
     // a yacht asked for in the address (the yachts page's Race her), else the one last raced
     const asked = new URLSearchParams(location.search).get('yacht'), yacht = isYacht(asked) ? asked : isYacht(o.yacht) ? o.yacht : 'jpk1050';
-    const start: Pick = fromToday ? { venue: d.venue, yacht: d.yacht, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course, daytime }
+    const start: Pick = fromToday || match ? { venue: d.venue, yacht: d.yacht, preset: d.preset, fleet: d.fleet, length: d.length, laps: d.laps, start: d.start, current: d.current, course: d.course, daytime }
       : { venue, yacht, preset: o.preset, fleet: o.fleet, length: o.length, laps: o.laps, start: o.start, current: o.current, course: savedShape(o.course), daytime };
     setP(start); if (from) setBase(start);
     setNear([d.venue, venue]);
     setReady(true);
-  }, [from]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [from, match]); // eslint-disable-line react-hooks/exhaustive-deps
   // today's venue and the one you sailed last: the first of the places offered, before the rest A to Z
   const [near, setNear] = useState<VenueId[]>([]);
   const [allPlaces, setAllPlaces] = useState(false);
@@ -72,14 +72,12 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
   useEffect(() => { if (!shapeOffered(p.venue, p.course, p.length)) setP((x) => ({ ...x, course: 'wl' })); }, [p.venue, p.course, p.length]);
   // and the lengths it has room for: one it hasn't goes down to the longest it has
   useEffect(() => { if (!lengthOffered(p.venue, p.length)) setP((x) => ({ ...x, length: lengthOffered(x.venue, 'medium') ? 'medium' : 'short' })); }, [p.venue, p.length]);
-  // a match is never long: the longest length goes down to medium (or short, where the venue has no room for medium)
-  useEffect(() => { if (match && p.length === 'long') setP((x) => ({ ...x, length: lengthOffered(x.venue, 'medium') ? 'medium' : 'short' })); }, [match, p.length, p.venue]);
   const go = () => {
     if (match) {
       const code = newCode();
       try {
         localStorage.setItem('regatta-match-host', JSON.stringify({ code }));
-        localStorage.setItem('regatta-match-settings', JSON.stringify({ venue: p.venue, yacht: p.yacht, preset: p.preset, length: p.length }));
+        localStorage.setItem('regatta-match-settings', JSON.stringify({ venue: p.venue, yacht: p.yacht, preset: p.preset, length: p.length, course: p.course, laps: p.laps, start: p.start, current: p.current, daytime: p.daytime }));
       } catch { /* storage blocked: the game still opens at the code */ }
       location.href = `/play?match=${code}&venue=${p.venue}&boat=${p.yacht}`;
       return;
@@ -158,7 +156,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
             <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок')} />
             <SceneBrand />
           </div>
-          <span className="bt-kick bt-kick-w">{match ? t('Match race', 'Матчевая гонка') : from === 'race' ? t('Change the race', 'Изменить гонку') : t('Free race', 'Свободная гонка')}</span>
+          <span className="bt-kick bt-kick-w">{match ? t('1-on-1 race', 'Гонка один на один') : from === 'race' ? t('Change the race', 'Изменить гонку') : t('Free race', 'Свободная гонка')}</span>
           <h1 className="bt-h" id="fs-title">{t(...where.name)} <span className="bt-h-cc">{where.nation}</span></h1>
           <p className="bt-p">{t(...where.place)} · {t(`prevailing wind ${where.wind[0]}`, `преобладающий ветер ${where.wind[1]}`)}. {t(...where.about)}</p>
           {view !== 'boats' && (
@@ -170,17 +168,17 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
           <div className="bt-stats">
             <div><span className="bt-sk">{t('Beat', 'Лавировка')}</span><b><Num v={`${beat} ${t('m', 'м')}`} /></b></div>
             <div><span className="bt-sk">{t('About', 'Около')}</span><b><Num v={`${minutes(p)} ${t('min', 'мин')}`} /></b></div>
-            {/* a match is one on one, best of three: a free race's best time says nothing of it */}
+            {/* a 1-on-1 race has no best time: a free race's says nothing of it */}
             {match
-              ? <div><span className="bt-sk">{t('Match', 'Матч')}</span><b>{t('Best of 3', 'До 2 побед')}</b></div>
+              ? <div><span className="bt-sk">{t('Race', 'Гонка')}</span><b>{t('1-on-1', '1 на 1')}</b></div>
               : <div><span className="bt-sk">{t('Your best', 'Рекорд')}</span><b className={best != null ? 'is-gold' : ''}>{best != null ? clock(best) : '—'}</b></div>}
           </div>
         </div>
 
-        <PauseCard lang={lang} back={match ? '/match/new' : fromToday ? '/race/free?from=today' : '/race/free'} title={match ? t('Set up your match', 'Настрой матч') : t('Set up your race', 'Настрой гонку')}
+        <PauseCard lang={lang} back={match ? '/match/new' : fromToday ? '/race/free?from=today' : '/race/free'} title={match ? t('Set up your 1-on-1 race', 'Настрой гонку один на один') : t('Set up your race', 'Настрой гонку')}
           foot={['boat', ['yachts', `/yachts?y=${p.yacht}&from=free`]]}
           action={<>
-            <button type="button" className="bt-go" onClick={go}><IconPlay /><span>{match ? t('Create the match', 'Создать матч') : from === 'race' ? t('Restart with these', 'Заново с этими') : t('Start race', 'Начать гонку')}</span></button>
+            <button type="button" className="bt-go" onClick={go}><IconPlay /><span>{match ? t('Create the race', 'Создать гонку') : from === 'race' ? t('Restart with these', 'Заново с этими') : t('Start race', 'Начать гонку')}</span></button>
             <button type="button" className="bt-show" aria-pressed={view === 'course'} onClick={() => setView(view === 'course' ? 'boats' : 'course')}>
               {view === 'course' ? <IconBoats s={15} /> : <IconRoute s={15} />}<span>{view === 'course' ? t('Boats', 'Лодки') : t('Show course', 'Дистанция')}</span>
             </button>
@@ -207,7 +205,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
           {tags('yacht', <IconSail s={14} />, t('Yacht', 'Яхта'), YACHTS.map((y) => [y.id, t(...y.name)] as [YachtId, string]),
             <p className="bt-hint">{t(...boat.tagline)} <Link href={`/yachts?y=${boat.id}&from=free`}>{t('About the yachts', 'О яхтах')}</Link></p>)}
           {tags('preset', <IconWind s={14} />, t('Wind', 'Ветер'), [['light', t('Light 7 kn', 'Слабый 7 уз')], ['medium', t('Medium 12 kn', 'Средний 12 уз')], ['strong', t('Strong 19 kn', 'Сильный 19 уз')]])}
-          {!match && tags('daytime', <IconSun />, t('Time of day', 'Время суток'), [['any', t('Any', 'Любое')], ['morning', t('Morning', 'Утро')], ['midday', t('Midday', 'Полдень')], ['afternoon', t('Afternoon', 'День')], ['evening', t('Evening', 'Вечер')], ['sunset', t('Sunset', 'Закат')]],
+          {tags('daytime', <IconSun />, t('Time of day', 'Время суток'), [['any', t('Any', 'Любое')], ['morning', t('Morning', 'Утро')], ['midday', t('Midday', 'Полдень')], ['afternoon', t('Afternoon', 'День')], ['evening', t('Evening', 'Вечер')], ['sunset', t('Sunset', 'Закат')]],
             <p className="bt-hint">{{
               any: t('A new hour every race, now and then under a grey sky.', 'Каждая гонка в новый час, иногда под серым небом.'),
               morning: t('Early, the sun low in the east and the air still fresh.', 'Рано: солнце низко на востоке, воздух ещё свежий.'),
@@ -216,15 +214,15 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
               evening: t('Golden light, the sun an hour above the horizon.', 'Золотой свет, солнце за час до заката.'),
               sunset: t('The sun on the horizon, the sky and the sea gone orange.', 'Солнце у горизонта, небо и море в оранжевом.'),
             }[p.daytime]}</p>)}
-          {!match && tags('course', <IconRoute />, t('Shape', 'Форма'), shapes.map((s) => [s, t(...SHAPE_NAME[s])] as [Shape, string]),
+          {tags('course', <IconRoute />, t('Shape', 'Форма'), shapes.map((s) => [s, t(...SHAPE_NAME[s])] as [Shape, string]),
             SHAPE_HINT[p.course] && <p className="bt-hint">{t(...SHAPE_HINT[p.course]!)}</p>)}
           {/* the race's size, two to a row on a wide screen */}
           <div className="fs-grid">
-            {tags('length', <IconRoute />, t('Course', 'Дистанция'), ([['short', t('Short', 'Короткая')], ['medium', t('Medium', 'Средняя')], ['long', t('Long', 'Длинная')]] as [Length, string][]).filter(([l]) => lengthOffered(p.venue, l) && !(match && l === 'long')))}
+            {tags('length', <IconRoute />, t('Course', 'Дистанция'), ([['short', t('Short', 'Короткая')], ['medium', t('Medium', 'Средняя')], ['long', t('Long', 'Длинная')]] as [Length, string][]).filter(([l]) => lengthOffered(p.venue, l)))}
             {!match && tags('fleet', <IconBoats />, t('Boats', 'Лодки'), [[3, t('3 boats', '3 лодки')], [5, t('5 boats', '5 лодок')], [7, t('7 boats', '7 лодок')]])}
-            {!match && tags('laps', <IconLaps />, t('Laps', 'Круги'), [[1, t('1 lap', '1 круг')], [2, t('2 laps', '2 круга')]])}
-            {!match && tags('start', <IconFlag />, t('Start', 'Старт'), [[1, t('1 min', '1 мин')], [3, t('3 min', '3 мин')], [5, t('5 min', '5 мин')]])}
-            {!match && tags('current', <IconTide />, t('Current', 'Течение'), [[0, t('Off', 'Выкл')], [1, t('On', 'Вкл')]],
+            {tags('laps', <IconLaps />, t('Laps', 'Круги'), [[1, t('1 lap', '1 круг')], [2, t('2 laps', '2 круга')]])}
+            {tags('start', <IconFlag />, t('Start', 'Старт'), [[1, t('1 min', '1 мин')], [3, t('3 min', '3 мин')], [5, t('5 min', '5 мин')]])}
+            {tags('current', <IconTide />, t('Current', 'Течение'), [[0, t('Off', 'Выкл')], [1, t('On', 'Вкл')]],
               <p className="bt-hint">{where.runs ? t('The water runs here whichever you choose.', 'Вода здесь идёт при любом выборе.') : t('On: the venue’s tide, river or drift sets every boat.', 'Вкл: местное приливное течение, река или дрейф сносит все лодки.')}</p>)}
           </div>
           <div className="bt-g fs-course-in">
@@ -232,7 +230,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
             <CourseMap className="cmap bt-map" lang={lang} geo={geo} preset={p.preset} W={250} H={210} route fleet={p.fleet} />
           </div>
           {base && changed.length ? <p className="bt-what" role="status"><b>{t('What happens', 'Что будет')}</b> {from === 'today' ? t(`A free race with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'} from today’s. It doesn’t go on today’s ranking.`, `Свободная гонка, изменений по сравнению с гонкой дня: ${changed.length}. В рейтинг дня она не идёт.`) : t(`The race starts over, with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'}.`, `Гонка начнётся заново, изменений: ${changed.length}.`)}</p> : null}
-          {match ? <p className="bt-saved bt-saved-l">{t('You and a friend, one on one. After you create the match you get a link to send.', 'Вы и друг, один на один. Когда создашь матч, получишь ссылку, чтобы отправить.')}</p> : <p className="bt-saved bt-saved-l">{best != null
+          {match ? <p className="bt-saved bt-saved-l">{t('You and a friend, one on one. After you create the race you get a link to send.', 'Вы и друг, один на один. Когда создашь гонку, получишь ссылку, чтобы отправить.')}</p> : <p className="bt-saved bt-saved-l">{best != null
             ? t(`Your best in this wind, fleet and course, at any venue: ${clock(best)}. Beat it and the result page says so.`, `Твой лучший результат при этом ветре, флоте и дистанции, на любой акватории: ${clock(best)}. Побьёшь — страница результата скажет.`)
             : t('The game keeps your best time on every course. A free race doesn’t go on today’s ranking.', 'Игра помнит лучшее время на каждой дистанции. Свободная гонка в рейтинг дня не идёт.')}</p>}
         </PauseCard>

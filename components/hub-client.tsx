@@ -34,7 +34,7 @@ export function FreeQuick({ lang }: { lang: Lang }) {
   );
 }
 
-// The match race, one on one against a friend: a link to send. Until the umpire's calls are signed off it shows only when
+// The 1-on-1 race, against a friend: a link to send. Until the owner's test race it shows only when
 // the hub's address has ?match (the hub is built once for everyone, so the address is read here in the browser).
 export function MatchCard({ lang }: { lang: Lang }) {
   const t = tx(lang);
@@ -43,9 +43,9 @@ export function MatchCard({ lang }: { lang: Lang }) {
   if (!on) return null;
   return (
     <div className="bt-g">
-      <span className="bt-k"><IconBoats s={13} />{t('Match race', 'Матчевая гонка')}</span>
+      <span className="bt-k"><IconBoats s={13} />{t('1-on-1 race', 'Гонка один на один')}</span>
       <p className="bt-hint">{t('You and a friend, one on one: send a link.', 'Вы и друг, один на один: отправьте ссылку.')}</p>
-      <Link className="lb-more" href="/match/new">{t('Set up a match', 'Настроить матч')}</Link>
+      <Link className="lb-more" href="/match/new">{t('Set up a 1-on-1 race', 'Настроить гонку один на один')}</Link>
     </div>
   );
 }

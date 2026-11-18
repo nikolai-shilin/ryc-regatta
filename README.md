@@ -11,8 +11,8 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 | `/` | Home: the game described in detail | `app/[lang]/page.tsx` |
 | `/race` | The race hub: today's race, today's fastest and a free race, in the pause-menu card over today's venue in the game's own scene (`components/game-scene.tsx`) | `app/[lang]/race/page.tsx` |
 | `/race/free` | Set up a free race (venue, wind, fleet, course shape — up and down, triangle, trapezoid or up and down with an upwind finish — length, laps, start, current), in the pause-menu card over the game's own scene at the chosen venue (`/boat-view?venue=&wind=`), which fades to each new place | `components/free-setup.tsx` |
-| `/match/new` | Set up a match race against a friend (venue, wind, yacht, length: the free race's set-up cut to a match's choices); it makes the match's code and opens the game's waiting room | `app/[lang]/match/new/page.tsx`, `components/free-setup.tsx` |
-| `/match/<code>?v=&b=` | The match's link, sent to the friend: Join opens the game at the match, in the host's venue and yacht (never indexed) | `app/[lang]/match/[code]/page.tsx` |
+| `/match/new` | Set up a 1-on-1 race against a friend (the free race's set-up without the number of boats, opening with today's settings); it makes the race's code and opens the game's waiting room | `app/[lang]/match/new/page.tsx`, `components/free-setup.tsx` |
+| `/match/<code>?v=&b=` | The 1-on-1 race's link, sent to the friend: Join opens the game at the race, in the host's venue and yacht (never indexed) | `app/[lang]/match/[code]/page.tsx` |
 | `/race/result/[id]` | The result and debrief after a race, in the pause-menu card over the finish as it was: the game's own scene at the race's venue (`/boat-view?finish=1`), the line, the marks and every boat where she was as you crossed it | `components/result-view.tsx`, `lib/finish.ts` |
 | `/boat` | Your boat: colours (a gennaker in up to three), bottom paint, deck (non-skid, teak or the hull's colour), her name on the quarters, flag, sail number and team, in the race's pause-menu card over the game's own scene: your yacht on Lake Garda on a summer evening (`/boat-view`) | `components/boat-editor.tsx` |
 | `/players` | The players: everyone who races signed in, the most points first (the rating's, every day of today's race added up), 20 a page, in the card over the game's own scene (`/boat-view`, a JPK 1050 on Lake Garda); a player (`?p=<k>`, the rating's key) turns the card to their points, races, wins, podiums, today's race, yachts and venues, and dresses the yacht in their colours as their account keeps them. From the scores API's `?players` and `?player=` (`lib/players.ts`) | `components/players-view.tsx` |
@@ -49,52 +49,32 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   your boat to the moment it's about, hands her over, and it ends with stars; it's never posted as a race. The game
   sends its moments to Vercel Web Analytics (Race start, Race left, Ghost, Drill done) and the pages theirs
   (`@vercel/analytics` `track`: Race finish, Race again, Challenge taken, Replay, Share).
-- **Match race:** two friends sail a best-of-three against each other, live, by a link, under the match-racing rules
-  (Appendix C of the RRS). The host sets it up on `/match/new` (the code goes in `localStorage` `regatta-match-host`,
+- **1-on-1 race:** two friends sail one race against each other, live, by a link, under the same rules as today's race
+  (no computer boats; the Appendix C match rules are gone). The host sets it up on `/match/new` (the free race's
+  choices but the number of boats, opening with today's settings; the code goes in `localStorage` `regatta-match-host`,
   the settings in `regatta-match-settings`) and the game opens at `/play?match=<code>`, where `public/game/match-ui.js`
-  runs the waiting room, the races, the cards between them and the match card. `main.js` imports it only for a match,
-  and it imports the rest only then: `net.js` (a raw-WebSocket client of Supabase Realtime broadcast, no Supabase
-  package; the address and publishable key come from `GET /connect`, with the signed-in player's name), `match.js` (the
-  waiting room, the score, the host's and the guest's sides of a race) and `wire.js` (a boat's controls and the race's
-  snapshot as they travel). Nobody sailing today's race or a free race downloads any of it.
-  - **The host's game runs the race** (`sim.js` with `match: true`, the only copy that counts) on channel
-    `match:<code>`; the guest's inputs come on `match:<code>:in` as they change (2–5 a second, at once for a tack, a
-    gybe or a big helm change, never more than ten), and the host sends both boats ten times a second with the race's
-    news (each umpire call, signal, rounding and finish, named for its boat), so every call is the same on both screens;
-    the guest's game never judges the rules itself. The guest's own boat is stepped on her own screen from her hands;
-    each snapshot's copy of her is compared with where she was herself at the same moment (her own last two seconds,
-    matched to when her input reached the host, on a clock smoothed against the network's jitter) and the difference
-    eased away, so the delay never pulls her helm; a contact, a penalty or a jump over 20 m takes the host's copy as it
-    is. The host's boat is drawn where it is now, carried on from the last snapshot by half the measured round trip.
+  runs the waiting room, the race and the results card. `main.js` imports it only for a 1-on-1 race, and it imports the
+  rest only then: `net.js` (a raw-WebSocket client of Supabase Realtime broadcast, no Supabase package; the address and
+  publishable key come from `GET /connect`, with the signed-in player's name), `match.js` (the waiting room and the
+  host's and the guest's sides of a race) and `wire.js` (a boat's controls and the race's snapshot as they travel).
+  Nobody sailing today's race or a free race downloads any of it. The addresses, `?match=` and the file names keep
+  "match"; the feature's name on the site is **1-on-1 race** / **Гонка один на один**.
+  - **The host's game runs the race** (`sim.js`, the only copy that counts) on channel `match:<code>`; the guest's inputs
+    come on `match:<code>:in` as they change, and the host sends both boats ten times a second with the race's news, so
+    every call is the same on both screens; the guest's game never judges the rules itself. The guest's own boat is
+    stepped on her own screen from her hands and eased toward the host's copy of her, so the delay never pulls her helm.
     Both screens must be on the same build (`/connect` gives the deployment's commit; another build is asked to
-    reload). The host decides who the guest is and keeps her; a third person with the link sees "This match is full".
-    The host also sends the match
-    (`mstate`: the score, the races, who is ready, and the race's umpire calls with their reasons), every second between
-    races and every two in one; the guest's screen copies it, so a reloaded guest finds her place.
-  - **The rules it judges:** blue (the committee boat end, the host in race 1, swapping each race) and yellow (the pin);
-    the entry, across the line at her own end from the course side between 4:00 and 2:00 (both start 40 m beyond their
-    ends, luffing, so a boat left alone stays afloat and owes one for not entering); an umpire that calls a
-    failure to keep clear without contact as well as a contact (rule 16.1 when the right-of-way boat's own turn did it);
-    the two-length zone; penalties owed and taken when the boat chooses (a gybe and back to close-hauled on a beat, a
-    tack and back to a run), one at once with two owed, none to finish with; two laps up and down, the five-minute
-    sequence; first to two wins. The HUD shows your side, the score, each boat's penalties owed (blinking while one is
-    being taken) and, until 2:00, where to enter. With `&debug=umpire` in the address a small overlay lists each of the
-    umpire's calls with its reasons (the projected gap, how far ahead, whether the right-of-way boat had turned), on both
-    screens.
-  - **When someone drops:** a guest unheard 3 s holds her course, and after 30 s the race is the host's; a host unheard
-    3 s freezes the guest's screen ("Waiting for …"), and after 60 s the host's game abandons the race, not scored (the
-    guest's screen waits for its word). In a match the link's heartbeat is every 5 s, so a dead socket is noticed within
-    about 10 s, and it reconnects at once when the phone comes back online, the tab becomes visible or the race channel
-    has gone quiet for 3 s; the host's own outage never counts against the guest. A host's reloaded or reopened tab keeps
-    the match (localStorage `regatta-match-<code>`, for six hours) but loses the race that was on. Between races the
-    next starts when both press Ready, or 60 s after the card opens with both there, never with one missing; Leave, or
-    five minutes gone, ends the match, and Back (the browser's or Telegram's) asks first. The host's race starts only
-    once the guest's screen has it built, so a slow phone isn't dropped while it loads. In a match a frame that throws
-    is logged and skipped, so one error doesn't lose the race.
-  - **Nothing is kept:** no result page, no ranking, nothing posted to the scores server (`stats.js` skips a match), and
-    the match is gone from the host's localStorage when it's left or done.
-  - **Not on the hub yet:** the race hub's Match race card shows only with `?match` in its address, until the umpire's
-    calls have been signed off in test matches; `/match/new` works for anyone with the address.
+    reload). The host decides who the guest is and keeps her; a third person with the link sees "This 1-on-1 race is full".
+  - **The finish:** the race is over when both boats are home, or 3 minutes after the first valid finish; a boat still
+    racing then is DNF. A finished boat can't touch or shadow the other. A guest who leaves before her finish forfeits;
+    a host who leaves, or whose tab is gone over 60 s, abandons the race, not scored.
+  - **After it:** a card lists the places with the gap (DSQ or DNF for a boat without a place), with Rematch (the host's,
+    a new seed), Full result and Done. Each screen saves the race's record as it ends (`oneOnOne`), so Full result opens
+    the usual result page (`components/result-view.tsx`) in the same tab, headed "1-on-1 race", with no ghost, personal
+    best, share link or ranking; its main button goes back to `/match/new`. A valid finish earns the venue's passport
+    stamp. Nothing is posted to the scores server (`stats.js` skips it).
+  - **Not on the hub yet:** the race hub's 1-on-1 race card shows only with `?match` in its address, until the owner's
+    test race with a friend; `/match/new` works for anyone with the address.
 - **A passport to share:** `/players?s=&v=&vs=&n=` (`lib/passport-share.ts`; its card `app/og/passport`): the streak and
   the venues raced as the sharer sent them, from Share on Home's venues and on your player card.
   - The game also posts each finished race to the scores server (below), so a result link opens on any device; there
@@ -119,7 +99,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 - **Scores:** `public/game/stats.js` posts every race's start, finish and result to `https://iyt.rycrentals.com/api/game`
   (`api/game.mjs` in the `iyt-test` repo, table `public.game_races`). It names the player by Telegram's launch data inside
   Telegram, or else by the site account's access token, which the game gets from `/auth/token` on this origin. Run
-  locally (localhost, `*.localhost`) it posts nothing, so test races stay off the rankings (nor does a match race, anywhere); `?scores` in the game's
+  locally (localhost, `*.localhost`) it posts nothing, so test races stay off the rankings (nor does a 1-on-1 race, anywhere); `?scores` in the game's
   address posts them all the same. The server drops a time faster than the course allows (0.45 s a metre of beat a
   lap); `npm test` checks that the computer boats stay well above that floor.
 - **Three.js** 0.160.0 is served from `public/vendor/` (the build and the three addons the game uses), not a CDN. To
