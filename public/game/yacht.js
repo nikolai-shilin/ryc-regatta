@@ -1876,6 +1876,57 @@ const HANDLE_R = 0.25; // a winch handle's reach, the socket to the grip
 const BACKSTAY_W = [1.4, 3.74]; // the backstays' winches (ST40), aft of the primaries at the helm's hand
 // this boat's sails, as sailTexture lays out the marks on them (numAt, numK: the number's height up the main and its size)
 const RIG = () => ({ span: MAIN_SPAN, chord: mainChord, flagM: 11.56, mark: SAIL_MARK, numAt: 0.64, numK: 1, hd: HEAD.clone().sub(TACK), clew: JIB_CLEW });
+// The twin backstays of a square-top main: its wide head has to get past them, so only the windward one is set up, straight
+// from the crane to its quarter. The lee one is let go: it hangs in a bow, and where the main comes up against it the cloth
+// carries it out, the wire lying taut over the sail's lee side from the crane down and passing under the boom to its quarter.
+// Worked out in the main's own frame, where the sail's height is its height up the luff. Points closer together at the ends,
+// where the wire clears the head and the boom.
+const STAY_N = 24, STAY_CLEAR = 0.06, STAY_SLACK = 0.28;
+const STAY_S = Float32Array.from({ length: STAY_N + 1 }, (_, k) => 0.5 - 0.5 * Math.cos(Math.PI * k / STAY_N));
+const STAY_OFF = new Float32Array(STAY_N + 1), STAY_HULL = new Uint8Array(STAY_N + 1);
+function setBackstays(v, cl, t, reefDrop) {
+  const ma = v.mainPivot.rotation.y, ca = Math.cos(ma), sa = Math.sin(ma), cr = Math.cos(RAKE), sr = Math.sin(RAKE), ss = v.sailSide;
+  const y0 = BOOM_Y + 0.08, span = MASTHEAD - 0.3 - BOOM_Y - reefDrop;
+  for (const l of v.backstays) {
+    const { sx, top, end } = l.userData, p = l.geometry.attributes.position;
+    // the wire's two ends in the main's frame: off the mast's rake, then round with the boom
+    const tu = -(top[1] - MAST_FOOT) * sr + (top[2] - MAST_Z) * cr, eu = -(end[1] - MAST_FOOT) * sr + (end[2] - MAST_Z) * cr;
+    const ax = top[0] * ca - tu * sa, ay = MAST_FOOT + (top[1] - MAST_FOOT) * cr + (top[2] - MAST_Z) * sr, az = top[0] * sa + tu * ca;
+    const bx = end[0] * ca - eu * sa, by = MAST_FOOT + (end[1] - MAST_FOOT) * cr + (end[2] - MAST_Z) * sr, bz = end[0] * sa + eu * ca;
+    // how far the cloth pushes each point of the straight wire out on the wire's own side
+    for (let k = 0; k <= STAY_N; k++) {
+      const s = STAY_S[k], x = lerp(ax, bx, s), y = lerp(ay, by, s), z = lerp(az, bz, s), f = (y - y0) / span;
+      let push = 0;
+      if (k > 0 && k < STAY_N && y >= BOOM_Y - 0.3) { // (above the head too, reefed or not: it passes the head on its own side)
+        const ff = clamp(f, 0, 1), ch = mainChord(ff);
+        if (z > -0.1 && z < ch * 1.02) push = Math.max(0, sx * mainShape(cl, ff, clamp(z / ch, 0, 1), ch, ss, 0.11, 0.5).x + STAY_CLEAR - sx * x);
+      }
+      STAY_OFF[k] = push;
+    }
+    // a taut wire: straight between the points where the cloth bears on it (the pushes' upper hull)
+    let n = 0;
+    for (let k = 0; k <= STAY_N; k++) {
+      while (n >= 2) {
+        const i = STAY_HULL[n - 2], j = STAY_HULL[n - 1];
+        if ((STAY_S[j] - STAY_S[i]) * (STAY_OFF[k] - STAY_OFF[i]) - (STAY_OFF[j] - STAY_OFF[i]) * (STAY_S[k] - STAY_S[i]) < 0) break;
+        n--;
+      }
+      STAY_HULL[n++] = k;
+    }
+    const lee = clamp(-sx * ss, 0, 1), blow = clamp(cl.aws / 12, 0.3, 1);
+    for (let h = 0; h < n - 1; h++) {
+      const i = STAY_HULL[h], j = STAY_HULL[h + 1];
+      for (let k = i; k <= j; k++) {
+        const s = STAY_S[k], off = lerp(STAY_OFF[i], STAY_OFF[j], (s - STAY_S[i]) / (STAY_S[j] - STAY_S[i])), bow = 4 * s * (1 - s);
+        // let go, it bows out and shakes in the breeze, except where it lies on the sail
+        const slack = lee * bow * (STAY_SLACK + 0.05 * blow * Math.sin(t * 5.5 + s * 8 + sx)) * (1 - smoothstep(0, 0.15, off));
+        const xs = lerp(ax, bx, s) + sx * (off + slack), ys = lerp(ay, by, s) - MAST_FOOT, zs = lerp(az, bz, s), uz = -xs * sa + zs * ca;
+        p.setXYZ(k, xs * ca + zs * sa, MAST_FOOT + ys * cr - uz * sr, MAST_Z + ys * sr + uz * cr);
+      }
+    }
+    p.needsUpdate = true;
+  }
+}
 
 export class BoatView {
   constructor({ look = LOOKS.player, label = null, player = false }) {
@@ -2044,10 +2095,13 @@ export class BoatView {
     fit(add, display(0.3, 0.17), ...raked(0, MAST_FOOT + 0.5, MAST_Z + 0.12), 0, RAKE);
     const hounds = raked(0, HOUNDS, MAST_Z - 0.06), crane = raked(0, MASTHEAD - 0.06, MAST_Z + 0.48);
     this.forestay = line(Array.from({ length: 9 }, () => [0, 0, 0])); this.forestay.frustumCulled = false; T.add(this.forestay); this.hounds = hounds; // it sags (update())
-    // twin backstays from the crane to the quarters, each led forward from a block on the deck to its own winch by the helm
+    // twin backstays from the crane to the quarters, the lee one let go (setBackstays), each led forward from a block on
+    // the deck to its own winch by the helm
+    this.backstays = [];
     for (const sx of [-1, 1]) {
       const bs = [sx * (halfBeam(0.02) - 0.14), sheerAt(0.02) + 0.05, STERN_Z - 0.25];
-      T.add(line([crane, bs]));
+      const stay = line(Array.from({ length: STAY_N + 1 }, () => [0, 0, 0])); stay.frustumCulled = false;
+      stay.userData = { sx, top: crane, end: bs }; T.add(stay); this.backstays.push(stay);
       fit(add, chainplate(bs, crane, 0.2));
       const bk = [sx * (halfBeam(0.04) - 0.2), sheerAt(0.04) + 0.04, zAt(0.04)];
       fit(add, block(0.03), ...bk, sx * 0.2);
@@ -2137,7 +2191,7 @@ export class BoatView {
   // so setDetail still hides the small ones far off), a boat costs a dozen draws instead.
   bake() {
     const moving = new Set([this.travCar, this.wheel, ...(this.rudders || []).map((r) => r.kick), this.sprit, this.mainRake, this.mainPivot, this.jibPivot, this.kite, this.windex,
-      this.mainsheet, this.jibSheet, this.lazySheet, this.kiteSheet, this.forestay, this.wash, ...this.crew.map((c) => c.g), ...(this.spin || [])]);
+      this.mainsheet, this.jibSheet, this.lazySheet, this.kiteSheet, this.forestay, ...(this.backstays || []), this.wash, ...this.crew.map((c) => c.g), ...(this.spin || [])]);
     if (this.tells?.length) this.wire(moving); // your own boat: her rigging as wire when you're close (setCrewNear)
     const sets = new Map();
     for (const o of this.tilt.children) {
@@ -2252,6 +2306,7 @@ export class BoatView {
       const m = mainShape(cl, f, u, mainChord(f), ss, 0.11, 0.5);
       v.set(m.x, BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), m.z);
     });
+    if (this.detailOn !== false) setBackstays(this, cl, t, reefDrop); // (far off the lines are hidden: setDetail)
     // the mainsheet, from the block on the traveller's car to the one under the boom
     const ma = this.mainPivot.rotation.y, bz = SHEET_B;
     this.travCar.position.x = clamp(Math.sin(ma) * bz * 0.6 + Math.sign(Math.sin(ma)) * clamp((b.depower || 0) / 10, 0, 1) * 0.35, -this.travW, this.travW); // dropped to leeward in a gust
