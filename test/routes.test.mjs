@@ -208,8 +208,22 @@ test('/connect tells the game the project, the key, the name and the build', asy
   delete process.env.VERCEL_GIT_COMMIT_SHA; delete process.env.VERCEL_DEPLOYMENT_ID;
   supabase({ user: { user_metadata: { display_name: 'Anna' } } });
   const r = await connect();
-  assert.deepEqual(await r.json(), { url: 'https://proj.supabase.test', key: 'pub-key', name: 'Anna', build: 'dev' });
+  assert.deepEqual(await r.json(), { url: 'https://proj.supabase.test', key: 'pub-key', name: 'Anna', canHost: true, build: 'dev' });
   assert.equal(r.headers.get('cache-control'), 'no-store');
+});
+
+test('/connect: hosting a 1-on-1 race takes an account, with or without a ranking name', async () => {
+  supabase({ user: { id: 'u1', user_metadata: {} } });
+  const named = await (await connect()).json();
+  assert.equal(named.canHost, true);
+  assert.equal(named.name, null);
+});
+
+test('/connect: a guest may not host, and nor may anyone while Supabase can\'t say who they are', async () => {
+  supabase();
+  assert.equal((await (await connect()).json()).canHost, false);
+  globalThis.__supabase = new Error('down');
+  assert.equal((await (await connect()).json()).canHost, false);
 });
 
 test('/connect: a guest has no name, even when Supabase can\'t be reached', async () => {

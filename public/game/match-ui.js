@@ -33,6 +33,7 @@ export const MATCH_STRINGS = {
     loadingRace: (w) => `Waiting for ${w} to load the race…`,
     sec: 's', waitHost: 'Waiting for the host…', stale: 'The game was updated: reload to join', reload: 'Reload', fullRoom: 'This race already has two sailors',
     badSet: 'This race is set at a venue or on a yacht this page can’t open',
+    hostH: 'Sign in to host this race', hostP: 'Hosting a 1-on-1 race takes an account. Joining a friend’s race doesn’t.', signIn: 'Sign in',
   },
   ru: {
     kick: 'Гонка один на один', room: 'Зал ожидания', linkK: 'Отправь другу эту ссылку', share: 'Поделиться', copy: 'Скопировать', copied: 'Скопировано',
@@ -46,6 +47,7 @@ export const MATCH_STRINGS = {
     loadingRace: (w) => `${w} загружает гонку…`,
     sec: 'с', waitHost: 'Ждём хозяина гонки…', stale: 'Игра обновилась: перезагрузи страницу, чтобы войти', reload: 'Перезагрузить', fullRoom: 'В этой гонке уже двое',
     badSet: 'Эта гонка в месте или на яхте, которых эта страница не открывает',
+    hostH: 'Войди, чтобы создать гонку', hostP: 'Чтобы создать гонку один на один, нужен аккаунт. Чтобы войти в гонку друга, он не нужен.', signIn: 'Войти',
   },
 };
 
@@ -139,6 +141,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
       <div class="m-nameBox"><span class="m-k m-nameK"></span><div class="m-name"><input maxlength="16" autocomplete="nickname"><button type="button" class="m-join"></button></div></div>
       <span class="m-st"></span>
       <button type="button" class="m-prim m-start"></button>
+      <button type="button" class="m-prim m-signin" hidden></button>
       <div class="m-btns"><button type="button" class="m-retry" hidden></button><button type="button" class="m-leave"></button></div>
     </div>
     <div class="m-card" id="mCard" role="dialog" aria-labelledby="mCardH" hidden>
@@ -154,14 +157,14 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   document.body.append(wrap);
   const q = (root, s) => root.querySelector(s);
   const R = { card: q(wrap, '#mRoom') }, C = { card: q(wrap, '#mCard') }, banner = q(wrap, '#mBanner'), note = q(wrap, '#mNote');
-  for (const k of ['kick', 'set', 'linkK', 'ppl', 'nameBox', 'nameK', 'st', 'start', 'retry', 'leave', 'share', 'join']) R[k] = q(R.card, '.m-' + k);
+  for (const k of ['kick', 'set', 'linkK', 'ppl', 'nameBox', 'nameK', 'st', 'start', 'signin', 'retry', 'leave', 'share', 'join']) R[k] = q(R.card, '.m-' + k);
   R.h = q(R.card, 'h2'); R.link = q(R.card, '.m-link input'); R.name = q(R.card, '.m-name input'); R.linkBox = q(R.card, '.m-linkBox');
   for (const k of ['kick', 'sub', 'rows', 'st', 'go', 'full', 'leave']) C[k] = q(C.card, '.m-' + k);
   C.h = q(C.card, 'h2');
   const txt = (el, s) => { s = String(s ?? ''); if (el._t !== s) { el._t = s; el.textContent = s; } };
   const show = (el, on) => { if (el.hidden === !!on) el.hidden = !on; };
   R.kick.textContent = C.kick.textContent = L.kick; R.h.textContent = L.room; R.linkK.textContent = L.linkK; R.nameK.textContent = L.nameK;
-  R.name.placeholder = L.namePh; R.join.textContent = L.join; R.start.textContent = L.start; R.leave.textContent = L.leave; R.retry.textContent = L.retry;
+  R.name.placeholder = L.namePh; R.join.textContent = L.join; R.start.textContent = L.start; R.leave.textContent = L.leave; R.retry.textContent = L.retry; R.signin.textContent = L.signIn;
   C.leave.textContent = L.done; C.full.textContent = L.fullResult; C.go.textContent = L.rematch;
   R.link.value = `${location.origin}/match/${code}?v=${encodeURIComponent(venue.id)}&b=${encodeURIComponent(cls.id)}`;
   R.share.textContent = navigator.share ? L.share : L.copy;
@@ -172,6 +175,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   let boat = null; try { boat = JSON.parse(localStorage.getItem('regatta-boat') || 'null'); } catch (e) {}
   const look = boat && typeof boat === 'object' ? Object.fromEntries(Object.entries(boat).filter(([k]) => k !== 'logoImg')) : null; // her look, less the picture of a logo saved before the logos became the admin's
   let isHost = false, hostSettings = null; // (known once match.js is in: connect())
+  let needsAccount = false; // this device made the race, but the site says nobody is signed in: no room, only the question
   sweepSaved();
 
   // ---------- the state of the screen ----------
@@ -227,6 +231,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   C.leave.addEventListener('click', () => leave());
   C.full.addEventListener('click', () => { const id = resultId(); if (id) leave(() => openResult(id)); });
   R.retry.addEventListener('click', () => location.reload());
+  R.signin.addEventListener('click', () => leave(() => { location.href = `/sign-in?next=${encodeURIComponent(location.pathname + location.search)}`; })); // (back to this race)
   addEventListener('pagehide', () => { tellEnd(true); if (!left) try { room?.leave(); } catch (e) {} });
   // the link checked at once when the page comes back to the front or the network comes back: a phone drops a
   // background tab's socket, and the old one may be half-open
@@ -244,7 +249,10 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
       build = typeof cfg.build === 'string' ? cfg.build : null;
       let net;
       [net, M, W, Log] = await Promise.all([import('./net.js'), import('./match.js'), import('./wire.js'), import('./duel-log.js').catch(() => null)]);
-      isHost = (store(M.HOST_KEY) || {}).code === code;
+      // hosting takes an account, and the site says who has one: what this device saved only says the race was made here
+      const mine = (store(M.HOST_KEY) || {}).code === code;
+      if (mine && cfg.canHost !== true) { needsAccount = true; return; }
+      isHost = mine;
       hostSettings = isHost ? M.cleanSettings(store(SETTINGS_KEY), here()) : null;
       if (isHost && !settingsHere(hostSettings)) return; // (another page: the host's own venue and yacht)
       R.link.value = `${location.origin}/match/${code}?v=${encodeURIComponent(hostSettings ? hostSettings.venue : venue.id)}&b=${encodeURIComponent(hostSettings ? hostSettings.yacht : cls.id)}`;
@@ -492,6 +500,12 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
 
   // ---------- the waiting room ----------
   const paintRoom = () => {
+    show(R.signin, needsAccount);
+    if (needsAccount) {
+      txt(R.h, L.hostH); txt(R.set, L.hostP);
+      for (const el of [R.linkBox, R.ppl, R.nameBox, R.st, R.start, R.retry]) show(el, false);
+      return;
+    }
     const raw = (room && room.settings) || hostSettings, s = raw && M ? M.cleanSettings(raw, here()) : null;
     txt(R.set, s ? [venueName(s.venue), yachtName(s.yacht), t(s.preset), t(LENGTH_KEY[s.length]), t(SHAPE_KEY[s.course]), L.laps(s.laps), L.startMin(s.start), s.current ? L.currentOn : '', s.daytime !== 'any' ? L.daytime(s.daytime) : ''].filter(Boolean).join(' · ') : '');
     const full = !!room && room.full;

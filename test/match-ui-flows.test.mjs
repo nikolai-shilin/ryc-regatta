@@ -94,8 +94,8 @@ async function page(name, { host = false, settings = {}, ls = null, lang = 'en',
   const s = { name, timers: [], channels: [], kept: [], opened: [], toasts: [], ended: 0, idled: 0, raced: 0, session: null, racing: false, win: {}, reloads: 0, replaced: [], ...more,
     doc: { head: new El('head'), body: new El('body'), activeElement: null, visibilityState: 'visible', heard: {}, copies: [], createElement: (t) => new El(t), addEventListener(k, fn) { (this.heard[k] ||= []).push(fn); }, execCommand(c) { if (s.doc.copyThrows) throw new Error('no'); s.doc.copies.push(c); } },
     ls: ls ?? memory(), nav: { userAgent: 'test', share, clipboard } };
-  s.loc = { origin: 'http://game.test', search, reload: () => { s.reloads++; }, replace: (u) => { s.replaced.push(u); } };
-  s.connect = connect ?? (async () => ({ ok: true, json: async () => ({ url: 'u', key: 'k', name, build, ...cfg }) }));
+  s.loc = { origin: 'http://game.test', pathname: '/play', search, reload: () => { s.reloads++; }, replace: (u) => { s.replaced.push(u); } };
+  s.connect = connect ?? (async () => ({ ok: true, json: async () => ({ url: 'u', key: 'k', name, canHost: true, build, ...cfg }) }));
   s.$ = (sel) => s.doc.body.querySelector(sel);
   s.shows = (sel) => { const e = s.$(sel); return !!e && !e.hidden; };
   s.says = (sel) => s.$(sel)?.textContent ?? '';
@@ -1380,4 +1380,88 @@ test('a reloaded guest on a new rematch goes straight to the new race', async ()
   until(() => back.raced === 1 && x.h.cur().H, x.h, back);
   assert.equal(back.cur().race.seed, x.h.cur().race.seed);
   x.h.gone(); back.gone();
+});
+
+// ---------- hosting takes an account ----------
+const HOST_ADDRESS = `?match=${CODE}&venue=palma&boat=jpk1050`;
+
+test('opened signed out, a host\'s address opens no race and asks her to sign in', async () => {
+  fresh();
+  const h = await page('Host', { host: true, search: HOST_ADDRESS, cfg: { canHost: false } });
+  run(0.5, h);
+  assert.equal(h.channels.length, 0, 'nothing is opened on the wire');
+  assert.equal(h.says('#mRoom h2'), 'Sign in to host this race');
+  assert.equal(h.says('#mRoom .m-set'), 'Hosting a 1-on-1 race takes an account. Joining a friend’s race doesn’t.');
+  assert.equal(h.shows('.m-signin'), true);
+  for (const part of ['.m-start', '.m-linkBox', '.m-nameBox', '.m-ppl', '.m-retry', '#mRoom .m-st']) assert.equal(h.shows(part), false, part);
+  h.gone();
+});
+
+test('signing in from there comes back to the same race', async () => {
+  fresh();
+  const h = await page('Host', { host: true, search: HOST_ADDRESS, cfg: { canHost: false } });
+  run(0.5, h);
+  await h.press('.m-signin');
+  assert.equal(h.loc.href, `/sign-in?next=${encodeURIComponent(`/play${HOST_ADDRESS}`)}`);
+  h.gone();
+});
+
+test('the sign-in question is in Russian too', async () => {
+  fresh();
+  const h = await page('Host', { host: true, lang: 'ru', cfg: { canHost: false } });
+  run(0.5, h);
+  assert.equal(h.says('#mRoom h2'), 'Войди, чтобы создать гонку');
+  assert.equal(h.says('#mRoom .m-set'), 'Чтобы создать гонку один на один, нужен аккаунт. Чтобы войти в гонку друга, он не нужен.');
+  assert.equal(h.says('.m-signin'), 'Войти');
+  h.gone();
+});
+
+test('an answer that doesn\'t say she may host counts as no', async () => {
+  fresh();
+  const h = await page('Host', { host: true, cfg: { canHost: undefined } });
+  run(0.5, h);
+  assert.equal(h.channels.length, 0);
+  assert.equal(h.shows('.m-signin'), true);
+  h.gone();
+});
+
+test('a signed-in host gets her room, and no question', async () => {
+  fresh();
+  const h = await page('Host', { host: true });
+  run(0.5, h);
+  assert.equal(h.says('#mRoom h2'), 'Waiting room');
+  assert.equal(h.shows('.m-signin'), false);
+  assert.equal(h.shows('.m-linkBox'), true);
+  assert.equal(h.shows('.m-start'), true);
+  h.gone();
+});
+
+test('a guest who isn\'t signed in still joins a friend\'s race and sails it', async () => {
+  fresh();
+  const h = await page('Host', { host: true }), g = await page('Guest', { cfg: { canHost: false } });
+  until(() => h.$('.m-start').disabled === false, h, g);
+  assert.equal(g.shows('.m-signin'), false);
+  h.press('.m-start');
+  until(() => g.raced === 1, h, g);
+  h.gone(); g.gone();
+});
+
+test('a race hosted on this device before doesn\'t stop her joining another as a guest', async () => {
+  fresh();
+  const ls = memory();
+  ls.setItem('regatta-match-host', JSON.stringify({ code: OTHER }));
+  const g = await page('Guest', { ls, cfg: { canHost: false } });
+  run(0.5, g);
+  assert.equal(g.shows('.m-signin'), false);
+  assert.ok(g.channels.length > 0, 'she is on the wire');
+  g.gone();
+});
+
+test('a rematch stays the host\'s: a guest who isn\'t signed in is offered none', async () => {
+  fresh();
+  const x = await carded({}, { cfg: { canHost: false } });
+  assert.equal(x.g.shows('#mCard .m-go'), false);
+  assert.equal(x.g.says('#mCard .m-st'), 'Host can start a rematch');
+  assert.equal(x.h.shows('#mCard .m-go'), true);
+  x.h.gone(); x.g.gone();
 });

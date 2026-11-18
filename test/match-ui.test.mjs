@@ -140,7 +140,7 @@ Object.assign(globalThis, {
   location: { origin: 'http://game.test', search: '', reload() {}, replace() {} }, addEventListener() {},
   setInterval: (fn, ms) => { const x = { fn, ms, at: clock.t + ms }; on.timers.push(x); return x; },
   clearInterval: (x) => { on.timers = on.timers.filter((o) => o !== x); },
-  fetch: async (u) => (u === '/connect' ? { ok: true, json: async () => ({ url: 'u', key: 'k', name: on.name, build: 'b1' }) } : new Response(await readFile(new URL(String(u))))),
+  fetch: async (u) => (u === '/connect' ? { ok: true, json: async () => ({ url: 'u', key: 'k', name: on.name, canHost: true, build: 'b1' }) } : new Response(await readFile(new URL(String(u))))),
   __realtime: () => {
     const me = on;
     return { setHeartbeat() {}, reconnect() {}, close() {}, lastHeard: () => clock.t,

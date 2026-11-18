@@ -101,7 +101,7 @@ export async function page(name, { host = false, settings = {}, ls = null, ...mo
   const s = { name, timers: [], channels: [], kept: [], records: [], opened: [], toasts: [], ended: 0, session: null, racing: false, heard: [], hands: null, ...more,
     doc: { head: new El('head'), body: new El('body'), activeElement: null, visibilityState: 'visible', createElement: (t) => new El(t), addEventListener() {}, execCommand() {} },
     ls: ls ?? memory(), nav: { userAgent: 'test' }, loc: { origin: 'http://game.test', search: '', reload() {}, replace() {} } };
-  s.connect = async () => ({ ok: true, json: async () => ({ url: 'u', key: 'k', name, build: 'b1' }) });
+  s.connect = async () => ({ ok: true, json: async () => ({ url: 'u', key: 'k', name, canHost: true, build: 'b1' }) });
   s.$ = (sel) => s.doc.body.querySelector(sel);
   s.shows = (sel) => { const e = s.$(sel); return !!e && !e.hidden; };
   s.says = (sel) => s.$(sel)?.textContent ?? '';
