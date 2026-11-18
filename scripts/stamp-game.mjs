@@ -73,6 +73,8 @@ export function stamp(dir) {
         return a + JSON.stringify(map) + b;
       })
       .replace(/(<link rel="modulepreload" href="|<script type="module" src=")([^"]+)"/g, (m, a, href) => (v[bare(href)] ? `${a}${v[bare(href)]}"` : m))
+      // the yacht fetched at once, at the address the game will ask for: at another the browser fetches her twice
+      .replace(/(<link rel="preload" as="fetch" href=")([^"]+)"/g, (m, a, href) => (files[bare(href)] ? `${a}${files[bare(href)]}"` : m))
       .replace(PLAIN, (_, a, p) => `${a}${p}?v=${hash(p)}"`);
     writeFileSync(`${dir}${page}`, out);
   }

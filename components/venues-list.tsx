@@ -11,6 +11,7 @@ import { SceneBrand } from './scene-brand';
 import { PauseCard } from './pause-card';
 import { FlagImg } from './flag';
 import '@/styles/venues.css';
+import { useSceneStart } from '@/lib/scene-start';
 
 // The venues (/venues), as /players: the game's own scene behind the page (/venues-view: your yacht sailing at the
 // venue of today's race, the drone starting close by her, then pulling up and away into a slow, wide circuit of the
@@ -22,6 +23,7 @@ export type VenueRow = { id: VenueId; name: Pair; place: Pair; wind: Pair; natio
 export function VenuesList({ lang, list, today, back }: { lang: Lang; list: VenueRow[]; today: VenueId; back: ReactNode }) {
   const t = tx(lang);
   const [live, setLive] = useState(false);
+  const backdrop = useSceneStart();
   const frame = useRef<HTMLIFrameElement>(null), card = useRef<HTMLElement>(null), info = useRef<HTMLDivElement>(null);
   const here = list.find((v) => v.id === today) ?? list[0];
 
@@ -61,10 +63,10 @@ export function VenuesList({ lang, list, today, back }: { lang: Lang; list: Venu
 
   return (
     <div className="bt vs-view">
-      <LoadBar label={t('Loading the water', 'Загружаем акваторию')} on={!live} />
-      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={`/venues-view?venue=${here.id}`}
+      <LoadBar label={t('Loading the water', 'Загружаем акваторию')} on={!live && !backdrop.off} />
+      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={backdrop.go ? `/venues-view?venue=${here.id}` : undefined}
         title={t(`${t(...here.name)} from the drone`, `${t(...here.name)} с дрона`)} onLoad={() => post({ type: 'hello' })} />
-      <ScenePoster label={t('Loading the water', 'Загружаем акваторию')} on={!live} />
+      <ScenePoster label={backdrop.off ? undefined : t('Loading the water', 'Загружаем акваторию')} on={!live} />
 
       <div className="bt-info" ref={info}>
         <div className="bt-top">{back}<SceneBrand /></div>

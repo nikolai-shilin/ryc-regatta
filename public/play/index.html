@@ -32,6 +32,7 @@
      page's text would only ask once it shows, and once the game is building its scene a font comes in slowly. Here,
      as a script after the stylesheets, it waits for them: they declare the face, and they hold up the first paint. -->
 <script>try { document.fonts.load('700 32px Carlito', '0123456789').catch(function () {}); } catch (e) {}</script>
+<script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
 <!-- the land round the course (game/land.js): fetched at once, not after the modules that ask for it. Its venue as
      game/venues.js pageVenue() chooses it: ?venue=, else a free race's choice, else today's (dailyVenue, copied here
      with the venues in the same order; npm test runs this script against the game's) -->
@@ -55,7 +56,8 @@
   try { var q = new URLSearchParams(location.search); v = q.get('venue') || (q.get('race') === 'free' ? JSON.parse(localStorage.getItem('regatta') || '{}').venue : today()) || 'gocek'; } catch (e) {}
   if (!/^[a-z-]+$/.test(v)) v = 'gocek';
   var f = v === 'gocek' ? ['/game/skopea.bin', '/game/skopea.json'] : ['/game/venues/' + v + '.bin', '/game/venues/' + v + '.json'];
-  f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
+  var map = {}; try { map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports; } catch (e) {}
+  f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = map[h] || h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
 <!-- Telegram's script, only inside Telegram: the launch data in the hash, or kept in sessionStorage by the site's pages
      (app/[lang]/layout.tsx), or Telegram's own webview. Elsewhere the race doesn't wait on telegram.org at all. It is written
      in, not added, so it still runs before the scripts below that read window.Telegram. -->
@@ -432,7 +434,6 @@
   #confirmCard .c-card, #glLost .c-card { width: min(400px, 100%); padding: 18px; gap: 8px; }
 
 </style>
-<script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
 <!-- every module the page will load, asked for at once rather than an import at a time, and the yacht with them
      (game/yacht.js); npm test keeps the list in step with the imports -->
 <link rel="preload" as="fetch" href="/game/yacht.glb" crossorigin>

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { VenueId } from '@/lib/venues';
 import type { Wind } from '@/lib/race';
+import { useSceneStart } from '@/lib/scene-start';
 import { LoadBar, ScenePoster } from './skeleton';
 
 // The scene behind the pages laid out as the race's pause screen (the race hub, the free race's set-up): the game at a
@@ -27,6 +28,7 @@ export const toScene = (msg: object) => dispatchEvent(new CustomEvent(SCENE_EVEN
 // new page too, as another venue is
 export function GameScene({ venue, boat = '', wind, title, finish, setup, loading }: { venue: VenueId; boat?: string; wind: Wind; title: string; finish?: object; setup?: SceneSetup; loading?: string }) {
   const [frames, setFrames] = useState<{ id: number; venue: VenueId; boat: string; wind: Wind; live: boolean }[]>(() => [{ id: 0, venue, boat, wind, live: false }]);
+  const backdrop = useSceneStart(!finish && !setup); // (the finish and the set-up are what their pages show)
   const refs = useRef(new Map<number, HTMLIFrameElement>());
   const windNow = useRef(wind); windNow.current = wind;
   const fin = useRef(finish); fin.current = finish;
@@ -80,10 +82,10 @@ export function GameScene({ venue, boat = '', wind, title, finish, setup, loadin
   // before the first frame of any venue is up: the sea's colours and the words, so the page isn't a blank dark screen
   // for the seconds a scene takes; faded out under the scene as it comes
   const none = !frames.some((f) => f.live);
-  return <>{loading ? <LoadBar label={loading} on={busy} /> : null}
-    <ScenePoster label={loading} on={none} />
+  return <>{loading ? <LoadBar label={loading} on={busy && !backdrop.off} /> : null}
+    <ScenePoster label={backdrop.off ? undefined : loading} on={none} />
     {frames.map((f) => (
     <iframe key={f.id} ref={(el) => { if (el) refs.current.set(f.id, el); else refs.current.delete(f.id); }} className={`bt-scene bt-fade ${f.live ? 'on' : ''}`}
-      src={`/boat-view?venue=${f.venue}&wind=${f.wind}${finish ? '&finish=1' : setup ? '&setup=1' : ''}${f.boat && f.boat !== 'jpk1050' ? `&boat=${f.boat}` : ''}`} title={title} onLoad={() => post({ type: 'hello' }, f.id)} />
+      src={backdrop.go ? `/boat-view?venue=${f.venue}&wind=${f.wind}${finish ? '&finish=1' : setup ? '&setup=1' : ''}${f.boat && f.boat !== 'jpk1050' ? `&boat=${f.boat}` : ''}` : undefined} title={title} onLoad={() => post({ type: 'hello' }, f.id)} />
   ))}</>;
 }

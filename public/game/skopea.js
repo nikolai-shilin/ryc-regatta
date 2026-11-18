@@ -3037,15 +3037,27 @@ function liftMask() {
 }
 
 // ---------- all of it ----------
+// The land's parts, the slow ones of the whole scene (a town alone is a quarter of a second, a second on a phone), in the
+// order they are built. buildLand makes them ahead of the world, a breath between each, so a page with a scene behind
+// it stays live while it comes up (world.js makeWorld); the race's own page, behind its loading screen, leaves it to
+// the constructor.
+const PARTS = [['land', terrain], ['far', far], ['trees', () => pines(16000)], ['farTrees', () => pines(9000, true)], ['town', town], ['boats', marinas], ['rocks', shoreRocks], ['landmarks', landmarks]];
+let built = null;
+export async function buildLand(breath) {
+  const got = {};
+  for (const [k, make] of PARTS) { got[k] = make(); await breath(); }
+  built = got;
+}
 export class Skopea {
   // skyU: the sky's uniforms (light.js), for the haze
   constructor(skyU) {
     SKY_U = skyU;
     Object.assign(CLOUD_U, { uCsRipple: skyU.uRipple, uCsCloud: skyU.uCloud, uCsSun: skyU.uSun }); // the sky's own, shared
     this.group = new THREE.Group();
-    this.land = terrain(); this.far = far(); this.trees = pines(16000); this.farTrees = pines(9000, true); this.town = town(); this.boats = marinas();
-    this.rocks = shoreRocks(); this.boats.add(this.rocks); // (with the boats: what the sea mirrors along its edge)
-    this.landmarks = landmarks(); if (this.landmarks) this.town.add(this.landmarks);
+    const got = built || Object.fromEntries(PARTS.map(([k, make]) => [k, make()])); built = null;
+    Object.assign(this, got);
+    this.boats.add(this.rocks); // (with the boats: what the sea mirrors along its edge)
+    if (this.landmarks) this.town.add(this.landmarks);
     GROUND_U.uLiftMask.value = liftMask();
     this.group.add(this.far, this.land, this.trees, this.farTrees, this.town, this.boats);
     this.group.traverse((o) => { if (o.isMesh) o.matrixAutoUpdate = false; });

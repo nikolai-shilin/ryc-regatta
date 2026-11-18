@@ -1144,8 +1144,15 @@ export function setKite(view, tk, hd, cl, sd, wd, R, k, guard) {
     guard.keep(v);
   });
 }
+// A sail far off is cut anew one frame in three, each on a beat of its own (so the fleet's don't all fall on one frame): the
+// shaping of the sails is the race's largest source of garbage, and from there no one can see its cloth move.
+const SAIL_V = new THREE.Vector3();
+let sailBeats = 0;
 export function setSail(m, fn) {
-  const d = m.userData, { rows, cols, g } = d, a = g.attributes.position, v = new THREE.Vector3(), st = d.tiers && !d.fine ? 2 : 1;
+  const d = m.userData;
+  if (d.tiers && !d.fine && d.cut) { d.beat = ((d.beat ?? sailBeats++) + 1) % 3; if (d.beat) return; }
+  d.cut = true;
+  const { rows, cols, g } = d, a = g.attributes.position, v = SAIL_V, st = d.tiers && !d.fine ? 2 : 1;
   if (st !== d.step) { d.step = st; g.setIndex(st > 1 ? d.coarseI : d.fineI); }
   for (let i = 0; i <= rows; i += st) for (let j = 0; j <= cols; j += st) { fn(i / rows, j / cols, v); a.setXYZ(i * (cols + 1) + j, v.x, v.y, v.z); }
   a.needsUpdate = true; g.computeVertexNormals(); g.computeBoundingSphere();
@@ -2255,7 +2262,7 @@ export class BoatView {
     setSail(this.jib, (f, u, v) => {
       const sg = sag * Math.sin(Math.PI * f), lx = head.x * f - ss * sg, ly = head.y * f, lz = head.z * f + sg * 0.5; // the luff on the sagging stay
       const ex = lerp(clew.x, head.x, f), ey = lerp(clew.y, head.y, f), ez = lerp(clew.z, head.z, f);
-      const len = Math.hypot(ex - lx, ey - ly, ez - lz), al = jibAlong(f, u);
+      const dx = ex - lx, dy = ey - ly, dz = ez - lz, len = Math.sqrt(dx * dx + dy * dy + dz * dz), al = jibAlong(f, u);
       v.set(lerp(lx, ex, al) + jibShape(cl, f, u, len, ss, 0.125, 1.3), lerp(ly, ey, al), lerp(lz, ez, al));
       stowJib(v, st, false, lx, ly, lz);
     });

@@ -43,7 +43,9 @@ test('the site and the game load the tokens and both Sofia Sans faces with Cyril
   assert.match(layout, /import '@\/public\/ui\/tokens\.css'/);
   // the faces are lib/fonts.ts's, for both root documents: every page's layout and the 404's
   const fonts = read('lib/fonts.ts');
-  for (const f of ['Sofia_Sans', 'Sofia_Sans_Condensed']) assert.match(fonts, new RegExp(`${f}\\(\\{ subsets: \\[[^\\]]*'cyrillic'`), f);
+  // (`subsets` names the files preloaded: next/font keeps every face, so a Russian page still draws in Sofia Sans)
+  for (const f of ['Sofia_Sans', 'Sofia_Sans_Condensed']) assert.match(fonts, new RegExp(`${f}\\(\\{ subsets: \\['latin'\\]`), f);
+  assert.match(read('node_modules/next/dist/compiled/@next/font/dist/google/loader.js'), /findFontFilesInCss\)\(fontFaceDeclarations, preload \? subsets : undefined\)/);
   for (const doc of [layout, read('app/global-not-found.tsx')]) {
     assert.match(doc, /className=\{FONT_VARS\}/);
     assert.match(doc, /import '@\/public\/ui\/tokens\.css';\nimport '@\/styles\/broadcast\.css';/);

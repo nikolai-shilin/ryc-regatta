@@ -66,6 +66,27 @@ test("stamped, each page's game modules carry their content's hash, in the impor
   }
 });
 
+test('stamped, the yacht and the land are preloaded at the very address the game asks for, so neither comes twice', async () => {
+  const { runInNewContext } = await import('node:vm');
+  const dir = mkdtempSync(join(tmpdir(), 'stamp-'));
+  try {
+    cpSync(pub, dir, { recursive: true, filter: (s) => /\/(yacht\.glb|skopea\.bin)$/.test(s) || !/\/(venues|images|flags)$|\.(bin|mp3|m4a|glb)$/.test(s) });
+    stamp(dir);
+    for (const page of PAGES.filter((p) => p !== '/fleet-view/index.html')) { // (the fleet's land is Garda's, whose files aren't copied here)
+      const html = readFileSync(join(dir, page), 'utf8'), text = /<script type="importmap">(.*?)<\/script>/.exec(html)[1], map = JSON.parse(text).imports;
+      assert.match(map['/game/yacht.glb'], /\?v=[0-9a-f]{10}$/);
+      assert.ok(html.includes(`<link rel="preload" as="fetch" href="${map['/game/yacht.glb']}" crossorigin>`), `${page}: the yacht`);
+      assert.ok(html.indexOf('type="importmap"') < html.indexOf("l.rel = 'preload'"), `${page}: the map is there for the land's preload to read`);
+      const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]).find((x) => x.includes("l.rel = 'preload'")), links = [];
+      runInNewContext(script, { Date, Math, JSON, URLSearchParams, location: { search: '?venue=gocek' }, localStorage: { getItem: () => null }, history: { replaceState() {} },
+        document: { querySelector: () => ({ textContent: text }), createElement: () => ({}), head: { appendChild: (l) => links.push(l.href) } } });
+      assert.ok(links.includes(map['/game/skopea.bin']), `${page}: the land`);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('an address with ?v= is cached for good, the rest of /game/ still revalidates, and the build stamps', () => {
   const config = readFileSync(new URL('../next.config.ts', import.meta.url), 'utf8');
   const plain = config.indexOf("{ source: '/game/:path*', headers");

@@ -20,6 +20,7 @@ import { passportShare, useLog } from './passport';
 import { PassportBlock, type PassportFacts } from './passport-card';
 import { ShareButton } from './share-sheet';
 import '@/styles/players.css';
+import { useSceneStart } from '@/lib/scene-start';
 
 // The players: the game's own scene (/boat-view: a JPK 1050 on Lake Garda on a summer evening, the drone circling her)
 // behind the page, as on /yachts and /boat, the players' table in the card on the right, a page at a time, the most
@@ -55,6 +56,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
   const [going, setGoing] = useState<string | null>(null); // the row clicked, while its card comes
   const [down, setDown] = useState(false);
   const [live, setLive] = useState(false);
+  const backdrop = useSceneStart();
   const frame = useRef<HTMLIFrameElement>(null), card = useRef<HTMLElement>(null), info = useRef<HTMLDivElement>(null);
   const page = list?.page ?? 1;
 
@@ -122,10 +124,10 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
 
   return (
     <div className="bt pl-view">
-      <LoadBar label={t('Loading the boat', 'Загружаем яхту')} on={!live || pending} />
-      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src="/boat-view?wind=light" title={t('The player’s boat in 3D', 'Яхта игрока в 3D')}
+      <LoadBar label={t('Loading the boat', 'Загружаем яхту')} on={(!live && !backdrop.off) || pending} />
+      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={backdrop.go ? '/boat-view?wind=light' : undefined} title={t('The player’s boat in 3D', 'Яхта игрока в 3D')}
         onLoad={() => post({ type: 'hello' })} />
-      <ScenePoster label={t('Loading the boat', 'Загружаем яхту')} on={!live} />
+      <ScenePoster label={backdrop.off ? undefined : t('Loading the boat', 'Загружаем яхту')} on={!live} />
 
       <div className="bt-info" ref={info}>
         <div className="bt-top">{back}<SceneBrand /></div>

@@ -9,6 +9,7 @@ import { SceneBrand } from './scene-brand';
 import { PauseCard } from './pause-card';
 import { BOAT_EVENT, DEFAULT_BOAT, NAME_MAX, PRESETS, SWATCHES, cleanName, readBoat, saveBoat, type Boat, type Deck } from '@/lib/boat';
 import { syncAccount } from './bests-sync';
+import { useSceneStart } from '@/lib/scene-start';
 
 // The boat page, laid out like the race's pause screen: the game's own scene behind it all (your yacht on Lake Garda,
 // /boat-view), her name and numbers over it, and the choices (the ready schemes, the hull, the sails, the gennaker, the
@@ -26,6 +27,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   const [err, setErr] = useState('');
   const [shots, setShots] = useState<Record<string, string>>({});
   const [live, setLive] = useState(false); // the 3D scene has drawn its first frame
+  const scene = useSceneStart(false); // (it is what this page edits: never left out, only started once the page is up)
   const frame = useRef<HTMLIFrameElement>(null);
   const card = useRef<HTMLElement>(null), info = useRef<HTMLDivElement>(null);
   const latest = useRef({ b, down });
@@ -136,7 +138,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   return (
     <div className="bt">
       <LoadBar label={t('Loading your boat', 'Загружаем яхту')} on={!live} />
-      <iframe ref={frame} className="bt-scene" src="/boat-view?wind=light" onLoad={() => post({ type: 'hello' })} title={t('Your boat in 3D', 'Твоя яхта в 3D')} />
+      <iframe ref={frame} className="bt-scene" src={scene.go ? '/boat-view?wind=light' : undefined} onLoad={() => post({ type: 'hello' })} title={t('Your boat in 3D', 'Твоя яхта в 3D')} />
       {/* over the scene, which doesn't fade in: it shows until her first frame, then fades away */}
       <ScenePoster label={t('Loading your boat', 'Загружаем яхту')} on={!live} />
 

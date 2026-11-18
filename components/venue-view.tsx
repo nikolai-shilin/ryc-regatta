@@ -8,6 +8,7 @@ import { IconPlay, IconBack, IconArrow, IconWind, IconFlag, IconPin, IconBook } 
 import { LoadBar, ScenePoster } from './skeleton';
 import { SceneBrand } from './scene-brand';
 import { PauseCard } from './pause-card';
+import { useSceneStart } from '@/lib/scene-start';
 
 // A venue (/venues/<id>), as the yachts page shows a yacht: the game's own scene there (/venue-view), a race on its
 // course sailed by the game's skippers, and a drone flying over it from one shot to the next (SHOTS) — high over the
@@ -38,6 +39,7 @@ export function VenueView({ lang, v, back }: { lang: Lang; v: VenueCard; back: R
   const [shot, setShot] = useState<ShotId>('waters');
   const [auto, setAuto] = useState(true);
   const [live, setLive] = useState(false);
+  const backdrop = useSceneStart();
   const [landed, setLanded] = useState(0); // the flights that have landed: the tour's clock restarts on each
   const [there, setThere] = useState(false); // the drone is at the shot picked, not on its way
   const frame = useRef<HTMLIFrameElement>(null), card = useRef<HTMLElement>(null), info = useRef<HTMLDivElement>(null), strip = useRef<HTMLDivElement>(null);
@@ -98,9 +100,9 @@ export function VenueView({ lang, v, back }: { lang: Lang; v: VenueCard; back: R
 
   return (
     <div className="bt fl-view vn-view">
-      <LoadBar label={t('Loading the water', 'Загружаем акваторию')} on={!live} />
-      <ScenePoster label={t('Loading the water', 'Загружаем акваторию')} on={!live} />
-      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={`/venue-view?venue=${v.id}`} title={t(`${name} from the drone`, `${name} с дрона`)}
+      <LoadBar label={t('Loading the water', 'Загружаем акваторию')} on={!live && !backdrop.off} />
+      <ScenePoster label={backdrop.off ? undefined : t('Loading the water', 'Загружаем акваторию')} on={!live} />
+      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={backdrop.go ? `/venue-view?venue=${v.id}` : undefined} title={t(`${name} from the drone`, `${name} с дрона`)}
         onLoad={() => post({ type: 'hello' })} />
 
       <div className="bt-info" ref={info}>

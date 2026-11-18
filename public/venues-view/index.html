@@ -19,6 +19,7 @@
   canvas.live { opacity: 1; }
   canvas:active { cursor: grabbing; }
 </style>
+<script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
 <!-- the venue, before the game's modules read it from the address, and its land fetched at once -->
 <script>(function () {
   var v = 'garda';
@@ -26,8 +27,8 @@
   if (!/^[a-z-]+$/.test(v)) v = 'garda';
   history.replaceState(null, '', location.pathname + '?venue=' + v + '&wind=light&sky=clear');
   var f = v === 'gocek' ? ['/game/skopea.bin', '/game/skopea.json'] : ['/game/venues/' + v + '.bin', '/game/venues/' + v + '.json'];
-  f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
-<script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
+  var map = {}; try { map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports; } catch (e) {}
+  f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = map[h] || h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
 <!-- every module the page will load, asked for at once rather than an import at a time, and the yacht with them
      (game/yacht.js); npm test keeps the list in step with the imports -->
 <link rel="preload" as="fetch" href="/game/yacht.glb" crossorigin>
@@ -65,7 +66,7 @@
 <body>
 <canvas id="c" aria-label="The venue from the drone, turn the view by dragging"></canvas>
 <script type="module">
-import { World } from '/game/world.js';
+import { makeWorld } from '/game/world.js';
 import { followSettings } from '/game/gfx.js';
 import { Race } from '/game/sim.js';
 import { lookFrom } from '/game/yacht.js';
@@ -89,7 +90,7 @@ if (CLS.foil) UP = { ...UP, awa: 0.24, sail: 7, v: 16, ride: 1 };
 const FRAME = CLS.frame ?? 1;
 
 let world;
-try { world = new World(canvas); } catch (e) { say({ type: 'ready' }); } // no WebGL: the page's own picture shows
+try { world = await makeWorld(canvas); } catch (e) { say({ type: 'ready' }); } // no WebGL: the page's own picture shows
 if (world) {
   world.framePow = world.framePowSmall = 1;
   world.showGuides = false;

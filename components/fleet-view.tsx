@@ -9,6 +9,7 @@ import { IconPlay, IconSail, IconBoats, IconBack, IconArrow, IconGrid } from './
 import { LoadBar, ScenePoster } from './skeleton';
 import { SceneBrand } from './scene-brand';
 import { PauseCard } from './pause-card';
+import { useSceneStart } from '@/lib/scene-start';
 
 // The fleet: every yacht you can race afloat abreast in one line by length, in one scene (/fleet-view, Lake Garda on a summer evening, in
 // your colours), the drone flying from one to the next — up and out until both are in the frame, across, and down to
@@ -29,6 +30,7 @@ export function FleetView({ lang, start, back, tour = true, own = false, foot }:
   const [auto, setAuto] = useState(tour);
   const [today] = useState<YachtId>(() => dailyYacht()); // today's race's yacht, fixed for the page's life
   const [live, setLive] = useState(false);
+  const backdrop = useSceneStart();
   const [landed, setLanded] = useState(0); // the flights that have landed: the tour's clock restarts on each
   const [there, setThere] = useState(false); // the drone is at the yacht picked, not on its way
   const frame = useRef<HTMLIFrameElement>(null), card = useRef<HTMLElement>(null), info = useRef<HTMLDivElement>(null), strip = useRef<HTMLDivElement>(null);
@@ -109,9 +111,9 @@ export function FleetView({ lang, start, back, tour = true, own = false, foot }:
 
   return (
     <div className="bt fl-view">
-      <LoadBar label={t('Loading the yachts', 'Загружаем яхты')} on={!live} />
-      <ScenePoster label={t('Loading the yachts', 'Загружаем яхты')} on={!live} />
-      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src="/fleet-view?wind=light" title={t('The yachts in 3D', 'Яхты в 3D')}
+      <LoadBar label={t('Loading the yachts', 'Загружаем яхты')} on={!live && !backdrop.off} />
+      <ScenePoster label={backdrop.off ? undefined : t('Loading the yachts', 'Загружаем яхты')} on={!live} />
+      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={backdrop.go ? '/fleet-view?wind=light' : undefined} title={t('The yachts in 3D', 'Яхты в 3D')}
         onLoad={() => post({ type: 'hello' })} />
 
       <div className="bt-info" ref={info}>

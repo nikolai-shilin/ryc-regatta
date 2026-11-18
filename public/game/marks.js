@@ -227,6 +227,9 @@ function body(color) {
   return new THREE.Mesh(geo, looks.get(color));
 }
 
+// the marks' drawn cloth and relief made ahead of the first race, on a turn of their own (world.js makeWorld)
+export const warmMarks = () => { body('#ff7314'); body('#ffd21a'); };
+
 const rubber = new THREE.MeshStandardMaterial({ color: '#202327', roughness: 0.85 });
 const ropeMat = new THREE.MeshStandardMaterial({ color: '#6b6650', roughness: 0.9 });
 const steel = new THREE.MeshStandardMaterial({ color: '#c8ccd0', roughness: 0.25, metalness: 1 });

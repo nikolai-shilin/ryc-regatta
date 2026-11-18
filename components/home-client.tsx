@@ -10,6 +10,7 @@ import { dailyVenue, dailyYacht } from '@/lib/race';
 import { clock } from './ui';
 import { FlagImg } from './flag';
 import { AvMenuItem } from './av-row';
+import { sceneOff } from '@/lib/scene-start';
 
 const IconBurger = () => <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
 const IconUser = () => <svg viewBox="0 0 16 16" width={16} height={16} aria-hidden="true"><circle cx="8" cy="5.2" r="2.8" fill="currentColor" /><path d="M2.5 14.5c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6z" fill="currentColor" /></svg>;
@@ -125,12 +126,11 @@ export function MyRow({ lang, day, top = [], cap = 5, next = '/' }: { lang: Lang
 // The hero's live race (public/hero-view): the whole game, ~1.4 MB of three.js and the course. It shares the page's
 // thread, so it starts only once the page has loaded and gone idle; until then the still picture under it shows.
 // Not at all where it would be hidden (reduced motion: a display:none iframe still downloads everything), or where the
-// reader has asked to save data or is on a slow connection: there the still picture is the hero.
+// scene is too much to ask (lib/scene-start.ts): there the still picture is the hero.
 export function HeroScene({ title }: { title: string }) {
   const [src, setSrc] = useState<string | undefined>();
   useEffect(() => {
-    const net = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches || net?.saveData || /(^|-)(2g|3g)$/.test(net?.effectiveType || '')) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || sceneOff()) return;
     // today's race as the game has it, by this browser's clock (the page is cached, and may be from yesterday): the
     // day's venue and yacht; the view lights it at the venue's own hour now
     const url = `/hero-view?venue=${dailyVenue()}&boat=${dailyYacht()}`;

@@ -21,13 +21,14 @@
   canvas.live { opacity: 1; }
   canvas:active { cursor: grabbing; }
 </style>
+<script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
 <!-- the venue, before the game's modules read it from the address, and its land fetched at once -->
 <script>(function () {
   var q = new URLSearchParams(location.search), w = q.get('wind') || 'medium';
   if (!/^[a-z]+$/.test(w)) w = 'medium';
   history.replaceState(null, '', location.pathname + '?venue=garda&wind=' + w + '&sky=clear');
-  ['/game/venues/garda.bin', '/game/venues/garda.json'].forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
-<script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
+  var map = {}; try { map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports; } catch (e) {}
+  ['/game/venues/garda.bin', '/game/venues/garda.json'].forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = map[h] || h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
 <!-- every module the page will load, asked for at once rather than an import at a time, and the yacht with them
      (game/yacht.js); npm test keeps the list in step with the imports -->
 <link rel="preload" as="fetch" href="/game/yacht.glb" crossorigin>
@@ -66,7 +67,7 @@
 <canvas id="c" aria-label="The fleet, turn the view by dragging"></canvas>
 <script type="module">
 import * as THREE from 'three';
-import { World } from '/game/world.js';
+import { makeWorld } from '/game/world.js';
 import { followSettings } from '/game/gfx.js';
 import { Race, D2R, wrap } from '/game/sim.js';
 import { CLASSES, CLASS_IDS } from '/game/classes.js';
@@ -98,7 +99,7 @@ BY_LENGTH.forEach((id, i) => { ACROSS[id] = i ? ACROSS[BY_LENGTH[i - 1]] - 0.55 
 const MID = ACROSS[BY_LENGTH[BY_LENGTH.length - 1]] / 2, BOWS = CLASSES[BY_LENGTH[0]].loa / 2;
 
 let world;
-try { world = new World(canvas); } catch (e) { say({ type: 'ready' }); } // no WebGL: the page's own picture shows
+try { world = await makeWorld(canvas); } catch (e) { say({ type: 'ready' }); } // no WebGL: the page's own picture shows
 if (world) {
   world.showGuides = false;
   const skipFrame = followSettings(world); // Audio & graphics: the level chosen, and the battery saver

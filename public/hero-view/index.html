@@ -17,14 +17,15 @@
   canvas.live { opacity: 1; }
   @media (prefers-reduced-motion: reduce) { canvas { display: none; } }
 </style>
+<script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
 <!-- the land round the course (game/land.js, the venue's: venues.js landFiles): fetched at once, not after the modules
      that ask for it -->
 <script>(function () { var v = 'gocek';
   try { v = new URLSearchParams(location.search).get('venue') || v; } catch (e) {}
   if (!/^[a-z-]+$/.test(v)) v = 'gocek';
   var f = v === 'gocek' ? ['/game/skopea.bin', '/game/skopea.json'] : ['/game/venues/' + v + '.bin', '/game/venues/' + v + '.json'];
-  f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
-<script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
+  var map = {}; try { map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports; } catch (e) {}
+  f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = map[h] || h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
 <!-- every module the page will load, asked for at once rather than an import at a time, and the yacht with them
      (game/yacht.js); npm test keeps the list in step with the imports -->
 <link rel="preload" as="fetch" href="/game/yacht.glb" crossorigin>
@@ -62,7 +63,7 @@
 <body>
 <canvas id="c" aria-hidden="true"></canvas>
 <script type="module">
-import { World } from '/game/world.js';
+import { makeWorld } from '/game/world.js';
 import { followSettings } from '/game/gfx.js';
 import { Race } from '/game/sim.js';
 import { VENUE } from '/game/venues.js';
@@ -79,9 +80,9 @@ function daytimeNow() {
 const canvas = document.getElementById('c');
 const STEP = 1 / 60;
 
-function start() {
+async function start() {
   let world;
-  try { world = new World(canvas); } catch (e) { return; } // no WebGL: the page's picture stays
+  try { world = await makeWorld(canvas); } catch (e) { return; } // no WebGL: the page's picture stays
   world.showGuides = false;
   const skipFrame = followSettings(world); // Audio & graphics: the level chosen, and the battery saver
 
