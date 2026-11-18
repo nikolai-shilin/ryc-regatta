@@ -47,6 +47,14 @@ export default async function Learn({ params }: LangParams) {
             </div>
           </Link>
         ))}
+        <Link className="gd-banner" href="/learn/rulebook">
+          <span className="kicker">{t('Rule book', 'Все правила')}</span>
+          <span className="gd-banner-t">
+            <span className="card-title">{t('The racing rules, rule by rule', 'Правила гонок, правило за правилом')}</span>
+            <p>{t('Every rule of the Racing Rules of Sailing in plain words, from right of way to protests, with the definitions and the race signals.', 'Все правила парусных гонок простыми словами, от права дороги до протестов, с определениями и гоночными сигналами.')}</p>
+          </span>
+          <span className="gd-banner-go">{t('Read', 'Читать')}<IconArrow s={14} /></span>
+        </Link>
         <Link className="gd-banner" href="/learn/glossary">
           <span className="kicker">{t('Glossary', 'Словарь')}</span>
           <span className="gd-banner-t">

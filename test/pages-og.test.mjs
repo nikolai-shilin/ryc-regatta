@@ -76,6 +76,7 @@ const CARDS = {
   learn: { bg: 'aerial', en: `${GUIDES.length} short guides and a glossary`, ru: `${GUIDES.length} коротких пособий и словарь` },
   guide: { q: '?g=marks', bg: 'aerial', en: 'Learn to race · Guide 6 of 8', ru: 'Учись гоняться · Пособие 6 из 8' },
   glossary: { bg: 'wind', en: 'The words of sailboat racing', ru: 'Слова парусных гонок' },
+  rulebook: { bg: 'fleet', en: 'The Racing Rules of Sailing in plain words', ru: 'Правила парусных гонок простыми словами' },
   yachts: { bg: 'fleet', en: `${YACHTS.length} yachts`, ru: `${YACHTS.length} яхт` },
   rating: { bg: 'fleet', en: 'Today’s rating', ru: 'Рейтинг дня' },
   players: { bg: 'helm', en: 'Sailors racing signed in', ru: 'Гонщики с аккаунтом' },

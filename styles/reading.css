@@ -5,6 +5,17 @@
 .bc .gd-by { margin: var(--s-3) 0 0; font: 600 var(--fs-label)/1.4 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 .bc .gd-by span { color: var(--ink-2); }
 
+/* the rule book (app/[lang]/learn/rulebook): the note that it is a summary, each part's and section's few words, and a rule's number beside its name */
+.bc .rb-note { display: flex; flex-direction: column; gap: var(--s-2); max-width: 68ch; margin: var(--s-4) 0 0; padding: var(--s-4) var(--s-5); background: var(--panel-2); border-left: 4px solid var(--you); font: 500 var(--fs-body)/1.55 var(--sans); color: var(--ink); }
+.bc .rb-note .lbl { color: var(--you); }
+.bc .rb-note a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.bc .rb-intro { margin: 0; max-width: 68ch; font: 500 var(--fs-body)/1.55 var(--sans); color: var(--ink-2); }
+.bc .rb-sec { display: flex; flex-direction: column; gap: var(--s-3); scroll-margin-top: var(--hm-head); }
+.bc .rb-sec + .rb-sec { margin-top: var(--s-5); }
+.bc .rb-sec h3 { margin: 0; font: 700 var(--fs-row)/1.2 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; color: var(--ink); }
+.bc .gd-groups .gd-term dt:has(.rb-no) { display: flex; align-items: baseline; gap: var(--s-3); }
+.bc .rb-no { flex: none; color: var(--you); font: 700 var(--fs-row)/1.2 var(--cond); font-variant-numeric: tabular-nums; }
+
 /* the game's facts about a venue or a yacht: a row of label and value pairs */
 .bc .vn-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; margin: 0; background: var(--rule); border: 1px solid var(--rule); }
 .bc .vn-facts > div { padding: 12px 14px; background: var(--panel); }

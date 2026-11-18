@@ -34,7 +34,7 @@ const entries = sitemap();
 const urls = entries.map((e) => e.url);
 const paths = (lang) => urls.filter((u) => u.endsWith('?lang=ru') === (lang === 'ru')).map((u) => u.slice(SITE.length).replace('?lang=ru', ''));
 
-const PUBLIC = ['/', '/race', '/race/rating', '/race/drills', '/race/free', '/help', '/faq', '/boat', '/yachts', '/venues', '/players', '/iyt', '/social', '/sponsorship', '/learn', '/learn/glossary',
+const PUBLIC = ['/', '/race', '/race/rating', '/race/drills', '/race/free', '/help', '/faq', '/boat', '/yachts', '/venues', '/players', '/iyt', '/social', '/sponsorship', '/learn', '/learn/glossary', '/learn/rulebook',
   ...GUIDES.map((g) => `/learn/${g}`), ...VENUES.map((v) => `/venues/${v.id}`), ...YACHT_IDS.map((y) => `/yachts/${y}`)];
 
 // ---------- the sitemap ----------
@@ -183,7 +183,7 @@ user = null;
 const indexed = sweep.filter((p) => p.meta.robots?.index !== false);
 
 test('every page was opened, in both languages', () => {
-  assert.equal(new Set(sweep.map((p) => p.route)).size, 34);
+  assert.equal(new Set(sweep.map((p) => p.route)).size, 35);
   assert.equal(sweep.length % 2, 0);
 });
 
@@ -261,7 +261,7 @@ const known = { '/learn/': GUIDES, '/venues/': VENUES.map((v) => v.id), '/yachts
 function missing(path) {
   if (SERVED.has(path) || exists(`public${path}`)) return false;
   for (const [prefix, ids] of Object.entries(known)) {
-    if (path.startsWith(prefix) && path !== '/learn/glossary') return !ids.includes(path.slice(prefix.length));
+    if (path.startsWith(prefix) && path !== '/learn/glossary' && path !== '/learn/rulebook') return !ids.includes(path.slice(prefix.length));
   }
   return !ROUTES.some(([, re]) => re.test(path));
 }

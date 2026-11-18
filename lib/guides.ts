@@ -26,7 +26,7 @@ export type GuideSlug = (typeof GUIDES)[number];
 // when each guide was first published and last changed in substance: its byline, its Article data and the sitemap
 export const GUIDE_DATES: Record<GuideSlug, { published: string; modified: string }> = {
   sail: { published: '2026-11-17', modified: '2026-11-17' }, tack: { published: '2026-11-17', modified: '2026-11-17' },
-  rules: { published: '2026-11-14', modified: '2026-11-14' }, start: { published: '2026-11-14', modified: '2026-11-14' },
+  rules: { published: '2026-11-14', modified: '2026-11-18' }, start: { published: '2026-11-14', modified: '2026-11-18' },
   shifts: { published: '2026-11-14', modified: '2026-11-14' }, marks: { published: '2026-11-14', modified: '2026-11-14' },
   downwind: { published: '2026-11-14', modified: '2026-11-14' }, trim: { published: '2026-11-14', modified: '2026-11-14' },
 };
@@ -235,13 +235,13 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
           'Между лодками на разных галсах на лавировке правило 18 не действует, так что у верхнего знака по-прежнему решает правило галсов. А поворот внутри зоны опасен: нельзя заставить лодку, которая идёт правым галсом с момента входа в зону, идти круче бейдевинда (правило 18.3).'),
       ], tip: t('Not sure you got the inside overlap before the zone? Assume you didn’t: where there is reasonable doubt, rule 18 presumes the overlap wasn’t made in time.',
         'Не уверен, что успел установить внутреннюю связанность до зоны? Считай, что не успел: при обоснованном сомнении правило 18 исходит из того, что связанность вовремя не установлена.') },
-      { id: 'pen', h: t('Fouls and penalties (rules 21, 31, 44)', 'Нарушения и штрафы (правила 21, 31, 44)'), p: [
+      { id: 'pen', h: t('Fouls and penalties (rules 31, 43, 44)', 'Нарушения и штрафы (правила 31, 43, 44)'), p: [
         t('Break a rule of Part 2 and you can take a penalty at once instead of a protest: get clear of the other boats and turn through a tack and a gybe. Touching a mark is a foul too (rule 31). Real races usually ask for two turns for a foul between boats and one for a mark, unless the sailing instructions say otherwise; the game asks for one turn either way, and disqualifies a boat that finishes without taking it.',
           'Нарушил правило части 2 — можешь сразу отработать штраф вместо протеста: отойди от других лодок и сделай оборот через поворот оверштаг и фордевинд. Касание знака — тоже нарушение (правило 31). В настоящих гонках за нарушение против лодки обычно положено два оборота, за знак — один, если гоночная инструкция не говорит иначе; в игре — один оборот в любом случае, а лодка, финишировавшая без штрафа, дисквалифицируется.'),
-        t('If another boat’s foul forced you into one, you are exonerated and take no penalty (rule 21).',
-          'Если тебя вынудило нарушить чужое нарушение, ты освобождаешься от ответственности и штраф не берёшь (правило 21).'),
-      ], tip: t('Get clear first, then turn the same way all round, through a tack and a gybe. In the game, turning back the other way starts the turn again; and while you take a penalty, you keep clear of every boat that isn’t (rule 22).',
-        'Сначала отойди от других, потом крутись в одну сторону — через оверштаг и фордевинд. В игре поворот обратно в другую сторону начинает оборот заново; а пока ты отрабатываешь штраф, ты уступаешь всем, кто его не отрабатывает (правило 22).'), pen: true },
+        t('If another boat’s foul forced you into one, you are exonerated and take no penalty (rule 43).',
+          'Если тебя вынудило нарушить чужое нарушение, ты освобождаешься от ответственности и штраф не берёшь (правило 43).'),
+      ], tip: t('Get clear first, then turn the same way all round, through a tack and a gybe. In the game, turning back the other way starts the turn again; and while you take a penalty, you keep clear of every boat that isn’t (rule 21.2).',
+        'Сначала отойди от других, потом крутись в одну сторону — через оверштаг и фордевинд. В игре поворот обратно в другую сторону начинает оборот заново; а пока ты отрабатываешь штраф, ты уступаешь всем, кто его не отрабатывает (правило 21.2).'), pen: true },
     ],
     more: [
       { label: t('Right of way, rule by rule', 'Право дороги, правило за правилом'), href: rr(lang, 'rightofway') },
@@ -297,8 +297,8 @@ export function guide(slug: GuideSlug, t: T, lang: Lang): Guide {
       { id: 'early', h: t('Over early', 'Фальстарт'), p: [
         t('Over the line at the gun under P, the committee flies X: go back to the pre-start side and start again; the sooner you turn, the less it costs. If too many are over to tell who, the whole start is recalled (two flags, the First Substitute) and you start again.',
           'Оказался за линией на сигнале под флагом P — комитет поднимает X: вернись на предстартовую сторону и стартуй заново; чем раньше развернёшься, тем меньше потеряешь. Если за линией слишком много лодок, дают общий отзыв (флаг «Первый заменяющий») и стартуют снова.'),
-      ], tip: t('Going back, keep clear of every boat that is starting properly until you are wholly on the pre-start side (rule 22). Turn back where the fewest boats are.',
-        'Возвращаясь, уступай всем, кто стартует правильно, пока целиком не окажешься на предстартовой стороне (правило 22). Разворачивайся там, где меньше лодок.'), pen: true },
+      ], tip: t('Going back, keep clear of every boat that is starting properly until you are wholly on the pre-start side (rule 21.1). Turn back where the fewest boats are.',
+        'Возвращаясь, уступай всем, кто стартует правильно, пока целиком не окажешься на предстартовой стороне (правило 21.1). Разворачивайся там, где меньше лодок.'), pen: true },
       { id: 'air', h: t('Clear air after the gun', 'Чистый ветер после старта'), p: [
         t('Behind and to leeward of another boat the wind is weaker and bent: dirty air. If you are stuck in it after the start, tack away to clear wind as soon as you can safely do it. The result page counts the seconds you spent in another boat’s dirty air.',
           'За другой лодкой и под ветром от неё ветер слабее и сбит: ветровая тень. Если после старта ты в ней, поворачивай в чистый ветер, как только это безопасно. На странице результата посчитано, сколько секунд ты провёл в чужой тени.'),

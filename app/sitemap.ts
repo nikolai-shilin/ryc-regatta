@@ -4,6 +4,7 @@ import { GUIDES, GUIDE_DATES } from '@/lib/guides';
 import { VENUES } from '@/lib/venues';
 import { YACHT_IDS } from '@/lib/yachts';
 import { PAGES_DATE } from '@/lib/venue-guides';
+import { RULEBOOK_DATE } from '@/lib/rulebook';
 
 // The pages worth finding, each in English (the bare address) and Russian (?lang=ru), with hreflang links between
 // the two so a search engine shows each reader their own language. lastmod is when the page's text last changed in
@@ -22,7 +23,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ['/yachts', 0.6], ...YACHT_IDS.map((id): Page => [`/yachts/${id}`, 0.6, PAGES_DATE]),
     ['/venues', 0.7, PAGES_DATE], ...VENUES.map((v): Page => [`/venues/${v.id}`, 0.6, PAGES_DATE]),
     ['/players', 0.5, day], ['/iyt', 0.6], ['/social', 0.4], ['/sponsorship', 0.4],
-    ['/learn', 0.7], ...GUIDES.map((g): Page => [`/learn/${g}`, 0.8, GUIDE_DATES[g].modified]), ['/learn/glossary', 0.7]];
+    ['/learn', 0.7], ...GUIDES.map((g): Page => [`/learn/${g}`, 0.8, GUIDE_DATES[g].modified]), ['/learn/rulebook', 0.8, RULEBOOK_DATE], ['/learn/glossary', 0.7]];
   const abs = (p: string) => SITE + p;
   return PAGES.flatMap(([path, priority, lastmod]) => {
     const alternates = { languages: Object.fromEntries(Object.entries(languages(path)).map(([k, v]) => [k, abs(v)])) };

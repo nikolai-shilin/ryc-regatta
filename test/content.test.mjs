@@ -2,12 +2,14 @@
 // languages, every picture and link they name exists, and each page's title, card and canonical are right.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { exists } from './load.mjs';
 
 const { tx } = await import('../lib/lang.ts');
 const { GUIDES, GUIDE_DATES, guide, guideNo, isGuide } = await import('../lib/guides.ts');
 const { faqGroups, HOME } = await import('../lib/faq.ts');
 const { glossary, glossaryGroups, seeLabel } = await import('../lib/glossary.ts');
+const { rulebook, entriesOf, ruleCount } = await import('../lib/rulebook.ts');
 const { VENUES } = await import('../lib/venues.ts');
 const { VENUE_GUIDES, PAGES_DATE } = await import('../lib/venue-guides.ts');
 const { IYT_LEVELS, IYT_TOTAL } = await import('../lib/iyt.ts');
@@ -109,6 +111,48 @@ test('a term that says "see" leads to a guide, and names it', () => {
     if (slug) assert.ok(isGuide(slug), `${x.id}: ${x.see}`);
     inLang(seeLabel(x.see, tx(lang), lang), lang, `${x.id}.see`);
   }
+});
+
+// ---------- the rule book ----------
+const RULE_NUMBERS = [[1, 6], [10, 23], [25, 37], [40, 56], [60, 65], [69, 72], [75, 80], [85, 92]].flatMap(([a, b]) => Array.from({ length: b - a + 1 }, (_, i) => String(a + i)));
+
+test('the rule book has every rule of Parts 1 to 7, in the book\'s order, and every appendix', () => {
+  const parts = rulebook(tx('en'));
+  const numbers = parts.filter((p) => p.id.startsWith('part-')).flatMap(entriesOf).map((x) => x.no.split('.')[0]);
+  assert.deepEqual([...new Set(numbers)], RULE_NUMBERS);
+  assert.equal(ruleCount(parts), RULE_NUMBERS.length);
+  assert.deepEqual(entriesOf(parts.find((p) => p.id === 'appendices')).map((x) => x.no), [...'ABCDEFGHJMNPRST']);
+});
+
+test('every entry of the rule book is whole in both languages, with its own address', () => {
+  const en = rulebook(tx('en')), ru = rulebook(tx('ru'));
+  assert.deepEqual(ru.flatMap(entriesOf).map((x) => x.id), en.flatMap(entriesOf).map((x) => x.id));
+  unique([...en.map((p) => p.id), ...en.flatMap((p) => p.sections.map((s) => s.id).filter(Boolean)), ...en.flatMap(entriesOf).map((x) => x.id)], 'rule book ids');
+  for (const p of ru) {
+    for (const k of ['chip', 'title', 'intro']) inLang(p[k], 'ru', `${p.id}.${k}`);
+    for (const s of p.sections) { if (s.title) inLang(s.title, 'ru', `${p.id} section`); if (s.intro) inLang(s.intro, 'ru', `${p.id} section`); }
+    for (const x of entriesOf(p)) { inLang(x.title, 'ru', x.id); inLang(x.text, 'ru', x.id); }
+  }
+  for (const x of en.flatMap(entriesOf)) { said(x.title, x.id); said(x.text, x.id); assert.doesNotMatch(x.text, CYR, `${x.id} is not in English`); }
+});
+
+test('a rule that leads to a guide leads to one that exists, and to a section it has', () => {
+  for (const x of rulebook(tx('en')).flatMap(entriesOf).filter((y) => y.see)) {
+    const [, slug, hash] = /^\/learn\/([a-z]+)(?:#(.+))?$/.exec(x.see);
+    assert.ok(isGuide(slug), `${x.id}: ${x.see}`);
+    if (hash) assert.ok(guide(slug, tx('en'), 'en').sections.some((s) => s.id === hash), `${x.id}: ${x.see}`);
+  }
+});
+
+test('the guides, the questions and the game cite the rules by their 2025–2028 numbers', () => {
+  for (const lang of LANGS) {
+    const t = tx(lang);
+    const words = [...GUIDES.flatMap((slug) => guide(slug, t, lang).sections.flatMap((s) => [s.h, ...s.p, s.tip || ''])), ...faqGroups(t).flatMap((g) => g.items.map((f) => f.a))].join('\n');
+    assert.doesNotMatch(words, /(rules?|правил[оа]|правилу) 2[12]\b(?!\.)/i, lang);
+    assert.match(words, /(rule|правил[оу]) 43\b/, lang);
+  }
+  const game = readFileSync(new URL('../public/game/main.js', import.meta.url), 'utf8');
+  assert.equal([...game.matchAll(/exonerated: '[^']*\((rule|правило) 43\)'/g)].length, 2);
 });
 
 // ---------- the venue pages ----------

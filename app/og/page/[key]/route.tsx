@@ -5,6 +5,7 @@ import { VENUES, venueOf } from '@/lib/venues';
 import { DRILLS, LEVELS } from '@/lib/drills';
 import { GUIDES, guide, guideNo, isGuide, type GuideSlug } from '@/lib/guides';
 import { glossaryGroups } from '@/lib/glossary';
+import { rulebook, ruleCount } from '@/lib/rulebook';
 import { faqGroups } from '@/lib/faq';
 import { CHANNELS } from '@/lib/social';
 import { IYT_TOTAL } from '@/lib/iyt';
@@ -50,6 +51,14 @@ const CARDS: Record<string, Build> = {
       bg: 'wind', kind: `${learn(t)} · ${t('Glossary', 'Словарь')}`,
       hero: { label: t('The words of sailboat racing', 'Слова парусных гонок'), value: t(`${n} terms`, `${n} ${ruPlural(n, ['термин', 'термина', 'терминов'])}`) },
       call: t('Look a word up', 'Найди слово'),
+    };
+  },
+  rulebook: (t) => {
+    const n = ruleCount(rulebook(t));
+    return {
+      bg: 'fleet', kind: `${learn(t)} · ${t('Rule book', 'Все правила')}`,
+      hero: { label: t('The Racing Rules of Sailing in plain words', 'Правила парусных гонок простыми словами'), value: t(`${n} rules`, `${n} ${ruPlural(n, ['правило', 'правила', 'правил'])}`) },
+      call: t('Look a rule up', 'Найди правило'),
     };
   },
   yachts: (t) => {

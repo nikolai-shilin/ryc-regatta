@@ -1,5 +1,6 @@
 import { faqGroups } from '@/lib/faq';
 import { glossaryGroups } from '@/lib/glossary';
+import { rulebook, RULEBOOK_SOURCE } from '@/lib/rulebook';
 import { GUIDES, GUIDE_DATES, guide } from '@/lib/guides';
 import { VENUES } from '@/lib/venues';
 import { VENUE_GUIDES } from '@/lib/venue-guides';
@@ -21,6 +22,10 @@ export function GET() {
       ...g.sections.map((s) => [`### ${s.h}`, '', ...s.p, ...(s.tip ? [`Tip: ${s.tip}`] : [])].join('\n\n')), ''].join('\n');
   }).join('\n');
   const glossary = glossaryGroups(t).map((g) => [`### ${g.title}`, '', ...g.terms.map((x) => `- **${x.term}**: ${x.def}`)].join('\n')).join('\n\n');
+  const rules = rulebook(t).map((p) => [`## ${p.title}`, '', p.intro, '', ...p.sections.flatMap((s) => [
+    ...(s.title ? [`### ${s.title}`, '', ...(s.intro ? [s.intro, ''] : [])] : []),
+    ...s.entries.map((x) => `- **${x.no ? `${x.no} ` : ''}${x.title}**: ${x.text}`), '',
+  ])].join('\n')).join('\n');
   const venues = VENUES.map((v) => {
     const g = VENUE_GUIDES[v.id];
     return [`## ${g.title[0]}`, '', `${SITE}/venues/${v.id} · ${v.place[0]} · wind in the game: ${v.wind[0]}`, '', g.intro[0], '',
@@ -43,6 +48,11 @@ ${guides}
 
 ${glossary}
 
+# The racing rules, rule by rule
+
+${SITE}/learn/rulebook · a summary in our own words of the Racing Rules of Sailing 2025–2028, not the official text, which is World Sailing's: ${RULEBOOK_SOURCE}
+
+${rules}
 # The venues
 
 ${venues}
