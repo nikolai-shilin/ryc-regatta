@@ -20,7 +20,7 @@ export type Insight = {
   ratings: { n: number; avg: Num; stars: number[]; yacht: Record<string, { n: number; avg: number }>; comments: { at: string; rating: Num; comment: string; yacht: string; venue: string | null; wind: string | null; place: Num; boats: Num; dsq: boolean; dev: string | null; how: string | null }[] };
   funnel: { opened: number; loaded: number; failed: number; gave_up: number; raced: number; finished: number; load: Num; mins: Num; races: Num;
     dev: Record<string, { opened: number; loaded: number; gave_up: number; failed: number; raced: number }>; why: { why: string; n: number }[];
-    errors: { m: string; src: string | null; n: number; visits: number }[]; lost: number; howto: number; drill: number; ghost: number };
+    errors: { m: string; src: string | null; n: number; visits: number }[]; lost: number; howto: number; drill: number };
   usage: Record<string, Record<string, number>>;
   difficulty: { b: number; n: number; fin: number; top3: number; dsq: number; who: number; down: Num; pens: Num }[];
 };
@@ -47,13 +47,13 @@ const INC: Record<string, [string, string]> = {
 const SET: Record<string, [string, string]> = {
   cam: ['Camera', 'Камера'], trim: ['Sails', 'Паруса'], sound: ['Sound', 'Звук'], voice: ['Voices', 'Голоса'], music: ['Music', 'Музыка'], sea: ['Sea', 'Море'],
   saver: ['Battery saver', 'Экономия батареи'], gfx: ['Graphics setting', 'Настройка графики'], q: ['Graphics level', 'Уровень графики'], guides: ['Guides', 'Подсказки на воде'],
-  speed: ['Game speed', 'Скорость игры'], ghost: ['Ghost of your best', 'Призрак лучшей гонки'],
+  speed: ['Game speed', 'Скорость игры'],
 };
 const VAL: Record<string, Record<string, [string, string]>> = {
   cam: { drone: ['Drone', 'Дрон'], top: ['From above', 'Сверху'], helm: ['From the helm', 'С руля'] },
   trim: { '0': ['By hand', 'Вручную'], '1': ['Auto', 'Авто'], '2': ['Main and jib apart', 'Раздельно'] },
   sound: { '0': ['Off', 'Выкл'], '1': ['On', 'Вкл'] }, voice: { '0': ['Off', 'Выкл'], '1': ['On', 'Вкл'] }, saver: { '0': ['Off', 'Выкл'], '1': ['On', 'Вкл'] },
-  guides: { '0': ['Off', 'Выкл'], '1': ['On', 'Вкл'] }, ghost: { '0': ['Off', 'Выкл'], '1': ['On', 'Вкл'] },
+  guides: { '0': ['Off', 'Выкл'], '1': ['On', 'Вкл'] },
   gfx: { auto: ['Auto', 'Авто'], high: ['High', 'Высокая'], medium: ['Medium', 'Средняя'], low: ['Low', 'Низкая'] },
   q: { high: ['High', 'Высокая'], medium: ['Medium', 'Средняя'], low: ['Low', 'Низкая'] },
 };
@@ -191,7 +191,6 @@ export function InsightVisits({ lang, data }: Props) {
       <div className="adm-tiles">
         <Tile k={t('Opened How to play', 'Открыли «Как играть»')} v={pct(F.howto, F.loaded)} />
         <Tile k={t('Sailed a drill', 'Проходили тренировку')} v={String(F.drill)} />
-        <Tile k={t('Raced a ghost', 'Гонялись с призраком')} v={String(F.ghost)} />
       </div>
       <p className="hint">{t('A visit is the game’s page opened. Followed from 17 November; a page opened from a cached copy of the game before that may have no opening.',
         'Заход — это одно открытие страницы игры. Отслеживается с 17 ноября; страница, открытая из старой копии игры, может прийти без записи об открытии.')}</p>

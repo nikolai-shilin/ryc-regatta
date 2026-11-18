@@ -242,7 +242,7 @@ const DATA = {
   funnel: { opened: 200, loaded: 150, failed: 10, gave_up: 40, raced: 100, finished: 50, load: 4.5, mins: 7.5, races: 1.5,
     dev: { desktop: { opened: 50, loaded: 50, gave_up: 0, failed: 0, raced: 25 }, 'phone tg': { opened: 150, loaded: 100, gave_up: 40, failed: 10, raced: 75 } },
     why: [{ why: 'WebGL missing', n: 7 }], errors: [{ m: 'TypeError: x', src: 'main.js', n: 9, visits: 4 }, { m: 'Script error', src: null, n: 2, visits: 2 }], lost: 3, howto: 30, drill: 8, ghost: 5 },
-  usage: { cam: { drone: 3, top: 1 }, speed: { '1.5': 2 }, sound: { 1: 4 }, nothing: { x: 1 } },
+  usage: { cam: { drone: 3, top: 1 }, speed: { '1.5': 2 }, sound: { 1: 4 }, ghost: { 0: 3, 1: 1 }, nothing: { x: 1 } },
   difficulty: [{ b: 1, n: 20, fin: 10, top3: 5, dsq: 2, who: 18, down: 0.75, pens: 1.25 }, { b: 4, n: 5, fin: 5, top3: 1, dsq: 0, who: 2, down: null, pens: null }],
 };
 const ALL = ['InsightExits', 'InsightRetention', 'InsightRatings', 'InsightVisits', 'InsightLoading', 'InsightSettings', 'InsightDifficulty'];
@@ -321,7 +321,7 @@ test('how far a visit gets, step by step and by device', () => {
   assert.equal(tile(html, 'Minutes a visit'), '7.5');
   assert.deepEqual(tableOf(html, 'By device'), [['Phone · Telegram', '150', '67%', '27%', '7%', '50%'], ['Computer · browser', '50', '100%', '0%', '0%', '50%']]);
   assert.equal(tile(html, 'Opened How to play'), '20%');
-  assert.equal(tile(html, 'Raced a ghost'), '5');
+  assert.doesNotMatch(html, /Raced a ghost|Ghost of your best/, 'what the server still counts of the ghost is not shown');
 });
 
 test('a period with no visits draws empty bars rather than failing', () => {

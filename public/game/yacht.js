@@ -1900,7 +1900,7 @@ export function onWatch(s, t, i, steady) {
 // which figure a boat's crew show: none far off (with the small fittings), the plain ones beyond near, the full ones
 // close, the finest right by the camera (not the J Class's thirty, nor a ghost's, which is see-through)
 function crewLevel(v) {
-  const l = v.detailOn === false ? 0 : v.crewNear === false ? 1 : v.crewClose && !v.noFine && v.crew?.length <= 8 ? 3 : 2;
+  const l = v.detailOn === false ? 0 : v.crewNear === false ? 1 : v.crewClose && v.crew?.length <= 8 ? 3 : 2;
   for (const c of v.crew || []) c.s.level(l);
 }
 

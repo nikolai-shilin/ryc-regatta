@@ -1,15 +1,12 @@
-// What the game does round the race (public/game/extras.js), on a small stand-in for the page with the 3D boat left out:
-// the analytics, the ghost you sail against, and each drill from the hand-over to its stars.
+// What the game does round the race (public/game/extras.js), on a small stand-in for the page: the analytics, and each
+// drill from the hand-over to its stars.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { mock } from './load.mjs';
 
 const def = (name, value) => Object.defineProperty(globalThis, name, { value, configurable: true, writable: true });
 let page = null;
 
-mock('public/game/boats3d.js', 'export const makeBoatView = (o) => globalThis.__view(o);');
-mock('public/game/yacht.js', "export const LOOKS = { Aurora: { name: 'Aurora' } }; export const playerLook = () => ({ name: 'mine' });");
 def('location', { search: '', pathname: '/' });
 def('fetch', async (u) => {
   const s = String(u);
@@ -17,7 +14,6 @@ def('fetch', async (u) => {
   page.fetched.push(s);
   return page.api(s);
 });
-const { along } = await import('../public/game/track.js');
 const { beatAngle, polarSpeed, KN, D2R } = await import('../public/game/sim.js');
 
 // ---------- the page ----------
@@ -30,31 +26,23 @@ class El {
   focus() { this.focused = true; }
 }
 let loads = 0;
-async function open({ search = '', stored = {}, lang = 'en', api = () => { throw new Error('nothing to fetch'); }, board = true, va, brokenStorage = false, random } = {}) {
+async function open({ search = '', stored = {}, lang = 'en', api = () => { throw new Error('nothing to fetch'); }, va, brokenStorage = false, random } = {}) {
   const data = new Map(Object.entries(stored).map(([k, v]) => [k, typeof v === 'string' ? v : JSON.stringify(v)]));
-  const p = { data, api, fetched: [], on: {}, stops: 0, race: null, running: true, head: new El('head'), body: new El('body'), board: board ? new El('board') : null, views: [], added: [], removed: [] };
+  const p = { data, api, fetched: [], on: {}, stops: 0, race: null, running: true, head: new El('head'), body: new El('body') };
   page = p;
   def('location', { search, pathname: '/play' });
   p.win = va ? { va } : {};
   def('window', p.win);
-  def('document', { head: p.head, body: p.body, createElement: (t) => new El(t), querySelector: (s) => (s === '.b-board' ? p.board : null) });
+  def('document', { head: p.head, body: p.body, createElement: (t) => new El(t) });
   def('addEventListener', (k, fn) => { (p.on[k] ||= []).push(fn); });
   def('localStorage', {
-    get length() { return data.size; },
-    key: (i) => [...data.keys()][i] ?? null,
     getItem: (k) => (data.has(k) ? data.get(k) : null),
     setItem: (k, v) => { if (brokenStorage) throw new Error('full'); data.set(k, String(v)); },
   });
-  globalThis.__view = (o) => {
-    const meshes = [{ material: material(0.5), castShadow: true }, { material: [material(), material(0.8)], castShadow: true }, { name: 'a group' }];
-    const v = { o, noFine: false, updates: [], meshes, root: { visible: false, traverse: (fn) => meshes.forEach(fn) }, update(...a) { this.updates.push(a); } };
-    p.views.push(v);
-    return v;
-  };
   const real = Math.random;
   if (random != null) Math.random = () => random;
   try { p.x = await import(`../public/game/extras.js?case=${++loads}`); } finally { Math.random = real; }
-  p.ctx = { LANG: lang, world: { W: 'the waves', mode: 'chase', scene: { add: (v) => p.added.push(v), remove: (v) => p.removed.push(v) } }, getRace: () => p.race, isRunning: () => p.running, stop: () => { p.stops++; } };
+  p.ctx = { LANG: lang, getRace: () => p.race, isRunning: () => p.running, stop: () => { p.stops++; } };
   p.x.initExtras(p.ctx);
   p.events = () => (p.win.vaq || []).map((a) => a[1]);
   p.named = (name) => p.events().filter((e) => e.name === name);
@@ -65,7 +53,6 @@ async function open({ search = '', stored = {}, lang = 'en', api = () => { throw
   p.saved = () => JSON.parse(data.get('regatta-drills') || '{}');
   return p;
 }
-function material(opacity) { return { opacity, clone() { return { ...this, cloned: true }; } }; }
 
 function aRace({ player, course, log, settings = {}, place = 1, fleet = 6, dist = 500, clock = 0, onStep } = {}) {
   const P = { name: 'me', x: 0, z: 0, h: 0, leg: 1, tws: 12, wdir: 0, twa: 0.7, v: 6, pens: 0, done: false, finish: null, events: ['said'], ...player };
@@ -590,303 +577,19 @@ test('after the last drill there is no next', async () => {
   assert.doesNotMatch(p.end().innerHTML, /Next drill/);
 });
 
-// ---------- the ghost ----------
-const DAY = '2026-11-18';
-const ID = '12345678-1234-4234-8234-1234567890ab';
-const TRACK = Array.from({ length: 83 }, (_, i) => [0, -10 * i]);
-const sailed = (boat = {}, o = {}) => ({ id: 'r1', daily: DAY, start: 1, boats: [{ me: false }, { me: true, done: true, dsq: false, secs: 100, track: TRACK, legT: [10, 60], ...boat }], ...o });
-const SETTING = { regatta: { ghost: 1, ghostV: 1 } };
-const today = (o = {}) => aRace({ settings: { daily: DAY }, ...o });
-async function withGhost(pageOpts = {}, race = today()) {
-  const p = await open(pageOpts);
-  p.race = race;
-  await p.x.onStart(race);
-  return p;
-}
-
-test('your best today sails with you when the setting is on', async () => {
-  const p = await withGhost({ stored: { ...SETTING, 'regatta-result-a': sailed() } });
-  assert.equal(p.views.length, 1);
-  assert.equal(p.added[0], p.views[0].root);
-  assert.deepEqual(p.views[0].o.look, { name: 'mine' });
-  assert.deepEqual(p.views[0].o.label, { text: 'Your best 1:40.0', color: 0xffffff });
-  assert.deepEqual(p.named('Ghost')[0].data, { own: 1 });
-});
-
-test('the fastest of the day is the one that sails', async () => {
-  const stored = { ...SETTING, 'regatta-result-a': sailed({ secs: 100 }), 'regatta-result-b': sailed({ secs: 90 }), 'regatta-result-c': sailed({ secs: 95 }) };
-  const p = await withGhost({ stored });
-  assert.match(p.views[0].o.label.text, /1:30\.0/);
-});
-
-const NOT_A_GHOST = [
-  ['another day', sailed({}, { daily: '2026-11-17' })],
-  ['a race not finished', sailed({ done: false })],
-  ['a disqualified race', sailed({ dsq: true })],
-  ['a race with no time', sailed({ secs: null })],
-  ['a track of one point', sailed({ track: [[0, 0]] })],
-  ['a race with no track', sailed({ track: undefined })],
-  ['a race you were not in', { daily: DAY, boats: [{ me: false }] }],
-  ['a record with no boats', { daily: DAY }],
-  ['a spoiled record', '{not json'],
-];
-for (const [name, result] of NOT_A_GHOST) {
-  test(`${name} makes no ghost`, async () => {
-    const p = await withGhost({ stored: { ...SETTING, 'regatta-result-a': result, 'something-else': 1 } });
-    assert.equal(p.views.length, 0);
-    assert.equal(p.named('Ghost').length, 0);
-  });
-}
-
-for (const [name, setting] of [['off', {}], ['never set', null], ['from an older version of it', { ghost: 1, ghostV: 0 }]]) {
-  test(`with the ghost setting ${name} your best stays home`, async () => {
-    const p = await withGhost({ stored: { ...(setting && { regatta: setting }), 'regatta-result-a': sailed() } });
-    assert.equal(p.views.length, 0);
-  });
-}
-
-test('a free race has no ghost', async () => {
-  const p = await withGhost({ stored: { ...SETTING, 'regatta-result-a': sailed() } }, aRace());
-  assert.equal(p.views.length, 0);
-});
-
-test("a result link's race on this device is yours", async () => {
-  const p = await withGhost({ search: `?race=today&ghost=${ID}`, stored: { [`regatta-result-${ID}`]: sailed() } });
-  assert.deepEqual(p.fetched, []);
-  assert.deepEqual(p.named('Ghost')[0].data, { own: 1 });
-});
-
-test('a link to your own race of another day makes no ghost, and asks nobody', async () => {
-  const p = await withGhost({ search: `?ghost=${ID}`, stored: { [`regatta-result-${ID}`]: sailed({}, { daily: '2020-01-01' }) } });
-  assert.equal(p.views.length, 0);
-  assert.deepEqual(p.fetched, []);
-});
-
-test("someone else's race is asked for from the server, and sails as a ghost", async () => {
-  const upper = ID.toUpperCase();
-  const p = await withGhost({ search: `?ghost=${upper}`, api: () => ({ ok: true, json: async () => sailed() }) });
-  assert.deepEqual(p.fetched, [`https://iyt.rycrentals.com/api/game?race=${ID}`]);
-  assert.deepEqual(p.views[0].o.look, { name: 'Aurora' });
-  assert.equal(p.views[0].o.label.text, 'Ghost 1:40.0');
-  assert.deepEqual(p.named('Ghost')[0].data, { own: 0 });
-});
-
-test('the ghost is named in Russian for a Russian player', async () => {
-  const own = await withGhost({ lang: 'ru', stored: { ...SETTING, 'regatta-result-a': sailed() } });
-  assert.equal(own.views[0].o.label.text, 'Твой лучший 1:40.0');
-  assert.match(own.board.children[0].innerHTML, /Лучший 1:40\.0/);
-  const other = await withGhost({ lang: 'ru', search: `?ghost=${ID}`, api: () => ({ ok: true, json: async () => sailed() }) });
-  assert.equal(other.views[0].o.label.text, 'Призрак 1:40.0');
-});
-
-for (const [name, api] of [['that it has no such race', () => ({ ok: false })], ['nothing at all', () => { throw new Error('offline'); }]]) {
-  test(`a server that says ${name} leaves the race without a ghost`, async () => {
-    const p = await withGhost({ search: `?ghost=${ID}`, api });
-    assert.equal(p.views.length, 0);
-  });
-}
-
-test("an address that isn't a race's id falls back on your own best", async () => {
-  const p = await withGhost({ search: '?ghost=not-an-id', stored: { ...SETTING, 'regatta-result-a': sailed() } });
-  assert.deepEqual(p.fetched, []);
-  assert.equal(p.views.length, 1);
-});
-
-test('a ghost that comes in after the race has been left is not put on the water', async () => {
-  let answer;
-  const p = await open({ search: `?ghost=${ID}`, api: () => new Promise((r) => { answer = r; }) });
-  const race = today();
-  p.race = race;
-  const going = p.x.onStart(race);
-  p.race = today();
-  answer({ ok: true, json: async () => sailed() });
-  await going;
-  assert.equal(p.views.length, 0);
-});
-
-test('a ghost that comes in after the race is over is not put on the water', async () => {
-  let answer;
-  const p = await open({ search: `?ghost=${ID}`, api: () => new Promise((r) => { answer = r; }) });
-  p.race = today();
-  const going = p.x.onStart(p.race);
-  p.race.over = true;
-  answer({ ok: true, json: async () => sailed() });
-  await going;
-  assert.equal(p.views.length, 0);
-});
-
-test('she is see-through, casts no shadow, and leaves the original materials alone', async () => {
-  const p = await withGhost({ stored: { ...SETTING, 'regatta-result-a': sailed() } });
-  const [v] = p.views, [a, b] = v.meshes;
-  assert.equal(v.noFine, true);
-  assert.deepEqual([a.material.cloned, a.material.transparent, a.material.depthWrite], [true, true, false]);
-  assert.ok(Math.abs(a.material.opacity - 0.16) < 1e-9);
-  assert.ok(Math.abs(b.material[0].opacity - 0.32) < 1e-9, 'a material with no opacity of its own counts as solid');
-  assert.ok(Math.abs(b.material[1].opacity - 0.256) < 1e-9);
-  assert.deepEqual([a.castShadow, b.castShadow], [false, false]);
-});
-
-test('she has a row of her own on the board', async () => {
-  const p = await withGhost({ stored: { ...SETTING, 'regatta-result-a': sailed() } });
-  const [row] = p.board.children;
-  assert.equal(row.className, 'b-ghost');
-  assert.match(row.innerHTML, /title="Your best · 1:40\.0">Best 1:40\.0/);
-});
-
-test('a page with no board still has her on the water', async () => {
-  const p = await withGhost({ board: false, stored: { ...SETTING, 'regatta-result-a': sailed() } });
-  assert.equal(p.views.length, 1);
-});
-
-test('the debug page can reach her', async () => {
-  const p = await open({ stored: { ...SETTING, 'regatta-result-a': sailed() } });
-  p.win.__rg = {};
-  p.race = today();
+// ---------- no ghost ----------
+test('an old link to race a ghost opens the race, and asks nobody for anything', async () => {
+  const p = await open({ search: '?race=today&ghost=12345678-1234-4234-8234-1234567890ab', stored: { regatta: { ghost: 1, ghostV: 1 } } });
+  p.race = aRace({ settings: { daily: '2026-11-18' } });
   await p.x.onStart(p.race);
-  assert.equal(p.win.__rg.ghost.secs, 100);
-});
-
-test('a time just short of the minute is shown as the next minute, not as 60 seconds', async () => {
-  const p = await withGhost({ stored: { ...SETTING, 'regatta-result-a': sailed({ secs: 119.97 }) } });
-  assert.equal(p.views[0].o.label.text, 'Your best 2:00.0');
-});
-
-// ---------- the ghost on the water ----------
-const ghosted = async (o = {}) => withGhost({ stored: { ...SETTING, 'regatta-result-a': sailed() } }, today(o));
-
-test('each frame she is where her track had her at this moment of the clock', async () => {
-  const p = await ghosted();
-  p.race.clock = 20.5;
-  p.x.onFrame(p.race, 1 / 60, 7);
-  const want = along(TRACK, 100, 1, 20.5), [b, t, W, drone] = p.views[0].updates[0];
-  assert.deepEqual([b.x, b.z, b.h], [want.x, want.z, want.h]);
-  assert.deepEqual([t, W, drone], [7, 'the waves', false]);
-  assert.equal(p.views[0].root.visible, true);
-});
-
-test('from the drone her view is told so', async () => {
-  const p = await ghosted();
-  p.ctx.world.mode = 'drone';
   p.x.onFrame(p.race, 1 / 60, 0);
-  assert.equal(p.views[0].updates[0][3], true);
+  assert.deepEqual(p.fetched, []);
+  assert.deepEqual(p.named('Ghost'), []);
+  assert.equal(p.win.__rg?.ghost, undefined);
+  assert.equal(p.x.onNewRace, undefined);
 });
 
-test('she is a boat of her own: yours is not moved', async () => {
-  const proto = { hello() { return 'hi'; } };
-  const race = today({ player: { x: 5, z: 6 } });
-  Object.setPrototypeOf(race.player, proto);
-  const p = await withGhost({ stored: { ...SETTING, 'regatta-result-a': sailed() } }, race);
-  p.race.clock = 30;
-  p.x.onFrame(p.race, 1 / 60, 0);
-  assert.deepEqual([race.player.x, race.player.z], [5, 6]);
-  const [b] = p.views[0].updates[0];
-  assert.notEqual(b, race.player);
-  assert.equal(b.hello(), 'hi');
-});
-
-test('upwind she carries no kite and heels hard; downwind the kite is up', async () => {
-  const p = await ghosted();
-  p.race.clock = 30;
-  p.x.onFrame(p.race, 1 / 60, 0); // her track runs north, into the wind
-  const up = { ...p.views[0].updates[0][0] };
-  assert.deepEqual([up.kite, up.kiteFill, up.heel, up.sail], [false, 0, 14, 12]);
-  assert.equal(up.boom, 1, 'dead into the wind, the boom has to lie somewhere');
-  p.race.wind.dir = () => Math.PI;
-  p.x.onFrame(p.race, 1 / 60, 0);
-  const down = p.views[0].updates[1][0];
-  assert.deepEqual([down.kite, down.kiteFill, down.heel], [true, 1, 6]);
-  assert.equal(down.sail, 80);
-});
-
-test('on a reach she heels less than on the wind', async () => {
-  const p = await ghosted();
-  p.race.wind.dir = () => Math.PI / 2;
-  p.race.clock = 30;
-  p.x.onFrame(p.race, 1 / 60, 0);
-  const [b] = p.views[0].updates[0];
-  assert.deepEqual([b.kite, b.heel, b.boom], [false, 10, 1]);
-});
-
-test('she is done once her finishing time has passed', async () => {
-  const p = await ghosted();
-  p.race.clock = 99;
-  p.x.onFrame(p.race, 1 / 60, 0);
-  assert.equal(p.views[0].updates[0][0].done, false);
-  p.race.clock = 101;
-  p.x.onFrame(p.race, 1 / 60, 0);
-  assert.equal(p.views[0].updates[1][0].done, true);
-});
-
-test('a frame of another race does not move her', async () => {
-  const p = await ghosted();
-  p.x.onFrame(today(), 1 / 60, 0);
-  assert.equal(p.views[0].updates.length, 0);
-});
-
-const gapAt = async (clock, player) => {
-  const at = along(TRACK, 100, 1, 30);
-  const p = await ghosted({ player: { x: at.x, z: at.z, leg: 1, ...player } });
-  p.race.clock = clock;
-  p.x.onFrame(p.race, 0.5, 0);
-  return p.views[0] && p.board.children[0].querySelector('b');
-};
-
-test('behind her, the board says by how long', async () => {
-  const gap = await gapAt(33);
-  assert.equal(gap.textContent, '+3.0');
-  assert.equal(gap.className, 'down');
-});
-
-test('ahead of her, the board says that too', async () => {
-  const gap = await gapAt(28);
-  assert.equal(gap.textContent, '−2.0');
-  assert.equal(gap.className, 'up');
-});
-
-test('too far from her track to compare, the board says nothing', async () => {
-  const gap = await gapAt(33, { x: 900 });
-  assert.equal(gap.textContent, '—');
-  assert.equal(gap.className, '');
-});
-
-test('home, the board has the difference in the two times', async () => {
-  const gap = await gapAt(120, { done: true, finish: 97.5 });
-  assert.equal(gap.textContent, '−2.5');
-  assert.equal(gap.className, 'up');
-});
-
-test('the gap is worked out a few times a second, not every frame', async () => {
-  const p = await ghosted({ player: { leg: 1 } });
-  const gap = p.board.children[0].querySelector('b');
-  p.race.clock = 33;
-  p.x.onFrame(p.race, 0.2, 0);
-  p.x.onFrame(p.race, 0.2, 0);
-  assert.equal(gap.textContent, '');
-  p.x.onFrame(p.race, 0.2, 0);
-  assert.notEqual(gap.textContent, '');
-});
-
-test('a new race takes the ghost off the water and off the board', async () => {
-  const p = await ghosted();
-  const row = p.board.children[0];
-  p.x.onNewRace();
-  assert.deepEqual(p.removed, [p.views[0].root]);
-  assert.equal(row.removed, true);
-  p.x.onFrame(p.race, 1 / 60, 0);
-  assert.equal(p.views[0].updates.length, 0);
-  assert.doesNotThrow(() => p.x.onNewRace(), 'and with none there is nothing to take off');
-});
-
-test('starting again replaces the ghost with a new one', async () => {
-  const p = await ghosted();
-  p.race = today();
-  await p.x.onStart(p.race);
-  assert.equal(p.removed.length, 1);
-  assert.equal(p.views.length, 2);
-  assert.equal(p.board.children.length, 1);
-});
-
-test('with neither a ghost nor a drill a frame does nothing', async () => {
+test('without a drill a frame does nothing', async () => {
   const p = await open();
   p.race = aRace();
   assert.doesNotThrow(() => p.x.onFrame(p.race, 1 / 60, 0));

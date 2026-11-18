@@ -10,8 +10,7 @@ globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))))
 const { Race, lineD } = await import('../public/game/sim.js');
 const { finalResults } = await import('../public/game/match.js');
 const { thinTrack } = await import('../public/game/wire.js');
-const { TICK, clock0 } = await import('../public/game/track.js');
-const { posesAt, replaySpan } = await import('../lib/finish.ts');
+const { TICK, clock0, posesAt, replaySpan } = await import('../lib/finish.ts');
 
 // ---------- a track as the game records it: a point a tick from the first signal's lead-in, and one as she finishes ----------
 const SPEED = 3;
@@ -176,46 +175,4 @@ test('a race given up at the very first moment never runs backwards', () => {
 test('the replay of any other race starts 15 s before the gun as it did', () => {
   assert.deepEqual(replaySpan(givenUp(-10)), { from: -15, to: -10 });
   assert.deepEqual(replaySpan(raceOf(1, { done: true, secs: 200, track: [[0, 0], [0, 1]] })), { from: -15, to: 200 });
-});
-
-// ---------- the ghost: the same track, sailed beside you in the game (track.js, extras.js) ----------
-const track = await import('../public/game/track.js');
-const ghostOf = (end, start = 1) => { const full = recorded(end, start, true); return { track: thinTrack(full), secs: end, start, legT: [0, end], step: stepOf(full) }; };
-
-test('the ghost sails where the boat sailed, whatever the race\'s length', () => {
-  for (const start of [1, 3, 5]) for (const L of LENGTHS) {
-    const c0 = clock0(start), end = c0 + L, g = ghostOf(end, start);
-    for (const f of [0.05, 0.25, 0.5, 0.75, 0.97]) {
-      const T = c0 + 2 + (L - 2) * f, p = track.ghostAt(g, T), [x, z] = north(T, c0);
-      assert.ok(Math.hypot(p.x - x, p.z - z) < 4, `${L} s after the first signal, at ${T.toFixed(1)} s she is ${Math.round(Math.hypot(p.x - x, p.z - z))} m out`);
-    }
-  }
-});
-
-test('the ghost and the replay put a boat in the same place', () => {
-  const end = clock0(1) + 320.2, g = ghostOf(end);
-  const r = raceOf(1, { done: true, secs: end, track: g.track, trackStep: g.step });
-  for (const T of [-30, 0, 47.3, 120, 250]) {
-    const a = track.along(g.track, g.secs, g.start, T, g.step), [b] = posesAt(r, T);
-    assert.ok(Math.abs(a.x - b.x) < 1e-9 && Math.abs(a.z - b.z) < 1e-9, `at ${T}`);
-  }
-});
-
-test('the gap to the ghost is the time she was there', () => {
-  const c0 = clock0(1), end = c0 + 320.2, g = ghostOf(end), [x, z] = north(150, c0);
-  assert.ok(Math.abs(track.ghostGap(g, x, z, 1, 154) - 4) < 1.1, 'four seconds behind her');
-  assert.ok(Math.abs(track.ghostGap(g, x, z, 1, 147) + 3) < 1.1, 'three seconds ahead of her');
-});
-
-test('a ghost from a record kept before the step was saved sails as she always did', () => {
-  const end = clock0(1) + 320.2, { track: tr } = ghostOf(end), g = { track: tr, secs: end, start: 1, legT: [0, end] };
-  for (const T of [-30, 47.3, 200]) assert.deepEqual(track.ghostAt(g, T), track.along(tr, end, 1, T));
-});
-
-test('the ghost picked from a record brings its step along', () => {
-  const src = readFileSync(new URL('../public/game/extras.js', import.meta.url), 'utf8');
-  const pick = new Function('day', `${src.slice(src.indexOf('const pick = (r, own) =>'), src.indexOf('if (want && UUID.test(want))'))}\nreturn pick;`)('2026-11-18');
-  const boat = { me: true, done: true, dsq: false, secs: 256.2, track: [[0, 0], [0, -9]], legT: [0] };
-  assert.equal(pick({ daily: '2026-11-18', start: 1, boats: [{ ...boat, trackStep: 3 }] }, true).step, 3);
-  assert.equal(pick({ daily: '2026-11-18', start: 1, boats: [boat] }, true).step, undefined);
 });

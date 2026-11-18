@@ -169,9 +169,9 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
   const gap = me.secs != null && winner?.secs != null && winner !== me ? `+${(me.secs - winner.secs).toFixed(1)} ${t('s', 'с')}` : '—';
   const again = one ? '/match/new' : res.daily ? '/play?race=today' : '/play?race=free';
   const isToday = res.daily === new Date().toISOString().slice(0, 10); // the daily race's day is the UTC date, as the game's
-  // someone else's race: beat their time if it's today's, else today's race
+  // someone else's race: today's race, for you to sail
   const cta = shared
-    ? (isToday && me.secs != null && !me.dsq ? { href: `/play?race=today&ghost=${encodeURIComponent(res.id)}`, label: t('Race this boat’s ghost', 'Гоняйся с её призраком') } : { href: '/race', label: t('Sail today’s race', 'Пройти гонку дня') })
+    ? { href: '/race', label: t('Sail today’s race', 'Пройти гонку дня') }
     : { href: again, label: one ? t('Another 1-on-1 race', 'Ещё одна гонка один на один') : t('Race again', 'Ещё гонку') };
   const mine = me.secs != null && !me.dsq ? me.secs : null;
   const you = shared ? t('This boat', 'Эта лодка') : t('You', 'Ты');

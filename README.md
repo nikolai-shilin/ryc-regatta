@@ -41,13 +41,10 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
       streak (days in a row; a day missed doesn't break it, two do), a first race at a venue on its result, and your month
       on the rating page, each day's best placed against that day's ranked times.
     - `regatta-drills` holds the drills' best stars (`/race/drills`, `lib/drills.ts`).
-- **The ghost, the drills and the analytics in the game:** `public/game/extras.js`, which `main.js` calls as a race
-  starts and every frame. The ghost is a see-through boat out of the race, sailing a finished race's track
-  (`public/game/track.js`, in step with `lib/finish.ts`, which `npm test` checks): your best today on this device (off in
-  Settings), or the race of a result link (`/play?race=today&ghost=<id>`, a shared result's button), with the gap to her
-  on the board. A drill (`/play?race=free&drill=<id>`, the ids in `DRILL_ORDER`, four skipper levels of them, each sailed against a fleet of its own level, and a level open with two thirds of the stars of the one below) is a free race of its own; a computer skipper sails
+- **The drills and the analytics in the game:** `public/game/extras.js`, which `main.js` calls as a race
+  starts and every frame. A drill (`/play?race=free&drill=<id>`, the ids in `DRILL_ORDER`, four skipper levels of them, each sailed against a fleet of its own level, and a level open with two thirds of the stars of the one below) is a free race of its own; a computer skipper sails
   your boat to the moment it's about, hands her over, and it ends with stars; it's never posted as a race. The game
-  sends its moments to Vercel Web Analytics (Race start, Race left, Ghost, Drill done) and the pages theirs
+  sends its moments to Vercel Web Analytics (Race start, Race left, Drill done) and the pages theirs
   (`@vercel/analytics` `track`: Race finish, Race again, Challenge taken, Replay, Share).
 - **1-on-1 race:** two friends sail one race against each other, live, by a link, under the same rules as today's race
   (no computer boats; the Appendix C match rules are gone). The host sets it up on `/match/new` (the free race's
@@ -70,7 +67,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     a host who leaves, or whose tab is gone over 60 s, abandons the race, not scored.
   - **After it:** a card lists the places with the gap (DSQ or DNF for a boat without a place), with Rematch (the host's,
     a new seed), Full result and Done. Each screen saves the race's record as it ends (`oneOnOne`), so Full result opens
-    the usual result page (`components/result-view.tsx`) in the same tab, headed "1-on-1 race", with no ghost, personal
+    the usual result page (`components/result-view.tsx`) in the same tab, headed "1-on-1 race", with no personal
     best, share link or ranking; its main button goes back to `/match/new`. A valid finish earns the venue's passport
     stamp. Nothing is posted to the scores server (`stats.js` skips it).
   - **Not on the hub yet:** the race hub's 1-on-1 race card shows only with `?match` in its address, until the owner's

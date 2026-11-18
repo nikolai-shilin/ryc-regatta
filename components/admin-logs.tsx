@@ -23,7 +23,7 @@ export type LogPerson = {
 export type LogVisit = {
   id: string; at: string; kind: string | null; ref: string | null; tg: Num; dev: string | null; load: Num; loaded_at: string | null;
   failed_at: string | null; why: string | null; gave_up_at: string | null; pct: Num; last_at: string | null; races: Num; finished: Num;
-  mins: Num; howto: Num; drill: Num; ghost: Num; lost: Num; errors: { m: string; src?: string | null; n?: number }[] | null;
+  mins: Num; howto: Num; drill: Num; lost: Num; errors: { m: string; src?: string | null; n?: number }[] | null;
 };
 type Perf = { fps?: number; low?: number; stall?: number; secs?: number; q0?: string; q?: string; gfx?: string; saver?: number; dev?: string; tg?: number;
   os?: string; br?: string; dpr?: number; cores?: number; mem?: number; gpu?: string; w?: number; h?: number; load?: number };

@@ -46,8 +46,8 @@ export function raceVenue(r: FinishResult, fallback: VenueId = 'gocek'): VenueId
 
 // the game records a boat's position about once a second (every 61 steps of 1/60 s) from the first warning signal's
 // lead-in, and once more as she finishes; the result keeps at most some 160 of them, every k-th and the last
-const TICK = 61 / 60;
-const clock0 = (start: number) => (start === 5 ? -300 - 8 : start === 3 ? -180 - 8 : -60 - 4);
+export const TICK = 61 / 60;
+export const clock0 = (start: number) => (start === 5 ? -300 - 8 : start === 3 ? -180 - 8 : -60 - 4);
 
 // the clock a boat's track ends at: her finish, or where a 1-on-1 race left her out on the water
 const endOf = (b: Boat) => b.secs ?? b.trackEnd ?? null;

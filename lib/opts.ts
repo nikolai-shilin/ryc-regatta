@@ -34,8 +34,6 @@ export type Opts = {
   gfxD?: Partial<Record<GfxPart, GfxLevel>>; // Custom graphics: each part's level
   saver: number; // 1: the battery saver, the race drawn at 30 frames a second (public/game/main.js: loop)
   figures: number; // 0: no people drawn on the boats, in the race or the scenes behind the site's pages (public/game/gfx.js)
-  ghost: number; // 1: today's race again has the ghost of your best today in it (public/game/extras.js); off unless chosen
-  ghostV: number; // 1: ghost is the player's own choice (before, it was on for everyone)
   camera: 'drone' | 'top' | 'helm'; vibration: number;
   voice: number; // the skipper's voice (the crew's calls in English), apart from Sound
   music: Music; // the soundtrack's track (public/game/music.js), or none
@@ -51,17 +49,16 @@ export type Opts = {
 
 export const DEFAULTS: Opts = {
   mode: 'daily', venue: 'gocek', yacht: 'jpk1050', preset: 'medium', fleet: 5, length: 'short', laps: 1, start: 1, current: 0, course: 'wl', daytime: 'any', contact: 'turn',
-  autoTrim: 1, sound: 1, guides: 1, ghost: 0, gfx: 'auto', saver: 0, figures: 1, camera: 'drone', vibration: 1, voice: 1, music: 'playlist', musicVol: 'normal', sea: 'normal', sndVoices: 'normal', sndBoats: 'normal', sndSignals: 'normal', sndAround: 'normal', fleetV: 3, optsV: 4, musicV: 2, ghostV: 1,
+  autoTrim: 1, sound: 1, guides: 1, gfx: 'auto', saver: 0, figures: 1, camera: 'drone', vibration: 1, voice: 1, music: 'playlist', musicVol: 'normal', sea: 'normal', sndVoices: 'normal', sndBoats: 'normal', sndSignals: 'normal', sndAround: 'normal', fleetV: 3, optsV: 4, musicV: 2,
 };
 
 export function readOpts(): Opts {
   try {
     const saved = JSON.parse(localStorage.getItem('regatta') || '{}');
-    const o = { ...DEFAULTS, ...saved, fleetV: 3, optsV: 4, musicV: 2, ghostV: 1 };
+    const o = { ...DEFAULTS, ...saved, fleetV: 3, optsV: 4, musicV: 2 };
     if (saved.musicV !== 2) o.music = 'playlist'; // the playlist is the default music now, as in the game: once, then theirs
-    if (saved.ghostV !== 1) o.ghost = 0; // the ghost of your best is off now unless you turn it on: once, then theirs
     if (o.music !== 'off' && !TRACKS.includes(o.music)) o.music = 'playlist'; // a style that's gone (Ambient, Film, Folk)
-    delete o.undefined; // junk an older game wrote; dropped on the next save
+    delete o.undefined; delete o.ghost; delete o.ghostV; // junk an older game wrote; dropped on the next save
     return o;
   } catch {
     return { ...DEFAULTS };

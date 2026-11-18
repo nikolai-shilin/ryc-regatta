@@ -2,7 +2,7 @@
 import { Race, CLS, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone, laidShape } from './sim.js';
 import { World, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
 import { raceStarted, raceFinished, raceResult, perfSetup, perfFrame, statsContext, raceIncident, raceEnded, visitSend } from './stats.js';
-import { initExtras, onStart, onFrame, drill, drillSettings } from './extras.js'; // the ghost, the drills, the analytics
+import { initExtras, onStart, onFrame, drill, drillSettings } from './extras.js'; // the drills, the analytics
 import { createHud } from './hud-bc.js';
 import { autoBase, autoTuner, gfxLevel, gfxNow, gfxParts, lighterParts, saveAuto, GFX_LEVELS, GFX_PARTS, SAVER_MS } from './gfx.js';
 import { openAvMenu, avSummary } from './av-menu.js'; // Audio & graphics, the site's menu too
@@ -69,7 +69,7 @@ const ord = (n) => `${n}${['st', 'nd', 'rd'][n - 1] || 'th'}`;
 const T = {
   en: {
     pausedK: 'Paused', legOf: (a, b) => `Leg ${a} of ${b}`, nextK: (m) => `Next: ${m}`, placeK: 'Place', ofN: (n) => `of ${n}`, timeK: 'Race time', penK: 'Penalties', penNone: 'clean so far', penS: 'spinning turns',
-    changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', camK: 'Camera', sAuto: 'Auto', guidesSw: 'Guides on the water', ghostSw: 'Ghost of your best today', avK: 'Audio & graphics', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
+    changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', camK: 'Camera', sAuto: 'Auto', guidesSw: 'Guides on the water', avK: 'Audio & graphics', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
     leaveK: 'Leave this race?', leaveTxt: (pl, leg) => `You are ${pl} on leg ${leg}.`, keepRacing: 'Keep racing', doRestart: 'Restart', doChange: 'Change it', doLeave: 'Leave',
     inSeq: 'You are in the start sequence.', notKept: 'This race’s time and place are not kept.',
     leaveHost: 'The race is abandoned on both screens.', leaveGuest: (w) => (w ? `You drop out, and the race goes to ${w}.` : 'You drop out, and the race ends with no winner.'), leaveHome: 'Your place stands for the other sailor, but if you leave now you won’t get the full result.',
@@ -175,7 +175,7 @@ const T = {
   },
   ru: {
     pausedK: 'Пауза', legOf: (a, b) => `Отрезок ${a} из ${b}`, nextK: (m) => `Дальше: ${m}`, placeK: 'Место', ofN: (n) => `из ${n}`, timeK: 'Время', penK: 'Штрафы', penNone: 'пока чисто', penS: 'штрафные обороты',
-    changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', camK: 'Камера', sAuto: 'Авто', guidesSw: 'Подсказки на воде', ghostSw: 'Призрак твоего лучшего сегодня', avK: 'Звук и графика', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
+    changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', camK: 'Камера', sAuto: 'Авто', guidesSw: 'Подсказки на воде', avK: 'Звук и графика', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
     leaveK: 'Выйти из гонки?', leaveTxt: (pl, leg) => `Ты ${pl}-й на ${leg}-м отрезке.`, keepRacing: 'Продолжить', doRestart: 'Заново', doChange: 'Изменить', doLeave: 'Выйти',
     inSeq: 'Идёт стартовая процедура.', notKept: 'Время и место этой гонки не сохранятся.',
     leaveHost: 'Гонка прекратится на обоих экранах.', leaveGuest: (w) => (w ? `Ты сходишь, и гонка достаётся: ${w}.` : 'Ты сходишь, и гонка закончится без победителя.'), leaveHome: 'Для соперника твоё место останется, но если выйдешь сейчас, полного результата не получишь.',
@@ -308,7 +308,7 @@ if (opts.optsV !== 4) { opts.length = 'short'; opts.mode = 'daily'; opts.optsV =
 if (opts.musicV !== 2) { opts.music = PLAYLIST; opts.musicV = 2; } // the playlist is the default music now: everyone hears it once, then keeps what they pick
 // a first race on Auto (Home's first four races promise it): you only steer. Whoever hasn't raced yet starts there, once
 if (!opts.played && opts.trimV !== 1) { opts.autoTrim = 1; opts.trimV = 1; }
-if (opts.ghostV !== 1) { opts.ghost = 0; opts.ghostV = 1; } // the ghost of your best is off now unless you turn it on (Settings): once, then theirs
+delete opts.ghost; delete opts.ghostV; // the ghost of your best is gone: its setting goes with the next save
 if (opts.music !== 'off' && !MUSIC_CHOICES.includes(opts.music)) opts.music = PLAYLIST; // a style that's gone (Ambient, Film, Folk): the playlist
 const saveOpts = () => { try { localStorage.setItem('regatta', JSON.stringify(opts)); } catch (e) {} };
 // the race's settings: the menu's, or in today's race the day's own (the same for everyone)
@@ -1468,13 +1468,13 @@ setCam(['drone', 'top', 'helm'].includes(opts.camera) ? opts.camera : 'drone'); 
 // the HUD, as a sailing broadcast lays it out (hud-bc.js)
 // what the player has set, read as each race ends (stats.js raceEnded, for the site's /admin)
 statsContext(() => ({ cam: world.mode, trim: opts.autoTrim, sound: opts.sound ? 1 : 0, voice: opts.voice ? 1 : 0, music: opts.music, sea: opts.sea,
-  saver: opts.saver ? 1 : 0, gfx: opts.gfx, q: levelNow(), guides: opts.guides ? 1 : 0, speed: timeScale, ghost: opts.ghost ? 1 : 0 }));
+  saver: opts.saver ? 1 : 0, gfx: opts.gfx, q: levelNow(), guides: opts.guides ? 1 : 0, speed: timeScale }));
 const bcHud = createHud({ t, LANG, fmt, world, getRace: () => race, setCam, flagOf: (b, me) => (me ? playerLook().flag : b.human ? lookFrom(b.look).flag : LOOKS[b.name] && LOOKS[b.name].flag) || null, // (the other sailor in a match: her own)
   sailOf: () => { const l = playerLook(); return `${l.nat} ${l.num}`.trim(); } }); // your flag and sail number, as the boat page sets them
 
 // ---------- menus ----------
 const menu = $('#menu'), hud = $('#hud');
-initExtras({ LANG, world, getRace: () => race, isRunning: () => running, stop: () => { running = false; hud.hidden = true; } });
+initExtras({ LANG, getRace: () => race, isRunning: () => running, stop: () => { running = false; hud.hidden = true; } });
 if (!opts.played) $('#howD').open = true; // how to play: open until the first race
 function startRace() {
   audio.init(); audio.setOn(!!opts.sound); skipper.load(); crews.load(); asides.load(); calls.load(); score.style();
@@ -1492,7 +1492,7 @@ function startRace() {
   applyTrimMode();
   setCam(world.mode);
   if (!drill) raceStarted(race, race.settings); // counted for the admins' Overview and the leaderboards (stats.js); a drill isn't a race
-  onStart(race); // the ghost, a drill's set-up, the analytics (extras.js)
+  onStart(race); // a drill's set-up, the analytics (extras.js)
 }
 // ---------- pause: the race stays in view; resume, change the race, restart or leave (each of the last three asks first) ----------
 const pauseEl = $('#pauseCard'), confirmEl = $('#confirmCard');
@@ -1521,7 +1521,7 @@ function paintPause() {
   // the ticker: paused, the venue, the race's clock (the count to the gun before it)
   const tick = $('#pTick'); tick.textContent = '';
   tick.append(`${t('pausedK')} · `, Object.assign(document.createElement('b'), { textContent: VENUE.name[LANG === 'ru' ? 1 : 0] }), ` · ${race.clock < 0 ? `${t('startIn')} ${fmt(-race.clock + 0.999)}` : fmt(race.clock)}`);
-  // guides and the ghost: switches; the sails three ways; the camera
+  // the guides: a switch; the sails three ways; the camera
   for (const b of pauseEl.querySelectorAll('[data-q]')) { const on = !!opts[b.dataset.q]; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); }
   for (const b of pauseEl.querySelectorAll('[data-trim]')) b.setAttribute('aria-checked', String(Number(b.dataset.trim) === (opts.autoTrim | 0)));
   for (const b of pauseEl.querySelectorAll('[data-pc]')) b.setAttribute('aria-checked', String(b.dataset.pc === world.mode));
@@ -2126,7 +2126,7 @@ function frame(now) {
     else {
       acc += dt * timeScale;
       while (acc >= STEP) { keepPrev(); race.step(STEP); acc -= STEP; }
-      onFrame(race, dt, race.t); // the ghost where she was, a drill's end (extras.js)
+      onFrame(race); // a drill's end (extras.js)
     }
     handleMessages();
     updateHud(dt);

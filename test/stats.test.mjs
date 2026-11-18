@@ -554,7 +554,8 @@ test('the visit counts the races begun and finished and the minutes on the page'
   await flush();
   const v = page.of('visit')[0];
   assert.equal(v.id, 'visit-1');
-  assert.deepEqual([v.visit.races, v.visit.finished, v.visit.mins, v.visit.drill, v.visit.ghost], [2, 1, 1.5, 1, 1]);
+  assert.deepEqual([v.visit.races, v.visit.finished, v.visit.mins, v.visit.drill], [2, 1, 1.5, 1]);
+  assert.equal('ghost' in v.visit, false, 'an old link to race a ghost counts for nothing');
   assert.equal('load' in v.visit, false);
 });
 
@@ -564,7 +565,7 @@ test('the visit says how long the race took to load only at that stage', async (
   page.stats.visitSend('loaded');
   await flush();
   assert.equal(page.of('visit')[0].visit.load, 7.3);
-  assert.deepEqual([page.of('visit')[0].visit.drill, page.of('visit')[0].visit.ghost], [0, 0]);
+  assert.equal(page.of('visit')[0].visit.drill, 0);
 });
 
 test('a browser keeps its id from one visit to the next', async () => {

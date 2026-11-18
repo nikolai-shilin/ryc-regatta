@@ -33,7 +33,7 @@ test('a new player has the defaults', () => {
 });
 
 test('the settings saved are read back over the defaults, marked as current', () => {
-  save({ musicV: 2, ghostV: 1, fleet: 7, venue: 'palma', fleetV: 1, optsV: 1 });
+  save({ musicV: 2, fleet: 7, venue: 'palma', fleetV: 1, optsV: 1 });
   const o = readOpts();
   assert.equal(o.fleet, 7); assert.equal(o.venue, 'palma'); assert.equal(o.sound, DEFAULTS.sound);
   assert.equal(o.fleetV, 3); assert.equal(o.optsV, 4);
@@ -53,11 +53,11 @@ test('a style of music that\'s gone falls back to the playlist', () => {
   assert.equal(readOpts().music, 'playlist');
 });
 
-test('the ghost is off unless the player chose it since it became a choice', () => {
-  save({ ghost: 1 });
-  assert.equal(readOpts().ghost, 0);
+test('the ghost setting an older game saved is dropped', () => {
   save({ ghost: 1, ghostV: 1 });
-  assert.equal(readOpts().ghost, 1);
+  const o = readOpts();
+  assert.equal('ghost' in o, false);
+  assert.equal('ghostV' in o, false);
 });
 
 test('junk an older game wrote is dropped', () => {
@@ -75,7 +75,7 @@ test('broken or blocked settings are the defaults, not a crash', () => {
 test('saving keeps the rest of the settings and tells the page', () => {
   const heard = [];
   set('window', { dispatchEvent: (e) => heard.push(e.type) });
-  save({ fleet: 7, musicV: 2, ghostV: 1 });
+  save({ fleet: 7, musicV: 2 });
   const next = saveOpts({ sound: 0 });
   assert.equal(next.fleet, 7); assert.equal(next.sound, 0);
   assert.equal(JSON.parse(ls.getItem('regatta')).sound, 0);

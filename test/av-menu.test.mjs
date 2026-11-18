@@ -189,7 +189,8 @@ test('the other menus only lead to Audio & graphics', () => {
 
 test('the sailing options are the same in every menu', () => {
   const site = read('components/sailing-opts.tsx'), play = read('public/play/index.html');
-  for (const k of ['autoTrim', 'camera', 'guides', 'ghost']) assert.match(site, new RegExp(`'${k}'`));
-  for (const a of ['data-trim="2"', 'data-pc="helm"', 'data-q="guides"', 'data-q="ghost"']) assert.ok(play.includes(a), a);
+  for (const k of ['autoTrim', 'camera', 'guides']) assert.match(site, new RegExp(`'${k}'`));
+  for (const a of ['data-trim="2"', 'data-pc="helm"', 'data-q="guides"']) assert.ok(play.includes(a), a);
+  assert.doesNotMatch(site + play, /ghostSw|data-q="ghost"|'ghost'|game\/track\.js/);
   for (const f of ['components/pause-card.tsx', 'components/settings-form.tsx']) assert.match(read(f), /<SailingOpts lang=\{lang\} \/>/, f);
 });

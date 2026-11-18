@@ -608,16 +608,16 @@ const checked = (b) => b.getAttribute('aria-checked') === 'true';
 
 test('the rows show the game’s defaults before anything is chosen', () => {
   const html = ssr(h(SailingOpts, { lang: 'en' }));
-  assert.match(plain(html), /Sails I trim Auto Main \+ jib Camera Drone Top Helm Guides on the water Ghost of your best today/);
+  assert.match(plain(html), /Sails I trim Auto Main \+ jib Camera Drone Top Helm Guides on the water/);
+  assert.doesNotMatch(plain(html), /Ghost/);
 });
 
 test('what you chose before is what shows', async () => {
-  localStorage.setItem('regatta', JSON.stringify({ autoTrim: 2, camera: 'helm', guides: 0, ghost: 1, ghostV: 1 }));
+  localStorage.setItem('regatta', JSON.stringify({ autoTrim: 2, camera: 'helm', guides: 0 }));
   const v = await mount(h(SailingOpts, { lang: 'en' }));
   assert.equal(group(v, 'autoTrim').find(checked).textContent, 'Main + jib');
   assert.equal(group(v, 'camera').find(checked).textContent, 'Helm');
   assert.equal(v.$('[aria-labelledby="l-guides"]').getAttribute('aria-checked'), 'false');
-  assert.equal(v.$('[aria-labelledby="l-ghost"]').getAttribute('aria-checked'), 'true');
 });
 
 test('a choice is saved at once where the game reads it', async () => {
@@ -635,14 +635,14 @@ test('choosing how the sails trim marks it as your own choice', async () => {
   assert.deepEqual([o.autoTrim, o.trimV], [0, 1]);
 });
 
-test('the switches turn on and off', async () => {
+test('the guides switch turns on and off', async () => {
   const v = await mount(h(SailingOpts, { lang: 'en' }));
-  const ghost = v.$('[aria-labelledby="l-ghost"]');
-  await click(ghost);
-  assert.equal(ghost.getAttribute('aria-checked'), 'true');
-  assert.equal(JSON.parse(localStorage.getItem('regatta')).ghost, 1);
-  await click(ghost);
-  assert.equal(JSON.parse(localStorage.getItem('regatta')).ghost, 0);
+  const guides = v.$('[aria-labelledby="l-guides"]');
+  await click(guides);
+  assert.equal(guides.getAttribute('aria-checked'), 'false');
+  assert.equal(JSON.parse(localStorage.getItem('regatta')).guides, 0);
+  await click(guides);
+  assert.equal(JSON.parse(localStorage.getItem('regatta')).guides, 1);
 });
 
 test('how you sail, in Russian', () => {

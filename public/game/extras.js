@@ -1,27 +1,17 @@
-// What the game does round the race itself, kept out of main.js, which calls in here at four places: newRace (a race
-// is built), start (it starts), frame (each frame, after the race has stepped) and settings (what a drill sails).
+// What the game does round the race itself, kept out of main.js, which calls in here at three places: start (a race
+// starts), frame (each frame, after the race has stepped) and settings (what a drill sails).
 //
-//   The ghost: a boat that sails a race already sailed, see-through and out of the race (no rules, no collisions),
-//     where her track had her at each moment of the clock: your own best in today's race, kept on this device (only when
-//     Settings › Ghost of your best is on: it's off by default), or the
-//     race a result link names (/play?race=today&ghost=<id>, from the result page's "Race this ghost"). Over the board,
-//     how far ahead or behind her you are: the clock now against hers where she was nearest you on the same leg.
 //   The drills: a minute or two each, from /race/drills (/play?race=free&drill=<id>). A computer skipper sails your
 //     boat to the moment the drill is about (or not, for the start), hands her over, and the drill ends when it's
 //     done: stars for how it went, kept on this device (localStorage regatta-drills), never posted as a race.
 //   The analytics: the race's moments as Vercel Web Analytics events (/play loads its script; the pages send theirs
 //   with @vercel/analytics):
 //     a race started, a race left before the finish, a drill done.
-import { makeBoatView } from './boats3d.js';
-import { LOOKS, playerLook } from './yacht.js';
 import { VENUE } from './venues.js';
-import { ghostAt, ghostGap } from './track.js';
 import { polarSpeed, beatAngle, lineT, KN, D2R } from './sim.js';
 
 const tr = (en, ru) => (ctx?.LANG === 'ru' ? ru : en); // the game's language (main.js), handed over at init
 const q = new URLSearchParams(location.search);
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const fmt = (s) => { const a = Number(Math.abs(s).toFixed(1)), m = Math.floor(a / 60), r = a - m * 60; return `${m}:${r.toFixed(1).padStart(4, '0')}`; }; // (the tenths rounded first: 119.97 s is 2:00.0, not 1:60.0)
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 
 // ---------- analytics ----------
@@ -77,12 +67,8 @@ const drillName = (id) => ({ start: tr('The start', 'Старт'), mark: tr('The
   back: tr('From the back', 'С последнего места'), race: tr('The whole race', 'Вся гонка') })[id];
 const levelName = (lv) => ({ beginner: tr('Beginner', 'Новичок'), club: tr('Club', 'Клуб'), racer: tr('Racer', 'Гонщик'), expert: tr('Expert', 'Эксперт') })[lv];
 
-let ctx = null, ghost = null, dr = null;
+let ctx = null, dr = null;
 const css = `
-.b-ghost { display: flex; align-items: center; gap: var(--s-3, 12px); height: 30px; padding: 0 var(--s-3, 12px); border-top: 1px solid var(--rule, rgba(255,255,255,.12)); font: 700 var(--fs-small, 14px)/1 var(--cond, sans-serif); text-transform: uppercase; letter-spacing: var(--ls-button, .04em); }
-.b-ghost i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.55); box-shadow: 0 0 0 2px rgba(255,255,255,.18); flex: none; }
-.b-ghost span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2, #aab); }
-.b-ghost b { font-variant-numeric: tabular-nums; } .b-ghost b.up { color: var(--up, #2ee6a0); } .b-ghost b.down { color: var(--down, #ff8a3d); }
 .drill-k { position: fixed; left: 50%; top: calc(14px + env(safe-area-inset-top)); translate: -50% 0; z-index: 40; display: flex; align-items: stretch; height: 30px; pointer-events: none;
   font: 700 var(--fs-small, 14px)/1 var(--cond, sans-serif); letter-spacing: var(--ls-label, .08em); text-transform: uppercase; }
 .drill-k > * { display: flex; align-items: center; padding: 0 var(--s-4, 16px); }
@@ -100,7 +86,7 @@ const css = `
 .drill-end a.go { background: var(--you, #3db8ff); color: var(--ink-on, #070d16); }
 `;
 
-// main.js hands over what the hooks need: the world, the toast, and how to stop the race (a drill's end)
+// main.js hands over what the hooks need: the language, the race, and how to stop it (a drill's end)
 export function initExtras(c) {
   ctx = c;
   document.head.append(Object.assign(document.createElement('style'), { textContent: css }));
@@ -112,94 +98,13 @@ export function initExtras(c) {
   });
 }
 
-// ---------- the ghost ----------
-// the ghost to sail against: a result link's race (today's only: the same course), else your best today on this device
-async function ghostFor(race) {
-  const day = race.settings?.daily;
-  if (!day || drillId) return null;
-  const want = q.get('ghost');
-  const pick = (r, own) => {
-    const b = r && r.daily === day && Array.isArray(r.boats) && r.boats.find((x) => x.me);
-    return b && b.done && !b.dsq && b.secs != null && b.track?.length > 1 ? { track: b.track, step: b.trackStep, secs: b.secs, legT: b.legT || [], start: r.start || 1, own, id: r.id } : null;
-  };
-  if (want && UUID.test(want)) {
-    const mine = read('regatta-result-' + want);
-    if (mine) return pick(mine, true);
-    try {
-      const r = await fetch(`https://iyt.rycrentals.com/api/game?race=${want.toLowerCase()}`).then((x) => (x.ok ? x.json() : null));
-      return pick(r, false);
-    } catch (e) { return null; }
-  }
-  const o = read('regatta') || {};
-  if (o.ghost !== 1 || o.ghostV !== 1) return null; // Settings › Ghost of your best: off unless turned on there
-  let best = null;
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (!k || !k.startsWith('regatta-result-')) continue;
-    const g = pick(read(k), true);
-    if (g && (!best || g.secs < best.secs)) best = g;
-  }
-  return best;
-}
-
-function makeGhost(g) {
-  const { world } = ctx;
-  const look = g.own ? playerLook() : LOOKS.Aurora;
-  const name = g.own ? tr('Your best', 'Твой лучший') : tr('Ghost', 'Призрак'), short = g.own ? tr('Best', 'Лучший') : tr('Ghost', 'Призрак');
-  const v = makeBoatView({ look, label: { text: `${name} ${fmt(g.secs)}`, color: 0xffffff } });
-  v.noFine = true; // (the finest figures are built later, and wouldn't be see-through)
-  // see-through, and never hiding what's behind her
-  v.root.traverse((o) => {
-    if (!o.material) return;
-    o.material = Array.isArray(o.material) ? o.material.map((m) => see(m)) : see(o.material);
-    o.castShadow = false;
-  });
-  world.scene.add(v.root);
-  // her own boat, posed each frame: your boat's properties, then where the track had her
-  const P = ctx.getRace().player, b = Object.assign(Object.create(Object.getPrototypeOf(P)), P);
-  const el = document.createElement('div'); el.className = 'b-ghost';
-  el.innerHTML = `<i></i><span title="${name} · ${fmt(g.secs)}">${short} ${fmt(g.secs)}</span><b></b>`; // the board's row: short, for a phone's
-  document.querySelector('.b-board')?.append(el);
-  return { ...g, v, b, el, gapEl: el.querySelector('b'), lastGap: 0 };
-}
-function see(m) { const c = m.clone(); c.transparent = true; c.opacity = 0.32 * (m.opacity ?? 1); c.depthWrite = false; return c; }
-function dropGhost() {
-  if (!ghost) return;
-  ctx.world.scene.remove(ghost.v.root);
-  ghost.el.remove();
-  ghost = null;
-}
-
 // ---------- the hooks ----------
-// a race is built (each start builds one): no ghost from the last
-export function onNewRace() { dropGhost(); }
-
-export async function onStart(race) {
+export function onStart(race) {
   track('Race start', { race: drillId ? 'drill' : race.settings?.daily ? 'daily' : 'free', venue: VENUE.id, ...(drillId && { drill: drillId }) });
-  dropGhost();
-  if (drillId) { startDrill(race); return; }
-  const g = await ghostFor(race);
-  if (g && race === ctx.getRace() && !race.over) { ghost = makeGhost(g); track('Ghost', { own: g.own ? 1 : 0 }); if (window.__rg) window.__rg.ghost = ghost; } // ?debug: main.js's window.__rg
+  if (drillId) startDrill(race);
 }
 
-export function onFrame(race, dt, t) {
-  if (ghost && race === ctx.getRace()) {
-    const p = ghostAt(ghost, race.clock), b = ghost.b, W = race.wind.dir();
-    if (p) {
-      const twa = Math.atan2(Math.sin(W - p.h), Math.cos(W - p.h)), down = Math.abs(twa) > 1.75, a = Math.abs(twa) * 180 / Math.PI;
-      Object.assign(b, { x: p.x, z: p.z, h: p.h, twa, awa: twa * (down ? 0.8 : 0.6), heel: down ? 6 : a < 60 ? 14 : 10, sail: Math.min(80, Math.max(12, 16 + (a - 41) * 0.52)),
-        kite: down, kiteFill: down ? 1 : 0, boom: Math.sign(twa) || 1, v: 3, rudder: 0, luff: 0, trim: 'ok', wdir: W, tws: race.wind.p.tws, done: race.clock > ghost.secs, pen: null });
-      ghost.v.root.visible = true;
-      ghost.v.update(b, t, ctx.world.W, ctx.world.mode === 'drone');
-    }
-    // the gap, a few times a second
-    if ((ghost.tick = (ghost.tick || 0) + dt) > 0.4) {
-      ghost.tick = 0;
-      const P = race.player, s = P.done ? P.finish - ghost.secs : ghostGap(ghost, P.x, P.z, P.leg, race.clock);
-      ghost.gapEl.textContent = s == null ? '—' : `${s > 0 ? '+' : '−'}${Math.abs(s).toFixed(1)}`;
-      ghost.gapEl.className = s == null ? '' : s > 0.05 ? 'down' : 'up';
-    }
-  }
+export function onFrame(race) {
   if (dr) drillFrame(race);
 }
 

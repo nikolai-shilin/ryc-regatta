@@ -187,11 +187,11 @@ addEventListener('unhandledrejection', (e) => noteError(e.reason && (e.reason.me
 document.querySelector('#gl')?.addEventListener('webglcontextlost', () => { visit.lost = 1; });
 document.querySelector('#howD')?.addEventListener('toggle', (e) => { if (e.target.open) visit.howto = 1; });
 // The visit, as it stands, each time the page is left or put away (and when the race is first under way: it loaded):
-// the races begun and finished, the minutes on the page, how to play opened, a drill or a ghost, the errors
+// the races begun and finished, the minutes on the page, how to play opened, a drill, the errors
 export function visitSend(stage) {
   if (!VISIT) return;
   const q = new URLSearchParams(location.search);
   send({ ev: 'visit', id: VISIT, visit: { stage, vid: VID, races: visit.races, finished: visit.finished, mins: Math.round(performance.now() / 6000) / 10,
-    howto: visit.howto, drill: q.get('drill') ? 1 : 0, ghost: q.get('ghost') ? 1 : 0, errors: visit.errors, lost: visit.lost,
+    howto: visit.howto, drill: q.get('drill') ? 1 : 0, errors: visit.errors, lost: visit.lost,
     ...(stage === 'loaded' && { load: Math.round(performance.now() / 100) / 10 }) } }, null);
 }
