@@ -54,8 +54,8 @@ const BAD = [
   { ...END, state: 'racing' }, { ...END, state: undefined },
   { ...END, winner: 'nobody' }, { ...END, winner: undefined }, { ...END, forfeited: 'both' }, { ...END, forfeited: undefined },
   { ...END, margin: -1 }, { ...END, margin: NaN }, { ...END, margin: Infinity }, { ...END, margin: '5' }, { ...END, margin: 86401 }, { ...END, margin: undefined },
-  { ...END, recalls: -1 }, { ...END, recalls: 10 }, { ...END, recalls: 1.5 }, { ...END, recalls: '1' }, { ...END, recalls: NaN }, { ...END, recalls: null },
-  { ...END, prep: 'X' }, { ...END, prep: 'p' }, { ...END, prep: null }, { ...END, prep: undefined },
+  { ...END, recalls: -1 }, { ...END, recalls: 10 }, { ...END, recalls: 1.5 }, { ...END, recalls: '1' }, { ...END, recalls: NaN },
+  { ...END, prep: 'X' }, { ...END, prep: 'p' }, { ...END, prep: undefined },
   { ...END, host: null }, { ...END, guest: undefined }, { ...END, host: side({ place: 0 }) }, { ...END, host: side({ place: 3 }) }, { ...END, host: side({ place: 1.5 }) }, { ...END, guest: side({ place: '1' }) },
   { ...END, host: side({ mark: 'OCS' }) }, { ...END, host: side({ mark: undefined }) },
   { ...END, host: side({ secs: -1 }) }, { ...END, host: side({ secs: NaN }) }, { ...END, guest: side({ secs: Infinity }) }, { ...END, guest: side({ secs: '300' }) }, { ...END, host: side({ secs: 86401 }) },
@@ -102,6 +102,12 @@ test('an end with nobody home: no winner, no times, a mark, no margin, is kept',
   assert.equal(rpc.calls, 1);
   assert.deepEqual(rpc.args.p_report.host, { place: null, secs: null, mark: 'DNF', pens: 0 }); assert.deepEqual(rpc.args.p_report.guest, { place: null, secs: null, mark: 'DSQ', pens: 99 });
   assert.equal(rpc.args.p_report.margin, null); assert.equal(rpc.args.p_report.forfeited, 'guest'); assert.equal(rpc.args.p_report.state, 'abandoned');
+});
+test('an abandoned end from a reloaded host, with nothing to read, is written with its nulls', async () => {
+  const none = { place: null, secs: null, mark: null, pens: null };
+  const sent = await post({ ...END, state: 'abandoned', prep: null, recalls: null, winner: null, margin: null, forfeited: null, host: none, guest: { ...none } });
+  assert.equal(sent.status, 204); assert.equal(rpc.calls, 1);
+  assert.deepEqual(rpc.args.p_report, { kind: 'end', code: 'K7M2QZ', seed: 4242, write_hash: sha256(TOKEN), state: 'abandoned', winner: null, margin: null, forfeited: null, recalls: null, prep_flag: null, host: none, guest: none });
 });
 test('every range is kept at its edges', async () => {
   for (const [venue, yacht] of [['gocek', 'jclass'], ['auckland', 'optimist']]) {
