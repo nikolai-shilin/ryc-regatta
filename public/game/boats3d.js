@@ -309,10 +309,10 @@ const MAT = {
   strap: new THREE.MeshStandardMaterial({ color: '#1d2a44', roughness: 0.8 }),
 };
 
-// the sail's layout for sailTexture: where the number, the logo and the flag sit on this class's main
-function rigOf({ span, chord, numAt, logoAt, flagAt, mark, head, tack, clew, ad, adH }) {
-  return { span, chord, numAt, numK: (2 * chord(numAt)) / span / 0.43, logoM: logoAt * span, flagM: flagAt * span, mark,
-    hd: head.clone().sub(tack), clew, ad, adH };
+// the sail's layout for sailTexture: where the number and the flag sit on this class's main (the logo takes the cloth between them)
+function rigOf({ span, chord, numAt, flagAt, mark, head, tack, clew, noAd = false }) {
+  return { span, chord, numAt, numK: (2 * chord(numAt)) / span / 0.43, flagM: flagAt * span, mark,
+    hd: head.clone().sub(tack), clew, noAd };
 }
 
 const SKINS = ['#c99272', '#e2b291', '#a36d4c', '#d8a27e', '#b98262', '#e8bd9c', '#8d5a3b', '#d39c78'];
@@ -509,7 +509,7 @@ const sport = (RS) => {
   const HEAD = new THREE.Vector3(0, HOUNDS - 0.2, MAST_Z - 0.07);
   const CLEW = new THREE.Vector3(0, 0.3, RS ? 2.15 : 2.3);
   const SPRIT = new THREE.Vector3(0, TACK.y + 0.04, hull.BOW - 1.5); // at the sprit's end
-  const rig = rigOf({ span: MASTHEAD - 0.2 - BOOM_Y, chord, numAt: 0.62, logoAt: 0.78, flagAt: 0.9, mark: 0.85, head: HEAD, tack: TACK, clew: CLEW, ad: 1.1, adH: 0.55 });
+  const rig = rigOf({ span: MASTHEAD - 0.2 - BOOM_Y, chord, numAt: 0.62, flagAt: 0.9, mark: 0.85, head: HEAD, tack: TACK, clew: CLEW });
   return { L, B, hull, MAST_Z, MAST_FOOT, MASTHEAD, HOUNDS, BOOM_Y, chord, TACK, HEAD, CLEW, SPRIT, rig };
 };
 
@@ -782,7 +782,7 @@ const DZ = (() => {
   const TACK = new THREE.Vector3(0, deckAt(0, STAY_Z) + 0.05, STAY_Z);
   const top = new THREE.Vector3(0, HOUNDS, MAST_Z - 0.06), HEAD = TACK.clone().lerp(top, 6.45 / top.distanceTo(TACK)); // a 6.5 m luff
   const CLEW = new THREE.Vector3(0, 0.22, 3.42); // from the tack: the foot 3.5 m, the clew aft of the mast by the cabin's end
-  const rig = rigOf({ span: MASTHEAD - 0.15 - BOOM_Y, chord, numAt: 0.6, logoAt: 0.78, flagAt: 0.9, mark: 0.8, head: HEAD, tack: TACK, clew: CLEW, ad: 1.2, adH: 0.55 });
+  const rig = rigOf({ span: MASTHEAD - 0.15 - BOOM_Y, chord, numAt: 0.6, flagAt: 0.9, mark: 0.8, head: HEAD, tack: TACK, clew: CLEW });
   return { L, B, hull, deckAt, CAB_F, CAB_A, CK_A, FLOOR, WOOD_T, bandHalf, bandH, coamY, roofY, TE0, KEEL_Y, STOCK, MAST_Z, BAND, BOOM_Y, MASTHEAD, HOUNDS, SPR, JUMP, KITE_H, BL, chord, STAY_Z, TACK, HEAD, CLEW, rig,
     SHEET_Z: MAST_Z + 2.3, TRAV_Z: MAST_Z + 2.3, POLE: 2.24, WINCH_Z: 1.4, TRACK: [0.15, 1.05], CAR_Z: 0.68, RUNNER_Z: 3.85 };
 })();
@@ -1057,8 +1057,8 @@ const JZ = (() => {
   const STACK = new THREE.Vector3(0, deckAt(0, -11.5) + 0.3, -11.5), STOP = new THREE.Vector3(0, HOUNDS, MAST_Z - 0.3);
   const su = STOP.clone().sub(STACK), suL = su.length(); su.normalize();
   const SHEAD = STACK.clone().addScaledVector(su, suL - 1.0), SCLEW = su.clone().multiplyScalar(0.1 * suL).addScaledVector(new THREE.Vector3(0, -su.z, su.y), 8.6);
-  const rig = rigOf({ span: MASTHEAD - 0.9 - BOOM_Y, chord, numAt: 0.62, logoAt: 0.8, flagAt: 0.9, mark: 4.2, head: HEAD, tack: TACK, clew: CLEW, ad: 5.5, adH: 2.4 });
-  const stayRig = rigOf({ span: MASTHEAD - 0.9 - BOOM_Y, chord, numAt: 0.62, logoAt: 0.8, flagAt: 0.9, mark: 4.2, head: SHEAD, tack: STACK, clew: SCLEW, ad: 0, adH: 0 });
+  const rig = rigOf({ span: MASTHEAD - 0.9 - BOOM_Y, chord, numAt: 0.62, flagAt: 0.9, mark: 4.2, head: HEAD, tack: TACK, clew: CLEW });
+  const stayRig = rigOf({ span: MASTHEAD - 0.9 - BOOM_Y, chord, numAt: 0.62, flagAt: 0.9, mark: 4.2, head: SHEAD, tack: STACK, clew: SCLEW, noAd: true });
   return { L, B, hull, deckAt, DH_F, DH_A, DH_H, dhHalf, dhTop, WELL, SKY, BUL: 0.26, TE0, HEEL_Y, STOCK, MAST_Z, MF, MASTHEAD, BOOM_Y, BL, HOUNDS, SPR, chord, TACK, FTOP, HEAD, CLEW,
     STACK, STOP, SHEAD, SCLEW, rig, stayRig, POLE: 15, WHEEL_Z: 11.3, TRAV_Z: 14.6, SHEET_Z: 13.4 + 0.0, PRIM_Z: 5.6, GRIND_Z: 6.6, LEAD_Z: 2.6, SLEAD_Z: 0.4, RUNNER_Z: 9.2 };
 })();
@@ -1436,7 +1436,7 @@ const LZ = (() => {
   const MAST_Z = hull.BOW + 1.0, MAST_FOOT = hull.deckY(MAST_Z) + 0.07, MASTHEAD = MAST_FOOT + 5.78, BOOM_Y = MAST_FOOT + 0.57, BL = 2.7, JOINT = MAST_FOOT + 2.5; // the mast's foot on the deck's 5 cm crown
   const chord = (f) => lerp(2.45, 0.15, f) + 0.12 * Math.sin(Math.PI * f);
   const span = MASTHEAD - 0.08 - BOOM_Y;
-  const rig = rigOf({ span, chord, numAt: 0.5, logoAt: 0.7, flagAt: 0.86, mark: 0.5, head: new THREE.Vector3(0, MASTHEAD, MAST_Z), tack: new THREE.Vector3(0, BOOM_Y, MAST_Z), clew: new THREE.Vector3(0, 0, BL), ad: 0.5, adH: 0.3 });
+  const rig = rigOf({ span, chord, numAt: 0.5, flagAt: 0.86, mark: 0.5, head: new THREE.Vector3(0, MASTHEAD, MAST_Z), tack: new THREE.Vector3(0, BOOM_Y, MAST_Z), clew: new THREE.Vector3(0, 0, BL) });
   return { L, B, hull, MAST_Z, MAST_FOOT, MASTHEAD, JOINT, BOOM_Y, BL, chord, span, rig, CK: [0.05, 1.36], FLOOR: 0.13, TRAV_Z: hull.STERN - 0.26, MID_Z: 1.09 }; // the boom's middle block 1.09 m from the gooseneck
 })();
 
@@ -1731,9 +1731,10 @@ const OZ = (() => {
   const luffAt = (f) => [LUFF0 + f * LUFF, 0.035], leechAt = (f) => [lerp(LUFF0, PEAK[1], f), lerp(FOOT, PEAK[0], f)];
   const chord = (f) => { const a = luffAt(f), b = leechAt(f); return Math.hypot(b[0] - a[0], b[1] - a[1]); };
   const span = (LUFF + PEAK[1] - LUFF0) / 2; // its height about where its number is, halfway between luff and leech
-  const rig = rigOf({ span, chord, numAt: 0.42, logoAt: 0.66, flagAt: 0.84, mark: 0.36, head: new THREE.Vector3(0, PEAK[1], MAST_Z + PEAK[0]), tack: new THREE.Vector3(0, LUFF0, MAST_Z), clew: new THREE.Vector3(0, 0, FOOT), ad: 0.4, adH: 0.2 });
+  const rig = rigOf({ span, chord, numAt: 0.42, flagAt: 0.84, mark: 0.36, head: new THREE.Vector3(0, PEAK[1], MAST_Z + PEAK[0]), tack: new THREE.Vector3(0, LUFF0, MAST_Z), clew: new THREE.Vector3(0, 0, FOOT) });
   rig.numK *= 0.7; // her number some 0.3 m tall, as the class has it: the wide sail would draw it half as tall again
   rig.battens = [[0.68, 0.2], [0.32, 0.2]]; // her two short battens in the leech, the lower 1.9 m down it from the peak
+  rig.at = (f, u) => { const a = luffAt(f), b = leechAt(f); return [lerp(a[1], b[1], u), lerp(a[0], b[0], u)]; }; // her cloth's rows climb to the peak: where each point of it lies, [aft, up]
   return { L, hull, section, loft, sheer, keel, hb, zp, SKIN, FLOOR_T, FLANGE, LIP, FLARE, floorAt, innerX, MAST_Z, MAST_FOOT, MASTHEAD, RAKE, BOOM_Y, BL, LUFF0, LUFF, FOOT, PEAK, SPRIT_Y, THWART_Y, DBZ, CASE_TOP, MID_Z, MID_H, BH_Z, SHEET_Z, RAT_Z, luffAt, leechAt, chord, span, rig, K_STERN, K_BOW };
 })();
 // a soft, blown-up bag: a box of w × h × l, its faces bulging and its edges and corners rounded off
@@ -2027,7 +2028,7 @@ const BV = (() => {
   const FLOOR = hull.deckY(4.5) - 0.49, CK = [COACH.za, 1.13], HELM = [5.35, 1.42], PLAT = 1.0; // the cockpit: its sole, where it starts and its half-width; where it widens for the wheels, and to what; the bathing platform's half-width
   // the logo and the flag 1.2 m wide: the furling main's head is narrow (1.5 m across where the logo goes), and her
   // number is small on it
-  const rig = rigOf({ span: MASTHEAD - 0.45 - BOOM_Y, chord, numAt: 0.6, logoAt: 0.76, flagAt: 0.88, mark: 1.2, head: HEAD, tack: TACK, clew: CLEW, ad: 2.4, adH: 1.2 });
+  const rig = rigOf({ span: MASTHEAD - 0.45 - BOOM_Y, chord, numAt: 0.6, flagAt: 0.88, mark: 1.2, head: HEAD, tack: TACK, clew: CLEW });
   return { L, B, hull, COACH, coachY, ROOF, SHEET_Z, MAST_Z, MAST_FOOT, MASTHEAD, HOUNDS, BOOM_Y, BL, SPR, chord, TACK, HEAD, CLEW, SPRIT, FLOOR, CK, HELM, PLAT, rig, WHEEL_Z: 5.95, WHEEL_X: 0.88, WINCH_Z: 4.9, WINCH_X: 1.34, FEET_Z: MAST_Z + 2.95 };
 })();
 const coamY = (z) => BV.hull.deckY(z) + BV.COACH.coam + 0.035; // the coamings' top, where the primary winches stand
@@ -2381,7 +2382,7 @@ const A = (() => {
   const CLEW = new THREE.Vector3(0, 0.25, 7.6); // from the tack: the self-tacker's foot, its clew just ahead of the mast
   const ARM = { x: 2.05, y: 0.52, z: hull.STERN - 11, len: 5.3 }; // the foil arms' cant axes, inside the hull, and their length
   const PODS = [[1.9, 3.3], [3.8, 5.0], [5.6, 8.6]]; // each side: the helm's, the trimmer's, the two cyclors' in tandem
-  const rig = rigOf({ span: MASTHEAD - 0.4 - FOOT_Y, chord, numAt: 0.5, logoAt: 0.7, flagAt: 0.84, mark: 2.6, head: HEAD, tack: TACK, clew: CLEW, ad: 3.6, adH: 1.6 });
+  const rig = rigOf({ span: MASTHEAD - 0.4 - FOOT_Y, chord, numAt: 0.5, flagAt: 0.84, mark: 2.6, head: HEAD, tack: TACK, clew: CLEW });
   return { L, B, hull, MAST_Z, MAST_FOOT, MASTHEAD, RAKE, rz, FOOT_Y, chord, FORESTAY, TACK, HEAD, CLEW, ARM, PODS, rig, TRAV_Z: hull.STERN - 0.9 };
 })();
 

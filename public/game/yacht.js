@@ -602,10 +602,17 @@ function kiteSeams(W, H) {
   for (let k = 1; k < 6; k++) { const u = (k / 6) * 0.5; seams.push([[0, H], at(0.8125, u)], [[W, H], at(0.8125, 1 - u)]); } // out of the tack and the clew
   return seams;
 }
+// a picture drawn at w × h on a canvas of its own, to be cut into rows or strips: an SVG cut straight from the image would
+// be drawn at its own small size
+function sharpPicture(img, w, h) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, w, h);
+  return c;
+}
 // a canvas texture for a sail; u runs luff → leech, v foot → head
-// rig: another class's sails (boats3d.js) — the main's luff (span, m) and its chord up it, where the logo and the flag
-// go on it (m up the luff) and how wide, where the number goes (0 the foot … 1 the head), and the jib's head and clew
-// from its tack with the ad's box; this boat's own when left out
+// rig: another class's sails (boats3d.js) — the main's luff (span, m) and its chord up it, where the flag goes on it
+// (m up the luff) and how wide, where the number goes (0 the foot … 1 the head), and the jib's head and clew from its
+// tack (noAd: a headsail that carries no ad); this boat's own when left out
 export function sailTexture(kind, look, rig = null) {
   const R = rig || RIG();
   const W = 512, H = kind === 'main' ? 1024 : kind === 'jib' ? 1536 : 512; // the jib tall enough for the ad on it to read
@@ -628,12 +635,38 @@ export function sailTexture(kind, look, rig = null) {
     x.fillStyle = 'rgba(0,0,0,.3)'; x.fillRect(0, 0, 5, H); x.fillRect(W - 5, 0, 5, H); x.fillRect(0, H - 5, W, 5);
   } else {
     x.fillStyle = look.cloth; x.fillRect(0, 0, W, H);
-    // draws in metres on the cloth: clothAt(canvas, luff length, chord at f, where across the chord) gives onCloth(m, draw),
-    // draw(canvas) centred m metres up the luff with the canvas scaled by the chord there, so a mark keeps its shape however
-    // much the sail has narrowed
-    const clothAt = (ctx, span, chordAt, u) => (m, draw) => {
-      const f = m / span;
-      ctx.save(); ctx.translate(W * u, H * (1 - f)); ctx.scale(W / chordAt(f), H / span); draw(ctx); ctx.restore();
+    // where a point of the cloth (f up the luff, u along the chord) lies on the flat sail, in metres: [aft, up]. A sail
+    // whose rows don't run level from the luff (the Optimist's climb to her sprit's peak) brings a map of its own (rig.at)
+    const clothPoint = R.at || ((f, u) => [u * R.chord(f), f * R.span]);
+    // a picture (its ImageData) level and upright on the sail, its middle at (zc, yc) in clothPoint's metres, w × h m in
+    // size: each pixel of the canvas looks up what lies at its point of the sail, so nothing leans however the cloth
+    // narrows or its rows run. s: 1 the front face, −1 the back, whose canvas is read mirrored and seen from the other side
+    const markOn = (ctx, s, pic, zc, yc, w, h) => {
+      const N = 64, padZ = (2 * R.chord(0)) / N, padY = (2 * R.span) / N;
+      let u0 = 1, u1 = 0, f0 = 1, f1 = 0;
+      for (let a = 0; a <= N; a++) for (let b = 0; b <= N; b++) {
+        const [z, y] = clothPoint(b / N, a / N);
+        if (Math.abs(z - zc) > w / 2 + padZ || Math.abs(y - yc) > h / 2 + padY) continue;
+        u0 = Math.min(u0, a / N); u1 = Math.max(u1, a / N); f0 = Math.min(f0, b / N); f1 = Math.max(f1, b / N);
+      }
+      if (u1 < u0) return;
+      const i0 = Math.max(0, Math.floor(W * (s > 0 ? u0 : 1 - u1)) - 8), i1 = Math.min(W, Math.ceil(W * (s > 0 ? u1 : 1 - u0)) + 8);
+      const j0 = Math.max(0, Math.floor(H * (1 - f1)) - 16), j1 = Math.min(H, Math.ceil(H * (1 - f0)) + 16), bw = i1 - i0, bh = j1 - j0;
+      const out = new ImageData(bw, bh), o = out.data, { data: d, width: pw, height: ph } = pic;
+      for (let j = 0; j < bh; j++) for (let i = 0; i < bw; i++) {
+        const u = (i0 + i + 0.5) / W, [z, y] = clothPoint(1 - (j0 + j + 0.5) / H, s > 0 ? u : 1 - u);
+        const px = ((s * (z - zc)) / w + 0.5) * pw - 0.5, py = ((yc - y) / h + 0.5) * ph - 0.5;
+        if (px < -0.5 || py < -0.5 || px > pw - 0.5 || py > ph - 0.5) continue;
+        const x0 = clamp(Math.floor(px), 0, pw - 1), y0 = clamp(Math.floor(py), 0, ph - 1), x1 = Math.min(x0 + 1, pw - 1), y1 = Math.min(y0 + 1, ph - 1), fx = clamp(px - x0, 0, 1), fy = clamp(py - y0, 0, 1);
+        let al = 0, r = 0, g = 0, b = 0;
+        for (let k = 0; k < 4; k++) { // weighed by their alpha, so a soft edge takes no colour from the clear pixels beside it
+          const q = ((k & 2 ? y1 : y0) * pw + (k & 1 ? x1 : x0)) * 4, e = (d[q + 3] * (k & 1 ? fx : 1 - fx) * (k & 2 ? fy : 1 - fy));
+          al += e; r += d[q] * e; g += d[q + 1] * e; b += d[q + 2] * e;
+        }
+        if (al > 0) { const q = (j * bw + i) * 4; o[q] = r / al; o[q + 1] = g / al; o[q + 2] = b / al; o[q + 3] = al; }
+      }
+      const oc = document.createElement('canvas'); oc.width = bw; oc.height = bh; oc.getContext('2d').putImageData(out, 0, 0);
+      ctx.drawImage(oc, i0, j0);
     };
     // the country flag, its full SAIL_MARK m wide and 3:2, centred m metres up the luff and z metres aft of it: drawn a
     // row of the canvas at a time, each row scaled by the chord there, so it comes out an upright rectangle on the sail
@@ -643,7 +676,14 @@ export function sailTexture(kind, look, rig = null) {
       if (!img) return;
       const w = R.mark, h = w / 1.5, iw = 300, ih = 200;
       const fc = document.createElement('canvas'); fc.width = iw; fc.height = ih; // the flag at a size to slice (an SVG may have none)
-      fc.getContext('2d').drawImage(img, 0, 0, iw, ih);
+      const fx = fc.getContext('2d'); fx.drawImage(img, 0, 0, iw, ih);
+      if (R.at) { // rows that don't run level: laid on the sail by its own map
+        fx.strokeStyle = 'rgba(0,0,0,.22)'; fx.lineWidth = 3; fx.strokeRect(1.5, 1.5, iw - 3, ih - 3);
+        const [zc, yc] = clothPoint(m / R.span, z / R.chord(m / R.span)), pic = fx.getImageData(0, 0, iw, ih);
+        for (const [ctx, s] of [[x, 1], [back, -1]]) markOn(ctx, s, pic, zc, yc, w, h);
+        t.needsUpdate = true; t.back.needsUpdate = true;
+        return;
+      }
       const j0 = Math.round(H * (1 - (m + h / 2) / R.span)), j1 = Math.round(H * (1 - (m - h / 2) / R.span));
       for (const [ctx, s] of [[x, 1], [back, -1]]) for (let j = j0 - 1; j <= j1; j++) {
         const f = 1 - (j + 0.5) / H, k = W / R.chord(f), dw = w * k, x0 = s > 0 ? (z - w / 2) * k : W - (z + w / 2) * k, edge = j < j0 || j === j1;
@@ -694,45 +734,87 @@ export function sailTexture(kind, look, rig = null) {
       // battens: the top two full length, the rest from the leech (or the class's own: rig.battens)
       x.fillStyle = look.batten;
       (R.battens || MAIN_BATTENS).forEach(([v, len]) => x.fillRect(W * (1 - len), H * (1 - v) - 5, W * len, 10));
-      // the logo and the country flag above the number, the same width on the cloth (SAIL_MARK m), evenly spaced between
-      // the number and the top batten. Where the head is too narrow for the flag it comes down to where it fits, and the
-      // logo with it, kept a third of the flag's width below it
-      // The back face gets a canvas of its own (t.back, the cloth as drawn so far), for the flag (flagAt)
+      // from the head down: the country flag (where the head is too narrow for it, it comes down to where it fits), the
+      // number right under it, and the admin's logo as large as the cloth below them allows
+      // The back face gets a canvas of its own (t.back, the cloth as drawn so far), for the flag and the logo
       const cb = document.createElement('canvas'); cb.width = W; cb.height = H;
       const xb = cb.getContext('2d'); xb.drawImage(c, 0, 0);
       sideB = new THREE.CanvasTexture(cb);
-      const [fm, fz] = flagPlace(R.flagM), logoM = look.flag ? Math.min(R.logoM, fm - R.mark / 3 - R.mark * (0.5 + 1 / 3)) : R.logoM;
-      // the admin's logo, on every boat: the number waits for it, as with a logo it stands alone and without one under
-      // her letters, squashed to come out the right shape on the sail
-      sailAd('main').then((img) => {
-        for (const ctx of [x, xb]) {
-          ctx.save(); ctx.translate(W * 0.47, H * (1 - R.numAt)); ctx.scale(1, 0.44 * R.numK);
-          ctx.fillStyle = look.ink; ctx.font = '900 128px Carlito, Lato, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          if (img) ctx.fillText(look.num, 0, 120);
-          else { ctx.fillText(look.nat, 0, -82); ctx.fillText(look.num, 0, 70); }
-          ctx.restore();
-          if (img) clothAt(ctx, R.span, R.chord, 0.47)(logoM, (c2) => drawContain(c2, img, 0, 0, R.mark, R.mark)); // a wide logo fills the width, a square one is SAIL_MARK square
+      const [fm, fz] = flagPlace(R.flagM);
+      // where the logo stands between lo and hi metres up the luff, its whole width on the cloth at its top edge, where the
+      // sail is narrowest: the largest it can be goes right down by the boom for a wide logo, so it stands as high as it can
+      // at nearly that size. Gives its middle (m up the luff, z aft of it) and its size in metres
+      const logoPlace = (aspect, lo, hi) => {
+        const MARGIN = 0.05, step = R.span / 200, chordAt = (m) => R.chord(Math.min(1, m / R.span));
+        const fit = (top) => Math.min(chordAt(top) * (1 - 2 * MARGIN), (top - lo) * aspect);
+        let most = 0, top = hi;
+        for (let m = hi; m > lo; m -= step) most = Math.max(most, fit(m));
+        while (top > lo && fit(top) < 0.94 * most) top -= step;
+        const w = fit(top), h = w / aspect, m = top - h / 2, ct = chordAt(top);
+        return { w, h, m, z: clamp(0.47 * chordAt(m), ct * MARGIN + w / 2, ct * (1 - MARGIN) - w / 2) };
+      };
+      // the logo, laid out as the flag is: a row of the canvas at a time, each scaled by the chord there, so it comes out
+      // an upright rectangle on the sail however much the sail narrows across its height, on both faces
+      const logoAt = (img, { m, z, w, h }) => {
+        const j0 = Math.round(H * (1 - (m + h / 2) / R.span)), j1 = Math.round(H * (1 - (m - h / 2) / R.span));
+        const pic = sharpPicture(img, 1024, j1 - j0);
+        if (R.at) { // rows that don't run level: laid on the sail by its own map
+          const [zc, yc] = clothPoint(m / R.span, z / R.chord(m / R.span)), data = pic.getContext('2d').getImageData(0, 0, pic.width, pic.height);
+          for (const [ctx, s] of [[x, 1], [xb, -1]]) markOn(ctx, s, data, zc, yc, w, h);
+          return;
         }
+        for (const [ctx, s] of [[x, 1], [xb, -1]]) for (let j = j0; j < j1; j++) {
+          const k = W / R.chord(1 - (j + 0.5) / H);
+          ctx.drawImage(pic, 0, j - j0, 1024, 1, s > 0 ? (z - w / 2) * k : W - (z + w / 2) * k, j, w * k, 1);
+        }
+      };
+      // the admin's logo, on every boat: the number waits for it, as with a logo it stands alone, under the flag, and
+      // without one under her letters; set on a canvas of their own and laid on the sail level and upright (markOn), as
+      // wide on the cloth wherever they go, and kept on the cloth where the sail is narrow
+      sailAd('main').then((img) => {
+        const numHalf = 0.022 * R.numK * R.span, gap = R.mark / 6, numM = fm - R.mark / 3 - gap - numHalf;
+        const numF = img ? numM / R.span : R.numAt, wide = R.chord(R.numAt) / R.chord(numF);
+        const spot = img && logoPlace((img.naturalWidth || 1) / (img.naturalHeight || 1), 0.16 * R.span, numM - numHalf - gap);
+        const numU = img ? fz / R.chord(numF) : 0.47;
+        const lines = img ? [[look.num, 0]] : [[look.nat, -82], [look.num, 70]], K = 0.44 * R.numK, top = lines[0][1] - 80, bottom = lines[lines.length - 1][1] + 80;
+        const tc = document.createElement('canvas'), tx = tc.getContext('2d', { willReadFrequently: true }), FONT = '900 128px Carlito, Lato, Arial, sans-serif';
+        tx.font = FONT;
+        const widest = Math.max(...lines.map(([s]) => tx.measureText(s).width)), tw = Math.ceil(img ? Math.min(widest, (W * 0.84) / wide) : widest) + 8;
+        tc.width = tw; tc.height = Math.ceil((bottom - top) * K);
+        tx.scale(1, K); tx.translate(tw / 2, -top); tx.fillStyle = look.ink; tx.font = FONT; tx.textAlign = 'center'; tx.textBaseline = 'middle';
+        for (const [s, ly] of lines) tx.fillText(s, 0, ly, tw - 8);
+        const mx = R.chord(R.numAt) / W, my = (R.span / H) * K, [z0, y0] = clothPoint(numF, numU), pic = tx.getImageData(0, 0, tc.width, tc.height);
+        for (const [ctx, s] of [[x, 1], [xb, -1]]) markOn(ctx, s, pic, z0, y0 - ((top + bottom) / 2) * my, tw * mx, (bottom - top) * my);
+        if (img) logoAt(img, spot);
         t.needsUpdate = true; t.back.needsUpdate = true;
       });
       if (look.flag) flagAt(fm, fz, xb);
     } else {
       x.fillStyle = look.batten; x.fillRect(W * 0.7, H * 0.35, W * 0.3, 16); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 16);
-      // the ad, low on the jib under the battens, at most JIB_AD wide and JIB_AD_H tall. The cloth maps (u along the
-      // chord, f up the luff) to P = head·f + clew·(1 − f)·u in the sail's plane, a grid sheared by the raked luff and
-      // tapering to the head: the canvas is set to that map's inverse at the ad's middle (f0 up, about halfway along), so the
-      // logo stands upright, level with the deck, and comes out its own shape on the sail.
+      // the ad, as large as the jib allows between a little above the foot and just over half way up the luff, its top
+      // corners clear of the luff and the leech. The cloth maps (u along the chord, f up the luff) to
+      // P = head·f + clew·(1 − f)·u in the sail's plane, a grid sheared by the raked luff and tapering to the head: the ad
+      // is drawn in level strips, the canvas set to that map's inverse at each strip's middle, so it stands upright, level
+      // with the deck, and comes out its own shape on the sail however much the jib narrows across its height.
       // The back face reads the canvas mirrored (u → 1 − u), which would turn the shear the wrong way and lean the ad: it
       // gets a canvas of its own (t.back, the cloth as drawn so far), the ad on it drawn with the shear the other way round.
       const cb = document.createElement('canvas'); cb.width = W; cb.height = H; cb.getContext('2d').drawImage(c, 0, 0);
       const tb = new THREE.CanvasTexture(cb);
       sailAd('jib').then((img) => {
-        if (!img) return;
-        const f0 = 0.25, u0 = 0.52, hd = R.hd, CL = R.clew;
-        const a = CL.z * (1 - f0), b = CL.y * (1 - f0), cc = hd.z - CL.z * u0, d = hd.y - CL.y * u0, det = a * d - b * cc;
-        for (const [ctx, s] of [[x, 1], [cb.getContext('2d'), -1]]) {
-          ctx.save(); ctx.translate(W * (s > 0 ? u0 : 1 - u0), H * (1 - f0)); ctx.transform((W * d) / det, (s * H * b) / det, (s * W * cc) / det, (H * a) / det, 0, 0);
-          drawContain(ctx, img, 0, 0, R.ad, R.adH);
+        if (!img || R.noAd) return;
+        const hd = R.hd, CL = R.clew, aspect = (img.naturalWidth || 1) / (img.naturalHeight || 1), clear = 0.035 * CL.z, y0 = 0.09 * hd.y;
+        const luffZ = (y) => (hd.z * y) / hd.y, leechZ = (y) => CL.z + ((hd.z - CL.z) * (y - CL.y)) / (hd.y - CL.y);
+        let w = 0, h = 0, zc = 0, yc = 0;
+        for (let top = y0; top < 0.6 * hd.y; top += hd.y / 200) {
+          const fit = Math.min(leechZ(top) - luffZ(top) - 2 * clear, (top - y0) * aspect);
+          if (fit > w) { w = fit; h = w / aspect; zc = (luffZ(top) + leechZ(top)) / 2; yc = top - h / 2; }
+        }
+        const STRIPS = 40, PW = 1024, PH = Math.round(PW / aspect), pic = sharpPicture(img, PW, PH), det0 = hd.z * CL.y - hd.y * CL.z;
+        for (const [ctx, s] of [[x, 1], [cb.getContext('2d'), -1]]) for (let k = 0; k < STRIPS; k++) {
+          const y = yc + h / 2 - ((k + 0.5) * h) / STRIPS, f = (zc * CL.y - CL.z * y) / det0, u = (hd.z * y - hd.y * zc) / det0 / (1 - f);
+          const a = CL.z * (1 - f), b = CL.y * (1 - f), cc = hd.z - CL.z * u, d = hd.y - CL.y * u, det = a * d - b * cc, dh = h / STRIPS;
+          ctx.save(); ctx.translate(W * (s > 0 ? u : 1 - u), H * (1 - f)); ctx.transform((W * d) / det, (s * H * b) / det, (s * W * cc) / det, (H * a) / det, 0, 0);
+          ctx.drawImage(pic, 0, (k * PH) / STRIPS, PW, PH / STRIPS, -w / 2, -dh * 0.56, w, dh * 1.12); // (a hair over, so no seam shows between strips)
           ctx.restore();
         }
         t.needsUpdate = true; tb.needsUpdate = true;
@@ -1768,15 +1850,15 @@ const SPREADER = 7.6, SPR_L = 1.6; // her one set of spreaders: 6.5 m above the 
 const BOOM_L = 4.85, SHEET_Z = 4.35; // the boom, and the traveller across the aft cockpit its mainsheet comes down to
 const SHEET_B = BOOM_L - 0.2; // the mainsheet's block, this far along the boom: over the traveller, the boom drooping with the rake
 // the square-top main: its chord at fraction f of the luff (narrowing to a wide head, with roach), the luff's length
-// (the cloth runs from BOOM_Y + 0.08 to MASTHEAD − 0.3), and the width of the logo and the flag on it, in metres
+// (the cloth runs from BOOM_Y + 0.08 to MASTHEAD − 0.3), and the width of the flag on it, in metres
 const mainChord = (f) => lerp(4.75, 1.4, f) + 0.45 * Math.sin(Math.PI * f);
 const MAIN_SPAN = MASTHEAD - 0.3 - BOOM_Y, SAIL_MARK = 1.5;
 // the forestay comes down to the deck 0.6 m aft of the stem, at the inboard end of the bowsprit's plate (the deck plan)
 const TACK_Z = BOW_Z + 0.6, TACK = new THREE.Vector3(0, deckY(TACK_Z) + 0.05 + 0.06, TACK_Z);
 const HEAD = new THREE.Vector3(...raked(0, HOUNDS - 0.3, MAST_Z - 0.12));
-// the jib's clew from the tack (the foot), and the box the ad on the jib fits in, in metres
+// the jib's clew from the tack (the foot), in metres
 // (a 106% genoa of 31 m²: its clew 0.6 m aft of the mast)
-const JIB_CLEW = new THREE.Vector3(0, 0.42, 4.75), JIB_AD = 2, JIB_AD_H = 1;
+const JIB_CLEW = new THREE.Vector3(0, 0.42, 4.75);
 const SPRIT = new THREE.Vector3(0, sheerAt(1) + 0.12, BOW_Z - 1.1); // the fixed bowsprit's end, 1.1 m out (the deck plan)
 const KITE_HEAD = raked(0, MASTHEAD - 0.4, MAST_Z - 0.15); // the gennaker's halyard, just under the masthead
 const GTRACK = [[1.0, 0.75], [1.45, 0.5]]; // the transverse genoa tracks on the side decks, inboard end to outboard, just aft of the clew
@@ -1786,7 +1868,7 @@ const PRIMARY = [1.22, 2.82]; // the jib sheets' winches (ST46), on the side dec
 const HANDLE_R = 0.25; // a winch handle's reach, the socket to the grip
 const BACKSTAY_W = [1.4, 3.74]; // the backstays' winches (ST40), aft of the primaries at the helm's hand
 // this boat's sails, as sailTexture lays out the marks on them (numAt, numK: the number's height up the main and its size)
-const RIG = () => ({ span: MAIN_SPAN, chord: mainChord, logoM: 9.8, flagM: 11.56, mark: SAIL_MARK, numAt: 0.64, numK: 1, hd: HEAD.clone().sub(TACK), clew: JIB_CLEW, ad: JIB_AD, adH: JIB_AD_H });
+const RIG = () => ({ span: MAIN_SPAN, chord: mainChord, flagM: 11.56, mark: SAIL_MARK, numAt: 0.64, numK: 1, hd: HEAD.clone().sub(TACK), clew: JIB_CLEW });
 
 export class BoatView {
   constructor({ look = LOOKS.player, label = null, player = false }) {
