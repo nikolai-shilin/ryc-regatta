@@ -14,6 +14,8 @@ const TAU = Math.PI * 2;
 const rnd = (a, b) => a + Math.random() * (b - a);
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const gauss = () => { let u = 0; while (!u) u = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * Math.random()); };
+// how often the sounds that follow the race are given new values (s): they glide over 60 ms or more, so a screen of 60 or 120 Hz needn't send each frame's
+export const AUDIO_TICK = 0.03;
 
 // a buffer's channels to an RMS of `rms`
 function level(buf, rms = 0.25) {
@@ -133,11 +135,13 @@ export function createSfx(ctx, master, bus = {}) {
     a.connect(lp).connect(body).connect(out); b.connect(bp).connect(hiss).connect(out);
     c.connect(m1).connect(moan); c.connect(m2).connect(moan); moan.connect(out);
     a.start(0, rnd(0, 3)); b.start(0, rnd(0, 3)); c.start(0, rnd(0, 3));
-    let slow = 0, fast = 0;
+    let slow = 0, fast = 0, last = -1, held = 0;
     return {
       // aws in knots; pan, where the apparent wind comes from (−1 left, 1 right); k the Sea setting (0 paused)
       update(aws, pan, k, dt) {
         const now = ctx.currentTime, s = Math.min(aws || 0, 35);
+        held += dt; if (now - last < AUDIO_TICK) return;
+        last = now; dt = held; held = 0;
         // a gust's swell, over a couple of seconds; and the eddies round your head, quicker
         slow += -slow / 2.2 * dt + Math.sqrt(dt) * 0.5 * gauss(); slow = clamp(slow, -1.4, 1.4);
         fast += -fast / 0.22 * dt + Math.sqrt(dt) * 0.55 * gauss(); fast = clamp(fast, -1, 1);
@@ -161,10 +165,11 @@ export function createSfx(ctx, master, bus = {}) {
     const bp = node.filter('bandpass', 700, 0.6);
     const a = node.src(pink); a.connect(bp).connect(rush).connect(out); a.start(0, rnd(0, 3));
     out.connect(master);
+    let last = -1;
     return {
       // v in m/s, surfing or not, lap 0..1 (the hull working in the sea; unused now), k the Sea setting (0 paused)
       update(v, surf, lap, k) {
-        const now = ctx.currentTime;
+        const now = ctx.currentTime; if (now - last < AUDIO_TICK) return; last = now;
         rush.gain.setTargetAtTime(k * Math.min(0.22, v / 34 + (surf ? 0.07 : 0)), now, 0.25);
         bp.frequency.setTargetAtTime(420 + 120 * Math.min(v, 14), now, 0.3);
       },
@@ -194,12 +199,15 @@ export function createSfx(ctx, master, bus = {}) {
     s.connect(bp).connect(am).connect(g).connect(boat); s.start(0, rnd(0, 3)); lfo.start();
     return { g, lfo };
   })();
-  let flogPh = 0;
+  let flogPh = 0, flutterT = -1;
   // every frame, your own sails: flog 0..1 (how hard they're flogging), aws knots, k (0 paused)
   function sails(flog, aws, k, dt) {
     const now = ctx.currentTime;
-    flutter.g.gain.setTargetAtTime(k * 0.11 * Math.min(1, flog * 2.2) * (1 - 0.6 * clamp((flog - 0.5) * 2, 0, 1)), now, 0.08);
-    flutter.lfo.frequency.setTargetAtTime(13 + 0.4 * Math.min(aws, 30), now, 0.3);
+    if (now - flutterT >= AUDIO_TICK) {
+      flutterT = now;
+      flutter.g.gain.setTargetAtTime(k * 0.11 * Math.min(1, flog * 2.2) * (1 - 0.6 * clamp((flog - 0.5) * 2, 0, 1)), now, 0.08);
+      flutter.lfo.frequency.setTargetAtTime(13 + 0.4 * Math.min(aws, 30), now, 0.3);
+    }
     const before = Math.floor(flogPh / Math.PI);
     flogPh += dt * TAU * (1.4 + 0.07 * Math.min(aws || 0, 30)) * rnd(0.85, 1.15);
     if (k && flog > 0.15 && Math.floor(flogPh / Math.PI) !== before) crack(k * 0.65 * flog * rnd(0.55, 1), rnd(-0.15, 0.15), boat, now + rnd(0, 0.02));

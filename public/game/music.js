@@ -62,7 +62,7 @@ const TRACKS = {
     hit: [149.054, 0.9],
   },
 };
-const ONE_SHOT = { build: { then: 'race', at: 4 }, finale: { then: 'calm', at: 0 } }; // and where they lead on to
+const ONE_SHOT = { build: { then: 'race', at: 4 }, finale: { then: 'calm', at: 0, quiet: { racing: 0.45, groove: 0.6, openwater: 1.1 } } }; // and where they lead on to (quiet: the seconds of a track's ending that are only its last ring, which the next piece comes in over)
 // which loop plays: by the mood, and in it by the intensity
 export function piece(mood, int) {
   if (mood === 'dark' || mood === 'lose') return 'dark';
@@ -107,7 +107,7 @@ export function createMusic(ctx, out) {
   const level = ctx.createGain(); level.gain.value = 0; level.connect(duck);
 
   const S = { int: 0.2, ten: 0.2, tInt: 0.2, tTen: 0.2, mood: 'calm', pend: null, cand: null, candT: 0 };
-  let style = null, cur = null, paused = false, lastSting = -1e9, breathUntil = 0;
+  let style = null, cur = null, paused = false, lastSting = -1e9, breathUntil = 0, voiceT = -1e9, ducked = null;
   const M = { volume: 0.5 };
 
   const newBus = () => { const bus = ctx.createGain(); bus.gain.value = 1; bus.connect(level); return bus; };
@@ -131,7 +131,7 @@ export function createMusic(ctx, out) {
   // Each bar is its own source, faded in and out over X either side of its bar lines, so the next bar (or another
   // piece's) takes over on the line. A loop changes on its four-bar phrases; a moment that can't wait cuts in at once.
   // A track's sound runs through its own lowpass and out to its bus, so a change of track crossfades.
-  const X = 0.015, R = { T: null, starts: null, lp: null, out: null, name: 'calm', k: 0, nextT: 0, cue: null, live: [], built: false };
+  const X = 0.015, R = { T: null, starts: null, lp: null, out: null, name: 'calm', k: 0, nextT: 0, cue: null, live: [], built: false, line: 0, lineName: null };
   const bufs = {}, shifts = {}, loading = {}, starts = {};
   for (const [id, T] of Object.entries(TRACKS)) { // each bar's start in its file
     starts[id] = {};
@@ -160,36 +160,46 @@ export function createMusic(ctx, out) {
     const live = R.live, v = { s, c, t, end: t + len }; live.push(v); s.onended = () => { const i = live.indexOf(v); if (i >= 0) live.splice(i, 1); };
     return v;
   }
-  // everything playing or queued fades out over X either side of t
+  const halt = (v, t) => { try { v.s.stop(t); } catch (e) {} };
+  // everything playing or queued fades out over X either side of t, and stops there
   function cutAt(t) {
-    for (const v of R.live) if (v.end > t - X) { v.c.gain.cancelScheduledValues(0); v.c.gain.setValueAtTime(1, Math.max(now(), t - X)); v.c.gain.linearRampToValueAtTime(0, Math.max(now(), t - X) + 2 * X); }
+    for (const v of R.live) if (v.end > t - X) { const from = Math.max(now(), t - X); v.c.gain.cancelScheduledValues(0); v.c.gain.setValueAtTime(1, from); v.c.gain.linearRampToValueAtTime(0, from + 2 * X); halt(v, from + 2 * X + 0.01); }
   }
   // a piece from bar k, at t (now, if not given): what's playing gives way
-  function cue(name, k = 0, t = now() + 0.03) { cutAt(t); R.cue = { name, k, at: t }; if (R.nextT > t) R.nextT = t; }
-  // the tape stops: what's playing slows to a growl and dies away, then the next piece
+  function cue(name, k = 0, t = now() + 0.03) { cutAt(t); R.cue = { name, k, at: t }; R.line = 0; if (R.nextT > t) R.nextT = t; }
+  // the tape stops: what's playing slows to a growl and dies away, and halfway down the next piece comes in under it
   function tapeStop(then, dur = 0.6) {
-    const n = now();
+    const n = now(), at = n + dur / 2;
     for (const v of R.live) {
-      if (v.t <= n) { v.s.playbackRate.setValueAtTime(1, n); v.s.playbackRate.exponentialRampToValueAtTime(0.25, n + dur); v.c.gain.setValueAtTime(1, n); v.c.gain.linearRampToValueAtTime(0, n + dur); }
-      else v.c.gain.setValueAtTime(0, n);
+      if (v.t <= n) { v.s.playbackRate.setValueAtTime(1, n); v.s.playbackRate.exponentialRampToValueAtTime(0.25, n + dur); v.c.gain.setValueAtTime(1, n); v.c.gain.linearRampToValueAtTime(0, n + dur); halt(v, n + dur + 0.02); }
+      else { v.c.gain.setValueAtTime(0, n); halt(v, n); }
     }
-    R.cue = { name: then, k: 0, at: n + dur }; R.nextT = n + dur;
+    R.cue = { name: then, k: 0, at }; R.nextT = at; R.line = 0;
   }
-  // ---------- the clock: bars are scheduled a quarter second ahead, from the game's frames ----------
+  // ---------- the clock: bars are queued further ahead than the page is ever likely to stall, from the game's frames ----------
+  // (the audio thread plays what's queued whatever the page is doing: a frame held up by shaders compiling or a slow
+  // phone's garbage collection is not heard. Anything that changes the music cuts the queue at the moment it changes.)
+  const AHEAD = 2.5;
   function schedule() {
     if (!buf()) return;
-    const until = now() + 0.25, T = R.T;
+    const until = now() + AHEAD, T = R.T;
     if (R.nextT < now() - 0.5) R.nextT = now() + 0.05; // after a stall (a hidden tab): pick up from now
+    // a mood that turned after the next phrase line was queued still takes that line
+    if (S.pend && !R.cue && R.line > now() + 0.1) {
+      S.mood = S.pend; S.pend = null;
+      const next = piece(S.mood, S.tInt); if (next !== R.lineName) cue(next, 0, R.line);
+    }
     while (R.nextT < until) {
       if (R.cue && R.nextT >= R.cue.at - 0.002) { R.name = R.cue.name; R.k = R.cue.k; R.nextT = R.cue.at; R.cue = null; }
       else if (R.k % 4 === 0 && !ONE_SHOT[R.name]) { // a phrase line: the mood that's waiting, and the loop for it
         if (S.pend) { S.mood = S.pend; S.pend = null; }
         const want = piece(S.mood, S.tInt); if (want !== R.name) { R.name = want; R.k = 0; }
+        R.line = R.nextT; R.lineName = R.name;
       }
       const len = T[R.name][1][R.k], v = clip(R.starts[R.name][R.k], len, R.nextT);
       if (R.cue && R.cue.at < v.end - X) { cutAt(R.cue.at); R.nextT = R.cue.at; continue; }
       R.nextT = v.end; R.k++;
-      if (R.k >= T[R.name][1].length) { const o = ONE_SHOT[R.name]; if (o) { R.name = o.then; R.k = o.at; } else R.k = 0; }
+      if (R.k >= T[R.name][1].length) { const o = ONE_SHOT[R.name]; if (o) { R.nextT -= o.quiet?.[style] ?? 0; R.name = o.then; R.k = o.at; } else R.k = 0; }
     }
     S.int = S.tInt; S.ten = S.tTen;
   }
@@ -229,7 +239,7 @@ export function createMusic(ctx, out) {
       R.T = TRACKS[id]; R.starts = starts[id];
       R.lp = ctx.createBiquadFilter(); R.lp.type = 'lowpass'; R.lp.frequency.value = 20000; R.lp.Q.value = 0.5;
       R.out = ctx.createGain(); R.out.gain.value = 1.1; R.lp.connect(R.out); R.out.connect(cur.bus);
-      R.name = piece(S.mood, S.tInt); R.k = 0; R.cue = null; R.built = false; R.nextT = now() + 0.08;
+      R.name = piece(S.mood, S.tInt); R.k = 0; R.cue = null; R.built = false; R.line = 0; R.nextT = now() + 0.08;
       load(id); if (buf()) setLevel(paused ? 0 : M.volume, 0.5);
     },
     // what direct() said: the dials ease there, the mood waits for the phrase line
@@ -243,10 +253,13 @@ export function createMusic(ctx, out) {
     pause(v) { if (v === paused) return; paused = v; setLevel(v ? 0 : M.volume, v ? 0.25 : 0.8); },
     // how loud the music is (Settings › Music volume): its level, eased there
     setVolume(v) { if (v === M.volume) return; M.volume = v; if (buf() && !paused) setLevel(v, 0.3); },
-    // the voices: v 0..1, how loud a voice is now (main.js measures them); the music bows out under them
+    // the voices: v 0..1, how loud a voice is now (main.js measures them); the music bows out under them, and stays
+    // down through the gaps between the words
     voices(v) {
-      if (now() < breathUntil) return;
-      duck.gain.setTargetAtTime(v > 0.02 ? 0.35 : 1, now(), v > 0.02 ? 0.06 : 0.5);
+      const n = now(); if (n < breathUntil) return;
+      if (v > 0.02) voiceT = n;
+      const down = n - voiceT < 0.4; if (down === ducked) return;
+      ducked = down; duck.gain.setTargetAtTime(down ? 0.35 : 1, n, down ? 0.06 : 0.5);
     },
     // the build's last bars, dur seconds of them, so its drop lands on the gun
     riser(dur) {
@@ -256,12 +269,12 @@ export function createMusic(ctx, out) {
       if (j < drop) { cue('build', j, now() + dur - s); R.built = true; }
     },
     // half a second of near silence before the gun, so the gun lands
-    breath(dur = 0.5) { breathUntil = now() + dur + 0.6; duck.gain.cancelScheduledValues(now()); duck.gain.setTargetAtTime(0.08, now(), 0.05); duck.gain.setTargetAtTime(1, now() + dur + 0.5, 0.05); },
+    breath(dur = 0.5) { breathUntil = now() + dur + 0.6; ducked = null; duck.gain.cancelScheduledValues(now()); duck.gain.setTargetAtTime(0.08, now(), 0.05); duck.gain.setTargetAtTime(1, now() + dur + 0.5, 0.05); },
     // an accent: 'gun', 'hit', 'swell', 'gain', 'loss', 'round', 'win', 'lose'. The small ones keep 3 s apart
     sting(kind) {
       if (!cur || paused) return;
       const t = now() + 0.02, big = kind === 'gun' || kind === 'win' || kind === 'lose';
-      if (big || t < breathUntil) { breathUntil = 0; duck.gain.cancelScheduledValues(t); duck.gain.setTargetAtTime(1, t, 0.02); } // the breath ends on the gun, whatever it brings
+      if (big || t < breathUntil) { breathUntil = 0; ducked = null; duck.gain.cancelScheduledValues(t); duck.gain.setTargetAtTime(1, t, 0.02); } // the breath ends on the gun, whatever it brings
       if (!big && t - lastSting < 3) return;
       lastSting = t;
       trackSting(kind, t);

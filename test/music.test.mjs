@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-const { direct, MUSIC_STYLES, piece: pieceFor } = await import('../public/game/music.js');
+const { createMusic, direct, MUSIC_STYLES, piece: pieceFor } = await import('../public/game/music.js');
 
 const racing = { clock: 120, done: false, place: 3, fleet: 5, dsq: false, ocs: false, pen: false, zone: false, near: 200, toMark: 300, markLeg: true, lastLeg: false, downwind: false, trend: 0 };
 const at = (o) => direct({ ...racing, ...o });
@@ -104,6 +104,75 @@ test('every answer is in range', () => {
     const d = at(o);
     assert.ok(d.int >= 0 && d.int <= 1 && d.ten >= 0 && d.ten <= 1, JSON.stringify(d));
     assert.ok(['calm', 'tense', 'up', 'dark', 'win', 'lose'].includes(d.mood));
+  }
+});
+
+// ---------- the player, on a clock of our own: what it queues, and so what is heard ----------
+async function player(style = 'racing') {
+  const clips = [], targets = [];
+  const param = (value = 1) => ({ value, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {}, cancelScheduledValues() {}, setTargetAtTime(v) { targets.push(v); } });
+  const node = (more = {}) => ({ connect: (d) => d, disconnect() {}, gain: param(), frequency: param(), Q: param(), threshold: param(), ratio: param(), ...more });
+  const ctx = {
+    currentTime: 0, sampleRate: 44100, createGain: () => node(), createBiquadFilter: () => node(), createDynamicsCompressor: () => node(),
+    createBufferSource() {
+      const c = { stopAt: Infinity };
+      return node({ playbackRate: param(), start(when, off, dur) { Object.assign(c, { when: Math.max(when, ctx.currentTime), off, dur }); clips.push(c); }, stop(t = ctx.currentTime) { c.stopAt = t; } });
+    },
+    decodeAudioData(b, ok) { ok({ sampleRate: 44100, getChannelData() { const d = new Float32Array(44100); d[8820] = 1; return d; } }); }, // (the blip at 0.2 s: no shift)
+  };
+  globalThis.fetch = async () => ({ arrayBuffer: async () => new ArrayBuffer(8) });
+  const m = createMusic(ctx, node());
+  m.setStyle(style);
+  await new Promise((r) => setImmediate(r));
+  const run = (until, each) => { while (ctx.currentTime < until) { ctx.currentTime += 1 / 60; each?.(); m.update(); } };
+  return { m, ctx, clips, targets, run };
+}
+// the silence between what was queued, from the first bar up to `to`
+const holes = (clips, to) => {
+  const iv = clips.map((c) => [c.when, Math.min(c.when + c.dur, c.stopAt)]).filter(([a, b]) => b > a && a < to).sort((a, b) => a[0] - b[0]);
+  let reach = iv[0][1], most = 0;
+  for (const [a, b] of iv) { most = Math.max(most, a - reach); reach = Math.max(reach, b); }
+  return most;
+};
+const startsPiece = (c, id, name) => Math.abs(c.off + 0.015 - tracks()[id][name][0]) < 0.002; // (a bar's fade begins 15 ms before its line)
+
+test('a stall of the page of up to two seconds leaves no hole in the music, whenever it comes', async () => {
+  for (let at = 8; at < 12; at += 0.13) {
+    const { ctx, clips, run } = await player();
+    run(at); ctx.currentTime += 2; run(at + 10);
+    assert.ok(holes(clips, at + 8) < 0.02, `a stall at ${at.toFixed(2)} s: ${holes(clips, at + 8).toFixed(2)} s of silence`);
+  }
+});
+
+test('a place lost: the dark piece comes in under the tape stopping, with no silence between', async () => {
+  const { m, ctx, clips, run } = await player();
+  run(10); const t = ctx.currentTime; m.sting('loss'); run(13);
+  const dark = clips.find((c) => c.when >= t && startsPiece(c, 'racing', 'dark'));
+  assert.ok(dark && dark.when - t < 0.4, `the dark piece ${dark ? (dark.when - t).toFixed(2) : 'never'} s after the tape began to stop`);
+});
+
+test('a mood that turns after its phrase line was queued still takes that line', async () => {
+  const { m, clips, run } = await player(), T = tracks().racing.calm[1], line = 0.08 + T[0] + T[1] + T[2] + T[3];
+  run(line - 3); m.set({ int: 0.3, ten: 0.6, mood: 'dark' });
+  run(line - 1); m.set({ int: 0.3, ten: 0.6, mood: 'dark' });
+  run(line + 3);
+  const dark = clips.find((c) => startsPiece(c, 'racing', 'dark'));
+  assert.ok(dark && Math.abs(dark.when + 0.015 - line) < 0.03, `dark at ${dark?.when.toFixed(2)}, the line at ${line.toFixed(2)}`);
+});
+
+test('the music stays down through the gaps between a voice’s words', async () => {
+  const { m, targets, run } = await player(); let i = 0;
+  run(5); targets.length = 0;
+  run(8, () => m.voices(Math.floor(i++ / 9) % 2 ? 0 : 0.5)); // words of 150 ms with 150 ms between them
+  assert.equal(targets.filter((v) => v === 0.35).length, 1); assert.equal(targets.filter((v) => v === 1).length, 0);
+});
+
+test('after the winner’s ending the music goes on without waiting out its silent tail', async () => {
+  for (const [id, quiet] of Object.entries({ racing: 0.45, groove: 0.6, openwater: 1.1 })) {
+    const { m, ctx, clips, run } = await player(id), T = tracks()[id].finale[1], len = T.reduce((a, b) => a + b, 0);
+    run(10); m.sting('win'); const t = ctx.currentTime + 0.05; run(t + len + 3);
+    const calm = clips.find((c) => c.when > t + 5 && startsPiece(c, id, 'calm'));
+    assert.ok(calm && Math.abs(calm.when - (t + len - quiet)) < 0.1, `${id}: calm ${calm ? (calm.when - t - len).toFixed(2) : 'never'} s from the ending's end`);
   }
 });
 

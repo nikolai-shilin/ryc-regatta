@@ -13,7 +13,7 @@ import { VENUE, venueById, laidLength, lengthOffered } from './venues.js';
 import { classById } from './classes.js';
 import { arriveLoaded, goBack, outOfRace } from './trail.js';
 import { createMusic, direct, MUSIC_STYLES } from './music.js';
-import { createSfx } from './sfx.js';
+import { createSfx, AUDIO_TICK } from './sfx.js';
 
 const $ = (s) => document.querySelector(s);
 // a file of the game's (a voice, the calls, the gulls) at the address the page's import map gives it, with its hash
@@ -895,6 +895,8 @@ const crews = {
       s.connect(f).connect(g); if (p) g.connect(p).connect(audio.boat); else g.connect(audio.boat); s.start(0, Math.random() * 3);
       this.wash = { g, p };
     }
+    if (audio.ctx.currentTime - (this.washT ?? -1) < AUDIO_TICK) return;
+    this.washT = audio.ctx.currentTime;
     let best = null, bd = 40;
     if (!still) for (const b of race.boats) if (b !== P) { const d = Math.hypot(b.x - P.x, b.z - P.z); if (d < bd) { bd = d; best = b; } }
     const ctx = audio.ctx, k = best ? (1 - bd / 40) ** 2 * Math.min(1, best.v / 5) * 0.3 : 0;
@@ -928,6 +930,8 @@ const engine = {
     if (!audio.ctx || !audio.buf) return;
     if (!this.n) this.build();
     const { o, sub, lp, g, p } = this.n, ctx = audio.ctx, now = ctx.currentTime, pl = world.plane;
+    if (now - (this.t ?? -1) < AUDIO_TICK) return;
+    this.t = now;
     if (still || !pl || !pl.on) { g.gain.setTargetAtTime(0, now, 0.15); return; }
     const cam = world.camera.position, dx = pl.p.x - cam.x, dy = pl.p.y - cam.y, dz = pl.p.z - cam.z, d = Math.max(1, Math.hypot(dx, dy, dz));
     const vr = -(pl.v.x * dx + pl.v.y * dy + pl.v.z * dz) / d, f = 78 * 343 / (343 - vr); // closing speed: positive coming
