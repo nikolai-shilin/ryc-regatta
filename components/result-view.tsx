@@ -301,7 +301,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
             {logNote ? <span className="bt-kick rs-kick-s">{logNote}</span> : null}
           </div>
           <h1 className="bt-h">{title}</h1>
-          <p className="bt-p">{t(...where.name)}, {t(...where.place)}. {near || t('The boats are where they were at the finish.', 'Лодки там, где были на финише.')}</p>
+          <p className="bt-p">{t(...where.name)}{where.place[0] !== where.name[0] && `, ${t(...where.place)}`}. {near || t('The boats are where they were at the finish.', 'Лодки там, где были на финише.')}</p>
           <div className="bt-stats">
             <div><span className="bt-sk">{t('Place', 'Место')}</span><b>{me.dsq ? 'DSQ' : t(ordEn(place), `${place}-е`)}</b><span className="bt-sv">{me.dsq ? t('disqualified', 'дисквалификация') : t(`of ${res.boats.length} boats`, `из ${ruBoats(res.boats.length)}`)}</span></div>
             <div><span className="bt-sk">{t('Time', 'Время')}</span><b className={res.pb?.isNew && !shared ? 'is-gold' : ''}>{me.secs != null && !me.dsq ? <CountUp v={clock(me.secs)} ms={1200} /> : '—'}</b><span className="bt-sv">{pbNote || t('at the line', 'на финише')}</span></div>

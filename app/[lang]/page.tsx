@@ -45,7 +45,7 @@ function siteLd(lang: 'en' | 'ru', t: (en: string, ru: string) => string) {
         screenshot: [`${SITE}/images/hud-desk-v8.jpg`, `${SITE}/images/top-v8.jpg`],
         genre: ['Sailing', 'Racing', 'Sports simulation'], gamePlatform: ['Web browser', 'Mobile web browser'],
         applicationCategory: 'GameApplication', operatingSystem: 'Any (runs in a web browser)', playMode: 'SinglePlayer',
-        gameLocation: VENUES.map((v) => `${t(...v.name)}, ${t(...v.place)}`), isAccessibleForFree: true,
+        gameLocation: VENUES.map((v) => (v.place[0] === v.name[0] ? t(...v.name) : `${t(...v.name)}, ${t(...v.place)}`)), isAccessibleForFree: true,
         offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD', availability: 'https://schema.org/InStock', url: `${SITE}/race` },
         author: { '@id': org['@id'] }, publisher: { '@id': org['@id'] },
         potentialAction: { '@type': 'PlayAction', target: `${SITE}/race` },
