@@ -18,6 +18,7 @@ import { Ocean, OCEAN_GLSL, SWELL_GLSL, oceanUniforms, blankOcean } from './ocea
 import { skyAt, pickSky, SKY_GLSL, SKY_BASE_GLSL, skyUniforms } from './light.js';
 import { Skopea, groundAt, inLandShadow, CLOUD_GLSL } from './skopea.js';
 import { VENUE } from './venues.js';
+import { compileReady, checkShaders } from './compile.js';
 import { GFX_PARTS, GFX_LEVELS, gfxParts } from './gfx.js'; // the graphics choice, shared with the site's menu
 export { flagTexture } from './committee.js';
 
@@ -1298,6 +1299,7 @@ const PART = {
 export class World {
   constructor(canvas) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, stencil: false, powerPreference: 'high-performance' });
+    this.renderer.debug.checkShaderErrors = checkShaders(location.hostname);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.05;
     this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -1601,7 +1603,7 @@ export class World {
   }
 
   // Every material's shaders, compiled before the frame that needs them. Drawn cold, the first frame compiled ~70
-  // programs one after another and held the page for ~0.4 s; compileAsync hands them all to the GPU process at once
+  // programs one after another and held the page for ~0.4 s; compileReady (compile.js) hands them all to the GPU process at once
   // (KHR_parallel_shader_compile) and leaves this thread free. Until they're ready, render() draws nothing and the
   // last picture (or the page's still, or the preloader) stays up. ready() says when.
   prepare() {
@@ -1610,21 +1612,21 @@ export class World {
     try {
       const jobs = [];
       r.setRenderTarget(this.post ? this.post.rt : null); // the scene's pass draws into the post's target when there is one: compile that variant
-      jobs.push(r.compileAsync(this.scene, this.camera));
+      jobs.push(compileReady(r, this.scene, this.camera));
       // the sea's mirror: its camera sees only the MIRRORED layer, no lights among it, so its programs are variants of their own
-      if (this.mirror) { r.setRenderTarget(this.mirror.rt); jobs.push(r.compileAsync(this.scene, this.mirror.cam)); }
+      if (this.mirror) { r.setRenderTarget(this.mirror.rt); jobs.push(compileReady(r, this.scene, this.mirror.cam)); }
       // the wake field's heights, and the hulls under the surface (drawn with one material in place of their own)
-      if (this.wakeField.rt) { r.setRenderTarget(this.wakeField.rt); jobs.push(r.compileAsync(this.wakeField.scene, this.wakeField.cam)); }
-      if (this.under) { const us = new THREE.Scene(); us.add(new THREE.Mesh(new THREE.BoxGeometry(), this.under.mat)); r.setRenderTarget(this.under.rt); jobs.push(r.compileAsync(us, this.camera)); }
-      { const ss = new THREE.Scene(); ss.add(new THREE.Mesh(new THREE.BoxGeometry(), this.seaShade.mat)); r.setRenderTarget(this.seaShade.rt); jobs.push(r.compileAsync(ss, this.camera)); }
+      if (this.wakeField.rt) { r.setRenderTarget(this.wakeField.rt); jobs.push(compileReady(r, this.wakeField.scene, this.wakeField.cam)); }
+      if (this.under) { const us = new THREE.Scene(); us.add(new THREE.Mesh(new THREE.BoxGeometry(), this.under.mat)); r.setRenderTarget(this.under.rt); jobs.push(compileReady(r, us, this.camera)); }
+      { const ss = new THREE.Scene(); ss.add(new THREE.Mesh(new THREE.BoxGeometry(), this.seaShade.mat)); r.setRenderTarget(this.seaShade.rt); jobs.push(compileReady(r, ss, this.camera)); }
       // the full-screen passes (the chop's FFT, the bloom) each swap a material onto one quad: set them out side by side.
       // All draw into targets but the bloom's composite, which draws to the screen.
       for (const pass of [this.ocean, this.post]) {
         if (!pass || !this.post) continue;
         const into = new THREE.Scene(), out = new THREE.Scene();
         for (const m of Object.values(pass)) if (m && m.isShaderMaterial) (m === pass.mComp ? out : into).add(new THREE.Mesh(pass.quad.geometry, m));
-        r.setRenderTarget(this.post.rt); jobs.push(r.compileAsync(into, pass.cam));
-        if (out.children.length) { r.setRenderTarget(null); jobs.push(r.compileAsync(out, pass.cam)); }
+        r.setRenderTarget(this.post.rt); jobs.push(compileReady(r, into, pass.cam));
+        if (out.children.length) { r.setRenderTarget(null); jobs.push(compileReady(r, out, pass.cam)); }
       }
       p = Promise.all(jobs);
     } catch (e) { p = Promise.resolve(); }

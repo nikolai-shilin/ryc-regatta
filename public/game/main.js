@@ -2048,11 +2048,10 @@ let drawnAt = 0;
 function loop(now) {
   if (opts.saver && now - drawnAt < SAVER_MS) { requestAnimationFrame(loop); return; }
   drawnAt = now;
-  if (!MATCH) { frame(now); requestAnimationFrame(loop); return; }
-  requestAnimationFrame(loop);
+  requestAnimationFrame(loop); // first: a frame that throws must not be the last one
   try { frame(now); } catch (e) {
-    console.error(e);
-    if (race) { race.messages.length = 0; for (const b of race.boats) b.events.length = 0; }
+    if (race) { race.messages.length = 0; for (const b of race.boats) b.events.length = 0; } // what it was part-way through isn't gone over again
+    if (MATCH) console.error(e); else throw e; // (alone, on to the page's own handlers: the loader's failure, the visit's log)
   }
 }
 function frame(now) {
