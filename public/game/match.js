@@ -1,19 +1,32 @@
-// A match race's protocol, with no DOM: the waiting room (Room), the match's score and state (Match), the two
-// channels a match talks on (makeLink), and the race between the two screens: the host's game runs it (Host), the
-// guest's follows it (Guest). Every clock is the injected now().
+// A 1-on-1 race's protocol, with no DOM: the waiting room (Room), the race's settings (cleanSettings) and state (Match,
+// Keeper), the two channels it talks on (makeLink), and the race between the two screens: the host's game runs it
+// (Host), the guest's follows it (Guest). Every clock is the injected now().
 import { Race, wrap, YAW_LAG } from './sim.js';
 import { applyControls, encodeSnap, applySnap, readBoat, setBoat, setSails, resultsOf } from './wire.js';
+export { FINISH_LIMIT_S } from './sim.js';
 
 export const HOST_KEY = 'regatta-match-host'; // localStorage: { code } of the match this browser hosts
 
 const HELLO_MS = 3000;
 const GONE_MS = 10000; // a hello unheard this long drops its sender from the room
-const READY_MS = 60000; // between races, the next one starts this long after both are there
-const ABSENT_MS = 300000; // gone this long, the match is over
+const ABSENT_MS = 300000; // gone this long, the race is over
 
 // 'match:CODE' carries the room and the match's events; 'match:CODE:in' the guest's inputs (race sync).
 export function makeLink(rt, code) {
   return { all: rt.channel('match:' + code), input: rt.channel('match:' + code + ':in') };
+}
+
+// what the host may choose, each list's first the default: a race's settings as the two screens build it, whatever was
+// saved or sent (an older set-up's, or a bad one's)
+const CHOICES = { preset: ['medium', 'light', 'strong'], length: ['short', 'medium', 'long'], course: ['wl', 'tri', 'trap', 'wlu'], laps: [1, 2], start: [1, 3, 5], current: [0, 1],
+  daytime: ['any', 'morning', 'midday', 'afternoon', 'evening', 'sunset'] };
+export function cleanSettings(s, { venue, yacht }) {
+  const o = s && typeof s === 'object' ? s : {}, out = { venue: String(o.venue || venue), yacht: String(o.yacht || yacht) };
+  for (const [k, list] of Object.entries(CHOICES)) {
+    const v = typeof list[0] === 'number' ? Number(o[k]) : o[k];
+    out[k] = list.includes(v) ? v : list[0];
+  }
+  return out;
 }
 
 const byJoin = (a, b) => a.joinedAt - b.joinedAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -125,7 +138,7 @@ export class Room {
     const guest = this.guest;
     if (!this.isHost || !guest) throw new Error('only the host, with a guest present, can start');
     const pick = (h) => ({ id: h.id, name: h.name, look: h.look });
-    const msg = { settings: this.settings, seed: Math.floor(Math.random() * 100000), race: 1, blue: this._hello.id, host: pick(this._hello), guest: pick(guest) };
+    const msg = { settings: this.settings, seed: Math.floor(Math.random() * 100000), host: pick(this._hello), guest: pick(guest) };
     this._started = msg;
     this.link.all.send('start', msg);
     this._emitStart(msg);
@@ -147,117 +160,76 @@ export class Room {
   }
 }
 
-// The score and state of one match: pure, no channels. blue is the host in odd races, the guest in even ones.
-// raceN is the race in progress, or the one just sailed while 'between'; nextN is the number the next will have.
+// The state of one race: pure, no channels. result: { winner, margin, forfeited, abandoned } (ids) once it is over.
 export class Match {
-  constructor({ start, now = Date.now, _from = null }) {
+  constructor({ start, now = Date.now }) {
     this.start = start;
     this.now = now;
     this.hostId = start.host.id;
     this.guestId = start.guest.id;
     this.state = 'race';
-    this.raceN = 1;
-    this.score = { [this.hostId]: 0, [this.guestId]: 0 };
-    this.races = [];
-    this._ready = new Set();
-    this._absent = { [this.hostId]: null, [this.guestId]: null }; // id -> when they went, or null
-    this._since = now(); // when the between card opened, or the later of that and the last return
+    this.result = null;
     this.leftBy = null;
-    if (_from) Object.assign(this, _from);
+    this._absent = { [this.hostId]: null, [this.guestId]: null }; // id -> when they went, or null
   }
 
-  get nextN() { return this.races.length + 1; }
-  blueOf(n) { return n % 2 === 1 ? this.hostId : this.guestId; }
-  seedOf(n) { return (this.start.seed + n * 7919) % 100000; }
-
-  endRace({ winner = null, margin = null, abandoned = false }) {
+  endRace({ winner = null, margin = null, forfeited = null, abandoned = false } = {}) {
     if (this.state !== 'race') return;
-    this.races.push({ winner: abandoned ? null : winner, margin: abandoned ? null : margin, abandoned: !!abandoned });
-    if (winner && !abandoned) this.score[winner] = (this.score[winner] || 0) + 1;
-    this._ready.clear();
-    this._since = this.now();
-    this.state = Object.values(this.score).some((s) => s >= 2) ? 'over' : 'between';
+    this.state = 'over';
+    this.result = abandoned ? { winner: null, margin: null, forfeited: null, abandoned: true } : { winner, margin, forfeited, abandoned: false };
   }
-
-  ready(id) { this._ready.add(id); this._advance(); }
+  // id has gone for good. The race lives in the host's tab, so with her it is abandoned; the guest's going is the race's
+  // own to judge (Host.guestLeft: before her finish she gives it up, after it her place stands and it runs on)
+  leave(id) {
+    this.leftBy = id;
+    if (id === this.hostId) this.endRace({ abandoned: true });
+  }
   present(id, on) {
     if (!(id in this._absent)) return;
-    if (on) { if (this._absent[id] !== null) { this._absent[id] = null; this._since = Math.max(this._since, this.now()); } }
-    else if (this._absent[id] === null) this._absent[id] = this.now();
-    this._advance();
+    if (on) this._absent[id] = null;
+    else this._absent[id] ??= this.now();
   }
-  leave(id) { this.leftBy = id; this.state = 'over'; }
-
   tick() {
     if (this.state === 'over') return;
     const t = this.now();
-    if (Object.values(this._absent).some((a) => a !== null && t - a >= ABSENT_MS)) { this.state = 'over'; return; }
-    this._advance();
+    if (Object.values(this._absent).some((a) => a !== null && t - a >= ABSENT_MS)) this.endRace({ abandoned: true });
   }
 
-  _advance() {
-    if (this.state !== 'between') return;
-    if (Object.values(this._absent).some((a) => a !== null)) return; // never with one of them missing
-    const both = this._ready.has(this.hostId) && this._ready.has(this.guestId);
-    if (both || this.now() - this._since >= READY_MS) this.nextRace();
-  }
-  nextRace() {
-    if (this.state !== 'between') return;
-    this.raceN = this.nextN;
-    this.state = 'race';
-    this._ready.clear();
-  }
-
-  toJSON() {
-    return { start: this.start, state: this.state, raceN: this.raceN, score: this.score, races: this.races, leftBy: this.leftBy };
-  }
-  // The host's saved match after a reload: a race that was on lived only in that tab, so it is abandoned and
-  // scores nothing; the match goes on at the score, to the next race.
+  toJSON() { return { start: this.start, state: this.state, result: this.result, leftBy: this.leftBy }; }
+  // The host's saved race after a reload: one that was on lived only in that tab, so it is abandoned; one sailed to its
+  // end keeps its result. (A match saved by an older build, with a score and no result, opens as no race at all.)
   static from(json, now = Date.now) {
     const j = JSON.parse(JSON.stringify(json));
     const m = new Match({ start: j.start, now });
-    m.score = j.score; m.races = j.races; m.raceN = j.raceN; m.leftBy = j.leftBy ?? null; m.state = j.state;
-    if (m.state === 'race') {
-      m.races.push({ winner: null, margin: null, abandoned: true });
-      m.raceN = m.races.length;
-      m.state = 'between';
-    }
-    m._since = now();
+    m.leftBy = j.leftBy ?? null;
+    m.endRace(j.state === 'over' && j.result ? j.result : { abandoned: true });
     return m;
   }
 }
 
-// The host's side of a match between its races, with no DOM: who is here, who is ready, and so when the next race
-// starts (Match's rules); match-ui.js draws it. The guest is the match's, the Room pinned to her: a third with the link
-// is never taken for her. Between races she is here while the Room hears her, and her build is this page's (build:
-// this page's; another build is another game: never raced, the screens ask for a reload), and, silent as the last race
-// ended, once she has been heard since; in a race, while her inputs come (FORFEIT_MS).
-//   loaded { id, n, seed }: race n is built on her screen; ready { id, n, seed }: Ready on the card before race n
+// The host's side of a race, with no DOM: who is here, and whether her screen has the race built; match-ui.js draws it.
+// The guest is the race's, the Room pinned to her: a third with the link is never taken for her. Off the water she is
+// here while the Room hears her, and her build is this page's (build: this page's; another build is another game: never
+// raced, the screens ask for a reload), and, silent as the last race ended, once she has been heard since; in a race,
+// while her inputs come (FORFEIT_MS).
+//   loaded { id, seed }: the race is built on her screen
 export class Keeper {
-  constructor({ room, link, build = null, now = Date.now, onChange = () => {} }) {
-    Object.assign(this, { room, link, build, now, onChange });
+  constructor({ room, link, build = null, now = Date.now }) {
+    Object.assign(this, { room, link, build, now });
     this.match = null;
-    this.ready = new Set(); // who pressed Ready on this card
-    this.cardOpenAt = 0; // when the card opened, or the later of that and her return (the automatic start's minute)
-    this.absent = false;
     this.racing = false; // a Host is running the race: her inputs say she's there
     this.lastIn = 0; // her last input
     this.heardAt = 0; // her last hello
     this.quietFrom = 0; // silent as the last race ended: not here till heard after this
-    this.loaded = { seed: null, n: 0 }; // the last race her screen has built
+    this.loaded = null; // the seed of the last race her screen has built
     const all = link.all, hers = (m) => !!this.match && !!m && m.id === this.match.guestId;
-    all.on('loaded', (m) => { if (hers(m) && m.seed === this.match.start.seed) this.loaded = { seed: m.seed, n: m.n | 0 }; });
-    all.on('ready', (m) => {
-      const M = this.match;
-      if (!hers(m) || m.seed !== M.start.seed || M.state !== 'between' || (m.n | 0) !== M.nextN || this.ready.has(m.id)) return;
-      this.ready.add(m.id); M.ready(m.id); this.onChange();
-    });
+    all.on('loaded', (m) => { if (hers(m) && m.seed === this.match.start.seed) this.loaded = m.seed; });
     all.on('hello', (h) => { if (hers(h)) this.heardAt = this.now(); });
     link.input.on('input', (m) => { if (hers(m)) this.lastIn = this.now(); });
   }
-  // the match kept from now on: a new one, a rematch, or a reloaded host's from its saved score
+  // the race kept from now on: a new one, a rematch, or a reloaded host's saved one
   set(match) {
-    this.match = match; this.ready = new Set(); this.cardOpenAt = this.now(); this.quietFrom = 0; this.absent = false; this.racing = false;
+    this.match = match; this.quietFrom = 0; this.racing = false;
     this.room.pin(match.guestId);
   }
   // another build on the guest's screen (null while she isn't heard)
@@ -271,38 +243,23 @@ export class Keeper {
     if (this.racing) return t - this.lastIn < FORFEIT_MS;
     return this.room.heard(M.guestId) && !this.stale() && !(this.quietFrom && Math.max(this.heardAt, this.lastIn) < this.quietFrom);
   }
-  // the host's own Ready
-  readyMe() {
-    const M = this.match;
-    if (!M || M.state !== 'between' || this.ready.has(M.hostId)) return;
-    this.ready.add(M.hostId); M.ready(M.hostId); this.onChange();
-  }
-  // its race begins (its Host built), and ends: the result, the card's minute from now
+  // its race begins (its Host built), and ends with its result
   raceOn() { this.racing = true; this.lastIn = this.now(); }
-  raceEnded({ winner = null, margin = null, abandoned = false }) {
-    this.match.endRace({ winner, margin, abandoned });
-    this.ready = new Set(); this.cardOpenAt = this.now();
-  }
-  // the card opens: the race's Host stopped. A guest silent then isn't here till she's heard again (the Room would give
-  // her ten seconds from its hellos resuming)
+  raceEnded(result) { this.match.endRace(result); }
+  // the card opens. A guest silent then isn't here till she's heard again (the Room would give her ten seconds from its
+  // hellos resuming)
   raceOff() {
     const t = this.now();
     this.quietFrom = this.racing && t - this.lastIn > HOLD_MS ? t : 0;
     this.racing = false;
   }
-  // seconds to the automatic start, while both are here between races; else null
-  left() {
-    const M = this.match;
-    return M && M.state === 'between' && this.present() ? Math.max(0, READY_MS / 1000 - (this.now() - this.cardOpenAt) / 1000) : null;
-  }
-  // four times a second: her presence to the Match, which starts the next race when its rules say
+  // four times a second: her presence to the Match. On the water her silence is the race's to judge (the Host's forfeit;
+  // a boat home has nothing to give up)
   beat() {
     const M = this.match;
     if (!M) return;
-    const here = this.present();
-    if (M.state === 'between' && here && this.absent) this.cardOpenAt = Math.max(this.cardOpenAt, this.now()); // back: the minute starts again
-    this.absent = !here;
-    M.present(M.guestId, here); M.tick();
+    M.present(M.guestId, this.racing || this.present());
+    M.tick();
   }
 }
 
@@ -311,7 +268,7 @@ export class Keeper {
 // own clock stamp and the host's clock when they came, or null) ten times a second; ev { list: [{ key, arg, to: id |
 // null }] }, the race's news; end { winner, margin, forfeited } (ids) once it's over, the last snap before it, both
 // again every second it's ticked; results (wire.js resultsOf) once it's over, every second until she answers; abandon
-// {} after the host's tab slept over a minute. 'match:CODE:in' (link.input): guest → host input { id, c, g } (controlsOf;
+// {} after the host's tab slept over a minute, or at its Leave with the race on. 'match:CODE:in' (link.input): guest → host input { id, c, g } (controlsOf;
 // g her own clock when they last changed), as they change (see INPUT_MIN_MS); resultsOk { id, seed }, for each results
 // heard. The Room joins link.all; Host and Guest join link.input, and stop() leaves it.
 const SNAP_S = 0.1; // a snapshot every 0.1 s of the race
@@ -330,11 +287,11 @@ const SNAP_ON = new Set(['bump', 'aground', 'touched', 'fouled', 'umpire']);
 const INPUT_MIN_MS = 200, INPUT_MAX_MS = 500, INPUT_NOW_MS = 100, HELM_NOW = 0.3;
 const HIST_S = 2; // the guest's own boat's recent poses, kept this long, to set the host's copy of her against
 
-// race n of the match (match.raceN), as both screens build it: the host's settings, the race's seed and colours,
-// the two sailors and their looks; myId the one this screen sails
+// the race, as both screens build it: the host's settings, its seed, the two sailors and their looks, and the seed's
+// word on who has which start position (a rematch has a new seed); myId the one this screen sails
 export function raceFor(match, myId) {
-  const n = match.raceN, s = match.start, pick = ({ id, name }) => ({ id, name });
-  const race = new Race({ ...s.settings, seed: match.seedOf(n), match: true, humans: [pick(s.host), pick(s.guest)], me: myId, blue: match.blueOf(n) });
+  const s = match.start, pick = ({ id, name }) => ({ id, name }), two = [pick(s.host), pick(s.guest)];
+  const race = new Race({ ...s.settings, current: !!s.settings.current, seed: s.seed, fleet: 2, humans: s.seed % 2 ? two.reverse() : two, me: myId });
   for (const p of [s.host, s.guest]) race.humans.find((b) => b.id === p.id).look = p.look;
   return race;
 }

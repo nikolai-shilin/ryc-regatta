@@ -1,14 +1,14 @@
-// The match's waiting room (Room) and score (Match), and the race between two screens (Host and Guest), over the
-// in-memory hub and a fake clock.
+// The 1-on-1 race's waiting room (Room), its state (Match, Keeper), and the race between two screens (Host and Guest),
+// over the in-memory hub and a fake clock.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { memoryRealtime } from './hub.mjs';
 
 globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u)))); // land.js's bay files, from the disk
-const { makeLink, Room, Match, HOST_KEY, raceFor, Host, Guest, Keeper } = await import('../public/game/match.js');
+const { makeLink, Room, Match, HOST_KEY, raceFor, cleanSettings, Host, Guest, Keeper } = await import('../public/game/match.js');
 const { controlsOf, readBoat, encodeSnap } = await import('../public/game/wire.js');
-const { D2R, wrap, lineD, sheetFor, idealSail } = await import('../public/game/sim.js');
+const { D2R, wrap, sheetFor, idealSail } = await import('../public/game/sim.js');
 
 const SETTINGS = { venue: 'palma', wind: 12, yacht: 'ac75', length: 'short' };
 const person = (id, name) => ({ id, name, look: { hull: id } });
@@ -25,7 +25,7 @@ function setup() {
   return { hub, clock, now, room };
 }
 
-const start = (host = person('h', 'Host'), guest = person('g', 'Guest')) => ({ settings: SETTINGS, seed: 4242, race: 1, blue: host.id, host, guest });
+const start = (host = person('h', 'Host'), guest = person('g', 'Guest')) => ({ settings: SETTINGS, seed: 4242, host, guest });
 
 test('makeLink names the two channels after the code', () => {
   const topics = [];
@@ -51,8 +51,8 @@ test('the host sees the guest arrive and only then may start', async () => {
   guest.onStart((m) => heard.push(m));
   const msg = host.start();
   assert.deepEqual(heard, [msg]);
-  assert.equal(msg.race, 1);
-  assert.equal(msg.blue, 'h');
+  assert.equal('race' in msg, false, 'one race: no number');
+  assert.equal('blue' in msg, false, 'and no colours');
   assert.equal(msg.host.id, 'h');
   assert.equal(msg.guest.id, 'g');
   assert.deepEqual(msg.settings, SETTINGS);
@@ -91,110 +91,134 @@ test('a third person is told the match is full', async () => {
   assert.equal(guest.guest.id, 'g');
 });
 
-test('first to two wins the match', () => {
+// ---------- the settings, and the race both screens build from them ----------
+const here = { venue: 'palma', yacht: 'jpk1050' };
+
+test('cleanSettings keeps a good race and repairs a bad or old one', () => {
+  assert.deepEqual(cleanSettings({ preset: 'strong', length: 'long', course: 'trap', laps: 2, start: 5, current: 1, daytime: 'sunset' }, here), { ...here, preset: 'strong', length: 'long', course: 'trap', laps: 2, start: 5, current: 1, daytime: 'sunset' });
+  assert.deepEqual(cleanSettings({ preset: 'x', length: 'short', course: 'zz', laps: 9 }, here), { ...here, preset: 'medium', length: 'short', course: 'wl', laps: 1, start: 1, current: 0, daytime: 'any' });
+  // what the set-up saved before it offered more, and nothing at all
+  const plain = { ...here, preset: 'medium', length: 'short', course: 'wl', laps: 1, start: 1, current: 0, daytime: 'any' };
+  assert.deepEqual(cleanSettings({ venue: 'palma', yacht: 'jpk1050', preset: 'medium', length: 'short' }, { venue: 'cork', yacht: 'ac75' }), plain);
+  for (const bad of [null, undefined, 7, 'x']) assert.deepEqual(cleanSettings(bad, here), plain);
+  // each list's every value stands; anything else, a number's string aside, is the default
+  for (const [k, list] of Object.entries({ preset: ['light', 'medium', 'strong'], length: ['short', 'medium', 'long'], course: ['wl', 'tri', 'trap', 'wlu'], laps: [1, 2], start: [1, 3, 5], current: [0, 1], daytime: ['any', 'morning', 'midday', 'afternoon', 'evening', 'sunset'] })) {
+    for (const v of list) assert.equal(cleanSettings({ [k]: v }, here)[k], v, `${k} ${v}`);
+    assert.equal(cleanSettings({ [k]: 'nonsense' }, here)[k], plain[k], k);
+  }
+  assert.equal(cleanSettings({ start: 4 }, here).start, 1);
+  assert.equal(cleanSettings({ current: true }, here).current, 1);
+});
+
+const raceStart = (seed, settings = { ...here, preset: 'strong', length: 'short', course: 'tri', laps: 2, start: 3, current: 1, daytime: 'morning' }) => ({ settings, seed, host: person('h', 'Host'), guest: person('g', 'Guest') });
+
+test('both screens build the same race from the settings', () => {
+  const m = new Match({ start: raceStart(4242) });
+  const a = raceFor(m, 'h'), b = raceFor(m, 'g');
+  assert.deepEqual(a.boats.map((x) => x.id), b.boats.map((x) => x.id));
+  assert.deepEqual(a.boats.map((x) => [x.x, x.z, x.h]), b.boats.map((x) => [x.x, x.z, x.h]), 'on the same spots');
+  assert.deepEqual(a.current, b.current);
+  assert.notDeepEqual(a.current, { x: 0, z: 0 }, 'the current the host chose');
+  assert.equal(a.course.type, 'tri');
+  assert.equal(a.seq[0].t, -180, 'the three-minute sequence the host chose');
+  assert.equal(a.seq.length, 4); // (warning, preparatory, one minute, gun)
+  assert.equal(a.seed, 4242);
+  assert.equal(a.boats.length, 2, 'no computer boats');
+  assert.equal(a.multi, true); assert.equal(a.match, false);
+  assert.equal(a.player.id, 'h'); assert.equal(b.player.id, 'g');
+  assert.deepEqual(a.humans.find((x) => x.id === 'g').look, { hull: 'g' }, 'each sailor in her own look');
+});
+
+test('the seed decides who has which start position', () => {
+  const even = new Match({ start: raceStart(4242) }), odd = new Match({ start: raceStart(4243) });
+  assert.deepEqual(raceFor(even, 'h').boats.map((b) => b.id), ['h', 'g']);
+  assert.deepEqual(raceFor(odd, 'h').boats.map((b) => b.id), ['g', 'h']);
+  assert.deepEqual(raceFor(odd, 'g').boats.map((b) => b.id), ['g', 'h'], 'on both screens');
+});
+
+// ---------- one race's state ----------
+test('a match is one race: its result, and nothing of a best of three', () => {
   const m = new Match({ start: start() });
   assert.equal(m.state, 'race');
-  assert.equal(m.raceN, 1);
-  m.endRace({ winner: 'h', margin: 12.5, abandoned: false });
-  assert.equal(m.state, 'between');
-  m.ready('h'); m.ready('g');
-  assert.equal(m.state, 'race');
-  assert.equal(m.raceN, 2);
-  m.endRace({ winner: 'g', margin: 3, abandoned: false });
-  assert.equal(m.state, 'between');
-  m.ready('h'); m.ready('g');
-  m.endRace({ winner: 'h', margin: 7, abandoned: false });
+  assert.equal(m.result, null);
+  for (const k of ['score', 'races', 'raceN', 'blueOf', 'ready', 'nextRace', 'seedOf', 'nextN']) assert.equal(k in m, false, k);
+  m.endRace({ winner: 'h', margin: 12.5, forfeited: null });
   assert.equal(m.state, 'over');
-  assert.deepEqual(m.score, { h: 2, g: 1 });
-  assert.equal(m.races.length, 3);
-  assert.deepEqual(m.races[2], { winner: 'h', margin: 7, abandoned: false });
+  assert.deepEqual(m.result, { winner: 'h', margin: 12.5, forfeited: null, abandoned: false });
+  m.endRace({ winner: 'g', margin: 1 });
+  assert.equal(m.result.winner, 'h', 'its first end stands');
 });
 
-test('colours swap each race', () => {
+test('an abandoned race has no winner, whatever it is told', () => {
   const m = new Match({ start: start() });
-  assert.equal(m.blueOf(1), 'h');
-  assert.equal(m.blueOf(2), 'g');
-  assert.equal(m.blueOf(3), 'h');
-  assert.equal(m.seedOf(1), (4242 + 7919) % 100000);
-  assert.equal(m.seedOf(2), (4242 + 2 * 7919) % 100000);
+  m.endRace({ winner: 'h', margin: 4, forfeited: 'g', abandoned: true });
+  assert.deepEqual(m.result, { winner: null, margin: null, forfeited: null, abandoned: true });
 });
 
-test('between races the match waits for a missing player', () => {
-  const t = { v: 0 };
-  const m = new Match({ start: start(), now: () => t.v });
-  m.endRace({ winner: 'h', margin: 5, abandoned: false });
-  m.present('g', false);
-  m.ready('h'); m.ready('g');
-  t.v += 120000; m.tick();
-  assert.equal(m.state, 'between');
-  t.v += 179000; m.tick(); // 299 s gone
-  assert.equal(m.state, 'between');
-  t.v += 1000; m.tick();
+test('the host leaving abandons the race; the guest leaving leaves it to the race\'s own rules', () => {
+  const a = new Match({ start: start() });
+  a.leave('h');
+  assert.equal(a.state, 'over'); assert.equal(a.result.abandoned, true); assert.equal(a.leftBy, 'h');
+  const b = new Match({ start: start() });
+  b.leave('g');
+  assert.equal(b.state, 'race', 'the Host forfeits her, or her place stands and it runs on');
+  assert.equal(b.leftBy, 'g');
+  b.endRace({ winner: 'h', margin: 3 });
+  assert.equal(b.result.winner, 'h');
+  // after the race, leaving changes nothing of its result
+  const c = new Match({ start: start() });
+  c.endRace({ winner: 'g', margin: 3 });
+  c.leave('h');
+  assert.equal(c.result.winner, 'g'); assert.equal(c.result.abandoned, false); assert.equal(c.leftBy, 'h');
+});
+
+test('a reloaded host: the race on the water is abandoned', () => {
+  const m = Match.from(JSON.parse(JSON.stringify(new Match({ start: start() }).toJSON())));
   assert.equal(m.state, 'over');
-  assert.deepEqual(m.score, { h: 1, g: 0 });
+  assert.equal(m.result.abandoned, true);
+  assert.equal(m.result.winner, null);
+  assert.equal(m.hostId, 'h'); assert.equal(m.guestId, 'g');
 });
 
-test('both ready starts the next race at once; one ready waits 60 s with both present', () => {
-  const t = { v: 0 };
-  const m = new Match({ start: start(), now: () => t.v });
-  m.endRace({ winner: 'g', margin: 5, abandoned: false });
-  m.ready('h');
-  assert.equal(m.state, 'between');
-  t.v += 59000; m.tick();
-  assert.equal(m.state, 'between');
-  t.v += 1000; m.tick();
-  assert.equal(m.state, 'race');
-  assert.equal(m.raceN, 2);
-  // and with nobody pressing, the 60 s alone does it; ready is cleared for the next card
-  m.endRace({ winner: 'h', margin: 1, abandoned: false });
-  assert.equal(m.state, 'between');
-  t.v += 60000; m.tick();
-  assert.equal(m.state, 'race');
-  assert.equal(m.raceN, 3);
-  // never with one absent: the 60 s waits, and counts from their return
-  m.endRace({ winner: null, margin: null, abandoned: true });
-  m.present('h', false);
-  t.v += 100000; m.tick();
-  assert.equal(m.state, 'between');
-  m.present('h', true);
-  t.v += 59000; m.tick();
-  assert.equal(m.state, 'between');
-  t.v += 1000; m.tick();
-  assert.equal(m.state, 'race');
-  assert.equal(m.raceN, 4);
-});
-
-test('an abandoned race scores nothing, and leave ends the match at the score', () => {
+test('a reloaded host: a race sailed to its end keeps its result, and who left', () => {
   const m = new Match({ start: start() });
-  m.endRace({ winner: 'h', margin: 4, abandoned: false });
-  m.ready('h'); m.ready('g');
-  m.endRace({ winner: null, margin: null, abandoned: true });
-  assert.equal(m.state, 'between');
-  assert.deepEqual(m.score, { h: 1, g: 0 });
+  m.endRace({ winner: 'g', margin: 7.5, forfeited: null });
   m.leave('g');
-  assert.equal(m.state, 'over');
-  assert.deepEqual(m.score, { h: 1, g: 0 });
+  const back = Match.from(JSON.parse(JSON.stringify(m.toJSON())));
+  assert.equal(back.state, 'over');
+  assert.deepEqual(back.result, { winner: 'g', margin: 7.5, forfeited: null, abandoned: false });
+  assert.equal(back.leftBy, 'g');
 });
 
-test('a reloaded host keeps the score and loses the race in progress', () => {
-  const t = { v: 5000 };
+test('a host\'s match saved in the old format opens as no race at all, without a throw', () => {
+  const oldStart = { settings: SETTINGS, seed: 4242, race: 1, blue: 'h', host: person('h', 'Host'), guest: person('g', 'Guest') };
+  for (const state of ['between', 'race', 'over']) {
+    const m = Match.from({ start: oldStart, state, raceN: 2, score: { h: 1, g: 0 }, races: [{ winner: 'h' }] });
+    assert.equal(m.state, 'over', state);
+    assert.equal(m.result.abandoned, true, state);
+  }
+});
+
+test('gone five minutes: the race is over', () => {
+  const t = { v: 0 };
   const m = new Match({ start: start(), now: () => t.v });
-  m.endRace({ winner: 'h', margin: 9, abandoned: false });
-  m.ready('h'); m.ready('g');
+  m.present('g', false);
+  t.v += 299000; m.tick();
+  assert.equal(m.state, 'race', 'under five minutes: still on');
+  m.present('g', true); // she is back: the five minutes start again
+  t.v += 299000; m.tick();
   assert.equal(m.state, 'race');
-  const saved = JSON.parse(JSON.stringify(m.toJSON()));
-  const back = Match.from(saved, () => t.v);
-  assert.equal(back.state, 'between');
-  assert.deepEqual(back.score, { h: 1, g: 0 });
-  assert.equal(back.races.length, 2);
-  assert.deepEqual(back.races[1], { winner: null, margin: null, abandoned: true });
-  assert.equal(back.blueOf(back.raceN + 1), 'h');
-  back.ready('h'); back.ready('g');
-  assert.equal(back.state, 'race');
-  assert.equal(back.raceN, 3);
-  // a finished match comes back finished
-  back.endRace({ winner: 'h', margin: 2, abandoned: false });
-  assert.equal(Match.from(back.toJSON()).state, 'over');
+  m.present('g', false);
+  t.v += 299999; m.tick();
+  assert.equal(m.state, 'race');
+  t.v += 1; m.tick();
+  assert.equal(m.state, 'over');
+  assert.equal(m.result.abandoned, true);
+  // someone who isn't in the race counts for nothing
+  const n = new Match({ start: start(), now: () => t.v });
+  n.present('x', false);
+  t.v += 600000; n.tick();
+  assert.equal(n.state, 'race');
 });
 
 test('the host picks the guest: a third person with an earlier clock still sees the match full', async () => {
@@ -245,7 +269,7 @@ test('a join that fails is reported: joined is false and error says why', async 
 });
 
 // ---------- the race between two screens: the host's game runs it, the guest's follows ----------
-const RACE_SETTINGS = { venue: 'palma', yacht: 'jpk1050', preset: 'medium', length: 'short' };
+const RACE_SETTINGS = { venue: 'palma', yacht: 'jpk1050', preset: 'medium', length: 'short', start: 5 }; // (the five-minute sequence: these tests are of the screens, before any gun)
 const FRAME = 1 / 60;
 
 // a hub that counts every broadcast sent and every one delivered
@@ -264,21 +288,21 @@ function counting(hub) {
   return { rt, n };
 }
 
-// both boats sailing, on a reach away from their ends at 2 m/s, the same on each screen (a match starts them luffing,
-// nearly stopped: these tests are of the helm and the sails between the screens, which want a boat with way on)
+// both boats sailing, well apart below the line and on a reach away from each other at 2 m/s, the same on each screen
+// (these tests are of the helm and the sails between the screens, which want a boat with way on and none in her way)
 function underWay(r) {
   const c = r.course;
-  for (const b of r.humans) {
-    const out = b.side === 'blue' ? 1 : -1;
-    Object.assign(b, { h: Math.atan2(c.dir.x * out, -c.dir.z * out), v: 2, sheet: sheetFor(idealSail(60)), jibSheet: sheetFor(idealSail(60)) });
-  }
+  r.humans.forEach((b, i) => {
+    const out = i ? -1 : 1;
+    Object.assign(b, { x: b.x + c.dir.x * out * 60, z: b.z + c.dir.z * out * 60, h: Math.atan2(c.dir.x * out, -c.dir.z * out), v: 2, sheet: sheetFor(idealSail(60)), jibSheet: sheetFor(idealSail(60)) });
+  });
 }
-// a match's first race on two screens: the host's (h) and the guest's (g), each with her own link, over one hub
+// a race on two screens: the host's (h) and the guest's (g), each with her own link, over one hub
 // (latency: ms each way); rooms: each screen's waiting room too, paused for the race as the game pauses it
 async function duel({ rt = null, hub = null, latency = 0, jitter = 0, rooms = false, alive } = {}) {
   const clock = { t: 50000 }, now = () => clock.t, code = 'DUEL22';
   rt ??= hub ? hub(now) : memoryRealtime({ latency, jitter, now });
-  const match = new Match({ start: { settings: RACE_SETTINGS, seed: 4242, race: 1, blue: 'h', host: person('h', 'Host'), guest: person('g', 'Guest') }, now });
+  const match = new Match({ start: { settings: RACE_SETTINGS, seed: 4242, host: person('h', 'Host'), guest: person('g', 'Guest') }, now });
   const hl = makeLink(rt, code), gl = makeLink(rt, code);
   let hroom = null, groom = null;
   if (rooms) {
@@ -330,7 +354,6 @@ test('the guest steers and the host\'s copy turns; each sees the other within 1 
   assert.ok(worstGuest < 1, `the guest sees the host's boat within ${worstGuest.toFixed(2)} m`);
   assert.ok(worstHost < 1, `the host sees the guest's boat within ${worstHost.toFixed(2)} m`);
   assert.ok(Math.abs(d.grace.clock - d.hrace.clock) < 0.25, 'the clocks agree');
-  assert.equal(d.grace.calls.length, 0);
 
   // 150 ms each way: she turns, and centres her helm. What the host's copy of her says moves her own boat only by
   // what really differs, not by the delay: her bow isn't pulled on after the turn, and she is on the host's copy's
@@ -349,36 +372,6 @@ test('the guest steers and the host\'s copy turns; each sees the other within 1 
   const fw = { x: Math.sin(e.Gh.h), z: -Math.cos(e.Gh.h) }, dx = e.me.x - e.Gh.x, dz = e.me.z - e.Gh.z;
   assert.ok(Math.abs(wrap(e.me.h - e.Gh.h)) < 1 * D2R, `on the host's copy's heading (${(wrap(e.me.h - e.Gh.h) / D2R).toFixed(2)}°)`);
   assert.ok(Math.abs(dx * fw.z - dz * fw.x) < 0.5, `and on its line (${(dx * fw.z - dz * fw.x).toFixed(2)} m off it)`);
-});
-
-// a port–starboard crossing halfway up the first beat, after the gun: the host (blue) on port, the guest on
-// starboard, each `secs` from the crossing at V, their helms centred
-function crossing(d, secs = 5, V = 3.4) {
-  const r = d.hrace, c = r.course;
-  r.clock = 30;
-  const X = { x: (c.pin.x + c.committee.x) / 4 + c.windward.x / 2, z: (c.pin.z + c.committee.z) / 4 + c.windward.z / 2 };
-  const W = r.wind.at(X.x, X.z).dir;
-  const put = (b, h) => {
-    Object.assign(b, { x: X.x - Math.sin(h) * V * secs, z: X.z + Math.cos(h) * V * secs, h, v: V, leg: 1, entered: true, owed: 0, auto: null, rudder: 0, yawRate: 0, hist: null, boom: 0 });
-    Object.assign(b, { lastD: lineD(c, b), lastZ: b.z });
-  };
-  put(d.H, W + 45 * D2R); put(d.Gh, W - 45 * D2R);
-}
-
-test('a call is made once, on the host, and each hears her own', async () => {
-  const d = await duel();
-  d.run(1);
-  crossing(d);
-  d.run(12, () => { d.H.rudder = 0; d.me.rudder = 0; });
-  assert.equal(d.hrace.calls.length, 1, JSON.stringify(d.hrace.calls.map((k) => [k.on, k.rule])));
-  const k = d.hrace.calls[0], arg = { rule: k.rule, on: k.on };
-  assert.equal(d.grace.calls.length, 0, 'the guest\'s game makes no calls of its own');
-  const ump = (list) => list.filter((m) => m.key === 'umpire');
-  assert.deepEqual(ump(d.heard).map((m) => [m.arg, m.to === d.me]), [[arg, true]], 'the guest hears it once, as hers');
-  assert.deepEqual(ump(d.hostHeard).map((m) => [m.arg, m.to === d.H]), [[arg, true]], 'and the host once');
-  const owes = k.on === 'g' ? d.me : d.Hg;
-  assert.equal(owes.owed, 1, 'the guest\'s screen shows the penalty owed');
-  assert.ok(d.heard.every((m) => !m.to || m.to === d.me), 'the guest is told only her own news');
 });
 
 test('a silent guest holds course, then the race goes to the host', async () => {
@@ -616,21 +609,21 @@ test('after the host\'s game hitches, the guest\'s clock, wind and waves are the
 test('her penalty turn is the host\'s to judge: her own screen never pays it, and hears it paid once', async () => {
   const d = await duel();
   d.run(1);
-  // the host's copy of her owes one and is turning it
-  Object.assign(d.Gh, { owed: 1, pen: { mr: true } });
+  // the host's copy of her owes a turn, the tack of it done
+  d.Gh.pen = { tack: true, gybe: false, dir: 1 };
   d.run(0.2);
-  assert.equal(d.me.owed, 1); assert.ok(d.me.pen);
-  // her own screen, sailing on, has her on the beat and close-hauled: there the turn would be done at once
-  Object.assign(d.me, { leg: 1, h: wrap(d.me.wdir - 40 * D2R), events: [] });
-  d.grace.clock = 20;
+  assert.deepEqual(d.me.pen, { tack: true, gybe: false, dir: 1 });
+  // her own screen, sailing on, has her gybing: there the turn would be done at once
+  d.me.events = [];
+  d.me.pen.gybe = true;
   for (let k = 0; k < 20; k++) { d.clock.t += 1000 * FRAME; d.guest.frame(FRAME); }
-  assert.equal(d.me.owed, 1, 'still owed: the host hasn\'t seen it done');
-  assert.ok(d.me.pen, 'still turning');
+  d.run(0.3);
+  assert.deepEqual(d.me.pen, { tack: true, gybe: false, dir: 1 }, 'still turning: the host hasn\'t seen it done');
   assert.deepEqual(d.me.events.filter((e) => e === 'penaltyDone'), []);
   // the host sees it done
-  Object.assign(d.Gh, { owed: 0, pen: null });
+  d.Gh.pen = null;
   d.run(0.5);
-  assert.equal(d.me.owed, 0); assert.equal(d.me.pen, null);
+  assert.equal(d.me.pen, null);
   assert.deepEqual(d.me.events.filter((e) => e === 'penaltyDone'), ['penaltyDone']);
 });
 
@@ -799,17 +792,18 @@ test('a host silent 58 to 65 s: the guest waits, and both screens agree on what 
   }
 });
 
-// ---------- the host's side between races (Keeper): presence, Ready and the automatic start ----------
-// the host's, the guest's and a third person's screens in one room over the hub, the clock fake; the match started and
-// its first race sailed, the card just open. say(who): that screen's beat of hellos; secs(n, ...who): n seconds of
-// beats, the Keeper's four a second, each named screen's room ticking
-async function between({ build = 'b1', guestBuild = 'b1' } = {}) {
+// ---------- the host's side after the race (Keeper): who is here ----------
+// the host's, the guest's and a third person's screens in one room over the hub, the clock fake; the race started and
+// sailed, the card just open. say(who): that screen's beat of hellos; secs(n, ...who): n seconds of beats, the Keeper's
+// four a second, each named screen's room ticking
+async function afterRace({ build = 'b1', guestBuild = 'b1' } = {}) {
   const hub = memoryRealtime(), clock = { t: 10000 }, now = () => clock.t;
   const mk = async (me, host) => { const r = new Room({ link: makeLink(hub, 'KEEP22'), me, host, settings: host ? SETTINGS : null, now, every: 0 }); await r.joined; return r; };
   const hl = makeLink(hub, 'KEEP22');
   const host = new Room({ link: hl, me: { ...person('h', 'Host'), build }, host: true, settings: SETTINGS, now, every: 0 });
   await host.joined;
   const keeper = new Keeper({ room: host, link: hl, build, now });
+  await hl.input.join();
   clock.t += 100;
   const gl = makeLink(hub, 'KEEP22');
   const guest = new Room({ link: gl, me: { ...person('g', 'Guest'), build: guestBuild }, host: false, now, every: 0 });
@@ -827,61 +821,39 @@ async function between({ build = 'b1', guestBuild = 'b1' } = {}) {
   host.pause(false); guest.pause(false); third.pause(false);
   const rooms = { host, guest, third };
   const secs = (n, ...who) => { for (let i = 0; i < n * 4; i++) { clock.t += 250; for (const w of who) rooms[w].tick(); keeper.beat(); } };
-  const ready = (n = m.nextN) => gl.all.send('ready', { id: 'g', n, seed: m.start.seed });
-  return { hub, clock, keeper, m, host, guest, third, secs, ready, gl };
+  return { hub, clock, keeper, m, host, guest, third, secs, gl, hl };
 }
 
-test('a third with the link never takes the guest\'s place: she is silent 12 s between races, comes back, both Ready, and race 2 is hers', async () => {
-  const { keeper, m, host, third, secs, ready } = await between();
-  assert.equal(m.state, 'between');
+test('the Keeper keeps who is here and what she has loaded, and nothing of Ready', async () => {
+  const { keeper, m, gl } = await afterRace();
+  for (const k of ['ready', 'readyMe', 'left', 'cardOpenAt']) assert.equal(k in keeper, false, k);
+  assert.equal(m.result.winner, 'h', 'its race ended with its result');
+  // loaded: this race's, from her alone
+  gl.all.send('loaded', { id: 'x', seed: m.start.seed });
+  gl.all.send('loaded', { id: 'g', seed: m.start.seed + 1 });
+  assert.equal(keeper.loaded, null);
+  gl.all.send('loaded', { id: 'g', seed: m.start.seed });
+  assert.equal(keeper.loaded, m.start.seed);
+});
+
+test('a third with the link never takes the guest\'s place: she is silent 12 s after the race, comes back, and the rematch is hers', async () => {
+  const { keeper, m, host, third, secs } = await afterRace();
+  assert.equal(m.state, 'over');
   secs(12, 'host', 'third'); // the guest's screen silent (a tunnel, a locked phone); the third's open
   assert.equal(keeper.present(), false, 'she is not here');
   assert.equal(host.guest, null, 'the room has no guest while she is away: not the third');
-  assert.equal(third.full, true, 'the third is still told the match is full');
-  assert.equal(m.state, 'between');
+  assert.equal(third.full, true, 'the third is still told the race is full');
   secs(1, 'host', 'third', 'guest'); // she is back
   assert.equal(keeper.present(), true);
   assert.equal(host.guest.id, 'g');
-  ready(); keeper.readyMe();
-  assert.equal(m.state, 'race', 'both Ready: the next race');
-  assert.equal(m.raceN, 2);
-  assert.equal(m.guestId, 'g');
   assert.equal(third.full, true);
-  // a rematch is hers too
-  assert.equal(host.start().guest.id, 'g');
+  assert.equal(host.start().guest.id, 'g', 'a rematch is hers too');
 });
 
-test('between races: one Ready starts the race after the card\'s minute with both here; the minute waits for a missing guest, and counts from her return', async () => {
-  const { keeper, m, clock, secs, ready } = await between();
-  keeper.readyMe();
-  secs(30, 'host', 'guest');
-  assert.equal(m.state, 'between');
-  assert.ok(Math.abs(keeper.left() - 30) < 0.5, `${keeper.left()} s left`);
-  secs(30.5, 'host', 'guest');
-  assert.equal(m.state, 'race', 'the minute up with both here');
-  // the next card: she goes silent at once, for two minutes; the race never starts without her
-  keeper.raceOn(); secs(1); keeper.raceEnded({ winner: 'g', margin: 2 }); keeper.raceOff();
-  secs(120, 'host');
-  assert.equal(m.state, 'between');
-  assert.equal(keeper.left(), null, 'no countdown while she is away');
-  secs(1, 'host', 'guest');
-  assert.ok(keeper.left() > 58, 'the minute from her return');
-  secs(58, 'host', 'guest');
-  assert.equal(m.state, 'between');
-  secs(2, 'host', 'guest');
-  assert.equal(m.state, 'race');
-  assert.equal(m.raceN, 3);
-  // a Ready for another race, or another match's, or from someone else, is nothing
-  keeper.raceOn(); secs(1); keeper.raceEnded({ winner: 'h', margin: 1 }); keeper.raceOff();
-  assert.equal(m.state, 'over', '2–1');
-  void clock; void ready;
-});
-
-test('a guest silent as a race ends isn\'t here till she is heard again (not the room\'s ten seconds); gone five minutes, the match is over', async () => {
-  const { hub, keeper, m, clock, host, secs, ready, gl } = await between();
-  // (between() had her inputs coming to the end) — the next race, and she goes silent in it
-  keeper.readyMe(); ready();
-  assert.equal(m.state, 'race');
+test('a guest silent as a race ends isn\'t here till she is heard again (not the room\'s ten seconds)', async () => {
+  const { keeper, m, clock, host, secs } = await afterRace();
+  const next = new Match({ start: { ...m.start, seed: m.start.seed + 1 }, now: () => clock.t });
+  keeper.set(next);
   host.pause(true); keeper.raceOn(); // (the room paused for the race, as the game pauses it)
   secs(5); // no inputs
   keeper.raceEnded({ winner: 'g', margin: 3 }); keeper.raceOff(); host.pause(false);
@@ -889,28 +861,63 @@ test('a guest silent as a race ends isn\'t here till she is heard again (not the
   assert.equal(host.heard('g'), true);
   secs(1, 'host', 'guest');
   assert.equal(keeper.present(), true, 'heard again: here');
-  // a Ready from someone else, for another race, or another match, is nothing
-  gl.all.send('ready', { id: 'x', n: m.nextN, seed: m.start.seed });
-  gl.all.send('ready', { id: 'g', n: m.nextN + 1, seed: m.start.seed });
-  gl.all.send('ready', { id: 'g', n: m.nextN, seed: m.start.seed + 1 });
-  assert.equal(keeper.ready.size, 0);
-  // gone for good: five minutes
-  secs(299, 'host');
-  assert.equal(m.state, 'between', 'four minutes and fifty-odd seconds: still waiting');
-  secs(12, 'host');
-  assert.equal(m.state, 'over', 'five minutes gone: over');
-  assert.deepEqual(m.score, { h: 1, g: 1 });
-  void hub; void clock;
+});
+
+test('a guest home and silent costs the race nothing: only the race\'s own rules end it', async () => {
+  const { keeper, m, clock, secs } = await afterRace();
+  const next = new Match({ start: { ...m.start, seed: m.start.seed + 1 }, now: () => clock.t });
+  keeper.set(next);
+  keeper.raceOn();
+  secs(400); // over six minutes without a word: the Host forfeits a boat still out at 30 s; a boat home has nothing to give up
+  assert.equal(next.state, 'race');
+});
+
+test('a guest who never loads the race, gone five minutes: the race is over, abandoned', async () => {
+  const { keeper, m, clock, secs } = await afterRace();
+  const next = new Match({ start: { ...m.start, seed: m.start.seed + 1 }, now: () => clock.t });
+  keeper.set(next);
+  secs(290, 'host');
+  assert.equal(next.state, 'race', 'under five minutes of her silence');
+  secs(25, 'host');
+  assert.equal(next.state, 'over');
+  assert.equal(next.result.abandoned, true);
 });
 
 test('a guest on another build is never raced: the room has her, but she isn\'t here till both screens run the same game', async () => {
-  const { keeper, m, secs, ready } = await between({ guestBuild: 'b2' });
+  const { keeper, secs } = await afterRace({ guestBuild: 'b2' });
   secs(2, 'host', 'guest');
   assert.equal(keeper.stale(), true);
   assert.equal(keeper.present(), false);
-  ready(); keeper.readyMe();
-  secs(90, 'host', 'guest');
-  assert.equal(m.state, 'between', 'never started');
+});
+
+// ---------- the end of the race, once the card is up: the beat keeps it going (match-ui.js) ----------
+test('after the race the host\'s tick(0) and flush go on repeating the end and the results, and the results stop at her answer', async () => {
+  const d = await duel();
+  d.run(1);
+  const heard = { snap: 0, end: 0, results: 0 };
+  const ear = makeLink(d.rt, d.code).all;
+  await ear.join();
+  for (const k of Object.keys(heard)) ear.on(k, () => heard[k]++);
+  // her answer doesn't come: she is deaf to the results for now
+  const answer = d.guest._onResults; d.guest._onResults = () => {};
+  d.hrace.forfeit(d.Gh);
+  d.host.tick(FRAME);
+  assert.equal(heard.end, 1); assert.equal(heard.results, 1);
+  // the frames have stopped (the card is open): only the beat, four times a second
+  const beat = (secs) => { for (let i = 0; i < secs * 4; i++) { d.clock.t += 250; d.host.tick(0); d.host.flush(); } };
+  beat(5);
+  assert.ok(heard.end >= 5 && heard.end <= 6, `the end told ${heard.end} times`);
+  assert.ok(heard.snap >= 5 && heard.snap <= 6, `the last snapshot ${heard.snap} times`);
+  assert.ok(heard.results >= 5 && heard.results <= 6, `the results ${heard.results} times`);
+  assert.equal(d.host.acked, false);
+  // she hears them, and answers: no more results
+  d.guest._onResults = answer;
+  beat(1.25);
+  assert.equal(d.host.acked, true);
+  assert.ok(d.guest.results, 'she has them');
+  const n = heard.results;
+  beat(3);
+  assert.equal(heard.results, n, 'answered: the results stop');
 });
 
 test('penalties owed off the wire are read as 0 to 9: a bad number never hangs the HUD', async () => {

@@ -1230,13 +1230,16 @@ function newRace() {
   world.resetView();
   hints = {}; lastClockInt = null; coachSeen = {}; skipper.reset(); asides.reset(); committee.reset(); score.reset();
 }
-// in a match, until its first race: the two boats at their ends of the line, in the host's wind and length if this is
-// the host's screen (the set-up page's), else the usual
+// in a 1-on-1 race, until it starts: the two boats below the line, in the race the host set up if this is the host's
+// screen (the set-up page's), else the usual. The defaults are match.js cleanSettings', by hand: this module doesn't load
+// match.js
 function matchView() {
   let s = null; try { s = JSON.parse(localStorage.getItem('regatta-match-settings') || 'null'); } catch (e) {}
-  race = new Race({ preset: ['light', 'medium', 'strong'].includes(s?.preset) ? s.preset : 'medium', length: s?.length === 'medium' ? 'medium' : 'short', match: true, seed: 1,
-    humans: [{ id: 'blue', name: '' }, { id: 'yellow', name: '' }], me: 'blue' });
-  race.settings = { daily: null, match: true, preset: s?.preset || 'medium', laps: 2, start: 5, fleet: 2, length: s?.length || 'short', course: 'wl' };
+  const one = (v, list) => (list.includes(v) ? v : list[0]);
+  const set = { preset: one(s?.preset, ['medium', 'light', 'strong']), length: one(s?.length, ['short', 'medium', 'long']), course: one(s?.course, ['wl', 'tri', 'trap', 'wlu']), laps: one(Number(s?.laps), [1, 2]),
+    start: one(Number(s?.start), [1, 3, 5]), current: one(Number(s?.current), [0, 1]), daytime: one(s?.daytime, ['any', 'morning', 'midday', 'afternoon', 'evening', 'sunset']) };
+  race = new Race({ ...set, current: !!set.current, fleet: 2, seed: 1, humans: [{ id: 'a', name: '' }, { id: 'b', name: '' }], me: 'a' });
+  race.settings = { ...set, fleet: 2, daily: null };
   world.setRace(race); world.resetView();
 }
 // a race of the match on screen (match-ui.js): its race in place of the last, the HUD up
@@ -1620,10 +1623,10 @@ for (const a of [$('#backLink'), $('#lBack')]) { // the menu's back and the load
   // the loading screen names the race now it's known: the venue in its title, the wind, the course and the fleet under it
   const s = MATCH ? race.settings : settings(), tr = (en, ru) => (LANG === 'ru' ? ru : en), boats = s.fleet - 1;
   if (MATCH) window.rycLoader?.race?.(VENUE.name[LANG === 'ru' ? 1 : 0], [
-    [tr('Match', 'Матч'), 3, tr('races', 'гонки'), tr('First to two wins', 'До двух побед')],
-    [tr('Course', 'Дистанция'), 2, tr('laps', 'круга'), t('shapeWl')],
+    [tr('Race', 'Гонка'), 1, tr('race', 'гонка'), tr('One race, one winner', 'Одна гонка, один победитель')],
+    [tr('Course', 'Дистанция'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
     [tr('Boats', 'Лодки'), 2, '', tr('You and a friend', 'Ты и друг')],
-  ], tr('5-minute start sequence', 'стартовая процедура 5 мин'));
+  ], tr(`${s.start}-minute start sequence`, `стартовая процедура ${s.start} мин`));
   else window.rycLoader?.race?.(VENUE.name[LANG === 'ru' ? 1 : 0], [
     [tr('Wind', 'Ветер'), { light: 7, medium: 12, strong: 19 }[s.preset], tr('kn', 'уз'), { light: tr('Light breeze', 'Слабый ветер'), medium: tr('Medium breeze', 'Средний ветер'), strong: tr('Strong breeze', 'Сильный ветер') }[s.preset]],
     [tr('Course', 'Дистанция'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
