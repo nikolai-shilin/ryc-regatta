@@ -12,6 +12,7 @@ const { SailAdForm, BannerForm } = await import('../components/admin-form.tsx');
 const insight = await import('../components/admin-insight.tsx');
 const { PlayersTable } = await import('../components/admin-players-table.tsx');
 const { AdminPlayers } = await import('../components/admin-players.tsx');
+const { AdminLogs } = await import('../components/admin-logs.tsx');
 const { AdminSchedule } = await import('../components/admin-schedule.tsx');
 const { ADMIN_PAGES, STAT_DAYS, pickDays, adminTitle, adminLoad, adminRpc, AdminShell, AdminHub, AdminMissing } = await import('../components/admin-shell.tsx');
 const { AdminRacing, AdminPerf, Tile, Table, hasStats } = await import('../components/admin-stats.tsx');
@@ -407,6 +408,38 @@ test('a player with nothing in a column goes last whichever way it is sorted', a
   assert.deepEqual(names(v), ['Cleo', 'Anna', 'Boris']);
   await click(head(v, 2));
   assert.deepEqual(names(v), ['Anna', 'Cleo', 'Boris']);
+});
+
+// ---------- the players with a problem (/admin/logs) ----------
+const logPerson = (who, name, o) => ({ who, kind: 'tg', name, handle: null, last: null, visits: 3, bad: 1, failed: 0, gave_up: 0, lost: 0, errors: 0, slow: 0, low: 0, dev: null, ...o });
+const LOGS = { since: '2026-11-01T00:00:00Z', report: null, totals: { visits: 9, bad: 3, failed: 3, gave_up: 0, lost: 0, errors: 6, slow: 0, low: 0, people: 3 }, people: [
+  logPerson('1', 'Ann', { failed: 2, last: '2026-11-10T10:00:00Z', dev: 'phone' }),
+  logPerson('2', 'Ben', { errors: 5, last: '2026-11-17T10:00:00Z', dev: 'desktop' }),
+  logPerson('3', 'Cy', { failed: 1, errors: 1, last: '2026-11-12T10:00:00Z' }),
+] };
+const logs = (lang = 'en') => h(AdminLogs, { lang, data: LOGS, days: 7 });
+
+test('the players with a problem start with the latest problem first', async () => {
+  const v = await mount(logs());
+  assert.deepEqual(names(v), ['Ben', 'Cy', 'Ann']);
+  assert.equal(v.$$('th[scope=col]')[8].getAttribute('aria-sort'), 'descending');
+});
+
+test('a problem’s column puts the most of it first, and those without it last either way', async () => {
+  const v = await mount(logs());
+  await click(head(v, 1));
+  assert.deepEqual(names(v), ['Ann', 'Cy', 'Ben']);
+  await click(head(v, 1));
+  assert.deepEqual(names(v), ['Cy', 'Ann', 'Ben']);
+});
+
+test('the players with a problem sort by name and by device, and each still opens their log', async () => {
+  const v = await mount(logs());
+  await click(head(v, 0));
+  assert.deepEqual(names(v), ['Ann', 'Ben', 'Cy']);
+  await click(head(v, 7));
+  assert.deepEqual(names(v), ['Ben', 'Ann', 'Cy'], 'Computer, Phone, and no device last');
+  assert.deepEqual(v.$$('tbody a').map((a) => a.getAttribute('href')), ['/admin/logs?who=2&days=7', '/admin/logs?who=1&days=7', '/admin/logs?who=3&days=7']);
 });
 
 test('a new player is marked, and the cells follow their row', async () => {

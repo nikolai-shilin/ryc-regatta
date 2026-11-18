@@ -5,6 +5,7 @@ import { plainName } from '@/lib/name';
 import { SHAPE_NAME } from '@/lib/race';
 import { VENUES } from '@/lib/venues';
 import { YACHTS } from '@/lib/yachts';
+import { PlayersTable, type Col, type Row } from './admin-players-table';
 import { Tile } from './admin-stats';
 import { IconBack, IconClock, IconCrew, clock } from './ui';
 
@@ -208,6 +209,19 @@ function Report({ w, report: r, days }: { w: W; report: LogReport; days: number 
 // the players with a problem in the period, the latest first
 function People({ w, data, days }: { w: W; data: Logs; days: number }) {
   const { t } = w, T = data.totals;
+  const cols: Col[] = [
+    { label: t('Failed', 'Сбой') }, { label: t('Gave up', 'Бросил') }, { label: t('3D lost', '3D') }, { label: t('Errors', 'Ошибки') },
+    { label: t('Slow', 'Медленно') }, { label: t('Low rating', 'Оценка') }, { label: t('Device', 'Устройство'), asc: true }, { label: t('Last problem', 'Последняя проблема') },
+  ];
+  // a count of none sorts as nothing, so the players who have that problem stay on top whichever way the column is turned
+  const rows: Row[] = data.people.map((p) => {
+    const counts = [p.failed, p.gave_up, p.lost, p.errors, p.slow, p.low];
+    return {
+      key: p.who, href: logHref(p.who, days), name: playerName(w, p), sub: playerSub(w, p), isNew: false,
+      cells: [...counts.map(cell), w.dev(p.dev) ?? '–', p.last ? w.when(p.last) : '–'],
+      vals: [...counts.map((n) => n || null), w.dev(p.dev), p.last ? Date.parse(p.last) : null],
+    };
+  });
   return (
     <div className="adm adm-stats">
       <div className="adm-k"><IconClock /><span className="kicker">{t('Players with problems', 'Игроки с проблемами')}</span></div>
@@ -223,27 +237,9 @@ function People({ w, data, days }: { w: W; data: Logs; days: number }) {
       </div>
       {data.people.length > 0 ? (
         <section className="adm-tab">
-          <h3 className="adm-tab-h">{t('Open a player for their full log', 'Откройте игрока, чтобы увидеть весь журнал')}</h3>
-          <div className="adm-tab-scroll" tabIndex={0} role="region" aria-label={t('Players with problems', 'Игроки с проблемами')}>
-            <table className="adm-players">
-              <thead>
-                <tr>{[t('Player', 'Игрок'), t('Failed', 'Сбой'), t('Gave up', 'Бросил'), t('3D lost', '3D'), t('Errors', 'Ошибки'), t('Slow', 'Медленно'), t('Low rating', 'Оценка'), t('Device', 'Устройство'), t('Last problem', 'Последняя проблема')].map((h) => <th key={h} scope="col">{h}</th>)}</tr>
-              </thead>
-              <tbody>
-                {data.people.map((p) => (
-                  <tr key={p.who}>
-                    <th scope="row">
-                      <Link className="adm-pl-name adm-pl-link" href={logHref(p.who, days)}>{playerName(w, p)}</Link>
-                      <span className="adm-pl-sub">{playerSub(w, p)}</span>
-                    </th>
-                    {[p.failed, p.gave_up, p.lost, p.errors, p.slow, p.low].map((n, i) => <td key={i}>{cell(n)}</td>)}
-                    <td>{w.dev(p.dev) ?? '–'}</td>
-                    <td>{p.last ? w.when(p.last) : '–'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <h3 className="adm-tab-h">{t('Open a player for their full log, or click a column to sort by it', 'Откройте игрока, чтобы увидеть весь журнал, или нажмите на столбец, чтобы отсортировать')}</h3>
+          <PlayersTable first={{ label: t('Player', 'Игрок'), asc: true }} cols={cols} rows={rows} start={cols.length}
+            label={t('Players with problems', 'Игроки с проблемами')} newLabel={t('New', 'Новый')} />
         </section>
       ) : <p className="hint">{t('No player had a problem in this period.', 'За этот период проблем ни у кого не было.')}</p>}
       <p className="hint">{t(`A problem is a load that failed or was given up, the 3D lost, an error on the page, a race under ${SLOW} frames a second, or one rated two stars or fewer. A guest is a browser. Times in UTC. The latest 200 players are shown.`,
