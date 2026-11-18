@@ -709,6 +709,7 @@ export const SHAPES = ['wl', 'tri', 'trap', 'wlu'];
 // doesn't lay it at that length (venues.js skip)
 export const laidShape = (course, length) => (SHAPES.includes(course) && shapeOffered(VENUE, course, length) ? course : 'wl');
 export const ZONE = 3 * HULL; // the zone round a mark: three hull lengths
+export const FINISH_LIMIT_S = 180; // a race of two humans: the boat still out has this long after the first valid finish
 const SEP = HULL * 0.78; // the computer skippers keep the centres this far apart, and then some
 // how big her boats are against the club's: the computer skippers' sense of a close pass and of room to tack scales
 // with it (SZ_PASS, a dinghy's tighter, a cruiser's wider), and their path round a mark grows with it but never
@@ -847,6 +848,8 @@ export class Race {
   constructor({ preset = 'medium', laps = 1, autoTrim = false, seed = Date.now() % 100000, start = 1, current = false, fleet = 4, length = 'short', course = 'wl', bias: lineBias = null, level = null, daytime = 'any',
     humans = [{ id: 'you', name: 'You' }], me = humans[0].id, match = false, blue = humans[0].id } = {}) {
     this.match = !!match;
+    // two humans and no computer boats, not a match: today's rules, and the first valid finish wins
+    this.multi = humans.length > 1 && !match; this.validAt = null;
     if (match) { fleet = 2; course = 'wl'; laps = 2; start = 5; current = false; }
     // the zone round a mark (rule 18): three hull lengths, two in a match (Appendix C)
     this.zone = match ? 2 * HULL : ZONE;
@@ -939,7 +942,7 @@ export class Race {
       b.color = color; b.crew = clamp(1.5 - b.ai.skill, 0.5, 1.2); // the better skippers have the surer crews
       this.boats.push(b);
     });
-    for (const b of this.boats) Object.assign(b, { leg: 0, ocs: false, done: false, finish: null, track: [], lastD: lineD(this.course, b), lastZ: b.z, rnd: null, dsq: false, touchT: 0, ufd: false, bfd: false,
+    for (const b of this.boats) Object.assign(b, { leg: 0, ocs: false, done: false, finish: null, track: [], lastD: lineD(this.course, b), lastZ: b.z, rnd: null, dsq: false, dnf: false, touchT: 0, ufd: false, bfd: false,
       legT: [], pens: 0 }); // for the result only: the clock as she finished each leg (the start's crossing first), and the penalties she got
     // the humans: the first in the spot above, human k in computer boat k's (her draws made as before, so a race with one
     // human is the race it always was), and all alike: no computer skipper, the first's trim and crew, the big jib
@@ -988,6 +991,13 @@ export class Race {
   }
   // a match given up by boat b (her sailor gone): the race is the other's
   forfeit(b) {
+    if (this.multi) { // a boat home can't give up; else the race is the other's, unless she is out too (or a winner is already home)
+      if (b.done) return;
+      const o = this.humans.find((h) => h !== b);
+      this.forfeited = b; this.over = true; this.margin = null;
+      if (!this.winner) this.winner = o && !(o.ufd || o.bfd || o.dsq) ? o : null;
+      return;
+    }
     this.winner = this.humans.find((o) => o !== b) ?? null; this.over = true; this.margin = null; this.forfeited = b;
   }
   // news for one boat's skipper (to: a human Boat), or for everyone (to: null)
@@ -1018,7 +1028,7 @@ export class Race {
     const ux = -Math.sin(w.dir), uz = Math.cos(w.dir); // downwind
     let deficit = 0, bend = 0;
     for (const o of this.boats) {
-      if (o === b) continue;
+      if (o === b || (this.multi && o.done)) continue; // (a boat home casts no shadow)
       const dx = b.x - o.x, dz = b.z - o.z, along = dx * ux + dz * uz;
       if (along < 3 * SHADOW_K || along > 80 * SHADOW_K) continue;
       const lat = dx * uz - dz * ux, width = 6 * SHADOW_K + along * 0.22;
@@ -1030,7 +1040,7 @@ export class Race {
     // (the "safe leeward" position); upwind only
     const fx = Math.sin(b.h), fz = -Math.cos(b.h), twaB = wrap(w.dir - b.h);
     if (Math.abs(twaB) < 70 * D2R) for (const o of this.boats) {
-      if (o === b || Math.abs(wrap(w.dir - o.h)) > 70 * D2R) continue;
+      if (o === b || (this.multi && o.done) || Math.abs(wrap(w.dir - o.h)) > 70 * D2R) continue;
       const dx = o.x - b.x, dz = o.z - b.z, down = dx * ux + dz * uz, ahead = dx * fx + dz * fz;
       const K = SHADOW_K;
       if (down < 2 * K || down > 22 * K || ahead < -2 * K || ahead > 20 * K || dx * dx + dz * dz > 625 * K * K) continue;
@@ -1120,6 +1130,11 @@ export class Race {
     if (this.match) this.entry(before); // (before progress moves lastD on)
     for (const b of this.boats) { const leg = b.leg; this.progress(b); if (b.leg > leg) b.legT.push(this.clock); }
     if (this.match) this.matchPens(dt);
+    // a race of two humans: FINISH_LIMIT_S after the first valid finish the boat still out is DNF, and it is over
+    if (this.multi && this.validAt !== null && !this.over && this.clock >= this.validAt + FINISH_LIMIT_S) {
+      for (const b of this.humans) if (!b.done) b.dnf = true;
+      this.over = true;
+    }
     this.zones();
     this.hails();
     this.record(dt, before);
@@ -1162,12 +1177,22 @@ export class Race {
           if (!this.winner) this.winner = b;
           else if (this.winner !== b && !this.forfeited) this.margin = b.finish - this.winner.finish;
           if (this.humans.every((o) => o.done)) this.over = true;
-        } else if (b === this.player) this.over = true;
+        } else if (this.multi) this.homeMulti(b);
+        else if (b === this.player) this.over = true;
       }
     }
     b.lastD = d; b.lastZ = b.z;
   }
 
+  // a race of two humans: the first home that isn't disqualified wins and starts the others' FINISH_LIMIT_S, the next
+  // one's margin is the gap, and with both home it is over
+  homeMulti(b) {
+    if (!b.dsq) {
+      if (this.winner === null) { this.winner = b; this.validAt = b.finish; }
+      else if (this.winner !== b && !this.forfeited) this.margin = b.finish - this.winner.finish;
+    }
+    if (this.humans.every((o) => o.done)) this.over = true;
+  }
   // a match's entry (Appendix C3): at the preparatory signal each boat outside the line square to the starting line
   // through her end (C3.1); in the two minutes after it, across the starting line at her own end, from the course side
   // to the pre-start side (C3.2: she shall "cross and clear the starting line"; her own half of it or the extension
@@ -1364,11 +1389,11 @@ export class Race {
   hails() {
     if (!this.rulesOn) return;
     for (const P of this.humans) for (const o of this.boats) {
-      if (o === P || !o.ai || o.done || P.done) continue;
+      if (o === P || !(o.ai || (this.multi && o.human)) || o.done || P.done) continue; // (in a race of two humans the other hails too)
       const c = this.cpa(P, o);
       if (c.now > 45 || c.d > 11 || c.t > 7) continue;
-      const r = this.judge(P, o);
-      if (r.giver === P && this.clock - o.ai.hailT > 7) { o.ai.hailT = this.clock; this.say('hail', { who: o.name, rule: r.rule }, P); P.log.hails[r.rule] = (P.log.hails[r.rule] || 0) + 1; }
+      const r = this.judge(P, o), hs = o.ai ?? o; // (the hail's own clock: the computer boat's, or a human's)
+      if (r.giver === P && this.clock - (hs.hailT ?? -99) > 7) { hs.hailT = this.clock; this.say('hail', { who: o.name, rule: r.rule }, P); P.log.hails[r.rule] = (P.log.hails[r.rule] || 0) + 1; }
     }
   }
   // contact: the boat that should have kept clear takes a one-turn penalty, one tack and one gybe (rule 44.2)
@@ -1447,6 +1472,7 @@ export class Race {
     const bs = this.boats, c = this.course;
     for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
       const p = bs[i], q = bs[j];
+      if (this.multi && (p.done || q.done)) continue; // (a boat home is out of the other's way)
       if (Math.hypot(q.x - p.x, q.z - p.z) > HULL + 1) continue;
       const g = hullGap(p, q);
       if (g.d < 2 * HALF_B) {
