@@ -17,6 +17,17 @@ const gauss = () => { let u = 0; while (!u) u = Math.random(); return Math.sqrt(
 // how often the sounds that follow the race are given new values (s): they glide over 60 ms or more, so a screen of 60 or 120 Hz needn't send each frame's
 export const AUDIO_TICK = 0.03;
 
+// the race's audio context, at the sound card's own rate up to 48 kHz. A card set to 96 or 192 kHz would have every
+// sound computed two or four times over for nothing anyone can hear, and a PC that can't keep up plays gaps, or nothing
+// (Windows at 192 kHz lost half its sound that way): above 48 kHz the browser is left to convert it for the card.
+const MAX_RATE = 48000;
+export function openAudio(AC) {
+  const ctx = new AC();
+  if (ctx.sampleRate <= MAX_RATE) return ctx;
+  ctx.close?.().catch(() => {});
+  return new AC({ sampleRate: MAX_RATE });
+}
+
 // a buffer's channels to an RMS of `rms`
 function level(buf, rms = 0.25) {
   for (let c = 0; c < buf.numberOfChannels; c++) {
