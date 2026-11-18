@@ -945,6 +945,49 @@ const engine = {
   },
 };
 
+// ---------- the airliner's engines ----------
+// Two big fans a long way up: the broad roar of the jets, a rumble under it that carries, and the fans' whine on top
+// that the air takes away first. What you hear left her seconds ago (airliners.js hear), so the roar comes after the
+// shadow when she's high, its pitch falling as she goes by. A climb out at full power is louder than an approach.
+const jetRoar = {
+  build() {
+    const ctx = audio.ctx, g = ctx.createGain(); g.gain.value = 0;
+    const noise = (type, freq, q, level) => {
+      const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), l = ctx.createGain();
+      s.buffer = audio.buf; s.loop = true; f.type = type; f.frequency.value = freq; f.Q.value = q; l.gain.value = level;
+      s.connect(f).connect(l).connect(g); s.start(0, Math.random() * 2);
+      return f;
+    };
+    const roar = noise('lowpass', 700, 0.5, 0.9); noise('lowpass', 110, 0.9, 2.6); // the roar, and the rumble
+    const fans = [ctx.createOscillator(), ctx.createOscillator()], bp = ctx.createBiquadFilter(), whine = ctx.createGain();
+    bp.type = 'bandpass'; bp.frequency.value = 1500; bp.Q.value = 2.5; whine.gain.value = 0;
+    for (const o of fans) { o.type = 'triangle'; o.connect(bp); o.start(); }
+    bp.connect(whine).connect(g);
+    const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if (p) g.connect(p).connect(audio.wild); else g.connect(audio.wild);
+    audio.sfx.send(g, 0.4, audio.wild); // and rolling back off the land
+    this.n = { g, roar, fans, whine, p };
+  },
+  update(still) {
+    if (!audio.ctx || !audio.buf) return;
+    if (!this.n) this.build();
+    const { g, roar, fans, whine, p } = this.n, ctx = audio.ctx, now = ctx.currentTime, jet = world.airliner;
+    if (now - (this.t ?? -1) < AUDIO_TICK) return;
+    this.t = now;
+    if (still || !jet?.on || !jet.sound.level) { g.gain.setTargetAtTime(0, now, 0.25); return; }
+    const o = jet.sound, cam = world.camera.position, dx = o.p.x - cam.x, dy = o.p.y - cam.y, dz = o.p.z - cam.z, d = Math.max(1, Math.hypot(dx, dy, dz));
+    const vr = -(o.v.x * dx + o.v.y * dy + o.v.z * dz) / d, shift = 343 / (343 - vr), near = Math.min(1, 700 / d);
+    fans[0].frequency.setTargetAtTime(1480 * shift, now, 0.2); fans[1].frequency.setTargetAtTime(1553 * shift, now, 0.2);
+    roar.frequency.setTargetAtTime((220 + 1500 * near) * shift, now, 0.3);
+    whine.gain.setTargetAtTime(0.09 * near * near, now, 0.3);
+    g.gain.setTargetAtTime((o.out ? 0.3 : 0.2) * near ** 1.2 * o.level, now, 0.3);
+    if (p) {
+      const v = world.camera.getWorldDirection(this._v || (this._v = cam.clone())), r = Math.hypot(v.x, v.z) || 1, hd = Math.hypot(dx, dz) || 1;
+      p.pan.setTargetAtTime(clamp((dx * -v.z + dz * v.x) / r / hd, -1, 1) * 0.7, now, 0.3);
+    }
+  },
+};
+
 // ---------- the gulls you hear, and the crew's asides ----------
 // The gulls (wildlife.js) call now and then, and cry when a boat puts one up off the water: a cry made here, from where
 // the gull is, quieter and duller the further off (under Sound, like the wind and the water). In the Russian game the
@@ -1708,7 +1751,7 @@ function updateHud(dt) {
     lastClockInt = ci;
   }
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) el.toast.classList.remove('show'); }
-  audio.update(P, paused); crews.update(P, paused); asides.update(); committee.update(); engine.update(false); score.update(P, dt);
+  audio.update(P, paused); crews.update(P, paused); asides.update(); committee.update(); engine.update(false); jetRoar.update(false); score.update(P, dt);
   if (race.coach) coach(P, a, leg);
   skipper.watch(P, dt);
   bcHud.update(P, dt);
@@ -2085,7 +2128,7 @@ function frame(now) {
     race.idle(dt);
     if (paused) { audio.update(P, true); crews.update(P, true); }
     score.update(P, dt); // paused or between races: the music fades out
-    engine.update(true);
+    engine.update(true); jetRoar.update(true);
   }
   // The race moves in steps of 1/60 s, the screen at 60, 120 or whatever the display runs at: drawn as the last step
   // left them, the boats would move on one frame and stand still on the next (at 120 Hz, every other frame), and the
@@ -2114,5 +2157,5 @@ function between(a) {
 }
 function putBack() { for (const b of race.boats) if (b._now) { for (const k of LERP) b[k] = b._now[k]; b._now = null; } }
 requestAnimationFrame(loop);
-if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, get mx() { return mx; }, get running() { return running; }, get paused() { return paused; }, world, audio, skipper, crews, asides, engine };
+if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, get mx() { return mx; }, get running() { return running; }, get paused() { return paused; }, world, audio, skipper, crews, asides, engine, jetRoar };
 document.addEventListener('visibilitychange', () => { if (document.hidden && running && !paused && !window.__rg && !MATCH) pause(); }); // not in debug: test screenshots hide the tab; nor in a match, which runs on

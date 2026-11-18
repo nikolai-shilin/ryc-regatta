@@ -11,6 +11,7 @@ import { buoy } from './marks.js';
 import { JuryBoat } from './jury.js';
 import { Wildlife } from './wildlife.js';
 import { BannerPlane } from './plane.js';
+import { Airliner } from './airliners.js';
 import { Jets } from './jets.js';
 import { Ships } from './ships.js';
 import { Post, Mirror, OVERLAY, MIRRORED } from './post.js';
@@ -1419,6 +1420,9 @@ export class World {
     // now and then a light plane tows an advertising banner across the course (plane.js)
     this.plane = new BannerPlane(this.renderer.capabilities.getMaxAnisotropy());
     this.scene.add(mirrored(this.plane.group));
+    // and, rarely, where an airport is close, an airliner comes over low, her shadow crossing the boats (airliners.js)
+    this.airliner = new Airliner(this.skyU);
+    this.scene.add(mirrored(this.airliner.group), this.airliner.shade);
     // tankers, container ships and the like passing far out, where the venue has open sea (ships.js)
     this.ships = new Ships(this.skyU);
     this.scene.add(this.ships.group);
@@ -1597,6 +1601,7 @@ export class World {
     this.contacts = race.boats.map(() => new HullContact(this.scene, this.wakeU, this.wakeField));
     this.wild.reset(race);
     this.plane.reset(race, (x, z) => groundAt(x + race.at.x, z + race.at.z)); // the land is laid round race.at
+    this.airliner.reset(race, (x, z) => groundAt(x + race.at.x, z + race.at.z));
     this.jets.reset(race);
     this.ships.reset(race, (x, z) => groundAt(x + race.at.x, z + race.at.z));
     this.skopea.place(race.at);
@@ -1987,6 +1992,7 @@ export class World {
     cam.updateProjectionMatrix();
     this.wild.update(dt, t, this.W, cam, this.foamU.uScale.value);
     this.plane.update(dt, cam, !this.intro);
+    this.airliner.update(dt, cam, !this.intro);
     this.sky.position.copy(cam.position); this.sky.material.uniforms.uTime.value = t; // the clouds drift
     this.skopea.update(cam.position, t); // the far trees as plain crowns, the clouds' shadows drifting
     this.jets.update(dt, cam, this.race);
