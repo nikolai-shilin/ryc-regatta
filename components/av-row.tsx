@@ -40,5 +40,5 @@ export function AvRow({ lang, wide = false }: { lang: Lang; wide?: boolean }) {
 
 // the line in the header's menu
 export function AvMenuItem({ lang }: { lang: Lang }) {
-  return <button type="button" className="hm-mi hm-mi-btn" onClick={() => openAv(lang)}>{tx(lang)('Audio & graphics', 'Звук и графика')}</button>;
+  return <button type="button" className="hm-mi hm-mi-btn" onClick={(e) => { e.currentTarget.closest('details')?.removeAttribute('open'); openAv(lang); }}>{tx(lang)('Audio & graphics', 'Звук и графика')}</button>;
 }
