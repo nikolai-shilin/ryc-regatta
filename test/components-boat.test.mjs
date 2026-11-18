@@ -795,7 +795,8 @@ const settings = (p = {}) => mount(h(SettingsForm, { lang: 'en', langSeg: h('nav
 test('Settings holds the account, your boat, how you sail and Audio & graphics', async () => {
   const v = await settings();
   assert.ok(v.$('#acct') && v.$('#seg'));
-  for (const w of ['Account', 'Your boat', 'Language', 'Sailing', 'Audio & graphics', 'Yacht name']) assert.ok(v.text().includes(w), w);
+  for (const w of ['Account', 'Your boat', 'Language', 'Sailing', 'Audio & graphics']) assert.ok(v.text().includes(w), w);
+  assert.equal(v.text().includes('Yacht name'), false, 'her name is set on the boat page');
 });
 
 test('your boat’s line shows her flag and sail number and leads to her', async () => {
@@ -817,63 +818,8 @@ test('a boat with no flag has a blank, and one from the account shows when it co
   assert.equal(v.$('.st-boat img').getAttribute('alt'), AU.ru);
 });
 
-test('the yacht’s name is kept at every key', async () => {
-  const v = await settings();
-  await type(v.$('#set-yacht'), 'Sea<> Dog');
-  assert.equal(v.$('#set-yacht').value, 'Sea Dog');
-  assert.equal(readBoat().name, 'Sea Dog');
-});
-
-test('emptied, she has no name', async () => {
-  saveBoat({ ...DEFAULT_BOAT, name: 'Sea Dog' });
-  const v = await settings();
-  assert.equal(v.$('#set-yacht').value, 'Sea Dog');
-  await type(v.$('#set-yacht'), '');
-  assert.equal(readBoat().name, undefined);
-});
-
-test('spaces round the name go when the field is left', async () => {
-  const v = await settings();
-  await doing(() => v.$('#set-yacht').focus());
-  await type(v.$('#set-yacht'), 'Sea Dog ');
-  await blur(v.$('#set-yacht'));
-  assert.equal(v.$('#set-yacht').value, 'Sea Dog');
-});
-
-test('a browser that won’t keep the name says so', async () => {
-  const v = await settings();
-  dom.storageBlocked = true;
-  await type(v.$('#set-yacht'), 'Sea');
-  assert.equal(v.$('[role=alert]').textContent, 'This browser didn’t keep it.');
-});
-
-const account = () => { signIn(); const updates = []; globalThis.__supabase = { auth: { getUser: async () => ({ data: { user: { user_metadata: {} } } }), updateUser: async (u) => { updates.push(u); return {}; } } }; return updates; };
-
-test('the name goes to the account once the typing stops', async () => {
-  const updates = account();
-  const v = await settings();
-  await type(v.$('#set-yacht'), 'S');
-  await tick(1000);
-  await type(v.$('#set-yacht'), 'Se');
-  await tick(1100);
-  assert.equal(updates.length, 0, 'not while typing');
-  await tick(100);
-  await settle();
-  assert.equal(updates.length, 1);
-  assert.equal(updates[0].data.boat.name, 'Se');
-});
-
-test('leaving the page straight after typing still sends the name', async () => {
-  const updates = account();
-  const v = await settings();
-  await type(v.$('#set-yacht'), 'Sea');
-  await v.unmount();
-  await settle();
-  assert.equal(updates[0].data.boat.name, 'Sea');
-});
-
 test('Settings in Russian', async () => {
   const v = await settings({ lang: 'ru' });
-  for (const w of ['Аккаунт', 'Твоя яхта', 'Цвета, флаг и номер', 'Изменить', 'Имя яхты', 'Язык', 'Яхта', 'Звук и графика']) assert.ok(v.text().includes(w), w);
+  for (const w of ['Аккаунт', 'Твоя яхта', 'Цвета, флаг и номер', 'Изменить', 'Язык', 'Яхта', 'Звук и графика']) assert.ok(v.text().includes(w), w);
   assert.deepEqual(englishIn(v.text()), []);
 });

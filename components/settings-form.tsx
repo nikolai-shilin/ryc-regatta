@@ -1,11 +1,10 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { tx, type Lang } from '@/lib/lang';
 import { cleanName, NAME_MAX } from '@/lib/name';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BOAT_EVENT, NAME_MAX as BOAT_NAME_MAX, cleanName as cleanBoatName, readBoat, saveBoat } from '@/lib/boat';
-import { syncAccount } from './bests-sync';
+import { BOAT_EVENT, readBoat } from '@/lib/boat';
 import { findFlag, flagSrc } from '@/lib/flags';
 import { IconArrow } from './ui';
 import { NoFlag } from './flag';
@@ -84,45 +83,6 @@ function BoatLine({ lang }: { lang: Lang }) {
   );
 }
 
-// Your yacht's name, the one on both quarters of her hull (as the boat page sets it), edited here in place: saved on
-// this device at every key as the other settings are, and sent to the account once the typing stops, as the boat page does
-function YachtName({ lang }: { lang: Lang }) {
-  const t = tx(lang);
-  const [name, setName] = useState('');
-  const [err, setErr] = useState(false);
-  const push = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => {
-    const load = () => setName(readBoat().name || '');
-    load();
-    addEventListener(BOAT_EVENT, load); // the account's boat, just brought to this device
-    return () => {
-      removeEventListener(BOAT_EVENT, load);
-      if (push.current) { clearTimeout(push.current); syncAccount().catch(() => {}); } // a change not yet sent
-    };
-  }, []);
-  const save = (raw: string) => {
-    const v = cleanBoatName(raw);
-    setName(v);
-    setErr(!saveBoat({ ...readBoat(), name: v.trim() || undefined }));
-    clearTimeout(push.current);
-    push.current = setTimeout(() => { push.current = undefined; syncAccount().catch(() => {}); }, 1200);
-  };
-  return (
-    <div className="name-row">
-      <div className="srow">
-        <label className="srow-k" htmlFor="set-yacht">{t('Yacht name', 'Имя яхты')}</label>
-        <div className="name-in">
-          <input id="set-yacht" className="field" type="text" autoComplete="off" spellCheck={false} maxLength={BOAT_NAME_MAX}
-            placeholder={t('No name', 'Без имени')} value={name}
-            onChange={(e) => save(e.target.value)} onBlur={() => { if (name.trim() !== name) save(name.trim()); }} />
-        </div>
-      </div>
-      {err ? <p className="err" role="alert">{t('This browser didn’t keep it.', 'Браузер не сохранил.')}</p>
-        : <p className="hint">{t('On both quarters of her hull. Leave it empty for none.', 'На корме с обоих бортов. Оставь пустым — будет без имени.')}</p>}
-    </div>
-  );
-}
-
 // S3 · Who you are, how you sail, and the way to Audio & graphics, in cards over the scene. Every change is saved at
 // once where the game reads it.
 export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: React.ReactNode; account: React.ReactNode }) {
@@ -133,7 +93,6 @@ export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: 
         {account}
         <div className="st-sub"><span className="lbl-ink">{t('Your boat', 'Твоя яхта')}</span></div>
         <BoatLine lang={lang} />
-        <YachtName lang={lang} />
         <div className="st-sub"><span className="lbl-ink" id="l-lang">{t('Language', 'Язык')}</span></div>
         {langSeg}
       </Card>
