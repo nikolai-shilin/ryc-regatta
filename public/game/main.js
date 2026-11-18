@@ -1126,6 +1126,7 @@ try {
   perfSetup({ gpu: gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER), size: () => [canvas.width, canvas.height] });
 } catch (e) {}
 const applyGfx = () => world.setQuality(...gfxNow(opts)); // (gfx.js: a level, Custom's parts, or what Auto draws on this device)
+world.setFigures(opts.figures !== 0); // Audio & graphics › People on board
 applyGfx();
 world.showGuides = !!opts.guides;
 // the level for the menu and the site's /admin: on Auto, the one its mix of parts comes closest to
@@ -1535,6 +1536,7 @@ let avClose = null;
 function applyAv(p) {
   if ('gfx' in p || 'gfxD' in p) { applyGfx(); perf.settle = 2; }
   if ('saver' in p) Object.assign(perf, { settle: 2, t: 0, d: [] }); // (the frame rate Auto watches changes with it)
+  if ('figures' in p) world.setFigures(p.figures !== 0);
   if ('music' in p || 'musicVol' in p) score.style();
   if ('sound' in p) audio.setOn(!!opts.sound);
   if (p.voice === 0) { skipper.stop(); asides.stop(); asides.pend = null; }

@@ -164,7 +164,7 @@ export const SAVER_MS = 1000 / 30 - 4;
 export function followSettings(world) {
   const read = () => { try { return JSON.parse(localStorage.getItem('regatta') || '{}') || {}; } catch (e) { return {}; } };
   let o = read(), drawnAt = 0;
-  const apply = () => world.setQuality(...gfxNow(o));
+  const apply = () => { world.setQuality(...gfxNow(o)); world.setFigures?.(o.figures !== 0); };
   apply();
   addEventListener('storage', (e) => { if (e.key === 'regatta' || e.key === GFX_KEY || e.key === null) { o = read(); apply(); } });
   return (now) => {

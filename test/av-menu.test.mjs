@@ -152,6 +152,23 @@ test('a view draws the level chosen, follows a change, and lets frames go on the
   assert.equal(skip(1033), false);
 });
 
+test('People on board: on until it is turned off, and every 3D view follows it at once', () => {
+  const on = {}, shown = [];
+  globalThis.addEventListener = (k, f) => { on[k] = f; };
+  store.clear();
+  followSettings({ setQuality() {}, setFigures: (v) => shown.push(v) });
+  assert.deepEqual(shown, [true], 'nothing saved yet: the people are there');
+  store.set('regatta', JSON.stringify({ figures: 0 }));
+  on.storage({ key: 'regatta' });
+  store.set('regatta', JSON.stringify({ figures: 1 }));
+  on.storage({ key: 'regatta' });
+  assert.deepEqual(shown, [true, false, true]);
+  const menu = read('public/game/av-menu.js');
+  assert.match(menu, /toggle\('figures', t\('People on board', 'Люди на борту'\), 1\)/, 'in the Graphics group, on by default');
+  assert.match(read('lib/opts.ts'), /figures: 1,/, 'the site starts with it on');
+  assert.match(read('public/game/main.js'), /'figures' in p\) world\.setFigures\(p\.figures !== 0\)/, 'the race hears of a change as it is made');
+});
+
 test('every 3D view follows the settings, none sets its own level', () => {
   for (const v of ['boat-view', 'fleet-view', 'hero-view', 'venue-view', 'venues-view']) {
     const html = read(`public/${v}/index.html`);

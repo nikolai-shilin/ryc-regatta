@@ -130,13 +130,13 @@ export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClo
     return row;
   };
   const key = (k, opts, fallback) => choice(opts.name, opts.list, () => o[k] ?? fallback, (v) => set({ [k]: v }));
-  // on or off
-  const toggle = (k, name) => {
+  // on or off (fallback: what it is until it's been set)
+  const toggle = (k, name, fallback = 0) => {
     const row = el('div', 'av-row'), l = el('span', 'av-k', name), b = button('av-sw');
     l.id = `av-l${++ids}`;
     b.setAttribute('role', 'switch'); b.setAttribute('aria-labelledby', l.id);
-    b.addEventListener('click', () => set({ [k]: o[k] ? 0 : 1 }));
-    paints.push(() => b.setAttribute('aria-checked', String(!!o[k])));
+    b.addEventListener('click', () => set({ [k]: (o[k] ?? fallback) ? 0 : 1 }));
+    paints.push(() => b.setAttribute('aria-checked', String(!!(o[k] ?? fallback))));
     row.append(l, b);
     return row;
   };
@@ -185,7 +185,7 @@ export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClo
   const group = (name, ...rows) => { const g = el('section', 'av-g'); g.append(el('h3', '', name), ...rows); return g; };
   const body = el('div', 'av-body');
   body.append(
-    group(t('Graphics', 'Графика'), quality, gfxParts.box, toggle('saver', t('Battery saver · 30 fps', 'Экономия батареи · 30 к/с'))),
+    group(t('Graphics', 'Графика'), quality, gfxParts.box, toggle('figures', t('People on board', 'Люди на борту'), 1), toggle('saver', t('Battery saver · 30 fps', 'Экономия батареи · 30 к/с'))),
     group(t('Audio', 'Звук'),
       toggle('sound', t('Sound', 'Звук')),
       toggle('voice', t('Voice on board', 'Голос шкипера')),

@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { clamp, lerp } from './sim.js';
-import { sailor, hullMaterial, NONSKID, deckFinish, cleat, wheel, M as YM } from './yacht.js';
+import { sailor, onWatch, hullMaterial, NONSKID, deckFinish, cleat, wheel, M as YM } from './yacht.js';
 
 const L = 13, B = 4.3, DRAFT = 0.85;
 export const COMMITTEE_L = L;
@@ -493,10 +493,11 @@ export class CommitteeBoat {
       { at: [side * 0.6, deckY(4.2), 4.3], jacket: '#1d3557', pose: 'horn', yaw: face + side * 0.25 },
       { at: [-side * 0.5, FLY, mz + 2.0], jacket: '#f2f1ec', pose: 'board', yaw: face + side * 0.5 },
     ];
-    crew.forEach((c, i) => {
+    this.officers = crew.map((c, i) => {
       const s = officer(i, c.jacket, c.pose);
       s.g.position.set(c.at[0], c.at[1] + 0.94 * 1.1, c.at[2]); s.g.rotation.y = c.yaw;
       root.add(s.g);
+      return { s, steady: c.pose === 'glasses' || c.pose === 'wheel' };
     });
 
     // put it together
@@ -515,6 +516,7 @@ export class CommitteeBoat {
   // flags: { cls, P, X, sub } as the race flies them; prepFlag: P, U or B; downwind: the wind's direction in the
   // boat (0 = straight aft); wind in m/s. A flag is hoisted or lowered along its halyard, not switched.
   update(t, dt, flags, prepFlag, downwind, wind) {
+    this.officers.forEach((o, i) => onWatch(o.s, t, i, o.steady));
     if (!this.orange) { this.burgee.update(t, downwind, wind); return; } // underway: the burgee is all she flies
     const pt = this.prepTex[prepFlag || 'P'];
     if (this.flags.P.mat.map !== pt) { this.flags.P.mat.map = pt; this.flags.P.mat.needsUpdate = true; }

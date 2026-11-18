@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { D2R, wrap, clamp, lerp, waveHeight, seaSlope as waveSlope, beatAngle, runAngle, HULL, ZONE, legTargets, legAim, isBeat, hasZone } from './sim.js';
 const SC = HULL / 10.45; // the model is drawn 10.45 m long, the JPK 1050 as she is
-import { LOOKS, playerLook, lookFrom, SEA } from './yacht.js';
+import { LOOKS, playerLook, lookFrom, SEA, crewFrame, showFigures } from './yacht.js';
 import { makeBoatView } from './boats3d.js';
 import { CLS } from './classes.js';
 import { CommitteeBoat, COMMITTEE_L, COMMITTEE_BOTTOM as BOTTOM_CB } from './committee.js';
@@ -1279,7 +1279,8 @@ function drapeGuides(G, W, t) {
 //   wakes: the boats' waves in the water (the field's texels; 0: none) and the spray and foam (how many flecks)
 //   under: the hulls seen through the water (the pass's scale; 0: none)
 //   land: the trees, rocks and moored boats ashore, and how fine the far land is (skopea.js setQuality)
-//   life: the gulls and dolphins (wildlife.js), the crew drawn in full close by, the boats in detail further off
+//   life: the gulls and dolphins (wildlife.js), the crew drawn in full close by (on High, in their finest figures right by
+//         the camera: sailor-hi.js), the boats in detail further off
 const PHONE = /android|iphone|ipad/i.test(navigator.userAgent);
 const PART = {
   res: { high: 1.75, medium: 1.3, low: 1.0 },
@@ -1638,6 +1639,9 @@ export class World {
   }
   ready() { return this.preparing || Promise.resolve(); }
 
+  // Audio & graphics › People on board: every figure in the scene shown or not
+  setFigures(on) { showFigures(on, this.scene); }
+
   // switch the graphics level: High, Medium or Low, or Custom with its parts (gfxParts)
   setQuality(q, custom) {
     if (q !== 'custom' && !GFX_LEVELS.includes(q)) return;
@@ -1822,7 +1826,8 @@ export class World {
     race.boats.forEach((b, i) => {
       const v = this.boatViews[i], d = Math.hypot(b.x - cp.x, b.z - cp.z);
       v.setDetail(b === P || d < farD * (this.gfx?.life === 'low' ? 0.6 : 1) && this.mode !== 'top');
-      v.setCrewNear(this.gfx?.life !== 'low' && Math.hypot(d, cp.y) < 25); // the full figures only close up, and never with Life on Low
+      const far = Math.hypot(d, cp.y); // the full figures only close up, never with Life on Low; the finest right by the camera, with Life on High
+      v.setCrewNear(this.gfx?.life !== 'low' && far < 25, this.gfx?.life === 'high' && far < (v.crewClose ? 19 : 15));
       v.update(b, t, this.W, this.mode === 'drone');
       if (race.match && v.label && b !== P) { // a match: her penalty turn or OCS by her name (the HUD's tag names her the rest of the time)
         const st = b.pen ? '⟳' : b.ocs ? 'OCS' : '';
@@ -1831,6 +1836,7 @@ export class World {
       if (v.crew) v.crew[0].g.visible = !(b === P && this.mode === 'helm'); // at the helm, you are the helmsman
       this.settle(v, dt, b, t);
     });
+    crewFrame(); // (a sailor who has just come close: her finest figure, one a frame)
     // buoys bob and tilt with the sea under them; in a current a mark leans downstream on its mooring and trails a
     // little foam
     for (const { obj, p, vee, ring } of this.buoys) {

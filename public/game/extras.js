@@ -147,6 +147,7 @@ function makeGhost(g) {
   const look = g.own ? playerLook() : LOOKS.Aurora;
   const name = g.own ? tr('Your best', 'Твой лучший') : tr('Ghost', 'Призрак'), short = g.own ? tr('Best', 'Лучший') : tr('Ghost', 'Призрак');
   const v = makeBoatView({ look, label: { text: `${name} ${fmt(g.secs)}`, color: 0xffffff } });
+  v.noFine = true; // (the finest figures are built later, and wouldn't be see-through)
   // see-through, and never hiding what's behind her
   v.root.traverse((o) => {
     if (!o.material) return;

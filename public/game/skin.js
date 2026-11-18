@@ -5,8 +5,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-// parts: [geometry, bone, colour?, blend?] — a colour (a THREE.Color) paints the part's vertices for a vertexColors
-// material; without one the geometry brings its own. A blend lets a part bend across a joint instead of meeting the
+// parts: [geometry, bone, colour?, blend?] — a colour (a THREE.Color, or a function of the vertex in the part's own
+// frame that gives one) paints the part's vertices for a vertexColors material; without one the geometry brings its
+// own. A geometry with a `shade` attribute has its colour darkened by it, vertex by vertex (the folds of a jacket). A blend lets a part bend across a joint instead of meeting the
 // next part there as two rigid pieces overlapping: blend(x, y, z), at the vertex in the part's own frame (its bone's),
 // gives the other bones it follows as [[bone, weight], …], up to three; what weight is left stays with the part's
 // bone. root: the top bone (it goes in the mesh); sphere: bounds every pose.
@@ -24,10 +25,14 @@ export function rigidSkin(parts, bones, root, material, sphere) {
     p.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4));
     p.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
     if (c) {
-      const col = new Float32Array(n * 3);
-      for (let i = 0; i < n; i++) { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
+      const col = new Float32Array(n * 3), sh = geo.attributes.shade, fn = typeof c === 'function' ? c : null;
+      for (let i = 0; i < n; i++) {
+        const k = fn ? fn(at.getX(i), at.getY(i), at.getZ(i)) : c, d = sh ? sh.getX(i) : 1;
+        col[i * 3] = k.r * d; col[i * 3 + 1] = k.g * d; col[i * 3 + 2] = k.b * d;
+      }
       p.setAttribute('color', new THREE.BufferAttribute(col, 3));
     }
+    p.deleteAttribute('shade');
     return p;
   }));
   mesh.bind(new THREE.Skeleton(bones));

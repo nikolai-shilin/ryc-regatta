@@ -486,10 +486,11 @@ export class LagoonCommittee {
       { at: [side > 0 ? 0.1 : -1.0, floorY(4.45), 4.45], jacket: '#1d3557', pose: 'horn', yaw: face + side * 0.25 },
       { at: [side > 0 ? -0.9 : 1.2, roofTop(2.3), 2.3], jacket: '#f2f1ec', pose: 'board', yaw: face + side * 0.5 },
     ];
-    crew.forEach((c, i) => {
+    this.officers = crew.map((c, i) => {
       const s = officer(i, c.jacket, c.pose);
       s.g.position.set(c.at[0], c.at[1] + 0.94 * 1.1, c.at[2]); s.g.rotation.y = c.yaw;
       root.add(s.g);
+      return { s, steady: c.pose === 'glasses' };
     });
 
     // put it together
