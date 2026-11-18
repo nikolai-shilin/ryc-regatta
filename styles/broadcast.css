@@ -1567,18 +1567,19 @@
 .bc .adm-days-read .peak dd { color: var(--gold); }
 .bc .adm-days-plot { position: relative; height: var(--days-h); margin-top: var(--s-2); }
 .bc .adm-days-y { position: absolute; inset: 0; }
-.bc .adm-days-y span { position: absolute; left: var(--days-y); right: 0; height: 0; border-top: 1px solid var(--rule-2); }
+.bc .adm-days-y span { position: absolute; left: var(--days-y); right: 0; height: 0; border-top: 1px solid transparent; }
 .bc .adm-days-y span:first-child { border-top-color: var(--w-35); }
 .bc .adm-days-y b { position: absolute; right: 100%; top: 0; translate: -8px -50%; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: 0.04em; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .bc .adm-days-bars, .bc .adm-days-t { display: grid; grid-template-columns: repeat(var(--days), minmax(0, 1fr)); column-gap: var(--day-gap); margin: 0; padding: 0 0 0 var(--days-y); list-style: none; }
 .bc .adm-days-bars { position: absolute; inset: 0; grid-template-rows: minmax(0, 1fr); }
 .bc .adm-days-slot { position: relative; grid-row: 1; outline: 0; cursor: default; }
 .bc .adm-days-slot::before, .bc .adm-days-bar { position: absolute; left: 0; right: 0; bottom: 0; max-width: var(--days-bar); margin-inline: auto; }
-.bc .adm-days-slot::before { content: ''; top: 0; background: var(--fill-1); }
+/* the scale's lines are cut out of the track, so they are the panel's dark, the same as the gaps between the days */
+.bc .adm-days-slot::before { content: ''; top: 0; background: repeating-linear-gradient(to top, transparent 0 1px, var(--days-track, var(--fill-1)) 1px calc(100% / var(--days-lines))); }
 .bc .adm-days-bar { display: block; min-height: 2px; background: var(--you); }
 .bc .adm-days-slot.peak .adm-days-bar { background: var(--gold); }
 /* the day pointed at: the mouse's, else the one last tapped */
-.bc .adm-days-slot:hover::before, .bc .adm-days-bars:not(:hover) .adm-days-slot:focus::before { background: var(--fill-3); }
+.bc .adm-days-slot:hover::before, .bc .adm-days-bars:not(:hover) .adm-days-slot:focus::before { --days-track: var(--fill-3); }
 .bc .adm-days-slot:hover .adm-days-bar, .bc .adm-days-bars:not(:hover) .adm-days-slot:focus .adm-days-bar { background: var(--ink); }
 /* the day's numbers: a plate beside its bar, on the side with the room */
 .bc .adm-days-tip { position: absolute; z-index: 2; top: 0; left: calc(50% + min(50%, var(--days-bar) / 2) + var(--s-2)); display: grid; min-width: 136px; padding-bottom: var(--s-2); background: rgb(16, 26, 40); box-shadow: 0 8px 24px rgba(3, 8, 14, 0.6); opacity: 0; pointer-events: none; }

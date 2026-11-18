@@ -200,6 +200,7 @@ test('the busiest day is called out, the latest of them when days tie, and the s
   assert.match(plain(fig), /Peak · 16 Nov 566/);
   assert.match(plain(fig), /Last day · 17 Nov 120/);
   assert.deepEqual([...fig.matchAll(/<b>(\d+)<\/b><\/span>/g)].map((m) => m[1]), ['0', '200', '400', '600']);
+  assert.match(fig, /class="adm-days-plot" style="--days-lines:3"/, 'the tracks are cut once for each step of the scale');
 });
 
 test('days on end with races are not given extra bars', () => {

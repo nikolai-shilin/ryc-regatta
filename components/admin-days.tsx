@@ -40,7 +40,7 @@ export function DayChart({ lang, title, label, slots }: { lang: Lang; title: str
           {peak !== last && <div><dt>{t('Last day', 'Последний день')} · {date(slots[last].d)}</dt><dd>{slots[last].n}</dd></div>}
         </dl>
       </figcaption>
-      <div className="adm-days-plot">
+      <div className="adm-days-plot" style={{ '--days-lines': lines.length - 1 } as CSSProperties}>
         <div className="adm-days-y" aria-hidden="true">
           {lines.map((v) => <span key={v} style={{ bottom: `${(v / top) * 100}%` }}><b>{v}</b></span>)}
         </div>
