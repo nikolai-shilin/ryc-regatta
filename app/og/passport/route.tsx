@@ -3,7 +3,7 @@ import { VENUES } from '@/lib/venues';
 import { readPassport } from '@/lib/passport-share';
 import { card, C } from '@/lib/og';
 
-// /og/passport?s=5&v=12&b=4&vs=…&bb=…&n=Anna&lang=ru — the share card of a player's passport (lib/passport-share.ts),
+// /og/passport?s=5&v=12&vs=…&n=Anna&lang=ru — the share card of a player's passport (lib/passport-share.ts),
 // in the logo's look (lib/og.tsx): their name beside the logo, and their streak (or their venues) as the big figure in
 // gold.
 export async function GET(request: Request) {

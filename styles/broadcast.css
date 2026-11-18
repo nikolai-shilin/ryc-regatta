@@ -1373,7 +1373,7 @@
 .bc .yt-spec dt { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
 .bc .yt-spec dd { margin-top: var(--s-1); font: 700 var(--fs-row)/1.2 var(--cond); color: var(--ink); }
 
-/* ---------- progress beyond a race (components/progress.tsx): the drills, the badges, the rival ---------- */
+/* ---------- progress beyond a race (components/progress.tsx): the drills, the rival ---------- */
 .bc .pg-drills { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
 .bc .pg-card { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); background: var(--surface); clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%); }
 .bc .pg-card-h { display: flex; align-items: center; gap: var(--s-3); }
@@ -1401,68 +1401,16 @@
 .bc .pg-go { margin: 0; }
 .bc .pg-stars { display: inline-flex; gap: 4px; font-size: 26px; line-height: 1; }
 .bc .pg-stars i { font-style: normal; color: var(--w-14); } .bc .pg-stars i.on { color: var(--gold); }
-/* the badges (components/badge-pennant.tsx draws each, flat as the race's HUD): the count, a pip each in its family's colour (--c), the key */
-.bc .pg-count { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3) var(--s-5); margin-bottom: var(--s-6); }
-.bc .pg-count p { margin: 0; font: 800 var(--fs-lead)/1 var(--cond); text-transform: uppercase; letter-spacing: var(--ls-button); }
-.bc .pg-count p b { margin-right: var(--s-1); font-size: var(--fs-h3); color: var(--gold); letter-spacing: var(--ls-name); }
-.bc .pg-count .bt-show { margin-left: auto; }
-.bc .pg-pips { display: flex; gap: var(--s-1); }
-.bc .pg-pips i { width: 22px; height: 8px; background: var(--w-14); clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%); }
-.bc :is(.pg-pips, .pg-row-pips) i.on { background: var(--c); }
-.bc .pg-legend { display: flex; gap: var(--s-4); font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
-.bc .pg-legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; margin-right: 6px; background: var(--c); vertical-align: -1px; }
-/* each badge's card: its family over the pennant, the name, how, and when (or not yet); earned, lit in its colour */
-.bc .pg-badges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
-@media (min-width: 900px) { .bc .pg-badges { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-3); } }
-.bc .pg-badge { position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--s-2); padding: 30px var(--s-3) var(--s-4); text-align: center; background: var(--surface);
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%); }
-.bc .pg-badge.on { box-shadow: inset 0 3px 0 var(--c); }
-.bc .pg-fam { position: absolute; top: var(--s-3); left: 14px; font: 700 11px/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
-.bc .pg-badge.on .pg-fam { color: var(--c); }
-.bc .pg-emb { width: 92px; height: 101px; margin-bottom: var(--s-1); }
-.bc .pg-badge b { font: 800 var(--fs-lead)/1.05 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; }
-.bc .pg-badge:not(.on) b { color: var(--ink-2); }
-.bc .pg-badge > span:not(.pg-fam) { max-width: 260px; font: 500 13px/1.45 var(--sans); color: var(--ink-2); }
-.bc .pg-badge small { margin-top: auto; padding-top: var(--s-2); font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
-.bc .pg-badge.on small { color: var(--c); }
-@media (min-width: 900px) {
-  .bc .pg-badge { padding: 28px var(--s-5) 22px; }
-  .bc .pg-emb { width: 120px; height: 132px; }
-  .bc .pg-badge b { font-size: 22px; }
-  .bc .pg-badge > span:not(.pg-fam) { font-size: var(--fs-small); }
-}
-/* a badge a result earned: a banner of its own under the kicks, the pennant, its name and how */
-.bc .pg-kick { flex: 1 1 100%; max-width: 440px; display: flex; align-items: center; gap: var(--s-4); padding: var(--s-2) var(--s-8) var(--s-2) var(--s-3); color: var(--ink); text-decoration: none;
-  background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
-  box-shadow: inset 3px 0 0 var(--c); clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); pointer-events: auto; }
-.bc .pg-kick-embs { flex: none; display: flex; }
-.bc .pg-kick-emb { flex: none; width: 52px; height: 57px; }
-.bc .pg-kick.many .pg-kick-emb { width: 44px; height: 48px; }
-.bc .pg-kick.many .pg-kick-emb + .pg-kick-emb { margin-left: 4px; }
-.bc .pg-kick.many .pg-kick-t strong { font-size: var(--fs-lead); line-height: 1.15; }
-.bc .pg-kick-t { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.bc .pg-kick-t em { font: 700 var(--fs-label)/1 var(--cond); font-style: normal; letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--c); }
-.bc .pg-kick-t strong { font: 800 var(--fs-row)/1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; }
-.bc .pg-kick-t span { font: 500 13px/1.3 var(--sans); color: var(--ink-2); }
-/* the hub's rows: a badge (the last earned), the name over its count, the stars or the pips */
+/* the hub's drills row: the name over your stars */
 .bc .bt-row.pg-row { height: auto; min-height: 60px; }
-.bc .bt-rows .bt-row > .pg-row-ico { position: relative; flex: 0 0 24px; height: 28px; overflow: visible; }
-.bc .bt-row .pg-row-ico svg { position: absolute; inset: 0; width: 24px; height: 28px; color: inherit; }
 .bc .bt-rows .bt-row > .pg-row-t { flex: 1 1 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.bc .bt-rows .bt-row > .pg-row-pips { flex: none; overflow: visible; }
 .bc .pg-row-t small { overflow: hidden; text-overflow: ellipsis; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
 .bc .pg-row-t small b { color: var(--gold); font-weight: 800; }
-.bc .pg-row-pips { margin-left: auto; display: flex; gap: 3px; }
-.bc .pg-row-pips i { width: 8px; height: 13px; background: var(--w-14); clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%); }
 .bc .pg-ico { width: 18px; flex: none; text-align: center; font: 700 15px/1 var(--cond); color: var(--gold); }
 .bc .pg-rival-m { display: inline-flex; align-items: center; gap: 6px; text-transform: none; }
 .bc .pg-rival-m .lb-who { display: inline-flex; align-items: center; gap: 4px; }
-/* the passport's share, on Home; a shared passport's venues */
+/* the passport's share, on Home */
 .bc .ho-pass .ho-pass-share { height: var(--h-s); margin-left: auto; }
-.bc .pg-pass { margin-top: var(--s-4); }
-.bc .pg-pass-b { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: var(--s-8) 0 0; padding: 0; list-style: none; }
-.bc .pg-pass-b svg { display: block; width: 64px; height: 70px; }
-.bc .pg-pass-b span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } /* the name, for a screen reader */
 
 /* ---------- the fleet's strip (/fleet): the tour's controls and the yachts, as the race's HUD draws them ----------
    The controls: square plates side by side, the one that is on in blue. The yachts: one plate of cells, as the

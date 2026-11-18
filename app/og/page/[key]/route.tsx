@@ -2,7 +2,6 @@ import { isLang, ruPlural, tx, type Lang, type T } from '@/lib/lang';
 import { dailyRace } from '@/lib/race';
 import { YACHTS, yachtOf } from '@/lib/yachts';
 import { VENUES, venueOf } from '@/lib/venues';
-import { BADGES } from '@/lib/badges';
 import { DRILLS, LEVELS } from '@/lib/drills';
 import { GUIDES, guide, guideNo, isGuide, type GuideSlug } from '@/lib/guides';
 import { glossaryGroups } from '@/lib/glossary';
@@ -102,11 +101,6 @@ const CARDS: Record<string, Build> = {
     bg: 'start', kind: t('Drills', 'Тренировки'),
     hero: { label: t(`${LEVELS.length} levels, beginner to expert`, `${LEVELS.length} уровня, от новичка до эксперта`), value: t(`${DRILLS.length} drills`, `${DRILLS.length} ${ruPlural(DRILLS.length, ['тренировка', 'тренировки', 'тренировок'])}`) },
     call: t('Start a drill', 'Начни тренировку'),
-  }),
-  badges: (t) => ({
-    bg: 'fleet', kind: t('Badges', 'Достижения'),
-    hero: { label: t('Earned on the water', 'Заслужено на воде'), value: t(`${BADGES.length} badges`, `${BADGES.length} ${ruPlural(BADGES.length, ['достижение', 'достижения', 'достижений'])}`), color: C.gold },
-    call: t('Earn them', 'Заслужи их'),
   }),
   free: (t) => ({
     bg: 'drone', kind: t(`${VENUES.length} venues · ${YACHTS.length} yachts`, `${VENUES.length} ${ruPlural(VENUES.length, ['акватория', 'акватории', 'акваторий'])} · ${YACHTS.length} яхт`),

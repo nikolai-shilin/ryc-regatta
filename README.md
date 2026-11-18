@@ -39,11 +39,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
       results, so the pages gather both into it on every visit (`components/bests-sync.tsx`, which merges it with the
       account's `user_metadata.log` for a signed-in player). From it: the venues stamped on Home and the hub with the
       streak (days in a row; a day missed doesn't break it, two do), a first race at a venue on its result, and your month
-      on the rating page, each day's best placed against that day's ranked times. It keeps the badges too
-      (`lib/badges.ts`, `/race/badges`), at the race that first earned each: a race's own from every result the device
-      has (a clean race, a start on the gun, tacking on headers…), the log's from the streak, the venues and the drills.
-      Each is drawn as a pennant in its family's colour (`components/badge-pennant.tsx`: gold a result, blue a skill,
-      green the season), on the badges page, a result's banner, the hub's rows, a shared passport and its card.
+      on the rating page, each day's best placed against that day's ranked times.
     - `regatta-drills` holds the drills' best stars (`/race/drills`, `lib/drills.ts`).
 - **The ghost, the drills and the analytics in the game:** `public/game/extras.js`, which `main.js` calls as a race
   starts and every frame. The ghost is a see-through boat out of the race, sailing a finished race's track
@@ -99,9 +95,8 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     the match is gone from the host's localStorage when it's left or done.
   - **Not on the hub yet:** the race hub's Match race card shows only with `?match` in its address, until the umpire's
     calls have been signed off in test matches; `/match/new` works for anyone with the address.
-- **A passport to share:** `/passport?s=&v=&b=&vs=&bb=&n=` (`lib/passport-share.ts`; its card `app/og/passport`): the
-  streak, the venues raced and the badges (which, `bb`, as well as how many) as the sharer sent them, from Share on Home's
-  venues and on the badges page.
+- **A passport to share:** `/players?s=&v=&vs=&n=` (`lib/passport-share.ts`; its card `app/og/passport`): the streak and
+  the venues raced as the sharer sent them, from Share on Home's venues and on your player card.
   - The game also posts each finished race to the scores server (below), so a result link opens on any device; there
     it reads as "this boat", not "you", and the page has a Share button for your own races.
 - **Every page's own share card:** home and the race hub show today's race (`app/og/today`), a result its race

@@ -5,7 +5,7 @@ import { SITE, jsonLd, langUrl } from '@/lib/seo';
 import { Logo, Langs } from './ui';
 import { SiteMenu } from './home-client';
 
-type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt' | 'learn' | 'rating' | 'drills' | 'badges' | 'social' | 'players' | 'venues' | 'yachts' | 'sponsorship';
+type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt' | 'learn' | 'rating' | 'drills' | 'social' | 'players' | 'venues' | 'yachts' | 'sponsorship';
 
 // Where each page sits under Home, for the breadcrumb trail search engines show instead of the bare address
 // (BreadcrumbList). A guide passes its own trail: Home › Learn to race › the guide.
@@ -14,7 +14,7 @@ const CRUMBS: Partial<Record<Page, [en: string, ru: string, path: string]>> = {
   help: ['How to play', 'Как играть', '/help'], faq: ['Questions', 'Вопросы', '/faq'], race: ['Today’s race', 'Гонка дня', '/race'],
   free: ['Free race', 'Свободная гонка', '/race/free'], boat: ['Your boat', 'Твоя яхта', '/boat'],
   iyt: ['Sailing Certification Test', 'Sailing Certification Test', '/iyt'], learn: ['Learn to race', 'Учись гоняться', '/learn'],
-  drills: ['Drills', 'Тренировки', '/race/drills'], badges: ['Badges', 'Достижения', '/race/badges'],
+  drills: ['Drills', 'Тренировки', '/race/drills'],
   social: ['Follow the game', 'Игра в соцсетях', '/social'], players: ['The players', 'Игроки', '/players'],
   venues: ['The venues', 'Акватории', '/venues'], yachts: ['The yachts', 'Яхты', '/yachts'],
   sponsorship: ['Sponsorship', 'Спонсорство', '/sponsorship'],
@@ -40,7 +40,7 @@ export function Trail({ t, crumbs }: { t: T; crumbs: Crumb[] }) {
 }
 
 // The site's header, as on rycrentals.com: the logo, the site's pages in the middle (from 1100 px wide), and the menu
-// (the burger and your avatar) at the right; your account, your boat and passport, How to play, Learn to race, Badges
+// (the burger and your avatar) at the right; your account, your boat and passport, How to play, Learn to race
 // and Questions are in the menu alone. On a page in the broadcast look (.bc, styles/broadcast.css) it is the
 // broadcast's bar: the name with the blue mark, the pages as tabs (from 1280 px wide; Venues and Yachts, hm-tab-x,
 // from 1360), Sign in (a guest's) and Play now beside the menu. On every page: the scrolling ones (home, help, the race result) and the
@@ -87,7 +87,6 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
           <Link href="/help">{t('How to play', 'Как играть')}</Link>
           <Link href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
           <Link href="/race/drills">{t('Drills', 'Тренировки')}</Link>
-          <Link href="/race/badges">{t('Badges', 'Достижения')}</Link>
           <Link href="/players?me=1">{t('Your player card', 'Твоя карточка игрока')}</Link>
           <Link href="/faq">{t('Questions', 'Вопросы')}</Link>
           <Link href="/social">{t('Follow the game', 'Игра в соцсетях')}</Link>

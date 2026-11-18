@@ -25,7 +25,9 @@ test('the streak: days in a row, one missed day forgiven, two not', () => {
 
 test('the log: a day at its fastest, a venue at its first race, from the game’s records and the account’s', () => {
   const l = cleanLog({ d: { '2026-11-10': 240, 'junk': 3 }, v: { cowes: 100, atlantis: 5 } });
-  assert.deepEqual(l, { d: { '2026-11-10': 240 }, v: { cowes: 100 }, b: {} });
+  assert.deepEqual(l, { d: { '2026-11-10': 240 }, v: { cowes: 100 } });
+  // what an older log kept of the badges is left behind
+  assert.deepEqual(cleanLog({ d: {}, v: {}, b: { win: 100 } }), { d: {}, v: {} });
   addDay(l, '2026-11-10', 230);
   addDay(l, '2026-11-10', 250);
   assert.equal(l.d['2026-11-10'], 230);
@@ -68,44 +70,19 @@ test('the ghost in the game and the replay on the result page put a boat in the 
   assert.equal(ghostGap(g, 0, -300, 0, 97), null); // before the start: no gap
 });
 
-test('the badges: what a race earned, and what the log and the drills have', async () => {
-  const { raceBadges, logBadges } = await import('../lib/badges.ts');
-  const { addResult, cleanLog, mergeLog } = await import('../lib/log.ts');
-  const boats = (place, n = 6) => Array.from({ length: n }, (_, i) => ({ me: i === place - 1, done: true, dsq: false, secs: 200 + i, pens: 0 }));
-  const log = { ocs: false, startDsq: null, startT: 1.2, gunV: 5.1, head: 3, lift: 0, pct: 96, fouls: [], hails: {}, legPlaces: [2, 5, 2], penT: 0 };
-  assert.deepEqual(raceBadges({ boats: boats(2), log }).sort(), ['clean', 'comeback', 'first', 'gun', 'podium', 'shifts', 'speed'].sort());
-  assert.deepEqual(raceBadges({ boats: boats(1), log: { ...log, startT: 6, lift: 1, pct: 80, hails: { 10: 1 }, legPlaces: [1, 1, 1] } }).sort(), ['first', 'podium', 'win'].sort());
-  // three boats: no podium for third; over early: no gun; a dsq earns nothing
-  assert.ok(!raceBadges({ boats: boats(3, 3), log }).includes('podium'));
-  assert.ok(!raceBadges({ boats: boats(2), log: { ...log, ocs: true } }).includes('gun'));
-  assert.deepEqual(raceBadges({ boats: boats(1).map((b) => ({ ...b, dsq: b.me })), log }), []);
-  assert.deepEqual(logBadges({ streak: 7, venues: 28, of: 28, drills: { start: 3, mark: 3, beat: 3 }, drillIds: ['start', 'mark', 'beat'] }).sort(), ['drills', 'streak7', 'venues28', 'venues7'].sort());
-  assert.deepEqual(logBadges({ streak: 6, venues: 6, of: 28, drills: { start: 3, mark: 2 }, drillIds: ['start', 'mark', 'beat'] }), []);
-  // kept in the log at the first race that earned them, merged with the account's at the earlier
-  const l = cleanLog(null);
-  addResult(l, { at: 500, daily: null, venue: 'kiel', boats: boats(1), log });
-  addResult(l, { at: 300, daily: null, venue: 'kiel', boats: boats(4), log });
-  assert.equal(l.b.win, 500);
-  assert.equal(l.b.first, 300);
-  assert.equal(mergeLog(l, { d: {}, v: {}, b: { win: 100, nonsense: 1 } }).b.win, 100);
-  assert.equal(cleanLog({ b: { win: 100, nonsense: 1 } }).b.nonsense, undefined);
-});
-
-test('the passport link carries which badges, and an older link only how many', async () => {
-  const { passportQuery, readPassport } = await import('../lib/passport-share.ts');
-  const { BADGES } = await import('../lib/badges.ts');
-  const q = Object.fromEntries(new URLSearchParams(passportQuery({ streak: 5, raced: new Set(['cowes', 'kiel']), badges: ['first', 'podium', 'streak7', 'nonsense'], name: 'Anna' })));
+test('the passport link carries the streak, the venues and the name, and an older link still opens', async () => {
+  const { passportInLink, passportQuery, readPassport } = await import('../lib/passport-share.ts');
+  const q = Object.fromEntries(new URLSearchParams(passportQuery({ streak: 5, raced: new Set(['cowes', 'kiel']), name: 'Anna' })));
+  assert.deepEqual(Object.keys(q).sort(), ['n', 's', 'v', 'vs']);
   const p = readPassport(q);
-  assert.equal(p.b, 3);
-  assert.deepEqual(BADGES.filter((_, i) => p.got[i]).map((b) => b.id), ['first', 'podium', 'streak7']);
+  assert.equal(p.s, 5);
   assert.equal(p.v, 2);
-  // a link from before: the count, none lit
-  const old = readPassport({ s: '5', v: '2', b: '4', vs: q.vs });
-  assert.equal(old.b, 4);
-  assert.ok(!old.got.some(Boolean));
-  assert.ok(!readPassport({ bb: '!!' }).got.some(Boolean));
-  // every badge has its family
-  assert.ok(BADGES.every((b) => ['result', 'skill', 'season'].includes(b.fam)));
+  assert.equal(p.n, 'Anna');
+  assert.equal(p.raced.filter(Boolean).length, 2);
+  // a link from when it carried the badges too: the same passport, and they stay out of its address
+  const old = { ...q, b: '4', bb: '1a' };
+  assert.deepEqual(readPassport(old), p);
+  assert.deepEqual(passportInLink(old).map(([k]) => k).sort(), ['n', 's', 'v', 'vs']);
 });
 
 test('the drills: the page lists the game\'s, in the game\'s order', async () => {

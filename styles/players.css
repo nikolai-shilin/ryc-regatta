@@ -44,12 +44,12 @@
 .bc .pl-card[aria-busy="true"] { cursor: progress; }
 
 /* the passport (components/passport-card.tsx): a section's head with its count at the right, a tick a venue, the venues
-   raced two to a row with the green of the venues you have been to (as Home's), the badges six to a row */
+   raced two to a row with the green of the venues you have been to (as Home's) */
 .bc .pl-k { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-width: 0; }
 .bc .pl-k .bt-k-r { flex: none; margin: 0; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.bc .pl-pass-st { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.bc .pl-pass-st { grid-template-columns: minmax(0, 1fr); }
 .bc .pl-pass-st b { font-size: var(--fs-row); white-space: nowrap; }
-.bc .pl-pass-st .pl-risk { grid-column: 1 / -1; color: var(--down); }
+.bc .pl-pass-st .pl-risk { color: var(--down); }
 .bc .pl-ticks { display: flex; gap: 2px; }
 .bc .pl-ticks i { flex: 1 1 0; min-width: 0; height: 10px; background: var(--w-14); }
 .bc .pl-ticks i.on { background: #2ee6a0; }
@@ -63,14 +63,8 @@
 .bc .pl-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .bc .pl-more { align-self: flex-start; display: inline-flex; align-items: center; color: var(--ink); cursor: pointer; }
 .bc .pl-more:focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
-.bc .pl-bdg { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
-.bc .pl-bdg a { display: block; transition: scale var(--t-quick); }
-.bc .pl-bdg a:hover { scale: 1.06; }
-.bc .pl-bdg a:focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
-.bc .pl-bdg svg { display: block; width: 100%; height: auto; }
 .bc .pl-share { display: flex; }
 .bc .pl-share > * { flex: 1 1 auto; }
-@media (prefers-reduced-motion: reduce) { .bc .pl-bdg a { transition: none; } .bc .pl-bdg a:hover { scale: none; } }
 @container scr (orientation: portrait) {
   .bc .pl-tr { grid-template-columns: 18px minmax(0, 1fr) 30px 32px 28px 30px; gap: var(--s-2); }
   .bc .pl-th { letter-spacing: 0; }

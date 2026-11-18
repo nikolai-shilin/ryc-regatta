@@ -18,7 +18,7 @@ const IconUser = () => <svg viewBox="0 0 16 16" width={16} height={16} aria-hidd
 // so whether you are is drawn by CSS, .if-me and .if-guest). At its head who you are: signed in, your initials and name,
 // the way to the account and settings; a guest, the way to sign in and why (at every width, the bar's own button
 // beside it or not). Then what's yours (the boat, your player card with your passport; Settings is the head's once
-// signed in), the reading pages with the badges, on a narrow screen
+// signed in), the reading pages, on a narrow screen
 // (where the header's links are hidden) the site's pages too, and last, signed in, Sign out (back to the page it was
 // on, app/auth/sign-out).
 export function SiteMenu({ lang }: { lang: Lang }) {
@@ -50,7 +50,6 @@ export function SiteMenu({ lang }: { lang: Lang }) {
         <span className="hm-msep" />
         <Link className="hm-mi" href="/help">{t('How to play', 'Как играть')}</Link>
         <Link className="hm-mi" href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
-        <Link className="hm-mi" href="/race/badges">{t('Badges', 'Достижения')}</Link>
         <Link className="hm-mi" href="/faq">{t('Questions', 'Вопросы')}</Link>
         <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы')}>
           <span className="hm-msep" />

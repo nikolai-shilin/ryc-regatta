@@ -4,9 +4,6 @@ import Link from 'next/link';
 import { tx, ruPlural, type Lang } from '@/lib/lang';
 import { track } from '@/lib/track';
 import { keptResults, readLog, streakOf, LOG_EVENT, type Log } from '@/lib/log';
-import { BADGES, badgeNear, type BadgeId } from '@/lib/badges';
-import { DRILL_IDS, DRILLS_KEY } from '@/lib/drills';
-import { VENUES } from '@/lib/venues';
 import { pushable, currentSub, subscribe, unsubscribe, pushSync } from '@/lib/push';
 import { useLog } from './passport';
 import { Countdown } from './home-client';
@@ -15,33 +12,19 @@ import { clock } from './ui';
 // Home for the player who has been before. Home is one cached page for everyone, so who has raced is the browser's
 // to know: the head script in app/[lang]/layout.tsx marks <html data-back> before the first paint when this device has
 // raced (its log or a kept result), and styles/home-back.css shows the strip and folds the explainers by it. The strip
-// itself is drawn here from the log (lib/log.ts): the streak and what today's race does to it, today's time against
-// the board, and the badge you're nearest.
+// itself is drawn here from the log (lib/log.ts): the streak and what today's race does to it, and today's time against
+// the board.
 
 const BACK = 'data-back';
 export const markBack = (log: Log | null) => { if (log && Object.keys(log.d).length) document.documentElement.setAttribute(BACK, ''); };
 
 const ord = (n: number, lang: Lang) => (lang === 'ru' ? `${n}-е` : `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'}`);
-const readDrills = (): Record<string, number> => { try { return JSON.parse(localStorage.getItem(DRILLS_KEY) || '{}') || {}; } catch { return {}; } };
-
-// the badge not yet earned that you have come nearest to, as far as it can be counted
-function nearest(log: Log): { id: BadgeId; v: number; of: number } | null {
-  const near = badgeNear(keptResults(), { streak: streakOf(log.d).n, venues: Object.keys(log.v).length, of: VENUES.length, drills: readDrills(), drillIds: DRILL_IDS });
-  let best: { id: BadgeId; v: number; of: number } | null = null;
-  for (const [id, n] of Object.entries(near) as [BadgeId, NonNullable<(typeof near)[BadgeId]>][]) {
-    if (log.b[id] || !n.of || n.unit === 'place' || n.unit === 'hails') continue;
-    if (!best || n.v / n.of > best.v / best.of) best = { id, v: Math.min(n.v, n.of), of: n.of };
-  }
-  return best;
-}
 
 export function BackStrip({ lang, day, top, cap = 5 }: { lang: Lang; day: string; top: { s: number }[]; cap?: number }) {
   const t = tx(lang), log = useLog();
   useEffect(() => markBack(log), [log]);
   if (!log || !Object.keys(log.d).length && !keptResults().length) return <div className="ho-back" aria-hidden="true" />;
-  const st = streakOf(log.d), mine = log.d[day] ?? null, near = nearest(log);
-  const badge = near ? BADGES.find((b) => b.id === near.id) : null;
-  const earned = Object.keys(log.b).length;
+  const st = streakOf(log.d), mine = log.d[day] ?? null;
   // where today's time stands: its place when the board's rows reach it, else its gap to the leader
   const place = mine != null && top.length && (top.length < cap || mine <= top[top.length - 1].s + 0.05) ? top.filter((r) => r.s < mine - 0.05).length + 1 : 0;
   const gap = mine != null && top.length ? mine - top[0].s : 0;
@@ -66,11 +49,6 @@ export function BackStrip({ lang, day, top, cap = 5 }: { lang: Lang; day: string
           <small>{t('Closes in', 'Закроется через')} <Countdown /></small>
         </>}
       </div>
-      <Link className="ho-back-i ho-back-a" href="/race/badges" data-cta="back-badge">
-        <span className="lbl">{badge ? t('Nearest badge', 'Ближайшее достижение') : t('Badges', 'Достижения')}</span>
-        <b>{badge ? t(...badge.name) : t(`${earned} of ${BADGES.length}`, `${earned} из ${BADGES.length}`)}</b>
-        <small>{near ? t(`${near.v} of ${near.of} ›`, `${near.v} из ${near.of} ›`) : t('See what each one takes ›', 'Что нужно для каждого ›')}</small>
-      </Link>
       <div className="ho-back-i ho-back-push"><PushButton lang={lang} where="back" /></div>
     </div>
   );

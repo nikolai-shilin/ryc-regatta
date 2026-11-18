@@ -18,7 +18,7 @@ const list = titled('The players', 'Игроки', {
 });
 
 // ?p=<k>, one player: their name in the title and their own share card (app/og/page/[key], player), so a link to it
-// shows them, not the list; kept out of search, the list is the page to find. ?s=5&v=12&b=4&vs=…&bb=…&n=Anna, a passport
+// shows them, not the list; kept out of search, the list is the page to find. ?s=5&v=12&vs=…&n=Anna, a passport
 // as its owner shared it (lib/passport-share.ts), with its card for the chat apps (app/og/passport). ?me=1, your own for
 // someone with no player card yet.
 export async function generateMetadata(props: LangParams & { searchParams: Promise<Query> }): Promise<Metadata> {
@@ -44,7 +44,7 @@ export async function generateMetadata(props: LangParams & { searchParams: Promi
     const card = { url: `/og/passport?${qs}`, width: 1200, height: 630, alt: title };
     return { ...meta, openGraph: { ...meta.openGraph, images: [card] }, twitter: { ...meta.twitter, images: [card] } };
   }
-  if (!key && one(sp.me)) return pageMeta(lang, { title: t('Your player card', 'Твоя карточка игрока'), description: t('Your venues, streak and badges in Up and down.', 'Твои акватории, серия и достижения в Up and down.'), index: false });
+  if (!key && one(sp.me)) return pageMeta(lang, { title: t('Your player card', 'Твоя карточка игрока'), description: t('Your venues and streak in Up and down.', 'Твои акватории и серия в Up and down.'), index: false });
   return list(props);
 }
 

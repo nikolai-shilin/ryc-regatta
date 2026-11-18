@@ -19,7 +19,6 @@ import { FaqList } from '@/components/faq-list';
 import { faqGroups, HOME } from '@/lib/faq';
 import { CHANNELS } from '@/lib/social';
 import { DRILLS } from '@/lib/drills';
-import { BADGES } from '@/lib/badges';
 import { BackStrip, PushButton, CtaTrack, Fold, MatchLink } from '@/components/home-back';
 import '@/styles/home-back.css';
 
@@ -241,12 +240,11 @@ export default async function Home({ params }: LangParams) {
           </figure>
         </section>
 
-        {/* 6½ · between races: the drills and the badges */}
+        {/* 6½ · between races: the drills */}
         <section className="ho-sec" aria-labelledby="h-more">
-          <div className="ho-sec-t"><span className="ho-k">{t('Between races', 'Между гонками')}</span><h2 className="ho-h2" id="h-more">{t('Practise the moments. Collect the badges.', 'Отрабатывай ключевые моменты. Получай достижения.')}</h2></div>
-          <div className="ho-feats ho-feats-2">
+          <div className="ho-sec-t"><span className="ho-k">{t('Between races', 'Между гонками')}</span><h2 className="ho-h2" id="h-more">{t('Practise the moments.', 'Отрабатывай ключевые моменты.')}</h2></div>
+          <div className="ho-feats">
             <Link className="ho-feat ho-feat-a" href="/race/drills" data-cta="drills"><i aria-hidden="true" /><div><h3 className="ho-h3">{t(`${DRILLS.length} drills`, `Упражнений: ${DRILLS.length}`)}</h3><p className="ho-ps">{t('The start, the top mark, the shifts, a comeback: each a minute or two, three stars to win, from beginner to expert.', 'Старт, верхний знак, сдвиги ветра, отыгрыш: каждое на минуту-две, три звезды, от новичка до эксперта.')}</p></div></Link>
-            <Link className="ho-feat ho-feat-a" href="/race/badges" data-cta="badges"><i aria-hidden="true" /><div><h3 className="ho-h3">{t(`${BADGES.length} badges`, `Достижений: ${BADGES.length}`)}</h3><p className="ho-ps">{t('A clean race, a win from behind, a week on the water, every venue raced. Each says how near you are.', 'Чистая гонка, победа с отыгрышем, неделя на воде, все акватории. Каждое показывает, сколько осталось.')}</p></div></Link>
           </div>
         </section>
 

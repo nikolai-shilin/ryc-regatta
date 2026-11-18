@@ -9,7 +9,6 @@ import { yachtOf, isYacht } from '@/lib/yachts';
 import { VENUES } from '@/lib/venues';
 import type { PlayerCard, PlayerList } from '@/lib/players';
 import type { PassportShare } from '@/lib/passport-share';
-import { BADGES } from '@/lib/badges';
 import { passport as passportOf, streakOf } from '@/lib/log';
 import { useCardKey } from '@/lib/card-key';
 import { IconBack, IconArrow, IconCrew, IconSail, IconTrophy, IconKite } from './ui';
@@ -28,8 +27,8 @@ import '@/styles/players.css';
 // (?p=<k>, a navigation the server answers, so the address can be shared) dresses the yacht in their colours and turns
 // the card to their numbers: the races, the wins and podiums, their passport, today's race, the yachts they sail, their
 // boat. A player whose boat the site never kept (one who only races inside Telegram) is shown the boat everyone starts in.
-// The passport's venues are the scores API's, so every card has them; the streak and the badges are kept in a player's
-// own log (lib/log.ts), so only your own card shows them. The card also holds a passport shared as a link and, at ?me=1,
+// The passport's venues are the scores API's, so every card has them; the streak is kept in a player's own log
+// (lib/log.ts), so only your own card shows it. The card also holds a passport shared as a link and, at ?me=1,
 // what this device has for someone with no card yet (passport below); a player with a card is sent to it.
 
 const href = (page: number, k?: string | null) => {
@@ -109,16 +108,16 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
   const known = new Set<string>(VENUES.map((v) => v.id));
   const cardFacts = (p: PlayerCard): PassportFacts => {
     const raced = new Set([...p.venues.map((v) => v.id).filter((id) => known.has(id)), ...(mine && log ? passportOf(log).raced : [])]);
-    const st = mine && log ? streakOf(log.d) : null, got = mine && log ? new Set(BADGES.filter((b) => log.b[b.id]).map((b) => b.id as string)) : null;
-    return { raced, n: raced.size, counts: Object.fromEntries(p.venues.map((v) => [v.id, v.n])), streak: st, badges: got && { got, n: got.size } };
+    const st = mine && log ? streakOf(log.d) : null;
+    return { raced, n: raced.size, counts: Object.fromEntries(p.venues.map((v) => [v.id, v.n])), streak: st };
   };
   // the passport in the link, or this device's
   const shared = passport?.shared;
   const passFacts: PassportFacts | null = shared
-    ? { raced: new Set(VENUES.filter((_, i) => shared.raced[i]).map((v) => v.id)), n: shared.v, streak: { n: shared.s }, badges: { got: new Set(BADGES.filter((_, i) => shared.got[i]).map((b) => b.id as string)), n: shared.b } }
-    : own && log ? { raced: passportOf(log).raced, n: passportOf(log).n, streak: streakOf(log.d), badges: { got: new Set(BADGES.filter((b) => log.b[b.id]).map((b) => b.id as string)), n: BADGES.filter((b) => log.b[b.id]).length } } : null;
+    ? { raced: new Set(VENUES.filter((_, i) => shared.raced[i]).map((v) => v.id)), n: shared.v, streak: { n: shared.s } }
+    : own && log ? { raced: passportOf(log).raced, n: passportOf(log).n, streak: streakOf(log.d) } : null;
   const passTitle = shared ? (shared.n ? t(`${shared.n}’s passport`, `Паспорт: ${shared.n}`) : t('A sailor’s passport', 'Паспорт гонщика')) : t('Your player card', 'Твоя карточка игрока');
-  const passN = passFacts?.n ?? 0, passS = passFacts?.streak?.n ?? 0, passB = passFacts?.badges?.n ?? 0;
+  const passN = passFacts?.n ?? 0, passS = passFacts?.streak?.n ?? 0;
   const shareBtn = (l: NonNullable<typeof log>) => <ShareButton lang={lang} data={() => passportShare(l, lang)} className="bt-show" title={t('Share your passport', 'Поделиться паспортом')} />;
 
   return (
@@ -134,8 +133,8 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
         {passport ? (<>
           <h1 className="bt-h">{passS >= 2 ? t(`${passS} days in a row`, `${passS} ${ruPlural(passS, ['день', 'дня', 'дней'])} подряд`) : t(`${passN} of ${VENUES.length} venues`, `${passN} из ${VENUES.length} акваторий`)}</h1>
           <p className="bt-p">{shared
-            ? t(`Every day the race moves to another of ${VENUES.length} famous regatta venues, the same race for everyone. ${passN} raced so far${passB ? `, ${passB} ${passB === 1 ? 'badge' : 'badges'} earned` : ''}. Can you get further?`, `Каждый день гонка переезжает на другую из ${VENUES.length} знаменитых регатных акваторий, и она у всех одна. Пройдено ${passN}${passB ? `, достижений: ${passB}` : ''}. Сможешь дальше?`)
-            : t('Your venues, streak and badges on this device. Sign in and race to get on the players’ list.', 'Твои акватории, серия и достижения на этом устройстве. Войди и пройди гонку, чтобы попасть в список игроков.')}</p>
+            ? t(`Every day the race moves to another of ${VENUES.length} famous regatta venues, the same race for everyone. ${passN} raced so far. Can you get further?`, `Каждый день гонка переезжает на другую из ${VENUES.length} знаменитых регатных акваторий, и она у всех одна. Пройдено ${passN}. Сможешь дальше?`)
+            : t('Your venues and streak on this device. Sign in and race to get on the players’ list.', 'Твои акватории и серия на этом устройстве. Войди и пройди гонку, чтобы попасть в список игроков.')}</p>
         </>) : player ? (<>
           <h1 className="bt-h bt-h-boat" key={player.k}>{/* eslint-disable-next-line @next/next/no-img-element */}{(() => { const f = findFlag(player.fl || undefined); return f ? <img className="bt-h-flag" src={flagSrc(f.code)} alt={t(f.en, f.ru)} /> : <NoFlag className="bt-h-flag" />; })()}<span>{nameOf(player)}</span></h1>
           <p className="bt-p">{player.boat

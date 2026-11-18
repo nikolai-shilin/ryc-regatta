@@ -1,19 +1,14 @@
 'use client';
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { tx, ruPlural, type Lang } from '@/lib/lang';
-import { BADGES, FAMS, badgeNear, type BadgeFam, type BadgeId, type Near } from '@/lib/badges';
-import { BadgePennant, FAM_COLOUR } from './badge-pennant';
-import { DRILLS, DRILL_IDS, DRILLS_KEY, LEVELS, levelOf, levelOpen, toOpen } from '@/lib/drills';
-import { keptResults, streakOf, todayUtc } from '@/lib/log';
-import { VENUES } from '@/lib/venues';
-import { passportShare, useLog } from './passport';
-import { ShareButton } from './share-sheet';
+import { DRILLS, DRILLS_KEY, LEVELS, levelOf, levelOpen, toOpen } from '@/lib/drills';
+import { todayUtc } from '@/lib/log';
 import { myPoints, useMyDays } from './my-month';
 import { Who } from './flag';
 
-// The player's progress beyond a race: the drills' stars, the badges, the rival in the month's standings. All of it is
-// this device's (and a signed-in player's account's, through the log), drawn in the browser on cached pages.
+// The player's progress beyond a race: the drills' stars and the rival in the month's standings, drawn in the browser
+// on cached pages.
 
 const readDrills = (): Record<string, number> => { try { return JSON.parse(localStorage.getItem(DRILLS_KEY) || '{}') || {}; } catch { return {}; } };
 function useDrills() {
@@ -21,6 +16,11 @@ function useDrills() {
   useEffect(() => setD(readDrills()), []);
   return d;
 }
+const IconStar = () => (
+  <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" />
+  </svg>
+);
 const Stars = ({ n, label }: { n: number; label: string }) => (
   <span className="pg-stars" role="img" aria-label={label}>{[1, 2, 3].map((i) => <i key={i} className={i <= n ? 'on' : ''}>★</i>)}</span>
 );
@@ -71,101 +71,22 @@ export function DrillsList({ lang }: { lang: Lang }) {
   );
 }
 
-
-// /race/badges: every badge as its pennant, those you have lit with when, the rest dark with how; over them how many,
-// a pip each in its family's colour
-export function BadgesGrid({ lang }: { lang: Lang }) {
-  const t = tx(lang), log = useLog(), loc = lang === 'ru' ? 'ru-RU' : 'en-GB';
-  const n = log ? BADGES.filter((b) => log.b[b.id]).length : 0;
-  // how near you've come to each you haven't got: from the results this device keeps, the streak, the venues, the drills
-  const [near, setNear] = useState<Partial<Record<BadgeId, Near>>>({});
-  useEffect(() => {
-    if (log) setNear(badgeNear(keptResults(), { streak: streakOf(log.d).n, venues: Object.keys(log.v).length, of: VENUES.length, drills: readDrills(), drillIds: DRILL_IDS }));
-  }, [log]);
-  const ord = (x: number) => (lang === 'ru' ? `${x}-е` : `${x}${['th', 'st', 'nd', 'rd'][x % 100 > 10 && x % 100 < 14 ? 0 : x % 10 < 4 ? x % 10 : 0]}`);
-  const soFar = (x?: Near) => {
-    if (!x) return null;
-    const v = x.unit === 'pct' ? `${x.v}%` : x.unit === 'place' ? ord(x.v) : x.unit === 'hails' ? t(`${x.v} ${x.v === 1 ? 'call' : 'calls'}`, `${x.v} ${ruPlural(x.v, ['замечание', 'замечания', 'замечаний'])}`) : x.unit === 'places' ? `+${x.v}` : String(x.v);
-    return x.of != null && x.unit !== 'pct' ? t(`So far: ${v} of ${x.of}`, `Пока: ${v} из ${x.of}`) : x.unit === 'pct' ? t(`Best so far: ${v} of 95%`, `Лучшее пока: ${v} из 95%`) : x.unit === 'place' ? t(`Best so far: ${v}`, `Лучшее пока: ${v}`) : t(`Closest: ${v}`, `Ближе всего: ${v}`);
-  };
-  return (
-    <>
-      <div className="pg-count">
-        <p role="status">{log ? (lang === 'ru' ? <>Получено <b>{n}</b> из {BADGES.length}</> : <><b>{n}</b> of {BADGES.length} earned</>) : ' '}</p>
-        <Pips got={log?.b} />
-        <span className="pg-legend">{FAMS.map((f) => <span key={f.id} style={fam(f.id)}>{t(...f.many)}</span>)}</span>
-        {log && n ? <ShareButton lang={lang} data={() => passportShare(log, lang)} className="bt-show" title={t('Share your badges and venues', 'Поделиться достижениями и акваториями')} /> : null}
-      </div>
-      <ul className="pg-badges">
-        {BADGES.map((b) => {
-          const at = log?.b[b.id];
-          return (
-            <li key={b.id} className={`pg-badge${at ? ' on' : ''}`} style={fam(b.fam)}>
-              <span className="pg-fam">{t(...FAMS.find((f) => f.id === b.fam)!.name)}</span>
-              <BadgePennant id={b.id} on={!!at} className="pg-emb" />
-              <b>{t(...b.name)}</b>
-              <span>{t(...b.how)}</span>
-              <small>{at ? new Date(at).toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' }) : soFar(near[b.id]) || t('Not yet', 'Ещё нет')}</small>
-            </li>
-          );
-        })}
-      </ul>
-    </>
-  );
-}
-// a family's colour, for the CSS
-const fam = (f: BadgeFam) => ({ '--c': FAM_COLOUR[f] }) as CSSProperties;
-// a pip a badge, lit in its family's colour once earned
-const Pips = ({ got, className = 'pg-pips' }: { got?: Partial<Record<string, number>>; className?: string }) => (
-  <span className={className} aria-hidden="true">{BADGES.map((b) => <i key={b.id} className={got?.[b.id] ? 'on' : undefined} style={fam(b.fam)} />)}</span>
-);
-
-// the result page: the badges this race earned first (the log keeps each at the race that first earned it), as a
-// banner under the result's kicks: one, its pennant, name and how; several (a first race often earns three), their
-// pennants side by side and their names, so the result stays in sight on a phone
-export function RaceBadges({ lang, at }: { lang: Lang; at: number }) {
-  const t = tx(lang), log = useLog();
-  const won = log ? BADGES.filter((b) => b.race && log.b[b.id] === at) : [];
-  if (!won.length) return null;
-  const one = won.length === 1 ? won[0] : null;
-  return (
-    <Link href="/race/badges" className={`pg-kick${one ? '' : ' many'}`} style={fam(won[0].fam)}>
-      <span className="pg-kick-embs">{won.map((b) => <BadgePennant key={b.id} id={b.id} on className="pg-kick-emb" style={fam(b.fam)} />)}</span>
-      <span className="pg-kick-t">
-        <em>{one ? t('New badge', 'Новое достижение') : lang === 'ru' ? `${won.length} ${ruPlural(won.length, ['новое достижение', 'новых достижения', 'новых достижений'])}` : `${won.length} new badges`}</em>
-        <strong>{won.map((b) => t(...b.name)).join(' · ')}</strong>
-        {one ? <span>{t(...one.how)}</span> : null}
-      </span>
-    </Link>
-  );
-}
-
-// the hub's rows: the drills (a gold plate, your stars of all) and the badges (the last you earned, how many, a pip
-// each)
+// the hub's row: the drills, your level and your stars at it
 export function ProgressRows({ lang }: { lang: Lang }) {
-  const t = tx(lang), got = useDrills(), log = useLog();
+  const t = tx(lang), got = useDrills();
   const stars = got ? DRILLS.reduce((a, d) => a + (got[d.id] || 0), 0) : null;
   // the pips: your level's drills' stars (the whole set's are too many to draw)
   const lv = got ? LEVELS.find((l) => l.id === levelOf(got))! : null, mineDs = lv ? DRILLS.filter((d) => d.level === lv.id) : [];
   const mineStars = got ? mineDs.reduce((a, d) => a + (got[d.id] || 0), 0) : 0;
   // the level after yours, and the stars at yours that open it: the row's next goal
   const next = lv ? LEVELS[LEVELS.indexOf(lv) + 1] : undefined;
-  const n = log ? BADGES.filter((b) => log.b[b.id]).length : null;
-  const last = log ? (Object.entries(log.b) as [BadgeId, number][]).filter(([id]) => BADGES.some((b) => b.id === id)).sort((a, b) => b[1] - a[1])[0]?.[0] : undefined;
   return (
-    <>
-      <Link className="bt-row pg-row" href="/race/drills">
-        <span className="pg-row-ico" aria-hidden="true"><BadgePennant id="drills" fam="result" on /></span>
-        <span className="pg-row-t">{t('Drills', 'Тренировки')}{stars == null || !lv ? null : <small>{lang === 'ru'
-          ? <>{lv.name[1]} · <b>{mineStars}</b> из {mineDs.length * 3}{next ? <> · ещё {toOpen(next.id) - mineStars} до уровня «{next.name[1]}»</> : null}</>
-          : <>{lv.name[0]} · <b>{mineStars}</b> of {mineDs.length * 3} stars{next ? <> · {toOpen(next.id) - mineStars} more to open {next.name[0]}</> : null}</>}</small>}</span>
-      </Link>
-      <Link className="bt-row pg-row" href="/race/badges">
-        <span className="pg-row-ico" aria-hidden="true">{last ? <BadgePennant id={last} on /> : <BadgePennant id="first" on={false} />}</span>
-        <span className="pg-row-t">{t('Badges', 'Достижения')}{n == null ? null : <small>{lang === 'ru' ? <>Получено <b>{n}</b> из {BADGES.length}</> : <><b>{n}</b> of {BADGES.length} earned</>}</small>}</span>
-        {n == null ? null : <Pips got={log?.b} className="pg-row-pips" />}
-      </Link>
-    </>
+    <Link className="bt-row pg-row" href="/race/drills">
+      <IconStar />
+      <span className="pg-row-t">{t('Drills', 'Тренировки')}{stars == null || !lv ? null : <small>{lang === 'ru'
+        ? <>{lv.name[1]} · <b>{mineStars}</b> из {mineDs.length * 3}{next ? <> · ещё {toOpen(next.id) - mineStars} до уровня «{next.name[1]}»</> : null}</>
+        : <>{lv.name[0]} · <b>{mineStars}</b> of {mineDs.length * 3} stars{next ? <> · {toOpen(next.id) - mineStars} more to open {next.name[0]}</> : null}</>}</small>}</span>
+    </Link>
   );
 }
 

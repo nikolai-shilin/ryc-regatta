@@ -9,9 +9,9 @@ import { ShareButton } from './share-sheet';
 
 // your passport as a link to share (/players with the passport in its address, its card app/og/passport): the numbers, and your name when signed in
 export function passportShare(log: Log, lang: Lang) {
-  const t = tx(lang), p = passport(log), st = streakOf(log.d).n, b = Object.keys(log.b || {});
+  const t = tx(lang), p = passport(log), st = streakOf(log.d).n;
   const name = typeof document === 'undefined' ? '' : getComputedStyle(document.documentElement).getPropertyValue('--me-name').trim().replace(/^"|"$/g, '').split(/[\s@]/)[0];
-  const url = `${location.origin}/players?${passportQuery({ streak: st, raced: p.raced, badges: b, name })}${lang === 'ru' ? '&lang=ru' : ''}`;
+  const url = `${location.origin}/players?${passportQuery({ streak: st, raced: p.raced, name })}${lang === 'ru' ? '&lang=ru' : ''}`;
   const text = st >= 2 ? t(`${st} days in a row on the water, ${p.n} of ${p.of} venues raced. Can you keep up?`, `${st} дней подряд на воде, ${p.n} из ${p.of} акваторий. Догонишь?`)
     : t(`${p.n} of ${p.of} regatta venues raced. Can you get further?`, `Пройдено ${p.n} из ${p.of} регатных акваторий. Сможешь дальше?`);
   return { title: 'Up and down', text, url };

@@ -21,7 +21,6 @@ import { costliest, goodLeg, startOf } from '@/lib/race-log';
 import { streakOf, todayUtc } from '@/lib/log';
 import { streakWords, useLog } from './passport';
 import { Replay } from './replay';
-import { RaceBadges } from './progress';
 import { track } from '@/lib/track';
 import { shortName } from '@/lib/name';
 import { BOAT_EVENT, readBoat } from '@/lib/boat';
@@ -300,7 +299,6 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
             <span className="bt-kick">{kicker}</span>
             {pbNote && res.pb?.isNew ? <span className="bt-kick rs-kick-g">{pbNote}</span> : null}
             {logNote ? <span className="bt-kick rs-kick-s">{logNote}</span> : null}
-            {!shared ? <RaceBadges lang={lang} at={res.at} /> : null}
           </div>
           <h1 className="bt-h">{title}</h1>
           <p className="bt-p">{t(...where.name)}, {t(...where.place)}. {near || t('The boats are where they were at the finish.', 'Лодки там, где были на финише.')}</p>

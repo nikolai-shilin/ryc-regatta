@@ -1,9 +1,9 @@
 /* Home for the player who has been before (components/home-back.tsx): <html data-back> is set before the first paint
    by the head script in app/[lang]/layout.tsx when this device has raced. Without it the page is the first-timer's. */
 
-/* the strip under the h1: the streak, today's time, the nearest badge, the reminder */
+/* the strip under the h1: the streak, today's time, the reminder */
 .bc .ho-back { display: none; }
-html[data-back] .bc .ho-back { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; min-height: 96px; background: var(--rule); }
+html[data-back] .bc .ho-back { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; min-height: 96px; background: var(--rule); }
 html[data-back] .bc .ho-back:empty { background: var(--panel); }
 .bc .ho-back-i { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; padding: var(--s-4) var(--s-5); background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); }
 .bc .ho-back-i b { font: 700 var(--fs-title)/1.05 var(--cond); text-transform: uppercase; letter-spacing: 0.01em; }
@@ -11,17 +11,14 @@ html[data-back] .bc .ho-back:empty { background: var(--panel); }
 .bc .ho-back-i small b { font: inherit; color: var(--ink); text-transform: none; letter-spacing: 0; }
 .bc .ho-back-i.risk { box-shadow: inset 3px 0 0 var(--live); }
 .bc .ho-back-i.risk small { color: var(--ink); }
-.bc a.ho-back-a { text-decoration: none; transition: background-color var(--t-quick); }
-.bc a.ho-back-a:hover { background: color-mix(in srgb, var(--panel), white 6%); }
 .bc .ho-back-push { grid-column: 1 / -1; padding-block: var(--s-3); }
 .bc .ho-back-push:empty { display: none; }
 .bc .ho-back-push .ho-push { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: var(--s-4); }
 
-/* a phone: the streak and today's time side by side, the badge under them */
+/* a phone: the strip closer */
 @media (max-width: 600px) {
-  html[data-back] .bc .ho-back { grid-template-columns: 1fr 1fr; min-height: 72px; }
+  html[data-back] .bc .ho-back { min-height: 72px; }
   .bc .ho-back-i { padding: var(--s-3) var(--s-4); gap: var(--s-1); }
-  .bc .ho-back-a { grid-column: 1 / -1; }
 }
 
 /* the reminder's switch, in the strip and in the venues' band */
@@ -39,9 +36,6 @@ html[data-back] .bc .ho-new { display: none; }
 /* a drill under a step of the first four races */
 .bc .ho-drill { margin-top: auto; padding-top: var(--s-2); font: 700 var(--fs-small)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--you); text-decoration: none; }
 .bc .ho-drill:hover { color: var(--ink); }
-
-/* the drills and the badges, side by side */
-.bc .ho-feats-2 { grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); }
 
 /* the explainers: open for a first-timer, folded behind one button for a returning player */
 .bc .ho-fold, .bc .ho-fold-in { display: flex; flex-direction: column; gap: inherit; }
