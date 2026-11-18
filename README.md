@@ -21,7 +21,7 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
 | `/help` | How to play, with screenshots | `app/[lang]/help/page.tsx` |
 | `/faq` | Questions: 32 in five groups | `lib/faq.ts`, `components/faq-list.tsx` |
 | `/iyt` | The IYT sailing certification test, as rycrentals.com/iyt has it | `app/[lang]/iyt/page.tsx` |
-| `/sponsorship` | What a sponsor can have: the jib's logo, the plane's banner, both, and what would be built to order. No prices; enquiries go by Telegram | `app/[lang]/sponsorship/page.tsx`, `styles/sponsorship.css` |
+| `/sponsorship` | What a sponsor can have: the jib's logo, the plane's banner, both, a post on the game's channel, a race film, and what would be built to order. No prices; enquiries go by Telegram | `app/[lang]/sponsorship/page.tsx`, `styles/sponsorship.css` |
 | `/sign-in`, `/sign-in/code`, `/sign-in/name` | Supabase sign-in: Google or a 6-digit email code, then a name for the ranking | `components/sign-in-forms.tsx` |
 | `/play?race=today`, `?race=free` or `?match=<code>` | The game itself, a static page | `public/play/index.html`, `public/game/` |
 | Any other address | The site's 404, with its header and a way back, in the reader's language; `proxy.ts` sends a rating day the API can't have (`/race/rating/not-a-day`, a day to come) here too. A document of its own, as the root layout is under `[lang]` (`experimental.globalNotFound`) | `app/global-not-found.tsx`, `components/not-found-view.tsx` |

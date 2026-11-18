@@ -37,6 +37,7 @@
 /* ---------- the options ---------- */
 .bc .sp-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: var(--s-4); }
 .bc .sp-opt { display: flex; flex-direction: column; min-width: 0; background: var(--surface); }
+.bc .hm-band :is(.sp-opt, .rd-cells li) { background: var(--panel-2); }
 .bc .sp-opt-t { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-6); }
 .bc .sp-spec { margin: var(--s-2) 0 0; border-top: 1px solid var(--rule); }
 .bc .sp-spec > div { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--rule-2); }
@@ -48,7 +49,7 @@
 
 /* ---------- made to order ---------- */
 .bc .sp-made { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 1px; margin: 0; padding: 0; background: var(--rule); }
-.bc .sp-made li { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-6); background: var(--ground); }
+.bc .sp-made li { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-6); background: var(--surface); }
 .bc .sp-made .hm-h3 { margin: 0; }
 .bc .sp-opt-t .hm-h3, .bc .sp-both .hm-h3 { margin: 0; }
 
