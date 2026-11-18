@@ -191,3 +191,63 @@ test('the counters clear themselves when they grow past 5,000 addresses', async 
   for (let i = 0; i < 5001; i++) await post({}, { ip: `172.16.${i >> 8}.${i & 255}` });
   rpc.calls = 0; await post(JOIN, { ip }); assert.equal(rpc.calls, 1, 'forgotten once the map was cleared');
 });
+
+// ---------- what the server says of a failure (the code only, never the report, the key or a token) ----------
+const heard = async (fn) => {
+  const logs = [], was = { error: console.error, warn: console.warn, log: console.log, info: console.info };
+  console.error = (...a) => logs.push(['error', a]); console.warn = (...a) => logs.push(['warn', a]);
+  console.log = (...a) => logs.push(['log', a]); console.info = (...a) => logs.push(['info', a]);
+  try { await fn(); } finally { Object.assign(console, was); }
+  return logs;
+};
+const everything = (logs) => JSON.stringify(logs, (k, v) => (v instanceof Error ? { m: v.message, s: v.stack, c: v.code } : v));
+test('a missing key says nothing outside production, and once on a production instance', async () => {
+  delete process.env.DUEL_LOG_KEY;
+  delete process.env.VERCEL_ENV;
+  assert.deepEqual(await heard(async () => { await post(START); await post(START); }), [], 'not production: silent');
+  process.env.VERCEL_ENV = 'preview';
+  assert.deepEqual(await heard(() => post(START)), [], 'a preview is not production');
+  process.env.VERCEL_ENV = 'production';
+  let res;
+  const logs = await heard(async () => { res = [await post(START), await post(END), await post(JOIN)]; });
+  assert.deepEqual(res.map((r) => r.status), [204, 204, 204]);
+  assert.equal(rpc.calls, 0);
+  assert.equal(logs.length, 1, 'one warning for the instance');
+  assert.equal(logs[0][0], 'warn');
+  assert.match(String(logs[0][1][0]), /duel-log/);
+  assert.match(String(logs[0][1][0]), /DUEL_LOG_KEY/);
+  delete process.env.VERCEL_ENV;
+});
+test('a database that answers with an error is logged by its code alone, and is still a 204', async () => {
+  process.env.DUEL_LOG_KEY = 'SECRET-KEY-VALUE';
+  rpc.error = { code: '42501', message: `permission denied for ${TOKEN} SECRET-KEY-VALUE Anna Boris` };
+  let res;
+  const logs = await heard(async () => { res = await post(START, { user: 'u-anna' }); });
+  assert.equal(res.status, 204);
+  assert.deepEqual(logs, [['error', ['duel-log', '42501']]]);
+});
+test('a database that throws is logged without its message, and is still a 204', async () => {
+  process.env.DUEL_LOG_KEY = 'SECRET-KEY-VALUE';
+  rpc.error = 'throw';
+  let res;
+  const logs = await heard(async () => { res = await post(START); });
+  assert.equal(res.status, 204);
+  assert.equal(logs.length, 1);
+  assert.equal(logs[0][0], 'error');
+  assert.equal(logs[0][1][0], 'duel-log');
+  assert.equal(logs[0][1].length, 2);
+  assert.equal(typeof logs[0][1][1], 'string');
+  assert.doesNotMatch(everything(logs), /db down/);
+});
+test('nothing logged ever holds the key, a token, a hash of it or a name', async () => {
+  process.env.DUEL_LOG_KEY = 'SECRET-KEY-VALUE';
+  const bodies = [START, JOIN, END];
+  const logs = [];
+  for (const error of [{ code: '42501', message: `bad ${TOKEN} SECRET-KEY-VALUE Anna Boris` }, 'throw', { message: 'no code SECRET-KEY-VALUE Anna' }, { code: `${TOKEN} Anna` }]) {
+    rpc.error = error;
+    for (const b of bodies) logs.push(...await heard(() => post(b, { user: 'u-anna' })));
+  }
+  assert.ok(logs.length >= 12, 'every failure is told');
+  const all = everything(logs);
+  for (const secret of ['SECRET-KEY-VALUE', TOKEN, sha256(TOKEN), 'Anna', 'Boris', 'u-anna', 'permission denied']) assert.ok(!all.includes(secret), `no ${secret} in the logs`);
+});

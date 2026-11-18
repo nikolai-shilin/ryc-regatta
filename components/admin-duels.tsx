@@ -11,7 +11,7 @@ import { IconCrew, clock } from './ui';
 
 // The admin's look at the 1-on-1 races, from the database's regatta_admin_duels (which answers an admin alone): the
 // totals, the races a day, how they ended, the tables by venue, yacht, wind, course and start, and every race, the
-// newest first (1,000 at most). The game's screens report each race (public/game/duel-log.js → app/api/duel-log), the
+// newest first (1,000 at most). The game's screens report each race (public/game/duel-log.js → app/connect/log), the
 // database keeps one row to a race. Drawn on the server, per request; the table sorts in the browser by the column
 // clicked (components/admin-players-table.tsx). Times are UTC, as on /admin/players.
 type Num = number | null;
@@ -100,7 +100,16 @@ export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days
     data.groups.filter((g) => g.k === k).map((g) => ({ key: `${k}-${g.v}`, name: label(g.v), cells: [String(g.n), pct(g.fin, g.n)] }));
   const head = [t('Races', 'Гонок'), t('Finished', 'Финиш')];
   const date = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-  const max = Math.max(1, ...data.days.map((d) => d.n));
+  // the database returns only the days that had races: the UTC days between the first and the last get a bar of no height
+  const span = (() => {
+    const out: { d: string; n: number; fin: number }[] = [], DAY = 864e5;
+    const first = Date.parse(`${data.days[0]?.d}T00:00:00Z`), last = Date.parse(`${data.days[data.days.length - 1]?.d}T00:00:00Z`);
+    if (!(last - first <= 3660 * DAY)) return data.days; // (a range that isn't one: drawn as it came)
+    const by = new Map(data.days.map((d) => [d.d, d]));
+    for (let at = first; at <= last; at += DAY) { const d = new Date(at).toISOString().slice(0, 10); out.push(by.get(d) ?? { d, n: 0, fin: 0 }); }
+    return out.length >= data.days.length ? out : data.days;
+  })();
+  const max = Math.max(1, ...span.map((d) => d.n));
   const PERIODS: { d: number | null; label: string }[] = [{ d: null, label: t('All time', 'Всё время') }, ...DUEL_DAYS.map((d) => ({ d, label: t(`${d} days`, `${d} дн.`) }))];
 
   return (
@@ -128,19 +137,19 @@ export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days
           <figcaption className="adm-tab-h">{t('Races a day', 'Гонок в день')} · {t('max', 'максимум')} {max}</figcaption>
           <svg viewBox="0 0 600 120" role="img" aria-label={t('Races started each day', 'Гонок начато в каждый день')}>
             <line x1="0" x2="600" y1="119.5" y2="119.5" className="adm-days-base" />
-            {data.days.map((d, i) => {
-              const n = data.days.length, bw = Math.max(1, 600 / n - 2), x = i * (600 / n) + 1, h = Math.max(2, (d.n / max) * 116);
+            {span.map((d, i) => {
+              const n = span.length, bw = Math.max(1, 600 / n - 2), x = i * (600 / n) + 1, h = d.n ? Math.max(2, (d.n / max) * 116) : 0;
               return (
                 <g key={d.d}>
                   <rect x={x} y={0} width={bw} height={120} className="adm-days-hit">
-                    <title>{`${date(d.d)}: ${t(`${d.n} races, ${pct(d.fin, d.n)} finished`, `${d.n} гонок, финиш ${pct(d.fin, d.n)}`)}`}</title>
+                    <title>{`${date(d.d)}: ${d.n ? t(`${d.n} races, ${pct(d.fin, d.n)} finished`, `${d.n} гонок, финиш ${pct(d.fin, d.n)}`) : t('no races', 'нет гонок')}`}</title>
                   </rect>
                   <rect x={x} y={120 - h} width={bw} height={h} rx={Math.min(2, bw / 2)} className="adm-days-bar" />
                 </g>
               );
             })}
           </svg>
-          <div className="adm-days-t"><span>{date(data.days[0].d)}</span><span>{date(data.days[data.days.length - 1].d)}</span></div>
+          <div className="adm-days-t"><span>{date(span[0].d)}</span><span>{date(span[span.length - 1].d)}</span></div>
         </figure>
       )}
       <section className="adm-tab">

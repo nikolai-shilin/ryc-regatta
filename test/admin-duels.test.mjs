@@ -165,3 +165,25 @@ test('an admin gets the page, asked for all time unless the address names a peri
     assert.equal((h.match(/class="adm-range"/g) ?? []).length, 1, 'only the page’s own period links, none from the shell');
   }
 });
+
+test('a day with no races is a gap in the chart, a bar of no height, across a month\'s end', () => {
+  const days = [{ d: '2026-01-30', n: 2, fin: 1 }, { d: '2026-02-02', n: 4, fin: 4 }];
+  const h = html({ days });
+  const fig = /<figure class="adm-days">(.*?)<\/figure>/.exec(h)[1];
+  const bars = [...fig.matchAll(/<rect [^>]*class="adm-days-bar"[^>]*>/g)].map((m) => m[0]);
+  assert.equal(bars.length, 4, '30 and 31 January, 1 and 2 February');
+  const hs = bars.map((b) => Number(/height="([\d.]+)"/.exec(b)[1]));
+  assert.ok(hs[0] > 0 && hs[3] > hs[0], 'the days that had races are drawn');
+  assert.deepEqual([hs[1], hs[2]], [0, 0], 'the days between are empty');
+  const tips = [...fig.matchAll(/<title>(.*?)<\/title>/g)].map((m) => m[1]);
+  assert.deepEqual(tips, ['30 Jan: 2 races, 50% finished', '31 Jan: no races', '1 Feb: no races', '2 Feb: 4 races, 100% finished']);
+  const xs = bars.map((b) => Number(/ x="([\d.]+)"/.exec(b)[1]));
+  assert.ok(xs[1] > xs[0] && xs[2] > xs[1] && xs[3] > xs[2], 'each day its own place');
+  assert.match(plain(fig), /30 Jan.*2 Feb/, 'the ends are the first and last day that had races');
+  assert.match(html({ days }, 'ru'), /31 янв\.: нет гонок/);
+});
+
+test('days on end with races are not given extra bars', () => {
+  const fig = /<figure class="adm-days">(.*?)<\/figure>/.exec(html())[1];
+  assert.equal((fig.match(/class="adm-days-bar"/g) ?? []).length, 2);
+});

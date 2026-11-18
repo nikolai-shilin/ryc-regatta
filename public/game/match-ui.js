@@ -370,6 +370,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   // the host: the race's end, once, by whatever way it ended. It follows its start's tries, for the site can't place an end
   // that overtakes its start; a page going away (now) can't wait for them
   const tellEnd = (now = false) => {
+    if (!Log) return; // (duel-log.js not loaded: nothing to build or send it with, and nothing is changed, so the end still goes if it loads)
     try {
       if (isHost && match?.state === 'over') {
         const l = told.get(match.start.seed), race = onScreen() ? cur.race : null;

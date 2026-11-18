@@ -5,6 +5,7 @@ import { sailing, room, start, rematch, page, world, run, until, toFinish, owes,
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { registerHooks } from 'node:module';
 
 const Log = await import('../public/game/duel-log.js');
 const { parseReport } = await import('../lib/duel-log.ts');
@@ -442,6 +443,27 @@ test('a saved token that isn\'t one is no token', async () => {
   const back = await page('Host', { ls: x.h.ls });
   run(2, back); await settle();
   assert.deepEqual(kinds(back), []);
+});
+
+test('a host back on a saved race whose duel-log.js failed to load makes no noise and sends nothing', async () => {
+  const x = await afloat();
+  x.h.gone();
+  posts = [];
+  const hook = registerHooks({ resolve(spec, ctx, next) {
+    if (globalThis.__noDuelLog && spec === './duel-log.js' && /match-ui\.js/.test(ctx.parentURL ?? '')) throw new Error('duel-log.js failed to load');
+    return next(spec, ctx);
+  } });
+  const errors = [], was = console.error;
+  console.error = (...a) => errors.push(a);
+  try {
+    globalThis.__noDuelLog = true;
+    const back = await page('Host', { ls: x.h.ls });
+    run(3, back); await settle();
+    run(3, back); await settle();
+    assert.deepEqual(errors, [], 'tellEnd throws on no beat');
+    assert.deepEqual(posts, [], 'and nothing is sent');
+    assert.equal(back.says('#mCardH'), 'Race abandoned', 'the race itself is told as before');
+  } finally { console.error = was; globalThis.__noDuelLog = false; hook.deregister(); }
 });
 
 // ---------- report(), on its own ----------
