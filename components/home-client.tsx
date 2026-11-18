@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { readPb } from '@/lib/opts';
 import { readBoat } from '@/lib/boat';
-import { readMe } from '@/lib/me';
+import { useCardKey, forgetCard } from '@/lib/card-key';
 import { briefUrl, readBrief } from '@/lib/day-brief';
 import { dailyVenue, dailyYacht } from '@/lib/race';
 import { clock } from './ui';
@@ -17,8 +17,8 @@ const IconUser = () => <svg viewBox="0 0 16 16" width={16} height={16} aria-hidd
 // The header's menu: the burger and your avatar (your initials once signed in, from lib/me.ts: the pages are cached,
 // so whether you are is drawn by CSS, .if-me and .if-guest). At its head who you are: signed in, your initials and name,
 // the way to the account and settings; a guest, the way to sign in and why (at every width, the bar's own button
-// beside it or not). Then what's yours on this device (the boat, the passport; Settings is the head's once signed in;
-// and, for a player who has raced, their own card on /players), the reading pages with the badges, on a narrow screen
+// beside it or not). Then what's yours (the boat, your player card with your passport; Settings is the head's once
+// signed in), the reading pages with the badges, on a narrow screen
 // (where the header's links are hidden) the site's pages too, and last, signed in, Sign out (back to the page it was
 // on, app/auth/sign-out).
 export function SiteMenu({ lang }: { lang: Lang }) {
@@ -44,8 +44,7 @@ export function SiteMenu({ lang }: { lang: Lang }) {
         </Link>
         <span className="hm-msep" />
         <Link className="hm-mi" href="/boat">{t('Your boat', 'Твоя яхта')}</Link>
-        <Link className="hm-mi" href="/passport">{t('Your passport', 'Твой паспорт')}</Link>
-        {card && <Link className="hm-mi if-me" href={`/players?p=${encodeURIComponent(card)}`}>{t('Your player card', 'Твоя карточка игрока')}</Link>}
+        <Link className="hm-mi" href={card ? `/players?p=${encodeURIComponent(card)}` : '/players?me=1'}>{t('Your player card', 'Твоя карточка игрока')}</Link>
         <Link className="hm-mi if-guest" href="/settings">{t('Settings', 'Настройки')}</Link>
         <AvMenuItem lang={lang} />
         <span className="hm-msep" />
@@ -73,37 +72,6 @@ export function SiteMenu({ lang }: { lang: Lang }) {
       </div>
     </details>
   );
-}
-
-// The key of your own card on /players (?p=<k>), for the menu's row. The scores server makes it from a secret of its
-// own, so it is asked for (app/auth/player, with the session) once you are signed in, when the menu is first opened
-// or pointed at, not on every page load; null until then, and for a guest or an account that has never raced (not a
-// player yet), so the row isn't there. A key found is kept for the tab, under who it is for (as lib/me.ts reads the
-// session), so the next page has the row at once; Sign out forgets it. Not having one is not kept: it is asked again
-// on the next page, so a first race shows the row soon after.
-const CARD = 'regatta-card';
-const cardWho = () => { const m = readMe(); return m ? `${m.provider}|${m.email}|${m.name}` : null; };
-const forgetCard = () => { try { sessionStorage.removeItem(CARD); } catch {} };
-function useCardKey(): [string | null, () => void] {
-  const [k, setK] = useState<string | null>(null);
-  const asked = useRef(false);
-  useEffect(() => {
-    try {
-      const c = JSON.parse(sessionStorage.getItem(CARD) || 'null');
-      if (c && typeof c.k === 'string' && c.who === cardWho()) { setK(c.k); asked.current = true; }
-    } catch {}
-  }, []);
-  const ask = () => {
-    const who = cardWho();
-    if (asked.current || !who) return;
-    asked.current = true;
-    fetch('/auth/player', { cache: 'no-store' }).then((r) => (r.status === 200 ? r.json() : null)).catch(() => null).then((j) => {
-      const key = typeof j?.k === 'string' ? j.k : null;
-      setK(key);
-      if (key) try { sessionStorage.setItem(CARD, JSON.stringify({ who, k: key })); } catch {}
-    });
-  };
-  return [k, ask];
 }
 
 // Your best time in today's race on this device (the game keeps it), or the way onto the ranking. The ranking above it is

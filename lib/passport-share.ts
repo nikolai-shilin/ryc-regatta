@@ -1,7 +1,7 @@
 import { VENUES } from './venues.ts'; // with their extensions, so npm test's Node finds them too
 import { BADGES } from './badges.ts';
 
-// A passport as a link (/passport?s=5&v=12&b=4&vs=…&bb=…&n=Anna): the streak, the venues raced (how many and which, as
+// A passport as a link (/players?s=5&v=12&b=4&vs=…&bb=…&n=Anna): the streak, the venues raced (how many and which, as
 // a bit each in the venues' order, in base 36) and the badges (how many and which, a bit each in lib/badges.ts's
 // order), for the share card (app/og/passport) and its page. Only what the sharer chose to send: the numbers, and
 // their name if they're signed in. A link from before bb says how many badges and not which: none lit.
@@ -12,6 +12,11 @@ const bitsOf = (s: string | undefined) => {
   return bits;
 };
 const clampN = (x: unknown, max: number) => { const n = Math.floor(Number(x)); return Number.isFinite(n) ? Math.max(0, Math.min(max, n)) : 0; };
+
+// the parts of an address that are a passport, as they came
+const KEYS = ['s', 'v', 'b', 'vs', 'bb', 'n'];
+export const passportInLink = (q: Record<string, string | string[] | undefined>) =>
+  Object.entries(q).flatMap(([k, v]) => (typeof v === 'string' && KEYS.includes(k) ? [[k, v] as [string, string]] : []));
 
 export function passportQuery(p: { streak: number; raced: Set<string>; badges: string[]; name?: string }) {
   let bits = 0n, bb = 0n;

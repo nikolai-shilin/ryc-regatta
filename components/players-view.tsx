@@ -8,19 +8,29 @@ import { findFlag, flagSrc } from '@/lib/flags';
 import { yachtOf, isYacht } from '@/lib/yachts';
 import { VENUES } from '@/lib/venues';
 import type { PlayerCard, PlayerList } from '@/lib/players';
-import { IconBack, IconArrow, IconCrew, IconSail, IconTrophy, IconPin, IconKite } from './ui';
+import type { PassportShare } from '@/lib/passport-share';
+import { BADGES } from '@/lib/badges';
+import { passport as passportOf, streakOf } from '@/lib/log';
+import { useCardKey } from '@/lib/card-key';
+import { IconBack, IconArrow, IconCrew, IconSail, IconTrophy, IconKite } from './ui';
 import { LoadBar, ScenePoster } from './skeleton';
 import { SceneBrand } from './scene-brand';
 import { PauseCard } from './pause-card';
 import { FlagImg, NoFlag } from './flag';
+import { passportShare, useLog } from './passport';
+import { PassportBlock, type PassportFacts } from './passport-card';
+import { ShareButton } from './share-sheet';
 import '@/styles/players.css';
 
 // The players: the game's own scene (/boat-view: a JPK 1050 on Lake Garda on a summer evening, the drone circling her)
 // behind the page, as on /yachts and /boat, the players' table in the card on the right, a page at a time, the most
 // points first (the rating's, every day of today's race added up). Picking one
 // (?p=<k>, a navigation the server answers, so the address can be shared) dresses the yacht in their colours and turns
-// the card to their numbers: the races, the wins and podiums, today's race, the yachts and venues they sail, their
+// the card to their numbers: the races, the wins and podiums, their passport, today's race, the yachts they sail, their
 // boat. A player whose boat the site never kept (one who only races inside Telegram) is shown the boat everyone starts in.
+// The passport's venues are the scores API's, so every card has them; the streak and the badges are kept in a player's
+// own log (lib/log.ts), so only your own card shows them. The card also holds a passport shared as a link and, at ?me=1,
+// what this device has for someone with no card yet (passport below); a player with a card is sent to it.
 
 const href = (page: number, k?: string | null) => {
   const q = new URLSearchParams();
@@ -30,9 +40,18 @@ const href = (page: number, k?: string | null) => {
   return s ? `/players?${s}` : '/players';
 };
 
-export function PlayersView({ lang, list, player, missing, back }: { lang: Lang; list: PlayerList | null; player: PlayerCard | null; missing: boolean; back: ReactNode }) {
+export function PlayersView({ lang, list, player, missing, back, passport }: {
+  lang: Lang; list: PlayerList | null; player: PlayerCard | null; missing: boolean; back: ReactNode;
+  passport?: { shared: PassportShare | null; path: string }; // a shared one, or (null) this device's
+}) {
   const t = tx(lang);
   const router = useRouter();
+  const log = useLog();
+  const [myKey, askKey] = useCardKey();
+  const mine = !!player && myKey === player.k;
+  const own = !!passport && !passport.shared;
+  useEffect(() => { if (player || own) askKey(); }); // asks once: the hook remembers
+  useEffect(() => { if (own && myKey) router.replace(href(1, myKey)); }, [own, myKey, router]);
   const [pending, start] = useTransition();
   const [going, setGoing] = useState<string | null>(null); // the row clicked, while its card comes
   const [down, setDown] = useState(false);
@@ -83,9 +102,24 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
   const date = (s: string, year = true) => new Date(s).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'short', ...(year && { year: 'numeric' }), timeZone: 'UTC' });
   const races = (n: number) => (lang === 'ru' ? `${num(n)} ${ruPlural(n, ['гонка', 'гонки', 'гонок'])}` : `${num(n)} race${n === 1 ? '' : 's'}`);
   const nameOf = (x: { name: string | null }) => x.name || t('A player', 'Игрок');
-  const venueName = (id: string) => { const v = VENUES.find((x) => x.id === id); return v ? t(...v.name) : id; };
   const yachtName = (id: string | null) => t(...yachtOf(isYacht(id) ? id : 'jpk1050').name);
   const flag = findFlag(boat.flag);
+
+  // the passport on a player's card: the venues they have raced, and on your own what this device's log adds to them
+  const known = new Set<string>(VENUES.map((v) => v.id));
+  const cardFacts = (p: PlayerCard): PassportFacts => {
+    const raced = new Set([...p.venues.map((v) => v.id).filter((id) => known.has(id)), ...(mine && log ? passportOf(log).raced : [])]);
+    const st = mine && log ? streakOf(log.d) : null, got = mine && log ? new Set(BADGES.filter((b) => log.b[b.id]).map((b) => b.id as string)) : null;
+    return { raced, n: raced.size, counts: Object.fromEntries(p.venues.map((v) => [v.id, v.n])), streak: st, badges: got && { got, n: got.size } };
+  };
+  // the passport in the link, or this device's
+  const shared = passport?.shared;
+  const passFacts: PassportFacts | null = shared
+    ? { raced: new Set(VENUES.filter((_, i) => shared.raced[i]).map((v) => v.id)), n: shared.v, streak: { n: shared.s }, badges: { got: new Set(BADGES.filter((_, i) => shared.got[i]).map((b) => b.id as string)), n: shared.b } }
+    : own && log ? { raced: passportOf(log).raced, n: passportOf(log).n, streak: streakOf(log.d), badges: { got: new Set(BADGES.filter((b) => log.b[b.id]).map((b) => b.id as string)), n: BADGES.filter((b) => log.b[b.id]).length } } : null;
+  const passTitle = shared ? (shared.n ? t(`${shared.n}’s passport`, `Паспорт: ${shared.n}`) : t('A sailor’s passport', 'Паспорт гонщика')) : t('Your player card', 'Твоя карточка игрока');
+  const passN = passFacts?.n ?? 0, passS = passFacts?.streak?.n ?? 0, passB = passFacts?.badges?.n ?? 0;
+  const shareBtn = (l: NonNullable<typeof log>) => <ShareButton lang={lang} data={() => passportShare(l, lang)} className="bt-show" title={t('Share your passport', 'Поделиться паспортом')} />;
 
   return (
     <div className="bt pl-view">
@@ -96,8 +130,13 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
 
       <div className="bt-info" ref={info}>
         <div className="bt-top">{back}<SceneBrand /></div>
-        <span className="bt-kick">{t('The players', 'Игроки')}</span>
-        {player ? (<>
+        <span className="bt-kick">{passport ? passTitle : t('The players', 'Игроки')}</span>
+        {passport ? (<>
+          <h1 className="bt-h">{passS >= 2 ? t(`${passS} days in a row`, `${passS} ${ruPlural(passS, ['день', 'дня', 'дней'])} подряд`) : t(`${passN} of ${VENUES.length} venues`, `${passN} из ${VENUES.length} акваторий`)}</h1>
+          <p className="bt-p">{shared
+            ? t(`Every day the race moves to another of ${VENUES.length} famous regatta venues, the same race for everyone. ${passN} raced so far${passB ? `, ${passB} ${passB === 1 ? 'badge' : 'badges'} earned` : ''}. Can you get further?`, `Каждый день гонка переезжает на другую из ${VENUES.length} знаменитых регатных акваторий, и она у всех одна. Пройдено ${passN}${passB ? `, достижений: ${passB}` : ''}. Сможешь дальше?`)
+            : t('Your venues, streak and badges on this device. Sign in and race to get on the players’ list.', 'Твои акватории, серия и достижения на этом устройстве. Войди и пройди гонку, чтобы попасть в список игроков.')}</p>
+        </>) : player ? (<>
           <h1 className="bt-h bt-h-boat" key={player.k}>{/* eslint-disable-next-line @next/next/no-img-element */}{(() => { const f = findFlag(player.fl || undefined); return f ? <img className="bt-h-flag" src={flagSrc(f.code)} alt={t(f.en, f.ru)} /> : <NoFlag className="bt-h-flag" />; })()}<span>{nameOf(player)}</span></h1>
           <p className="bt-p">{player.boat
             ? <>{boat.name ? <><i>{boat.name}</i> · </> : null}{`${boat.nat} ${boat.num || '1'}`.trim()} · {t('Their colours on the JPK 1050. Drag to circle her.', 'Их цвета на JPK 1050. Тяни, чтобы облететь яхту.')}</>
@@ -110,11 +149,18 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
         </>)}
       </div>
 
-      <PauseCard lang={lang} back={href(page, player?.k)} className="pl-card" cardRef={card} busy={pending}
-        title={player ? nameOf(player) : `${t('The players', 'Игроки')}${list ? ` · ${num(list.total)}` : ''}`} icon={player ? undefined : <IconCrew s={14} />}
-        note={!player && list && list.pages > 1 ? t(`Page ${page} of ${list.pages}`, `Страница ${page} из ${list.pages}`) : undefined}
-        tools={player ? <Link className="bt-mini" href={href(page)} scroll={false} onClick={(e) => { e.preventDefault(); go(href(page), null); }}><IconBack s={14} /><span>{t('All players', 'Все игроки')}</span></Link> : undefined}>
-        {player ? (<>
+      <PauseCard lang={lang} back={passport ? passport.path : href(page, player?.k)} className="pl-card" cardRef={card} busy={pending}
+        title={passport ? passTitle : player ? nameOf(player) : `${t('The players', 'Игроки')}${list ? ` · ${num(list.total)}` : ''}`} icon={player || passport ? undefined : <IconCrew s={14} />}
+        note={!player && !passport && list && list.pages > 1 ? t(`Page ${page} of ${list.pages}`, `Страница ${page} из ${list.pages}`) : undefined}
+        action={passport ? <a className="bt-go" href="/play?race=today">{t('Sail today’s race', 'Пройди гонку дня')}</a> : undefined}
+        tools={player || passport ? <Link className="bt-mini" href={href(player ? page : 1)} scroll={false} onClick={(e) => { e.preventDefault(); go(href(player ? page : 1), null); }}><IconBack s={14} /><span>{t('All players', 'Все игроки')}</span></Link> : undefined}>
+        {passport ? (<>
+          {passFacts ? <PassportBlock lang={lang} facts={passFacts} mine={own} share={own && log && passFacts.n ? shareBtn(log) : undefined} /> : null}
+          <div className="bt-rows">
+            {own ? <Link className="bt-row if-guest" href={`/sign-in?next=${encodeURIComponent('/players?me=1')}`}><IconCrew s={18} /><span>{t('Sign in', 'Войти')}</span><span className="bt-row-m">{t('Keep it on every device', 'Сохрани на всех устройствах')}</span></Link> : null}
+            <Link className="bt-row" href="/"><IconSail s={18} /><span>{t('What the game is', 'Что это за игра')}</span></Link>
+          </div>
+        </>) : player ? (<>
           <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс')}>
             <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд')}</button>
             <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Gennaker', 'Генакер')}</button>
@@ -131,6 +177,8 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
             <div><span className="bt-sk">{t('Last race', 'Последняя')}</span><b className="pl-d">{date(player.last, false)}</b></div>
             <span className="bt-sv">{player.best && player.fleet ? t(`Best: ${place(player.best)} of ${player.fleet} boats. `, `Лучшее: ${player.best}-е из ${player.fleet}. `) : ''}{t(`Racing since ${date(player.first)}.`, `Гоняется с ${date(player.first)}.`)}</span>
           </div>
+
+          <PassportBlock lang={lang} facts={cardFacts(player)} mine={mine} share={mine && log ? shareBtn(log) : undefined} />
 
           <div className="bt-g">
             <span className="bt-k"><IconTrophy s={14} />{t('Today’s race', 'Гонка дня')}</span>
@@ -166,15 +214,6 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
               {player.yachts.slice(0, 6).map((y) => <div key={y.id}><dt>{yachtName(y.id)}</dt><dd>{races(y.n)}</dd></div>)}
             </dl>
           </div>
-
-          {player.venues.length > 0 && (
-            <div className="bt-g">
-              <span className="bt-k"><IconPin s={14} />{t('Where they race', 'Где гоняются')}</span>
-              <dl className="yt-spec pl-spec">
-                {player.venues.slice(0, 6).map((v) => <div key={v.id}><dt>{venueName(v.id)}</dt><dd>{races(v.n)}</dd></div>)}
-              </dl>
-            </div>
-          )}
 
           <div className="bt-rows">
             <Link className="bt-row" href="/race/rating"><IconTrophy s={18} /><span>{t('The rating', 'Рейтинг')}</span><span className="bt-row-m">{t('Today and the month', 'День и месяц')}</span></Link>

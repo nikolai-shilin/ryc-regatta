@@ -88,7 +88,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
           <Link href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>
           <Link href="/race/drills">{t('Drills', 'Тренировки')}</Link>
           <Link href="/race/badges">{t('Badges', 'Достижения')}</Link>
-          <Link href="/passport">{t('Your passport', 'Твой паспорт')}</Link>
+          <Link href="/players?me=1">{t('Your player card', 'Твоя карточка игрока')}</Link>
           <Link href="/faq">{t('Questions', 'Вопросы')}</Link>
           <Link href="/social">{t('Follow the game', 'Игра в соцсетях')}</Link>
           <Link href="/sponsorship">{t('Sponsorship', 'Спонсорство')}</Link>

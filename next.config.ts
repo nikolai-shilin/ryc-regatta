@@ -11,9 +11,14 @@ const config: NextConfig = {
   // The game pictures in public/images are rendered at 3–4× and served at quality 90 (every <Image> snaps to the one
   // allowed quality), AVIF where the browser takes it, else WebP. They only change with a new render, so cache them long.
   images: { qualities: [90], formats: ['image/avif', 'image/webp'], minimumCacheTTL: 2678400 },
-  // the fleet and the yachts were two pages of the same scene: one now, /yachts
+  // the fleet and the yachts were two pages of the same scene: one now, /yachts. The passport is on the player card
+  // now: a link someone shared keeps its passport in the address, and with none it is your own
   async redirects() {
-    return [{ source: '/fleet', destination: '/yachts', permanent: true }];
+    return [
+      { source: '/fleet', destination: '/yachts', permanent: true },
+      { source: '/passport', has: [{ type: 'query', key: 'v' }], destination: '/players', permanent: true },
+      { source: '/passport', destination: '/players?me=1', permanent: true },
+    ];
   },
   async rewrites() {
     return [

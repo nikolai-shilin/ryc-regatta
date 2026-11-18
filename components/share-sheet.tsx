@@ -7,7 +7,7 @@ import { IconSend, IconCheck } from './ui';
 import { AppMark } from './app-marks';
 import { track } from '@/lib/track';
 
-// what was shared (its path: /race/result, /passport) and where to, for the analytics
+// what was shared (its path: /race/result, /players) and where to, for the analytics
 const shared = (url: string, via: string) => { try { track('Share', { what: new URL(url).pathname.split('/').slice(0, 3).join('/'), via }); } catch {} };
 
 const L = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
