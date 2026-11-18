@@ -86,6 +86,9 @@ export function avSummary(o, lang) {
   return `${(CHOICE[o.gfx] || CHOICE.auto)[i]} · ${sound[i]}`;
 }
 
+// the graphics level alone, for the button in the head of a page's panel: "Auto"
+export const avGfx = (o, lang) => (CHOICE[o.gfx] || CHOICE.auto)[lang === 'ru' ? 1 : 0];
+
 const el = (tag, cls, text) => {
   const e = document.createElement(tag);
   if (cls) e.className = cls;

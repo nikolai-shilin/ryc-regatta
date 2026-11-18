@@ -7,6 +7,7 @@ import type { VenueId } from '@/lib/venues';
 import { IconPlay, IconBack, IconArrow, IconWind, IconFlag, IconPin, IconBook } from './ui';
 import { LoadBar, ScenePoster } from './skeleton';
 import { SceneBrand } from './scene-brand';
+import { PauseCard } from './pause-card';
 
 // A venue (/venues/<id>), as the yachts page shows a yacht: the game's own scene there (/venue-view), a race on its
 // course sailed by the game's skippers, and a drone flying over it from one shot to the next (SHOTS) — high over the
@@ -130,11 +131,10 @@ export function VenueView({ lang, v, back }: { lang: Lang; v: VenueCard; back: R
         </div>
       </div>
 
-      <section className="bt-card" ref={card} aria-labelledby="vn-card">
-        <div className="bt-card-h"><span className="lbl-ink">{name} · {t(...v.place)}</span></div>
-        {v.today
+      <PauseCard lang={lang} back={`/venues/${v.id}`} title={name} icon={<IconPin s={14} />} cardRef={card}
+        action={v.today
           ? <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Sail today’s race here', 'Пройди гонку дня здесь')}</span></a>
-          : <button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race at ${name}`, 'Гоняться здесь')}</span></button>}
+          : <button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race at ${name}`, 'Гоняться здесь')}</span></button>}>
         <p className="bt-hint">{v.today
           ? t('Today’s race is sailed here: the same course and wind for everyone. Or set up a free race here, your yacht, wind and fleet.', 'Гонка дня сегодня здесь: одна дистанция и ветер для всех. Или настрой здесь свободную гонку — со своей яхтой, ветром и флотом.')
           : t('A free race here: the yacht, the wind, the fleet and the course are yours to choose. Free, on a phone or a computer, with nothing to install.', 'Свободная гонка здесь: яхту, ветер, флот и дистанцию выбираешь ты. Бесплатно, на телефоне или компьютере, ничего не нужно устанавливать.')}</p>
@@ -168,7 +168,7 @@ export function VenueView({ lang, v, back }: { lang: Lang; v: VenueCard; back: R
             <Link className="bt-row" href="/learn/shifts"><IconWind s={18} /><span>{t('Playing the wind shifts', 'Как играть на сдвигах')}</span><span className="bt-row-m">{t('Guide', 'Гид')}</span></Link>
           </div>
         </div>
-      </section>
+      </PauseCard>
     </div>
   );
 }

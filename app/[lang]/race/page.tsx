@@ -9,13 +9,13 @@ import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, SHAPE_NAME }
 import { yachtOf } from '@/lib/yachts';
 import { venueOf } from '@/lib/venues';
 import { BackLink } from '@/components/back-link';
-import { IconPlay, IconTrophy, IconSliders, IconBoats, Num, clock } from '@/components/ui';
-import { BoatRow, FreeQuick, MatchCard } from '@/components/hub-client';
+import { IconPlay, IconTrophy, IconSliders, Num, clock } from '@/components/ui';
+import { FreeQuick, MatchCard } from '@/components/hub-client';
 import { PassportRow } from '@/components/passport';
 import { ProgressRows, RivalRow } from '@/components/progress';
 import { SceneBrand } from '@/components/scene-brand';
 import { GameScene } from '@/components/game-scene';
-import { PauseCard, SettingsRow } from '@/components/pause-card';
+import { PauseCard } from '@/components/pause-card';
 import { MyRow } from '@/components/home-client';
 
 // Built for everyone alike and refreshed every five minutes, as Home is (today's fastest move): who is signed in is
@@ -71,13 +71,12 @@ export default async function Hub({ params }: LangParams) {
           </div>
         </div>
 
-        <PauseCard lang={lang} back="/race" label={t('Today’s race', 'Гонка дня')}>
-          <div className="bt-card-h">
-            <span className="lbl-ink">{t('Today’s race', 'Гонка дня')}</span>
+        <PauseCard lang={lang} back="/race" title={t('Today’s race', 'Гонка дня')}
+          tools={<>
             <Link className="bt-acct bt-acct-me if-me me-ini" href="/settings" aria-label={t('Settings, signed in', 'Настройки, ты вошёл')} />
             <Link className="bt-acct if-guest" href="/sign-in?next=/race">{t('Sign in', 'Войти')}</Link>
-          </div>
-          <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Start today’s race', 'Начать гонку дня')}</span></a>
+          </>}
+          action={<a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Start today’s race', 'Начать гонку дня')}</span></a>}>
           <div className="bt-g">
             <span className="bt-k"><IconTrophy />{t('Today’s fastest', 'Самые быстрые сегодня')}{races ? <span className="bt-k-r">{t(`${races} ${races === 1 ? 'race' : 'races'}`, `заездов: ${races}`)}</span> : null}</span>
             <ol className="hm-lb bt-lb">
@@ -99,9 +98,6 @@ export default async function Hub({ params }: LangParams) {
             <PassportRow lang={lang} />
             <RivalRow lang={lang} />
             <ProgressRows lang={lang} />
-            <BoatRow lang={lang} />
-            <Link className="bt-row" href="/yachts"><IconBoats s={18} /><span>{t('The yachts', 'Яхты')}</span><span className="bt-row-m">{t('All six in 3D', 'Все шесть в 3D')}</span></Link>
-            <SettingsRow lang={lang} note />
           </div>
         </PauseCard>
       </div>

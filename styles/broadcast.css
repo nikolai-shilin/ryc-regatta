@@ -63,11 +63,7 @@
 .bc .bt-sub { margin: 0; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 .bc .bt-hint, .bc .bt-saved { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-3); }
 .bc .bt-err { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--live); }
-/* the boat page's Save: stuck to the foot of the card as it scrolls, on the card's own dark ground so the rows going by
-   under it are covered; the button lit in the broadcast's blue while there's a change to keep, quiet once it's kept */
-.bc .bt-savebar { position: sticky; bottom: calc(-1 * var(--cp)); z-index: 2; display: flex; align-items: center; gap: var(--s-3); flex: none;
-  margin: auto calc(-1 * var(--cp)) calc(-1 * var(--cp)); padding: var(--s-3) var(--cp) var(--cp); background: rgb(8, 13, 21); border-top: 1px solid var(--rule); }
-.bc .bt-savebar .bt-saved { flex: 1 1 auto; min-width: 0; margin: 0; }
+/* the boat page's Save, beside the way to the race: lit in the broadcast's blue while there's a change to keep, quiet once it's kept */
 .bc .bt-save { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); flex: none; min-width: 128px; height: var(--h-m); padding: 0 var(--s-4);
   border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink-3); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; cursor: pointer; }
 .bc .bt-save.on { background: var(--you); color: var(--ink-on); }
@@ -130,15 +126,53 @@
 .bc .bt-acct-t b { font: 700 var(--fs-body)/1.2 var(--cond); letter-spacing: var(--ls-name); }
 .bc .bt-acct-t small { font: 500 var(--fs-label)/1.3 var(--sans); }
 
-/* the free race: Start and Show course on top, your boat and Settings under, the choices between */
+/* the panel, the same way down on every page (components/pause-card.tsx): the head, the one action, what it holds (the
+   only part that scrolls), the foot, each set off by a hairline */
 .bc .bt-card.bt-docked { padding: 0; gap: 0; }
-.bc .bt-docked .bt-body { gap: var(--s-5); padding: var(--s-3) var(--cp) var(--s-4); scrollbar-color: var(--w-25) transparent; }
-.bc .bt-dock { gap: var(--s-2); padding: var(--cp) var(--cp) var(--s-2); }
+.bc .bt-docked > .bt-card-h { flex: none; flex-wrap: nowrap; gap: var(--s-3); min-height: var(--h-m); margin: 0; padding: 0 0 0 var(--cp); }
+.bc .bt-card-t { flex: 1 1 auto; display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.bc .bt-card-t > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc .bt-card-t > svg { flex: none; color: var(--ink-3); }
+.bc .bt-card-n { flex: none; white-space: nowrap; }
+.bc .bt-card-tools { flex: none; align-self: stretch; display: flex; }
+/* the head's controls fill its height, flush with the panel's corner, a hairline between them */
+.bc .bt-card-tools > :is(.bt-gfx, .bt-mini, .bt-acct) { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); width: auto; height: auto; min-width: var(--h-m); padding: 0 var(--s-4);
+  border: 0; border-left: 1px solid var(--rule); border-radius: 0; background: none; color: var(--ink); text-decoration: none; white-space: nowrap; cursor: pointer;
+  font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; transition: background-color var(--t-quick); }
+.bc .bt-card-tools > :is(.bt-gfx, .bt-mini, .bt-acct):hover { background: var(--w-06); }
+.bc .bt-card-tools > :is(.bt-gfx, .bt-mini, .bt-acct):focus-visible { outline: 2px solid var(--you); outline-offset: -2px; }
+.bc .bt-card-tools > .bt-acct-me, .bc .bt-card-tools > .bt-acct-me:hover { background: var(--you); color: var(--ink-on); }
+.bc .bt-gfx svg { flex: none; width: 16px; height: 16px; color: var(--you); }
+.bc .bt-gfx b { font-weight: 700; color: var(--you); }
+@container scr (max-width: 440px) { .bc .bt-gfx b, .bc .bt-card-n { display: none; } .bc .bt-card-tools > :is(.bt-gfx, .bt-mini, .bt-acct) { padding: 0 var(--s-3); } }
+.bc .bt-dock { gap: var(--s-2); padding: var(--s-3) var(--cp); }
+.bc .bt-dock-t { flex-wrap: wrap; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.bc .bt-dock-t .bt-go { flex: 1 1 0; }
+.bc .bt-dock-t .bt-save { height: var(--h-l); min-width: 0; }
+.bc .bt-dock-t > .bt-err { flex: 0 0 100%; margin: 0; } /* what went wrong saving, in sight whatever is scrolled to */
+.bc .bt-docked > .bt-card-h + .bt-dock-t { border-top: 0; }
+.bc .bt-dock .bt-go { --go-ground: transparent; background-size: calc(100% - 17px) 100%, 18px 100%; box-shadow: none; clip-path: none; white-space: nowrap; } /* the blue and its slant overlap, or a hairline shows between them */
+/* a phone: the action keeps its words on one line beside Show course */
+@container scr (max-width: 440px) { .bc .bt-dock .bt-go { gap: var(--s-2); font-size: var(--fs-lead); letter-spacing: var(--ls-button); } .bc .bt-dock .bt-show { flex: none; padding: 0 var(--s-3); } .bc .bt-dock .bt-show svg { display: none; } }
+/* a phone sideways: the same, and a lower action, to leave the choices room */
+@container scr (max-height: 500px) and (orientation: landscape) { .bc .bt-dock-t .bt-save { height: var(--h-m); } .bc .bt-dock { padding: var(--s-2) var(--cp); } .bc .bt-dock .bt-go { gap: var(--s-2); font-size: var(--fs-body); letter-spacing: var(--ls-button); } .bc .bt-dock .bt-show { flex: none; height: var(--h-m); padding: 0 var(--s-3); } .bc .bt-dock .bt-show svg { display: none; } }
+.bc .bt-docked .bt-body { gap: var(--s-5); padding: var(--s-4) var(--cp); scrollbar-color: var(--w-25) transparent; -webkit-mask-image: none; mask-image: none; }
+/* a table or rows at the very top or foot of what it holds meet the hairlines there */
+.bc .bt-view > :is(.pl-tab, .vs-tab, .bt-rows, .bt-lb):first-child { margin-top: calc(-1 * var(--s-4)); border-top: 0; }
+.bc .bt-view > .bt-rows:last-child { margin-bottom: calc(-1 * var(--s-4)); }
+/* a link closing a block runs straight into the rows after it */
+.bc .bt-g:has(> .lb-more:last-child) + .bt-rows { margin-top: calc(-1 * var(--s-5)); border-top: 0; }
 .bc .bt-dock-b { padding: 0; border-top: 1px solid var(--rule); }
 .bc .bt-dock-b .bt-rows { flex-direction: row; min-width: 0; margin: 0; border-top: 0; } /* shrinks with its card: a flex item is otherwise as wide as its rows */
-@container scr (max-width: 440px) { .bc .bt-dock-b .bt-row { gap: var(--s-1); padding: 0 var(--s-2); } .bc .bt-dock-b .bt-row > svg, .bc .bt-dock-b .bt-row::after { display: none; } }
-.bc .bt-dock-b .bt-row { flex: 1 1 0; justify-content: center; padding: 0 var(--s-3); border-bottom: 0; }
+.bc .bt-dock-b .bt-row { flex: 1 1 0; justify-content: center; gap: var(--s-2); padding: 0 var(--s-2); border-bottom: 0; }
+.bc .bt-dock-b .bt-row::after { display: none; }
 .bc .bt-dock-b .bt-row + .bt-row { border-left: 1px solid var(--rule-2); }
+@container scr (max-width: 440px) { .bc .bt-dock-b .bt-row { gap: var(--s-1); } .bc .bt-dock-b .bt-row > svg { display: none; } }
+/* every row's name starts at the same place, whatever stands before it */
+.bc .bt-view .bt-rows .bt-row > svg, .bc .bt-rows .pg-ico { flex: 0 0 24px; }
+.bc .bt-k-r { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* the streak's warning is the row's whole message: it keeps the row to itself */
+.bc .bt-row-risk > .bt-row-m { display: none; }
 .bc .bt-show { height: var(--h-l); gap: var(--s-2); padding: 0 var(--s-4); border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
 .bc .bt-show:hover { background: var(--w-14); }
 .bc .bt-show[aria-pressed="true"] { background: color-mix(in srgb, var(--gold) 16%, transparent); box-shadow: inset 0 -3px 0 var(--gold); }
@@ -306,6 +340,7 @@
   .bc .bt-stats > div { flex: 1 1 0; min-width: 0; padding: var(--s-2) var(--s-3); }
   .bc .bt-stats b { font-size: var(--fs-row); }
   .bc .bt-card { --cp: var(--s-4); width: auto; gap: var(--s-4); }
+  .bc .bt-card.bt-docked { max-height: 56%; }
 }
 /* a phone sideways: a smaller heading, a narrower card */
 @container scr (max-height: 500px) and (orientation: landscape) {
@@ -357,9 +392,6 @@
 /* a card's header: what it holds, and one control on the right */
 .bc .bt-card-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); margin: calc(-1 * var(--cp)) calc(-1 * var(--cp)) 0;
   padding: var(--s-2) var(--s-2) var(--s-2) var(--cp); border-bottom: 1px solid var(--rule); }
-.bc .bt-card-h .bt-acct { flex: none; width: auto; background: var(--fill-2); -webkit-backdrop-filter: none; backdrop-filter: none; }
-.bc .bt-card-h .bt-acct:hover { background: var(--w-14); }
-.bc .bt-card-h .bt-acct-me, .bc .bt-card-h .bt-acct-me:hover { background: var(--you); }
 /* the rows' notes on the right: what's set now */
 /* (the note gives way first, then the row's name) */
 .bc .bt-rows .bt-row > span { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1210,7 +1242,7 @@
 .bc .bt-stats-lock > [data-lock] { cursor: pointer; transition: background-color var(--t-quick); }
 .bc .bt-stats-lock > [data-lock]:hover { background: var(--w-06); }
 .bc .bt-stats-lock > [data-lock] .bt-sk::after { content: ''; display: inline-block; width: 9px; height: 11px; margin-left: 6px; vertical-align: -1px; opacity: .75; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Cpath d='M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3Crect x='1' y='5' width='8' height='6.5' rx='1'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Cpath d='M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3Crect x='1' y='5' width='8' height='6.5' rx='1'/%3E%3C/svg%3E") center / contain no-repeat; }
-.bc button.bt-row { width: 100%; border: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.bc button.bt-row { width: 100%; text-align: left; color: inherit; cursor: pointer; }
 .bc .dl { width: min(520px, calc(100vw - 32px)); max-width: none; margin: auto; padding: 0; border: 0; background: var(--panel-2); color: var(--ink);
   -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%); }
 .bc .dl::backdrop { background: rgba(3, 8, 14, 0.62); }
@@ -1417,14 +1449,13 @@
 .bc .pg-kick-t strong { font: 800 var(--fs-row)/1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; }
 .bc .pg-kick-t span { font: 500 13px/1.3 var(--sans); color: var(--ink-2); }
 /* the hub's rows: a badge (the last earned), the name over its count, the stars or the pips */
-.bc .bt-row.pg-row { height: auto; min-height: 64px; }
-.bc .pg-row-ico { position: relative; flex: none; width: 52px; height: 40px; }
-.bc .bt-row .pg-row-ico svg { position: absolute; top: 1px; left: 9px; width: 34px; height: 38px; color: inherit; }
-.bc .pg-row-t { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.bc .pg-row-t small { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.bc .bt-row.pg-row { height: auto; min-height: 60px; }
+.bc .bt-rows .bt-row > .pg-row-ico { position: relative; flex: 0 0 24px; height: 28px; overflow: visible; }
+.bc .bt-row .pg-row-ico svg { position: absolute; inset: 0; width: 24px; height: 28px; color: inherit; }
+.bc .bt-rows .bt-row > .pg-row-t { flex: 1 1 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bc .bt-rows .bt-row > .pg-row-pips { flex: none; overflow: visible; }
+.bc .pg-row-t small { overflow: hidden; text-overflow: ellipsis; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
 .bc .pg-row-t small b { color: var(--gold); font-weight: 800; }
-.bc .pg-row-stars { margin-left: auto; display: flex; gap: 1px; font-size: 14px; line-height: 1; }
-.bc .pg-row-stars i { font-style: normal; color: var(--w-14); } .bc .pg-row-stars i.on { color: var(--gold); }
 .bc .pg-row-pips { margin-left: auto; display: flex; gap: 3px; }
 .bc .pg-row-pips i { width: 8px; height: 13px; background: var(--w-14); clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%); }
 .bc .pg-ico { width: 18px; flex: none; text-align: center; font: 700 15px/1 var(--cond); color: var(--gold); }
@@ -1584,7 +1615,17 @@
 .bc .adm-sort { font-size: 9px; opacity: .5; }
 .bc .adm-players thead button.on .adm-sort { opacity: 1; color: var(--you); }
 /* ---------- the result page: how was the race (components/rate-race.tsx) ---------- */
-.bc .rr { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); margin-top: var(--s-4); padding: var(--s-5) var(--s-6); }
+.bc .rr { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); padding-top: var(--s-4); border-top: 1px solid var(--rule); }
+.bc .bt-view > .rs-hint { margin: 0; }
+/* upright, the result's heading and numbers can fill the window: the first screen grows to hold its panel whole, and the debrief starts after it */
+@container scr (orientation: portrait) { .bc.rs-scr .bt { height: auto; min-height: 100%; } }
+/* a phone sideways: the panel is narrow, so its head keeps to the title and its controls, and the results to the names and times */
+@container scr (max-height: 500px) and (orientation: landscape) {
+  .bc .bt-gfx b, .bc .bt-card-n { display: none; }
+  .bc .bt-card-tools > :is(.bt-gfx, .bt-mini, .bt-acct) { padding: 0 var(--s-3); }
+  .bc .rs-lb .rs-lv, .bc .rs-lb .rs-pen:empty { display: none; }
+  .bc .rs-lv ~ .rs-pen { min-width: 0; }
+}
 .bc .rr-q { font: 700 var(--fs-row)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink); }
 .bc .rr-stars { display: flex; gap: var(--s-1); }
 .bc .rr-stars button { display: inline-flex; align-items: center; justify-content: center; width: var(--h-m); height: var(--h-m); padding: 0; border: 0; background: var(--fill-2); color: var(--ink-3); cursor: pointer; transition: background-color var(--t-quick), color var(--t-quick); }

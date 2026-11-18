@@ -28,6 +28,5 @@
   font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
 
 @container scr (orientation: portrait) {
-  .bc .vs-card { max-height: 56%; }
   .bc .vs-tr { gap: var(--s-2); }
 }

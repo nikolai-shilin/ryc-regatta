@@ -6,14 +6,15 @@ import { IconPlay, IconGrid, IconHull, IconSail, IconKite, IconImage, IconHash, 
 import { FLAGS, findFlag, flagSrc, type Flag } from '@/lib/flags';
 import { NoFlag } from './flag';
 import { SceneBrand } from './scene-brand';
+import { PauseCard } from './pause-card';
 import { BOAT_EVENT, DEFAULT_BOAT, DEFAULT_LOGO, NAME_MAX, PRESETS, SWATCHES, cleanName, readBoat, saveBoat, shrinkLogo, type Boat, type Deck, type Logo } from '@/lib/boat';
 import { syncAccount } from './bests-sync';
 
 // The boat page, laid out like the race's pause screen: the game's own scene behind it all (your yacht on Lake Garda,
 // /boat-view), her name and numbers over it, and the choices (the ready schemes, the hull, the sails, the gennaker, the
-// logo, the sail number and the team) in the pause menu's dark glass card. The scene is told what the card and the
+// logo, the sail number and the team) in the panel every scene page has (pause-card.tsx). The scene is told what the card and the
 // heading cover, so she stands in the part left clear. Every change shows on her at once, and is kept when you press
-// Save (at the foot of the card): then it's saved where the game reads it and, for a signed-in player, in the account.
+// Save (beside the way to the race, at the panel's top): then it's saved where the game reads it and, for a signed-in player, in the account.
 // Until then Save stands out and leaving asks first; going to race in her saves her on the way. The boat as it was read
 // (from this device, or from the account when the sync brings it) is never saved back, so a first visit doesn't stamp
 // the default as a choice.
@@ -163,14 +164,17 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         </div>
       </div>
 
-      <section className="bt-card bt-boat" ref={card} aria-labelledby="b-card">
-        <div className="bt-card-h">
-          <span className="lbl-ink" id="b-card">{t('Colours, logo and sail number', 'Цвета, логотип и номер')}</span>
-          <button type="button" className="bt-mini" onClick={() => { setB({ ...DEFAULT_BOAT, logoImg: b.logoImg, name: b.name }); setDown(false); }}>
-            <IconRestart s={14} /><span>{t('Back to the RYC colours', 'Вернуть цвета RYC')}</span>
+      <PauseCard lang={lang} back="/boat" title={t('Your boat', 'Твоя яхта')} className="bt-boat" cardRef={card} foot={['yachts', 'venues']}
+        tools={<button type="button" className="bt-mini" title={t('Back to the RYC colours', 'Вернуть цвета RYC')} aria-label={t('Back to the RYC colours', 'Вернуть цвета RYC')} onClick={() => { setB({ ...DEFAULT_BOAT, logoImg: b.logoImg, name: b.name }); setDown(false); }}>
+          <IconRestart s={14} /><span>{t('RYC colours', 'Цвета RYC')}</span>
+        </button>}
+        action={<>
+          <a className="bt-go" href="/play?race=today" onClick={(e) => { if (dirty && !save()) e.preventDefault(); }}><IconPlay /><span>{t('Race her today', 'В гонку дня')}</span></a>
+          <button type="button" className={`bt-save${dirty ? ' on' : ''}`} onClick={save} disabled={!dirty}>
+            {dirty ? <span>{t('Save', 'Сохранить')}</span> : <><IconCheck s={16} /><span>{t('Saved', 'Сохранено')}</span></>}
           </button>
-        </div>
-        <a className="bt-go" href="/play?race=today" onClick={(e) => { if (dirty && !save()) e.preventDefault(); }}><IconPlay /><span>{t('Sail her in today’s race', 'В гонку дня на ней')}</span></a>
+          {err && <p className="bt-err" role="alert">{err}</p>}
+        </>}>
         <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс')}>
           <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд')}</button>
           <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Gennaker', 'Генакер')}</button>
@@ -264,19 +268,12 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
             onChange={(e) => { set({ name: cleanName(e.target.value) || undefined }); setDown(false); }} onBlur={() => { const n = b.name?.trim(); if (n !== b.name) set({ name: n || undefined }); }} />
         </div>
 
-        {err && <p className="bt-err" role="alert">{err}</p>}
-        {/* Save, at the foot of the card wherever it's scrolled to */}
-        <div className="bt-savebar">
-          <p className="bt-saved" role="status">{dirty
-            ? t('Changes not saved yet.', 'Изменения ещё не сохранены.')
-            : justSaved
-              ? t('Saved. You race in her from the next start.', 'Сохранено. В гонке — со следующего старта.')
-              : t('Kept on this device, and in your account when you’re signed in.', 'Хранится на этом устройстве, а если ты вошёл — и в аккаунте.')}</p>
-          <button type="button" className={`bt-save${dirty ? ' on' : ''}`} onClick={save} disabled={!dirty}>
-            {dirty ? <span>{t('Save', 'Сохранить')}</span> : <><IconCheck s={16} /><span>{t('Saved', 'Сохранено')}</span></>}
-          </button>
-        </div>
-      </section>
+        <p className="bt-saved" role="status">{dirty
+          ? t('Changes not saved yet.', 'Изменения ещё не сохранены.')
+          : justSaved
+            ? t('Saved. You race in her from the next start.', 'Сохранено. В гонке — со следующего старта.')
+            : t('Kept on this device, and in your account when you’re signed in.', 'Хранится на этом устройстве, а если ты вошёл — и в аккаунте.')}</p>
+      </PauseCard>
     </div>
   );
 }

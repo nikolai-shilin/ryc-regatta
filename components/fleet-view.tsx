@@ -8,6 +8,7 @@ import { DAILY_YACHTS, dailyYacht } from '@/lib/race';
 import { IconPlay, IconSail, IconBoats, IconBack, IconArrow, IconGrid } from './ui';
 import { LoadBar, ScenePoster } from './skeleton';
 import { SceneBrand } from './scene-brand';
+import { PauseCard } from './pause-card';
 
 // The fleet: every yacht you can race afloat abreast in one line by length, in one scene (/fleet-view, Lake Garda on a summer evening, in
 // your colours), the drone flying from one to the next — up and out until both are in the frame, across, and down to
@@ -146,9 +147,8 @@ export function FleetView({ lang, start, back, tour = true, own = false, foot }:
         </div>
       </div>
 
-      <section className="bt-card" ref={card} aria-labelledby="fl-card">
-        <div className="bt-card-h"><span className="lbl-ink" id="fl-card">{t(...y.name)} · {t(...y.kind)}</span></div>
-        <button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race the ${y.name[0]}`, `В гонку на ${y.name[1]}`)}</span></button>
+      <PauseCard lang={lang} back={own ? `/yachts/${shown}` : '/yachts'} title={t(...y.name)} cardRef={card} foot={['boat', 'venues']}
+        action={<button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race the ${y.name[0]}`, `В гонку на ${y.name[1]}`)}</span></button>}>
         <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс')}>
           <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд')}</button>
           <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Downwind', 'Попутный')}</button>
@@ -186,12 +186,9 @@ export function FleetView({ lang, start, back, tour = true, own = false, foot }:
           </dl>
         </div>
 
-        <div className="bt-rows">
-          {shown === today && <a className="bt-row" href="/play?race=today"><IconPlay /><span>{t('Today’s race', 'Гонка дня')}</span><span className="bt-row-m">{t('In her', 'На ней')}</span></a>}
-          <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your colours', 'Твои цвета')}</span><span className="bt-row-m">{t('Every yacht', 'Для всех яхт')}</span></Link>
-        </div>
+        {shown === today && <div className="bt-rows"><a className="bt-row" href="/play?race=today"><IconPlay /><span>{t('Today’s race', 'Гонка дня')}</span><span className="bt-row-m">{t('In her', 'На ней')}</span></a></div>}
         {foot}
-      </section>
+      </PauseCard>
     </div>
   );
 }

@@ -33,7 +33,7 @@ export function RateRace({ id, lang }: { id: string; lang: Lang }) {
   };
   const words = [t('Bad', 'Плохо'), t('Not great', 'Так себе'), t('OK', 'Нормально'), t('Good', 'Хорошо'), t('Loved it', 'Отлично')];
   return (
-    <section className="bt-card rr" aria-label={t('Rate the race', 'Оценка гонки')}>
+    <section className="rr" aria-label={t('Rate the race', 'Оценка гонки')}>
       {stage === 'done' ? (
         <p className="rr-thanks">{t('Thank you — it helps us make the game better.', 'Спасибо — это помогает делать игру лучше.')}</p>
       ) : (

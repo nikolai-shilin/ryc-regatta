@@ -42,9 +42,7 @@
 .bc .pl-sws { display: flex; flex-wrap: wrap; gap: 4px; }
 .bc .pl-sws i { width: 16px; height: 16px; box-shadow: 0 0 0 1px var(--w-25); }
 .bc .pl-card[aria-busy="true"] { cursor: progress; }
-.bc .pl-card .lbl-ink { display: inline-flex; align-items: center; gap: var(--s-2); }
 @container scr (orientation: portrait) {
-  .bc .pl-card { max-height: 56%; }
   .bc .pl-tr { grid-template-columns: 18px minmax(0, 1fr) 30px 32px 28px 30px; gap: var(--s-2); }
   .bc .pl-th { letter-spacing: 0; }
   .bc .pl-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }

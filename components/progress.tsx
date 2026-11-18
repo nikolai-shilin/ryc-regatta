@@ -159,7 +159,6 @@ export function ProgressRows({ lang }: { lang: Lang }) {
         <span className="pg-row-t">{t('Drills', 'Тренировки')}{stars == null || !lv ? null : <small>{lang === 'ru'
           ? <>{lv.name[1]} · <b>{mineStars}</b> из {mineDs.length * 3}{next ? <> · ещё {toOpen(next.id) - mineStars} до уровня «{next.name[1]}»</> : null}</>
           : <>{lv.name[0]} · <b>{mineStars}</b> of {mineDs.length * 3} stars{next ? <> · {toOpen(next.id) - mineStars} more to open {next.name[0]}</> : null}</>}</small>}</span>
-        {stars == null ? null : <span className="pg-row-stars" aria-hidden="true">{Array.from({ length: mineDs.length * 3 }, (_, i) => <i key={i} className={i < mineStars ? 'on' : undefined}>★</i>)}</span>}
       </Link>
       <Link className="bt-row pg-row" href="/race/badges">
         <span className="pg-row-ico" aria-hidden="true">{last ? <BadgePennant id={last} on /> : <BadgePennant id="first" on={false} />}</span>

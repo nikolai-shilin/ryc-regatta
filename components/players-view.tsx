@@ -11,6 +11,7 @@ import type { PlayerCard, PlayerList } from '@/lib/players';
 import { IconBack, IconArrow, IconCrew, IconSail, IconTrophy, IconPin, IconKite } from './ui';
 import { LoadBar, ScenePoster } from './skeleton';
 import { SceneBrand } from './scene-brand';
+import { PauseCard } from './pause-card';
 import { FlagImg, NoFlag } from './flag';
 import '@/styles/players.css';
 
@@ -72,7 +73,7 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
   useEffect(() => { post({ type: 'pose', down }); }, [down, post]);
   useEffect(() => { if (!pending) setGoing(null); }, [pending]);
   useEffect(() => { setDown(false); }, [player?.k]);
-  useEffect(() => { card.current?.scrollTo({ top: 0 }); }, [player?.k, page]); // a new page or player starts at the card's top
+  useEffect(() => { card.current?.querySelector('.bt-body')?.scrollTo({ top: 0 }); }, [player?.k, page]); // a new page or player starts at the card's top
 
   const go = (to: string, k: string | null) => { setGoing(k); start(() => router.push(to, { scroll: false })); };
 
@@ -109,14 +110,11 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
         </>)}
       </div>
 
-      <section className="bt-card pl-card" ref={card} aria-labelledby="pl-card" aria-busy={pending}>
+      <PauseCard lang={lang} back={href(page, player?.k)} className="pl-card" cardRef={card} busy={pending}
+        title={player ? nameOf(player) : `${t('The players', 'Игроки')}${list ? ` · ${num(list.total)}` : ''}`} icon={player ? undefined : <IconCrew s={14} />}
+        note={!player && list && list.pages > 1 ? t(`Page ${page} of ${list.pages}`, `Страница ${page} из ${list.pages}`) : undefined}
+        tools={player ? <Link className="bt-mini" href={href(page)} scroll={false} onClick={(e) => { e.preventDefault(); go(href(page), null); }}><IconBack s={14} /><span>{t('All players', 'Все игроки')}</span></Link> : undefined}>
         {player ? (<>
-          <div className="bt-card-h">
-            <span className="lbl-ink" id="pl-card">{nameOf(player)}</span>
-            <Link className="bt-mini" href={href(page)} scroll={false} onClick={(e) => { e.preventDefault(); go(href(page), null); }}>
-              <IconBack s={14} /><span>{t('All players', 'Все игроки')}</span>
-            </Link>
-          </div>
           <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс')}>
             <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд')}</button>
             <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Gennaker', 'Генакер')}</button>
@@ -180,14 +178,8 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
 
           <div className="bt-rows">
             <Link className="bt-row" href="/race/rating"><IconTrophy s={18} /><span>{t('The rating', 'Рейтинг')}</span><span className="bt-row-m">{t('Today and the month', 'День и месяц')}</span></Link>
-            <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your colours', 'Твои цвета')}</span><span className="bt-row-m">{t('Dress your boat', 'Раскрась яхту')}</span></Link>
           </div>
         </>) : (<>
-          <div className="bt-card-h">
-            <span className="lbl-ink" id="pl-card"><IconCrew s={13} />{t('The players', 'Игроки')}{list ? ` · ${num(list.total)}` : ''}</span>
-            {list && list.pages > 1 && <span className="lbl">{t(`Page ${page} of ${list.pages}`, `Страница ${page} из ${list.pages}`)}</span>}
-          </div>
-
           {!list ? (
             <p className="bt-hint">{t('The players can’t be had just now. Try again in a minute.', 'Список игроков сейчас недоступен. Попробуй через минуту.')}</p>
           ) : list.rows.length === 0 ? (
@@ -238,7 +230,7 @@ export function PlayersView({ lang, list, player, missing, back }: { lang: Lang;
             <p className="bt-hint">{t('Points are the rating’s, every day of today’s race added up: of N players ranked on a day, the first gets N and the last 1. Wins and podiums count every race, free races too. Guests aren’t on it: sign in and race to be.', 'Очки — рейтинговые, за все дни гонки дня: из N игроков в рейтинге дня первый получает N, последний — 1. Победы и подиумы — во всех гонках, и в свободных тоже. Гостей здесь нет: войди и пройди гонку, чтобы попасть сюда.')}</p>
           </>)}
         </>)}
-      </section>
+      </PauseCard>
     </div>
   );
 }

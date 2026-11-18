@@ -1,70 +1,64 @@
 'use client';
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react';
 import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
-import { readOpts } from '@/lib/opts';
-import { IconScreen, IconSail, IconCrew } from './ui';
+import { IconBoats, IconCrew, IconPin, IconSail, IconScreen } from './ui';
 import { useWho } from './me';
-import { AvRow } from './av-row';
+import { AvButton, AvRow } from './av-row';
 import { SailingOpts } from './sailing-opts';
 
+// what a panel's foot leads to: your boat, the yachts (the yachts' own page has the venues there instead), and Settings
+const FOOT = {
+  boat: { href: '/boat', ico: <IconSail s={18} />, name: ['Your boat', 'Твоя яхта'] },
+  yachts: { href: '/yachts', ico: <IconBoats s={18} />, name: ['The yachts', 'Яхты'] },
+  venues: { href: '/venues', ico: <IconPin s={18} />, name: ['The venues', 'Акватории'] },
+} as const;
+type FootKey = keyof typeof FOOT;
 
-const Open = createContext<(open: boolean) => void>(() => {});
-// whether Settings is open in the card: the row's summary reads the options again when it closes
-const Shown = createContext(false);
-
-// The glass card of the pages laid out as the race's pause screen (the race hub, the free race's set-up). Like the
-// pause menu it has a second view: Settings opens in the card itself, in place of what it holds, and Back returns to it,
-// without leaving the page. back: this page's own path, for the language switch and signing in to come back to.
-// head and foot stay put at the card's top and bottom while what is between them scrolls (the free race: Start and
-// Show course over the choices, your boat and Settings under them); Settings, open, takes the whole card.
-export function PauseCard({ lang, back, label, head, foot, children }: { lang: Lang; back: string; label: string; head?: ReactNode; foot?: ReactNode; children: ReactNode }) {
+// The panel of the pages over a 3D scene (the race hub, the free race's set-up, the yachts, the venues, the players),
+// the same way down on each: the head (what it holds, and Audio & graphics a tap away), the page's one action if it has
+// one, what it holds, the only part that scrolls, and the foot. Like the race's pause menu it has a second view:
+// Settings opens in the panel itself, in place of what it holds, and Back returns to it, without leaving the page.
+// back: this page's own path, for the language switch and signing in to come back to. note: a word by the title; tools:
+// the page's own control in the head; foot: the two links before Settings, each a key or a key and its own address.
+export function PauseCard({ lang, back, title, icon, note, tools, action, foot = ['boat', 'yachts'], cardRef, className = '', busy, children }: {
+  lang: Lang; back: string; title: string; icon?: ReactNode; note?: ReactNode; tools?: ReactNode; action?: ReactNode;
+  foot?: (FootKey | [FootKey, string])[]; cardRef?: RefObject<HTMLElement | null>; className?: string; busy?: boolean; children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
-  const card = useRef<HTMLElement>(null), body = useRef<HTMLDivElement>(null);
-  const docked = !!(head || foot);
+  const body = useRef<HTMLDivElement>(null), id = useId(), t = tx(lang);
   useEffect(() => {
-    (body.current || card.current)?.scrollTo({ top: 0 });
+    body.current?.scrollTo({ top: 0 });
     if (!open) return;
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     addEventListener('keydown', k);
     return () => removeEventListener('keydown', k);
   }, [open]);
   return (
-    <section className={`bt-card${docked ? ' bt-docked' : ''}`} ref={card} aria-label={label}>
-      <Open.Provider value={setOpen}><Shown.Provider value={open}>
-        {docked ? (
-          <>
-            {head && !open && <div className="bt-dock bt-dock-t">{head}</div>}
-            <div className="bt-body" ref={body}>
-              <div className="bt-view" hidden={open}>{children}</div>
-              {open && <Settings lang={lang} back={back} close={() => setOpen(false)} />}
-            </div>
-            {foot && !open && <div className="bt-dock bt-dock-b">{foot}</div>}
-          </>
-        ) : (
-          <>
-            <div className="bt-view" hidden={open}>{children}</div>
-            {open && <Settings lang={lang} back={back} close={() => setOpen(false)} />}
-          </>
-        )}
-      </Shown.Provider></Open.Provider>
+    <section className={`bt-card bt-docked ${className}`.trim()} ref={cardRef} aria-labelledby={id} aria-busy={busy}>
+      <div className="bt-card-h">
+        <span className="lbl-ink bt-card-t" id={id} title={title}>{icon}<span>{title}</span></span>
+        {note && <span className="lbl bt-card-n">{note}</span>}
+        <span className="bt-card-tools">{tools}<AvButton lang={lang} /></span>
+      </div>
+      {action && !open && <div className="bt-dock bt-dock-t">{action}</div>}
+      <div className="bt-body" ref={body}>
+        <div className="bt-view" hidden={open}>{children}</div>
+        {open && <Settings lang={lang} back={back} close={() => setOpen(false)} />}
+      </div>
+      {!open && (
+        <div className="bt-dock bt-dock-b">
+          <div className="bt-rows">
+            {foot.map((f) => {
+              const [k, href] = typeof f === 'string' ? [f, FOOT[f].href] : f;
+              return <Link key={k} className="bt-row" href={href}>{FOOT[k].ico}<span>{t(FOOT[k].name[0], FOOT[k].name[1])}</span></Link>;
+            })}
+            <button type="button" className="bt-row" onClick={() => setOpen(true)}><IconScreen /><span>{t('Settings', 'Настройки')}</span></button>
+          </div>
+        </div>
+      )}
     </section>
   );
-}
-
-// the row that opens them, as the pause menu's rows; note: with how you sail and the first camera on its right, as
-// they're saved on this device
-export function SettingsRow({ lang, note = false }: { lang: Lang; note?: boolean }) {
-  const open = useContext(Open), shown = useContext(Shown), t = tx(lang);
-  const [sum, setSum] = useState('');
-  useEffect(() => {
-    if (!note || shown) return;
-    const o = readOpts();
-    const trim = [t('I trim', 'Ручная настройка'), t('Auto trim', 'Автонастройка'), t('Main + jib', 'Грот + стаксель')][o.autoTrim] || '';
-    const cam = { drone: t('drone', 'дрон'), top: t('top', 'сверху'), helm: t('helm', 'штурвал') }[o.camera] || '';
-    setSum([trim, cam].filter(Boolean).join(' · '));
-  }, [note, shown, lang]); // eslint-disable-line react-hooks/exhaustive-deps
-  return <button type="button" className="bt-row" onClick={() => open(true)}><IconScreen /><span>{t('Settings', 'Настройки')}</span>{sum && <span className="bt-row-m">{sum}</span>}</button>;
 }
 
 // How you sail, as /settings has it, and the way to Audio & graphics; the language and the account

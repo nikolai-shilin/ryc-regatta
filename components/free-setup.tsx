@@ -9,7 +9,7 @@ import { lengthOffered, shapeOffered, venueOf, VENUES } from '@/lib/venues';
 import { courseDistance, dailyRace, fmtDistance, pbKey, plannedCourse, raceMinutes, savedShape, KN, SHAPE_NAME, SHAPES, type Length, type Shape, type Wind } from '@/lib/race';
 import { CourseMap } from './course-map';
 import { GameScene, type SceneSetup } from './game-scene';
-import { PauseCard, SettingsRow } from './pause-card';
+import { PauseCard } from './pause-card';
 import { BackLink } from './back-link';
 import { IconPin, IconPlay, IconWind, IconBoats, IconRoute, IconLaps, IconFlag, IconTide, IconSail, IconSun, Num, clock } from './ui';
 import { SceneBrand } from './scene-brand';
@@ -177,18 +177,14 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
           </div>
         </div>
 
-        <PauseCard lang={lang} back={match ? '/match/new' : fromToday ? '/race/free?from=today' : '/race/free'} label={match ? t('Set up your match', 'Настрой матч') : t('Set up your race', 'Настрой гонку')}
-          head={<>
+        <PauseCard lang={lang} back={match ? '/match/new' : fromToday ? '/race/free?from=today' : '/race/free'} title={match ? t('Set up your match', 'Настрой матч') : t('Set up your race', 'Настрой гонку')}
+          foot={['boat', ['yachts', `/yachts?y=${p.yacht}&from=free`]]}
+          action={<>
             <button type="button" className="bt-go" onClick={go}><IconPlay /><span>{match ? t('Create the match', 'Создать матч') : from === 'race' ? t('Restart with these', 'Заново с этими') : t('Start race', 'Начать гонку')}</span></button>
             <button type="button" className="bt-show" aria-pressed={view === 'course'} onClick={() => setView(view === 'course' ? 'boats' : 'course')}>
               {view === 'course' ? <IconBoats s={15} /> : <IconRoute s={15} />}<span>{view === 'course' ? t('Boats', 'Лодки') : t('Show course', 'Дистанция')}</span>
             </button>
-          </>}
-          foot={<div className="bt-rows">
-            <Link className="bt-row" href="/boat"><IconSail s={18} /><span>{t('Your boat', 'Твоя яхта')}</span></Link>
-            <Link className="bt-row" href={`/yachts?y=${p.yacht}&from=free`}><IconBoats s={18} /><span>{t('The yachts', 'Яхты')}</span></Link>
-            <SettingsRow lang={lang} />
-          </div>}>
+          </>}>
           <div className="bt-g">
             <span className="bt-k" id="fs-venue"><IconPin />{t('Where', 'Где')}{chg('venue')}</span>
             <div className={`fs-where${allPlaces ? '' : ' fs-one'}`}>

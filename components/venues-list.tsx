@@ -8,6 +8,7 @@ import type { VenueId } from '@/lib/venues';
 import { IconPin, IconArrow, IconSail, IconBook } from './ui';
 import { LoadBar, ScenePoster } from './skeleton';
 import { SceneBrand } from './scene-brand';
+import { PauseCard } from './pause-card';
 import { FlagImg } from './flag';
 import '@/styles/venues.css';
 
@@ -73,11 +74,7 @@ export function VenuesList({ lang, list, today, back }: { lang: Lang; list: Venu
         <span className="vs-now"><IconPin s={13} />{t(`Over ${t(...here.name)}, today’s race`, `Над акваторией ${t(...here.name)} — гонка дня`)}</span>
       </div>
 
-      <section className="bt-card vs-card" ref={card} aria-labelledby="vs-card">
-        <div className="bt-card-h">
-          <span className="lbl-ink" id="vs-card"><IconPin s={13} />{t('The venues', 'Акватории')} · {list.length}</span>
-        </div>
-
+      <PauseCard lang={lang} back="/venues" title={`${t('The venues', 'Акватории')} · ${list.length}`} icon={<IconPin s={14} />} cardRef={card}>
         <ol className="vs-tab" aria-label={t('The venues', 'Акватории')}>
           {rows.map(({ v, flag, name }, i) => (
             <li key={v.id}>
@@ -99,7 +96,7 @@ export function VenuesList({ lang, list, today, back }: { lang: Lang; list: Venu
           <Link className="bt-row" href="/race/free"><IconSail s={18} /><span>{t('Race anywhere', 'Гоняться где угодно')}</span><span className="bt-row-m">{t('Free race', 'Свободная гонка')}</span></Link>
           <Link className="bt-row" href="/learn"><IconBook s={18} /><span>{t('The guides', 'Гиды')}</span><span className="bt-row-m">{t('Learn to race', 'Учись гоняться')}</span></Link>
         </div>
-      </section>
+      </PauseCard>
     </div>
   );
 }
