@@ -254,6 +254,7 @@ html[data-me] .hm-av > svg { display: none; }
 .me-name::before { content: var(--me-name); }
 .hm-mi { display: flex; align-items: center; height: var(--h-m); padding: 0 var(--s-3); border-radius: var(--r-full); font: 700 var(--t-m)/1 var(--f-sans); color: var(--ink); }
 .hm-mi:hover { background: var(--band); }
+.hm-mi-btn { width: 100%; border: 0; background: none; cursor: pointer; text-align: left; }
 .hm-menu-nav { display: flex; flex-direction: column; }
 .hm-msep { height: 1px; background: var(--line); margin: var(--s-2); }
 /* the menu's head: who you are and the way to your account, or a guest's way to sign in and why */

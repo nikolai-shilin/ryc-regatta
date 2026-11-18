@@ -41,6 +41,7 @@
 <link rel="preload" as="fetch" href="/game/yacht.glb" crossorigin>
 <link rel="modulepreload" href="/vendor/three@0.160.0/build/three.module.min.js">
 <link rel="modulepreload" href="/game/world.js">
+<link rel="modulepreload" href="/game/gfx.js">
 <link rel="modulepreload" href="/game/sim.js">
 <link rel="modulepreload" href="/game/land.js">
 <link rel="modulepreload" href="/game/venues.js">
@@ -69,6 +70,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { World } from '/game/world.js';
+import { followSettings } from '/game/gfx.js';
 import { Race, beatAngle, legAim, SHAPES } from '/game/sim.js';
 import { placeCourse } from '/game/land.js';
 import { lookFrom } from '/game/yacht.js';
@@ -107,7 +109,7 @@ try { world = new World(canvas); } catch (e) { say({ type: 'ready' }); } // no W
 if (world) world.framePow = world.framePowSmall = 1; // every yacht the JPK's size on the screen, as FRAME above takes her
 if (world) {
   world.showGuides = false;
-  world.setQuality(/android|iphone|ipad/i.test(navigator.userAgent) ? 'medium' : 'high');
+  const skipFrame = followSettings(world); // Audio & graphics: the level chosen, and the battery saver
   // a race with only her in it, laid where a race there starts, and never sailed: she is posed each frame instead. A
   // stronger breeze heels her further and raises the sea.
   const HEEL = { light: 1, medium: 1.35, strong: 1.7 };
@@ -617,6 +619,7 @@ if (world) {
   if (!FINISH && !SETUP) world.ready().then(go);
   function loop(now) {
     requestAnimationFrame(loop);
+    if (skipFrame(now)) return;
     if (document.hidden) { last = now; return; }
     const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
     if (pending) { world.setPlayerLook(pending); pending = null; }

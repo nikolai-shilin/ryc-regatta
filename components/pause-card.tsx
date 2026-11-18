@@ -2,9 +2,11 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
-import { readOpts, saveOpts, DEFAULTS, type Opts } from '@/lib/opts';
+import { readOpts } from '@/lib/opts';
 import { IconScreen, IconSail, IconCrew } from './ui';
 import { useWho } from './me';
+import { AvRow } from './av-row';
+import { SailingOpts } from './sailing-opts';
 
 
 const Open = createContext<(open: boolean) => void>(() => {});
@@ -65,29 +67,11 @@ export function SettingsRow({ lang, note = false }: { lang: Lang; note?: boolean
   return <button type="button" className="bt-row" onClick={() => open(true)}><IconScreen /><span>{t('Settings', 'Настройки')}</span>{sum && <span className="bt-row-m">{sum}</span>}</button>;
 }
 
-type Keys = 'autoTrim' | 'guides' | 'camera' | 'gfx' | 'saver' | 'sound' | 'voice' | 'vibration' | 'music' | 'musicVol' | 'sea';
-
-// How you sail and how the game runs, as /settings has them: every change is saved at once where the game reads it
+// How you sail, as /settings has it, and the way to Audio & graphics; the language and the account
 // the account: who is signed in, read from the session cookie (the pages with this card are cached for everyone)
 function Settings({ lang, back, close }: { lang: Lang; back: string; close: () => void }) {
   const who = useWho(lang);
   const t = tx(lang), to = encodeURIComponent(back);
-  const [o, setO] = useState<Pick<Opts, Keys>>(DEFAULTS);
-  const [touch, setTouch] = useState(false);
-  useEffect(() => { setO(readOpts()); setTouch(matchMedia('(pointer: coarse)').matches); }, []);
-  const set = <K extends Keys>(k: K, v: Opts[K]) => { saveOpts({ [k]: v, ...(k === 'autoTrim' && { trimV: 1 }) }); setO((x) => ({ ...x, [k]: v })); };
-
-  const seg = <K extends Keys>(k: K, label: string, opts: [Opts[K], string][]) => (
-    <div className="bt-part">
-      <span className="bt-sub" id={`st-${k}`}>{label}</span>
-      <div className="bt-seg" style={{ ['--n' as string]: opts.length }} role="radiogroup" aria-labelledby={`st-${k}`}>
-        {opts.map(([v, l]) => <button key={String(v)} type="button" role="radio" aria-checked={o[k] === v} onClick={() => set(k, v)}>{l}</button>)}
-      </div>
-    </div>
-  );
-  const sw = (k: 'guides' | 'saver' | 'sound' | 'voice' | 'vibration', label: string) => (
-    <button key={k} type="button" role="switch" aria-checked={!!o[k]} className="bt-pill" onClick={() => set(k, o[k] ? 0 : 1)}>{label}</button>
-  );
 
   return (
     <div className="bt-view bt-set">
@@ -95,25 +79,10 @@ function Settings({ lang, back, close }: { lang: Lang; back: string; close: () =
 
       <div className="bt-g">
         <span className="bt-k"><IconSail s={13} />{t('Sailing', 'Яхта')}</span>
-        {seg('autoTrim', t('Sails', 'Паруса'), [[0, t('I trim', 'Сам')], [1, t('Auto', 'Авто')], [2, t('Main + jib', 'Грот + стаксель')]])}
-        {seg('camera', t('First camera', 'Камера'), [['drone', t('Drone', 'Дрон')], ['top', t('Top', 'Сверху')], ['helm', t('Helm', 'Штурвал')]])}
-        <div className="bt-pills">{sw('guides', t('Guides on the water', 'Подсказки на воде'))}</div>
+        <SailingOpts lang={lang} />
       </div>
 
-      <div className="bt-g">
-        <span className="bt-k"><IconScreen />{t('Screen and sound', 'Экран и звук')}</span>
-        {/* Custom shows only while it's the choice: its parts are set in /settings */}
-        {seg('gfx', t('Graphics', 'Графика'), [['auto', t('Auto', 'Авто')], ['high', t('High', 'Макс.')], ['medium', t('Medium', 'Сред.')], ['low', t('Low', 'Мин.')], ...(o.gfx === 'custom' ? [['custom', t('Custom', 'Своя')] as ['custom', string]] : [])])}
-        {seg('music', t('Music', 'Музыка'), [['racing', t('Racing', 'Гонка')], ['groove', t('Groove', 'Грув')], ['riff', t('Riff', 'Рифф')], ['openwater', t('Open water', 'Простор')], ['off', t('Off', 'Выкл')]])}
-        {seg('musicVol', t('Music volume', 'Громкость музыки'), [['loud', t('Loud', 'Громко')], ['normal', t('Normal', 'Обычно')], ['quiet', t('Quiet', 'Тихо')]])}
-        {seg('sea', t('Sea', 'Море'), [['loud', t('Loud', 'Громко')], ['normal', t('Normal', 'Обычно')], ['quiet', t('Quiet', 'Тихо')], ['off', t('Off', 'Выкл')]])}
-        <div className="bt-pills">
-          {sw('saver', t('Battery saver · 30 fps', 'Экономия батареи · 30 к/с'))}
-          {sw('sound', t('Sound', 'Звук'))}
-          {sw('voice', t('Voice on board', 'Голос шкипера'))}
-          {touch && sw('vibration', t('Vibration', 'Вибрация'))}
-        </div>
-      </div>
+      <div className="bt-rows"><AvRow lang={lang} /></div>
 
       <div className="bt-g">
         <span className="bt-k" id="st-lang">{t('Language', 'Язык')}</span>

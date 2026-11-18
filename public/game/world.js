@@ -18,6 +18,7 @@ import { Ocean, OCEAN_GLSL, SWELL_GLSL, oceanUniforms, blankOcean } from './ocea
 import { skyAt, pickSky, SKY_GLSL, SKY_BASE_GLSL, skyUniforms } from './light.js';
 import { Skopea, groundAt, inLandShadow, CLOUD_GLSL } from './skopea.js';
 import { VENUE } from './venues.js';
+import { GFX_PARTS, GFX_LEVELS, gfxParts } from './gfx.js'; // the graphics choice, shared with the site's menu
 export { flagTexture } from './committee.js';
 
 // the sky's colours and the sun: one set of objects that every shader shares; setLight() changes them in place
@@ -1279,8 +1280,6 @@ function drapeGuides(G, W, t) {
 //   land: the trees, rocks and moored boats ashore, and how fine the far land is (skopea.js setQuality)
 //   life: the gulls and dolphins (wildlife.js), the crew drawn in full close by, the boats in detail further off
 const PHONE = /android|iphone|ipad/i.test(navigator.userAgent);
-export const GFX_PARTS = ['res', 'shadows', 'sea', 'refl', 'post', 'wakes', 'under', 'land', 'life'];
-export const GFX_LEVELS = ['high', 'medium', 'low'];
 const PART = {
   res: { high: 1.75, medium: 1.3, low: 1.0 },
   shadows: { high: PHONE ? 1024 : 2048, medium: 1024, low: 0 },
@@ -1294,12 +1293,6 @@ const PART = {
   wakes: { high: { wake: 512, foam: 1600 }, medium: { wake: 256, foam: 900 }, low: { wake: 0, foam: 450 } },
   under: { high: PHONE ? 0.5 : 1, medium: 0.5, low: 0 },
 };
-// a level's parts: High, Medium or Low all alike; Custom, the ones given (any part not given or not known: High)
-export function gfxParts(q, custom) {
-  const lv = (v) => (GFX_LEVELS.includes(v) ? v : 'high');
-  return Object.fromEntries(GFX_PARTS.map((k) => [k, q === 'custom' ? lv(custom && custom[k]) : lv(q)]));
-}
-export const defaultQuality = () => (PHONE ? 'medium' : 'high');
 
 // ---------- the world ----------
 export class World {

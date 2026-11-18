@@ -9,6 +9,7 @@ import { briefUrl, readBrief } from '@/lib/day-brief';
 import { dailyVenue, dailyYacht } from '@/lib/race';
 import { clock } from './ui';
 import { FlagImg } from './flag';
+import { AvMenuItem } from './av-row';
 
 const IconBurger = () => <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
 const IconUser = () => <svg viewBox="0 0 16 16" width={16} height={16} aria-hidden="true"><circle cx="8" cy="5.2" r="2.8" fill="currentColor" /><path d="M2.5 14.5c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6z" fill="currentColor" /></svg>;
@@ -47,6 +48,7 @@ export function SiteMenu({ lang }: { lang: Lang }) {
         {card && <Link className="hm-mi if-me" href={`/players?p=${encodeURIComponent(card)}`}>{t('Your player card', 'Твоя карточка игрока')}</Link>}
         <Link className="hm-mi" href="/race/badges">{t('Badges', 'Достижения')}</Link>
         <Link className="hm-mi if-guest" href="/settings">{t('Settings', 'Настройки')}</Link>
+        <AvMenuItem lang={lang} />
         <span className="hm-msep" />
         <Link className="hm-mi" href="/help">{t('How to play', 'Как играть')}</Link>
         <Link className="hm-mi" href="/learn">{t('Learn to race', 'Учись гоняться')}</Link>

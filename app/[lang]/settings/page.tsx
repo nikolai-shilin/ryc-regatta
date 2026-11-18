@@ -11,8 +11,8 @@ import { NameRow, SettingsForm } from '@/components/settings-form';
 export const generateMetadata = titled('Settings', 'Настройки', { index: false });
 
 // S3 / A5 · Settings, as the race's pause screen: today's venue in the game's own scene behind (as the race hub has
-// it), the heading on the left, and three cards on the right: the account, your boat and the language; sailing; the
-// screen and the sound.
+// it), the heading on the left, and on the right the cards: the account, your boat and the language; sailing; and the
+// way to Audio & graphics.
 export default async function SettingsPage({ params }: LangParams) {
   const [{ lang, t }, account] = await Promise.all([getT(params), getAccount()]);
   const d = dailyRace();

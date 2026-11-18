@@ -33,6 +33,7 @@
 <link rel="preload" as="fetch" href="/game/yacht.glb" crossorigin>
 <link rel="modulepreload" href="/vendor/three@0.160.0/build/three.module.min.js">
 <link rel="modulepreload" href="/game/world.js">
+<link rel="modulepreload" href="/game/gfx.js">
 <link rel="modulepreload" href="/game/sim.js">
 <link rel="modulepreload" href="/game/land.js">
 <link rel="modulepreload" href="/game/venues.js">
@@ -61,6 +62,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { World } from '/game/world.js';
+import { followSettings } from '/game/gfx.js';
 import { Race, D2R, wrap } from '/game/sim.js';
 import { CLASSES, CLASS_IDS } from '/game/classes.js';
 import { HOURS } from '/game/light.js';
@@ -94,7 +96,7 @@ let world;
 try { world = new World(canvas); } catch (e) { say({ type: 'ready' }); } // no WebGL: the page's own picture shows
 if (world) {
   world.showGuides = false;
-  world.setQuality(/android|iphone|ipad/i.test(navigator.userAgent) ? 'medium' : 'high');
+  const skipFrame = followSettings(world); // Audio & graphics: the level chosen, and the battery saver
   const wind = new URLSearchParams(location.search).get('wind');
   // a race with only the fleet in it, laid where a race there starts, and never sailed: each yacht is posed each frame
   const race = new Race({ preset: wind, fleet: 2, laps: 1, length: 'short', start: 1, seed: 4242 });
@@ -240,6 +242,7 @@ if (world) {
   world.ready().then(() => { last = performance.now(); requestAnimationFrame(loop); });
   function loop(now) {
     requestAnimationFrame(loop);
+    if (skipFrame(now)) return;
     if (document.hidden) { last = now; return; }
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     step(dt);

@@ -29,6 +29,7 @@
      (game/yacht.js); npm test keeps the list in step with the imports -->
 <link rel="preload" as="fetch" href="/game/yacht.glb" crossorigin>
 <link rel="modulepreload" href="/game/world.js">
+<link rel="modulepreload" href="/game/gfx.js">
 <link rel="modulepreload" href="/vendor/three@0.160.0/build/three.module.min.js">
 <link rel="modulepreload" href="/game/sim.js">
 <link rel="modulepreload" href="/game/land.js">
@@ -57,6 +58,7 @@
 <canvas id="c" aria-hidden="true"></canvas>
 <script type="module">
 import { World } from '/game/world.js';
+import { followSettings } from '/game/gfx.js';
 import { Race } from '/game/sim.js';
 import { VENUE } from '/game/venues.js';
 import { DAYTIMES } from '/game/light.js';
@@ -76,7 +78,7 @@ function start() {
   let world;
   try { world = new World(canvas); } catch (e) { return; } // no WebGL: the page's picture stays
   world.showGuides = false;
-  world.setQuality(/android|iphone|ipad/i.test(navigator.userAgent) ? 'medium' : 'high');
+  const skipFrame = followSettings(world); // Audio & graphics: the level chosen, and the battery saver
 
   let race, ready = false, last = performance.now(), acc = 0;
   function newRace() {
@@ -111,6 +113,7 @@ function start() {
 
   function loop(now) {
     requestAnimationFrame(loop);
+    if (skipFrame(now)) return;
     if (!on || document.hidden || !ready) return;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     acc += dt;

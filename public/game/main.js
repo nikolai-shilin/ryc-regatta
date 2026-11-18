@@ -1,9 +1,11 @@
 // Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
 import { Race, CLS, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone, laidShape } from './sim.js';
-import { World, defaultQuality, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
+import { World, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
 import { raceStarted, raceFinished, raceResult, perfSetup, perfFrame, statsContext, raceIncident, raceEnded, visitSend } from './stats.js';
 import { initExtras, onStart, onFrame, drill, drillSettings } from './extras.js'; // the ghost, the drills, the analytics
 import { createHud } from './hud-bc.js';
+import { startQuality, GFX_KEY, SAVER_MS } from './gfx.js';
+import { openAvMenu, avSummary } from './av-menu.js'; // Audio & graphics, the site's menu too
 import { LINE_DASH, mapPalette, placeLabels } from './course-map.js';
 import { LOOKS, playerLook, lookFrom } from './yacht.js';
 const flagCode = (src) => { const m = typeof src === 'string' && /\/flags\/([a-z]{2}(?:-[a-z]+)?)\.svg$/.exec(src); return m ? m[1] : null; }; // '/flags/gb.svg' → 'gb'
@@ -68,7 +70,7 @@ const ord = (n) => `${n}${['st', 'nd', 'rd'][n - 1] || 'th'}`;
 const T = {
   en: {
     pausedK: 'Paused', legOf: (a, b) => `Leg ${a} of ${b}`, nextK: (m) => `Next: ${m}`, placeK: 'Place', ofN: (n) => `of ${n}`, timeK: 'Race time', penK: 'Penalties', penNone: 'clean so far', penS: 'spinning turns',
-    changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', camK: 'Camera', sAuto: 'Auto', guidesSw: 'Guides on the water', voiceSw: 'Voice on board', saverK: 'Battery saver', saverSw: 'Battery saver · 30 fps', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
+    changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', camK: 'Camera', sAuto: 'Auto', guidesSw: 'Guides on the water', ghostSw: 'Ghost of your best today', avK: 'Audio & graphics', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
     leaveK: 'Leave this race?', leaveTxt: (pl, leg) => `You are ${pl} on leg ${leg}.`, keepRacing: 'Keep racing', doRestart: 'Restart', doChange: 'Change it', doLeave: 'Leave',
     inSeq: 'You are in the start sequence.', notKept: 'This race’s time and place are not kept.',
     askK: { restart: 'Restart', change: 'Change the race', leave: 'Leave' }, askH: { restart: 'Restart this race?', change: 'Change the race?', leave: 'Leave this race?' },
@@ -127,9 +129,9 @@ const T = {
     cFinishUp: 'The finish line is up the course, just right of the windward mark — beat up and cross it',
     cFinishR: 'The finish line is off to the right of the gate — reach across and cross it', cFinishL: 'The finish line is off to the left of the gate — reach across and cross it',
     wind: 'Wind', light: 'Light · 7 kn', medium: 'Medium · 12 kn', strong: 'Strong · 19 kn', laps: 'Laps', sails: 'Sails',
-    manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', voiceK: 'Voice', musicK: 'Music', muRacing: 'Racing', muGroove: 'Groove', muRiff: 'Riff', muOpenwater: 'Open water', muVolK: 'Music volume', seaK: 'Sea', seaLoud: 'Loud', seaNormal: 'Normal', seaQuiet: 'Quiet', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
+    manual: 'I trim', auto: 'Auto-trim', sound: 'Sound', voiceK: 'Voice', on: 'On', off: 'Off', startK: 'Start', m1: '1 min', m3: '3 min', m5: '5 min',
     fleetK: 'Boats', lengthK: 'Course', lShort: 'Short', lMedium: 'Medium', lLong: 'Long',
-    currentK: 'Current', guidesK: 'Guides', gfx: 'Graphics', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', gsHigh: 'High', gsMedium: 'Medium', gsLow: 'Low', gsCustom: 'Custom', gfxNow: (q) => `Graphics · ${q} now`, start: 'Start race', resume: 'Resume', restart: 'Restart',
+    currentK: 'Current', guidesK: 'Guides', gAuto: 'Auto', gHigh: 'High', gMedium: 'Medium', gLow: 'Low', start: 'Start race', resume: 'Resume', restart: 'Restart',
     how1: '<b>Left thumb</b> steers on the arc. <b>Right thumb</b> works the sheet: up pulls the sails in, down lets them out. Keep the telltales green.',
     how2: '<b>Tack</b> turns you through the wind (<b>Gybe</b> downwind). <b>Kite</b> sets the gennaker on a run — the hoist and the drop take the crew a few seconds, so get it down in good time before the gate. In a gust, ease the sheet before she heels too far; in a blow, <b>Reef</b> makes the main smaller. Before the start, head up and let the sheet right out to stop — or even go astern.',
     how3: 'Start after the gun — the class flag comes down. Over early and you must go back. Round the windward mark <b>leaving it to port</b>, finish through the line.',
@@ -174,7 +176,7 @@ const T = {
   },
   ru: {
     pausedK: 'Пауза', legOf: (a, b) => `Отрезок ${a} из ${b}`, nextK: (m) => `Дальше: ${m}`, placeK: 'Место', ofN: (n) => `из ${n}`, timeK: 'Время', penK: 'Штрафы', penNone: 'пока чисто', penS: 'штрафные обороты',
-    changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', camK: 'Камера', sAuto: 'Авто', guidesSw: 'Подсказки на воде', voiceSw: 'Голос шкипера', saverK: 'Экономия батареи', saverSw: 'Экономия батареи · 30 к/с', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
+    changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', camK: 'Камера', sAuto: 'Авто', guidesSw: 'Подсказки на воде', ghostSw: 'Призрак твоего лучшего сегодня', avK: 'Звук и графика', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
     leaveK: 'Выйти из гонки?', leaveTxt: (pl, leg) => `Ты ${pl}-й на ${leg}-м отрезке.`, keepRacing: 'Продолжить', doRestart: 'Заново', doChange: 'Изменить', doLeave: 'Выйти',
     inSeq: 'Идёт стартовая процедура.', notKept: 'Время и место этой гонки не сохранятся.',
     askK: { restart: 'Заново', change: 'Изменить гонку', leave: 'Выход' }, askH: { restart: 'Начать заново?', change: 'Изменить гонку?', leave: 'Выйти из гонки?' },
@@ -233,9 +235,9 @@ const T = {
     cFinishUp: 'Финишная линия наверху, чуть правее верхнего знака — лавируй к ней и пересеки её',
     cFinishR: 'Финишная линия справа от ворот — иди к ней галфвиндом и пересеки её', cFinishL: 'Финишная линия слева от ворот — иди к ней галфвиндом и пересеки её',
     wind: 'Ветер', light: 'Слабый · 7 уз', medium: 'Средний · 12 уз', strong: 'Сильный · 19 уз', laps: 'Круги', sails: 'Паруса',
-    manual: 'Сам', auto: 'Авто', sound: 'Звук', voiceK: 'Голос', musicK: 'Музыка', muRacing: 'Гонка', muGroove: 'Грув', muRiff: 'Рифф', muOpenwater: 'Простор', muVolK: 'Громкость музыки', seaK: 'Море', seaLoud: 'Громко', seaNormal: 'Обычно', seaQuiet: 'Тихо', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
+    manual: 'Сам', auto: 'Авто', sound: 'Звук', voiceK: 'Голос', on: 'Вкл', off: 'Выкл', startK: 'Старт', m1: '1 мин', m3: '3 мин', m5: '5 мин',
     fleetK: 'Лодок', lengthK: 'Дистанция', lShort: 'Короткая', lMedium: 'Средняя', lLong: 'Длинная',
-    currentK: 'Течение', guidesK: 'Подсказки', gfx: 'Графика', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', gsHigh: 'Макс.', gsMedium: 'Сред.', gsLow: 'Мин.', gsCustom: 'Своя', gfxNow: (q) => `Графика · сейчас ${q.toLowerCase()}`, start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
+    currentK: 'Течение', guidesK: 'Подсказки', gAuto: 'Авто', gHigh: 'Высокая', gMedium: 'Средняя', gLow: 'Низкая', start: 'Начать гонку', resume: 'Продолжить', restart: 'Заново',
     how1: '<b>Левый палец</b> рулит по дуге. <b>Правый</b> работает шкотом: вверх выбрать, вниз потравить. Колдунчики должны быть зелёными.',
     how2: '<b>Поворот</b> — оверштаг через ветер (на полных курсах — <b>фордевинд</b>). <b>Генакер</b> — для попутного ветра; постановка и уборка занимают у экипажа несколько секунд, так что убирай его заранее, до ворот. В порыве трави шкот, пока крен не стал слишком большим; в сильный ветер <b>Риф</b> уменьшает грот. Перед стартом приведись и потрави шкот до конца — лодка остановится или даже пойдёт назад.',
     how3: 'Старт после сигнала — флаг класса спущен. Фальстарт — вернись за линию. Верхний знак огибают, <b>оставляя его слева</b>; финиш — через линию.',
@@ -336,15 +338,12 @@ for (const g of document.querySelectorAll('.choice[data-opt]')) {
   g.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     if (opts.mode === 'daily' && DAILY_KEYS.includes(k)) { Object.assign(opts, Object.fromEntries(DAILY_KEYS.map((x) => [x, settings()[x]]))); opts.yacht = CLS.id; opts.mode = 'free'; } // changing today's settings makes it a free race, in today's yacht
-    opts[k] = k === 'preset' || k === 'gfx' || k === 'length' || k === 'mode' || k === 'course' ? b.dataset.v : +b.dataset.v; paintOpts(); saveOpts();
+    opts[k] = k === 'preset' || k === 'length' || k === 'mode' || k === 'course' ? b.dataset.v : +b.dataset.v; paintOpts(); saveOpts();
     // today's race is at the day's venue, a free race where the set-up chose: another venue's land needs the page loaded again
     // …and so does another class of yacht: today's race is sailed in the day's, a free race in the one chosen (classes.js)
     if (k === 'mode' && !new URLSearchParams(location.search).get('boat') && (opts.mode === 'daily' ? dailyRace().yacht : classById(opts.yacht).id) !== CLS.id) { location.href = '/play?race=' + (opts.mode === 'daily' ? 'today' : 'free'); return; }
     if (k === 'mode' && !new URLSearchParams(location.search).get('venue') && (opts.mode === 'daily' ? dailyRace().venue : venueById(opts.venue).id) !== VENUE.id) { location.href = '/play?race=' + (opts.mode === 'daily' ? 'today' : 'free'); return; }
-    if (k === 'gfx') { applyGfx(); perf.settle = 2; }
     if (k === 'guides') world.showGuides = !!opts.guides;
-    if (k === 'saver') Object.assign(perf, { settle: 2, t: 0, d: [] }); // (the frame rate it watches changes with it)
-    if (k === 'sound') audio.setOn(!!opts.sound);
     if (k === 'autoTrim' && race && running) applyTrimMode();
     if (k === 'preset' || k === 'laps' || k === 'start' || k === 'current' || k === 'mode' || k === 'fleet' || k === 'length' || k === 'course') { if (!running) newRace(); else menuChanged = true; }
   });
@@ -357,7 +356,7 @@ if (TG) {
   try { if (TG.isVersionAtLeast && TG.isVersionAtLeast('8.0') && /android|iphone|ipad/i.test(navigator.userAgent)) TG.requestFullscreen(); } catch (e) {}
   TG.onEvent && TG.onEvent('themeChanged', () => applyTheme());
   TG.BackButton.show();
-  TG.BackButton.onClick(() => { if (MATCH && matchUi) matchBack(); else if (running && !paused) pause(); else quit(); });
+  TG.BackButton.onClick(() => { if (avClose) { avClose(); return; } if (MATCH && matchUi) matchBack(); else if (running && !paused) pause(); else quit(); });
 }
 const haptic = (kind) => {
   if (opts.vibration === 0) return; // Settings › Vibration
@@ -410,6 +409,8 @@ const audio = {
   // how loud the voices are now, 0..1 (the peak of the last ~10 ms)
   voiceLevel() { if (!this.meter) return 0; this.meter.getFloatTimeDomainData(this.meterBuf); let m = 0; for (const x of this.meterBuf) m = Math.max(m, Math.abs(x)); return m; },
   setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 1 : 0; if (!v) { skipper.stop(); asides.stop(); committee.stop(); } },
+  // each kind of sound as loud as Audio & graphics now says
+  levels() { if (!this.ctx) return; this.boat.gain.value = sndK('sndBoats'); this.signals.gain.value = sndK('sndSignals'); this.wild.gain.value = sndK('sndAround'); this.voiceLvl.gain.value = sndK('sndVoices'); },
   update(P, paused) {
     if (!this.ctx || !this.sfx) return;
     const k = paused ? 0 : 1, sea = k * seaK(), now = this.ctx.currentTime;
@@ -1120,25 +1121,13 @@ try {
   const gl = world.renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info');
   perfSetup({ gpu: gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER), size: () => [canvas.width, canvas.height] });
 } catch (e) {}
-// Auto remembers a step down as 'medium|<when>' for three days, then tries the device's own level again: one slow
-// race (another tab busy, a hot phone) shouldn't keep the picture down for good. A bare level from before is retried now.
-const GFX_KEY = 'regatta-gfx', GFX_DAYS = 3;
-function startQuality() {
-  if (opts.gfx !== 'auto') return opts.gfx; // a level, or Custom (its parts: opts.gfxD)
-  try {
-    const [q, at] = (localStorage.getItem(GFX_KEY) || '').split('|');
-    if (q && Date.now() - at < GFX_DAYS * 864e5) return q;
-    localStorage.removeItem(GFX_KEY);
-  } catch (e) {}
-  return defaultQuality();
-}
-const applyGfx = () => world.setQuality(startQuality(), opts.gfxD);
+const applyGfx = () => world.setQuality(startQuality(opts), opts.gfxD); // (gfx.js: a level, Custom's parts, or Auto's level on this device)
 applyGfx();
 world.showGuides = !!opts.guides;
 // Auto: watch the frame rate while racing; under 45 fps, step down a level and remember it for this device.
 // It goes by the middle frame of each 3 s, not their average: one stall (the tab away in a match, which runs on
 // unpaused; a notification; a frame that waited on the disk) would pull a steady 60 fps under 45 by itself, and leave
-// a fast machine on Low for GFX_DAYS. A frame over 0.25 s is such a stall, and isn't counted at all. With the battery
+// a fast machine on Low for days (gfx.js GFX_DAYS). A frame over 0.25 s is such a stall, and isn't counted at all. With the battery
 // saver on, the frames come at 30 a second by choice: then a level down only if it can't hold some 27.
 const perf = { t: 0, d: [], settle: 3 };
 function watchFps(raw) {
@@ -1183,7 +1172,7 @@ canvas.addEventListener('webglcontextlost', () => {
 canvas.addEventListener('webglcontextrestored', () => {
   glLost = false; clearTimeout(glT);
   if (glCard) { glCard.remove(); glCard = null; }
-  const q = startQuality();
+  const q = startQuality(opts);
   if (q !== world.quality) world.setQuality(q, opts.gfxD); else world.prepare(); // (setQuality compiles the shaders again itself)
 });
 
@@ -1219,7 +1208,7 @@ function onMatchRace(s) {
   raceStarted(race, race.settings); // (stats.js posts nothing for a match)
 }
 // …and off it: a card between the races, or at the end
-function onMatchIdle() { running = false; paused = false; hud.hidden = true; pauseEl.hidden = true; confirmEl.hidden = true; overWater(false); }
+function onMatchIdle() { if (avClose) avClose(); running = false; paused = false; hud.hidden = true; pauseEl.hidden = true; confirmEl.hidden = true; overWater(false); }
 // the HUD's tags on the water (hud-bc.js: the next mark's, the boats'), which live outside #hud
 const overWater = (on) => { for (const id of ['#nxTag', '#bOver']) { const e = $(id); if (e) e.style.visibility = on ? '' : 'hidden'; } };
 function startMatchFlow() {
@@ -1462,8 +1451,8 @@ function startRace() {
 // ---------- pause: the race stays in view; resume, change the race, restart or leave (each of the last three asks first) ----------
 const pauseEl = $('#pauseCard'), confirmEl = $('#confirmCard');
 // the voice on board (the skipper in Russian, the crew's calls in English) has a switch of its own, under Sound;
-// off, the hails and the call for a tack or a gybe are still heard, and the count to the gun beeps (Settings › Voice on
-// board too). The race committee and the umpire are under Sound alone.
+// off, the hails and the call for a tack or a gybe are still heard, and the count to the gun beeps (Audio & graphics ›
+// Voice on board). The race committee and the umpire are under Sound alone.
 const ordL = (n) => (LANG === 'ru' ? `${n}-е` : ord(n));
 function paintPause() {
   const P = race.player, legs = race.course.legs, n = legs.length - 1, leg = Math.min(n, Math.max(1, P.leg));
@@ -1486,16 +1475,11 @@ function paintPause() {
   // the ticker: paused, the venue, the race's clock (the count to the gun before it)
   const tick = $('#pTick'); tick.textContent = '';
   tick.append(`${t('pausedK')} · `, Object.assign(document.createElement('b'), { textContent: VENUE.name[LANG === 'ru' ? 1 : 0] }), ` · ${race.clock < 0 ? `${t('startIn')} ${fmt(-race.clock + 0.999)}` : fmt(race.clock)}`);
-  // guides, sound and voice: switches; the sails three ways; the camera
+  // guides and the ghost: switches; the sails three ways; the camera
   for (const b of pauseEl.querySelectorAll('[data-q]')) { const on = !!opts[b.dataset.q]; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); }
   for (const b of pauseEl.querySelectorAll('[data-trim]')) b.setAttribute('aria-checked', String(Number(b.dataset.trim) === (opts.autoTrim | 0)));
   for (const b of pauseEl.querySelectorAll('[data-pc]')) b.setAttribute('aria-checked', String(b.dataset.pc === world.mode));
-  // graphics: the choice, and on Auto the level it has settled on for this device
-  for (const b of pauseEl.querySelectorAll('[data-g]')) { b.setAttribute('aria-checked', String(b.dataset.g === opts.gfx)); if (b.dataset.g === 'custom') b.hidden = opts.gfx !== 'custom'; } // Custom: shown only while it's the choice (its parts are set in Settings)
-  for (const b of pauseEl.querySelectorAll('[data-mv]')) b.setAttribute('aria-checked', String(b.dataset.mv === (opts.musicVol in MUSIC_VOL ? opts.musicVol : 'normal')));
-  for (const b of pauseEl.querySelectorAll('[data-sea]')) b.setAttribute('aria-checked', String(b.dataset.sea === (opts.sea in SEA ? opts.sea : 'normal')));
-  for (const b of pauseEl.querySelectorAll('[data-mu]')) b.setAttribute('aria-checked', String(b.dataset.mu === (MUSIC_STYLES.includes(opts.music) ? opts.music : 'off')));
-  $('#pGfxK').textContent = opts.gfx === 'auto' ? t('gfxNow', t({ high: 'gHigh', medium: 'gMedium', low: 'gLow' }[world.quality] || 'gHigh')) : t('gfx');
+  $('#pAvM').textContent = avSummary(opts, LANG); // what Audio & graphics has chosen
 }
 // how a leg's target is rounded or crossed: every mark is left to port; the gate either way; the lines between their ends
 const howKey = (c, k) => (c.marks[k] ? 'howPort' : k === 'gate' ? 'howGate' : k === 'finish' ? 'howFinish' : 'howStart');
@@ -1516,6 +1500,7 @@ if (!TG) {
   const guard = () => { try { if (!history.state || !history.state.race) history.pushState({ race: 1 }, ''); } catch (e) {} };
   addEventListener('popstate', () => {
     if (replacing != null) { if (replacing) { const to = replacing; replacing = ''; location.replace(to); } return; } // on the way out (replaceRace)
+    if (avClose) { avClose(); guard(); return; } // back from Audio & graphics is to the pause menu
     if (MATCH && matchUi) { matchBack(); guard(); return; }
     if (!running || race.over) { quit(); return; }
     if (!confirmEl.hidden) { quit(); return; }
@@ -1546,6 +1531,20 @@ $('#pResume').addEventListener('click', resume);
 $('#pChange').addEventListener('click', () => ask('change'));
 $('#pRestart').addEventListener('click', () => ask('restart'));
 $('#pLeave').addEventListener('click', () => ask('leave'));
+// Audio & graphics, over the pause menu: each change is heard and seen as it's made
+let avClose = null;
+function applyAv(p) {
+  if ('gfx' in p || 'gfxD' in p) { applyGfx(); perf.settle = 2; }
+  if ('saver' in p) Object.assign(perf, { settle: 2, t: 0, d: [] }); // (the frame rate Auto watches changes with it)
+  if ('music' in p || 'musicVol' in p) score.style();
+  if ('sound' in p) audio.setOn(!!opts.sound);
+  if (p.voice === 0) { skipper.stop(); asides.stop(); asides.pend = null; }
+  audio.levels();
+}
+$('#pAv').addEventListener('click', () => {
+  avClose = openAvMenu({ lang: LANG, read: () => opts, write: (p) => { Object.assign(opts, p); saveOpts(); applyAv(p); }, now: () => world.quality, zIndex: 15,
+    onClose: () => { avClose = null; if (running && race) paintPause(); } });
+});
 $('#cKeep').addEventListener('click', () => { confirmEl.hidden = true; pauseEl.hidden = false; });
 $('#cGo').addEventListener('click', () => {
   raceEnded(race, confirmDo === 'restart' ? 'restart' : confirmDo === 'change' ? 'change' : 'menu'); // (stats.js: how the race ended)
@@ -1553,14 +1552,6 @@ $('#cGo').addEventListener('click', () => {
   if (confirmDo === 'change') replaceRace(`/race/free?from=${race.settings.daily ? 'today' : 'race'}`); else quit();
 });
 pauseEl.addEventListener('click', (e) => {
-  const g = e.target.closest('[data-g]');
-  if (g) { opts.gfx = g.dataset.g; saveOpts(); applyGfx(); perf.settle = 2; paintOpts(); paintPause(); return; } // as the menu's Graphics does
-  const mu = e.target.closest('[data-mu]');
-  if (mu) { opts.music = mu.dataset.mu; saveOpts(); score.style(); paintPause(); return; } // Settings › Music, from here too
-  const mv = e.target.closest('[data-mv]');
-  if (mv) { opts.musicVol = mv.dataset.mv; saveOpts(); score.style(); paintPause(); return; } // Settings › Music volume: heard as the race resumes
-  const sea = e.target.closest('[data-sea]');
-  if (sea) { opts.sea = sea.dataset.sea; saveOpts(); paintPause(); return; } // Settings › Sea: heard as the race resumes
   const tr = e.target.closest('[data-trim]');
   if (tr) { opts.autoTrim = Number(tr.dataset.trim); applyTrimMode(); saveOpts(); paintOpts(); paintPause(); return; } // Settings › Sails: I trim, Auto, Main + jib
   const pc = e.target.closest('[data-pc]');
@@ -1568,10 +1559,7 @@ pauseEl.addEventListener('click', (e) => {
   const b = e.target.closest('[data-q]'); if (!b) return;
   const k = b.dataset.q;
   opts[k] = opts[k] ? 0 : 1;
-  if (k === 'sound') audio.setOn(!!opts.sound);
-  if (k === 'voice' && !opts.voice) { skipper.stop(); asides.stop(); asides.pend = null; }
   if (k === 'guides') world.showGuides = !!opts.guides;
-  if (k === 'saver') Object.assign(perf, { settle: 2, t: 0, d: [] });
   saveOpts(); paintPause();
 });
 $('#goBtn').addEventListener('click', startRace);
@@ -2053,11 +2041,9 @@ let frameN = 0;
 // news is dropped (a message that threw would throw again). A dead loop sends no inputs, so the guest would be
 // forfeited after 30 s, and a host's guest frozen and her race abandoned after 60. Today's race and a free race keep
 // the plain loop.
-// The battery saver (Settings): a frame drawn every 1/30 s, whatever the screen's rate (60, 90, 120 Hz), the ones
-// between let go. The race still moves in its 1/60 s steps, two to a frame, so it sails the same; the phone does half
-// the work or less, runs cooler and so doesn't slow itself down when it heats up. (4 ms short of 1/30 s: the
-// screen's ticks wander, and at 60 Hz the second one after a frame must count, not the third.)
-const SAVER_MS = 1000 / 30 - 4;
+// The battery saver (Audio & graphics; gfx.js SAVER_MS): a frame drawn every 1/30 s, whatever the screen's rate (60, 90,
+// 120 Hz), the ones between let go. The race still moves in its 1/60 s steps, two to a frame, so it sails the same; the
+// phone does half the work or less, runs cooler and so doesn't slow itself down when it heats up.
 let drawnAt = 0;
 function loop(now) {
   if (opts.saver && now - drawnAt < SAVER_MS) { requestAnimationFrame(loop); return; }

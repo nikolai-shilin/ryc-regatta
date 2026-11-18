@@ -33,6 +33,7 @@
 <link rel="preload" as="fetch" href="/game/yacht.glb" crossorigin>
 <link rel="modulepreload" href="/vendor/three@0.160.0/build/three.module.min.js">
 <link rel="modulepreload" href="/game/world.js">
+<link rel="modulepreload" href="/game/gfx.js">
 <link rel="modulepreload" href="/game/sim.js">
 <link rel="modulepreload" href="/game/land.js">
 <link rel="modulepreload" href="/game/venues.js">
@@ -60,6 +61,7 @@
 <canvas id="c" aria-label="The venue from the drone, turn the view by dragging"></canvas>
 <script type="module">
 import { World } from '/game/world.js';
+import { followSettings } from '/game/gfx.js';
 import { Race } from '/game/sim.js';
 import { lookFrom } from '/game/yacht.js';
 import { CLS } from '/game/classes.js';
@@ -86,7 +88,7 @@ try { world = new World(canvas); } catch (e) { say({ type: 'ready' }); } // no W
 if (world) {
   world.framePow = world.framePowSmall = 1;
   world.showGuides = false;
-  world.setQuality(/android|iphone|ipad/i.test(navigator.userAgent) ? 'medium' : 'high');
+  const skipFrame = followSettings(world); // Audio & graphics: the level chosen, and the battery saver
 
   // ---------- her: a race with only her in it, never started; she is sailed here, upwind, tacking off the shore ----------
   const race = new Race({ preset: 'light', fleet: 2, laps: 1, length: 'short', start: 1, seed: 4242 });
@@ -214,6 +216,7 @@ if (world) {
   world.ready().then(() => { last = performance.now(); requestAnimationFrame(loop); });
   function loop(now) {
     requestAnimationFrame(loop);
+    if (skipFrame(now)) return;
     if (document.hidden) { last = now; return; }
     const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
     if (pending) { world.setPlayerLook(pending); pending = null; }

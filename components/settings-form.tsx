@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { tx, type Lang } from '@/lib/lang';
-import { readOpts, saveOpts, DEFAULTS, GFX_PARTS, SOUND_PARTS, gfxDetail, type Opts, type GfxLevel, type GfxPart, type Sea, type SoundPart } from '@/lib/opts';
 import { cleanName, NAME_MAX } from '@/lib/name';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -10,6 +9,8 @@ import { syncAccount } from './bests-sync';
 import { findFlag, flagSrc } from '@/lib/flags';
 import { IconArrow } from './ui';
 import { NoFlag } from './flag';
+import { AvRow } from './av-row';
+import { SailingOpts } from './sailing-opts';
 
 // The name on the ranking, edited in place. The Supabase client loads only when it's saved, so guests never get it.
 export function NameRow({ lang, name: saved }: { lang: Lang; name: string }) {
@@ -48,8 +49,6 @@ export function NameRow({ lang, name: saved }: { lang: Lang; name: string }) {
     </form>
   );
 }
-
-type Keys = 'autoTrim' | 'guides' | 'ghost' | 'camera' | 'gfx' | 'gfxD' | 'saver' | 'sound' | 'voice' | 'vibration' | 'music' | 'musicVol' | 'sea' | SoundPart;
 
 // One of the settings' cards over the scene: its name on top, its rows under it
 function Card({ id, title, wide = false, children }: { id: string; title: string; wide?: boolean; children: React.ReactNode }) {
@@ -124,112 +123,10 @@ function YachtName({ lang }: { lang: Lang }) {
   );
 }
 
-// Graphics › Details: each part of the picture on its own (public/game/world.js: GFX_PARTS), the ones a level draws
-// shown as they are; changing one makes it Custom. The costliest first: resolution, shadows, the sea and its reflection.
-const GFX_NAMES: Record<GfxPart, [string, string, boolean]> = { // English, Russian, whether its lowest is off
-  res: ['Resolution', 'Разрешение', false],
-  shadows: ['Shadows', 'Тени', true],
-  sea: ['Waves', 'Волны', false],
-  refl: ['Reflections', 'Отражения', true],
-  post: ['Glow and smoothing', 'Свечение и сглаживание', true],
-  wakes: ['Wakes and spray', 'Кильватер и брызги', false],
-  under: ['Hulls under water', 'Корпуса под водой', true],
-  land: ['Shore and trees', 'Берег и деревья', false],
-  life: ['Gulls, dolphins and crew', 'Птицы, дельфины, экипаж', false],
-};
-function GfxDetails({ lang, o, open, toggle, pick }: { lang: Lang; o: Pick<Opts, 'gfx' | 'gfxD'>; open: boolean; toggle: () => void; pick: (k: GfxPart, v: GfxLevel) => void }) {
-  const t = tx(lang), d = gfxDetail(o);
-  const lv = (off: boolean): [GfxLevel, string][] => [['high', t('High', 'Макс.')], ['medium', t('Medium', 'Сред.')], ['low', off ? t('Off', 'Выкл') : t('Low', 'Мин.')]];
-  return (
-    <div className="st-det">
-      <button type="button" className="st-det-t" aria-expanded={open} aria-controls="st-gfx-b" onClick={toggle}>
-        <span>{t('Details', 'Подробно')}</span><IconArrow s={14} />
-      </button>
-      {open && (
-        <div className="st-det-b" id="st-gfx-b">
-          {GFX_PARTS.map((k) => (
-            <div className="srow st-det-r" key={k}>
-              <span className="srow-k" id={`l-gfx-${k}`}>{t(GFX_NAMES[k][0], GFX_NAMES[k][1])}</span>
-              <div className="segc" role="radiogroup" aria-labelledby={`l-gfx-${k}`}>
-                {lv(GFX_NAMES[k][2]).map(([v, l]) => (
-                  <button key={v} type="button" role="radio" aria-checked={d[k] === v} className={d[k] === v ? 'on' : ''} onClick={() => pick(k, v)}>{l}</button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Sound › Details: each kind of sound as loud as you like it, apart from the sea and the music above
-const SOUND_NAMES: Record<SoundPart, [string, string]> = {
-  sndVoices: ['Voices', 'Голоса'],
-  sndBoats: ['Sails, winches, hulls', 'Паруса, лебёдки, корпус'],
-  sndSignals: ['Horns and beeps', 'Сигналы и таймер'],
-  sndAround: ['Gulls and the plane', 'Чайки и самолёт'],
-};
-function SoundDetails({ lang, o, open, toggle, pick }: { lang: Lang; o: Pick<Opts, SoundPart>; open: boolean; toggle: () => void; pick: (k: SoundPart, v: Sea) => void }) {
-  const t = tx(lang);
-  const lv: [Sea, string][] = [['loud', t('Loud', 'Громко')], ['normal', t('Normal', 'Обычно')], ['quiet', t('Quiet', 'Тихо')], ['off', t('Off', 'Выкл')]];
-  return (
-    <div className="st-det">
-      <button type="button" className="st-det-t" aria-expanded={open} aria-controls="st-snd-b" onClick={toggle}>
-        <span>{t('Sound details', 'Звук подробно')}</span><IconArrow s={14} />
-      </button>
-      {open && (
-        <div className="st-det-b st-det-4" id="st-snd-b">
-          {SOUND_PARTS.map((k) => (
-            <div className="srow st-det-r" key={k}>
-              <span className="srow-k" id={`l-${k}`}>{t(SOUND_NAMES[k][0], SOUND_NAMES[k][1])}</span>
-              <div className="segc" role="radiogroup" aria-labelledby={`l-${k}`}>
-                {lv.map(([v, l]) => (
-                  <button key={v} type="button" role="radio" aria-checked={(o[k] || 'normal') === v} className={(o[k] || 'normal') === v ? 'on' : ''} onClick={() => pick(k, v)}>{l}</button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// S3 · How you sail and how the game runs, in three cards over the scene: the account, your boat and the language;
-// sailing; the screen and the sound. Every change is saved at once where the game reads it.
+// S3 · Who you are, how you sail, and the way to Audio & graphics, in cards over the scene. Every change is saved at
+// once where the game reads it.
 export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: React.ReactNode; account: React.ReactNode }) {
   const t = tx(lang);
-  const [o, setO] = useState<Pick<Opts, Keys>>(DEFAULTS);
-  const [gfxOpen, setGfxOpen] = useState(false);
-  const [sndOpen, setSndOpen] = useState(false);
-  useEffect(() => { const x = readOpts(); setO(x); setGfxOpen(x.gfx === 'custom'); setSndOpen(SOUND_PARTS.some((k) => x[k] !== 'normal')); }, []);
-  const set = <K extends Keys>(k: K, v: Opts[K]) => { saveOpts({ [k]: v, ...(k === 'autoTrim' && { trimV: 1 }) }); setO((x) => ({ ...x, [k]: v })); };
-  // Graphics: Custom starts from the parts drawn now, and opens them; a part changed makes it Custom
-  const setGfx = (v: Opts['gfx']) => {
-    if (v !== 'custom') { set('gfx', v); return; }
-    const d = gfxDetail(o); saveOpts({ gfx: 'custom', gfxD: d }); setO((x) => ({ ...x, gfx: 'custom', gfxD: d })); setGfxOpen(true);
-  };
-  const pickGfx = (k: GfxPart, v: GfxLevel) => { const d = { ...gfxDetail(o), [k]: v }; saveOpts({ gfx: 'custom', gfxD: d }); setO((x) => ({ ...x, gfx: 'custom', gfxD: d })); };
-
-  const seg = <K extends Keys>(k: K, label: string, opts: [Opts[K], string][], hint?: string) => (
-    <div className="srow srow-seg">
-      <span className="srow-k" id={`l-${k}`}>{label}</span>
-      <div className="segc" role="radiogroup" aria-labelledby={`l-${k}`}>
-        {opts.map(([v, l]) => (
-          <button key={String(v)} type="button" role="radio" aria-checked={o[k] === v} className={o[k] === v ? 'on' : ''} onClick={() => set(k, v)}>{l}</button>
-        ))}
-      </div>
-      {hint && <p className="hint">{hint}</p>}
-    </div>
-  );
-  const sw = (k: 'guides' | 'ghost' | 'saver' | 'sound' | 'voice' | 'vibration', label: string, cls = '') => (
-    <div className={`srow ${cls}`}>
-      <span className="srow-k" id={`l-${k}`}>{label}</span>
-      <button type="button" className="tgl" role="switch" aria-checked={!!o[k]} aria-labelledby={`l-${k}`} onClick={() => set(k, o[k] ? 0 : 1)}><i /></button>
-    </div>
-  );
-
   return (
     <div className="st-cards">
       <Card id="st-acct" title={t('Account', 'Аккаунт')}>
@@ -240,40 +137,8 @@ export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: 
         <div className="st-sub"><span className="lbl-ink" id="l-lang">{t('Language', 'Язык')}</span></div>
         {langSeg}
       </Card>
-      <Card id="st-sail" title={t('Sailing', 'Яхта')}>
-        {seg('autoTrim', t('Sails', 'Паруса'), [[0, t('I trim', 'Сам')], [1, t('Auto', 'Авто')], [2, t('Main + jib', 'Грот + стаксель')]])}
-        {seg('camera', t('First camera', 'Камера'), [['drone', t('Drone', 'Дрон')], ['top', t('Top', 'Сверху')], ['helm', t('Helm', 'Штурвал')]])}
-        {sw('guides', t('Guides on the water', 'Подсказки на воде'))}
-        {sw('ghost', t('Ghost of your best today', 'Призрак твоего лучшего сегодня'))}
-      </Card>
-      <Card id="st-screen" title={t('Screen and sound', 'Экран и звук')} wide>
-        <div className="st-cols">
-          <div>
-            <div className="srow srow-seg">
-              <span className="srow-k" id="l-gfx">{t('Graphics', 'Графика')}</span>
-              <div className="segc" role="radiogroup" aria-labelledby="l-gfx">
-                {([['auto', t('Auto', 'Авто')], ['high', t('High', 'Макс.')], ['medium', t('Medium', 'Сред.')], ['low', t('Low', 'Мин.')], ['custom', t('Custom', 'Своя')]] as [Opts['gfx'], string][]).map(([v, l]) => (
-                  <button key={v} type="button" role="radio" aria-checked={o.gfx === v} className={o.gfx === v ? 'on' : ''} onClick={() => setGfx(v)}>{l}</button>
-                ))}
-              </div>
-              <p className="hint">{o.gfx === 'custom'
-                ? t('Each part as you set it below. Resolution, shadows and reflections cost the most frames.', 'Каждая часть — как задано ниже. Больше всего кадров съедают разрешение, тени и отражения.')
-                : t('On Auto the game lowers the detail by itself when the frame rate drops, and remembers it for this device.', 'На «Авто» игра сама снижает детализацию, если падает частота кадров, и запоминает это для устройства.')}</p>
-              <GfxDetails lang={lang} o={o} open={gfxOpen} toggle={() => setGfxOpen((x) => !x)} pick={pickGfx} />
-            </div>
-            {sw('saver', t('Battery saver · 30 fps', 'Экономия батареи · 30 к/с'))}
-            {sw('sound', t('Sound', 'Звук'))}
-            {sw('voice', t('Voice on board', 'Голос шкипера'))}
-            {sw('vibration', t('Vibration', 'Вибрация'), 'no-desk')}
-          </div>
-          <div>
-            {seg('music', t('Music', 'Музыка'), [['racing', t('Racing', 'Гонка')], ['groove', t('Groove', 'Грув')], ['riff', t('Riff', 'Рифф')], ['openwater', t('Open water', 'Простор')], ['off', t('Off', 'Выкл')]])}
-            {seg('musicVol', t('Music volume', 'Громкость музыки'), [['loud', t('Loud', 'Громко')], ['normal', t('Normal', 'Обычно')], ['quiet', t('Quiet', 'Тихо')]])}
-            {seg('sea', t('Sea', 'Море'), [['loud', t('Loud', 'Громко')], ['normal', t('Normal', 'Обычно')], ['quiet', t('Quiet', 'Тихо')], ['off', t('Off', 'Выкл')]])}
-            <SoundDetails lang={lang} o={o} open={sndOpen} toggle={() => setSndOpen((x) => !x)} pick={(k, v) => set(k, v)} />
-          </div>
-        </div>
-      </Card>
+      <Card id="st-sail" title={t('Sailing', 'Яхта')}><SailingOpts lang={lang} /></Card>
+      <section className="st-card st-wide" aria-label={t('Audio & graphics', 'Звук и графика')}><div className="st-card-b"><AvRow lang={lang} wide /></div></section>
     </div>
   );
 }
