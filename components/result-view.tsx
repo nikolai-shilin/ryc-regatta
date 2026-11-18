@@ -22,7 +22,7 @@ import { streakOf, todayUtc } from '@/lib/log';
 import { streakWords, useLog } from './passport';
 import { Replay } from './replay';
 import { track } from '@/lib/track';
-import { shortName } from '@/lib/name';
+import { plainRows, shortName } from '@/lib/name';
 import { BOAT_EVENT, readBoat } from '@/lib/boat';
 import { briefUrl, readBrief, SCORES_API } from '@/lib/day-brief';
 import { useWho } from './me';
@@ -123,7 +123,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
       if (!live) return;
       const b = readBrief(day, res.daily!), d = j?.daily;
       if (b) setField(b.s);
-      setTop(b ? b.top.slice(0, 5).map((r) => ({ name: shortName(r.name), s: r.s, fl: r.fl })) : d && d.d === res.daily ? (d.top || []).slice(0, 3) : []);
+      setTop(b ? b.top.slice(0, 5).map((r) => ({ name: shortName(r.name), s: r.s, fl: r.fl })) : d && d.d === res.daily ? plainRows((d.top || []).slice(0, 3)) : []);
     });
     return () => { live = false; };
   }, [res]);

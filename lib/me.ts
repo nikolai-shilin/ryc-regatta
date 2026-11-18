@@ -33,7 +33,9 @@ export function readMe(): MeUser | null {
     const user = session.user || JSON.parse(b64(session.access_token.split('.')[1]));
     const md = user.user_metadata || {}, am = user.app_metadata || {}, tg = !!am.telegram_id;
     // as getAccount in lib/supabase/server.ts: a Telegram player's address is made up, never shown
-    return { name: String(md.display_name || ''), email: tg ? '' : String(user.email || ''), provider: tg ? 'telegram' : String(am.provider || 'email') };
+    // (the name without its emoji: lib/name.ts's EMOJI, written out because this runs on its own in the head script)
+    const name = String(md.display_name || '').replace(/[#*0-9]️?⃣|[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}][︎️‍\u{E0020}-\u{E007F}]*/gu, '').replace(/\s+/g, ' ').trim();
+    return { name, email: tg ? '' : String(user.email || ''), provider: tg ? 'telegram' : String(am.provider || 'email') };
   } catch (e) {
     return null;
   }

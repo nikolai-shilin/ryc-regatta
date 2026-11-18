@@ -1,5 +1,6 @@
 import 'server-only';
 import type { Boat } from './boat';
+import { plainName, plainRows } from './name';
 
 // the scores API; SCORES_API points the site at another one (a local copy, a stub for testing), as lib/rating.ts
 const SCORES = process.env.SCORES_API || 'https://iyt.rycrentals.com/api/game';
@@ -34,12 +35,12 @@ const get = async <T>(q: string): Promise<T | null> => {
 // null when it can't be had (the API is down): the page says so rather than showing nobody
 export async function getPlayers(page: number): Promise<PlayerList | null> {
   const j = await get<PlayerList>(`players&page=${page}`);
-  return j && Array.isArray(j.rows) && Number.isFinite(j.pages) ? j : null;
+  return j && Array.isArray(j.rows) && Number.isFinite(j.pages) ? { ...j, rows: plainRows(j.rows) } : null;
 }
 
 // null for a key nobody has, or when the API is down
 export async function getPlayer(k: string): Promise<PlayerCard | null> {
   if (!KEY_RE.test(k)) return null;
   const j = await get<PlayerCard>(`player=${encodeURIComponent(k)}`);
-  return j && j.k === k ? j : null;
+  return j && j.k === k ? { ...j, name: plainName(j.name) } : null;
 }

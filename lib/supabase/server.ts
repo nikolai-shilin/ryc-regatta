@@ -1,6 +1,7 @@
 import 'server-only';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { noEmoji } from '@/lib/name';
 
 // Supabase Auth for server components, route handlers and server actions. The session lives in cookies on this
 // origin, so the game at /play shares it.
@@ -34,7 +35,7 @@ export async function getAccount(): Promise<Account> {
   return {
     id: u.id,
     email: tg ? '' : u.email || '',
-    name: String(meta.display_name || ''),
+    name: noEmoji(String(meta.display_name || '')),
     provider: tg ? 'telegram' : String(u.app_metadata?.provider || 'email'),
   };
 }

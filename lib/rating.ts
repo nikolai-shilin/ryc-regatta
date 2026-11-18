@@ -12,6 +12,7 @@ export type MonthRow = { k: string; name: string | null; ph: string | null; fl: 
 export type Rating = { d: string; w: string | null; races: number; guests: number; rows: DayRow[]; month: { m: string; days: number; rows: MonthRow[] }; days: string[] };
 
 import { todayUtc } from './day';
+import { plainRows } from './name';
 export { DAY_RE, todayUtc, validDay } from './day';
 
 // null when it can't be had (the API is down, or doesn't know ?day= yet): the page says so rather than showing nobody
@@ -21,7 +22,7 @@ export async function getRating(day: string): Promise<Rating | null> {
     if (!r.ok) return null;
     const j = await r.json();
     if (!j || j.d !== day || !Array.isArray(j.rows) || !j.month || !Array.isArray(j.month.rows)) return null;
-    return { ...j, days: Array.isArray(j.days) ? j.days : [] };
+    return { ...j, rows: plainRows(j.rows), month: { ...j.month, rows: plainRows(j.month.rows) }, days: Array.isArray(j.days) ? j.days : [] };
   } catch {
     return null;
   }

@@ -1,4 +1,5 @@
 import { VENUES } from './venues.ts'; // with their extensions, so npm test's Node finds them too
+import { noEmoji } from './name.ts';
 
 // A passport as a link (/players?s=5&v=12&vs=…&n=Anna): the streak and the venues raced (how many and which, as a bit
 // each in the venues' order, in base 36), for the share card (app/og/passport) and its page. Only what the sharer chose
@@ -29,6 +30,6 @@ export function readPassport(q: Record<string, string | string[] | undefined>): 
   const one = (k: string) => { const x = q[k]; return Array.isArray(x) ? x[0] : x; };
   const bits = bitsOf(one('vs'));
   const raced = VENUES.map((_, i) => ((bits >> BigInt(i)) & 1n) === 1n);
-  const n = (one('n') || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 30);
+  const n = noEmoji((one('n') || '').replace(/[\u0000-\u001f<>]/g, '')).slice(0, 30);
   return { s: clampN(one('s'), 9999), v: Math.min(clampN(one('v'), VENUES.length), raced.filter(Boolean).length || clampN(one('v'), VENUES.length)), raced, n };
 }

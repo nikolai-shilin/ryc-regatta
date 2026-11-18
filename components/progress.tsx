@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { tx, ruPlural, type Lang } from '@/lib/lang';
 import { DRILLS, DRILLS_KEY, LEVELS, levelOf, levelOpen, toOpen } from '@/lib/drills';
 import { todayUtc } from '@/lib/log';
+import { plainRows } from '@/lib/name';
 import { myPoints, useMyDays } from './my-month';
 import { Who } from './flag';
 
@@ -103,7 +104,7 @@ export function useRival() {
     if (!on) return;
     let live = true;
     fetch(`https://iyt.rycrentals.com/api/game?day=${todayUtc()}`).then((r) => (r.ok ? r.json() : null)).catch(() => null)
-      .then((j) => live && setRows(j && j.month && Array.isArray(j.month.rows) ? j.month.rows : []));
+      .then((j) => live && setRows(j && j.month && Array.isArray(j.month.rows) ? plainRows<MonthRow>(j.month.rows) : []));
     return () => { live = false; };
   }, [on]);
   if (!on || !days || !rows) return null;

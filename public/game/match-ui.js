@@ -82,7 +82,8 @@ const CSS = `
 `;
 
 const html = (s) => { const d = document.createElement('div'); d.innerHTML = s.trim(); return d.firstChild; };
-const clean = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
+// a name: no control characters, no emoji (lib/name.ts's EMOJI), 16 characters at most
+export const clean = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/[#*0-9]️?⃣|[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}][︎️‍\u{E0020}-\u{E007F}]*/gu, '').replace(/\s+/g, ' ').trim().slice(0, 16);
 const store = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} return null; };
 const fmtS = (s, unit = 's') => { s = Math.max(0, Math.round(s)); return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `${s} ${unit}`; };
 // a host's match, kept in localStorage['regatta-match-' + code] as { at, m } for six hours (a tab closed and the link

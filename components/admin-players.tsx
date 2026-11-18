@@ -1,4 +1,5 @@
 import { tx, type Lang } from '@/lib/lang';
+import { plainName } from '@/lib/name';
 import { Tile } from './admin-stats';
 import { IconCrew, clock } from './ui';
 import { PlayersTable, type Col, type Row } from './admin-players-table';
@@ -36,7 +37,7 @@ export function AdminPlayers({ lang, data }: { lang: Lang; data: Players }) {
   ];
   const rows: Row[] = P.map((p) => ({
     key: p.who,
-    name: p.name || (p.kind === 'guest' ? `${KIND.guest} ${p.who.slice(0, 4)}` : '–'),
+    name: plainName(p.name) || (p.kind === 'guest' ? `${KIND.guest} ${p.who.slice(0, 4)}` : '–'),
     sub: `${KIND[p.kind]}${p.handle ? ` · ${p.kind === 'tg' ? '@' : ''}${p.handle}` : ''}`,
     isNew: p.new,
     cells: [String(p.n), pct(p.fin, p.n), String(p.top3), p.dsq ? String(p.dsq) : '–', String(p.days), p.down == null ? '–' : `${Math.round(100 * p.down)}%`,
