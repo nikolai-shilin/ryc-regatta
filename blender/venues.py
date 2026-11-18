@@ -68,6 +68,7 @@ from PIL import Image, ImageColor, ImageDraw, ImageFilter
 # along stern-to, the shore by those streets; routes: the ferries' and the water taxis' ways across the bay, (lat, lon)
 # each; kites: the line off a beach the kitesurfers ride along, and how many; footbox: where the footprints are taken
 # when it isn't the buildings' own box (`build`); aprons: (south, west, north, east) boxes of a container port's yards, paved
+# surface: the height in metres of a lake whose tiles carry its bed and not its surface (Lake Michigan's)
 # erode: how much of the gullies erode() cuts back into the hills (1 when not given; 0 where the tiles carry a fine
 # survey of their own, whose gullies are already there)
 VENUES = {
@@ -341,6 +342,76 @@ VENUES = {
                         landmarks=[dict(kind='chronicle', at=(41.77059, 44.81039), h=35, ring=[(41.77040, 44.81082), (41.77033, 44.81026), (41.77047, 44.80998), (41.77057, 44.80996), (41.77076, 44.81014), (41.77084, 44.81072)]),  # its sixteen pillars, along the map's outline of them, open to the east
                                    dict(kind='tower', style='tbilisi-tv', at=(41.69582, 44.78495), h=274.5, clear=30)],  # the lattice tower of 1972
                         towns=[(41.7568, 44.8505, 800), (41.7779, 44.8474, 900), (41.7357, 44.8159, 900), (41.7119, 44.8658, 900)]),
+    # Malta's north-east coast off Valletta and the Grand Harbour, where the Rolex Middle Sea Race starts, in the majjistral
+    'malta': dict(bathy='emodnet', zoom=14, most=15000, relations=True, paved=True, trees=True, home=(35.9150, 14.5300), wind=315,
+                  landmarks=[dict(kind='dome', at=(35.90016, 14.51228), h=42, r=10, clear=24, color='#d8c08e'),
+                             dict(kind='steeple', at=(35.90070, 14.51192), h=60, w=8, color='#dcc596', spire='#bda67a', clear=12),
+                             dict(kind='lighthouse', style='plain', at=(35.90264, 14.52546), h=20, ground=0, foot=5, band='#2e8a4f'),
+                             dict(kind='lighthouse', style='plain', at=(35.89934, 14.52293), h=20, ground=0, foot=5, band='#c23a30')],
+                  towns=[(35.8975, 14.5125, 900), (35.9120, 14.5040, 900), (35.8880, 14.5220, 700), (35.9200, 14.4900, 900)]),
+    # the Bay of Saint-Malo off the walled city, the start of the Route du Rhum, in the westerly
+    'saint-malo': dict(bathy='emodnet', zoom=14, most=15000, relations=True, paved=True, trees=True, home=(48.6680, -2.0450), wind=280,
+                       landmarks=[dict(kind='steeple', at=(48.64950, -2.02549), h=61, w=11, color='#9b968a', spire='#6f706c', split=0.58),
+                                  dict(kind='rampart', at=(48.65159, -2.02367), ring=[(48.65159, -2.02367), (48.65172, -2.02374), (48.65145, -2.02549), (48.65155, -2.02549), (48.65161, -2.02596), (48.65140, -2.02604), (48.65057, -2.02788), (48.65066, -2.02852), (48.65074, -2.02869), (48.65072, -2.02880), (48.65062, -2.02877), (48.65053, -2.02856), (48.64985, -2.02838), (48.64948, -2.02820), (48.64939, -2.02819), (48.64914, -2.02839), (48.64910, -2.02833), (48.64892, -2.02835), (48.64872, -2.02842), (48.64854, -2.02827), (48.64815, -2.02833), (48.64806, -2.02840), (48.64788, -2.02861), (48.64781, -2.02895), (48.64776, -2.02900), (48.64697, -2.02917), (48.64692, -2.02911), (48.64696, -2.02870), (48.64611, -2.02811), (48.64600, -2.02820), (48.64573, -2.02806), (48.64571, -2.02799), (48.64584, -2.02742), (48.64593, -2.02738), (48.64640, -2.02491), (48.64633, -2.02480), (48.64653, -2.02351), (48.64697, -2.02357), (48.64703, -2.02369), (48.64881, -2.02378), (48.64885, -2.02368), (48.64896, -2.02374), (48.64906, -2.02361), (48.64915, -2.02370), (48.65034, -2.02295), (48.65074, -2.02324), (48.65078, -2.02320), (48.65072, -2.02337)], h=10, w=6, color='#8b867b'),
+                                  dict(kind='rampart', at=(48.64666, -2.02371), ring=[(48.64666, -2.02371), (48.64877, -2.02383), (48.64883, -2.02389), (48.64910, -2.02386), (48.65032, -2.02311), (48.65065, -2.02332)], h=10, w=6, color='#8b867b'),
+                                  dict(kind='rampart', at=(48.64665, -2.02374), ring=[(48.64665, -2.02374), (48.64623, -2.02605)], h=10, w=6, color='#8b867b'),
+                                  dict(kind='rampart', at=(48.64788, -2.02856), ring=[(48.64788, -2.02856), (48.64816, -2.02830), (48.64856, -2.02824), (48.64873, -2.02837), (48.64902, -2.02831)], h=10, w=6, color='#8b867b'),
+                                  dict(kind='castle', at=(48.65486, -2.02332), h=9, ring=[(48.65455, -2.02327), (48.65460, -2.02374), (48.65523, -2.02358), (48.65523, -2.02314), (48.65507, -2.02318), (48.65501, -2.02291), (48.65478, -2.02292), (48.65463, -2.02281), (48.65449, -2.02307)]),
+                                  dict(kind='castle', at=(48.65256, -2.03853), h=9, ring=[(48.65272, -2.03884), (48.65277, -2.03869), (48.65253, -2.03811), (48.65231, -2.03835), (48.65250, -2.03874)]),
+                                  dict(kind='castle', at=(48.68373, -2.04411), h=10, ring=[(48.68393, -2.04428), (48.68402, -2.04410), (48.68394, -2.04385), (48.68376, -2.04388), (48.68344, -2.04415), (48.68347, -2.04436)]),
+                                  dict(kind='lighthouse', style='plain', at=(48.64211, -2.03183), h=16, ground=0, foot=4, band='#c23a30'),
+                                  dict(kind='lighthouse', style='plain', at=(48.67004, -2.08285), h=38, ground=0, foot=8, tower='#aeb2ae', band='#c23a30')],
+                       towns=[(48.6495, -2.0260, 700), (48.6450, -2.0050, 1000), (48.6320, -2.0560, 900), (48.6380, -2.0200, 800)]),
+    # the Derwent off Sandy Bay, the finish of the Sydney to Hobart, in the afternoon sea breeze up the river under kunanyi
+    'hobart': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(-42.9000, 147.3700), wind=170,
+                   landmarks=[dict(kind='viaduct', at=(-42.86538, 147.33805), ring=[(-42.86538, 147.33805), (-42.86429, 147.35046), (-42.86415, 147.35111), (-42.86392, 147.35173), (-42.86330, 147.35280)], deck=50, w=24, span=85, color='#b4b4ac'),
+                              dict(kind='tower', style='wrest-point', at=(-42.90245, 147.33755), h=73, clear=45),
+                              dict(kind='lighthouse', style='plain', at=(-42.91458, 147.36043), h=10, tower='#f4f2ea')],
+                   towns=[(-42.8820, 147.3270, 1300), (-42.8950, 147.3300, 900), (-42.8700, 147.3650, 1200), (-42.9150, 147.3350, 800)]),
+    # the Petit-Lac above Geneva, the start of the Bol d'Or Mirabaud, in the bise down the lake
+    'lake-geneva': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(46.2700, 6.2000), wind=40, lake='Le Léman',
+                        landmarks=[dict(kind='jet', at=(46.20733, 6.15587), h=140, dir=220),
+                                   dict(kind='lighthouse', style='plain', at=(46.21000, 6.15693), h=18.7, ground=0, foot=4, tower='#f4f1e8', band='#2e8a4f'),
+                                   dict(kind='lighthouse', style='plain', at=(46.20801, 6.15599), h=10, ground=0, foot=4, tower='#f4f1e8', band='#c23a30')],
+                        towns=[(46.2070, 6.1500, 1500), (46.2150, 6.1800, 800), (46.2830, 6.1620, 800), (46.3010, 6.2450, 500), (46.2540, 6.1540, 600)]),
+    # the Pacific off Point Loma, of the America's Cup of 1988, 1992 and 1995, in the sea breeze
+    'san-diego': dict(erode=0, bathy='noaa', zoom=14, most=15000, relations=True, parts=True, paved=True, trees=True, home=(32.6600, -117.2000), wind=290,
+                      landmarks=[dict(kind='viaduct', at=(32.68862, -117.16424), ring=[(32.68862, -117.16424), (32.68734, -117.16212), (32.68687, -117.16094), (32.68665, -117.15968), (32.68666, -117.15841), (32.68690, -117.15717), (32.68738, -117.15602), (32.68810, -117.15497), (32.69628, -117.14692), (32.69814, -117.14518), (32.69885, -117.14444), (32.69924, -117.14375)], deck=61, w=20, span=70, color='#4a86b8'),
+                                 dict(kind='hotel-del', at=(32.68080, -117.17820), dir=215, clear=140),
+                                 dict(kind='lighthouse', style='plain', at=(32.66508, -117.24268), h=27, tower='#f4f2ea'),
+                                 dict(kind='lighthouse', style='plain', at=(32.67199, -117.24099), h=14, tower='#f0ece2')],
+                      towns=[(32.6900, -117.1750, 1200), (32.7200, -117.2350, 1200), (32.7150, -117.1600, 1300), (32.5800, -117.1300, 900)]),
+    # the mouth of Cork Harbour off Roches Point, of Cork Week and the world's oldest yacht club, in the south-westerly
+    'cork': dict(bathy='emodnet', zoom=14, most=15000, relations=True, paved=True, trees=True, home=(51.7720, -8.2450), wind=225,
+                 landmarks=[dict(kind='lighthouse', style='plain', at=(51.79301, -8.25467), h=15, tower='#f6f4ec'),
+                            dict(kind='castle', at=(51.81217, -8.25959), h=6, ring=[(51.81232, -8.25980), (51.81222, -8.25984), (51.81225, -8.25971), (51.81212, -8.25937), (51.81206, -8.25943), (51.81205, -8.25923)])],
+                 towns=[(51.8020, -8.2980, 600), (51.8510, -8.2960, 800), (51.8270, -8.2400, 500)]),
+    # the bay off Cascais in the summer's nortada, the Sintra hills to windward
+    'cascais': dict(bathy='emodnet', zoom=14, most=15000, relations=True, paved=True, trees=True, home=(38.6650, -9.3900), wind=340,
+                    landmarks=[dict(kind='lighthouse', style='plain', at=(38.69039, -9.42097), h=20, tower='#f7f6f0', stripes='#2f6fb5', clear=8),
+                               dict(kind='lighthouse', style='plain', at=(38.69561, -9.44641), h=28, tower='#f7f6f0'),
+                               dict(kind='lighthouse', style='plain', at=(38.67447, -9.32526), h=24, tower='#f2efe6', band='#c23a30'),
+                               dict(kind='castle', at=(38.69368, -9.41922), h=11, ring=[(38.69312, -9.41856), (38.69331, -9.41852), (38.69350, -9.41822), (38.69371, -9.41828), (38.69369, -9.41843), (38.69496, -9.41916), (38.69465, -9.41952), (38.69446, -9.41941), (38.69430, -9.41982), (38.69419, -9.42015), (38.69438, -9.42026), (38.69438, -9.42081), (38.69378, -9.42034), (38.69383, -9.42007), (38.69312, -9.41983), (38.69306, -9.42014), (38.69236, -9.42022), (38.69318, -9.41915), (38.69332, -9.41879)])],
+                    towns=[(38.6970, -9.4210, 1000), (38.7060, -9.3970, 1000), (38.6960, -9.3700, 900), (38.6800, -9.3400, 900)]),
+    # Lake Michigan off Monroe Harbor, the start of the Race to Mackinac, in the lake breeze, the Loop's towers to leeward
+    'chicago': dict(erode=0, zoom=14, most=15000, relations=True, parts=True, paved=True, trees=True, home=(41.8800, -87.5750), wind=60, lake='Lake Michigan', surface=176,
+                    height_of={'Trump International Hotel & Tower Chicago': 423},
+                    landmarks=[dict(kind='wheel', at=(41.89169, -87.60748), h=60, dir=90, clear=35),
+                               dict(kind='lighthouse', style='plain', at=(41.88935, -87.59055), h=15, ground=0, foot=8, tower='#f6f4ec', band='#c23a30'),
+                               dict(kind='crib', at=(41.87278, -87.54535)),
+                               dict(kind='crib', at=(41.91648, -87.57211))],
+                    towns=[(41.8820, -87.6280, 1500), (41.8600, -87.6250, 1200), (41.9050, -87.6280, 1300)]),
+    # the Caribbean off Gustavia, of Les Voiles de St Barth and the Bucket, in the trade wind
+    'st-barths': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(17.8850, -62.8600), wind=95,
+                      landmarks=[dict(kind='lighthouse', style='plain', at=(17.90109, -62.85135), h=18, tower='#f4f2ea', band='#c23a30'),
+                                 dict(kind='steeple', at=(17.89536, -62.84759), h=12, w=4.5, color='#f4f1e8', spire='#b8392e', split=0.7, clear=6)],
+                      towns=[(17.8970, -62.8520, 500), (17.9040, -62.8340, 500)]),
+    # Fushan Bay off the Olympic Sailing Center of 2008, in the summer's south-easterly
+    'qingdao': dict(zoom=14, most=15000, relations=True, parts=True, paved=True, trees=True, home=(36.0250, 120.4050), wind=135,
+                    landmarks=[dict(kind='may-wind', at=(36.06121, 120.38015), h=30, r=13.5, clear=25),
+                               dict(kind='tower', style='lattice', at=(36.06886, 120.35025), h=232, gallery=12, color='#c9ccc8', clear=30),
+                               dict(kind='lighthouse', style='plain', at=(36.05253, 120.38256), h=14, ground=0, foot=5, band='#c23a30')],
+                    towns=[(36.0650, 120.3800, 1500), (36.0650, 120.3300, 1200), (36.0700, 120.4500, 1200)]),
 }
 
 # what is on the ground (the cover part), from OpenStreetMap's land use; 0 where the map has nothing, which the game
@@ -768,6 +839,7 @@ def bake(vid, V, fetch_only=False):
     HX, HZ = np.meshgrid(gx, gz)
     level = 0.0
     if V.get('lake'): level = float(np.median(height(np.linspace(-300, 300, 9), np.zeros(9)))); print('  the lake stands at', round(level, 1), 'm')
+    level = float(V.get('surface', level))  # a great lake the map draws with a coastline of its own, at its known height
     H = height(HX, HZ) - level
     pix = lambda r: [((x + G) / CELL, (z + G) / CELL) for x, z in r]
 
@@ -1478,7 +1550,7 @@ def bake(vid, V, fetch_only=False):
     os.makedirs(os.path.dirname(jpath), exist_ok=True)
     with open(jpath[:-5] + '.bin', 'wb') as f: f.write(gzip.compress(raw, 9, mtime=0))
     meta = {
-        'origin': [LAT0, LON0], 'turn': V['wind'], 'home': [round(float(MID[0]), 1), round(float(MID[1]), 1)], 'mid': [float(MID[0]), float(MID[1])], 'lake': bool(V.get('lake')),
+        'origin': [LAT0, LON0], 'turn': V['wind'], 'home': [round(float(MID[0]), 1), round(float(MID[1]), 1)], 'mid': [float(MID[0]), float(MID[1])], 'lake': bool(V.get('lake') or V.get('surface')),
         'terrain': {'ext': EXTENT, 'n': N}, 'grid': {'x0': -EXTENT, 'cell': CC, 'n': NCC}, 'ao': {'cell': CC * 2, 'n': NCC // 2, 'k': 4}, 'far': {'ext': FEXT, 'cell': FCELL, 'n': NF, 'k': 2}, 'near': {'x0': -NE * EC / 2, 'cell': EC, 'n': NE},
         'room': {'x0': MX0, 'z0': MZ0, 'cell': SC, 'nx': MW, 'nz': MH}, 'classes': CLASSES, 'parts': desc,
         'marinas': marinas, 'pierKinds': PIERS, 'towns': towns, 'landmarks': landmarks, **({'moor': moor} if moor else {}), **({'routes': routes} if routes else {}), **({'kites': kites} if kites else {}),

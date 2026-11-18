@@ -613,6 +613,149 @@ export const VENUES = [
       water: { deep: '#0a3c4a', scatter: '#2a9088', k: 0.45, shallow: '#58a892', clear: 0.35 },
     },
   },
+  {
+    // Malta's north-east coast off Valletta and the Grand Harbour, where the Rolex Middle Sea Race starts, in the
+    // north-westerly majjistral: the honey limestone bastions and the Carmelite dome to leeward
+    id: 'malta', name: ['Malta', 'Мальта'], lat: 35.915, lon: 14.53, wind: 315, tz: 2, thermal: false, from: '2026-11-20',
+    look: {
+      haze: 1.15,
+      ground: { forest: ['#46542f', '#5a683a', '#747c4a'], scrub: '#9a9166', rock: ['#dcc99e', '#b9a67c'], town: '#cdb98f', shore: '#d8c69c', sand: '#e0c98f', grass: '#7f8a4c' },
+      fields: ['#8f9456', '#a39c5e', '#b5a768', '#7f8a4c'],
+      trees: [['olive', 0.35, '#56603e', '#7f8660'], ['stone', 0.3, '#3f4f2c', '#62703f'], ['shrub', 0.25, '#66703f', '#878a55'], ['palm', 0.1, '#3d5a2c', '#5f7a3a']], treeTop: 260, woods: 0.08, coast: 'rock',
+      // Globigerina limestone, the whole island's one colour, its roofs flat
+      walls: ['#dcc596', '#e3cfa4', '#d3b985', '#ead9b4', '#cfb27c', '#e6d3a8'], roofs: ['#cdb68a', '#bda67a', '#d6c298'], flat: 0.92,
+      boats: { sail: 0.5, motor: 0.3, big: 0.2, bigKind: 'super' },
+      water: { deep: '#033a62', scatter: '#1092bc', k: 0.5, shallow: '#3cc4c4', clear: 0.75 },
+    },
+  },
+  {
+    // the Bay of Saint-Malo off the walled city, the start of the Route du Rhum, in the westerly: granite ramparts, the
+    // cathedral's spire, the islets and forts that the great tides cover and uncover
+    id: 'saint-malo', name: ['Saint-Malo', 'Сен-Мало'], lat: 48.668, lon: -2.045, wind: 280, tz: 2, stream: ['tide', 80, 1.6], from: '2026-11-20',
+    look: {
+      haze: 0.95,
+      ground: { forest: ['#2d4629', '#3f5c36', '#5b7848'], scrub: '#7a8258', rock: ['#8f8a7e', '#6d6a60'], town: '#a8a296', shore: '#cbbfa4', sand: '#dccfb0', grass: '#688a48' },
+      fields: ['#6f9a45', '#7fa64e', '#8fae55', '#a8b866', '#5f8c3e'],
+      trees: [['broad', 0.65, '#2d4629', '#5b7848'], ['conifer', 0.2, '#243b22', '#3a5530'], ['pine', 0.15, '#2b4123', '#536b39']], treeTop: 200, woods: 0.22, clearing: 'grass', coast: 'rock',
+      // Breton granite under slate
+      walls: ['#9b968a', '#a9a497', '#8b867b', '#bdb7a9', '#d8d2c4', '#e6e1d4'], roofs: ['#4a4f55', '#55595f', '#3f444a', '#5f6368'], flat: 0.05,
+      boats: { sail: 0.82, motor: 0.18, big: 0 },
+      water: { deep: '#0b3a47', scatter: '#2b8a88', k: 0.5, shallow: '#5aa89a', clear: 0.28 },
+    },
+  },
+  {
+    // the Derwent off Sandy Bay, the finish of the Sydney to Hobart, in the afternoon sea breeze up the river:
+    // kunanyi/Mount Wellington over the city, the Tasman Bridge upstream
+    id: 'hobart', name: ['Hobart', 'Хобарт'], lat: -42.9, lon: 147.37, wind: 170, tz: 11, from: '2026-11-20',
+    look: {
+      haze: 1.15,
+      ground: { forest: ['#2c3e2a', '#3e5138', '#566a48'], scrub: '#7d7f58', rock: ['#8b857a', '#6b665c'], town: '#a79d8b', shore: '#bfb49c', sand: '#d8cca8', grass: '#7c8a4c' },
+      fields: ['#8a9450', '#a3a25c', '#b9ac68', '#76863f'],
+      trees: [['eucalypt', 0.8, '#2f3f2c', '#65735a'], ['broad', 0.12, '#2c3e2a', '#566a48'], ['conifer', 0.08, '#22381f', '#36502c']], treeTop: 1150, woods: 0.7, snow: 1250,
+      // weatherboard and Georgian sandstone under iron roofs
+      walls: ['#d9d2c2', '#c9a88a', '#e6e1d5', '#b78a6a', '#d1c6b4', '#f0ece2'], roofs: ['#6a6e72', '#8a4a3c', '#55595e', '#a0553f', '#7f8488'], flat: 0.12,
+      boats: { sail: 0.85, motor: 0.15, big: 0 },
+      water: { deep: '#08303f', scatter: '#1f7f83', k: 0.5, shallow: '#4a9a90', clear: 0.3 },
+    },
+  },
+  {
+    // the Petit-Lac above Geneva, the start of the Bol d'Or, in the bise blowing down the lake: the Jet d'Eau at its foot,
+    // the Jura to one side and the Alps to the other
+    id: 'lake-geneva', name: ['Lake Geneva', 'Женевское озеро'], lat: 46.27, lon: 6.2, wind: 40, tz: 2, thermal: false, from: '2026-11-20',
+    look: {
+      haze: 1.1,
+      ground: { forest: ['#2c4524', '#3c5a2c', '#557236'], scrub: '#7c8452', rock: ['#a9a89e', '#87867c'], town: '#b4ab98', shore: '#b9b09c', grass: '#6f9048' },
+      fields: ['#6f9a45', '#7fa64e', '#8fae55', '#a8b866', '#5f8c3e', '#c2b46a'],
+      trees: [['broad', 0.6, '#2c4524', '#58773a'], ['conifer', 0.3, '#22381f', '#36502c'], ['cypress', 0.1, '#25391f', '#3a5230']], treeTop: 1800, woods: 0.4, snow: 2700, clearing: 'grass',
+      walls: ['#efe8d8', '#e6dcc6', '#f3efe6', '#d8cdb6', '#e9d9bb', '#ffffff'], roofs: ['#9c5a42', '#8a4e3a', '#6e6a68', '#a8644a'], flat: 0.25,
+      boats: { sail: 0.85, motor: 0.15, big: 0 },
+      water: { deep: '#0a3b52', scatter: '#2a93a0', k: 0.5, shallow: '#5aa9a6', clear: 0.45 },
+    },
+  },
+  {
+    // the Pacific off Point Loma, of the America's Cups of 1988, 1992 and 1995, in the sea breeze: the old lighthouse on the
+    // ridge, the Hotel del Coronado on its beach, the city's towers behind North Island
+    id: 'san-diego', name: ['San Diego', 'Сан-Диего'], lat: 32.66, lon: -117.2, wind: 290, tz: -7, from: '2026-11-20',
+    look: {
+      haze: 0.95,
+      ground: { forest: ['#46502f', '#58623a', '#6f7747'], scrub: '#8d8558', rock: ['#b0a184', '#8a7e68'], town: '#b0a898', shore: '#d9cca8', sand: '#e2d5b2', grass: '#71843f' },
+      trees: [['palm', 0.35, '#3d5a2c', '#6a8a3a'], ['eucalypt', 0.25, '#4a5a3a', '#7d8a62'], ['shrub', 0.3, '#5a6a42', '#7f8a5c'], ['broad', 0.1, '#3a5230', '#5f7a3c']], treeTop: 450, woods: 0.15, clearing: 'scrub',
+      walls: ['#f3eee2', '#e9dec6', '#f7f3ea', '#dccdb0', '#d0ccc2', '#ffffff'], roofs: ['#b4603e', '#a5543a', '#8f8678', '#6f7478'], flat: 0.55,
+      boats: { sail: 0.6, motor: 0.3, big: 0.1, bigKind: 'super' },
+      water: { deep: '#0f4258', scatter: '#2f8a8c', k: 0.5, shallow: '#5aa894', clear: 0.28 },
+    },
+  },
+  {
+    // the mouth of Cork Harbour off Roches Point, home of the Royal Cork Yacht Club and Cork Week, in the south-westerly:
+    // green headlands, the white lighthouse, the old forts either side of the entrance
+    id: 'cork', name: ['Cork', 'Корк'], lat: 51.772, lon: -8.245, wind: 225, tz: 1, stream: ['tide', 350, 0.8], from: '2026-11-20',
+    look: {
+      haze: 0.9,
+      ground: { forest: ['#2b4a26', '#3a5f2e', '#538039'], scrub: '#6f9048', rock: ['#8b897c', '#6c6a60'], town: '#a8a294', shore: '#a9a08a', sand: '#cfc3a0', grass: '#5f9440' },
+      fields: ['#5f9a40', '#6fa648', '#7fb050', '#559038', '#8fb455', '#4f8a36'],
+      trees: [['broad', 0.75, '#2b4a26', '#5a803a'], ['conifer', 0.25, '#243b22', '#3a5530']], treeTop: 300, woods: 0.14, clearing: 'grass', coast: 'rock',
+      // Ireland's painted terraces, the slate roofs over them
+      walls: ['#f2efe6', '#e8d9b8', '#d9e0dc', '#efc9a8', '#c8d8d8', '#f6ead0', '#ffffff'], roofs: ['#4f565c', '#5c6266', '#464c52', '#6b6f72'], flat: 0.05,
+      boats: { sail: 0.85, motor: 0.15, big: 0 },
+      water: { deep: '#0c3238', scatter: '#2a7f76', k: 0.5, shallow: '#4f9080', clear: 0.2 },
+    },
+  },
+  {
+    // the bay off Cascais in the summer's nortada, the Sintra hills to windward: the striped Santa Marta light on the rocks,
+    // the Citadel over the marina, the Tagus's tide running along the coast
+    id: 'cascais', name: ['Cascais', 'Кашкайш'], lat: 38.665, lon: -9.39, wind: 340, tz: 1, stream: ['tide', 95, 0.5], thermal: false, from: '2026-11-20',
+    look: {
+      haze: 1.1,
+      ground: { forest: ['#2e4428', '#40582f', '#5c703f'], scrub: '#7f7f58', rock: ['#c9bfa6', '#a39880'], town: '#bdb4a2', shore: '#d8cba8', sand: '#e8d9ae', grass: '#748a48' },
+      trees: [['stone', 0.4, '#2e4428', '#587040'], ['pine', 0.25, '#2b4123', '#536b39'], ['eucalypt', 0.2, '#4a5a3a', '#7d8a62'], ['palm', 0.15, '#3d5a2c', '#5f7a3a']], treeTop: 530, woods: 0.3, coast: 'rock',
+      // whitewash with Portugal's yellow and blue bands, under terracotta
+      walls: ['#f7f4ec', '#ffffff', '#f2dfa6', '#efe8d8', '#e9c98a', '#d8e2ea'], roofs: ['#b4603e', '#c0704a', '#a5543a', '#9c4f37'], flat: 0.3,
+      boats: { sail: 0.7, motor: 0.25, big: 0.05, bigKind: 'super' },
+      water: { deep: '#07405e', scatter: '#1a8ca6', k: 0.5, shallow: '#4ab8b0', clear: 0.5 },
+    },
+  },
+  {
+    // Lake Michigan off Monroe Harbor, the start of the Race to Mackinac, in the lake breeze: fresh water, the breakwater
+    // and its light, Navy Pier's wheel and the Loop's towers to leeward
+    id: 'chicago', name: ['Chicago', 'Чикаго'], lat: 41.88, lon: -87.575, wind: 60, tz: -5, from: '2026-11-20',
+    look: {
+      haze: 0.85,
+      ground: { forest: ['#2b4526', '#3a5a2f', '#557539'], scrub: '#7a8a52', rock: ['#a8a598', '#85837a'], town: '#8f8a82', shore: '#b5ad98', sand: '#d9cda8', grass: '#5f8040' },
+      trees: [['broad', 0.9, '#2b4526', '#58793a'], ['conifer', 0.1, '#22381f', '#36502c']], treeTop: 120, woods: 0.2, clearing: 'grass',
+      // Chicago common brick, limestone and terracotta, the roofs flat
+      walls: ['#a8704e', '#8a5a44', '#d9d0bc', '#c9c4ba', '#e6e0d2', '#b98a64', '#6f6a64'], roofs: ['#4a4d50', '#5a5f60', '#6b6e70', '#3f4448'], flat: 0.9,
+      fill: 0, // every building is on the map: none made up
+      boats: { sail: 0.7, motor: 0.3, big: 0 },
+      water: { deep: '#0d4258', scatter: '#2c8f9c', k: 0.55, shallow: '#62a8a0', clear: 0.3 },
+    },
+  },
+  {
+    // the Caribbean off Gustavia, of Les Voiles de St Barth and the Bucket, in the trade wind: red roofs round the harbour,
+    // the green hills and the rocks offshore
+    id: 'st-barths', name: ['St Barths', 'Сен-Бартелеми'], lat: 17.885, lon: -62.86, wind: 95, tz: -4, stream: ['flow', 285, 0.5], thermal: false, from: '2026-11-20',
+    look: {
+      haze: 1.25,
+      ground: { forest: ['#34522a', '#466e32', '#628c40'], scrub: '#76904c', rock: ['#a89a80', '#857a68'], town: '#c6bdaa', shore: '#efe4c4', sand: '#f6edd4', grass: '#669440' },
+      trees: [['shrub', 0.45, '#55703a', '#7a8f4e'], ['palm', 0.3, '#3d5a2c', '#6a8a3a'], ['broad', 0.25, '#34522a', '#628c40']], treeTop: 290, woods: 0.55, coast: 'rock',
+      // white walls and shutters, the red roofs the island is known for
+      walls: ['#ffffff', '#f8f5ee', '#f6f0e0', '#eef2f0', '#f4e6c8'], roofs: ['#b8392e', '#c23a30', '#a8352c', '#c8503c'], flat: 0.1,
+      boats: { sail: 0.45, motor: 0.25, big: 0.3, bigKind: 'super' },
+      water: { deep: '#024a7c', scatter: '#0fa8c8', k: 0.55, shallow: '#54d8c8', clear: 0.85 },
+    },
+  },
+  {
+    // Fushan Bay off the Olympic Sailing Center of 2008, in the summer's south-easterly: the May Wind's red spiral on its
+    // square, the towers along the seafront, the old town's red roofs to the west
+    id: 'qingdao', name: ['Qingdao', 'Циндао'], lat: 36.025, lon: 120.405, wind: 135, tz: 8, stream: ['tide', 70, 0.6], from: '2026-11-20',
+    look: {
+      haze: 0.75,
+      ground: { forest: ['#2a4524', '#3a5a2e', '#55733a'], scrub: '#74804e', rock: ['#a8a090', '#857e70'], town: '#a39e94', shore: '#c9bea0', sand: '#ddd0aa', grass: '#5f8040' },
+      trees: [['pine', 0.5, '#2a4524', '#55733a'], ['broad', 0.5, '#2f4a26', '#5f7a3c']], treeTop: 900, woods: 0.55, coast: 'rock',
+      walls: ['#dcdad4', '#cfcac0', '#e8e4dc', '#bfc4c6', '#d6cfc0', '#e6e0d0'], roofs: ['#b4553e', '#7e7f80', '#a5483a', '#6f7478'], flat: 0.75,
+      boats: { sail: 0.55, motor: 0.4, big: 0.05, bigKind: 'super' },
+      water: { deep: '#123f4c', scatter: '#2f7c78', k: 0.55, shallow: '#558a78', clear: 0.15 },
+    },
+  },
 ];
 
 export const venueById = (id) => VENUES.find((v) => v.id === id) || VENUES[0];

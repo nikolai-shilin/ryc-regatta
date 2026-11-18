@@ -10,7 +10,8 @@ export type VenueId = 'gocek' | 'cowes' | 'newport' | 'sydney' | 'kiel' | 'tries
   | 'san-francisco' | 'valencia' | 'barcelona' | 'palma' | 'marstrand' | 'bermuda' | 'enoshima' | 'weymouth' | 'marseille' | 'rio' | 'garda' | 'istanbul'
   | 'st-petersburg' | 'batumi' | 'scheveningen' | 'hong-kong' | 'cape-town' | 'athens' | 'marmaris' | 'fethiye'
   | 'sochi' | 'melbourne' | 'gold-coast' | 'new-york'
-  | 'naples' | 'los-angeles' | 'les-sables' | 'dubai' | 'miami' | 'split' | 'monaco' | 'fremantle' | 'sint-maarten' | 'phuket' | 'tbilisi-sea';
+  | 'naples' | 'los-angeles' | 'les-sables' | 'dubai' | 'miami' | 'split' | 'monaco' | 'fremantle' | 'sint-maarten' | 'phuket' | 'tbilisi-sea'
+  | 'malta' | 'saint-malo' | 'hobart' | 'lake-geneva' | 'san-diego' | 'cork' | 'cascais' | 'chicago' | 'st-barths' | 'qingdao';
 type Pair = [string, string]; // English, Russian
 
 export const VENUES: { id: VenueId; nation: string; name: Pair; place: Pair; wind: Pair; skip?: string[]; from?: string; runs?: boolean; about: Pair }[] = [
@@ -104,6 +105,26 @@ export const VENUES: { id: VenueId; nation: string; name: Pair; place: Pair; win
     about: ['The Andaman Sea of the King’s Cup off Kata and Karon, in the north-east monsoon, the Big Buddha on the hill above the beaches.', 'Андаманское море Королевского кубка у Каты и Карона, под северо-восточным муссоном; над пляжами на холме — Большой Будда.'] },
   { id: 'tbilisi-sea', nation: 'GEO', name: ['Tbilisi Sea', 'Тбилисское море'], place: ['Georgia', 'Грузия'], wind: ['NW', 'СЗ'], from: '2026-11-20',
     about: ['Fresh water in the dry hills over Georgia’s capital, in the north-westerly, under the bronze pillars of the Chronicle of Georgia.', 'Пресная вода в сухих холмах над столицей Грузии, под северо-западным ветром и бронзовыми колоннами «Хроники Грузии».'] },
+  { id: 'malta', nation: 'MLT', name: ['Malta', 'Мальта'], place: ['Valletta, Malta', 'Валлетта, Мальта'], wind: ['NW', 'СЗ'], from: '2026-11-20',
+    about: ['Malta’s limestone bastions off the Grand Harbour, where the Rolex Middle Sea Race starts, in the majjistral.', 'Известняковые бастионы Мальты у Великой гавани, откуда стартует Rolex Middle Sea Race, под северо-западным мажистралом.'] },
+  { id: 'saint-malo', nation: 'FRA', name: ['Saint-Malo', 'Сен-Мало'], place: ['Brittany, France', 'Бретань, Франция'], wind: ['W', 'З'], from: '2026-11-20',
+    about: ['The walled corsair city where the Route du Rhum starts, among islets, forts and some of Europe’s biggest tides.', 'Город корсаров за крепостными стенами, откуда уходит Route du Rhum, среди островков, фортов и одних из самых больших приливов Европы.'] },
+  { id: 'hobart', nation: 'AUS', name: ['Hobart', 'Хобарт'], place: ['Tasmania, Australia', 'Тасмания, Австралия'], wind: ['S', 'Ю'], from: '2026-11-20',
+    about: ['The Derwent under kunanyi/Mount Wellington, where the Sydney to Hobart ends, in the afternoon sea breeze.', 'Река Дервент под горой Кунани (Веллингтон), где финиширует гонка Сидней – Хобарт, под дневным морским бризом.'] },
+  { id: 'lake-geneva', nation: 'SUI', name: ['Lake Geneva', 'Женевское озеро'], place: ['Switzerland', 'Швейцария'], wind: ['NE', 'СВ'], from: '2026-11-20',
+    about: ['The Petit-Lac above Geneva, where the Bol d’Or starts, the bise blowing down the lake to the Jet d’Eau.', 'Малое озеро над Женевой, откуда стартует Bol d’Or, и биза, дующая вдоль озера к фонтану Же-До.'] },
+  { id: 'san-diego', nation: 'USA', name: ['San Diego', 'Сан-Диего'], place: ['California, USA', 'Калифорния, США'], wind: ['WNW', 'ЗСЗ'], from: '2026-11-20',
+    about: ['The Pacific off Point Loma, home of the America’s Cup in 1988, 1992 and 1995, in the sea breeze.', 'Тихий океан у мыса Пойнт-Лома, где в 1988, 1992 и 1995 годах разыгрывался Кубок «Америки», под морским бризом.'] },
+  { id: 'cork', nation: 'IRL', name: ['Cork', 'Корк'], place: ['Ireland', 'Ирландия'], wind: ['SW', 'ЮЗ'], from: '2026-11-20',
+    about: ['The mouth of Cork Harbour off Roches Point, home of Cork Week and the Royal Cork Yacht Club, founded in 1720.', 'Вход в гавань Корка у мыса Рочес-Пойнт, родина Недели Корка и Королевского яхт-клуба Корка, основанного в 1720 году.'] },
+  { id: 'cascais', nation: 'POR', name: ['Cascais', 'Кашкайш'], place: ['Portugal', 'Португалия'], wind: ['NNW', 'ССЗ'], from: '2026-11-20',
+    about: ['The bay off Cascais in Portugal’s summer nortada, the striped Santa Marta light on the rocks.', 'Залив у Кашкайша под летней нортадой Португалии, на скалах – полосатый маяк Санта-Марта.'] },
+  { id: 'chicago', nation: 'USA', name: ['Chicago', 'Чикаго'], place: ['Illinois, USA', 'Иллинойс, США'], wind: ['ENE', 'ВСВ'], from: '2026-11-20',
+    about: ['Lake Michigan off Monroe Harbor, the start of the Race to Mackinac, the Loop’s towers to leeward.', 'Озеро Мичиган у гавани Монро, старт гонки на Макино, под ветром – небоскрёбы Лупа.'] },
+  { id: 'st-barths', nation: 'FRA', name: ['St Barths', 'Сен-Бартелеми'], place: ['Caribbean', 'Карибы'], wind: ['E', 'В'], from: '2026-11-20',
+    about: ['The Caribbean off Gustavia, of Les Voiles de St Barth and the Bucket, in the trade wind.', 'Карибское море у Густавии, регаты Les Voiles de St Barth и Bucket, под пассатом.'] },
+  { id: 'qingdao', nation: 'CHN', name: ['Qingdao', 'Циндао'], place: ['China', 'Китай'], wind: ['SE', 'ЮВ'], from: '2026-11-20',
+    about: ['Fushan Bay, the sailing waters of the 2008 Olympics, in the summer’s south-easterly.', 'Залив Фушань, парусная акватория Олимпиады 2008 года, под летним юго-восточным ветром.'] },
 ];
 
 export const venueOf = (id: string | undefined) => VENUES.find((v) => v.id === id) || VENUES[0];

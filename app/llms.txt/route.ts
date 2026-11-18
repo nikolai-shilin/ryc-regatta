@@ -16,7 +16,7 @@ export function GET() {
 
 > ${HOME_DESC[0]}
 
-${NAME} is a free 3D sailing race game by RYC that runs in any modern web browser, on a phone or a computer, with nothing to install. You sail a yacht round one of four courses (up and down, a triangle, a trapezoid, or up and down with an upwind finish) at one of 45 famous regatta venues (Göcek, Cowes, Newport, Sydney, San Francisco, Auckland, Hong Kong, Cape Town, New York and more), against up to six computer boats that race by the Racing Rules of Sailing: they hail, give way and do their penalty turns. It is in English and Russian.
+${NAME} is a free 3D sailing race game by RYC that runs in any modern web browser, on a phone or a computer, with nothing to install. You sail a yacht round one of four courses (up and down, a triangle, a trapezoid, or up and down with an upwind finish) at one of 55 famous regatta venues (Göcek, Cowes, Newport, Sydney, San Francisco, Auckland, Hong Kong, Cape Town, New York and more), against up to six computer boats that race by the Racing Rules of Sailing: they hail, give way and do their penalty turns. It is in English and Russian.
 
 ## Key facts
 
@@ -47,7 +47,7 @@ ${NAME} is a free 3D sailing race game by RYC that runs in any modern web browse
   - [Sail trim and boat speed](${SITE}/learn/trim): the sheets, steering, footing for speed, heel, reefing in a blow
   - [Sailing racing glossary](${SITE}/learn/glossary): beat, overlap, clear astern, header, lift, layline, zone, mark-room, OCS and more
 - [Sailing certification exam practice](${SITE}/iyt): RYC's free practice app for sailing certification theory exams
-- [The venues](${SITE}/venues): the 45 regatta venues, each with the water, the wind, its regattas and how to race it
+- [The venues](${SITE}/venues): the 55 regatta venues, each with the water, the wind, its regattas and how to race it
 ${VENUES.map((v) => `  - [${v.name[0]}, ${v.place[0]}](${SITE}/venues/${v.id})`).join('\n')}
 - [The yachts](${SITE}/yachts): the nine yachts in 3D, each with a page of her own
 ${YACHTS.map((y) => `  - [${y.name[0]}](${SITE}/yachts/${y.id}): ${y.kind[0]}`).join('\n')}

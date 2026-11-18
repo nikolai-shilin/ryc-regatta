@@ -5,11 +5,11 @@ import { dailyVenue } from '@/lib/race';
 import { BackLink } from '@/components/back-link';
 import { VenuesList } from '@/components/venues-list';
 
-export const generateMetadata = titled('The venues: 45 regatta waters to race', 'Акватории: 45 регатных мест для гонок', {
+export const generateMetadata = titled('The venues: 55 regatta waters to race', 'Акватории: 55 регатных мест для гонок', {
   path: '/venues',
   description: [
-    'The 45 regatta venues you can race in the game, from Cowes, Newport and Sydney to Lake Garda and Hong Kong: the water, the wind and the regattas of each.',
-    '45 регатных акваторий, на которых можно гоняться в игре, от Кауса, Ньюпорта и Сиднея до озера Гарда и Гонконга: вода, ветер и регаты каждой.'],
+    'The 55 regatta venues you can race in the game, from Cowes, Newport and Sydney to Lake Garda and Hong Kong: the water, the wind and the regattas of each.',
+    '55 регатных акваторий, на которых можно гоняться в игре, от Кауса, Ньюпорта и Сиднея до озера Гарда и Гонконга: вода, ветер и регаты каждой.'],
 });
 
 // rebuilt hourly, for the venue of today's race at the head

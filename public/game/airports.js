@@ -37,6 +37,13 @@ export const AIRPORTS = {
   monaco: { code: 'NCE', name: 'Nice', wide: true, runways: [[43.64674, 7.2025, 43.66559, 7.22843]] },
   'sint-maarten': { code: 'SXM', name: 'Princess Juliana', wide: true, runways: [[18.03952, -63.11876, 18.04245, -63.09822]] },
   'tbilisi-sea': { code: 'TBS', name: 'Tbilisi', wide: false, runways: [[41.6780596, 44.9398557, 41.6582654, 44.964827]] },
+  malta: { code: 'MLA', name: 'Malta', wide: false, runways: [[35.83514, 14.50519, 35.85642, 14.47885]] },
+  'saint-malo': { code: 'DNR', name: 'Dinard', wide: false, runways: [[48.598, -2.08267, 48.57875, -2.0776]] },
+  hobart: { code: 'HBA', name: 'Hobart', wide: false, runways: [[-42.82822, 147.50103, -42.84558, 147.52458]] },
+  'lake-geneva': { code: 'GVA', name: 'Geneva', wide: true, runways: [[46.2504, 6.12708, 46.22565, 6.09077]] },
+  'san-diego': { code: 'SAN', name: 'San Diego', wide: true, runways: [[32.73, -117.17498, 32.73713, -117.20437]] },
+  cork: { code: 'ORK', name: 'Cork', wide: false, runways: [[51.83227, -8.48579, 51.85027, -8.49644]] },
+  chicago: { code: 'MDW', name: 'Midway', wide: false, runways: [[41.77917, -87.75932, 41.792, -87.74307]] },
 };
 
 const GLIDE = Math.tan(3 * Math.PI / 180); // the approach's three degrees

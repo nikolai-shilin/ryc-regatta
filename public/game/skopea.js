@@ -2409,6 +2409,10 @@ function plainLight(L, parts) {
   const y0 = y <= 0.5 ? 2 : y, r = Math.max(1.6, H * 0.1);
   parts.push(post(x, z, y0, r, r * 0.68, H - y0 + y - 5, tower, n));
   if (L.band) parts.push(post(x, z, y0 + (H - y0 + y) * 0.62, r * 0.8, r * 0.76, (H - y0 + y) * 0.2, L.band, n));
+  if (L.stripes) { // painted in bands from the foot up (Santa Marta's blue and white)
+    const h = H - y0 + y - 5, N = 7;
+    for (let k = 0; k < N; k += 2) { const t = k / N; parts.push(post(x, z, y0 + h * t, r * (1 - 0.32 * t) + 0.08, r * (1 - 0.32 * (t + 1 / N)) + 0.08, h / N, L.stripes, n)); }
+  }
   parts.push(post(x, z, y + H - 5.4, r * 0.95, r * 0.95, 0.5, '#3a3f42', n), post(x, z, y + H - 5, r * 0.55, r * 0.55, 3.2, '#2a3238', 10), tint(new THREE.ConeGeometry(r * 0.66, 1.8, 10).translate(x, y + H - 0.9, z), L.cap || '#2a3238'));
 }
 // Stiltsville's wooden houses standing in the flats of Biscayne Bay: the piles, the deck, the painted walls, the roof
@@ -2502,7 +2506,7 @@ function chronicle(L, parts) {
 }
 // Tbilisi's TV tower on Mtatsminda: four steel legs drawing in as they rise, braced on every face, its galleries, the mast
 function tbilisiTv(L, parts) {
-  const [x, z] = L.at, y = groundAt(x, z), steel = '#8d959a', top = L.h * 0.68, N = 13;
+  const [x, z] = L.at, y = groundAt(x, z), steel = L.color || '#8d959a', top = L.h * 0.68, N = 13, G = L.gallery || 3;
   const hw = (t) => 2.6 + 21 * (1 - t) ** 1.7, C = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
   const at = (c, t) => V3(x + c[0] * hw(t), y + top * t, z + c[1] * hw(t));
   for (let i = 0; i < N; i++) {
@@ -2512,8 +2516,95 @@ function tbilisiTv(L, parts) {
       parts.push(beam(at(a, t0), at(a, t1), 1.9, 1.9, steel), beam(at(a, t1), at(b, t1), 0.9, 0.9, steel), beam(at(a, t0), at(b, t1), 0.8, 0.8, steel), beam(at(b, t0), at(a, t1), 0.8, 0.8, steel));
     }
   }
-  for (const t of [0.42, 0.68, 1]) parts.push(post(x, z, y + top * t - 1.2, hw(t) + 3, hw(t) + 3, 2.4, '#b6babb', 8));
+  for (const t of [0.42, 0.68, 1]) parts.push(post(x, z, y + top * t - 1.2, hw(t) + G, hw(t) + G, G > 3 ? 7 : 2.4, '#b6babb', G > 3 ? 16 : 8));
   parts.push(post(x, z, y + top, 2.4, 1.5, (L.h - top) * 0.55, steel, 8), post(x, z, y + top + (L.h - top) * 0.55, 1.5, 0.35, (L.h - top) * 0.45, '#c9ccca', 8));
+}
+// A church's dome on its drum, a lantern on top (the Carmelite basilica over Valletta)
+function dome(L, parts) {
+  const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), H = L.h, R = L.r || H * 0.24, stone = L.color || '#d2b988', base = H * 0.45, drum = H * 0.16;
+  parts.push(post(x, z, y - 2, R * 1.4, R * 1.32, base + 2, stone, 16), post(x, z, y + base, R, R, drum, stone, 20));
+  parts.push(tint(new THREE.SphereGeometry(R * 1.03, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.25, 1).translate(x, y + base + drum, z), L.cap || '#c4aa7c'));
+  const top = base + drum + R * 1.25;
+  parts.push(post(x, z, y + top - 0.6, R * 0.2, R * 0.16, Math.max(2, H - top), stone, 10));
+}
+// A church's square tower and its spire, on a nave when `nave` gives its length along `dir`
+function steeple(L, parts) {
+  const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), H = L.h, W = L.w || H * 0.16, stone = L.color || '#a9a497', T = H * (L.split ?? 0.55), F = frameOf(L, y);
+  parts.push(blk(x, z, y - 2, T + 2, W, W, F.ang, stone), blk(x, z, y + T, 1.2, W * 1.18, W * 1.18, F.ang, stone));
+  parts.push(tint(new THREE.ConeGeometry(W * 0.66, H - T - 1.2, 8).rotateY(Math.PI / 8 - F.ang).translate(x, y + T + 1.2 + (H - T - 1.2) / 2, z), L.spire || '#4a4f55'));
+  if (L.nave) { const w = W * 1.5, h = H * 0.3; parts.push(F.box(L.nave / 2, 0, -2, h + 2, L.nave, w, stone), ...gable(F, 0, L.nave, w, h, w * 0.45, L.spire || '#4a4f55')); }
+}
+// A town's ramparts along `ring`, each stretch on its own ground
+function rampart(L, parts) {
+  const col = L.color || '#8f8a7c', W = L.w || 5;
+  for (let i = 0; i + 1 < L.ring.length; i++) {
+    const [ax, az] = L.ring[i], [bx, bz] = L.ring[i + 1], len = Math.hypot(bx - ax, bz - az), ang = Math.atan2(bz - az, bx - ax), n = Math.max(1, Math.round(len / 10));
+    for (let k = 0; k < n; k++) {
+      const u = (k + 0.5) / n, cx = ax + (bx - ax) * u, cz = az + (bz - az) * u;
+      parts.push(blk(cx, cz, Math.max(0, groundAt(cx, cz)) - 3, L.h + 3, len / n + 0.6, W, ang, col));
+    }
+  }
+}
+// A long road bridge along `ring`: its deck rising to `deck` metres over the channel, on twin columns (the Tasman, the Coronado)
+function viaduct(L, parts) {
+  const P = L.ring, seg = P.slice(1).map((p, i) => Math.hypot(p[0] - P[i][0], p[1] - P[i][1])), len = seg.reduce((s, l) => s + l, 0), col = L.color || '#9a9c98', W = L.w || 22, D = L.deck;
+  const at = (u) => { let k = 0; while (k < seg.length - 1 && u > seg[k]) u -= seg[k++]; const t = Math.min(1, u / seg[k]); return [P[k][0] + (P[k + 1][0] - P[k][0]) * t, P[k][1] + (P[k + 1][1] - P[k][1]) * t, Math.atan2(P[k + 1][1] - P[k][1], P[k + 1][0] - P[k][0])]; };
+  const deck = (u) => { const [x, z] = at(u); return Math.max(Math.max(0, groundAt(x, z)) + 2, 7 + (D - 7) * Math.sin((Math.PI * u) / len) ** 0.8); };
+  const n = Math.ceil(len / 35);
+  for (let i = 0; i < n; i++) { const u0 = (len * i) / n, u1 = (len * (i + 1)) / n, [ax, az] = at(u0), [bx, bz] = at(u1); parts.push(beam(V3(ax, deck(u0), az), V3(bx, deck(u1), bz), W, 3, col)); }
+  for (let u = (L.span || 80) / 2; u < len; u += L.span || 80) {
+    const [x, z, a] = at(u), h = deck(u), nx = -Math.sin(a), nz = Math.cos(a), y0 = Math.min(0, groundAt(x, z)) - 3;
+    for (const s of [-1, 1]) parts.push(post(x + nx * s * W * 0.3, z + nz * s * W * 0.3, y0, 2.6, 1.9, h - y0, col, 8));
+    parts.push(beam(V3(x - nx * W * 0.45, h - 2.2, z - nz * W * 0.45), V3(x + nx * W * 0.45, h - 2.2, z + nz * W * 0.45), 3.4, 2.6, col));
+  }
+}
+// Geneva's Jet d'Eau: the white column, and the spray falling back from its top blown away along `dir`
+function jetDeau(L, parts) {
+  // (water in the sun: as bright on the side away from it, the light coming through the spray)
+  const lit = (g) => { const c = g.attributes.color; for (let i = 0; i < c.count; i++) c.setXYZ(i, c.getX(i) * 3, c.getY(i) * 3, c.getZ(i) * 3); return g; };
+  const F = frameOf(L, 0), H = L.h, white = '#f5f9fb', [x, z] = F.xz(0, 0), puff = (a, b, y, r) => { const p = F.P(a, b, y); return lit(tint(new THREE.IcosahedronGeometry(1, 2).scale(r, r * 1.5, r).translate(p.x, p.y, p.z), white)); };
+  parts.push(lit(post(x, z, -1, 3, 1.4, H * 0.94, white, 10)));
+  for (let i = 0; i < 44; i++) { const t = i / 43, y = H * (1 - 0.8 * t ** 1.25), a = 2 + 38 * t ** 0.85, b = 8 * Math.sin(i * 2.4) * t; parts.push(puff(a, b, y, 3 + 6 * t)); }
+  parts.push(puff(1, 0, H, 3.6), post(x, z, -2, 9, 8, 3, '#8f8a7e', 14));
+}
+// A big wheel (Navy Pier's Centennial Wheel): two rims, their spokes, the gondolas, the legs either side of the hub
+function bigWheel(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), H = L.h, R = H * 0.44, hub = H - R - 1, steel = '#d9dcdc', N = 40;
+  const C = (i, b, r = R) => { const a = (i / N) * 2 * Math.PI; return F.P(r * Math.cos(a), b, hub + r * Math.sin(a)); };
+  for (let i = 0; i < N; i++) {
+    for (const b of [-3, 3]) { parts.push(beam(C(i, b), C(i + 1, b), 0.7, 0.9, steel)); if (i % 2 === 0) parts.push(beam(F.P(0, b * 0.5, hub), C(i, b), 0.25, 0.25, steel)); }
+    parts.push(beam(C(i, -3), C(i, 3), 0.4, 0.4, steel));
+    const g = C(i, 0, R + 1.6); parts.push(blk(g.x, g.z, g.y - 3.2, 2.8, 3, 3.4, F.ang, i % 2 ? '#d8352c' : '#2f6fb0'));
+  }
+  for (const s of [-1, 1]) for (const b of [-7, 7]) parts.push(beam(F.P(0, b * 0.55, hub), F.P(s * R * 0.42, b, 0), 1.2, 1.2, steel));
+  parts.push(beam(F.P(0, -6, hub), F.P(0, 6, hub), 1.8, 1.8, '#9fa4a6'));
+}
+// A water intake crib out in the lake, Chicago's: the round stone pier, its house and light
+function crib(L, parts) {
+  const [x, z] = L.at, R = L.r || 26;
+  parts.push(post(x, z, -3, R, R * 0.97, 8, '#8f8a7e', 24), post(x, z, 5, R * 0.62, R * 0.6, 7, '#b65a42', 20), tint(new THREE.ConeGeometry(R * 0.68, 5, 20).translate(x, 14.5, z), '#4a4f55'), post(x, z, 17, 1.6, 1.3, 7, '#f2efe8', 10), post(x, z, 24, 1.1, 1.1, 2, '#2a3238', 8));
+}
+// Qingdao's May Wind on its square: a red steel ribbon wound upwards, narrowing as it rises
+function mayWind(L, parts) {
+  const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), H = L.h, R = L.r || H * 0.42, red = '#c9242b', N = 84;
+  const P = (t) => { const a = t * 3.4 * 2 * Math.PI, r = R * (1 - 0.62 * t); return V3(x + r * Math.cos(a), y + 2 + (H - 2) * t, z + r * Math.sin(a)); };
+  parts.push(post(x, z, y - 1, R * 1.25, R * 1.25, 3, '#a8a49a', 28));
+  for (let i = 0; i < N; i++) { const t = i / N, w = H * (0.2 - 0.12 * t); parts.push(beam(P(t), P((i + 1) / N), w * 0.3, w, red), beam(P(t), V3(x, y + 2 + (H - 2) * t, z), 0.5, 0.5, red)); }
+}
+// The Hotel del Coronado: white timber wings round a court under red roofs, the great cone of its Crown Room at the front
+function hotelDel(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), white = '#f6f3ea', red = '#b5392e', A = 75, B = 55, h = 16;
+  for (const [a0, a1, b, w] of [[-A, A, -B, 20], [-A, A, B, 20]]) parts.push(F.box((a0 + a1) / 2, b, -2, h + 2, a1 - a0, w, white), ...gable(F, a0, a1, w, h, 7, red, b));
+  for (const a of [-A, A]) parts.push(F.box(a, 0, -2, h + 2, 20, 2 * B, white), F.box(a, 0, h, 1.2, 22, 2 * B + 2, red));
+  const [cx, cz] = F.xz(A + 2, 0);
+  parts.push(post(cx, cz, y - 2, 19, 18, h + 8, white, 18), tint(new THREE.ConeGeometry(21, 22, 18).translate(cx, y + h + 6 + 11, cz), red), post(cx, cz, y + h + 28, 1.6, 0.5, 8, white, 8));
+  for (const [a, b] of [[-A, -B], [-A, B], [A * 0.3, -B], [A * 0.3, B]]) { const [tx, tz] = F.xz(a, b); parts.push(post(tx, tz, y, 6.5, 6.2, h + 5, white, 12), tint(new THREE.ConeGeometry(7.6, 10, 12).translate(tx, y + h + 10, tz), red)); }
+}
+// Wrest Point's round tower over the Derwent, its storeys in bands of window
+function wrestPoint(L, parts) {
+  const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), H = L.h, R = 14;
+  parts.push(blk(x, z, y - 2, 11, 62, 44, 0.3, '#d9d6cc'), post(x, z, y, R, R, H - 3, '#e8e6de', 24), post(x, z, y + H - 3, R * 0.7, R * 0.6, 3, '#c9c8c0', 20));
+  for (let k = 12; k < H - 5; k += 3.4) parts.push(post(x, z, y + k, R + 0.15, R + 0.15, 1.5, '#39505e', 24));
 }
 function landmarks() {
   const parts = [];
@@ -2614,9 +2705,19 @@ function landmarks() {
       else if (L.style === 'burj-al-arab') burjAlArab(L, parts);
       else if (L.style === 'khalifa') burjKhalifa(L, parts);
       else if (L.style === 'domnius') domnius(L, parts);
-      else if (L.style === 'tbilisi-tv') tbilisiTv(L, parts);
+      else if (L.style === 'tbilisi-tv' || L.style === 'lattice') tbilisiTv(L, parts);
+      else if (L.style === 'wrest-point') wrestPoint(L, parts);
     } else if (L.kind === 'liner') queenMary(L, parts);
     else if (L.kind === 'chronicle') chronicle(L, parts);
+    else if (L.kind === 'dome') dome(L, parts);
+    else if (L.kind === 'steeple') steeple(L, parts);
+    else if (L.kind === 'rampart') rampart(L, parts);
+    else if (L.kind === 'viaduct') viaduct(L, parts);
+    else if (L.kind === 'jet') jetDeau(L, parts);
+    else if (L.kind === 'wheel') bigWheel(L, parts);
+    else if (L.kind === 'crib') crib(L, parts);
+    else if (L.kind === 'may-wind') mayWind(L, parts);
+    else if (L.kind === 'hotel-del') hotelDel(L, parts);
     else if (L.kind === 'cablestay') cableStayed(L, parts);
     else if (L.kind === 'cranes') cranes(L, parts);
     else if (L.kind === 'stilt') stiltHouse(L, parts);
