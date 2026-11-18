@@ -941,6 +941,62 @@ export function setSail(m, fn) {
   a.needsUpdate = true; g.computeVertexNormals(); g.computeBoundingSphere();
 }
 
+// The kite flies ahead of the main. Its clew is set for a main sheeted in, and a main eased square swings forward past
+// it, so the cloth went through the main: asked of the main as it is drawn this frame (set before the kite, its belly,
+// twist, reef and all). clew(c, lead) swings the clew round the mast until it lies ahead of the main, and lowers it as far
+// as its sheet, running aft to the lead, needs to pass under the boom; keep(v) lifts any of the kite still behind the
+// main's forward face off it, by a gap that grows with her size, and a spinnaker's windward shoulder forward of the mast.
+const KITE_GAP = 0.045, CLEW_AHEAD = 12 * D2R; // of the main's foot; how far ahead of the main the clew flies
+const toBoat = new THREE.Matrix4(), toMain = new THREE.Matrix4(), onMain = new THREE.Vector3();
+export function kiteGuard(view) {
+  toBoat.identity();
+  for (let o = view.main; o !== view.kite.parent; o = o.parent) { o.updateMatrix(); toBoat.premultiply(o.matrix); }
+  toMain.copy(toBoat).invert();
+  const { rows, cols, g } = view.main.userData, a = g.attributes.position.array, w = cols + 1;
+  const lee = view.sailSide < 0 ? 1 : -1, ahead = CLEW_AHEAD * Math.min(1, Math.abs(view.sailSide));
+  const y0 = a[1], y1 = a[rows * w * 3 + 1], gap = KITE_GAP * Math.abs(a[cols * 3 + 2] - a[2]), e = toBoat.elements;
+  // across a row of the main, at z: where its cloth lies, and how far aft along the row that is (0 the luff, 1 the leech)
+  let rowU = 0;
+  const across = (i, z) => {
+    const o = i * w * 3, zl = a[o + 2], u = (z - zl) / (a[o + cols * 3 + 2] - zl), c = clamp(u, 0, 1) * cols, j = Math.min(cols - 1, Math.floor(c));
+    rowU = u;
+    return lerp(a[o + j * 3], a[o + (j + 1) * 3], c - j);
+  };
+  return {
+    clew(c, lead) {
+      onMain.set(lead[0], lead[1], lead[2]).applyMatrix4(toMain);
+      const lx = onMain.x, ly = onMain.y, lz = onMain.z;
+      onMain.set(c[0], c[1], c[2]).applyMatrix4(toMain);
+      if (Math.atan2(lee * onMain.x, onMain.z) < ahead) {
+        const r = Math.hypot(onMain.x, onMain.z);
+        onMain.x = lee * r * Math.sin(ahead); onMain.z = r * Math.cos(ahead);
+      }
+      // where the sheet crosses the main's plane: over the boom, the clew comes down until it passes under; past the
+      // leech it's clear, and in between the one eases into the other
+      const t = onMain.x / (onMain.x - lx);
+      if (t > 0 && t < 1) {
+        const foot = a[cols * 3 + 2], at = lerp(onMain.z, lz, t) / foot, under = (y0 - gap - t * ly) / (1 - t);
+        onMain.y = lerp(onMain.y, Math.min(onMain.y, under), smoothstep(1.15, 1, at));
+      }
+      onMain.applyMatrix4(toBoat); c[0] = onMain.x; c[1] = onMain.y; c[2] = onMain.z;
+    },
+    keep(v) {
+      onMain.copy(v).applyMatrix4(toMain);
+      const r = clamp((onMain.y - y0) / (y1 - y0), 0, 1) * rows, i = Math.min(rows - 1, Math.floor(r));
+      const x0 = across(i, onMain.z), u0 = rowU, x = lerp(x0, across(i + 1, onMain.z), r - i), u = lerp(u0, rowU, r - i);
+      if (u > 0 && u < 0.5 && lee * (onMain.x - x) < 0) { // to windward, just aft of the mast: round ahead of it, the further the further out it lies
+        const back = onMain.z - a[Math.round(r) * w * 3 + 2] + gap + 1.5 * Math.abs(onMain.x - x);
+        v.x -= e[8] * back; v.y -= e[9] * back; v.z -= e[10] * back;
+        return;
+      }
+      const d = lee * (onMain.x - x) - gap;
+      if (d >= gap || u <= 0) return;
+      const lift = lee * (gap * gap / (2 * gap - d) - d) * smoothstep(0, 0.12, u); // eased, so the cloth never creases where it starts to lift
+      v.x += e[0] * lift; v.y += e[1] * lift; v.z += e[2] * lift;
+    },
+  };
+}
+
 // ---------- labels ----------
 export function labelSprite(color) {
   const c = document.createElement('canvas'); c.width = 320; c.height = 64;
@@ -1982,6 +2038,7 @@ export class BoatView {
     if (kf > 0.02) {
       const a = Math.abs(b.twa) / D2R, out = lerp(6.2, 3.4, clamp((a - 95) / 80, 0, 1)) * lerp(0.15, 1, kfill), sd = -this.sailSide;
       const tk = [SPRIT.x, SPRIT.y + 0.1, SPRIT.z], hd = [0, lerp(SPRIT.y + 1, KITE_HEAD[1], kf), lerp(SPRIT.z, KITE_HEAD[2], kf)], kl = [sd * out, lerp(SPRIT.y + 0.4, 2.9, kf), lerp(SPRIT.z + 0.8, 1.8, kf)];
+      const lead = [sd * 1.3, deckY(4.6) + 0.1, 4.6], guard = kiteGuard(this); guard.clew(kl, lead);
       setSail(this.kite, (f, u, v) => {
         const lx = sd * Math.sin(Math.PI * f) * 2.4 * kfill, lz = -Math.sin(Math.PI * f) * 2.6 * kfill;
         const p = [lerp(tk[0], hd[0], f) + lx, lerp(tk[1], hd[1], f), lerp(tk[2], hd[2], f) + lz];
@@ -1989,9 +2046,10 @@ export class BoatView {
         const bul = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, f * 1.08)) * 2.8 * kfill;
         const cu = kiteCurl(cl, f, u) * 1.5 * kfill; // the luff folding in, aft and into the sail's hollow
         v.set(lerp(p[0], q[0], u) + sd * (bul - cu), lerp(p[1], q[1], u), lerp(p[2], q[2], u) - bul * 0.9 + cu * 0.6);
+        guard.keep(v);
       });
       const kp = this.kiteSheet.geometry.attributes.position;
-      drape(kp, 0, 9, kl, [sd * 1.3, deckY(4.6) + 0.1, 4.6], 0.25 + 1.2 * (b.kiteCollapse || 0) + 0.4 * (1 - kfill), 0.25 * (b.kiteCollapse || 0), t); kp.needsUpdate = true;
+      drape(kp, 0, 9, kl, lead, 0.25 + 1.2 * (b.kiteCollapse || 0) + 0.4 * (1 - kfill), 0.25 * (b.kiteCollapse || 0), t); kp.needsUpdate = true;
     }
     // telltales: streaming aft when the trim is right, lifting or drooping when it isn't
     for (const tt of this.tells) {

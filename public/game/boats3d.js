@@ -8,7 +8,7 @@
 // the one asked for (the fleet page, /fleet-view, has one of each afloat together).
 // Local frame as yacht.js: +x starboard, +y up, −z forward (the bow), the waterline at y = 0.
 import * as THREE from 'three';
-import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, clothState, flog, mainCloth, kiteCurl, hullSea, staySag, deckWash, lookAt, glance, sailor, drive, feel, holdExtension, labelSprite, THIGH, SHIN, LOOKS, jibStow, stowJib, stowTells, kiteHoist,
+import { BoatView, M, NONSKID, canvasTex, line, tube, cyl, hullMaterial, logoImage, drawContain, sailTexture, sailMesh, setSail, leechFlutter, clothState, flog, mainCloth, kiteCurl, kiteGuard, hullSea, staySag, deckWash, lookAt, glance, sailor, drive, feel, holdExtension, labelSprite, THIGH, SHIN, LOOKS, jibStow, stowJib, stowTells, kiteHoist,
   fit, bar, winch, block, clutches, cleat, wheel, chainplate, display, purchase, mergeGroup, bowNumberMaterial, nameMaterial, deckFinish, mastGeo, spreaderGeo } from './yacht.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -717,15 +717,17 @@ class SportView extends ClassView {
     if (kf > 0.02) {
       const a = Math.abs(b.twa) / D2R, out = lerp(3.6, 2.0, clamp((a - 95) / 80, 0, 1)) * lerp(0.15, 1, kfill), sd = -this.sailSide;
       const tk = [S.x, S.y + 0.06, S.z], hd = [0, lerp(S.y + 0.6, J.MASTHEAD - 0.3, kf), lerp(S.z, J.MAST_Z - 0.1, kf)], cl = [sd * out, lerp(S.y + 0.3, 1.7, kf), lerp(S.z + 0.5, 1.0, kf)];
+      const lead = [sd * 0.9, H.deckY(2.6) + 0.08, 2.6], guard = kiteGuard(this); guard.clew(cl, lead);
       setSail(this.kite, (f, u, v) => {
         const lx = sd * Math.sin(Math.PI * f) * 1.4 * kfill, lz = -Math.sin(Math.PI * f) * 1.5 * kfill;
         const p = [lerp(tk[0], hd[0], f) + lx, lerp(tk[1], hd[1], f), lerp(tk[2], hd[2], f) + lz];
         const q = [lerp(cl[0], hd[0], f), lerp(cl[1], hd[1], f), lerp(cl[2], hd[2], f)];
         const bul = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, f * 1.08)) * 1.65 * kfill, cu = kiteCurl(this.cloth, f, u) * 0.9 * kfill; // the luff folding in
         v.set(lerp(p[0], q[0], u) + sd * (bul - cu), lerp(p[1], q[1], u), lerp(p[2], q[2], u) - bul * 0.9 + cu * 0.6);
+        guard.keep(v);
       });
       const kp = this.kiteSheet.geometry.attributes.position;
-      kp.setXYZ(0, cl[0], cl[1], cl[2]); kp.setXYZ(1, sd * 0.9, H.deckY(2.6) + 0.08, 2.6); kp.setXYZ(2, sd * 0.82, H.deckY(0.2) + 0.12, 0.2); kp.needsUpdate = true;
+      kp.setXYZ(0, cl[0], cl[1], cl[2]); kp.setXYZ(1, ...lead); kp.setXYZ(2, sd * 0.82, H.deckY(0.2) + 0.12, 0.2); kp.needsUpdate = true;
     }
     this.showLabel(b, showLabel);
   }
@@ -1003,15 +1005,17 @@ class DragonView extends ClassView {
       const out = lerp(2.4, 1.6, sq) * lerp(0.2, 1, kfill);
       const tk = [lerp(0, PE[0], kf), lerp(D.TACK.y + 0.2, PE[1], kf), lerp(D.TACK.z, PE[2], kf)], hd = [0, lerp(D.TACK.y + 0.8, D.KITE_H, kf), lerp(D.TACK.z, D.MAST_Z - 0.12, kf)];
       const cl = [sd * out, lerp(D.TACK.y + 0.5, 1.4, kf), lerp(D.TACK.z + 0.5, lerp(-0.6, 0.2, sq), kf)];
+      const qz = H.STERN - 0.5, qx = (s) => s * (H.hbAt(qz) - 0.06), lead = [qx(sd), dk(Math.abs(qx(sd)), qz) + 0.06, qz], guard = kiteGuard(this); guard.clew(cl, lead);
       setSail(this.kite, (f, u, v) => {
         const lx = wd * Math.sin(Math.PI * f ** 0.8) * 1.2 * kfill, lz = -Math.sin(Math.PI * f) * 1.2 * kfill; // the luffs curving out to its shoulders, 5 m across
         const p = [lerp(tk[0], hd[0], f) + lx, lerp(tk[1], hd[1], f), lerp(tk[2], hd[2], f) + lz];
         const q = [lerp(cl[0], hd[0], f) - lx, lerp(cl[1], hd[1], f), lerp(cl[2], hd[2], f) + lz];
         const bul = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, f * 1.08)) * 1.45 * kfill, cu = kiteCurl(this.cloth, f, u) * 0.8 * kfill;
         v.set(lerp(p[0], q[0], u) + sd * (cu * 0.4), lerp(p[1], q[1], u), lerp(p[2], q[2], u) - bul + cu * 0.6);
+        guard.keep(v);
       });
-      const kp = this.kiteSheet.geometry.attributes.position, gp = this.guy.geometry.attributes.position, qz = H.STERN - 0.5, qx = (s) => s * (H.hbAt(qz) - 0.06);
-      kp.setXYZ(0, ...cl); kp.setXYZ(1, qx(sd), dk(Math.abs(qx(sd)), qz) + 0.06, qz); kp.setXYZ(2, sd * 0.86, dk(0.86, D.WINCH_Z) + 0.1, D.WINCH_Z); kp.needsUpdate = true;
+      const kp = this.kiteSheet.geometry.attributes.position, gp = this.guy.geometry.attributes.position;
+      kp.setXYZ(0, ...cl); kp.setXYZ(1, ...lead); kp.setXYZ(2, sd * 0.86, dk(0.86, D.WINCH_Z) + 0.1, D.WINCH_Z); kp.needsUpdate = true;
       gp.setXYZ(0, ...PE); gp.setXYZ(1, wd * (H.hbAt(0.3) - 0.03), dk(H.hbAt(0.3) - 0.03, 0.3) + 0.05, 0.3); gp.setXYZ(2, wd * 0.86, dk(0.86, D.WINCH_Z) + 0.1, D.WINCH_Z); gp.needsUpdate = true;
     }
     this.showLabel(b, showLabel);
@@ -1416,15 +1420,17 @@ class JClassView extends ClassView {
       const out = lerp(15, 10, sq) * lerp(0.2, 1, kfill);
       const tk = [lerp(0, PE[0], kf), lerp(D.TACK.y + 1, PE[1], kf), lerp(D.TACK.z, PE[2], kf)], hd = [0, lerp(D.TACK.y + 4, D.MASTHEAD - 0.8, kf), lerp(D.TACK.z, D.MAST_Z - 0.6, kf)];
       const cl = [sd * out, lerp(D.TACK.y + 2, 4.5, kf), lerp(D.TACK.z + 2, lerp(-2, 2, sq), kf)];
+      const qz = H.STERN - 3, qx = (s) => s * (H.hbAt(qz) - 0.2), lead = [qx(sd), dk(Math.abs(qx(sd)), qz) + 0.2, qz], guard = kiteGuard(this); guard.clew(cl, lead);
       setSail(this.kite, (f, u, v) => {
         const lx = wd * Math.sin(Math.PI * f ** 0.8) * 5.2 * kfill, lz = -Math.sin(Math.PI * f) * 5.2 * kfill;
         const p = [lerp(tk[0], hd[0], f) + lx, lerp(tk[1], hd[1], f), lerp(tk[2], hd[2], f) + lz];
         const q = [lerp(cl[0], hd[0], f) - lx, lerp(cl[1], hd[1], f), lerp(cl[2], hd[2], f) + lz];
         const bul = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, f * 1.08)) * 6.5 * kfill, cu = kiteCurl(this.cloth, f, u) * 3.5 * kfill;
         v.set(lerp(p[0], q[0], u) + sd * (cu * 0.4), lerp(p[1], q[1], u), lerp(p[2], q[2], u) - bul + cu * 0.6);
+        guard.keep(v);
       });
-      const kp = this.kiteSheet.geometry.attributes.position, gp = this.guy.geometry.attributes.position, qz = H.STERN - 3, qx = (s) => s * (H.hbAt(qz) - 0.2);
-      kp.setXYZ(0, ...cl); kp.setXYZ(1, qx(sd), dk(Math.abs(qx(sd)), qz) + 0.2, qz); kp.setXYZ(2, sd * 2.3, dk(2.3, 10.4) + 0.3, 10.4); kp.needsUpdate = true;
+      const kp = this.kiteSheet.geometry.attributes.position, gp = this.guy.geometry.attributes.position;
+      kp.setXYZ(0, ...cl); kp.setXYZ(1, ...lead); kp.setXYZ(2, sd * 2.3, dk(2.3, 10.4) + 0.3, 10.4); kp.needsUpdate = true;
       gp.setXYZ(0, ...PE); gp.setXYZ(1, wd * (H.hbAt(1.0) - 0.15), dk(H.hbAt(1.0) - 0.15, 1.0) + 0.2, 1.0); gp.setXYZ(2, wd * 2.35, dk(2.35, D.PRIM_Z) + 0.35, D.PRIM_Z); gp.needsUpdate = true;
     }
     this.showLabel(b, showLabel);
@@ -2361,15 +2367,17 @@ class CruiserView extends ClassView {
     if (kf > 0.02) {
       const a = Math.abs(b.twa) / D2R, out = lerp(6.2, 3.6, clamp((a - 95) / 80, 0, 1)) * lerp(0.15, 1, kfill), sd = -this.sailSide;
       const tk = [S.x, S.y + 0.1, S.z], hd = [0, lerp(S.y + 1.0, BV.HOUNDS + 0.2, kf), lerp(S.z, BV.MAST_Z - 0.2, kf)], cl = [sd * out, lerp(S.y + 0.5, 3.4, kf), lerp(S.z + 1.0, 1.2, kf)];
+      const qz = H.STERN - 0.7, lead = [sd * (H.hbAt(qz) - 0.1), H.deckY(qz) + 0.1, qz], guard = kiteGuard(this); guard.clew(cl, lead);
       setSail(this.kite, (f, u, v) => {
         const lx = sd * Math.sin(Math.PI * f) * 2.6 * kfill, lz = -Math.sin(Math.PI * f) * 2.8 * kfill;
         const p = [lerp(tk[0], hd[0], f) + lx, lerp(tk[1], hd[1], f), lerp(tk[2], hd[2], f) + lz];
         const q = [lerp(cl[0], hd[0], f), lerp(cl[1], hd[1], f), lerp(cl[2], hd[2], f)];
         const bul = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, f * 1.08)) * 3.0 * kfill, cu = kiteCurl(this.cloth, f, u) * 1.6 * kfill; // the luff folding in
         v.set(lerp(p[0], q[0], u) + sd * (bul - cu), lerp(p[1], q[1], u), lerp(p[2], q[2], u) - bul * 0.9 + cu * 0.6);
+        guard.keep(v);
       });
-      const kp = this.kiteSheet.geometry.attributes.position, qz = H.STERN - 0.7;
-      kp.setXYZ(0, cl[0], cl[1], cl[2]); kp.setXYZ(1, sd * (H.hbAt(qz) - 0.1), H.deckY(qz) + 0.1, qz); kp.setXYZ(2, sd * BV.WINCH_X, wy, BV.WINCH_Z); kp.needsUpdate = true;
+      const kp = this.kiteSheet.geometry.attributes.position;
+      kp.setXYZ(0, cl[0], cl[1], cl[2]); kp.setXYZ(1, ...lead); kp.setXYZ(2, sd * BV.WINCH_X, wy, BV.WINCH_Z); kp.needsUpdate = true;
     }
     this.showLabel(b, showLabel);
   }
