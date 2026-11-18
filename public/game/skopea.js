@@ -2403,8 +2403,13 @@ function arundel(L, parts) {
 }
 // Le Phare des Barges on its reef, of grey granite, the keeper's gallery and the black lantern; and any plain light
 // in its colours: `tower`, `band`, the lantern's roof
+// The bare rock a fort or a light stands on, out in the water
+function islet(x, z, R, parts) {
+  parts.push(tint(new THREE.IcosahedronGeometry(1, 2).scale(R, 7, R * 0.86).rotateY(0.7).translate(x, 0, z), '#6d6a60'), tint(new THREE.IcosahedronGeometry(1, 1).scale(R * 0.6, 5, R * 0.5).translate(x + R * 0.55, 0, z - R * 0.45), '#7f7b70'), tint(new THREE.IcosahedronGeometry(1, 1).scale(R * 0.5, 4, R * 0.62).translate(x - R * 0.6, 0, z + R * 0.4), '#5f5c54'));
+}
 function plainLight(L, parts) {
   const [x, z] = L.at, y = L.ground === 0 ? 0 : Math.max(0, groundAt(x, z)), H = L.h, tower = L.tower || '#f2efe8', n = L.sides || 16;
+  if (L.rock) islet(x, z, L.rock, parts);
   if (y <= 0.5) parts.push(post(x, z, -3, L.foot || 7, (L.foot || 7) * 0.9, 5, '#8f8a7e', 16));
   const y0 = y <= 0.5 ? 2 : y, r = Math.max(1.6, H * 0.1);
   parts.push(post(x, z, y0, r, r * 0.68, H - y0 + y - 5, tower, n));
@@ -2854,7 +2859,8 @@ function landmarks() {
       // without one, a summit's ring of some 70 by 50 m). Each piece of wall on the hill's own ground
       const [x, z] = L.at, stone = L.ruin ? '#a8987c' : '#c2b296', dark = L.ruin ? '#8e806a' : '#a89a80', H = L.h;
       const ring = L.ring ? L.ring.map(([px, pz]) => [px - x, pz - z]) : [[-34, -16], [-18, -27], [12, -25], [33, -12], [36, 10], [18, 24], [-10, 26], [-31, 12]];
-      const gy = (px, pz) => Math.max(0, groundAt(px, pz));
+      const gy = (px, pz) => Math.max(L.rock ? 5 : 0, groundAt(px, pz));
+      if (L.rock) islet(x, z, L.rock, parts);
       ring.forEach(([ax, az], i) => {
         const [bx, bz] = ring[(i + 1) % ring.length], len = Math.hypot(bx - ax, bz - az), ang = Math.atan2(bz - az, bx - ax);
         const n = Math.max(1, Math.round(len / 8));

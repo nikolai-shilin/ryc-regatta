@@ -631,7 +631,7 @@ export const VENUES = [
   {
     // the Bay of Saint-Malo off the walled city, the start of the Route du Rhum, in the westerly: granite ramparts, the
     // cathedral's spire, the islets and forts that the great tides cover and uncover
-    id: 'saint-malo', name: ['Saint-Malo', 'Сен-Мало'], lat: 48.668, lon: -2.045, wind: 280, tz: 2, stream: ['tide', 80, 1.6], from: '2026-11-20',
+    id: 'saint-malo', name: ['Saint-Malo', 'Сен-Мало'], lat: 48.668, lon: -2.045, wind: 280, tz: 2, stream: ['tide', 80, 1.0], from: '2026-11-20',
     look: {
       haze: 0.95,
       ground: { forest: ['#2d4629', '#3f5c36', '#5b7848'], scrub: '#7a8258', rock: ['#8f8a7e', '#6d6a60'], town: '#a8a296', shore: '#cbbfa4', sand: '#dccfb0', grass: '#688a48' },
@@ -675,7 +675,7 @@ export const VENUES = [
   {
     // the Pacific off Point Loma, of the America's Cups of 1988, 1992 and 1995, in the sea breeze: the old lighthouse on the
     // ridge, the Hotel del Coronado on its beach, the city's towers behind North Island
-    id: 'san-diego', name: ['San Diego', 'Сан-Диего'], lat: 32.66, lon: -117.2, wind: 290, tz: -7, from: '2026-11-20',
+    id: 'san-diego', name: ['San Diego', 'Сан-Диего'], lat: 32.6725, lon: -117.195, wind: 290, tz: -7, from: '2026-11-20',
     look: {
       haze: 0.95,
       ground: { forest: ['#46502f', '#58623a', '#6f7747'], scrub: '#8d8558', rock: ['#b0a184', '#8a7e68'], town: '#b0a898', shore: '#d9cca8', sand: '#e2d5b2', grass: '#71843f' },
@@ -688,7 +688,7 @@ export const VENUES = [
   {
     // the mouth of Cork Harbour off Roches Point, home of the Royal Cork Yacht Club and Cork Week, in the south-westerly:
     // green headlands, the white lighthouse, the old forts either side of the entrance
-    id: 'cork', name: ['Cork', 'Корк'], lat: 51.772, lon: -8.245, wind: 225, tz: 1, stream: ['tide', 350, 0.8], from: '2026-11-20',
+    id: 'cork', name: ['Cork', 'Корк'], lat: 51.7825, lon: -8.27, wind: 225, tz: 1, stream: ['tide', 350, 0.8], from: '2026-11-20',
     look: {
       haze: 0.9,
       ground: { forest: ['#2b4a26', '#3a5f2e', '#538039'], scrub: '#6f9048', rock: ['#8b897c', '#6c6a60'], town: '#a8a294', shore: '#a9a08a', sand: '#cfc3a0', grass: '#5f9440' },
@@ -703,7 +703,7 @@ export const VENUES = [
   {
     // the bay off Cascais in the summer's nortada, the Sintra hills to windward: the striped Santa Marta light on the rocks,
     // the Citadel over the marina, the Tagus's tide running along the coast
-    id: 'cascais', name: ['Cascais', 'Кашкайш'], lat: 38.665, lon: -9.39, wind: 340, tz: 1, stream: ['tide', 95, 0.5], thermal: false, from: '2026-11-20',
+    id: 'cascais', name: ['Cascais', 'Кашкайш'], lat: 38.68, lon: -9.4, wind: 340, tz: 1, stream: ['tide', 95, 0.5], thermal: false, from: '2026-11-20',
     look: {
       haze: 1.1,
       ground: { forest: ['#2e4428', '#40582f', '#5c703f'], scrub: '#7f7f58', rock: ['#c9bfa6', '#a39880'], town: '#bdb4a2', shore: '#d8cba8', sand: '#e8d9ae', grass: '#748a48' },
@@ -717,7 +717,7 @@ export const VENUES = [
   {
     // Lake Michigan off Monroe Harbor, the start of the Race to Mackinac, in the lake breeze: fresh water, the breakwater
     // and its light, Navy Pier's wheel and the Loop's towers to leeward
-    id: 'chicago', name: ['Chicago', 'Чикаго'], lat: 41.88, lon: -87.575, wind: 60, tz: -5, from: '2026-11-20',
+    id: 'chicago', name: ['Chicago', 'Чикаго'], lat: 41.88, lon: -87.583, wind: 60, tz: -5, from: '2026-11-20',
     look: {
       haze: 0.85,
       ground: { forest: ['#2b4526', '#3a5a2f', '#557539'], scrub: '#7a8a52', rock: ['#a8a598', '#85837a'], town: '#8f8a82', shore: '#b5ad98', sand: '#d9cda8', grass: '#5f8040' },
@@ -746,7 +746,7 @@ export const VENUES = [
   {
     // Fushan Bay off the Olympic Sailing Center of 2008, in the summer's south-easterly: the May Wind's red spiral on its
     // square, the towers along the seafront, the old town's red roofs to the west
-    id: 'qingdao', name: ['Qingdao', 'Циндао'], lat: 36.025, lon: 120.405, wind: 135, tz: 8, stream: ['tide', 70, 0.6], from: '2026-11-20',
+    id: 'qingdao', name: ['Qingdao', 'Циндао'], lat: 36.04, lon: 120.395, wind: 135, tz: 8, stream: ['tide', 70, 0.6], from: '2026-11-20',
     look: {
       haze: 0.75,
       ground: { forest: ['#2a4524', '#3a5a2e', '#55733a'], scrub: '#74804e', rock: ['#a8a090', '#857e70'], town: '#a39e94', shore: '#c9bea0', sand: '#ddd0aa', grass: '#5f8040' },
