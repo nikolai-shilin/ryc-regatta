@@ -85,7 +85,8 @@ const WIDE = '(min-width: 1100px) and (min-height: 640px)';
 // the blocks come in one after another, in reading order (the design's 60 ms stagger): the delay of the i-th
 const AT = (i) => `calc(${i} * var(--t-stagger) + 150ms)`;
 const CSS = `
-#hud.bc { zoom: var(--hz, 1); }
+/* --tap: the smallest thing a thumb presses, 44 px on the glass however far the HUD is scaled down to fit a small phone */
+#hud.bc { zoom: var(--hz, 1); --tap: max(var(--h-m), calc(var(--h-m) / var(--hz, 1))); }
 #hud.bc > .tc, #hud.bc > .tr, #hud.bc > .tl { display: none !important; }
 .bx { display: none !important; }
 #hud.bc .bx { display: flex !important; position: absolute; pointer-events: none; }
@@ -123,11 +124,11 @@ const CSS = `
 #hud.bc #flags figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: var(--s-2); }
 #hud.bc #flags .flag { width: 38px; height: 26px; border-radius: 0; box-shadow: 0 0 0 1px var(--w-35); animation: none; }
 #hud.bc #flags .flag.P::after { inset: 8px 13px; }
-#hud.bc #flags .flag.cls { background: var(--gold); color: var(--ink-on); font: 700 var(--fs-lead)/26px var(--cond); }
+#hud.bc #flags .flag.cls { background: var(--gold); color: var(--ink-on); font: 700 var(--fs-lead)/26px var(--cond); text-align: center; }
 #hud.bc #flags figcaption { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 .b-gunc { align-items: center; padding: var(--s-3) var(--s-8); min-width: 240px; }
 .b-gunn { font: 800 var(--fs-h1)/0.9 var(--cond); transition: color .4s; }
-.b-gunn.soon { color: var(--gold); } .b-gunn.now { color: var(--live); }
+.b-gunn.now { color: var(--you); } /* white until the last ten seconds */
 .b-gunn.beat { animation: bc-beat .5s var(--ease); } /* the last ten seconds: a beat a second, in its own place */
 .b-seq { position: relative; width: 200px; height: 4px; background: var(--fill-3); }
 .b-seq > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--you); transition: width .6s var(--ease); }
@@ -170,7 +171,7 @@ const CSS = `
 .b-row.first .b-pos { background: var(--ink); color: var(--ink-on); }
 .b-row.me { background: color-mix(in srgb, var(--you) 16%, transparent); }
 .b-row.me .b-pos { background: var(--you); color: var(--ink-on); }
-.b-row .b-bar { width: 4px; align-self: stretch; background: var(--c, var(--fill-3)); }
+.b-row .b-bar { width: 4px; align-self: stretch; background: var(--fill-3); }
 /* the boat's country flag, 3:2, before her name (none when she flies none) */
 #hud.bc .b-fl, #bOver .b-fl { flex: none; display: block; width: 24px; height: 16px; object-fit: cover; box-shadow: 0 0 0 1px var(--w-25); }
 #hud.bc .b-row .b-fl { margin-left: var(--s-3); }
@@ -385,7 +386,6 @@ const CSS = `
 .b-btag.first .p { background: var(--ink); color: var(--ink-on); }
 .b-btag.me .p { background: var(--you); color: var(--ink-on); }
 .b-btag.me .in { box-shadow: inset 0 -3px 0 var(--you); clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
-.b-btag .c { width: 4px; background: var(--c, var(--fill-3)); }
 .b-btag .n { display: flex; align-items: center; gap: var(--s-2); padding: 0 var(--s-3); font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-name); }
 .b-btag .v { display: flex; align-items: center; padding: 0 var(--s-3); border-left: 1px solid var(--rule); font: 600 var(--fs-small)/1 var(--cond); color: var(--ink-2); }
 .b-btag .stem { position: absolute; left: -1px; bottom: 0; width: 2px; height: 22px; background: linear-gradient(var(--w-90), var(--w-14)); transform-origin: top; animation: bc-pin .35s var(--ease) both .3s; }
@@ -458,6 +458,7 @@ const CSS = `
   .b-msplit .b-row .b-gp { min-width: 0; }
   .b-pen { height: 14px; padding: 0 var(--s-1); margin-right: var(--s-1); }
   .b-lv { height: 14px; gap: 1px; padding: 0; border: 0; margin: 0 var(--s-1); } .b-lv > span { display: none; } .b-lv > i { width: 2px; height: 7px; }
+  .b-row .b-lv { display: none; } /* a row this narrow is for her name and the gap */
   #hud.bc .b-bug, #hud.bc .b-state, #hud.bc .b-board .b-bh, #hud.bc .b-board .b-bf, #hud.bc .b-map .b-mh, #hud.bc .b-gunc, #hud.bc .b-bias, #hud.bc .b-legs, #hud.bc .b-wind .b-wt > .lbl:first-child, #hud.bc .b-dir { display: none !important; }
   #hud.bc .b-tr, #hud.bc .b-low { display: contents !important; }
   .b-wind { position: absolute; left: calc(16px + var(--sl)); top: calc(12px + var(--st)); height: 36px; gap: var(--s-2); padding: 0 var(--s-3) 0 var(--s-2); margin: 0; pointer-events: none; animation: bc-slide-l var(--t-in) var(--ease) both ${AT(0)}; }
@@ -466,7 +467,7 @@ const CSS = `
   .b-wind .n-l { font-size: var(--fs-body); }
   .b-wind .b-shift { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
   .b-btns { position: absolute; right: calc(16px + var(--sr)); top: calc(12px + var(--st)); pointer-events: none; animation: bc-slide-r var(--t-in) var(--ease) both ${AT(2)}; }
-  #hud.bc .b-btns > button { min-width: 36px; height: 36px; }
+  #hud.bc .b-btns > button { min-width: var(--tap); height: var(--tap); }
   #hud.bc .b-btns > button svg { width: 16px; height: 16px; }
   #hud.bc .b-btns > #zoomIn, #hud.bc .b-btns > #zoomOut { font-size: var(--fs-row); }
   .b-board { right: calc(16px + var(--sr)); top: calc(54px + var(--st)); width: 168px; }
@@ -502,7 +503,7 @@ const CSS = `
   #hud.bc #toast.long { font-size: var(--fs-small); }
   .b-acts { right: calc(76px + var(--sr)); bottom: calc(18px + var(--sb)); }
   #hud.bc.split-trim .b-acts { right: calc(136px + var(--sr)); }
-  #hud.bc .b-acts > .round { height: 40px !important; font-size: var(--fs-small) !important; padding: 0 var(--s-3) 0 var(--s-5); }
+  #hud.bc .b-acts > .round { height: var(--tap) !important; font-size: var(--fs-small) !important; padding: 0 var(--s-3) 0 var(--s-5); }
   #hud.bc .b-acts > #tackBtn { height: 56px !important; padding: 0 var(--s-5) 0 var(--s-8); font-size: var(--fs-body) !important; }
   #hud.bc #sheetZone { right: calc(16px + var(--sr)); bottom: calc(18px + var(--sb)); width: 48px; height: min(200px, calc(100vh / var(--hz, 1) - 170px)); padding: 28px 0; }
   #hud.bc #sheetZone.split { width: 108px; }
@@ -525,7 +526,9 @@ const CSS = `
 /* a phone sideways: pause beside the board, and the call right over the tack button (moved into its column: see
    placeCall) */
 @media not all and ${WIDE} { @media (orientation: landscape) {
-  #hud.bc .b-btns > #pauseBtn { position: absolute; right: calc(168px + var(--s-1)); top: 42px; }
+  .b-board, .b-msplit { top: calc(var(--tap) + 18px + var(--st)); } /* under the buttons */
+  #hud.bc .b-btns > #pauseBtn { position: absolute; right: calc(168px + var(--s-1)); top: calc(var(--tap) + 6px); }
+  @media (max-width: 720px) { .b-you { left: calc(50% - var(--s-8)); } } /* a small phone: your strip clear of the buttons, into the room left by the wind */
   .b-acts > .b-callrow { position: static; translate: none; margin: 0; }
 } }
 @media not all and ${WIDE} { @media (orientation: portrait) {
@@ -604,7 +607,6 @@ const legKey = (c, k) => (k === 'mark' && c.type === 'trap' ? 'mark1' : LEG[k]);
 // a leg's kind, for its arrow: up (a beat), across (a reach out to the wing, mark 2 or the offset), down
 const legKind = (c, i) => (isBeat(c, i) ? 'up' : ['wing', 'mark2', 'offset'].includes(c.legs[i]) ? 'reach' : 'down');
 const CAMS = ['drone', 'top', 'helm'];
-const hex = (n) => (typeof n === 'number' ? '#' + n.toString(16).padStart(6, '0') : '');
 
 // Boxes as wide as what they say (your strip, the state over it, the tags on the water) glide to a new width rather
 // than jump when their words or numbers change. Whatever changes in one this frame, its width is read once after the
@@ -754,9 +756,9 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   document.body.append(over);
   const advLine = q(over, '.adv'), advLab = q(over, '.b-advl');
   const btags = Array.from({ length: 3 }, () => {
-    const el = html(`<div class="b-btag"><span class="stem"></span><div class="in"><b class="p"></b><i class="c"></i><span class="n"><img class="b-fl" alt="" hidden><span class="nt"></span><span class="b-lv" hidden><i></i><i></i><i></i><i></i><span></span></span></span><span class="v"></span><b class="b-pen" hidden>${L.pen}</b></div></div>`);
+    const el = html(`<div class="b-btag"><span class="stem"></span><div class="in"><b class="p"></b><span class="n"><img class="b-fl" alt="" hidden><span class="nt"></span><span class="b-lv" hidden><i></i><i></i><i></i><i></i><span></span></span></span><span class="v"></span><b class="b-pen" hidden>${L.pen}</b></div></div>`);
     over.append(el);
-    return { el, box: q(el, '.in'), p: q(el, '.p'), c: q(el, '.c'), n: q(el, '.n .nt'), fl: q(el, '.b-fl'), lv: q(el, '.b-lv'), v: q(el, '.v'), pen: q(el, '.b-pen'), w: 0, f: 0 };
+    return { el, box: q(el, '.in'), p: q(el, '.p'), n: q(el, '.n .nt'), fl: q(el, '.b-fl'), lv: q(el, '.b-lv'), v: q(el, '.v'), pen: q(el, '.b-pen'), w: 0, f: 0 };
   });
   const lay = q(low, '.b-lay'), layT = q(lay, 'span'), layK = q(lay, '.b-key');
   const split = q(low, '.b-split'), SP = { k: q(split, '.k'), t: q(split, '.t'), v: q(split, '.v'), g: q(split, '.g') };
@@ -982,7 +984,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       const gs = fmt(left + 0.999);
       if (left <= 10 && gs !== B.gunN._t) flash(B.gunN, 'beat', 500);
       txt(B.gunN, gs);
-      cls(B.gunN, `b-gunn${left <= 10 ? ' now' : left <= 60 ? ' soon' : ''}`);
+      cls(B.gunN, `b-gunn${left <= 10 ? ' now' : ''}`);
       const seq = race.seq, total = -seq[0].t, k = `${seq.length}|${total}`;
       if (k !== seqKey) {
         seqKey = k;
@@ -1071,7 +1073,6 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       const i = st.indexOf(b) + 1, me = b === P;
       cls(r.el, `b-row${me ? ' me' : ''}${i === 1 && !pre ? ' first' : ''}${cx.includes(b) ? '' : ' cxh'}`);
       txt(r.pos, b.dsq ? '–' : String(i));
-      r.bar.style.setProperty('--c', hex(b.color));
       txt(r.nm, me ? sailNo() : b.name); setFlag(r.fl, flagOf(b, me)); showPen(r.pen, b); showLevel(r.lv, me ? null : b.level);
       const mv = moved.get(b), mvOn = mv && race.clock < mv[1];
       txt(r.mv, mvOn ? (mv[0] === 'u' ? '▲' : '▼') : ''); cls(r.mv, `b-mv${mvOn ? ' ' + mv[0] : ''}`);
@@ -1214,7 +1215,6 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       cls(g.el, `b-btag on${me ? ' me' : ''}${place === 1 && !pre ? ' first' : ''}`);
       g.el.style.transform = `translate(${at[0].toFixed(1)}px, ${at[1].toFixed(1)}px)`;
       txt(g.p, pre ? '·' : String(place));
-      g.c.style.setProperty('--c', me ? 'var(--you)' : hex(b.color));
       txt(g.n, me ? sailNo() : b.name); setFlag(g.fl, flagOf(b, me)); showLevel(g.lv, me ? null : b.level);
       txt(g.v, pre && !me ? L.mToLine(Math.round(Math.max(0, -race.lineInfo(b).d))) : `${nf(b.v / KN)} ${t('kn')}`); // a rival before the start: how far from the line
       showPen(g.pen, b);
