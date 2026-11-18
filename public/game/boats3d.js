@@ -1079,6 +1079,44 @@ const SIT_Y = 0.12 + 0.25 * (THIGH + SHIN + 0.02) - 0.07;
 MAT.bronze = new THREE.MeshStandardMaterial({ color: '#b48a52', roughness: 0.32, metalness: 1, envMapIntensity: 1 }); // the J's deck bronze
 MAT.buoyRed = new THREE.MeshStandardMaterial({ color: '#c8202a', roughness: 0.6 });
 
+const STAY_GAP = 0.3; // how far outside the staysail the yankee lies at the closest, in metres
+// One sail flying outside another, each flogging to its own time, would go through it. Lays the outer cloth over the
+// inner, gap metres to leeward of it, as cloth pressed against cloth does: outer and inner are their grids as they lie in
+// the boat ({ a: x, y, z of each point, rows, cols }, a row running luff to leech), lee how far the sails have gone to
+// that side (+ starboard, 0 on the centreline in a tack, where they change over and neither is outside). The outer luff
+// stays on its stay, and past the inner sail's edges the cloth falls back to its own shape within reach metres. Gives
+// how many points it moved.
+export function drapeOver(outer, inner, lee, gap, reach = 2.5) {
+  const side = Math.sign(lee), k = smooth(0.15, 0.6, Math.abs(lee));
+  if (!k) return 0;
+  const A = inner.a, n = inner.rows, m = inner.cols, w = m + 1, O = outer.a, ow = outer.cols + 1;
+  const at = (i, j, c) => A[(i * w + j) * 3 + c];
+  let moved = 0, L = [0, 0], E = [0, 0];
+  const row = (f) => { // the inner sail's row f of the way up (in rows): its luff and leech, y and z
+    const i = Math.min(Math.floor(f), n - 1), v = f - i;
+    L = [lerp(at(i, 0, 1), at(i + 1, 0, 1), v), lerp(at(i, 0, 2), at(i + 1, 0, 2), v)];
+    E = [lerp(at(i, m, 1), at(i + 1, m, 1), v), lerp(at(i, m, 2), at(i + 1, m, 2), v)];
+  };
+  row(0);
+  const y0 = L[0], z0 = L[1], ey = E[0] - y0, ez = E[1] - z0, up = Math.sign(ey * (at(n, 0, 2) - z0) - ez * (at(n, 0, 1) - y0)); // which way the rows climb
+  for (let r = 0; r <= outer.rows; r++) for (let c = 1; c <= outer.cols; c++) {
+    const q = (r * ow + c) * 3, y = O[q + 1], z = O[q + 2];
+    let lo = 0, hi = n; // the rows fan up from the foot without crossing: halve the way to the one this point lies on
+    for (let s = 0; s < 12; s++) { const f = (lo + hi) / 2; row(f); if (up * ((E[0] - L[0]) * (z - L[1]) - (E[1] - L[1]) * (y - L[0])) >= 0) lo = f; else hi = f; }
+    row(lo);
+    const dy = E[0] - L[0], dz = E[1] - L[1], t = clamp(((y - L[0]) * dy + (z - L[1]) * dz) / Math.max(dy * dy + dz * dz, 1e-6), 0, 1);
+    const off = Math.hypot(y - lerp(L[0], E[0], t), z - lerp(L[1], E[1], t)), fade = 1 - smooth(0, reach, off);
+    if (fade <= 0) continue;
+    const i = Math.min(Math.floor(lo), n - 1), v = lo - i, b = t * m, j = Math.min(Math.floor(b), m - 1), h = b - j;
+    const x = lerp(lerp(at(i, j, 0), at(i, j + 1, 0), h), lerp(at(i + 1, j, 0), at(i + 1, j + 1, 0), h), v);
+    const short = gap - side * (O[q] - x);
+    if (short <= 0) continue;
+    O[q] += side * short * fade * k;
+    moved++;
+  }
+  return moved;
+}
+
 class JClassView extends ClassView {
   constructor({ look = LOOKS.player, label = null, player = false, cls = CLS }) {
     super();
@@ -1326,6 +1364,29 @@ class JClassView extends ClassView {
     });
     this.finish(label, 52);
   }
+  // the yankee lies over the staysail, for as long as both are set and she is near enough for it to be seen
+  yankeeOverStaysail() {
+    const d = this.jib.userData;
+    d.draped = 0;
+    if (this.jibStowed > 0 || !d.fine) return;
+    const v = new THREE.Vector3(), grid = (sail, pivot) => { // a sail's cloth as it lies in the boat
+      const { rows, cols, g, step } = sail.userData, p = g.attributes.position, R = rows / step, C = cols / step, a = new Float32Array((R + 1) * (C + 1) * 3);
+      for (let i = 0, q = 0; i <= R; i++) for (let j = 0; j <= C; j++, q += 3) v.fromBufferAttribute(p, i * step * (cols + 1) + j * step).applyQuaternion(pivot.quaternion).add(pivot.position).toArray(a, q);
+      return { a, rows: R, cols: C };
+    };
+    const outer = grid(this.jib, this.jibPivot);
+    d.draped = drapeOver(outer, grid(this.stay, this.stayPivot), -this.sailSide, STAY_GAP);
+    if (!d.draped) return;
+    const { rows, cols, g, step } = d, p = g.attributes.position, back = this.jibPivot.quaternion.clone().invert();
+    for (let i = 0, q = 0; i <= outer.rows; i++) for (let j = 0; j <= outer.cols; j++, q += 3) {
+      v.fromArray(outer.a, q).sub(this.jibPivot.position).applyQuaternion(back);
+      p.setXYZ(i * step * (cols + 1) + j * step, v.x, v.y, v.z);
+    }
+    p.needsUpdate = true; g.computeVertexNormals();
+    // her sheets go with the clew
+    const q = outer.cols * 3, [x, y, z] = [outer.a[q], outer.a[q + 1], outer.a[q + 2]];
+    for (const s of [this.jibSheet, this.lazySheet]) { const a = s.geometry.attributes.position; a.setXYZ(0, x, y, z); a.needsUpdate = true; }
+  }
   update(b, t, W, showLabel) {
     const D = JZ, H = D.hull, dk = D.deckAt, side = this.place(b, t, W);
     this.wheel.quaternion.setFromAxisAngle(this.rudderAxis, b.rudder * 0.5);
@@ -1360,6 +1421,7 @@ class JClassView extends ClassView {
       });
       const cw = stowJib(D.SCLEW.clone(), st, true).applyQuaternion(this.stayPivot.quaternion).add(this.stayPivot.position), ls = cw.x < 0 ? -1 : 1, p = this.staySheet.geometry.attributes.position;
       p.setXYZ(0, cw.x, cw.y, cw.z); p.setXYZ(1, ls * 1.9, dk(1.9, D.SLEAD_Z) + 0.2, D.SLEAD_Z); p.setXYZ(2, ls * 2.2, dk(2.2, 1.4) + 0.3, 1.4); p.needsUpdate = true;
+      this.yankeeOverStaysail();
     }
     // the runners: the windward one set up from the hounds to its quarter, its checkstay to the masthead's third; the
     // lee one let go forward and tied off at the mast, its checkstay with it; they change over as the boom comes across
