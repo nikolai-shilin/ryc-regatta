@@ -5,7 +5,7 @@ import { SITE, jsonLd, langUrl } from '@/lib/seo';
 import { Logo, Langs } from './ui';
 import { SiteMenu } from './home-client';
 
-type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt' | 'learn' | 'rating' | 'drills' | 'badges' | 'social' | 'players' | 'venues' | 'yachts';
+type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt' | 'learn' | 'rating' | 'drills' | 'badges' | 'social' | 'players' | 'venues' | 'yachts' | 'sponsorship';
 
 // Where each page sits under Home, for the breadcrumb trail search engines show instead of the bare address
 // (BreadcrumbList). A guide passes its own trail: Home › Learn to race › the guide.
@@ -17,6 +17,7 @@ const CRUMBS: Partial<Record<Page, [en: string, ru: string, path: string]>> = {
   drills: ['Drills', 'Тренировки', '/race/drills'], badges: ['Badges', 'Достижения', '/race/badges'],
   social: ['Follow the game', 'Игра в соцсетях', '/social'], players: ['The players', 'Игроки', '/players'],
   venues: ['The venues', 'Акватории', '/venues'], yachts: ['The yachts', 'Яхты', '/yachts'],
+  sponsorship: ['Sponsorship', 'Спонсорство', '/sponsorship'],
 };
 function Breadcrumbs({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Page; crumbs?: Crumb[] }) {
   const c = CRUMBS[page];
@@ -91,6 +92,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
           <Link href="/passport">{t('Your passport', 'Твой паспорт')}</Link>
           <Link href="/faq">{t('Questions', 'Вопросы')}</Link>
           <Link href="/social">{t('Follow the game', 'Игра в соцсетях')}</Link>
+          <Link href="/sponsorship">{t('Sponsorship', 'Спонсорство')}</Link>
           <Link className="if-me me-name" href="/settings" /><Link className="if-guest" href="/sign-in">{t('Sign in', 'Войти')}</Link>
           <a href="https://www.rycrentals.com/">rycrentals.com</a>
           <a href="https://www.rycsailing.com/">rycsailing.com</a>

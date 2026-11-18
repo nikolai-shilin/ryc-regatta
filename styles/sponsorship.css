@@ -1,0 +1,58 @@
+/* The sponsorship page (/sponsorship), in the broadcast look: pictures of the game with the ad's place marked on them,
+   as a commentator's graphic would, and what each option is in rows. */
+
+/* ---------- the head: the words, the picture, the numbers under them ---------- */
+.bc .hm-ph.sp-hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-8); padding-bottom: 0; }
+.bc .sp-hero-t { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-5); min-width: 0; }
+.bc .sp-hero .kicker { background: var(--you); }
+.bc .sp-hero-t .hm-text { font: 500 var(--fs-lead)/1.55 var(--sans); }
+.bc .sp-acts { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-2); }
+.bc .sp-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 0; background: var(--rule); }
+.bc .sp-facts > div { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: var(--s-2); min-width: 0; padding: var(--s-4) var(--s-5); background: var(--surface); }
+.bc .sp-facts dt { font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .sp-facts dd { margin: 0; font: 700 var(--fs-h3)/1 var(--cond); color: var(--ink); }
+@container help (min-width: 1100px) {
+  .bc .hm-ph.sp-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-8) var(--s-12); align-items: center; }
+  .bc .sp-facts { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .bc .sp-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bc .sp-acts, .bc .sp-acts .pill { width: 100%; }
+}
+
+/* ---------- a picture of the game, the ad's place bracketed in gold ---------- */
+.bc .sp-shot { position: relative; margin: 0; min-width: 0; aspect-ratio: 16 / 10; background: var(--surface); }
+.bc .sp-shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.bc .sp-mark { position: absolute; --c: var(--gold); --l: 14px; --w: 2px;
+  background:
+    linear-gradient(var(--c), var(--c)) 0 0 / var(--l) var(--w), linear-gradient(var(--c), var(--c)) 0 0 / var(--w) var(--l),
+    linear-gradient(var(--c), var(--c)) 100% 0 / var(--l) var(--w), linear-gradient(var(--c), var(--c)) 100% 0 / var(--w) var(--l),
+    linear-gradient(var(--c), var(--c)) 0 100% / var(--l) var(--w), linear-gradient(var(--c), var(--c)) 0 100% / var(--w) var(--l),
+    linear-gradient(var(--c), var(--c)) 100% 100% / var(--l) var(--w), linear-gradient(var(--c), var(--c)) 100% 100% / var(--w) var(--l);
+  background-repeat: no-repeat; }
+.bc .sp-tag { position: absolute; top: calc(100% + var(--s-1)); left: 0; padding: var(--s-1) var(--s-4) var(--s-1) var(--s-2); background: var(--gold); color: var(--ink-on); white-space: nowrap;
+  font: 700 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+@media (max-width: 600px) { .bc .sp-mark { --l: 9px; } }
+
+/* ---------- the options ---------- */
+.bc .sp-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: var(--s-4); }
+.bc .sp-opt { display: flex; flex-direction: column; min-width: 0; background: var(--surface); }
+.bc .sp-opt-t { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-6); }
+.bc .sp-spec { margin: var(--s-2) 0 0; border-top: 1px solid var(--rule); }
+.bc .sp-spec > div { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--rule-2); }
+.bc .sp-spec > div:last-child { border-bottom: 0; padding-bottom: 0; }
+.bc .sp-spec dt { font: 600 var(--fs-label)/1.5 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .sp-spec dd { margin: 0; font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink); }
+.bc .sp-both { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-5) var(--s-8); padding: var(--s-6); background: var(--panel-2); border-left: 4px solid var(--gold); }
+.bc .sp-both > div { display: flex; flex-direction: column; gap: var(--s-2); flex: 1 1 320px; min-width: 0; }
+
+/* ---------- made to order ---------- */
+.bc .sp-made { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 1px; margin: 0; padding: 0; background: var(--rule); }
+.bc .sp-made li { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-6); background: var(--ground); }
+.bc .sp-made .hm-h3 { margin: 0; }
+.bc .sp-opt-t .hm-h3, .bc .sp-both .hm-h3 { margin: 0; }
+
+/* ---------- the way to write ---------- */
+.bc .sp-end { flex-direction: row; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-6) var(--s-12); }
+.bc .sp-end .hm-sec-t { flex: 1 1 420px; }
+@media (max-width: 600px) { .bc .sp-end .pill, .bc .sp-both .pill { width: 100%; } }

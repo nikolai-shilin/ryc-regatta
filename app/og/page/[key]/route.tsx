@@ -150,6 +150,11 @@ const CARDS: Record<string, Build> = {
       call: t('Follow', 'Подписаться'),
     };
   },
+  sponsorship: (t) => ({
+    bg: 'fleet', kind: t('Sponsorship', 'Спонсорство'),
+    hero: { label: t('On the sails and over the course', 'На парусах и над дистанцией'), value: t('Your brand in the race', 'Ваш бренд в гонке'), wrap: true },
+    call: t('See the options', 'Посмотреть варианты'),
+  }),
   boat: (t) => ({
     bg: 'drone', kind: t('Your boat', 'Твоя яхта'),
     hero: { label: t('Hull, sails, logo and number', 'Корпус, паруса, логотип и номер'), value: t('Your boat', 'Твоя яхта'), wrap: true },
