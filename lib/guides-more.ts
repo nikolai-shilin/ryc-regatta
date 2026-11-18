@@ -17,9 +17,7 @@ export function moreGuide(slug: 'sail' | 'tack', t: T, lang: Lang): Guide {
     title: t('Points of sail: from close-hauled to a run', 'Курсы относительно ветра: от бейдевинда до фордевинда'),
     short: t('Points of sail', 'Курсы относительно ветра'),
     kicker: t('Learn to race · points of sail', 'Учись гоняться · курсы'),
-    img: shot('h-wind-v8', t(
-      'Your boat close-hauled on starboard tack in the game, seen from above: the red arc ahead of her is the no-go zone, the green marks at its ends close-hauled on each tack, the blue arc behind her the best angles downwind',
-      'Твоя лодка в бейдевинд правым галсом в игре, вид сверху: красная дуга впереди — мёртвый угол, зелёные метки на её концах — бейдевинд на каждом галсе, синяя дуга позади — лучшие углы на попутном курсе')),
+    img: shot('gd-sail-v1', t('Your boat close-hauled in the game, the fleet sailing upwind around her', 'Твоя лодка идёт в бейдевинд в игре, вокруг неё флот на лавировке'), 3840, 1600),
     description: t(
       'The points of sail: the no-go zone, close-hauled, reaching and running, how the sails are set on each, true and apparent wind, and which point is fastest.',
       'Курсы относительно ветра: мёртвый угол, бейдевинд, галфвинд, бакштаг и фордевинд, как ставить паруса, истинный и вымпельный ветер и какой курс быстрее.'),
@@ -85,9 +83,7 @@ export function moreGuide(slug: 'sail' | 'tack', t: T, lang: Lang): Guide {
     title: t('How to tack and gybe a sailboat', 'Как делать поворот оверштаг и фордевинд'),
     short: t('Tacking and gybing', 'Оверштаг и фордевинд'),
     kicker: t('Learn to race · tacking', 'Учись гоняться · повороты'),
-    img: shot('h-tack-v8', t(
-      'Your boat close-hauled on starboard tack before the start in the game, heeling, with the Tack button at the bottom right',
-      'Твоя лодка в бейдевинд правым галсом перед стартом в игре, с креном; справа внизу — кнопка «Поворот»')),
+    img: shot('gd-tack-v1', t('Your boat head to wind in the middle of a tack in the game', 'Твоя лодка стоит носом к ветру в середине поворота оверштаг в игре'), 3840, 1600),
     description: t(
       'How to tack and gybe a sailboat step by step: the calls, how far to turn, keeping speed, roll tacks, avoiding a crash gybe, which to choose and rule 13.',
       'Как делать поворот оверштаг и фордевинд шаг за шагом: команды, насколько поворачивать, как не терять ход, ролл-так, самопроизвольный поворот и правило 13.'),

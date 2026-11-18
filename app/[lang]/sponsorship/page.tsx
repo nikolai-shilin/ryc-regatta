@@ -85,7 +85,7 @@ export default async function Sponsorship({ params }: LangParams) {
             <a className="pill" href="#options"><span className="btn-t">{t('See the options', 'Посмотреть варианты')}</span></a>
           </div>
         </div>
-        <Shot src="/images/sp-jib-v1.jpg" tag={logo} mark={[32, 43.5, 9.4, 8.6]} priority sizes="(min-width: 1100px) 680px, 100vw"
+        <Shot src="/images/sp-jib-v2.jpg" tag={logo} mark={[53.7, 64.7, 9.6, 10.3]} priority sizes="(min-width: 1100px) 680px, 100vw"
           alt={t('A yacht racing in the game with a logo on her jib', 'Яхта в гонке с логотипом на стакселе')} />
         <dl className="sp-facts">
           {facts.map(([n, label]) => <div key={label}><dt>{label}</dt><dd>{n}</dd></div>)}
@@ -101,7 +101,7 @@ export default async function Sponsorship({ params }: LangParams) {
         </div>
         <div className="sp-opts">
           <article className="sp-opt">
-            <Shot src="/images/sp-jib-close-v1.jpg" tag={logo} mark={[35.2, 51, 18.8, 17.2]} sizes="(min-width: 900px) 580px, 100vw"
+            <Shot src="/images/sp-jib-close-v2.jpg" tag={logo} mark={[47.3, 53.2, 26.6, 23.2]} sizes="(min-width: 900px) 580px, 100vw"
               alt={t('The logo on the jib, marked', 'Логотип на стакселе, место отмечено')} />
             <div className="sp-opt-t">
               <h3 className="hm-h3">{t('Logo on the jib', 'Логотип на стакселе')}</h3>
@@ -116,7 +116,7 @@ export default async function Sponsorship({ params }: LangParams) {
             </div>
           </article>
           <article className="sp-opt">
-            <Shot src="/images/sp-banner-v1.jpg" tag={words} mark={[47.6, 38.4, 44.2, 7]} sizes="(min-width: 900px) 580px, 100vw"
+            <Shot src="/images/sp-banner-v2.jpg" tag={words} mark={[41.4, 28.6, 38.1, 7.4]} sizes="(min-width: 900px) 580px, 100vw"
               alt={t('A light plane towing a banner over the course, the banner marked', 'Лёгкий самолёт с баннером над дистанцией, баннер отмечен')} />
             <div className="sp-opt-t">
               <h3 className="hm-h3">{t('Banner over the course', 'Баннер над дистанцией')}</h3>

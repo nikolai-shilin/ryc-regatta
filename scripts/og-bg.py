@@ -11,13 +11,13 @@ OUT = 'lib/og-bg'
 # name: (picture, the subject's centre as a share of the picture's width and height, how wide the crop is as a share of
 # the picture's width, where the subject lands across the card)
 CROPS = {
-    'drone': ('drone-desk-v8.jpg', 0.385, 0.47, 0.56, 0.68),
-    'fleet': ('h-run-v8.jpg', 0.62, 0.52, 1.0, 0.60),
-    'aerial': ('top-v8.jpg', 0.36, 0.5, 0.62, 0.66),
-    'start': ('h-start-v8.jpg', 0.40, 0.50, 0.92, 0.64),
-    'trim': ('h-trim-v8.jpg', 0.38, 0.52, 0.92, 0.64),
-    'helm': ('h-view-helm-v8.jpg', 0.45, 0.55, 1.0, 0.55),
-    'wind': ('h-wind-v8.jpg', 0.42, 0.50, 0.95, 0.62),
+    'drone': ('drone-desk-v9.jpg', 0.447, 0.42, 0.56, 0.68),
+    'fleet': ('h-run-v9.jpg', 0.62, 0.47, 1.0, 0.60),
+    'aerial': ('top-v9.jpg', 0.47, 0.6, 0.62, 0.66),
+    'start': ('h-start-v9.jpg', 0.49, 0.47, 0.92, 0.64),
+    'trim': ('h-trim-v9.jpg', 0.42, 0.50, 0.92, 0.64),
+    'helm': ('h-view-helm-v9.jpg', 0.45, 0.55, 1.0, 0.55),
+    'wind': ('h-wind-v9.jpg', 0.44, 0.52, 0.95, 0.62),
 }
 
 os.makedirs(OUT, exist_ok=True)

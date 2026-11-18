@@ -171,7 +171,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ key:
   const ql = q.get('lang'), lang: Lang = isLang(ql) ? ql : 'en';
   const build = Object.hasOwn(CARDS, key) ? CARDS[key] : null; // (not the names every object has: /og/page/constructor)
   const c = build ? await build(tx(lang), lang, q) : null;
-  if (!c) return new Response(null, { status: 302, headers: { location: '/images/og-v8.jpg', 'cache-control': 'public, max-age=60' } });
+  if (!c) return new Response(null, { status: 302, headers: { location: '/images/og-v9.jpg', 'cache-control': 'public, max-age=60' } });
   const img = await card(c);
   // the rating and the players move through the day; the rest only with a deploy
   const live = key === 'rating' || key === 'players' || key === 'player';
