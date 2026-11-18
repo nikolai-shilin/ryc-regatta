@@ -1115,6 +1115,64 @@ export function mainShape(c, f, u, ch, s, k, tw, battens = true) {
   MAIN_AT.z = u * ch * (1 - (battens ? 0.02 * aft * betweenBattens(f) : 0));
   return MAIN_AT;
 }
+// The shrouds stop an eased main: the boom comes up against them, and above it the cloth lies along them, each height of
+// the sail turned aft about the mast as far as it takes to pass behind every wire there. Only what's drawn: the race goes
+// on sailing the angle it was trimmed to.
+// shroudsOf: the wires on one side, up the mast's frame [x, y, z of the lower end, x, y, z of the upper], the standing
+// rigging abeam of the mast and not the backstays, halyards or lifelines
+const WIRE_A = new THREE.Vector3(), WIRE_B = new THREE.Vector3(), SHROUD_EASED = 25 * D2R, SHROUD_GAP = 2 * D2R, SHROUD_FLAT = 0.4, ROW_TURN = 2.5 * D2R;
+function shroudsOf(v) {
+  v.root.updateMatrixWorld(true);
+  const to = new THREE.Matrix4().copy(v.mainPivot.matrixWorld).invert(), out = [];
+  for (const o of v.tilt.children) {
+    if (!o.isLine || !o.frustumCulled) continue;
+    const p = o.geometry.attributes.position, m = new THREE.Matrix4().multiplyMatrices(to, o.matrixWorld);
+    for (let i = 0; i < p.count - 1; i++) {
+      const a = WIRE_A.fromBufferAttribute(p, i).applyMatrix4(m), b = WIRE_B.fromBufferAttribute(p, i + 1).applyMatrix4(m);
+      const [lo, hi] = a.y < b.y ? [a, b] : [b, a], end = a.x > b.x ? a : b;
+      if (Math.min(a.x, b.x) < -0.01 || end.x < 0.15 || hi.y - lo.y < 0.5 * a.distanceTo(b) || Math.atan2(end.x, end.z) < 35 * D2R) continue;
+      out.push(lo.x, lo.y, lo.z, hi.x, hi.y, hi.z);
+    }
+  }
+  return new Float32Array(out);
+}
+// Sets the boom's angle for a main trimmed to sa, and how far each row of the cloth turns aft of it (turnMain). shape: the
+// sail as it's about to be cut, y(f) its height, chord(f), x(f, u) its cloth off the boom's line, z0 how far aft of the
+// pivot its luff starts, axis(y) how far aft the mast has raked at that height
+export function clearShrouds(v, sa, ss, shape) {
+  const rows = v.main.userData.rows, d = (v.mainTurn ??= new Float32Array(rows + 1)), W = v.shrouds, L = ss < 0 ? 1 : -1, a = Math.abs(ss) * sa;
+  d.fill(0);
+  let drawn = a;
+  const flat = v.mainFlat = W?.length ? lerp(1, SHROUD_FLAT, smoothstep(35 * D2R, 60 * D2R, a)) : 1; // pressed on the rig, the cloth loses its belly
+  if (a > SHROUD_EASED && W?.length) {
+    const z0 = shape.z0 ?? 0;
+    for (let i = 0; i <= rows; i++) {
+      const f = i / rows, y = shape.y(f), ch = shape.chord(f), ax = shape.axis ? shape.axis(y) : 0;
+      for (let k = 0; k < W.length; k += 6) {
+        if (y < W[k + 1] || y > W[k + 4]) continue;
+        const t = (y - W[k + 1]) / (W[k + 4] - W[k + 1]), wx = lerp(W[k], W[k + 3], t), wz = lerp(W[k + 2], W[k + 5], t) - ax, R = Math.hypot(wx, wz);
+        if (R < 0.01 || R > ch + z0) continue; // past the leech, the wire is clear of this height of the sail
+        const off = L * flat * shape.x(f, clamp((R - z0) / ch, 0, 1)); // the cloth's lee side where the wire would meet it
+        d[i] = Math.max(d[i], a + Math.asin(clamp(off / R, -1, 1)) + SHROUD_GAP - Math.atan2(wx, wz));
+      }
+    }
+    // the cloth bends round the wires in a smooth curve, and no part of it turns forward of the boom
+    for (let i = 1; i <= rows; i++) d[i] = Math.max(d[i], d[i - 1] - ROW_TURN);
+    for (let i = rows - 1; i >= 0; i--) d[i] = Math.max(d[i], d[i + 1] - ROW_TURN);
+    drawn = a - d[0];
+    for (let i = rows; i >= 0; i--) d[i] = Math.max(0, d[i] - d[0]);
+  }
+  v.mainLee = L;
+  v.mainPivot.rotation.y = L * drawn;
+}
+// a point of the main, at f up its luff, turned aft about the mast with its row (clearShrouds)
+export function turnMain(v, f, p) {
+  p.x *= v.mainFlat;
+  const d = v.mainTurn[Math.round(f * (v.mainTurn.length - 1))];
+  if (!d) return;
+  const c = Math.cos(d), s = Math.sin(d), x = p.x, z = p.z;
+  p.x = x * c - v.mainLee * z * s; p.z = v.mainLee * x * s + z * c;
+}
 // A jib's offset from the flat between its luff and leech: deepest well forward, flatter up high, twisting off at the
 // head, its leech turned in a little; len its chord there, k its depth, ph its flog's own phase
 export function jibShape(c, f, u, len, s, k, ph) {
@@ -2199,6 +2257,7 @@ export class BoatView {
   // its own draw — in the view, the sea's reflection and the sun's shadow. Merged per material (and per detail level,
   // so setDetail still hides the small ones far off), a boat costs a dozen draws instead.
   bake() {
+    this.shrouds = shroudsOf(this); // (read while they're still lines of their own)
     const moving = new Set([this.travCar, this.wheel, ...(this.rudders || []).map((r) => r.kick), this.sprit, this.mainRake, this.mainPivot, this.jibPivot, this.kite, this.windex,
       this.mainsheet, this.jibSheet, this.lazySheet, this.kiteSheet, this.forestay, ...(this.backstays || []), this.wash, ...this.crew.map((c) => c.g), ...(this.spin || [])]);
     if (this.tells?.length) this.wire(moving); // your own boat: her rigging as wire when you're close (setCrewNear)
@@ -2309,12 +2368,13 @@ export class BoatView {
     this.wash.userData.set(this.sea?.rz ?? this.tilt.rotation.z, t, b.v);
 
     const sa = b.sail * D2R, cl = clothState(this, b, t), ss = this.sailSide;
-    this.mainPivot.rotation.y = -ss * sa;
     const reefDrop = (b.reefFill || 0) * 2.4; // a reef: the head comes 2.4 m down the mast, the sail is that much smaller
+    clearShrouds(this, sa, ss, { y: (f) => BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), chord: mainChord, x: (f, u) => mainShape(cl, f, u, mainChord(f), ss, 0.11, 0.5).x });
     // square-top main: the chord narrows up the mast to a wide head, with roach on the leech; twist opens the top
     setSail(this.main, (f, u, v) => {
       const m = mainShape(cl, f, u, mainChord(f), ss, 0.11, 0.5);
       v.set(m.x, BOOM_Y + 0.08 + f * (MASTHEAD - 0.3 - BOOM_Y - reefDrop), m.z);
+      turnMain(this, f, v);
     });
     if (this.detailOn !== false) setBackstays(this, cl, t, reefDrop); // (far off the lines are hidden: setDetail)
     // the mainsheet, from the block on the traveller's car to the one under the boom
