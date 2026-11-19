@@ -850,7 +850,7 @@ export const VENUES = [
   {
     id: 'muscat', name: ['Muscat', 'Маскат', 'Mascate', 'Maskat', 'Maskat'], lat: 23.65, lon: 58.27, wind: 10, tz: 4, from: '2026-11-21',
     look: {
-      haze: 1.05,
+      haze: 2.0, // (the Hajar's ridges 20 to 30 km inland show over the plain, as they do from the water)
       // the Hajar's dark ophiolite, brown and grey, over the gravel plain
       ground: { forest: ['#4a5a34', '#5c6c3e', '#74824c'], scrub: '#a89a72', rock: ['#7a6a5a', '#5a4e44'], town: '#cfc3a8', shore: '#e2d2ac', sand: '#e6d4ac', grass: '#7f9448' },
       trees: [['palm', 0.6, '#3d5a2c', '#6a8a3a'], ['shrub', 0.4, '#6a7446', '#8d9460']], treeTop: 60, woods: 0.04,
