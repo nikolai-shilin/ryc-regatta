@@ -28,9 +28,9 @@ export function SailingOpts({ lang }: { lang: Lang }) {
   );
   return (
     <div className="st-sail">
-      {seg('autoTrim', t('Sails', 'Паруса', 'Velas', 'Segel'), [[0, t('I trim', 'Сам', 'Trimo yo', 'Ich trimme')], [1, t('Auto', 'Авто', 'Auto', 'Auto')], [2, t('Main + jib', 'Грот + стаксель', 'Mayor + foque', 'Groß + Fock')]])}
-      {seg('camera', t('Camera', 'Камера', 'Cámara', 'Kamera'), [['drone', t('Drone', 'Дрон', 'Dron', 'Drohne')], ['top', t('Top', 'Сверху', 'Cenital', 'Oben')], ['helm', t('Helm', 'Штурвал', 'Timón', 'Ruder')]])}
-      {sw('guides', t('Guides on the water', 'Подсказки на воде', 'Guías en el agua', 'Hilfslinien auf dem Wasser'))}
+      {seg('autoTrim', t('Sails', 'Паруса', 'Velas', 'Segel', 'Yelkenler'), [[0, t('I trim', 'Сам', 'Trimo yo', 'Ich trimme', 'Trimi ben yaparım')], [1, t('Auto', 'Авто', 'Auto', 'Auto', 'Otomatik')], [2, t('Main + jib', 'Грот + стаксель', 'Mayor + foque', 'Groß + Fock', 'Ana yelken + flok')]])}
+      {seg('camera', t('Camera', 'Камера', 'Cámara', 'Kamera', 'Kamera'), [['drone', t('Drone', 'Дрон', 'Dron', 'Drohne', 'Drone')], ['top', t('Top', 'Сверху', 'Cenital', 'Oben', 'Üst')], ['helm', t('Helm', 'Штурвал', 'Timón', 'Ruder', 'Dümen')]])}
+      {sw('guides', t('Guides on the water', 'Подсказки на воде', 'Guías en el agua', 'Hilfslinien auf dem Wasser', 'Suda kılavuzlar'))}
     </div>
   );
 }

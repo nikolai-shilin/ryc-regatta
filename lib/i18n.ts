@@ -24,7 +24,8 @@ export async function getT(params: LangParams['params']) {
 //   export const generateMetadata = titled('Settings', 'Настройки', { index: false });
 //   export const generateMetadata = titled('How to play', 'Как играть', { path: '/help', description: ['…', '…'] });
 type Opts = { path?: string; description?: Pair; index?: boolean; today?: boolean; card?: string; live?: boolean };
-export const titled = (en: string, ru: string, es?: string | Opts, de?: string | Opts, more: Opts = {}) => async ({ params }: LangParams): Promise<Metadata> => {
-  const { lang, t } = await getT(params), o = typeof es === 'object' ? es : typeof de === 'object' ? de : more;
-  return pageMeta(lang, { title: t(en, ru, typeof es === 'string' ? es : undefined, typeof de === 'string' ? de : undefined), description: o.description && t(...o.description), path: o.path, index: o.index, today: o.today, card: o.card, live: o.live });
+export const titled = (en: string, ru: string, ...more: (string | Opts)[]) => async ({ params }: LangParams): Promise<Metadata> => {
+  const { lang, t } = await getT(params), o = (more.find((x) => typeof x === 'object') ?? {}) as Opts;
+  const [es, de, tr] = more.filter((x): x is string => typeof x === 'string');
+  return pageMeta(lang, { title: t(en, ru, es, de, tr), description: o.description && t(...o.description), path: o.path, index: o.index, today: o.today, card: o.card, live: o.live });
 };

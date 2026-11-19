@@ -36,8 +36,8 @@ export function DayChart({ lang, title, label, slots }: { lang: Lang; title: str
       <figcaption className="adm-days-head">
         <span className="adm-days-title">{title}</span>
         <dl className="adm-days-read">
-          {peak >= 0 && <div className="peak"><dt>{t('Peak', 'Пик', 'Pico', 'Spitze')} · {date(slots[peak].d)}</dt><dd>{max}</dd></div>}
-          {peak !== last && <div><dt>{t('Last day', 'Последний день', 'Último día', 'Letzter Tag')} · {date(slots[last].d)}</dt><dd>{slots[last].n}</dd></div>}
+          {peak >= 0 && <div className="peak"><dt>{t('Peak', 'Пик', 'Pico', 'Spitze', 'Zirve')} · {date(slots[peak].d)}</dt><dd>{max}</dd></div>}
+          {peak !== last && <div><dt>{t('Last day', 'Последний день', 'Último día', 'Letzter Tag', 'Son gün')} · {date(slots[last].d)}</dt><dd>{slots[last].n}</dd></div>}
         </dl>
       </figcaption>
       <div className="adm-days-plot" style={{ '--days-lines': lines.length - 1 } as CSSProperties}>
@@ -52,7 +52,7 @@ export function DayChart({ lang, title, label, slots }: { lang: Lang; title: str
                 <b>{date(s.d)}</b>
                 {s.n > 0
                   ? s.tip.map(([k, v]) => <span key={k}><em>{k}</em>{v}</span>)
-                  : <span><em>{t('No races', 'Нет гонок', 'Sin regatas', 'Keine Regatten')}</em></span>}
+                  : <span><em>{t('No races', 'Нет гонок', 'Sin regatas', 'Keine Regatten', 'Yarış yok')}</em></span>}
               </span>
             </li>
           ))}

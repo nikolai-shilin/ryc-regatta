@@ -7,7 +7,17 @@ const Q = {
   id: 'rr-166',
   answer: 'B' as const,
   figure: { en: 'https://iyt.rycrentals.com/api/mcp?figure=rr-166', ru: 'https://iyt.rycrentals.com/api/mcp?figure=rr-166&lang=ru' },
-  reference: { en: 'RRS 12, RRS 13, RRS 10', ru: 'ППГ 12, ППГ 13, ППГ 10', es: 'RRV 12, RRV 13, RRV 10', de: 'WR 12, WR 13, WR 10' },
+  reference: { en: 'RRS 12, RRS 13, RRS 10', ru: 'ППГ 12, ППГ 13, ППГ 10', es: 'RRV 12, RRV 13, RRV 10', de: 'WR 12, WR 13, WR 10', tr: 'YYK 12, YYK 13, YYK 10' },
+  tr: {
+    question: 'Mavi, orsa ayağında sancak kontrada senden iki boy açık önde; sen uzak duruyorsun. Tam önünde iskele kontraya tramola atıyor ve bir buçuk boy önünde orsaya oturuyor. Tramolası sırasında kim uzak durur, sonrasında kim?',
+    options: {
+      A: 'Tramola sırasında Mavi, sonra sen: tramolası bitince yine açık arkadaki tekne sensin',
+      B: 'İki durumda da Mavi: tramola sırasında kural 13 gereği uzak durur, iskele kontrada orsaya oturunca da sancak kontradaki sana karşı kural 10 gereği uzak durur',
+      C: 'Onun tramolası sırasında sen, sonra Mavi: tramola atan tekne orsaya oturana kadar geçiş hakkına sahiptir',
+      D: 'İki durumda da sen: arkadaki tekne, öndeki ne yaparsa yapsın ondan uzak durur (kural 12)',
+    },
+    why: 'Kural 12, Mavi rüzgârın içinden geçtiğinde sona erer; tramola sırasında kural 13, sonrasında kontralar farklı olduğu için kural 10 uygulanır.',
+  },
   de: {
     question: 'Blau liegt zwei Längen klar voraus auf Steuerbordbug an der Kreuz; du hältst dich frei. Sie wendet direkt vor dir auf Backbordbug und liegt anderthalb Längen vor dir hoch am Wind. Wer hält sich während ihrer Wende frei, und wer danach?',
     options: {

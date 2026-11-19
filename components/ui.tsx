@@ -52,7 +52,7 @@ export const IconGoogle = ({ s = 20 }) => (
   </svg>
 );
 
-// English · Русский · Español · Deutsch: plain links, so they work without JavaScript and the game sees the same choice.
+// English · Русский · Español · Deutsch · Türkçe: plain links, so they work without JavaScript and the game sees the same choice.
 export function Langs({ lang, back, className = '' }: { lang: Lang; back: string; className?: string }) {
   // the page itself with ?lang= (proxy.ts keeps the choice as the cookie): a link a search engine follows to the page in
   // the other language, which /lang, a redirect kept out of robots.txt, never was
@@ -63,7 +63,7 @@ export function Langs({ lang, back, className = '' }: { lang: Lang; back: string
   };
   const on = (to: Lang) => (lang === to ? ({ 'aria-current': 'true' } as const) : {});
   return (
-    <nav className={`langs ${className}`} aria-label={tx(lang)('Language', 'Язык', 'Idioma', 'Sprache')}>
+    <nav className={`langs ${className}`} aria-label={tx(lang)('Language', 'Язык', 'Idioma', 'Sprache', 'Dil')}>
       <a className={`lang ${lang === 'en' ? 'lang-on' : ''}`} href={href('en')} hrefLang="en" lang="en" {...on('en')}>English</a>
       <span aria-hidden="true">·</span>
       <a className={`lang ${lang === 'ru' ? 'lang-on' : ''}`} href={href('ru')} hrefLang="ru" lang="ru" {...on('ru')}>Русский</a>
@@ -71,6 +71,8 @@ export function Langs({ lang, back, className = '' }: { lang: Lang; back: string
       <a className={`lang ${lang === 'es' ? 'lang-on' : ''}`} href={href('es')} hrefLang="es" lang="es" {...on('es')}>Español</a>
       <span aria-hidden="true">·</span>
       <a className={`lang ${lang === 'de' ? 'lang-on' : ''}`} href={href('de')} hrefLang="de" lang="de" {...on('de')}>Deutsch</a>
+      <span aria-hidden="true">·</span>
+      <a className={`lang ${lang === 'tr' ? 'lang-on' : ''}`} href={href('tr')} hrefLang="tr" lang="tr" {...on('tr')}>Türkçe</a>
     </nav>
   );
 }

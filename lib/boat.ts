@@ -25,7 +25,7 @@ export type Boat = {
 
 export const BOAT_KEY = 'regatta-boat';
 
-export type Preset = { id: string; en: string; ru: string; es?: string; de?: string; boat: Omit<Boat, 'nat' | 'num' | 'preset' | 'flag' | 'bottom' | 'deck' | 'name'> };
+export type Preset = { id: string; en: string; ru: string; es?: string; de?: string; tr?: string; boat: Omit<Boat, 'nat' | 'num' | 'preset' | 'flag' | 'bottom' | 'deck' | 'name'> };
 
 // one-colour schemes: the hull, the gennaker and the team jackets in one colour, on white sails, with a sail number
 // that shows up against it. Picking one keeps your number.
@@ -34,12 +34,13 @@ const light = (hex: string) => {
   return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255 > 0.6;
 };
 const PRESET_ES: Record<string, string> = { white: 'Blanco', silver: 'Plateado', black: 'Negro', navy: 'Azul marino', blue: 'Azul', teal: 'Turquesa', green: 'Verde', yellow: 'Amarillo', orange: 'Naranja', red: 'Rojo', pink: 'Rosa', purple: 'Morado' };
+const PRESET_TR: Record<string, string> = { white: 'Beyaz', silver: 'Gümüş', black: 'Siyah', navy: 'Lacivert', blue: 'Mavi', teal: 'Petrol mavisi', green: 'Yeşil', yellow: 'Sarı', orange: 'Turuncu', red: 'Kırmızı', pink: 'Pembe', purple: 'Mor' };
 const PRESET_DE: Record<string, string> = { white: 'Weiß', silver: 'Silber', black: 'Schwarz', navy: 'Marineblau', blue: 'Blau', teal: 'Petrol', green: 'Grün', yellow: 'Gelb', orange: 'Orange', red: 'Rot', pink: 'Rosa', purple: 'Lila' };
 function mono(id: string, en: string, ru: string, c: string, dark = false): Preset {
   const mark = light(c) ? '#1d1d1d' : '#ffffff';
   const cloth = dark ? '#2a2c30' : '#f4f2ea';
   // a one-colour gennaker: kite2 and kite3 there, unset, so picking a preset clears them
-  return { id, en, ru, es: PRESET_ES[id], de: PRESET_DE[id], boat: { hull: c, cloth, laminate: dark, ink: dark || light(c) ? mark : c, kite: c, kite2: undefined, kite3: undefined, crew: c, pants: dark ? c : '#262a31' } };
+  return { id, en, ru, es: PRESET_ES[id], de: PRESET_DE[id], tr: PRESET_TR[id], boat: { hull: c, cloth, laminate: dark, ink: dark || light(c) ? mark : c, kite: c, kite2: undefined, kite3: undefined, crew: c, pants: dark ? c : '#262a31' } };
 }
 export const PRESETS: Preset[] = [
   mono('white', 'White', 'Белая', '#f4f3ef'),

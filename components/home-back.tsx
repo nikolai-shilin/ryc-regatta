@@ -18,7 +18,7 @@ import { clock } from './ui';
 const BACK = 'data-back';
 export const markBack = (log: Log | null) => { if (log && Object.keys(log.d).length) document.documentElement.setAttribute(BACK, ''); };
 
-const ord = (n: number, lang: Lang) => (lang === 'ru' ? `${n}-е` : lang === 'es' ? `${n}.º` : lang === 'de' ? `${n}.` : `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'}`);
+const ord = (n: number, lang: Lang) => (lang === 'ru' ? `${n}-е` : lang === 'es' ? `${n}.º` : lang === 'de' || lang === 'tr' ? `${n}.` : `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'}`);
 
 export function BackStrip({ lang, day, top, cap = 5 }: { lang: Lang; day: string; top: { s: number }[]; cap?: number }) {
   const t = tx(lang), log = useLog();
@@ -28,25 +28,25 @@ export function BackStrip({ lang, day, top, cap = 5 }: { lang: Lang; day: string
   // where today's time stands: its place when the board's rows reach it, else its gap to the leader
   const place = mine != null && top.length && (top.length < cap || mine <= top[top.length - 1].s + 0.05) ? top.filter((r) => r.s < mine - 0.05).length + 1 : 0;
   const gap = mine != null && top.length ? mine - top[0].s : 0;
-  const days = (n: number) => t(`${n}-day streak`, `${n} ${ruPlural(n, ['день', 'дня', 'дней'])} подряд`, `Racha de ${n} ${n === 1 ? 'día' : 'días'}`, `${n}-Tage-Serie`);
+  const days = (n: number) => t(`${n}-day streak`, `${n} ${ruPlural(n, ['день', 'дня', 'дней'])} подряд`, `Racha de ${n} ${n === 1 ? 'día' : 'días'}`, `${n}-Tage-Serie`, `${n} günlük seri`);
   return (
-    <div className="ho-back" aria-label={t('Your racing', 'Твои гонки', 'Tus regatas', 'Dein Segeln')} role="group">
+    <div className="ho-back" aria-label={t('Your racing', 'Твои гонки', 'Tus regatas', 'Dein Segeln', 'Yarışların')} role="group">
       <div className={`ho-back-i${st.risk ? ' risk' : ''}`}>
-        <span className="lbl">{t('Streak', 'Серия', 'Racha', 'Serie')}</span>
-        <b>{st.n ? days(st.n) : t('No streak yet', 'Серии пока нет', 'Aún sin racha', 'Noch keine Serie')}</b>
-        <small>{st.today ? t('Today’s is in. Back tomorrow for the next', 'Сегодняшняя есть. Завтра — следующая', 'La de hoy está hecha. Vuelve mañana para la siguiente', 'Die von heute ist drin. Morgen wieder für die nächste')
-          : st.risk ? t('Sail today’s race or it ends', 'Пройди гонку дня, иначе серия прервётся', 'Navega la regata de hoy o se acaba', 'Segle die Regatta des Tages, sonst endet sie')
-          : st.n ? t(`Sail today’s race to make it ${st.n + 1}`, `Пройди гонку дня — будет ${st.n + 1}`, `Navega la regata de hoy para llegar a ${st.n + 1}`, `Segle die Regatta des Tages, damit es ${st.n + 1} werden`)
-          : t('Finish today’s race to start one', 'Пройди гонку дня, чтобы начать серию', 'Termina la regata de hoy para empezar una', 'Beende die Regatta des Tages, um eine zu beginnen')}</small>
+        <span className="lbl">{t('Streak', 'Серия', 'Racha', 'Serie', 'Seri')}</span>
+        <b>{st.n ? days(st.n) : t('No streak yet', 'Серии пока нет', 'Aún sin racha', 'Noch keine Serie', 'Henüz seri yok')}</b>
+        <small>{st.today ? t('Today’s is in. Back tomorrow for the next', 'Сегодняшняя есть. Завтра — следующая', 'La de hoy está hecha. Vuelve mañana para la siguiente', 'Die von heute ist drin. Morgen wieder für die nächste', 'Bugünküsü tamam. Sonraki için yarın gel')
+          : st.risk ? t('Sail today’s race or it ends', 'Пройди гонку дня, иначе серия прервётся', 'Navega la regata de hoy o se acaba', 'Segle die Regatta des Tages, sonst endet sie', 'Günün yarışını yarış, yoksa biter')
+          : st.n ? t(`Sail today’s race to make it ${st.n + 1}`, `Пройди гонку дня — будет ${st.n + 1}`, `Navega la regata de hoy para llegar a ${st.n + 1}`, `Segle die Regatta des Tages, damit es ${st.n + 1} werden`, `Seriyi ${st.n + 1} yapmak için günün yarışını yarış`)
+          : t('Finish today’s race to start one', 'Пройди гонку дня, чтобы начать серию', 'Termina la regata de hoy para empezar una', 'Beende die Regatta des Tages, um eine zu beginnen', 'Bir seri başlatmak için günün yarışını bitir')}</small>
       </div>
       <div className="ho-back-i">
-        <span className="lbl">{t('Your time today', 'Твоё время сегодня', 'Tu tiempo de hoy', 'Deine Zeit heute')}</span>
+        <span className="lbl">{t('Your time today', 'Твоё время сегодня', 'Tu tiempo de hoy', 'Deine Zeit heute', 'Bugünkü süren')}</span>
         {mine != null ? <>
           <b>{clock(mine)}</b>
-          <small>{place === 1 ? t('The time to beat is yours', 'Время дня — твоё', 'El tiempo a batir es el tuyo', 'Die Zeit zum Schlagen ist deine') : place ? t(`${ord(place, lang)} today · ${gap.toFixed(1)} s off the lead`, `${ord(place, lang)} место · ${gap.toFixed(1).replace('.', ',')} с до лидера`, `${ord(place, lang)} hoy · a ${gap.toFixed(1).replace('.', ',')} s del líder`, `${ord(place, lang)} heute · ${gap.toFixed(1).replace('.', ',')} s hinter der Spitze`) : gap > 0 ? t(`${gap.toFixed(1)} s off the lead`, `${gap.toFixed(1).replace('.', ',')} с до лидера`, `A ${gap.toFixed(1).replace('.', ',')} s del líder`, `${gap.toFixed(1).replace('.', ',')} s hinter der Spitze`) : t('On today’s board', 'В рейтинге дня', 'En la clasificación de hoy', 'In der heutigen Rangliste')}</small>
+          <small>{place === 1 ? t('The time to beat is yours', 'Время дня — твоё', 'El tiempo a batir es el tuyo', 'Die Zeit zum Schlagen ist deine', 'Geçilecek süre senin') : place ? t(`${ord(place, lang)} today · ${gap.toFixed(1)} s off the lead`, `${ord(place, lang)} место · ${gap.toFixed(1).replace('.', ',')} с до лидера`, `${ord(place, lang)} hoy · a ${gap.toFixed(1).replace('.', ',')} s del líder`, `${ord(place, lang)} heute · ${gap.toFixed(1).replace('.', ',')} s hinter der Spitze`, `Bugün ${ord(place, lang)} · liderden ${gap.toFixed(1).replace('.', ',')} sn geride`) : gap > 0 ? t(`${gap.toFixed(1)} s off the lead`, `${gap.toFixed(1).replace('.', ',')} с до лидера`, `A ${gap.toFixed(1).replace('.', ',')} s del líder`, `${gap.toFixed(1).replace('.', ',')} s hinter der Spitze`, `Liderden ${gap.toFixed(1).replace('.', ',')} sn geride`) : t('On today’s board', 'В рейтинге дня', 'En la clasificación de hoy', 'In der heutigen Rangliste', 'Günün tablosunda')}</small>
         </> : <>
-          <b>{t('Not sailed yet', 'Ещё не пройдена', 'Sin navegar aún', 'Noch nicht gesegelt')}</b>
-          <small>{t('Closes in', 'Закроется через', 'Cierra en', 'Schließt in')} <Countdown /></small>
+          <b>{t('Not sailed yet', 'Ещё не пройдена', 'Sin navegar aún', 'Noch nicht gesegelt', 'Henüz yarışılmadı')}</b>
+          <small>{t('Closes in', 'Закроется через', 'Cierra en', 'Schließt in', 'Kapanmasına kalan')} <Countdown /></small>
         </>}
       </div>
       <div className="ho-back-i ho-back-push"><PushButton lang={lang} where="back" /></div>
@@ -77,22 +77,22 @@ export function PushButton({ lang, where }: { lang: Lang; where: string }) {
   };
   const off = async () => { setSt('busy'); await unsubscribe(); track('Reminder', { where, result: 'off' }); setSt('off'); };
   if (st === 'wait' || st === 'na') return null;
-  if (st === 'ios') return <p className="ho-push-t">{t('For a daily reminder on an iPhone: Share › Add to Home Screen, then open it from there.', 'Чтобы получать напоминание на iPhone: «Поделиться» › «На экран Домой», и открой оттуда.', 'Para un recordatorio diario en un iPhone: Compartir › Añadir a pantalla de inicio, y ábrela desde ahí.', 'Für eine tägliche Erinnerung auf dem iPhone: Teilen › Zum Home-Bildschirm, dann von dort öffnen.')}</p>;
-  if (st === 'denied') return <p className="ho-push-t">{t('Reminders are blocked for this site in the browser’s settings.', 'Напоминания для этого сайта выключены в настройках браузера.', 'Los recordatorios están bloqueados para este sitio en los ajustes del navegador.', 'Erinnerungen sind für diese Seite in den Browser-Einstellungen gesperrt.')}</p>;
+  if (st === 'ios') return <p className="ho-push-t">{t('For a daily reminder on an iPhone: Share › Add to Home Screen, then open it from there.', 'Чтобы получать напоминание на iPhone: «Поделиться» › «На экран Домой», и открой оттуда.', 'Para un recordatorio diario en un iPhone: Compartir › Añadir a pantalla de inicio, y ábrela desde ahí.', 'Für eine tägliche Erinnerung auf dem iPhone: Teilen › Zum Home-Bildschirm, dann von dort öffnen.', 'iPhone’da günlük hatırlatma için: Paylaş › Ana Ekrana Ekle, sonra oradan aç.')}</p>;
+  if (st === 'denied') return <p className="ho-push-t">{t('Reminders are blocked for this site in the browser’s settings.', 'Напоминания для этого сайта выключены в настройках браузера.', 'Los recordatorios están bloqueados para este sitio en los ajustes del navegador.', 'Erinnerungen sind für diese Seite in den Browser-Einstellungen gesperrt.', 'Hatırlatmalar bu site için tarayıcı ayarlarında engellenmiş.')}</p>;
   if (st === 'on') return (
     <div className="ho-push">
-      <span className="lbl">{t('Reminder on', 'Напоминание включено', 'Recordatorio activado', 'Erinnerung an')}</span>
-      <b>{t(`Daily at ${at}`, `Каждый день в ${at}`, `A diario a las ${at}`, `Täglich um ${at}`)}</b>
-      <small>{t('Only on days you haven’t sailed yet. ', 'Только в дни, когда ты ещё не прошёл гонку. ', 'Solo los días que aún no has navegado. ', 'Nur an Tagen, an denen du noch nicht gesegelt bist. ')}<button type="button" className="ho-push-x" onClick={off}>{t('Turn off', 'Выключить', 'Desactivar', 'Ausschalten')}</button></small>
+      <span className="lbl">{t('Reminder on', 'Напоминание включено', 'Recordatorio activado', 'Erinnerung an', 'Hatırlatma açık')}</span>
+      <b>{t(`Daily at ${at}`, `Каждый день в ${at}`, `A diario a las ${at}`, `Täglich um ${at}`, `Her gün ${at}`)}</b>
+      <small>{t('Only on days you haven’t sailed yet. ', 'Только в дни, когда ты ещё не прошёл гонку. ', 'Solo los días que aún no has navegado. ', 'Nur an Tagen, an denen du noch nicht gesegelt bist. ', 'Yalnızca henüz yarışmadığın günlerde. ')}<button type="button" className="ho-push-x" onClick={off}>{t('Turn off', 'Выключить', 'Desactivar', 'Ausschalten', 'Kapat')}</button></small>
     </div>
   );
   return (
     <div className="ho-push">
       <button type="button" className="ho-ghost ho-push-go" onClick={on} disabled={st === 'busy'}>
         <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" /></svg>
-        <span>{t('Remind me before it closes', 'Напомни до закрытия', 'Recuérdamelo antes de que cierre', 'Erinnere mich vor Schluss')}</span>
+        <span>{t('Remind me before it closes', 'Напомни до закрытия', 'Recuérdamelo antes de que cierre', 'Erinnere mich vor Schluss', 'Kapanmadan önce hatırlat')}</span>
       </button>
-      <small>{st === 'failed' ? t('That didn’t work. Try again in a moment.', 'Не получилось. Попробуй ещё раз чуть позже.', 'No ha funcionado. Inténtalo de nuevo en un momento.', 'Das hat nicht geklappt. Versuch es gleich nochmal.') : t(`At ${at}, only on days you haven’t sailed.`, `В ${at}, только в дни без гонки.`, `A las ${at}, solo los días que no has navegado.`, `Um ${at}, nur an Tagen, an denen du nicht gesegelt bist.`)}</small>
+      <small>{st === 'failed' ? t('That didn’t work. Try again in a moment.', 'Не получилось. Попробуй ещё раз чуть позже.', 'No ha funcionado. Inténtalo de nuevo en un momento.', 'Das hat nicht geklappt. Versuch es gleich nochmal.', 'Olmadı. Biraz sonra yeniden dene.') : t(`At ${at}, only on days you haven’t sailed.`, `В ${at}, только в дни без гонки.`, `A las ${at}, solo los días que no has navegado.`, `Um ${at}, nur an Tagen, an denen du nicht gesegelt bist.`, `Saat ${at}, yalnızca yarışmadığın günlerde.`)}</small>
     </div>
   );
 }
@@ -141,7 +141,7 @@ export function Fold({ lang, children }: { lang: Lang; children: ReactNode }) {
   return (
     <div className={`ho-fold${open ? ' open' : ''}`} ref={ref}>
       <button type="button" className="ho-ghost ho-fold-btn" aria-expanded={open} onClick={() => { setOpen(!open); track('Home CTA', { where: 'fold', to: open ? 'close' : 'open', back: 1 }); }}>
-        {open ? t('Less about the game', 'Свернуть', 'Menos sobre el juego', 'Weniger zum Spiel') : t('About the game: what’s inside, the questions, the rules', 'Об игре: что внутри, вопросы, правила', 'Sobre el juego: qué hay dentro, las preguntas, las reglas', 'Zum Spiel: was drinsteckt, die Fragen, die Regeln')}
+        {open ? t('Less about the game', 'Свернуть', 'Menos sobre el juego', 'Weniger zum Spiel', 'Oyun hakkında daha az') : t('About the game: what’s inside, the questions, the rules', 'Об игре: что внутри, вопросы, правила', 'Sobre el juego: qué hay dentro, las preguntas, las reglas', 'Zum Spiel: was drinsteckt, die Fragen, die Regeln', 'Oyun hakkında: içinde ne var, sorular, kurallar')}
         <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true"><path d={open ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} /></svg>
       </button>
       <div className="ho-fold-in">{children}</div>
@@ -156,5 +156,5 @@ export function MatchLink({ lang }: { lang: Lang }) {
   const [on, setOn] = useState(false);
   useEffect(() => { setOn(new URLSearchParams(location.search).has('match')); }, []);
   if (!on) return null;
-  return <Link className="ho-ghost" href="/match/new" data-cta="friend-match">{t('Race a friend, 1-on-1', 'Гонка с другом 1 на 1', 'Regatea con un amigo, 1 contra 1', 'Fordere einen Freund heraus, 1 gegen 1')}</Link>;
+  return <Link className="ho-ghost" href="/match/new" data-cta="friend-match">{t('Race a friend, 1-on-1', 'Гонка с другом 1 на 1', 'Regatea con un amigo, 1 contra 1', 'Fordere einen Freund heraus, 1 gegen 1', 'Bir arkadaşınla yarış, bire bir')}</Link>;
 }

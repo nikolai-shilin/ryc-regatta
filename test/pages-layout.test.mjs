@@ -44,7 +44,7 @@ const SESSION = `sb-abcdefgh-auth-token=base64-${b64url(JSON.stringify({ access_
 
 // ---------- the layout ----------
 test('every language is built at deploy, and no others', () => {
-  assert.deepEqual(layout.generateStaticParams(), [{ lang: 'en' }, { lang: 'ru' }, { lang: 'es' }, { lang: 'de' }]);
+  assert.deepEqual(layout.generateStaticParams(), [{ lang: 'en' }, { lang: 'ru' }, { lang: 'es' }, { lang: 'de' }, { lang: 'tr' }]);
 });
 
 test('the layout marks the page\'s language and holds the page', async () => {

@@ -44,9 +44,13 @@ type Card = {
   tag?: { text: string; live?: boolean }; // over it: the day, with the red dot while it's on
   hero: Hero;
   call: string;
+  lang?: string; // the card's language: Turkish capitals keep their dotted İ (CSS's uppercase here doesn't know the language)
 };
 
-export async function card({ bg, kind, tag, hero, call }: Card): Promise<Response> {
+export async function card({ bg, kind: kind0, tag: tag0, hero: hero0, call: call0, lang }: Card): Promise<Response> {
+  const up = (s: string) => (lang === 'tr' ? s.toLocaleUpperCase('tr') : s);
+  const kind = up(kind0), call = up(call0), tag = tag0 && { ...tag0, text: up(tag0.text) };
+  const hero = { ...hero0, label: up(hero0.label), value: up(hero0.value) };
   const [fonts, logoUri, bgUri] = await Promise.all([loadFaces(), loadLogo(), loadBg(bg)]);
   const plateW = hero.plate ? 40 + hero.plate.text.length * 60 : 0;
   // a figure on one line; a name on two at most, the biggest size its words still break into two lines at (a capital

@@ -17,7 +17,7 @@ import { pick } from '@/lib/lang';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
-type Row = { endpoint: string; p256dh: string; auth: string; lang: 'en' | 'ru' | 'es' | 'de'; last_day: string | null; streak: number };
+type Row = { endpoint: string; p256dh: string; auth: string; lang: 'en' | 'ru' | 'es' | 'de' | 'tr'; last_day: string | null; streak: number };
 const shift = (d: string, n: number) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
 const ruDays = (n: number) => (n % 10 === 1 && n % 100 !== 11 ? 'день' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'дня' : 'дней');
 
@@ -41,17 +41,17 @@ export async function GET(req: Request) {
   const top = await todayTop().catch(() => null);
   const best = top && top.d === day ? top.top[0] : null;
   const say = (r: Row) => {
-    const ru = r.lang === 'ru', es = r.lang === 'es', de = r.lang === 'de', v = pick(venue, r.lang), y = pick(yacht, r.lang);
+    const ru = r.lang === 'ru', es = r.lang === 'es', de = r.lang === 'de', tr = r.lang === 'tr', v = pick(venue, r.lang), y = pick(yacht, r.lang);
     // the streak is alive while no two days in a row are missed (lib/log.ts streakOf): yesterday's or the day before's
     const alive = r.streak >= 2 && r.last_day != null && r.last_day >= shift(day, -2);
     const title = alive
-      ? ru ? `Серия: ${r.streak} ${ruDays(r.streak)} подряд` : es ? `Mantén tu racha de ${r.streak} días` : de ? `Halte deine Serie von ${r.streak} Tagen` : `Keep your ${r.streak}-day streak`
-      : ru ? `Гонка дня: ${v}` : es ? `La regata del día: ${v}` : de ? `Die Regatta des Tages: ${v}` : `Today’s race: ${v}`;
+      ? ru ? `Серия: ${r.streak} ${ruDays(r.streak)} подряд` : es ? `Mantén tu racha de ${r.streak} días` : de ? `Halte deine Serie von ${r.streak} Tagen` : tr ? `${r.streak} günlük serini koru` : `Keep your ${r.streak}-day streak`
+      : ru ? `Гонка дня: ${v}` : es ? `La regata del día: ${v}` : de ? `Die Regatta des Tages: ${v}` : tr ? `Günün yarışı: ${v}` : `Today’s race: ${v}`;
     const body = alive
-      ? ru ? `Гонка дня — ${v}, ${y}. Закроется через 7 часов.` : es ? `La regata del día en ${v} con el ${y} cierra en 7 horas.` : de ? `Die Regatta des Tages in ${v} mit der ${y} schließt in 7 Stunden.` : `Today’s race at ${v} on the ${y} closes in 7 hours.`
+      ? ru ? `Гонка дня — ${v}, ${y}. Закроется через 7 часов.` : es ? `La regata del día en ${v} con el ${y} cierra en 7 horas.` : de ? `Die Regatta des Tages in ${v} mit der ${y} schließt in 7 Stunden.` : tr ? `${v}'deki ${y} ile günün yarışı 7 saat sonra kapanıyor.` : `Today’s race at ${v} on the ${y} closes in 7 hours.`
       : best
-        ? ru ? `${y}. Время, которое надо побить: ${clock(best.s)}. Закроется через 7 часов.` : es ? `El ${y}. El tiempo a batir es ${clock(best.s)}. Cierra en 7 horas.` : de ? `${y}. Die Zeit zum Schlagen ist ${clock(best.s)}. Schließt in 7 Stunden.` : `The ${y}. The time to beat is ${clock(best.s)}. Closes in 7 hours.`
-        : ru ? `${y}. Гонку ещё никто не прошёл: задай время дня.` : es ? `El ${y}. Nadie la ha terminado todavía: marca el tiempo a batir.` : de ? `${y}. Noch hat niemand sie beendet: setz die Zeit zum Schlagen.` : `The ${y}. Nobody has finished it yet: set the time to beat.`;
+        ? ru ? `${y}. Время, которое надо побить: ${clock(best.s)}. Закроется через 7 часов.` : es ? `El ${y}. El tiempo a batir es ${clock(best.s)}. Cierra en 7 horas.` : de ? `${y}. Die Zeit zum Schlagen ist ${clock(best.s)}. Schließt in 7 Stunden.` : tr ? `${y}. Geçilecek süre ${clock(best.s)}. 7 saat sonra kapanıyor.` : `The ${y}. The time to beat is ${clock(best.s)}. Closes in 7 hours.`
+        : ru ? `${y}. Гонку ещё никто не прошёл: задай время дня.` : es ? `El ${y}. Nadie la ha terminado todavía: marca el tiempo a batir.` : de ? `${y}. Noch hat niemand sie beendet: setz die Zeit zum Schlagen.` : tr ? `${y}. Henüz kimse bitirmedi: geçilecek süreyi sen belirle.` : `The ${y}. Nobody has finished it yet: set the time to beat.`;
     return JSON.stringify({ title, body, lang: r.lang, tag: `daily-${day}`, url: `/race?from=push` });
   };
 

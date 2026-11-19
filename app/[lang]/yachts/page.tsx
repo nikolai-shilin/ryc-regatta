@@ -3,11 +3,11 @@ import { BackLink } from '@/components/back-link';
 import { FleetView } from '@/components/fleet-view';
 import { isYacht } from '@/lib/yachts';
 
-export const generateMetadata = titled('The yachts: from the Optimist to the AC75', 'Яхты: от Оптимиста до AC75', 'Los yates: del Optimist al AC75', 'Die Yachten: vom Optimist bis zum AC75', {
+export const generateMetadata = titled('The yachts: from the Optimist to the AC75', 'Яхты: от Оптимиста до AC75', 'Los yates: del Optimist al AC75', 'Die Yachten: vom Optimist bis zum AC75', 'Yatlar: Optimist’ten AC75’e', {
   path: '/yachts', card: '/og/page/yachts',
   description: [
     'The nine yachts you can race in 3D, from the Optimist, ILCA and J/70 to the Dragon, the J Class and the foiling AC75: what each is and how she sails.',
-    'Девять яхт, на которых можно гоняться в 3D, от Оптимиста, ILCA и J/70 до Дракона, класса J и AC75 на крыльях: что это за лодки и как они ходят.', 'Los nueve yates que puedes navegar en 3D, del Optimist, el ILCA y el J/70 al Dragon, el J Class y el AC75 con foils: qué es cada uno y cómo navega en el juego.', 'Die neun Yachten, die du in 3D segeln kannst, vom Optimist, ILCA und J/70 bis zum Dragon, der J Class und dem fliegenden AC75: was jede ist und wie sie segelt.'],
+    'Девять яхт, на которых можно гоняться в 3D, от Оптимиста, ILCA и J/70 до Дракона, класса J и AC75 на крыльях: что это за лодки и как они ходят.', 'Los nueve yates que puedes navegar en 3D, del Optimist, el ILCA y el J/70 al Dragon, el J Class y el AC75 con foils: qué es cada uno y cómo navega en el juego.', 'Die neun Yachten, die du in 3D segeln kannst, vom Optimist, ILCA und J/70 bis zum Dragon, der J Class und dem fliegenden AC75: was jede ist und wie sie segelt.', 'Optimist, ILCA ve J/70’ten Dragon’a, J Class’a ve foil üstünde uçan AC75’e kadar 3D’de yarışabileceğin dokuz yat: her biri nedir ve nasıl seyreder.'],
 });
 
 // The yachts: every class you can race in one scene, the drone flying from one to the next (components/fleet-view).
@@ -20,7 +20,7 @@ export default async function YachtsPage({ params, searchParams }: LangParams & 
   return (
     <div className="scr bt-scr bc" lang={lang}>
       <FleetView lang={lang} start={start} tour={!start} back={(
-        <BackLink href={back} label={back === '/race' ? t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub') : t('Back to the custom race', 'Назад к своей гонке', 'Volver a la regata personalizada', 'Zurück zur freien Regatta')} />
+        <BackLink href={back} label={back === '/race' ? t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub', 'Yarış merkezine dön') : t('Back to the custom race', 'Назад к своей гонке', 'Volver a la regata personalizada', 'Zurück zur freien Regatta', 'Serbest yarışa dön')} />
       )} />
     </div>
   );

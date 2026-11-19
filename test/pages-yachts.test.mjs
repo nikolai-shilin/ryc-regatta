@@ -118,7 +118,7 @@ for (const y of YACHTS) {
       assert.equal(m.title, t(`The ${name}: race her in a 3D sailing game`, `${name}: гонки в 3D-парусной игре`));
       assert.ok(m.description.startsWith(t(...y.tagline)));
       assert.equal(m.alternates.canonical, addressed(`/yachts/${y.id}`, lang));
-      assert.deepEqual(m.alternates.languages, { en: `/yachts/${y.id}`, ru: `/yachts/${y.id}?lang=ru`, es: `/yachts/${y.id}?lang=es`, de: `/yachts/${y.id}?lang=de`, 'x-default': `/yachts/${y.id}` });
+      assert.deepEqual(m.alternates.languages, { en: `/yachts/${y.id}`, ru: `/yachts/${y.id}?lang=ru`, es: `/yachts/${y.id}?lang=es`, de: `/yachts/${y.id}?lang=de`, tr: `/yachts/${y.id}?lang=tr`, 'x-default': `/yachts/${y.id}` });
       assert.equal(m.openGraph.images[0].url, `/og/page/yachts?lang=${lang}`);
       assert.deepEqual(m.authors, [{ name: t('Nikolai Shilin', 'Николай Шилин') }]);
     });

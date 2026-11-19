@@ -136,11 +136,11 @@ function laid(preset: Wind, length: Length, fleet: number, shape: Shape, k: numb
   return { type: shape, windward, gate, pin: [-half, 0], committee: [half, 0], marks, ...(wing && { wing }), ...(finish && { finish }) };
 }
 
-export const SHAPE_NAME: Record<Shape, [en: string, ru: string, es?: string, de?: string]> = {
-  wl: ['Up and down', 'Апвинд — даунвинд', 'Barlovento–sotavento', 'Luv–Lee'],
-  tri: ['Triangle', 'Треугольник', 'Triángulo', 'Dreieck'],
-  trap: ['Trapezoid', 'Трапеция', 'Trapecio', 'Trapez'],
-  wlu: ['Up and down, upwind finish', 'Апвинд — даунвинд, финиш наверху', 'Barlovento–sotavento, llegada en ceñida', 'Luv–Lee, Ziel am Wind'],
+export const SHAPE_NAME: Record<Shape, [en: string, ru: string, es?: string, de?: string, tr?: string]> = {
+  wl: ['Up and down', 'Апвинд — даунвинд', 'Barlovento–sotavento', 'Luv–Lee', 'Orsa–pupa'],
+  tri: ['Triangle', 'Треугольник', 'Triángulo', 'Dreieck', 'Üçgen'],
+  trap: ['Trapezoid', 'Трапеция', 'Trapecio', 'Trapez', 'Yamuk'],
+  wlu: ['Up and down, upwind finish', 'Апвинд — даунвинд, финиш наверху', 'Barlovento–sotavento, llegada en ceñida', 'Luv–Lee, Ziel am Wind', 'Orsa–pupa, orsada bitiş'],
 };
 export const SHAPES = Object.keys(SHAPE_NAME) as Shape[];
 const isShape = (s: unknown): s is Shape => typeof s === 'string' && (SHAPES as string[]).includes(s);
@@ -181,7 +181,7 @@ export const courseDistance = (c: CourseGeo, laps: number) =>
   legDistances(c, courseLegs(laps, shapeOf(c))).reduce((a, b) => a + b, 0);
 
 // "520 m · 0.28 nm"
-export function fmtDistance(m: number, lang: 'en' | 'ru' | 'es' | 'de') {
+export function fmtDistance(m: number, lang: 'en' | 'ru' | 'es' | 'de' | 'tr') {
   const nm = (m / 1852).toFixed(2), r = Math.round(m / 10) * 10;
-  return lang === 'ru' ? `${r} м · ${nm.replace('.', ',')} мили` : lang === 'es' ? `${r} m · ${nm.replace('.', ',')} millas` : lang === 'de' ? `${r} m · ${nm.replace('.', ',')} sm` : `${r} m · ${nm} nm`;
+  return lang === 'ru' ? `${r} м · ${nm.replace('.', ',')} мили` : lang === 'es' ? `${r} m · ${nm.replace('.', ',')} millas` : lang === 'de' ? `${r} m · ${nm.replace('.', ',')} sm` : lang === 'tr' ? `${r} m · ${nm.replace('.', ',')} deniz mili` : `${r} m · ${nm} nm`;
 }

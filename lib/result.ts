@@ -28,6 +28,7 @@ export async function getResult(id: string): Promise<SharedResult | null> {
 
 export const ordEs = (n: number) => `${n}.º`;
 export const ordDe = (n: number) => `${n}.`;
+export const ordTr = (n: number) => `${n}.`;
 export const ordEn = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`;
 
 // The race in words, for the title, the description and the card: "2nd in 3:45.7", "Race of the day · Fri 13 Nov",
@@ -37,17 +38,17 @@ export function describe(res: SharedResult, lang: Lang) {
   const t = tx(lang);
   const me = res.boats.find((b) => b.me)!, place = res.boats.indexOf(me) + 1;
   const time = me.secs != null && !me.dsq ? clock(me.secs) : null;
-  const headline = me.dsq || !time ? t('Disqualified', 'Дисквалификация', 'Descalificado', 'Disqualifiziert') : t(`${ordEn(place)} in ${time}`, `${place}-е место · ${time}`, `${ordEs(place)} en ${time}`, `${ordDe(place)} in ${time}`);
+  const headline = me.dsq || !time ? t('Disqualified', 'Дисквалификация', 'Descalificado', 'Disqualifiziert', 'Diskalifiye') : t(`${ordEn(place)} in ${time}`, `${place}-е место · ${time}`, `${ordEs(place)} en ${time}`, `${ordDe(place)} in ${time}`, `${ordTr(place)}, ${time}`);
   const date = new Date(res.at).toLocaleDateString(LOCALE[lang], { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-  const kind = res.daily ? `${t('Race of the day', 'Гонка дня', 'Regata del día', 'Regatta des Tages')} · ${date}` : t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta');
-  const wind = { light: t('Light breeze', 'Слабый ветер', 'Brisa suave', 'Leichte Brise'), medium: t('Medium breeze', 'Средний ветер', 'Brisa media', 'Mittlere Brise'), strong: t('Strong breeze', 'Сильный ветер', 'Brisa fuerte', 'Starke Brise') }[res.preset];
+  const kind = res.daily ? `${t('Race of the day', 'Гонка дня', 'Regata del día', 'Regatta des Tages', 'Günün yarışı')} · ${date}` : t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış');
+  const wind = { light: t('Light breeze', 'Слабый ветер', 'Brisa suave', 'Leichte Brise', 'Hafif meltem'), medium: t('Medium breeze', 'Средний ветер', 'Brisa media', 'Mittlere Brise', 'Orta meltem'), strong: t('Strong breeze', 'Сильный ветер', 'Brisa fuerte', 'Starke Brise', 'Kuvvetli meltem') }[res.preset];
   const kn = { light: 7, medium: 12, strong: 19 }[res.preset];
-  const len = ({ short: t('short', 'короткая', 'corto', 'kurz'), medium: t('medium', 'средняя', 'medio', 'mittel'), long: t('long', 'длинная', 'largo', 'lang') } as Record<string, string>)[res.length] || '';
+  const len = ({ short: t('short', 'короткая', 'corto', 'kurz', 'kısa'), medium: t('medium', 'средняя', 'medio', 'mittel', 'orta'), long: t('long', 'длинная', 'largo', 'lang', 'uzun') } as Record<string, string>)[res.length] || '';
   const shape = t(...SHAPE_NAME[shapeOf(res.course)]).toLowerCase();
-  const laps = t(`${res.laps} ${res.laps > 1 ? 'laps' : 'lap'}`, `${res.laps} ${res.laps > 1 ? 'круга' : 'круг'}`, `${res.laps} ${res.laps > 1 ? 'vueltas' : 'vuelta'}`, `${res.laps} ${res.laps > 1 ? 'Runden' : 'Runde'}`);
-  const detail = `${wind} ${kn} ${t('kn', 'уз', 'kn', 'kn')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length), `${res.boats.length} ${res.boats.length === 1 ? 'barco' : 'barcos'}`, `${res.boats.length} ${res.boats.length === 1 ? 'Boot' : 'Boote'}`)} · ${shape}${len ? `, ${len}` : ''}, ${laps}`;
+  const laps = t(`${res.laps} ${res.laps > 1 ? 'laps' : 'lap'}`, `${res.laps} ${res.laps > 1 ? 'круга' : 'круг'}`, `${res.laps} ${res.laps > 1 ? 'vueltas' : 'vuelta'}`, `${res.laps} ${res.laps > 1 ? 'Runden' : 'Runde'}`, `${res.laps} tur`);
+  const detail = `${wind} ${kn} ${t('kn', 'уз', 'kn', 'kn', 'kn')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length), `${res.boats.length} ${res.boats.length === 1 ? 'barco' : 'barcos'}`, `${res.boats.length} ${res.boats.length === 1 ? 'Boot' : 'Boote'}`, `${res.boats.length} tekne`)} · ${shape}${len ? `, ${len}` : ''}, ${laps}`;
   const isToday = res.daily === new Date().toISOString().slice(0, 10);
-  const call = time && res.daily && isToday ? t('Beat this time', 'Побей это время', 'Bate este tiempo', 'Zeit zum Schlagen') : t('Sail today’s race', 'Пройди гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln');
-  const length = ({ short: t('Short', 'Короткая', 'Corta', 'Kurz'), medium: t('Medium', 'Средняя', 'Media', 'Mittel'), long: t('Long', 'Длинная', 'Larga', 'Lang') } as Record<string, string>)[res.length] || '';
+  const call = time && res.daily && isToday ? t('Beat this time', 'Побей это время', 'Bate este tiempo', 'Zeit zum Schlagen', 'Bu süreyi geç') : t('Sail today’s race', 'Пройди гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln', 'Günün yarışına çık');
+  const length = ({ short: t('Short', 'Короткая', 'Corta', 'Kurz', 'Kısa'), medium: t('Medium', 'Средняя', 'Media', 'Mittel', 'Orta'), long: t('Long', 'Длинная', 'Larga', 'Lang', 'Uzun') } as Record<string, string>)[res.length] || '';
   return { me, place, time, headline, kind, detail, call, date, kn, length, shape: t(...SHAPE_NAME[shapeOf(res.course)]), boats: res.boats.length };
 }

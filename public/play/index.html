@@ -585,13 +585,13 @@
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var q = new URLSearchParams(location.search), TG = window.Telegram && Telegram.WebApp && Telegram.WebApp.initData ? Telegram.WebApp : null;
-  var ul = q.get('lang'), cl = (document.cookie.match(/(?:^|; )lang=(en|ru|es|de)\b/) || [])[1];
+  var ul = q.get('lang'), cl = (document.cookie.match(/(?:^|; )lang=(en|ru|es|de|tr)\b/) || [])[1];
   var dl = (TG && TG.initDataUnsafe && TG.initDataUnsafe.user && TG.initDataUnsafe.user.language_code) || navigator.language || '';
-  var lang = ul === 'ru' || ul === 'en' || ul === 'es' || ul === 'de' ? ul : cl ? cl : /^(ru|uk|be|kk)\b/i.test(dl) ? 'ru' : /^es\b/i.test(dl) ? 'es' : /^de\b/i.test(dl) ? 'de' : 'en';
+  var lang = ul === 'ru' || ul === 'en' || ul === 'es' || ul === 'de' || ul === 'tr' ? ul : cl ? cl : /^(ru|uk|be|kk)\b/i.test(dl) ? 'ru' : /^es\b/i.test(dl) ? 'es' : /^de\b/i.test(dl) ? 'de' : /^tr\b/i.test(dl) ? 'tr' : 'en';
   var ru = lang === 'ru';
-  var t = function (en, r, es, de) { return ru ? r : lang === 'es' && es ? es : lang === 'de' && de ? de : en; };
+  var t = function (en, r, es, de, tk) { return ru ? r : lang === 'es' && es ? es : lang === 'de' && de ? de : lang === 'tr' && tk ? tk : en; };
   document.documentElement.lang = lang;
-  document.title = t('Race', 'Гонка', 'Regata', 'Regatta') + ' · Up and down';
+  document.title = t('Race', 'Гонка', 'Regata', 'Regatta', 'Yarış') + ' · Up and down';
   var free = q.get('race') === 'free', match = !!q.get('match');
   // the visit, for the site's /admin (stats.js goes on with it): this browser's random id (kept, so one coming back
   // another day counts once), this opening's, and a post that it opened, from where and on what. Nothing names anyone.
@@ -606,15 +606,15 @@
   var ref = document.referrer ? (new URL(document.referrer).host === location.host ? 'site' : 'other') : TG ? 'tg' : 'direct';
   visitPost({ ev: 'open', id: window.rycVisit.id, open: { vid: vid, ref: ref, kind: match ? 'match' : q.get('drill') ? 'drill' : free ? 'free' : 'today', tg: TG ? 1 : 0,
     dev: matchMedia('(pointer: coarse)').matches ? (Math.min(screen.width, screen.height) < 600 ? 'phone' : 'tablet') : 'desktop' } });
-  var day = new Date().toLocaleDateString({ ru: 'ru-RU', es: 'es-ES', de: 'de-DE' }[lang] || 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-  $('lKick').textContent = match ? t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta') : free ? t('Custom race', 'Своя гонка', 'Regata libre', 'Freie Regatta') : t('Today’s race', 'Гонка дня', 'Regata del día', 'Regatta des Tages') + ' · ' + day;
-  $('lSub').textContent = match ? t('You and a friend in one race, under the rules of today’s race.', 'Ты и друг в одной гонке, по правилам гонки дня.', 'Tú y un amigo en una misma regata, con las reglas de la regata del día.', 'Du und ein Freund in einer Regatta, nach den Regeln der Regatta des Tages.')
+  var day = new Date().toLocaleDateString({ ru: 'ru-RU', es: 'es-ES', de: 'de-DE', tr: 'tr-TR' }[lang] || 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  $('lKick').textContent = match ? t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış') : free ? t('Custom race', 'Своя гонка', 'Regata libre', 'Freie Regatta', 'Serbest yarış') : t('Today’s race', 'Гонка дня', 'Regata del día', 'Regatta des Tages', 'Günün yarışı') + ' · ' + day;
+  $('lSub').textContent = match ? t('You and a friend in one race, under the rules of today’s race.', 'Ты и друг в одной гонке, по правилам гонки дня.', 'Tú y un amigo en una misma regata, con las reglas de la regata del día.', 'Du und ein Freund in einer Regatta, nach den Regeln der Regatta des Tages.', 'Sen ve bir arkadaşın aynı yarışta, günün yarışının kurallarıyla.')
     : free
-    ? t('Your wind, your fleet, your course — against the computer boats, under the racing rules.', 'Твой ветер, твой флот, твоя дистанция — против компьютерных лодок, по правилам.', 'Tu viento, tu flota, tu recorrido: contra los barcos del ordenador y con el reglamento de regatas.', 'Dein Wind, dein Feld, deine Bahn: gegen die Computerboote, nach den Wettfahrtregeln.')
-    : t('The same race for everyone today, so the times compare fairly.', 'Сегодня у всех одна гонка, поэтому время сравнивается честно.', 'Hoy todos corren la misma regata, así que los tiempos se comparan en igualdad.', 'Heute segeln alle dieselbe Regatta, die Zeiten sind also fair vergleichbar.');
-  $('lTick').textContent = t('Coming up', 'Дальше', 'A continuación', 'Als Nächstes');
-  $('lRetry').textContent = t('Try again', 'Ещё раз', 'Reintentar', 'Erneut versuchen');
-  $('lBack').textContent = t('Race hub', 'Меню гонок', 'Menú de regatas', 'Regatta-Menü');
+    ? t('Your wind, your fleet, your course — against the computer boats, under the racing rules.', 'Твой ветер, твой флот, твоя дистанция — против компьютерных лодок, по правилам.', 'Tu viento, tu flota, tu recorrido: contra los barcos del ordenador y con el reglamento de regatas.', 'Dein Wind, dein Feld, deine Bahn: gegen die Computerboote, nach den Wettfahrtregeln.', 'Senin rüzgârın, senin filon, senin parkurun: bilgisayar teknelerine karşı, yarış kurallarıyla.')
+    : t('The same race for everyone today, so the times compare fairly.', 'Сегодня у всех одна гонка, поэтому время сравнивается честно.', 'Hoy todos corren la misma regata, así que los tiempos se comparan en igualdad.', 'Heute segeln alle dieselbe Regatta, die Zeiten sind also fair vergleichbar.', 'Bugün herkes aynı yarışta, böylece süreler adilce karşılaştırılır.');
+  $('lTick').textContent = t('Coming up', 'Дальше', 'A continuación', 'Als Nächstes', 'Sırada');
+  $('lRetry').textContent = t('Try again', 'Ещё раз', 'Reintentar', 'Erneut versuchen', 'Tekrar dene');
+  $('lBack').textContent = t('Race hub', 'Меню гонок', 'Menú de regatas', 'Regatta-Menü', 'Yarış menüsü');
 
   // the photo: the game seen from the drone, sized by the image optimiser (AVIF ~110 KB), faded in once it is here
   var photo = $('lPhoto'), img = new Image();
@@ -623,17 +623,17 @@
 
   // a tip while it loads, a new one every five seconds
   var tips = [
-    ['Port tack keeps clear of starboard.', 'Левый галс уступает дорогу правому.', 'La amura de babor se mantiene separada de la de estribor.', 'Backbordbug hält sich von Steuerbordbug frei.'],
-    ['In a header, tack. In a lift, point higher.', 'В заходе — поворачивай. В отходе — иди острее.', 'Con rolada desfavorable, vira. Con rolada favorable, orza más.', 'Bei einem Dreher wenden. Bei einem Raumer höher segeln.'],
-    ['Cross the line just after the gun. Over early and you have to go back.', 'Пересекай линию сразу после сигнала. Фальстарт — придётся вернуться.', 'Cruza la línea justo después de la señal. Si sales antes, tendrás que volver.', 'Überquere die Linie direkt nach dem Startsignal. Zu früh, und du musst zurück.'],
-    ['Round the windward mark leaving it to port, on your left.', 'Верхний знак огибай, оставляя его слева.', 'Rodea la baliza de barlovento dejándola por babor, a tu izquierda.', 'Runde die Luvtonne an Backbord, also links von dir.'],
-    ['Keep the telltales green: ease the sheet till they stream, then pull in a touch.', 'Держи колдунчики зелёными: трави шкот, пока не потекут, и чуть выбери.', 'Mantén los catavientos en verde: suelta escota hasta que fluyan y luego caza un poco.', 'Halte die Windfäden grün: fier die Schot, bis sie anliegen, dann hol ein wenig dicht.'],
-    ['In a gust, ease the sheet before she heels too far.', 'В порыв трави шкот, пока лодка не легла.', 'En una racha, suelta escota antes de que el barco escore demasiado.', 'In einer Bö fier die Schot, bevor das Boot zu weit krängt.'],
-    ['The kite takes the crew a few seconds to drop — get it down before the gate.', 'Генакер убирают несколько секунд — снимай его до ворот.', 'Arriar el gennaker lleva unos segundos: bájalo antes de la puerta.', 'Den Gennaker zu bergen dauert ein paar Sekunden: hol ihn vor dem Tor runter.'],
-    ['Windward boat keeps clear of leeward; the boat astern of the boat ahead.', 'Наветренная лодка уступает подветренной, чисто позади — чисто впереди.', 'El barco de barlovento se mantiene separado del de sotavento, y el libre por la popa del libre por la proa.', 'Das Luvboot hält sich vom Leeboot frei, das Boot klar achteraus vom Boot klar voraus.'],
+    ['Port tack keeps clear of starboard.', 'Левый галс уступает дорогу правому.', 'La amura de babor se mantiene separada de la de estribor.', 'Backbordbug hält sich von Steuerbordbug frei.', 'İskele kontra, sancak kontradan uzak durur.'],
+    ['In a header, tack. In a lift, point higher.', 'В заходе — поворачивай. В отходе — иди острее.', 'Con rolada desfavorable, vira. Con rolada favorable, orza más.', 'Bei einem Dreher wenden. Bei einem Raumer höher segeln.', 'Aleyhte dönüşte tramola at. Lehte dönüşte daha orsa çık.'],
+    ['Cross the line just after the gun. Over early and you have to go back.', 'Пересекай линию сразу после сигнала. Фальстарт — придётся вернуться.', 'Cruza la línea justo después de la señal. Si sales antes, tendrás que volver.', 'Überquere die Linie direkt nach dem Startsignal. Zu früh, und du musst zurück.', 'Hattı start işaretinden hemen sonra geç. Erken geçersen geri dönmen gerekir.'],
+    ['Round the windward mark leaving it to port, on your left.', 'Верхний знак огибай, оставляя его слева.', 'Rodea la baliza de barlovento dejándola por babor, a tu izquierda.', 'Runde die Luvtonne an Backbord, also links von dir.', 'Rüzgârüstü şamandırasını iskeleden, yani solunda bırakarak dön.'],
+    ['Keep the telltales green: ease the sheet till they stream, then pull in a touch.', 'Держи колдунчики зелёными: трави шкот, пока не потекут, и чуть выбери.', 'Mantén los catavientos en verde: suelta escota hasta que fluyan y luego caza un poco.', 'Halte die Windfäden grün: fier die Schot, bis sie anliegen, dann hol ein wenig dicht.', 'Telltale’ları yeşilde tut: düz akana dek iskotayı boşlat, sonra biraz çek.'],
+    ['In a gust, ease the sheet before she heels too far.', 'В порыв трави шкот, пока лодка не легла.', 'En una racha, suelta escota antes de que el barco escore demasiado.', 'In einer Bö fier die Schot, bevor das Boot zu weit krängt.', 'Rüzgâr hamlesinde tekne fazla yatmadan iskotayı boşlat.'],
+    ['The kite takes the crew a few seconds to drop — get it down before the gate.', 'Генакер убирают несколько секунд — снимай его до ворот.', 'Arriar el gennaker lleva unos segundos: bájalo antes de la puerta.', 'Den Gennaker zu bergen dauert ein paar Sekunden: hol ihn vor dem Tor runter.', 'Gennaker’ı indirmek birkaç saniye sürer: kapıdan önce indir.'],
+    ['Windward boat keeps clear of leeward; the boat astern of the boat ahead.', 'Наветренная лодка уступает подветренной, чисто позади — чисто впереди.', 'El barco de barlovento se mantiene separado del de sotavento, y el libre por la popa del libre por la proa.', 'Das Luvboot hält sich vom Leeboot frei, das Boot klar achteraus vom Boot klar voraus.', 'Rüzgârüstündeki tekne rüzgâraltındakinden, açık arkadaki de açık öndekinden uzak durur.'],
   ];
   var tipEl = $('lTip'), ti = Math.floor(Math.random() * tips.length);
-  var showTip = function () { tipEl.innerHTML = '<span class="meta">' + t('While the boat is rigged', 'Пока готовим лодку', 'Mientras preparamos el barco', 'Während das Boot aufgeriggt wird') + '</span>' + (tips[ti % tips.length][{ en: 0, ru: 1, es: 2, de: 3 }[lang] || 0] || tips[ti % tips.length][0]); };
+  var showTip = function () { tipEl.innerHTML = '<span class="meta">' + t('While the boat is rigged', 'Пока готовим лодку', 'Mientras preparamos el barco', 'Während das Boot aufgeriggt wird', 'Tekne hazırlanırken') + '</span>' + (tips[ti % tips.length][{ en: 0, ru: 1, es: 2, de: 3, tr: 4 }[lang] || 0] || tips[ti % tips.length][0]); };
   showTip();
   var tipTimer = setInterval(function () { tipEl.classList.add('fade'); setTimeout(function () { ti++; showTip(); tipEl.classList.remove('fade'); }, 350); }, 5000);
 
@@ -642,8 +642,8 @@
     ['/game/post.js', 1], ['/game/ocean.js', 1], ['/game/light.js', 1], ['/game/land.js', 1], ['/game/skopea.js', 2], ['skopea.json', 1], ['skopea.bin', 2],
     ['/game/yacht.js', 4], ['/game/committee.js', 3], ['/game/wildlife.js', 3], ['/game/hud-bc.js', 3], ['/game/course-map.js', 1], ['/game/stats.js', 1], ['/game/main.js', 3], ['yacht.glb', 15]];
   var got = {}, target = 0, shown = 0, soft = 0, ready = false, failed = false, t0 = performance.now();
-  var steps = { wind: t('Checking the wind', 'Смотрим на ветер', 'Comprobando el viento', 'Wind wird geprüft'), course: t('Laying the course', 'Ставим дистанцию', 'Montando el recorrido', 'Bahn wird ausgelegt'), boat: t('Rigging the boat', 'Готовим лодку', 'Preparando el barco', 'Boot wird aufgeriggt'),
-    slow: t('Slow connection — still loading', 'Медленная связь — ещё грузится', 'Conexión lenta: sigue cargando', 'Langsame Verbindung: lädt noch'), ready: t('Ready — to the start', 'Готово — на старт', 'Listo: a la salida', 'Fertig: zum Start'), err: t('The race didn’t load', 'Гонка не загрузилась', 'La regata no se ha cargado', 'Die Regatta wurde nicht geladen') };
+  var steps = { wind: t('Checking the wind', 'Смотрим на ветер', 'Comprobando el viento', 'Wind wird geprüft', 'Rüzgâr kontrol ediliyor'), course: t('Laying the course', 'Ставим дистанцию', 'Montando el recorrido', 'Bahn wird ausgelegt', 'Parkur kuruluyor'), boat: t('Rigging the boat', 'Готовим лодку', 'Preparando el barco', 'Boot wird aufgeriggt', 'Tekne hazırlanıyor'),
+    slow: t('Slow connection — still loading', 'Медленная связь — ещё грузится', 'Conexión lenta: sigue cargando', 'Langsame Verbindung: lädt noch', 'Bağlantı yavaş: hâlâ yükleniyor'), ready: t('Ready — to the start', 'Готово — на старт', 'Listo: a la salida', 'Fertig: zum Start', 'Hazır: starta'), err: t('The race didn’t load', 'Гонка не загрузилась', 'La regata no se ha cargado', 'Die Regatta wurde nicht geladen', 'Yarış yüklenemedi') };
   var stepEl = $('lStep'), pctEl = $('lPct'), bar = $('lBar'), root = $('loading');
   var step = function (s) { if (stepEl.textContent !== s) stepEl.textContent = s; };
   function count(list) {
@@ -690,7 +690,7 @@
     race: function (venue, cells, next) {
       var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
       $('lH').textContent = venue;
-      $('lTick').innerHTML = esc(t('Coming up', 'Дальше', 'A continuación', 'Als Nächstes')) + ' · <b>' + esc(venue) + '</b>' + (next ? '<span class="l-tn"> · ' + esc(next) + '</span>' : '');
+      $('lTick').innerHTML = esc(t('Coming up', 'Дальше', 'A continuación', 'Als Nächstes', 'Sırada')) + ' · <b>' + esc(venue) + '</b>' + (next ? '<span class="l-tn"> · ' + esc(next) + '</span>' : '');
       var box = $('lCells');
       box.innerHTML = cells.map(function (c) { return '<div><span class="meta">' + esc(c[0]) + '</span><b>' + esc(c[1]) + (c[2] ? '<small>' + esc(c[2]) + '</small>' : '') + '</b><em>' + esc(c[3]) + '</em></div>'; }).join('');
       box.hidden = false;
@@ -758,7 +758,7 @@
   </div>
 </div>
 
-<noscript>The game needs JavaScript and WebGL. · Для игры нужны JavaScript и WebGL. · El juego necesita JavaScript y WebGL. · Das Spiel braucht JavaScript und WebGL.</noscript>
+<noscript>The game needs JavaScript and WebGL. · Для игры нужны JavaScript и WebGL. · El juego necesita JavaScript y WebGL. · Das Spiel braucht JavaScript und WebGL. · Oyun için JavaScript ve WebGL gerekir.</noscript>
 <script type="module" src="/game/main.js"></script>
 </body>
 </html>

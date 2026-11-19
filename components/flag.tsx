@@ -9,7 +9,7 @@ export const NoFlag = ({ className = 'fl' }: { className?: string }) => <span cl
 export function FlagImg({ code, lang }: { code: string | null | undefined; lang: Lang }) {
   const f = findFlag(code || undefined);
   if (!f) return <NoFlag />;
-  const name = lang === 'ru' ? f.ru : lang === 'es' ? f.es ?? f.en : lang === 'de' ? f.de ?? f.en : f.en;
+  const name = lang === 'ru' ? f.ru : lang === 'es' ? f.es ?? f.en : lang === 'de' ? f.de ?? f.en : lang === 'tr' ? f.tr ?? f.en : f.en;
   // eslint-disable-next-line @next/next/no-img-element
   return <img className="fl" src={flagSrc(f.code)} alt={name} title={name} width={24} height={16} loading="lazy" decoding="async" />;
 }

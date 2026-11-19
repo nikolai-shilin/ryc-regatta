@@ -648,13 +648,13 @@ function glideWidths(els) {
 
 export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam, flagOf: lookFlag = () => null, sailOf = () => '' }) {
   const L = strings || HUD_STRINGS[LANG] || HUD_STRINGS.en;
-  const ofT = LANG === 'de' ? L.ofTarget : L.ofTarget.toLowerCase(); // (German keeps its nouns' capitals)
+  const ofT = LANG === 'de' ? L.ofTarget : L.ofTarget.toLocaleLowerCase(LANG); // (German keeps its nouns' capitals; Turkish its dotted i)
   const $ = (s) => document.querySelector(s);
   const hud = $('#hud');
   const rudder = $('#rudder'), sheet = $('#sheet'), mini = $('#mini'), count = $('#count'), toastEl = $('#toast');
   const nf = (x, d = 1) => (LANG === 'en' ? x.toFixed(d) : x.toFixed(d).replace('.', ','));
   const M = LANG === 'ru' ? 'м' : 'm', KNU = t('kn').toUpperCase();
-  const venue = (VENUE.name && (VENUE.name[{ en: 0, ru: 1, es: 2, de: 3 }[LANG] ?? 0] ?? VENUE.name[0])) || '';
+  const venue = (VENUE.name && (VENUE.name[{ en: 0, ru: 1, es: 2, de: 3, tr: 4 }[LANG] ?? 0] ?? VENUE.name[0])) || '';
   document.head.append(Object.assign(document.createElement('style'), { textContent: CSS }));
   const html = (s) => { const d = document.createElement('div'); d.innerHTML = s.trim(); return d.firstChild; };
   const q = (root, s) => root.querySelector(s);

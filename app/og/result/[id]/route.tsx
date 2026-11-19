@@ -1,5 +1,5 @@
 import { isLang, ruPlural, tx, type Lang } from '@/lib/lang';
-import { describe, getResult, ordEn, ordEs, ordDe } from '@/lib/result';
+import { describe, getResult, ordEn, ordEs, ordDe, ordTr } from '@/lib/result';
 import { card, C } from '@/lib/og';
 import { OG_IMAGE } from '@/lib/seo';
 
@@ -15,13 +15,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const res = await getResult(id);
   if (!res) return new Response(null, { status: 302, headers: { location: OG_IMAGE.url, 'cache-control': 'public, max-age=60' } });
   const d = describe(res, lang);
-  const img = await card({
+  const img = await card({ lang,
     bg: 'drone',
-    kind: `${res.daily ? t('Race of the day', 'Гонка дня', 'Regata del día', 'Regatta des Tages') : t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta')} · ${t(`${d.boats} boats`, `${d.boats} ${ruPlural(d.boats, ['лодка', 'лодки', 'лодок'])}`, `${d.boats} barcos`, `${d.boats} Boote`)}`,
+    kind: `${res.daily ? t('Race of the day', 'Гонка дня', 'Regata del día', 'Regatta des Tages', 'Günün yarışı') : t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış')} · ${t(`${d.boats} boats`, `${d.boats} ${ruPlural(d.boats, ['лодка', 'лодки', 'лодок'])}`, `${d.boats} barcos`, `${d.boats} Boote`, `${d.boats} tekne`)}`,
     tag: { text: d.date.replace(/\.$/, '') },
     hero: d.time
-      ? { label: t(`Finished ${ordEn(d.place)} of ${d.boats}`, `Финиш: ${d.place}-е место из ${d.boats}`, `Puesto ${ordEs(d.place)} de ${d.boats}`, `Im Ziel als ${ordDe(d.place)} von ${d.boats}`), value: d.time, plate: { text: t(ordEn(d.place), `${d.place}`, ordEs(d.place), ordDe(d.place)), bg: d.place === 1 ? C.gold : C.you } }
-      : { label: t('Result', 'Результат', 'Resultado', 'Ergebnis'), value: t('Disqualified', 'Дисквалификация', 'Descalificado', 'Disqualifiziert'), color: C.live },
+      ? { label: t(`Finished ${ordEn(d.place)} of ${d.boats}`, `Финиш: ${d.place}-е место из ${d.boats}`, `Puesto ${ordEs(d.place)} de ${d.boats}`, `Im Ziel als ${ordDe(d.place)} von ${d.boats}`, `${d.boats} tekne içinde ${ordTr(d.place)} bitirdi`), value: d.time, plate: { text: t(ordEn(d.place), `${d.place}`, ordEs(d.place), ordDe(d.place), ordTr(d.place)), bg: d.place === 1 ? C.gold : C.you } }
+      : { label: t('Result', 'Результат', 'Resultado', 'Ergebnis', 'Sonuç'), value: t('Disqualified', 'Дисквалификация', 'Descalificado', 'Disqualifiziert', 'Diskalifiye'), color: C.live },
     call: d.call,
   });
   img.headers.set('cache-control', 'public, max-age=86400, s-maxage=604800, immutable'); // a posted result never changes

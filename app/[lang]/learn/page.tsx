@@ -10,11 +10,11 @@ import { READING_VIEWPORT } from '@/lib/no-zoom';
 // text to read: it zooms (lib/no-zoom.ts)
 export const viewport = READING_VIEWPORT;
 
-export const generateMetadata = titled('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen', {
+export const generateMetadata = titled('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen', 'Yarış rehberleri', {
   path: '/learn', card: '/og/page/learn',
   description: [
     'Short guides to sailboat racing: points of sail, tacking and gybing, the racing rules, the start, wind shifts, the marks, downwind and boat speed. Then try them in a free 3D race.',
-    'Короткие пособия по парусным гонкам: курсы относительно ветра, повороты, правила, старт, сдвиги ветра, знаки, попутные курсы и скорость. А потом попробуй их в бесплатной 3D-гонке.', 'Guías breves de regatas a vela: rumbos respecto al viento, virar y trasluchar, las reglas de regatas, la salida, las roladas, las balizas, la popa y la velocidad del barco. Luego pruébalas en una regata 3D gratuita.', 'Kurze Anleitungen zum Segelregattasport: Kurse zum Wind, Wenden und Halsen, die Wettfahrtregeln, der Start, Winddreher, die Bahnmarken, Vorwindkurs und Bootstempo. Dann probiere sie in einer kostenlosen 3D-Regatta aus.'],
+    'Короткие пособия по парусным гонкам: курсы относительно ветра, повороты, правила, старт, сдвиги ветра, знаки, попутные курсы и скорость. А потом попробуй их в бесплатной 3D-гонке.', 'Guías breves de regatas a vela: rumbos respecto al viento, virar y trasluchar, las reglas de regatas, la salida, las roladas, las balizas, la popa y la velocidad del barco. Luego pruébalas en una regata 3D gratuita.', 'Kurze Anleitungen zum Segelregattasport: Kurse zum Wind, Wenden und Halsen, die Wettfahrtregeln, der Start, Winddreher, die Bahnmarken, Vorwindkurs und Bootstempo. Dann probiere sie in einer kostenlosen 3D-Regatta aus.', 'Yelken yarışı için kısa rehberler: seyir yönleri, tramola ve kavança, yarış kuralları, start, rüzgâr dönüşleri, şamandıralar, pupa ve tekne hızı. Sonra ücretsiz bir 3D yarışta dene.'],
 });
 
 // L0 · Learn to race: the guides, one card each (its picture from the game and its number over it; the one without a
@@ -26,9 +26,9 @@ export default async function Learn({ params }: LangParams) {
     <div className="scr help hp bc" lang={lang}>
       <SiteHead lang={lang} t={t} page="learn" />
       <header className="hm-page hm-ph">
-        <span className="kicker">{t(`Up and down · ${guides.length} guides`, `Up and down · ${guides.length} ${ruPlural(guides.length, ['пособие', 'пособия', 'пособий'])}`, `Up and down · ${guides.length} guías`, `Up and down · ${guides.length} Anleitungen`)}</span>
-        <h1 className="hm-ph-h">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen')}</h1>
-        <p className="hm-text">{t('What wins a sailboat race, a few minutes at a time: the points of sail and the tack, the rules when boats meet, the start, the wind shifts, the marks, the run and boat speed. Each guide ends on the water, in the game.', 'Что выигрывает парусную гонку — по несколько минут на тему: курсы относительно ветра и повороты, правила при встрече лодок, старт, заходы и отходы ветра, знаки, попутный курс и скорость. Каждое пособие заканчивается на воде, в игре.', 'Qué gana una regata a vela, unos minutos cada vez: los rumbos respecto al viento y la virada, las reglas cuando los barcos se encuentran, la salida, las roladas, las balizas, la empopada y la velocidad del barco. Cada guía acaba en el agua, en el juego.', 'Was eine Segelregatta gewinnt, ein paar Minuten auf einmal: die Kurse zum Wind und die Wende, die Regeln, wenn Boote sich begegnen, der Start, die Winddreher, die Bahnmarken, der Vorwindkurs und das Bootstempo. Jede Anleitung endet auf dem Wasser, im Spiel.')}</p>
+        <span className="kicker">{t(`Up and down · ${guides.length} guides`, `Up and down · ${guides.length} ${ruPlural(guides.length, ['пособие', 'пособия', 'пособий'])}`, `Up and down · ${guides.length} guías`, `Up and down · ${guides.length} Anleitungen`, `Up and down · ${guides.length} rehber`)}</span>
+        <h1 className="hm-ph-h">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen', 'Yarış rehberleri')}</h1>
+        <p className="hm-text">{t('What wins a sailboat race, a few minutes at a time: the points of sail and the tack, the rules when boats meet, the start, the wind shifts, the marks, the run and boat speed. Each guide ends on the water, in the game.', 'Что выигрывает парусную гонку — по несколько минут на тему: курсы относительно ветра и повороты, правила при встрече лодок, старт, заходы и отходы ветра, знаки, попутный курс и скорость. Каждое пособие заканчивается на воде, в игре.', 'Qué gana una regata a vela, unos minutos cada vez: los rumbos respecto al viento y la virada, las reglas cuando los barcos se encuentran, la salida, las roladas, las balizas, la empopada y la velocidad del barco. Cada guía acaba en el agua, en el juego.', 'Was eine Segelregatta gewinnt, ein paar Minuten auf einmal: die Kurse zum Wind und die Wende, die Regeln, wenn Boote sich begegnen, der Start, die Winddreher, die Bahnmarken, der Vorwindkurs und das Bootstempo. Jede Anleitung endet auf dem Wasser, im Spiel.', 'Bir yelken yarışını ne kazandırır, her seferinde birkaç dakika: seyir yönleri ve tramola, tekneler karşılaşınca kurallar, start, rüzgâr dönüşleri, şamandıralar, pupa ve tekne hızı. Her rehber suda, oyunda biter.')}</p>
       </header>
       <div className="hm-page gd-list">
         {guides.map((g, i) => (
@@ -43,17 +43,17 @@ export default async function Learn({ params }: LangParams) {
               <span className="kicker">{g.kicker}</span>
               <span className="card-title">{g.title}</span>
               <p>{g.description}</p>
-              <span className="hm-src">{t('Read', 'Читать', 'Leer', 'Lesen')}<IconArrow s={14} /></span>
+              <span className="hm-src">{t('Read', 'Читать', 'Leer', 'Lesen', 'Oku')}<IconArrow s={14} /></span>
             </div>
           </Link>
         ))}
         <Link className="gd-banner" href="/learn/glossary">
-          <span className="kicker">{t('Glossary', 'Словарь', 'Glosario', 'Glossar')}</span>
+          <span className="kicker">{t('Glossary', 'Словарь', 'Glosario', 'Glossar', 'Sözlük')}</span>
           <span className="gd-banner-t">
-            <span className="card-title">{t('Sailing racing glossary', 'Словарь парусных гонок', 'Glosario de regatas a vela', 'Segelregatta-Glossar')}</span>
-            <p>{t('Beat, overlap, clear astern, header, layline, zone, mark-room, OCS: the words of a race course, a sentence or two each.', 'Лавировка, связанность, чисто позади, заход ветра, лейлайн, зона, место у знака, фальстарт: слова гоночной дистанции, по паре предложений.', 'Ceñida, compromiso, libre por la popa, rolada desfavorable, layline, zona, espacio en baliza, OCS: las palabras de un recorrido de regata, una frase o dos cada una.', 'Kreuz, Überlappung, klar achteraus, Dreher, Layline, Zone, Bahnmarkenraum, OCS: die Wörter einer Regattabahn, je ein bis zwei Sätze.')}</p>
+            <span className="card-title">{t('Sailing racing glossary', 'Словарь парусных гонок', 'Glosario de regatas a vela', 'Segelregatta-Glossar', 'Yelken yarışı sözlüğü')}</span>
+            <p>{t('Beat, overlap, clear astern, header, layline, zone, mark-room, OCS: the words of a race course, a sentence or two each.', 'Лавировка, связанность, чисто позади, заход ветра, лейлайн, зона, место у знака, фальстарт: слова гоночной дистанции, по паре предложений.', 'Ceñida, compromiso, libre por la popa, rolada desfavorable, layline, zona, espacio en baliza, OCS: las palabras de un recorrido de regata, una frase o dos cada una.', 'Kreuz, Überlappung, klar achteraus, Dreher, Layline, Zone, Bahnmarkenraum, OCS: die Wörter einer Regattabahn, je ein bis zwei Sätze.', 'Orsa ayağı, bindirme, açık arkada, aleyhte dönüş, layline, bölge, şamandıra alanı, OCS: bir yarış parkurunun sözcükleri, her biri bir iki cümle.')}</p>
           </span>
-          <span className="gd-banner-go">{t('Read', 'Читать', 'Leer', 'Lesen')}<IconArrow s={14} /></span>
+          <span className="gd-banner-go">{t('Read', 'Читать', 'Leer', 'Lesen', 'Oku')}<IconArrow s={14} /></span>
         </Link>
       </div>
       <SiteFoot lang={lang} t={t} back="/learn" />

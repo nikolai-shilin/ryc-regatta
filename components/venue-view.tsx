@@ -18,12 +18,12 @@ import { useSceneStart } from '@/lib/scene-start';
 // seconds once the drone is there (the first a little longer); picking one, the arrows or taking hold of the view stops
 // the tour, and the play button starts it again.
 const DWELL = 10;
-type Pair = [en: string, ru: string, es?: string, de?: string]; // English, Russian
+type Pair = [en: string, ru: string, es?: string, de?: string, tr?: string]; // English, Russian
 const SHOTS: { id: string; name: Pair; note: Pair }[] = [
-  { id: 'waters', name: ['The water', 'Акватория', 'El agua', 'Das Wasser'], note: ['From high up, all round', 'С высоты, по кругу', 'Desde lo alto, alrededor', 'Von hoch oben, rundum'] },
-  { id: 'course', name: ['The course', 'Дистанция', 'El recorrido', 'Die Bahn'], note: ['From behind the start', 'Из-за линии старта', 'Desde detrás de la salida', 'Von hinter dem Start'] },
-  { id: 'start', name: ['The start', 'Старт', 'La salida', 'Der Start'], note: ['Along the line', 'Вдоль линии', 'A lo largo de la línea', 'Entlang der Linie'] },
-  { id: 'windward', name: ['The top mark', 'Верхний знак', 'La baliza de barlovento', 'Die obere Marke'], note: ['Down the beat', 'Вниз по лавировке', 'Bajando la ceñida', 'Das Kreuz hinunter'] },
+  { id: 'waters', name: ['The water', 'Акватория', 'El agua', 'Das Wasser', 'Su'], note: ['From high up, all round', 'С высоты, по кругу', 'Desde lo alto, alrededor', 'Von hoch oben, rundum', 'Yukarıdan, çepeçevre'] },
+  { id: 'course', name: ['The course', 'Дистанция', 'El recorrido', 'Die Bahn', 'Parkur'], note: ['From behind the start', 'Из-за линии старта', 'Desde detrás de la salida', 'Von hinter dem Start', 'Startın arkasından'] },
+  { id: 'start', name: ['The start', 'Старт', 'La salida', 'Der Start', 'Start'], note: ['Along the line', 'Вдоль линии', 'A lo largo de la línea', 'Entlang der Linie', 'Hat boyunca'] },
+  { id: 'windward', name: ['The top mark', 'Верхний знак', 'La baliza de barlovento', 'Die obere Marke', 'Üst şamandıra'], note: ['Down the beat', 'Вниз по лавировке', 'Bajando la ceñida', 'Das Kreuz hinunter', 'Orsa ayağından aşağı'] },
 ];
 type ShotId = string;
 
@@ -100,27 +100,27 @@ export function VenueView({ lang, v, back }: { lang: Lang; v: VenueCard; back: R
 
   return (
     <div className="bt fl-view vn-view">
-      <LoadBar label={t('Loading the water', 'Загружаем акваторию', 'Cargando el agua', 'Das Wasser wird geladen')} on={!live && !backdrop.off} />
-      <ScenePoster label={backdrop.off ? undefined : t('Loading the water', 'Загружаем акваторию', 'Cargando el agua', 'Das Wasser wird geladen')} on={!live} />
-      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={backdrop.go ? `/venue-view?venue=${v.id}` : undefined} title={t(`${name} from the drone`, `${name} с дрона`, `${name} desde el dron`, `${name} aus der Drohne`)}
+      <LoadBar label={t('Loading the water', 'Загружаем акваторию', 'Cargando el agua', 'Das Wasser wird geladen', 'Su yükleniyor')} on={!live && !backdrop.off} />
+      <ScenePoster label={backdrop.off ? undefined : t('Loading the water', 'Загружаем акваторию', 'Cargando el agua', 'Das Wasser wird geladen', 'Su yükleniyor')} on={!live} />
+      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={backdrop.go ? `/venue-view?venue=${v.id}` : undefined} title={t(`${name} from the drone`, `${name} с дрона`, `${name} desde el dron`, `${name} aus der Drohne`, `${name} drondan`)}
         onLoad={() => post({ type: 'hello' })} />
 
       <div className="bt-info" ref={info}>
         <div className="bt-top">{back}<SceneBrand lang={lang} /></div>
-        <span className="bt-kick">{t('Regatta venue', 'Регатная акватория', 'Sede de regata', 'Regattarevier')} <span className="fl-n">{String(v.n).padStart(2, '0')} / {String(v.of).padStart(2, '0')}</span></span>
+        <span className="bt-kick">{t('Regatta venue', 'Регатная акватория', 'Sede de regata', 'Regattarevier', 'Regata yarış alanı')} <span className="fl-n">{String(v.n).padStart(2, '0')} / {String(v.of).padStart(2, '0')}</span></span>
         <h1 className="bt-h fl-h">{name}</h1>
         <p className="bt-p">{t(...v.about)}</p>
 
         <div className="fl-strip" ref={strip}>
           <div className="fl-ctl">
-            <button type="button" className="fl-btn" onClick={() => { setAuto(false); step(-1); }} aria-label={t('Previous shot', 'Предыдущий вид', 'Plano anterior', 'Vorherige Aufnahme')}><IconBack s={16} /></button>
+            <button type="button" className="fl-btn" onClick={() => { setAuto(false); step(-1); }} aria-label={t('Previous shot', 'Предыдущий вид', 'Plano anterior', 'Vorherige Aufnahme', 'Önceki çekim')}><IconBack s={16} /></button>
             <button type="button" className="fl-btn" onClick={() => setAuto(!auto)} aria-pressed={auto}
-              aria-label={auto ? t('Stop the drone’s tour', 'Остановить облёт', 'Parar el recorrido del dron', 'Tour der Drohne beenden') : t('Tour the course', 'Облететь дистанцию', 'Recorrer el campo', 'Bahn besichtigen')}>
+              aria-label={auto ? t('Stop the drone’s tour', 'Остановить облёт', 'Parar el recorrido del dron', 'Tour der Drohne beenden', 'Dron turunu durdur') : t('Tour the course', 'Облететь дистанцию', 'Recorrer el campo', 'Bahn besichtigen', 'Parkuru gez')}>
               {auto ? <svg viewBox="0 0 24 24" width={14} height={14} aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" /></svg> : <IconPlay s={14} />}
             </button>
-            <button type="button" className="fl-btn" onClick={() => { setAuto(false); step(1); }} aria-label={t('Next shot', 'Следующий вид', 'Siguiente plano', 'Nächste Aufnahme')}><IconArrow s={16} /></button>
+            <button type="button" className="fl-btn" onClick={() => { setAuto(false); step(1); }} aria-label={t('Next shot', 'Следующий вид', 'Siguiente plano', 'Nächste Aufnahme', 'Sonraki çekim')}><IconArrow s={16} /></button>
           </div>
-          <div className="fl-boats vn-shots" role="radiogroup" aria-label={t('The drone’s view', 'Вид с дрона', 'La vista del dron', 'Die Sicht der Drohne')}>
+          <div className="fl-boats vn-shots" role="radiogroup" aria-label={t('The drone’s view', 'Вид с дрона', 'La vista del dron', 'Die Sicht der Drohne', 'Dronun görüntüsü')}>
             {SHOTS.map((x, i) => (
               <button key={x.id} type="button" role="radio" aria-checked={x.id === shot} className="fl-boat" onClick={() => pick(x.id)}>
                 <span className="fl-i">{String(i + 1).padStart(2, '0')}</span>
@@ -134,25 +134,25 @@ export function VenueView({ lang, v, back }: { lang: Lang; v: VenueCard; back: R
       </div>
 
       <PauseCard lang={lang} back={`/venues/${v.id}`} title={name} icon={<IconPin s={14} />} cardRef={card}
-        tools={<Link className="bt-mini bt-all" href="/venues" aria-label={t('All venues', 'Все акватории', 'Todas las sedes', 'Alle Reviere')}><IconBack s={14} /><span>{t('All venues', 'Все акватории', 'Todas las sedes', 'Alle Reviere')}</span></Link>}
+        tools={<Link className="bt-mini bt-all" href="/venues" aria-label={t('All venues', 'Все акватории', 'Todas las sedes', 'Alle Reviere', 'Tüm yarış alanları')}><IconBack s={14} /><span>{t('All venues', 'Все акватории', 'Todas las sedes', 'Alle Reviere', 'Tüm yarış alanları')}</span></Link>}
         action={v.today
-          ? <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Sail today’s race here', 'Пройди гонку дня здесь', 'Navega aquí la regata de hoy', 'Hier die Regatta des Tages segeln')}</span></a>
-          : <button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race at ${name}`, 'Гоняться здесь', `Regatea en ${name}`, `Regatta in ${name}`)}</span></button>}>
+          ? <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Sail today’s race here', 'Пройди гонку дня здесь', 'Navega aquí la regata de hoy', 'Hier die Regatta des Tages segeln', 'Günün yarışını burada yarış')}</span></a>
+          : <button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race at ${name}`, 'Гоняться здесь', `Regatea en ${name}`, `Regatta in ${name}`, `${name} yarışı`)}</span></button>}>
         <p className="bt-hint">{v.today
-          ? t('Today’s race is sailed here: the same course and wind for everyone. Or set up a custom race here, your yacht, wind and fleet.', 'Гонка дня сегодня здесь: одна дистанция и ветер для всех. Или настрой здесь свою гонку — со своей яхтой, ветром и флотом.', 'La regata de hoy se navega aquí: el mismo recorrido y viento para todos. O prepara aquí una regata personalizada, con tu yate, viento y flota.', 'Die Regatta des Tages wird hier gesegelt: dieselbe Bahn und derselbe Wind für alle. Oder richte hier eine eigene Regatta ein, mit deiner Yacht, Wind und Feld.')
-          : t('A custom race here: the yacht, the wind, the fleet and the course are yours to choose. Free, on a phone or a computer, with nothing to install.', 'Своя гонка здесь: яхту, ветер, флот и дистанцию выбираешь ты. Бесплатно, на телефоне или компьютере, ничего не нужно устанавливать.', 'Una regata personalizada aquí: el yate, el viento, la flota y el recorrido los eliges tú. Gratis, en móvil u ordenador, sin instalar nada.', 'Eine freie Regatta hier: Yacht, Wind, Feld und Bahn wählst du selbst. Kostenlos, auf dem Handy oder am Computer, ohne etwas zu installieren.')}</p>
+          ? t('Today’s race is sailed here: the same course and wind for everyone. Or set up a custom race here, your yacht, wind and fleet.', 'Гонка дня сегодня здесь: одна дистанция и ветер для всех. Или настрой здесь свою гонку — со своей яхтой, ветром и флотом.', 'La regata de hoy se navega aquí: el mismo recorrido y viento para todos. O prepara aquí una regata personalizada, con tu yate, viento y flota.', 'Die Regatta des Tages wird hier gesegelt: dieselbe Bahn und derselbe Wind für alle. Oder richte hier eine eigene Regatta ein, mit deiner Yacht, Wind und Feld.', 'Günün yarışı burada yapılır: herkes için aynı parkur ve rüzgâr. Ya da burada, yatınla, rüzgârınla ve filonla bir serbest yarış kur.')
+          : t('A custom race here: the yacht, the wind, the fleet and the course are yours to choose. Free, on a phone or a computer, with nothing to install.', 'Своя гонка здесь: яхту, ветер, флот и дистанцию выбираешь ты. Бесплатно, на телефоне или компьютере, ничего не нужно устанавливать.', 'Una regata personalizada aquí: el yate, el viento, la flota y el recorrido los eliges tú. Gratis, en móvil u ordenador, sin instalar nada.', 'Eine freie Regatta hier: Yacht, Wind, Feld und Bahn wählst du selbst. Kostenlos, auf dem Handy oder am Computer, ohne etwas zu installieren.', 'Burada serbest yarış: yat, rüzgâr, filo ve parkur senin seçimin. Ücretsiz, telefonda ya da bilgisayarda, hiçbir şey kurmadan.')}</p>
 
         <div className="fl-stats vn-stats">
-          <div><span className="bt-sk">{t('Wind in the game', 'Ветер в игре', 'El viento en el juego', 'Wind im Spiel')}</span><b>{t(...v.wind)}</b></div>
-          <div><span className="bt-sk">{t('Sail letters', 'Буквы на парусе', 'Letras de vela', 'Segelnummern')}</span><b>{v.nation}</b></div>
-          <div className="vn-wide"><span className="bt-sk">{t('Where', 'Где', 'Dónde', 'Wo')}</span><b>{t(...v.place)}</b></div>
-          {v.next && <div className="vn-wide"><span className="bt-sk">{t('Race of the day here', 'Гонка дня здесь', 'Regata del día aquí', 'Die Regatta des Tages hier')}</span><b>{v.today ? t('Today', 'Сегодня', 'Hoy', 'Heute') : v.next}</b></div>}
+          <div><span className="bt-sk">{t('Wind in the game', 'Ветер в игре', 'El viento en el juego', 'Wind im Spiel', 'Oyunda rüzgâr')}</span><b>{t(...v.wind)}</b></div>
+          <div><span className="bt-sk">{t('Sail letters', 'Буквы на парусе', 'Letras de vela', 'Segelnummern', 'Yelken harfleri')}</span><b>{v.nation}</b></div>
+          <div className="vn-wide"><span className="bt-sk">{t('Where', 'Где', 'Dónde', 'Wo', 'Nerede')}</span><b>{t(...v.place)}</b></div>
+          {v.next && <div className="vn-wide"><span className="bt-sk">{t('Race of the day here', 'Гонка дня здесь', 'Regata del día aquí', 'Die Regatta des Tages hier', 'Günün yarışı burada')}</span><b>{v.today ? t('Today', 'Сегодня', 'Hoy', 'Heute', 'Bugün') : v.next}</b></div>}
         </div>
 
         <article className="vn-guide">
           <h2 className="vn-title" id="vn-card">{t(...v.title)}</h2>
           <p className="vn-intro">{t(...v.intro)}</p>
-          <p className="gd-by">{t('By ', '', 'Por ', 'Von ')}<span>{v.by}</span> · {t('Published ', 'Опубликовано ', 'Publicado ', 'Veröffentlicht ')}<time dateTime={v.published[1]}>{v.published[0]}</time></p>
+          <p className="gd-by">{t('By ', '', 'Por ', 'Von ', 'Yazan: ')}<span>{v.by}</span> · {t('Published ', 'Опубликовано ', 'Publicado ', 'Veröffentlicht ', 'Yayımlandı: ')}<time dateTime={v.published[1]}>{v.published[0]}</time></p>
           {v.sections.map((s, k) => (
             <section key={k} className="bt-g yt-about" aria-labelledby={`vn-s${k + 1}`}>
               <h3 className="bt-k" id={`vn-s${k + 1}`}>{[<IconWind key="w" s={14} />, <IconFlag key="f" s={14} />, <IconPin key="p" s={14} />][k] ?? <IconBook s={14} />}{t(...s.h)}</h3>
@@ -162,13 +162,13 @@ export function VenueView({ lang, v, back }: { lang: Lang; v: VenueCard; back: R
         </article>
 
         <div className="bt-g">
-          <h3 className="bt-k">{t('More venues', 'Другие акватории', 'Más sedes', 'Weitere Reviere')}</h3>
+          <h3 className="bt-k">{t('More venues', 'Другие акватории', 'Más sedes', 'Weitere Reviere', 'Daha fazla yarış alanı')}</h3>
           <div className="bt-rows">
             {v.others.map((o) => (
               <Link key={o.id} className="bt-row" href={`/venues/${o.id}`}><IconPin s={18} /><span>{t(...o.name)}</span><span className="bt-row-m">{t(...o.place)}</span></Link>
             ))}
-            <Link className="bt-row" href="/venues"><IconBook s={18} /><span>{t('Every venue', 'Все акватории', 'Todas las sedes', 'Alle Reviere')}</span><span className="bt-row-m">{v.of}</span></Link>
-            <Link className="bt-row" href="/learn/shifts"><IconWind s={18} /><span>{t('Playing the wind shifts', 'Как играть на сдвигах', 'Jugar con las roladas', 'Mit den Winddrehern spielen')}</span><span className="bt-row-m">{t('Guide', 'Гид', 'Guía', 'Leitfaden')}</span></Link>
+            <Link className="bt-row" href="/venues"><IconBook s={18} /><span>{t('Every venue', 'Все акватории', 'Todas las sedes', 'Alle Reviere', 'Tüm yarış alanları')}</span><span className="bt-row-m">{v.of}</span></Link>
+            <Link className="bt-row" href="/learn/shifts"><IconWind s={18} /><span>{t('Playing the wind shifts', 'Как играть на сдвигах', 'Jugar con las roladas', 'Mit den Winddrehern spielen', 'Rüzgâr dönüşlerini kullanmak')}</span><span className="bt-row-m">{t('Guide', 'Гид', 'Guía', 'Leitfaden', 'Rehber')}</span></Link>
           </div>
         </div>
       </PauseCard>

@@ -96,7 +96,7 @@ test('a 1-on-1 race posts no rating, and its button is counted as its own', () =
 
 test('the loading screen names the 1-on-1 race, under today\'s rules', () => {
   const play = read('public/play/index.html');
-  assert.match(play, /match \? t\('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta'\)/);
+  assert.match(play, /match \? t\('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış'\)/);
   assert.doesNotMatch(play, /Match race|Матчевая гонка|match-racing rules|правилам матчевых гонок/);
   assert.match(play, /under the rules of today’s race/); assert.match(play, /по правилам гонки дня/);
 });
