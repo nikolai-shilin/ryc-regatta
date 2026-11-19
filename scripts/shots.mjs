@@ -57,11 +57,12 @@ const SHOTS = [
   // an echelon seen off their windward bows, so every mainsail's face (its logo) shows beside her spinnaker (STAGE below)
   { name: 'sp-fleet-v3', w: 1600, h: 1000, dpr: 2, touch: false, keep: [], clean: true, opts: { fleet: 7, fleetV: 3, yacht: 'jclass' }, stage: { twa: 2.25, awa: 1.75, a: 0.95, d: 400, up: 9, lat: 34, rec: 68, fov: 30, look: -75, aim: 18, ahead: 120, sail: 12, jib: 25 } },
   // a flock: seven J Class yachts at Fethiye running at the camera under their spinnakers, filling the picture (FLOCK
-  // below), seen from off their port bows, from dead ahead and from off their starboard bows; pictures to keep rather than
-  // the site's, saved large in renders/ as PNG and JPEG
-  ...[['left-front', -0.5], ['front', 0], ['right-front', 0.5]].map(([pov, a]) => ({ name: `fethiye-flock-${pov}`, w: 1600, h: 1000, dpr: 2, touch: false, keep: [], clean: true,
+  // below), seen from off their bows on the mainsails' side (their logos clear of the spinnakers), on either gybe, and
+  // from dead ahead (the spinnakers only); pictures to keep rather than
+  // the site's, saved in renders/ as PNG and JPEG at the window's size (1600×1000) and large (-hd, 3200×2000)
+  ...[['left-front', { a: -1.3 }], ['front', { a: 0 }], ['right-front', { a: 1.5, course: -2.75, twa: -2.75, awa: -2.55, boom: -1 }]].flatMap(([pov, view]) => [1, 2].map((dpr) => ({ name: `fethiye-flock-${pov}${dpr > 1 ? '-hd' : ''}`, w: 1600, h: 1000, dpr, touch: false, keep: [], clean: true,
     q: 'venue=fethiye&boat=jclass', opts: { fleet: 7, fleetV: 3, yacht: 'jclass' }, dir: 'renders/', png: true,
-    flock: { course: 2.75, twa: 2.75, awa: 2.55, a, d: 150, up: 6, fov: 34, aim: 21, ahead: -400, sail: 75, jib: 40, at: [[0, 0], [-46, 38], [48, 50], [-95, 95], [-22, 115], [30, 150], [95, 105]] } })),
+    flock: { course: 2.75, twa: 2.75, awa: 2.55, boom: 1, ...view, d: 150, up: 6, fov: 34, aim: 21, ahead: -400, sail: 75, jib: 40, at: [[0, 0], [-46, 38], [48, 50], [-95, 95], [-22, 115], [30, 150], [95, 105]] } }))),
 ].filter((s) => !only.length || only.includes(s.name));
 
 // A camera the game doesn't have, held on her from the frame's own loop. Beside her, on her windward side, where the crew
@@ -150,7 +151,7 @@ const FLOCK = (spec) => `(async () => {
   const c = [f[0] * Math.cos(s.a) + r[0] * Math.sin(s.a), f[1] * Math.cos(s.a) + r[1] * Math.sin(s.a)], p = [-c[1], c[0]];
   B.forEach((b, i) => { const [x, y] = s.at[i % s.at.length];
     Object.assign(b, { x: M[0] + p[0] * x - c[0] * y, z: M[1] + p[1] * x - c[1] * y, h, twa: s.twa, awa: s.awa, aws: 10, tws: 12, v: 9, heel: 3, luff: 0,
-      kite: true, kiteFill: 1, kiteJob: null, kiteCollapse: 0, boom: 1, sail: s.sail, jibSail: s.jib });
+      kite: true, kiteFill: 1, kiteJob: null, kiteCollapse: 0, boom: s.boom, sail: s.sail, jibSail: s.jib });
   });
   C.position.set(M[0] + c[0] * s.d, s.up, M[1] + c[1] * s.d); C.lookAt(M[0], s.aim, M[1]);
   const bearing = (x, z) => Math.atan2(C.position.x - x, z - C.position.z);
@@ -267,7 +268,8 @@ async function shoot({ send }, s) {
     if (!up) console.log(`${s.name}: the moment never came, taken as it stands`);
   }
   if (s.stage) { await js(STAGE(s.stage)); await sleep(1500); }
-  if (s.flock) { await js(FLOCK(s.flock)); await sleep(1500); await js(`for (const w of window.__rg.world.wakes) w.trail = []`); }
+  // (FLOCK='{"a":-1}' in the environment: to try a view)
+  if (s.flock) { await js(FLOCK({ ...s.flock, ...JSON.parse(process.env.FLOCK || '{}') })); await sleep(1500); await js(`for (const w of window.__rg.world.wakes) w.trail = []`); }
   await sleep(s.cam ? 2500 : 1500); // the call's own entrance (or the camera) settled, while the frames are still quick
   // frame: wait for a picture worth keeping, the drone swinging after the fleet as it sails: her masthead inside the
   // frame, no yacht close under the lens or cut by its edge, and (company) another one in the open beside her
