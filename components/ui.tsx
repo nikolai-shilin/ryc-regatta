@@ -52,7 +52,7 @@ export const IconGoogle = ({ s = 20 }) => (
   </svg>
 );
 
-// English · Русский: plain links, so they work without JavaScript and the game sees the same choice.
+// English · Русский · Español: plain links, so they work without JavaScript and the game sees the same choice.
 export function Langs({ lang, back, className = '' }: { lang: Lang; back: string; className?: string }) {
   // the page itself with ?lang= (proxy.ts keeps the choice as the cookie): a link a search engine follows to the page in
   // the other language, which /lang, a redirect kept out of robots.txt, never was

@@ -130,7 +130,7 @@ export default async function Home({ params }: LangParams) {
             </div>
             <Link className="ho-how ho-new" href="/help" data-cta="hero-how">{t('New to it? How to play, in 3 minutes', 'Впервые? Как играть — за 3 минуты', '¿Nuevo? Cómo jugar, en 3 minutos')} ›</Link>
             <ul className="ho-trust ho-new">
-              <li>{t('Free', 'Бесплатно', 'Gratis')}</li><li>{t('No install', 'Без установки', 'Sin instalar')}</li><li>{t('No sign-up to play', 'Без регистрации', 'Sin registro para jugar')}</li><li>{t('Phone or keyboard', 'Телефон или клавиатура', 'Móvil o teclado')}</li><li>English · Русский</li>
+              <li>{t('Free', 'Бесплатно', 'Gratis')}</li><li>{t('No install', 'Без установки', 'Sin instalar')}</li><li>{t('No sign-up to play', 'Без регистрации', 'Sin registro para jugar')}</li><li>{t('Phone or keyboard', 'Телефон или клавиатура', 'Móvil o teclado')}</li><li>English · Русский · Español</li>
             </ul>
           </div>
           <aside className="ho-card ho-rank" aria-label={t('Today’s leaderboard', 'Рейтинг дня', 'Clasificación de hoy')}>
