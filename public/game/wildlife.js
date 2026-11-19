@@ -5,7 +5,10 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { waveHeight, clamp, lerp, wrap, KN } from './sim.js';
 import { rigidSkin } from './skin.js';
-import { roomAt, groundAt } from './land.js';
+import { roomAt, groundAt, SKOPEA } from './land.js';
+
+// a lake's or a reservoir's fresh water: gulls over it, but no dolphins and no whales
+const FRESH = !!SKOPEA.meta?.lake;
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const smooth = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
@@ -385,7 +388,7 @@ export class Wildlife {
     const pod = this.pod, SLOTS = [[8, -1.2], [7, 1.7], [4, -3.3], [2.5, 3.5], [10.5, 0.4]];
     pod.timer -= dt;
     if (pod.state === 'away') {
-      if (pod.timer > 0) return;
+      if (pod.timer > 0 || FRESH) return;
       pod.state = 'come'; pod.side = Math.random() < 0.5 ? -1 : 1; pod.n = this.level.dolphins;
       this.dolphins.forEach((d, i) => {
         const a = 30 + i * 3, c = pod.side * (80 + i * 4);
@@ -435,7 +438,7 @@ export class Wildlife {
   whale(w, dt, t, W, P) {
     if (w.state === 'deep') {
       w.timer -= dt;
-      if (w.timer > 0 || !this.place(w, P)) return;
+      if (w.timer > 0 || FRESH || !this.place(w, P)) return;
       w.state = 'up'; w.g.visible = true;
       // a breach, sometimes, to start; then three to five breaths, and down she goes
       w.seq = Math.random() < 0.15 ? ['breach', ['glide', rnd(6, 9)]] : [['glide', 3]];

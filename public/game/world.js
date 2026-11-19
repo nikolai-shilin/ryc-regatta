@@ -1494,7 +1494,7 @@ export class World {
     this.underU.uExtinct.value.set(0.6, 0.12, 0.085).multiplyScalar(clear);
     this.setLight(pickSky(race));
     // the chop is raised by the race's mean wind and keeps its heading (the sea lags the shifts)
-    if (this.ocean) this.ocean.setWind(race.wind.p.tws);
+    if (this.ocean) this.ocean.setWind(race.wind.p.tws, VENUE.fetch); // over the venue's own fetch (venues.js)
     this.oceanU.uFftW.value.set(Math.sin(W0 + Math.PI), -Math.cos(W0 + Math.PI));
     this.boatViews = race.boats.map((b) => this.boatView(b));
     this.setMarks(race);
@@ -1698,7 +1698,7 @@ export class World {
       if (!this.ocean || this.ocean.N !== S.fft || this.ocean.Ls.join() !== S.seas.join()) {
         if (this.ocean) this.ocean.dispose();
         this.ocean = new Ocean(r, S.fft, S.seas);
-        if (this.race) this.ocean.setWind(this.race.wind.p.tws);
+        if (this.race) this.ocean.setWind(this.race.wind.p.tws, VENUE.fetch);
       }
       O.uFftD.value = this.ocean.disp.texture; this.oceanSlopes();
       O.uFftL.value.set(S.seas[0], S.seas[1] || 1, S.seas[2] || 1); O.uFftOn.value = 1; O.uFftN.value = S.seas.length;

@@ -16,7 +16,7 @@ export function GET() {
 
 > ${HOME_DESC[0]}
 
-${NAME} is a free 3D sailing race game by RYC that runs in any modern web browser, on a phone or a computer, with nothing to install. You sail a yacht round one of four courses (up and down, a triangle, a trapezoid, or up and down with an upwind finish) at one of 65 famous regatta venues (Göcek, Cowes, Newport, Sydney, San Francisco, Auckland, Hong Kong, Cape Town, New York and more), against up to six computer boats that race by the Racing Rules of Sailing: they hail, give way and do their penalty turns. It is in English, Russian, Spanish, German and Turkish.
+${NAME} is a free 3D sailing race game by RYC that runs in any modern web browser, on a phone or a computer, with nothing to install. You sail a yacht round one of four courses (up and down, a triangle, a trapezoid, or up and down with an upwind finish) at one of 66 famous regatta venues (Göcek, Cowes, Newport, Sydney, San Francisco, Auckland, Hong Kong, Cape Town, New York and more), against up to six computer boats that race by the Racing Rules of Sailing: they hail, give way and do their penalty turns. It is in English, Russian, Spanish, German and Turkish.
 
 ## Key facts
 
@@ -48,7 +48,7 @@ ${NAME} is a free 3D sailing race game by RYC that runs in any modern web browse
   - [Sailing racing glossary](${SITE}/learn/glossary): beat, overlap, clear astern, header, lift, layline, zone, mark-room, OCS and more
 - [The racing rules, rule by rule](${SITE}/rulebook): every rule of the Racing Rules of Sailing 2025–2028 in plain words, with the definitions, appendices and race signals
 - [Sailing certification exam practice](${SITE}/iyt): RYC's free practice app for sailing certification theory exams
-- [The venues](${SITE}/venues): the 65 regatta venues, each with the water, the wind, its regattas and how to race it
+- [The venues](${SITE}/venues): the 66 regatta venues, each with the water, the wind, its regattas and how to race it
 ${VENUES.map((v) => `  - [${v.name[0]}, ${v.place[0]}](${SITE}/venues/${v.id})`).join('\n')}
 - [The yachts](${SITE}/yachts): the nine yachts in 3D, each with a page of her own
 ${YACHTS.map((y) => `  - [${y.name[0]}](${SITE}/yachts/${y.id}): ${y.kind[0]}`).join('\n')}

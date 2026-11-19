@@ -14,6 +14,12 @@
 // runs: true, a river or a strait, whose stream runs in every race and not only with the current on (a match excepted)
 // anchored: how many ships lie at anchor in the roads off its port, 1.6 to 4.5 km out, most upwind (ships.js)
 // thermal: false, no sea breeze here: the venue's wind is a gradient wind, or blows off the land (sim.js seaBreeze)
+// fetch: the metres of open water the wind crosses to the course, which the wind's own chop grows over (ocean.js;
+//   8000, a bay's, when not given); swell: how much of the long swell reaches the course (sim.js makeWaves; 1 when not
+//   given; a shut-in reservoir's short fetch raises no long sea at all)
+// gusty: how much harder the puffs and how much wider the shifts than over open water (sim.js Wind; 1 when not given):
+//   a wind that has crossed woods and villages to the course
+// overcast: how many races in a hundred are sailed under a grey sky (light.js pickSky; 14 when not given)
 // look: how the land is drawn (skopea.js)
 //   ground: the colours of the hillsides: forest (dark, mid, light), scrub, rock (light, dark), town, shore; sand
 //     (beaches) and grass (lawns, parks, meadows), when not the defaults (skopea.js)
@@ -885,6 +891,27 @@ export const VENUES = [
       towers: ['#9fb6c4', '#b9c9d2', '#d8dee0', '#7f9bad', '#e4e4de', '#a9bcc6'],
       boats: { sail: 0.6, motor: 0.4, big: 0 },
       water: { deep: '#0a2c40', scatter: '#227f86', k: 0.45, shallow: '#4f9a8c', clear: 0.35 },
+    },
+  },
+  {
+    // the Minsk Sea, the Zaslavl reservoir north-west of Belarus's capital, in its wide basin off the national sailing
+    // centre, in the westerly over the pine and birch woods; Minsk's blocks of flats on the skyline to the south-east
+    id: 'minsk-sea', name: ['Minsk Sea', 'Минское море', 'Mar de Minsk', 'Minsker Meer', 'Minsk Denizi'], lat: 53.978, lon: 27.375, wind: 270, tz: 3, thermal: false, from: '2026-11-21',
+    // the westerly crosses two or three kilometres of the reservoir from its western shore, through the woods and
+    // villages there: a short, low chop and no long sea; puffs and shifts off the trees; a cloudier summer sky than the
+    // south's, thunderstorms building in the afternoon
+    fetch: 2500, swell: 0.3, gusty: 1.3, overcast: 0.3,
+    look: {
+      haze: 0.95,
+      ground: { forest: ['#24391f', '#33502a', '#4f6b36'], scrub: '#6f8048', rock: ['#a8a08c', '#86806e'], town: '#9a968a', shore: '#c2b48e', sand: '#e0d2a6', grass: '#5f8a3c' },
+      fields: ['#6a9442', '#7aa04a', '#8fae55', '#b8b45c', '#c9b866', '#5a8a3a'],
+      trees: [['pine', 0.5, '#24391f', '#46623a'], ['broad', 0.3, '#2f4a26', '#6a8a42'], ['conifer', 0.2, '#1f331c', '#33492a']], treeTop: 300, woods: 0.55, clearing: 'grass',
+      // the cottages' painted boards and pale brick under their tin roofs; Minsk's panel blocks
+      walls: ['#e8e2d2', '#d8cdb4', '#c9b89a', '#e6d6a8', '#b8c4b8', '#f2efe8'], roofs: ['#5d6266', '#7a4a3a', '#4a5a4a', '#8a8c8a'], flat: 0.25,
+      towers: ['#d8d4ca', '#c9c6bc', '#e2ded2', '#bcbab2', '#cfd2d0'],
+      boats: { sail: 0.75, motor: 0.25, big: 0 },
+      // a shallow reservoir's green-brown water, its bed seen only faintly
+      water: { deep: '#1c3e3a', scatter: '#3f7a62', k: 0.6, shallow: '#5f8a66', clear: 0.15 },
     },
   },
 ];

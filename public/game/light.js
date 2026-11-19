@@ -155,7 +155,7 @@ export const clockText = (hour) => { const m = Math.round(hour * 60); return `${
 
 // the light for a race: ?hour=18.5 and ?sky=overcast|clear in the address win (for testing; the old ?light=day,
 // morning, golden, overcast still work); otherwise a new hour every start, any hour of the racing day alike but at
-// least two hours from the last one (remembered across visits), and overcast about one race in seven. A free race set
+// least two hours from the last one (remembered across visits), and overcast about one race in seven (or as often as the venue's sky is: venues.js overcast). A free race set
 // to a time of day (race.settings.daytime) is sailed at that hour, under a clear sky; today's race keeps the random one.
 // A day with a sea breeze (sim.js seaBreeze) is a sunny one, between the late morning and the late afternoon.
 let last = null;
@@ -166,7 +166,7 @@ export function pickSky(race) {
   let hour;
   do hour = from + Math.random() * (to - from);
   while (Number.isFinite(last) && Math.abs(hour - last) < 2);
-  let overcast = !breeze && Math.random() < 0.14;
+  let overcast = !breeze && Math.random() < (VENUE.overcast ?? 0.14); // (venues.js overcast)
   if (chosen != null) { hour = chosen; overcast = false; }
   last = hour;
   try { localStorage.setItem('regatta.hour', hour.toFixed(2)); } catch (e) {}

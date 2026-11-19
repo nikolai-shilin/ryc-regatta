@@ -137,7 +137,7 @@ test('the presets table: every venue\'s, then each set, with what a set leaves t
   const html = ssr(h(SailPresets, { lang: 'en', every: EVERY, sets: SETS }));
   const rows = [...html.matchAll(/<tr( class="sp-every")?><th scope="row">(.*?)<\/th>(.*?)<\/tr>/g)].map((m) => [m[2], plain(m[3])]);
   assert.deepEqual(rows.map((r) => r[0]), ['Every venue', 'UK', 'Turkey']);
-  assert.match(rows[0][1], /^The other 62 /, 'the venues no set has');
+  assert.match(rows[0][1], /^The other 63 /, 'the venues no set has');
   assert.match(rows[1][1], /^Cowes, Weymouth/);
   assert.match(html, /<span class="sp-pic"><img src="https:\/\/cdn.test\/main\/uk.png"/, 'its own picture');
   assert.match(html, /<span class="sp-pic sp-inh" title="As every venue"><img src="https:\/\/cdn.test\/jib\/old.png"/, 'every venue\'s, faded');

@@ -28,11 +28,11 @@ export function rng(seed) {
 // eight wave trains spread about the wind: the long ones move the boats and the water surface, the short ones only
 // shade it. Q is the Gerstner steepness (the picture sharpens the crests with it; heights here are plain sines).
 export function makeWaves(amp, windFrom) {
-  const b = windFrom + Math.PI; // they run downwind
+  const b = windFrom + Math.PI, sw = VENUE.swell ?? 1; // they run downwind; a shut-in water's long trains as small as its fetch keeps them (venues.js swell)
   const parts = [[0, 46, 0.36], [0.35, 31, 0.24], [-0.45, 22, 0.17], [0.8, 14, 0.1], [-0.9, 10, 0.07], [0.2, 7, 0.045], [-0.3, 5, 0.03], [1.2, 3.5, 0.02]];
   const steep = clamp(0.25 + amp * 0.5, 0.25, 0.75);
   return parts.map(([off, len, f], i) => {
-    const a = b + off, k = (2 * Math.PI) / len, A = amp * f;
+    const a = b + off, k = (2 * Math.PI) / len, A = amp * f * (i < 3 ? sw : 1);
     return { dx: Math.sin(a), dz: -Math.cos(a), k, A, w: Math.sqrt(9.81 * k), ph: i * 1.7, Q: A > 0 ? Math.min(1, steep / (k * A * parts.length)) : 0 };
   });
 }
@@ -194,7 +194,8 @@ const SEA_T = 720, SEA_VEER = (VENUE.lat < 0 ? -15 : 15) * D2R;
 
 export class Wind {
   constructor(preset, seed = 1, span = 280, wide = 0, daytime = 'any') {
-    this.p = PRESETS[preset] || PRESETS.medium;
+    const P = PRESETS[preset] || PRESETS.medium, g = VENUE.gusty ?? 1; // a wind off woods and villages: harder puffs, wider shifts (venues.js gusty)
+    this.p = g === 1 ? P : { ...P, osc: P.osc * g, veer: P.veer * g, gustStr: P.gustStr * g };
     this.span = span; // how far upwind the course goes: the gusts cover it all
     this.wide = wide; // and how far out to the side (a triangle's wing mark)
     this.sea = seaBreeze(seed, preset, daytime);

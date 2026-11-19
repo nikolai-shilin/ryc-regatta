@@ -269,7 +269,7 @@ test('/admin/sails shows every venue\'s sails and the presets, each venue in one
   assert.match(html, /#ABCDEF/);
   assert.doesNotMatch(html, /javascript:x|Bad Id|junk|SECRET-BANNER/);
   const rows = [...html.matchAll(/<tr( class="sp-every")?><th scope="row">(.*?)<\/th><td class="sp-venues">(.*?)<\/td>/g)].map((m) => [m[2], m[3]]);
-  assert.deepEqual(rows, [['Every venue', 'The other 63'], ['Turkey', 'Göcek'], ['again', 'Cowes']], 'a venue in one set only; a set with no name goes by its id');
+  assert.deepEqual(rows, [['Every venue', 'The other 64'], ['Turkey', 'Göcek'], ['again', 'Cowes']], 'a venue in one set only; a set with no name goes by its id');
 });
 
 test('/admin/ads leaves out a saved setting that is not what it should be', async () => {

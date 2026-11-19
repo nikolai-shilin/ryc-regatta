@@ -2532,12 +2532,13 @@ function dome(L, parts) {
   const top = base + drum + R * 1.25;
   parts.push(post(x, z, y + top - 0.6, R * 0.2, R * 0.16, Math.max(2, H - top), stone, 10));
 }
-// A church's square tower and its spire, on a nave when `nave` gives its length along `dir`
+// A church's square tower and its spire, on a nave when `nave` gives its length along `dir` (`nw` its width, when
+// not half as wide again as the tower: a hall church's; `nr` its roof's height, when not 0.45 of its width)
 function steeple(L, parts) {
   const [x, z] = L.at, y = Math.max(0, groundAt(x, z)), H = L.h, W = L.w || H * 0.16, stone = L.color || '#a9a497', T = H * (L.split ?? 0.55), F = frameOf(L, y);
   parts.push(blk(x, z, y - 2, T + 2, W, W, F.ang, stone), blk(x, z, y + T, 1.2, W * 1.18, W * 1.18, F.ang, stone));
   parts.push(tint(new THREE.ConeGeometry(W * 0.66, H - T - 1.2, 8).rotateY(Math.PI / 8 - F.ang).translate(x, y + T + 1.2 + (H - T - 1.2) / 2, z), L.spire || '#4a4f55'));
-  if (L.nave) { const w = W * 1.5, h = H * 0.3; parts.push(F.box(L.nave / 2, 0, -2, h + 2, L.nave, w, stone), ...gable(F, 0, L.nave, w, h, w * 0.45, L.spire || '#4a4f55')); }
+  if (L.nave) { const w = L.nw || W * 1.5, h = H * 0.3; parts.push(F.box(L.nave / 2, 0, -2, h + 2, L.nave, w, stone), ...gable(F, 0, L.nave, w, h, L.nr || w * 0.45, L.spire || '#4a4f55')); }
 }
 // A town's ramparts along `ring`, each stretch on its own ground
 function rampart(L, parts) {

@@ -49,7 +49,7 @@ test('the log: a day at its fastest, a venue at its first race, from the game’
   assert.equal(m.v.cowes, 40);
   assert.equal(m.v.kiel, 50);
   assert.deepEqual([...passport(m).raced].sort(), ['cowes', 'kiel', v].sort());
-  assert.equal(passport(m).of, 65);
+  assert.equal(passport(m).of, 66);
 });
 
 test('the passport link carries the streak, the venues and the name, and an older link still opens', async () => {
