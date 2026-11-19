@@ -101,7 +101,7 @@ VENUES = {
                           keep=[(37.8267, -122.4230, 300)],  # Alcatraz
                           landmarks=[dict(kind='suspension', style='golden-gate', a=(37.8077, -122.4750), b=(37.8288, -122.4813), h=227, span=1280, deck=67, color='#c0362c'),
                                      dict(kind='tower', style='pyramid', at=(37.79519, -122.40265), h=260, clear=30)]),  # the Transamerica Pyramid
-    'valencia': dict(bathy='emodnet', home=(39.4550, -0.2850), wind=110, towns=[(39.4700, -0.3700, 1200), (39.4700, -0.3250, 1000), (39.4300, -0.3300, 800)]),
+    'valencia': dict(bathy='emodnet', home=(39.4581, -0.2959), wind=110, towns=[(39.4700, -0.3700, 1200), (39.4700, -0.3250, 1000), (39.4300, -0.3300, 800)]),
     'barcelona': dict(bathy='emodnet', home=(41.3720, 2.2250), wind=200, towns=[(41.3850, 2.1800, 1100), (41.3950, 2.2050, 1100), (41.3780, 2.1900, 700), (41.4100, 2.2250, 900),
                                                                     (41.4036, 2.1744, 450)],  # the Eixample's blocks round the Sagrada Família
                       landmarks=[dict(kind='spires', at=(41.4036, 2.1744), h=172.5, dir=135),  # the Sagrada Família: its nave to the Glory façade, south-east
@@ -111,7 +111,7 @@ VENUES = {
     'marstrand': dict(bathy='emodnet', home=(57.8850, 11.5550), wind=225, towns=[(57.8860, 11.5850, 500), (57.8900, 11.6000, 500), (57.8650, 11.6000, 400)],
                       landmarks=[dict(kind='fort', at=(57.88624, 11.57767), h=28, clear=[(57.88624, 11.57767, 30), (57.88630, 11.57885, 75)])]),  # Carlsten's round keep at the fortress's south-west corner
     'bermuda': dict(home=(32.3050, -64.8400), wind=200, towns=[(32.2930, -64.7830, 900), (32.3250, -64.8350, 500), (32.3100, -64.8650, 600), (32.2850, -64.8150, 700)]),
-    'enoshima': dict(home=(35.2850, 139.4950), wind=190, keep=[(35.2990, 139.4805, 500)], towns=[(35.3100, 139.4800, 1200), (35.3100, 139.5300, 1200), (35.3050, 139.5000, 800)],
+    'enoshima': dict(home=(35.2921, 139.4965), wind=190, keep=[(35.2990, 139.4805, 500)], towns=[(35.3100, 139.4800, 1200), (35.3100, 139.5300, 1200), (35.3050, 139.5000, 800)],
                      landmarks=[dict(kind='lighthouse', at=(35.2997, 139.4796), h=60, style='candle')]),
     'weymouth': dict(bathy='emodnet', zoom=14, home=(50.6050, -2.4100), wind=225, towns=[(50.6100, -2.4550, 1100), (50.5550, -2.4400, 900), (50.6300, -2.4400, 700)]),
     'marseille': dict(bathy='emodnet', home=(43.2650, 5.3350), wind=315, keep=[(43.2805, 5.3080, 1100), (43.2799, 5.3254, 200)], towns=[(43.2950, 5.3750, 1200), (43.2750, 5.3650, 900), (43.2600, 5.3800, 700), (43.3100, 5.3650, 1000)],
@@ -218,13 +218,13 @@ VENUES = {
                   landmarks=[dict(kind='spire', style='sochi', at=(43.58045, 39.71061), h=71, dir=225)]),  # the sea terminal's tower and spire over the map's building, its front to the sea
     # Port Phillip off St Kilda, of the 1956 Olympic regatta, in the afternoon sea breeze off Bass Strait; the city's
     # towers to leeward. The bay's shores are low and the tiles' radar has their roofs and trees for the ground
-    'melbourne': dict(zoom=14, most=15000, relations=True, parts=True, plain=(10, 30), paved=True, trees=True, home=(-37.8800, 144.9450), wind=200,
+    'melbourne': dict(zoom=14, most=15000, relations=True, parts=True, plain=(10, 30), paved=True, trees=True, home=(-37.8732, 144.9481), wind=200,
                       palms=(['Jacka Boulevard', 'Marine Parade', 'Beaconsfield Parade', 'Fitzroy Street'], 45),  # St Kilda's Canary Island palms
                       kites=dict(a=(-37.87300, 144.97900), b=(-37.88600, 144.98350), n=6),  # off St Kilda and Elwood beaches in the sea breeze
                       towns=[(-37.8650, 144.9820, 1000), (-37.8400, 144.9400, 1000), (-37.8610, 144.8990, 900), (-37.8820, 144.9880, 900), (-37.8350, 144.9600, 900)]),
     # the Pacific off Surfers Paradise's beach and towers, in the easterly sea breeze; the coastal plain's ground in the
     # tiles is its roofs and trees (`plain`)
-    'gold-coast': dict(zoom=14, most=15000, relations=True, parts=True, plain=(10, 30), paved=True, trees=True, home=(-28.0000, 153.4550), wind=90,
+    'gold-coast': dict(zoom=14, most=15000, relations=True, parts=True, plain=(10, 30), paved=True, trees=True, home=(-28.0000, 153.4448), wind=90,
                        palms=(['The Esplanade', 'Esplanade', 'Main Beach Parade'], 140),  # (behind the wide beach)
                        landmarks=[dict(kind='tower', style='q1', at=(-28.006235, 153.429706), h=322.5, dir=141, la=24.5, lb=18, clear=30)],  # Q1, its glass crown and spire (the map has it 2 storeys high, or a 323 m block)
                        towns=[(-28.0000, 153.4280, 1000), (-27.9750, 153.4270, 900), (-28.0300, 153.4320, 1000), (-27.9700, 153.4050, 1100)]),
@@ -275,7 +275,7 @@ VENUES = {
                         towns=[(33.7700, -118.1900, 1300), (33.7450, -118.2900, 1200), (33.7650, -118.1400, 1200), (33.7300, -118.3100, 1000)]),
     # the Bay of Biscay off Les Sables-d'Olonne, where the Vendée Globe starts and ends, in the westerly: the channel
     # between La Chaume and the Remblai's long beach to leeward
-    'les-sables': dict(bathy='emodnet', zoom=14, most=15000, relations=True, plain=(8, 25), paved=True, trees=True, home=(46.4750, -1.8350), wind=285,
+    'les-sables': dict(bathy='emodnet', zoom=14, most=15000, relations=True, plain=(8, 25), paved=True, trees=True, home=(46.4795, -1.8237), wind=285,
                        keep=[(46.4939, -1.7957, 300), (46.4899, -1.7947, 250)],  # La Chaume's keep and the Prieuré Saint-Nicolas
                        routes=[dict(kind='taxi', pts=[(46.49600, -1.79600), (46.49440, -1.79480)])],  # le passeur, across the channel to La Chaume
                        landmarks=[dict(kind='steeple', at=(46.49583, -1.78600), h=42, w=9, color='#d8d0bd', spire='#6a6e72', clear=14),  # Notre-Dame de Bon-Port
@@ -337,7 +337,7 @@ VENUES = {
                    towns=[(43.7350, 7.4200, 700), (43.7420, 7.4300, 800), (43.7500, 7.4450, 800)]),
     # Gage Roads off Fremantle, of the 1987 America's Cup, in the south-westerly Fremantle Doctor: the port's moles and
     # cranes to leeward, Rottnest on the horizon
-    'fremantle': dict(zoom=14, most=15000, relations=True, plain=(10, 30), paved=True, trees=True, home=(-32.0450, 115.7000), wind=225,
+    'fremantle': dict(zoom=14, most=15000, relations=True, plain=(10, 30), paved=True, trees=True, home=(-32.0450, 115.7106), wind=225,
                       aprons=[(-32.0475, 115.7385, -32.0385, 115.7520)],  # North Quay's container yard
                       kites=dict(a=(-32.03000, 115.74800), b=(-32.01800, 115.75000), n=7),  # off Leighton Beach in the Doctor
                       keep=[(-32.0560, 115.7414, 420)],  # the West End and the Round House

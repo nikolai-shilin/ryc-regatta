@@ -164,7 +164,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'valencia', name: ['Valencia', 'Валенсия', 'Valencia', 'Valencia', 'Valensiya'], lat: 39.455, lon: -0.285, wind: 110, tz: 2, anchored: 4,
+    id: 'valencia', name: ['Valencia', 'Валенсия', 'Valencia', 'Valencia', 'Valensiya'], lat: 39.4581, lon: -0.2959, wind: 110, tz: 2, anchored: 4,
     look: {
       haze: 1.0,
       ground: { forest: ['#3a5229', '#4c6a30', '#66823c'], scrub: '#8a8a58', rock: ['#b8a888', '#9a8a6c'], town: '#bba98e', shore: '#e0cfa4' },
@@ -222,7 +222,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'enoshima', name: ['Enoshima', 'Эносима', 'Enoshima', 'Enoshima', 'Enoshima'], lat: 35.285, lon: 139.495, wind: 190, tz: 9,
+    id: 'enoshima', name: ['Enoshima', 'Эносима', 'Enoshima', 'Enoshima', 'Enoshima'], lat: 35.2921, lon: 139.4965, wind: 190, tz: 9,
     look: {
       haze: 0.85,
       ground: { forest: ['#1f3a1e', '#2c4a26', '#43622f'], scrub: '#6a7a48', rock: ['#8e8a7e', '#6f6b62'], town: '#a09c94', shore: '#a89f8c' },
@@ -418,7 +418,7 @@ export const VENUES = [
   {
     // Port Phillip off St Kilda, the waters of the 1956 Olympic regatta, in the afternoon sea breeze off Bass Strait:
     // the beaches of St Kilda and Port Melbourne to leeward, the city's towers beyond
-    id: 'melbourne', name: ['Melbourne', 'Мельбурн', 'Melbourne', 'Melbourne', 'Melbourne'], lat: -37.88, lon: 144.945, wind: 200, tz: 11, anchored: 2, from: '2026-11-20',
+    id: 'melbourne', name: ['Melbourne', 'Мельбурн', 'Melbourne', 'Melbourne', 'Melbourne'], lat: -37.8732, lon: 144.9481, wind: 200, tz: 11, anchored: 2, from: '2026-11-20',
     look: {
       haze: 1.0,
       ground: { forest: ['#3a4a2c', '#4b5c36', '#66734a'], scrub: '#7e7c56', rock: ['#a89c86', '#877d6c'], town: '#a49a8c', shore: '#d6c6a0', sand: '#ddcca4', grass: '#6f8a48' },
@@ -432,7 +432,7 @@ export const VENUES = [
   {
     // the Pacific off Surfers Paradise, in the easterly sea breeze: the beach and its towers to leeward, the Broadwater
     // behind them, the East Australian Current running south along the coast
-    id: 'gold-coast', name: ['Gold Coast', 'Голд-Кост', 'Gold Coast', 'Gold Coast', 'Gold Coast'], lat: -28.0, lon: 153.455, wind: 90, tz: 10, stream: ['flow', 175, 0.6], from: '2026-11-20',
+    id: 'gold-coast', name: ['Gold Coast', 'Голд-Кост', 'Gold Coast', 'Gold Coast', 'Gold Coast'], lat: -28.0, lon: 153.4448, wind: 90, tz: 10, stream: ['flow', 175, 0.6], from: '2026-11-20',
     look: {
       haze: 1.3,
       ground: { forest: ['#2f4a26', '#3f6030', '#5a7a3a'], scrub: '#7a8a50', rock: ['#a89a80', '#86786a'], town: '#b0a898', shore: '#eadcb8', sand: '#efe2c0', grass: '#6a8a40' },
@@ -490,7 +490,7 @@ export const VENUES = [
   {
     // the Bay of Biscay off Les Sables-d'Olonne, where the Vendée Globe starts and ends, in the westerly: the channel
     // between La Chaume's tower and the Remblai's long beach to leeward
-    id: 'les-sables', name: ['Les Sables-d’Olonne', 'Ле-Сабль-д’Олон', 'Les Sables-d’Olonne', 'Les Sables-d’Olonne', 'Les Sables-d’Olonne'], lat: 46.475, lon: -1.835, wind: 285, tz: 2, anchored: 1, stream: ['tide', 330, 0.5], from: '2026-11-20',
+    id: 'les-sables', name: ['Les Sables-d’Olonne', 'Ле-Сабль-д’Олон', 'Les Sables-d’Olonne', 'Les Sables-d’Olonne', 'Les Sables-d’Olonne'], lat: 46.4795, lon: -1.8237, wind: 285, tz: 2, anchored: 1, stream: ['tide', 330, 0.5], from: '2026-11-20',
     look: {
       haze: 0.95,
       ground: { forest: ['#2e4428', '#3f5a32', '#57703f'], scrub: '#7d8058', rock: ['#a59c8a', '#857d6e'], town: '#b3ab9c', shore: '#dccfa9', sand: '#e6d9b4', grass: '#6f8a4a' },
@@ -560,7 +560,7 @@ export const VENUES = [
   {
     // Gage Roads off Fremantle, of the 1987 America's Cup, in the south-westerly Fremantle Doctor: the port's moles and
     // cranes and the long white beaches to leeward, Rottnest on the horizon
-    id: 'fremantle', name: ['Fremantle', 'Фримантл', 'Fremantle', 'Fremantle', 'Fremantle'], lat: -32.045, lon: 115.7, wind: 225, tz: 8, anchored: 4, from: '2026-11-20',
+    id: 'fremantle', name: ['Fremantle', 'Фримантл', 'Fremantle', 'Fremantle', 'Fremantle'], lat: -32.045, lon: 115.7106, wind: 225, tz: 8, anchored: 4, from: '2026-11-20',
     look: {
       haze: 1.25,
       ground: { forest: ['#3f4f30', '#52633a', '#6c7a4a'], scrub: '#88865a', rock: ['#c8bb9c', '#a59878'], town: '#b8ad9a', shore: '#f0e6cc', sand: '#f4ecd6', grass: '#7a8f48' },
