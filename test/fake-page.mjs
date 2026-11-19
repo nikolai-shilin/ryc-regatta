@@ -173,7 +173,7 @@ export function installPage(o = {}) {
     const url = String(input?.url ?? input);
     page.fetched.push(url);
     for (const [part, answer] of Object.entries(routes)) if (url.includes(part)) return typeof answer === 'function' ? answer(url) : Response.json(answer);
-    if (url.endsWith('/sponsor') || url === '/sponsor') return Response.json(sponsor);
+    if (url.split('?')[0].endsWith('/sponsor')) return Response.json(sponsor); // (a race names its venue: /sponsor?venue=…)
     if (noModels && /\.glb(\?|$)/.test(url)) throw new TypeError('fetch failed');
     if (url.startsWith('file:')) {
       const path = fileURLToPath(url.split('?')[0]);

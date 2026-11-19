@@ -43,7 +43,7 @@ const DUELS = { since: null, more: false, totals: { races: 3, finished: 2, aband
   races: [{ id: 'd1', code: 'SECRET-DUEL', race_no: 1, at: '2026-11-17T10:00:00Z', ended: '2026-11-17T10:09:00Z', state: 'finished', venue: 'cowes', yacht: 'j70', wind: 'light', length: 'short', course: 'wl', laps: 1, start_min: 1,
     current: false, daytime: null, winner: 'host', margin: 3, forfeited: null, recalls: 0, prep_flag: null, length_s: 500,
     host: { name: 'SECRET-DUELIST', who: WHO, kind: 'acct', handle: null, place: 1, secs: 497, mark: null, pens: 0 }, guest: { name: 'Guest', who: null, kind: 'guest', handle: null, place: 2, secs: 500, mark: null, pens: 0 } }] };
-const SETTINGS = { jib_ad: { url: 'https://cdn.example/SECRET-JIB.png', path: 'jib.png' }, main_logo: { url: 'https://cdn.example/SECRET-MAIN.png' }, plane_banner: { lines: ['SECRET-BANNER'] } };
+const SETTINGS = { jib_ad: { url: 'https://cdn.example/SECRET-JIB.png', path: 'jib.png' }, main_logo: { url: 'https://cdn.example/SECRET-MAIN.png' }, kite_logo: { url: 'https://cdn.example/SECRET-KITE.png' }, sail_colors: { jib: '#abcdef', kite: ['#fedcba', 'nope'] }, plane_banner: { lines: ['SECRET-BANNER'] } };
 
 // ---------- the database, as the session reading it is answered ----------
 const db = { user: null, isAdmin: { data: false, error: null }, rpc: {}, settings: SETTINGS, calls: [] };
@@ -256,7 +256,29 @@ test('/admin/ads shows the saved logos and the banner\'s words', async () => {
   const html = await render(page('ads'));
   assert.ok(html.includes('https://cdn.example/SECRET-JIB.png'));
   assert.ok(html.includes('https://cdn.example/SECRET-MAIN.png'));
+  assert.ok(html.includes('https://cdn.example/SECRET-KITE.png'));
+  assert.ok(html.includes('#ABCDEF') && html.includes('#FEDCBA'), 'the saved colours shown');
   assert.match(html, /SECRET-BANNER/);
+});
+
+test('/admin/ads?set= sets a set\'s own, showing every venue\'s until it has them, and no banner', async () => {
+  admin();
+  db.settings = { ...SETTINGS, sail_sets: {
+    turkey: { name: 'Turkey', venues: ['gocek', 'nowhere', 'gocek'], kite: { url: 'https://cdn.example/TR-KITE.png', path: 'kite/t.png' }, colors: { jib: 'auto', kite: 'own' }, jib: { url: 'javascript:x' } },
+    again: { name: '', venues: ['gocek', 'cowes'], main: { url: 'https://cdn.example/AGAIN.png' } }, 'Bad Id': { name: 'X', venues: [] }, junk: 'junk',
+  } };
+  const html = await render(page('ads'), 'en', { set: 'turkey' });
+  assert.ok(html.includes('https://cdn.example/TR-KITE.png'), 'its own gennaker logo');
+  assert.ok(html.includes('https://cdn.example/SECRET-JIB.png'), 'every venue\'s jib ad, as it has none');
+  assert.doesNotMatch(html, /SECRET-KITE|javascript:x/);
+  assert.match(html, /<option value="turkey" selected="">Turkey · 1 venue<\/option><option value="again">again · 1 venue<\/option>/, 'a venue in one set only; a set with no name goes by its id');
+  assert.doesNotMatch(html, /Bad Id|junk/);
+  assert.match(html, /The set · Turkey/);
+  assert.doesNotMatch(html, /On the plane’s banner/);
+  const all = await render(page('ads'), 'en', { set: 'nowhere' });
+  assert.match(all, /On the plane’s banner/, 'a set there isn\'t: every venue\'s');
+  assert.doesNotMatch(all, /The set ·/);
+  assert.ok(all.includes('https://cdn.example/SECRET-KITE.png'));
 });
 
 test('/admin/ads leaves out a saved setting that is not what it should be', async () => {

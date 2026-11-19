@@ -138,22 +138,17 @@ test('her name is cleaned as it is typed and trimmed when left', async () => {
   assert.equal(v.$('#b-name').value.length, 16);
 });
 
-test('the gennaker goes to two and three colours and back, each new one different', async () => {
-  saveBoat({ ...DEFAULT_BOAT, kite: '#f4f3ef', kite2: undefined });
+test('the gennaker is one colour: its swatches, and no bands to pick', async () => {
+  saveBoat({ ...DEFAULT_BOAT, kite: '#f4f3ef' });
   const v = await editor();
-  const bands = (n) => v.$$('[aria-labelledby="l-kite"].bt-pills button')[n - 1];
-  await click(bands(2));
-  let b = sent(v, 'look').at(-1).boat;
-  assert.equal(b.kite2, '#1c1f24', 'dark against a white first colour');
-  assert.equal(sent(v, 'pose').at(-1).down, true, 'she bears away to show it');
-  await click(bands(3));
-  b = sent(v, 'look').at(-1).boat;
-  assert.ok(b.kite3 && ![b.kite, b.kite2].includes(b.kite3));
-  assert.equal(v.$('#l-kite3').textContent, 'Third');
-  await click(bands(1));
-  b = sent(v, 'look').at(-1).boat;
-  assert.deepEqual([b.kite2, b.kite3], [undefined, undefined]);
+  assert.equal(v.$('[aria-labelledby="l-kite"].bt-pills'), null, 'no choice of bands');
   assert.equal(v.$('#l-kite2'), null);
+  const red = v.$$('[aria-labelledby="l-kite"].sws [role=radio]').find((s) => s.style.getPropertyValue('--c') !== '#f4f3ef');
+  await click(red);
+  const b = sent(v, 'look').at(-1).boat;
+  assert.equal(b.kite, red.style.getPropertyValue('--c'));
+  assert.ok(!('kite2' in b) && !('kite3' in b));
+  assert.equal(sent(v, 'pose').at(-1).down, true, 'she bears away to show it');
 });
 
 test('upwind and gennaker turn the boat in the scene', async () => {

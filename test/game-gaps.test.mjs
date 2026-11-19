@@ -25,7 +25,7 @@ let refuseStorage = false;
 def('localStorage', { getItem: (k) => saved.get(k) ?? null, setItem: (k, v) => { if (refuseStorage) throw new Error('full'); saved.set(k, String(v)); } });
 def('fetch', async (u) => {
   const s = String(u);
-  if (s === '/sponsor') { asked.push(s); return answerSponsor(); }
+  if (s.split('?')[0] === '/sponsor') { asked.push(s); return answerSponsor(); }
   if (s.endsWith('.mp3')) return { arrayBuffer: async () => new ArrayBuffer(8) };
   return new Response(await readFile(new URL(s))); // land.js's bay files, from the disk
 });
@@ -62,6 +62,23 @@ test("the sponsor's words are asked for once a page, however many ask", async ()
   assert.deepEqual(await first, words);
   await sponsor();
   assert.deepEqual(asked, ['/sponsor']);
+});
+
+test('a race asks for its venue\'s sails; the site\'s other views of the boats for every venue\'s', async () => {
+  const was = globalThis.location;
+  answerSponsor = () => ({ ok: true, json: async () => ({}) });
+  try {
+    for (const [loc, want] of [[{ search: '', pathname: '/play' }, `/sponsor?venue=${VENUE.id}`], [{ search: '?venue=cowes', pathname: '/venue-view/' }, `/sponsor?venue=${VENUE.id}`], [{ search: '', pathname: '/boat-view/' }, '/sponsor']]) {
+      def('location', loc);
+      const { sponsor, sponsorVenue } = await freshSponsor();
+      asked.length = 0;
+      await sponsor();
+      assert.deepEqual(asked, [want], loc.pathname);
+      assert.equal(sponsorVenue(), want === '/sponsor' ? null : VENUE.id);
+    }
+    def('location', { get search() { throw new Error('no address'); }, pathname: '/' });
+    assert.equal((await freshSponsor()).sponsorVenue(), null);
+  } finally { def('location', was); }
 });
 
 test('no sponsor on the server: the game keeps its own defaults', async () => {

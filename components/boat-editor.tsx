@@ -110,7 +110,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   const set = (patch: Partial<Boat>) => setB((x) => ({ ...x, ...patch, preset: undefined }));
 
   // one setting: a small caps label, then the swatches; a part of a bigger group gets a quieter label
-  const swatches = (k: 'hull' | 'cloth' | 'ink' | 'kite' | 'kite2' | 'kite3' | 'bottom' | 'crew' | 'pants', label: string, sub = false) => (
+  const swatches = (k: 'hull' | 'cloth' | 'ink' | 'kite' | 'bottom' | 'crew' | 'pants', label: string, sub = false) => (
     <div className={sub ? 'bt-part' : 'bt-g'}>
       {sub ? <span className="bt-sub" id={`l-${k}`}>{label}</span> : null}
       <Swatches label={`l-${k}`} value={b[k] || ''} options={SWATCHES[k]} onChange={(v) => { set({ [k]: v }); if (k.startsWith('kite')) setDown(true); else if (k !== 'crew' && k !== 'pants') setDown(false); }} t={t} />
@@ -123,13 +123,6 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
       {opts.map(([v, l]) => <button key={String(v)} type="button" role="radio" aria-checked={value === v} className="bt-pill" onClick={() => pick(v)}>{l}</button>)}
     </div>
   );
-  // the gennaker in one, two or three colours: a new band takes a colour of the palette the others don't have
-  const bands = b.kite3 ? 3 : b.kite2 ? 2 : 1;
-  const free = (...used: (string | undefined)[]) => ['#b0202b', '#f2c230', '#1f6fb2', ...SWATCHES.kite].find((c) => !used.some((u) => u?.toLowerCase() === c.toLowerCase())) || '#b0202b'; // red, yellow or blue first
-  const setBands = (n: number) => {
-    const k2 = n > 1 ? b.kite2 || (b.kite.toLowerCase() === '#f4f3ef' ? '#1c1f24' : '#f4f3ef') : undefined;
-    set({ kite2: k2, kite3: n > 2 ? b.kite3 || free(b.kite, k2) : undefined }); setDown(true);
-  };
   const preset = PRESETS.find((p) => p.id === b.preset);
   const flag = findFlag(b.flag);
   // a flag on the main: the boat then carries that country's letters too
@@ -207,14 +200,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
 
           <div className="bt-g">
             {kicker('l-kite', <IconKite />, t('Gennaker', 'Генакер', 'Gennaker', 'Gennaker', 'Gennaker'))}
-            {tags('l-kite', String(bands), [['1', t('One colour', 'Один цвет', 'Un color', 'Eine Farbe', 'Tek renk')], ['2', t('Two', 'Два', 'Dos', 'Zwei', 'İki')], ['3', t('Three', 'Три', 'Tres', 'Drei', 'Üç')]] as [string, string][], (v) => setBands(Number(v)))}
-            {bands === 1
-              ? <Swatches label="l-kite" value={b.kite} options={SWATCHES.kite} onChange={(v) => { set({ kite: v }); setDown(true); }} t={t} />
-              : <>
-                {swatches('kite', t('First', 'Первый', 'Primero', 'Erste', 'Birinci'), true)}
-                {swatches('kite2', t('Second', 'Второй', 'Segundo', 'Zweite', 'İkinci'), true)}
-                {bands === 3 && swatches('kite3', t('Third', 'Третий', 'Tercero', 'Dritte', 'Üçüncü'), true)}
-              </>}
+            <Swatches label="l-kite" value={b.kite} options={SWATCHES.kite} onChange={(v) => { set({ kite: v }); setDown(true); }} t={t} />
           </div>
 
           <div className="bt-g">

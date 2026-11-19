@@ -1743,3 +1743,20 @@
 .bc .bt-menu .hm-menu .hm-menu-nav, .bc .bt-menu .hm-menu .hm-menu-nav > * { display: flex; }
 /* open, the bar it's in comes over the rest of the page's words (each of them drawn on a layer of its own as it rises in) */
 .bc .bt-top:has(.bt-menu .hm-menu[open]) { position: relative; z-index: 20; }
+/* admin: every jib's and gennaker's colour (components/admin-form.tsx SailColorForm): one sail, the choice, the colours */
+.bc .adm-prev-1 { grid-template-columns: minmax(0, 1fr); max-width: 50%; }
+.bc .adm-sail-jib, .bc .adm-sail-kite { background: var(--fill-2); }
+.bc .adm-sail-kite { clip-path: polygon(30% 0, 70% 0, 100% 100%, 0 100%); padding-left: var(--s-4); }
+.bc .adm-modes { margin-bottom: var(--s-3); }
+.bc .adm-color { display: inline-flex; align-items: center; gap: var(--s-3); }
+.bc .adm-color input[type="color"] { width: 44px; height: var(--h-s, 32px); padding: 0; border: 1px solid var(--rule); background: none; cursor: pointer; }
+.bc .adm-color input[type="color"]:disabled { opacity: .5; cursor: default; }
+@media (max-width: 600px) { .bc .adm-prev-1 { max-width: none; } }
+/* admin: a set of venues (components/admin-form.tsx SetEditor): its venues by country, a country's name picks them all */
+.bc .adm-venues { display: grid; gap: var(--s-3); align-content: start; max-height: 520px; overflow-y: auto; padding-right: var(--s-2); }
+.bc .adm-country { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: var(--s-2); align-items: start; }
+.bc .adm-country-k { justify-content: flex-start; }
+.bc .adm-country-k[aria-checked="mixed"]::before { background: var(--w-50); }
+.bc .adm-in-set { color: var(--ink-3); text-transform: none; letter-spacing: 0; }
+.bc .adm-set .adm-in { flex: 0 1 60%; }
+@media (max-width: 600px) { .bc .adm-country { grid-template-columns: minmax(0, 1fr); } .bc .adm-venues { max-height: none; } }

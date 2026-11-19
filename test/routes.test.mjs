@@ -273,19 +273,19 @@ const settings = (o) => answer(() => json(Object.entries(o).map(([key, value]) =
 const BUCKET = 'https://proj.supabase.test/storage/v1/object/public/regatta-ads/';
 
 test('/sponsor: an uploaded picture and the site\'s own go on the sails', async () => {
-  settings({ jib_ad: { url: `${BUCKET}jib.png` }, main_logo: { url: '/images/ryc-badge.svg' } });
+  settings({ jib_ad: { url: `${BUCKET}jib.png` }, main_logo: { url: '/images/ryc-badge.svg' }, kite_logo: { url: '/flags/tr.svg' } });
   const r = await sponsor();
-  assert.deepEqual(await r.json(), { jib: `${BUCKET}jib.png`, main: '/images/ryc-badge.svg', banner: null });
+  assert.deepEqual(await r.json(), { jib: `${BUCKET}jib.png`, main: '/images/ryc-badge.svg', kite: '/flags/tr.svg', colors: { jib: null, kite: null }, banner: null });
   assert.match(r.headers.get('cache-control'), /s-maxage=60/);
   assert.equal(sent[0].o.headers.apikey, 'pub-key');
   assert.ok(sent[0].o.signal instanceof AbortSignal, 'it doesn\'t wait on a database that doesn\'t answer');
 });
 
 test('/sponsor: a picture from anywhere else is refused', async () => {
-  for (const url of ['https://evil.test/a.png', 'https://proj.supabase.test/storage/v1/object/public/other/a.png', '/images/../secret.png', '/images/a.exe', 'javascript:alert(1)', 7, null]) {
-    settings({ jib_ad: { url }, main_logo: { url } });
+  for (const url of ['https://evil.test/a.png', 'https://proj.supabase.test/storage/v1/object/public/other/a.png', '/images/../secret.png', '/flags/../secret.svg', '/images/a.exe', '/game/a.png', 'javascript:alert(1)', 7, null]) {
+    settings({ jib_ad: { url }, main_logo: { url }, kite_logo: { url } });
     const j = await (await sponsor()).json();
-    assert.equal(j.jib, null, String(url)); assert.equal(j.main, null, String(url));
+    assert.equal(j.jib, null, String(url)); assert.equal(j.main, null, String(url)); assert.equal(j.kite, null, String(url));
   }
 });
 
@@ -298,8 +298,39 @@ test('/sponsor: the banner is two lines of 40 characters at most, with the blank
   }
 });
 
+test('/sponsor: the jibs\' and gennakers\' colours, as the game takes them', async () => {
+  settings({ sail_colors: { jib: '#AE0000', kite: '#111111' } });
+  assert.deepEqual((await (await sponsor()).json()).colors, { jib: '#AE0000', kite: '#111111' });
+  settings({ sail_colors: { jib: 'own', kite: ['#222222', '#333333'] } });
+  assert.deepEqual((await (await sponsor()).json()).colors, { jib: 'own', kite: '#222222' }, 'bands saved before: the first colour');
+  for (const bad of [{ jib: 'red', kite: 'red' }, { jib: '#12345', kite: [] }, { jib: 7, kite: ['nope', '#111111'] }, null]) {
+    settings({ sail_colors: bad });
+    assert.deepEqual((await (await sponsor()).json()).colors, { jib: null, kite: null }, JSON.stringify(bad));
+  }
+});
+
+test('/sponsor?venue=: the venue\'s set\'s pictures and colours over every venue\'s, the rest every venue\'s', async () => {
+  const all = { jib_ad: { url: `${BUCKET}all-jib.png` }, main_logo: { url: '/images/ryc-badge.svg' }, kite_logo: { url: `${BUCKET}all-kite.png` }, sail_colors: { jib: '#111111', kite: '#222222' }, plane_banner: { lines: ['WORDS'] } };
+  settings({ ...all, sail_sets: {
+    turkey: { name: 'Turkey', venues: ['gocek', 'istanbul'], jib: { url: '/images/ryc-jib-banner.svg' }, kite: { url: '/flags/tr.svg' }, colors: { kite: '#e30a17' } },
+    uk: { name: 'UK', venues: ['cowes'], main: { url: 'https://evil.test/a.png' }, colors: { jib: 'auto', kite: 'own' } },
+    junk: 'junk', loose: { name: 'No venues', kite: { url: '/flags/gb.svg' } },
+  } });
+  const at = async (v) => (await (await sponsor(new Request(`https://x.test/sponsor${v === undefined ? '' : `?venue=${v}`}`))).json());
+  const turkey = { jib: '/images/ryc-jib-banner.svg', main: '/images/ryc-badge.svg', kite: '/flags/tr.svg', colors: { jib: '#111111', kite: '#e30a17' }, banner: ['WORDS'] };
+  assert.deepEqual(await at('gocek'), turkey);
+  assert.deepEqual(await at('istanbul'), turkey, 'every venue in the set alike');
+  assert.deepEqual(await at('cowes'), { jib: `${BUCKET}all-jib.png`, main: '/images/ryc-badge.svg', kite: `${BUCKET}all-kite.png`, colors: { jib: null, kite: null }, banner: ['WORDS'] }, 'a picture from anywhere else refused; the jib back to its ad, the gennaker each boat\'s own');
+  const everyVenue = { jib: `${BUCKET}all-jib.png`, main: '/images/ryc-badge.svg', kite: `${BUCKET}all-kite.png`, colors: { jib: '#111111', kite: '#222222' }, banner: ['WORDS'] };
+  for (const v of [undefined, 'kiel', 'nowhere', '__proto__', '']) assert.deepEqual(await at(v), everyVenue, String(v));
+  settings({ ...all, sail_sets: 'junk' });
+  assert.deepEqual(await at('gocek'), everyVenue);
+  settings({ ...all, sail_sets: { t: { venues: ['gocek'], colors: { jib: 'blue', kite: 'all' } } } });
+  assert.deepEqual((await at('gocek')).colors, { jib: '#111111', kite: '#222222' });
+});
+
 test('/sponsor: nothing to be had leaves the sails plain', async () => {
-  const none = { jib: null, main: null, banner: null };
+  const none = { jib: null, main: null, kite: null, colors: { jib: null, kite: null }, banner: null };
   answer(() => json({}, 500));
   assert.deepEqual(await (await sponsor()).json(), none);
   answer(() => { throw new Error('down'); });

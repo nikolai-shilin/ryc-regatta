@@ -15,7 +15,7 @@ const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/M
 const [base = 'http://localhost:5193', ...only] = process.argv.slice(2);
 const OUT = new URL('../public/images/', import.meta.url);
 const VERSION = 'v1', W = 1920, H = 800, DPR = 2, SUPER = 2, TRIES = 6;
-const BOAT = { hull: '#1c1f24', cloth: '#2a2c30', laminate: true, ink: '#ffffff', kite: '#1c1f24', kite2: '#f4f3ef', bottom: '#1c1f24', deck: 'nonskid', name: 'MARIE', crew: '#1c1f24', pants: '#1c1f24', logo: 'none', nat: 'GEO', num: '13', flag: 'ge' };
+const BOAT = { hull: '#1c1f24', cloth: '#2a2c30', laminate: true, ink: '#ffffff', kite: '#1c1f24', bottom: '#1c1f24', deck: 'nonskid', name: 'MARIE', crew: '#1c1f24', pants: '#1c1f24', logo: 'none', nat: 'GEO', num: '13', flag: 'ge' };
 
 // hit: on the race (R), her (P), the windward mark (M), how long since she last tacked (calm), the moment to stop at.
 // cam, in metres and degrees. az: round her from the bow (0) by her leeward side (90) to the stern (180); el: up from

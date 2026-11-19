@@ -307,6 +307,23 @@ class HTMLInputElement extends HTMLElement {
   get form() { return this.closest('form'); }
   select() {}
 }
+// a drop-down: its options (React marks the chosen one), and its value the chosen option's, or one set by a test
+class HTMLSelectElement extends HTMLElement {
+  dirty = null;
+  get options() { return this.querySelectorAll('option'); }
+  get value() { return this.dirty ?? (this.options.find((o) => o.selected) ?? this.options[0])?.value ?? ''; }
+  set value(v) { this.dirty = v == null ? '' : String(v); }
+  get type() { return this.hasAttribute('multiple') ? 'select-multiple' : 'select-one'; }
+  get disabled() { return this.hasAttribute('disabled'); }
+  get form() { return this.closest('form'); }
+}
+class HTMLOptionElement extends HTMLElement {
+  selected = false;
+  get value() { return this.getAttribute('value') ?? this.textContent; }
+  set value(v) { this.setAttribute('value', v); }
+  get defaultSelected() { return this.hasAttribute('selected'); }
+  set defaultSelected(v) { if (v) this.setAttribute('selected', ''); else this.removeAttribute('selected'); }
+}
 class HTMLTextAreaElement extends HTMLElement {
   dirty = null; selectionStart = 0; selectionEnd = 0; dflt = '';
   get value() { return this.dirty ?? this.dflt; }
@@ -331,7 +348,7 @@ class HTMLDetailsElement extends HTMLElement {
   get open() { return this.hasAttribute('open'); }
   set open(v) { const was = this.open; if (v) this.setAttribute('open', ''); else this.removeAttribute('open'); if (was !== !!v) this.dispatchEvent(new Evt('toggle')); }
 }
-const KINDS = { iframe: HTMLIFrameElement, button: HTMLButtonElement, input: HTMLInputElement, textarea: HTMLTextAreaElement, form: HTMLFormElement, dialog: HTMLDialogElement, details: HTMLDetailsElement };
+const KINDS = { iframe: HTMLIFrameElement, button: HTMLButtonElement, input: HTMLInputElement, select: HTMLSelectElement, option: HTMLOptionElement, textarea: HTMLTextAreaElement, form: HTMLFormElement, dialog: HTMLDialogElement, details: HTMLDetailsElement };
 
 class Document extends Node {
   oninput = null; hidden = false; visibilityState = 'visible'; readyState = 'complete'; jar = new Map(); referrer = '';
@@ -387,7 +404,7 @@ class IntersectionObserverFake { constructor(cb, opts) { this.cb = cb; this.opts
 export const dom = {};
 const define = (k, value) => Object.defineProperty(globalThis, k, { value, writable: true, configurable: true, enumerable: false });
 const globals = {
-  window: globalThis, self: globalThis, document, Node, Element, HTMLElement, SVGElement, HTMLIFrameElement, HTMLInputElement, HTMLTextAreaElement, HTMLButtonElement, HTMLFormElement, HTMLDialogElement, HTMLDetailsElement,
+  window: globalThis, self: globalThis, document, Node, Element, HTMLElement, SVGElement, HTMLIFrameElement, HTMLInputElement, HTMLSelectElement, HTMLOptionElement, HTMLTextAreaElement, HTMLButtonElement, HTMLFormElement, HTMLDialogElement, HTMLDetailsElement,
   Event: Evt, MouseEvent: MouseEvt, PointerEvent: PointerEvt, KeyboardEvent: KeyEvt, FocusEvent: FocusEvt, CustomEvent: CustomEvt, MessageEvent: MessageEvt, PageTransitionEvent: PageEvt,
   addEventListener: (...a) => win.addEventListener(...a), removeEventListener: (...a) => win.removeEventListener(...a), dispatchEvent: (e) => win.dispatchEvent(e),
   Date: FakeDate, ResizeObserver: ResizeObserverFake, IntersectionObserver: IntersectionObserverFake,

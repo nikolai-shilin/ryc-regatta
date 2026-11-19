@@ -21,7 +21,7 @@ const OUT = new URL('../public/images/', import.meta.url);
 const LIGHT = 'hour=15.5&sky=clear';
 
 // the yacht in every picture, as the boat page would save her (lib/boat.ts): MARIE, GEO 13
-const BOAT = { hull: '#1c1f24', cloth: '#2a2c30', laminate: true, ink: '#ffffff', kite: '#1c1f24', kite2: '#f4f3ef', bottom: '#1c1f24', deck: 'nonskid', name: 'MARIE', crew: '#1c1f24', pants: '#1c1f24', logo: 'none', nat: 'GEO', num: '13', flag: 'ge' };
+const BOAT = { hull: '#1c1f24', cloth: '#2a2c30', laminate: true, ink: '#ffffff', kite: '#1c1f24', bottom: '#1c1f24', deck: 'nonskid', name: 'MARIE', crew: '#1c1f24', pants: '#1c1f24', logo: 'none', nat: 'GEO', num: '13', flag: 'ge' };
 
 // each picture: the window (CSS pixels) and its scale, a touch screen or not, and (for a close-up) the HUD's parts to
 // keep: the rest of the HUD (and the yachts' tags) is hidden, the scene stays (keep: [] is the scene alone). cam: the camera, set on the game's

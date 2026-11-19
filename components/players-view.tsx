@@ -200,7 +200,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
                 {boat.name && <div><dt>{t('Name', 'Имя', 'Nombre', 'Name', 'İsim')}</dt><dd>{boat.name}</dd></div>}
                 <div><dt>{t('Sail number', 'Номер', 'Número de vela', 'Segelnummer', 'Yelken numarası')}</dt><dd>{`${boat.nat} ${boat.num || '1'}`.trim()}</dd></div>
                 <div><dt>{t('Colours', 'Цвета', 'Colores', 'Farben', 'Renkler')}</dt><dd className="pl-sws">
-                  {[boat.hull, boat.cloth, boat.kite, boat.kite2, boat.kite3, boat.crew].filter(Boolean).map((c, i) => <i key={i} style={{ background: c }} />)}
+                  {[boat.hull, boat.cloth, boat.kite, boat.crew].filter(Boolean).map((c, i) => <i key={i} style={{ background: c }} />)}
                 </dd></div>
                 <div><dt>{t('Deck', 'Палуба', 'Cubierta', 'Deck', 'Güverte')}</dt><dd>{boat.deck === 'teak' ? t('Teak', 'Тик', 'Teca', 'Teak', 'Tik') : boat.deck === 'hull' ? t('Hull colour', 'В цвет корпуса', 'Color del casco', 'Rumpffarbe', 'Gövde rengi') : t('Non-skid', 'Нескользящая', 'Antideslizante', 'Rutschfest', 'Kaymaz yüzey')}</dd></div>
                 <div><dt>{t('Sails', 'Паруса', 'Velas', 'Segel', 'Yelkenler')}</dt><dd>{boat.laminate ? t('Laminate', 'Ламинат', 'Laminado', 'Laminat', 'Laminat') : t('Dacron', 'Дакрон', 'Dacron', 'Dacron', 'Dacron')}</dd></div>

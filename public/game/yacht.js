@@ -634,14 +634,25 @@ export function drawContain(x, img, cx, cy, w, h) {
 }
 
 // the pictures on every boat's sails, as the site's admin sets them (/admin, which /sponsor serves): 'jib' the ad on the
-// jib, 'main' the logo on the mainsail. Asked for once a page, then the picture itself (from Supabase Storage, so loaded
-// for CORS: a tainted canvas can't go to the GPU). None, nothing on the sail.
+// jib, 'main' the logo on the mainsail, 'kite' the logo on the gennaker. Asked for once a page, then the picture itself
+// (from Supabase Storage, so loaded for CORS: a tainted canvas can't go to the GPU). None, nothing on the sail.
 const adPromises = {};
 function sailAd(slot) {
   if (!adPromises[slot]) adPromises[slot] = sponsor()
     .then((d) => (d && typeof d[slot] === 'string' ? new Promise((res, rej) => { const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => res(img); img.onerror = rej; img.src = d[slot]; }) : null))
     .catch(() => null);
   return adPromises[slot];
+}
+// the colours the admin dyes every boat's jib and gennaker (/admin, 'sail_colors'), checked again here: jib '#rrggbb' one
+// colour for all, 'own' each boat's own cloth, null the ad's own ground when it has one; kite '#rrggbb' one colour for
+// all (an older answer's list of bands: its first), null each boat's own
+const HEX = /^#[0-9a-f]{6}$/i;
+let colorsPromise = null;
+function sailColors() {
+  return (colorsPromise ||= sponsor().then((d) => {
+    const c = d?.colors, kite = Array.isArray(c?.kite) ? c.kite[0] : c?.kite;
+    return { jib: c?.jib === 'own' || (typeof c?.jib === 'string' && HEX.test(c.jib)) ? c.jib : null, kite: typeof kite === 'string' && HEX.test(kite) ? kite : null };
+  }).catch(() => ({ jib: null, kite: null })));
 }
 
 // a logo decal on the bow, wrapped onto the hull's own surface (side: +1 starboard, −1 port)
@@ -681,10 +692,15 @@ function logoDecal(side, logo, z0 = -2.55, y0 = 0.64, W = 1.36, H = 0.52) {
 }
 
 // ---------- sails ----------
-// how a kite is cut, on its cloth (x from the luff to the leech, y from the head down to the foot): a band's edge, v of
+// how a kite is cut, on its cloth (x from the luff to the leech, y from the head down to the foot): a seam across it, v of
 // the way down the luff at the luff and arching up towards the middle; and its seams, the panels fanning out of the three
 // corners, where the load is, and running across the sail between them
 const kiteArc = (v, u) => v * (1 - 0.06 * Math.sin(Math.PI * u));
+// the kite laid flat for a logo on it (sailTexture), in units of its luff's height: this boat's gennaker on a broad reach
+// seen square to its cloth, the head 0.35 aft of the tack, the clew 0.63 aft and 0.11 up, its luff rounding forward and
+// its leech aft to the shoulders. A logo is drawn a little inside the largest that fits the flat kite (grow), with
+// cloth round it on every side
+const KITE = { hz: 0.35, cz: 0.63, cy: 0.11, luffOut: 0.15, leechOut: 0.07, grow: 0.92 };
 function kiteSeams(W, H) {
   const at = (v, u) => [u * W, kiteArc(v, u) * H], seams = [];
   for (let i = 3; i <= 10; i++) seams.push(Array.from({ length: 17 }, (_, k) => at(i / 16 + 0.1875, k / 16))); // across the middle
@@ -699,6 +715,68 @@ function sharpPicture(img, w, h) {
   const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, w, h);
   return c;
 }
+// a picture (its ImageData) level and upright on a sail, its middle at (zc, yc) in the metres of clothPoint(f, u) (where
+// the point f up the luff and u along the row lies on the flat sail: [aft, up]), w × h m in size: each pixel of the canvas
+// looks up what lies at its point of the sail, so nothing leans however the cloth narrows or its rows run. s: 1 the front
+// face, −1 the back, whose canvas is read mirrored and seen from the other side. padZ, padY: how far past the picture to
+// look for the rows it touches (a sixty-fourth of the sail's grid misses its edge)
+function markCloth(ctx, s, pic, zc, yc, w, h, clothPoint, padZ, padY) {
+  const W = ctx.canvas.width, H = ctx.canvas.height, N = 64;
+  let u0 = 1, u1 = 0, f0 = 1, f1 = 0;
+  for (let a = 0; a <= N; a++) for (let b = 0; b <= N; b++) {
+    const [z, y] = clothPoint(b / N, a / N);
+    if (Math.abs(z - zc) > w / 2 + padZ || Math.abs(y - yc) > h / 2 + padY) continue;
+    u0 = Math.min(u0, a / N); u1 = Math.max(u1, a / N); f0 = Math.min(f0, b / N); f1 = Math.max(f1, b / N);
+  }
+  if (u1 < u0) return;
+  const i0 = Math.max(0, Math.floor(W * (s > 0 ? u0 : 1 - u1)) - 8), i1 = Math.min(W, Math.ceil(W * (s > 0 ? u1 : 1 - u0)) + 8);
+  const j0 = Math.max(0, Math.floor(H * (1 - f1)) - 16), j1 = Math.min(H, Math.ceil(H * (1 - f0)) + 16), bw = i1 - i0, bh = j1 - j0;
+  const out = new ImageData(bw, bh), o = out.data, { data: d, width: pw, height: ph } = pic;
+  for (let j = 0; j < bh; j++) for (let i = 0; i < bw; i++) {
+    const u = (i0 + i + 0.5) / W, [z, y] = clothPoint(1 - (j0 + j + 0.5) / H, s > 0 ? u : 1 - u);
+    const px = ((s * (z - zc)) / w + 0.5) * pw - 0.5, py = ((yc - y) / h + 0.5) * ph - 0.5;
+    if (px < -0.5 || py < -0.5 || px > pw - 0.5 || py > ph - 0.5) continue;
+    const x0 = clamp(Math.floor(px), 0, pw - 1), y0 = clamp(Math.floor(py), 0, ph - 1), x1 = Math.min(x0 + 1, pw - 1), y1 = Math.min(y0 + 1, ph - 1), fx = clamp(px - x0, 0, 1), fy = clamp(py - y0, 0, 1);
+    let al = 0, r = 0, g = 0, b = 0;
+    for (let k = 0; k < 4; k++) { // weighed by their alpha, so a soft edge takes no colour from the clear pixels beside it
+      const q = ((k & 2 ? y1 : y0) * pw + (k & 1 ? x1 : x0)) * 4, e = (d[q + 3] * (k & 1 ? fx : 1 - fx) * (k & 2 ? fy : 1 - fy));
+      al += e; r += d[q] * e; g += d[q + 1] * e; b += d[q + 2] * e;
+    }
+    if (al > 0) { const q = (j * bw + i) * 4; o[q] = r / al; o[q + 1] = g / al; o[q + 2] = b / al; o[q + 3] = al; }
+  }
+  const oc = document.createElement('canvas'); oc.width = bw; oc.height = bh; oc.getContext('2d').putImageData(out, 0, 0);
+  ctx.drawImage(oc, i0, j0);
+}
+// the largest box of a picture's shape (aspect, wide ÷ tall) that stands upright on a sail between yLo and yHi metres up,
+// clear of its edges by `clear`: the cloth at height y runs aft from luffZ(y) to aftZ(y). Gives { w, h, zc, yc }, its
+// size and its middle
+export function fitBox(luffZ, aftZ, yLo, yHi, aspect, clear) {
+  const N = 60, K = 12, dy = (yHi - yLo) / N;
+  let best = { w: 0, h: 0, zc: 0, yc: 0 };
+  for (let a = 0; a < N; a++) for (let b = a + 1; b <= N; b++) {
+    const y0 = yLo + a * dy, y1 = yLo + b * dy;
+    if ((y1 - y0) * aspect <= best.w) continue;
+    let z0 = -Infinity, z1 = Infinity;
+    for (let k = 0; k <= K; k++) { const y = y0 + ((y1 - y0) * k) / K; z0 = Math.max(z0, luffZ(y)); z1 = Math.min(z1, aftZ(y)); }
+    const w = Math.min(z1 - z0 - 2 * clear, (y1 - y0) * aspect);
+    if (w > best.w) best = { w, h: w / aspect, zc: (z0 + z1) / 2, yc: (y0 + y1) / 2 };
+  }
+  return best;
+}
+// a picture at w × h on a canvas of its own, turned a quarter round to read from the foot up (its left edge at the bottom)
+function turnedPicture(img, w, h) {
+  const c = document.createElement('canvas'); c.width = h; c.height = w;
+  const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.translate(0, w); x.rotate(-Math.PI / 2); x.drawImage(img, 0, 0, w, h);
+  return c;
+}
+// the colour a picture is printed on, when it is: its four corners alike and solid (a banner's red), else null
+export function groundOf(img) {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, 64, 64);
+  const px = [[1, 1], [62, 1], [1, 62], [62, 62]].map(([i, j]) => x.getImageData(i, j, 1, 1).data);
+  if (px.some((p) => p[3] < 250 || Math.abs(p[0] - px[0][0]) + Math.abs(p[1] - px[0][1]) + Math.abs(p[2] - px[0][2]) > 24)) return null;
+  return `rgb(${px[0][0]},${px[0][1]},${px[0][2]})`;
+}
 // a canvas texture for a sail; u runs luff → leech, v foot → head
 // rig: another class's sails (boats3d.js) — the main's luff (span, m) and its chord up it, where the flag goes on it
 // (m up the luff) and how wide, where the number goes (0 the foot … 1 the head), and the jib's head and clew from its
@@ -710,54 +788,46 @@ export function sailTexture(kind, look, rig = null) {
   const x = c.getContext('2d');
   let sideB = null; // the back face of the jib or the main, when it needs a canvas of its own
   if (kind === 'kite') {
-    // the boat's colours in bands across the sail, each arching up from the luff to the leech as the foot does
-    const cols = look.kite;
-    for (let i = 0; i < 8; i++) {
-      x.fillStyle = cols[i % cols.length]; x.beginPath(); x.moveTo(W, H); x.lineTo(0, H);
-      for (let k = 0; k <= 24; k++) x.lineTo((k / 24) * W, kiteArc(i / 8, k / 24) * H);
-      x.closePath(); x.fill();
-    }
-    // the cloth over the colours: its seams, the tapes round its edge, and the patches of extra cloth at its corners
-    x.strokeStyle = 'rgba(0,0,0,.2)'; x.lineWidth = 1.5;
-    for (const seam of kiteSeams(W, H)) { x.beginPath(); seam.forEach(([a, b], k) => (k ? x.lineTo(a, b) : x.moveTo(a, b))); x.stroke(); }
-    x.fillStyle = 'rgba(128,128,128,.28)'; x.fillRect(0, 0, W, H * 0.05);
-    for (const cx of [0, W]) for (const r of [0.2, 0.12]) { x.beginPath(); x.moveTo(cx, H); x.arc(cx, H, W * r, 0, Math.PI * 2); x.fill(); }
-    x.fillStyle = 'rgba(0,0,0,.3)'; x.fillRect(0, 0, 5, H); x.fillRect(W - 5, 0, 5, H); x.fillRect(0, H - 5, W, 5);
+    // one colour all over: the boat's own, or the admin's for every boat (sailColors), painted again once it's known
+    const paint = (x, color) => {
+      x.fillStyle = color; x.fillRect(0, 0, W, H);
+      // the cloth over the colours: its seams, the tapes round its edge, and the patches of extra cloth at its corners
+      x.strokeStyle = 'rgba(0,0,0,.2)'; x.lineWidth = 1.5;
+      for (const seam of kiteSeams(W, H)) { x.beginPath(); seam.forEach(([a, b], k) => (k ? x.lineTo(a, b) : x.moveTo(a, b))); x.stroke(); }
+      x.fillStyle = 'rgba(128,128,128,.28)'; x.fillRect(0, 0, W, H * 0.05);
+      for (const cx of [0, W]) for (const r of [0.2, 0.12]) { x.beginPath(); x.moveTo(cx, H); x.arc(cx, H, W * r, 0, Math.PI * 2); x.fill(); }
+      x.fillStyle = 'rgba(0,0,0,.3)'; x.fillRect(0, 0, 5, H); x.fillRect(W - 5, 0, 5, H); x.fillRect(0, H - 5, W, 5);
+    };
+    paint(x, look.kite);
+    // the admin's logo (/admin, 'kite'), on every gennaker and spinnaker as large as the cloth allows, upright and reading
+    // the right way round from both sides (the back face gets a canvas of its own). Laid out on the kite flattened, its
+    // luff one unit tall: the tack at the foot, the head KITE.hz aft of it, the clew KITE.cz aft and KITE.cy up, and the
+    // luff and leech rounding out to its shoulders (setKite's sh and round, near enough for every class's kite); kept a
+    // little off the luff, which curls
+    const cb = document.createElement('canvas'); cb.width = W; cb.height = H; cb.getContext('2d').drawImage(c, 0, 0);
+    sideB = new THREE.CanvasTexture(cb);
+    Promise.all([sailAd('kite'), sailColors()]).then(([img, colors]) => {
+      const xb = cb.getContext('2d');
+      if (colors.kite) { paint(x, colors.kite); paint(xb, colors.kite); }
+      if (img) laidOn(img, xb);
+      if (img || colors.kite) { t.needsUpdate = true; t.back.needsUpdate = true; }
+    });
+    const laidOn = (img, xb) => {
+      const { hz, cz, cy, luffOut, leechOut } = KITE;
+      const luff = (f) => [hz * f - luffOut * Math.sin(Math.PI * f ** 1.3), f], leech = (f) => [lerp(cz, hz, f) + leechOut * Math.sin(Math.PI * f ** 1.15), lerp(cy, 1, f)];
+      const point = (f, u) => { const a = luff(f), b = leech(f); return [lerp(a[0], b[0], u), lerp(a[1], b[1], u)]; };
+      const aftZ = (y) => (y < cy ? (cz * y) / cy : leech((y - cy) / (1 - cy))[0]);
+      const aspect = (img.naturalWidth || 1) / (img.naturalHeight || 1), fit = fitBox((y) => luff(y)[0] + 0.02, aftZ, cy + 0.06, 0.85, aspect, 0.025);
+      const w = fit.w * KITE.grow, h = fit.h * KITE.grow, { zc, yc } = fit;
+      const PW = 512, pic = sharpPicture(img, PW, Math.max(1, Math.round(PW / aspect))), data = pic.getContext('2d').getImageData(0, 0, pic.width, pic.height);
+      for (const [ctx, s] of [[x, 1], [xb, -1]]) markCloth(ctx, s, data, zc, yc, w, h, point, 0.03, 0.03);
+    };
   } else {
-    x.fillStyle = look.cloth; x.fillRect(0, 0, W, H);
+    // the cloth itself (drawCloth below, once the marks' helpers are set): drawn again in another colour when the jib is dyed
     // where a point of the cloth (f up the luff, u along the chord) lies on the flat sail, in metres: [aft, up]. A sail
     // whose rows don't run level from the luff (the Optimist's climb to her sprit's peak) brings a map of its own (rig.at)
     const clothPoint = R.at || ((f, u) => [u * R.chord(f), f * R.span]);
-    // a picture (its ImageData) level and upright on the sail, its middle at (zc, yc) in clothPoint's metres, w × h m in
-    // size: each pixel of the canvas looks up what lies at its point of the sail, so nothing leans however the cloth
-    // narrows or its rows run. s: 1 the front face, −1 the back, whose canvas is read mirrored and seen from the other side
-    const markOn = (ctx, s, pic, zc, yc, w, h) => {
-      const N = 64, padZ = (2 * R.chord(0)) / N, padY = (2 * R.span) / N;
-      let u0 = 1, u1 = 0, f0 = 1, f1 = 0;
-      for (let a = 0; a <= N; a++) for (let b = 0; b <= N; b++) {
-        const [z, y] = clothPoint(b / N, a / N);
-        if (Math.abs(z - zc) > w / 2 + padZ || Math.abs(y - yc) > h / 2 + padY) continue;
-        u0 = Math.min(u0, a / N); u1 = Math.max(u1, a / N); f0 = Math.min(f0, b / N); f1 = Math.max(f1, b / N);
-      }
-      if (u1 < u0) return;
-      const i0 = Math.max(0, Math.floor(W * (s > 0 ? u0 : 1 - u1)) - 8), i1 = Math.min(W, Math.ceil(W * (s > 0 ? u1 : 1 - u0)) + 8);
-      const j0 = Math.max(0, Math.floor(H * (1 - f1)) - 16), j1 = Math.min(H, Math.ceil(H * (1 - f0)) + 16), bw = i1 - i0, bh = j1 - j0;
-      const out = new ImageData(bw, bh), o = out.data, { data: d, width: pw, height: ph } = pic;
-      for (let j = 0; j < bh; j++) for (let i = 0; i < bw; i++) {
-        const u = (i0 + i + 0.5) / W, [z, y] = clothPoint(1 - (j0 + j + 0.5) / H, s > 0 ? u : 1 - u);
-        const px = ((s * (z - zc)) / w + 0.5) * pw - 0.5, py = ((yc - y) / h + 0.5) * ph - 0.5;
-        if (px < -0.5 || py < -0.5 || px > pw - 0.5 || py > ph - 0.5) continue;
-        const x0 = clamp(Math.floor(px), 0, pw - 1), y0 = clamp(Math.floor(py), 0, ph - 1), x1 = Math.min(x0 + 1, pw - 1), y1 = Math.min(y0 + 1, ph - 1), fx = clamp(px - x0, 0, 1), fy = clamp(py - y0, 0, 1);
-        let al = 0, r = 0, g = 0, b = 0;
-        for (let k = 0; k < 4; k++) { // weighed by their alpha, so a soft edge takes no colour from the clear pixels beside it
-          const q = ((k & 2 ? y1 : y0) * pw + (k & 1 ? x1 : x0)) * 4, e = (d[q + 3] * (k & 1 ? fx : 1 - fx) * (k & 2 ? fy : 1 - fy));
-          al += e; r += d[q] * e; g += d[q + 1] * e; b += d[q + 2] * e;
-        }
-        if (al > 0) { const q = (j * bw + i) * 4; o[q] = r / al; o[q + 1] = g / al; o[q + 2] = b / al; o[q + 3] = al; }
-      }
-      const oc = document.createElement('canvas'); oc.width = bw; oc.height = bh; oc.getContext('2d').putImageData(out, 0, 0);
-      ctx.drawImage(oc, i0, j0);
-    };
+    const markOn = (ctx, s, pic, zc, yc, w, h) => markCloth(ctx, s, pic, zc, yc, w, h, clothPoint, (2 * R.chord(0)) / 64, (2 * R.span) / 64);
     // the country flag, its full SAIL_MARK m wide and 3:2, centred m metres up the luff and z metres aft of it: drawn a
     // row of the canvas at a time, each row scaled by the chord there, so it comes out an upright rectangle on the sail
     // (not narrowing as the sail does), with an edge for a white flag on white cloth. back: the back face's canvas, which
@@ -790,36 +860,41 @@ export function sailTexture(kind, look, rig = null) {
       const ct = R.chord(Math.min(1, (m + h / 2) / R.span)), z = clamp(0.47 * R.chord(m / R.span), ct * MARGIN + w / 2, ct * (1 - MARGIN) - w / 2);
       return [m, z];
     };
-    // laminate: fine fibres; cloth: panel seams
-    if (look.laminate) {
-      x.strokeStyle = 'rgba(255,255,255,.07)'; x.lineWidth = 1;
-      for (let i = -H; i < W; i += 9) { x.beginPath(); x.moveTo(i, H); x.lineTo(i + H * 0.7, 0); x.stroke(); }
-      for (let i = 0; i < W + H; i += 14) { x.beginPath(); x.moveTo(W, i); x.lineTo(0, i - W * 0.5); x.stroke(); }
-    }
-    // the panels: each cut from its own run of cloth, so each a shade lighter or darker than the next (seen at any
-    // distance, it is what keeps a sail from looking like one flat sheet), and the load-bearing laminate's darker
-    // fibres fanning from the clew and the head
-    let ps = 7 + kind.length; const prnd = () => ((ps = (ps * 16807) % 2147483647) / 2147483647);
-    for (let i = 0; i < 10; i++) {
-      const d = (prnd() - 0.5) * (look.laminate ? 0.09 : 0.06);
-      x.fillStyle = d > 0 ? `rgba(255,255,255,${d})` : `rgba(0,0,0,${-d})`;
-      x.beginPath(); x.moveTo(0, (i * H) / 10 + 20); x.lineTo(W, (i * H) / 10 - 30); x.lineTo(W, ((i + 1) * H) / 10 - 30); x.lineTo(0, ((i + 1) * H) / 10 + 20); x.closePath(); x.fill();
-    }
-    if (look.laminate) {
-      x.strokeStyle = 'rgba(0,0,0,.05)'; x.lineWidth = 3;
-      for (let i = 0; i < 9; i++) { x.beginPath(); x.moveTo(W, H); x.quadraticCurveTo(W * (0.55 - i * 0.05), H * (0.7 - i * 0.04), W * (0.05 + i * 0.02), H * (0.1 + i * 0.09)); x.stroke(); }
-      for (let i = 0; i < 6; i++) { x.beginPath(); x.moveTo(W * 0.04, 0); x.quadraticCurveTo(W * (0.3 + i * 0.05), H * (0.2 + i * 0.03), W * (0.9 - i * 0.04), H * (0.35 + i * 0.07)); x.stroke(); }
-    }
-    x.strokeStyle = look.laminate ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.08)'; x.lineWidth = 2;
-    for (let i = 1; i < 10; i++) { x.beginPath(); x.moveTo(0, (i * H) / 10 + 20); x.lineTo(W, (i * H) / 10 - 30); x.stroke(); }
-    // creases: faint wrinkles fanning from the clew (bottom right) and from the head, each a shadow with a highlight
-    const crease = (x0, y0, x1, y1) => {
-      for (const [d, s] of [[0, 'rgba(0,0,0,.07)'], [2.5, 'rgba(255,255,255,.08)']]) { x.strokeStyle = s; x.lineWidth = 1.6; x.beginPath(); x.moveTo(x0 + d, y0); x.lineTo(x1 + d, y1); x.stroke(); }
+    // the cloth: its colour, then (laminate) fine fibres or (cloth) panel seams, the panels' shading, the creases and the tapes
+    const drawCloth = (x, cloth) => {
+      x.fillStyle = cloth; x.fillRect(0, 0, W, H);
+      // laminate: fine fibres; cloth: panel seams
+      if (look.laminate) {
+        x.strokeStyle = 'rgba(255,255,255,.07)'; x.lineWidth = 1;
+        for (let i = -H; i < W; i += 9) { x.beginPath(); x.moveTo(i, H); x.lineTo(i + H * 0.7, 0); x.stroke(); }
+        for (let i = 0; i < W + H; i += 14) { x.beginPath(); x.moveTo(W, i); x.lineTo(0, i - W * 0.5); x.stroke(); }
+      }
+      // the panels: each cut from its own run of cloth, so each a shade lighter or darker than the next (seen at any
+      // distance, it is what keeps a sail from looking like one flat sheet), and the load-bearing laminate's darker
+      // fibres fanning from the clew and the head
+      let ps = 7 + kind.length; const prnd = () => ((ps = (ps * 16807) % 2147483647) / 2147483647);
+      for (let i = 0; i < 10; i++) {
+        const d = (prnd() - 0.5) * (look.laminate ? 0.09 : 0.06);
+        x.fillStyle = d > 0 ? `rgba(255,255,255,${d})` : `rgba(0,0,0,${-d})`;
+        x.beginPath(); x.moveTo(0, (i * H) / 10 + 20); x.lineTo(W, (i * H) / 10 - 30); x.lineTo(W, ((i + 1) * H) / 10 - 30); x.lineTo(0, ((i + 1) * H) / 10 + 20); x.closePath(); x.fill();
+      }
+      if (look.laminate) {
+        x.strokeStyle = 'rgba(0,0,0,.05)'; x.lineWidth = 3;
+        for (let i = 0; i < 9; i++) { x.beginPath(); x.moveTo(W, H); x.quadraticCurveTo(W * (0.55 - i * 0.05), H * (0.7 - i * 0.04), W * (0.05 + i * 0.02), H * (0.1 + i * 0.09)); x.stroke(); }
+        for (let i = 0; i < 6; i++) { x.beginPath(); x.moveTo(W * 0.04, 0); x.quadraticCurveTo(W * (0.3 + i * 0.05), H * (0.2 + i * 0.03), W * (0.9 - i * 0.04), H * (0.35 + i * 0.07)); x.stroke(); }
+      }
+      x.strokeStyle = look.laminate ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.08)'; x.lineWidth = 2;
+      for (let i = 1; i < 10; i++) { x.beginPath(); x.moveTo(0, (i * H) / 10 + 20); x.lineTo(W, (i * H) / 10 - 30); x.stroke(); }
+      // creases: faint wrinkles fanning from the clew (bottom right) and from the head, each a shadow with a highlight
+      const crease = (x0, y0, x1, y1) => {
+        for (const [d, s] of [[0, 'rgba(0,0,0,.07)'], [2.5, 'rgba(255,255,255,.08)']]) { x.strokeStyle = s; x.lineWidth = 1.6; x.beginPath(); x.moveTo(x0 + d, y0); x.lineTo(x1 + d, y1); x.stroke(); }
+      };
+      for (let i = 0; i < 6; i++) crease(W - 6, H - 6, W * (0.62 - i * 0.05), H * (0.86 - i * 0.05));
+      for (let i = 0; i < 4; i++) crease(W * 0.06, 6, W * (0.22 + i * 0.06), H * (0.1 + i * 0.025));
+      // tapes along the luff and foot, the leech line
+      x.fillStyle = look.tape; x.fillRect(0, 0, 10, H); x.fillRect(0, H - 10, W, 10); x.fillRect(W - 6, 0, 6, H);
     };
-    for (let i = 0; i < 6; i++) crease(W - 6, H - 6, W * (0.62 - i * 0.05), H * (0.86 - i * 0.05));
-    for (let i = 0; i < 4; i++) crease(W * 0.06, 6, W * (0.22 + i * 0.06), H * (0.1 + i * 0.025));
-    // tapes along the luff and foot, the leech line
-    x.fillStyle = look.tape; x.fillRect(0, 0, 10, H); x.fillRect(0, H - 10, W, 10); x.fillRect(W - 6, 0, 6, H);
+    drawCloth(x, look.cloth);
     if (kind === 'main') {
       // battens: the top two full length, the rest from the leech (or the class's own: rig.battens)
       x.fillStyle = look.batten;
@@ -880,35 +955,42 @@ export function sailTexture(kind, look, rig = null) {
       });
       if (look.flag) flagAt(fm, fz, xb);
     } else {
-      x.fillStyle = look.batten; x.fillRect(W * 0.7, H * 0.35, W * 0.3, 16); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 16);
-      // the ad, as large as the jib allows between a little above the foot and just over half way up the luff, its top
-      // corners clear of the luff and the leech. The cloth maps (u along the chord, f up the luff) to
-      // P = head·f + clew·(1 − f)·u in the sail's plane, a grid sheared by the raked luff and tapering to the head: the ad
-      // is drawn in level strips, the canvas set to that map's inverse at each strip's middle, so it stands upright, level
-      // with the deck, and comes out its own shape on the sail however much the jib narrows across its height.
+      const battens = (x) => { x.fillStyle = look.batten; x.fillRect(W * 0.7, H * 0.35, W * 0.3, 16); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 16); };
+      battens(x);
+      // the ad, as large as the jib allows from a little above the foot to near the head, clear of the luff, the leech and
+      // the foot: level as it is, or turned a quarter round to read up the luff, whichever comes out the larger (a wide
+      // banner on a tall jib reads best turned). A banner printed on a colour of its own (its corners alike and solid)
+      // dyes the whole jib that colour first, so the ad takes the full sail, unless the admin has set the jibs' colour
+      // (sailColors: one colour for every boat, with or without an ad, or each boat's own cloth). The cloth maps (u along the chord, f up the
+      // luff) to P = head·f + clew·(1 − f)·u in the sail's plane, a grid sheared by the raked luff and tapering to the
+      // head: the ad is drawn in level strips, the canvas set to that map's inverse at each strip's middle, so it stands
+      // upright, level with the deck, and comes out its own shape on the sail however much the jib narrows across its height.
       // The back face reads the canvas mirrored (u → 1 − u), which would turn the shear the wrong way and lean the ad: it
       // gets a canvas of its own (t.back, the cloth as drawn so far), the ad on it drawn with the shear the other way round.
       const cb = document.createElement('canvas'); cb.width = W; cb.height = H; cb.getContext('2d').drawImage(c, 0, 0);
       const tb = new THREE.CanvasTexture(cb);
-      sailAd('jib').then((img) => {
-        if (!img || R.noAd) return;
-        const hd = R.hd, CL = R.clew, aspect = (img.naturalWidth || 1) / (img.naturalHeight || 1), clear = 0.035 * CL.z, y0 = 0.09 * hd.y;
-        const luffZ = (y) => (hd.z * y) / hd.y, leechZ = (y) => CL.z + ((hd.z - CL.z) * (y - CL.y)) / (hd.y - CL.y);
-        let w = 0, h = 0, zc = 0, yc = 0;
-        for (let top = y0; top < 0.6 * hd.y; top += hd.y / 200) {
-          const fit = Math.min(leechZ(top) - luffZ(top) - 2 * clear, (top - y0) * aspect);
-          if (fit > w) { w = fit; h = w / aspect; zc = (luffZ(top) + leechZ(top)) / 2; yc = top - h / 2; }
-        }
-        const STRIPS = 40, PW = 1024, PH = Math.round(PW / aspect), pic = sharpPicture(img, PW, PH), det0 = hd.z * CL.y - hd.y * CL.z;
-        for (const [ctx, s] of [[x, 1], [cb.getContext('2d'), -1]]) for (let k = 0; k < STRIPS; k++) {
+      Promise.all([sailAd('jib'), sailColors()]).then(([img, colors]) => {
+        if (R.noAd) return;
+        const xb = cb.getContext('2d'), ground = colors.jib === 'own' ? null : colors.jib || (img && groundOf(img));
+        if (ground) for (const ctx of [x, xb]) { drawCloth(ctx, ground); battens(ctx); }
+        if (img) adOn(img, xb);
+        if (img || ground) { t.needsUpdate = true; tb.needsUpdate = true; }
+      });
+      const adOn = (img, xb) => {
+        const hd = R.hd, CL = R.clew, aspect = (img.naturalWidth || 1) / (img.naturalHeight || 1), clear = 0.035 * CL.z;
+        const luffZ = (y) => (hd.z * y) / hd.y, aftZ = (y) => (y < CL.y ? (CL.z * y) / CL.y : CL.z + ((hd.z - CL.z) * (y - CL.y)) / (hd.y - CL.y));
+        const lo = Math.max(0.06 * hd.y, CL.y + 0.05), level = fitBox(luffZ, aftZ, lo, 0.96 * hd.y, aspect, clear), turned = fitBox(luffZ, aftZ, lo, 0.96 * hd.y, 1 / aspect, clear);
+        const turn = turned.w * turned.h > level.w * level.h, { w, h, zc, yc } = turn ? turned : level;
+        const STRIPS = turn ? 120 : 40, PW = 1024, PH = Math.round(PW / aspect), det0 = hd.z * CL.y - hd.y * CL.z;
+        const pic = turn ? turnedPicture(img, PW, PH) : sharpPicture(img, PW, PH), pw = pic.width, ph = pic.height;
+        for (const [ctx, s] of [[x, 1], [xb, -1]]) for (let k = 0; k < STRIPS; k++) {
           const y = yc + h / 2 - ((k + 0.5) * h) / STRIPS, f = (zc * CL.y - CL.z * y) / det0, u = (hd.z * y - hd.y * zc) / det0 / (1 - f);
           const a = CL.z * (1 - f), b = CL.y * (1 - f), cc = hd.z - CL.z * u, d = hd.y - CL.y * u, det = a * d - b * cc, dh = h / STRIPS;
           ctx.save(); ctx.translate(W * (s > 0 ? u : 1 - u), H * (1 - f)); ctx.transform((W * d) / det, (s * H * b) / det, (s * W * cc) / det, (H * a) / det, 0, 0);
-          ctx.drawImage(pic, 0, (k * PH) / STRIPS, PW, PH / STRIPS, -w / 2, -dh * 0.56, w, dh * 1.12); // (a hair over, so no seam shows between strips)
+          ctx.drawImage(pic, 0, (k * ph) / STRIPS, pw, ph / STRIPS, -w / 2, -dh * 0.56, w, dh * 1.12); // (a hair over, so no seam shows between strips)
           ctx.restore();
         }
-        t.needsUpdate = true; tb.needsUpdate = true;
-      });
+      };
       sideB = tb;
     }
   }
@@ -1386,18 +1468,18 @@ export function labelSprite(color) {
   };
   return s;
 }
-// the looks: hull paint, sail cloth and number, gennaker panels
+// the looks: hull paint, sail cloth and number, the gennaker's colour
 export const LOOKS = {
-  player: { hull: '#1c1f24', stripe: '#1c1f24', cloth: '#2a2c30', laminate: true, tape: '#1e1f22', batten: '#1d1f22', ink: '#ffffff', nat: 'RYC', num: '1', logo: false, kite: ['#1c1f24', '#f4f3ef'], bottom: '#1c1f24', crew: '#1c1f24', pants: '#1c1f24' }, // all black, a black and white gennaker, no logo, RYC 1 in white (lib/boat.ts DEFAULT_BOAT)
-  Aurora: { hull: '#a8202a', stripe: '#f4f2ec', cloth: '#7f858c', laminate: true, tape: '#5f646b', batten: '#5a5f66', ink: '#ffffff', nat: 'GBR', flag: '/flags/gb.svg', num: '52', kite: ['#e63946', '#ffffff'] },
-  Kestrel: { hull: '#14503c', stripe: '#e9e3cf', cloth: '#2a2c30', laminate: true, tape: '#18191c', batten: '#1c1d20', ink: '#f2c230', nat: 'FRA', flag: '/flags/fr.svg', num: '7', kite: ['#2a9d8f', '#f2c230'] },
-  Nomad: { hull: '#2b2f36', stripe: '#e8c547', cloth: '#ebe3cd', tape: '#cfc5aa', batten: '#d2c9b0', ink: '#b3262b', nat: 'ITA', flag: '/flags/it.svg', num: '33', kite: ['#f4a261', '#1d1d1d'] },
-  Halcyon: { hull: '#1f4e8c', stripe: '#ffffff', cloth: '#f2f0e8', tape: '#d6d1c2', batten: '#d0ccbe', ink: '#1f4e8c', nat: 'NED', flag: '/flags/nl.svg', num: '14', kite: ['#3a86ff', '#ffbe0b'] },
-  Mistral: { hull: '#f3f1ec', stripe: '#6c3483', cloth: '#3a3d42', laminate: true, tape: '#23252a', batten: '#26282d', ink: '#ffffff', nat: 'ESP', flag: '/flags/es.svg', num: '88', kite: ['#8e44ad', '#ffffff'] },
-  Selkie: { hull: '#0f6b5f', stripe: '#f1ece0', cloth: '#efeadd', tape: '#d3ccb8', batten: '#cfc8b4', ink: '#0f6b5f', nat: 'IRL', flag: '/flags/ie.svg', num: '21', kite: ['#16a085', '#f1c40f'] },
-  Tern: { hull: '#f5f4f0', stripe: '#e67e22', cloth: '#868c93', laminate: true, tape: '#62676e', batten: '#5d6269', ink: '#1d1d1d', nat: 'GER', flag: '/flags/de.svg', num: '9', kite: ['#e67e22', '#2d3436'] },
-  Vela: { hull: '#7a1f3d', stripe: '#f6e6ea', cloth: '#f3f0e8', tape: '#d8d2c3', batten: '#d2ccbd', ink: '#7a1f3d', nat: 'CRO', flag: '/flags/hr.svg', num: '40', kite: ['#e84393', '#ffffff'] },
-  Zephyr: { hull: '#b9bec4', stripe: '#1d1f22', cloth: '#2b2d31', laminate: true, tape: '#1a1b1e', batten: '#1d1e21', ink: '#e8e8e8', nat: 'SWE', flag: '/flags/se.svg', num: '63', kite: ['#0984e3', '#fdcb6e'] },
+  player: { hull: '#1c1f24', stripe: '#1c1f24', cloth: '#2a2c30', laminate: true, tape: '#1e1f22', batten: '#1d1f22', ink: '#ffffff', nat: 'RYC', num: '1', logo: false, kite: '#1c1f24', bottom: '#1c1f24', crew: '#1c1f24', pants: '#1c1f24' }, // all black, a black gennaker, no logo, RYC 1 in white (lib/boat.ts DEFAULT_BOAT)
+  Aurora: { hull: '#a8202a', stripe: '#f4f2ec', cloth: '#7f858c', laminate: true, tape: '#5f646b', batten: '#5a5f66', ink: '#ffffff', nat: 'GBR', flag: '/flags/gb.svg', num: '52', kite: '#e63946' },
+  Kestrel: { hull: '#14503c', stripe: '#e9e3cf', cloth: '#2a2c30', laminate: true, tape: '#18191c', batten: '#1c1d20', ink: '#f2c230', nat: 'FRA', flag: '/flags/fr.svg', num: '7', kite: '#2a9d8f' },
+  Nomad: { hull: '#2b2f36', stripe: '#e8c547', cloth: '#ebe3cd', tape: '#cfc5aa', batten: '#d2c9b0', ink: '#b3262b', nat: 'ITA', flag: '/flags/it.svg', num: '33', kite: '#f4a261' },
+  Halcyon: { hull: '#1f4e8c', stripe: '#ffffff', cloth: '#f2f0e8', tape: '#d6d1c2', batten: '#d0ccbe', ink: '#1f4e8c', nat: 'NED', flag: '/flags/nl.svg', num: '14', kite: '#3a86ff' },
+  Mistral: { hull: '#f3f1ec', stripe: '#6c3483', cloth: '#3a3d42', laminate: true, tape: '#23252a', batten: '#26282d', ink: '#ffffff', nat: 'ESP', flag: '/flags/es.svg', num: '88', kite: '#8e44ad' },
+  Selkie: { hull: '#0f6b5f', stripe: '#f1ece0', cloth: '#efeadd', tape: '#d3ccb8', batten: '#cfc8b4', ink: '#0f6b5f', nat: 'IRL', flag: '/flags/ie.svg', num: '21', kite: '#16a085' },
+  Tern: { hull: '#f5f4f0', stripe: '#e67e22', cloth: '#868c93', laminate: true, tape: '#62676e', batten: '#5d6269', ink: '#1d1d1d', nat: 'GER', flag: '/flags/de.svg', num: '9', kite: '#e67e22' },
+  Vela: { hull: '#7a1f3d', stripe: '#f6e6ea', cloth: '#f3f0e8', tape: '#d8d2c3', batten: '#d2ccbd', ink: '#7a1f3d', nat: 'CRO', flag: '/flags/hr.svg', num: '40', kite: '#e84393' },
+  Zephyr: { hull: '#b9bec4', stripe: '#1d1f22', cloth: '#2b2d31', laminate: true, tape: '#1a1b1e', batten: '#1d1e21', ink: '#e8e8e8', nat: 'SWE', flag: '/flags/se.svg', num: '63', kite: '#0984e3' },
 };
 
 // the player's own boat, as the boat page (/boat) saves it in localStorage 'regatta-boat': the colours of the hull, the
@@ -1412,9 +1494,8 @@ export function lookFrom(b) {
   if (!b || typeof b !== 'object') return L;
   for (const k of ['hull', 'cloth', 'ink', 'crew', 'pants']) if (isHex(b[k])) L[k] = b[k];
   L.stripe = L.hull; // no stripe of its own: the sheer stripe and the boot-top are the hull's colour
-  const kite = Array.isArray(b.kite) ? b.kite[0] : b.kite; // the gennaker's first colour (older saves kept three panels: the top one)
-  if (isHex(kite)) L.kite = [kite];
-  L.kite = [L.kite[0], ...[b.kite2, b.kite3].filter(isHex)]; // then its second and third, in bands
+  const kite = Array.isArray(b.kite) ? b.kite[0] : b.kite; // the gennaker's colour (older saves kept panels or bands: the first)
+  if (isHex(kite)) L.kite = kite;
   if (isHex(b.bottom)) L.bottom = b.bottom;
   if (b.deck === 'teak' || b.deck === 'hull') L.deck = b.deck;
   if (typeof b.name === 'string') { const n = b.name.replace(/[^\p{L}\p{N} .'’&-]/gu, '').trim().slice(0, 16); if (n) L.name = n; } // as lib/boat.ts cleanName

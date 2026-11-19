@@ -12,8 +12,7 @@ export type Boat = {
   hull: string;                          // the topsides, the stripe under the sheer and the boot-top all in one colour
   cloth: string; laminate: boolean;      // the mainsail and jib: their colour, and laminate (fibres, a sheen) or Dacron
   ink: string;                           // the sail number and its letters
-  kite: string;                          // the gennaker: its first colour
-  kite2?: string; kite3?: string;        // and its second and third, for a gennaker in bands of two or three (none: one colour)
+  kite: string;                          // the gennaker: one colour all over
   bottom: string;                        // the antifouling under the waterline
   deck: Deck;                            // moulded non-skid (the class's own), teak planks, or non-skid in the hull's colour
   name?: string;                         // her name on both quarters, in letters that show up against the hull; none for no name
@@ -39,8 +38,7 @@ const PRESET_DE: Record<string, string> = { white: 'Weiß', silver: 'Silber', bl
 function mono(id: string, en: string, ru: string, c: string, dark = false): Preset {
   const mark = light(c) ? '#1d1d1d' : '#ffffff';
   const cloth = dark ? '#2a2c30' : '#f4f2ea';
-  // a one-colour gennaker: kite2 and kite3 there, unset, so picking a preset clears them
-  return { id, en, ru, es: PRESET_ES[id], de: PRESET_DE[id], tr: PRESET_TR[id], boat: { hull: c, cloth, laminate: dark, ink: dark || light(c) ? mark : c, kite: c, kite2: undefined, kite3: undefined, crew: c, pants: dark ? c : '#262a31' } };
+  return { id, en, ru, es: PRESET_ES[id], de: PRESET_DE[id], tr: PRESET_TR[id], boat: { hull: c, cloth, laminate: dark, ink: dark || light(c) ? mark : c, kite: c, crew: c, pants: dark ? c : '#262a31' } };
 }
 export const PRESETS: Preset[] = [
   mono('white', 'White', 'Белая', '#f4f3ef'),
@@ -63,7 +61,7 @@ export const PRESETS: Preset[] = [
 // stay yours: she has none of them but the club's letters.
 export const BOTTOM = '#5b1f24'; // the usual dark red antifouling, the first of its swatches
 export const DEFAULT_BOAT: Boat = {
-  ...PRESETS.find((p) => p.id === 'black')!.boat, kite2: '#f4f3ef', bottom: '#1c1f24', deck: 'nonskid', nat: 'RYC', num: '1',
+  ...PRESETS.find((p) => p.id === 'black')!.boat, bottom: '#1c1f24', deck: 'nonskid', nat: 'RYC', num: '1',
 };
 // a boat's name: letters of any alphabet, digits, spaces and a little punctuation, up to 16
 export const NAME_MAX = 16;
@@ -79,7 +77,7 @@ export const SWATCHES = {
   hull: PALETTE,
   cloth: uniq([...PRESETS.map((p) => p.boat.cloth), '#ebe3cd', '#dfe4e8', '#868c93', '#3a3d42']),
   ink: MARKS,
-  kite: PALETTE, kite2: PALETTE, kite3: PALETTE,
+  kite: PALETTE,
   // the antifouling: the usual dark red, black, navy, blue, silver and white
   bottom: uniq([BOTTOM, '#1c1f24', '#16325c', '#1f6fb2', '#b9bec4', '#f4f3ef']),
   crew: PALETTE,
@@ -94,10 +92,8 @@ export function cleanBoat(b: unknown): Boat | null {
   const r = b as Record<string, unknown>;
   const out: Boat = { ...DEFAULT_BOAT, preset: typeof r.preset === 'string' ? r.preset : undefined };
   for (const k of ['hull', 'cloth', 'ink', 'crew', 'pants'] as const) if (isHex(r[k])) out[k] = r[k];
-  const kite = Array.isArray(r.kite) ? r.kite[0] : r.kite; // saved before the gennaker went one colour: its top panel
+  const kite = Array.isArray(r.kite) ? r.kite[0] : r.kite; // saved with panels: its top one (and bands, kite2 and kite3, left behind)
   if (isHex(kite)) out.kite = kite;
-  const more = [r.kite2, r.kite3].filter(isHex); // a third colour without a second moves up
-  out.kite2 = more[0]; out.kite3 = more[1];
   if (isHex(r.bottom)) out.bottom = r.bottom;
   if (r.deck === 'nonskid' || r.deck === 'teak' || r.deck === 'hull') out.deck = r.deck;
   const name = typeof r.name === 'string' ? cleanName(r.name).trim() : '';
@@ -116,7 +112,7 @@ export function readBoat(): Boat {
 }
 
 // what she looks like, without when she was saved or which preset she came from
-const LOOK = ['hull', 'cloth', 'laminate', 'ink', 'kite', 'kite2', 'kite3', 'bottom', 'deck', 'name', 'crew', 'pants', 'nat', 'num', 'flag'] as const;
+const LOOK = ['hull', 'cloth', 'laminate', 'ink', 'kite', 'bottom', 'deck', 'name', 'crew', 'pants', 'nat', 'num', 'flag'] as const;
 const sameLook = (a: Boat, b: Boat) => LOOK.every((k) => a[k] === b[k]);
 
 // The account's boat and this device's, made one: the one changed last wins. A boat the player changed carries the

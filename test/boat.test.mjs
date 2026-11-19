@@ -59,16 +59,15 @@ test('a broken boat in the account is cleaned', () => {
   assert.equal(b.at, undefined);
 });
 
-test('the gennaker’s colours, the bottom paint, the deck and the name are kept, and cleaned', () => {
+test('the gennaker’s colour, the bottom paint, the deck and the name are kept, and cleaned', () => {
   const b = cleanBoat({ kite: '#1c1f24', kite2: '#f2c230', kite3: '#b0202b', bottom: '#16325c', deck: 'teak', name: '  Bora <b>Bora</b>  ' });
-  assert.equal(b.kite2, '#f2c230');
-  assert.equal(b.kite3, '#b0202b');
+  assert.equal(b.kite, '#1c1f24');
+  assert.ok(!('kite2' in b) && !('kite3' in b), 'a striped gennaker saved before is one colour now');
   assert.equal(b.bottom, '#16325c');
   assert.equal(b.deck, 'teak');
   assert.equal(b.name, 'Bora bBorab');
   const d = cleanBoat({ kite3: '#b0202b', bottom: 'blue', deck: 'gold', name: '   ' });
-  assert.equal(d.kite2, '#b0202b'); // a third colour without a second moves up
-  assert.equal(d.kite3, undefined);
+  assert.equal(d.kite, DEFAULT_BOAT.kite);
   assert.equal(d.bottom, DEFAULT_BOAT.bottom);
   assert.equal(d.deck, 'nonskid');
   assert.equal(d.name, undefined);
