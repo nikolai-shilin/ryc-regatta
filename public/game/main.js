@@ -1206,8 +1206,12 @@ const levelNow = () => (opts.gfx === 'auto' || !opts.gfx ? gfxLevel(world.gfx) :
 // autoTuner), remembered for this device. Word of it only when the picture comes down a whole level.
 const tuneGfx = autoTuner(autoBase());
 let frameBusy = 0; // how long the last frame kept the CPU (frame, below)
+// seconds of frames let pass after Audio & graphics changes the picture or the battery saver (applyAv): they're the new
+// shaders compiling, or the old pace, and say nothing of the new one
+let settleT = 0;
 function watchFps(raw) {
   if ((opts.gfx || 'auto') !== 'auto' || world.preparing) return; // (new shaders compiling: those frames say nothing)
+  if (settleT > 0) { settleT -= raw; return; }
   const next = tuneGfx(raw, frameBusy, world.gfx, !!opts.saver);
   if (!next) return;
   const was = gfxLevel(world.gfx), q = gfxLevel(next);
@@ -1648,8 +1652,8 @@ $('#pLeave').addEventListener('click', () => ask('leave'));
 // Audio & graphics, over the pause menu: each change is heard and seen as it's made
 let avClose = null;
 function applyAv(p) {
-  if ('gfx' in p || 'gfxD' in p) { applyGfx(); perf.settle = 2; }
-  if ('saver' in p) Object.assign(perf, { settle: 2, t: 0, d: [] }); // (the frame rate Auto watches changes with it)
+  if ('gfx' in p || 'gfxD' in p) { applyGfx(); settleT = 2; }
+  if ('saver' in p) settleT = 2; // (the frame rate Auto watches changes with it)
   if ('figures' in p) world.setFigures(p.figures !== 0);
   if ('music' in p || 'musicVol' in p || 'sound' in p) score.style();
   if ('sound' in p) audio.setOn(!!opts.sound);
