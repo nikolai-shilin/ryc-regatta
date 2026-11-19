@@ -2554,7 +2554,10 @@ function rampart(L, parts) {
 function viaduct(L, parts) {
   const P = L.ring, seg = P.slice(1).map((p, i) => Math.hypot(p[0] - P[i][0], p[1] - P[i][1])), len = seg.reduce((s, l) => s + l, 0), col = L.color || '#9a9c98', W = L.w || 22, D = L.deck;
   const at = (u) => { let k = 0; while (k < seg.length - 1 && u > seg[k]) u -= seg[k++]; const t = Math.min(1, u / seg[k]); return [P[k][0] + (P[k + 1][0] - P[k][0]) * t, P[k][1] + (P[k + 1][1] - P[k][1]) * t, Math.atan2(P[k + 1][1] - P[k][1], P[k + 1][0] - P[k][0])]; };
-  const deck = (u) => { const [x, z] = at(u); return Math.max(Math.max(0, groundAt(x, z)) + 2, 7 + (D - 7) * Math.sin((Math.PI * u) / len) ** 0.8); };
+  // the deck arched over the water, low at both ends; or (high: 'a' or 'b') rising all the way to that end, an approach
+  // climbing to a bridge's main span (the Gwangan Bridge's)
+  const rise = (u) => (L.high === 'a' ? 1 - u / len : L.high === 'b' ? u / len : Math.sin((Math.PI * u) / len)) ** 0.8;
+  const deck = (u) => { const [x, z] = at(u); return Math.max(Math.max(0, groundAt(x, z)) + 2, 7 + (D - 7) * rise(u)); };
   const n = Math.ceil(len / 35);
   for (let i = 0; i < n; i++) { const u0 = (len * i) / n, u1 = (len * (i + 1)) / n, [ax, az] = at(u0), [bx, bz] = at(u1); parts.push(beam(V3(ax, deck(u0), az), V3(bx, deck(u1), bz), W, 3, col)); }
   for (let u = (L.span || 80) / 2; u < len; u += L.span || 80) {
