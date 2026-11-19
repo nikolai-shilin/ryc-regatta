@@ -1013,10 +1013,11 @@ export function sailTexture(kind, look, rig = null) {
         const w = (turn ? along : level).w * grow, h = (turn ? along : level).h * grow;
         const zc = turn ? along.zc * cs + along.yc * sn : level.zc, yc = turn ? -along.zc * sn + along.yc * cs : level.yc;
         const STRIPS = turn ? 120 : 40, PW = 1024, PH = Math.round(PW / aspect), det0 = hd.z * CL.y - hd.y * CL.z, dh = h / STRIPS;
-        // turned, the words stand on the luff on both faces, their foot along it: reading from the head down on the front
-        // and from the foot up on the back, as a sailmaker prints the two sides (the same turn on both would hang them
-        // from the luff on one side, a mirror of the other)
-        const pics = turn ? [turnedPicture(img, PW, PH, true), turnedPicture(img, PW, PH, false)] : [sharpPicture(img, PW, PH)], pw = pics[0].width, ph = pics[0].height;
+        // turned, each face reads the way that is easier from where it is seen: the line running left to right and turned
+        // less than a right angle from level, the luff raked away from it. The front is seen with her bow to the left, the
+        // luff rising to the right, so it reads from the foot up; the back, bow to the right, from the head down. The same
+        // turn on both faces would read upside down on one of them
+        const pics = turn ? [turnedPicture(img, PW, PH, false), turnedPicture(img, PW, PH, true)] : [sharpPicture(img, PW, PH)], pw = pics[0].width, ph = pics[0].height;
         for (const [ctx, s, pic] of [[x, 1, pics[0]], [xb, -1, pics.at(-1)]]) for (let k = 0; k < STRIPS; k++) {
           // the strip's middle on the sail, a step down the picture's own up (the luff's line when turned)
           const t = h / 2 - (k + 0.5) * dh, pz = zc + Math.sin(phi) * t, py = yc + Math.cos(phi) * t;
