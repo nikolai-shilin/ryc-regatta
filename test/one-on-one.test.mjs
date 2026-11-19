@@ -378,6 +378,8 @@ async function flagged(flag, b = (d) => d.Gh) {
 }
 
 for (const flag of ['U', 'B']) {
+  // under U she sails on and is still out at the limit; under the black flag she is out of the race there and then
+  const want = flag === 'U' ? [false, true, true] : [true, true, false];
   test(`the results count a boat out under the ${flag === 'U' ? 'U' : 'black'} flag as disqualified: still out at the limit, or gone`, async () => {
     const d = await flagged(flag);
     toFinish(d, d.H);
@@ -386,14 +388,16 @@ for (const flag of ['U', 'B']) {
     d.hrace.clock = d.hrace.validAt + FINISH_LIMIT_S - 0.5;
     d.run(1.5, () => { d.me.rudder = 0; });
     const late = d.guest.results.boats.find((b) => b.id === 'g');
-    assert.deepEqual([late.done, late.dsq, late.dnf], [false, true, true], 'out at the limit');
+    assert.deepEqual([late.done, late.dsq, late.dnf], want, 'out at the limit');
     assert.equal(d.guest.results.boats.find((b) => b.id === 'h').dsq, false, 'and the boat home clean is not');
 
     const e = await flagged(flag);
     e.host.guestLeft();
     e.run(0.5);
+    // (out under the black flag, she had already left the race: the host's boat races on to her finish)
+    if (flag === 'B') { assert.equal(e.hrace.over, false); toFinish(e, e.H); e.run(2, () => { e.me.rudder = 0; }); }
     const gone = e.guest.results.boats.find((b) => b.id === 'g');
-    assert.deepEqual([gone.done, gone.dsq, gone.dnf], [false, true, true], 'gone before her finish: out, and she never finished');
+    assert.deepEqual([gone.done, gone.dsq, gone.dnf], want, 'gone before her finish: out, and she never finished');
   });
 }
 

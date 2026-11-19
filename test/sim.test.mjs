@@ -140,11 +140,11 @@ test('the course lists its marks and legs', () => {
   assert.deepEqual(c.legInfo.map((l) => l.beat), [false, true, false, false, true, false, false]);
   assert.equal(c.finish, null);
   assert.equal(sim.legAim(c, c.legs.indexOf('gate')).x, (c.gate[0].x + c.gate[1].x) / 2);
-  // a zone (mark-room) at the gate and the wing, none at the windward mark; the beats are the legs up to it
+  // a zone (mark-room) at every mark: the gate, the wing and the windward mark; the beats are the legs up to it
   const at = (k) => c.legs.indexOf(k);
   assert.equal(sim.hasZone(c, at('gate')), true);
   assert.equal(sim.hasZone(c, at('wing')), true);
-  assert.equal(sim.hasZone(c, at('mark')), false);
+  assert.equal(sim.hasZone(c, at('mark')), true);
   assert.deepEqual(c.legs.map((_, i) => sim.isBeat(c, i)), c.legs.map((k) => k === 'mark'));
   assert.deepEqual(sim.legTargets(c, at('start')), [c.pin, c.committee]);
   assert.deepEqual(sim.legTargets(c, at('gate')), [c.gate[0], c.gate[1]]);
@@ -168,7 +168,7 @@ test('the trapezoid is laid as the spec says', () => {
   const c = sim.makeCourse(2, 260, 0, 5, 'trap');
   assert.deepEqual(c.legs, ['start', 'mark', 'mark2', 'gate', 'mark2', 'gate', 'finish']);
   assert.deepEqual(c.legs.map((_, i) => sim.isBeat(c, i)), [false, true, false, false, true, false, false]);
-  assert.deepEqual(c.legs.map((_, i) => sim.hasZone(c, i)), [false, false, true, true, false, true, false]);
+  assert.deepEqual(c.legs.map((_, i) => sim.hasZone(c, i)), [false, true, true, true, true, true, false]);
 });
 test('the upwind finish is laid as the spec says', () => {
   for (const preset of ['light', 'medium', 'strong']) {
@@ -182,7 +182,7 @@ test('the upwind finish is laid as the spec says', () => {
     assert.ok(up <= 15, `${preset}: the finish is ${up.toFixed(1)}° off dead upwind from the gate`);
     assert.deepEqual(c.legs, ['start', 'mark', 'offset', 'gate', 'finish']);
     assert.deepEqual(c.legs.map((_, i) => sim.isBeat(c, i)), [false, true, false, false, true]);
-    assert.deepEqual(c.legs.map((_, i) => sim.hasZone(c, i)), [false, false, true, true, false]);
+    assert.deepEqual(c.legs.map((_, i) => sim.hasZone(c, i)), [false, true, true, true, false]);
   }
 });
 // the trapezoid's finish line lies out to the left of the start: in any fleet, any wind and either skew of the line,
@@ -262,7 +262,7 @@ function sailScripted(opts) {
   return r.boats.map((b) => (b.done && !b.dsq ? Math.round(b.finish * 10) / 10 : null));
 }
 // recorded before the race had more than one human boat in it (sailScripted on the sim as it was)
-const GOLDEN_4242 = [ null, 286.1, 242.3, 241.8, 242.8 ]; // sailed again 2026-11-18: the leeward boat is the one on the other's leeward side (sim.js windward)
+const GOLDEN_4242 = [ null, 251.3, 257.9, 230.7, 274.8 ]; // sailed again 2026-11-19: the rules changed (sim.js: mark-room at the windward mark, the line crossed at the bow, rule 13 from head to wind), and this seed now flies the I flag
 test('golden: a one-human race is the race it always was', () => {
   assert.deepEqual(sailScripted({ preset: 'medium', length: 'short', laps: 1, fleet: 5, seed: 4242 }), GOLDEN_4242);
 });

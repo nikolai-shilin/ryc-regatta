@@ -73,18 +73,17 @@ test('home with a penalty unserved is disqualified, and starts no limit', () => 
   assert.equal(r.validAt, null); assert.equal(r.winner, null); assert.equal(r.over, false); assert.ok(!g.done);
 });
 
-test('a boat out under the black flag starts no limit when she crosses first', () => {
+test('a boat out under the black flag is out at once, and starts no limit', () => {
   const r = duel({ seed: SEED.B }), [h, g] = r.humans, c = r.course;
   assert.equal(r.prepFlag, 'B');
   // in the triangle of the line and the first mark in the last minute
   r.clock = -30; put(r, h, linePt(c, 0.5, 20), h.h, 0); still(h); put(r, g, linePt(c, 0.5, -60), g.h, 0); still(g); // (g below the line, outside it)
   r.step(1 / 60);
   assert.equal(h.bfd, true); assert.ok(!g.bfd);
-  afterGun(r); toFinish(r, h);
-  assert.ok(runUntil(r, () => h.done, 60));
-  assert.equal(h.dsq, true); assert.equal(r.validAt, null); assert.equal(r.winner, null); assert.equal(r.over, false);
+  assert.equal(h.done, true); assert.equal(h.dsq, true); assert.equal(h.out, true);
+  assert.equal(r.validAt, null); assert.equal(r.winner, null); assert.equal(r.over, false);
   // and the other is the one the race is for
-  toFinish(r, g, 0.3);
+  steer(h, null); afterGun(r); g.leg = c.legs.length - 1; toFinish(r, g, 0.3);
   assert.ok(runUntil(r, () => g.done, 60));
   assert.equal(r.winner, g); assert.equal(r.validAt, g.finish); assert.equal(r.over, true); assert.equal(r.margin, null);
 });
@@ -197,7 +196,7 @@ function sailScripted(opts) {
   }
   return r.boats.map((b) => (b.done && !b.dsq ? Math.round(b.finish * 10) / 10 : null));
 }
-const GOLDEN_4242 = [ null, 286.1, 242.3, 241.8, 242.8 ]; // sailed again 2026-11-18: the leeward boat is the one on the other's leeward side (sim.js windward)
+const GOLDEN_4242 = [ null, 251.3, 257.9, 230.7, 274.8 ]; // sailed again 2026-11-19: the rules changed (sim.js: mark-room at the windward mark, the line crossed at the bow, rule 13 from head to wind), and this seed now flies the I flag
 test('a custom race is unchanged by the 1-on-1 race', () => {
   assert.deepEqual(sailScripted({ preset: 'medium', length: 'short', laps: 1, fleet: 5, seed: 4242 }), GOLDEN_4242);
 });

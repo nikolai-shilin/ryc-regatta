@@ -37,7 +37,7 @@ export const HUD_STRINGS = {
     split: 'split', timeGap: 'Time · gap', due: 'Grey: still to round, metres to the mark', toGo: 'to go',
     squareAt: 'square', veer: 'Veer', back: 'Back', mToLine: (m) => `${m} m to line`,
     hold: (s) => `Too early by ${s}: turn away from the line`, bearNow: 'Go now: head for the line at full speed', late: 'Late: head for the line now',
-    overL: 'Over the line', overCall: 'Over the line: turn back behind it before the gun', vmgP: 'Speed to the mark',
+    overL: 'Over the line', overCall: 'Over the line: turn back behind it before the gun', endCall: 'I flag: go back round an end of the line', vmgP: 'Speed to the mark',
     mvUp: (n) => (n > 1 ? `Up ${n} places` : 'Up a place'), mvDown: (n) => (n > 1 ? `Down ${n} places` : 'Down a place'),
     mvPast: (n) => `Past ${n}`, mvBy: (n) => `${n} through`, mvTheirPen: 'Her penalty turn', mvYourPen: 'Your penalty turn',
     mvMark: 'At the mark', mvShift: 'On the shift',
@@ -63,7 +63,7 @@ export const HUD_STRINGS = {
     split: 'отсечка', timeGap: 'Время · разрыв', due: 'Серым: ещё не обогнули, метров до знака', toGo: 'осталось',
     squareAt: 'ровная при', veer: 'Сдвиг вправо', back: 'Сдвиг влево', mToLine: (m) => `${m} м до линии`,
     hold: (s) => `Рано на ${s}: отверни от линии`, bearNow: 'Пора: иди к линии полным ходом', late: 'Опаздываешь: иди к линии сейчас',
-    overL: 'За линией', overCall: 'Ты за линией: вернись за неё до сигнала', vmgP: 'Скорость к знаку',
+    overL: 'За линией', overCall: 'Ты за линией: вернись за неё до сигнала', endCall: 'Флаг I: вернись в обход конца линии', vmgP: 'Скорость к знаку',
     mvUp: (n) => `+${n} ${ruPlaces(n)}`, mvDown: (n) => `−${n} ${ruPlaces(n)}`,
     mvPast: (n) => `${n} позади`, mvBy: (n) => `${n} впереди`, mvTheirPen: 'Она крутит штраф', mvYourPen: 'Ты крутишь штраф',
     mvMark: 'На знаке', mvShift: 'На сдвиге ветра',
@@ -1148,9 +1148,10 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     // before the start, the same place calls the time to burn: hold, bear away now, or late
     burnK = pre && !P.ocs && !P.auto ? burnCall(burn, left, burnK) : null;
     // over the line before the gun (and not out of the race for it already): that, from the moment she's over, first
-    const overL = pre && !P.ocs && !P.ufd && !P.bfd && race.lineInfo(P).d > 0;
+    // (under I, over in the last minute: until she has gone round an end of the line, that is what she must do)
+    const endL = pre && P.roundEnd, overL = endL || (pre && !P.ocs && !P.ufd && !P.bfd && race.lineInfo(P).d > 0);
     if (overL) burnK = null;
-    const ly = overL ? [L.overCall, false, false] : !pre && !done ? layline(race, c, P) : burnK ? [burnK.kind === 'hold' ? L.hold(fmt(burnK.s)) : burnK.kind === 'now' ? L.bearNow : L.late, burnK.kind === 'now', false] : null;
+    const ly = overL ? [endL ? L.endCall : L.overCall, false, false] : !pre && !done ? layline(race, c, P) : burnK ? [burnK.kind === 'hold' ? L.hold(fmt(burnK.s)) : burnK.kind === 'now' ? L.bearNow : L.late, burnK.kind === 'now', false] : null;
     lay.classList.toggle('on', !!ly && !toastEl.classList.contains('show'));
     if (ly) { txt(layT, ly[0]); lay.classList.toggle('now', ly[1]); txt(layK, ly[2] ? L.space : ''); }
     lay.classList.toggle('burn', !!burnK || overL); lay.classList.toggle('late', overL || burnK?.kind === 'late');

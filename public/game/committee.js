@@ -27,6 +27,7 @@ export function flagTexture(k) {
   if (k === 'P') { x.fillStyle = '#1f4fa8'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#fff'; x.fillRect(30, 20, 36, 24); }
   else if (k === 'U') { x.fillStyle = '#fff'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#d22'; x.fillRect(0, 0, 48, 32); x.fillRect(48, 32, 48, 32); }
   else if (k === 'B') { x.fillStyle = '#111'; x.fillRect(0, 0, 96, 64); }
+  else if (k === 'I') { x.fillStyle = '#f2c230'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#111'; x.beginPath(); x.arc(48, 32, 17, 0, Math.PI * 2); x.fill(); } // India: a black disc on yellow
   else if (k === 'sub') { x.fillStyle = '#1f4fa8'; x.beginPath(); x.moveTo(0, 0); x.lineTo(96, 32); x.lineTo(0, 64); x.fill(); x.fillStyle = '#f2c230'; x.beginPath(); x.moveTo(8, 12); x.lineTo(70, 32); x.lineTo(8, 52); x.fill(); } // the first substitute
   else if (k === 'X') { x.fillStyle = '#fff'; x.fillRect(0, 0, 96, 64); x.fillStyle = '#1f4fa8'; x.fillRect(40, 0, 16, 64); x.fillRect(0, 24, 96, 16); }
   else if (k === 'blue') { x.fillStyle = '#1f4fa8'; x.fillRect(0, 0, 96, 64); } // the finish boat's: on station at the finish
@@ -447,7 +448,7 @@ export class CommitteeBoat {
       f.top = top; f.bot = bot.clone().setY(rH + 0.9); f.h = 0;
       root.add(f.pivot); this.flags[k] = f;
     }
-    this.prepTex = { P: this.flags.P?.mat.map, U: flagTexture('U'), B: flagTexture('B') };
+    this.prepTex = { P: this.flags.P?.mat.map, I: flagTexture('I'), U: flagTexture('U'), B: flagTexture('B') };
     this.burgee = new Flag(flagTexture('burgee'), 0.75, 0.45, true);
     this.burgee.pivot.position.set(0, mTop + 0.05, mz); root.add(this.burgee.pivot);
     put('dark', new THREE.CylinderGeometry(0.01, 0.01, 0.55, 4).translate(0, mTop + 0.25 - 0.27, mz));

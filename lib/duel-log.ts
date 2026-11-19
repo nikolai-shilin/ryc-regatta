@@ -18,7 +18,7 @@ export type Report =
   | { kind: 'start'; code: string; seed: number; token: string; host: string; guest: string; settings: Settings }
   | { kind: 'join'; code: string; seed: number; name: string }
   | { kind: 'end'; code: string; seed: number; token: string; state: 'finished' | 'abandoned'; winner: Side | null; margin: number | null; forfeited: Side | null;
-      recalls: number | null; prep: 'P' | 'U' | 'B' | null; host: Result; guest: Result };
+      recalls: number | null; prep: 'P' | 'I' | 'U' | 'B' | null; host: Result; guest: Result };
 
 const CHOICES = { preset: ['medium', 'light', 'strong'], length: ['short', 'medium', 'long'], course: ['wl', 'tri', 'trap', 'wlu'], laps: [1, 2], start: [1, 3, 5], current: [0, 1],
   daytime: ['any', 'morning', 'midday', 'afternoon', 'evening', 'sunset'] } as const;
@@ -67,7 +67,7 @@ export function parseReport(body: unknown): Report | null {
   const { state, winner, forfeited, margin, recalls, prep } = body;
   if (state !== 'finished' && state !== 'abandoned') return null;
   if (!(winner === null || winner === 'host' || winner === 'guest') || !(forfeited === null || forfeited === 'host' || forfeited === 'guest')) return null;
-  if (!(margin === null || span(margin)) || !(recalls === null || int(recalls, 0, 9)) || !(prep === null || oneOf(prep, ['P', 'U', 'B'] as const))) return null;
+  if (!(margin === null || span(margin)) || !(recalls === null || int(recalls, 0, 9)) || !(prep === null || oneOf(prep, ['P', 'I', 'U', 'B'] as const))) return null;
   const host = resultOf(body.host), guest = resultOf(body.guest);
   return host && guest ? { kind, code, seed, token, state, winner, margin, forfeited, recalls, prep, host, guest } : null;
 }

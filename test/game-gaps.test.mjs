@@ -36,7 +36,7 @@ const { groundAt, MESH, TREE, SKOPEA } = await import('../public/game/land.js');
 const { createMusic } = await import('../public/game/music.js');
 const { realtime } = await import('../public/game/net.js');
 const { lerpBoat, readBoat } = await import('../public/game/wire.js');
-const { Boat, Race, makeWaves, waveGroup, waveHeight, seaSlope } = await import('../public/game/sim.js');
+const { Boat, Race, makeWaves, waveGroup, waveHeight, seaSlope, HULL } = await import('../public/game/sim.js');
 const { CLS } = await import('../public/game/classes.js');
 const { Room, makeLink } = await import('../public/game/match.js');
 
@@ -659,9 +659,11 @@ test('a race standing idle lets the time go by, and not its clock', () => {
   assert.deepEqual(r, { t: 10.5, clock: -5 });
 });
 
-test('how far a boat is from the line, and how far along it', () => {
+test('how far a boat is from the line, and how far along it: at her bow', () => {
   const course = { pin: { x: -100, z: 0 }, normal: { x: 0, z: 1 }, dir: { x: 1, z: 0 }, len: 200 };
-  assert.deepEqual(Race.prototype.lineInfo.call({ course }, { x: 50, z: 30 }), { d: 30, t: 0.75 });
+  // the middle of her hull 30 m above the line, heading away from it (+z): her bow half a hull further
+  const { d, t } = Race.prototype.lineInfo.call({ course }, { x: 50, z: 30, h: Math.PI });
+  assert.ok(Math.abs(d - (30 + HULL / 2)) < 1e-9); assert.ok(Math.abs(t - 0.75) < 1e-9);
 });
 
 // ---------- a river's stream ----------

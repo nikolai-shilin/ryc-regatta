@@ -461,7 +461,7 @@ export class LagoonCommittee {
       f.top = topP; f.bot = new THREE.Vector3().lerpVectors(bot, topP, 1.8 / (topP.y - bot.y)); f.h = 0;
       root.add(f.pivot); this.flags[k] = f;
     }
-    this.prepTex = { P: this.flags.P.mat.map, U: flagTexture('U'), B: flagTexture('B') };
+    this.prepTex = { P: this.flags.P.mat.map, I: flagTexture('I'), U: flagTexture('U'), B: flagTexture('B') };
     this.burgee = new Flag(flagTexture('burgee'), 0.75, 0.45, true);
     this.burgee.pivot.position.set(0, MTOP + 0.95, MZ); root.add(this.burgee.pivot);
     put('dark', new THREE.CylinderGeometry(0.01, 0.01, 0.95, 4).translate(0, MTOP + 0.48, MZ));

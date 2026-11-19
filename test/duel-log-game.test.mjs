@@ -641,3 +641,9 @@ test('M.finalResults gives endBody every boat it reads', async () => {
   bothHome(x);
   for (const b of M.finalResults(x.hr).boats) for (const k of ['id', 'done', 'dsq', 'dnf', 'place', 'finish', 'pens']) assert.ok(k in b, k);
 });
+
+test('endBody keeps the I flag', () => {
+  const result = { winner: 'g1', margin: 3, forfeited: null, abandoned: false };
+  const results = { boats: [row('g1', { place: 1, finish: 400 }), row('h1', { place: 2, finish: 403 })] };
+  assert.equal(accepted(Log.endBody(matchOf(result), CODE, TOKEN, { prepFlag: 'I', recalls: 0 }, results)).prep, 'I');
+});

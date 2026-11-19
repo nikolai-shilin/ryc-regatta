@@ -75,8 +75,8 @@ for (const [net, o] of NETS) {
     const x = await raced({ seed: 21, net: o });
     assert.equal(x.hr.prepFlag, 'P');
     for (let i = 0; i < 90 * 60 && x.hr.clock < -1.5; i++) frame(x.h, x.g);
-    const c = x.hr.course, m = midLine(c); // both boats over the line as the gun goes
-    [[x.H, 25], [x.G, -25]].forEach(([b, off]) => place(x.hr, b, { x: m.x + c.dir.x * off + c.normal.x * 5, z: m.z + c.dir.z * off + c.normal.z * 5 }, x.hr.wind.dir() + Math.PI, 0.5));
+    const c = x.hr.course, m = midLine(c), up = 5 + sim.HULL / 2; // both boats over the line as the gun goes, bow and all
+    [[x.H, 25], [x.G, -25]].forEach(([b, off]) => place(x.hr, b, { x: m.x + c.dir.x * off + c.normal.x * up, z: m.z + c.dir.z * off + c.normal.z * up }, x.hr.wind.dir() + Math.PI, 0.5));
     for (let i = 0; i < 5 * 60 && x.hr.recalls === 0; i++) frame(x.h, x.g);
     assert.equal(x.hr.recalls, 1, 'both over at the gun');
     run(1, x.h, x.g);

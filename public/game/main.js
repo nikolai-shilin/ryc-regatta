@@ -94,10 +94,11 @@ const T = {
     dDirty: (s) => `${s} s in another boat’s dirty air`, tipDirty: 'Behind and downwind of another boat the wind is weaker: tack away or sail clear of it.',
     dPen: (s) => `${s} s spinning penalty turns`, dClean: 'No fouls and no penalties — a clean race', dHails: (n) => `Hailed ${n}× by boats you had to keep clear of`,
     dRule: (r) => `Rule ${r}`, read: 'Read the rule', r10: 'Port keeps clear of starboard', r11: 'Windward keeps clear of leeward', r12: 'Clear astern keeps clear',
-    r13: 'While tacking, keep clear', r18: 'Mark-room', r31: 'Touching a mark', r44: 'A boat taking a penalty keeps clear', rOcs: 'Over the line at the start',
+    r13: 'While tacking, keep clear', r18: 'Mark-room', r31: 'Touching a mark', r44: 'A boat taking a penalty keeps clear', 'r21.1': 'Going back after a false start, keep clear', 'r21.2': 'A boat taking a penalty keeps clear', rOcs: 'Over the line at the start',
     x10: 'On opposite tacks, the boat with the wind on her port side keeps clear.', x11: 'Overlapped on the same tack, the windward boat keeps clear.',
     x12: 'On the same tack and not overlapped, the boat behind keeps clear.', x13: 'From head to wind until close-hauled, a tacking boat keeps clear of everyone.',
-    x18: 'At the gate and the wing mark, in the zone, the inside boat, or the one clear ahead, gets room to round. Not at the windward mark: there nobody gets mark-room, and port keeps clear of starboard.', x31: 'Touching a mark costs one penalty turn.', x44: 'A boat spinning her penalty turns keeps clear of the others.',
+    x18: 'In the zone of a mark (three hull lengths), the inside boat, or the one clear ahead, gets room to round. At the windward mark only between boats on the same tack: on opposite tacks there is no inside or outside, and port keeps clear of starboard.', x31: 'Touching a mark costs one penalty turn.', x44: 'A boat spinning her penalty turns keeps clear of the others.',
+    'x21.1': 'A boat going back below the line after a false start keeps clear of the boats that have started, until all of her hull is below it.', 'x21.2': 'A boat spinning her penalty turns keeps clear of the others.',
     r15: 'Just got right of way — give room first', r16: 'Right of way, but no sudden turns', r17: 'In to leeward from astern — no higher than your proper course',
     x15: 'A boat that gets right of way by her own action (a tack, or sailing up from astern) must at first give the other room to keep clear.',
     x16: 'A boat with right of way that changes course must leave the other boat room to keep clear.',
@@ -112,10 +113,11 @@ const T = {
     jibBtn: 'J3', jibBig: 'J1', jibStart: 'Changing jibs…', jibDone: 'New jib up', zero: 'Code 0',
     kiteHoistZ: 'Unfurling the code zero…', kiteUpZ: 'Code zero drawing', kiteDropZ: 'Furling the code zero…',
     hailBtn: 'Hail', youHail: (h) => `You: “${h}”`, hailNone: 'Nothing to hail for',
-    prepU: 'U flag today: in the triangle by the line in the last minute, you’re out (UFD)', prepB: 'Black flag today: over in the last minute and you’re out, even if the start is recalled (BFD)',
+    prepI: 'I flag today: over the line in the last minute, and you must go back round an end of it to start', roundEnd: 'Over in the last minute under the I flag — go back round an end of the line', clearedEnd: 'Round the end — now start', ocsI: 'Over early! X flag — go back round an end of the line, keeping clear of the others',
+    prepU: 'U flag today: in the triangle by the line in the last minute, you’re out (UFD)', prepB: 'Black flag today: over in the last minute and you’re out at once, even if the start is recalled (BFD)',
     ufd: 'Over in the last minute under the U flag — disqualified (UFD)', bfd: 'Over in the last minute under the black flag — disqualified (BFD)',
     genRecall: (f) => `General recall — too many over. The start is repeated${f === 'U' ? ', now under the U flag' : f === 'B' ? ', now under the black flag' : ''}`,
-    finishedStartDsq: 'Finished — but disqualified at the start', flagU: 'U flag', flagB: 'Black', flagSub: 'Recall',
+    finishedStartDsq: 'Finished — but disqualified at the start', flagI: 'I flag', flagU: 'U flag', flagB: 'Black', flagSub: 'Recall',
     dStartDsq: (f) => (f === 'U' ? 'Disqualified at the start (U flag)' : 'Disqualified at the start (black flag)'), tipStartDsq: 'Under U or the black flag, stay below the line for the whole last minute.',
     'r18.3': 'Tacking in the zone', 'r18.4': 'Gybing at the mark', r19: 'Room at an obstruction', rU: 'The U flag', rB: 'The black flag',
     'x18.3': 'A boat that tacks onto starboard in the zone mustn’t make a boat that has been on starboard since entering it sail above close-hauled, and gives her room if she gets inside.',
@@ -136,7 +138,7 @@ const T = {
     how2: '<b>Tack</b> turns you through the wind (<b>Gybe</b> downwind). <b>Kite</b> sets the gennaker on a run — the hoist and the drop take the crew a few seconds, so get it down in good time before the gate. In a gust, ease the sheet before she heels too far; in a blow, <b>Reef</b> makes the main smaller. Before the start, head up and let the sheet right out to stop — or even go astern.',
     how3: 'Start after the gun — the class flag comes down. Over early and you must go back. Round the windward mark <b>leaving it to port</b>, finish through the line.',
     how5: 'Round your boat: the <b>arrow</b> shows where the wind blows from; <b>red</b> — too close to the wind to sail; <b>green</b> marks — the best angle upwind; <b>blue</b> — the best angle downwind. The wind swings ten degrees and more either way every minute or so: in a <b>lift</b> you can point higher, in a <b>header</b> tack.',
-    how4: 'Racing rules: port tack keeps clear of starboard, windward of leeward, the boat astern of the boat ahead; at the windward mark nobody gets room, port keeps clear of starboard; at the gate, the <b>zone</b> (dashed ring, three hull lengths): if two boats are overlapped when the first reaches it, the inside one gets room, if not — the one clear ahead. Hit someone you should have avoided, or touch a mark — one penalty turn: a tack and a gybe. A boat that has just got right of way must first give the other room, and a boat with right of way mustn’t turn suddenly into one keeping clear.',
+    how4: 'Racing rules: port tack keeps clear of starboard, windward of leeward, the boat astern of the boat ahead; at each mark, the <b>zone</b> (dashed ring, three hull lengths): if two boats are overlapped when the first reaches it, the inside one gets room, if not — the one clear ahead; at the windward mark only on the same tack, and on opposite tacks port keeps clear of starboard. Over at the start: go back below the line, keeping clear of everyone. Hit someone you should have avoided, or touch a mark — one penalty turn: a tack and a gybe. A boat that has just got right of way must first give the other room, and a boat with right of way mustn’t turn suddenly into one keeping clear.',
     rotate: 'Turn your phone sideways for the best view.', back: '← Back to Sailing Certification Test',
     flagCls: 'Class', flagP: 'Prep', flagX: 'Recall', kn: 'kn', drone: 'Drone', helm: 'Helm', top: 'Top', tack: 'Tack', gybe: 'Gybe', kite: 'Kite', in: 'In', out: 'Out',
     ok: 'Trim OK', pullIn: 'Pull in', easeOut: 'Ease out', irons: 'In irons',
@@ -149,8 +151,8 @@ const T = {
     crashGybe: 'Crash gybe! Too far by the lee — the boom slammed across', deathRoll: 'Death roll! By the lee with the kite up — she rolled and rounded up',
     byLee: (d) => `By the lee ${d}° — gybe or head up`, foot: 'Slow: steer a little away from the wind to build speed', waveTip: 'Waves: luff up the face, bear away down the back', ocsS: 'OCS — return below the line',
     target: 'target', vmg: 'VMG', line: 'line', toLine: 'to line', favPin: 'pin end favoured', favBoat: 'boat end favoured', square: 'line square',
-    sigWarn: (n) => `Warning signal — class flag up, ${n} min`, sigPrep: (n, f = 'P') => `Preparatory — ${{ P: 'P flag', U: 'U flag', B: 'black flag' }[f]} up, ${n} min`, sig1: (n, f = 'P') => `One minute — ${{ P: 'P flag', U: 'U flag', B: 'black flag' }[f]} down`, gun: 'Start! Class flag down',
-    ocs: 'Over early! X flag — go back below the line', cleared: 'Clear — now start', started: 'Good start!', rounded: 'Mark rounded — bear away, kite up',
+    sigWarn: (n) => `Warning signal — class flag up, ${n} min`, sigPrep: (n, f = 'P') => `Preparatory — ${{ P: 'P flag', I: 'I flag', U: 'U flag', B: 'black flag' }[f]} up, ${n} min`, sig1: (n, f = 'P') => `One minute — ${{ P: 'P flag', I: 'I flag', U: 'U flag', B: 'black flag' }[f]} down`, gun: 'Start! Class flag down',
+    ocs: 'Over early! X flag — go back below the line, keeping clear of the others', cleared: 'Clear — now start', started: 'Good start!', rounded: 'Mark rounded — bear away, kite up',
     missedLine: 'Outside the line — cross between the committee boat and the pin', missedGate: 'Outside the gate — go back and sail between the two buoys', wrongSide: 'Leave the mark to port — go back round it',
     gateMsg: 'Through the gate — back upwind', bump: 'Contact!', aground: 'Aground! Steer back out to sea', broach: 'Broach! Ease the sheet', kitedown: 'Too close to the wind — the kite comes down in a hurry',
     heelMsg: 'Too much heel — ease the sheet', ironsMsg: 'In irons — steer away from the wind', gust: 'Gust!', autoOff: 'You trim the sails this race. Tap Auto to hand them back', autoOn: 'Sails back on Auto', autoKeep: 'The sails are on Auto for your first races: just steer',
@@ -204,10 +206,11 @@ const T = {
     dDirty: (s) => `${s} с в ветровой тени другой лодки`, tipDirty: 'За другой лодкой и под ветром от неё ветер слабее: поверни или уйди в чистый ветер.',
     dPen: (s) => `${s} с на штрафных оборотах`, dClean: 'Ни нарушений, ни штрафов — чистая гонка', dHails: (n) => `${n} раз(а) окликнули лодки, которым ты должен был уступить`,
     dRule: (r) => `Правило ${r}`, read: 'Прочитать правило', r10: 'Левый галс уступает правому', r11: 'Наветренная уступает подветренной', r12: 'Чисто позади уступает',
-    r13: 'В повороте — уступай', r18: 'Место у знака', r31: 'Касание знака', r44: 'Лодка на штрафе уступает', rOcs: 'Фальстарт',
+    r13: 'В повороте — уступай', r18: 'Место у знака', r31: 'Касание знака', r44: 'Лодка на штрафе уступает', 'r21.1': 'Возвращаясь после фальстарта — уступай', 'r21.2': 'Лодка на штрафе уступает', rOcs: 'Фальстарт',
     x10: 'На разных галсах уступает лодка, у которой ветер слева (левый галс).', x11: 'Связанные на одном галсе: наветренная уступает.',
     x12: 'На одном галсе без связанности уступает идущая сзади.', x13: 'От положения левентик до курса бейдевинд лодка в повороте уступает всем.',
-    x18: 'У ворот и у бокового знака в зоне место для огибания получает внутренняя лодка или та, что чисто впереди. У верхнего знака места не требует никто: левый галс уступает правому.', x31: 'Касание знака — один штрафной оборот.', x44: 'Лодка на штрафных оборотах уступает остальным.',
+    x18: 'В зоне знака (три корпуса) место для огибания получает внутренняя лодка или та, что чисто впереди. У верхнего знака — только между лодками на одном галсе: на разных галсах нет внутренней и внешней, левый галс уступает правому.', x31: 'Касание знака — один штрафной оборот.', x44: 'Лодка на штрафных оборотах уступает остальным.',
+    'x21.1': 'Лодка, возвращающаяся за линию после фальстарта, уступает стартовавшим, пока весь её корпус не окажется за линией.', 'x21.2': 'Лодка на штрафных оборотах уступает остальным.',
     r15: 'Получила право дороги — сначала дай место', r16: 'Право дороги — но без резких поворотов', r17: 'Догнала сзади под ветром — не выше надлежащего курса',
     x15: 'Лодка, получившая право дороги своими действиями (поворотом или догнав сзади), сначала должна дать другой место, чтобы уступить.',
     x16: 'Лодка с правом дороги, меняя курс, должна оставлять другой лодке место, чтобы уступить.',
@@ -222,10 +225,11 @@ const T = {
     jibBtn: 'J3', jibBig: 'J1', jibStart: 'Меняем стаксель…', jibDone: 'Новый стаксель поднят', zero: 'Код 0',
     kiteHoistZ: 'Раскатываем код-зеро…', kiteUpZ: 'Код-зеро работает', kiteDropZ: 'Скатываем код-зеро…',
     hailBtn: 'Оклик', youHail: (h) => `Ты: «${h}»`, hailNone: 'Окликать некого',
-    prepU: 'Сегодня флаг U: в треугольнике у линии в последнюю минуту — дисквалификация (UFD)', prepB: 'Сегодня чёрный флаг: за линией в последнюю минуту — дисквалификация, даже при общем отзыве (BFD)',
+    prepI: 'Сегодня флаг I: оказался за линией в последнюю минуту — возвращайся в обход конца линии, потом стартуй', roundEnd: 'За линией в последнюю минуту под флагом I — вернись в обход конца линии', clearedEnd: 'Конец линии обойдён — теперь стартуй', ocsI: 'Фальстарт! Флаг X — вернись в обход конца линии, уступая другим',
+    prepU: 'Сегодня флаг U: в треугольнике у линии в последнюю минуту — дисквалификация (UFD)', prepB: 'Сегодня чёрный флаг: за линией в последнюю минуту — сразу дисквалификация, даже при общем отзыве (BFD)',
     ufd: 'За линией в последнюю минуту под флагом U — дисквалификация (UFD)', bfd: 'За линией в последнюю минуту под чёрным флагом — дисквалификация (BFD)',
     genRecall: (f) => `Общий отзыв — слишком многие за линией. Старт повторяется${f === 'U' ? ', теперь под флагом U' : f === 'B' ? ', теперь под чёрным флагом' : ''}`,
-    finishedStartDsq: 'Финиш — но дисквалификация на старте', flagU: 'Флаг U', flagB: 'Чёрный', flagSub: 'Отзыв',
+    finishedStartDsq: 'Финиш — но дисквалификация на старте', flagI: 'Флаг I', flagU: 'Флаг U', flagB: 'Чёрный', flagSub: 'Отзыв',
     dStartDsq: (f) => (f === 'U' ? 'Дисквалификация на старте (флаг U)' : 'Дисквалификация на старте (чёрный флаг)'), tipStartDsq: 'Под флагом U или чёрным флагом всю последнюю минуту держись ниже линии.',
     'r18.3': 'Поворот в зоне', 'r18.4': 'Фордевинд у знака', r19: 'Место у препятствия', rU: 'Флаг U', rB: 'Чёрный флаг',
     'x18.3': 'Лодка, сделавшая поворот на правый галс в зоне, не должна заставлять лодку, идущую правым галсом с входа в зону, идти выше бейдевинда, и даёт ей место, если та окажется внутри.',
@@ -246,7 +250,7 @@ const T = {
     how2: '<b>Поворот</b> — оверштаг через ветер (на полных курсах — <b>фордевинд</b>). <b>Генакер</b> — для попутного ветра; постановка и уборка занимают у экипажа несколько секунд, так что убирай его заранее, до ворот. В порыве трави шкот, пока крен не стал слишком большим; в сильный ветер <b>Риф</b> уменьшает грот. Перед стартом приведись и потрави шкот до конца — лодка остановится или даже пойдёт назад.',
     how3: 'Старт после сигнала — флаг класса спущен. Фальстарт — вернись за линию. Верхний знак огибают, <b>оставляя его слева</b>; финиш — через линию.',
     how5: 'Вокруг лодки: <b>стрелка</b> — откуда дует ветер; <b>красное</b> — слишком остро к ветру, идти нельзя; <b>зелёные</b> метки — лучший угол на лавировке; <b>синие</b> — на попутных курсах. Ветер гуляет на десять с лишним градусов в обе стороны каждую минуту-другую: когда он <b>отходит</b>, можно идти круче, когда <b>заходит</b> — поворачивай.',
-    how4: 'Правила: левый галс уступает правому, наветренная — подветренной, чисто позади — чисто впереди; у верхнего знака места не требует никто, левый галс уступает правому; у ворот — <b>зона</b> (пунктирный круг, три корпуса): если лодки связаны, когда первая в неё входит, место получает внутренняя, если не связаны — идущая впереди. Столкнулся, когда должен был уступить, или задел знак — штрафной оборот: поворот оверштаг и фордевинд. Лодка, только что получившая право дороги, сначала даёт место, а лодка с правом дороги не может резко поворачивать на ту, что уступает.',
+    how4: 'Правила: левый галс уступает правому, наветренная — подветренной, чисто позади — чисто впереди; у каждого знака — <b>зона</b> (пунктирный круг, три корпуса): если лодки связаны, когда первая в неё входит, место получает внутренняя, если не связаны — идущая впереди; у верхнего знака — только на одном галсе, а на разных галсах левый уступает правому. Фальстарт: вернись за линию, уступая всем. Столкнулся, когда должен был уступить, или задел знак — штрафной оборот: поворот оверштаг и фордевинд. Лодка, только что получившая право дороги, сначала даёт место, а лодка с правом дороги не может резко поворачивать на ту, что уступает.',
     rotate: 'Поверните телефон горизонтально.', back: '← Назад в Sailing Certification Test',
     flagCls: 'Класс', flagP: 'Подгот.', flagX: 'Отзыв', kn: 'уз', drone: 'Дрон', helm: 'Штурвал', top: 'Сверху', tack: 'Поворот', gybe: 'Фордевинд', kite: 'Генакер', in: 'Выбрать', out: 'Травить',
     ok: 'Паруса в норме', pullIn: 'Выбери шкот', easeOut: 'Потрави шкот', irons: 'Левентик',
@@ -259,8 +263,8 @@ const T = {
     crashGybe: 'Самопроизвольный фордевинд! Увалился дальше фордевинда — гик перебросило', deathRoll: 'Брочинг на ветер! С генакером на «неправильном» борту — её положило и привело',
     byLee: (d) => `Увалился дальше фордевинда на ${d}° — делай фордевинд или приводись`, foot: 'Мало скорости: отверни немного от ветра и разгонись', waveTip: 'Волна: приводись на склон, уваливайся с гребня', ocsS: 'Фальстарт — вернись за линию',
     target: 'цель', vmg: 'VMG', line: 'линия', toLine: 'до линии', favPin: 'выгоднее у знака', favBoat: 'выгоднее у судна', square: 'линия ровная',
-    sigWarn: (n) => `Предупредительный сигнал — флаг класса, ${n} мин`, sigPrep: (n, f = 'P') => `Подготовительный — ${{ P: 'флаг P', U: 'флаг U', B: 'чёрный флаг' }[f]}, ${n} мин`, sig1: (n, f = 'P') => `Одна минута — ${{ P: 'флаг P', U: 'флаг U', B: 'чёрный флаг' }[f]} спущен`, gun: 'Старт! Флаг класса спущен',
-    ocs: 'Фальстарт! Флаг X — вернись за линию', cleared: 'Теперь стартуй', started: 'Отличный старт!', rounded: 'Знак пройден — уваливайся, ставь генакер',
+    sigWarn: (n) => `Предупредительный сигнал — флаг класса, ${n} мин`, sigPrep: (n, f = 'P') => `Подготовительный — ${{ P: 'флаг P', I: 'флаг I', U: 'флаг U', B: 'чёрный флаг' }[f]}, ${n} мин`, sig1: (n, f = 'P') => `Одна минута — ${{ P: 'флаг P', I: 'флаг I', U: 'флаг U', B: 'чёрный флаг' }[f]} спущен`, gun: 'Старт! Флаг класса спущен',
+    ocs: 'Фальстарт! Флаг X — вернись за линию, уступая другим', cleared: 'Теперь стартуй', started: 'Отличный старт!', rounded: 'Знак пройден — уваливайся, ставь генакер',
     missedLine: 'Мимо линии — пересеки её между судейским судном и знаком', missedGate: 'Мимо ворот — вернись и пройди между двумя знаками', wrongSide: 'Знак оставляют слева — обогни его снова',
     gateMsg: 'Ворота пройдены — снова на ветер', bump: 'Столкновение!', aground: 'На мели! Уходи от берега', broach: 'Брочинг! Трави шкот', kitedown: 'Слишком остро — генакер убирают в спешке',
     heelMsg: 'Сильный крен — потрави шкот', ironsMsg: 'Левентик — уваливайся', gust: 'Порыв!', autoOff: 'В этой гонке шкот твой. «Авто» вернёт автоподбор', autoOn: 'Паруса снова на автоподборе', autoKeep: 'В первых гонках паруса на автоподборе: просто рули',
@@ -1402,6 +1406,7 @@ document.head.append(Object.assign(document.createElement('style'), { textConten
   #jibBtn[hidden], #hailBtn[hidden] { display: none; }
   .flag.U { background: conic-gradient(#d22 0 25%, #fff 0 50%, #d22 0 75%, #fff 0); }
   .flag.B { background: #111; }
+  .flag.I { background: radial-gradient(circle, #111 0 27%, #f2c230 calc(27% + 0.5px)); }
   .flag.sub { background: #f2c230; clip-path: polygon(0 0, 100% 50%, 0 100%); box-shadow: inset 0 0 0 4px #1f4fa8; }` }));
 const doJib = () => { if (!running || paused) return; const P = race.player; if (!P.jibJob && P.setJib(!P.smallJib)) haptic('light'); };
 const doHail = () => {
@@ -1762,8 +1767,8 @@ function updateHud(dt) {
   if (fk !== flagsKey) {
     flagsKey = fk;
     const fig = (cls, inner, cap) => `<figure><i class="flag ${cls}">${inner}</i><figcaption>${t(cap)}</figcaption></figure>`;
-    const pf = race.prepFlag || 'P'; // the preparatory flag: P, U or black
-    el.flags.innerHTML = (race.flags.sub ? fig('sub', '', 'flagSub') : '') + (race.flags.cls ? fig('cls', 'R', 'flagCls') : '') + (race.flags.P ? fig(pf, '', { P: 'flagP', U: 'flagU', B: 'flagB' }[pf]) : '') + (race.flags.X ? fig('X', '', 'flagX') : '');
+    const pf = race.prepFlag || 'P'; // the preparatory flag: P, I, U or black
+    el.flags.innerHTML = (race.flags.sub ? fig('sub', '', 'flagSub') : '') + (race.flags.cls ? fig('cls', 'R', 'flagCls') : '') + (race.flags.P ? fig(pf, '', { P: 'flagP', I: 'flagI', U: 'flagU', B: 'flagB' }[pf]) : '') + (race.flags.X ? fig('X', '', 'flagX') : '');
   }
   // chips: penalty, dirty air, surfing
   const chips = [];
@@ -1860,15 +1865,16 @@ function handleMessages() {
     else if (m.key === 'youHail') { if (a.rule) { const h = t('hail' + a.rule); toast(t('youHail', h), 2); skipper.cue('hail' + a.rule, null, true); } }
     else if (m.key === 'seaBreeze' || m.key === 'seaBreezeSouth' || m.key === 'thermalBreeze') { toast(t(m.key), 5); if (m.key === 'seaBreeze') committee.call('cBreeze', 20); } // (the committee's recording says a sea breeze, veering right)
     else if (m.key === 'genRecall') { score.sting('hit'); toast(t('genRecall', m.arg), 4); audio.horn(); audio.horn(false, null, 1.25); haptic('warn'); committee.stop(); committee.call('cGenRecall'); skipper.shout('lost'); }
-    else if (m.key === 'prepU' || m.key === 'prepB' || m.key === 'ufd' || m.key === 'bfd') {
+    else if (m.key === 'prepI' || m.key === 'prepU' || m.key === 'prepB' || m.key === 'ufd' || m.key === 'bfd') {
       toast(t(m.key), 4);
+      if (m.key === 'prepI') skipper.later('flag'); // (the committee has no recording for I: the words on screen say it)
       if (m.key === 'prepU' || m.key === 'prepB') { if (race.seq.length <= 2) committee.call(m.key === 'prepU' ? 'cFlagU' : 'cFlagB', 8); skipper.later('flag'); } // a one-minute start has no preparatory signal to say it
       if (m.key === 'ufd' || m.key === 'bfd') { score.sting('loss'); haptic('warn'); committee.call('cOut'); skipper.shout('lost'); }
     }
     else if (m.key === 'fouled' || m.key === 'theyFouled') { score.sting(m.key === 'fouled' ? 'loss' : 'hit'); bcHud.umpire(m.key, a); skipper.cue('protest') || skipper.shout(m.key === 'fouled' ? 'foul' : 'contact'); committee.call(m.key === 'fouled' ? 'uPen' : 'uThem', 4); } // the umpire's card (hud-bc.js)
     else if (m.key === 'touched') { bcHud.umpire(m.key, a); skipper.shout('foul'); score.sting('loss'); committee.call('uMark', 4); }
     else {
-      toast(t(m.key), 2.6); if (m.key === 'ocs') { haptic('warn'); skipper.shout('early', 1, true); } if (m.key === 'rounded' || m.key === 'roundedTrap' || m.key === 'roundedWlu') haptic('medium');
+      toast(t(m.key === 'ocs' && race.prepFlag === 'I' ? 'ocsI' : m.key), 2.6); if (m.key === 'ocs') { haptic('warn'); skipper.shout('early', 1, true); } if (m.key === 'rounded' || m.key === 'roundedTrap' || m.key === 'roundedWlu') haptic('medium');
       if (m.key === 'touched' || m.key === 'wrongSide' || m.key === 'missedGate') { skipper.shout('foul'); score.sting('loss'); }
       if (m.key === 'ocs') score.sting('loss');
       if (m.key === 'cleared' || m.key === 'exonerated') score.sting('gain');

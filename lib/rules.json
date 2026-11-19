@@ -47,6 +47,14 @@
   "en": "Room to tack at an obstruction",
   "ru": "Место для поворота у препятствия"
  },
+ "r21.1": {
+  "en": "Going back after a false start, keep clear",
+  "ru": "Возвращаясь после фальстарта — уступай"
+ },
+ "r21.2": {
+  "en": "A boat taking a penalty keeps clear",
+  "ru": "Лодка на штрафе уступает"
+ },
  "r31": {
   "en": "Touching a mark",
   "ru": "Касание знака"
@@ -96,8 +104,8 @@
   "ru": "Став связанной под ветром, догнав сзади в пределах двух корпусов, лодка не должна идти выше своего надлежащего курса."
  },
  "x18": {
-  "en": "At the gate and the wing mark, in the zone, the inside boat, or the one clear ahead, gets room to round. Not at the windward mark: there nobody gets mark-room, and port keeps clear of starboard.",
-  "ru": "У ворот и у бокового знака в зоне место для огибания получает внутренняя лодка или та, что чисто впереди. У верхнего знака места не требует никто: левый галс уступает правому."
+  "en": "In the zone of a mark (three hull lengths), the inside boat, or the one clear ahead, gets room to round. At the windward mark only between boats on the same tack: on opposite tacks there is no inside or outside, and port keeps clear of starboard.",
+  "ru": "В зоне знака (три корпуса) место для огибания получает внутренняя лодка или та, что чисто впереди. У верхнего знака — только между лодками на одном галсе: на разных галсах нет внутренней и внешней, левый галс уступает правому."
  },
  "x18.3": {
   "en": "A boat that tacks onto starboard in the zone mustn’t make a boat that has been on starboard since entering it sail above close-hauled, and gives her room if she gets inside.",
@@ -114,6 +122,14 @@
  "x20": {
   "en": "Close-hauled and blocked by an obstruction ahead, a boat may hail for room to tack; the boat hailed must tack or give her room.",
   "ru": "Идя в бейдевинд и упираясь в препятствие, лодка может окликнуть и попросить место для поворота; окликнутая должна повернуть или дать место."
+ },
+ "x21.1": {
+  "en": "A boat going back below the line after a false start keeps clear of the boats that have started, until all of her hull is below it.",
+  "ru": "Лодка, возвращающаяся за линию после фальстарта, уступает стартовавшим, пока весь её корпус не окажется за линией."
+ },
+ "x21.2": {
+  "en": "A boat spinning her penalty turns keeps clear of the others.",
+  "ru": "Лодка на штрафных оборотах уступает остальным."
  },
  "x31": {
   "en": "Touching a mark costs one penalty turn: a tack and a gybe.",

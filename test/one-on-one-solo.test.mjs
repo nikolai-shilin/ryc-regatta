@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 globalThis.fetch = async (u) => new Response(await readFile(new URL(String(u))));
-const { Race, D2R, lineD, FINISH_LIMIT_S } = await import('../public/game/sim.js');
+const { Race, D2R, lineD, FINISH_LIMIT_S, HULL } = await import('../public/game/sim.js');
 
 // the race's other boat, as this race has her: a computer boat, or the second human
 const WAYS = [['today\'s race', () => new Race({ preset: 'medium', length: 'short', seed: 11, fleet: 3, start: 1 })], ['one human named', () => new Race({ preset: 'medium', length: 'short', seed: 11, fleet: 3, start: 1, humans: [{ id: 'me', name: 'Me' }] })]];
@@ -97,7 +97,8 @@ for (const [what, make] of WAYS) {
     assert.equal(r.over, false, 'nor can the race be given up'); assert.equal(r.forfeited, null); assert.equal(P.dnf, false);
     const c = r.course, m = { x: (c.pin.x + c.committee.x) / 2, z: (c.pin.z + c.committee.z) / 2 };
     P.leg = c.legs.length - 1;
-    put(r, P, { x: m.x + c.normal.x * 2, z: m.z + c.normal.z * 2 }, Math.atan2(-c.normal.x, c.normal.z), 4);
+    const up = 2 + HULL / 2; // her bow 2 m above the line, heading down across it
+    put(r, P, { x: m.x + c.normal.x * up, z: m.z + c.normal.z * up }, Math.atan2(-c.normal.x, c.normal.z), 4);
     for (let i = 0; i < 120 && !P.done; i++) r.step(1 / 60);
     assert.equal(P.done, true); assert.equal(r.over, true, 'her finish ends it');
     assert.equal(r.winner, null, 'and no 1-on-1 winner is named');

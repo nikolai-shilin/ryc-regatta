@@ -70,6 +70,6 @@ export function endBody(match, code, token, race, results) {
       mark: won ? null : b.dsq || b.ufd || b.bfd ? 'DSQ' : b.dnf || !b.done ? 'DNF' : null, pens: count(b.pens || 0, MAX_PENS) };
   };
   return { kind: 'end', code, seed: match.start.seed, token, state: abandoned ? 'abandoned' : 'finished', winner: role(winner), margin: abandoned ? null : span(r.margin),
-    forfeited: abandoned ? null : role(r.forfeited), recalls: race ? count(race.recalls, MAX_RECALLS) : null, prep: ['P', 'U', 'B'].includes(race?.prepFlag) ? race.prepFlag : null,
+    forfeited: abandoned ? null : role(r.forfeited), recalls: race ? count(race.recalls, MAX_RECALLS) : null, prep: ['P', 'I', 'U', 'B'].includes(race?.prepFlag) ? race.prepFlag : null,
     host: boat(match.hostId), guest: boat(match.guestId) };
 }

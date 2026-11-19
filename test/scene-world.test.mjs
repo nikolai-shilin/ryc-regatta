@@ -53,10 +53,11 @@ test('the guides show the beat being sailed, or the last one sailed', () => {
   assert.ok(Number.isFinite(from.x) && Number.isFinite(from.z));
 });
 
-test('the zones are round the gate and the marks reached on a run or a reach, and no others', () => {
+test('the zones are round the gate and every mark, the windward mark too', () => {
   const c = makeCourse(1, 300, 0), z = zoneMarks(c);
   for (const m of c.gate) assert.ok(z.includes(m), 'the gate has one');
-  assert.ok(!z.includes(c.windward), 'a mark reached on a beat has no zone');
+  assert.ok(z.includes(c.windward), 'a mark reached on a beat has one, for boats on the same tack');
+  assert.ok(!z.includes(c.pin) && !z.includes(c.committee), 'the line has none');
 });
 
 test('the code flags are passed on from the committee boat', () => {
