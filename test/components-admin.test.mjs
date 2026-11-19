@@ -8,7 +8,8 @@ import { choose, click, clock, dom, done, englishIn, fire, h, hrefs, mount, plai
 mock('app/[lang]/admin/actions.ts', 'export const sponsorChanged = async () => { globalThis.__sponsor = (globalThis.__sponsor || 0) + 1; };');
 mock('lib/supabase/server.ts', 'export const getAccount = async () => globalThis.__account ?? null; export const supabaseServer = async () => globalThis.__sb;');
 
-const { SailAdForm, SailColorForm, BannerForm, SetPicker, SetEditor } = await import('../components/admin-form.tsx');
+const { BannerForm } = await import('../components/admin-form.tsx');
+const { SailPresets } = await import('../components/admin-sails.tsx');
 const insight = await import('../components/admin-insight.tsx');
 const { PlayersTable } = await import('../components/admin-players-table.tsx');
 const { AdminPlayers } = await import('../components/admin-players.tsx');
@@ -52,121 +53,6 @@ const fakeSb = ({ uploadError = null, rowError = null } = {}) => {
   };
 };
 const PNG = { name: 'logo.png', type: 'image/png', size: 1000 };
-
-test('the jib’s form, the mainsail’s and the gennaker’s say which sail they are for', () => {
-  const jib = plain(ssr(h(SailAdForm, { lang: 'en', slot: 'jib', current: null })));
-  assert.match(jib, /On every jib No ad No ad/);
-  assert.match(jib, /Put it on the jibs/);
-  const main = plain(ssr(h(SailAdForm, { lang: 'en', slot: 'main', current: null })));
-  assert.match(main, /On every mainsail No logo No logo/);
-  assert.match(main, /Players can’t change it/);
-  assert.match(main, /Put it on the mainsails/);
-  const kite = plain(ssr(h(SailAdForm, { lang: 'en', slot: 'kite', current: null })));
-  assert.match(kite, /On every gennaker No logo No logo/);
-  assert.match(kite, /Put it on the gennakers/);
-  assert.match(jib, /dyes the whole jib/);
-});
-
-test('the Russian form has no English left', () => {
-  for (const slot of ['jib', 'main', 'kite']) {
-    const words = plain(ssr(h(SailAdForm, { lang: 'ru', slot, current: { url: '/a.png' } })));
-    assert.match(words, /Поставить на/);
-    assert.deepEqual(englishIn(words), [], slot);
-  }
-});
-
-test('a picture already up shows on white and on black sails, with the way to remove it', () => {
-  const html = ssr(h(SailAdForm, { lang: 'en', slot: 'jib', current: { url: 'https://cdn.test/a.png', path: 'jib/a.png' } }));
-  assert.equal([...html.matchAll(/<img src="https:\/\/cdn.test\/a.png"/g)].length, 2);
-  assert.match(plain(html), /Remove the ad/);
-  assert.doesNotMatch(plain(ssr(h(SailAdForm, { lang: 'en', slot: 'jib', current: null }))), /Remove the ad/);
-});
-
-test('with no picture chosen there is nothing to put up', async () => {
-  const v = await mount(h(SailAdForm, { lang: 'en', slot: 'jib', current: null }));
-  assert.equal(v.$('.pill-primary').disabled, true);
-  assert.equal(v.$('input').getAttribute('accept'), 'image/png,image/jpeg,image/webp,image/svg+xml');
-  assert.ok(v.$('a[href="/boat"]'));
-});
-
-test('a file that isn’t a picture is refused, and so is one over 2 MB', async () => {
-  const v = await mount(h(SailAdForm, { lang: 'en', slot: 'jib', current: null }));
-  await choose(v.$('input'), { name: 'a.gif', type: 'image/gif', size: 10 });
-  assert.equal(v.$('[role=alert]').textContent, 'A PNG, JPEG, WebP or SVG picture, please.');
-  assert.equal(v.$('.pill-primary').disabled, true);
-  await choose(v.$('input'), { name: 'a.png', type: 'image/png', size: 2 * 1024 * 1024 + 1 });
-  assert.equal(v.$('[role=alert]').textContent, 'Up to 2 MB, please.');
-  await choose(v.$('input'), { name: 'b.png', type: 'image/png', size: 2 * 1024 * 1024 });
-  assert.equal(v.$('[role=alert]'), null, 'exactly 2 MB will do');
-});
-
-test('a picture chosen is previewed and named before it goes up', async () => {
-  const v = await mount(h(SailAdForm, { lang: 'en', slot: 'main', current: null }));
-  await choose(v.$('input'), PNG);
-  assert.equal(v.$('.adm-pick span').textContent, 'logo.png');
-  assert.equal(v.$$('.adm-sail img').length, 2);
-  assert.equal(v.$('.adm-sail img').getAttribute('src'), 'blob:preview');
-  assert.equal(v.$('.pill-primary').disabled, false);
-  await choose(v.$('input'), { ...PNG, name: 'second.png' });
-  assert.deepEqual(revoked, ['blob:preview'], 'the last preview is let go');
-});
-
-test('putting it up stores the picture, sets it for every boat and removes the old one', async () => {
-  const router = spyRouter(), sb = fakeSb();
-  globalThis.__supabase = sb;
-  const v = await mount(h(SailAdForm, { lang: 'en', slot: 'jib', current: { url: 'old', path: 'jib/old.png' } }));
-  await choose(v.$('input'), PNG);
-  await click(v.$('.pill-primary'));
-  const name = `jib/${clock.now}.png`;
-  assert.deepEqual(sb.log, [
-    ['upload', 'regatta-ads', name, 'image/png'],
-    ['upsert', 'regatta_settings', 'jib_ad', { url: `https://cdn.test/${name}`, path: name }],
-    ['remove', 'jib/old.png'],
-  ]);
-  assert.equal(globalThis.__sponsor, 1);
-  assert.equal(router.refreshed, 1);
-  assert.equal(v.$('[role=status]').textContent, 'Saved. Every boat carries it from the next race.');
-  assert.equal(v.$('.pill-primary').disabled, true, 'nothing more to put up');
-});
-
-test('a failed upload says why and changes nothing', async () => {
-  globalThis.__supabase = fakeSb({ uploadError: { message: 'Bucket is full' } });
-  const v = await mount(h(SailAdForm, { lang: 'en', slot: 'main', current: null }));
-  await choose(v.$('input'), PNG);
-  await click(v.$('.pill-primary'));
-  assert.equal(v.$('[role=alert]').textContent, 'Bucket is full');
-  assert.equal(globalThis.__sponsor, 0);
-  assert.equal(v.$('.pill-primary').disabled, false, 'it can be tried again');
-});
-
-test('when the setting can’t be saved the picture just uploaded is taken away again', async () => {
-  const sb = fakeSb({ rowError: { message: 'Not an admin' } });
-  globalThis.__supabase = sb;
-  const v = await mount(h(SailAdForm, { lang: 'en', slot: 'main', current: { url: 'old', path: 'main/old.png' } }));
-  await choose(v.$('input'), PNG);
-  await click(v.$('.pill-primary'));
-  assert.equal(v.$('[role=alert]').textContent, 'Not an admin');
-  assert.deepEqual(sb.log.at(-1), ['remove', `main/${clock.now}.png`]);
-  assert.ok(!sb.log.some((l) => l[0] === 'remove' && l[1] === 'main/old.png'), 'the one in use stays');
-});
-
-test('removing the ad clears the setting and its file', async () => {
-  const router = spyRouter(), sb = fakeSb();
-  globalThis.__supabase = sb;
-  const v = await mount(h(SailAdForm, { lang: 'en', slot: 'main', current: { url: 'old', path: 'main/old.png' } }));
-  await click(v.$('.pill-quiet'));
-  assert.deepEqual(sb.log, [['delete', 'regatta_settings', 'key', 'main_logo'], ['remove', 'main/old.png']]);
-  assert.equal(v.$('[role=status]').textContent, 'Removed. The mainsails carry no logo again.');
-  assert.equal(router.refreshed, 1);
-});
-
-test('a removal that fails says why', async () => {
-  globalThis.__supabase = fakeSb({ rowError: { message: 'Denied' } });
-  const v = await mount(h(SailAdForm, { lang: 'ru', slot: 'jib', current: { url: 'old' } }));
-  await click(v.$('.pill-quiet'));
-  assert.equal(v.$('[role=alert]').textContent, 'Denied');
-  assert.equal(globalThis.__sponsor, 0);
-});
 
 // ---------- the plane's banner ----------
 test('with no words set the banner reads the game’s own', () => {
@@ -234,218 +120,224 @@ test('the Russian banner form is in Russian', () => {
   assert.deepEqual(englishIn(plain(ssr(h(BannerForm, { lang: 'ru', current: ['Слово', 'Ещё'] })))), []);
 });
 
-// ---------- every jib's and gennaker's colour ----------
-const radio = (v, label) => [...v.$$('[role=radio]')].find((b) => b.textContent === label);
+// ---------- the sails: presets in a table, each made or changed in a dialog ----------
+const radio = (v, label) => [...v.$$('dialog [role=radio]')].find((b) => b.textContent === label);
+const btn = (v, label) => [...v.$$('button')].find((b) => b.textContent === label);
+const chip = (v, label) => [...v.$$('.adm-venues [role=checkbox]')].find((b) => b.textContent.split(' · ')[0] === label);
+const JIB = { url: 'https://cdn.test/jib/old.png', path: 'jib/old.png' }, KITE = { url: 'https://cdn.test/kite/k.png', path: 'kite/k.png' };
+const EVERY = { main: null, jib: JIB, kite: null, colors: { kite: '#222222' } };
+const SETS = {
+  uk: { name: 'UK', venues: ['cowes', 'weymouth'], main: { url: 'https://cdn.test/main/uk.png', path: 'main/uk.png' }, colors: { jib: 'auto' } },
+  turkey: { name: 'Turkey', venues: ['gocek'], kite: KITE, colors: { kite: '#e30a17' } },
+};
+const presets = (o = {}) => mount(h(SailPresets, { lang: 'en', every: EVERY, sets: SETS, ...o }));
+const edit = (v, name) => click(v.$(`[aria-label="Edit ${name}"]`));
 
-test('the jib follows its ad until the admin picks a colour for all, which keeps the gennaker’s', async () => {
+test('the presets table: every venue\'s, then each set, with what a set leaves to every venue\'s faded', () => {
+  const html = ssr(h(SailPresets, { lang: 'en', every: EVERY, sets: SETS }));
+  const rows = [...html.matchAll(/<tr( class="sp-every")?><th scope="row">(.*?)<\/th>(.*?)<\/tr>/g)].map((m) => [m[2], plain(m[3])]);
+  assert.deepEqual(rows.map((r) => r[0]), ['Every venue', 'UK', 'Turkey']);
+  assert.match(rows[0][1], /^The other 62 /, 'the venues no set has');
+  assert.match(rows[1][1], /^Cowes, Weymouth/);
+  assert.match(html, /<span class="sp-pic"><img src="https:\/\/cdn.test\/main\/uk.png"/, 'its own picture');
+  assert.match(html, /<span class="sp-pic sp-inh" title="As every venue"><img src="https:\/\/cdn.test\/jib\/old.png"/, 'every venue\'s, faded');
+  assert.match(rows[0][1], /From the ad .* #222222/, 'every venue\'s colours');
+  assert.match(rows[2][1], /#E30A17/);
+  assert.match(html, /<span class="sp-dye sp-inh">From the ad/, 'a set\'s jib colour as every venue\'s');
+  assert.equal(html.includes('<dialog'), false, 'no dialog till one is opened');
+  const many = ssr(h(SailPresets, { lang: 'en', every: EVERY, sets: { big: { name: 'Big', venues: ['gocek', 'cowes', 'kiel', 'sydney', 'antigua'] }, none: { name: 'None', venues: [] } } }));
+  assert.match(plain(many), /Göcek, Cowes, Kiel \+2/);
+  assert.match(plain(many), /None —/);
+  assert.deepEqual(englishIn(plain(ssr(h(SailPresets, { lang: 'ru', every: EVERY, sets: SETS }))).replace(/#[0-9A-F]{6}/g, ''), ['UK', 'Turkey']), []);
+});
+
+test('every venue\'s new jib ad is uploaded, saved and the old file taken away; the dialog closes', async () => {
   const router = spyRouter(), sb = fakeSb();
   globalThis.__supabase = sb;
-  const v = await mount(h(SailColorForm, { lang: 'en', slot: 'jib', current: { kite: ['#111111'] } }));
-  assert.equal(radio(v, 'Follow the ad').getAttribute('aria-checked'), 'true');
-  assert.equal(v.$('.pill-primary').disabled, true, 'nothing changed yet');
-  assert.equal(v.$('input[type=color]'), null);
-  await click(radio(v, 'One colour for all'));
-  await type(v.$('input[type=color]'), '#123456');
-  await click(v.$('.pill-primary'));
-  assert.deepEqual(sb.log, [['upsert', 'regatta_settings', 'sail_colors', { kite: ['#111111'], jib: '#123456' }]]);
+  const v = await presets();
+  await edit(v, 'Every venue');
+  assert.equal(v.$('dialog').open, true);
+  assert.equal(v.$('#sp-dlg-h').textContent, 'Every venue’s sails');
+  assert.equal(v.$('#sp-name'), null, 'every venue\'s has no name or venues');
+  assert.equal(radio(v, 'As every venue'), undefined);
+  await choose(v.$('#sp-file-jib'), PNG);
+  assert.equal(v.$$('.sp-pic-l')[1].querySelector('img').getAttribute('src'), 'blob:preview', 'previewed before it goes up');
+  assert.match(v.$('dialog').textContent, /logo\.png/);
+  await click(btn(v, 'Save'));
+  const path = `jib/${clock.now}.png`;
+  assert.deepEqual(sb.log, [['upload', 'regatta-ads', path, 'image/png'], ['upsert', 'regatta_settings', 'jib_ad', { url: `https://cdn.test/${path}`, path }], ['remove', 'jib/old.png']], 'the colours unchanged: not written');
   assert.equal(globalThis.__sponsor, 1);
   assert.equal(router.refreshed, 1);
-  assert.equal(v.$('[role=status]').textContent, 'Saved. Every boat carries it from the next race.');
+  assert.equal(v.$('dialog'), null);
+  assert.deepEqual(revoked, ['blob:preview']);
 });
 
-test('a jib can keep each boat’s own cloth whatever its ad', async () => {
-  const sb = fakeSb();
-  globalThis.__supabase = sb;
-  const v = await mount(h(SailColorForm, { lang: 'en', slot: 'jib', current: null }));
-  await click(radio(v, 'Each boat’s own'));
-  assert.match(v.$('section').textContent, /keeps the cloth its player picked/);
-  await click(v.$('.pill-primary'));
-  assert.deepEqual(sb.log, [['upsert', 'regatta_settings', 'sail_colors', { jib: 'own' }]]);
+test('a file that isn’t a picture is refused, and so is one over 2 MB', async () => {
+  globalThis.__supabase = fakeSb();
+  const v = await presets();
+  await edit(v, 'Every venue');
+  await choose(v.$('#sp-file-main'), { name: 'a.pdf', type: 'application/pdf', size: 10 });
+  assert.equal(v.$('[role=alert]').textContent, 'A PNG, JPEG, WebP or SVG picture, please.');
+  await choose(v.$('#sp-file-main'), { ...PNG, size: 3 * 1024 * 1024 });
+  assert.equal(v.$('[role=alert]').textContent, 'Up to 2 MB, please.');
+  await choose(v.$('#sp-file-main'), undefined);
+  assert.equal(v.$('[role=alert]'), null);
 });
 
-test('the gennaker takes one colour for all, no bands', async () => {
+test('every venue\'s picture taken off and colours set: the rows written or dropped', async () => {
   const sb = fakeSb();
   globalThis.__supabase = sb;
-  const v = await mount(h(SailColorForm, { lang: 'en', slot: 'kite', current: null }));
-  assert.equal(radio(v, 'Each boat’s own').getAttribute('aria-checked'), 'true');
+  const v = await presets();
+  await edit(v, 'Every venue');
+  await click(btn(v, 'No picture'));
+  assert.equal(btn(v, 'No picture'), undefined);
   await click(radio(v, 'One colour for all'));
-  assert.equal(v.$$('input[type=color]').length, 1);
-  assert.equal(radio(v, '2'), undefined, 'no bands to pick');
-  await type(v.$('input[type=color]'), '#00ff00');
-  await click(v.$('.pill-primary'));
-  assert.deepEqual(sb.log, [['upsert', 'regatta_settings', 'sail_colors', { kite: '#00ff00' }]]);
+  await type(v.$('[aria-labelledby="sp-dye-jib"][type=color]'), '#123456');
+  await click(v.$$('dialog [role=radiogroup]')[1].querySelector('[role=radio]'));
+  await click(btn(v, 'Save'));
+  assert.deepEqual(sb.log, [['delete', 'regatta_settings', 'key', 'jib_ad'], ['upsert', 'regatta_settings', 'sail_colors', { jib: '#123456' }], ['remove', 'jib/old.png']]);
 });
 
-test('going back to each boat’s own gennaker clears the row when nothing else is set', async () => {
+test('every venue\'s colours back to their defaults drop the row', async () => {
   const sb = fakeSb();
   globalThis.__supabase = sb;
-  const v = await mount(h(SailColorForm, { lang: 'en', slot: 'kite', current: { kite: '#ae0000' } }));
-  assert.equal(v.$('input[type=color]').value, '#ae0000', 'the saved colour shown');
-  await click(radio(v, 'Each boat’s own'));
-  await click(v.$('.pill-primary'));
+  const v = await presets();
+  await edit(v, 'Every venue');
+  assert.equal(v.$('[aria-labelledby="sp-dye-kite"][type=color]').value, '#222222');
+  await click(v.$$('dialog [role=radiogroup]')[1].querySelector('[role=radio]'));
+  await click(btn(v, 'Save'));
   assert.deepEqual(sb.log, [['delete', 'regatta_settings', 'key', 'sail_colors']]);
 });
 
-test('in the sail\'s own card, the colour is a few rows: the choice, the colour and save, and what it does', async () => {
-  const sb = fakeSb();
-  globalThis.__supabase = sb;
-  const v = await mount(h(SailColorForm, { lang: 'en', slot: 'kite', current: { kite: '#ae0000' }, inline: true }));
-  assert.equal(v.$('section'), null, 'no card of its own');
-  assert.equal(v.$('.adm-dye-in [role=group], .adm-dye-in')?.getAttribute('role'), 'group');
-  assert.equal(v.$('#adm-dye-kite-k').textContent, 'Colour of the gennakers');
-  assert.match(v.$('.adm-dye-in').textContent, /this colour all over/);
-  await type(v.$('input[type=color]'), '#00ff00');
-  await click(v.$('.pill-primary'));
-  assert.deepEqual(sb.log, [['upsert', 'regatta_settings', 'sail_colors', { kite: '#00ff00' }]]);
-  assert.equal(v.$('[role=status]').textContent, 'Saved. Every boat carries it from the next race.');
-});
-
-test('colours that can’t be saved say why', async () => {
-  globalThis.__supabase = fakeSb({ rowError: { message: 'Not an admin' } });
-  const v = await mount(h(SailColorForm, { lang: 'en', slot: 'jib', current: { jib: 'own' } }));
-  assert.equal(radio(v, 'Each boat’s own').getAttribute('aria-checked'), 'true');
-  await click(radio(v, 'Follow the ad'));
-  await click(v.$('.pill-primary'));
-  assert.equal(v.$('[role=alert]').textContent, 'Not an admin');
+test('a failed upload says why and saves nothing; a failed save takes the new upload away again', async () => {
+  globalThis.__supabase = fakeSb({ uploadError: { message: 'Bucket is full' } });
+  const v = await presets();
+  await edit(v, 'Every venue');
+  await choose(v.$('#sp-file-kite'), PNG);
+  await click(btn(v, 'Save'));
+  assert.equal(v.$('[role=alert]').textContent, 'Bucket is full');
+  assert.deepEqual(globalThis.__supabase.log, [['upload', 'regatta-ads', `kite/${clock.now}.png`, 'image/png']]);
   assert.equal(globalThis.__sponsor, 0);
 });
 
-test('the colour forms are in Russian, every choice shown', () => {
-  for (const [slot, current] of [['jib', null], ['jib', { jib: 'own' }], ['jib', { jib: '#ae0000' }], ['kite', null], ['kite', { kite: '#ae0000' }]]) {
-    assert.deepEqual(englishIn(plain(ssr(h(SailColorForm, { lang: 'ru', slot, current }))).replace(/#[0-9A-F]{6}/g, '')), [], `${slot} ${JSON.stringify(current)}`); // (less the colours' codes)
-  }
-});
-
-// ---------- sets of venues ----------
-const SETS = { uk: { name: 'UK', venues: ['cowes', 'weymouth'], main: { url: 'https://cdn.test/main/uk.png', path: 'main/uk.png' } }, turkey: { name: 'Turkey', venues: ['gocek'] } };
-
-test('a set\'s own picture is written into it, keeping the other sets', async () => {
-  const sb = fakeSb();
+test('a save that fails takes the picture just uploaded away again, and leaves the dialog open', async () => {
+  const sb = fakeSb({ rowError: { message: 'Not an admin' } });
   globalThis.__supabase = sb;
-  const v = await mount(h(SailAdForm, { lang: 'en', slot: 'kite', set: 'turkey', sets: SETS, current: null, inherited: { url: 'https://cdn.test/kite/all.png' } }));
-  assert.equal(v.$('.adm-sail img').getAttribute('src'), 'https://cdn.test/kite/all.png', 'every venue\'s shown until it has its own');
-  assert.match(v.$('.adm-from').textContent, /until this set has its own/);
-  assert.equal(v.$('.kicker').textContent, 'On every gennaker · Turkey', 'the set named');
-  assert.equal(v.$('.srow-link').getAttribute('href'), '/venues/gocek', 'seen at its first venue');
-  await choose(v.$('input[type=file]'), PNG);
-  await click(v.$('.pill-primary'));
-  const path = `kite/turkey-${clock.now}.png`;
-  assert.deepEqual(sb.log, [['upload', 'regatta-ads', path, 'image/png'], ['upsert', 'regatta_settings', 'sail_sets', { ...SETS, turkey: { name: 'Turkey', venues: ['gocek'], kite: { url: `https://cdn.test/${path}`, path } } }]]);
-});
-
-test('removing a set\'s picture brings back every venue\'s', async () => {
-  const sb = fakeSb();
-  globalThis.__supabase = sb;
-  const v = await mount(h(SailAdForm, { lang: 'en', slot: 'main', set: 'uk', sets: SETS, current: SETS.uk.main }));
-  await click(v.$('.pill-quiet'));
-  assert.deepEqual(sb.log, [['upsert', 'regatta_settings', 'sail_sets', { ...SETS, uk: { name: 'UK', venues: ['cowes', 'weymouth'] } }], ['remove', 'main/uk.png']]);
-  assert.equal(v.$('[role=status]').textContent, 'Removed. Boats at this set’s venues carry every venue’s again.');
-  assert.equal(plain(ssr(h(SailAdForm, { lang: 'en', slot: 'main', set: 'empty', sets: { empty: { name: 'Empty', venues: [] } }, current: null }))).includes('Your yacht'), false, 'no venue to see it at');
-});
-
-test('a set\'s jib starts as every venue\'s, and can be set back to following its ad', async () => {
-  const sb = fakeSb();
-  globalThis.__supabase = sb;
-  const v = await mount(h(SailColorForm, { lang: 'en', slot: 'jib', set: 'turkey', sets: SETS, current: { jib: '#000000' } }));
-  assert.equal(radio(v, 'As every venue').getAttribute('aria-checked'), 'true');
-  assert.match(v.$('section').textContent, /take what is set for every venue/);
-  assert.equal(v.$('.kicker').textContent, 'Every jib’s colour · Turkey');
-  await click(radio(v, 'Follow the ad'));
-  await click(v.$('.pill-primary'));
-  assert.deepEqual(sb.log, [['upsert', 'regatta_settings', 'sail_sets', { ...SETS, turkey: { name: 'Turkey', venues: ['gocek'], colors: { jib: 'auto' } } }]]);
-});
-
-test('a set\'s gennaker can go to one colour, and back to as every venue', async () => {
-  const sb = fakeSb();
-  globalThis.__supabase = sb;
-  const sets = { turkey: { name: 'Turkey', venues: ['gocek'], colors: { kite: '#e30a17' } } };
-  const v = await mount(h(SailColorForm, { lang: 'en', slot: 'kite', set: 'turkey', sets, current: null }));
-  assert.equal(radio(v, 'One colour for all').getAttribute('aria-checked'), 'true');
-  assert.equal(v.$('input[type=color]').value, '#e30a17');
-  await click(radio(v, 'As every venue'));
-  await click(v.$('.pill-primary'));
-  assert.deepEqual(sb.log, [['upsert', 'regatta_settings', 'sail_sets', { turkey: { name: 'Turkey', venues: ['gocek'] } }]], 'no colours of its own left');
-});
-
-test('the set picker opens a set, and a new set is made and opened at once', async () => {
-  const router = spyRouter(), sb = fakeSb();
-  globalThis.__supabase = sb;
-  globalThis.__nav.path = '/admin/ads';
-  const html = ssr(h(SetPicker, { lang: 'en', set: null, sets: SETS }));
-  assert.match(html, /<option value="uk">UK · 2 venues<\/option><option value="turkey">Turkey · 1 venue<\/option>/);
-  const v = await mount(h(SetPicker, { lang: 'en', set: null, sets: SETS }));
-  const sel = v.$('#adm-set');
-  sel.value = 'uk';
-  await fire(sel, 'change');
-  sel.value = '';
-  await fire(sel, 'change');
-  await click(v.$('.pill-quiet'));
-  const id = `s${clock.now.toString(36)}`;
-  assert.deepEqual(sb.log, [['upsert', 'regatta_settings', 'sail_sets', { ...SETS, [id]: { name: 'New set', venues: [] } }]]);
-  assert.equal(globalThis.__sponsor, 1);
-  assert.deepEqual(router.pushed, ['/admin/ads?set=uk', '/admin/ads', `/admin/ads?set=${id}`]);
-  assert.deepEqual(englishIn(plain(ssr(h(SetPicker, { lang: 'ru', set: 'uk', sets: SETS }))), ['UK', 'Turkey']), []); // (the sets' own names)
-});
-
-test('a new set that can\'t be made says why', async () => {
-  globalThis.__supabase = fakeSb({ rowError: { message: 'Not an admin' } });
-  const v = await mount(h(SetPicker, { lang: 'en', set: null, sets: {} }));
-  await click(v.$('.pill-quiet'));
+  const v = await presets();
+  await edit(v, 'Turkey');
+  await choose(v.$('#sp-file-main'), PNG);
+  await click(btn(v, 'Save'));
   assert.equal(v.$('[role=alert]').textContent, 'Not an admin');
+  assert.deepEqual(sb.log.at(-1), ['remove', `main/turkey-${clock.now}.png`]);
+  assert.equal(v.$('dialog').open, true, 'left open to try again');
 });
 
-test('a set\'s venues are picked by country, and one in another set moves here', async () => {
-  const router = spyRouter(), sb = fakeSb();
-  globalThis.__supabase = sb;
-  const v = await mount(h(SetEditor, { lang: 'en', set: 'turkey', sets: SETS }));
-  const chip = (label) => [...v.$$('.adm-venues [role=checkbox]')].find((b) => b.textContent.split(' · ')[0] === label);
-  assert.equal(chip('Turkey').getAttribute('aria-checked'), 'mixed', 'one of Turkey\'s venues');
-  assert.equal(chip('Göcek').getAttribute('aria-checked'), 'true');
-  assert.equal(chip('Cowes').textContent, 'Cowes · UK', 'named with the set it is in');
-  assert.equal(v.$('.pill-primary').disabled, true, 'nothing changed yet');
-  await click(chip('Turkey'));
-  assert.equal(chip('Turkey').getAttribute('aria-checked'), 'true');
-  assert.equal(chip('Istanbul').getAttribute('aria-checked'), 'true');
-  await click(chip('Cowes'));
-  assert.match(v.$('section').textContent, /5 venues picked/);
-  await type(v.$('#adm-set-name'), '  Turkey & Cowes  ');
-  await click(v.$('.pill-primary'));
-  assert.deepEqual(sb.log, [['upsert', 'regatta_settings', 'sail_sets', { uk: { ...SETS.uk, venues: ['weymouth'] }, turkey: { name: 'Turkey & Cowes', venues: ['gocek', 'cowes', 'istanbul', 'marmaris', 'fethiye'] } }]]);
-  assert.equal(globalThis.__sponsor, 1);
-  assert.equal(router.refreshed, 1);
-  assert.match(v.$('[role=status]').textContent, /carry the set from the next race/);
-  await click(chip('Turkey'));
-  assert.equal(chip('Turkey').getAttribute('aria-checked'), 'false', 'a country picked whole is unpicked whole');
-});
-
-test('deleting a set takes its pictures and leaves its venues to every venue\'s sails', async () => {
-  const router = spyRouter(), sb = fakeSb();
-  globalThis.__supabase = sb;
-  globalThis.__nav.path = '/admin/ads';
-  const v = await mount(h(SetEditor, { lang: 'en', set: 'uk', sets: SETS }));
-  await click(v.$('.pill-quiet'));
-  assert.deepEqual(sb.log, [['upsert', 'regatta_settings', 'sail_sets', { turkey: SETS.turkey }], ['remove', 'main/uk.png']]);
-  assert.deepEqual(router.pushed, ['/admin/ads']);
-});
-
-test('deleting the last set drops the row', async () => {
+test('a set: its name, venues by country (one from another set moves here), a picture as every venue\'s, its colours', async () => {
   const sb = fakeSb();
   globalThis.__supabase = sb;
-  const v = await mount(h(SetEditor, { lang: 'en', set: 'turkey', sets: { turkey: SETS.turkey } }));
-  await click(v.$('.pill-quiet'));
+  const v = await presets();
+  await edit(v, 'Turkey');
+  assert.equal(v.$('#sp-name').value, 'Turkey');
+  assert.equal(chip(v, 'Turkey').getAttribute('aria-checked'), 'mixed');
+  assert.equal(chip(v, 'Cowes').textContent, 'Cowes · UK', 'named with the set it is in');
+  assert.equal(radio(v, 'As every venue').getAttribute('aria-checked'), 'true', 'its jib colour as every venue\'s');
+  assert.ok(v.$('.sp-pic-l.sp-inh img'), 'every venue\'s jib ad shown faded');
+  await click(chip(v, 'Turkey'));
+  assert.equal(chip(v, 'Istanbul').getAttribute('aria-checked'), 'true');
+  await click(chip(v, 'Cowes'));
+  assert.match(v.$('dialog').textContent, /Venues \(5\)/);
+  await type(v.$('#sp-name'), '  Türkiye & Cowes ');
+  await click([...v.$$('.sp-row')].find((r) => r.textContent.startsWith('Gennaker logo')).querySelector('.pill-quiet')); // its logo as every venue's
+  await click(radio(v, 'Follow the ad'));
+  await click(btn(v, 'Save'));
+  assert.deepEqual(sb.log, [
+    ['upsert', 'regatta_settings', 'sail_sets', { uk: { ...SETS.uk, venues: ['weymouth'] }, turkey: { name: 'Türkiye & Cowes', venues: ['gocek', 'cowes', 'istanbul', 'marmaris', 'fethiye'], colors: { jib: 'auto', kite: '#e30a17' } } }],
+    ['remove', 'kite/k.png'],
+  ]);
+  assert.equal(globalThis.__sponsor, 1);
+});
+
+test('a set\'s gennaker goes back to each boat\'s own, and a picked country is unpicked whole', async () => {
+  const sb = fakeSb();
+  globalThis.__supabase = sb;
+  const v = await presets();
+  await edit(v, 'UK');
+  assert.equal(chip(v, 'UK').getAttribute('aria-checked'), 'true');
+  await click(chip(v, 'UK'));
+  assert.equal(chip(v, 'Cowes').getAttribute('aria-checked'), 'false');
+  await click(chip(v, 'Cowes'));
+  await click(v.$$('dialog [role=radiogroup]')[1].querySelectorAll('[role=radio]')[1]);
+  await click(btn(v, 'Save'));
+  assert.deepEqual(sb.log, [['upsert', 'regatta_settings', 'sail_sets', { ...SETS, uk: { name: 'UK', venues: ['cowes'], main: SETS.uk.main, colors: { jib: 'auto', kite: 'own' } } }]]);
+});
+
+test('a new preset needs a name, then is made with its venues and picture', async () => {
+  const sb = fakeSb();
+  globalThis.__supabase = sb;
+  const v = await presets({ sets: {} });
+  await click(btn(v, 'New preset'));
+  assert.equal(v.$('#sp-dlg-h').textContent, 'New preset');
+  assert.equal(btn(v, 'Save').disabled, true, 'no name yet');
+  assert.equal(btn(v, 'Delete the preset'), undefined);
+  await type(v.$('#sp-name'), 'Italy');
+  await click(chip(v, 'Italy'));
+  await choose(v.$('#sp-file-jib'), PNG);
+  await click(btn(v, 'Save'));
+  const id = `s${clock.now.toString(36)}`, path = `jib/${id}-${clock.now}.png`;
+  const italy = ['trieste', 'porto-cervo', 'garda', 'naples'].filter((x) => sb.log[1][3][id].venues.includes(x));
+  assert.ok(italy.length >= 3, 'its country\'s venues');
+  assert.deepEqual(sb.log, [['upload', 'regatta-ads', path, 'image/png'], ['upsert', 'regatta_settings', 'sail_sets', { [id]: { name: 'Italy', venues: sb.log[1][3][id].venues, jib: { url: `https://cdn.test/${path}`, path } } }]]);
+});
+
+test('deleting a set takes its pictures and leaves its venues to every venue\'s sails; the last one the row', async () => {
+  const router = spyRouter(), sb = fakeSb();
+  globalThis.__supabase = sb;
+  const v = await presets();
+  await edit(v, 'UK');
+  await click(btn(v, 'Delete the preset'));
+  assert.deepEqual(sb.log, [['upsert', 'regatta_settings', 'sail_sets', { turkey: SETS.turkey }], ['remove', 'main/uk.png']]);
+  assert.equal(router.refreshed, 1);
+  assert.equal(v.$('dialog'), null);
+});
+
+test('deleting the last set drops the row, and one that fails says why', async () => {
+  const sb = fakeSb();
+  globalThis.__supabase = sb;
+  const v = await presets({ sets: { uk: { name: 'UK', venues: [] } } });
+  await edit(v, 'UK');
+  await click(btn(v, 'Delete the preset'));
   assert.deepEqual(sb.log, [['delete', 'regatta_settings', 'key', 'sail_sets']]);
 });
 
-test('a set that can\'t be saved says why, and a set there isn\'t shows nothing', async () => {
+test('a set that can\'t be deleted says why', async () => {
   globalThis.__supabase = fakeSb({ rowError: { message: 'Nope' } });
-  const v = await mount(h(SetEditor, { lang: 'en', set: 'turkey', sets: SETS }));
-  await type(v.$('#adm-set-name'), 'Türkiye');
-  await click(v.$('.pill-primary'));
+  const v = await presets();
+  await edit(v, 'UK');
+  await click(btn(v, 'Delete the preset'));
   assert.equal(v.$('[role=alert]').textContent, 'Nope');
-  await click(v.$('.pill-quiet'));
-  assert.equal(v.$('[role=alert]').textContent, 'Nope');
-  assert.equal(ssr(h(SetEditor, { lang: 'en', set: 'gone', sets: SETS })), '');
-  assert.deepEqual(englishIn(plain(ssr(h(SetEditor, { lang: 'ru', set: 'turkey', sets: SETS }))), ['UK', 'USA', 'UAE', 'Turkey']), []);
+  assert.equal(globalThis.__sponsor, 0);
+});
+
+test('Cancel and Escape close the dialog without saving', async () => {
+  const sb = fakeSb();
+  globalThis.__supabase = sb;
+  const v = await presets();
+  await edit(v, 'Turkey');
+  await type(v.$('#sp-name'), 'Changed');
+  await click(btn(v, 'Cancel'));
+  assert.equal(v.$('dialog'), null);
+  await edit(v, 'Turkey');
+  assert.equal(v.$('#sp-name').value, 'Turkey', 'opened afresh');
+  await fire(v.$('dialog'), 'cancel');
+  assert.equal(v.$('dialog'), null);
+  assert.deepEqual(sb.log, []);
+});
+
+test('the dialog is in Russian', async () => {
+  globalThis.__supabase = fakeSb();
+  const v = await mount(h(SailPresets, { lang: 'ru', every: EVERY, sets: SETS }));
+  await click(v.$('[aria-label="Изменить Turkey"]'));
+  assert.deepEqual(englishIn(v.$('dialog').textContent.replace(/#[0-9A-F]{6}/g, ''), ['UK', 'Turkey']), []);
 });
 
 // ---------- why races are left, who comes back, what they say ----------
@@ -812,7 +704,8 @@ test('someone not on the list is told so and sees none of it', () => {
 test('an admin gets the page, the pages’ tabs and the way back', () => {
   const html = ssr(shell({ page: 'ads' }));
   assert.match(html, /id="inner"/);
-  assert.match(plain(html), /Admin · Ads The ads in the game/);
+  assert.match(plain(html), /Admin · Ads The plane’s banner/);
+  assert.match(html, /<a href="\/admin\/sails">Sails<\/a>/, 'the sails a page of their own');
   assert.match(html, /<a href="\/admin\/ads" class="on" aria-current="page">Ads<\/a>/);
   assert.ok(hrefs(html).includes('/admin'), 'back to the admin');
   assert.ok(hrefs(ssr(shell())).includes('/settings'), 'the admin’s own page goes back to settings');

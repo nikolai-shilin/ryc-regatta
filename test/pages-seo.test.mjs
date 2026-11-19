@@ -187,7 +187,7 @@ user = null;
 const indexed = sweep.filter((p) => p.meta.robots?.index !== false);
 
 test('every page was opened, in both languages', () => {
-  assert.equal(new Set(sweep.map((p) => p.route)).size, 36);
+  assert.equal(new Set(sweep.map((p) => p.route)).size, 37);
   assert.equal(sweep.length % 2, 0);
 });
 

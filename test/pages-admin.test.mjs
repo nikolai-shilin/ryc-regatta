@@ -79,7 +79,7 @@ const walk = (d) => readdirSync(d).flatMap((f) => { const p = join(d, f); return
 const adminDir = join(ROOT, 'app/[lang]/admin');
 const PAGES = walk(adminDir).filter((f) => f.endsWith('page.tsx')).map((f) => ({ file: f, id: relative(adminDir, f).replace(/\/?page\.tsx$/, '') || 'hub' }));
 // what only an admin's copy of each page has
-const ONLY_ADMIN = { hub: 'adm-hub', ads: 'SECRET-BANNER', game: 'SECRET-COMMENT', players: 'SECRET-PLAYER', tech: 'SECRET-CHIP', race: 'adm-sched', logs: 'SECRET-LOGGED', duels: 'SECRET-DUELIST' };
+const ONLY_ADMIN = { hub: 'adm-hub', ads: 'SECRET-BANNER', sails: 'SECRET-JIB', game: 'SECRET-COMMENT', players: 'SECRET-PLAYER', tech: 'SECRET-CHIP', race: 'adm-sched', logs: 'SECRET-LOGGED', duels: 'SECRET-DUELIST' };
 const SECRETS = /SECRET-|adm-hub|adm-sched|adm-bar|adm-tile/;
 
 const load = (file) => import(file);
@@ -251,39 +251,25 @@ test('/admin/players links each player to their log', async () => {
   assert.ok((await render(page('players'), 'en', { days: '7' })).includes('href="/admin/logs?who=abcd1234&amp;days=7"'));
 });
 
-test('/admin/ads shows the saved logos and the banner\'s words', async () => {
+test('/admin/ads shows the banner\'s words', async () => {
   admin();
   const html = await render(page('ads'));
-  assert.ok(html.includes('https://cdn.example/SECRET-JIB.png'));
-  assert.ok(html.includes('https://cdn.example/SECRET-MAIN.png'));
-  assert.ok(html.includes('https://cdn.example/SECRET-KITE.png'));
-  assert.ok(html.includes('#ABCDEF') && html.includes('#FEDCBA'), 'the saved colours shown');
-  const card = (k) => html.slice(html.indexOf(`adm adm-${k}"`), html.indexOf('</section>', html.indexOf(`adm adm-${k}"`)));
-  assert.match(card('jib'), /Colour of the jibs/, 'each sail\'s colour in its own card');
-  assert.match(card('kite'), /Colour of the gennakers/);
-  assert.doesNotMatch(card('main'), /Colour of/);
-  assert.doesNotMatch(html, /adm-dye adm-dye/, 'no card of their own');
   assert.match(html, /SECRET-BANNER/);
+  assert.doesNotMatch(html, /SECRET-JIB|sp-tab/, 'the sails are on their own page');
 });
 
-test('/admin/ads?set= sets a set\'s own, showing every venue\'s until it has them, and no banner', async () => {
+test('/admin/sails shows every venue\'s sails and the presets, each venue in one set, as the game takes them', async () => {
   admin();
   db.settings = { ...SETTINGS, sail_sets: {
     turkey: { name: 'Turkey', venues: ['gocek', 'nowhere', 'gocek'], kite: { url: 'https://cdn.example/TR-KITE.png', path: 'kite/t.png' }, colors: { jib: 'auto', kite: 'own' }, jib: { url: 'javascript:x' } },
     again: { name: '', venues: ['gocek', 'cowes'], main: { url: 'https://cdn.example/AGAIN.png' } }, 'Bad Id': { name: 'X', venues: [] }, junk: 'junk',
   } };
-  const html = await render(page('ads'), 'en', { set: 'turkey' });
-  assert.ok(html.includes('https://cdn.example/TR-KITE.png'), 'its own gennaker logo');
-  assert.ok(html.includes('https://cdn.example/SECRET-JIB.png'), 'every venue\'s jib ad, as it has none');
-  assert.doesNotMatch(html, /SECRET-KITE|javascript:x/);
-  assert.match(html, /<option value="turkey" selected="">Turkey · 1 venue<\/option><option value="again">again · 1 venue<\/option>/, 'a venue in one set only; a set with no name goes by its id');
-  assert.doesNotMatch(html, /Bad Id|junk/);
-  assert.match(html, /The set · Turkey/);
-  assert.doesNotMatch(html, /On the plane’s banner/);
-  const all = await render(page('ads'), 'en', { set: 'nowhere' });
-  assert.match(all, /On the plane’s banner/, 'a set there isn\'t: every venue\'s');
-  assert.doesNotMatch(all, /The set ·/);
-  assert.ok(all.includes('https://cdn.example/SECRET-KITE.png'));
+  const html = await render(page('sails'));
+  for (const u of ['SECRET-JIB', 'SECRET-MAIN', 'SECRET-KITE', 'TR-KITE', 'AGAIN']) assert.ok(html.includes(`https://cdn.example/${u}.png`), u);
+  assert.match(html, /#ABCDEF/);
+  assert.doesNotMatch(html, /javascript:x|Bad Id|junk|SECRET-BANNER/);
+  const rows = [...html.matchAll(/<tr( class="sp-every")?><th scope="row">(.*?)<\/th><td class="sp-venues">(.*?)<\/td>/g)].map((m) => [m[2], m[3]]);
+  assert.deepEqual(rows, [['Every venue', 'The other 63'], ['Turkey', 'Göcek'], ['again', 'Cowes']], 'a venue in one set only; a set with no name goes by its id');
 });
 
 test('/admin/ads leaves out a saved setting that is not what it should be', async () => {

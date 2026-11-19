@@ -1743,48 +1743,42 @@
 .bc .bt-menu .hm-menu .hm-menu-nav, .bc .bt-menu .hm-menu .hm-menu-nav > * { display: flex; }
 /* open, the bar it's in comes over the rest of the page's words (each of them drawn on a layer of its own as it rises in) */
 .bc .bt-top:has(.bt-menu .hm-menu[open]) { position: relative; z-index: 20; }
-/* admin: every jib's and gennaker's colour (components/admin-form.tsx SailColorForm): one sail, the choice, the colours */
-.bc .adm-prev-1 { grid-template-columns: minmax(0, 1fr); max-width: 50%; }
-.bc .adm-sail-jib, .bc .adm-sail-kite { background: var(--fill-2); }
-.bc .adm-sail-kite { clip-path: polygon(30% 0, 70% 0, 100% 100%, 0 100%); padding-left: var(--s-4); }
-.bc .adm-modes { margin-bottom: var(--s-3); }
+/* admin: the sails (components/admin-sails.tsx): the presets in a table, each made or changed in a dialog */
+.bc .adm-sails .sp-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-2); }
+.bc .adm-sails .sp-bar .kicker { margin: 0; }
+.bc .adm-sails > .hint { margin: 0 0 var(--s-4); }
+.bc .sp-tab { margin: 0; }
+.bc .sp-tab th, .bc .sp-tab td { text-align: left; vertical-align: middle; }
+.bc .sp-tab td:last-child { text-align: right; }
+.bc .sp-tab .sp-every th[scope="row"] { color: var(--you); }
+.bc .sp-venues { white-space: normal; min-width: 140px; max-width: 260px; color: var(--ink-2); }
+.bc .sp-pic { display: inline-grid; place-items: center; width: 64px; height: 32px; padding: 3px; background: #2a2c30; }
+.bc .sp-pic img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.bc .sp-pic-l { width: 112px; height: 56px; flex: none; }
+.bc .sp-inh { opacity: .38; }
+.bc .sp-none { color: var(--ink-3); }
+.bc .sp-dye { display: inline-flex; align-items: center; gap: var(--s-2); }
+.bc .sp-dye i { width: 14px; height: 14px; border: 1px solid var(--rule); }
+.bc .sp-dlg { width: min(860px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto; }
+.bc .sp-in { gap: var(--s-3); }
+.bc .sp-row { display: grid; grid-template-columns: 11em minmax(0, 1fr); gap: var(--s-3); align-items: center; padding: var(--s-2) 0; border-top: 1px solid var(--rule-2); }
+.bc .sp-row-top { align-items: start; }
+.bc .sp-row .field { width: 100%; max-width: 360px; height: var(--h-m, 40px); }
+.bc .sp-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.bc .sp-ctl .adm-pick { max-width: 100%; height: var(--h-s, 32px); }
+.bc .sp-btns { justify-content: flex-start; margin-top: var(--s-2); }
+.bc .sp-btns .pill { flex: none; }
+.bc .sp-del { margin-left: auto; }
+.bc .adm .bt-pills, .bc .sp-dlg .bt-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.bc .adm .bt-pills .bt-pill, .bc .sp-dlg .bt-pills .bt-pill { flex: none; height: 28px; padding: 0 10px 0 8px; }
 .bc .adm-color { display: inline-flex; align-items: center; gap: var(--s-3); }
 .bc .adm-color input[type="color"] { width: 44px; height: var(--h-s, 32px); padding: 0; border: 1px solid var(--rule); background: none; cursor: pointer; }
 .bc .adm-color input[type="color"]:disabled { opacity: .5; cursor: default; }
-@media (max-width: 600px) { .bc .adm-prev-1 { max-width: none; } }
-/* admin: a set of venues (components/admin-form.tsx SetEditor): its venues by country, a country's name picks them all */
-.bc .adm-venues { display: grid; gap: var(--s-3); align-content: start; max-height: 520px; overflow-y: auto; padding-right: var(--s-2); }
-.bc .adm-country { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: var(--s-2); align-items: start; }
-.bc .adm-country-k { justify-content: flex-start; }
-.bc .adm-country-k[aria-checked="mixed"]::before { background: var(--w-50); }
-.bc .adm-in-set { color: var(--ink-3); text-transform: none; letter-spacing: 0; }
-.bc .adm-set .adm-in { flex: 0 1 60%; }
-@media (max-width: 600px) { .bc .adm-country { grid-template-columns: minmax(0, 1fr); } .bc .adm-venues { max-height: none; } }
-/* admin ads, compact: a narrower card, smaller sail previews, the picker one bar, a set's venues flowing by country */
-.bc .adm { padding: var(--s-4) var(--s-5); gap: var(--s-3) var(--s-8); }
-.bc .adm + .adm, .bc .adm.adm-banner { margin-top: var(--s-3); }
-.bc .adm-k { margin-bottom: var(--s-2); }
-.bc .adm-prev { max-width: 300px; margin: var(--s-1) 0 var(--s-2); gap: var(--s-2); }
-.bc .adm-sail { padding: var(--s-2) var(--s-2) var(--s-2) 18%; }
-.bc .adm .hint { margin: var(--s-1) 0 0; }
-.bc .adm-go { margin: var(--s-2) 0 var(--s-1); }
-.bc .adm .srow { min-height: 0; padding-block: var(--s-2); }
-.bc .adm-where-row { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
-.bc .adm-where-row .field { flex: 0 1 340px; min-width: 0; height: var(--h-m, 40px); }
-.bc .adm-where .hint { margin-top: var(--s-2); }
-.bc .adm-dye-in { display: grid; gap: var(--s-2); margin-top: var(--s-2); padding-top: var(--s-3); border-top: 1px solid var(--rule); }
-.bc .adm-dye-in .adm-go { margin: 0; align-items: center; }
-.bc .adm-dye-go { display: flex; gap: var(--s-3); flex-wrap: wrap; }
-.bc .adm-modes { margin-bottom: 0; }
-.bc .adm .bt-pill { height: 28px; padding: 0 10px 0 8px; }
-.bc .adm-venues { gap: var(--s-2); max-height: 300px; }
+.bc .adm-venues { display: grid; gap: var(--s-2); align-content: start; max-height: 260px; overflow-y: auto; padding-right: var(--s-2); }
 .bc .adm-country { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .bc .adm-venues .bt-pills { display: contents; }
 .bc .adm-venues .bt-pill { height: 26px; padding: 0 9px 0 7px; font-size: 10.5px; }
-.bc .adm-country-k { min-width: 6.5em; font-weight: 800; }
-@media (max-width: 600px) { .bc .adm { padding: var(--s-3); } .bc .adm-prev { max-width: none; } }
-.bc .adm .bt-pills { display: flex; flex-wrap: wrap; }
-.bc .adm .bt-pills .bt-pill { flex: none; }
-.bc .adm-pic { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-top: var(--s-1); }
-.bc .adm-pic .adm-pick { max-width: 100%; height: var(--h-s, 32px); }
-.bc .adm-pic-k { display: block; }
+.bc .adm-country-k { min-width: 6.5em; justify-content: flex-start; font-weight: 800; }
+.bc .adm-country-k[aria-checked="mixed"]::before { background: var(--w-50); }
+.bc .adm-in-set { color: var(--ink-3); text-transform: none; letter-spacing: 0; }
+@media (max-width: 600px) { .bc .sp-row { grid-template-columns: minmax(0, 1fr); } .bc .adm-venues { max-height: none; } }
