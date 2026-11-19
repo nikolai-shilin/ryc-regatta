@@ -54,7 +54,8 @@ export default async function Iyt({ params }: LangParams) {
       'Пробный экзамен берёт вопросы из всех тем уровня, а прогресс виден по каждой теме — понятно, что повторить.', 'Un examen de prueba con cronómetro saca preguntas de todos los temas del nivel, y tu progreso se muestra por tema, para que sepas qué repasar.', 'Eine Probeprüfung mit Timer zieht Fragen aus jedem Thema der Stufe, und dein Fortschritt wird je Thema angezeigt, damit du weißt, was du wiederholen musst.', 'Zamanlayıcılı bir deneme sınavı seviyenin her konusundan soru çeker ve ilerlemen konu konu gösterilir; neyi tekrarlayacağını bilirsin.')],
   ];
 
-  const levels: [string, number, string][] = IYT_LEVELS.map((l) => [t(...l.name), l.n, t(...l.text)]);
+  // a course's English name, kept in another language, is marked English (Turkish capitals would dot its i)
+  const levels: [string, number, string, boolean][] = IYT_LEVELS.map((l) => [t(...l.name), l.n, t(...l.text), lang !== 'en' && t(...l.name) === l.name[0]]);
   const total = levels.reduce((a, l) => a + l[1], 0);
 
   const ld = {
@@ -97,9 +98,9 @@ export default async function Iyt({ params }: LangParams) {
             <p className="hm-text iyt-lead">{t(`${n(total)} questions across every theory level from VHF Radio Operator to Yachtmaster Ocean, plus the racing rules and a charter check-in course.`, `${n(total)} вопросов по всем уровням теории от VHF Radio Operator до Yachtmaster Ocean, плюс правила парусных гонок и курс приёмки чартерной яхты.`, `${n(total)} preguntas en todos los niveles de teoría, de Operador de Radio VHF a Yachtmaster Ocean, además de las reglas de regatas y un curso de check-in de chárter.`, `${n(total)} Fragen in allen Theoriestufen von VHF Radio Operator bis Yachtmaster Ocean, dazu die Wettfahrtregeln und ein Charter-Check-in-Kurs.`, `VHF Radio Operator’dan Yachtmaster Ocean’a her teori seviyesinde ${n(total)} soru, ayrıca yarış kuralları ve bir charter check-in kursu.`)}</p>
           </div>
           <ul className="iyt-levels">
-            {levels.map(([name, q, text]) => (
+            {levels.map(([name, q, text, en]) => (
               <li key={name}>
-                <span className="hm-h3">{name}</span>
+                <span className="hm-h3" lang={en ? 'en' : undefined}>{name}</span>
                 <span className="meta">{t(`${n(q)} questions`, `${n(q)} вопросов`, `${n(q)} preguntas`, `${n(q)} Fragen`, `${n(q)} soru`)}</span>
                 <span className="hm-text">{text}</span>
               </li>
@@ -138,7 +139,7 @@ export default async function Iyt({ params }: LangParams) {
 
       <div className="hm-band">
         <section className="hm-page hm-sec iyt-end" aria-labelledby="iyt-try">
-          <h2 className="hm-h2" id="iyt-try">{t('Try a few questions now', 'Попробуйте пару вопросов прямо сейчас', 'Prueba unas preguntas ahora', 'Probiere jetzt ein paar Fragen', 'Şimdi birkaç soru dene')}</h2>
+          <h2 className="hm-h2" id="iyt-try">{t('Try a few questions now', 'Попробуйте пару вопросов прямо сейчас', 'Prueba unas preguntas ahora', 'Probiere jetzt ein paar Fragen aus', 'Şimdi birkaç soru dene')}</h2>
           <Open lang={lang} t={t} />
         </section>
       </div>

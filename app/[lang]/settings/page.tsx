@@ -19,7 +19,7 @@ export default async function SettingsPage({ params }: LangParams) {
   const href = (to: string) => `/lang?to=${to}&back=/settings`;
   const langSeg = (
     <nav className="segc" aria-labelledby="l-lang">
-      <a className={lang === 'en' ? 'on' : ''} href={href('en')} aria-current={lang === 'en' ? 'true' : undefined}>English</a>
+      <a className={lang === 'en' ? 'on' : ''} href={href('en')} aria-current={lang === 'en' ? 'true' : undefined} lang="en">English</a>
       <a className={lang === 'ru' ? 'on' : ''} href={href('ru')} aria-current={lang === 'ru' ? 'true' : undefined} lang="ru">Русский</a>
       <a className={lang === 'es' ? 'on' : ''} href={href('es')} aria-current={lang === 'es' ? 'true' : undefined} lang="es">Español</a>
       <a className={lang === 'de' ? 'on' : ''} href={href('de')} aria-current={lang === 'de' ? 'true' : undefined} lang="de">Deutsch</a>

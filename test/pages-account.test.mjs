@@ -112,7 +112,7 @@ test('Settings leaves emoji out of a name', async () => {
 test('Settings offers both languages and marks the one in use', async () => {
   as(null);
   const en = await html(settings, 'en'), ru = await html(settings, 'ru');
-  assert.match(en, /class="on" href="\/lang\?to=en&amp;back=\/settings" aria-current="true">English/);
+  assert.match(en, /class="on" href="\/lang\?to=en&amp;back=\/settings" aria-current="true" lang="en">English/);
   assert.match(en, /href="\/lang\?to=ru&amp;back=\/settings" lang="ru">Русский/);
   assert.match(ru, /class="on" href="\/lang\?to=ru&amp;back=\/settings" aria-current="true" lang="ru">Русский/);
 });

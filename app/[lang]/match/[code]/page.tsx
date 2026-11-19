@@ -61,7 +61,7 @@ export default async function MatchPage({ params, searchParams }: LangParams & {
           <p className="bt-p">{t('You and a friend, one on one.', 'Вы и друг, один на один.', 'Tú y un amigo, uno contra uno.', 'Du und ein Freund, eins gegen eins.', 'Sen ve bir arkadaşın, bire bir.')}</p>
           <div className="bt-stats">
             <div><span className="bt-sk">{t('Code', 'Код', 'Código', 'Code', 'Kod')}</span><b>{code}</b></div>
-            {venue && <div><span className="bt-sk">{t('Venue', 'Акватория', 'Lugar', 'Revier', 'Yarış alanı')}</span><b>{t(...venue.name)}</b></div>}
+            {venue && <div><span className="bt-sk">{t('Venue', 'Акватория', 'Sede', 'Revier', 'Yarış alanı')}</span><b>{t(...venue.name)}</b></div>}
             {yacht && <div><span className="bt-sk">{t('Yacht', 'Яхта', 'Yate', 'Yacht', 'Yat')}</span><b>{t(...yacht.name)}</b></div>}
           </div>
           <a className="bt-go" href={href}><IconPlay /><span>{t('Join the race', 'Войти в гонку', 'Unirse a la regata', 'An der Regatta teilnehmen', 'Yarışa katıl')}</span></a>

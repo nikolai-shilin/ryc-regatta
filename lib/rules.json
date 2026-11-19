@@ -136,7 +136,7 @@
   "en": "On opposite tacks, the boat with the wind on her port side keeps clear.",
   "ru": "На разных галсах уступает лодка, у которой ветер слева (левый галс).",
   "es": "En amuras opuestas, el barco que recibe el viento por babor se mantiene separado.",
-  "de": "Auf verschiedenen Bugs hält sich das Boot mit dem Wind von Backbord frei.",
+  "de": "Auf entgegengesetzten Bugen hält sich das Boot mit dem Wind von Backbord frei.",
   "tr": "Farklı kontralarda, rüzgârı iskele tarafından alan tekne uzak durur."
  },
  "x11": {
@@ -164,8 +164,8 @@
   "en": "A boat that gets right of way by her own action (a tack, or sailing up from astern) must at first give the other room to keep clear.",
   "ru": "Лодка, получившая право дороги своими действиями (поворотом или догнав сзади), сначала должна дать другой место, чтобы уступить.",
   "es": "Un barco que obtiene derecho de paso por su propia acción (una virada, o al orzar desde atrás) debe al principio dar al otro espacio para mantenerse separado.",
-  "de": "Ein Boot, das durch eigenes Handeln Wegerecht bekommt (eine Wende oder Anluven von achtern), muss dem anderen zunächst Raum zum Freihalten geben.",
-  "tr": "Geçiş hakkını kendi hareketiyle (bir tramola ya da arkadan orsalayarak) alan tekne, önce diğerine uzak durması için alan vermelidir."
+  "de": "Ein Boot, das durch eigenes Handeln Wegerecht bekommt (eine Wende oder das Aufholen von achtern), muss dem anderen zunächst Raum zum Freihalten geben.",
+  "tr": "Geçiş hakkını kendi hareketiyle (bir tramola ya da arkadan yaklaşarak) alan tekne, önce diğerine uzak durması için alan vermelidir."
  },
  "x16": {
   "en": "A boat with right of way that changes course must leave the other boat room to keep clear.",
@@ -185,7 +185,7 @@
   "en": "In the zone of a mark (three hull lengths), the inside boat, or the one clear ahead, gets room to round. At the windward mark only between boats on the same tack: on opposite tacks there is no inside or outside, and port keeps clear of starboard.",
   "ru": "В зоне знака (три корпуса) место для огибания получает внутренняя лодка или та, что чисто впереди. У верхнего знака — только между лодками на одном галсе: на разных галсах нет внутренней и внешней, левый галс уступает правому.",
   "es": "En la zona de una baliza (tres esloras), el barco interior, o el libre por la proa, tiene espacio para rodear. En la baliza de barlovento solo entre barcos en la misma amura: en amuras opuestas no hay interior ni exterior, y babor se mantiene separado de estribor.",
-  "de": "In der Zone einer Bahnmarke (drei Rumpflängen) bekommt das innere Boot oder das klar vorausliegende Raum zum Runden. An der Luvtonne nur zwischen Booten auf demselben Bug: auf verschiedenen Bugs gibt es kein Innen und Außen, und Backbordbug hält sich von Steuerbordbug frei.",
+  "de": "In der Zone einer Bahnmarke (drei Rumpflängen) bekommt das innere Boot oder das klar vorausliegende Raum zum Runden. An der Luvtonne nur zwischen Booten auf demselben Bug: auf entgegengesetzten Bugen gibt es kein Innen und Außen, und Backbordbug hält sich von Steuerbordbug frei.",
   "tr": "Bir şamandıranın bölgesinde (üç boy) içteki tekne ya da açık öndeki, dönmek için alan alır. Rüzgârüstü şamandırasında yalnızca aynı kontradaki tekneler arasında: farklı kontralarda iç ya da dış yoktur ve iskele kontra sancak kontradan uzak durur."
  },
  "x18.3": {

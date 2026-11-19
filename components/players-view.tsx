@@ -221,7 +221,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
           </div>
         </>) : (<>
           {!list ? (
-            <p className="bt-hint">{t('The players can’t be had just now. Try again in a minute.', 'Список игроков сейчас недоступен. Попробуй через минуту.', 'Ahora mismo no se pueden obtener los jugadores. Inténtalo de nuevo en un minuto.', 'Die Spieler sind gerade nicht zu bekommen. Versuch es in einer Minute nochmal.', 'Oyunculara şu an ulaşılamıyor. Bir dakika sonra yeniden dene.')}</p>
+            <p className="bt-hint">{t('The players can’t be had just now. Try again in a minute.', 'Список игроков сейчас недоступен. Попробуй через минуту.', 'Ahora mismo no se pueden obtener los jugadores. Inténtalo de nuevo en un minuto.', 'Die Spieler lassen sich gerade nicht laden. Versuch es in einer Minute nochmal.', 'Oyunculara şu an ulaşılamıyor. Bir dakika sonra yeniden dene.')}</p>
           ) : list.rows.length === 0 ? (
             <p className="bt-hint">{t('Nobody yet. Sign in and race to be the first.', 'Пока никого. Войди и пройди гонку — будешь первым.', 'Nadie todavía. Inicia sesión y regatea para ser el primero.', 'Noch niemand. Melde dich an und segle, um der Erste zu sein.', 'Henüz kimse yok. Giriş yap ve ilk olmak için yarış.')}</p>
           ) : (<>

@@ -75,8 +75,8 @@ function words(lang: Lang) {
     how: (k: string | undefined) => of({ finish: t('Finished', 'Финиш', 'Terminada', 'Beendet', 'Bitirdi'), restart: t('Restarted', 'Перезапуск', 'Reinicio', 'Neu gestartet', 'Yeniden başladı'), change: t('Back to the set-up', 'Назад к настройке', 'Volver al ajuste', 'Zurück zur Einrichtung', 'Kurulum ekranına döndü'), menu: t('Back to the menu', 'Назад в меню', 'Volver al menú', 'Zurück zum Menü', 'Menüye döndü'),
       close: t('Closed the page', 'Страница закрыта', 'Cerró la página', 'Seite geschlossen', 'Sayfayı kapattı'), hidden: t('Put the page away', 'Страница свёрнута', 'Dejó la página en segundo plano', 'Seite weggelegt', 'Sayfayı kenara koydu'), new: t('Began another race', 'Начата другая гонка', 'Empezó otra regata', 'Andere Regatta begonnen', 'Başka bir yarışa başladı') }, k),
     incident: (k: string | undefined) => of({ ocs: t('Over early', 'Фальстарт', 'Salida adelantada', 'Zu früh', 'Erken geçiş'), fouled: t('Foul', 'Нарушение', 'Infracción', 'Foul', 'Faul'), touched: t('Touched a mark', 'Касание знака', 'Tocó una baliza', 'Marke berührt', 'Şamandıraya dokundu'), bump: t('Collision', 'Столкновение', 'Colisión', 'Kollision', 'Çarpışma'),
-      aground: t('Aground', 'На мели', 'Varado', 'Auf Grund', 'Karaya oturdu'), missedLine: t('Missed the line', 'Мимо линии', 'Se pasó de la línea', 'Linie verpasst', 'Hattı kaçırdı'), missedGate: t('Missed the gate', 'Мимо ворот', 'Se pasó de la puerta', 'Tor verpasst', 'Kapıyı kaçırdı'), wrongSide: t('Wrong side', 'Не с той стороны', 'Lado equivocado', 'Falsche Seite', 'Yanlış taraf'),
-      genRecall: t('General recall', 'Общий отзыв', 'Llamada general', 'Allgemeiner Rückruf', 'Genel geri çağırma'), barging: t('Barging', 'Навал на старте', 'Abordaje en la salida', 'Drängeln', 'Sıkıştırma') }, k),
+      aground: t('Aground', 'На мели', 'Varado', 'Auf Grund', 'Karaya oturdu'), missedLine: t('Missed the line', 'Мимо линии', 'No cruzó la línea', 'Linie verpasst', 'Hattı kaçırdı'), missedGate: t('Missed the gate', 'Мимо ворот', 'Se saltó la puerta', 'Tor verpasst', 'Kapıyı kaçırdı'), wrongSide: t('Wrong side', 'Не с той стороны', 'Lado equivocado', 'Falsche Seite', 'Yanlış taraf'),
+      genRecall: t('General recall', 'Общий отзыв', 'Llamada general', 'Allgemeiner Rückruf', 'Genel geri çağırma'), barging: t('Barging', 'Навал на старте', 'Colarse en la salida', 'Drängeln', 'Sıkıştırma') }, k),
     wind: (k: string | null) => of({ light: t('Light', 'Слабый', 'Flojo', 'Leicht', 'Hafif'), medium: t('Medium', 'Средний', 'Medio', 'Mittel', 'Orta'), strong: t('Strong', 'Сильный', 'Fuerte', 'Stark', 'Kuvvetli') }, k),
     level: (k: string | undefined) => of({ auto: t('Auto', 'Авто', 'Auto', 'Auto', 'Otomatik'), high: t('High', 'Высокая', 'Alto', 'Hoch', 'Yüksek'), medium: t('Medium', 'Средняя', 'Media', 'Mittel', 'Orta'), low: t('Low', 'Низкая', 'Bajo', 'Niedrig', 'Düşük') }, k),
     yacht: (id: string | null) => pick(YACHTS.find((y) => y.id === (id ?? 'jpk1050'))?.name, lang) ?? id,
@@ -171,7 +171,7 @@ function VisitEntry({ w, visit: v, races }: { w: W; visit: LogVisit; races: LogR
           [t('Races begun', 'Гонок начато', 'Regatas empezadas', 'Begonnene Regatten', 'Başlayan yarışlar'), v.races],
           [t('Races finished', 'Гонок закончено', 'Regatas terminadas', 'Beendete Regatten', 'Biten yarışlar'), v.finished],
           [t('Last heard from', 'Последний сигнал', 'Última señal', 'Zuletzt gehört', 'Son görülme'), v.last_at ? w.when(v.last_at) : null],
-          [t('How to play opened', 'Открывал «Как играть»', 'Abrió «Cómo se juega»', '„So spielst du“ geöffnet', '“Nasıl oynanır” açıldı'), v.howto === 1 ? t('Yes', 'Да', 'Sí', 'Ja', 'Evet') : null],
+          [t('How to play opened', 'Открывал «Как играть»', 'Abrió «Cómo jugar»', '„So spielst du“ geöffnet', '“Nasıl oynanır” açıldı'), v.howto === 1 ? t('Yes', 'Да', 'Sí', 'Ja', 'Evet') : null],
         ]} />
         {races.length > 0 && <ol className="adm-log adm-log-in">{races.map((r) => <RaceEntry key={r.id} w={w} race={r} />)}</ol>}
       </details>
@@ -237,7 +237,7 @@ function People({ w, data, days }: { w: W; data: Logs; days: number }) {
       </div>
       {data.people.length > 0 ? (
         <section className="adm-tab">
-          <h3 className="adm-tab-h">{t('Open a player for their full log, or click a column to sort by it', 'Откройте игрока, чтобы увидеть весь журнал, или нажмите на столбец, чтобы отсортировать', 'Abre un jugador para ver su registro completo, o pulsa una columna para ordenar', 'Öffne einen Spieler für sein ganzes Protokoll oder klicke auf eine Spalte, um danach zu sortieren', 'Tam günlüğü için bir oyuncu aç, ya da sıralamak için bir sütuna tıkla')}</h3>
+          <h3 className="adm-tab-h">{t('Open a player for their full log, or click a column to sort by it', 'Откройте игрока, чтобы увидеть весь журнал, или нажмите на столбец, чтобы отсортировать', 'Abre un jugador para ver su registro completo, o pulsa una columna para ordenar', 'Öffne einen Spieler für sein ganzes Protokoll oder klicke auf eine Spalte, um danach zu sortieren', 'Tam günlüğü görmek için bir oyuncuyu aç ya da sıralamak için bir sütuna tıkla')}</h3>
           <PlayersTable first={{ label: t('Player', 'Игрок', 'Jugador', 'Spieler', 'Oyuncu'), asc: true }} cols={cols} rows={rows} start={cols.length}
             label={t('Players with problems', 'Игроки с проблемами', 'Jugadores con problemas', 'Spieler mit Problemen', 'Sorun yaşayan oyuncular')} newLabel={t('New', 'Новый', 'Nuevo', 'Neu', 'Yeni')} />
         </section>

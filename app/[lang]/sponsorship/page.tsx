@@ -155,7 +155,7 @@ export default async function Sponsorship({ params }: LangParams) {
                   `Пост о вашем бренде в ${channel.handle}, где мы публикуем новости игры, лучшие гонки дня и разборы гоночных правил.`, `Una publicación sobre tu marca en ${channel.handle}, donde compartimos las novedades del juego, las mejores regatas del día y las reglas de regatas.`, `Ein Beitrag über deine Marke auf ${channel.handle}, wo wir die Neuigkeiten des Spiels, die besten Regatten des Tages und die Wettfahrtregeln teilen.`, `${channel.handle} üzerinde, oyunun haberlerini, günün en iyi yarışlarını ve yarış kurallarını paylaştığımız yerde, markan hakkında bir yazı.`)}</p>
                 <Spec rows={[
                   [t('Language', 'Язык', 'Idioma', 'Sprache', 'Dil'), t('Russian', 'Русский', 'Ruso', 'Russisch', 'Rusça')],
-                  [t('You send', 'От вас', 'Tú envías', 'Du schickst', 'Sen gönderirsin'), t('Your text, a picture and a link', 'Текст, изображение и ссылка', 'Tu texto, una imagen y un enlace', 'Deinen Text, ein Bild und einen Link', 'Metnin, bir resim ve bir bağlantı')],
+                  [t('You send', 'От вас', 'Tú envías', 'Du schickst', 'Sen gönderirsin'), t('Your text, a picture and a link', 'Текст, изображение и ссылка', 'Tu texto, una imagen y un enlace', 'Deinen Text, ein Bild und einen Link', 'Bir metin, bir resim ve bir bağlantı')],
                   [t('Shown as', 'Формат', 'Se muestra como', 'Gezeigt als', 'Şöyle gösterilir'), t('Marked as an advertisement', 'С пометкой «реклама»', 'Marcado como publicidad', 'Als Werbung gekennzeichnet', 'Reklam olarak işaretli')],
                 ]} />
               </div>
@@ -205,7 +205,7 @@ export default async function Sponsorship({ params }: LangParams) {
           <h2 className="hm-h2" id="sp-talk">{t('Tell us what you have in mind', 'Расскажите, что вы задумали', 'Cuéntanos qué tienes en mente', 'Sag uns, was du vorhast', 'Aklındakini bize anlat')}</h2>
           <p className="hm-text">{t('Write to us on Telegram for prices, free dates and current audience figures.', 'Напишите нам в Telegram: расскажем о ценах, свободных датах и текущей аудитории.', 'Escríbenos por Telegram para precios, fechas libres y cifras de audiencia actuales.', 'Schreib uns auf Telegram für Preise, freie Termine und aktuelle Reichweitenzahlen.', 'Fiyatlar, boş tarihler ve güncel izleyici sayıları için bize Telegram’dan yaz.')}</p>
         </div>
-        <a className="pill pill-primary" href={CONTACT.url} target="_blank" rel="noopener"><AppMark app="telegram" s={22} /><span className="btn-t">{CONTACT.handle}</span></a>
+        <a className="pill pill-primary" href={CONTACT.url} target="_blank" rel="noopener"><AppMark app="telegram" s={22} /><span className="btn-t" lang="en" translate="no">{CONTACT.handle}</span></a>
       </section>
 
       <SiteFoot lang={lang} t={t} back="/sponsorship" />

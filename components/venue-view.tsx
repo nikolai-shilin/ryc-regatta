@@ -23,7 +23,7 @@ const SHOTS: { id: string; name: Pair; note: Pair }[] = [
   { id: 'waters', name: ['The water', 'Акватория', 'El agua', 'Das Wasser', 'Su'], note: ['From high up, all round', 'С высоты, по кругу', 'Desde lo alto, alrededor', 'Von hoch oben, rundum', 'Yukarıdan, çepeçevre'] },
   { id: 'course', name: ['The course', 'Дистанция', 'El recorrido', 'Die Bahn', 'Parkur'], note: ['From behind the start', 'Из-за линии старта', 'Desde detrás de la salida', 'Von hinter dem Start', 'Startın arkasından'] },
   { id: 'start', name: ['The start', 'Старт', 'La salida', 'Der Start', 'Start'], note: ['Along the line', 'Вдоль линии', 'A lo largo de la línea', 'Entlang der Linie', 'Hat boyunca'] },
-  { id: 'windward', name: ['The top mark', 'Верхний знак', 'La baliza de barlovento', 'Die obere Marke', 'Üst şamandıra'], note: ['Down the beat', 'Вниз по лавировке', 'Bajando la ceñida', 'Das Kreuz hinunter', 'Orsa ayağından aşağı'] },
+  { id: 'windward', name: ['The top mark', 'Верхний знак', 'La baliza de barlovento', 'Die Luvtonne', 'Üst şamandıra'], note: ['Down the beat', 'Вниз по лавировке', 'Bajando la ceñida', 'Das Kreuz hinunter', 'Orsa ayağından aşağı'] },
 ];
 type ShotId = string;
 
@@ -102,7 +102,7 @@ export function VenueView({ lang, v, back }: { lang: Lang; v: VenueCard; back: R
     <div className="bt fl-view vn-view">
       <LoadBar label={t('Loading the water', 'Загружаем акваторию', 'Cargando el agua', 'Das Wasser wird geladen', 'Su yükleniyor')} on={!live && !backdrop.off} />
       <ScenePoster label={backdrop.off ? undefined : t('Loading the water', 'Загружаем акваторию', 'Cargando el agua', 'Das Wasser wird geladen', 'Su yükleniyor')} on={!live} />
-      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={backdrop.go ? `/venue-view?venue=${v.id}` : undefined} title={t(`${name} from the drone`, `${name} с дрона`, `${name} desde el dron`, `${name} aus der Drohne`, `${name} drondan`)}
+      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={backdrop.go ? `/venue-view?venue=${v.id}` : undefined} title={t(`${name} from the drone`, `${name} с дрона`, `${name} desde el dron`, `${name} aus der Drohnenperspektive`, `${name} drondan`)}
         onLoad={() => post({ type: 'hello' })} />
 
       <div className="bt-info" ref={info}>
@@ -139,7 +139,7 @@ export function VenueView({ lang, v, back }: { lang: Lang; v: VenueCard; back: R
           ? <a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Sail today’s race here', 'Пройди гонку дня здесь', 'Navega aquí la regata de hoy', 'Hier die Regatta des Tages segeln', 'Günün yarışını burada yarış')}</span></a>
           : <button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race at ${name}`, 'Гоняться здесь', `Regatea en ${name}`, `Regatta in ${name}`, `${name} yarışı`)}</span></button>}>
         <p className="bt-hint">{v.today
-          ? t('Today’s race is sailed here: the same course and wind for everyone. Or set up a custom race here, your yacht, wind and fleet.', 'Гонка дня сегодня здесь: одна дистанция и ветер для всех. Или настрой здесь свою гонку — со своей яхтой, ветром и флотом.', 'La regata de hoy se navega aquí: el mismo recorrido y viento para todos. O prepara aquí una regata personalizada, con tu yate, viento y flota.', 'Die Regatta des Tages wird hier gesegelt: dieselbe Bahn und derselbe Wind für alle. Oder richte hier eine eigene Regatta ein, mit deiner Yacht, Wind und Feld.', 'Günün yarışı burada yapılır: herkes için aynı parkur ve rüzgâr. Ya da burada, yatınla, rüzgârınla ve filonla bir serbest yarış kur.')
+          ? t('Today’s race is sailed here: the same course and wind for everyone. Or set up a custom race here, your yacht, wind and fleet.', 'Гонка дня сегодня здесь: одна дистанция и ветер для всех. Или настрой здесь свою гонку — со своей яхтой, ветром и флотом.', 'La regata de hoy se navega aquí: el mismo recorrido y viento para todos. O prepara aquí una regata personalizada, con tu yate, viento y flota.', 'Die Regatta des Tages wird hier gesegelt: dieselbe Bahn und derselbe Wind für alle. Oder richte hier eine eigene Regatta ein, mit Yacht, Wind und Feld nach deiner Wahl.', 'Günün yarışı burada yapılır: herkes için aynı parkur ve rüzgâr. Ya da burada, yatınla, rüzgârınla ve filonla bir serbest yarış kur.')
           : t('A custom race here: the yacht, the wind, the fleet and the course are yours to choose. Free, on a phone or a computer, with nothing to install.', 'Своя гонка здесь: яхту, ветер, флот и дистанцию выбираешь ты. Бесплатно, на телефоне или компьютере, ничего не нужно устанавливать.', 'Una regata personalizada aquí: el yate, el viento, la flota y el recorrido los eliges tú. Gratis, en móvil u ordenador, sin instalar nada.', 'Eine freie Regatta hier: Yacht, Wind, Feld und Bahn wählst du selbst. Kostenlos, auf dem Handy oder am Computer, ohne etwas zu installieren.', 'Burada serbest yarış: yat, rüzgâr, filo ve parkur senin seçimin. Ücretsiz, telefonda ya da bilgisayarda, hiçbir şey kurmadan.')}</p>
 
         <div className="fl-stats vn-stats">

@@ -43,7 +43,7 @@ export default async function Social({ params }: LangParams) {
                 <span className="so-ch-i" style={{ background: color(c.app) }}><AppMark app={c.app} s={30} /></span>
                 <span className="so-ch-t">
                   <span className="meta">{c.name} · {speaks(c.lang)}</span>
-                  <b className="hm-h3">{c.handle}</b>
+                  <b className="hm-h3" lang="en" translate="no">{c.handle}</b>
                   <span className="hm-text">{pick(c.what, lang)}</span>
                 </span>
                 <span className="so-ch-go">{t('Follow', 'Подписаться', 'Seguir', 'Folgen', 'Takip et')}<IconArrow s={16} /></span>

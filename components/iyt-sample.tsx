@@ -20,7 +20,7 @@ export function IytSample({ lang, q }: { lang: Lang; q: Sample }) {
       <div className="iyt-q-b">
         {/* the trainer's own drawing of the situation (an SVG from its site) */}
         <img className="iyt-q-fig" src={q.figure} width={344} height={224} decoding="async"
-          alt={t('The drawing: Blue, ahead of you, tacks onto port in your path', 'Рисунок: Синяя впереди вас поворачивает на левый галс на вашем пути', 'El dibujo: Azul, por delante de ti, vira a amura de babor en tu camino', 'Die Zeichnung: Blau, vor dir, wendet auf Backbordbug in deinen Weg', 'Çizim: Önündeki Mavi, yoluna iskele kontraya tak atıyor')} />
+          alt={t('The drawing: Blue, ahead of you, tacks onto port in your path', 'Рисунок: Синяя впереди вас поворачивает на левый галс на вашем пути', 'El dibujo: Azul, por delante de ti, vira a amura de babor en tu camino', 'Die Zeichnung: Blau, vor dir, wendet auf Backbordbug in deinen Weg', 'Çizim: Önündeki Mavi, yoluna iskele kontraya tramola atıyor')} />
         <p className="iyt-q-text" id="iyt-q-text">{q.question}</p>
         <div className="iyt-q-opts" role="group" aria-labelledby="iyt-q-text">
           {q.options.map(([l, text]) => {

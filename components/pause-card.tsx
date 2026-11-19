@@ -81,11 +81,11 @@ function Settings({ lang, back, close }: { lang: Lang; back: string; close: () =
       <div className="bt-g">
         <span className="bt-k" id="st-lang">{t('Language', 'Язык', 'Idioma', 'Sprache', 'Dil')}</span>
         <nav className="bt-seg" style={{ ['--n' as string]: 5 }} aria-labelledby="st-lang">
-          <a href={`/lang?to=en&back=${to}`} aria-current={lang === 'en' ? 'true' : undefined}>English</a>
-          <a href={`/lang?to=ru&back=${to}`} aria-current={lang === 'ru' ? 'true' : undefined}>Русский</a>
-          <a href={`/lang?to=es&back=${to}`} aria-current={lang === 'es' ? 'true' : undefined}>Español</a>
-          <a href={`/lang?to=de&back=${to}`} aria-current={lang === 'de' ? 'true' : undefined}>Deutsch</a>
-          <a href={`/lang?to=tr&back=${to}`} aria-current={lang === 'tr' ? 'true' : undefined}>Türkçe</a>
+          <a href={`/lang?to=en&back=${to}`} aria-current={lang === 'en' ? 'true' : undefined} lang="en">English</a>
+          <a href={`/lang?to=ru&back=${to}`} aria-current={lang === 'ru' ? 'true' : undefined} lang="ru">Русский</a>
+          <a href={`/lang?to=es&back=${to}`} aria-current={lang === 'es' ? 'true' : undefined} lang="es">Español</a>
+          <a href={`/lang?to=de&back=${to}`} aria-current={lang === 'de' ? 'true' : undefined} lang="de">Deutsch</a>
+          <a href={`/lang?to=tr&back=${to}`} aria-current={lang === 'tr' ? 'true' : undefined} lang="tr">Türkçe</a>
         </nav>
       </div>
 

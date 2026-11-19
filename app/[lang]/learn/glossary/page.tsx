@@ -94,7 +94,7 @@ export default async function Glossary({ params }: LangParams) {
           <section className="gd-try" aria-labelledby="gl-guides">
             <div className="gd-try-t">
               <span className="gd-try-k">{t('The words, on the water', 'Слова — на воде', 'Las palabras, en el agua', 'Die Wörter, auf dem Wasser', 'Sözcükler, suda')}</span>
-              <h2 className="hm-h2" id="gl-guides">{t(`${EN_N[n] || n} guides, each ending in a race`, `${RU_N[n] || n} ${ruPlural(n, ['пособие', 'пособия', 'пособий'])}, и каждое заканчивается гонкой`, `${ES_N[n] || n} guías, cada una acaba en una regata`, `${DE_N[n] || n} Anleitungen, jede endet mit einer Regatta`, `${TR_N[n] ? n : n} rehber, her biri bir yarışla biter`)}</h2>
+              <h2 className="hm-h2" id="gl-guides">{t(`${EN_N[n] || n} guides, each ending in a race`, `${RU_N[n] || n} ${ruPlural(n, ['пособие', 'пособия', 'пособий'])}, и каждое заканчивается гонкой`, `${ES_N[n] || n} guías, cada una acaba en una regata`, `${DE_N[n] || n} Anleitungen, jede endet mit einer Regatta`, `${TR_N[n] || n} rehber, her biri bir yarışla biter`)}</h2>
               <p>{t('Up and down is free, on a phone or a computer, with nothing to install.', 'Up and down бесплатна, на телефоне или компьютере, ничего не нужно устанавливать.', 'Up and down es gratis, en el móvil o en el ordenador, sin instalar nada.', 'Up and down ist kostenlos, auf dem Handy oder am Computer, ohne etwas zu installieren.', 'Up and down ücretsizdir, telefonda ya da bilgisayarda, hiçbir şey kurmadan.')}</p>
             </div>
             <Link className="gd-try-go" href="/learn">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen', 'Yarış rehberleri')}<IconArrow /></Link>

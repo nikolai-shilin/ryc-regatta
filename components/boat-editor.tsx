@@ -50,7 +50,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   }, []);
   useEffect(() => { if (ready) post({ type: 'look', boat: b }); setJustSaved(false); }, [b, ready]); // eslint-disable-line react-hooks/exhaustive-deps
   const save = () => {
-    if (!saveBoat(b)) { setErr(t('This browser didn’t keep your yacht: its storage may be full or blocked.', 'Браузер не сохранил яхту: возможно, его хранилище заполнено или заблокировано.', 'Este navegador no guardó tu yate: puede que su almacenamiento esté lleno o bloqueado.', 'Dieser Browser hat deine Yacht nicht gespeichert: Vielleicht ist der Speicher voll oder gesperrt.', 'Bu tarayıcı yatını saklamadı: depolaması dolu ya da engelli olabilir.')); return false; }
+    if (!saveBoat(b)) { setErr(t('This browser didn’t keep your yacht: its storage may be full or blocked.', 'Браузер не сохранил яхту: возможно, его хранилище заполнено или заблокировано.', 'Este navegador no guardó tu yate: puede que su almacenamiento esté lleno o bloqueado.', 'Dieser Browser hat deine Yacht nicht gespeichert: Vielleicht ist der Speicher voll oder gesperrt.', 'Bu tarayıcı yatını saklamadı: depolama alanı dolu ya da engellenmiş olabilir.')); return false; }
     setErr(''); setKept(lookKey(b)); setJustSaved(true); dirtyRef.current = false; // kept: going on to race asks nothing
     syncAccount().catch(() => {});
     return true;
@@ -316,7 +316,7 @@ function FlagPicker({ value, onChange, t }: { value?: string; onChange: (code: s
                 {f && <span className="fp-code">{f.ioc}</span>}
               </li>
             ))}
-            {!items.length && <li className="fp-empty">{t('No such country here', 'Такой страны нет', 'No hay ese país', 'Kein solches Land hier', 'Burada böyle bir ülke yok')}</li>}
+            {!items.length && <li className="fp-empty">{t('No such country here', 'Такой страны нет', 'No hay ningún país así', 'Kein solches Land hier', 'Burada böyle bir ülke yok')}</li>}
           </ul>
         </div>
       )}

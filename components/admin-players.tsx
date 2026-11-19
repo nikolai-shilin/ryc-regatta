@@ -51,7 +51,7 @@ export function AdminPlayers({ lang, data, days = 30 }: { lang: Lang; data: Play
     <div className="adm adm-stats">
       <div className="adm-k"><IconCrew /><span className="kicker">{t('The players', 'Игроки', 'Los jugadores', 'Die Spieler', 'Oyuncular')}</span></div>
       <div className="adm-tiles">
-        <Tile k={t('Players who raced', 'Игроков с гонками', 'Jugadores que regataron', 'Spieler, die gesegelt sind', 'Yarışan oyuncular')} v={String(P.length)} />
+        <Tile k={t('Players who raced', 'Игроков с гонками', 'Jugadores que regatearon', 'Spieler, die gesegelt sind', 'Yarışan oyuncular')} v={String(P.length)} />
         <Tile k={t('New in the period', 'Новых за период', 'Nuevos en el periodo', 'Neu im Zeitraum', 'Dönemde yeni')} v={String(P.filter((p) => p.new).length)} />
         <Tile k="Telegram" v={String(count('tg'))} />
         <Tile k={t('Site accounts', 'Аккаунтов на сайте', 'Cuentas del sitio', 'Konten auf der Seite', 'Site hesapları')} v={String(count('acct'))} />

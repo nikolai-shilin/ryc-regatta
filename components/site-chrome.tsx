@@ -120,7 +120,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
             <FootLink href="/players?me=1">{t('Your player card', 'Твоя карточка игрока', 'Tu tarjeta de jugador', 'Deine Spielerkarte', 'Oyuncu kartın')}</FootLink>
             <FootLink href="/settings">{t('Settings', 'Настройки', 'Ajustes', 'Einstellungen', 'Ayarlar')}</FootLink>
           </FootGroup>
-          <FootGroup title={t('About', 'О проекте', 'Acerca de', 'Über', 'Hakkında')}>
+          <FootGroup title={t('About', 'О проекте', 'Acerca de', 'Über uns', 'Hakkında')}>
             <FootLink href="/social">{t('Social media', 'Соцсети', 'Redes sociales', 'Soziale Medien', 'Sosyal medya')}</FootLink>
             <FootLink href="/sponsorship">{t('Sponsorship', 'Спонсорство', 'Patrocinio', 'Sponsoring', 'Sponsorluk')}</FootLink>
             <li><a href="https://www.rycrentals.com/">RYC Rentals</a></li>
@@ -128,7 +128,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
           </FootGroup>
         </nav>
         <p className="hm-foot-note">{t('This simulator is an independent project and is not affiliated with, sponsored by, or endorsed by America’s Cup or its organizers.',
-          'Этот симулятор — независимый проект, не связанный с America’s Cup и его организаторами, не спонсируемый и не одобренный ими.', 'Este simulador es un proyecto independiente y no está afiliado, patrocinado ni respaldado por la Copa América ni por sus organizadores.', 'Dieser Simulator ist ein unabhängiges Projekt und steht in keiner Verbindung zum America’s Cup oder seinen Veranstaltern und wird weder von ihnen gesponsert noch unterstützt.', 'Bu simülatör bağımsız bir projedir; America’s Cup ya da organizatörleriyle bağlantılı değildir, onlarca desteklenmemekte ya da onaylanmamıştır.')}</p>
+          'Этот симулятор — независимый проект, не связанный с America’s Cup и его организаторами, не спонсируемый и не одобренный ими.', 'Este simulador es un proyecto independiente y no está afiliado, patrocinado ni respaldado por la Copa América ni por sus organizadores.', 'Dieser Simulator ist ein unabhängiges Projekt und steht in keiner Verbindung zum America’s Cup oder seinen Veranstaltern und wird weder von ihnen gesponsert noch unterstützt.', 'Bu simülatör bağımsız bir projedir; America’s Cup ya da organizatörleriyle bağlantılı değildir, onlar tarafından desteklenmemekte ya da onaylanmamıştır.')}</p>
       </footer>
     </div>
   );
