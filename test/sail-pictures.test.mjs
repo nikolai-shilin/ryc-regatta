@@ -84,6 +84,30 @@ test('a picture with clear corners leaves the jib its own cloth', async () => {
   assert.ok(t.image.getContext('2d').images.length >= 120);
 });
 
+test('an ad of one colour on a clear ground is printed in the sail number\'s colour on her own jib; one of more colours as it is', async () => {
+  const pictureOf = async (paint) => {
+    page.paint = paint;
+    const t = Y.sailTexture('jib', LOOKS.Halcyon);
+    await settle();
+    return [t.image, t.back.image].map((c) => c.getContext('2d').images.find((d) => d.image.height === 1024).image.getContext('2d'));
+  };
+  // white words across the middle, clear round them (a white cut-out would vanish on her white jib)
+  for (const x of await pictureOf((i, j, c) => (Math.abs(i - c.width / 2) < c.width / 5 ? [255, 255, 255, 255] : [0, 0, 0, 0]))) {
+    assert.ok(x.rects.some((r) => r.fill === LOOKS.Halcyon.ink), 'inked in her number\'s colour');
+    assert.equal(x.globalCompositeOperation, 'source-over', 'and drawing put back as it was');
+    assert.ok(x.counts.setTransform >= 1, 'inked square to the canvas, not through the turn it was drawn with (which would clear all but a corner)');
+  }
+  for (const x of await pictureOf((i, j, c) => (Math.abs(i - c.width / 2) >= c.width / 5 ? [0, 0, 0, 0] : j < c.height / 2 ? [255, 255, 255, 255] : [0, 0, 255, 255])))
+    assert.ok(!x.rects.some((r) => r.fill === LOOKS.Halcyon.ink), 'two colours: as it is');
+});
+
+test('on a jib the admin dyed, a one-colour ad is printed black or white, whichever reads on it', () => {
+  assert.equal(Y.inkOn('#111111'), '#ffffff');
+  assert.equal(Y.inkOn('#ae0000'), '#ffffff');
+  assert.equal(Y.inkOn('#f2f0e8'), '#111111');
+  assert.equal(Y.inkOn('rgb(255,220,0)'), '#111111');
+});
+
 test('the gennaker carries the logo on both faces, within its cloth', async () => {
   page.paint = () => RED;
   const t = Y.sailTexture('kite', LOOKS.Aurora), v = t.version;

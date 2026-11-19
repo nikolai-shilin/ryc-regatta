@@ -775,7 +775,7 @@ function turnedPicture(img, w, h, down = true) {
 }
 // a picture of one colour on a clear ground (a logo cut out, white or black), printed in `ink` instead: on the main the
 // boat's sail number's colour, which reads on her cloth whatever it is, where the logo's own white would vanish on a
-// white sail. A picture of more colours, or on a ground, is left as it is
+// white sail; on the jib the same, or black or white on a colour the admin set (inkOn). A picture of more colours, or on a ground, is left as it is
 export function inked(pic, ink) {
   const { width: w, height: h } = pic, x = pic.getContext('2d', { willReadFrequently: true }), d = x.getImageData(0, 0, w, h).data, N = 24;
   let clear = 0, first = null, one = true;
@@ -787,8 +787,14 @@ export function inked(pic, ink) {
     else if (Math.abs(d[q] - first[0]) + Math.abs(d[q + 1] - first[1]) + Math.abs(d[q + 2] - first[2]) > 48) { one = false; break; }
   }
   if (!one || !first || clear < (N * N) / 10) return pic;
-  x.globalCompositeOperation = 'source-in'; x.fillStyle = ink; x.fillRect(0, 0, w, h); x.globalCompositeOperation = 'source-over';
+  // over the whole canvas whatever it was drawn turned with (turnedPicture): source-in clears all it doesn't cover
+  x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = ink; x.fillRect(0, 0, w, h); x.restore();
   return pic;
+}
+// black or white, whichever reads on a cloth of this colour ('#rrggbb' or 'rgb(r,g,b)')
+export function inkOn(color) {
+  const v = color.startsWith('#') ? [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16)) : (color.match(/\d+/g) || []).map(Number);
+  return 0.299 * v[0] + 0.587 * v[1] + 0.114 * v[2] > 150 ? '#111111' : '#ffffff';
 }
 // the colour a picture is printed on, when it is: its four corners alike and solid (a banner's red), else null
 export function groundOf(img) {
@@ -994,12 +1000,14 @@ export function sailTexture(kind, look, rig = null) {
         if (R.noAd) return;
         const xb = cb.getContext('2d'), own = img && groundOf(img), ground = colors.jib === 'own' ? null : colors.jib || own;
         if (ground) for (const ctx of [x, xb]) { drawCloth(ctx, ground); battens(ctx); }
-        if (img) adOn(img, xb, !colors.jib && !!own);
+        // an ad of one colour on a clear ground (words cut out) is printed in a colour that reads on the jib: on her own
+        // cloth the sail number's, on one the admin set black or white, whichever stands out on it (inked)
+        if (img) adOn(img, xb, !colors.jib && !!own, ground ? inkOn(ground) : look.ink);
         if (img || ground) { t.needsUpdate = true; tb.needsUpdate = true; }
       });
       // bleed: the jib is dyed the banner's own ground, so the banner can be drawn a size larger than fits the sail, its
       // ground running off the cloth's edges unseen and its words the larger
-      const adOn = (img, xb, bleed) => {
+      const adOn = (img, xb, bleed, ink) => {
         const hd = R.hd, CL = R.clew, aspect = (img.naturalWidth || 1) / (img.naturalHeight || 1), clear = 0.035 * CL.z;
         const luffZ = (y) => (hd.z * y) / hd.y, aftZ = (y) => (y < CL.y ? (CL.z * y) / CL.y : CL.z + ((hd.z - CL.z) * (y - CL.y)) / (hd.y - CL.y));
         const lo = Math.max(0.06 * hd.y, CL.y + 0.05), level = fitBox(luffZ, aftZ, lo, 0.96 * hd.y, aspect, clear);
@@ -1017,7 +1025,7 @@ export function sailTexture(kind, look, rig = null) {
         // less than a right angle from level, the luff raked away from it. The front is seen with her bow to the left, the
         // luff rising to the right, so it reads from the foot up; the back, bow to the right, from the head down. The same
         // turn on both faces would read upside down on one of them
-        const pics = turn ? [turnedPicture(img, PW, PH, false), turnedPicture(img, PW, PH, true)] : [sharpPicture(img, PW, PH)], pw = pics[0].width, ph = pics[0].height;
+        const pics = (turn ? [turnedPicture(img, PW, PH, false), turnedPicture(img, PW, PH, true)] : [sharpPicture(img, PW, PH)]).map((p) => inked(p, ink)), pw = pics[0].width, ph = pics[0].height;
         for (const [ctx, s, pic] of [[x, 1, pics[0]], [xb, -1, pics.at(-1)]]) for (let k = 0; k < STRIPS; k++) {
           // the strip's middle on the sail, a step down the picture's own up (the luff's line when turned)
           const t = h / 2 - (k + 0.5) * dh, pz = zc + Math.sin(phi) * t, py = yc + Math.cos(phi) * t;
