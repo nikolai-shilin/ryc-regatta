@@ -762,10 +762,10 @@ export function fitBox(luffZ, aftZ, yLo, yHi, aspect, clear) {
   }
   return best;
 }
-// a picture at w × h on a canvas of its own, turned a quarter round to read from the foot up (its left edge at the bottom)
+// a picture at w × h on a canvas of its own, turned a quarter round to read from the head down (its left edge at the top)
 function turnedPicture(img, w, h) {
   const c = document.createElement('canvas'); c.width = h; c.height = w;
-  const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.translate(0, w); x.rotate(-Math.PI / 2); x.drawImage(img, 0, 0, w, h);
+  const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.translate(h, 0); x.rotate(Math.PI / 2); x.drawImage(img, 0, 0, w, h);
   return c;
 }
 // the colour a picture is printed on, when it is: its four corners alike and solid (a banner's red), else null
@@ -957,7 +957,7 @@ export function sailTexture(kind, look, rig = null) {
       const battens = (x) => { x.fillStyle = look.batten; x.fillRect(W * 0.7, H * 0.35, W * 0.3, 16); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 16); };
       battens(x);
       // the ad, as large as the jib allows from a little above the foot to near the head, clear of the luff, the leech and
-      // the foot: level as it is, or turned a quarter round to read up the luff along its line (raked as the forestay the
+      // the foot: level as it is, or turned a quarter round to read down the luff along its line (raked as the forestay the
       // jib furls on), whichever comes out the larger (a wide banner on a tall jib reads best turned). A banner printed on a colour of its own (its corners alike and solid)
       // dyes the whole jib that colour first, so the ad takes the full sail, unless the admin has set the jibs' colour
       // (sailColors: one colour for every boat, with or without an ad, or each boat's own cloth). The cloth maps (u along the chord, f up the
