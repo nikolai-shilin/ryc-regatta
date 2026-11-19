@@ -71,6 +71,10 @@ from PIL import Image, ImageColor, ImageDraw, ImageFilter
 # mapshore: the map's coast alone decides what is land, where the tiles have a harbour town at the sea's own level; a
 # landmark's rock: the metres round it that are solid, a fort's or a light's islet out in the water
 # surface: the height in metres of a lake whose tiles carry its bed and not its surface (Lake Michigan's)
+# datum: how many metres too high the tiles have the land and the water along the shore, where they measure from the
+# ellipsoid and not the sea (Helsinki's, 17)
+# drop: the names of buildings the map has that are left out, a landmark drawn in their place where it is no
+# building from the ground up (Marina Bay Sands' SkyPark, which the map has as a block 207 m high)
 # erode: how much of the gullies erode() cuts back into the hills (1 when not given; 0 where the tiles carry a fine
 # survey of their own, whose gullies are already there)
 VENUES = {
@@ -479,24 +483,32 @@ VENUES = {
                    towns=[(54.5180, 18.5350, 1500), (54.4800, 18.5600, 1000), (54.4450, 18.5650, 900)]),
     # Lake Ontario off Portsmouth Olympic Harbour, the Olympic waters of 1976 and of CORK, in the afternoon south-westerly
     'kingston': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(44.2050, -76.5250), wind=225, lake='Lake Ontario',
+                     landmarks=[dict(kind='dome', at=(44.22985, -76.48040), h=40, r=4.5, color='#c9c2ae', cap='#7f9a8a'),  # City Hall's dome over its limestone front to the harbour
+                                dict(kind='dome', at=(44.22943, -76.48302), h=36, r=6, color='#c9c2ae', cap='#6f8f80')],  # St George's Cathedral
                      towns=[(44.2300, -76.4850, 1300), (44.2250, -76.5300, 800)]),
     # the Bay of Tivat off Porto Montenegro, in the summer maestral
     'tivat': dict(bathy='emodnet', zoom=14, most=15000, relations=True, paved=True, trees=True, home=(42.4250, 18.6750), wind=315,
                   towns=[(42.4330, 18.6950, 900), (42.4500, 18.6900, 600)]),
     # Lake Balaton off Balatonfüred, the start of the Blue Ribbon, in the northerly down off the Bakony
-    'balaton': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(46.9300, 17.9500), wind=330, lake='Balaton',
+    'balaton': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(46.9370, 17.9320), wind=330, lake='Balaton',
+                    landmarks=[dict(kind='steeple', at=at, h=38, w=6, color='#efe4c4', spire='#4d5a52', split=0.72, dir=90) for at in ((46.913968, 17.889926), (46.914077, 17.889926))],  # Tihany Abbey's twin towers over the lake, on its east front
                     towns=[(46.9570, 17.8900, 900), (46.9070, 18.0500, 1200), (46.9150, 17.8900, 500)]),
     # the Singapore Strait off the Marina Barrage, in the north-east monsoon, the towers of Marina Bay behind
     'singapore': dict(zoom=14, most=15000, relations=True, parts=True, paved=True, trees=True, home=(1.2600, 103.8750), wind=30,
+                      drop=['SkyPark'],
+                      landmarks=[dict(kind='skypark', at=(1.282491, 103.859954), b=(1.285300, 103.861313), h=200),  # across the three towers' tops, its cantilever out past the north one
+                                 dict(kind='wheel', at=(1.28941, 103.86320), h=165, dir=50, clear=40)],  # the Singapore Flyer
                       towns=[(1.2830, 103.8550, 1500), (1.3000, 103.8600, 1200), (1.3050, 103.9050, 1200)]),
     # the Gulf of Oman off Al Mouj, Oman Sail's home, in the sea breeze, the Hajar mountains behind
-    'muscat': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(23.6400, 58.2700), wind=10,
+    'muscat': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(23.6500, 58.2700), wind=10, mapshore=True,
                    towns=[(23.6150, 58.2750, 900), (23.6000, 58.3300, 1200), (23.5900, 58.2300, 1000)]),
     # the Río de la Plata off Olivos and San Isidro, in the easterly off the river
-    'buenos-aires': dict(zoom=14, most=15000, relations=True, parts=True, paved=True, trees=True, home=(-34.4900, -58.4400), wind=90,
+    'buenos-aires': dict(zoom=14, most=15000, relations=True, parts=True, paved=True, trees=True, home=(-34.5015, -58.4540), wind=90,
+                         landmarks=[dict(kind='steeple', at=(-34.46718, -58.50910), h=68, w=10, color='#d8c8b0', spire='#857a70', split=0.55)],  # San Isidro Cathedral's neo-Gothic spire over the river
                          towns=[(-34.5100, -58.4800, 1200), (-34.4750, -58.5100, 1000), (-34.5300, -58.4600, 1200)]),
     # Suyeong Bay, the Olympic waters of 1988, in the north-westerly off the land, Haeundae's towers and the Gwangan Bridge
-    'busan': dict(zoom=14, most=15000, relations=True, parts=True, paved=True, trees=True, home=(35.1450, 129.1350), wind=315,
+    'busan': dict(zoom=14, most=15000, relations=True, parts=True, paved=True, trees=True, home=(35.1330, 129.1480), wind=315,
+                  landmarks=[dict(kind='suspension', a=(35.14252, 129.12530), b=(35.14892, 129.13149), h=116, span=500, deck=40, color='#c9ccca', cable='#9aa2a6')],  # the Gwangan Bridge's main span across the bay
                   towns=[(35.1600, 129.1600, 1200), (35.1550, 129.1150, 1000), (35.1700, 129.1300, 1000)]),
 }
 
@@ -805,6 +817,10 @@ def bake(vid, V, fetch_only=False):
                 if fetch_only: continue
                 a = np.asarray(Image.open(p).convert('RGB')).astype(np.float32)
                 IMG[(ty - TY0) * 256:(ty - TY0 + 1) * 256, (tx - TX0) * 256:(tx - TX0 + 1) * 256] = a[..., 0] * 256 + a[..., 1] + a[..., 2] / 256 - 32768
+        if V.get('datum') and not fetch_only:
+            # tiles whose land (and the water along its shore) is measured from the ellipsoid, not the sea: Finland's,
+            # some 17 m up, the sea off Helsinki at 17 m; down by that much, the sea floor's survey (below −5 m) as it is
+            d0 = float(V['datum']); IMG = np.where(IMG > -5, np.maximum(IMG - d0, np.minimum(IMG, 0)), IMG).astype(np.float32)
         # lone: the coarse tiles' junk pixels out, one or two together standing hundreds of metres or more above all
         # round them (gone in the next zoom out, so not the land's); a real summit has its slopes round it, so it
         # stands at most some 150 m above the second highest of its eight neighbours (Sugarloaf 123, Garda's Alps
@@ -1316,6 +1332,7 @@ def bake(vid, V, fetch_only=False):
         p = poly(el.get('geometry')) if el['type'] == 'way' else keyhole(el)
         if not p or len(p) < 4: continue
         t = el.get('tags', {}); h = num(t.get('height')) or (num(t.get('building:levels')) * 3.1 + 1.0 if t.get('building:levels') else 0)
+        if t.get('name') in V.get('drop', ()): continue
         h = V.get('height_of', {}).get(t.get('name'), h)  # (a building the map gives no height, or a wrong one, by its name)
         kind = 3 if t.get('building') in ('church', 'chapel', 'cathedral') else 4 if t.get('building') == 'mosque' else ROOFS.get(t.get('roof:shape'), 0)
         # a fortress's ramparts (a palace the map calls a castle, as St Petersburg's are, is a house like the rest)

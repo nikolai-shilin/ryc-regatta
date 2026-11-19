@@ -44,6 +44,13 @@ export const AIRPORTS = {
   'san-diego': { code: 'SAN', name: 'San Diego', wide: true, runways: [[32.73, -117.17498, 32.73713, -117.20437]] },
   cork: { code: 'ORK', name: 'Cork', wide: false, runways: [[51.83227, -8.48579, 51.85027, -8.49644]] },
   chicago: { code: 'MDW', name: 'Midway', wide: false, runways: [[41.77917, -87.75932, 41.792, -87.74307]] },
+  helsinki: { code: 'HEL', name: 'Helsinki', wide: true, runways: [[60.30949, 24.93241, 60.33066, 24.97903], [60.30712, 24.98827, 60.33023, 24.96455]] },
+  gdynia: { code: 'GDN', name: 'Gdańsk', wide: false, runways: [[54.37129, 18.4917, 54.38105, 18.45213]] },
+  tivat: { code: 'TIV', name: 'Tivat', wide: false, runways: [[42.4131, 18.71334, 42.39624, 18.73321]] },
+  singapore: { code: 'SIN', name: 'Changi', wide: true, runways: [[1.32239, 103.99984, 1.35618, 104.01411]] },
+  muscat: { code: 'MCT', name: 'Muscat', wide: true, runways: [[23.59168, 58.26699, 23.59493, 58.30731]] },
+  'buenos-aires': { code: 'AEP', name: 'Aeroparque', wide: false, runways: [[-34.55227, -58.42829, -34.56569, -58.40419]] },
+  busan: { code: 'PUS', name: 'Gimhae', wide: true, runways: [[35.16519, 128.93882, 35.19642, 128.93479]] },
 };
 
 const GLIDE = Math.tan(3 * Math.PI / 180); // the approach's three degrees

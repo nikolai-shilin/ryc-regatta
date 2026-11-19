@@ -41,6 +41,7 @@
     'san-francisco', 'valencia', 'barcelona', 'palma', 'marstrand', 'bermuda', 'enoshima', 'weymouth', 'marseille', 'rio', 'garda', 'istanbul'];
   // a venue added later joins on its day: [the day, the venues from it], the days before going round the ones there were
   var eras = [[0, ids], [Math.floor(Date.parse('2026-11-20') / 864e5), ids.concat(['st-petersburg', 'batumi', 'scheveningen', 'hong-kong', 'cape-town', 'athens', 'marmaris', 'fethiye', 'sochi', 'melbourne', 'gold-coast', 'new-york', 'naples', 'los-angeles', 'les-sables', 'dubai', 'miami', 'split', 'monaco', 'fremantle', 'sint-maarten', 'phuket', 'tbilisi-sea', 'malta', 'saint-malo', 'hobart', 'lake-geneva', 'san-diego', 'cork', 'cascais', 'chicago', 'st-barths', 'qingdao'])]];
+  eras.push([Math.floor(Date.parse('2026-11-21') / 864e5), eras[1][1].concat(['aarhus', 'helsinki', 'gdynia', 'kingston', 'tivat', 'balaton', 'singapore', 'muscat', 'buenos-aires', 'busan'])]);
   function round(v, k) {
     var a = v.slice(), s = ((k + 1) * 40503 + 977) >>> 0 || 1, i, j, x;
     for (i = a.length - 1; i > 0; i--) { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; j = Math.floor(s / 4294967296 * (i + 1)); x = a[i]; a[i] = a[j]; a[j] = x; }

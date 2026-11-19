@@ -2795,6 +2795,8 @@ function landmarks() {
     else if (L.kind === 'viaduct') viaduct(L, parts);
     else if (L.kind === 'jet') jetDeau(L, parts);
     else if (L.kind === 'wheel') bigWheel(L, parts);
+    else if (L.kind === 'rainbow') rainbow(L, parts);
+    else if (L.kind === 'skypark') skypark(L, parts);
     else if (L.kind === 'crib') crib(L, parts);
     else if (L.kind === 'may-wind') mayWind(L, parts);
     else if (L.kind === 'hotel-del') hotelDel(L, parts);

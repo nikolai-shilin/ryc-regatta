@@ -756,6 +756,134 @@ export const VENUES = [
       water: { deep: '#123f4c', scatter: '#2f7c78', k: 0.55, shallow: '#558a78', clear: 0.15 },
     },
   },
+  {
+    id: 'aarhus', name: ['Aarhus', 'Орхус', 'Aarhus', 'Aarhus', 'Aarhus'], lat: 56.148, lon: 10.27, wind: 250, tz: 2, thermal: false, from: '2026-11-21',
+    look: {
+      haze: 0.95,
+      ground: { forest: ['#2a4424', '#38582c', '#4f7236'], scrub: '#6f8a48', rock: ['#a49c88', '#8c8676'], town: '#8f7f74', shore: '#cbbd98', grass: '#6a9444' },
+      fields: ['#6f9a45', '#87a94d', '#b9b25c', '#d1bb5e', '#5d8a3c', '#9cb256'],
+      trees: [['broad', 0.75, '#2a4424', '#557a3a'], ['conifer', 0.25, '#203a20', '#34502c']], treeTop: 120, woods: 0.3, clearing: 'grass',
+      // Danish red and yellow brick, white render, red tile and black glazed roofs; the harbour's new white blocks
+      walls: ['#a04a38', '#b8644a', '#e8d9a8', '#f2efe8', '#d9d2c4', '#8a4334'], roofs: ['#8a3b2e', '#3a3a3c', '#5a3a33', '#555a5e'], flat: 0.35,
+      tall: 50, // (ARoS's brick cube is no glass tower)
+      fill: 0, // every building is on the map: none made up
+      boats: { sail: 0.85, motor: 0.15, big: 0 },
+      water: { deep: '#0b2a33', scatter: '#2a7a6e', k: 0.6, shallow: '#5a8a70', clear: 0.3 },
+    },
+  },
+  {
+    id: 'helsinki', name: ['Helsinki', 'Хельсинки', 'Helsinki', 'Helsinki', 'Helsinki'], lat: 60.125, lon: 24.95, wind: 225, tz: 3, from: '2026-11-21',
+    look: {
+      haze: 1.1,
+      // Finnish granite, red-grey and smoothed by the ice, birch and pine on the islands
+      ground: { forest: ['#243d22', '#34502c', '#4c6a36'], scrub: '#6f7a50', rock: ['#a8948c', '#7d6e68'], town: '#9a948a', shore: '#9a8c84', grass: '#6a8a44' },
+      trees: [['conifer', 0.55, '#1f381d', '#33502a'], ['broad', 0.45, '#2e4a26', '#5f7f3c']], treeTop: 120, woods: 0.45, clearing: 'rock', coast: 'rock',
+      // the city's ochre, cream and pale render, the copper roofs green, the sheet roofs grey and red
+      walls: ['#e8d9a8', '#f2ebdc', '#d9c49a', '#c9b8a0', '#f4f2ec', '#b07a5a'], roofs: ['#4a4d50', '#5f7f6a', '#8a3b2e', '#3f4448'], flat: 0.3,
+      boats: { sail: 0.75, motor: 0.25, big: 0 },
+      water: { deep: '#0b2833', scatter: '#24706a', k: 0.6, shallow: '#4f7f72', clear: 0.25 },
+    },
+  },
+  {
+    id: 'gdynia', name: ['Gdynia', 'Гдыня', 'Gdynia', 'Gdynia', 'Gdynia'], lat: 54.52, lon: 18.6, wind: 250, tz: 2, thermal: false, from: '2026-11-21',
+    look: {
+      haze: 0.95,
+      ground: { forest: ['#2a4424', '#38582c', '#4f7236'], scrub: '#6f8a48', rock: ['#b0a48a', '#8c8676'], town: '#9a9088', shore: '#d8c9a0', sand: '#e2d4ae', grass: '#6a9444' },
+      fields: ['#6f9a45', '#87a94d', '#b9b25c', '#d1bb5e', '#5d8a3c'],
+      trees: [['broad', 0.6, '#2a4424', '#557a3a'], ['conifer', 0.4, '#203a20', '#34502c']], treeTop: 200, woods: 0.45, clearing: 'grass',
+      // Gdynia's white modernism of the 1930s, Sopot's villas, the newer blocks pale
+      walls: ['#f2efe8', '#e6e2d6', '#d9d2c4', '#c9c4ba', '#e8d9bc', '#a85c45'], roofs: ['#5a3a33', '#8a4a38', '#555a5e', '#4a4d50'], flat: 0.5,
+      boats: { sail: 0.8, motor: 0.2, big: 0 },
+      water: { deep: '#0c2a30', scatter: '#2a7468', k: 0.6, shallow: '#5a8a70', clear: 0.25 },
+    },
+  },
+  {
+    id: 'kingston', name: ['Kingston', 'Кингстон', 'Kingston', 'Kingston', 'Kingston'], lat: 44.205, lon: -76.525, wind: 225, tz: -4, from: '2026-11-21',
+    look: {
+      haze: 1.05,
+      ground: { forest: ['#2b4526', '#3a5a2f', '#557539'], scrub: '#7a8a52', rock: ['#a8a598', '#85837a'], town: '#8f8a82', shore: '#a8a294', grass: '#5f8040' },
+      fields: ['#6a9446', '#7a9f4c', '#8aa858', '#9cae62', '#b9b25c'],
+      trees: [['broad', 0.75, '#2b4526', '#58793a'], ['conifer', 0.25, '#22381f', '#36502c']], treeTop: 150, woods: 0.35, clearing: 'grass', coast: 'rock',
+      // the Limestone City's grey stone, red brick and white siding
+      walls: ['#b8b4a8', '#a8a49a', '#a8704e', '#8a5a44', '#f2efe8', '#d9d0bc'], roofs: ['#4a4d50', '#5a5f60', '#3f4448', '#6b4a3e'], flat: 0.3,
+      boats: { sail: 0.8, motor: 0.2, big: 0 },
+      water: { deep: '#0d3a4a', scatter: '#2c8090', k: 0.55, shallow: '#5a9a90', clear: 0.35 },
+    },
+  },
+  {
+    id: 'tivat', name: ['Tivat', 'Тиват', 'Tivat', 'Tivat', 'Tivat'], lat: 42.425, lon: 18.675, wind: 315, tz: 2, from: '2026-11-21',
+    look: {
+      haze: 1.2,
+      ground: { forest: ['#33482a', '#46602f', '#5f7a3c'], scrub: '#7f8656', rock: ['#c8c2b2', '#a7a090'], town: '#b0a48e', shore: '#c9c1ad' },
+      trees: [['broad', 0.35, '#33482a', '#62803e'], ['cypress', 0.2, '#25391f', '#3a5230'], ['olive', 0.2, '#56603e', '#7f8660'], ['stone', 0.1, '#2e4626', '#4f6834'], ['palm', 0.15, '#3d5a2c', '#6a8a3a']], treeTop: 900, woods: 0.7, coast: 'rock', snow: 2600,
+      walls: ['#efe3c8', '#e6d2a8', '#f2ebe0', '#d9c39b', '#eadbc0', '#f6f1e6'], roofs: MED.roofs, flat: 0.25,
+      boats: { sail: 0.45, motor: 0.3, big: 0.25, bigKind: 'super' },
+      water: { deep: '#06304a', scatter: '#1a8a94', k: 0.4, shallow: '#3fa49a', clear: 0.5 },
+    },
+  },
+  {
+    id: 'balaton', name: ['Lake Balaton', 'Озеро Балатон', 'Lago Balatón', 'Balaton', 'Balaton Gölü'], lat: 46.937, lon: 17.932, wind: 330, tz: 2, from: '2026-11-21',
+    look: {
+      haze: 1.0,
+      ground: { forest: ['#2e4626', '#3f5a2e', '#5a733a'], scrub: '#7c8250', rock: ['#b0a68e', '#8c846e'], town: '#a8a08e', shore: '#b8b098', grass: '#6a9046' },
+      fields: ['#6f9a45', '#7fa64e', '#a8b866', '#c2b46a', '#d1bb5e', '#5f8c3e'],
+      trees: [['broad', 0.85, '#2e4626', '#5a7838'], ['conifer', 0.15, '#22381f', '#36502c']], treeTop: 400, woods: 0.35, clearing: 'grass',
+      // white and cream villas, red tile roofs
+      walls: ['#f2efe6', '#efe3c8', '#e6dcc6', '#f6f1e6', '#e8d5b5', '#d9cdb0'], roofs: ['#a5543a', '#b4603e', '#8a4e3a', '#6e6a68'], flat: 0.15,
+      boats: { sail: 0.85, motor: 0.15, big: 0 },
+      // the lake's milky green, its fine limestone silt stirred up in the shallows
+      water: { deep: '#2a6a62', scatter: '#5aa898', k: 0.7, shallow: '#7ab8a4', clear: 0.15 },
+    },
+  },
+  {
+    id: 'singapore', name: ['Singapore', 'Сингапур', 'Singapur', 'Singapur', 'Singapur'], lat: 1.26, lon: 103.875, wind: 30, tz: 8, thermal: false, stream: ['tide', 75, 1.0], from: '2026-11-21',
+    look: {
+      haze: 0.75,
+      ground: { forest: ['#24401f', '#335229', '#4a6b34'], scrub: '#5f7a3c', rock: ['#a8957a', '#86765f'], town: '#a8a49a', shore: '#d8c9a0', sand: '#e2d2a8', grass: '#5f8a3a' },
+      trees: [['broad', 0.7, '#24401f', '#4c6e34'], ['palm', 0.3, '#2f4a24', '#4f6e30']], treeTop: 120, woods: 0.4, clearing: 'grass',
+      walls: ['#f2efe8', '#e6e2d6', '#d9d4c8', '#f6f1e6', '#e8dcc6', '#c9d2d6'], roofs: ['#8a4e3a', '#a5543a', '#7e8489', '#5d6266'], flat: 0.8,
+      towers: ['#9fb6c4', '#b9c9d2', '#d8dee0', '#7f9bad', '#e4e4de', '#a9bcc6'],
+      boats: { sail: 0.4, motor: 0.4, big: 0.2, bigKind: 'super' },
+      water: { deep: '#0d3a40', scatter: '#2a8070', k: 0.55, shallow: '#5a9480', clear: 0.15 },
+    },
+  },
+  {
+    id: 'muscat', name: ['Muscat', 'Маскат', 'Mascate', 'Maskat', 'Maskat'], lat: 23.65, lon: 58.27, wind: 10, tz: 4, from: '2026-11-21',
+    look: {
+      haze: 1.05,
+      // the Hajar's dark ophiolite, brown and grey, over the gravel plain
+      ground: { forest: ['#4a5a34', '#5c6c3e', '#74824c'], scrub: '#a89a72', rock: ['#7a6a5a', '#5a4e44'], town: '#cfc3a8', shore: '#e2d2ac', sand: '#e6d4ac', grass: '#7f9448' },
+      trees: [['palm', 0.6, '#3d5a2c', '#6a8a3a'], ['shrub', 0.4, '#6a7446', '#8d9460']], treeTop: 60, woods: 0.04,
+      // Muscat's white, flat-roofed and low by law
+      walls: ['#f6f4ee', '#f1ebdc', '#ffffff', '#e8dfca', '#efe6d2', '#e0d4ba'], roofs: ['#e8e4dc', '#d8cdb4', '#f2efe8', '#c9bea4'], flat: 0.97,
+      boats: { sail: 0.4, motor: 0.4, big: 0.2, bigKind: 'super' },
+      water: { deep: '#06405a', scatter: '#1aa4a0', k: 0.5, shallow: '#4cc0b0', clear: 0.6 },
+    },
+  },
+  {
+    id: 'buenos-aires', name: ['Buenos Aires', 'Буэнос-Айрес', 'Buenos Aires', 'Buenos Aires', 'Buenos Aires'], lat: -34.5015, lon: -58.454, wind: 90, tz: -3, stream: ['tide', 300, 0.5], from: '2026-11-21',
+    look: {
+      haze: 0.85,
+      ground: { forest: ['#33482a', '#46602f', '#5f7a3c'], scrub: '#7f8656', rock: ['#a89c84', '#857b6a'], town: '#a8a090', shore: '#b8a888', grass: '#6a8a44' },
+      trees: [['broad', 0.85, '#33482a', '#5a7838'], ['palm', 0.15, '#3d5a2c', '#6a8a3a']], treeTop: 60, woods: 0.3, clearing: 'grass',
+      walls: ['#efe6d2', '#e8d9bc', '#f2ebdc', '#b5684c', '#d9c3a0', '#f6f1e6'], roofs: ['#a5543a', '#8a8e90', '#b4603e', '#6e6a68'], flat: 0.65,
+      boats: { sail: 0.75, motor: 0.25, big: 0 },
+      // the river's brown, silt from the Paraná and the Uruguay
+      water: { deep: '#4a3a24', scatter: '#8a6e44', k: 0.85, shallow: '#9a7e52', clear: 0.05 },
+    },
+  },
+  {
+    id: 'busan', name: ['Busan', 'Пусан', 'Busan', 'Busan', 'Busan'], lat: 35.133, lon: 129.148, wind: 315, tz: 9, thermal: false, from: '2026-11-21',
+    look: {
+      haze: 0.9,
+      ground: { forest: ['#24401f', '#335229', '#4a6b34'], scrub: '#6b7a44', rock: ['#9a9284', '#7a7366'], town: '#9a948a', shore: '#c9bb98', sand: '#e2d4ae' },
+      trees: [['conifer', 0.5, '#1f381d', '#33502a'], ['broad', 0.5, '#2e4a26', '#557038']], treeTop: 600, woods: 0.7, coast: 'rock',
+      walls: ['#f2efe8', '#e6e2d6', '#d9d4c8', '#c9d2d6', '#e8dcc6', '#b8c4c9'], roofs: ['#4a5a6a', '#5d6266', '#7e8489', '#8a4e3a'], flat: 0.85,
+      towers: ['#9fb6c4', '#b9c9d2', '#d8dee0', '#7f9bad', '#e4e4de', '#a9bcc6'],
+      boats: { sail: 0.6, motor: 0.4, big: 0 },
+      water: { deep: '#0a2c40', scatter: '#227f86', k: 0.45, shallow: '#4f9a8c', clear: 0.35 },
+    },
+  },
 ];
 
 export const venueById = (id) => VENUES.find((v) => v.id === id) || VENUES[0];

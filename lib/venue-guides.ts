@@ -4,6 +4,8 @@ import { PART_2 } from './venue-guides/part-2';
 import { PART_3 } from './venue-guides/part-3';
 import { PART_4 } from './venue-guides/part-4';
 import { PART_5 } from './venue-guides/part-5';
+import { PART_6 } from './venue-guides/part-6';
+import { PART_7 } from './venue-guides/part-7';
 
 // The venue pages (/venues/<id>): what each place is like to sail and race in, for people who search for it and for
 // the AI assistants that answer them. The game's own facts about a venue (its wind, the courses laid there) come from
@@ -20,4 +22,4 @@ export type VenueGuide = {
 // when the venue and yacht pages were written: their bylines and the sitemap's lastmod
 export const PAGES_DATE = '2026-11-17';
 
-export const VENUE_GUIDES: Record<VenueId, VenueGuide> = { ...PART_1, ...PART_2, ...PART_3, ...PART_4, ...PART_5 } as Record<VenueId, VenueGuide>;
+export const VENUE_GUIDES: Record<VenueId, VenueGuide> = { ...PART_1, ...PART_2, ...PART_3, ...PART_4, ...PART_5, ...PART_6, ...PART_7 } as Record<VenueId, VenueGuide>;

@@ -156,8 +156,8 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   in the `regatta` options; `?venue=<id>` in the game's address overrides it): Göcek, Cowes, Newport, Sydney, Kiel,
   Trieste, Porto Cervo, Saint-Tropez, Antigua, Auckland, San Francisco, Valencia, Barcelona, Palma, Marstrand, Bermuda,
   Enoshima, Weymouth, Marseille, Rio de Janeiro, Lake Garda, Istanbul, St Petersburg (the Neva under the
-  Peter and Paul Fortress, its bridges raised), Batumi, Scheveningen, Hong Kong, Cape Town, Athens, Marmaris, Fethiye, Sochi, Melbourne, Gold Coast, New York, Naples, Los Angeles, Les Sables-d'Olonne, Dubai, Miami, Split, Monaco, Fremantle, Sint Maarten, Phuket, the Tbilisi Sea, Malta, Saint-Malo, Hobart, Lake Geneva, San Diego, Cork, Cascais, Chicago, St Barths or Qingdao (the last thirty-three join
-  today's races together, on 20 November 2026). `public/game/venues.js` holds each one's position,
+  Peter and Paul Fortress, its bridges raised), Batumi, Scheveningen, Hong Kong, Cape Town, Athens, Marmaris, Fethiye, Sochi, Melbourne, Gold Coast, New York, Naples, Los Angeles, Les Sables-d'Olonne, Dubai, Miami, Split, Monaco, Fremantle, Sint Maarten, Phuket, the Tbilisi Sea, Malta, Saint-Malo, Hobart, Lake Geneva, San Diego, Cork, Cascais, Chicago, St Barths, Qingdao, Aarhus, Helsinki, Gdynia, Kingston, Tivat, Lake Balaton, Singapore, Muscat, Buenos Aires or Busan (thirty-three of them join
+  today's races together on 20 November 2026, and the last ten on 21 November). `public/game/venues.js` holds each one's position,
   prevailing wind, clock and look (its woods, farmland, houses, moored boats and water); `lib/venues.ts` is the set-up
   page's list of them, and `npm test` keeps the two in step. Each venue's land, Göcek's too, is baked by
   `python3 blender/venues.py [work dir] [id ...]` (needs numpy and Pillow; `--fetch` only downloads; the downloads are
@@ -170,7 +170,8 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   draws:
   - the terrain as a quadtree, some 8 m cells on the coast and round the race area, coarser where the hills are far or
     smooth, from elevation tiles some 10 m a pixel (Cowes, Weymouth, Newport, San Francisco and Auckland, where they
-    carry survey data) or 20 m; the shore meets the water on OpenStreetMap's coastline to the metre, the map's water
+    carry survey data) or 20 m (Helsinki's, measured from the ellipsoid and not the sea, brought down the 17 m
+    they stand too high: `datum`); the shore meets the water on OpenStreetMap's coastline to the metre, the map's water
     ashore down at the sea's level (an estuary, a lagoon) is water too, and the bed under the water is as steep as the
     land above it (deep under a cliff, gently shelving off a beach); further out, the sea floor's survey where there is
     one (EMODnet's round the European venues, Göcek, Istanbul, Batumi, Marmaris, Fethiye and Sochi; NOAA's at Newport, San Francisco and New York), else the
