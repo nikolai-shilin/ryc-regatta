@@ -2598,6 +2598,15 @@ function rainbow(L, parts) {
     if (i % 3 === 0) parts.push(post(at(i, R, 0).x, at(i, R, 0).z, y - 0.5, 0.35, 0.35, 3.2, '#d9dcdc', 6));
   }
 }
+// Valencia's Veles e Vents (David Chipperfield, for the America's Cup of 2007): four long white floors stacked one over
+// another, each slid out past the one below it towards the sea, the dark glass set back under them; `dir` its front
+function veles(L, parts) {
+  const y = Math.max(0, groundAt(L.at[0], L.at[1])), F = frameOf(L, y), white = '#f3f3ef', glass = '#33414a';
+  for (let i = 0; i < 4; i++) {
+    const a = (i % 2 ? 5 : -2) + i * 2.5, la = 66 - i * 3, lb = 46 + (i % 2) * 6;
+    parts.push(F.box(a, 0, i * 6, 4.6, la - 14, lb - 12, glass), F.box(a, 0, i * 6 + 4.6, 1.5, la, lb, white));
+  }
+}
 // Marina Bay Sands' SkyPark: the long deck laid across the tops of its three towers (which the map has), from `at` (its
 // south end) to `b` (the tip of its cantilever, out past the north tower), `h` up; tapering to the tip like a hull
 function skypark(L, parts) {
@@ -2800,6 +2809,7 @@ function landmarks() {
     else if (L.kind === 'wheel') bigWheel(L, parts);
     else if (L.kind === 'rainbow') rainbow(L, parts);
     else if (L.kind === 'skypark') skypark(L, parts);
+    else if (L.kind === 'veles') veles(L, parts);
     else if (L.kind === 'crib') crib(L, parts);
     else if (L.kind === 'may-wind') mayWind(L, parts);
     else if (L.kind === 'hotel-del') hotelDel(L, parts);

@@ -78,9 +78,11 @@ from PIL import Image, ImageColor, ImageDraw, ImageFilter
 # erode: how much of the gullies erode() cuts back into the hills (1 when not given; 0 where the tiles carry a fine
 # survey of their own, whose gullies are already there)
 VENUES = {
-    'gocek': dict(bathy='emodnet', origin=(36.7525, 28.9395), mid=(-400, 700), wind=195, zoom=14, out='skopea', towns=[(36.7564, 28.9402, 650)],
+    'gocek': dict(landmarks=[dict(kind='mosque', at=(36.75288, 28.94328), h=13, minarets=1, mh=26, clear=12)],  # Göcek Camii by the harbour
+                bathy='emodnet', origin=(36.7525, 28.9395), mid=(-400, 700), wind=195, zoom=14, out='skopea', towns=[(36.7564, 28.9402, 650)],
                   build=(36.705, 28.875, 36.795, 29.005), footprints=('Turkey', '122101223')),
-    'cowes': dict(bathy='emodnet', zoom=14, home=(50.7880, -1.3060), wind=225, towns=[(50.7600, -1.2980, 900), (50.7570, -1.2880, 700)]),
+    'cowes': dict(landmarks=[dict(kind='castle', at=(50.76654, -1.30114), h=9, clear=30, ring=[(50.76639, -1.3015), (50.76655, -1.30142), (50.76662, -1.30142), (50.76665, -1.30129), (50.76664, -1.30119), (50.76666, -1.30112), (50.76668, -1.30108), (50.76668, -1.30097), (50.76665, -1.30085), (50.76659, -1.30081), (50.76653, -1.30076), (50.76642, -1.3008), (50.76648, -1.3011), (50.7664, -1.30115), (50.76642, -1.30124), (50.76635, -1.30129)])],  # the Royal Yacht Squadron's castle, on the map's outline of it
+                bathy='emodnet', zoom=14, home=(50.7880, -1.3060), wind=225, towns=[(50.7600, -1.2980, 900), (50.7570, -1.2880, 700)]),
     'newport': dict(erode=0, bathy='noaa', zoom=14, home=(41.4570, -71.3600), wind=210, towns=[(41.4850, -71.3150, 1300), (41.4960, -71.3700, 700)],
                     keep=[(41.4777, -71.3405, 450)],  # Fort Adams
                     landmarks=[dict(kind='suspension', a=(41.5052, -71.3598), b=(41.5046, -71.3318), h=122, span=488, deck=58)]),
@@ -92,8 +94,10 @@ VENUES = {
                             dict(kind='tower', style='laboe', at=(54.41216, 10.23078), h=72, dir=340, clear=14)]),  # the naval memorial, its curved stem to the fjord
     'trieste': dict(bathy='emodnet', home=(45.6720, 13.7280), wind=70, towns=[(45.6500, 13.7700, 1600), (45.6750, 13.7500, 700), (45.6960, 13.7070, 500)],
                     landmarks=[dict(kind='lighthouse', style='vittoria', at=(45.67563, 13.75698), h=68, clear=15)]),  # the Faro della Vittoria on Gretta's hill
-    'porto-cervo': dict(bathy='emodnet', home=(41.1520, 9.5650), wind=315, towns=[(41.1340, 9.5340, 600), (41.1050, 9.5150, 500)]),
-    'saint-tropez': dict(bathy='emodnet', home=(43.2900, 6.6700), wind=280, towns=[(43.2710, 6.6390, 800), (43.3090, 6.6360, 1000), (43.2930, 6.5870, 600)]),
+    'porto-cervo': dict(landmarks=[dict(kind='steeple', at=(41.13331, 9.53082), h=18, w=4, color='#f0ebe0', spire='#d8cbb4', split=0.8)],  # Stella Maris over the harbour
+                bathy='emodnet', home=(41.1520, 9.5650), wind=315, towns=[(41.1340, 9.5340, 600), (41.1050, 9.5150, 500)]),
+    'saint-tropez': dict(landmarks=[dict(kind='steeple', at=(43.27283, 6.64000), h=30, w=6, color='#e8b27a', spire='#c86a3a', split=0.72), dict(kind='castle', at=(43.27175, 6.64381), h=12, clear=40)],  # Notre-Dame de l'Assomption's ochre bell tower, the citadel on its hill
+                bathy='emodnet', home=(43.2900, 6.6700), wind=280, towns=[(43.2710, 6.6390, 800), (43.3090, 6.6360, 1000), (43.2930, 6.5870, 600)]),
     'antigua': dict(home=(16.9890, -61.7700), wind=95, towns=[(17.0080, -61.7640, 500), (17.0180, -61.7820, 700)]),
     'auckland': dict(erode=0, zoom=14, home=(-36.8300, 174.8150), wind=225, towns=[(-36.8480, 174.7650, 1500), (-36.8280, 174.7980, 900), (-36.8500, 174.8100, 1300), (-36.8000, 174.7900, 1500)],
                      landmarks=[dict(kind='tower', at=(-36.84846, 174.76218), h=328, style='sky')]),
@@ -101,7 +105,8 @@ VENUES = {
                           keep=[(37.8267, -122.4230, 300)],  # Alcatraz
                           landmarks=[dict(kind='suspension', style='golden-gate', a=(37.8077, -122.4750), b=(37.8288, -122.4813), h=227, span=1280, deck=67, color='#c0362c'),
                                      dict(kind='tower', style='pyramid', at=(37.79519, -122.40265), h=260, clear=30)]),  # the Transamerica Pyramid
-    'valencia': dict(bathy='emodnet', home=(39.4581, -0.2959), wind=110, towns=[(39.4700, -0.3700, 1200), (39.4700, -0.3250, 1000), (39.4300, -0.3300, 800)]),
+    'valencia': dict(landmarks=[dict(kind='veles', at=(39.46114, -0.32417), dir=90, clear=45)],  # Veles e Vents on the America's Cup port
+                bathy='emodnet', home=(39.4581, -0.2959), wind=110, towns=[(39.4700, -0.3700, 1200), (39.4700, -0.3250, 1000), (39.4300, -0.3300, 800)]),
     'barcelona': dict(bathy='emodnet', home=(41.3720, 2.2250), wind=200, towns=[(41.3850, 2.1800, 1100), (41.3950, 2.2050, 1100), (41.3780, 2.1900, 700), (41.4100, 2.2250, 900),
                                                                     (41.4036, 2.1744, 450)],  # the Eixample's blocks round the Sagrada Família
                       landmarks=[dict(kind='spires', at=(41.4036, 2.1744), h=172.5, dir=135),  # the Sagrada Família: its nave to the Glory façade, south-east
@@ -110,15 +115,18 @@ VENUES = {
                   landmarks=[dict(kind='cathedral', at=(39.56760, 2.64832), h=44, dir=120, clear=40)]),  # La Seu, its apse to the east-south-east
     'marstrand': dict(bathy='emodnet', home=(57.8850, 11.5550), wind=225, towns=[(57.8860, 11.5850, 500), (57.8900, 11.6000, 500), (57.8650, 11.6000, 400)],
                       landmarks=[dict(kind='fort', at=(57.88624, 11.57767), h=28, clear=[(57.88624, 11.57767, 30), (57.88630, 11.57885, 75)])]),  # Carlsten's round keep at the fortress's south-west corner
-    'bermuda': dict(home=(32.3050, -64.8400), wind=200, towns=[(32.2930, -64.7830, 900), (32.3250, -64.8350, 500), (32.3100, -64.8650, 600), (32.2850, -64.8150, 700)]),
+    'bermuda': dict(landmarks=[dict(kind='steeple', at=at, h=30, w=6, color='#ebe4d2', spire='#d7cfbb', split=0.86) for at in ((32.32478, -64.83490), (32.32462, -64.83468))] + [dict(kind='lighthouse', style='plain', at=(32.25281, -64.83475), h=36, tower='#f3f1ea', clear=12)],  # the Dockyard's twin clock towers, Gibbs Hill's light
+                home=(32.3050, -64.8400), wind=200, towns=[(32.2930, -64.7830, 900), (32.3250, -64.8350, 500), (32.3100, -64.8650, 600), (32.2850, -64.8150, 700)]),
     'enoshima': dict(home=(35.2921, 139.4965), wind=190, keep=[(35.2990, 139.4805, 500)], towns=[(35.3100, 139.4800, 1200), (35.3100, 139.5300, 1200), (35.3050, 139.5000, 800)],
                      landmarks=[dict(kind='lighthouse', at=(35.2997, 139.4796), h=60, style='candle')]),
-    'weymouth': dict(bathy='emodnet', zoom=14, home=(50.6050, -2.4100), wind=225, towns=[(50.6100, -2.4550, 1100), (50.5550, -2.4400, 900), (50.6300, -2.4400, 700)]),
+    'weymouth': dict(landmarks=[dict(kind='steeple', at=(50.61440, -2.45259), h=13, w=2.6, color='#2c5a86', spire='#c8a040', split=0.8, clear=4)],  # the Jubilee Clock on the esplanade
+                bathy='emodnet', zoom=14, home=(50.6050, -2.4100), wind=225, towns=[(50.6100, -2.4550, 1100), (50.5550, -2.4400, 900), (50.6300, -2.4400, 700)]),
     'marseille': dict(bathy='emodnet', home=(43.2650, 5.3350), wind=315, keep=[(43.2805, 5.3080, 1100), (43.2799, 5.3254, 200)], towns=[(43.2950, 5.3750, 1200), (43.2750, 5.3650, 900), (43.2600, 5.3800, 700), (43.3100, 5.3650, 1000)],
                       landmarks=[dict(kind='basilica', at=(43.28400, 5.37116), h=60, dir=130, clear=22)]),  # its belfry at the north-west end, the apse to the south-east
     'rio': dict(home=(-22.9300, -43.1580), wind=150, towns=[(-22.9250, -43.1750, 1200), (-22.9000, -43.1150, 1200), (-22.9450, -43.1800, 900), (-22.9700, -43.1850, 1000)],
                 landmarks=[dict(kind='statue', at=(-22.95168, -43.21181), h=38, dir=100)]),  # facing the bay; on the tiles' summit of Corcovado, 135 m west of its own
-    'garda': dict(home=(45.8400, 10.8500), wind=190, lake='Lago di Garda', towns=[(45.8860, 10.8410, 800), (45.8750, 10.8760, 600), (45.7650, 10.8100, 600), (45.8730, 10.8560, 500)]),
+    'garda': dict(landmarks=[dict(kind='steeple', at=(45.88479, 10.84007), h=37, w=7, color='#d3bf98', spire='#7a5a40', split=0.86, clear=6)],  # Riva's Torre Apponale
+                home=(45.8400, 10.8500), wind=190, lake='Lago di Garda', towns=[(45.8860, 10.8410, 800), (45.8750, 10.8760, 600), (45.7650, 10.8100, 600), (45.8730, 10.8560, 500)]),
     'istanbul': dict(bathy='emodnet', home=(40.9820, 28.9920), wind=35, keep=[(41.0063, 28.9855, 150), (41.0024, 28.9768, 150)], towns=[(40.9900, 29.0270, 1200), (41.0250, 29.0180, 1200), (41.0080, 28.9650, 1500), (41.0330, 28.9800, 1200), (40.9720, 29.0400, 1000),
                                                                  (41.0430, 29.0060, 900), (41.0480, 29.0250, 700), (41.0365, 29.0310, 600), (41.0440, 29.0440, 700)],  # Beşiktaş, Ortaköy, Kuzguncuk, Beylerbeyi: round the bridge
                      landmarks=[dict(kind='suspension', a=(41.0510, 29.0287), b=(41.0400, 29.0401), h=165, span=1074, deck=64),
@@ -218,7 +226,8 @@ VENUES = {
                   landmarks=[dict(kind='spire', style='sochi', at=(43.58045, 39.71061), h=71, dir=225)]),  # the sea terminal's tower and spire over the map's building, its front to the sea
     # Port Phillip off St Kilda, of the 1956 Olympic regatta, in the afternoon sea breeze off Bass Strait; the city's
     # towers to leeward. The bay's shores are low and the tiles' radar has their roofs and trees for the ground
-    'melbourne': dict(zoom=14, most=15000, relations=True, parts=True, plain=(10, 30), paved=True, trees=True, home=(-37.8732, 144.9481), wind=200,
+    'melbourne': dict(landmarks=[dict(kind='cablestay', a=(-37.83003, 144.89816), b=(-37.83157, 144.90144), h=102, deck=58)],  # the West Gate Bridge over the Yarra
+                zoom=14, most=15000, relations=True, parts=True, plain=(10, 30), paved=True, trees=True, home=(-37.8732, 144.9481), wind=200,
                       palms=(['Jacka Boulevard', 'Marine Parade', 'Beaconsfield Parade', 'Fitzroy Street'], 45),  # St Kilda's Canary Island palms
                       kites=dict(a=(-37.87300, 144.97900), b=(-37.88600, 144.98350), n=6),  # off St Kilda and Elwood beaches in the sea breeze
                       towns=[(-37.8650, 144.9820, 1000), (-37.8400, 144.9400, 1000), (-37.8610, 144.8990, 900), (-37.8820, 144.9880, 900), (-37.8350, 144.9600, 900)]),
