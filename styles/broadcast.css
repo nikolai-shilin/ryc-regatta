@@ -1748,6 +1748,11 @@
 .bc .adm-sails .sp-bar .kicker { margin: 0; }
 .bc .adm-sails > .hint { margin: 0 0 var(--s-4); }
 .bc .sp-tab { margin: 0; }
+.bc .adm-sails .sp-req { margin: var(--s-3) 0 0; font-size: var(--fs-label); max-width: 72ch; }
+.bc .adm-sails .sp-req p, .bc .adm-sails .sp-req ul { margin: 0; }
+.bc .adm-sails .sp-req ul { padding-left: 1.2em; margin-top: var(--s-1); }
+.bc .adm-sails .sp-req li + li { margin-top: 2px; }
+.bc .adm-sails .sp-req b { font-weight: 600; color: var(--ink-2); }
 .bc .sp-tab th, .bc .sp-tab td { text-align: left; vertical-align: middle; }
 .bc .sp-tab td:last-child { text-align: right; }
 .bc .sp-tab .sp-every th[scope="row"] { color: var(--you); }

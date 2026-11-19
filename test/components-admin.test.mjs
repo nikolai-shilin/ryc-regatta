@@ -148,7 +148,7 @@ test('the presets table: every venue\'s, then each set, with what a set leaves t
   const many = ssr(h(SailPresets, { lang: 'en', every: EVERY, sets: { big: { name: 'Big', venues: ['gocek', 'cowes', 'kiel', 'sydney', 'antigua'] }, none: { name: 'None', venues: [] } } }));
   assert.match(plain(many), /Göcek, Cowes, Kiel \+2/);
   assert.match(plain(many), /None —/);
-  assert.deepEqual(englishIn(plain(ssr(h(SailPresets, { lang: 'ru', every: EVERY, sets: SETS }))).replace(/#[0-9A-F]{6}/g, ''), ['UK', 'Turkey']), []);
+  assert.deepEqual(englishIn(plain(ssr(h(SailPresets, { lang: 'ru', every: EVERY, sets: SETS }))).replace(/#[0-9A-F]{6}/g, ''), ['UK', 'Turkey', 'PNG', 'JPEG', 'WebP', 'SVG']), []);
 });
 
 test('every venue\'s new jib ad is uploaded, saved and the old file taken away; the dialog closes', async () => {
