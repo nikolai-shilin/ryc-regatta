@@ -123,3 +123,18 @@ for (const [net, o] of NETS) {
     });
   }
 }
+
+// main.js draws the boats between their last two steps: the screen's step calls its hook before each step, and says how
+// far the frame is into the next
+test('a frame steps the race in 1/60 s steps, calling the hook before each, and says how far it is into the next', async () => {
+  const x = await sailing({ seed: 11 });
+  run(1, ...x.both);
+  for (const s of [x.h, x.g]) {
+    let n = 0;
+    s.session.step(0.05, () => n++);
+    assert.equal(n, 3, `${s.name}: 0.05 s is three steps`);
+    assert.ok(s.session.frac >= 0 && s.session.frac < 1);
+    n = 0; s.session.step(0.5, () => n++); // a slow frame (main.js's MATCH_DT): made up, every step of it
+    assert.ok(n >= 29 && n <= 31, `${s.name}: half a second is thirty steps (${n})`);
+  }
+});

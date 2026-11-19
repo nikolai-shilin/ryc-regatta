@@ -647,3 +647,31 @@ test('endBody keeps the I flag', () => {
   const results = { boats: [row('g1', { place: 1, finish: 400 }), row('h1', { place: 2, finish: 403 })] };
   assert.equal(accepted(Log.endBody(matchOf(result), CODE, TOKEN, { prepFlag: 'I', recalls: 0 }, results)).prep, 'I');
 });
+
+// ---------- how the race ran on each screen ----------
+const PERF = { fps: 30.3, low: 19.6, stall: 2.13, secs: 282, q0: 'low', q: 'low', gfx: 'auto', saver: 0, dev: 'desktop', tg: 0, os: 'windows', br: 'chrome', dpr: 1.25,
+  cores: 4, mem: 8, gpu: 'Intel(R) UHD Graphics', w: 1536, h: 703, load: null };
+
+test('each screen reports how the race ran on it once, as its card opens: its frames, and how the other screen\'s messages came', async () => {
+  const x = await afloat();
+  x.h.perf = () => PERF; x.g.perf = () => ({ ...PERF, fps: 60 });
+  await pass(25, ...x.both);
+  bothHome(x); await settle(); toCard(x); await settle();
+  run(3, ...x.both); await settle();
+  const perf = of('perf');
+  assert.deepEqual(perf.map((p) => [p.side, p.seed, p.code, p.perf.fps]).sort(), [['guest', 11, CODE, 60], ['host', 11, CODE, 30.3]], 'one from each screen');
+  const g = perf.find((p) => p.side === 'guest').perf.net, h = perf.find((p) => p.side === 'host').perf.net;
+  assert.deepEqual(g, { rtt: null, late: 0 }, 'the guest\'s: no snapshot late (and no way there and back to measure with no delay)');
+  assert.equal(h.rtt, null);
+});
+
+test('a screen with too few frames, or none measured, reports nothing; leaving mid-race reports what was measured', async () => {
+  const x = await afloat();
+  await pass(3, ...x.both);
+  x.g.perf = () => PERF; // (main.js's meter: null under 20 s of frames)
+  leaves(x, x.g); await settle();
+  assert.deepEqual(of('perf').map((p) => p.side), ['guest'], 'the guest leaving says hers');
+  assert.equal(of('perf')[0].perf.net, null, 'under 20 s of snapshots: no word on them');
+  until(() => x.h.shows('#mCard'), x.live, 40, 'the host\'s card (the race is hers: the guest gave it up)'); await settle(); run(2, ...x.live); await settle();
+  assert.equal(of('perf').length, 1, 'the host measured nothing: nothing from it');
+});

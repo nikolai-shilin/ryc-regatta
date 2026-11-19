@@ -16,7 +16,10 @@ import { IconCrew, clock } from './ui';
 // database keeps one row to a race. Drawn on the server, per request; the table sorts in the browser by the column
 // clicked (components/admin-players-table.tsx). Times are UTC, as on /admin/players.
 type Num = number | null;
-export type Sailor = { name: string | null; who: string | null; kind: 'tg' | 'acct' | 'guest'; handle: string | null; place: Num; secs: Num; mark: string | null; pens: Num };
+// how the race ran on that sailor's screen, as the game reported it (lib/duel-log.ts Perf); null when it didn't
+export type Perf = { fps: number; low: Num; stall: Num; secs: number; q: string | null; gfx: string | null; saver: 0 | 1; dev: string | null; os: string | null; br: string | null;
+  gpu: string | null; cores: Num; mem: Num; net: { rtt: Num; late: Num } | null };
+export type Sailor = { name: string | null; who: string | null; kind: 'tg' | 'acct' | 'guest'; handle: string | null; place: Num; secs: Num; mark: string | null; pens: Num; perf?: Perf | null };
 export type DuelRace = {
   id: string; code: string; race_no: number; at: string; ended: string | null; state: 'racing' | 'finished' | 'abandoned' | 'no_result';
   venue: string | null; yacht: string | null; wind: string | null; length: string | null; course: string | null; laps: Num; start_min: Num;
@@ -25,7 +28,7 @@ export type DuelRace = {
 };
 export type Duels = {
   since: string | null; more: boolean;
-  totals: { races: number; finished: number; abandoned: number; no_result: number; sailors: number; seats: number; signed: number; rematches: number; median: Num };
+  totals: { races: number; finished: number; abandoned: number; no_result: number; sailors: number; seats: number; signed: number; rematches: number; median: Num; perf_seats?: number; slow_seats?: number };
   days: { d: string; n: number; fin: number }[];
   endings: { forfeit: number; no_winner: number; dnf: number; dsq: number; both: number };
   groups: { k: 'venue' | 'yacht' | 'wind' | 'course' | 'start'; v: string | null; n: number; fin: number }[];
@@ -37,6 +40,8 @@ export const DUEL_DAYS = [90, 30, 7] as const;
 export const pickDuelDays = (q?: string): number | null => ((DUEL_DAYS as readonly number[]).includes(Number(q)) ? Number(q) : null);
 
 const pct = (a: number, b: number) => (b ? `${Math.round((100 * a) / b)}%` : '–');
+// a screen that ran slow: its slow end under 20 fps, or two stalls (frames over 100 ms) a minute or more
+export const slowScreen = (p: Perf) => (p.low != null && p.low < 20) || (p.stall != null && p.stall >= 2);
 const ordinal = (n: number, lang: Lang) => (lang === 'ru' ? `${n}-е` : lang === 'es' ? `${n}.º` : ['1st', '2nd', '3rd'][n - 1] ?? `${n}th`);
 
 export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days: number | null }) {
@@ -73,12 +78,30 @@ export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days
   };
   const lap = (n: number) => t(n === 1 ? '1 lap' : `${n} laps`, `${n} кр.`, n === 1 ? '1 vuelta' : `${n} vueltas`);
   const settings = (r: DuelRace) => [r.course && course(r.course), r.length && length(r.length), r.laps != null && lap(r.laps), r.start_min != null && t(`${r.start_min} min`, `${r.start_min} мин`, `${r.start_min} min`), r.current && t('Current', 'Течение', 'Corriente')].filter(Boolean).join(' · ');
+  // how the race ran on a sailor's screen: the middle frame's rate, and below it the slow end's, the stalls, the way to the
+  // other screen and back (the guest's), the late messages and the device; the whole in the tooltip
+  const screen = (s: Sailor | null) => {
+    const p = s?.perf;
+    if (!p) return <span>–</span>;
+    const net = p.net, sys = [p.os, p.br].filter(Boolean).join('/');
+    const sub = [p.low != null && t(`low ${Math.round(p.low)}`, `мин. ${Math.round(p.low)}`, `mín. ${Math.round(p.low)}`), p.stall != null && p.stall > 0 && t(`${p.stall}/min stalls`, `${p.stall}/мин рывков`, `${p.stall}/min tirones`),
+      net?.rtt != null && `${net.rtt} ${t('ms', 'мс', 'ms')}`, net?.late != null && net.late > 0 && t(`${net.late}/min late`, `${net.late}/мин поздно`, `${net.late}/min tarde`)].filter(Boolean).join(' · ');
+    const tip = [sys, p.gpu, p.cores != null && t(`${p.cores} cores`, `${p.cores} ядер`, `${p.cores} núcleos`), p.mem != null && `${p.mem} GB`, p.q && t(`graphics ${p.q}${p.gfx === 'auto' ? ' (auto)' : ''}`, `графика ${p.q}${p.gfx === 'auto' ? ' (авто)' : ''}`, `gráficos ${p.q}${p.gfx === 'auto' ? ' (auto)' : ''}`),
+      p.saver ? t('battery saver', 'экономия батареи', 'ahorro de batería') : null].filter(Boolean).join(' · ');
+    return (
+      <span className="adm-pl-name" title={tip}>
+        <span style={slowScreen(p) ? { color: 'var(--warn)' } : undefined}>{Math.round(p.fps)} fps</span>
+        <span className="adm-pl-sub">{sub || sys || '–'}</span>
+      </span>
+    );
+  };
   const where = (r: DuelRace) => (r.venue || r.yacht || r.wind ? [venue(r.venue), yacht(r.yacht), wind(r.wind)].join(' · ') : '–');
 
   const cols: Col[] = [
     { label: t('Where', 'Где', 'Dónde'), asc: true }, { label: t('Host', 'Хозяин', 'Anfitrión'), asc: true }, { label: t('Guest', 'Гость', 'Invitado'), asc: true },
     { label: t('Winner', 'Победил', 'Ganador'), asc: true }, { label: t('Result', 'Итог', 'Resultado'), asc: true }, { label: t('Margin', 'Отрыв', 'Diferencia') },
     { label: t('Length', 'Длина', 'Duración') }, { label: t('State', 'Статус', 'Estado'), asc: true },
+    { label: t('Host’s screen', 'Экран хозяина', 'Pantalla del anfitrión') }, { label: t('Guest’s screen', 'Экран гостя', 'Pantalla del invitado') },
   ];
   const rows: Row[] = R.map((r) => ({
     key: r.id,
@@ -90,9 +113,10 @@ export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days
       <span key="w" className="adm-pl-name">{where(r)}<span className="adm-pl-sub">{settings(r)}</span></span>,
       who(r.host), who(r.guest), side(r, r.winner), result(r),
       r.margin == null ? '–' : `${r.margin.toFixed(1)} ${t('s', 'с', 's')}`, r.length_s == null ? '–' : clock(r.length_s), STATE[r.state],
+      screen(r.host), screen(r.guest),
     ],
     vals: [r.venue ? venue(r.venue) : null, plainName(r.host?.name)?.toLowerCase() ?? null, plainName(r.guest?.name)?.toLowerCase() ?? null,
-      r.winner ? name(r[r.winner]).toLowerCase() : null, r.host?.place ?? null, r.margin, r.length_s, STATE[r.state]],
+      r.winner ? name(r[r.winner]).toLowerCase() : null, r.host?.place ?? null, r.margin, r.length_s, STATE[r.state], r.host?.perf?.fps ?? null, r.guest?.perf?.fps ?? null],
   }));
 
   const E = data.endings;
@@ -131,6 +155,7 @@ export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days
         <Tile k={t('Signed in', 'С аккаунтом', 'Con sesión')} v={pct(T.signed, T.seats)} />
         <Tile k={t('Rematches', 'Реваншей', 'Revanchas')} v={String(T.rematches)} />
         <Tile k={t('Median race', 'Медиана гонки', 'Regata mediana')} v={T.median == null ? '–' : clock(T.median)} />
+        {T.perf_seats ? <Tile k={t('Slow screens', 'Медленные экраны', 'Pantallas lentas')} v={`${T.slow_seats ?? 0} · ${pct(T.slow_seats ?? 0, T.perf_seats)}`} /> : null}
       </div>
       {data.days.length > 0 && <DayChart lang={lang} title={t('Races a day', 'Гонок в день', 'Regatas al día')} label={t('Races started each day', 'Гонок начато в каждый день', 'Regatas iniciadas cada día')} slots={slots} />}
       <section className="adm-tab">
@@ -152,6 +177,9 @@ export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days
       </section>
       <p className="hint">{t('Races are counted by when they started. No result: a race still on after two hours with no end reported. Sailors: accounts, and guests by name, so a guest who changes name counts twice. Signed in: the share of seats sailed with an account. Rematches: races beyond the first on each code. Median race: the slower boat’s time over the finished races with a time. Times in UTC.',
         'Гонки считаются по времени старта. Без итога — гонка, идущая дольше двух часов без отчёта о конце. Гонщики — аккаунты и гости по имени, так что гость, сменивший имя, считается дважды. С аккаунтом — доля мест, на которых гонщик вошёл в аккаунт. Реванши — гонки сверх первой на каждом коде. Медиана — время более медленной лодки в завершённых гонках с временем. Время по UTC.', 'Las regatas se cuentan por cuándo empezaron. Sin resultado: una regata aún en curso tras dos horas sin fin registrado. Regatistas: cuentas, e invitados por nombre, así que un invitado que cambia de nombre cuenta dos veces. Con sesión: la proporción de plazas navegadas con cuenta. Revanchas: regatas posteriores a la primera en cada código. Regata mediana: el tiempo del barco más lento en las regatas terminadas con tiempo. Horas en UTC.')}</p>
+      <p className="hint">{t('Host’s and Guest’s screen: how the race ran on each sailor’s screen, as the game reported it when its card opened or the page left the race (nothing under 20 s of racing): the middle frame’s rate, and below it the slow end’s (the 95th percentile frame), stalls over 100 ms a minute, the way to the host and back (the guest’s screen), and the other screen’s messages that came over 250 ms late, a minute. The device is in the tooltip. Amber: a slow screen, its slow end under 20 fps or two stalls a minute or more. The race runs on the host’s screen, so a slow host slows it for both.',
+        'Экран хозяина и гостя — как гонка шла на экране каждого, по отчёту игры, когда открылась карточка или страница ушла из гонки (меньше 20 с гонки не отчитывается): частота среднего кадра, под ней — медленного края (95-й процентиль), рывки дольше 100 мс в минуту, путь до хозяина и обратно (на экране гостя) и сообщения другого экрана, опоздавшие больше чем на 250 мс, в минуту. Устройство — во всплывающей подсказке. Жёлтым — медленный экран: медленный край ниже 20 fps или два рывка в минуту и больше. Гонка идёт на экране хозяина, так что медленный хозяин замедляет её обоим.',
+        'Pantalla del anfitrión y del invitado: cómo fue la regata en la pantalla de cada uno, según la informó el juego al abrirse su tarjeta o al salir la página de la regata (nada con menos de 20 s de regata): la frecuencia del fotograma medio y, debajo, la del extremo lento (el percentil 95), los tirones de más de 100 ms por minuto, la ida y vuelta hasta el anfitrión (en la pantalla del invitado) y los mensajes de la otra pantalla que llegaron con más de 250 ms de retraso, por minuto. El dispositivo, en la información emergente. En ámbar: una pantalla lenta, con el extremo lento por debajo de 20 fps o dos tirones por minuto o más. La regata corre en la pantalla del anfitrión, así que un anfitrión lento la ralentiza para los dos.')}</p>
     </div>
   );
 }

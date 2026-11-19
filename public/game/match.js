@@ -311,6 +311,8 @@ const SNAP_ON = new Set(['bump', 'aground', 'touched', 'fouled']);
 // the helm moved more than 0.3 since the last went, at once, but never more than ten a second
 const INPUT_MIN_MS = 200, INPUT_MAX_MS = 500, INPUT_NOW_MS = 100, HELM_NOW = 0.3;
 const HIST_S = 2; // the guest's own boat's recent poses, kept this long, to set the host's copy of her against
+const OTHER_EASE_S = 0.15; // the other boat, moved by a snapshot's new word, glides there with this time constant (further than SNAP_M: at once)
+const LATE_MS = 250; // a message from the other screen this much later than its due is late (net(): late ones a minute)
 
 // the race, as both screens build it: the host's settings, its seed, the two sailors and their looks, and the seed's
 // word on who has which start position (a rematch has a new seed); myId the one this screen sails
@@ -359,9 +361,11 @@ export class Host {
     this._lastTick = null;
     this._snapT = SNAP_S; // the first tick sends one
     this._sent = new WeakSet(race.messages); // the race's news so far is the guest's own race's too (same seed)
+    this._came = { from: null, at: null, late: 0 }; // her inputs as they came: the first, the last, and how many came late
     link.input.on('input', (m) => {
       if (this.stopped || !m || m.id !== guestId || m.seed !== race.seed || !goodControls(m.c)) return;
       this._c = m.c; this._lastIn = this.now();
+      const h = this._came; if (h.at !== null && this._lastIn - h.at > INPUT_MAX_MS + LATE_MS) h.late++; h.at = this._lastIn; h.from ??= this._lastIn;
       if (Number.isFinite(m.g) && m.g !== this._ack?.[0]) this._ack = [m.g, Math.round(this.race.clock * 1000) / 1000];
     });
     link.input.on('resultsOk', (m) => { if (!this.stopped && m && m.id === guestId && m.seed === race.seed) this.acked = true; });
@@ -394,6 +398,9 @@ export class Host {
     if (this._snapT >= SNAP_S - 1e-6 && !race.over) { this._snapT = 0; all.send('snap', { ...encodeSnap(race), seed: race.seed, a: this._ack }); } // (the last is _end's)
     if (race.over) this._end();
   }
+  // how the guest's inputs came, for the race's report: { rtt: null (the host measures no way there and back), late: inputs
+  // more than LATE_MS past the slowest pace she sends them at (INPUT_MAX_MS), a minute } (null: under 20 s of them)
+  net() { return netOf(this._came, null, this.now()); }
   // the guest has left the race: before her finish she gives it up at once; after it her place stands (race.forfeit)
   guestLeft() { if (!this.stopped) this.race.forfeit(this.guest); }
   // the results, once a second until she answers
@@ -431,6 +438,12 @@ function carryOn(o, t) {
   let x = o.x, z = o.z;
   for (let i = 1; i <= n; i++) { const h = head((i - 0.5) * d); x += Math.sin(h) * o.v * d; z -= Math.cos(h) * o.v * d; }
   return { ...o, x, z, h: wrap(head(t)) };
+}
+
+// what a screen heard of the other, for the race's report (Host.net, Guest.net)
+function netOf(h, rtt, t) {
+  const span = h.from === null ? 0 : (Math.min(t, h.at) - h.from) / 60000;
+  return span * 60 < 20 ? null : { rtt, late: Math.round((h.late / span) * 100) / 100 };
 }
 
 // what the guest takes from the host, whole or not at all: the ack on a snapshot, the race's news, and its end
@@ -483,6 +496,8 @@ export class Guest {
     this._rtts = []; // s: the way to the host and back, as measured
     this._ackG = null;
     this._trackC = -Infinity;
+    this._oErr = new Map(); // the other boat (index in race.boats) -> { x, z, h }: where she was drawn less where the snapshots now put her, eased away
+    this._came = { from: null, at: null, late: 0 }; // the snapshots as they came (net)
     const all = link.all, ours = (m) => !this.stopped && m?.seed === race.seed; // (this race's: not the one before a rematch)
     all.on('snap', (s) => { if (ours(s) && goodSnap(race, s) && goodAck(s.a)) this._onSnap(s); });
     all.on('ev', (e) => { if (ours(e) && goodNews(race, e.list)) this._onEv(e); });
@@ -495,16 +510,26 @@ export class Guest {
   onEnd(fn) { this._ends.push(fn); }
   onResults(fn) { this._onResultsFns.push(fn); }
   _boat(id) { return id ? this.race.humans.find((b) => b.id === id) ?? null : null; }
+  // how the host's snapshots came, for the race's report: { rtt: the least way there and back measured (ms), late: snapshots
+  // more than LATE_MS past their due (SNAP_S after the last), a minute } (null: under 20 s of them)
+  net() { return netOf(this._came, this._rtts.length ? Math.round(Math.min(...this._rtts) * 1000) : null, this.now()); }
   // the host's clock now, as the quickest snapshot of the last 2 s has it (null before the first)
   _hostClock(t) { return this._offs.length ? t / 1000 - Math.min(...this._offs.map((o) => o.off)) : null; }
 
   _onSnap(s) {
     const race = this.race, me = this.me, pen = !!me.pen;
+    // the other boat as the snapshots so far would draw her now (before applySnap moves her): the new word glides her from there
+    let was = null;
+    if (this._last && s.r === race.recalls) { this._drawOthers(this.now()); was = this._shown(); }
     if (s.r !== race.recalls) this._recalled(s);
     if (!applySnap(race, s, me)) return;
     // the host saw her turn done (a turn gone with a disqualification, at the finish, wasn't paid)
     if (pen && !me.pen && !me.dsq) me.events.push('penaltyDone');
-    const at = this.now();
+    const at = this.now(), hd = this._came;
+    if (!this.ended) { // (after the end the host repeats its last once a second: not late)
+      if (hd.at !== null && at - hd.at > SNAP_S * 1000 + LATE_MS) hd.late++;
+      hd.at = at; hd.from ??= at;
+    }
     this._lastSnap = at;
     this._last = { at, s };
     const O = this._offs, off = at / 1000 - s.c;
@@ -518,7 +543,7 @@ export class Guest {
       this._trackC = s.c;
       race.boats.forEach((b, k) => { if (b !== me && !b.done) { const p = readBoat(s.b[k]); b.track.push([p.x, p.z]); } });
     }
-    this._drawOthers(at);
+    this._drawOthers(at, was);
     if (race.clock < s.c - 1) this._catchUp(s.c); // a page just opened, or one that slept: the wind and waves too
     // the time on her own clock the host's copy at s.c stands for: her stamp on its controls, plus the host's time
     // since they came (a stamp from before this page opened is a reloaded page's last: nothing here to set it against)
@@ -547,7 +572,7 @@ export class Guest {
     for (let d = s.t - race.t; d > 1e-9; d -= 0.25) race.advance(Math.min(0.25, d));
     race.recalls = s.r; race.clock = s.c; race.trackT = 0; // (the clock after: advance moves it)
     for (const b of race.boats) { b.track = []; b.legT = []; }
-    this._offs = []; this._hist = []; this._err = null;
+    this._offs = []; this._hist = []; this._err = null; this._oErr.clear();
     this._trackC = -Infinity; this._stamp = true;
   }
   // the host's copy of her taken as it is, carried on `ahead` s; her past poses moved with her (as the easing moves
@@ -561,12 +586,23 @@ export class Guest {
     this._err = null;
   }
   // the other boat where she is now: carried on from the last snapshot to the host's clock now, which is ahead of the
-  // snapshots' by the way here (half there and back). Each frame, and as a snapshot comes (it put her where she was)
-  _drawOthers(t) {
+  // snapshots' by the way here (half there and back). Each frame, and as a snapshot comes (it put her where she was).
+  // A snapshot's word on her differs a little from where she was carried to (the host's helm since, a late snapshot): the
+  // difference is eased away (OTHER_EASE_S, each frame) rather than drawn as a jump; was: where she was drawn before it
+  _drawOthers(t, was = null) {
     const L = this._last, race = this.race, me = this.me, est = this._hostClock(t);
     const way = this._rtts.length ? Math.min(0.5, Math.min(...this._rtts) / 2) : 0, on = Math.min(CARRY_S, Math.max(0, est + way - L.s.c));
-    race.boats.forEach((b, i) => { if (b !== me) setBoat(b, carryOn(readBoat(L.s.b[i]), on)); });
+    race.boats.forEach((b, i) => {
+      if (b === me) return;
+      setBoat(b, carryOn(readBoat(L.s.b[i]), on));
+      const w = was?.get(i);
+      if (w) { const e = { x: w.x - b.x, z: w.z - b.z, h: wrap(w.h - b.h) }; if (Math.hypot(e.x, e.z) < SNAP_M) this._oErr.set(i, e); else this._oErr.delete(i); }
+      const e = this._oErr.get(i);
+      if (e) { b.x += e.x; b.z += e.z; b.h = wrap(b.h + e.h); }
+    });
   }
+  // the other boats as drawn now (index -> pose)
+  _shown() { const m = new Map(); this.race.boats.forEach((b, i) => { if (b !== this.me) m.set(i, { x: b.x, z: b.z, h: b.h }); }); return m; }
   // her own pose at her own clock c, between the two around it (null outside what's kept)
   _histAt(c) {
     const H = this._hist;
@@ -653,6 +689,8 @@ export class Guest {
     if (me.events.length > ne) me.events.splice(ne, me.events.length - ne, ...me.events.slice(ne).filter((e) => e !== 'penaltyDone'));
     if (est !== null && est - race.clock > dt / 2) this._catchUp(est); // behind: forward, the wind and waves with it
     if (!L) return;
+    const k = Math.exp(-dt / OTHER_EASE_S);
+    for (const [i, e] of this._oErr) { e.x *= k; e.z *= k; e.h *= k; if (Math.hypot(e.x, e.z) < 1e-3 && Math.abs(e.h) < 1e-4) this._oErr.delete(i); }
     this._drawOthers(t);
     // her own boat: the difference from the host's copy eased away, her past poses moved with her
     const E = this._err, H = this._hist;

@@ -6,7 +6,7 @@ import { noEmoji } from '@/lib/name';
 // What the 1-on-1 race's game reports to POST /connect/log (app/connect/log/route.ts), checked before it reaches the
 // database: the database casts these to smallint and int, so a number out of range would raise there and lose the
 // report. parseReport answers the report as the site understands it, or null for anything that is not exactly one of the
-// three. toRow makes the p_report of regatta_duel_log from it.
+// four. toRow makes the p_report of regatta_duel_log from it.
 //
 // The settings' lists are those of cleanSettings in public/game/match.js; a name is cleaned as `clean` in
 // public/game/match-ui.js does it.
@@ -18,7 +18,19 @@ export type Report =
   | { kind: 'start'; code: string; seed: number; token: string; host: string; guest: string; settings: Settings }
   | { kind: 'join'; code: string; seed: number; name: string }
   | { kind: 'end'; code: string; seed: number; token: string; state: 'finished' | 'abandoned'; winner: Side | null; margin: number | null; forfeited: Side | null;
-      recalls: number | null; prep: 'P' | 'I' | 'U' | 'B' | null; host: Result; guest: Result };
+      recalls: number | null; prep: 'P' | 'I' | 'U' | 'B' | null; host: Result; guest: Result }
+  | { kind: 'perf'; code: string; seed: number; side: Side; perf: Perf };
+
+// How the race ran on one screen, as the game's stats.js perfSummary and match.js net() measure it: the middle frame's
+// rate (fps) and the slow end's (low, the 95th percentile frame), stalls over 100 ms a minute, seconds measured, the
+// graphics level at the start and the end and the setting, the battery saver, the device, and how the other screen's
+// messages came (rtt: the least way there and back, ms, measured on the guest's screen alone; late: messages more than
+// 250 ms past their due, a minute). fps and secs must be good; any other field that isn't is kept as null.
+export type Perf = {
+  fps: number; low: number | null; stall: number | null; secs: number; q0: string | null; q: string | null; gfx: string | null; saver: 0 | 1;
+  dev: string | null; tg: 0 | 1; os: string | null; br: string | null; dpr: number | null; cores: number | null; mem: number | null; gpu: string | null;
+  w: number | null; h: number | null; net: { rtt: number | null; late: number | null } | null;
+};
 
 const CHOICES = { preset: ['medium', 'light', 'strong'], length: ['short', 'medium', 'long'], course: ['wl', 'tri', 'trap', 'wlu'], laps: [1, 2], start: [1, 3, 5], current: [0, 1],
   daytime: ['any', 'morning', 'midday', 'afternoon', 'evening', 'sunset'] } as const;
@@ -49,6 +61,24 @@ function resultOf(r: unknown): Result | null {
   return { place, secs, mark, pens } as Result;
 }
 
+const LEVELS = ['high', 'medium', 'low', 'custom'] as const, SETS = ['auto', 'high', 'medium', 'low', 'custom'] as const;
+const num = (v: unknown, lo: number, hi: number) => (typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi ? Math.round(v * 100) / 100 : null);
+const whole = (v: unknown, lo: number, hi: number) => (int(v, lo, hi) ? v : null);
+const word = (v: unknown) => (typeof v === 'string' && /^[a-z0-9_-]{1,16}$/.test(v) ? v : null);
+const pick = <T extends string>(v: unknown, list: readonly T[]) => (oneOf(v, list) ? v : null);
+function perfOf(p: unknown): Perf | null {
+  if (!isObj(p)) return null;
+  const fps = num(p.fps, 0, 1000), secs = whole(p.secs, 0, MAX_SECS);
+  if (fps === null || secs === null) return null;
+  const n = isObj(p.net) ? p.net : null;
+  return {
+    fps, low: num(p.low, 0, 1000), stall: num(p.stall, 0, 10000), secs, q0: pick(p.q0, LEVELS), q: pick(p.q, LEVELS), gfx: pick(p.gfx, SETS), saver: p.saver === 1 ? 1 : 0,
+    dev: pick(p.dev, ['phone', 'tablet', 'desktop'] as const), tg: p.tg === 1 ? 1 : 0, os: word(p.os), br: word(p.br), dpr: num(p.dpr, 0.25, 8),
+    cores: whole(p.cores, 1, 1024), mem: num(p.mem, 0, 1024), gpu: typeof p.gpu === 'string' && /^[\w ()+\-.,/:]{1,60}$/.test(p.gpu) ? p.gpu : null,
+    w: whole(p.w, 1, 20000), h: whole(p.h, 1, 20000), net: n && { rtt: whole(n.rtt, 0, 60000), late: num(n.late, 0, 10000) },
+  };
+}
+
 export function parseReport(body: unknown): Report | null {
   if (!isObj(body)) return null;
   const { kind, code, seed } = body;
@@ -56,6 +86,10 @@ export function parseReport(body: unknown): Report | null {
   if (kind === 'join') {
     const name = cleanName(body.name);
     return name ? { kind, code, seed, name } : null;
+  }
+  if (kind === 'perf') {
+    const side = body.side, perf = perfOf(body.perf);
+    return (side === 'host' || side === 'guest') && perf ? { kind, code, seed, side, perf } : null;
   }
   if (kind !== 'start' && kind !== 'end') return null;
   const token = body.token;
@@ -76,6 +110,7 @@ export function parseReport(body: unknown): Report | null {
 // SHA-256 of the write token, which is never sent on.
 export function toRow(r: Report, userId: string | null, hash: string | null): object {
   if (r.kind === 'join') return { kind: 'join', code: r.code, seed: r.seed, guest_user: userId, guest_name: r.name };
+  if (r.kind === 'perf') return { kind: 'perf', code: r.code, seed: r.seed, side: r.side, perf: r.perf };
   if (r.kind === 'start') {
     const s = r.settings;
     return { kind: 'start', code: r.code, seed: r.seed, write_hash: hash, host_user: userId, host_name: r.host, guest_name: r.guest, venue: s.venue, yacht: s.yacht, wind: s.preset,

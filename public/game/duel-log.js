@@ -1,5 +1,5 @@
 // What a 1-on-1 race tells the site: POST /connect/log (app/connect/log/route.ts, whose rules are lib/duel-log.ts) hears of its
-// start and its end from the host's screen, and of each guest's joining from hers. Nothing here touches the page but
+// start and its end from the host's screen, of each guest's joining from hers, and from each screen how the race ran on it. Nothing here touches the page but
 // isLocal's reading of the address, and nothing here can get in the way of a race: a report goes in the background, is
 // tried again a few times, and is then forgotten. match-ui.js is the only module that loads this one.
 const ROUTE = '/connect/log';
@@ -72,4 +72,10 @@ export function endBody(match, code, token, race, results) {
   return { kind: 'end', code, seed: match.start.seed, token, state: abandoned ? 'abandoned' : 'finished', winner: role(winner), margin: abandoned ? null : span(r.margin),
     forfeited: abandoned ? null : role(r.forfeited), recalls: race ? count(race.recalls, MAX_RECALLS) : null, prep: ['P', 'I', 'U', 'B'].includes(race?.prepFlag) ? race.prepFlag : null,
     host: boat(match.hostId), guest: boat(match.guestId) };
+}
+
+// How the race ran on one screen (side: 'host' | 'guest'): perf, stats.js perfSummary's numbers for its frames (perfMeter),
+// and net, how the other screen's messages came (match.js Host.net or Guest.net: { rtt ms or null, late a minute }), or null
+export function perfBody(match, code, side, perf, net) {
+  return { kind: 'perf', code, seed: match.start.seed, side, perf: { ...perf, net: net ?? null } };
 }

@@ -5,7 +5,7 @@ import { parseReport, toRow } from '@/lib/duel-log';
 
 // Where the 1-on-1 race's game reports its races (public/game/match-ui.js posts here, on the same origin, so the player's
 // session cookie comes along):
-//   POST /connect/log { kind: 'start' | 'join' | 'end', … } → always 204
+//   POST /connect/log { kind: 'start' | 'join' | 'end' | 'perf', … } → always 204
 // The game never waits on it, so every path answers 204: a report that is refused, dropped, limited or lost to the
 // database is told no differently from one that was written. The account is the session's, never the body's; the write
 // token (the host's proof that a race is hers) is hashed here and only the hash goes to the database.
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
     let userId: string | null = null;
-    if (report.kind !== 'end') {
+    if (report.kind === 'start' || report.kind === 'join') {
       try { userId = (await supabase.auth.getUser()).data.user?.id ?? null; } catch { /* a session that fails to load: a guest */ }
     }
     const hash = 'token' in report ? createHash('sha256').update(report.token).digest('hex') : null;

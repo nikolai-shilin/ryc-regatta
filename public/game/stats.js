@@ -110,16 +110,30 @@ export const device = () => ({
   cores: navigator.hardwareConcurrency || null,
   mem: navigator.deviceMemory || null,
 });
+const newPf = (q, gfx, saver) => ({ hist: new Uint32Array(NB), n: 0, t: 0, stalls: 0, q0: q, q, gfx, saver: saver ? 1 : 0, load: null });
+function addPf(p, raw, q, gfx, saver) {
+  p.hist[Math.min(NB - 1, Math.floor((raw * 1000) / BIN))]++;
+  p.n++; p.t += raw; if (raw > STALL) p.stalls++;
+  p.q = q; p.gfx = gfx; if (saver) p.saver = 1;
+}
 export function perfFrame(race, raw, q, gfx, saver) {
   if (!race || !race._rid || race.multi || !(raw > 0) || raw > 1) return; // (a second and more: the tab was away)
   if (!pf || pf.rid !== race._rid) {
     perfSend();
-    pf = { rid: race._rid, hist: new Uint32Array(NB), n: 0, t: 0, stalls: 0, q0: q, q, gfx, saver: saver ? 1 : 0 };
+    pf = { rid: race._rid, ...newPf(q, gfx, saver) };
     pf.load = loaded ? null : Math.round(performance.now() / 100) / 10; loaded = true; // the page's first race: since it opened
   }
-  pf.hist[Math.min(NB - 1, Math.floor((raw * 1000) / BIN))]++;
-  pf.n++; pf.t += raw; if (raw > STALL) pf.stalls++;
-  pf.q = q; pf.gfx = gfx; if (saver) pf.saver = 1;
+  addPf(pf, raw, q, gfx, saver);
+}
+// A 1-on-1 race's frames on this screen, measured as perfFrame measures a race's: the race has no row of its own among the
+// races (stats.js posts nothing for it), so match-ui.js sends summary() with its own report of the race (duel-log.js).
+// summary(): perfSummary's numbers, or null under 20 s of frames
+export function perfMeter() {
+  let p = null;
+  return {
+    frame(raw, q, gfx, saver) { if (!(raw > 0) || raw > 1) return; p ??= newPf(q, gfx, saver); addPf(p, raw, q, gfx, saver); },
+    summary() { return p && p.t >= 20 && p.n >= 200 ? perfSummary(p) : null; },
+  };
 }
 // the frame time (s) at fraction f of the frames, the slowest last
 function frameAt(h, n, f) {

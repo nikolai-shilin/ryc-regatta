@@ -207,3 +207,26 @@ test('days on end with races are not given extra bars', () => {
   const fig = /<figure class="adm-days">(.*?)<\/figure>/.exec(html())[1];
   assert.equal((fig.match(/class="adm-days-bar"/g) ?? []).length, 2);
 });
+
+// ---------- how the race ran on each screen ----------
+const PERF = { fps: 30.3, low: 19.6, stall: 2.13, secs: 282, q0: 'low', q: 'low', gfx: 'auto', saver: 0, dev: 'desktop', tg: 0, os: 'windows', br: 'chrome', dpr: 1.25,
+  cores: 4, mem: 8, gpu: 'Intel(R) UHD Graphics', w: 1536, h: 703, net: { rtt: null, late: 1.5 } };
+const FAST = { ...PERF, fps: 60, low: 58.8, stall: 0, os: 'mac', gpu: 'Apple M3 Max', cores: 14, mem: 32, q: 'high', gfx: 'high', saver: 1, net: { rtt: 98, late: 0 } };
+
+test('each sailor\'s screen shows its frame rate, the slow end, the stalls, the way there and back and the late messages, the device in the tooltip', () => {
+  const h = html({ races: [race({ host: sailor({ perf: PERF }), guest: sailor({ name: 'Boris', perf: FAST }) })], totals: { ...TOTALS, perf_seats: 2, slow_seats: 1 } });
+  const t = plain(h);
+  assert.match(t, /30 fps low 20 · 2\.13\/min stalls · 1\.5\/min late/);
+  assert.match(t, /60 fps low 59 · 98 ms/);
+  assert.match(h, /title="windows\/chrome · Intel\(R\) UHD Graphics · 4 cores · 8 GB · graphics low \(auto\)"/);
+  assert.match(h, /title="mac\/chrome · Apple M3 Max · 14 cores · 32 GB · graphics high · battery saver"/);
+  assert.equal((h.match(/color:var\(--warn\)/g) || []).length, 1, 'the slow screen alone is amber');
+  assert.equal(tile(h, 'Slow screens'), '1 · 50%');
+});
+
+test('a race with no screen reported, or data from before screens were reported, draws dashes and no Slow screens tile', () => {
+  const h = html();
+  assert.equal(tile(h, 'Slow screens'), undefined);
+  assert.match(plain(h), /Finished – –/);
+  assert.equal(tile(html({ totals: { ...TOTALS, perf_seats: 0, slow_seats: 0 } }), 'Slow screens'), undefined);
+});

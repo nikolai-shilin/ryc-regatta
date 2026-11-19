@@ -1,7 +1,7 @@
 // Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
 import { Race, CLS, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone, laidShape } from './sim.js';
 import { World, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
-import { raceStarted, raceFinished, raceResult, perfSetup, perfFrame, statsContext, raceIncident, raceEnded, visitSend } from './stats.js';
+import { raceStarted, raceFinished, raceResult, perfSetup, perfFrame, perfMeter, statsContext, raceIncident, raceEnded, visitSend } from './stats.js';
 import { initExtras, onStart, onFrame, drill, drillSettings } from './extras.js'; // the drills, the analytics
 import { createHud } from './hud-bc.js';
 import { autoBase, autoTuner, gfxLevel, gfxNow, gfxParts, lighterParts, saveAuto, GFX_LEVELS, GFX_PARTS, SAVER_MS } from './gfx.js';
@@ -1263,7 +1263,7 @@ function matchView() {
 }
 // a race of the match on screen (match-ui.js): its race in place of the last, the HUD up
 function onMatchRace(s) {
-  mx = s; race = s.race;
+  mx = s; race = s.race; duelPerf = perfMeter(); // (its frames go with the race's own report: match-ui.js)
   world.setRace(race); world.resetView();
   hints = {}; lastClockInt = null; coachSeen = {}; skipper.reset(); asides.reset(); committee.reset(); score.reset(); flagsKey = '';
   race.coach = false;
@@ -1282,7 +1282,7 @@ function startMatchFlow() {
   for (const id of ['#pChange', '#pRestart']) $(id).style.display = 'none'; // a match isn't restarted or changed: only left
   import('./match-ui.js').then((m) => {
     matchUi = m;
-    return m.startMatch({ code: MATCH, t, LANG, strings: ES?.MATCH, venue: VENUE, cls: CLS, onRace: onMatchRace, onIdle: onMatchIdle, onEnd: () => replaceRace(HUB), keepOneOnOne, openResult, toast: (s) => toast(s, 3.5),
+    return m.startMatch({ code: MATCH, t, LANG, perf: () => duelPerf?.summary() ?? null, strings: ES?.MATCH, venue: VENUE, cls: CLS, onRace: onMatchRace, onIdle: onMatchIdle, onEnd: () => replaceRace(HUB), keepOneOnOne, openResult, toast: (s) => toast(s, 3.5),
       yachtName: (id) => yachtName(id), venueName: (id) => named(venueById(id).name) });
   }).catch((e) => { console.error(e); matchFailed(); });
 }
@@ -2147,7 +2147,11 @@ function personalBest(key, secs) {
 // ---------- the loop ----------
 let last = performance.now(), acc = 0;
 const STEP = 1 / 60;
-let frameN = 0;
+// A 1-on-1 race runs at the speed of the clock on both screens: a slow frame (a weak laptop's, a stall) is made up with as
+// many steps as it took, up to half a second of them, rather than cut to 0.05 s as a race of one's is, which slowed the
+// race for both (the guest's screen keeps the host's clock). A step is a hundredth of a millisecond.
+const MATCH_DT = 0.5;
+let frameN = 0, stepK = 0, duelPerf = null;
 // In a match a frame that throws costs that frame, not the race: the next one is asked for first, and the frame's
 // news is dropped (a message that threw would throw again). A dead loop sends no inputs, so the guest would be
 // forfeited after 30 s, and a host's guest frozen and her race abandoned after 60. Today's race and a free race keep
@@ -2179,7 +2183,7 @@ function frame(now) {
     if (!P.autoTrim && (input.keys.ArrowDown || input.keys.KeyS)) setSheet(P.sheet + dt * 0.6);
     if (!input.rudderHeld) input.rudder *= Math.exp(-dt * 5);
     if (!P.auto) P.rudder = input.rudder; else input.rudder = 0;
-    if (mx) mx.step(dt); // a match: the host's game runs the race, the guest's follows it (match-ui.js)
+    if (mx) mx.step(Math.min(MATCH_DT, raw), keepPrev); // a match: the host's game runs the race, the guest's follows it (match-ui.js)
     else {
       acc += dt * timeScale;
       while (acc >= STEP) { keepPrev(); race.step(STEP); acc -= STEP; }
@@ -2190,6 +2194,7 @@ function frame(now) {
     if (world.gfx.res === 'high' || frameN++ % 3 === 0) drawMap(mctx, 240, false);
     watchFps(raw);
     perfFrame(race, raw, levelNow(), opts.gfx, !!opts.saver); // (stats.js: a race's frames, for the site's /admin)
+    if (mx) duelPerf?.frame(raw, levelNow(), opts.gfx, !!opts.saver); // (a 1-on-1 race's: told with its report)
   } else {
     if (!running) world.orbit += dt * 0.12; // behind the menu the drone circles
     race.idle(dt);
@@ -2201,20 +2206,22 @@ function frame(now) {
   // left them, the boats would move on one frame and stand still on the next (at 120 Hz, every other frame), and the
   // helm view, bolted to the hull, would judder with her. So the picture is drawn where they are between their last
   // two steps, as far on as the time left over says (a step behind at most), and the race is put back as it was.
-  const lerped = running && !paused && !mx && between(acc / STEP);
-  world.frame(running && (!paused || mx) ? dt * timeScale : 0, lerped ? race.t - STEP + acc : race.t, dt); // foam and wakes keep pace with the race; the cameras on the frame's clock
+  const frac = mx ? mx.frac : acc / STEP, lerped = running && (!paused || mx) && between(frac); // (a match: its steps are match-ui.js's)
+  world.frame(running && (!paused || mx) ? dt * timeScale : 0, lerped ? race.t - STEP + frac * STEP : race.t, dt); // foam and wakes keep pace with the race; the cameras on the frame's clock
   if (lerped) putBack();
   frameBusy = (performance.now() - began) / 1000;
 }
 // what the picture takes from each boat between two steps: where she is, her heading, her heel, how high she flies
 const LERP = ['x', 'z', 'h', 'heel', 'ride'];
-function keepPrev() { for (const b of race.boats) { const p = b._prev || (b._prev = {}); for (const k of LERP) p[k] = b[k]; p.t = race.t; } }
+// (before each step; stepK counts them, so a boat kept before the last step is told from one kept earlier: a match's steps
+// don't each move race.t by a step, the guest's clock waiting for the host's or catching up with it)
+function keepPrev() { stepK++; for (const b of race.boats) { const p = b._prev || (b._prev = {}); for (const k of LERP) p[k] = b[k]; p.t = race.t; p.k = stepK; } }
 function between(a) {
   if (!(a >= 0 && a < 1)) return false; // (at 0 the picture is the step before: drawing the last one would jump a step)
   let any = false;
   for (const b of race.boats) {
     const p = b._prev;
-    if (!p || Math.abs(p.t + STEP - race.t) > 1e-6) { b._now = null; continue; } // no step behind her yet (a new race)
+    if (!p || p.k !== stepK || (!mx && Math.abs(p.t + STEP - race.t) > 1e-6)) { b._now = null; continue; } // no step behind her yet (a new race)
     const n = b._now || (b._now = {});
     for (const k of LERP) n[k] = b[k];
     for (const k of LERP) if (typeof p[k] === 'number' && typeof n[k] === 'number') b[k] = k === 'h' ? p.h + wrap(n.h - p.h) * a : p[k] + (n[k] - p[k]) * a;

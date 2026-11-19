@@ -130,7 +130,7 @@ export function leaveMatch() { if (api) api.leave(); }
 // puts the race on screen ({ race, step(dt), isGuest }), onIdle() takes it off (the card); onEnd() leaves the page;
 // toast(text) says a word over the race; keepOneOnOne(race, results) keeps this screen's record of it and returns its id,
 // openResult(id) goes to its page. yachtName(id) and venueName(id) for the waiting room's settings.
-export async function startMatch({ code, t, LANG = 'en', strings = null, onRace, onIdle = () => {}, onEnd = () => {}, toast = () => {}, keepOneOnOne = () => null, openResult = () => {}, venue, cls, yachtName = (id) => id, venueName = (id) => id }) {
+export async function startMatch({ code, t, LANG = 'en', strings = null, perf = () => null, onRace, onIdle = () => {}, onEnd = () => {}, toast = () => {}, keepOneOnOne = () => null, openResult = () => {}, venue, cls, yachtName = (id) => id, venueName = (id) => id }) {
   const L = strings || MATCH_STRINGS[LANG] || MATCH_STRINGS.en;
   document.head.append(Object.assign(document.createElement('style'), { textContent: CSS }));
   const wrap = html(`<div id="mWrap" class="bc">
@@ -220,7 +220,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, onRace,
       link?.all.send('leave', { id: myId });
     } catch (e) {}
     if (isHost && match?.state === 'race') match.endRace({ abandoned: true }); // (it lived in this tab)
-    tellEnd(true);
+    tellEnd(true); tellPerf(cur);
     cur?.H?.stop(); cur?.G?.stop();
     if (isHost) try { localStorage.removeItem('regatta-match-' + code); } catch (e) {}
     try { room?.leave(); } catch (e) {}
@@ -233,7 +233,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, onRace,
   C.full.addEventListener('click', () => { const id = resultId(); if (id) leave(() => openResult(id)); });
   R.retry.addEventListener('click', () => location.reload());
   R.signin.addEventListener('click', () => leave(() => { location.href = `/sign-in?next=${encodeURIComponent(location.pathname + location.search)}`; })); // (back to this race)
-  addEventListener('pagehide', () => { tellEnd(true); if (!left) try { room?.leave(); } catch (e) {} });
+  addEventListener('pagehide', () => { tellEnd(true); tellPerf(cur); if (!left) try { room?.leave(); } catch (e) {} });
   // the link checked at once when the page comes back to the front or the network comes back: a phone drops a
   // background tab's socket, and the old one may be half-open
   const relink = () => { if (rt && !left) { kicked = Date.now(); rt.reconnect(); } };
@@ -380,6 +380,16 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, onRace,
       for (const l of told.values()) if (l.end && (l.settled || now)) sendEnd(l);
     } catch (e) { console.error(e); }
   };
+  // this screen's frames in race c and how the other screen's messages came (main.js measures the frames: perf()), once a
+  // race: as its card opens, or as the page leaves it; under 20 s of frames tells nothing
+  const tellPerf = (c) => {
+    if (!c || c.perfTold || !Log?.perfBody || !match) return;
+    c.perfTold = true;
+    try {
+      const p = perf();
+      if (p) Log.report(Log.perfBody(match, code, isHost ? 'host' : 'guest', p, (c.H || c.G)?.net() ?? null));
+    } catch (e) { console.error(e); }
+  };
   // the guest: her joining this race, once
   const tellJoin = () => {
     const seed = match.start.seed;
@@ -427,14 +437,17 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, onRace,
     get race() { return cur?.race; },
     get isGuest() { return !isHost; },
     get debug() { return { cur, phase, match, room, link, K, rt }; }, // (main.js's window.__rg.mx, under ?debug)
-    // a frame of the race: the host steps it (once the guest has it), the guest follows the host's
-    step(dt) {
+    // a frame of the race: the host steps it (once the guest has it), the guest follows the host's; each() before each step
+    // (main.js keeps the boats' poses, to draw them between their last two steps)
+    step(dt, each = () => {}) {
       if (!cur) return;
       const P = cur.race.player;
-      if (cur.H) { cur.acc += dt; while (cur.acc >= STEP) { cur.H.tick(STEP); cur.acc -= STEP; } }
-      else if (cur.G) { cur.G.input(W.controlsOf(P)); cur.acc += dt; while (cur.acc >= STEP) { cur.G.frame(STEP); cur.acc -= STEP; } }
+      if (cur.H) { cur.acc += dt; while (cur.acc >= STEP) { each(); cur.H.tick(STEP); cur.acc -= STEP; } }
+      else if (cur.G) { cur.G.input(W.controlsOf(P)); cur.acc += dt; while (cur.acc >= STEP) { each(); cur.G.frame(STEP); cur.acc -= STEP; } }
       hostEnded();
     },
+    // how far the frame is into the next step (0 to 1)
+    get frac() { return cur ? Math.min(1, Math.max(0, cur.acc / STEP)) : 0; },
   };
 
   // the race's result over the water, for a boat that didn't cross the finish herself (her own finish says it)
@@ -590,6 +603,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, onRace,
       if (cur.endedAt && done && now - cur.endedAt >= CARD_MS) {
         if (isHost) K.raceOff();
         room?.pause(false);
+        tellPerf(cur);
         phase = 'card'; onIdle();
       }
     }

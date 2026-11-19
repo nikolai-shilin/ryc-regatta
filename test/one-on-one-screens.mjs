@@ -119,7 +119,8 @@ export async function page(name, { host = false, settings = {}, ls = null, ...mo
   const keepOne = recorder((res) => s.records.push(res));
   await ui.startMatch({ code: CODE, t: (k, ...a) => [k, ...a].join(' '), LANG: 'en', venue: { id: 'palma' }, cls: { id: 'jpk1050' },
     onRace: (x) => { s.session = x; s.racing = true; }, onIdle: () => { s.racing = false; }, onEnd: () => { s.ended++; }, toast: (x) => s.toasts.push(x),
-    keepOneOnOne: (race, results) => { s.kept.push(JSON.parse(JSON.stringify(results))); return keepOne(race, results); }, openResult: (id) => s.opened.push(id) });
+    keepOneOnOne: (race, results) => { s.kept.push(JSON.parse(JSON.stringify(results))); return keepOne(race, results); }, openResult: (id) => s.opened.push(id),
+    perf: () => s.perf?.() ?? null }); // (main.js's measure of the race's frames: a test sets s.perf)
   return s;
 }
 

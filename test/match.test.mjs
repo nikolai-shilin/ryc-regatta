@@ -920,3 +920,33 @@ test('after the race the host\'s tick(0) and flush go on repeating the end and t
   assert.equal(heard.results, n, 'answered: the results stop');
 });
 
+
+// ---------- the other boat on the guest's screen, and what each screen heard ----------
+test('the host\'s boat glides on the guest\'s screen: a snapshot that corrects her is eased in, never drawn as a jump', async () => {
+  const d = await duel({ latency: 80, jitter: 60 });
+  const drawn = [], real = [];
+  d.run(6, () => {});
+  for (let i = 0; i < 20 * 60; i++) { d.frame(() => { d.H.rudder = Math.sin(d.clock.t / 1000 * 1.2) * 0.6; }); drawn.push([d.Hg.x, d.Hg.z]); real.push([d.H.x, d.H.z]); } // (as the screen draws her: after the frame)
+  // a jump: the change in her movement from one frame to the next (drawn as the snapshots came, unsmoothed: 6.7 cm)
+  const jerk = (P) => P.slice(2).map((p, i) => Math.hypot(p[0] - 2 * P[i + 1][0] + P[i][0], p[1] - 2 * P[i + 1][1] + P[i][1]));
+  const J = jerk(drawn), worst = Math.max(...J);
+  assert.ok(worst < 0.015, `the drawn boat's movement changes by ${worst.toFixed(4)} m a frame at most`);
+  const off = drawn.map((p, i) => Math.hypot(p[0] - real[i][0], p[1] - real[i][1]));
+  assert.ok(Math.max(...off) < 0.5, `and she stays where the host has her: ${Math.max(...off).toFixed(2)} m off at most`);
+});
+
+test('each screen says how the other\'s messages came: the guest the way there and back and her late snapshots, the host her late inputs', async () => {
+  const d = await duel({ latency: 50 });
+  assert.equal(d.guest.net(), null, 'nothing under 20 s');
+  d.run(30, () => { d.me.rudder = Math.sin(d.clock.t / 700) * 0.4; });
+  const g = d.guest.net(), h = d.host.net();
+  assert.ok(g.rtt >= 60 && g.rtt <= 140, `the way there and back (50 ms each way): ${g.rtt} ms`);
+  assert.equal(g.late, 0); assert.deepEqual(h, { rtt: null, late: 0 });
+  // the host's game stalls 1 s: no snapshot and no input heard in that time
+  const T = d.clock.t; let stalled = false;
+  const tick = d.host.tick.bind(d.host);
+  d.host.tick = (dt) => { if (d.clock.t - T < 1000) { stalled = true; return; } tick(dt); };
+  d.run(5, () => {});
+  assert.ok(stalled);
+  assert.ok(d.guest.net().late > 0, 'the guest heard the snapshots late');
+});

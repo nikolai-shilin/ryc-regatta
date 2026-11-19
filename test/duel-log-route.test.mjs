@@ -251,3 +251,30 @@ test('nothing logged ever holds the key, a token, a hash of it or a name', async
   const all = everything(logs);
   for (const secret of ['SECRET-KEY-VALUE', TOKEN, sha256(TOKEN), 'Anna', 'Boris', 'u-anna', 'permission denied']) assert.ok(!all.includes(secret), `no ${secret} in the logs`);
 });
+
+// ---------- how the race ran on a screen ----------
+const PERF = { fps: 30.3, low: 19.6, stall: 2.13, secs: 282, q0: 'low', q: 'low', gfx: 'auto', saver: 0, dev: 'desktop', tg: 0, os: 'windows', br: 'chrome', dpr: 1.25,
+  cores: 4, mem: 8, gpu: 'Intel(R) UHD Graphics', w: 1536, h: 703, load: 7.9, net: { rtt: 98, late: 0.4 } };
+const PERFR = { kind: 'perf', code: 'K7M2QZ', seed: 4242, side: 'host', perf: PERF };
+
+test('a screen\'s perf is written for its side, with no account and no token, its fields as sent', async () => {
+  assert.equal((await post(PERFR, { user: 'u-1' })).status, 204);
+  assert.equal(rpc.calls, 1);
+  const { load, ...kept } = PERF; // (the page's load time isn't the race's)
+  assert.deepEqual(rpc.args, { fn: 'regatta_duel_log', p_key: 'k', p_report: { kind: 'perf', code: 'K7M2QZ', seed: 4242, side: 'host', perf: kept } });
+  await post({ ...PERFR, side: 'guest', perf: { ...PERF, net: { rtt: null, late: 0 } } });
+  assert.equal(rpc.args.p_report.side, 'guest');
+  assert.deepEqual(rpc.args.p_report.perf.net, { rtt: null, late: 0 });
+});
+
+test('a perf with a bad side, fps or secs is dropped; any other bad field is kept as null, and unknown ones go', async () => {
+  for (const bad of [{ ...PERFR, side: 'both' }, { ...PERFR, side: undefined }, { ...PERFR, perf: null }, { ...PERFR, perf: [] }, { ...PERFR, perf: { ...PERF, fps: -1 } },
+    { ...PERFR, perf: { ...PERF, fps: '30' } }, { ...PERFR, perf: { ...PERF, fps: NaN } }, { ...PERFR, perf: { ...PERF, secs: 1.5 } }, { ...PERFR, perf: { ...PERF, secs: undefined } },
+    { ...PERFR, seed: -1 }, { ...PERFR, code: 'nope' }]) assert.equal(parseReport(bad), null, JSON.stringify(bad));
+  const r = parseReport({ ...PERFR, perf: { ...PERF, low: -3, stall: 'many', q: 'ultra', gfx: 'turbo', dev: 'fridge', os: '<script>', br: 'a'.repeat(17), dpr: 99, cores: 0.5, mem: -1,
+    gpu: 'GPU <img src=x>', w: 0, h: 1e9, saver: 'yes', tg: 2, net: { rtt: -5, late: 'x' }, extra: 'dropped' } });
+  assert.deepEqual(r.perf, { fps: 30.3, low: null, stall: null, secs: 282, q0: 'low', q: null, gfx: null, saver: 0, dev: null, tg: 0, os: null, br: null, dpr: null,
+    cores: null, mem: null, gpu: null, w: null, h: null, net: { rtt: null, late: null } });
+  assert.equal(parseReport({ ...PERFR, perf: { ...PERF, net: 'fast' } }).perf.net, null);
+  assert.deepEqual(toRow(parseReport(PERFR), 'u-1', 'h'), { kind: 'perf', code: 'K7M2QZ', seed: 4242, side: 'host', perf: parseReport(PERFR).perf });
+});
