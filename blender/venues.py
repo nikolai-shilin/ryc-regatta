@@ -796,6 +796,28 @@ def nearest(P, Q, bs=24.0):
     return best, bd
 
 
+def outline(r, tol=0.4):
+    """a building's footprint without the corners that bend it by less than `tol` metres (Douglas–Peucker round the
+    ring, from its two corners farthest apart; four corners at the least): the map traces many a wall in steps of a few
+    centimetres, every one of them walls and roof to draw. A ring that meets itself (a courtyard joined to its outer
+    wall) is left as it is."""
+    n = len(r)
+    if n <= 4 or len({(round(a, 2), round(b, 2)) for a, b in r}) < n: return r
+    P = np.asarray(r, float)
+    def dp(i, j):  # the corners to keep strictly between i and j, round the ring
+        idx = [(i + k) % n for k in range(1, (j - i) % n)]
+        if not idx: return []
+        a, b = P[i], P[j]; ab = b - a; L = math.hypot(*ab) or 1e-9
+        d = [abs(ab[0] * (P[k][1] - a[1]) - ab[1] * (P[k][0] - a[0])) / L for k in idx]
+        m = int(np.argmax(d))
+        if d[m] <= tol: return []
+        k = idx[m]
+        return dp(i, k) + [k] + dp(k, j)
+    i = 0; j = int(np.argmax(np.hypot(*(P - P[0]).T)))
+    keep = sorted([i] + dp(i, j) + [j] + dp(j, i))
+    return r if len(keep) < 4 else [r[k] for k in keep]
+
+
 def bake(vid, V, fetch_only=False):
     work = os.path.join(WORK, vid); os.makedirs(work, exist_ok=True)
     LAT0, LON0 = V.get('origin') or V['home']
@@ -1310,6 +1332,7 @@ def bake(vid, V, fetch_only=False):
     CLEAR = [c for lm in V.get('landmarks', []) if lm.get('clear') for c in
              ([(*to_xz(*lm['at']), lm['clear'])] if not isinstance(lm['clear'], (list, tuple)) else [(*to_xz(la, lo), r) for la, lo, r in lm['clear']])]
     def add(r, h, roof, t=None):
+        r = outline(r)
         cx_ = sum(a for a, _ in r) / len(r); cz_ = sum(b for _, b in r) / len(r)
         if any(math.hypot(cx_ - float(lx), cz_ - float(lz)) < cr for lx, lz, cr in CLEAR): return
         near = min([math.hypot(cx_ - MID[0], cz_ - MID[1])] + [math.hypot(cx_ - tx, cz_ - tz) * 1.5 for tx, tz in TOWN_XZ])
