@@ -310,6 +310,10 @@ const SCORES = [
   ['start', 'close but slow', 1, /At the gun: 9 m/, (r) => { Object.assign(r.log, { gunD: 9, gunV: 3 }); r.clock = 8; }],
   ['start', 'far back', 1, /At the gun: 40 m/, (r) => { Object.assign(r.log, { gunD: 40, gunV: 6 }); r.clock = 8; }],
   ['start', 'just over, and back behind it', 3, /At the gun: 0 m/, (r) => { Object.assign(r.log, { gunD: -2, gunV: 5 }); r.clock = 8; }],
+  // left alone, the boat sails over the line long before the gun and on out past its end, where no recall picks her out:
+  // at the gun she is far over it, and hasn't started
+  ['start', 'far over the line, out past its end', 0, /out past its end: you never started/, (r) => { Object.assign(r.log, { gunD: -120, gunV: 6.5 }); r.clock = 8; }],
+  ['tide', 'far over the line on the stream', 0, /you never started\..* The stream sets you/, (r) => { Object.assign(r.log, { gunD: -40, gunV: 5 }); r.clock = 8; }],
   ['tide', 'over the line on the stream', 0, /The stream sets you/, (r) => { r.log.ocs = true; r.clock = 8; }],
   ['tide', 'a fair start on the stream', 2, /The stream sets you/, (r) => { Object.assign(r.log, { gunD: 20, gunV: 4 }); r.clock = 8; }],
   ['tide', 'a perfect start on the stream', 3, /wins races\.$/, (r) => { Object.assign(r.log, { gunD: 5, gunV: 5 }); r.clock = 8; }],
@@ -353,6 +357,7 @@ const SCORES = [
   ['end', 'at that end but slow', 2, /Three stars: in the third of the line/, (r, f) => { P_(r).x = -80; r.clock = 0; f(); Object.assign(r.log, { gunD: 5, gunV: 3 }); r.clock = 8; }],
   ['end', 'at the wrong end', 1, /90% of the way/, (r, f) => { P_(r).x = 80; r.clock = 0; f(); Object.assign(r.log, { gunD: 5, gunV: 5 }); r.clock = 8; }],
   ['end', 'the committee boat further upwind, and there', 3, /The end that paid: the committee boat\. At the gun you were 10%/, (r, f) => { r.course.committee = { x: 100, z: -50 }; P_(r).x = 80; r.clock = 0; f(); Object.assign(r.log, { gunD: 5, gunV: 5 }); r.clock = 8; }],
+  ['end', 'far over the line at the end that paid', 0, /out past its end: you never started/, (r, f) => { P_(r).x = -130; r.clock = 0; f(); Object.assign(r.log, { gunD: -120, gunV: 6.5 }); r.clock = 8; }],
   ['end', 'off the end of the line', 3, /0% of the way/, (r, f) => { P_(r).x = -300; r.clock = 0; f(); Object.assign(r.log, { gunD: 5, gunV: 5 }); r.clock = 8; }],
 
   ['layline', 'not at the mark in time', 0, /Not at the mark in time/, (r) => { r.clock = 241; }],

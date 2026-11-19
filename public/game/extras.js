@@ -108,6 +108,10 @@ export function onFrame(race) {
   if (dr) drillFrame(race);
 }
 
+// further over the line than this at the gun, and not recalled (out past an end of it, where the committee doesn't look):
+// she hasn't started, and isn't on the line at speed whatever her distance from it says
+const FAR = 10;
+
 // ---------- a drill's course ----------
 function startDrill(race) {
   const P = race.player;
@@ -202,6 +206,7 @@ function drillFrame(race) {
   if (K === 'start') {
     const d = L.gunD, v = L.gunV;
     if (L.ocs || L.startDsq) { stars = 0; line = tr('Over the line at the gun: you had to go back. Hold below it until the last seconds.' + tide[0], 'Фальстарт — пришлось возвращаться. Держись под ней до последних секунд.' + tide[1], 'Saliste antes de la señal y tuviste que volver. Aguanta por debajo de la línea hasta los últimos segundos.' + (tide[2] ?? tide[0]), 'Beim Startsignal über der Linie: du musstest zurück. Bleib bis zu den letzten Sekunden darunter.' + (tide[3] ?? tide[0]), 'Start işaretinde hattın üzerindeydin: geri dönmen gerekti. Son saniyelere kadar hattın altında kal.' + (tide[4] ?? tide[0])); }
+    else if (d < -FAR) { stars = 0; line = tr('Over the line at the gun, out past its end: you never started. Stay below the line, between its ends, until the last seconds.' + tide[0], 'На сигнале ты был за линией, в стороне от её концов: старта не было. Держись под линией, между её концами, до последних секунд.' + tide[1], 'En la señal estabas por encima de la línea, fuera de sus extremos: no llegaste a salir. Quédate por debajo de la línea, entre sus extremos, hasta los últimos segundos.' + (tide[2] ?? tide[0]), 'Beim Startsignal warst du über der Linie, außerhalb ihrer Enden: Du bist nie gestartet. Bleib bis zu den letzten Sekunden unter der Linie, zwischen ihren Enden.' + (tide[3] ?? tide[0]), 'Start işaretinde hattın üstünde, uçlarının dışındaydın: hiç start etmedin. Son saniyelere kadar hattın altında, iki ucunun arasında kal.' + (tide[4] ?? tide[0])); }
     else if (d == null) { stars = 0; line = tr('No start this time.', 'В этот раз старта не было.', 'Esta vez no hubo salida.', 'Diesmal kein Start.', 'Bu sefer start yok.'); }
     else {
       stars = d < 10 && v > 4.5 ? 3 : d < 25 && v > 3.5 ? 2 : 1;
@@ -218,6 +223,7 @@ function drillFrame(race) {
     const boat = dr.boatEnd, at = dr.gunAt, d = L.gunD, v = L.gunV, endName = boat ? tr('the committee boat', 'у судейского судна', 'el barco del comité', 'das Wettfahrtleitungsboot', 'komite teknesi') : tr('the pin', 'у пина', 'el pin', 'der Pin', 'pin');
     const near = at == null ? 1 : boat ? 1 - at : at; // how far along the line from the end that paid
     if (L.ocs || L.startDsq) { stars = 0; line = tr('Over the line at the gun: you had to go back.', 'Фальстарт — пришлось возвращаться.', 'Sobre la línea en la señal: tuviste que volver.', 'Beim Startsignal über der Linie: Du musstest zurück.', 'Start işaretinde hattın üstündeydin: geri dönmen gerekti.'); }
+    else if (d < -FAR) { stars = 0; line = tr('Over the line at the gun, out past its end: you never started. Stay below the line, between its ends, until the last seconds.', 'На сигнале ты был за линией, в стороне от её концов: старта не было. Держись под линией, между её концами, до последних секунд.', 'En la señal estabas por encima de la línea, fuera de sus extremos: no llegaste a salir. Quédate por debajo de la línea, entre sus extremos, hasta los últimos segundos.', 'Beim Startsignal warst du über der Linie, außerhalb ihrer Enden: Du bist nie gestartet. Bleib bis zu den letzten Sekunden unter der Linie, zwischen ihren Enden.', 'Start işaretinde hattın üstünde, uçlarının dışındaydın: hiç start etmedin. Son saniyelere kadar hattın altında, iki ucunun arasında kal.'); }
     else if (d == null || at == null) { stars = 0; line = tr('No start this time.', 'В этот раз старта не было.', 'Esta vez no hubo salida.', 'Diesmal kein Start.', 'Bu sefer start yok.'); }
     else {
       stars = near <= 1 / 3 && d < 15 && v > 4 ? 3 : near <= 1 / 2 && d < 30 ? 2 : 1;
