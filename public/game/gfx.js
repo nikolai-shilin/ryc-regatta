@@ -79,6 +79,7 @@ export const gfxLevel = (parts) => GFX_LEVELS[Math.round(GFX_PARTS.reduce((s, k)
 // if that step brings the frames down again within 20 s it waits three times as long before the next try, up to 15 minutes.
 // Two rounds of giving up that buy no frames at all mean the picture isn't what holds them back (a phone in low power
 // mode draws 30 a second whatever it's given): the picture comes back as it was, and stays unless the frames get worse.
+// Not under 24 fps, which no such cap explains: there it goes on giving up, the GPU's steps too, till all is low.
 export function autoTuner(base) {
   let settle = 3, t = 0, d = [], b = [], calm = 0, wait = 40, clock = 0, raisedAt = -Infinity, tried = null, capped = 0;
   const mid = (a) => a.sort((x, y) => x - y)[a.length >> 1];
@@ -92,11 +93,17 @@ export function autoTuner(base) {
     t = 0; d = []; b = [];
     if (frame > target) {
       calm = 0;
+      // under 24 fps no rate cap explains it (a phone's low power mode holds 30): the picture is what holds the frames
+      // back, however little the first steps bought, so the steps go on till the frames come or all is low. And once a
+      // round has bought nothing, what eases the GPU goes too, though the frames look held up by the CPU: on Windows the
+      // drawing goes through ANGLE onto Direct3D, so a laptop's Intel graphics shows its drawing as CPU time, and gave up
+      // only the CPU's steps, which left it at Medium and 10 fps for whole races (2026-11-18)
+      const slow = frame > 1 / 24;
       if (clock - raisedAt < 20) { wait = Math.min(wait * 3, 900); raisedAt = -Infinity; }
-      if (capped && frame <= capped * 1.15) return null;
+      if (capped && frame <= capped * 1.15 && !slow) return null;
       if (tried && frame < tried.frame * 0.95) tried = null; // that helped
-      if (tried && tried.rounds >= 2) { const back = tried.parts; capped = frame; tried = null; settle = 2; return back; }
-      const next = shedParts(parts, 1 - target / frame, work > target * 0.75);
+      if (tried && tried.rounds >= 2 && !slow) { const back = tried.parts; capped = frame; tried = null; settle = 2; return back; }
+      const next = shedParts(parts, 1 - target / frame, work > target * 0.75 && !(slow && tried));
       if (next) { settle = 2; if (tried) tried.rounds++; else tried = { parts, frame, rounds: 1 }; }
       return next;
     }

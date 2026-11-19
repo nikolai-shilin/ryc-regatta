@@ -95,6 +95,19 @@ test('giving things up that buys no frames is undone: a phone held at 30 fps kee
   assert.ok(changes > 0, 'frames much slower than that are a real shortfall again');
 });
 
+test('at 10 fps it goes on giving things up though the first steps buy nothing, down to Low', () => {
+  const base = gfxParts('medium'), tune = autoTuner(base);
+  let parts = base;
+  // a laptop whose frames come only once nearly everything is low, and only some seconds after each change (its
+  // shaders compiling again, slowly): the first rounds seem to buy nothing
+  let since = 0;
+  const frameOf = (p) => (since > 8 && GFX_PARTS.filter((k) => p[k] === 'low').length >= GFX_PARTS.length - 1 ? 1 / 30 : 1 / 10);
+  // and whose frames keep the CPU busy (Windows draws through ANGLE onto Direct3D: the GL calls are CPU time), so it looks CPU-bound
+  for (let t = 0; t < 90;) { const raw = frameOf(parts), n = tune(raw, raw * 0.9, parts, false); t += raw; since += raw; if (n) { parts = n; since = 0; } }
+  assert.equal(frameOf(parts), 1 / 30, 'it got down to where the frames come');
+  assert.notDeepEqual(parts, base, 'and kept it');
+});
+
 test('giving things up that does buy frames goes on until the frames hold', () => {
   const base = gfxParts('high'), tune = autoTuner(base);
   let parts = base;
