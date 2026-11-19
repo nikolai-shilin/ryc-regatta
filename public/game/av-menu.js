@@ -155,7 +155,7 @@ export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClo
     return { box, show };
   };
 
-  const loud = [['loud', t('Loud', 'Громко', 'Alto', 'Laut', 'Yüksek')], ['normal', t('Normal', 'Обычно', 'Normal', 'Normal', 'Normal')], ['quiet', t('Quiet', 'Тихо', 'Bajo', 'Leise', 'Sessiz')]];
+  const loud = [['loud', t('Loud', 'Громко', 'Alto', 'Laut', 'Yüksek')], ['normal', t('Normal', 'Обычно', 'Normal', 'Normal', 'Normal')], ['quiet', t('Quiet', 'Тихо', 'Bajo', 'Leise', 'Kısık')]];
   const level = [...loud, ['off', t('Off', 'Выкл', 'No', 'Aus', 'Kapalı')]];
 
   // ---------- the picture ----------
@@ -192,7 +192,7 @@ export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClo
     group(t('Graphics', 'Графика', 'Gráficos', 'Grafik', 'Grafik'), quality, gfxParts.box, toggle('figures', t('People on board', 'Люди на борту', 'Gente a bordo', 'Leute an Bord', 'Teknedeki insanlar'), 1), toggle('saver', t('Battery saver · 30 fps', 'Экономия батареи · 30 к/с', 'Ahorro de batería · 30 fps', 'Akkusparmodus · 30 fps', 'Pil tasarrufu · 30 fps'))),
     group(t('Audio', 'Звук', 'Audio', 'Audio', 'Ses'),
       toggle('sound', t('Sound', 'Звук', 'Sonido', 'Ton', 'Ses')),
-      toggle('voice', t('Voice on board', 'Голос шкипера', 'Voz a bordo', 'Stimme an Bord', 'Teknede ses')),
+      toggle('voice', t('Voice on board', 'Голос шкипера', 'Voz a bordo', 'Stimme an Bord', 'Kaptanın sesi')),
       key('music', { name: t('Music', 'Музыка', 'Música', 'Musik', 'Müzik'), list: [...Object.entries(TRACK).map(([v, n]) => [v, pair(n)]), ['off', t('Off', 'Выкл', 'No', 'Aus', 'Kapalı')]] }, 'playlist'),
       key('musicVol', { name: t('Music volume', 'Громкость музыки', 'Volumen de la música', 'Musiklautstärke', 'Müzik sesi'), list: loud }, 'normal'),
       key('sea', { name: t('Sea', 'Море', 'Mar', 'Meer', 'Deniz'), list: level }, 'normal'),

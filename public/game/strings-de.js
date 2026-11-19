@@ -128,7 +128,7 @@ export const HUD = {
   you: 'Du', layIn: (s) => `Layline in ${s} · dann wenden`, layNow: 'An der Layline · wenden', over: 'Über die Layline · jetzt wenden', fetch: 'Tonne liegt an',
   advantage: 'Vorteil',
   camName: { drone: 'Drohnenkamera', top: 'Kamera von oben', helm: 'Ruderkamera' },
-  space: 'Raum', boardFoot: (n) => `Die Boote um dich · ${n} insgesamt`,
+  space: 'Leertaste', boardFoot: (n) => `Die Boote um dich · ${n} insgesamt`,
   level: { beginner: 'Anfänger', club: 'Club', racer: 'Regattasegler', expert: 'Experte' },
   toLeg: { lineStart: 'Zur Startlinie', mark: 'Zur Luvtonne', mark1: 'Zu Tonne 1', wing: 'Zur Raumtonne', mark2: 'Zu Tonne 2', offset: 'Zur Ablauftonne', gate: 'Zum Leetor', finish: 'Zum Ziel' },
   go: 'Los', leads: 'Führt', afterGun: 'nach dem Signal', ord,
