@@ -42,6 +42,7 @@ export function AdminPlayers({ lang, data, days = 30 }: { lang: Lang; data: Play
     name: plainName(p.name) || (p.kind === 'guest' ? `${KIND.guest} ${p.who.slice(0, 4)}` : '–'),
     sub: `${KIND[p.kind]}${p.handle ? ` · ${p.kind === 'tg' ? '@' : ''}${p.handle}` : ''}`,
     isNew: p.new,
+    hideable: p.kind === 'guest',
     cells: [String(p.n), pct(p.fin, p.n), String(p.top3), p.dsq ? String(p.dsq) : '–', String(p.days), p.down == null ? '–' : `${Math.round(100 * p.down)}%`,
       p.best == null ? '–' : clock(p.best), p.rated ? `${(p.rating ?? 0).toFixed(1)} · ${p.rated}` : '–', dev(p.dev), when(p.last), when(p.first)],
     vals: [p.n, p.n ? p.fin / p.n : null, p.top3, p.dsq, p.days, p.down, p.best, p.rated ? p.rating : null, p.dev ? dev(p.dev) : null, Date.parse(p.last), Date.parse(p.first)],
@@ -60,6 +61,7 @@ export function AdminPlayers({ lang, data, days = 30 }: { lang: Lang; data: Play
         <section className="adm-tab">
           <h3 className="adm-tab-h">{t('Click a column to sort by it', 'Нажмите на столбец, чтобы отсортировать', 'Pulsa una columna para ordenar', 'Klicke auf eine Spalte, um danach zu sortieren', 'Sıralamak için bir sütuna tıkla')}</h3>
           <PlayersTable first={{ label: t('Player', 'Игрок', 'Jugador', 'Spieler', 'Oyuncu'), asc: true }} cols={cols} rows={rows} start={10}
+            hideLabel={count('guest') ? t('Hide guests', 'Скрыть гостей', 'Ocultar invitados', 'Gäste ausblenden', 'Misafirleri gizle') : undefined}
             label={t('The players', 'Игроки', 'Los jugadores', 'Die Spieler', 'Oyuncular')} newLabel={t('New', 'Новый', 'Nuevo', 'Neu', 'Yeni')} />
         </section>
       )}

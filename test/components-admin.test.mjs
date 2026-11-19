@@ -475,6 +475,22 @@ test('a player’s row reads their numbers, last seen first', async () => {
   assert.equal(v.$$('.adm-pl-sub')[2].textContent, 'Site account · eve@x.co');
 });
 
+test('the switch hides the guests from the table and shows them again', async () => {
+  const v = await mount(h(AdminPlayers, { lang: 'en', data: PLAYERS }));
+  const sw = v.$('.adm-tab-sw [role="switch"]');
+  assert.equal(v.$('.adm-tab-sw span').textContent, 'Hide guests');
+  assert.equal(sw.getAttribute('aria-checked'), 'false');
+  await click(sw);
+  assert.equal(sw.getAttribute('aria-checked'), 'true');
+  assert.deepEqual(names(v), ['Kolya', '<i>Eve</i>']);
+  await click(sw);
+  assert.deepEqual(names(v), ['Kolya', 'Guest abcd', '<i>Eve</i>']);
+});
+
+test('with no guests there is no switch', () => {
+  assert.doesNotMatch(ssr(h(AdminPlayers, { lang: 'en', data: { ...PLAYERS, players: PLAYERS.players.filter((p) => p.kind !== 'guest') } })), /adm-tab-sw/);
+});
+
 test('a name is shown as written, never as markup', () => {
   assert.match(ssr(h(AdminPlayers, { lang: 'en', data: PLAYERS })), /&lt;i&gt;Eve&lt;\/i&gt;/);
 });

@@ -1556,6 +1556,7 @@
 .bc .adm-tab, .bc .adm-days { margin: 0 0 var(--s-5); }
 .bc .adm-tab-h { margin: 0 0 var(--s-2); font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 .bc .adm-tab-scroll { overflow-x: auto; }
+.bc .adm-tab-sw { display: flex; align-items: center; gap: var(--s-3); margin: 0 0 var(--s-3); font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-2); }   /* the switch that hides the guests */
 .bc .adm-tab-scroll:focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
 .bc .adm-tab table { width: 100%; border-collapse: collapse; font: 600 var(--fs-small)/1.3 var(--cond); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; color: var(--ink-2); }
 .bc .adm-tab th, .bc .adm-tab td { padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--rule-2); text-align: right; white-space: nowrap; }

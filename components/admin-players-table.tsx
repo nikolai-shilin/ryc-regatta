@@ -1,29 +1,41 @@
 'use client';
 import Link from 'next/link';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 // The players' table on /admin/players, sorted by the column whose head was clicked (components/admin-players.tsx
 // draws each cell on the server and gives each its value to sort by). A second click turns the order round; a column
-// with nothing in it for a player puts that player last either way. At first: the last seen first.
+// with nothing in it for a player puts that player last either way. At first: the last seen first. Given hideLabel, a
+// switch above it leaves out the rows marked hideable (the guests on /admin/players), remembered in this browser.
 export type Col = { label: string; asc?: boolean };   // asc: sorted low to high at its first click
-export type Row = { key: string; name: string; sub: string; isNew: boolean; cells: ReactNode[]; vals: (number | string | null)[]; href?: string; sort?: number | string };   // href: the player's log; sort: what the first column sorts by, when not its name
+export type Row = { key: string; name: string; sub: string; isNew: boolean; cells: ReactNode[]; vals: (number | string | null)[]; href?: string; sort?: number | string; hideable?: boolean };   // href: the player's log; sort: what the first column sorts by, when not its name; hideable: left out while the switch is on
 
-export function PlayersTable({ cols, rows, first, label, newLabel, start }: {
-  cols: Col[]; rows: Row[]; first: Col; label: string; newLabel: string; start: number;
+const HIDE = 'adm-hide';
+
+export function PlayersTable({ cols, rows, first, label, newLabel, start, hideLabel }: {
+  cols: Col[]; rows: Row[]; first: Col; label: string; newLabel: string; start: number; hideLabel?: string;
 }) {
   const all = [first, ...cols];
   const [sort, setSort] = useState<{ i: number; asc: boolean }>({ i: start, asc: false });
+  const [hide, setHide] = useState(false);
+  useEffect(() => { try { if (hideLabel && localStorage.getItem(HIDE) === '1') setHide(true); } catch {} }, [hideLabel]);
+  const flip = () => setHide((h) => { try { localStorage.setItem(HIDE, h ? '0' : '1'); } catch {} return !h; });
   const sorted = useMemo(() => {
     const val = (r: Row) => (sort.i === 0 ? (r.sort ?? r.name) : r.vals[sort.i - 1]);
-    return [...rows].sort((a, b) => {
+    return rows.filter((r) => !(hide && r.hideable)).sort((a, b) => {
       const x = val(a), y = val(b);
       if (x == null || y == null) return x == null && y == null ? 0 : x == null ? 1 : -1;
       const c = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y));
       return sort.asc ? c : -c;
     });
-  }, [rows, sort]);
+  }, [rows, sort, hide]);
   const click = (i: number) => setSort((s) => (s.i === i ? { i, asc: !s.asc } : { i, asc: !!all[i].asc }));
-  return (
+  return (<>
+    {hideLabel && (
+      <div className="adm-tab-sw">
+        <span id="adm-hide-l">{hideLabel}</span>
+        <button type="button" className="tgl" role="switch" aria-checked={hide} aria-labelledby="adm-hide-l" onClick={flip}><i /></button>
+      </div>
+    )}
     <div className="adm-tab-scroll" tabIndex={0} role="region" aria-label={label}>
       <table className="adm-players">
         <thead>
@@ -50,5 +62,5 @@ export function PlayersTable({ cols, rows, first, label, newLabel, start }: {
         </tbody>
       </table>
     </div>
-  );
+  </>);
 }
