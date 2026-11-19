@@ -36,7 +36,8 @@ export const HUD_STRINGS = {
     umpire: 'Umpire · penalty', oneTurn: 'one turn', ruleN: (r) => `Rule ${r}`, against: (n) => `Against ${n}`, againstYou: 'Against you', pen: 'Pen',
     split: 'split', timeGap: 'Time · gap', due: 'Grey: still to round, metres to the mark', toGo: 'to go',
     squareAt: 'square', veer: 'Veer', back: 'Back', mToLine: (m) => `${m} m to line`,
-    hold: (s) => `Hold ${s}, then bear away`, bearNow: 'Bear away now, full speed', late: 'Late: bear away now',
+    hold: (s) => `Too early by ${s}: turn away from the line`, bearNow: 'Go now: head for the line at full speed', late: 'Late: head for the line now',
+    overL: 'Over the line', overCall: 'Over the line: turn back behind it before the gun', vmgP: 'Speed to the mark',
     mvUp: (n) => (n > 1 ? `Up ${n} places` : 'Up a place'), mvDown: (n) => (n > 1 ? `Down ${n} places` : 'Down a place'),
     mvPast: (n) => `Past ${n}`, mvBy: (n) => `${n} through`, mvTheirPen: 'Her penalty turn', mvYourPen: 'Your penalty turn',
     mvMark: 'At the mark', mvShift: 'On the shift',
@@ -61,7 +62,8 @@ export const HUD_STRINGS = {
     umpire: 'Судья · штраф', oneTurn: 'один оборот', ruleN: (r) => `Правило ${r}`, against: (n) => `Против ${n}`, againstYou: 'Против тебя', pen: 'Штраф',
     split: 'отсечка', timeGap: 'Время · разрыв', due: 'Серым: ещё не обогнули, метров до знака', toGo: 'осталось',
     squareAt: 'ровная при', veer: 'Сдвиг вправо', back: 'Сдвиг влево', mToLine: (m) => `${m} м до линии`,
-    hold: (s) => `Выжди ${s}, потом уваливайся`, bearNow: 'Уваливайся сейчас, полный ход', late: 'Опаздываешь: уваливайся сейчас',
+    hold: (s) => `Рано на ${s}: отверни от линии`, bearNow: 'Пора: иди к линии полным ходом', late: 'Опаздываешь: иди к линии сейчас',
+    overL: 'За линией', overCall: 'Ты за линией: вернись за неё до сигнала', vmgP: 'Скорость к знаку',
     mvUp: (n) => `+${n} ${ruPlaces(n)}`, mvDown: (n) => `−${n} ${ruPlaces(n)}`,
     mvPast: (n) => `${n} позади`, mvBy: (n) => `${n} впереди`, mvTheirPen: 'Она крутит штраф', mvYourPen: 'Ты крутишь штраф',
     mvMark: 'На знаке', mvShift: 'На сдвиге ветра',
@@ -716,7 +718,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
   const cell = (k) => q(low, `.c-${k}`);
   const Y = {
     pos: cell('pos'), legP: q(cell('leg'), 'path'), legT: q(cell('leg'), 'span'), spd: q(cell('spd'), '.v'), pct: q(cell('pct'), '.pv'), pctG: q(cell('pct'), '.b-g'),
-    pctI: q(cell('pct'), '.b-g i'), vmg: q(cell('pct'), '.c-vm .v'), toL: q(cell('to'), '.lbl'), to: q(cell('to'), '.v'), eta: q(cell('to'), '.b-sub'), burn: q(cell('burn'), '.v'),
+    pctI: q(cell('pct'), '.b-g i'), pctL: q(cell('pct'), '.lbl'), vmg: q(cell('pct'), '.c-vm .v'), toL: q(cell('to'), '.lbl'), to: q(cell('to'), '.v'), eta: q(cell('to'), '.b-sub'), burn: q(cell('burn'), '.v'),
     ldrL: q(cell('ldr'), '.lbl'), ldr: q(cell('ldr'), '.v'), rate: q(cell('ldr'), '.b-sub'), time: q(cell('time'), '.v'),
     nm: q(cell('nm'), '.n-m'), fl: q(cell('nm'), '.b-fl'),
   };
@@ -1105,7 +1107,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     const ink = (el, c2) => { el.classList.remove('good', 'low', 'late'); if (c2) el.classList.add(c2); };
     if (pre) {
       const li = race.lineInfo(P), close = (Math.sin(P.h) * c.normal.x - Math.cos(P.h) * c.normal.z) * P.v;
-      txt(Y.toL, L.toLine); txt(Y.to, String(Math.round(Math.max(0, -li.d)))); txt(Y.eta, '');
+      txt(Y.toL, li.d > 0 ? L.overL : L.toLine); txt(Y.to, String(Math.round(Math.abs(li.d)))); txt(Y.eta, ''); // over it: by how much
       Y.legP.setAttribute('d', ARROW.up); txt(Y.legT, `${L.start} ${fmt(left + 0.999)}`);
       if (close > 0.3 && li.d < 0) {
         burn = left - -li.d / close;
@@ -1118,6 +1120,7 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
       Y.pctI.style.width = `${(clamp(pct, 0, 1.1) / 1.1) * 100}%`;
       const pk = pct >= 0.95 ? 'good' : pct < 0.7 ? 'low' : ''; ink(Y.pct, pk); ink(Y.pctG, pk);
       txt(Y.vmg, nf(kn * cos));
+      txt(Y.pctL, `${race.coach ? L.vmgP : L.vmg} · ${L.ofTarget.toLowerCase()}`); // the first races (main.js coach): in words
       txt(Y.toL, L.toMark); txt(Y.to, String(Math.round(d)));
       const vm = P.v * cos; txt(Y.eta, vm > 0.3 ? fmt(d / vm) : '');
       Y.legP.setAttribute('d', ARROW[legKind(c, Math.max(1, P.leg))]); txt(Y.legT, P.leg ? L.legShort(P.leg, nLegs) : L.start);
@@ -1144,10 +1147,13 @@ export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFl
     // the layline, when nothing else is being called
     // before the start, the same place calls the time to burn: hold, bear away now, or late
     burnK = pre && !P.ocs && !P.auto ? burnCall(burn, left, burnK) : null;
-    const ly = !pre && !done ? layline(race, c, P) : burnK ? [burnK.kind === 'hold' ? L.hold(fmt(burnK.s)) : burnK.kind === 'now' ? L.bearNow : L.late, burnK.kind === 'now', false] : null;
+    // over the line before the gun (and not out of the race for it already): that, from the moment she's over, first
+    const overL = pre && !P.ocs && !P.ufd && !P.bfd && race.lineInfo(P).d > 0;
+    if (overL) burnK = null;
+    const ly = overL ? [L.overCall, false, false] : !pre && !done ? layline(race, c, P) : burnK ? [burnK.kind === 'hold' ? L.hold(fmt(burnK.s)) : burnK.kind === 'now' ? L.bearNow : L.late, burnK.kind === 'now', false] : null;
     lay.classList.toggle('on', !!ly && !toastEl.classList.contains('show'));
     if (ly) { txt(layT, ly[0]); lay.classList.toggle('now', ly[1]); txt(layK, ly[2] ? L.space : ''); }
-    lay.classList.toggle('burn', !!burnK); lay.classList.toggle('late', burnK?.kind === 'late');
+    lay.classList.toggle('burn', !!burnK || overL); lay.classList.toggle('late', overL || burnK?.kind === 'late');
 
     // the rudder fades back when no one is steering
     rudder.classList.toggle('act', Math.abs(P.rudder) > 0.04);

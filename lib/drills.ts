@@ -70,3 +70,15 @@ export function levelOpen(lv: Level, got: Record<string, number>): boolean {
 // the stars a level needs from the one below, and the level a player is at: the highest open
 export const toOpen = (lv: Level) => { const i = LEVELS.findIndex((l) => l.id === lv); return i <= 0 ? 0 : Math.ceil(DRILLS.filter((d) => d.level === LEVELS[i - 1].id).length * 2); };
 export const levelOf = (got: Record<string, number>): Level => LEVELS.filter((l) => levelOpen(l.id, got)).at(-1)!.id;
+
+// The drill for a part of the race the result's debrief says to work on (components/result-view.tsx): the start, the
+// tacks on the shifts, the penalty turns. Its link: the drill itself when its level is open (got: your stars, as
+// regatta-drills keeps them), else the drills, where the way to its level is.
+export const DEBRIEF_DRILL = { start: 'start', tacks: 'beat', penalties: 'penalty' } as const;
+export function drillLink(id: string, got: Record<string, number>): { href: string; name: Pair; min: number; open: boolean } | null {
+  const d = DRILLS.find((x) => x.id === id);
+  if (!d) return null;
+  const open = levelOpen(d.level, got);
+  return { href: open ? `/play?race=free&drill=${d.id}` : '/race/drills', name: d.name, min: d.min, open };
+}
+export const readDrills = (): Record<string, number> => { try { return JSON.parse(localStorage.getItem(DRILLS_KEY) || '{}') || {}; } catch { return {}; } };

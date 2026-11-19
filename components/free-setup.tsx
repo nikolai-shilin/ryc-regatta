@@ -154,7 +154,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
         <div className="bt-info">
           <div className="bt-top">
             <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок')} />
-            <SceneBrand />
+            <SceneBrand lang={lang} />
           </div>
           <span className="bt-kick bt-kick-w">{match ? t('1-on-1 race', 'Гонка 1 на 1') : from === 'race' ? t('Change the race', 'Изменить гонку') : t('Custom race', 'Своя гонка')}</span>
           <h1 className="bt-h" id="fs-title">{t(...where.name)} <span className="bt-h-cc">{where.nation}</span></h1>

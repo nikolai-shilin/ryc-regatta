@@ -52,7 +52,7 @@ export default async function SettingsPage({ params }: LangParams) {
         <div className="bt-info">
           <div className="bt-top">
             <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок')} />
-            <SceneBrand />
+            <SceneBrand lang={lang} />
             <DoneButton label={t('Done', 'Готово')} />
           </div>
           <span className="bt-kick">{t('Settings', 'Настройки')}</span>

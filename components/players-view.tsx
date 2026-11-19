@@ -130,7 +130,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
       <ScenePoster label={backdrop.off ? undefined : t('Loading the boat', 'Загружаем яхту')} on={!live} />
 
       <div className="bt-info" ref={info}>
-        <div className="bt-top">{back}<SceneBrand /></div>
+        <div className="bt-top">{back}<SceneBrand lang={lang} /></div>
         <span className="bt-kick">{passport ? passTitle : t('The players', 'Игроки')}</span>
         {passport ? (<>
           <h1 className="bt-h">{passS >= 2 ? t(`${passS} days in a row`, `${passS} ${ruPlural(passS, ['день', 'дня', 'дней'])} подряд`) : t(`${passN} of ${VENUES.length} venues`, `${passN} из ${VENUES.length} акваторий`)}</h1>

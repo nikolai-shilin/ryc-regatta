@@ -9,8 +9,8 @@ import { courseDistance, dailyRace, fmtDistance, plannedCourse, KN, SHAPE_NAME }
 import { yachtOf } from '@/lib/yachts';
 import { venueOf } from '@/lib/venues';
 import { BackLink } from '@/components/back-link';
-import { IconPlay, IconTrophy, Num, clock } from '@/components/ui';
-import { FreeQuick, MatchCard } from '@/components/hub-client';
+import { IconTrophy, Num, clock } from '@/components/ui';
+import { FreeQuick, MatchCard, TodayGo } from '@/components/hub-client';
 import { RivalRow } from '@/components/progress';
 import { SceneBrand } from '@/components/scene-brand';
 import { GameScene } from '@/components/game-scene';
@@ -51,7 +51,7 @@ export default async function Hub({ params }: LangParams) {
         <div className="bt-info">
           <div className="bt-top">
             <BackLink href="/" label={t('Home', 'На главную')} />
-            <SceneBrand />
+            <SceneBrand lang={lang} />
             <span className="bt-top-r">
               <span className="bt-tick"><span className="dot-live" aria-hidden="true" /><time dateTime={d.day}>{date}</time></span>
               <Link className="bt-ico" href="/help" aria-label={t('How to play', 'Как играть')} title={t('How to play', 'Как играть')}>?</Link>
@@ -75,7 +75,7 @@ export default async function Hub({ params }: LangParams) {
             <Link className="bt-acct bt-acct-me if-me me-ini" href="/settings" aria-label={t('Settings, signed in', 'Настройки, ты вошёл')} />
             <Link className="bt-acct if-guest" href="/sign-in?next=/race">{t('Sign in', 'Войти')}</Link>
           </>}
-          action={<a className="bt-go" href="/play?race=today"><IconPlay /><span>{t('Start today’s race', 'Начать гонку дня')}</span></a>}>
+          action={<TodayGo lang={lang} day={d.day} />}>
           <div className="bt-g">
             <span className="bt-k"><IconTrophy />{t('Today’s fastest', 'Самые быстрые сегодня')}{races ? <span className="bt-k-r">{t(`${races} ${races === 1 ? 'race' : 'races'}`, `заездов: ${races}`)}</span> : null}</span>
             <ol className="hm-lb bt-lb">

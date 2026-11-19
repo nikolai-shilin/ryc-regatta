@@ -1730,3 +1730,14 @@
   .bc .so-ch-go { grid-column: 1; }
   .bc .so-ch-i { width: 48px; height: 48px; }
 }
+
+/* ---------- the site's menu on the pages over a scene, beside the name (components/scene-brand.tsx) ---------- */
+/* these pages have no header, so the menu holds every page at any width (the header's tabs hide some of it when they're
+   on screen), and opens from its left edge, as it sits at the left */
+.bc .bt-menu { pointer-events: auto; display: flex; flex: none; }
+.bc .bt-menu .hm-prof { height: 36px; background: var(--panel-2); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+.bc .bt-menu .hm-prof:hover { background: rgba(28, 42, 62, 0.94); }
+.bc .bt-menu .hm-menu-pop { left: 0; right: auto; z-index: 30; max-height: calc(100dvh - 96px); overflow-y: auto; }
+.bc .bt-menu .hm-menu .hm-menu-nav, .bc .bt-menu .hm-menu .hm-menu-nav > * { display: flex; }
+/* open, the bar it's in comes over the rest of the page's words (each of them drawn on a layer of its own as it rises in) */
+.bc .bt-top:has(.bt-menu .hm-menu[open]) { position: relative; z-index: 20; }

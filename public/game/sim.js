@@ -701,6 +701,10 @@ export const SHAPES = ['wl', 'tri', 'trap', 'wlu'];
 export const laidShape = (course, length) => (SHAPES.includes(course) && shapeOffered(VENUE, course, length) ? course : 'wl');
 export const ZONE = 3 * HULL; // the zone round a mark: three hull lengths
 export const FINISH_LIMIT_S = 180; // a race of two humans: the boat still out has this long after the first valid finish
+// Race.lineUp: how far back a newcomer's boat starts, as a share of the way her polar's beat would take her by the gun
+// (she sails it slower, getting up to speed, so this brings her to the line a few seconds after the gun more often than
+// before it), and never further back than this many metres
+export const LINE_UP_K = 0.96, LINE_UP_MAX = 420;
 const SEP = HULL * 0.78; // the computer skippers keep the centres this far apart, and then some
 // how big her boats are against the club's: the computer skippers' sense of a close pass and of room to tack scales
 // with it (SZ_PASS, a dinghy's tighter, a cruiser's wider), and their path round a mark grows with it but never
@@ -1127,6 +1131,19 @@ export class Race {
     return was < 0 && s >= 0 && t >= 0 && t <= 1;
   }
   lineInfo(b) { const c = this.course; return { d: lineD(c, b), t: lineT(c, b) }; }
+  // A newcomer's first starts (main.js: the first three races on a device): her boat set back along the course she is
+  // on, so that held as she goes she comes to the middle of the line about as the gun goes, a few seconds after it more
+  // often than before it. Not where the way there isn’t open water, nor further off than LINE_UP_MAX (a long sequence,
+  // a foiler's speed): she stays where she was. True if she was moved.
+  lineUp(b) {
+    const c = this.course, tws = this.wind.p.tws;
+    const dist = polarSpeed(tws, beatAngle(tws)) * KN * -this.clock * LINE_UP_K;
+    if (!(dist > HULL) || dist > LINE_UP_MAX) return false;
+    const mx = (c.pin.x + c.committee.x) / 2, mz = (c.pin.z + c.committee.z) / 2, sx = Math.sin(b.h), cz = Math.cos(b.h);
+    for (let s = 0; s <= dist + 1; s += 20) if (this.roomAt(mx - sx * s, mz + cz * s) < 30) return false;
+    b.x = mx - sx * dist; b.z = mz + cz * dist; b.lastD = lineD(c, b); b.lastZ = b.z;
+    return true;
+  }
 
   // the triangle of the starting line's ends and the first mark (rule 30.3 and 30.4)
   inTriangle(b) {

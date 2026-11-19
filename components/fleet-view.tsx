@@ -117,7 +117,7 @@ export function FleetView({ lang, start, back, tour = true, own = false, foot }:
         onLoad={() => post({ type: 'hello' })} />
 
       <div className="bt-info" ref={info}>
-        <div className="bt-top">{back}<SceneBrand /></div>
+        <div className="bt-top">{back}<SceneBrand lang={lang} /></div>
         <span className="bt-kick">{t('The yachts', 'Яхты')} <span className="fl-n">{id ? `${String(n).padStart(2, '0')} / ${String(YACHTS.length).padStart(2, '0')}` : t('All yachts', 'Все яхты')}</span></span>
         <h1 className="bt-h fl-h" key={shown}>{id ? t(...y.name) : t('Every yacht', 'Все яхты')}</h1>
         <p className="bt-p">{id ? <>{t(...y.kind)}. {t(...y.tagline)}</> : t('Every yacht in one line by length, bows level: from the America’s Cup’s 20.7 m foiler to the 2.3 m Optimist. Pick one to fly to her.', 'Все яхты в одну линию по длине, носы вровень: от 20,7-метровой летающей яхты Кубка Америки до 2,3-метрового Оптимиста. Выбери, чтобы подлететь к ней.')}</p>

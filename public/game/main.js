@@ -147,13 +147,17 @@ const T = {
     roundedWlu: 'Mark rounded — bear away to the offset mark', roundedOffset: 'Offset mark rounded — bear away, kite up', gateFinish: 'Through the gate — now for the finish',
     seaBreeze: 'Sea breeze today — it will build and swing right as you race', seaBreezeSouth: 'Sea breeze today — it will build and swing left as you race', thermalBreeze: 'Thermal breeze today — it will build and swing right as you race', kiteWrap: 'The kite wrapped in the gybe — it has to come down', kiteGybed: 'Kite gybed', takeoff: 'Foiling!', splashdown: 'Off the foils — build speed to take off again',
     crashGybe: 'Crash gybe! Too far by the lee — the boom slammed across', deathRoll: 'Death roll! By the lee with the kite up — she rolled and rounded up',
-    byLee: (d) => `By the lee ${d}° — gybe or head up`, foot: 'Slow — foot a few degrees to build speed', waveTip: 'Waves: luff up the face, bear away down the back', ocsS: 'OCS — return below the line',
+    byLee: (d) => `By the lee ${d}° — gybe or head up`, foot: 'Slow: steer a little away from the wind to build speed', waveTip: 'Waves: luff up the face, bear away down the back', ocsS: 'OCS — return below the line',
     target: 'target', vmg: 'VMG', line: 'line', toLine: 'to line', favPin: 'pin end favoured', favBoat: 'boat end favoured', square: 'line square',
     sigWarn: (n) => `Warning signal — class flag up, ${n} min`, sigPrep: (n, f = 'P') => `Preparatory — ${{ P: 'P flag', U: 'U flag', B: 'black flag' }[f]} up, ${n} min`, sig1: (n, f = 'P') => `One minute — ${{ P: 'P flag', U: 'U flag', B: 'black flag' }[f]} down`, gun: 'Start! Class flag down',
     ocs: 'Over early! X flag — go back below the line', cleared: 'Clear — now start', started: 'Good start!', rounded: 'Mark rounded — bear away, kite up',
     missedLine: 'Outside the line — cross between the committee boat and the pin', missedGate: 'Outside the gate — go back and sail between the two buoys', wrongSide: 'Leave the mark to port — go back round it',
     gateMsg: 'Through the gate — back upwind', bump: 'Contact!', aground: 'Aground! Steer back out to sea', broach: 'Broach! Ease the sheet', kitedown: 'Too close to the wind — the kite comes down in a hurry',
-    heelMsg: 'Too much heel — ease the sheet', ironsMsg: 'In irons — steer away from the wind', gust: 'Gust!', autoOff: 'Auto-trim off — you trim now',
+    heelMsg: 'Too much heel — ease the sheet', ironsMsg: 'In irons — steer away from the wind', gust: 'Gust!', autoOff: 'You trim the sails this race. Tap Auto to hand them back', autoOn: 'Sails back on Auto', autoKeep: 'The sails are on Auto for your first races: just steer',
+    autoBtn: 'Auto', ironsP: 'Stopped: steer away from the wind',
+    rK: 'Before the start', rH: 'Cross the line after the gun', rLined: 'Your boat is lined up: hold your course and you reach the line as the gun goes.',
+    rStay: 'Stay behind the line until the gun, then cross it at full speed.', rKeys: 'Steer with ← and →.', rTouch: 'Steer with your left thumb along the arc.',
+    rAuto: 'The sails trim themselves.', rEarly: 'Cross before the gun and you have to come back.', rGo: 'Ready', rNote: 'The clock starts when you’re ready.',
     hail10: 'Starboard!', hail11: 'Windward boat, keep clear!', hail12: 'Keep clear astern!', hail13: 'You’re tacking — keep clear!', hail18: 'Room at the mark!', hail44: 'Penalty boat — keep clear!',
     fouled: (w, r) => `Foul on ${w} (rule ${r}) — penalty turn: tack and gybe`, theyFouled: (w, r) => `${w} broke rule ${r} and takes a penalty`,
     touched: 'You touched the mark — penalty turn: tack and gybe', penaltyDone: 'Penalty done', pen: (tk, gy) => `Penalty: ${tk ? '✓' : '○'} tack ${gy ? '✓' : '○'} gybe`,
@@ -253,13 +257,17 @@ const T = {
     roundedWlu: 'Знак пройден — уваливайся к отбойнику', roundedOffset: 'Отбойник пройден — уваливайся, ставь генакер', gateFinish: 'Ворота пройдены — теперь на финиш',
     seaBreeze: 'Сегодня бриз — он будет усиливаться и смещаться вправо', seaBreezeSouth: 'Сегодня бриз — он будет усиливаться и смещаться влево', thermalBreeze: 'Сегодня термический ветер — он будет усиливаться и смещаться вправо', kiteWrap: 'Генакер закрутился на повороте — его надо убрать', kiteGybed: 'Генакер переброшен', takeoff: 'Вышли на крылья!', splashdown: 'Сели в воду — разгоняйся, чтобы снова выйти на крылья',
     crashGybe: 'Самопроизвольный фордевинд! Увалился дальше фордевинда — гик перебросило', deathRoll: 'Брочинг на ветер! С генакером на «неправильном» борту — её положило и привело',
-    byLee: (d) => `Увалился дальше фордевинда на ${d}° — делай фордевинд или приводись`, foot: 'Мало скорости — уваливайся на пару градусов, разгонись', waveTip: 'Волна: приводись на склон, уваливайся с гребня', ocsS: 'Фальстарт — вернись за линию',
+    byLee: (d) => `Увалился дальше фордевинда на ${d}° — делай фордевинд или приводись`, foot: 'Мало скорости: отверни немного от ветра и разгонись', waveTip: 'Волна: приводись на склон, уваливайся с гребня', ocsS: 'Фальстарт — вернись за линию',
     target: 'цель', vmg: 'VMG', line: 'линия', toLine: 'до линии', favPin: 'выгоднее у знака', favBoat: 'выгоднее у судна', square: 'линия ровная',
     sigWarn: (n) => `Предупредительный сигнал — флаг класса, ${n} мин`, sigPrep: (n, f = 'P') => `Подготовительный — ${{ P: 'флаг P', U: 'флаг U', B: 'чёрный флаг' }[f]}, ${n} мин`, sig1: (n, f = 'P') => `Одна минута — ${{ P: 'флаг P', U: 'флаг U', B: 'чёрный флаг' }[f]} спущен`, gun: 'Старт! Флаг класса спущен',
     ocs: 'Фальстарт! Флаг X — вернись за линию', cleared: 'Теперь стартуй', started: 'Отличный старт!', rounded: 'Знак пройден — уваливайся, ставь генакер',
     missedLine: 'Мимо линии — пересеки её между судейским судном и знаком', missedGate: 'Мимо ворот — вернись и пройди между двумя знаками', wrongSide: 'Знак оставляют слева — обогни его снова',
     gateMsg: 'Ворота пройдены — снова на ветер', bump: 'Столкновение!', aground: 'На мели! Уходи от берега', broach: 'Брочинг! Трави шкот', kitedown: 'Слишком остро — генакер убирают в спешке',
-    heelMsg: 'Сильный крен — потрави шкот', ironsMsg: 'Левентик — уваливайся', gust: 'Порыв!', autoOff: 'Автоподбор выключен — шкот твой',
+    heelMsg: 'Сильный крен — потрави шкот', ironsMsg: 'Левентик — уваливайся', gust: 'Порыв!', autoOff: 'В этой гонке шкот твой. «Авто» вернёт автоподбор', autoOn: 'Паруса снова на автоподборе', autoKeep: 'В первых гонках паруса на автоподборе: просто рули',
+    autoBtn: 'Авто', ironsP: 'Стоишь: отверни от ветра',
+    rK: 'Перед стартом', rH: 'Пересеки линию после сигнала', rLined: 'Лодка уже на курсе: держи его, и подойдёшь к линии к сигналу.',
+    rStay: 'Держись за линией до сигнала, потом пересекай её полным ходом.', rKeys: 'Руль — клавиши ← и →.', rTouch: 'Руль — левым пальцем по дуге.',
+    rAuto: 'Паруса настраиваются сами.', rEarly: 'Пересечёшь линию раньше сигнала — придётся вернуться.', rGo: 'Готов', rNote: 'Время пойдёт, когда будешь готов.',
     hail10: 'Правый галс!', hail11: 'Наветренная, уходи!', hail12: 'Сзади, уходи!', hail13: 'Ты в повороте — уходи!', hail18: 'Место у знака!', hail44: 'Штрафник, уходи!',
     fouled: (w, r) => `Нарушение против ${w} (правило ${r}) — штрафной оборот: оверштаг и фордевинд`, theyFouled: (w, r) => `${w}: нарушение правила ${r}, штрафные обороты`,
     touched: 'Касание знака — штрафной оборот: оверштаг и фордевинд', penaltyDone: 'Штраф выполнен', pen: (tk, gy) => `Штраф: ${tk ? '✓' : '○'} оверштаг ${gy ? '✓' : '○'} фордевинд`,
@@ -1333,9 +1341,15 @@ const pickSheet = (x) => {
   const a = jibEl.getBoundingClientRect(), b = sheetEl.getBoundingClientRect();
   return Math.abs(x - (a.left + a.width / 2)) < Math.abs(x - (b.left + b.width / 2)) ? 'jib' : 'main';
 };
+// a hand on the sheet with the sails on Auto: they're yours for this race only, the Sails setting stays Auto and the Auto
+// button by the slider hands them back (a slip of the thumb costs nothing). In the first three races (race.coach) the
+// sheet stays on Auto: true, and the touch does nothing else.
 const autoOff = () => {
-  if (!race.player.autoTrim) return;
-  race.player.autoTrim = false; opts.autoTrim = 0; saveOpts(); paintOpts(); toast(t('autoOff'));
+  const P = race.player;
+  if (!P.autoTrim) return false;
+  if (race.coach) { hint('autoKeep', t('autoKeep'), 8); return true; }
+  P.autoTrim = false; toast(t('autoOff'), 3.5);
+  return false;
 };
 const setSheet = (v) => {
   const P = race.player; v = clamp(v, 0, 1);
@@ -1344,7 +1358,7 @@ const setSheet = (v) => {
   if (sheetWhich === 'jib') P.jibSheet = v; else P.sheet = v;
 };
 const setSheetFrom = (y) => { const r = (sheetWhich === 'jib' ? jibEl : sheetEl).getBoundingClientRect(); setSheet((y - r.top) / r.height); };
-sz.addEventListener('pointerdown', (e) => { sheetPtr = e.pointerId; sz.setPointerCapture(e.pointerId); autoOff(); sheetWhich = pickSheet(e.clientX); input.lastSheet = sheetWhich === 'jib' ? race.player.jibSheet : race.player.sheet; setSheetFrom(e.clientY); e.preventDefault(); });
+sz.addEventListener('pointerdown', (e) => { if (autoOff()) { e.preventDefault(); return; } sheetPtr = e.pointerId; sz.setPointerCapture(e.pointerId); sheetWhich = pickSheet(e.clientX); input.lastSheet = sheetWhich === 'jib' ? race.player.jibSheet : race.player.sheet; setSheetFrom(e.clientY); e.preventDefault(); });
 sz.addEventListener('pointermove', (e) => { if (e.pointerId === sheetPtr) setSheetFrom(e.clientY); });
 const sheetUp = (e) => { if (e.pointerId === sheetPtr) sheetPtr = null; };
 sz.addEventListener('pointerup', sheetUp); sz.addEventListener('pointercancel', sheetUp);
@@ -1400,6 +1414,14 @@ const doHail = () => {
 };
 jibBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doJib(); });
 hailBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doHail(); });
+// Auto, over the sheet's slider: shown when a hand on the sheet has taken the sails off Auto for this race, and a tap (or
+// U) hands them back
+const autoBtn = reefBtn.cloneNode(true); autoBtn.id = 'autoBtn'; autoBtn.hidden = true; autoBtn.innerHTML = t('autoBtn'); autoBtn.title = `${t('autoBtn')} · U`; sz.before(autoBtn);
+document.head.append(Object.assign(document.createElement('style'), { textContent: `
+  #hud #autoBtn { right: calc(17px + var(--sr)); bottom: calc(min(300px, 100% - 200px - var(--st) - var(--sb)) + 20px + var(--sb)); width: 46px; height: 46px; font-size: 9px; }
+  #autoBtn[hidden] { display: none; }` }));
+const doAutoBack = () => { if (!running || paused || opts.autoTrim !== 1 || race.player.autoTrim) return; applyTrimMode(); toast(t('autoOn'), 1.6); haptic('light'); };
+autoBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doAutoBack(); });
 reefBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doReef(); });
 tackBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doTack(); });
 kiteBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); doKite(); });
@@ -1448,10 +1470,12 @@ speedBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); cycleSpeed
 // keyboard, for a computer: ←/→ steer, ↑/↓ sheet, space tack, K kite, T game speed, X/C/V drone/top/helm view, A/Z zoom in/out, Esc pause
 // (L hides and shows the fleet board: hud-bc.js)
 window.addEventListener('keydown', (e) => {
+  if (readyOn) { if ((e.code === 'Enter' || e.code === 'Space') && !e.repeat) { e.preventDefault(); ready(); } return; } // the Ready card: the race waits
   input.keys[e.code] = true;
   if (e.code === 'Space') { e.preventDefault(); doTack(); }
   if (e.code === 'KeyK') doKite();
   if (e.code === 'KeyT') cycleSpeed();
+  if (e.code === 'KeyU') doAutoBack();
   if (e.code === 'KeyA') world.zoom(1 / 1.12); // held down, the key repeats: a smooth zoom
   if (e.code === 'KeyZ') world.zoom(1.12);
   const view = { KeyX: 'drone', KeyC: 'top', KeyV: 'helm' }[e.code]; // in the order of the buttons
@@ -1487,13 +1511,30 @@ function startRace() {
   menuChanged = false; firstStart = false;
   opts.played = (opts.played || 0) + 1; saveOpts();
   race.coach = opts.played <= 3; // the first three races: tips as you go
+  // and her boat lined up for the line, so that held as she goes she starts about on the gun (sim.js lineUp)
+  const lined = race.coach && !drill && race.lineUp(race.player);
+  if (lined) world.resetView();
   menu.hidden = true; hud.hidden = false;
   running = true; paused = false;
   applyTrimMode();
   setCam(world.mode);
   if (!drill) raceStarted(race, race.settings); // counted for the admins' Overview and the leaderboards (stats.js); a drill isn't a race
   onStart(race); // a drill's set-up, the analytics (extras.js)
+  if (race.coach && !drill) askReady(lined); // (a match never comes here: startMatchFlow)
 }
+// ---------- the first three races: the race waits behind a card for Ready, with the start in three lines ----------
+const readyEl = $('#readyCard');
+let readyOn = false;
+function askReady(lined) {
+  readyOn = true; paused = true;
+  $('#rLine').textContent = t(lined ? 'rLined' : 'rStay');
+  $('#rSteer').textContent = `${t(matchMedia('(pointer: coarse)').matches ? 'rTouch' : 'rKeys')}${race.player.autoTrim ? ` ${t('rAuto')}` : ''}`;
+  readyEl.hidden = false;
+  updateHud(0); // the HUD as it will be at the start, under the card
+  $('#rGo').focus({ preventScroll: true });
+}
+function ready() { if (!readyOn) return; readyOn = false; paused = false; readyEl.hidden = true; }
+$('#rGo').addEventListener('click', ready);
 // ---------- pause: the race stays in view; resume, change the race, restart or leave (each of the last three asks first) ----------
 const pauseEl = $('#pauseCard'), confirmEl = $('#confirmCard');
 // the voice on board (the skipper in Russian, the crew's calls in English) has a switch of its own, under Sound;
@@ -1523,7 +1564,8 @@ function paintPause() {
   tick.append(`${t('pausedK')} · `, Object.assign(document.createElement('b'), { textContent: VENUE.name[LANG === 'ru' ? 1 : 0] }), ` · ${race.clock < 0 ? `${t('startIn')} ${fmt(-race.clock + 0.999)}` : fmt(race.clock)}`);
   // the guides: a switch; the sails three ways; the camera
   for (const b of pauseEl.querySelectorAll('[data-q]')) { const on = !!opts[b.dataset.q]; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); }
-  for (const b of pauseEl.querySelectorAll('[data-trim]')) b.setAttribute('aria-checked', String(Number(b.dataset.trim) === (opts.autoTrim | 0)));
+  const trimNow = opts.autoTrim === 1 && !P.autoTrim ? 0 : opts.autoTrim | 0; // (Auto, the sheet taken by hand this race: I trim)
+  for (const b of pauseEl.querySelectorAll('[data-trim]')) b.setAttribute('aria-checked', String(Number(b.dataset.trim) === trimNow));
   for (const b of pauseEl.querySelectorAll('[data-pc]')) b.setAttribute('aria-checked', String(b.dataset.pc === world.mode));
   $('#pAvM').textContent = avSummary(opts, LANG); // what Audio & graphics has chosen
 }
@@ -1548,7 +1590,7 @@ if (!TG) {
     if (replacing != null) { if (replacing) { const to = replacing; replacing = ''; location.replace(to); } return; } // on the way out (replaceRace)
     if (avClose) { avClose(); guard(); return; } // back from Audio & graphics is to the pause menu
     if (MATCH && matchUi) { matchBack(); guard(); return; }
-    if (!running || race.over) { quit(); return; }
+    if (readyOn || !running || race.over) { quit(); return; } // (at the Ready card nothing is lost)
     if (!confirmEl.hidden) { quit(); return; }
     if (paused) ask('leave'); else pause();
     guard();
@@ -1556,8 +1598,8 @@ if (!TG) {
   addEventListener('pointerdown', guard, { once: true }); // a browser keeps an entry only after the page is used
 }
 // (in a match the menu opens, but the race runs on under it: two screens, one race)
-function pause() { if (!running || race.over) return; paused = true; paintPause(); pauseEl.hidden = false; confirmEl.hidden = true; }
-function resume() { paused = false; pauseEl.hidden = true; confirmEl.hidden = true; }
+function pause() { if (!running || race.over || readyOn) return; paused = true; paintPause(); pauseEl.hidden = false; confirmEl.hidden = true; }
+function resume() { if (readyOn) return; paused = false; pauseEl.hidden = true; confirmEl.hidden = true; }
 let confirmDo = null;
 function ask(action) {
   const P = race.player, place = race.standings().indexOf(P) + 1, c = race.course;
@@ -1666,7 +1708,7 @@ function updateHud(dt) {
   txt(el.spd, kn.toFixed(1));
   el.trim.dataset.s = P.trim;
   el.trim.hidden = P.trim === 'ok'; // the chip only when there's something to do
-  txt(el.trimTxt, t(P.trimSail === 'jib' && (P.trim === 'in' || P.trim === 'out') ? (P.trim === 'in' ? 'jibIn' : 'jibOut') : { ok: 'ok', in: 'pullIn', out: 'easeOut', irons: 'irons' }[P.trim]));
+  txt(el.trimTxt, t(P.trimSail === 'jib' && (P.trim === 'in' || P.trim === 'out') ? (P.trim === 'in' ? 'jibIn' : 'jibOut') : { ok: 'ok', in: 'pullIn', out: 'easeOut', irons: race.coach ? 'ironsP' : 'irons' }[P.trim]));
   const ang = P.rudder * 70 * D2R; el.knob.setAttribute('cx', (105 + Math.sin(ang) * 84).toFixed(1)); el.knob.setAttribute('cy', (104 - Math.cos(ang) * 84).toFixed(1));
   const tol = 7 / 77, lo = clamp(sheetFor(idealSail(awa)) - tol, 0, 1), hi = clamp(sheetFor(idealSail(awa) + P.depower) + tol, 0, 1);
   el.band.style.top = `${lo * 100}%`; el.band.style.height = `${(hi - lo) * 100}%`;
@@ -1688,6 +1730,7 @@ function updateHud(dt) {
   const jl = t((P.jibJob ? P.jibJob.small : P.smallJib) ? 'jibBig' : 'jibBtn'); if (jibBtn.textContent !== jl) txt(jibBtn, jl); // what a tap changes to
   jibBtn.style.opacity = P.jibJob ? (0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 180))).toFixed(2) : '';
   hailBtn.hidden = !race.youCanHail();
+  autoBtn.hidden = !(opts.autoTrim === 1 && !P.autoTrim);
 
   // status and the line below it
   const leg = c.legs[P.leg];
@@ -2118,8 +2161,8 @@ function frame(now) {
     const kl = input.keys.ArrowLeft, kr = input.keys.ArrowRight;
     if (kl || kr) { input.rudderHeld = true; input._key = true; input.rudder = clamp(input.rudder + (kr ? 1 : -1) * dt * 2.5, -1, 1); P.auto = null; }
     else if (input._key) { input._key = false; input.rudderHeld = rudderPtr !== null; }
-    if (input.keys.ArrowUp || input.keys.KeyW) setSheet(P.sheet - dt * 0.6);
-    if (input.keys.ArrowDown || input.keys.KeyS) setSheet(P.sheet + dt * 0.6);
+    if (!P.autoTrim && (input.keys.ArrowUp || input.keys.KeyW)) setSheet(P.sheet - dt * 0.6); // (on Auto, the first races keep it)
+    if (!P.autoTrim && (input.keys.ArrowDown || input.keys.KeyS)) setSheet(P.sheet + dt * 0.6);
     if (!input.rudderHeld) input.rudder *= Math.exp(-dt * 5);
     if (!P.auto) P.rudder = input.rudder; else input.rudder = 0;
     if (mx) mx.step(dt); // a match: the host's game runs the race, the guest's follows it (match-ui.js)

@@ -69,7 +69,7 @@ export function VenuesList({ lang, list, today, back }: { lang: Lang; list: Venu
       <ScenePoster label={backdrop.off ? undefined : t('Loading the water', 'Загружаем акваторию')} on={!live} />
 
       <div className="bt-info" ref={info}>
-        <div className="bt-top">{back}<SceneBrand /></div>
+        <div className="bt-top">{back}<SceneBrand lang={lang} /></div>
         <span className="bt-kick">{t(`Regatta venues · ${list.length}`, `Регатные акватории · ${list.length}`)}</span>
         <h1 className="bt-h">{t('The venues', 'Акватории')}</h1>
         <p className="bt-p">{t('Every place you can race in the game is a real one, laid out from the map: the Solent, Newport, Sydney Harbour, the Mediterranean and beyond. Pick one for its water, its wind, its regattas and how to race it.', 'Каждое место для гонки в игре — настоящее, построенное по карте: Солент, Ньюпорт, гавань Сиднея, Средиземное море и не только. Выбери любое — там его вода, ветер, регаты и как на нём гоняться.')}</p>

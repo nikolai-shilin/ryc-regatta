@@ -106,7 +106,7 @@ export function VenueView({ lang, v, back }: { lang: Lang; v: VenueCard; back: R
         onLoad={() => post({ type: 'hello' })} />
 
       <div className="bt-info" ref={info}>
-        <div className="bt-top">{back}<SceneBrand /></div>
+        <div className="bt-top">{back}<SceneBrand lang={lang} /></div>
         <span className="bt-kick">{t('Regatta venue', 'Регатная акватория')} <span className="fl-n">{String(v.n).padStart(2, '0')} / {String(v.of).padStart(2, '0')}</span></span>
         <h1 className="bt-h fl-h">{name}</h1>
         <p className="bt-p">{t(...v.about)}</p>

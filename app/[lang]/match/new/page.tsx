@@ -17,7 +17,7 @@ export default async function NewMatchPage({ params }: LangParams) {
         <div className="bt-info">
           <div className="bt-top">
             <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок')} />
-            <SceneBrand />
+            <SceneBrand lang={lang} />
           </div>
           <span className="bt-kick bt-kick-w">{t('1-on-1 race', 'Гонка 1 на 1')}</span>
           <h1 className="bt-h">{t('Sign in to host a 1-on-1 race', 'Войди, чтобы создать гонку 1 на 1')}</h1>

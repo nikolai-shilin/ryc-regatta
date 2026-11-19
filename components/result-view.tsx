@@ -28,6 +28,7 @@ import { briefUrl, readBrief, SCORES_API } from '@/lib/day-brief';
 import { useWho } from './me';
 import { RateRace } from './rate-race';
 import { PauseCard } from './pause-card';
+import { DEBRIEF_DRILL, drillLink, readDrills } from '@/lib/drills';
 
 // What the game keeps for a finished race (public/game/main.js, finishToPage).
 // legT (the clock as she finished each leg, the start's crossing first) and pens (her penalties) came with the finish's
@@ -190,18 +191,19 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
   };
 
   // the debrief: the game's own items, each good or one to work on
-  type Item = { k: string; good: boolean; v: string; tip: string; note?: boolean };
+  // drill: the drill for it (lib/drills.ts DEBRIEF_DRILL), offered when it's one to work on
+  type Item = { k: string; good: boolean; v: string; tip: string; note?: boolean; drill?: keyof typeof DEBRIEF_DRILL };
   const items: Item[] = [];
-  if (L.startDsq) items.push({ k: t('Start', 'Старт'), good: false, v: L.startDsq === 'U' ? t('Disqualified at the start (U flag)', 'Дисквалификация на старте (флаг U)') : t('Disqualified at the start (black flag)', 'Дисквалификация на старте (чёрный флаг)'), tip: t('Under U or the black flag, stay below the line for the whole last minute.', 'Под флагом U или чёрным держись за линией всю последнюю минуту.') });
-  else if (L.ocs) items.push({ k: t('Start', 'Старт'), good: false, v: t('At the gun: over the line — you had to go back', 'На сигнале старта: за линией — пришлось возвращаться'), tip: t('Aim to be a boat length behind the line, at full speed, as the gun goes.', 'Цель — быть в корпусе от линии на полной скорости в момент сигнала.') });
+  if (L.startDsq) items.push({ k: t('Start', 'Старт'), good: false, v: L.startDsq === 'U' ? t('Disqualified at the start (U flag)', 'Дисквалификация на старте (флаг U)') : t('Disqualified at the start (black flag)', 'Дисквалификация на старте (чёрный флаг)'), tip: t('Under U or the black flag, stay below the line for the whole last minute.', 'Под флагом U или чёрным держись за линией всю последнюю минуту.') , drill: 'start' });
+  else if (L.ocs) items.push({ k: t('Start', 'Старт'), good: false, v: t('At the gun: over the line — you had to go back', 'На сигнале старта: за линией — пришлось возвращаться'), tip: t('Aim to be a boat length behind the line, at full speed, as the gun goes.', 'Цель — быть в корпусе от линии на полной скорости в момент сигнала.') , drill: 'start' });
   else if (L.gunD != null && L.gunV != null) {
     const good = L.gunD >= 0 && L.gunD < 25 && L.gunV > 3.5, d = Math.round(Math.max(0, L.gunD)), v = L.gunV.toFixed(1);
-    items.push({ k: t('Start', 'Старт'), good, v: t(`At the gun: ${d} m from the line at ${v} kn`, `На сигнале старта: ${d} м до линии, ${v.replace('.', ',')} уз`), tip: good ? t('Close to the line and up to speed at the gun: that is the start that wins races.', 'У линии и на скорости в момент старта — так и выигрываются гонки.') : t('Aim to be a boat length behind the line, at full speed, as the gun goes.', 'Цель — быть в корпусе от линии на полной скорости в момент сигнала.') });
+    items.push({ k: t('Start', 'Старт'), good, v: t(`At the gun: ${d} m from the line at ${v} kn`, `На сигнале старта: ${d} м до линии, ${v.replace('.', ',')} уз`), tip: good ? t('Close to the line and up to speed at the gun: that is the start that wins races.', 'У линии и на скорости в момент старта — так и выигрываются гонки.') : t('Aim to be a boat length behind the line, at full speed, as the gun goes.', 'Цель — быть в корпусе от линии на полной скорости в момент сигнала.') , drill: good ? undefined : 'start' });
   }
   if (L.pct != null) items.push({ k: t('Speed', 'Скорость'), good: L.pct >= 90, v: t(`${L.pct}% of target on average`, `В среднем ${L.pct}% от целевой`), tip: L.pct >= 90 ? t('The sheet stayed in the green band: the boat sailed close to her best.', 'Шкот был в зелёной полосе — лодка шла близко к лучшей скорости.') : t('Keep the sheet in the green band and steer smoothly: every turn of the rudder brakes the boat.', 'Держи шкот в зелёной полосе и рули плавно: каждое движение руля тормозит.') });
-  if (L.tacks) items.push({ k: t('Tacks', 'Повороты'), good: L.lift <= L.head, v: t(`On the beat: ${L.head} in a header, ${L.lift} in a lift`, `На лавировке: ${L.head} — когда ветер зашёл, ${L.lift} — когда отошёл`), tip: L.lift <= L.head ? t('You tacked on the headers: each one turned the shift into ground gained.', 'Ты поворачивал на заходах — и каждый превращал сдвиг ветра в выигрыш.') : t('Tack when the wind heads you (Header in the wind box), not when it lifts you (Lift).', 'Поворачивай, когда ветер заходит («Заход» в окне ветра), а не когда отходит («Отход»).') });
+  if (L.tacks) items.push({ k: t('Tacks', 'Повороты'), good: L.lift <= L.head, v: t(`On the beat: ${L.head} in a header, ${L.lift} in a lift`, `На лавировке: ${L.head} — когда ветер зашёл, ${L.lift} — когда отошёл`), tip: L.lift <= L.head ? t('You tacked on the headers: each one turned the shift into ground gained.', 'Ты поворачивал на заходах — и каждый превращал сдвиг ветра в выигрыш.') : t('Tack when the wind heads you (Header in the wind box), not when it lifts you (Lift).', 'Поворачивай, когда ветер заходит («Заход» в окне ветра), а не когда отходит («Отход»).') , drill: L.lift <= L.head ? undefined : 'tacks' });
   if (L.dirty >= 10) items.push({ k: t('Dirty air', 'Ветровая тень'), good: L.dirty < 30, v: t(`${L.dirty} s in another boat’s dirty air`, `${L.dirty} с в ветровой тени другой лодки`), tip: L.dirty < 30 ? t('Mostly in clear air, where the wind is full.', 'Почти всё время в чистом ветре, где он полный.') : t('Behind and downwind of another boat the wind is weaker: tack away or sail clear of it.', 'За другой лодкой и под ветром от неё ветер слабее: поверни или уйди из ветровой тени.') });
-  if (L.penT > 1) items.push({ k: t('Penalties', 'Штрафы'), good: false, v: t(`${L.penT} s spinning penalty turns`, `${L.penT} с на штрафных оборотах`), tip: t('The rule behind each foul is below.', 'Правило за каждым нарушением — ниже.') });
+  if (L.penT > 1) items.push({ k: t('Penalties', 'Штрафы'), good: false, v: t(`${L.penT} s spinning penalty turns`, `${L.penT} с на штрафных оборотах`), tip: t('The rule behind each foul is below.', 'Правило за каждым нарушением — ниже.') , drill: 'penalties' });
   const hails = Object.values(L.hails || {}).reduce((a, b) => a + b, 0);
   if (hails) items.push({ k: t('Hails', 'Оклики'), good: false, v: t(`Hailed ${hails}× by boats you had to keep clear of`, `${hails} раз(а) окликнули лодки, которым ты должен был уступить`), tip: t('A hail is a warning, not a penalty — keep clear in time.', 'Оклик — предупреждение, а не штраф: уступай вовремя.'), note: true });
   if (!L.fouls.length && !L.ocs && !L.startDsq && !hails) items.push({ k: t('Rules', 'Правила'), good: true, v: t('No fouls and no penalties — a clean race', 'Ни нарушений, ни штрафов — чистая гонка'), tip: t('You kept clear in time, every time.', 'Ты всегда вовремя уступал дорогу.') });
@@ -288,6 +290,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
 
   // the result as the broadcast lays it out: the finish as it was behind the result and the full table, then, as the
   // page scrolls on, the debrief beside the track and the legs, and today's ranking beside your best and sharing
+  const drills = readDrills(); // your stars, for whether a drill's level is open (this part is drawn only in the browser)
   const tag = (x: Item) => (x.note ? ['note', t('Note', 'Заметка')] : x.good ? ['ok', t('Good', 'Хорошо')] : ['work', t('Work on it', 'Поработай')]);
   return (
     <div className="scr bt-scr rs-scr bc" lang={lang}>
@@ -298,7 +301,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
         <div className="bt-info">
           <div className="bt-top">
             <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок')} />
-            <SceneBrand />
+            <SceneBrand lang={lang} />
           </div>
           <div className="bt-kicks">
             <span className="bt-kick">{kicker}</span>
@@ -367,11 +370,12 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
             ) : null}
             <ul className="rs-card rs-db">
               {items.map((x, i) => {
-                const [k, w] = tag(x);
+                const [k, w] = tag(x), dl = x.drill && !shared ? drillLink(DEBRIEF_DRILL[x.drill], drills) : null;
                 return (
                   <li key={i} className={k}>
                     <span className="rs-tag">{w}</span>
-                    <span className="rs-db-t"><span className="rs-db-k">{x.k}</span><span className="rs-db-v">{x.v}</span>{x.tip && <span className="rs-db-tip">{x.tip}</span>}</span>
+                    <span className="rs-db-t"><span className="rs-db-k">{x.k}</span><span className="rs-db-v">{x.v}</span>{x.tip && <span className="rs-db-tip">{x.tip}</span>}
+                      {dl && <a className="rs-rule-a" href={dl.href}>{dl.open ? t(`Practise it: the “${dl.name[0].replace(/^The /, '')}” drill, ${dl.min} min`, `Потренируйся: «${dl.name[1]}», ${dl.min} мин`) : t('Practise it in the drills', 'Потренируйся в тренировках')}</a>}</span>
                   </li>
                 );
               })}

@@ -143,7 +143,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
       <ScenePoster label={t('Loading your yacht', 'Загружаем яхту')} on={!live} />
 
       <div className="bt-info" ref={info}>
-        <div className="bt-top">{back}<SceneBrand /></div>
+        <div className="bt-top">{back}<SceneBrand lang={lang} /></div>
         <span className="bt-kick">{t('Your yacht', 'Твоя яхта')}</span>
         {/* her flag and sail number, as the race calls her */}
         <h1 className="bt-h bt-h-boat">{/* eslint-disable-next-line @next/next/no-img-element */}{flag ? <img className="bt-h-flag" src={flagSrc(flag.code)} alt={t(flag.en, flag.ru)} /> : <NoFlag className="bt-h-flag" />}<span className="vh">{t('Your yacht: ', 'Твоя яхта: ')}</span><span>{`${b.nat} ${b.num || '1'}`.trim()}</span></h1>

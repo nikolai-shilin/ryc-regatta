@@ -2,10 +2,10 @@
 import { useEffect, useState } from 'react';
 import { ruBoats, tx, type Lang } from '@/lib/lang';
 import Link from 'next/link';
-import { readOpts, saveOpts } from '@/lib/opts';
+import { readOpts, readPb, saveOpts } from '@/lib/opts';
 import { venueOf } from '@/lib/venues';
 import { KN, type Wind } from '@/lib/race';
-import { IconBoats, IconWind } from './ui';
+import { IconBoats, IconPlay, IconRestart, IconWind, clock } from './ui';
 
 // The free race in the race hub's card: one tap starts a free race in that wind (with the venue, fleet, course and
 // start you chose last time), as the pause menu's pills.
@@ -47,5 +47,19 @@ export function MatchCard({ lang }: { lang: Lang }) {
       <p className="bt-hint">{t('You and a friend, one on one: send a link.', 'Вы и друг, один на один: отправьте ссылку.')}</p>
       <Link className="lb-more" href="/match/new">{t('Set up a 1-on-1 race', 'Настроить гонку 1 на 1')}</Link>
     </div>
+  );
+}
+
+// The hub's one action, today's race: to start it, or, once you have a time today (your best, kept on this device), to
+// beat it. The page is built for everyone alike, so it says Start until the browser has read your best.
+export function TodayGo({ lang, day }: { lang: Lang; day: string }) {
+  const t = tx(lang);
+  const [best, setBest] = useState<number | null>(null);
+  useEffect(() => { setBest(readPb()[`daily|${day}`] ?? null); }, [day]);
+  return (
+    <a className="bt-go" href="/play?race=today">
+      {best != null ? <IconRestart /> : <IconPlay />}
+      <span>{best != null ? t(`Beat your ${clock(best)}`, `Побей своё ${clock(best)}`) : t('Start today’s race', 'Начать гонку дня')}</span>
+    </a>
   );
 }

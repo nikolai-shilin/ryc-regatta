@@ -14,6 +14,7 @@
 //                          after it her place stands. The host's, in a race: `abandon` goes first (match.js)
 const STEP = 1 / 60;
 const CARD_MS = 3500; // a race's end stays on the water this long before its card
+const HOST_WAIT_MS = 30000; // the guest alone in a room this long: the room says the host may not come
 const RESULTS_MS = 30000; // the results go on being sent, and waited for, this long after the race's end
 const NAME_KEY = 'regatta-match-name', ME_KEY = 'regatta-match-me', SETTINGS_KEY = 'regatta-match-settings';
 const RESULT_KEY = 'regatta-match-result'; // { code, seed, id }: the record this device kept of its last race, for Full result after a reload
@@ -31,7 +32,7 @@ export const MATCH_STRINGS = {
     rematch: 'Rematch', fullResult: 'Full result', done: 'Done', waitRematch: (w) => `${w} can start a rematch`, left: (w) => `${w} left the race`,
     stillOut: (w) => `${w} is still racing`, stillOutT: (w, s) => `${w} is still racing · ${s} left`, keepOpen: 'Keep this screen open',
     loadingRace: (w) => `Waiting for ${w} to load the race…`,
-    sec: 's', waitHost: 'Waiting for the host…', stale: 'The game was updated: reload to join', reload: 'Reload', fullRoom: 'This race already has two sailors',
+    sec: 's', waitHost: 'Waiting for the host…', noHost: 'Nobody is hosting this race yet. The link may be old, or your friend has left: ask them for a new one, or leave and sail today’s race.', stale: 'The game was updated: reload to join', reload: 'Reload', fullRoom: 'This race already has two sailors',
     badSet: 'This race is set at a venue or on a yacht this page can’t open',
     hostH: 'Sign in to host this race', hostP: 'Hosting a 1-on-1 race takes an account. Joining a friend’s race doesn’t.', signIn: 'Sign in',
   },
@@ -45,7 +46,7 @@ export const MATCH_STRINGS = {
     rematch: 'Реванш', fullResult: 'Полный результат', done: 'Закончить', waitRematch: (w) => `${w} может начать реванш`, left: (w) => `${w}: выход из гонки`,
     stillOut: (w) => `${w} ещё в гонке`, stillOutT: (w, s) => `${w} ещё в гонке · осталось ${s}`, keepOpen: 'Не закрывай этот экран',
     loadingRace: (w) => `${w} загружает гонку…`,
-    sec: 'с', waitHost: 'Ждём хозяина гонки…', stale: 'Игра обновилась: перезагрузи страницу, чтобы войти', reload: 'Перезагрузить', fullRoom: 'В этой гонке уже двое',
+    sec: 'с', waitHost: 'Ждём хозяина гонки…', noHost: 'Эту гонку пока никто не открыл. Возможно, ссылка устарела или друг вышел: попроси новую или выйди и пройди гонку дня.', stale: 'Игра обновилась: перезагрузи страницу, чтобы войти', reload: 'Перезагрузить', fullRoom: 'В этой гонке уже двое',
     badSet: 'Эта гонка в месте или на яхте, которых эта страница не открывает',
     hostH: 'Войди, чтобы создать гонку', hostP: 'Чтобы создать гонку 1 на 1, нужен аккаунт. Чтобы войти в гонку друга, он не нужен.', signIn: 'Войти',
   },
@@ -500,6 +501,13 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
   };
 
   // ---------- the waiting room ----------
+  // the guest in the room with no host in it, since when (0: not so): after HOST_WAIT_MS it says why that may be
+  let alone = 0;
+  const hostGone = (h) => {
+    if (isHost || !room || h || !joined || error) { alone = 0; return false; }
+    if (!alone) alone = Date.now();
+    return Date.now() - alone > HOST_WAIT_MS;
+  };
   const paintRoom = () => {
     show(R.signin, needsAccount);
     if (needsAccount) {
@@ -530,6 +538,7 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     if (document.activeElement !== R.name && !R.name.value) R.name.value = myName;
     const old = stale();
     show(R.retry, !!error || old); txt(R.retry, old ? L.reload : L.retry);
+    const gone = hostGone(h);
     let st = '', bad = false;
     if (badSet) { st = L.badSet; bad = true; }
     else if (error) { st = L.noConnect; bad = true; }
@@ -538,7 +547,9 @@ export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => 
     else if (!room) st = L.nameFirst;
     else if (full) { st = L.fullRoom; bad = true; }
     else if (isHost) st = ''; // (alone, the friend's row says it)
+    else if (gone) st = L.noHost || MATCH_STRINGS.en.noHost; // and Leave, lit, is the way on
     else st = h ? L.waitStart(clean(h.name)) : joined ? '' : L.connecting; // (no host yet: its row says so)
+    R.leave.classList.toggle('m-prim', gone);
     txt(R.st, st); R.st.classList.toggle('bad', bad); show(R.st, !!st);
     show(R.start, isHost && !error);
     R.start.disabled = !(room && room.canStart()) || old;

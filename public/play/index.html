@@ -348,7 +348,7 @@
   .c-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
 
   /* the pause and confirm cards in the sailing HUD's look: dark glass, a hairline edge, small bold sans, icons */
-  #pauseCard .card, #confirmCard .card, #glLost .card {
+  #pauseCard .card, #confirmCard .card, #glLost .card, #readyCard .card {
     --bg: rgba(8, 14, 20, 0.58); --ink: #ffffff; --muted: rgba(255, 255, 255, 0.62); --line: rgba(255, 255, 255, 0.12);
     --accent: #35b0f2; --on-accent: #00131f; --ok: #2ee6a0; --ease: cubic-bezier(.2, .8, .2, 1);
     background: var(--bg); color: var(--ink); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 22px;
@@ -357,10 +357,17 @@
   }
   @keyframes pc-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }
   #pauseCard .p-card { width: 300px; gap: 6px; padding: 14px; }
+  /* the first three races: the start in three lines over the race, which waits for Ready (main.js askReady) */
+  #readyCard { z-index: 10; background: rgba(4, 10, 16, 0.3); } /* over the HUD, as the pause menu */
+  #readyCard .r-card { width: min(400px, 100%); gap: 12px; padding: 22px; }
+  #readyCard .r-list { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; font: 500 15px/1.4 var(--sans); color: rgba(255, 255, 255, 0.88); }
+  #readyCard .r-list li { position: relative; padding-left: 18px; }
+  #readyCard .r-list li::before { content: ''; position: absolute; left: 2px; top: 0.5em; width: 6px; height: 6px; background: var(--accent); }
+  #readyCard .r-note { margin: 0; font: 600 12px/1.3 var(--sans); color: var(--muted); text-align: center; }
 
-  #pauseCard .go, #confirmCard .go, #glLost .go { height: 44px; margin: 0; gap: 8px; border: 0; border-radius: 54px; font: 700 13px var(--sans); text-transform: uppercase; letter-spacing: .04em; transition: transform .12s, background-color .2s, filter .2s; }
-  #pauseCard .go:hover, #confirmCard .go:hover, #glLost .go:hover { filter: brightness(1.08); }
-  #pauseCard .go:active, #confirmCard .go:active, #pauseCard .p-row:active, #pauseCard .choice button:active, #glLost .go:active { transform: scale(.97); }
+  #pauseCard .go, #confirmCard .go, #glLost .go, #readyCard .go { height: 44px; margin: 0; gap: 8px; border: 0; border-radius: 54px; font: 700 13px var(--sans); text-transform: uppercase; letter-spacing: .04em; transition: transform .12s, background-color .2s, filter .2s; }
+  #pauseCard .go:hover, #confirmCard .go:hover, #glLost .go:hover, #readyCard .go:hover { filter: brightness(1.08); }
+  #pauseCard .go:active, #confirmCard .go:active, #pauseCard .p-row:active, #pauseCard .choice button:active, #glLost .go:active, #readyCard .go:active { transform: scale(.97); }
   #pauseCard .p-card > * { flex: none; } /* a short screen scrolls the card rather than squashing Resume */
   #pauseCard .p-esc { align-self: flex-start; font: 700 10.5px var(--sans); letter-spacing: .06em; color: rgba(255, 255, 255, .62); text-shadow: none; }
   #pauseCard #pResume::before { content: ''; width: 12px; height: 12px; background: currentColor; -webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat;
@@ -737,6 +744,16 @@
     <h2 id="cHead" data-t="leaveK"></h2>
     <p id="cTxt"></p>
     <div class="c-btns"><button class="go" id="cKeep" data-t="keepRacing"></button><button class="go ghost" id="cGo"></button></div>
+  </div>
+</div>
+
+<div class="overlay bc" id="readyCard" hidden>
+  <div class="card c-card r-card" role="dialog" aria-modal="true" aria-labelledby="rHead">
+    <span class="kicker" data-t="rK"></span>
+    <h2 id="rHead" data-t="rH"></h2>
+    <ul class="r-list"><li id="rLine"></li><li id="rSteer"></li><li data-t="rEarly"></li></ul>
+    <button class="go" id="rGo" data-t="rGo"></button>
+    <p class="r-note" data-t="rNote"></p>
   </div>
 </div>
 

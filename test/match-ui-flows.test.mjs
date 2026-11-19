@@ -274,6 +274,22 @@ test('the guest\'s words in Russian, and a guest alone waits for the host', asyn
   alone.gone();
 });
 
+test('a guest alone for half a minute is told the host may not come, and Leave is lit as the way on', async () => {
+  fresh();
+  const alone = await page('Guest');
+  run(29, alone);
+  assert.equal(alone.shows('#mRoom .m-st'), false, 'at first her row says she is waiting');
+  assert.equal(alone.$('.m-leave').classList.contains('m-prim'), false);
+  run(2, alone);
+  assert.match(alone.says('#mRoom .m-st'), /^Nobody is hosting this race yet\. The link may be old/);
+  assert.ok(alone.$('.m-leave').classList.contains('m-prim'));
+  const h = await page('Host', { host: true });
+  run(0.5, h, alone);
+  assert.equal(alone.says('#mRoom .m-st'), 'Waiting for Host to start the race…', 'the host come after all');
+  assert.equal(alone.$('.m-leave').classList.contains('m-prim'), false);
+  h.gone(); alone.gone();
+});
+
 test('a third with the link is told the race already has two sailors', async () => {
   const { h, g } = await room();
   const t = await page('Third');
