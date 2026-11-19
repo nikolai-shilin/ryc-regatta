@@ -157,6 +157,7 @@ const T = {
     gateMsg: 'Through the gate — back upwind', bump: 'Contact!', aground: 'Aground! Steer back out to sea', broach: 'Broach! Ease the sheet', kitedown: 'Too close to the wind — the kite comes down in a hurry',
     heelMsg: 'Too much heel — ease the sheet', ironsMsg: 'In irons — steer away from the wind', gust: 'Gust!', autoOff: 'You trim the sails this race. Tap Auto to hand them back', autoOn: 'Sails back on Auto', autoKeep: 'The sails are on Auto for your first races: just steer',
     autoBtn: 'Auto', ironsP: 'Stopped: steer away from the wind',
+    pauseL: 'Pause', zoomInL: 'Zoom in', zoomOutL: 'Zoom out', speedL: 'Game speed',
     rK: 'Before the start', rH: 'Cross the line after the gun', rLined: 'Your boat is lined up: hold your course and you reach the line as the gun goes.',
     rStay: 'Stay behind the line until the gun, then cross it at full speed.', rKeys: 'Steer with ← and →.', rTouch: 'Steer with your left thumb along the arc.',
     rAuto: 'The sails trim themselves.', rEarly: 'Cross before the gun and you have to come back.', rGo: 'Ready', rNote: 'The clock starts when you’re ready.',
@@ -269,6 +270,7 @@ const T = {
     gateMsg: 'Ворота пройдены — снова на ветер', bump: 'Столкновение!', aground: 'На мели! Уходи от берега', broach: 'Брочинг! Трави шкот', kitedown: 'Слишком остро — генакер убирают в спешке',
     heelMsg: 'Сильный крен — потрави шкот', ironsMsg: 'Левентик — уваливайся', gust: 'Порыв!', autoOff: 'В этой гонке шкот твой. «Авто» вернёт автоподбор', autoOn: 'Паруса снова на автоподборе', autoKeep: 'В первых гонках паруса на автоподборе: просто рули',
     autoBtn: 'Авто', ironsP: 'Стоишь: отверни от ветра',
+    pauseL: 'Пауза', zoomInL: 'Приблизить', zoomOutL: 'Отдалить', speedL: 'Скорость игры',
     rK: 'Перед стартом', rH: 'Пересеки линию после сигнала', rLined: 'Лодка уже на курсе: держи его, и подойдёшь к линии к сигналу.',
     rStay: 'Держись за линией до сигнала, потом пересекай её полным ходом.', rKeys: 'Руль — клавиши ← и →.', rTouch: 'Руль — левым пальцем по дуге.',
     rAuto: 'Паруса настраиваются сами.', rEarly: 'Пересечёшь линию раньше сигнала — придётся вернуться.', rGo: 'Готов', rNote: 'Время пойдёт, когда будешь готов.',
@@ -305,6 +307,12 @@ const named = (p) => p[LANG === 'ru' ? 1 : LANG === 'es' ? 2 : 0] ?? p[0]; // a 
 const t = (k, ...a) => { const v = T[LANG]?.[k] ?? T.en[k] ?? k; return typeof v === 'function' ? v(...a) : v; };
 document.documentElement.lang = LANG;
 for (const el of document.querySelectorAll('[data-t]')) el.innerHTML = t(el.dataset.t);
+// the buttons with no words on them: their name for a screen reader, and with their key for the tooltip
+for (const el of document.querySelectorAll('[data-tl]')) {
+  const name = t(el.dataset.tl), key = el.dataset.key;
+  el.setAttribute('aria-label', key ? `${name} (${key})` : name);
+  if (key) el.title = `${name} · ${key}`;
+}
 const fmt = (s) => { s = Math.max(0, s); return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`; };
 
 // ---------- the app's light and night themes ----------

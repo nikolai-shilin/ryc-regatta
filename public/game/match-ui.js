@@ -137,7 +137,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     <div class="m-card" id="mRoom" role="dialog" aria-labelledby="mRoomH">
       <span class="m-kick"></span><h2 id="mRoomH"></h2>
       <p class="m-set"></p>
-      <div class="m-linkBox"><span class="m-k m-linkK"></span><div class="m-link"><input readonly aria-label="link"><button type="button" class="m-share"></button></div></div>
+      <div class="m-linkBox"><span class="m-k m-linkK"></span><div class="m-link"><input readonly><button type="button" class="m-share"></button></div></div>
       <div class="m-ppl"></div>
       <div class="m-nameBox"><span class="m-k m-nameK"></span><div class="m-name"><input maxlength="16" autocomplete="nickname"><button type="button" class="m-join"></button></div></div>
       <span class="m-st"></span>
@@ -164,7 +164,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
   C.h = q(C.card, 'h2');
   const txt = (el, s) => { s = String(s ?? ''); if (el._t !== s) { el._t = s; el.textContent = s; } };
   const show = (el, on) => { if (el.hidden === !!on) el.hidden = !on; };
-  R.kick.textContent = C.kick.textContent = L.kick; R.h.textContent = L.room; R.linkK.textContent = L.linkK; R.nameK.textContent = L.nameK;
+  R.kick.textContent = C.kick.textContent = L.kick; R.h.textContent = L.room; R.linkK.textContent = L.linkK; R.link.ariaLabel = L.linkK; R.nameK.textContent = L.nameK;
   R.name.placeholder = L.namePh; R.join.textContent = L.join; R.start.textContent = L.start; R.leave.textContent = L.leave; R.retry.textContent = L.retry; R.signin.textContent = L.signIn;
   C.leave.textContent = L.done; C.full.textContent = L.fullResult; C.go.textContent = L.rematch;
   R.link.value = `${location.origin}/match/${code}?v=${encodeURIComponent(venue.id)}&b=${encodeURIComponent(cls.id)}`;

@@ -120,6 +120,7 @@ export const MAIN = {
   rAuto: 'Las velas se triman solas.',
   rEarly: 'Si cruzas antes de la señal, tendrás que volver.',
   rGo: 'Listo',
+  pauseL: 'Pausa', zoomInL: 'Acercar', zoomOutL: 'Alejar', speedL: 'Velocidad del juego',
   prepI: 'Hoy, bandera I: si estás por delante de la línea en el último minuto, debes volver rodeando uno de sus extremos para salir',
   roundEnd: 'Por delante en el último minuto con la bandera I: vuelve rodeando un extremo de la línea',
   clearedEnd: 'Extremo rodeado: ahora sal',

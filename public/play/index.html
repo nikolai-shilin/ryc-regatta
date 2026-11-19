@@ -501,11 +501,11 @@
   <div class="tr">
     <div class="row">
       <div class="seg" id="camSeg"><button data-cam="drone" data-t="drone" title="X"></button><button data-cam="top" data-t="top" title="C"></button><button data-cam="helm" data-t="helm" title="V"></button></div>
-      <button class="round-s" id="pauseBtn" aria-label="pause"><svg width="14" height="14" viewBox="0 0 14 14"><rect x="2" y="1" width="3.5" height="12" rx="1.2" fill="currentColor"/><rect x="8.5" y="1" width="3.5" height="12" rx="1.2" fill="currentColor"/></svg></button>
+      <button class="round-s" id="pauseBtn" aria-label="Pause" data-tl="pauseL"><svg width="14" height="14" viewBox="0 0 14 14"><rect x="2" y="1" width="3.5" height="12" rx="1.2" fill="currentColor"/><rect x="8.5" y="1" width="3.5" height="12" rx="1.2" fill="currentColor"/></svg></button>
     </div>
     <canvas id="mini" width="240" height="240"></canvas>
   </div>
-  <div class="tl zoom"><button id="zoomIn" aria-label="zoom in (A)" title="Zoom in · A">+</button><button id="zoomOut" aria-label="zoom out (Z)" title="Zoom out · Z">−</button><button id="speedBtn" aria-label="game speed (T)" title="Game speed · T">1×</button></div>
+  <div class="tl zoom"><button id="zoomIn" aria-label="Zoom in (A)" title="Zoom in · A" data-tl="zoomInL" data-key="A">+</button><button id="zoomOut" aria-label="Zoom out (Z)" title="Zoom out · Z" data-tl="zoomOutL" data-key="Z">−</button><button id="speedBtn" aria-label="Game speed (T)" title="Game speed · T" data-tl="speedL" data-key="T">1×</button></div>
   <div id="rudderZone">
     <svg id="rudder" viewBox="0 0 210 118">
       <path class="track" d="M22 104 A84 84 0 0 1 188 104"/>
@@ -758,7 +758,7 @@
   </div>
 </div>
 
-<noscript>The game needs JavaScript and WebGL.</noscript>
+<noscript>The game needs JavaScript and WebGL. · Для игры нужны JavaScript и WebGL. · El juego necesita JavaScript y WebGL.</noscript>
 <script type="module" src="/game/main.js"></script>
 </body>
 </html>
