@@ -1114,7 +1114,7 @@
 .bc .rt-step.off { opacity: .3; }
 .bc .rt { padding-block: var(--s-4) var(--s-16); }
 .bc .rt-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--s-4); align-items: start; }
-@media (max-width: 900px) { .bc .rt-grid { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .bc .rt-grid { grid-template-columns: minmax(0, 1fr); } } /* 1fr alone grows to the widest row's content (your rival's name, the day's split) and takes the page sideways */
 .bc .rt-card { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); background: var(--surface); clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%); }
 .bc .rt-card-h { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding-bottom: var(--s-3); border-bottom: 1px solid var(--rule); }
 .bc .rt-card-h .lbl-ink { display: inline-flex; align-items: center; gap: var(--s-2); }
