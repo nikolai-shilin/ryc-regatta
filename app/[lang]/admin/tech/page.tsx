@@ -15,8 +15,8 @@ export default async function AdminTechPage({ params, searchParams }: LangParams
   const { lang, t } = a;
   return (
     <AdminShell {...a} page="tech" days={days}>
-      {hasStats(st?.data ?? null) ? <AdminPerf lang={lang} stats={st!.data!} /> : <AdminMissing t={t} Icon={IconDevice} title={t('How the game runs', 'Как работает игра', 'Cómo funciona el juego')} error={st?.error} />}
-      {ins?.data ? <InsightLoading lang={lang} data={ins.data} /> : <AdminMissing t={t} Icon={IconScreen} title={t('Loads and errors', 'Загрузка и ошибки', 'Cargas y errores')} error={ins?.error} />}
+      {hasStats(st?.data ?? null) ? <AdminPerf lang={lang} stats={st!.data!} /> : <AdminMissing t={t} Icon={IconDevice} title={t('How the game runs', 'Как работает игра', 'Cómo funciona el juego', 'Wie das Spiel läuft')} error={st?.error} />}
+      {ins?.data ? <InsightLoading lang={lang} data={ins.data} /> : <AdminMissing t={t} Icon={IconScreen} title={t('Loads and errors', 'Загрузка и ошибки', 'Cargas y errores', 'Ladezeiten und Fehler')} error={ins?.error} />}
     </AdminShell>
   );
 }

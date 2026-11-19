@@ -99,10 +99,10 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
 
   // a number the API may not send yet (an answer cached from before it did) is a dash, not an error
   const num = (n: number | undefined) => (typeof n === 'number' ? n.toLocaleString(LOCALE[lang]) : '–');
-  const place = (p: number | null) => (p == null ? '–' : lang === 'ru' ? `${p}-е` : lang === 'es' ? `${p}.º` : `${p}${p % 10 === 1 && p % 100 !== 11 ? 'st' : p % 10 === 2 && p % 100 !== 12 ? 'nd' : p % 10 === 3 && p % 100 !== 13 ? 'rd' : 'th'}`);
+  const place = (p: number | null) => (p == null ? '–' : lang === 'ru' ? `${p}-е` : lang === 'es' ? `${p}.º` : lang === 'de' ? `${p}.` : `${p}${p % 10 === 1 && p % 100 !== 11 ? 'st' : p % 10 === 2 && p % 100 !== 12 ? 'nd' : p % 10 === 3 && p % 100 !== 13 ? 'rd' : 'th'}`);
   const date = (s: string, year = true) => new Date(s).toLocaleDateString(LOCALE[lang], { day: 'numeric', month: 'short', ...(year && { year: 'numeric' }), timeZone: 'UTC' });
-  const races = (n: number) => (lang === 'ru' ? `${num(n)} ${ruPlural(n, ['гонка', 'гонки', 'гонок'])}` : lang === 'es' ? `${num(n)} ${n === 1 ? 'regata' : 'regatas'}` : `${num(n)} race${n === 1 ? '' : 's'}`);
-  const nameOf = (x: { name: string | null }) => x.name || t('A player', 'Игрок', 'Un jugador');
+  const races = (n: number) => (lang === 'ru' ? `${num(n)} ${ruPlural(n, ['гонка', 'гонки', 'гонок'])}` : lang === 'es' ? `${num(n)} ${n === 1 ? 'regata' : 'regatas'}` : lang === 'de' ? `${num(n)} ${n === 1 ? 'Regatta' : 'Regatten'}` : `${num(n)} race${n === 1 ? '' : 's'}`);
+  const nameOf = (x: { name: string | null }) => x.name || t('A player', 'Игрок', 'Un jugador', 'Ein Spieler');
   const yachtName = (id: string | null) => t(...yachtOf(isYacht(id) ? id : 'jpk1050').name);
   const flag = findFlag(boat.flag);
 
@@ -118,121 +118,121 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
   const passFacts: PassportFacts | null = shared
     ? { raced: new Set(VENUES.filter((_, i) => shared.raced[i]).map((v) => v.id)), n: shared.v, streak: { n: shared.s } }
     : own && log ? { raced: passportOf(log).raced, n: passportOf(log).n, streak: streakOf(log.d) } : null;
-  const passTitle = shared ? (shared.n ? t(`${shared.n}’s passport`, `Паспорт: ${shared.n}`, `Pasaporte de ${shared.n}`) : t('A sailor’s passport', 'Паспорт гонщика', 'Pasaporte de un regatista')) : t('Your player card', 'Твоя карточка игрока', 'Tu tarjeta de jugador');
+  const passTitle = shared ? (shared.n ? t(`${shared.n}’s passport`, `Паспорт: ${shared.n}`, `Pasaporte de ${shared.n}`, `Pass von ${shared.n}`) : t('A sailor’s passport', 'Паспорт гонщика', 'Pasaporte de un regatista', 'Der Pass eines Seglers')) : t('Your player card', 'Твоя карточка игрока', 'Tu tarjeta de jugador', 'Deine Spielerkarte');
   const passN = passFacts?.n ?? 0, passS = passFacts?.streak?.n ?? 0;
-  const shareBtn = (l: NonNullable<typeof log>) => <ShareButton lang={lang} data={() => passportShare(l, lang)} className="bt-show" title={t('Share your passport', 'Поделиться паспортом', 'Comparte tu pasaporte')} />;
+  const shareBtn = (l: NonNullable<typeof log>) => <ShareButton lang={lang} data={() => passportShare(l, lang)} className="bt-show" title={t('Share your passport', 'Поделиться паспортом', 'Comparte tu pasaporte', 'Teile deinen Pass')} />;
 
   return (
     <div className="bt pl-view">
-      <LoadBar label={t('Loading the boat', 'Загружаем яхту', 'Cargando el barco')} on={(!live && !backdrop.off) || pending} />
-      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={backdrop.go ? '/boat-view?wind=light' : undefined} title={t('The player’s boat in 3D', 'Яхта игрока в 3D', 'El barco del jugador en 3D')}
+      <LoadBar label={t('Loading the boat', 'Загружаем яхту', 'Cargando el barco', 'Das Boot wird geladen')} on={(!live && !backdrop.off) || pending} />
+      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={backdrop.go ? '/boat-view?wind=light' : undefined} title={t('The player’s boat in 3D', 'Яхта игрока в 3D', 'El barco del jugador en 3D', 'Das Boot des Spielers in 3D')}
         onLoad={() => post({ type: 'hello' })} />
-      <ScenePoster label={backdrop.off ? undefined : t('Loading the boat', 'Загружаем яхту', 'Cargando el barco')} on={!live} />
+      <ScenePoster label={backdrop.off ? undefined : t('Loading the boat', 'Загружаем яхту', 'Cargando el barco', 'Das Boot wird geladen')} on={!live} />
 
       <div className="bt-info" ref={info}>
         <div className="bt-top">{back}<SceneBrand lang={lang} /></div>
-        <span className="bt-kick">{passport ? passTitle : t('The players', 'Игроки', 'Los jugadores')}</span>
+        <span className="bt-kick">{passport ? passTitle : t('The players', 'Игроки', 'Los jugadores', 'Die Spieler')}</span>
         {passport ? (<>
-          <h1 className="bt-h">{passS >= 2 ? t(`${passS} days in a row`, `${passS} ${ruPlural(passS, ['день', 'дня', 'дней'])} подряд`, `${passS} días seguidos`) : t(`${passN} of ${VENUES.length} venues`, `${passN} из ${VENUES.length} акваторий`, `${passN} de ${VENUES.length} sedes`)}</h1>
+          <h1 className="bt-h">{passS >= 2 ? t(`${passS} days in a row`, `${passS} ${ruPlural(passS, ['день', 'дня', 'дней'])} подряд`, `${passS} días seguidos`, `${passS} Tage in Folge`) : t(`${passN} of ${VENUES.length} venues`, `${passN} из ${VENUES.length} акваторий`, `${passN} de ${VENUES.length} sedes`, `${passN} von ${VENUES.length} Revieren`)}</h1>
           <p className="bt-p">{shared
-            ? t(`Every day the race moves to another of ${VENUES.length} famous regatta venues, the same race for everyone. ${passN} raced so far. Can you get further?`, `Каждый день гонка переезжает на другую из ${VENUES.length} знаменитых регатных акваторий, и она у всех одна. Пройдено ${passN}. Сможешь дальше?`, `Cada día la regata se traslada a otra de ${VENUES.length} famosas sedes de regata, la misma regata para todos. ${passN} regateadas hasta ahora. ¿Puedes llegar más lejos?`)
-            : t('Your venues and streak on this device. Sign in and race to get on the players’ list.', 'Твои акватории и серия на этом устройстве. Войди и пройди гонку, чтобы попасть в список игроков.', 'Tus sedes y tu racha en este dispositivo. Inicia sesión y regatea para entrar en la lista de jugadores.')}</p>
+            ? t(`Every day the race moves to another of ${VENUES.length} famous regatta venues, the same race for everyone. ${passN} raced so far. Can you get further?`, `Каждый день гонка переезжает на другую из ${VENUES.length} знаменитых регатных акваторий, и она у всех одна. Пройдено ${passN}. Сможешь дальше?`, `Cada día la regata se traslada a otra de ${VENUES.length} famosas sedes de regata, la misma regata para todos. ${passN} regateadas hasta ahora. ¿Puedes llegar más lejos?`, `Jeden Tag zieht die Regatta zu einem anderen von ${VENUES.length} berühmten Regattarevieren, für alle dieselbe Regatta. ${passN} gesegelt. Kommst du weiter?`)
+            : t('Your venues and streak on this device. Sign in and race to get on the players’ list.', 'Твои акватории и серия на этом устройстве. Войди и пройди гонку, чтобы попасть в список игроков.', 'Tus sedes y tu racha en este dispositivo. Inicia sesión y regatea para entrar en la lista de jugadores.', 'Deine Reviere und deine Serie auf diesem Gerät. Melde dich an und segle, um in die Spielerliste zu kommen.')}</p>
         </>) : player ? (<>
-          <h1 className="bt-h bt-h-boat" key={player.k}>{/* eslint-disable-next-line @next/next/no-img-element */}{(() => { const f = findFlag(player.fl || undefined); return f ? <img className="bt-h-flag" src={flagSrc(f.code)} alt={t(f.en, f.ru, f.es)} /> : <NoFlag className="bt-h-flag" />; })()}<span>{nameOf(player)}</span></h1>
+          <h1 className="bt-h bt-h-boat" key={player.k}>{/* eslint-disable-next-line @next/next/no-img-element */}{(() => { const f = findFlag(player.fl || undefined); return f ? <img className="bt-h-flag" src={flagSrc(f.code)} alt={t(f.en, f.ru, f.es, f.de)} /> : <NoFlag className="bt-h-flag" />; })()}<span>{nameOf(player)}</span></h1>
           <p className="bt-p">{player.boat
-            ? <>{boat.name ? `${boat.name} · ` : null}{`${boat.nat} ${boat.num || '1'}`.trim()} · {t('Their colours on the JPK 1050. Drag to circle her.', 'Их цвета на JPK 1050. Тяни, чтобы облететь яхту.', 'Sus colores en el JPK 1050. Arrastra para rodearlo.')}</>
-            : t('Their colours aren’t kept online, so this is the boat everyone starts in. Drag to circle her.', 'Их цвета не сохранены онлайн, поэтому здесь яхта, с которой начинают все. Тяни, чтобы облететь её.', 'Sus colores no se guardan en línea, así que este es el barco con el que empieza todo el mundo. Arrastra para rodearlo.')}</p>
+            ? <>{boat.name ? `${boat.name} · ` : null}{`${boat.nat} ${boat.num || '1'}`.trim()} · {t('Their colours on the JPK 1050. Drag to circle her.', 'Их цвета на JPK 1050. Тяни, чтобы облететь яхту.', 'Sus colores en el JPK 1050. Arrastra para rodearlo.', 'Ihre Farben auf der JPK 1050. Ziehen, um sie zu umkreisen.')}</>
+            : t('Their colours aren’t kept online, so this is the boat everyone starts in. Drag to circle her.', 'Их цвета не сохранены онлайн, поэтому здесь яхта, с которой начинают все. Тяни, чтобы облететь её.', 'Sus colores no se guardan en línea, así que este es el barco con el que empieza todo el mundo. Arrastra para rodearlo.', 'Ihre Farben werden nicht online gespeichert, das hier ist also das Boot, mit dem alle starten. Ziehen, um sie zu umkreisen.')}</p>
         </>) : (<>
-          <h1 className="bt-h">{t('The players', 'Игроки', 'Los jugadores')}</h1>
+          <h1 className="bt-h">{t('The players', 'Игроки', 'Los jugadores', 'Die Spieler')}</h1>
           <p className="bt-p">{missing
-            ? t('That player isn’t on the list any more. Pick one from the table to see their numbers and their boat.', 'Этого игрока больше нет в списке. Выбери игрока в таблице, чтобы увидеть его цифры и яхту.', 'Ese jugador ya no está en la lista. Elige uno de la tabla para ver sus números y su barco.')
-            : t('Everyone who races signed in, the most points first. Pick a player to see their numbers and their boat in their own colours.', 'Все, кто гоняется со входом в аккаунт, — больше всего очков сверху. Выбери игрока, чтобы увидеть его цифры и яхту в его цветах.', 'Todos los que regatean con sesión iniciada, primero los de más puntos. Elige un jugador para ver sus números y su barco con sus propios colores.')}</p>
+            ? t('That player isn’t on the list any more. Pick one from the table to see their numbers and their boat.', 'Этого игрока больше нет в списке. Выбери игрока в таблице, чтобы увидеть его цифры и яхту.', 'Ese jugador ya no está en la lista. Elige uno de la tabla para ver sus números y su barco.', 'Dieser Spieler steht nicht mehr auf der Liste. Wähl einen aus der Tabelle, um seine Zahlen und sein Boot zu sehen.')
+            : t('Everyone who races signed in, the most points first. Pick a player to see their numbers and their boat in their own colours.', 'Все, кто гоняется со входом в аккаунт, — больше всего очков сверху. Выбери игрока, чтобы увидеть его цифры и яхту в его цветах.', 'Todos los que regatean con sesión iniciada, primero los de más puntos. Elige un jugador para ver sus números y su barco con sus propios colores.', 'Alle, die angemeldet segeln, die meisten Punkte zuerst. Wähl einen Spieler, um seine Zahlen und sein Boot in seinen eigenen Farben zu sehen.')}</p>
         </>)}
       </div>
 
       <PauseCard lang={lang} back={passport ? passport.path : href(page, player?.k)} className="pl-card" cardRef={card} busy={pending}
-        title={passport ? passTitle : player ? nameOf(player) : `${t('The players', 'Игроки', 'Los jugadores')}${list ? ` · ${num(list.total)}` : ''}`} icon={player || passport ? undefined : <IconCrew s={14} />}
-        note={!player && !passport && list && list.pages > 1 ? t(`Page ${page} of ${list.pages}`, `Страница ${page} из ${list.pages}`, `Página ${page} de ${list.pages}`) : undefined}
-        action={passport ? <a className="bt-go" href="/play?race=today">{t('Sail today’s race', 'Пройди гонку дня', 'Navega la regata del día')}</a> : undefined}
-        tools={player || passport ? <Link className="bt-mini" href={href(player ? page : 1)} scroll={false} onClick={(e) => { e.preventDefault(); go(href(player ? page : 1), null); }}><IconBack s={14} /><span>{t('All players', 'Все игроки', 'Todos los jugadores')}</span></Link> : undefined}>
+        title={passport ? passTitle : player ? nameOf(player) : `${t('The players', 'Игроки', 'Los jugadores', 'Die Spieler')}${list ? ` · ${num(list.total)}` : ''}`} icon={player || passport ? undefined : <IconCrew s={14} />}
+        note={!player && !passport && list && list.pages > 1 ? t(`Page ${page} of ${list.pages}`, `Страница ${page} из ${list.pages}`, `Página ${page} de ${list.pages}`, `Seite ${page} von ${list.pages}`) : undefined}
+        action={passport ? <a className="bt-go" href="/play?race=today">{t('Sail today’s race', 'Пройди гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln')}</a> : undefined}
+        tools={player || passport ? <Link className="bt-mini" href={href(player ? page : 1)} scroll={false} onClick={(e) => { e.preventDefault(); go(href(player ? page : 1), null); }}><IconBack s={14} /><span>{t('All players', 'Все игроки', 'Todos los jugadores', 'Alle Spieler')}</span></Link> : undefined}>
         {passport ? (<>
           {passFacts ? <PassportBlock lang={lang} facts={passFacts} mine={own} share={own && log && passFacts.n ? shareBtn(log) : undefined} /> : null}
           <div className="bt-rows">
-            {own ? <Link className="bt-row if-guest" href={`/sign-in?next=${encodeURIComponent('/players?me=1')}`}><IconCrew s={18} /><span>{t('Sign in', 'Войти', 'Iniciar sesión')}</span><span className="bt-row-m">{t('Keep it on every device', 'Сохрани на всех устройствах', 'Guárdalo en todos tus dispositivos')}</span></Link> : null}
-            <Link className="bt-row" href="/"><IconSail s={18} /><span>{t('What the game is', 'Что это за игра', 'Qué es el juego')}</span></Link>
+            {own ? <Link className="bt-row if-guest" href={`/sign-in?next=${encodeURIComponent('/players?me=1')}`}><IconCrew s={18} /><span>{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden')}</span><span className="bt-row-m">{t('Keep it on every device', 'Сохрани на всех устройствах', 'Guárdalo en todos tus dispositivos', 'Auf jedem Gerät behalten')}</span></Link> : null}
+            <Link className="bt-row" href="/"><IconSail s={18} /><span>{t('What the game is', 'Что это за игра', 'Qué es el juego', 'Was das Spiel ist')}</span></Link>
           </div>
         </>) : player ? (<>
-          <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс', 'Rumbo')}>
-            <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд', 'Ceñida')}</button>
-            <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Gennaker', 'Генакер', 'Gennaker')}</button>
+          <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс', 'Rumbo', 'Kurs zum Wind')}>
+            <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд', 'Ceñida', 'Am Wind')}</button>
+            <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Gennaker', 'Генакер', 'Gennaker', 'Gennaker')}</button>
           </div>
 
           <div className="fl-stats pl-stats">
-            <div><span className="bt-sk">{t('Races', 'Гонок', 'Regatas')}</span><b>{num(player.n)}</b></div>
-            <div><span className="bt-sk">{t('Finished', 'Финиш', 'Terminada')}</span><b>{player.n ? `${Math.round((100 * player.fin) / player.n)}%` : '–'}</b></div>
-            <div><span className="bt-sk">{t('Wins', 'Побед', 'Victorias')}</span><b>{num(player.wins)}</b></div>
-            <div><span className="bt-sk">{t('Podiums', 'Подиумов', 'Podios')}</span><b>{num(player.podiums)}</b></div>
-            <div><span className="bt-sk">{t('Days', 'Дней', 'Días')}</span><b>{num(player.days)}</b></div>
-            <div><span className="bt-sk">{t('Best place', 'Лучшее место', 'Mejor puesto')}</span><b>{place(player.best)}</b></div>
+            <div><span className="bt-sk">{t('Races', 'Гонок', 'Regatas', 'Regatten')}</span><b>{num(player.n)}</b></div>
+            <div><span className="bt-sk">{t('Finished', 'Финиш', 'Terminada', 'Beendet')}</span><b>{player.n ? `${Math.round((100 * player.fin) / player.n)}%` : '–'}</b></div>
+            <div><span className="bt-sk">{t('Wins', 'Побед', 'Victorias', 'Siege')}</span><b>{num(player.wins)}</b></div>
+            <div><span className="bt-sk">{t('Podiums', 'Подиумов', 'Podios', 'Podien')}</span><b>{num(player.podiums)}</b></div>
+            <div><span className="bt-sk">{t('Days', 'Дней', 'Días', 'Tage')}</span><b>{num(player.days)}</b></div>
+            <div><span className="bt-sk">{t('Best place', 'Лучшее место', 'Mejor puesto', 'Bester Platz')}</span><b>{place(player.best)}</b></div>
             <div><span className="bt-sk">DSQ</span><b>{player.dsq ? num(player.dsq) : '–'}</b></div>
-            <div><span className="bt-sk">{t('Last race', 'Последняя', 'Última regata')}</span><b className="pl-d">{date(player.last, false)}</b></div>
-            <span className="bt-sv">{player.best && player.fleet ? t(`Best: ${place(player.best)} of ${player.fleet} boats. `, `Лучшее: ${player.best}-е из ${player.fleet}. `, `Mejor: ${place(player.best)} de ${player.fleet} barcos. `) : ''}{t(`Racing since ${date(player.first)}.`, `Гоняется с ${date(player.first)}.`, `Regatea desde ${date(player.first)}.`)}</span>
+            <div><span className="bt-sk">{t('Last race', 'Последняя', 'Última regata', 'Letzte Regatta')}</span><b className="pl-d">{date(player.last, false)}</b></div>
+            <span className="bt-sv">{player.best && player.fleet ? t(`Best: ${place(player.best)} of ${player.fleet} boats. `, `Лучшее: ${player.best}-е из ${player.fleet}. `, `Mejor: ${place(player.best)} de ${player.fleet} barcos. `, `Beste: ${place(player.best)} von ${player.fleet} Booten. `) : ''}{t(`Racing since ${date(player.first)}.`, `Гоняется с ${date(player.first)}.`, `Regatea desde ${date(player.first)}.`, `Segelt seit ${date(player.first)}.`)}</span>
           </div>
 
           <PassportBlock lang={lang} facts={cardFacts(player)} mine={mine} share={mine && log ? shareBtn(log) : undefined} />
 
           <div className="bt-g">
-            <span className="bt-k"><IconTrophy s={14} />{t('Today’s race', 'Гонка дня', 'La regata del día')}</span>
+            <span className="bt-k"><IconTrophy s={14} />{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages')}</span>
             {player.daily.n ? (
               <dl className="yt-spec pl-spec">
-                <div><dt>{t('Points', 'Очков', 'Puntos')}</dt><dd>{num(player.pts)}</dd></div>
-                <div><dt>{t('Days ranked', 'Дней в рейтинге', 'Días clasificado')}</dt><dd>{num(player.daily.days)}</dd></div>
-                <div><dt>{t('Days won', 'Дней первым', 'Días ganados')}</dt><dd>{num(player.daily.wins)}</dd></div>
-                <div><dt>{t('Days in the top 3', 'Дней в топ-3', 'Días en el top 3')}</dt><dd>{num(player.daily.podiums)}</dd></div>
+                <div><dt>{t('Points', 'Очков', 'Puntos', 'Punkte')}</dt><dd>{num(player.pts)}</dd></div>
+                <div><dt>{t('Days ranked', 'Дней в рейтинге', 'Días clasificado', 'Tage in der Rangliste')}</dt><dd>{num(player.daily.days)}</dd></div>
+                <div><dt>{t('Days won', 'Дней первым', 'Días ganados', 'Tage gewonnen')}</dt><dd>{num(player.daily.wins)}</dd></div>
+                <div><dt>{t('Days in the top 3', 'Дней в топ-3', 'Días en el top 3', 'Tage in den Top 3')}</dt><dd>{num(player.daily.podiums)}</dd></div>
               </dl>
-            ) : <p className="bt-hint">{t('Not sailed yet: every day a new race, the same for everyone.', 'Ещё не ходил: каждый день новая гонка, одна для всех.', 'Aún sin navegar: cada día una regata nueva, la misma para todos.')}</p>}
+            ) : <p className="bt-hint">{t('Not sailed yet: every day a new race, the same for everyone.', 'Ещё не ходил: каждый день новая гонка, одна для всех.', 'Aún sin navegar: cada día una regata nueva, la misma para todos.', 'Noch nicht gesegelt: jeden Tag eine neue Regatta, für alle dieselbe.')}</p>}
           </div>
 
           <div className="bt-g">
-            <span className="bt-k"><IconKite s={14} />{t('Their boat', 'Их яхта', 'Su barco')}</span>
+            <span className="bt-k"><IconKite s={14} />{t('Their boat', 'Их яхта', 'Su barco', 'Ihr Boot')}</span>
             {player.boat ? (
               <dl className="yt-spec pl-spec">
-                {boat.name && <div><dt>{t('Name', 'Имя', 'Nombre')}</dt><dd>{boat.name}</dd></div>}
-                <div><dt>{t('Sail number', 'Номер', 'Número de vela')}</dt><dd>{`${boat.nat} ${boat.num || '1'}`.trim()}</dd></div>
-                <div><dt>{t('Colours', 'Цвета', 'Colores')}</dt><dd className="pl-sws">
+                {boat.name && <div><dt>{t('Name', 'Имя', 'Nombre', 'Name')}</dt><dd>{boat.name}</dd></div>}
+                <div><dt>{t('Sail number', 'Номер', 'Número de vela', 'Segelnummer')}</dt><dd>{`${boat.nat} ${boat.num || '1'}`.trim()}</dd></div>
+                <div><dt>{t('Colours', 'Цвета', 'Colores', 'Farben')}</dt><dd className="pl-sws">
                   {[boat.hull, boat.cloth, boat.kite, boat.kite2, boat.kite3, boat.crew].filter(Boolean).map((c, i) => <i key={i} style={{ background: c }} />)}
                 </dd></div>
-                <div><dt>{t('Deck', 'Палуба', 'Cubierta')}</dt><dd>{boat.deck === 'teak' ? t('Teak', 'Тик', 'Teca') : boat.deck === 'hull' ? t('Hull colour', 'В цвет корпуса', 'Color del casco') : t('Non-skid', 'Нескользящая', 'Antideslizante')}</dd></div>
-                <div><dt>{t('Sails', 'Паруса', 'Velas')}</dt><dd>{boat.laminate ? t('Laminate', 'Ламинат', 'Laminado') : t('Dacron', 'Дакрон', 'Dacron')}</dd></div>
-                <div><dt>{t('Flag', 'Флаг', 'Bandera')}</dt><dd>{flag ? t(flag.en, flag.ru, flag.es) : '–'}</dd></div>
+                <div><dt>{t('Deck', 'Палуба', 'Cubierta', 'Deck')}</dt><dd>{boat.deck === 'teak' ? t('Teak', 'Тик', 'Teca', 'Teak') : boat.deck === 'hull' ? t('Hull colour', 'В цвет корпуса', 'Color del casco', 'Rumpffarbe') : t('Non-skid', 'Нескользящая', 'Antideslizante', 'Rutschfest')}</dd></div>
+                <div><dt>{t('Sails', 'Паруса', 'Velas', 'Segel')}</dt><dd>{boat.laminate ? t('Laminate', 'Ламинат', 'Laminado', 'Laminat') : t('Dacron', 'Дакрон', 'Dacron', 'Dacron')}</dd></div>
+                <div><dt>{t('Flag', 'Флаг', 'Bandera', 'Flagge')}</dt><dd>{flag ? t(flag.en, flag.ru, flag.es, flag.de) : '–'}</dd></div>
               </dl>
-            ) : <p className="bt-hint">{t('They race inside Telegram or haven’t changed their boat, so the site doesn’t keep their colours: the scene shows the boat everyone starts in.', 'Они гоняются в Telegram или не меняли яхту, поэтому сайт не хранит их цвета: в сцене яхта, с которой начинают все.', 'Regatean dentro de Telegram o no han cambiado su barco, así que el sitio no guarda sus colores: la escena muestra el barco con el que empieza todo el mundo.')}</p>}
+            ) : <p className="bt-hint">{t('They race inside Telegram or haven’t changed their boat, so the site doesn’t keep their colours: the scene shows the boat everyone starts in.', 'Они гоняются в Telegram или не меняли яхту, поэтому сайт не хранит их цвета: в сцене яхта, с которой начинают все.', 'Regatean dentro de Telegram o no han cambiado su barco, así que el sitio no guarda sus colores: la escena muestra el barco con el que empieza todo el mundo.', 'Sie segeln in Telegram oder haben ihr Boot nicht geändert, also speichert die Seite ihre Farben nicht: Die Szene zeigt das Boot, mit dem alle starten.')}</p>}
           </div>
 
           <div className="bt-g">
-            <span className="bt-k"><IconSail s={14} />{t('Yachts they sail', 'На чём ходят', 'Yates en los que navegan')}</span>
+            <span className="bt-k"><IconSail s={14} />{t('Yachts they sail', 'На чём ходят', 'Yates en los que navegan', 'Yachten, die sie segeln')}</span>
             <dl className="yt-spec pl-spec">
               {player.yachts.slice(0, 6).map((y) => <div key={y.id}><dt>{yachtName(y.id)}</dt><dd>{races(y.n)}</dd></div>)}
             </dl>
           </div>
 
           <div className="bt-rows">
-            <Link className="bt-row" href="/race/rating"><IconTrophy s={18} /><span>{t('The leaderboard', 'Рейтинг', 'La clasificación')}</span><span className="bt-row-m">{t('Today and the month', 'День и месяц', 'Hoy y el mes')}</span></Link>
+            <Link className="bt-row" href="/race/rating"><IconTrophy s={18} /><span>{t('The leaderboard', 'Рейтинг', 'La clasificación', 'Die Rangliste')}</span><span className="bt-row-m">{t('Today and the month', 'День и месяц', 'Hoy y el mes', 'Heute und der Monat')}</span></Link>
           </div>
         </>) : (<>
           {!list ? (
-            <p className="bt-hint">{t('The players can’t be had just now. Try again in a minute.', 'Список игроков сейчас недоступен. Попробуй через минуту.', 'Ahora mismo no se pueden obtener los jugadores. Inténtalo de nuevo en un minuto.')}</p>
+            <p className="bt-hint">{t('The players can’t be had just now. Try again in a minute.', 'Список игроков сейчас недоступен. Попробуй через минуту.', 'Ahora mismo no se pueden obtener los jugadores. Inténtalo de nuevo en un minuto.', 'Die Spieler sind gerade nicht zu bekommen. Versuch es in einer Minute nochmal.')}</p>
           ) : list.rows.length === 0 ? (
-            <p className="bt-hint">{t('Nobody yet. Sign in and race to be the first.', 'Пока никого. Войди и пройди гонку — будешь первым.', 'Nadie todavía. Inicia sesión y regatea para ser el primero.')}</p>
+            <p className="bt-hint">{t('Nobody yet. Sign in and race to be the first.', 'Пока никого. Войди и пройди гонку — будешь первым.', 'Nadie todavía. Inicia sesión y regatea para ser el primero.', 'Noch niemand. Melde dich an und segle, um der Erste zu sein.')}</p>
           ) : (<>
-            <div className="pl-tab" role="table" aria-label={t('The players', 'Игроки', 'Los jugadores')}>
+            <div className="pl-tab" role="table" aria-label={t('The players', 'Игроки', 'Los jugadores', 'Die Spieler')}>
               <div className="pl-tr pl-th" role="row">
                 <span role="columnheader">#</span>
-                <span role="columnheader">{t('Player', 'Игрок', 'Jugador')}</span>
-                <span role="columnheader" title={t('Points on the leaderboard, every day added up', 'Очки рейтинга за все дни', 'Puntos de la clasificación, sumando todos los días')} aria-sort="descending">{t('Pts', 'Очки', 'Pts')}</span>
-                <span role="columnheader" title={t('Races', 'Гонок', 'Regatas')}>{t('Races', 'Гонок', 'Regatas')}</span>
-                <span role="columnheader" title={t('Wins', 'Побед', 'Victorias')}>{t('Wins', 'Побед', 'Victorias')}</span>
-                <span role="columnheader" title={t('Podiums', 'Подиумов', 'Podios')}>{t('Top 3', 'Топ-3', 'Top 3')}</span>
+                <span role="columnheader">{t('Player', 'Игрок', 'Jugador', 'Spieler')}</span>
+                <span role="columnheader" title={t('Points on the leaderboard, every day added up', 'Очки рейтинга за все дни', 'Puntos de la clasificación, sumando todos los días', 'Punkte in der Rangliste, jeder Tag zusammengezählt')} aria-sort="descending">{t('Pts', 'Очки', 'Pts', 'Pkt')}</span>
+                <span role="columnheader" title={t('Races', 'Гонок', 'Regatas', 'Regatten')}>{t('Races', 'Гонок', 'Regatas', 'Regatten')}</span>
+                <span role="columnheader" title={t('Wins', 'Побед', 'Victorias', 'Siege')}>{t('Wins', 'Побед', 'Victorias', 'Siege')}</span>
+                <span role="columnheader" title={t('Podiums', 'Подиумов', 'Podios', 'Podien')}>{t('Top 3', 'Топ-3', 'Top 3', 'Top 3')}</span>
               </div>
               {list.rows.map((r, i) => {
                 const to = href(page, r.k);
@@ -242,7 +242,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
                     <span role="cell" className="pl-i">{(page - 1) * list.per + i + 1}</span>
                     <span role="cell" className="pl-who">
                       <span className="pl-fl"><FlagImg code={r.fl} lang={lang} /></span>
-                      <span className="pl-nm"><b>{nameOf(r)}</b><small>{r.yacht ? yachtName(r.yacht) : t(`${r.days} day${r.days === 1 ? '' : 's'} racing`, `${r.days} ${ruPlural(r.days, ['день', 'дня', 'дней'])} в гонках`, `${r.days} ${r.days === 1 ? 'día' : 'días'} de regata`)}</small></span>
+                      <span className="pl-nm"><b>{nameOf(r)}</b><small>{r.yacht ? yachtName(r.yacht) : t(`${r.days} day${r.days === 1 ? '' : 's'} racing`, `${r.days} ${ruPlural(r.days, ['день', 'дня', 'дней'])} в гонках`, `${r.days} ${r.days === 1 ? 'día' : 'días'} de regata`, `${r.days} ${r.days === 1 ? 'Tag' : 'Tage'} dabei`)}</small></span>
                     </span>
                     <span role="cell" className="pl-pts">{num(r.pts)}</span>
                     <span role="cell">{num(r.n)}</span>
@@ -253,9 +253,9 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
               })}
             </div>
             {list.pages > 1 && (
-              <nav className="pl-pages" aria-label={t('Pages', 'Страницы', 'Páginas')}>
+              <nav className="pl-pages" aria-label={t('Pages', 'Страницы', 'Páginas', 'Seiten')}>
                 <Link className="fl-btn" href={href(page - 1)} aria-disabled={page <= 1} tabIndex={page <= 1 ? -1 : undefined} scroll={false}
-                  onClick={(e) => { e.preventDefault(); if (page > 1) go(href(page - 1), null); }} aria-label={t('Previous page', 'Предыдущая страница', 'Página anterior')}><IconBack s={16} /></Link>
+                  onClick={(e) => { e.preventDefault(); if (page > 1) go(href(page - 1), null); }} aria-label={t('Previous page', 'Предыдущая страница', 'Página anterior', 'Vorherige Seite')}><IconBack s={16} /></Link>
                 {Array.from({ length: list.pages }, (_, i) => i + 1).filter((n) => n === 1 || n === list.pages || Math.abs(n - page) <= 1).map((n, i, a) => (
                   <span key={n} className="pl-pn">
                     {i > 0 && n - a[i - 1] > 1 && <span className="pl-gap" aria-hidden="true">…</span>}
@@ -264,10 +264,10 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
                   </span>
                 ))}
                 <Link className="fl-btn" href={href(page + 1)} aria-disabled={page >= list.pages} tabIndex={page >= list.pages ? -1 : undefined} scroll={false}
-                  onClick={(e) => { e.preventDefault(); if (page < list.pages) go(href(page + 1), null); }} aria-label={t('Next page', 'Следующая страница', 'Página siguiente')}><IconArrow s={16} /></Link>
+                  onClick={(e) => { e.preventDefault(); if (page < list.pages) go(href(page + 1), null); }} aria-label={t('Next page', 'Следующая страница', 'Página siguiente', 'Nächste Seite')}><IconArrow s={16} /></Link>
               </nav>
             )}
-            <p className="bt-hint">{t('Points are the leaderboard’s, every day of today’s race added up: of N players ranked on a day, the first gets N and the last 1. Wins and podiums count every race, custom races too. Guests aren’t on it: sign in and race to be.', 'Очки — рейтинговые, за все дни гонки дня: из N игроков в рейтинге дня первый получает N, последний — 1. Победы и подиумы — во всех гонках, и в свободных тоже. Гостей здесь нет: войди и пройди гонку, чтобы попасть сюда.', 'Los puntos son los de la clasificación, sumando cada día de la regata del día: de N jugadores clasificados en un día, el primero recibe N y el último 1. Las victorias y los podios cuentan todas las regatas, también las personalizadas. Los invitados no entran: inicia sesión y regatea para entrar.')}</p>
+            <p className="bt-hint">{t('Points are the leaderboard’s, every day of today’s race added up: of N players ranked on a day, the first gets N and the last 1. Wins and podiums count every race, custom races too. Guests aren’t on it: sign in and race to be.', 'Очки — рейтинговые, за все дни гонки дня: из N игроков в рейтинге дня первый получает N, последний — 1. Победы и подиумы — во всех гонках, и в свободных тоже. Гостей здесь нет: войди и пройди гонку, чтобы попасть сюда.', 'Los puntos son los de la clasificación, sumando cada día de la regata del día: de N jugadores clasificados en un día, el primero recibe N y el último 1. Las victorias y los podios cuentan todas las regatas, también las personalizadas. Los invitados no entran: inicia sesión y regatea para entrar.', 'Die Punkte sind die der Rangliste, jeder Tag der Regatta des Tages zusammengezählt: von N an einem Tag gerankten Spielern bekommt der Erste N und der Letzte 1. Siege und Podien zählen jede Regatta, auch eigene. Gäste sind nicht dabei: Melde dich an und segle, um dabei zu sein.')}</p>
           </>)}
         </>)}
       </PauseCard>

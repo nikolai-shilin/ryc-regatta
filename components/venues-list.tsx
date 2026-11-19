@@ -17,7 +17,7 @@ import { useSceneStart } from '@/lib/scene-start';
 // venue of today's race, the drone starting close by her, then pulling up and away into a slow, wide circuit of the
 // water and the land round it), and every venue in the card on the right, by country and name, A to Z. Each row is the
 // venue's own page (/venues/<id>), so search engines find every one from here.
-type Pair = [en: string, ru: string, es?: string];
+type Pair = [en: string, ru: string, es?: string, de?: string];
 export type VenueRow = { id: VenueId; name: Pair; place: Pair; wind: Pair; nation: string; about: Pair };
 
 export function VenuesList({ lang, list, today, back }: { lang: Lang; list: VenueRow[]; today: VenueId; back: ReactNode }) {
@@ -58,26 +58,26 @@ export function VenuesList({ lang, list, today, back }: { lang: Lang; list: Venu
   const abc = new Intl.Collator(lang).compare;
   const rows = list.map((v) => {
     const f = FLAGS.find((x) => x.ioc === v.nation);
-    return { v, flag: f?.code ?? null, country: f ? t(f.en, f.ru, f.es) : t(...v.place).split(', ').pop()!, name: t(...v.name) };
+    return { v, flag: f?.code ?? null, country: f ? t(f.en, f.ru, f.es, f.de) : t(...v.place).split(', ').pop()!, name: t(...v.name) };
   }).sort((a, b) => abc(a.country, b.country) || abc(a.name, b.name));
 
   return (
     <div className="bt vs-view">
-      <LoadBar label={t('Loading the water', 'Загружаем акваторию', 'Cargando el agua')} on={!live && !backdrop.off} />
+      <LoadBar label={t('Loading the water', 'Загружаем акваторию', 'Cargando el agua', 'Das Wasser wird geladen')} on={!live && !backdrop.off} />
       <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={backdrop.go ? `/venues-view?venue=${here.id}` : undefined}
-        title={t(`${t(...here.name)} from the drone`, `${t(...here.name)} с дрона`, `${t(...here.name)} desde el dron`)} onLoad={() => post({ type: 'hello' })} />
-      <ScenePoster label={backdrop.off ? undefined : t('Loading the water', 'Загружаем акваторию', 'Cargando el agua')} on={!live} />
+        title={t(`${t(...here.name)} from the drone`, `${t(...here.name)} с дрона`, `${t(...here.name)} desde el dron`, `${t(...here.name)} aus der Drohne`)} onLoad={() => post({ type: 'hello' })} />
+      <ScenePoster label={backdrop.off ? undefined : t('Loading the water', 'Загружаем акваторию', 'Cargando el agua', 'Das Wasser wird geladen')} on={!live} />
 
       <div className="bt-info" ref={info}>
         <div className="bt-top">{back}<SceneBrand lang={lang} /></div>
-        <span className="bt-kick">{t(`Regatta venues · ${list.length}`, `Регатные акватории · ${list.length}`, `Sedes de regata · ${list.length}`)}</span>
-        <h1 className="bt-h">{t('The venues', 'Акватории', 'Las sedes')}</h1>
-        <p className="bt-p">{t('Every place you can race in the game is a real one, laid out from the map: the Solent, Newport, Sydney Harbour, the Mediterranean and beyond. Pick one for its water, its wind, its regattas and how to race it.', 'Каждое место для гонки в игре — настоящее, построенное по карте: Солент, Ньюпорт, гавань Сиднея, Средиземное море и не только. Выбери любое — там его вода, ветер, регаты и как на нём гоняться.', 'Cada lugar donde puedes regatear en el juego es real, trazado a partir del mapa: el Solent, Newport, el puerto de Sídney, el Mediterráneo y más allá. Elige uno para ver su agua, su viento, sus regatas y cómo regatear en él.')}</p>
-        <span className="vs-now"><IconPin s={13} />{t(`Over ${t(...here.name)}, today’s race`, `Над акваторией ${t(...here.name)} — гонка дня`, `Sobre ${t(...here.name)}, la regata de hoy`)}</span>
+        <span className="bt-kick">{t(`Regatta venues · ${list.length}`, `Регатные акватории · ${list.length}`, `Sedes de regata · ${list.length}`, `Regattareviere · ${list.length}`)}</span>
+        <h1 className="bt-h">{t('The venues', 'Акватории', 'Las sedes', 'Die Reviere')}</h1>
+        <p className="bt-p">{t('Every place you can race in the game is a real one, laid out from the map: the Solent, Newport, Sydney Harbour, the Mediterranean and beyond. Pick one for its water, its wind, its regattas and how to race it.', 'Каждое место для гонки в игре — настоящее, построенное по карте: Солент, Ньюпорт, гавань Сиднея, Средиземное море и не только. Выбери любое — там его вода, ветер, регаты и как на нём гоняться.', 'Cada lugar donde puedes regatear en el juego es real, trazado a partir del mapa: el Solent, Newport, el puerto de Sídney, el Mediterráneo y más allá. Elige uno para ver su agua, su viento, sus regatas y cómo regatear en él.', 'Jeder Ort, an dem du im Spiel segeln kannst, ist echt und nach der Karte nachgebaut: Solent, Newport, Sydney Harbour, das Mittelmeer und mehr. Such dir eines aus, nach Wasser, Wind, Regatten und danach, wie man dort segelt.')}</p>
+        <span className="vs-now"><IconPin s={13} />{t(`Over ${t(...here.name)}, today’s race`, `Над акваторией ${t(...here.name)} — гонка дня`, `Sobre ${t(...here.name)}, la regata de hoy`, `Über ${t(...here.name)}, die Regatta des Tages`)}</span>
       </div>
 
-      <PauseCard lang={lang} back="/venues" title={`${t('The venues', 'Акватории', 'Las sedes')} · ${list.length}`} icon={<IconPin s={14} />} cardRef={card}>
-        <ol className="vs-tab" aria-label={t('The venues', 'Акватории', 'Las sedes')}>
+      <PauseCard lang={lang} back="/venues" title={`${t('The venues', 'Акватории', 'Las sedes', 'Die Reviere')} · ${list.length}`} icon={<IconPin s={14} />} cardRef={card}>
+        <ol className="vs-tab" aria-label={t('The venues', 'Акватории', 'Las sedes', 'Die Reviere')}>
           {rows.map(({ v, flag, name }, i) => (
             <li key={v.id}>
               <Link href={`/venues/${v.id}`} className="vs-tr" aria-current={v.id === today ? 'true' : undefined} title={t(...v.about)}>
@@ -86,17 +86,17 @@ export function VenuesList({ lang, list, today, back }: { lang: Lang; list: Venu
                   <span className="vs-fl"><FlagImg code={flag} lang={lang} /></span>
                   <span className="vs-nm"><b>{name}</b><small>{t(...v.place)}</small></span>
                 </span>
-                {v.id === today ? <span className="vs-today">{t('Today', 'Сегодня', 'Hoy')}</span> : <span className="vs-wind">{t(...v.wind)}</span>}
+                {v.id === today ? <span className="vs-today">{t('Today', 'Сегодня', 'Hoy', 'Heute')}</span> : <span className="vs-wind">{t(...v.wind)}</span>}
                 <IconArrow s={14} />
               </Link>
             </li>
           ))}
         </ol>
-        <p className="bt-hint">{t('The wind is the one the game gives each venue, its usual breeze. Today’s race goes to a new venue every day, each in turn.', 'Ветер — тот, что игра даёт каждой акватории, её обычный бриз. Гонка дня каждый день идёт на новую акваторию, по очереди.', 'El viento es el que el juego da a cada sede, su brisa habitual. La regata de hoy va cada día a una sede nueva, por turnos.')}</p>
+        <p className="bt-hint">{t('The wind is the one the game gives each venue, its usual breeze. Today’s race goes to a new venue every day, each in turn.', 'Ветер — тот, что игра даёт каждой акватории, её обычный бриз. Гонка дня каждый день идёт на новую акваторию, по очереди.', 'El viento es el que el juego da a cada sede, su brisa habitual. La regata de hoy va cada día a una sede nueva, por turnos.', 'Der Wind ist der, den das Spiel jedem Revier gibt, seine übliche Brise. Die Regatta des Tages geht jeden Tag in ein neues Revier, eines nach dem anderen.')}</p>
 
         <div className="bt-rows">
-          <Link className="bt-row" href="/race/free"><IconSail s={18} /><span>{t('Race anywhere', 'Гоняться где угодно', 'Regatea donde quieras')}</span><span className="bt-row-m">{t('Custom race', 'Своя гонка', 'Regata personalizada')}</span></Link>
-          <Link className="bt-row" href="/learn"><IconBook s={18} /><span>{t('The guides', 'Гиды', 'Las guías')}</span><span className="bt-row-m">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas')}</span></Link>
+          <Link className="bt-row" href="/race/free"><IconSail s={18} /><span>{t('Race anywhere', 'Гоняться где угодно', 'Regatea donde quieras', 'Überall segeln')}</span><span className="bt-row-m">{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta')}</span></Link>
+          <Link className="bt-row" href="/learn"><IconBook s={18} /><span>{t('The guides', 'Гиды', 'Las guías', 'Die Leitfäden')}</span><span className="bt-row-m">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen')}</span></Link>
         </div>
       </PauseCard>
     </div>

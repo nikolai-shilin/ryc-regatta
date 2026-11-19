@@ -2,7 +2,7 @@
 // scripts/flags.mjs (add a country there and here). ioc: the letters a boat from there carries on her sail, which the
 // boat page fills in when you pick her flag.
 
-export type Flag = { code: string; ioc: string; en: string; ru: string; es?: string };
+export type Flag = { code: string; ioc: string; en: string; ru: string; es?: string; de?: string };
 
 export const FLAGS: Flag[] = [
   { code: 'ag', ioc: 'ANT', en: 'Antigua and Barbuda', ru: 'Антигуа и Барбуда' },
@@ -110,6 +110,8 @@ export const FLAGS: Flag[] = [
 // the Spanish name of each, as Intl knows the country (a code it doesn't know reads in English)
 const esNames = (() => { try { return new Intl.DisplayNames(['es'], { type: 'region' }); } catch { return null; } })();
 for (const f of FLAGS) { const n = esNames && /^[a-z]{2}$/.test(f.code) ? esNames.of(f.code.toUpperCase()) : undefined; if (n && n !== f.code.toUpperCase()) f.es = n; }
+const deNames = (() => { try { return new Intl.DisplayNames(['de'], { type: 'region' }); } catch { return null; } })();
+for (const f of FLAGS) { const n = deNames && /^[a-z]{2}$/.test(f.code) ? deNames.of(f.code.toUpperCase()) : undefined; if (n && n !== f.code.toUpperCase()) f.de = n; }
 
 export const flagSrc = (code: string) => `/flags/${code}.svg`;
 export const findFlag = (code: string | undefined) => (code ? FLAGS.find((f) => f.code === code) : undefined);

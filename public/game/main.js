@@ -294,16 +294,16 @@ const T = {
   },
 };
 const urlLang = new URLSearchParams(location.search).get('lang');
-const cookieLang = (document.cookie.match(/(?:^|; )lang=(en|ru|es)\b/) || [])[1];
+const cookieLang = (document.cookie.match(/(?:^|; )lang=(en|ru|es|de)\b/) || [])[1];
 const deviceLang = (TG && TG.initDataUnsafe?.user?.language_code) || navigator.language || '';
-const LANG = urlLang === 'ru' || urlLang === 'en' || urlLang === 'es' ? urlLang : cookieLang ? cookieLang
-  : /^(ru|uk|be|kk)\b/i.test(deviceLang) ? 'ru' : /^es\b/i.test(deviceLang) ? 'es' : 'en';
-// Spanish is fetched only by those who read it
-const ES = LANG === 'es' ? await import('./strings-es.js').catch(() => null) : null;
-if (ES) T.es = ES.MAIN;
-// the voices are recorded in English and Russian: Spanish hears the English ones
-const VOICE = LANG === 'es' ? 'en' : LANG;
-const named = (p) => p[LANG === 'ru' ? 1 : LANG === 'es' ? 2 : 0] ?? p[0]; // a name kept as [English, Russian, Spanish]
+const LANG = ['ru', 'en', 'es', 'de'].includes(urlLang) ? urlLang : cookieLang ? cookieLang
+  : /^(ru|uk|be|kk)\b/i.test(deviceLang) ? 'ru' : /^es\b/i.test(deviceLang) ? 'es' : /^de\b/i.test(deviceLang) ? 'de' : 'en';
+// Spanish and German are fetched only by those who read them
+const PACK = LANG === 'es' ? await import('./strings-es.js').catch(() => null) : LANG === 'de' ? await import('./strings-de.js').catch(() => null) : null;
+if (PACK) T[LANG] = PACK.MAIN;
+// the voices are recorded in English and Russian: Spanish and German hear the English ones
+const VOICE = LANG === 'es' || LANG === 'de' ? 'en' : LANG;
+const named = (p) => p[{ en: 0, ru: 1, es: 2, de: 3 }[LANG] ?? 0] ?? p[0]; // a name kept as [English, Russian, Spanish, German]
 const t = (k, ...a) => { const v = T[LANG]?.[k] ?? T.en[k] ?? k; return typeof v === 'function' ? v(...a) : v; };
 document.documentElement.lang = LANG;
 for (const el of document.querySelectorAll('[data-t]')) el.innerHTML = t(el.dataset.t);
@@ -344,7 +344,7 @@ const DAILY_KEYS = ['preset', 'fleet', 'length', 'laps', 'start', 'current', 'co
 const settings = () => { if (drill) return { ...opts, ...drillSettings(), length: laidLength(VENUE, drillSettings().length), daily: null }; if (opts.mode !== 'daily') return { ...opts, length: laidLength(VENUE, opts.length), daily: null }; const d = dailyRace(); return { ...opts, ...d, daily: d.day }; };
 const windName = (p) => t(p);
 // the yachts' names, as lib/yachts.ts has them (another class: its id)
-const YACHT_NAMES = { jpk1050: ['JPK 1050', 'JPK 1050'], bavaria46: ['Bavaria 46', 'Bavaria 46'], j70: ['J/70', 'J/70'], rs21: ['RS21', 'RS21'], laser: ['Laser (ILCA)', 'Laser (ILCA)'], optimist: ['Optimist', 'Оптимист', 'Optimist'], dragon: ['Dragon', 'Дракон', 'Dragon'], jclass: ['J Class', 'Класс J', 'J Class'], ac75: ['AC75', 'AC75'] };
+const YACHT_NAMES = { jpk1050: ['JPK 1050', 'JPK 1050'], bavaria46: ['Bavaria 46', 'Bavaria 46'], j70: ['J/70', 'J/70'], rs21: ['RS21', 'RS21'], laser: ['Laser (ILCA)', 'Laser (ILCA)'], optimist: ['Optimist', 'Оптимист', 'Optimist', 'Optimist'], dragon: ['Dragon', 'Дракон', 'Dragon', 'Dragon'], jclass: ['J Class', 'Класс J', 'J Class', 'J Class'], ac75: ['AC75', 'AC75'] };
 const yachtName = (id) => named(YACHT_NAMES[id] || [id, id]);
 const SHAPE_KEY = { wl: 'shapeWl', tri: 'shapeTri', trap: 'shapeTrap', wlu: 'shapeWlu' };
 const paintOpts = () => {
@@ -1290,7 +1290,7 @@ function startMatchFlow() {
   for (const id of ['#pChange', '#pRestart']) $(id).style.display = 'none'; // a match isn't restarted or changed: only left
   import('./match-ui.js').then((m) => {
     matchUi = m;
-    return m.startMatch({ code: MATCH, t, LANG, perf: () => duelPerf?.summary() ?? null, strings: ES?.MATCH, venue: VENUE, cls: CLS, onRace: onMatchRace, onIdle: onMatchIdle, onEnd: () => replaceRace(HUB), keepOneOnOne, openResult, toast: (s) => toast(s, 3.5),
+    return m.startMatch({ code: MATCH, t, LANG, perf: () => duelPerf?.summary() ?? null, strings: PACK?.MATCH, venue: VENUE, cls: CLS, onRace: onMatchRace, onIdle: onMatchIdle, onEnd: () => replaceRace(HUB), keepOneOnOne, openResult, toast: (s) => toast(s, 3.5),
       yachtName: (id) => yachtName(id), venueName: (id) => named(venueById(id).name) });
   }).catch((e) => { console.error(e); matchFailed(); });
 }
@@ -1513,7 +1513,7 @@ setCam(['drone', 'top', 'helm'].includes(opts.camera) ? opts.camera : 'drone'); 
 // what the player has set, read as each race ends (stats.js raceEnded, for the site's /admin)
 statsContext(() => ({ cam: world.mode, trim: opts.autoTrim, sound: opts.sound ? 1 : 0, voice: opts.voice ? 1 : 0, music: opts.music, sea: opts.sea,
   saver: opts.saver ? 1 : 0, gfx: opts.gfx, q: levelNow(), guides: opts.guides ? 1 : 0, speed: timeScale }));
-const bcHud = createHud({ t, LANG, strings: ES?.HUD, fmt, world, getRace: () => race, setCam, flagOf: (b, me) => (me ? playerLook().flag : b.human ? lookFrom(b.look).flag : LOOKS[b.name] && LOOKS[b.name].flag) || null, // (the other sailor in a match: her own)
+const bcHud = createHud({ t, LANG, strings: PACK?.HUD, fmt, world, getRace: () => race, setCam, flagOf: (b, me) => (me ? playerLook().flag : b.human ? lookFrom(b.look).flag : LOOKS[b.name] && LOOKS[b.name].flag) || null, // (the other sailor in a match: her own)
   sailOf: () => { const l = playerLook(); return `${l.nat} ${l.num}`.trim(); } }); // your flag and sail number, as the boat page sets them
 
 // ---------- menus ----------
@@ -1560,8 +1560,8 @@ const pauseEl = $('#pauseCard'), confirmEl = $('#confirmCard');
 // the voice on board (the skipper in Russian, the crew's calls in English) has a switch of its own, under Sound;
 // off, the hails and the call for a tack or a gybe are still heard, and the count to the gun beeps (Audio & graphics ›
 // Voice on board). The race committee and the umpire are under Sound alone.
-const ordL = (n) => (LANG === 'ru' ? `${n}-е` : LANG === 'es' ? `${n}.º` : ord(n));
-const placeWord = (n) => (LANG === 'ru' ? n : LANG === 'es' ? `${n}.º` : ord(n));
+const ordL = (n) => (LANG === 'ru' ? `${n}-е` : LANG === 'es' ? `${n}.º` : LANG === 'de' ? `${n}.` : ord(n));
+const placeWord = (n) => (LANG === 'ru' ? n : LANG === 'es' ? `${n}.º` : LANG === 'de' ? `${n}.` : ord(n));
 function paintPause() {
   const P = race.player, legs = race.course.legs, n = legs.length - 1, leg = Math.min(n, Math.max(1, P.leg));
   const place = race.standings().indexOf(P) + 1, L = race.log;
@@ -1688,17 +1688,17 @@ for (const a of [$('#backLink'), $('#lBack')]) { // the menu's back and the load
 {
   paintOpts(); // the menu as this race has it (the note on today's race, its place and wind; opts.mode is the address's, above)
   // the loading screen names the race now it's known: the venue in its title, the wind, the course and the fleet under it
-  const s = MATCH ? race.settings : settings(), tr = (en, ru, es) => (LANG === 'ru' ? ru : LANG === 'es' ? es ?? en : en), boats = s.fleet - 1;
+  const s = MATCH ? race.settings : settings(), tr = (en, ru, es, de) => (LANG === 'ru' ? ru : LANG === 'es' ? es ?? en : LANG === 'de' ? de ?? en : en), boats = s.fleet - 1;
   if (MATCH) window.rycLoader?.race?.(named(VENUE.name), [
-    [tr('Race', 'Гонка', 'Regata'), 1, tr('race', 'гонка', 'regata'), tr('One race, one winner', 'Одна гонка, один победитель', 'Una regata, un ganador')],
-    [tr('Course', 'Дистанция', 'Recorrido'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг', s.laps > 1 ? 'vueltas' : 'vuelta'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
-    [tr('Boats', 'Лодки', 'Barcos'), 2, '', tr('You and a friend', 'Ты и друг', 'Tú y un amigo')],
-  ], tr(`${s.start}-minute start sequence`, `стартовая процедура ${s.start} мин`, `Secuencia de salida de ${s.start} minutos`));
+    [tr('Race', 'Гонка', 'Regata', 'Regatta'), 1, tr('race', 'гонка', 'regata', 'Regatta'), tr('One race, one winner', 'Одна гонка, один победитель', 'Una regata, un ganador', 'Eine Regatta, ein Sieger')],
+    [tr('Course', 'Дистанция', 'Recorrido', 'Bahn'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг', s.laps > 1 ? 'vueltas' : 'vuelta', s.laps > 1 ? 'Runden' : 'Runde'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
+    [tr('Boats', 'Лодки', 'Barcos', 'Boote'), 2, '', tr('You and a friend', 'Ты и друг', 'Tú y un amigo', 'Du und ein Freund')],
+  ], tr(`${s.start}-minute start sequence`, `стартовая процедура ${s.start} мин`, `Secuencia de salida de ${s.start} minutos`, `${s.start}-Minuten-Startsequenz`));
   else window.rycLoader?.race?.(named(VENUE.name), [
-    [tr('Wind', 'Ветер', 'Viento'), { light: 7, medium: 12, strong: 19 }[s.preset], tr('kn', 'уз', 'kn'), { light: tr('Light breeze', 'Слабый ветер', 'Brisa suave'), medium: tr('Medium breeze', 'Средний ветер', 'Brisa media'), strong: tr('Strong breeze', 'Сильный ветер', 'Brisa fuerte') }[s.preset]],
-    [tr('Course', 'Дистанция', 'Recorrido'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг', s.laps > 1 ? 'vueltas' : 'vuelta'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
-    [tr('Fleet', 'Флот', 'Flota'), s.fleet, '', tr(`You and ${boats} boats`, `Ты и ${boats} ${boats === 1 ? 'лодка' : boats < 5 ? 'лодки' : 'лодок'}`, `Tú y ${boats} barcos`)],
-  ], tr(`${s.start}-minute start sequence`, `стартовая процедура ${s.start} мин`, `Secuencia de salida de ${s.start} minutos`)); // what's coming up, in the ticker
+    [tr('Wind', 'Ветер', 'Viento', 'Wind'), { light: 7, medium: 12, strong: 19 }[s.preset], tr('kn', 'уз', 'kn', 'kn'), { light: tr('Light breeze', 'Слабый ветер', 'Brisa suave', 'Leichte Brise'), medium: tr('Medium breeze', 'Средний ветер', 'Brisa media', 'Mittlere Brise'), strong: tr('Strong breeze', 'Сильный ветер', 'Brisa fuerte', 'Starke Brise') }[s.preset]],
+    [tr('Course', 'Дистанция', 'Recorrido', 'Bahn'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг', s.laps > 1 ? 'vueltas' : 'vuelta', s.laps > 1 ? 'Runden' : 'Runde'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
+    [tr('Fleet', 'Флот', 'Flota', 'Feld'), s.fleet, '', tr(`You and ${boats} boats`, `Ты и ${boats} ${boats === 1 ? 'лодка' : boats < 5 ? 'лодки' : 'лодок'}`, `Tú y ${boats} barcos`, `Du und ${boats} Boote`)],
+  ], tr(`${s.start}-minute start sequence`, `стартовая процедура ${s.start} мин`, `Secuencia de salida de ${s.start} minutos`, `${s.start}-Minuten-Startsequenz`)); // what's coming up, in the ticker
   menu.hidden = true;
   // the preloader in play/index.html has counted the files in; the scene is built, so it fills its bar and fades into the race
   // …once the shaders are compiled too (world.prepare), so the first frame of the race doesn't stall

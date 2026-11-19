@@ -7,7 +7,17 @@ const Q = {
   id: 'rr-166',
   answer: 'B' as const,
   figure: { en: 'https://iyt.rycrentals.com/api/mcp?figure=rr-166', ru: 'https://iyt.rycrentals.com/api/mcp?figure=rr-166&lang=ru' },
-  reference: { en: 'RRS 12, RRS 13, RRS 10', ru: 'ППГ 12, ППГ 13, ППГ 10', es: 'RRV 12, RRV 13, RRV 10' },
+  reference: { en: 'RRS 12, RRS 13, RRS 10', ru: 'ППГ 12, ППГ 13, ППГ 10', es: 'RRV 12, RRV 13, RRV 10', de: 'WR 12, WR 13, WR 10' },
+  de: {
+    question: 'Blau liegt zwei Längen klar voraus auf Steuerbordbug an der Kreuz; du hältst dich frei. Sie wendet direkt vor dir auf Backbordbug und liegt anderthalb Längen vor dir hoch am Wind. Wer hält sich während ihrer Wende frei, und wer danach?',
+    options: {
+      A: 'Blau während der Wende, danach du: sobald ihre Wende beendet ist, bist du wieder das Boot klar achteraus',
+      B: 'Beide Male Blau: während der Wende hält sie sich nach Regel 13 frei, und hoch am Wind auf Backbordbug hält sie sich von dir auf Steuerbordbug nach Regel 10 frei',
+      C: 'Du während ihrer Wende, danach Blau: ein wendendes Boot hat Wegerecht, bis es hoch am Wind liegt',
+      D: 'Beide Male du: das Boot dahinter hält sich vom Boot davor frei, was es auch tut (Regel 12)',
+    },
+    why: 'Regel 12 endet, wenn Blau durch den Wind geht; während der Wende gilt Regel 13 und danach Regel 10, weil die Bugs verschieden sind.',
+  },
   es: {
     question: 'Azul va libre por la proa dos esloras delante de ti, amurada a estribor en ceñida; tú te mantienes separado. Vira a babor justo en tu camino y se queda de ceñida una eslora y media por delante de ti. ¿Quién se mantiene separado durante su virada, y quién después?',
     options: {

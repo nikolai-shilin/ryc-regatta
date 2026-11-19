@@ -9,12 +9,12 @@ export function ShareGame({ lang }: { lang: Lang }) {
   const t = tx(lang);
   const data = () => ({
     url: `${location.origin}/${lang === 'en' ? '' : `?lang=${lang}`}`,
-    text: t('Up and down: a sailing race in the browser, today’s race the same for everyone. Beat my time?', 'Up and down — парусная регата в браузере, гонка дня одна на всех. Обгонишь моё время?', 'Up and down: una regata a vela en el navegador, la regata de hoy igual para todos. ¿Superas mi tiempo?'),
-    title: t('Share the game', 'Поделиться игрой', 'Comparte el juego'),
+    text: t('Up and down: a sailing race in the browser, today’s race the same for everyone. Beat my time?', 'Up and down — парусная регата в браузере, гонка дня одна на всех. Обгонишь моё время?', 'Up and down: una regata a vela en el navegador, la regata de hoy igual para todos. ¿Superas mi tiempo?', 'Up and down: eine Segelregatta im Browser, die Regatta des Tages für alle dieselbe. Schlägst du meine Zeit?'),
+    title: t('Share the game', 'Поделиться игрой', 'Comparte el juego', 'Spiel teilen'),
   });
   return (
     <div className="so-share">
-      <ShareButton lang={lang} data={data} className="pill pill-primary" title={t('Share the game', 'Поделиться игрой', 'Comparte el juego')} />
+      <ShareButton lang={lang} data={data} className="pill pill-primary" title={t('Share the game', 'Поделиться игрой', 'Comparte el juego', 'Spiel teilen')} />
       <CopyLink lang={lang} data={data} className="pill" />
     </div>
   );

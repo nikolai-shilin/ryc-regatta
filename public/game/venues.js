@@ -37,7 +37,7 @@ const MED = { walls: ['#f3eee4', '#efe6d2', '#f6f2ea', '#e9dcc0', '#f1e3c8', '#f
 
 export const VENUES = [
   {
-    id: 'gocek', name: ['Göcek', 'Гёчек', 'Göcek'], lat: 36.7525, lon: 28.9395, wind: 195, tz: 3,
+    id: 'gocek', name: ['Göcek', 'Гёчек', 'Göcek', 'Göcek'], lat: 36.7525, lon: 28.9395, wind: 195, tz: 3,
     look: {
       haze: 1.1,
       ground: { forest: ['#283d21', '#36502b', '#4e6535'], scrub: '#7b7d55', rock: ['#9a917c', '#7b7465'], town: '#a19a84', shore: '#a39a86' },
@@ -47,7 +47,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'cowes', name: ['Cowes', 'Каус', 'Cowes'], lat: 50.788, lon: -1.306, wind: 225, tz: 1, stream: ['tide', 75, 1.1],
+    id: 'cowes', name: ['Cowes', 'Каус', 'Cowes', 'Cowes'], lat: 50.788, lon: -1.306, wind: 225, tz: 1, stream: ['tide', 75, 1.1],
     look: {
       haze: 0.85,
       ground: { forest: ['#2f4a26', '#3e5d2e', '#557a3a'], scrub: '#6f8a4a', rock: ['#a59d86', '#8a8473'], town: '#9c8f80', shore: '#b9ab8a' },
@@ -59,7 +59,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'newport', name: ['Newport', 'Ньюпорт', 'Newport'], lat: 41.457, lon: -71.36, wind: 210, tz: -4, stream: ['tide', 340, 0.8],
+    id: 'newport', name: ['Newport', 'Ньюпорт', 'Newport', 'Newport'], lat: 41.457, lon: -71.36, wind: 210, tz: -4, stream: ['tide', 340, 0.8],
     look: {
       haze: 0.95,
       ground: { forest: ['#2b4526', '#3a5a2f', '#557539'], scrub: '#7a8a52', rock: ['#8e8a80', '#6f6c66'], town: '#9a968c', shore: '#a8a090' },
@@ -71,7 +71,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'sydney', name: ['Sydney', 'Сидней', 'Sídney'], lat: -33.848, lon: 151.256, wind: 45, tz: 11, stream: ['tide', 225, 0.6],
+    id: 'sydney', name: ['Sydney', 'Сидней', 'Sídney', 'Sydney'], lat: -33.848, lon: 151.256, wind: 45, tz: 11, stream: ['tide', 225, 0.6],
     look: {
       haze: 1.15,
       ground: { forest: ['#3a4a2c', '#4d5c37', '#6b7547'], scrub: '#7f7f58', rock: ['#c9a878', '#a8865c'], town: '#a8988a', shore: '#d8c49a' },
@@ -82,7 +82,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'kiel', name: ['Kiel', 'Киль', 'Kiel'], lat: 54.43, lon: 10.205, wind: 250, tz: 2, thermal: false,
+    id: 'kiel', name: ['Kiel', 'Киль', 'Kiel', 'Kiel'], lat: 54.43, lon: 10.205, wind: 250, tz: 2, thermal: false,
     look: {
       haze: 0.9,
       ground: { forest: ['#2a4424', '#38582c', '#4f7236'], scrub: '#6f8a48', rock: ['#a49c88', '#8c8676'], town: '#8f7f74', shore: '#cbbd98' },
@@ -94,7 +94,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'trieste', name: ['Trieste', 'Триест', 'Trieste'], lat: 45.672, lon: 13.728, wind: 70, tz: 2, thermal: false,
+    id: 'trieste', name: ['Trieste', 'Триест', 'Trieste', 'Triest'], lat: 45.672, lon: 13.728, wind: 70, tz: 2, thermal: false,
     look: {
       haze: 1.1,
       ground: { forest: ['#33482a', '#46602f', '#5f7a3c'], scrub: '#7f8656', rock: ['#c8c2b2', '#a7a090'], town: '#b0a48e', shore: '#c9c1ad' },
@@ -105,7 +105,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'porto-cervo', name: ['Porto Cervo', 'Порто-Черво', 'Porto Cervo'], lat: 41.152, lon: 9.565, wind: 315, tz: 2, thermal: false,
+    id: 'porto-cervo', name: ['Porto Cervo', 'Порто-Черво', 'Porto Cervo', 'Porto Cervo'], lat: 41.152, lon: 9.565, wind: 315, tz: 2, thermal: false,
     look: {
       haze: 1.35,
       ground: { forest: ['#3e4d2c', '#4f5f34', '#68743f'], scrub: '#7c7a50', rock: ['#c4a58c', '#a08670'], town: '#c2a88a', shore: '#d8c3a4' },
@@ -116,7 +116,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'saint-tropez', name: ['Saint-Tropez', 'Сен-Тропе', 'Saint-Tropez'], lat: 43.29, lon: 6.67, wind: 280, tz: 2, thermal: false,
+    id: 'saint-tropez', name: ['Saint-Tropez', 'Сен-Тропе', 'Saint-Tropez', 'Saint-Tropez'], lat: 43.29, lon: 6.67, wind: 280, tz: 2, thermal: false,
     look: {
       haze: 1.15,
       ground: { forest: ['#2e4626', '#3f5a2e', '#5a733a'], scrub: '#7a7c52', rock: ['#a69a84', '#857b6a'], town: '#b3a088', shore: '#cdbb98' },
@@ -128,7 +128,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'antigua', name: ['Antigua', 'Антигуа', 'Antigua'], lat: 16.989, lon: -61.77, wind: 95, tz: -4, stream: ['flow', 290, 0.5],
+    id: 'antigua', name: ['Antigua', 'Антигуа', 'Antigua', 'Antigua'], lat: 16.989, lon: -61.77, wind: 95, tz: -4, stream: ['flow', 290, 0.5],
     look: {
       haze: 1.6,
       ground: { forest: ['#3c5a2a', '#4f7032', '#6a8a3e'], scrub: '#8a8a52', rock: ['#a8957a', '#86765f'], town: '#b9a88e', shore: '#eadcb8' },
@@ -139,7 +139,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'auckland', name: ['Auckland', 'Окленд', 'Auckland'], lat: -36.83, lon: 174.815, wind: 225, tz: 13, thermal: false, stream: ['tide', 230, 1.0],
+    id: 'auckland', name: ['Auckland', 'Окленд', 'Auckland', 'Auckland'], lat: -36.83, lon: 174.815, wind: 225, tz: 13, thermal: false, stream: ['tide', 230, 1.0],
     look: {
       haze: 1.2,
       ground: { forest: ['#24401f', '#335229', '#4a6b34'], scrub: '#6b7a44', rock: ['#5d5a55', '#45433f'], town: '#9a948a', shore: '#b8a888' },
@@ -151,7 +151,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'san-francisco', name: ['San Francisco', 'Сан-Франциско', 'San Francisco'], lat: 37.815, lon: -122.435, wind: 255, tz: -7, stream: ['tide', 85, 1.2],
+    id: 'san-francisco', name: ['San Francisco', 'Сан-Франциско', 'San Francisco', 'San Francisco'], lat: 37.815, lon: -122.435, wind: 255, tz: -7, stream: ['tide', 85, 1.2],
     look: {
       haze: 0.8,
       ground: { forest: ['#33452a', '#465a33', '#617040'], scrub: '#9a9460', rock: ['#9a9284', '#7a7366'], town: '#b0a89a', shore: '#b8ad94' },
@@ -163,7 +163,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'valencia', name: ['Valencia', 'Валенсия', 'Valencia'], lat: 39.455, lon: -0.285, wind: 110, tz: 2,
+    id: 'valencia', name: ['Valencia', 'Валенсия', 'Valencia', 'Valencia'], lat: 39.455, lon: -0.285, wind: 110, tz: 2,
     look: {
       haze: 1.0,
       ground: { forest: ['#3a5229', '#4c6a30', '#66823c'], scrub: '#8a8a58', rock: ['#b8a888', '#9a8a6c'], town: '#bba98e', shore: '#e0cfa4' },
@@ -175,7 +175,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'barcelona', name: ['Barcelona', 'Барселона', 'Barcelona'], lat: 41.372, lon: 2.225, wind: 200, tz: 2,
+    id: 'barcelona', name: ['Barcelona', 'Барселона', 'Barcelona', 'Barcelona'], lat: 41.372, lon: 2.225, wind: 200, tz: 2,
     look: {
       haze: 0.9,
       ground: { forest: ['#33482a', '#46602f', '#5f7a3c'], scrub: '#7f8656', rock: ['#b4a890', '#958a74'], town: '#b8a890', shore: '#dcc9a0' },
@@ -186,7 +186,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'palma', name: ['Palma', 'Пальма', 'Palma'], lat: 39.535, lon: 2.63, wind: 220, tz: 2,
+    id: 'palma', name: ['Palma', 'Пальма', 'Palma', 'Palma'], lat: 39.535, lon: 2.63, wind: 220, tz: 2,
     look: {
       haze: 1.2,
       ground: { forest: ['#33482a', '#46602f', '#5f7a3c'], scrub: '#868a58', rock: ['#c4b49a', '#a3937a'], town: '#bfae92', shore: '#e2d2ac' },
@@ -198,7 +198,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'marstrand', name: ['Marstrand', 'Марстранд', 'Marstrand'], lat: 57.885, lon: 11.555, wind: 225, tz: 2, stream: ['flow', 15, 0.4],
+    id: 'marstrand', name: ['Marstrand', 'Марстранд', 'Marstrand', 'Marstrand'], lat: 57.885, lon: 11.555, wind: 225, tz: 2, stream: ['flow', 15, 0.4],
     look: {
       haze: 1.15,
       // (Bohuslän granite: pinkish grey, not sand)
@@ -210,7 +210,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'bermuda', name: ['Bermuda', 'Бермуды', 'Bermudas'], lat: 32.305, lon: -64.84, wind: 200, tz: -3,
+    id: 'bermuda', name: ['Bermuda', 'Бермуды', 'Bermudas', 'Bermuda'], lat: 32.305, lon: -64.84, wind: 200, tz: -3,
     look: {
       haze: 1.6,
       ground: { forest: ['#2f4a26', '#3f6030', '#5a7a3a'], scrub: '#7a8a50', rock: ['#c9bba0', '#a89a80'], town: '#c8bca8', shore: '#efdcc4' },
@@ -221,7 +221,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'enoshima', name: ['Enoshima', 'Эносима', 'Enoshima'], lat: 35.285, lon: 139.495, wind: 190, tz: 9,
+    id: 'enoshima', name: ['Enoshima', 'Эносима', 'Enoshima', 'Enoshima'], lat: 35.285, lon: 139.495, wind: 190, tz: 9,
     look: {
       haze: 0.85,
       ground: { forest: ['#1f3a1e', '#2c4a26', '#43622f'], scrub: '#6a7a48', rock: ['#8e8a7e', '#6f6b62'], town: '#a09c94', shore: '#a89f8c' },
@@ -232,7 +232,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'weymouth', name: ['Weymouth', 'Уэймут', 'Weymouth'], lat: 50.605, lon: -2.41, wind: 225, tz: 1, stream: ['tide', 60, 0.5],
+    id: 'weymouth', name: ['Weymouth', 'Уэймут', 'Weymouth', 'Weymouth'], lat: 50.605, lon: -2.41, wind: 225, tz: 1, stream: ['tide', 60, 0.5],
     look: {
       haze: 0.9,
       ground: { forest: ['#2f4a26', '#3e5d2e', '#557a3a'], scrub: '#7a9050', rock: ['#d4ccb4', '#b4aa92'], town: '#a8988a', shore: '#cfc2a0' },
@@ -244,7 +244,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'marseille', name: ['Marseille', 'Марсель', 'Marsella'], lat: 43.265, lon: 5.335, wind: 315, tz: 2, thermal: false,
+    id: 'marseille', name: ['Marseille', 'Марсель', 'Marsella', 'Marseille'], lat: 43.265, lon: 5.335, wind: 315, tz: 2, thermal: false,
     look: {
       haze: 1.2,
       ground: { forest: ['#3a4c2c', '#4a5e34', '#647440'], scrub: '#8a8a5c', rock: ['#d8d2c2', '#b8b0a0'], town: '#c2b8a6', shore: '#d6cfbe' },
@@ -255,7 +255,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'rio', name: ['Rio de Janeiro', 'Рио-де-Жанейро', 'Río de Janeiro'], lat: -22.93, lon: -43.158, wind: 150, tz: -3, stream: ['tide', 35, 0.8],
+    id: 'rio', name: ['Rio de Janeiro', 'Рио-де-Жанейро', 'Río de Janeiro', 'Rio de Janeiro'], lat: -22.93, lon: -43.158, wind: 150, tz: -3, stream: ['tide', 35, 0.8],
     look: {
       haze: 0.9,
       ground: { forest: ['#1c3a1a', '#284d22', '#3c642c'], scrub: '#5f7a3c', rock: ['#8a8680', '#6a6660'], town: '#b4aca0', shore: '#e4d6b0' },
@@ -266,7 +266,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'garda', name: ['Lake Garda', 'Озеро Гарда', 'Lago de Garda'], lat: 45.84, lon: 10.85, wind: 190, tz: 2,
+    id: 'garda', name: ['Lake Garda', 'Озеро Гарда', 'Lago de Garda', 'Gardasee'], lat: 45.84, lon: 10.85, wind: 190, tz: 2,
     look: {
       haze: 1.0,
       ground: { forest: ['#2c4524', '#3c5a2c', '#557236'], scrub: '#7c8452', rock: ['#b8b2a2', '#958f80'], town: '#b0a48c', shore: '#bdb3a0' },
@@ -277,7 +277,7 @@ export const VENUES = [
     },
   },
   {
-    id: 'istanbul', name: ['Istanbul', 'Стамбул', 'Estambul'], lat: 40.982, lon: 28.992, wind: 35, tz: 3, thermal: false, stream: ['flow', 185, 1.0], runs: true,
+    id: 'istanbul', name: ['Istanbul', 'Стамбул', 'Estambul', 'Istanbul'], lat: 40.982, lon: 28.992, wind: 35, tz: 3, thermal: false, stream: ['flow', 185, 1.0], runs: true,
     look: {
       haze: 0.8,
       ground: { forest: ['#2e4626', '#3f5a2e', '#5a733a'], scrub: '#7c7e54', rock: ['#b0a690', '#8f8674'], town: '#b2a692', shore: '#bfb39a' },
@@ -291,7 +291,7 @@ export const VENUES = [
   {
     // the Neva under the Peter and Paul Fortress's walls, in the westerly off the Gulf of Finland; today's race comes
     // here from its `from` day (dailyVenue)
-    id: 'st-petersburg', name: ['St Petersburg', 'Санкт-Петербург', 'San Petersburgo'], lat: 59.9464, lon: 30.3187, wind: 245, tz: 3, thermal: false, stream: ['flow', 235, 0.9], runs: true, from: '2026-11-20',
+    id: 'st-petersburg', name: ['St Petersburg', 'Санкт-Петербург', 'San Petersburgo', 'Sankt Petersburg'], lat: 59.9464, lon: 30.3187, wind: 245, tz: 3, thermal: false, stream: ['flow', 235, 0.9], runs: true, from: '2026-11-20',
     // the river is too narrow for the triangle's wing mark, and the long course's beat (the medium wind's, some 900 m
     // and wide) has no reach of it between two of the bridges, too low for a mast
     skip: ['tri:medium', 'tri:long', 'long'],
@@ -312,7 +312,7 @@ export const VENUES = [
   {
     // Batumi bay in the Black Sea's afternoon breeze: the city and the Alphabetic Tower on the cape to the left, the
     // coast to Green Cape and the wooded mountains of Adjara to the right
-    id: 'batumi', name: ['Batumi', 'Батуми', 'Batumi'], lat: 41.672, lon: 41.68, wind: 290, tz: 4, stream: ['flow', 55, 0.4], from: '2026-11-20',
+    id: 'batumi', name: ['Batumi', 'Батуми', 'Batumi', 'Batumi'], lat: 41.672, lon: 41.68, wind: 290, tz: 4, stream: ['flow', 55, 0.4], from: '2026-11-20',
     look: {
       haze: 0.85,
       ground: { forest: ['#264222', '#355a2c', '#4d7238'], scrub: '#6f7f4c', rock: ['#a49c8a', '#857d6e'], town: '#9c9b8c', shore: '#9b968d', sand: '#9b968d', grass: '#5a7a38' }, // the beaches are grey pebbles; the subtropical town green round its houses
@@ -324,7 +324,7 @@ export const VENUES = [
   },
   {
     // the North Sea off Scheveningen's beach, the pier and the Kurhaus, in the south-westerly along the dunes
-    id: 'scheveningen', name: ['Scheveningen', 'Схевенинген', 'Scheveningen'], lat: 52.1228, lon: 4.2662, wind: 225, tz: 2, stream: ['tide', 30, 1.0], from: '2026-11-20',
+    id: 'scheveningen', name: ['Scheveningen', 'Схевенинген', 'Scheveningen', 'Scheveningen'], lat: 52.1228, lon: 4.2662, wind: 225, tz: 2, stream: ['tide', 30, 1.0], from: '2026-11-20',
     look: {
       haze: 0.8,
       ground: { forest: ['#2e4428', '#3f5a32', '#57703f'], scrub: '#7d8058', rock: ['#a49e90', '#87827a'], town: '#9a9088', shore: '#d8cba8', sand: '#e0d3b0', grass: '#6f8a4a' },
@@ -337,7 +337,7 @@ export const VENUES = [
   },
   {
     // Victoria Harbour between Wan Chai and Tsim Sha Tsui, in the easterly: the towers on both shores, the Peak above
-    id: 'hong-kong', name: ['Hong Kong', 'Гонконг', 'Hong Kong'], lat: 22.2884, lon: 114.1781, wind: 80, tz: 8, stream: ['tide', 80, 1.0], from: '2026-11-20',
+    id: 'hong-kong', name: ['Hong Kong', 'Гонконг', 'Hong Kong', 'Hongkong'], lat: 22.2884, lon: 114.1781, wind: 80, tz: 8, stream: ['tide', 80, 1.0], from: '2026-11-20',
     look: {
       haze: 0.7,
       ground: { forest: ['#24401f', '#33572a', '#4b7034'], scrub: '#5f7a42', rock: ['#9a9488', '#7b766c'], town: '#9c9890', shore: '#a29c90' },
@@ -350,7 +350,7 @@ export const VENUES = [
   },
   {
     // Table Bay off the V&A Waterfront, in the south-easterly Cape Doctor, Table Mountain to windward
-    id: 'cape-town', name: ['Cape Town', 'Кейптаун', 'Ciudad del Cabo'], lat: -33.8978, lon: 18.4556, wind: 160, tz: 2, thermal: false, from: '2026-11-20',
+    id: 'cape-town', name: ['Cape Town', 'Кейптаун', 'Ciudad del Cabo', 'Kapstadt'], lat: -33.8978, lon: 18.4556, wind: 160, tz: 2, thermal: false, from: '2026-11-20',
     look: {
       haze: 1.15,
       ground: { forest: ['#2f4428', '#41583a', '#5a7046'], scrub: '#7a7a52', rock: ['#a39d92', '#7f7a72'], town: '#aaa498', shore: '#d9d0bc', sand: '#e6dcc4' },
@@ -362,7 +362,7 @@ export const VENUES = [
   },
   {
     // the 2004 Olympic waters in Faliro Bay, in the meltemi off the land, the Parthenon on the Acropolis to windward
-    id: 'athens', name: ['Athens', 'Афины', 'Atenas'], lat: 37.9115, lon: 23.6765, wind: 30, tz: 3, thermal: false, from: '2026-11-20',
+    id: 'athens', name: ['Athens', 'Афины', 'Atenas', 'Athen'], lat: 37.9115, lon: 23.6765, wind: 30, tz: 3, thermal: false, from: '2026-11-20',
     look: {
       haze: 1.2, // the meltemi's clear air: the Acropolis and Hymettus seen across the bay
       ground: { forest: ['#3a4a2c', '#4c5e36', '#66763f'], scrub: '#8a8458', rock: ['#c2b8a2', '#a09684'], town: '#c4bba8', shore: '#c8bca2' },
@@ -375,7 +375,7 @@ export const VENUES = [
   {
     // Marmaris bay in the westerly over İçmeler, the castle above the old town and Netsel's pontoons to leeward, the
     // red-pine mountains all round
-    id: 'marmaris', name: ['Marmaris', 'Мармарис', 'Marmaris'], lat: 36.83, lon: 28.262, wind: 265, tz: 3, from: '2026-11-20',
+    id: 'marmaris', name: ['Marmaris', 'Мармарис', 'Marmaris', 'Marmaris'], lat: 36.83, lon: 28.262, wind: 265, tz: 3, from: '2026-11-20',
     look: {
       haze: 1.15,
       ground: { forest: ['#2b4123', '#3a5430', '#536b39'], scrub: '#78794f', rock: ['#a09684', '#7f776a'], town: '#a89f8a', shore: '#b3a88f' },
@@ -388,7 +388,7 @@ export const VENUES = [
   {
     // Fethiye's bay inside Şövalye island in the afternoon westerly: the town all round to leeward, the castle, the
     // theatre and the Lycian tombs over the harbour, Babadağ above
-    id: 'fethiye', name: ['Fethiye', 'Фетхие', 'Fethiye'], lat: 36.634, lon: 29.11, wind: 275, tz: 3, from: '2026-11-20',
+    id: 'fethiye', name: ['Fethiye', 'Фетхие', 'Fethiye', 'Fethiye'], lat: 36.634, lon: 29.11, wind: 275, tz: 3, from: '2026-11-20',
     look: {
       haze: 1.1,
       ground: { forest: ['#2d4325', '#3d5631', '#586f3c'], scrub: '#7d7c52', rock: ['#a89e8c', '#857c6e'], town: '#a89f8a', shore: '#b9ae96', sand: '#cdbfa0' },
@@ -404,7 +404,7 @@ export const VENUES = [
   {
     // the Black Sea off Sochi's sea terminal and its spire, in the afternoon south-westerly off the sea: the town along
     // the shore to leeward, its sanatoria, palms and cypresses, the wooded foothills and the Caucasus behind
-    id: 'sochi', name: ['Sochi', 'Сочи', 'Sochi'], lat: 43.564, lon: 39.697, wind: 225, tz: 3, stream: ['flow', 310, 0.4], from: '2026-11-20',
+    id: 'sochi', name: ['Sochi', 'Сочи', 'Sochi', 'Sotschi'], lat: 43.564, lon: 39.697, wind: 225, tz: 3, stream: ['flow', 310, 0.4], from: '2026-11-20',
     look: {
       haze: 0.9,
       ground: { forest: ['#243f20', '#33552a', '#4a6e35'], scrub: '#6c7d4a', rock: ['#a09886', '#80786a'], town: '#a09c90', shore: '#a49e93', sand: '#a49e93', grass: '#5a7a3a' }, // grey pebble beaches
@@ -417,7 +417,7 @@ export const VENUES = [
   {
     // Port Phillip off St Kilda, the waters of the 1956 Olympic regatta, in the afternoon sea breeze off Bass Strait:
     // the beaches of St Kilda and Port Melbourne to leeward, the city's towers beyond
-    id: 'melbourne', name: ['Melbourne', 'Мельбурн', 'Melbourne'], lat: -37.88, lon: 144.945, wind: 200, tz: 11, from: '2026-11-20',
+    id: 'melbourne', name: ['Melbourne', 'Мельбурн', 'Melbourne', 'Melbourne'], lat: -37.88, lon: 144.945, wind: 200, tz: 11, from: '2026-11-20',
     look: {
       haze: 1.0,
       ground: { forest: ['#3a4a2c', '#4b5c36', '#66734a'], scrub: '#7e7c56', rock: ['#a89c86', '#877d6c'], town: '#a49a8c', shore: '#d6c6a0', sand: '#ddcca4', grass: '#6f8a48' },
@@ -431,7 +431,7 @@ export const VENUES = [
   {
     // the Pacific off Surfers Paradise, in the easterly sea breeze: the beach and its towers to leeward, the Broadwater
     // behind them, the East Australian Current running south along the coast
-    id: 'gold-coast', name: ['Gold Coast', 'Голд-Кост', 'Gold Coast'], lat: -28.0, lon: 153.455, wind: 90, tz: 10, stream: ['flow', 175, 0.6], from: '2026-11-20',
+    id: 'gold-coast', name: ['Gold Coast', 'Голд-Кост', 'Gold Coast', 'Gold Coast'], lat: -28.0, lon: 153.455, wind: 90, tz: 10, stream: ['flow', 175, 0.6], from: '2026-11-20',
     look: {
       haze: 1.3,
       ground: { forest: ['#2f4a26', '#3f6030', '#5a7a3a'], scrub: '#7a8a50', rock: ['#a89a80', '#86786a'], town: '#b0a898', shore: '#eadcb8', sand: '#efe2c0', grass: '#6a8a40' },
@@ -445,7 +445,7 @@ export const VENUES = [
   {
     // the Upper Bay by the Statue of Liberty, in the summer's south-south-westerly up the Narrows: Lower Manhattan,
     // the Brooklyn Bridge and Jersey City to leeward, the Verrazzano-Narrows Bridge to windward
-    id: 'new-york', name: ['New York', 'Нью-Йорк', 'Nueva York'], lat: 40.675, lon: -74.035, wind: 200, tz: -4, stream: ['tide', 15, 1.2], from: '2026-11-20',
+    id: 'new-york', name: ['New York', 'Нью-Йорк', 'Nueva York', 'New York'], lat: 40.675, lon: -74.035, wind: 200, tz: -4, stream: ['tide', 15, 1.2], from: '2026-11-20',
     look: {
       haze: 0.85,
       ground: { forest: ['#2b4526', '#3a5a2f', '#557539'], scrub: '#7a8a52', rock: ['#8e8a80', '#6f6c66'], town: '#8f8a82', shore: '#9a948a', grass: '#5f8040' },
@@ -461,7 +461,7 @@ export const VENUES = [
   {
     // the Bay of Naples off Posillipo and the Via Caracciolo, the America's Cup's waters of 2027, in the afternoon sea
     // breeze: Castel dell'Ovo and the city climbing to Sant'Elmo to leeward, Vesuvius beyond
-    id: 'naples', name: ['Naples', 'Неаполь', 'Nápoles'], lat: 40.806, lon: 14.232, wind: 230, tz: 2, from: '2026-11-20',
+    id: 'naples', name: ['Naples', 'Неаполь', 'Nápoles', 'Neapel'], lat: 40.806, lon: 14.232, wind: 230, tz: 2, from: '2026-11-20',
     look: {
       haze: 0.95,
       ground: { forest: ['#2f4427', '#3f5831', '#5a7040'], scrub: '#78794f', rock: ['#8f8778', '#6d665c'], town: '#b0a48e', shore: '#8a8275', sand: '#6f6a60', grass: '#66803f' }, // the volcanic coast's dark sand
@@ -476,7 +476,7 @@ export const VENUES = [
   {
     // San Pedro Bay outside the Federal Breakwater, the 2028 Olympic waters, in the afternoon westerly: the Port of Los
     // Angeles's cranes, the Queen Mary and Long Beach's towers to leeward, the Palos Verdes hills to windward
-    id: 'los-angeles', name: ['Los Angeles', 'Лос-Анджелес', 'Los Ángeles'], lat: 33.7, lon: -118.195, wind: 255, tz: -7, stream: ['tide', 290, 0.4], from: '2026-11-20',
+    id: 'los-angeles', name: ['Los Angeles', 'Лос-Анджелес', 'Los Ángeles', 'Los Angeles'], lat: 33.7, lon: -118.195, wind: 255, tz: -7, stream: ['tide', 290, 0.4], from: '2026-11-20',
     look: {
       haze: 0.8,
       ground: { forest: ['#46502f', '#58623a', '#6f7747'], scrub: '#8d8558', rock: ['#a89a80', '#857a68'], town: '#aaa294', shore: '#d4c7a6', sand: '#ddd0ae', grass: '#71843f' },
@@ -489,7 +489,7 @@ export const VENUES = [
   {
     // the Bay of Biscay off Les Sables-d'Olonne, where the Vendée Globe starts and ends, in the westerly: the channel
     // between La Chaume's tower and the Remblai's long beach to leeward
-    id: 'les-sables', name: ['Les Sables-d’Olonne', 'Ле-Сабль-д’Олон', 'Les Sables-d’Olonne'], lat: 46.475, lon: -1.835, wind: 285, tz: 2, stream: ['tide', 330, 0.5], from: '2026-11-20',
+    id: 'les-sables', name: ['Les Sables-d’Olonne', 'Ле-Сабль-д’Олон', 'Les Sables-d’Olonne', 'Les Sables-d’Olonne'], lat: 46.475, lon: -1.835, wind: 285, tz: 2, stream: ['tide', 330, 0.5], from: '2026-11-20',
     look: {
       haze: 0.95,
       ground: { forest: ['#2e4428', '#3f5a32', '#57703f'], scrub: '#7d8058', rock: ['#a59c8a', '#857d6e'], town: '#b3ab9c', shore: '#dccfa9', sand: '#e6d9b4', grass: '#6f8a4a' },
@@ -504,7 +504,7 @@ export const VENUES = [
   {
     // the Gulf off Jumeirah in the shamal: the Burj Al Arab on its island, the Palm and the Marina's towers along the
     // shore, the World's islands offshore and the Burj Khalifa over the city
-    id: 'dubai', name: ['Dubai', 'Дубай', 'Dubái'], lat: 25.168, lon: 55.175, wind: 315, tz: 4, stream: ['tide', 230, 0.5], from: '2026-11-20',
+    id: 'dubai', name: ['Dubai', 'Дубай', 'Dubái', 'Dubai'], lat: 25.168, lon: 55.175, wind: 315, tz: 4, stream: ['tide', 230, 0.5], from: '2026-11-20',
     look: {
       haze: 0.75,
       ground: { forest: ['#4a5a34', '#5c6c3e', '#74824c'], scrub: '#b3a274', rock: ['#c7b28e', '#a8946f'], town: '#cfc3a8', shore: '#eadcb8', sand: '#e9d7ae', grass: '#7f9448' },
@@ -518,7 +518,7 @@ export const VENUES = [
   {
     // Biscayne Bay off Coconut Grove, of the Bacardi Cup, in the south-easterly trade wind: Key Biscayne and Cape
     // Florida's light to windward, Stiltsville on the flats, the towers of Brickell and downtown up the bay
-    id: 'miami', name: ['Miami', 'Майами', 'Miami'], lat: 25.695, lon: -80.205, wind: 110, tz: -4, stream: ['tide', 320, 0.4], from: '2026-11-20',
+    id: 'miami', name: ['Miami', 'Майами', 'Miami', 'Miami'], lat: 25.695, lon: -80.205, wind: 110, tz: -4, stream: ['tide', 320, 0.4], from: '2026-11-20',
     look: {
       haze: 0.95,
       ground: { forest: ['#2f4d28', '#3f6430', '#5a7f3a'], scrub: '#70874a', rock: ['#b8ae94', '#968c76'], town: '#b5ae9e', shore: '#e8dcbc', sand: '#efe4c6', grass: '#5f8a3e' },
@@ -532,7 +532,7 @@ export const VENUES = [
   {
     // the Split Channel in the summer's maestral: the Riva and Diocletian's palace behind Marjan's wooded hill, Mosor
     // over the city, Brač and Šolta across the water
-    id: 'split', name: ['Split', 'Сплит', 'Split'], lat: 43.465, lon: 16.42, wind: 300, tz: 2, from: '2026-11-20',
+    id: 'split', name: ['Split', 'Сплит', 'Split', 'Split'], lat: 43.465, lon: 16.42, wind: 300, tz: 2, from: '2026-11-20',
     look: {
       haze: 1.2,
       ground: { forest: ['#2f4427', '#41582f', '#5c7040'], scrub: '#7f7f58', rock: ['#d2cbb8', '#aaa390'], town: '#bfb6a2', shore: '#cfc6b0', sand: '#d9d0ba' }, // the Dalmatian coast's white limestone
@@ -545,7 +545,7 @@ export const VENUES = [
   {
     // the Ligurian Sea off Port Hercule in the sea breeze: the Rock and its palace, Monte Carlo's towers stacked up
     // the mountain, the Liguro-Provençal current running west along the coast
-    id: 'monaco', name: ['Monaco', 'Монако', 'Mónaco'], lat: 43.72, lon: 7.44, wind: 135, tz: 2, stream: ['flow', 250, 0.3], from: '2026-11-20',
+    id: 'monaco', name: ['Monaco', 'Монако', 'Mónaco', 'Monaco'], lat: 43.72, lon: 7.44, wind: 135, tz: 2, stream: ['flow', 250, 0.3], from: '2026-11-20',
     look: {
       haze: 1.1,
       ground: { forest: ['#30452a', '#425a33', '#5d7242'], scrub: '#7c7b55', rock: ['#bdb4a0', '#968e7c'], town: '#b9ae9a', shore: '#a89f8c', sand: '#bdb29c' },
@@ -559,7 +559,7 @@ export const VENUES = [
   {
     // Gage Roads off Fremantle, of the 1987 America's Cup, in the south-westerly Fremantle Doctor: the port's moles and
     // cranes and the long white beaches to leeward, Rottnest on the horizon
-    id: 'fremantle', name: ['Fremantle', 'Фримантл', 'Fremantle'], lat: -32.045, lon: 115.7, wind: 225, tz: 8, from: '2026-11-20',
+    id: 'fremantle', name: ['Fremantle', 'Фримантл', 'Fremantle', 'Fremantle'], lat: -32.045, lon: 115.7, wind: 225, tz: 8, from: '2026-11-20',
     look: {
       haze: 1.25,
       ground: { forest: ['#3f4f30', '#52633a', '#6c7a4a'], scrub: '#88865a', rock: ['#c8bb9c', '#a59878'], town: '#b8ad9a', shore: '#f0e6cc', sand: '#f4ecd6', grass: '#7a8f48' },
@@ -573,7 +573,7 @@ export const VENUES = [
   {
     // the Caribbean off Simpson Bay in the easterly trade wind: the airliners coming in over Maho Beach, Cupecoy's
     // cliffs and the island's green hills ashore
-    id: 'sint-maarten', name: ['Sint Maarten', 'Синт-Мартен', 'Sint Maarten'], lat: 18.012, lon: -63.105, wind: 95, tz: -4, stream: ['flow', 285, 0.5], from: '2026-11-20',
+    id: 'sint-maarten', name: ['Sint Maarten', 'Синт-Мартен', 'Sint Maarten', 'Sint Maarten'], lat: 18.012, lon: -63.105, wind: 95, tz: -4, stream: ['flow', 285, 0.5], from: '2026-11-20',
     look: {
       haze: 1.2,
       ground: { forest: ['#2f4f28', '#3f6a30', '#5c8a3c'], scrub: '#6f8a48', rock: ['#a89a80', '#857a68'], town: '#c0b8a6', shore: '#efe4c4', sand: '#f4ead0', grass: '#5f8f3e' },
@@ -587,7 +587,7 @@ export const VENUES = [
   {
     // the Andaman Sea off Kata and Karon, of the King's Cup, in the winter's north-easterly monsoon: the beaches, the
     // jungle hills and the Big Buddha on Nakkerd Hill to windward
-    id: 'phuket', name: ['Phuket', 'Пхукет', 'Phuket'], lat: 7.785, lon: 98.255, wind: 60, tz: 7, thermal: false, stream: ['tide', 350, 0.4], from: '2026-11-20',
+    id: 'phuket', name: ['Phuket', 'Пхукет', 'Phuket', 'Phuket'], lat: 7.785, lon: 98.255, wind: 60, tz: 7, thermal: false, stream: ['tide', 350, 0.4], from: '2026-11-20',
     look: {
       haze: 0.95,
       ground: { forest: ['#234a22', '#2f602a', '#4a7f36'], scrub: '#5f8a42', rock: ['#9a9080', '#786f62'], town: '#b5ad9c', shore: '#efe4c6', sand: '#f4ecd2', grass: '#5a8f3a' },
@@ -601,7 +601,7 @@ export const VENUES = [
   {
     // the Tbilisi Sea, the reservoir in the dry hills over Georgia's capital, in the north-westerly that blows down its
     // length: the Chronicle of Georgia's bronze pillars on the hill at its head, the city's blocks of flats along its banks
-    id: 'tbilisi-sea', name: ['Tbilisi Sea', 'Тбилисское море', 'Mar de Tiflis'], lat: 41.75, lon: 44.8405, wind: 305, tz: 4, thermal: false, from: '2026-11-20',
+    id: 'tbilisi-sea', name: ['Tbilisi Sea', 'Тбилисское море', 'Mar de Tiflis', 'Tiflis-See'], lat: 41.75, lon: 44.8405, wind: 305, tz: 4, thermal: false, from: '2026-11-20',
     look: {
       haze: 1.0,
       ground: { forest: ['#39482a', '#4b5a32', '#69703f'], scrub: '#9b8f5e', rock: ['#bbab8c', '#95876c'], town: '#aca18d', shore: '#b9aa8b', grass: '#a59b63' }, // the steppe's dry grass
@@ -616,7 +616,7 @@ export const VENUES = [
   {
     // Malta's north-east coast off Valletta and the Grand Harbour, where the Rolex Middle Sea Race starts, in the
     // north-westerly majjistral: the honey limestone bastions and the Carmelite dome to leeward
-    id: 'malta', name: ['Malta', 'Мальта', 'Malta'], lat: 35.915, lon: 14.53, wind: 315, tz: 2, thermal: false, from: '2026-11-20',
+    id: 'malta', name: ['Malta', 'Мальта', 'Malta', 'Malta'], lat: 35.915, lon: 14.53, wind: 315, tz: 2, thermal: false, from: '2026-11-20',
     look: {
       haze: 1.15,
       ground: { forest: ['#46542f', '#5a683a', '#747c4a'], scrub: '#9a9166', rock: ['#dcc99e', '#b9a67c'], town: '#cdb98f', shore: '#d8c69c', sand: '#e0c98f', grass: '#7f8a4c' },
@@ -631,7 +631,7 @@ export const VENUES = [
   {
     // the Bay of Saint-Malo off the walled city, the start of the Route du Rhum, in the westerly: granite ramparts, the
     // cathedral's spire, the islets and forts that the great tides cover and uncover
-    id: 'saint-malo', name: ['Saint-Malo', 'Сен-Мало', 'Saint-Malo'], lat: 48.668, lon: -2.045, wind: 280, tz: 2, stream: ['tide', 80, 1.0], from: '2026-11-20',
+    id: 'saint-malo', name: ['Saint-Malo', 'Сен-Мало', 'Saint-Malo', 'Saint-Malo'], lat: 48.668, lon: -2.045, wind: 280, tz: 2, stream: ['tide', 80, 1.0], from: '2026-11-20',
     look: {
       haze: 0.95,
       ground: { forest: ['#2d4629', '#3f5c36', '#5b7848'], scrub: '#7a8258', rock: ['#8f8a7e', '#6d6a60'], town: '#a8a296', shore: '#cbbfa4', sand: '#dccfb0', grass: '#688a48' },
@@ -646,7 +646,7 @@ export const VENUES = [
   {
     // the Derwent off Sandy Bay, the finish of the Sydney to Hobart, in the afternoon sea breeze up the river:
     // kunanyi/Mount Wellington over the city, the Tasman Bridge upstream
-    id: 'hobart', name: ['Hobart', 'Хобарт', 'Hobart'], lat: -42.9, lon: 147.37, wind: 170, tz: 11, from: '2026-11-20',
+    id: 'hobart', name: ['Hobart', 'Хобарт', 'Hobart', 'Hobart'], lat: -42.9, lon: 147.37, wind: 170, tz: 11, from: '2026-11-20',
     look: {
       haze: 1.15,
       ground: { forest: ['#2c3e2a', '#3e5138', '#566a48'], scrub: '#7d7f58', rock: ['#8b857a', '#6b665c'], town: '#a79d8b', shore: '#bfb49c', sand: '#d8cca8', grass: '#7c8a4c' },
@@ -661,7 +661,7 @@ export const VENUES = [
   {
     // the Petit-Lac above Geneva, the start of the Bol d'Or, in the bise blowing down the lake: the Jet d'Eau at its foot,
     // the Jura to one side and the Alps to the other
-    id: 'lake-geneva', name: ['Lake Geneva', 'Женевское озеро', 'Lago Lemán'], lat: 46.27, lon: 6.2, wind: 40, tz: 2, thermal: false, from: '2026-11-20',
+    id: 'lake-geneva', name: ['Lake Geneva', 'Женевское озеро', 'Lago Lemán', 'Genfersee'], lat: 46.27, lon: 6.2, wind: 40, tz: 2, thermal: false, from: '2026-11-20',
     look: {
       haze: 1.1,
       ground: { forest: ['#2c4524', '#3c5a2c', '#557236'], scrub: '#7c8452', rock: ['#a9a89e', '#87867c'], town: '#b4ab98', shore: '#b9b09c', grass: '#6f9048' },
@@ -675,7 +675,7 @@ export const VENUES = [
   {
     // the Pacific off Point Loma, of the America's Cups of 1988, 1992 and 1995, in the sea breeze: the old lighthouse on the
     // ridge, the Hotel del Coronado on its beach, the city's towers behind North Island
-    id: 'san-diego', name: ['San Diego', 'Сан-Диего', 'San Diego'], lat: 32.6725, lon: -117.195, wind: 290, tz: -7, from: '2026-11-20',
+    id: 'san-diego', name: ['San Diego', 'Сан-Диего', 'San Diego', 'San Diego'], lat: 32.6725, lon: -117.195, wind: 290, tz: -7, from: '2026-11-20',
     look: {
       haze: 0.95,
       ground: { forest: ['#46502f', '#58623a', '#6f7747'], scrub: '#8d8558', rock: ['#b0a184', '#8a7e68'], town: '#b0a898', shore: '#d9cca8', sand: '#e2d5b2', grass: '#71843f' },
@@ -688,7 +688,7 @@ export const VENUES = [
   {
     // the mouth of Cork Harbour off Roches Point, home of the Royal Cork Yacht Club and Cork Week, in the south-westerly:
     // green headlands, the white lighthouse, the old forts either side of the entrance
-    id: 'cork', name: ['Cork', 'Корк', 'Cork'], lat: 51.7825, lon: -8.27, wind: 225, tz: 1, stream: ['tide', 350, 0.8], from: '2026-11-20',
+    id: 'cork', name: ['Cork', 'Корк', 'Cork', 'Cork'], lat: 51.7825, lon: -8.27, wind: 225, tz: 1, stream: ['tide', 350, 0.8], from: '2026-11-20',
     look: {
       haze: 0.9,
       ground: { forest: ['#2b4a26', '#3a5f2e', '#538039'], scrub: '#6f9048', rock: ['#8b897c', '#6c6a60'], town: '#a8a294', shore: '#a9a08a', sand: '#cfc3a0', grass: '#5f9440' },
@@ -703,7 +703,7 @@ export const VENUES = [
   {
     // the bay off Cascais in the summer's nortada, the Sintra hills to windward: the striped Santa Marta light on the rocks,
     // the Citadel over the marina, the Tagus's tide running along the coast
-    id: 'cascais', name: ['Cascais', 'Кашкайш', 'Cascais'], lat: 38.68, lon: -9.4, wind: 340, tz: 1, stream: ['tide', 95, 0.5], thermal: false, from: '2026-11-20',
+    id: 'cascais', name: ['Cascais', 'Кашкайш', 'Cascais', 'Cascais'], lat: 38.68, lon: -9.4, wind: 340, tz: 1, stream: ['tide', 95, 0.5], thermal: false, from: '2026-11-20',
     look: {
       haze: 1.1,
       ground: { forest: ['#2e4428', '#40582f', '#5c703f'], scrub: '#7f7f58', rock: ['#c9bfa6', '#a39880'], town: '#bdb4a2', shore: '#d8cba8', sand: '#e8d9ae', grass: '#748a48' },
@@ -717,7 +717,7 @@ export const VENUES = [
   {
     // Lake Michigan off Monroe Harbor, the start of the Race to Mackinac, in the lake breeze: fresh water, the breakwater
     // and its light, Navy Pier's wheel and the Loop's towers to leeward
-    id: 'chicago', name: ['Chicago', 'Чикаго', 'Chicago'], lat: 41.88, lon: -87.583, wind: 60, tz: -5, from: '2026-11-20',
+    id: 'chicago', name: ['Chicago', 'Чикаго', 'Chicago', 'Chicago'], lat: 41.88, lon: -87.583, wind: 60, tz: -5, from: '2026-11-20',
     look: {
       haze: 0.85,
       ground: { forest: ['#2b4526', '#3a5a2f', '#557539'], scrub: '#7a8a52', rock: ['#a8a598', '#85837a'], town: '#8f8a82', shore: '#b5ad98', sand: '#d9cda8', grass: '#5f8040' },
@@ -732,7 +732,7 @@ export const VENUES = [
   {
     // the Caribbean off Gustavia, of Les Voiles de St Barth and the Bucket, in the trade wind: red roofs round the harbour,
     // the green hills and the rocks offshore
-    id: 'st-barths', name: ['St Barths', 'Сен-Бартелеми', 'St Barths'], lat: 17.885, lon: -62.86, wind: 95, tz: -4, stream: ['flow', 285, 0.5], thermal: false, from: '2026-11-20',
+    id: 'st-barths', name: ['St Barths', 'Сен-Бартелеми', 'St Barths', 'St. Barths'], lat: 17.885, lon: -62.86, wind: 95, tz: -4, stream: ['flow', 285, 0.5], thermal: false, from: '2026-11-20',
     look: {
       haze: 1.25,
       ground: { forest: ['#34522a', '#466e32', '#628c40'], scrub: '#76904c', rock: ['#a89a80', '#857a68'], town: '#c6bdaa', shore: '#efe4c4', sand: '#f6edd4', grass: '#669440' },
@@ -746,7 +746,7 @@ export const VENUES = [
   {
     // Fushan Bay off the Olympic Sailing Center of 2008, in the summer's south-easterly: the May Wind's red spiral on its
     // square, the towers along the seafront, the old town's red roofs to the west
-    id: 'qingdao', name: ['Qingdao', 'Циндао', 'Qingdao'], lat: 36.04, lon: 120.395, wind: 135, tz: 8, stream: ['tide', 70, 0.6], from: '2026-11-20',
+    id: 'qingdao', name: ['Qingdao', 'Циндао', 'Qingdao', 'Qingdao'], lat: 36.04, lon: 120.395, wind: 135, tz: 8, stream: ['tide', 70, 0.6], from: '2026-11-20',
     look: {
       haze: 0.75,
       ground: { forest: ['#2a4524', '#3a5a2e', '#55733a'], scrub: '#74804e', rock: ['#a8a090', '#857e70'], town: '#a39e94', shore: '#c9bea0', sand: '#ddd0aa', grass: '#5f8040' },

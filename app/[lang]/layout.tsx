@@ -17,8 +17,8 @@ import { NO_ZOOM } from '@/lib/no-zoom';
 
 // The defaults every page starts from: the site's name and the share card. Each page then gives its own title,
 // description, canonical address and languages (lib/seo.ts, through titled() in lib/i18n.ts).
-// Every language is built at deploy (proxy.ts rewrites /help to /en/help, /ru/help or /es/help); no other segment is a page.
-export const generateStaticParams = () => [{ lang: 'en' }, { lang: 'ru' }, { lang: 'es' }];
+// Every language is built at deploy (proxy.ts rewrites /help to /en/help, /ru/help, /es/help or /de/help); no other segment is a page.
+export const generateStaticParams = () => [{ lang: 'en' }, { lang: 'ru' }, { lang: 'es' }, { lang: 'de' }];
 
 export async function generateMetadata({ params }: LangParams): Promise<Metadata> {
   const { lang, t } = await getT(params);

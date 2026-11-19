@@ -33,42 +33,42 @@ export function SiteMenu({ lang }: { lang: Lang }) {
   }, []);
   return (
     <details className="hm-menu" ref={ref} onToggle={(e) => { if (e.currentTarget.open) askCard(); }}>
-      <summary className="hm-prof" aria-label={t('Menu', 'Меню', 'Menú')} onPointerEnter={askCard} onFocus={askCard}><IconBurger /><span className="hm-av"><IconUser /><span className="me-ini" /></span></summary>
+      <summary className="hm-prof" aria-label={t('Menu', 'Меню', 'Menú', 'Menü')} onPointerEnter={askCard} onFocus={askCard}><IconBurger /><span className="hm-av"><IconUser /><span className="me-ini" /></span></summary>
       <div className="hm-menu-pop">
         <Link className="hm-acct if-me" href="/settings">
           <span className="hm-av hm-acct-av me-ini" aria-hidden="true" />
-          <span className="hm-acct-t"><span className="hm-acct-n me-name" /><span className="hm-acct-s">{t('Settings', 'Настройки', 'Ajustes')}</span></span>
+          <span className="hm-acct-t"><span className="hm-acct-n me-name" /><span className="hm-acct-s">{t('Settings', 'Настройки', 'Ajustes', 'Einstellungen')}</span></span>
         </Link>
         <Link className="hm-acct if-guest" href="/sign-in">
           <span className="hm-av hm-acct-av" aria-hidden="true"><IconUser /></span>
-          <span className="hm-acct-t"><span className="hm-acct-n">{t('Sign in', 'Войти', 'Iniciar sesión')}</span><span className="hm-acct-s">{t('To be ranked and keep your times', 'Чтобы попасть в рейтинг и сохранить результаты', 'Para entrar en la clasificación y guardar tus tiempos')}</span></span>
+          <span className="hm-acct-t"><span className="hm-acct-n">{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden')}</span><span className="hm-acct-s">{t('To be ranked and keep your times', 'Чтобы попасть в рейтинг и сохранить результаты', 'Para entrar en la clasificación y guardar tus tiempos', 'Um gerankt zu werden und deine Zeiten zu behalten')}</span></span>
         </Link>
         <span className="hm-msep" />
-        <Link className="hm-mi" href="/boat">{t('Your yacht', 'Твоя яхта', 'Tu yate')}</Link>
-        <Link className="hm-mi" href={card ? `/players?p=${encodeURIComponent(card)}` : '/players?me=1'}>{t('Your player card', 'Твоя карточка игрока', 'Tu tarjeta de jugador')}</Link>
-        <Link className="hm-mi if-guest" href="/settings">{t('Settings', 'Настройки', 'Ajustes')}</Link>
+        <Link className="hm-mi" href="/boat">{t('Your yacht', 'Твоя яхта', 'Tu yate', 'Deine Yacht')}</Link>
+        <Link className="hm-mi" href={card ? `/players?p=${encodeURIComponent(card)}` : '/players?me=1'}>{t('Your player card', 'Твоя карточка игрока', 'Tu tarjeta de jugador', 'Deine Spielerkarte')}</Link>
+        <Link className="hm-mi if-guest" href="/settings">{t('Settings', 'Настройки', 'Ajustes', 'Einstellungen')}</Link>
         <AvMenuItem lang={lang} />
         <span className="hm-msep" />
-        <Link className="hm-mi" href="/help">{t('How to play', 'Как играть', 'Cómo jugar')}</Link>
-        <Link className="hm-mi" href="/learn">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas')}</Link>
-        <Link className="hm-mi" href="/rulebook">{t('Racing rules', 'Правила гонок', 'Reglas de regatas')}</Link>
-        <Link className="hm-mi" href="/faq">{t('FAQ', 'Вопросы и ответы', 'Preguntas')}</Link>
-        <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы', 'Páginas')}>
+        <Link className="hm-mi" href="/help">{t('How to play', 'Как играть', 'Cómo jugar', 'So spielst du')}</Link>
+        <Link className="hm-mi" href="/learn">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen')}</Link>
+        <Link className="hm-mi" href="/rulebook">{t('Racing rules', 'Правила гонок', 'Reglas de regatas', 'Wettfahrtregeln')}</Link>
+        <Link className="hm-mi" href="/faq">{t('FAQ', 'Вопросы и ответы', 'Preguntas', 'FAQ')}</Link>
+        <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы', 'Páginas', 'Seiten')}>
           <span className="hm-msep" />
-          <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня', 'La regata del día')}</Link>
-          <Link className="hm-mi" href="/race/free">{t('Custom race', 'Своя гонка', 'Regata personalizada')}</Link>
-          <Link className="hm-mi" href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1')}</Link>
-          <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки', 'Ejercicios')}</Link>
-          <Link className="hm-mi" href="/race/rating">{t('Leaderboard', 'Рейтинг', 'Clasificación')}</Link>
-          <Link className="hm-mi" href="/players">{t('Players', 'Игроки', 'Jugadores')}</Link>
-          <Link className="hm-mi hm-mi-x" href="/venues">{t('Venues', 'Акватории', 'Sedes')}</Link>
-          <Link className="hm-mi hm-mi-x" href="/yachts">{t('Yachts', 'Яхты', 'Yates')}</Link>
+          <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages')}</Link>
+          <Link className="hm-mi" href="/race/free">{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta')}</Link>
+          <Link className="hm-mi" href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta')}</Link>
+          <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки', 'Ejercicios', 'Übungen')}</Link>
+          <Link className="hm-mi" href="/race/rating">{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste')}</Link>
+          <Link className="hm-mi" href="/players">{t('Players', 'Игроки', 'Jugadores', 'Spieler')}</Link>
+          <Link className="hm-mi hm-mi-x" href="/venues">{t('Venues', 'Акватории', 'Sedes', 'Reviere')}</Link>
+          <Link className="hm-mi hm-mi-x" href="/yachts">{t('Yachts', 'Яхты', 'Yates', 'Yachten')}</Link>
         </nav>
         <form className="if-me" action="/auth/sign-out" method="post"
           onSubmit={(e) => { (e.currentTarget.elements.namedItem('next') as HTMLInputElement).value = location.pathname + location.search; forgetCard(); }}>
           <span className="hm-msep" />
           <input type="hidden" name="next" />
-          <button className="hm-mi hm-mi-out" type="submit">{t('Sign out', 'Выйти', 'Cerrar sesión')}</button>
+          <button className="hm-mi hm-mi-out" type="submit">{t('Sign out', 'Выйти', 'Cerrar sesión', 'Abmelden')}</button>
         </form>
       </div>
     </details>
@@ -115,11 +115,11 @@ export function MyRow({ lang, day, top = [], cap = 5, next = '/' }: { lang: Lang
       <span className="hm-n">{listed ? place : '·'}</span>
       <span className="lb-who">
         <FlagImg code={fl} lang={lang} />
-        <span className="lb-nm"><span className="if-guest">{t('You', 'Ты', 'Tú')}</span><span className="if-me lb-you" data-you={t('(you)', '(ты)', '(tú)')} /></span>
-        {missing && <small className="hm-why if-me" title={t('This device has the time, but the race didn’t reach today’s ranking', 'Время есть на этом устройстве, но в рейтинг дня гонка не попала', 'Este dispositivo tiene el tiempo, pero la regata no llegó a la clasificación de hoy')}>{t('not on the ranking', 'не в рейтинге', 'fuera de la clasificación')}</small>}
+        <span className="lb-nm"><span className="if-guest">{t('You', 'Ты', 'Tú', 'Du')}</span><span className="if-me lb-you" data-you={t('(you)', '(ты)', '(tú)', '(du)')} /></span>
+        {missing && <small className="hm-why if-me" title={t('This device has the time, but the race didn’t reach today’s ranking', 'Время есть на этом устройстве, но в рейтинг дня гонка не попала', 'Este dispositivo tiene el tiempo, pero la regata no llegó a la clasificación de hoy', 'Dieses Gerät hat die Zeit, aber die Regatta kam nicht in die Rangliste des Tages')}>{t('not on the ranking', 'не в рейтинге', 'fuera de la clasificación', 'nicht in der Rangliste')}</small>}
       </span>
-      <span className="hm-t if-me">{best != null ? <>{clock(best)}{Math.abs(gap) >= 0.05 ? <small>{gap > 0 ? '+' : '−'}{Math.abs(gap).toFixed(1)}</small> : null}</> : <span className="hm-muted">{t('not yet', 'ещё нет', 'aún no')}</span>}</span>
-      <Link className="hm-src if-guest" href={`/sign-in?next=${next}`}>{t('Sign in to get on it', 'Войди, чтобы попасть сюда', 'Inicia sesión para entrar')}</Link>
+      <span className="hm-t if-me">{best != null ? <>{clock(best)}{Math.abs(gap) >= 0.05 ? <small>{gap > 0 ? '+' : '−'}{Math.abs(gap).toFixed(1)}</small> : null}</> : <span className="hm-muted">{t('not yet', 'ещё нет', 'aún no', 'noch nicht')}</span>}</span>
+      <Link className="hm-src if-guest" href={`/sign-in?next=${next}`}>{t('Sign in to get on it', 'Войди, чтобы попасть сюда', 'Inicia sesión para entrar', 'Melde dich an, um aufgenommen zu werden')}</Link>
     </li>
   );
 }

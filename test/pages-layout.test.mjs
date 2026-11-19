@@ -44,7 +44,7 @@ const SESSION = `sb-abcdefgh-auth-token=base64-${b64url(JSON.stringify({ access_
 
 // ---------- the layout ----------
 test('every language is built at deploy, and no others', () => {
-  assert.deepEqual(layout.generateStaticParams(), [{ lang: 'en' }, { lang: 'ru' }, { lang: 'es' }]);
+  assert.deepEqual(layout.generateStaticParams(), [{ lang: 'en' }, { lang: 'ru' }, { lang: 'es' }, { lang: 'de' }]);
 });
 
 test('the layout marks the page\'s language and holds the page', async () => {
@@ -56,8 +56,8 @@ test('the layout marks the page\'s language and holds the page', async () => {
 });
 
 test('the layout refuses a language the site does not have', async () => {
-  await assert.rejects(page('de'), (e) => e.kind === 'notFound');
-  await assert.rejects(layout.generateMetadata(props('de')), (e) => e.kind === 'notFound');
+  await assert.rejects(page('fr'), (e) => e.kind === 'notFound');
+  await assert.rejects(layout.generateMetadata(props('fr')), (e) => e.kind === 'notFound');
 });
 
 test('every page starts from the site\'s name, its address and its icons', async () => {
@@ -173,7 +173,7 @@ test('the 404 speaks the language the address was given', async () => {
 });
 
 test('the 404 falls back on English for no language or one the site does not have', async () => {
-  for (const lang of [undefined, 'de', '']) {
+  for (const lang of [undefined, 'fr', '']) {
     withLang(lang);
     assert.match(await notFound(), /^<html lang="en"/, String(lang));
   }

@@ -14,10 +14,10 @@ export function AuthShell({ lang, back, aside, children }: { lang: Lang; back?: 
   return (
     <div className="scr bt-scr bc au-scr" lang={lang}>
       <div className="bt">
-        <GameScene venue={d.venue} wind={d.preset} title={t('Today’s venue in 3D', 'Место гонки дня в 3D', 'La sede de hoy en 3D')} />
+        <GameScene venue={d.venue} wind={d.preset} title={t('Today’s venue in 3D', 'Место гонки дня в 3D', 'La sede de hoy en 3D', 'Das Revier von heute in 3D')} />
         <div className="bt-info">
           <div className="bt-top">
-            {back && <BackLink href={back} label={t('Back', 'Назад', 'Atrás')} />}
+            {back && <BackLink href={back} label={t('Back', 'Назад', 'Atrás', 'Zurück')} />}
             <SceneBrand />
           </div>
           {aside}

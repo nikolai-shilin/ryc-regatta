@@ -22,7 +22,7 @@ export function useWho(lang: Lang): Who {
   useEffect(() => {
     const me = readMe(), t = tx(lang);
     setWho(me && { name: me.name, email: me.email, initials: initials(me.name, me.email),
-      via: me.provider === 'google' ? 'Google' : me.provider === 'telegram' ? 'Telegram' : t('email code', 'код по почте', 'código por correo') });
+      via: me.provider === 'google' ? 'Google' : me.provider === 'telegram' ? 'Telegram' : t('email code', 'код по почте', 'código por correo', 'E-Mail-Code') });
   }, [lang, path]);
   return who;
 }

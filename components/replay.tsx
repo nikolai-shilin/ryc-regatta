@@ -38,28 +38,28 @@ export function Replay({ res, myLegs = [], lang }: { res: FinishResult; myLegs?:
   const legs = res.course.legs.length - 1;
   // legT: the clock as you crossed the start line, then as you rounded each mark
   const leg = T < 0 ? 0 : Math.min(legs, myLegs.filter((x) => x <= T).length);
-  const where = T < 0 ? t('Before the gun', 'До старта', 'Antes de la salida') : leg ? t(`Leg ${leg} of ${legs}`, `Отрезок ${leg} из ${legs}`, `Tramo ${leg} de ${legs}`) : t('The start', 'Старт', 'La salida');
+  const where = T < 0 ? t('Before the gun', 'До старта', 'Antes de la salida', 'Vor dem Startsignal') : leg ? t(`Leg ${leg} of ${legs}`, `Отрезок ${leg} из ${legs}`, `Tramo ${leg} de ${legs}`, `Schenkel ${leg} von ${legs}`) : t('The start', 'Старт', 'La salida', 'Der Start');
 
   if (!on) {
     return (
-      <button type="button" className="bt-show rs-ghost rs-replay-go" title={t('Watch the race again', 'Посмотреть гонку заново', 'Ver la regata otra vez')} aria-label={t('Watch the race again', 'Посмотреть гонку заново', 'Ver la regata otra vez')} onClick={() => { setOn(true); setT(span.from); send(span.from); setPlaying(true); track('Replay'); }}>
-        <IconPlay s={16} /><span>{t('Replay', 'Повтор', 'Repetición')}</span>
+      <button type="button" className="bt-show rs-ghost rs-replay-go" title={t('Watch the race again', 'Посмотреть гонку заново', 'Ver la regata otra vez', 'Regatta noch einmal ansehen')} aria-label={t('Watch the race again', 'Посмотреть гонку заново', 'Ver la regata otra vez', 'Regatta noch einmal ansehen')} onClick={() => { setOn(true); setT(span.from); send(span.from); setPlaying(true); track('Replay'); }}>
+        <IconPlay s={16} /><span>{t('Replay', 'Повтор', 'Repetición', 'Wiederholung')}</span>
       </button>
     );
   }
   const close = () => { setPlaying(false); setOn(false); toScene({ type: 'replay', off: true }); };
   const atEnd = T >= span.to;
   return (
-    <div className="rs-replay" role="group" aria-label={t('Replay', 'Повтор', 'Repetición')}>
-      <button type="button" className="rs-rp-b" onClick={() => { if (atEnd) { setT(span.from); send(span.from); } setPlaying((p) => !p); }} aria-label={playing ? t('Pause', 'Пауза', 'Pausa') : t('Play', 'Играть', 'Reproducir')}>
+    <div className="rs-replay" role="group" aria-label={t('Replay', 'Повтор', 'Repetición', 'Wiederholung')}>
+      <button type="button" className="rs-rp-b" onClick={() => { if (atEnd) { setT(span.from); send(span.from); } setPlaying((p) => !p); }} aria-label={playing ? t('Pause', 'Пауза', 'Pausa', 'Pause') : t('Play', 'Играть', 'Reproducir', 'Abspielen')}>
         {playing ? <svg viewBox="0 0 24 24" width={16} height={16} aria-hidden="true"><path d="M7 5h3v14H7zM14 5h3v14h-3z" fill="currentColor" /></svg> : <IconPlay s={16} />}
       </button>
-      <input className="rs-rp-r" type="range" min={span.from} max={span.to} step={0.1} value={T} aria-label={t('Race time', 'Время гонки', 'Tiempo de regata')} aria-valuetext={clockOf(T)}
+      <input className="rs-rp-r" type="range" min={span.from} max={span.to} step={0.1} value={T} aria-label={t('Race time', 'Время гонки', 'Tiempo de regata', 'Regattazeit')} aria-valuetext={clockOf(T)}
         style={{ ['--p' as string]: `${((T - span.from) / (span.to - span.from || 1)) * 100}%` }}
         onChange={(e) => { const x = +e.target.value; setPlaying(false); setT(x); send(x); }} />
       <span className="rs-rp-t"><b>{clockOf(T)}</b><small>{where}</small></span>
-      <button type="button" className="rs-rp-s" onClick={() => setSp((k) => (k + 1) % SPEEDS.length)} aria-label={t('Playback speed', 'Скорость повтора', 'Velocidad de reproducción')}>{SPEEDS[sp]}×</button>
-      <button type="button" className="rs-rp-x" onClick={close} aria-label={t('Close the replay', 'Закрыть повтор', 'Cerrar la repetición')}>×</button>
+      <button type="button" className="rs-rp-s" onClick={() => setSp((k) => (k + 1) % SPEEDS.length)} aria-label={t('Playback speed', 'Скорость повтора', 'Velocidad de reproducción', 'Wiedergabegeschwindigkeit')}>{SPEEDS[sp]}×</button>
+      <button type="button" className="rs-rp-x" onClick={close} aria-label={t('Close the replay', 'Закрыть повтор', 'Cerrar la repetición', 'Wiederholung schließen')}>×</button>
     </div>
   );
 }

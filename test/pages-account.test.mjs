@@ -286,5 +286,5 @@ test('the name step opens with the suggestion in the box, in the reader\'s langu
 
 test('the account pages refuse a language the site does not have', async () => {
   as(null);
-  for (const [mod, q] of [[settings], [signIn], [code, { email: 'a@b.co' }], [name]]) await assert.rejects(html(mod, 'de', q), (e) => e.kind === 'notFound');
+  for (const [mod, q] of [[settings], [signIn], [code, { email: 'a@b.co' }], [name]]) await assert.rejects(html(mod, 'fr', q), (e) => e.kind === 'notFound');
 });

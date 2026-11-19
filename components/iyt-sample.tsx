@@ -14,13 +14,13 @@ export function IytSample({ lang, q }: { lang: Lang; q: Sample }) {
   return (
     <aside className="iyt-q" aria-labelledby="iyt-q-k">
       <div className="iyt-q-h">
-        <span className="lbl-ink" id="iyt-q-k">{t('Try a question', 'Попробуйте вопрос', 'Prueba una pregunta')}</span>
-        <span className="lbl">{t('Racing Rules of Sailing', 'Правила парусных гонок', 'Reglamento de Regatas a Vela')}</span>
+        <span className="lbl-ink" id="iyt-q-k">{t('Try a question', 'Попробуйте вопрос', 'Prueba una pregunta', 'Probier eine Frage')}</span>
+        <span className="lbl">{t('Racing Rules of Sailing', 'Правила парусных гонок', 'Reglamento de Regatas a Vela', 'Wettfahrtregeln Segeln')}</span>
       </div>
       <div className="iyt-q-b">
         {/* the trainer's own drawing of the situation (an SVG from its site) */}
         <img className="iyt-q-fig" src={q.figure} width={344} height={224} decoding="async"
-          alt={t('The drawing: Blue, ahead of you, tacks onto port in your path', 'Рисунок: Синяя впереди вас поворачивает на левый галс на вашем пути', 'El dibujo: Azul, por delante de ti, vira a amura de babor en tu camino')} />
+          alt={t('The drawing: Blue, ahead of you, tacks onto port in your path', 'Рисунок: Синяя впереди вас поворачивает на левый галс на вашем пути', 'El dibujo: Azul, por delante de ti, vira a amura de babor en tu camino', 'Die Zeichnung: Blau, vor dir, wendet auf Backbordbug in deinen Weg')} />
         <p className="iyt-q-text" id="iyt-q-text">{q.question}</p>
         <div className="iyt-q-opts" role="group" aria-labelledby="iyt-q-text">
           {q.options.map(([l, text]) => {
@@ -36,9 +36,9 @@ export function IytSample({ lang, q }: { lang: Lang; q: Sample }) {
         <div className="iyt-q-res" aria-live="polite">
           {picked && (
             <div className={right ? 'iyt-q-why ok' : 'iyt-q-why no'}>
-              <p><b>{right ? t('Right.', 'Верно.', 'Correcto.') : t(`Not quite: the answer is ${q.answer}.`, `Не совсем: правильный ответ — ${q.answer}.`, `No exactamente: la respuesta es ${q.answer}.`)}</b> {q.why}</p>
+              <p><b>{right ? t('Right.', 'Верно.', 'Correcto.', 'Richtig.') : t(`Not quite: the answer is ${q.answer}.`, `Не совсем: правильный ответ — ${q.answer}.`, `No exactamente: la respuesta es ${q.answer}.`, `Nicht ganz: Die Antwort ist ${q.answer}.`)}</b> {q.why}</p>
               <span className="lbl">{q.reference}</span>
-              <a className="hm-src" href={q.more}>{t('More questions like this', 'Ещё вопросы на эту тему', 'Más preguntas como esta')}<IconOut /></a>
+              <a className="hm-src" href={q.more}>{t('More questions like this', 'Ещё вопросы на эту тему', 'Más preguntas como esta', 'Mehr Fragen wie diese')}<IconOut /></a>
             </div>
           )}
         </div>

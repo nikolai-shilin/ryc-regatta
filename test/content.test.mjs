@@ -242,14 +242,14 @@ test('the reader\'s language: the address, the cookie, then the browser', () => 
   assert.equal(pickLang(null, 'ru', 'en'), 'ru');
   assert.equal(pickLang(null, null, 'ru-RU,ru;q=0.9'), 'ru');
   for (const a of ['uk-UA', 'be', 'kk-KZ', 'RU']) assert.equal(pickLang(null, null, a), 'ru', a);
-  for (const a of ['en-GB', 'de', 'rus', 'ruby', null, '']) assert.equal(pickLang('de', 'fr', a), 'en', String(a));
+  for (const a of ['en-GB', 'fr', 'rus', 'ruby', null, '']) assert.equal(pickLang('fr', 'it', a), 'en', String(a));
 });
 
 test('a page\'s language comes from its address, and any other is not found', async () => {
   assert.equal(await getLang(Promise.resolve({ lang: 'ru' })), 'ru');
   const { lang, t } = await getT(Promise.resolve({ lang: 'en' }));
   assert.equal(lang, 'en'); assert.equal(t('a', 'б'), 'a');
-  await assert.rejects(getLang(Promise.resolve({ lang: 'de' })), (e) => e.kind === 'notFound');
+  await assert.rejects(getLang(Promise.resolve({ lang: 'fr' })), (e) => e.kind === 'notFound');
 });
 
 test('a page\'s title in the reader\'s language', async () => {
@@ -266,7 +266,7 @@ test('a page\'s title in the reader\'s language', async () => {
 test('each language has an address of its own', () => {
   assert.equal(seo.langUrl('/faq', 'en'), '/faq');
   assert.equal(seo.langUrl('/faq', 'ru'), '/faq?lang=ru');
-  assert.deepEqual(seo.languages('/faq'), { en: '/faq', ru: '/faq?lang=ru', es: '/faq?lang=es', 'x-default': '/faq' });
+  assert.deepEqual(seo.languages('/faq'), { en: '/faq', ru: '/faq?lang=ru', es: '/faq?lang=es', de: '/faq?lang=de', 'x-default': '/faq' });
 });
 
 test('a page\'s meta: the title with the site\'s name, its canonical and both languages', () => {
@@ -274,7 +274,7 @@ test('a page\'s meta: the title with the site\'s name, its canonical and both la
   assert.equal(m.title, 'Вопросы и ответы');
   assert.equal(m.openGraph.title, `Вопросы и ответы · ${seo.NAME}`);
   assert.equal(m.openGraph.url, '/faq?lang=ru');
-  assert.equal(m.openGraph.locale, 'ru_RU'); assert.deepEqual(m.openGraph.alternateLocale, ['en_GB', 'es_ES']);
+  assert.equal(m.openGraph.locale, 'ru_RU'); assert.deepEqual(m.openGraph.alternateLocale, ['en_GB', 'es_ES', 'de_DE']);
   assert.equal(m.alternates.canonical, '/faq?lang=ru');
   assert.equal(m.alternates.languages['x-default'], '/faq');
   assert.equal(m.twitter.card, 'summary_large_image');

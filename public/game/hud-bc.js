@@ -648,12 +648,13 @@ function glideWidths(els) {
 
 export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam, flagOf: lookFlag = () => null, sailOf = () => '' }) {
   const L = strings || HUD_STRINGS[LANG] || HUD_STRINGS.en;
+  const ofT = LANG === 'de' ? L.ofTarget : L.ofTarget.toLowerCase(); // (German keeps its nouns' capitals)
   const $ = (s) => document.querySelector(s);
   const hud = $('#hud');
   const rudder = $('#rudder'), sheet = $('#sheet'), mini = $('#mini'), count = $('#count'), toastEl = $('#toast');
   const nf = (x, d = 1) => (LANG === 'en' ? x.toFixed(d) : x.toFixed(d).replace('.', ','));
   const M = LANG === 'ru' ? 'м' : 'm', KNU = t('kn').toUpperCase();
-  const venue = (VENUE.name && (VENUE.name[LANG === 'ru' ? 1 : LANG === 'es' ? 2 : 0] ?? VENUE.name[0])) || '';
+  const venue = (VENUE.name && (VENUE.name[{ en: 0, ru: 1, es: 2, de: 3 }[LANG] ?? 0] ?? VENUE.name[0])) || '';
   document.head.append(Object.assign(document.createElement('style'), { textContent: CSS }));
   const html = (s) => { const d = document.createElement('div'); d.innerHTML = s.trim(); return d.firstChild; };
   const q = (root, s) => root.querySelector(s);
@@ -685,7 +686,7 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
       <div class="c-nm s-pre s-run s-done"><img class="b-fl" alt="" hidden><i></i><span class="c-nmt"><span class="n-m"></span></span></div>
       <div class="c-leg s-pre s-run s-done"><svg viewBox="0 0 10 10" aria-hidden="true"><path fill="currentColor"/></svg><span></span></div>
       <div class="c-spd s-pre s-run"><span class="lbl">${L.speed}</span><span class="n-l"><span class="v"></span><span class="unit">${KNU}</span></span></div>
-      <div class="c-pct s-run"><span class="lbl">${L.vmg} · ${L.ofTarget.toLowerCase()}</span><span class="b-v"><span class="n-l c-vm"><span class="v"></span><span class="unit">${KNU}</span></span><span class="n-s pv"></span></span><span class="b-g" aria-hidden="true"><i></i></span></div>
+      <div class="c-pct s-run"><span class="lbl">${L.vmg} · ${ofT}</span><span class="b-v"><span class="n-l c-vm"><span class="v"></span><span class="unit">${KNU}</span></span><span class="n-s pv"></span></span><span class="b-g" aria-hidden="true"><i></i></span></div>
       <div class="c-to s-pre s-run"><span class="lbl"></span><span class="b-v"><span class="n-l"><span class="v"></span><span class="unit">${M.toUpperCase()}</span></span><span class="b-sub"></span></span></div>
       <div class="c-burn s-pre"><span class="lbl">${L.burn}</span><span class="n-l v"></span></div>
       <div class="c-ldr s-run"><span class="lbl"></span><span class="b-v"><span class="n-l v"></span><span class="b-sub r"></span></span></div>
@@ -1120,7 +1121,7 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
       Y.pctI.style.width = `${(clamp(pct, 0, 1.1) / 1.1) * 100}%`;
       const pk = pct >= 0.95 ? 'good' : pct < 0.7 ? 'low' : ''; ink(Y.pct, pk); ink(Y.pctG, pk);
       txt(Y.vmg, nf(kn * cos));
-      txt(Y.pctL, `${race.coach ? L.vmgP : L.vmg} · ${L.ofTarget.toLowerCase()}`); // the first races (main.js coach): in words
+      txt(Y.pctL, `${race.coach ? L.vmgP : L.vmg} · ${ofT}`); // the first races (main.js coach): in words
       txt(Y.toL, L.toMark); txt(Y.to, String(Math.round(d)));
       const vm = P.v * cos; txt(Y.eta, vm > 0.3 ? fmt(d / vm) : '');
       Y.legP.setAttribute('d', ARROW[legKind(c, Math.max(1, P.leg))]); txt(Y.legT, P.leg ? L.legShort(P.leg, nLegs) : L.start);

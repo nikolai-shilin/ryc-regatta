@@ -20,8 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!y) return {};
   const name = t(...y.name);
   const meta = pageMeta(lang, {
-    title: t(`The ${name}: race her in a 3D sailing game`, `${name}: гонки в 3D-парусной игре`, `${name}: regatea en un juego de vela 3D`),
-    description: `${t(...y.tagline)} ${t('What she is, her numbers, and how she sails in the game.', 'Что это за яхта, её цифры и как она ходит в игре.', 'Qué es, sus números y cómo navega en el juego.')}`,
+    title: t(`The ${name}: race her in a 3D sailing game`, `${name}: гонки в 3D-парусной игре`, `${name}: regatea en un juego de vela 3D`, `${name}: im 3D-Segelspiel segeln`),
+    description: `${t(...y.tagline)} ${t('What she is, her numbers, and how she sails in the game.', 'Что это за яхта, её цифры и как она ходит в игре.', 'Qué es, sus números y cómo navega en el juego.', 'Was sie ausmacht, ihre Daten und wie sie im Spiel segelt.')}`,
     path: `/yachts/${id}`, card: '/og/page/yachts',
   });
   return { ...meta, authors: [{ name: t(...AUTHOR.name) }] };
@@ -37,7 +37,7 @@ export default async function YachtPage({ params }: Props) {
   const name = t(...y.name);
   const url = SITE + langUrl(`/yachts/${id}`, lang);
   const ld = {
-    '@context': 'https://schema.org', '@type': 'Article', headline: t(`The ${name}`, name, `El ${name}`), description: t(...y.tagline), inLanguage: lang,
+    '@context': 'https://schema.org', '@type': 'Article', headline: t(`The ${name}`, name, `El ${name}`, `Die ${name}`), description: t(...y.tagline), inLanguage: lang,
     url, mainEntityOfPage: url, image: SITE + OG_IMAGE.url, datePublished: PAGES_DATE, dateModified: PAGES_DATE,
     author: AUTHOR_LD, publisher: RYC_LD, about: { '@type': 'Thing', name: y.name[0], description: y.kind[0] },
   };
@@ -46,8 +46,8 @@ export default async function YachtPage({ params }: Props) {
     <div className="scr bt-scr bc" lang={lang}>
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <FleetView lang={lang} start={y.id} tour={false} own
-        back={<BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas')} />}
-        foot={<p className="bt-hint">{t('By ', '', 'Por ')}{t(...AUTHOR.name)}, {AUTHOR.org} · {t('Published ', 'Опубликовано ', 'Publicado ')}<time dateTime={PAGES_DATE}>{longDate(PAGES_DATE, lang)}</time></p>} />
+        back={<BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub')} />}
+        foot={<p className="bt-hint">{t('By ', '', 'Por ', 'Von ')}{t(...AUTHOR.name)}, {AUTHOR.org} · {t('Published ', 'Опубликовано ', 'Publicado ', 'Veröffentlicht ')}<time dateTime={PAGES_DATE}>{longDate(PAGES_DATE, lang)}</time></p>} />
     </div>
   );
 }

@@ -26,14 +26,14 @@ export function DailyLock({ lang, chips }: { lang: Lang; chips: string[] }) {
   return (
     <dialog ref={dlg} className="dl" aria-labelledby="dl-h" onClick={backdrop}>
       <div className="dl-in">
-        <span className="dl-k">{t('Today’s race', 'Гонка дня', 'La regata del día')}</span>
-        <h2 className="dl-h" id="dl-h">{t('Today’s race is fixed', 'Гонка дня неизменна', 'La regata de hoy es fija')}</h2>
-        <p className="dl-p">{t('Everyone sails today’s race in the same place, wind and course, so the times compare fairly. A race in other conditions doesn’t go on today’s ranking.', 'Сегодня все проходят гонку в одном месте, при одном ветре и на одной дистанции — так время сравнивается честно. Гонка в других условиях в рейтинг дня не идёт.', 'Todos navegan la regata de hoy en el mismo lugar, con el mismo viento y recorrido, para que los tiempos se comparen con justicia. Una regata en otras condiciones no entra en la clasificación de hoy.')}</p>
-        <ul className="dl-chips" aria-label={t('Today’s conditions', 'Условия сегодня', 'Condiciones de hoy')}>{chips.map((c) => <li key={c}>{c}</li>)}</ul>
-        <p className="dl-p dl-s">{t('To change them, make it a custom race: it opens with today’s settings, for you to change.', 'Чтобы их изменить, сделай свою гонку: она откроется с сегодняшними настройками, и их можно поменять.', 'Para cambiarlas, hazla una regata personalizada: se abre con los ajustes de hoy, para que los cambies.')}</p>
+        <span className="dl-k">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages')}</span>
+        <h2 className="dl-h" id="dl-h">{t('Today’s race is fixed', 'Гонка дня неизменна', 'La regata de hoy es fija', 'Die Regatta des Tages steht fest')}</h2>
+        <p className="dl-p">{t('Everyone sails today’s race in the same place, wind and course, so the times compare fairly. A race in other conditions doesn’t go on today’s ranking.', 'Сегодня все проходят гонку в одном месте, при одном ветре и на одной дистанции — так время сравнивается честно. Гонка в других условиях в рейтинг дня не идёт.', 'Todos navegan la regata de hoy en el mismo lugar, con el mismo viento y recorrido, para que los tiempos se comparen con justicia. Una regata en otras condiciones no entra en la clasificación de hoy.', 'Alle segeln die Regatta des Tages am selben Ort, bei gleichem Wind und auf gleicher Bahn, damit die Zeiten fair vergleichbar sind. Eine Regatta unter anderen Bedingungen kommt nicht in die Rangliste des Tages.')}</p>
+        <ul className="dl-chips" aria-label={t('Today’s conditions', 'Условия сегодня', 'Condiciones de hoy', 'Heutige Bedingungen')}>{chips.map((c) => <li key={c}>{c}</li>)}</ul>
+        <p className="dl-p dl-s">{t('To change them, make it a custom race: it opens with today’s settings, for you to change.', 'Чтобы их изменить, сделай свою гонку: она откроется с сегодняшними настройками, и их можно поменять.', 'Para cambiarlas, hazla una regata personalizada: se abre con los ajustes de hoy, para que los cambies.', 'Um sie zu ändern, mach daraus eine eigene Regatta: Sie öffnet sich mit den heutigen Einstellungen, damit du sie ändern kannst.')}</p>
         <div className="dl-btns">
-          <button type="button" className="dl-keep" onClick={() => dlg.current?.close()} autoFocus>{t('Keep today’s race', 'Остаться в гонке дня', 'Mantener la regata de hoy')}</button>
-          <a className="dl-free" href="/race/free?from=today">{t('Make it a custom race', 'Сделать своей', 'Hacerla personalizada')}</a>
+          <button type="button" className="dl-keep" onClick={() => dlg.current?.close()} autoFocus>{t('Keep today’s race', 'Остаться в гонке дня', 'Mantener la regata de hoy', 'Regatta des Tages behalten')}</button>
+          <a className="dl-free" href="/race/free?from=today">{t('Make it a custom race', 'Сделать своей', 'Hacerla personalizada', 'Eigene Regatta daraus machen')}</a>
         </div>
       </div>
     </dialog>

@@ -10,11 +10,11 @@ import { READING_VIEWPORT } from '@/lib/no-zoom';
 // text to read: it zooms (lib/no-zoom.ts)
 export const viewport = READING_VIEWPORT;
 
-export const generateMetadata = titled('Sailing game FAQ: today’s race, controls, rules', 'Вопросы о парусной игре: гонка дня, управление, правила', 'Preguntas del juego de vela: la regata del día, controles, reglas', {
+export const generateMetadata = titled('Sailing game FAQ: today’s race, controls, rules', 'Вопросы о парусной игре: гонка дня, управление, правила', 'Preguntas del juego de vela: la regata del día, controles, reglas', 'Segelspiel-FAQ: Regatta des Tages, Steuerung, Regeln', {
   path: '/faq', card: '/og/page/faq',
   description: [
     'Questions about Up and down, the free sailing race game: does it work on a phone, how today’s race and the ranking work, sailing the boat, the racing rules the computer boats follow.',
-    'Вопросы об Up and down, бесплатной парусной гонке: работает ли на телефоне, как устроены гонка дня и рейтинг, управление лодкой, правила, по которым гоняются компьютерные лодки.', 'Preguntas sobre Up and down, el juego gratuito de regatas a vela: si funciona en el móvil, cómo van la regata del día y la clasificación, cómo navegar el barco, las reglas de regatas que siguen los barcos del ordenador.'],
+    'Вопросы об Up and down, бесплатной парусной гонке: работает ли на телефоне, как устроены гонка дня и рейтинг, управление лодкой, правила, по которым гоняются компьютерные лодки.', 'Preguntas sobre Up and down, el juego gratuito de regatas a vela: si funciona en el móvil, cómo van la regata del día y la clasificación, cómo navegar el barco, las reglas de regatas que siguen los barcos del ordenador.', 'Fragen zu Up and down, dem kostenlosen Segelregatta-Spiel: Läuft es auf dem Handy, wie funktionieren die Regatta des Tages und die Rangliste, wie segelt man das Boot, welche Wettfahrtregeln befolgen die Computerboote.'],
 });
 
 // H2 · Questions: every question in five groups, white and the pale band in turn, as on the home page.
@@ -33,9 +33,9 @@ export default async function Faq({ params }: LangParams) {
       <SiteHead lang={lang} t={t} page="faq" />
       <header className="hm-page hm-ph">
         <span className="kicker">Up and down</span>
-        <h1 className="hm-ph-h">{t('FAQ', 'Вопросы и ответы', 'Preguntas')}</h1>
-        <p className="hm-text">{t('The game, today’s race, sailing the boat and the rules, a question at a time. For the race screen itself, with pictures, see ', 'Об игре, гонке дня, управлении лодкой и правилах — по вопросу за раз. Сам экран гонки, с картинками, — на странице «', 'El juego, la regata del día, cómo navegar el barco y las reglas, una pregunta cada vez. Para la pantalla de regata en sí, con imágenes, mira ')}<Link href="/help">{t('How to play', 'Как играть', 'Cómo jugar')}</Link>{t('.', '».')}</p>
-        <nav className="hm-ph-nav" aria-label={t('Contents', 'Содержание', 'Contenido')}>
+        <h1 className="hm-ph-h">{t('FAQ', 'Вопросы и ответы', 'Preguntas', 'FAQ')}</h1>
+        <p className="hm-text">{t('The game, today’s race, sailing the boat and the rules, a question at a time. For the race screen itself, with pictures, see ', 'Об игре, гонке дня, управлении лодкой и правилах — по вопросу за раз. Сам экран гонки, с картинками, — на странице «', 'El juego, la regata del día, cómo navegar el barco y las reglas, una pregunta cada vez. Para la pantalla de regata en sí, con imágenes, mira ', 'Das Spiel, die Regatta des Tages, das Segeln und die Regeln, Frage für Frage. Für den Regattabildschirm selbst, mit Bildern, siehe ')}<Link href="/help">{t('How to play', 'Как играть', 'Cómo jugar', 'So spielst du')}</Link>{t('.', '».')}</p>
+        <nav className="hm-ph-nav" aria-label={t('Contents', 'Содержание', 'Contenido', 'Inhalt')}>
           {groups.map((g) => <a key={g.id} className="hm-chip" href={`#q-${g.id}`}>{g.title}<span className="td">{g.items.length}</span></a>)}
         </nav>
       </header>
@@ -47,7 +47,7 @@ export default async function Faq({ params }: LangParams) {
               <div className="hm-faq-side">
                 <span className="kicker">{g.kicker}</span>
                 <h2 className="hm-h2" id={`q-${g.id}-t`}>{g.title}</h2>
-                <span className="meta">{t(`${g.items.length} questions`, `Вопросов: ${g.items.length}`, `${g.items.length} preguntas`)}</span>
+                <span className="meta">{t(`${g.items.length} questions`, `Вопросов: ${g.items.length}`, `${g.items.length} preguntas`, `${g.items.length} Fragen`)}</span>
               </div>
               <FaqList items={g.items} open />
             </div>
@@ -59,10 +59,10 @@ export default async function Faq({ params }: LangParams) {
       <div className={groups.length % 2 ? 'hm-band' : ''}>
         <section className="hm-page hm-sec hm-help" aria-labelledby="q-more">
           <div className="hm-help-main">
-            <span className="kicker">{t('Still unsure?', 'Остались вопросы?', '¿Aún tienes dudas?')}</span>
-            <h2 className="hm-h2" id="q-more">{t('The race screen, with pictures', 'Экран гонки в картинках', 'La pantalla de regata, con imágenes')}</h2>
-            <p className="hm-text">{t('How to play goes through every button, the wind ring, the start sequence and the six rules you meet most.', 'На странице «Как играть» — каждая кнопка, кольцо ветра, стартовая процедура и шесть самых частых правил.', 'Cómo jugar repasa cada botón, el anillo de viento, la secuencia de salida y las seis reglas que más verás.')}</p>
-            <Link className="pill pill-primary hm-cta" href="/help"><span className="btn-t">{t('How to play', 'Как играть', 'Cómo jugar')}</span><IconArrow /></Link>
+            <span className="kicker">{t('Still unsure?', 'Остались вопросы?', '¿Aún tienes dudas?', 'Noch unsicher?')}</span>
+            <h2 className="hm-h2" id="q-more">{t('The race screen, with pictures', 'Экран гонки в картинках', 'La pantalla de regata, con imágenes', 'Der Regattabildschirm, mit Bildern')}</h2>
+            <p className="hm-text">{t('How to play goes through every button, the wind ring, the start sequence and the six rules you meet most.', 'На странице «Как играть» — каждая кнопка, кольцо ветра, стартовая процедура и шесть самых частых правил.', 'Cómo jugar repasa cada botón, el anillo de viento, la secuencia de salida y las seis reglas que más verás.', '„So spielst du“ geht jede Taste durch, den Windring, die Startsequenz und die sechs Regeln, denen du am häufigsten begegnest.')}</p>
+            <Link className="pill pill-primary hm-cta" href="/help"><span className="btn-t">{t('How to play', 'Как играть', 'Cómo jugar', 'So spielst du')}</span><IconArrow /></Link>
           </div>
         </section>
       </div>

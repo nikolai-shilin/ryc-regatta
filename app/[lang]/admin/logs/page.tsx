@@ -14,7 +14,7 @@ export default async function AdminLogsPage({ params, searchParams }: LangParams
   const { lang, t } = a;
   return (
     <AdminShell {...a} page="logs" days={days} who={who}>
-      {a.data?.data ? <AdminLogs lang={lang} data={a.data.data} days={days} /> : <AdminMissing t={t} Icon={IconClock} title={t('Players with problems', 'Игроки с проблемами', 'Jugadores con problemas')} error={a.data?.error} />}
+      {a.data?.data ? <AdminLogs lang={lang} data={a.data.data} days={days} /> : <AdminMissing t={t} Icon={IconClock} title={t('Players with problems', 'Игроки с проблемами', 'Jugadores con problemas', 'Spieler mit Problemen')} error={a.data?.error} />}
     </AdminShell>
   );
 }

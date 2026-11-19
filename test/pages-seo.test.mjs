@@ -32,8 +32,8 @@ const appleIcon = await import('../app/apple-icon.tsx');
 
 const entries = sitemap();
 const urls = entries.map((e) => e.url);
-const langOf = (u) => (/\?lang=(ru|es)$/.exec(u) || [, 'en'])[1];
-const paths = (lang) => urls.filter((u) => langOf(u) === lang).map((u) => u.slice(SITE.length).replace(/\?lang=(ru|es)$/, ''));
+const langOf = (u) => (/\?lang=(ru|es|de)$/.exec(u) || [, 'en'])[1];
+const paths = (lang) => urls.filter((u) => langOf(u) === lang).map((u) => u.slice(SITE.length).replace(/\?lang=(ru|es|de)$/, ''));
 
 const PUBLIC = ['/', '/race', '/race/rating', '/race/drills', '/race/free', '/help', '/faq', '/boat', '/yachts', '/venues', '/players', '/iyt', '/social', '/sponsorship', '/learn', '/learn/glossary', '/rulebook',
   ...GUIDES.map((g) => `/learn/${g}`), ...VENUES.map((v) => `/venues/${v.id}`), ...YACHT_IDS.map((y) => `/yachts/${y}`)];
@@ -42,6 +42,7 @@ const PUBLIC = ['/', '/race', '/race/rating', '/race/drills', '/race/free', '/he
 test('the sitemap lists every public page in English', () => assert.deepEqual([...paths('en')].sort(), [...PUBLIC].sort()));
 test('the sitemap lists every public page in Russian', () => assert.deepEqual([...paths('ru')].sort(), [...PUBLIC].sort()));
 test('the sitemap lists every public page in Spanish', () => assert.deepEqual([...paths('es')].sort(), [...PUBLIC].sort()));
+test('the sitemap lists every public page in German', () => assert.deepEqual([...paths('de')].sort(), [...PUBLIC].sort()));
 
 test('the sitemap lists no address twice', () => assert.equal(new Set(urls).size, urls.length));
 
@@ -57,8 +58,8 @@ for (const bad of ['/admin', '/auth', '/sign-in', '/settings', '/match', '/race/
 
 test('the sitemap ties each page\'s languages together, with absolute addresses', () => {
   for (const e of entries) {
-    const path = e.url.slice(SITE.length).replace(/\?lang=(ru|es)$/, '');
-    assert.deepEqual(e.alternates.languages, { en: SITE + path, ru: `${SITE}${path}?lang=ru`, es: `${SITE}${path}?lang=es`, 'x-default': SITE + path }, e.url);
+    const path = e.url.slice(SITE.length).replace(/\?lang=(ru|es|de)$/, '');
+    assert.deepEqual(e.alternates.languages, { en: SITE + path, ru: `${SITE}${path}?lang=ru`, es: `${SITE}${path}?lang=es`, de: `${SITE}${path}?lang=de`, 'x-default': SITE + path }, e.url);
   }
 });
 
@@ -198,7 +199,7 @@ test('every page open to search names its own canonical address, the one the sit
     const url = p.lang === 'ru' ? `${p.path}?lang=ru` : p.path;
     assert.equal(p.meta.alternates?.canonical, url, `${p.path} ${p.lang}`);
     assert.ok(urls.includes(SITE + url), `${url} is in the sitemap`);
-    assert.deepEqual(p.meta.alternates.languages, { en: p.path, ru: `${p.path}?lang=ru`, es: `${p.path}?lang=es`, 'x-default': p.path }, p.path);
+    assert.deepEqual(p.meta.alternates.languages, { en: p.path, ru: `${p.path}?lang=ru`, es: `${p.path}?lang=es`, de: `${p.path}?lang=de`, 'x-default': p.path }, p.path);
     assert.equal(p.meta.openGraph.url, url, `${p.path}: its share link`);
   }
 });

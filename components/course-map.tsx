@@ -23,7 +23,7 @@ const w = (a: number) => `rgba(255,255,255,${a})`;
 const font = { fontFamily: "var(--cond, 'Sofia Sans Condensed'), 'Arial Narrow', sans-serif", fontWeight: 600, letterSpacing: '1.2px' } as const;
 
 export function CourseMap({ lang, geo, preset, W, H, className, route, fleet, tracks, fouls }: Props) {
-  const ru = lang === 'ru', es = lang === 'es', id = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const ru = lang === 'ru', es = lang === 'es', de = lang === 'de', id = useId().replace(/[^a-zA-Z0-9]/g, '');
   const m = (v: number) => `${Math.round(v)} ${ru ? 'м' : 'm'}`;
   const M = lineMid(geo), Wm = geo.windward, beat = Math.hypot(Wm[0] - M[0], Wm[1] - M[1]);
   const lineLen = Math.hypot(geo.committee[0] - geo.pin[0], geo.committee[1] - geo.pin[1]);
@@ -75,6 +75,7 @@ export function CourseMap({ lang, geo, preset, W, H, className, route, fleet, tr
   const label = ru
     ? `Дистанция сверху, в масштабе: лавировка ${m(beat)}, стартовая линия ${m(lineLen)}, ворота ${m(gateW)}`
     : es ? `El recorrido visto desde arriba, a escala: una ceñida de ${m(beat)}, una línea de salida de ${m(lineLen)} y una puerta de ${m(gateW)}`
+    : de ? `Die Bahn von oben, maßstabsgetreu: eine Kreuz von ${m(beat)}, eine Startlinie von ${m(lineLen)}, ein Tor von ${m(gateW)}`
     : `The course from above, to scale: a ${m(beat)} beat, a ${m(lineLen)} start line, a ${m(gateW)} gate`;
 
   return (
@@ -143,26 +144,26 @@ export function CourseMap({ lang, geo, preset, W, H, className, route, fleet, tr
         <g fontSize={10.5} fill={w(0.78)} style={font}>
           {/* with an upwind finish the offset mark is where the windward mark's name would go: the name goes above */}
           {Off
-            ? <text x={X(Wm[0])} y={Z(Wm[1]) - 10} textAnchor="middle" {...halo}>{ru ? 'ВЕРХНИЙ ЗНАК' : es ? 'BALIZA DE BARLOVENTO' : 'WINDWARD MARK'}</text>
-            : <text x={X(Wm[0]) - 10} y={Z(Wm[1]) + 3.5} textAnchor="end" {...halo}>{shape === 'trap' ? (ru ? 'ЗНАК 1' : es ? 'BALIZA 1' : 'MARK 1') : ru ? 'ВЕРХНИЙ ЗНАК' : es ? 'BALIZA DE BARLOVENTO' : 'WINDWARD MARK'}</text>}
-          {Wg && <text x={X(Wg[0])} y={Z(Wg[1]) - 10} textAnchor="middle" {...halo}>{ru ? 'БОКОВОЙ ЗНАК' : es ? 'BALIZA DE TRAVÉS' : 'WING MARK'}</text>}
-          {M2 && <text x={X(M2[0]) - 9} y={Z(M2[1]) + 3.5} textAnchor="end" {...halo}>{ru ? 'ЗНАК 2' : es ? 'BALIZA 2' : 'MARK 2'}</text>}
-          {Off && <text x={X(Off[0]) - 9} y={Z(Off[1]) + 3.5} textAnchor="end" {...halo}>{ru ? 'ОТБОЙНИК' : es ? 'BALIZA DE DESMARQUE' : 'OFFSET MARK'}</text>}
+            ? <text x={X(Wm[0])} y={Z(Wm[1]) - 10} textAnchor="middle" {...halo}>{ru ? 'ВЕРХНИЙ ЗНАК' : es ? 'BALIZA DE BARLOVENTO' : de ? 'LUVTONNE' : 'WINDWARD MARK'}</text>
+            : <text x={X(Wm[0]) - 10} y={Z(Wm[1]) + 3.5} textAnchor="end" {...halo}>{shape === 'trap' ? (ru ? 'ЗНАК 1' : es ? 'BALIZA 1' : de ? 'TONNE 1' : 'MARK 1') : ru ? 'ВЕРХНИЙ ЗНАК' : es ? 'BALIZA DE BARLOVENTO' : de ? 'LUVTONNE' : 'WINDWARD MARK'}</text>}
+          {Wg && <text x={X(Wg[0])} y={Z(Wg[1]) - 10} textAnchor="middle" {...halo}>{ru ? 'БОКОВОЙ ЗНАК' : es ? 'BALIZA DE TRAVÉS' : de ? 'RAUMTONNE' : 'WING MARK'}</text>}
+          {M2 && <text x={X(M2[0]) - 9} y={Z(M2[1]) + 3.5} textAnchor="end" {...halo}>{ru ? 'ЗНАК 2' : es ? 'BALIZA 2' : de ? 'TONNE 2' : 'MARK 2'}</text>}
+          {Off && <text x={X(Off[0]) - 9} y={Z(Off[1]) + 3.5} textAnchor="end" {...halo}>{ru ? 'ОТБОЙНИК' : es ? 'BALIZA DE DESMARQUE' : de ? 'ABLAUFTONNE' : 'OFFSET MARK'}</text>}
           {/* the trapezoid's gate is out at the left edge: its name goes under it */}
           {shape === 'trap'
-            ? <text x={X(G[0])} y={Z(G[1]) + 16} textAnchor="middle" {...halo}>{ru ? `ВОРОТА ${m(gateW).toUpperCase()}` : es ? `PUERTA ${m(gateW).toUpperCase()}` : `GATE ${m(gateW).toUpperCase()}`}</text>
-            : <text x={X(geo.gate[0][0]) - 9} y={Z(geo.gate[0][1]) - 6} textAnchor="end" {...halo}>{ru ? `ВОРОТА ${m(gateW).toUpperCase()}` : es ? `PUERTA ${m(gateW).toUpperCase()}` : `GATE ${m(gateW).toUpperCase()}`}</text>}
+            ? <text x={X(G[0])} y={Z(G[1]) + 16} textAnchor="middle" {...halo}>{ru ? `ВОРОТА ${m(gateW).toUpperCase()}` : es ? `PUERTA ${m(gateW).toUpperCase()}` : de ? `TOR ${m(gateW).toUpperCase()}` : `GATE ${m(gateW).toUpperCase()}`}</text>
+            : <text x={X(geo.gate[0][0]) - 9} y={Z(geo.gate[0][1]) - 6} textAnchor="end" {...halo}>{ru ? `ВОРОТА ${m(gateW).toUpperCase()}` : es ? `PUERTA ${m(gateW).toUpperCase()}` : de ? `TOR ${m(gateW).toUpperCase()}` : `GATE ${m(gateW).toUpperCase()}`}</text>}
           {F && (shape === 'trap'
-            ? <text x={X(Math.min(F[0][0], F[1][0])) + 1} y={Math.min(Z(F[0][1]), Z(F[1][1])) - 7} textAnchor="start" {...halo}>{ru ? 'ФИНИШ' : es ? 'LLEGADA' : 'FINISH'}</text>
-            : <text x={X(Math.max(F[0][0], F[1][0])) + 8} y={Z(Fm![1]) + 3.5} textAnchor="start" {...halo}>{ru ? 'ФИНИШ' : es ? 'LLEGADA' : 'FINISH'}</text>)}
+            ? <text x={X(Math.min(F[0][0], F[1][0])) + 1} y={Math.min(Z(F[0][1]), Z(F[1][1])) - 7} textAnchor="start" {...halo}>{ru ? 'ФИНИШ' : es ? 'LLEGADA' : de ? 'ZIEL' : 'FINISH'}</text>
+            : <text x={X(Math.max(F[0][0], F[1][0])) + 8} y={Z(Fm![1]) + 3.5} textAnchor="start" {...halo}>{ru ? 'ФИНИШ' : es ? 'LLEGADA' : de ? 'ZIEL' : 'FINISH'}</text>)}
           <text x={X(M[0])} y={Z(M[1]) + (route ? 18 + boatL : 17)} textAnchor="middle" fill={GOLD} {...halo}>{F
-            ? ru ? `СТАРТ ${m(lineLen).toUpperCase()}` : es ? `SALIDA ${m(lineLen).toUpperCase()}` : `START ${m(lineLen).toUpperCase()}`
-            : ru ? `СТАРТ · ФИНИШ ${m(lineLen).toUpperCase()}` : es ? `SALIDA · LLEGADA ${m(lineLen).toUpperCase()}` : `START · FINISH ${m(lineLen).toUpperCase()}`}</text>
+            ? ru ? `СТАРТ ${m(lineLen).toUpperCase()}` : es ? `SALIDA ${m(lineLen).toUpperCase()}` : de ? `START ${m(lineLen).toUpperCase()}` : `START ${m(lineLen).toUpperCase()}`
+            : ru ? `СТАРТ · ФИНИШ ${m(lineLen).toUpperCase()}` : es ? `SALIDA · LLEGADA ${m(lineLen).toUpperCase()}` : de ? `START · ZIEL ${m(lineLen).toUpperCase()}` : `START · FINISH ${m(lineLen).toUpperCase()}`}</text>
         </g>
         <g fontSize={10.5} fill={w(0.62)} style={font}>
           {/* the wind, top left, in your blue as the race's map has it: blowing down the map */}
           <path d="M16 30 L21 21 H17.5 V10 H14.5 V21 H11 Z" fill={YOU} />
-          <text x={28} y={23}>{ru ? `ВЕТЕР ${KN[preset]} УЗ` : es ? `VIENTO ${KN[preset]} KN` : `WIND ${KN[preset]} KN`}</text>
+          <text x={28} y={23}>{ru ? `ВЕТЕР ${KN[preset]} УЗ` : es ? `VIENTO ${KN[preset]} KN` : de ? `WIND ${KN[preset]} KN` : `WIND ${KN[preset]} KN`}</text>
           {/* the scale, top right */}
           <path d={`M${W - 14 - bar * s} 13 v5 H${W - 14} v-5`} fill="none" stroke={w(0.62)} strokeWidth={1.4} />
           <text x={W - 20 - bar * s} y={21} textAnchor="end">{m(bar).toUpperCase()}</text>

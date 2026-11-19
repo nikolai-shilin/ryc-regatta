@@ -14,20 +14,20 @@ import { IconArrow, IconClock, IconCrew, IconDevice, IconFlag, IconImage, IconTr
 // admin's writes and the numbers answer an admin alone (row-level security, regatta_admin_stats and _insight), so these
 // pages only hide what they show from everyone else.
 export const ADMIN_PAGES = [
-  { id: 'race', Icon: IconFlag, name: ['Race', 'Гонка', 'Regata'], h: ['Today’s race and the week ahead', 'Гонка дня и неделя вперёд', 'La regata de hoy y la semana que viene'],
-    goal: ['What every player sails today, and what comes on each of the next seven days.', 'Что все игроки проходят сегодня и что ждёт их в каждый из следующих семи дней.', 'Lo que navega hoy cada jugador y lo que viene en cada uno de los próximos siete días.'] },
-  { id: 'ads', Icon: IconImage, name: ['Ads', 'Реклама', 'Anuncios'], h: ['The ads in the game', 'Реклама в игре', 'Los anuncios del juego'],
-    goal: ['The logos every boat carries on her mainsail and her jib, and the words on the banner the plane tows over the course.', 'Логотипы на гроте и стакселе каждой яхты и слова на баннере, который самолёт проносит над дистанцией.', 'Los logos que lleva cada barco en la mayor y en el foque, y las palabras de la pancarta que remolca el avión sobre el recorrido.'] },
-  { id: 'players', Icon: IconCrew, name: ['Players', 'Игроки', 'Jugadores'], h: ['Do they come and stay', 'Приходят ли и остаются', '¿Vienen y se quedan?'],
-    goal: ['Who plays, how far a visit gets from opening the game to a finish, and whether the players come back.', 'Кто играет, как далеко заходит визит, от открытия игры до финиша, и возвращаются ли игроки.', 'Quién juega, hasta dónde llega una visita desde que abre el juego hasta una llegada, y si los jugadores vuelven.'] },
-  { id: 'game', Icon: IconTrophy, name: ['The game', 'Игра', 'El juego'], h: ['Is it fun and fair', 'Интересно ли и честно', '¿Es divertido y justo?'],
-    goal: ['How the races go by yacht, wind, venue and course; how hard they are as a player learns; why races are left; what the players say and what they set.', 'Как идут гонки по яхтам, ветру, месту и дистанции; насколько они сложны по мере опыта; почему их бросают; что говорят игроки и что выставляют.', 'Cómo van las regatas por yate, viento, sede y recorrido; lo difíciles que son según aprende el jugador; por qué se abandonan; qué dicen los jugadores y qué ajustan.'] },
-  { id: 'tech', Icon: IconDevice, name: ['Performance', 'Производительность', 'Rendimiento'], h: ['Does it run well', 'Хорошо ли работает', '¿Funciona bien?'],
-    goal: ['How the game runs on the players’ devices: the frame rate and the stalls, the loads that fail, the errors on the page.', 'Как игра работает на устройствах игроков: частота кадров и рывки, неудачные загрузки, ошибки на странице.', 'Cómo funciona el juego en los dispositivos de los jugadores: los fotogramas por segundo y los tirones, las cargas que fallan, los errores en la página.'] },
-  { id: 'duels', Icon: IconCrew, name: ['1-on-1 races', 'Гонки 1 на 1', 'Regatas 1 contra 1'], h: ['Races sailed head to head', 'Гонки 1 на 1', 'Regatas cara a cara'],
-    goal: ['Every 1-on-1 race the players sailed: who raced whom, where, how it ended, and how often a race is left or sailed again.', 'Все гонки 1 на 1: кто с кем, где, чем закончилась и как часто гонку бросают или проводят заново.', 'Cada regata 1 contra 1 que navegaron los jugadores: quién contra quién, dónde, cómo terminó y con qué frecuencia se abandona o se repite una regata.'] },
-  { id: 'logs', Icon: IconClock, name: ['Logs', 'Журнал', 'Registros'], h: ['What went wrong, and for whom', 'Что пошло не так и у кого', 'Qué salió mal y a quién'],
-    goal: ['The players who hit a problem, and each one’s visits and races in full, to see what happened to them.', 'Игроки, столкнувшиеся с проблемой, и все их визиты и гонки в подробностях, чтобы понять, что с ними случилось.', 'Los jugadores que tuvieron un problema, con sus visitas y regatas completas, para ver qué les pasó.'] },
+  { id: 'race', Icon: IconFlag, name: ['Race', 'Гонка', 'Regata', 'Regatta'], h: ['Today’s race and the week ahead', 'Гонка дня и неделя вперёд', 'La regata de hoy y la semana que viene', 'Die Regatta des Tages und die Woche voraus'],
+    goal: ['What every player sails today, and what comes on each of the next seven days.', 'Что все игроки проходят сегодня и что ждёт их в каждый из следующих семи дней.', 'Lo que navega hoy cada jugador y lo que viene en cada uno de los próximos siete días.', 'Was alle Spieler heute segeln und was an jedem der nächsten sieben Tage kommt.'] },
+  { id: 'ads', Icon: IconImage, name: ['Ads', 'Реклама', 'Anuncios', 'Werbung'], h: ['The ads in the game', 'Реклама в игре', 'Los anuncios del juego', 'Die Werbung im Spiel'],
+    goal: ['The logos every boat carries on her mainsail and her jib, and the words on the banner the plane tows over the course.', 'Логотипы на гроте и стакселе каждой яхты и слова на баннере, который самолёт проносит над дистанцией.', 'Los logos que lleva cada barco en la mayor y en el foque, y las palabras de la pancarta que remolca el avión sobre el recorrido.', 'Die Logos, die jedes Boot auf Großsegel und Fock trägt, und die Worte auf dem Banner, das das Flugzeug über die Bahn zieht.'] },
+  { id: 'players', Icon: IconCrew, name: ['Players', 'Игроки', 'Jugadores', 'Spieler'], h: ['Do they come and stay', 'Приходят ли и остаются', '¿Vienen y se quedan?', 'Kommen sie und bleiben sie'],
+    goal: ['Who plays, how far a visit gets from opening the game to a finish, and whether the players come back.', 'Кто играет, как далеко заходит визит, от открытия игры до финиша, и возвращаются ли игроки.', 'Quién juega, hasta dónde llega una visita desde que abre el juego hasta una llegada, y si los jugadores vuelven.', 'Wer spielt, wie weit ein Besuch vom Öffnen des Spiels bis zum Ziel kommt und ob die Spieler wiederkommen.'] },
+  { id: 'game', Icon: IconTrophy, name: ['The game', 'Игра', 'El juego', 'Das Spiel'], h: ['Is it fun and fair', 'Интересно ли и честно', '¿Es divertido y justo?', 'Macht es Spaß und ist es fair'],
+    goal: ['How the races go by yacht, wind, venue and course; how hard they are as a player learns; why races are left; what the players say and what they set.', 'Как идут гонки по яхтам, ветру, месту и дистанции; насколько они сложны по мере опыта; почему их бросают; что говорят игроки и что выставляют.', 'Cómo van las regatas por yate, viento, sede y recorrido; lo difíciles que son según aprende el jugador; por qué se abandonan; qué dicen los jugadores y qué ajustan.', 'Wie die Regatten laufen, nach Yacht, Wind, Revier und Bahn; wie schwer sie werden, wenn ein Spieler dazulernt; warum Regatten abgebrochen werden; was die Spieler sagen und was sie einstellen.'] },
+  { id: 'tech', Icon: IconDevice, name: ['Performance', 'Производительность', 'Rendimiento', 'Leistung'], h: ['Does it run well', 'Хорошо ли работает', '¿Funciona bien?', 'Läuft es gut'],
+    goal: ['How the game runs on the players’ devices: the frame rate and the stalls, the loads that fail, the errors on the page.', 'Как игра работает на устройствах игроков: частота кадров и рывки, неудачные загрузки, ошибки на странице.', 'Cómo funciona el juego en los dispositivos de los jugadores: los fotogramas por segundo y los tirones, las cargas que fallan, los errores en la página.', 'Wie das Spiel auf den Geräten der Spieler läuft: die Bildrate und die Ruckler, die Ladevorgänge, die fehlschlagen, die Fehler auf der Seite.'] },
+  { id: 'duels', Icon: IconCrew, name: ['1-on-1 races', 'Гонки 1 на 1', 'Regatas 1 contra 1', '1-gegen-1-Regatten'], h: ['Races sailed head to head', 'Гонки 1 на 1', 'Regatas cara a cara', 'Regatten Kopf an Kopf'],
+    goal: ['Every 1-on-1 race the players sailed: who raced whom, where, how it ended, and how often a race is left or sailed again.', 'Все гонки 1 на 1: кто с кем, где, чем закончилась и как часто гонку бросают или проводят заново.', 'Cada regata 1 contra 1 que navegaron los jugadores: quién contra quién, dónde, cómo terminó y con qué frecuencia se abandona o se repite una regata.', 'Jede 1-gegen-1-Regatta der Spieler: wer gegen wen fuhr, wo, wie sie endete und wie oft eine Regatta abgebrochen oder wiederholt wird.'] },
+  { id: 'logs', Icon: IconClock, name: ['Logs', 'Журнал', 'Registros', 'Protokolle'], h: ['What went wrong, and for whom', 'Что пошло не так и у кого', 'Qué salió mal y a quién', 'Was schiefging, und bei wem'],
+    goal: ['The players who hit a problem, and each one’s visits and races in full, to see what happened to them.', 'Игроки, столкнувшиеся с проблемой, и все их визиты и гонки в подробностях, чтобы понять, что с ними случилось.', 'Los jugadores que tuvieron un problema, con sus visitas y regatas completas, para ver qué les pasó.', 'Die Spieler, die ein Problem hatten, und von jedem alle Besuche und Regatten, um zu sehen, was ihnen passiert ist.'] },
 ] as const;
 export type AdminPage = (typeof ADMIN_PAGES)[number]['id'];
 const pageOf = (id: AdminPage) => ADMIN_PAGES.find((p) => p.id === id)!;
@@ -37,7 +37,7 @@ export const STAT_DAYS = [7, 30, 90] as const;
 export const pickDays = (q?: string) => ((STAT_DAYS as readonly number[]).includes(Number(q)) ? Number(q) : 30);
 const DATA: AdminPage[] = ['players', 'game', 'tech', 'logs'];
 
-export const adminTitle = (id?: AdminPage) => (id ? titled(`Admin · ${pageOf(id).name[0]}`, `Админка · ${pageOf(id).name[1]}`, `Admin · ${pageOf(id).name[0]}`, { index: false }) : titled('Admin', 'Админка', 'Admin', { index: false }));
+export const adminTitle = (id?: AdminPage) => (id ? titled(`Admin · ${pageOf(id).name[0]}`, `Админка · ${pageOf(id).name[1]}`, `Admin · ${pageOf(id).name[0]}`, `Admin · ${pageOf(id).name[0]}`, { index: false }) : titled('Admin', 'Админка', 'Admin', 'Admin', { index: false }));
 
 type Supabase = Awaited<ReturnType<typeof supabaseServer>>;
 // Who is reading, whether they are an admin, and what the page loads for one: the load goes with the admin check, not
@@ -71,25 +71,25 @@ export function AdminShell({ lang, t, account, admin, page, days, who, children 
         <div className="aph">
           <div className="aph-top">
             {p
-              ? <BackLink className="round round-s round-muted" href="/admin" label={t('Back to the admin', 'Назад в админку', 'Volver al admin')} />
-              : <BackLink className="round round-s round-muted" href="/settings" label={t('Back to settings', 'Назад в настройки', 'Volver a ajustes')} />}
-            <span className="kicker">{p ? `${t('Admin', 'Админка', 'Admin')} · ${pick(p.name, lang)}` : t('Admin', 'Админка', 'Admin')}</span>
+              ? <BackLink className="round round-s round-muted" href="/admin" label={t('Back to the admin', 'Назад в админку', 'Volver al admin', 'Zurück zum Admin')} />
+              : <BackLink className="round round-s round-muted" href="/settings" label={t('Back to settings', 'Назад в настройки', 'Volver a ajustes', 'Zurück zu den Einstellungen')} />}
+            <span className="kicker">{p ? `${t('Admin', 'Админка', 'Admin', 'Admin')} · ${pick(p.name, lang)}` : t('Admin', 'Админка', 'Admin', 'Admin')}</span>
           </div>
-          <h1 className="aph-h">{p ? pick(p.h, lang) : t('The race, the ads and the numbers', 'Гонка, реклама и цифры', 'La regata, los anuncios y los números')}</h1>
-          <p className="aph-p">{p ? pick(p.goal, lang) : t('A page for each thing you come here to do.', 'По странице на каждую задачу.', 'Una página para cada cosa que vienes a hacer aquí.')}</p>
+          <h1 className="aph-h">{p ? pick(p.h, lang) : t('The race, the ads and the numbers', 'Гонка, реклама и цифры', 'La regata, los anuncios y los números', 'Die Regatta, die Werbung und die Zahlen')}</h1>
+          <p className="aph-p">{p ? pick(p.goal, lang) : t('A page for each thing you come here to do.', 'По странице на каждую задачу.', 'Una página para cada cosa que vienes a hacer aquí.', 'Eine Seite für alles, weswegen du hierherkommst.')}</p>
           {admin && (
             <div className="adm-bar">
-              <nav className="segc adm-nav" aria-label={t('Admin pages', 'Разделы админки', 'Páginas del admin')}>
+              <nav className="segc adm-nav" aria-label={t('Admin pages', 'Разделы админки', 'Páginas del admin', 'Admin-Seiten')}>
                 {ADMIN_PAGES.map((x) => (
                   <Link key={x.id} href={DATA.includes(x.id) ? withDays(`/admin/${x.id}`, days) : `/admin/${x.id}`}
                     className={x.id === page ? 'on' : undefined} aria-current={x.id === page ? 'page' : undefined}>{pick(x.name, lang)}</Link>
                 ))}
               </nav>
               {page && DATA.includes(page) && days != null && (
-                <nav className="adm-range" aria-label={t('Period', 'Период', 'Periodo')}>
+                <nav className="adm-range" aria-label={t('Period', 'Период', 'Periodo', 'Zeitraum')}>
                   {STAT_DAYS.map((d) => (
                     <Link key={d} href={`${here}?days=${d}${who ? `&who=${encodeURIComponent(who)}` : ''}`} scroll={false} aria-current={d === days ? 'page' : undefined} className={d === days ? 'on' : undefined}>
-                      {t(`${d} days`, `${d} дн.`, `${d} días`)}
+                      {t(`${d} days`, `${d} дн.`, `${d} días`, `${d} Tage`)}
                     </Link>
                   ))}
                 </nav>
@@ -100,13 +100,13 @@ export function AdminShell({ lang, t, account, admin, page, days, who, children 
         {!account ? (
           <div className="acct acct-row">
             <div className="acct-guest">
-              <span className="srow-k">{t('Sign in as an admin', 'Войдите как администратор', 'Inicia sesión como administrador')}</span>
-              <span className="small">{t('With the email on the admin list', 'С почтой из списка администраторов', 'Con el correo de la lista de administradores')}</span>
+              <span className="srow-k">{t('Sign in as an admin', 'Войдите как администратор', 'Inicia sesión como administrador', 'Als Admin anmelden')}</span>
+              <span className="small">{t('With the email on the admin list', 'С почтой из списка администраторов', 'Con el correo de la lista de administradores', 'Mit der E-Mail auf der Admin-Liste')}</span>
             </div>
-            <Link className="pill pill-xs" href={`/sign-in?next=${here}`}><span className="btn-t">{t('Sign in', 'Войти', 'Iniciar sesión')}</span></Link>
+            <Link className="pill pill-xs" href={`/sign-in?next=${here}`}><span className="btn-t">{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden')}</span></Link>
           </div>
         ) : !admin ? (
-          <p className="hint">{t(`${account.email || account.name} is not on the admin list.`, `${account.email || account.name} нет в списке администраторов.`, `${account.email || account.name} no está en la lista de administradores.`)}</p>
+          <p className="hint">{t(`${account.email || account.name} is not on the admin list.`, `${account.email || account.name} нет в списке администраторов.`, `${account.email || account.name} no está en la lista de administradores.`, `${account.email || account.name} steht nicht auf der Admin-Liste.`)}</p>
         ) : children}
       </div>
     </div>
@@ -136,7 +136,7 @@ export function AdminMissing({ title, Icon, error, t }: { title: string; Icon: C
   return (
     <div className="adm adm-stats">
       <div className="adm-k"><Icon /><span className="kicker">{title}</span></div>
-      <p className="hint">{error ? t(`The numbers didn’t load: ${error}`, `Цифры не загрузились: ${error}`, `Los números no cargaron: ${error}`) : t('Nothing in this period.', 'За этот период ничего нет.', 'Nada en este periodo.')}</p>
+      <p className="hint">{error ? t(`The numbers didn’t load: ${error}`, `Цифры не загрузились: ${error}`, `Los números no cargaron: ${error}`, `Die Zahlen wurden nicht geladen: ${error}`) : t('Nothing in this period.', 'За этот период ничего нет.', 'Nada en este periodo.', 'Nichts in diesem Zeitraum.')}</p>
     </div>
   );
 }

@@ -189,7 +189,7 @@ test('home is titled as it stands, addressed for each language, with today\'s sh
   assert.notEqual(en.description, ru.description);
   assert.equal(en.alternates.canonical, '/');
   assert.equal(ru.alternates.canonical, '/?lang=ru');
-  assert.deepEqual(en.alternates.languages, { en: '/', ru: '/?lang=ru', es: '/?lang=es', 'x-default': '/' });
+  assert.deepEqual(en.alternates.languages, { en: '/', ru: '/?lang=ru', es: '/?lang=es', de: '/?lang=de', 'x-default': '/' });
   assert.equal(en.openGraph.images[0].url, `/og/today?lang=en&d=${DAY}`);
   assert.equal(ru.openGraph.images[0].url, `/og/today?lang=ru&d=${DAY}`);
   assert.equal(en.robots, undefined);
@@ -197,6 +197,6 @@ test('home is titled as it stands, addressed for each language, with today\'s sh
 
 test('home refuses a language the site does not have', async () => {
   reset();
-  await assert.rejects(html('de'), (e) => e.kind === 'notFound');
-  await assert.rejects(home.generateMetadata(props('de')), (e) => e.kind === 'notFound');
+  await assert.rejects(html('fr'), (e) => e.kind === 'notFound');
+  await assert.rejects(home.generateMetadata(props('fr')), (e) => e.kind === 'notFound');
 });

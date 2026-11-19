@@ -16,13 +16,13 @@ export default async function AdminGamePage({ params, searchParams }: LangParams
   const { lang, t } = a;
   return (
     <AdminShell {...a} page="game" days={days}>
-      {hasStats(st?.data ?? null) ? <AdminRacing lang={lang} stats={st!.data!} /> : <AdminMissing t={t} Icon={IconTrophy} title={t('How they race', 'Как гоняются', 'Cómo compiten')} error={st?.error} />}
+      {hasStats(st?.data ?? null) ? <AdminRacing lang={lang} stats={st!.data!} /> : <AdminMissing t={t} Icon={IconTrophy} title={t('How they race', 'Как гоняются', 'Cómo compiten', 'Wie sie segeln')} error={st?.error} />}
       {ins?.data ? (<>
         <InsightDifficulty lang={lang} data={ins.data} />
         <InsightExits lang={lang} data={ins.data} />
         <InsightRatings lang={lang} data={ins.data} />
         <InsightSettings lang={lang} data={ins.data} />
-      </>) : <AdminMissing t={t} Icon={IconCrew} title={t('How they like it', 'Нравится ли игра', 'Cómo les gusta')} error={ins?.error} />}
+      </>) : <AdminMissing t={t} Icon={IconCrew} title={t('How they like it', 'Нравится ли игра', 'Cómo les gusta', 'Wie sie es mögen')} error={ins?.error} />}
     </AdminShell>
   );
 }

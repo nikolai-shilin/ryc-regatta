@@ -560,7 +560,7 @@ export const h = React.createElement;
 // English words left in text meant to be Russian, the names that stay as they are (`allow`) taken out first
 export const englishIn = (text, allow = []) => {
   let s = String(text);
-  for (const a of ['Up and down', 'RYC Rentals', 'RYC Sailing', 'RYC', 'English', 'Español', 'America’s Cup', 'Telegram', 'Google', 'DSQ', 'FPS', 'WebGL', 'UTC', ...allow]) s = s.split(a).join(' ');
+  for (const a of ['Up and down', 'RYC Rentals', 'RYC Sailing', 'RYC', 'English', 'Español', 'Deutsch', 'America’s Cup', 'Telegram', 'Google', 'DSQ', 'FPS', 'WebGL', 'UTC', ...allow]) s = s.split(a).join(' ');
   return s.match(/[A-Za-z]{3,}/g) ?? [];
 };
 // a router that remembers where it was sent, as next/navigation's stand-in hands it to the page

@@ -13,11 +13,11 @@ export async function GET(request: Request) {
   const streak = p.s >= 2;
   const img = await card({
     bg: 'helm',
-    kind: p.n ? t(`${p.n}’s passport`, `Паспорт: ${p.n}`, `Pasaporte de ${p.n}`) : t('A sailor’s passport', 'Паспорт гонщика', 'Pasaporte de un regatista'),
+    kind: p.n ? t(`${p.n}’s passport`, `Паспорт: ${p.n}`, `Pasaporte de ${p.n}`, `Pass von ${p.n}`) : t('A sailor’s passport', 'Паспорт гонщика', 'Pasaporte de un regatista', 'Der Pass eines Seglers'),
     hero: streak
-      ? { label: t('Days in a row', ruPlural(p.s, ['День подряд', 'Дня подряд', 'Дней подряд']), 'Días seguidos'), value: String(p.s), color: C.gold }
-      : { label: t('Venues raced', 'Пройдено акваторий', 'Sedes navegadas'), value: `${p.v} / ${VENUES.length}`, color: C.gold },
-    call: t('Sail today’s race', 'Пройди гонку дня', 'Navega la regata del día'),
+      ? { label: t('Days in a row', ruPlural(p.s, ['День подряд', 'Дня подряд', 'Дней подряд']), 'Días seguidos', 'Tage in Folge'), value: String(p.s), color: C.gold }
+      : { label: t('Venues raced', 'Пройдено акваторий', 'Sedes navegadas', 'Gesegelte Reviere'), value: `${p.v} / ${VENUES.length}`, color: C.gold },
+    call: t('Sail today’s race', 'Пройди гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln'),
   });
   img.headers.set('cache-control', 'public, max-age=86400, s-maxage=31536000, immutable'); // the address is the picture
   return img;

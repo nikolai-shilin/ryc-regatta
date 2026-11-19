@@ -63,6 +63,6 @@ test('the language: the address, then the cookie, then the browser', () => {
   assert.equal(pickLang('ru', 'en', 'en-GB'), 'ru');
   assert.equal(pickLang('xx', 'ru', 'en-GB'), 'ru');
   assert.equal(pickLang(null, null, 'uk-UA,uk;q=0.9'), 'ru');
-  assert.equal(pickLang(null, 'de', 'tr-TR,tr;q=0.9,en;q=0.8'), 'en');
+  assert.equal(pickLang(null, 'fr', 'tr-TR,tr;q=0.9,en;q=0.8'), 'en');
   assert.equal(pickLang(undefined, undefined, null), 'en');
 });

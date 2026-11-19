@@ -28,9 +28,9 @@ export function SailingOpts({ lang }: { lang: Lang }) {
   );
   return (
     <div className="st-sail">
-      {seg('autoTrim', t('Sails', 'Паруса', 'Velas'), [[0, t('I trim', 'Сам', 'Trimo yo')], [1, t('Auto', 'Авто', 'Auto')], [2, t('Main + jib', 'Грот + стаксель', 'Mayor + foque')]])}
-      {seg('camera', t('Camera', 'Камера', 'Cámara'), [['drone', t('Drone', 'Дрон', 'Dron')], ['top', t('Top', 'Сверху', 'Cenital')], ['helm', t('Helm', 'Штурвал', 'Timón')]])}
-      {sw('guides', t('Guides on the water', 'Подсказки на воде', 'Guías en el agua'))}
+      {seg('autoTrim', t('Sails', 'Паруса', 'Velas', 'Segel'), [[0, t('I trim', 'Сам', 'Trimo yo', 'Ich trimme')], [1, t('Auto', 'Авто', 'Auto', 'Auto')], [2, t('Main + jib', 'Грот + стаксель', 'Mayor + foque', 'Groß + Fock')]])}
+      {seg('camera', t('Camera', 'Камера', 'Cámara', 'Kamera'), [['drone', t('Drone', 'Дрон', 'Dron', 'Drohne')], ['top', t('Top', 'Сверху', 'Cenital', 'Oben')], ['helm', t('Helm', 'Штурвал', 'Timón', 'Ruder')]])}
+      {sw('guides', t('Guides on the water', 'Подсказки на воде', 'Guías en el agua', 'Hilfslinien auf dem Wasser'))}
     </div>
   );
 }
