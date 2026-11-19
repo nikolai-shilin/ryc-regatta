@@ -330,6 +330,7 @@ function Swatches({ label, value, options, onChange, t }: { label: string; value
 const NAMES: Record<string, [en: string, ru: string, es?: string, de?: string, tr?: string]> = {
   '#ffffff': ['White', 'Белый', 'Blanco', 'Weiß', 'Beyaz'], '#1d1d1d': ['Black', 'Чёрный', 'Negro', 'Schwarz', 'Siyah'], '#f4f2ea': ['Sailcloth white', 'Белая парусина', 'Blanco velero', 'Segeltuchweiß', 'Yelken beyazı'], '#ebe3cd': ['Cream', 'Кремовый', 'Crema', 'Creme', 'Krem'],
   '#dfe4e8': ['Mylar', 'Майлар', 'Mylar', 'Mylar', 'Mylar'], '#868c93': ['Grey laminate', 'Серый ламинат', 'Laminado gris', 'Graues Laminat', 'Gri laminat'], '#3a3d42': ['Charcoal', 'Графит', 'Antracita', 'Anthrazit', 'Antrasit'], '#2a2c30': ['Carbon', 'Карбон', 'Carbono', 'Carbon', 'Karbon'],
+  '#8a4b2f': ['Tanbark', 'Красно-коричневый', 'Rojo teja', 'Lohbraun', 'Kızıl kahve'], '#8cc63f': ['Lime', 'Лайм', 'Lima', 'Limette', 'Limon yeşili'], '#3fb6e8': ['Sky blue', 'Голубой', 'Celeste', 'Himmelblau', 'Gök mavisi'], '#ff6f59': ['Coral', 'Коралловый', 'Coral', 'Koralle', 'Mercan'],
   '#262a31': ['Dark grey', 'Тёмно-серый', 'Gris oscuro', 'Dunkelgrau', 'Koyu gri'], '#5b1f24': ['Antifouling red', 'Тёмно-красный', 'Rojo antifouling', 'Antifouling-Rot', 'Antifouling kırmızısı'],
 };
 function colourName(c: string, t: (en: string, ru: string, es?: string, de?: string, tr?: string) => string) {

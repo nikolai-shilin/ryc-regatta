@@ -178,6 +178,18 @@ test('colours are named for a screen reader', async () => {
   assert.equal(ink[1].getAttribute('aria-label'), 'Black');
 });
 
+test('the sails come in more colours than white and grey, every one named', async () => {
+  const v = await editor();
+  for (const k of ['cloth', 'kite']) {
+    const sw = v.$$(`[aria-labelledby="l-${k}"] .sw`);
+    assert.equal(sw.length, SWATCHES[k].length);
+    for (const s of sw) assert.doesNotMatch(s.getAttribute('aria-label'), /^#/, `${k} ${s.style.getPropertyValue('--c')} has a name`);
+  }
+  assert.ok(SWATCHES.cloth.length >= 15, 'dyed Dacron in the palette colours and tanbark');
+  assert.ok(SWATCHES.cloth.includes('#b0202b') && SWATCHES.cloth.includes('#8a4b2f'));
+  assert.ok(SWATCHES.kite.includes('#8cc63f'));
+});
+
 // ---------- the flag ----------
 const fp = (v) => v.$('.fp-btn');
 const options = (v) => v.$$('.fp-o');

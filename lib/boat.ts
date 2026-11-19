@@ -73,11 +73,15 @@ const PALETTE = PRESETS.map((p) => p.boat.hull);
 const uniq = (l: string[]) => [...new Set(l.map((c) => c.toLowerCase()))];
 // what shows on a hull or a sail: pure white and near-black (in place of the White and Black hulls' own shades), then the palette
 const MARKS = uniq(['#ffffff', '#1d1d1d', ...PALETTE.filter((c) => !['#f4f3ef', '#1c1f24'].includes(c))]);
+// the sails' own: white, cream, Mylar, grey and charcoal laminate, carbon, then the classic tanbark, and dyed Dacron in
+// the palette's colours (the White, Silver and Black hulls' shades left out: the sailcloth's own whites and greys stand in)
+const DYED = PALETTE.filter((c) => !['#f4f3ef', '#b9bec4', '#1c1f24'].includes(c));
 export const SWATCHES = {
   hull: PALETTE,
-  cloth: uniq([...PRESETS.map((p) => p.boat.cloth), '#ebe3cd', '#dfe4e8', '#868c93', '#3a3d42']),
+  cloth: uniq([...PRESETS.map((p) => p.boat.cloth), '#ebe3cd', '#dfe4e8', '#868c93', '#3a3d42', '#8a4b2f', ...DYED]),
   ink: MARKS,
-  kite: PALETTE,
+  // the gennaker: the palette, then the brighter nylon a kite is often cut from: lime, sky blue and coral
+  kite: uniq([...PALETTE, '#8cc63f', '#3fb6e8', '#ff6f59']),
   // the antifouling: the usual dark red, black, navy, blue, silver and white
   bottom: uniq([BOTTOM, '#1c1f24', '#16325c', '#1f6fb2', '#b9bec4', '#f4f3ef']),
   crew: PALETTE,
