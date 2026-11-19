@@ -57,6 +57,7 @@ test('a banner on a colour dyes the whole jib, both faces, and reads up the luff
     assert.ok(x.rects.some((r) => r.fill === LOOKS.Halcyon.tape), 'its tapes drawn again over the colour');
     const strips = x.images.filter((d) => d.image.height === 1024);
     assert.equal(strips.length, 120, 'the banner turned (1024 px tall) and laid in strips');
+    assert.equal(x.counts.rotate, 120, 'each strip turned through the luff\'s rake, along the line the jib furls on');
   }
 });
 

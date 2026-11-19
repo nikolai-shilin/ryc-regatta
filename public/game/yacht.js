@@ -957,8 +957,8 @@ export function sailTexture(kind, look, rig = null) {
       const battens = (x) => { x.fillStyle = look.batten; x.fillRect(W * 0.7, H * 0.35, W * 0.3, 16); x.fillRect(W * 0.6, H * 0.6, W * 0.4, 16); };
       battens(x);
       // the ad, as large as the jib allows from a little above the foot to near the head, clear of the luff, the leech and
-      // the foot: level as it is, or turned a quarter round to read up the luff, whichever comes out the larger (a wide
-      // banner on a tall jib reads best turned). A banner printed on a colour of its own (its corners alike and solid)
+      // the foot: level as it is, or turned a quarter round to read up the luff along its line (raked as the forestay the
+      // jib furls on), whichever comes out the larger (a wide banner on a tall jib reads best turned). A banner printed on a colour of its own (its corners alike and solid)
       // dyes the whole jib that colour first, so the ad takes the full sail, unless the admin has set the jibs' colour
       // (sailColors: one colour for every boat, with or without an ad, or each boat's own cloth). The cloth maps (u along the chord, f up the
       // luff) to P = head·f + clew·(1 − f)·u in the sail's plane, a grid sheared by the raked luff and tapering to the
@@ -978,14 +978,24 @@ export function sailTexture(kind, look, rig = null) {
       const adOn = (img, xb) => {
         const hd = R.hd, CL = R.clew, aspect = (img.naturalWidth || 1) / (img.naturalHeight || 1), clear = 0.035 * CL.z;
         const luffZ = (y) => (hd.z * y) / hd.y, aftZ = (y) => (y < CL.y ? (CL.z * y) / CL.y : CL.z + ((hd.z - CL.z) * (y - CL.y)) / (hd.y - CL.y));
-        const lo = Math.max(0.06 * hd.y, CL.y + 0.05), level = fitBox(luffZ, aftZ, lo, 0.96 * hd.y, aspect, clear), turned = fitBox(luffZ, aftZ, lo, 0.96 * hd.y, 1 / aspect, clear);
-        const turn = turned.w * turned.h > level.w * level.h, { w, h, zc, yc } = turn ? turned : level;
-        const STRIPS = turn ? 120 : 40, PW = 1024, PH = Math.round(PW / aspect), det0 = hd.z * CL.y - hd.y * CL.z;
+        const lo = Math.max(0.06 * hd.y, CL.y + 0.05), level = fitBox(luffZ, aftZ, lo, 0.96 * hd.y, aspect, clear);
+        // turned, it lies along the luff, the line the jib furls on: fitted in the luff's own frame (b up the luff, a square
+        // to it, aft), where the luff is a = 0, and turned through the luff's rake (phi) to go on the sail
+        const L = Math.hypot(hd.z, hd.y), rake = Math.atan2(hd.z, hd.y), cs = Math.cos(rake), sn = Math.sin(rake);
+        const ca = CL.z * cs - CL.y * sn, cb = CL.z * sn + CL.y * cs; // the clew in that frame
+        const aftL = (b) => (b >= cb ? (ca * (L - b)) / (L - cb) : cb > 0 ? (ca * b) / cb : ca);
+        const along = fitBox(() => 0, aftL, Math.max(0.06 * L, cb + 0.05), 0.96 * L, 1 / aspect, clear);
+        const turn = along.w * along.h > level.w * level.h, phi = turn ? rake : 0, { w, h } = turn ? along : level;
+        const zc = turn ? along.zc * cs + along.yc * sn : level.zc, yc = turn ? -along.zc * sn + along.yc * cs : level.yc;
+        const STRIPS = turn ? 120 : 40, PW = 1024, PH = Math.round(PW / aspect), det0 = hd.z * CL.y - hd.y * CL.z, dh = h / STRIPS;
         const pic = turn ? turnedPicture(img, PW, PH) : sharpPicture(img, PW, PH), pw = pic.width, ph = pic.height;
         for (const [ctx, s] of [[x, 1], [xb, -1]]) for (let k = 0; k < STRIPS; k++) {
-          const y = yc + h / 2 - ((k + 0.5) * h) / STRIPS, f = (zc * CL.y - CL.z * y) / det0, u = (hd.z * y - hd.y * zc) / det0 / (1 - f);
-          const a = CL.z * (1 - f), b = CL.y * (1 - f), cc = hd.z - CL.z * u, d = hd.y - CL.y * u, det = a * d - b * cc, dh = h / STRIPS;
+          // the strip's middle on the sail, a step down the picture's own up (the luff's line when turned)
+          const t = h / 2 - (k + 0.5) * dh, pz = zc + Math.sin(phi) * t, py = yc + Math.cos(phi) * t;
+          const f = (pz * CL.y - CL.z * py) / det0, u = (hd.z * py - hd.y * pz) / det0 / (1 - f);
+          const a = CL.z * (1 - f), b = CL.y * (1 - f), cc = hd.z - CL.z * u, d = hd.y - CL.y * u, det = a * d - b * cc;
           ctx.save(); ctx.translate(W * (s > 0 ? u : 1 - u), H * (1 - f)); ctx.transform((W * d) / det, (s * H * b) / det, (s * W * cc) / det, (H * a) / det, 0, 0);
+          if (phi) ctx.rotate(s * phi);
           ctx.drawImage(pic, 0, (k * ph) / STRIPS, pw, ph / STRIPS, -w / 2, -dh * 0.56, w, dh * 1.12); // (a hair over, so no seam shows between strips)
           ctx.restore();
         }
