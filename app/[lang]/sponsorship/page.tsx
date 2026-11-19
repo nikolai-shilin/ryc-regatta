@@ -16,22 +16,29 @@ export const viewport = READING_VIEWPORT;
 export const generateMetadata = titled('Sponsor a sailing race game', 'Спонсорство парусной игры', 'Patrocina un juego de regatas a vela', 'Ein Segelregatta-Spiel sponsern', 'Bir yelken yarışı oyununa sponsor ol', {
   path: '/sponsorship', card: '/og/page/sponsorship',
   description: [
-    'Sponsor Up and down, the free 3D sailing race game: your logo on the jib, your words on the banner a plane tows over the course, or both.',
-    'Спонсорство Up and down, бесплатной парусной 3D-гонки: ваш логотип на стакселе, ваш текст на баннере за самолётом над дистанцией или всё вместе.', 'Patrocina Up and down, el juego gratuito de regatas a vela en 3D: tu logo en el foque, tus palabras en la pancarta que remolca una avioneta sobre el recorrido, o ambos.', 'Sponsere Up and down, das kostenlose 3D-Segelregatta-Spiel: dein Logo auf der Fock, deine Worte auf dem Banner, das ein Flugzeug über die Bahn zieht, oder beides.', 'Ücretsiz 3D yelken yarışı oyunu Up and down’a sponsor ol: logon flokta, sözlerin yarış parkurunun üstünde bir uçağın çektiği pankartta, ya da ikisi birden.'],
+    'Sponsor Up and down, the free 3D sailing race game: your banner over the whole jib, your logo on the mainsail and the gennaker, your words on the banner a plane tows over the course, at every venue or the ones you choose.',
+    'Спонсорство Up and down, бесплатной парусной 3D-гонки: ваш баннер на весь стаксель, логотип на гроте и генакере, текст на баннере за самолётом над дистанцией — на всех акваториях или на выбранных.', 'Patrocina Up and down, el juego gratuito de regatas a vela en 3D: tu pancarta en todo el foque, tu logo en la mayor y el gennaker, tus palabras en la pancarta que remolca una avioneta sobre el recorrido, en todas las sedes o en las que elijas.', 'Sponsere Up and down, das kostenlose 3D-Segelregatta-Spiel: dein Banner über die ganze Fock, dein Logo auf Großsegel und Gennaker, deine Worte auf dem Banner, das ein Flugzeug über die Bahn zieht, in allen Revieren oder in denen, die du wählst.', 'Ücretsiz 3D yelken yarışı oyunu Up and down’a sponsor ol: pankartın bütün flokta, logon ana yelkende ve balonda, sözlerin parkurun üstünde bir uçağın çektiği pankartta, tüm yarış alanlarında ya da seçtiklerinde.'],
 });
 
 // where a sponsor writes: the racing contact rycsailing.com/contacts lists
 const CONTACT = { handle: '@fullcrimp', url: 'https://t.me/fullcrimp' };
-// the Laser and the Optimist sail with no jib (public/game/classes.js jib: false), so they carry no logo
+// the Laser and the Optimist sail with no jib (public/game/classes.js jib: false), so they carry no jib's ad; nor they and
+// the AC75 a gennaker or spinnaker (kite: false), so no logo there
 const WITH_JIB = YACHT_IDS.filter((y) => y !== 'laser' && y !== 'optimist').length;
+const WITH_KITE = YACHT_IDS.filter((y) => y !== 'laser' && y !== 'optimist' && y !== 'ac75').length;
+// where each ad is in its picture: left, top, width and height in % (the words on the jib, the logo on the main, the
+// nearest yacht's spinnaker)
+const MARKS: Record<'jib' | 'main' | 'kite', [number, number, number, number]> = {
+  jib: [51, 21, 16, 57], main: [46, 39, 17, 23], kite: [86, 20, 9.5, 38],
+};
 
-// A picture of the game with the ad's place marked on it. mark: left, top, width and height, in % of the picture.
-function Shot({ src, alt, tag, mark, sizes, priority }: { src: string; alt: string; tag: string; mark: [number, number, number, number]; sizes: string; priority?: boolean }) {
-  const [left, top, width, height] = mark;
+// A picture of the game, with the ad's place marked on it (mark: left, top, width and height, in % of the picture), or
+// with none where the whole picture is the ad
+function Shot({ src, alt, tag, mark, sizes, priority }: { src: string; alt: string; tag?: string; mark?: [number, number, number, number]; sizes: string; priority?: boolean }) {
   return (
     <figure className="sp-shot">
       <Image src={src} width={1600} height={1000} sizes={sizes} alt={alt} priority={priority} />
-      <span className="sp-mark" style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` }} aria-hidden="true"><span className="sp-tag">{tag}</span></span>
+      {mark && <span className="sp-mark" style={{ left: `${mark[0]}%`, top: `${mark[1]}%`, width: `${mark[2]}%`, height: `${mark[3]}%` }} aria-hidden="true"><span className="sp-tag">{tag}</span></span>}
     </figure>
   );
 }
@@ -40,8 +47,9 @@ function Spec({ rows }: { rows: [label: string, value: string][] }) {
   return <dl className="sp-spec">{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>;
 }
 
-// What can be sponsored: the two places the game already has (the jib's logo and the plane's banner, both set on /admin
-// and served by /sponsor), the two together, what reaches people away from the race (a post on the game's channel, a film
+// What can be sponsored: the places the game already has (the jib's banner, the mainsail's and the gennaker's logo, set
+// on /admin/sails for every venue or a set of them, and the plane's banner, on /admin/ads, all served by /sponsor), all of
+// them together, what reaches people away from the race (a post on the game's channel, a film
 // of a race) and what would have to be built first. No prices: they're agreed by message.
 export default async function Sponsorship({ params }: LangParams) {
   const { lang, t } = await getT(params);
@@ -55,7 +63,8 @@ export default async function Sponsorship({ params }: LangParams) {
     [t('Your colours on players’ boats', 'Ваши цвета на яхтах игроков', 'Tus colores en los barcos de los jugadores', 'Deine Farben auf den Booten der Spieler', 'Renklerin oyuncuların teknelerinde'), t('A ready colour scheme in your brand’s colours that players can choose for their own boat.', 'Готовая схема в цветах вашего бренда, которую игроки смогут выбрать для своей яхты.', 'Un esquema de color listo con los colores de tu marca que los jugadores pueden elegir para su propio barco.', 'Ein fertiges Farbschema in den Farben deiner Marke, das Spieler für ihr eigenes Boot wählen können.', 'Markanın renklerinde, oyuncuların kendi tekneleri için seçebileceği hazır bir renk düzeni.')],
     [t('Partner of the guides', 'Партнёр пособий', 'Socio de las guías', 'Partner der Anleitungen', 'Rehberlerin ortağı'), t(`Your name on the game’s ${GUIDES.length} guides to racing, for a sailing school or a chandlery.`, `Ваше имя на ${GUIDES.length} пособиях игры по гонкам: для парусной школы или магазина яхтенного снаряжения.`, `Tu nombre en las ${GUIDES.length} guías de regatas del juego, para una escuela de vela o una tienda náutica.`, `Dein Name auf den ${GUIDES.length} Regatta-Anleitungen des Spiels, für eine Segelschule oder einen Yachtausrüster.`, `Oyunun ${GUIDES.length} yarış rehberinde adın, bir yelken okulu ya da denizcilik malzemecisi için.`)],
   ];
-  const logo = t('Your logo', 'Ваш логотип', 'Tu logo', 'Dein Logo', 'Logon'), words = t('Your words', 'Ваш текст', 'Tus palabras', 'Deine Worte', 'Sözlerin');
+  const logo = t('Your logo', 'Ваш логотип', 'Tu logo', 'Dein Logo', 'Logon'), words = t('Your words', 'Ваш текст', 'Tus palabras', 'Deine Worte', 'Sözlerin'), ad = t('Your banner', 'Ваш баннер', 'Tu pancarta', 'Dein Banner', 'Pankartın');
+  const artwork: [string, string] = [t('Artwork', 'Материалы', 'Material gráfico', 'Artwork', 'Tasarım'), t('PNG, JPEG, WebP or SVG, up to 2 MB', 'PNG, JPEG, WebP или SVG, до 2 МБ', 'PNG, JPEG, WebP o SVG, hasta 2 MB', 'PNG, JPEG, WebP oder SVG, bis 2 MB', 'PNG, JPEG, WebP ya da SVG, en çok 2 MB')];
   const ask = t('Ask about sponsoring', 'Обсудить спонсорство', 'Pregunta por el patrocinio', 'Zum Sponsoring anfragen', 'Sponsorluk hakkında sor');
   const facts: [string, string][] = [
     [String(VENUES.length), t('Venues', 'Акваторий', 'Sedes', 'Reviere', 'Yarış alanları')],
@@ -85,8 +94,8 @@ export default async function Sponsorship({ params }: LangParams) {
             <a className="pill" href="#options"><span className="btn-t">{t('See the options', 'Посмотреть варианты', 'Ver las opciones', 'Die Optionen ansehen', 'Seçenekleri gör')}</span></a>
           </div>
         </div>
-        <Shot src="/images/sp-jib-v2.jpg" tag={logo} mark={[53.7, 64.7, 9.6, 10.3]} priority sizes="(min-width: 1100px) 680px, 100vw"
-          alt={t('A yacht racing in the game with a logo on her jib', 'Яхта в гонке с логотипом на стакселе', 'Un yate regateando en el juego con un logo en el foque', 'Eine Yacht, die im Spiel segelt, mit einem Logo auf der Fock', 'Flokunda logo olan, oyunda yarışan bir yat')} />
+        <Shot src="/images/sp-flock-v3.jpg" priority sizes="(min-width: 1100px) 680px, 100vw"
+          alt={t('Seven J Class yachts in the game running at the camera off Fethiye, under spinnakers in a sponsor’s colour and logo', 'Семь яхт класса J в игре идут прямо на камеру у Фетхие под спинакерами в цвете и с логотипом спонсора', 'Siete yates de la clase J en el juego navegando hacia la cámara frente a Fethiye, con spinnakers del color y el logo de un patrocinador', 'Sieben Yachten der J-Klasse, die im Spiel vor Fethiye auf die Kamera zu segeln, unter Spinnakern in Farbe und Logo eines Sponsors', 'Oyunda Fethiye açıklarında kameraya doğru gelen, bir sponsorun rengi ve logosuyla balonlar altındaki yedi J Class yatı')} />
         <dl className="sp-facts">
           {facts.map(([n, label]) => <div key={label}><dt>{label}</dt><dd>{n}</dd></div>)}
         </dl>
@@ -96,22 +105,52 @@ export default async function Sponsorship({ params }: LangParams) {
         <div className="hm-sec-t">
           <span className="kicker">{t('Available now', 'Доступно сейчас', 'Disponible ahora', 'Jetzt verfügbar', 'Şimdi mevcut')}</span>
           <h2 className="hm-h2" id="sp-now">{t('Choose your place on the course', 'Выберите место на дистанции', 'Elige tu lugar en el recorrido', 'Wähle deinen Platz auf der Bahn', 'Parkurdaki yerini seç')}</h2>
-          <p className="hm-text">{t('Each place goes to one sponsor at a time. The price depends on the option and how long it runs, so ask us for a quote.',
-            'Каждое место достаётся одному спонсору на время размещения. Цена зависит от варианта и срока: напишите нам, и мы её назовём.', 'Cada lugar va a un solo patrocinador a la vez. El precio depende de la opción y de cuánto dure, así que pídenos un presupuesto.', 'Jeder Platz geht jeweils an einen Sponsor. Der Preis hängt von der Option und der Laufzeit ab, frag uns also nach einem Angebot.', 'Her yer bir seferde bir sponsora gider. Fiyat seçeneğe ve ne kadar sürdüğüne bağlıdır, bu yüzden bizden teklif iste.')}</p>
+          <p className="hm-text">{t(`Each place goes to one sponsor at a time, at all of the game’s ${VENUES.length} venues or at the ones you choose: a country’s, say, or a single venue. The price depends on the option, the venues and how long it runs, so ask us for a quote.`,
+            `Каждое место достаётся одному спонсору на время размещения — на всех ${VENUES.length} акваториях игры или на выбранных вами: например, в одной стране или на одной акватории. Цена зависит от варианта, акваторий и срока: напишите нам, и мы её назовём.`, `Cada lugar va a un solo patrocinador a la vez, en las ${VENUES.length} sedes del juego o en las que elijas: las de un país, por ejemplo, o una sola sede. El precio depende de la opción, las sedes y cuánto dure, así que pídenos un presupuesto.`, `Jeder Platz geht jeweils an einen Sponsor, in allen ${VENUES.length} Revieren des Spiels oder in denen, die du wählst: etwa denen eines Landes oder einem einzigen Revier. Der Preis hängt von der Option, den Revieren und der Laufzeit ab, frag uns also nach einem Angebot.`, `Her yer bir seferde bir sponsora gider; oyunun ${VENUES.length} yarış alanının hepsinde ya da seçtiklerinde: örneğin bir ülkeninkilerde ya da tek bir alanda. Fiyat seçeneğe, alanlara ve ne kadar sürdüğüne bağlıdır, bu yüzden bizden teklif iste.`)}</p>
         </div>
         <div className="sp-opts">
           <article className="sp-opt">
-            <Shot src="/images/sp-jib-close-v2.jpg" tag={logo} mark={[47.3, 53.2, 26.6, 23.2]} sizes="(min-width: 900px) 580px, 100vw"
-              alt={t('The logo on the jib, marked', 'Логотип на стакселе, место отмечено', 'El logo en el foque, señalado', 'Das Logo auf der Fock, markiert', 'Flokta logo, işaretli')} />
+            <Shot src="/images/sp-jib-v3.jpg" tag={ad} mark={MARKS.jib} sizes="(min-width: 900px) 580px, 100vw"
+              alt={t('A banner over the whole jib, reading along the luff, marked', 'Баннер на весь стаксель вдоль передней шкаторины, место отмечено', 'Una pancarta en todo el foque, a lo largo del grátil, señalada', 'Ein Banner über die ganze Fock, am Vorliek entlang, markiert', 'Bütün flokta, orsa yakası boyunca pankart, işaretli')} />
             <div className="sp-opt-t">
-              <h3 className="hm-h3">{t('Logo on the jib', 'Логотип на стакселе', 'Logo en el foque', 'Logo auf der Fock', 'Flokta logo')}</h3>
-              <p className="hm-text">{t('Your logo on the jib of every boat in the race, the player’s and the computer’s, from the start to the finish.',
-                'Ваш логотип на стакселе каждой лодки в гонке, у игрока и у компьютерных соперников, от старта до финиша.', 'Tu logo en el foque de cada barco de la regata, el del jugador y los del ordenador, desde la salida hasta la llegada.', 'Dein Logo auf der Fock jedes Bootes in der Regatta, des Spielers und der Computerboote, vom Start bis zum Ziel.', 'Logon, yarıştaki her teknenin flokunda, oyuncunun ve bilgisayarın, startan bitişe kadar.')}</p>
+              <h3 className="hm-h3">{t('Banner on the jib', 'Баннер на стакселе', 'Pancarta en el foque', 'Banner auf der Fock', 'Flokta pankart')}</h3>
+              <p className="hm-text">{t('Your banner over the whole jib of every boat in the race, the player’s and the computer’s: as large as the sail takes it, reading along the luff, and the jib dyed your banner’s own colour.',
+                'Ваш баннер на весь стаксель каждой лодки в гонке, у игрока и у компьютерных соперников: так крупно, как позволяет парус, вдоль передней шкаторины, а сам стаксель — в цвете вашего баннера.', 'Tu pancarta en todo el foque de cada barco de la regata, el del jugador y los del ordenador: tan grande como lo admite la vela, a lo largo del grátil, y el foque teñido del color de tu pancarta.', 'Dein Banner über die ganze Fock jedes Bootes in der Regatta, des Spielers und der Computerboote: so groß, wie das Segel es zulässt, am Vorliek entlang, und die Fock in der Farbe deines Banners.', 'Pankartın yarıştaki her teknenin, oyuncunun ve bilgisayarın, bütün flokunda: yelkenin aldığı kadar büyük, orsa yakası boyunca, flok da pankartının renginde.')}</p>
               <Spec rows={[
-                [t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar'), t(`The ${WITH_JIB} of ${YACHT_IDS.length} classes that carry a jib`, `${WITH_JIB} из ${YACHT_IDS.length} классов, у которых есть стаксель`, `Las ${WITH_JIB} de ${YACHT_IDS.length} clases que llevan foque`, `${WITH_JIB} von ${YACHT_IDS.length} Klassen führen eine Fock`, `Flok taşıyan ${YACHT_IDS.length} sınıftan ${WITH_JIB} tanesi`)],
-                [t('Size on the sail', 'Размер на парусе', 'Tamaño en la vela', 'Größe auf dem Segel', 'Yelkendeki boyut'), t('Up to 2 × 1 m', 'До 2 × 1 м', 'Hasta 2 × 1 m', 'Bis zu 2 × 1 m', 'En çok 2 × 1 m')],
-                [t('Artwork', 'Материалы', 'Material gráfico', 'Artwork', 'Tasarım'), t('PNG, JPEG, WebP or SVG, up to 2 MB', 'PNG, JPEG, WebP или SVG, до 2 МБ', 'PNG, JPEG, WebP o SVG, hasta 2 MB', 'PNG, JPEG, WebP oder SVG, bis 2 MB', 'PNG, JPEG, WebP ya da SVG, en çok 2 MB')],
-                [t('Colours', 'Цвета', 'Colores', 'Farben', 'Renkler'), t('Must read on both light and dark sails', 'Логотип должен читаться на светлых и тёмных парусах', 'Debe leerse tanto en velas claras como oscuras', 'Muss auf hellen und dunklen Segeln lesbar sein', 'Hem açık hem koyu yelkende okunmalı')],
+                [t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar'), t(`The ${WITH_JIB} of ${YACHT_IDS.length} classes that carry a jib`, `${WITH_JIB} из ${YACHT_IDS.length} классов, у которых есть стаксель`, `Las ${WITH_JIB} de ${YACHT_IDS.length} clases que llevan foque`, `${WITH_JIB} von ${YACHT_IDS.length} Klassen führen eine Fock`, `Flok taşıyan ${YACHT_IDS.length} sınıftan ${WITH_JIB}`)],
+                [t('Size on the sail', 'Размер на парусе', 'Tamaño en la vela', 'Größe auf dem Segel', 'Yelkendeki boyut'), t('The whole jib, along the luff', 'Весь стаксель, вдоль передней шкаторины', 'Todo el foque, a lo largo del grátil', 'Die ganze Fock, am Vorliek entlang', 'Bütün flok, orsa yakası boyunca')],
+                artwork,
+                [t('Colours', 'Цвета', 'Colores', 'Farben', 'Renkler'), t('A wide banner on a colour of its own: the jib takes that colour. Or a colour of yours for every jib', 'Широкий баннер на своём цвете: стаксель принимает этот цвет. Или ваш цвет для всех стакселей', 'Una pancarta ancha sobre un color propio: el foque toma ese color. O un color tuyo para todos los foques', 'Ein breites Banner auf eigener Farbe: Die Fock nimmt diese Farbe an. Oder eine Farbe von dir für alle Focks', 'Kendi renginde geniş bir pankart: flok o rengi alır. Ya da bütün floklar için senin bir rengin')],
+              ]} />
+            </div>
+          </article>
+          <article className="sp-opt">
+            <Shot src="/images/sp-main-v3.jpg" tag={logo} mark={MARKS.main} sizes="(min-width: 900px) 580px, 100vw"
+              alt={t('A logo on the mainsail, marked', 'Логотип на гроте, место отмечено', 'Un logo en la mayor, señalado', 'Ein Logo auf dem Großsegel, markiert', 'Ana yelkende logo, işaretli')} />
+            <div className="sp-opt-t">
+              <h3 className="hm-h3">{t('Logo on the mainsail', 'Логотип на гроте', 'Logo en la mayor', 'Logo auf dem Großsegel', 'Ana yelkende logo')}</h3>
+              <p className="hm-text">{t('Your logo on the mainsail of every boat in the race, above her sail number, on both sides. A logo of one colour takes the colour of each boat’s number, so it reads on light and dark sails alike.',
+                'Ваш логотип на гроте каждой лодки в гонке, над номером на парусе, с обеих сторон. Одноцветный логотип принимает цвет номера каждой яхты, поэтому читается и на светлых, и на тёмных парусах.', 'Tu logo en la mayor de cada barco de la regata, sobre su número de vela, por ambas caras. Un logo de un solo color toma el color del número de cada barco, así se lee igual en velas claras y oscuras.', 'Dein Logo auf dem Großsegel jedes Bootes in der Regatta, über ihrer Segelnummer, auf beiden Seiten. Ein einfarbiges Logo nimmt die Farbe der Nummer jedes Bootes an, so liest es sich auf hellen wie auf dunklen Segeln.', 'Logon yarıştaki her teknenin ana yelkeninde, yelken numarasının üstünde, iki yüzde de. Tek renkli bir logo her teknenin numarasının rengini alır, böylece açık ve koyu yelkende aynı okunur.')}</p>
+              <Spec rows={[
+                [t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar'), t(`All ${YACHT_IDS.length} classes`, `Все ${YACHT_IDS.length} классов`, `Las ${YACHT_IDS.length} clases`, `Alle ${YACHT_IDS.length} Klassen`, `${YACHT_IDS.length} sınıfın hepsi`)],
+                [t('Size on the sail', 'Размер на парусе', 'Tamaño en la vela', 'Größe auf dem Segel', 'Yelkendeki boyut'), t('As large as the cloth above the boom allows', 'Так крупно, как позволяет парус над гиком', 'Tan grande como lo permite la tela sobre la botavara', 'So groß, wie das Tuch über dem Baum es zulässt', 'Bumbanın üstündeki kumaşın izin verdiği kadar büyük')],
+                artwork,
+                [t('Colours', 'Цвета', 'Colores', 'Farben', 'Renkler'), t('One colour on a transparent background reads best', 'Лучше всего читается одноцветный на прозрачном фоне', 'Un solo color sobre fondo transparente se lee mejor', 'Einfarbig auf transparentem Hintergrund liest sich am besten', 'Saydam arka planda tek renk en iyi okunur')],
+              ]} />
+            </div>
+          </article>
+          <article className="sp-opt">
+            <Shot src="/images/sp-fleet-v3.jpg" tag={logo} mark={MARKS.kite} sizes="(min-width: 900px) 580px, 100vw"
+              alt={t('A fleet of J Class yachts under spinnakers in a sponsor’s colour with a large logo, the nearest marked', 'Флот яхт класса J под спинакерами в цвете спонсора с большим логотипом, ближний отмечен', 'Una flota de yates de la clase J con spinnakers del color de un patrocinador con un logo grande, el más cercano señalado', 'Eine Flotte von Yachten der J-Klasse unter Spinnakern in der Farbe eines Sponsors mit einem großen Logo, der vorderste markiert', 'Bir sponsorun renginde, büyük logolu balonlar altında J Class yatlarından bir filo, en yakındaki işaretli')} />
+            <div className="sp-opt-t">
+              <h3 className="hm-h3">{t('Gennaker in your colour', 'Генакер в вашем цвете', 'Gennaker de tu color', 'Gennaker in deiner Farbe', 'Senin renginde balon')}</h3>
+              <p className="hm-text">{t('Every gennaker and spinnaker in the race in your colour with your logo large across it, when the boats bear away downwind: the biggest sail on the course.',
+                'Каждый генакер и спинакер в гонке — в вашем цвете и с крупным логотипом, когда лодки уваливаются на полные курсы: самый большой парус на дистанции.', 'Cada gennaker y spinnaker de la regata de tu color con tu logo en grande, cuando los barcos arriban con viento de popa: la vela más grande del recorrido.', 'Jeder Gennaker und Spinnaker in der Regatta in deiner Farbe mit deinem Logo groß darauf, wenn die Boote vor dem Wind abfallen: das größte Segel auf der Bahn.', 'Tekneler pupaya döndüğünde yarıştaki her balon senin renginde ve üstünde büyük logonla: parkurdaki en büyük yelken.')}</p>
+              <Spec rows={[
+                [t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar'), t(`The ${WITH_KITE} of ${YACHT_IDS.length} classes that carry one`, `${WITH_KITE} из ${YACHT_IDS.length} классов, у которых он есть`, `Las ${WITH_KITE} de ${YACHT_IDS.length} clases que lo llevan`, `${WITH_KITE} von ${YACHT_IDS.length} Klassen führen einen`, `Taşıyan ${YACHT_IDS.length} sınıftan ${WITH_KITE}`)],
+                [t('Size on the sail', 'Размер на парусе', 'Tamaño en la vela', 'Größe auf dem Segel', 'Yelkendeki boyut'), t('About three quarters of its width', 'Около трёх четвертей его ширины', 'Unas tres cuartas partes de su ancho', 'Etwa drei Viertel seiner Breite', 'Genişliğinin dörtte üçü kadar')],
+                artwork,
+                [t('Colours', 'Цвета', 'Colores', 'Farben', 'Renkler'), t('One colour of yours for the whole sail', 'Один ваш цвет на весь парус', 'Un color tuyo para toda la vela', 'Eine Farbe von dir für das ganze Segel', 'Bütün yelken için senin bir rengin')],
               ]} />
             </div>
           </article>
@@ -129,14 +168,29 @@ export default async function Sponsorship({ params }: LangParams) {
               ]} />
             </div>
           </article>
+          <article className="sp-opt sp-opt-wide">
+            <Shot src="/images/sp-flock-side-v3.jpg" sizes="(min-width: 900px) 640px, 100vw"
+              alt={t('J Class yachts running off Fethiye under spinnakers in one sponsor’s colour and logo, seen off their bows', 'Яхты класса J идут у Фетхие под спинакерами в цвете и с логотипом одного спонсора, вид с носа', 'Yates de la clase J navegando frente a Fethiye con spinnakers del color y el logo de un patrocinador, vistos desde proa', 'Yachten der J-Klasse vor Fethiye unter Spinnakern in Farbe und Logo eines Sponsors, von vorn gesehen', 'Fethiye açıklarında bir sponsorun rengi ve logosuyla balonlar altında giden J Class yatları, baştan görünüş')} />
+            <div className="sp-opt-t">
+              <h3 className="hm-h3">{t('All the sails at your venues', 'Все паруса на ваших акваториях', 'Todas las velas en tus sedes', 'Alle Segel in deinen Revieren', 'Yarış alanlarında bütün yelkenler')}</h3>
+              <p className="hm-text">{t('A set of venues, a country’s coast, a region or a single bay, dressed in your brand: your banner on every jib, your logo on every mainsail, every gennaker and spinnaker in your colour with your logo, and the jibs in a colour of yours. Races there carry your sails; the other venues keep theirs.',
+                'Набор акваторий — побережье страны, регион или одна бухта — в вашем стиле: ваш баннер на каждом стакселе, логотип на каждом гроте, каждый генакер и спинакер в вашем цвете с вашим логотипом, а стаксели — в вашем цвете. Гонки там идут под вашими парусами, на остальных акваториях — свои.', 'Un conjunto de sedes, la costa de un país, una región o una sola bahía, con tu marca: tu pancarta en cada foque, tu logo en cada mayor, cada gennaker y spinnaker de tu color con tu logo, y los foques de un color tuyo. Las regatas allí llevan tus velas; las demás sedes conservan las suyas.', 'Eine Reihe von Revieren, die Küste eines Landes, eine Region oder eine einzelne Bucht, in deiner Marke: dein Banner auf jeder Fock, dein Logo auf jedem Großsegel, jeder Gennaker und Spinnaker in deiner Farbe mit deinem Logo und die Focks in einer Farbe von dir. Regatten dort tragen deine Segel; die anderen Reviere behalten ihre.', 'Bir dizi yarış alanı, bir ülkenin kıyısı, bir bölge ya da tek bir koy, markanla giydirilir: her flokta pankartın, her ana yelkende logon, her balon ve spinaker senin renginde ve logonla, floklar da senin bir renginde. Oradaki yarışlar senin yelkenlerini taşır; diğer alanlar kendilerininkini korur.')}</p>
+              <Spec rows={[
+                [t('Venues', 'Акватории', 'Sedes', 'Reviere', 'Yarış alanları'), t(`Any of the ${VENUES.length}: one, a country’s or a list of your own`, `Любые из ${VENUES.length}: одна, все акватории страны или ваш список`, `Cualquiera de las ${VENUES.length}: una, las de un país o una lista tuya`, `Beliebige der ${VENUES.length}: eines, die eines Landes oder eine eigene Liste`, `${VENUES.length} alandan herhangi biri: tek bir alan, bir ülkeninkiler ya da kendi listen`)],
+                [t('Sails', 'Паруса', 'Velas', 'Segel', 'Yelkenler'), t('Jib, mainsail and gennaker: each one yours, or as at every venue', 'Стаксель, грот и генакер: каждый ваш или как на всех акваториях', 'Foque, mayor y gennaker: cada uno tuyo, o como en todas las sedes', 'Fock, Großsegel und Gennaker: jedes von dir oder wie in allen Revieren', 'Flok, ana yelken ve balon: her biri senin ya da tüm alanlardaki gibi')],
+                [t('Colours', 'Цвета', 'Colores', 'Farben', 'Renkler'), t('One of yours for every jib and one for every gennaker', 'Ваш цвет для всех стакселей и ваш — для всех генакеров', 'Uno tuyo para todos los foques y otro para todos los gennakers', 'Eine von dir für alle Focks und eine für alle Gennaker', 'Bütün floklar için bir rengin, bütün balonlar için bir rengin')],
+                artwork,
+              ]} />
+            </div>
+          </article>
         </div>
         <article className="sp-both">
           <div>
-            <h3 className="hm-h3">{t('Jib and banner together', 'Стаксель и баннер вместе', 'Foque y pancarta juntos', 'Fock und Banner zusammen', 'Flok ve pankart birlikte')}</h3>
-            <p className="hm-text">{t('You take both places, so no other sponsor appears in the race while yours runs.',
-              'Оба места за вами: пока идёт размещение, других спонсоров в гонке нет.', 'Te quedas con ambos lugares, así que ningún otro patrocinador aparece en la regata mientras dure el tuyo.', 'Du nimmst beide Plätze, also erscheint in der Regatta kein anderer Sponsor, solange deiner läuft.', 'İki yeri de alırsın, böylece seninki sürerken yarışta başka bir sponsor görünmez.')}</p>
+            <h3 className="hm-h3">{t('The sails and the banner together', 'Паруса и баннер вместе', 'Las velas y la pancarta juntas', 'Segel und Banner zusammen', 'Yelkenler ve pankart birlikte')}</h3>
+            <p className="hm-text">{t('You take every place, so no other sponsor appears in the race while yours runs.',
+              'Все места за вами: пока идёт размещение, других спонсоров в гонке нет.', 'Te quedas con todos los lugares, así que ningún otro patrocinador aparece en la regata mientras dure el tuyo.', 'Du nimmst alle Plätze, also erscheint in der Regatta kein anderer Sponsor, solange deiner läuft.', 'Bütün yerleri alırsın, böylece seninki sürerken yarışta başka bir sponsor görünmez.')}</p>
           </div>
-          <a className="pill pill-primary" href={CONTACT.url} target="_blank" rel="noopener"><span className="btn-t">{t('Ask for both', 'Узнать о пакете', 'Pide ambos', 'Beides anfragen', 'İkisini de iste')}</span><IconArrow /></a>
+          <a className="pill pill-primary" href={CONTACT.url} target="_blank" rel="noopener"><span className="btn-t">{t('Ask for all of them', 'Узнать о пакете', 'Pide todos', 'Alles anfragen', 'Hepsini iste')}</span><IconArrow /></a>
         </article>
       </section>
 

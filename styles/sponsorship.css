@@ -39,6 +39,9 @@
 .bc .sp-opt { display: flex; flex-direction: column; min-width: 0; background: var(--surface); }
 .bc .hm-band :is(.sp-opt, .rd-cells li) { background: var(--panel-2); }
 .bc .sp-opt-t { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-6); }
+/* the venue set: across the grid, its picture beside its words where there is room */
+.bc .sp-opt-wide { grid-column: 1 / -1; }
+@media (min-width: 900px) { .bc .sp-opt-wide { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; } }
 .bc .sp-spec { margin: var(--s-2) 0 0; border-top: 1px solid var(--rule); }
 .bc .sp-spec > div { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--rule-2); }
 .bc .sp-spec > div:last-child { border-bottom: 0; padding-bottom: 0; }

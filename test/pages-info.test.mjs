@@ -204,3 +204,15 @@ test('/sponsorship sends a sponsor to the racing contact', async () => {
     assert.ok(h.includes('href="#options"') && h.includes('id="options"'), `${lang}: See the options goes to the options`);
   }
 });
+
+test('/sponsorship offers every sail at the venues a sponsor chooses, with pictures of the game that exist', async () => {
+  const { existsSync } = await import('node:fs');
+  for (const lang of LANGS) {
+    const h = await html(sponsorship, lang);
+    assert.ok(h.includes('sp-opt-wide'), `${lang}: the venue set's card`);
+    for (const pic of h.match(/sp-[a-z-]+-v\d\.jpg/g) || []) assert.ok(existsSync(new URL(`../public/images/${pic}`, import.meta.url)), `${lang}: ${pic}`);
+  }
+  const en = await html(sponsorship, 'en');
+  assert.ok(en.includes('All the sails at your venues') && en.includes(`Any of the ${VENUES.length}`));
+  for (const pic of ['sp-flock-v3', 'sp-flock-side-v3', 'sp-jib-v3', 'sp-main-v3', 'sp-fleet-v3']) assert.ok(en.includes(pic), pic);
+});
