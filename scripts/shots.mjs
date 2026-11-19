@@ -51,16 +51,14 @@ const SHOTS = [
   { name: 'h-view-top-v10', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 40 } },
   { name: 'h-run-v10', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: [], clean: true, frame: { company: true }, q: 'drill=run', prep: 'P.setKite(true)', until: 'P.kite && P.kiteFill > 0.95 && !P.kiteJob', cam: { mode: 'drone', dist: 40, orbit: 'kite', droneEl: 20, orbitMax: 1.1 } },
   { name: 'h-view-helm-v10', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'helm', helmFov: 68, look: 0 } },
-  // the sponsorship page's: rig, a camera of the script's own (RIG below). Its marks are the logo's and the banner's place
+  // the sponsorship page's: rig, a camera of the script's own (RIG below). Its marks are the logo's and the banner's place.
+  // (Its pictures of the race itself, the fleet at the mark and on the run, are scripts/sponsor-shots.mjs's)
   { name: 'sp-banner-v2', w: 1600, h: 1000, dpr: 1.5, touch: false, keep: [], clean: true, rig: { pass: true, back: 85, left: 14.5, y: 3, fov: 24, pitch: 3 } },
   // the sails' ads as they are now (the admin's /admin/sails): the jib's banner over the whole sail along its luff, the
   // logo on the main, the gennaker's logo on its colour. sail: the sail whose outline is printed for the page's mark.
   // Taken with the site's /sponsor answering a set's sails (a stub, as the race films are: see the notes in its header)
   { name: 'sp-jib-v3', w: 1600, h: 1000, dpr: 1.5, touch: false, keep: [], clean: true, sail: 'jib', rig: { dist: 19, y: 3.4, camAhead: 5, ahead: 4.2, aimY: 6.2, fov: 40, wait: 55 } },
   { name: 'sp-main-v3', w: 1600, h: 1000, dpr: 1.5, touch: false, keep: [], clean: true, sail: 'main', rig: { dist: 19, y: 4, camAhead: -3, ahead: -0.5, aimY: 7.4, fov: 40, wait: 55 } },
-  // the fleet: seven J Class yachts set by the script on a broad reach with their spinnakers up, coming at the camera in
-  // an echelon seen off their windward bows, so every mainsail's face (its logo) shows beside her spinnaker (STAGE below)
-  { name: 'sp-fleet-v3', w: 1600, h: 1000, dpr: 2, touch: false, keep: [], clean: true, opts: { fleet: 7, fleetV: 3, yacht: 'jclass' }, stage: { twa: 2.25, awa: 1.75, a: 0.95, d: 400, up: 9, lat: 34, rec: 68, fov: 30, look: -75, aim: 18, ahead: 120, sail: 12, jib: 25 } },
   // a flock: seven J Class yachts at Fethiye running at the camera under their spinnakers, filling the picture (FLOCK
   // below), seen from off their bows on the mainsails' side (their logos clear of the spinnakers), on either gybe, and
   // from dead ahead (the spinnakers only); pictures to keep rather than
@@ -102,32 +100,6 @@ const RIG = (spec) => `(() => {
     requestAnimationFrame(tick);
   };
   tick(); return true;
-})()`;
-
-// A moment the race doesn't come to by itself: the race paused (the game still draws it, from the boats as they stand),
-// every yacht put on one broad reach with her gennaker up, in an echelon across the camera's view and away from it (lat,
-// rec: metres across and away a boat), ahead metres up the course from the start, and the camera off their windward bows
-// (a: radians from ahead, d metres off, up metres high), looking along them (look: metres across from the middle, aim: high). Each is turned a little so the camera sees her from the same
-// angle as the one in the middle, her boom on the gennaker's side and her main sheeted in (sail, jib: degrees), its face to
-// the camera beside the gennaker rather than behind it
-const STAGE = (spec) => `(() => {
-  const W = window.__rg.world, R = window.__rg.race, B = R.boats, C = W.camera, s = ${JSON.stringify(spec)};
-  document.getElementById('pauseBtn').click();
-  for (const g of W.wild.gulls) Object.defineProperty(g.g, 'visible', { get: () => false, set() {} });
-  W.scene.traverse((o) => { if (o.isMesh && o.geometry.type === 'ConeGeometry' && o.material.color?.getHexString() === 'ffd400') o.material.visible = false; });
-  W.showGuides = false; W.mode = 'look'; C.fov = s.fov; C.updateProjectionMatrix();
-  const h = B[0].wdir - 2.44, f = [Math.sin(h), -Math.cos(h)], r = [Math.cos(h), Math.sin(h)];
-  const mx = B.reduce((t, b) => t + b.x, 0) / B.length, mz = B.reduce((t, b) => t + b.z, 0) / B.length; // the fleet on the line, before the gun
-  const M = [mx + f[0] * s.ahead, mz + f[1] * s.ahead], c = [f[0] * Math.cos(s.a) + r[0] * Math.sin(s.a), f[1] * Math.cos(s.a) + r[1] * Math.sin(s.a)], p = [-c[1], c[0]];
-  B.forEach((b, i) => {
-    const k = i - (B.length - 1) / 2;
-    Object.assign(b, { x: M[0] + p[0] * k * s.lat - c[0] * k * s.rec, z: M[1] + p[1] * k * s.lat - c[1] * k * s.rec, h, twa: s.twa, awa: s.awa, aws: 10, tws: 12, v: 7.5, heel: 6, luff: 0,
-      kite: true, kiteFill: 1, kiteJob: null, kiteCollapse: 0, boom: 1, sail: s.sail, jibSail: s.jib });
-  });
-  C.position.set(M[0] + c[0] * s.d, s.up, M[1] + c[1] * s.d); C.lookAt(M[0] + p[0] * s.look, s.aim, M[1] + p[1] * s.look);
-  const bearing = (x, z) => Math.atan2(C.position.x - x, z - C.position.z);
-  for (const b of B) b.h = h + bearing(b.x, b.z) - bearing(M[0], M[1]);
-  return true;
 })()`;
 
 // A flock coming at the camera: the race paused, every yacht running on one course (course: radians off the wind) with
@@ -276,7 +248,6 @@ async function shoot({ send }, s) {
     for (let i = 0; i < 180 && !up; i++) { await sleep(500); up = await js(`!!window.__rigReady`); }
     if (!up) console.log(`${s.name}: the moment never came, taken as it stands`);
   }
-  if (s.stage) { await js(STAGE(s.stage)); await sleep(1500); }
   // (FLOCK='{"a":-1}' in the environment: to try a view)
   if (s.flock) { await js(FLOCK({ ...s.flock, ...JSON.parse(process.env.FLOCK || '{}') })); await sleep(1500); await js(`for (const w of window.__rg.world.wakes) w.trail = []`); }
   await sleep(s.cam ? 2500 : 1500); // the call's own entrance (or the camera) settled, while the frames are still quick
@@ -349,7 +320,7 @@ async function shoot({ send }, s) {
       const d = (v) => +v.toFixed(1); return 'mark ' + JSON.stringify([d((x0 + 1) * 50), d((1 - y1) * 50), d((x1 - x0) * 50), d((y1 - y0) * 50)]);
     })()`);
   }
-  if (s.sail && !s.stage) { // where the sail came out, for the page's mark: the outline of its front face, in % of the picture
+  if (s.sail) { // where the sail came out, for the page's mark: the outline of its front face, in % of the picture
     rects = await js(`(() => {
       const W = window.__rg.world, R = window.__rg.race, C = W.camera, V = W.boatViews[R.boats.indexOf(R.player)], m = V[${JSON.stringify(s.sail)}].children[0];
       m.updateMatrixWorld(true); const A = m.geometry.attributes.position, p = C.position.clone(); let x0 = 9, x1 = -9, y0 = 9, y1 = -9;

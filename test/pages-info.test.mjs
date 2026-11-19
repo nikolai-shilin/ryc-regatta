@@ -214,5 +214,5 @@ test('/sponsorship offers every sail at the venues a sponsor chooses, with pictu
   }
   const en = await html(sponsorship, 'en');
   assert.ok(en.includes('All the sails at your venues') && en.includes(`Any of the ${VENUES.length}`));
-  for (const pic of ['sp-flock-v3', 'sp-flock-side-v4', 'sp-jib-v3', 'sp-main-v3', 'sp-fleet-v3']) assert.ok(en.includes(pic), pic);
+  for (const pic of ['sp-pack-v1', 'sp-run-v1', 'sp-jib-v3', 'sp-main-v3', 'sp-kite-v1']) assert.ok(en.includes(pic), pic);
 });

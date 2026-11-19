@@ -26,10 +26,10 @@ const CONTACT = { handle: '@fullcrimp', url: 'https://t.me/fullcrimp' };
 // the AC75 a gennaker or spinnaker (kite: false), so no logo there
 const WITH_JIB = YACHT_IDS.filter((y) => y !== 'laser' && y !== 'optimist').length;
 const WITH_KITE = YACHT_IDS.filter((y) => y !== 'laser' && y !== 'optimist' && y !== 'ac75').length;
-// where each ad is in its picture: left, top, width and height in % (the words on the jib, the logo on the main, the
-// nearest yacht's spinnaker)
+// where each ad is in its picture: left, top, width and height in % (the words on the jib, the logo on the main, her
+// gennaker)
 const MARKS: Record<'jib' | 'main' | 'kite', [number, number, number, number]> = {
-  jib: [51, 21, 16, 57], main: [46, 39, 17, 23], kite: [86, 20, 9.5, 38],
+  jib: [51, 21, 16, 57], main: [46, 39, 17, 23], kite: [50.1, 20.9, 24.6, 67.2],
 };
 
 // A picture of the game, with the ad's place marked on it (mark: left, top, width and height, in % of the picture), or
@@ -94,8 +94,8 @@ export default async function Sponsorship({ params }: LangParams) {
             <a className="pill" href="#options"><span className="btn-t">{t('See the options', 'Посмотреть варианты', 'Ver las opciones', 'Die Optionen ansehen', 'Seçenekleri gör')}</span></a>
           </div>
         </div>
-        <Shot src="/images/sp-flock-v3.jpg" priority sizes="(min-width: 1100px) 680px, 100vw"
-          alt={t('Seven J Class yachts in the game running at the camera off Fethiye, under spinnakers in a sponsor’s colour and logo', 'Семь яхт класса J в игре идут прямо на камеру у Фетхие под спинакерами в цвете и с логотипом спонсора', 'Siete yates de la clase J en el juego navegando hacia la cámara frente a Fethiye, con spinnakers del color y el logo de un patrocinador', 'Sieben Yachten der J-Klasse, die im Spiel vor Fethiye auf die Kamera zu segeln, unter Spinnakern in Farbe und Logo eines Sponsors', 'Oyunda Fethiye açıklarında kameraya doğru gelen, bir sponsorun rengi ve logosuyla balonlar altındaki yedi J Class yatı')} />
+        <Shot src="/images/sp-pack-v1.jpg" priority sizes="(min-width: 1100px) 680px, 100vw"
+          alt={t('A race in the game at Göcek: at the windward mark one yacht bears away under her red gennaker across the bow of another still beating up, her crew hiking, with the jib’s banner and the logo on the mainsails', 'Гонка в игре у Гёджека: у верхнего знака одна яхта уваливается под красным генакером прямо перед носом другой, которая ещё идёт в лавировку, экипаж на борту; баннер на стакселе и логотип на гротах', 'Una regata en el juego en Göcek: en la baliza de barlovento un yate arriba bajo su gennaker rojo por la proa de otro que aún ciñe con la tripulación sacando el cuerpo, con la pancarta del foque y el logo en las mayores', 'Eine Regatta im Spiel vor Göcek: an der Luvtonne fällt eine Yacht unter ihrem roten Gennaker vor dem Bug einer anderen ab, die noch kreuzt, die Crew im Ausreiten, mit dem Banner auf der Fock und dem Logo auf den Großsegeln', 'Oyunda Göcek’te bir yarış: rüzgâr üstü şamandırasında bir yat kırmızı balonuyla, mürettebatı küpeştede hâlâ orsada giden başka bir yatın pruvasından geçerek kırıyor; flokta pankart, ana yelkenlerde logo')} />
         <dl className="sp-facts">
           {facts.map(([n, label]) => <div key={label}><dt>{label}</dt><dd>{n}</dd></div>)}
         </dl>
@@ -140,8 +140,8 @@ export default async function Sponsorship({ params }: LangParams) {
             </div>
           </article>
           <article className="sp-opt">
-            <Shot src="/images/sp-fleet-v3.jpg" tag={logo} mark={MARKS.kite} sizes="(min-width: 900px) 580px, 100vw"
-              alt={t('A fleet of J Class yachts under spinnakers in a sponsor’s colour with a large logo, the nearest marked', 'Флот яхт класса J под спинакерами в цвете спонсора с большим логотипом, ближний отмечен', 'Una flota de yates de la clase J con spinnakers del color de un patrocinador con un logo grande, el más cercano señalado', 'Eine Flotte von Yachten der J-Klasse unter Spinnakern in der Farbe eines Sponsors mit einem großen Logo, der vorderste markiert', 'Bir sponsorun renginde, büyük logolu balonlar altında J Class yatlarından bir filo, en yakındaki işaretli')} />
+            <Shot src="/images/sp-kite-v1.jpg" tag={logo} mark={MARKS.kite} sizes="(min-width: 900px) 580px, 100vw"
+              alt={t('A yacht running down the course under a gennaker in a sponsor’s colour with a large logo, marked', 'Яхта идёт по дистанции фордевиндом под генакером в цвете спонсора с большим логотипом, место отмечено', 'Un yate navegando en popa por el recorrido con un gennaker del color de un patrocinador y un logo grande, señalado', 'Eine Yacht vor dem Wind auf der Bahn unter einem Gennaker in der Farbe eines Sponsors mit einem großen Logo, markiert', 'Parkurda pupada, bir sponsorun renginde büyük logolu balonla giden bir yat, işaretli')} />
             <div className="sp-opt-t">
               <h3 className="hm-h3">{t('Gennaker in your colour', 'Генакер в вашем цвете', 'Gennaker de tu color', 'Gennaker in deiner Farbe', 'Senin renginde balon')}</h3>
               <p className="hm-text">{t('Every gennaker and spinnaker in the race in your colour with your logo large across it, when the boats bear away downwind: the biggest sail on the course.',
@@ -169,8 +169,8 @@ export default async function Sponsorship({ params }: LangParams) {
             </div>
           </article>
           <article className="sp-opt sp-opt-wide">
-            <Shot src="/images/sp-flock-side-v4.jpg" sizes="(min-width: 900px) 640px, 100vw"
-              alt={t('J Class yachts running off Fethiye under spinnakers in one sponsor’s colour and logo, the logo on every mainsail too, seen off their bows', 'Яхты класса J идут у Фетхие под спинакерами в цвете и с логотипом одного спонсора, с логотипом и на каждом гроте, вид с носа', 'Yates de la clase J navegando frente a Fethiye con spinnakers del color y el logo de un patrocinador, con el logo también en cada mayor, vistos desde proa', 'Yachten der J-Klasse vor Fethiye unter Spinnakern in Farbe und Logo eines Sponsors, das Logo auch auf jedem Großsegel, von vorn gesehen', 'Fethiye açıklarında bir sponsorun rengi ve logosuyla balonlar altında, logo her ana yelkende de, giden J Class yatları, baştan görünüş')} />
+            <Shot src="/images/sp-run-v1.jpg" sizes="(min-width: 900px) 640px, 100vw"
+              alt={t('Yachts racing down the run at Göcek under gennakers in one sponsor’s colour and logo, the logo on every mainsail too', 'Яхты в гонке у Гёджека идут фордевиндом под генакерами в цвете и с логотипом одного спонсора, с логотипом и на каждом гроте', 'Yates en regata navegando en popa en Göcek con gennakers del color y el logo de un patrocinador, con el logo también en cada mayor', 'Yachten in der Regatta vor Göcek vor dem Wind unter Gennakern in Farbe und Logo eines Sponsors, das Logo auch auf jedem Großsegel', 'Göcek’te yarışta, bir sponsorun rengi ve logosuyla balonlar altında pupada giden yatlar, logo her ana yelkende de')} />
             <div className="sp-opt-t">
               <h3 className="hm-h3">{t('All the sails at your venues', 'Все паруса на ваших акваториях', 'Todas las velas en tus sedes', 'Alle Segel in deinen Revieren', 'Yarış alanlarında bütün yelkenler')}</h3>
               <p className="hm-text">{t('A set of venues, a country’s coast, a region or a single bay, dressed in your brand: your banner on every jib, your logo on every mainsail, every gennaker and spinnaker in your colour with your logo, and the jibs in a colour of yours. Races there carry your sails; the other venues keep theirs.',
