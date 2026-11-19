@@ -286,6 +286,20 @@ test('going back to each boat’s own gennaker clears the row when nothing else 
   assert.deepEqual(sb.log, [['delete', 'regatta_settings', 'key', 'sail_colors']]);
 });
 
+test('in the sail\'s own card, the colour is a few rows: the choice, the colour and save, and what it does', async () => {
+  const sb = fakeSb();
+  globalThis.__supabase = sb;
+  const v = await mount(h(SailColorForm, { lang: 'en', slot: 'kite', current: { kite: '#ae0000' }, inline: true }));
+  assert.equal(v.$('section'), null, 'no card of its own');
+  assert.equal(v.$('.adm-dye-in [role=group], .adm-dye-in')?.getAttribute('role'), 'group');
+  assert.equal(v.$('#adm-dye-kite-k').textContent, 'Colour of the gennakers');
+  assert.match(v.$('.adm-dye-in').textContent, /this colour all over/);
+  await type(v.$('input[type=color]'), '#00ff00');
+  await click(v.$('.pill-primary'));
+  assert.deepEqual(sb.log, [['upsert', 'regatta_settings', 'sail_colors', { kite: '#00ff00' }]]);
+  assert.equal(v.$('[role=status]').textContent, 'Saved. Every boat carries it from the next race.');
+});
+
 test('colours that can’t be saved say why', async () => {
   globalThis.__supabase = fakeSb({ rowError: { message: 'Not an admin' } });
   const v = await mount(h(SailColorForm, { lang: 'en', slot: 'jib', current: { jib: 'own' } }));

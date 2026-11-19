@@ -258,6 +258,11 @@ test('/admin/ads shows the saved logos and the banner\'s words', async () => {
   assert.ok(html.includes('https://cdn.example/SECRET-MAIN.png'));
   assert.ok(html.includes('https://cdn.example/SECRET-KITE.png'));
   assert.ok(html.includes('#ABCDEF') && html.includes('#FEDCBA'), 'the saved colours shown');
+  const card = (k) => html.slice(html.indexOf(`adm adm-${k}"`), html.indexOf('</section>', html.indexOf(`adm adm-${k}"`)));
+  assert.match(card('jib'), /Colour of the jibs/, 'each sail\'s colour in its own card');
+  assert.match(card('kite'), /Colour of the gennakers/);
+  assert.doesNotMatch(card('main'), /Colour of/);
+  assert.doesNotMatch(html, /adm-dye adm-dye/, 'no card of their own');
   assert.match(html, /SECRET-BANNER/);
 });
 

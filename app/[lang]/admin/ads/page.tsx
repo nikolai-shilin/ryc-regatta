@@ -67,11 +67,11 @@ export default async function AdminAdsPage({ params, searchParams }: LangParams 
     <AdminShell {...a} page="ads">
       {a.data && <SetPicker key={`p-${set}`} lang={a.lang} set={set} sets={sets} />}
       {set && <SetEditor key={`e-${set}-${JSON.stringify(sets[set])}`} lang={a.lang} set={set} sets={sets} />}
-      {(['main', 'jib', 'kite'] as const).map((slot) => [
+      {(['main', 'jib', 'kite'] as const).map((slot) => (
         <SailAdForm key={`${set}-${slot}`} lang={a.lang} slot={slot} set={set} sets={sets}
-          current={set ? sets[set][slot] ?? null : a.data?.[slot] ?? null} inherited={set ? a.data?.[slot] ?? null : null} />,
-        slot !== 'main' && <SailColorForm key={`${set}-${slot}-c`} lang={a.lang} slot={slot} set={set} sets={sets} current={a.data?.colors ?? null} />,
-      ])}
+          current={set ? sets[set][slot] ?? null : a.data?.[slot] ?? null} inherited={set ? a.data?.[slot] ?? null : null}
+          extra={slot !== 'main' && <SailColorForm lang={a.lang} slot={slot} set={set} sets={sets} current={a.data?.colors ?? null} inline />} />
+      ))}
       {!set && <BannerForm lang={a.lang} current={a.data?.banner ?? null} />}
     </AdminShell>
   );

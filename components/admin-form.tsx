@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { pick as inLang, tx, type Lang } from '@/lib/lang';
 import { VENUES } from '@/lib/venues';
@@ -36,8 +36,8 @@ const TYPES: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg',
 const SLOTS = { jib: { key: 'jib_ad', dir: 'jib' }, main: { key: 'main_logo', dir: 'main' }, kite: { key: 'kite_logo', dir: 'kite' } } as const;
 
 // set: a set's own picture (from `sets`, the row as the page read it), shown over every venue's (`inherited`) until it
-// has one; none, every venue's
-export function SailAdForm({ lang, slot, current, set = null, sets = {}, inherited = null }: { lang: Lang; slot: keyof typeof SLOTS; current: Pic | null; set?: string | null; sets?: SetMap; inherited?: Pic | null }) {
+// has one; none, every venue's. extra: more of the same sail in its card (its colour, SailColorForm inline)
+export function SailAdForm({ lang, slot, current, set = null, sets = {}, inherited = null, extra = null }: { lang: Lang; slot: keyof typeof SLOTS; current: Pic | null; set?: string | null; sets?: SetMap; inherited?: Pic | null; extra?: ReactNode }) {
   const t = tx(lang);
   const { key: KEY, dir } = SLOTS[slot];
   const words = slot === 'main' ? {
@@ -130,16 +130,15 @@ export function SailAdForm({ lang, slot, current, set = null, sets = {}, inherit
         <p className="hint">{words.hint}</p>
       </div>
       <div className="set-sec">
-        <div className="srow">
-          <span className="srow-k">{t('Picture', 'Картинка', 'Imagen', 'Bild', 'Resim')}</span>
+        <span className="srow-k adm-pic-k">{t('Picture', 'Картинка', 'Imagen', 'Bild', 'Resim')}</span>
+        <div className="btn-row adm-go adm-pic">
           <input id={`adm-file-${slot}`} className="vh" type="file" accept={Object.keys(TYPES).join(',')} disabled={busy} onChange={(e) => pick(e.target.files?.[0])} />
           <label className="adm-pick" htmlFor={`adm-file-${slot}`}><IconImage /><span>{file ? file.name : t('Choose a picture', 'Выбрать картинку', 'Elige una imagen', 'Bild wählen', 'Resim seç')}</span></label>
-        </div>
-        <div className="btn-row adm-go">
           <button type="button" className="pill pill-primary pill-xs" disabled={!file || busy} onClick={save}><span className="btn-t">{busy && file ? t('Saving…', 'Сохраняю…', 'Guardando…', 'Speichern …', 'Kaydediliyor…') : words.put}</span></button>
           {current && <button type="button" className="pill pill-quiet pill-xs" disabled={busy} onClick={clear}><span className="btn-t">{words.remove}</span></button>}
         </div>
         {err ? <p className="err" role="alert">{err}</p> : done ? <p className="hint" role="status">{done}</p> : null}
+        {extra}
         <div className="srow">
           <span className="srow-k">{t('See it on the water', 'Посмотреть на воде', 'Verlo en el agua', 'Auf dem Wasser ansehen', 'Suyun üstünde gör')}</span>
           {set
@@ -229,7 +228,8 @@ const COLORS_KEY = 'sail_colors', HEX = /^#[0-9a-f]{6}$/i;
 export type SailColors = { jib?: string; kite?: string };
 type Dye = 'inherit' | 'auto' | 'own' | 'one';
 
-export function SailColorForm({ lang, slot, current, set = null, sets = {} }: { lang: Lang; slot: 'jib' | 'kite'; current: SailColors | null; set?: string | null; sets?: SetMap }) {
+// inline: in the sail's own card (SailAdForm's extra), its choice, colour and save on a few rows, without a card of its own
+export function SailColorForm({ lang, slot, current, set = null, sets = {}, inline = false }: { lang: Lang; slot: 'jib' | 'kite'; current: SailColors | null; set?: string | null; sets?: SetMap; inline?: boolean }) {
   const t = tx(lang);
   const router = useRouter();
   const venue = set, cur = set ? sets[set]?.colors : current, was = slot === 'jib' ? cur?.jib : cur?.kite;
@@ -277,6 +277,24 @@ export function SailColorForm({ lang, slot, current, set = null, sets = {} }: { 
   const swatch = mode === 'one' ? col : undefined;
   const id = `adm-dye-${slot}`;
 
+  const controls = (
+    <>
+      <div className="bt-pills adm-modes" role="radiogroup" aria-labelledby={`${id}-k`}>
+        {modes.map(([m, l]) => <button key={m} type="button" role="radio" aria-checked={mode === m} className="bt-pill" disabled={busy} onClick={() => pick(m)}>{l}</button>)}
+      </div>
+      <div className="btn-row adm-go adm-dye-go">
+        {mode === 'one' && <span className="adm-color"><input id={`${id}-c`} type="color" aria-label={t('Colour', 'Цвет', 'Color', 'Farbe', 'Renk')} value={col} disabled={busy} onChange={(e) => setCol(e.target.value)} /><span className="adm-v">{col.toUpperCase()}</span></span>}
+        <button type="button" className="pill pill-primary pill-xs" disabled={same || busy} onClick={save}><span className="btn-t">{busy ? t('Saving…', 'Сохраняю…', 'Guardando…', 'Speichern …', 'Kaydediliyor…') : t('Save the colour', 'Сохранить цвет', 'Guardar el color', 'Farbe speichern', 'Rengi kaydet')}</span></button>
+      </div>
+      {err ? <p className="err" role="alert">{err}</p> : done ? <p className="hint" role="status">{done}</p> : <p className="hint">{hint}</p>}
+    </>
+  );
+  if (inline) return (
+    <div className={`adm-dye-in adm-dye-${slot}`} role="group" aria-labelledby={`${id}-k`}>
+      <span className="srow-k" id={`${id}-k`}>{slot === 'jib' ? t('Colour of the jibs', 'Цвет стакселей', 'Color de los foques', 'Farbe der Focks', 'Flokların rengi') : t('Colour of the gennakers', 'Цвет генакеров', 'Color de los gennakers', 'Farbe der Gennaker', 'Balonların rengi')}</span>
+      {controls}
+    </div>
+  );
   return (
     <section className={`set-grid adm adm-dye adm-dye-${slot}`} aria-labelledby={`${id}-k`}>
       <div className="set-sec">
@@ -286,23 +304,8 @@ export function SailColorForm({ lang, slot, current, set = null, sets = {} }: { 
             {!swatch && <span className="hint">{mode === 'inherit' ? t('As every venue', 'Как для всех мест', 'Como en todas las sedes', 'Wie in allen Revieren', 'Tüm mekânlardaki gibi') : mode === 'auto' ? t('From the ad', 'По рекламе', 'Según el anuncio', 'Nach der Werbung', 'Reklamdan') : t('The boat’s own', 'Свой у яхты', 'El del barco', 'Das eigene des Bootes', 'Teknenin kendi')}</span>}
           </div>
         </div>
-        <p className="hint">{hint}</p>
       </div>
-      <div className="set-sec">
-        <div className="bt-pills adm-modes" role="radiogroup" aria-labelledby={`${id}-k`}>
-          {modes.map(([m, l]) => <button key={m} type="button" role="radio" aria-checked={mode === m} className="bt-pill" disabled={busy} onClick={() => pick(m)}>{l}</button>)}
-        </div>
-        {mode === 'one' && (
-          <div className="srow">
-            <label className="srow-k" htmlFor={`${id}-c`}>{t('Colour', 'Цвет', 'Color', 'Farbe', 'Renk')}</label>
-            <span className="adm-color"><input id={`${id}-c`} type="color" value={col} disabled={busy} onChange={(e) => setCol(e.target.value)} /><span className="adm-v">{col.toUpperCase()}</span></span>
-          </div>
-        )}
-        <div className="btn-row adm-go">
-          <button type="button" className="pill pill-primary pill-xs" disabled={same || busy} onClick={save}><span className="btn-t">{busy ? t('Saving…', 'Сохраняю…', 'Guardando…', 'Speichern …', 'Kaydediliyor…') : t('Save the colour', 'Сохранить цвет', 'Guardar el color', 'Farbe speichern', 'Rengi kaydet')}</span></button>
-        </div>
-        {err ? <p className="err" role="alert">{err}</p> : done ? <p className="hint" role="status">{done}</p> : null}
-      </div>
+      <div className="set-sec">{controls}</div>
     </section>
   );
 }
@@ -324,24 +327,17 @@ export function SetPicker({ lang, set, sets }: { lang: Lang; set: string | null;
     router.push(`${path}?set=${id}`);
   };
   return (
-    <section className="set-grid adm adm-where" aria-labelledby="adm-k-where">
-      <div className="set-sec">
-        <div className="adm-k"><span className="kicker" id="adm-k-where">{t('Where', 'Где', 'Dónde', 'Wo', 'Nerede')}</span></div>
-        <p className="hint">{t('The sails’ pictures and colours for every venue, or a set’s own: a set is a look for the venues you put in it (all of a country’s at a tick), and a race at one of them takes every venue’s for anything the set doesn’t set. The plane’s banner is the same everywhere.', 'Картинки и цвета парусов для всех мест или свои у набора: набор — это вид парусов для мест, которые вы в него добавите (все места страны одной галочкой), а гонка в одном из них берёт из общих всё, что набор не задаёт. Баннер самолёта везде один.', 'Las imágenes y los colores de las velas para todas las sedes, o los propios de un conjunto: un conjunto es un aspecto para las sedes que pongas en él (todas las de un país de un clic), y una regata en una de ellas toma los de todas las sedes para lo que el conjunto no fije. La pancarta de la avioneta es la misma en todas partes.', 'Bilder und Farben der Segel für alle Reviere oder die eigenen eines Sets: Ein Set ist ein Look für die Reviere, die du hineinlegst (alle eines Landes mit einem Haken), und eine Regatta in einem davon nimmt für alles, was das Set nicht festlegt, die für alle Reviere. Das Banner des Flugzeugs ist überall dasselbe.', 'Tüm mekânlar için ya da bir setin kendine ait yelken resimleri ve renkleri: set, içine koyduğun mekânlar için bir görünümdür (bir ülkenin tümü tek tıkla) ve bunlardan birindeki yarış, setin ayarlamadığı her şeyi tüm mekânlarınkinden alır. Uçağın pankartı her yerde aynıdır.')}</p>
+    <section className="adm adm-where" aria-labelledby="adm-k-where">
+      <div className="adm-where-row">
+        <span className="kicker" id="adm-k-where">{t('Sails for', 'Паруса для', 'Velas para', 'Segel für', 'Yelkenler')}</span>
+        <select id="adm-set" className="field" aria-labelledby="adm-k-where" value={set ?? ''} onChange={(e) => router.push(e.target.value ? `${path}?set=${e.target.value}` : path)}>
+          <option value="">{t('Every venue', 'Всех мест', 'Todas las sedes', 'Alle Reviere', 'Tüm mekânlar')}</option>
+          {Object.entries(sets).map(([id, x]) => <option key={id} value={id}>{`${x.name} · ${n(x.venues.length)}`}</option>)}
+        </select>
+        <button type="button" className="pill pill-quiet pill-xs" disabled={busy} onClick={make}><span className="btn-t">{t('New set', 'Новый набор', 'Conjunto nuevo', 'Neues Set', 'Yeni set')}</span></button>
       </div>
-      <div className="set-sec">
-        <div className="srow adm-field">
-          <label className="srow-k" htmlFor="adm-set">{t('Sails for', 'Паруса для', 'Velas para', 'Segel für', 'Yelkenler')}</label>
-          <select id="adm-set" className="field" value={set ?? ''} onChange={(e) => router.push(e.target.value ? `${path}?set=${e.target.value}` : path)}>
-            <option value="">{t('Every venue', 'Всех мест', 'Todas las sedes', 'Alle Reviere', 'Tüm mekânlar')}</option>
-            {Object.entries(sets).map(([id, x]) => <option key={id} value={id}>{`${x.name} · ${n(x.venues.length)}`}</option>)}
-          </select>
-        </div>
-        <div className="btn-row adm-go">
-          <button type="button" className="pill pill-quiet pill-xs" disabled={busy} onClick={make}><span className="btn-t">{t('New set', 'Новый набор', 'Conjunto nuevo', 'Neues Set', 'Yeni set')}</span></button>
-        </div>
-        {err && <p className="err" role="alert">{err}</p>}
-      </div>
+      <p className="hint">{t('A set gives the venues in it their own sails; anything it leaves unset, and every other venue, takes every venue’s. The plane’s banner is the same everywhere.', 'Набор даёт своим местам собственные паруса; всё, что он не задаёт, и все остальные места берут общие. Баннер самолёта везде один.', 'Un conjunto da a sus sedes velas propias; lo que no fija, y todas las demás sedes, toman las de todas las sedes. La pancarta de la avioneta es la misma en todas partes.', 'Ein Set gibt seinen Revieren eigene Segel; was es nicht festlegt, und jedes andere Revier, nimmt die für alle Reviere. Das Banner des Flugzeugs ist überall dasselbe.', 'Bir set, içindeki mekânlara kendi yelkenlerini verir; ayarlamadığı her şey ve diğer tüm mekânlar, tüm mekânlarınkini alır. Uçağın pankartı her yerde aynıdır.')}</p>
+      {err && <p className="err" role="alert">{err}</p>}
     </section>
   );
 }
