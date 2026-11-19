@@ -14,7 +14,7 @@ import { join } from 'node:path';
 const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const [base = 'http://localhost:5193', ...only] = process.argv.slice(2);
 const OUT = new URL('../public/images/', import.meta.url);
-const VERSION = 'v1', W = 1920, H = 800, DPR = 2, SUPER = 2, TRIES = 6;
+const VERSION = 'v2', W = 1920, H = 800, DPR = 2, SUPER = 2, TRIES = 6;
 const BOAT = { hull: '#1c1f24', cloth: '#2a2c30', laminate: true, ink: '#ffffff', kite: '#1c1f24', bottom: '#1c1f24', deck: 'nonskid', name: 'MARIE', crew: '#1c1f24', pants: '#1c1f24', logo: 'none', nat: 'GEO', num: '13', flag: 'ge' };
 
 // hit: on the race (R), her (P), the windward mark (M), how long since she last tacked (calm), the moment to stop at.
@@ -42,7 +42,7 @@ const CLOCK = `(() => {
   window.requestAnimationFrame = (f) => { if (!window.__manual) return raf(() => f(vt)); q.push(f); return q.length; };
   window.__tick = (ms) => { vt += ms; for (const f of q.splice(0)) f(vt); };
   setInterval(() => { if (!window.__manual) vt += 16; }, 16);
-  try { localStorage.setItem('regatta', JSON.stringify({ gfx: 'high', sound: 0, music: 0, voice: 0 })); localStorage.setItem('regatta-boat', ${JSON.stringify(JSON.stringify(BOAT))}); } catch (e) {}
+  try { localStorage.setItem('regatta', JSON.stringify({ gfx: 'high', played: 4, sound: 0, music: 0, voice: 0 })); localStorage.setItem('regatta-boat', ${JSON.stringify(JSON.stringify(BOAT))}); } catch (e) {}
 })()`;
 
 // the camera, set again before every frame; __blocked: another yacht is under the lens

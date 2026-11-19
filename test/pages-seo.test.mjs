@@ -271,7 +271,7 @@ function missing(path) {
 }
 
 test('the link check below can tell a page that exists from one that does not', () => {
-  for (const path of ['/', '/race', '/learn/sail', '/learn/glossary', '/venues/cowes', '/yachts/j70', '/race/rating/2026-11-17', '/play', '/images/og-v9.jpg']) assert.equal(missing(path), false, path);
+  for (const path of ['/', '/race', '/learn/sail', '/learn/glossary', '/venues/cowes', '/yachts/j70', '/race/rating/2026-11-17', '/play', '/images/og-v10.jpg']) assert.equal(missing(path), false, path);
   for (const path of ['/nope', '/learn/nope', '/venues/atlantis', '/yachts/titanic', '/race/nope', '/admin/nope']) assert.equal(missing(path), true, path);
 });
 

@@ -123,7 +123,7 @@ test('a card speaks English when the address names no language or one the site l
 });
 
 // ---------- what isn't a card ----------
-const isPlainPicture = (res, to = '/images/og-v9.jpg') => {
+const isPlainPicture = (res, to = '/images/og-v10.jpg') => {
   assert.equal(res.status, 302);
   assert.equal(res.headers.get('location'), to);
   assert.equal(res.headers.get('cache-control'), 'public, max-age=60');

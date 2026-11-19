@@ -6,8 +6,10 @@
 //
 //   node scripts/shots.mjs [base] [name…]     base: the site, running (npm run dev); default http://localhost:5193
 //
-// Chrome is driven over its DevTools protocol (Node's own WebSocket, no packages). A fresh profile each time, so the
-// race is the first one: the game's first-race tips show as the call over your numbers. Every picture is in the same
+// Chrome is driven over its DevTools protocol (Node's own WebSocket, no packages). A fresh profile each time, as a player
+// past her first races (played: 4): no coaching, so she starts among the fleet rather than lined up behind it waiting
+// for Ready, and the call over your numbers is the committee's. The heroes (opts played: 0) are a first race's: she lined
+// up behind the fleet, so the drone looking up the course has it ahead of her, and Ready pressed. Every picture is in the same
 // light (LIGHT: Göcek, the free race's own venue, an afternoon under a clear sky), at High graphics.
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -17,6 +19,8 @@ import { join } from 'node:path';
 const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const [base = 'http://localhost:5193', ...only] = process.argv.slice(2);
 const OUT = new URL('../public/images/', import.meta.url);
+// Chrome's debugging port: another of these scripts running at once has the default, and the pictures would be taken in its Chrome
+const PORT = +process.env.CDP_PORT || 9333;
 
 const LIGHT = 'hour=15.5&sky=clear';
 
@@ -24,28 +28,29 @@ const LIGHT = 'hour=15.5&sky=clear';
 const BOAT = { hull: '#1c1f24', cloth: '#2a2c30', laminate: true, ink: '#ffffff', kite: '#1c1f24', bottom: '#1c1f24', deck: 'nonskid', name: 'MARIE', crew: '#1c1f24', pants: '#1c1f24', logo: 'none', nat: 'GEO', num: '13', flag: 'ge' };
 
 // each picture: the window (CSS pixels) and its scale, a touch screen or not, and (for a close-up) the HUD's parts to
-// keep: the rest of the HUD (and the yachts' tags) is hidden, the scene stays (keep: [] is the scene alone). cam: the camera, set on the game's
+// keep: the rest of the HUD (and the yachts' tags) is hidden, the scene stays (keep: [] is the scene alone); hide: parts
+// of what's kept to hide all the same (the start's advice beside the Tack button). cam: the camera, set on the game's
 // world (world.js: mode drone, top or helm; dist, orbit in radians round her, droneEl in degrees down, helmFov, look).
 // out: the picture scaled to that size after it is taken (the share card, kept small for WhatsApp). q: the race page's
 // own options instead of the minute before the gun (a drill: its computer skipper sails her to the moment, then she's
 // yours), prep run on her (P) once the race is up, and until, on her too, the moment to take it.
 // clean: the scene without the guides drawn on the water round her (the pictures that show the game, not how to read it).
 const SHOTS = [
-  { name: 'hud-desk-v9', w: 1200, h: 750, dpr: 2.7, touch: false, call: true, rects: true },
-  { name: 'hud-port-v9', w: 390, h: 844, dpr: 3, touch: true, call: true, rects: true },
-  { name: 'h-start-v9', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: ['.b-top', '#nxTag'] },
-  { name: 'h-steer-v9', w: 640, h: 480, dpr: 3, touch: true, keep: ['#rudderZone'] },
-  { name: 'h-trim-v9', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone'] },
-  { name: 'h-tack-v9', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone', '.b-acts'] },
-  { name: 'drone-desk-v9', w: 1600, h: 1000, dpr: 2.7, touch: false, keep: [], clean: true, frame: { company: true }, cam: { mode: 'drone', dist: 36, orbit: 'lee', droneEl: 16 } },
-  { name: 'drone-port-v9', w: 390, h: 844, dpr: 3, touch: true, keep: [], clean: true, frame: {}, cam: { mode: 'drone', dist: 36, orbit: 'lee', droneEl: 18, orbitMax: 0.35 } },
-  { name: 'top-v9', w: 1266, h: 585, dpr: 3, touch: false, keep: [], clean: true, cam: { mode: 'top', dist: 70 } },
-  { name: 'og-v9', w: 1200, h: 630, dpr: 2, touch: false, keep: [], clean: true, frame: { company: true }, cam: { mode: 'drone', dist: 38, orbit: 'lee', droneEl: 16 }, out: [1200, 630] },
-  { name: 'h-wind-v9', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 9 } },
-  { name: 'h-view-drone-v9', w: 640, h: 480, dpr: 3, touch: false, keep: [], frame: {}, cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 22 } },
-  { name: 'h-view-top-v9', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 40 } },
-  { name: 'h-run-v9', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: [], clean: true, frame: { company: true }, q: 'drill=run', prep: 'P.setKite(true)', until: 'P.kite && P.kiteFill > 0.95 && !P.kiteJob', cam: { mode: 'drone', dist: 40, orbit: 'kite', droneEl: 20, orbitMax: 1.1 } },
-  { name: 'h-view-helm-v9', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'helm', helmFov: 68, look: 0 } },
+  { name: 'hud-desk-v10', w: 1200, h: 750, dpr: 2.7, touch: false, call: true, rects: true },
+  { name: 'hud-port-v10', w: 390, h: 844, dpr: 3, touch: true, call: true, rects: true },
+  { name: 'h-start-v10', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: ['.b-top', '#nxTag'] },
+  { name: 'h-steer-v10', w: 640, h: 480, dpr: 3, touch: true, keep: ['#rudderZone'] },
+  { name: 'h-trim-v10', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone'] },
+  { name: 'h-tack-v10', w: 640, h: 480, dpr: 3, touch: true, keep: ['#sheetZone', '.b-acts'], hide: ['.b-lay'] },
+  { name: 'drone-desk-v10', w: 1600, h: 1000, dpr: 2.7, touch: false, keep: [], clean: true, opts: { played: 0 }, frame: { company: true }, cam: { mode: 'drone', dist: 36, orbit: 'lee', droneEl: 16 } },
+  { name: 'drone-port-v10', w: 390, h: 844, dpr: 3, touch: true, keep: [], clean: true, opts: { played: 0 }, frame: {}, cam: { mode: 'drone', dist: 36, orbit: 'lee', droneEl: 18, orbitMax: 0.35 } },
+  { name: 'top-v10', w: 1266, h: 585, dpr: 3, touch: false, keep: [], clean: true, cam: { mode: 'top', dist: 70 } },
+  { name: 'og-v10', w: 1200, h: 630, dpr: 2, touch: false, keep: [], clean: true, frame: { company: true }, cam: { mode: 'drone', dist: 38, orbit: 'lee', droneEl: 16 }, out: [1200, 630] },
+  { name: 'h-wind-v10', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 9 } },
+  { name: 'h-view-drone-v10', w: 640, h: 480, dpr: 3, touch: false, keep: [], frame: {}, cam: { mode: 'drone', dist: 30, orbit: 'lee', droneEl: 22 } },
+  { name: 'h-view-top-v10', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'top', dist: 40 } },
+  { name: 'h-run-v10', w: 1100, h: 825, dpr: 1920 / 1100, touch: false, keep: [], clean: true, frame: { company: true }, q: 'drill=run', prep: 'P.setKite(true)', until: 'P.kite && P.kiteFill > 0.95 && !P.kiteJob', cam: { mode: 'drone', dist: 40, orbit: 'kite', droneEl: 20, orbitMax: 1.1 } },
+  { name: 'h-view-helm-v10', w: 640, h: 480, dpr: 3, touch: false, keep: [], cam: { mode: 'helm', helmFov: 68, look: 0 } },
   // the sponsorship page's: rig, a camera of the script's own (RIG below). Its marks are the logo's and the banner's place
   { name: 'sp-banner-v2', w: 1600, h: 1000, dpr: 1.5, touch: false, keep: [], clean: true, rig: { pass: true, back: 85, left: 14.5, y: 3, fov: 24, pitch: 3 } },
   // the sails' ads as they are now (the admin's /admin/sails): the jib's banner over the whole sail along its luff, the
@@ -172,12 +177,13 @@ const PARTS = { bug: '.b-bug', gun: '.b-top', btns: '.b-btns', wind: '.b-wind', 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function main() {
+  if (await fetch(`http://127.0.0.1:${PORT}/json/version`).then(() => true, () => false)) throw new Error(`a Chrome already answers on port ${PORT}: set CDP_PORT`);
   const dir = mkdtempSync(join(tmpdir(), 'shots-'));
-  const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=9333', `--user-data-dir=${dir}`, '--no-first-run', '--no-default-browser-check',
+  const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${PORT}`, `--user-data-dir=${dir}`, '--no-first-run', '--no-default-browser-check',
     '--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist', '--hide-scrollbars', '--mute-audio', 'about:blank'], { stdio: 'ignore' });
   try {
     let ver;
-    for (let i = 0; i < 50 && !ver; i++) { await sleep(200); ver = await fetch('http://127.0.0.1:9333/json/version').then((r) => r.json()).catch(() => null); }
+    for (let i = 0; i < 50 && !ver; i++) { await sleep(200); ver = await fetch(`http://127.0.0.1:${PORT}/json/version`).then((r) => r.json()).catch(() => null); }
     if (!ver) throw new Error('Chrome did not start');
     const cdp = await connect(ver.webSocketDebuggerUrl);
     for (const s of SHOTS) await shoot(cdp, s);
@@ -217,17 +223,18 @@ async function shoot({ send }, s) {
   if (s.touch) await S('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   // High graphics, so the picture's scale doesn't make the game step down to Medium on its slow frames
   await S('Page.navigate', { url: `${base}/robots.txt` }); await sleep(1000);
-  await js(`localStorage.setItem('regatta', JSON.stringify(${JSON.stringify({ gfx: 'high', ...s.opts })})); localStorage.setItem('regatta-boat', ${JSON.stringify(JSON.stringify(BOAT))})`);
+  await js(`localStorage.setItem('regatta', JSON.stringify(${JSON.stringify({ gfx: 'high', played: 4, ...s.opts })})); localStorage.setItem('regatta-boat', ${JSON.stringify(JSON.stringify(BOAT))})`);
   await S('Page.navigate', { url: `${base}/play?race=free&lang=en&debug&${LIGHT}${s.q ? `&${s.q}` : ''}` });
 
   // the race under way, not paused, then the right moment: the minute before the gun, and where the picture shows the
   // call, something in it (a tip, the committee's signal; not a warning about the day's flag)
   const t0 = Date.now();
   let left = 999, call = false;
-  while (Date.now() - t0 < 240000) {
+  while (Date.now() - t0 < 480000) { // (long: another render on the same GPU slows the race clock)
     await sleep(500);
     const st = await js(`(() => {
       const p = document.getElementById('pauseCard'); if (p && !p.hidden) document.getElementById('pResume')?.click();
+      const r = document.getElementById('readyCard'); if (r && !r.hidden) document.getElementById('rGo')?.click(); // a first race waits for Ready
       const g = document.querySelector('#hud.bc .b-gunn'), l = document.getElementById('loading');
       return { up: !!g && (!l || l.hidden), clock: g ? g.textContent : '', call: !!document.querySelector('#toast.show') && !/disqualif|UFD|BFD|you’re out/i.test(document.getElementById('toast').textContent) };
     })()`);
@@ -256,7 +263,9 @@ async function shoot({ send }, s) {
         const d = Math.hypot(b.x - P.x, b.z - P.z), rel = wrap(Math.atan2(b.x - P.x, -(b.z - P.z)) - P.h);
         if (d < best && Math.abs(rel) < 1.1) { best = d; o = Math.max(-max, Math.min(max, 0.55 * rel + 0.2 * up)); }
       }
-      cam.orbit = o;
+      // never swung past her stern to the other side: towards a yacht ahead to windward, it looked at the crew and the
+      // backs of the sails
+      cam.orbit = cam.orbit === 'lee' && o * up < 0.15 ? 0.15 * up : o;
     }
     Object.assign(W, cam); ${s.clean ? 'W.showGuides = false;' : ''} return true;
   })()`);
@@ -305,7 +314,7 @@ async function shoot({ send }, s) {
   await frames(4);
   if (s.keep) { // under #hud, so they outrank its hiding; with nothing kept, everything over the scene goes
     await js(`document.head.append(Object.assign(document.createElement('style'), { textContent: ${JSON.stringify(s.keep.length
-      ? `#hud, #hud *, #nxTag, #nxTag *, #bOver, #bOver * { visibility: hidden !important; } ${s.keep.map((k) => (k.startsWith('#nxTag') ? k : `#hud ${k}`)).flatMap((k) => [k, `${k} *`]).join(', ')} { visibility: visible !important; }`
+      ? `#hud, #hud *, #nxTag, #nxTag *, #bOver, #bOver * { visibility: hidden !important; } ${s.keep.map((k) => (k.startsWith('#nxTag') ? k : `#hud ${k}`)).flatMap((k) => [k, `${k} *`]).join(', ')} { visibility: visible !important; }${(s.hide || []).map((k) => ` #hud ${k}, #hud ${k} * { visibility: hidden !important; }`).join('')}`
       : 'body > :not(#gl), body > :not(#gl) * { visibility: hidden !important; }')} }))`);
     await sleep(300);
   }

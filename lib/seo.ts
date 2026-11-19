@@ -10,7 +10,7 @@ import { LANGS, LOCALE, tx, type Lang, type Pair } from './lang.ts'; // with its
 export const SITE = 'https://www.sailupdown.com';
 export const NAME = 'Up and down';
 // The share picture: the race from the drone with today's HUD, 1200 × 630 and under 300 KB, so WhatsApp shows it too.
-export const OG_IMAGE = { url: '/images/og-v9.jpg', width: 1200, height: 630, type: 'image/jpeg' };
+export const OG_IMAGE = { url: '/images/og-v10.jpg', width: 1200, height: 630, type: 'image/jpeg' };
 
 // The home page's title and description, also the defaults for any page that doesn't give its own.
 export const HOME_TITLE: Pair = ['Up and down — a free online sailing race game', 'Up and down — парусная гонка и симулятор яхты онлайн', 'Up and down — un juego de regatas de vela gratis en línea', 'Up and down — ein kostenloses Segelregatta-Spiel im Netz', 'Up and down — ücretsiz çevrimiçi yelken yarışı oyunu'];
