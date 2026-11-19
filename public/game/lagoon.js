@@ -14,7 +14,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { clamp, lerp } from './sim.js';
-import { hullMaterial, NONSKID, canvasTex, cleat, wheel, display, winch, block, clutches, chainplate, mastGeo, spreaderGeo, M as YM } from './yacht.js';
+import { hullMaterial, NONSKID, canvasTex, cleat, wheel, display, winch, block, clutches, chainplate, mastGeo, spreaderGeo, foldStill, M as YM } from './yacht.js';
 import { CommitteeBoat, flagTexture, bannerTexture, finishes, RoundedBoxGeometry, tube, rod, Flag, officer } from './committee.js';
 
 // ---------- her lines (blender/lagoon42.py's) ----------
@@ -500,6 +500,7 @@ export class LagoonCommittee {
     const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
     root.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: '#3a3f46' })));
     root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = !o.material.alphaTest; } });
+    foldStill(root); // her plain parts, a draw a material, into one (yacht.js)
   }
 }
 // her signals are run as the motor cruiser's are: hoisted and lowered along their halyards, the blue flag in the

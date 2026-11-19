@@ -391,6 +391,90 @@ export const M = {
     }) }),
   well: [0, 1, 2, 3, 4, 5].map((i) => new THREE.MeshStandardMaterial(i === 3 ? { map: TEAK, roughness: 0.75, side: THREE.BackSide } : { color: '#e4e1d8', roughness: 0.8, side: THREE.BackSide })),
 };
+// Most of a boat's fittings are plain: painted, anodised, polished or lacquered, a colour, a roughness, a metalness
+// and how much of the sky they mirror, with no picture on them. Folded into one material that takes all of those (and
+// a clear coat's) from each vertex, the ones that stand still on her cost a draw or two in every pass instead of one a
+// material, and look as they did (bake). BAKE.fold false builds them as before, a draw a material, to compare.
+export const BAKE = { fold: true };
+const PLAIN = new WeakMap(); // material → may it be folded (judged when first seen, before the world adds its own shading)
+const NO_MAPS = ['map', 'lightMap', 'aoMap', 'emissiveMap', 'bumpMap', 'normalMap', 'displacementMap', 'roughnessMap', 'metalnessMap', 'alphaMap', 'envMap',
+  'clearcoatMap', 'clearcoatRoughnessMap', 'clearcoatNormalMap', 'iridescenceMap', 'iridescenceThicknessMap', 'sheenColorMap', 'sheenRoughnessMap',
+  'transmissionMap', 'thicknessMap', 'specularIntensityMap', 'specularColorMap', 'anisotropyMap'];
+function plain(m) {
+  if (PLAIN.has(m)) return PLAIN.get(m);
+  const ok = !!m?.isMeshStandardMaterial && m.visible && !m.transparent && m.opacity === 1 && m.side === THREE.FrontSide && m.shadowSide == null && !m.vertexColors
+    && !m.flatShading && !m.wireframe && m.alphaTest === 0 && m.blending === THREE.NormalBlending && m.depthTest && m.depthWrite && m.colorWrite && !m.polygonOffset
+    && !m.stencilWrite && !m.clippingPlanes && m.toneMapped && m.fog && m.emissive.getHex() === 0 && NO_MAPS.every((k) => !m[k])
+    && !Object.hasOwn(m, 'onBeforeCompile') && !Object.hasOwn(m, 'customProgramCacheKey') && !Object.keys(m.userData).length && Object.keys(m.defines || {}).every((k) => k === 'STANDARD' || k === 'PHYSICAL')
+    && (!m.isMeshPhysicalMaterial || (m.sheen === 0 && m.transmission === 0 && m.iridescence === 0 && (m.anisotropy ?? 0) === 0 && m.ior === 1.5
+      && m.specularIntensity === 1 && m.specularColor.getHex() === 0xffffff));
+  PLAIN.set(m, ok);
+  return ok;
+}
+// the one material for a boat's folded fittings: cc, with a clear coat (some of them are lacquered carbon)
+function foldMaterial(cc) {
+  const m = cc ? new THREE.MeshPhysicalMaterial({ vertexColors: true, clearcoat: 1 }) : new THREE.MeshStandardMaterial({ vertexColors: true });
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = `attribute vec3 fitRME; varying vec3 vFitRME;${cc ? ' attribute vec2 fitCC; varying vec2 vFitCC;' : ''}\n`
+      + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n  vFitRME = fitRME;${cc ? ' vFitCC = fitCC;' : ''}`);
+    let f = sh.fragmentShader
+      .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = vFitRME.x;')
+      .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = vFitRME.y;')
+      .replace('#include <envmap_common_pars_fragment>', '#include <envmap_common_pars_fragment>\n#define envMapIntensity vFitRME.z'); // (the uniform's declared, then each vertex's used)
+    if (cc) f = f.replace('#include <lights_physical_fragment>', THREE.ShaderChunk.lights_physical_fragment
+      .replace('material.clearcoat = clearcoat;', 'material.clearcoat = vFitCC.x;').replace('material.clearcoatRoughness = clearcoatRoughness;', 'material.clearcoatRoughness = vFitCC.y;'));
+    sh.fragmentShader = `varying vec3 vFitRME;${cc ? ' varying vec2 vFitCC;' : ''}\n` + f;
+  };
+  m.customProgramCacheKey = () => (cc ? 'fold-cc' : 'fold');
+  return m;
+}
+// a part's geometry, in her frame, with its material's colour and finish on each vertex
+function foldGeometry(g, m, cc) {
+  for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal') g.deleteAttribute(k);
+  g.morphAttributes = {}; g.clearGroups();
+  const n = g.attributes.position.count, col = new Float32Array(n * 3), rme = new Float32Array(n * 3), ccA = cc ? new Float32Array(n * 2) : null;
+  for (let i = 0; i < n; i++) {
+    col[i * 3] = m.color.r; col[i * 3 + 1] = m.color.g; col[i * 3 + 2] = m.color.b;
+    rme[i * 3] = m.roughness; rme[i * 3 + 1] = m.metalness; rme[i * 3 + 2] = m.envMapIntensity;
+    if (cc) { ccA[i * 2] = m.clearcoat || 0; ccA[i * 2 + 1] = m.clearcoatRoughness || 0; }
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('fitRME', new THREE.BufferAttribute(rme, 3));
+  if (cc) g.setAttribute('fitCC', new THREE.BufferAttribute(ccA, 2));
+  return g;
+}
+// a mirrored part's triangles turned the other way round, so they face out once the mirroring is in the vertices
+function unmirror(g) {
+  if (!g.index) g.setIndex(Array.from({ length: g.attributes.position.count }, (_, i) => i));
+  const a = g.index.array;
+  for (let i = 0; i + 2 < a.length; i += 3) { const t = a[i + 1]; a[i + 1] = a[i + 2]; a[i + 2] = t; }
+  g.index.needsUpdate = true;
+  return g;
+}
+// the plain parts straight under root (a committee boat's), folded into one mesh per shadow and draw order; skip: what
+// else may move or come and go. A material with a part that reaches down to the water (y below dry, root as built) is
+// left as it is (world.js underParts draws each in its own colour there)
+export function foldStill(root, skip = new Set(), dry = 0.35) {
+  if (!BAKE.fold) return root;
+  root.updateMatrixWorld(true);
+  const parts = root.children.filter((o) => o.isMesh && !o.isSkinnedMesh && !o.isInstancedMesh && !o.children.length && !skip.has(o) && o.visible && !Array.isArray(o.material)
+    && !Object.keys(o.userData).length && !Object.hasOwn(o, 'onBeforeRender') && plain(o.material) && !!o.geometry.attributes.normal);
+  const wet = new Set(), box = new THREE.Box3();
+  for (const o of parts) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); if (box.copy(o.geometry.boundingBox).applyMatrix4(o.matrix).min.y < dry) wet.add(o.material); }
+  const sets = new Map();
+  for (const o of parts) if (!wet.has(o.material)) { const k = o.castShadow + '|' + o.receiveShadow + '|' + o.renderOrder; if (!sets.has(k)) sets.set(k, []); sets.get(k).push(o); }
+  for (const list of sets.values()) {
+    if (list.length < 2) continue;
+    const cc = list.some((o) => o.material.isMeshPhysicalMaterial);
+    const geos = list.map((o) => { o.updateMatrix(); const g = foldGeometry(o.geometry.clone().applyMatrix4(o.matrix), o.material, cc); if (o.matrix.determinant() < 0) unmirror(g); return g.index ? g : g.setIndex(Array.from({ length: g.attributes.position.count }, (_, i) => i)); });
+    const merged = mergeGeometries(geos);
+    if (!merged) continue;
+    const m = new THREE.Mesh(merged, foldMaterial(cc));
+    m.castShadow = list[0].castShadow; m.receiveShadow = list[0].receiveShadow; m.renderOrder = list[0].renderOrder;
+    for (const o of list) o.removeFromParent(); // (their geometry may be shared: a model's)
+    root.add(m);
+  }
+  return root;
+}
 const WIRE = new THREE.MeshStandardMaterial({ color: '#3b4148', roughness: 0.35, metalness: 0.6 }); // the rigging as wire, up close
 const wireMat = new THREE.LineBasicMaterial({ color: 0x4d555e, transparent: true, opacity: 0.8 }); // grey and a touch see-through, so the thin lines don't crawl dark against the sky
 export const line = (pts) => new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map((p) => new THREE.Vector3(...p))), wireMat);
@@ -932,8 +1016,10 @@ export function sailMesh(rows0, cols0, tex, shiny = false, kind = 'main') {
     map, side, normalMap: nmap, normalScale: new THREE.Vector2(0.6, 0.6), roughness: shiny ? 0.45 : kind === 'kite' ? 0.55 : 0.72, metalness: shiny ? 0.12 : 0,
     emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.1,
   }), kind === 'kite' ? 0.6 : shiny ? 0.28 : 0.45);
-  const grp = new THREE.Group();
-  grp.add(new THREE.Mesh(g, mat(tex, relief, THREE.FrontSide)), new THREE.Mesh(g, mat(back, reliefBack, THREE.BackSide)));
+  const grp = new THREE.Group(), front = new THREE.Mesh(g, mat(tex, relief, THREE.FrontSide)), rear = new THREE.Mesh(g, mat(back, reliefBack, THREE.BackSide));
+  // one face casts the cloth's shadow, both sides of it (the shadow map's and the sea's), so it costs one draw there, not two
+  if (BAKE.fold) { front.material.shadowSide = THREE.DoubleSide; rear.userData.flat = true; }
+  grp.add(front, rear);
   grp.userData = { rows, cols, g, tiers, fine: true, step: 1, fineI, coarseI };
   // near enough to see the finer grid: within a few times the sail's own size, a little further to let it go again
   if (tiers) grp.children[0].onBeforeRender = (r, s, cam) => {
@@ -2261,37 +2347,135 @@ export class BoatView {
     const moving = new Set([this.travCar, this.wheel, ...(this.rudders || []).map((r) => r.kick), this.sprit, this.mainRake, this.mainPivot, this.jibPivot, this.kite, this.windex,
       this.mainsheet, this.jibSheet, this.lazySheet, this.kiteSheet, this.forestay, ...(this.backstays || []), this.wash, ...this.crew.map((c) => c.g), ...(this.spin || [])]);
     if (this.tells?.length) this.wire(moving); // your own boat: her rigging as wire when you're close (setCrewNear)
-    const sets = new Map();
+    const sets = new Map(), fold = BAKE.fold, parts = [];
     for (const o of this.tilt.children) {
       if (moving.has(o) || o.children.length || !(o.isMesh || o.isLine) || Array.isArray(o.material)) continue;
       if (o.isLine && !o.frustumCulled) continue; // a line that moves isn't culled: its points change every frame
       o.updateMatrix();
-      if (o.matrix.determinant() < 0) continue; // mirrored: its faces would turn inside out
+      // mirrored: its faces would turn inside out (folding, they're turned back: unmirror)
+      if (o.matrix.determinant() < 0 && !(fold && o.isMesh)) continue;
+      parts.push(o);
+    }
+    // what moves (the boom, the traveller's car, the wheel, the windex…) moves as a whole: the plain parts of each are
+    // folded too, into a mesh that moves with them; and those in a group of their own that stands still, into hers.
+    // Not a part anything else reaches for by name (it may move on its own, or come and go), nor the crew's
+    const rel = new Map(); // a part in a group that stands still → where it is in her frame
+    if (fold) {
+      const named = new Set(), note = (x, d = 0) => {
+        if (x?.isObject3D) named.add(x);
+        else if (d < 2 && x && typeof x === 'object' && (Array.isArray(x) || Object.getPrototypeOf(x) === Object.prototype)) for (const y of Object.values(x)) note(y, d + 1);
+      };
+      for (const x of Object.values(this)) note(x);
+      const skip = new Set([...this.crew.map((c) => c.g), this.wash]);
+      const loose = (o) => o.isMesh && !o.isSkinnedMesh && !o.isInstancedMesh && !o.children.length && !named.has(o) && o.visible && !Array.isArray(o.material)
+        && !Object.keys(o.userData).length && !Object.hasOwn(o, 'onBeforeRender') && plain(o.material);
+      const walk = (n, still) => { // still: n and all between it and her stand still
+        if (skip.has(n) || n.isMesh || n.isLine) return;
+        const moves = n !== this.tilt && (moving.has(n) || named.has(n) || !still);
+        if (n !== this.tilt) for (const o of n.children) if (loose(o)) {
+          o.updateMatrix();
+          if (!moves) { const m = o.matrix.clone(); for (let p = n; p !== this.tilt; p = p.parent) { p.updateMatrix(); m.premultiply(p.matrix); } rel.set(o, m); }
+          parts.push(o);
+        }
+        for (const c of n.children) if (c.children.length) walk(c, !moves && n.visible);
+      };
+      walk(this.tilt, true);
+    }
+    // what reaches down to the water stays as it is: the hulls under it (world.js underParts) are drawn in each part's
+    // own colour, which a folded part no longer has. A material with such a part among those that stand still keeps
+    // all of them merged on their own, as before; a moving one's part that does stays on its own
+    const wet = new Set(), box = new THREE.Box3(), dry = 0.35 * (this.drawnL || 10.45) / (this.cls?.loa ?? 10.45);
+    const isWet = (o) => { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); return box.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld).min.y < dry; };
+    if (fold) {
+      this.root.updateMatrixWorld(true); // (the boat as built: her frame is the world's)
+      for (const o of parts) if (o.parent === this.tilt && o.isMesh && plain(o.material) && isWet(o)) wet.add(o.material);
+    }
+    for (const o of parts) {
       const g = o.geometry;
       if (!g.boundingSphere) g.computeBoundingSphere();
-      const small = o.isLine || g.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z) < 0.9; // as setDetail
+      const small = o.isLine || g.boundingSphere.radius * Math.max(...o.scale.toArray().map(Math.abs)) < 0.9; // as setDetail
+      const folds = fold && o.isMesh && plain(o.material) && !!g.attributes.normal && (o.parent === this.tilt ? !wet.has(o.material) : !isWet(o));
+      if (o.parent !== this.tilt && !folds) continue;
+      const parent = rel.has(o) ? this.tilt : o.parent;
       const attrs = Object.keys(g.attributes).sort().join();
-      const key = [o.isLine ? 'L' : 'M', o.material.uuid, small, o.castShadow, o.renderOrder, attrs, !!g.index].join('|');
-      if (!sets.has(key)) sets.set(key, { list: [], small, line: o.isLine, mat: o.material, cast: o.castShadow, order: o.renderOrder });
+      const key = folds ? [parent.uuid, 'F', small, o.castShadow, o.renderOrder].join('|')
+        : [o.isLine ? 'L' : 'M', o.material.uuid, small, o.castShadow, o.renderOrder, attrs, o.isLine || !fold ? !!g.index : true].join('|');
+      if (!sets.has(key)) sets.set(key, { list: [], small, line: o.isLine, mat: o.material, cast: o.castShadow, order: o.renderOrder, folds, parent });
       sets.get(key).list.push(o);
     }
+    const indexed = (g) => (g.index ? g : g.setIndex(Array.from({ length: g.attributes.position.count }, (_, i) => i)));
     for (const s of sets.values()) {
-      if (s.list.length < 2) continue;
+      if (s.list.length < 2) continue; // (one part alone is drawn as it was)
+      const cc = s.folds && s.list.some((o) => o.material.isMeshPhysicalMaterial);
       const geos = s.list.map((o) => {
-        let g = o.geometry.clone().applyMatrix4(o.matrix);
+        const at = rel.get(o) || o.matrix, g = o.geometry.clone().applyMatrix4(at);
+        if (at.determinant() < 0) unmirror(g);
+        if (s.folds) foldGeometry(g, o.material, cc);
         if (s.line) { // a strip of points → its segments, so many lines can be one LineSegments
           const p = g.attributes.position, idx = [];
           for (let i = 0; i < p.count - 1; i++) idx.push(i, i + 1);
           g.setIndex(idx);
-        }
+        } else if (fold) indexed(g);
         return g;
       });
       const merged = mergeGeometries(geos);
       if (!merged) continue;
-      const m = s.line ? new THREE.LineSegments(merged, s.mat) : new THREE.Mesh(merged, s.mat);
+      const m = s.line ? new THREE.LineSegments(merged, s.mat) : new THREE.Mesh(merged, s.folds ? foldMaterial(cc) : s.mat);
       m.castShadow = s.cast; m.receiveShadow = true; m.renderOrder = s.order; m.userData.detail = s.small;
-      for (const o of s.list) { this.tilt.remove(o); if (!SHARED.has(o.geometry)) o.geometry.dispose(); }
-      this.tilt.add(m);
+      for (const o of s.list) { const own = o.parent === this.tilt; o.removeFromParent(); if (own && !SHARED.has(o.geometry)) o.geometry.dispose(); } // (a group's may be shared)
+      s.parent.add(m);
+    }
+    if (fold) BoatView.prototype.lines.call(this); // (the classes' views share this bake, not the class)
+  }
+
+  // Her lines (standing rigging, sheets, stays, runners, lifelines), each its own draw and the moving ones never culled
+  // (their points change every frame): drawn instead as one set of segments a material, filled each frame from the
+  // lines as they are then, after everything on her has moved and before anything is drawn, and culled as the boat is.
+  // The lines themselves stay where they are, in no layer: what moves them, shows or hides them, still does.
+  lines() {
+    const by = new Map();
+    this.tilt.traverse((o) => {
+      if (!o.isLine || o.material?.type !== 'LineBasicMaterial' || o.material.vertexColors || o.geometry.morphAttributes.position) return;
+      const chain = []; for (let p = o; p !== this.tilt; p = p.parent) chain.push(p);
+      const k = o.material.uuid + '|' + o.renderOrder;
+      if (!by.has(k)) by.set(k, { mat: o.material, order: o.renderOrder, src: [] });
+      by.get(k).src.push({ o, chain });
+    });
+    if (!by.size) return;
+    // as far as anything on her reaches, and then some (a kite's sheet, a backstay let go)
+    this.root.updateMatrixWorld(true);
+    const sphere = new THREE.Box3().setFromObject(this.tilt).getBoundingSphere(new THREE.Sphere());
+    sphere.applyMatrix4(new THREE.Matrix4().copy(this.tilt.matrixWorld).invert()); sphere.radius *= 1.3;
+    const segs = (o) => { const g = o.geometry, n = g.index ? g.index.count : g.attributes.position.count, c = Math.min(n - g.drawRange.start, g.drawRange.count); return o.isLineSegments ? c : Math.max(0, c - 1) * 2 + (o.isLineLoop && c > 2 ? 2 : 0); };
+    const M = new THREE.Matrix4(), v = new THREE.Vector3();
+    for (const { mat, order, src } of by.values()) {
+      const geo = new THREE.BufferGeometry();
+      const grow = (n) => { const a = new THREE.BufferAttribute(new Float32Array(n * 3), 3); a.setUsage(THREE.DynamicDrawUsage); geo.setAttribute('position', a); return a; };
+      let attr = grow(src.reduce((a, s) => a + segs(s.o), 0));
+      geo.boundingSphere = sphere.clone();
+      const all = new THREE.LineSegments(geo, mat);
+      all.renderOrder = order; all.userData.detail = true; // (far off, hidden with the small fittings: setDetail)
+      for (const s of src) s.o.layers.disableAll();
+      all.updateMatrixWorld = function (force) {
+        THREE.LineSegments.prototype.updateMatrixWorld.call(this, force);
+        if (!this.visible) return;
+        const need = src.reduce((a, s) => a + segs(s.o), 0);
+        if (need > attr.count) attr = grow(need * 2);
+        const out = attr.array;
+        let n = 0;
+        for (const { o, chain } of src) {
+          if (chain.some((p) => !p.visible)) continue;
+          M.identity();
+          for (const p of chain) { if (p.matrixAutoUpdate) p.updateMatrix(); M.premultiply(p.matrix); }
+          const g = o.geometry, P = g.attributes.position, I = g.index, s0 = g.drawRange.start, c = Math.min((I ? I.count : P.count) - s0, g.drawRange.count);
+          const at = (i) => { const j = I ? I.getX(s0 + i) : s0 + i; v.fromBufferAttribute(P, j).applyMatrix4(M); out[n * 3] = v.x; out[n * 3 + 1] = v.y; out[n * 3 + 2] = v.z; n++; };
+          if (o.isLineSegments) for (let i = 0; i + 1 < c; i += 2) { at(i); at(i + 1); }
+          else { for (let i = 0; i + 1 < c; i++) { at(i); at(i + 1); } if (o.isLineLoop && c > 2) { at(c - 1); at(0); } }
+        }
+        geo.setDrawRange(0, n);
+        attr.needsUpdate = true;
+      };
+      this.tilt.add(all); // (last: the lines it gathers have moved by the time it's reached)
     }
   }
 

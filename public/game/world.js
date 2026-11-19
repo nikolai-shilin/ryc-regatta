@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { D2R, wrap, clamp, lerp, waveHeight, seaSlope as waveSlope, beatAngle, runAngle, HULL, ZONE, legTargets, legAim, isBeat, hasZone } from './sim.js';
 const SC = HULL / 10.45; // the model is drawn 10.45 m long, the JPK 1050 as she is
-import { LOOKS, playerLook, lookFrom, SEA, crewFrame, showFigures } from './yacht.js';
+import { LOOKS, playerLook, lookFrom, SEA, crewFrame, showFigures, BAKE } from './yacht.js';
 import { makeBoatView } from './boats3d.js';
 import { CLS } from './classes.js';
 import { CommitteeBoat, COMMITTEE_L, COMMITTEE_BOTTOM as BOTTOM_CB } from './committee.js';
@@ -987,12 +987,17 @@ class SeaShade {
     this._v = new THREE.Vector2(); this._cc = new THREE.Color();
   }
   // a boat's parts that cast a shadow, into the SHADE layer: her solid parts (not the crew, skinned, nor the rigging's
-  // lines, too fine) and her sails, k the light each stops
+  // lines, too fine, nor the small fittings, whose shadow in the half-size mask would be a pixel or two, each a draw)
+  // and her sails, k the light each stops
   add(view) {
     const sails = new Map([[view.main, 0.8], [view.main2, 0.8], [view.jib, 0.8], [view.kite, 0.6]]);
     view.root.traverse((o) => {
       if (!o.isMesh || !o.castShadow || o.isSprite || o.isSkinnedMesh || o.isInstancedMesh || o.morphTargetInfluences) return;
-      let k = 1; for (let p = o.parent; p; p = p.parent) if (sails.has(p)) { k = sails.get(p); break; }
+      let k = 1, sail = false; for (let p = o.parent; p; p = p.parent) if (sails.has(p)) { k = sails.get(p); sail = true; break; }
+      if (BAKE.fold && !sail && o.parent?.userData.g !== o.geometry) { // (small as BoatView.setDetail has it; any sail, yacht.js sailMesh, stays)
+        if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+        if (o.userData.detail ?? o.geometry.boundingSphere.radius * Math.max(...o.scale.toArray().map(Math.abs)) < 0.9) return;
+      }
       o.layers.enable(SHADE); o.userData.shadeK = k; this.list.add(o);
       const prev = o.onBeforeRender, mat = this.mat;
       o.onBeforeRender = function (r, s, c, g, m, grp) {

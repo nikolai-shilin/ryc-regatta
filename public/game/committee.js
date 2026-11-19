@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { clamp, lerp } from './sim.js';
-import { sailor, onWatch, hullMaterial, NONSKID, deckFinish, cleat, wheel, M as YM } from './yacht.js';
+import { sailor, onWatch, hullMaterial, NONSKID, deckFinish, cleat, wheel, foldStill, M as YM } from './yacht.js';
 
 const L = 13, B = 4.3, DRAFT = 0.85;
 export const COMMITTEE_L = L;
@@ -509,6 +509,7 @@ export class CommitteeBoat {
     const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
     root.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: '#3a3f46' })));
     root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    foldStill(root); // her plain parts, a draw a material, into one (yacht.js)
   }
 
   // a finish line's boat: she runs no start, and the class flag's halyard flies the blue flag instead
