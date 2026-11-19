@@ -701,6 +701,8 @@ const kiteArc = (v, u) => v * (1 - 0.06 * Math.sin(Math.PI * u));
 // its leech aft to the shoulders. A logo is drawn a little inside the largest that fits the flat kite (grow), with
 // cloth round it on every side
 const KITE = { hz: 0.35, cz: 0.63, cy: 0.11, luffOut: 0.15, leechOut: 0.07, grow: 0.92 };
+// how much larger than fits a jib's banner on a ground of its own is drawn, the jib dyed that ground (adOn's bleed)
+const JIB_BLEED = 1.15;
 function kiteSeams(W, H) {
   const at = (v, u) => [u * W, kiteArc(v, u) * H], seams = [];
   for (let k = 1; k < 8; k++) seams.push([[(k / 8) * W, 0], at(0.375, k / 8)]); // out of the head
@@ -762,10 +764,13 @@ export function fitBox(luffZ, aftZ, yLo, yHi, aspect, clear) {
   }
   return best;
 }
-// a picture at w × h on a canvas of its own, turned a quarter round to read from the head down (its left edge at the top)
-function turnedPicture(img, w, h) {
+// a picture at w × h on a canvas of its own, turned a quarter round: down, to read from the head down (its left edge at
+// the top), else from the foot up (its left edge at the bottom)
+function turnedPicture(img, w, h, down = true) {
   const c = document.createElement('canvas'); c.width = h; c.height = w;
-  const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.translate(h, 0); x.rotate(Math.PI / 2); x.drawImage(img, 0, 0, w, h);
+  const x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+  if (down) { x.translate(h, 0); x.rotate(Math.PI / 2); } else { x.translate(0, w); x.rotate(-Math.PI / 2); }
+  x.drawImage(img, 0, 0, w, h);
   return c;
 }
 // the colour a picture is printed on, when it is: its four corners alike and solid (a banner's red), else null
@@ -970,12 +975,14 @@ export function sailTexture(kind, look, rig = null) {
       const tb = new THREE.CanvasTexture(cb);
       Promise.all([sailAd('jib'), sailColors()]).then(([img, colors]) => {
         if (R.noAd) return;
-        const xb = cb.getContext('2d'), ground = colors.jib === 'own' ? null : colors.jib || (img && groundOf(img));
+        const xb = cb.getContext('2d'), own = img && groundOf(img), ground = colors.jib === 'own' ? null : colors.jib || own;
         if (ground) for (const ctx of [x, xb]) { drawCloth(ctx, ground); battens(ctx); }
-        if (img) adOn(img, xb);
+        if (img) adOn(img, xb, !colors.jib && !!own);
         if (img || ground) { t.needsUpdate = true; tb.needsUpdate = true; }
       });
-      const adOn = (img, xb) => {
+      // bleed: the jib is dyed the banner's own ground, so the banner can be drawn a size larger than fits the sail, its
+      // ground running off the cloth's edges unseen and its words the larger
+      const adOn = (img, xb, bleed) => {
         const hd = R.hd, CL = R.clew, aspect = (img.naturalWidth || 1) / (img.naturalHeight || 1), clear = 0.035 * CL.z;
         const luffZ = (y) => (hd.z * y) / hd.y, aftZ = (y) => (y < CL.y ? (CL.z * y) / CL.y : CL.z + ((hd.z - CL.z) * (y - CL.y)) / (hd.y - CL.y));
         const lo = Math.max(0.06 * hd.y, CL.y + 0.05), level = fitBox(luffZ, aftZ, lo, 0.96 * hd.y, aspect, clear);
@@ -985,11 +992,15 @@ export function sailTexture(kind, look, rig = null) {
         const ca = CL.z * cs - CL.y * sn, cb = CL.z * sn + CL.y * cs; // the clew in that frame
         const aftL = (b) => (b >= cb ? (ca * (L - b)) / (L - cb) : cb > 0 ? (ca * b) / cb : ca);
         const along = fitBox(() => 0, aftL, Math.max(0.06 * L, cb + 0.05), 0.96 * L, 1 / aspect, clear);
-        const turn = along.w * along.h > level.w * level.h, phi = turn ? rake : 0, { w, h } = turn ? along : level;
+        const turn = along.w * along.h > level.w * level.h, phi = turn ? rake : 0, grow = bleed ? JIB_BLEED : 1;
+        const w = (turn ? along : level).w * grow, h = (turn ? along : level).h * grow;
         const zc = turn ? along.zc * cs + along.yc * sn : level.zc, yc = turn ? -along.zc * sn + along.yc * cs : level.yc;
         const STRIPS = turn ? 120 : 40, PW = 1024, PH = Math.round(PW / aspect), det0 = hd.z * CL.y - hd.y * CL.z, dh = h / STRIPS;
-        const pic = turn ? turnedPicture(img, PW, PH) : sharpPicture(img, PW, PH), pw = pic.width, ph = pic.height;
-        for (const [ctx, s] of [[x, 1], [xb, -1]]) for (let k = 0; k < STRIPS; k++) {
+        // turned, the words stand on the luff on both faces, their foot along it: reading from the head down on the front
+        // and from the foot up on the back, as a sailmaker prints the two sides (the same turn on both would hang them
+        // from the luff on one side, a mirror of the other)
+        const pics = turn ? [turnedPicture(img, PW, PH, true), turnedPicture(img, PW, PH, false)] : [sharpPicture(img, PW, PH)], pw = pics[0].width, ph = pics[0].height;
+        for (const [ctx, s, pic] of [[x, 1, pics[0]], [xb, -1, pics.at(-1)]]) for (let k = 0; k < STRIPS; k++) {
           // the strip's middle on the sail, a step down the picture's own up (the luff's line when turned)
           const t = h / 2 - (k + 0.5) * dh, pz = zc + Math.sin(phi) * t, py = yc + Math.cos(phi) * t;
           const f = (pz * CL.y - CL.z * py) / det0, u = (hd.z * py - hd.y * pz) / det0 / (1 - f);

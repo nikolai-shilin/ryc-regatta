@@ -59,6 +59,21 @@ test('a banner on a colour dyes the whole jib, both faces, and reads up the luff
     assert.equal(strips.length, 120, 'the banner turned (1024 px tall) and laid in strips');
     assert.equal(x.counts.rotate, 120, 'each strip turned through the luff\'s rake, along the line the jib furls on');
   }
+  const turned = [t.image, t.back.image].map((c) => c.getContext('2d').images.find((d) => d.image.height === 1024).image);
+  assert.notEqual(turned[0], turned[1], 'each face its own turn: the words stand on the luff on both, not mirrored on one');
+  const [front, back] = turned.map((c) => c.getContext('2d').counts);
+  assert.equal(front.rotate, 1); assert.equal(back.rotate, 1);
+});
+
+test('a banner on a ground of its own, the jib dyed that ground, is drawn a size larger than one on a clear ground', async () => {
+  const width = async (paint) => {
+    page.paint = paint;
+    const t = Y.sailTexture('jib', LOOKS.Nomad);
+    await settle();
+    return t.image.getContext('2d').images.find((d) => d.image.height === 1024).args[6]; // each strip's width
+  };
+  const dyed = await width(() => RED), clear = await width(() => [0, 0, 0, 0]);
+  assert.ok(Math.abs(dyed / clear - 1.15) < 1e-9, `${dyed} is not 1.15 × ${clear}`);
 });
 
 test('a picture with clear corners leaves the jib its own cloth', async () => {
