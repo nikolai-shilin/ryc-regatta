@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { tx, type Lang } from '@/lib/lang';
+import { LOCALE, tx, type Lang } from '@/lib/lang';
 
 // The admin's races-a-day chart (/admin/game, /admin/duels), drawn as the race's HUD draws its gauges: square bars on
 // their tracks, the condensed face, the day's numbers in a plate when it's pointed at (hover or tap, no script), the
@@ -18,7 +18,7 @@ function scale(max: number) {
 
 export function DayChart({ lang, title, label, slots }: { lang: Lang; title: string; label: string; slots: DaySlot[] }) {
   const t = tx(lang);
-  const date = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const date = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(LOCALE[lang], { day: 'numeric', month: 'short', timeZone: 'UTC' });
   const n = slots.length, room = Math.max(n, WEEK), pad = room - n, last = n - 1;
   const max = Math.max(0, ...slots.map((s) => s.n)), { step, top } = scale(max);
   const peak = max ? slots.findLastIndex((s) => s.n === max) : -1;
@@ -36,8 +36,8 @@ export function DayChart({ lang, title, label, slots }: { lang: Lang; title: str
       <figcaption className="adm-days-head">
         <span className="adm-days-title">{title}</span>
         <dl className="adm-days-read">
-          {peak >= 0 && <div className="peak"><dt>{t('Peak', 'Пик')} · {date(slots[peak].d)}</dt><dd>{max}</dd></div>}
-          {peak !== last && <div><dt>{t('Last day', 'Последний день')} · {date(slots[last].d)}</dt><dd>{slots[last].n}</dd></div>}
+          {peak >= 0 && <div className="peak"><dt>{t('Peak', 'Пик', 'Pico')} · {date(slots[peak].d)}</dt><dd>{max}</dd></div>}
+          {peak !== last && <div><dt>{t('Last day', 'Последний день', 'Último día')} · {date(slots[last].d)}</dt><dd>{slots[last].n}</dd></div>}
         </dl>
       </figcaption>
       <div className="adm-days-plot" style={{ '--days-lines': lines.length - 1 } as CSSProperties}>
@@ -52,7 +52,7 @@ export function DayChart({ lang, title, label, slots }: { lang: Lang; title: str
                 <b>{date(s.d)}</b>
                 {s.n > 0
                   ? s.tip.map(([k, v]) => <span key={k}><em>{k}</em>{v}</span>)
-                  : <span><em>{t('No races', 'Нет гонок')}</em></span>}
+                  : <span><em>{t('No races', 'Нет гонок', 'Sin regatas')}</em></span>}
               </span>
             </li>
           ))}

@@ -54,7 +54,7 @@ for (const { name, mod, path, card, title, h1 } of PAGES) {
       assert.equal(m.title, title[L]);
       assert.ok(m.description.length > 50, 'a description to show in search');
       assert.equal(m.alternates.canonical, url);
-      assert.deepEqual(m.alternates.languages, { en: path, ru: `${path}?lang=ru`, 'x-default': path });
+      assert.deepEqual(m.alternates.languages, { en: path, ru: `${path}?lang=ru`, es: `${path}?lang=es`, 'x-default': path });
       assert.equal(m.openGraph.url, url);
       assert.equal(m.openGraph.title, `${title[L]} · Up and down`);
       assert.equal(m.openGraph.locale, lang === 'ru' ? 'ru_RU' : 'en_GB');

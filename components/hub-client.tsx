@@ -15,21 +15,21 @@ export function FreeQuick({ lang }: { lang: Lang }) {
   useEffect(() => {
     const o = readOpts();
     if (!o.lastFree) return;
-    const w = { light: t('light', 'слабый'), medium: t('medium', 'средний'), strong: t('strong', 'сильный') }[o.preset];
-    const v = t(...venueOf(o.venue).name), laps = o.laps > 1 ? t(`, ${o.laps} laps`, `, ${o.laps} круга`) : '';
-    setLast(t(`Last: ${v}, ${w}, ${o.fleet} boats${laps}`, `Прошлая: ${v}, ${w}, ${ruBoats(o.fleet)}${laps}`));
+    const w = { light: t('light', 'слабый', 'flojo'), medium: t('medium', 'средний', 'medio'), strong: t('strong', 'сильный', 'fuerte') }[o.preset];
+    const v = t(...venueOf(o.venue).name), laps = o.laps > 1 ? t(`, ${o.laps} laps`, `, ${o.laps} круга`, `, ${o.laps} vueltas`) : '';
+    setLast(t(`Last: ${v}, ${w}, ${o.fleet} boats${laps}`, `Прошлая: ${v}, ${w}, ${ruBoats(o.fleet)}${laps}`, `Última: ${v}, ${w}, ${o.fleet} barcos${laps}`));
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const go = (preset: Wind) => { saveOpts({ preset, mode: 'free', lastFree: Date.now() }); location.href = '/play?race=free'; };
-  const winds: [Wind, string][] = [['light', t('Light', 'Слабый')], ['medium', t('Medium', 'Средний')], ['strong', t('Strong', 'Сильный')]];
+  const winds: [Wind, string][] = [['light', t('Light', 'Слабый', 'Flojo')], ['medium', t('Medium', 'Средний', 'Medio')], ['strong', t('Strong', 'Сильный', 'Fuerte')]];
   return (
     <div className="bt-g">
-      <span className="bt-k" id="fq-k"><IconWind s={13} />{t('Custom race', 'Своя гонка')}{last && <span className="bt-k-r" title={last}>{last}</span>}</span>
+      <span className="bt-k" id="fq-k"><IconWind s={13} />{t('Custom race', 'Своя гонка', 'Regata personalizada')}{last && <span className="bt-k-r" title={last}>{last}</span>}</span>
       <div className="bt-pills" role="group" aria-labelledby="fq-k">
         {winds.map(([w, label]) => (
-          <button key={w} type="button" className="bt-pill bt-pill-go" onClick={() => go(w)}>{label} <small>{KN[w]} {t('kn', 'уз')}</small></button>
+          <button key={w} type="button" className="bt-pill bt-pill-go" onClick={() => go(w)}>{label} <small>{KN[w]} {t('kn', 'уз', 'kn')}</small></button>
         ))}
       </div>
-      <Link className="lb-more" href="/race/free">{t('Set up a custom race: place, wind, course', 'Настроить свою гонку: место, ветер, дистанция')}</Link>
+      <Link className="lb-more" href="/race/free">{t('Set up a custom race: place, wind, course', 'Настроить свою гонку: место, ветер, дистанция', 'Prepara una regata personalizada: lugar, viento, recorrido')}</Link>
     </div>
   );
 }
@@ -43,9 +43,9 @@ export function MatchCard({ lang }: { lang: Lang }) {
   if (!on) return null;
   return (
     <div className="bt-g">
-      <span className="bt-k"><IconBoats s={13} />{t('1-on-1 race', 'Гонка 1 на 1')}</span>
-      <p className="bt-hint">{t('You and a friend, one on one: send a link.', 'Вы и друг, один на один: отправьте ссылку.')}</p>
-      <Link className="lb-more" href="/match/new">{t('Set up a 1-on-1 race', 'Настроить гонку 1 на 1')}</Link>
+      <span className="bt-k"><IconBoats s={13} />{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1')}</span>
+      <p className="bt-hint">{t('You and a friend, one on one: send a link.', 'Вы и друг, один на один: отправьте ссылку.', 'Tú y un amigo, uno contra uno: envía un enlace.')}</p>
+      <Link className="lb-more" href="/match/new">{t('Set up a 1-on-1 race', 'Настроить гонку 1 на 1', 'Prepara una regata 1 contra 1')}</Link>
     </div>
   );
 }
@@ -59,7 +59,7 @@ export function TodayGo({ lang, day }: { lang: Lang; day: string }) {
   return (
     <a className="bt-go" href="/play?race=today">
       {best != null ? <IconRestart /> : <IconPlay />}
-      <span>{best != null ? t(`Beat your ${clock(best)}`, `Побей своё ${clock(best)}`) : t('Start today’s race', 'Начать гонку дня')}</span>
+      <span>{best != null ? t(`Beat your ${clock(best)}`, `Побей своё ${clock(best)}`, `Mejora tu ${clock(best)}`) : t('Start today’s race', 'Начать гонку дня', 'Empieza la regata del día')}</span>
     </a>
   );
 }

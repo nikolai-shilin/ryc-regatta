@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import type { Lang } from './lang';
+import { LANGS, LOCALE, tx, type Lang, type Pair } from './lang.ts'; // with its extension, so npm test's Node finds it too
 
 // What search engines, AI answer engines and link previews (Telegram, WhatsApp, Facebook, X, LinkedIn…) read.
 //
@@ -13,17 +13,18 @@ export const NAME = 'Up and down';
 export const OG_IMAGE = { url: '/images/og-v9.jpg', width: 1200, height: 630, type: 'image/jpeg' };
 
 // The home page's title and description, also the defaults for any page that doesn't give its own.
-export const HOME_TITLE: [string, string] = ['Up and down — a free online sailing race game', 'Up and down — парусная гонка и симулятор яхты онлайн'];
-export const HOME_DESC: [string, string] = [
+export const HOME_TITLE: Pair = ['Up and down — a free online sailing race game', 'Up and down — парусная гонка и симулятор яхты онлайн', 'Up and down — un juego de regatas de vela gratis en línea'];
+export const HOME_DESC: Pair = [
   'A free 3D sailing game and yacht race simulator in your browser. Win the start, play the wind shifts and race up to six boats round the marks at famous regatta venues, under the real racing rules. A new race of the day every midnight.',
-  'Бесплатный 3D-парусный симулятор и гонка яхт в браузере. Возьми старт, лови заходы ветра и обойди до шести лодок на знаменитых регатных акваториях по настоящим правилам парусных гонок. Новая гонка дня каждую полночь.'];
+  'Бесплатный 3D-парусный симулятор и гонка яхт в браузере. Возьми старт, лови заходы ветра и обойди до шести лодок на знаменитых регатных акваториях по настоящим правилам парусных гонок. Новая гонка дня каждую полночь.', 'Un juego de vela en 3D y simulador de regatas de yates gratis en tu navegador. Gana la salida, juega con las roladas del viento y compite con hasta seis barcos alrededor de las balizas en famosas sedes de regatas, con el reglamento real. Cada medianoche, una nueva regata del día.'];
 
 // IndexNow (Bing, Yandex and others): the key is public by design, served at /indexnow.txt; scripts/indexnow.mjs
 // sends the sitemap's addresses after a deploy, so new and changed pages are crawled within minutes, not weeks.
 export const INDEXNOW_KEY = '98bc80b477c59bf3f8eb4da1345aa18d';
 
-export const langUrl = (path: string, lang: Lang) => (lang === 'ru' ? `${path}?lang=ru` : path);
-export const languages = (path: string) => ({ en: langUrl(path, 'en'), ru: langUrl(path, 'ru'), 'x-default': path });
+export const langUrl = (path: string, lang: Lang) => (lang === 'en' ? path : `${path}?lang=${lang}`);
+export const languages = (path: string) => ({ en: langUrl(path, 'en'), ru: langUrl(path, 'ru'), es: langUrl(path, 'es'), 'x-default': path });
+const OG_LOCALE: Record<Lang, string> = { en: 'en_GB', ru: 'ru_RU', es: 'es_ES' };
 
 type PageMeta = {
   title: string;
@@ -40,8 +41,8 @@ type PageMeta = {
 export function pageMeta(lang: Lang, { title, description, path, index = true, absolute = false, today = false, card, live = false }: PageMeta): Metadata {
   const full = absolute ? title : `${title} · ${NAME}`;
   const url = path ? langUrl(path, lang) : undefined;
-  const alt = today ? (lang === 'ru' ? 'Гонка дня: ветер, дистанция и время, которое нужно побить' : 'Today’s race: the wind, the course and the time to beat')
-    : card ? full : (lang === 'ru' ? 'Гонка в игре' : 'A race in the game');
+  const alt = today ? tx(lang)('Today’s race: the wind, the course and the time to beat', 'Гонка дня: ветер, дистанция и время, которое нужно побить', 'La regata del día: el viento, el recorrido y el tiempo a batir')
+    : card ? full : tx(lang)('A race in the game', 'Гонка в игре', 'Una regata en el juego');
   // today's card carries the day in its address, so a chat app fetches the new day's instead of its cached one
   const day = new Date().toISOString().slice(0, 10);
   const drawn = (u: string) => ({ url: u, width: 1200, height: 630, type: 'image/jpeg' });
@@ -54,7 +55,7 @@ export function pageMeta(lang: Lang, { title, description, path, index = true, a
     ...(!index && { robots: { index: false, follow: true } }),
     openGraph: {
       type: 'website', siteName: NAME, title: full, ...(description && { description }), ...(url && { url }),
-      locale: lang === 'ru' ? 'ru_RU' : 'en_GB', alternateLocale: lang === 'ru' ? ['en_GB'] : ['ru_RU'],
+      locale: OG_LOCALE[lang], alternateLocale: LANGS.filter((l) => l !== lang).map((l) => OG_LOCALE[l]),
       images: [{ ...image, alt }],
     },
     twitter: { card: 'summary_large_image', title: full, ...(description && { description }), images: [{ url: image.url, alt }] },
@@ -63,14 +64,14 @@ export function pageMeta(lang: Lang, { title, description, path, index = true, a
 
 // Who writes the guides and the venue pages: the byline under each one's title and the author in its Article data.
 // sameAs: the author's public profiles, so search engines and AI assistants can tell who he is.
-export const AUTHOR = { name: ['Nikolai Shilin', 'Николай Шилин'] as [string, string], org: 'RYC', sameAs: [] as string[] };
+export const AUTHOR = { name: ['Nikolai Shilin', 'Николай Шилин', 'Nikolai Shilin'] as Pair, org: 'RYC', sameAs: [] as string[] };
 export const RYC_LD = { '@type': 'Organization', '@id': `${SITE}/#ryc`, name: 'RYC', url: 'https://www.rycrentals.com/', logo: { '@type': 'ImageObject', url: `${SITE}/logo-black.svg` } };
 export const AUTHOR_LD = {
   '@type': 'Person', '@id': `${SITE}/#author`, name: AUTHOR.name[0], alternateName: AUTHOR.name[1], worksFor: RYC_LD,
   ...(AUTHOR.sameAs.length && { sameAs: AUTHOR.sameAs }),
 };
 // a date as the bylines say it: 17 November 2026, 17 ноября 2026 г.
-export const longDate = (day: string, lang: Lang) => new Date(day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+export const longDate = (day: string, lang: Lang) => new Date(day + 'T12:00:00Z').toLocaleDateString(LOCALE[lang], { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 
 // Escaped for a <script type="application/ld+json">: no "</script>" can close it early.
 export const jsonLd = (data: unknown) => ({ __html: JSON.stringify(data).replace(/</g, '\\u003c') });

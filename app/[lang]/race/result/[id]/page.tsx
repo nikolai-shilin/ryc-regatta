@@ -13,12 +13,12 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const res = await getResult(id);
   const d = res && describe(res, lang);
   const meta = pageMeta(lang, {
-    title: d ? `${d.headline} · ${d.kind}` : t('Race result', 'Результат гонки'),
-    description: d ? `${d.detail}. ${d.call}: ${t('a free 3D sailing race in your browser.', 'бесплатная 3D-парусная гонка в браузере.')}` : undefined,
+    title: d ? `${d.headline} · ${d.kind}` : t('Race result', 'Результат гонки', 'Resultado de la regata'),
+    description: d ? `${d.detail}. ${d.call}: ${t('a free 3D sailing race in your browser.', 'бесплатная 3D-парусная гонка в браузере.', 'una regata 3D gratuita en tu navegador.')}` : undefined,
     index: false,
   });
-  const card = { url: `/og/result/${encodeURIComponent(id)}${lang === 'ru' ? '?lang=ru' : ''}`, width: 1200, height: 630, alt: d ? `${d.headline} · ${d.detail}` : t('A race in the game', 'Гонка в игре') };
-  return { ...meta, openGraph: { ...meta.openGraph, url: `/race/result/${id}${lang === 'ru' ? '?lang=ru' : ''}`, images: [card] }, twitter: { ...meta.twitter, images: [card] } };
+  const card = { url: `/og/result/${encodeURIComponent(id)}${lang === 'en' ? '' : `?lang=${lang}`}`, width: 1200, height: 630, alt: d ? `${d.headline} · ${d.detail}` : t('A race in the game', 'Гонка в игре', 'Una regata en el juego') };
+  return { ...meta, openGraph: { ...meta.openGraph, url: `/race/result/${id}${lang === 'en' ? '' : `?lang=${lang}`}`, images: [card] }, twitter: { ...meta.twitter, images: [card] } };
 }
 
 // R1 · The result and debrief, as the broadcast lays it out: the finish as it was behind the result and the full table

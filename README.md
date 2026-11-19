@@ -116,16 +116,19 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   the first one, so the race under the preloader is the one sailed, and the start keeps it rather than building it
   again (about half a second on a phone). The exception is a race dressed before Carlito bold came in (the sail and
   bow numbers' face, which `/play` asks for from an inline script after its stylesheets): the start dresses it again.
-- **Languages:** English and Russian.
-  - The address's `?lang=ru` decides (the address search engines index each language by, `lib/seo.ts`), else the `lang`
+- **Languages:** English, Russian and Spanish.
+  - The address's `?lang=ru` or `?lang=es` decides (the address search engines index each language by, `lib/seo.ts`), else the `lang`
     cookie (set by `?lang=` and by `/lang?to=ru&back=/somewhere`), else the browser's Accept-Language.
   - Every page lives under `app/[lang]/`, a segment no address shows: `proxy.ts` picks the language and rewrites `/help`
     to `/ru/help`. So the content pages (Home, `/help`, `/faq`, `/learn`, `/iyt`) are built once per language and served
     from the CDN; Home is rebuilt every five minutes for today's fastest. `/ru/help` typed in redirects to `/help?lang=ru`.
   - Those pages don't know who is signed in: the avatar, the footer's account link and "Sign in to get on it" are drawn
     from the session cookie in the browser (`lib/me.ts`, then CSS `.if-me` / `.if-guest`).
-  - The game reads the same cookie.
-  - The copy is inline as `t('English', 'Русский')` pairs (`lib/lang.ts`).
+  - The game reads the same cookie. Its Spanish words are `public/game/strings-es.js`, fetched only when the game is in
+    Spanish; the spoken calls and the skipper's voice have no Spanish recording yet, so Spanish hears the English ones.
+  - The copy is inline as `t('English', 'Русский', 'Español')` (`lib/lang.ts`); a line with no Spanish reads in English
+    on the Spanish pages, and `test/spanish.test.mjs` fails until every English and Russian line has its Spanish. A name
+    kept as `[English, Russian, Spanish]` is read with `pick(name, lang)`.
 - **Today's race:** `lib/race.ts` is a copy of the game's `dailyRace()` and must stay in step with `public/game/sim.js`;
   `npm test` compares the two over 546 days. From `SHAPES_FROM` today's race picks one of the four shapes each day. Its day is the UTC date, so it changes at 03:00 in Moscow and Türkiye.
   Today's fastest comes from `https://iyt.rycrentals.com/api/game` (the `iyt-test` repo).

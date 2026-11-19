@@ -1,4 +1,4 @@
-import { tx, type Lang } from '@/lib/lang';
+import { LOCALE, tx, type Lang } from '@/lib/lang';
 import { plainName } from '@/lib/name';
 import { Tile } from './admin-stats';
 import { IconCrew, clock } from './ui';
@@ -21,20 +21,20 @@ const pct = (a: number, b: number) => (b ? `${Math.round((100 * a) / b)}%` : '�
 
 export function AdminPlayers({ lang, data, days = 30 }: { lang: Lang; data: Players; days?: number }) {
   const t = tx(lang), P = data.players;
-  const KIND = { tg: 'Telegram', acct: t('Site account', 'Аккаунт на сайте'), guest: t('Guest', 'Гость') };
-  const when = (s: string) => new Date(s).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+  const KIND = { tg: 'Telegram', acct: t('Site account', 'Аккаунт на сайте', 'Cuenta del sitio'), guest: t('Guest', 'Гость', 'Invitado') };
+  const when = (s: string) => new Date(s).toLocaleString(LOCALE[lang], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
   const dev = (v: string | null) => {
     if (!v) return '–';
     const [d, tg] = v.split(' ');
-    const name = { phone: t('Phone', 'Телефон'), tablet: t('Tablet', 'Планшет'), desktop: t('Computer', 'Компьютер') }[d] ?? d;
+    const name = { phone: t('Phone', 'Телефон', 'Móvil'), tablet: t('Tablet', 'Планшет', 'Tableta'), desktop: t('Computer', 'Компьютер', 'Ordenador') }[d] ?? d;
     return tg ? `${name} · Telegram` : name;
   };
   const count = (k: Player['kind']) => P.filter((p) => p.kind === k).length;
   const cols: Col[] = [
-    { label: t('Races', 'Гонок') }, { label: t('Finished', 'Финиш') }, { label: t('Top 3', 'Топ-3') },
-    { label: t('DSQ', 'DSQ') }, { label: t('Days', 'Дней') }, { label: t('Place', 'Место'), asc: true },
-    { label: t('Best today’s race', 'Лучшее в гонке дня'), asc: true }, { label: t('Rating', 'Оценка') },
-    { label: t('Device', 'Устройство'), asc: true }, { label: t('Last seen', 'Был') }, { label: t('First seen', 'Впервые') },
+    { label: t('Races', 'Гонок', 'Regatas') }, { label: t('Finished', 'Финиш', 'Terminada') }, { label: t('Top 3', 'Топ-3', 'Top 3') },
+    { label: t('DSQ', 'DSQ') }, { label: t('Days', 'Дней', 'Días') }, { label: t('Place', 'Место', 'Puesto'), asc: true },
+    { label: t('Best today’s race', 'Лучшее в гонке дня', 'Mejor de la regata del día'), asc: true }, { label: t('Rating', 'Оценка', 'Valoración') },
+    { label: t('Device', 'Устройство', 'Dispositivo'), asc: true }, { label: t('Last seen', 'Был', 'Visto por última vez') }, { label: t('First seen', 'Впервые', 'Visto por primera vez') },
   ];
   const rows: Row[] = P.map((p) => ({
     key: p.who,
@@ -48,23 +48,23 @@ export function AdminPlayers({ lang, data, days = 30 }: { lang: Lang; data: Play
   }));
   return (
     <div className="adm adm-stats">
-      <div className="adm-k"><IconCrew /><span className="kicker">{t('The players', 'Игроки')}</span></div>
+      <div className="adm-k"><IconCrew /><span className="kicker">{t('The players', 'Игроки', 'Los jugadores')}</span></div>
       <div className="adm-tiles">
-        <Tile k={t('Players who raced', 'Игроков с гонками')} v={String(P.length)} />
-        <Tile k={t('New in the period', 'Новых за период')} v={String(P.filter((p) => p.new).length)} />
+        <Tile k={t('Players who raced', 'Игроков с гонками', 'Jugadores que regataron')} v={String(P.length)} />
+        <Tile k={t('New in the period', 'Новых за период', 'Nuevos en el periodo')} v={String(P.filter((p) => p.new).length)} />
         <Tile k="Telegram" v={String(count('tg'))} />
-        <Tile k={t('Site accounts', 'Аккаунтов на сайте')} v={String(count('acct'))} />
-        <Tile k={t('Guests', 'Гостей')} v={String(count('guest'))} />
+        <Tile k={t('Site accounts', 'Аккаунтов на сайте', 'Cuentas del sitio')} v={String(count('acct'))} />
+        <Tile k={t('Guests', 'Гостей', 'Invitados')} v={String(count('guest'))} />
       </div>
       {P.length > 0 && (
         <section className="adm-tab">
-          <h3 className="adm-tab-h">{t('Click a column to sort by it', 'Нажмите на столбец, чтобы отсортировать')}</h3>
-          <PlayersTable first={{ label: t('Player', 'Игрок'), asc: true }} cols={cols} rows={rows} start={10}
-            label={t('The players', 'Игроки')} newLabel={t('New', 'Новый')} />
+          <h3 className="adm-tab-h">{t('Click a column to sort by it', 'Нажмите на столбец, чтобы отсортировать', 'Pulsa una columna para ordenar')}</h3>
+          <PlayersTable first={{ label: t('Player', 'Игрок', 'Jugador'), asc: true }} cols={cols} rows={rows} start={10}
+            label={t('The players', 'Игроки', 'Los jugadores')} newLabel={t('New', 'Новый', 'Nuevo')} />
         </section>
       )}
       <p className="hint">{t('Everyone who began a race in the period, the last seen first; click a column’s head to sort by it, again to turn it round. A guest is a browser; one who signed in later is counted as that player. Place: the median, 0% first in the fleet, 100% last. Rating: the average of the stars they gave, and how many. Times in UTC; first seen is their first race ever. Guests’ races before 17 November had no browser and aren’t here.',
-        'Все, кто начинал гонку за период, недавние сверху; нажмите на заголовок столбца, чтобы отсортировать, ещё раз — в обратном порядке. Гость — это браузер; если он потом вошёл, его гонки считаются за этого игрока. Место — медиана: 0% — первым во флоте, 100% — последним. Оценка — средняя из поставленных звёзд и их число. Время по UTC; «Впервые» — первая гонка вообще. Гонки гостей до 17 ноября без браузера и сюда не попали.')}</p>
+        'Все, кто начинал гонку за период, недавние сверху; нажмите на заголовок столбца, чтобы отсортировать, ещё раз — в обратном порядке. Гость — это браузер; если он потом вошёл, его гонки считаются за этого игрока. Место — медиана: 0% — первым во флоте, 100% — последним. Оценка — средняя из поставленных звёзд и их число. Время по UTC; «Впервые» — первая гонка вообще. Гонки гостей до 17 ноября без браузера и сюда не попали.', 'Todos los que empezaron una regata en el periodo, el visto más recientemente primero; pulsa el encabezado de una columna para ordenar, otra vez para invertir. Un invitado es un navegador; si entró después, se cuenta como ese jugador. Puesto: la mediana, 0 % primero de la flota, 100 % último. Valoración: la media de las estrellas que dieron, y cuántas. Horas en UTC; visto por primera vez es su primera regata de siempre. Las regatas de invitados anteriores al 17 de noviembre no tenían navegador y no están aquí.')}</p>
     </div>
   );
 }

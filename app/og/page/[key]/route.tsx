@@ -1,4 +1,4 @@
-import { isLang, ruPlural, tx, type Lang, type T } from '@/lib/lang';
+import { LOCALE, isLang, ruPlural, tx, type Lang, type T } from '@/lib/lang';
 import { dailyRace } from '@/lib/race';
 import { YACHTS, yachtOf } from '@/lib/yachts';
 import { VENUES, venueOf } from '@/lib/venues';
@@ -23,51 +23,51 @@ type Q = URLSearchParams;
 type Built = Parameters<typeof card>[0];
 type Build = (t: T, lang: Lang, q: Q) => Promise<Built | null> | Built | null;
 
-const num = (n: number, lang: Lang) => n.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB');
-const dayLabel = (day: string, lang: Lang) => new Date(day + 'T12:00:00Z').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/\.$/, '');
-const learn = (t: T) => t('Racing guides', 'Пособия по гонкам');
+const num = (n: number, lang: Lang) => n.toLocaleString(LOCALE[lang]);
+const dayLabel = (day: string, lang: Lang) => new Date(day + 'T12:00:00Z').toLocaleDateString(LOCALE[lang], { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/\.$/, '');
+const learn = (t: T) => t('Racing guides', 'Пособия по гонкам', 'Guías de regatas');
 // the picture behind each guide: what it teaches, as the game shows it
 const GUIDE_BG: Record<GuideSlug, Bg> = { sail: 'wind', tack: 'helm', rules: 'fleet', start: 'start', shifts: 'wind', marks: 'aerial', downwind: 'fleet', trim: 'trim' };
 
 const CARDS: Record<string, Build> = {
   learn: (t) => ({
-    bg: 'aerial', kind: t(`${GUIDES.length} short guides and a glossary`, `${GUIDES.length} коротких пособий и словарь`),
-    hero: { label: t('Sailboat racing, step by step', 'Парусные гонки шаг за шагом'), value: learn(t), wrap: true },
-    call: t('Read, then race', 'Читай и гоняйся'),
+    bg: 'aerial', kind: t(`${GUIDES.length} short guides and a glossary`, `${GUIDES.length} коротких пособий и словарь`, `${GUIDES.length} guías breves y un glosario`),
+    hero: { label: t('Sailboat racing, step by step', 'Парусные гонки шаг за шагом', 'Regatas a vela, paso a paso'), value: learn(t), wrap: true },
+    call: t('Read, then race', 'Читай и гоняйся', 'Lee, luego compite'),
   }),
   guide: (t, lang, q) => {
     const slug = q.get('g') || '';
     if (!isGuide(slug)) return null;
     const g = guide(slug, t, lang);
     return {
-      bg: GUIDE_BG[slug], kind: `${learn(t)} · ${t(`Guide ${guideNo(slug)} of ${GUIDES.length}`, `Пособие ${guideNo(slug)} из ${GUIDES.length}`)}`,
-      hero: { label: g.kicker.split(' · ')[1] || t('Guide', 'Пособие'), value: g.short, wrap: true },
-      call: t('Read the guide', 'Читать пособие'),
+      bg: GUIDE_BG[slug], kind: `${learn(t)} · ${t(`Guide ${guideNo(slug)} of ${GUIDES.length}`, `Пособие ${guideNo(slug)} из ${GUIDES.length}`, `Guía ${guideNo(slug)} de ${GUIDES.length}`)}`,
+      hero: { label: g.kicker.split(' · ')[1] || t('Guide', 'Пособие', 'Guía'), value: g.short, wrap: true },
+      call: t('Read the guide', 'Читать пособие', 'Lee la guía'),
     };
   },
   glossary: (t) => {
     const n = glossaryGroups(t).reduce((a, g) => a + g.terms.length, 0);
     return {
-      bg: 'wind', kind: `${learn(t)} · ${t('Glossary', 'Словарь')}`,
-      hero: { label: t('The words of sailboat racing', 'Слова парусных гонок'), value: t(`${n} terms`, `${n} ${ruPlural(n, ['термин', 'термина', 'терминов'])}`) },
-      call: t('Look a word up', 'Найди слово'),
+      bg: 'wind', kind: `${learn(t)} · ${t('Glossary', 'Словарь', 'Glosario')}`,
+      hero: { label: t('The words of sailboat racing', 'Слова парусных гонок', 'Las palabras de las regatas a vela'), value: t(`${n} terms`, `${n} ${ruPlural(n, ['термин', 'термина', 'терминов'])}`, `${n} términos`) },
+      call: t('Look a word up', 'Найди слово', 'Busca una palabra'),
     };
   },
   rulebook: (t) => {
     const n = ruleCount(rulebook(t));
     return {
-      bg: 'fleet', kind: t('Racing rules', 'Правила гонок'),
-      hero: { label: t('The Racing Rules of Sailing in plain words', 'Правила парусных гонок простыми словами'), value: t(`${n} rules`, `${n} ${ruPlural(n, ['правило', 'правила', 'правил'])}`) },
-      call: t('Look a rule up', 'Найди правило'),
+      bg: 'fleet', kind: t('Racing rules', 'Правила гонок', 'Reglas de regatas'),
+      hero: { label: t('The Racing Rules of Sailing in plain words', 'Правила парусных гонок простыми словами', 'El Reglamento de Regatas a Vela en palabras llanas'), value: t(`${n} rules`, `${n} ${ruPlural(n, ['правило', 'правила', 'правил'])}`, `${n} reglas`) },
+      call: t('Look a rule up', 'Найди правило', 'Busca una regla'),
     };
   },
   yachts: (t) => {
     const len = (y: (typeof YACHTS)[number]) => parseFloat(y.specs.find((s) => s.k[0] === 'Length')!.v[0]);
     const ys = YACHTS.slice().sort((a, b) => len(b) - len(a));
     return {
-      bg: 'fleet', kind: t('The yachts', 'Яхты'),
-      hero: { label: t(`From the ${t(...ys[ys.length - 1].name)} to the ${t(...ys[0].name)}`, `От ${t(...ys[ys.length - 1].name)} до ${t(...ys[0].name)}`), value: t(`${ys.length} yachts`, `${ys.length} яхт`) },
-      call: t('Pick your yacht', 'Выбери яхту'),
+      bg: 'fleet', kind: t('The yachts', 'Яхты', 'Los yates'),
+      hero: { label: t(`From the ${t(...ys[ys.length - 1].name)} to the ${t(...ys[0].name)}`, `От ${t(...ys[ys.length - 1].name)} до ${t(...ys[0].name)}`, `Del ${t(...ys[ys.length - 1].name)} al ${t(...ys[0].name)}`), value: t(`${ys.length} yachts`, `${ys.length} яхт`, `${ys.length} yates`) },
+      call: t('Pick your yacht', 'Выбери яхту', 'Elige tu yate'),
     };
   },
   // a day's rating (today's without ?day): the winner and their time
@@ -77,20 +77,20 @@ const CARDS: Record<string, Build> = {
     const d = dailyRace(new Date(day + 'T12:00:00Z'));
     const first = (r?.rows || []).slice().sort((a, b) => a.s - b.s)[0];
     return {
-      bg: 'fleet', kind: `${live ? t('Today’s leaderboard', 'Рейтинг дня') : t('Leaderboard', 'Рейтинг')} · ${t(...venueOf(d.venue).name)} · ${t(...yachtOf(d.yacht).name)}`,
+      bg: 'fleet', kind: `${live ? t('Today’s leaderboard', 'Рейтинг дня', 'Clasificación de hoy') : t('Leaderboard', 'Рейтинг', 'Clasificación')} · ${t(...venueOf(d.venue).name)} · ${t(...yachtOf(d.yacht).name)}`,
       tag: { text: dayLabel(day, lang), live },
       hero: first
-        ? { label: t(`First · ${first.name || 'a sailor'}`, `Первое место · ${first.name || 'гонщик'}`), value: clock(first.s), color: C.gold, plate: { text: t('1st', '1'), bg: C.gold } }
-        : { label: t('No time yet', 'Пока никто не финишировал'), value: t('Be first', 'Будь первым') },
-      call: live ? t('Beat the time', 'Побей время') : t('See the leaderboard', 'Смотри рейтинг'),
+        ? { label: t(`First · ${first.name || 'a sailor'}`, `Первое место · ${first.name || 'гонщик'}`, `Primero · ${first.name || 'un regatista'}`), value: clock(first.s), color: C.gold, plate: { text: t('1st', '1', '1.º'), bg: C.gold } }
+        : { label: t('No time yet', 'Пока никто не финишировал', 'Aún sin tiempo'), value: t('Be first', 'Будь первым', 'Sé el primero') },
+      call: live ? t('Beat the time', 'Побей время', 'Bate el tiempo') : t('See the leaderboard', 'Смотри рейтинг', 'Ver la clasificación'),
     };
   },
   players: async (t, lang) => {
     const l = await getPlayers(1);
     return {
-      bg: 'helm', kind: t('The players', 'Игроки'),
-      hero: l && l.total ? { label: t('Sailors racing signed in', 'Гонщики с аккаунтом'), value: num(l.total, lang), color: C.gold } : { label: t('Everyone who races', 'Все, кто гоняется'), value: t('The players', 'Игроки'), wrap: true },
-      call: t('Join them', 'Присоединяйся'),
+      bg: 'helm', kind: t('The players', 'Игроки', 'Los jugadores'),
+      hero: l && l.total ? { label: t('Sailors racing signed in', 'Гонщики с аккаунтом', 'Regatistas con sesión iniciada'), value: num(l.total, lang), color: C.gold } : { label: t('Everyone who races', 'Все, кто гоняется', 'Todos los que compiten'), value: t('The players', 'Игроки', 'Los jugadores'), wrap: true },
+      call: t('Join them', 'Присоединяйся', 'Únete'),
     };
   },
   // one player: their name, and their points and wins
@@ -98,70 +98,70 @@ const CARDS: Record<string, Build> = {
     const k = q.get('p') || '';
     const p = KEY_RE.test(k) ? await getPlayer(k) : null;
     if (!p) return CARDS.players(t, lang, q);
-    const pts = t(`${num(p.pts, lang)} points`, `${num(p.pts, lang)} ${ruPlural(p.pts, ['очко', 'очка', 'очков'])}`);
-    const wins = p.wins ? t(`${p.wins} ${p.wins === 1 ? 'win' : 'wins'}`, `${p.wins} ${ruPlural(p.wins, ['победа', 'победы', 'побед'])}`) : '';
+    const pts = t(`${num(p.pts, lang)} points`, `${num(p.pts, lang)} ${ruPlural(p.pts, ['очко', 'очка', 'очков'])}`, `${num(p.pts, lang)} ${p.pts === 1 ? 'punto' : 'puntos'}`);
+    const wins = p.wins ? t(`${p.wins} ${p.wins === 1 ? 'win' : 'wins'}`, `${p.wins} ${ruPlural(p.wins, ['победа', 'победы', 'побед'])}`, `${p.wins} ${p.wins === 1 ? 'victoria' : 'victorias'}`) : '';
     return {
-      bg: 'helm', kind: t('Player card', 'Карточка игрока'),
-      hero: { label: [pts, wins].filter(Boolean).join(' · '), value: p.name || t('A sailor', 'Гонщик'), wrap: true },
-      call: t('Race them', 'Обгони'),
+      bg: 'helm', kind: t('Player card', 'Карточка игрока', 'Tarjeta de jugador'),
+      hero: { label: [pts, wins].filter(Boolean).join(' · '), value: p.name || t('A sailor', 'Гонщик', 'Un regatista'), wrap: true },
+      call: t('Race them', 'Обгони', 'Rétalos'),
     };
   },
   drills: (t) => ({
-    bg: 'start', kind: t('Drills', 'Тренировки'),
-    hero: { label: t(`${LEVELS.length} levels, beginner to expert`, `${LEVELS.length} уровня, от новичка до эксперта`), value: t(`${DRILLS.length} drills`, `${DRILLS.length} ${ruPlural(DRILLS.length, ['тренировка', 'тренировки', 'тренировок'])}`) },
-    call: t('Start a drill', 'Начни тренировку'),
+    bg: 'start', kind: t('Drills', 'Тренировки', 'Ejercicios'),
+    hero: { label: t(`${LEVELS.length} levels, beginner to expert`, `${LEVELS.length} уровня, от новичка до эксперта`, `${LEVELS.length} niveles, de principiante a experto`), value: t(`${DRILLS.length} drills`, `${DRILLS.length} ${ruPlural(DRILLS.length, ['тренировка', 'тренировки', 'тренировок'])}`, `${DRILLS.length} ejercicios`) },
+    call: t('Start a drill', 'Начни тренировку', 'Empezar un ejercicio'),
   }),
   free: (t) => ({
-    bg: 'drone', kind: t(`${VENUES.length} venues · ${YACHTS.length} yachts`, `${VENUES.length} ${ruPlural(VENUES.length, ['акватория', 'акватории', 'акваторий'])} · ${YACHTS.length} яхт`),
-    hero: { label: t('Your venue, your yacht, your wind', 'Твоя акватория, твоя яхта, твой ветер'), value: t('Custom race', 'Своя гонка'), wrap: true },
-    call: t('Set up a race', 'Настрой гонку'),
+    bg: 'drone', kind: t(`${VENUES.length} venues · ${YACHTS.length} yachts`, `${VENUES.length} ${ruPlural(VENUES.length, ['акватория', 'акватории', 'акваторий'])} · ${YACHTS.length} яхт`, `${VENUES.length} sedes · ${YACHTS.length} yates`),
+    hero: { label: t('Your venue, your yacht, your wind', 'Твоя акватория, твоя яхта, твой ветер', 'Tu sede, tu yate, tu viento'), value: t('Custom race', 'Своя гонка', 'Regata personalizada'), wrap: true },
+    call: t('Set up a race', 'Настрой гонку', 'Preparar una regata'),
   }),
   // a 1-on-1 race: the host's venue and boat, its code on the tag
   match: (t, _lang, q) => {
     const code = parseCode(q.get('c') || '');
     const v = venueOf(q.get('v') || undefined), y = yachtOf(q.get('b'));
     return {
-      bg: 'drone', kind: `${t('1-on-1 race', 'Гонка 1 на 1')} · ${t(...v.name)} · ${t(...y.name)}`,
+      bg: 'drone', kind: `${t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1')} · ${t(...v.name)} · ${t(...y.name)}`,
       ...(code ? { tag: { text: code } } : {}),
-      hero: { label: t('You and a friend, one on one', 'Вы и друг, один на один'), value: t('Race me', 'Сыграем'), color: C.gold },
-      call: t('Join the race', 'Войти в гонку'),
+      hero: { label: t('You and a friend, one on one', 'Вы и друг, один на один', 'Tú y un amigo, uno contra uno'), value: t('Race me', 'Сыграем', 'Rétame'), color: C.gold },
+      call: t('Join the race', 'Войти в гонку', 'Unirse a la regata'),
     };
   },
   iyt: (t, lang) => ({
     bg: 'helm', kind: 'Sailing Certification Test',
-    hero: { label: t('Questions, VHF to Yachtmaster Ocean', 'Вопросов, от VHF до Yachtmaster Ocean'), value: num(IYT_TOTAL, lang), color: C.gold },
-    call: t('Practise free', 'Тренируйся бесплатно'),
+    hero: { label: t('Questions, VHF to Yachtmaster Ocean', 'Вопросов, от VHF до Yachtmaster Ocean', 'Preguntas, de VHF a Yachtmaster Ocean'), value: num(IYT_TOTAL, lang), color: C.gold },
+    call: t('Practise free', 'Тренируйся бесплатно', 'Practica gratis'),
   }),
   help: (t) => ({
-    bg: 'trim', kind: t('How to play', 'Как играть'),
-    hero: { label: t('Steer, trim, tack and win the start', 'Руль, паруса, поворот и старт'), value: t('How to play', 'Как играть'), wrap: true },
-    call: t('Learn the boat', 'Освой лодку'),
+    bg: 'trim', kind: t('How to play', 'Как играть', 'Cómo jugar'),
+    hero: { label: t('Steer, trim, tack and win the start', 'Руль, паруса, поворот и старт', 'Gobierna, trima, vira y gana la salida'), value: t('How to play', 'Как играть', 'Cómo jugar'), wrap: true },
+    call: t('Learn the boat', 'Освой лодку', 'Aprende el barco'),
   }),
   faq: (t) => {
     const n = faqGroups(t).reduce((a, g) => a + g.items.length, 0);
     return {
-      bg: 'drone', kind: t('FAQ', 'Вопросы и ответы'),
-      hero: { label: t('About the game, the race and the rules', 'Об игре, гонке и правилах'), value: t(`${n} answers`, `${n} ${ruPlural(n, ['ответ', 'ответа', 'ответов'])}`) },
-      call: t('Find the answer', 'Найди ответ'),
+      bg: 'drone', kind: t('FAQ', 'Вопросы и ответы', 'Preguntas'),
+      hero: { label: t('About the game, the race and the rules', 'Об игре, гонке и правилах', 'Sobre el juego, la regata y las reglas'), value: t(`${n} answers`, `${n} ${ruPlural(n, ['ответ', 'ответа', 'ответов'])}`, `${n} respuestas`) },
+      call: t('Find the answer', 'Найди ответ', 'Encuentra la respuesta'),
     };
   },
   social: (t) => {
     const ch = CHANNELS[0];
     return {
-      bg: 'fleet', kind: t('Social media', 'Соцсети'),
-      hero: { label: t(`On ${ch.name}`, `В ${ch.name}`), value: ch.handle, wrap: true },
-      call: t('Follow', 'Подписаться'),
+      bg: 'fleet', kind: t('Social media', 'Соцсети', 'Redes sociales'),
+      hero: { label: t(`On ${ch.name}`, `В ${ch.name}`, `En ${ch.name}`), value: ch.handle, wrap: true },
+      call: t('Follow', 'Подписаться', 'Seguir'),
     };
   },
   sponsorship: (t) => ({
-    bg: 'fleet', kind: t('Sponsorship', 'Спонсорство'),
-    hero: { label: t('On the sails and over the course', 'На парусах и над дистанцией'), value: t('Your brand in the race', 'Ваш бренд в гонке'), wrap: true },
-    call: t('See the options', 'Посмотреть варианты'),
+    bg: 'fleet', kind: t('Sponsorship', 'Спонсорство', 'Patrocinio'),
+    hero: { label: t('On the sails and over the course', 'На парусах и над дистанцией', 'En las velas y sobre el recorrido'), value: t('Your brand in the race', 'Ваш бренд в гонке', 'Tu marca en la regata'), wrap: true },
+    call: t('See the options', 'Посмотреть варианты', 'Ver las opciones'),
   }),
   boat: (t) => ({
-    bg: 'drone', kind: t('Your yacht', 'Твоя яхта'),
-    hero: { label: t('Hull, sails, flag and number', 'Корпус, паруса, флаг и номер'), value: t('Your yacht', 'Твоя яхта'), wrap: true },
-    call: t('Paint your yacht', 'Раскрась яхту'),
+    bg: 'drone', kind: t('Your yacht', 'Твоя яхта', 'Tu yate'),
+    hero: { label: t('Hull, sails, flag and number', 'Корпус, паруса, флаг и номер', 'Casco, velas, bandera y número'), value: t('Your yacht', 'Твоя яхта', 'Tu yate'), wrap: true },
+    call: t('Paint your yacht', 'Раскрась яхту', 'Pinta tu yate'),
   }),
 };
 

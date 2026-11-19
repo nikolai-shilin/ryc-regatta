@@ -10,11 +10,11 @@ export function NotFoundView({ lang }: { lang: Lang }) {
       <SiteHead lang={lang} t={t} page="result" />
       <header className="hm-page hm-ph">
         <span className="kicker">404</span>
-        <h1 className="hm-ph-h">{t('This page isn’t here', 'Такой страницы нет')}</h1>
-        <p className="hm-text">{t('The address may be mistyped, or the page has moved. Today’s race is still on.', 'Возможно, в адресе опечатка или страница переехала. Гонка дня на месте.')}</p>
+        <h1 className="hm-ph-h">{t('This page isn’t here', 'Такой страницы нет', 'Esta página no está aquí')}</h1>
+        <p className="hm-text">{t('The address may be mistyped, or the page has moved. Today’s race is still on.', 'Возможно, в адресе опечатка или страница переехала. Гонка дня на месте.', 'Puede que la dirección esté mal escrita, o que la página se haya movido. La regata de hoy sigue en marcha.')}</p>
         <div className="btn-row">
-          <Link className="pill pill-primary pill-s" href="/race"><span className="btn-t">{t('Today’s race', 'Гонка дня')}</span></Link>
-          <Link className="pill pill-s" href="/"><span className="btn-t">{t('Home', 'Главная')}</span></Link>
+          <Link className="pill pill-primary pill-s" href="/race"><span className="btn-t">{t('Today’s race', 'Гонка дня', 'La regata del día')}</span></Link>
+          <Link className="pill pill-s" href="/"><span className="btn-t">{t('Home', 'Главная', 'Inicio')}</span></Link>
         </div>
       </header>
       <SiteFoot lang={lang} t={t} back="/" />

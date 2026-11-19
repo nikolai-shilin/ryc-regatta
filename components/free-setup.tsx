@@ -17,10 +17,10 @@ import { newCode } from '@/lib/code';
 import { useLog } from './passport';
 
 // the way round each shape but up and down, under its choice
-const SHAPE_HINT: Partial<Record<Shape, [string, string]>> = {
-  tri: ['Up to the windward mark, a tight reach out to the wing mark, a gybe there and a broad reach back.', 'Вверх к верхнему знаку, галфвинд к боковому знаку, там поворот фордевинд и бакштаг обратно.'],
-  trap: ['Up to mark 1, a broad reach out to mark 2, a run down to the gate, and a beam reach home to a finish line of its own.', 'Вверх к знаку 1, бакштаг к знаку 2, фордевинд к воротам и галфвинд к своей финишной линии.'],
-  wlu: ['Up to the windward mark, a short reach to the offset mark, a run down through the gate, and a last beat up to a finish line below the windward mark.', 'Вверх к верхнему знаку, короткий галфвинд к отбойнику, фордевинд через ворота и последняя лавировка к финишу чуть ниже верхнего знака.'],
+const SHAPE_HINT: Partial<Record<Shape, [en: string, ru: string, es?: string]>> = {
+  tri: ['Up to the windward mark, a tight reach out to the wing mark, a gybe there and a broad reach back.', 'Вверх к верхнему знаку, галфвинд к боковому знаку, там поворот фордевинд и бакштаг обратно.', 'Hasta la baliza de barlovento, un través cerrado hasta la baliza de través, una trasluchada allí y un largo de vuelta.'],
+  trap: ['Up to mark 1, a broad reach out to mark 2, a run down to the gate, and a beam reach home to a finish line of its own.', 'Вверх к знаку 1, бакштаг к знаку 2, фордевинд к воротам и галфвинд к своей финишной линии.', 'Hasta la baliza 1, un largo hasta la baliza 2, una empopada hasta la puerta y un través de vuelta a una línea de llegada propia.'],
+  wlu: ['Up to the windward mark, a short reach to the offset mark, a run down through the gate, and a last beat up to a finish line below the windward mark.', 'Вверх к верхнему знаку, короткий галфвинд к отбойнику, фордевинд через ворота и последняя лавировка к финишу чуть ниже верхнего знака.', 'Hasta la baliza de barlovento, un través corto hasta la baliza de desmarque, una empopada por la puerta y una última ceñida hasta una línea de llegada bajo la baliza de barlovento.'],
 };
 
 type Pick = { venue: VenueId; yacht: YachtId; preset: Wind; fleet: number; length: Length; laps: number; start: number; current: number; course: Shape; daytime: Daytime; contact: 'turn' | 'dsq' };
@@ -86,7 +86,7 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
   };
 
   // a blue dot on a choice changed from the race this page was opened from
-  const chg = (k: keyof Pick) => changed.includes(k) ? <i className="bt-chg" title={t('Changed', 'Изменено')}><span className="vh">{t('changed', 'изменено')}</span></i> : null;
+  const chg = (k: keyof Pick) => changed.includes(k) ? <i className="bt-chg" title={t('Changed', 'Изменено', 'Cambiado')}><span className="vh">{t('changed', 'изменено', 'cambiado')}</span></i> : null;
   // one choice as the pause menu's quick switches: a label, then pills with a light that's on
   const tags = <K extends keyof Pick>(k: K, ico: React.ReactNode, label: string, opts: [Pick[K], string][], hint?: React.ReactNode) => (
     <div className="bt-g">
@@ -106,37 +106,37 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
   const boat = yachtOf(p.yacht);
   const geo = plannedCourse(p.preset, p.length, p.fleet, p.course, boat);
   const where = venueOf(p.venue);
-  const courseName = { short: t('Short', 'Короткая'), medium: t('Medium', 'Средняя'), long: t('Long', 'Длинная') }[p.length];
+  const courseName = { short: t('Short', 'Короткая', 'Corta'), medium: t('Medium', 'Средняя', 'Media'), long: t('Long', 'Длинная', 'Larga') }[p.length];
   const metres = fmtDistance(courseDistance(geo, p.laps), lang).split(' · ')[0];
   const shapeName = t(...SHAPE_NAME[p.course]);
-  const lapsName = `${p.laps} ${t(p.laps > 1 ? 'laps' : 'lap', p.laps > 1 ? 'круга' : 'круг')}`;
+  const lapsName = `${p.laps} ${t(p.laps > 1 ? 'laps' : 'lap', p.laps > 1 ? 'круга' : 'круг', p.laps > 1 ? 'vueltas' : 'vuelta')}`;
   const beat = Math.round(Math.abs(geo.windward[1]));
   const scene: SceneSetup = {
     race: { preset: p.preset, fleet: p.fleet, length: p.length, laps: p.laps, course: p.course, current: p.current, start: p.start, daytime: p.daytime },
     view,
     // the marks' names (on a trapezoid the windward mark is mark 1), and the start line's: the finish too, unless the
     // shape has a finish line of its own
-    labels: { windward: p.course === 'trap' ? t('Mark 1', 'Знак 1') : t('Windward mark', 'Верхний знак'), gate: t('Gate', 'Ворота'), wing: t('Wing mark', 'Боковой знак'),
-      mark2: t('Mark 2', 'Знак 2'), offset: t('Offset mark', 'Отбойник'), finish: t('Finish', 'Финиш'),
-      line: geo.finish ? t('Start', 'Старт') : t('Start · Finish', 'Старт · Финиш'), beat: t(`Beat ${beat} m`, `Лавировка ${beat} м`) },
+    labels: { windward: p.course === 'trap' ? t('Mark 1', 'Знак 1', 'Baliza 1') : t('Windward mark', 'Верхний знак', 'Baliza de barlovento'), gate: t('Gate', 'Ворота', 'Puerta'), wing: t('Wing mark', 'Боковой знак', 'Baliza de través'),
+      mark2: t('Mark 2', 'Знак 2', 'Baliza 2'), offset: t('Offset mark', 'Отбойник', 'Baliza de desmarque'), finish: t('Finish', 'Финиш', 'Llegada'),
+      line: geo.finish ? t('Start', 'Старт', 'Salida') : t('Start · Finish', 'Старт · Финиш', 'Salida · Llegada'), beat: t(`Beat ${beat} m`, `Лавировка ${beat} м`, `Ceñida ${beat} m`) },
   };
   // a word on what the scene shows, when it shows more than the boats
-  const cap: Record<Exclude<View, 'boats'>, [string, string]> = {
-    wind: [t(`Wind · ${KN[p.preset]} kn`, `Ветер · ${KN[p.preset]} уз`),
+  const cap: Record<Exclude<View, 'boats'>, [en: string, ru: string, es?: string]> = {
+    wind: [t(`Wind · ${KN[p.preset]} kn`, `Ветер · ${KN[p.preset]} уз`, `Viento · ${KN[p.preset]} kn`),
       t(`The streaks run with the breeze down the course. The gold ones are gusts, up to ${GUST[p.preset][0]} kn; the wind swings up to ${GUST[p.preset][1]}° either way.`,
-        `Штрихи бегут с ветром вниз по дистанции. Золотые — порывы, до ${GUST[p.preset][0]} уз; ветер гуляет до ${GUST[p.preset][1]}° в каждую сторону.`)],
+        `Штрихи бегут с ветром вниз по дистанции. Золотые — порывы, до ${GUST[p.preset][0]} уз; ветер гуляет до ${GUST[p.preset][1]}° в каждую сторону.`, `Las rayas corren con la brisa por el recorrido. Las doradas son rachas, de hasta ${GUST[p.preset][0]} kn; el viento rola hasta ${GUST[p.preset][1]}° a cada lado.`)],
     current: p.current || where.runs
-      ? [t('Current · the venue’s own', 'Течение · местное'), t('The water runs as it does there: the tide along the channel, a river downstream, or, where the sea has no tide, the wind’s light drift. Harder in places, and it builds and eases as you race.', 'Вода идёт так, как там на самом деле: приливное течение вдоль пролива, река вниз по течению, а где прилива нет — лёгкий дрейф по ветру. Где-то сильнее, и то крепчает, то слабеет по ходу гонки.')]
-      : [t('No current', 'Без течения'), t('The water stands still. Switch the current on to see the tide run over the course.', 'Вода стоит. Включи течение — и увидишь, как оно идёт по дистанции.')],
+      ? [t('Current · the venue’s own', 'Течение · местное', 'Corriente · la propia de la sede'), t('The water runs as it does there: the tide along the channel, a river downstream, or, where the sea has no tide, the wind’s light drift. Harder in places, and it builds and eases as you race.', 'Вода идёт так, как там на самом деле: приливное течение вдоль пролива, река вниз по течению, а где прилива нет — лёгкий дрейф по ветру. Где-то сильнее, и то крепчает, то слабеет по ходу гонки.', 'El agua corre como allí: la marea por el canal, un río aguas abajo o, donde el mar no tiene marea, la suave deriva del viento. Más fuerte en algunos puntos, y crece y cede mientras regateas.')]
+      : [t('No current', 'Без течения', 'Sin corriente'), t('The water stands still. Switch the current on to see the tide run over the course.', 'Вода стоит. Включи течение — и увидишь, как оно идёт по дистанции.', 'El agua está quieta. Activa la corriente para ver correr la marea por el recorrido.')],
     course: [`${shapeName} · ${lapsName} · ${metres}`, {
-      wl: `${t('From the start up to the windward mark and down to the gate', 'От старта вверх к верхнему знаку и вниз к воротам')}${p.laps > 1 ? t(', then round again; lap 1 in gold, lap 2 in blue.', ', потом ещё круг; первый круг золотой, второй синий.') : t(', then down to the finish.', ', потом вниз на финиш.')}`,
-      tri: `${t('From the start up to the windward mark, a reach out to the wing mark and back down to the gate', 'От старта вверх к верхнему знаку, галфвинд к боковому знаку и вниз к воротам')}${p.laps > 1 ? t(', then round again; lap 1 in gold, lap 2 in blue.', ', потом ещё круг; первый круг золотой, второй синий.') : t(', then down to the finish.', ', потом вниз на финиш.')}`,
-      trap: `${t('From the start up to mark 1, a reach out to mark 2 and down to the gate', 'От старта вверх к знаку 1, бакштаг к знаку 2 и вниз к воротам')}${p.laps > 1
-        ? t(', then back up to mark 2 and down again; lap 1 in gold, lap 2 in blue. Last, a reach across to the finish line.', ', потом снова вверх к знаку 2 и вниз; первый круг золотой, второй синий. В конце — галфвинд к финишной линии.')
-        : t(', then a reach across to the finish line.', ', потом галфвинд к финишной линии.')}`,
-      wlu: `${t('From the start up to the windward mark, out to the offset mark and down to the gate', 'От старта вверх к верхнему знаку, к отбойнику и вниз к воротам')}${p.laps > 1
-        ? t(', then round again; lap 1 in gold, lap 2 in blue. Last, a beat up to the finish line below the windward mark.', ', потом ещё круг; первый круг золотой, второй синий. В конце — лавировка к финишу чуть ниже верхнего знака.')
-        : t(', then a beat up to the finish line below the windward mark.', ', потом лавировка к финишу чуть ниже верхнего знака.')}`,
+      wl: `${t('From the start up to the windward mark and down to the gate', 'От старта вверх к верхнему знаку и вниз к воротам', 'Desde la salida hasta la baliza de barlovento y bajando hasta la puerta')}${p.laps > 1 ? t(', then round again; lap 1 in gold, lap 2 in blue.', ', потом ещё круг; первый круг золотой, второй синий.', ', luego otra vuelta; vuelta 1 en dorado, vuelta 2 en azul.') : t(', then down to the finish.', ', потом вниз на финиш.', ', luego hasta la llegada.')}`,
+      tri: `${t('From the start up to the windward mark, a reach out to the wing mark and back down to the gate', 'От старта вверх к верхнему знаку, галфвинд к боковому знаку и вниз к воротам', 'Desde la salida hasta la baliza de barlovento, un través hasta la baliza de través y de vuelta a la puerta')}${p.laps > 1 ? t(', then round again; lap 1 in gold, lap 2 in blue.', ', потом ещё круг; первый круг золотой, второй синий.', ', luego otra vuelta; vuelta 1 en dorado, vuelta 2 en azul.') : t(', then down to the finish.', ', потом вниз на финиш.', ', luego hasta la llegada.')}`,
+      trap: `${t('From the start up to mark 1, a reach out to mark 2 and down to the gate', 'От старта вверх к знаку 1, бакштаг к знаку 2 и вниз к воротам', 'Desde la salida hasta la baliza 1, un través hasta la baliza 2 y bajando hasta la puerta')}${p.laps > 1
+        ? t(', then back up to mark 2 and down again; lap 1 in gold, lap 2 in blue. Last, a reach across to the finish line.', ', потом снова вверх к знаку 2 и вниз; первый круг золотой, второй синий. В конце — галфвинд к финишной линии.', ', luego otra vez hasta la baliza 2 y de nuevo abajo; vuelta 1 en dorado, vuelta 2 en azul. Por último, un través hasta la línea de llegada.')
+        : t(', then a reach across to the finish line.', ', потом галфвинд к финишной линии.', ', luego un través hasta la línea de llegada.')}`,
+      wlu: `${t('From the start up to the windward mark, out to the offset mark and down to the gate', 'От старта вверх к верхнему знаку, к отбойнику и вниз к воротам', 'Desde la salida hasta la baliza de barlovento, hasta la baliza de desmarque y bajando hasta la puerta')}${p.laps > 1
+        ? t(', then round again; lap 1 in gold, lap 2 in blue. Last, a beat up to the finish line below the windward mark.', ', потом ещё круг; первый круг золотой, второй синий. В конце — лавировка к финишу чуть ниже верхнего знака.', ', luego otra vuelta; vuelta 1 en dorado, vuelta 2 en azul. Por último, una ceñida hasta la línea de llegada bajo la baliza de barlovento.')
+        : t(', then a beat up to the finish line below the windward mark.', ', потом лавировка к финишу чуть ниже верхнего знака.', ', luego una ceñida hasta la línea de llegada bajo la baliza de barlovento.')}`,
     }[p.course]],
   };
   // the places: four to pick from (today's, your last, then the first A to Z; the one chosen always among them), and
@@ -149,92 +149,92 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
   return (
     <div className="scr bt-scr bc fs-scr" lang={lang}>
       <div className="bt">
-        {ready && <GameScene venue={p.venue} boat={p.yacht} wind={p.preset} setup={scene} title={t('The race’s venue in 3D', 'Место гонки в 3D')} loading={t('Loading the venue', 'Загружаем место гонки')} />}
+        {ready && <GameScene venue={p.venue} boat={p.yacht} wind={p.preset} setup={scene} title={t('The race’s venue in 3D', 'Место гонки в 3D', 'La sede de la regata en 3D')} loading={t('Loading the venue', 'Загружаем место гонки', 'Cargando la sede')} />}
 
         <div className="bt-info">
           <div className="bt-top">
-            <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок')} />
+            <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas')} />
             <SceneBrand lang={lang} />
           </div>
-          <span className="bt-kick bt-kick-w">{match ? t('1-on-1 race', 'Гонка 1 на 1') : from === 'race' ? t('Change the race', 'Изменить гонку') : t('Custom race', 'Своя гонка')}</span>
+          <span className="bt-kick bt-kick-w">{match ? t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1') : from === 'race' ? t('Change the race', 'Изменить гонку', 'Cambiar la regata') : t('Custom race', 'Своя гонка', 'Regata personalizada')}</span>
           <h1 className="bt-h" id="fs-title">{t(...where.name)} <span className="bt-h-cc">{where.nation}</span></h1>
-          <p className="bt-p">{t(...where.place)} · {t(`prevailing wind ${where.wind[0]}`, `преобладающий ветер ${where.wind[1]}`)}. {t(...where.about)}</p>
+          <p className="bt-p">{t(...where.place)} · {t(`prevailing wind ${where.wind[0]}`, `преобладающий ветер ${where.wind[1]}`, `viento predominante ${where.wind[0]}`)}. {t(...where.about)}</p>
           {view !== 'boats' && (
             <div className="bt-cap" role="status">
               <span className="bt-cap-t"><b>{cap[view][0]}</b><span>{cap[view][1]}</span></span>
-              <button type="button" className="bt-cap-x" onClick={() => setView('boats')} aria-label={t('Back to the boats', 'Назад к лодкам')}>×</button>
+              <button type="button" className="bt-cap-x" onClick={() => setView('boats')} aria-label={t('Back to the boats', 'Назад к лодкам', 'Volver a los barcos')}>×</button>
             </div>
           )}
           <div className="bt-stats">
-            <div><span className="bt-sk">{t('Beat', 'Лавировка')}</span><b><Num v={`${beat} ${t('m', 'м')}`} /></b></div>
-            <div><span className="bt-sk">{t('About', 'Около')}</span><b><Num v={`${minutes(p)} ${t('min', 'мин')}`} /></b></div>
+            <div><span className="bt-sk">{t('Beat', 'Лавировка', 'Ceñida')}</span><b><Num v={`${beat} ${t('m', 'м', 'm')}`} /></b></div>
+            <div><span className="bt-sk">{t('About', 'Около', 'Unos')}</span><b><Num v={`${minutes(p)} ${t('min', 'мин', 'min')}`} /></b></div>
             {/* a 1-on-1 race has no best time: a free race's says nothing of it */}
             {match
-              ? <div><span className="bt-sk">{t('Race', 'Гонка')}</span><b>{t('1-on-1', '1 на 1')}</b></div>
-              : <div><span className="bt-sk">{t('Your best', 'Рекорд')}</span><b className={best != null ? 'is-gold' : ''}>{best != null ? clock(best) : '—'}</b></div>}
+              ? <div><span className="bt-sk">{t('Race', 'Гонка', 'Regata')}</span><b>{t('1-on-1', '1 на 1', '1 contra 1')}</b></div>
+              : <div><span className="bt-sk">{t('Your best', 'Рекорд', 'Tu mejor marca')}</span><b className={best != null ? 'is-gold' : ''}>{best != null ? clock(best) : '—'}</b></div>}
           </div>
         </div>
 
-        <PauseCard lang={lang} back={match ? '/match/new' : fromToday ? '/race/free?from=today' : '/race/free'} title={match ? t('Set up your 1-on-1 race', 'Настрой гонку 1 на 1') : t('Set up your race', 'Настрой гонку')}
+        <PauseCard lang={lang} back={match ? '/match/new' : fromToday ? '/race/free?from=today' : '/race/free'} title={match ? t('Set up your 1-on-1 race', 'Настрой гонку 1 на 1', 'Prepara tu regata 1 contra 1') : t('Set up your race', 'Настрой гонку', 'Prepara tu regata')}
           foot={['boat', ['yachts', `/yachts?y=${p.yacht}&from=free`]]}
           action={<>
-            <button type="button" className="bt-go" onClick={go}><IconPlay /><span>{match ? t('Create the race', 'Создать гонку') : from === 'race' ? t('Restart with these', 'Заново с этими') : t('Start race', 'Начать гонку')}</span></button>
+            <button type="button" className="bt-go" onClick={go}><IconPlay /><span>{match ? t('Create the race', 'Создать гонку', 'Crear la regata') : from === 'race' ? t('Restart with these', 'Заново с этими', 'Reiniciar con esto') : t('Start race', 'Начать гонку', 'Empezar regata')}</span></button>
             <button type="button" className="bt-show" aria-pressed={view === 'course'} onClick={() => setView(view === 'course' ? 'boats' : 'course')}>
-              {view === 'course' ? <IconBoats s={15} /> : <IconRoute s={15} />}<span>{view === 'course' ? t('Boats', 'Лодки') : t('Show course', 'Дистанция')}</span>
+              {view === 'course' ? <IconBoats s={15} /> : <IconRoute s={15} />}<span>{view === 'course' ? t('Boats', 'Лодки', 'Barcos') : t('Show course', 'Дистанция', 'Ver recorrido')}</span>
             </button>
           </>}>
           <div className="bt-g">
-            <span className="bt-k" id="fs-venue"><IconPin />{t('Where', 'Где')}{chg('venue')}</span>
+            <span className="bt-k" id="fs-venue"><IconPin />{t('Where', 'Где', 'Dónde')}{chg('venue')}</span>
             <div className={`fs-where${allPlaces ? '' : ' fs-one'}`}>
               <div className="bt-pills" id="fs-places" role="radiogroup" aria-labelledby="fs-venue">
                 {places.map(([v, l]) => {
                   // the venues you've raced (today's race or a free one) carry a tick, as the passport stamps them
                   const done = !!log?.v[v];
                   return (
-                    <button key={v} type="button" role="radio" aria-checked={p.venue === v} className={`bt-pill${done ? ' is-raced' : ''}`} title={done ? t('You’ve raced here', 'Ты здесь уже гонялся') : undefined} onClick={() => { set('venue', v); setAllPlaces(false); }}>
-                      {l}{done ? <span className="vh">{t(' · raced', ' · пройдено')}</span> : null}
+                    <button key={v} type="button" role="radio" aria-checked={p.venue === v} className={`bt-pill${done ? ' is-raced' : ''}`} title={done ? t('You’ve raced here', 'Ты здесь уже гонялся', 'Ya has regateado aquí') : undefined} onClick={() => { set('venue', v); setAllPlaces(false); }}>
+                      {l}{done ? <span className="vh">{t(' · raced', ' · пройдено', ' · regateado')}</span> : null}
                     </button>
                   );
                 })}
               </div>
               <button type="button" className="bt-pill fs-all" aria-expanded={allPlaces} aria-controls="fs-places" onClick={() => setAllPlaces(!allPlaces)}>
-                {t(`All ${VENUES.length}`, `Все ${VENUES.length}`)}<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="2" /></svg>
+                {t(`All ${VENUES.length}`, `Все ${VENUES.length}`, `Todas ${VENUES.length}`)}<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="2" /></svg>
               </button>
             </div>
           </div>
-          {tags('yacht', <IconSail s={14} />, t('Yacht', 'Яхта'), YACHTS.map((y) => [y.id, t(...y.name)] as [YachtId, string]),
-            <p className="bt-hint">{t(...boat.tagline)} <Link href={`/yachts?y=${boat.id}&from=free`}>{t('About the yachts', 'О яхтах')}</Link></p>)}
-          {tags('preset', <IconWind s={14} />, t('Wind', 'Ветер'), [['light', t('Light 7 kn', 'Слабый 7 уз')], ['medium', t('Medium 12 kn', 'Средний 12 уз')], ['strong', t('Strong 19 kn', 'Сильный 19 уз')]])}
-          {tags('daytime', <IconSun />, t('Time of day', 'Время суток'), [['any', t('Any', 'Любое')], ['morning', t('Morning', 'Утро')], ['midday', t('Midday', 'Полдень')], ['afternoon', t('Afternoon', 'День')], ['evening', t('Evening', 'Вечер')], ['sunset', t('Sunset', 'Закат')]],
+          {tags('yacht', <IconSail s={14} />, t('Yacht', 'Яхта', 'Yate'), YACHTS.map((y) => [y.id, t(...y.name)] as [YachtId, string]),
+            <p className="bt-hint">{t(...boat.tagline)} <Link href={`/yachts?y=${boat.id}&from=free`}>{t('About the yachts', 'О яхтах', 'Sobre los yates')}</Link></p>)}
+          {tags('preset', <IconWind s={14} />, t('Wind', 'Ветер', 'Viento'), [['light', t('Light 7 kn', 'Слабый 7 уз', 'Flojo 7 kn')], ['medium', t('Medium 12 kn', 'Средний 12 уз', 'Medio 12 kn')], ['strong', t('Strong 19 kn', 'Сильный 19 уз', 'Fuerte 19 kn')]])}
+          {tags('daytime', <IconSun />, t('Time of day', 'Время суток', 'Hora del día'), [['any', t('Any', 'Любое', 'Cualquiera')], ['morning', t('Morning', 'Утро', 'Mañana')], ['midday', t('Midday', 'Полдень', 'Mediodía')], ['afternoon', t('Afternoon', 'День', 'Tarde')], ['evening', t('Evening', 'Вечер', 'Atardecer')], ['sunset', t('Sunset', 'Закат', 'Puesta de sol')]],
             <p className="bt-hint">{{
-              any: t('A new hour every race, now and then under a grey sky.', 'Каждая гонка в новый час, иногда под серым небом.'),
-              morning: t('Early, the sun low in the east and the air still fresh.', 'Рано: солнце низко на востоке, воздух ещё свежий.'),
-              midday: t('The sun at its highest, the sea at its bluest.', 'Солнце в зените, море самое синее.'),
-              afternoon: t('The sun past its highest, swinging west.', 'Солнце уже за зенитом, уходит на запад.'),
-              evening: t('Golden light, the sun an hour above the horizon.', 'Золотой свет, солнце за час до заката.'),
-              sunset: t('The sun on the horizon, the sky and the sea gone orange.', 'Солнце у горизонта, небо и море в оранжевом.'),
+              any: t('A new hour every race, now and then under a grey sky.', 'Каждая гонка в новый час, иногда под серым небом.', 'Una hora nueva en cada regata, de vez en cuando bajo un cielo gris.'),
+              morning: t('Early, the sun low in the east and the air still fresh.', 'Рано: солнце низко на востоке, воздух ещё свежий.', 'Temprano, con el sol bajo en el este y el aire aún fresco.'),
+              midday: t('The sun at its highest, the sea at its bluest.', 'Солнце в зените, море самое синее.', 'El sol en lo más alto, el mar en su azul más intenso.'),
+              afternoon: t('The sun past its highest, swinging west.', 'Солнце уже за зенитом, уходит на запад.', 'El sol pasado el cenit, girando hacia el oeste.'),
+              evening: t('Golden light, the sun an hour above the horizon.', 'Золотой свет, солнце за час до заката.', 'Luz dorada, el sol una hora sobre el horizonte.'),
+              sunset: t('The sun on the horizon, the sky and the sea gone orange.', 'Солнце у горизонта, небо и море в оранжевом.', 'El sol en el horizonte, el cielo y el mar teñidos de naranja.'),
             }[p.daytime]}</p>)}
-          {tags('course', <IconRoute />, t('Shape', 'Форма'), shapes.map((s) => [s, t(...SHAPE_NAME[s])] as [Shape, string]),
+          {tags('course', <IconRoute />, t('Shape', 'Форма', 'Forma'), shapes.map((s) => [s, t(...SHAPE_NAME[s])] as [Shape, string]),
             SHAPE_HINT[p.course] && <p className="bt-hint">{t(...SHAPE_HINT[p.course]!)}</p>)}
           {/* the race's size, two to a row on a wide screen */}
           <div className="fs-grid">
-            {tags('length', <IconRoute />, t('Course', 'Дистанция'), ([['short', t('Short', 'Короткая')], ['medium', t('Medium', 'Средняя')], ['long', t('Long', 'Длинная')]] as [Length, string][]).filter(([l]) => lengthOffered(p.venue, l)))}
-            {!match && tags('fleet', <IconBoats />, t('Boats', 'Лодки'), [[3, t('3 boats', '3 лодки')], [5, t('5 boats', '5 лодок')], [7, t('7 boats', '7 лодок')]])}
-            {tags('laps', <IconLaps />, t('Laps', 'Круги'), [[1, t('1 lap', '1 круг')], [2, t('2 laps', '2 круга')]])}
-            {tags('start', <IconFlag />, t('Start', 'Старт'), [[1, t('1 min', '1 мин')], [3, t('3 min', '3 мин')], [5, t('5 min', '5 мин')]])}
-            {tags('current', <IconTide />, t('Current', 'Течение'), [[0, t('Off', 'Выкл')], [1, t('On', 'Вкл')]],
-              <p className="bt-hint">{where.runs ? t('The water runs here whichever you choose.', 'Вода здесь идёт при любом выборе.') : t('On: the venue’s tide, river or drift sets every boat.', 'Вкл: местное приливное течение, река или дрейф сносит все лодки.')}</p>)}
-            {!match && tags('contact', <IconFlag />, t('Contact', 'Столкновение'), [['turn', t('Penalty turn', 'Штрафной оборот')], ['dsq', 'DSQ']],
-              <p className="bt-hint">{p.contact === 'dsq' ? t('The boat at fault is out of the race at once. The rudder is read, and a boat with right of way can be at fault too.', 'Виновная яхта сразу снимается с гонки. Судья смотрит на угол руля, и яхта с правом дороги тоже может оказаться виновной.') : t('The boat at fault takes a penalty turn and sails on.', 'Виновная яхта делает штрафной оборот и продолжает гонку.')}</p>)}
+            {tags('length', <IconRoute />, t('Course', 'Дистанция', 'Recorrido'), ([['short', t('Short', 'Короткая', 'Corta')], ['medium', t('Medium', 'Средняя', 'Media')], ['long', t('Long', 'Длинная', 'Larga')]] as [Length, string][]).filter(([l]) => lengthOffered(p.venue, l)))}
+            {!match && tags('fleet', <IconBoats />, t('Boats', 'Лодки', 'Barcos'), [[3, t('3 boats', '3 лодки', '3 barcos')], [5, t('5 boats', '5 лодок', '5 barcos')], [7, t('7 boats', '7 лодок', '7 barcos')]])}
+            {tags('laps', <IconLaps />, t('Laps', 'Круги', 'Vueltas'), [[1, t('1 lap', '1 круг', '1 vuelta')], [2, t('2 laps', '2 круга', '2 vueltas')]])}
+            {tags('start', <IconFlag />, t('Start', 'Старт', 'Salida'), [[1, t('1 min', '1 мин', '1 min')], [3, t('3 min', '3 мин', '3 min')], [5, t('5 min', '5 мин', '5 min')]])}
+            {tags('current', <IconTide />, t('Current', 'Течение', 'Corriente'), [[0, t('Off', 'Выкл', 'No')], [1, t('On', 'Вкл', 'Sí')]],
+              <p className="bt-hint">{where.runs ? t('The water runs here whichever you choose.', 'Вода здесь идёт при любом выборе.', 'Aquí el agua corre elijas lo que elijas.') : t('On: the venue’s tide, river or drift sets every boat.', 'Вкл: местное приливное течение, река или дрейф сносит все лодки.', 'Sí: la marea, el río o la deriva de la sede mueve a todos los barcos.')}</p>)}
+            {!match && tags('contact', <IconFlag />, t('Contact', 'Столкновение', 'Contacto'), [['turn', t('Penalty turn', 'Штрафной оборот', 'Giro de penalización')], ['dsq', 'DSQ']],
+              <p className="bt-hint">{p.contact === 'dsq' ? t('The boat at fault is out of the race at once. The rudder is read, and a boat with right of way can be at fault too.', 'Виновная яхта сразу снимается с гонки. Судья смотрит на угол руля, и яхта с правом дороги тоже может оказаться виновной.', 'El barco en falta queda fuera de la regata al instante. Se lee el timón, y un barco con derecho de paso también puede estar en falta.') : t('The boat at fault takes a penalty turn and sails on.', 'Виновная яхта делает штрафной оборот и продолжает гонку.', 'El barco en falta hace un giro de penalización y sigue navegando.')}</p>)}
           </div>
           <div className="bt-g fs-course-in">
-            <span className="bt-k"><IconRoute />{t('Your course', 'Твоя дистанция')}<span className="bt-k-r">{p.course !== 'wl' ? `${shapeName} · ` : ''}{courseName} · {lapsName} · {metres}</span></span>
+            <span className="bt-k"><IconRoute />{t('Your course', 'Твоя дистанция', 'Tu recorrido')}<span className="bt-k-r">{p.course !== 'wl' ? `${shapeName} · ` : ''}{courseName} · {lapsName} · {metres}</span></span>
             <CourseMap className="cmap bt-map" lang={lang} geo={geo} preset={p.preset} W={250} H={210} route fleet={p.fleet} />
           </div>
-          {base && changed.length ? <p className="bt-what" role="status"><b>{t('What happens', 'Что будет')}</b> {from === 'today' ? t(`A custom race with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'} from today’s. It doesn’t go on today’s ranking.`, `Своя гонка, изменений по сравнению с гонкой дня: ${changed.length}. В рейтинг дня она не идёт.`) : t(`The race starts over, with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'}.`, `Гонка начнётся заново, изменений: ${changed.length}.`)}</p> : null}
-          {match ? <p className="bt-saved bt-saved-l">{t('You and a friend, one on one. After you create the race you get a link to send.', 'Вы и друг, один на один. Когда создашь гонку, получишь ссылку, чтобы отправить.')}</p> : <p className="bt-saved bt-saved-l">{best != null
-            ? t(`Your best in this wind, fleet and course, at any venue: ${clock(best)}. Beat it and the result page says so.`, `Твой лучший результат при этом ветре, флоте и дистанции, на любой акватории: ${clock(best)}. Побьёшь — страница результата скажет.`)
-            : t('The game keeps your best time on every course. A custom race doesn’t go on today’s ranking.', 'Игра помнит лучшее время на каждой дистанции. Своя гонка в рейтинг дня не идёт.')}</p>}
+          {base && changed.length ? <p className="bt-what" role="status"><b>{t('What happens', 'Что будет', 'Qué pasa')}</b> {from === 'today' ? t(`A custom race with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'} from today’s. It doesn’t go on today’s ranking.`, `Своя гонка, изменений по сравнению с гонкой дня: ${changed.length}. В рейтинг дня она не идёт.`, `Una regata libre con ${changed.length} ${changed.length === 1 ? 'cambio' : 'cambios'} respecto a la de hoy. No entra en la clasificación del día.`) : t(`The race starts over, with ${changed.length} ${changed.length === 1 ? 'change' : 'changes'}.`, `Гонка начнётся заново, изменений: ${changed.length}.`, `La regata vuelve a empezar, con ${changed.length} ${changed.length === 1 ? 'cambio' : 'cambios'}.`)}</p> : null}
+          {match ? <p className="bt-saved bt-saved-l">{t('You and a friend, one on one. After you create the race you get a link to send.', 'Вы и друг, один на один. Когда создашь гонку, получишь ссылку, чтобы отправить.', 'Tú y un amigo, uno contra uno. Al crear la regata recibes un enlace para enviar.')}</p> : <p className="bt-saved bt-saved-l">{best != null
+            ? t(`Your best in this wind, fleet and course, at any venue: ${clock(best)}. Beat it and the result page says so.`, `Твой лучший результат при этом ветре, флоте и дистанции, на любой акватории: ${clock(best)}. Побьёшь — страница результата скажет.`, `Tu mejor marca con este viento, flota y recorrido, en cualquier sede: ${clock(best)}. Supérala y la página de resultados lo dirá.`)
+            : t('The game keeps your best time on every course. A custom race doesn’t go on today’s ranking.', 'Игра помнит лучшее время на каждой дистанции. Своя гонка в рейтинг дня не идёт.', 'El juego guarda tu mejor tiempo en cada recorrido. Una regata personalizada no entra en la clasificación de hoy.')}</p>}
         </PauseCard>
       </div>
     </div>

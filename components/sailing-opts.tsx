@@ -28,9 +28,9 @@ export function SailingOpts({ lang }: { lang: Lang }) {
   );
   return (
     <div className="st-sail">
-      {seg('autoTrim', t('Sails', 'Паруса'), [[0, t('I trim', 'Сам')], [1, t('Auto', 'Авто')], [2, t('Main + jib', 'Грот + стаксель')]])}
-      {seg('camera', t('Camera', 'Камера'), [['drone', t('Drone', 'Дрон')], ['top', t('Top', 'Сверху')], ['helm', t('Helm', 'Штурвал')]])}
-      {sw('guides', t('Guides on the water', 'Подсказки на воде'))}
+      {seg('autoTrim', t('Sails', 'Паруса', 'Velas'), [[0, t('I trim', 'Сам', 'Trimo yo')], [1, t('Auto', 'Авто', 'Auto')], [2, t('Main + jib', 'Грот + стаксель', 'Mayor + foque')]])}
+      {seg('camera', t('Camera', 'Камера', 'Cámara'), [['drone', t('Drone', 'Дрон', 'Dron')], ['top', t('Top', 'Сверху', 'Cenital')], ['helm', t('Helm', 'Штурвал', 'Timón')]])}
+      {sw('guides', t('Guides on the water', 'Подсказки на воде', 'Guías en el agua'))}
     </div>
   );
 }

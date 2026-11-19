@@ -130,8 +130,8 @@ export function leaveMatch() { if (api) api.leave(); }
 // puts the race on screen ({ race, step(dt), isGuest }), onIdle() takes it off (the card); onEnd() leaves the page;
 // toast(text) says a word over the race; keepOneOnOne(race, results) keeps this screen's record of it and returns its id,
 // openResult(id) goes to its page. yachtName(id) and venueName(id) for the waiting room's settings.
-export async function startMatch({ code, t, LANG = 'en', onRace, onIdle = () => {}, onEnd = () => {}, toast = () => {}, keepOneOnOne = () => null, openResult = () => {}, venue, cls, yachtName = (id) => id, venueName = (id) => id }) {
-  const L = MATCH_STRINGS[LANG] || MATCH_STRINGS.en;
+export async function startMatch({ code, t, LANG = 'en', strings = null, onRace, onIdle = () => {}, onEnd = () => {}, toast = () => {}, keepOneOnOne = () => null, openResult = () => {}, venue, cls, yachtName = (id) => id, venueName = (id) => id }) {
+  const L = strings || MATCH_STRINGS[LANG] || MATCH_STRINGS.en;
   document.head.append(Object.assign(document.createElement('style'), { textContent: CSS }));
   const wrap = html(`<div id="mWrap" class="bc">
     <div class="m-card" id="mRoom" role="dialog" aria-labelledby="mRoomH">

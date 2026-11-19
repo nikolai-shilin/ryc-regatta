@@ -14,11 +14,11 @@ import '@/styles/reading.css';
 // text to read: it zooms (lib/no-zoom.ts)
 export const viewport = READING_VIEWPORT;
 
-export const generateMetadata = titled('The Racing Rules of Sailing, rule by rule', 'Правила парусных гонок: все правила по порядку', {
+export const generateMetadata = titled('The Racing Rules of Sailing, rule by rule', 'Правила парусных гонок: все правила по порядку', 'El Reglamento de Regatas a Vela, regla a regla', {
   path: '/rulebook', card: '/og/page/rulebook',
   description: [
     'Every rule of the Racing Rules of Sailing 2025–2028 in plain words: definitions, right of way, mark-room, starts, penalties, protests, appendices and race signals.',
-    'Все правила парусных гонок 2025–2028 простыми словами: определения, право дороги, место у знака, старт, наказания, протесты, приложения и гоночные сигналы.'],
+    'Все правила парусных гонок 2025–2028 простыми словами: определения, право дороги, место у знака, старт, наказания, протесты, приложения и гоночные сигналы.', 'Cada regla del Reglamento de Regatas a Vela 2025–2028 en palabras llanas: definiciones, derecho de paso, espacio en baliza, salidas, penalizaciones, protestas, apéndices y señales de regata.'],
 });
 
 // L1 · The rule book, a page of its own in the menu and the footer, laid out as a guide (learn/[slug]/page.tsx): the title and the intro over the rules guide's picture,
@@ -31,22 +31,22 @@ export default async function Rulebook({ params }: LangParams) {
   const n = ruleCount(parts);
   const img = guide('rules', t, lang).img!;
   const url = SITE + langUrl('/rulebook', lang);
-  const title = t('The racing rules, rule by rule', 'Правила гонок, правило за правилом');
-  const crumbs: Crumb[] = [[t('Racing rules', 'Правила гонок'), '/rulebook']];
+  const title = t('The racing rules, rule by rule', 'Правила гонок, правило за правилом', 'Las reglas de regatas, regla a regla');
+  const crumbs: Crumb[] = [[t('Racing rules', 'Правила гонок', 'Reglas de regatas'), '/rulebook']];
   const ld = {
     '@context': 'https://schema.org', '@type': 'Article', headline: title, inLanguage: lang, url, mainEntityOfPage: url, image: SITE + (img.src || OG_IMAGE.url),
     datePublished: RULEBOOK_DATE, dateModified: RULEBOOK_DATE, author: AUTHOR_LD, publisher: RYC_LD, about: ['Racing Rules of Sailing', 'Sailboat racing'],
   };
   const cards: [string, string, string][] = [
-    [t('Further reading', 'Подробнее'), guide('rules', t, lang).short, '/learn/rules'],
-    [t('Glossary', 'Словарь'), t('Sailing racing glossary', 'Словарь парусных гонок'), '/learn/glossary'],
-    [t('All the guides', 'Все пособия'), t('Racing guides', 'Пособия по гонкам'), '/learn'],
+    [t('Further reading', 'Подробнее', 'Más lecturas'), guide('rules', t, lang).short, '/learn/rules'],
+    [t('Glossary', 'Словарь', 'Glosario'), t('Sailing racing glossary', 'Словарь парусных гонок', 'Glosario de regatas a vela'), '/learn/glossary'],
+    [t('All the guides', 'Все пособия', 'Todas las guías'), t('Racing guides', 'Пособия по гонкам', 'Guías de regatas'), '/learn'],
   ];
   const rule = (x: RuleEntry, Heading: 'h3' | 'h4') => (
     <div key={x.id} id={x.id} className="rb-rule">
       <Heading>{x.no && <b>{x.no}</b>}{x.title}</Heading>
       <p>{x.text}</p>
-      {x.see && <Link className="gd-see" href={x.see}>{t('Read the guide', 'Читать пособие')}<IconArrow s={12} /></Link>}
+      {x.see && <Link className="gd-see" href={x.see}>{t('Read the guide', 'Читать пособие', 'Lee la guía')}<IconArrow s={12} /></Link>}
     </div>
   );
   return (
@@ -57,24 +57,24 @@ export default async function Rulebook({ params }: LangParams) {
         <Image className="gd-hero-bg" src={img.src} width={img.width} height={img.height} sizes="100vw" fetchPriority="high" loading="eager" alt={img.alt} />
         <div className="hm-page hm-ph">
           <Trail t={t} crumbs={crumbs} />
-          <span className="kicker">{t(`Racing Rules of Sailing · ${n} rules`, `Правила парусных гонок · ${n} ${ruPlural(n, ['правило', 'правила', 'правил'])}`)}</span>
+          <span className="kicker">{t(`Racing Rules of Sailing · ${n} rules`, `Правила парусных гонок · ${n} ${ruPlural(n, ['правило', 'правила', 'правил'])}`, `Reglamento de Regatas a Vela · ${n} reglas`)}</span>
           <h1 className="hm-ph-h">{title}</h1>
-          <p className="hm-text">{t('The Racing Rules of Sailing 2025–2028 in plain words, with the definitions, the appendices and the race signals. Look one up, or read a part from the top.', 'Правила парусных гонок 2025–2028 простыми словами, с определениями, приложениями и гоночными сигналами. Найдите нужное правило или прочитайте часть с начала.')}</p>
-          <p className="gd-by">{t('By ', '')}<span>{t(...AUTHOR.name)}</span>, {AUTHOR.org} · {t('Published ', 'Опубликовано ')}<time dateTime={RULEBOOK_DATE}>{longDate(RULEBOOK_DATE, lang)}</time></p>
-          <nav className="hm-ph-nav rd-chips" aria-label={t('Contents', 'Содержание')}>
+          <p className="hm-text">{t('The Racing Rules of Sailing 2025–2028 in plain words, with the definitions, the appendices and the race signals. Look one up, or read a part from the top.', 'Правила парусных гонок 2025–2028 простыми словами, с определениями, приложениями и гоночными сигналами. Найдите нужное правило или прочитайте часть с начала.', 'El Reglamento de Regatas a Vela 2025–2028 en palabras llanas, con las definiciones, los apéndices y las señales de regata. Busca una regla o lee una parte desde el principio.')}</p>
+          <p className="gd-by">{t('By ', '', 'Por ')}<span>{t(...AUTHOR.name)}</span>, {AUTHOR.org} · {t('Published ', 'Опубликовано ', 'Publicado ')}<time dateTime={RULEBOOK_DATE}>{longDate(RULEBOOK_DATE, lang)}</time></p>
+          <nav className="hm-ph-nav rd-chips" aria-label={t('Contents', 'Содержание', 'Contenido')}>
             {parts.map((p) => <a key={p.id} className="hm-chip" href={`#${p.id}`}>{p.chip}</a>)}
           </nav>
         </div>
       </header>
 
       <div className="hm-page rd-layout">
-        <Toc items={parts.map((p) => [p.id, p.title])} label={t('Contents', 'Содержание')} />
+        <Toc items={parts.map((p) => [p.id, p.title])} label={t('Contents', 'Содержание', 'Contenido')} />
         <div className="rd-main">
           <article className="gd">
             <div className="gd-sec">
               <div className="gd-tip">
-                <b className="lbl">{t('A summary', 'Краткое изложение')}</b>
-                <p>{t('These are our own short versions, not the official text, and a race’s notice of race and sailing instructions can change many rules. At a real event, go by ', 'Это наш короткий пересказ, а не официальный текст, и положение о соревновании и гоночная инструкция могут менять многие правила. На настоящих гонках руководствуйтесь ')}<a href={RULEBOOK_SOURCE} rel="noopener">{t('World Sailing’s rule book', 'книгой правил World Sailing')}</a>.</p>
+                <b className="lbl">{t('A summary', 'Краткое изложение', 'Un resumen')}</b>
+                <p>{t('These are our own short versions, not the official text, and a race’s notice of race and sailing instructions can change many rules. At a real event, go by ', 'Это наш короткий пересказ, а не официальный текст, и положение о соревновании и гоночная инструкция могут менять многие правила. На настоящих гонках руководствуйтесь ', 'Estas son versiones cortas propias, no el texto oficial, y el anuncio de regata y las instrucciones de regata de una prueba pueden cambiar muchas reglas. En un evento real, guíate por ')}<a href={RULEBOOK_SOURCE} rel="noopener">{t('World Sailing’s rule book', 'книгой правил World Sailing', 'el reglamento de World Sailing')}</a>.</p>
               </div>
             </div>
             {parts.map((p) => (
@@ -96,15 +96,15 @@ export default async function Rulebook({ params }: LangParams) {
 
           <section className="gd-try" aria-labelledby="gd-try">
             <div className="gd-try-t">
-              <span className="gd-try-k">{t('Now try it', 'Теперь попробуй')}</span>
-              <h2 className="hm-h2" id="gd-try">{t('On the water, in your browser', 'На воде, прямо в браузере')}</h2>
-              <p>{t('The computer boats race by these rules, and so do you. Up and down is free, on a phone or a computer, with nothing to install.', 'Компьютерные лодки гоняются по этим правилам, и ты вместе с ними. Up and down бесплатна, на телефоне или компьютере, ничего не нужно устанавливать.')}</p>
+              <span className="gd-try-k">{t('Now try it', 'Теперь попробуй', 'Pruébalo ahora')}</span>
+              <h2 className="hm-h2" id="gd-try">{t('On the water, in your browser', 'На воде, прямо в браузере', 'En el agua, en tu navegador')}</h2>
+              <p>{t('The computer boats race by these rules, and so do you. Up and down is free, on a phone or a computer, with nothing to install.', 'Компьютерные лодки гоняются по этим правилам, и ты вместе с ними. Up and down бесплатна, на телефоне или компьютере, ничего не нужно устанавливать.', 'Los barcos del ordenador compiten según estas reglas, y tú también. Up and down es gratis, en el móvil o en el ordenador, sin instalar nada.')}</p>
             </div>
-            <Link className="gd-try-go" href="/race">{t('Today’s race', 'Гонка дня')}<IconArrow /></Link>
+            <Link className="gd-try-go" href="/race">{t('Today’s race', 'Гонка дня', 'La regata del día')}<IconArrow /></Link>
           </section>
 
           <section className="gd-more" aria-labelledby="gd-more">
-            <h2 className="lbl-ink" id="gd-more">{t('Read more', 'Читать дальше')}</h2>
+            <h2 className="lbl-ink" id="gd-more">{t('Read more', 'Читать дальше', 'Leer más')}</h2>
             <div className="gd-next">
               {cards.map(([k, label, href]) => <Link key={href} className="gd-next-card" href={href}><span className="lbl">{k}</span><span className="card-title">{label}</span><IconArrow s={16} /></Link>)}
             </div>

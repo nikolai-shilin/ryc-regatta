@@ -1,7 +1,7 @@
 import 'server-only';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { isLang, tx, type Lang } from './lang';
+import { isLang, tx, type Lang, type Pair } from './lang';
 import { pageMeta } from './seo';
 
 // Every page lives under app/[lang]/, a segment no address shows: proxy.ts picks the language (the address's ?lang=,
@@ -23,8 +23,8 @@ export async function getT(params: LangParams['params']) {
 // A page's title, description and share card in the reader's language:
 //   export const generateMetadata = titled('Settings', 'Настройки', { index: false });
 //   export const generateMetadata = titled('How to play', 'Как играть', { path: '/help', description: ['…', '…'] });
-type Opts = { path?: string; description?: [string, string]; index?: boolean; today?: boolean; card?: string; live?: boolean };
-export const titled = (en: string, ru: string, o: Opts = {}) => async ({ params }: LangParams): Promise<Metadata> => {
-  const { lang, t } = await getT(params);
-  return pageMeta(lang, { title: t(en, ru), description: o.description && t(...o.description), path: o.path, index: o.index, today: o.today, card: o.card, live: o.live });
+type Opts = { path?: string; description?: Pair; index?: boolean; today?: boolean; card?: string; live?: boolean };
+export const titled = (en: string, ru: string, es?: string | Opts, more: Opts = {}) => async ({ params }: LangParams): Promise<Metadata> => {
+  const { lang, t } = await getT(params), o = typeof es === 'object' ? es : more;
+  return pageMeta(lang, { title: t(en, ru, typeof es === 'string' ? es : undefined), description: o.description && t(...o.description), path: o.path, index: o.index, today: o.today, card: o.card, live: o.live });
 };

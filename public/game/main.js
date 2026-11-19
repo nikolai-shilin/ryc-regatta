@@ -292,10 +292,17 @@ const T = {
   },
 };
 const urlLang = new URLSearchParams(location.search).get('lang');
-const cookieLang = (document.cookie.match(/(?:^|; )lang=(en|ru)\b/) || [])[1];
-const LANG = urlLang === 'ru' || urlLang === 'en' ? urlLang : cookieLang ? cookieLang
-  : /^(ru|uk|be|kk)\b/i.test((TG && TG.initDataUnsafe?.user?.language_code) || navigator.language || '') ? 'ru' : 'en';
-const t = (k, ...a) => { const v = T[LANG][k] ?? T.en[k] ?? k; return typeof v === 'function' ? v(...a) : v; };
+const cookieLang = (document.cookie.match(/(?:^|; )lang=(en|ru|es)\b/) || [])[1];
+const deviceLang = (TG && TG.initDataUnsafe?.user?.language_code) || navigator.language || '';
+const LANG = urlLang === 'ru' || urlLang === 'en' || urlLang === 'es' ? urlLang : cookieLang ? cookieLang
+  : /^(ru|uk|be|kk)\b/i.test(deviceLang) ? 'ru' : /^es\b/i.test(deviceLang) ? 'es' : 'en';
+// Spanish is fetched only by those who read it
+const ES = LANG === 'es' ? await import('./strings-es.js').catch(() => null) : null;
+if (ES) T.es = ES.MAIN;
+// the voices are recorded in English and Russian: Spanish hears the English ones
+const VOICE = LANG === 'es' ? 'en' : LANG;
+const named = (p) => p[LANG === 'ru' ? 1 : LANG === 'es' ? 2 : 0] ?? p[0]; // a name kept as [English, Russian, Spanish]
+const t = (k, ...a) => { const v = T[LANG]?.[k] ?? T.en[k] ?? k; return typeof v === 'function' ? v(...a) : v; };
 document.documentElement.lang = LANG;
 for (const el of document.querySelectorAll('[data-t]')) el.innerHTML = t(el.dataset.t);
 const fmt = (s) => { s = Math.max(0, s); return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`; };
@@ -329,8 +336,8 @@ const DAILY_KEYS = ['preset', 'fleet', 'length', 'laps', 'start', 'current', 'co
 const settings = () => { if (drill) return { ...opts, ...drillSettings(), length: laidLength(VENUE, drillSettings().length), daily: null }; if (opts.mode !== 'daily') return { ...opts, length: laidLength(VENUE, opts.length), daily: null }; const d = dailyRace(); return { ...opts, ...d, daily: d.day }; };
 const windName = (p) => t(p);
 // the yachts' names, as lib/yachts.ts has them (another class: its id)
-const YACHT_NAMES = { jpk1050: ['JPK 1050', 'JPK 1050'], bavaria46: ['Bavaria 46', 'Bavaria 46'], j70: ['J/70', 'J/70'], rs21: ['RS21', 'RS21'], laser: ['Laser (ILCA)', 'Laser (ILCA)'], optimist: ['Optimist', 'Оптимист'], dragon: ['Dragon', 'Дракон'], jclass: ['J Class', 'Класс J'], ac75: ['AC75', 'AC75'] };
-const yachtName = (id) => (YACHT_NAMES[id] || [id, id])[LANG === 'ru' ? 1 : 0];
+const YACHT_NAMES = { jpk1050: ['JPK 1050', 'JPK 1050'], bavaria46: ['Bavaria 46', 'Bavaria 46'], j70: ['J/70', 'J/70'], rs21: ['RS21', 'RS21'], laser: ['Laser (ILCA)', 'Laser (ILCA)'], optimist: ['Optimist', 'Оптимист', 'Optimist'], dragon: ['Dragon', 'Дракон', 'Dragon'], jclass: ['J Class', 'Класс J', 'J Class'], ac75: ['AC75', 'AC75'] };
+const yachtName = (id) => named(YACHT_NAMES[id] || [id, id]);
 const SHAPE_KEY = { wl: 'shapeWl', tri: 'shapeTri', trap: 'shapeTrap', wlu: 'shapeWlu' };
 const paintOpts = () => {
   const s = settings();
@@ -339,7 +346,7 @@ const paintOpts = () => {
     g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(s[g.dataset.opt]) === b.dataset.v));
     if (g.dataset.opt === 'length') g.querySelectorAll('button').forEach((b) => { b.hidden = !lengthOffered(VENUE, b.dataset.v); });
   });
-  const n = $('#dailyNote'); if (n) { n.hidden = opts.mode !== 'daily'; n.textContent = t('dailyNote', windName(s.preset), venueById(s.venue).name[LANG === 'ru' ? 1 : 0], t(SHAPE_KEY[laidShape(s.course, s.length)]), yachtName(CLS.id)); } // the shape the race is laid in (sim.js), not only the one asked for
+  const n = $('#dailyNote'); if (n) { n.hidden = opts.mode !== 'daily'; n.textContent = t('dailyNote', windName(s.preset), named(venueById(s.venue).name), t(SHAPE_KEY[laidShape(s.course, s.length)]), yachtName(CLS.id)); } // the shape the race is laid in (sim.js), not only the one asked for
 };
 // a third way to trim: the main and the jib each on their own sheet
 { const g = document.querySelector('.choice[data-opt="autoTrim"]'); if (g && !g.querySelector('[data-v="2"]')) { const b = document.createElement('button'); b.dataset.v = '2'; b.innerHTML = t('split'); g.append(b); } }
@@ -594,11 +601,11 @@ const CALLS = { ru: {
   uThem: [74.613, 1.781], // Penalty on the other boat!
 } };
 const calls = {
-  clips: CALLS[LANG] || {}, buf: null, loading: false,
+  clips: CALLS[VOICE] || {}, buf: null, loading: false,
   load() {
-    if (!CALLS[LANG] || this.buf || this.loading || !audio.ctx) return;
+    if (!CALLS[VOICE] || this.buf || this.loading || !audio.ctx) return;
     this.loading = true;
-    audio.fetch(`calls-${LANG}.mp3`).then((b) => { this.buf = b; }, () => { this.loading = false; });
+    audio.fetch(`calls-${VOICE}.mp3`).then((b) => { this.buf = b; }, () => { this.loading = false; });
   },
 };
 // a woman's line, in a crew's voice of two: g and then a capital or a digit (gStarboard, g10, gTack)
@@ -688,14 +695,14 @@ const VOICES = { ru: {
   },
 } };
 const skipper = {
-  ...VOICES[LANG],
+  ...VOICES[VOICE],
   buf: null, loading: false, src: null, speakTill: 0, busyTill: 0, last: {}, letGo: {},
   TALK: 0.5, // how often he says something when he could
   REST: 180, // seconds before he says a line again
   load() {
-    if (!VOICES[LANG] || this.buf || this.loading || !audio.ctx) return;
+    if (!VOICES[VOICE] || this.buf || this.loading || !audio.ctx) return;
     this.loading = true;
-    fetch(fileAt(`skipper-${LANG}.mp3`)).then((r) => r.arrayBuffer())
+    fetch(fileAt(`skipper-${VOICE}.mp3`)).then((r) => r.arrayBuffer())
       .then((b) => new Promise((res, rej) => audio.ctx.decodeAudioData(b, res, rej)))
       .then((b) => { this.buf = b; }, () => { this.loading = false; });
   },
@@ -814,7 +821,7 @@ const crews = {
   own: {},
   buf: null, loading: false,
   load() {
-    const o = this.own[LANG]; if (!o || this.buf || this.loading || !audio.ctx) return;
+    const o = this.own[VOICE]; if (!o || this.buf || this.loading || !audio.ctx) return;
     this.loading = true;
     fetch(fileAt(o.file)).then((r) => r.arrayBuffer())
       .then((b) => new Promise((res, rej) => audio.ctx.decodeAudioData(b, res, rej)))
@@ -822,7 +829,7 @@ const crews = {
   },
   // where line k is to be had: { buf, at, len, own } in their own voice if it's loaded, else in ours or calls-<lang>.mp3
   line(k) {
-    const c = this.buf && this.own[LANG].clips[k];
+    const c = this.buf && this.own[VOICE].clips[k];
     return c ? { buf: this.buf, at: c[0], len: c[1], own: true } : lineOf(k);
   },
   // a boat as heard from ours: near 1 alongside to 0 out of earshot, pan −1 left to 1 right of the camera's view
@@ -843,7 +850,7 @@ const crews = {
     const { d, near, pan } = this.place(b); if (near <= 0) return;
     const v = near * near, ctx = audio.ctx, now = ctx.currentTime;
     if (e === 'tacking' || e === 'gybing') { this.flog(v, pan, 1.6, d / 343); this.winch(v, pan, 1.5 + d / 343); }
-    const list = (this.calls[LANG] || {})[e];
+    const list = (this.calls[VOICE] || {})[e];
     if (!list || !(this.buf || skipper.buf) || !opts.voice || now < this.talkTill || now < skipper.speakTill || committee.busy() || now - (this.last.get(b) ?? -1e9) < 10) return;
     const { len } = this.say(b, this.pick(b, list), 0.8 * Math.max(v, 0.08));
     this.last.set(b, now); this.talkTill = now + len + 1.5;
@@ -1045,7 +1052,7 @@ const asides = {
   buf: {}, loading: {}, last: {}, raced: {}, pend: null, cryTill: 0,
   load() {
     gulls.load();
-    const files = this.files[LANG]; if (!files || !audio.ctx) return;
+    const files = this.files[VOICE]; if (!files || !audio.ctx) return;
     for (const [k, f] of Object.entries(files)) {
       if (this.buf[k] || this.loading[k]) continue;
       this.loading[k] = true;
@@ -1275,8 +1282,8 @@ function startMatchFlow() {
   for (const id of ['#pChange', '#pRestart']) $(id).style.display = 'none'; // a match isn't restarted or changed: only left
   import('./match-ui.js').then((m) => {
     matchUi = m;
-    return m.startMatch({ code: MATCH, t, LANG, venue: VENUE, cls: CLS, onRace: onMatchRace, onIdle: onMatchIdle, onEnd: () => replaceRace(HUB), keepOneOnOne, openResult, toast: (s) => toast(s, 3.5),
-      yachtName: (id) => yachtName(id), venueName: (id) => venueById(id).name[LANG === 'ru' ? 1 : 0] });
+    return m.startMatch({ code: MATCH, t, LANG, strings: ES?.MATCH, venue: VENUE, cls: CLS, onRace: onMatchRace, onIdle: onMatchIdle, onEnd: () => replaceRace(HUB), keepOneOnOne, openResult, toast: (s) => toast(s, 3.5),
+      yachtName: (id) => yachtName(id), venueName: (id) => named(venueById(id).name) });
   }).catch((e) => { console.error(e); matchFailed(); });
 }
 // match-ui.js itself didn't load (or threw before it could say so): the game's own question card says it, with Try
@@ -1498,7 +1505,7 @@ setCam(['drone', 'top', 'helm'].includes(opts.camera) ? opts.camera : 'drone'); 
 // what the player has set, read as each race ends (stats.js raceEnded, for the site's /admin)
 statsContext(() => ({ cam: world.mode, trim: opts.autoTrim, sound: opts.sound ? 1 : 0, voice: opts.voice ? 1 : 0, music: opts.music, sea: opts.sea,
   saver: opts.saver ? 1 : 0, gfx: opts.gfx, q: levelNow(), guides: opts.guides ? 1 : 0, speed: timeScale }));
-const bcHud = createHud({ t, LANG, fmt, world, getRace: () => race, setCam, flagOf: (b, me) => (me ? playerLook().flag : b.human ? lookFrom(b.look).flag : LOOKS[b.name] && LOOKS[b.name].flag) || null, // (the other sailor in a match: her own)
+const bcHud = createHud({ t, LANG, strings: ES?.HUD, fmt, world, getRace: () => race, setCam, flagOf: (b, me) => (me ? playerLook().flag : b.human ? lookFrom(b.look).flag : LOOKS[b.name] && LOOKS[b.name].flag) || null, // (the other sailor in a match: her own)
   sailOf: () => { const l = playerLook(); return `${l.nat} ${l.num}`.trim(); } }); // your flag and sail number, as the boat page sets them
 
 // ---------- menus ----------
@@ -1545,7 +1552,8 @@ const pauseEl = $('#pauseCard'), confirmEl = $('#confirmCard');
 // the voice on board (the skipper in Russian, the crew's calls in English) has a switch of its own, under Sound;
 // off, the hails and the call for a tack or a gybe are still heard, and the count to the gun beeps (Audio & graphics ›
 // Voice on board). The race committee and the umpire are under Sound alone.
-const ordL = (n) => (LANG === 'ru' ? `${n}-е` : ord(n));
+const ordL = (n) => (LANG === 'ru' ? `${n}-е` : LANG === 'es' ? `${n}.º` : ord(n));
+const placeWord = (n) => (LANG === 'ru' ? n : LANG === 'es' ? `${n}.º` : ord(n));
 function paintPause() {
   const P = race.player, legs = race.course.legs, n = legs.length - 1, leg = Math.min(n, Math.max(1, P.leg));
   const place = race.standings().indexOf(P) + 1, L = race.log;
@@ -1566,7 +1574,7 @@ function paintPause() {
   $('#pPen').textContent = L.penT > 1 ? `${Math.round(L.penT)} s` : '0'; $('#pPenD').textContent = L.penT > 1 ? t('penS') : t('penNone');
   // the ticker: paused, the venue, the race's clock (the count to the gun before it)
   const tick = $('#pTick'); tick.textContent = '';
-  tick.append(`${t('pausedK')} · `, Object.assign(document.createElement('b'), { textContent: VENUE.name[LANG === 'ru' ? 1 : 0] }), ` · ${race.clock < 0 ? `${t('startIn')} ${fmt(-race.clock + 0.999)}` : fmt(race.clock)}`);
+  tick.append(`${t('pausedK')} · `, Object.assign(document.createElement('b'), { textContent: named(VENUE.name) }), ` · ${race.clock < 0 ? `${t('startIn')} ${fmt(-race.clock + 0.999)}` : fmt(race.clock)}`);
   // the guides: a switch; the sails three ways; the camera
   for (const b of pauseEl.querySelectorAll('[data-q]')) { const on = !!opts[b.dataset.q]; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); }
   const trimNow = opts.autoTrim === 1 && !P.autoTrim ? 0 : opts.autoTrim | 0; // (Auto, the sheet taken by hand this race: I trim)
@@ -1581,7 +1589,7 @@ const legKind = (c, i) => (isBeat(c, i) ? 'up' : ['wing', 'mark2', 'offset'].inc
 function pauseLine(P, place, nx) {
   if (race.clock < 0) return t('inStart');
   if (P.leg < 1) return t('notOver');
-  const mark = nx ? (T[LANG].toD || t('toK'))[legKey(race.course, nx)] || '' : ''; // "к верхнему знаку", "to the windward mark"
+  const mark = nx ? (T[LANG]?.toD || t('toK'))[legKey(race.course, nx)] || '' : ''; // "к верхнему знаку", "to the windward mark"
   const how = isBeat(race.course, P.leg) ? t('sailUp') : legKind(race.course, P.leg) === 'reach' ? t('sailReach') : t('sailDown', !!P.kite);
   const st = race.standings(), ahead = st[place - 2], behind = st[place], rem = (b) => bcHud.remaining(race, b);
   // the gap in time, at the pace of the boat behind (as the board gives it): "0:12"
@@ -1614,10 +1622,10 @@ function ask(action) {
     $('#cTxt').textContent = !mx?.isGuest ? t('leaveHost') : P.done ? t('leaveHome') : t('leaveGuest', o.ufd || o.bfd || o.dsq ? null : o.name);
   } else if (race.clock >= 0 && P.leg >= 1 && !P.done) { // racing: the question in the bar, where you are as the headline
     $('#cKick').textContent = t('askH')[action];
-    $('#cHead').textContent = t('whereH', LANG === 'ru' ? place : ord(place), Math.round(race.distToNext(P)), t('toK')[legKey(c, c.legs[P.leg])]);
+    $('#cHead').textContent = t('whereH', placeWord(place), Math.round(race.distToNext(P)), t('toK')[legKey(c, c.legs[P.leg])]);
     $('#cTxt').textContent = `${t('askT')[action]} ${t('notKept')}`;
   } else { // in the start sequence, still to cross the line (or finished): the question as the headline
-    const where = race.clock < 0 ? t('inSeq') : P.leg < 1 ? t('notOverYou') : t('leaveTxt', LANG === 'ru' ? place : ord(place), P.leg);
+    const where = race.clock < 0 ? t('inSeq') : P.leg < 1 ? t('notOverYou') : t('leaveTxt', placeWord(place), P.leg);
     $('#cKick').textContent = t('askK')[action]; $('#cHead').textContent = t('askH')[action];
     $('#cTxt').textContent = `${where} ${t('askT')[action]} ${t('notKept')}`;
   }
@@ -1672,17 +1680,17 @@ for (const a of [$('#backLink'), $('#lBack')]) { // the menu's back and the load
 {
   paintOpts(); // the menu as this race has it (the note on today's race, its place and wind; opts.mode is the address's, above)
   // the loading screen names the race now it's known: the venue in its title, the wind, the course and the fleet under it
-  const s = MATCH ? race.settings : settings(), tr = (en, ru) => (LANG === 'ru' ? ru : en), boats = s.fleet - 1;
-  if (MATCH) window.rycLoader?.race?.(VENUE.name[LANG === 'ru' ? 1 : 0], [
-    [tr('Race', 'Гонка'), 1, tr('race', 'гонка'), tr('One race, one winner', 'Одна гонка, один победитель')],
-    [tr('Course', 'Дистанция'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
-    [tr('Boats', 'Лодки'), 2, '', tr('You and a friend', 'Ты и друг')],
-  ], tr(`${s.start}-minute start sequence`, `стартовая процедура ${s.start} мин`));
-  else window.rycLoader?.race?.(VENUE.name[LANG === 'ru' ? 1 : 0], [
-    [tr('Wind', 'Ветер'), { light: 7, medium: 12, strong: 19 }[s.preset], tr('kn', 'уз'), { light: tr('Light breeze', 'Слабый ветер'), medium: tr('Medium breeze', 'Средний ветер'), strong: tr('Strong breeze', 'Сильный ветер') }[s.preset]],
-    [tr('Course', 'Дистанция'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
-    [tr('Fleet', 'Флот'), s.fleet, '', tr(`You and ${boats} boats`, `Ты и ${boats} ${boats === 1 ? 'лодка' : boats < 5 ? 'лодки' : 'лодок'}`)],
-  ], tr(`${s.start}-minute start sequence`, `стартовая процедура ${s.start} мин`)); // what's coming up, in the ticker
+  const s = MATCH ? race.settings : settings(), tr = (en, ru, es) => (LANG === 'ru' ? ru : LANG === 'es' ? es ?? en : en), boats = s.fleet - 1;
+  if (MATCH) window.rycLoader?.race?.(named(VENUE.name), [
+    [tr('Race', 'Гонка', 'Regata'), 1, tr('race', 'гонка', 'regata'), tr('One race, one winner', 'Одна гонка, один победитель', 'Una regata, un ganador')],
+    [tr('Course', 'Дистанция', 'Recorrido'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг', s.laps > 1 ? 'vueltas' : 'vuelta'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
+    [tr('Boats', 'Лодки', 'Barcos'), 2, '', tr('You and a friend', 'Ты и друг', 'Tú y un amigo')],
+  ], tr(`${s.start}-minute start sequence`, `стартовая процедура ${s.start} мин`, `Secuencia de salida de ${s.start} minutos`));
+  else window.rycLoader?.race?.(named(VENUE.name), [
+    [tr('Wind', 'Ветер', 'Viento'), { light: 7, medium: 12, strong: 19 }[s.preset], tr('kn', 'уз', 'kn'), { light: tr('Light breeze', 'Слабый ветер', 'Brisa suave'), medium: tr('Medium breeze', 'Средний ветер', 'Brisa media'), strong: tr('Strong breeze', 'Сильный ветер', 'Brisa fuerte') }[s.preset]],
+    [tr('Course', 'Дистанция', 'Recorrido'), s.laps, tr(s.laps > 1 ? 'laps' : 'lap', s.laps > 1 ? 'круга' : 'круг', s.laps > 1 ? 'vueltas' : 'vuelta'), t(SHAPE_KEY[laidShape(s.course, s.length)])],
+    [tr('Fleet', 'Флот', 'Flota'), s.fleet, '', tr(`You and ${boats} boats`, `Ты и ${boats} ${boats === 1 ? 'лодка' : boats < 5 ? 'лодки' : 'лодок'}`, `Tú y ${boats} barcos`)],
+  ], tr(`${s.start}-minute start sequence`, `стартовая процедура ${s.start} мин`, `Secuencia de salida de ${s.start} minutos`)); // what's coming up, in the ticker
   menu.hidden = true;
   // the preloader in play/index.html has counted the files in; the scene is built, so it fills its bar and fades into the race
   // …once the shaders are compiled too (world.prepare), so the first frame of the race doesn't stall

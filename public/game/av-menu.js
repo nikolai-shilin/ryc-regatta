@@ -55,9 +55,9 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .av-card { animation: none; } }
 `;
 
-const LEVEL = { high: ['High', 'Макс.'], medium: ['Medium', 'Сред.'], low: ['Low', 'Мин.'] };
-const CHOICE = { auto: ['Auto', 'Авто'], ...LEVEL, custom: ['Custom', 'Своя'] };
-const TRACK = { playlist: ['Playlist', 'Плейлист'], racing: ['Racing', 'Гонка'], groove: ['Groove', 'Грув'], riff: ['Riff', 'Рифф'], openwater: ['Open water', 'Простор'] };
+const LEVEL = { high: ['High', 'Макс.', 'Alta'], medium: ['Medium', 'Сред.', 'Media'], low: ['Low', 'Мин.', 'Baja'] };
+const CHOICE = { auto: ['Auto', 'Авто', 'Auto'], ...LEVEL, custom: ['Custom', 'Своя', 'Personalizada'] };
+const TRACK = { playlist: ['Playlist', 'Плейлист', 'Lista'], racing: ['Racing', 'Гонка', 'Regata'], groove: ['Groove', 'Грув', 'Groove'], riff: ['Riff', 'Рифф', 'Riff'], openwater: ['Open water', 'Простор', 'Mar abierto'] };
 // the costliest first: resolution, shadows, the sea and its reflection; the third: whether its lowest is off
 const GFX_NAMES = {
   res: ['Resolution', 'Разрешение', false],
@@ -71,23 +71,24 @@ const GFX_NAMES = {
   life: ['Gulls, dolphins and crew', 'Птицы, дельфины, экипаж', false],
 };
 const SOUND_NAMES = {
-  sndVoices: ['Voices', 'Голоса'],
-  sndBoats: ['Sails, winches, hulls', 'Паруса, лебёдки, корпус'],
-  sndSignals: ['Horns and beeps', 'Сигналы и таймер'],
-  sndAround: ['Gulls and the plane', 'Чайки и самолёт'],
+  sndVoices: ['Voices', 'Голоса', 'Voces'],
+  sndBoats: ['Sails, winches, hulls', 'Паруса, лебёдки, корпус', 'Velas, winches, cascos'],
+  sndSignals: ['Horns and beeps', 'Сигналы и таймер', 'Bocinas y pitidos'],
+  sndAround: ['Gulls and the plane', 'Чайки и самолёт', 'Gaviotas y el avión'],
 };
 
-export const avTitle = (lang) => (lang === 'ru' ? 'Звук и графика' : 'Audio & graphics');
+const at = (p, lang) => p[lang === 'ru' ? 1 : lang === 'es' ? 2 : 0] ?? p[0]; // [English, Russian, Spanish]
+export const avTitle = (lang) => at(['Audio & graphics', 'Звук и графика', 'Sonido y gráficos'], lang);
 
 // what's chosen, for the row that opens the menu: "Auto · Racing"
 export function avSummary(o, lang) {
-  const i = lang === 'ru' ? 1 : 0, off = ['Sound off', 'Звук выкл'], noMusic = ['Music off', 'Музыка выкл'];
+  const off = ['Sound off', 'Звук выкл', 'Sonido desactivado'], noMusic = ['Music off', 'Музыка выкл', 'Música desactivada'];
   const sound = !o.sound ? off : TRACK[o.music] || noMusic;
-  return `${(CHOICE[o.gfx] || CHOICE.auto)[i]} · ${sound[i]}`;
+  return `${at(CHOICE[o.gfx] || CHOICE.auto, lang)} · ${at(sound, lang)}`;
 }
 
 // the graphics level alone, for the button in the head of a page's panel: "Auto"
-export const avGfx = (o, lang) => (CHOICE[o.gfx] || CHOICE.auto)[lang === 'ru' ? 1 : 0];
+export const avGfx = (o, lang) => at(CHOICE[o.gfx] || CHOICE.auto, lang);
 
 const el = (tag, cls, text) => {
   const e = document.createElement(tag);
@@ -99,12 +100,12 @@ const button = (cls, text) => { const b = el('button', cls, text); b.type = 'but
 
 let shown = null, ids = 0; // the menu open now: its close
 
-// lang: 'en' or 'ru'; read(): the settings; write(patch): save a change; now(): the level drawn on Auto, where a scene
+// lang: 'en', 'ru' or 'es'; read(): the settings; write(patch): save a change; now(): the level drawn on Auto, where a scene
 // is running; zIndex: over what's on the page; onClose: called once it has closed. Gives back its close.
 export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClose }) {
   if (shown) return shown;
   if (!document.getElementById('av-css')) { const s = el('style', '', CSS); s.id = 'av-css'; document.head.append(s); }
-  const t = (en, ru) => (lang === 'ru' ? ru : en), pair = ([en, ru]) => t(en, ru);
+  const t = (en, ru, es) => (lang === 'ru' ? ru : lang === 'es' ? es ?? en : en), pair = ([en, ru, es]) => t(en, ru, es);
   let o = read();
   const paints = [];
   const paint = () => { o = read(); for (const p of paints) p(); };
@@ -152,8 +153,8 @@ export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClo
     return { box, show };
   };
 
-  const loud = [['loud', t('Loud', 'Громко')], ['normal', t('Normal', 'Обычно')], ['quiet', t('Quiet', 'Тихо')]];
-  const level = [...loud, ['off', t('Off', 'Выкл')]];
+  const loud = [['loud', t('Loud', 'Громко', 'Alto')], ['normal', t('Normal', 'Обычно', 'Normal')], ['quiet', t('Quiet', 'Тихо', 'Bajo')]];
+  const level = [...loud, ['off', t('Off', 'Выкл', 'No')]];
 
   // ---------- the picture ----------
   const pickGfx = (v) => {
@@ -161,44 +162,44 @@ export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClo
     set({ gfx: 'custom', gfxD: gfxDetail(o) }); // Custom starts from the parts drawn now, and opens them
     gfxParts.show(true);
   };
-  const quality = choice(t('Quality', 'Качество'), Object.entries(CHOICE).map(([v, n]) => [v, pair(n)]), () => o.gfx || 'auto', pickGfx);
+  const quality = choice(t('Quality', 'Качество', 'Calidad'), Object.entries(CHOICE).map(([v, n]) => [v, pair(n)]), () => o.gfx || 'auto', pickGfx);
   const hint = el('p', 'av-hint');
   quality.append(hint);
   paints.push(() => {
     const g = o.gfx || 'auto';
-    if (g === 'custom') hint.textContent = t('Each part as you set it below. Resolution, shadows and reflections cost the most frames.', 'Каждая часть — как задано ниже. Больше всего кадров съедают разрешение, тени и отражения.');
+    if (g === 'custom') hint.textContent = t('Each part as you set it below. Resolution, shadows and reflections cost the most frames.', 'Каждая часть — как задано ниже. Больше всего кадров съедают разрешение, тени и отражения.', 'Cada parte como la ajustes abajo. La resolución, las sombras y los reflejos son lo que más fotogramas cuesta.');
     else if (g === 'auto') {
       const eased = autoEased(gfxDetail(o)).map((k) => pair(GFX_NAMES[k]));
-      const head = `${t('Now', 'Сейчас')}: ${pair(LEVEL[(now && now()) || startQuality(o)] || LEVEL.high)}${eased.length ? ` · ${t('eased off', 'снижено')}: ${eased.join(', ')}` : ''}`;
-      hint.textContent = `${head}${head.endsWith('.') ? '' : '.'} ${t('When the frame rate drops the game eases off what shows least first, brings it back when it can, and remembers it for this device.', 'Когда падает частота кадров, игра сначала снижает то, что меньше всего заметно, возвращает это, когда может, и запоминает для устройства.')}`;
+      const head = `${t('Now', 'Сейчас', 'Ahora')}: ${pair(LEVEL[(now && now()) || startQuality(o)] || LEVEL.high)}${eased.length ? ` · ${t('eased off', 'снижено', 'reducido')}: ${eased.join(', ')}` : ''}`;
+      hint.textContent = `${head}${head.endsWith('.') ? '' : '.'} ${t('When the frame rate drops the game eases off what shows least first, brings it back when it can, and remembers it for this device.', 'Когда падает частота кадров, игра сначала снижает то, что меньше всего заметно, возвращает это, когда может, и запоминает для устройства.', 'Cuando baja la tasa de fotogramas, el juego reduce primero lo que menos se nota, lo recupera cuando puede y lo recuerda en este dispositivo.')}`;
     }
-    else hint.textContent = t('The race and every 3D scene on the site draw at this level.', 'Гонка и все 3D-сцены на сайте рисуются с этим качеством.');
+    else hint.textContent = t('The race and every 3D scene on the site draw at this level.', 'Гонка и все 3D-сцены на сайте рисуются с этим качеством.', 'La regata y cada escena 3D del sitio se dibujan a este nivel.');
   });
-  const partLevels = (off) => [['high', t('High', 'Макс.')], ['medium', t('Medium', 'Сред.')], ['low', off ? t('Off', 'Выкл') : t('Low', 'Мин.')]];
-  const gfxParts = details(t('Details', 'Подробно'), o.gfx === 'custom', GFX_PARTS.map((k) => choice(pair(GFX_NAMES[k]), partLevels(GFX_NAMES[k][2]), () => gfxDetail(o)[k],
+  const partLevels = (off) => [['high', t('High', 'Макс.', 'Alta')], ['medium', t('Medium', 'Сред.', 'Media')], ['low', off ? t('Off', 'Выкл', 'No') : t('Low', 'Мин.', 'Baja')]];
+  const gfxParts = details(t('Details', 'Подробно', 'Detalles'), o.gfx === 'custom', GFX_PARTS.map((k) => choice(pair(GFX_NAMES[k]), partLevels(GFX_NAMES[k][2]), () => gfxDetail(o)[k],
     (v) => set({ gfx: 'custom', gfxD: { ...gfxDetail(o), [k]: v } }), 'av-part'))); // a part changed makes it Custom
 
   // ---------- the sound ----------
   const soundParts = Object.keys(SOUND_NAMES);
-  const soundDet = details(t('Sound details', 'Звук подробно'), soundParts.some((k) => (o[k] || 'normal') !== 'normal'),
+  const soundDet = details(t('Sound details', 'Звук подробно', 'Detalles del sonido'), soundParts.some((k) => (o[k] || 'normal') !== 'normal'),
     soundParts.map((k) => choice(pair(SOUND_NAMES[k]), level, () => o[k] || 'normal', (v) => set({ [k]: v }), 'av-part')));
 
   const group = (name, ...rows) => { const g = el('section', 'av-g'); g.append(el('h3', '', name), ...rows); return g; };
   const body = el('div', 'av-body');
   body.append(
-    group(t('Graphics', 'Графика'), quality, gfxParts.box, toggle('figures', t('People on board', 'Люди на борту'), 1), toggle('saver', t('Battery saver · 30 fps', 'Экономия батареи · 30 к/с'))),
-    group(t('Audio', 'Звук'),
-      toggle('sound', t('Sound', 'Звук')),
-      toggle('voice', t('Voice on board', 'Голос шкипера')),
-      key('music', { name: t('Music', 'Музыка'), list: [...Object.entries(TRACK).map(([v, n]) => [v, pair(n)]), ['off', t('Off', 'Выкл')]] }, 'playlist'),
-      key('musicVol', { name: t('Music volume', 'Громкость музыки'), list: loud }, 'normal'),
-      key('sea', { name: t('Sea', 'Море'), list: level }, 'normal'),
+    group(t('Graphics', 'Графика', 'Gráficos'), quality, gfxParts.box, toggle('figures', t('People on board', 'Люди на борту', 'Gente a bordo'), 1), toggle('saver', t('Battery saver · 30 fps', 'Экономия батареи · 30 к/с', 'Ahorro de batería · 30 fps'))),
+    group(t('Audio', 'Звук', 'Audio'),
+      toggle('sound', t('Sound', 'Звук', 'Sonido')),
+      toggle('voice', t('Voice on board', 'Голос шкипера', 'Voz a bordo')),
+      key('music', { name: t('Music', 'Музыка', 'Música'), list: [...Object.entries(TRACK).map(([v, n]) => [v, pair(n)]), ['off', t('Off', 'Выкл', 'No')]] }, 'playlist'),
+      key('musicVol', { name: t('Music volume', 'Громкость музыки', 'Volumen de la música'), list: loud }, 'normal'),
+      key('sea', { name: t('Sea', 'Море', 'Mar'), list: level }, 'normal'),
       soundDet.box,
-      ...(matchMedia('(pointer: coarse)').matches ? [toggle('vibration', t('Vibration', 'Вибрация'))] : [])),
+      ...(matchMedia('(pointer: coarse)').matches ? [toggle('vibration', t('Vibration', 'Вибрация', 'Vibración'))] : [])),
   );
 
   // ---------- the card over the screen ----------
-  const ov = el('div', 'av bc'), card = el('section', 'av-card'), top = el('div', 'av-top'), h = el('h2', '', avTitle(lang)), back = button('av-back', t('Back', 'Назад'));
+  const ov = el('div', 'av bc'), card = el('section', 'av-card'), top = el('div', 'av-top'), h = el('h2', '', avTitle(lang)), back = button('av-back', t('Back', 'Назад', 'Atrás'));
   h.id = `av-h${++ids}`;
   ov.style.zIndex = zIndex;
   ov.lang = lang;

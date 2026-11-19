@@ -1,5 +1,5 @@
 import { isLang, ruPlural, tx, type Lang } from '@/lib/lang';
-import { describe, getResult, ordEn } from '@/lib/result';
+import { describe, getResult, ordEn, ordEs } from '@/lib/result';
 import { card, C } from '@/lib/og';
 import { OG_IMAGE } from '@/lib/seo';
 
@@ -17,11 +17,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const d = describe(res, lang);
   const img = await card({
     bg: 'drone',
-    kind: `${res.daily ? t('Race of the day', 'Гонка дня') : t('Custom race', 'Своя гонка')} · ${t(`${d.boats} boats`, `${d.boats} ${ruPlural(d.boats, ['лодка', 'лодки', 'лодок'])}`)}`,
+    kind: `${res.daily ? t('Race of the day', 'Гонка дня', 'Regata del día') : t('Custom race', 'Своя гонка', 'Regata personalizada')} · ${t(`${d.boats} boats`, `${d.boats} ${ruPlural(d.boats, ['лодка', 'лодки', 'лодок'])}`, `${d.boats} barcos`)}`,
     tag: { text: d.date.replace(/\.$/, '') },
     hero: d.time
-      ? { label: t(`Finished ${ordEn(d.place)} of ${d.boats}`, `Финиш: ${d.place}-е место из ${d.boats}`), value: d.time, plate: { text: t(ordEn(d.place), `${d.place}`), bg: d.place === 1 ? C.gold : C.you } }
-      : { label: t('Result', 'Результат'), value: t('Disqualified', 'Дисквалификация'), color: C.live },
+      ? { label: t(`Finished ${ordEn(d.place)} of ${d.boats}`, `Финиш: ${d.place}-е место из ${d.boats}`, `Puesto ${ordEs(d.place)} de ${d.boats}`), value: d.time, plate: { text: t(ordEn(d.place), `${d.place}`, ordEs(d.place)), bg: d.place === 1 ? C.gold : C.you } }
+      : { label: t('Result', 'Результат', 'Resultado'), value: t('Disqualified', 'Дисквалификация', 'Descalificado'), color: C.live },
     call: d.call,
   });
   img.headers.set('cache-control', 'public, max-age=86400, s-maxage=604800, immutable'); // a posted result never changes

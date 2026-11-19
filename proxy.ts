@@ -16,7 +16,7 @@ const CRAWLER = /googlebot|google-inspectiontool|googleother|storebot-google|bin
 
 export async function proxy(request: NextRequest) {
   const url = request.nextUrl;
-  const seg = /^\/(en|ru)(\/.*)?$/.exec(url.pathname);
+  const seg = /^\/(en|ru|es)(\/.*)?$/.exec(url.pathname);
   if (seg) {
     const to = url.clone();
     to.pathname = seg[2] || '/';

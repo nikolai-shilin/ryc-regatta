@@ -105,34 +105,34 @@ export function FleetView({ lang, start, back, tour = true, own = false, foot }:
   }, [step]);
 
   const race = () => { saveOpts({ yacht: shown }); location.href = `/race/free?yacht=${shown}`; };
-  const kn = (v: number) => `${lang === 'ru' ? String(v).replace('.', ',') : v} ${t('kn', 'уз')}`; // 8,1 уз in Russian
+  const kn = (v: number) => `${lang !== 'en' ? String(v).replace('.', ',') : v} ${t('kn', 'уз', 'kn')}`; // 8,1 уз in Russian
   const spec = (k: string) => y.specs.find((s) => s.k[0] === k);
   const n = YACHTS.findIndex((x) => x.id === shown) + 1;
 
   return (
     <div className="bt fl-view">
-      <LoadBar label={t('Loading the yachts', 'Загружаем яхты')} on={!live && !backdrop.off} />
-      <ScenePoster label={backdrop.off ? undefined : t('Loading the yachts', 'Загружаем яхты')} on={!live} />
-      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={backdrop.go ? '/fleet-view?wind=light' : undefined} title={t('The yachts in 3D', 'Яхты в 3D')}
+      <LoadBar label={t('Loading the yachts', 'Загружаем яхты', 'Cargando los yates')} on={!live && !backdrop.off} />
+      <ScenePoster label={backdrop.off ? undefined : t('Loading the yachts', 'Загружаем яхты', 'Cargando los yates')} on={!live} />
+      <iframe ref={frame} className={`bt-scene bt-fade ${live ? 'on' : ''}`} src={backdrop.go ? '/fleet-view?wind=light' : undefined} title={t('The yachts in 3D', 'Яхты в 3D', 'Los yates en 3D')}
         onLoad={() => post({ type: 'hello' })} />
 
       <div className="bt-info" ref={info}>
         <div className="bt-top">{back}<SceneBrand lang={lang} /></div>
-        <span className="bt-kick">{t('The yachts', 'Яхты')} <span className="fl-n">{id ? `${String(n).padStart(2, '0')} / ${String(YACHTS.length).padStart(2, '0')}` : t('All yachts', 'Все яхты')}</span></span>
-        <h1 className="bt-h fl-h" key={shown}>{id ? t(...y.name) : t('Every yacht', 'Все яхты')}</h1>
-        <p className="bt-p">{id ? <>{t(...y.kind)}. {t(...y.tagline)}</> : t('Every yacht in one line by length, bows level: from the America’s Cup’s 20.7 m foiler to the 2.3 m Optimist. Pick one to fly to her.', 'Все яхты в одну линию по длине, носы вровень: от 20,7-метровой летающей яхты Кубка Америки до 2,3-метрового Оптимиста. Выбери, чтобы подлететь к ней.')}</p>
+        <span className="bt-kick">{t('The yachts', 'Яхты', 'Los yates')} <span className="fl-n">{id ? `${String(n).padStart(2, '0')} / ${String(YACHTS.length).padStart(2, '0')}` : t('All yachts', 'Все яхты', 'Todos los yates')}</span></span>
+        <h1 className="bt-h fl-h" key={shown}>{id ? t(...y.name) : t('Every yacht', 'Все яхты', 'Todos los yates')}</h1>
+        <p className="bt-p">{id ? <>{t(...y.kind)}. {t(...y.tagline)}</> : t('Every yacht in one line by length, bows level: from the America’s Cup’s 20.7 m foiler to the 2.3 m Optimist. Pick one to fly to her.', 'Все яхты в одну линию по длине, носы вровень: от 20,7-метровой летающей яхты Кубка Америки до 2,3-метрового Оптимиста. Выбери, чтобы подлететь к ней.', 'Todos los yates en una línea por eslora, con las proas alineadas: del foiler de la Copa América de 20,7 m al Optimist de 2,3 m. Elige uno para volar hasta él.')}</p>
 
         <div className="fl-strip" ref={strip}>
           <div className="fl-ctl">
-            <button type="button" className="fl-btn" onClick={() => { setAuto(false); step(-1); }} aria-label={t('Previous yacht', 'Предыдущая яхта')}><IconBack s={16} /></button>
+            <button type="button" className="fl-btn" onClick={() => { setAuto(false); step(-1); }} aria-label={t('Previous yacht', 'Предыдущая яхта', 'Yate anterior')}><IconBack s={16} /></button>
             <button type="button" className="fl-btn" onClick={toggle} aria-pressed={auto}
-              aria-label={auto ? t('Stop the tour', 'Остановить облёт') : t('Tour the fleet', 'Облететь флот')}>
+              aria-label={auto ? t('Stop the tour', 'Остановить облёт', 'Parar el recorrido') : t('Tour the fleet', 'Облететь флот', 'Recorrer la flota')}>
               {auto ? <svg viewBox="0 0 24 24" width={14} height={14} aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" /></svg> : <IconPlay s={14} />}
             </button>
-            <button type="button" className="fl-btn" onClick={() => { setAuto(false); step(1); }} aria-label={t('Next yacht', 'Следующая яхта')}><IconArrow s={16} /></button>
-            <button type="button" className="fl-btn fl-all" onClick={() => pick(null)} aria-pressed={!id}><IconGrid s={14} /><span>{t('All', 'Все')}</span></button>
+            <button type="button" className="fl-btn" onClick={() => { setAuto(false); step(1); }} aria-label={t('Next yacht', 'Следующая яхта', 'Yate siguiente')}><IconArrow s={16} /></button>
+            <button type="button" className="fl-btn fl-all" onClick={() => pick(null)} aria-pressed={!id}><IconGrid s={14} /><span>{t('All', 'Все', 'Todos')}</span></button>
           </div>
-          <div className="fl-boats" role="radiogroup" aria-label={t('Yacht', 'Яхта')}>
+          <div className="fl-boats" role="radiogroup" aria-label={t('Yacht', 'Яхта', 'Yate')}>
             {YACHTS.map((x, i) => {
               const cell = <>
                 <span className="fl-i">{String(i + 1).padStart(2, '0')}</span>
@@ -142,7 +142,7 @@ export function FleetView({ lang, start, back, tour = true, own = false, foot }:
               </>;
               // on a yacht's page each is a link to hers (read by search engines), flown to here rather than followed
               return own
-                ? <a key={x.id} href={`/yachts/${x.id}${lang === 'ru' ? '?lang=ru' : ''}`} role="radio" aria-checked={x.id === id} className="fl-boat"
+                ? <a key={x.id} href={`/yachts/${x.id}${lang === 'en' ? '' : `?lang=${lang}`}`} role="radio" aria-checked={x.id === id} className="fl-boat"
                     onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; e.preventDefault(); pick(x.id); }}>{cell}</a>
                 : <button key={x.id} type="button" role="radio" aria-checked={x.id === id} className="fl-boat" onClick={() => pick(x.id)}>{cell}</button>;
             })}
@@ -151,55 +151,55 @@ export function FleetView({ lang, start, back, tour = true, own = false, foot }:
       </div>
 
       <PauseCard lang={lang} back={own ? `/yachts/${shown}` : '/yachts'} title={t(...y.name)} cardRef={card} foot={['boat', 'venues']}
-        tools={id ? <Link className="bt-mini bt-all" href="/yachts" scroll={false} aria-label={t('All yachts', 'Все яхты')}
-          onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; e.preventDefault(); pick(null); }}><IconBack s={14} /><span>{t('All yachts', 'Все яхты')}</span></Link> : undefined}
-        action={<button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race the ${y.name[0]}`, `В гонку на ${y.name[1]}`)}</span></button>}>
-        <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс')}>
-          <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд')}</button>
-          <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Downwind', 'Попутный')}</button>
+        tools={id ? <Link className="bt-mini bt-all" href="/yachts" scroll={false} aria-label={t('All yachts', 'Все яхты', 'Todos los yates')}
+          onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; e.preventDefault(); pick(null); }}><IconBack s={14} /><span>{t('All yachts', 'Все яхты', 'Todos los yates')}</span></Link> : undefined}
+        action={<button type="button" className="bt-go" onClick={race}><IconPlay /><span>{t(`Race the ${y.name[0]}`, `В гонку на ${y.name[1]}`, `Regata con ${(y.name[2] ?? y.name[0])}`)}</span></button>}>
+        <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс', 'Rumbo')}>
+          <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд', 'Ceñida')}</button>
+          <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Downwind', 'Попутный', 'Popa')}</button>
         </div>
 
         <p className="bt-hint">{shown === today
-          ? t('Today’s race is sailed in her, the same boat for everyone. A new yacht every day; any can sail a custom race.', 'Сегодня гонка дня идёт на ней — у всех одна и та же лодка. Каждый день — новая яхта; в своей гонке — любая.')
+          ? t('Today’s race is sailed in her, the same boat for everyone. A new yacht every day; any can sail a custom race.', 'Сегодня гонка дня идёт на ней — у всех одна и та же лодка. Каждый день — новая яхта; в своей гонке — любая.', 'La regata de hoy se navega en ella, el mismo barco para todos. Un yate nuevo cada día; cualquiera puede navegar una regata personalizada.')
           : shown in DAILY_YACHTS
-            ? t(`In a custom race, the whole fleet sails her, and today’s race does on her days: a new yacht every day, today the ${yachtOf(today).name[0]}.`, `В своей гонке на ней идёт весь флот, а в её дни — и гонка дня: каждый день новая яхта, сегодня ${yachtOf(today).name[1]}.`)
-            : t(`In a custom race, the whole fleet sails her. Today’s race is sailed in a new yacht every day: today the ${yachtOf(today).name[0]}.`, `В своей гонке на ней идёт весь флот. Гонка дня — каждый день на новой яхте: сегодня ${yachtOf(today).name[1]}.`)}</p>
+            ? t(`In a custom race, the whole fleet sails her, and today’s race does on her days: a new yacht every day, today the ${yachtOf(today).name[0]}.`, `В своей гонке на ней идёт весь флот, а в её дни — и гонка дня: каждый день новая яхта, сегодня ${yachtOf(today).name[1]}.`, `En una regata personalizada, toda la flota la navega, y la regata de hoy también en sus días: un yate nuevo cada día, hoy ${yachtOf(today).name[0]}.`)
+            : t(`In a custom race, the whole fleet sails her. Today’s race is sailed in a new yacht every day: today the ${yachtOf(today).name[0]}.`, `В своей гонке на ней идёт весь флот. Гонка дня — каждый день на новой яхте: сегодня ${yachtOf(today).name[1]}.`, `En una regata personalizada, toda la flota la navega. La regata de hoy se navega en un yate nuevo cada día: hoy ${yachtOf(today).name[0]}.`)}</p>
 
         <div className="fl-stats">
-          <div><span className="bt-sk">{t('Length', 'Длина')}</span><b>{t(...spec('Length')!.v)}</b></div>
-          <div><span className="bt-sk">{t('Crew', 'Экипаж')}</span><b>{t(...spec('Crew')!.v)}</b></div>
-          <div><span className="bt-sk">{t('Upwind', 'Бейдевинд')}</span><b>{kn(y.speed.up)}</b></div>
-          <div><span className="bt-sk">{t('Downwind', 'Попутный')}</span><b>{kn(y.speed.down)}</b></div>
-          <span className="bt-sv">{t('Speeds in 12 kn of wind', 'Скорости при ветре 12 уз')}</span>
+          <div><span className="bt-sk">{t('Length', 'Длина', 'Duración')}</span><b>{t(...spec('Length')!.v)}</b></div>
+          <div><span className="bt-sk">{t('Crew', 'Экипаж', 'Tripulación')}</span><b>{t(...spec('Crew')!.v)}</b></div>
+          <div><span className="bt-sk">{t('Upwind', 'Бейдевинд', 'Ceñida')}</span><b>{kn(y.speed.up)}</b></div>
+          <div><span className="bt-sk">{t('Downwind', 'Попутный', 'Popa')}</span><b>{kn(y.speed.down)}</b></div>
+          <span className="bt-sv">{t('Speeds in 12 kn of wind', 'Скорости при ветре 12 уз', 'Velocidades con 12 kn de viento')}</span>
         </div>
 
         <div className="bt-g yt-about">
-          <span className="bt-k"><IconSail s={14} />{t('About her', 'О яхте')}</span>
+          <span className="bt-k"><IconSail s={14} />{t('About her', 'О яхте', 'Sobre ella')}</span>
           {y.about.map((p, i) => <p key={i}>{t(...p)}</p>)}
-          {!own && <p><Link className="hm-src" href={`/yachts/${y.id}`}>{t(`The ${y.name[0]}’s own page`, `Страница яхты ${y.name[1]}`)}</Link></p>}
+          {!own && <p><Link className="hm-src" href={`/yachts/${y.id}`}>{t(`The ${y.name[0]}’s own page`, `Страница яхты ${y.name[1]}`, `Página de ${(y.name[2] ?? y.name[0])}`)}</Link></p>}
         </div>
 
         <div className="bt-g yt-about">
-          <span className="bt-k"><IconPlay />{t('In the game', 'В игре')}</span>
+          <span className="bt-k"><IconPlay />{t('In the game', 'В игре', 'En el juego')}</span>
           <p>{t(...y.race)}</p>
         </div>
 
         <div className="bt-g">
-          <span className="bt-k">{t('Seconds a mile upwind', 'Секунд на милю в лавировку')}</span>
+          <span className="bt-k">{t('Seconds a mile upwind', 'Секунд на милю в лавировку', 'Segundos por milla de ceñida')}</span>
           <dl className="yt-spec yt-beat">
-            {BEAT_TWS.map((w, i) => <div key={w}><dt>{w} {t('kn', 'уз')}</dt><dd>{BEAT_SECS[y.id][i]}</dd></div>)}
+            {BEAT_TWS.map((w, i) => <div key={w}><dt>{w} {t('kn', 'уз', 'kn')}</dt><dd>{BEAT_SECS[y.id][i]}</dd></div>)}
           </dl>
-          <p className="bt-hint">{t('As on an ORC certificate: 3600 / (speed × cos of the wind angle), at her best close-hauled angle in each wind.', 'Как в мерительном сертификате ORC: 3600 / (скорость × cos угла к ветру), на лучшем угле лавировки при каждом ветре.')}</p>
+          <p className="bt-hint">{t('As on an ORC certificate: 3600 / (speed × cos of the wind angle), at her best close-hauled angle in each wind.', 'Как в мерительном сертификате ORC: 3600 / (скорость × cos угла к ветру), на лучшем угле лавировки при каждом ветре.', 'Como en un certificado ORC: 3600 / (velocidad × cos del ángulo del viento), a su mejor ángulo de ceñida con cada viento.')}</p>
         </div>
 
         <div className="bt-g">
-          <span className="bt-k">{t('Specifications', 'Характеристики')}</span>
+          <span className="bt-k">{t('Specifications', 'Характеристики', 'Especificaciones')}</span>
           <dl className="yt-spec">
             {y.specs.map((s) => <div key={s.k[0]}><dt>{t(...s.k)}</dt><dd>{t(...s.v)}</dd></div>)}
           </dl>
         </div>
 
-        {shown === today && <div className="bt-rows"><a className="bt-row" href="/play?race=today"><IconPlay /><span>{t('Today’s race', 'Гонка дня')}</span><span className="bt-row-m">{t('In her', 'На ней')}</span></a></div>}
+        {shown === today && <div className="bt-rows"><a className="bt-row" href="/play?race=today"><IconPlay /><span>{t('Today’s race', 'Гонка дня', 'La regata del día')}</span><span className="bt-row-m">{t('In her', 'На ней', 'En ella')}</span></a></div>}
         {foot}
       </PauseCard>
     </div>

@@ -10,9 +10,9 @@ import { ShareButton } from './share-sheet';
 export function passportShare(log: Log, lang: Lang) {
   const t = tx(lang), p = passport(log), st = streakOf(log.d).n;
   const name = typeof document === 'undefined' ? '' : getComputedStyle(document.documentElement).getPropertyValue('--me-name').trim().replace(/^"|"$/g, '').split(/[\s@]/)[0];
-  const url = `${location.origin}/players?${passportQuery({ streak: st, raced: p.raced, name })}${lang === 'ru' ? '&lang=ru' : ''}`;
-  const text = st >= 2 ? t(`${st} days in a row on the water, ${p.n} of ${p.of} venues raced. Can you keep up?`, `${st} ${ruPlural(st, ['день', 'дня', 'дней'])} подряд на воде, ${p.n} из ${p.of} акваторий. Догонишь?`)
-    : t(`${p.n} of ${p.of} regatta venues raced. Can you get further?`, `Пройдено ${p.n} из ${p.of} регатных акваторий. Сможешь дальше?`);
+  const url = `${location.origin}/players?${passportQuery({ streak: st, raced: p.raced, name })}${lang === 'en' ? '' : `&lang=${lang}`}`;
+  const text = st >= 2 ? t(`${st} days in a row on the water, ${p.n} of ${p.of} venues raced. Can you keep up?`, `${st} ${ruPlural(st, ['день', 'дня', 'дней'])} подряд на воде, ${p.n} из ${p.of} акваторий. Догонишь?`, `${st} ${st === 1 ? 'día' : 'días'} seguidos en el agua, ${p.n} de ${p.of} sedes regateadas. ¿Puedes seguir el ritmo?`)
+    : t(`${p.n} of ${p.of} regatta venues raced. Can you get further?`, `Пройдено ${p.n} из ${p.of} регатных акваторий. Сможешь дальше?`, `${p.n} de ${p.of} sedes de regata regateadas. ¿Puedes llegar más lejos?`);
   return { title: 'Up and down', text, url };
 }
 
@@ -30,7 +30,7 @@ export function useLog() {
 }
 
 // "5-day streak", "1 day"
-export const streakWords = (n: number, lang: Lang) => tx(lang)(`${n}-day streak`, `${n} ${ruPlural(n, ['день', 'дня', 'дней'])} подряд`);
+export const streakWords = (n: number, lang: Lang) => tx(lang)(`${n}-day streak`, `${n} ${ruPlural(n, ['день', 'дня', 'дней'])} подряд`, `Racha de ${n} ${n === 1 ? 'día' : 'días'}`);
 
 // Home's venues, one a day: each you've raced tinted green, today's lit, and over them how many you have and your streak
 export function VenueList({ lang, today }: { lang: Lang; today: VenueId }) {
@@ -40,21 +40,21 @@ export function VenueList({ lang, today }: { lang: Lang; today: VenueId }) {
     <div className="ho-venues-w">
       {p && p.n > 0 ? (
         <p className="ho-pass" role="status">
-          <b>{t(`${p.n} of ${p.of} raced`, `Пройдено ${p.n} из ${p.of}`)}</b>
-          {st && st.n > 1 ? <span className={st.risk ? 'risk' : ''}>{streakWords(st.n, lang)}{st.risk ? t(' · race today to keep it', ' · пройди сегодня, чтобы не прервать') : ''}</span> : null}
-          {log ? <ShareButton lang={lang} data={() => passportShare(log, lang)} className="bt-show ho-pass-share" title={t('Share your passport', 'Поделиться паспортом')} /> : null}
+          <b>{t(`${p.n} of ${p.of} raced`, `Пройдено ${p.n} из ${p.of}`, `${p.n} de ${p.of} regateadas`)}</b>
+          {st && st.n > 1 ? <span className={st.risk ? 'risk' : ''}>{streakWords(st.n, lang)}{st.risk ? t(' · race today to keep it', ' · пройди сегодня, чтобы не прервать', ' · regatea hoy para mantenerla') : ''}</span> : null}
+          {log ? <ShareButton lang={lang} data={() => passportShare(log, lang)} className="bt-show ho-pass-share" title={t('Share your passport', 'Поделиться паспортом', 'Comparte tu pasaporte')} /> : null}
         </p>
       ) : null}
       <ul className="ho-venues">
         {VENUES.map((v) => {
           const raced = !!p?.raced.has(v.id), name = t(...v.name);
           return (
-            <li key={v.id} className={`${v.id === today ? 'today' : ''}${raced ? ' raced' : ''}`.trim() || undefined} title={raced ? t(`You’ve raced at ${name}`, `Ты уже гонялся в ${name}`) : undefined}>
-              {v.id === today ? t(`${v.name[0]} · today`, `${v.name[1]} · сегодня`) : name}
+            <li key={v.id} className={`${v.id === today ? 'today' : ''}${raced ? ' raced' : ''}`.trim() || undefined} title={raced ? t(`You’ve raced at ${name}`, `Ты уже гонялся в ${name}`, `Has regateado en ${name}`) : undefined}>
+              {v.id === today ? t(`${v.name[0]} · today`, `${v.name[1]} · сегодня`, `${(v.name[2] ?? v.name[0])} · hoy`) : name}
             </li>
           );
         })}
-        <li className="next">{t('Tomorrow · ?', 'Завтра · ?')}</li>
+        <li className="next">{t('Tomorrow · ?', 'Завтра · ?', 'Mañana · ?')}</li>
       </ul>
     </div>
   );

@@ -1,4 +1,4 @@
-import type { Lang } from '@/lib/lang';
+import { tx, type Lang } from '@/lib/lang';
 import { CountUp } from './count-up';
 
 // The RYC logo and the line icons of the design (24px grid, 2px stroke, currentColor).
@@ -63,10 +63,12 @@ export function Langs({ lang, back, className = '' }: { lang: Lang; back: string
   };
   const on = (to: Lang) => (lang === to ? ({ 'aria-current': 'true' } as const) : {});
   return (
-    <nav className={`langs ${className}`} aria-label={lang === 'ru' ? 'Язык' : 'Language'}>
+    <nav className={`langs ${className}`} aria-label={tx(lang)('Language', 'Язык', 'Idioma')}>
       <a className={`lang ${lang === 'en' ? 'lang-on' : ''}`} href={href('en')} hrefLang="en" lang="en" {...on('en')}>English</a>
       <span aria-hidden="true">·</span>
       <a className={`lang ${lang === 'ru' ? 'lang-on' : ''}`} href={href('ru')} hrefLang="ru" lang="ru" {...on('ru')}>Русский</a>
+      <span aria-hidden="true">·</span>
+      <a className={`lang ${lang === 'es' ? 'lang-on' : ''}`} href={href('es')} hrefLang="es" lang="es" {...on('es')}>Español</a>
     </nav>
   );
 }

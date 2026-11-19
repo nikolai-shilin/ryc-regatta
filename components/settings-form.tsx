@@ -24,27 +24,27 @@ export function NameRow({ lang, name: saved }: { lang: Lang; name: string }) {
     e.preventDefault();
     const v = cleanName(name);
     if (v === saved) return;
-    if (v.length < 2) { setMsg({ err: true, text: t('Two letters at least.', 'Хотя бы две буквы.') }); return; }
+    if (v.length < 2) { setMsg({ err: true, text: t('Two letters at least.', 'Хотя бы две буквы.', 'Mínimo dos letras.') }); return; }
     setBusy(true); setMsg(null);
     const { supabaseBrowser } = await import('@/lib/supabase/client');
     const { error } = await supabaseBrowser().auth.updateUser({ data: { display_name: v } });
     setBusy(false);
-    if (error) { setMsg({ err: true, text: t('Couldn’t save it. Try again.', 'Не удалось сохранить. Попробуй ещё раз.') }); return; }
-    setName(v); setMsg({ text: t('Saved. The ranking shows this name now.', 'Сохранено. В рейтинге теперь это имя.') });
+    if (error) { setMsg({ err: true, text: t('Couldn’t save it. Try again.', 'Не удалось сохранить. Попробуй ещё раз.', 'No se pudo guardar. Inténtalo de nuevo.') }); return; }
+    setName(v); setMsg({ text: t('Saved. The ranking shows this name now.', 'Сохранено. В рейтинге теперь это имя.', 'Guardado. La clasificación muestra ahora este nombre.') });
     router.refresh();
   };
   return (
     <form className="name-row" onSubmit={save}>
       <div className="srow">
-        <label className="srow-k" htmlFor="set-name">{t('Name on the ranking', 'Имя в рейтинге')}</label>
+        <label className="srow-k" htmlFor="set-name">{t('Name on the ranking', 'Имя в рейтинге', 'Nombre en la clasificación')}</label>
         <div className="name-in">
-          <input id="set-name" className="field" type="text" autoComplete="nickname" maxLength={NAME_MAX} placeholder={t('Anna P.', 'Анна П.')}
+          <input id="set-name" className="field" type="text" autoComplete="nickname" maxLength={NAME_MAX} placeholder={t('Anna P.', 'Анна П.', 'Anna P.')}
             value={name} onChange={(e) => { setName(e.target.value); setMsg(null); }} disabled={busy} />
-          {dirty && <button className="mini" type="submit" disabled={busy}><span className="btn-t">{t('Save', 'Сохранить')}</span></button>}
+          {dirty && <button className="mini" type="submit" disabled={busy}><span className="btn-t">{t('Save', 'Сохранить', 'Guardar')}</span></button>}
         </div>
       </div>
       {msg ? <p className={msg.err ? 'err' : 'hint'} role={msg.err ? 'alert' : 'status'}>{msg.text}</p>
-        : <p className="hint">{t('Only this name is public. Your email stays private.', 'Всем видно только это имя. Почта остаётся скрытой.')}</p>}
+        : <p className="hint">{t('Only this name is public. Your email stays private.', 'Всем видно только это имя. Почта остаётся скрытой.', 'Solo este nombre es público. Tu correo sigue siendo privado.')}</p>}
     </form>
   );
 }
@@ -66,19 +66,19 @@ function BoatLine({ lang }: { lang: Lang }) {
   useEffect(() => {
     const load = () => {
       const x = readBoat(), f = findFlag(x.flag);
-      setB({ name: `${x.nat} ${x.num || '1'}`.trim(), flag: f?.code, land: f ? t(f.en, f.ru) : undefined });
+      setB({ name: `${x.nat} ${x.num || '1'}`.trim(), flag: f?.code, land: f ? t(f.en, f.ru, f.es) : undefined });
     };
     load();
     addEventListener(BOAT_EVENT, load); // the account's boat, just brought to this device
     return () => removeEventListener(BOAT_EVENT, load);
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <Link className="st-boat" href="/boat?from=settings" aria-label={t('Edit your yacht', 'Изменить яхту')}>
+    <Link className="st-boat" href="/boat?from=settings" aria-label={t('Edit your yacht', 'Изменить яхту', 'Edita tu yate')}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {b?.flag ? <img className="fl" src={flagSrc(b.flag)} alt={b.land || ''} /> : <NoFlag />}
       <b>{b ? b.name : '\u00a0'}</b>
-      <span className="st-boat-k">{t('Colours, flag and number', 'Цвета, флаг и номер')}</span>
-      <span className="st-boat-e">{t('Edit', 'Изменить')}<IconArrow s={14} /></span>
+      <span className="st-boat-k">{t('Colours, flag and number', 'Цвета, флаг и номер', 'Colores, bandera y número')}</span>
+      <span className="st-boat-e">{t('Edit', 'Изменить', 'Editar')}<IconArrow s={14} /></span>
     </Link>
   );
 }
@@ -89,15 +89,15 @@ export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: 
   const t = tx(lang);
   return (
     <div className="st-cards">
-      <Card id="st-acct" title={t('Account', 'Аккаунт')}>
+      <Card id="st-acct" title={t('Account', 'Аккаунт', 'Cuenta')}>
         {account}
-        <div className="st-sub"><span className="lbl-ink">{t('Your yacht', 'Твоя яхта')}</span></div>
+        <div className="st-sub"><span className="lbl-ink">{t('Your yacht', 'Твоя яхта', 'Tu yate')}</span></div>
         <BoatLine lang={lang} />
-        <div className="st-sub"><span className="lbl-ink" id="l-lang">{t('Language', 'Язык')}</span></div>
+        <div className="st-sub"><span className="lbl-ink" id="l-lang">{t('Language', 'Язык', 'Idioma')}</span></div>
         {langSeg}
       </Card>
-      <Card id="st-sail" title={t('Sailing', 'Яхта')}><SailingOpts lang={lang} /></Card>
-      <section className="st-card st-wide" aria-label={t('Audio & graphics', 'Звук и графика')}><div className="st-card-b"><AvRow lang={lang} wide /></div></section>
+      <Card id="st-sail" title={t('Sailing', 'Яхта', 'Navegando')}><SailingOpts lang={lang} /></Card>
+      <section className="st-card st-wide" aria-label={t('Audio & graphics', 'Звук и графика', 'Audio y gráficos')}><div className="st-card-b"><AvRow lang={lang} wide /></div></section>
     </div>
   );
 }

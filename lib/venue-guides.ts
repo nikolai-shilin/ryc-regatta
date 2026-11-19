@@ -9,7 +9,7 @@ import { PART_5 } from './venue-guides/part-5';
 // the AI assistants that answer them. The game's own facts about a venue (its wind, the courses laid there) come from
 // lib/venues.ts and public/game/venues.js and are added by the page; these are the place itself: the water, the
 // wind, the regattas and a few local tactics, true of the real place.
-type Pair = [string, string]; // English, Russian
+type Pair = [en: string, ru: string, es?: string]; // English, Russian
 export type VenueGuide = {
   title: Pair; // the page's <title>, without the site's name: 'Sailing in Cowes: the Solent and Cowes Week'
   description: Pair; // the search result's line, at most 155 characters

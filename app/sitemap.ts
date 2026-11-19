@@ -1,13 +1,14 @@
 import type { MetadataRoute } from 'next';
 import { SITE, langUrl, languages } from '@/lib/seo';
+import { LANGS } from '@/lib/lang';
 import { GUIDES, GUIDE_DATES } from '@/lib/guides';
 import { VENUES } from '@/lib/venues';
 import { YACHT_IDS } from '@/lib/yachts';
 import { PAGES_DATE } from '@/lib/venue-guides';
 import { RULEBOOK_DATE } from '@/lib/rulebook';
 
-// The pages worth finding, each in English (the bare address) and Russian (?lang=ru), with hreflang links between
-// the two so a search engine shows each reader their own language. lastmod is when the page's text last changed in
+// The pages worth finding, each in English (the bare address), Russian (?lang=ru) and Spanish (?lang=es), with hreflang
+// links between them so a search engine shows each reader their own language. lastmod is when the page's text last changed in
 // substance (Google reads it, and ignores priority and changefreq); the pages that change every day say today, and a
 // page with no date known says none rather than a wrong one.
 //
@@ -28,6 +29,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return PAGES.flatMap(([path, priority, lastmod]) => {
     const alternates = { languages: Object.fromEntries(Object.entries(languages(path)).map(([k, v]) => [k, abs(v)])) };
     const changeFrequency = lastmod === day ? 'daily' as const : 'weekly' as const;
-    return (['en', 'ru'] as const).map((lang) => ({ url: abs(langUrl(path, lang)), ...(lastmod && { lastModified: lastmod }), changeFrequency, priority, alternates }));
+    return LANGS.map((lang) => ({ url: abs(langUrl(path, lang)), ...(lastmod && { lastModified: lastmod }), changeFrequency, priority, alternates }));
   });
 }

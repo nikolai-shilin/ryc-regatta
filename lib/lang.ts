@@ -1,8 +1,19 @@
-// Two languages, English and Russian. Copy sits inline as pairs: t('Settings', 'Настройки').
-export type Lang = 'en' | 'ru';
-export type T = (en: string, ru: string) => string;
-export const tx = (lang: Lang): T => (en, ru) => (lang === 'ru' ? ru : en);
-export const isLang = (v: unknown): v is Lang => v === 'en' || v === 'ru';
+// Three languages, English, Russian and Spanish. Copy sits inline, in that order: t('Settings', 'Настройки', 'Ajustes').
+// A line with no Spanish yet reads in English on the Spanish pages.
+export type Lang = 'en' | 'ru' | 'es';
+export type Pair = [en: string, ru: string, es?: string];
+export type T = (en: string, ru: string, es?: string) => string;
+export const tx = (lang: Lang): T => (en, ru, es) => (lang === 'ru' ? ru : lang === 'es' ? es ?? en : en);
+// a kept [English, Russian, Spanish] in the reader's language
+export function pick(p: Pair | readonly string[], lang: Lang): string;
+export function pick(p: Pair | readonly string[] | undefined, lang: Lang): string | undefined;
+export function pick(p: Pair | readonly string[] | undefined, lang: Lang) { return p && (p[lang === 'ru' ? 1 : lang === 'es' ? 2 : 0] ?? p[0]); }
+export const LANGS: readonly Lang[] = ['en', 'ru', 'es'];
+export const isLang = (v: unknown): v is Lang => v === 'en' || v === 'ru' || v === 'es';
+// the locale each language writes its dates and numbers in
+export const LOCALE: Record<Lang, string> = { en: 'en-GB', ru: 'ru-RU', es: 'es-ES' };
+// the language's name in itself, for the language switchers
+export const LANG_NAME: Record<Lang, string> = { en: 'English', ru: 'Русский', es: 'Español' };
 
 // Russian counts take one of three forms: 1 лодка, 3 лодки, 5 лодок (and 11–14 лодок, 21 лодка, 22 лодки…)
 export const ruPlural = (n: number, [one, few, many]: [string, string, string]) => {
@@ -17,4 +28,4 @@ export const ruBoatsOf = (n: number) => `${n} ${ruPlural(n, ['лодки', 'ло
 // index each language by, lib/seo.ts), else the player's choice (the lang cookie, set by /lang and ?lang=, and read by
 // the game too), else the browser's.
 export const pickLang = (q: string | null | undefined, cookie: string | null | undefined, acceptLanguage: string | null | undefined): Lang =>
-  isLang(q) ? q : isLang(cookie) ? cookie : /^(ru|uk|be|kk)\b/i.test(acceptLanguage || '') ? 'ru' : 'en';
+  isLang(q) ? q : isLang(cookie) ? cookie : /^(ru|uk|be|kk)\b/i.test(acceptLanguage || '') ? 'ru' : /^es\b/i.test(acceptLanguage || '') ? 'es' : 'en';

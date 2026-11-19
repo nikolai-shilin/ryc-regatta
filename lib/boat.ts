@@ -25,7 +25,7 @@ export type Boat = {
 
 export const BOAT_KEY = 'regatta-boat';
 
-export type Preset = { id: string; en: string; ru: string; boat: Omit<Boat, 'nat' | 'num' | 'preset' | 'flag' | 'bottom' | 'deck' | 'name'> };
+export type Preset = { id: string; en: string; ru: string; es?: string; boat: Omit<Boat, 'nat' | 'num' | 'preset' | 'flag' | 'bottom' | 'deck' | 'name'> };
 
 // one-colour schemes: the hull, the gennaker and the team jackets in one colour, on white sails, with a sail number
 // that shows up against it. Picking one keeps your number.
@@ -33,11 +33,12 @@ const light = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
   return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255 > 0.6;
 };
+const PRESET_ES: Record<string, string> = { white: 'Blanco', silver: 'Plateado', black: 'Negro', navy: 'Azul marino', blue: 'Azul', teal: 'Turquesa', green: 'Verde', yellow: 'Amarillo', orange: 'Naranja', red: 'Rojo', pink: 'Rosa', purple: 'Morado' };
 function mono(id: string, en: string, ru: string, c: string, dark = false): Preset {
   const mark = light(c) ? '#1d1d1d' : '#ffffff';
   const cloth = dark ? '#2a2c30' : '#f4f2ea';
   // a one-colour gennaker: kite2 and kite3 there, unset, so picking a preset clears them
-  return { id, en, ru, boat: { hull: c, cloth, laminate: dark, ink: dark || light(c) ? mark : c, kite: c, kite2: undefined, kite3: undefined, crew: c, pants: dark ? c : '#262a31' } };
+  return { id, en, ru, es: PRESET_ES[id], boat: { hull: c, cloth, laminate: dark, ink: dark || light(c) ? mark : c, kite: c, kite2: undefined, kite3: undefined, crew: c, pants: dark ? c : '#262a31' } };
 }
 export const PRESETS: Preset[] = [
   mono('white', 'White', 'Белая', '#f4f3ef'),

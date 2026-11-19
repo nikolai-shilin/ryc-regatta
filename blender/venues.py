@@ -461,6 +461,43 @@ VENUES = {
                                dict(kind='tower', style='lattice', at=(36.06886, 120.35025), h=232, gallery=12, color='#c9ccc8', clear=30),
                                dict(kind='lighthouse', style='plain', at=(36.05253, 120.38256), h=14, ground=0, foot=5, band='#c23a30')],
                     towns=[(36.0650, 120.3800, 1500), (36.0650, 120.3300, 1200), (36.0700, 120.4500, 1200)]),
+    # Aarhus Bay off the city's harbour, of the Sailing World Championships of 2018, in the westerly
+    'aarhus': dict(bathy='emodnet', zoom=14, most=15000, relations=True, paved=True, trees=True, home=(56.1480, 10.2700), wind=250,
+                   height_of={'ARoS Kunstmuseum': 43},  # (the map has none)
+                   landmarks=[dict(kind='steeple', at=(56.15686, 10.21025), h=93, w=13, color='#a8553f', spire='#5f8a74', split=0.5, dir=90),  # the Domkirke's tower at its west end, the nave to the east
+                              dict(kind='rainbow', at=(56.15394, 10.19960), roof=43)],  # Your rainbow panorama on ARoS's roof
+                   towns=[(56.1560, 10.2050, 1500), (56.1750, 10.1950, 800), (56.1300, 10.2050, 900)]),
+    # the skerries off Helsinki, the Olympic waters of 1952, in the south-westerly
+    'helsinki': dict(bathy='emodnet', zoom=14, most=15000, relations=True, paved=True, trees=True, home=(60.1250, 24.9500), wind=225, datum=17,
+                     landmarks=[dict(kind='dome', at=(60.17038, 24.95216), h=62, r=10, clear=40, color='#f2f0ea', cap='#5f8a74'),  # the cathedral over Senate Square: its green dome on the white drum
+                                *[dict(kind='dome', at=(60.17038 + a * 0.00016, 24.95216 + b * 0.00032), h=36, r=3.2, color='#f2f0ea', cap='#5f8a74') for a in (-1, 1) for b in (-1, 1)],  # and the four little domes round it
+                                dict(kind='dome', at=(60.16846, 24.95996), h=51, r=6, clear=30, color='#9a4a3a', cap='#d6a43a'),  # the Uspenski Cathedral's red brick and gilded cupola on its rock
+                                dict(kind='lighthouse', style='plain', at=(60.10501, 24.97556), h=16, tower='#f4f2ea', band='#c23a30', clear=8)],  # Harmaja's light
+                     towns=[(60.1680, 24.9400, 1500), (60.1580, 24.9200, 800), (60.1600, 24.9750, 800)]),
+    # the Gulf of Gdańsk off Gdynia, of Gdynia Sailing Days, in the westerly off the land
+    'gdynia': dict(bathy='emodnet', zoom=14, most=15000, relations=True, parts=True, paved=True, trees=True, home=(54.5200, 18.6000), wind=250,
+                   towns=[(54.5180, 18.5350, 1500), (54.4800, 18.5600, 1000), (54.4450, 18.5650, 900)]),
+    # Lake Ontario off Portsmouth Olympic Harbour, the Olympic waters of 1976 and of CORK, in the afternoon south-westerly
+    'kingston': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(44.2050, -76.5250), wind=225, lake='Lake Ontario',
+                     towns=[(44.2300, -76.4850, 1300), (44.2250, -76.5300, 800)]),
+    # the Bay of Tivat off Porto Montenegro, in the summer maestral
+    'tivat': dict(bathy='emodnet', zoom=14, most=15000, relations=True, paved=True, trees=True, home=(42.4250, 18.6750), wind=315,
+                  towns=[(42.4330, 18.6950, 900), (42.4500, 18.6900, 600)]),
+    # Lake Balaton off Balatonfüred, the start of the Blue Ribbon, in the northerly down off the Bakony
+    'balaton': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(46.9300, 17.9500), wind=330, lake='Balaton',
+                    towns=[(46.9570, 17.8900, 900), (46.9070, 18.0500, 1200), (46.9150, 17.8900, 500)]),
+    # the Singapore Strait off the Marina Barrage, in the north-east monsoon, the towers of Marina Bay behind
+    'singapore': dict(zoom=14, most=15000, relations=True, parts=True, paved=True, trees=True, home=(1.2600, 103.8750), wind=30,
+                      towns=[(1.2830, 103.8550, 1500), (1.3000, 103.8600, 1200), (1.3050, 103.9050, 1200)]),
+    # the Gulf of Oman off Al Mouj, Oman Sail's home, in the sea breeze, the Hajar mountains behind
+    'muscat': dict(zoom=14, most=15000, relations=True, paved=True, trees=True, home=(23.6400, 58.2700), wind=10,
+                   towns=[(23.6150, 58.2750, 900), (23.6000, 58.3300, 1200), (23.5900, 58.2300, 1000)]),
+    # the Río de la Plata off Olivos and San Isidro, in the easterly off the river
+    'buenos-aires': dict(zoom=14, most=15000, relations=True, parts=True, paved=True, trees=True, home=(-34.4900, -58.4400), wind=90,
+                         towns=[(-34.5100, -58.4800, 1200), (-34.4750, -58.5100, 1000), (-34.5300, -58.4600, 1200)]),
+    # Suyeong Bay, the Olympic waters of 1988, in the north-westerly off the land, Haeundae's towers and the Gwangan Bridge
+    'busan': dict(zoom=14, most=15000, relations=True, parts=True, paved=True, trees=True, home=(35.1450, 129.1350), wind=315,
+                  towns=[(35.1600, 129.1600, 1200), (35.1550, 129.1150, 1000), (35.1700, 129.1300, 1000)]),
 }
 
 # what is on the ground (the cover part), from OpenStreetMap's land use; 0 where the map has nothing, which the game

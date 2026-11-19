@@ -646,14 +646,14 @@ function glideWidths(els) {
   addEventListener('resize', () => { for (const e of reg) { if (e._ga) { e._ga.cancel(); e._ga = null; } e._gw = null; delete e.dataset.glide; } });
 }
 
-export function createHud({ t, LANG, fmt, world, getRace, setCam, flagOf: lookFlag = () => null, sailOf = () => '' }) {
-  const L = HUD_STRINGS[LANG] || HUD_STRINGS.en;
+export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam, flagOf: lookFlag = () => null, sailOf = () => '' }) {
+  const L = strings || HUD_STRINGS[LANG] || HUD_STRINGS.en;
   const $ = (s) => document.querySelector(s);
   const hud = $('#hud');
   const rudder = $('#rudder'), sheet = $('#sheet'), mini = $('#mini'), count = $('#count'), toastEl = $('#toast');
-  const nf = (x, d = 1) => (LANG === 'ru' ? x.toFixed(d).replace('.', ',') : x.toFixed(d));
+  const nf = (x, d = 1) => (LANG === 'en' ? x.toFixed(d) : x.toFixed(d).replace('.', ','));
   const M = LANG === 'ru' ? 'м' : 'm', KNU = t('kn').toUpperCase();
-  const venue = (VENUE.name && VENUE.name[LANG === 'ru' ? 1 : 0]) || '';
+  const venue = (VENUE.name && (VENUE.name[LANG === 'ru' ? 1 : LANG === 'es' ? 2 : 0] ?? VENUE.name[0])) || '';
   document.head.append(Object.assign(document.createElement('style'), { textContent: CSS }));
   const html = (s) => { const d = document.createElement('div'); d.innerHTML = s.trim(); return d.firstChild; };
   const q = (root, s) => root.querySelector(s);

@@ -1,4 +1,4 @@
-import { tx, type Lang } from '@/lib/lang';
+import { pick, tx, type Lang } from '@/lib/lang';
 import { VENUES } from '@/lib/venues';
 import { YACHTS } from '@/lib/yachts';
 import { SHAPE_NAME } from '@/lib/race';
@@ -25,19 +25,19 @@ const num = (x: number | null | undefined, k = 0) => (x == null ? '–' : x.toFi
 
 // what a group's key and value are called
 function names(lang: Lang) {
-  const t = tx(lang), L = lang === 'ru' ? 1 : 0;
+  const t = tx(lang);
   return {
     t,
-    yachtName: (id: string | null) => YACHTS.find((y) => y.id === id)?.name[L] ?? id ?? '–',
-    venueName: (id: string | null) => (id ? VENUES.find((v) => v.id === id)?.name[L] ?? id : t('Not kept (older races)', 'Не записано (старые гонки)')),
-    wind: (v: string | null) => ({ light: t('Light', 'Слабый'), medium: t('Medium', 'Средний'), strong: t('Strong', 'Сильный') }[v || ''] ?? '–'),
-    shape: (v: string | null) => (v && v in SHAPE_NAME ? SHAPE_NAME[v as keyof typeof SHAPE_NAME][L] : v ?? '–'),
+    yachtName: (id: string | null) => pick(YACHTS.find((y) => y.id === id)?.name, lang) ?? id ?? '–',
+    venueName: (id: string | null) => (id ? pick(VENUES.find((v) => v.id === id)?.name, lang) ?? id : t('Not kept (older races)', 'Не записано (старые гонки)', 'No guardado (regatas anteriores)')),
+    wind: (v: string | null) => ({ light: t('Light', 'Слабый', 'Flojo'), medium: t('Medium', 'Средний', 'Medio'), strong: t('Strong', 'Сильный', 'Fuerte') }[v || ''] ?? '–'),
+    shape: (v: string | null) => (v && v in SHAPE_NAME ? pick(SHAPE_NAME[v as keyof typeof SHAPE_NAME], lang) : v ?? '–'),
     dev: (v: string | null) => {
       const [d, tg] = (v || '').split(' ');
-      const name = { phone: t('Phone', 'Телефон'), tablet: t('Tablet', 'Планшет'), desktop: t('Computer', 'Компьютер') }[d] ?? d;
-      return tg ? `${name} · Telegram` : `${name} · ${t('browser', 'браузер')}`;
+      const name = { phone: t('Phone', 'Телефон', 'Móvil'), tablet: t('Tablet', 'Планшет', 'Tableta'), desktop: t('Computer', 'Компьютер', 'Ordenador') }[d] ?? d;
+      return tg ? `${name} · Telegram` : `${name} · ${t('browser', 'браузер', 'navegador')}`;
     },
-    level: (v: string | null) => ({ high: t('High', 'Высокая'), medium: t('Medium', 'Средняя'), low: t('Low', 'Низкая') }[v || ''] ?? '–'),
+    level: (v: string | null) => ({ high: t('High', 'Высокая', 'Alto'), medium: t('Medium', 'Средняя', 'Media'), low: t('Low', 'Низкая', 'Bajo') }[v || ''] ?? '–'),
     plain: (v: string | null) => v ?? '–',
   };
 }
@@ -52,24 +52,24 @@ export function AdminRacing({ lang, stats }: { lang: Lang; stats: Stats }) {
   const raceRows = (k: string, name: (v: string | null) => string, keep = (g: Group) => g.v != null) => of(k).filter(keep).map((g) => ({
     key: g.v ?? '–', name: name(g.v), cells: [String(g.n), pct(g.fin, g.n), pct(g.top3, g.fin), pct(g.dsq, g.n), g.down == null ? '–' : `${Math.round(100 * g.down)}%`, num(g.fps)],
   }));
-  const raceHead = [t('Races', 'Гонок'), t('Finished', 'Финиш'), t('Top 3', 'Топ-3'), t('DSQ', 'DSQ'), t('Place', 'Место'), t('FPS', 'FPS')];
+  const raceHead = [t('Races', 'Гонок', 'Regatas'), t('Finished', 'Финиш', 'Terminada'), t('Top 3', 'Топ-3', 'Top 3'), t('DSQ', 'DSQ'), t('Place', 'Место', 'Puesto'), t('FPS', 'FPS')];
   return (
     <div className="adm adm-stats">
-      <div className="adm-k"><IconTrophy /><span className="kicker">{t('How they race', 'Как гоняются')}</span></div>
+      <div className="adm-k"><IconTrophy /><span className="kicker">{t('How they race', 'Как гоняются', 'Cómo compiten')}</span></div>
       <div className="adm-tiles">
-        <Tile k={t('Races started', 'Гонок начато')} v={String(all.n)} />
-        <Tile k={t('Finished', 'Дошли до финиша')} v={pct(all.fin, all.n)} />
-        <Tile k={t('Players signed in', 'Игроков с аккаунтом')} v={String(all.who)} />
-        <Tile k={t('Disqualified', 'Дисквалификаций')} v={pct(all.dsq, all.n)} />
+        <Tile k={t('Races started', 'Гонок начато', 'Regatas empezadas')} v={String(all.n)} />
+        <Tile k={t('Finished', 'Дошли до финиша', 'Llegaron')} v={pct(all.fin, all.n)} />
+        <Tile k={t('Players signed in', 'Игроков с аккаунтом', 'Jugadores con sesión')} v={String(all.who)} />
+        <Tile k={t('Disqualified', 'Дисквалификаций', 'Descalificados')} v={pct(all.dsq, all.n)} />
       </div>
       <DayBars lang={lang} days={stats.days} since={stats.since} />
-      <Table title={t('By yacht', 'По яхтам')} first={t('Yacht', 'Яхта')} head={raceHead} rows={raceRows('yacht', yachtName)} />
-      <Table title={t('By wind', 'По ветру')} first={t('Wind', 'Ветер')} head={raceHead} rows={raceRows('wind', wind)} />
-      <Table title={t('By venue', 'По месту')} first={t('Venue', 'Место')} head={raceHead} rows={raceRows('venue', venueName, () => true)} />
-      <Table title={t('By course and race', 'По дистанции и виду гонки')} first={t('Course', 'Дистанция')} head={raceHead}
-        rows={[...raceRows('shape', shape), ...raceRows('kind', (v) => (v === 'daily' ? t('Today’s race', 'Гонка дня') : t('Custom race', 'Своя гонка')))]} />
+      <Table title={t('By yacht', 'По яхтам', 'Por yate')} first={t('Yacht', 'Яхта', 'Yate')} head={raceHead} rows={raceRows('yacht', yachtName)} />
+      <Table title={t('By wind', 'По ветру', 'Por viento')} first={t('Wind', 'Ветер', 'Viento')} head={raceHead} rows={raceRows('wind', wind)} />
+      <Table title={t('By venue', 'По месту', 'Por sede')} first={t('Venue', 'Место', 'Sede')} head={raceHead} rows={raceRows('venue', venueName, () => true)} />
+      <Table title={t('By course and race', 'По дистанции и виду гонки', 'Por recorrido y regata')} first={t('Course', 'Дистанция', 'Recorrido')} head={raceHead}
+        rows={[...raceRows('shape', shape), ...raceRows('kind', (v) => (v === 'daily' ? t('Today’s race', 'Гонка дня', 'La regata del día') : t('Custom race', 'Своя гонка', 'Regata personalizada')))]} />
       <p className="hint">{t('Finished and DSQ: of the races started. Top 3: of the races finished. Place: the median, 0% first in the fleet, 100% last. FPS: the median frame rate of the races measured.',
-        'Финиш и DSQ — от начатых гонок. Топ-3 — от финишировавших. Место — медиана: 0% — первым во флоте, 100% — последним. FPS — медианная частота кадров в измеренных гонках.')}</p>
+        'Финиш и DSQ — от начатых гонок. Топ-3 — от финишировавших. Место — медиана: 0% — первым во флоте, 100% — последним. FPS — медианная частота кадров в измеренных гонках.', 'Terminadas y DSQ: de las regatas empezadas. Top 3: de las regatas terminadas. Puesto: la mediana, 0 % primero de la flota, 100 % último. FPS: la mediana de fotogramas por segundo de las regatas medidas.')}</p>
     </div>
   );
 }
@@ -82,26 +82,26 @@ export function AdminPerf({ lang, stats }: { lang: Lang; stats: Stats }) {
   const perfRows = (k: string, name: (v: string | null) => string, limit = 50) => of(k).filter((g) => g.v != null && g.np > 0).sort((a, b) => b.np - a.np).slice(0, limit).map((g) => ({
     key: g.v ?? '–', name: name(g.v),
     cells: [String(g.np), num(g.fps), num(g.low), pct(g.slow, g.np), num(g.stall, 1), g.saver == null ? '–' : `${Math.round(100 * g.saver)}%`,
-      `${pct(g.qh, g.np)} / ${pct(g.qm, g.np)} / ${pct(g.ql, g.np)}`, g.load == null ? '–' : `${num(g.load, 1)} ${t('s', 'с')}`],
+      `${pct(g.qh, g.np)} / ${pct(g.qm, g.np)} / ${pct(g.ql, g.np)}`, g.load == null ? '–' : `${num(g.load, 1)} ${t('s', 'с', 's')}`],
   }));
-  const perfHead = [t('Races', 'Гонок'), t('FPS', 'FPS'), t('Slow 5%', 'Худшие 5%'), t('Under 30', 'Ниже 30'), t('Stalls/min', 'Рывков/мин'), t('Saver', 'Экономия'), t('High / Med / Low', 'Выс / Сред / Низ'), t('Load', 'Загрузка')];
+  const perfHead = [t('Races', 'Гонок', 'Regatas'), t('FPS', 'FPS'), t('Slow 5%', 'Худшие 5%', '5 % lento'), t('Under 30', 'Ниже 30', 'Menos de 30'), t('Stalls/min', 'Рывков/мин', 'Tirones/min'), t('Saver', 'Экономия', 'Ahorro'), t('High / Med / Low', 'Выс / Сред / Низ', 'Alto / Medio / Bajo'), t('Load', 'Загрузка', 'Carga')];
   return (
     <div className="adm adm-stats">
-      <div className="adm-k"><IconDevice /><span className="kicker">{t('How the game runs', 'Как работает игра')}</span></div>
+      <div className="adm-k"><IconDevice /><span className="kicker">{t('How the game runs', 'Как работает игра', 'Cómo funciona el juego')}</span></div>
       <div className="adm-tiles">
-        <Tile k={t('Races measured', 'Гонок измерено')} v={String(all.np)} />
-        <Tile k={t('Median FPS', 'Медиана FPS')} v={num(all.fps)} />
-        <Tile k={t('Under 30 FPS', 'Ниже 30 FPS')} v={pct(all.slow, all.np)} />
-        <Tile k={t('Stalls a minute', 'Рывков в минуту')} v={num(all.stall, 1)} />
-        <Tile k={t('To the first race', 'До первой гонки')} v={all.load == null ? '–' : `${num(all.load, 1)} ${t('s', 'с')}`} />
+        <Tile k={t('Races measured', 'Гонок измерено', 'Regatas medidas')} v={String(all.np)} />
+        <Tile k={t('Median FPS', 'Медиана FPS', 'FPS medianos')} v={num(all.fps)} />
+        <Tile k={t('Under 30 FPS', 'Ниже 30 FPS', 'Menos de 30 FPS')} v={pct(all.slow, all.np)} />
+        <Tile k={t('Stalls a minute', 'Рывков в минуту', 'Tirones por minuto')} v={num(all.stall, 1)} />
+        <Tile k={t('To the first race', 'До первой гонки', 'Hasta la primera regata')} v={all.load == null ? '–' : `${num(all.load, 1)} ${t('s', 'с', 's')}`} />
       </div>
-      <Table title={t('By device', 'По устройству')} first={t('Device', 'Устройство')} head={perfHead} rows={perfRows('dev', dev)} />
-      <Table title={t('By graphics chip', 'По видеочипу')} first={t('Chip', 'Чип')} head={perfHead} rows={perfRows('gpu', plain, 15)} />
-      <Table title={t('By graphics level', 'По уровню графики')} first={t('Level', 'Уровень')} head={perfHead} rows={perfRows('q', level)} />
-      <Table title={t('By system and browser', 'По системе и браузеру')} first={t('System', 'Система')} head={perfHead} rows={[...perfRows('os', plain), ...perfRows('br', plain)]} />
-      <Table title={t('By venue', 'По месту')} first={t('Venue', 'Место')} head={perfHead} rows={perfRows('venue', venueName)} />
+      <Table title={t('By device', 'По устройству', 'Por dispositivo')} first={t('Device', 'Устройство', 'Dispositivo')} head={perfHead} rows={perfRows('dev', dev)} />
+      <Table title={t('By graphics chip', 'По видеочипу', 'Por chip gráfico')} first={t('Chip', 'Чип', 'Chip')} head={perfHead} rows={perfRows('gpu', plain, 15)} />
+      <Table title={t('By graphics level', 'По уровню графики', 'Por nivel de gráficos')} first={t('Level', 'Уровень', 'Nivel')} head={perfHead} rows={perfRows('q', level)} />
+      <Table title={t('By system and browser', 'По системе и браузеру', 'Por sistema y navegador')} first={t('System', 'Система', 'Sistema')} head={perfHead} rows={[...perfRows('os', plain), ...perfRows('br', plain)]} />
+      <Table title={t('By venue', 'По месту', 'Por sede')} first={t('Venue', 'Место', 'Sede')} head={perfHead} rows={perfRows('venue', venueName)} />
       <p className="hint">{t('Each race the game measures its frames: FPS is the middle frame’s rate, Slow 5% the rate of the slowest twentieth; a stall is a frame over 0.1 s. The level is the one a race ended on (Auto steps down on a slow device). Load: from opening the page to the first race. Races before 17 November weren’t measured.',
-        'Игра измеряет кадры в каждой гонке: FPS — частота среднего кадра, «Худшие 5%» — частота самой медленной двадцатой части кадров; рывок — кадр дольше 0,1 с. Уровень — тот, на котором гонка закончилась (Авто понижает его на медленном устройстве). Загрузка — от открытия страницы до первой гонки. Гонки до 17 ноября не измерялись.')}</p>
+        'Игра измеряет кадры в каждой гонке: FPS — частота среднего кадра, «Худшие 5%» — частота самой медленной двадцатой части кадров; рывок — кадр дольше 0,1 с. Уровень — тот, на котором гонка закончилась (Авто понижает его на медленном устройстве). Загрузка — от открытия страницы до первой гонки. Гонки до 17 ноября не измерялись.', 'En cada regata el juego mide sus fotogramas: FPS es la velocidad del fotograma central, 5 % lento la del vigésimo más lento; un tirón es un fotograma de más de 0,1 s. El nivel es en el que terminó una regata (Auto baja en un dispositivo lento). Carga: desde que se abre la página hasta la primera regata. Las regatas anteriores al 17 de noviembre no se midieron.')}</p>
     </div>
   );
 }
@@ -133,7 +133,7 @@ function DayBars({ lang, days, since }: { lang: Lang; days: Day[]; since: string
   const n = Math.max(1, Math.round((to - from) / 864e5) + 1), by = new Map(days.map((d) => [d.d, d]));
   const slots: DaySlot[] = Array.from({ length: n }, (_, i) => {
     const d = new Date(from + i * 864e5).toISOString().slice(0, 10), x = by.get(d);
-    return { d, n: x?.n ?? 0, tip: x ? [[t('Races', 'Гонок'), String(x.n)], [t('Finished', 'Финиш'), pct(x.fin, x.n)], [t('Players', 'Игроков'), String(x.who)], [t('FPS', 'FPS'), num(x.fps)]] : [] };
+    return { d, n: x?.n ?? 0, tip: x ? [[t('Races', 'Гонок', 'Regatas'), String(x.n)], [t('Finished', 'Финиш', 'Terminada'), pct(x.fin, x.n)], [t('Players', 'Игроков', 'Jugadores'), String(x.who)], [t('FPS', 'FPS'), num(x.fps)]] : [] };
   });
-  return <DayChart lang={lang} title={t('Races started a day', 'Гонок начато в день')} label={t('Races started each day', 'Гонок начато в каждый день')} slots={slots} />;
+  return <DayChart lang={lang} title={t('Races started a day', 'Гонок начато в день', 'Regatas empezadas al día')} label={t('Races started each day', 'Гонок начато в каждый день', 'Regatas iniciadas cada día')} slots={slots} />;
 }

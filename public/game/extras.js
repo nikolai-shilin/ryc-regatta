@@ -10,7 +10,7 @@
 import { VENUE } from './venues.js';
 import { polarSpeed, beatAngle, lineT, KN, D2R } from './sim.js';
 
-const tr = (en, ru) => (ctx?.LANG === 'ru' ? ru : en); // the game's language (main.js), handed over at init
+const tr = (en, ru, es) => (ctx?.LANG === 'ru' ? ru : ctx?.LANG === 'es' ? es ?? en : en); // the game's language (main.js), handed over at init
 const q = new URLSearchParams(location.search);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 
@@ -60,12 +60,12 @@ export const drill = drillId;
 const kind = (id) => DRILLS[id].as || id;
 // what a drill sails, over the free race's own choices (main.js settings())
 export const drillSettings = () => (drillId ? { ...DRILLS[drillId].race, level: DRILLS[drillId].level } : null);
-const drillName = (id) => ({ start: tr('The start', 'Старт'), mark: tr('The top mark', 'Верхний знак'), beat: tr('The shifts', 'Сдвиги ветра'),
-  run: tr('The run', 'Фордевинд'), finish: tr('The finish', 'Финиш'), end: tr('The favoured end', 'Выгодный конец'), layline: tr('The layline', 'Лейлайн'),
-  penalty: tr('The penalty turn', 'Штрафной оборот'), tide: tr('The tide start', 'Старт на течении'), light: tr('Light air', 'Слабый ветер'),
-  wing: tr('The wing mark', 'Боковой знак'), heavy: tr('The heavy-air run', 'Фордевинд в свежак'), port: tr('The port-tack start', 'Старт левым галсом'),
-  back: tr('From the back', 'С последнего места'), race: tr('The whole race', 'Вся гонка') })[id];
-const levelName = (lv) => ({ beginner: tr('Beginner', 'Новичок'), club: tr('Club', 'Клуб'), racer: tr('Racer', 'Гонщик'), expert: tr('Expert', 'Эксперт') })[lv];
+const drillName = (id) => ({ start: tr('The start', 'Старт', 'La salida'), mark: tr('The top mark', 'Верхний знак', 'La baliza de barlovento'), beat: tr('The shifts', 'Сдвиги ветра', 'Las roladas'),
+  run: tr('The run', 'Фордевинд', 'La empopada'), finish: tr('The finish', 'Финиш', 'La llegada'), end: tr('The favoured end', 'Выгодный конец', 'El extremo favorecido'), layline: tr('The layline', 'Лейлайн', 'La layline'),
+  penalty: tr('The penalty turn', 'Штрафной оборот', 'El giro de penalización'), tide: tr('The tide start', 'Старт на течении', 'La salida con marea'), light: tr('Light air', 'Слабый ветер', 'Poco viento'),
+  wing: tr('The wing mark', 'Боковой знак', 'La baliza de través'), heavy: tr('The heavy-air run', 'Фордевинд в свежак', 'La empopada con viento fuerte'), port: tr('The port-tack start', 'Старт левым галсом', 'La salida por babor'),
+  back: tr('From the back', 'С последнего места', 'Desde atrás'), race: tr('The whole race', 'Вся гонка', 'La regata completa') })[id];
+const levelName = (lv) => ({ beginner: tr('Beginner', 'Новичок', 'Principiante'), club: tr('Club', 'Клуб', 'Club'), racer: tr('Racer', 'Гонщик', 'Regatista'), expert: tr('Expert', 'Эксперт', 'Experto') })[lv];
 
 let ctx = null, dr = null;
 const css = `
@@ -139,13 +139,13 @@ function startDrill(race) {
   if (drillId === 'layline') Object.assign(dr, { tacks: 0, inTack: false, T: { x: P.x, z: P.z, W: P.wdir }, tw: [] });
   dr.t0 = race.clock; dr.place0 = race.standings().indexOf(P) + 1; dr.pens0 = P.pens || 0; dr.leg0 = P.leg;
   const k = document.createElement('div'); k.className = 'drill-k bc';
-  k.innerHTML = `<b>${levelName(DRILLS[drillId].level)}</b><span>${drillName(drillId)} · ${{ start: tr('cross at the gun, at speed', 'пересеки линию по сигналу, на скорости'), mark: tr('round it, gain a place', 'обогни и выиграй место'), beat: tr('to the top mark', 'до верхнего знака'),
-    run: tr('down through the gate', 'вниз через ворота'), finish: tr('cross ahead', 'финишируй впереди'), end: tr('start at the end that pays', 'стартуй у выгодного конца'),
-    layline: tr('tack for the mark at the right time', 'поверни на знак вовремя'), penalty: tr('tack, gybe, back up to speed', 'оверштаг, фордевинд и снова на скорость'),
-    tide: tr('cross at the gun, the stream under you', 'пересеки линию по сигналу, течение под тобой'), light: tr('to the top mark, in a zephyr', 'до верхнего знака в слабый ветер'),
-    wing: tr('round it, gain a place', 'обогни и выиграй место'), heavy: tr('through the gate, on her feet', 'через ворота, без брочинга'),
-    port: tr('start on port at the pin, cross them', 'стартуй левым у пина, пересеки курс флота'), back: tr('from the back, pass them', 'с конца — обгоняй'),
-    race: tr('win it', 'выиграй её') }[drillId]}</span>`;
+  k.innerHTML = `<b>${levelName(DRILLS[drillId].level)}</b><span>${drillName(drillId)} · ${{ start: tr('cross at the gun, at speed', 'пересеки линию по сигналу, на скорости', 'cruza en la señal, a toda velocidad'), mark: tr('round it, gain a place', 'обогни и выиграй место', 'rodéala y gana un puesto'), beat: tr('to the top mark', 'до верхнего знака', 'hasta la baliza de barlovento'),
+    run: tr('down through the gate', 'вниз через ворота', 'bajando por la puerta'), finish: tr('cross ahead', 'финишируй впереди', 'cruza por delante'), end: tr('start at the end that pays', 'стартуй у выгодного конца', 'sal por el extremo que compensa'),
+    layline: tr('tack for the mark at the right time', 'поверни на знак вовремя', 'vira hacia la baliza en el momento justo'), penalty: tr('tack, gybe, back up to speed', 'оверштаг, фордевинд и снова на скорость', 'vira, trasluchas, vuelve a la velocidad'),
+    tide: tr('cross at the gun, the stream under you', 'пересеки линию по сигналу, течение под тобой', 'cruza en la señal, con la corriente bajo ti'), light: tr('to the top mark, in a zephyr', 'до верхнего знака в слабый ветер', 'hasta la baliza de barlovento, con brisa flojita'),
+    wing: tr('round it, gain a place', 'обогни и выиграй место', 'rodéala y gana un puesto'), heavy: tr('through the gate, on her feet', 'через ворота, без брочинга', 'por la puerta, sin tumbarte'),
+    port: tr('start on port at the pin, cross them', 'стартуй левым у пина, пересеки курс флота', 'sal por babor en el pin, cruza por delante'), back: tr('from the back, pass them', 'с конца — обгоняй', 'desde atrás, adelántalos'),
+    race: tr('win it', 'выиграй её', 'gana') }[drillId]}</span>`;
   document.body.append(k); dr.k = k;
 }
 
@@ -198,31 +198,31 @@ function drillFrame(race) {
   dr.done = true;
   const place = race.standings().indexOf(P) + 1, pens = (P.pens || 0) - dr.pens0, n = race.boats.length;
   let stars = 0, line = '';
-  const tide = dr.id === 'tide' ? [' The stream sets you: watch how fast a buoy or the committee boat slides by, and hold further off when it runs toward the line.', ' Течение сносит: смотри, как быстро мимо идёт знак или судейское судно, и держись дальше, если оно несёт на линию.'] : ['', ''];
+  const tide = dr.id === 'tide' ? [' The stream sets you: watch how fast a buoy or the committee boat slides by, and hold further off when it runs toward the line.', ' Течение сносит: смотри, как быстро мимо идёт знак или судейское судно, и держись дальше, если оно несёт на линию.', ' La corriente te arrastra: fíjate en lo rápido que pasa una boya o el barco del comité y mantente más lejos cuando va hacia la línea.'] : ['', ''];
   if (K === 'start') {
     const d = L.gunD, v = L.gunV;
-    if (L.ocs || L.startDsq) { stars = 0; line = tr('Over the line at the gun: you had to go back. Hold below it until the last seconds.' + tide[0], 'Фальстарт — пришлось возвращаться. Держись под ней до последних секунд.' + tide[1]); }
-    else if (d == null) { stars = 0; line = tr('No start this time.', 'В этот раз старта не было.'); }
+    if (L.ocs || L.startDsq) { stars = 0; line = tr('Over the line at the gun: you had to go back. Hold below it until the last seconds.' + tide[0], 'Фальстарт — пришлось возвращаться. Держись под ней до последних секунд.' + tide[1], 'Saliste antes de la señal y tuviste que volver. Aguanta por debajo de la línea hasta los últimos segundos.' + (tide[2] ?? tide[0])); }
+    else if (d == null) { stars = 0; line = tr('No start this time.', 'В этот раз старта не было.', 'Esta vez no hubo salida.'); }
     else {
       stars = d < 10 && v > 4.5 ? 3 : d < 25 && v > 3.5 ? 2 : 1;
       line = tr(`At the gun: ${Math.round(Math.max(0, d))} m from the line at ${v.toFixed(1)} kn. ${stars === 3 ? 'That is the start that wins races.' : 'Three stars: under 10 m, over 4.5 kn.' + tide[0]}`,
-        `На сигнале: ${Math.round(Math.max(0, d))} м до линии, ${v.toFixed(1).replace('.', ',')} уз. ${stars === 3 ? 'Такой старт и выигрывает гонки.' : 'Три звезды: ближе 10 м, быстрее 4,5 уз.' + tide[1]}`);
+        `На сигнале: ${Math.round(Math.max(0, d))} м до линии, ${v.toFixed(1).replace('.', ',')} уз. ${stars === 3 ? 'Такой старт и выигрывает гонки.' : 'Три звезды: ближе 10 м, быстрее 4,5 уз.' + tide[1]}`, `En la señal: a ${Math.round(Math.max(0, d))} m de la línea a ${v.toFixed(1).replace('.', ',')} kn. ${stars === 3 ? 'Esa es la salida que gana regatas.' : 'Tres estrellas: a menos de 10 m y a más de 4,5 kn.' + (tide[2] ?? tide[0])}`);
     }
   } else if (K === 'mark') {
     const gained = dr.place0 - place;
     stars = dr.roundT == null ? 0 : pens ? 1 : gained > 0 || place === 1 ? 3 : gained === 0 ? 2 : 1;
-    line = dr.roundT == null ? tr('The mark wasn’t rounded in time.', 'Знак не обогнут вовремя.')
+    line = dr.roundT == null ? tr('The mark wasn’t rounded in time.', 'Знак не обогнут вовремя.', 'No rodeaste la baliza a tiempo.')
       : tr(`${ord(dr.place0)} at the zone, ${ord(place)} after it${pens ? ', with a penalty' : ''}. ${stars === 3 ? 'Wide in, tight out.' : 'Three stars: a place gained (or kept at the front), and no penalty.'}`,
-        `${dr.place0}-е у зоны, ${place}-е после неё${pens ? ', со штрафом' : ''}. ${stars === 3 ? 'Широко на вход, плотно на выход.' : 'Три звезды: выигранное место (или удержанное первое) и без штрафа.'}`);
+        `${dr.place0}-е у зоны, ${place}-е после неё${pens ? ', со штрафом' : ''}. ${stars === 3 ? 'Широко на вход, плотно на выход.' : 'Три звезды: выигранное место (или удержанное первое) и без штрафа.'}`, `${ord(dr.place0)} en la zona, ${ord(place)} después${pens ? ', con una penalización' : ''}. ${stars === 3 ? 'Entra abierto, sal pegado.' : 'Tres estrellas: gana un puesto (o sigue en cabeza) y sin penalización.'}`);
   } else if (dr.id === 'end') {
-    const boat = dr.boatEnd, at = dr.gunAt, d = L.gunD, v = L.gunV, endName = boat ? tr('the committee boat', 'у судейского судна') : tr('the pin', 'у пина');
+    const boat = dr.boatEnd, at = dr.gunAt, d = L.gunD, v = L.gunV, endName = boat ? tr('the committee boat', 'у судейского судна', 'el barco del comité') : tr('the pin', 'у пина', 'el pin');
     const near = at == null ? 1 : boat ? 1 - at : at; // how far along the line from the end that paid
-    if (L.ocs || L.startDsq) { stars = 0; line = tr('Over the line at the gun: you had to go back.', 'Фальстарт — пришлось возвращаться.'); }
-    else if (d == null || at == null) { stars = 0; line = tr('No start this time.', 'В этот раз старта не было.'); }
+    if (L.ocs || L.startDsq) { stars = 0; line = tr('Over the line at the gun: you had to go back.', 'Фальстарт — пришлось возвращаться.', 'Sobre la línea en la señal: tuviste que volver.'); }
+    else if (d == null || at == null) { stars = 0; line = tr('No start this time.', 'В этот раз старта не было.', 'Esta vez no hubo salida.'); }
     else {
       stars = near <= 1 / 3 && d < 15 && v > 4 ? 3 : near <= 1 / 2 && d < 30 ? 2 : 1;
       line = tr(`The end that paid: ${boat ? 'the committee boat' : 'the pin'}. At the gun you were ${Math.round(near * 100)}% of the way along the line from it, ${Math.round(Math.max(0, d))} m from the line at the gun at ${v.toFixed(1)} kn. ${stars === 3 ? 'A head start on the whole fleet.' : 'Three stars: in the third of the line nearest that end, under 15 m at the gun, over 4 kn. Look which end is further upwind before you set up.'}`,
-        `Выгодный конец — ${endName}. На сигнале ты был в ${Math.round(near * 100)}% длины линии от него, ${Math.round(Math.max(0, d))} м до линии на сигнале, ${v.toFixed(1).replace('.', ',')} уз. ${stars === 3 ? 'Фора перед всем флотом.' : 'Три звезды: в трети линии у этого конца, ближе 15 м на сигнале, быстрее 4 уз. Посмотри, какой конец выше по ветру, прежде чем заходить.'}`);
+        `Выгодный конец — ${endName}. На сигнале ты был в ${Math.round(near * 100)}% длины линии от него, ${Math.round(Math.max(0, d))} м до линии на сигнале, ${v.toFixed(1).replace('.', ',')} уз. ${stars === 3 ? 'Фора перед всем флотом.' : 'Три звезды: в трети линии у этого конца, ближе 15 м на сигнале, быстрее 4 уз. Посмотри, какой конец выше по ветру, прежде чем заходить.'}`, `El extremo que compensaba: ${boat ? 'el barco del comité' : 'la baliza'}. En la señal estabas al ${Math.round(near * 100)}% de la línea contando desde ese extremo, a ${Math.round(Math.max(0, d))} m de la línea y a ${v.toFixed(1).replace('.', ',')} kn. ${stars === 3 ? 'Ventaja sobre toda la flota desde el primer momento.' : 'Tres estrellas: en el tercio de la línea más cercano a ese extremo, a menos de 15 m en la señal y a más de 4 kn. Antes de colocarte, mira qué extremo está más a barlovento.'}`);
     }
   } else if (dr.id === 'layline') {
     // overstood: from where she came out of her last tack the mark lay further off the wind than she sailed (the middle
@@ -233,52 +233,52 @@ function drillFrame(race) {
     const over = lie > sails ? d * Math.sin(lie - sails) : 0, n = dr.tacks;
     stars = P.leg < 2 ? 0 : pens ? 1 : n <= 2 && over < 10 ? 3 : n <= 3 && over < 25 ? 2 : 1;
     const ru = n === 1 ? 'поворот' : n > 1 && n < 5 ? 'поворота' : 'поворотов';
-    line = P.leg < 2 ? tr('Not at the mark in time.', 'Не дошёл до знака вовремя.')
+    line = P.leg < 2 ? tr('Not at the mark in time.', 'Не дошёл до знака вовремя.', 'No llegaste a la baliza a tiempo.')
       : tr(`${n} ${n === 1 ? 'tack' : 'tacks'}, ${over < 1 ? 'not overstood' : `overstood by ${Math.round(over)} m`}${pens ? ', with a penalty' : ''}. ${stars === 3 ? 'Tacked on the layline, not past it.' : 'Three stars: two tacks at most, under 10 m past the layline, no penalty. Tack when the mark is level with the angle you sail on the other tack, and no later.'}`,
-        `${n} ${ru}, ${over < 1 ? 'без перебора' : `перебор ${Math.round(over)} м`}${pens ? ', со штрафом' : ''}. ${stars === 3 ? 'Поворот точно на лейлайне, без перебора.' : 'Три звезды: не больше двух поворотов, перебор меньше 10 м и без штрафа. Поворачивай, когда знак встаёт на угол, которым ты идёшь другим галсом, и не позже.'}`);
+        `${n} ${ru}, ${over < 1 ? 'без перебора' : `перебор ${Math.round(over)} м`}${pens ? ', со штрафом' : ''}. ${stars === 3 ? 'Поворот точно на лейлайне, без перебора.' : 'Три звезды: не больше двух поворотов, перебор меньше 10 м и без штрафа. Поворачивай, когда знак встаёт на угол, которым ты идёшь другим галсом, и не позже.'}`, `${n} ${n === 1 ? 'virada' : 'viradas'}, ${over < 1 ? 'sin pasarte de la layline' : `te pasaste ${Math.round(over)} m`}${pens ? ', con una penalización' : ''}. ${stars === 3 ? 'Viraste en la layline, sin pasarte.' : 'Tres estrellas: dos viradas como máximo, menos de 10 m más allá de la layline y sin penalización. Vira cuando la baliza quede a la altura del ángulo que navegas en la otra amura, y no más tarde.'}`);
   } else if (dr.id === 'penalty') {
     const took = dr.doneT == null ? null : dr.doneT - dr.t0, more = pens; // (pens0 was counted with the drill's own turn)
     stars = took == null ? 0 : more > 0 ? 1 : took <= 20 ? 3 : took <= 30 ? 2 : 1;
-    line = took == null ? tr('The turn wasn’t done, or she wasn’t back up to speed, in 90 s.', 'Оборот не сделан или скорость не набрана за 90 с.')
+    line = took == null ? tr('The turn wasn’t done, or she wasn’t back up to speed, in 90 s.', 'Оборот не сделан или скорость не набрана за 90 с.', 'No completaste el giro, o no recuperó la velocidad, en 90 s.')
       : tr(`Turned and back up to speed in ${took.toFixed(1)} s${more > 0 ? ', but you fouled someone on the way' : ''}. ${stars === 3 ? 'Barely a dent in your race.' : 'Three stars: under 20 s, keeping clear of the others. Bear away into the gybe, then come up hard through the tack, and don’t stall head to wind.'}`,
-        `Оборот и снова на скорости за ${took.toFixed(1).replace('.', ',')} с${more > 0 ? ', но по пути ты нарушил правила' : ''}. ${stars === 3 ? 'Гонка почти не пострадала.' : 'Три звезды: быстрее 20 с, никому не мешая. Уваливайся в поворот фордевинд, затем резко приводись через оверштаг и не застревай в левентике.'}`);
+        `Оборот и снова на скорости за ${took.toFixed(1).replace('.', ',')} с${more > 0 ? ', но по пути ты нарушил правила' : ''}. ${stars === 3 ? 'Гонка почти не пострадала.' : 'Три звезды: быстрее 20 с, никому не мешая. Уваливайся в поворот фордевинд, затем резко приводись через оверштаг и не застревай в левентике.'}`, `Giro completado y de nuevo a velocidad en ${took.toFixed(1).replace('.', ',')} s${more > 0 ? ', pero cometiste una infracción por el camino' : ''}. ${stars === 3 ? 'Apenas te ha costado tiempo.' : 'Tres estrellas: menos de 20 s y manteniéndote separado de los demás. Arriba para trasluchar, orza con decisión para virar y no te quedes parado proa al viento.'}`);
   } else if (K === 'port') {
     const c = dr.cross;
-    if (L.ocs || L.startDsq) { stars = 0; line = tr('Over the line at the gun: you had to go back.', 'Фальстарт — пришлось возвращаться.'); }
-    else if (!c) { stars = 0; line = tr('No start in the first 20 s.', 'Старта не было за первые 20 с.'); }
+    if (L.ocs || L.startDsq) { stars = 0; line = tr('Over the line at the gun: you had to go back.', 'Фальстарт — пришлось возвращаться.', 'Sobre la línea en la señal: tuviste que volver.'); }
+    else if (!c) { stars = 0; line = tr('No start in the first 20 s.', 'Старта не было за первые 20 с.', 'No hubo salida en los primeros 20 s.'); }
     else {
       stars = !c.port || pens ? 1 : c.at <= 1 / 3 && L.gunD < 15 ? 3 : 2;
-      line = !c.port ? tr('You started on starboard. Three stars: on port, in the third of the line by the pin, clear of everyone.', 'Ты стартовал правым галсом. Три звезды: левым, в трети линии у пина, никому не мешая.')
-        : pens ? tr('On port, but you fouled a starboard boat crossing. Duck the ones you can’t cross, behind their sterns.', 'Левым галсом, но ты нарушил правила, пересекая лодку правого галса. Тех, кого не пересечь, обходи за кормой.')
+      line = !c.port ? tr('You started on starboard. Three stars: on port, in the third of the line by the pin, clear of everyone.', 'Ты стартовал правым галсом. Три звезды: левым, в трети линии у пина, никому не мешая.', 'Saliste por estribor. Tres estrellas: por babor, en el tercio de la línea junto al pin, libre de todos.')
+        : pens ? tr('On port, but you fouled a starboard boat crossing. Duck the ones you can’t cross, behind their sterns.', 'Левым галсом, но ты нарушил правила, пересекая лодку правого галса. Тех, кого не пересечь, обходи за кормой.', 'Por babor, pero molestaste a un barco por estribor al cruzar. Pasa por la popa de los que no puedes cruzar.')
         : tr(`On port, ${Math.round(c.at * 100)}% along the line from the pin, ${Math.round(Math.max(0, L.gunD))} m from it at the gun. ${stars === 3 ? 'Across the whole fleet: the race is yours to lose.' : 'Three stars: in the third of the line by the pin, under 15 m from it at the gun.'}`,
-          `Левым галсом, в ${Math.round(c.at * 100)}% линии от пина, ${Math.round(Math.max(0, L.gunD))} м до неё на сигнале. ${stars === 3 ? 'Прошёл перед носом у всего флота — гонка твоя.' : 'Три звезды: в трети линии у пина, ближе 15 м на сигнале.'}`);
+          `Левым галсом, в ${Math.round(c.at * 100)}% линии от пина, ${Math.round(Math.max(0, L.gunD))} м до неё на сигнале. ${stars === 3 ? 'Прошёл перед носом у всего флота — гонка твоя.' : 'Три звезды: в трети линии у пина, ближе 15 м на сигнале.'}`, `Por babor, al ${Math.round(c.at * 100)}% de la línea desde la baliza, a ${Math.round(Math.max(0, L.gunD))} m de ella en la señal. ${stars === 3 ? 'Por delante de toda la flota: la regata es tuya.' : 'Tres estrellas: en el tercio de la línea junto a la baliza, a menos de 15 m de ella en la señal.'}`);
     }
   } else if (K === 'back' || K === 'race') {
     // From the back: the places made up from the windward mark to the finish. The whole race: where she finished
     const back = K === 'back', gained = dr.place0 - place, ok = P.done && !P.dsq;
     stars = !ok ? 0 : back ? (gained >= 3 && !pens ? 3 : gained >= 1 ? 2 : 1) : place === 1 ? 3 : place <= 3 ? 2 : 1;
-    line = !P.done ? tr('Not over the line in time.', 'Не финишировал вовремя.') : P.dsq ? tr('Finished without taking a penalty: disqualified.', 'Финиш без выполненного штрафа — дисквалификация.')
+    line = !P.done ? tr('Not over the line in time.', 'Не финишировал вовремя.', 'No cruzaste la línea a tiempo.') : P.dsq ? tr('Finished without taking a penalty: disqualified.', 'Финиш без выполненного штрафа — дисквалификация.', 'Llegaste sin cumplir la penalización: descalificado.')
       : back ? tr(`${ord(dr.place0)} at the top mark, ${ord(place)} at the finish${pens ? ', with a penalty' : ''}. ${stars === 3 ? 'Through the fleet.' : 'Three stars: three places made up, with no penalty. Go where they aren’t: the other side of the run, the less crowded gate mark, the clear lane up the beat.'}`,
-        `${dr.place0}-е у верхнего знака, ${place}-е на финише${pens ? ', со штрафом' : ''}. ${stars === 3 ? 'Сквозь весь флот.' : 'Три звезды: три отыгранных места и без штрафа. Иди туда, где их нет: другая сторона фордевинда, свободный знак ворот, чистый коридор на лавировке.'}`)
+        `${dr.place0}-е у верхнего знака, ${place}-е на финише${pens ? ', со штрафом' : ''}. ${stars === 3 ? 'Сквозь весь флот.' : 'Три звезды: три отыгранных места и без штрафа. Иди туда, где их нет: другая сторона фордевинда, свободный знак ворот, чистый коридор на лавировке.'}`, `${ord(dr.place0)} en la baliza de barlovento, ${ord(place)} en la llegada${pens ? ', con una penalización' : ''}. ${stars === 3 ? 'Has atravesado la flota.' : 'Tres estrellas: recupera tres puestos sin penalización. Ve por donde no van ellos: el otro lado de la empopada, la baliza de la puerta menos concurrida, el carril libre en la ceñida.'}`)
       : tr(`${ord(place)} of ${n} against the experts${pens ? `, ${pens} ${pens === 1 ? 'penalty' : 'penalties'}` : ''}. ${stars === 3 ? 'You beat them all.' : 'Three stars: win it. Two: a podium.'}`,
-        `${place}-е из ${n} против экспертов${pens ? `, штрафов: ${pens}` : ''}. ${stars === 3 ? 'Ты обыграл всех.' : 'Три звезды: победа. Две: подиум.'}`);
+        `${place}-е из ${n} против экспертов${pens ? `, штрафов: ${pens}` : ''}. ${stars === 3 ? 'Ты обыграл всех.' : 'Три звезды: победа. Две: подиум.'}`, `${ord(place)} de ${n} frente a los expertos${pens ? `, ${pens} ${pens === 1 ? 'penalización' : 'penalizaciones'}` : ''}. ${stars === 3 ? 'Los has ganado a todos.' : 'Tres estrellas: gana. Dos: sube al podio.'}`);
   } else if (K === 'run' || K === 'finish') {
     // places gained (or the lead kept) down the run and through the gate, or up the last of the beat and over the line;
     // in heavy air, on her feet all the way
     const run = K === 'run', made = run ? dr.roundT != null : P.done, gained = dr.place0 - place;
     stars = !made ? 0 : pens || dr.wild ? 1 : gained > 0 || place === 1 ? 3 : gained === 0 ? 2 : 1;
     line = made && dr.wild ? tr(`${dr.wild === 'wrap' ? 'The kite wrapped round the forestay' : 'You broached'} on the way down. Three stars: through the gate on her feet, a place gained (or the lead kept). Gybe at full speed with the boat flat, and bear away in the gusts.`,
-      `${dr.wild === 'wrap' ? 'Генакер замотался вокруг штага' : 'Брочинг'} на фордевинде. Три звезды: через ворота без брочинга, выигранное место (или удержанное первое). Делай поворот фордевинд на полной скорости и ровной лодкой, уваливайся в порывах.`)
-      : !made ? (run ? tr('Not through the gate in time.', 'Не прошёл ворота вовремя.') : tr('Not over the line in time.', 'Не финишировал вовремя.'))
+      `${dr.wild === 'wrap' ? 'Генакер замотался вокруг штага' : 'Брочинг'} на фордевинде. Три звезды: через ворота без брочинга, выигранное место (или удержанное первое). Делай поворот фордевинд на полной скорости и ровной лодкой, уваливайся в порывах.`, `${dr.wild === 'wrap' ? 'El gennaker se enrolló en el estay' : 'Has sufrido una barrenada'} en la bajada. Tres estrellas: pasa la puerta sin volcar, ganando un puesto (o manteniendo la cabeza). Traslucha a toda velocidad con el barco plano y arriba en las rachas.`)
+      : !made ? (run ? tr('Not through the gate in time.', 'Не прошёл ворота вовремя.', 'No pasaste por la puerta a tiempo.') : tr('Not over the line in time.', 'Не финишировал вовремя.', 'No cruzaste la línea a tiempo.'))
       : run ? tr(`${ord(dr.place0)} at the top mark, ${ord(place)} out of the gate${pens ? ', with a penalty' : ''}. ${stars === 3 ? 'Clear air down the run, the gate mark nobody else wanted.' : 'Three stars: a place gained (or the lead kept), and no penalty. Keep your air clear and take the less crowded gate mark.'}`,
-        `${dr.place0}-е у верхнего знака, ${place}-е после ворот${pens ? ', со штрафом' : ''}. ${stars === 3 ? 'Чистый ветер на фордевинде и свободный знак ворот.' : 'Три звезды: выигранное место (или удержанное первое) и без штрафа. Держи чистый ветер и бери свободный знак ворот.'}`)
+        `${dr.place0}-е у верхнего знака, ${place}-е после ворот${pens ? ', со штрафом' : ''}. ${stars === 3 ? 'Чистый ветер на фордевинде и свободный знак ворот.' : 'Три звезды: выигранное место (или удержанное первое) и без штрафа. Держи чистый ветер и бери свободный знак ворот.'}`, `${ord(dr.place0)} en la baliza de barlovento, ${ord(place)} saliendo de la puerta${pens ? ', con una penalización' : ''}. ${stars === 3 ? 'Aire limpio en la empopada y la baliza de la puerta que nadie quería.' : 'Tres estrellas: gana un puesto (o sigue en cabeza) y sin penalización. Mantén el aire limpio y elige la baliza de la puerta menos concurrida.'}`)
       : tr(`${ord(dr.place0)} with 150 m to go, ${ord(place)} over the line${pens ? ', with a penalty' : ''}. ${stars === 3 ? 'You found the end of the line that pays.' : 'Three stars: a place gained (or the lead kept), and no penalty. Finish at the end of the line nearer you.'}`,
-        `${dr.place0}-е за 150 м до финиша, ${place}-е на линии${pens ? ', со штрафом' : ''}. ${stars === 3 ? 'Ты нашёл выгодный конец линии.' : 'Три звезды: выигранное место (или удержанное первое) и без штрафа. Финишируй у ближнего к тебе конца линии.'}`);
+        `${dr.place0}-е за 150 м до финиша, ${place}-е на линии${pens ? ', со штрафом' : ''}. ${stars === 3 ? 'Ты нашёл выгодный конец линии.' : 'Три звезды: выигранное место (или удержанное первое) и без штрафа. Финишируй у ближнего к тебе конца линии.'}`, `${ord(dr.place0)} a 150 m del final, ${ord(place)} al cruzar la línea${pens ? ', con una penalización' : ''}. ${stars === 3 ? 'Encontraste el extremo de la línea que compensa.' : 'Tres estrellas: gana un puesto (o sigue en cabeza) y sin penalización. Llega por el extremo de la línea más cercano a ti.'}`);
   } else {
     stars = P.leg < 2 ? 0 : place <= 2 && !pens ? 3 : place <= Math.ceil(n / 2) ? 2 : 1;
-    line = P.leg < 2 ? tr('Not at the mark in time.', 'Не дошёл до знака вовремя.')
+    line = P.leg < 2 ? tr('Not at the mark in time.', 'Не дошёл до знака вовремя.', 'No llegaste a la baliza a tiempo.')
       : tr(`${ord(dr.place0)} halfway up, ${ord(place)} of ${n} at the top mark. ${stars === 3 ? 'You played the shifts.' : 'Three stars: first or second there. Tack on the headers.'}`,
-        `${dr.place0}-е на половине лавировки, ${place}-е из ${n} у верхнего знака. ${stars === 3 ? 'Ты сыграл на сдвигах.' : 'Три звезды: первым или вторым. Поворачивай на заходах.'}`);
+        `${dr.place0}-е на половине лавировки, ${place}-е из ${n} у верхнего знака. ${stars === 3 ? 'Ты сыграл на сдвигах.' : 'Три звезды: первым или вторым. Поворачивай на заходах.'}`, `${ord(dr.place0)} a mitad de ceñida, ${ord(place)} de ${n} en la baliza de barlovento. ${stars === 3 ? 'Has sabido jugar las roladas.' : 'Tres estrellas: llega primero o segundo. Vira con las roladas desfavorables.'}`);
   }
   const all = read('regatta-drills') || {}, was = all[dr.id] || 0;
   // a level this opened: said on the end screen, and the next drill offered only if its level is open
@@ -291,12 +291,12 @@ function drillFrame(race) {
   const nx = DRILL_ORDER[DRILL_ORDER.indexOf(dr.id) + 1], next = nx && levelOpen(DRILLS[nx].level, all) ? nx : null;
   const el = document.createElement('div'); el.className = 'drill-end bc'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
   el.innerHTML = `<div class="in"><span class="k">${levelName(DRILLS[dr.id].level)} · ${drillName(dr.id)}</span>
-    <h2>${stars === 3 ? tr('Three stars', 'Три звезды') : stars ? tr(`${stars} ${stars === 1 ? 'star' : 'stars'}`, `${stars} ${stars === 1 ? 'звезда' : 'звезды'}`) : tr('Try again', 'Ещё раз')}</h2>
+    <h2>${stars === 3 ? tr('Three stars', 'Три звезды', 'Tres estrellas') : stars ? tr(`${stars} ${stars === 1 ? 'star' : 'stars'}`, `${stars} ${stars === 1 ? 'звезда' : 'звезды'}`, `${stars} ${stars === 1 ? 'estrella' : 'estrellas'}`) : tr('Try again', 'Ещё раз', 'Reintentar')}</h2>
     <div class="st" aria-label="${stars} / 3">${[1, 2, 3].map((i) => `<span class="${i <= stars ? 'on' : ''}">★</span>`).join('')}</div>
-    <p></p>${stars > was && was ? `<p>${tr('A new best on this drill.', 'Новый рекорд в этой тренировке.')}</p>` : ''}${opened ? `<p class="lv">${tr(`${levelName(opened)} drills are open.`, `Открыты тренировки уровня «${levelName(opened)}».`)}</p>` : ''}
-    <div class="bs"><a class="go" href="${location.pathname}${location.search}">${tr('Again', 'Ещё раз')}</a>${next ? `<a href="/play?race=free&drill=${next}">${tr('Next drill', 'Следующая')}</a>` : ''}<a href="/race/drills">${tr('All drills', 'Все тренировки')}</a></div></div>`;
+    <p></p>${stars > was && was ? `<p>${tr('A new best on this drill.', 'Новый рекорд в этой тренировке.', 'Nueva mejor marca en este ejercicio.')}</p>` : ''}${opened ? `<p class="lv">${tr(`${levelName(opened)} drills are open.`, `Открыты тренировки уровня «${levelName(opened)}».`, `Los ejercicios de ${levelName(opened)} están abiertos.`)}</p>` : ''}
+    <div class="bs"><a class="go" href="${location.pathname}${location.search}">${tr('Again', 'Ещё раз', 'Otra vez')}</a>${next ? `<a href="/play?race=free&drill=${next}">${tr('Next drill', 'Следующая', 'Siguiente ejercicio')}</a>` : ''}<a href="/race/drills">${tr('All drills', 'Все тренировки', 'Todos los ejercicios')}</a></div></div>`;
   el.querySelector('p').textContent = line;
   document.body.append(el);
   el.querySelector('a.go').focus();
 }
-const ord = (n) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`;
+const ord = (n) => ctx?.LANG === 'es' ? `${n}.º` : `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`;

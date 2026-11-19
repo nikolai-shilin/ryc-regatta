@@ -136,11 +136,11 @@ function laid(preset: Wind, length: Length, fleet: number, shape: Shape, k: numb
   return { type: shape, windward, gate, pin: [-half, 0], committee: [half, 0], marks, ...(wing && { wing }), ...(finish && { finish }) };
 }
 
-export const SHAPE_NAME: Record<Shape, [en: string, ru: string]> = {
-  wl: ['Up and down', 'Апвинд — даунвинд'],
-  tri: ['Triangle', 'Треугольник'],
-  trap: ['Trapezoid', 'Трапеция'],
-  wlu: ['Up and down, upwind finish', 'Апвинд — даунвинд, финиш наверху'],
+export const SHAPE_NAME: Record<Shape, [en: string, ru: string, es?: string]> = {
+  wl: ['Up and down', 'Апвинд — даунвинд', 'Up and down'],
+  tri: ['Triangle', 'Треугольник', 'Triángulo'],
+  trap: ['Trapezoid', 'Трапеция', 'Trapecio'],
+  wlu: ['Up and down, upwind finish', 'Апвинд — даунвинд, финиш наверху', 'Up and down, llegada de ceñida'],
 };
 export const SHAPES = Object.keys(SHAPE_NAME) as Shape[];
 const isShape = (s: unknown): s is Shape => typeof s === 'string' && (SHAPES as string[]).includes(s);
@@ -181,7 +181,7 @@ export const courseDistance = (c: CourseGeo, laps: number) =>
   legDistances(c, courseLegs(laps, shapeOf(c))).reduce((a, b) => a + b, 0);
 
 // "520 m · 0.28 nm"
-export function fmtDistance(m: number, lang: 'en' | 'ru') {
+export function fmtDistance(m: number, lang: 'en' | 'ru' | 'es') {
   const nm = (m / 1852).toFixed(2), r = Math.round(m / 10) * 10;
-  return lang === 'ru' ? `${r} м · ${nm.replace('.', ',')} мили` : `${r} m · ${nm} nm`;
+  return lang === 'ru' ? `${r} м · ${nm.replace('.', ',')} мили` : lang === 'es' ? `${r} m · ${nm.replace('.', ',')} millas` : `${r} m · ${nm} nm`;
 }

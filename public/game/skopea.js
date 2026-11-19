@@ -2584,6 +2584,27 @@ function bigWheel(L, parts) {
   for (const s of [-1, 1]) for (const b of [-7, 7]) parts.push(beam(F.P(0, b * 0.55, hub), F.P(s * R * 0.42, b, 0), 1.2, 1.2, steel));
   parts.push(beam(F.P(0, -6, hub), F.P(0, 6, hub), 1.8, 1.8, '#9fa4a6'));
 }
+// Your rainbow panorama on ARoS's roof in Aarhus: a ring walkway 52 m across, its glass every colour of the spectrum
+// in turn, on slim columns over the roof (`roof`, its height over the ground)
+function rainbow(L, parts) {
+  const [x, z] = L.at, y = Math.max(0, groundAt(x, z)) + L.roof, R = L.r || 26, N = 36, c = new THREE.Color();
+  const at = (i, r, h) => { const a = (i / N) * 2 * Math.PI; return V3(x + r * Math.cos(a), h, z + r * Math.sin(a)); };
+  for (let i = 0; i < N; i++) {
+    parts.push(beam(at(i, R, y + 4.6), at(i + 1, R, y + 4.6), 3.4, 3.4, '#' + c.setHSL(i / N, 0.8, 0.55).getHexString()));
+    parts.push(beam(at(i, R, y + 2.7), at(i + 1, R, y + 2.7), 3.6, 0.5, '#d9dcdc'));
+    if (i % 3 === 0) parts.push(post(at(i, R, 0).x, at(i, R, 0).z, y - 0.5, 0.35, 0.35, 3.2, '#d9dcdc', 6));
+  }
+}
+// Marina Bay Sands' SkyPark: the long deck laid across the tops of its three towers (which the map has), from `at` (its
+// south end) to `b` (the tip of its cantilever, out past the north tower), `h` up; tapering to the tip like a hull
+function skypark(L, parts) {
+  const [ax, az] = L.at, [bx, bz] = L.b, len = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / len, uz = (bz - az) / len, ang = Math.atan2(uz, ux);
+  const N = 12, H = L.h;
+  for (let i = 0; i < N; i++) {
+    const t = (i + 0.5) / N, w = 38 * (t < 0.8 ? 1 : 1 - (t - 0.8) * 3.2), x = ax + ux * len * t, z = az + uz * len * t;
+    parts.push(blk(x, z, H - 6, 6, len / N + 0.4, w, ang, '#dcdedc'), blk(x, z, H, 1.2, len / N + 0.4, w * 0.9, ang, '#7f9a5a'));
+  }
+}
 // A water intake crib out in the lake, Chicago's: the round stone pier, its house and light
 function crib(L, parts) {
   const [x, z] = L.at, R = L.r || 26;

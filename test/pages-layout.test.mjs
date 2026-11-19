@@ -43,8 +43,8 @@ const b64url = (s) => Buffer.from(s).toString('base64url');
 const SESSION = `sb-abcdefgh-auth-token=base64-${b64url(JSON.stringify({ access_token: 'x.y.z', user: { email: 'anna@example.com', user_metadata: { display_name: 'Anna Petrova' } } }))}`;
 
 // ---------- the layout ----------
-test('both languages are built at deploy, and no others', () => {
-  assert.deepEqual(layout.generateStaticParams(), [{ lang: 'en' }, { lang: 'ru' }]);
+test('every language is built at deploy, and no others', () => {
+  assert.deepEqual(layout.generateStaticParams(), [{ lang: 'en' }, { lang: 'ru' }, { lang: 'es' }]);
 });
 
 test('the layout marks the page\'s language and holds the page', async () => {

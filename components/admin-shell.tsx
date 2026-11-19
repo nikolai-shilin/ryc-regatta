@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ComponentType, ReactNode } from 'react';
-import type { Lang, T } from '@/lib/lang';
+import { pick, type Lang, type T } from '@/lib/lang';
 import { getT, titled, type LangParams } from '@/lib/i18n';
 import { getAccount, supabaseServer, type Account } from '@/lib/supabase/server';
 import { BackLink } from './back-link';
@@ -14,20 +14,20 @@ import { IconArrow, IconClock, IconCrew, IconDevice, IconFlag, IconImage, IconTr
 // admin's writes and the numbers answer an admin alone (row-level security, regatta_admin_stats and _insight), so these
 // pages only hide what they show from everyone else.
 export const ADMIN_PAGES = [
-  { id: 'race', Icon: IconFlag, name: ['Race', 'Гонка'], h: ['Today’s race and the week ahead', 'Гонка дня и неделя вперёд'],
-    goal: ['What every player sails today, and what comes on each of the next seven days.', 'Что все игроки проходят сегодня и что ждёт их в каждый из следующих семи дней.'] },
-  { id: 'ads', Icon: IconImage, name: ['Ads', 'Реклама'], h: ['The ads in the game', 'Реклама в игре'],
-    goal: ['The logos every boat carries on her mainsail and her jib, and the words on the banner the plane tows over the course.', 'Логотипы на гроте и стакселе каждой яхты и слова на баннере, который самолёт проносит над дистанцией.'] },
-  { id: 'players', Icon: IconCrew, name: ['Players', 'Игроки'], h: ['Do they come and stay', 'Приходят ли и остаются'],
-    goal: ['Who plays, how far a visit gets from opening the game to a finish, and whether the players come back.', 'Кто играет, как далеко заходит визит, от открытия игры до финиша, и возвращаются ли игроки.'] },
-  { id: 'game', Icon: IconTrophy, name: ['The game', 'Игра'], h: ['Is it fun and fair', 'Интересно ли и честно'],
-    goal: ['How the races go by yacht, wind, venue and course; how hard they are as a player learns; why races are left; what the players say and what they set.', 'Как идут гонки по яхтам, ветру, месту и дистанции; насколько они сложны по мере опыта; почему их бросают; что говорят игроки и что выставляют.'] },
-  { id: 'tech', Icon: IconDevice, name: ['Performance', 'Производительность'], h: ['Does it run well', 'Хорошо ли работает'],
-    goal: ['How the game runs on the players’ devices: the frame rate and the stalls, the loads that fail, the errors on the page.', 'Как игра работает на устройствах игроков: частота кадров и рывки, неудачные загрузки, ошибки на странице.'] },
-  { id: 'duels', Icon: IconCrew, name: ['1-on-1 races', 'Гонки 1 на 1'], h: ['Races sailed head to head', 'Гонки 1 на 1'],
-    goal: ['Every 1-on-1 race the players sailed: who raced whom, where, how it ended, and how often a race is left or sailed again.', 'Все гонки 1 на 1: кто с кем, где, чем закончилась и как часто гонку бросают или проводят заново.'] },
-  { id: 'logs', Icon: IconClock, name: ['Logs', 'Журнал'], h: ['What went wrong, and for whom', 'Что пошло не так и у кого'],
-    goal: ['The players who hit a problem, and each one’s visits and races in full, to see what happened to them.', 'Игроки, столкнувшиеся с проблемой, и все их визиты и гонки в подробностях, чтобы понять, что с ними случилось.'] },
+  { id: 'race', Icon: IconFlag, name: ['Race', 'Гонка', 'Regata'], h: ['Today’s race and the week ahead', 'Гонка дня и неделя вперёд', 'La regata de hoy y la semana que viene'],
+    goal: ['What every player sails today, and what comes on each of the next seven days.', 'Что все игроки проходят сегодня и что ждёт их в каждый из следующих семи дней.', 'Lo que navega hoy cada jugador y lo que viene en cada uno de los próximos siete días.'] },
+  { id: 'ads', Icon: IconImage, name: ['Ads', 'Реклама', 'Anuncios'], h: ['The ads in the game', 'Реклама в игре', 'Los anuncios del juego'],
+    goal: ['The logos every boat carries on her mainsail and her jib, and the words on the banner the plane tows over the course.', 'Логотипы на гроте и стакселе каждой яхты и слова на баннере, который самолёт проносит над дистанцией.', 'Los logos que lleva cada barco en la mayor y en el foque, y las palabras de la pancarta que remolca el avión sobre el recorrido.'] },
+  { id: 'players', Icon: IconCrew, name: ['Players', 'Игроки', 'Jugadores'], h: ['Do they come and stay', 'Приходят ли и остаются', '¿Vienen y se quedan?'],
+    goal: ['Who plays, how far a visit gets from opening the game to a finish, and whether the players come back.', 'Кто играет, как далеко заходит визит, от открытия игры до финиша, и возвращаются ли игроки.', 'Quién juega, hasta dónde llega una visita desde que abre el juego hasta una llegada, y si los jugadores vuelven.'] },
+  { id: 'game', Icon: IconTrophy, name: ['The game', 'Игра', 'El juego'], h: ['Is it fun and fair', 'Интересно ли и честно', '¿Es divertido y justo?'],
+    goal: ['How the races go by yacht, wind, venue and course; how hard they are as a player learns; why races are left; what the players say and what they set.', 'Как идут гонки по яхтам, ветру, месту и дистанции; насколько они сложны по мере опыта; почему их бросают; что говорят игроки и что выставляют.', 'Cómo van las regatas por yate, viento, sede y recorrido; lo difíciles que son según aprende el jugador; por qué se abandonan; qué dicen los jugadores y qué ajustan.'] },
+  { id: 'tech', Icon: IconDevice, name: ['Performance', 'Производительность', 'Rendimiento'], h: ['Does it run well', 'Хорошо ли работает', '¿Funciona bien?'],
+    goal: ['How the game runs on the players’ devices: the frame rate and the stalls, the loads that fail, the errors on the page.', 'Как игра работает на устройствах игроков: частота кадров и рывки, неудачные загрузки, ошибки на странице.', 'Cómo funciona el juego en los dispositivos de los jugadores: los fotogramas por segundo y los tirones, las cargas que fallan, los errores en la página.'] },
+  { id: 'duels', Icon: IconCrew, name: ['1-on-1 races', 'Гонки 1 на 1', 'Regatas 1 contra 1'], h: ['Races sailed head to head', 'Гонки 1 на 1', 'Regatas cara a cara'],
+    goal: ['Every 1-on-1 race the players sailed: who raced whom, where, how it ended, and how often a race is left or sailed again.', 'Все гонки 1 на 1: кто с кем, где, чем закончилась и как часто гонку бросают или проводят заново.', 'Cada regata 1 contra 1 que navegaron los jugadores: quién contra quién, dónde, cómo terminó y con qué frecuencia se abandona o se repite una regata.'] },
+  { id: 'logs', Icon: IconClock, name: ['Logs', 'Журнал', 'Registros'], h: ['What went wrong, and for whom', 'Что пошло не так и у кого', 'Qué salió mal y a quién'],
+    goal: ['The players who hit a problem, and each one’s visits and races in full, to see what happened to them.', 'Игроки, столкнувшиеся с проблемой, и все их визиты и гонки в подробностях, чтобы понять, что с ними случилось.', 'Los jugadores que tuvieron un problema, con sus visitas y regatas completas, para ver qué les pasó.'] },
 ] as const;
 export type AdminPage = (typeof ADMIN_PAGES)[number]['id'];
 const pageOf = (id: AdminPage) => ADMIN_PAGES.find((p) => p.id === id)!;
@@ -37,7 +37,7 @@ export const STAT_DAYS = [7, 30, 90] as const;
 export const pickDays = (q?: string) => ((STAT_DAYS as readonly number[]).includes(Number(q)) ? Number(q) : 30);
 const DATA: AdminPage[] = ['players', 'game', 'tech', 'logs'];
 
-export const adminTitle = (id?: AdminPage) => (id ? titled(`Admin · ${pageOf(id).name[0]}`, `Админка · ${pageOf(id).name[1]}`, { index: false }) : titled('Admin', 'Админка', { index: false }));
+export const adminTitle = (id?: AdminPage) => (id ? titled(`Admin · ${pageOf(id).name[0]}`, `Админка · ${pageOf(id).name[1]}`, `Admin · ${pageOf(id).name[0]}`, { index: false }) : titled('Admin', 'Админка', 'Admin', { index: false }));
 
 type Supabase = Awaited<ReturnType<typeof supabaseServer>>;
 // Who is reading, whether they are an admin, and what the page loads for one: the load goes with the admin check, not
@@ -62,7 +62,7 @@ const withDays = (path: string, days?: number) => (days && days !== 30 ? `${path
 export function AdminShell({ lang, t, account, admin, page, days, who, children }: {
   lang: Lang; t: T; account: Account; admin: boolean; page?: AdminPage; days?: number; who?: string | null; children: ReactNode;
 }) {
-  const L = lang === 'ru' ? 1 : 0, p = page ? pageOf(page) : null;
+  const p = page ? pageOf(page) : null;
   const here = page ? `/admin/${page}` : '/admin';
   return (
     <div className="scr app bc" lang={lang} data-acct={account ? 'signed' : 'guest'}>
@@ -71,25 +71,25 @@ export function AdminShell({ lang, t, account, admin, page, days, who, children 
         <div className="aph">
           <div className="aph-top">
             {p
-              ? <BackLink className="round round-s round-muted" href="/admin" label={t('Back to the admin', 'Назад в админку')} />
-              : <BackLink className="round round-s round-muted" href="/settings" label={t('Back to settings', 'Назад в настройки')} />}
-            <span className="kicker">{p ? `${t('Admin', 'Админка')} · ${p.name[L]}` : t('Admin', 'Админка')}</span>
+              ? <BackLink className="round round-s round-muted" href="/admin" label={t('Back to the admin', 'Назад в админку', 'Volver al admin')} />
+              : <BackLink className="round round-s round-muted" href="/settings" label={t('Back to settings', 'Назад в настройки', 'Volver a ajustes')} />}
+            <span className="kicker">{p ? `${t('Admin', 'Админка', 'Admin')} · ${pick(p.name, lang)}` : t('Admin', 'Админка', 'Admin')}</span>
           </div>
-          <h1 className="aph-h">{p ? p.h[L] : t('The race, the ads and the numbers', 'Гонка, реклама и цифры')}</h1>
-          <p className="aph-p">{p ? p.goal[L] : t('A page for each thing you come here to do.', 'По странице на каждую задачу.')}</p>
+          <h1 className="aph-h">{p ? pick(p.h, lang) : t('The race, the ads and the numbers', 'Гонка, реклама и цифры', 'La regata, los anuncios y los números')}</h1>
+          <p className="aph-p">{p ? pick(p.goal, lang) : t('A page for each thing you come here to do.', 'По странице на каждую задачу.', 'Una página para cada cosa que vienes a hacer aquí.')}</p>
           {admin && (
             <div className="adm-bar">
-              <nav className="segc adm-nav" aria-label={t('Admin pages', 'Разделы админки')}>
+              <nav className="segc adm-nav" aria-label={t('Admin pages', 'Разделы админки', 'Páginas del admin')}>
                 {ADMIN_PAGES.map((x) => (
                   <Link key={x.id} href={DATA.includes(x.id) ? withDays(`/admin/${x.id}`, days) : `/admin/${x.id}`}
-                    className={x.id === page ? 'on' : undefined} aria-current={x.id === page ? 'page' : undefined}>{x.name[L]}</Link>
+                    className={x.id === page ? 'on' : undefined} aria-current={x.id === page ? 'page' : undefined}>{pick(x.name, lang)}</Link>
                 ))}
               </nav>
               {page && DATA.includes(page) && days != null && (
-                <nav className="adm-range" aria-label={t('Period', 'Период')}>
+                <nav className="adm-range" aria-label={t('Period', 'Период', 'Periodo')}>
                   {STAT_DAYS.map((d) => (
                     <Link key={d} href={`${here}?days=${d}${who ? `&who=${encodeURIComponent(who)}` : ''}`} scroll={false} aria-current={d === days ? 'page' : undefined} className={d === days ? 'on' : undefined}>
-                      {t(`${d} days`, `${d} дн.`)}
+                      {t(`${d} days`, `${d} дн.`, `${d} días`)}
                     </Link>
                   ))}
                 </nav>
@@ -100,13 +100,13 @@ export function AdminShell({ lang, t, account, admin, page, days, who, children 
         {!account ? (
           <div className="acct acct-row">
             <div className="acct-guest">
-              <span className="srow-k">{t('Sign in as an admin', 'Войдите как администратор')}</span>
-              <span className="small">{t('With the email on the admin list', 'С почтой из списка администраторов')}</span>
+              <span className="srow-k">{t('Sign in as an admin', 'Войдите как администратор', 'Inicia sesión como administrador')}</span>
+              <span className="small">{t('With the email on the admin list', 'С почтой из списка администраторов', 'Con el correo de la lista de administradores')}</span>
             </div>
-            <Link className="pill pill-xs" href={`/sign-in?next=${here}`}><span className="btn-t">{t('Sign in', 'Войти')}</span></Link>
+            <Link className="pill pill-xs" href={`/sign-in?next=${here}`}><span className="btn-t">{t('Sign in', 'Войти', 'Iniciar sesión')}</span></Link>
           </div>
         ) : !admin ? (
-          <p className="hint">{t(`${account.email || account.name} is not on the admin list.`, `${account.email || account.name} нет в списке администраторов.`)}</p>
+          <p className="hint">{t(`${account.email || account.name} is not on the admin list.`, `${account.email || account.name} нет в списке администраторов.`, `${account.email || account.name} no está en la lista de administradores.`)}</p>
         ) : children}
       </div>
     </div>
@@ -115,15 +115,14 @@ export function AdminShell({ lang, t, account, admin, page, days, who, children 
 
 // /admin: the pages, each with what it is for
 export function AdminHub({ lang }: { lang: Lang }) {
-  const L = lang === 'ru' ? 1 : 0;
   return (
     <ul className="adm-hub">
       {ADMIN_PAGES.map(({ id, Icon, name, h, goal }) => (
         <li key={id}>
           <Link href={`/admin/${id}`} className="adm adm-hub-a">
-            <span className="adm-k"><Icon /><span className="kicker">{name[L]}</span></span>
-            <b className="adm-hub-h">{h[L]}</b>
-            <span className="hint">{goal[L]}</span>
+            <span className="adm-k"><Icon /><span className="kicker">{pick(name, lang)}</span></span>
+            <b className="adm-hub-h">{pick(h, lang)}</b>
+            <span className="hint">{pick(goal, lang)}</span>
             <IconArrow />
           </Link>
         </li>
@@ -137,7 +136,7 @@ export function AdminMissing({ title, Icon, error, t }: { title: string; Icon: C
   return (
     <div className="adm adm-stats">
       <div className="adm-k"><Icon /><span className="kicker">{title}</span></div>
-      <p className="hint">{error ? t(`The numbers didn’t load: ${error}`, `Цифры не загрузились: ${error}`) : t('Nothing in this period.', 'За этот период ничего нет.')}</p>
+      <p className="hint">{error ? t(`The numbers didn’t load: ${error}`, `Цифры не загрузились: ${error}`, `Los números no cargaron: ${error}`) : t('Nothing in this period.', 'За этот период ничего нет.', 'Nada en este periodo.')}</p>
     </div>
   );
 }

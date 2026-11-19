@@ -40,10 +40,10 @@ export function DrillsList({ lang }: { lang: Lang }) {
             <div className="pg-level-h">
               <span className={`pg-lv l${li + 1}`} aria-hidden="true"><i /><i /><i /><i /></span>
               <h2 id={`lv-${lv.id}`}>{t(...lv.name)}</h2>
-              {mine === lv.id ? <span className="pg-level-you">{t('Your level', 'Твой уровень')}</span> : null}
-              {have == null ? null : <span className="pg-level-n">{lang === 'ru' ? <><b>{have}</b> из {ds.length * 3} звёзд</> : <><b>{have}</b> of {ds.length * 3} stars</>}</span>}
+              {mine === lv.id ? <span className="pg-level-you">{t('Your level', 'Твой уровень', 'Tu nivel')}</span> : null}
+              {have == null ? null : <span className="pg-level-n">{lang === 'ru' ? <><b>{have}</b> из {ds.length * 3} звёзд</> : lang === 'es' ? <><b>{have}</b> de {ds.length * 3} estrellas</> : <><b>{have}</b> of {ds.length * 3} stars</>}</span>}
             </div>
-            <p className="pg-level-who">{t(...lv.who)}{open || !below ? null : <> <b>{lang === 'ru' ? `Откроется с ${toOpen(lv.id)} звёздами уровня «${below.name[1]}».` : `Opens with ${toOpen(lv.id)} stars at ${below.name[0]} level.`}</b></>}</p>
+            <p className="pg-level-who">{t(...lv.who)}{open || !below ? null : <> <b>{lang === 'ru' ? `Откроется с ${toOpen(lv.id)} звёздами уровня «${below.name[1]}».` : lang === 'es' ? `Se abre con ${toOpen(lv.id)} estrellas en el nivel ${below.name[2] ?? below.name[0]}.` : `Opens with ${toOpen(lv.id)} stars at ${below.name[0]} level.`}</b></>}</p>
             <ol className="pg-drills" start={n + 1}>
               {ds.map((d) => {
                 const s = got?.[d.id] || 0;
@@ -51,13 +51,13 @@ export function DrillsList({ lang }: { lang: Lang }) {
                 return (
                   <li key={d.id} className={`pg-card${open ? '' : ' off'}`}>
                     <div className="pg-card-h"><span className="pg-n">{n}</span><h3>{t(...d.name)}</h3>
-                      <span className="pg-min">{t(`${d.min} min`, `${d.min} мин`)}</span></div>
+                      <span className="pg-min">{t(`${d.min} min`, `${d.min} мин`, `${d.min} min`)}</span></div>
                     <p>{t(...d.what)}</p>
-                    <p className="pg-three"><b>{t('Three stars', 'Три звезды')}</b> · {t(...d.three)}</p>
+                    <p className="pg-three"><b>{t('Three stars', 'Три звезды', 'Tres estrellas')}</b> · {t(...d.three)}</p>
                     <div className="pg-foot">
-                      {got ? <Stars n={s} label={t(`Your best: ${s} of 3 stars`, `Твой лучший: ${s} из 3 звёзд`)} /> : <span />}
-                      {open ? <a className={`rt-go pg-go${d.id === next ? ' pg-next' : ''}`} href={`/play?race=free&drill=${d.id}`}>{s ? t('Again', 'Ещё раз') : t('Start', 'Начать')}</a>
-                        : <span className="pg-lock">{t('Not open yet', 'Пока закрыто')}</span>}
+                      {got ? <Stars n={s} label={t(`Your best: ${s} of 3 stars`, `Твой лучший: ${s} из 3 звёзд`, `Tu mejor marca: ${s} de 3 estrellas`)} /> : <span />}
+                      {open ? <a className={`rt-go pg-go${d.id === next ? ' pg-next' : ''}`} href={`/play?race=free&drill=${d.id}`}>{s ? t('Again', 'Ещё раз', 'Otra vez') : t('Start', 'Начать', 'Empezar')}</a>
+                        : <span className="pg-lock">{t('Not open yet', 'Пока закрыто', 'Aún cerrado')}</span>}
                     </div>
                   </li>
                 );
@@ -97,7 +97,7 @@ export function useRival() {
   return { mine, place, rival: above || null, lead: !above ? (others.filter((r) => r.pts < mine).sort((a, b) => b.pts - a.pts)[0] || null) : null };
 }
 const short = (n: string) => { const w = n.toLowerCase().split(/[\s.]+/).filter(Boolean); return w.length ? `${w[0]} ${w[1]?.[0] || ''}`.trim() : ''; };
-const pts = (n: number, lang: Lang) => tx(lang)(`${n} ${n === 1 ? 'pt' : 'pts'}`, `${n} ${ruPlural(n, ['очко', 'очка', 'очков'])}`);
+const pts = (n: number, lang: Lang) => tx(lang)(`${n} ${n === 1 ? 'pt' : 'pts'}`, `${n} ${ruPlural(n, ['очко', 'очка', 'очков'])}`, `${n} ${n === 1 ? 'pto' : 'ptos'}`);
 
 // the hub's row: who's next above you this month, and by how much
 export function RivalRow({ lang }: { lang: Lang }) {
@@ -107,8 +107,8 @@ export function RivalRow({ lang }: { lang: Lang }) {
     <Link className="bt-row pg-rival" href="/race/rating">
       <span className="pg-ico" aria-hidden="true">⚔</span>
       {r.rival
-        ? <><span>{t('Your rival', 'Твой соперник')}</span><span className="bt-row-m pg-rival-m"><Who fl={r.rival.fl} name={r.rival.name || t('No name', 'Без имени')} lang={lang} /> · {t(`${r.rival.pts - r.mine} ${r.rival.pts - r.mine === 1 ? 'pt' : 'pts'} ahead`, `впереди на ${pts(r.rival.pts - r.mine, lang)}`)}</span></>
-        : <><span>{t('You lead the month', 'Ты лидер месяца')}</span><span className="bt-row-m">{r.lead ? t(`${r.mine - r.lead.pts} clear of ${r.lead.name || 'the next'}`, `отрыв ${pts(r.mine - r.lead.pts, lang)}`) : pts(r.mine, lang)}</span></>}
+        ? <><span>{t('Your rival', 'Твой соперник', 'Tu rival')}</span><span className="bt-row-m pg-rival-m"><Who fl={r.rival.fl} name={r.rival.name || t('No name', 'Без имени', 'Sin nombre')} lang={lang} /> · {t(`${r.rival.pts - r.mine} ${r.rival.pts - r.mine === 1 ? 'pt' : 'pts'} ahead`, `впереди на ${pts(r.rival.pts - r.mine, lang)}`, `${r.rival.pts - r.mine} ${r.rival.pts - r.mine === 1 ? 'pto' : 'ptos'} por delante`)}</span></>
+        : <><span>{t('You lead the month', 'Ты лидер месяца', 'Lideras el mes')}</span><span className="bt-row-m">{r.lead ? t(`${r.mine - r.lead.pts} clear of ${r.lead.name || 'the next'}`, `отрыв ${pts(r.mine - r.lead.pts, lang)}`, `${r.mine - r.lead.pts} de ventaja sobre ${r.lead.name || 'el siguiente'}`) : pts(r.mine, lang)}</span></>}
     </Link>
   );
 }
@@ -117,15 +117,15 @@ export function RivalRow({ lang }: { lang: Lang }) {
 export function RivalLine({ lang }: { lang: Lang }) {
   const t = tx(lang), r = useRival();
   if (!r) return null;
-  const ordW = (n: number) => t(`${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`, `${n}-е`);
+  const ordW = (n: number) => t(`${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`, `${n}-е`, `${n}.º`);
   return (
     <div className={`pg-rv${r.rival ? '' : ' lead'}`} role="status">
-      <span className="k">{r.rival ? t('Your rival', 'Соперник') : t('You lead', 'Ты лидер')}</span>
+      <span className="k">{r.rival ? t('Your rival', 'Соперник', 'Tu rival') : t('You lead', 'Ты лидер', 'Lideras')}</span>
       {r.rival
-        ? <b className="t"><Who fl={r.rival.fl} name={r.rival.name || t('No name', 'Без имени')} lang={lang} /></b>
-        : <b className="t">{t('The month', 'Месяц')}</b>}
+        ? <b className="t"><Who fl={r.rival.fl} name={r.rival.name || t('No name', 'Без имени', 'Sin nombre')} lang={lang} /></b>
+        : <b className="t">{t('The month', 'Месяц', 'El mes')}</b>}
       <span className="v">{r.rival ? `+${pts(r.rival.pts - r.mine, lang)}` : r.lead ? `+${pts(r.mine - r.lead.pts, lang)}` : pts(r.mine, lang)}</span>
-      <span className="g">{t(`You ${ordW(r.place)} · ${pts(r.mine, lang)}`, `Ты ${r.place}-й · ${pts(r.mine, lang)}`)}</span>
+      <span className="g">{t(`You ${ordW(r.place)} · ${pts(r.mine, lang)}`, `Ты ${r.place}-й · ${pts(r.mine, lang)}`, `Tú ${ordW(r.place)} · ${pts(r.mine, lang)}`)}</span>
     </div>
   );
 }

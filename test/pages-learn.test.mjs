@@ -54,7 +54,7 @@ test('/learn is titled, described and addressed for each language', async () => 
   assert.match(ru.description, /Короткие пособия/);
   assert.equal(en.alternates.canonical, '/learn');
   assert.equal(ru.alternates.canonical, '/learn?lang=ru');
-  assert.deepEqual(en.alternates.languages, { en: '/learn', ru: '/learn?lang=ru', 'x-default': '/learn' });
+  assert.deepEqual(en.alternates.languages, { en: '/learn', ru: '/learn?lang=ru', es: '/learn?lang=es', 'x-default': '/learn' });
   assert.equal(en.openGraph.images[0].url, '/og/page/learn?lang=en');
   assert.equal(ru.openGraph.images[0].url, '/og/page/learn?lang=ru');
   assert.equal(en.robots, undefined, 'a page to be found');
@@ -123,7 +123,7 @@ for (const slug of GUIDES) {
       assert.equal(m.title, g.title);
       assert.equal(m.description, g.description);
       assert.equal(m.alternates.canonical, addressed(`/learn/${slug}`, lang));
-      assert.deepEqual(m.alternates.languages, { en: `/learn/${slug}`, ru: `/learn/${slug}?lang=ru`, 'x-default': `/learn/${slug}` });
+      assert.deepEqual(m.alternates.languages, { en: `/learn/${slug}`, ru: `/learn/${slug}?lang=ru`, es: `/learn/${slug}?lang=es`, 'x-default': `/learn/${slug}` });
       assert.equal(m.openGraph.type, 'article');
       assert.equal(m.openGraph.publishedTime, GUIDE_DATES[slug].published);
       assert.equal(m.openGraph.modifiedTime, GUIDE_DATES[slug].modified);

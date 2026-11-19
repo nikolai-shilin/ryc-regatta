@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
-import { isLang, type Lang } from '@/lib/lang';
+import { isLang, tx, type Lang } from '@/lib/lang';
 import { applyMe, readMe } from '@/lib/me';
 import { FONT_VARS } from '@/lib/fonts';
 import { NO_ZOOM } from '@/lib/no-zoom';
@@ -23,7 +23,7 @@ async function lang(): Promise<Lang> {
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, maximumScale: 1, userScalable: false, viewportFit: 'cover', themeColor: '#070d16' };
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await lang()) === 'ru' ? 'Страница не найдена · Up and down' : 'Page not found · Up and down', robots: { index: false } };
+  return { title: `${tx(await lang())('Page not found', 'Страница не найдена', 'Página no encontrada')} · Up and down`, robots: { index: false } };
 }
 
 export default async function GlobalNotFound() {

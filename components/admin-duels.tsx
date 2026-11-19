@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { tx, type Lang } from '@/lib/lang';
+import { pick, LOCALE, tx, type Lang } from '@/lib/lang';
 import { plainName } from '@/lib/name';
 import { SHAPE_NAME } from '@/lib/race';
 import { VENUES } from '@/lib/venues';
@@ -37,24 +37,24 @@ export const DUEL_DAYS = [90, 30, 7] as const;
 export const pickDuelDays = (q?: string): number | null => ((DUEL_DAYS as readonly number[]).includes(Number(q)) ? Number(q) : null);
 
 const pct = (a: number, b: number) => (b ? `${Math.round((100 * a) / b)}%` : '–');
-const ordinal = (n: number, lang: Lang) => (lang === 'ru' ? `${n}-е` : ['1st', '2nd', '3rd'][n - 1] ?? `${n}th`);
+const ordinal = (n: number, lang: Lang) => (lang === 'ru' ? `${n}-е` : lang === 'es' ? `${n}.º` : ['1st', '2nd', '3rd'][n - 1] ?? `${n}th`);
 
 export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days: number | null }) {
-  const t = tx(lang), L = lang === 'ru' ? 1 : 0, T = data.totals, R = data.races;
-  const when = (s: string) => new Date(s).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
-  const venue = (v: string | null) => (v ? VENUES.find((x) => x.id === v)?.name[L] ?? v : '–');
-  const yacht = (v: string | null) => (v ? YACHTS.find((x) => x.id === v)?.name[L] ?? v : '–');
-  const wind = (v: string | null) => ({ light: t('Light', 'Слабый'), medium: t('Medium', 'Средний'), strong: t('Strong', 'Сильный') }[v ?? ''] ?? v ?? '–');
-  const course = (v: string | null) => (v && v in SHAPE_NAME ? SHAPE_NAME[v as keyof typeof SHAPE_NAME][L] : v ?? '–');
-  const length = (v: string | null) => ({ short: t('Short', 'Короткая'), medium: t('Medium', 'Средняя'), long: t('Long', 'Длинная') }[v ?? ''] ?? v ?? '–');
-  const STATE = { racing: t('Racing', 'Идёт'), finished: t('Finished', 'Финиш'), abandoned: t('Abandoned', 'Брошена'), no_result: t('No result', 'Без итога') };
-  const name = (s: Sailor | null) => (s ? plainName(s.name) ?? (s.kind === 'guest' ? t('Guest', 'Гость') : '–') : '–');
+  const t = tx(lang), T = data.totals, R = data.races;
+  const when = (s: string) => new Date(s).toLocaleString(LOCALE[lang], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+  const venue = (v: string | null) => (v ? pick(VENUES.find((x) => x.id === v)?.name, lang) ?? v : '–');
+  const yacht = (v: string | null) => (v ? pick(YACHTS.find((x) => x.id === v)?.name, lang) ?? v : '–');
+  const wind = (v: string | null) => ({ light: t('Light', 'Слабый', 'Flojo'), medium: t('Medium', 'Средний', 'Medio'), strong: t('Strong', 'Сильный', 'Fuerte') }[v ?? ''] ?? v ?? '–');
+  const course = (v: string | null) => (v && v in SHAPE_NAME ? pick(SHAPE_NAME[v as keyof typeof SHAPE_NAME], lang) : v ?? '–');
+  const length = (v: string | null) => ({ short: t('Short', 'Короткая', 'Corta'), medium: t('Medium', 'Средняя', 'Media'), long: t('Long', 'Длинная', 'Larga') }[v ?? ''] ?? v ?? '–');
+  const STATE = { racing: t('Racing', 'Идёт', 'En regata'), finished: t('Finished', 'Финиш', 'Terminada'), abandoned: t('Abandoned', 'Брошена', 'Abandonada'), no_result: t('No result', 'Без итога', 'Sin resultado') };
+  const name = (s: Sailor | null) => (s ? plainName(s.name) ?? (s.kind === 'guest' ? t('Guest', 'Гость', 'Invitado') : '–') : '–');
   const who = (s: Sailor | null) => {
     if (!s || (!s.who && plainName(s.name) == null)) return <span>–</span>;
     return (
       <span className="adm-pl-name">
         {s.who ? <Link className="adm-pl-link" href={logHref(s.who, days ?? 30)}>{name(s)}</Link> : name(s)}
-        {s.kind === 'guest' && <span className="adm-pl-sub">{t('Guest', 'Гость')}</span>}
+        {s.kind === 'guest' && <span className="adm-pl-sub">{t('Guest', 'Гость', 'Invitado')}</span>}
       </span>
     );
   };
@@ -68,38 +68,38 @@ export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days
   const side = (r: DuelRace, w: 'host' | 'guest' | null) => (w ? name(r[w]) : '–');
   const result = (r: DuelRace) => {
     if (r.state === 'abandoned' || r.state === 'no_result' || r.state === 'racing') return '–';
-    if (r.forfeited) return t(`Forfeit: ${side(r, r.forfeited)}`, `Сдача: ${side(r, r.forfeited)}`);
+    if (r.forfeited) return t(`Forfeit: ${side(r, r.forfeited)}`, `Сдача: ${side(r, r.forfeited)}`, `Abandono: ${side(r, r.forfeited)}`);
     return `${boat(r.host)} / ${boat(r.guest)}`;
   };
-  const lap = (n: number) => t(n === 1 ? '1 lap' : `${n} laps`, `${n} кр.`);
-  const settings = (r: DuelRace) => [r.course && course(r.course), r.length && length(r.length), r.laps != null && lap(r.laps), r.start_min != null && t(`${r.start_min} min`, `${r.start_min} мин`), r.current && t('Current', 'Течение')].filter(Boolean).join(' · ');
+  const lap = (n: number) => t(n === 1 ? '1 lap' : `${n} laps`, `${n} кр.`, n === 1 ? '1 vuelta' : `${n} vueltas`);
+  const settings = (r: DuelRace) => [r.course && course(r.course), r.length && length(r.length), r.laps != null && lap(r.laps), r.start_min != null && t(`${r.start_min} min`, `${r.start_min} мин`, `${r.start_min} min`), r.current && t('Current', 'Течение', 'Corriente')].filter(Boolean).join(' · ');
   const where = (r: DuelRace) => (r.venue || r.yacht || r.wind ? [venue(r.venue), yacht(r.yacht), wind(r.wind)].join(' · ') : '–');
 
   const cols: Col[] = [
-    { label: t('Where', 'Где'), asc: true }, { label: t('Host', 'Хозяин'), asc: true }, { label: t('Guest', 'Гость'), asc: true },
-    { label: t('Winner', 'Победил'), asc: true }, { label: t('Result', 'Итог'), asc: true }, { label: t('Margin', 'Отрыв') },
-    { label: t('Length', 'Длина') }, { label: t('State', 'Статус'), asc: true },
+    { label: t('Where', 'Где', 'Dónde'), asc: true }, { label: t('Host', 'Хозяин', 'Anfitrión'), asc: true }, { label: t('Guest', 'Гость', 'Invitado'), asc: true },
+    { label: t('Winner', 'Победил', 'Ganador'), asc: true }, { label: t('Result', 'Итог', 'Resultado'), asc: true }, { label: t('Margin', 'Отрыв', 'Diferencia') },
+    { label: t('Length', 'Длина', 'Duración') }, { label: t('State', 'Статус', 'Estado'), asc: true },
   ];
   const rows: Row[] = R.map((r) => ({
     key: r.id,
     name: when(r.at),
     sort: Date.parse(r.at),
-    sub: `${r.code}${r.race_no > 1 ? ` · ${t('Race', 'Гонка')} ${r.race_no}` : ''}`,
+    sub: `${r.code}${r.race_no > 1 ? ` · ${t('Race', 'Гонка', 'Regata')} ${r.race_no}` : ''}`,
     isNew: false,
     cells: [
       <span key="w" className="adm-pl-name">{where(r)}<span className="adm-pl-sub">{settings(r)}</span></span>,
       who(r.host), who(r.guest), side(r, r.winner), result(r),
-      r.margin == null ? '–' : `${r.margin.toFixed(1)} ${t('s', 'с')}`, r.length_s == null ? '–' : clock(r.length_s), STATE[r.state],
+      r.margin == null ? '–' : `${r.margin.toFixed(1)} ${t('s', 'с', 's')}`, r.length_s == null ? '–' : clock(r.length_s), STATE[r.state],
     ],
     vals: [r.venue ? venue(r.venue) : null, plainName(r.host?.name)?.toLowerCase() ?? null, plainName(r.guest?.name)?.toLowerCase() ?? null,
       r.winner ? name(r[r.winner]).toLowerCase() : null, r.host?.place ?? null, r.margin, r.length_s, STATE[r.state]],
   }));
 
   const E = data.endings;
-  const endings: [string, number][] = [[t('Both home', 'Оба финишировали'), E.both], [t('Forfeit', 'Сдача'), E.forfeit], [t('DSQ', 'DSQ'), E.dsq], [t('DNF', 'DNF'), E.dnf], [t('No winner', 'Без победителя'), E.no_winner]];
+  const endings: [string, number][] = [[t('Both home', 'Оба финишировали', 'Ambos llegaron'), E.both], [t('Forfeit', 'Сдача', 'Retirada'), E.forfeit], [t('DSQ', 'DSQ'), E.dsq], [t('DNF', 'DNF'), E.dnf], [t('No winner', 'Без победителя', 'Sin ganador'), E.no_winner]];
   const groupRows = (k: Duels['groups'][number]['k'], label: (v: string | null) => string) =>
     data.groups.filter((g) => g.k === k).map((g) => ({ key: `${k}-${g.v}`, name: label(g.v), cells: [String(g.n), pct(g.fin, g.n)] }));
-  const head = [t('Races', 'Гонок'), t('Finished', 'Финиш')];
+  const head = [t('Races', 'Гонок', 'Regatas'), t('Finished', 'Финиш', 'Terminada')];
   // the database returns only the days that had races: the UTC days between the first and the last get an empty track
   const span = (() => {
     const out: { d: string; n: number; fin: number }[] = [], DAY = 864e5;
@@ -109,49 +109,49 @@ export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days
     for (let at = first; at <= last; at += DAY) { const d = new Date(at).toISOString().slice(0, 10); out.push(by.get(d) ?? { d, n: 0, fin: 0 }); }
     return out.length >= data.days.length ? out : data.days;
   })();
-  const slots: DaySlot[] = span.map((d) => ({ d: d.d, n: d.n, tip: [[t('Races', 'Гонок'), String(d.n)], [t('Finished', 'Финиш'), pct(d.fin, d.n)]] }));
-  const PERIODS: { d: number | null; label: string }[] = [{ d: null, label: t('All time', 'Всё время') }, ...DUEL_DAYS.map((d) => ({ d, label: t(`${d} days`, `${d} дн.`) }))];
+  const slots: DaySlot[] = span.map((d) => ({ d: d.d, n: d.n, tip: [[t('Races', 'Гонок', 'Regatas'), String(d.n)], [t('Finished', 'Финиш', 'Terminada'), pct(d.fin, d.n)]] }));
+  const PERIODS: { d: number | null; label: string }[] = [{ d: null, label: t('All time', 'Всё время', 'Todo el tiempo') }, ...DUEL_DAYS.map((d) => ({ d, label: t(`${d} days`, `${d} дн.`, `${d} días`) }))];
 
   return (
     <div className="adm adm-stats">
       <div className="adm-k">
-        <IconCrew /><span className="kicker">{t('1-on-1 races', 'Гонки 1 на 1')}</span>
-        <nav className="adm-range" aria-label={t('Period', 'Период')}>
+        <IconCrew /><span className="kicker">{t('1-on-1 races', 'Гонки 1 на 1', 'Regatas 1 contra 1')}</span>
+        <nav className="adm-range" aria-label={t('Period', 'Период', 'Periodo')}>
           {PERIODS.map((p) => (
             <Link key={p.label} href={p.d ? `/admin/duels?days=${p.d}` : '/admin/duels'} scroll={false} aria-current={p.d === days ? 'page' : undefined} className={p.d === days ? 'on' : undefined}>{p.label}</Link>
           ))}
         </nav>
       </div>
       <div className="adm-tiles">
-        <Tile k={t('Races', 'Гонок')} v={String(T.races)} />
-        <Tile k={t('Finished', 'Финиш')} v={`${T.finished} · ${pct(T.finished, T.races)}`} />
-        <Tile k={t('Abandoned', 'Брошено')} v={`${T.abandoned} · ${pct(T.abandoned, T.races)}`} />
-        <Tile k={t('No result', 'Без итога')} v={`${T.no_result} · ${pct(T.no_result, T.races)}`} />
-        <Tile k={t('Sailors', 'Гонщиков')} v={String(T.sailors)} />
-        <Tile k={t('Signed in', 'С аккаунтом')} v={pct(T.signed, T.seats)} />
-        <Tile k={t('Rematches', 'Реваншей')} v={String(T.rematches)} />
-        <Tile k={t('Median race', 'Медиана гонки')} v={T.median == null ? '–' : clock(T.median)} />
+        <Tile k={t('Races', 'Гонок', 'Regatas')} v={String(T.races)} />
+        <Tile k={t('Finished', 'Финиш', 'Terminada')} v={`${T.finished} · ${pct(T.finished, T.races)}`} />
+        <Tile k={t('Abandoned', 'Брошено', 'Abandonadas')} v={`${T.abandoned} · ${pct(T.abandoned, T.races)}`} />
+        <Tile k={t('No result', 'Без итога', 'Sin resultado')} v={`${T.no_result} · ${pct(T.no_result, T.races)}`} />
+        <Tile k={t('Sailors', 'Гонщиков', 'Regatistas')} v={String(T.sailors)} />
+        <Tile k={t('Signed in', 'С аккаунтом', 'Con sesión')} v={pct(T.signed, T.seats)} />
+        <Tile k={t('Rematches', 'Реваншей', 'Revanchas')} v={String(T.rematches)} />
+        <Tile k={t('Median race', 'Медиана гонки', 'Regata mediana')} v={T.median == null ? '–' : clock(T.median)} />
       </div>
-      {data.days.length > 0 && <DayChart lang={lang} title={t('Races a day', 'Гонок в день')} label={t('Races started each day', 'Гонок начато в каждый день')} slots={slots} />}
+      {data.days.length > 0 && <DayChart lang={lang} title={t('Races a day', 'Гонок в день', 'Regatas al día')} label={t('Races started each day', 'Гонок начато в каждый день', 'Regatas iniciadas cada día')} slots={slots} />}
       <section className="adm-tab">
-        <h3 className="adm-tab-h">{t('How the finished races ended', 'Чем закончились гонки')}</h3>
+        <h3 className="adm-tab-h">{t('How the finished races ended', 'Чем закончились гонки', 'Cómo acabaron las regatas terminadas')}</h3>
         <p className="hint">{endings.map(([k, n]) => `${k} ${n}`).join(' · ')}</p>
       </section>
-      <Table title={t('By venue', 'По месту')} first={t('Venue', 'Место')} head={head} rows={groupRows('venue', (v) => (v ? venue(v) : t('Not kept', 'Не записано')))} />
-      <Table title={t('By yacht', 'По яхте')} first={t('Yacht', 'Яхта')} head={head} rows={groupRows('yacht', yacht)} />
-      <Table title={t('By wind', 'По ветру')} first={t('Wind', 'Ветер')} head={head} rows={groupRows('wind', wind)} />
-      <Table title={t('By course', 'По дистанции')} first={t('Course', 'Дистанция')} head={head} rows={groupRows('course', course)} />
-      <Table title={t('By start', 'По старту')} first={t('Start', 'Старт')} head={head} rows={groupRows('start', (v) => (v ? t(`${v} min`, `${v} мин`) : '–'))} />
+      <Table title={t('By venue', 'По месту', 'Por sede')} first={t('Venue', 'Место', 'Sede')} head={head} rows={groupRows('venue', (v) => (v ? venue(v) : t('Not kept', 'Не записано', 'No guardado')))} />
+      <Table title={t('By yacht', 'По яхте', 'Por yate')} first={t('Yacht', 'Яхта', 'Yate')} head={head} rows={groupRows('yacht', yacht)} />
+      <Table title={t('By wind', 'По ветру', 'Por viento')} first={t('Wind', 'Ветер', 'Viento')} head={head} rows={groupRows('wind', wind)} />
+      <Table title={t('By course', 'По дистанции', 'Por recorrido')} first={t('Course', 'Дистанция', 'Recorrido')} head={head} rows={groupRows('course', course)} />
+      <Table title={t('By start', 'По старту', 'Por salida')} first={t('Start', 'Старт', 'Salida')} head={head} rows={groupRows('start', (v) => (v ? t(`${v} min`, `${v} мин`, `${v} min`) : '–'))} />
       <section className="adm-tab">
-        <h3 className="adm-tab-h">{t('Every race', 'Каждая гонка')}</h3>
+        <h3 className="adm-tab-h">{t('Every race', 'Каждая гонка', 'Todas las regatas')}</h3>
         {R.length > 0 ? (
-          <PlayersTable first={{ label: t('When', 'Когда') }} cols={cols} rows={rows} start={0}
-            label={t('Every race', 'Каждая гонка')} newLabel="" />
-        ) : <p className="hint">{t('No races in this period.', 'За этот период гонок нет.')}</p>}
-        {data.more && <p className="hint">{t('The period has more races than the table holds: only the newest 1,000 are shown.', 'В периоде больше гонок, чем помещается в таблицу: показаны только последние 1000.')}</p>}
+          <PlayersTable first={{ label: t('When', 'Когда', 'Cuándo') }} cols={cols} rows={rows} start={0}
+            label={t('Every race', 'Каждая гонка', 'Todas las regatas')} newLabel="" />
+        ) : <p className="hint">{t('No races in this period.', 'За этот период гонок нет.', 'No hay regatas en este periodo.')}</p>}
+        {data.more && <p className="hint">{t('The period has more races than the table holds: only the newest 1,000 are shown.', 'В периоде больше гонок, чем помещается в таблицу: показаны только последние 1000.', 'El periodo tiene más regatas de las que cabe en la tabla: solo se muestran las 1000 más recientes.')}</p>}
       </section>
       <p className="hint">{t('Races are counted by when they started. No result: a race still on after two hours with no end reported. Sailors: accounts, and guests by name, so a guest who changes name counts twice. Signed in: the share of seats sailed with an account. Rematches: races beyond the first on each code. Median race: the slower boat’s time over the finished races with a time. Times in UTC.',
-        'Гонки считаются по времени старта. Без итога — гонка, идущая дольше двух часов без отчёта о конце. Гонщики — аккаунты и гости по имени, так что гость, сменивший имя, считается дважды. С аккаунтом — доля мест, на которых гонщик вошёл в аккаунт. Реванши — гонки сверх первой на каждом коде. Медиана — время более медленной лодки в завершённых гонках с временем. Время по UTC.')}</p>
+        'Гонки считаются по времени старта. Без итога — гонка, идущая дольше двух часов без отчёта о конце. Гонщики — аккаунты и гости по имени, так что гость, сменивший имя, считается дважды. С аккаунтом — доля мест, на которых гонщик вошёл в аккаунт. Реванши — гонки сверх первой на каждом коде. Медиана — время более медленной лодки в завершённых гонках с временем. Время по UTC.', 'Las regatas se cuentan por cuándo empezaron. Sin resultado: una regata aún en curso tras dos horas sin fin registrado. Regatistas: cuentas, e invitados por nombre, así que un invitado que cambia de nombre cuenta dos veces. Con sesión: la proporción de plazas navegadas con cuenta. Revanchas: regatas posteriores a la primera en cada código. Regata mediana: el tiempo del barco más lento en las regatas terminadas con tiempo. Horas en UTC.')}</p>
     </div>
   );
 }

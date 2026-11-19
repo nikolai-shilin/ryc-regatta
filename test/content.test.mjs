@@ -266,7 +266,7 @@ test('a page\'s title in the reader\'s language', async () => {
 test('each language has an address of its own', () => {
   assert.equal(seo.langUrl('/faq', 'en'), '/faq');
   assert.equal(seo.langUrl('/faq', 'ru'), '/faq?lang=ru');
-  assert.deepEqual(seo.languages('/faq'), { en: '/faq', ru: '/faq?lang=ru', 'x-default': '/faq' });
+  assert.deepEqual(seo.languages('/faq'), { en: '/faq', ru: '/faq?lang=ru', es: '/faq?lang=es', 'x-default': '/faq' });
 });
 
 test('a page\'s meta: the title with the site\'s name, its canonical and both languages', () => {
@@ -274,7 +274,7 @@ test('a page\'s meta: the title with the site\'s name, its canonical and both la
   assert.equal(m.title, 'Вопросы и ответы');
   assert.equal(m.openGraph.title, `Вопросы и ответы · ${seo.NAME}`);
   assert.equal(m.openGraph.url, '/faq?lang=ru');
-  assert.equal(m.openGraph.locale, 'ru_RU'); assert.deepEqual(m.openGraph.alternateLocale, ['en_GB']);
+  assert.equal(m.openGraph.locale, 'ru_RU'); assert.deepEqual(m.openGraph.alternateLocale, ['en_GB', 'es_ES']);
   assert.equal(m.alternates.canonical, '/faq?lang=ru');
   assert.equal(m.alternates.languages['x-default'], '/faq');
   assert.equal(m.twitter.card, 'summary_large_image');
