@@ -692,9 +692,9 @@ function logoDecal(side, logo, z0 = -2.55, y0 = 0.64, W = 1.36, H = 0.52) {
 }
 
 // ---------- sails ----------
-// how a kite is cut, on its cloth (x from the luff to the leech, y from the head down to the foot): a seam across it, v of
+// how a kite is cut, on its cloth (x from the luff to the leech, y from the head down to the foot): a line across it, v of
 // the way down the luff at the luff and arching up towards the middle; and its seams, the panels fanning out of the three
-// corners, where the load is, and running across the sail between them
+// corners, where the load is (none running across the sail between them, which on one colour read as stripes)
 const kiteArc = (v, u) => v * (1 - 0.06 * Math.sin(Math.PI * u));
 // the kite laid flat for a logo on it (sailTexture), in units of its luff's height: this boat's gennaker on a broad reach
 // seen square to its cloth, the head 0.35 aft of the tack, the clew 0.63 aft and 0.11 up, its luff rounding forward and
@@ -703,7 +703,6 @@ const kiteArc = (v, u) => v * (1 - 0.06 * Math.sin(Math.PI * u));
 const KITE = { hz: 0.35, cz: 0.63, cy: 0.11, luffOut: 0.15, leechOut: 0.07, grow: 0.92 };
 function kiteSeams(W, H) {
   const at = (v, u) => [u * W, kiteArc(v, u) * H], seams = [];
-  for (let i = 3; i <= 10; i++) seams.push(Array.from({ length: 17 }, (_, k) => at(i / 16 + 0.1875, k / 16))); // across the middle
   for (let k = 1; k < 8; k++) seams.push([[(k / 8) * W, 0], at(0.375, k / 8)]); // out of the head
   for (let k = 1; k < 6; k++) { const u = (k / 6) * 0.5; seams.push([[0, H], at(0.8125, u)], [[W, H], at(0.8125, 1 - u)]); } // out of the tack and the clew
   return seams;
