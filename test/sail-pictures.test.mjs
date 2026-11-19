@@ -100,3 +100,16 @@ test('the gennaker carries the logo on both faces, within its cloth', async () =
   });
   assert.ok(page.images.includes('/flags/tr.svg'));
 });
+
+test('a logo of one colour on a clear ground is printed in the boat\'s number colour; any other picture as it is', () => {
+  const pic = () => { const c = document.createElement('canvas'); c.width = 100; c.height = 50; return c; };
+  const tinted = (c) => c.getContext('2d').rects.some((r) => r.fill === '#123456' && r.w === 100 && r.h === 50);
+  page.paint = (x, y) => (x > 30 && x < 70 && y > 10 && y < 40 ? [255, 255, 255, 255] : [0, 0, 0, 0]); // white, cut out
+  assert.equal(tinted(Y.inked(pic(), '#123456')), true);
+  page.paint = () => RED; // on a ground of its own
+  assert.equal(tinted(Y.inked(pic(), '#123456')), false);
+  page.paint = (x, y) => (x < 50 ? [255, 255, 255, 255] : y < 25 ? [0, 0, 0, 0] : [174, 0, 0, 255]); // two colours
+  assert.equal(tinted(Y.inked(pic(), '#123456')), false);
+  page.paint = () => [0, 0, 0, 0]; // nothing at all
+  assert.equal(tinted(Y.inked(pic(), '#123456')), false);
+});

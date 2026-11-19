@@ -773,6 +773,23 @@ function turnedPicture(img, w, h, down = true) {
   x.drawImage(img, 0, 0, w, h);
   return c;
 }
+// a picture of one colour on a clear ground (a logo cut out, white or black), printed in `ink` instead: on the main the
+// boat's sail number's colour, which reads on her cloth whatever it is, where the logo's own white would vanish on a
+// white sail. A picture of more colours, or on a ground, is left as it is
+export function inked(pic, ink) {
+  const { width: w, height: h } = pic, x = pic.getContext('2d', { willReadFrequently: true }), d = x.getImageData(0, 0, w, h).data, N = 24;
+  let clear = 0, first = null, one = true;
+  for (let a = 0; a < N && one; a++) for (let b = 0; b < N; b++) {
+    const q = (Math.floor(((b + 0.5) * h) / N) * w + Math.floor(((a + 0.5) * w) / N)) * 4;
+    if (d[q + 3] < 20) { clear++; continue; }
+    if (d[q + 3] < 200) continue; // an edge, half drawn
+    if (!first) first = [d[q], d[q + 1], d[q + 2]];
+    else if (Math.abs(d[q] - first[0]) + Math.abs(d[q + 1] - first[1]) + Math.abs(d[q + 2] - first[2]) > 48) { one = false; break; }
+  }
+  if (!one || !first || clear < (N * N) / 10) return pic;
+  x.globalCompositeOperation = 'source-in'; x.fillStyle = ink; x.fillRect(0, 0, w, h); x.globalCompositeOperation = 'source-over';
+  return pic;
+}
 // the colour a picture is printed on, when it is: its four corners alike and solid (a banner's red), else null
 export function groundOf(img) {
   const c = document.createElement('canvas'); c.width = c.height = 64;
@@ -926,7 +943,7 @@ export function sailTexture(kind, look, rig = null) {
       // an upright rectangle on the sail however much the sail narrows across its height, on both faces
       const logoAt = (img, { m, z, w, h }) => {
         const j0 = Math.round(H * (1 - (m + h / 2) / R.span)), j1 = Math.round(H * (1 - (m - h / 2) / R.span));
-        const pic = sharpPicture(img, 1024, j1 - j0);
+        const pic = inked(sharpPicture(img, 1024, j1 - j0), look.ink);
         if (R.at) { // rows that don't run level: laid on the sail by its own map
           const [zc, yc] = clothPoint(m / R.span, z / R.chord(m / R.span)), data = pic.getContext('2d').getImageData(0, 0, pic.width, pic.height);
           for (const [ctx, s] of [[x, 1], [xb, -1]]) markOn(ctx, s, data, zc, yc, w, h);
