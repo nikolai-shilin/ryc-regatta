@@ -171,7 +171,7 @@ export const VENUES = [
       trees: [['broad', 0.45, '#335226', '#5a7c34'], ['palm', 0.3, '#3d5a2c', '#6a8a3a'], ['stone', 0.25, '#2e4626', '#4f6834']], treeTop: 600, woods: 0.35,
       walls: ['#f2e6cc', '#efd9b0', '#f6f1e6', '#e3cfa8', '#f0dfc0', '#e8d5b5'], roofs: ['#b4603e', '#a5543a', '#9c4f37', '#8a8e90'], flat: 0.6,
       boats: { sail: 0.6, motor: 0.3, big: 0.1, bigKind: 'super' },
-      water: { deep: '#06304a', scatter: '#1a9a9a', k: 0.3, shallow: '#4aa89a', clear: 0.45 },
+      water: { deep: '#06304a', scatter: '#1d8a8c', k: 0.35, shallow: '#4f8e84', clear: 0.22 }, // (a sandy bed under greener water than the islands')
     },
   },
   {
@@ -640,7 +640,7 @@ export const VENUES = [
       // Breton granite under slate
       walls: ['#9b968a', '#a9a497', '#8b867b', '#bdb7a9', '#d8d2c4', '#e6e1d4'], roofs: ['#4a4f55', '#55595f', '#3f444a', '#5f6368'], flat: 0.05,
       boats: { sail: 0.82, motor: 0.18, big: 0 },
-      water: { deep: '#0b3a47', scatter: '#2b8a88', k: 0.5, shallow: '#5aa89a', clear: 0.28 },
+      water: { deep: '#0b3a47', scatter: '#2a7a76', k: 0.55, shallow: '#5a8a7c', clear: 0.14 }, // (the Channel's, stirred by the tide)
     },
   },
   {
@@ -869,7 +869,7 @@ export const VENUES = [
       walls: ['#efe6d2', '#e8d9bc', '#f2ebdc', '#b5684c', '#d9c3a0', '#f6f1e6'], roofs: ['#a5543a', '#8a8e90', '#b4603e', '#6e6a68'], flat: 0.65,
       boats: { sail: 0.75, motor: 0.25, big: 0 },
       // the river's brown, silt from the Paraná and the Uruguay
-      water: { deep: '#4a3a24', scatter: '#8a6e44', k: 0.85, shallow: '#9a7e52', clear: 0.05 },
+      water: { deep: '#5e4c32', scatter: '#a88c5c', k: 0.85, shallow: '#a68c5e', clear: 0.05 },
     },
   },
   {

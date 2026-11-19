@@ -50,11 +50,13 @@ const lerp = (a, b, k) => a + (b - a) * k;
 // the high sun's look, which the venues' sea colours and the shallows' bed are given in (linear light)
 const NOON = (() => { const K = KEYS[KEYS.length - 1], c = (h) => new THREE.Color(h);
   return { deep: c(K.deep), scatter: c(K.scatter), sky: c(K.hemiSky).multiplyScalar(K.hemiI), sun: c(K.sun).multiplyScalar(K.sunI) }; })();
-// a colour given as it is at noon (v), as it is at another hour: noon's own colour there (now, against base) times
-// the venue's against noon's, channel by channel (kept within a few times, as a dark channel's ratio runs away)
+// a colour given as it is at noon (v), as it is at another hour: the venue's own colour times the hour's against
+// noon's (now against base), channel by channel (that ratio kept within a few times, as a dark channel's runs away).
+// At noon it is the venue's colour as given, however far from the open sea's blue: the Río de la Plata's brown,
+// Balaton's milky green, the North Sea's grey-green
 function tinted(now, base, v) {
   const o = new THREE.Color(v);
-  for (const ch of ['r', 'g', 'b']) o[ch] = now[ch] * Math.min(Math.max(o[ch] / Math.max(base[ch], 1e-4), 0.25), 4);
+  for (const ch of ['r', 'g', 'b']) o[ch] *= Math.min(Math.max(now[ch] / Math.max(base[ch], 1e-4), 0.25), 4);
   return o;
 }
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
