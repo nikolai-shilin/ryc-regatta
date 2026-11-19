@@ -568,9 +568,11 @@ function submarine() {
 }
 
 const KINDS = [[tanker, 0.3], [container, 0.27], [bulk, 0.17], [cruise, 0.1], [corvette, 0.1], [submarine, 0.06]];
-function build() {
-  let r = Math.random();
-  for (const [f, w] of KINDS) { if ((r -= w) <= 0) return f(); }
+// at anchor in a port's roads, waiting for a berth: the cargo ships, never a navy's
+const ANCHORED = [[tanker, 0.4], [container, 0.25], [bulk, 0.35]];
+function build(kinds = KINDS) {
+  let r = Math.random() * kinds.reduce((a, k) => a + k[1], 0);
+  for (const [f, w] of kinds) { if ((r -= w) <= 0) return f(); }
   return tanker();
 }
 
@@ -708,6 +710,8 @@ export class Ships {
     this.marks = [{ x: 0, z: 0 }, ...Object.values(race?.course?.marks || {})];
     this.timer = rnd(90, 240);
     if (!this.on) return;
+    // the ships at anchor in the roads off a port (venues.js anchored: how many), most of them upwind, where the beat looks
+    for (let i = 0; i < (VENUE.anchored || 0); i++) this.moor();
     // the offing isn't empty when you get there: one or two already on their way across it
     for (let i = 0, n = Math.random() < 0.5 ? 1 : 2; i < n; i++) this.spawn(rnd(0.25, 0.75));
   }
@@ -745,6 +749,28 @@ export class Ships {
     }
     return null;
   }
+  // a ship lying at anchor, 1.6 to 4.5 km off the course, head to the wind (the game's north) give or take a little as she
+  // swings to it; in open water with room round her for her swing, and clear of the course and of the others
+  moor() {
+    const mx = this.marks.reduce((a, m) => a + m.x, 0) / this.marks.length, mz = this.marks.reduce((a, m) => a + m.z, 0) / this.marks.length;
+    const ship = build(ANCHORED);
+    for (let tries = 0; tries < 60; tries++) {
+      const b = rnd(-1.4, 1.4) + (Math.random() < 0.25 ? Math.PI : 0), d = rnd(1600, 4500); // (a bearing from upwind, radians)
+      const x = mx + Math.sin(b) * d, z = mz - Math.cos(b) * d;
+      if (this.marks.some((m) => Math.hypot(m.x - x, m.z - z) < CLEAR)) continue;
+      if ([[0, 0], [300, 0], [-300, 0], [0, 300], [0, -300]].some(([ox, oz]) => this.ground(x + ox, z + oz) >= SEA)) continue;
+      if (this.list.some((o) => Math.hypot(o.x0 + o.f.x * o.s - x, o.z0 + o.f.z * o.s - z) < 500)) continue;
+      const h = rnd(-0.35, 0.35), g = new THREE.Group(), mesh = new THREE.Mesh(ship.k.geometry(), this.mat), wake = new THREE.Mesh(foam(ship.h, 0.3), this.foamMat);
+      mesh.rotation.order = 'YXZ'; wake.renderOrder = 1;
+      g.add(mesh, wake); g.rotation.y = -h;
+      this.group.add(g);
+      const me = { x0: x, z0: z, f: { x: Math.sin(h), z: -Math.cos(h) }, s: 0, len: Infinity, v: 0, g, mesh, wake, h, k: Math.random() * 10, anchored: true };
+      this.place(me, 0);
+      this.list.push(me);
+      return me;
+    }
+    return null;
+  }
   drop(s) { this.group.remove(s.g); s.mesh.geometry.dispose(); s.wake.geometry.dispose(); }
   place(s, t) {
     s.g.position.set(s.x0 + s.f.x * s.s, 0, s.z0 + s.f.z * s.s);
@@ -755,7 +781,7 @@ export class Ships {
     if (!this.on || !this.ground) return;
     this.t = (this.t || 0) + dt; this.time.value = this.t;
     this.timer -= dt;
-    if (this.timer <= 0 && dt > 0) { this.timer = rnd(150, 360); if (this.list.length < MAX) this.spawn(0); }
+    if (this.timer <= 0 && dt > 0) { this.timer = rnd(150, 360); if (this.list.filter((o) => !o.anchored).length < MAX) this.spawn(0); }
     for (let i = this.list.length - 1; i >= 0; i--) {
       const s = this.list[i];
       s.s += s.v * dt;

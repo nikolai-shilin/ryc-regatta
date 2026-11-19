@@ -265,6 +265,29 @@ test('never more than three are out there, for all of a long race', () => {
   assertFiniteTree(s.group, 'the ships');
 });
 
+test('a port has its ships at anchor in the roads: cargo ships, still, head to wind, in open water clear of the course', () => {
+  const was = VENUE.anchored; VENUE.anchored = 5;
+  try {
+    const s = ships(), at = s.list.filter((o) => o.anchored);
+    assert.equal(at.length, 5, 'as many as the venue has');
+    for (const a of at) {
+      const d = Math.hypot(a.x0, a.z0 + 350);
+      assert.ok(d >= 1500 && d <= 4700, `${Math.round(d)} m off the course`);
+      assert.ok([{ x: 0, z: -900 }, { x: 0, z: 200 }, { x: 0, z: 0 }].every((m) => Math.hypot(m.x - a.x0, m.z - a.z0) >= CLEAR), 'clear of every mark');
+      assert.ok(Math.abs(a.h) <= 0.36, 'head to the wind, give or take her swing');
+      assert.equal(a.v, 0);
+    }
+    const where = at.map((a) => [a.x0, a.z0]);
+    for (let i = 0; i < 2000; i++) s.update(3);
+    const still = s.list.filter((o) => o.anchored);
+    assert.deepEqual(still.map((a) => [a.x0 + a.f.x * a.s, a.z0 + a.f.z * a.s]), where, 'they stay where they lie');
+    assert.ok(s.list.filter((o) => !o.anchored).length <= 3, 'and the ships passing are still three at most');
+    // none in a land-locked harbour: only open water with room to swing
+    const shut = ships(() => 10);
+    assert.equal(shut.list.filter((o) => o.anchored).length, 0, 'no water, no anchorage');
+  } finally { VENUE.anchored = was; }
+});
+
 // ---------- how they are drawn ----------
 test('her wake goes on the water after her, without writing to the depth', () => {
   const { s, ship } = one('cruise');
