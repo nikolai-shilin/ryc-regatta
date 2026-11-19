@@ -397,7 +397,9 @@ export const VENUES = [
       trees: [['pine', 0.7, '#2d4325', '#586f3c'], ['olive', 0.12, '#56603e', '#7f8660'], ['cypress', 0.08, '#25391f', '#3a5230'], ['palm', 0.05, '#3d5a2c', '#5f7a3a'], ['broad', 0.05, '#33482a', '#5f7a3c']],
       treeTop: 1150, woods: 0.75, snow: 3200, // (Babadağ's top bare limestone above the pines)
       ...MED, flat: 0.65,
-      water: { shallow: '#40ac9e', clear: 0.5 },
+      // the survey has most of the bay inside Şövalye a few metres deep, which would turn it all the shallows' turquoise:
+      // its bed shown faintly, so the bay is Göcek's deep blue
+      water: { shallow: '#3fae9e', clear: 0.12 },
       boats: { sail: 0.5, motor: 0.28, big: 0.22, bigKind: 'gulet' },
     },
   },
