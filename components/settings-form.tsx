@@ -97,7 +97,7 @@ export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: 
         {langSeg}
       </Card>
       <Card id="st-sail" title={t('Sailing', 'Яхта', 'Navegando')}><SailingOpts lang={lang} /></Card>
-      <section className="st-card st-wide" aria-label={t('Audio & graphics', 'Звук и графика', 'Audio y gráficos')}><div className="st-card-b"><AvRow lang={lang} wide /></div></section>
+      <section className="st-card st-wide" aria-label={t('Audio & graphics', 'Звук и графика', 'Sonido y gráficos')}><div className="st-card-b"><AvRow lang={lang} wide /></div></section>
     </div>
   );
 }

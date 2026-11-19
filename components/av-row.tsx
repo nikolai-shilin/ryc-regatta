@@ -31,7 +31,7 @@ function useSummary(lang: Lang) {
 
 // the button in the head of every panel over a 3D scene: the menu in one tap, with the level the scene is drawn at
 export function AvButton({ lang }: { lang: Lang }) {
-  const t = tx(lang), sum = useSummary(lang), name = t('Audio & graphics', 'Звук и графика', 'Audio y gráficos');
+  const t = tx(lang), sum = useSummary(lang), name = t('Audio & graphics', 'Звук и графика', 'Sonido y gráficos');
   return (
     <button type="button" className="bt-gfx" onClick={() => openAv(lang)} aria-haspopup="dialog" aria-label={sum.all ? `${name}: ${sum.all}` : name} title={name}>
       <IconSliders /><span>{t('Graphics', 'Графика', 'Gráficos')}</span>{sum.gfx && <b>{sum.gfx}</b>}
@@ -41,7 +41,7 @@ export function AvButton({ lang }: { lang: Lang }) {
 
 // a row of the panels' Settings; `wide`: the row across /settings
 export function AvRow({ lang, wide = false }: { lang: Lang; wide?: boolean }) {
-  const t = tx(lang), sum = useSummary(lang).all, name = t('Audio & graphics', 'Звук и графика', 'Audio y gráficos');
+  const t = tx(lang), sum = useSummary(lang).all, name = t('Audio & graphics', 'Звук и графика', 'Sonido y gráficos');
   if (wide) return (
     <button type="button" className="st-boat st-av" onClick={() => openAv(lang)}>
       <IconSliders /><b>{name}</b><span className="st-boat-k">{sum}</span>
@@ -53,5 +53,5 @@ export function AvRow({ lang, wide = false }: { lang: Lang; wide?: boolean }) {
 
 // the line in the header's menu
 export function AvMenuItem({ lang }: { lang: Lang }) {
-  return <button type="button" className="hm-mi hm-mi-btn" onClick={(e) => { e.currentTarget.closest('details')?.removeAttribute('open'); openAv(lang); }}>{tx(lang)('Audio & graphics', 'Звук и графика', 'Audio y gráficos')}</button>;
+  return <button type="button" className="hm-mi hm-mi-btn" onClick={(e) => { e.currentTarget.closest('details')?.removeAttribute('open'); openAv(lang); }}>{tx(lang)('Audio & graphics', 'Звук и графика', 'Sonido y gráficos')}</button>;
 }

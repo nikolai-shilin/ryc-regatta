@@ -60,7 +60,7 @@ export function SignInForm({ lang, next, failed, signup = false }: { lang: Lang;
       <Step n={1} label={t('Email', 'Почта', 'Correo')}><Link className="back-link" href={next}>{t('Not now', 'Не сейчас', 'Ahora no')}</Link></Step>
       <h1 className="h-land-s">{signup ? t('Create your account', 'Создай аккаунт', 'Crea tu cuenta') : t('Sign in to get on the ranking', 'Войди, чтобы попасть в рейтинг', 'Inicia sesión para entrar en la clasificación')}</h1>
       <p className="lead muted">{t('Your times go on today’s ranking, and your best times follow you to any device.', 'Твоё время попадёт в рейтинг дня, а рекорды будут с тобой на любом устройстве.', 'Tus tiempos entran en la clasificación de hoy, y tus mejores tiempos te siguen a cualquier dispositivo.')}</p>
-      <button type="button" className="pill pill-oauth pill-wide au-google" onClick={google} disabled={busy}><IconGoogle /><span className="btn-t">{t('Continue with Google', signup ? 'Продолжить с Google' : 'Войти через Google')}</span></button>
+      <button type="button" className="pill pill-oauth pill-wide au-google" onClick={google} disabled={busy}><IconGoogle /><span className="btn-t">{t('Continue with Google', signup ? 'Продолжить с Google' : 'Войти через Google', signup ? 'Continuar con Google' : 'Entrar con Google')}</span></button>
       <div className="or">{t('or by email', 'или по почте', 'o por correo')}</div>
       <form className="au-form" onSubmit={send} noValidate>
         <label className="au-lbl" htmlFor="em">{t('Email', 'Почта', 'Correo')}</label>

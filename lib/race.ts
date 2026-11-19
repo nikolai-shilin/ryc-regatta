@@ -137,10 +137,10 @@ function laid(preset: Wind, length: Length, fleet: number, shape: Shape, k: numb
 }
 
 export const SHAPE_NAME: Record<Shape, [en: string, ru: string, es?: string]> = {
-  wl: ['Up and down', 'Апвинд — даунвинд', 'Up and down'],
+  wl: ['Up and down', 'Апвинд — даунвинд', 'Barlovento–sotavento'],
   tri: ['Triangle', 'Треугольник', 'Triángulo'],
   trap: ['Trapezoid', 'Трапеция', 'Trapecio'],
-  wlu: ['Up and down, upwind finish', 'Апвинд — даунвинд, финиш наверху', 'Up and down, llegada de ceñida'],
+  wlu: ['Up and down, upwind finish', 'Апвинд — даунвинд, финиш наверху', 'Barlovento–sotavento, llegada en ceñida'],
 };
 export const SHAPES = Object.keys(SHAPE_NAME) as Shape[];
 const isShape = (s: unknown): s is Shape => typeof s === 'string' && (SHAPES as string[]).includes(s);

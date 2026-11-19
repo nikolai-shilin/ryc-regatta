@@ -3,7 +3,7 @@ const ord = (n) => `${n}.º`;
 
 export const MAIN = {
   pausedK: 'En pausa', legOf: (a, b) => `Tramo ${a} de ${b}`, nextK: (m) => `Siguiente: ${m}`, placeK: 'Puesto', ofN: (n) => `de ${n}`, timeK: 'Tiempo de regata', penK: 'Penalizaciones', penNone: 'sin penalizaciones', penS: 'giros de penalización',
-  changeRace: 'Cambiar la regata', leaveHub: 'Salir al centro de regatas', quickK: 'Ajustes rápidos', camK: 'Cámara', sAuto: 'Auto', guidesSw: 'Guías sobre el agua', avK: 'Audio y gráficos', startsOver: 'vuelve a empezar', loadingK: 'Aparejando el barco', escResumes: 'Esc continúa',
+  changeRace: 'Cambiar la regata', leaveHub: 'Salir al centro de regatas', quickK: 'Ajustes rápidos', camK: 'Cámara', sAuto: 'Auto', guidesSw: 'Guías sobre el agua', avK: 'Sonido y gráficos', startsOver: 'vuelve a empezar', loadingK: 'Aparejando el barco', escResumes: 'Esc continúa',
   leaveK: '¿Salir de esta regata?', leaveTxt: (pl, leg) => `Vas ${pl} en el tramo ${leg}.`, keepRacing: 'Seguir en regata', doRestart: 'Reiniciar', doChange: 'Cambiarla', doLeave: 'Salir',
   inSeq: 'Estás en la secuencia de salida.', notKept: 'El tiempo y el puesto de esta regata no se guardan.',
   leaveHost: 'La regata se abandona en las dos pantallas.', leaveGuest: (w) => (w ? `Abandonas, y la regata es para ${w}.` : 'Abandonas, y la regata termina sin ganador.'), leaveHome: 'Tu puesto se mantiene para el otro regatista, pero si te vas ahora no tendrás el resultado completo.',
@@ -20,7 +20,7 @@ export const MAIN = {
   kick: 'Juego', title: 'Up and down', fun: 'Solo por diversión: tómate un descanso y relájate entre test y test.', sub: 'Una regata alrededor de las balizas contra los barcos del ordenador, con el Reglamento de Regatas a Vela. Gobierna, trima, vira y lee el viento.',
   modeK: 'Regata', daily: 'La regata del día', free: 'Regata libre', howK: 'Cómo se juega',
   dailyNote: (w, at, sh, y) => `Hoy todos tienen el mismo lugar, yate, recorrido y viento — ${at}, ${y}, ${sh}, ${w} — así que los tiempos se comparan con justicia. Cada día, un yate nuevo. Los más rápidos están en la página de inicio.`,
-  shapeWl: 'Ceñida y popa', shapeTri: 'Triángulo', shapeTrap: 'Trapecio', shapeWlu: 'Ceñida y popa, llegada de ceñida',
+  shapeWl: 'Barlovento–sotavento', shapeTri: 'Triángulo', shapeTrap: 'Trapecio', shapeWlu: 'Barlovento–sotavento, llegada en ceñida',
   dbK: 'Tu regata', dGun: (d, v) => `En la señal de salida: a ${d} m de la línea, a ${v} kn`, dGunOver: 'En la señal de salida: sobre la línea; tuviste que volver',
   dStartLate: (s) => `Cruzaste la línea ${s} s después de la señal`, tipStart: 'Intenta estar a una eslora de la línea, a toda velocidad, cuando suene la señal.',
   dSpeed: (p) => `Velocidad: ${p} % del objetivo de media`, tipSpeed: 'Mantén la escota en la banda verde y gobierna con suavidad: cada giro del timón frena.',

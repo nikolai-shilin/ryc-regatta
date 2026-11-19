@@ -58,18 +58,20 @@ const CSS = `
 const LEVEL = { high: ['High', 'Макс.', 'Alta'], medium: ['Medium', 'Сред.', 'Media'], low: ['Low', 'Мин.', 'Baja'] };
 const CHOICE = { auto: ['Auto', 'Авто', 'Auto'], ...LEVEL, custom: ['Custom', 'Своя', 'Personalizada'] };
 const TRACK = { playlist: ['Playlist', 'Плейлист', 'Lista'], racing: ['Racing', 'Гонка', 'Regata'], groove: ['Groove', 'Грув', 'Groove'], riff: ['Riff', 'Рифф', 'Riff'], openwater: ['Open water', 'Простор', 'Mar abierto'] };
-// the costliest first: resolution, shadows, the sea and its reflection; the third: whether its lowest is off
+// the costliest first: resolution, shadows, the sea and its reflection
 const GFX_NAMES = {
-  res: ['Resolution', 'Разрешение', false],
-  shadows: ['Shadows', 'Тени', true],
-  sea: ['Waves', 'Волны', false],
-  refl: ['Reflections', 'Отражения', true],
-  post: ['Glow and smoothing', 'Свечение и сглаживание', true],
-  wakes: ['Wakes and spray', 'Кильватер и брызги', false],
-  under: ['Hulls under water', 'Корпуса под водой', true],
-  land: ['Shore and trees', 'Берег и деревья', false],
-  life: ['Gulls, dolphins and crew', 'Птицы, дельфины, экипаж', false],
+  res: ['Resolution', 'Разрешение', 'Resolución'],
+  shadows: ['Shadows', 'Тени', 'Sombras'],
+  sea: ['Waves', 'Волны', 'Olas'],
+  refl: ['Reflections', 'Отражения', 'Reflejos'],
+  post: ['Glow and smoothing', 'Свечение и сглаживание', 'Brillo y suavizado'],
+  wakes: ['Wakes and spray', 'Кильватер и брызги', 'Estelas y salpicaduras'],
+  under: ['Hulls under water', 'Корпуса под водой', 'Cascos bajo el agua'],
+  land: ['Shore and trees', 'Берег и деревья', 'Costa y árboles'],
+  life: ['Gulls, dolphins and crew', 'Птицы, дельфины, экипаж', 'Gaviotas, delfines y tripulación'],
 };
+// whether each one's lowest is off
+const GFX_OFF = { res: false, shadows: true, sea: false, refl: true, post: true, wakes: false, under: true, land: false, life: false };
 const SOUND_NAMES = {
   sndVoices: ['Voices', 'Голоса', 'Voces'],
   sndBoats: ['Sails, winches, hulls', 'Паруса, лебёдки, корпус', 'Velas, winches, cascos'],
@@ -176,7 +178,7 @@ export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClo
     else hint.textContent = t('The race and every 3D scene on the site draw at this level.', 'Гонка и все 3D-сцены на сайте рисуются с этим качеством.', 'La regata y cada escena 3D del sitio se dibujan a este nivel.');
   });
   const partLevels = (off) => [['high', t('High', 'Макс.', 'Alta')], ['medium', t('Medium', 'Сред.', 'Media')], ['low', off ? t('Off', 'Выкл', 'No') : t('Low', 'Мин.', 'Baja')]];
-  const gfxParts = details(t('Details', 'Подробно', 'Detalles'), o.gfx === 'custom', GFX_PARTS.map((k) => choice(pair(GFX_NAMES[k]), partLevels(GFX_NAMES[k][2]), () => gfxDetail(o)[k],
+  const gfxParts = details(t('Details', 'Подробно', 'Detalles'), o.gfx === 'custom', GFX_PARTS.map((k) => choice(pair(GFX_NAMES[k]), partLevels(GFX_OFF[k]), () => gfxDetail(o)[k],
     (v) => set({ gfx: 'custom', gfxD: { ...gfxDetail(o), [k]: v } }), 'av-part'))); // a part changed makes it Custom
 
   // ---------- the sound ----------
