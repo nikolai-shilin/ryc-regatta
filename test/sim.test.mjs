@@ -81,6 +81,17 @@ test('today’s race goes round the venues, and the play page preloads the day�
     });
     assert.deepEqual(links.sort(), landFiles(venueById(v)).map((f) => '/game/' + f).sort(), day.toISOString().slice(0, 10));
   }
+  // a newcomer's first race: its own venue's land, as the game's pageVenue has it (venues.js firstRaceHere)
+  const { FIRST_VENUE } = await import('../public/game/venues.js');
+  for (const [path, search, played, first] of [['/play', '?race=first', 4, true], ['/play', '', null, true], ['/play', '?race=today', null, true], ['/play', '', 2, false],
+    ['/play', '?race=today&nofirst', null, false], ['/play', '?race=free', null, false], ['/play', '?drill=start', null, false], ['/play', '?race=first&venue=cowes', null, false]]) {
+    const links = [];
+    runInNewContext(script, {
+      Date, Math, JSON, URLSearchParams, location: { pathname: path, search }, localStorage: { getItem: () => (played == null ? null : JSON.stringify({ played, venue: 'kiel' })) },
+      document: { createElement: () => ({}), head: { appendChild: (l) => links.push(l.href) } },
+    });
+    assert.equal(links.some((h) => h.includes(FIRST_VENUE.id)), first, `${path}${search} played ${played}`);
+  }
 });
 
 // today's yacht: the JPK 1050 until the classes join, then each in turn, never the same two days running
@@ -466,10 +477,10 @@ test('every game script parses', async () => {
   const dir = new URL('../public/game/', import.meta.url);
   for (const f of readdirSync(dir).filter((n) => n.endsWith('.js'))) execFileSync(process.execPath, ['--check', new URL(f, dir).pathname]);
 });
-const { VENUES } = await import('../public/game/venues.js');
+const { VENUES, FIRST_VENUE } = await import('../public/game/venues.js');
 const { promisify } = await import('node:util');
 const execFileP = promisify((await import('node:child_process')).execFile);
-for (const v of VENUES) {
+for (const v of [...VENUES, FIRST_VENUE]) { // (the first race's own venue too: its short course, in the Optimist)
   test(`${v.name[0]}: the land is baked, and every course is laid in clear water`, async () => {
     const code = (boat) => `
       import { readFile } from 'node:fs/promises';
@@ -514,7 +525,7 @@ for (const v of VENUES) {
         if (up > spike) { spike = up; spikeAt = (-F.ext + j * F.cell) + ', ' + (-F.ext + i * F.cell); }
       }
       console.log(JSON.stringify({ origin: SKOPEA.meta.origin, turn: SKOPEA.meta.turn ?? 0, worst, where, legWorst, legWhere, under, corners: MESH.corners, heights: SKOPEA.parts.heights.length, spike, spikeAt }));`;
-    const runs = await Promise.all(['jpk1050', 'bavaria46', 'laser', 'optimist', 'ac75', 'jclass'].map(async (boat) => [boat, JSON.parse((await execFileP(process.execPath, ['--input-type=module', '-e', code(boat)], { encoding: 'utf8' })).stdout)]));
+    const runs = await Promise.all((v === FIRST_VENUE ? ['optimist'] : ['jpk1050', 'bavaria46', 'laser', 'optimist', 'ac75', 'jclass']).map(async (boat) => [boat, JSON.parse((await execFileP(process.execPath, ['--input-type=module', '-e', code(boat)], { encoding: 'utf8' })).stdout)]));
     for (const [boat, out] of runs) {
       assert.deepEqual(out.origin, [v.lat, v.lon], 'baked at the venue’s position');
       assert.equal(out.turn, v.wind, 'turned to the venue’s wind');

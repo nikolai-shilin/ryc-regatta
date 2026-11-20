@@ -4,7 +4,7 @@
 // seconds to the gun are counted big. One page a file, as the game runs once a page: the tests go on from each other.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bootGame, freshPage } from './fake-game.mjs';
+import { bootGame, freshPage, fetched } from './fake-game.mjs';
 
 const game = await bootGame({ search: '?debug' });
 const { $ } = game, race = () => game.rg.race;
@@ -18,6 +18,17 @@ test('the loading screen names it: a short race in an Optimist, about three minu
   assert.equal(cells[1][1], 3);
   assert.equal(cells[1][3], '20-second start');
   assert.equal(next, '20-second start');
+});
+
+test('sailed at a venue of its own, the Tobago Cays, wherever today’s race is: named as it loads, its land the only one fetched', async () => {
+  const { VENUE, FIRST_VENUE } = await import('../public/game/venues.js');
+  assert.equal(VENUE, FIRST_VENUE);
+  assert.equal(VENUE.id, 'tobago-cays');
+  assert.equal(game.loader.races[0].place, 'Tobago Cays');
+  const land = fetched.map((f) => String(f.url)).filter((u) => /\/game\/(venues\/|skopea\.)/.test(u));
+  assert.ok(land.length && land.every((u) => u.includes('tobago-cays')), land.join(' '));
+  await game.frames(2);
+  assert.equal($('.b-sub').textContent, 'First race · Tobago Cays', 'the HUD names it so, not a custom race');
 });
 
 test('an Optimist race of its own, not today’s: five boats of beginners, a medium breeze, up and down once', () => {

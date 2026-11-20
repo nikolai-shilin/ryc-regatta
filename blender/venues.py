@@ -99,6 +99,10 @@ VENUES = {
     'saint-tropez': dict(landmarks=[dict(kind='steeple', at=(43.27283, 6.64000), h=30, w=6, color='#e8b27a', spire='#c86a3a', split=0.72), dict(kind='castle', at=(43.27175, 6.64381), h=12, clear=40)],  # Notre-Dame de l'Assomption's ochre bell tower, the citadel on its hill
                 bathy='emodnet', home=(43.2900, 6.6700), wind=280, towns=[(43.2710, 6.6390, 800), (43.3090, 6.6360, 1000), (43.2930, 6.5870, 600)]),
     'antigua': dict(home=(16.9890, -61.7700), wind=95, towns=[(17.0080, -61.7640, 500), (17.0180, -61.7820, 700)]),
+    # the first race's (venues.js first): the Tobago Cays' lagoon in the Grenadines, inside Horseshoe Reef east of the
+    # four uninhabited cays, in the easterly trade wind; sheltered, flat water and almost nothing ashore to draw. The
+    # map's coast decides the land (the reef flats sit at the sea's level in the tiles)
+    'tobago-cays': dict(zoom=14, mapshore=True, trees=True, home=(12.6270, -61.3400), wind=90),
     'auckland': dict(erode=0, zoom=14, home=(-36.8300, 174.8150), wind=225, towns=[(-36.8480, 174.7650, 1500), (-36.8280, 174.7980, 900), (-36.8500, 174.8100, 1300), (-36.8000, 174.7900, 1500)],
                      landmarks=[dict(kind='tower', at=(-36.84846, 174.76218), h=328, style='sky')]),
     'san-francisco': dict(erode=0, bathy='noaa', zoom=14, home=(37.8150, -122.4350), wind=255, towns=[(37.8020, -122.4400, 1100), (37.7960, -122.4120, 1100), (37.8580, -122.4850, 800), (37.8730, -122.4570, 700)],

@@ -916,7 +916,41 @@ export const VENUES = [
   },
 ];
 
-export const venueById = (id) => VENUES.find((v) => v.id === id) || VENUES[0];
+// A newcomer's first race (main.js FIRST; classes.js pageClass sails it in an Optimist): today's race asked for on a
+// device with no race behind it (the regatta options' played, counted as each race starts: main.js) becomes an easy
+// one. Not a custom race, a drill, a 1-on-1 or a boat the address names, all chosen on purpose; ?nofirst skips it.
+// ?race=first asks for it by name, on any device, raced before or not (the site's header, menu and home link it).
+// public/play/index.html has a copy, to fetch its land at once.
+export function firstRaceHere() {
+  try {
+    const q = new URLSearchParams(location.search);
+    if (!/^\/play/.test(location.pathname)) return false;
+    if (q.get('race') === 'first') return true;
+    if (q.get('race') === 'free' || q.get('boat') || q.get('drill') || q.get('match') || q.has('nofirst')) return false;
+    return !(+JSON.parse(localStorage.getItem('regatta') || '{}').played > 0);
+  } catch (e) { return false; }
+}
+// The first race's own venue: the Tobago Cays' lagoon in the Grenadines, inside Horseshoe Reef east of the four
+// uninhabited cays, in the easterly trade wind. Sheltered, flat water, and a scene that loads and draws light wherever
+// today's race is (its land some 0.2 MB and next to nothing ashore, where a city's is up to 1.4 MB and two seconds
+// more of a slow phone's load, 2026-11-20). Not one of VENUES: never today's race, nor on the set-up page or the
+// venues' pages; only its short course is laid (the Optimist's, the first race's)
+export const FIRST_VENUE = {
+  id: 'tobago-cays', name: ['Tobago Cays', 'Тобаго-Кейс', 'Cayos de Tobago', 'Tobago Cays', 'Tobago Cays'], lat: 12.627, lon: -61.34, wind: 90, tz: -4, thermal: false,
+  // the Atlantic's swell breaks on the reef: inside it a short chop off a mile or two of lagoon, and the trade's steady
+  // breeze under its small white clouds
+  fetch: 2000, swell: 0.15, overcast: 0.08, skip: ['medium', 'long'],
+  look: {
+    haze: 1.3,
+    ground: { forest: ['#2f4f28', '#3f6a30', '#5c8a3c'], scrub: '#6f8a48', rock: ['#a89a80', '#857a68'], town: '#c0b8a6', shore: '#f4ecd6', sand: '#f8f0dc', grass: '#6f8f42' },
+    trees: [['palm', 0.5, '#3d5a2c', '#6a8a3a'], ['shrub', 0.35, '#55703a', '#7a8f4e'], ['broad', 0.15, '#2f4f28', '#5c8a3c']], treeTop: 120, woods: 0.35,
+    walls: ['#f6f3ec', '#f2d7a8', '#a8d8d0', '#f8e8b0', '#ffffff'], roofs: ['#c23a30', '#3f7f8f', '#d8d4c8'], flat: 0.3,
+    boats: { sail: 0.8, motor: 0.2, big: 0 },
+    // the lagoon's clear turquoise over white sand
+    water: { deep: '#02507e', scatter: '#12b4c8', k: 0.6, shallow: '#5edcc8', clear: 0.85 },
+  },
+};
+export const venueById = (id) => VENUES.find((v) => v.id === id) || (id === FIRST_VENUE.id ? FIRST_VENUE : VENUES[0]);
 // whether a course shape is laid at the venue at that length: its `skip` lists the '<shape>:<length>' that don't fit
 // its water, and a length none fits (never a short course, where today's race goes); lib/venues.ts has the same lists
 export const shapeOffered = (v, shape, length) => !(v.skip || []).includes(`${shape}:${length}`);
@@ -946,13 +980,14 @@ function venueOn(n) {
 }
 export const dailyVenue = (date = new Date()) => venueOn(Math.floor(Date.parse(date.toISOString().slice(0, 10)) / 864e5));
 
-// The venue of the race on this page: ?venue= in the address wins; a free race goes where the set-up chose
-// (localStorage 'regatta', venue); today's race (any other /play) to the day's venue. The home page's view
-// (/hero-view) and Node's tests are in Göcek.
+// The venue of the race on this page: ?venue= in the address wins; a newcomer's first race is sailed at its own
+// (FIRST_VENUE); a free race goes where the set-up chose (localStorage 'regatta', venue); today's race (any other
+// /play) to the day's venue. The home page's view (/hero-view) and Node's tests are in Göcek.
 export function pageVenue() {
   try {
     const q = new URLSearchParams(location.search);
     if (q.get('venue')) return venueById(q.get('venue'));
+    if (firstRaceHere()) return FIRST_VENUE;
     if (q.get('race') === 'free') return venueById(JSON.parse(localStorage.getItem('regatta') || '{}').venue);
     if (/^\/play/.test(location.pathname)) return venueById(dailyVenue());
   } catch (e) {}

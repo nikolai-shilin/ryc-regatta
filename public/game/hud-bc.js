@@ -17,7 +17,7 @@ const ruPlaces = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'место' : n % 10 
 // the HUD's own words; test/ui.test.mjs checks both languages have them all
 export const HUD_STRINGS = {
   en: {
-    title: 'Up and down', daily: 'Daily race', free: 'Custom race', live: 'Live', startIn: 'Start in', gun: 'Gun',
+    title: 'Up and down', daily: 'Daily race', free: 'Custom race', first: 'First race', live: 'Live', startIn: 'Start in', gun: 'Gun',
     bias: 'Line bias', pinEnd: 'Pin end', boatEnd: 'Boat end', square: 'Square', line: 'Line',
     legOf: (n, N) => `Leg ${n} of ${N}`, legN: (n) => `Leg ${n}`, legShort: (n, N) => `Leg ${n}/${N}`, up: 'Up', down: 'Down', reach: 'Reach',
     upwind: 'upwind', downwind: 'downwind', reaching: 'reach', stbd: 'starboard', port: 'port', preStart: 'Pre-start',
@@ -43,7 +43,7 @@ export const HUD_STRINGS = {
     mvMark: 'At the mark', mvShift: 'On the shift',
   },
   ru: {
-    title: 'Up and down', daily: 'Гонка дня', free: 'Своя гонка', live: 'Эфир', startIn: 'До старта', gun: 'Старт',
+    title: 'Up and down', daily: 'Гонка дня', free: 'Своя гонка', first: 'Первая гонка', live: 'Эфир', startIn: 'До старта', gun: 'Старт',
     bias: 'Перекос линии', pinEnd: 'У знака', boatEnd: 'У судна', square: 'Ровная', line: 'Линия',
     legOf: (n, N) => `Отрезок ${n} из ${N}`, legN: (n) => `Отрезок ${n}`, legShort: (n, N) => `Отр. ${n}/${N}`, up: 'Апвинд', down: 'Даунвинд', reach: 'Галфвинд',
     upwind: 'апвинд', downwind: 'даунвинд', reaching: 'галфвинд', stbd: 'правый галс', port: 'левый галс', preStart: 'Предстарт',
@@ -1005,7 +1005,7 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
     const daily = !!race.settings?.daily;
 
     // the bug: the race, and the clock; from the top camera or the helm, the camera's name, as a broadcast says which it's on
-    txt(B.sub, world.mode !== 'drone' && L.camName[world.mode] ? L.camName[world.mode] : `${daily ? L.daily : L.free}${venue ? ' · ' + venue : ''}`);
+    txt(B.sub, world.mode !== 'drone' && L.camName[world.mode] ? L.camName[world.mode] : `${daily ? L.daily : race.settings?.first ? L.first || L.free : L.free}${venue ? ' · ' + venue : ''}`);
     txt(B.clock, pre ? L.live : done ? fmt(P.finish) : fmt(race.clock));
     B.clock.classList.toggle('run', !pre);
 

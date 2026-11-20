@@ -54,7 +54,10 @@
     return a[n - n0 - k * len];
   }
   function today() { return on(Math.floor(Date.parse(new Date().toISOString().slice(0, 10)) / 864e5)); }
-  try { var q = new URLSearchParams(location.search); v = q.get('venue') || (q.get('race') === 'free' ? JSON.parse(localStorage.getItem('regatta') || '{}').venue : today()) || 'gocek'; } catch (e) {}
+  // a newcomer's first race at its own venue (venues.js firstRaceHere, FIRST_VENUE)
+  function first(q) { return q.get('race') === 'first' || (/^\/play/.test(location.pathname) && q.get('race') !== 'free' && !q.get('boat') && !q.get('drill') && !q.get('match') && !q.has('nofirst')
+    && !(+JSON.parse(localStorage.getItem('regatta') || '{}').played > 0)); }
+  try { var q = new URLSearchParams(location.search); v = q.get('venue') || (first(q) ? 'tobago-cays' : q.get('race') === 'free' ? JSON.parse(localStorage.getItem('regatta') || '{}').venue : today()) || 'gocek'; } catch (e) {}
   if (!/^[a-z-]+$/.test(v)) v = 'gocek';
   var f = v === 'gocek' ? ['/game/skopea.bin', '/game/skopea.json'] : ['/game/venues/' + v + '.bin', '/game/venues/' + v + '.json'];
   var map = {}; try { map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports; } catch (e) {}

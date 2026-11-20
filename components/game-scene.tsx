@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import type { VenueId } from '@/lib/venues';
+import type { PlaceId } from '@/lib/venues';
 import type { Wind } from '@/lib/race';
 import { useSceneStart } from '@/lib/scene-start';
 import { LoadBar, ScenePoster } from './skeleton';
@@ -26,8 +26,8 @@ export const toScene = (msg: object) => dispatchEvent(new CustomEvent(SCENE_EVEN
 
 // `boat`: the class of yacht the scene shows (public/game/classes.js), the JPK 1050 without one; another is a
 // new page too, as another venue is
-export function GameScene({ venue, boat = '', wind, title, finish, setup, loading }: { venue: VenueId; boat?: string; wind: Wind; title: string; finish?: object; setup?: SceneSetup; loading?: string }) {
-  const [frames, setFrames] = useState<{ id: number; venue: VenueId; boat: string; wind: Wind; live: boolean }[]>(() => [{ id: 0, venue, boat, wind, live: false }]);
+export function GameScene({ venue, boat = '', wind, title, finish, setup, loading }: { venue: PlaceId; boat?: string; wind: Wind; title: string; finish?: object; setup?: SceneSetup; loading?: string }) {
+  const [frames, setFrames] = useState<{ id: number; venue: PlaceId; boat: string; wind: Wind; live: boolean }[]>(() => [{ id: 0, venue, boat, wind, live: false }]);
   const backdrop = useSceneStart(!finish && !setup); // (the finish and the set-up are what their pages show)
   const refs = useRef(new Map<number, HTMLIFrameElement>());
   const windNow = useRef(wind); windNow.current = wind;

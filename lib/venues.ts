@@ -150,7 +150,19 @@ export const VENUES: { id: VenueId; nation: string; name: Pair; place: Pair; win
     about: ['The Zaslavl reservoir north-west of Minsk, Belarus’s sailing water, in the westerly over the pine woods, off the national sailing centre.', 'Заславское водохранилище к северо-западу от Минска, главная парусная акватория Беларуси, под западным ветром с сосновых лесов, у республиканского центра парусного спорта.', 'El embalse de Zaslavl, al noroeste de Minsk, las aguas de vela de Bielorrusia, con el poniente sobre los pinares, frente al centro nacional de vela.', 'Der Saslauer Stausee nordwestlich von Minsk, das Segelrevier von Belarus, im Westwind über den Kiefernwäldern, vor dem nationalen Segelzentrum.', 'Minsk’in kuzeybatısındaki Zaslavl baraj gölü, Belarus’un yelken suyu, çam ormanlarının üzerinden esen batı rüzgârında, ulusal yelken merkezinin açıklarında.'] },
 ];
 
+// The first race's own venue (public/game/venues.js FIRST_VENUE): a newcomer's first race is sailed there, in an
+// Optimist, wherever today's race is. Not one of VENUES: never today's race, nor on the set-up page, the venues' pages
+// or the passport; known here for the result of a first race (its name, its finish scene's land)
+export const FIRST_VENUE: Omit<(typeof VENUES)[number], 'id'> & { id: 'tobago-cays' } = {
+  id: 'tobago-cays', name: ['Tobago Cays', 'Тобаго-Кейс', 'Cayos de Tobago', 'Tobago Cays', 'Tobago Cays'], nation: 'VCT',
+  place: ['St Vincent and the Grenadines', 'Сент-Винсент и Гренадины', 'San Vicente y las Granadinas', 'St. Vincent und die Grenadinen', 'Saint Vincent ve Grenadinler'],
+  wind: ['E', 'В', 'E', 'O', 'D'], skip: ['medium', 'long'],
+  about: ['A lagoon inside Horseshoe Reef among four uninhabited palm cays, in the steady easterly trade wind.', 'Лагуна за рифом Хорсшу среди четырёх необитаемых пальмовых островков, под ровным восточным пассатом.', 'Una laguna tras el arrecife Horseshoe entre cuatro cayos de palmeras deshabitados, con el alisio constante del este.', 'Eine Lagune hinter dem Horseshoe Reef zwischen vier unbewohnten Palmeninseln, im stetigen Ostpassat.', 'Horseshoe Resifi’nin ardında, ıssız dört palmiyeli adacığın arasında bir lagün, düzenli doğu alize rüzgârında.'],
+};
 export const venueOf = (id: string | undefined) => VENUES.find((v) => v.id === id) || VENUES[0];
+// where a race was sailed, the first race's venue among them (a result, its finish scene); venueOf for the set-up's
+export type PlaceId = VenueId | typeof FIRST_VENUE.id;
+export const sailedAt = (id: string | undefined) => (id === FIRST_VENUE.id ? FIRST_VENUE : venueOf(id));
 // whether the set-up offers a course shape at the venue at that length, as public/game/venues.js shapeOffered
 export const shapeOffered = (id: string | undefined, shape: string, length: string) => !(venueOf(id).skip || []).includes(`${shape}:${length}`);
 // and whether it offers that length at all, as public/game/venues.js lengthOffered

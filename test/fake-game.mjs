@@ -232,7 +232,7 @@ export async function bootGame({ search = '?debug', path = '/play/', cookies = {
   const loader = { races: [], failed: [], handed: 0 };
   window.rycVisit = { id: '00000000-0000-4000-8000-000000000001' };
   if (withLoader) window.rycLoader = {
-    race: (venue, cells, next) => loader.races.push({ venue, cells, next }),
+    race: (venue, cells, next, place) => loader.races.push({ venue, cells, next, place }), // (place: the venue, when the title is something else)
     done: (start) => { loader.handed++; start(); },
     fail: (why, say) => loader.failed.push({ why, say }),
   };

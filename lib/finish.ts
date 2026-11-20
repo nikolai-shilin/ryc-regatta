@@ -1,5 +1,5 @@
 import { dailyRace, dailyVenue, type Shape, type XZ } from './race.ts'; // with their extensions, so npm test's Node finds them too
-import { venueOf, type VenueId } from './venues.ts';
+import { sailedAt, type PlaceId, type VenueId } from './venues.ts';
 
 // The finish of a race as it was the moment you crossed the line, for the scene behind the result page
 // (public/boat-view?finish=1): the race's settings, its course and where it lay at the venue, and every boat where she
@@ -38,8 +38,8 @@ export const winnerOf = <B extends Ended>(r: { boats: B[] }): B | null => r.boat
 const dayOf = (d: string) => new Date(d + 'T12:00:00Z');
 
 // where the race was sailed: as the game says, else the day's venue for a daily race, else the one given
-export function raceVenue(r: FinishResult, fallback: VenueId = 'gocek'): VenueId {
-  if (r.venue) return venueOf(r.venue).id;
+export function raceVenue(r: FinishResult, fallback: VenueId = 'gocek'): PlaceId {
+  if (r.venue) return sailedAt(r.venue).id;
   if (r.daily) return dailyVenue(dayOf(r.daily));
   return fallback;
 }

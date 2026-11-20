@@ -15,7 +15,7 @@ import { GameScene } from './game-scene';
 import { Soundtrack } from './soundtrack';
 import { courseDistance, fmtDistance, legDistances, shapeOf, SHAPE_NAME, type Shape } from '@/lib/race';
 import { finishScene, neighbours, raceVenue, standing, winnerOf, type Pose } from '@/lib/finish';
-import { venueOf } from '@/lib/venues';
+import { sailedAt } from '@/lib/venues';
 import { readOpts } from '@/lib/opts';
 import { costliest, goodLeg, startOf } from '@/lib/race-log';
 import { streakOf, todayUtc } from '@/lib/log';
@@ -168,7 +168,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
     ? `${t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış')} · ${windW} ${kn} ${t('kn', 'уз', 'kn', 'kn', 'kn')} · ${shapeW ? `${shapeW} · ` : ''}${res.laps} ${t(res.laps > 1 ? 'laps' : 'lap', res.laps > 1 ? 'круга' : 'круг', res.laps > 1 ? 'vueltas' : 'vuelta', res.laps > 1 ? 'Runden' : 'Runde', 'tur')}`
     : res.daily
     ? `${shared ? t('Race of the day', 'Гонка дня', 'Regata del día', 'Regatta des Tages', 'Günün yarışı') : t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı')} · ${date} · ${windW} ${kn} ${t('kn', 'уз', 'kn', 'kn', 'kn')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length), `${res.boats.length} ${res.boats.length === 1 ? 'barco' : 'barcos'}`, `${res.boats.length} ${res.boats.length === 1 ? 'Boot' : 'Boote'}`, `${res.boats.length} tekne`)}${shapeW ? ` · ${shapeW}` : ''}`
-    : `${t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış')} · ${windW} ${kn} ${t('kn', 'уз', 'kn', 'kn', 'kn')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length), `${res.boats.length} ${res.boats.length === 1 ? 'barco' : 'barcos'}`, `${res.boats.length} ${res.boats.length === 1 ? 'Boot' : 'Boote'}`, `${res.boats.length} tekne`)} · ${shapeW ? `${shapeW} · ` : ''}${res.laps} ${t(res.laps > 1 ? 'laps' : 'lap', res.laps > 1 ? 'круга' : 'круг', res.laps > 1 ? 'vueltas' : 'vuelta', res.laps > 1 ? 'Runden' : 'Runde', 'tur')}`;
+    : `${res.first ? t('Your first race', 'Твоя первая гонка', 'Tu primera regata', 'Deine erste Regatta', 'İlk yarışın') : t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış')} · ${windW} ${kn} ${t('kn', 'уз', 'kn', 'kn', 'kn')} · ${t(`${res.boats.length} boats`, ruBoats(res.boats.length), `${res.boats.length} ${res.boats.length === 1 ? 'barco' : 'barcos'}`, `${res.boats.length} ${res.boats.length === 1 ? 'Boot' : 'Boote'}`, `${res.boats.length} tekne`)} · ${shapeW ? `${shapeW} · ` : ''}${res.laps} ${t(res.laps > 1 ? 'laps' : 'lap', res.laps > 1 ? 'круга' : 'круг', res.laps > 1 ? 'vueltas' : 'vuelta', res.laps > 1 ? 'Runden' : 'Runde', 'tur')}`;
   const rival = res.boats.find((b) => !b.me)?.name || t('The other boat', 'Соперник', 'El otro barco', 'Das andere Boot', 'Diğer tekne'); // (a 1-on-1 race's: the one who dropped out)
   const title = ended === 'dsq' ? t('Disqualified', 'Дисквалификация', 'Descalificado', 'Disqualifiziert', 'Diskalifiye') : ended === 'dnf' ? t('Did not finish', 'Не финишировал', 'No terminó', 'Nicht im Ziel', 'Bitirmedi') : ended === 'won' ? t(`You won: ${rival} dropped out`, `Ты победил: ${rival} — сход`, `Ganaste: ${rival} abandonó`, `Du hast gewonnen: ${rival} ist ausgeschieden`, `Kazandın: ${rival} yarıştan çekildi`) : shared ? t(`Finished ${ordEn(place)}`, `${place}-е место на финише`, `Llegaste ${ordEs(place)}`, `${ordDe(place)} im Ziel`, `${ordTr(place)} bitirdi`) : t(`You finished ${ordEn(place)}`, `${place}-е место на финише`, `Llegaste ${ordEs(place)}`, `Du bist ${ordDe(place)} im Ziel`, `${ordTr(place)} bitirdin`);
   const gap = me.secs != null && winner?.secs != null && winner !== me ? `+${(me.secs - winner.secs).toFixed(1)} ${t('s', 'с', 's', 's', 'sn')}` : '—';
@@ -221,7 +221,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
   const legName = (k: string) => ({ start: t('Start', 'Старт', 'Salida', 'Start', 'Start'), mark: shape === 'trap' ? t('Mark 1', 'Знак 1', 'Baliza 1', 'Marke 1', 'Şamandıra 1') : t('Windward mark', 'Верхний знак', 'Baliza de barlovento', 'Luvtonne', 'Rüzgârüstü şamandırası'), wing: t('Wing mark', 'Боковой знак', 'Baliza de través', 'Raumtonne', 'Kanat şamandırası'),
     mark2: t('Mark 2', 'Знак 2', 'Baliza 2', 'Marke 2', 'Şamandıra 2'), offset: t('Offset mark', 'Отбойник', 'Baliza de desmarque', 'Ablauftonne', 'Ofset şamandırası'), gate: t('Leeward gate', 'Нижние ворота', 'Puerta de sotavento', 'Leetor', 'Rüzgâraltı kapısı'), finish: t('Finish', 'Финиш', 'Llegada', 'Ziel', 'Bitiş') }[k] || k);
 
-  const where = venueOf(raceVenue(res, shared ? 'gocek' : readOpts().venue));
+  const where = sailedAt(raceVenue(res, shared ? 'gocek' : readOpts().venue)); // (a first race's, its own venue: lib/venues.ts FIRST_VENUE)
   const scene = finishScene(res);
   const nb = neighbours(res);
   const gapS = (g: number) => `${g.toFixed(1).replace('.', lang === 'en' ? '.' : ',')} ${t('s', 'с', 's', 's', 'sn')}`;

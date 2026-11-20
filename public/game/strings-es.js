@@ -134,7 +134,7 @@ export const MAIN = {
 };
 
 export const HUD = {
-  title: 'Up and down', daily: 'Regata del día', free: 'Regata libre', live: 'En vivo', startIn: 'Salida en', gun: 'Señal',
+  title: 'Up and down', daily: 'Regata del día', free: 'Regata libre', first: 'Primera regata', live: 'En vivo', startIn: 'Salida en', gun: 'Señal',
   bias: 'Sesgo de línea', pinEnd: 'Lado baliza', boatEnd: 'Lado barco', square: 'Cuadrada', line: 'Línea',
   legOf: (n, N) => `Tramo ${n} de ${N}`, legN: (n) => `Tramo ${n}`, legShort: (n, N) => `Tr. ${n}/${N}`, up: 'Ceñida', down: 'Popa', reach: 'Través',
   upwind: 'de ceñida', downwind: 'de popa', reaching: 'de través', stbd: 'estribor', port: 'babor', preStart: 'Antes de salir',

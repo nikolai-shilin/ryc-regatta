@@ -1,5 +1,5 @@
 import { dailyVenue } from './race.ts'; // with their extensions, so npm test's Node finds them too
-import { VENUES, venueOf } from './venues.ts';
+import { VENUES, sailedAt } from './venues.ts';
 
 // The player's log, kept for good: the days they finished today's race (with their best time that day) and the venues
 // they have raced at (with when they first did). The game itself keeps a day's best only a week (regatta-pb) and the
@@ -53,7 +53,7 @@ export function addResult(l: Log, r: Kept) {
   const me = r?.boats?.find((b) => b.me);
   if (!me || !me.done || me.dsq || me.secs == null) return;
   if (r.daily) addDay(l, r.daily, me.secs);
-  const venue = r.venue ? venueOf(r.venue).id : r.daily ? dailyVenue(new Date(r.daily + 'T12:00:00Z')) : null;
+  const venue = r.venue ? sailedAt(r.venue).id : r.daily ? dailyVenue(new Date(r.daily + 'T12:00:00Z')) : null;
   if (venue && r.at) stamp(l, venue, r.at);
 }
 
