@@ -333,6 +333,22 @@ test('a race kept with no day finished is still a returning player’s', async (
   assert.match(cells(v)[0], /No streak yet Finish today’s race to start one/);
 });
 
+test('after the first race, and only it: the way in goes on, the first race done and today\'s race next', async () => {
+  localStorage.setItem('regatta-result-f1', JSON.stringify({ id: 'f1', at: Date.now(), daily: null, first: true,
+    boats: [{ me: false, done: true, secs: 150 }, { me: true, done: true, secs: 159.7 }, { me: false, done: true, secs: 170 }] }));
+  const v = await strip();
+  assert.ok(v.$('.ho-after'));
+  assert.deepEqual(v.$$('.ho-after-steps li').map((x) => x.className), ['done', 'now', '']);
+  assert.match(cells(v)[0], /Your first race.*2nd of 3.*2:39\.7.*Sail it again/);
+  assert.ok(v.$('a[href="/play?race=first"]'));
+  assert.match(cells(v)[1], /Today.s race.*Not sailed yet.*Closes in/);
+  // once today's race is in the log, the strip is the streak's again
+  await v.unmount();
+  logged({ [TODAY]: 70 });
+  const w = await strip();
+  assert.ok(!w.$('.ho-after'), 'the streak\'s strip again');
+});
+
 test('the strip in Russian', async () => {
   logged({ [TODAY]: 70.5, [day(1)]: 70 });
   const v = await strip({ lang: 'ru' });

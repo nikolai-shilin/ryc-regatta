@@ -24,6 +24,10 @@ export function BackStrip({ lang, day, top, cap = 5 }: { lang: Lang; day: string
   const t = tx(lang), log = useLog();
   useEffect(() => markBack(log), [log]);
   if (!log || !Object.keys(log.d).length && !keptResults().length) return <div className="ho-back" aria-hidden="true" />;
+  // one race behind them and it was the first (the game's easy race: its record says first), today's not yet: the way in
+  // goes on, the first race done, today's race next (the designs' "after the first race")
+  const firstOnly = !Object.keys(log.d).length ? (keptResults() as (ReturnType<typeof keptResults>[number] & { id?: string; first?: boolean })[]).find((r) => r.first) : null;
+  if (firstOnly) return <AfterFirst lang={lang} res={firstOnly} />;
   const st = streakOf(log.d), mine = log.d[day] ?? null;
   // where today's time stands: its place when the board's rows reach it, else its gap to the leader
   const place = mine != null && top.length && (top.length < cap || mine <= top[top.length - 1].s + 0.05) ? top.filter((r) => r.s < mine - 0.05).length + 1 : 0;
@@ -50,6 +54,33 @@ export function BackStrip({ lang, day, top, cap = 5 }: { lang: Lang; day: string
         </>}
       </div>
       <div className="ho-back-i ho-back-push"><PushButton lang={lang} where="back" /></div>
+    </div>
+  );
+}
+
+// After the first race: the three steps with the first done and today's race now, the first race's place and time (and
+// the way to sail it again), today's race not sailed yet and the time it has left, and the reminder
+function AfterFirst({ lang, res }: { lang: Lang; res: { boats?: { me?: boolean; done?: boolean; dsq?: boolean; secs?: number | null }[] } }) {
+  const t = tx(lang), boats = res.boats || [], me = boats.find((b) => b.me), place = me ? boats.indexOf(me) + 1 : 0;
+  const how = !me ? '–' : me.dsq ? 'DSQ' : me.done && me.secs != null ? t(`${ord(place, lang)} of ${boats.length}`, `${place}-е из ${boats.length}`, `${ord(place, lang)} de ${boats.length}`, `${ord(place, lang)} von ${boats.length}`, `${boats.length} içinde ${ord(place, lang)}`) : 'DNF';
+  return (
+    <div className="ho-back ho-after" aria-label={t('Your way in', 'Как начать', 'Por dónde empezar', 'Dein Einstieg', 'Başlangıç yolun')} role="group">
+      <ol className="ho-after-steps">
+        <li className="done"><span className="ho-n" aria-hidden="true">✓</span>{t('First race', 'Первая гонка', 'Primera regata', 'Erste Regatta', 'İlk yarış')}</li>
+        <li className="now"><span className="ho-n">2</span>{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı')}</li>
+        <li><Link href="/sign-in"><span className="ho-n">3</span>{t('Keep it', 'Сохранить', 'Guárdalo', 'Behalten', 'Sakla')}</Link></li>
+      </ol>
+      <div className="ho-back-i">
+        <span className="lbl">{t('Your first race', 'Твоя первая гонка', 'Tu primera regata', 'Deine erste Regatta', 'İlk yarışın')}</span>
+        <b>{how}</b>
+        <small>{me?.secs != null && !me.dsq ? `${clock(me.secs)} · ` : ''}<a className="ho-push-x" href="/play?race=first">{t('Sail it again', 'Пройти ещё раз', 'Navégala otra vez', 'Nochmal segeln', 'Tekrar yarış')}</a></small>
+      </div>
+      <div className="ho-back-i">
+        <span className="lbl">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı')}</span>
+        <b>{t('Not sailed yet', 'Ещё не пройдена', 'Sin navegar aún', 'Noch nicht gesegelt', 'Henüz yarışılmadı')}</b>
+        <small>{t('Closes in', 'Закроется через', 'Cierra en', 'Schließt in', 'Kapanmasına kalan')} <Countdown /></small>
+      </div>
+      <div className="ho-back-i ho-back-push"><PushButton lang={lang} where="after-first" /></div>
     </div>
   );
 }

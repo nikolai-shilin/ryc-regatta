@@ -77,3 +77,14 @@ html:not([data-back]) .bc .ho-old { display: none; }
 /* the bar's first race: its length tagged as in the header */
 .bc .ho-dock-t .hm-tag { align-self: center; }
 @media (max-width: 600px) { .bc .ho-dock-t .hm-tag { display: none; } }
+
+/* after the first race (components/home-back.tsx AfterFirst): the way in's three steps over the strip, the first done */
+.bc .ho-after-steps { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; }
+.bc .ho-after-steps li, .bc .ho-after-steps a { display: flex; align-items: center; gap: var(--s-2); min-width: 0; color: var(--ink-3); text-decoration: none;
+  font: 700 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; }
+.bc .ho-after-steps li { padding: var(--s-3) var(--s-3); background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+.bc .ho-after-steps .ho-n { flex: none; width: 24px; height: 24px; font-size: var(--fs-small); }
+.bc .ho-after-steps li.done { color: var(--ink-2); }
+.bc .ho-after-steps li.done .ho-n { background: var(--up); color: var(--ink-on); }
+.bc .ho-after-steps li.now { color: var(--ink); box-shadow: inset 0 -3px 0 var(--you); }
+.bc .ho-after-steps li.now .ho-n { background: var(--you); color: var(--ink-on); }
