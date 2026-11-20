@@ -135,7 +135,7 @@ if (world) {
   // the finish as it was: the race laid again as it lay (its course, where it was at the venue), every boat posed where
   // she was the moment you crossed the line, and the drone downwind of you, a little off to one side, high enough to
   // see the line and the boats coming down to it over you
-  let fleet = null, look0 = 0, reach = 40, byKey = null, held = null, replaying = false;
+  let fleet = null, look0 = 0, reach = 40, byKey = null, held = null, replaying = false, away = false; // away: scrolled out of sight on the page
   // how a boat sailed, from the game when it kept it, else from her heading in the wind: close-hauled, reaching, or
   // under the kite
   const poseOf = (s) => {
@@ -582,6 +582,7 @@ if (world) {
     if (e.data.type === 'look') pending = curLook = lookFrom(e.data.boat); // dressed on the next frame, so dragging a colour stays smooth
     if (e.data.type === 'pose') pose = e.data.down ? DOWN : UP;
     if (e.data.type === 'inset') { inset = e.data; size(); }
+    if (e.data.type === 'away') away = !!e.data.on; // scrolled out of sight on the page (components/game-scene.tsx): nothing drawn
     if (e.data.type === 'finish' && FINISH && !fleet && e.data.race && Array.isArray(e.data.boats)) finish(e.data);
     if (e.data.type === 'replay' && FINISH) replay(e.data);
     if (e.data.type === 'setup' && SETUP && e.data.race) setupMsg(e.data);
@@ -621,12 +622,17 @@ if (world) {
 
   // the loop starts once the race is laid and its land is in (for the finish, once the page has sent it)
   let last = performance.now(), t = 0, started = false;
+  // the finish, held, moves little (the flags, the sea, the drone's slow sway): a frame every 1/20 s is enough, which
+  // leaves the page it's behind more of its thread; played back or turned by hand, every frame (4 ms short, as SAVER_MS)
+  const HELD_MS = 1000 / 20 - 4;
+  let heldAt = 0;
   function go() { if (!started) { started = true; last = performance.now(); requestAnimationFrame(loop); } }
   if (!FINISH && !SETUP) world.ready().then(go);
   function loop(now) {
     requestAnimationFrame(loop);
     if (skipFrame(now)) return;
-    if (document.hidden) { last = now; return; }
+    if (document.hidden || away) { last = now; return; }
+    if (fleet && !replaying && idle <= 0) { if (now - heldAt < HELD_MS) return; heldAt = now; }
     const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
     if (pending) { world.setPlayerLook(pending); pending = null; }
     if (fleet) {

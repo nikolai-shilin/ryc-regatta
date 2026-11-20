@@ -14,6 +14,10 @@ import { LoadBar, ScenePoster } from './skeleton';
 //
 // With `setup` it is the free race's set-up: the race as it will be laid (every boat, the marks, the committee boat),
 // and `setup.view` says what the drone shows: the fleet, the wind or the current over the course, or the course.
+//
+// The scene is a page of the site's own, so it draws on this page's thread: scrolled out of sight (the result page's
+// debrief, below its first screen), it's told so and draws nothing until it's back, and the page scrolls at the
+// screen's rate.
 export type SceneSetup = {
   race: { preset: Wind; fleet: number; length: string; laps: number; course: string; current: number; start: number; daytime?: string };
   view: 'boats' | 'wind' | 'current' | 'course';
@@ -30,6 +34,7 @@ export function GameScene({ venue, boat = '', wind, title, finish, setup, loadin
   const [frames, setFrames] = useState<{ id: number; venue: PlaceId; boat: string; wind: Wind; live: boolean }[]>(() => [{ id: 0, venue, boat, wind, live: false }]);
   const backdrop = useSceneStart(!finish && !setup); // (the finish and the set-up are what their pages show)
   const refs = useRef(new Map<number, HTMLIFrameElement>());
+  const away = useRef(false), seen = useRef<IntersectionObserver | null>(null); // out of sight, and what watches for it
   const windNow = useRef(wind); windNow.current = wind;
   const fin = useRef(finish); fin.current = finish;
   const su = useRef(setup); su.current = setup;
@@ -61,7 +66,7 @@ export function GameScene({ venue, boat = '', wind, title, finish, setup, loadin
       if (e.origin !== location.origin) return;
       const id = [...refs.current].find(([, f]) => f.contentWindow === e.source)?.[0];
       if (id == null) return;
-      if (e.data?.type === 'ready') { inset(id); post(first(), id); }
+      if (e.data?.type === 'ready') { inset(id); post(first(), id); if (away.current) post({ type: 'away', on: true }, id); }
       if (e.data?.type === 'live') {
         setFrames((fs) => fs.map((f) => (f.id === id ? { ...f, live: true } : f)));
         setTimeout(() => setFrames((fs) => fs.filter((f) => f.id >= id)), 900); // the one under it, once faded over
@@ -75,7 +80,13 @@ export function GameScene({ venue, boat = '', wind, title, finish, setup, loadin
     const ro = new ResizeObserver(fit), { card, info } = parts();
     if (card) ro.observe(card);
     if (info) ro.observe(info);
-    return () => { removeEventListener(SCENE_EVENT, relay); removeEventListener('message', on); removeEventListener('resize', fit); ro.disconnect(); };
+    // the scene scrolled out of sight and back: every frame is at the same place, so one answer is all of theirs
+    const io = seen.current = new IntersectionObserver((es) => {
+      const off = !es[es.length - 1].isIntersecting;
+      if (off !== away.current) { away.current = off; post({ type: 'away', on: off }); }
+    });
+    refs.current.forEach((f) => io.observe(f));
+    return () => { removeEventListener(SCENE_EVENT, relay); removeEventListener('message', on); removeEventListener('resize', fit); ro.disconnect(); io.disconnect(); seen.current = null; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // the bar runs while the venue on top is still coming up
   const busy = !frames[frames.length - 1].live;
@@ -85,7 +96,7 @@ export function GameScene({ venue, boat = '', wind, title, finish, setup, loadin
   return <>{loading ? <LoadBar label={loading} on={busy && !backdrop.off} /> : null}
     <ScenePoster label={backdrop.off ? undefined : loading} on={none} />
     {frames.map((f) => (
-    <iframe key={f.id} ref={(el) => { if (el) refs.current.set(f.id, el); else refs.current.delete(f.id); }} className={`bt-scene bt-fade ${f.live ? 'on' : ''}`}
+    <iframe key={f.id} ref={(el) => { const was = refs.current.get(f.id); if (was && was !== el) seen.current?.unobserve(was); if (el) { refs.current.set(f.id, el); seen.current?.observe(el); } else refs.current.delete(f.id); }} className={`bt-scene bt-fade ${f.live ? 'on' : ''}`}
       src={backdrop.go ? `/boat-view?venue=${f.venue}&wind=${f.wind}${finish ? '&finish=1' : setup ? '&setup=1' : ''}${f.boat && f.boat !== 'jpk1050' ? `&boat=${f.boat}` : ''}` : undefined} title={title} onLoad={() => post({ type: 'hello' }, f.id)} />
   ))}</>;
 }

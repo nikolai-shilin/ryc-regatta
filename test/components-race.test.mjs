@@ -3,7 +3,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import './load.mjs';
-import { click, clock, doing, dom, done, englishIn, fire, fromFrame, h, hrefs, json, mount, plain, reset, serve, settle, ssr, tell, tick, type } from './fake-dom.mjs';
+import { click, clock, doing, dom, done, englishIn, fire, fromFrame, h, hrefs, intersect, json, mount, plain, reset, serve, settle, ssr, tell, tick, type } from './fake-dom.mjs';
 
 const { RatingView } = await import('../components/rating-view.tsx');
 const { MyMonth, monthOf, myPoints } = await import('../components/my-month.tsx');
@@ -746,6 +746,21 @@ const RES = {
 const replay = (p = {}) => mount(h('div', null, h(GameScene, { venue: 'gocek', wind: 'light', title: 'S', finish: {} }), h(Replay, { res: RES, lang: 'en', ...p })));
 const toFrame = (v) => v.$('iframe').contentWindow.sent.filter((m) => m.type === 'replay');
 const clockText = (v) => v.$('.rs-rp-t b').textContent;
+
+// the scene draws on the page's own thread: scrolled out of sight (the result's debrief) it's told to draw nothing
+test('the scene scrolled out of sight is told so, once, and again when it’s back', async () => {
+  const v = await mount(h(GameScene, { venue: 'gocek', wind: 'light', title: 'S', finish: {} }));
+  const f = v.$('iframe'), away = () => f.contentWindow.sent.filter((m) => m.type === 'away');
+  assert.deepEqual(away(), [], 'in sight: nothing said');
+  await intersect(f, false);
+  assert.deepEqual(away(), [{ type: 'away', on: true }]);
+  await intersect(f, false);
+  assert.equal(away().length, 1, 'said once');
+  await fromFrame(f, { type: 'ready' });
+  assert.deepEqual(away().at(-1), { type: 'away', on: true }, 'a scene coming up out of sight is told at once');
+  await intersect(f, true);
+  assert.deepEqual(away().at(-1), { type: 'away', on: false });
+});
 
 test('the replay starts from a button, a little before the gun', async () => {
   const v = await replay();
