@@ -810,20 +810,48 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
   // grows by a pixel (the font's figures aren't all one width) moves nothing; a cell opens a step to fit a longer number
   // or word in about a third of a second, and closes on a shorter one only once it has stayed shorter for three seconds,
   // then to the widest it was in that time, over 0.6 s: so a number flicking between two lengths (9,9 ↔ 10,0) holds the
-  // wider, and nothing shivers. The widths are read once a frame, after the frame's writes; a cell coming into view,
+  // wider, and nothing shivers. The widths are read once a frame, before the frame's writes (measure, from main.js at
+  // the top of its frame, while the page's layout is still the one just painted: read after the writes, it was a whole
+  // layout of the page forced every frame, a seventh of a frame on Low graphics, 2026-11-20), so they are the last
+  // frame's, a sixtieth of a second behind; without a measure, after the writes as before. A cell coming into view,
   // and a new screen size, take theirs at once; with reduced motion they don't glide.
   const holdCells = [...B.you.children].filter((d) => !d.matches('.c-pos, .c-nm'));
   for (const d of holdCells) d.classList.add('hw');
   const calmQ = matchMedia('(prefers-reduced-motion: reduce)');
   const setW = (d, w, ms) => { d.style.transition = ms && !calmQ.matches ? `width ${ms}ms cubic-bezier(0.2, 0.8, 0.2, 1)` : 'none'; d.style.width = `${w}px`; };
   addEventListener('resize', () => { for (const d of holdCells) d._hw = 0; });
-  function holdWidths() {
-    const now = performance.now(), on = holdCells.filter((d) => d.getClientRects().length);
-    const need = on.map((d) => { // read: the widest thing in it, and its padding and rule
+  let measured = null;
+  function measureWidths() {
+    const cells = holdCells.filter((d) => d.getClientRects().length);
+    const need = cells.map((d) => { // read: the widest thing in it, and its padding and rule
       if (!d._hw) { const cs = getComputedStyle(d); d._pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth); }
       let m = 0; for (const k of d.children) if (!k.classList.contains('b-g') && k.getClientRects().length) m = Math.max(m, k.offsetWidth);
       return Math.ceil((m + d._pad) / 8) * 8;
     });
+    measured = { on: cells, need };
+  }
+  function measure() {
+    if (!on) return;
+    measureWidths();
+    // …and the boxes the tags on the water go by (placeTag, placeBoats): the HUD's blocks, the next mark's tag, the
+    // boats' tags, each with where it was put when it was painted so, to be moved on from there this frame
+    readBlocks();
+    const nxOn = tag.classList.contains('on');
+    pm = { hz: parseFloat(getComputedStyle(tag).zoom) || 1, lw: tagIn.offsetWidth, nx: nxOn ? tagIn.getBoundingClientRect() : null,
+      edge: [ump, ...calls.children].filter((e) => e && !e.hidden && e.offsetParent).map((e) => e.getBoundingClientRect()).filter((r) => r.height) };
+    for (const g of btags) if (g.el.classList.contains('on') && g.at0) { g.r = g.box.getBoundingClientRect(); g.w = g.box.offsetWidth; g.rAt = g.at0; g.rDx = g.dx0; g.rLift = g.lift0; }
+  }
+  let pm = null; // (measure: the boxes as painted; null, read now)
+  // a boat's tag's box this frame, from the box as last measured: moved by as much as its point, its slide in from the
+  // edge (dx) and its lift have moved since (screen pixels)
+  const boxAt = (g, at, hz, dx, lift) => {
+    const r = g.r, ox = (at[0] - g.rAt[0] + dx - g.rDx) * hz, oy = (at[1] - g.rAt[1] - lift + g.rLift) * hz;
+    return { left: r.left + ox, right: r.right + ox, top: r.top + oy, bottom: r.bottom + oy };
+  };
+  function holdWidths() {
+    if (!measured) measureWidths();
+    const now = performance.now(), { on, need } = measured || { on: [], need: [] };
+    measured = null;
     on.forEach((d, i) => { // write
       const n = need[i];
       if (!d._hw) { d._hw = n; d._lo = 0; setW(d, n, 0); return; }
@@ -1188,6 +1216,7 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
     placeTag(race, c, leg, P);
     over.classList.toggle('on', !hud.hidden);
     if (!hud.hidden) { placeBoats(race, P, st, pre); placeAdv(race, c, P, st, pre, done); }
+    pm = null;
   }
 
   // the screen point of a place on the water (in the tags' own scaled pixels), or null behind the camera or off it
@@ -1209,12 +1238,13 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
       .filter((r) => r.width && r.height).map((r) => ({ l: r.left - 4, r: r.right + 4, t: r.top - 4, b: r.bottom + 4 }));
   }
   function placeBoats(race, P, st, pre) {
-    readBlocks();
+    const M = pm; // (measured at the frame's top, or read now)
+    if (!M) readBlocks();
     const i = st.indexOf(P);
     const others = pre ? st.filter((b) => b !== P).slice(0, 2) : [st[0], st[i - 1] || st[i + 1]].filter((b) => b && b !== P);
     const list = [...(world.mode === 'helm' ? [] : [P]), ...new Set(others)].slice(0, 3);
     // the next mark's tag, where it stands this frame: a boat's tag that would sit on it is lifted clear above it
-    const nx = tag.classList.contains('on') ? tagIn.getBoundingClientRect() : null, hz = parseFloat(over.style.getPropertyValue('--hz')) || 1;
+    const nx = M ? M.nx : tag.classList.contains('on') ? tagIn.getBoundingClientRect() : null, hz = parseFloat(over.style.getPropertyValue('--hz')) || 1;
     btags.forEach((g, n) => {
       const b = list[n], at = b && !b.done && onScreen(b.x, 9, b.z, 40); // halfway up the mast
       g.el.classList.toggle('on', !!at);
@@ -1227,12 +1257,13 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
       txt(g.v, pre && !me ? L.mToLine(Math.round(Math.max(0, -race.lineInfo(b).d))) : `${nf(b.v / KN)} ${t('kn')}`); // a rival before the start: how far from the line
       showPen(g.pen, b);
       // its box slid back onto the screen when the boat is near an edge (its width read now and then, not every frame)
-      if (!g.w || ++g.f % 30 === 0) g.w = g.box.offsetWidth;
+      const known = M && g.r; // its box measured as painted: moved on from there (boxAt), not read again now
+      if (!known && (!g.w || ++g.f % 30 === 0)) g.w = g.box.offsetWidth;
       const half = g.w / 2, edge = 8, dx = Math.min(0, innerWidth / hz - edge - (at[0] + half)) + Math.max(0, edge - (at[0] - half));
       // the lift: measured from where the box would be without last frame's, so it settles rather than see-saws
       let lift = 0;
       if (nx && nx.width) {
-        const r = g.box.getBoundingClientRect(), was = (g.lift || 0) * hz, top = r.top + was, bot = r.bottom + was;
+        const r = known ? boxAt(g, at, hz, dx, 0) : g.box.getBoundingClientRect(), was = known ? 0 : (g.lift || 0) * hz, top = r.top + was, bot = r.bottom + was;
         if (r.left < nx.right + 4 && r.right > nx.left - 4 && top < nx.bottom + 4 && bot > nx.top - 4) lift = Math.min(80, Math.round((bot - nx.top + 6) / hz));
       }
       g.lift = lift;
@@ -1240,7 +1271,8 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
       if (g.box._tr !== tr) { g.box._tr = tr; g.box.style.translate = tr; const stem = g.el.firstElementChild; if (stem) stem.style.height = lift ? `${22 + lift}px` : ''; }
       // under one of the HUD's blocks it would only peek out from beneath it: then it isn't shown (its box as the
       // screen has it: it hangs above the point, lifted off it)
-      if (blocks.length) { const r = g.box.getBoundingClientRect(); if (blocks.some((k) => r.left < k.r && r.right > k.l && r.top < k.b && r.bottom > k.t)) g.el.classList.remove('on'); }
+      g.at0 = at; g.dx0 = dx; g.lift0 = lift; // (as it's put: measure moves on from here)
+      if (blocks.length) { const r = known ? boxAt(g, at, hz, dx, lift) : g.box.getBoundingClientRect(); if (blocks.some((k) => r.left < k.r && r.right > k.l && r.top < k.b && r.bottom > k.t)) g.el.classList.remove('on'); }
     });
   }
 
@@ -1282,9 +1314,9 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
     const next = legTargets(c, P.leg);
     const x = next.reduce((s, m) => s + m.x, 0) / next.length, z = next.reduce((s, m) => s + m.z, 0) / next.length;
     v3.set(x, 2.5, z).project(world.camera);
-    const hz = parseFloat(getComputedStyle(tag).zoom) || 1, W = innerWidth / hz, H = innerHeight / hz;
+    const M = pm, hz = M ? M.hz : parseFloat(getComputedStyle(tag).zoom) || 1, W = innerWidth / hz, H = innerHeight / hz;
     let sx = (v3.x + 1) / 2 * W, sy = (1 - v3.y) / 2 * H;
-    const lw = tagIn.offsetWidth / 2 + 10; // the label must fit whole, or it goes to the edge and points
+    const lw = (M ? M.lw : tagIn.offsetWidth) / 2 + 10; // the label must fit whole, or it goes to the edge and points
     const behind = v3.z > 1, inView = !behind && sx > lw && sx < W - lw && sy > 120 && sy < H - 140;
     tag.classList.toggle('line', !c.marks[leg] && leg !== 'gate');
     tag.classList.toggle('edge', !inView);
@@ -1294,9 +1326,9 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
       const hw = W / 2 - lw, hh = H / 2 - 150, k = Math.min(hw / Math.abs(dx || 1e-6), hh / Math.abs(dy || 1e-6));
       sx = W / 2 + dx * k; sy = H / 2 + dy * k; rot = Math.atan2(dy, dx);
       // the umpire's card and the calls are under it there (it stands over the HUD): below them instead
-      for (const e of [ump, ...calls.children]) {
-        if (!e || e.hidden || !e.offsetParent) continue;
-        const r = e.getBoundingClientRect(); if (!r.height) continue;
+      for (const e of M ? M.edge : [ump, ...calls.children]) {
+        if (!M && (!e || e.hidden || !e.offsetParent)) continue;
+        const r = M ? e : e.getBoundingClientRect(); if (!r.height) continue;
         const l = r.left / hz, rr = r.right / hz, t2 = r.top / hz, b = r.bottom / hz;
         if (sx + lw > l && sx - lw < rr && sy + 22 > t2 && sy - 22 < b) sy = Math.min(H - 150, b + 30);
       }
@@ -1385,5 +1417,5 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
     ump.hidden = false; ump.style.animation = 'none'; void ump.offsetWidth; ump.style.animation = ''; // in again, if one was showing
   }
 
-  return { update, chips, remaining, gapTime, umpire };
+  return { update, measure, chips, remaining, gapTime, umpire };
 }

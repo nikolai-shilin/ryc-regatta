@@ -41,14 +41,22 @@ export function makeWaves(amp, windFrom) {
 // little off the waves' own so they are patches and not stripes. So the swell never settles into one repeating
 // pattern. The same in every shader that sums the trains (ocean.js SWELL_GLSL): keep the two alike. Only the
 // picture has them (waveHeight, seaSlope); the boats' speed is the plain trains' (waveSlope).
-export function waveGroup(p, i, x, z, t) {
+// (A train's group, its direction, number and speed, worked out once and kept on it: the picture asks for the sea's
+// height some ten thousand times a frame, at every point of the hulls' patches, the wakes and the marks' rings, and
+// the turn of the groups' crests was a cosine and a sine each time, 2026-11-20. A train's direction, number and speed
+// never change, only its height, A: sim.js step)
+function groupOf(p, i) {
   const ga = i % 2 ? 0.2 : -0.2, g = p.k * 0.11, c = Math.cos(ga), s = Math.sin(ga);
   const dx = p.dx * c - p.dz * s, dz = p.dx * s + p.dz * c;
-  return 1 + (i < 3 ? 0.35 : 0.2) * Math.sin(g * (dx * x + dz * z) - g * (p.w / (2 * p.k)) * t + i * 3.91);
+  return (p._g = { i, a: i < 3 ? 0.35 : 0.2, gx: g * dx, gz: g * dz, gw: g * (p.w / (2 * p.k)), ph: i * 3.91 });
+}
+export function waveGroup(p, i, x, z, t) {
+  const q = p._g && p._g.i === i ? p._g : groupOf(p, i);
+  return 1 + q.a * Math.sin(q.gx * x + q.gz * z - q.gw * t + q.ph);
 }
 export function waveHeight(W, x, z, t) {
   let h = 0;
-  for (let i = 0; i < W.length; i++) { const p = W[i]; h += p.A * waveGroup(p, i, x, z, t) * Math.sin(p.k * (p.dx * x + p.dz * z) - p.w * t + p.ph); }
+  for (let i = 0; i < W.length; i++) { const p = W[i]; if (p.A) h += p.A * waveGroup(p, i, x, z, t) * Math.sin(p.k * (p.dx * x + p.dz * z) - p.w * t + p.ph); } // (a train with no height adds nothing)
   return h;
 }
 // the slope of the sea along a direction (ux, uz): + uphill; `n` only the first n trains (the long swell). What the

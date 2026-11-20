@@ -2270,6 +2270,7 @@ function loop(now) {
 }
 function frame(now) {
   const began = performance.now();
+  if (running && !hud.hidden) bcHud.measure(); // first, before anything is written: the HUD's widths as just painted (hud-bc.js holdWidths)
   const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now;
   if (window.__slow) { const t0 = performance.now(); while (performance.now() - t0 < window.__slow); } // debug: pretend to be a slow phone
   const P = race.player;

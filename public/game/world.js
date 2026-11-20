@@ -695,12 +695,20 @@ class Wake {
     this.field = field; this.hmesh = field?.add(new THREE.Mesh(g, field.ribbonMat)); // the same ribbons, as the water's heights
   }
   dispose(scene) { scene.remove(this.mesh); if (this.hmesh) this.field.scene.remove(this.hmesh); this.mesh.geometry.dispose(); }
-  update(b, dt, t, W) {
+  update(b, dt, t, W, seen) {
     // a new sample every WAKE_DT seconds; the newest point always rides with the boat
     this.acc += dt;
     const here = { x: b.x, z: b.z, h: b.h, v: b.v, born: t, fly: b.ride || 0 };
     if (!this.trail.length || this.acc >= WAKE_DT) { this.acc = 0; this.trail.unshift(here); if (this.trail.length > WAKE_N) this.trail.pop(); }
     else this.trail[0] = here;
+    // a wake wholly off the screen isn't laid on the waves, nor drawn (seen: World.frame); its trail goes on
+    if (seen) {
+      let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+      for (const s of this.trail) { if (s.x < x0) x0 = s.x; if (s.x > x1) x1 = s.x; if (s.z < z0) z0 = s.z; if (s.z > z1) z1 = s.z; }
+      const on = seen((x0 + x1) / 2, (z0 + z1) / 2, Math.hypot(x1 - x0, z1 - z0) / 2 + 12 + 0.354 * WAKE_AGE * b.v); // (and as far out as its arms have spread)
+      this.mesh.visible = on; if (this.hmesh) this.hmesh.visible = on;
+      if (!on) return;
+    }
     const g = this.mesh.geometry, P = g.attributes.position, AG = g.attributes.aAge, SD = g.attributes.aSide, KD = g.attributes.aKind, ST = g.attributes.aStr, AC = g.attributes.aAcross;
     for (let r = 0; r < 3; r++) for (let i = 0; i < WAKE_N; i++) {
       const s = this.trail[Math.min(i, this.trail.length - 1)], age = Math.max(0, t - s.born);
@@ -770,10 +778,10 @@ class HullContact {
     this.hmesh = field?.add(new THREE.Mesh(g, field.hullMat(this.u.uSpd, this.uK)));
   }
   dispose(scene) { scene.remove(this.mesh); this.mesh.geometry.dispose(); this.mesh.material.dispose(); if (this.hmesh) { this.field.scene.remove(this.hmesh); this.hmesh.material.dispose(); } }
-  update(b, t, W) {
+  update(b, t, W, seen) {
     // another class's hull is laid HULL / 12.2 times the club boat's size (a boat of a class of her own, b.cls, at
-    // hers); a foiler flying has none in the water
-    this.mesh.visible = !(b.ride > 0.5);
+    // hers); a foiler flying has none in the water; nor is one off the screen ridden on the waves (seen: World.frame)
+    this.mesh.visible = !(b.ride > 0.5) && (!seen || seen(b.x, b.z, 14));
     if (this.hmesh) this.hmesh.visible = this.mesh.visible;
     if (!this.mesh.visible) return;
     const g = this.mesh.geometry, P = g.attributes.position, L = g.attributes.aL, S = (b.cls?.loa ?? HULL) / 12.2, Sc = b.cls?.wlb ? b.cls.wlb / 3.5 : S; // Sc: a narrower hull's across her (a catamaran's)
@@ -1131,7 +1139,7 @@ void main() {
 }`;
 class MarkContact {
   constructor(R, uniforms) {
-    const NA = 40, NR = 7, R1 = R + 2.2, aL = [], idx = [];
+    const NA = 40, NR = 7, R1 = R + 2.2, aL = [], idx = []; this.R1 = R1 + 1;
     for (let j = 0; j <= NR; j++) for (let i = 0; i < NA; i++) { const a = (i / NA) * 2 * Math.PI, r = R * 0.94 + (R1 - R * 0.94) * (j / NR) ** 1.6; aL.push(Math.cos(a) * r, Math.sin(a) * r); }
     for (let j = 0; j < NR; j++) for (let i = 0; i < NA; i++) { const a = j * NA + i, b = j * NA + ((i + 1) % NA); idx.push(a, b, a + NA, b, b + NA, a + NA); } // facing up
     const g = new THREE.BufferGeometry();
@@ -1142,7 +1150,9 @@ class MarkContact {
     this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ uniforms: this.u, vertexShader: CONTACT_VS, fragmentShader: MARK_FS, transparent: true, depthWrite: false }));
     this.mesh.frustumCulled = false; this.mesh.renderOrder = 2;
   }
-  update(p, t, W) {
+  update(p, t, W, seen) {
+    this.mesh.visible = !seen || seen(p.x, p.z, this.R1 || 8); // (off the screen: not laid on the waves)
+    if (!this.mesh.visible) return;
     const P = this.mesh.geometry.attributes.position, L = this.mesh.geometry.attributes.aL;
     for (let i = 0; i < P.count; i++) { const x = p.x + L.getX(i), z = p.z + L.getY(i); P.setXYZ(i, x, waveHeight(W, x, z, t) + 0.04, z); }
     P.needsUpdate = true;
@@ -1177,6 +1187,7 @@ function currentVee() {
 // the one shape's, not the batch's).
 const MIRROR_MIN = 1; // m, the radius of the sphere round a part under which it isn't reflected
 const _ms = new THREE.Vector3();
+const _vm = new THREE.Matrix4(), _view = new THREE.Frustum(), _vs = new THREE.Sphere(); // (World.frame: what the camera took in)
 function mirrored(obj) {
   obj.updateWorldMatrix(true, true);
   obj.traverse((o) => {
@@ -1837,6 +1848,10 @@ export class World {
 
   frame(dt, t, wall) {
     const race = this.race, P = race.player, wind = race.wind;
+    // what the camera took in at the last frame: the hulls' patches, the wakes and the marks' rings off it aren't laid on
+    // the waves (some ten thousand heights of the sea a frame, the most of the frame's own work on Low, 2026-11-20)
+    _vm.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse); _view.setFromProjectionMatrix(_vm);
+    const seen = (x, z, r) => { _vs.center.set(x, 0, z); _vs.radius = r; return _view.intersectsSphere(_vs); };
     // boats
     const cp = this.camera.position, farD = this.mode === 'top' ? 1e9 : 85;
     race.boats.forEach((b, i) => {
@@ -1858,7 +1873,7 @@ export class World {
     for (const { obj, p, vee, ring } of this.buoys) {
       const boat = obj.userData.boat; // a committee boat
       obj.position.y = waveHeight(this.W, p.x, p.z, t) * (boat ? 0.7 : 0.9);
-      if (ring) ring.update(p, t, this.W);
+      if (ring) ring.update(p, t, this.W, seen);
       if (boat) { // she pitches and rolls a little on the swell, being long and heavy (a catamaran rolls less still)
         const W0 = this.cbW0, fx = Math.sin(W0), fz = -Math.cos(W0);
         obj.rotation.x = waveSlope(this.W, p.x, p.z, t, fx, fz) * (boat.pitch ?? 0.35);
@@ -1886,7 +1901,7 @@ export class World {
       }
     }
     this.juryFrame(dt, t);
-    for (const h of this.cbContacts) h.update(h.at, t, this.W);
+    for (const h of this.cbContacts) h.update(h.at, t, this.W, seen);
     const c = race.course, k = c.legs[P.leg];
     this.zones.update(this.W, t, P.done || !hasZone(c, P.leg) ? [] : legTargets(c, P.leg).map((m) => this.zoneM.indexOf(m)));
     this.cb.update(t, dt, race.flags, race.prepFlag, this.cbW0 - race.wind.dir(), race.wind.p.tws * 0.514); // flags fly downwind
@@ -1909,8 +1924,8 @@ export class World {
     // foam
     race.boats.forEach((b, i) => {
       if (b.ride > 0.5) this.spawnFoilSpray(b, dt); else { this.spawnFoam(b, dt); this.spawnSpray(b, dt, race); }
-      if (this.wakes[i]) this.wakes[i].update(b, dt, t, this.W);
-      if (this.contacts[i]) this.contacts[i].update(b, t, this.W);
+      if (this.wakes[i]) this.wakes[i].update(b, dt, t, this.W, seen);
+      if (this.contacts[i]) this.contacts[i].update(b, t, this.W, seen);
     });
     const ga = this.foamPts.geometry.attributes, fp = ga.position, fa = ga.aAlpha, fs = ga.aSize;
     for (let i = 0; i < this.foamMax; i++) {
