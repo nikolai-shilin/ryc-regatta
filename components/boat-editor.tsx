@@ -123,7 +123,6 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
       {opts.map(([v, l]) => <button key={String(v)} type="button" role="radio" aria-checked={value === v} className="bt-pill" onClick={() => pick(v)}>{l}</button>)}
     </div>
   );
-  const preset = PRESETS.find((p) => p.id === b.preset);
   const flag = findFlag(b.flag);
   // a flag on the main: the boat then carries that country's letters too
   const setFlag = (code: string) => { const f = findFlag(code); setB((x) => ({ ...x, flag: f?.code, ...(f ? { nat: f.ioc } : {}) })); setDown(false); };
@@ -141,10 +140,6 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         {/* her flag and sail number, as the race calls her */}
         <h1 className="bt-h bt-h-boat">{/* eslint-disable-next-line @next/next/no-img-element */}{flag ? <img className="bt-h-flag" src={flagSrc(flag.code)} alt={t(flag.en, flag.ru, flag.es, flag.de, flag.tr)} /> : <NoFlag className="bt-h-flag" />}<span className="vh">{t('Your yacht: ', 'Твоя яхта: ', 'Tu yate: ', 'Deine Yacht: ', 'Yatın: ')}</span><span>{`${b.nat} ${b.num || '1'}`.trim()}</span></h1>
         <p className="bt-p">{t('Lake Garda, a summer evening. Drag to circle her.', 'Озеро Гарда, летний вечер. Тяни, чтобы облететь яхту.', 'Lago de Garda, una tarde de verano. Arrastra para rodearla.', 'Gardasee, ein Sommerabend. Ziehen, um sie zu umkreisen.', 'Garda Gölü, bir yaz akşamı. Çevresinde dönmek için sürükle.')}</p>
-        <div className="bt-stats bt-stats-fit">
-          <div><span className="bt-sk">{t('Colours', 'Цвета', 'Colores', 'Farben', 'Renkler')}</span><b>{preset ? t(preset.en, preset.ru, preset.es, preset.de, preset.tr) : t('Your own', 'Свои', 'El tuyo', 'Eigene', 'Kendine ait')}</b></div>
-          <div><span className="bt-sk">{t('Sails', 'Паруса', 'Velas', 'Segel', 'Yelkenler')}</span><b>{b.laminate ? t('Laminate', 'Ламинат', 'Laminado', 'Laminat', 'Laminat') : t('Dacron', 'Дакрон', 'Dacron', 'Dacron', 'Dacron')}</b></div>
-        </div>
       </div>
 
       <PauseCard lang={lang} back="/boat" title={t('Your yacht', 'Твоя яхта', 'Tu yate', 'Deine Yacht', 'Yatın')} className="bt-boat" cardRef={card} foot={['yachts', 'venues']}

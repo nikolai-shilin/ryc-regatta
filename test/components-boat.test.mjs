@@ -40,7 +40,9 @@ test('the boat you saved is the one that comes up', async () => {
   assert.match(v.$('h1').textContent, /AUS 42/);
   assert.equal(v.$('.bt-h-flag').getAttribute('alt'), AU.en);
   assert.equal(v.$('#b-name').value, 'Sea Dog');
-  assert.match(plain(v.$('.bt-stats').innerHTML), /Colours Your own Sails Dacron/);
+  assert.ok(v.$$('.preset').every((b) => b.getAttribute('aria-pressed') === 'false'), 'her own colours, no scheme');
+  assert.equal(v.$('[aria-labelledby="l-sails"] [aria-checked="true"]').textContent, 'Dacron');
+  assert.equal(v.$('.bt-stats'), null, 'no colours and sails over the scene');
   assert.equal(saveBtn(v).disabled, true, 'nothing to save yet');
 });
 
@@ -92,9 +94,8 @@ test('a ready scheme dresses her and is named', async () => {
   await click(btn);
   assert.equal(btn.getAttribute('aria-pressed'), 'true');
   assert.equal(sent(v, 'look').at(-1).boat.hull, p.boat.hull);
-  assert.match(plain(v.$('.bt-stats').innerHTML), new RegExp(`Colours ${p.en}`));
   await click(swatch(v, 'l-hull'));
-  assert.match(plain(v.$('.bt-stats').innerHTML), /Colours Your own/, 'a change makes her your own');
+  assert.equal(btn.getAttribute('aria-pressed'), 'false', 'a change makes her your own');
 });
 
 test('Back to the RYC colours keeps her name', async () => {
@@ -167,7 +168,7 @@ test('deck and sailcloth are chosen by name', async () => {
   assert.equal(sent(v, 'look').at(-1).boat.deck, 'teak');
   await click(v.$$('[aria-labelledby="l-sails"] button').find((b) => b.textContent === 'Dacron'));
   assert.equal(sent(v, 'look').at(-1).boat.laminate, false);
-  assert.match(plain(v.$('.bt-stats').innerHTML), /Sails Dacron/);
+  assert.equal(v.$('[aria-labelledby="l-sails"] [aria-checked="true"]').textContent, 'Dacron');
 });
 
 test('colours are named for a screen reader', async () => {
