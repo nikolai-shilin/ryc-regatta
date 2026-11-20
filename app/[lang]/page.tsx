@@ -101,7 +101,26 @@ export default async function Home({ params }: LangParams) {
   const { alt: _alt, ...heroNarrow } = getImageProps({ ...hero, src: '/images/drone-port-v10.jpg' }).props;
   const all = faqGroups(t).flatMap((g) => g.items);
   const faq = HOME.map((id) => all.find((f) => f.id === id)!);
-  const go = '/play?race=today';
+  const go = '/play?race=today', first = '/play?race=first'; // (first: the easy race, on any device: public/game/classes.js firstRaceHere)
+
+  // today's leaderboard: the countdown, the top and your row; beside a returning player's hero, under a newcomer's targets
+  const board = (
+    <>
+      <div className="ho-card-h"><span className="lbl-ink">{t('Today’s leaderboard', 'Рейтинг дня', 'Clasificación de hoy', 'Rangliste von heute', 'Günün sıralaması')}</span><span className="lbl">{races ? t(`${races} ${races === 1 ? 'race' : 'races'}`, `заездов: ${races}`, `${races} ${races === 1 ? 'regata' : 'regatas'}`, `${races} ${races === 1 ? 'Regatta' : 'Regatten'}`, `${races} yarış`) : windName + ` · ${kn} ${t('kn', 'уз', 'kn', 'kn', 'kn')}`}</span></div>
+      <div className="ho-cd"><span className="lbl">{t('This race closes, a new one starts in', 'Эта гонка закроется, новая начнётся через', 'Esta regata cierra, una nueva empieza en', 'Diese Regatta endet, eine neue startet in', 'Bu yarış kapanır, yenisi şu süre sonra başlar')}</span><Countdown /></div>
+      <ol className="hm-lb bt-lb">
+        {top.map((r, i) => (
+          <li key={i} className={i === 0 ? 'first' : ''}>
+            <span className="hm-n">{i + 1}</span><Who fl={r.fl} name={name(r.name)} lang={lang} />
+            <span className="hm-t">{clock(r.s)}{i > 0 && best ? <small>+{(r.s - best.s).toFixed(1)}</small> : null}</span>
+          </li>
+        ))}
+        {!top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов', 'Aún no hay tiempos hoy', 'Heute noch keine Zeiten', 'Bugün henüz süre yok')}</span><span /></li>}
+        <MyRow lang={lang} day={d.day} top={top} cap={live?.n} />
+      </ol>
+      <Link className="lb-more" href="/race/rating" data-cta="rank-more">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц', 'Clasificación completa y puntos del mes', 'Gesamtrangliste und Punkte des Monats', 'Tam sıralama ve ayın puanları')}</Link>
+    </>
+  );
 
   return (
     <div className="scr help home bc" lang={lang}>
@@ -117,36 +136,42 @@ export default async function Home({ params }: LangParams) {
         <HeroScene title={t('A race in the game', 'Гонка в игре', 'Una regata en el juego', 'Eine Regatta im Spiel', 'Oyunda bir yarış')} />
         <Soundtrack />
         <div className="ho-in">
+          {/* a newcomer's (no race on this device): the first race, an Optimist's three minutes, and the way in beside it */}
+          {/* the hook. A newcomer's (no race on this device: <html data-back> unset, styles/home-back.css): the first race, an
+              Optimist's three minutes, and the way in beside it. A returning player's: today's time to beat, the ranking beside it */}
           <div className="ho-info">
-            <span className="ho-kick"><span className="dot-live" />{t(`Live · today’s race · ${where} · ${yacht}`, `Эфир · гонка дня · ${where} · ${yacht}`, `En directo · regata del día · ${where} · ${yacht}`, `Live · Regatta des Tages · ${where} · ${yacht}`, `Canlı · günün yarışı · ${where} · ${yacht}`)}</span>
-            <h1 className="ho-h1" id="home-h1">{beat ? t(`Beat ${beat} today`, `Побей ${beat} сегодня`, `Bate ${beat} hoy`, `Schlage ${beat} heute`, `Bugün ${beat} süresini geç`) : t('Set today’s time to beat', 'Задай время дня', 'Marca el tiempo a batir de hoy', 'Die Zeit zum Schlagen des Tages setzen', 'Günün geçilecek süresini belirle')}</h1>
+            <span className="ho-kick ho-new">{t('Your first race · 3 min', 'Твоя первая гонка · 3 мин', 'Tu primera regata · 3 min', 'Deine erste Regatta · 3 Min.', 'İlk yarışın · 3 dk')}</span>
+            <span className="ho-kick ho-old"><span className="dot-live" />{t(`Live · today’s race · ${where} · ${yacht}`, `Эфир · гонка дня · ${where} · ${yacht}`, `En directo · regata del día · ${where} · ${yacht}`, `Live · Regatta des Tages · ${where} · ${yacht}`, `Canlı · günün yarışı · ${where} · ${yacht}`)}</span>
+            <h1 className="ho-h1" id="home-h1"><span className="ho-new">{t('Sail your first race in 3 minutes', 'Первая гонка — за 3 минуты', 'Tu primera regata en 3 minutos', 'Deine erste Regatta in 3 Minuten', 'İlk yarışını 3 dakikada yap')}</span><span className="ho-old">{beat ? t(`Beat ${beat} today`, `Побей ${beat} сегодня`, `Bate ${beat} hoy`, `Schlage ${beat} heute`, `Bugün ${beat} süresini geç`) : t('Set today’s time to beat', 'Задай время дня', 'Marca el tiempo a batir de hoy', 'Die Zeit zum Schlagen des Tages setzen', 'Günün geçilecek süresini belirle')}</span></h1>
             <BackStrip lang={lang} day={d.day} top={top} cap={live?.n} />
-            <p className="ho-lead ho-new">{t(
-              `A free sailing race game in your browser, under the real racing rules. One race for everyone today, so your time sits right next to theirs. About ${mins} minutes, no sign-up to start.`,
-              `Бесплатная парусная гонка в браузере, по настоящим правилам. Сегодня у всех одна гонка, так что твоё время встанет рядом с остальными. Около ${mins} минут, без регистрации.`, `Un juego gratuito de regatas a vela en tu navegador, con las reglas de regatas reales. Una regata para todos hoy, así que tu tiempo queda junto al suyo. Unos ${mins} minutos, sin registro para empezar.`, `Ein kostenloses Segelregatta-Spiel im Browser, nach den echten Wettfahrtregeln. Heute eine Regatta für alle, deine Zeit steht also direkt neben ihren. Etwa ${mins} Minuten, ohne Anmeldung zum Start.`, `Tarayıcında, gerçek yarış kurallarıyla ücretsiz bir yelken yarışı oyunu. Bugün herkes için tek bir yarış, böylece süren tam onların sürelerinin yanında durur. Yaklaşık ${mins} dakika, başlamak için kaydolmak gerekmez.`)}</p>
-            <div className="ho-acts ho-hero-acts">
-              <a className="ho-go ho-go-xl" href={go} data-cta="hero"><IconPlay s={22} /><span>{t('Sail today’s race', 'Пройти гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln', 'Günün yarışına çık')}</span></a>
-              <Link className="ho-ghost ho-go-xl ho-new" href="/race/free" data-cta="hero-practise">{t('Practise first', 'Сначала потренироваться', 'Practica primero', 'Erst üben', 'Önce alıştırma yap')}</Link>
+            <p className="ho-lead ho-new">{t('A short race in an Optimist against four beginner boats, in your browser. The start counts itself down; you steer, the sails trim themselves. Then today’s race, with everyone.',
+              'Короткая гонка на «Оптимисте» против четырёх новичков, прямо в браузере. Старт отсчитается сам; ты рулишь, паруса настраиваются сами. Потом — гонка дня, вместе со всеми.',
+              'Una regata corta en Optimist contra cuatro barcos principiantes, en tu navegador. La salida se cuenta sola; tú gobiernas y las velas se ajustan solas. Después, la regata del día, con todos.',
+              'Eine kurze Regatta im Optimist gegen vier Anfängerboote, im Browser. Der Start zählt sich selbst herunter; du steuerst, die Segel trimmen sich selbst. Danach die Regatta des Tages, mit allen.',
+              'Tarayıcında, dört acemi tekneye karşı Optimist ile kısa bir yarış. Start kendi kendine geri sayar; sen dümen kırarsın, yelkenler kendini ayarlar. Sonra herkesle birlikte günün yarışı.')}</p>
+            <div className="ho-acts ho-hero-acts ho-new">
+              <a className="ho-go ho-go-xl" href={first} data-cta="hero-first"><IconPlay s={22} /><span>{t('Start your first race', 'Начать первую гонку', 'Empieza tu primera regata', 'Starte deine erste Regatta', 'İlk yarışına başla')}</span></a>
+              <a className="ho-ghost ho-go-xl" href="/play?race=today&nofirst" data-cta="hero-today">{t('Already sail? Today’s race', 'Уже ходишь? Гонка дня', '¿Ya navegas? La regata del día', 'Segelst du schon? Regatta des Tages', 'Zaten yelken mi açıyorsun? Günün yarışı')}</a>
             </div>
-            <Link className="ho-how ho-new" href="/help" data-cta="hero-how">{t('New to it? How to play, in 3 minutes', 'Впервые? Как играть — за 3 минуты', '¿Nuevo? Cómo jugar, en 3 minutos', 'Neu dabei? So spielst du, in 3 Minuten', 'Yeni misin? Nasıl oynanır, 3 dakikada')} ›</Link>
+            <div className="ho-acts ho-hero-acts ho-old">
+              <a className="ho-go ho-go-xl" href={go} data-cta="hero"><IconPlay s={22} /><span>{t('Sail today’s race', 'Пройти гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln', 'Günün yarışına çık')}</span></a>
+            </div>
             <ul className="ho-trust ho-new">
-              <li>{t('Free', 'Бесплатно', 'Gratis', 'Kostenlos', 'Ücretsiz')}</li><li>{t('No install', 'Без установки', 'Sin instalar', 'Keine Installation', 'Kurulum yok')}</li><li>{t('No sign-up to play', 'Без регистрации', 'Sin registro para jugar', 'Zum Spielen keine Anmeldung', 'Oynamak için kayıt yok')}</li><li>{t('Phone or keyboard', 'Телефон или клавиатура', 'Móvil o teclado', 'Handy oder Tastatur', 'Telefon ya da klavye')}</li><li><span lang="en">English</span> · <span lang="ru">Русский</span> · <span lang="es">Español</span> · <span lang="de">Deutsch</span> · <span lang="tr">Türkçe</span></li>
+              <li>{t('Free', 'Бесплатно', 'Gratis', 'Kostenlos', 'Ücretsiz')}</li><li>{t('No install', 'Без установки', 'Sin instalar', 'Keine Installation', 'Kurulum yok')}</li><li>{t('No sign-up to play', 'Без регистрации', 'Sin registro para jugar', 'Zum Spielen keine Anmeldung', 'Oynamak için kayıt gerekmez')}</li>
             </ul>
           </div>
-          <aside className="ho-card ho-rank" aria-label={t('Today’s leaderboard', 'Рейтинг дня', 'Clasificación de hoy', 'Rangliste von heute', 'Günün sıralaması')}>
-            <div className="ho-card-h"><span className="lbl-ink">{t('Today’s leaderboard', 'Рейтинг дня', 'Clasificación de hoy', 'Rangliste von heute', 'Günün sıralaması')}</span><span className="lbl">{races ? t(`${races} ${races === 1 ? 'race' : 'races'}`, `заездов: ${races}`, `${races} ${races === 1 ? 'regata' : 'regatas'}`, `${races} ${races === 1 ? 'Regatta' : 'Regatten'}`, `${races} yarış`) : windName + ` · ${kn} ${t('kn', 'уз', 'kn', 'kn', 'kn')}`}</span></div>
-            <div className="ho-cd"><span className="lbl">{t('This race closes, a new one starts in', 'Эта гонка закроется, новая начнётся через', 'Esta regata cierra, una nueva empieza en', 'Diese Regatta endet, eine neue startet in', 'Bu yarış kapanır, yenisi şu süre sonra başlar')}</span><Countdown /></div>
-            <ol className="hm-lb bt-lb">
-              {top.map((r, i) => (
-                <li key={i} className={i === 0 ? 'first' : ''}>
-                  <span className="hm-n">{i + 1}</span><Who fl={r.fl} name={name(r.name)} lang={lang} />
-                  <span className="hm-t">{clock(r.s)}{i > 0 && best ? <small>+{(r.s - best.s).toFixed(1)}</small> : null}</span>
-                </li>
-              ))}
-              {!top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов', 'Aún no hay tiempos hoy', 'Heute noch keine Zeiten', 'Bugün henüz süre yok')}</span><span /></li>}
-              <MyRow lang={lang} day={d.day} top={top} cap={live?.n} />
+          <aside className="ho-card ho-rank ho-way ho-new" aria-label={t('Your way in', 'Как начать', 'Por dónde empezar', 'Dein Einstieg', 'Başlangıç yolun')}>
+            <div className="ho-card-h"><span className="lbl-ink">{t('Your way in', 'Как начать', 'Por dónde empezar', 'Dein Einstieg', 'Başlangıç yolun')}</span><span className="lbl">{t('3 steps', '3 шага', '3 pasos', '3 Schritte', '3 adım')}</span></div>
+            <ol className="ho-way-l">
+              <li className="now"><a href={first}><span className="ho-n">1</span><span className="ho-way-t"><b>{t('Your first race', 'Первая гонка', 'Tu primera regata', 'Deine erste Regatta', 'İlk yarışın')}</b><span className="ho-ps">{t('An Optimist, four beginner boats, about 3 minutes. Just finish.', '«Оптимист», четыре новичка, около 3 минут. Просто финишируй.', 'Un Optimist, cuatro barcos principiantes, unos 3 minutos. Solo llega.', 'Ein Optimist, vier Anfängerboote, etwa 3 Minuten. Einfach ins Ziel kommen.', 'Bir Optimist, dört acemi tekne, yaklaşık 3 dakika. Sadece bitir.')}</span></span><span className="hm-tag">{t('Now', 'Сейчас', 'Ahora', 'Jetzt', 'Şimdi')}</span></a></li>
+              <li><a href="/play?race=today&nofirst"><span className="ho-n">2</span><span className="ho-way-t"><b>{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı')}</b><span className="ho-ps">{beat
+                ? t(`${where} · ${yacht}. One race for everyone, the time to beat ${beat}.`, `${where} · ${yacht}. Одна гонка для всех, время дня — ${beat}.`, `${where} · ${yacht}. Una regata para todos, el tiempo a batir: ${beat}.`, `${where} · ${yacht}. Eine Regatta für alle, die Zeit zum Schlagen: ${beat}.`, `${where} · ${yacht}. Herkes için tek yarış, geçilecek süre ${beat}.`)
+                : t(`${where} · ${yacht}. One race for everyone.`, `${where} · ${yacht}. Одна гонка для всех.`, `${where} · ${yacht}. Una regata para todos.`, `${where} · ${yacht}. Eine Regatta für alle.`, `${where} · ${yacht}. Herkes için tek yarış.`)}</span></span><span className="ho-way-live"><span className="dot-live" />{t('Live', 'Эфир', 'En directo', 'Live', 'Canlı')}</span></a></li>
+              <li><Link href="/sign-in"><span className="ho-n">3</span><span className="ho-way-t"><b>{t('Keep your results', 'Сохраняй результаты', 'Guarda tus resultados', 'Behalte deine Ergebnisse', 'Sonuçlarını sakla')}</b><span className="ho-ps">{t('Sign in once: your races and your boat on any device, and a reminder each day.', 'Войди один раз: гонки и лодка на любом устройстве и напоминание каждый день.', 'Inicia sesión una vez: tus regatas y tu barco en cualquier dispositivo, y un recordatorio cada día.', 'Melde dich einmal an: deine Regatten und dein Boot auf jedem Gerät und eine Erinnerung jeden Tag.', 'Bir kez giriş yap: yarışların ve teknen her cihazda, her gün bir hatırlatma.')}</span></span></Link></li>
             </ol>
-            <Link className="lb-more" href="/race/rating" data-cta="rank-more">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц', 'Clasificación completa y puntos del mes', 'Gesamtrangliste und Punkte des Monats', 'Tam sıralama ve ayın puanları')}</Link>
+          </aside>
+          <aside className="ho-card ho-rank ho-old" aria-label={t('Today’s leaderboard', 'Рейтинг дня', 'Clasificación de hoy', 'Rangliste von heute', 'Günün sıralaması')}>
+            {board}
             <div className="ho-tick" aria-live="polite"><span className="dot-live" /><Ticker lines={lines} /></div>
           </aside>
         </div>
@@ -156,11 +181,12 @@ export default async function Home({ params }: LangParams) {
         {/* 2 · three targets: something to aim for at every level */}
         <section className="ho-sec" aria-labelledby="h-goals">
           <div className="ho-sec-h">
-            <div className="ho-sec-t"><span className="ho-k">{t('Today’s targets', 'Цели дня', 'Objetivos de hoy', 'Ziele von heute', 'Günün hedefleri')}</span><h2 className="ho-h2" id="h-goals">{t('Pick one. Then go for the next.', 'Выбери одну. Потом — следующую.', 'Elige uno. Luego ve a por el siguiente.', 'Such dir eins aus. Dann nimm das nächste.', 'Birini seç. Sonra bir sonrakine geç.')}</h2></div>
-            <span className="lbl">{t('Reset at midnight UTC with the race', 'Обновляются в полночь по UTC вместе с гонкой', 'Se reinicia a medianoche UTC con la regata', 'Wird um Mitternacht UTC mit der Regatta zurückgesetzt', 'Yarışla birlikte gece yarısı UTC’de sıfırlanır')}</span>
+            <div className="ho-sec-t ho-old"><span className="ho-k">{t('Today’s targets', 'Цели дня', 'Objetivos de hoy', 'Ziele von heute', 'Günün hedefleri')}</span><h2 className="ho-h2" id="h-goals">{t('Pick one. Then go for the next.', 'Выбери одну. Потом — следующую.', 'Elige uno. Luego ve a por el siguiente.', 'Such dir eins aus. Dann nimm das nächste.', 'Birini seç. Sonra bir sonrakine geç.')}</h2></div>
+            <div className="ho-sec-t ho-new"><span className="ho-kick"><span className="dot-live" />{t(`Then · today’s race · ${where} · ${yacht}`, `Потом · гонка дня · ${where} · ${yacht}`, `Luego · regata del día · ${where} · ${yacht}`, `Dann · Regatta des Tages · ${where} · ${yacht}`, `Sonra · günün yarışı · ${where} · ${yacht}`)}</span><h2 className="ho-h2">{t('One race for everyone. Pick a target.', 'Одна гонка для всех. Выбери цель.', 'Una regata para todos. Elige un objetivo.', 'Eine Regatta für alle. Wähl ein Ziel.', 'Herkes için tek yarış. Bir hedef seç.')}</h2></div>
+            <span className="lbl ho-old">{t('Reset at midnight UTC with the race', 'Обновляются в полночь по UTC вместе с гонкой', 'Se reinicia a medianoche UTC con la regata', 'Wird um Mitternacht UTC mit der Regatta zurückgesetzt', 'Yarışla birlikte gece yarısı UTC’de sıfırlanır')}</span>
           </div>
           <div className="ho-goals">
-            <a className="ho-goal" href={go} data-cta="goal-finish">
+            <a className="ho-goal ho-old" href={go} data-cta="goal-finish">
               <span className="ho-medal">✓</span>
               <span className="lbl is-you">{t('Everyone', 'Для всех', 'Todos', 'Alle', 'Herkes')}</span>
               <h3 className="ho-h3">{t('Finish the race', 'Пройди гонку', 'Termina la regata', 'Die Regatta beenden', 'Yarışı bitir')}</h3>
@@ -193,19 +219,21 @@ export default async function Home({ params }: LangParams) {
               <span className="lbl-ink ho-foot">{t('Take the top spot ›', 'Займи первое место ›', 'Toma el primer puesto ›', 'Hol dir den Spitzenplatz ›', 'Zirveyi al ›')}</span>
             </a>
           </div>
+          <aside className="ho-card ho-rank ho-board ho-new" aria-label={t('Today’s leaderboard', 'Рейтинг дня', 'Clasificación de hoy', 'Rangliste von heute', 'Günün sıralaması')}>
+            {board}
+          </aside>
         </section>
 
         {/* 3 · the first four races, each in its picture: a path, so a first race isn't the last (and what a race is) */}
         <section className="ho-sec ho-new" aria-labelledby="h-path">
           <div className="ho-sec-t"><span className="ho-k">{t('New to racing?', 'Впервые на гонке?', '¿Nuevo en las regatas?', 'Neu im Regattasport?', 'Yarışa yeni misin?')}</span><h2 className="ho-h2" id="h-path">{t('Your first four races', 'Твои первые четыре гонки', 'Tus cuatro primeras regatas', 'Deine ersten vier Regatten', 'İlk dört yarışın')}</h2></div>
           <ol className="ho-path">
-            <li className="now"><span className="ho-pic ho-path-pic"><Image src="/images/h-steer-v10.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">1</span><span className="lbl is-you">{t(`Today · ${mins} min`, `Сегодня · ${mins} мин`, `Hoy · ${mins} min`, `Heute · ${mins} Min.`, `Bugün · ${mins} dk`)}</span><h3 className="ho-h3">{t('Just finish', 'Просто финишируй', 'Solo llega', 'Einfach ins Ziel kommen', 'Sadece bitir')}</h3><p className="ho-ps">{t('Sails on Auto, you only steer. Follow the call above your numbers.', 'Паруса на «Авто», ты только рулишь. Следуй подсказке над своими цифрами.', 'Velas en Auto, tú solo gobiernas. Sigue el aviso sobre tus números.', 'Segel auf Auto, du steuerst nur. Folge dem Hinweis über deinen Zahlen.', 'Yelkenler Otomatikte, sen yalnızca dümen tutarsın. Sayıların üstündeki çağrıyı izle.')}</p></li>
-            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-start-v10.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">2</span><span className="lbl">{t('Then', 'Потом', 'Luego', 'Dann', 'Sonra')}</span><h3 className="ho-h3">{t('Win the start', 'Выиграй старт', 'Gana la salida', 'Gewinne den Start', 'Startı kazan')}</h3><p className="ho-ps">{t('Be a boat length behind the line, at full speed, as the gun goes.', 'Будь в корпусе от линии на полном ходу в момент сигнала.', 'Ponte una eslora por detrás de la línea, a toda velocidad, cuando suene la señal.', 'Sei eine Bootslänge hinter der Linie, mit voller Fahrt, wenn das Startsignal fällt.', 'Start işareti verilirken hattın bir tekne boyu gerisinde, tam hızda ol.')}</p><a className="ho-drill" href="/play?race=free&drill=start" data-cta="path-drill-start">{t('Practise it: the start drill ›', 'Потренируй: упражнение «Старт» ›', 'Practícalo: el ejercicio de salida ›', 'Übe es: die Start-Übung ›', 'Alıştır: start alıştırması ›')}</a></li>
+            <li className="now"><span className="ho-pic ho-path-pic"><Image src="/images/first-opti-v1.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">1</span><span className="lbl is-you">{t('First · 3 min · an Optimist', 'Сначала · 3 мин · «Оптимист»', 'Primero · 3 min · un Optimist', 'Zuerst · 3 Min. · ein Optimist', 'Önce · 3 dk · bir Optimist')}</span><h3 className="ho-h3">{t('Just finish', 'Просто финишируй', 'Solo llega', 'Einfach ins Ziel kommen', 'Sadece bitir')}</h3><p className="ho-ps">{t('Four beginner boats, a 20-second start. You only steer; the sails trim themselves.', 'Четыре новичка, старт через 20 секунд. Ты только рулишь, паруса настраиваются сами.', 'Cuatro barcos principiantes, una salida de 20 segundos. Tú solo gobiernas; las velas se ajustan solas.', 'Vier Anfängerboote, ein Start in 20 Sekunden. Du steuerst nur; die Segel trimmen sich selbst.', 'Dört acemi tekne, 20 saniyelik bir start. Sen sadece dümen kırarsın; yelkenler kendini ayarlar.')}</p></li>
+            <li><span className="ho-pic ho-path-pic"><Image src="/images/h-start-v10.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">2</span><span className="lbl">{t('Then · today’s race', 'Потом · гонка дня', 'Luego · la regata del día', 'Dann · Regatta des Tages', 'Sonra · günün yarışı')}</span><h3 className="ho-h3">{t('Win the start', 'Выиграй старт', 'Gana la salida', 'Gewinne den Start', 'Startı kazan')}</h3><p className="ho-ps">{t('Today’s yacht, with everyone. Be a boat length behind the line, at full speed, as the gun goes.', 'Яхта дня, вместе со всеми. Будь в корпусе от линии на полном ходу в момент сигнала.', 'El yate del día, con todos. Ponte una eslora por detrás de la línea, a toda velocidad, cuando suene la señal.', 'Die Yacht des Tages, mit allen. Sei eine Bootslänge hinter der Linie, mit voller Fahrt, wenn das Startsignal fällt.', 'Günün yatı, herkesle birlikte. Start işareti verilirken hattın bir tekne boyu gerisinde, tam hızda ol.')}</p><a className="ho-drill" href="/play?race=free&drill=start" data-cta="path-drill-start">{t('Practise it: the start drill ›', 'Потренируй: упражнение «Старт» ›', 'Practícalo: el ejercicio de salida ›', 'Übe es: die Start-Übung ›', 'Alıştır: start alıştırması ›')}</a></li>
             <li><span className="ho-pic ho-path-pic"><Image src="/images/h-tack-v10.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">3</span><span className="lbl">{t('Then', 'Потом', 'Luego', 'Dann', 'Sonra')}</span><h3 className="ho-h3">{t('Play the shifts', 'Лови заходы', 'Juega las roladas', 'Nutze die Dreher', 'Rüzgâr dönüşlerini oyna')}</h3><p className="ho-ps">{t('Tack when the wind heads you. Every header you catch is a place.', 'Поворачивай, когда ветер заходит. Каждый пойманный заход — место.', 'Vira cuando el viento te cierra. Cada rolada desfavorable que pilles es un puesto.', 'Wende, wenn der Wind dich abdreht. Jeder Dreher, den du erwischst, ist ein Platz.', 'Rüzgâr seni aleyhe çevirince tramola at. Yakaladığın her aleyhte dönüş bir sıra kazandırır.')}</p><a className="ho-drill" href="/play?race=free&drill=beat" data-cta="path-drill-beat">{t('Practise it: the shifts drill ›', 'Потренируй: упражнение «Сдвиги ветра» ›', 'Practícalo: el ejercicio de roladas ›', 'Übe es: die Dreher-Übung ›', 'Alıştır: rüzgâr dönüşleri alıştırması ›')}</a></li>
             <li><span className="ho-pic ho-path-pic"><Image src="/images/h-trim-v10.jpg" alt="" fill sizes="(min-width: 900px) 300px, 100vw" /></span><span className="ho-n">4</span><span className="lbl">{t('Then', 'Потом', 'Luego', 'Dann', 'Sonra')}</span><h3 className="ho-h3">{t('Race the ranking', 'Гоняйся за рейтингом', 'Compite por la clasificación', 'Segle um die Rangliste', 'Sıralama için yarış')}</h3><p className="ho-ps">{t('Trim the sails yourself and go for today’s podium.', 'Настраивай паруса сам и иди в тройку дня.', 'Trima las velas tú mismo y ve a por el podio de hoy.', 'Trimme die Segel selbst und greif nach dem Podium von heute.', 'Yelkenleri kendin trim et ve günün podyumunu hedefle.')}</p></li>
           </ol>
           <div className="ho-acts">
-            <a className="ho-go" href={go} data-cta="path-start"><IconPlay /><span>{t('Start race 1', 'Начать гонку 1', 'Empezar la regata 1', 'Regatta 1 starten', '1. yarışı başlat')}</span></a>
             <Link className="ho-ghost" href="/help" data-cta="path-how">{t('How to play, in 3 minutes', 'Как играть — за 3 минуты', 'Cómo jugar, en 3 minutos', 'So spielst du, in 3 Minuten', 'Nasıl oynanır, 3 dakikada')}</Link>
           </div>
         </section>
@@ -259,7 +287,6 @@ export default async function Home({ params }: LangParams) {
             <div><dt className="bt-sk">{t('Wind', 'Ветер', 'Viento', 'Wind', 'Rüzgâr')}</dt><dd><b><Num v={`${KN.light}–${KN.strong} ${t('kn', 'уз', 'kn', 'kn', 'kn')}`} /></b></dd><dd className="bt-sv">{t('From light air to a breeze you reef for', 'От лёгкого ветра до такого, что берут рифы', 'De aire flojo a una brisa que obliga a rizar', 'Von leichtem Wind bis zu einer Brise, bei der du reffst', 'Hafif havadan camadan almak gereken meltemlere')}</dd></div>
             <div><dt className="bt-sk">{t('Fleet', 'Флот', 'Flota', 'Feld', 'Filo')}</dt><dd><b><CountUp v="3 · 5 · 7" /></b></dd><dd className="bt-sv">{t('Boats on the line, every one sailing by the rules', 'Лодок на линии, и все ходят по правилам', 'Barcos en la línea, todos navegando según las reglas', 'Boote an der Linie, jedes segelt nach den Regeln', 'Hatta tekneler, her biri kurallara göre seyreder')}</dd></div>
             <div><dt className="bt-sk">{t('Shifts', 'Сдвиги', 'Roladas', 'Dreher', 'Dönüşler')}</dt><dd><b><CountUp v="10°+" /></b></dd><dd className="bt-sv">{t('Every minute. Catch them or lose places', 'Каждую минуту. Лови их или теряй места', 'Cada minuto. Pilla las buenas o pierde puestos', 'Jede Minute. Erwisch sie oder verlier Plätze', 'Her dakika. Yakala ya da sıra kaybet')}</dd></div>
-            <div><dt className="bt-sk">{t('Race of the day', 'Гонка дня', 'Regata del día', 'Regatta des Tages', 'Günün yarışı')}</dt><dd><b>1</b></dd><dd className="bt-sv">{t('One for everyone, a new one every midnight', 'Одна на всех, новая каждую полночь', 'Una para todos, una nueva cada medianoche', 'Eine für alle, jede Mitternacht eine neue', 'Herkes için bir tane, her gece yarısı yenisi')}</dd></div>
           </dl>
         </section>
 
@@ -309,8 +336,10 @@ export default async function Home({ params }: LangParams) {
 
       {/* the button that never goes away, once the hero's own have scrolled by */}
       <Dock watch=".ho-hero-acts">
-        <div className="ho-dock-t"><span className="dot-live" /><b>{beat ? <><span className="ho-dock-w">{t(`Today’s race · ${where} · `, `Гонка дня · ${where} · `, `Regata del día · ${where} · `, `Regatta des Tages · ${where} · `, `Günün yarışı · ${where} · `)}</span>{t(`beat ${beat}`, `побей ${beat}`, `bate ${beat}`, `${beat} schlagen`, `${beat} süresini geç`)}</> : t(`Today’s race · ${where}`, `Гонка дня · ${where}`, `Regata del día · ${where}`, `Regatta des Tages · ${where}`, `Günün yarışı · ${where}`)}</b><span className="lbl">{t('closes in', 'закроется через', 'cierra en', 'endet in', 'kapanmasına')}</span><Countdown className="ho-dock-cd" /></div>
-        <a className="ho-go" href={go} data-cta="dock"><IconPlay /><span>{t('Sail today’s race', 'Пройти гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln', 'Günün yarışına çık')}</span></a>
+        <div className="ho-dock-t ho-new"><span className="hm-tag">{t('3 min', '3 мин', '3 min', '3 Min.', '3 dk')}</span><b>{t('Your first race', 'Первая гонка', 'Tu primera regata', 'Deine erste Regatta', 'İlk yarışın')}<span className="ho-dock-w">{t(' · an Optimist', ' · «Оптимист»', ' · un Optimist', ' · ein Optimist', ' · bir Optimist')}</span></b><span className="lbl">{t('then today’s race · closes in', 'потом гонка дня · закроется через', 'luego la regata del día · cierra en', 'dann die Regatta des Tages · endet in', 'sonra günün yarışı · kapanmasına')}</span><Countdown className="ho-dock-cd" /></div>
+        <a className="ho-go ho-new" href={first} data-cta="dock-first"><IconPlay /><span>{t('Start your first race', 'Начать первую гонку', 'Empieza tu primera regata', 'Starte deine erste Regatta', 'İlk yarışına başla')}</span></a>
+        <div className="ho-dock-t ho-old"><span className="dot-live" /><b>{beat ? <><span className="ho-dock-w">{t(`Today’s race · ${where} · `, `Гонка дня · ${where} · `, `Regata del día · ${where} · `, `Regatta des Tages · ${where} · `, `Günün yarışı · ${where} · `)}</span>{t(`beat ${beat}`, `побей ${beat}`, `bate ${beat}`, `${beat} schlagen`, `${beat} süresini geç`)}</> : t(`Today’s race · ${where}`, `Гонка дня · ${where}`, `Regata del día · ${where}`, `Regatta des Tages · ${where}`, `Günün yarışı · ${where}`)}</b><span className="lbl">{t('closes in', 'закроется через', 'cierra en', 'endet in', 'kapanmasına')}</span><Countdown className="ho-dock-cd" /></div>
+        <a className="ho-go ho-old" href={go} data-cta="dock"><IconPlay /><span>{t('Sail today’s race', 'Пройти гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln', 'Günün yarışına çık')}</span></a>
       </Dock>
     </div>
   );

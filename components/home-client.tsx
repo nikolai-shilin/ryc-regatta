@@ -43,6 +43,19 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <span className="hm-av hm-acct-av" aria-hidden="true"><IconUser /></span>
           <span className="hm-acct-t"><span className="hm-acct-n">{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden', 'Giriş yap')}</span><span className="hm-acct-s">{t('To be ranked and keep your times', 'Чтобы попасть в рейтинг и сохранить результаты', 'Para entrar en la clasificación y guardar tus tiempos', 'Um gerankt zu werden und deine Zeiten zu behalten', 'Sıralamaya girmek ve sürelerini tutmak için')}</span></span>
         </Link>
+        {/* the race pages, where the header has no room for them: first, under the account, the first race at their top */}
+        <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы', 'Páginas', 'Seiten', 'Sayfalar')}>
+          <span className="hm-msep" />
+          <a className="hm-mi hm-mi-first" href="/play?race=first"><span className="hm-mi-t"><b>{t('First race', 'Первая гонка', 'Primera regata', 'Erste Regatta', 'İlk yarış')}</b><span className="lbl">{t('An Optimist · four beginners', 'Оптимист · четыре новичка', 'Un Optimist · cuatro principiantes', 'Ein Optimist · vier Anfänger', 'Bir Optimist · dört acemi')}</span></span><span className="hm-tag">{t('3 min', '3 мин', '3 min', '3 Min.', '3 dk')}</span></a>
+          <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı')}</Link>
+          <Link className="hm-mi" href="/race/free">{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış')}</Link>
+          <Link className="hm-mi" href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış')}</Link>
+          <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки', 'Ejercicios', 'Übungen', 'Alıştırmalar')}</Link>
+          <Link className="hm-mi" href="/race/rating">{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama')}</Link>
+          <Link className="hm-mi hm-mi-x" href="/players">{t('Players', 'Игроки', 'Jugadores', 'Spieler', 'Oyuncular')}</Link>
+          <Link className="hm-mi hm-mi-x" href="/venues">{t('Venues', 'Акватории', 'Sedes', 'Reviere', 'Yarış alanları')}</Link>
+          <Link className="hm-mi hm-mi-x" href="/yachts">{t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar')}</Link>
+        </nav>
         <span className="hm-msep" />
         <Link className="hm-mi" href="/boat">{t('Your yacht', 'Твоя яхта', 'Tu yate', 'Deine Yacht', 'Yatın')}</Link>
         <Link className="hm-mi" href={card ? `/players?p=${encodeURIComponent(card)}` : '/players?me=1'}>{t('Your player card', 'Твоя карточка игрока', 'Tu tarjeta de jugador', 'Deine Spielerkarte', 'Oyuncu kartın')}</Link>
@@ -53,17 +66,6 @@ export function SiteMenu({ lang }: { lang: Lang }) {
         <Link className="hm-mi" href="/learn">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen', 'Yarış rehberleri')}</Link>
         <Link className="hm-mi" href="/rulebook">{t('Racing rules', 'Правила гонок', 'Reglas de regatas', 'Wettfahrtregeln', 'Yarış kuralları')}</Link>
         <Link className="hm-mi" href="/faq">{t('FAQ', 'Вопросы и ответы', 'Preguntas', 'FAQ', 'SSS')}</Link>
-        <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы', 'Páginas', 'Seiten', 'Sayfalar')}>
-          <span className="hm-msep" />
-          <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı')}</Link>
-          <Link className="hm-mi" href="/race/free">{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış')}</Link>
-          <Link className="hm-mi" href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış')}</Link>
-          <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки', 'Ejercicios', 'Übungen', 'Alıştırmalar')}</Link>
-          <Link className="hm-mi" href="/race/rating">{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama')}</Link>
-          <Link className="hm-mi" href="/players">{t('Players', 'Игроки', 'Jugadores', 'Spieler', 'Oyuncular')}</Link>
-          <Link className="hm-mi hm-mi-x" href="/venues">{t('Venues', 'Акватории', 'Sedes', 'Reviere', 'Yarış alanları')}</Link>
-          <Link className="hm-mi hm-mi-x" href="/yachts">{t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar')}</Link>
-        </nav>
         <form className="if-me" action="/auth/sign-out" method="post"
           onSubmit={(e) => { (e.currentTarget.elements.namedItem('next') as HTMLInputElement).value = location.pathname + location.search; forgetCard(); }}>
           <span className="hm-msep" />
@@ -166,7 +168,8 @@ export function Countdown({ className }: { className?: string }) {
 export function Dock({ watch, children }: { watch: string; children: ReactNode }) {
   const [on, setOn] = useState(false);
   useEffect(() => {
-    const el = document.querySelector(watch);
+    // (the first of them on show: the home draws a newcomer's hero and a returning player's, and hides one)
+    const all = [...document.querySelectorAll(watch)], el = all.find((e) => e.getClientRects?.().length) || all[0] || null;
     if (!el) { setOn(true); return; }
     const io = new IntersectionObserver(([e]) => setOn(!e.isIntersecting && e.boundingClientRect.top < 0));
     io.observe(el);

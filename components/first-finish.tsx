@@ -37,7 +37,7 @@ export function FirstFinish({ lang, id, signed }: { lang: Lang; id: string; sign
       </div>
       {err && <p className="ff-err" role="alert">{err}</p>}
       <div className="ff-push"><PushButton lang={lang} where="first-finish" /></div>
-      <a className="ff-more" href="/play?race=free&boat=optimist">{t('Race the Optimist again', 'Ещё раз на «Оптимисте»', 'Otra vez en Optimist', 'Nochmal im Optimist', 'Optimist ile tekrar')}</a>
+      <a className="ff-more" href="/play?race=first">{t('Race the Optimist again', 'Ещё раз на «Оптимисте»', 'Otra vez en Optimist', 'Nochmal im Optimist', 'Optimist ile tekrar')}</a>
     </section>
   );
 }

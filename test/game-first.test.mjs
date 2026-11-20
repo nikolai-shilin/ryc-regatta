@@ -4,7 +4,7 @@
 // seconds to the gun are counted big. One page a file, as the game runs once a page: the tests go on from each other.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bootGame } from './fake-game.mjs';
+import { bootGame, freshPage } from './fake-game.mjs';
 
 const game = await bootGame({ search: '?debug' });
 const { $ } = game, race = () => game.rg.race;
@@ -80,4 +80,14 @@ test('sailed to the finish: the result kept says it was the first race, and isnâ
   assert.equal(res.first, true);
   assert.equal(res.daily, null);
   assert.equal(res.yacht, 'optimist');
+});
+
+test('?race=first asks for it by name, on a device that has raced before; today\'s race there is today\'s', () => {
+  localStorage.setItem('regatta', JSON.stringify({ played: 7 }));
+  freshPage('/play/?race=first');
+  assert.equal(firstRaceHere(), true);
+  freshPage('/play/?race=today');
+  assert.equal(firstRaceHere(), false);
+  freshPage('/play/?race=free');
+  assert.equal(firstRaceHere(), false);
 });

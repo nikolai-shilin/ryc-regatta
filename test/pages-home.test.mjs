@@ -39,9 +39,25 @@ const LANGS = ['en', 'ru'];
 const props = (lang) => ({ params: Promise.resolve({ lang }) });
 const html = async (lang) => renderToStaticMarkup(await home.default(props(lang)));
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
-const h1 = (h) => /<h1 class="ho-h1" id="home-h1">([^<]*)<\/h1>/.exec(h)[1];
+// the heading as a returning player reads it (a newcomer's is the other span: styles/home-back.css shows one)
+const h1 = (h) => /<h1 class="ho-h1" id="home-h1"><span class="ho-new">[^<]*<\/span><span class="ho-old">([^<]*)<\/span><\/h1>/.exec(h)[1];
+const h1New = (h) => /<h1 class="ho-h1" id="home-h1"><span class="ho-new">([^<]*)<\/span>/.exec(h)[1];
 const ld = (h) => JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/s.exec(h)[1]);
 const today = dailyRace();
+
+test('a newcomer\'s home offers the first race: its heading, its button, the way in, the bar at the foot', async () => {
+  reset();
+  const en = await html('en');
+  assert.equal(h1New(en), 'Sail your first race in 3 minutes');
+  assert.ok(en.includes('href="/play?race=first" data-cta="hero-first"'));
+  assert.ok(en.includes('href="/play?race=today&amp;nofirst" data-cta="hero-today"'), 'today\'s race, the first skipped, for one who sails already');
+  assert.ok(en.includes('aria-label="Your way in"'));
+  assert.ok(en.includes('data-cta="dock-first"'));
+  assert.ok(!en.includes('Start race 1'), 'one button to start it, not a second under the path');
+  assert.ok(!en.includes('>Race of the day<'));
+  assert.ok(en.includes('class="ho-goal ho-old"'), 'the target to finish is a returning player\'s: the first race is that');
+  assert.equal(h1New(await html('ru')), 'Первая гонка — за 3 минуты');
+});
 
 test('home challenges you to beat today\'s best time', async () => {
   reset();

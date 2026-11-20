@@ -329,10 +329,13 @@ export const dailyYacht = (date = new Date()) => yachtOn(dayN(date.toISOString()
 // A newcomer's first race: today's race asked for on a device with no race behind it (the regatta options' played,
 // counted as each race starts: main.js) becomes an easy one, an Optimist on a short course (main.js settings).
 // Not a custom race, a drill, a 1-on-1 or a boat the address names, all chosen on purpose; ?nofirst skips it.
+// ?race=first asks for it by name, on any device, raced before or not (the site's header, menu and home link it).
 export function firstRaceHere() {
   try {
     const q = new URLSearchParams(location.search);
-    if (!/^\/play/.test(location.pathname) || q.get('race') === 'free' || q.get('boat') || q.get('drill') || q.get('match') || q.has('nofirst')) return false;
+    if (!/^\/play/.test(location.pathname)) return false;
+    if (q.get('race') === 'first') return true;
+    if (q.get('race') === 'free' || q.get('boat') || q.get('drill') || q.get('match') || q.has('nofirst')) return false;
     return !(+JSON.parse(localStorage.getItem('regatta') || '{}').played > 0);
   } catch (e) { return false; }
 }

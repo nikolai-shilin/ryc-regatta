@@ -4,6 +4,7 @@ import type { Lang, T } from '@/lib/lang';
 import { SITE, jsonLd, langUrl } from '@/lib/seo';
 import { Logo, Langs } from './ui';
 import { SiteMenu } from './home-client';
+import '@/styles/first-race.css';
 
 type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt' | 'learn' | 'rating' | 'drills' | 'social' | 'players' | 'venues' | 'yachts' | 'sponsorship' | 'rulebook';
 
@@ -54,12 +55,14 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
       <div className="hm-page hm-head-in">
         <Link className="hm-brand" href="/" aria-label="RYC · Up and down"><Logo /><span className="hm-brand-t">Up and down</span></Link>
         <nav className="hm-nav" aria-label={t('Main', 'Главное', 'Principal', 'Hauptmenü', 'Ana')}>
+          {/* the easy race, an Optimist's three minutes, first: the way in for a newcomer, and back to it for anyone (public/game/classes.js firstRaceHere) */}
+          <a className="hm-tab hm-tab-first" href="/play?race=first">{t('First race', 'Первая гонка', 'Primera regata', 'Erste Regatta', 'İlk yarış')}<span className="hm-tag">{t('3 min', '3 мин', '3 min', '3 Min.', '3 dk')}</span></a>
           <Link className="hm-tab" href="/race" {...cur('race')}>{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı')}</Link>
           <Link className="hm-tab" href="/race/free" {...cur('free')}>{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış')}</Link>
           <Link className="hm-tab" href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış')}</Link>
           <Link className="hm-tab" href="/race/drills" {...cur('drills')}>{t('Drills', 'Тренировки', 'Ejercicios', 'Übungen', 'Alıştırmalar')}</Link>
           <Link className="hm-tab" href="/race/rating" {...cur('rating')}>{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama')}</Link>
-          <Link className="hm-tab" href="/players" {...cur('players')}>{t('Players', 'Игроки', 'Jugadores', 'Spieler', 'Oyuncular')}</Link>
+          <Link className="hm-tab hm-tab-x" href="/players" {...cur('players')}>{t('Players', 'Игроки', 'Jugadores', 'Spieler', 'Oyuncular')}</Link>
           <Link className="hm-tab hm-tab-x" href="/venues" {...cur('venues')}>{t('Venues', 'Акватории', 'Sedes', 'Reviere', 'Yarış alanları')}</Link>
           <Link className="hm-tab hm-tab-x" href="/yachts" {...cur('yachts')}>{t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar')}</Link>
         </nav>
@@ -95,6 +98,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
         <Langs lang={lang} back={back} />
         <nav className="hm-foot-map" aria-label={t('All pages', 'Все страницы', 'Todas las páginas', 'Alle Seiten', 'Tüm sayfalar')}>
           <FootGroup title={t('Race', 'Гонки', 'Regata', 'Regatta', 'Yarış')}>
+            <li><a href="/play?race=first">{t('First race', 'Первая гонка', 'Primera regata', 'Erste Regatta', 'İlk yarış')}</a></li>
             <FootLink href="/race">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı')}</FootLink>
             <FootLink href="/race/free">{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış')}</FootLink>
             <FootLink href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış')}</FootLink>

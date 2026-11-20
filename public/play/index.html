@@ -597,8 +597,8 @@
   document.title = t('Race', 'Гонка', 'Regata', 'Regatta', 'Yarış') + ' · Up and down';
   var free = q.get('race') === 'free', match = !!q.get('match');
   // a newcomer's first race (the same test as classes.js firstRaceHere): an Optimist on a short course, said as it loads
-  var first = /^\/play/.test(location.pathname) && !free && !match && !q.get('drill') && !q.get('boat') && !q.has('nofirst')
-    && !(function () { try { return +JSON.parse(localStorage.getItem('regatta') || '{}').played > 0; } catch (e) { return false; } })();
+  var first = q.get('race') === 'first' || (/^\/play/.test(location.pathname) && !free && !match && !q.get('drill') && !q.get('boat') && !q.has('nofirst')
+    && !(function () { try { return +JSON.parse(localStorage.getItem('regatta') || '{}').played > 0; } catch (e) { return false; } })());
   // the visit, for the site's /admin (stats.js goes on with it): this browser's random id (kept, so one coming back
   // another day counts once), this opening's, and a post that it opened, from where and on what. Nothing names anyone.
   // A local copy of the game (npm run dev) posts nothing, as stats.js.
@@ -610,7 +610,7 @@
     try { fetch('https://iyt.rycrentals.com/api/game', { method: 'POST', keepalive: true, body: JSON.stringify(body) }).catch(function () {}); } catch (e) {}
   };
   var ref = document.referrer ? (new URL(document.referrer).host === location.host ? 'site' : 'other') : TG ? 'tg' : 'direct';
-  visitPost({ ev: 'open', id: window.rycVisit.id, open: { vid: vid, ref: ref, kind: match ? 'match' : q.get('drill') ? 'drill' : free ? 'free' : 'today', tg: TG ? 1 : 0,
+  visitPost({ ev: 'open', id: window.rycVisit.id, open: { vid: vid, ref: ref, kind: match ? 'match' : q.get('drill') ? 'drill' : free || q.get('race') === 'first' ? 'free' : 'today', tg: TG ? 1 : 0,
     dev: matchMedia('(pointer: coarse)').matches ? (Math.min(screen.width, screen.height) < 600 ? 'phone' : 'tablet') : 'desktop' } });
   var day = new Date().toLocaleDateString({ ru: 'ru-RU', es: 'es-ES', de: 'de-DE', tr: 'tr-TR' }[lang] || 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
   $('lKick').textContent = match ? t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış') : free ? t('Custom race', 'Своя гонка', 'Regata libre', 'Freie Regatta', 'Serbest yarış') : t('Today’s race', 'Гонка дня', 'Regata del día', 'Regatta des Tages', 'Günün yarışı') + ' · ' + day;
