@@ -1543,9 +1543,12 @@ if (!opts.played) $('#howD').open = true; // how to play: open until the first r
 function startRace() {
   audio.init(); audio.setOn(!!opts.sound); skipper.load(); crews.load(); asides.load(); calls.load(); score.style();
   const day = dailyRace();
-  // a new day: a new daily race, and at another venue its land needs the page loaded again, in another yacht her model
+  // a new day: a new daily race, and at another venue its land needs the page loaded again, in another yacht her model.
+  // Asked of the page's own yacht and venue, not of the race built for it: one built after midnight already has the new
+  // day's date and wind, and was sailed in the day before's yacht at its venue (20 Nov 2026: a page opened on the AC75's
+  // day raced the Dragon's day in the AC75, in half the time, and was ranked first)
   const q = new URLSearchParams(location.search);
-  if (race.settings.daily && race.settings.daily !== day.day && ((day.venue !== VENUE.id && !q.get('venue')) || (day.yacht !== CLS.id && !q.get('boat')))) { location.href = '/play?race=today'; return; }
+  if (opts.mode === 'daily' && !FIRST && !drill && !MATCH && ((day.venue !== VENUE.id && !q.get('venue')) || (day.yacht !== CLS.id && !q.get('boat')))) { location.href = '/play?race=today'; return; }
   if (running || menuChanged || race.over || (race.settings.daily && race.settings.daily !== day.day) || (firstStart && !dressed)) newRace();
   else if (firstStart) world.resetView(); // the race built at load: the drone has circled her under the preloader
   menuChanged = false; firstStart = false;
