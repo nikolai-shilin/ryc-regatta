@@ -60,6 +60,10 @@ test('the Ready card starts the clock by itself after three seconds', async () =
 test('the last seconds to the gun are counted big, and gone with the gun', async () => {
   assert.ok($('#gunCount').classList.contains('on'));
   assert.equal($('#gunN').textContent, String(Math.ceil(-race().clock)));
+  assert.ok(!$('#gunCount').classList.contains('now'), 'white before the last ten seconds, as the HUD’s gun clock');
+  await game.until(() => race().clock > -9.5, 'the last ten seconds', 1500);
+  await game.frames(2);
+  assert.ok($('#gunCount').classList.contains('now'), 'blue in the last ten');
   await game.until(() => race().clock > 0.2, 'the gun', 3000);
   await game.frames(2);
   assert.ok(!$('#gunCount').classList.contains('on'));

@@ -214,7 +214,7 @@
 #readyCard.bc .r-ring circle { fill: none; stroke: var(--fill-3); stroke-width: 4; }
 #readyCard.bc .r-ring #rRing { stroke: var(--you); stroke-dasharray: 100; stroke-dashoffset: 0; }
 #readyCard.bc .r-ring b { position: relative; font: 800 var(--fs-h3)/1 var(--cond); }
-@keyframes r-glow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(61, 184, 255, 0)); } 50% { filter: drop-shadow(0 0 10px rgba(61, 184, 255, 0.95)); } }
+@keyframes r-glow { 0%, 100% { filter: drop-shadow(0 0 0 transparent); } 50% { filter: drop-shadow(0 0 10px var(--you)); } }
 #hud.r-wait #rudder { animation: r-glow 1.4s ease-in-out infinite; }
 #hud.r-wait #rudder .track { stroke: var(--you); }
 @media (max-height: 420px) {
@@ -223,12 +223,19 @@
   #readyCard.bc .r-ring b { font-size: var(--fs-title); }
 }
 
-#gunCount { position: absolute; left: 50%; top: 24%; translate: -50% 0; display: none; flex-direction: column; align-items: center; gap: var(--s-1);
-  font-family: var(--cond); color: #fff; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.5); pointer-events: none; }
-#gunCount.on { display: flex; }
-#gunCount b { font: 800 104px/0.9 var(--cond); font-variant-numeric: tabular-nums; }
-#gunCount span { font: 700 13px/1 var(--cond); letter-spacing: 0.14em; text-transform: uppercase; }
-@media (max-height: 420px) { #gunCount { top: 16%; } #gunCount b { font-size: 64px; } }
+/* the last 20 seconds to the gun as the HUD's own gun clock (hud-bc.js .b-gunc): a panel, the number in --fs-h1, blue
+   in the last ten seconds with a beat a second (.b-gunn.now, .beat), and the sequence's bar under it (.b-seq) */
+#gunCount { position: absolute; left: 50%; top: 26%; translate: -50% 0; display: none; flex-direction: column; align-items: center; gap: var(--s-2);
+  min-width: 240px; padding: var(--s-3) var(--s-8) var(--s-4); background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  font-family: var(--cond); color: var(--ink); pointer-events: none; }
+#gunCount.on { display: flex; animation: bc-rise var(--t-in) var(--ease) both; }
+#gunCount span { order: -1; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+#gunCount b { font: 800 var(--fs-h1)/0.9 var(--cond); font-variant-numeric: tabular-nums; transition: color .4s; }
+#gunCount.now b { color: var(--you); }
+#gunCount.beat b { animation: bc-beat .5s var(--ease); }
+#gunCount i { position: relative; width: 176px; height: 4px; background: var(--fill-3); }
+#gunCount i::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: var(--k, 0%); background: var(--you); }
+@media (max-height: 420px) { #gunCount { top: 18%; padding: var(--s-2) var(--s-6); } #gunCount b { font-size: var(--fs-h3); } }
 
 #awayCard.bc .a-card { width: min(440px, 100%); }
 #awayCard.bc .kicker { display: flex; align-items: center; gap: var(--s-2); margin: 0; padding: var(--s-2) var(--s-4); background: var(--ink); color: var(--ink-on);
@@ -243,7 +250,7 @@
 #awayCard.bc .c-btns { display: flex; gap: var(--s-2); margin: var(--s-3) var(--s-5) 0; }
 #awayCard.bc .c-btns .go { flex: 1 1 0; }
 #awayCard.bc #aGo { position: relative; overflow: hidden; }
-#awayCard.bc #aRun { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(4, 18, 30, 0.35); transform-origin: left; }
+#awayCard.bc #aRun { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: color-mix(in srgb, var(--ink-on) 35%, transparent); transform-origin: left; }
 #awayCard.bc .go.ghost { border: 0; background: var(--fill-2); color: var(--ink); clip-path: none; }
 
 /* the loading screen: a first race's way to today's race instead; no WebGL: what mends it, and the link to copy */
@@ -254,9 +261,9 @@
 #loading.bc.gl .l-fix li { display: flex; align-items: flex-start; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--rule-2);
   counter-increment: f; font: 500 var(--fs-body)/1.4 var(--sans); color: var(--ink-2); }
 #loading.bc.gl .l-fix li:last-child { border-bottom: 0; }
-#loading.bc.gl .l-fix li::before { content: counter(f, decimal-leading-zero); flex: none; display: grid; place-items: center; width: 28px; height: 28px; background: var(--fill-2);
+#loading.bc.gl .l-fix li::before { content: counter(f, decimal-leading-zero); flex: none; display: grid; place-items: center; width: var(--h-s); height: var(--h-s); background: var(--fill-2);
   color: var(--ink); font: 700 var(--fs-small)/1 var(--cond); }
-#loading.bc.gl .l-in > .kicker { background: var(--down); }
+#loading.bc.gl .l-in > .kicker { background: var(--live); color: var(--ink); }
 #loading.bc.gl .l-prog, #loading.bc.gl .l-cells { display: none; }
 #loading .l-copy { display: none !important; }
 #loading.bc.gl .l-copy { display: inline-flex !important; background: var(--fill-2); color: var(--ink); }

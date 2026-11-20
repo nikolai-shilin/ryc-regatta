@@ -1997,7 +1997,14 @@ const gunEl = $('#gunCount'), gunN = $('#gunN');
 function paintGun() {
   const on = !!race.coach && !drill && !MATCH && running && race.clock < 0 && race.clock >= FIRST_SEQ;
   if (gunEl.classList.contains('on') !== on) gunEl.classList.toggle('on', on);
-  if (on) txt(gunN, String(Math.ceil(-race.clock)));
+  if (!on) return;
+  const n = String(Math.ceil(-race.clock)), now = -race.clock <= 10; // (as the HUD's gun clock: blue in the last ten, a beat a second)
+  if (gunN._t !== n) {
+    txt(gunN, n);
+    gunEl.style.setProperty('--k', `${Math.round(100 * (1 - -race.clock / -FIRST_SEQ))}%`);
+    if (now) { gunEl.classList.remove('beat'); void gunEl.offsetWidth; gunEl.classList.add('beat'); }
+  }
+  if (gunEl.classList.contains('now') !== now) gunEl.classList.toggle('now', now);
 }
 
 // ---------- minimap ----------
