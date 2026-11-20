@@ -42,8 +42,8 @@ export function Trail({ t, crumbs }: { t: T; crumbs: Crumb[] }) {
 
 // The site's header, as on rycrentals.com: the logo, the site's pages in the middle (from 1100 px wide), and the menu
 // (the burger and your avatar) at the right; your account, your boat and passport, How to play, Racing guides,
-// Racing rules and FAQ are in the menu alone. On a page in the broadcast look (.bc, styles/broadcast.css) it is the
-// broadcast's bar: the name with the blue mark, the pages as tabs (from 1280 px wide; Venues and Yachts, hm-tab-x,
+// Racing rules, FAQ, Venues and Yachts are in the menu alone. On a page in the broadcast look (.bc, styles/broadcast.css)
+// it is the broadcast's bar: the name with the blue mark, the pages as tabs (from 1280 px wide; Players, hm-tab-x,
 // from 1360), Sign in (a guest's) and Play now beside the menu. On every page: the scrolling ones (home, help, the race result) and the
 // app screens, where it sits over the screen and stays short on a phone held sideways.
 // Who is signed in isn't known here (the pages are cached): the avatar and the account link are filled in by lib/me.ts.
@@ -63,8 +63,6 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
           <Link className="hm-tab" href="/race/drills" {...cur('drills')}>{t('Drills', 'Тренировки', 'Ejercicios', 'Übungen', 'Alıştırmalar')}</Link>
           <Link className="hm-tab" href="/race/rating" {...cur('rating')}>{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama')}</Link>
           <Link className="hm-tab hm-tab-x" href="/players" {...cur('players')}>{t('Players', 'Игроки', 'Jugadores', 'Spieler', 'Oyuncular')}</Link>
-          <Link className="hm-tab hm-tab-x" href="/venues" {...cur('venues')}>{t('Venues', 'Акватории', 'Sedes', 'Reviere', 'Yarış alanları')}</Link>
-          <Link className="hm-tab hm-tab-x" href="/yachts" {...cur('yachts')}>{t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar')}</Link>
         </nav>
         {/* a guest's way to sign in, in the bar where there's room (else in the menu); signed in, the avatar says who */}
         <Link className="hm-signin if-guest" href="/sign-in" {...cur('signin')}>{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden', 'Giriş yap')}</Link>

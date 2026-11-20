@@ -11,7 +11,3 @@
 .bc .hm-mi-t b { font: inherit; }
 .bc .hm-mi-t .lbl { font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 
-/* With the first race in it the header's row is longer: Players, Venues and Yachts (.hm-tab-x) leave it for the menu
-   below 1500 px rather than 1360 (styles/broadcast.css), where the menu shows them (.hm-mi-x) instead */
-@container help (min-width: 1280px) and (max-width: 1499px) { .bc .hm-tab-x { display: none; } .bc .hm-menu-nav { display: flex; } .bc .hm-menu-nav > :not(.hm-mi-x, .hm-msep) { display: none; } }
-@container scr (min-width: 1280px) and (max-width: 1499px) { .bc .hm-tab-x { display: none; } .bc .hm-menu-nav { display: flex; } .bc .hm-menu-nav > :not(.hm-mi-x, .hm-msep) { display: none; } }

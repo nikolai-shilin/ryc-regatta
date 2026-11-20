@@ -53,9 +53,11 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки', 'Ejercicios', 'Übungen', 'Alıştırmalar')}</Link>
           <Link className="hm-mi" href="/race/rating">{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama')}</Link>
           <Link className="hm-mi hm-mi-x" href="/players">{t('Players', 'Игроки', 'Jugadores', 'Spieler', 'Oyuncular')}</Link>
-          <Link className="hm-mi hm-mi-x" href="/venues">{t('Venues', 'Акватории', 'Sedes', 'Reviere', 'Yarış alanları')}</Link>
-          <Link className="hm-mi hm-mi-x" href="/yachts">{t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar')}</Link>
         </nav>
+        {/* the venues and the yachts: in the menu at every width, never in the header's row */}
+        <span className="hm-msep" />
+        <Link className="hm-mi" href="/venues">{t('Venues', 'Акватории', 'Sedes', 'Reviere', 'Yarış alanları')}</Link>
+        <Link className="hm-mi" href="/yachts">{t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar')}</Link>
         <span className="hm-msep" />
         <Link className="hm-mi" href="/boat">{t('Your yacht', 'Твоя яхта', 'Tu yate', 'Deine Yacht', 'Yatın')}</Link>
         <Link className="hm-mi" href={card ? `/players?p=${encodeURIComponent(card)}` : '/players?me=1'}>{t('Your player card', 'Твоя карточка игрока', 'Tu tarjeta de jugador', 'Deine Spielerkarte', 'Oyuncu kartın')}</Link>
