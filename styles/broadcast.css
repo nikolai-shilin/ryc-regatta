@@ -431,6 +431,7 @@
   .bc .fs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5) var(--s-4); }
   .bc .fs-grid .bt-pill { flex: 1 1 auto; justify-content: center; padding: 0 var(--s-2); letter-spacing: var(--ls-name); }
 }
+.bc .bt-pills > .bt-pill[data-tail] { flex-grow: 0; } /* the last line of a row that wraps: its own width, not stretched */
 
 /* the result: the time and the gap in columns of their own; Copy link beside Share */
 .bc .rs-lb .hm-t { flex: none; min-width: 56px; text-align: right; }

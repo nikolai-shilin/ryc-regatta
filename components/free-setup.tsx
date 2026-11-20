@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { tx, type Lang } from '@/lib/lang';
 import { DAYTIMES, readOpts, readPb, saveOpts, type Daytime } from '@/lib/opts';
@@ -146,8 +146,25 @@ export default function FreeSetup({ lang, from, match }: { lang: Lang; from: 'to
   if (!four.includes(p.venue)) four[3] = p.venue;
   const places = allPlaces ? byName : four.map((id) => byName.find(([v]) => v === id)!);
 
+  // a row of choices fills its width, but one that wraps leaves its last line at the buttons' own width: one button
+  // hanging under a full row isn't stretched across the card (the line a button lands on doesn't depend on its grow)
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const mark = () => el.querySelectorAll<HTMLElement>('.bt-pills[role="radiogroup"]').forEach((g) => {
+      const kids = [...g.children] as HTMLElement[];
+      const last = Math.max(...kids.map((k) => k.offsetTop));
+      kids.forEach((k) => k.toggleAttribute('data-tail', last > kids[0].offsetTop && k.offsetTop === last));
+    });
+    mark();
+    const ro = new ResizeObserver(mark);
+    el.querySelectorAll('.bt-pills[role="radiogroup"]').forEach((g) => ro.observe(g));
+    return () => ro.disconnect();
+  });
+
   return (
-    <div className="scr bt-scr bc fs-scr" lang={lang}>
+    <div className="scr bt-scr bc fs-scr" lang={lang} ref={root}>
       <div className="bt">
         {ready && <GameScene venue={p.venue} boat={p.yacht} wind={p.preset} setup={scene} title={t('The race’s venue in 3D', 'Место гонки в 3D', 'La sede de la regata en 3D', 'Das Revier der Regatta in 3D', 'Yarışın yarış alanı 3D')} loading={t('Loading the venue', 'Загружаем место гонки', 'Cargando la sede', 'Revier wird geladen', 'Yarış alanı yükleniyor')} />}
 
