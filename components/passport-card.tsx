@@ -21,19 +21,19 @@ export function PassportBlock({ lang, facts, mine, share }: { lang: Lang; facts:
   const t = tx(lang), [all, setAll] = useState(false);
   const { raced, n, counts, streak } = facts, of = VENUES.length;
   const name = (v: (typeof VENUES)[number]) => t(...v.name);
-  const races = (x: number) => (lang === 'ru' ? `${x} ${ruPlural(x, ['гонка', 'гонки', 'гонок'])}` : lang === 'es' ? `${x} ${x === 1 ? 'regata' : 'regatas'}` : lang === 'de' ? `${x} ${x === 1 ? 'Regatta' : 'Regatten'}` : lang === 'tr' ? `${x} yarış` : lang === 'fr' ? `${x} ${x < 2 ? 'régate' : 'régates'}` : `${x} race${x === 1 ? '' : 's'}`);
+  const races = (x: number) => (lang === 'ru' ? `${x} ${ruPlural(x, ['гонка', 'гонки', 'гонок'])}` : lang === 'es' ? `${x} ${x === 1 ? 'regata' : 'regatas'}` : lang === 'de' ? `${x} ${x === 1 ? 'Regatta' : 'Regatten'}` : lang === 'tr' ? `${x} yarış` : lang === 'fr' ? `${x} ${x < 2 ? 'régate' : 'régates'}` : lang === 'it' ? `${x} ${x === 1 ? 'regata' : 'regate'}` : `${x} race${x === 1 ? '' : 's'}`);
   const been = VENUES.filter((v) => raced.has(v.id)).sort((a, b) => (counts?.[b.id] ?? 0) - (counts?.[a.id] ?? 0));
   const rows = all ? [...been, ...VENUES.filter((v) => !raced.has(v.id))] : been.slice(0, SHOWN);
-  const days = streak ? (streak.n ? t(`${streak.n} ${streak.n === 1 ? 'day' : 'days'}`, `${streak.n} ${ruPlural(streak.n, ['день', 'дня', 'дней'])}`, `${streak.n} ${streak.n === 1 ? 'día' : 'días'}`, `${streak.n} ${streak.n === 1 ? 'Tag' : 'Tage'}`, `${streak.n} gün`, `${streak.n} ${streak.n === 1 ? 'jour' : 'jours'}`) : '–') : '';
+  const days = streak ? (streak.n ? t(`${streak.n} ${streak.n === 1 ? 'day' : 'days'}`, `${streak.n} ${ruPlural(streak.n, ['день', 'дня', 'дней'])}`, `${streak.n} ${streak.n === 1 ? 'día' : 'días'}`, `${streak.n} ${streak.n === 1 ? 'Tag' : 'Tage'}`, `${streak.n} gün`, `${streak.n} ${streak.n === 1 ? 'jour' : 'jours'}`, `${streak.n} ${streak.n === 1 ? 'giorno' : 'giorni'}`) : '–') : '';
   return (<>
     {streak ? (
       <div className="fl-stats pl-pass-st">
-        <div><span className="bt-sk">{t('Streak', 'Серия', 'Racha', 'Serie', 'Seri', 'Série')}</span><b>{days}</b></div>
-        {streak.risk ? <span className="bt-sv pl-risk">{t('Race today to keep your streak', 'Пройди гонку сегодня, чтобы не прервать серию', 'Regatea hoy para mantener tu racha', 'Segle heute, um deine Serie zu halten', 'Serini korumak için bugün yarış', 'Régate aujourd’hui pour garder ta série')}</span> : null}
+        <div><span className="bt-sk">{t('Streak', 'Серия', 'Racha', 'Serie', 'Seri', 'Série', 'Serie')}</span><b>{days}</b></div>
+        {streak.risk ? <span className="bt-sv pl-risk">{t('Race today to keep your streak', 'Пройди гонку сегодня, чтобы не прервать серию', 'Regatea hoy para mantener tu racha', 'Segle heute, um deine Serie zu halten', 'Serini korumak için bugün yarış', 'Régate aujourd’hui pour garder ta série', 'Regata oggi per mantenere la serie')}</span> : null}
       </div>
     ) : null}
     <div className="bt-g pl-pass">
-      <div className="pl-k"><span className="bt-k"><IconPin s={14} />{t('Venues raced', 'Пройденные акватории', 'Sedes regateadas', 'Gesegelte Reviere', 'Yarışılan yerler', 'Plans d’eau courus')}</span><span className="bt-k-r">{t(`${n} of ${of}`, `${n} из ${of}`, `${n} de ${of}`, `${n} von ${of}`, `${of} içinde ${n}`, `${n} sur ${of}`)}</span></div>
+      <div className="pl-k"><span className="bt-k"><IconPin s={14} />{t('Venues raced', 'Пройденные акватории', 'Sedes regateadas', 'Gesegelte Reviere', 'Yarışılan yerler', 'Plans d’eau courus', 'Campi di regata visitati')}</span><span className="bt-k-r">{t(`${n} of ${of}`, `${n} из ${of}`, `${n} de ${of}`, `${n} von ${of}`, `${of} içinde ${n}`, `${n} sur ${of}`, `${n} su ${of}`)}</span></div>
       <div className="pl-ticks" aria-hidden="true">{VENUES.map((v) => <i key={v.id} className={raced.has(v.id) ? 'on' : undefined} />)}</div>
       {rows.length ? (
         <ul className="pl-vn">
@@ -43,13 +43,13 @@ export function PassportBlock({ lang, facts, mine, share }: { lang: Lang; facts:
               <li key={v.id} className={on ? 'on' : undefined} title={on && c ? `${name(v)}: ${races(c)}` : name(v)}>
                 <span className="pl-vn-t">{name(v)}</span>
                 {on && c ? <span className="pl-vn-n">{c}</span> : null}
-                {on ? null : <span className="pl-sr">{t(' (not raced yet)', ' (ещё не пройдена)', ' (sin regatear aún)', ' (noch nicht gesegelt)', ' (henüz yarışılmadı)', ' (pas encore couru)')}</span>}
+                {on ? null : <span className="pl-sr">{t(' (not raced yet)', ' (ещё не пройдена)', ' (sin regatear aún)', ' (noch nicht gesegelt)', ' (henüz yarışılmadı)', ' (pas encore couru)', ' (non ancora regatato)')}</span>}
               </li>
             );
           })}
         </ul>
-      ) : n ? null : <p className="bt-hint">{mine ? t('Finish a race and its venue is stamped here.', 'Финишируй в гонке, и её акватория появится здесь.', 'Termina una regata y su sede se sella aquí.', 'Beende eine Regatta, und ihr Revier wird hier abgestempelt.', 'Bir yarışı bitir, yeri buraya damgalanır.', 'Termine une régate et son plan d’eau est tamponné ici.') : t('No venue raced yet.', 'Пока ни одной акватории.', 'Aún ninguna sede regateada.', 'Noch kein Revier gesegelt.', 'Henüz yarışılan yer yok.', 'Aucun plan d’eau couru pour l’instant.')}</p>}
-      <button type="button" className="bt-mini pl-more" aria-expanded={all} onClick={() => setAll(!all)}>{all ? t('Show fewer', 'Свернуть', 'Ver menos', 'Weniger zeigen', 'Daha az göster', 'Voir moins') : t(`All ${of} venues`, `Все ${of} ${ruPlural(of, ['акватория', 'акватории', 'акваторий'])}`, `Las ${of} sedes`, `Alle ${of} Reviere`, `${of} yerin tümü`, `Les ${of} plans d’eau`)}</button>
+      ) : n ? null : <p className="bt-hint">{mine ? t('Finish a race and its venue is stamped here.', 'Финишируй в гонке, и её акватория появится здесь.', 'Termina una regata y su sede se sella aquí.', 'Beende eine Regatta, und ihr Revier wird hier abgestempelt.', 'Bir yarışı bitir, yeri buraya damgalanır.', 'Termine une régate et son plan d’eau est tamponné ici.', 'Finisci una regata e il suo campo di regata viene timbrato qui.') : t('No venue raced yet.', 'Пока ни одной акватории.', 'Aún ninguna sede regateada.', 'Noch kein Revier gesegelt.', 'Henüz yarışılan yer yok.', 'Aucun plan d’eau couru pour l’instant.', 'Ancora nessun campo di regata.')}</p>}
+      <button type="button" className="bt-mini pl-more" aria-expanded={all} onClick={() => setAll(!all)}>{all ? t('Show fewer', 'Свернуть', 'Ver menos', 'Weniger zeigen', 'Daha az göster', 'Voir moins', 'Mostra meno') : t(`All ${of} venues`, `Все ${of} ${ruPlural(of, ['акватория', 'акватории', 'акваторий'])}`, `Las ${of} sedes`, `Alle ${of} Reviere`, `${of} yerin tümü`, `Les ${of} plans d’eau`, `Tutti i ${of} campi di regata`)}</button>
     </div>
     {share ? <div className="pl-share">{share}</div> : null}
   </>);

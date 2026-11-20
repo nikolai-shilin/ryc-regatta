@@ -24,7 +24,7 @@ export type Boat = {
 
 export const BOAT_KEY = 'regatta-boat';
 
-export type Preset = { id: string; en: string; ru: string; es?: string; de?: string; tr?: string; fr?: string; boat: Omit<Boat, 'nat' | 'num' | 'preset' | 'flag' | 'bottom' | 'deck' | 'name'> };
+export type Preset = { id: string; en: string; ru: string; es?: string; de?: string; tr?: string; fr?: string; it?: string; boat: Omit<Boat, 'nat' | 'num' | 'preset' | 'flag' | 'bottom' | 'deck' | 'name'> };
 
 // one-colour schemes: the hull, the gennaker and the team jackets in one colour, on white sails, with a sail number
 // that shows up against it. Picking one keeps your number.
@@ -34,12 +34,13 @@ const light = (hex: string) => {
 };
 const PRESET_ES: Record<string, string> = { white: 'Blanco', silver: 'Plateado', black: 'Negro', navy: 'Azul marino', blue: 'Azul', teal: 'Turquesa', green: 'Verde', yellow: 'Amarillo', orange: 'Naranja', red: 'Rojo', pink: 'Rosa', purple: 'Morado' };
 const PRESET_TR: Record<string, string> = { white: 'Beyaz', silver: 'Gümüş', black: 'Siyah', navy: 'Lacivert', blue: 'Mavi', teal: 'Petrol mavisi', green: 'Yeşil', yellow: 'Sarı', orange: 'Turuncu', red: 'Kırmızı', pink: 'Pembe', purple: 'Mor' };
+const PRESET_IT: Record<string, string> = { white: 'Bianco', silver: 'Argento', black: 'Nero', navy: 'Blu navy', blue: 'Blu', teal: 'Ottanio', green: 'Verde', yellow: 'Giallo', orange: 'Arancione', red: 'Rosso', pink: 'Rosa', purple: 'Viola' };
 const PRESET_FR: Record<string, string> = { white: 'Blanc', silver: 'Argent', black: 'Noir', navy: 'Bleu marine', blue: 'Bleu', teal: 'Bleu canard', green: 'Vert', yellow: 'Jaune', orange: 'Orange', red: 'Rouge', pink: 'Rose', purple: 'Violet' };
 const PRESET_DE: Record<string, string> = { white: 'Weiß', silver: 'Silber', black: 'Schwarz', navy: 'Marineblau', blue: 'Blau', teal: 'Petrol', green: 'Grün', yellow: 'Gelb', orange: 'Orange', red: 'Rot', pink: 'Rosa', purple: 'Lila' };
 function mono(id: string, en: string, ru: string, c: string, dark = false): Preset {
   const mark = light(c) ? '#1d1d1d' : '#ffffff';
   const cloth = dark ? '#2a2c30' : '#f4f2ea';
-  return { id, en, ru, es: PRESET_ES[id], de: PRESET_DE[id], tr: PRESET_TR[id], fr: PRESET_FR[id], boat: { hull: c, cloth, laminate: dark, ink: dark || light(c) ? mark : c, kite: c, crew: c, pants: dark ? c : '#262a31' } };
+  return { id, en, ru, es: PRESET_ES[id], de: PRESET_DE[id], tr: PRESET_TR[id], fr: PRESET_FR[id], it: PRESET_IT[id], boat: { hull: c, cloth, laminate: dark, ink: dark || light(c) ? mark : c, kite: c, crew: c, pants: dark ? c : '#262a31' } };
 }
 export const PRESETS: Preset[] = [
   mono('white', 'White', 'Белая', '#f4f3ef'),

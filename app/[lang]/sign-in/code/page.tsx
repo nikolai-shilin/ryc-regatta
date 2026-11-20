@@ -4,7 +4,7 @@ import { safeNext } from '@/lib/next-path';
 import { AuthShell } from '@/components/auth-shell';
 import { CodeForm } from '@/components/sign-in-forms';
 
-export const generateMetadata = titled('Enter the code', 'Введи код', 'Introduce el código', 'Code eingeben', 'Kodu gir', 'Saisis le code', { index: false });
+export const generateMetadata = titled('Enter the code', 'Введи код', 'Introduce el código', 'Code eingeben', 'Kodu gir', 'Saisis le code', 'Inserisci il codice', { index: false });
 
 export default async function Code({ params, searchParams }: LangParams & { searchParams: Promise<{ email?: string; next?: string }> }) {
   const [lang, sp] = await Promise.all([getLang(params), searchParams]);

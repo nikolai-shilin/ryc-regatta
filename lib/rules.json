@@ -5,7 +5,8 @@
   "es": "Babor se mantiene separado de estribor",
   "de": "Backbordbug hält sich von Steuerbordbug frei",
   "tr": "İskele kontra, sancak kontradan uzak durur",
-  "fr": "Bâbord amures se maintient à l’écart de tribord amures"
+  "fr": "Bâbord amures se maintient à l’écart de tribord amures",
+  "it": "Mure a sinistra si tiene discosta da mure a dritta"
  },
  "r11": {
   "en": "Windward keeps clear of leeward",
@@ -13,7 +14,8 @@
   "es": "Barlovento se mantiene separado de sotavento",
   "de": "Luv hält sich von Lee frei",
   "tr": "Rüzgârüstü, rüzgâraltından uzak durur",
-  "fr": "Au vent se maintient à l’écart de sous le vent"
+  "fr": "Au vent se maintient à l’écart de sous le vent",
+  "it": "Sopravvento si tiene discosta da sottovento"
  },
  "r12": {
   "en": "Clear astern keeps clear",
@@ -21,7 +23,8 @@
   "es": "El libre por la popa se mantiene separado",
   "de": "Klar achteraus hält sich frei",
   "tr": "Açık arkadaki uzak durur",
-  "fr": "Route libre derrière se maintient à l’écart"
+  "fr": "Route libre derrière se maintient à l’écart",
+  "it": "Libera dietro si tiene discosta"
  },
  "r13": {
   "en": "While tacking, keep clear",
@@ -29,7 +32,8 @@
   "es": "Mientras viras, mantente separado",
   "de": "Während der Wende: freihalten",
   "tr": "Tramola atarken uzak dur",
-  "fr": "En virant de bord, se maintenir à l’écart"
+  "fr": "En virant de bord, se maintenir à l’écart",
+  "it": "Mentre vira, tenersi discosta"
  },
  "r15": {
   "en": "Just got right of way — give room first",
@@ -37,7 +41,8 @@
   "es": "Acabas de obtener derecho de paso: primero da espacio",
   "de": "Gerade Wegerecht bekommen: zuerst Raum geben",
   "tr": "Geçiş hakkını yeni aldın: önce alan ver",
-  "fr": "Priorité tout juste acquise : d’abord laisser la place"
+  "fr": "Priorité tout juste acquise : d’abord laisser la place",
+  "it": "Diritto di rotta appena acquisito: prima dai spazio"
  },
  "r16": {
   "en": "Right of way, but no sudden turns",
@@ -45,7 +50,8 @@
   "es": "Derecho de paso, pero sin cambios bruscos",
   "de": "Wegerecht, aber keine plötzlichen Kursänderungen",
   "tr": "Geçiş hakkı var, ama ani dönüş yok",
-  "fr": "Priorité, mais pas de changement de route brusque"
+  "fr": "Priorité, mais pas de changement de route brusque",
+  "it": "Diritto di rotta, ma niente accostate improvvise"
  },
  "r17": {
   "en": "In to leeward from astern — no higher than your proper course",
@@ -53,7 +59,8 @@
   "es": "Por sotavento desde atrás: no más alto que tu rumbo debido",
   "de": "Von achtern nach Lee: nicht höher als dein richtiger Kurs",
   "tr": "Arkadan rüzgâraltına girdin: uygun rotandan yükseğe çıkma",
-  "fr": "Engagé sous le vent par l’arrière : pas plus haut que ta route normale"
+  "fr": "Engagé sous le vent par l’arrière : pas plus haut que ta route normale",
+  "it": "Ingaggio sottovento da dietro: non più alta della rotta propria"
  },
  "r18": {
   "en": "Mark-room",
@@ -61,7 +68,8 @@
   "es": "Espacio en baliza",
   "de": "Bahnmarkenraum",
   "tr": "Şamandıra alanı",
-  "fr": "Place à la marque"
+  "fr": "Place à la marque",
+  "it": "Spazio alla boa"
  },
  "r18.3": {
   "en": "Tacking in the zone",
@@ -69,7 +77,8 @@
   "es": "Virar en la zona",
   "de": "Wenden in der Zone",
   "tr": "Bölgede tramola",
-  "fr": "Virer de bord dans la zone"
+  "fr": "Virer de bord dans la zone",
+  "it": "Virare nella zona"
  },
  "r18.4": {
   "en": "Gybing at the mark",
@@ -77,7 +86,8 @@
   "es": "Trasluchar en la baliza",
   "de": "Halsen an der Bahnmarke",
   "tr": "Şamandırada kavança",
-  "fr": "Empanner à la marque"
+  "fr": "Empanner à la marque",
+  "it": "Strambare alla boa"
  },
  "r19": {
   "en": "Room at an obstruction",
@@ -85,7 +95,8 @@
   "es": "Espacio en un obstáculo",
   "de": "Raum an einem Hindernis",
   "tr": "Engelde alan",
-  "fr": "Place à un obstacle"
+  "fr": "Place à un obstacle",
+  "it": "Spazio per passare un ostacolo"
  },
  "r20": {
   "en": "Room to tack at an obstruction",
@@ -93,7 +104,8 @@
   "es": "Espacio para virar en un obstáculo",
   "de": "Raum zum Wenden an einem Hindernis",
   "tr": "Engelde tramola için alan",
-  "fr": "Place pour virer de bord à un obstacle"
+  "fr": "Place pour virer de bord à un obstacle",
+  "it": "Spazio per virare a un ostacolo"
  },
  "r21.1": {
   "en": "Going back after a false start, keep clear",
@@ -101,7 +113,8 @@
   "es": "Al volver tras salir antes de tiempo, mantente separado",
   "de": "Nach einem Frühstart zurück: freihalten",
   "tr": "Erken starttan dönerken uzak dur",
-  "fr": "En revenant après un départ anticipé, se maintenir à l’écart"
+  "fr": "En revenant après un départ anticipé, se maintenir à l’écart",
+  "it": "Rientrando dopo una partenza anticipata, tenersi discosta"
  },
  "r21.2": {
   "en": "A boat taking a penalty keeps clear",
@@ -109,7 +122,8 @@
   "es": "Un barco que cumple una penalización se mantiene separado",
   "de": "Ein Boot beim Strafkringel hält sich frei",
   "tr": "Ceza dönüşündeki tekne uzak durur",
-  "fr": "Un bateau qui effectue une pénalité se maintient à l’écart"
+  "fr": "Un bateau qui effectue une pénalité se maintient à l’écart",
+  "it": "Una barca che si penalizza si tiene discosta"
  },
  "r31": {
   "en": "Touching a mark",
@@ -117,7 +131,8 @@
   "es": "Tocar una baliza",
   "de": "Berühren einer Bahnmarke",
   "tr": "Şamandıraya dokunmak",
-  "fr": "Toucher une marque"
+  "fr": "Toucher une marque",
+  "it": "Toccare una boa"
  },
  "r44": {
   "en": "A boat taking a penalty keeps clear",
@@ -125,7 +140,8 @@
   "es": "Un barco que cumple una penalización se mantiene separado",
   "de": "Ein Boot beim Strafkringel hält sich frei",
   "tr": "Ceza dönüşündeki tekne uzak durur",
-  "fr": "Un bateau qui effectue une pénalité se maintient à l’écart"
+  "fr": "Un bateau qui effectue une pénalité se maintient à l’écart",
+  "it": "Una barca che si penalizza si tiene discosta"
  },
  "rOcs": {
   "en": "Over the line at the start",
@@ -133,7 +149,8 @@
   "es": "Por delante de la línea en la salida",
   "de": "Beim Start über der Linie",
   "tr": "Startta hattın üzerinde",
-  "fr": "Du côté parcours de la ligne au départ"
+  "fr": "Du côté parcours de la ligne au départ",
+  "it": "Oltre la linea alla partenza"
  },
  "rU": {
   "en": "The U flag",
@@ -141,7 +158,8 @@
   "es": "La bandera U",
   "de": "Die Flagge U",
   "tr": "U bayrağı",
-  "fr": "Le pavillon U"
+  "fr": "Le pavillon U",
+  "it": "La bandiera U"
  },
  "rB": {
   "en": "The black flag",
@@ -149,7 +167,8 @@
   "es": "La bandera negra",
   "de": "Die schwarze Flagge",
   "tr": "Siyah bayrak",
-  "fr": "Le pavillon noir"
+  "fr": "Le pavillon noir",
+  "it": "La bandiera nera"
  },
  "x10": {
   "en": "On opposite tacks, the boat with the wind on her port side keeps clear.",
@@ -157,7 +176,8 @@
   "es": "En amuras opuestas, el barco que recibe el viento por babor se mantiene separado.",
   "de": "Auf entgegengesetzten Bugen hält sich das Boot mit dem Wind von Backbord frei.",
   "tr": "Farklı kontralarda, rüzgârı iskele tarafından alan tekne uzak durur.",
-  "fr": "Sur des bords opposés, le bateau qui reçoit le vent par bâbord se maintient à l’écart."
+  "fr": "Sur des bords opposés, le bateau qui reçoit le vent par bâbord se maintient à l’écart.",
+  "it": "Su mure opposte, una barca con mure a sinistra deve tenersi discosta da una barca con mure a dritta."
  },
  "x11": {
   "en": "Overlapped on the same tack, the windward boat keeps clear.",
@@ -165,7 +185,8 @@
   "es": "Comprometidos en la misma amura, el barco de barlovento se mantiene separado.",
   "de": "Überlappt auf demselben Bug hält sich das Luvboot frei.",
   "tr": "Aynı kontrada bindirmeliyken rüzgârüstündeki tekne uzak durur.",
-  "fr": "Engagés sur le même bord, le bateau au vent se maintient à l’écart."
+  "fr": "Engagés sur le même bord, le bateau au vent se maintient à l’écart.",
+  "it": "Sulle stesse mure e ingaggiate, una barca sopravvento deve tenersi discosta da una barca sottovento."
  },
  "x12": {
   "en": "On the same tack and not overlapped, the boat behind keeps clear.",
@@ -173,7 +194,8 @@
   "es": "En la misma amura y sin compromiso, el barco de detrás se mantiene separado.",
   "de": "Auf demselben Bug und nicht überlappt hält sich das Boot dahinter frei.",
   "tr": "Aynı kontrada ve bindirme yokken arkadaki tekne uzak durur.",
-  "fr": "Sur le même bord et non engagés, le bateau derrière se maintient à l’écart."
+  "fr": "Sur le même bord et non engagés, le bateau derrière se maintient à l’écart.",
+  "it": "Sulle stesse mure e non ingaggiate, una barca libera dietro deve tenersi discosta da una barca libera avanti."
  },
  "x13": {
   "en": "From head to wind until close-hauled, a tacking boat keeps clear of everyone.",
@@ -181,7 +203,8 @@
   "es": "Desde proa al viento hasta quedar de ceñida, un barco que vira se mantiene separado de todos.",
   "de": "Vom Durchgang durch den Wind bis hoch am Wind hält sich ein wendendes Boot von allen frei.",
   "tr": "Rüzgârın içinden geçtiği andan orsaya oturana kadar tramola atan tekne herkesten uzak durur.",
-  "fr": "De la position bout au vent jusqu’au plus près, un bateau qui vire de bord se maintient à l’écart de tous les autres."
+  "fr": "De la position bout au vent jusqu’au plus près, un bateau qui vire de bord se maintient à l’écart de tous les autres.",
+  "it": "Da quando passa la posizione di prua al vento fino a quando è di bolina stretta, una barca che vira deve tenersi discosta da tutte le altre."
  },
  "x15": {
   "en": "A boat that gets right of way by her own action (a tack, or sailing up from astern) must at first give the other room to keep clear.",
@@ -189,7 +212,8 @@
   "es": "Un barco que obtiene derecho de paso por su propia acción (una virada, o al orzar desde atrás) debe al principio dar al otro espacio para mantenerse separado.",
   "de": "Ein Boot, das durch eigenes Handeln Wegerecht bekommt (eine Wende oder das Aufholen von achtern), muss dem anderen zunächst Raum zum Freihalten geben.",
   "tr": "Geçiş hakkını kendi hareketiyle (bir tramola ya da arkadan yaklaşarak) alan tekne, önce diğerine uzak durması için alan vermelidir.",
-  "fr": "Un bateau qui acquiert la priorité par sa propre action (un virement de bord, ou en arrivant par l’arrière) doit d’abord laisser à l’autre la place de se maintenir à l’écart."
+  "fr": "Un bateau qui acquiert la priorité par sa propre action (un virement de bord, ou en arrivant par l’arrière) doit d’abord laisser à l’autre la place de se maintenir à l’écart.",
+  "it": "Una barca che acquisisce il diritto di rotta con una sua azione (una virata, o arrivando da dietro) deve inizialmente dare all’altra spazio per tenersi discosta."
  },
  "x16": {
   "en": "A boat with right of way that changes course must leave the other boat room to keep clear.",
@@ -197,7 +221,8 @@
   "es": "Un barco con derecho de paso que cambia de rumbo debe dar al otro espacio para mantenerse separado.",
   "de": "Ein Boot mit Wegerecht, das den Kurs ändert, muss dem anderen Raum zum Freihalten lassen.",
   "tr": "Rotasını değiştiren, geçiş hakkına sahip tekne diğerine uzak durması için alan bırakmalıdır.",
-  "fr": "Un bateau prioritaire qui change de route doit laisser à l’autre bateau la place de se maintenir à l’écart."
+  "fr": "Un bateau prioritaire qui change de route doit laisser à l’autre bateau la place de se maintenir à l’écart.",
+  "it": "Una barca con diritto di rotta che cambia rotta deve dare all’altra barca spazio per tenersi discosta."
  },
  "x17": {
   "en": "Overlapped to leeward from clear astern within two hull lengths, a boat must not sail above her proper course.",
@@ -205,7 +230,8 @@
   "es": "Comprometido por sotavento desde libre por la popa a menos de dos esloras, un barco no debe navegar por encima de su rumbo debido.",
   "de": "Von klar achteraus innerhalb von zwei Rumpflängen in Lee überlappt, darf ein Boot nicht höher als seinen richtigen Kurs segeln.",
   "tr": "Açık arkadan iki boy içinde rüzgâraltına bindiren tekne uygun rotasından yükseğe çıkamaz.",
-  "fr": "Engagé sous le vent à moins de deux longueurs de coque après être arrivé en route libre derrière, un bateau ne doit pas naviguer au-dessus de sa route normale."
+  "fr": "Engagé sous le vent à moins de deux longueurs de coque après être arrivé en route libre derrière, un bateau ne doit pas naviguer au-dessus de sa route normale.",
+  "it": "Ingaggiata sottovento da libera dietro entro due lunghezze di scafo, una barca non deve navigare più alta della sua rotta propria."
  },
  "x18": {
   "en": "In the zone of a mark (three hull lengths), the inside boat, or the one clear ahead, gets room to round. At the windward mark only between boats on the same tack: on opposite tacks there is no inside or outside, and port keeps clear of starboard.",
@@ -213,7 +239,8 @@
   "es": "En la zona de una baliza (tres esloras), el barco interior, o el libre por la proa, tiene espacio para rodear. En la baliza de barlovento solo entre barcos en la misma amura: en amuras opuestas no hay interior ni exterior, y babor se mantiene separado de estribor.",
   "de": "In der Zone einer Bahnmarke (drei Rumpflängen) bekommt das innere Boot oder das klar vorausliegende Raum zum Runden. An der Luvtonne nur zwischen Booten auf demselben Bug: auf entgegengesetzten Bugen gibt es kein Innen und Außen, und Backbordbug hält sich von Steuerbordbug frei.",
   "tr": "Bir şamandıranın bölgesinde (üç boy) içteki tekne ya da açık öndeki, dönmek için alan alır. Rüzgârüstü şamandırasında yalnızca aynı kontradaki tekneler arasında: farklı kontralarda iç ya da dış yoktur ve iskele kontra sancak kontradan uzak durur.",
-  "fr": "Dans la zone d’une marque (trois longueurs de coque), le bateau à l’intérieur, ou celui en route libre devant, a droit à la place pour la contourner. À la marque au vent, seulement entre bateaux sur le même bord : sur des bords opposés, il n’y a ni intérieur ni extérieur, et bâbord amures se maintient à l’écart de tribord amures."
+  "fr": "Dans la zone d’une marque (trois longueurs de coque), le bateau à l’intérieur, ou celui en route libre devant, a droit à la place pour la contourner. À la marque au vent, seulement entre bateaux sur le même bord : sur des bords opposés, il n’y a ni intérieur ni extérieur, et bâbord amures se maintient à l’écart de tribord amures.",
+  "it": "Nella zona di una boa (tre lunghezze di scafo), la barca interna, o quella libera avanti, ha diritto allo spazio per girarla. Alla boa di bolina vale solo tra barche sulle stesse mure: su mure opposte non c’è interno né esterno, e mure a sinistra si tiene discosta da mure a dritta."
  },
  "x18.3": {
   "en": "A boat that tacks onto starboard in the zone mustn’t make a boat that has been on starboard since entering it sail above close-hauled, and gives her room if she gets inside.",
@@ -221,7 +248,8 @@
   "es": "Un barco que vira a estribor dentro de la zona no debe obligar a navegar por encima de ceñida a un barco que va amurado a estribor desde que entró en ella, y le da espacio si queda por dentro.",
   "de": "Ein Boot, das in der Zone auf Steuerbordbug wendet, darf ein Boot, das seit dem Erreichen der Zone auf Steuerbordbug segelt, nicht zwingen, höher als hoch am Wind zu segeln, und gibt ihm Raum, wenn es innen liegt.",
   "tr": "Bölgede sancak kontraya tramola atan tekne, bölgeye girdiğinden beri sancak kontrada olan bir tekneyi orsadan yükseğe çıkmaya zorlayamaz ve içe girerse ona alan verir.",
-  "fr": "Un bateau qui vire sur tribord amures dans la zone ne doit pas obliger un bateau tribord amures depuis son entrée dans la zone à naviguer au-dessus du plus près, et lui laisse la place s’il passe à l’intérieur."
+  "fr": "Un bateau qui vire sur tribord amures dans la zone ne doit pas obliger un bateau tribord amures depuis son entrée dans la zone à naviguer au-dessus du plus près, et lui laisse la place s’il passe à l’intérieur.",
+  "it": "Una barca che vira con mure a dritta nella zona non deve costringere una barca che è con mure a dritta da quando è entrata nella zona a navigare più alta di bolina stretta, e le dà spazio se si trova all’interno."
  },
  "x18.4": {
   "en": "An inside boat with right of way that has to gybe at the mark sails no farther from it than her proper course needs.",
@@ -229,7 +257,8 @@
   "es": "Un barco interior con derecho de paso que tiene que trasluchar en la baliza no se aleja de ella más de lo que exige su rumbo debido.",
   "de": "Ein inneres Boot mit Wegerecht, das an der Bahnmarke halsen muss, segelt nicht weiter von ihr weg, als sein richtiger Kurs verlangt.",
   "tr": "Şamandırada kavança atması gereken, geçiş hakkına sahip içteki tekne şamandıradan uygun rotasının gerektirdiğinden fazla uzaklaşmaz.",
-  "fr": "Un bateau prioritaire à l’intérieur qui doit empanner à la marque ne s’en éloigne pas plus que ne l’exige sa route normale."
+  "fr": "Un bateau prioritaire à l’intérieur qui doit empanner à la marque ne s’en éloigne pas plus que ne l’exige sa route normale.",
+  "it": "Una barca interna con diritto di rotta che deve strambare alla boa non se ne allontana più di quanto richieda la sua rotta propria."
  },
  "x19": {
   "en": "Passing an obstruction overlapped (the committee boat, away from the start and finish), the outside boat gives the inside one room.",
@@ -237,7 +266,8 @@
   "es": "Al pasar comprometidos un obstáculo (el barco del comité, lejos de la salida y la llegada), el barco exterior da espacio al interior.",
   "de": "Beim überlappten Passieren eines Hindernisses (des Startschiffs, abseits von Start und Ziel) gibt das äußere Boot dem inneren Raum.",
   "tr": "Bir engeli bindirmeli geçerken (start ve bitişten uzaktaki komite teknesi) dıştaki tekne içtekine alan verir.",
-  "fr": "En passant un obstacle engagés (le bateau comité, loin du départ et de l’arrivée), le bateau à l’extérieur laisse la place à celui de l’intérieur."
+  "fr": "En passant un obstacle engagés (le bateau comité, loin du départ et de l’arrivée), le bateau à l’extérieur laisse la place à celui de l’intérieur.",
+  "it": "Passando un ostacolo da ingaggiate (la barca comitato, lontano da partenza e arrivo), la barca esterna dà spazio a quella interna."
  },
  "x20": {
   "en": "Close-hauled and blocked by an obstruction ahead, a boat may hail for room to tack; the boat hailed must tack or give her room.",
@@ -245,7 +275,8 @@
   "es": "De ceñida y con un obstáculo delante, un barco puede pedir a voces espacio para virar; el barco avisado debe virar o darle espacio.",
   "de": "Hoch am Wind und von einem Hindernis voraus blockiert, darf ein Boot um Raum zum Wenden rufen; das angerufene Boot muss wenden oder ihm Raum geben.",
   "tr": "Orsada ve önünde bir engel varken tekne tramola için alan isteyebilir; seslenilen tekne tramola atmalı ya da ona alan vermelidir.",
-  "fr": "Au plus près et bloqué par un obstacle devant, un bateau peut héler pour avoir la place de virer ; le bateau hélé doit virer ou lui laisser la place."
+  "fr": "Au plus près et bloqué par un obstacle devant, un bateau peut héler pour avoir la place de virer ; le bateau hélé doit virer ou lui laisser la place.",
+  "it": "Di bolina stretta e bloccata da un ostacolo davanti, una barca può chiamare spazio per virare; la barca chiamata deve virare o darle spazio."
  },
  "x21.1": {
   "en": "A boat going back below the line after a false start keeps clear of the boats that have started, until all of her hull is below it.",
@@ -253,7 +284,8 @@
   "es": "Un barco que vuelve por debajo de la línea tras salir antes de tiempo se mantiene separado de los que ya han salido, hasta tener todo el casco por debajo de ella.",
   "de": "Ein Boot, das nach einem Frühstart unter die Linie zurückkehrt, hält sich von den gestarteten Booten frei, bis sein ganzer Rumpf unter der Linie ist.",
   "tr": "Erken starttan sonra hattın altına dönen tekne, gövdesinin tamamı hattın altına geçene kadar start etmiş teknelerden uzak durur.",
-  "fr": "Un bateau qui revient du côté pré-départ de la ligne après un départ anticipé se maintient à l’écart des bateaux partis, jusqu’à ce que toute sa coque soit de ce côté."
+  "fr": "Un bateau qui revient du côté pré-départ de la ligne après un départ anticipé se maintient à l’écart des bateaux partis, jusqu’à ce que toute sa coque soit de ce côté.",
+  "it": "Una barca che rientra sotto la linea dopo una partenza anticipata si tiene discosta dalle barche già partite, finché tutto il suo scafo non è tornato dalla parte di prepartenza."
  },
  "x21.2": {
   "en": "A boat spinning her penalty turns keeps clear of the others.",
@@ -261,7 +293,8 @@
   "es": "Un barco que está haciendo sus giros de penalización se mantiene separado de los demás.",
   "de": "Ein Boot beim Strafkringel hält sich von den anderen frei.",
   "tr": "Ceza dönüşlerini yapan tekne diğerlerinden uzak durur.",
-  "fr": "Un bateau qui effectue ses tours de pénalité se maintient à l’écart des autres."
+  "fr": "Un bateau qui effectue ses tours de pénalité se maintient à l’écart des autres.",
+  "it": "Una barca che esegue i suoi giri di penalità si tiene discosta dalle altre."
  },
  "x31": {
   "en": "Touching a mark costs one penalty turn: a tack and a gybe.",
@@ -269,7 +302,8 @@
   "es": "Tocar una baliza cuesta un giro de penalización: una virada y una trasluchada.",
   "de": "Das Berühren einer Bahnmarke kostet einen Strafkringel: eine Wende und eine Halse.",
   "tr": "Şamandıraya dokunmanın bedeli bir ceza dönüşüdür: bir tramola ve bir kavança.",
-  "fr": "Toucher une marque coûte un tour de pénalité : un virement de bord et un empannage."
+  "fr": "Toucher une marque coûte un tour de pénalité : un virement de bord et un empannage.",
+  "it": "Toccare una boa costa un giro di penalità: una virata e una strambata."
  },
  "x44": {
   "en": "A boat spinning her penalty turns keeps clear of the others.",
@@ -277,6 +311,7 @@
   "es": "Un barco que está haciendo sus giros de penalización se mantiene separado de los demás.",
   "de": "Ein Boot beim Strafkringel hält sich von den anderen frei.",
   "tr": "Ceza dönüşlerini yapan tekne diğerlerinden uzak durur.",
-  "fr": "Un bateau qui effectue ses tours de pénalité se maintient à l’écart des autres."
+  "fr": "Un bateau qui effectue ses tours de pénalité se maintient à l’écart des autres.",
+  "it": "Una barca che esegue i suoi giri di penalità si tiene discosta dalle altre."
  }
 }

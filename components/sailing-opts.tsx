@@ -28,9 +28,9 @@ export function SailingOpts({ lang }: { lang: Lang }) {
   );
   return (
     <div className="st-sail">
-      {seg('autoTrim', t('Sails', 'Паруса', 'Velas', 'Segel', 'Yelkenler', 'Voiles'), [[0, t('I trim', 'Сам', 'Trimo yo', 'Ich trimme', 'Trimi ben yaparım', 'Je règle')], [1, t('Auto', 'Авто', 'Auto', 'Auto', 'Otomatik', 'Auto')], [2, t('Main + jib', 'Грот + стаксель', 'Mayor + foque', 'Groß + Fock', 'Ana yelken + flok', 'GV + foc')]])}
-      {seg('camera', t('Camera', 'Камера', 'Cámara', 'Kamera', 'Kamera', 'Caméra'), [['drone', t('Drone', 'Дрон', 'Dron', 'Drohne', 'Drone', 'Drone')], ['top', t('Top', 'Сверху', 'Cenital', 'Oben', 'Üst', 'Dessus')], ['helm', t('Helm', 'Штурвал', 'Timón', 'Ruder', 'Dümen', 'Barre')]])}
-      {sw('guides', t('Guides on the water', 'Подсказки на воде', 'Guías en el agua', 'Hilfslinien auf dem Wasser', 'Suda kılavuzlar', 'Aides sur l’eau'))}
+      {seg('autoTrim', t('Sails', 'Паруса', 'Velas', 'Segel', 'Yelkenler', 'Voiles', 'Vele'), [[0, t('I trim', 'Сам', 'Trimo yo', 'Ich trimme', 'Trimi ben yaparım', 'Je règle', 'Regolo io')], [1, t('Auto', 'Авто', 'Auto', 'Auto', 'Otomatik', 'Auto', 'Auto')], [2, t('Main + jib', 'Грот + стаксель', 'Mayor + foque', 'Groß + Fock', 'Ana yelken + flok', 'GV + foc', 'Randa + fiocco')]])}
+      {seg('camera', t('Camera', 'Камера', 'Cámara', 'Kamera', 'Kamera', 'Caméra', 'Telecamera'), [['drone', t('Drone', 'Дрон', 'Dron', 'Drohne', 'Drone', 'Drone', 'Drone')], ['top', t('Top', 'Сверху', 'Cenital', 'Oben', 'Üst', 'Dessus', 'Dall’alto')], ['helm', t('Helm', 'Штурвал', 'Timón', 'Ruder', 'Dümen', 'Barre', 'Timoniere')]])}
+      {sw('guides', t('Guides on the water', 'Подсказки на воде', 'Guías en el agua', 'Hilfslinien auf dem Wasser', 'Suda kılavuzlar', 'Aides sur l’eau', 'Guide sull’acqua'))}
     </div>
   );
 }

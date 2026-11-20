@@ -19,12 +19,12 @@ export async function GET(request: Request) {
   const date = new Date(d.day + 'T12:00:00Z').toLocaleDateString(LOCALE[lang], { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/\.$/, '');
   const img = await card({ lang,
     bg: 'drone',
-    kind: `${t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı', 'La régate du jour')} · ${t(...venueOf(d.venue).name)} · ${t(...yachtOf(d.yacht).name)}`,
+    kind: `${t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı', 'La régate du jour', 'La regata del giorno')} · ${t(...venueOf(d.venue).name)} · ${t(...yachtOf(d.yacht).name)}`,
     tag: { text: date, live: true },
     hero: best
-      ? { label: best.name ? `${t('Time to beat', 'Лучшее время', 'Tiempo a batir', 'Zeit zum Schlagen', 'Geçilecek süre', 'Temps à battre')} · ${best.name}` : t('Time to beat', 'Лучшее время', 'Tiempo a batir', 'Zeit zum Schlagen', 'Geçilecek süre', 'Temps à battre'), value: clock(best.s), color: C.gold }
-      : { label: t('No time yet today', 'Сегодня ещё никто не финишировал', 'Aún sin tiempo hoy', 'Heute noch keine Zeit', 'Bugün henüz süre yok', 'Pas encore de temps aujourd’hui'), value: t('Be first', 'Будь первым', 'Sé el primero', 'Sei der Erste', 'İlk ol', 'Prends la tête') },
-    call: t('Sail today’s race', 'Пройди гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln', 'Günün yarışına çık', 'Cours la régate du jour'),
+      ? { label: best.name ? `${t('Time to beat', 'Лучшее время', 'Tiempo a batir', 'Zeit zum Schlagen', 'Geçilecek süre', 'Temps à battre', 'Tempo da battere')} · ${best.name}` : t('Time to beat', 'Лучшее время', 'Tiempo a batir', 'Zeit zum Schlagen', 'Geçilecek süre', 'Temps à battre', 'Tempo da battere'), value: clock(best.s), color: C.gold }
+      : { label: t('No time yet today', 'Сегодня ещё никто не финишировал', 'Aún sin tiempo hoy', 'Heute noch keine Zeit', 'Bugün henüz süre yok', 'Pas encore de temps aujourd’hui', 'Ancora nessun tempo oggi'), value: t('Be first', 'Будь первым', 'Sé el primero', 'Sei der Erste', 'İlk ol', 'Prends la tête', 'Sii il primo') },
+    call: t('Sail today’s race', 'Пройди гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln', 'Günün yarışına çık', 'Cours la régate du jour', 'Corri la regata del giorno'),
   });
   img.headers.set('cache-control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=3600'); // the time to beat moves
   return img;

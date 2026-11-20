@@ -16,13 +16,13 @@ export default async function AdminGamePage({ params, searchParams }: LangParams
   const { lang, t } = a;
   return (
     <AdminShell {...a} page="game" days={days}>
-      {hasStats(st?.data ?? null) ? <AdminRacing lang={lang} stats={st!.data!} /> : <AdminMissing t={t} Icon={IconTrophy} title={t('How they race', 'Как гоняются', 'Cómo compiten', 'Wie sie segeln', 'Nasıl yarışıyorlar', 'Comment ils régatent')} error={st?.error} />}
+      {hasStats(st?.data ?? null) ? <AdminRacing lang={lang} stats={st!.data!} /> : <AdminMissing t={t} Icon={IconTrophy} title={t('How they race', 'Как гоняются', 'Cómo compiten', 'Wie sie segeln', 'Nasıl yarışıyorlar', 'Comment ils régatent', 'Come regatano')} error={st?.error} />}
       {ins?.data ? (<>
         <InsightDifficulty lang={lang} data={ins.data} />
         <InsightExits lang={lang} data={ins.data} />
         <InsightRatings lang={lang} data={ins.data} />
         <InsightSettings lang={lang} data={ins.data} />
-      </>) : <AdminMissing t={t} Icon={IconCrew} title={t('How they like it', 'Нравится ли игра', 'Cómo les gusta', 'Wie sie es mögen', 'Neleri tercih ediyorlar', 'Ce qu’ils aiment')} error={ins?.error} />}
+      </>) : <AdminMissing t={t} Icon={IconCrew} title={t('How they like it', 'Нравится ли игра', 'Cómo les gusta', 'Wie sie es mögen', 'Neleri tercih ediyorlar', 'Ce qu’ils aiment', 'Cosa ne pensano')} error={ins?.error} />}
     </AdminShell>
   );
 }

@@ -7,7 +7,7 @@ import { getRating, todayUtc } from '@/lib/rating';
 import { AuthShell } from '@/components/auth-shell';
 import { NameForm } from '@/components/sign-in-forms';
 
-export const generateMetadata = titled('Your name on the ranking', 'Твоё имя в рейтинге', 'Tu nombre en la clasificación', 'Dein Name in der Rangliste', 'Sıralamadaki adın', 'Ton nom au classement', { index: false });
+export const generateMetadata = titled('Your name on the ranking', 'Твоё имя в рейтинге', 'Tu nombre en la clasificación', 'Dein Name in der Rangliste', 'Sıralamadaki adın', 'Ton nom au classement', 'Il tuo nome in classifica', { index: false });
 
 // "Anna Petrova" from Google becomes "Anna P."
 const short = (full: string) => {

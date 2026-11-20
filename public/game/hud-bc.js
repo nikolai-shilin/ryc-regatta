@@ -654,7 +654,7 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
   const rudder = $('#rudder'), sheet = $('#sheet'), mini = $('#mini'), count = $('#count'), toastEl = $('#toast');
   const nf = (x, d = 1) => (LANG === 'en' ? x.toFixed(d) : x.toFixed(d).replace('.', ','));
   const M = LANG === 'ru' ? 'м' : 'm', KNU = t('kn').toUpperCase();
-  const venue = (VENUE.name && (VENUE.name[{ en: 0, ru: 1, es: 2, de: 3, tr: 4, fr: 5 }[LANG] ?? 0] ?? VENUE.name[0])) || '';
+  const venue = (VENUE.name && (VENUE.name[{ en: 0, ru: 1, es: 2, de: 3, tr: 4, fr: 5, it: 6 }[LANG] ?? 0] ?? VENUE.name[0])) || '';
   document.head.append(Object.assign(document.createElement('style'), { textContent: CSS }));
   const html = (s) => { const d = document.createElement('div'); d.innerHTML = s.trim(); return d.firstChild; };
   const q = (root, s) => root.querySelector(s);

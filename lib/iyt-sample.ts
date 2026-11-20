@@ -7,7 +7,17 @@ const Q = {
   id: 'rr-166',
   answer: 'B' as const,
   figure: { en: 'https://iyt.rycrentals.com/api/mcp?figure=rr-166', ru: 'https://iyt.rycrentals.com/api/mcp?figure=rr-166&lang=ru' },
-  reference: { en: 'RRS 12, RRS 13, RRS 10', ru: 'ППГ 12, ППГ 13, ППГ 10', es: 'RRV 12, RRV 13, RRV 10', de: 'WR 12, WR 13, WR 10', tr: 'YYK 12, YYK 13, YYK 10', fr: 'RCV 12, RCV 13, RCV 10' },
+  reference: { en: 'RRS 12, RRS 13, RRS 10', ru: 'ППГ 12, ППГ 13, ППГ 10', es: 'RRV 12, RRV 13, RRV 10', de: 'WR 12, WR 13, WR 10', tr: 'YYK 12, YYK 13, YYK 10', fr: 'RCV 12, RCV 13, RCV 10', it: 'RRS 12, RRS 13, RRS 10' },
+  it: {
+    question: 'Blu è libera avanti, due lunghezze davanti a te, mure a dritta di bolina; tu ti tieni discosto. Vira proprio sulla tua rotta, passa mure a sinistra e si assesta di bolina una lunghezza e mezza davanti a te. Chi si tiene discosto mentre vira, e chi dopo?',
+    options: {
+      A: 'Blu durante la virata, poi tu: finita la virata, sei di nuovo la barca libera dietro',
+      B: 'Blu entrambe le volte: durante la virata si tiene discosta per la regola 13, e una volta di bolina mure a sinistra si tiene discosta da te, mure a dritta, per la regola 10',
+      C: 'Tu durante la sua virata, poi Blu: una barca che vira ha il diritto di rotta finché non è di bolina',
+      D: 'Tu entrambe le volte: la barca dietro si tiene discosta da quella davanti, qualunque cosa faccia (regola 12)',
+    },
+    why: 'La regola 12 smette di valere quando Blu passa la prua al vento; durante la virata vale la regola 13, poi la regola 10, perché le mure sono diverse.',
+  },
   fr: {
     question: 'Bleu est en route libre devant, deux longueurs devant toi, tribord amures au près ; tu te maintiens à l’écart. Il vire de bord juste sur ta route, passe bâbord amures et s’établit au près une longueur et demie devant toi. Qui se maintient à l’écart pendant son virement, et qui ensuite ?',
     options: {

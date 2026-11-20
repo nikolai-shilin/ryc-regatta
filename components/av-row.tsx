@@ -31,21 +31,21 @@ function useSummary(lang: Lang) {
 
 // the button in the head of every panel over a 3D scene: the menu in one tap, with the level the scene is drawn at
 export function AvButton({ lang }: { lang: Lang }) {
-  const t = tx(lang), sum = useSummary(lang), name = t('Audio & graphics', 'Звук и графика', 'Sonido y gráficos', 'Ton & Grafik', 'Ses ve grafik', 'Audio et graphismes');
+  const t = tx(lang), sum = useSummary(lang), name = t('Audio & graphics', 'Звук и графика', 'Sonido y gráficos', 'Ton & Grafik', 'Ses ve grafik', 'Audio et graphismes', 'Audio e grafica');
   return (
     <button type="button" className="bt-gfx" onClick={() => openAv(lang)} aria-haspopup="dialog" aria-label={sum.all ? `${name}: ${sum.all}` : name} title={name}>
-      <IconSliders /><span>{t('Graphics', 'Графика', 'Gráficos', 'Grafik', 'Grafik', 'Graphismes')}</span>{sum.gfx && <b>{sum.gfx}</b>}
+      <IconSliders /><span>{t('Graphics', 'Графика', 'Gráficos', 'Grafik', 'Grafik', 'Graphismes', 'Grafica')}</span>{sum.gfx && <b>{sum.gfx}</b>}
     </button>
   );
 }
 
 // a row of the panels' Settings; `wide`: the row across /settings
 export function AvRow({ lang, wide = false }: { lang: Lang; wide?: boolean }) {
-  const t = tx(lang), sum = useSummary(lang).all, name = t('Audio & graphics', 'Звук и графика', 'Sonido y gráficos', 'Ton & Grafik', 'Ses ve grafik', 'Audio et graphismes');
+  const t = tx(lang), sum = useSummary(lang).all, name = t('Audio & graphics', 'Звук и графика', 'Sonido y gráficos', 'Ton & Grafik', 'Ses ve grafik', 'Audio et graphismes', 'Audio e grafica');
   if (wide) return (
     <button type="button" className="st-boat st-av" onClick={() => openAv(lang)}>
       <IconSliders /><b>{name}</b><span className="st-boat-k">{sum}</span>
-      <span className="st-boat-e">{t('Open', 'Открыть', 'Abrir', 'Öffnen', 'Aç', 'Ouvrir')}<IconArrow s={14} /></span>
+      <span className="st-boat-e">{t('Open', 'Открыть', 'Abrir', 'Öffnen', 'Aç', 'Ouvrir', 'Apri')}<IconArrow s={14} /></span>
     </button>
   );
   return <button type="button" className="bt-row" onClick={() => openAv(lang)}><IconSliders /><span>{name}</span>{sum && <span className="bt-row-m">{sum}</span>}</button>;
@@ -53,5 +53,5 @@ export function AvRow({ lang, wide = false }: { lang: Lang; wide?: boolean }) {
 
 // the line in the header's menu
 export function AvMenuItem({ lang }: { lang: Lang }) {
-  return <button type="button" className="hm-mi hm-mi-btn" onClick={(e) => { e.currentTarget.closest('details')?.removeAttribute('open'); openAv(lang); }}>{tx(lang)('Audio & graphics', 'Звук и графика', 'Sonido y gráficos', 'Ton & Grafik', 'Ses ve grafik', 'Audio et graphismes')}</button>;
+  return <button type="button" className="hm-mi hm-mi-btn" onClick={(e) => { e.currentTarget.closest('details')?.removeAttribute('open'); openAv(lang); }}>{tx(lang)('Audio & graphics', 'Звук и графика', 'Sonido y gráficos', 'Ton & Grafik', 'Ses ve grafik', 'Audio et graphismes', 'Audio e grafica')}</button>;
 }

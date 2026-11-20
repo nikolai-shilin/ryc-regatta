@@ -2,7 +2,7 @@
 // scripts/flags.mjs (add a country there and here). ioc: the letters a boat from there carries on her sail, which the
 // boat page fills in when you pick her flag.
 
-export type Flag = { code: string; ioc: string; en: string; ru: string; es?: string; de?: string; tr?: string; fr?: string };
+export type Flag = { code: string; ioc: string; en: string; ru: string; es?: string; de?: string; tr?: string; fr?: string; it?: string };
 
 export const FLAGS: Flag[] = [
   { code: 'ag', ioc: 'ANT', en: 'Antigua and Barbuda', ru: 'Антигуа и Барбуда' },
@@ -116,6 +116,8 @@ const trNames = (() => { try { return new Intl.DisplayNames(['tr'], { type: 'reg
 for (const f of FLAGS) { const n = trNames && /^[a-z]{2}$/.test(f.code) ? trNames.of(f.code.toUpperCase()) : undefined; if (n && n !== f.code.toUpperCase()) f.tr = n; }
 const frNames = (() => { try { return new Intl.DisplayNames(['fr'], { type: 'region' }); } catch { return null; } })();
 for (const f of FLAGS) { const n = frNames && /^[a-z]{2}$/.test(f.code) ? frNames.of(f.code.toUpperCase()) : undefined; if (n && n !== f.code.toUpperCase()) f.fr = n; }
+const itNames = (() => { try { return new Intl.DisplayNames(['it'], { type: 'region' }); } catch { return null; } })();
+for (const f of FLAGS) { const n = itNames && /^[a-z]{2}$/.test(f.code) ? itNames.of(f.code.toUpperCase()) : undefined; if (n && n !== f.code.toUpperCase()) f.it = n; }
 
 export const flagSrc = (code: string) => `/flags/${code}.svg`;
 export const findFlag = (code: string | undefined) => (code ? FLAGS.find((f) => f.code === code) : undefined);

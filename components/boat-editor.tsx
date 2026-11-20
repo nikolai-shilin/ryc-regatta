@@ -50,7 +50,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
   }, []);
   useEffect(() => { if (ready) post({ type: 'look', boat: b }); setJustSaved(false); }, [b, ready]); // eslint-disable-line react-hooks/exhaustive-deps
   const save = () => {
-    if (!saveBoat(b)) { setErr(t('This browser didn’t keep your yacht: its storage may be full or blocked.', 'Браузер не сохранил яхту: возможно, его хранилище заполнено или заблокировано.', 'Este navegador no guardó tu yate: puede que su almacenamiento esté lleno o bloqueado.', 'Dieser Browser hat deine Yacht nicht gespeichert: Vielleicht ist der Speicher voll oder gesperrt.', 'Bu tarayıcı yatını saklamadı: depolama alanı dolu ya da engellenmiş olabilir.', 'Ce navigateur n’a pas gardé ton yacht : son stockage est peut-être plein ou bloqué.')); return false; }
+    if (!saveBoat(b)) { setErr(t('This browser didn’t keep your yacht: its storage may be full or blocked.', 'Браузер не сохранил яхту: возможно, его хранилище заполнено или заблокировано.', 'Este navegador no guardó tu yate: puede que su almacenamiento esté lleno o bloqueado.', 'Dieser Browser hat deine Yacht nicht gespeichert: Vielleicht ist der Speicher voll oder gesperrt.', 'Bu tarayıcı yatını saklamadı: depolama alanı dolu ya da engellenmiş olabilir.', 'Ce navigateur n’a pas gardé ton yacht : son stockage est peut-être plein ou bloqué.', 'Questo browser non ha conservato il tuo yacht: la sua memoria potrebbe essere piena o bloccata.')); return false; }
     setErr(''); setKept(lookKey(b)); setJustSaved(true); dirtyRef.current = false; // kept: going on to race asks nothing
     syncAccount().catch(() => {});
     return true;
@@ -62,7 +62,7 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
     const link = (e: MouseEvent) => {
       const a = (e.target as HTMLElement)?.closest?.('a[href]');
       if (!a || a.classList.contains('bt-go') || e.defaultPrevented) return;
-      if (!confirm(t('Leave without saving your yacht? Your changes will be lost.', 'Уйти, не сохранив яхту? Изменения пропадут.', '¿Salir sin guardar tu yate? Perderás los cambios.', 'Verlassen, ohne deine Yacht zu speichern? Deine Änderungen gehen verloren.', 'Yatını kaydetmeden çıkılsın mı? Değişikliklerin kaybolacak.', 'Partir sans enregistrer ton yacht ? Tes modifications seront perdues.'))) { e.preventDefault(); e.stopPropagation(); }
+      if (!confirm(t('Leave without saving your yacht? Your changes will be lost.', 'Уйти, не сохранив яхту? Изменения пропадут.', '¿Salir sin guardar tu yate? Perderás los cambios.', 'Verlassen, ohne deine Yacht zu speichern? Deine Änderungen gehen verloren.', 'Yatını kaydetmeden çıkılsın mı? Değişikliklerin kaybolacak.', 'Partir sans enregistrer ton yacht ? Tes modifications seront perdues.', 'Uscire senza salvare il tuo yacht? Le modifiche andranno perse.'))) { e.preventDefault(); e.stopPropagation(); }
     };
     addEventListener('beforeunload', unload);
     document.addEventListener('click', link, true);
@@ -129,47 +129,47 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
 
   return (
     <div className="bt">
-      <LoadBar label={t('Loading your yacht', 'Загружаем яхту', 'Cargando tu yate', 'Deine Yacht wird geladen', 'Yatın yükleniyor', 'Chargement de ton yacht')} on={!live} />
-      <iframe ref={frame} className="bt-scene" src={scene.go ? '/boat-view?wind=light' : undefined} onLoad={() => post({ type: 'hello' })} title={t('Your yacht in 3D', 'Твоя яхта в 3D', 'Tu yate en 3D', 'Deine Yacht in 3D', 'Yatın 3D', 'Ton yacht en 3D')} />
+      <LoadBar label={t('Loading your yacht', 'Загружаем яхту', 'Cargando tu yate', 'Deine Yacht wird geladen', 'Yatın yükleniyor', 'Chargement de ton yacht', 'Caricamento del tuo yacht')} on={!live} />
+      <iframe ref={frame} className="bt-scene" src={scene.go ? '/boat-view?wind=light' : undefined} onLoad={() => post({ type: 'hello' })} title={t('Your yacht in 3D', 'Твоя яхта в 3D', 'Tu yate en 3D', 'Deine Yacht in 3D', 'Yatın 3D', 'Ton yacht en 3D', 'Il tuo yacht in 3D')} />
       {/* over the scene, which doesn't fade in: it shows until her first frame, then fades away */}
-      <ScenePoster label={t('Loading your yacht', 'Загружаем яхту', 'Cargando tu yate', 'Deine Yacht wird geladen', 'Yatın yükleniyor', 'Chargement de ton yacht')} on={!live} />
+      <ScenePoster label={t('Loading your yacht', 'Загружаем яхту', 'Cargando tu yate', 'Deine Yacht wird geladen', 'Yatın yükleniyor', 'Chargement de ton yacht', 'Caricamento del tuo yacht')} on={!live} />
 
       <div className="bt-info" ref={info}>
         <div className="bt-top">{back}<SceneBrand lang={lang} /></div>
-        <span className="bt-kick">{t('Your yacht', 'Твоя яхта', 'Tu yate', 'Deine Yacht', 'Yatın', 'Ton yacht')}</span>
+        <span className="bt-kick">{t('Your yacht', 'Твоя яхта', 'Tu yate', 'Deine Yacht', 'Yatın', 'Ton yacht', 'Il tuo yacht')}</span>
         {/* her flag and sail number, as the race calls her */}
-        <h1 className="bt-h bt-h-boat">{/* eslint-disable-next-line @next/next/no-img-element */}{flag ? <img className="bt-h-flag" src={flagSrc(flag.code)} alt={t(flag.en, flag.ru, flag.es, flag.de, flag.tr, flag.fr)} /> : <NoFlag className="bt-h-flag" />}<span className="vh">{t('Your yacht: ', 'Твоя яхта: ', 'Tu yate: ', 'Deine Yacht: ', 'Yatın: ', 'Ton yacht : ')}</span><span>{`${b.nat} ${b.num || '1'}`.trim()}</span></h1>
-        <p className="bt-p">{t('Lake Garda, a summer evening. Drag to circle her.', 'Озеро Гарда, летний вечер. Тяни, чтобы облететь яхту.', 'Lago de Garda, una tarde de verano. Arrastra para rodearla.', 'Gardasee, ein Sommerabend. Ziehen, um sie zu umkreisen.', 'Garda Gölü, bir yaz akşamı. Çevresinde dönmek için sürükle.', 'Lac de Garde, un soir d’été. Fais glisser pour tourner autour.')}</p>
+        <h1 className="bt-h bt-h-boat">{/* eslint-disable-next-line @next/next/no-img-element */}{flag ? <img className="bt-h-flag" src={flagSrc(flag.code)} alt={t(flag.en, flag.ru, flag.es, flag.de, flag.tr, flag.fr, flag.it)} /> : <NoFlag className="bt-h-flag" />}<span className="vh">{t('Your yacht: ', 'Твоя яхта: ', 'Tu yate: ', 'Deine Yacht: ', 'Yatın: ', 'Ton yacht : ', 'Il tuo yacht: ')}</span><span>{`${b.nat} ${b.num || '1'}`.trim()}</span></h1>
+        <p className="bt-p">{t('Lake Garda, a summer evening. Drag to circle her.', 'Озеро Гарда, летний вечер. Тяни, чтобы облететь яхту.', 'Lago de Garda, una tarde de verano. Arrastra para rodearla.', 'Gardasee, ein Sommerabend. Ziehen, um sie zu umkreisen.', 'Garda Gölü, bir yaz akşamı. Çevresinde dönmek için sürükle.', 'Lac de Garde, un soir d’été. Fais glisser pour tourner autour.', 'Lago di Garda, una sera d’estate. Trascina per girarle intorno.')}</p>
       </div>
 
-      <PauseCard lang={lang} back="/boat" title={t('Your yacht', 'Твоя яхта', 'Tu yate', 'Deine Yacht', 'Yatın', 'Ton yacht')} className="bt-boat" cardRef={card} foot={['yachts', 'venues']}
-        tools={<button type="button" className="bt-mini" title={t('Back to the RYC colours', 'Вернуть цвета RYC', 'Volver a los colores del RYC', 'Zurück zu den RYC-Farben', 'RYC renklerine dön', 'Revenir aux couleurs du RYC')} aria-label={t('Back to the RYC colours', 'Вернуть цвета RYC', 'Volver a los colores del RYC', 'Zurück zu den RYC-Farben', 'RYC renklerine dön', 'Revenir aux couleurs du RYC')} onClick={() => { setB({ ...DEFAULT_BOAT, name: b.name }); setDown(false); }}>
-          <IconRestart s={14} /><span>{t('RYC colours', 'Цвета RYC', 'Colores del RYC', 'RYC-Farben', 'RYC renkleri', 'Couleurs du RYC')}</span>
+      <PauseCard lang={lang} back="/boat" title={t('Your yacht', 'Твоя яхта', 'Tu yate', 'Deine Yacht', 'Yatın', 'Ton yacht', 'Il tuo yacht')} className="bt-boat" cardRef={card} foot={['yachts', 'venues']}
+        tools={<button type="button" className="bt-mini" title={t('Back to the RYC colours', 'Вернуть цвета RYC', 'Volver a los colores del RYC', 'Zurück zu den RYC-Farben', 'RYC renklerine dön', 'Revenir aux couleurs du RYC', 'Torna ai colori RYC')} aria-label={t('Back to the RYC colours', 'Вернуть цвета RYC', 'Volver a los colores del RYC', 'Zurück zu den RYC-Farben', 'RYC renklerine dön', 'Revenir aux couleurs du RYC', 'Torna ai colori RYC')} onClick={() => { setB({ ...DEFAULT_BOAT, name: b.name }); setDown(false); }}>
+          <IconRestart s={14} /><span>{t('RYC colours', 'Цвета RYC', 'Colores del RYC', 'RYC-Farben', 'RYC renkleri', 'Couleurs du RYC', 'Colori RYC')}</span>
         </button>}
         action={<>
-          <a className="bt-go" href="/play?race=today" onClick={(e) => { if (dirty && !save()) e.preventDefault(); }}><IconPlay /><span>{t('Race her today', 'В гонку дня', 'Regatea hoy con ella', 'Heute mit ihr segeln', 'Bugün onunla yarış', 'À la régate du jour')}</span></a>
+          <a className="bt-go" href="/play?race=today" onClick={(e) => { if (dirty && !save()) e.preventDefault(); }}><IconPlay /><span>{t('Race her today', 'В гонку дня', 'Regatea hoy con ella', 'Heute mit ihr segeln', 'Bugün onunla yarış', 'À la régate du jour', 'Portala in regata oggi')}</span></a>
           <button type="button" className={`bt-save${dirty ? ' on' : ''}`} onClick={save} disabled={!dirty}>
-            {dirty ? <span>{t('Save', 'Сохранить', 'Guardar', 'Speichern', 'Kaydet', 'Enregistrer')}</span> : <><IconCheck s={16} /><span>{t('Saved', 'Сохранено', 'Guardado', 'Gespeichert', 'Kaydedildi', 'Enregistré')}</span></>}
+            {dirty ? <span>{t('Save', 'Сохранить', 'Guardar', 'Speichern', 'Kaydet', 'Enregistrer', 'Salva')}</span> : <><IconCheck s={16} /><span>{t('Saved', 'Сохранено', 'Guardado', 'Gespeichert', 'Kaydedildi', 'Enregistré', 'Salvato')}</span></>}
           </button>
           {err && <p className="bt-err" role="alert">{err}</p>}
         </>}>
-        <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс', 'Rumbo', 'Kurs zum Wind', 'Seyir yönü', 'Allure')}>
-          <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд', 'Ceñida', 'Am Wind', 'Orsa', 'Au près')}</button>
-          <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Gennaker', 'Генакер', 'Gennaker', 'Gennaker', 'Gennaker', 'Gennaker')}</button>
+        <div className="bt-seg" role="radiogroup" aria-label={t('Point of sail', 'Курс', 'Rumbo', 'Kurs zum Wind', 'Seyir yönü', 'Allure', 'Andatura')}>
+          <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд', 'Ceñida', 'Am Wind', 'Orsa', 'Au près', 'Di bolina')}</button>
+          <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Gennaker', 'Генакер', 'Gennaker', 'Gennaker', 'Gennaker', 'Gennaker', 'Gennaker')}</button>
         </div>
 
         <div className="bt-g">
-          {kicker('l-presets', <IconGrid />, t('Presets', 'Готовые схемы', 'Preajustes', 'Vorlagen', 'Hazır ayarlar', 'Modèles'))}
+          {kicker('l-presets', <IconGrid />, t('Presets', 'Готовые схемы', 'Preajustes', 'Vorlagen', 'Hazır ayarlar', 'Modèles', 'Preset'))}
           <div className="presets" role="list" aria-labelledby="l-presets">
             {PRESETS.map((p) => (
               <button key={p.id} type="button" role="listitem" className={`preset ${b.preset === p.id ? 'on' : ''}`} aria-pressed={b.preset === p.id}
-                aria-label={t(p.en, p.ru, p.es, p.de, p.tr, p.fr)} title={t(p.en, p.ru, p.es, p.de, p.tr, p.fr)} style={{ ['--c' as string]: p.boat.hull }}
+                aria-label={t(p.en, p.ru, p.es, p.de, p.tr, p.fr, p.it)} title={t(p.en, p.ru, p.es, p.de, p.tr, p.fr, p.it)} style={{ ['--c' as string]: p.boat.hull }}
                 onClick={() => setB((x) => ({ ...x, ...p.boat, preset: p.id }))}>
                 <span className={`preset-pic${shots[p.id] ? '' : ' sk'}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {shots[p.id] ? <img src={shots[p.id]} alt="" /> : null}
                 </span>
-                <span className="preset-n" aria-hidden="true">{t(p.en, p.ru, p.es, p.de, p.tr, p.fr)}</span>
+                <span className="preset-n" aria-hidden="true">{t(p.en, p.ru, p.es, p.de, p.tr, p.fr, p.it)}</span>
               </button>
             ))}
           </div>
@@ -178,60 +178,60 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
         {/* the colours two to a row on a wide screen */}
         <div className="bt-grid2">
           <div className="bt-g">
-            {kicker('l-hull', <IconHull />, t('Hull', 'Корпус', 'Casco', 'Rumpf', 'Gövde', 'Coque'))}
+            {kicker('l-hull', <IconHull />, t('Hull', 'Корпус', 'Casco', 'Rumpf', 'Gövde', 'Coque', 'Scafo'))}
             <Swatches label="l-hull" value={b.hull} options={SWATCHES.hull} onChange={(v) => { set({ hull: v }); setDown(false); }} t={t} />
-            {swatches('bottom', t('Bottom paint', 'Днище', 'Pintura de fondo', 'Unterwasserfarbe', 'Alt boya', 'Antifouling'), true)}
+            {swatches('bottom', t('Bottom paint', 'Днище', 'Pintura de fondo', 'Unterwasserfarbe', 'Alt boya', 'Antifouling', 'Antivegetativa'), true)}
             <div className="bt-part">
-              <span className="bt-sub" id="l-deck">{t('Deck', 'Палуба', 'Cubierta', 'Deck', 'Güverte', 'Pont')}</span>
-              {tags('l-deck', b.deck, [['nonskid', t('Non-skid', 'Нескользящая', 'Antideslizante', 'Rutschfest', 'Kaymaz yüzey', 'Antidérapant')], ['teak', t('Teak', 'Тик', 'Teca', 'Teak', 'Tik', 'Teck')], ['hull', t('Hull colour', 'В цвет корпуса', 'Color del casco', 'Rumpffarbe', 'Gövde rengi', 'Couleur de coque')]] as [Deck, string][], (v) => { set({ deck: v }); setDown(false); })}
+              <span className="bt-sub" id="l-deck">{t('Deck', 'Палуба', 'Cubierta', 'Deck', 'Güverte', 'Pont', 'Coperta')}</span>
+              {tags('l-deck', b.deck, [['nonskid', t('Non-skid', 'Нескользящая', 'Antideslizante', 'Rutschfest', 'Kaymaz yüzey', 'Antidérapant', 'Antiscivolo')], ['teak', t('Teak', 'Тик', 'Teca', 'Teak', 'Tik', 'Teck', 'Teak')], ['hull', t('Hull colour', 'В цвет корпуса', 'Color del casco', 'Rumpffarbe', 'Gövde rengi', 'Couleur de coque', 'Colore dello scafo')]] as [Deck, string][], (v) => { set({ deck: v }); setDown(false); })}
             </div>
           </div>
 
           <div className="bt-g">
-            {kicker('l-sails', <IconSail s={14} />, t('Sails', 'Паруса', 'Velas', 'Segel', 'Yelkenler', 'Voiles'))}
-            {tags('l-sails', b.laminate, [[false, t('Dacron', 'Дакрон', 'Dacron', 'Dacron', 'Dacron', 'Dacron')], [true, t('Laminate', 'Ламинат', 'Laminado', 'Laminat', 'Laminat', 'Laminé')]], (v) => { set({ laminate: v }); setDown(false); })}
-            {swatches('cloth', t('Colour', 'Цвет', 'Color', 'Farbe', 'Renk', 'Couleur'), true)}
+            {kicker('l-sails', <IconSail s={14} />, t('Sails', 'Паруса', 'Velas', 'Segel', 'Yelkenler', 'Voiles', 'Vele'))}
+            {tags('l-sails', b.laminate, [[false, t('Dacron', 'Дакрон', 'Dacron', 'Dacron', 'Dacron', 'Dacron', 'Dacron')], [true, t('Laminate', 'Ламинат', 'Laminado', 'Laminat', 'Laminat', 'Laminé', 'Laminato')]], (v) => { set({ laminate: v }); setDown(false); })}
+            {swatches('cloth', t('Colour', 'Цвет', 'Color', 'Farbe', 'Renk', 'Couleur', 'Colore'), true)}
           </div>
 
           <div className="bt-g">
-            {kicker('l-kite', <IconKite />, t('Gennaker', 'Генакер', 'Gennaker', 'Gennaker', 'Gennaker', 'Gennaker'))}
+            {kicker('l-kite', <IconKite />, t('Gennaker', 'Генакер', 'Gennaker', 'Gennaker', 'Gennaker', 'Gennaker', 'Gennaker'))}
             <Swatches label="l-kite" value={b.kite} options={SWATCHES.kite} onChange={(v) => { set({ kite: v }); setDown(true); }} t={t} />
           </div>
 
           <div className="bt-g">
-            {kicker('l-team', <IconCrew />, t('Team', 'Команда', 'Equipo', 'Team', 'Takım', 'Équipage'))}
-            {swatches('crew', t('Jackets', 'Куртки', 'Chaquetas', 'Jacken', 'Ceketler', 'Vestes'), true)}
-            {swatches('pants', t('Trousers', 'Брюки', 'Pantalones', 'Hosen', 'Pantolonlar', 'Pantalons'), true)}
+            {kicker('l-team', <IconCrew />, t('Team', 'Команда', 'Equipo', 'Team', 'Takım', 'Équipage', 'Equipaggio'))}
+            {swatches('crew', t('Jackets', 'Куртки', 'Chaquetas', 'Jacken', 'Ceketler', 'Vestes', 'Giacche'), true)}
+            {swatches('pants', t('Trousers', 'Брюки', 'Pantalones', 'Hosen', 'Pantolonlar', 'Pantalons', 'Pantaloni'), true)}
           </div>
         </div>
 
         {/* the flag and the number side by side; the flag's list, open, takes the row */}
         <div className="bt-pair">
           <div className="bt-g">
-            {kicker('l-flag', <IconFlag />, t('Flag on the main', 'Флаг на гроте', 'Bandera en la mayor', 'Flagge im Groß', 'Ana yelkende bayrak', 'Pavillon sur la grand-voile'))}
+            {kicker('l-flag', <IconFlag />, t('Flag on the main', 'Флаг на гроте', 'Bandera en la mayor', 'Flagge im Groß', 'Ana yelkende bayrak', 'Pavillon sur la grand-voile', 'Bandiera sulla randa'))}
             <FlagPicker value={flag?.code} onChange={setFlag} t={t} />
           </div>
           <div className="bt-g">
-            <label className="bt-k" htmlFor="b-num"><IconHash />{t('Sail number', 'Номер на парусе', 'Número de vela', 'Segelnummer', 'Yelken numarası', 'Numéro de voile')}</label>
+            <label className="bt-k" htmlFor="b-num"><IconHash />{t('Sail number', 'Номер на парусе', 'Número de vela', 'Segelnummer', 'Yelken numarası', 'Numéro de voile', 'Numero velico')}</label>
             <div className="num-pair">
-              <input className="num-in" aria-label={t('Letters on the sail', 'Буквы на парусе', 'Letras en la vela', 'Buchstaben auf dem Segel', 'Yelkendeki harfler', 'Lettres sur la voile')} value={b.nat} maxLength={3} onChange={(e) => set({ nat: e.target.value.toUpperCase().replace(/[^A-ZА-ЯЁ]/g, '') })} />
+              <input className="num-in" aria-label={t('Letters on the sail', 'Буквы на парусе', 'Letras en la vela', 'Buchstaben auf dem Segel', 'Yelkendeki harfler', 'Lettres sur la voile', 'Lettere sulla vela')} value={b.nat} maxLength={3} onChange={(e) => set({ nat: e.target.value.toUpperCase().replace(/[^A-ZА-ЯЁ]/g, '') })} />
               <input id="b-num" className="num-in" inputMode="numeric" value={b.num} maxLength={4} onChange={(e) => set({ num: e.target.value.replace(/[^0-9]/g, '') })} onBlur={() => { if (!b.num) set({ num: '1' }); }} />
             </div>
           </div>
         </div>
-        {swatches('ink', t('Sail number colour', 'Цвет номера', 'Color del número de vela', 'Farbe der Segelnummer', 'Yelken numarası rengi', 'Couleur du numéro de voile'), true)}
+        {swatches('ink', t('Sail number colour', 'Цвет номера', 'Color del número de vela', 'Farbe der Segelnummer', 'Yelken numarası rengi', 'Couleur du numéro de voile', 'Colore del numero velico'), true)}
 
         <div className="bt-g">
-          <label className="bt-k" htmlFor="b-name"><IconHull />{t('Name on the hull', 'Имя на корпусе', 'Nombre en el casco', 'Name am Rumpf', 'Gövdedeki isim', 'Nom sur la coque')}</label>
-          <input id="b-name" className="num-in boat-name" value={b.name || ''} maxLength={NAME_MAX} placeholder={t('No name', 'Без имени', 'Sin nombre', 'Kein Name', 'Adsız', 'Sans nom')} autoComplete="off" spellCheck={false}
+          <label className="bt-k" htmlFor="b-name"><IconHull />{t('Name on the hull', 'Имя на корпусе', 'Nombre en el casco', 'Name am Rumpf', 'Gövdedeki isim', 'Nom sur la coque', 'Nome sullo scafo')}</label>
+          <input id="b-name" className="num-in boat-name" value={b.name || ''} maxLength={NAME_MAX} placeholder={t('No name', 'Без имени', 'Sin nombre', 'Kein Name', 'Adsız', 'Sans nom', 'Senza nome')} autoComplete="off" spellCheck={false}
             onChange={(e) => { set({ name: cleanName(e.target.value) || undefined }); setDown(false); }} onBlur={() => { const n = b.name?.trim(); if (n !== b.name) set({ name: n || undefined }); }} />
         </div>
 
         <p className="bt-saved" role="status">{dirty
-          ? t('Changes not saved yet.', 'Изменения ещё не сохранены.', 'Cambios sin guardar.', 'Änderungen noch nicht gespeichert.', 'Değişiklikler henüz kaydedilmedi.', 'Modifications pas encore enregistrées.')
+          ? t('Changes not saved yet.', 'Изменения ещё не сохранены.', 'Cambios sin guardar.', 'Änderungen noch nicht gespeichert.', 'Değişiklikler henüz kaydedilmedi.', 'Modifications pas encore enregistrées.', 'Modifiche non ancora salvate.')
           : justSaved
-            ? t('Saved. You race in her from the next start.', 'Сохранено. В гонке — со следующего старта.', 'Guardado. Regatearás con ella desde la próxima salida.', 'Gespeichert. Du segelst ab dem nächsten Start mit ihr.', 'Kaydedildi. Bir sonraki startta onunla yarışırsın.', 'Enregistré. Tu le barres dès le prochain départ.')
-            : t('Kept on this device, and in your account when you’re signed in.', 'Хранится на этом устройстве, а если ты вошёл — и в аккаунте.', 'Se guarda en este dispositivo, y en tu cuenta cuando has iniciado sesión.', 'Auf diesem Gerät gespeichert, und in deinem Konto, wenn du angemeldet bist.', 'Bu cihazda saklanır, giriş yaptıysan hesabında da.', 'Gardé sur cet appareil, et dans ton compte quand tu es connecté.')}</p>
+            ? t('Saved. You race in her from the next start.', 'Сохранено. В гонке — со следующего старта.', 'Guardado. Regatearás con ella desde la próxima salida.', 'Gespeichert. Du segelst ab dem nächsten Start mit ihr.', 'Kaydedildi. Bir sonraki startta onunla yarışırsın.', 'Enregistré. Tu le barres dès le prochain départ.', 'Salvato. Regaterai con lei dalla prossima partenza.')
+            : t('Kept on this device, and in your account when you’re signed in.', 'Хранится на этом устройстве, а если ты вошёл — и в аккаунте.', 'Se guarda en este dispositivo, y en tu cuenta cuando has iniciado sesión.', 'Auf diesem Gerät gespeichert, und in deinem Konto, wenn du angemeldet bist.', 'Bu cihazda saklanır, giriş yaptıysan hesabında da.', 'Gardé sur cet appareil, et dans ton compte quand tu es connecté.', 'Conservato su questo dispositivo, e nel tuo account quando hai effettuato l’accesso.')}</p>
       </PauseCard>
     </div>
   );
@@ -239,13 +239,13 @@ export function BoatEditor({ lang, back }: { lang: Lang; back?: ReactNode }) {
 
 // the flag on the main: a dropdown showing the flag you fly, opening (in the card, so it scrolls with it) on a search
 // box and the countries A to Z in your language, No flag first. Arrows move, Enter picks, Escape closes.
-function FlagPicker({ value, onChange, t }: { value?: string; onChange: (code: string) => void; t: (en: string, ru: string, es?: string, de?: string, tr?: string, fr?: string) => string }) {
+function FlagPicker({ value, onChange, t }: { value?: string; onChange: (code: string) => void; t: (en: string, ru: string, es?: string, de?: string, tr?: string, fr?: string, it?: string) => string }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [hi, setHi] = useState(0);
   const root = useRef<HTMLDivElement>(null), list = useRef<HTMLUListElement>(null), search = useRef<HTMLInputElement>(null);
   const cur = findFlag(value);
-  const name = (f: Flag) => t(f.en, f.ru, f.es, f.de, f.tr, f.fr);
+  const name = (f: Flag) => t(f.en, f.ru, f.es, f.de, f.tr, f.fr, f.it);
   const sorted = useMemo(() => [...FLAGS].sort((a, b) => name(a).localeCompare(name(b))), [t]); // eslint-disable-line react-hooks/exhaustive-deps
   const needle = q.trim().toLowerCase();
   const items: (Flag | null)[] = [
@@ -279,25 +279,25 @@ function FlagPicker({ value, onChange, t }: { value?: string; onChange: (code: s
       <button type="button" className="fp-btn" aria-haspopup="listbox" aria-expanded={open} aria-labelledby="l-flag fp-val"
         onClick={() => show(!open)} onKeyDown={(e) => { if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); show(true); } }}>
         {thumb(cur)}
-        <span className="fp-name" id="fp-val">{cur ? name(cur) : t('No flag', 'Без флага', 'Sin bandera', 'Keine Flagge', 'Bayrak yok', 'Sans pavillon')}</span>
+        <span className="fp-name" id="fp-val">{cur ? name(cur) : t('No flag', 'Без флага', 'Sin bandera', 'Keine Flagge', 'Bayrak yok', 'Sans pavillon', 'Nessuna bandiera')}</span>
         {cur && <span className="fp-code">{cur.ioc}</span>}
         <svg className="fp-chev" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </button>
       {open && (
         <div className="fp-pop">
-          <input ref={search} className="fp-q" type="search" value={q} placeholder={t('Search a country', 'Найти страну', 'Busca un país', 'Land suchen', 'Ülke ara', 'Chercher un pays')} aria-label={t('Search a country', 'Найти страну', 'Busca un país', 'Land suchen', 'Ülke ara', 'Chercher un pays')}
+          <input ref={search} className="fp-q" type="search" value={q} placeholder={t('Search a country', 'Найти страну', 'Busca un país', 'Land suchen', 'Ülke ara', 'Chercher un pays', 'Cerca un paese')} aria-label={t('Search a country', 'Найти страну', 'Busca un país', 'Land suchen', 'Ülke ara', 'Chercher un pays', 'Cerca un paese')}
             aria-controls="fp-list" aria-activedescendant={items[hi] !== undefined ? `fp-o-${items[hi]?.code ?? 'none'}` : undefined}
             onChange={(e) => { setQ(e.target.value); setHi(0); }} onKeyDown={key} />
-          <ul className="fp-list" id="fp-list" role="listbox" ref={list} aria-label={t('Flag on the main', 'Флаг на гроте', 'Bandera en la mayor', 'Flagge im Groß', 'Ana yelkende bayrak', 'Pavillon sur la grand-voile')}>
+          <ul className="fp-list" id="fp-list" role="listbox" ref={list} aria-label={t('Flag on the main', 'Флаг на гроте', 'Bandera en la mayor', 'Flagge im Groß', 'Ana yelkende bayrak', 'Pavillon sur la grand-voile', 'Bandiera sulla randa')}>
             {items.map((f, i) => (
               <li key={f?.code ?? 'none'} id={`fp-o-${f?.code ?? 'none'}`} data-i={i} role="option" aria-selected={(f?.code ?? '') === (value ?? '')}
                 className={`fp-o ${i === hi ? 'hi' : ''}`} onPointerMove={() => setHi(i)} onClick={() => pick(f)}>
                 {thumb(f)}
-                <span className="fp-name">{f ? name(f) : t('No flag', 'Без флага', 'Sin bandera', 'Keine Flagge', 'Bayrak yok', 'Sans pavillon')}</span>
+                <span className="fp-name">{f ? name(f) : t('No flag', 'Без флага', 'Sin bandera', 'Keine Flagge', 'Bayrak yok', 'Sans pavillon', 'Nessuna bandiera')}</span>
                 {f && <span className="fp-code">{f.ioc}</span>}
               </li>
             ))}
-            {!items.length && <li className="fp-empty">{t('No such country here', 'Такой страны нет', 'No hay ningún país así', 'Kein solches Land hier', 'Burada böyle bir ülke yok', 'Aucun pays de ce nom ici')}</li>}
+            {!items.length && <li className="fp-empty">{t('No such country here', 'Такой страны нет', 'No hay ningún país así', 'Kein solches Land hier', 'Burada böyle bir ülke yok', 'Aucun pays de ce nom ici', 'Nessun paese con questo nome')}</li>}
           </ul>
         </div>
       )}
@@ -311,7 +311,7 @@ const lookKey = ({ at: _, ...r }: Boat) => JSON.stringify(r, Object.keys(r).sort
 const SHOTS_KEY = 'regatta-boat-shots', SHOTS_V = 'v5:' + PRESETS.map((p) => p.id + JSON.stringify(p.boat)).join('|');
 
 // a row of colour swatches, named for the screen reader and on hover by the preset that colour comes from
-function Swatches({ label, value, options, onChange, t }: { label: string; value: string; options: string[]; onChange: (v: string) => void; t: (en: string, ru: string, es?: string, de?: string, tr?: string, fr?: string) => string }) {
+function Swatches({ label, value, options, onChange, t }: { label: string; value: string; options: string[]; onChange: (v: string) => void; t: (en: string, ru: string, es?: string, de?: string, tr?: string, fr?: string, it?: string) => string }) {
   return (
     <div className="sws" role="radiogroup" aria-labelledby={label}>
       {options.map((c) => {
@@ -322,14 +322,14 @@ function Swatches({ label, value, options, onChange, t }: { label: string; value
   );
 }
 
-const NAMES: Record<string, [en: string, ru: string, es?: string, de?: string, tr?: string, fr?: string]> = {
-  '#ffffff': ['White', 'Белый', 'Blanco', 'Weiß', 'Beyaz', 'Blanc'], '#1d1d1d': ['Black', 'Чёрный', 'Negro', 'Schwarz', 'Siyah', 'Noir'], '#f4f2ea': ['Sailcloth white', 'Белая парусина', 'Blanco velero', 'Segeltuchweiß', 'Yelken beyazı', 'Blanc voile'], '#ebe3cd': ['Cream', 'Кремовый', 'Crema', 'Creme', 'Krem', 'Crème'],
-  '#dfe4e8': ['Mylar', 'Майлар', 'Mylar', 'Mylar', 'Mylar', 'Mylar'], '#868c93': ['Grey laminate', 'Серый ламинат', 'Laminado gris', 'Graues Laminat', 'Gri laminat', 'Laminé gris'], '#3a3d42': ['Charcoal', 'Графит', 'Antracita', 'Anthrazit', 'Antrasit', 'Anthracite'], '#2a2c30': ['Carbon', 'Карбон', 'Carbono', 'Carbon', 'Karbon', 'Carbone'],
-  '#8a4b2f': ['Tanbark', 'Красно-коричневый', 'Rojo teja', 'Lohbraun', 'Kızıl kahve', 'Tanné'], '#8cc63f': ['Lime', 'Лайм', 'Lima', 'Limette', 'Limon yeşili', 'Citron vert'], '#3fb6e8': ['Sky blue', 'Голубой', 'Celeste', 'Himmelblau', 'Gök mavisi', 'Bleu ciel'], '#ff6f59': ['Coral', 'Коралловый', 'Coral', 'Koralle', 'Mercan', 'Corail'],
-  '#262a31': ['Dark grey', 'Тёмно-серый', 'Gris oscuro', 'Dunkelgrau', 'Koyu gri', 'Gris foncé'], '#5b1f24': ['Antifouling red', 'Тёмно-красный', 'Rojo antifouling', 'Antifouling-Rot', 'Antifouling kırmızısı', 'Rouge antifouling'],
+const NAMES: Record<string, [en: string, ru: string, es?: string, de?: string, tr?: string, fr?: string, it?: string]> = {
+  '#ffffff': ['White', 'Белый', 'Blanco', 'Weiß', 'Beyaz', 'Blanc', 'Bianco'], '#1d1d1d': ['Black', 'Чёрный', 'Negro', 'Schwarz', 'Siyah', 'Noir', 'Nero'], '#f4f2ea': ['Sailcloth white', 'Белая парусина', 'Blanco velero', 'Segeltuchweiß', 'Yelken beyazı', 'Blanc voile', 'Bianco vela'], '#ebe3cd': ['Cream', 'Кремовый', 'Crema', 'Creme', 'Krem', 'Crème', 'Crema'],
+  '#dfe4e8': ['Mylar', 'Майлар', 'Mylar', 'Mylar', 'Mylar', 'Mylar', 'Mylar'], '#868c93': ['Grey laminate', 'Серый ламинат', 'Laminado gris', 'Graues Laminat', 'Gri laminat', 'Laminé gris', 'Laminato grigio'], '#3a3d42': ['Charcoal', 'Графит', 'Antracita', 'Anthrazit', 'Antrasit', 'Anthracite', 'Antracite'], '#2a2c30': ['Carbon', 'Карбон', 'Carbono', 'Carbon', 'Karbon', 'Carbone', 'Carbonio'],
+  '#8a4b2f': ['Tanbark', 'Красно-коричневый', 'Rojo teja', 'Lohbraun', 'Kızıl kahve', 'Tanné', 'Tanbark'], '#8cc63f': ['Lime', 'Лайм', 'Lima', 'Limette', 'Limon yeşili', 'Citron vert', 'Lime'], '#3fb6e8': ['Sky blue', 'Голубой', 'Celeste', 'Himmelblau', 'Gök mavisi', 'Bleu ciel', 'Azzurro cielo'], '#ff6f59': ['Coral', 'Коралловый', 'Coral', 'Koralle', 'Mercan', 'Corail', 'Corallo'],
+  '#262a31': ['Dark grey', 'Тёмно-серый', 'Gris oscuro', 'Dunkelgrau', 'Koyu gri', 'Gris foncé', 'Grigio scuro'], '#5b1f24': ['Antifouling red', 'Тёмно-красный', 'Rojo antifouling', 'Antifouling-Rot', 'Antifouling kırmızısı', 'Rouge antifouling', 'Rosso antivegetativa'],
 };
-function colourName(c: string, t: (en: string, ru: string, es?: string, de?: string, tr?: string, fr?: string) => string) {
+function colourName(c: string, t: (en: string, ru: string, es?: string, de?: string, tr?: string, fr?: string, it?: string) => string) {
   const k = c.toLowerCase(), p = PRESETS.find((x) => x.boat.hull.toLowerCase() === k), n = NAMES[k];
-  return p ? t(p.en, p.ru, p.es, p.de, p.tr, p.fr) : n ? t(...n) : c;
+  return p ? t(p.en, p.ru, p.es, p.de, p.tr, p.fr, p.it) : n ? t(...n) : c;
 }
 
