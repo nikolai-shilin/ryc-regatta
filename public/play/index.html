@@ -877,7 +877,8 @@
       var go = function () {
         introIn = function () {};
         root.classList.add('out'); if (intro) intro.classList.add('out');
-        start(); setTimeout(function () { root.hidden = true; if (intro) intro.hidden = true; }, 500);
+        // (after the intro: it fades first, in a fifth of a second, so the Ready card doesn't come up under its cards)
+        setTimeout(start, intro ? 200 : 0); setTimeout(function () { root.hidden = true; if (intro) intro.hidden = true; }, 500);
       };
       if (intro && !introGo) { // the intro waits for Start
         introIn = go; intro.classList.add('ready'); $('iStartT').textContent = t('Start the race', 'Начать гонку', 'Empezar la regata', 'Regatta starten', 'Yarışı başlat');

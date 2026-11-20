@@ -54,9 +54,11 @@ test('a newcomer’s first race opens on the intro: four cards with their drawin
   assert.ok(p.$('#intro').classList.contains('ready'));
   assert.ok(!p.$('#loading').classList.contains('out'));
   p.$('#iStart').click();
-  assert.equal(p.started, 1, 'Start puts the race in');
   assert.ok(p.$('#intro').classList.contains('out') && p.$('#loading').classList.contains('out'));
-  await tick(600);
+  assert.equal(p.started, 0, 'the intro fades first, so the Ready card doesn’t come up under it');
+  await tick(200);
+  assert.equal(p.started, 1, 'Start puts the race in');
+  await tick(400);
   assert.ok(p.$('#intro').hidden && p.$('#loading').hidden);
 });
 
@@ -67,7 +69,7 @@ test('Start pressed before the race has loaded is kept: the race goes in by itse
   assert.ok(p.$('#intro').classList.contains('go'));
   assert.equal(p.$('#iStartT').textContent, 'Starting as soon as it’s loaded');
   window.rycLoader.done(p.start);
-  await tick(400);
+  await tick(600);
   assert.equal(p.started, 1);
 });
 
