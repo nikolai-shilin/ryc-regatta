@@ -10,6 +10,8 @@ import { dailyVenue, dailyYacht } from '@/lib/race';
 import { clock } from './ui';
 import { FlagImg } from './flag';
 import { AvMenuItem } from './av-row';
+// the menu's first-race row is drawn there: the pages over a scene have the menu without the site's header
+import '@/styles/first-race.css';
 import { sceneOff } from '@/lib/scene-start';
 
 const IconBurger = () => <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
@@ -50,12 +52,12 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı')}</Link>
           <Link className="hm-mi" href="/race/free">{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış')}</Link>
           <Link className="hm-mi" href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış')}</Link>
-          <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки', 'Ejercicios', 'Übungen', 'Alıştırmalar')}</Link>
           <Link className="hm-mi" href="/race/rating">{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama')}</Link>
-          <Link className="hm-mi hm-mi-x" href="/players">{t('Players', 'Игроки', 'Jugadores', 'Spieler', 'Oyuncular')}</Link>
         </nav>
-        {/* the venues and the yachts: in the menu at every width, never in the header's row */}
+        {/* the drills, the players, the venues and the yachts: in the menu at every width, never in the header's row */}
         <span className="hm-msep" />
+        <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки', 'Ejercicios', 'Übungen', 'Alıştırmalar')}</Link>
+        <Link className="hm-mi" href="/players">{t('Players', 'Игроки', 'Jugadores', 'Spieler', 'Oyuncular')}</Link>
         <Link className="hm-mi" href="/venues">{t('Venues', 'Акватории', 'Sedes', 'Reviere', 'Yarış alanları')}</Link>
         <Link className="hm-mi" href="/yachts">{t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar')}</Link>
         <span className="hm-msep" />

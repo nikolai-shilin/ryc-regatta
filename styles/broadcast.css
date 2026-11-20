@@ -512,15 +512,10 @@
 .bc .hm-signin:hover { background: var(--w-14); }
 @container help (min-width: 600px) { .bc .hm-signin { display: inline-flex; } }
 @container scr (min-width: 600px) { .bc .hm-signin { display: inline-flex; } }
-/* the tabs need the room: none under 1280px wide (they're in the menu) and Venues and Yachts from 1360px (a 1366 laptop;
-   in Russian the eight need about 1310); between, the ones that don't fit are in the menu. The fleet and Your boat are
+/* the tabs need the room: none under 1280px wide (they're in the menu). Drills, Players, Venues, Yachts and Your boat are
    always in the menu, never tabs */
 @container help (max-width: 1279px) { .bc .hm-nav { display: none; } .bc .hm-menu-nav { display: flex; } }
 @container scr (max-width: 1279px) { .bc .hm-nav { display: none; } .bc .hm-menu-nav { display: flex; } }
-@container help (max-width: 1359px) { .bc .hm-tab-x { display: none; } }
-@container scr (max-width: 1359px) { .bc .hm-tab-x { display: none; } }
-@container help (min-width: 1280px) and (max-width: 1359px) { .bc .hm-menu-nav { display: flex; } .bc .hm-menu-nav > :not(.hm-mi-x, .hm-msep) { display: none; } }
-@container scr (min-width: 1280px) and (max-width: 1359px) { .bc .hm-menu-nav { display: flex; } .bc .hm-menu-nav > :not(.hm-mi-x, .hm-msep) { display: none; } }
 /* the burger and the avatar on the panel the name sits on, as tall as it: the same in the header and over a scene */
 .bc .hm-prof { height: 36px; border: 0; border-radius: 0; background: var(--panel-2); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); }
 .bc .hm-prof:hover { background: rgba(28, 42, 62, 0.94); }

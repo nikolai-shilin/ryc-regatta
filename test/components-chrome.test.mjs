@@ -80,12 +80,21 @@ test('the header links to the site’s pages and marks the one being read', () =
   for (const to of ['/race', '/race/free', '/race/drills', '/race/rating', '/players', '/venues', '/yachts', '/sign-in', '/play?race=today']) assert.ok(hrefs(html).includes(to), to);
   assert.equal([...html.matchAll(/aria-current="page"/g)].length, 1);
   assert.match(html, /<a href="\/race\/rating"[^>]*aria-current="page"/);
-  assert.match(plain(html), /Today’s race Custom race 1-on-1 race Drills Leaderboard Players Venues Yachts/);
+  assert.match(plain(html), /Today’s race Custom race 1-on-1 race Leaderboard Drills Players Venues Yachts/);
+});
+
+test('Drills and Players are in the menu at every width, not among the header’s tabs', () => {
+  const html = ssr(h(SiteHead, { lang: 'en', t: en, page: 'drills' }));
+  const tabs = /<nav class="hm-nav"[^>]*>(.*?)<\/nav>/s.exec(html)[1];
+  assert.deepEqual(hrefs(tabs), ['/play?race=first', '/race', '/race/free', '/match/new', '/race/rating']);
+  const shown = html.split('class="hm-menu-nav"')[1].split('</nav>').slice(1).join('</nav>');
+  for (const to of ['/race/drills', '/players', '/venues', '/yachts']) assert.ok(hrefs(shown).includes(to), to);
+  assert.doesNotMatch(html, /aria-current/, 'no tab to mark on the drills’ page');
 });
 
 test('the Russian header has no English left but the game’s name', () => {
   const words = plain(ssr(h(SiteHead, { lang: 'ru', t: ru, page: 'home' })));
-  assert.match(words, /Гонка дня Своя гонка Гонка 1 на 1 Тренировки Рейтинг Игроки Акватории Яхты/);
+  assert.match(words, /Гонка дня Своя гонка Гонка 1 на 1 Рейтинг Тренировки Игроки Акватории Яхты/);
   assert.match(words, /Играть/);
   assert.deepEqual(englishIn(words), []);
 });
