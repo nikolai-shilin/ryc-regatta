@@ -19,6 +19,7 @@
    line under it */
 .bc .pl-who { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
 .bc .pl-fl { flex: none; display: flex; width: 24px; }
+.bc .pl-fl:has(> .fl-none) { display: none; } /* no flag: no place kept for one, the name where it would be */
 .bc .pl-nm { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .bc .pl-nm b { font: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bc .pl-nm small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
