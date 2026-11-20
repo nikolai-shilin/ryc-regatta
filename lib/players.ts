@@ -8,7 +8,7 @@ const SCORES = process.env.SCORES_API || 'https://iyt.rycrentals.com/api/game';
 // The players, from the scores API (api/game.mjs in the iyt-test repo): everyone who races signed in (inside Telegram
 // or with a site account; guests are not players), the most points first (the rating's, every day of today's race
 // added up), PER a page (GET ?players&page=), and one player's card with their boat (GET ?player=<k>). k is a key that stays the player's (not their id), the same one the
-// rating gives them; fl their flag; yacht the class they sail most (null: the JPK 1050).
+// rating gives them; fl their flag; yacht the class of their last race (null, from the API before 20 Nov 2026: the JPK 1050).
 export type PlayerRow = {
   k: string; name: string | null; ph: string | null; fl: string | null;
   pts: number; n: number; fin: number; wins: number; podiums: number; days: number; last: string; yacht: string | null;

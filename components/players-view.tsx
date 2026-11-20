@@ -242,7 +242,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
                     <span role="cell" className="pl-i">{(page - 1) * list.per + i + 1}</span>
                     <span role="cell" className="pl-who">
                       <span className="pl-fl"><FlagImg code={r.fl} lang={lang} /></span>
-                      <span className="pl-nm"><b>{nameOf(r)}</b><small>{r.yacht ? yachtName(r.yacht) : t(`${r.days} day${r.days === 1 ? '' : 's'} racing`, `${r.days} ${ruPlural(r.days, ['день', 'дня', 'дней'])} в гонках`, `${r.days} ${r.days === 1 ? 'día' : 'días'} de regata`, `${r.days} ${r.days === 1 ? 'Tag' : 'Tage'} dabei`, `${r.days} gün yarışıyor`)}</small></span>
+                      <span className="pl-nm"><b>{nameOf(r)}</b><small>{yachtName(r.yacht)}</small></span>
                     </span>
                     <span role="cell" className="pl-pts">{num(r.pts)}</span>
                     <span role="cell">{num(r.n)}</span>
