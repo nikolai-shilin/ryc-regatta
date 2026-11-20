@@ -35,6 +35,15 @@ test('a newcomer’s first race opens on the intro: four cards with their drawin
   assert.equal(p.$('#iH').textContent, 'Four things before the gun');
   assert.deepEqual(p.$$('#iCards li b').map((b) => b.textContent), ['The course', 'Steering', 'The start', 'Right of way']);
   assert.equal(p.$$('#iCards li svg').length, 4);
+  // each drawing a map as the HUD's: its name over it, the wind's arrow, and what the HUD's map draws
+  assert.deepEqual(p.$$('#iCards .m-h').map((x) => x.firstElementChild.textContent), ['Course', 'Your boat', 'Start', 'Right of way']);
+  assert.equal(p.$$('#iCards .m-wind').length, 4);
+  const [course, steer, start, way] = p.$$('#iCards svg');
+  assert.ok(course.querySelector('.m-line') && course.querySelector('.m-lay') && course.querySelector('.m-hot'), 'the line, the laylines and the next mark ringed');
+  assert.ok(steer.querySelector('.m-red') && steer.querySelector('.m-grn'), 'the wind’s angles round your boat');
+  assert.ok(start.querySelector('.m-gn').textContent === '0:20' && start.querySelector('.m-pen'), 'the gun’s count, and a boat over early ringed');
+  assert.ok(way.querySelector('.m-pen') && way.querySelector('.m-oth'), 'a penalty ringed, the port boat crossing behind');
+  assert.equal(p.$$('#iCards .m-me').length, 4, 'you in each of them');
   assert.match(p.$$('#iCards li p')[1].textContent, /← and →/, 'steering by the keys on a computer');
   assert.match(String(p.$('#iSkip').href), /race=today&nofirst/);
   assert.equal(p.$('#iStartT').textContent, 'Start the race');

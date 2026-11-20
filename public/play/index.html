@@ -687,24 +687,51 @@
     var touch = matchMedia('(pointer: coarse)').matches, esc1 = function (x) { return String(x).replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
     $('iKick').textContent = t('Your first race · How it works', 'Твоя первая гонка · Как это устроено', 'Tu primera regata · Cómo funciona', 'Deine erste Regatta · So geht’s', 'İlk yarışın · Nasıl işler');
     $('iH').textContent = t('Four things before the gun', 'Четыре вещи до старта', 'Cuatro cosas antes de la señal', 'Vier Dinge vor dem Start', 'Starttan önce dört şey');
-    // the drawings: in the tokens' colours, the wind always from the top as in the race
-    var boat = function (x, y, deg, cls) { return '<path class="' + cls + '" transform="translate(' + x + ' ' + y + ') rotate(' + deg + ')" d="M0 -9 C4 -5 4.5 3 3 8 L-3 8 C-4.5 3 -4 -5 0 -9 Z"/>'; };
-    var wind = '<g class="i-w"><path d="M14 8v16M9 19l5 5 5-5"/><text x="22" y="14">' + esc1(t('Wind', 'Ветер', 'Viento', 'Wind', 'Rüzgâr')) + '</text></g>';
+    // the drawings: each a map as the race's own HUD draws it (main.js drawMap: hud-bc.js .b-map), the wind from the top:
+    // the grid and the shore, the start line gold, the marks orange (the next one ringed), the laylines yellow, your
+    // track and boat in your blue, the others white, a penalty ringed red; its name over it and a caption under it
+    var hull = function (x, y, deg, k, cls) { return '<path class="' + cls + '" transform="translate(' + x + ' ' + y + ') rotate(' + deg + ') scale(' + k + ')" d="M0 -6 L3.5 5 L-3.5 5 Z"/>'; };
+    var me = function (x, y, deg) { return hull(x, y, deg, 1.6, 'm-me'); }, oth = function (x, y, deg, hi) { return hull(x, y, deg, 1.25, hi ? 'm-b1' : 'm-b2'); };
+    var buoy = function (x, y, hot) { return '<circle class="m-buoy" cx="' + x + '" cy="' + y + '" r="' + (hot ? 4.5 : 3.5) + '"/>' + (hot ? '<circle class="m-hot" cx="' + x + '" cy="' + y + '" r="7.5"/>' : ''); };
+    var lab = function (x, y, txt, cls, end) { return '<text class="' + cls + '" x="' + x + '" y="' + y + '"' + (end ? ' text-anchor="end"' : '') + '>' + esc1(txt).toLocaleUpperCase(lang) + '</text>'; };
+    var cap = function (txt) { return '<text class="m-cap" x="120" y="114" text-anchor="middle">' + esc1(txt).toLocaleUpperCase(lang) + '</text>'; };
+    var windA = '<path class="m-wind" transform="translate(226 16)" d="M0 10 L5 1 L1.5 1 L1.5 -10 L-1.5 -10 L-1.5 1 L-5 1 Z"/>';
+    var you = t('You', 'Вы', 'Tú', 'Du', 'Sen');
+    var map = function (left, right, body) { return '<div class="m-h"><span>' + esc1(left) + '</span><span>' + esc1(right) + '</span></div><svg viewBox="0 0 240 120" aria-hidden="true">' + body + windA + '</svg>'; };
     var art = [
-      // the course: the line between the committee boat and the pin, the yellow mark upwind, up in a zigzag and back down
-      '<svg viewBox="0 0 200 130" aria-hidden="true">' + wind + '<path class="i-up" d="M100 108 L72 80 L122 52 L102 26"/><path class="i-dn" d="M110 26 V102"/><path class="i-dnh" d="M104 94 l6 8 6-8"/>'
-        + '<circle class="i-mk" cx="106" cy="20" r="6"/><path class="i-ln" d="M66 112 H146"/><circle class="i-pin" cx="66" cy="112" r="4"/><rect class="i-cb" x="146" y="106" width="22" height="12"/></svg>',
-      // steering: the arc and the thumb on a phone, the keys on a keyboard
-      touch
-        ? '<svg viewBox="0 0 200 130" aria-hidden="true">' + wind + '<path class="i-arc" d="M50 112 A50 50 0 0 1 150 112"/><circle class="i-th" cx="122" cy="70" r="11"/><path class="i-arr" d="M84 60 l-8 4 8 6 M116 52 l8 4 -8 6"/>' + boat(100, 98, 0, 'i-me') + '</svg>'
-        : '<svg viewBox="0 0 200 130" aria-hidden="true">' + wind + '<rect class="i-key" x="46" y="58" width="40" height="40"/><rect class="i-key" x="114" y="58" width="40" height="40"/><text class="i-kt" x="66" y="85">←</text><text class="i-kt" x="134" y="85">→</text>'
-          + '<rect class="i-key" x="46" y="106" width="108" height="18"/><text class="i-ks" x="100" y="119">' + esc1(t('Space · Tack', 'Пробел · Поворот', 'Espacio · Virar', 'Leertaste · Wenden', 'Boşluk · Tramola')) + '</text></svg>',
-      // the start: the boats behind the line, the count, and over it after the gun
-      '<svg viewBox="0 0 200 130" aria-hidden="true">' + wind + '<rect class="i-clk" x="64" y="10" width="72" height="34"/><text class="i-ct" x="100" y="35">0:20</text><path class="i-ln" d="M36 76 H164"/><circle class="i-pin" cx="36" cy="76" r="4"/><rect class="i-cb" x="164" y="70" width="22" height="12"/>'
-        + boat(70, 100, 0, 'i-ai') + boat(130, 102, 0, 'i-ai') + boat(100, 96, 0, 'i-me') + '<path class="i-go2" d="M100 86 V58"/><path class="i-dnh" d="M94 64 l6 -8 6 8"/></svg>',
-      // right of way: the boat on starboard (the wind over her right side) holds her course, the one on port goes behind her
-      '<svg viewBox="0 0 200 130" aria-hidden="true">' + wind + '<path class="i-up" d="M156 104 L74 50"/><path class="i-pt" d="M48 104 C70 92 92 88 112 96 L150 70"/>' + boat(120, 78, -56, 'i-me') + boat(64, 96, 50, 'i-ai')
-        + '<text class="i-tg" x="132" y="50">' + esc1(t('Right of way', 'Право дороги', 'Preferencia', 'Vorfahrt', 'Yol hakkı')) + '</text></svg>',
+      // the course: the line between the committee boat and the pin, the windward mark (the next), its laylines, your
+      // track zigzagging up, the way back down to the line
+      map(t('Course', 'Дистанция', 'Recorrido', 'Bahn', 'Parkur'), t('Windward–leeward', 'Апвинд — даунвинд', 'Barlovento–sotavento', 'Luv–Lee', 'Orsa–pupa'),
+        '<path class="m-land" d="M0 38 C9 33 21 35 27 42 C30 47 25 52 17 53 C10 54 4 52 0 51 Z M240 56 C231 54 219 58 214 66 C212 71 219 74 228 73 C233 72 237 71 240 71 Z"/>'
+        + '<path class="m-lay" d="M120 14 L52 82 M120 14 L188 82"/><path class="m-line" d="M84 90 H156"/>'
+        + '<path class="m-back" d="M113 26 V82 M109 77 L113 83 L117 77"/><path class="m-trk" d="M128 90 L104 68 L124 48"/>'
+        + buoy(84, 90) + buoy(156, 90) + buoy(120, 14, true) + oth(98, 60, -45, true) + oth(146, 70, 45) + me(124, 48, 45) + lab(132, 52, you, 'm-you')
+        + cap(t('Start · Windward mark · Finish', 'Старт · Верхний знак · Финиш', 'Salida · Baliza de barlovento · Llegada', 'Start · Luvtonne · Ziel', 'Start · Rüzgârüstü şamandırası · Bitiş'))),
+      // steering: your boat in the ring of the wind's angles: red, too close to the wind to sail; green, the best angle
+      // upwind; blue, downwind. Up in a zigzag, and the tack through the red
+      map(t('Your boat', 'Твоя лодка', 'Tu barco', 'Dein Boot', 'Teknen'), t('Wind angles', 'Углы к ветру', 'Ángulos al viento', 'Windwinkel', 'Rüzgâr açıları'),
+        '<circle class="m-ring" cx="120" cy="60" r="34"/><path class="m-red" d="M98.1 34 A34 34 0 0 1 141.9 34"/>'
+        + '<path class="m-grn" d="M139.8 40.2 L148.3 31.7 M100.2 40.2 L91.7 31.7"/><path class="m-blu" d="M136 89.4 L142 99.8 M104 89.4 L98 99.8"/>'
+        + '<path class="m-trk" d="M90 118 L74 102 L108 72 L120 60"/><path class="m-tack" d="M135.6 44.4 A22 22 0 0 0 104.4 44.4 M108.2 40.2 L104.4 44.4 L109.8 46.6"/>'
+        + me(120, 60, 45) + lab(120, 20, t('No go', 'Мёртвая зона', 'Zona muerta', 'No-Go-Zone', 'Ölü bölge'), 'm-no') + lab(130, 74, you, 'm-you')
+        + cap(touch ? t('Thumb on the arc · Tack', 'Палец по дуге · Поворот', 'Pulgar en el arco · Virar', 'Daumen am Bogen · Wenden', 'Başparmak yayda · Tramola')
+          : t('← → steer · Space tacks', '← → руль · пробел — поворот', '← → timón · Espacio vira', '← → steuern · Leertaste wendet', '← → dümen · Boşluk tramola'))),
+      // the start: the gun's count as the HUD has it, the line, the fleet below it, one over early ringed red
+      map(t('Start', 'Старт', 'Salida', 'Start', 'Start'), t('The line', 'Линия', 'La línea', 'Die Linie', 'Hat'),
+        '<rect class="m-gun" x="8" y="6" width="66" height="40"/><text class="m-gl" x="15" y="18">' + esc1(t('To the gun', 'До сигнала', 'A la señal', 'Bis zum Signal', 'İşarete')).toLocaleUpperCase(lang) + '</text>'
+        + '<text class="m-gn" x="15" y="38">0:20</text><rect class="m-gb" x="8" y="44" width="40" height="2"/>'
+        + '<path class="m-line" d="M60 66 H200"/>' + buoy(60, 66) + buoy(200, 66)
+        + oth(92, 84, 0) + oth(152, 86, 0, true) + me(122, 88, 0) + lab(130, 100, you, 'm-you')
+        + oth(178, 54, 0) + '<circle class="m-pen" cx="178" cy="54" r="9"/>' + lab(190, 48, 'OCS', 'm-pent')
+        + cap(t('Cross after the gun', 'Пересекай после сигнала', 'Cruza tras la señal', 'Über die Linie nach dem Signal', 'İşaretten sonra geç'))),
+      // right of way: you on starboard (the wind over your right side) holding your course; the boat on port bearing
+      // away to cross behind you; one that touched the mark, ringed red for her penalty
+      map(t('Right of way', 'Право дороги', 'Preferencia', 'Vorfahrt', 'Yol hakkı'), t('Starboard', 'Правый галс', 'Estribor', 'Steuerbord', 'Sancak'),
+        '<circle class="m-zone" cx="40" cy="38" r="17"/><path class="m-trk" d="M198 98 L150 50"/><path class="m-oth" d="M112 80 C128 92 150 96 168 84 L194 60"/>'
+        + buoy(40, 38) + oth(51, 45, 130) + '<circle class="m-pen" cx="51" cy="45" r="9"/>' + lab(28, 66, t('Penalty', 'Штраф', 'Penalización', 'Strafe', 'Ceza'), 'm-pent')
+        + oth(112, 80, 45, true) + lab(102, 84, t('Port', 'Левый галс', 'Babor', 'Backbord', 'İskele'), 'm-oth2', true)
+        + me(150, 50, -45) + lab(160, 44, you, 'm-you')
+        + cap(t('Starboard has right of way', 'У правого галса право дороги', 'Estribor tiene preferencia', 'Steuerbord hat Vorfahrt', 'Sancak kontranın yol hakkı var'))),
     ];
     var cards = [
       [t('The course', 'Дистанция', 'El recorrido', 'Die Bahn', 'Parkur'), t('Up to the yellow mark, round it and come back down through the line. One lap, about three minutes, five boats.', 'Вверх к жёлтому знаку, обогни его и вернись вниз через линию. Один круг, около трёх минут, пять лодок.', 'Sube hasta la baliza amarilla, rodéala y baja de vuelta cruzando la línea. Una vuelta, unos tres minutos, cinco barcos.', 'Hoch zur gelben Tonne, um sie herum und zurück durch die Linie. Eine Runde, etwa drei Minuten, fünf Boote.', 'Sarı şamandıraya kadar çık, etrafından dön ve hattan geçerek geri in. Tek tur, yaklaşık üç dakika, beş tekne.')],
