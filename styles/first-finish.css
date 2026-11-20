@@ -1,18 +1,29 @@
-/* The result of a newcomer's first race: keep it (components/first-finish.tsx). A block of the broadcast's
-   (public/ui/tokens.css) under the result's buttons, over the finish scene: the ask, Google white as the one action,
-   the code by email beside it, the daily reminder, and the Optimist again as a plain link. */
-.bc .ff { display: flex; flex-direction: column; gap: var(--s-4); max-width: 560px; padding: var(--s-5); background: var(--panel-2);
-  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); animation: bc-rise var(--t-in) var(--ease) both; animation-delay: 300ms; }
-.bc .ff-t { display: flex; flex-direction: column; gap: var(--s-2); }
-.bc .ff-h { margin: 0; font: 700 var(--fs-title)/1 var(--cond); text-transform: uppercase; }
-.bc .ff-p { margin: 0; font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-2); }
-.bc .ff-b { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
-.bc .ff-go, .bc .ff-alt { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: var(--h-m); padding: 0 var(--s-4); border: 0;
+/* The result of a newcomer's first race: keep it (components/first-finish.tsx). The page's one ask, a block of the
+   broadcast's (public/ui/tokens.css) right under the result's numbers, over the finish scene: your blue down its edge,
+   the tag that says where the result is now, the place to save in big capitals, what an account gives, ticked, Google
+   white and tall as the one action with the code by email beside it, then the daily reminder and the Optimist again. */
+.bc .ff { position: relative; display: flex; flex-direction: column; gap: var(--s-4); max-width: 600px; padding: var(--s-6) var(--s-6) var(--s-5) calc(var(--s-6) + 6px);
+  background: var(--panel-2); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: inset 6px 0 0 var(--you), 0 24px 60px rgba(0, 0, 0, 0.35);
+  animation: bc-rise var(--t-in) var(--ease) both; animation-delay: 200ms; }
+.bc .ff-k { align-self: flex-start; display: inline-flex; align-items: center; gap: var(--s-2); min-height: 28px; padding: var(--s-1) var(--s-6) var(--s-1) var(--s-3);
+  background: var(--you); color: var(--ink-on); font: 700 var(--fs-small)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); }
+.bc .ff-k::before { content: ''; width: 8px; height: 8px; background: currentColor; border-radius: 50%; animation: ff-blink 1.6s ease-in-out infinite; }
+@keyframes ff-blink { 50% { opacity: .25; } }
+.bc .ff-h { margin: 0; font: 700 var(--fs-h2)/0.95 var(--cond); text-transform: uppercase; }
+.bc .ff-p { margin: 0; font: 500 var(--fs-body)/1.45 var(--sans); color: var(--ink-2); }
+.bc .ff-why { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--s-2); }
+.bc .ff-why li { display: flex; align-items: center; gap: var(--s-3); font: 600 var(--fs-body)/1.3 var(--sans); color: var(--ink); }
+.bc .ff-why svg { flex: none; color: var(--up); }
+.bc .ff-b { display: grid; grid-template-columns: 3fr 2fr; gap: var(--s-2); margin-top: var(--s-2); }
+.bc .ff-go, .bc .ff-alt { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-3); min-height: var(--h-l); padding: 0 var(--s-5); border: 0;
   border-radius: 0; font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; text-decoration: none; cursor: pointer; }
-.bc .ff-go { background: var(--ink); color: var(--ink-on); }
+.bc .ff-go { background: var(--ink); color: var(--ink-on); font-size: var(--fs-lead); }
 .bc .ff-go[disabled] { opacity: .6; cursor: progress; }
 .bc .ff-alt { background: var(--fill-2); color: var(--ink); box-shadow: var(--hairline, inset 0 0 0 1px var(--w-25)); }
 .bc .ff-go:hover, .bc .ff-alt:hover { filter: brightness(1.08); }
+.bc .ff-go:active, .bc .ff-alt:active { scale: .98; }
+.bc .ff-note { margin: calc(-1 * var(--s-2)) 0 0; font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 .bc .ff-err { margin: 0; font: 500 var(--fs-small)/1.4 var(--sans); color: var(--down); }
 .bc .ff-push:empty { display: none; }
 .bc .ff-push { padding-top: var(--s-4); border-top: 1px solid var(--rule-2); }
@@ -26,3 +37,10 @@
 .bc .ff .ho-push-x { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .bc .ff-more { align-self: flex-start; color: var(--ink-2); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; text-decoration: none; }
 .bc .ff-more:hover { color: var(--ink); }
+/* a phone: the buttons one over the other, Google on top */
+@media (max-width: 560px) {
+  .bc .ff { padding: var(--s-5) var(--s-4) var(--s-4) calc(var(--s-4) + 6px); gap: var(--s-3); }
+  .bc .ff-b { grid-template-columns: 1fr; }
+  .bc .ff-why li { font-size: var(--fs-small); }
+}
+@media (prefers-reduced-motion: reduce) { .bc .ff-k::before { animation: none; } }

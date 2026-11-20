@@ -323,6 +323,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
             <div><span className="bt-sk">{t('Behind', 'Отставание', 'Detrás', 'Zurück', 'Geride')}</span><b>{winner && winner !== me && me.secs != null && winner.secs != null ? <CountUp v={`+${gapS(me.secs - winner.secs)}`} /> : '—'}</b><span className="bt-sv">{winner && winner !== me ? t(`${winner.name} won`, `победа: ${winner.name}`, `Ganó ${winner.name}`, `${winner.name} gewann`, `${winner.name} kazandı`) : !winner ? t('No winner', 'Без победителя', 'Sin ganador', 'Kein Sieger', 'Kazanan yok') : shared ? t('this boat won', 'эта лодка победила', 'ganó este barco', 'dieses Boot gewann', 'bu tekne kazandı') : t('you won', 'ты победил', 'ganaste', 'du hast gewonnen', 'sen kazandın')}</span></div>
             <div><span className="bt-sk">{t('Penalties', 'Штрафы', 'Penalizaciones', 'Strafen', 'Cezalar')}</span><b className={L.penT > 1 ? 'is-down' : 'is-up'}><Num v={L.penT > 1 ? `${L.penT} ${t('s', 'с', 's', 's', 'sn')}` : '0'} /></b><span className="bt-sv">{L.penT > 1 ? t('turning circles', 'штрафные обороты', 'círculos de giro', 'Kreise', 'dönüş daireleri') : t('A clean race', 'Чистая гонка', 'Una regata limpia', 'Eine saubere Regatta', 'Temiz bir yarış')}</span></div>
           </div>
+          {firstRace && <FirstFinish lang={lang} id={res.id} signed={!!signedName} place={ended === 'place' || ended === 'won' ? place : null} />}{/* a newcomer's first race: keep it, before anything else */}
           {target ? (
             <div className="rs-target" role="note" title={target.s}>
               <span className="bt-sk">{t('Next target', 'Следующая цель', 'Próximo objetivo', 'Nächstes Ziel', 'Sonraki hedef')}</span>
@@ -336,7 +337,6 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
             <Link className="bt-show rs-ghost" href="/race">{t('Race hub', 'Меню гонок', 'Centro de regatas', 'Regattazentrale', 'Yarış merkezi')}</Link>
             {res.boats.some((b) => b.track?.length > 1) ? <Replay res={res} myLegs={me.legT} lang={lang} /> : null}
           </div>
-          {firstRace && <FirstFinish lang={lang} id={res.id} signed={!!signedName} />}{/* a newcomer's first race: keep it */}
         </div>
 
         {/* the full table, as the broadcast's results board */}
