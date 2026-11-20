@@ -20,7 +20,7 @@ export const MAIN = {
   kick: 'Jeu', title: 'Up and down', fun: 'Juste pour le plaisir : fais une pause et détends-toi entre deux tests.', sub: 'Une régate autour des bouées contre les bateaux de l’ordinateur, selon les règles de course. Barre, règle tes voiles, vire de bord, lis le vent.',
   modeK: 'Régate', daily: 'La régate du jour', free: 'Régate libre', howK: 'Comment jouer',
   dailyNote: (w, at, sh, y) => `Aujourd’hui, même plan d’eau, même yacht, même parcours et même vent pour tous — ${at}, ${y}, ${sh}, ${w} — pour que les temps se comparent à armes égales. Un nouveau yacht chaque jour. Les plus rapides sont sur la page d’accueil.`,
-  shapeWl: 'Banane', shapeTri: 'Triangle', shapeTrap: 'Trapèze', shapeWlu: 'Banane, arrivée au près',
+  shapeWl: 'Banane', shapeTri: 'Triangle', shapeTrap: 'Trapèze', shapeWlu: 'Banane, arrivée au vent',
   dbK: 'Ta régate', dGun: (d, v) => `Au signal : à ${d} m de la ligne, à ${v} nœuds`, dGunOver: 'Au signal : parti trop tôt, tu as dû revenir',
   dStartLate: (s) => `Tu as franchi la ligne ${s} s après le signal`, tipStart: 'Vise une longueur de bateau derrière la ligne, à pleine vitesse, au moment du signal.',
   dSpeed: (p) => `Vitesse : ${p} % de la cible en moyenne`, tipSpeed: 'Garde l’écoute dans la bande verte et barre en douceur : chaque coup de barre freine.',
