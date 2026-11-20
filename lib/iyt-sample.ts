@@ -7,7 +7,17 @@ const Q = {
   id: 'rr-166',
   answer: 'B' as const,
   figure: { en: 'https://iyt.rycrentals.com/api/mcp?figure=rr-166', ru: 'https://iyt.rycrentals.com/api/mcp?figure=rr-166&lang=ru' },
-  reference: { en: 'RRS 12, RRS 13, RRS 10', ru: 'ППГ 12, ППГ 13, ППГ 10', es: 'RRV 12, RRV 13, RRV 10', de: 'WR 12, WR 13, WR 10', tr: 'YYK 12, YYK 13, YYK 10' },
+  reference: { en: 'RRS 12, RRS 13, RRS 10', ru: 'ППГ 12, ППГ 13, ППГ 10', es: 'RRV 12, RRV 13, RRV 10', de: 'WR 12, WR 13, WR 10', tr: 'YYK 12, YYK 13, YYK 10', fr: 'RCV 12, RCV 13, RCV 10' },
+  fr: {
+    question: 'Bleu est en route libre devant, deux longueurs devant toi, tribord amures au près ; tu te maintiens à l’écart. Il vire de bord juste sur ta route, passe bâbord amures et s’établit au près une longueur et demie devant toi. Qui se maintient à l’écart pendant son virement, et qui ensuite ?',
+    options: {
+      A: 'Bleu pendant le virement, puis toi : une fois son virement terminé, tu es de nouveau le bateau en route libre derrière',
+      B: 'Bleu les deux fois : pendant le virement il se maintient à l’écart selon la règle 13, et une fois au près bâbord amures il se maintient à l’écart de toi, tribord amures, selon la règle 10',
+      C: 'Toi pendant son virement, puis Bleu : un bateau qui vire de bord a la priorité jusqu’à ce qu’il soit au près',
+      D: 'Toi les deux fois : le bateau derrière se maintient à l’écart du bateau devant, quoi qu’il fasse (règle 12)',
+    },
+    why: 'La règle 12 cesse de s’appliquer quand Bleu passe bout au vent ; la règle 13 s’applique pendant le virement, puis la règle 10, puisque les amures sont différentes.',
+  },
   tr: {
     question: 'Mavi, orsa ayağında sancak kontrada senden iki boy açık önde; sen uzak duruyorsun. Tam önünde iskele kontraya tramola atıyor ve bir buçuk boy önünde orsaya oturuyor. Tramolası sırasında kim uzak durur, sonrasında kim?',
     options: {

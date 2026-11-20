@@ -61,7 +61,7 @@ test('/venues is titled, described and addressed for each language', async () =>
   assert.notEqual(en.description, ru.description);
   assert.equal(en.alternates.canonical, '/venues');
   assert.equal(ru.alternates.canonical, '/venues?lang=ru');
-  assert.deepEqual(ru.alternates.languages, { en: '/venues', ru: '/venues?lang=ru', es: '/venues?lang=es', de: '/venues?lang=de', tr: '/venues?lang=tr', 'x-default': '/venues' });
+  assert.deepEqual(ru.alternates.languages, { en: '/venues', ru: '/venues?lang=ru', es: '/venues?lang=es', de: '/venues?lang=de', tr: '/venues?lang=tr', fr: '/venues?lang=fr', 'x-default': '/venues' });
 });
 
 test('/venues counts as many venues in its title and description as the game has', async () => {
@@ -119,7 +119,7 @@ for (const lang of LANGS) {
       assert.equal(m.title, t(...g.title), v.id);
       assert.equal(m.description, t(...g.description), v.id);
       assert.equal(m.alternates.canonical, addressed(`/venues/${v.id}`, lang), v.id);
-      assert.deepEqual(m.alternates.languages, { en: `/venues/${v.id}`, ru: `/venues/${v.id}?lang=ru`, es: `/venues/${v.id}?lang=es`, de: `/venues/${v.id}?lang=de`, tr: `/venues/${v.id}?lang=tr`, 'x-default': `/venues/${v.id}` }, v.id);
+      assert.deepEqual(m.alternates.languages, { en: `/venues/${v.id}`, ru: `/venues/${v.id}?lang=ru`, es: `/venues/${v.id}?lang=es`, de: `/venues/${v.id}?lang=de`, tr: `/venues/${v.id}?lang=tr`, fr: `/venues/${v.id}?lang=fr`, 'x-default': `/venues/${v.id}` }, v.id);
       assert.equal(m.openGraph.type, 'article', v.id);
       assert.equal(m.openGraph.publishedTime, PAGES_DATE, v.id);
       assert.equal(m.openGraph.images[0].url, OG_IMAGE.url, v.id);

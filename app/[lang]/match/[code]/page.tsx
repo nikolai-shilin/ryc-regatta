@@ -17,7 +17,7 @@ export async function generateMetadata({ params, searchParams }: LangParams & { 
   const one = (x?: string | string[]) => { const s = Array.isArray(x) ? x[0] : x; return s && /^[a-z0-9_-]{1,32}$/i.test(s) ? s : ''; };
   const code = parseCode(raw), v = one(sp.v), b = one(sp.b);
   const card = `/og/page/match?${new URLSearchParams({ ...(code && { c: code }), ...(v && { v }), ...(b && { b }) })}`;
-  return pageMeta(lang, { title: t('Race me: a 1-on-1 race', 'Сыграем: гонка 1 на 1', 'Rétame: una regata 1 contra 1', 'Segle gegen mich: eine 1-gegen-1-Regatta', 'Bana karşı yarış: bire bir yarış'), description: t('You and a friend, one on one: join the race.', 'Вы и друг, один на один: войдите в гонку.', 'Tú y un amigo, uno contra uno: únete a la regata.', 'Du und ein Freund, eins gegen eins: nimm an der Regatta teil.', 'Sen ve bir arkadaşın, bire bir: yarışa katıl.'), index: false, card });
+  return pageMeta(lang, { title: t('Race me: a 1-on-1 race', 'Сыграем: гонка 1 на 1', 'Rétame: una regata 1 contra 1', 'Segle gegen mich: eine 1-gegen-1-Regatta', 'Bana karşı yarış: bire bir yarış', 'Défie-moi : un duel en 1 contre 1'), description: t('You and a friend, one on one: join the race.', 'Вы и друг, один на один: войдите в гонку.', 'Tú y un amigo, uno contra uno: únete a la regata.', 'Du und ein Freund, eins gegen eins: nimm an der Regatta teil.', 'Sen ve bir arkadaşın, bire bir: yarışa katıl.', 'Toi et un ami, en tête-à-tête : rejoins la régate.'), index: false, card });
 }
 
 export default async function MatchPage({ params, searchParams }: LangParams & { params: Promise<{ lang: string; code: string }>; searchParams: Promise<{ v?: string | string[]; b?: string | string[] }> }) {
@@ -29,15 +29,15 @@ export default async function MatchPage({ params, searchParams }: LangParams & {
       <div className="bt">
         <div className="bt-info">
           <div className="bt-top">
-            <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub', 'Yarış merkezine dön')} />
+            <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub', 'Yarış merkezine dön', 'Retour au centre de régate')} />
             <SceneBrand lang={lang} />
           </div>
-          <span className="bt-kick bt-kick-w">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış')}</span>
-          <h1 className="bt-h">{t('This invite link doesn’t work', 'Эта ссылка-приглашение не работает', 'Este enlace de invitación no funciona', 'Dieser Einladungslink funktioniert nicht', 'Bu davet bağlantısı çalışmıyor')}</h1>
+          <span className="bt-kick bt-kick-w">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1')}</span>
+          <h1 className="bt-h">{t('This invite link doesn’t work', 'Эта ссылка-приглашение не работает', 'Este enlace de invitación no funciona', 'Dieser Einladungslink funktioniert nicht', 'Bu davet bağlantısı çalışmıyor', 'Ce lien d’invitation ne fonctionne pas')}</h1>
           <p className="bt-p">{t('Its race code is missing or mistyped: a code is six letters and numbers. Ask your friend to send the link again, or set up a race of your own.',
-            'В ней нет кода гонки или он с опечаткой: код — это шесть букв и цифр. Попроси друга прислать ссылку ещё раз или создай свою гонку.', 'Le falta el código de la regata o tiene una errata: un código son seis letras y números. Pide a tu amigo que te mande el enlace otra vez, o prepara tu propia regata.', 'Der Regattacode fehlt oder ist falsch getippt: Ein Code besteht aus sechs Buchstaben und Ziffern. Bitte deinen Freund, den Link noch einmal zu schicken, oder richte selbst eine Regatta ein.', 'Yarış kodu eksik ya da yanlış yazılmış: kod altı harf ve rakamdır. Arkadaşından bağlantıyı yeniden göndermesini iste ya da kendi yarışını kur.')}</p>
-          <a className="bt-go" href="/match/new"><IconPlay /><span>{t('Set up a 1-on-1 race', 'Настроить гонку 1 на 1', 'Prepara una regata 1 contra 1', '1-gegen-1-Regatta einrichten', 'Bire bir yarış kur')}</span></a>
-          <a className="bt-show" href="/race">{t('Sail today’s race', 'Пройти гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln', 'Günün yarışına çık')}</a>
+            'В ней нет кода гонки или он с опечаткой: код — это шесть букв и цифр. Попроси друга прислать ссылку ещё раз или создай свою гонку.', 'Le falta el código de la regata o tiene una errata: un código son seis letras y números. Pide a tu amigo que te mande el enlace otra vez, o prepara tu propia regata.', 'Der Regattacode fehlt oder ist falsch getippt: Ein Code besteht aus sechs Buchstaben und Ziffern. Bitte deinen Freund, den Link noch einmal zu schicken, oder richte selbst eine Regatta ein.', 'Yarış kodu eksik ya da yanlış yazılmış: kod altı harf ve rakamdır. Arkadaşından bağlantıyı yeniden göndermesini iste ya da kendi yarışını kur.', 'Son code de régate manque ou est mal saisi : un code fait six lettres et chiffres. Demande à ton ami de renvoyer le lien, ou prépare ta propre régate.')}</p>
+          <a className="bt-go" href="/match/new"><IconPlay /><span>{t('Set up a 1-on-1 race', 'Настроить гонку 1 на 1', 'Prepara una regata 1 contra 1', '1-gegen-1-Regatta einrichten', 'Bire bir yarış kur', 'Préparer un duel 1 contre 1')}</span></a>
+          <a className="bt-show" href="/race">{t('Sail today’s race', 'Пройти гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln', 'Günün yarışına çık', 'Courir la régate du jour')}</a>
         </div>
       </div>
     </div>
@@ -53,18 +53,18 @@ export default async function MatchPage({ params, searchParams }: LangParams & {
       <div className="bt">
         <div className="bt-info">
           <div className="bt-top">
-            <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub', 'Yarış merkezine dön')} />
+            <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub', 'Yarış merkezine dön', 'Retour au centre de régate')} />
             <SceneBrand lang={lang} />
           </div>
-          <span className="bt-kick bt-kick-w">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış')}</span>
-          <h1 className="bt-h" id="match-title">{t('Race me', 'Сыграем', 'Rétame', 'Segle gegen mich', 'Bana karşı yarış')}</h1>
-          <p className="bt-p">{t('You and a friend, one on one.', 'Вы и друг, один на один.', 'Tú y un amigo, uno contra uno.', 'Du und ein Freund, eins gegen eins.', 'Sen ve bir arkadaşın, bire bir.')}</p>
+          <span className="bt-kick bt-kick-w">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1')}</span>
+          <h1 className="bt-h" id="match-title">{t('Race me', 'Сыграем', 'Rétame', 'Segle gegen mich', 'Bana karşı yarış', 'Défie-moi')}</h1>
+          <p className="bt-p">{t('You and a friend, one on one.', 'Вы и друг, один на один.', 'Tú y un amigo, uno contra uno.', 'Du und ein Freund, eins gegen eins.', 'Sen ve bir arkadaşın, bire bir.', 'Toi et un ami, en tête-à-tête.')}</p>
           <div className="bt-stats">
-            <div><span className="bt-sk">{t('Code', 'Код', 'Código', 'Code', 'Kod')}</span><b>{code}</b></div>
-            {venue && <div><span className="bt-sk">{t('Venue', 'Акватория', 'Sede', 'Revier', 'Yarış alanı')}</span><b>{t(...venue.name)}</b></div>}
-            {yacht && <div><span className="bt-sk">{t('Yacht', 'Яхта', 'Yate', 'Yacht', 'Yat')}</span><b>{t(...yacht.name)}</b></div>}
+            <div><span className="bt-sk">{t('Code', 'Код', 'Código', 'Code', 'Kod', 'Code')}</span><b>{code}</b></div>
+            {venue && <div><span className="bt-sk">{t('Venue', 'Акватория', 'Sede', 'Revier', 'Yarış alanı', 'Plan d’eau')}</span><b>{t(...venue.name)}</b></div>}
+            {yacht && <div><span className="bt-sk">{t('Yacht', 'Яхта', 'Yate', 'Yacht', 'Yat', 'Yacht')}</span><b>{t(...yacht.name)}</b></div>}
           </div>
-          <a className="bt-go" href={href}><IconPlay /><span>{t('Join the race', 'Войти в гонку', 'Unirse a la regata', 'An der Regatta teilnehmen', 'Yarışa katıl')}</span></a>
+          <a className="bt-go" href={href}><IconPlay /><span>{t('Join the race', 'Войти в гонку', 'Unirse a la regata', 'An der Regatta teilnehmen', 'Yarışa katıl', 'Rejoindre la régate')}</span></a>
         </div>
       </div>
     </div>

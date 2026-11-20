@@ -41,14 +41,14 @@ const en = tx('en'), ru = tx('ru');
 // ---------- ui.tsx ----------
 test('the language links keep the page, its query and its anchor, and mark the language being read', () => {
   const html = ssr(h(Langs, { lang: 'ru', back: '/race/free?from=today#course' }));
-  assert.deepEqual(hrefs(html), ['/race/free?from=today&lang=en#course', '/race/free?from=today&lang=ru#course', '/race/free?from=today&lang=es#course', '/race/free?from=today&lang=de#course', '/race/free?from=today&lang=tr#course']);
+  assert.deepEqual(hrefs(html), ['/race/free?from=today&lang=en#course', '/race/free?from=today&lang=ru#course', '/race/free?from=today&lang=es#course', '/race/free?from=today&lang=de#course', '/race/free?from=today&lang=tr#course', '/race/free?from=today&lang=fr#course']);
   assert.match(html, /<a class="lang lang-on"[^>]*lang="ru"[^>]*aria-current="true"/);
   assert.match(html, /aria-label="Язык"/);
   assert.match(ssr(h(Langs, { lang: 'en', back: '/' })), /aria-label="Language"/);
 });
 
 test('switching language replaces a ?lang= already in the address rather than adding a second', () => {
-  assert.deepEqual(hrefs(ssr(h(Langs, { lang: 'en', back: '/faq?lang=ru' }))), ['/faq?lang=en', '/faq?lang=ru', '/faq?lang=es', '/faq?lang=de', '/faq?lang=tr']);
+  assert.deepEqual(hrefs(ssr(h(Langs, { lang: 'en', back: '/faq?lang=ru' }))), ['/faq?lang=en', '/faq?lang=ru', '/faq?lang=es', '/faq?lang=de', '/faq?lang=tr', '/faq?lang=fr']);
 });
 
 test('a number and its unit are set apart, and a bare number has no unit', () => {

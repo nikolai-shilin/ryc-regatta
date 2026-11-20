@@ -26,6 +26,6 @@ export async function getT(params: LangParams['params']) {
 type Opts = { path?: string; description?: Pair; index?: boolean; today?: boolean; card?: string; live?: boolean };
 export const titled = (en: string, ru: string, ...more: (string | Opts)[]) => async ({ params }: LangParams): Promise<Metadata> => {
   const { lang, t } = await getT(params), o = (more.find((x) => typeof x === 'object') ?? {}) as Opts;
-  const [es, de, tr] = more.filter((x): x is string => typeof x === 'string');
-  return pageMeta(lang, { title: t(en, ru, es, de, tr), description: o.description && t(...o.description), path: o.path, index: o.index, today: o.today, card: o.card, live: o.live });
+  const [es, de, tr, fr] = more.filter((x): x is string => typeof x === 'string');
+  return pageMeta(lang, { title: t(en, ru, es, de, tr, fr), description: o.description && t(...o.description), path: o.path, index: o.index, today: o.today, card: o.card, live: o.live });
 };

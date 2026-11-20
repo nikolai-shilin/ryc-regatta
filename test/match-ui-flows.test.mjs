@@ -245,7 +245,7 @@ test('the host\'s room in Russian', async () => {
 
 test('a language it doesn\'t have is English', async () => {
   fresh();
-  const h = await page('Host', { host: true, lang: 'fr' });
+  const h = await page('Host', { host: true, lang: 'pt' });
   assert.equal(h.says('#mRoomH'), 'Waiting room');
   h.gone();
 });

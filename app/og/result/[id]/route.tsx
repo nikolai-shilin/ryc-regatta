@@ -17,11 +17,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const d = describe(res, lang);
   const img = await card({ lang,
     bg: 'drone',
-    kind: `${res.daily ? t('Race of the day', 'Гонка дня', 'Regata del día', 'Regatta des Tages', 'Günün yarışı') : t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış')} · ${t(`${d.boats} boats`, `${d.boats} ${ruPlural(d.boats, ['лодка', 'лодки', 'лодок'])}`, `${d.boats} barcos`, `${d.boats} Boote`, `${d.boats} tekne`)}`,
+    kind: `${res.daily ? t('Race of the day', 'Гонка дня', 'Regata del día', 'Regatta des Tages', 'Günün yarışı', 'Régate du jour') : t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış', 'Régate libre')} · ${t(`${d.boats} boats`, `${d.boats} ${ruPlural(d.boats, ['лодка', 'лодки', 'лодок'])}`, `${d.boats} barcos`, `${d.boats} Boote`, `${d.boats} tekne`, `${d.boats} bateaux`)}`,
     tag: { text: d.date.replace(/\.$/, '') },
     hero: d.time
-      ? { label: t(`Finished ${ordEn(d.place)} of ${d.boats}`, `Финиш: ${d.place}-е место из ${d.boats}`, `Puesto ${ordEs(d.place)} de ${d.boats}`, `Im Ziel als ${ordDe(d.place)} von ${d.boats}`, `${d.boats} tekne içinde ${ordTr(d.place)} bitirdi`), value: d.time, plate: { text: t(ordEn(d.place), `${d.place}`, ordEs(d.place), ordDe(d.place), ordTr(d.place)), bg: d.place === 1 ? C.gold : C.you } }
-      : { label: t('Result', 'Результат', 'Resultado', 'Ergebnis', 'Sonuç'), value: t('Disqualified', 'Дисквалификация', 'Descalificado', 'Disqualifiziert', 'Diskalifiye'), color: C.live },
+      ? { label: t(`Finished ${ordEn(d.place)} of ${d.boats}`, `Финиш: ${d.place}-е место из ${d.boats}`, `Puesto ${ordEs(d.place)} de ${d.boats}`, `Im Ziel als ${ordDe(d.place)} von ${d.boats}`, `${d.boats} tekne içinde ${ordTr(d.place)} bitirdi`, `À l’arrivée : ${d.place}${d.place === 1 ? 'er' : 'e'} sur ${d.boats}`), value: d.time, plate: { text: t(ordEn(d.place), `${d.place}`, ordEs(d.place), ordDe(d.place), ordTr(d.place)), bg: d.place === 1 ? C.gold : C.you } }
+      : { label: t('Result', 'Результат', 'Resultado', 'Ergebnis', 'Sonuç', 'Résultat'), value: t('Disqualified', 'Дисквалификация', 'Descalificado', 'Disqualifiziert', 'Diskalifiye', 'Disqualifié'), color: C.live },
     call: d.call,
   });
   img.headers.set('cache-control', 'public, max-age=86400, s-maxage=604800, immutable'); // a posted result never changes

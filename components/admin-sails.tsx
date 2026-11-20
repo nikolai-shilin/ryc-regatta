@@ -46,7 +46,7 @@ export function SailPresets({ lang, every, sets }: { lang: Lang; every: EveryVen
   const names = (ids: string[]) => ids.map((id) => inLang(VENUES.find((v) => v.id === id)!.name, lang));
   const taken = new Set(Object.values(sets).flatMap((x) => x.venues)), rest = VENUES.length - taken.size;
   const rows: { id: string; name: string; venues: string; own: Partial<Record<Slot, Pic>>; colors: SailColors | null }[] = [
-    { id: EVERY, name: t('Every venue', 'Все места', 'Todas las sedes', 'Alle Reviere', 'Tüm mekânlar'), venues: t(`The other ${rest}`, `Остальные ${rest}`, `Las otras ${rest}`, `Die übrigen ${rest}`, `Diğer ${rest}`),
+    { id: EVERY, name: t('Every venue', 'Все места', 'Todas las sedes', 'Alle Reviere', 'Tüm mekânlar', 'Tous les plans d’eau'), venues: t(`The other ${rest}`, `Остальные ${rest}`, `Las otras ${rest}`, `Die übrigen ${rest}`, `Diğer ${rest}`, `Les ${rest} autres`),
       own: { main: every.main ?? undefined, jib: every.jib ?? undefined, kite: every.kite ?? undefined }, colors: every.colors },
     ...Object.entries(sets).map(([id, x]) => {
       const v = names(x.venues);
@@ -58,33 +58,33 @@ export function SailPresets({ lang, every, sets }: { lang: Lang; every: EveryVen
     const p = own ?? (id === EVERY ? undefined : every[slot] ?? undefined);
     if (!p) return <span className="sp-none">—</span>;
     // eslint-disable-next-line @next/next/no-img-element
-    return <span className={`sp-pic${own ? '' : ' sp-inh'}`} title={own ? undefined : t('As every venue', 'Как для всех мест', 'Como en todas las sedes', 'Wie in allen Revieren', 'Tüm mekânlardaki gibi')}><img src={p.url} alt="" /></span>;
+    return <span className={`sp-pic${own ? '' : ' sp-inh'}`} title={own ? undefined : t('As every venue', 'Как для всех мест', 'Como en todas las sedes', 'Wie in allen Revieren', 'Tüm mekânlardaki gibi', 'Comme tous les plans d’eau')}><img src={p.url} alt="" /></span>;
   };
   const dye = (id: string, c: string | undefined, slot: 'jib' | 'kite') => {
     const inherit = c === undefined && id !== EVERY, v = inherit ? every.colors?.[slot] : c;
-    const label = v === undefined || v === 'auto' ? (slot === 'jib' ? t('From the ad', 'По рекламе', 'Según el anuncio', 'Nach der Werbung', 'Reklamdan') : t('Boat’s own', 'Свой у яхты', 'El del barco', 'Das eigene', 'Teknenin')) : v === 'own' ? t('Boat’s own', 'Свой у яхты', 'El del barco', 'Das eigene', 'Teknenin') : v.toUpperCase();
+    const label = v === undefined || v === 'auto' ? (slot === 'jib' ? t('From the ad', 'По рекламе', 'Según el anuncio', 'Nach der Werbung', 'Reklamdan', 'Selon la pub') : t('Boat’s own', 'Свой у яхты', 'El del barco', 'Das eigene', 'Teknenin', 'Celle du bateau')) : v === 'own' ? t('Boat’s own', 'Свой у яхты', 'El del barco', 'Das eigene', 'Teknenin', 'Celle du bateau') : v.toUpperCase();
     return <span className={`sp-dye${inherit ? ' sp-inh' : ''}`}>{v && HEX.test(v) ? <i style={{ background: v }} /> : null}{label}</span>;
   };
   return (
     <section className="adm adm-sails" aria-labelledby="sp-h">
       <div className="sp-bar">
-        <h2 className="kicker" id="sp-h">{t('Sail presets', 'Пресеты парусов', 'Ajustes de velas', 'Segel-Vorlagen', 'Yelken ön ayarları')}</h2>
-        <button type="button" className="pill pill-primary pill-xs" onClick={() => setOpen(NEW)}><span className="btn-t">{t('New preset', 'Новый пресет', 'Ajuste nuevo', 'Neue Vorlage', 'Yeni ön ayar')}</span></button>
+        <h2 className="kicker" id="sp-h">{t('Sail presets', 'Пресеты парусов', 'Ajustes de velas', 'Segel-Vorlagen', 'Yelken ön ayarları', 'Préréglages de voiles')}</h2>
+        <button type="button" className="pill pill-primary pill-xs" onClick={() => setOpen(NEW)}><span className="btn-t">{t('New preset', 'Новый пресет', 'Ajuste nuevo', 'Neue Vorlage', 'Yeni ön ayar', 'Nouveau préréglage')}</span></button>
       </div>
-      <p className="hint">{t('Every venue’s sails, and presets for sets of venues: a race at one of a preset’s venues carries its sails, and every venue’s for anything the preset leaves to them (shown faded). The plane’s banner is on Ads.', 'Паруса для всех мест и пресеты для наборов мест: гонка в месте из пресета несёт его паруса, а то, что пресет оставляет общим (бледное), — общие. Баннер самолёта — в «Рекламе».', 'Las velas de todas las sedes y ajustes para conjuntos de sedes: una regata en una de sus sedes lleva sus velas, y las de todas las sedes para lo que el ajuste les deja (en claro). La pancarta de la avioneta está en Anuncios.', 'Die Segel aller Reviere und Vorlagen für Gruppen von Revieren: Eine Regatta in einem ihrer Reviere trägt ihre Segel und für alles, was die Vorlage offen lässt (blass), die aller Reviere. Das Banner des Flugzeugs ist unter Werbung.', 'Tüm mekânların yelkenleri ve mekân grupları için ön ayarlar: bir ön ayarın mekânındaki yarış onun yelkenlerini, ön ayarın bıraktıkları için (soluk) tüm mekânlarınkini taşır. Uçağın pankartı Reklamlar’dadır.')}</p>
+      <p className="hint">{t('Every venue’s sails, and presets for sets of venues: a race at one of a preset’s venues carries its sails, and every venue’s for anything the preset leaves to them (shown faded). The plane’s banner is on Ads.', 'Паруса для всех мест и пресеты для наборов мест: гонка в месте из пресета несёт его паруса, а то, что пресет оставляет общим (бледное), — общие. Баннер самолёта — в «Рекламе».', 'Las velas de todas las sedes y ajustes para conjuntos de sedes: una regata en una de sus sedes lleva sus velas, y las de todas las sedes para lo que el ajuste les deja (en claro). La pancarta de la avioneta está en Anuncios.', 'Die Segel aller Reviere und Vorlagen für Gruppen von Revieren: Eine Regatta in einem ihrer Reviere trägt ihre Segel und für alles, was die Vorlage offen lässt (blass), die aller Reviere. Das Banner des Flugzeugs ist unter Werbung.', 'Tüm mekânların yelkenleri ve mekân grupları için ön ayarlar: bir ön ayarın mekânındaki yarış onun yelkenlerini, ön ayarın bıraktıkları için (soluk) tüm mekânlarınkini taşır. Uçağın pankartı Reklamlar’dadır.', 'Les voiles de tous les plans d’eau, et des préréglages pour des groupes de plans d’eau : une régate sur l’un des plans d’eau d’un préréglage porte ses voiles, et celles de tous les plans d’eau pour tout ce que le préréglage leur laisse (affiché en pâle). La banderole de l’avion est dans Pubs.')}</p>
       <div className="adm-tab sp-tab">
         <div className="adm-tab-scroll" tabIndex={0} role="region" aria-labelledby="sp-h">
           <table>
             <thead>
               <tr>
-                <th scope="col">{t('Preset', 'Пресет', 'Ajuste', 'Vorlage', 'Ön ayar')}</th>
-                <th scope="col">{t('Venues', 'Места', 'Sedes', 'Reviere', 'Mekânlar')}</th>
-                <th scope="col">{t('Mainsail', 'Грот', 'Mayor', 'Großsegel', 'Ana yelken')}</th>
-                <th scope="col">{t('Jib', 'Стаксель', 'Foque', 'Fock', 'Flok')}</th>
-                <th scope="col">{t('Jib colour', 'Цвет стакселя', 'Color del foque', 'Fockfarbe', 'Flok rengi')}</th>
-                <th scope="col">{t('Gennaker', 'Генакер', 'Gennaker', 'Gennaker', 'Balon')}</th>
-                <th scope="col">{t('Gennaker colour', 'Цвет генакера', 'Color del gennaker', 'Gennakerfarbe', 'Balon rengi')}</th>
-                <th scope="col"><span className="vh">{t('Edit', 'Изменить', 'Editar', 'Bearbeiten', 'Düzenle')}</span></th>
+                <th scope="col">{t('Preset', 'Пресет', 'Ajuste', 'Vorlage', 'Ön ayar', 'Préréglage')}</th>
+                <th scope="col">{t('Venues', 'Места', 'Sedes', 'Reviere', 'Mekânlar', 'Plans d’eau')}</th>
+                <th scope="col">{t('Mainsail', 'Грот', 'Mayor', 'Großsegel', 'Ana yelken', 'Grand-voile')}</th>
+                <th scope="col">{t('Jib', 'Стаксель', 'Foque', 'Fock', 'Flok', 'Foc')}</th>
+                <th scope="col">{t('Jib colour', 'Цвет стакселя', 'Color del foque', 'Fockfarbe', 'Flok rengi', 'Couleur du foc')}</th>
+                <th scope="col">{t('Gennaker', 'Генакер', 'Gennaker', 'Gennaker', 'Balon', 'Gennaker')}</th>
+                <th scope="col">{t('Gennaker colour', 'Цвет генакера', 'Color del gennaker', 'Gennakerfarbe', 'Balon rengi', 'Couleur du gennaker')}</th>
+                <th scope="col"><span className="vh">{t('Edit', 'Изменить', 'Editar', 'Bearbeiten', 'Düzenle', 'Modifier')}</span></th>
               </tr>
             </thead>
             <tbody>
@@ -97,7 +97,7 @@ export function SailPresets({ lang, every, sets }: { lang: Lang; every: EveryVen
                   <td>{dye(r.id, r.colors?.jib, 'jib')}</td>
                   <td>{pic(r.id, r.own.kite, 'kite')}</td>
                   <td>{dye(r.id, r.colors?.kite, 'kite')}</td>
-                  <td><button type="button" className="pill pill-quiet pill-xs sp-edit" aria-label={`${t('Edit', 'Изменить', 'Editar', 'Bearbeiten', 'Düzenle')} ${r.name}`} onClick={() => setOpen(r.id)}><span className="btn-t">{t('Edit', 'Изменить', 'Editar', 'Bearbeiten', 'Düzenle')}</span></button></td>
+                  <td><button type="button" className="pill pill-quiet pill-xs sp-edit" aria-label={`${t('Edit', 'Изменить', 'Editar', 'Bearbeiten', 'Düzenle', 'Modifier')} ${r.name}`} onClick={() => setOpen(r.id)}><span className="btn-t">{t('Edit', 'Изменить', 'Editar', 'Bearbeiten', 'Düzenle', 'Modifier')}</span></button></td>
                 </tr>
               ))}
             </tbody>
@@ -105,11 +105,11 @@ export function SailPresets({ lang, every, sets }: { lang: Lang; every: EveryVen
         </div>
       </div>
       <div className="hint sp-req">
-        <p>{t('Pictures: PNG, JPEG, WebP or SVG, up to 2 MB. Crop each to its artwork, with no empty margin: its own shape sets how large it stands on the sail. An SVG stays sharp; a bitmap wants to be at least 1024 px on its long side.', 'Картинки: PNG, JPEG, WebP или SVG, до 2 МБ. Обрежьте по рисунку, без пустых полей: размер на парусе задаёт его собственная форма. SVG остаётся чётким; растровой картинке нужно от 1024 px по длинной стороне.', 'Imágenes: PNG, JPEG, WebP o SVG, hasta 2 MB. Recórtala a su dibujo, sin márgenes vacíos: su propia forma decide su tamaño en la vela. Un SVG queda nítido; un mapa de bits pide al menos 1024 px en su lado largo.', 'Bilder: PNG, JPEG, WebP oder SVG, bis 2 MB. Auf das Motiv zuschneiden, ohne leeren Rand: Seine eigene Form bestimmt, wie groß es auf dem Segel steht. Ein SVG bleibt scharf; eine Rastergrafik braucht mindestens 1024 px an der langen Seite.', 'Resimler: PNG, JPEG, WebP veya SVG, en fazla 2 MB. Boş kenar bırakmadan çizime göre kırp: yelkendeki boyunu kendi biçimi belirler. SVG net kalır; bitmap uzun kenarında en az 1024 px olmalı.')}</p>
+        <p>{t('Pictures: PNG, JPEG, WebP or SVG, up to 2 MB. Crop each to its artwork, with no empty margin: its own shape sets how large it stands on the sail. An SVG stays sharp; a bitmap wants to be at least 1024 px on its long side.', 'Картинки: PNG, JPEG, WebP или SVG, до 2 МБ. Обрежьте по рисунку, без пустых полей: размер на парусе задаёт его собственная форма. SVG остаётся чётким; растровой картинке нужно от 1024 px по длинной стороне.', 'Imágenes: PNG, JPEG, WebP o SVG, hasta 2 MB. Recórtala a su dibujo, sin márgenes vacíos: su propia forma decide su tamaño en la vela. Un SVG queda nítido; un mapa de bits pide al menos 1024 px en su lado largo.', 'Bilder: PNG, JPEG, WebP oder SVG, bis 2 MB. Auf das Motiv zuschneiden, ohne leeren Rand: Seine eigene Form bestimmt, wie groß es auf dem Segel steht. Ein SVG bleibt scharf; eine Rastergrafik braucht mindestens 1024 px an der langen Seite.', 'Resimler: PNG, JPEG, WebP veya SVG, en fazla 2 MB. Boş kenar bırakmadan çizime göre kırp: yelkendeki boyunu kendi biçimi belirler. SVG net kalır; bitmap uzun kenarında en az 1024 px olmalı.', 'Images : PNG, JPEG, WebP ou SVG, jusqu’à 2 Mo. Recadre chacune sur son motif, sans marge vide : sa propre forme fixe sa taille sur la voile. Un SVG reste net ; une image bitmap doit faire au moins 1024 px sur son grand côté.')}</p>
         <ul>
-          <li><b>{t('Mainsail logo', 'Логотип на гроте', 'Logo en la mayor', 'Logo auf dem Großsegel', 'Ana yelken logosu')}</b> — {t('stands upright under the number; a logo of one colour on a transparent ground (a white cut-out) is printed in the boat’s sail-number colour, one of more colours or on a ground of its own as it is.', 'стоит прямо под номером; логотип одного цвета на прозрачном фоне (белый силуэт) печатается цветом номера яхты, многоцветный или на своём фоне — как есть.', 'va derecho bajo el número; un logo de un color sobre fondo transparente (un recorte blanco) se imprime en el color del número del barco, uno de más colores o con fondo propio tal cual.', 'steht aufrecht unter der Nummer; ein einfarbiges Logo auf transparentem Grund (weiß ausgeschnitten) wird in der Farbe der Segelnummer gedruckt, ein mehrfarbiges oder eines mit eigenem Grund so, wie es ist.', 'numaranın altında dik durur; saydam zemin üzerinde tek renkli bir logo (beyaz kesik) teknenin yelken numarası renginde, çok renkli ya da kendi zemini olan bir logo olduğu gibi basılır.')}</li>
-          <li><b>{t('Jib ad', 'Реклама на стакселе', 'Anuncio en el foque', 'Werbung auf der Fock', 'Flok reklamı')}</b> — {t('a long banner (about 4:1 or longer) runs up the luff, a squarer one stands level. With a solid ground of one colour to all four corners, the jib is dyed that colour (when its colour follows the ad) and the banner drawn 15% larger, its edges running off the sail: keep the words clear of the edges. Words of one colour on a transparent ground are printed in the boat’s sail-number colour, or in black or white on a jib colour set here.', 'длинный баннер (примерно 4:1 и длиннее) идёт вдоль передней шкаторины, более квадратный стоит ровно. Если фон сплошной и одного цвета во всех четырёх углах, стаксель красится в этот цвет (когда цвет «по рекламе»), а баннер рисуется на 15% больше и края уходят за парус: держите слова подальше от краёв. Надпись одного цвета на прозрачном фоне печатается цветом номера яхты, а на заданном здесь цвете стакселя — чёрным или белым.', 'una pancarta larga (unos 4:1 o más) sube por el grátil, una más cuadrada va a nivel. Con un fondo liso de un color en las cuatro esquinas, el foque se tiñe de ese color (si su color sigue al anuncio) y la pancarta se dibuja un 15% mayor, sus bordes fuera de la vela: deja las letras lejos de los bordes. Un texto de un color sobre fondo transparente se imprime en el color del número del barco, o en negro o blanco sobre un color de foque fijado aquí.', 'ein langes Banner (etwa 4:1 oder länger) läuft am Vorliek hinauf, ein eher quadratisches steht waagerecht. Ist der Grund in allen vier Ecken einfarbig, wird die Fock in dieser Farbe gefärbt (wenn ihre Farbe der Werbung folgt) und das Banner 15 % größer gezeichnet, seine Ränder über das Segel hinaus: Schrift von den Rändern fernhalten. Einfarbige Schrift auf transparentem Grund wird in der Farbe der Segelnummer gedruckt, auf einer hier gesetzten Fockfarbe schwarz oder weiß.', 'uzun bir pankart (yaklaşık 4:1 ya da daha uzun) orsa yakası boyunca uzanır, daha kare olanı düz durur. Zemin dört köşede de tek ve düz bir renkse flok o renge boyanır (rengi reklama göreyse) ve pankart %15 büyük çizilir, kenarları yelkenin dışına taşar: yazıyı kenarlardan uzak tut. Saydam zemin üzerinde tek renkli yazı teknenin yelken numarası renginde, burada seçilen bir flok renginde ise siyah ya da beyaz basılır.')}</li>
-          <li><b>{t('Gennaker logo', 'Логотип на генакере', 'Logo en el gennaker', 'Logo auf dem Gennaker', 'Balon logosu')}</b> — {t('stands upright in the middle of the sail, as it is, best on a transparent ground.', 'стоит прямо посередине паруса, как есть; лучше на прозрачном фоне.', 'va derecho en el centro de la vela, tal cual; mejor sobre fondo transparente.', 'steht aufrecht in der Mitte des Segels, so wie es ist; am besten auf transparentem Grund.', 'yelkenin ortasında olduğu gibi dik durur; en iyisi saydam zeminde.')}</li>
+          <li><b>{t('Mainsail logo', 'Логотип на гроте', 'Logo en la mayor', 'Logo auf dem Großsegel', 'Ana yelken logosu', 'Logo de grand-voile')}</b> — {t('stands upright under the number; a logo of one colour on a transparent ground (a white cut-out) is printed in the boat’s sail-number colour, one of more colours or on a ground of its own as it is.', 'стоит прямо под номером; логотип одного цвета на прозрачном фоне (белый силуэт) печатается цветом номера яхты, многоцветный или на своём фоне — как есть.', 'va derecho bajo el número; un logo de un color sobre fondo transparente (un recorte blanco) se imprime en el color del número del barco, uno de más colores o con fondo propio tal cual.', 'steht aufrecht unter der Nummer; ein einfarbiges Logo auf transparentem Grund (weiß ausgeschnitten) wird in der Farbe der Segelnummer gedruckt, ein mehrfarbiges oder eines mit eigenem Grund so, wie es ist.', 'numaranın altında dik durur; saydam zemin üzerinde tek renkli bir logo (beyaz kesik) teknenin yelken numarası renginde, çok renkli ya da kendi zemini olan bir logo olduğu gibi basılır.', 'se tient droit sous le numéro ; un logo d’une seule couleur sur fond transparent (une découpe blanche) est imprimé dans la couleur du numéro de voile du bateau, un logo de plusieurs couleurs ou sur un fond à lui tel quel.')}</li>
+          <li><b>{t('Jib ad', 'Реклама на стакселе', 'Anuncio en el foque', 'Werbung auf der Fock', 'Flok reklamı', 'Pub de foc')}</b> — {t('a long banner (about 4:1 or longer) runs up the luff, a squarer one stands level. With a solid ground of one colour to all four corners, the jib is dyed that colour (when its colour follows the ad) and the banner drawn 15% larger, its edges running off the sail: keep the words clear of the edges. Words of one colour on a transparent ground are printed in the boat’s sail-number colour, or in black or white on a jib colour set here.', 'длинный баннер (примерно 4:1 и длиннее) идёт вдоль передней шкаторины, более квадратный стоит ровно. Если фон сплошной и одного цвета во всех четырёх углах, стаксель красится в этот цвет (когда цвет «по рекламе»), а баннер рисуется на 15% больше и края уходят за парус: держите слова подальше от краёв. Надпись одного цвета на прозрачном фоне печатается цветом номера яхты, а на заданном здесь цвете стакселя — чёрным или белым.', 'una pancarta larga (unos 4:1 o más) sube por el grátil, una más cuadrada va a nivel. Con un fondo liso de un color en las cuatro esquinas, el foque se tiñe de ese color (si su color sigue al anuncio) y la pancarta se dibuja un 15% mayor, sus bordes fuera de la vela: deja las letras lejos de los bordes. Un texto de un color sobre fondo transparente se imprime en el color del número del barco, o en negro o blanco sobre un color de foque fijado aquí.', 'ein langes Banner (etwa 4:1 oder länger) läuft am Vorliek hinauf, ein eher quadratisches steht waagerecht. Ist der Grund in allen vier Ecken einfarbig, wird die Fock in dieser Farbe gefärbt (wenn ihre Farbe der Werbung folgt) und das Banner 15 % größer gezeichnet, seine Ränder über das Segel hinaus: Schrift von den Rändern fernhalten. Einfarbige Schrift auf transparentem Grund wird in der Farbe der Segelnummer gedruckt, auf einer hier gesetzten Fockfarbe schwarz oder weiß.', 'uzun bir pankart (yaklaşık 4:1 ya da daha uzun) orsa yakası boyunca uzanır, daha kare olanı düz durur. Zemin dört köşede de tek ve düz bir renkse flok o renge boyanır (rengi reklama göreyse) ve pankart %15 büyük çizilir, kenarları yelkenin dışına taşar: yazıyı kenarlardan uzak tut. Saydam zemin üzerinde tek renkli yazı teknenin yelken numarası renginde, burada seçilen bir flok renginde ise siyah ya da beyaz basılır.', 'une banderole longue (environ 4:1 ou plus) monte le long du guindant, une plus carrée se tient à l’horizontale. Avec un fond uni d’une seule couleur jusqu’aux quatre coins, le foc est teint de cette couleur (quand sa couleur suit la pub) et la banderole est dessinée 15 % plus grande, ses bords débordant de la voile : garde le texte loin des bords. Un texte d’une seule couleur sur fond transparent est imprimé dans la couleur du numéro de voile du bateau, ou en noir ou en blanc sur une couleur de foc choisie ici.')}</li>
+          <li><b>{t('Gennaker logo', 'Логотип на генакере', 'Logo en el gennaker', 'Logo auf dem Gennaker', 'Balon logosu', 'Logo de gennaker')}</b> — {t('stands upright in the middle of the sail, as it is, best on a transparent ground.', 'стоит прямо посередине паруса, как есть; лучше на прозрачном фоне.', 'va derecho en el centro de la vela, tal cual; mejor sobre fondo transparente.', 'steht aufrecht in der Mitte des Segels, so wie es ist; am besten auf transparentem Grund.', 'yelkenin ortasında olduğu gibi dik durur; en iyisi saydam zeminde.', 'se tient droit au milieu de la voile, tel quel, de préférence sur fond transparent.')}</li>
         </ul>
       </div>
       {open !== null && <PresetDialog key={open} lang={lang} id={open} every={every} sets={sets} onClose={() => setOpen(null)} />}
@@ -143,7 +143,7 @@ function PresetDialog({ lang, id, every, sets, onClose }: { lang: Lang; id: stri
   useEffect(() => { dlg.current?.showModal(); }, []);
   const close = () => { for (const p of Object.values(pics)) if (p.preview) URL.revokeObjectURL(p.preview); dlg.current?.close(); onClose(); };
 
-  const title = isEvery ? t('Every venue’s sails', 'Паруса для всех мест', 'Las velas de todas las sedes', 'Die Segel aller Reviere', 'Tüm mekânların yelkenleri') : isNew ? t('New preset', 'Новый пресет', 'Ajuste nuevo', 'Neue Vorlage', 'Yeni ön ayar') : me!.name;
+  const title = isEvery ? t('Every venue’s sails', 'Паруса для всех мест', 'Las velas de todas las sedes', 'Die Segel aller Reviere', 'Tüm mekânların yelkenleri', 'Les voiles de tous les plans d’eau') : isNew ? t('New preset', 'Новый пресет', 'Ajuste nuevo', 'Neue Vorlage', 'Yeni ön ayar', 'Nouveau préréglage') : me!.name;
   const has = (v: string) => picked.includes(v);
   const toggle = (ids: string[], on: boolean) => setPicked((p) => (on ? [...new Set([...p, ...ids])] : p.filter((v) => !ids.includes(v))));
   const owner = (v: string) => Object.entries(sets).find(([sid, x]) => sid !== id && x.venues.includes(v))?.[1];
@@ -154,8 +154,8 @@ function PresetDialog({ lang, id, every, sets, onClose }: { lang: Lang; id: stri
   const choose = (slot: Slot, f: File | undefined) => {
     setErr('');
     if (!f) return;
-    if (!TYPES[f.type]) return setErr(t('A PNG, JPEG, WebP or SVG picture, please.', 'Нужна картинка PNG, JPEG, WebP или SVG.', 'Una imagen PNG, JPEG, WebP o SVG, por favor.', 'Bitte ein PNG-, JPEG-, WebP- oder SVG-Bild.', 'Lütfen PNG, JPEG, WebP veya SVG bir resim seç.'));
-    if (f.size > MAX) return setErr(t('Up to 2 MB, please.', 'Не больше 2 МБ.', 'Hasta 2 MB, por favor.', 'Bitte höchstens 2 MB.', 'En fazla 2 MB olsun.'));
+    if (!TYPES[f.type]) return setErr(t('A PNG, JPEG, WebP or SVG picture, please.', 'Нужна картинка PNG, JPEG, WebP или SVG.', 'Una imagen PNG, JPEG, WebP o SVG, por favor.', 'Bitte ein PNG-, JPEG-, WebP- oder SVG-Bild.', 'Lütfen PNG, JPEG, WebP veya SVG bir resim seç.', 'Une image PNG, JPEG, WebP ou SVG, s’il te plaît.'));
+    if (f.size > MAX) return setErr(t('Up to 2 MB, please.', 'Не больше 2 МБ.', 'Hasta 2 MB, por favor.', 'Bitte höchstens 2 MB.', 'En fazla 2 MB olsun.', 'Jusqu’à 2 Mo, s’il te plaît.'));
     setPics((p) => { if (p[slot].preview) URL.revokeObjectURL(p[slot].preview!); return { ...p, [slot]: { ...p[slot], file: f, preview: URL.createObjectURL(f), drop: false } }; });
   };
   const drop = (slot: Slot) => setPics((p) => { if (p[slot].preview) URL.revokeObjectURL(p[slot].preview!); return { ...p, [slot]: { ...p[slot], file: null, preview: null, drop: true } }; });
@@ -226,16 +226,16 @@ function PresetDialog({ lang, id, every, sets, onClose }: { lang: Lang; id: stri
     setBusy(false); close(); router.refresh();
   };
 
-  const slotName: Record<Slot, string> = { main: t('Mainsail logo', 'Логотип на гроте', 'Logo en la mayor', 'Logo auf dem Großsegel', 'Ana yelken logosu'), jib: t('Jib ad', 'Реклама на стакселе', 'Anuncio en el foque', 'Werbung auf der Fock', 'Flok reklamı'), kite: t('Gennaker logo', 'Логотип на генакере', 'Logo en el gennaker', 'Logo auf dem Gennaker', 'Balon logosu') };
-  const asAll: [Dye, string][] = isEvery ? [] : [['inherit', t('As every venue', 'Как для всех мест', 'Como en todas las sedes', 'Wie in allen Revieren', 'Tüm mekânlardaki gibi')]];
+  const slotName: Record<Slot, string> = { main: t('Mainsail logo', 'Логотип на гроте', 'Logo en la mayor', 'Logo auf dem Großsegel', 'Ana yelken logosu', 'Logo de grand-voile'), jib: t('Jib ad', 'Реклама на стакселе', 'Anuncio en el foque', 'Werbung auf der Fock', 'Flok reklamı', 'Pub de foc'), kite: t('Gennaker logo', 'Логотип на генакере', 'Logo en el gennaker', 'Logo auf dem Gennaker', 'Balon logosu', 'Logo de gennaker') };
+  const asAll: [Dye, string][] = isEvery ? [] : [['inherit', t('As every venue', 'Как для всех мест', 'Como en todas las sedes', 'Wie in allen Revieren', 'Tüm mekânlardaki gibi', 'Comme tous les plans d’eau')]];
   const dyeRow = (slot: 'jib' | 'kite', d: { mode: Dye; col: string }, set: (d: { mode: Dye; col: string }) => void) => {
     const modes: [Dye, string][] = slot === 'jib'
-      ? [...asAll, ['auto', t('Follow the ad', 'По рекламе', 'Según el anuncio', 'Nach der Werbung', 'Reklama göre')], ['own', t('Each boat’s own', 'Свой у каждой', 'El de cada barco', 'Jedes Boot sein eigenes', 'Her teknenin kendi')], ['one', t('One colour for all', 'Один цвет для всех', 'Un color para todos', 'Eine Farbe für alle', 'Herkese tek renk')]]
-      : [...asAll, ['own', t('Each boat’s own', 'Свой у каждой', 'El de cada barco', 'Jedes Boot sein eigenes', 'Her teknenin kendi')], ['one', t('One colour for all', 'Один цвет для всех', 'Un color para todos', 'Eine Farbe für alle', 'Herkese tek renk')]];
+      ? [...asAll, ['auto', t('Follow the ad', 'По рекламе', 'Según el anuncio', 'Nach der Werbung', 'Reklama göre', 'Suivre la pub')], ['own', t('Each boat’s own', 'Свой у каждой', 'El de cada barco', 'Jedes Boot sein eigenes', 'Her teknenin kendi', 'Celle de chaque bateau')], ['one', t('One colour for all', 'Один цвет для всех', 'Un color para todos', 'Eine Farbe für alle', 'Herkese tek renk', 'Une couleur pour tous')]]
+      : [...asAll, ['own', t('Each boat’s own', 'Свой у каждой', 'El de cada barco', 'Jedes Boot sein eigenes', 'Her teknenin kendi', 'Celle de chaque bateau')], ['one', t('One colour for all', 'Один цвет для всех', 'Un color para todos', 'Eine Farbe für alle', 'Herkese tek renk', 'Une couleur pour tous')]];
     const lid = `sp-dye-${slot}`;
     return (
       <div className="sp-row">
-        <span className="srow-k" id={lid}>{slot === 'jib' ? t('Jib colour', 'Цвет стакселя', 'Color del foque', 'Fockfarbe', 'Flok rengi') : t('Gennaker colour', 'Цвет генакера', 'Color del gennaker', 'Gennakerfarbe', 'Balon rengi')}</span>
+        <span className="srow-k" id={lid}>{slot === 'jib' ? t('Jib colour', 'Цвет стакселя', 'Color del foque', 'Fockfarbe', 'Flok rengi', 'Couleur du foc') : t('Gennaker colour', 'Цвет генакера', 'Color del gennaker', 'Gennakerfarbe', 'Balon rengi', 'Couleur du gennaker')}</span>
         <div className="sp-ctl">
           <div className="bt-pills" role="radiogroup" aria-labelledby={lid}>
             {modes.map(([m, l]) => <button key={m} type="button" role="radio" aria-checked={d.mode === m} className="bt-pill" disabled={busy} onClick={() => set({ ...d, mode: m })}>{l}</button>)}
@@ -249,16 +249,16 @@ function PresetDialog({ lang, id, every, sets, onClose }: { lang: Lang; id: stri
   return (
     <dialog ref={dlg} className="dl sp-dlg" aria-labelledby="sp-dlg-h" onCancel={(e) => { e.preventDefault(); if (!busy) close(); }}>
       <div className="dl-in sp-in">
-        <span className="dl-k">{t('Sail preset', 'Пресет парусов', 'Ajuste de velas', 'Segel-Vorlage', 'Yelken ön ayarı')}</span>
-        <h2 className="dl-h" id="sp-dlg-h">{title || t('New preset', 'Новый пресет', 'Ajuste nuevo', 'Neue Vorlage', 'Yeni ön ayar')}</h2>
+        <span className="dl-k">{t('Sail preset', 'Пресет парусов', 'Ajuste de velas', 'Segel-Vorlage', 'Yelken ön ayarı', 'Préréglage de voiles')}</span>
+        <h2 className="dl-h" id="sp-dlg-h">{title || t('New preset', 'Новый пресет', 'Ajuste nuevo', 'Neue Vorlage', 'Yeni ön ayar', 'Nouveau préréglage')}</h2>
         {!isEvery && (
           <>
             <div className="sp-row">
-              <label className="srow-k" htmlFor="sp-name">{t('Name', 'Название', 'Nombre', 'Name', 'Ad')}</label>
+              <label className="srow-k" htmlFor="sp-name">{t('Name', 'Название', 'Nombre', 'Name', 'Ad', 'Nom')}</label>
               <input id="sp-name" className="field" type="text" maxLength={NAME_MAX} value={name} disabled={busy} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="sp-row sp-row-top">
-              <span className="srow-k">{t(`Venues (${picked.length})`, `Места (${picked.length})`, `Sedes (${picked.length})`, `Reviere (${picked.length})`, `Mekânlar (${picked.length})`)}</span>
+              <span className="srow-k">{t(`Venues (${picked.length})`, `Места (${picked.length})`, `Sedes (${picked.length})`, `Reviere (${picked.length})`, `Mekânlar (${picked.length})`, `Plans d’eau (${picked.length})`)}</span>
               <div className="adm-venues sp-venues">
                 {countries.map(({ nation, vs, label }) => {
                   const all = vs.every((v) => has(v.id)), some = vs.some((v) => has(v.id));
@@ -268,7 +268,7 @@ function PresetDialog({ lang, id, every, sets, onClose }: { lang: Lang; id: stri
                       <div className="bt-pills">
                         {vs.map((v) => {
                           const other = owner(v.id);
-                          return <button key={v.id} type="button" role="checkbox" aria-checked={has(v.id)} className="bt-pill" disabled={busy} title={other && !has(v.id) ? t(`In “${other.name}”: picking it moves it here`, `В «${other.name}»: если выбрать, перейдёт сюда`, `En «${other.name}»: elegirla la trae aquí`, `In „${other.name}“: Wählen holt es hierher`, `“${other.name}” içinde: seçersen buraya taşınır`) : undefined} onClick={() => toggle([v.id], !has(v.id))}>{inLang(v.name, lang)}{other && !has(v.id) ? <span className="adm-in-set"> · {other.name}</span> : null}</button>;
+                          return <button key={v.id} type="button" role="checkbox" aria-checked={has(v.id)} className="bt-pill" disabled={busy} title={other && !has(v.id) ? t(`In “${other.name}”: picking it moves it here`, `В «${other.name}»: если выбрать, перейдёт сюда`, `En «${other.name}»: elegirla la trae aquí`, `In „${other.name}“: Wählen holt es hierher`, `“${other.name}” içinde: seçersen buraya taşınır`, `Dans « ${other.name} » : le choisir le déplace ici`) : undefined} onClick={() => toggle([v.id], !has(v.id))}>{inLang(v.name, lang)}{other && !has(v.id) ? <span className="adm-in-set"> · {other.name}</span> : null}</button>;
                         })}
                       </div>
                     </div>
@@ -287,8 +287,8 @@ function PresetDialog({ lang, id, every, sets, onClose }: { lang: Lang; id: stri
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <span className={`sp-pic sp-pic-l${inherited ? ' sp-inh' : ''}`}>{shown || inherited ? <img src={(shown || inherited)!} alt="" /> : <span className="sp-none">—</span>}</span>
                 <input id={`sp-file-${slot}`} className="vh" type="file" accept={Object.keys(TYPES).join(',')} disabled={busy} onChange={(e) => choose(slot, e.target.files?.[0])} />
-                <label className="adm-pick" htmlFor={`sp-file-${slot}`}><IconImage /><span>{p.file ? p.file.name : t('Choose a picture', 'Выбрать картинку', 'Elige una imagen', 'Bild wählen', 'Resim seç')}</span></label>
-                {shown && <button type="button" className="pill pill-quiet pill-xs" disabled={busy} onClick={() => drop(slot)}><span className="btn-t">{isEvery ? t('No picture', 'Без картинки', 'Sin imagen', 'Kein Bild', 'Resim yok') : t('As every venue', 'Как для всех мест', 'Como en todas las sedes', 'Wie in allen Revieren', 'Tüm mekânlardaki gibi')}</span></button>}
+                <label className="adm-pick" htmlFor={`sp-file-${slot}`}><IconImage /><span>{p.file ? p.file.name : t('Choose a picture', 'Выбрать картинку', 'Elige una imagen', 'Bild wählen', 'Resim seç', 'Choisir une image')}</span></label>
+                {shown && <button type="button" className="pill pill-quiet pill-xs" disabled={busy} onClick={() => drop(slot)}><span className="btn-t">{isEvery ? t('No picture', 'Без картинки', 'Sin imagen', 'Kein Bild', 'Resim yok', 'Aucune image') : t('As every venue', 'Как для всех мест', 'Como en todas las sedes', 'Wie in allen Revieren', 'Tüm mekânlardaki gibi', 'Comme tous les plans d’eau')}</span></button>}
               </div>
             </div>
           );
@@ -297,9 +297,9 @@ function PresetDialog({ lang, id, every, sets, onClose }: { lang: Lang; id: stri
         {dyeRow('kite', kite, setKite)}
         {err && <p className="err" role="alert">{err}</p>}
         <div className="dl-btns sp-btns">
-          <button type="button" className="pill pill-primary pill-xs" disabled={busy || (!isEvery && !clean)} onClick={save}><span className="btn-t">{busy ? t('Saving…', 'Сохраняю…', 'Guardando…', 'Speichern …', 'Kaydediliyor…') : t('Save', 'Сохранить', 'Guardar', 'Speichern', 'Kaydet')}</span></button>
-          <button type="button" className="pill pill-quiet pill-xs" disabled={busy} onClick={close}><span className="btn-t">{t('Cancel', 'Отмена', 'Cancelar', 'Abbrechen', 'Vazgeç')}</span></button>
-          {!isEvery && !isNew && <button type="button" className="pill pill-quiet pill-xs sp-del" disabled={busy} onClick={remove}><span className="btn-t">{t('Delete the preset', 'Удалить пресет', 'Borrar el ajuste', 'Vorlage löschen', 'Ön ayarı sil')}</span></button>}
+          <button type="button" className="pill pill-primary pill-xs" disabled={busy || (!isEvery && !clean)} onClick={save}><span className="btn-t">{busy ? t('Saving…', 'Сохраняю…', 'Guardando…', 'Speichern …', 'Kaydediliyor…', 'Enregistrement…') : t('Save', 'Сохранить', 'Guardar', 'Speichern', 'Kaydet', 'Enregistrer')}</span></button>
+          <button type="button" className="pill pill-quiet pill-xs" disabled={busy} onClick={close}><span className="btn-t">{t('Cancel', 'Отмена', 'Cancelar', 'Abbrechen', 'Vazgeç', 'Annuler')}</span></button>
+          {!isEvery && !isNew && <button type="button" className="pill pill-quiet pill-xs sp-del" disabled={busy} onClick={remove}><span className="btn-t">{t('Delete the preset', 'Удалить пресет', 'Borrar el ajuste', 'Vorlage löschen', 'Ön ayarı sil', 'Supprimer le préréglage')}</span></button>}
         </div>
       </div>
     </dialog>

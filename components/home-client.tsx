@@ -35,46 +35,46 @@ export function SiteMenu({ lang }: { lang: Lang }) {
   }, []);
   return (
     <details className="hm-menu" ref={ref} onToggle={(e) => { if (e.currentTarget.open) askCard(); }}>
-      <summary className="hm-prof" aria-label={t('Menu', 'Меню', 'Menú', 'Menü', 'Menü')} onPointerEnter={askCard} onFocus={askCard}><IconBurger /><span className="hm-av"><IconUser /><span className="me-ini" /></span></summary>
+      <summary className="hm-prof" aria-label={t('Menu', 'Меню', 'Menú', 'Menü', 'Menü', 'Menu')} onPointerEnter={askCard} onFocus={askCard}><IconBurger /><span className="hm-av"><IconUser /><span className="me-ini" /></span></summary>
       <div className="hm-menu-pop">
         <Link className="hm-acct if-me" href="/settings">
           <span className="hm-av hm-acct-av me-ini" aria-hidden="true" />
-          <span className="hm-acct-t"><span className="hm-acct-n me-name" /><span className="hm-acct-s">{t('Settings', 'Настройки', 'Ajustes', 'Einstellungen', 'Ayarlar')}</span></span>
+          <span className="hm-acct-t"><span className="hm-acct-n me-name" /><span className="hm-acct-s">{t('Settings', 'Настройки', 'Ajustes', 'Einstellungen', 'Ayarlar', 'Réglages')}</span></span>
         </Link>
         <Link className="hm-acct if-guest" href="/sign-in">
           <span className="hm-av hm-acct-av" aria-hidden="true"><IconUser /></span>
-          <span className="hm-acct-t"><span className="hm-acct-n">{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden', 'Giriş yap')}</span><span className="hm-acct-s">{t('To be ranked and keep your times', 'Чтобы попасть в рейтинг и сохранить результаты', 'Para entrar en la clasificación y guardar tus tiempos', 'Um gerankt zu werden und deine Zeiten zu behalten', 'Sıralamaya girmek ve sürelerini tutmak için')}</span></span>
+          <span className="hm-acct-t"><span className="hm-acct-n">{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden', 'Giriş yap', 'Se connecter')}</span><span className="hm-acct-s">{t('To be ranked and keep your times', 'Чтобы попасть в рейтинг и сохранить результаты', 'Para entrar en la clasificación y guardar tus tiempos', 'Um gerankt zu werden und deine Zeiten zu behalten', 'Sıralamaya girmek ve sürelerini tutmak için', 'Pour être classé et garder tes temps')}</span></span>
         </Link>
         {/* the race pages, where the header has no room for them: first, under the account, the first race at their top */}
-        <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы', 'Páginas', 'Seiten', 'Sayfalar')}>
+        <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы', 'Páginas', 'Seiten', 'Sayfalar', 'Pages')}>
           <span className="hm-msep" />
-          <a className="hm-mi hm-mi-first" href="/play?race=first&intro"><span className="hm-mi-t"><b>{t('First race', 'Первая гонка', 'Primera regata', 'Erste Regatta', 'İlk yarış')}</b><span className="lbl">{t('An Optimist · four beginners', 'Оптимист · четыре новичка', 'Un Optimist · cuatro principiantes', 'Ein Optimist · vier Anfänger', 'Bir Optimist · dört acemi')}</span></span><span className="hm-tag">{t('3 min', '3 мин', '3 min', '3 Min.', '3 dk')}</span></a>
-          <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı')}</Link>
-          <Link className="hm-mi" href="/race/free">{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış')}</Link>
-          <Link className="hm-mi" href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış')}</Link>
-          <Link className="hm-mi" href="/race/rating">{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama')}</Link>
+          <a className="hm-mi hm-mi-first" href="/play?race=first&intro"><span className="hm-mi-t"><b>{t('First race', 'Первая гонка', 'Primera regata', 'Erste Regatta', 'İlk yarış', 'Première régate')}</b><span className="lbl">{t('An Optimist · four beginners', 'Оптимист · четыре новичка', 'Un Optimist · cuatro principiantes', 'Ein Optimist · vier Anfänger', 'Bir Optimist · dört acemi', 'Un Optimist · quatre débutants')}</span></span><span className="hm-tag">{t('3 min', '3 мин', '3 min', '3 Min.', '3 dk', '3 min')}</span></a>
+          <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı', 'La régate du jour')}</Link>
+          <Link className="hm-mi" href="/race/free">{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış', 'Régate libre')}</Link>
+          <Link className="hm-mi" href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1')}</Link>
+          <Link className="hm-mi" href="/race/rating">{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama', 'Classement')}</Link>
         </nav>
         {/* the drills, the players, the venues and the yachts: in the menu at every width, never in the header's row */}
         <span className="hm-msep" />
-        <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки', 'Ejercicios', 'Übungen', 'Alıştırmalar')}</Link>
-        <Link className="hm-mi" href="/players">{t('Players', 'Игроки', 'Jugadores', 'Spieler', 'Oyuncular')}</Link>
-        <Link className="hm-mi" href="/venues">{t('Venues', 'Акватории', 'Sedes', 'Reviere', 'Yarış alanları')}</Link>
-        <Link className="hm-mi" href="/yachts">{t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar')}</Link>
+        <Link className="hm-mi" href="/race/drills">{t('Drills', 'Тренировки', 'Ejercicios', 'Übungen', 'Alıştırmalar', 'Entraînements')}</Link>
+        <Link className="hm-mi" href="/players">{t('Players', 'Игроки', 'Jugadores', 'Spieler', 'Oyuncular', 'Joueurs')}</Link>
+        <Link className="hm-mi" href="/venues">{t('Venues', 'Акватории', 'Sedes', 'Reviere', 'Yarış alanları', 'Plans d’eau')}</Link>
+        <Link className="hm-mi" href="/yachts">{t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar', 'Yachts')}</Link>
         <span className="hm-msep" />
-        <Link className="hm-mi" href="/boat">{t('Your yacht', 'Твоя яхта', 'Tu yate', 'Deine Yacht', 'Yatın')}</Link>
-        <Link className="hm-mi" href={card ? `/players?p=${encodeURIComponent(card)}` : '/players?me=1'}>{t('Your player card', 'Твоя карточка игрока', 'Tu tarjeta de jugador', 'Deine Spielerkarte', 'Oyuncu kartın')}</Link>
-        <Link className="hm-mi if-guest" href="/settings">{t('Settings', 'Настройки', 'Ajustes', 'Einstellungen', 'Ayarlar')}</Link>
+        <Link className="hm-mi" href="/boat">{t('Your yacht', 'Твоя яхта', 'Tu yate', 'Deine Yacht', 'Yatın', 'Ton yacht')}</Link>
+        <Link className="hm-mi" href={card ? `/players?p=${encodeURIComponent(card)}` : '/players?me=1'}>{t('Your player card', 'Твоя карточка игрока', 'Tu tarjeta de jugador', 'Deine Spielerkarte', 'Oyuncu kartın', 'Ta carte de joueur')}</Link>
+        <Link className="hm-mi if-guest" href="/settings">{t('Settings', 'Настройки', 'Ajustes', 'Einstellungen', 'Ayarlar', 'Réglages')}</Link>
         <AvMenuItem lang={lang} />
         <span className="hm-msep" />
-        <Link className="hm-mi" href="/help">{t('How to play', 'Как играть', 'Cómo jugar', 'So spielst du', 'Nasıl oynanır')}</Link>
-        <Link className="hm-mi" href="/learn">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen', 'Yarış rehberleri')}</Link>
-        <Link className="hm-mi" href="/rulebook">{t('Racing rules', 'Правила гонок', 'Reglas de regatas', 'Wettfahrtregeln', 'Yarış kuralları')}</Link>
-        <Link className="hm-mi" href="/faq">{t('FAQ', 'Вопросы и ответы', 'Preguntas', 'FAQ', 'SSS')}</Link>
+        <Link className="hm-mi" href="/help">{t('How to play', 'Как играть', 'Cómo jugar', 'So spielst du', 'Nasıl oynanır', 'Comment jouer')}</Link>
+        <Link className="hm-mi" href="/learn">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen', 'Yarış rehberleri', 'Guides de régate')}</Link>
+        <Link className="hm-mi" href="/rulebook">{t('Racing rules', 'Правила гонок', 'Reglas de regatas', 'Wettfahrtregeln', 'Yarış kuralları', 'Règles de course')}</Link>
+        <Link className="hm-mi" href="/faq">{t('FAQ', 'Вопросы и ответы', 'Preguntas', 'FAQ', 'SSS', 'FAQ')}</Link>
         <form className="if-me" action="/auth/sign-out" method="post"
           onSubmit={(e) => { (e.currentTarget.elements.namedItem('next') as HTMLInputElement).value = location.pathname + location.search; forgetCard(); }}>
           <span className="hm-msep" />
           <input type="hidden" name="next" />
-          <button className="hm-mi hm-mi-out" type="submit">{t('Sign out', 'Выйти', 'Cerrar sesión', 'Abmelden', 'Çıkış yap')}</button>
+          <button className="hm-mi hm-mi-out" type="submit">{t('Sign out', 'Выйти', 'Cerrar sesión', 'Abmelden', 'Çıkış yap', 'Se déconnecter')}</button>
         </form>
       </div>
     </details>
@@ -121,11 +121,11 @@ export function MyRow({ lang, day, top = [], cap = 5, next = '/' }: { lang: Lang
       <span className="hm-n">{listed ? place : '·'}</span>
       <span className="lb-who">
         <FlagImg code={fl} lang={lang} />
-        <span className="lb-nm"><span className="if-guest">{t('You', 'Ты', 'Tú', 'Du', 'Sen')}</span><span className="if-me lb-you" data-you={t('(you)', '(ты)', '(tú)', '(du)', '(sen)')} /></span>
-        {missing && <small className="hm-why if-me" title={t('This device has the time, but the race didn’t reach today’s ranking', 'Время есть на этом устройстве, но в рейтинг дня гонка не попала', 'Este dispositivo tiene el tiempo, pero la regata no llegó a la clasificación de hoy', 'Dieses Gerät hat die Zeit, aber die Regatta kam nicht in die Rangliste des Tages', 'Bu cihazda süre var ama yarış günün sıralamasına ulaşmadı')}>{t('not on the ranking', 'не в рейтинге', 'fuera de la clasificación', 'nicht in der Rangliste', 'sıralamada değil')}</small>}
+        <span className="lb-nm"><span className="if-guest">{t('You', 'Ты', 'Tú', 'Du', 'Sen', 'Toi')}</span><span className="if-me lb-you" data-you={t('(you)', '(ты)', '(tú)', '(du)', '(sen)', '(toi)')} /></span>
+        {missing && <small className="hm-why if-me" title={t('This device has the time, but the race didn’t reach today’s ranking', 'Время есть на этом устройстве, но в рейтинг дня гонка не попала', 'Este dispositivo tiene el tiempo, pero la regata no llegó a la clasificación de hoy', 'Dieses Gerät hat die Zeit, aber die Regatta kam nicht in die Rangliste des Tages', 'Bu cihazda süre var ama yarış günün sıralamasına ulaşmadı', 'Cet appareil a le temps, mais la régate n’est pas arrivée au classement du jour')}>{t('not on the ranking', 'не в рейтинге', 'fuera de la clasificación', 'nicht in der Rangliste', 'sıralamada değil', 'hors classement')}</small>}
       </span>
-      <span className="hm-t if-me">{best != null ? <>{clock(best)}{Math.abs(gap) >= 0.05 ? <small>{gap > 0 ? '+' : '−'}{Math.abs(gap).toFixed(1)}</small> : null}</> : <span className="hm-muted">{t('not yet', 'ещё нет', 'aún no', 'noch nicht', 'henüz değil')}</span>}</span>
-      <Link className="hm-src if-guest" href={`/sign-in?next=${next}`}>{t('Sign in to get on it', 'Войди, чтобы попасть сюда', 'Inicia sesión para entrar', 'Melde dich an, um aufgenommen zu werden', 'Girmek için giriş yap')}</Link>
+      <span className="hm-t if-me">{best != null ? <>{clock(best)}{Math.abs(gap) >= 0.05 ? <small>{gap > 0 ? '+' : '−'}{Math.abs(gap).toFixed(1)}</small> : null}</> : <span className="hm-muted">{t('not yet', 'ещё нет', 'aún no', 'noch nicht', 'henüz değil', 'pas encore')}</span>}</span>
+      <Link className="hm-src if-guest" href={`/sign-in?next=${next}`}>{t('Sign in to get on it', 'Войди, чтобы попасть сюда', 'Inicia sesión para entrar', 'Melde dich an, um aufgenommen zu werden', 'Girmek için giriş yap', 'Connecte-toi pour y figurer')}</Link>
     </li>
   );
 }

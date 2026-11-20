@@ -52,7 +52,7 @@ export function MyMonth({ day, lang }: { day: string; lang: Lang }) {
   const all: string[] = []; for (let d = first; d <= end; d = shiftDay(d, 1)) all.push(d);
   const by = new Map(days.map((x) => [x.d, x]));
   const share = (x: MyDay) => (x.of <= 1 ? 1 : (x.of - x.place) / (x.of - 1)); // of the field beaten: 1 first, 0 last
-  const ord = (n: number) => t(`${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`, `${n}-е`, `${n}.º`, `${n}.`, `${n}.`);
+  const ord = (n: number) => t(`${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`, `${n}-е`, `${n}.º`, `${n}.`, `${n}.`, `${n === 1 ? '1er' : `${n}e`}`);
   // a day nobody else ranked has no field to place you in: drawn hollow, and neither a win nor your best
   const placed = days.filter((x) => x.of > 1);
   const best = placed.length ? placed.reduce((a, b) => (share(b) > share(a) || (share(b) === share(a) && b.place < a.place) ? b : a)) : null;
@@ -66,24 +66,24 @@ export function MyMonth({ day, lang }: { day: string; lang: Lang }) {
 
   return (
     <section className="rt-mine" aria-labelledby="rt-mine-h">
-      <div className="rt-card-h"><span className="lbl-ink" id="rt-mine-h">{t('Your month', 'Твой месяц', 'Tu mes', 'Dein Monat', 'Senin ayın')}</span>
+      <div className="rt-card-h"><span className="lbl-ink" id="rt-mine-h">{t('Your month', 'Твой месяц', 'Tu mes', 'Dein Monat', 'Senin ayın', 'Ton mois')}</span>
         <span className="lbl">{new Date(day + 'T12:00:00Z').toLocaleDateString(loc, { month: 'long', timeZone: 'UTC' })}</span></div>
       {days.length ? (
         <>
           {/* the month in four numbers, as the pause card's */}
           <div className="rt-mstats">
-            {stat(t('Days', 'Дней', 'Días', 'Tage', 'Gün'), String(days.length))}
-            {stat(t('Best', 'Лучшее', 'Mejor', 'Beste', 'En iyi'), best ? (lang === 'ru' ? `${best.place}` : lang === 'es' ? `${best.place}.º` : lang === 'de' || lang === 'tr' ? `${best.place}.` : ord(best.place)) : '—', best ? t(`of ${best.of}`, `из ${best.of}`, `de ${best.of}`, `von ${best.of}`, `${best.of} içinde`) : undefined, best?.place === 1)}
-            {stat(t('Wins', 'Победы', 'Victorias', 'Siege', 'Galibiyet'), String(wins), undefined, wins > 0)}
-            {stat(t('Podiums', 'Подиумы', 'Podios', 'Podien', 'Podyum'), String(podiums))}
+            {stat(t('Days', 'Дней', 'Días', 'Tage', 'Gün', 'Jours'), String(days.length))}
+            {stat(t('Best', 'Лучшее', 'Mejor', 'Beste', 'En iyi', 'Meilleure'), best ? (lang === 'ru' ? `${best.place}` : lang === 'es' ? `${best.place}.º` : lang === 'fr' ? (best.place === 1 ? '1er' : `${best.place}e`) : lang === 'de' || lang === 'tr' ? `${best.place}.` : ord(best.place)) : '—', best ? t(`of ${best.of}`, `из ${best.of}`, `de ${best.of}`, `von ${best.of}`, `${best.of} içinde`, `sur ${best.of}`) : undefined, best?.place === 1)}
+            {stat(t('Wins', 'Победы', 'Victorias', 'Siege', 'Galibiyet', 'Victoires'), String(wins), undefined, wins > 0)}
+            {stat(t('Podiums', 'Подиумы', 'Podios', 'Podien', 'Podyum', 'Podiums'), String(podiums))}
           </div>
           {/* each day you raced: a marker at your place that day (the top first, the foot last), on a stem from the foot;
               a win gold, your best labelled; the days you didn't, a tick on the foot */}
-          <div className="rt-mc" role="img" aria-label={t('Your place each day this month: higher is better, the top is first that day', 'Твоё место в каждый день месяца: чем выше, тем лучше, верх — первое место', 'Tu puesto cada día de este mes: más alto es mejor, arriba es el primero ese día', 'Dein Platz an jedem Tag dieses Monats: höher ist besser, ganz oben heißt an dem Tag Erster', 'Bu ay her günkü sıran: yüksek daha iyi, tepe o günün birincisi')}
+          <div className="rt-mc" role="img" aria-label={t('Your place each day this month: higher is better, the top is first that day', 'Твоё место в каждый день месяца: чем выше, тем лучше, верх — первое место', 'Tu puesto cada día de este mes: más alto es mejor, arriba es el primero ese día', 'Dein Platz an jedem Tag dieses Monats: höher ist besser, ganz oben heißt an dem Tag Erster', 'Bu ay her günkü sıran: yüksek daha iyi, tepe o günün birincisi', 'Ta place chaque jour ce mois-ci : plus c’est haut, mieux c’est ; tout en haut, c’est premier ce jour-là')}
             onPointerLeave={() => setHover(null)}>
-            <span className="rt-mc-g top"><i>{t('1st', '1-е', '1.º', '1.', '1.')}</i></span>
+            <span className="rt-mc-g top"><i>{t('1st', '1-е', '1.º', '1.', '1.', '1er')}</i></span>
             <span className="rt-mc-g mid" />
-            <span className="rt-mc-g foot"><i>{t('Last', 'Посл.', 'Último', 'Letzter', 'Son')}</i></span>
+            <span className="rt-mc-g foot"><i>{t('Last', 'Посл.', 'Último', 'Letzter', 'Son', 'Dernier')}</i></span>
             <div className="rt-mc-cols">
               {all.map((d) => {
                 const x = by.get(d), y = x && x.of > 1 ? share(x) : 0; // a day nobody else ranked: on the foot, hollow
@@ -91,8 +91,8 @@ export function MyMonth({ day, lang }: { day: string; lang: Lang }) {
                   <span key={d} className={`rt-mc-d${x ? ' has' : ''}${x && x.of > 1 && x.place === 1 ? ' win' : ''}${x && x.of <= 1 ? ' alone' : ''}${d === end ? ' on' : ''}${shown?.d === d ? ' sel' : ''}`}
                     style={{ ['--y' as string]: y.toFixed(3) }}
                     onPointerEnter={() => x && setHover(d)} onFocus={() => x && setHover(d)} onBlur={() => setHover(null)} tabIndex={x ? 0 : -1}
-                    aria-label={x ? `${dateW(d)}: ${x.of > 1 ? t(`${ord(x.place)} of ${x.of}`, `${x.place}-е из ${x.of}`, `${ord(x.place)} de ${x.of}`, `${ord(x.place)} von ${x.of}`, `${x.of} içinde ${ord(x.place)}`) : t('no one else ranked', 'других в рейтинге нет', 'nadie más clasificado', 'niemand sonst in der Rangliste', 'başka sıralanan yok')}, ${clock(x.s)}` : undefined}>
-                    {x ? <><i className="rt-mc-st" /><i className="rt-mc-mk" />{best?.d === d ? <b className="rt-mc-lb">{lang === 'ru' ? `${x.place}-е` : lang === 'es' ? `${x.place}.º` : lang === 'de' || lang === 'tr' ? `${x.place}.` : ord(x.place)}</b> : null}</> : null}
+                    aria-label={x ? `${dateW(d)}: ${x.of > 1 ? t(`${ord(x.place)} of ${x.of}`, `${x.place}-е из ${x.of}`, `${ord(x.place)} de ${x.of}`, `${ord(x.place)} von ${x.of}`, `${x.of} içinde ${ord(x.place)}`, `${ord(x.place)} sur ${x.of}`) : t('no one else ranked', 'других в рейтинге нет', 'nadie más clasificado', 'niemand sonst in der Rangliste', 'başka sıralanan yok', 'personne d’autre au classement')}, ${clock(x.s)}` : undefined}>
+                    {x ? <><i className="rt-mc-st" /><i className="rt-mc-mk" />{best?.d === d ? <b className="rt-mc-lb">{lang === 'ru' ? `${x.place}-е` : lang === 'es' ? `${x.place}.º` : lang === 'fr' ? (x.place === 1 ? '1er' : `${x.place}e`) : lang === 'de' || lang === 'tr' ? `${x.place}.` : ord(x.place)}</b> : null}</> : null}
                     <small>{+d.slice(8)}</small>
                   </span>
                 );
@@ -103,13 +103,13 @@ export function MyMonth({ day, lang }: { day: string; lang: Lang }) {
           {shown ? (
             <div className="rt-msplit" aria-live="polite">
               <span className="k">{dateW(shown.d)}</span>
-              <b className={`t${shown.of > 1 && shown.place === 1 ? ' gold' : ''}`}>{shown.of > 1 ? t(`${ord(shown.place)} of ${shown.of}`, `${shown.place}-е из ${shown.of}`, `${ord(shown.place)} de ${shown.of}`, `${ord(shown.place)} von ${shown.of}`, `${shown.of} içinde ${ord(shown.place)}`) : t('No one else ranked', 'Других в рейтинге нет', 'Nadie más clasificado', 'Niemand sonst in der Rangliste', 'Başka sıralanan yok')}</b>
+              <b className={`t${shown.of > 1 && shown.place === 1 ? ' gold' : ''}`}>{shown.of > 1 ? t(`${ord(shown.place)} of ${shown.of}`, `${shown.place}-е из ${shown.of}`, `${ord(shown.place)} de ${shown.of}`, `${ord(shown.place)} von ${shown.of}`, `${shown.of} içinde ${ord(shown.place)}`, `${ord(shown.place)} sur ${shown.of}`) : t('No one else ranked', 'Других в рейтинге нет', 'Nadie más clasificado', 'Niemand sonst in der Rangliste', 'Başka sıralanan yok', 'Personne d’autre au classement')}</b>
               <span className="v">{clock(shown.s)}</span>
             </div>
           ) : null}
         </>
       ) : (
-        <p className="rt-none">{t('No races of yours this month on this device yet. Finish today’s race and it shows here.', 'На этом устройстве в этом месяце твоих гонок пока нет. Пройди гонку дня — и она появится здесь.', 'Aún no hay regatas tuyas este mes en este dispositivo. Termina la regata de hoy y aparecerá aquí.', 'Noch keine Regatten von dir in diesem Monat auf diesem Gerät. Beende die Regatta des Tages, dann erscheint sie hier.', 'Bu ay bu cihazda henüz yarışın yok. Günün yarışını bitir, burada görünür.')}</p>
+        <p className="rt-none">{t('No races of yours this month on this device yet. Finish today’s race and it shows here.', 'На этом устройстве в этом месяце твоих гонок пока нет. Пройди гонку дня — и она появится здесь.', 'Aún no hay regatas tuyas este mes en este dispositivo. Termina la regata de hoy y aparecerá aquí.', 'Noch keine Regatten von dir in diesem Monat auf diesem Gerät. Beende die Regatta des Tages, dann erscheint sie hier.', 'Bu ay bu cihazda henüz yarışın yok. Günün yarışını bitir, burada görünür.', 'Pas encore de régate à toi ce mois-ci sur cet appareil. Termine la régate du jour et elle s’affichera ici.')}</p>
       )}
     </section>
   );

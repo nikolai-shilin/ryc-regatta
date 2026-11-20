@@ -255,7 +255,7 @@ test('/lang keeps the language for a year and goes back', () => {
 });
 
 test('/lang: a language that doesn\'t exist sets nothing, and another site is never gone to', () => {
-  assert.equal(lang(req('/lang?to=fr&back=/boat')).cookies.get('lang'), undefined);
+  assert.equal(lang(req('/lang?to=pt&back=/boat')).cookies.get('lang'), undefined);
   assert.equal(where(lang(req('/lang?to=ru&back=//evil.test'))), '/');
   assert.equal(where(lang(req('/lang?to=ru'))), '/');
 });

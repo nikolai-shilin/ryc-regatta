@@ -23,7 +23,7 @@ async function lang(): Promise<Lang> {
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, maximumScale: 1, userScalable: false, viewportFit: 'cover', themeColor: '#070d16' };
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: `${tx(await lang())('Page not found', 'Страница не найдена', 'Página no encontrada', 'Seite nicht gefunden', 'Sayfa bulunamadı')} · Up and down`, robots: { index: false } };
+  return { title: `${tx(await lang())('Page not found', 'Страница не найдена', 'Página no encontrada', 'Seite nicht gefunden', 'Sayfa bulunamadı', 'Page introuvable')} · Up and down`, robots: { index: false } };
 }
 
 export default async function GlobalNotFound() {

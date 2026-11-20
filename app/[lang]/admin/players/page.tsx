@@ -16,11 +16,11 @@ export default async function AdminPlayersPage({ params, searchParams }: LangPar
   const { lang, t } = a;
   return (
     <AdminShell {...a} page="players" days={days}>
-      {pl?.data ? <AdminPlayers lang={lang} data={pl.data} days={days} /> : <AdminMissing t={t} Icon={IconCrew} title={t('The players', 'Игроки', 'Los jugadores', 'Die Spieler', 'Oyuncular')} error={pl?.error} />}
+      {pl?.data ? <AdminPlayers lang={lang} data={pl.data} days={days} /> : <AdminMissing t={t} Icon={IconCrew} title={t('The players', 'Игроки', 'Los jugadores', 'Die Spieler', 'Oyuncular', 'Les joueurs')} error={pl?.error} />}
       {ins?.data ? (<>
         <InsightVisits lang={lang} data={ins.data} />
         <InsightRetention lang={lang} data={ins.data} />
-      </>) : <AdminMissing t={t} Icon={IconScreen} title={t('Visits and returns', 'Заходы и возвраты', 'Visitas y regresos', 'Besuche und Rückkehrer', 'Ziyaretler ve geri dönüşler')} error={ins?.error} />}
+      </>) : <AdminMissing t={t} Icon={IconScreen} title={t('Visits and returns', 'Заходы и возвраты', 'Visitas y regresos', 'Besuche und Rückkehrer', 'Ziyaretler ve geri dönüşler', 'Visites et retours')} error={ins?.error} />}
     </AdminShell>
   );
 }

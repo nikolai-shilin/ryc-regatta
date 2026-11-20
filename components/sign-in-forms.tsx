@@ -17,8 +17,8 @@ function sendFailed(t: T, error: { status?: number; message?: string }, other: s
   if (error.status !== 429) return other;
   const secs = /after (\d+) second/.exec(error.message || '')?.[1];
   return secs
-    ? t(`Wait ${secs} seconds, then try again.`, `Подожди ${secs} сек. и попробуй снова.`, `Espera ${secs} segundos y vuelve a intentarlo.`, `Warte ${secs} Sekunden und versuch es dann nochmal.`, `${secs} saniye bekle, sonra yeniden dene.`)
-    : t('Too many sign-in emails have gone out. Try again in an hour, or continue with Google.', 'Отправлено слишком много писем для входа. Попробуй через час или войди через Google.', 'Se han enviado demasiados correos de acceso. Inténtalo de nuevo en una hora, o continúa con Google.', 'Es sind zu viele Anmelde-E-Mails verschickt worden. Versuch es in einer Stunde nochmal oder mach mit Google weiter.', 'Çok fazla giriş e-postası gönderildi. Bir saat sonra yeniden dene ya da Google ile devam et.');
+    ? t(`Wait ${secs} seconds, then try again.`, `Подожди ${secs} сек. и попробуй снова.`, `Espera ${secs} segundos y vuelve a intentarlo.`, `Warte ${secs} Sekunden und versuch es dann nochmal.`, `${secs} saniye bekle, sonra yeniden dene.`, `Attends ${secs} secondes, puis réessaie.`)
+    : t('Too many sign-in emails have gone out. Try again in an hour, or continue with Google.', 'Отправлено слишком много писем для входа. Попробуй через час или войди через Google.', 'Se han enviado demasiados correos de acceso. Inténtalo de nuevo en una hora, o continúa con Google.', 'Es sind zu viele Anmelde-E-Mails verschickt worden. Versuch es in einer Stunde nochmal oder mach mit Google weiter.', 'Çok fazla giriş e-postası gönderildi. Bir saat sonra yeniden dene ya da Google ile devam et.', 'Trop d’e-mails de connexion ont été envoyés. Réessaie dans une heure, ou continue avec Google.');
 }
 
 // The numbered step at the card's top (1 Email, 2 Code, 3 Name), and on its right a way out of it
@@ -38,36 +38,36 @@ export function SignInForm({ lang, next, failed, signup = false }: { lang: Lang;
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState(failed ? t('That didn’t work. Try again.', 'Не получилось. Попробуй ещё раз.', 'No ha funcionado. Inténtalo de nuevo.', 'Das hat nicht geklappt. Versuch es nochmal.', 'Olmadı. Yeniden dene.') : '');
+  const [err, setErr] = useState(failed ? t('That didn’t work. Try again.', 'Не получилось. Попробуй ещё раз.', 'No ha funcionado. Inténtalo de nuevo.', 'Das hat nicht geklappt. Versuch es nochmal.', 'Olmadı. Yeniden dene.', 'Ça n’a pas marché. Réessaie.') : '');
   const google = async () => {
     setBusy(true); setErr('');
     const { error } = await supabaseBrowser().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: callback(next) } });
-    if (error) { setBusy(false); setErr(t('Google sign-in isn’t available right now.', 'Вход через Google сейчас недоступен.', 'El inicio de sesión con Google no está disponible ahora mismo.', 'Die Anmeldung mit Google ist gerade nicht verfügbar.', 'Google ile giriş şu an kullanılamıyor.')); }
+    if (error) { setBusy(false); setErr(t('Google sign-in isn’t available right now.', 'Вход через Google сейчас недоступен.', 'El inicio de sesión con Google no está disponible ahora mismo.', 'Die Anmeldung mit Google ist gerade nicht verfügbar.', 'Google ile giriş şu an kullanılamıyor.', 'La connexion avec Google n’est pas disponible pour le moment.')); }
   };
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     const v = email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { setErr(t('Type your email address.', 'Введи адрес почты.', 'Escribe tu correo electrónico.', 'Gib deine E-Mail-Adresse ein.', 'E-posta adresini yaz.')); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { setErr(t('Type your email address.', 'Введи адрес почты.', 'Escribe tu correo electrónico.', 'Gib deine E-Mail-Adresse ein.', 'E-posta adresini yaz.', 'Saisis ton adresse e-mail.')); return; }
     setBusy(true); setErr('');
     const { error } = await supabaseBrowser().auth.signInWithOtp({ email: v, options: { shouldCreateUser: true, emailRedirectTo: callback(next) } });
     setBusy(false);
-    if (error) { setErr(sendFailed(t, error, t('Couldn’t send the code. Try again.', 'Не удалось отправить код. Попробуй ещё раз.', 'No se pudo enviar el código. Inténtalo de nuevo.', 'Der Code konnte nicht gesendet werden. Versuch es nochmal.', 'Kod gönderilemedi. Yeniden dene.'))); return; }
+    if (error) { setErr(sendFailed(t, error, t('Couldn’t send the code. Try again.', 'Не удалось отправить код. Попробуй ещё раз.', 'No se pudo enviar el código. Inténtalo de nuevo.', 'Der Code konnte nicht gesendet werden. Versuch es nochmal.', 'Kod gönderilemedi. Yeniden dene.', 'Impossible d’envoyer le code. Réessaie.'))); return; }
     try { sessionStorage.setItem('regatta-otp-sent', String(Date.now())); } catch {}
     router.push(`/sign-in/code?email=${encodeURIComponent(v)}&next=${encodeURIComponent(next)}`);
   };
   return (
     <>
-      <Step n={1} label={t('Email', 'Почта', 'Correo', 'E-Mail', 'E-posta')}><Link className="back-link" href={next}>{t('Not now', 'Не сейчас', 'Ahora no', 'Nicht jetzt', 'Şimdi değil')}</Link></Step>
-      <h1 className="h-land-s">{signup ? t('Create your account', 'Создай аккаунт', 'Crea tu cuenta', 'Konto erstellen', 'Hesabını oluştur') : t('Sign in to get on the ranking', 'Войди, чтобы попасть в рейтинг', 'Inicia sesión para entrar en la clasificación', 'Melde dich an, um in die Rangliste zu kommen', 'Sıralamaya girmek için giriş yap')}</h1>
-      <p className="lead muted">{t('Your times go on today’s ranking, and your best times follow you to any device.', 'Твоё время попадёт в рейтинг дня, а рекорды будут с тобой на любом устройстве.', 'Tus tiempos entran en la clasificación de hoy, y tus mejores tiempos te siguen a cualquier dispositivo.', 'Deine Zeiten kommen in die Rangliste des Tages, und deine Bestzeiten folgen dir auf jedes Gerät.', 'Sürelerin günün sıralamasına girer ve en iyi sürelerin her cihaza seninle gelir.')}</p>
-      <button type="button" className="pill pill-oauth pill-wide au-google" onClick={google} disabled={busy}><IconGoogle /><span className="btn-t">{t('Continue with Google', signup ? 'Продолжить с Google' : 'Войти через Google', signup ? 'Continuar con Google' : 'Entrar con Google', signup ? 'Weiter mit Google' : 'Mit Google anmelden', signup ? 'Google ile devam et' : 'Google ile giriş yap')}</span></button>
-      <div className="or">{t('or by email', 'или по почте', 'o por correo', 'oder per E-Mail', 'ya da e-postayla')}</div>
+      <Step n={1} label={t('Email', 'Почта', 'Correo', 'E-Mail', 'E-posta', 'E-mail')}><Link className="back-link" href={next}>{t('Not now', 'Не сейчас', 'Ahora no', 'Nicht jetzt', 'Şimdi değil', 'Pas maintenant')}</Link></Step>
+      <h1 className="h-land-s">{signup ? t('Create your account', 'Создай аккаунт', 'Crea tu cuenta', 'Konto erstellen', 'Hesabını oluştur', 'Crée ton compte') : t('Sign in to get on the ranking', 'Войди, чтобы попасть в рейтинг', 'Inicia sesión para entrar en la clasificación', 'Melde dich an, um in die Rangliste zu kommen', 'Sıralamaya girmek için giriş yap', 'Connecte-toi pour figurer au classement')}</h1>
+      <p className="lead muted">{t('Your times go on today’s ranking, and your best times follow you to any device.', 'Твоё время попадёт в рейтинг дня, а рекорды будут с тобой на любом устройстве.', 'Tus tiempos entran en la clasificación de hoy, y tus mejores tiempos te siguen a cualquier dispositivo.', 'Deine Zeiten kommen in die Rangliste des Tages, und deine Bestzeiten folgen dir auf jedes Gerät.', 'Sürelerin günün sıralamasına girer ve en iyi sürelerin her cihaza seninle gelir.', 'Tes temps entrent dans le classement du jour, et tes meilleurs temps te suivent sur tous tes appareils.')}</p>
+      <button type="button" className="pill pill-oauth pill-wide au-google" onClick={google} disabled={busy}><IconGoogle /><span className="btn-t">{t('Continue with Google', signup ? 'Продолжить с Google' : 'Войти через Google', signup ? 'Continuar con Google' : 'Entrar con Google', signup ? 'Weiter mit Google' : 'Mit Google anmelden', signup ? 'Google ile devam et' : 'Google ile giriş yap', signup ? 'Continuer avec Google' : 'Se connecter avec Google')}</span></button>
+      <div className="or">{t('or by email', 'или по почте', 'o por correo', 'oder per E-Mail', 'ya da e-postayla', 'ou par e-mail')}</div>
       <form className="au-form" onSubmit={send} noValidate>
-        <label className="au-lbl" htmlFor="em">{t('Email', 'Почта', 'Correo', 'E-Mail', 'E-posta')}</label>
+        <label className="au-lbl" htmlFor="em">{t('Email', 'Почта', 'Correo', 'E-Mail', 'E-posta', 'E-mail')}</label>
         <input id="em" className="field" type="email" name="email" autoComplete="email" inputMode="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={busy} />
-        <button className="pill pill-primary pill-wide pill-s" type="submit" disabled={busy}><span className="btn-t">{t('Send code', 'Получить код', 'Enviar código', 'Code senden', 'Kod gönder')}</span></button>
+        <button className="pill pill-primary pill-wide pill-s" type="submit" disabled={busy}><span className="btn-t">{t('Send code', 'Получить код', 'Enviar código', 'Code senden', 'Kod gönder', 'Envoyer le code')}</span></button>
       </form>
-      {err ? <p className="err" role="alert">{err}</p> : <p className="hint">{t('No password: we email you a 6-digit code.', 'Без пароля: пришлём на почту 6-значный код.', 'Sin contraseña: te enviamos por correo un código de 6 dígitos.', 'Kein Passwort: Wir mailen dir einen 6-stelligen Code.', 'Parola yok: sana 6 haneli bir kod e-postalıyoruz.')}</p>}
+      {err ? <p className="err" role="alert">{err}</p> : <p className="hint">{t('No password: we email you a 6-digit code.', 'Без пароля: пришлём на почту 6-значный код.', 'Sin contraseña: te enviamos por correo un código de 6 dígitos.', 'Kein Passwort: Wir mailen dir einen 6-stelligen Code.', 'Parola yok: sana 6 haneli bir kod e-postalıyoruz.', 'Pas de mot de passe : nous t’envoyons un code à 6 chiffres par e-mail.')}</p>}
     </>
   );
 }
@@ -97,7 +97,7 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
     setBusy(true); setErr('');
     const supabase = supabaseBrowser();
     const { data, error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
-    if (error || !data.user) { setBusy(false); setErr(t('That code didn’t work. Check it, or send a new one.', 'Код не подошёл. Проверь его или запроси новый.', 'Ese código no ha funcionado. Revísalo o pide uno nuevo.', 'Dieser Code hat nicht funktioniert. Prüf ihn oder lass einen neuen senden.', 'Bu kod işe yaramadı. Kontrol et ya da yenisini gönder.')); setD(['', '', '', '', '', '']); refocus.current = true; return; }
+    if (error || !data.user) { setBusy(false); setErr(t('That code didn’t work. Check it, or send a new one.', 'Код не подошёл. Проверь его или запроси новый.', 'Ese código no ha funcionado. Revísalo o pide uno nuevo.', 'Dieser Code hat nicht funktioniert. Prüf ihn oder lass einen neuen senden.', 'Bu kod işe yaramadı. Kontrol et ya da yenisini gönder.', 'Ce code n’a pas marché. Vérifie-le, ou demandes-en un nouveau.')); setD(['', '', '', '', '', '']); refocus.current = true; return; }
     router.replace(data.user.user_metadata?.display_name ? next : `/sign-in/name?next=${encodeURIComponent(next)}`);
     router.refresh();
   };
@@ -114,17 +114,17 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
   const resend = async () => {
     setErr('');
     const { error } = await supabaseBrowser().auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: callback(next) } });
-    if (error) { setErr(sendFailed(t, error, t('Couldn’t send the code. Try again in a minute.', 'Не удалось отправить код. Попробуй через минуту.', 'No se pudo enviar el código. Inténtalo de nuevo en un minuto.', 'Der Code konnte nicht gesendet werden. Versuch es in einer Minute nochmal.', 'Kod gönderilemedi. Bir dakika sonra yeniden dene.'))); return; }
+    if (error) { setErr(sendFailed(t, error, t('Couldn’t send the code. Try again in a minute.', 'Не удалось отправить код. Попробуй через минуту.', 'No se pudo enviar el código. Inténtalo de nuevo en un minuto.', 'Der Code konnte nicht gesendet werden. Versuch es in einer Minute nochmal.', 'Kod gönderilemedi. Bir dakika sonra yeniden dene.', 'Impossible d’envoyer le code. Réessaie dans une minute.'))); return; }
     sent.current = Date.now();
     try { sessionStorage.setItem('regatta-otp-sent', String(sent.current)); } catch {}
     setWait(60);
   };
   return (
     <>
-      <Step n={2} label={t('Code', 'Код', 'Código', 'Code', 'Kod')}><Link className="back-link" href={`/sign-in?next=${encodeURIComponent(next)}`}>{t('Change email', 'Другая почта', 'Cambiar correo', 'E-Mail ändern', 'E-postayı değiştir')}</Link></Step>
-      <h1 className="h-land-s">{t('Check your email', 'Проверь почту', 'Revisa tu correo', 'Prüfe deine E-Mails', 'E-postanı kontrol et')}</h1>
-      <p className="lead muted">{t('We sent a 6-digit code to ', 'Мы отправили 6-значный код на ', 'Hemos enviado un código de 6 dígitos a ', 'Wir haben einen 6-stelligen Code an ', 'Şu adrese 6 haneli bir kod gönderdik: ')}<b className="ink">{email}</b>{t('. Type it here.', '. Введи его здесь.', '. Escríbelo aquí.', ' geschickt. Gib ihn hier ein.', '. Buraya yaz.')}</p>
-      <div className="otp" role="group" aria-label={t('Code', 'Код', 'Código', 'Code', 'Kod')}>
+      <Step n={2} label={t('Code', 'Код', 'Código', 'Code', 'Kod', 'Code')}><Link className="back-link" href={`/sign-in?next=${encodeURIComponent(next)}`}>{t('Change email', 'Другая почта', 'Cambiar correo', 'E-Mail ändern', 'E-postayı değiştir', 'Changer d’e-mail')}</Link></Step>
+      <h1 className="h-land-s">{t('Check your email', 'Проверь почту', 'Revisa tu correo', 'Prüfe deine E-Mails', 'E-postanı kontrol et', 'Consulte tes e-mails')}</h1>
+      <p className="lead muted">{t('We sent a 6-digit code to ', 'Мы отправили 6-значный код на ', 'Hemos enviado un código de 6 dígitos a ', 'Wir haben einen 6-stelligen Code an ', 'Şu adrese 6 haneli bir kod gönderdik: ', 'Nous avons envoyé un code à 6 chiffres à ')}<b className="ink">{email}</b>{t('. Type it here.', '. Введи его здесь.', '. Escríbelo aquí.', ' geschickt. Gib ihn hier ein.', '. Buraya yaz.', '. Saisis-le ici.')}</p>
+      <div className="otp" role="group" aria-label={t('Code', 'Код', 'Código', 'Code', 'Kod', 'Code')}>
         {d.map((c, i) => (
           <input key={i} ref={(el) => { refs.current[i] = el; }} className={c ? 'on' : ''} inputMode="numeric" autoComplete={i === 0 ? 'one-time-code' : 'off'} maxLength={i === 0 ? 6 : 1} value={c} disabled={busy}
             aria-label={`${i + 1}`}
@@ -134,11 +134,11 @@ export function CodeForm({ lang, email, next }: { lang: Lang; email: string; nex
       </div>
       {err ? <p className="err" role="alert">{err}</p> : (
         <p className="hint">{wait > 0
-          ? t(`Didn’t get it? Check spam, or send it again in ${mmss(wait)}.`, `Не пришёл? Проверь спам или отправь снова через ${mmss(wait)}.`, `¿No te ha llegado? Mira en el spam o vuelve a enviarlo en ${mmss(wait)}.`, `Nichts bekommen? Schau im Spam nach oder sende ihn in ${mmss(wait)} nochmal.`, `Gelmedi mi? Spam’i kontrol et ya da ${mmss(wait)} sonra yeniden gönder.`)
-          : <>{t('Didn’t get it? Check spam, or ', 'Не пришёл? Проверь спам или ', '¿No te ha llegado? Mira en el spam o ', 'Nichts bekommen? Schau im Spam nach oder ', 'Gelmedi mi? Spam’i kontrol et ya da ')}<button type="button" className="back-link" onClick={resend}>{t('send it again', 'отправь снова', 'envíalo de nuevo', 'sende ihn nochmal', 'yeniden gönder')}</button>.</>}</p>
+          ? t(`Didn’t get it? Check spam, or send it again in ${mmss(wait)}.`, `Не пришёл? Проверь спам или отправь снова через ${mmss(wait)}.`, `¿No te ha llegado? Mira en el spam o vuelve a enviarlo en ${mmss(wait)}.`, `Nichts bekommen? Schau im Spam nach oder sende ihn in ${mmss(wait)} nochmal.`, `Gelmedi mi? Spam’i kontrol et ya da ${mmss(wait)} sonra yeniden gönder.`, `Pas reçu ? Regarde dans les spams, ou renvoie-le dans ${mmss(wait)}.`)
+          : <>{t('Didn’t get it? Check spam, or ', 'Не пришёл? Проверь спам или ', '¿No te ha llegado? Mira en el spam o ', 'Nichts bekommen? Schau im Spam nach oder ', 'Gelmedi mi? Spam’i kontrol et ya da ', 'Pas reçu ? Regarde dans les spams, ou ')}<button type="button" className="back-link" onClick={resend}>{t('send it again', 'отправь снова', 'envíalo de nuevo', 'sende ihn nochmal', 'yeniden gönder', 'renvoie-le')}</button>.</>}</p>
       )}
       <span className="sp" />
-      <button type="button" className="pill pill-primary pill-wide pill-s" disabled={busy || !d.every(Boolean)} onClick={() => verify(d.join(''))}><span className="btn-t">{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden', 'Giriş yap')}</span></button>
+      <button type="button" className="pill pill-primary pill-wide pill-s" disabled={busy || !d.every(Boolean)} onClick={() => verify(d.join(''))}><span className="btn-t">{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden', 'Giriş yap', 'Se connecter')}</span></button>
     </>
   );
 }
@@ -172,27 +172,27 @@ export function NameForm({ lang, next, suggested, fromGoogle = false, day, times
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     const v = cleanName(name);
-    if (v.length < 2) { setErr(t('Two letters at least.', 'Хотя бы две буквы.', 'Mínimo dos letras.', 'Mindestens zwei Buchstaben.', 'En az iki harf.')); return; }
+    if (v.length < 2) { setErr(t('Two letters at least.', 'Хотя бы две буквы.', 'Mínimo dos letras.', 'Mindestens zwei Buchstaben.', 'En az iki harf.', 'Deux lettres au moins.')); return; }
     setBusy(true); setErr('');
     const { error } = await supabaseBrowser().auth.updateUser({ data: { display_name: v } });
-    if (error) { setBusy(false); setErr(t('Couldn’t save it. Try again.', 'Не удалось сохранить. Попробуй ещё раз.', 'No se pudo guardar. Inténtalo de nuevo.', 'Konnte nicht gespeichert werden. Versuch es nochmal.', 'Kaydedilemedi. Yeniden dene.')); return; }
+    if (error) { setBusy(false); setErr(t('Couldn’t save it. Try again.', 'Не удалось сохранить. Попробуй ещё раз.', 'No se pudo guardar. Inténtalo de nuevo.', 'Konnte nicht gespeichert werden. Versuch es nochmal.', 'Kaydedilemedi. Yeniden dene.', 'Impossible d’enregistrer. Réessaie.')); return; }
     router.replace(next); router.refresh();
   };
   return (
     <form onSubmit={save} style={{ display: 'contents' }}>
-      <Step n={3} label={t('Name', 'Имя', 'Nombre', 'Name', 'İsim')} />
-      <h1 className="h-land-s">{t('Almost there: how should the ranking show you?', 'Почти готово: как подписать тебя в рейтинге?', 'Casi listo: ¿cómo quieres que te muestre la clasificación?', 'Fast geschafft: Wie soll die Rangliste dich zeigen?', 'Neredeyse tamam: sıralama seni nasıl göstersin?')}</h1>
-      <p className="lead muted">{t('Only this name is public. Your email stays private.', 'Всем видно только это имя. Почта остаётся скрытой.', 'Solo este nombre es público. Tu correo sigue siendo privado.', 'Nur dieser Name ist öffentlich. Deine E-Mail bleibt privat.', 'Yalnızca bu isim herkese açık. E-postan gizli kalır.')}</p>
-      <label className="au-lbl" htmlFor="nm">{t('Name on the ranking', 'Имя в рейтинге', 'Nombre en la clasificación', 'Name in der Rangliste', 'Sıralamadaki isim')}</label>
+      <Step n={3} label={t('Name', 'Имя', 'Nombre', 'Name', 'İsim', 'Nom')} />
+      <h1 className="h-land-s">{t('Almost there: how should the ranking show you?', 'Почти готово: как подписать тебя в рейтинге?', 'Casi listo: ¿cómo quieres que te muestre la clasificación?', 'Fast geschafft: Wie soll die Rangliste dich zeigen?', 'Neredeyse tamam: sıralama seni nasıl göstersin?', 'Presque fini : comment le classement doit-il t’afficher ?')}</h1>
+      <p className="lead muted">{t('Only this name is public. Your email stays private.', 'Всем видно только это имя. Почта остаётся скрытой.', 'Solo este nombre es público. Tu correo sigue siendo privado.', 'Nur dieser Name ist öffentlich. Deine E-Mail bleibt privat.', 'Yalnızca bu isim herkese açık. E-postan gizli kalır.', 'Seul ce nom est public. Ton e-mail reste privé.')}</p>
+      <label className="au-lbl" htmlFor="nm">{t('Name on the ranking', 'Имя в рейтинге', 'Nombre en la clasificación', 'Name in der Rangliste', 'Sıralamadaki isim', 'Nom au classement')}</label>
       <input id="nm" className="field" type="text" autoComplete="nickname" maxLength={NAME_MAX} value={name} onChange={(e) => setName(e.target.value)} disabled={busy} autoFocus />
       {mine != null && times && (
-        <ol className="hm-lb bt-lb au-pv" aria-label={t('Where your time today goes on the ranking', 'Где твоё сегодняшнее время в рейтинге', 'Dónde entra tu tiempo de hoy en la clasificación', 'Wo deine Zeit von heute in der Rangliste steht', 'Bugünkü süren sıralamada nasıl yer alsın')}>
-          <li className="me"><span className="hm-n">{placeAmong(times, mine)}</span><span>{cleanName(name) || t('Your name', 'Твоё имя', 'Tu nombre', 'Dein Name', 'Adın')}</span><span className="hm-t">{clock(mine)}</span></li>
+        <ol className="hm-lb bt-lb au-pv" aria-label={t('Where your time today goes on the ranking', 'Где твоё сегодняшнее время в рейтинге', 'Dónde entra tu tiempo de hoy en la clasificación', 'Wo deine Zeit von heute in der Rangliste steht', 'Bugünkü süren sıralamada nasıl yer alsın', 'Le nom sous lequel ton temps du jour apparaît au classement')}>
+          <li className="me"><span className="hm-n">{placeAmong(times, mine)}</span><span>{cleanName(name) || t('Your name', 'Твоё имя', 'Tu nombre', 'Dein Name', 'Adın', 'Ton nom')}</span><span className="hm-t">{clock(mine)}</span></li>
         </ol>
       )}
-      {err ? <p className="err" role="alert">{err}</p> : <p className="hint">{fromGoogle ? t('Taken from your Google account: change it if you like. You can change it later in Settings too.', 'Взято из аккаунта Google — поменяй, если хочешь. Позже это можно сделать и в настройках.', 'Tomado de tu cuenta de Google: cámbialo si quieres. También puedes cambiarlo luego en Ajustes.', 'Aus deinem Google-Konto übernommen: Ändere ihn, wenn du magst. Du kannst ihn auch später in den Einstellungen ändern.', 'Google hesabından alındı: istersen değiştir. Ayarlar’dan sonra da değiştirebilirsin.') : t('First name and the first letter of your surname works well. You can change it in Settings.', 'Лучше всего имя и первая буква фамилии. Поменять можно в настройках.', 'Funciona bien el nombre y la inicial del apellido. Puedes cambiarlo en Ajustes.', 'Vorname und der erste Buchstabe des Nachnamens passen gut. Du kannst ihn in den Einstellungen ändern.', 'Ad ve soyadın ilk harfi iyi çalışır. Ayarlar’dan değiştirebilirsin.')}</p>}
+      {err ? <p className="err" role="alert">{err}</p> : <p className="hint">{fromGoogle ? t('Taken from your Google account: change it if you like. You can change it later in Settings too.', 'Взято из аккаунта Google — поменяй, если хочешь. Позже это можно сделать и в настройках.', 'Tomado de tu cuenta de Google: cámbialo si quieres. También puedes cambiarlo luego en Ajustes.', 'Aus deinem Google-Konto übernommen: Ändere ihn, wenn du magst. Du kannst ihn auch später in den Einstellungen ändern.', 'Google hesabından alındı: istersen değiştir. Ayarlar’dan sonra da değiştirebilirsin.', 'Repris de ton compte Google : modifie-le si tu veux. Tu pourras aussi le changer plus tard dans les Réglages.') : t('First name and the first letter of your surname works well. You can change it in Settings.', 'Лучше всего имя и первая буква фамилии. Поменять можно в настройках.', 'Funciona bien el nombre y la inicial del apellido. Puedes cambiarlo en Ajustes.', 'Vorname und der erste Buchstabe des Nachnamens passen gut. Du kannst ihn in den Einstellungen ändern.', 'Ad ve soyadın ilk harfi iyi çalışır. Ayarlar’dan değiştirebilirsin.', 'Le prénom et l’initiale du nom, ça marche bien. Tu peux le changer dans les Réglages.')}</p>}
       <span className="sp" />
-      <button className="pill pill-primary pill-wide pill-s" type="submit" disabled={busy}><span className="btn-t">{next.startsWith('/race') ? t('Save and race', 'Сохранить и в гонку', 'Guardar y regatear', 'Speichern und segeln', 'Kaydet ve yarış') : t('Save', 'Сохранить', 'Guardar', 'Speichern', 'Kaydet')}</span></button>
+      <button className="pill pill-primary pill-wide pill-s" type="submit" disabled={busy}><span className="btn-t">{next.startsWith('/race') ? t('Save and race', 'Сохранить и в гонку', 'Guardar y regatear', 'Speichern und segeln', 'Kaydet ve yarış', 'Enregistrer et régater') : t('Save', 'Сохранить', 'Guardar', 'Speichern', 'Kaydet', 'Enregistrer')}</span></button>
     </form>
   );
 }

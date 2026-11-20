@@ -143,7 +143,7 @@ for (const { id, file } of PAGES) {
 
   test(`/admin ${id} refuses a language the site doesn't have`, async () => {
     be(VISITORS['a guest']());
-    await assert.rejects(render(file, 'fr'), (e) => e.kind === 'notFound');
+    await assert.rejects(render(file, 'pt'), (e) => e.kind === 'notFound');
   });
 }
 
