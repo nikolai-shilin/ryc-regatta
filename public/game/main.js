@@ -1,6 +1,7 @@
 // Regatta: the game loop, the touch controls, the instruments, the sounds and the menus.
 import { Race, CLS, D2R, KN, HULL, clamp, wrap, idealSail, sheetFor, beatAngle, ZONE, dailyRace, legTargets, legAim, isBeat, hasZone, laidShape } from './sim.js';
 import { World, ladderStep, beatOf, beatFrom, zoneMarks } from './world.js';
+import { lateLand } from './skopea.js';
 import { raceStarted, raceFinished, raceResult, perfSetup, perfFrame, perfMeter, statsContext, raceIncident, raceEnded, visitSend } from './stats.js';
 import { initExtras, onStart, onFrame, drill, drillSettings } from './extras.js'; // the drills, the analytics
 import { createHud } from './hud-bc.js';
@@ -1190,6 +1191,10 @@ let world;
 // browser holding it back for a while after the graphics were reset (a context lost, below): Chrome turns WebGL off
 // for the site, Safari when short of memory, so the way out is other tabs closed or the browser restarted. (The page
 // wiped for a line of black text left the page's dark blue and nothing readable on it: a blue screen.)
+// The first three races (behind the Ready card, below): the land's trees, town, moored boats and rocks are built after
+// the race is on the screen, the card's three seconds, not under the loading screen, where on a slow phone they were
+// three of its eleven seconds (2026-11-20)
+if (!MATCH && !drill && (opts.played || 0) < 3) lateLand(true);
 try { world = new World(canvas); } catch (e) {
   if (window.rycLoader?.fail) window.rycLoader.fail('webgl: ' + (e && e.message), t('noGl'));
   else document.body.innerHTML = `<p style="padding:24px;font:18px/1.5 sans-serif;color:#fff">${t('noGl')}</p>`;
@@ -1557,10 +1562,15 @@ function startRace() {
   if (!drill) raceStarted(race, race.settings); // counted for the admins' Overview and the leaderboards (stats.js); a drill isn't a race
   onStart(race); // a drill's set-up, the analytics (extras.js)
   if (race.coach && !drill) askReady(lined); // (a match never comes here: startMatchFlow)
+  if (world.skopea.late.length && !filling) { // the land's late parts, once the race's first frames are drawn
+    const breath = () => new Promise((r) => setTimeout(r, 30));
+    filling = new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))).then(() => world.fillLand(breath))
+      .catch(() => {}).then(() => { filling = null; if (readyWant) ready(); });
+  }
 }
 // ---------- the first three races: the race waits behind a card for Ready, with the start in three lines ----------
 const readyEl = $('#readyCard');
-let readyOn = false;
+let readyOn = false, filling = null, readyWant = false; // (Ready waits for the land behind it: startRace)
 // It starts by itself after READY_S seconds on the screen, or as soon as she steers (a touch on the steering, an arrow
 // key): one newcomer in nine never pressed Ready and never raced (2026-11-19). The count waits while the page is out of
 // sight, and begins again when she is back.
@@ -1579,7 +1589,7 @@ function askReady(lined) {
   updateHud(0); // the HUD as it will be at the start, under the card
   $('#rGo').focus({ preventScroll: true });
 }
-function ready() { if (!readyOn) return; readyOn = false; paused = false; readyEl.hidden = true; hud.classList.remove('r-wait'); tabCall(); }
+function ready() { if (!readyOn) return; if (filling) { readyWant = true; $('#rGo').setAttribute('aria-busy', 'true'); return; } readyWant = false; $('#rGo').removeAttribute('aria-busy'); readyOn = false; paused = false; readyEl.hidden = true; hud.classList.remove('r-wait'); tabCall(); }
 // The first race's start sequence run on unseen to FIRST_SEQ seconds before the gun: the fleet where it would be by
 // then, the committee's signals given, nothing of it said or heard. Her own boat is sailed by a computer skipper
 // meanwhile, so if she can't be lined up (sim.js lineUp) she is somewhere sensible for the start

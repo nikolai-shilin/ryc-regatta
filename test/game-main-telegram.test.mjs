@@ -37,6 +37,7 @@ test('in Russian, from Telegram’s language: the page, the loading screen and t
 });
 
 test('Telegram’s back button: at the Ready card it leaves; racing it pauses, then leaves', async () => {
+  await game.until(() => !rg.world.skopea.late.length, 'the land built behind the card (skopea.js lateLand)', 300);
   $('#rGo').click();
   assert.equal(rg.paused, false);
   tg.back();

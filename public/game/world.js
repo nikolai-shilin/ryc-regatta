@@ -1647,6 +1647,13 @@ export class World {
     return job;
   }
   ready() { return this.preparing || Promise.resolve(); }
+  // The land's late parts (skopea.js lateLand) built into it behind the race, a breath between them: the town reflected
+  // as at the start, and the shaders of what came in compiled before it's drawn (prepare)
+  async fillLand(breath) {
+    if (!this.skopea.late.length) return;
+    await this.skopea.fillLand(breath, (obj, k) => { if (k === 'town' || k === 'landmarks') mirrored(obj); });
+    await this.prepare();
+  }
 
   // Audio & graphics › People on board: every figure in the scene shown or not
   setFigures(on) { showFigures(on, this.scene); }

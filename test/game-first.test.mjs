@@ -52,6 +52,10 @@ test('the Ready card starts the clock by itself after three seconds', async () =
   assert.equal($('#rCount').textContent, '2');
   await game.until(() => !game.rg.paused, 'the card to start the race', 300);
   assert.ok($('#readyCard').hidden);
+  // the land's trees, town and moored boats were built behind the card, not under the loading screen (skopea.js lateLand)
+  const land = game.rg.world.skopea;
+  assert.equal(land.late.length, 0, 'all of the land in');
+  assert.ok(land.town.children.length > 0 && land.trees.children.length > 0 && land.boats.children.length > 0);
   assert.ok(!$('#hud').classList.contains('r-wait'));
   await game.frames(30);
   assert.ok(race().clock > c0, 'the count to the gun runs');

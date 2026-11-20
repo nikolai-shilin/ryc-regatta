@@ -1073,7 +1073,6 @@ class Batch {
 }
 // walls one colour, the faces looking up (a flat roof) another
 function paint(geo, wall, top = wall) {
-  geo.computeVertexNormals();
   const g = geo.index ? geo.toNonIndexed() : geo; g.computeVertexNormals();
   const N = g.attributes.normal.array, n = g.attributes.position.count, a = new Float32Array(n * 3), cw = C(wall), ct = C(top);
   for (let i = 0; i < n; i++) { const c = N[i * 3 + 1] > 0.7 ? ct : cw; a.set([c.r, c.g, c.b], i * 3); }
@@ -3140,6 +3139,13 @@ function liftMask() {
 // the constructor.
 const PARTS = [['land', terrain], ['far', far], ['trees', () => pines(16000)], ['farTrees', () => pines(9000, true)], ['town', town], ['boats', marinas], ['rocks', shoreRocks], ['landmarks', landmarks]];
 let built = null;
+// The parts that may come after the race is on the screen (main.js, behind a newcomer's Ready card): the trees, the
+// town, the moored boats, the rocks and the landmarks, two thirds of the land's time (three seconds of a slow phone's
+// load, 2026-11-20). lateLand(): the next Skopea leaves them as empty places, and fillLand builds them into them.
+const LATE = new Set(['trees', 'farTrees', 'town', 'boats', 'rocks', 'landmarks']);
+let late = false;
+export function lateLand(on = true) { late = on; }
+const place = () => { const g = new THREE.Group(); g.userData = { tiles: [], farBatches: [] }; return g; };
 export async function buildLand(breath) {
   const got = {};
   for (const [k, make] of PARTS) { got[k] = make(); await breath(); }
@@ -3151,7 +3157,10 @@ export class Skopea {
     SKY_U = skyU;
     Object.assign(CLOUD_U, { uCsRipple: skyU.uRipple, uCsCloud: skyU.uCloud, uCsSun: skyU.uSun }); // the sky's own, shared
     this.group = new THREE.Group();
-    const got = built || Object.fromEntries(PARTS.map(([k, make]) => [k, make()])); built = null;
+    const later = late && !built;
+    const got = built || Object.fromEntries(PARTS.filter(([k]) => !(later && LATE.has(k))).map(([k, make]) => [k, make()])); built = null;
+    this.late = later ? PARTS.filter(([k]) => LATE.has(k)) : []; late = false; // (once: the next is whole)
+    for (const [k] of this.late) got[k] = k === 'landmarks' ? null : place();
     Object.assign(this, got);
     this.boats.add(this.rocks); // (with the boats: what the sea mirrors along its edge)
     if (this.landmarks) this.town.add(this.landmarks);
@@ -3170,10 +3179,33 @@ export class Skopea {
       ...CLOUD_U,
     };
   }
+  // The late parts (lateLand), each built and put in its place a breath apart, the whole of one part in one go (the
+  // town's the longest): the trees' batches into the trees' place, the town, boats and rocks into theirs; then the
+  // ground under the town lifted, the shadows cast again and the graphics level given to them. each(obj): every part as
+  // it comes in, for what the world does to its land (world.js mirrored, for the town)
+  async fillLand(breath, each = () => {}) {
+    for (const [k, make] of this.late) {
+      await breath();
+      const obj = make();
+      if (!obj) continue;
+      obj.traverse((o) => { o.updateMatrix(); if (o.isMesh) o.matrixAutoUpdate = false; });
+      if (k === 'trees' || k === 'farTrees') { for (const c of [...obj.children]) this[k].add(c); } // (setQuality and update go through the batches)
+      else if (k === 'landmarks') { this.landmarks = obj; this.town.add(obj); }
+      else { Object.assign(this[k].userData, obj.userData); this[k].add(obj); }
+      if (k === 'town' || k === 'trees' || k === 'landmarks') obj.traverse((o) => o.layers.enable(SHADOW_LAYER));
+      if (k !== 'trees' && k !== 'farTrees') each(obj, k);
+    }
+    this.late = [];
+    GROUND_U.uLiftMask.value = liftMask();
+    this.group.updateMatrixWorld(true);
+    if (this.q) this.setQuality(this.q);
+    if (this.lit) this.setLight(...this.lit);
+  }
   // the race's start at its place in the bay
   place(at) { this.group.position.set(-at.x, 0, -at.z); this.group.updateMatrixWorld(true); LAND_U.uAt.value.set(at.x, 0, at.z); }
   // the light of the race (light.js): the haze as thick as the sea's, the lakes' colour, the shadows from where the sun is
   setLight(L, renderer) {
+    this.lit = [L, renderer]; // (again once the late parts are in: fillLand)
     LAND_U.uHazeL.value = L.fogFar * 2.4 * (LOOK.haze ?? 1); // (how clear the venue's air is: venues.js)
     LAND_U.uMist.value = L.mist || 0;
     FILL_U.uSkyFill.value = L.fill ?? 0.35; // the boats' sky light (inLandShadow, light.js fill): a third with the sun high, less as it sets, most of it under cloud
@@ -3201,6 +3233,7 @@ export class Skopea {
   }
   // fewer trees for the lower graphics levels, and none of the far ones on the lowest; the land beyond coarser
   setQuality(q) {
+    this.q = q;
     const f = q === 'high' ? 1 : q === 'medium' ? 0.45 : 0.25, ff = q === 'high' ? 1 : q === 'medium' ? 0.4 : 0;
     for (const m of this.trees.children) m.count = Math.round(m.userData.max * f);
     for (const m of this.farTrees.children) m.count = Math.round(m.userData.max * ff);
