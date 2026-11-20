@@ -209,6 +209,7 @@ class Element extends Node {
   getAttribute(k) { return this.attrs.get(this.key(k)) ?? null; }
   hasAttribute(k) { return this.attrs.has(this.key(k)); }
   removeAttribute(k) { this.attrs.delete(this.key(k)); }
+  toggleAttribute(k, force) { const on = force === undefined ? !this.hasAttribute(k) : !!force; if (on) this.setAttribute(k, ''); else this.removeAttribute(k); return on; }
   removeAttributeNS(_, k) { this.removeAttribute(k); }
   getAttributeNames() { return [...this.attrs.keys()]; }
   get attributes() { return [...this.attrs].map(([name, value]) => ({ name, value })); }
