@@ -232,7 +232,7 @@
    The root stays one window tall (a size container, so the layouts still follow the window, as .scr.app does) and the
    sections run on past it; the document scrolls, over the scene too, which here is only to look at. */
 .bc.rs-scr { position: relative; inset: auto; overflow: visible; overflow-x: clip; } /* the cards slide in from the right: no sideways scroll meanwhile */
-.bc.rs-scr .bt { position: relative; inset: auto; height: 100%; }
+.bc.rs-scr .bt { position: relative; inset: auto; height: auto; min-height: 100%; } /* one window, or longer when the panel is (a first race's sign-in under the numbers): the page's next sections start after it, never under it */
 .bc.rs-scr .bt-scene { pointer-events: none; }
 .bc .rs-kick-g { flex: none; white-space: nowrap; background: var(--gold); }
 .bc .rs-acts { display: flex; flex-wrap: wrap; gap: var(--s-2); pointer-events: auto; }
