@@ -196,7 +196,7 @@ function sailScripted(opts) {
   }
   return r.boats.map((b) => (b.done && !b.dsq ? Math.round(b.finish * 10) / 10 : null));
 }
-const GOLDEN_4242 = [ null, 251.3, 257.9, 230.7, 274.8 ]; // sailed again 2026-11-19: the rules changed (sim.js: mark-room at the windward mark, the line crossed at the bow, rule 13 from head to wind), and this seed now flies the I flag
+const GOLDEN_4242 = [ null, 285.1, 239.5, 246.2, 217.7 ]; // sailed again 2026-11-19: the rules changed (sim.js: mark-room at the windward mark, the line crossed at the bow, rule 13 from head to wind), and this seed now flies the I flag; and again 2026-11-20: the computer skippers keep clear of each other better (sim.js aiThreat)
 test('a custom race is unchanged by the 1-on-1 race', () => {
   assert.deepEqual(sailScripted({ preset: 'medium', length: 'short', laps: 1, fleet: 5, seed: 4242 }), GOLDEN_4242);
 });

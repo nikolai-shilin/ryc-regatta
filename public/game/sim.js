@@ -1334,9 +1334,10 @@ export class Race {
     return false;
   }
   zoneOf(p, q) { for (const st of this.zoneStates.values()) if ((st.p === p && st.q === q) || (st.p === q && st.q === p)) return st; return null; }
-  cpa(p, q, ph = p.h) {
+  // their closest approach, each holding her course and speed (p on heading ph at speed pv, if given)
+  cpa(p, q, ph = p.h, pv = p.v) {
     const rx = q.x - p.x, rz = q.z - p.z;
-    const vx = Math.sin(q.h) * q.v - Math.sin(ph) * p.v, vz = -Math.cos(q.h) * q.v + Math.cos(ph) * p.v;
+    const vx = Math.sin(q.h) * q.v - Math.sin(ph) * pv, vz = -Math.cos(q.h) * q.v + Math.cos(ph) * pv;
     const v2 = vx * vx + vz * vz;
     const t = v2 < 1e-4 ? 0 : clamp(-(rx * vx + rz * vz) / v2, 0, 30);
     return { t, d: Math.hypot(rx + vx * t, rz + vz * t), now: Math.hypot(rx, rz) };
@@ -1548,7 +1549,7 @@ export class Race {
     // hailed for room to tack (rule 20): she answers by tacking, after a moment's reaction
     const h20 = this.r20;
     if (h20 && h20.hailed === b && !h20.answered && this.clock >= (ai.respondT ?? 0)) { h20.answered = true; ai.lastTack = this.clock; this.aiTack(b); return; }
-    let tx, tz;
+    let tx, tz, threat;
     // her spot on the line: pushed towards the favoured end (the end further upwind, on the wind as she reads it),
     // the more so the better she is and the more it's favoured — so the fleet bunches there
     let lt = ai.lineT;
@@ -1588,7 +1589,18 @@ export class Race {
         // five, and she crosses well after the gun) — and under U or the black flag, a few more.
         // (with the stream behind her, a few seconds more: it carries her on whatever she does)
         const dl = -lineD(c, bowOf(b)), need = Math.max(0, dl) / sp + lag, margin = (this.prepFlag === 'P' ? 3 * slack + ai.dare : 2 + 3 * slack + Math.max(0, ai.dare)) + 7 * slack ** 2 + 4 * Math.max(0, curN);
-        if (this.clock < -1 && dl < (16 + margin * 2) * this.startK && (-this.clock > need + margin || dl < (1.5 + margin) * this.startK)) {
+        // a boat she must keep clear of closing on her where she'd stop and wait: no stopping in its way (stopped, she
+        // can't steer out of it), she sails off down below the line, keeping clear as she would after the gun, and
+        // comes up to it again (sailing on, she was over it before the gun)
+        threat = this.aiThreat(b);
+        const hold = this.clock < -1 && dl < (16 + margin * 2) * this.startK && (-this.clock > need + margin || dl < (1.5 + margin) * this.startK);
+        // (and goes on down for a few seconds: deciding afresh each moment, she turned up for the line and down from it
+        // by turns, the helm one way and the other, and held her course straight into the boat)
+        // Only for one about to hit her: for any she'd see coming, on a crowded line nearly always one, the fleet backed
+        // off and came to the line seconds late
+        if (hold && threat?.giver && threat.t < 5 && this.cpa(b, threat.o).d < SEP + 4 * SZ_PASS) ai.backT = this.clock + 3;
+        if (ai.backT > this.clock && this.clock < -1) { tx = pt.x - c.normal.x * 30 * this.startK; tz = pt.z - c.normal.z * 30 * this.startK; }
+        else if (hold) {
           // a stream setting her up to the line would carry her over before the gun while she waits: she bears away
           // and sails back down a little, then comes up to it again
           if (curN > 0 && dl < curN * -this.clock + (3 + margin) * this.startK) { this.steerTo(b, W - 130 * D2R * sgn(b.twa)); b.autoTrim = true; return; }
@@ -1600,7 +1612,7 @@ export class Race {
         }
         // hunting: just to leeward of a boat on the same tack, close, she luffs a little to push it up and make room
         // (a few seconds at a time, and only while the other is still there to windward)
-        if (this.clock < -4 && Math.abs(b.twa) < 70 * D2R) {
+        if (this.clock < -4 && !threat && Math.abs(b.twa) < 70 * D2R) {
           const o = this.boats.find((o) => o !== b && !o.done && sgn(o.twa) === sgn(b.twa) && Math.hypot(o.x - b.x, o.z - b.z) < 1.6 * HULL && this.rightOfWay(b, o).giver === o);
           if (o && (ai.huntT > this.clock || this.rand() < dt * ai.skill * 0.8)) {
             if (!(ai.huntT > this.clock)) ai.huntT = this.clock + 3 + 3 * this.rand();
@@ -1705,35 +1717,36 @@ export class Race {
       else want = best;
     }
     // keep clear: of the boats it must keep clear of, the most urgent one; and a boat with right of way still alters
-    // course when the other isn't keeping clear and contact is close (rule 14). It takes the sailable heading that
-    // leaves the most room to every boat near and to the marks (stopping instead only makes her a target).
-    if (this.rulesOn) {
-      let threat = null;
-      for (const o of this.boats) {
-        if (o === b || o.done) continue;
-        const cp = this.cpa(b, o);
-        // how far ahead she looks for trouble, and how close a pass worries her: an expert sees it coming some 12 s off
-        // and gives a wide berth, a beginner sees it late and cuts it fine; a hail makes anyone look at once
-        const look = this.clock - (ai.alertT ?? -99) < 6 ? 12 : 6 + 6 * ai.skill;
-        if (cp.now > 70 || cp.d > (12 + 8 * ai.skill) * SZ_PASS || cp.t > look) continue;
-        // waiting before the start she simply keeps out of everyone's way, right of way or not
-        const waiting = this.clock < 0 && !ai.go, giver = waiting || this.judge(b, o).giver === b;
-        if (!giver && !(cp.t < 5 && cp.d < SEP + 4 * SZ_PASS)) continue;
-        if (!threat || cp.t < threat.t) threat = { o, t: cp.t, giver };
+    // course when the other isn't keeping clear and contact is close (rule 14). She turns to a sailable heading
+    // (stopping instead only makes her a target).
+    if (threat === undefined) threat = this.aiThreat(b);
+    if (threat) {
+      // the least turn that leaves room enough to every boat near and to the marks, as a skipper ducks a stern by a few
+      // degrees; with none, the heading that leaves the most. (Taking the most room every time, she bore away 60° for a
+      // boat she'd have cleared at 25, and lost the beat to it)
+      // (a boat alongside, the two not closing: the room is what she opens up in the next few seconds — by their
+      // closest approach, now, every heading away from it was as good as holding on, and two boats reached side by
+      // side a few metres apart until they touched)
+      const near = this.boats.filter((o) => o !== b && !o.done && Math.hypot(o.x - b.x, o.z - b.z) < 70);
+      const apart = (o, h) => { const p = this.cpa(b, o, h); if (p.t > 0) return p.d; const t = 4; return Math.hypot(o.x + Math.sin(o.h) * o.v * t - b.x - Math.sin(h) * b.v * t, o.z - Math.cos(o.h) * o.v * t - b.z + Math.cos(h) * b.v * t); };
+      const room = (h) => Math.min(markClear(h) + SEP, ...near.map((o) => apart(o, h)));
+      const offs = this.clock < 0 && !ai.go ? [0, -30, 30, -60, 60, -90, 90] : threat.giver ? [0, -12, 10, -25, 20, -40, 30, -60] : [0, -15, 15, -30, 30]; // − bears away, + luffs
+      const safe = SEP + (4 + 4 * ai.skill) * SZ_PASS;
+      let best = want, bd = -Infinity;
+      // the way she chose a moment ago she keeps while it still leaves her room: choosing afresh each moment, she turned
+      // one way and the other by turns and didn't turn at all
+      const kept = ai.pick && this.clock - ai.pick.t < 2 && ai.pick.o === threat.o && room(ai.pick.h) >= safe ? ai.pick.h : null;
+      if (kept !== null) best = want = kept; else for (const d of offs) {
+        const h = want + tack * d * D2R;
+        // off the wind, don't luff into the no-go zone; and keeping clear, never: head to wind she stops and can't steer,
+        // and the boat she luffed for sails into her
+        if (d > 0 && !this.canSail(h, W, b.tws) && (threat.giver || Math.abs(rel) >= up)) continue;
+        const r = room(h);
+        if (r >= safe) { best = h; break; }
+        if (r - Math.abs(d) * 0.04 > bd) { bd = r - Math.abs(d) * 0.04; best = h; }
       }
-      if (threat) {
-        const near = this.boats.filter((o) => o !== b && !o.done && Math.hypot(o.x - b.x, o.z - b.z) < 70);
-        const room = (h) => Math.min(markClear(h) + SEP, ...near.map((o) => this.cpa(b, o, h).d));
-        const offs = this.clock < 0 && !ai.go ? [-30, 30, -60, 60, -90, 90, 0] : threat.giver ? [-25, -40, -60, 15, 30, 0] : [-15, 15, -30, 30, 0]; // − bears away, + luffs
-        let best = want, bd = -1;
-        for (const d of offs) {
-          const h = want + tack * d * D2R;
-          if (d > 0 && !this.canSail(h, W, b.tws) && Math.abs(rel) >= up) continue; // off the wind, don't luff into the no-go zone
-          const r = room(h) - Math.abs(d) * 0.04;
-          if (r > bd) { bd = r; best = h; }
-        }
-        want = best;
-      }
+      if (kept === null && best !== want) ai.pick = { h: best, t: this.clock, o: threat.o };
+      want = best;
     }
     this.steerTo(b, want);
     const a = Math.abs(b.twa) / D2R;
@@ -1752,6 +1765,36 @@ export class Race {
     // a reef when it blows over 21 knots for a while, shaken out when it eases below 16
     ai.blowT = b.tws > 21.5 ? (ai.blowT || 0) + dt : 0; ai.easeT = b.tws < 16 ? (ai.easeT || 0) + dt : 0;
     if (!b.reef && ai.blowT > 20) b.setReef(true); else if (b.reef && ai.easeT > 30) b.setReef(false);
+  }
+  // the boat a computer skipper has to get out of the way of, or null: of those she must keep clear of, the soonest to
+  // come close; and one with right of way that isn't keeping clear, close (rule 14). One she has begun to keep clear
+  // of stays her threat until they are past each other: dropped as soon as the pass looked clear on the heading she'd
+  // turned to, she came back up onto it, and onto it again, and touched
+  aiThreat(b) {
+    const ai = b.ai;
+    if (!this.rulesOn) return null;
+    let threat = null;
+    const was = ai.avoid && this.clock < ai.avoid.until ? ai.avoid.o : null;
+    for (const o of this.boats) {
+      if (o === b || o.done || o.out) continue;
+      const cp = this.cpa(b, o);
+      // how far ahead she looks for trouble, and how close a pass worries her: an expert sees it coming some 12 s off
+      // and gives a wide berth, a beginner sees it late and cuts it fine; a hail makes anyone look at once
+      const look = this.clock - (ai.alertT ?? -99) < 6 ? 12 : 6 + 6 * ai.skill;
+      // (one not closing on her, only when already close alongside: a boat sailing on parallel 15 m off, she bore away
+      // from it and round the wrong side of the mark she was rounding)
+      const seen = !(cp.now > 70 || cp.d > (12 + 8 * ai.skill) * SZ_PASS || cp.t > look || (cp.t <= 0 && cp.now > SEP + 3 * SZ_PASS));
+      const held = o === was && cp.t > 0 && cp.now < 4 * HULL;
+      if (!seen && !held) continue;
+      // waiting before the start she simply keeps out of everyone's way, right of way or not
+      const waiting = this.clock < 0 && !ai.go, giver = waiting || this.judge(b, o).giver === b;
+      if (!giver && !(cp.t < 5 && cp.d < SEP + 4 * SZ_PASS)) continue;
+      if (!threat || cp.t < threat.t) threat = { o, t: cp.t, giver, seen };
+    }
+    // (held only some seconds past the last time she saw it coming: held on while it lasted, two boats going round a
+    // mark together kept each other for good, and one dodged the other round and round it instead of rounding)
+    if (threat?.seen) ai.avoid = { o: threat.o, until: this.clock + 6 };
+    return threat;
   }
   // rule 20, room to tack: close-hauled with you close to windward (so she can't tack) and an obstruction ahead — a
   // boat she must keep clear of, or the committee boat — she hails you; you must tack (or give her room), and when
@@ -1872,8 +1915,10 @@ export class Race {
       // the room she wants: an expert tacks or gybes only well clear, a beginner into a tighter gap
       const k = b.ai ? 0.6 + 0.6 * b.ai.skill : 1;
       if (d < SEP + 8 * k * SZ_PASS) return false;
-      const c = this.cpa(b, o, h);
-      if (c.d < SEP + 6 * k * SZ_PASS && c.t < 12) return false;
+      // through the turn she all but stops: judged as if she held her speed onto the new heading, she tacked across a
+      // boat coming at her, which was on her before she got going again. So the pass as it would be at a crawl too
+      const c = this.cpa(b, o, h), s = this.cpa(b, o, h, b.v * 0.3);
+      if ((c.d < SEP + 6 * k * SZ_PASS && c.t < 12) || (s.d < SEP + 4 * k * SZ_PASS && s.t < 12)) return false;
     }
     return true;
   }
