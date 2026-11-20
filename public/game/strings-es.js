@@ -102,7 +102,7 @@ export const MAIN = {
   raceWon: '¡Ganas la regata!', raceLost: (w) => `${w} gana la regata`,
   waitingHost: (n) => `Esperando a ${n}…`, guestGone: (n) => `${n} no responde: su barco mantiene el rumbo; tras 30 s de silencio abandona`,
   abandoned: 'Regata abandonada: no puntúa', full: 'Esta regata 1 contra 1 está completa', matchFail: 'No se pudo conectar a la regata 1 contra 1', tryAgain: 'Intentar de nuevo',
-  noGl: 'El navegador no puede iniciar los gráficos 3D ahora mismo. Cierra otras pestañas y aplicaciones, o reinicia el navegador, e inténtalo de nuevo.',
+  noGl: 'El juego necesita los gráficos 3D de tu dispositivo y el navegador no los ha dado ahora. Suele arreglarse con una de estas cosas:',
   glLostK: 'Se perdió la imagen', glLostTxt: 'El dispositivo recuperó los gráficos, casi siempre por falta de memoria. Recarga para seguir navegando con gráficos más ligeros.', doReload: 'Recargar',
   timeOne: 'regata 1 contra 1',
   'r16.1': 'Derecho de paso, pero da espacio para mantenerse separado', 'x16.1': 'Un barco con derecho de paso que cambia de rumbo debe dar al otro barco espacio para mantenerse separado.',
@@ -119,7 +119,7 @@ export const MAIN = {
   rKeys: 'Gobierna con ← y →.',
   rAuto: 'Las velas se triman solas.',
   rEarly: 'Si cruzas antes de la señal, tendrás que volver.',
-  rGo: 'Listo',
+  rGo: 'Empezar ya',
   pauseL: 'Pausa', zoomInL: 'Acercar', zoomOutL: 'Alejar', speedL: 'Velocidad del juego',
   prepI: 'Hoy, bandera I: si estás por delante de la línea en el último minuto, debes volver rodeando uno de sus extremos para salir',
   roundEnd: 'Por delante en el último minuto con la bandera I: vuelve rodeando un extremo de la línea',
@@ -129,7 +129,8 @@ export const MAIN = {
   rLined: 'Tu barco ya está alineado: mantén el rumbo y llegarás a la línea con la señal.',
   rStay: 'Quédate detrás de la línea hasta la señal y crúzala a toda velocidad.',
   rTouch: 'Gobierna con el pulgar izquierdo a lo largo del arco.',
-  rNote: 'El reloj arranca cuando estés listo.',
+  rNote: 'El reloj arranca solo, o en cuanto gobiernes.',
+  gunK: 'Segundos para la señal', awayK: 'En pausa mientras no estabas', awayH: 'Tu regata te ha esperado', awayP: 'Nada se ha movido mientras no estabas.', awayGun: 'Para la señal', awayLine: 'A la línea', awayPlace: 'Puesto', awayTime: 'Tiempo', awayGo: 'Seguir', awayMenu: 'Menú de la regata', tabWait: 'Tu regata te espera', firstK: 'Tu primera regata', firstH: 'Una regata corta en Optimist', firstNext: 'salida en 20 segundos',
 };
 
 export const HUD = {

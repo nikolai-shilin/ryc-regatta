@@ -26,6 +26,7 @@ import { plainRows, shortName } from '@/lib/name';
 import { BOAT_EVENT, readBoat } from '@/lib/boat';
 import { briefUrl, readBrief, SCORES_API } from '@/lib/day-brief';
 import { useWho } from './me';
+import { FirstFinish } from './first-finish';
 import { RateRace } from './rate-race';
 import { PauseCard } from './pause-card';
 import { DEBRIEF_DRILL, drillLink, readDrills } from '@/lib/drills';
@@ -51,7 +52,7 @@ function Level({ lv, t }: { lv?: string; t: (en: string, ru: string, es?: string
 }
 type Foul = { rule: string; who: string | null; t: number | null; x: number | null; z: number | null };
 type Result = {
-  v: 1; id: string; at: number; daily: string | null; oneOnOne?: boolean; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
+  v: 1; id: string; at: number; daily: string | null; oneOnOne?: boolean; first?: boolean; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
   // `type`, `marks` (every rounding mark, by the leg that goes to it) and `finish` (a finish line of its own) came with the
   // course shapes: a result saved before them has none, and a wing mark makes it a triangle
   course: { windward: [number, number]; gate: [number, number][]; pin: [number, number]; committee: [number, number]; legs: string[]; wing?: [number, number];
@@ -174,8 +175,11 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
   const again = one ? '/match/new' : res.daily ? '/play?race=today' : '/play?race=free';
   const isToday = res.daily === new Date().toISOString().slice(0, 10); // the daily race's day is the UTC date, as the game's
   // someone else's race: today's race, for you to sail
+  // a newcomer's first race (the game's easy one, public/game/main.js FIRST): on to today's race next
+  const firstRace = !shared && !one && !!res.first;
   const cta = shared
     ? { href: '/race', label: t('Sail today’s race', 'Пройти гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln', 'Günün yarışına çık') }
+    : firstRace ? { href: '/play?race=today', label: t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı') }
     : { href: again, label: one ? t('Another 1-on-1 race', 'Ещё одна гонка 1 на 1', 'Otra regata 1 contra 1', 'Noch eine 1-gegen-1-Regatta', 'Bir bire bir yarış daha') : t('Race again', 'Ещё гонку', 'Regatear otra vez', 'Nochmal segeln', 'Yeniden yarış') };
   const mine = me.secs != null && !me.dsq ? me.secs : null;
   const you = shared ? t('This boat', 'Эта лодка', 'Este barco', 'Dieses Boot', 'Bu tekne') : t('You', 'Ты', 'Tú', 'Du', 'Sen');
@@ -282,7 +286,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
   if (lost) tiles.splice(Math.min(2, tiles.length), 0, { k: t('Most lost', 'Больше всего потеряно', 'Lo que más se perdió', 'Am meisten verloren', 'En çok kayıp'), v: num(lost.lost), u: t('s', 'с', 's', 's', 'sn'),
     s: [lost.seg === 0 ? t('Off the start line', 'На старте', 'Al salir de la línea', 'An der Startlinie', 'Start hattından') : t(`Leg ${lost.seg} (${legName(res.course.legs[lost.seg]).toLowerCase()})`, `Отрезок ${lost.seg} (${legName(res.course.legs[lost.seg]).toLowerCase()})`, `Tramo ${lost.seg} (${legName(res.course.legs[lost.seg]).toLowerCase()})`, `Schenkel ${lost.seg} (${legName(res.course.legs[lost.seg])})`, `Ayak ${lost.seg} (${legName(res.course.legs[lost.seg]).toLowerCase()})`),
       lost.name ? t(`against ${lost.name}`, `против ${lost.name}`, `contra ${lost.name}`, `gegen ${lost.name}`, `${lost.name} karşısında`) : ''].filter(Boolean).join(', ') });
-  const ctaLabel = !shared && target?.go ? `${cta.label} · ${target.go}` : cta.label;
+  const ctaLabel = !shared && !firstRace && target?.go ? `${cta.label} · ${target.go}` : cta.label; // (a first race's target is the Optimist's, not today's)
 
   // a first race at this venue (your stamp's race is this one), or a day of a streak
   const firstHere = !shared && !!log && log.v[where.id] === res.at && !me.dsq && me.done;
@@ -332,6 +336,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
             <Link className="bt-show rs-ghost" href="/race">{t('Race hub', 'Меню гонок', 'Centro de regatas', 'Regattazentrale', 'Yarış merkezi')}</Link>
             {res.boats.some((b) => b.track?.length > 1) ? <Replay res={res} myLegs={me.legT} lang={lang} /> : null}
           </div>
+          {firstRace && <FirstFinish lang={lang} id={res.id} signed={!!signedName} />}{/* a newcomer's first race: keep it */}
         </div>
 
         {/* the full table, as the broadcast's results board */}

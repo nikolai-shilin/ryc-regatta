@@ -90,11 +90,11 @@
 #pauseCard.bc .p-esc { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
 #pauseCard.bc .p-esc kbd { border-radius: 0; border: 1px solid var(--rule); font: 600 var(--fs-label)/1 var(--cond); color: var(--ink-2); }
 /* the card */
-#pauseCard.bc .card, #confirmCard.bc .card, #glLost.bc .card { border: 0; border-radius: 0; background: var(--panel); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); animation: bc-slide-r .45s var(--ease) both; }
+#pauseCard.bc .card, #confirmCard.bc .card, #glLost.bc .card, #awayCard.bc .card { border: 0; border-radius: 0; background: var(--panel); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); animation: bc-slide-r .45s var(--ease) both; }
 #pauseCard.bc .p-card { gap: var(--s-2); padding: var(--s-5); }
-#pauseCard.bc .go, #confirmCard.bc .go, #glLost.bc .go { height: var(--h-l); gap: var(--s-3); border-radius: 0; background: var(--you); color: var(--ink-on);
+#pauseCard.bc .go, #confirmCard.bc .go, #glLost.bc .go, #awayCard.bc .go { height: var(--h-l); gap: var(--s-3); border-radius: 0; background: var(--you); color: var(--ink-on);
   font: 700 var(--fs-row)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%); }
-#pauseCard.bc .go:active, #confirmCard.bc .go:active, #pauseCard.bc .p-row:active, #pauseCard.bc .choice button:active, #pauseCard.bc .p-seg button:active, #glLost.bc .go:active { transform: none; scale: .97; }
+#pauseCard.bc .go:active, #confirmCard.bc .go:active, #pauseCard.bc .p-row:active, #pauseCard.bc .choice button:active, #pauseCard.bc .p-seg button:active, #glLost.bc .go:active, #awayCard.bc .go:active { transform: none; scale: .97; }
 #pauseCard.bc #pResume::before { width: 14px; height: 14px; }
 #pauseCard.bc .p-rows { gap: 0; margin: var(--s-2) calc(-1 * var(--s-5)) 0; border-top: 1px solid var(--rule); }
 #pauseCard.bc .p-row { height: var(--h-m); padding: 0 var(--s-5); border-radius: 0; border-bottom: 1px solid var(--rule-2); font: 700 var(--fs-lead)/1 var(--cond); letter-spacing: var(--ls-name); }
@@ -106,7 +106,7 @@
 #pauseCard #pAv { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M4 7h9M19 7h1M4 17h1M11 17h9'/%3E%3Ccircle cx='16' cy='7' r='2.5'/%3E%3Ccircle cx='8' cy='17' r='2.5'/%3E%3C/svg%3E"); }
 #pauseCard #pLeave { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 12H5M11 6l-6 6 6 6'/%3E%3C/svg%3E"); }
 #pauseCard.bc .p-row .meta { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
-#pauseCard.bc .p-card > .meta, #confirmCard.bc .kicker, #glLost.bc .kicker { margin: var(--s-3) 0 var(--s-1); font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+#pauseCard.bc .p-card > .meta, #confirmCard.bc .kicker, #glLost.bc .kicker, #awayCard.bc .kicker { margin: var(--s-3) 0 var(--s-1); font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 /* quick switches: on/off with a green mark; graphics: one of four, the picked one blue */
 #pauseCard.bc .choice { gap: var(--s-1); padding: 0; }
 #pauseCard.bc .choice button { height: var(--h-s); gap: var(--s-2); padding: 0 var(--s-3); border: 0; border-radius: 0; background: var(--fill-2); color: var(--ink);
@@ -156,14 +156,14 @@
 }
 
 /* ---------- before you leave: a white bar that asks, the line, two buttons ---------- */
-#confirmCard.bc .c-card, #glLost.bc .c-card { gap: var(--s-3); padding: 0 0 var(--s-5); }
-#confirmCard.bc .kicker, #glLost.bc .kicker { display: block; margin: 0; padding: var(--s-2) var(--s-4); background: var(--ink); color: var(--ink-on); font-weight: 700; }
-#confirmCard.bc .c-card h2, #glLost.bc .c-card h2 { margin: var(--s-3) var(--s-5) 0; font: 700 var(--fs-h3)/1 var(--cond); text-transform: uppercase; }
-#confirmCard.bc .c-card p, #glLost.bc .c-card p { margin: 0 var(--s-5); font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
-#confirmCard.bc .c-btns, #glLost.bc .c-btns { gap: var(--s-2); margin: var(--s-2) var(--s-5) 0; }
-#confirmCard.bc .go, #glLost.bc .go { font-size: var(--fs-lead); }
-#confirmCard.bc .go.ghost, #glLost.bc .go.ghost { border: 0; background: var(--fill-2); color: var(--ink); clip-path: none; }
-#confirmCard.bc .go.ghost:hover, #glLost.bc .go.ghost:hover { background: var(--w-14); }
+#confirmCard.bc .c-card, #glLost.bc .c-card, #awayCard.bc .c-card { gap: var(--s-3); padding: 0 0 var(--s-5); }
+#confirmCard.bc .kicker, #glLost.bc .kicker, #awayCard.bc .kicker { display: block; margin: 0; padding: var(--s-2) var(--s-4); background: var(--ink); color: var(--ink-on); font-weight: 700; }
+#confirmCard.bc .c-card h2, #glLost.bc .c-card h2, #awayCard.bc .c-card h2 { margin: var(--s-3) var(--s-5) 0; font: 700 var(--fs-h3)/1 var(--cond); text-transform: uppercase; }
+#confirmCard.bc .c-card p, #glLost.bc .c-card p, #awayCard.bc .c-card p { margin: 0 var(--s-5); font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+#confirmCard.bc .c-btns, #glLost.bc .c-btns, #awayCard.bc .c-btns { gap: var(--s-2); margin: var(--s-2) var(--s-5) 0; }
+#confirmCard.bc .go, #glLost.bc .go, #awayCard.bc .go { font-size: var(--fs-lead); }
+#confirmCard.bc .go.ghost, #glLost.bc .go.ghost, #awayCard.bc .go.ghost { border: 0; background: var(--fill-2); color: var(--ink); clip-path: none; }
+#confirmCard.bc .go.ghost:hover, #glLost.bc .go.ghost:hover, #awayCard.bc .go.ghost:hover { background: var(--w-14); }
 
 /* ---------- the first three races: the start in three numbered lines, the race waiting behind for Ready ----------
    (main.js askReady). The card as the one that asks before you leave: the white bar, the headline in capitals, the
@@ -201,3 +201,63 @@
   #readyCard.bc .go { height: var(--h-m); margin: var(--s-3) var(--s-4) 0; font-size: var(--fs-lead); }
   #readyCard.bc .r-note { margin: var(--s-2) var(--s-4) 0; }
 }
+
+/* ---------- a newcomer's first races (main.js): the Ready card that starts by itself, the steering it lets through,
+   the last 20 seconds to the gun, big, and the card that says the race held while the page was out of sight ---------- */
+/* the card alone takes a touch: the steering under the scrim starts the clock too, and glows while it waits */
+#readyCard.bc { pointer-events: none; }
+#readyCard.bc .r-card { pointer-events: auto; }
+#readyCard.bc .r-head { display: flex; align-items: center; gap: var(--s-4); margin: var(--s-5) var(--s-5) var(--s-4); }
+#readyCard.bc .r-head h2 { flex: 1 1 auto; margin: 0; }
+#readyCard.bc .r-ring { position: relative; flex: none; width: 56px; height: 56px; display: grid; place-items: center; }
+#readyCard.bc .r-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; rotate: -90deg; }
+#readyCard.bc .r-ring circle { fill: none; stroke: var(--fill-3); stroke-width: 4; }
+#readyCard.bc .r-ring #rRing { stroke: var(--you); stroke-dasharray: 100; stroke-dashoffset: 0; }
+#readyCard.bc .r-ring b { position: relative; font: 800 var(--fs-h3)/1 var(--cond); }
+@keyframes r-glow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(61, 184, 255, 0)); } 50% { filter: drop-shadow(0 0 10px rgba(61, 184, 255, 0.95)); } }
+#hud.r-wait #rudder { animation: r-glow 1.4s ease-in-out infinite; }
+#hud.r-wait #rudder .track { stroke: var(--you); }
+@media (max-height: 420px) {
+  #readyCard.bc .r-head { margin: var(--s-3) var(--s-4) var(--s-2); }
+  #readyCard.bc .r-ring { width: 44px; height: 44px; }
+  #readyCard.bc .r-ring b { font-size: var(--fs-title); }
+}
+
+#gunCount { position: absolute; left: 50%; top: 24%; translate: -50% 0; display: none; flex-direction: column; align-items: center; gap: var(--s-1);
+  font-family: var(--cond); color: #fff; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.5); pointer-events: none; }
+#gunCount.on { display: flex; }
+#gunCount b { font: 800 104px/0.9 var(--cond); font-variant-numeric: tabular-nums; }
+#gunCount span { font: 700 13px/1 var(--cond); letter-spacing: 0.14em; text-transform: uppercase; }
+@media (max-height: 420px) { #gunCount { top: 16%; } #gunCount b { font-size: 64px; } }
+
+#awayCard.bc .a-card { width: min(440px, 100%); }
+#awayCard.bc .kicker { display: flex; align-items: center; gap: var(--s-2); margin: 0; padding: var(--s-2) var(--s-4); background: var(--ink); color: var(--ink-on);
+  font: 700 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; }
+#awayCard.bc .c-card h2 { margin: var(--s-3) var(--s-5) 0; font: 700 var(--fs-h3)/0.95 var(--cond); text-transform: uppercase; }
+#awayCard.bc .c-card p { margin: 0 var(--s-5); font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-2); }
+#awayCard.bc .a-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: var(--s-2) var(--s-5) 0; background: var(--fill-1); }
+#awayCard.bc .a-stats > div { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3) var(--s-4); }
+#awayCard.bc .a-stats > div + div { border-left: 1px solid var(--rule); }
+#awayCard.bc .a-stats .meta { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+#awayCard.bc .a-stats b { font: 700 var(--fs-h3)/1 var(--cond); font-variant-numeric: tabular-nums; }
+#awayCard.bc .c-btns { display: flex; gap: var(--s-2); margin: var(--s-3) var(--s-5) 0; }
+#awayCard.bc .c-btns .go { flex: 1 1 0; }
+#awayCard.bc #aGo { position: relative; overflow: hidden; }
+#awayCard.bc #aRun { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(4, 18, 30, 0.35); transform-origin: left; }
+#awayCard.bc .go.ghost { border: 0; background: var(--fill-2); color: var(--ink); clip-path: none; }
+
+/* the loading screen: a first race's way to today's race instead; no WebGL: what mends it, and the link to copy */
+#loading.bc .l-tip .l-skip { color: var(--ink); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+#loading .l-fix { display: none; }
+#loading.bc.gl .l-fix { display: flex; flex-direction: column; margin: 0; padding: 0; max-width: 480px; list-style: none; counter-reset: f; background: var(--panel);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+#loading.bc.gl .l-fix li { display: flex; align-items: flex-start; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--rule-2);
+  counter-increment: f; font: 500 var(--fs-body)/1.4 var(--sans); color: var(--ink-2); }
+#loading.bc.gl .l-fix li:last-child { border-bottom: 0; }
+#loading.bc.gl .l-fix li::before { content: counter(f, decimal-leading-zero); flex: none; display: grid; place-items: center; width: 28px; height: 28px; background: var(--fill-2);
+  color: var(--ink); font: 700 var(--fs-small)/1 var(--cond); }
+#loading.bc.gl .l-in > .kicker { background: var(--down); }
+#loading.bc.gl .l-prog, #loading.bc.gl .l-cells { display: none; }
+#loading .l-copy { display: none !important; }
+#loading.bc.gl .l-copy { display: inline-flex !important; background: var(--fill-2); color: var(--ink); }
+#loading.bc.gl #lBack { display: none; }

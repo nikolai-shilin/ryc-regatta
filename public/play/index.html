@@ -349,7 +349,7 @@
   .c-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
 
   /* the pause and confirm cards in the sailing HUD's look: dark glass, a hairline edge, small bold sans, icons */
-  #pauseCard .card, #confirmCard .card, #glLost .card, #readyCard .card {
+  #pauseCard .card, #confirmCard .card, #glLost .card, #readyCard .card, #awayCard .card {
     --bg: rgba(8, 14, 20, 0.58); --ink: #ffffff; --muted: rgba(255, 255, 255, 0.62); --line: rgba(255, 255, 255, 0.12);
     --accent: #35b0f2; --on-accent: #00131f; --ok: #2ee6a0; --ease: cubic-bezier(.2, .8, .2, 1);
     background: var(--bg); color: var(--ink); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 22px;
@@ -366,9 +366,9 @@
   #readyCard .r-list li::before { content: ''; position: absolute; left: 2px; top: 0.5em; width: 6px; height: 6px; background: var(--accent); }
   #readyCard .r-note { margin: 0; font: 600 12px/1.3 var(--sans); color: var(--muted); text-align: center; }
 
-  #pauseCard .go, #confirmCard .go, #glLost .go, #readyCard .go { height: 44px; margin: 0; gap: 8px; border: 0; border-radius: 54px; font: 700 13px var(--sans); text-transform: uppercase; letter-spacing: .04em; transition: transform .12s, background-color .2s, filter .2s; }
-  #pauseCard .go:hover, #confirmCard .go:hover, #glLost .go:hover, #readyCard .go:hover { filter: brightness(1.08); }
-  #pauseCard .go:active, #confirmCard .go:active, #pauseCard .p-row:active, #pauseCard .choice button:active, #glLost .go:active, #readyCard .go:active { transform: scale(.97); }
+  #pauseCard .go, #confirmCard .go, #glLost .go, #readyCard .go, #awayCard .go { height: 44px; margin: 0; gap: 8px; border: 0; border-radius: 54px; font: 700 13px var(--sans); text-transform: uppercase; letter-spacing: .04em; transition: transform .12s, background-color .2s, filter .2s; }
+  #pauseCard .go:hover, #confirmCard .go:hover, #glLost .go:hover, #readyCard .go:hover, #awayCard .go:hover { filter: brightness(1.08); }
+  #pauseCard .go:active, #confirmCard .go:active, #pauseCard .p-row:active, #pauseCard .choice button:active, #glLost .go:active, #readyCard .go:active, #awayCard .go:active { transform: scale(.97); }
   #pauseCard .p-card > * { flex: none; } /* a short screen scrolls the card rather than squashing Resume */
   #pauseCard .p-esc { align-self: flex-start; font: 700 10.5px var(--sans); letter-spacing: .06em; color: rgba(255, 255, 255, .62); text-shadow: none; }
   #pauseCard #pResume::before { content: ''; width: 12px; height: 12px; background: currentColor; -webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat;
@@ -397,7 +397,7 @@
   /* the race's state in the HUD's own type too: bold sans, numbers in glass tiles, the legs as a progress track and
      the next target as the chip it wears on the water (yellow for a line, orange for a mark) */
   #pauseCard { z-index: 10; background: radial-gradient(120% 90% at 30% 40%, rgba(4,10,16,.25) 0%, rgba(4,10,16,.7) 100%); backdrop-filter: blur(3px) saturate(.9); -webkit-backdrop-filter: blur(3px) saturate(.9); }
-  #confirmCard { z-index: 10; }
+  #confirmCard, #awayCard { z-index: 10; }
   #glLost { z-index: 20; } /* the picture lost (main.js): over the pause menu, under the preloader */
 
   #pauseCard .p-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 12px 0 10px; border-radius: 54px; border: 1px solid var(--line);
@@ -439,7 +439,7 @@
     #pauseCard .p-stats { gap: 12px; margin-top: 32px; }
 
   }
-  #confirmCard .c-card, #glLost .c-card { width: min(400px, 100%); padding: 18px; gap: 8px; }
+  #confirmCard .c-card, #glLost .c-card, #awayCard .c-card { width: min(400px, 100%); padding: 18px; gap: 8px; }
 
 </style>
 <!-- every module the page will load, asked for at once rather than an import at a time, and the yacht with them
@@ -518,6 +518,7 @@
   <button class="round" id="tackBtn"></button>
   <button class="round" id="kiteBtn" hidden data-t="kite"></button>
   <div id="count" class="on-photo"></div>
+  <div id="gunCount" aria-hidden="true"><b id="gunN"></b><span data-t="gunK"></span></div>
 </div>
 
 <div class="overlay" id="menu" hidden>
@@ -576,7 +577,8 @@
       <div class="l-row"><span class="meta" id="lStep">&nbsp;</span><span class="meta l-pct" id="lPct">0%</span></div>
       <div class="l-bar"><i id="lBar"></i></div>
     </div>
-    <div class="l-err"><button type="button" id="lRetry"></button><a id="lBack" href="/race"></a></div>
+    <ol class="l-fix" id="lFix"></ol>
+    <div class="l-err"><button type="button" id="lRetry"></button><button type="button" id="lCopy" class="l-copy"></button><a id="lBack" href="/race"></a></div>
     <p class="l-tip" id="lTip"></p>
   </div>
 </div>
@@ -594,6 +596,9 @@
   document.documentElement.lang = lang;
   document.title = t('Race', 'Гонка', 'Regata', 'Regatta', 'Yarış') + ' · Up and down';
   var free = q.get('race') === 'free', match = !!q.get('match');
+  // a newcomer's first race (the same test as classes.js firstRaceHere): an Optimist on a short course, said as it loads
+  var first = /^\/play/.test(location.pathname) && !free && !match && !q.get('drill') && !q.get('boat') && !q.has('nofirst')
+    && !(function () { try { return +JSON.parse(localStorage.getItem('regatta') || '{}').played > 0; } catch (e) { return false; } })();
   // the visit, for the site's /admin (stats.js goes on with it): this browser's random id (kept, so one coming back
   // another day counts once), this opening's, and a post that it opened, from where and on what. Nothing names anyone.
   // A local copy of the game (npm run dev) posts nothing, as stats.js.
@@ -613,7 +618,15 @@
     : free
     ? t('Your wind, your fleet, your course — against the computer boats, under the racing rules.', 'Твой ветер, твой флот, твоя дистанция — против компьютерных лодок, по правилам.', 'Tu viento, tu flota, tu recorrido: contra los barcos del ordenador y con el reglamento de regatas.', 'Dein Wind, dein Feld, deine Bahn: gegen die Computerboote, nach den Wettfahrtregeln.', 'Senin rüzgârın, senin filon, senin parkurun: bilgisayar teknelerine karşı, yarış kurallarıyla.')
     : t('The same race for everyone today, so the times compare fairly.', 'Сегодня у всех одна гонка, поэтому время сравнивается честно.', 'Hoy todos corren la misma regata, así que los tiempos se comparan en igualdad.', 'Heute segeln alle dieselbe Regatta, die Zeiten sind also fair vergleichbar.', 'Bugün herkes aynı yarışta, böylece süreler adilce karşılaştırılır.');
+  if (first) { // what the race is and how to steer, while it loads
+    $('lKick').textContent = t('Your first race', 'Твоя первая гонка', 'Tu primera regata', 'Deine erste Regatta', 'İlk yarışın');
+    $('lH').textContent = t('A short race in an Optimist', 'Короткая гонка на «Оптимисте»', 'Una regata corta en Optimist', 'Eine kurze Regatta im Optimist', 'Optimist ile kısa bir yarış');
+    $('lSub').textContent = matchMedia('(pointer: coarse)').matches
+      ? t('Steer with your thumb along the arc. The sails trim themselves.', 'Рули большим пальцем по дуге. Паруса настраиваются сами.', 'Gobierna con el pulgar a lo largo del arco. Las velas se ajustan solas.', 'Steuere mit dem Daumen am Bogen entlang. Die Segel trimmen sich selbst.', 'Başparmağınla yay boyunca dümen kır. Yelkenler kendi kendine ayarlanır.')
+      : t('Steer with ← and →. The sails trim themselves.', 'Руль — клавиши ← и →. Паруса настраиваются сами.', 'Gobierna con ← y →. Las velas se ajustan solas.', 'Steuere mit ← und →. Die Segel trimmen sich selbst.', 'Dümeni ← ve → ile kullan. Yelkenler kendi kendine ayarlanır.');
+  }
   $('lTick').textContent = t('Coming up', 'Дальше', 'A continuación', 'Als Nächstes', 'Sırada');
+  $('lCopy').textContent = t('Copy link', 'Скопировать ссылку', 'Copiar enlace', 'Link kopieren', 'Bağlantıyı kopyala');
   $('lRetry').textContent = t('Try again', 'Ещё раз', 'Reintentar', 'Erneut versuchen', 'Tekrar dene');
   $('lBack').textContent = t('Race hub', 'Меню гонок', 'Menú de regatas', 'Regatta-Menü', 'Yarış menüsü');
 
@@ -635,8 +648,16 @@
   ];
   var tipEl = $('lTip'), ti = Math.floor(Math.random() * tips.length);
   var showTip = function () { tipEl.innerHTML = '<span class="meta">' + t('While the boat is rigged', 'Пока готовим лодку', 'Mientras preparamos el barco', 'Während das Boot aufgeriggt wird', 'Tekne hazırlanırken') + '</span>' + (tips[ti % tips.length][{ en: 0, ru: 1, es: 2, de: 3, tr: 4 }[lang] || 0] || tips[ti % tips.length][0]); };
-  showTip();
-  var tipTimer = setInterval(function () { tipEl.classList.add('fade'); setTimeout(function () { ti++; showTip(); tipEl.classList.remove('fade'); }, 350); }, 5000);
+  var tipTimer = null;
+  if (first) { // a first race's note: the start waits, and the way to today's race instead
+    var esc0 = function (x) { return String(x).replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
+    tipEl.innerHTML = '<span class="meta">' + esc0(t('Taking a while?', 'Долго грузится?', '¿Tarda un poco?', 'Dauert es?', 'Biraz sürüyor mu?')) + '</span>'
+      + esc0(t('Switch apps if you like: the start waits for you.', 'Можно переключиться на другое приложение: старт тебя подождёт.', 'Puedes cambiar de app: la salida te espera.', 'Wechsle ruhig die App: Der Start wartet auf dich.', 'İstersen başka uygulamaya geç: start seni bekler.'))
+      + ' <a class="l-skip" href="/play?race=today&amp;nofirst' + (ul ? '&amp;lang=' + ul : '') + '">' + esc0(t('Skip to today’s race', 'Сразу к гонке дня', 'Ir a la regata del día', 'Direkt zur Regatta des Tages', 'Doğrudan günün yarışına')) + '</a>';
+  } else {
+    showTip();
+    tipTimer = setInterval(function () { tipEl.classList.add('fade'); setTimeout(function () { ti++; showTip(); tipEl.classList.remove('fade'); }, 350); }, 5000);
+  }
 
   // progress: each file the race needs has a weight (three.js is most of the bytes); main.js running is the last 12
   var files = [['three.module.js', 30], ['GLTFLoader.js', 4], ['BufferGeometryUtils.js', 3], ['/game/sim.js', 6], ['/game/world.js', 4],
@@ -681,6 +702,10 @@
   addEventListener('pagehide', function () { if (!ready && !failed && !fixing) visitPost({ ev: 'visit', id: window.rycVisit.id, visit: { stage: 'gave-up', vid: vid, mins: Math.round(performance.now() / 6000) / 10, pct: Math.round(shown) } }); });
   var ours = function (u) { return !!u && (u.indexOf('/game/') !== -1 || u.indexOf('three') !== -1); };
   window.addEventListener('error', function (e) { var el = e.target; if (el && el.tagName === 'SCRIPT' ? ours(el.src) : ours(e.filename)) broke(el && el.tagName === 'SCRIPT' ? 'script: ' + String(el.src).replace(/^.*\//, '') : e.message + ' @ ' + String(e.filename).replace(/^.*\//, '') + ':' + e.lineno); }, true);
+  $('lCopy').addEventListener('click', function () {
+    var b = this, done = function () { b.textContent = t('Link copied', 'Ссылка скопирована', 'Enlace copiado', 'Link kopiert', 'Bağlantı kopyalandı'); };
+    try { navigator.clipboard.writeText(location.href).then(done, function () {}); } catch (e) {}
+  });
   $('lRetry').addEventListener('click', function () { this.disabled = true; refetch().then(function () { location.reload(); }); });
 
   // A file of the game's that didn't come, or its code throwing before the race is ready. What the browser kept may be
@@ -714,13 +739,30 @@
 
   window.rycLoader = {
     // main.js, when it can't go on (no WebGL to be had): the failure, with what to do about it under the race's name
-    fail: function (why, say) { if (say) $('lSub').textContent = say; fail(why); },
+    // No WebGL: what usually mends it, as steps, and the link to copy for another browser or a computer
+    fail: function (why, say) {
+      if (say) $('lSub').textContent = say;
+      if (/^webgl/.test(why)) {
+        root.classList.add('gl');
+        $('lKick').textContent = t('The race couldn’t start', 'Гонка не запустилась', 'La regata no pudo empezar', 'Die Regatta konnte nicht starten', 'Yarış başlayamadı');
+        $('lH').textContent = t('This browser couldn’t draw the water', 'Браузер не смог нарисовать воду', 'El navegador no pudo dibujar el agua', 'Der Browser konnte das Wasser nicht zeichnen', 'Tarayıcı suyu çizemedi');
+        var steps = [
+          t('Open it in Safari or Chrome if you came from a link inside another app.', 'Открой в Safari или Chrome, если пришёл по ссылке из другого приложения.', 'Ábrelo en Safari o Chrome si llegaste desde un enlace en otra app.', 'Öffne es in Safari oder Chrome, wenn du über einen Link in einer anderen App gekommen bist.', 'Başka bir uygulamadaki bağlantıdan geldiysen Safari veya Chrome’da aç.'),
+          t('Close other tabs with games, maps or videos.', 'Закрой другие вкладки с играми, картами или видео.', 'Cierra otras pestañas con juegos, mapas o vídeos.', 'Schließe andere Tabs mit Spielen, Karten oder Videos.', 'Oyun, harita veya video açık olan diğer sekmeleri kapat.'),
+          t('Try again. It often works the second time.', 'Попробуй ещё раз — со второго раза часто получается.', 'Inténtalo de nuevo: a menudo funciona a la segunda.', 'Versuch es nochmal – beim zweiten Mal klappt es oft.', 'Tekrar dene. Genelde ikinci seferde çalışır.'),
+        ];
+        var ol = $('lFix'); ol.textContent = '';
+        steps.forEach(function (x) { var li = document.createElement('li'); li.textContent = x; ol.appendChild(li); });
+      }
+      fail(why);
+    },
     // main.js, once it knows the race: its venue as the title, and its numbers under it ([label, value, unit, line] each);
     // the ticker says what's coming up: the venue, then (next) the start sequence
-    race: function (venue, cells, next) {
+    // (place: the venue for the ticker when the title is something else, a newcomer's first race)
+    race: function (venue, cells, next, place) {
       var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
       $('lH').textContent = venue;
-      $('lTick').innerHTML = esc(t('Coming up', 'Дальше', 'A continuación', 'Als Nächstes', 'Sırada')) + ' · <b>' + esc(venue) + '</b>' + (next ? '<span class="l-tn"> · ' + esc(next) + '</span>' : '');
+      $('lTick').innerHTML = esc(t('Coming up', 'Дальше', 'A continuación', 'Als Nächstes', 'Sırada')) + ' · <b>' + esc(place || venue) + '</b>' + (next ? '<span class="l-tn"> · ' + esc(next) + '</span>' : '');
       var box = $('lCells');
       box.innerHTML = cells.map(function (c) { return '<div><span class="meta">' + esc(c[0]) + '</span><b>' + esc(c[1]) + (c[2] ? '<small>' + esc(c[2]) + '</small>' : '') + '</b><em>' + esc(c[3]) + '</em></div>'; }).join('');
       box.hidden = false;
@@ -771,6 +813,17 @@
   </div>
 </div>
 
+<!-- back after the page was out of sight in one of the first three races: the race held, and goes on by itself (main.js showAway) -->
+<div class="overlay bc" id="awayCard" hidden>
+  <div class="card c-card a-card" role="dialog" aria-modal="true" aria-labelledby="aHead">
+    <span class="kicker" data-t="awayK"></span>
+    <h2 id="aHead" data-t="awayH"></h2>
+    <p data-t="awayP"></p>
+    <div class="a-stats"><div><span class="meta" id="aK1"></span><b id="aV1"></b></div><div><span class="meta" id="aK2"></span><b id="aV2"></b></div></div>
+    <div class="c-btns"><button class="go" id="aGo"><span data-t="awayGo"></span>&nbsp;·&nbsp;<span id="aN">3</span><i id="aRun" aria-hidden="true"></i></button><button class="go ghost" id="aMenu" data-t="awayMenu"></button></div>
+  </div>
+</div>
+
 <div class="overlay bc" id="confirmCard" hidden>
   <div class="card c-card" role="dialog" aria-modal="true" aria-labelledby="cHead">
     <span class="kicker" id="cKick" data-t="pausedK"></span>
@@ -783,7 +836,7 @@
 <div class="overlay bc" id="readyCard" hidden>
   <div class="card c-card r-card" role="dialog" aria-modal="true" aria-labelledby="rHead">
     <span class="kicker" data-t="rK"></span>
-    <h2 id="rHead" data-t="rH"></h2>
+    <div class="r-head"><h2 id="rHead" data-t="rH"></h2><span class="r-ring" aria-hidden="true"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" pathLength="100"/><circle id="rRing" cx="24" cy="24" r="20" pathLength="100"/></svg><b id="rCount">3</b></span></div>
     <ul class="r-list"><li id="rLine"></li><li id="rSteer"></li><li data-t="rEarly"></li></ul>
     <button class="go" id="rGo" data-t="rGo"></button>
     <p class="r-note" data-t="rNote"></p>

@@ -6,7 +6,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { bootGame, sound, fetched } from './fake-game.mjs';
 
-const game = await bootGame({ search: '?debug' });
+// (?nofirst: today's race itself, not the easy race a newcomer is given first: test/game-first.test.mjs)
+const game = await bootGame({ search: '?debug&nofirst' });
 const { $, rg } = { $: game.$, get rg() { return game.rg; } };
 const P = () => game.rg.race.player;
 const shown = (s) => !$(s).hidden;
@@ -27,7 +28,7 @@ test('the loading screen is told the race: its venue, the wind, the course and t
 test('the page speaks English: every word on it put in, the buttons named for a screen reader', () => {
   assert.equal(document.documentElement.lang, 'en');
   for (const el of document.querySelectorAll('[data-t]')) assert.match(el.innerHTML, /\S/, `[data-t=${el.dataset.t}] left empty`);
-  for (const [k, en] of [['pausedK', 'Paused'], ['resume', 'Resume'], ['rGo', 'Ready']]) assert.match($(`[data-t="${k}"]`).innerHTML, new RegExp(en), k);
+  for (const [k, en] of [['pausedK', 'Paused'], ['resume', 'Resume'], ['rGo', 'Start now']]) assert.match($(`[data-t="${k}"]`).innerHTML, new RegExp(en), k);
   assert.equal($('#zoomIn').getAttribute('aria-label'), 'Zoom in (A)');
   assert.equal($('#zoomIn').title, 'Zoom in · A');
   // the split trim's third choice, and the buttons made from the kite's
@@ -47,9 +48,9 @@ test('a newcomer’s first race waits behind the Ready card, lined up for the st
   const opts = JSON.parse(localStorage.getItem('regatta'));
   assert.equal(opts.played, 1);
   assert.equal(rg.race.coach, true);
-  // a key that isn't Enter or Space does nothing yet; the clock stands still behind the card
+  // a key that neither starts nor steers does nothing yet; the clock stands still behind the card
   const c0 = rg.race.clock;
-  game.key('ArrowLeft'); await game.frames(20);
+  game.key('KeyK'); await game.frames(20);
   assert.equal(rg.race.clock, c0);
   assert.ok(shown('#readyCard'));
   game.key('Enter');

@@ -1,0 +1,28 @@
+/* The result of a newcomer's first race: keep it (components/first-finish.tsx). A block of the broadcast's
+   (public/ui/tokens.css) under the result's buttons, over the finish scene: the ask, Google white as the one action,
+   the code by email beside it, the daily reminder, and the Optimist again as a plain link. */
+.bc .ff { display: flex; flex-direction: column; gap: var(--s-4); max-width: 560px; padding: var(--s-5); background: var(--panel-2);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); animation: bc-rise var(--t-in) var(--ease) both; animation-delay: 300ms; }
+.bc .ff-t { display: flex; flex-direction: column; gap: var(--s-2); }
+.bc .ff-h { margin: 0; font: 700 var(--fs-title)/1 var(--cond); text-transform: uppercase; }
+.bc .ff-p { margin: 0; font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-2); }
+.bc .ff-b { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
+.bc .ff-go, .bc .ff-alt { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: var(--h-m); padding: 0 var(--s-4); border: 0;
+  border-radius: 0; font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; text-decoration: none; cursor: pointer; }
+.bc .ff-go { background: var(--ink); color: var(--ink-on); }
+.bc .ff-go[disabled] { opacity: .6; cursor: progress; }
+.bc .ff-alt { background: var(--fill-2); color: var(--ink); box-shadow: var(--hairline, inset 0 0 0 1px var(--w-25)); }
+.bc .ff-go:hover, .bc .ff-alt:hover { filter: brightness(1.08); }
+.bc .ff-err { margin: 0; font: 500 var(--fs-small)/1.4 var(--sans); color: var(--down); }
+.bc .ff-push:empty { display: none; }
+.bc .ff-push { padding-top: var(--s-4); border-top: 1px solid var(--rule-2); }
+.bc .ff .ho-push { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); }
+.bc .ff .ho-push b { font: 700 var(--fs-row)/1.05 var(--cond); text-transform: uppercase; }
+.bc .ff .ho-push small, .bc .ff .ho-push-t { margin: 0; font: 500 var(--fs-small)/1.35 var(--sans); color: var(--ink-2); }
+.bc .ff .ho-push .lbl { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .ff .ho-push-go { display: inline-flex; align-items: center; gap: var(--s-2); min-height: var(--h-m); padding: 0 var(--s-4); border: 0; border-radius: 0;
+  background: var(--fill-2); color: var(--ink); font: 700 var(--fs-body)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; cursor: pointer; }
+.bc .ff .ho-push-go[disabled] { opacity: .6; cursor: progress; }
+.bc .ff .ho-push-x { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.bc .ff-more { align-self: flex-start; color: var(--ink-2); font: 700 var(--fs-small)/1 var(--cond); letter-spacing: var(--ls-button); text-transform: uppercase; text-decoration: none; }
+.bc .ff-more:hover { color: var(--ink); }
