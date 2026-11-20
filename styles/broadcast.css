@@ -1078,8 +1078,10 @@
 
 /* ---------- flags on the leaderboards (components/flag.tsx) ---------- */
 .bc .fl { flex: none; display: block; width: 24px; height: 16px; object-fit: cover; box-shadow: 0 0 0 1px var(--w-25); }
-/* no flag flown: a blank one, quieter than a real flag's edge, holding its place (here and in the boat's headline) */
-.bc .fl-none { display: block; background: var(--w-06); box-shadow: inset 0 0 0 1px var(--w-16); }
+/* no flag flown: nothing drawn, its place kept in a list so the names still line up under each other; in a headline
+   (the boat's, a player's card) no place either, the name where the flag would be */
+.bc .fl-none { display: block; background: none; box-shadow: none; }
+.bc .bt-h-flag.fl-none { display: none; }
 .bc .lb-who { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
 .bc .lb-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bc .rs-name .fl { width: 21px; height: 14px; }
