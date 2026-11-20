@@ -1736,8 +1736,14 @@
 .bc .bt-menu { pointer-events: auto; display: flex; flex: none; }
 .bc .bt-menu .hm-menu-pop { left: 0; right: auto; z-index: 30; max-height: calc(100dvh - 96px); overflow-y: auto; }
 .bc .bt-menu .hm-menu .hm-menu-nav, .bc .bt-menu .hm-menu .hm-menu-nav > * { display: flex; }
+/* open, it comes over the card it then overlaps, wherever it sits (the words and the card are on the same layer, the card
+   the later: the menu went under the players' table on a phone) */
+.bc .bt-info:has(.bt-menu .hm-menu[open]) { z-index: 3; }
 /* open, the bar it's in comes over the rest of the page's words (each of them drawn on a layer of its own as it rises in) */
 .bc .bt-top:has(.bt-menu .hm-menu[open]) { position: relative; z-index: 20; }
+/* on a phone the menu's button sits past the middle, and the menu opened from it ran off the screen's right edge: there
+   it opens from the bar's left edge, under the back button */
+@container scr (max-width: 600px) { .bc .bt-menu:not(.bt-menu-r) .hm-menu { position: static; } .bc .bt-menu:not(.bt-menu-r) .hm-menu-pop { max-width: calc(100cqw - 2 * var(--s-4)); } }
 /* admin: the sails (components/admin-sails.tsx): the presets in a table, each made or changed in a dialog */
 .bc .adm-sails .sp-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-2); }
 .bc .adm-sails .sp-bar .kicker { margin: 0; }

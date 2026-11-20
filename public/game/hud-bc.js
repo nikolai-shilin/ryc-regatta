@@ -838,7 +838,8 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
     readBlocks();
     const nxOn = tag.classList.contains('on');
     pm = { hz: parseFloat(getComputedStyle(tag).zoom) || 1, lw: tagIn.offsetWidth, nx: nxOn ? tagIn.getBoundingClientRect() : null,
-      edge: [ump, ...calls.children].filter((e) => e && !e.hidden && e.offsetParent).map((e) => e.getBoundingClientRect()).filter((r) => r.height) };
+      edge: [ump, ...calls.children].filter((e) => e && !e.hidden && e.offsetParent).map((e) => e.getBoundingClientRect()).filter((r) => r.height),
+      side: sideRects() };
     for (const g of btags) if (g.el.classList.contains('on') && g.at0) { g.r = g.box.getBoundingClientRect(); g.w = g.box.offsetWidth; g.rAt = g.at0; g.rDx = g.dx0; g.rLift = g.lift0; }
   }
   let pm = null; // (measure: the boxes as painted; null, read now)
@@ -1309,6 +1310,8 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
     return !k ? null : k.kind === 'in' ? [L.layIn(fmt(k.s)), false, true] : k.kind === 'fetch' ? [L.fetch, false, false] : [k.kind === 'over' ? L.over : L.layNow, true, true];
   }
 
+  // the HUD's columns down a side of the screen, as painted: the buttons, the trim
+  function sideRects() { return [B.btns, $('#sheetZone')].filter((e) => e && e.getClientRects().length).map((e) => e.getBoundingClientRect()).filter((r) => r.height); }
   function placeTag(race, c, leg, P) {
     if (hud.hidden || P.done) { tag.classList.remove('on'); return; }
     const next = legTargets(c, P.leg);
@@ -1331,6 +1334,11 @@ export function createHud({ t, LANG, strings = null, fmt, world, getRace, setCam
         const r = M ? e : e.getBoundingClientRect(); if (!r.height) continue;
         const l = r.left / hz, rr = r.right / hz, t2 = r.top / hz, b = r.bottom / hz;
         if (sx + lw > l && sx - lw < rr && sy + 22 > t2 && sy - 22 < b) sy = Math.min(H - 150, b + 30);
+      }
+      // the buttons and the trim down a side (a phone's right edge): beside them, on the water's side
+      for (const r of M ? M.side : sideRects()) {
+        const l = r.left / hz, rr = r.right / hz, t2 = r.top / hz, b = r.bottom / hz;
+        if (sx + lw > l && sx - lw < rr && sy + 22 > t2 && sy - 22 < b) sx = (l + rr) / 2 > W / 2 ? l - lw + 4 : rr + lw - 4;
       }
     }
     tag.style.transform = `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px)`;

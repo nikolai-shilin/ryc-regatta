@@ -29,7 +29,7 @@ const auto = (v) => v.$('.fl-ctl [aria-pressed]');
 test('a venue says what it is, where it is and its place among the venues', () => {
   const words = plain(page());
   assert.match(words, /Regatta venue 03 \/ 55 Göcek Pine-clad hills\./);
-  for (const s of ['Wind in the game SSW', 'Sail letters TUR', 'Where Turkey', 'Race of the day here 21 Nov']) assert.ok(words.includes(s), s);
+  for (const s of ['Wind in the game SSW', 'Sail letters TUR', 'Where Turkey', 'Next race of the day here 21 Nov']) assert.ok(words.includes(s), s);
 });
 
 test('its guide has every section, a byline and the date it was published', () => {

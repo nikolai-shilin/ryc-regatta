@@ -146,7 +146,7 @@ export function VenueView({ lang, v, back }: { lang: Lang; v: VenueCard; back: R
           <div><span className="bt-sk">{t('Wind in the game', 'Ветер в игре', 'El viento en el juego', 'Wind im Spiel', 'Oyunda rüzgâr')}</span><b>{t(...v.wind)}</b></div>
           <div><span className="bt-sk">{t('Sail letters', 'Буквы на парусе', 'Letras de vela', 'Segelnummern', 'Yelken harfleri')}</span><b>{v.nation}</b></div>
           <div className="vn-wide"><span className="bt-sk">{t('Where', 'Где', 'Dónde', 'Wo', 'Nerede')}</span><b>{t(...v.place)}</b></div>
-          {v.next && <div className="vn-wide"><span className="bt-sk">{t('Race of the day here', 'Гонка дня здесь', 'Regata del día aquí', 'Die Regatta des Tages hier', 'Günün yarışı burada')}</span><b>{v.today ? t('Today', 'Сегодня', 'Hoy', 'Heute', 'Bugün') : v.next}</b></div>}
+          {v.next && <div className="vn-wide"><span className="bt-sk">{v.today ? t('Race of the day here', 'Гонка дня здесь', 'Regata del día aquí', 'Die Regatta des Tages hier', 'Günün yarışı burada') : t('Next race of the day here', 'Следующая гонка дня здесь', 'Próxima regata del día aquí', 'Nächste Regatta des Tages hier', 'Buradaki sıradaki günün yarışı')}</span><b>{v.today ? t('Today', 'Сегодня', 'Hoy', 'Heute', 'Bugün') : v.next}</b></div>}
         </div>
 
         <article className="vn-guide">
