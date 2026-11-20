@@ -86,7 +86,7 @@ test('the header links to the site’s pages and marks the one being read', () =
 test('Drills and Players are in the menu at every width, not among the header’s tabs', () => {
   const html = ssr(h(SiteHead, { lang: 'en', t: en, page: 'drills' }));
   const tabs = /<nav class="hm-nav"[^>]*>(.*?)<\/nav>/s.exec(html)[1];
-  assert.deepEqual(hrefs(tabs), ['/play?race=first', '/race', '/race/free', '/match/new', '/race/rating']);
+  assert.deepEqual(hrefs(tabs), ['/play?race=first&intro', '/race', '/race/free', '/match/new', '/race/rating']);
   const shown = html.split('class="hm-menu-nav"')[1].split('</nav>').slice(1).join('</nav>');
   for (const to of ['/race/drills', '/players', '/venues', '/yachts']) assert.ok(hrefs(shown).includes(to), to);
   assert.doesNotMatch(html, /aria-current/, 'no tab to mark on the drills’ page');

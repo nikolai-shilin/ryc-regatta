@@ -48,7 +48,7 @@ export function SiteMenu({ lang }: { lang: Lang }) {
         {/* the race pages, where the header has no room for them: first, under the account, the first race at their top */}
         <nav className="hm-menu-nav" aria-label={t('Pages', 'Страницы', 'Páginas', 'Seiten', 'Sayfalar')}>
           <span className="hm-msep" />
-          <a className="hm-mi hm-mi-first" href="/play?race=first"><span className="hm-mi-t"><b>{t('First race', 'Первая гонка', 'Primera regata', 'Erste Regatta', 'İlk yarış')}</b><span className="lbl">{t('An Optimist · four beginners', 'Оптимист · четыре новичка', 'Un Optimist · cuatro principiantes', 'Ein Optimist · vier Anfänger', 'Bir Optimist · dört acemi')}</span></span><span className="hm-tag">{t('3 min', '3 мин', '3 min', '3 Min.', '3 dk')}</span></a>
+          <a className="hm-mi hm-mi-first" href="/play?race=first&intro"><span className="hm-mi-t"><b>{t('First race', 'Первая гонка', 'Primera regata', 'Erste Regatta', 'İlk yarış')}</b><span className="lbl">{t('An Optimist · four beginners', 'Оптимист · четыре новичка', 'Un Optimist · cuatro principiantes', 'Ein Optimist · vier Anfänger', 'Bir Optimist · dört acemi')}</span></span><span className="hm-tag">{t('3 min', '3 мин', '3 min', '3 Min.', '3 dk')}</span></a>
           <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı')}</Link>
           <Link className="hm-mi" href="/race/free">{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış')}</Link>
           <Link className="hm-mi" href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış')}</Link>
