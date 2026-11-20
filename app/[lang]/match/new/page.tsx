@@ -6,7 +6,7 @@ import { SceneBrand } from '@/components/scene-brand';
 
 // The 1-on-1 race's set-up: the free race's, without the number of boats. Hosting takes an account: a visitor who isn't
 // signed in is asked to, and comes back here (joining a friend's race, /match/[code], takes none).
-export const generateMetadata = titled('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', { index: false, card: '/og/page/match' });
+export const generateMetadata = titled('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', 'Duelo 1 contra 1', { index: false, card: '/og/page/match' });
 
 export default async function NewMatchPage({ params }: LangParams) {
   const [{ lang, t }, account] = await Promise.all([getT(params), getAccount()]);
@@ -16,14 +16,14 @@ export default async function NewMatchPage({ params }: LangParams) {
       <div className="bt">
         <div className="bt-info">
           <div className="bt-top">
-            <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub', 'Yarış merkezine dön', 'Retour au centre de régate', 'Torna al centro regate')} />
+            <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub', 'Yarış merkezine dön', 'Retour au centre de régate', 'Torna al centro regate', 'Voltar à central de regatas')} />
             <SceneBrand lang={lang} />
           </div>
-          <span className="bt-kick bt-kick-w">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1')}</span>
-          <h1 className="bt-h">{t('Sign in to host a 1-on-1 race', 'Войди, чтобы создать гонку 1 на 1', 'Inicia sesión para organizar una regata 1 contra 1', 'Melde dich an, um eine 1-gegen-1-Regatta auszurichten', 'Bire bir yarış kurmak için giriş yap', 'Connecte-toi pour organiser un duel', 'Accedi per organizzare un duello 1 contro 1')}</h1>
-          <p className="bt-p">{t('You set the race and send a friend the link. Joining a friend’s race doesn’t take an account.', 'Ты настраиваешь гонку и отправляешь другу ссылку. Чтобы войти в гонку друга, аккаунт не нужен.', 'Tú preparas la regata y envías el enlace a un amigo. Unirse a la regata de un amigo no requiere cuenta.', 'Du legst die Regatta fest und schickst einem Freund den Link. Für die Teilnahme an der Regatta eines Freundes brauchst du kein Konto.', 'Yarışı sen kurarsın ve bir arkadaşına bağlantıyı gönderirsin. Bir arkadaşının yarışına katılmak için hesap gerekmez.', 'Tu prépares la régate et tu envoies le lien à un ami. Rejoindre la régate d’un ami ne demande pas de compte.', 'Tu imposti la regata e mandi il link a un amico. Per entrare nella regata di un amico non serve un account.')}</p>
-          <a className="bt-go" href="/sign-in?next=/match/new"><span>{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden', 'Giriş yap', 'Se connecter', 'Accedi')}</span></a>
-          <a className="bt-show" href="/sign-in?next=/match/new&signup=1"><span>{t('Sign up', 'Зарегистрироваться', 'Registrarse', 'Registrieren', 'Kaydol', 'S’inscrire', 'Registrati')}</span></a>
+          <span className="bt-kick bt-kick-w">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', 'Duelo 1 contra 1')}</span>
+          <h1 className="bt-h">{t('Sign in to host a 1-on-1 race', 'Войди, чтобы создать гонку 1 на 1', 'Inicia sesión para organizar una regata 1 contra 1', 'Melde dich an, um eine 1-gegen-1-Regatta auszurichten', 'Bire bir yarış kurmak için giriş yap', 'Connecte-toi pour organiser un duel', 'Accedi per organizzare un duello 1 contro 1', 'Entre na sua conta para organizar um duelo 1 contra 1')}</h1>
+          <p className="bt-p">{t('You set the race and send a friend the link. Joining a friend’s race doesn’t take an account.', 'Ты настраиваешь гонку и отправляешь другу ссылку. Чтобы войти в гонку друга, аккаунт не нужен.', 'Tú preparas la regata y envías el enlace a un amigo. Unirse a la regata de un amigo no requiere cuenta.', 'Du legst die Regatta fest und schickst einem Freund den Link. Für die Teilnahme an der Regatta eines Freundes brauchst du kein Konto.', 'Yarışı sen kurarsın ve bir arkadaşına bağlantıyı gönderirsin. Bir arkadaşının yarışına katılmak için hesap gerekmez.', 'Tu prépares la régate et tu envoies le lien à un ami. Rejoindre la régate d’un ami ne demande pas de compte.', 'Tu imposti la regata e mandi il link a un amico. Per entrare nella regata di un amico non serve un account.', 'Você monta a regata e manda o link para um amigo. Para entrar na regata de um amigo não precisa de conta.')}</p>
+          <a className="bt-go" href="/sign-in?next=/match/new"><span>{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden', 'Giriş yap', 'Se connecter', 'Accedi', 'Entrar')}</span></a>
+          <a className="bt-show" href="/sign-in?next=/match/new&signup=1"><span>{t('Sign up', 'Зарегистрироваться', 'Registrarse', 'Registrieren', 'Kaydol', 'S’inscrire', 'Registrati', 'Cadastrar-se')}</span></a>
         </div>
       </div>
     </div>

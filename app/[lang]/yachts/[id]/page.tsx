@@ -20,8 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!y) return {};
   const name = t(...y.name);
   const meta = pageMeta(lang, {
-    title: t(`The ${name}: race her in a 3D sailing game`, `${name}: гонки в 3D-парусной игре`, `${name}: regatea en un juego de vela 3D`, `${name}: im 3D-Segelspiel segeln`, `${name}: onunla 3D bir yelken oyununda yarış`, `${name} : régate à son bord dans un jeu de voile en 3D`, `${name}: portalo in regata in un gioco di vela in 3D`),
-    description: `${t(...y.tagline)} ${t('What she is, her numbers, and how she sails in the game.', 'Что это за яхта, её цифры и как она ходит в игре.', 'Qué es, sus números y cómo navega en el juego.', 'Was sie ausmacht, ihre Daten und wie sie im Spiel segelt.', 'Ne olduğu, sayıları ve oyunda nasıl seyrettiği.', 'Ce qu’il est, ses chiffres, et comment il navigue dans le jeu.', 'Cos’è, i suoi numeri e come naviga nel gioco.')}`,
+    title: t(`The ${name}: race her in a 3D sailing game`, `${name}: гонки в 3D-парусной игре`, `${name}: regatea en un juego de vela 3D`, `${name}: im 3D-Segelspiel segeln`, `${name}: onunla 3D bir yelken oyununda yarış`, `${name} : régate à son bord dans un jeu de voile en 3D`, `${name}: portalo in regata in un gioco di vela in 3D`, `${name}: corra uma regata com ele num jogo de vela em 3D`),
+    description: `${t(...y.tagline)} ${t('What she is, her numbers, and how she sails in the game.', 'Что это за яхта, её цифры и как она ходит в игре.', 'Qué es, sus números y cómo navega en el juego.', 'Was sie ausmacht, ihre Daten und wie sie im Spiel segelt.', 'Ne olduğu, sayıları ve oyunda nasıl seyrettiği.', 'Ce qu’il est, ses chiffres, et comment il navigue dans le jeu.', 'Cos’è, i suoi numeri e come naviga nel gioco.', 'O que ele é, seus números e como ele veleja no jogo.')}`,
     path: `/yachts/${id}`, card: '/og/page/yachts',
   });
   return { ...meta, authors: [{ name: t(...AUTHOR.name) }] };
@@ -46,8 +46,8 @@ export default async function YachtPage({ params }: Props) {
     <div className="scr bt-scr bc" lang={lang}>
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <FleetView lang={lang} start={y.id} tour={false} own
-        back={<BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub', 'Yarış merkezine dön', 'Retour au centre de régate', 'Torna al centro regate')} />}
-        foot={<p className="bt-hint">{t('By ', '', 'Por ', 'Von ', 'Yazan: ')}{t(...AUTHOR.name)}, {AUTHOR.org} · {t('Published ', 'Опубликовано ', 'Publicado ', 'Veröffentlicht ', 'Yayımlandı: ', 'Publié le ', 'Pubblicata il ')}<time dateTime={PAGES_DATE}>{longDate(PAGES_DATE, lang)}</time></p>} />
+        back={<BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub', 'Yarış merkezine dön', 'Retour au centre de régate', 'Torna al centro regate', 'Voltar à central de regatas')} />}
+        foot={<p className="bt-hint">{t('By ', '', 'Por ', 'Von ', 'Yazan: ')}{t(...AUTHOR.name)}, {AUTHOR.org} · {t('Published ', 'Опубликовано ', 'Publicado ', 'Veröffentlicht ', 'Yayımlandı: ', 'Publié le ', 'Pubblicata il ', 'Publicado em ')}<time dateTime={PAGES_DATE}>{longDate(PAGES_DATE, lang)}</time></p>} />
     </div>
   );
 }

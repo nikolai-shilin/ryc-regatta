@@ -454,7 +454,7 @@ test('trapezoid mark 2 counts only when rounded to port', () => {
 test('the set-up page lists the game’s venues', async () => {
   const { VENUES } = await import('../public/game/venues.js');
   const page = await readFile(new URL('../lib/venues.ts', import.meta.url), 'utf8');
-  assert.deepEqual([...page.matchAll(/\{ id: '([a-z-]+)', nation: '[A-Z]{3}', name: \['([^']+)', '([^']+)', '([^']+)', '([^']+)', '([^']+)', '([^']+)', '([^']+)'\]/g)].map((m) => [m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8]]), VENUES.map((v) => [v.id, ...v.name]));
+  assert.deepEqual([...page.matchAll(/\{ id: '([a-z-]+)', nation: '[A-Z]{3}', name: \['([^']+)', '([^']+)', '([^']+)', '([^']+)', '([^']+)', '([^']+)', '([^']+)', '([^']+)'\]/g)].map((m) => [m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9]]), VENUES.map((v) => [v.id, ...v.name]));
 });
 // the shapes a venue doesn't offer at some length: the same list on the set-up page as in the game
 test('the set-up page’s skip lists are the game’s', async () => {

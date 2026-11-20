@@ -19,7 +19,7 @@ const read = (f) => readFileSync(ROOT + f, 'utf8');
 const CYR = /[Ѐ-ӿ]/;
 
 test('Spanish is a language of the site, with its own address and locale', () => {
-  assert.deepEqual(LANGS, ['en', 'ru', 'es', 'de', 'tr', 'fr', 'it']);
+  assert.deepEqual(LANGS, ['en', 'ru', 'es', 'de', 'tr', 'fr', 'it', 'pt']);
   assert.ok(isLang('es'));
   assert.equal(LOCALE.es, 'es-ES');
   assert.equal(seo.langUrl('/faq', 'es'), '/faq?lang=es');
@@ -31,7 +31,7 @@ test('a Spanish browser is sent to Spanish, unless the address or the cookie say
   assert.equal(pickLang(null, null, 'es-419'), 'es');
   assert.equal(pickLang(null, 'en', 'es-ES'), 'en');
   assert.equal(pickLang('ru', 'es', 'es-ES'), 'ru');
-  assert.equal(pickLang(null, null, 'pt-BR'), 'en');
+  assert.equal(pickLang(null, null, 'nl-NL'), 'en');
 });
 
 test('a line with no Spanish reads in English, and a kept name in its language', () => {
@@ -111,8 +111,8 @@ test('the game has every one of its words in Spanish', async () => {
 
 test('the game reads Spanish from the address, the cookie and the device, and fetches its words only then', () => {
   const main = read('public/game/main.js');
-  assert.match(main, /lang=\(en\|ru\|es\|de\|tr\|fr\|it\)/);
+  assert.match(main, /lang=\(en\|ru\|es\|de\|tr\|fr\|it\|pt\)/);
   assert.match(main, /LANG === 'es' \? await import\('\.\/strings-es\.js'\)/);
   assert.match(main, /LANG === 'de' \? await import\('\.\/strings-de\.js'\)/);
-  assert.match(read('public/play/index.html'), /lang=\(en\|ru\|es\|de\|tr\|fr\|it\)/);
+  assert.match(read('public/play/index.html'), /lang=\(en\|ru\|es\|de\|tr\|fr\|it\|pt\)/);
 });

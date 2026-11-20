@@ -177,7 +177,7 @@ test('People on board: on until it is turned off, and every 3D view follows it a
   on.storage({ key: 'regatta' });
   assert.deepEqual(shown, [true, false, true]);
   const menu = read('public/game/av-menu.js');
-  assert.match(menu, /toggle\('figures', t\('People on board', 'Люди на борту', '[^']+', '[^']+', '[^']+', '[^']+', '[^']+'\), 1\)/, 'in the Graphics group, on by default');
+  assert.match(menu, /toggle\('figures', t\('People on board', 'Люди на борту', '[^']+', '[^']+', '[^']+', '[^']+', '[^']+', '[^']+'\), 1\)/, 'in the Graphics group, on by default');
   assert.match(read('lib/opts.ts'), /figures: 1,/, 'the site starts with it on');
   assert.match(read('public/game/main.js'), /'figures' in p\) world\.setFigures\(p\.figures !== 0\)/, 'the race hears of a change as it is made');
 });

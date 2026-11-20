@@ -119,7 +119,7 @@ for (const [key, c] of Object.entries(CARDS)) {
 }
 
 test('a card speaks English when the address names no language or one the site lacks', async () => {
-  for (const q of ['', '?lang=pt', '?lang=']) assert.ok((await draw('help', q)).text.includes('How to play'), q);
+  for (const q of ['', '?lang=nl', '?lang=']) assert.ok((await draw('help', q)).text.includes('How to play'), q);
 });
 
 // ---------- what isn't a card ----------

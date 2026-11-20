@@ -55,36 +55,36 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .av-card { animation: none; } }
 `;
 
-const LEVEL = { high: ['High', 'Макс.', 'Alta', 'Hoch', 'Yüksek', 'Élevée', 'Alta'], medium: ['Medium', 'Сред.', 'Media', 'Mittel', 'Orta', 'Moyenne', 'Media'], low: ['Low', 'Мин.', 'Baja', 'Niedrig', 'Düşük', 'Basse', 'Bassa'] };
-const CHOICE = { auto: ['Auto', 'Авто', 'Auto', 'Auto', 'Otomatik', 'Auto', 'Auto'], ...LEVEL, custom: ['Custom', 'Своя', 'Personalizada', 'Eigene', 'Özel', 'Personnalisée', 'Personalizzata'] };
-const TRACK = { playlist: ['Playlist', 'Плейлист', 'Lista', 'Playlist', 'Çalma listesi', 'Playlist', 'Playlist'], racing: ['Racing', 'Гонка', 'Regata', 'Racing', 'Yarış', 'Régate', 'Regata'], groove: ['Groove', 'Грув', 'Groove', 'Groove', 'Groove', 'Groove', 'Groove'], riff: ['Riff', 'Рифф', 'Riff', 'Riff', 'Riff', 'Riff', 'Riff'], openwater: ['Open water', 'Простор', 'Mar abierto', 'Offenes Wasser', 'Açık deniz', 'Grand large', 'Mare aperto'] };
+const LEVEL = { high: ['High', 'Макс.', 'Alta', 'Hoch', 'Yüksek', 'Élevée', 'Alta', 'Alta'], medium: ['Medium', 'Сред.', 'Media', 'Mittel', 'Orta', 'Moyenne', 'Media', 'Média'], low: ['Low', 'Мин.', 'Baja', 'Niedrig', 'Düşük', 'Basse', 'Bassa', 'Baixa'] };
+const CHOICE = { auto: ['Auto', 'Авто', 'Auto', 'Auto', 'Otomatik', 'Auto', 'Auto', 'Auto'], ...LEVEL, custom: ['Custom', 'Своя', 'Personalizada', 'Eigene', 'Özel', 'Personnalisée', 'Personalizzata', 'Personalizada'] };
+const TRACK = { playlist: ['Playlist', 'Плейлист', 'Lista', 'Playlist', 'Çalma listesi', 'Playlist', 'Playlist', 'Playlist'], racing: ['Racing', 'Гонка', 'Regata', 'Racing', 'Yarış', 'Régate', 'Regata', 'Regata'], groove: ['Groove', 'Грув', 'Groove', 'Groove', 'Groove', 'Groove', 'Groove', 'Groove'], riff: ['Riff', 'Рифф', 'Riff', 'Riff', 'Riff', 'Riff', 'Riff', 'Riff'], openwater: ['Open water', 'Простор', 'Mar abierto', 'Offenes Wasser', 'Açık deniz', 'Grand large', 'Mare aperto', 'Mar aberto'] };
 // the costliest first: resolution, shadows, the sea and its reflection
 const GFX_NAMES = {
-  res: ['Resolution', 'Разрешение', 'Resolución', 'Auflösung', 'Çözünürlük', 'Résolution', 'Risoluzione'],
-  shadows: ['Shadows', 'Тени', 'Sombras', 'Schatten', 'Gölgeler', 'Ombres', 'Ombre'],
-  sea: ['Waves', 'Волны', 'Olas', 'Wellen', 'Dalgalar', 'Vagues', 'Onde'],
-  refl: ['Reflections', 'Отражения', 'Reflejos', 'Spiegelungen', 'Yansımalar', 'Reflets', 'Riflessi'],
-  post: ['Glow and smoothing', 'Свечение и сглаживание', 'Brillo y suavizado', 'Glühen und Glättung', 'Parlama ve yumuşatma', 'Halo et lissage', 'Bagliore e smussatura'],
-  wakes: ['Wakes and spray', 'Кильватер и брызги', 'Estelas y salpicaduras', 'Kielwasser und Gischt', 'İz ve serpinti', 'Sillages et embruns', 'Scie e spruzzi'],
-  under: ['Hulls under water', 'Корпуса под водой', 'Cascos bajo el agua', 'Rümpfe unter Wasser', 'Su altındaki gövdeler', 'Coques sous l’eau', 'Scafi sott’acqua'],
-  land: ['Shore and trees', 'Берег и деревья', 'Costa y árboles', 'Ufer und Bäume', 'Kıyı ve ağaçlar', 'Côte et arbres', 'Costa e alberi'],
-  life: ['Gulls, dolphins and crew', 'Птицы, дельфины, экипаж', 'Gaviotas, delfines y tripulación', 'Möwen, Delfine und Crew', 'Martılar, yunuslar ve mürettebat', 'Mouettes, dauphins et équipage', 'Gabbiani, delfini ed equipaggio'],
+  res: ['Resolution', 'Разрешение', 'Resolución', 'Auflösung', 'Çözünürlük', 'Résolution', 'Risoluzione', 'Resolução'],
+  shadows: ['Shadows', 'Тени', 'Sombras', 'Schatten', 'Gölgeler', 'Ombres', 'Ombre', 'Sombras'],
+  sea: ['Waves', 'Волны', 'Olas', 'Wellen', 'Dalgalar', 'Vagues', 'Onde', 'Ondas'],
+  refl: ['Reflections', 'Отражения', 'Reflejos', 'Spiegelungen', 'Yansımalar', 'Reflets', 'Riflessi', 'Reflexos'],
+  post: ['Glow and smoothing', 'Свечение и сглаживание', 'Brillo y suavizado', 'Glühen und Glättung', 'Parlama ve yumuşatma', 'Halo et lissage', 'Bagliore e smussatura', 'Brilho e suavização'],
+  wakes: ['Wakes and spray', 'Кильватер и брызги', 'Estelas y salpicaduras', 'Kielwasser und Gischt', 'İz ve serpinti', 'Sillages et embruns', 'Scie e spruzzi', 'Esteiras e respingos'],
+  under: ['Hulls under water', 'Корпуса под водой', 'Cascos bajo el agua', 'Rümpfe unter Wasser', 'Su altındaki gövdeler', 'Coques sous l’eau', 'Scafi sott’acqua', 'Cascos sob a água'],
+  land: ['Shore and trees', 'Берег и деревья', 'Costa y árboles', 'Ufer und Bäume', 'Kıyı ve ağaçlar', 'Côte et arbres', 'Costa e alberi', 'Costa e árvores'],
+  life: ['Gulls, dolphins and crew', 'Птицы, дельфины, экипаж', 'Gaviotas, delfines y tripulación', 'Möwen, Delfine und Crew', 'Martılar, yunuslar ve mürettebat', 'Mouettes, dauphins et équipage', 'Gabbiani, delfini ed equipaggio', 'Gaivotas, golfinhos e tripulação'],
 };
 // whether each one's lowest is off
 const GFX_OFF = { res: false, shadows: true, sea: false, refl: true, post: true, wakes: false, under: true, land: false, life: false };
 const SOUND_NAMES = {
-  sndVoices: ['Voices', 'Голоса', 'Voces', 'Stimmen', 'Sesler', 'Voix', 'Voci'],
-  sndBoats: ['Sails, winches, hulls', 'Паруса, лебёдки, корпус', 'Velas, winches, cascos', 'Segel, Winschen, Rümpfe', 'Yelkenler, vinçler, gövdeler', 'Voiles, winchs, coques', 'Vele, winch, scafi'],
-  sndSignals: ['Horns and beeps', 'Сигналы и таймер', 'Bocinas y pitidos', 'Hörner und Pieptöne', 'Kornalar ve bipler', 'Cornes et bips', 'Trombe e bip'],
-  sndAround: ['Gulls and the plane', 'Чайки и самолёт', 'Gaviotas y el avión', 'Möwen und das Flugzeug', 'Martılar ve uçak', 'Mouettes et l’avion', 'Gabbiani e l’aereo'],
+  sndVoices: ['Voices', 'Голоса', 'Voces', 'Stimmen', 'Sesler', 'Voix', 'Voci', 'Vozes'],
+  sndBoats: ['Sails, winches, hulls', 'Паруса, лебёдки, корпус', 'Velas, winches, cascos', 'Segel, Winschen, Rümpfe', 'Yelkenler, vinçler, gövdeler', 'Voiles, winchs, coques', 'Vele, winch, scafi', 'Velas, catracas, cascos'],
+  sndSignals: ['Horns and beeps', 'Сигналы и таймер', 'Bocinas y pitidos', 'Hörner und Pieptöne', 'Kornalar ve bipler', 'Cornes et bips', 'Trombe e bip', 'Buzinas e bipes'],
+  sndAround: ['Gulls and the plane', 'Чайки и самолёт', 'Gaviotas y el avión', 'Möwen und das Flugzeug', 'Martılar ve uçak', 'Mouettes et l’avion', 'Gabbiani e l’aereo', 'Gaivotas e o avião'],
 };
 
-const at = (p, lang) => p[{ en: 0, ru: 1, es: 2, de: 3, tr: 4, fr: 5, it: 6 }[lang] ?? 0] ?? p[0]; // [English, Russian, Spanish, German, Turkish, French, Italian]
-export const avTitle = (lang) => at(['Audio & graphics', 'Звук и графика', 'Sonido y gráficos', 'Ton & Grafik', 'Ses ve grafik', 'Audio et graphismes', 'Audio e grafica'], lang);
+const at = (p, lang) => p[{ en: 0, ru: 1, es: 2, de: 3, tr: 4, fr: 5, it: 6, pt: 7 }[lang] ?? 0] ?? p[0]; // [English, Russian, Spanish, German, Turkish, French, Italian, Portuguese]
+export const avTitle = (lang) => at(['Audio & graphics', 'Звук и графика', 'Sonido y gráficos', 'Ton & Grafik', 'Ses ve grafik', 'Audio et graphismes', 'Audio e grafica', 'Áudio e gráficos'], lang);
 
 // what's chosen, for the row that opens the menu: "Auto · Racing"
 export function avSummary(o, lang) {
-  const off = ['Sound off', 'Звук выкл', 'Sonido desactivado', 'Ton aus', 'Ses kapalı', 'Son coupé', 'Audio disattivato'], noMusic = ['Music off', 'Музыка выкл', 'Música desactivada', 'Musik aus', 'Müzik kapalı', 'Musique coupée', 'Musica disattivata'];
+  const off = ['Sound off', 'Звук выкл', 'Sonido desactivado', 'Ton aus', 'Ses kapalı', 'Son coupé', 'Audio disattivato', 'Som desligado'], noMusic = ['Music off', 'Музыка выкл', 'Música desactivada', 'Musik aus', 'Müzik kapalı', 'Musique coupée', 'Musica disattivata', 'Música desligada'];
   const sound = !o.sound ? off : TRACK[o.music] || noMusic;
   return `${at(CHOICE[o.gfx] || CHOICE.auto, lang)} · ${at(sound, lang)}`;
 }
@@ -102,12 +102,12 @@ const button = (cls, text) => { const b = el('button', cls, text); b.type = 'but
 
 let shown = null, ids = 0; // the menu open now: its close
 
-// lang: 'en', 'ru', 'es', 'de', 'tr', 'fr' or 'it'; read(): the settings; write(patch): save a change; now(): the level drawn on Auto, where a scene
+// lang: 'en', 'ru', 'es', 'de', 'tr', 'fr', 'it' or 'pt'; read(): the settings; write(patch): save a change; now(): the level drawn on Auto, where a scene
 // is running; zIndex: over what's on the page; onClose: called once it has closed. Gives back its close.
 export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClose }) {
   if (shown) return shown;
   if (!document.getElementById('av-css')) { const s = el('style', '', CSS); s.id = 'av-css'; document.head.append(s); }
-  const t = (en, ru, es, de, tr, fr, it) => (lang === 'ru' ? ru : lang === 'es' ? es ?? en : lang === 'de' ? de ?? en : lang === 'tr' ? tr ?? en : lang === 'fr' ? fr ?? en : lang === 'it' ? it ?? en : en), pair = ([en, ru, es, de, tr, fr, it]) => t(en, ru, es, de, tr, fr, it);
+  const t = (en, ru, es, de, tr, fr, it, pt) => (lang === 'ru' ? ru : lang === 'es' ? es ?? en : lang === 'de' ? de ?? en : lang === 'tr' ? tr ?? en : lang === 'fr' ? fr ?? en : lang === 'it' ? it ?? en : lang === 'pt' ? pt ?? en : en), pair = ([en, ru, es, de, tr, fr, it, pt]) => t(en, ru, es, de, tr, fr, it, pt);
   let o = read();
   const paints = [];
   const paint = () => { o = read(); for (const p of paints) p(); };
@@ -155,8 +155,8 @@ export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClo
     return { box, show };
   };
 
-  const loud = [['loud', t('Loud', 'Громко', 'Alto', 'Laut', 'Yüksek', 'Fort', 'Forte')], ['normal', t('Normal', 'Обычно', 'Normal', 'Normal', 'Normal', 'Normal', 'Normale')], ['quiet', t('Quiet', 'Тихо', 'Bajo', 'Leise', 'Kısık', 'Doux', 'Piano')]];
-  const level = [...loud, ['off', t('Off', 'Выкл', 'No', 'Aus', 'Kapalı', 'Non', 'Disattivato')]];
+  const loud = [['loud', t('Loud', 'Громко', 'Alto', 'Laut', 'Yüksek', 'Fort', 'Forte', 'Alto')], ['normal', t('Normal', 'Обычно', 'Normal', 'Normal', 'Normal', 'Normal', 'Normale', 'Normal')], ['quiet', t('Quiet', 'Тихо', 'Bajo', 'Leise', 'Kısık', 'Doux', 'Piano', 'Baixo')]];
+  const level = [...loud, ['off', t('Off', 'Выкл', 'No', 'Aus', 'Kapalı', 'Non', 'Disattivato', 'Desligado')]];
 
   // ---------- the picture ----------
   const pickGfx = (v) => {
@@ -164,44 +164,44 @@ export function openAvMenu({ lang = 'en', read, write, now, zIndex = 1000, onClo
     set({ gfx: 'custom', gfxD: gfxDetail(o) }); // Custom starts from the parts drawn now, and opens them
     gfxParts.show(true);
   };
-  const quality = choice(t('Quality', 'Качество', 'Calidad', 'Qualität', 'Kalite', 'Qualité', 'Qualità'), Object.entries(CHOICE).map(([v, n]) => [v, pair(n)]), () => o.gfx || 'auto', pickGfx);
+  const quality = choice(t('Quality', 'Качество', 'Calidad', 'Qualität', 'Kalite', 'Qualité', 'Qualità', 'Qualidade'), Object.entries(CHOICE).map(([v, n]) => [v, pair(n)]), () => o.gfx || 'auto', pickGfx);
   const hint = el('p', 'av-hint');
   quality.append(hint);
   paints.push(() => {
     const g = o.gfx || 'auto';
-    if (g === 'custom') hint.textContent = t('Each part as you set it below. Resolution, shadows and reflections cost the most frames.', 'Каждая часть — как задано ниже. Больше всего кадров съедают разрешение, тени и отражения.', 'Cada parte como la ajustes abajo. La resolución, las sombras y los reflejos son lo que más fotogramas cuesta.', 'Jeder Teil so, wie du ihn unten einstellst. Auflösung, Schatten und Spiegelungen kosten die meisten Frames.', 'Her parça aşağıda ayarladığın gibi. Çözünürlük, gölgeler ve yansımalar en çok kare yer.', 'Chaque élément tel que tu le règles ci-dessous. La résolution, les ombres et les reflets sont ce qui coûte le plus d’images par seconde.', 'Ogni parte come la imposti qui sotto. Risoluzione, ombre e riflessi sono ciò che costa più fotogrammi.');
+    if (g === 'custom') hint.textContent = t('Each part as you set it below. Resolution, shadows and reflections cost the most frames.', 'Каждая часть — как задано ниже. Больше всего кадров съедают разрешение, тени и отражения.', 'Cada parte como la ajustes abajo. La resolución, las sombras y los reflejos son lo que más fotogramas cuesta.', 'Jeder Teil so, wie du ihn unten einstellst. Auflösung, Schatten und Spiegelungen kosten die meisten Frames.', 'Her parça aşağıda ayarladığın gibi. Çözünürlük, gölgeler ve yansımalar en çok kare yer.', 'Chaque élément tel que tu le règles ci-dessous. La résolution, les ombres et les reflets sont ce qui coûte le plus d’images par seconde.', 'Ogni parte come la imposti qui sotto. Risoluzione, ombre e riflessi sono ciò che costa più fotogrammi.', 'Cada parte como você ajustar abaixo. Resolução, sombras e reflexos são o que mais custa quadros.');
     else if (g === 'auto') {
       const eased = autoEased(gfxDetail(o)).map((k) => pair(GFX_NAMES[k]));
-      const head = `${t('Now:', 'Сейчас:', 'Ahora:', 'Jetzt:', 'Şimdi:', 'Maintenant :', 'Ora:')} ${pair(LEVEL[(now && now()) || startQuality(o)] || LEVEL.high)}${eased.length ? ` · ${t('eased off:', 'снижено:', 'reducido:', 'reduziert:', 'kısıldı:', 'allégé :', 'alleggerito:')} ${eased.join(', ')}` : ''}`;
-      hint.textContent = `${head}${head.endsWith('.') ? '' : '.'} ${t('When the frame rate drops the game eases off what shows least first, brings it back when it can, and remembers it for this device.', 'Когда падает частота кадров, игра сначала снижает то, что меньше всего заметно, возвращает это, когда может, и запоминает для устройства.', 'Cuando baja la tasa de fotogramas, el juego reduce primero lo que menos se nota, lo recupera cuando puede y lo recuerda en este dispositivo.', 'Wenn die Bildrate sinkt, nimmt das Spiel zuerst zurück, was am wenigsten auffällt, bringt es zurück, sobald es kann, und merkt es sich für dieses Gerät.', 'Kare hızı düşünce oyun önce en az göze çarpanı kısar, olabildiğinde geri getirir ve bu cihaz için hatırlar.', 'Quand la fluidité baisse, le jeu allège d’abord ce qui se voit le moins, le rétablit dès qu’il le peut et s’en souvient pour cet appareil.', 'Quando il frame rate cala, il gioco alleggerisce prima ciò che si vede meno, lo ripristina appena può e se lo ricorda per questo dispositivo.')}`;
+      const head = `${t('Now:', 'Сейчас:', 'Ahora:', 'Jetzt:', 'Şimdi:', 'Maintenant :', 'Ora:', 'Agora:')} ${pair(LEVEL[(now && now()) || startQuality(o)] || LEVEL.high)}${eased.length ? ` · ${t('eased off:', 'снижено:', 'reducido:', 'reduziert:', 'kısıldı:', 'allégé :', 'alleggerito:', 'reduzido:')} ${eased.join(', ')}` : ''}`;
+      hint.textContent = `${head}${head.endsWith('.') ? '' : '.'} ${t('When the frame rate drops the game eases off what shows least first, brings it back when it can, and remembers it for this device.', 'Когда падает частота кадров, игра сначала снижает то, что меньше всего заметно, возвращает это, когда может, и запоминает для устройства.', 'Cuando baja la tasa de fotogramas, el juego reduce primero lo que menos se nota, lo recupera cuando puede y lo recuerda en este dispositivo.', 'Wenn die Bildrate sinkt, nimmt das Spiel zuerst zurück, was am wenigsten auffällt, bringt es zurück, sobald es kann, und merkt es sich für dieses Gerät.', 'Kare hızı düşünce oyun önce en az göze çarpanı kısar, olabildiğinde geri getirir ve bu cihaz için hatırlar.', 'Quand la fluidité baisse, le jeu allège d’abord ce qui se voit le moins, le rétablit dès qu’il le peut et s’en souvient pour cet appareil.', 'Quando il frame rate cala, il gioco alleggerisce prima ciò che si vede meno, lo ripristina appena può e se lo ricorda per questo dispositivo.', 'Quando a taxa de quadros cai, o jogo reduz primeiro o que menos aparece, traz de volta quando pode e se lembra disso neste aparelho.')}`;
     }
-    else hint.textContent = t('The race and every 3D scene on the site draw at this level.', 'Гонка и все 3D-сцены на сайте рисуются с этим качеством.', 'La regata y cada escena 3D del sitio se dibujan a este nivel.', 'Die Regatta und jede 3D-Szene auf der Seite zeichnen in dieser Stufe.', 'Yarış ve sitedeki her 3D sahne bu seviyede çizilir.', 'La régate et toutes les scènes 3D du site s’affichent à ce niveau.', 'La regata e ogni scena 3D del sito vengono disegnate a questo livello.');
+    else hint.textContent = t('The race and every 3D scene on the site draw at this level.', 'Гонка и все 3D-сцены на сайте рисуются с этим качеством.', 'La regata y cada escena 3D del sitio se dibujan a este nivel.', 'Die Regatta und jede 3D-Szene auf der Seite zeichnen in dieser Stufe.', 'Yarış ve sitedeki her 3D sahne bu seviyede çizilir.', 'La régate et toutes les scènes 3D du site s’affichent à ce niveau.', 'La regata e ogni scena 3D del sito vengono disegnate a questo livello.', 'A regata e todas as cenas 3D do site são desenhadas neste nível.');
   });
-  const partLevels = (off) => [['high', t('High', 'Макс.', 'Alta', 'Hoch', 'Yüksek', 'Élevée', 'Alta')], ['medium', t('Medium', 'Сред.', 'Media', 'Mittel', 'Orta', 'Moyenne', 'Media')], ['low', off ? t('Off', 'Выкл', 'No', 'Aus', 'Kapalı', 'Non', 'Disattivato') : t('Low', 'Мин.', 'Baja', 'Niedrig', 'Düşük', 'Basse', 'Bassa')]];
-  const gfxParts = details(t('Details', 'Подробно', 'Detalles', 'Details', 'Ayrıntılar', 'Détails', 'Dettagli'), o.gfx === 'custom', GFX_PARTS.map((k) => choice(pair(GFX_NAMES[k]), partLevels(GFX_OFF[k]), () => gfxDetail(o)[k],
+  const partLevels = (off) => [['high', t('High', 'Макс.', 'Alta', 'Hoch', 'Yüksek', 'Élevée', 'Alta', 'Alta')], ['medium', t('Medium', 'Сред.', 'Media', 'Mittel', 'Orta', 'Moyenne', 'Media', 'Média')], ['low', off ? t('Off', 'Выкл', 'No', 'Aus', 'Kapalı', 'Non', 'Disattivato', 'Desligado') : t('Low', 'Мин.', 'Baja', 'Niedrig', 'Düşük', 'Basse', 'Bassa', 'Baixa')]];
+  const gfxParts = details(t('Details', 'Подробно', 'Detalles', 'Details', 'Ayrıntılar', 'Détails', 'Dettagli', 'Detalhes'), o.gfx === 'custom', GFX_PARTS.map((k) => choice(pair(GFX_NAMES[k]), partLevels(GFX_OFF[k]), () => gfxDetail(o)[k],
     (v) => set({ gfx: 'custom', gfxD: { ...gfxDetail(o), [k]: v } }), 'av-part'))); // a part changed makes it Custom
 
   // ---------- the sound ----------
   const soundParts = Object.keys(SOUND_NAMES);
-  const soundDet = details(t('Sound details', 'Звук подробно', 'Detalles del sonido', 'Tondetails', 'Ses ayrıntıları', 'Détails du son', 'Dettagli audio'), soundParts.some((k) => (o[k] || 'normal') !== 'normal'),
+  const soundDet = details(t('Sound details', 'Звук подробно', 'Detalles del sonido', 'Tondetails', 'Ses ayrıntıları', 'Détails du son', 'Dettagli audio', 'Detalhes do som'), soundParts.some((k) => (o[k] || 'normal') !== 'normal'),
     soundParts.map((k) => choice(pair(SOUND_NAMES[k]), level, () => o[k] || 'normal', (v) => set({ [k]: v }), 'av-part')));
 
   const group = (name, ...rows) => { const g = el('section', 'av-g'); g.append(el('h3', '', name), ...rows); return g; };
   const body = el('div', 'av-body');
   body.append(
-    group(t('Graphics', 'Графика', 'Gráficos', 'Grafik', 'Grafik', 'Graphismes', 'Grafica'), quality, gfxParts.box, toggle('figures', t('People on board', 'Люди на борту', 'Gente a bordo', 'Leute an Bord', 'Teknedeki insanlar', 'Personnes à bord', 'Persone a bordo'), 1), toggle('saver', t('Battery saver · 30 fps', 'Экономия батареи · 30 к/с', 'Ahorro de batería · 30 fps', 'Akkusparmodus · 30 fps', 'Pil tasarrufu · 30 fps', 'Économie de batterie · 30 fps', 'Risparmio batteria · 30 fps'))),
-    group(t('Audio', 'Звук', 'Audio', 'Audio', 'Ses', 'Audio', 'Audio'),
-      toggle('sound', t('Sound', 'Звук', 'Sonido', 'Ton', 'Ses', 'Son', 'Audio')),
-      toggle('voice', t('Voice on board', 'Голос шкипера', 'Voz a bordo', 'Stimme an Bord', 'Kaptanın sesi', 'Voix à bord', 'Voce a bordo')),
-      key('music', { name: t('Music', 'Музыка', 'Música', 'Musik', 'Müzik', 'Musique', 'Musica'), list: [...Object.entries(TRACK).map(([v, n]) => [v, pair(n)]), ['off', t('Off', 'Выкл', 'No', 'Aus', 'Kapalı', 'Non', 'Disattivato')]] }, 'playlist'),
-      key('musicVol', { name: t('Music volume', 'Громкость музыки', 'Volumen de la música', 'Musiklautstärke', 'Müzik sesi', 'Volume de la musique', 'Volume musica'), list: loud }, 'normal'),
-      key('sea', { name: t('Sea', 'Море', 'Mar', 'Meer', 'Deniz', 'Mer', 'Mare'), list: level }, 'normal'),
+    group(t('Graphics', 'Графика', 'Gráficos', 'Grafik', 'Grafik', 'Graphismes', 'Grafica', 'Gráficos'), quality, gfxParts.box, toggle('figures', t('People on board', 'Люди на борту', 'Gente a bordo', 'Leute an Bord', 'Teknedeki insanlar', 'Personnes à bord', 'Persone a bordo', 'Pessoas a bordo'), 1), toggle('saver', t('Battery saver · 30 fps', 'Экономия батареи · 30 к/с', 'Ahorro de batería · 30 fps', 'Akkusparmodus · 30 fps', 'Pil tasarrufu · 30 fps', 'Économie de batterie · 30 fps', 'Risparmio batteria · 30 fps', 'Economia de bateria · 30 fps'))),
+    group(t('Audio', 'Звук', 'Audio', 'Audio', 'Ses', 'Audio', 'Audio', 'Áudio'),
+      toggle('sound', t('Sound', 'Звук', 'Sonido', 'Ton', 'Ses', 'Son', 'Audio', 'Som')),
+      toggle('voice', t('Voice on board', 'Голос шкипера', 'Voz a bordo', 'Stimme an Bord', 'Kaptanın sesi', 'Voix à bord', 'Voce a bordo', 'Voz a bordo')),
+      key('music', { name: t('Music', 'Музыка', 'Música', 'Musik', 'Müzik', 'Musique', 'Musica', 'Música'), list: [...Object.entries(TRACK).map(([v, n]) => [v, pair(n)]), ['off', t('Off', 'Выкл', 'No', 'Aus', 'Kapalı', 'Non', 'Disattivato', 'Desligado')]] }, 'playlist'),
+      key('musicVol', { name: t('Music volume', 'Громкость музыки', 'Volumen de la música', 'Musiklautstärke', 'Müzik sesi', 'Volume de la musique', 'Volume musica', 'Volume da música'), list: loud }, 'normal'),
+      key('sea', { name: t('Sea', 'Море', 'Mar', 'Meer', 'Deniz', 'Mer', 'Mare', 'Mar'), list: level }, 'normal'),
       soundDet.box,
-      ...(matchMedia('(pointer: coarse)').matches ? [toggle('vibration', t('Vibration', 'Вибрация', 'Vibración', 'Vibration', 'Titreşim', 'Vibration', 'Vibrazione'))] : [])),
+      ...(matchMedia('(pointer: coarse)').matches ? [toggle('vibration', t('Vibration', 'Вибрация', 'Vibración', 'Vibration', 'Titreşim', 'Vibration', 'Vibrazione', 'Vibração'))] : [])),
   );
 
   // ---------- the card over the screen ----------
-  const ov = el('div', 'av bc'), card = el('section', 'av-card'), top = el('div', 'av-top'), h = el('h2', '', avTitle(lang)), back = button('av-back', t('Back', 'Назад', 'Atrás', 'Zurück', 'Geri', 'Retour', 'Indietro'));
+  const ov = el('div', 'av bc'), card = el('section', 'av-card'), top = el('div', 'av-top'), h = el('h2', '', avTitle(lang)), back = button('av-back', t('Back', 'Назад', 'Atrás', 'Zurück', 'Geri', 'Retour', 'Indietro', 'Voltar'));
   h.id = `av-h${++ids}`;
   ov.style.zIndex = zIndex;
   ov.lang = lang;

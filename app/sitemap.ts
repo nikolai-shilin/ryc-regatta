@@ -7,7 +7,7 @@ import { YACHT_IDS } from '@/lib/yachts';
 import { PAGES_DATE } from '@/lib/venue-guides';
 import { RULEBOOK_DATE } from '@/lib/rulebook';
 
-// The pages worth finding, each in English (the bare address), Russian (?lang=ru), Spanish (?lang=es), German (?lang=de), Turkish (?lang=tr), French (?lang=fr) and Italian (?lang=it), with hreflang
+// The pages worth finding, each in English (the bare address), Russian (?lang=ru), Spanish (?lang=es), German (?lang=de), Turkish (?lang=tr), French (?lang=fr), Italian (?lang=it) and Portuguese (?lang=pt), with hreflang
 // links between them so a search engine shows each reader their own language. lastmod is when the page's text last changed in
 // substance (Google reads it, and ignores priority and changefreq); the pages that change every day say today, and a
 // page with no date known says none rather than a wrong one.

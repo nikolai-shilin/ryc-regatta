@@ -7,7 +7,17 @@ const Q = {
   id: 'rr-166',
   answer: 'B' as const,
   figure: { en: 'https://iyt.rycrentals.com/api/mcp?figure=rr-166', ru: 'https://iyt.rycrentals.com/api/mcp?figure=rr-166&lang=ru' },
-  reference: { en: 'RRS 12, RRS 13, RRS 10', ru: 'ППГ 12, ППГ 13, ППГ 10', es: 'RRV 12, RRV 13, RRV 10', de: 'WR 12, WR 13, WR 10', tr: 'YYK 12, YYK 13, YYK 10', fr: 'RCV 12, RCV 13, RCV 10', it: 'RRS 12, RRS 13, RRS 10' },
+  reference: { en: 'RRS 12, RRS 13, RRS 10', ru: 'ППГ 12, ППГ 13, ППГ 10', es: 'RRV 12, RRV 13, RRV 10', de: 'WR 12, WR 13, WR 10', tr: 'YYK 12, YYK 13, YYK 10', fr: 'RCV 12, RCV 13, RCV 10', it: 'RRS 12, RRS 13, RRS 10', pt: 'RRV 12, RRV 13, RRV 10' },
+  pt: {
+    question: 'Azul está livre à vante, dois comprimentos à sua frente, amurado a boreste no contravento; você se mantém afastado. Ele cambeia bem na sua rota, passa a amurado a bombordo e se acerta no contravento um comprimento e meio à sua frente. Quem se mantém afastado durante a cambada, e quem depois?',
+    options: {
+      A: 'Azul durante a cambada, depois você: terminada a cambada, você volta a ser o barco livre à ré',
+      B: 'Azul nas duas vezes: durante a cambada ele se mantém afastado pela regra 13, e uma vez no contravento amurado a bombordo ele se mantém afastado de você, amurado a boreste, pela regra 10',
+      C: 'Você durante a cambada dele, depois Azul: um barco cambando tem direito de passagem até estar no contravento',
+      D: 'Você nas duas vezes: o barco de trás se mantém afastado do barco da frente, faça ele o que fizer (regra 12)',
+    },
+    why: 'A regra 12 deixa de valer quando Azul passa da proa ao vento; durante a cambada vale a regra 13, depois a regra 10, porque as amuras são opostas.',
+  },
   it: {
     question: 'Blu è libera avanti, due lunghezze davanti a te, mure a dritta di bolina; tu ti tieni discosto. Vira proprio sulla tua rotta, passa mure a sinistra e si assesta di bolina una lunghezza e mezza davanti a te. Chi si tiene discosto mentre vira, e chi dopo?',
     options: {

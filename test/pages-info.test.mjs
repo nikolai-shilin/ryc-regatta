@@ -54,7 +54,7 @@ for (const { name, mod, path, card, title, h1 } of PAGES) {
       assert.equal(m.title, title[L]);
       assert.ok(m.description.length > 50, 'a description to show in search');
       assert.equal(m.alternates.canonical, url);
-      assert.deepEqual(m.alternates.languages, { en: path, ru: `${path}?lang=ru`, es: `${path}?lang=es`, de: `${path}?lang=de`, tr: `${path}?lang=tr`, fr: `${path}?lang=fr`, it: `${path}?lang=it`, 'x-default': path });
+      assert.deepEqual(m.alternates.languages, { en: path, ru: `${path}?lang=ru`, es: `${path}?lang=es`, de: `${path}?lang=de`, tr: `${path}?lang=tr`, fr: `${path}?lang=fr`, it: `${path}?lang=it`, pt: `${path}?lang=pt`, 'x-default': path });
       assert.equal(m.openGraph.url, url);
       assert.equal(m.openGraph.title, `${title[L]} · Up and down`);
       assert.equal(m.openGraph.locale, lang === 'ru' ? 'ru_RU' : 'en_GB');
@@ -75,8 +75,8 @@ for (const { name, mod, path, card, title, h1 } of PAGES) {
   test(`/${name} is a page a reader can zoom`, () => assert.deepEqual(mod.viewport, READING_VIEWPORT));
 
   test(`/${name} refuses a language the site doesn't have`, async () => {
-    await assert.rejects(html(mod, 'pt'), (e) => e.kind === 'notFound');
-    await assert.rejects(mod.generateMetadata(props('pt')), (e) => e.kind === 'notFound');
+    await assert.rejects(html(mod, 'nl'), (e) => e.kind === 'notFound');
+    await assert.rejects(mod.generateMetadata(props('nl')), (e) => e.kind === 'notFound');
   });
 }
 

@@ -25,31 +25,31 @@ export function FirstFinish({ lang, id, signed, place }: { lang: Lang; id: strin
     setBusy(true); setErr('');
     track('First finish sign-in', { via: 'google' });
     const { error } = await supabaseBrowser().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(next)}` } });
-    if (error) { setBusy(false); setErr(t('Google sign-in isn’t available right now.', 'Вход через Google сейчас недоступен.', 'El inicio de sesión con Google no está disponible ahora mismo.', 'Die Anmeldung mit Google ist gerade nicht verfügbar.', 'Google ile giriş şu an kullanılamıyor.', 'La connexion avec Google n’est pas disponible pour le moment.', 'L’accesso con Google non è disponibile in questo momento.')); }
+    if (error) { setBusy(false); setErr(t('Google sign-in isn’t available right now.', 'Вход через Google сейчас недоступен.', 'El inicio de sesión con Google no está disponible ahora mismo.', 'Die Anmeldung mit Google ist gerade nicht verfügbar.', 'Google ile giriş şu an kullanılamıyor.', 'La connexion avec Google n’est pas disponible pour le moment.', 'L’accesso con Google non è disponibile in questo momento.', 'Entrar com o Google não está disponível no momento.')); }
   };
   // the headline: the place she sailed to, hers to keep (a race not finished: the race itself)
   const head = place
-    ? t(`Save your ${ordEn(place)} place`, `Сохрани своё ${place}-е место`, `Guarda tu ${place}.º puesto`, `Sichere deinen ${place}. Platz`, `${place}. sıranı sakla`, `Garde ta ${place === 1 ? '1re' : `${place}e`} place`, `Salva il tuo ${place}º posto`)
-    : t('Keep your first race', 'Сохрани первую гонку', 'Guarda tu primera regata', 'Behalte deine erste Regatta', 'İlk yarışını sakla', 'Garde ta première régate', 'Conserva la tua prima regata');
+    ? t(`Save your ${ordEn(place)} place`, `Сохрани своё ${place}-е место`, `Guarda tu ${place}.º puesto`, `Sichere deinen ${place}. Platz`, `${place}. sıranı sakla`, `Garde ta ${place === 1 ? '1re' : `${place}e`} place`, `Salva il tuo ${place}º posto`, `Salve seu ${place}º lugar`)
+    : t('Keep your first race', 'Сохрани первую гонку', 'Guarda tu primera regata', 'Behalte deine erste Regatta', 'İlk yarışını sakla', 'Garde ta première régate', 'Conserva la tua prima regata', 'Guarde sua primeira regata');
   const why = [
-    t('Your races and your boat on any device', 'Твои гонки и лодка на любом устройстве', 'Tus regatas y tu barco en cualquier dispositivo', 'Deine Regatten und dein Boot auf jedem Gerät', 'Yarışların ve teknen her cihazda', 'Tes régates et ton bateau sur tous tes appareils', 'Le tue regate e la tua barca su qualsiasi dispositivo'),
-    t('Your name on today’s leaderboard', 'Твоё имя в рейтинге дня', 'Tu nombre en la clasificación de hoy', 'Dein Name in der Tageswertung', 'Adın günün sıralamasında', 'Ton nom au classement du jour', 'Il tuo nome nella classifica del giorno'),
-    t('A player card: your venues, your streak', 'Карточка игрока: твои акватории и серия', 'Una ficha de jugador: tus sedes, tu racha', 'Eine Spielerkarte: deine Reviere, deine Serie', 'Oyuncu kartı: yarış alanların, serin', 'Une carte de joueur : tes plans d’eau, ta série', 'Una tessera del giocatore: i tuoi campi di regata, la tua serie'),
+    t('Your races and your boat on any device', 'Твои гонки и лодка на любом устройстве', 'Tus regatas y tu barco en cualquier dispositivo', 'Deine Regatten und dein Boot auf jedem Gerät', 'Yarışların ve teknen her cihazda', 'Tes régates et ton bateau sur tous tes appareils', 'Le tue regate e la tua barca su qualsiasi dispositivo', 'Suas regatas e seu barco em qualquer aparelho'),
+    t('Your name on today’s leaderboard', 'Твоё имя в рейтинге дня', 'Tu nombre en la clasificación de hoy', 'Dein Name in der Tageswertung', 'Adın günün sıralamasında', 'Ton nom au classement du jour', 'Il tuo nome nella classifica del giorno', 'Seu nome na classificação do dia'),
+    t('A player card: your venues, your streak', 'Карточка игрока: твои акватории и серия', 'Una ficha de jugador: tus sedes, tu racha', 'Eine Spielerkarte: deine Reviere, deine Serie', 'Oyuncu kartı: yarış alanların, serin', 'Une carte de joueur : tes plans d’eau, ta série', 'Una tessera del giocatore: i tuoi campi di regata, la tua serie', 'Um cartão do jogador: suas raias, sua sequência'),
   ];
   return (
     <section className="ff" aria-labelledby="ff-h">
-      <span className="ff-k">{t('Only on this device', 'Только на этом устройстве', 'Solo en este dispositivo', 'Nur auf diesem Gerät', 'Sadece bu cihazda', 'Seulement sur cet appareil', 'Solo su questo dispositivo')}</span>
+      <span className="ff-k">{t('Only on this device', 'Только на этом устройстве', 'Solo en este dispositivo', 'Nur auf diesem Gerät', 'Sadece bu cihazda', 'Seulement sur cet appareil', 'Solo su questo dispositivo', 'Só neste aparelho')}</span>
       <h2 className="ff-h" id="ff-h">{head}</h2>
-      <p className="ff-p">{t('Sign in and it’s yours, wherever you race next.', 'Войди — и он твой, где бы ты ни гонялся дальше.', 'Inicia sesión y es tuyo, dondequiera que navegues después.', 'Melde dich an, und es gehört dir, wo immer du als Nächstes segelst.', 'Giriş yap, bir sonraki yarışın nerede olursa olsun senin olsun.', 'Connecte-toi et c’est à toi, où que tu régates ensuite.', 'Accedi ed è tuo, ovunque regaterai la prossima volta.')}</p>
+      <p className="ff-p">{t('Sign in and it’s yours, wherever you race next.', 'Войди — и он твой, где бы ты ни гонялся дальше.', 'Inicia sesión y es tuyo, dondequiera que navegues después.', 'Melde dich an, und es gehört dir, wo immer du als Nächstes segelst.', 'Giriş yap, bir sonraki yarışın nerede olursa olsun senin olsun.', 'Connecte-toi et c’est à toi, où que tu régates ensuite.', 'Accedi ed è tuo, ovunque regaterai la prossima volta.', 'Entre e é seu, onde quer que você corra depois.')}</p>
       <ul className="ff-why">{why.map((w) => <li key={w}><IconCheck s={18} /><span>{w}</span></li>)}</ul>
       <div className="ff-b">
-        <button type="button" className="ff-go" onClick={google} disabled={busy}><IconGoogle s={20} /><span>{t('Continue with Google', 'Войти через Google', 'Continuar con Google', 'Weiter mit Google', 'Google ile devam et', 'Continuer avec Google', 'Continua con Google')}</span></button>
-        <Link className="ff-alt" href={`/sign-in?next=${encodeURIComponent(next)}`} onClick={() => track('First finish sign-in', { via: 'email' })}>{t('Email me a code', 'Код на почту', 'Envíame un código', 'Code per E-Mail', 'Bana kod gönder', 'Recevoir un code par e-mail', 'Inviami un codice via email')}</Link>
+        <button type="button" className="ff-go" onClick={google} disabled={busy}><IconGoogle s={20} /><span>{t('Continue with Google', 'Войти через Google', 'Continuar con Google', 'Weiter mit Google', 'Google ile devam et', 'Continuer avec Google', 'Continua con Google', 'Continuar com o Google')}</span></button>
+        <Link className="ff-alt" href={`/sign-in?next=${encodeURIComponent(next)}`} onClick={() => track('First finish sign-in', { via: 'email' })}>{t('Email me a code', 'Код на почту', 'Envíame un código', 'Code per E-Mail', 'Bana kod gönder', 'Recevoir un code par e-mail', 'Inviami un codice via email', 'Me envie um código por e-mail')}</Link>
       </div>
-      <p className="ff-note">{t('Free · no password · ten seconds', 'Бесплатно · без пароля · десять секунд', 'Gratis · sin contraseña · diez segundos', 'Kostenlos · ohne Passwort · zehn Sekunden', 'Ücretsiz · şifresiz · on saniye', 'Gratuit · sans mot de passe · dix secondes', 'Gratis · nessuna password · dieci secondi')}</p>
+      <p className="ff-note">{t('Free · no password · ten seconds', 'Бесплатно · без пароля · десять секунд', 'Gratis · sin contraseña · diez segundos', 'Kostenlos · ohne Passwort · zehn Sekunden', 'Ücretsiz · şifresiz · on saniye', 'Gratuit · sans mot de passe · dix secondes', 'Gratis · nessuna password · dieci secondi', 'Grátis · sem senha · dez segundos')}</p>
       {err && <p className="ff-err" role="alert">{err}</p>}
       <div className="ff-push"><PushButton lang={lang} where="first-finish" /></div>
-      <a className="ff-more" href="/play?race=first">{t('Race the Optimist again', 'Ещё раз на «Оптимисте»', 'Otra vez en Optimist', 'Nochmal im Optimist', 'Optimist ile tekrar', 'Refaire la régate en Optimist', 'Corri di nuovo con l’Optimist')}</a>
+      <a className="ff-more" href="/play?race=first">{t('Race the Optimist again', 'Ещё раз на «Оптимисте»', 'Otra vez en Optimist', 'Nochmal im Optimist', 'Optimist ile tekrar', 'Refaire la régate en Optimist', 'Corri di nuovo con l’Optimist', 'Correr de Optimist de novo')}</a>
     </section>
   );
 }

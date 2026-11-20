@@ -13,11 +13,11 @@ export async function GET(request: Request) {
   const streak = p.s >= 2;
   const img = await card({ lang,
     bg: 'helm',
-    kind: p.n ? t(`${p.n}’s passport`, `Паспорт: ${p.n}`, `Pasaporte de ${p.n}`, `Pass von ${p.n}`, `Pasaport: ${p.n}`, `Carte de joueur de ${p.n}`, `Tessera di ${p.n}`) : t('A sailor’s passport', 'Паспорт гонщика', 'Pasaporte de un regatista', 'Der Pass eines Seglers', 'Bir denizcinin pasaportu', 'La carte de joueur d’un régatier', 'La tessera di un velista'),
+    kind: p.n ? t(`${p.n}’s passport`, `Паспорт: ${p.n}`, `Pasaporte de ${p.n}`, `Pass von ${p.n}`, `Pasaport: ${p.n}`, `Carte de joueur de ${p.n}`, `Tessera di ${p.n}`, `Cartão do jogador de ${p.n}`) : t('A sailor’s passport', 'Паспорт гонщика', 'Pasaporte de un regatista', 'Der Pass eines Seglers', 'Bir denizcinin pasaportu', 'La carte de joueur d’un régatier', 'La tessera di un velista', 'O cartão de um velejador'),
     hero: streak
-      ? { label: t('Days in a row', ruPlural(p.s, ['День подряд', 'Дня подряд', 'Дней подряд']), 'Días seguidos', 'Tage in Folge', 'Art arda gün', 'Jours d’affilée', 'Giorni di fila'), value: String(p.s), color: C.gold }
-      : { label: t('Venues raced', 'Пройдено акваторий', 'Sedes navegadas', 'Gesegelte Reviere', 'Yarışılan alanlar', 'Plans d’eau courus', 'Campi di regata corsi'), value: `${p.v} / ${VENUES.length}`, color: C.gold },
-    call: t('Sail today’s race', 'Пройди гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln', 'Günün yarışına çık', 'Cours la régate du jour', 'Corri la regata del giorno'),
+      ? { label: t('Days in a row', ruPlural(p.s, ['День подряд', 'Дня подряд', 'Дней подряд']), 'Días seguidos', 'Tage in Folge', 'Art arda gün', 'Jours d’affilée', 'Giorni di fila', 'Dias seguidos'), value: String(p.s), color: C.gold }
+      : { label: t('Venues raced', 'Пройдено акваторий', 'Sedes navegadas', 'Gesegelte Reviere', 'Yarışılan alanlar', 'Plans d’eau courus', 'Campi di regata corsi', 'Raias velejadas'), value: `${p.v} / ${VENUES.length}`, color: C.gold },
+    call: t('Sail today’s race', 'Пройди гонку дня', 'Navega la regata del día', 'Die Regatta des Tages segeln', 'Günün yarışına çık', 'Cours la régate du jour', 'Corri la regata del giorno', 'Velejar a regata do dia'),
   });
   img.headers.set('cache-control', 'public, max-age=86400, s-maxage=31536000, immutable'); // the address is the picture
   return img;

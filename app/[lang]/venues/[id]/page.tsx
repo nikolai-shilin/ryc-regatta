@@ -56,7 +56,7 @@ export default async function VenuePage({ params }: Props) {
   return (
     <div className="scr bt-scr bc" lang={lang}>
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
-      <VenueView lang={lang} back={<BackLink href="/venues" label={t('Back to the venues', 'Назад к акваториям', 'Volver a las sedes', 'Zurück zu den Revieren', 'Yarış alanlarına dön', 'Retour aux plans d’eau', 'Torna ai campi di regata')} />} v={{
+      <VenueView lang={lang} back={<BackLink href="/venues" label={t('Back to the venues', 'Назад к акваториям', 'Volver a las sedes', 'Zurück zu den Revieren', 'Yarış alanlarına dön', 'Retour aux plans d’eau', 'Torna ai campi di regata', 'Voltar às raias')} />} v={{
         id: v.id, n: i + 1, of: VENUES.length, name: v.name, place: v.place, about: v.about, wind: v.wind, nation: v.nation,
         title: g.title, intro: g.intro, sections: g.sections,
         next: next && longDate(next, lang), today: next === new Date().toISOString().slice(0, 10),

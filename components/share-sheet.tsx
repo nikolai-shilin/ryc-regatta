@@ -56,10 +56,10 @@ export function ShareButton({ lang, data, className = 'bt-show', title }: { lang
   const targets = SHARE_TARGETS.filter((a) => a.id !== 'sms' || sms);
   const sheet = open && host && createPortal(
     <div className="shr" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
-      <div className="shr-p" role="dialog" aria-modal="true" aria-label={title || t('Share', 'Поделиться', 'Compartir', 'Teilen', 'Paylaş', 'Partager', 'Condividi')} ref={panel}>
+      <div className="shr-p" role="dialog" aria-modal="true" aria-label={title || t('Share', 'Поделиться', 'Compartir', 'Teilen', 'Paylaş', 'Partager', 'Condividi', 'Compartilhar')} ref={panel}>
         <div className="shr-h">
-          <b>{title || t('Share', 'Поделиться', 'Compartir', 'Teilen', 'Paylaş', 'Partager', 'Condividi')}</b>
-          <button type="button" className="shr-x" onClick={close} aria-label={t('Close', 'Закрыть', 'Cerrar', 'Schließen', 'Kapat', 'Fermer', 'Chiudi')}>×</button>
+          <b>{title || t('Share', 'Поделиться', 'Compartir', 'Teilen', 'Paylaş', 'Partager', 'Condividi', 'Compartilhar')}</b>
+          <button type="button" className="shr-x" onClick={close} aria-label={t('Close', 'Закрыть', 'Cerrar', 'Schließen', 'Kapat', 'Fermer', 'Chiudi', 'Fechar')}>×</button>
         </div>
         <p className="shr-l">{open.text}</p>
         <div className="shr-g">
@@ -67,17 +67,17 @@ export function ShareButton({ lang, data, className = 'bt-show', title }: { lang
             <a key={a.id} className="shr-a" href={shareHref(a.id, open)} target={a.id === 'email' || a.id === 'sms' ? undefined : '_blank'} rel="noopener noreferrer"
               onClick={(e) => { shared(open.url, a.id); if (openShare(a.id, open)) e.preventDefault(); close(); }}>
               <span className="shr-i" style={{ background: a.color }}><AppMark app={a.id} s={22} /></span>
-              <span>{a.id === 'email' ? t('Email', 'Почта', 'Correo', 'E-Mail', 'E-posta', 'E-mail', 'Email') : a.name}</span>
+              <span>{a.id === 'email' ? t('Email', 'Почта', 'Correo', 'E-Mail', 'E-posta', 'E-mail', 'Email', 'E-mail') : a.name}</span>
             </a>
           ))}
           <button type="button" className="shr-a" onClick={copy}>
             <span className="shr-i shr-i-n">{copied ? <IconCheck s={20} /> : <IconLink />}</span>
-            <span aria-live="polite">{copied ? t('Copied', 'Скопировано', 'Copiado', 'Kopiert', 'Kopyalandı', 'Copié', 'Copiato') : t('Copy link', 'Ссылка', 'Copiar enlace', 'Link kopieren', 'Bağlantıyı kopyala', 'Copier le lien', 'Copia link')}</span>
+            <span aria-live="polite">{copied ? t('Copied', 'Скопировано', 'Copiado', 'Kopiert', 'Kopyalandı', 'Copié', 'Copiato', 'Copiado') : t('Copy link', 'Ссылка', 'Copiar enlace', 'Link kopieren', 'Bağlantıyı kopyala', 'Copier le lien', 'Copia link', 'Copiar link')}</span>
           </button>
           {more && (
             <button type="button" className="shr-a" onClick={native}>
               <span className="shr-i shr-i-n"><IconMore /></span>
-              <span>{t('More', 'Ещё', 'Más', 'Mehr', 'Daha fazla', 'Plus', 'Altro')}</span>
+              <span>{t('More', 'Ещё', 'Más', 'Mehr', 'Daha fazla', 'Plus', 'Altro', 'Mais')}</span>
             </button>
           )}
         </div>
@@ -89,7 +89,7 @@ export function ShareButton({ lang, data, className = 'bt-show', title }: { lang
   return (
     <>
       <button type="button" ref={btn} className={className} onClick={show} aria-haspopup="dialog" aria-expanded={!!open}>
-        <IconSend s={15} /><span>{t('Share', 'Поделиться', 'Compartir', 'Teilen', 'Paylaş', 'Partager', 'Condividi')}</span>
+        <IconSend s={15} /><span>{t('Share', 'Поделиться', 'Compartir', 'Teilen', 'Paylaş', 'Partager', 'Condividi', 'Compartilhar')}</span>
       </button>
       {sheet}
     </>
@@ -106,7 +106,7 @@ export function CopyLink({ lang, data, className = 'bt-show' }: { lang: Lang; da
   };
   return (
     <button type="button" className={className} onClick={copy}>
-      {copied ? <IconCheck s={15} /> : <IconLink s={15} />}<span aria-live="polite">{copied ? t('Copied', 'Скопировано', 'Copiado', 'Kopiert', 'Kopyalandı', 'Copié', 'Copiato') : t('Copy link', 'Скопировать ссылку', 'Copiar enlace', 'Link kopieren', 'Bağlantıyı kopyala', 'Copier le lien', 'Copia link')}</span>
+      {copied ? <IconCheck s={15} /> : <IconLink s={15} />}<span aria-live="polite">{copied ? t('Copied', 'Скопировано', 'Copiado', 'Kopiert', 'Kopyalandı', 'Copié', 'Copiato', 'Copiado') : t('Copy link', 'Скопировать ссылку', 'Copiar enlace', 'Link kopieren', 'Bağlantıyı kopyala', 'Copier le lien', 'Copia link', 'Copiar link')}</span>
     </button>
   );
 }

@@ -9,12 +9,12 @@ export function ShareGame({ lang }: { lang: Lang }) {
   const t = tx(lang);
   const data = () => ({
     url: `${location.origin}/${lang === 'en' ? '' : `?lang=${lang}`}`,
-    text: t('Up and down: a sailing race in the browser, today’s race the same for everyone. Beat my time?', 'Up and down — парусная регата в браузере, гонка дня одна на всех. Обгонишь моё время?', 'Up and down: una regata a vela en el navegador, la regata de hoy igual para todos. ¿Superas mi tiempo?', 'Up and down: eine Segelregatta im Browser, die Regatta des Tages für alle dieselbe. Schlägst du meine Zeit?', 'Up and down: tarayıcıda bir yelken yarışı, günün yarışı herkes için aynı. Süremi geçebilir misin?', 'Up and down : une régate de voile dans le navigateur, la régate du jour est la même pour tout le monde. Tu bats mon temps ?', 'Up and down: una regata a vela nel browser, la regata del giorno uguale per tutti. Batti il mio tempo?'),
-    title: t('Share the game', 'Поделиться игрой', 'Comparte el juego', 'Spiel teilen', 'Oyunu paylaş', 'Partager le jeu', 'Condividi il gioco'),
+    text: t('Up and down: a sailing race in the browser, today’s race the same for everyone. Beat my time?', 'Up and down — парусная регата в браузере, гонка дня одна на всех. Обгонишь моё время?', 'Up and down: una regata a vela en el navegador, la regata de hoy igual para todos. ¿Superas mi tiempo?', 'Up and down: eine Segelregatta im Browser, die Regatta des Tages für alle dieselbe. Schlägst du meine Zeit?', 'Up and down: tarayıcıda bir yelken yarışı, günün yarışı herkes için aynı. Süremi geçebilir misin?', 'Up and down : une régate de voile dans le navigateur, la régate du jour est la même pour tout le monde. Tu bats mon temps ?', 'Up and down: una regata a vela nel browser, la regata del giorno uguale per tutti. Batti il mio tempo?', 'Up and down: uma regata de vela no navegador, a regata do dia igual para todos. Consegue bater meu tempo?'),
+    title: t('Share the game', 'Поделиться игрой', 'Comparte el juego', 'Spiel teilen', 'Oyunu paylaş', 'Partager le jeu', 'Condividi il gioco', 'Compartilhar o jogo'),
   });
   return (
     <div className="so-share">
-      <ShareButton lang={lang} data={data} className="pill pill-primary" title={t('Share the game', 'Поделиться игрой', 'Comparte el juego', 'Spiel teilen', 'Oyunu paylaş', 'Partager le jeu', 'Condividi il gioco')} />
+      <ShareButton lang={lang} data={data} className="pill pill-primary" title={t('Share the game', 'Поделиться игрой', 'Comparte el juego', 'Spiel teilen', 'Oyunu paylaş', 'Partager le jeu', 'Condividi il gioco', 'Compartilhar o jogo')} />
       <CopyLink lang={lang} data={data} className="pill" />
     </div>
   );

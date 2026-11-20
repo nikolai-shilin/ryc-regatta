@@ -38,28 +38,28 @@ export function Replay({ res, myLegs = [], lang }: { res: FinishResult; myLegs?:
   const legs = res.course.legs.length - 1;
   // legT: the clock as you crossed the start line, then as you rounded each mark
   const leg = T < 0 ? 0 : Math.min(legs, myLegs.filter((x) => x <= T).length);
-  const where = T < 0 ? t('Before the gun', 'До старта', 'Antes de la salida', 'Vor dem Startsignal', 'Start işaretinden önce', 'Avant le signal', 'Prima del segnale') : leg ? t(`Leg ${leg} of ${legs}`, `Отрезок ${leg} из ${legs}`, `Tramo ${leg} de ${legs}`, `Schenkel ${leg} von ${legs}`, `Ayak ${leg} / ${legs}`, `Bord ${leg} sur ${legs}`, `Lato ${leg} di ${legs}`) : t('The start', 'Старт', 'La salida', 'Der Start', 'Start', 'Le départ', 'La partenza');
+  const where = T < 0 ? t('Before the gun', 'До старта', 'Antes de la salida', 'Vor dem Startsignal', 'Start işaretinden önce', 'Avant le signal', 'Prima del segnale', 'Antes da largada') : leg ? t(`Leg ${leg} of ${legs}`, `Отрезок ${leg} из ${legs}`, `Tramo ${leg} de ${legs}`, `Schenkel ${leg} von ${legs}`, `Ayak ${leg} / ${legs}`, `Bord ${leg} sur ${legs}`, `Lato ${leg} di ${legs}`, `Perna ${leg} de ${legs}`) : t('The start', 'Старт', 'La salida', 'Der Start', 'Start', 'Le départ', 'La partenza', 'A largada');
 
   if (!on) {
     return (
-      <button type="button" className="bt-show rs-ghost rs-replay-go" title={t('Watch the race again', 'Посмотреть гонку заново', 'Ver la regata otra vez', 'Regatta noch einmal ansehen', 'Yarışı yeniden izle', 'Revoir la régate', 'Rivedi la regata')} aria-label={t('Watch the race again', 'Посмотреть гонку заново', 'Ver la regata otra vez', 'Regatta noch einmal ansehen', 'Yarışı yeniden izle', 'Revoir la régate', 'Rivedi la regata')} onClick={() => { setOn(true); setT(span.from); send(span.from); setPlaying(true); track('Replay'); }}>
-        <IconPlay s={16} /><span>{t('Replay', 'Повтор', 'Repetición', 'Wiederholung', 'Tekrar', 'Revoir', 'Replay')}</span>
+      <button type="button" className="bt-show rs-ghost rs-replay-go" title={t('Watch the race again', 'Посмотреть гонку заново', 'Ver la regata otra vez', 'Regatta noch einmal ansehen', 'Yarışı yeniden izle', 'Revoir la régate', 'Rivedi la regata', 'Ver a regata de novo')} aria-label={t('Watch the race again', 'Посмотреть гонку заново', 'Ver la regata otra vez', 'Regatta noch einmal ansehen', 'Yarışı yeniden izle', 'Revoir la régate', 'Rivedi la regata', 'Ver a regata de novo')} onClick={() => { setOn(true); setT(span.from); send(span.from); setPlaying(true); track('Replay'); }}>
+        <IconPlay s={16} /><span>{t('Replay', 'Повтор', 'Repetición', 'Wiederholung', 'Tekrar', 'Revoir', 'Replay', 'Replay')}</span>
       </button>
     );
   }
   const close = () => { setPlaying(false); setOn(false); toScene({ type: 'replay', off: true }); };
   const atEnd = T >= span.to;
   return (
-    <div className="rs-replay" role="group" aria-label={t('Replay', 'Повтор', 'Repetición', 'Wiederholung', 'Tekrar', 'Revoir', 'Replay')}>
-      <button type="button" className="rs-rp-b" onClick={() => { if (atEnd) { setT(span.from); send(span.from); } setPlaying((p) => !p); }} aria-label={playing ? t('Pause', 'Пауза', 'Pausa', 'Pause', 'Duraklat', 'Pause', 'Pausa') : t('Play', 'Играть', 'Reproducir', 'Abspielen', 'Oynat', 'Lecture', 'Riproduci')}>
+    <div className="rs-replay" role="group" aria-label={t('Replay', 'Повтор', 'Repetición', 'Wiederholung', 'Tekrar', 'Revoir', 'Replay', 'Replay')}>
+      <button type="button" className="rs-rp-b" onClick={() => { if (atEnd) { setT(span.from); send(span.from); } setPlaying((p) => !p); }} aria-label={playing ? t('Pause', 'Пауза', 'Pausa', 'Pause', 'Duraklat', 'Pause', 'Pausa', 'Pausar') : t('Play', 'Играть', 'Reproducir', 'Abspielen', 'Oynat', 'Lecture', 'Riproduci', 'Reproduzir')}>
         {playing ? <svg viewBox="0 0 24 24" width={16} height={16} aria-hidden="true"><path d="M7 5h3v14H7zM14 5h3v14h-3z" fill="currentColor" /></svg> : <IconPlay s={16} />}
       </button>
-      <input className="rs-rp-r" type="range" min={span.from} max={span.to} step={0.1} value={T} aria-label={t('Race time', 'Время гонки', 'Tiempo de regata', 'Regattazeit', 'Yarış saati', 'Temps de course', 'Tempo di regata')} aria-valuetext={clockOf(T)}
+      <input className="rs-rp-r" type="range" min={span.from} max={span.to} step={0.1} value={T} aria-label={t('Race time', 'Время гонки', 'Tiempo de regata', 'Regattazeit', 'Yarış saati', 'Temps de course', 'Tempo di regata', 'Tempo de regata')} aria-valuetext={clockOf(T)}
         style={{ ['--p' as string]: `${((T - span.from) / (span.to - span.from || 1)) * 100}%` }}
         onChange={(e) => { const x = +e.target.value; setPlaying(false); setT(x); send(x); }} />
       <span className="rs-rp-t"><b>{clockOf(T)}</b><small>{where}</small></span>
-      <button type="button" className="rs-rp-s" onClick={() => setSp((k) => (k + 1) % SPEEDS.length)} aria-label={t('Playback speed', 'Скорость повтора', 'Velocidad de reproducción', 'Wiedergabegeschwindigkeit', 'Oynatma hızı', 'Vitesse de lecture', 'Velocità di riproduzione')}>{SPEEDS[sp]}×</button>
-      <button type="button" className="rs-rp-x" onClick={close} aria-label={t('Close the replay', 'Закрыть повтор', 'Cerrar la repetición', 'Wiederholung schließen', 'Tekrarı kapat', 'Fermer la rediffusion', 'Chiudi il replay')}>×</button>
+      <button type="button" className="rs-rp-s" onClick={() => setSp((k) => (k + 1) % SPEEDS.length)} aria-label={t('Playback speed', 'Скорость повтора', 'Velocidad de reproducción', 'Wiedergabegeschwindigkeit', 'Oynatma hızı', 'Vitesse de lecture', 'Velocità di riproduzione', 'Velocidade de reprodução')}>{SPEEDS[sp]}×</button>
+      <button type="button" className="rs-rp-x" onClick={close} aria-label={t('Close the replay', 'Закрыть повтор', 'Cerrar la repetición', 'Wiederholung schließen', 'Tekrarı kapat', 'Fermer la rediffusion', 'Chiudi il replay', 'Fechar o replay')}>×</button>
     </div>
   );
 }

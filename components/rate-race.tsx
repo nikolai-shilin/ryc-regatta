@@ -31,15 +31,15 @@ export function RateRace({ id, lang }: { id: string; lang: Lang }) {
     if (c) post({ ev: 'rate', id, comment: c.slice(0, 500) });
     setStage('done');
   };
-  const words = [t('Bad', 'Плохо', 'Mala', 'Schlecht', 'Kötü', 'Mauvaise', 'Pessima'), t('Not great', 'Так себе', 'Floja', 'Nicht toll', 'Pek iyi değil', 'Bof', 'Così così'), t('OK', 'Нормально', 'Normal', 'OK', 'İdare eder', 'Correcte', 'OK'), t('Good', 'Хорошо', 'Buena', 'Gut', 'İyi', 'Bonne', 'Buona'), t('Loved it', 'Отлично', 'Me encantó', 'Super', 'Bayıldım', 'J’ai adoré', 'Mi è piaciuta molto')];
+  const words = [t('Bad', 'Плохо', 'Mala', 'Schlecht', 'Kötü', 'Mauvaise', 'Pessima', 'Ruim'), t('Not great', 'Так себе', 'Floja', 'Nicht toll', 'Pek iyi değil', 'Bof', 'Così così', 'Fraca'), t('OK', 'Нормально', 'Normal', 'OK', 'İdare eder', 'Correcte', 'OK', 'OK'), t('Good', 'Хорошо', 'Buena', 'Gut', 'İyi', 'Bonne', 'Buona', 'Boa'), t('Loved it', 'Отлично', 'Me encantó', 'Super', 'Bayıldım', 'J’ai adoré', 'Mi è piaciuta molto', 'Adorei')];
   return (
-    <section className="rr" aria-label={t('Rate the race', 'Оценка гонки', 'Valora la regata', 'Bewerte die Regatta', 'Yarışı puanla', 'Noter la régate', 'Valuta la regata')}>
+    <section className="rr" aria-label={t('Rate the race', 'Оценка гонки', 'Valora la regata', 'Bewerte die Regatta', 'Yarışı puanla', 'Noter la régate', 'Valuta la regata', 'Avalie a regata')}>
       {stage === 'done' ? (
-        <p className="rr-thanks">{t('Thank you — it helps us make the game better.', 'Спасибо — это помогает делать игру лучше.', 'Gracias: nos ayuda a mejorar el juego.', 'Danke, das hilft uns, das Spiel besser zu machen.', 'Teşekkürler — oyunu daha iyi yapmamıza yardımcı oluyor.', 'Merci — ça nous aide à améliorer le jeu.', 'Grazie: ci aiuta a migliorare il gioco.')}</p>
+        <p className="rr-thanks">{t('Thank you — it helps us make the game better.', 'Спасибо — это помогает делать игру лучше.', 'Gracias: nos ayuda a mejorar el juego.', 'Danke, das hilft uns, das Spiel besser zu machen.', 'Teşekkürler — oyunu daha iyi yapmamıza yardımcı oluyor.', 'Merci — ça nous aide à améliorer le jeu.', 'Grazie: ci aiuta a migliorare il gioco.', 'Obrigado — isso nos ajuda a melhorar o jogo.')}</p>
       ) : (
         <>
-          <span className="rr-q">{t('How was the race?', 'Как тебе гонка?', '¿Qué tal la regata?', 'Wie war die Regatta?', 'Yarış nasıldı?', 'Comment était la régate ?', 'Com’è andata la regata?')}</span>
-          <div className="rr-stars" role="radiogroup" aria-label={t('One to five', 'От одного до пяти', 'De una a cinco', 'Eins bis fünf', 'Birden beşe', 'De un à cinq', 'Da uno a cinque')}>
+          <span className="rr-q">{t('How was the race?', 'Как тебе гонка?', '¿Qué tal la regata?', 'Wie war die Regatta?', 'Yarış nasıldı?', 'Comment était la régate ?', 'Com’è andata la regata?', 'Como foi a regata?')}</span>
+          <div className="rr-stars" role="radiogroup" aria-label={t('One to five', 'От одного до пяти', 'De una a cinco', 'Eins bis fünf', 'Birden beşe', 'De un à cinq', 'Da uno a cinque', 'De uma a cinco')}>
             {[1, 2, 3, 4, 5].map((n) => (
               <button key={n} type="button" role="radio" aria-checked={stars === n} aria-label={`${n} · ${words[n - 1]}`} title={words[n - 1]}
                 className={n <= stars ? 'on' : undefined} onClick={() => rate(n)} disabled={stage === 'more'}>
@@ -49,9 +49,9 @@ export function RateRace({ id, lang }: { id: string; lang: Lang }) {
           </div>
           {stage === 'more' && (
             <div className="rr-more">
-              <label className="rr-l" htmlFor="rr-text">{stars <= 3 ? t('What got in the way?', 'Что мешало?', '¿Qué te molestó?', 'Was war im Weg?', 'Ne engel oldu?', 'Qu’est-ce qui t’a gêné ?', 'Cosa ti ha dato fastidio?') : t('What would make it better?', 'Что сделать ещё лучше?', '¿Qué la mejoraría?', 'Was würde es besser machen?', 'Neyi daha iyi yapardı?', 'Qu’est-ce qui la rendrait meilleure ?', 'Cosa la renderebbe migliore?')} <span>{t('If you like', 'Если хочешь', 'Si quieres', 'Wenn du magst', 'İstersen', 'Si tu veux', 'Se vuoi')}</span></label>
+              <label className="rr-l" htmlFor="rr-text">{stars <= 3 ? t('What got in the way?', 'Что мешало?', '¿Qué te molestó?', 'Was war im Weg?', 'Ne engel oldu?', 'Qu’est-ce qui t’a gêné ?', 'Cosa ti ha dato fastidio?', 'O que atrapalhou?') : t('What would make it better?', 'Что сделать ещё лучше?', '¿Qué la mejoraría?', 'Was würde es besser machen?', 'Neyi daha iyi yapardı?', 'Qu’est-ce qui la rendrait meilleure ?', 'Cosa la renderebbe migliore?', 'O que a deixaria melhor?')} <span>{t('If you like', 'Если хочешь', 'Si quieres', 'Wenn du magst', 'İstersen', 'Si tu veux', 'Se vuoi', 'Se quiser')}</span></label>
               <textarea id="rr-text" className="field rr-text" rows={2} maxLength={500} value={text} onChange={(e) => setText(e.target.value)} />
-              <button type="button" className="pill pill-xs rr-send" onClick={send}><span className="btn-t">{text.trim() ? t('Send', 'Отправить', 'Enviar', 'Senden', 'Gönder', 'Envoyer', 'Invia') : t('Done', 'Готово', 'Hecho', 'Fertig', 'Tamam', 'Terminé', 'Fatto')}</span></button>
+              <button type="button" className="pill pill-xs rr-send" onClick={send}><span className="btn-t">{text.trim() ? t('Send', 'Отправить', 'Enviar', 'Senden', 'Gönder', 'Envoyer', 'Invia', 'Enviar') : t('Done', 'Готово', 'Hecho', 'Fertig', 'Tamam', 'Terminé', 'Fatto', 'Pronto')}</span></button>
             </div>
           )}
         </>

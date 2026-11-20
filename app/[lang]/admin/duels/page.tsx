@@ -13,7 +13,7 @@ export default async function AdminDuelsPage({ params, searchParams }: LangParam
   const { lang, t } = a;
   return (
     <AdminShell {...a} page="duels">
-      {a.data?.data ? <AdminDuels lang={lang} data={a.data.data} days={days} /> : <AdminMissing t={t} Icon={IconCrew} title={t('1-on-1 races', 'Гонки 1 на 1', 'Regatas 1 contra 1', '1-gegen-1-Regatten', 'Bire bir yarışlar', 'Duels 1 contre 1', 'Duelli 1 contro 1')} error={a.data?.error} />}
+      {a.data?.data ? <AdminDuels lang={lang} data={a.data.data} days={days} /> : <AdminMissing t={t} Icon={IconCrew} title={t('1-on-1 races', 'Гонки 1 на 1', 'Regatas 1 contra 1', '1-gegen-1-Regatten', 'Bire bir yarışlar', 'Duels 1 contre 1', 'Duelli 1 contro 1', 'Duelos 1 contra 1')} error={a.data?.error} />}
     </AdminShell>
   );
 }

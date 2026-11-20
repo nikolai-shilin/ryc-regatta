@@ -136,11 +136,11 @@ function laid(preset: Wind, length: Length, fleet: number, shape: Shape, k: numb
   return { type: shape, windward, gate, pin: [-half, 0], committee: [half, 0], marks, ...(wing && { wing }), ...(finish && { finish }) };
 }
 
-export const SHAPE_NAME: Record<Shape, [en: string, ru: string, es?: string, de?: string, tr?: string, fr?: string, it?: string]> = {
-  wl: ['Up and down', 'Апвинд — даунвинд', 'Barlovento–sotavento', 'Luv–Lee', 'Orsa–pupa', 'Banane', 'Bastone'],
-  tri: ['Triangle', 'Треугольник', 'Triángulo', 'Dreieck', 'Üçgen', 'Triangle', 'Triangolo'],
-  trap: ['Trapezoid', 'Трапеция', 'Trapecio', 'Trapez', 'Yamuk', 'Trapèze', 'Trapezio'],
-  wlu: ['Up and down, upwind finish', 'Апвинд — даунвинд, финиш наверху', 'Barlovento–sotavento, llegada en ceñida', 'Luv–Lee, Ziel am Wind', 'Orsa–pupa, orsada bitiş', 'Banane, arrivée au vent', 'Bastone, arrivo di bolina'],
+export const SHAPE_NAME: Record<Shape, [en: string, ru: string, es?: string, de?: string, tr?: string, fr?: string, it?: string, pt?: string]> = {
+  wl: ['Up and down', 'Апвинд — даунвинд', 'Barlovento–sotavento', 'Luv–Lee', 'Orsa–pupa', 'Banane', 'Bastone', 'Barla-sota'],
+  tri: ['Triangle', 'Треугольник', 'Triángulo', 'Dreieck', 'Üçgen', 'Triangle', 'Triangolo', 'Triângulo'],
+  trap: ['Trapezoid', 'Трапеция', 'Trapecio', 'Trapez', 'Yamuk', 'Trapèze', 'Trapezio', 'Trapézio'],
+  wlu: ['Up and down, upwind finish', 'Апвинд — даунвинд, финиш наверху', 'Barlovento–sotavento, llegada en ceñida', 'Luv–Lee, Ziel am Wind', 'Orsa–pupa, orsada bitiş', 'Banane, arrivée au vent', 'Bastone, arrivo di bolina', 'Barla-sota, chegada em barlavento'],
 };
 export const SHAPES = Object.keys(SHAPE_NAME) as Shape[];
 const isShape = (s: unknown): s is Shape => typeof s === 'string' && (SHAPES as string[]).includes(s);
@@ -181,7 +181,7 @@ export const courseDistance = (c: CourseGeo, laps: number) =>
   legDistances(c, courseLegs(laps, shapeOf(c))).reduce((a, b) => a + b, 0);
 
 // "520 m · 0.28 nm"
-export function fmtDistance(m: number, lang: 'en' | 'ru' | 'es' | 'de' | 'tr' | 'fr' | 'it') {
+export function fmtDistance(m: number, lang: 'en' | 'ru' | 'es' | 'de' | 'tr' | 'fr' | 'it' | 'pt') {
   const nm = (m / 1852).toFixed(2), r = Math.round(m / 10) * 10;
-  return lang === 'ru' ? `${r} м · ${nm.replace('.', ',')} мили` : lang === 'es' ? `${r} m · ${nm.replace('.', ',')} millas` : lang === 'de' ? `${r} m · ${nm.replace('.', ',')} sm` : lang === 'tr' ? `${r} m · ${nm.replace('.', ',')} deniz mili` : lang === 'fr' ? `${r} m · ${nm.replace('.', ',')} mille` : lang === 'it' ? `${r} m · ${nm.replace('.', ',')} miglia` : `${r} m · ${nm} nm`;
+  return lang === 'ru' ? `${r} м · ${nm.replace('.', ',')} мили` : lang === 'es' ? `${r} m · ${nm.replace('.', ',')} millas` : lang === 'de' ? `${r} m · ${nm.replace('.', ',')} sm` : lang === 'tr' ? `${r} m · ${nm.replace('.', ',')} deniz mili` : lang === 'fr' ? `${r} m · ${nm.replace('.', ',')} mille` : lang === 'it' ? `${r} m · ${nm.replace('.', ',')} miglia` : lang === 'pt' ? `${r} m · ${nm.replace('.', ',')} milhas` : `${r} m · ${nm} nm`;
 }

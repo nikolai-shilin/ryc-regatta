@@ -298,5 +298,5 @@ test('a shared passport keeps its own address for the page\'s own links', async 
 
 test('/players refuses a language the site does not have', async () => {
   reset();
-  await assert.rejects(html('pt'), (e) => e.kind === 'notFound');
+  await assert.rejects(html('nl'), (e) => e.kind === 'notFound');
 });
