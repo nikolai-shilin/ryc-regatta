@@ -1,4 +1,8 @@
 import type { NextConfig } from 'next';
+import { fileURLToPath } from 'node:url';
+import { hashes } from './scripts/stamp-game.mjs';
+
+const FOREVER = [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }];
 
 // The race itself is the static Three.js game in public/: its page is public/play/index.html, its code public/game/.
 // /play serves that page, so the game and the Next.js pages share one origin (the Supabase session cookie and the
@@ -42,12 +46,13 @@ const config: NextConfig = {
       { source: '/venue-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/venues-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/game/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=0, must-revalidate' }] },
-      // a module at its hashed address (scripts/stamp-game.mjs, at the build): a new version has a new address
-      { source: '/game/:path*', has: [{ type: 'query', key: 'v' }], headers: [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }] },
       { source: '/ui/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=0, must-revalidate' }] }, // the design system's, as the game's
-      // /play's stylesheets and the logo on its cards at their hashed address (scripts/stamp-game.mjs), as the game's modules
-      { source: '/ui/:path*', has: [{ type: 'query', key: 'v' }], headers: [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }] },
-      { source: '/logo-black.svg', has: [{ type: 'query', key: 'v' }], headers: [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }] },
+      // The game's files, /play's stylesheets and the logo on its cards at their hashed address (scripts/stamp-game.mjs,
+      // at the build): a new version has a new address, so the browser keeps it for good. Only at this build's own
+      // hash, though: Vercel serves a file at any ?v=, and an old build still answering while this one goes live would
+      // otherwise hand out its old file as this one's, to be kept for a year (stamp-game.mjs, hashes()).
+      ...Object.entries(hashes(fileURLToPath(new URL('./public', import.meta.url))))
+        .map(([source, v]) => ({ source, has: [{ type: 'query' as const, key: 'v', value: v }], headers: FOREVER })),
       // three.js, served from here rather than a CDN (the version is in the path, so a file there never changes)
       { source: '/vendor/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }] },
       // the country flags (the flag picker shows some 250 at once) and the pictures as they are, outside next/image (the

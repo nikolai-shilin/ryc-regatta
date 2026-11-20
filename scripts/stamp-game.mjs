@@ -1,7 +1,7 @@
 // npm run build runs this first (prebuild). On Vercel it gives each of the game's modules an address with its content's
 // hash, /game/sim.js?v=1a2b3c4d5e, in the five pages that run the game's scene (public/play, public/boat-view,
 // public/hero-view, public/fleet-view, public/venue-view): the import map sends every import of /game/sim.js there, the <link rel="modulepreload"> lists and
-// /play's <script src> name it, and next.config.ts serves an address with ?v= as immutable. So a returning visitor's
+// /play's <script src> name it, and next.config.ts serves an address with the right ?v= as immutable (hashes()). So a returning visitor's
 // browser takes the modules from its cache without asking the server again, and a deploy that changes a module changes
 // its address: a page can't get yesterday's sim.js with today's world.js. The game's files that aren't modules (the
 // land, the music, the yacht: some 2 MB each) get the same in the import map, and the modules that fetch them ask it
@@ -15,6 +15,7 @@
 // again comes out the same. test/preload.test.mjs uses reach() to check the pages' preload lists.
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const PAGES = ['/play/index.html', '/boat-view/index.html', '/hero-view/index.html', '/fleet-view/index.html', '/venue-view/index.html', '/venues-view/index.html'];
@@ -58,14 +59,29 @@ export const assetsOf = (dir) => readdirSync(`${dir}/game`, { recursive: true })
 // a page's stylesheets from /ui/ and the logo, where a page names them (stamped already or not)
 const PLAIN = /(<link rel="stylesheet" href="|<img [^>]*?src=")(\/ui\/[^"?]+\.css|\/logo-black\.svg)(?:\?v=[0-9a-f]+)?"/g;
 
+// a file's hash, as its ?v=: the first ten hex of the sha-256 of its bytes
+export const hashOf = (dir, p) => createHash('sha256').update(readFileSync(`${dir}${p}`)).digest('hex').slice(0, 10);
+
+// Every file a stamped page can name, by path, with its hash: all of /game/, /ui/'s stylesheets and the logo.
+// next.config.ts caches an address for good only when its ?v= is the hash of the file this build serves there. Vercel
+// answers any ?v= with the file it has (its cache keeps one copy per path, whatever the query), so while a deploy goes
+// live, a page of the new build can ask the old one for world.js?v=new and get the old world.js. Marked immutable,
+// that old file stayed in the browser under the new address for a year, and every reload ran it with the new main.js
+// ("world.setFigures is not a function", 18 November). With the hash checked, the old build's answer comes back to be
+// revalidated, and the next load gets the right file.
+export function hashes(dir) {
+  const game = readdirSync(`${dir}/game`, { recursive: true, withFileTypes: true }).filter((f) => f.isFile())
+    .map((f) => `/game/${join(f.parentPath ?? f.path, f.name).slice(`${dir}/game/`.length).split('\\').join('/')}`);
+  const ui = readdirSync(`${dir}/ui`).filter((f) => f.endsWith('.css')).map((f) => `/ui/${f}`);
+  return Object.fromEntries([...game, ...ui, '/logo-black.svg'].sort().map((p) => [p, hashOf(dir, p)]));
+}
+
 export function stamp(dir) {
-  const read = reader(dir);
-  const hash = (p) => createHash('sha256').update(readFileSync(`${dir}${p}`)).digest('hex').slice(0, 10);
+  const hash = (p) => hashOf(dir, p);
   const files = Object.fromEntries(assetsOf(dir).map((p) => [p, `${p}?v=${hash(p)}`]));
   for (const page of PAGES) {
     const { html, reached } = reach(dir, page);
-    const v = Object.fromEntries(reached.filter((p) => p.startsWith('/game/'))
-      .map((p) => [p, `${p}?v=${createHash('sha256').update(read(p)).digest('hex').slice(0, 10)}`]));
+    const v = Object.fromEntries(reached.filter((p) => p.startsWith('/game/')).map((p) => [p, `${p}?v=${hash(p)}`]));
     const out = html
       .replace(/(<script type="importmap">)(.*?)(<\/script>)/, (_, a, json, b) => {
         const map = JSON.parse(json);

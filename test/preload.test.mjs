@@ -2,7 +2,8 @@
 // will load in <link rel="modulepreload">, so the browser asks for them all at once instead of one level of imports at
 // a time (five round trips deep from main.js). npm test walks each page's imports and checks its list is exactly the
 // modules it reaches: a module added to the game goes in the lists too, and one taken out leaves them. And on Vercel,
-// scripts/stamp-game.mjs gives each of the game's modules its content's hash, ?v=, which next.config.ts caches for good.
+// scripts/stamp-game.mjs gives each of the game's modules its content's hash, ?v=, which next.config.ts caches for good
+// (at that hash only).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -10,7 +11,7 @@ import { cpSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PAGES, reach, stamp } from '../scripts/stamp-game.mjs';
+import { PAGES, hashOf, reach, stamp } from '../scripts/stamp-game.mjs';
 
 const pub = fileURLToPath(new URL('../public', import.meta.url));
 
@@ -87,17 +88,34 @@ test('stamped, the yacht and the land are preloaded at the very address the game
   }
 });
 
-test('an address with ?v= is cached for good, the rest of /game/ still revalidates, and the build stamps', () => {
-  const config = readFileSync(new URL('../next.config.ts', import.meta.url), 'utf8');
-  const plain = config.indexOf("{ source: '/game/:path*', headers");
-  const versioned = config.indexOf("{ source: '/game/:path*', has: [{ type: 'query', key: 'v' }]");
-  assert.ok(plain >= 0 && versioned > plain, 'the ?v= rule comes after the plain one, so it wins');
-  assert.match(config.slice(versioned, config.indexOf('\n', versioned)), /max-age=31536000, immutable/);
-  const ui = config.indexOf("{ source: '/ui/:path*', headers");
-  const uiv = config.indexOf("{ source: '/ui/:path*', has: [{ type: 'query', key: 'v' }]");
-  assert.ok(ui >= 0 && uiv > ui, "/ui/'s ?v= rule comes after its plain one");
-  assert.match(config.slice(uiv, config.indexOf('\n', uiv)), /max-age=31536000, immutable/);
-  assert.match(config, /\{ source: '\/logo-black\.svg', has: \[\{ type: 'query', key: 'v' \}\], headers: \[\{ key: 'cache-control', value: 'public, max-age=31536000, immutable' \}\] \}/);
+test('an address is cached for good only at its own hash: the rest of /game/ and /ui/ revalidates, and the build stamps', async () => {
+  const { default: config } = await import('../next.config.ts');
+  const rules = await config.headers();
+  const at = (source) => rules.findIndex((r) => r.source === source && !r.has);
+  for (const plain of ['/game/:path*', '/ui/:path*']) {
+    assert.ok(at(plain) >= 0, plain);
+    assert.deepEqual(rules[at(plain)].headers, [{ key: 'cache-control', value: 'public, max-age=0, must-revalidate' }], plain);
+  }
+  // no rule caches a file for good at any ?v= (Vercel would hand an old build's file out at a new build's address)
+  assert.ok(!rules.some((r) => r.has && r.has.some((h) => h.key === 'v' && !h.value)), 'a ?v= rule without its hash');
+  const forever = new Map(rules.filter((r) => r.has && r.has[0].key === 'v').map((r) => {
+    assert.ok(rules.indexOf(r) > Math.max(at('/game/:path*'), at('/ui/:path*')), `${r.source}: after the plain rules, so it wins`);
+    assert.deepEqual(r.headers, [{ key: 'cache-control', value: 'public, max-age=31536000, immutable' }], r.source);
+    return [`${r.source}?v=${r.has[0].value}`, r];
+  }));
+  // every hashed address a stamped page names is one of them, at the hash of the file served there
+  const dir = mkdtempSync(join(tmpdir(), 'stamp-'));
+  try {
+    cpSync(pub, dir, { recursive: true, filter: (s) => !/\/(images|flags)$|\.(bin|mp3|m4a|glb)$/.test(s) });
+    stamp(dir);
+    const named = new Set(PAGES.flatMap((p) => [...readFileSync(join(dir, p), 'utf8').matchAll(/"(\/[^"?]+\?v=[0-9a-f]{10})"/g)].map((m) => m[1])));
+    assert.ok(named.size > 100, `${named.size} addresses`);
+    for (const u of named) assert.ok(forever.has(u), `${u} is cached for good`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  assert.ok(forever.has(`/game/world.js?v=${hashOf(pub, '/game/world.js')}`));
+  assert.ok(!forever.has('/game/world.js?v=0a713b9fc9'), 'an old hash is not');
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   assert.equal(pkg.scripts.prebuild, 'node scripts/stamp-game.mjs');
 });

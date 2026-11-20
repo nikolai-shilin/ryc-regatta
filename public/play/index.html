@@ -678,10 +678,39 @@
   // a file that fails (no network, the CDN down) or the game's code throwing before it's ready: say so and offer a retry
   function fail(why) { if (ready || failed) return; failed = true; clearInterval(tipTimer); root.classList.add('err'); label(); visitPost({ ev: 'visit', id: window.rycVisit.id, visit: { stage: 'failed', vid: vid, why: String(why || 'error').slice(0, 140), mins: Math.round(performance.now() / 6000) / 10 } }); }
   // left while it was still loading (stats.js says when the race got under way, and after that)
-  addEventListener('pagehide', function () { if (!ready && !failed) visitPost({ ev: 'visit', id: window.rycVisit.id, visit: { stage: 'gave-up', vid: vid, mins: Math.round(performance.now() / 6000) / 10, pct: Math.round(shown) } }); });
+  addEventListener('pagehide', function () { if (!ready && !failed && !fixing) visitPost({ ev: 'visit', id: window.rycVisit.id, visit: { stage: 'gave-up', vid: vid, mins: Math.round(performance.now() / 6000) / 10, pct: Math.round(shown) } }); });
   var ours = function (u) { return !!u && (u.indexOf('/game/') !== -1 || u.indexOf('three') !== -1); };
-  window.addEventListener('error', function (e) { var el = e.target; if (el && el.tagName === 'SCRIPT' ? ours(el.src) : ours(e.filename)) fail(el && el.tagName === 'SCRIPT' ? 'script: ' + String(el.src).replace(/^.*\//, '') : e.message + ' @ ' + String(e.filename).replace(/^.*\//, '') + ':' + e.lineno); }, true);
-  $('lRetry').addEventListener('click', function () { location.reload(); });
+  window.addEventListener('error', function (e) { var el = e.target; if (el && el.tagName === 'SCRIPT' ? ours(el.src) : ours(e.filename)) broke(el && el.tagName === 'SCRIPT' ? 'script: ' + String(el.src).replace(/^.*\//, '') : e.message + ' @ ' + String(e.filename).replace(/^.*\//, '') + ':' + e.lineno); }, true);
+  $('lRetry').addEventListener('click', function () { this.disabled = true; refetch().then(function () { location.reload(); }); });
+
+  // A file of the game's that didn't come, or its code throwing before the race is ready. What the browser kept may be
+  // the trouble: a file of the build before, kept at this build's address while a deploy went live (next.config.ts),
+  // which a reload takes from the cache again. So every module the page names is fetched once more past the cache, which
+  // puts the right file in its place, and the page loads again, by itself, once; a second failure within two minutes is
+  // the card with Try again (which fetches them afresh too). The failure goes to /admin with what came back wrong.
+  var fixing = false, RELOAD = 'regatta-reload';
+  var short = function (u) { return String(u).replace(/^.*\//, '').replace(/\?.*$/, ''); };
+  function refetch() {
+    var urls = [], bad = [];
+    try { var m = JSON.parse(document.querySelector('script[type="importmap"]').textContent).imports; for (var k in m) if (/\.js(\?|$)/.test(m[k])) urls.push(m[k]); } catch (e) {}
+    var links = document.querySelectorAll('link[rel="modulepreload"], script[type="module"][src]');
+    for (var i = 0; i < links.length; i++) { var u = links[i].getAttribute('href') || links[i].getAttribute('src'); if (urls.indexOf(u) === -1) urls.push(u); }
+    var one = function (u) { return fetch(u, { cache: 'reload' }).then(function (r) { if (!r.ok) bad.push(r.status + ' ' + short(u)); }, function () { bad.push('no answer ' + short(u)); }); };
+    // (a slow line doesn't hold the page up: after eight seconds it goes on with what has come)
+    return Promise.race([Promise.all(urls.map(one)), new Promise(function (r) { setTimeout(r, 8000); })]).then(function () { return bad; });
+  }
+  function broke(why) {
+    if (ready || failed || fixing) return;
+    fixing = true;
+    var again = true; try { again = Date.now() - (+sessionStorage.getItem(RELOAD) || 0) < 120000; } catch (e) {}
+    refetch().then(function (bad) {
+      var said = why + (bad.length ? ' · ' + bad.slice(0, 3).join(', ') : '');
+      if (again) { fixing = false; return fail(said); }
+      try { sessionStorage.setItem(RELOAD, String(Date.now())); } catch (e) {}
+      visitPost({ ev: 'visit', id: window.rycVisit.id, visit: { stage: 'failed', vid: vid, why: ('reloaded: ' + said).slice(0, 140), mins: Math.round(performance.now() / 6000) / 10 } });
+      location.reload();
+    });
+  }
 
   window.rycLoader = {
     // main.js, when it can't go on (no WebGL to be had): the failure, with what to do about it under the race's name
@@ -698,8 +727,10 @@
     },
     // main.js: the scene is built. Fill the bar, let the first frames render under it, then fade into the race.
     done: function (start) {
-      if (ready || failed) { if (!failed) start(); return; }
+      if (failed || fixing) return;
+      if (ready) return start();
       ready = true; clearInterval(tipTimer); requestAnimationFrame(tick);
+      try { sessionStorage.removeItem(RELOAD); } catch (e) {}
       setTimeout(function () { root.classList.add('out'); start(); setTimeout(function () { root.hidden = true; }, 500); }, 700);
     },
   };
