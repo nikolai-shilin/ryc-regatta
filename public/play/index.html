@@ -585,6 +585,20 @@
     <p class="l-tip" id="lTip"></p>
   </div>
 </div>
+<!-- a newcomer's first race: how it goes, on four cards, while the race loads behind them; Start goes in once it's
+     loaded, and a press before that is kept (the loader below: intro) -->
+<section id="intro" class="bc" hidden aria-labelledby="iH">
+  <div class="i-in">
+    <span class="kicker" id="iKick"></span>
+    <h1 id="iH"></h1>
+    <ol class="i-cards" id="iCards"></ol>
+    <div class="i-dots" id="iDots" aria-hidden="true"></div>
+    <div class="i-go">
+      <button type="button" class="i-start" id="iStart"><span class="i-st" id="iStartT"></span><span class="i-pct" id="iPct">0%</span><i id="iBar"></i></button>
+      <a class="i-skip" id="iSkip"></a>
+    </div>
+  </div>
+</section>
 <script>
 /* The preloader runs before the game's modules arrive: it speaks the game's language (the same choice as main.js),
    names the race, counts the files in as they land and hands over to the race when main.js calls rycLoader.done(). */
@@ -662,6 +676,61 @@
     tipTimer = setInterval(function () { tipEl.classList.add('fade'); setTimeout(function () { ti++; showTip(); tipEl.classList.remove('fade'); }, 350); }, 5000);
   }
 
+  // A newcomer's first race opens on how it goes: four cards over the photo while the race loads behind them (about
+  // seven seconds on a phone), so reading them adds no wait; the race goes in on Start once it's loaded, or at once if
+  // Start was pressed before. Only on a device that hasn't raced (?intro shows it anyway); ?race=first after that loads
+  // straight into the race as before.
+  var intro = null, introGo = false, introIn = null;
+  var played = (function () { try { return +JSON.parse(localStorage.getItem('regatta') || '{}').played || 0; } catch (e) { return 0; } })();
+  if (first && (!(played > 0) || q.has('intro'))) {
+    intro = $('intro'); root0().classList.add('intro');
+    var touch = matchMedia('(pointer: coarse)').matches, esc1 = function (x) { return String(x).replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
+    $('iKick').textContent = t('Your first race · How it works', 'Твоя первая гонка · Как это устроено', 'Tu primera regata · Cómo funciona', 'Deine erste Regatta · So geht’s', 'İlk yarışın · Nasıl işler');
+    $('iH').textContent = t('Four things before the gun', 'Четыре вещи до старта', 'Cuatro cosas antes de la señal', 'Vier Dinge vor dem Start', 'Starttan önce dört şey');
+    // the drawings: in the tokens' colours, the wind always from the top as in the race
+    var boat = function (x, y, deg, cls) { return '<path class="' + cls + '" transform="translate(' + x + ' ' + y + ') rotate(' + deg + ')" d="M0 -9 C4 -5 4.5 3 3 8 L-3 8 C-4.5 3 -4 -5 0 -9 Z"/>'; };
+    var wind = '<g class="i-w"><path d="M14 8v16M9 19l5 5 5-5"/><text x="22" y="14">' + esc1(t('Wind', 'Ветер', 'Viento', 'Wind', 'Rüzgâr')) + '</text></g>';
+    var art = [
+      // the course: the line between the committee boat and the pin, the yellow mark upwind, up in a zigzag and back down
+      '<svg viewBox="0 0 200 130" aria-hidden="true">' + wind + '<path class="i-up" d="M100 108 L72 80 L122 52 L102 26"/><path class="i-dn" d="M110 26 V102"/><path class="i-dnh" d="M104 94 l6 8 6-8"/>'
+        + '<circle class="i-mk" cx="106" cy="20" r="6"/><path class="i-ln" d="M66 112 H146"/><circle class="i-pin" cx="66" cy="112" r="4"/><rect class="i-cb" x="146" y="106" width="22" height="12"/></svg>',
+      // steering: the arc and the thumb on a phone, the keys on a keyboard
+      touch
+        ? '<svg viewBox="0 0 200 130" aria-hidden="true">' + wind + '<path class="i-arc" d="M50 112 A50 50 0 0 1 150 112"/><circle class="i-th" cx="122" cy="70" r="11"/><path class="i-arr" d="M84 60 l-8 4 8 6 M116 52 l8 4 -8 6"/>' + boat(100, 98, 0, 'i-me') + '</svg>'
+        : '<svg viewBox="0 0 200 130" aria-hidden="true">' + wind + '<rect class="i-key" x="46" y="58" width="40" height="40"/><rect class="i-key" x="114" y="58" width="40" height="40"/><text class="i-kt" x="66" y="85">←</text><text class="i-kt" x="134" y="85">→</text>'
+          + '<rect class="i-key" x="46" y="106" width="108" height="18"/><text class="i-ks" x="100" y="119">' + esc1(t('Space · Tack', 'Пробел · Поворот', 'Espacio · Virar', 'Leertaste · Wenden', 'Boşluk · Tramola')) + '</text></svg>',
+      // the start: the boats behind the line, the count, and over it after the gun
+      '<svg viewBox="0 0 200 130" aria-hidden="true">' + wind + '<rect class="i-clk" x="64" y="10" width="72" height="34"/><text class="i-ct" x="100" y="35">0:20</text><path class="i-ln" d="M36 76 H164"/><circle class="i-pin" cx="36" cy="76" r="4"/><rect class="i-cb" x="164" y="70" width="22" height="12"/>'
+        + boat(70, 100, 0, 'i-ai') + boat(130, 102, 0, 'i-ai') + boat(100, 96, 0, 'i-me') + '<path class="i-go2" d="M100 86 V58"/><path class="i-dnh" d="M94 64 l6 -8 6 8"/></svg>',
+      // right of way: the boat on starboard (the wind over her right side) holds her course, the one on port goes behind her
+      '<svg viewBox="0 0 200 130" aria-hidden="true">' + wind + '<path class="i-up" d="M156 104 L74 50"/><path class="i-pt" d="M48 104 C70 92 92 88 112 96 L150 70"/>' + boat(120, 78, -56, 'i-me') + boat(64, 96, 50, 'i-ai')
+        + '<text class="i-tg" x="132" y="50">' + esc1(t('Right of way', 'Право дороги', 'Preferencia', 'Vorfahrt', 'Yol hakkı')) + '</text></svg>',
+    ];
+    var cards = [
+      [t('The course', 'Дистанция', 'El recorrido', 'Die Bahn', 'Parkur'), t('Up to the yellow mark, round it and come back down through the line. One lap, about three minutes, five boats.', 'Вверх к жёлтому знаку, обогни его и вернись вниз через линию. Один круг, около трёх минут, пять лодок.', 'Sube hasta la baliza amarilla, rodéala y baja de vuelta cruzando la línea. Una vuelta, unos tres minutos, cinco barcos.', 'Hoch zur gelben Tonne, um sie herum und zurück durch die Linie. Eine Runde, etwa drei Minuten, fünf Boote.', 'Sarı şamandıraya kadar çık, etrafından dön ve hattan geçerek geri in. Tek tur, yaklaşık üç dakika, beş tekne.')],
+      [t('Steering', 'Руль', 'El timón', 'Steuern', 'Dümen'), touch
+        ? t('Slide your thumb along the arc to steer; the sails trim themselves. You can’t sail straight into the wind: zigzag up, and press Tack to turn through it.', 'Веди большим пальцем по дуге, чтобы рулить; паруса настраиваются сами. Прямо против ветра идти нельзя: поднимайся зигзагом и жми «Поворот», чтобы пройти через ветер.', 'Desliza el pulgar por el arco para gobernar; las velas se ajustan solas. No se puede ir directo contra el viento: sube en zigzag y pulsa Virar para pasar por proa.', 'Fahr mit dem Daumen am Bogen entlang, um zu steuern; die Segel trimmen sich selbst. Direkt gegen den Wind geht es nicht: kreuze im Zickzack hoch und tippe auf Wenden.', 'Dümen için başparmağını yay boyunca kaydır; yelkenler kendi kendine ayarlanır. Rüzgâra dümdüz gidemezsin: zikzak çizerek çık, rüzgârın içinden dönmek için Tramola’ya bas.')
+        : t('Steer with ← and →; the sails trim themselves. You can’t sail straight into the wind: zigzag up, and press Space to tack through it.', 'Рули клавишами ← и →; паруса настраиваются сами. Прямо против ветра идти нельзя: поднимайся зигзагом, пробел — поворот через ветер.', 'Gobierna con ← y →; las velas se ajustan solas. No se puede ir directo contra el viento: sube en zigzag y pulsa Espacio para virar.', 'Steuere mit ← und →; die Segel trimmen sich selbst. Direkt gegen den Wind geht es nicht: kreuze im Zickzack hoch, mit der Leertaste wendest du.', 'Dümeni ← ve → ile kullan; yelkenler kendi kendine ayarlanır. Rüzgâra dümdüz gidemezsin: zikzak çizerek çık, Boşluk tuşuyla tramola at.')],
+      [t('The start', 'Старт', 'La salida', 'Der Start', 'Start'), t('The last 20 seconds before the gun are counted for you. Cross the line after the gun; over early and you have to go back behind it.', 'Последние 20 секунд до сигнала отсчитываются на экране. Пересекай линию после сигнала; раньше — придётся вернуться за неё.', 'Los últimos 20 segundos antes de la señal se cuentan en pantalla. Cruza la línea después de la señal; si sales antes, tendrás que volver detrás.', 'Die letzten 20 Sekunden vor dem Signal werden für dich gezählt. Überquere die Linie nach dem Signal; bist du zu früh drüber, musst du zurück dahinter.', 'İşaretten önceki son 20 saniye ekranda sayılır. Hattı işaretten sonra geç; erken geçersen gerisine dönmen gerekir.')],
+      [t('Right of way', 'Право дороги', 'Preferencia', 'Vorfahrt', 'Yol hakkı'), t('Wind over your right side? You’re on starboard and have right of way; otherwise keep clear. Touch a boat or the mark and you owe a penalty: a tack and a gybe.', 'Ветер дует в правый борт? Ты на правом галсе, у тебя право дороги; иначе уступай. Коснулся лодки или знака — штраф: поворот оверштаг и фордевинд.', '¿El viento te entra por la derecha? Vas amurado a estribor y tienes preferencia; si no, apártate. Si tocas un barco o la baliza, debes una penalización: una virada y una trasluchada.', 'Kommt der Wind von rechts? Dann segelst du auf Steuerbordbug und hast Vorfahrt; sonst halte dich frei. Berührst du ein Boot oder die Tonne, schuldest du eine Strafe: eine Wende und eine Halse.', 'Rüzgâr sağ tarafından mı geliyor? Sancak kontradasın ve yol hakkın var; değilse uzak dur. Bir tekneye ya da şamandıraya değersen ceza borçlanırsın: bir tramola ve bir kavança.')],
+    ];
+    $('iCards').innerHTML = cards.map(function (c, i) { return '<li><div class="i-art">' + art[i] + '</div><span class="i-n">0' + (i + 1) + '</span><b>' + esc1(c[0]) + '</b><p>' + esc1(c[1]) + '</p></li>'; }).join('');
+    $('iDots').innerHTML = cards.map(function () { return '<i></i>'; }).join('');
+    var dots = $('iDots').children, list = $('iCards');
+    var onDot = function () { var w = list.firstElementChild ? list.firstElementChild.getBoundingClientRect().width : 1, k = Math.round(list.scrollLeft / Math.max(1, w)); for (var i = 0; i < dots.length; i++) dots[i].classList.toggle('on', i === Math.min(k, dots.length - 1)); };
+    list.addEventListener('scroll', onDot, { passive: true }); onDot();
+    $('iStartT').textContent = t('Start the race', 'Начать гонку', 'Empezar la regata', 'Regatta starten', 'Yarışı başlat');
+    $('iSkip').textContent = t('Skip to today’s race', 'Сразу к гонке дня', 'Ir a la regata del día', 'Direkt zur Regatta des Tages', 'Doğrudan günün yarışına');
+    $('iSkip').href = '/play?race=today&nofirst' + (ul ? '&lang=' + ul : '');
+    $('iStart').addEventListener('click', function () {
+      if (introIn) return introIn();
+      introGo = true; intro.classList.add('go');
+      $('iStartT').textContent = t('Starting as soon as it’s loaded', 'Стартуем, как только загрузится', 'Empieza en cuanto cargue', 'Startet, sobald es geladen ist', 'Yüklenir yüklenmez başlıyor');
+    });
+    intro.hidden = false;
+  }
+  function root0() { return document.getElementById('loading'); }
+
   // progress: each file the race needs has a weight (three.js is most of the bytes); main.js running is the last 12
   var files = [['three.module.js', 30], ['GLTFLoader.js', 4], ['BufferGeometryUtils.js', 3], ['/game/sim.js', 6], ['/game/world.js', 4],
     ['/game/post.js', 1], ['/game/ocean.js', 1], ['/game/light.js', 1], ['/game/land.js', 1], ['/game/skopea.js', 2], ['skopea.json', 1], ['skopea.bin', 2],
@@ -694,14 +763,16 @@
     if (aim - shown < 0.05) shown = aim;
     bar.style.transform = 'scaleX(' + (shown / 100).toFixed(4) + ')';
     var p = Math.round(shown); pctEl.textContent = p + '%'; root.setAttribute('aria-valuenow', p);
+    if (intro) { $('iBar').style.transform = bar.style.transform; $('iPct').textContent = p + '%'; }
     label();
     if (shown < 100) requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
 
   // a file that fails (no network, the CDN down) or the game's code throwing before it's ready: say so and offer a retry
-  function fail(why) { if (ready || failed) return; failed = true; clearInterval(tipTimer); root.classList.add('err'); label(); visitPost({ ev: 'visit', id: window.rycVisit.id, visit: { stage: 'failed', vid: vid, why: String(why || 'error').slice(0, 140), mins: Math.round(performance.now() / 6000) / 10 } }); }
+  function fail(why) { if (ready || failed) return; failed = true; clearInterval(tipTimer); if (intro) { intro.hidden = true; root.classList.remove('intro'); } root.classList.add('err'); label(); visitPost({ ev: 'visit', id: window.rycVisit.id, visit: { stage: 'failed', vid: vid, why: String(why || 'error').slice(0, 140), mins: Math.round(performance.now() / 6000) / 10 } }); }
   // left while it was still loading (stats.js says when the race got under way, and after that)
+  addEventListener('pagehide', function () { if (intro && ready && !intro.classList.contains('out')) visitPost({ ev: 'visit', id: window.rycVisit.id, visit: { stage: 'gave-up', vid: vid, mins: Math.round(performance.now() / 6000) / 10, pct: 100 } }); }); // (loaded, and left at the intro without starting)
   addEventListener('pagehide', function () { if (!ready && !failed && !fixing) visitPost({ ev: 'visit', id: window.rycVisit.id, visit: { stage: 'gave-up', vid: vid, mins: Math.round(performance.now() / 6000) / 10, pct: Math.round(shown) } }); });
   var ours = function (u) { return !!u && (u.indexOf('/game/') !== -1 || u.indexOf('three') !== -1); };
   window.addEventListener('error', function (e) { var el = e.target; if (el && el.tagName === 'SCRIPT' ? ours(el.src) : ours(e.filename)) broke(el && el.tagName === 'SCRIPT' ? 'script: ' + String(el.src).replace(/^.*\//, '') : e.message + ' @ ' + String(e.filename).replace(/^.*\//, '') + ':' + e.lineno); }, true);
@@ -776,7 +847,17 @@
       if (ready) return start();
       ready = true; clearInterval(tipTimer); requestAnimationFrame(tick);
       try { sessionStorage.removeItem(RELOAD); } catch (e) {}
-      setTimeout(function () { root.classList.add('out'); start(); setTimeout(function () { root.hidden = true; }, 500); }, 700);
+      var go = function () {
+        introIn = function () {};
+        root.classList.add('out'); if (intro) intro.classList.add('out');
+        start(); setTimeout(function () { root.hidden = true; if (intro) intro.hidden = true; }, 500);
+      };
+      if (intro && !introGo) { // the intro waits for Start
+        introIn = go; intro.classList.add('ready'); $('iStartT').textContent = t('Start the race', 'Начать гонку', 'Empezar la regata', 'Regatta starten', 'Yarışı başlat');
+        try { $('iStart').focus({ preventScroll: true }); } catch (e) {}
+        return;
+      }
+      setTimeout(go, intro ? 300 : 700);
     },
   };
 })();
