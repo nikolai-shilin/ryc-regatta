@@ -36,9 +36,12 @@ const settle = async () => { for (let i = 0; i < 8; i++) await new Promise((r) =
 const pass = async (secs, ...pages) => { for (let t = 0; t < secs; t += 0.1) { run(0.1, ...pages); await settle(); } };
 const gate = () => { let open; const promise = new Promise((r) => { open = () => r(new Response(null, { status: 204 })); }); return { promise, open }; };
 
-const of = (kind) => posts.filter((p) => p.body.kind === kind).map((p) => p.body);
+// the guest's end (side 'guest') is her word beside the race's: of('end') and allKinds() are the host's, guestEnds() hers
+const mine = (p) => !(p.body.kind === 'end' && p.body.side === 'guest');
+const of = (kind) => posts.filter((p) => p.body.kind === kind && mine(p)).map((p) => p.body);
+const guestEnds = () => posts.filter((p) => !mine(p)).map((p) => p.body);
 const kinds = (s) => posts.filter((p) => p.loc === s.loc).map((p) => p.body.kind);
-const allKinds = () => posts.map((p) => p.body.kind);
+const allKinds = () => posts.filter(mine).map((p) => p.body.kind);
 
 // ---------- what happens on the water (as one-on-one-endings.test.mjs sails it) ----------
 const home = (x, b) => { toFinish(x.hr, b); until(() => b.done, x.live, 10, `${b.name} is home`); };
@@ -102,6 +105,9 @@ for (const [name, make, sail, want] of ENDINGS) {
     assert.equal(of('end')[0].token, of('start')[0].token);
     assert.equal(of('end')[0].seed, of('start')[0].seed);
     assert.deepEqual(allKinds().filter((k) => k !== 'join'), ['start', 'end'], 'the start first');
+    const g = guestEnds();
+    assert.ok(g.length <= 1, 'her end told once at the most');
+    if (g.length) assert.deepEqual([g[0].state, g[0].winner, g[0].seed], [of('end')[0].state, of('end')[0].winner, of('end')[0].seed], 'the two screens agree');
   });
 }
 
@@ -135,14 +141,21 @@ test('a rematch drawing a seed already sailed is no new race to the site', async
   assert.deepEqual(kinds(x.h), ['start', 'end', 'start', 'end']);
 });
 
-test('the guest reports joining once a race, and never a start or an end', async () => {
+test('the guest reports joining once a race with a token of her own, and her end beside the host\'s, and never a start', async () => {
   const x = await afloat();
   run(3, ...x.both);
   bothHome(x); await settle(); toCard(x);
   rematch(x, 12);
   run(1, ...x.both); await settle();
-  assert.deepEqual(kinds(x.g), ['join', 'join']);
-  assert.deepEqual(of('join'), [{ kind: 'join', code: CODE, seed: 11, name: 'Guest' }, { kind: 'join', code: CODE, seed: 12, name: 'Guest' }]);
+  assert.deepEqual(kinds(x.g), ['join', 'end', 'join']);
+  const joins = of('join');
+  assert.deepEqual(joins.map(({ token, ...j }) => j), [{ kind: 'join', code: CODE, seed: 11, name: 'Guest' }, { kind: 'join', code: CODE, seed: 12, name: 'Guest' }]);
+  for (const j of joins) assert.match(j.token, /^[0-9a-f]{64}$/);
+  assert.notEqual(joins[0].token, joins[1].token, 'each race its own token');
+  const [mine] = guestEnds(), [host] = of('end');
+  assert.equal(mine.side, 'guest'); assert.equal(mine.token, joins[0].token, 'her end carries her join\'s token');
+  assert.notEqual(mine.token, host.token);
+  assert.deepEqual([mine.seed, mine.state, mine.winner, mine.gun], [11, host.state, host.winner, true], 'the two screens agree');
 });
 
 test('both home: the end names the winner, the margin and each boat', async () => {
@@ -195,7 +208,7 @@ test('the guest never receives the write token', async () => {
   assert.ok(wire.length > 10, 'she heard the race');
   assert.equal(JSON.stringify(wire).includes(hostToken), false);
   assert.equal(JSON.stringify(Object.entries(x.g.ls)).includes(hostToken), false);
-  assert.ok(of('join').every((b) => !('token' in b)));
+  assert.ok(of('join').every((b) => b.token !== hostToken), 'her token is her own');
 });
 
 // ---------- a report that fails ----------
@@ -369,8 +382,8 @@ for (const [what, sail] of [['with both boats out', () => {}], ['with the host h
     sail(x);
     const saved = x.h.ls.getItem(savedKey);
     x.h.leave();
-    const { prep, recalls, ...here } = of('end')[0];
-    assert.deepEqual([prep, recalls], ['P', 0], 'the race on the page has its flag and its recalls');
+    const { prep, recalls, gun, ...here } = of('end')[0];
+    assert.deepEqual([prep, recalls, gun], ['P', 0, true], 'the race on the page has its flag, its recalls and its clock past the gun');
     assert.deepEqual([here.host, here.guest], [{ place: null, secs: null, mark: null, pens: null }, { place: null, secs: null, mark: null, pens: null }]);
     assert.deepEqual([here.state, here.winner, here.margin, here.forfeited], ['abandoned', null, null, null]);
 
@@ -380,8 +393,8 @@ for (const [what, sail] of [['with both boats out', () => {}], ['with the host h
     posts = [];
     await page('Host', { ls: x.h.ls });
     await settle();
-    const { prep: prep2, recalls: recalls2, ...back } = of('end')[0];
-    assert.deepEqual([prep2, recalls2], [null, null], 'a reloaded page has no race to read them from');
+    const { prep: prep2, recalls: recalls2, gun: gun2, ...back } = of('end')[0];
+    assert.deepEqual([prep2, recalls2, gun2], [null, null, null], 'a reloaded page has no race to read them from');
     assert.deepEqual(back, here);
   });
 }
@@ -573,9 +586,27 @@ test('endBody with the race here reads its boats, and only what the site keeps o
   const race = { prepFlag: 'B', recalls: 2 };
   const results = { boats: [row('g1', { place: 1, finish: 400.1234 }), row('h1', { place: 2, finish: 412.5, pens: 3 })] };
   assert.deepEqual(accepted(Log.endBody(matchOf(result), CODE, TOKEN, race, results)), {
-    kind: 'end', code: CODE, seed: 42, token: TOKEN, state: 'finished', winner: 'guest', margin: 12.346, forfeited: null, recalls: 2, prep: 'B',
+    kind: 'end', side: 'host', code: CODE, seed: 42, token: TOKEN, state: 'finished', winner: 'guest', margin: 12.346, forfeited: null, recalls: 2, prep: 'B', gun: true,
     host: { place: 2, secs: 412.5, mark: null, pens: 3 }, guest: { place: 1, secs: 400.123, mark: null, pens: 0 },
   });
+});
+
+test('the gun: the clock past nought or a recall; a page with no race knows it of a finish, not of an abandoned race', () => {
+  const won = { winner: 'g1', margin: 1, forfeited: null, abandoned: false }, off = { abandoned: true };
+  const gun = (result, race) => accepted(Log.endBody(matchOf(result), CODE, TOKEN, race, null)).gun;
+  assert.equal(gun(off, { clock: -42, recalls: 0 }), false, 'abandoned in the sequence');
+  assert.equal(gun(off, { clock: 0, recalls: 0 }), true, 'abandoned at the gun');
+  assert.equal(gun(off, { clock: -50, recalls: 1 }), true, 'abandoned in the sequence again, after a recall');
+  assert.equal(gun(off, null), null);
+  assert.equal(gun(won, null), true);
+});
+
+test('the guest\'s end says her side; her join carries her token, and one with none is still a join', () => {
+  const result = { winner: 'h1', margin: 3, forfeited: null, abandoned: false };
+  const mine = accepted(Log.endBody(matchOf(result), CODE, TOKEN, { clock: 300, recalls: 0 }, null, 'guest'));
+  assert.deepEqual([mine.side, mine.winner, mine.token], ['guest', 'host', TOKEN]);
+  assert.equal(accepted(Log.joinBody(matchOf(null), CODE, 'Bo', TOKEN)).token, TOKEN);
+  assert.equal('token' in accepted(Log.joinBody(matchOf(null), CODE, 'Bo')), false);
 });
 
 for (const [what, boat, mark] of [['dsq', { dsq: true }, 'DSQ'], ['ufd', { ufd: true, done: false }, 'DSQ'], ['bfd', { bfd: true, done: false }, 'DSQ'], ['dnf', { dnf: true, done: false }, 'DNF'], ['not home', { done: false, finish: null }, 'DNF'], ['home', {}, null]]) {

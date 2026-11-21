@@ -75,6 +75,11 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     through `regatta_duel_log` into `public.regatta_duels`, apart from the rankings. It needs `DUEL_LOG_KEY` in the site's
     environment, whose SHA-256 is the vault secret `regatta_duel_key_hash`. `/admin/duels` shows the totals and every race.
     Run locally nothing is reported unless the address has `?scores`.
+  - **Trusted results:** both screens report the end. The host's end, with the write token from its start, is the
+    race's result. The guest's end, with a token of her own from her join, is kept beside it. Each end says whether the
+    race reached the gun. A race whose two ends name the same state and winner is `agreed`, and a finished, agreed race
+    between two accounts is a trusted result, the only kind a rating will count
+    (`docs/superpowers/specs/2026-11-21-one-on-one-trusted-results.md`).
   - **Not on the hub yet:** the race hub's 1-on-1 race card shows only with `?match` in its address, until the owner's
     test race with a friend; `/match/new` works for anyone with the address.
 - **A passport to share:** `/players?s=&v=&vs=&n=` (`lib/passport-share.ts`; its card `app/og/passport`): the streak and

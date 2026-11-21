@@ -8,6 +8,10 @@ import { noEmoji } from '@/lib/name';
 // report. parseReport answers the report as the site understands it, or null for anything that is not exactly one of the
 // four. toRow makes the p_report of regatta_duel_log from it.
 //
+// Both screens report the end: the host's with the write token it sent with the start, the guest's (side 'guest') with the
+// token she sent with her join. The database keeps the host's as the race's result and the guest's beside it, and a race
+// whose two ends name the same state and winner is agreed (a race of two accounts, agreed, is one the rating may count).
+//
 // The settings' lists are those of cleanSettings in public/game/match.js; a name is cleaned as `clean` in
 // public/game/match-ui.js does it.
 
@@ -16,9 +20,9 @@ export type Result = { place: number | null; secs: number | null; mark: 'DSQ' | 
 export type Side = 'host' | 'guest';
 export type Report =
   | { kind: 'start'; code: string; seed: number; token: string; host: string; guest: string; settings: Settings }
-  | { kind: 'join'; code: string; seed: number; name: string }
-  | { kind: 'end'; code: string; seed: number; token: string; state: 'finished' | 'abandoned'; winner: Side | null; margin: number | null; forfeited: Side | null;
-      recalls: number | null; prep: 'P' | 'I' | 'U' | 'B' | null; host: Result; guest: Result }
+  | { kind: 'join'; code: string; seed: number; name: string; token: string | null }
+  | { kind: 'end'; code: string; seed: number; token: string; side: Side; state: 'finished' | 'abandoned'; winner: Side | null; margin: number | null; forfeited: Side | null;
+      recalls: number | null; prep: 'P' | 'I' | 'U' | 'B' | null; gun: boolean | null; host: Result; guest: Result }
   | { kind: 'perf'; code: string; seed: number; side: Side; perf: Perf };
 
 // How the race ran on one screen, as the game's stats.js perfSummary and match.js net() measure it: the middle frame's
@@ -41,6 +45,7 @@ const MAX_SECS = 86400;
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const int = (v: unknown, lo: number, hi: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= lo && v <= hi;
 const span = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= MAX_SECS;
+const isToken = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{32,64}$/i.test(v);
 const oneOf = <T extends string>(v: unknown, list: readonly T[]): v is T => typeof v === 'string' && (list as readonly string[]).includes(v);
 
 // a name: no control characters, no < or >, no emoji, whitespace collapsed, 16 characters at most; '' when nothing is left.
@@ -84,8 +89,10 @@ export function parseReport(body: unknown): Report | null {
   const { kind, code, seed } = body;
   if (typeof code !== 'string' || !CODE_RE.test(code) || !int(seed, 0, 100000)) return null;
   if (kind === 'join') {
-    const name = cleanName(body.name);
-    return name ? { kind, code, seed, name } : null;
+    // her token, the proof that her end is hers (a build before it sends none)
+    const name = cleanName(body.name), token = body.token ?? null;
+    if (!(token === null || isToken(token))) return null;
+    return name ? { kind, code, seed, name, token } : null;
   }
   if (kind === 'perf') {
     const side = body.side, perf = perfOf(body.perf);
@@ -93,23 +100,26 @@ export function parseReport(body: unknown): Report | null {
   }
   if (kind !== 'start' && kind !== 'end') return null;
   const token = body.token;
-  if (typeof token !== 'string' || !/^[0-9a-f]{32,64}$/i.test(token)) return null;
+  if (!isToken(token)) return null;
   if (kind === 'start') {
     const host = cleanName(body.host), guest = cleanName(body.guest), settings = settingsOf(body.settings);
     return host && guest && settings ? { kind, code, seed, token, host, guest, settings } : null;
   }
   const { state, winner, forfeited, margin, recalls, prep } = body;
+  const side = body.side ?? 'host', gun = body.gun ?? null; // (a build before them sends neither: the host's, and the gun unknown)
   if (state !== 'finished' && state !== 'abandoned') return null;
+  if (side !== 'host' && side !== 'guest') return null;
+  if (!(gun === null || typeof gun === 'boolean')) return null;
   if (!(winner === null || winner === 'host' || winner === 'guest') || !(forfeited === null || forfeited === 'host' || forfeited === 'guest')) return null;
   if (!(margin === null || span(margin)) || !(recalls === null || int(recalls, 0, 9)) || !(prep === null || oneOf(prep, ['P', 'I', 'U', 'B'] as const))) return null;
   const host = resultOf(body.host), guest = resultOf(body.guest);
-  return host && guest ? { kind, code, seed, token, state, winner, margin, forfeited, recalls, prep, host, guest } : null;
+  return host && guest ? { kind, code, seed, token, side, state, winner, margin, forfeited, recalls, prep, gun, host, guest } : null;
 }
 
 // The p_report of regatta_duel_log. userId is the account the session names (never one the body names); hash is the
-// SHA-256 of the write token, which is never sent on.
+// SHA-256 of the report's token (the host's write token, or the guest's), which is never sent on.
 export function toRow(r: Report, userId: string | null, hash: string | null): object {
-  if (r.kind === 'join') return { kind: 'join', code: r.code, seed: r.seed, guest_user: userId, guest_name: r.name };
+  if (r.kind === 'join') return { kind: 'join', code: r.code, seed: r.seed, guest_user: userId, guest_name: r.name, guest_hash: hash };
   if (r.kind === 'perf') return { kind: 'perf', code: r.code, seed: r.seed, side: r.side, perf: r.perf };
   if (r.kind === 'start') {
     const s = r.settings;
@@ -117,6 +127,6 @@ export function toRow(r: Report, userId: string | null, hash: string | null): ob
       length: s.length, course: s.course, laps: s.laps, start_min: s.start, current: s.current === 1, daytime: s.daytime };
   }
   const side = (x: Result) => ({ place: x.place, secs: x.secs, mark: x.mark, pens: x.pens });
-  return { kind: 'end', code: r.code, seed: r.seed, write_hash: hash, state: r.state, winner: r.winner, margin: r.margin, forfeited: r.forfeited, recalls: r.recalls, prep_flag: r.prep,
-    host: side(r.host), guest: side(r.guest) };
+  return { kind: 'end', side: r.side, code: r.code, seed: r.seed, write_hash: hash, state: r.state, winner: r.winner, margin: r.margin, forfeited: r.forfeited, recalls: r.recalls, prep_flag: r.prep,
+    gun: r.gun, host: side(r.host), guest: side(r.guest) };
 }

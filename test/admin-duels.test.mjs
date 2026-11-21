@@ -227,6 +227,29 @@ test('each sailor\'s screen shows its frame rate, the slow end, the stalls, the 
 test('a race with no screen reported, or data from before screens were reported, draws dashes and no Slow screens tile', () => {
   const h = html();
   assert.equal(tile(h, 'Slow screens'), undefined);
-  assert.match(plain(h), /Finished – –/);
+  assert.match(plain(h), /Finished Host’s screen only – –/);
   assert.equal(tile(html({ totals: { ...TOTALS, perf_seats: 0, slow_seats: 0 } }), 'Slow screens'), undefined);
+});
+
+test('the gun, the screens agreeing and the trusted results are tiles, once the database counts them, and not before', () => {
+  const h = html({ totals: { ...TOTALS, gun: 40, gun_known: 50, both_told: 20, agreed: 19, disputed: 1, finished_accounts: 30, trusted: 19 } });
+  assert.equal(tile(h, 'Reached the gun'), '40 · 80%');
+  assert.equal(tile(h, 'Screens agree'), '19 · 95%');
+  assert.equal(tile(h, 'Disputed'), '1');
+  assert.equal(tile(h, 'Trusted results'), '19 · 63%');
+  const before = html();
+  for (const k of ['Reached the gun', 'Screens agree', 'Disputed', 'Trusted results']) assert.equal(tile(before, k), undefined, k);
+});
+
+test('each race says what the guest\'s screen said of its end: the same, something else, or nothing; and an abandoned race, before or after the gun', () => {
+  const t = (o, lang) => text({ races: [race(o)] }, lang);
+  assert.match(t({ agreed: true, guest_state: 'finished', guest_winner: 'host' }), /Finished Both screens agree/);
+  assert.match(t({ agreed: false, guest_state: 'finished', guest_winner: 'guest' }), /Finished Guest’s screen: Winner Boris/);
+  assert.match(t({ agreed: false, guest_state: 'abandoned', guest_winner: null }), /Finished Guest’s screen: Abandoned/);
+  assert.match(t({ agreed: false, guest_state: 'finished', guest_winner: null }), /Guest’s screen: no winner/);
+  assert.match(t({ state: 'abandoned', winner: null, gun: false, agreed: true }), /Abandoned before the gun · Both screens agree/);
+  assert.match(t({ state: 'abandoned', winner: null, gun: true }), /Abandoned after the gun · Host’s screen only/);
+  assert.match(t({ agreed: false, guest_state: 'finished', guest_winner: 'guest' }, 'ru'), /Экран гостя: Победил Boris/);
+  assert.match(t({ state: 'racing', winner: null }), /8:53\.0 Racing – –/, 'a race still on says nothing of the screens');
+  assert.match(html({ races: [race({ agreed: false, guest_state: 'abandoned' })] }), /color:var\(--warn\)">Finished/);
 });
