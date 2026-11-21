@@ -155,6 +155,7 @@ export const MATCH = {
   currentOn: 'Corrente', daytime: (d) => ({ morning: 'Manhã', midday: 'Meio-dia', afternoon: 'Tarde', evening: 'Fim de tarde', sunset: 'Pôr do sol' })[d] ?? d,
   by: (s) => `+${s}`, forfeit: (w) => `${w} abandonou`, abandonedH: 'Regata anulada', notScored: 'Não conta para nenhum de vocês', noWinner: 'Sem vencedor',
   rematch: 'Revanche', fullResult: 'Resultado completo', done: 'Concluir', waitRematch: (w) => `${w} pode começar a revanche`, left: (w) => `${w} saiu da regata`,
+  stepAway: (w, c) => `${w} saiu · a largada espera · ${c}`,
   stillOut: (w) => `${w} ainda está na regata`, stillOutT: (w, s) => `${w} ainda está na regata · faltam ${s}`, keepOpen: 'Mantenha esta tela aberta',
   loadingRace: (w) => `Esperando ${w} carregar a regata…`,
   sec: 's', waitHost: 'Esperando o anfitrião…', noHost: 'Ninguém está organizando esta regata ainda. Talvez o link seja antigo, ou seu amigo saiu: peça um link novo a ele, ou saia e corra a regata do dia.', stale: 'O jogo foi atualizado: recarregue para participar', reload: 'Recarregar', fullRoom: 'Esta regata já tem dois velejadores',

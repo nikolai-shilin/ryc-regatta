@@ -298,7 +298,8 @@ export class Keeper {
 // The Room joins link.all; Host and Guest join link.input, and stop() leaves it.
 const SNAP_S = 0.1; // a snapshot every 0.1 s of the race
 const HOLD_MS = 3000; // a guest unheard this long holds her course; a host unheard this long: "Waiting for <host>"
-const FORFEIT_MS = 30000; // a guest unheard this long: the race is the host's
+const FORFEIT_MS = 30000; // a guest unheard this long, after the gun: the race is the host's
+export const START_WAIT_MS = 60000; // before the gun, the start waits this long for a screen unheard (after HOLD_MS), then the race is abandoned: nothing counts
 const ASLEEP_MS = 60000; // a host's tab asleep this long: the race is abandoned (the host's word: the guest waits for it)
 const CLOCK_S = 2; // the host's clock is read from the quickest snapshot of the last 2 s…
 const HITCH_S = 0.25; // …unless one comes this much later for its clock than the last: the host's game fell behind
@@ -349,6 +350,8 @@ export class Host {
     this.guest = race.humans.find((b) => b.id === guestId);
     this.stopped = false;
     this.abandoned = false;
+    this.guestGone = false; // abandoned because the guest never came back before the gun
+    this.waiting = null; // before the gun, with the guest unheard: how long the start will still wait for her (ms), else null
     this.ended = false;
     this.acked = false; // the guest has the results
     this.error = null;
@@ -383,6 +386,18 @@ export class Host {
     }
     this._lastTick = t;
     const g = this.guest, quiet = t - this._lastIn;
+    // before the gun the start waits for her: the race stands still (its clock too), its snapshots going on, until she is back,
+    // or for START_WAIT_MS, and then it is abandoned, her leaving before the gun: nothing counts. (After a recall it is
+    // before the gun again: the same.)
+    if (race.clock < 0 && quiet >= HOLD_MS) {
+      const left = START_WAIT_MS - (quiet - HOLD_MS);
+      if (left <= 0) { all.send('abandon', { seed: race.seed, left: g.id }); this.abandoned = true; this.guestGone = true; this.waiting = null; this.stop(); return; }
+      this.waiting = left;
+      this._snapT += dt;
+      if (this._snapT >= SNAP_S - 1e-6) { this._snapT = 0; all.send('snap', { ...encodeSnap(race), seed: race.seed, a: this._ack }); }
+      return;
+    }
+    this.waiting = null;
     if (quiet >= FORFEIT_MS && !g.done) race.forfeit(g); // (a boat home has nothing to give up: the race runs out to its end)
     else if (quiet >= HOLD_MS && !g.done) { g.rudder = 0; g.auto = null; } // she holds her course
     else if (this._c) applyControls(race, g, this._c);
@@ -503,7 +518,7 @@ export class Guest {
     all.on('ev', (e) => { if (ours(e) && goodNews(race, e.list)) this._onEv(e); });
     all.on('end', (e) => { if (ours(e) && goodEnd(race, e)) this._onEnd(e); });
     all.on('results', (m) => { if (!this.stopped) this._onResults(m); });
-    all.on('abandon', (m) => { if (ours(m) && !this.ended) this.abandoned = true; });
+    all.on('abandon', (m) => { if (ours(m) && !this.ended) { this.abandoned = true; this.abandonLeft = typeof m.left === 'string' ? m.left : null; } }); // (left: the host's word on who left: her own tab, or this guest's silence before the gun)
     this.joined = joinOf(this, link.input);
   }
 

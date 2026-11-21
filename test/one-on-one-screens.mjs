@@ -176,7 +176,7 @@ export function aboard(x, gun = true) {
   const hr = x.h.race();
   Object.assign(x, { hr, H: hr.player, G: hr.humans.find((b) => b !== hr.player), gr: x.g.race() });
   x.me = x.gr.player; x.both = [x.h, x.g];
-  if (gun) { hr.clock = 60; for (const b of hr.humans) { b.leg = 1; place(hr, b, midBeat(hr.course, b === x.H ? 70 : -70), hr.wind.dir() + 45 * D2R, 3); } }
+  if (gun) { hr.clock = 60; x.gr.clock = 60; for (const b of hr.humans) { b.leg = 1; place(hr, b, midBeat(hr.course, b === x.H ? 70 : -70), hr.wind.dir() + 45 * D2R, 3); } }
   return x;
 }
 

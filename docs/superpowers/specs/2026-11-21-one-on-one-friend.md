@@ -23,9 +23,22 @@ release 3 of the 1-on-1 plan, the friend challenge ("the gold lane"). It follows
 - **Your card on /players lists every 1-on-1 race,** rated or not (`regatta_my_rating` `recent`): won or lost, against
   whom, where and in what, and the rating change, or "For fun" or "Abandoned".
 
+## 3b: the start that waits (built after 3a)
+
+Before the gun the start waits for both screens (`public/game/match.js` Host.tick, `START_WAIT_MS`, and `match-ui.js`).
+A screen that goes quiet, a phone flipped to Telegram say, stops the start sequence and its clock. Each screen says
+"Anna stepped away · the start waits · 0:24", in every language the game speaks.
+
+- **Back within the minute:** the sequence goes on where it stood.
+- **Gone longer:** the race is abandoned and both screens name the one who left. It was before the gun, so nothing
+  counts. When the guest is the one who left, the host's abandon message names her (`left`), so her screen agrees.
+- **A host gone quiet:** the guest's screen waits the minute and a few seconds more for the host's own word, then ends the
+  race, naming the host.
+- **After the gun:** the 30 s forfeit stands as before. Before this change, it also applied before the gun, so a guest
+  who flipped apps during the start lost a race that hadn't begun.
+
 ## Left for the next slices of release 3
 
-- **The start that waits for both screens:** 60 s before the gun, then both back unrated.
 - **The race screen's own pieces:** the HUD's gun clock on the start line, the order panel cut to two rows, and the
   four set phrases.
 - **The four cards before a first 1-on-1.**

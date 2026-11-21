@@ -151,6 +151,7 @@ export const MATCH = {
   currentOn: 'Strömung', daytime: (d) => ({ morning: 'Morgen', midday: 'Mittag', afternoon: 'Nachmittag', evening: 'Abend', sunset: 'Sonnenuntergang' })[d] ?? d,
   by: (s) => `+${s}`, forfeit: (w) => `${w} hat aufgegeben`, abandonedH: 'Regatta abgebrochen', notScored: 'Sie zählt für keinen von euch', noWinner: 'Kein Sieger',
   rematch: 'Revanche', fullResult: 'Gesamtergebnis', done: 'Fertig', waitRematch: (w) => `${w} kann eine Revanche starten`, left: (w) => `${w} hat die Regatta verlassen`,
+  stepAway: (w, c) => `${w} ist weg · der Start wartet · ${c}`,
   stillOut: (w) => `${w} segelt noch`, stillOutT: (w, s) => `${w} segelt noch · noch ${s}`, keepOpen: 'Lass diesen Bildschirm offen',
   loadingRace: (w) => `Warte, bis ${w} die Regatta geladen hat…`,
   sec: 's', waitHost: 'Warte auf den Host…', noHost: 'Noch hostet niemand diese Regatta. Der Link ist vielleicht alt, oder dein Freund ist gegangen: Frag nach einem neuen oder verlasse die Seite und segle die Regatta des Tages.', stale: 'Das Spiel wurde aktualisiert: Lade neu, um beizutreten', reload: 'Neu laden', fullRoom: 'In dieser Regatta sind schon zwei Segler',

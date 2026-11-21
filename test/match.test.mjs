@@ -374,8 +374,9 @@ test('the guest steers and the host\'s copy turns; each sees the other within 1 
   assert.ok(Math.abs(dx * fw.z - dz * fw.x) < 0.5, `and on its line (${(dx * fw.z - dz * fw.x).toFixed(2)} m off it)`);
 });
 
-test('a silent guest holds course, then the race goes to the host', async () => {
+test('a silent guest holds course, then the race goes to the host (after the gun: before it the start waits)', async () => {
   const d = await duel();
+  d.hrace.clock = 60; d.grace.clock = 60; // (past the gun)
   d.run(1, () => { d.me.rudder = 0.6; });
   d.clock.t += 100; d.me.rudder = 0.65; d.guest.input(controlsOf(d.me)); // her last input
   let end = null;
@@ -753,9 +754,43 @@ test('a tack pressed or the helm thrown goes at once, past the 0.2 s floor, but 
   assert.ok(tk && tk.at - t0 <= 1000 * FRAME + 1, `the tack went ${tk ? (tk.at - t0).toFixed(0) : '–'} ms after the press`);
 });
 
+test('before the gun a silent guest stops the start, the clock standing, for a minute; then the race is abandoned, her the one who left', async () => {
+  const d = await duel();
+  d.run(1);
+  const quiet = (secs) => { for (let i = 0, n = Math.round(secs / FRAME); i < n; i++) { d.clock.t += 1000 * FRAME; d.host.tick(FRAME); } };
+  let abandon = null;
+  d.guest.link.all.on('abandon', (m) => { abandon = m; });
+  quiet(3.5);
+  const stood = d.hrace.clock;
+  assert.ok(stood < 0, 'before the gun');
+  assert.ok(d.host.waiting > 59000 && d.host.waiting <= 60000, 'the start waits a minute from her going quiet');
+  quiet(40);
+  assert.equal(d.hrace.clock, stood, 'the start sequence stands still');
+  assert.equal(d.hrace.over, false, 'no forfeit before the gun');
+  assert.ok(d.host.waiting > 19000 && d.host.waiting < 21000);
+  quiet(21);
+  assert.equal(d.host.abandoned, true); assert.equal(d.host.guestGone, true); assert.equal(d.host.waiting, null);
+  d.rt.pump?.();
+  assert.deepEqual(abandon, { seed: 4242, left: 'g' });
+  assert.equal(d.hrace.over, false, 'abandoned, not sailed: nobody won');
+});
+
+test('before the gun a guest back within the minute: the start goes on from where it stood', async () => {
+  const d = await duel();
+  d.run(1);
+  for (let i = 0, n = Math.round(20 / FRAME); i < n; i++) { d.clock.t += 1000 * FRAME; d.host.tick(FRAME); } // twenty seconds of her silence
+  const stood = d.hrace.clock;
+  assert.ok(d.host.waiting > 0);
+  d.run(1); // her controls come again
+  assert.equal(d.host.waiting, null);
+  assert.ok(d.hrace.clock > stood);
+  assert.equal(d.host.abandoned, false);
+});
+
 test('while the host\'s own link is in doubt the guest\'s silence isn\'t counted: no forfeit for the host\'s outage', async () => {
   let up = true;
   const d = await duel({ alive: () => up });
+  d.hrace.clock = 60; d.grace.clock = 60; // (past the gun: before it the start waits instead)
   d.run(1);
   // the host's socket is dead (no heartbeat answered for over 7 s): nothing from the guest gets through
   up = false;

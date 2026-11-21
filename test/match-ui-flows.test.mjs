@@ -146,6 +146,7 @@ async function sailing(hostOpts = {}, guestOpts = {}) {
   until(() => h.cur()?.H && g.cur()?.G, h, g);
   const hr = h.cur().race;
   hr.clock = 60; // the gun long gone
+  g.cur().race.clock = 60; // (her copy too: past the gun on both screens)
   return { h, g, hr, H: hr.player, G: hr.humans.find((b) => b !== hr.player) };
 }
 const { lineD } = await import('../public/game/sim.js');

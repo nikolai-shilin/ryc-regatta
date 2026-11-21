@@ -31,6 +31,7 @@ export const MATCH_STRINGS = {
     currentOn: 'Current', daytime: (d) => ({ morning: 'Morning', midday: 'Midday', afternoon: 'Afternoon', evening: 'Evening', sunset: 'Sunset' })[d] ?? d,
     by: (s) => `+${s}`, forfeit: (w) => `${w} dropped out`, abandonedH: 'Race abandoned', notScored: 'It doesn’t count for either of you', noWinner: 'No winner',
     rematch: 'Rematch', fullResult: 'Full result', done: 'Done', waitRematch: (w) => `${w} can start a rematch`, left: (w) => `${w} left the race`,
+    stepAway: (w, c) => `${w} stepped away · the start waits · ${c}`,
     stillOut: (w) => `${w} is still racing`, stillOutT: (w, s) => `${w} is still racing · ${s} left`, keepOpen: 'Keep this screen open',
     loadingRace: (w) => `Waiting for ${w} to load the race…`,
     sec: 's', waitHost: 'Waiting for the host…', noHost: 'Nobody is hosting this race yet. The link may be old, or your friend has left: ask them for a new one, or leave and sail today’s race.', stale: 'The game was updated: reload to join', reload: 'Reload', fullRoom: 'This race already has two sailors',
@@ -45,6 +46,7 @@ export const MATCH_STRINGS = {
     currentOn: 'Течение', daytime: (d) => ({ morning: 'Утро', midday: 'Полдень', afternoon: 'День', evening: 'Вечер', sunset: 'Закат' })[d] ?? d,
     by: (s) => `+${s}`, forfeit: (w) => `${w}: сход`, abandonedH: 'Гонка прекращена', notScored: 'Она не засчитывается никому из вас', noWinner: 'Без победителя',
     rematch: 'Реванш', fullResult: 'Полный результат', done: 'Закончить', waitRematch: (w) => `${w} может начать реванш`, left: (w) => `${w}: выход из гонки`,
+    stepAway: (w, c) => `${w} не на связи · старт ждёт · ${c}`,
     stillOut: (w) => `${w} ещё в гонке`, stillOutT: (w, s) => `${w} ещё в гонке · осталось ${s}`, keepOpen: 'Не закрывай этот экран',
     loadingRace: (w) => `${w} загружает гонку…`,
     sec: 'с', waitHost: 'Ждём хозяина гонки…', noHost: 'Эту гонку пока никто не открыл. Возможно, ссылка устарела или друг вышел: попроси новую или выйди и пройди гонку дня.', stale: 'Игра обновилась: перезагрузи страницу, чтобы войти', reload: 'Перезагрузить', fullRoom: 'В этой гонке уже двое',
@@ -486,7 +488,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     const r = cur.race;
     cur.endedAt = Date.now();
     K.raceEnded(cur.H.abandoned ? { abandoned: true } : { winner: r.winner?.id ?? null, margin: r.margin ?? null, forfeited: r.forfeited?.id ?? null, marks: M.marksOf(r) });
-    if (cur.H.abandoned) match.leftBy ??= myId; // (abandoned here only by this tab asleep: the host left the app)
+    if (cur.H.abandoned) match.leftBy ??= cur.H.guestGone ? match.guestId : myId; // (abandoned here by this tab asleep, the host's leaving; or by the guest gone before the gun)
     if (!cur.H.abandoned) keep(cur, M.finalResults(r));
     saveMatch(); sendState();
   };
@@ -647,7 +649,13 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     if (!isHost && match) {
       if (cur && cur.G && !cur.gotSnap && now - cur.loadedAt > 1000) sendLoaded();
       // the host's abandon (her tab asleep, or her leaving), or the host gone five minutes: over, and the host is the one who left
-      if (onScreen() && cur.G?.abandoned && match.state === 'race') match.leave(match.hostId);
+      if (onScreen() && cur.G?.abandoned && match.state === 'race') {
+        if (cur.G.abandonLeft === myId) { match.endRace({ abandoned: true }); match.leftBy = myId; } // (the start waited for her, before the gun, and she didn't come back)
+        else match.leave(match.hostId);
+      }
+      // the host silent before the gun: the start waits for the host as the host's waits for her, START_WAIT_MS and a few seconds
+      // more for the host's own word, then the race is over, the host the one who left
+      if (onScreen() && match.state === 'race' && cur.gotSnap && !cur.endedAt && cur.race.clock < 0 && now - lastHostAt > 3000 + M.START_WAIT_MS + 5000) match.leave(match.hostId);
       if (match.state !== 'over' && now - lastHostAt > 300000) match.leave(match.hostId);
       tellEnd();
     }
@@ -682,6 +690,8 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     let b = '';
     if (phase === 'race' && cur) {
       if (isHost && !cur.H && !cur.endedAt) b = L.loadingRace(nameOf(match.guestId));
+      else if (isHost && cur.H && !cur.endedAt && cur.H.waiting != null) b = L.stepAway(nameOf(match.guestId), mmss(cur.H.waiting)); // (before the gun: the start waits for her)
+      else if (!isHost && cur.G && !cur.endedAt && cur.gotSnap && cur.race.clock < 0 && now - lastHostAt > 3000) b = L.stepAway(nameOf(match.hostId), mmss(3000 + M.START_WAIT_MS - (now - lastHostAt)));
       else if (isHost && cur.H && !cur.endedAt && !cur.H.guest.done && now - K.lastIn > 3000) b = t('guestGone', nameOf(match.guestId));
       else if (!isHost && cur.G?.abandoned) b = t('abandoned'); // (over the last moments on the water: the race has already ended)
       else if (!isHost && cur.G && !cur.endedAt && (cur.G.hostSilent || (!cur.gotSnap && now - cur.at > 4000))) b = t('waitingHost', nameOf(match.hostId));
@@ -690,6 +700,8 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     paintNote();
   };
   const timer = setInterval(beat, 250);
+  // the start's wait, as 0:24 (never below 0:00)
+  function mmss(ms) { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
 
   api = { leave };
   paintRoom();
