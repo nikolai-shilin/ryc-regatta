@@ -121,13 +121,30 @@ test('at 12 fps, each round buying a little, it goes on past the CPU\'s steps do
   assert.ok(lows(parts) >= GFX_PARTS.length - 1, 'with the GPU\'s steps given up too');
 });
 
-test('a CPU-bound frame at 30 fps keeps the GPU\'s steps', () => {
-  // over 24 fps a frame held up by the CPU is left its picture once the CPU's steps are gone: a lower resolution buys nothing
+test('at 30 fps on a 60 Hz screen, a Windows laptop goes on past the CPU\'s steps down to where it draws 60', () => {
+  // the laptops of the week to 21 Nov: Windows draws through ANGLE onto Direct3D, so the GPU's work is CPU time and the
+  // frame looks CPU-bound; and a frame shows only at the screen's refresh, so 19 ms of work comes at 30 fps like 30 ms
+  // does. Auto gave up the CPU's steps, which bought no frames, and kept the rest: Medium at 30 for whole races
+  const rank = { high: 0, medium: 1, low: 2 };
+  const work = (p) => (2.5 * (13.3 - GFX_LADDER.reduce((s, [k, to, ms]) => s + (rank[p[k]] >= rank[to] ? ms : 0), 0))) / 1000;
+  const shown = (p) => Math.ceil(work(p) * 60 - 1e-9) / 60;
+  for (const start of ['high', 'medium']) {
+    const base = gfxParts(start), tune = autoTuner(base);
+    let parts = base;
+    for (let t = 0; t < 300;) { const raw = shown(parts), n = tune(raw, work(parts), parts, false); t += raw; if (n) parts = n; }
+    assert.equal(shown(parts), 1 / 60, `from ${start}: it got to 60 fps`);
+    assert.equal(gfxLevel(parts), 'low', `from ${start}: on Low`);
+  }
+});
+
+test('a 30 fps frame that nothing eases gets its picture back', () => {
+  // held at 30 whatever it's given and busy all the while (a CPU at its limit, or a rate cap): the CPU's steps, then the
+  // GPU's, buy nothing, and the picture comes back as it was
   const base = gfxParts('high'), tune = autoTuner(base);
-  let parts = base;
-  for (let t = 0; t < 120;) { const raw = 1 / 30, n = tune(raw, raw * 0.95, parts, false); t += raw; if (n) parts = n; }
-  assert.equal(parts.res, 'medium', 'resolution not given up to Low');
-  assert.equal(parts.post, 'high', 'nor the bloom');
+  let parts = base, changes = 0;
+  for (let t = 0; t < 300;) { const raw = 1 / 30, n = tune(raw, raw * 0.95, parts, false); t += raw; if (n) { parts = n; changes++; } }
+  assert.deepEqual(parts, base, 'back to where it started');
+  assert.ok(changes <= 3, 'and left there');
 });
 
 test('giving things up that does buy frames goes on until the frames hold', () => {

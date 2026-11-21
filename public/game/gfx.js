@@ -88,6 +88,9 @@ export const gfxLevel = (parts) => GFX_LEVELS[Math.round(GFX_PARTS.reduce((s, k)
 // Two rounds of giving up that buy no frames at all mean the picture isn't what holds them back (a phone in low power
 // mode draws 30 a second whatever it's given): the picture comes back as it was, and stays unless the frames get worse.
 // Not under 24 fps, which no such cap explains: there it goes on giving up, the GPU's steps too, till all is low.
+// A screen shows a frame only at its refresh, so on a 60 Hz screen a frame of 18 ms waits for 33: the frames come at 60,
+// 30, 20, 15 a second and nothing between. A step that takes a 25 ms frame down to 18 buys no frames yet, though it
+// brought them nearer; so while the work is still over a refresh, less of it counts as having helped.
 export function autoTuner(base) {
   let settle = 3, t = 0, d = [], b = [], calm = 0, wait = 40, clock = 0, raisedAt = -Infinity, tried = null, capped = 0, scaled = null, noScale = false;
   const mid = (a) => a.sort((x, y) => x - y)[a.length >> 1];
@@ -107,16 +110,19 @@ export function autoTuner(base) {
       // drawing goes through ANGLE onto Direct3D, so a laptop's Intel graphics shows its drawing as CPU time, and gave up
       // only the CPU's steps, which left it at Medium and 10 fps for whole races (2026-11-18). The same once the CPU's steps
       // are all gone: each round that bought a little (and so cleared `tried`) looked CPU-bound again, nothing was left
-      // to give, and a laptop sailed nine races on Medium at 8.5–12 fps (2026-11-19)
+      // to give, and a laptop sailed nine races on Medium at 8.5–12 fps (2026-11-19). Over 24 fps too: a Windows laptop
+      // at 30 fps gave up the CPU's steps, which bought nothing, and kept the rest for the whole race, on Medium at 30
+      // where Low would have drawn 60 (38 races by 14 players in the week to 2026-11-21); a frame that nothing eases still
+      // gets its picture back after two rounds, as above
       const slow = frame > 1 / 24;
       if (scaled) { const was = scaled; scaled = null; if (frame >= was.frame * 0.95) { noScale = true; settle = 2; return { ...parts, scale: was.scale }; } } // fewer pixels bought nothing: back
       if (clock - raisedAt < 20) { wait = Math.min(wait * 3, 900); raisedAt = -Infinity; }
       if (capped && frame <= capped * 1.15 && !slow) return null;
-      if (tried && frame < tried.frame * 0.95) tried = null; // that helped
+      if (tried && (frame < tried.frame * 0.95 || (work > 1 / 60 && work < tried.work * 0.95))) tried = null; // that helped (or, still over a refresh, eased the work)
       if (tried && tried.rounds >= 2 && !slow) { const back = tried.parts; capped = frame; tried = null; settle = 2; return back; }
-      const need = 1 - target / frame, cpu = work > target * 0.75 && !(slow && tried);
-      const next = shedParts(parts, need, cpu) || (cpu && slow ? shedParts(parts, need, false) : null);
-      if (next) { settle = 2; if (tried) tried.rounds++; else tried = { parts, frame, rounds: 1 }; return next; }
+      const need = 1 - target / frame, cpu = work > target * 0.75 && !tried;
+      const next = shedParts(parts, need, cpu) || (cpu ? shedParts(parts, need, false) : null);
+      if (next) { settle = 2; if (tried) tried.rounds++; else tried = { parts, frame, work, rounds: 1 }; return next; }
       // every part Low and still under 24 fps: the resolution below Low, a step at a time
       const s = SCALES.indexOf(parts.scale ?? 1);
       if (!slow || noScale || s < 0 || s >= SCALES.length - 1 || !GFX_PARTS.every((k) => parts[k] === 'low')) return null;
