@@ -68,3 +68,19 @@ test('signed out, nothing is asked', async () => {
   assert.deepEqual(asks(), []);
   await v.unmount();
 });
+
+test('a match found starts loading the race at once, and the card says how far, then that it opens at once', async () => {
+  const play = `<script type="importmap">{"imports":{"three":"/vendor/three.js"}}</script><link rel="modulepreload" href="/game/main.js">`;
+  let hold = null;
+  const gate = new Promise((r) => { hold = r; });
+  serve([['/connect/seek', (u, init) => json(answer[JSON.parse(init.body).do] ?? { status: 'none', reason: null })], ['/play', { text: async () => play }],
+    [/\/game\/|\/vendor\//, async (u) => { if (u.endsWith('main.js')) await gate; return json(null); }]]);
+  const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  answer.challenge = { status: 'found', pair: PAIR }; answer.seek = { status: 'found', pair: PAIR };
+  await click(race(v));
+  assert.match(v.text(), /Match found .* Loading Phuket · 86%/);
+  assert.deepEqual(dom.fetches.map((f) => f.url).filter((u) => !u.startsWith('/connect/')), ['/play', '/game/venues/phuket.json', '/game/venues/phuket.bin', '/game/j70.glb', '/game/yacht.glb', '/game/committee.glb', '/vendor/three.js', '/game/main.js']);
+  hold(); await tick(0);
+  assert.match(v.text(), /Phuket is loaded: the race opens at once/);
+  await v.unmount();
+});

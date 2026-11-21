@@ -8,6 +8,7 @@ import { isHandle, parseReady, parseSeek, raceHref, type Pair, type Ready, type 
 import { VENUES } from '@/lib/venues';
 import { YACHTS } from '@/lib/yachts';
 import { track } from '@/lib/track';
+import { preloadRace } from '@/lib/duel-preload';
 import { IconPlay } from './ui';
 import '@/styles/duel-rating.css';
 
@@ -19,6 +20,8 @@ import '@/styles/duel-rating.css';
 // while looking, every second once found. Nobody after 1:30: keep looking, or send a friend a link instead.
 // Ready now: who else is looking at this moment, nearest your rating first (read every 10 s), each with Race, which
 // challenges that sailor directly whatever the gap in rating (regatta_seek_challenge): both get Match found as above.
+// The race's files start loading the moment a match is found (lib/duel-preload.ts), and the card says how far: by
+// Ready the game opens on a browser that has them.
 // Opened from the home's Race (/duel?challenge=<handle>, components/duel-home.tsx), it challenges that sailor at once.
 // The wishes, a venue and a yacht, kept on this device, are the race's from a sailor's fourth rated race (the host's first).
 type Phase = 'idle' | 'looking' | 'found' | 'go' | 'missed' | 'error';
@@ -56,6 +59,8 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
   const [said, setSaid] = useState(false); // this sailor said Ready to the pair on screen
   const [note, setNote] = useState<Note>('');
   const [left, setLeft] = useState(0);
+  const [loaded, setLoaded] = useState<number | null>(null); // the share of the race's files fetched, once a match is found
+  const preload = useRef<AbortController | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null), on = useRef(false), pairRef = useRef<Pair | null>(null), saidRef = useRef(false), started = useRef(0), foundAt = useRef(0);
 
   const stopTimer = () => { if (timer.current) clearTimeout(timer.current); timer.current = null; };
@@ -63,7 +68,11 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
     if (!on.current) return;
     if (s.status === 'go') { on.current = false; setPair(s.pair); setPhase('go'); track('Duel match', { role: s.pair.role }); handOver(s.pair); return; }
     if (s.status === 'found') {
-      if (pairRef.current?.id !== s.pair.id) foundAt.current = Date.now();
+      if (pairRef.current?.id !== s.pair.id) {
+        foundAt.current = Date.now();
+        preload.current?.abort(); const ac = preload.current = new AbortController(); setLoaded(0);
+        preloadRace(s.pair.settings.venue, s.pair.settings.yacht, (x) => { if (!ac.signal.aborted) setLoaded(x); }, ac.signal);
+      }
       pairRef.current = s.pair; setPair(s.pair); setLeft(s.pair.left); setPhase('found');
       timer.current = setTimeout(ask, FOUND_MS);
       return;
@@ -71,6 +80,7 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
     // the pair gone: before its time was up the other said no; after it, whoever hadn't said Ready let it go. This sailor's
     // own silence is a miss (the database dropped her; asking again would only look afresh): stop, and say so
     const had = pairRef.current, wasReady = saidRef.current, early = had && Date.now() - foundAt.current < 11000;
+    if (had) { preload.current?.abort(); preload.current = null; setLoaded(null); }
     pairRef.current = null; saidRef.current = false; setSaid(false); setPair(null);
     if (had && !wasReady && !early) { on.current = false; setPhase('missed'); post({ do: 'stop' }); return; }
     if (had) setNote(early ? 'declined' : 'noanswer');
@@ -113,7 +123,7 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
       setList(r.ok ? parseReady((await r.json())?.list) : []);
     } catch { /* the list stays as it was */ }
   }, []);
-  const decline = () => { const p = pairRef.current; stopTimer(); on.current = false; pairRef.current = null; setPair(null); setPhase('idle'); if (p) post({ do: 'decline', pair: p.id }); };
+  const decline = () => { const p = pairRef.current; stopTimer(); preload.current?.abort(); setLoaded(null); on.current = false; pairRef.current = null; setPair(null); setPhase('idle'); if (p) post({ do: 'decline', pair: p.id }); };
 
   useEffect(() => {
     const w = readWishes(); wishesRef.current = w; setWishes(w);
@@ -136,19 +146,19 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
   useEffect(() => {
     const away = () => { if (on.current) navigator.sendBeacon?.('/connect/seek', new Blob([JSON.stringify({ do: 'stop' })], { type: 'application/json' })); };
     addEventListener('pagehide', away);
-    return () => { removeEventListener('pagehide', away); stopTimer(); };
+    return () => { removeEventListener('pagehide', away); stopTimer(); preload.current?.abort(); };
   }, []);
 
   return <DuelFinderView lang={lang} signed={signed} phase={phase} look={look} pair={pair} said={said} left={left} note={note}
     longWait={phase === 'looking' && look.waited >= OFFER_AFTER_S} find={find} stop={stop} ready={ready} decline={decline}
-    list={list} challenge={challenge} wishes={wishes} setWish={setWish} />;
+    list={list} challenge={challenge} wishes={wishes} setWish={setWish} loaded={loaded} />;
 }
 
 type ViewProps = { lang: Lang; signed: boolean; phase: Phase; look: { waited: number; band: number; online: number }; pair: Pair | null; said: boolean; left: number;
   note: Note; longWait: boolean; find: () => void; stop: () => void; ready: () => void; decline: () => void;
-  list?: Ready[]; challenge?: (handle: string) => void; wishes?: Wishes; setWish?: (k: keyof Wishes, v: string) => void };
+  list?: Ready[]; challenge?: (handle: string) => void; wishes?: Wishes; setWish?: (k: keyof Wishes, v: string) => void; loaded?: number | null };
 
-export function DuelFinderView({ lang, signed, phase, look, pair, said, left, note, longWait, find, stop, ready, decline, list = [], challenge = () => {}, wishes = {}, setWish = () => {} }: ViewProps) {
+export function DuelFinderView({ lang, signed, phase, look, pair, said, left, note, longWait, find, stop, ready, decline, list = [], challenge = () => {}, wishes = {}, setWish = () => {}, loaded = null }: ViewProps) {
   const t = tx(lang);
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const friend = <Link className="bt-show" href="/match/new">{t('Challenge a friend instead', 'Позвать друга', 'Reta a un amigo', 'Lieber einen Freund herausfordern', 'Bunun yerine bir arkadaşını çağır', 'Défier plutôt un ami', 'Sfida invece un amico', 'Desafiar um amigo')}</Link>;
@@ -197,6 +207,12 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
         <p className="iv-who"><b>{them}</b><span className="dr-lvl">{provisional(pair.them.races) ? t('New to 1-on-1', 'Новичок в 1 на 1', 'Nuevo en 1 contra 1', 'Neu im 1 gegen 1', 'Bire birde yeni', 'Nouveau en duel', 'Nuovo all’1 contro 1', 'Novo no 1 contra 1') : levelName(pair.them.rating, lang)}</span><span className="iv-r">{shown(pair.them.rating, pair.them.races)}</span>
           {pair.minutes ? <span className="iv-m">{t(`about ${pair.minutes} min`, `около ${pair.minutes} мин`, `unos ${pair.minutes} min`, `etwa ${pair.minutes} Min.`, `yaklaşık ${pair.minutes} dk`, `environ ${pair.minutes} min`, `circa ${pair.minutes} min`, `cerca de ${pair.minutes} min`)}</span> : null}</p>
         {where && <p className="df-where">{where}</p>}
+        {loaded !== null && (() => {
+          const v = pick(VENUES.find((x) => x.id === pair.settings.venue)?.name, lang) ?? '', pct = Math.round(loaded * 100);
+          return <p className="df-load">{pct < 100
+            ? t(`Loading ${v} · ${pct}%`, `Загружается ${v} · ${pct}%`, `Cargando ${v} · ${pct}%`, `${v} lädt · ${pct} %`, `${v} yükleniyor · %${pct}`, `Chargement de ${v} · ${pct} %`, `Caricamento di ${v} · ${pct}%`, `Carregando ${v} · ${pct}%`)
+            : t(`${v} is loaded: the race opens at once`, `${v} загружен: гонка откроется сразу`, `${v} está cargado: la regata abre al instante`, `${v} ist geladen: die Regatta öffnet sofort`, `${v} yüklendi: yarış hemen açılır`, `${v} est chargé : la régate s’ouvre aussitôt`, `${v} è caricato: la regata si apre subito`, `${v} está carregado: a regata abre na hora`)}</p>;
+        })()}
         {!first && <p className="df-stakes">{t(`Your chance ${Math.round(st.chance * 100)}% · win `, `Твой шанс ${Math.round(st.chance * 100)}% · победа `, `Tu probabilidad ${Math.round(st.chance * 100)}% · ganar `, `Deine Chance ${Math.round(st.chance * 100)} % · Sieg `, `Şansın %${Math.round(st.chance * 100)} · galibiyet `, `Ta chance ${Math.round(st.chance * 100)} % · victoire `, `La tua probabilità ${Math.round(st.chance * 100)}% · vittoria `, `Sua chance ${Math.round(st.chance * 100)}% · vitória `)}<b className="up">{sgn(st.win)}</b>{t(' · lose ', ' · поражение ', ' · perder ', ' · Niederlage ', ' · yenilgi ', ' · défaite ', ' · sconfitta ', ' · derrota ')}<b className="down">{sgn(-st.loss)}</b></p>}
         {said
           ? <p className="df-wait">{t(`Ready. Waiting for ${them}…`, `Готов. Ждём ${them}…`, `Listo. Esperando a ${them}…`, `Bereit. Warte auf ${them} …`, `Hazırsın. ${them} bekleniyor…`, `Prêt. On attend ${them}…`, `Pronto. In attesa di ${them}…`, `Pronto. Esperando ${them}…`)}</p>
