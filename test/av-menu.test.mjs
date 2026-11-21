@@ -108,6 +108,28 @@ test('at 10 fps it goes on giving things up though the first steps buy nothing, 
   assert.notDeepEqual(parts, base, 'and kept it');
 });
 
+test('at 12 fps, each round buying a little, it goes on past the CPU\'s steps down to Low', () => {
+  // the laptop of 19 Nov (Intel UHD, Windows, 1950 × 1124): every part given up bought a few per cent, never enough. Each
+  // round's few per cent read as "that helped", the next round looked CPU-bound again (ANGLE), the CPU's steps were all
+  // gone, and Auto stopped on Medium for nine races at 8.5–12 fps
+  const base = gfxParts('high'), tune = autoTuner(base);
+  let parts = gfxParts('medium');
+  const lows = (p) => GFX_PARTS.filter((k) => p[k] === 'low').length;
+  const frameOf = (p) => (1 / 12) * (1 - 0.06 * lows(p));
+  for (let t = 0; t < 120;) { const raw = frameOf(parts), n = tune(raw, raw * 0.95, parts, false); t += raw; if (n) parts = n; }
+  assert.equal(gfxLevel(parts), 'low', 'it got to Low');
+  assert.ok(lows(parts) >= GFX_PARTS.length - 1, 'with the GPU\'s steps given up too');
+});
+
+test('a CPU-bound frame at 30 fps keeps the GPU\'s steps', () => {
+  // over 24 fps a frame held up by the CPU is left its picture once the CPU's steps are gone: a lower resolution buys nothing
+  const base = gfxParts('high'), tune = autoTuner(base);
+  let parts = base;
+  for (let t = 0; t < 120;) { const raw = 1 / 30, n = tune(raw, raw * 0.95, parts, false); t += raw; if (n) parts = n; }
+  assert.equal(parts.res, 'medium', 'resolution not given up to Low');
+  assert.equal(parts.post, 'high', 'nor the bloom');
+});
+
 test('giving things up that does buy frames goes on until the frames hold', () => {
   const base = gfxParts('high'), tune = autoTuner(base);
   let parts = base;

@@ -97,13 +97,16 @@ export function autoTuner(base) {
       // back, however little the first steps bought, so the steps go on till the frames come or all is low. And once a
       // round has bought nothing, what eases the GPU goes too, though the frames look held up by the CPU: on Windows the
       // drawing goes through ANGLE onto Direct3D, so a laptop's Intel graphics shows its drawing as CPU time, and gave up
-      // only the CPU's steps, which left it at Medium and 10 fps for whole races (2026-11-18)
+      // only the CPU's steps, which left it at Medium and 10 fps for whole races (2026-11-18). The same once the CPU's steps
+      // are all gone: each round that bought a little (and so cleared `tried`) looked CPU-bound again, nothing was left
+      // to give, and a laptop sailed nine races on Medium at 8.5–12 fps (2026-11-19)
       const slow = frame > 1 / 24;
       if (clock - raisedAt < 20) { wait = Math.min(wait * 3, 900); raisedAt = -Infinity; }
       if (capped && frame <= capped * 1.15 && !slow) return null;
       if (tried && frame < tried.frame * 0.95) tried = null; // that helped
       if (tried && tried.rounds >= 2 && !slow) { const back = tried.parts; capped = frame; tried = null; settle = 2; return back; }
-      const next = shedParts(parts, 1 - target / frame, work > target * 0.75 && !(slow && tried));
+      const need = 1 - target / frame, cpu = work > target * 0.75 && !(slow && tried);
+      const next = shedParts(parts, need, cpu) || (cpu && slow ? shedParts(parts, need, false) : null);
       if (next) { settle = 2; if (tried) tried.rounds++; else tried = { parts, frame, rounds: 1 }; }
       return next;
     }
