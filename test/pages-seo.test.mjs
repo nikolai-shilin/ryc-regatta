@@ -257,7 +257,7 @@ test('the structured data on every page can be read, and stays inside its script
   let n = 0;
   for (const p of sweep) for (const m of p.html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)) {
     const ld = JSON.parse(m[1]);
-    assert.equal(ld['@context'], 'https://schema.org', p.path);
+    for (const item of [ld].flat()) assert.equal(item['@context'], 'https://schema.org', p.path); // one item, or a list of them (the race hub: its crumbs and the day's event)
     n++;
   }
   assert.ok(n > 100, 'the pages that have it were all read');
