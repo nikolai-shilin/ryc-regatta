@@ -108,6 +108,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
           </FootGroup>
           <FootGroup title={t('Learn', 'Обучение', 'Aprender', 'Lernen', 'Öğren', 'Apprendre', 'Impara', 'Aprender')}>
             <FootLink href="/help">{t('How to play', 'Как играть', 'Cómo jugar', 'So spielst du', 'Nasıl oynanır', 'Comment jouer', 'Come si gioca', 'Como jogar')}</FootLink>
+            <FootLink href="/help/race">{t('Today’s race, explained', 'Гонка дня: как устроена', 'La regata del día, explicada', 'Die Regatta des Tages, erklärt', 'Günün yarışı, açıklamalı', 'La régate du jour, expliquée', 'La regata del giorno, spiegata', 'A regata do dia, explicada')}</FootLink>
             <FootLink href="/learn">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen', 'Yarış rehberleri', 'Guides de régate', 'Guide alla regata', 'Guias de regata')}</FootLink>
             <FootLink href="/rulebook">{t('Racing rules', 'Правила гонок', 'Reglas de regatas', 'Wettfahrtregeln', 'Yarış kuralları', 'Règles de course', 'Regole di regata', 'Regras de regata')}</FootLink>
             <FootLink href="/learn/glossary">{t('Glossary', 'Словарь', 'Glosario', 'Glossar', 'Sözlük', 'Glossaire', 'Glossario', 'Glossário')}</FootLink>

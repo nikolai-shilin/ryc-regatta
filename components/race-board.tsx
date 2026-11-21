@@ -81,6 +81,7 @@ export function RaceBoard({ lang, t, day, venue, data, duel }: { lang: Lang; t: 
             <div className="rb-how">
               <span className="lbl-ink">{t('How the points work', 'Как считаются очки', 'Cómo funcionan los puntos', 'So funktionieren die Punkte', 'Puanlar nasıl çalışır', 'Comment marchent les points', 'Come funzionano i punti', 'Como funcionam os pontos')}</span>
               <p>{howPoints(t)}</p>
+              <Link className="rb-link" href="/help/race">{t('How today’s race works', 'Как устроена гонка дня', 'Cómo funciona la regata del día', 'So funktioniert die Regatta des Tages', 'Günün yarışı nasıl işler', 'Comment marche la régate du jour', 'Come funziona la regata del giorno', 'Como funciona a regata do dia')} ›</Link>
             </div>
           </div>
 

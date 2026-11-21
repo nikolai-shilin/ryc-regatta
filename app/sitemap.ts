@@ -22,7 +22,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const day = today();
-  const PAGES: Page[] = [['/', 1, day], ['/race', 0.9, day], ['/race/drills', 0.6], ['/help', 0.8], ['/faq', 0.8], ['/race/free', 0.6], ['/boat', 0.5],
+  const PAGES: Page[] = [['/', 1, day], ['/race', 0.9, day], ['/race/drills', 0.6], ['/help', 0.8], ['/help/race', 0.7], ['/faq', 0.8], ['/race/free', 0.6], ['/boat', 0.5],
     ['/yachts', 0.6], ...YACHT_IDS.map((id): Page => [`/yachts/${id}`, 0.6, PAGES_DATE]),
     ['/venues', 0.7, PAGES_DATE], ...VENUES.map((v): Page => [`/venues/${v.id}`, 0.6, PAGES_DATE]),
     ['/players', 0.5, day], ['/iyt', 0.6], ['/social', 0.4], ['/sponsorship', 0.4],

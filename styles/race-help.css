@@ -1,0 +1,33 @@
+/* Today's race, explained (app/[lang]/help/race): the day's facts, today's card, the steps, the sum and its table.
+   The page's frame is the help page's own (.hm-sec, .rd-layout in broadcast.css). */
+.bc .rh-facts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 2px; }
+.bc .rh-facts li { display: flex; flex-direction: column; gap: 8px; padding: var(--s-5, 20px); background: var(--panel, rgba(255, 255, 255, 0.05)); }
+.bc .rh-facts b { font: 800 40px/1 var(--cond, sans-serif); color: var(--you, #3db8ff); font-variant-numeric: tabular-nums; }
+.bc .rh-facts .lead { font-size: var(--fs-body, 15px); }
+
+.bc .rh-today { display: flex; flex-direction: column; gap: 12px; padding: var(--s-5, 20px); background: var(--panel, rgba(255, 255, 255, 0.05)); box-shadow: inset 4px 0 0 var(--you, #3db8ff); }
+.bc .rh-today dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 12px 20px; }
+.bc .rh-today dt { font: 700 11px/1 var(--cond, sans-serif); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3, rgba(255, 255, 255, 0.62)); }
+.bc .rh-today dd { margin: 4px 0 0; font: 700 var(--fs-row, 17px)/1.2 var(--cond, sans-serif); }
+
+.bc .rh-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.bc .rh-steps li { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; background: var(--panel, rgba(255, 255, 255, 0.05)); }
+.bc .rh-steps .num-ico { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: var(--you, #3db8ff); color: var(--ink-on, #04121e); font: 700 13px/1 var(--cond, sans-serif); }
+.bc .rh-steps b { display: block; font: 700 var(--fs-row, 17px)/1.2 var(--cond, sans-serif); }
+.bc .rh-steps .d { display: block; margin-top: 4px; font: 500 var(--fs-body, 15px)/1.5 var(--sans, sans-serif); color: var(--ink-2, rgba(255, 255, 255, 0.78)); }
+.bc .rh-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 2px; }
+.bc .rh-two > div { display: flex; flex-direction: column; gap: 8px; padding: var(--s-5, 20px); background: var(--panel, rgba(255, 255, 255, 0.05)); }
+
+.bc .rh-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: var(--s-5, 20px); background: var(--panel, rgba(255, 255, 255, 0.05)); }
+.bc .rh-sum span { display: flex; flex-direction: column; gap: 4px; }
+.bc .rh-sum b { font: 800 44px/1 var(--cond, sans-serif); font-variant-numeric: tabular-nums; }
+.bc .rh-sum small { font: 700 11px/1 var(--cond, sans-serif); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3, rgba(255, 255, 255, 0.62)); }
+.bc .rh-sum i { font: 700 28px/1 var(--cond, sans-serif); font-style: normal; color: var(--ink-3, rgba(255, 255, 255, 0.62)); }
+.bc .rh-sum-r b { color: var(--up, #2ee6a0); }
+
+.bc .rh-table { width: 100%; border-collapse: collapse; font: 600 var(--fs-body, 15px)/1.3 var(--sans, sans-serif); }
+.bc .rh-table th { text-align: left; padding: 8px 12px; font: 700 11px/1 var(--cond, sans-serif); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3, rgba(255, 255, 255, 0.62)); border-bottom: 1px solid var(--rule, rgba(255, 255, 255, 0.14)); }
+.bc .rh-table td { padding: 10px 12px; border-bottom: 1px solid var(--rule-2, rgba(255, 255, 255, 0.08)); font-variant-numeric: tabular-nums; }
+.bc .rh-table td:nth-child(2) { font: 700 var(--fs-row, 17px)/1 var(--cond, sans-serif); color: var(--up, #2ee6a0); }
+.bc .rh-boards a { color: var(--you, #3db8ff); white-space: nowrap; }
+.bc .rh-acts { margin-top: var(--s-8, 32px); }
