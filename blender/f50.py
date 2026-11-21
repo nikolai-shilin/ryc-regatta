@@ -122,14 +122,15 @@ def build_beam(bm, M, z, y, chord, th, n=14, span=24):
             bm.faces.new((rows[k][i], rows[k][(i + 1) % m], rows[k + 1][(i + 1) % m], rows[k + 1][i])).material_index = M['hull']
     bm.faces.new(list(reversed(rows[0]))).material_index = M['hull']; bm.faces.new(rows[-1]).material_index = M['hull']
 
-# the main beam, as she shows it head-on: a slim faired tube across at deck height, its section an ellipse (chord fore
-# and aft, depth up and down), flaring at each root into a smooth fairing on the hull's inboard topside
-def build_main_beam(bm, M, z, y, chord, depth, seg=20, span=40):
-    ends = HX - 0.15
+# the main beam, as she shows it head-on: a slim faired tube across, its top flush with the hulls' decks, its section an
+# ellipse (chord fore and aft, depth up and down), flaring at each root, fore and aft and downward, into a smooth fairing
+# on the hull's inboard topside; it runs a quarter metre into each hull, out of sight
+def build_main_beam(bm, M, z, top, chord, depth, seg=20, span=40):
+    side = HX - hb_of(t_at(z)); ends = side + 0.25
     rows = []
     for k in range(span + 1):
-        x = lerp(-ends, ends, k / span); r = smooth(ends - 1.0, ends, abs(x))  # the root's flare, over its last metre
-        a, b, yc = chord / 2 * (1 + 1.3 * r), depth / 2 * (1 + 0.6 * r), y + 0.08 * r
+        x = lerp(-ends, ends, k / span); r = smooth(side - 0.9, side, abs(x))  # the root's flare, over the metre to the hull
+        a, b = chord / 2 * (1 + 1.2 * r), depth / 2 * (1 + 0.8 * r); yc = top - b
         rows.append([bm.verts.new(G(x, yc + b * math.sin(2 * math.pi * j / seg), z + a * math.cos(2 * math.pi * j / seg) * (0.85 if math.cos(2 * math.pi * j / seg) < 0 else 1.15))) for j in range(seg)])
     for k in range(span):
         for j in range(seg): bm.faces.new((rows[k][j], rows[k][(j + 1) % seg], rows[k + 1][(j + 1) % seg], rows[k + 1][j])).material_index = M['hull']
@@ -146,7 +147,8 @@ def build_pod(bm, M, z0, z1, y, r0, r1, seg=24, n=40):
     for i in range(n + 1):
         s = i / n; z = lerp(z0, z1, s)
         r = lerp(r0, r1, s ** 0.8) * (math.sqrt(max(0.0, 1 - ((s - 0.9) / 0.1) ** 2)) if s > 0.9 else 1.0)
-        rows.append([bm.verts.new(G(*(lambda p: (p[0], y + p[1]))(sec(2 * math.pi * k / seg, r)), z)) for k in range(seg)])
+        kd = lerp(0.12, 1.0, smooth(0, 0.2, s))  # aft, the keel rising to the beam's bottom, the pod fairing into it
+        rows.append([bm.verts.new(G(*(lambda p: (p[0], y + (p[1] * kd if p[1] < 0 else p[1])))(sec(2 * math.pi * k / seg, r)), z)) for k in range(seg)])
     for i in range(n):
         for k in range(seg):
             bm.faces.new((rows[i][k], rows[i][(k + 1) % seg], rows[i + 1][(k + 1) % seg], rows[i + 1][k])).material_index = M['hull']
@@ -156,11 +158,15 @@ def build_pod(bm, M, z0, z1, y, r0, r1, seg=24, n=40):
 
 # the nets: between the hulls' inner sides at the deck, from the main beam's trailing edge to the aft beam's leading edge
 def build_net(bm, M, z0, z1, y, n=24):
-    rows = []
+    rows, edge = [], []
     for i in range(n + 1):
         z = lerp(z0, z1, i / n); x = HX - hb_of(t_at(z)) * 0.92
-        rows.append((bm.verts.new(G(-x, y, z)), bm.verts.new(G(x, y, z))))
+        rows.append((bm.verts.new(G(-x, y, z)), bm.verts.new(G(x, y, z)))); edge.append((x, z))
     for i in range(n): bm.faces.new((rows[i][0], rows[i][1], rows[i + 1][1], rows[i + 1][0])).material_index = M['net']
+    # its bolt rope, round the edge it is laced by: along each hull, across at each beam
+    for sx in (-1, 1):
+        for (xa, za), (xb, zb) in zip(edge, edge[1:]): tube_between(bm, M, G(sx * xa, y, za), G(sx * xb, y, zb), 0.022, 6)
+    for x, z in (edge[0], edge[-1]): tube_between(bm, M, G(-x, y, z), G(x, y, z), 0.022, 6)
 
 # the aft beam: an open truss between the hulls, as the photographs of her on the crane show it: two tubes one above the
 # other, their ends in the hulls, and diagonals between them
@@ -172,11 +178,19 @@ def tube_between(bm, M, a, b, r, seg=8):
     for k in range(seg): bm.faces.new((ra[k], ra[(k + 1) % seg], rb[(k + 1) % seg], rb[k])).material_index = M['pod']
     bm.faces.new(list(reversed(ra))).material_index = M['pod']; bm.faces.new(rb).material_index = M['pod']
 def build_truss(bm, M, z, y0, y1, n=8):
-    ends = HX - 0.2
+    side = HX - hb_of(t_at(z)); ends = side + 0.1  # each chord's end in the hull's side
     for y in (y0, y1): tube_between(bm, M, G(-ends, y, z), G(ends, y, z), 0.06)
     for k in range(n):
-        xa, xb = lerp(-ends, ends, k / n), lerp(-ends, ends, (k + 1) / n)
+        xa, xb = lerp(-side, side, k / n), lerp(-side, side, (k + 1) / n)
         tube_between(bm, M, G(xa, y0 if k % 2 else y1, z), G(xb, y1 if k % 2 else y0, z), 0.025)
+    # where it meets each hull, a plate on the topside the chords are bolted to
+    for sx in (-1, 1):
+        x = sx * (side + 0.02)
+        plan_prism(bm, [(x - 0.04, z - 0.2), (x + 0.04, z - 0.2), (x + 0.04, z + 0.2), (x - 0.04, z + 0.2)], y0 - 0.12, y1 + 0.08, M['pod'], M['pod'], M['pod'])
+def boss(bm, M, at, r=0.06):  # a fitting where a rod ends: a small ball on its pin
+    bmesh.ops.create_uvsphere(bm, u_segments=10, v_segments=6, radius=r, matrix=__import__('mathutils').Matrix.Translation(at))
+    for f in bm.faces:
+        if f.material_index == 0 and all((v.co - at).length < r * 1.01 for v in f.verts): f.material_index = M['pod']
 
 def plan_prism(bm, outline, y0, y1, ms, mb, mt):
     lo = [bm.verts.new(G(x, y0, z)) for x, z in outline]; hi = [bm.verts.new(G(x, y1, z)) for x, z in outline]
@@ -247,14 +261,20 @@ for cx in (-HX, HX):
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(fair.data); bm.free()
 
 # the platform: the main beam at the wing's step (boats3d.js F.MAST_Z), the aft truss, the pod and its rods, the nets
-MAIN_Z, AFT_Z, TACK_Z = -STERN + 7.4, STERN - 1.0, -STERN + 3.2
+MAIN_Z, AFT_Z, TACK_Z = -STERN + 7.4, STERN - 1.3, -STERN + 3.2
+BEAM_TOP, POD_Y, POD_R = 0.88, 0.62, 0.45  # the main beam's top, flush with the decks; the pod's axis, its top under the beam's
 plat = new_object('platform'); bm = bmesh.new()
-build_main_beam(bm, IDX, MAIN_Z + 0.25, 0.86, 0.6, 0.38)
-build_truss(bm, IDX, AFT_Z, 0.42, 0.9)
-# under the main beam, the pod braced to the hulls: a rod from its keel to each hull's inboard side at the beam's root
-for sx in (-1, 1): tube_between(bm, IDX, G(0, 0.82 - 0.45 * 2.2 + 0.08, MAIN_Z + 0.1), G(sx * (HX - 0.42), 0.62, MAIN_Z + 0.25), 0.03)
-build_pod(bm, IDX, MAIN_Z + 0.1, TACK_Z, 0.82, 0.45, 0.13)
-build_net(bm, IDX, MAIN_Z + 0.25 + 0.36, AFT_Z - 0.1, 0.85)
+build_main_beam(bm, IDX, MAIN_Z + 0.25, BEAM_TOP, 0.6, 0.38)
+build_truss(bm, IDX, AFT_Z, 0.36, 0.78)
+build_pod(bm, IDX, MAIN_Z + 0.1, TACK_Z, POD_Y, POD_R, 0.13)
+# under the main beam, the pod braced to the hulls: a rod from its keel, where it is deepest, to each hull's inboard side
+# below the beam's root, a ball fitting at each end
+keel = G(0, POD_Y - POD_R * 2.2 + 0.05, MAIN_Z - 0.75)
+for sx in (-1, 1):
+    side = G(sx * (HX - hb_of(t_at(MAIN_Z + 0.25)) + 0.02), 0.42, MAIN_Z + 0.25)
+    tube_between(bm, IDX, keel, side, 0.03); boss(bm, IDX, side)
+boss(bm, IDX, keel, 0.07)
+build_net(bm, IDX, MAIN_Z + 0.25 + 0.36, AFT_Z - 0.02, 0.85)
 bmesh.ops.recalc_face_normals(bm, faces=[f for f in bm.faces if f.material_index != IDX['net']]); bm.to_mesh(plat.data); bm.free()
 
 bpy.ops.object.select_all(action='DESELECT')
