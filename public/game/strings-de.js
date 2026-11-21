@@ -103,7 +103,7 @@ export const MAIN = {
   zIn: (n) => `Zone · überlappt mit ${n}, du bist innen – du bekommst Raum`, zOut: (n) => `Zone · überlappt mit ${n}, du bist außen – gib Raum`,
   zAhead: (n) => `Zone · klar voraus von ${n} – du bekommst Raum`, zAstern: (n) => `Zone · klar achteraus von ${n} – freihalten`, tackCall: 'Klar zur Wende… Ree!', gybeCall: 'Klar zur Halse… Halse!',
   results: 'Ergebnisse', again: 'Noch eine Regatta', menu: 'Menü', racing: 'segelt…', you: 'Du', dsq: 'DSQ',
-  gfxDown: (q) => `Grafik auf ${q} gestellt, damit es flüssig läuft`, place: ord, finished: (n) => `Als ${ord(n)} im Ziel!`, finishedDsq: 'Im Ziel, ohne die Strafe zu drehen – DSQ',
+  gfxDown: (q) => `Grafik auf ${q} gestellt, damit es flüssig läuft`, lowestTip: (low, lowest, menu) => `Auch auf ${low} noch ruckelig? Probier ${lowest} unter ${menu}`, place: ord, finished: (n) => `Als ${ord(n)} im Ziel!`, finishedDsq: 'Im Ziel, ohne die Strafe zu drehen – DSQ',
   contactDsq: (a) => ({ rudder: `DSQ, Regel ${a.rule}: Du musstest dich von ${a.who} freihalten, und dein Ruder war nur ${a.deg}° von ${a.max}° gelegt`, late: `DSQ, Regel ${a.rule}: Du musstest dich von ${a.who} freihalten. Ruder hart gelegt, aber zu spät`, room: `DSQ, Regel 14: Du hattest Raum, ${a.who} auszuweichen, und hast den Kurs gehalten`, turned: `DSQ, Regel 16: Du hast auf ${a.who} zugedreht, obwohl sich das Boot freihielt`, above: `DSQ, Regel 17: über deinem richtigen Kurs, auf ${a.who} zu` })[a.why],
   theyDsq: (a) => `${a.who} disqualifiziert, Regel ${a.rule}`,
   // a 1-on-1 race: the result, and the link between the two screens

@@ -134,6 +134,29 @@ export function autoTuner(base) {
   };
 }
 
+// Low chosen by hand and still slow: Auto's steps below Low can't reach it, so the race says Lowest is there (main.js
+// watchLow), once a week at most. slowWatch() is given each frame's time and says true once: when five 3 s spells in a
+// row (15 s), each by its middle frame, ran under 24 fps. A frame over 0.25 s is a stall, not counted.
+export const LOWEST_TIP_KEY = 'regatta-lowest-tip', LOWEST_TIP_DAYS = 7;
+export function slowWatch() {
+  let t = 0, d = [], run = 0, told = false;
+  return (raw) => {
+    if (told || !(raw > 0) || raw > 0.25) return false;
+    t += raw; d.push(raw);
+    if (t < 3) return false;
+    const mid = d.sort((x, y) => x - y)[d.length >> 1];
+    t = 0; d = [];
+    run = mid > 1 / 24 ? run + 1 : 0;
+    if (run < 5) return false;
+    told = true;
+    return true;
+  };
+}
+export function lowestTipDue(now = Date.now()) {
+  try { const at = Number(localStorage.getItem(LOWEST_TIP_KEY)); return !(at > 0 && now - at < LOWEST_TIP_DAYS * 864e5); } catch (e) { return false; }
+}
+export function lowestTipShown(now = Date.now()) { try { localStorage.setItem(LOWEST_TIP_KEY, String(now)); } catch (e) {} }
+
 // Auto remembers what it gave up as 'mhmmhhhmh|<when>' (each part's first letter, in GFX_PARTS order), and the resolution
 // below Low after an @ ('lllllllll@0.65|<when>'), for three days,
 // then tries the device's own level again: one slow race (another tab busy, a hot phone) shouldn't keep the picture down

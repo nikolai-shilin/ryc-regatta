@@ -103,7 +103,7 @@ export const MAIN = {
   zIn: (n) => `Zone · engagé avec ${n}, tu es à l’intérieur : tu as droit à la place`, zOut: (n) => `Zone · engagé avec ${n}, tu es à l’extérieur : laisse la place`,
   zAhead: (n) => `Zone · en route libre devant ${n} : tu as droit à la place`, zAstern: (n) => `Zone · en route libre derrière ${n} : reste à l’écart`, tackCall: 'Paré à virer… Envoyez !', gybeCall: 'Paré à empanner… Empannez !',
   results: 'Résultats', again: 'Nouvelle régate', menu: 'Menu', racing: 'en régate…', you: 'Toi', dsq: 'DSQ',
-  gfxDown: (q) => `Graphismes réglés sur ${q} pour rester fluide`, place: ord, finished: (n) => `Tu termines ${ord(n)} !`, finishedDsq: 'Arrivé sans avoir effectué ta pénalité : DSQ',
+  gfxDown: (q) => `Graphismes réglés sur ${q} pour rester fluide`, lowestTip: (low, lowest, menu) => `Toujours lent en ${low} ? Essaie ${lowest} dans ${menu}`, place: ord, finished: (n) => `Tu termines ${ord(n)} !`, finishedDsq: 'Arrivé sans avoir effectué ta pénalité : DSQ',
   contactDsq: (a) => ({ rudder: `DSQ, règle ${a.rule} : tu devais te maintenir à l’écart de ${a.who}, et ta barre n’était braquée qu’à ${a.deg}° sur ${a.max}°`, late: `DSQ, règle ${a.rule} : tu devais te maintenir à l’écart de ${a.who}. Barre à fond, mais trop tard`, room: `DSQ, règle 14 : tu avais la place d’éviter ${a.who} et tu as gardé ton cap`, turned: `DSQ, règle 16 : tu as viré vers ${a.who}, qui se maintenait à l’écart`, above: `DSQ, règle 17 : au-dessus de ta route normale, sur ${a.who}` })[a.why],
   theyDsq: (a) => `${a.who} disqualifié, règle ${a.rule}`,
   // a 1-on-1 race: the result, and the link between the two screens

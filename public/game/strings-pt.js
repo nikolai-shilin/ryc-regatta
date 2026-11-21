@@ -107,7 +107,7 @@ export const MAIN = {
   zIn: (n) => `Zona · sobreposto a ${n}, você está por dentro: tem direito a espaço`, zOut: (n) => `Zona · sobreposto a ${n}, você está por fora: dê espaço`,
   zAhead: (n) => `Zona · livre à vante de ${n}: você tem direito a espaço`, zAstern: (n) => `Zona · livre à ré de ${n}: mantenha-se afastado`, tackCall: 'Preparar para cambar… Cambando!', gybeCall: 'Preparar para jibar… Jibando!',
   results: 'Resultados', again: 'Outra regata', menu: 'Menu', racing: 'em regata…', you: 'Você', dsq: 'DSQ',
-  gfxDown: (q) => `Qualidade gráfica: ${q}, para manter a fluidez`, place: ord, finished: (n) => `Chegou em ${ord(n)}!`, finishedDsq: 'Chegou sem cumprir a penalidade: DSQ',
+  gfxDown: (q) => `Qualidade gráfica: ${q}, para manter a fluidez`, lowestTip: (low, lowest, menu) => `Ainda lento em ${low}? Experimente ${lowest} em ${menu}`, place: ord, finished: (n) => `Chegou em ${ord(n)}!`, finishedDsq: 'Chegou sem cumprir a penalidade: DSQ',
   contactDsq: (a) => ({ rudder: `DSQ, regra ${a.rule}: você devia se manter afastado de ${a.who}, e seu leme estava virado só ${a.deg}° de ${a.max}°`, late: `DSQ, regra ${a.rule}: você devia se manter afastado de ${a.who}. Leme todo carregado, mas tarde demais`, room: `DSQ, regra 14: você tinha espaço para evitar ${a.who} e manteve o rumo`, turned: `DSQ, regra 16: você guinou para cima de ${a.who}, que estava se mantendo afastado`, above: `DSQ, regra 17: acima do seu rumo devido, para cima de ${a.who}` })[a.why],
   theyDsq: (a) => `${a.who} desclassificado, regra ${a.rule}`,
   // a 1-on-1 race: the result, and the link between the two screens

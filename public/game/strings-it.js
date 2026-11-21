@@ -105,7 +105,7 @@ export const MAIN = {
   zIn: (n) => `Zona · ingaggiato con ${n}, sei all’interno: hai diritto allo spazio`, zOut: (n) => `Zona · ingaggiato con ${n}, sei all’esterno: dai spazio`,
   zAhead: (n) => `Zona · libero avanti a ${n}: hai diritto allo spazio`, zAstern: (n) => `Zona · libero dietro a ${n}: tieniti discosto`, tackCall: 'Pronti a virare… Vira!', gybeCall: 'Pronti a strambare… Stramba!',
   results: 'Risultati', again: 'Un’altra regata', menu: 'Menu', racing: 'in regata…', you: 'Tu', dsq: 'DSQ',
-  gfxDown: (q) => `Grafica impostata su ${q} per restare fluida`, place: ord, finished: (n) => `${ord(n)} all’arrivo!`, finishedDsq: 'Arrivo senza aver eseguito la penalità: DSQ',
+  gfxDown: (q) => `Grafica impostata su ${q} per restare fluida`, lowestTip: (low, lowest, menu) => `Ancora lento su ${low}? Prova ${lowest} in ${menu}`, place: ord, finished: (n) => `${ord(n)} all’arrivo!`, finishedDsq: 'Arrivo senza aver eseguito la penalità: DSQ',
   contactDsq: (a) => ({ rudder: `DSQ, regola ${a.rule}: dovevi tenerti discosto da ${a.who}, e il tuo timone era girato solo di ${a.deg}° su ${a.max}°`, late: `DSQ, regola ${a.rule}: dovevi tenerti discosto da ${a.who}. Timone tutto alla banda, ma troppo tardi`, room: `DSQ, regola 14: avevi spazio per evitare ${a.who} e hai mantenuto la rotta`, turned: `DSQ, regola 16: hai accostato verso ${a.who}, che si stava tenendo discosto`, above: `DSQ, regola 17: sopra la tua rotta propria, addosso a ${a.who}` })[a.why],
   theyDsq: (a) => `${a.who} squalificato, regola ${a.rule}`,
   // a 1-on-1 race: the result, and the link between the two screens

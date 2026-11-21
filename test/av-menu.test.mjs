@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 const store = new Map();
 globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
-const { GFX_KEY, GFX_LADDER, GFX_LEVELS, GFX_PARTS, RES_BELOW, autoEased, autoParts, autoScale, autoTuner, defaultQuality, followSettings, gfxDetail, gfxLevel, gfxNow, gfxParts, gfxScale, lighterParts, raiseParts, saveAuto, shedParts, startQuality } = await import('../public/game/gfx.js');
+const { GFX_KEY, GFX_LADDER, GFX_LEVELS, GFX_PARTS, LOWEST_TIP_DAYS, LOWEST_TIP_KEY, RES_BELOW, autoEased, autoParts, autoScale, autoTuner, defaultQuality, followSettings, gfxDetail, gfxLevel, gfxNow, gfxParts, gfxScale, lighterParts, lowestTipDue, lowestTipShown, raiseParts, saveAuto, shedParts, slowWatch, startQuality } = await import('../public/game/gfx.js');
 
 test('a level chosen is the level drawn, and Custom draws its own parts', () => {
   assert.equal(startQuality({ gfx: 'low' }), 'low');
@@ -258,6 +258,32 @@ test('Lowest draws every part Low at the resolution below Low Auto goes to last,
   globalThis.addEventListener = () => {};
   followSettings({ setQuality: (q) => calls.push(q), setResScale: (s) => scales.push(s) });
   assert.deepEqual([calls, scales], [['low'], [RES_BELOW.at(-1)]], 'and every view behind the site\'s pages with it');
+});
+
+test('slow on Low: told once, after 15 s of frames all under 24 fps', () => {
+  const watch = slowWatch();
+  let said = 0, at = null;
+  for (let t = 0; t < 60; t += 1 / 20) if (watch(1 / 20)) { said++; at ??= t; }
+  assert.equal(said, 1, 'once');
+  assert.ok(at >= 14.9 && at < 16, `after 15 s (${at.toFixed(1)})`);
+  const steady = slowWatch();
+  for (let t = 0; t < 120; t += 1 / 30) assert.equal(steady(1 / 30), false, '30 fps is not slow');
+  const spells = slowWatch(); // slow spells broken by smooth ones: never five in a row
+  for (let t = 0; t < 120; t += 1 / 20) assert.equal(spells(Math.floor(t / 9) % 2 ? 1 / 40 : 1 / 20), false);
+  const stalls = slowWatch(); // stalls aren't the frame rate
+  for (let i = 0; i < 3000; i++) assert.equal(stalls(i % 10 ? 1 / 40 : 0.5), false);
+});
+
+test('the Lowest tip is shown once a week at most', () => {
+  store.clear();
+  const now = Date.now();
+  assert.equal(lowestTipDue(now), true);
+  lowestTipShown(now);
+  assert.equal(store.get(LOWEST_TIP_KEY), String(now));
+  assert.equal(lowestTipDue(now + 864e5), false, 'the next day: not again');
+  assert.equal(lowestTipDue(now + LOWEST_TIP_DAYS * 864e5 + 1), true, 'a week on: again');
+  store.set(LOWEST_TIP_KEY, 'garbage');
+  assert.equal(lowestTipDue(now), true);
 });
 
 test('a view draws the level chosen, follows a change, and lets frames go on the battery saver', () => {

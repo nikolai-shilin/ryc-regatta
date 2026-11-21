@@ -5,8 +5,8 @@ import { lateLand } from './skopea.js';
 import { raceStarted, raceFinished, raceResult, perfSetup, perfFrame, perfMeter, statsContext, raceIncident, raceEnded, visitSend } from './stats.js';
 import { initExtras, onStart, onFrame, drill, drillSettings } from './extras.js'; // the drills, the analytics
 import { createHud } from './hud-bc.js';
-import { autoBase, autoTuner, gfxLevel, gfxNow, gfxParts, gfxScale, lighterParts, saveAuto, GFX_LEVELS, GFX_PARTS, SAVER_MS } from './gfx.js';
-import { openAvMenu, avSummary } from './av-menu.js'; // Audio & graphics, the site's menu too
+import { autoBase, autoTuner, gfxLevel, gfxNow, gfxParts, gfxScale, lighterParts, lowestTipDue, lowestTipShown, saveAuto, slowWatch, GFX_LEVELS, GFX_PARTS, SAVER_MS } from './gfx.js';
+import { openAvMenu, avSummary, avGfx, avTitle } from './av-menu.js'; // Audio & graphics, the site's menu too
 import { LINE_DASH, mapPalette, placeLabels } from './course-map.js';
 import { LOOKS, playerLook, lookFrom } from './yacht.js';
 const flagCode = (src) => { const m = typeof src === 'string' && /\/flags\/([a-z]{2}(?:-[a-z]+)?)\.svg$/.exec(src); return m ? m[1] : null; }; // '/flags/gb.svg' → 'gb'
@@ -174,7 +174,7 @@ const T = {
     zIn: (n) => `Zone · overlapped with ${n}, you're inside — you get room`, zOut: (n) => `Zone · overlapped with ${n}, you're outside — give room`,
     zAhead: (n) => `Zone · clear ahead of ${n} — you get room`, zAstern: (n) => `Zone · clear astern of ${n} — keep clear`, tackCall: 'Ready about… Lee-oh!', gybeCall: 'Stand by to gybe… Gybe-oh!',
     results: 'Results', again: 'Race again', menu: 'Menu', racing: 'racing…', you: 'You', dsq: 'DSQ',
-    gfxDown: (q) => `Graphics set to ${q} to keep it smooth`, place: ord, finished: (n) => `Finished ${ord(n)}!`, finishedDsq: 'Finished without taking your penalty — DSQ',
+    gfxDown: (q) => `Graphics set to ${q} to keep it smooth`, lowestTip: (low, lowest, menu) => `Still slow on ${low}? Try ${lowest} in ${menu}`, place: ord, finished: (n) => `Finished ${ord(n)}!`, finishedDsq: 'Finished without taking your penalty — DSQ',
     contactDsq: (a) => ({ rudder: `DSQ, rule ${a.rule}: you had to keep clear of ${a.who}, and your rudder was only ${a.deg}° of ${a.max}° over`, late: `DSQ, rule ${a.rule}: you had to keep clear of ${a.who}. Rudder hard over, but too late`, room: `DSQ, rule 14: you had room to avoid ${a.who} and held your course`, turned: `DSQ, rule 16: you turned onto ${a.who}, who was keeping clear`, above: `DSQ, rule 17: above your proper course, into ${a.who}` })[a.why],
     theyDsq: (a) => `${a.who} disqualified, rule ${a.rule}`,
     // a 1-on-1 race: the result, and the link between the two screens
@@ -288,7 +288,7 @@ const T = {
     zIn: (n) => `Зона · связаны с ${n}, ты внутри — тебе дают место`, zOut: (n) => `Зона · связаны с ${n}, ты снаружи — дай место`,
     zAhead: (n) => `Зона · не связаны, ты впереди ${n} — тебе дают место`, zAstern: (n) => `Зона · не связаны, ты позади ${n} — держись в стороне`, tackCall: 'К повороту оверштаг… Поворот!', gybeCall: 'К повороту фордевинд… Поворот!',
     results: 'Результаты', again: 'Ещё гонку', menu: 'Меню', racing: 'в гонке…', you: 'Вы', dsq: 'DSQ',
-    gfxDown: (q) => `Графика: «${q}» — для плавности`, place: (n) => `${n}-е`, finished: (n) => `Финиш: ${n}-е место!`, finishedDsq: 'Финиш без штрафа — дисквалификация (DSQ)',
+    gfxDown: (q) => `Графика: «${q}» — для плавности`, lowestTip: (low, lowest, menu) => `Тормозит даже на «${low}»? Попробуй «${lowest}» в меню «${menu}»`, place: (n) => `${n}-е`, finished: (n) => `Финиш: ${n}-е место!`, finishedDsq: 'Финиш без штрафа — дисквалификация (DSQ)',
     contactDsq: (a) => ({ rudder: `DSQ, правило ${a.rule}: нужно было уступить яхте ${a.who}, а руль был повёрнут только на ${a.deg}° из ${a.max}°`, late: `DSQ, правило ${a.rule}: нужно было уступить яхте ${a.who}. Руль положен до конца, но слишком поздно`, room: `DSQ, правило 14: было место уйти от яхты ${a.who}, но курс не изменён`, turned: `DSQ, правило 16: поворот на яхту ${a.who}, которая уступала`, above: `DSQ, правило 17: выше надлежащего курса, столкновение с яхтой ${a.who}` })[a.why],
     theyDsq: (a) => `${a.who}: дисквалификация, правило ${a.rule}`,
     raceWon: 'Гонка твоя!', raceLost: (w) => `Гонку выигрывает ${w}`,
@@ -1224,7 +1224,16 @@ const drawnNow = () => (autoNow && autoNow.of === world.gfx && autoNow.scale ===
 // seconds of frames let pass after Audio & graphics changes the picture or the battery saver (applyAv): they're the new
 // shaders compiling, or the old pace, and say nothing of the new one
 let settleT = 0;
+// Low chosen by hand and still under 24 fps for 15 s: Auto's steps below Low can't reach it, so a toast says Lowest is
+// there, in the menu's own words (gfx.js slowWatch), once a week at most
+const slowOnLow = slowWatch();
+function watchLow(raw) {
+  if (opts.gfx !== 'low' || world.preparing || !slowOnLow(raw) || !lowestTipDue()) return;
+  lowestTipShown();
+  toast(t('lowestTip', avGfx({ gfx: 'low' }, LANG), avGfx({ gfx: 'lowest' }, LANG), avTitle(LANG)), 6);
+}
 function watchFps(raw) {
+  watchLow(raw);
   if ((opts.gfx || 'auto') !== 'auto' || world.preparing) return; // (new shaders compiling: those frames say nothing)
   if (settleT > 0) { settleT -= raw; return; }
   const next = tuneGfx(raw, frameBusy, drawnNow(), !!opts.saver);

@@ -103,7 +103,7 @@ export const MAIN = {
   zIn: (n) => `Bölge · ${n} ile bindirmeli, içtesin – alan alırsın`, zOut: (n) => `Bölge · ${n} ile bindirmeli, dıştasın – alan ver`,
   zAhead: (n) => `Bölge · ${n} teknesinin açık önündesin – alan alırsın`, zAstern: (n) => `Bölge · ${n} teknesinin açık arkasındasın – uzak dur`, tackCall: 'Tramolaya hazır… Tramola!', gybeCall: 'Kavançaya hazır… Kavança!',
   results: 'Sonuçlar', again: 'Bir yarış daha', menu: 'Menü', racing: 'yarışıyor…', you: 'Sen', dsq: 'DSQ',
-  gfxDown: (q) => `Akıcı olsun diye grafik şuna ayarlandı: ${q}`, place: ord, finished: (n) => `${ord(n)} olarak bitirdin!`, finishedDsq: 'Cezanı yapmadan bitirdin – DSQ',
+  gfxDown: (q) => `Akıcı olsun diye grafik şuna ayarlandı: ${q}`, lowestTip: (low, lowest, menu) => `${low} ayarında bile yavaş mı? ${menu} menüsünde ${lowest} ayarını dene`, place: ord, finished: (n) => `${ord(n)} olarak bitirdin!`, finishedDsq: 'Cezanı yapmadan bitirdin – DSQ',
   contactDsq: (a) => ({ rudder: `DSQ, kural ${a.rule}: ${a.who} teknesinden uzak durmalıydın, ama dümenin ${a.max}° üzerinden yalnızca ${a.deg}° çevrilmişti`, late: `DSQ, kural ${a.rule}: ${a.who} teknesinden uzak durmalıydın. Dümen sonuna kadar çevrildi ama çok geç`, room: `DSQ, kural 14: ${a.who} teknesinden kaçınmak için alanın vardı ve rotanı korudun`, turned: `DSQ, kural 16: uzak duran ${a.who} teknesinin üstüne döndün`, above: `DSQ, kural 17: uygun rotanın üstünde, ${a.who} teknesine doğru` })[a.why],
   theyDsq: (a) => `${a.who} diskalifiye, kural ${a.rule}`,
   // a 1-on-1 race: the result, and the link between the two screens

@@ -22,7 +22,8 @@ mock('lib/track.ts', 'export const track = (name, data) => { globalThis.__tracke
 mock('lib/supabase/client.ts', 'export const supabaseBrowser = () => globalThis.__supabase;');
 mock('public/game/av-menu.js', `export const openAvMenu = (o) => { globalThis.__avOpened?.push(o); };
 export const avSummary = (o, lang) => (lang === 'ru' ? 'Авто · звук вкл' : 'Auto · sound on');
-export const avGfx = (o, lang) => (lang === 'ru' ? 'Авто' : 'Auto');`);
+export const avGfx = (o, lang) => (lang === 'ru' ? 'Авто' : { low: 'Low', lowest: 'Lowest' }[o?.gfx] ?? 'Auto');
+export const avTitle = (lang) => (lang === 'ru' ? 'Звук и графика' : 'Audio & graphics');`);
 
 const HTML = 'http://www.w3.org/1999/xhtml';
 const RealDate = Date;

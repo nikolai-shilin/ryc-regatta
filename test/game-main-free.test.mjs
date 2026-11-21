@@ -170,6 +170,21 @@ test('slow frames bring the graphics down a level, and say so', async () => {
   assert.ok(localStorage.getItem(GFX_KEY), 'the lighter picture remembered for this device');
 });
 
+test('Low chosen and still slow: a toast says Lowest is there, once', async () => {
+  const { LOWEST_TIP_KEY } = await import('../public/game/gfx.js');
+  localStorage.removeItem(LOWEST_TIP_KEY);
+  const choose = (p) => { game.key('Escape'); $('#pAv').click(); const av = game.dom.avOpened.at(-1); av.write(p); av.onClose(); game.key('Escape'); };
+  choose({ gfx: 'low' });
+  const raf = globalThis.requestAnimationFrame; // a frame every 100 ms: 10 fps
+  globalThis.requestAnimationFrame = (f) => setTimeout(() => f(performance.now()), 100);
+  let n;
+  try { n = await game.until(() => /Lowest/.test(toast()), 'the tip', 400, 100); } finally { globalThis.requestAnimationFrame = raf; }
+  assert.ok(n >= 150, `after 15 s of them (${n} frames)`);
+  assert.equal(toast(), 'Still slow on Low? Try Lowest in Audio & graphics');
+  assert.ok(localStorage.getItem(LOWEST_TIP_KEY), 'remembered: not again this week (once a race and once a week: test/av-menu.test.mjs)');
+  choose({ gfx: 'auto' });
+});
+
 test('the WebGL context lost: the race pauses, a card after 2 s, and the picture back takes the card away', async () => {
   if (rg().paused) game.key('Escape');
   const gl = $('#gl');
