@@ -364,9 +364,9 @@ export function createStage({ world, race, lang = 'en' }) {
   const stern = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: '#f5c400', transparent: true, opacity: 0.9, fog: false }));
   stern.frustumCulled = false; stern.visible = false; world.scene.add(stern);
 
-  // the wind's arrow, flat on the water and pointing the way the wind blows, with its tag at its tail: half see-through,
+  // the wind's arrow, flat on the water and pointing the way the wind blows, with its tag at its tail: mostly see-through,
   // it sways gently to and fro along the wind
-  const AL = 1.5 * L, AW = 0.18 * L, HL = 0.5 * L, HW = 0.55 * L, ARROW_A = 0.5, ARROW_T = 1.8;
+  const AL = 1.5 * L, AW = 0.18 * L, HL = 0.5 * L, HW = 0.55 * L, ARROW_A = 0.3, ARROW_T = 1.8;
   const ash = new THREE.Shape();
   ash.moveTo(0, -AW / 2); ash.lineTo(AL - HL, -AW / 2); ash.lineTo(AL - HL, -HW / 2); ash.lineTo(AL, 0); ash.lineTo(AL - HL, HW / 2); ash.lineTo(AL - HL, AW / 2); ash.lineTo(0, AW / 2); ash.closePath();
   const arrow = new THREE.Group(), arrowM = new THREE.Mesh(new THREE.ShapeGeometry(ash), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: ARROW_A, depthWrite: false, fog: false, side: THREE.DoubleSide }));
@@ -585,7 +585,7 @@ export function createStage({ world, race, lang = 'en' }) {
       }
       arrow.position.set(cx, 0.45, cz);
       arrow.rotation.y = Math.atan2(-Math.cos(wn), -Math.sin(wn)); // its +x down the wind
-      // to and fro a sixth of its length along the wind, at half opacity throughout (its tag stays put)
+      // to and fro a sixth of its length along the wind, its opacity steady (its tag stays put)
       arrowM.position.x = Math.sin((time / ARROW_T) * 2 * Math.PI) * AL * k / 12;
     }
     // the umpire's boat: by the boat she watches, on the way that boat set out on, riding the swell
