@@ -109,7 +109,7 @@ test('robots.txt speaks to every crawler and names the sitemap', () => {
   assert.equal(robots().sitemap, `${SITE}/sitemap.xml`);
 });
 
-for (const path of ['/auth/callback', '/auth/sign-out', '/auth/telegram', '/lang', '/lang?to=ru', '/sponsor', '/match/K7M2QZ', '/match/new']) {
+for (const path of ['/auth/callback', '/auth/sign-out', '/auth/telegram', '/lang', '/lang?to=ru', '/sponsor', '/match/K7M2QZ', '/match/new', '/call/K7M2QZ']) {
   test(`robots.txt keeps crawlers off ${path}`, () => assert.equal(crawlable(path), false));
 }
 
@@ -172,6 +172,7 @@ const instances = (route) => {
   if (route === '/yachts/[id]') return YACHT_IDS.map((id) => [`/yachts/${id}`, { id }]);
   if (route === '/dictionary/[term]') return glossary(tx('en')).map((x) => [`/dictionary/${x.id}`, { term: x.id }]);
   if (route === '/match/[code]') return [['/match/K7M2QZ', { code: 'K7M2QZ' }]];
+  if (route === '/call/[code]') return [['/call/K7M2QZ', { code: 'K7M2QZ' }]];
   if (route === '/race/rating/[day]') return [['/race/rating/2026-11-17', { day: '2026-11-17' }]];
   if (route === '/race/result/[id]') return [[`/race/result/${RACE}`, { id: RACE }]];
   assert.ok(!route.includes('['), `${route}: a dynamic page this file doesn't know`);
@@ -194,7 +195,7 @@ user = null;
 const indexed = sweep.filter((p) => p.meta.robots?.index !== false);
 
 test('every page was opened, in both languages', () => {
-  assert.equal(new Set(sweep.map((p) => p.route)).size, 40); // (40: /duel, Find a race)
+  assert.equal(new Set(sweep.map((p) => p.route)).size, 41); // (41: /call/[code], an open call)
   assert.equal(sweep.length % 2, 0);
 });
 

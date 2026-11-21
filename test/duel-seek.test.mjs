@@ -125,7 +125,7 @@ test('Ready now under the button and while looking: nearest first, level or New,
   const list = parseReady(READY), raced = [];
   const s = view({ list, challenge: (h) => raced.push(h) });
   assert.match(s, /Ready now Cara M\. National 1900 waiting 0:23 Race Lina S\. New ~1508 waiting 0:04 Race/);
-  assert.match(view({ phase: 'looking', look: { waited: 5, band: 100, online: 3 }, list }), /Stop looking Ready now Cara M\./);
+  assert.match(view({ phase: 'looking', look: { waited: 5, band: 100, online: 3 }, list }), /Stop looking Post an open call .* Ready now Cara M\./);
   assert.match(view(), /Ready now Nobody else is looking right now\. Find a race, and you’re the first one the next sailor sees\./);
   assert.match(view({ note: 'gone' }), /That sailor has just gone: paired with someone else, or stopped looking\. Find a race/);
   assert.doesNotMatch(view({ phase: 'found', pair: pairOf(), list }), /Ready now/, 'not over a match found');
@@ -139,4 +139,38 @@ test('the wishes, a venue and a yacht or Any, and when they count; a signed-out 
   assert.match(plain(html), /Venue Any .* Yacht Any .* Your wishes count from your fourth rated race; the host’s come first\./);
   const out = plain(renderToStaticMarkup(DuelFinderView({ lang: 'en', signed: false, phase: 'idle', look: { waited: 0, band: 100, online: 0 }, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop, list: parseReady(READY) })));
   assert.doesNotMatch(out, /Ready now|Venue/);
+});
+
+test('POST /connect/seek: call posts with a band it knows and clean wishes; take names a code; a bad code asks nothing', async () => {
+  rpc.data = { status: 'open', code: 'K7M2QZ', lo: 1458, hi: 1658, left: 3600 };
+  assert.deepEqual(await post({ do: 'call', band: 200, wishes: { venue: 'cowes', yacht: 'titanic' } }), { status: 'open', code: 'K7M2QZ', lo: 1458, hi: 1658, left: 3600 });
+  assert.deepEqual(rpc.calls.at(-1), { fn: 'regatta_call_post', p_wishes: { venue: 'cowes' }, p_band: 200 });
+  await post({ do: 'call', band: 999 });
+  assert.equal(rpc.calls.at(-1).p_band, 100, 'a band it doesn\'t know is the narrowest');
+  rpc.data = { status: 'none', reason: 'not_looking' };
+  assert.deepEqual(await post({ do: 'call' }), { status: 'none', reason: 'not_looking' });
+  rpc.data = { status: 'found', pair: PAIR };
+  assert.equal((await post({ do: 'take', code: 'k7m2qz' })).status, 'found');
+  assert.deepEqual(rpc.calls.at(-1), { fn: 'regatta_call_take', p_code: 'K7M2QZ', p_wishes: {} });
+  rpc.data = { status: 'none', reason: 'taken' };
+  assert.deepEqual(await post({ do: 'take', code: 'K7M2QZ' }), { status: 'none', reason: 'taken' });
+  for (const code of [undefined, 'nope', 'K7M2Q0', 7]) { rpc.calls = []; assert.equal((await post({ do: 'take', code })).status, 'none'); assert.equal(rpc.calls.length, 0, String(code)); }
+});
+
+test('looking: Post an open call; posted, the call\'s band, its link and the ways to send it', () => {
+  const looking = { phase: 'looking', look: { waited: 30, band: 200, online: 1 } };
+  assert.match(view(looking), /Stop looking Post an open call A link for any chat: the first sailor near your rating to take it races you\./);
+  const call = { code: 'K7M2QZ', lo: 1458, hi: 1658, url: 'https://www.sailupdown.com/call/K7M2QZ' };
+  const html = renderToStaticMarkup(DuelFinderView({ lang: 'en', signed: true, ...looking, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop, call }));
+  assert.match(plain(html), /Your open call For ratings 1458–1658: the first to take it races you\. Open while you look, an hour at most\. Telegram WhatsApp Copy link/);
+  assert.match(html, /href="https:\/\/t\.me\/share\/url\?url=https%3A%2F%2Fwww\.sailupdown\.com%2Fcall%2FK7M2QZ%3Futm_source%3Dtelegram&amp;text=Race%20me%201-on-1/);
+  assert.match(html, /href="https:\/\/wa\.me\/\?text=Race%20me%201-on-1%20on%20Up%20and%20down%3A%20rated%2C%20about%204%20minutes%2C%20for%20ratings%201458%E2%80%931658\.%20https/);
+  assert.match(html, /value="https:\/\/www\.sailupdown\.com\/call\/K7M2QZ"/);
+  assert.doesNotMatch(plain(html), /Post an open call/);
+  assert.doesNotMatch(view(), /Post an open call/, 'only while looking');
+});
+
+test('a call that couldn\'t be taken says why, in each case', () => {
+  for (const [note, said] of [['taken', /That call has been taken/], ['away', /isn’t looking right now/], ['closed', /That call has closed\./], ['band', /outside that call’s range/], ['mine', /That’s your own call/]]) assert.match(view({ note }), said, note);
+  assert.match(view({ phase: 'looking', note: 'nocall' }), /The call couldn’t be posted just now/);
 });

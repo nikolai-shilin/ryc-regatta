@@ -84,3 +84,36 @@ test('a match found starts loading the race at once, and the card says how far, 
   assert.match(v.text(), /Phuket is loaded: the race opens at once/);
   await v.unmount();
 });
+
+test('Post an open call while looking: the call\'s link to send, and a match through it is Match found as ever', async () => {
+  answer.call = { status: 'open', code: 'K7M2QZ', lo: 1458, hi: 1658, left: 3600 };
+  const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  await click(v.$('.bt-go'));
+  const postBtn = v.$$('.df-call button').find((b) => b.textContent === 'Post an open call');
+  await click(postBtn);
+  assert.deepEqual(asks().find((a) => a.do === 'call'), { do: 'call', wishes: {} });
+  assert.match(v.text(), /Your open call For ratings 1458–1658/);
+  assert.equal(v.$('.df-url').value, 'https://updown.test/call/K7M2QZ');
+  answer.seek = { status: 'found', pair: PAIR };
+  await tick(3000);
+  assert.match(v.text(), /Match found Cara M\./);
+  assert.doesNotMatch(v.text(), /Your open call/);
+  await v.unmount();
+});
+
+test('/duel?take= takes that call once, and the address loses it; a call taken already says so', async () => {
+  reset({ url: 'https://updown.test/duel?take=k7m2qz' });
+  answer.take = { status: 'none', reason: 'taken' };
+  serve([['/connect/seek', (u, init) => json(answer[JSON.parse(init.body).do] ?? { status: 'none', reason: null })]]);
+  let v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  assert.deepEqual(asks().filter((a) => a.do === 'take'), [{ do: 'take', code: 'K7M2QZ', wishes: {} }]);
+  assert.equal(location.search, '');
+  assert.match(v.text(), /That call has been taken: someone else got there first\. .*Find a race/);
+  await v.unmount();
+  reset({ url: 'https://updown.test/duel?take=K7M2QZ' });
+  answer.take = { status: 'found', pair: PAIR };
+  serve([['/connect/seek', (u, init) => json(answer[JSON.parse(init.body).do] ?? { status: 'none', reason: null })], ['/play', { text: async () => '' }], [/\/game\//, json(null)]]);
+  v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  assert.match(v.text(), /Match found Cara M\./);
+  await v.unmount();
+});

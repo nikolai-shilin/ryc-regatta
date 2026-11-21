@@ -6,7 +6,7 @@ import { SITE } from '@/lib/seo';
 // switch are off limits. The bare game (/play) carries its own noindex header.
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: '*', allow: '/', disallow: ['/auth/', '/lang', '/sponsor$', '/match/'] }, // /sponsor$: the game's ad feed alone, not the page /sponsorship
+    rules: { userAgent: '*', allow: '/', disallow: ['/auth/', '/lang', '/sponsor$', '/match/', '/call/'] }, // /sponsor$: the game's ad feed alone, not the page /sponsorship; /call/: an open 1-on-1 call's link, as /match/ an invite's
     sitemap: `${SITE}/sitemap.xml`,
   };
 }

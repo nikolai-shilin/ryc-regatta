@@ -43,7 +43,7 @@
 .df-stakes .up { color: var(--up, #2ee6a0); } .df-stakes .down { color: var(--down, #ff8a3d); }
 .df-wait { margin: 0; font: 600 16px/1.4 var(--sans, 'Sofia Sans', sans-serif); color: var(--ink-2, rgba(255,255,255,.78)); }
 .df-ready { position: relative; }
-.bc .bt-go.df-ready { padding-right: 38px; } /* (the seconds clear the slanted end, 18 px) */
+.bc .bt-go.df-ready, .bc .bt-go.df-go { padding-right: 38px; } /* (the words and the seconds clear the slanted end, 18 px) */
 .df-left { margin-left: 10px; font-variant-numeric: tabular-nums; opacity: .75; }
 .df-bar { flex: none; width: 100%; height: 4px; } /* (a line, not the level bar's row: in this column its basis would be its height) */
 
@@ -82,3 +82,9 @@
 .dh-st { font-variant-numeric: tabular-nums; }
 @media (max-width: 860px) { .bc .ho-sec.dh { grid-template-columns: minmax(0, 1fr); } .dh-strip .dh-wide { grid-column: auto; } }
 .df-load { margin: 0; font: 600 13px/1.4 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: .06em; text-transform: uppercase; color: var(--you, #3db8ff); font-variant-numeric: tabular-nums; }
+
+/* an open call (components/duel-finder.tsx): the button that posts one, or the call's link and the ways to send it */
+.df-call { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--rule, rgba(255,255,255,.14)); }
+.df-url { width: 100%; min-width: 0; padding: 8px 10px; font: 500 13px/1.3 var(--mono, ui-monospace, monospace); color: var(--ink-2, rgba(255,255,255,.78)); background: rgba(255,255,255,.06); border: 1px solid var(--rule, rgba(255,255,255,.22)); border-radius: 0; }
+.df-state { align-self: flex-start; padding: 5px 10px; font: 700 12px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: .14em; text-transform: uppercase; background: var(--w-12, rgba(255,255,255,.12)); color: var(--ink, #fff); }
+.df-state-open { background: var(--up, #2ee6a0); color: var(--ink-on, #04121e); }

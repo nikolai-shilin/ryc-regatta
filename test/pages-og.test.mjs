@@ -84,6 +84,7 @@ const CARDS = {
   drills: { bg: 'start', en: `${DRILLS.length} drills`, ru: `${DRILLS.length} тренировок` },
   free: { bg: 'drone', en: `${VENUES.length} venues · ${YACHTS.length} yachts`, ru: 'Своя гонка' },
   match: { bg: 'drone', en: 'You and a friend, one on one', ru: 'Вы и друг, один на один' },
+  call: { q: '?n=Alex+P.&r=1558&p=41&lo=1458&hi=1658&v=gocek&b=j70', bg: 'start', en: 'Alex P. · 1558 · Fleet', ru: 'Alex P. · 1558 · Флот' },
   iyt: { bg: 'helm', en: 'Questions, VHF to Yachtmaster Ocean', ru: 'Вопросов, от VHF до Yachtmaster Ocean' },
   help: { bg: 'trim', en: 'How to play', ru: 'Как играть' },
   faq: { bg: 'drone', en: 'About the game, the race and the rules', ru: 'Об игре, гонке и правилах' },
@@ -262,6 +263,13 @@ test('a 1-on-1 result\'s card says who won, by how much, where and in what, and 
   const ru = (await draw('duel', '?v=gocek&b=j70&w=Alex&l=Anna&m=1.8&lang=ru')).text;
   assert.ok(ru.includes('на 1,8 с впереди Anna') && ru.includes('Alex побеждает'), ru);
   assert.ok((await draw('duel', '?v=gocek&w=Alex&l=Anna')).text.includes('ahead of Anna'), 'no margin: no number');
+});
+
+test('an open call\'s card: who, rating and level, where, the band on its tag, Race me and Take it; without its numbers, not drawn', async () => {
+  const { text } = await draw('call', '?n=Alex+P.&r=1558&p=41&lo=1458&hi=1658&v=gocek&b=j70');
+  for (const w of ['Open call · 1-on-1 · rated · Göcek · J/70', '1458–1658', 'Alex P. · 1558 · Fleet', 'Race me', 'Take it']) assert.ok(text.includes(w), `${w}: ${text}`);
+  assert.ok((await draw('call', '?r=1500&p=2&lo=1400&hi=1600')).text.includes('A sailor · ~1500 · New to 1-on-1'));
+  for (const q of ['?r=1558&lo=1458', '?r=x&lo=1&hi=2', '?n=Alex&lo=1458&hi=1658']) assert.equal((await page('call', q)).status, 302, q);
 });
 
 test('a 1-on-1 result\'s card without both names, or with markup in them, is not drawn as given', async () => {

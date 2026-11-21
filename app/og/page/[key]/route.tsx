@@ -15,6 +15,9 @@ import { clock } from '@/lib/clock';
 import { parseCode } from '@/lib/code';
 import { card, C, type Bg } from '@/lib/og';
 import { duelFrom } from '@/lib/duel-share';
+import { plainName } from '@/lib/name';
+import { levelName } from '@/lib/levels';
+import { provisional, shown } from '@/lib/elo';
 
 // /og/page/<key>?lang=ru — the share card of a page that has no race or passport of its own, in the logo's look
 // (lib/og.tsx) over a picture of the game that suits it: what the page is, and the one thing about it worth a link (a
@@ -141,6 +144,21 @@ const CARDS: Record<string, Build> = {
           : t(`ahead of ${d.l}`, `впереди ${d.l}`, `por delante de ${d.l}`, `vor ${d.l}`, `${d.l} önünde`, `devant ${d.l}`, `davanti a ${d.l}`, `à frente de ${d.l}`),
         value: t(`${d.w} won`, `${d.w} побеждает`, `${d.w} ganó`, `${d.w} gewinnt`, `${d.w} kazandı`, `${d.w} gagne`, `${d.w} vince`, `${d.w} venceu`), wrap: true },
       call: t('Race the winner', 'Сразись с победителем', 'Reta al ganador', 'Fordere den Sieger', 'Kazananla yarış', 'Défie le vainqueur', 'Sfida il vincitore', 'Desafie o vencedor'),
+    };
+  },
+  // an open 1-on-1 call (app/[lang]/call/[code]): who, their rating and level, where if wished, and the band that may take it
+  call: (t, lang, q) => {
+    const n = (k: string) => { const x = q.get(k); return x && /^\d{1,4}$/.test(x) ? Number(x) : null; }; // (whole numbers as written, never a missing one as 0)
+    const r = n('r'), lo = n('lo'), hi = n('hi'), races = n('p') ?? 0;
+    if (r == null || lo == null || hi == null) return null;
+    const who = plainName(q.get('n') || '') || t('A sailor', 'Соперник', 'Un regatista', 'Ein Segler', 'Bir denizci', 'Un marin', 'Un velista', 'Um velejador');
+    const v = q.get('v') ? venueOf(q.get('v') || undefined) : null, y = q.get('b') ? yachtOf(q.get('b')) : null;
+    const lvl = provisional(races) ? t('New to 1-on-1', 'Новичок в 1 на 1', 'Nuevo en 1 contra 1', 'Neu im 1 gegen 1', 'Bire birde yeni', 'Nouveau en duel', 'Nuovo all’1 contro 1', 'Novo no 1 contra 1') : levelName(r, lang);
+    return {
+      bg: 'start', kind: [t('Open call · 1-on-1 · rated', 'Открытый вызов · 1 на 1 · рейтинг', 'Reto abierto · 1 contra 1 · con rating', 'Offene Herausforderung · 1 gegen 1 · gewertet', 'Açık çağrı · bire bir · reytingli', 'Appel ouvert · duel · classé', 'Sfida aperta · 1 contro 1 · valida', 'Desafio aberto · 1 contra 1 · vale rating'), v ? t(...v.name) : null, y ? t(...y.name) : null].filter(Boolean).join(' · '),
+      tag: { text: `${lo}–${hi}` },
+      hero: { label: `${who} · ${shown(r, races)} · ${lvl}`, value: t('Race me', 'Сыграем', 'Rétame', 'Segle gegen mich', 'Bana karşı yarış', 'Défie-moi', 'Sfidami', 'Me desafie'), color: C.gold, wrap: true },
+      call: t('Take it', 'Принять', 'Aceptar', 'Annehmen', 'Kabul et', 'Le prendre', 'Accetta', 'Aceitar'),
     };
   },
   iyt: (t, lang) => ({
