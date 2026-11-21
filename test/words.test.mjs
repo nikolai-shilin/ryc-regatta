@@ -69,7 +69,7 @@ test('a search folds case and accents, needs every word typed, and puts the term
   const tack = find(DATA.ru, 'tack', '', 'ru').flatMap((x) => x.terms).find((y) => y.id === 'tack');
   assert.ok(tack.shown && tack.named, 'tack finds Поворот оверштаг by name');
   assert.equal(tack.en, 'tack');
-  assert.equal(DATA.en[0].terms.every((x) => x.length === 3), true, 'none in English');
+  assert.equal(DATA.en.flatMap((g) => g.terms).every((x) => !x[3]), true, 'none in English');
 });
 
 // ---------- on a page ----------
@@ -120,9 +120,9 @@ test('it opens over the race with every word in its groups, and the field takes 
 test('typing finds the words, marks them, counts them in the tabs, and Esc clears before it closes', async () => {
   const closes = await open();
   assert.equal(document.activeElement, $('.wd-back'), 'on a touch screen the field waits for a tap');
-  await type($('.wd-q'), 'lay');
+  await type($('.wd-q'), 'layl');
   assert.deepEqual(shownTerms(), ['layline']);
-  assert.equal($('.wd-w[data-id="layline"] mark').textContent, 'Lay');
+  assert.equal($('.wd-w[data-id="layline"] mark').textContent, 'Layl');
   assert.ok($('.wd-w[data-id="layline"]').classList.contains('hit'));
   assert.equal($('.wd-tabs button').textContent, 'All1');
   assert.equal($('.wd-tabs [data-g="wind"]').textContent, `${DATA.en.find((g) => g.id === 'wind').title}1`);
@@ -167,6 +167,10 @@ test('in Russian, Russian; the title the race gives it', async () => {
   assert.equal($('.wd-w[data-id="tack"] .wd-en').textContent, '(tack)');
   assert.equal($('.wd-w[data-id="tack"] .wd-en').lang, 'en');
   assert.ok(!$('.wd-w[data-id="vmg"] .wd-en'), 'VMG (скорость к цели) says it already');
+  // the crash gybe's danger, in red under its words
+  assert.equal($('.wd-w[data-id="crash-gybe"] .wd-warn').textContent, DATA.ru.flatMap((g) => g.terms).find((x) => x[0] === 'crash-gybe')[4]);
+  assert.match($('.wd-w[data-id="crash-gybe"] .wd-warn').textContent, /^Крайне опасно/);
+  assert.equal(document.body.querySelectorAll('.wd-warn').length, 1);
   await type($('.wd-q'), 'close-hauled');
   assert.deepEqual(shownTerms(), ['close-hauled']);
   assert.equal($('.wd-w[data-id="close-hauled"] .wd-en mark').textContent, 'close-hauled');

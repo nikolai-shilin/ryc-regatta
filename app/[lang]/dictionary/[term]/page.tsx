@@ -70,6 +70,7 @@ export default async function TermPage({ params }: Props) {
           <h1 className="hm-ph-h">{x.term}</h1>
           {x.en ? <p className="dc-en" lang="en">({x.en})</p> : null}
           <p className="hm-text">{x.def}</p>
+          {x.warn ? <p className="dc-warn" role="note">{x.warn}</p> : null}
           {x.see && <p className="gd-see-d"><Link className="gd-see" href={x.see}>{seeLabel(x.see, t, lang)}<IconArrow s={12} /></Link></p>}
         </div>
       </header>

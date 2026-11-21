@@ -40,6 +40,8 @@ for (const lang of ['en', 'ru', 'de']) {
     assert.equal((h.match(/class="wd-3d"/g) || []).length, terms.filter((x) => SCENES_3D.includes(x.id)).length, 'the 3D mark on the words the game sails');
     assert.equal((h.match(/role="radio"/g) || []).length, glossaryGroups(t).length + 1, 'a tab for all, and one for each group');
     assert.match(h, /class="dc-foot"/);
+    assert.equal((h.match(/<dd class="wd-warn">/g) || []).length, 1, 'the crash gybe’s warning, in red');
+    assert.ok(terms.find((x) => x.id === 'crash-gybe').warn, 'the crash gybe has one');
     const ld = ldOf(h);
     assert.equal(ld['@type'], 'DefinedTermSet');
     assert.equal(ld.url, SITE + addressed('/dictionary', lang));
@@ -63,6 +65,9 @@ for (const lang of ['en', 'ru', 'de']) {
       for (const y of groups.find((g) => g.id === x.group).terms.filter((y) => y.id !== x.id)) assert.ok(h.includes(`href="/dictionary/${y.id}"`), `${x.id} → ${y.id}`);
       assert.match(h, /rel="prev"/); assert.match(h, /rel="next"/);
       if (x.see) assert.ok(h.includes(`href="${x.see}"`), `${x.id}: the guide that goes further`);
+      // what's dangerous about it, in red: the crash gybe's
+      assert.equal(h.includes('class="dc-warn"'), !!x.warn, `${x.id}: a warning`);
+      if (x.warn) assert.ok(h.includes(`<p class="dc-warn" role="note">${esc(x.warn)}</p>`));
       const ld = ldOf(h), [term, trail] = ld['@graph'];
       assert.equal(ld['@context'], 'https://schema.org');
       assert.equal(term['@type'], 'DefinedTerm'); assert.equal(term.name, x.term); assert.equal(term.description, x.def);

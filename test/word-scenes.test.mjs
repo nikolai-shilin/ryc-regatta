@@ -40,8 +40,8 @@ test('every word of the glossary is a scene, but the two this class has no sail 
   const all = words.en.flatMap((g) => g.terms.map((x) => x[0]));
   const ids = sceneIds();
   for (const id of ids) assert.ok(all.includes(id), `${id} is a word of the glossary`);
-  // what can't be seen: an idea (the apparent wind, VMG), a person (the umpire), or what's too small to make out (telltales)
-  assert.deepEqual(all.filter((id) => !ids.includes(id)), ['apparent-wind', 'vmg', 'umpire', 'telltales'], 'the JPK 1050 has every sail: every other word has one');
+  // what can't be seen: an idea (the apparent wind, VMG), or what's too small to make out (telltales)
+  assert.deepEqual(all.filter((id) => !ids.includes(id)), ['apparent-wind', 'vmg', 'telltales'], 'the JPK 1050 has every sail: every other word has one');
   const dinghy = sceneIds({ kite: false, reef: false, zero: false, jib: false });
   for (const id of ['gennaker', 'reef', 'code-zero', 'jib']) assert.ok(!dinghy.includes(id), `a Laser has no ${id}`);
   for (const [k, v] of Object.entries(TAGS)) assert.equal(v.length, 8, `the tag ${k} in every language`);
@@ -131,6 +131,68 @@ test('the port boat crosses astern of the starboard one, never touching', () => 
   let min = Infinity;
   sail(12, ([s, p]) => { min = Math.min(min, Math.hypot(s.x - p.x, s.z - p.z)); });
   assert.ok(min > 1.1 * L, `${(min / L).toFixed(2)} lengths apart at the closest`);
+});
+
+test('luffing and bearing away beside another boat: she goes higher, or lower, and the two never touch', () => {
+  for (const [w, s, higher] of [['luff', 5, true], ['bear-away', 6, false]]) {
+    stage.show(w);
+    assert.equal(boats().length, 2, w);
+    let near = Infinity;
+    sail(1.5); const a = Math.abs(twaOf(boats()[0])), o = Math.abs(twaOf(boats()[1]));
+    sail(s, ([p, q]) => { near = Math.min(near, Math.hypot(p.x - q.x, p.z - q.z)); });
+    const d = Math.abs(twaOf(boats()[0])) - a;
+    assert.ok(higher ? d < -30 : d > 50, `${w}: ${d.toFixed(0)}°`);
+    assert.equal(boats()[0].tag, higher ? 'higher' : 'lower');
+    assert.ok(near > 1.3 * L, `${w}: ${(near / L).toFixed(2)} lengths apart at the closest`);
+    if (higher) assert.ok(Math.abs(twaOf(boats()[1])) < o - 30, 'the windward boat comes up after her');
+    else assert.ok(Math.abs(Math.abs(twaOf(boats()[1])) - o) < 8, 'the other sails on close-hauled');
+  }
+});
+
+test('the wind’s arrow lies on the water beside the boat, pointing down the wind, where the words name the wind', () => {
+  const { arrow } = stage.extras;
+  for (const w of ['tack', 'gybe', 'luff', 'bear-away', 'by-the-lee', 'crash-gybe', 'favoured-end', 'line-bias']) {
+    stage.show(w); sail(0.5);
+    assert.ok(arrow.visible, w);
+    const line = w.includes('end') || w === 'line-bias', b = line ? race.course.committee : boats()[0];
+    const up = { x: Math.sin(race.wind.dir()), z: -Math.cos(race.wind.dir()) }, dx = arrow.position.x - b.x, dz = arrow.position.z - b.z;
+    if (line) assert.ok(dx * up.x + dz * up.z > 2 * L, `${w}: upwind of the line`);
+    else assert.ok(Math.abs(dx * up.z - dz * up.x) > 1.5 * L, `${w}: alongside her, clear of her`);
+    const tip = new THREE.Vector3(1, 0, 0).applyEuler(arrow.rotation);
+    assert.ok(tip.x * up.x + tip.z * up.z < -0.99, `${w}: pointing down the wind`);
+  }
+  stage.show('reach'); sail(0.2);
+  assert.equal(arrow.visible, false, 'not where the words don’t need it');
+});
+
+test('the favoured end shows ahead of the line square to the wind', () => {
+  const { square } = stage.extras;
+  stage.show('favoured-end'); sail(0.2);
+  assert.ok(square.visible);
+  const p = square.geometry.attributes.position, dx = p.getX(1) - p.getX(0), dz = p.getZ(1) - p.getZ(0);
+  const up = { x: Math.sin(race.wind.dir()), z: -Math.cos(race.wind.dir()) };
+  assert.ok(Math.abs(dx * up.x + dz * up.z) / Math.hypot(dx, dz) < 1e-6, 'square to the wind');
+  stage.show('tack'); sail(0.2);
+  assert.equal(square.visible, false);
+});
+
+test('the crash gybe is tagged as the danger it is, in red', () => {
+  stage.show('crash-gybe'); sail(14);
+  assert.equal(boats()[0].tag, 'danger');
+  assert.equal(boats()[0].warn, true);
+});
+
+test('the umpire watches from a RIB by the boat taking her penalty, the flag up in her colour', () => {
+  stage.show('umpire');
+  const { rib } = stage.extras;
+  assert.ok(rib.visible && boats()[0].pen);
+  let far = 0, done = -1;
+  sail(16, ([b], t) => { far = Math.max(far, Math.hypot(rib.position.x - b.x, rib.position.z - b.z)); if (done < 0 && !b.pen) done = t; });
+  assert.ok(done > 0, 'the turn completed');
+  assert.ok(far < 6 * L, `kept by her: ${(far / L).toFixed(1)} lengths at most`);
+  assert.equal(rib.userData.flag.material.color.getHexString(), '3db8ff');
+  stage.show('reach'); sail(0.2);
+  assert.equal(rib.visible, false);
 });
 
 test('the penalty turn is done, a tack and a gybe, and she sails on', () => {

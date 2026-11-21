@@ -87,6 +87,7 @@ export default async function Glossary({ params }: LangParams) {
                     <div key={x.id} id={x.id} className="rb-rule">
                       <dt><Link className="dc-term" href={dictPath(x.id)}>{x.term}</Link>{x.en ? <span className="dc-en-s" lang="en"> ({x.en})</span> : null}</dt>
                       <dd>{x.def}</dd>
+                      {x.warn ? <dd className="dc-warn">{x.warn}</dd> : null}
                       {x.see && <dd className="gd-see-d"><Link className="gd-see" href={x.see}>{seeLabel(x.see, t, lang)}<IconArrow s={12} /></Link></dd>}
                     </div>
                   ))}
