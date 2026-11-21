@@ -368,3 +368,10 @@ test('the sailing options are the same in every menu', () => {
   assert.doesNotMatch(site + play, /ghostSw|data-q="ghost"|'ghost'|game\/track\.js/);
   for (const f of ['components/pause-card.tsx', 'components/settings-form.tsx']) assert.match(read(f), /<SailingOpts lang=\{lang\} \/>/, f);
 });
+
+test("the pause card's eight languages sit four a row, so their names fit (eight in one row ran into each other)", () => {
+  const card = read('components/pause-card.tsx');
+  assert.match(card, /<nav className="bt-seg" style=\{\{ \['--n' as string\]: 4 \}\} aria-labelledby="st-lang">/);
+  assert.equal((card.match(/href=\{`\/lang\?to=/g) || []).length, 8);
+  assert.match(read('styles/ryc.css'), /\.bt-set \.bt-seg :is\(button, a\) \{ padding: 0 4px; white-space: nowrap; \}/);
+});
