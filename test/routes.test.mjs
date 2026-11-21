@@ -476,8 +476,8 @@ test('/llms.txt says how many venues and yachts there really are (its words are 
   const { YACHTS } = await import('../lib/yachts.ts');
   const s = await (await import('../app/llms.txt/route.ts')).GET().text();
   assert.ok(s.includes(`the ${VENUES.length} regatta venues`), `${VENUES.length} venues`);
-  assert.equal(YACHTS.length, 9, 'the page says "the nine yachts"');
-  assert.ok(s.includes('the nine yachts'));
+  assert.equal(YACHTS.length, 10, 'the page says "the ten yachts"');
+  assert.ok(s.includes('the ten yachts'));
 });
 
 test('/llms-full.txt carries every guide, venue and yacht whole', async () => {
