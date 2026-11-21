@@ -132,7 +132,7 @@ test('typing finds the words, marks them, counts them in the tabs, and Esc clear
   assert.deepEqual(shownTerms(), []);
   assert.match($('.wd-say').textContent, /^Not in this group: “gennaker”\.All groups$/);
   await click($('.wd-say button'));
-  assert.deepEqual(shownTerms(), ['gennaker']);
+  assert.deepEqual(shownTerms(), ['gennaker', 'code-zero'], 'the one named first, then the one that only mentions it');
   // nothing anywhere
   await type($('.wd-q'), 'qwerty');
   assert.match($('.wd-say').textContent, /^No word matches “qwerty”\.Clear$/);

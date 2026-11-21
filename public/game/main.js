@@ -1748,14 +1748,14 @@ $('#pWords').addEventListener('click', async () => {
     try { wordStage = sc ? sc.createStage({ world, race, lang: LANG }) : null; } catch (e) { wordStage = null; }
     const hudWas = hud.hidden;
     avClose = openWords({ lang: LANG, title: t('wordsK'), url: fileAt('words.json'), zIndex: 15,
-      stage: wordStage && { ids: sc.sceneIds(), show: (id) => wordStage.show(id), view: (r) => wordStage.view(r) },
+      stage: wordStage && { ids: wordStage.ids, show: (id) => wordStage.show(id), view: (r) => wordStage.view(r) },
       onClose: () => {
         avClose = null;
         if (!wordStage) return;
         wordStage.close(); wordStage = null;
-        hud.hidden = hudWas; if (running && paused) { pauseEl.hidden = false; paintPause(); }
+        hud.hidden = hudWas; if (running) overWater(true); if (running && paused) { pauseEl.hidden = false; paintPause(); }
       } });
-    if (wordStage) { pauseEl.hidden = true; hud.hidden = true; }
+    if (wordStage) { pauseEl.hidden = true; hud.hidden = true; overWater(false); } // (the race's tags on the water too: they point at the race put away)
   } catch (e) { avClose = null; if (wordStage) { wordStage.close(); wordStage = null; } }
 });
 $('#cKeep').addEventListener('click', () => { confirmEl.hidden = true; pauseEl.hidden = false; });

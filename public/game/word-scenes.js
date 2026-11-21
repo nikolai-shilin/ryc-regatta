@@ -35,6 +35,8 @@ export const TAGS = {
   ocs: ['OCS', 'OCS', 'OCS', 'OCS', 'OCS', 'OCS', 'OCS', 'OCS'],
   proper: ['Proper course', 'Надлежащий курс', 'Rumbo debido', 'Richtiger Kurs', 'Uygun rota', 'Route normale', 'Rotta propria', 'Rumo devido'],
   penalty: ['Penalty turn', 'Штрафной оборот', 'Giro de penalización', 'Strafkringel', 'Ceza dönüşü', 'Tour de pénalité', 'Giro di penalità', 'Giro de penalidade'],
+  veer: ['Veer', 'Сдвиг вправо', 'Rolada a la derecha', 'Rechtsdreher', 'Sağa dönüş', 'Bascule à droite', 'Rotazione a destra', 'Rondada à direita'],
+  back: ['Back', 'Сдвиг влево', 'Rolada a la izquierda', 'Linksdreher', 'Sola dönüş', 'Bascule à gauche', 'Rotazione a sinistra', 'Rondada à esquerda'],
   layline: ['On the layline', 'На лейлайне', 'En la layline', 'Auf der Layline', 'Layline üzerinde', 'Sur la lay-line', 'Sulla layline', 'Na layline'],
 };
 const tagIn = (k, lang) => (TAGS[k] ? TAGS[k][LANG_AT[lang] ?? 0] ?? TAGS[k][0] : k);
@@ -147,6 +149,69 @@ const SCENES = {
     tick: (t, [b]) => { b.sheet = clamp(0.45 + 0.42 * Math.sin((t / 8) * 2 * Math.PI), 0, 1); },
   }),
   reef: (S) => (S.reef ? { boats: [{ at: S.o, tack: 1, twa: S.bt, reef: true }], cam: { on: 0, r: 1.5, el: 12, az: 80 }, T: 24 } : null),
+
+  // ---------- the words added on 21 November ----------
+  'no-go': (S) => ({
+    boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 2.4, el: 64, az: 0, wind: true }, T: 11, guides: true,
+    tick: (t, [b]) => { if (t > 2) b.hold = 12; },
+  }),
+  pinching: (S) => ({ boats: [{ at: S.o, tack: 1, twa: S.bt - 9, hold: S.bt - 9 }], cam: { on: 0, r: 1.3, el: 20, az: 60 }, T: 20 }),
+  footing: (S) => ({ boats: [{ at: S.o, tack: 1, twa: S.bt + 8, hold: S.bt + 8 }], cam: { on: 0, r: 1.3, el: 20, az: 60 }, T: 20 }),
+  // past dead downwind slowly, the boom left where it was: a few degrees by the lee; on further, it slams across
+  'by-the-lee': (S) => ({
+    boats: [{ at: S.o, tack: 1, twa: 160, kite: S.kite }], cam: { on: 0, r: 2, el: 40, az: 0, wind: true }, T: 18,
+    tick: (t, [b]) => { b.holdH = S.h(1, 160 + clamp((t - 1) * 2, 0, 27)); },
+  }),
+  'crash-gybe': (S) => ({
+    boats: [{ at: S.o, tack: 1, twa: 160 }], cam: { on: 0, r: 2, el: 40, az: 0, wind: true }, T: 16,
+    tick: (t, [b]) => { if (!b.flipped) b.holdH = S.h(1, 160 + clamp((t - 1) * 3, 0, 45)); if (b.boom < 0) { b.flipped = 1; b.holdH = null; b.hold = 150; } },
+  }),
+  heel: (S) => ({ boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 1.3, el: 6, az: 180 }, T: 24 }),
+  'keep-clear': (S) => crossing(S, 1),
+  'veer-back': (S) => ({
+    boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 2.6, el: 76, az: 0, wind: true }, T: 14, guides: true,
+    wind: (t) => 14 * D2R * (clamp((t - 1.5) / 2.5, 0, 1) - 2 * clamp((t - 7) / 4, 0, 1)),
+    tick: (t, [b]) => { b.tag = t < 1.5 ? null : t < 8 ? 'veer' : 'back'; },
+  }),
+  oscillating: (S) => ({
+    boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 2.8, el: 78, az: 0, wind: true }, T: 24, guides: true,
+    wind: (t) => 11 * D2R * Math.sin((t / 12) * 2 * Math.PI),
+  }),
+  persistent: (S) => ({
+    boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 2.8, el: 78, az: 0, wind: true }, T: 20, guides: true,
+    wind: (t) => 20 * D2R * clamp((t - 1) / 14, 0, 1),
+  }),
+  current: (S) => (S.current ? { boats: [{ at: S.up(S.M, -2.5, 1.6), tack: 1, twa: S.bt }], cam: { at: S.M, r: 2.6, el: 38, az: 0, spin: 4 }, T: 16, leg: 'mark' } : null),
+  'committee-boat': (S) => ({
+    boats: [{ at: S.up(S.lerpLine(0.8), -2.2, 0), tack: 1, twa: S.bt }], cam: { at: S.cb, r: 2.4, el: 18, az: 0, spin: 7 }, T: 30, leg: 'start',
+  }),
+  pin: (S) => ({
+    boats: [{ at: S.up(S.lerpLine(0.2), -2.2, 0), tack: 1, twa: S.bt }], cam: { at: S.pin, r: 2.2, el: 20, az: 0, spin: 7 }, T: 30, leg: 'start',
+  }),
+  'starting-signal': (S) => SCENES['start-line'](S),
+  'line-bias': (S) => SCENES['favoured-end'](S),
+  leg: (S) => ({
+    boats: [{ at: S.up(S.Lm, 4, 1), tack: 1, twa: S.bt }],
+    cam: { at: S.mid(S.Lm, S.M), r: S.dist(S.Lm, S.M) / 2 / S.L + 2, el: 72, az: 0 }, T: 30, leg: 'mark', guides: true,
+    tick: (t, [b]) => { if (t > 4 && !b.auto && b.sinceTack > 9) b.tackOrGybe(); },
+  }),
+  'offset-mark': (S) => (S.marks.offset ? around(S, S.M, S.marks.offset, S.G) : null),
+  'wing-mark': (S) => (S.marks.wing ? around(S, S.M, S.marks.wing, S.G) : null),
+  'wide-in': (S) => rounding(S, { cam: { at: S.M, r: 4, el: 70, az: 0 } }),
+  'finish-line': (S) => {
+    const f = S.finish, mid = f ? S.mid(f.a, f.b) : S.Lm, len = f ? S.dist(f.a, f.b) / S.L : S.lineL;
+    let h = f ? Math.atan2(f.through.x, -f.through.z) : S.h(1, S.ra);
+    if (Math.abs(wrap(S.W - h)) < S.bt * D2R) h = S.h(1, S.bt); // a finish straight upwind: crossed close-hauled
+    return { boats: [headed(S, add(mid, S.fwd(h), -4 * S.L), h)], cam: { at: mid, r: len / 2 + 2, el: 45, az: 0 }, T: 14, leg: 'finish' };
+  },
+  mainsail: (S) => ({ boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 1.1, el: 10, az: 95, y: 0.45 }, T: 24 }),
+  jib: (S) => (S.jib ? { boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 1, el: 14, az: 150, y: 0.4 }, T: 24 } : null),
+  boom: (S) => ({
+    boats: [{ at: S.o, tack: 1, twa: 150 }], cam: { on: 0, r: 1.2, el: 52, az: 0, wind: true }, T: 11,
+    tick: (t, [b]) => { if (t > 3 && !b.done1) { b.done1 = 1; b.tackOrGybe(); } },
+  }),
+  'code-zero': (S) => (S.zero ? { boats: [{ at: S.o, tack: 1, twa: 80, kite: 'zero' }], cam: { on: 0, r: 1.6, el: 14, az: 60, spin: 4 }, T: 30 } : null),
+  backing: (S) => ({ boats: [{ at: S.o, tack: 1, twa: 40, v: 0.4, hold: null, manual: true, sheet: 1 }], cam: { on: 0, r: 1.6, el: 22, az: 90 }, T: 14, pre: 0 }),
 };
 const add = (p, v, k) => ({ x: p.x + v.x * k, z: p.z + v.z * k });
 const off = (v1, k1, v2, k2) => ({ dx: v1.x * k1 + v2.x * k2, dz: v1.z * k1 + v2.z * k2 });
@@ -172,8 +237,22 @@ function rounding(S, { two, cam }) {
     tick: (t, bs) => { for (const b of bs) if (!b.round && (b.x - S.M.x) * f.x + (b.z - S.M.z) * f.z > 0.9 * S.L) { b.round = 1; b.hold = S.ra; b.kiteUp = S.kite; } } };
 }
 
+// a boat on a heading of her own (radians), her tack and angle to the wind as they come
+function headed(S, at, h) {
+  const twa = wrap(S.W - h) / D2R;
+  return { at, tack: twa >= 0 ? 1 : -1, twa: Math.abs(twa), holdH: h };
+}
+// out from one mark to another, round it to port, and on towards a third: the reach to the wing mark and the gybe
+// there, or the offset mark and the bear-away onto the run
+function around(S, from, mark, next) {
+  const d = Math.hypot(mark.x - from.x, mark.z - from.z), h = Math.atan2(mark.x - from.x, -(mark.z - from.z));
+  const back = Math.min(3.5 * S.L, d * 0.8), at = add(mark, S.fwd(h), -back);
+  const pass = add(add(mark, S.stb(h), 1.8 * S.L), S.fwd(h), 0.6 * S.L); // the mark to port: she passes to its right, and turns once by it
+  return { boats: [{ ...headed(S, at, h), route: [pass, next] }], cam: { at: mark, r: 4.5, el: 58, az: 0 }, T: 18, leg: 'mark' };
+}
+
 // the words that have a scene for this class (a dinghy has no gennaker, few classes a reef)
-export const sceneIds = (cls = CLS) => Object.keys(SCENES).filter((id) => !((id === 'gennaker' && !cls.kite) || (id === 'reef' && !cls.reef)));
+export const sceneIds = (cls = CLS) => Object.keys(SCENES).filter((id) => !((id === 'gennaker' && !cls.kite) || (id === 'reef' && !cls.reef) || (id === 'code-zero' && !cls.zero) || (id === 'jib' && cls.jib === false)));
 
 // ---------- the stage ----------
 // world: the race's World; race: the race, paused; lang: for the tags. Gives back show(id) (true: shown; false: the
@@ -197,6 +276,9 @@ export function createStage({ world, race, lang = 'en' }) {
     lineL: Math.hypot(pin.x - cb.x, pin.z - cb.z) / L, gateW: Math.hypot(c.gate[0].x - c.gate[1].x, c.gate[0].z - c.gate[1].z) / L,
     fav: pinUp > 0 ? pin : cb, unfav: pinUp > 0 ? cb : pin,
     gust: gs[0] ? { x: gs[0].x, z: gs[0].z, r: gs[0].r } : null,
+    zero: !!CLS.zero, jib: CLS.jib !== false, marks: c.marks, finish: c.finish, cb, pin,
+    current: Math.hypot(race.current?.x || 0, race.current?.z || 0) > 0.05,
+    mid: (a, b) => ({ x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 }), dist: (a, b) => Math.hypot(a.x - b.x, a.z - b.z),
   };
   const legOf = (k) => (k === 'start' ? 0 : Math.max(0, c.legs.indexOf(k)));
 
@@ -256,8 +338,10 @@ export function createStage({ world, race, lang = 'en' }) {
       const v = sp.v ?? def.v ?? polarSpeed(tws, Math.max(twa, 30), !!sp.kite) * KN * 0.95;
       const pre = def.pre ?? 1.2, f = fwd(h);
       const b = new Boat({ x: at.x - f.x * v * pre, z: at.z - f.z * v * pre, h, v, autoTrim: !sp.manual });
-      b.boom = sp.tack; b.tackSide = sp.tack; b.hold = sp.hold === undefined ? twa : sp.hold; b.tag = sp.tag || null; b.warn = !!sp.warn;
-      if (sp.kite) { b.kite = true; b.kiteFill = 1; }
+      b.boom = sp.tack; b.tackSide = sp.tack; b.hold = sp.hold === undefined && sp.holdH == null ? twa : sp.hold ?? null; b.tag = sp.tag || null; b.warn = !!sp.warn;
+      b.holdH = sp.holdH ?? null; b.route = sp.route ? [...sp.route] : null;
+      if (sp.kite) { b.kite = true; b.kiteFill = 1; if (sp.kite === 'zero') b.kiteType = 'zero'; }
+      if (sp.sheet != null) b.sheet = b.jibSheet = sp.sheet;
       if (sp.reef) { b.reef = true; b.reefFill = 1; }
       if (sp.pen) b.pen = {};
       if (sp.warn) b.ocs = true;
@@ -278,8 +362,18 @@ export function createStage({ world, race, lang = 'en' }) {
     for (let n = Math.round((def.pre ?? 1.2) / STEP); n > 0; n--) stepAll(true);
   };
   const steer = (b) => {
-    if (b.auto || b.hold == null) return;
-    const side = Math.sign(wrap(b.wdir - b.h)) || b.tackSide || 1, want = b.wdir - side * b.hold * D2R;
+    if (b.auto) return;
+    if (b.route?.length) { // on to the next point of her way, never into the wind
+      const p = b.route[0], dx = p.x - b.x, dz = p.z - b.z;
+      if (Math.hypot(dx, dz) < 0.8 * L || (b.route.length > 1 && dx * Math.sin(b.h) - dz * Math.cos(b.h) < 0 && Math.hypot(dx, dz) < 3 * L)) { b.route.shift(); return steer(b); }
+      let h = Math.atan2(dx, -dz); const a = wrap(b.wdir - h);
+      if (Math.abs(a) < S.bt * D2R) h = b.wdir - Math.sign(a || 1) * S.bt * D2R;
+      b.holdH = h;
+    }
+    let want;
+    if (b.holdH != null) want = b.holdH;
+    else if (b.hold != null) { const side = Math.sign(wrap(b.wdir - b.h)) || b.tackSide || 1; want = b.wdir - side * b.hold * D2R; }
+    else return;
     b.rudder = clamp(wrap(want - b.h) / (14 * D2R) - b.yawRate * 0.6, -1, 1);
   };
   function stepAll(pre) {
@@ -310,7 +404,7 @@ export function createStage({ world, race, lang = 'en' }) {
     const d = (C.r * L * 1.08) / Math.max(0.05, half);
     const f = fwd(ph);
     want.set(p.x - f.x * d * Math.cos(el), Math.max(2, d * Math.sin(el)) + L * 0.15, p.z - f.z * d * Math.cos(el));
-    target.set(p.x, on?.length ? L * 0.25 : 0, p.z);
+    target.set(p.x, on?.length ? L * (C.y ?? 0.25) : 0, p.z);
     const k = firstShot ? 1 : cl(2.4);
     cam.position.lerp(want, k); look.lerp(target, firstShot ? 1 : cl(3)); firstShot = false;
     cam.up.set(0, 1, 0); cam.lookAt(look); cam.fov = 50;
@@ -329,11 +423,15 @@ export function createStage({ world, race, lang = 'en' }) {
     }
   }
 
+  // the words this race can show: the class's, less those its course, wind or water haven't the makings of (a wing
+  // mark on a triangle only, a current where the water runs, a gust where one is blowing)
+  const ids = sceneIds().filter((w) => { try { return !!SCENES[w](S); } catch (e) { return false; } });
   return {
-    has: (w) => sceneIds().includes(w),
+    ids,
+    has: (w) => ids.includes(w),
     show(w) {
       const make = SCENES[w];
-      const d = make && sceneIds().includes(w) ? make(S) : null;
+      const d = make && ids.includes(w) ? make(S) : null;
       if (!d) { def = null; id = null; giveBack(); return false; }
       hideRace();
       id = w; def = d; specs = d.boats; acc = 0;

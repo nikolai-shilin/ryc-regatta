@@ -38,8 +38,10 @@ test('every word of the glossary is a scene, but the two this class has no sail 
   const all = words.en.flatMap((g) => g.terms.map((x) => x[0]));
   const ids = sceneIds();
   for (const id of ids) assert.ok(all.includes(id), `${id} is a word of the glossary`);
-  assert.deepEqual(all.filter((id) => !ids.includes(id)), [], 'the JPK 1050 has a gennaker and a reef: every word has one');
-  assert.ok(!sceneIds({ kite: false, reef: false }).includes('gennaker') && !sceneIds({ kite: false, reef: false }).includes('reef'), 'a dinghy has neither');
+  // what can't be seen: an idea (the apparent wind, VMG), a person (the umpire), or what's too small to make out (telltales)
+  assert.deepEqual(all.filter((id) => !ids.includes(id)), ['apparent-wind', 'vmg', 'umpire', 'telltales'], 'the JPK 1050 has every sail: every other word has one');
+  const dinghy = sceneIds({ kite: false, reef: false, zero: false, jib: false });
+  for (const id of ['gennaker', 'reef', 'code-zero', 'jib']) assert.ok(!dinghy.includes(id), `a Laser has no ${id}`);
   for (const [k, v] of Object.entries(TAGS)) assert.equal(v.length, 8, `the tag ${k} in every language`);
 });
 
@@ -66,10 +68,13 @@ test('a word shown puts the race away, its boats on the water instead; closed, t
 test('each scene sails, its boats where they should be, finite, and the camera on them', () => {
   stage = createStage({ world, race, lang: 'ru' });
   stage.view({ x: 440, y: 0, w: 840, h: 720 });
-  for (const id of sceneIds()) {
+  // this race's: an up-and-down course has no wing or offset mark
+  assert.ok(!stage.ids.includes('wing-mark') && !stage.ids.includes('offset-mark'));
+  assert.equal(stage.show('wing-mark'), false);
+  for (const id of stage.ids) {
     assert.equal(stage.show(id), true, id);
     sail(2);
-    for (const b of boats()) assert.ok(Number.isFinite(b.x) && Number.isFinite(b.z) && Number.isFinite(b.h) && b.v >= 0, `${id}: a boat sails`);
+    for (const b of boats()) assert.ok(Number.isFinite(b.x) && Number.isFinite(b.z) && Number.isFinite(b.h) && (b.v >= 0 || id === 'backing'), `${id}: a boat sails`);
     const c = world.camera.position;
     assert.ok(Number.isFinite(c.x) && c.y > 0, `${id}: the camera above the water`);
     const near = Math.min(...boats().map((b) => Math.hypot(b.x - c.x, b.z - c.z)));
@@ -142,6 +147,31 @@ test('a rounding leaves the windward mark to port and bears away onto the run, t
   assert.ok(closest[0] > 0.6 * L && closest[0] < 3 * L, `close by, not hitting it: ${(closest[0] / L).toFixed(2)} lengths`);
 });
 
+test('by the lee she runs on with the boom where it was; further, it crashes across; backing the main, she goes astern', () => {
+  stage.show('by-the-lee');
+  const boom = boats()[0].boom;
+  sail(16);
+  assert.equal(boats()[0].boom, boom, 'no gybe');
+  assert.ok(boats()[0].byLee > 2, `by the lee ${boats()[0].byLee.toFixed(1)}°`);
+  stage.show('crash-gybe');
+  const b0 = boats()[0].boom;
+  sail(14);
+  assert.equal(boats()[0].boom, -b0, 'the boom came across on its own');
+  assert.equal(boats()[0].auto, null, 'nobody gybed her');
+  stage.show('backing'); sail(6);
+  assert.ok(boats()[0].v < 0 && boats()[0].backing, 'going astern');
+});
+
+test('an oscillating wind swings her to and fro; a persistent one turns her one way for good', () => {
+  stage.show('oscillating');
+  const hs = [];
+  sail(12, ([b]) => hs.push(b.h));
+  const span = (Math.max(...hs.map((h) => wrap(h - hs[0]))) - Math.min(...hs.map((h) => wrap(h - hs[0])))) / D2R;
+  assert.ok(span > 14, `swung ${span.toFixed(0)}°`);
+  stage.show('persistent'); sail(1); const h0 = boats()[0].h; sail(15);
+  assert.ok(wrap(boats()[0].h - h0) / D2R > 14, 'lifted for good');
+});
+
 test('a word with no scene gives the race back; the stage closes clean', () => {
   assert.equal(stage.show('nonsense'), false);
   assert.equal(world.race, race);
@@ -150,4 +180,22 @@ test('a word with no scene gives the race back; the stage closes clean', () => {
   stage.close(); stage = null;
   assert.equal(world.race, race);
   world.frame(0, race.t, 1 / 30);
+});
+
+test('on a triangle the wing mark is rounded to port, and she goes on down towards the gate', () => {
+  const tri = new Race({ preset: 'medium', seed: 7, fleet: 4, start: 1, autoTrim: true, course: 'tri' });
+  world.setRace(tri); for (let i = 0; i < 2; i++) world.frame(0, tri.t, 1 / 30);
+  stage = createStage({ world, race: tri, lang: 'en' });
+  assert.ok(stage.ids.includes('wing-mark') && !stage.ids.includes('offset-mark'));
+  assert.equal(stage.show('wing-mark'), true);
+  const w = tri.course.marks.wing, G = tri.course.gate;
+  let closest = Infinity;
+  const run = (n) => { for (let i = 0; i < n * 30; i++) { tri.idle(1 / 30); stage.frame(1 / 30); world.frame(1 / 30, tri.t, 1 / 30); const b = world.race.boats[0]; closest = Math.min(closest, Math.hypot(b.x - w.x, b.z - w.z)); } };
+  run(16);
+  const b = world.race.boats[0], gm = { x: (G[0].x + G[1].x) / 2, z: (G[0].z + G[1].z) / 2 }, gd = Math.hypot(gm.x - b.x, gm.z - b.z);
+  assert.ok(closest < 3 * L && closest > 0.4 * L, `passed by the mark: ${(closest / L).toFixed(2)} lengths`);
+  assert.ok(((gm.x - b.x) * Math.sin(b.h) - (gm.z - b.z) * Math.cos(b.h)) / gd > 0.85, 'then heading on for the gate');
+  assert.ok(b.boom < 0, 'gybed round it, onto port');
+  stage.close(); stage = null;
+  world.setRace(race);
 });
