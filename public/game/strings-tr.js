@@ -152,6 +152,7 @@ export const MATCH = {
   by: (s) => `+${s}`, forfeit: (w) => `${w} çekildi`, abandonedH: 'Yarış iptal edildi', notScored: 'İkinizin de sonucuna sayılmaz', noWinner: 'Kazanan yok',
   rematch: 'Rövanş', fullResult: 'Tam sonuç', done: 'Bitti', waitRematch: (w) => `${w} rövanş başlatabilir`, left: (w) => `${w} yarıştan ayrıldı`,
   stepAway: (w, c) => `${w} ayrıldı · start bekliyor · ${c}`,
+  chat: (k) => ['Bol şans!', 'İyi start', 'Rövanş?', 'İyi yarıştı'][k] ?? '', chatK: 'Söyle',
   stillOut: (w) => `${w} hâlâ yarışıyor`, stillOutT: (w, s) => `${w} hâlâ yarışıyor · ${s} kaldı`, keepOpen: 'Bu ekranı açık tut',
   loadingRace: (w) => `${w} yarışı yükleyene kadar bekleniyor…`,
   sec: 'sn', waitHost: 'Ev sahibi bekleniyor…', noHost: 'Bu yarışı henüz kimse kurmadı. Bağlantı eski olabilir ya da arkadaşın ayrılmış olabilir: yenisini iste ya da çıkıp günün yarışında yelken aç.', stale: 'Oyun güncellendi: katılmak için yeniden yükle', reload: 'Yeniden yükle', fullRoom: 'Bu yarışta zaten iki yelkenci var',

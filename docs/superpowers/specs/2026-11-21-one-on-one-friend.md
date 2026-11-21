@@ -48,9 +48,27 @@ A screen that goes quiet, a phone flipped to Telegram say, stops the start seque
   Its card says "Alex P. won · 1.8 s ahead of Anna K." over the venue and the yacht, with "Race the winner"
   (`/og/page/duel`). The invite page's title says it too. Whoever opens the link can race the sharer next.
 
-## Left for the next slices of release 3
+## 3d: the four cards and quick chat (built after 3c)
 
-- **The race screen's own pieces:** the HUD's gun clock on the start line, the order panel cut to two rows, and the
-  four set phrases.
-- **The four cards before a first 1-on-1.**
+- **Four things before your first 1-on-1** (`public/play/index.html`, beside the first race's own four). They show
+  over the loading screen while the race loads, drawn as the HUD draws its pieces:
+  - the order panel, cut to the two of you, with the gap;
+  - leaving: the start waits a minute, and after the gun leaving loses;
+  - what a race is worth: about +33 or −31 for a first rated race, the first five counting double;
+  - the rematch, one tap at the finish.
+
+  They're shown once on a device (`regatta-duel-intro`; `?intro` shows them again), and "On to the race" goes on to
+  the waiting room once the race has loaded. In every language the game speaks.
+- **Quick chat** (`public/game/match-ui.js`): four set phrases, "Good luck!", "Nice start", "Rematch?" and "GG", with no
+  typing.
+  - Where: on the waiting room's card and the end-of-race card, while the other sailor is there.
+  - What goes over the link: only the phrase's number, at most every 3 s.
+  - What the other screen shows: a toast in its own language, "Anna: Good luck!", even during the race.
+  - Why not during the race: the race screen's corners are the HUD's and the steering's, so there are no buttons there.
+- **The race screen's own pieces** were already the HUD's: its gun clock runs the 1-on-1 start, and its order board has
+  a row for each of the two boats. Nothing new was drawn for them.
+
+## Left after release 3
+
 - **Head-to-head with one sailor** ("Anna 7–4"), now that a guest's races can be kept.
+- **Phrases to send during the race**, if a place is found for them that the HUD doesn't need.

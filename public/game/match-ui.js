@@ -17,7 +17,8 @@ const CARD_MS = 3500; // a race's end stays on the water this long before its ca
 const HOST_WAIT_MS = 30000; // the guest alone in a room this long: the room says the host may not come
 const RESULTS_MS = 30000; // the results go on being sent, and waited for, this long after the race's end
 const NAME_KEY = 'regatta-match-name', ME_KEY = 'regatta-match-me', SETTINGS_KEY = 'regatta-match-settings';
-const RATE_EVERY_MS = 4000, RATE_FOR_MS = 90000; // the rating after a race: asked this often, for this long
+const RATE_EVERY_MS = 4000, RATE_FOR_MS = 90000;
+const CHAT_MS = 3000, CHAT_N = 4; // a quick-chat phrase, at most this often; there are four // the rating after a race: asked this often, for this long
 const RESULT_KEY = 'regatta-match-result'; // { code, seed, id }: the record this device kept of its last race, for Full result after a reload
 const SHAPE_KEY = { wl: 'shapeWl', tri: 'shapeTri', trap: 'shapeTrap', wlu: 'shapeWlu' };
 const LENGTH_KEY = { short: 'lShort', medium: 'lMedium', long: 'lLong' };
@@ -32,6 +33,7 @@ export const MATCH_STRINGS = {
     by: (s) => `+${s}`, forfeit: (w) => `${w} dropped out`, abandonedH: 'Race abandoned', notScored: 'It doesn’t count for either of you', noWinner: 'No winner',
     rematch: 'Rematch', fullResult: 'Full result', done: 'Done', waitRematch: (w) => `${w} can start a rematch`, left: (w) => `${w} left the race`,
     stepAway: (w, c) => `${w} stepped away · the start waits · ${c}`,
+    chat: (k) => ['Good luck!', 'Nice start', 'Rematch?', 'GG'][k] ?? '', chatK: 'Say',
     stillOut: (w) => `${w} is still racing`, stillOutT: (w, s) => `${w} is still racing · ${s} left`, keepOpen: 'Keep this screen open',
     loadingRace: (w) => `Waiting for ${w} to load the race…`,
     sec: 's', waitHost: 'Waiting for the host…', noHost: 'Nobody is hosting this race yet. The link may be old, or your friend has left: ask them for a new one, or leave and sail today’s race.', stale: 'The game was updated: reload to join', reload: 'Reload', fullRoom: 'This race already has two sailors',
@@ -47,6 +49,7 @@ export const MATCH_STRINGS = {
     by: (s) => `+${s}`, forfeit: (w) => `${w}: сход`, abandonedH: 'Гонка прекращена', notScored: 'Она не засчитывается никому из вас', noWinner: 'Без победителя',
     rematch: 'Реванш', fullResult: 'Полный результат', done: 'Закончить', waitRematch: (w) => `${w} может начать реванш`, left: (w) => `${w}: выход из гонки`,
     stepAway: (w, c) => `${w} не на связи · старт ждёт · ${c}`,
+    chat: (k) => ['Удачи!', 'Хороший старт', 'Реванш?', 'Хорошая гонка'][k] ?? '', chatK: 'Сказать',
     stillOut: (w) => `${w} ещё в гонке`, stillOutT: (w, s) => `${w} ещё в гонке · осталось ${s}`, keepOpen: 'Не закрывай этот экран',
     loadingRace: (w) => `${w} загружает гонку…`,
     sec: 'с', waitHost: 'Ждём хозяина гонки…', noHost: 'Эту гонку пока никто не открыл. Возможно, ссылка устарела или друг вышел: попроси новую или выйди и пройди гонку дня.', stale: 'Игра обновилась: перезагрузи страницу, чтобы войти', reload: 'Перезагрузить', fullRoom: 'В этой гонке уже двое',
@@ -74,6 +77,10 @@ const CSS = `
 #mWrap button.m-prim { height: var(--h-l); border-radius: 0; background: var(--you); color: var(--ink-on); }
 #mWrap button.m-prim:disabled { background: var(--fill-2); color: var(--ink-3); cursor: default; }
 #mWrap .m-btns { display: flex; gap: var(--s-2); } #mWrap .m-btns button { flex: 1 1 0; }
+#mWrap .m-chat { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+#mWrap .m-chat .m-k { margin-right: 2px; }
+#mWrap .m-chat button { height: 32px; padding: 0 10px; font: 600 var(--fs-small)/1 var(--cond); letter-spacing: 0.04em; text-transform: none; }
+#mWrap .m-chat button.sent { background: var(--you); color: var(--ink-on); }
 #mWrap .m-ppl { display: flex; flex-direction: column; border-top: 1px solid var(--rule); }
 #mWrap .m-p { display: flex; align-items: center; gap: var(--s-2); height: 40px; border-bottom: 1px solid var(--rule-2); font: 700 var(--fs-row)/1 var(--cond); }
 #mWrap .m-p.empty { color: var(--ink-3); font-weight: 600; font-size: var(--fs-small); }
@@ -145,6 +152,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
       <div class="m-linkBox"><span class="m-k m-linkK"></span><div class="m-link"><input readonly><button type="button" class="m-share"></button></div></div>
       <div class="m-ppl"></div>
       <div class="m-nameBox"><span class="m-k m-nameK"></span><div class="m-name"><input maxlength="16" autocomplete="nickname"><button type="button" class="m-join"></button></div></div>
+      <div class="m-chat" hidden></div>
       <span class="m-st"></span>
       <button type="button" class="m-prim m-start"></button>
       <button type="button" class="m-prim m-signin" hidden></button>
@@ -154,6 +162,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
       <span class="m-kick"></span><h2 id="mCardH"></h2><p class="m-sub"></p>
       <div class="m-rows"></div>
       <span class="m-rate" hidden></span>
+      <div class="m-chat" hidden></div>
       <span class="m-st"></span>
       <button type="button" class="m-prim m-go"></button>
       <div class="m-btns"><button type="button" class="m-full" hidden></button><button type="button" class="m-leave"></button></div>
@@ -166,7 +175,8 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
   const R = { card: q(wrap, '#mRoom') }, C = { card: q(wrap, '#mCard') }, banner = q(wrap, '#mBanner'), note = q(wrap, '#mNote');
   for (const k of ['kick', 'set', 'linkK', 'ppl', 'nameBox', 'nameK', 'st', 'start', 'signin', 'retry', 'leave', 'share', 'join']) R[k] = q(R.card, '.m-' + k);
   R.h = q(R.card, 'h2'); R.link = q(R.card, '.m-link input'); R.name = q(R.card, '.m-name input'); R.linkBox = q(R.card, '.m-linkBox');
-  for (const k of ['kick', 'sub', 'rows', 'rate', 'st', 'go', 'full', 'leave']) C[k] = q(C.card, '.m-' + k);
+  for (const k of ['kick', 'sub', 'rows', 'rate', 'chat', 'st', 'go', 'full', 'leave']) C[k] = q(C.card, '.m-' + k);
+  R.chat = q(R.card, '.m-chat');
   C.h = q(C.card, 'h2');
   const txt = (el, s) => { s = String(s ?? ''); if (el._t !== s) { el._t = s; el.textContent = s; } };
   const show = (el, on) => { if (el.hidden === !!on) el.hidden = !on; };
@@ -300,6 +310,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     room.onStart((m) => onStartMsg(m));
     if (isHost) K = new M.Keeper({ room, link, build });
     link.all.on('mstate', (s) => { if (!isHost && !left) onState(s); });
+    link.all.on('chat', heardChat);
     link.all.on('leave', (m) => {
       if (!match || !m || m.id !== otherId()) return;
       // the guest gone in a race: before her finish she gives it up, after it it runs on; not yet under way, there's no race
@@ -444,6 +455,32 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     C.rate.classList.toggle('up', !!r && r.delta > 0); C.rate.classList.toggle('down', !!r && r.delta < 0);
   };
 
+  // ---------- quick chat: four set phrases (L.chat), no typing ----------
+  // a tap sends the phrase's number, never words, at most every CHAT_MS; the other screen says it as a toast, in its own
+  // language: "Anna: Good luck!". Offered on the waiting room's card and the race's, while the other sailor is there
+  let chatAt = 0;
+  const phrase = (k) => (L.chat || MATCH_STRINGS.en.chat)(k) || MATCH_STRINGS.en.chat(k);
+  const say = (k, btn) => {
+    const now = Date.now();
+    if (!link || now - chatAt < CHAT_MS) return;
+    chatAt = now;
+    try { link.all.send('chat', { id: myId, k }); } catch (e) {}
+    for (const b of [...R.chat.querySelectorAll('button'), ...C.chat.querySelectorAll('button')]) b.classList.remove('sent');
+    btn.classList.add('sent'); setTimeout(() => btn.classList.remove('sent'), 1500);
+  };
+  for (const box of [R.chat, C.chat]) {
+    box.append(Object.assign(document.createElement('span'), { className: 'm-k', textContent: L.chatK || MATCH_STRINGS.en.chatK }));
+    for (let k = 0; k < CHAT_N; k++) { const b = Object.assign(document.createElement('button'), { type: 'button', textContent: phrase(k) }); b.addEventListener('click', () => say(k, b)); box.append(b); }
+  }
+  // who sent it: the race's other sailor, or in the waiting room before any race, the one in the room
+  const chatFrom = (id) => (match && (id === match.hostId || id === match.guestId) ? nameOf(id) : room ? [room.host, room.guest].find((p) => p && p.id === id)?.name ?? null : null);
+  const heardChat = (m) => {
+    const k = Number(m?.k);
+    if (!m || m.id === myId || !Number.isInteger(k) || k < 0 || k >= CHAT_N) return;
+    const who = chatFrom(m.id);
+    if (who) toast(`${clean(who) || '—'}: ${phrase(k)}`);
+  };
+
   // the guest: her joining this race, once, with the token that will prove her end hers
   const tellJoin = () => {
     const seed = match.start.seed;
@@ -551,6 +588,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     show(C.sub, !!C.sub._t);
     paintRows(r);
     askRating(); paintRating();
+    show(C.chat, hereNow && !gone);
     show(C.full, !r.abandoned && !!resultId());
     if (old) { // another build on the other screen: a reload, not a race
       show(C.go, true); txt(C.go, L.reload);
@@ -590,6 +628,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     }
     const raw = (room && room.settings) || hostSettings, s = raw && M ? M.cleanSettings(raw, here()) : null;
     txt(R.set, s ? [venueName(s.venue), yachtName(s.yacht), t(s.preset), t(LENGTH_KEY[s.length]), t(SHAPE_KEY[s.course]), L.laps(s.laps), L.startMin(s.start), s.current ? L.currentOn : '', s.daytime !== 'any' ? L.daytime(s.daytime) : ''].filter(Boolean).join(' · ') : '');
+    show(R.chat, !!room && !!room.host && !!room.guest && !room.full);
     const full = !!room && room.full;
     const h = room ? room.host : isHost ? { id: myId, name: myName || '…' } : null, g = room && room.guest;
     const rows = [[h, L.hostTag], [full ? null : g, '']];

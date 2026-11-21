@@ -680,7 +680,7 @@
   // seven seconds on a phone), so reading them adds no wait; the race goes in on Start once it's loaded, or at once if
   // Start was pressed before. Only on a device that hasn't raced (?intro shows it anyway); ?race=first after that loads
   // straight into the race as before.
-  var intro = null, introGo = false, introIn = null;
+  var intro = null, introGo = false, introIn = null, introStartLabel = null; // (the Start button's label once loaded: a first race's own, or a 1-on-1's)
   var played = (function () { try { return +JSON.parse(localStorage.getItem('regatta') || '{}').played || 0; } catch (e) { return 0; } })();
   if (first && (!(played > 0) || q.has('intro'))) {
     intro = $('intro'); root0().classList.add('intro');
@@ -753,6 +753,72 @@
       if (introIn) return introIn();
       introGo = true; intro.classList.add('go');
       $('iStartT').textContent = t('Starting as soon as it’s loaded', 'Стартуем, как только загрузится', 'Empieza en cuanto cargue', 'Startet, sobald es geladen ist', 'Yüklenir yüklenmez başlıyor', 'Départ dès que c’est chargé', 'Partenza appena è tutto caricato', 'Largando assim que carregar');
+    });
+    intro.hidden = false;
+  } else if (match && (q.has('intro') || !(function () { try { return localStorage.getItem('regatta-duel-intro') === '1'; } catch (e) { return true; } })())) {
+    // A first 1-on-1 opens on how it goes, as a first race does: four cards over the photo while the race loads, drawn as
+    // the race's HUD draws its pieces (the order panel, the gun clock, the finish). Shown once on a device (?intro shows it
+    // anyway); Start goes on to the race's waiting room once it's loaded.
+    try { localStorage.setItem('regatta-duel-intro', '1'); } catch (e) {}
+    intro = $('intro'); root0().classList.add('intro');
+    var dEsc = function (x) { return String(x).replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
+    var dHull = function (x, y, deg, k, cls) { return '<path class="' + cls + '" transform="translate(' + x + ' ' + y + ') rotate(' + deg + ') scale(' + k + ')" d="M0 -6 L3.5 5 L-3.5 5 Z"/>'; };
+    var dLab = function (x, y, txt, cls, end, style) { return '<text class="' + cls + '" x="' + x + '" y="' + y + '"' + (end ? ' text-anchor="end"' : '') + (style ? ' style="' + style + '"' : '') + '>' + dEsc(txt).toLocaleUpperCase(lang) + '</text>'; };
+    var dCap = function (txt) { return '<text class="m-cap" x="120" y="114" text-anchor="middle">' + dEsc(txt).toLocaleUpperCase(lang) + '</text>'; };
+    var dMap = function (left, right, body) { return '<div class="m-h"><span>' + dEsc(left) + '</span><span>' + dEsc(right) + '</span></div><svg viewBox="0 0 240 120" aria-hidden="true">' + body + '</svg>'; };
+    var dYou = t('You', 'Вы', 'Tú', 'Du', 'Sen', 'Toi', 'Tu', 'Você'), dThem = t('Anna', 'Анна', 'Ana', 'Anna', 'Ayşe', 'Anna', 'Anna', 'Ana');
+    var UP = 'fill:var(--up)', DOWN = 'fill:var(--down)';
+    $('iKick').textContent = t('1-on-1 race · How it works', 'Гонка 1 на 1 · Как это устроено', 'Regata 1 contra 1 · Cómo funciona', '1-gegen-1-Regatta · So geht’s', 'Bire bir yarış · Nasıl işler', 'Duel · Comment ça marche', 'Duello · Come funziona', 'Duelo 1 contra 1 · Como funciona');
+    $('iH').textContent = t('Four things before your first 1-on-1', 'Четыре вещи перед первой гонкой 1 на 1', 'Cuatro cosas antes de tu primer 1 contra 1', 'Vier Dinge vor deinem ersten 1 gegen 1', 'İlk bire bir yarışından önce dört şey', 'Quatre choses avant ton premier duel', 'Quattro cose prima del tuo primo 1 contro 1', 'Quatro coisas antes do seu primeiro 1 contra 1');
+    var dArt = [
+      // the order panel, cut to the two of you: places, names and the gap
+      dMap(t('Order', 'Порядок', 'Orden', 'Reihenfolge', 'Sıra', 'Classement', 'Ordine', 'Ordem'), t('Two rows', 'Две строки', 'Dos filas', 'Zwei Zeilen', 'İki satır', 'Deux lignes', 'Due righe', 'Duas linhas'),
+        '<rect class="m-gun" x="46" y="14" width="148" height="76"/>' + dLab(54, 26, t('Order · gap', 'Порядок · разрыв', 'Orden · distancia', 'Reihenfolge · Abstand', 'Sıra · fark', 'Classement · écart', 'Ordine · distacco', 'Ordem · distância'), 'm-gl')
+        + '<rect class="m-gb" x="46" y="36" width="3" height="20"/>' + dLab(58, 51, '1', 'm-you') + dLab(72, 51, dYou, 'm-you') + dLab(186, 51, '24 m', 'm-you', true, UP)
+        + dLab(58, 77, '2', 'm-oth2') + dLab(72, 77, dThem, 'm-oth2') + dLab(186, 77, '+6.1 s', 'm-oth2', true)
+        + dCap(t('Who leads, and by how much', 'Кто впереди и на сколько', 'Quién va delante y por cuánto', 'Wer führt und um wie viel', 'Kim önde, ne kadar farkla', 'Qui mène, et de combien', 'Chi è in testa, e di quanto', 'Quem lidera, e por quanto'))),
+      // the start waiting, as the HUD's gun clock: the other screen stepped away
+      dMap(t('Leaving', 'Уход', 'Salir', 'Gehen', 'Ayrılmak', 'Partir', 'Uscire', 'Sair'), t('The start waits', 'Старт ждёт', 'La salida espera', 'Der Start wartet', 'Start bekler', 'Le départ attend', 'La partenza aspetta', 'A largada espera'),
+        '<rect class="m-gun" x="8" y="6" width="84" height="40"/>' + dLab(15, 18, t('Start waits', 'Старт ждёт', 'Espera', 'Start wartet', 'Start bekler', 'Départ attend', 'Partenza attende', 'Largada espera'), 'm-gl')
+        + '<text class="m-gn" x="15" y="38">0:59</text><rect class="m-gb" x="8" y="44" width="60" height="2"/>'
+        + '<path class="m-line" d="M60 72 H200"/><circle class="m-buoy" cx="60" cy="72" r="3.5"/><circle class="m-buoy" cx="200" cy="72" r="3.5"/>'
+        + dHull(110, 88, 0, 1.6, 'm-me') + dLab(120, 102, dYou, 'm-you') + dHull(156, 88, 0, 1.25, 'm-b1') + '<circle class="m-pen" cx="156" cy="88" r="9"/>'
+        + dCap(t('After the gun, leaving loses', 'После сигнала уход — поражение', 'Tras la señal, salir es perder', 'Nach dem Start heißt Gehen verlieren', 'İşaretten sonra ayrılan kaybeder', 'Après le signal, partir c’est perdre', 'Dopo il segnale, chi esce perde', 'Depois do sinal, sair é perder'))),
+      // what it's worth: the win and the loss, before the race
+      dMap(t('Rating', 'Рейтинг', 'Rating', 'Wertung', 'Reyting', 'Classement', 'Rating', 'Rating'), t('From 1500', 'С 1500', 'Desde 1500', 'Ab 1500', '1500’den', 'Depuis 1500', 'Da 1500', 'A partir de 1500'),
+        dLab(56, 40, t('Win', 'Победа', 'Ganar', 'Sieg', 'Kazan', 'Victoire', 'Vittoria', 'Vitória'), 'm-gl') + '<text class="m-gn" x="56" y="68" style="' + UP + '">+33</text>'
+        + dLab(184, 40, t('Lose', 'Поражение', 'Perder', 'Niederlage', 'Kaybet', 'Défaite', 'Sconfitta', 'Derrota'), 'm-gl', true) + '<text class="m-gn" x="184" y="68" text-anchor="end" style="' + DOWN + '">−31</text>'
+        + '<rect class="m-gb" x="56" y="78" width="62" height="4"/><rect class="m-gun" x="120" y="78" width="64" height="4"/>'
+        + dCap(t('Your first five count double', 'Первые пять — вдвойне', 'Las cinco primeras cuentan doble', 'Die ersten fünf zählen doppelt', 'İlk beşi iki kat sayılır', 'Les cinq premières comptent double', 'Le prime cinque contano doppio', 'As cinco primeiras contam em dobro'))),
+      // the finish, and one tap for the next race
+      dMap(t('Finish', 'Финиш', 'Llegada', 'Ziel', 'Bitiş', 'Arrivée', 'Arrivo', 'Chegada'), t('One tap', 'Одно касание', 'Un toque', 'Ein Tipp', 'Tek dokunuş', 'Un geste', 'Un tocco', 'Um toque'),
+        '<path class="m-line" d="M40 34 H200"/><circle class="m-buoy" cx="40" cy="34" r="3.5"/><circle class="m-buoy" cx="200" cy="34" r="3.5"/>'
+        + dHull(104, 24, 0, 1.6, 'm-me') + dHull(140, 46, 0, 1.25, 'm-b1')
+        + '<rect class="m-gb" x="78" y="62" width="84" height="22"/>' + '<text x="120" y="77" text-anchor="middle" style="fill:var(--ink-on);font-size:9px;font-weight:700;letter-spacing:1px;stroke:none">' + dEsc(t('Rematch', 'Реванш', 'Revancha', 'Revanche', 'Rövanş', 'Revanche', 'Rivincita', 'Revanche')).toLocaleUpperCase(lang) + '</text>'
+        + dCap(t('Same course, same friend', 'Та же дистанция, тот же друг', 'Mismo recorrido, mismo amigo', 'Gleiche Bahn, gleicher Freund', 'Aynı parkur, aynı arkadaş', 'Même parcours, même ami', 'Stesso percorso, stesso amico', 'Mesmo percurso, mesmo amigo'))),
+    ];
+    var dCards = [
+      [t('The order panel', 'Панель порядка', 'El panel de orden', 'Die Reihenfolge', 'Sıra paneli', 'Le classement', 'Il pannello dell’ordine', 'O painel de ordem'),
+        t('Just the two of you: who leads, and the gap in metres and seconds. Green while you gain, orange while you lose.', 'Только вы двое: кто впереди и разрыв в метрах и секундах. Зелёный, пока догоняешь, оранжевый, пока отстаёшь.', 'Solo vosotros dos: quién va delante y la distancia en metros y segundos. Verde mientras ganas, naranja mientras pierdes.', 'Nur ihr zwei: wer führt, und der Abstand in Metern und Sekunden. Grün, solange du aufholst, orange, solange du verlierst.', 'Yalnızca ikiniz: kim önde, aradaki fark metre ve saniye olarak. Kazandıkça yeşil, kaybettikçe turuncu.', 'Vous deux seulement : qui mène, et l’écart en mètres et en secondes. Vert quand tu gagnes du terrain, orange quand tu en perds.', 'Solo voi due: chi è in testa e il distacco in metri e secondi. Verde mentre guadagni, arancione mentre perdi.', 'Só vocês dois: quem lidera e a distância em metros e segundos. Verde enquanto você ganha, laranja enquanto perde.')],
+      [t('Leaving', 'Если уйти', 'Salir', 'Gehen', 'Ayrılmak', 'Partir', 'Uscire', 'Sair'),
+        t('Before the gun the start waits a minute for either of you to come back. After the gun, leaving loses the race.', 'До сигнала старт ждёт минуту, пока любой из вас вернётся. После сигнала уход — это поражение.', 'Antes de la señal, la salida espera un minuto a que cualquiera de los dos vuelva. Tras la señal, salir es perder la regata.', 'Vor dem Start wartet die Startfolge eine Minute, bis ihr beide wieder da seid. Nach dem Start verliert, wer geht.', 'İşaretten önce start, ikinizden birinin dönmesi için bir dakika bekler. İşaretten sonra ayrılan yarışı kaybeder.', 'Avant le signal, le départ attend une minute que l’un de vous revienne. Après le signal, partir fait perdre la régate.', 'Prima del segnale la partenza aspetta un minuto che uno di voi torni. Dopo il segnale, chi esce perde la regata.', 'Antes do sinal, a largada espera um minuto até um de vocês voltar. Depois do sinal, quem sai perde a regata.')],
+      [t('What it’s worth', 'Что на кону', 'Lo que vale', 'Was es zählt', 'Değeri', 'Ce que ça vaut', 'Quanto vale', 'O que vale'),
+        t('Both signed in, the race counts for the 1-on-1 rating, and your first five count double. Signed out, it’s just for fun.', 'Если оба вошли в аккаунт, гонка идёт в рейтинг 1 на 1, а первые пять — вдвойне. Без аккаунта — просто для себя.', 'Con los dos con sesión iniciada, la regata cuenta para el rating 1 contra 1 y tus cinco primeras cuentan doble. Sin sesión, es solo por diversión.', 'Seid ihr beide angemeldet, zählt die Regatta für die 1-gegen-1-Wertung, und deine ersten fünf zählen doppelt. Ohne Anmeldung ist es nur zum Spaß.', 'İkiniz de giriş yaptıysanız yarış bire bir reytinge sayılır ve ilk beşin iki kat sayılır. Giriş yapmadan sadece eğlence.', 'Tous deux connectés, la régate compte pour le classement en duel, et tes cinq premières comptent double. Sans compte, c’est juste pour le plaisir.', 'Con entrambi connessi, la regata conta per il rating 1 contro 1 e le prime cinque contano doppio. Senza accesso è solo per divertimento.', 'Com os dois conectados, a regata conta para o rating 1 contra 1 e as cinco primeiras contam em dobro. Sem conta, é só por diversão.')],
+      [t('Rematch', 'Реванш', 'Revancha', 'Revanche', 'Rövanş', 'Revanche', 'Rivincita', 'Revanche'),
+        t('At the finish, one tap starts the next race on the same course, and the result page shows where the time went.', 'На финише одно касание запускает следующую гонку на той же дистанции, а страница результата покажет, где ушло время.', 'En la llegada, un toque empieza la siguiente regata en el mismo recorrido, y la página del resultado muestra dónde se fue el tiempo.', 'Im Ziel startet ein Tipp die nächste Regatta auf derselben Bahn, und die Ergebnisseite zeigt, wo die Zeit blieb.', 'Bitişte tek dokunuş aynı parkurda bir sonraki yarışı başlatır; sonuç sayfası zamanın nerede gittiğini gösterir.', 'À l’arrivée, un geste lance la régate suivante sur le même parcours, et la page du résultat montre où le temps est passé.', 'All’arrivo un tocco avvia la regata successiva sullo stesso percorso, e la pagina del risultato mostra dove è andato il tempo.', 'Na chegada, um toque começa a próxima regata no mesmo percurso, e a página do resultado mostra onde o tempo foi.')],
+    ];
+    $('iCards').innerHTML = dCards.map(function (c, i) { return '<li><div class="i-art">' + dArt[i] + '</div><span class="i-n">0' + (i + 1) + '</span><b>' + dEsc(c[0]) + '</b><p>' + dEsc(c[1]) + '</p></li>'; }).join('');
+    $('iDots').innerHTML = dCards.map(function () { return '<i></i>'; }).join('');
+    var dDots = $('iDots').children, dList = $('iCards');
+    var dOnDot = function () { var w = dList.firstElementChild ? dList.firstElementChild.getBoundingClientRect().width : 1, k = Math.round(dList.scrollLeft / Math.max(1, w)); for (var i = 0; i < dDots.length; i++) dDots[i].classList.toggle('on', i === Math.min(dDots.length - 1, k)); };
+    dList.addEventListener('scroll', dOnDot, { passive: true }); dOnDot();
+    introStartLabel = t('On to the race', 'К гонке', 'A la regata', 'Zur Regatta', 'Yarışa geç', 'Vers la régate', 'Alla regata', 'Para a regata');
+    $('iStartT').textContent = introStartLabel;
+    $('iSkip').hidden = true; // (nothing to skip to: the friend is waiting in this race)
+    $('iStart').addEventListener('click', function () {
+      if (introIn) return introIn();
+      introGo = true; intro.classList.add('go');
+      $('iStartT').textContent = t('Going on as soon as it’s loaded', 'Продолжим, как только загрузится', 'Seguimos en cuanto cargue', 'Weiter, sobald es geladen ist', 'Yüklenir yüklenmez devam', 'On continue dès que c’est chargé', 'Si continua appena caricato', 'Seguimos assim que carregar');
     });
     intro.hidden = false;
   }
@@ -881,7 +947,7 @@
         setTimeout(start, intro ? 200 : 0); setTimeout(function () { root.hidden = true; if (intro) intro.hidden = true; }, 500);
       };
       if (intro && !introGo) { // the intro waits for Start
-        introIn = go; intro.classList.add('ready'); $('iStartT').textContent = t('Start the race', 'Начать гонку', 'Empezar la regata', 'Regatta starten', 'Yarışı başlat', 'Lancer la régate', 'Inizia la regata', 'Começar a regata');
+        introIn = go; intro.classList.add('ready'); $('iStartT').textContent = introStartLabel || t('Start the race', 'Начать гонку', 'Empezar la regata', 'Regatta starten', 'Yarışı başlat', 'Lancer la régate', 'Inizia la regata', 'Começar a regata');
         try { $('iStart').focus({ preventScroll: true }); } catch (e) {}
         return;
       }
