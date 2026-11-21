@@ -154,6 +154,7 @@ export const MATCH = {
   by: (s) => `+${s}`, forfeit: (w) => `${w} si è ritirato`, abandonedH: 'Regata annullata', notScored: 'Non conta per nessuno dei due', noWinner: 'Nessun vincitore',
   rematch: 'Rivincita', fullResult: 'Risultato completo', done: 'Fine', waitRematch: (w) => `${w} può avviare la rivincita`, left: (w) => `${w} ha lasciato la regata`,
   stepAway: (w, c) => `${w} non c’è · la partenza aspetta · ${c}`,
+  loadingPct: (w, p) => `${w} · carica la regata · ${p}%`,
   chat: (k) => ['Buona fortuna!', 'Bella partenza', 'Rivincita?', 'Bella regata'][k] ?? '', chatK: 'Di’',
   stillOut: (w) => `${w} è ancora in regata`, stillOutT: (w, s) => `${w} è ancora in regata · mancano ${s}`, keepOpen: 'Tieni aperto questo schermo',
   loadingRace: (w) => `In attesa che ${w} carichi la regata…`,

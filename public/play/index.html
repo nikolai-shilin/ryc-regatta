@@ -855,12 +855,16 @@
     shown += (aim - shown) * (ready ? 0.16 : 0.07);
     if (aim - shown < 0.05) shown = aim;
     bar.style.transform = 'scaleX(' + (shown / 100).toFixed(4) + ')';
-    var p = Math.round(shown); pctEl.textContent = p + '%'; root.setAttribute('aria-valuenow', p);
+    var p = Math.round(shown); pctEl.textContent = p + '%'; root.setAttribute('aria-valuenow', p); window.rycLoadPct = p;
     if (intro) { $('iBar').style.transform = bar.style.transform; $('iPct').textContent = p + '%'; }
     label();
     if (shown < 100) requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
+  // a 1-on-1 race: how far this screen has loaded goes to the other's waiting room as it loads (game/duel-loading.js,
+  // its own socket; the import map gives its address), from the share the bar shows
+  window.rycLoadPct = 0;
+  if (/[?&]match=[A-Za-z0-9]{6}(&|$)/.test(location.search)) import('/game/duel-loading.js').catch(function () {});
 
   // a file that fails (no network, the CDN down) or the game's code throwing before it's ready: say so and offer a retry
   function fail(why) { if (ready || failed) return; failed = true; clearInterval(tipTimer); if (intro) { intro.hidden = true; root.classList.remove('intro'); } root.classList.add('err'); label(); visitPost({ ev: 'visit', id: window.rycVisit.id, visit: { stage: 'failed', vid: vid, why: String(why || 'error').slice(0, 140), mins: Math.round(performance.now() / 6000) / 10 } }); }

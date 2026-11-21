@@ -10,6 +10,7 @@
 //                          seconds in one (a reloaded guest learns where it is)
 //   loaded  guest → host  { id, seed } the race is built on her screen: the host's race starts then (its silence timers
 //                          with it), so a slow phone still building the venue isn't forfeited; every second till it is
+//   loading either        { id, name, pct } while its page is still loading (duel-loading.js): said on its empty row
 //   leave   either        { id } Leave, Done or Full result. The guest's, in a race: before her finish she gives it up,
 //                          after it her place stands. The host's, in a race: `abandon` goes first (match.js)
 const STEP = 1 / 60;
@@ -33,6 +34,7 @@ export const MATCH_STRINGS = {
     by: (s) => `+${s}`, forfeit: (w) => `${w} dropped out`, abandonedH: 'Race abandoned', notScored: 'It doesn’t count for either of you', noWinner: 'No winner',
     rematch: 'Rematch', fullResult: 'Full result', done: 'Done', waitRematch: (w) => `${w} can start a rematch`, left: (w) => `${w} left the race`,
     stepAway: (w, c) => `${w} stepped away · the start waits · ${c}`,
+    loadingPct: (w, p) => `${w} · loading the race · ${p}%`,
     chat: (k) => ['Good luck!', 'Nice start', 'Rematch?', 'GG'][k] ?? '', chatK: 'Say',
     stillOut: (w) => `${w} is still racing`, stillOutT: (w, s) => `${w} is still racing · ${s} left`, keepOpen: 'Keep this screen open',
     loadingRace: (w) => `Waiting for ${w} to load the race…`,
@@ -49,6 +51,7 @@ export const MATCH_STRINGS = {
     by: (s) => `+${s}`, forfeit: (w) => `${w}: сход`, abandonedH: 'Гонка прекращена', notScored: 'Она не засчитывается никому из вас', noWinner: 'Без победителя',
     rematch: 'Реванш', fullResult: 'Полный результат', done: 'Закончить', waitRematch: (w) => `${w} может начать реванш`, left: (w) => `${w}: выход из гонки`,
     stepAway: (w, c) => `${w} не на связи · старт ждёт · ${c}`,
+    loadingPct: (w, p) => `${w} · загружает гонку · ${p}%`,
     chat: (k) => ['Удачи!', 'Хороший старт', 'Реванш?', 'Хорошая гонка'][k] ?? '', chatK: 'Сказать',
     stillOut: (w) => `${w} ещё в гонке`, stillOutT: (w, s) => `${w} ещё в гонке · осталось ${s}`, keepOpen: 'Не закрывай этот экран',
     loadingRace: (w) => `${w} загружает гонку…`,
@@ -283,6 +286,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
       rt = net.realtime({ url: cfg.url, key: cfg.key });
       rt.setHeartbeat(5000); // a race notices a dead link in under 10 s
       link = M.makeLink(rt, code);
+      link.all.on('loading', heardLoading); // (the other screen, still loading: duel-loading.js)
       if (myName) openRoom();
     } catch (e) { console.error(e); error = 'connect'; } // a module that didn't load, or anything else: Try again
   };
@@ -614,6 +618,13 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
   // ---------- the waiting room ----------
   // the guest in the room with no host in it, since when (0: not so): after HOST_WAIT_MS it says why that may be
   let alone = 0;
+  // the other screen still loading the race (duel-loading.js 'loading'): said on their empty row while it is fresh
+  let theirLoad = null;
+  const heardLoading = (m) => {
+    if (!m || typeof m !== 'object' || typeof m.id !== 'string' || m.id === myId || typeof m.pct !== 'number' || !Number.isFinite(m.pct)) return;
+    theirLoad = { id: m.id, name: clean(m.name), pct: Math.max(0, Math.min(100, Math.round(m.pct))), at: Date.now() };
+  };
+  const loadingLine = () => (theirLoad && Date.now() - theirLoad.at < 3000 && theirLoad.pct < 100 ? (L.loadingPct || MATCH_STRINGS.en.loadingPct)(theirLoad.name || '—', theirLoad.pct) : '');
   const hostGone = (h) => {
     if (isHost || !room || h || !joined || error) { alone = 0; return false; }
     if (!alone) alone = Date.now();
@@ -632,7 +643,8 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     const full = !!room && room.full;
     const h = room ? room.host : isHost ? { id: myId, name: myName || '…' } : null, g = room && room.guest;
     const rows = [[h, L.hostTag], [full ? null : g, '']];
-    const k = JSON.stringify(rows.map(([p]) => p && [p.id, p.name])) + full + !!room + joined;
+    const loading = loadingLine();
+    const k = JSON.stringify(rows.map(([p]) => p && [p.id, p.name])) + full + !!room + joined + loading;
     if (R.ppl._k !== k) {
       R.ppl._k = k; R.ppl.textContent = '';
       for (const [p, tag] of rows) {
@@ -641,7 +653,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
           row.append(Object.assign(document.createElement('span'), { textContent: clean(p.name) || '—' }));
           const tags = [p.id === myId ? L.youTag : '', tag].filter(Boolean).join(' · ');
           if (tags) row.append(Object.assign(document.createElement('span'), { className: 't', textContent: tags }));
-        } else row.textContent = isHost ? L.waitFriend : joined ? L.waitHost : L.connecting; // (the guest: joined, the host just isn't there)
+        } else row.textContent = loading || (isHost ? L.waitFriend : joined ? L.waitHost : L.connecting); // (the guest: joined, the host just isn't there; either: the other still loading)
         if (p || (room && !full && row.textContent)) R.ppl.append(row); // (before the room is open, or a full one: only who is known)
       }
     }

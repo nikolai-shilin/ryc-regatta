@@ -152,6 +152,7 @@ export const MATCH = {
   by: (s) => `+${s}`, forfeit: (w) => `${w} a abandonné`, abandonedH: 'Régate annulée', notScored: 'Elle ne compte pour aucun de vous deux', noWinner: 'Pas de vainqueur',
   rematch: 'Revanche', fullResult: 'Résultat complet', done: 'Terminer', waitRematch: (w) => `${w} peut lancer une revanche`, left: (w) => `${w} a quitté la régate`,
   stepAway: (w, c) => `${w} n’est plus là · le départ attend · ${c}`,
+  loadingPct: (w, p) => `${w} · charge la régate · ${p} %`,
   chat: (k) => ['Bonne chance !', 'Joli départ', 'Revanche ?', 'Belle régate'][k] ?? '', chatK: 'Dire',
   stillOut: (w) => `${w} est encore en régate`, stillOutT: (w, s) => `${w} est encore en régate · encore ${s}`, keepOpen: 'Garde cet écran ouvert',
   loadingRace: (w) => `En attente que ${w} charge la régate…`,
