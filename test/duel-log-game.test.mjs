@@ -586,7 +586,7 @@ test('endBody with the race here reads its boats, and only what the site keeps o
   const race = { prepFlag: 'B', recalls: 2 };
   const results = { boats: [row('g1', { place: 1, finish: 400.1234 }), row('h1', { place: 2, finish: 412.5, pens: 3 })] };
   assert.deepEqual(accepted(Log.endBody(matchOf(result), CODE, TOKEN, race, results)), {
-    kind: 'end', side: 'host', code: CODE, seed: 42, token: TOKEN, state: 'finished', winner: 'guest', margin: 12.346, forfeited: null, recalls: 2, prep: 'B', gun: true,
+    kind: 'end', side: 'host', code: CODE, seed: 42, token: TOKEN, state: 'finished', winner: 'guest', margin: 12.346, forfeited: null, recalls: 2, prep: 'B', gun: true, left: null,
     host: { place: 2, secs: 412.5, mark: null, pens: 3 }, guest: { place: 1, secs: 400.123, mark: null, pens: 0 },
   });
 });
@@ -705,4 +705,47 @@ test('a screen with too few frames, or none measured, reports nothing; leaving m
   assert.equal(of('perf')[0].perf.net, null, 'under 20 s of snapshots: no word on them');
   until(() => x.h.shows('#mCard'), x.live, 40, 'the host\'s card (the race is hers: the guest gave it up)'); await settle(); run(2, ...x.live); await settle();
   assert.equal(of('perf').length, 1, 'the host measured nothing: nothing from it');
+});
+
+// ---------- who left: leaving after the gun loses the race (the rating's rule, 20261121160000_regatta_rating_leaving.sql) ----------
+// (the harness puts the host's clock past the gun; the guest's, which follows the host's snapshots, is put there too)
+const afloatGun = async () => { const x = await afloat(); x.gr.clock = x.hr.clock; return x; };
+const ends = async (x) => { await settle(); run(2, ...x.live); await settle(); run(31, ...x.live); await settle(); const host = of('end')[0], guest = guestEnds()[0]; assert.equal(host.side, 'host'); if (guest) assert.equal(guest.side, 'guest'); assert.ok(of('end').length === 1 && guestEnds().length <= 1, 'each told once'); return { host, guest }; };
+test('the host leaving mid-race: both ends say the race was abandoned after the gun, and that the host left', async () => {
+  const x = await afloatGun();
+  leaves(x, x.h);
+  const e = await ends(x);
+  assert.deepEqual([e.host.state, e.host.gun, e.host.left], ['abandoned', true, 'host']);
+  assert.deepEqual([e.guest?.state, e.guest?.gun, e.guest?.left], ['abandoned', true, 'host']);
+});
+test('the host\'s tab asleep past a minute: the host left, on both screens', async () => {
+  const x = await afloatGun();
+  asleep(x, 61);
+  const e = await ends(x);
+  assert.deepEqual([e.host.state, e.host.left], ['abandoned', 'host']);
+  assert.deepEqual([e.guest?.state, e.guest?.left], ['abandoned', 'host']);
+});
+test('the guest leaving before her finish: both ends give the race to the host by her forfeit, and say she left', async () => {
+  const x = await afloatGun();
+  leaves(x, x.g);
+  const e = await ends(x);
+  assert.deepEqual([e.host.state, e.host.winner, e.host.forfeited], ['finished', 'host', 'guest']);
+  assert.ok(e.guest, 'her end is told as she leaves');
+  assert.deepEqual([e.guest.state, e.guest.winner, e.guest.forfeited, e.guest.left], ['finished', 'host', 'guest', 'guest']);
+});
+test('a race sailed to its end: nobody left', async () => {
+  const x = await afloatGun();
+  bothHome(x);
+  const e = await ends(x);
+  assert.deepEqual([e.host.left, e.guest?.left], [null, null]);
+});
+test('a host back on a race that was on when its tab went: the host left it', async () => {
+  const x = await afloatGun();
+  const saved = x.h.ls.getItem(savedKey);
+  x.h.gone();
+  posts = [];
+  x.h.ls.setItem(savedKey, saved);
+  await page('Host', { ls: x.h.ls });
+  await settle();
+  assert.deepEqual([of('end')[0].state, of('end')[0].left, of('end')[0].gun], ['abandoned', 'host', null]);
 });

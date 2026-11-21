@@ -225,7 +225,7 @@ export class Match {
     try { j = JSON.parse(JSON.stringify(json)); } catch (e) { return null; }
     if (!isObj(j) || !goodStart(j.start)) return null;
     const m = new Match({ start: j.start, now }), ids = [m.hostId, m.guestId];
-    m.leftBy = ids.includes(j.leftBy) ? j.leftBy : null;
+    m.leftBy = ids.includes(j.leftBy) ? j.leftBy : j.state === 'race' ? m.hostId : null; // (a race still on when its tab went: the host left it)
     m.endRace(j.state === 'over' && goodResult(j.result, ids) ? j.result : { abandoned: true });
     return m;
   }

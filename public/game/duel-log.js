@@ -58,6 +58,7 @@ export function joinBody(match, code, name, token) {
 // clock to read: a finish was after the gun, an abandoned race isn't known)
 const gunOf = (race, abandoned) => (race ? race.clock >= 0 || race.recalls > 0 : abandoned ? null : true);
 
+// left: who left the race, as this screen knows it (match.leftBy): her Leave, her tab asleep or gone; null when nobody did.
 // How the race ended, as this screen has it (side: 'host', the race's result, or 'guest', her word beside it). race and
 // results (M.finalResults, or the host's results on the guest's screen) are the race on this page; a page opened again has neither, and
 // reports what match.result holds. Each boat: her place, her time, DSQ or DNF as marksOf (match.js) has it, her penalties;
@@ -77,7 +78,7 @@ export function endBody(match, code, token, race, results, side = 'host') {
   };
   return { kind: 'end', side, code, seed: match.start.seed, token, state: abandoned ? 'abandoned' : 'finished', winner: role(winner), margin: abandoned ? null : span(r.margin),
     forfeited: abandoned ? null : role(r.forfeited), recalls: race ? count(race.recalls, MAX_RECALLS) : null, prep: ['P', 'I', 'U', 'B'].includes(race?.prepFlag) ? race.prepFlag : null,
-    gun: gunOf(race, abandoned), host: boat(match.hostId), guest: boat(match.guestId) };
+    gun: gunOf(race, abandoned), left: role(match.leftBy), host: boat(match.hostId), guest: boat(match.guestId) };
 }
 
 // How the race ran on one screen (side: 'host' | 'guest'): perf, stats.js perfSummary's numbers for its frames (perfMeter),

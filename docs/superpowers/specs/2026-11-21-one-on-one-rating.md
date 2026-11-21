@@ -60,9 +60,17 @@ A race that was abandoned, had no winner, was disputed, or was told by one scree
 
 ## Left for later
 
-- **A host who closes the tab while losing.** The race lives in the host's tab, so it ends abandoned and isn't rated.
-  The plan's rule ("leaving after the gun is a loss") needs both screens to name who left, and a ruling when the host's
-  end never comes. That is the next change to the rating.
+- **Leaving after the gun** is now a loss (`20261121160000_regatta_rating_leaving.sql`). Each screen's end says who
+  left: the host's Leave, her tab asleep past a minute, her page gone mid-race; on the guest's screen also the host silent
+  five minutes. Rated as a loss for the leaver:
+  - when both screens report the race abandoned after the gun and name the same leaver;
+  - when the host's screen never reports and the guest's says the host left after the gun, a minute after her report.
+    Her screen only gives up on a silent host after five minutes, so the host has had those to say otherwise. Each
+    report sweeps such races (`regatta_rate_waiting`), as does the guest's screen asking after its rating.
+
+  The guest pressing Leave before her own finish is her forfeit on both screens now. Before, her screen sent no end, so
+  that forfeit went unrated as "one screen only". A race abandoned before the gun, or one where the screens name different
+  leavers, is never rated.
 - **The full rating page and the leaderboard tab.** The design's rating page (the chart, the spread of all sailors, the
   record by opponent) and the 1-on-1 tab on the race board are release 6 of the plan.
 - **Stakes before the race.** Match found's chance and stakes come with matchmaking (release 4). `lib/elo.ts`

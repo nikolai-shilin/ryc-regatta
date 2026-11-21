@@ -22,7 +22,7 @@ export type Report =
   | { kind: 'start'; code: string; seed: number; token: string; host: string; guest: string; settings: Settings }
   | { kind: 'join'; code: string; seed: number; name: string; token: string | null }
   | { kind: 'end'; code: string; seed: number; token: string; side: Side; state: 'finished' | 'abandoned'; winner: Side | null; margin: number | null; forfeited: Side | null;
-      recalls: number | null; prep: 'P' | 'I' | 'U' | 'B' | null; gun: boolean | null; host: Result; guest: Result }
+      recalls: number | null; prep: 'P' | 'I' | 'U' | 'B' | null; gun: boolean | null; left: Side | null; host: Result; guest: Result }
   | { kind: 'perf'; code: string; seed: number; side: Side; perf: Perf };
 
 // How the race ran on one screen, as the game's stats.js perfSummary and match.js net() measure it: the middle frame's
@@ -106,14 +106,15 @@ export function parseReport(body: unknown): Report | null {
     return host && guest && settings ? { kind, code, seed, token, host, guest, settings } : null;
   }
   const { state, winner, forfeited, margin, recalls, prep } = body;
-  const side = body.side ?? 'host', gun = body.gun ?? null; // (a build before them sends neither: the host's, and the gun unknown)
+  const side = body.side ?? 'host', gun = body.gun ?? null, left = body.left ?? null; // (a build before them sends none: the host's, the gun and who left unknown)
   if (state !== 'finished' && state !== 'abandoned') return null;
   if (side !== 'host' && side !== 'guest') return null;
   if (!(gun === null || typeof gun === 'boolean')) return null;
+  if (!(left === null || left === 'host' || left === 'guest')) return null;
   if (!(winner === null || winner === 'host' || winner === 'guest') || !(forfeited === null || forfeited === 'host' || forfeited === 'guest')) return null;
   if (!(margin === null || span(margin)) || !(recalls === null || int(recalls, 0, 9)) || !(prep === null || oneOf(prep, ['P', 'I', 'U', 'B'] as const))) return null;
   const host = resultOf(body.host), guest = resultOf(body.guest);
-  return host && guest ? { kind, code, seed, token, side, state, winner, margin, forfeited, recalls, prep, gun, host, guest } : null;
+  return host && guest ? { kind, code, seed, token, side, state, winner, margin, forfeited, recalls, prep, gun, left, host, guest } : null;
 }
 
 // The p_report of regatta_duel_log. userId is the account the session names (never one the body names); hash is the
@@ -128,5 +129,5 @@ export function toRow(r: Report, userId: string | null, hash: string | null): ob
   }
   const side = (x: Result) => ({ place: x.place, secs: x.secs, mark: x.mark, pens: x.pens });
   return { kind: 'end', side: r.side, code: r.code, seed: r.seed, write_hash: hash, state: r.state, winner: r.winner, margin: r.margin, forfeited: r.forfeited, recalls: r.recalls, prep_flag: r.prep,
-    gun: r.gun, host: side(r.host), guest: side(r.guest) };
+    gun: r.gun, left: r.left, host: side(r.host), guest: side(r.guest) };
 }

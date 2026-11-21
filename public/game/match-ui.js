@@ -224,7 +224,11 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
       if (isHost && match?.state === 'race') link?.all.send('abandon', { seed: match.start.seed });
       link?.all.send('leave', { id: myId });
     } catch (e) {}
-    if (isHost && match?.state === 'race') match.endRace({ abandoned: true }); // (it lived in this tab)
+    // who left is told with the end (duel-log.js endBody `left`): leaving after the gun loses the race. The host's going
+    // abandons it (it lived in this tab); the guest's going, before her own finish, gives it to the host, as the host's
+    // screen has it (Host.guestLeft), so the two ends agree
+    if (isHost && match?.state === 'race') match.leave(myId);
+    else if (!isHost && match?.state === 'race' && onScreen() && !cur.race.player?.done) { match.endRace({ winner: match.hostId, forfeited: myId }); match.leftBy = myId; }
     tellEnd(true); tellPerf(cur);
     cur?.H?.stop(); cur?.G?.stop();
     if (isHost) try { localStorage.removeItem('regatta-match-' + code); } catch (e) {}
@@ -478,6 +482,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     const r = cur.race;
     cur.endedAt = Date.now();
     K.raceEnded(cur.H.abandoned ? { abandoned: true } : { winner: r.winner?.id ?? null, margin: r.margin ?? null, forfeited: r.forfeited?.id ?? null, marks: M.marksOf(r) });
+    if (cur.H.abandoned) match.leftBy ??= myId; // (abandoned here only by this tab asleep: the host left the app)
     if (!cur.H.abandoned) keep(cur, M.finalResults(r));
     saveMatch(); sendState();
   };
@@ -637,8 +642,9 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     }
     if (!isHost && match) {
       if (cur && cur.G && !cur.gotSnap && now - cur.loadedAt > 1000) sendLoaded();
-      if (onScreen() && cur.G?.abandoned) match.endRace({ abandoned: true });
-      if (match.state !== 'over' && now - lastHostAt > 300000) match.endRace({ abandoned: true }); // her host gone five minutes: over
+      // the host's abandon (her tab asleep, or her leaving), or the host gone five minutes: over, and the host is the one who left
+      if (onScreen() && cur.G?.abandoned && match.state === 'race') match.leave(match.hostId);
+      if (match.state !== 'over' && now - lastHostAt > 300000) match.leave(match.hostId);
       tellEnd();
     }
     // a race gone quiet 3 s (no snapshot on the guest's screen, no input from a boat still out on the host's): the link
