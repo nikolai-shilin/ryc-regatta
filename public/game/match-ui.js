@@ -667,6 +667,10 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     R.start.disabled = !(room && room.canStart()) || old;
   };
   R.start.addEventListener('click', () => { if (room && room.canStart() && !match && !stale()) room.start(); });
+  // a race found by matchmaking (the site's /duel: ?auto in the address): both sailors said Ready there, so the host's
+  // screen presses Start itself once the guest is in the room (once: a rematch is the card's, as ever)
+  const AUTO = (() => { try { return new URLSearchParams(location.search).has('auto'); } catch (e) { return false; } })();
+  let autoStarted = false;
 
   // ---------- the beat: four times a second ----------
   const beat = () => {
@@ -677,6 +681,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     if (!isHost && pendingStart && now - pendingStart.at > 1500 && (!match || match.start.seed !== pendingStart.m.seed)) {
       const m = pendingStart.m; pendingStart = null; match = guestMatch(m); enterRace();
     }
+    if (AUTO && isHost && !autoStarted && room && room.canStart() && !match && !stale()) { autoStarted = true; room.start(); }
     if (isHost && match) {
       K.beat(); // her presence to the Match
       startHost();
