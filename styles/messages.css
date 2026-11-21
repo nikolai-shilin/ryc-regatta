@@ -1,0 +1,5 @@
+/* the Messages card on /settings (components/messages-form.tsx) */
+.bc .st-msg .st-note { margin: 2px 0 var(--s-3, 12px); color: var(--ink-3, rgba(255,255,255,.62)); }
+.bc .st-msg .st-note a { color: var(--you, #3db8ff); }
+.bc .st-msg .segc { margin-bottom: 6px; }
+.bc .st-msg > .st-sub:first-child { margin-top: 0; padding-top: 0; border-top: 0; } /* (the card's own rule is above it) */

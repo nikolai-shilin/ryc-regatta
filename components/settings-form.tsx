@@ -85,7 +85,7 @@ function BoatLine({ lang }: { lang: Lang }) {
 
 // S3 · Who you are, how you sail, and the way to Audio & graphics, in cards over the scene. Every change is saved at
 // once where the game reads it.
-export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: React.ReactNode; account: React.ReactNode }) {
+export function SettingsForm({ lang, langSeg, account, messages = null }: { lang: Lang; langSeg: React.ReactNode; account: React.ReactNode; messages?: React.ReactNode }) {
   const t = tx(lang);
   return (
     <div className="st-cards">
@@ -97,6 +97,7 @@ export function SettingsForm({ lang, langSeg, account }: { lang: Lang; langSeg: 
         {langSeg}
       </Card>
       <Card id="st-sail" title={t('Sailing', 'Яхта', 'Navegando', 'Segeln', 'Yelken', 'Navigation', 'Vela', 'Velejando')}><SailingOpts lang={lang} /></Card>
+      {messages && <Card id="st-msg" title={t('Messages', 'Сообщения', 'Mensajes', 'Nachrichten', 'Mesajlar', 'Messages', 'Messaggi', 'Mensagens')}>{messages}</Card>}{/* signed in: which messages come, and quiet hours */}
       <section className="st-card st-wide" aria-label={t('Audio & graphics', 'Звук и графика', 'Sonido y gráficos', 'Ton & Grafik', 'Ses ve grafik', 'Audio et graphismes', 'Audio e grafica', 'Áudio e gráficos')}><div className="st-card-b"><AvRow lang={lang} wide /></div></section>
     </div>
   );

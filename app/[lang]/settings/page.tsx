@@ -7,6 +7,7 @@ import { BackLink } from '@/components/back-link';
 import { GameScene } from '@/components/game-scene';
 import { SceneBrand } from '@/components/scene-brand';
 import { NameRow, SettingsForm } from '@/components/settings-form';
+import { MessagesForm } from '@/components/messages-form';
 
 export const generateMetadata = titled('Settings', 'Настройки', 'Ajustes', 'Einstellungen', 'Ayarlar', 'Réglages', 'Impostazioni', 'Configurações', { index: false });
 
@@ -67,7 +68,7 @@ export default async function SettingsPage({ params }: LangParams) {
         </div>
 
         <div className="bt-card st-wrap">
-          <SettingsForm lang={lang} langSeg={langSeg} account={acct} />
+          <SettingsForm lang={lang} langSeg={langSeg} account={acct} messages={account ? <MessagesForm lang={lang} /> : null} />
         </div>
       </div>
     </div>
