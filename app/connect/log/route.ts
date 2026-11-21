@@ -8,7 +8,8 @@ import { parseReport, toRow } from '@/lib/duel-log';
 //   POST /connect/log { kind: 'start' | 'join' | 'end' | 'perf', … } → always 204
 // The game never waits on it, so every path answers 204: a report that is refused, dropped, limited or lost to the
 // database is told no differently from one that was written. The account is the session's, never the body's; the write
-// token (the host's proof that a race is hers) is hashed here and only the hash goes to the database.
+// tokens (the host's proof that a race and its end are hers, the guest's that her end is hers) are hashed here and only
+// the hash goes to the database.
 const RATE_LIMIT = 60, RATE_WINDOW_MS = 10 * 60e3, MAX_BODY = 4096;
 const seen = new Map<string, [number, number]>(); // address → [count, window start]
 const done = () => new Response(null, { status: 204 });
@@ -49,7 +50,8 @@ export async function POST(request: NextRequest) {
     if (report.kind === 'start' || report.kind === 'join') {
       try { userId = (await supabase.auth.getUser()).data.user?.id ?? null; } catch { /* a session that fails to load: a guest */ }
     }
-    const hash = 'token' in report ? createHash('sha256').update(report.token).digest('hex') : null;
+    const token = 'token' in report ? report.token : null;
+    const hash = token ? createHash('sha256').update(token).digest('hex') : null;
     const { error } = await supabase.rpc('regatta_duel_log', { p_key: key, p_report: toRow(report, userId, hash) });
     if (error) console.error('duel-log', codeOf(error));
   } catch (e) { console.error('duel-log', codeOf(e)); /* the report is lost; the game goes on */ }

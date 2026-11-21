@@ -189,7 +189,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
   let lastHostAt = Date.now(), lastState = 0, stateKey = '', kicked = 0;
   let pendingStart = null; // the guest: a start heard before any mstate
   const pastSeeds = new Set(); // the guest: the races before the one she is on
-  const told = new Map(); // what the site has been told, by seed. The host's: { token, settled (its start's tries are over), end (its report, till then) }, the token gone with the end; the guest's: true, she has joined
+  const told = new Map(); // what the site has been told, by seed: { token, settled (the tries of its start, or of her join, are over), end (its report, till then) }, the token gone with the end
   let myName = clean(store(NAME_KEY) || '');
 
   const here = () => ({ venue: venue.id, yacht: cls.id });
@@ -368,14 +368,20 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     if (!left) saveMatch(); // (the token goes with it: a page opened again has nothing more to tell)
     Log.report(body);
   };
-  // the host: the race's end, once, by whatever way it ended. It follows its start's tries, for the site can't place an end
-  // that overtakes its start; a page going away (now) can't wait for them
+  // the race's end, once, by whatever way it ended: the host's is the race's result, the guest's her word on it, so the
+  // site can tell whether the two screens agree. Each follows the tries of its start or join, for the site can't place an
+  // end that overtakes them; a page going away (now) can't wait for them. The guest's waits for the host's results (or
+  // RESULTS_MS) so it says what her card says
   const tellEnd = (now = false) => {
     if (!Log) return; // (duel-log.js not loaded: nothing to build or send it with, and nothing is changed, so the end still goes if it loads)
     try {
-      if (isHost && match?.state === 'over') {
+      if (match?.state === 'over') {
         const l = told.get(match.start.seed), race = onScreen() ? cur.race : null;
-        if (l?.token && !l.end) l.end = Log.endBody(match, code, l.token, race, race && M.finalResults(race));
+        if (l?.token && !l.end) {
+          if (isHost) l.end = Log.endBody(match, code, l.token, race, race && M.finalResults(race));
+          else if (now || !race || cur.G?.results || match.result?.abandoned || (cur.endedAt && Date.now() - cur.endedAt >= RESULTS_MS))
+            l.end = Log.endBody(match, code, l.token, race, race ? cur.G?.results ?? null : null, 'guest');
+        }
       }
       for (const l of told.values()) if (l.end && (l.settled || now)) sendEnd(l);
     } catch (e) { console.error(e); }
@@ -390,12 +396,15 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
       if (p) Log.report(Log.perfBody(match, code, isHost ? 'host' : 'guest', p, (c.H || c.G)?.net() ?? null));
     } catch (e) { console.error(e); }
   };
-  // the guest: her joining this race, once
+  // the guest: her joining this race, once, with the token that will prove her end hers
   const tellJoin = () => {
     const seed = match.start.seed;
     if (told.has(seed)) return;
-    told.set(seed, true);
-    try { Log.report(Log.joinBody(match, code, myName)); } catch (e) { console.error(e); }
+    try {
+      const l = { token: Log.newToken(), settled: false, end: null };
+      told.set(seed, l);
+      Log.report(Log.joinBody(match, code, myName, l.token), { done: () => { l.settled = true; if (l.end) sendEnd(l); } });
+    } catch (e) { console.error(e); }
   };
 
   // ---------- the race ----------
@@ -590,6 +599,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
       if (cur && cur.G && !cur.gotSnap && now - cur.loadedAt > 1000) sendLoaded();
       if (onScreen() && cur.G?.abandoned) match.endRace({ abandoned: true });
       if (match.state !== 'over' && now - lastHostAt > 300000) match.endRace({ abandoned: true }); // her host gone five minutes: over
+      tellEnd();
     }
     // a race gone quiet 3 s (no snapshot on the guest's screen, no input from a boat still out on the host's): the link
     // checked, at once and then every 10 s while it stays quiet (a half-open socket would otherwise take a heartbeat or

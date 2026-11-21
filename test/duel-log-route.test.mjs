@@ -61,6 +61,8 @@ const BAD = [
   { ...END, host: side({ secs: -1 }) }, { ...END, host: side({ secs: NaN }) }, { ...END, guest: side({ secs: Infinity }) }, { ...END, guest: side({ secs: '300' }) }, { ...END, host: side({ secs: 86401 }) },
   { ...END, host: side({ pens: -1 }) }, { ...END, host: side({ pens: 100 }) }, { ...END, guest: side({ pens: 0.5 }) }, { ...END, guest: side({ pens: '0' }) }, { ...END, guest: side({ pens: NaN }) },
   { ...END, token: 'zz' },
+  { ...END, side: 'both' }, { ...END, side: 'Guest' }, { ...END, gun: 1 }, { ...END, gun: 'yes' },
+  { ...JOIN, token: 'abc' }, { ...JOIN, token: 42 }, { ...JOIN, token: 'g'.repeat(32) },
 ];
 
 test('a good start is written with the account from the session, never from the body', async () => {
@@ -75,7 +77,22 @@ test('a good start is written with the account from the session, never from the 
 });
 test('a join is written with the guest as the session names her; a body naming an account changes nothing', async () => {
   await post({ ...JOIN, guest_user: 'someone-else' }, { user: 'u-2' });
-  assert.deepEqual(rpc.args.p_report, { kind: 'join', code: 'K7M2QZ', seed: 4242, guest_user: 'u-2', guest_name: 'Boris' });
+  assert.deepEqual(rpc.args.p_report, { kind: 'join', code: 'K7M2QZ', seed: 4242, guest_user: 'u-2', guest_name: 'Boris', guest_hash: null });
+});
+test('a join with the guest\'s own token is written with its hash, never the token', async () => {
+  const mine = 'f'.repeat(64);
+  await post({ ...JOIN, token: mine }, { user: 'u-2' });
+  assert.equal(rpc.args.p_report.guest_hash, sha256(mine));
+  assert.equal(JSON.stringify(rpc.args).includes(mine), false);
+});
+test('the guest\'s end is written as her side, with the hash of her token; a host\'s end from an older build is the host\'s', async () => {
+  const mine = 'e'.repeat(64);
+  await post({ ...END, token: mine, side: 'guest', gun: true });
+  assert.deepEqual([rpc.args.p_report.side, rpc.args.p_report.write_hash, rpc.args.p_report.gun], ['guest', sha256(mine), true]);
+  await post(END);
+  assert.deepEqual([rpc.args.p_report.side, rpc.args.p_report.gun], ['host', null]);
+  await post({ ...END, side: 'host', gun: false });
+  assert.deepEqual([rpc.args.p_report.side, rpc.args.p_report.gun], ['host', false]);
 });
 test('no session is a guest', async () => {
   await post(JOIN, { user: null });
@@ -92,8 +109,8 @@ test('an end is written with the hash of its token, the results as sent, and no 
   session.throws = true; // an end never asks who is signed in
   await post({ ...END, host_user: 'x' }, { user: 'u-1' });
   assert.equal(rpc.calls, 1);
-  assert.deepEqual(rpc.args.p_report, { kind: 'end', code: 'K7M2QZ', seed: 4242, write_hash: sha256(TOKEN), state: 'finished', winner: 'host', margin: 12.5, forfeited: null, recalls: 1, prep_flag: 'P',
-    host: { place: 1, secs: 301.2, mark: null, pens: 0 }, guest: { place: 2, secs: 313.7, mark: null, pens: 1 } });
+  assert.deepEqual(rpc.args.p_report, { kind: 'end', side: 'host', code: 'K7M2QZ', seed: 4242, write_hash: sha256(TOKEN), state: 'finished', winner: 'host', margin: 12.5, forfeited: null, recalls: 1, prep_flag: 'P',
+    gun: null, host: { place: 1, secs: 301.2, mark: null, pens: 0 }, guest: { place: 2, secs: 313.7, mark: null, pens: 1 } });
   assert.equal(JSON.stringify(rpc.args).includes(TOKEN), false);
 });
 test('an end with nobody home: no winner, no times, a mark, no margin, is kept', async () => {
@@ -107,7 +124,7 @@ test('an abandoned end from a reloaded host, with nothing to read, is written wi
   const none = { place: null, secs: null, mark: null, pens: null };
   const sent = await post({ ...END, state: 'abandoned', prep: null, recalls: null, winner: null, margin: null, forfeited: null, host: none, guest: { ...none } });
   assert.equal(sent.status, 204); assert.equal(rpc.calls, 1);
-  assert.deepEqual(rpc.args.p_report, { kind: 'end', code: 'K7M2QZ', seed: 4242, write_hash: sha256(TOKEN), state: 'abandoned', winner: null, margin: null, forfeited: null, recalls: null, prep_flag: null, host: none, guest: none });
+  assert.deepEqual(rpc.args.p_report, { kind: 'end', side: 'host', code: 'K7M2QZ', seed: 4242, write_hash: sha256(TOKEN), state: 'abandoned', winner: null, margin: null, forfeited: null, recalls: null, prep_flag: null, gun: null, host: none, guest: none });
 });
 test('every range is kept at its edges', async () => {
   for (const [venue, yacht] of [['gocek', 'jclass'], ['auckland', 'optimist']]) {
