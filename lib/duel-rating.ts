@@ -6,7 +6,7 @@ import { plainName } from './name';
 // What a 1-on-1 race did to the rating, as the database's regatta_duel_rating(code, seed) tells the signed-in sailor of
 // it (iyt-test supabase/migrations/20261121140000_regatta_rating.sql), and the line the game's card and the result page say it
 // in. GET /connect/rating (app/connect/rating/route.ts) answers it; components/duel-rating.tsx draws it on the result page.
-export type Why = 'account' | 'same' | 'abandoned' | 'no_winner' | 'disputed' | 'limit' | 'one_screen';
+export type Why = 'account' | 'same' | 'claimed' | 'abandoned' | 'no_winner' | 'disputed' | 'limit' | 'one_screen';
 export type Rated = {
   status: 'rated'; side: 'host' | 'guest';
   me: { before: number; after: number; delta: number; won: boolean; k: number; chance: number; races: number; rating: number; all_races: number };
@@ -14,7 +14,7 @@ export type Rated = {
 };
 export type DuelRating = Rated | { status: 'waiting'; side: 'host' | 'guest' } | { status: 'unrated'; side: 'host' | 'guest'; reason: Why } | { status: 'none' };
 
-const WHYS: readonly Why[] = ['account', 'same', 'abandoned', 'no_winner', 'disputed', 'limit', 'one_screen'];
+const WHYS: readonly Why[] = ['account', 'same', 'claimed', 'abandoned', 'no_winner', 'disputed', 'limit', 'one_screen'];
 const int = (v: unknown) => typeof v === 'number' && Number.isInteger(v);
 
 // the database's answer, checked: anything that isn't one of the four is 'none'
@@ -51,6 +51,7 @@ export function whyText(why: Why, lang: Lang): string {
   switch (why) {
     case 'account': return t('both sailors need to be signed in', 'оба гонщика должны войти в аккаунт', 'los dos regatistas tienen que iniciar sesión', 'beide Segler müssen angemeldet sein', 'iki denizcinin de giriş yapması gerekir', 'les deux marins doivent être connectés', 'entrambi i velisti devono aver effettuato l’accesso', 'os dois velejadores precisam estar conectados');
     case 'same': return t('the same account sailed both boats', 'на обеих лодках один аккаунт', 'la misma cuenta llevó los dos barcos', 'dasselbe Konto segelte beide Boote', 'iki tekneyi de aynı hesap yönetti', 'le même compte menait les deux bateaux', 'lo stesso account ha portato entrambe le barche', 'a mesma conta velejou os dois barcos');
+    case 'claimed': return t('it was sailed signed out and kept after', 'гонка прошла без аккаунта и сохранена после', 'se navegó sin sesión y se guardó después', 'sie wurde ohne Anmeldung gesegelt und danach gespeichert', 'giriş yapılmadan yarışıldı ve sonra saklandı', 'elle a été courue sans être connecté et gardée après', 'è stata corsa senza accesso e salvata dopo', 'foi corrida sem conta e guardada depois');
     case 'abandoned': return t('the race was abandoned', 'гонка брошена', 'la regata se abandonó', 'die Regatta wurde abgebrochen', 'yarış terk edildi', 'la régate a été abandonnée', 'la regata è stata abbandonata', 'a regata foi abandonada');
     case 'no_winner': return t('the race had no winner', 'у гонки нет победителя', 'la regata no tuvo ganador', 'die Regatta hatte keinen Sieger', 'yarışın kazananı yok', 'la régate n’a pas de vainqueur', 'la regata non ha un vincitore', 'a regata não teve vencedor');
     case 'disputed': return t('the two screens saw different results', 'экраны увидели разный итог', 'las dos pantallas vieron resultados distintos', 'die beiden Bildschirme sahen verschiedene Ergebnisse', 'iki ekran farklı sonuçlar gördü', 'les deux écrans ont vu des résultats différents', 'i due schermi hanno visto risultati diversi', 'as duas telas viram resultados diferentes');
@@ -62,7 +63,9 @@ export function whyText(why: Why, lang: Lang): string {
 // The signed-in sailor's own rating, as regatta_my_rating() tells it: the number, the record, the place among settled
 // ratings (null while provisional), best and lowest, and the last rated races, newest first
 export type MyRace = { at: string; won: boolean; before: number; after: number; delta: number; them: string | null; them_before: number; venue: string | null; yacht: string | null; margin: number | null; forfeit: boolean };
-export type MyRating = { rating: number; races: number; wins: number; losses: number; best: number; lowest: number; place: number | null; of: number; changes: MyRace[] };
+// recent: the last ten 1-on-1 races, rated or not (delta null: just for fun, or not rated), the player page's history
+export type Recent = { at: string; state: 'finished' | 'abandoned' | 'no_result'; won: boolean | null; them: string | null; venue: string | null; yacht: string | null; delta: number | null };
+export type MyRating = { rating: number; races: number; wins: number; losses: number; best: number; lowest: number; place: number | null; of: number; changes: MyRace[]; recent: Recent[] };
 
 export function parseMine(j: unknown): MyRating | null {
   const o = j as Record<string, unknown> | null;
@@ -71,6 +74,9 @@ export function parseMine(j: unknown): MyRating | null {
     at: c.at as string, won: !!c.won, before: c.before as number, after: c.after as number, delta: c.delta as number, them: plainName(c.them as string) ?? null,
     them_before: c.them_before as number, venue: typeof c.venue === 'string' ? c.venue : null, yacht: typeof c.yacht === 'string' ? c.yacht : null,
     margin: typeof c.margin === 'number' && Number.isFinite(c.margin) ? c.margin : null, forfeit: !!c.forfeit }));
+  const recent = (Array.isArray(o.recent) ? (o.recent as Record<string, unknown>[]) : []).filter((c) => c && typeof c.at === 'string' && ['finished', 'abandoned', 'no_result'].includes(c.state as string)).map((c) => ({
+    at: c.at as string, state: c.state as Recent['state'], won: typeof c.won === 'boolean' ? c.won : null, them: plainName(c.them as string) ?? null,
+    venue: typeof c.venue === 'string' ? c.venue : null, yacht: typeof c.yacht === 'string' ? c.yacht : null, delta: int(c.delta) ? (c.delta as number) : null }));
   return { rating: o.rating as number, races: o.races as number, wins: o.wins as number, losses: o.losses as number, best: o.best as number, lowest: o.lowest as number,
-    place: o.place as number | null, of: o.of as number, changes };
+    place: o.place as number | null, of: o.of as number, changes, recent };
 }

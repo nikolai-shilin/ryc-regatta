@@ -50,6 +50,12 @@ export function startBody(match, code, token) {
   return { kind: 'start', code, seed, token, host: shown(host.name), guest: shown(guest.name), settings: Object.fromEntries(SETTINGS.map((k) => [k, settings?.[k]])) };
 }
 
+// the host's link, as its waiting room opens: who is asking and the race's settings, for the invite page (/match/<code>
+// reads them back: app/connect/invite). The site takes the account from the session, so only a signed-in host is named
+export function inviteBody(code, settings, name) {
+  return { kind: 'invite', code, host: shown(name), settings: Object.fromEntries(SETTINGS.map((k) => [k, settings?.[k]])) };
+}
+
 export function joinBody(match, code, name, token) {
   return { kind: 'join', code, seed: match.start.seed, name: shown(name), ...(token && { token }) };
 }

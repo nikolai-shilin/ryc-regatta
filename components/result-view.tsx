@@ -27,6 +27,7 @@ import { BOAT_EVENT, readBoat } from '@/lib/boat';
 import { briefUrl, readBrief, SCORES_API } from '@/lib/day-brief';
 import { useWho } from './me';
 import { DuelRating } from './duel-rating';
+import { DuelKeep } from './duel-keep';
 import { FirstFinish } from './first-finish';
 import { RateRace } from './rate-race';
 import { PauseCard } from './pause-card';
@@ -53,7 +54,7 @@ function Level({ lv, t }: { lv?: string; t: (en: string, ru: string, es?: string
 }
 type Foul = { rule: string; who: string | null; t: number | null; x: number | null; z: number | null };
 type Result = {
-  v: 1; id: string; at: number; daily: string | null; oneOnOne?: boolean; duel?: { code: string; seed: number }; // duel: a 1-on-1 race's code and seed, for its rating (components/duel-rating.tsx)
+  v: 1; id: string; at: number; daily: string | null; oneOnOne?: boolean; duel?: { code: string; seed: number; token?: string }; // duel: a 1-on-1 race's code and seed, for its rating (components/duel-rating.tsx); token: a guest's, to keep it (components/duel-keep.tsx)
   first?: boolean; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
   // `type`, `marks` (every rounding mark, by the leg that goes to it) and `finish` (a finish line of its own) came with the
   // course shapes: a result saved before them has none, and a wing mark makes it a triangle
@@ -331,6 +332,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
             <div><span className="bt-sk">{t('Behind', 'Отставание', 'Detrás', 'Zurück', 'Geride', 'Écart', 'Distacco', 'Atrás')}</span><b>{winner && winner !== me && me.secs != null && winner.secs != null ? <CountUp v={`+${gapS(me.secs - winner.secs)}`} /> : '—'}</b><span className="bt-sv">{winner && winner !== me ? t(`${winner.name} won`, `победа: ${winner.name}`, `Ganó ${winner.name}`, `${winner.name} gewann`, `${winner.name} kazandı`, `${winner.name} a gagné`, `Ha vinto ${winner.name}`, `${winner.name} venceu`) : !winner ? t('No winner', 'Без победителя', 'Sin ganador', 'Kein Sieger', 'Kazanan yok', 'Pas de vainqueur', 'Nessun vincitore', 'Sem vencedor') : shared ? t('this boat won', 'эта лодка победила', 'ganó este barco', 'dieses Boot gewann', 'bu tekne kazandı', 'ce bateau a gagné', 'ha vinto questa barca', 'este barco venceu') : t('you won', 'ты победил', 'ganaste', 'du hast gewonnen', 'sen kazandın', 'tu as gagné', 'hai vinto', 'você venceu')}</span></div>
             <div><span className="bt-sk">{t('Penalties', 'Штрафы', 'Penalizaciones', 'Strafen', 'Cezalar', 'Pénalités', 'Penalità', 'Penalidades')}</span><b className={L.penT > 1 ? 'is-down' : 'is-up'}><Num v={L.penT > 1 ? `${L.penT} ${t('s', 'с', 's', 's', 'sn', 's', 's', 's')}` : '0'} /></b><span className="bt-sv">{L.penT > 1 ? t('turning circles', 'штрафные обороты', 'círculos de giro', 'Kreise', 'dönüş daireleri', 'en tours de pénalité', 'giri su sé stessi', 'fazendo giros de penalidade') : t('A clean race', 'Чистая гонка', 'Una regata limpia', 'Eine saubere Regatta', 'Temiz bir yarış', 'Une régate propre', 'Una regata pulita', 'Uma regata limpa')}</span></div>
           </div>
+          {!shared && one && typeof res.duel?.code === 'string' && Number.isInteger(res.duel.seed) && typeof res.duel.token === 'string' && <DuelKeep lang={lang} id={res.id} duel={res.duel as { code: string; seed: number; token: string }} signed={!!signedName} won={ended === 'won'} rival={rival} />}{/* a friend who raced signed out: keep it */}
           {firstRace && <FirstFinish lang={lang} id={res.id} signed={!!signedName} place={ended === 'place' || ended === 'won' ? place : null} />}{/* a newcomer's first race: keep it, before anything else */}
           {target ? (
             <div className="rs-target" role="note" title={target.s}>

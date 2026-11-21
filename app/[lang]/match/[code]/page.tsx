@@ -7,6 +7,7 @@ import { SceneBrand } from '@/components/scene-brand';
 import { IconPlay } from '@/components/ui';
 import { venueOf } from '@/lib/venues';
 import { yachtOf } from '@/lib/yachts';
+import { InviteJoin } from '@/components/invite-info';
 
 // The page a 1-on-1 race's link opens: /match/K7M2QZ?v=cowes&b=jpk1050. A tap on Join (the tap lets the game start its sound)
 // opens the game at the race, in the host's venue and on the boat he picked. Never indexed.
@@ -64,7 +65,7 @@ export default async function MatchPage({ params, searchParams }: LangParams & {
             {venue && <div><span className="bt-sk">{t('Venue', 'Акватория', 'Sede', 'Revier', 'Yarış alanı', 'Plan d’eau', 'Campo di regata', 'Raia')}</span><b>{t(...venue.name)}</b></div>}
             {yacht && <div><span className="bt-sk">{t('Yacht', 'Яхта', 'Yate', 'Yacht', 'Yat', 'Yacht', 'Yacht', 'Veleiro')}</span><b>{t(...yacht.name)}</b></div>}
           </div>
-          <a className="bt-go" href={href}><IconPlay /><span>{t('Join the race', 'Войти в гонку', 'Unirse a la regata', 'An der Regatta teilnehmen', 'Yarışa katıl', 'Rejoindre la régate', 'Entra in regata', 'Entrar na regata')}</span></a>
+          <InviteJoin code={code} href={href} lang={lang} />{/* who is asking, how long, and "Race Alex" (read in the browser) */}
         </div>
       </div>
     </div>

@@ -86,6 +86,8 @@ test('each screen\'s record names its race, for the result page to ask after its
   for (const s of x.both) {
     const [res] = s.records;
     assert.ok(res, `${s.name} kept a record`);
-    assert.deepEqual(JSON.parse(s.ls.getItem('regatta-result-' + res.id)).duel, { code: CODE, seed: 11 });
+    const { token, ...duel } = JSON.parse(s.ls.getItem('regatta-result-' + res.id)).duel;
+    assert.deepEqual(duel, { code: CODE, seed: 11 });
+    if (s === x.h) assert.equal(token, undefined, 'the host\'s has no token'); else assert.match(token, /^[0-9a-f]{64}$/, 'the guest\'s keeps hers, to keep the race');
   }
 });
