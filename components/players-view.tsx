@@ -19,6 +19,7 @@ import { FlagImg, NoFlag } from './flag';
 import { passportShare, useLog } from './passport';
 import { PassportBlock, type PassportFacts } from './passport-card';
 import { ShareButton } from './share-sheet';
+import { MyDuelRating } from './my-duel-rating';
 import '@/styles/players.css';
 import { useSceneStart } from '@/lib/scene-start';
 
@@ -180,6 +181,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
           </div>
 
           <PassportBlock lang={lang} facts={cardFacts(player)} mine={mine} share={mine && log ? shareBtn(log) : undefined} />
+          {mine && <MyDuelRating lang={lang} />}{/* your 1-on-1 rating: your own card alone */}
 
           <div className="bt-g">
             <span className="bt-k"><IconTrophy s={14} />{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı', 'La régate du jour', 'La regata del giorno', 'A regata do dia')}</span>

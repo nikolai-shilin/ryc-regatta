@@ -17,6 +17,7 @@ const CARD_MS = 3500; // a race's end stays on the water this long before its ca
 const HOST_WAIT_MS = 30000; // the guest alone in a room this long: the room says the host may not come
 const RESULTS_MS = 30000; // the results go on being sent, and waited for, this long after the race's end
 const NAME_KEY = 'regatta-match-name', ME_KEY = 'regatta-match-me', SETTINGS_KEY = 'regatta-match-settings';
+const RATE_EVERY_MS = 4000, RATE_FOR_MS = 90000; // the rating after a race: asked this often, for this long
 const RESULT_KEY = 'regatta-match-result'; // { code, seed, id }: the record this device kept of its last race, for Full result after a reload
 const SHAPE_KEY = { wl: 'shapeWl', tri: 'shapeTri', trap: 'shapeTrap', wlu: 'shapeWlu' };
 const LENGTH_KEY = { short: 'lShort', medium: 'lMedium', long: 'lLong' };
@@ -77,6 +78,8 @@ const CSS = `
 #mWrap .m-p .t { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 #mWrap .m-st { font: 600 var(--fs-small)/1.3 var(--sans); color: var(--ink-2); }
 #mWrap .m-st.bad { color: var(--down); }
+#mWrap .m-rate { font: 700 var(--fs-small)/1.3 var(--cond); letter-spacing: 0.02em; color: var(--ink-2); }
+#mWrap .m-rate.up { color: var(--up); } #mWrap .m-rate.down { color: var(--down); }
 #mWrap .m-rows { display: flex; flex-direction: column; border-top: 1px solid var(--rule); }
 #mWrap .m-rows div { display: grid; grid-template-columns: 44px 1fr auto; gap: var(--s-2); height: 40px; align-items: center; border-bottom: 1px solid var(--rule-2); font: 700 var(--fs-row)/1 var(--cond); }
 #mWrap .m-rows b { font-weight: 800; }
@@ -148,6 +151,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     <div class="m-card" id="mCard" role="dialog" aria-labelledby="mCardH" hidden>
       <span class="m-kick"></span><h2 id="mCardH"></h2><p class="m-sub"></p>
       <div class="m-rows"></div>
+      <span class="m-rate" hidden></span>
       <span class="m-st"></span>
       <button type="button" class="m-prim m-go"></button>
       <div class="m-btns"><button type="button" class="m-full" hidden></button><button type="button" class="m-leave"></button></div>
@@ -160,7 +164,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
   const R = { card: q(wrap, '#mRoom') }, C = { card: q(wrap, '#mCard') }, banner = q(wrap, '#mBanner'), note = q(wrap, '#mNote');
   for (const k of ['kick', 'set', 'linkK', 'ppl', 'nameBox', 'nameK', 'st', 'start', 'signin', 'retry', 'leave', 'share', 'join']) R[k] = q(R.card, '.m-' + k);
   R.h = q(R.card, 'h2'); R.link = q(R.card, '.m-link input'); R.name = q(R.card, '.m-name input'); R.linkBox = q(R.card, '.m-linkBox');
-  for (const k of ['kick', 'sub', 'rows', 'st', 'go', 'full', 'leave']) C[k] = q(C.card, '.m-' + k);
+  for (const k of ['kick', 'sub', 'rows', 'rate', 'st', 'go', 'full', 'leave']) C[k] = q(C.card, '.m-' + k);
   C.h = q(C.card, 'h2');
   const txt = (el, s) => { s = String(s ?? ''); if (el._t !== s) { el._t = s; el.textContent = s; } };
   const show = (el, on) => { if (el.hidden === !!on) el.hidden = !on; };
@@ -177,6 +181,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
   const look = boat && typeof boat === 'object' ? Object.fromEntries(Object.entries(boat).filter(([k]) => k !== 'logoImg')) : null; // her look, less the picture of a logo saved before the logos became the admin's
   let isHost = false, hostSettings = null; // (known once match.js is in: connect())
   let needsAccount = false; // this device made the race, but the site says nobody is signed in: no room, only the question
+  let signedIn = false; // the site says this sailor is signed in (/connect canHost): only then is there a rating to ask after
   sweepSaved();
 
   // ---------- the state of the screen ----------
@@ -247,6 +252,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
       try { cfg = await fetch('/connect', { cache: 'no-store', credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)); } catch (e) {}
       if (!cfg || !cfg.url || !cfg.key) { error = 'connect'; return; }
       if (cfg.name) myName = clean(cfg.name) || myName; // signed in: the account's name
+      signedIn = cfg.canHost === true;
       build = typeof cfg.build === 'string' ? cfg.build : null;
       let net;
       [net, M, W, Log] = await Promise.all([import('./net.js'), import('./match.js'), import('./wire.js'), import('./duel-log.js').catch(() => null)]);
@@ -346,7 +352,12 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
   // this screen's record of the race, kept once, as it has the results (a reload finds its id: resultId)
   const keep = (c, results) => {
     if (c.rid || savedRid(c.seed)) return;
-    try { c.rid = keepOneOnOne(c.race, results); store(RESULT_KEY, { code, seed: c.seed, id: c.rid }); } catch (e) { console.error(e); }
+    try { c.rid = keepOneOnOne(c.race, results); store(RESULT_KEY, { code, seed: c.seed, id: c.rid }); markDuel(c.rid, c.seed); } catch (e) { console.error(e); }
+  };
+  // the record names its race, so the result page can ask what it did to the rating (components/duel-rating.tsx)
+  const markDuel = (id, seed) => {
+    if (!id) return;
+    try { const k = 'regatta-result-' + id, rec = JSON.parse(localStorage.getItem(k) || 'null'); if (rec && typeof rec === 'object') localStorage.setItem(k, JSON.stringify({ ...rec, duel: { code, seed } })); } catch (e) {}
   };
   const savedRid = (seed) => { const v = store(RESULT_KEY); return v && v.code === code && v.seed === seed ? v.id : null; };
   const resultId = () => (match ? (onScreen() && cur.rid) || savedRid(match.start.seed) : null);
@@ -396,6 +407,34 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
       if (p) Log.report(Log.perfBody(match, code, isHost ? 'host' : 'guest', p, (c.H || c.G)?.net() ?? null));
     } catch (e) { console.error(e); }
   };
+  // what the race did to this sailor's rating (GET /connect/rating), asked once the race is over and both screens may have
+  // told its end, every RATE_EVERY_MS while the answer is "waiting", for RATE_FOR_MS at the most; its line goes on the card
+  const rated = new Map(); // seed -> { line, delta, done, at, busy }
+  const askRating = () => {
+    if (!signedIn || !match || match.state !== 'over' || phase !== 'card') return;
+    const seed = match.start.seed, now = Date.now();
+    let r = rated.get(seed);
+    if (!r) rated.set(seed, (r = { line: null, delta: 0, done: false, at: 0, first: now, busy: false }));
+    if (r.done || r.busy || now - r.at < RATE_EVERY_MS) return;
+    if (now - r.first > RATE_FOR_MS) { r.done = true; return; }
+    r.busy = true; r.at = now;
+    let asking;
+    try { asking = fetch(`/connect/rating?code=${encodeURIComponent(code)}&seed=${seed}&lang=${encodeURIComponent(LANG)}`, { cache: 'no-store', credentials: 'same-origin' }); } catch (e) { r.busy = false; return; }
+    Promise.resolve(asking).then((x) => (x?.ok ? x.json() : null))
+      .then((j) => {
+        if (!j) return;
+        r.line = typeof j.line === 'string' ? j.line : null;
+        r.delta = j.status === 'rated' && Number.isFinite(j.me?.delta) ? j.me.delta : 0;
+        if (j.status !== 'waiting') r.done = true;
+      }, () => {})
+      .finally(() => { r.busy = false; });
+  };
+  const paintRating = () => {
+    const r = match && rated.get(match.start.seed);
+    txt(C.rate, r?.line || ''); show(C.rate, !!r?.line);
+    C.rate.classList.toggle('up', !!r && r.delta > 0); C.rate.classList.toggle('down', !!r && r.delta < 0);
+  };
+
   // the guest: her joining this race, once, with the token that will prove her end hers
   const tellJoin = () => {
     const seed = match.start.seed;
@@ -500,6 +539,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     txt(C.sub, r.abandoned ? L.notScored : r.forfeited ? L.forfeit(r.forfeited === myId ? t('you') : nameOf(r.forfeited)) : '');
     show(C.sub, !!C.sub._t);
     paintRows(r);
+    askRating(); paintRating();
     show(C.full, !r.abandoned && !!resultId());
     if (old) { // another build on the other screen: a reload, not a race
       show(C.go, true); txt(C.go, L.reload);
