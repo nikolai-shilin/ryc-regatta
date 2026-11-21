@@ -67,6 +67,7 @@ export function RaceBoard({ lang, t, day, venue, data, duel }: { lang: Lang; t: 
 
           <div className="rb-p rb-p-month">
             <MyMonth day={day} lang={lang} />
+            <Link className="rb-link" href="/race/month">{t('Your month, day by day', 'Твой месяц по дням', 'Tu mes, día a día', 'Dein Monat, Tag für Tag', 'Ayın, gün gün', 'Ton mois, jour par jour', 'Il tuo mese, giorno per giorno', 'Seu mês, dia a dia')} ›</Link>
             {!data ? down : data.month.rows.length ? (
               <ol className="rt-lb rt-lb-m rb-lb">
                 {data.month.rows.slice(0, 50).map((r, i) => (

@@ -16,7 +16,7 @@ mock('next/image', `import { createElement } from 'react';
 export const getImageProps = ({ fill, priority, ...p }) => ({ props: { ...p, srcSet: p.src } });
 export default function Image({ fill, priority, ...p }) { return createElement('img', p); }`);
 let user = null;
-globalThis.__sb = { auth: { getUser: async () => ({ data: { user } }) }, rpc: async () => ({ data: false }), from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }) }) };
+globalThis.__sb = { auth: { getUser: async () => ({ data: { user } }), getClaims: async () => ({ data: null }), getSession: async () => ({ data: { session: null } }) }, rpc: async () => ({ data: false }), from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }) }) };
 globalThis.fetch = async () => new Response('{}', { status: 503 });
 
 const DAY = '2026-11-18', SITE = 'https://www.sailupdown.com';
@@ -195,7 +195,7 @@ user = null;
 const indexed = sweep.filter((p) => p.meta.robots?.index !== false);
 
 test('every page was opened, in both languages', () => {
-  assert.equal(new Set(sweep.map((p) => p.route)).size, 41); // (41: /help/race, today's race explained)
+  assert.equal(new Set(sweep.map((p) => p.route)).size, 42); // (42: /race/month, your month day by day)
   assert.equal(sweep.length % 2, 0);
 });
 
