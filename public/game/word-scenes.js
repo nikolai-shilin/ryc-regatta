@@ -13,6 +13,7 @@ import { Boat, KN, D2R, clamp, lerp, wrap, beatAngle, runAngle, polarSpeed, rng,
 import { CLS } from './classes.js';
 import { labelSprite } from './yacht.js';
 import { OVERLAY } from './post.js';
+import { officer, Flag, tube, rod, RoundedBoxGeometry } from './committee.js';
 
 const STEP = 1 / 60;
 const LANG_AT = { en: 0, ru: 1, es: 2, de: 3, tr: 4, fr: 5, it: 6, pt: 7 };
@@ -54,7 +55,7 @@ const tagIn = (k, lang) => (TAGS[k] ? TAGS[k][LANG_AT[lang] ?? 0] ?? TAGS[k][0] 
 // Places in boat lengths (S.L) from the course's marks; "up" is towards the wind, "right" to the right looking up it.
 // A boat: at (where she is at the scene's start), tack (+1 starboard, −1 port), twa (degrees off the wind), hold (the
 // angle she's steered to, twa by default; null: the helm left alone), kite, tag, warn (a red tag), you (your boat).
-// A camera: on (a boat, or two: their middle) or at (a place); r (what has to fit, in lengths, round it); el (degrees
+// A camera: on (a boat, or two: their middle; rib: that share of the way to the umpire's boat) or at (a place); r (what has to fit, in lengths, round it); el (degrees
 // above the water); az (degrees round from behind her, or from downwind with wind: true or a place); spin (°/s).
 // arrow: the wind's arrow on the water, alongside what the camera's on, on the side away from the other boat (true,
 // or how many lengths off), or upwind of it ({ up: lengths, scale }); square: the
@@ -208,7 +209,7 @@ const SCENES = {
   umpire: (S) => {
     const h = S.h(1, S.bt);
     return { boats: [{ at: S.o, tack: -1, twa: S.bt, hold: null, tag: 'penalty', pen: true }, { at: S.o, tack: 1, twa: S.bt, tag: 'stbd', ...off(S.fwd(h), 2.6 * S.L, S.stb(h), -1.2 * S.L) }],
-      cam: { on: 0, r: 2.4, el: 28, az: 25, wind: true }, T: 18, umpire: { by: 0, at: [-1.7, -0.6] },
+      cam: { on: 0, r: 1.5, el: 22, az: 35, wind: true, rib: 0.55 }, T: 18, umpire: { by: 0, at: [-1.5, -0.4] },
       tick: (t, [b]) => { b.rudder = t > 0.6 && b.pen ? -1 : 0; if (!b.pen) { b.hold = S.bt; b.tag = null; } } };
   },
   'starting-signal': (S) => SCENES['start-line'](S),
@@ -366,31 +367,81 @@ export function createStage({ world, race, lang = 'en' }) {
   const squareTag = labelSprite('#ffffff'); squareTag.layers.set(OVERLAY); squareTag.visible = false; world.scene.add(squareTag);
   windTag.userData.set(tagIn('wind', lang), false);
   squareTag.userData.set(tagIn('square', lang), false);
-  // the umpire's boat: a grey RIB, its driver at the console, the umpire standing with the flag up
+  // the umpire's boat: a RIB five metres long, her bow to −z: a white moulded hull with a deep vee, grey tubes round
+  // her with a black rubbing strake, a non-slip deck, a console with its windscreen, wheel and aerial, a jockey seat
+  // and an outboard; the driver at the wheel and the umpire behind him, standing, the flag up in the colour of the boat
+  // she penalises (the race's officers, committee.js)
   let rib = null;
   const makeRib = () => {
-    const g = new THREE.Group(), mat = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, ...o });
-    const hs = new THREE.Shape(); // the hull from above, her bow to −z
-    [[0, -2.4], [0.9, -1.3], [1, 0.9], [0.95, 2.3], [-0.95, 2.3], [-1, 0.9], [-0.9, -1.3]].forEach(([x, z], i) => (i ? hs.lineTo(x, z) : hs.moveTo(x, z)));
-    hs.closePath();
-    const hull = new THREE.ExtrudeGeometry(hs, { depth: 0.35, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.2, bevelSegments: 3 });
-    hull.rotateX(Math.PI / 2); hull.translate(0, 0.55, 0);
-    g.add(new THREE.Mesh(hull, mat('#3a4048')));
-    const box = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c)); m.position.set(x, y, z); g.add(m); return m; };
-    box(0.7, 0.75, 0.5, '#e9edf0', 0, 1.0, 0.2); // the console
-    box(0.45, 0.7, 0.4, '#15181c', 0, 0.75, 2.45); // the outboard
-    const person = (x, z, jacket) => {
-      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.21, 0.6, 4, 8), mat(jacket)); body.position.set(x, 1.25, z); g.add(body);
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 8), mat('#d9ab8c')); head.position.set(x, 1.82, z); g.add(head);
-      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat('#14223a')); cap.position.set(x, 1.86, z); g.add(cap);
-    };
-    person(0, 0.85, '#14223a'); // the driver
-    person(0.35, 1.55, '#e8462a'); // the umpire
-    const staff = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 2.1, 6), mat('#cfd4d8')); staff.position.set(0.62, 2.2, 1.55); g.add(staff);
-    const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.62), new THREE.MeshStandardMaterial({ color: '#3db8ff', side: THREE.DoubleSide, roughness: 0.8 }));
-    flag.position.set(0.62 + 0.48, 2.95, 1.55); g.add(flag);
-    const tag = labelSprite('#ffffff'); tag.layers.set(OVERLAY); tag.position.set(0, 3.6, 0); tag.userData.set(tagIn('umpire', lang), false); g.add(tag);
-    g.userData.flag = flag; g.visible = false; world.scene.add(g);
+    const g = new THREE.Group(), std = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.6, ...o });
+    const M = { hull: std('#eef0f1', { roughness: 0.35 }), tube: std('#59616a', { roughness: 0.55 }), strake: std('#1b1d20', { roughness: 0.5 }),
+      deck: std('#b9bec2', { roughness: 0.9 }), white: std('#f4f5f6', { roughness: 0.4 }), dark: std('#202327', { roughness: 0.45 }),
+      seat: std('#2c3138', { roughness: 0.8 }), glass: new THREE.MeshPhysicalMaterial({ color: '#9fb6c4', roughness: 0.05, transmission: 0.6, transparent: true, opacity: 0.45 }),
+      steel: std('#c9ced2', { metalness: 0.8, roughness: 0.3 }) };
+    const add = (geo, m, x = 0, y = 0, z = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; g.add(o); return o; };
+    // the hull, lofted through its sections: a half-breadth and a keel at each station, fine at the bow
+    const Z0 = -2.45, Z1 = 2.4, N = 14, sec = [];
+    for (let i = 0; i <= N; i++) {
+      const z = lerp(Z0, Z1, i / N), f = clamp((z - Z0) / 1.9, 0, 1), b = 0.86 * Math.sqrt(f) + 0.01, keel = lerp(0.3, -0.32, Math.min(1, f * 1.3));
+      sec.push([[-b, 0.34], [-b * 0.97, 0.06], [-b * 0.45, keel + 0.08], [0, keel], [b * 0.45, keel + 0.08], [b * 0.97, 0.06], [b, 0.34]].map(([x, y]) => [x, y, z]));
+    }
+    const pos = [], idx = [];
+    sec.forEach((r) => r.forEach((q) => pos.push(...q)));
+    const W = sec[0].length;
+    for (let i = 0; i < N; i++) for (let j = 0; j < W - 1; j++) { const a = i * W + j, b = a + W; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+    const last = N * W; // the transom
+    pos.push(0, 0.34, Z1); const c = pos.length / 3 - 1;
+    for (let j = 0; j < W - 1; j++) idx.push(last + j, c, last + j + 1);
+    const hull = new THREE.BufferGeometry(); hull.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); hull.setIndex(idx); hull.computeVertexNormals();
+    add(hull, new THREE.MeshStandardMaterial({ color: '#eef0f1', roughness: 0.35, side: THREE.DoubleSide }));
+    // the tubes, round her from the stern on one side to the stern on the other, their ends coned
+    const path = [[0.92, 2.45], [0.97, 1.4], [0.97, 0], [0.9, -1.05], [0.66, -1.95], [0.3, -2.5], [0, -2.62]];
+    const loop = [...path.map(([x, z]) => [x, z]), ...path.slice(0, -1).reverse().map(([x, z]) => [-x, z])];
+    add(tube(loop.map(([x, z], i) => [x, 0.5 + (z < -1.5 ? (-1.5 - z) * 0.08 : 0), z]), 0.27, false, 16), M.tube);
+    add(tube(loop.map(([x, z]) => [x * 1.06 + Math.sign(x) * 0.12, 0.3 + (z < -1.5 ? (-1.5 - z) * 0.08 : 0), z - (z < -2 ? 0.12 : 0)]), 0.045, false, 6), M.strake);
+    for (const x of [-0.92, 0.92]) { const cone = add(new THREE.ConeGeometry(0.27, 0.34, 16).rotateX(Math.PI / 2), M.tube, x, 0.5, 2.62); cone.rotation.y = Math.PI; }
+    // a grab line along the top of each tube
+    for (const k of [-1, 1]) add(tube([[0.98 * k, 0.8, 1.9], [1.02 * k, 0.79, 0.6], [1, 0.79, -0.6].map((v, i) => (i ? v : v * k)), [0.86 * k, 0.79, -1.4]], 0.018, false, 5), M.strake);
+    // the deck, inside the tubes
+    const ds = new THREE.Shape(); [[0.7, 2.35], [0.72, 0], [0.6, -1.1], [0.3, -1.9], [-0.3, -1.9], [-0.6, -1.1], [-0.72, 0], [-0.7, 2.35]].forEach(([x, z], i) => (i ? ds.lineTo(x, -z) : ds.moveTo(x, -z)));
+    add(new THREE.ShapeGeometry(ds).rotateX(-Math.PI / 2), M.deck, 0, 0.36, 0);
+    // the console: its box, the windscreen raked over its front, a dash, the wheel, the aerial; the grab rail round it
+    const conZ = -0.25;
+    add(RoundedBoxGeometry(0.66, 0.82, 0.62, 3, 0.07), M.white, 0, 0.77, conZ);
+    const glass = add(new THREE.PlaneGeometry(0.64, 0.34), M.glass, 0, 1.3, conZ - 0.2); glass.rotation.x = -0.55;
+    add(new THREE.BoxGeometry(0.5, 0.06, 0.24), M.dark, 0, 1.2, conZ + 0.06).rotation.x = 0.35;
+    const wheelM = add(new THREE.TorusGeometry(0.15, 0.022, 8, 24), M.dark, 0.08, 1.07, conZ + 0.36); wheelM.rotation.x = -0.75;
+    add(rod([0.25, 1.18, conZ + 0.1], [0.25, 2.5, conZ + 0.1], 0.012), M.white);
+    add(tube([[-0.36, 0.5, conZ + 0.36], [-0.38, 1.0, conZ + 0.3], [-0.36, 1.2, conZ - 0.1], [-0.36, 1.0, conZ - 0.36]], 0.018, false, 5), M.steel);
+    add(tube([[0.36, 0.5, conZ + 0.36], [0.38, 1.0, conZ + 0.3], [0.36, 1.2, conZ - 0.1], [0.36, 1.0, conZ - 0.36]], 0.018, false, 5), M.steel);
+    // the jockey seat behind it, and the fuel tank under the umpire's feet
+    add(RoundedBoxGeometry(0.52, 0.5, 0.5, 3, 0.06), M.seat, 0, 0.62, conZ + 0.95);
+    add(RoundedBoxGeometry(0.56, 0.12, 0.54, 3, 0.05), M.dark, 0, 0.92, conZ + 0.95);
+    add(RoundedBoxGeometry(0.5, 0.22, 0.4, 2, 0.05), M.dark, -0.3, 0.47, 1.95);
+    // the outboard on the transom: its cowling, the leg into the water, the tiller arm
+    add(RoundedBoxGeometry(0.44, 0.52, 0.64, 3, 0.12), M.dark, 0, 0.98, 2.62);
+    add(RoundedBoxGeometry(0.17, 1.15, 0.26, 2, 0.04), M.dark, 0, 0.18, 2.72);
+    add(new THREE.BoxGeometry(0.32, 0.035, 0.36), M.dark, 0, -0.12, 2.74); // the cavitation plate, just under the water
+    add(new THREE.CylinderGeometry(0.06, 0.05, 0.3, 10).rotateX(Math.PI / 2), M.dark, 0, -0.32, 2.78); // the propeller's hub
+    add(new THREE.BoxGeometry(0.46, 0.05, 0.12), M.steel, 0, 0.72, 2.34);
+    // the crew: the driver at the wheel, the umpire standing behind him, his arm up with the flag
+    const ahead = Math.PI / 2; // an officer faces +x: this turns him to look over the bow
+    const driver = officer(0, '#1d3557', 'wheel');
+    driver.g.position.set(0, 0.36 + 0.94 * 1.1 - 0.05, conZ + 0.74); driver.g.rotation.y = ahead; g.add(driver.g);
+    driver.arms[0].rotation.set(0.28, 0, 0.62); driver.arms[1].rotation.set(-0.28, 0, 0.62); // his hands down on the wheel
+    const ump = officer(2, '#d8342b', 'halyard');
+    ump.g.position.set(0.32, 0.36 + 0.94 * 1.1, 1.45); ump.g.rotation.y = ahead - 0.35; g.add(ump.g);
+    g.updateMatrixWorld(true);
+    // the staff upright in his raised hand, and the flag at its head
+    const hand = ump.wrists[1].localToWorld(new THREE.Vector3(0, -0.06, 0));
+    const top = hand.clone().add(new THREE.Vector3(0, 1.1, 0)), low = hand.clone().add(new THREE.Vector3(0, -0.45, 0));
+    add(rod(low.toArray(), top.toArray(), 0.018), M.steel);
+    const flag = new Flag(null, 1.1, 0.75); flag.mat.color.set('#3db8ff');
+    flag.pivot.position.copy(top); g.add(flag.pivot);
+    g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    const tag = labelSprite('#ffffff'); tag.layers.set(OVERLAY); tag.position.set(0, 3.9, 0); tag.userData.set(tagIn('umpire', lang), false); g.add(tag);
+    g.userData.flag = flag.mesh; g.userData.flagObj = flag; g.userData.hand = hand;
+    g.visible = false; world.scene.add(g);
     return g;
   };
   let ribAt = null;
@@ -483,7 +534,8 @@ export function createStage({ world, race, lang = 'en' }) {
   function shot(cam, cl, time) {
     const C = def?.cam; if (!C) return;
     const bs = stage.boats, on = C.on == null ? null : [].concat(C.on).map((i) => bs[i]).filter(Boolean);
-    const p = on?.length ? { x: on.reduce((s, b) => s + b.x, 0) / on.length, z: on.reduce((s, b) => s + b.z, 0) / on.length } : C.at;
+    let p = on?.length ? { x: on.reduce((s, b) => s + b.x, 0) / on.length, z: on.reduce((s, b) => s + b.z, 0) / on.length } : C.at;
+    if (C.rib && rib?.visible && ribAt) p = { x: lerp(p.x, rib.position.x, C.rib), z: lerp(p.z, rib.position.z, C.rib) }; // (the umpire's boat in the picture too)
     const head = on?.length && !C.wind ? on[0].h : W;
     camH = camH == null ? head : camH + wrap(head - camH) * cl(0.9);
     const ph = camH + (C.az + (C.spin || 0) * time) * D2R, el = C.el * D2R;
@@ -530,8 +582,8 @@ export function createStage({ world, race, lang = 'en' }) {
         const [r1, a1] = def.umpire.at, f1 = fwd(ribAt.h), s1 = stb(ribAt.h);
         ribAt.x += (b.x - ribAt.x) * cl(2); ribAt.z += (b.z - ribAt.z) * cl(2);
         const x = ribAt.x + s1.x * r1 * L + f1.x * a1 * L, z = ribAt.z + s1.z * r1 * L + f1.z * a1 * L;
-        rib.position.set(x, waveHeight(world.W, x, z, time) * 0.8, z); rib.rotation.y = -ribAt.h;
-        rib.userData.flag.rotation.y = Math.sin(time * 5) * 0.25;
+        rib.position.set(x, waveHeight(world.W, x, z, time) * 0.8 - 0.1, z); // her tubes just clear of the water rib.rotation.y = -ribAt.h;
+        rib.userData.flagObj.update(time, ribAt.h - (W + shiftNow), tws * 0.514); // flying down the wind
       }
     }
     stern.visible = !!def.stern && !!bs[def.stern];
