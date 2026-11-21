@@ -19,7 +19,10 @@ import { DuelHour } from './duel-hour';
 import { hourAt } from '@/lib/duel-hour';
 import { parseMine, type MyRating } from '@/lib/duel-rating';
 import { parseCalls, parseNear, type Call, type Near } from '@/lib/duel-page';
-import { RatingPanel, ReadyTable, OpenCalls, LastRaces, NearTable, Card } from './duel-page';
+import { HudCells, ReadyTable, OpenCalls, LastRaces, NearTable, RATING_HREF } from './duel-page';
+import { GameScene } from './game-scene';
+import { BackLink } from './back-link';
+import { SceneBrand } from './scene-brand';
 import type { ReactNode } from 'react';
 import '@/styles/duel-rating.css';
 import '@/styles/duel-page.css';
@@ -342,12 +345,12 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
   ) : null;
   // who: find one, a friend's link, or an open call for any chat
   const who = (
-    <div className="dp-who-seg">
-      <span className="lbl">{t('Who', 'С кем', 'Con quién', 'Mit wem', 'Kiminle', 'Avec qui', 'Con chi', 'Com quem')}</span>
-      <div className="dp-seg">
-        <span className="on">{t('Find one', 'Найти', 'Buscar', 'Finden', 'Bul', 'En trouver un', 'Trovane uno', 'Encontrar')}</span>
-        <Link href="/match/new">{t('A friend', 'Друг', 'Un amigo', 'Ein Freund', 'Bir arkadaş', 'Un ami', 'Un amico', 'Um amigo')}</Link>
-        <button type="button" onClick={postCall}>{t('Open call', 'Открытый вызов', 'Reto abierto', 'Offene', 'Açık çağrı', 'Appel ouvert', 'Sfida aperta', 'Desafio aberto')}</button>
+    <div className="bt-g">
+      <span className="bt-k" id="dp-who">{t('Who', 'С кем', 'Con quién', 'Mit wem', 'Kiminle', 'Avec qui', 'Con chi', 'Com quem')}</span>
+      <div className="bt-pills" role="group" aria-labelledby="dp-who">
+        <span className="bt-pill" aria-checked="true" role="radio">{t('Find one', 'Найти', 'Buscar', 'Finden', 'Bul', 'En trouver un', 'Trovane uno', 'Encontrar')}</span>
+        <Link className="bt-pill" href="/match/new">{t('A friend', 'Друг', 'Un amigo', 'Ein Freund', 'Bir arkadaş', 'Un ami', 'Un amico', 'Um amigo')}</Link>
+        <button type="button" className="bt-pill" onClick={postCall}>{t('Open call', 'Открытый вызов', 'Reto abierto', 'Offene', 'Açık çağrı', 'Appel ouvert', 'Sfida aperta', 'Desafio aberto')}</button>
       </div>
     </div>
   );
@@ -424,9 +427,6 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
       {easy}
       {wish}
       {wishNote}
-      <div className="df-acts">
-        <button type="button" className="bt-go df-go dp-go" onClick={find}><IconPlay /><span>{t('Find a race', 'Найти гонку', 'Buscar una regata', 'Regatta finden', 'Yarış bul', 'Trouver une régate', 'Trova una regata', 'Encontrar uma regata')}</span><span className="dp-go-sub">{t('~4 min race', 'гонка ~4 мин', 'regata de ~4 min', '~4 Min. Regatta', '~4 dk yarış', 'régate de ~4 min', 'regata di ~4 min', 'regata de ~4 min')}</span></button>
-      </div>
     </div>
   );
   })();
@@ -439,29 +439,53 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
   const heroP = t('One race, one rival, the same wind. Win and your rating goes up; beat someone stronger and it goes up more.', 'Одна гонка, один соперник, один ветер. Победишь — рейтинг вырастет; победишь сильнее себя — вырастет больше.', 'Una regata, un rival, el mismo viento. Gana y tu rating sube; vence a alguien más fuerte y sube más.', 'Eine Regatta, ein Gegner, derselbe Wind. Gewinnst du, steigt deine Wertung; schlägst du jemand Stärkeren, steigt sie mehr.', 'Bir yarış, bir rakip, aynı rüzgâr. Kazan, reytingin yükselsin; daha güçlüsünü yen, daha çok yükselsin.', 'Une régate, un adversaire, le même vent. Gagne et ton classement monte ; bats plus fort que toi et il monte davantage.', 'Una regata, un avversario, lo stesso vento. Vinci e il tuo rating sale; batti qualcuno più forte e sale di più.', 'Uma regata, um adversário, o mesmo vento. Vença e seu rating sobe; vença alguém mais forte e sobe mais.');
   const readyLine = readyN > 0 ? t(` ${readyN} ready now.`, ` Сейчас готовы: ${readyN}.`, ` ${readyN} listos ahora.`, ` ${readyN} jetzt bereit.`, ` Şu an ${readyN} kişi hazır.`, ` ${readyN} prêts maintenant.`, ` ${readyN} pronti ora.`, ` ${readyN} prontos agora.`) : '';
   const idle = phase === 'idle' || phase === 'missed' || phase === 'error';
+  const nearN = list.filter((r) => Math.abs(r.rating - me) <= 100).length;
+  // Find a race, docked at the top of the card as the race hub's action is, over the set-up that scrolls under it
+  const findBtn = (
+<button type="button" className="bt-go df-go dp-go" onClick={find}><IconPlay /><span>{t('Find a race', 'Найти гонку', 'Buscar una regata', 'Regatta finden', 'Yarış bul', 'Trouver une régate', 'Trova una regata', 'Encontrar uma regata')}</span><span className="dp-go-sub">{t('~4 min race', 'гонка ~4 мин', 'regata de ~4 min', '~4 Min. Regatta', '~4 dk yarış', 'régate de ~4 min', 'regata di ~4 min', 'regata de ~4 min')}</span></button>
+  );
+  const rows = (
+    <nav className="bt-rows" aria-label={t('More', 'Ещё', 'Más', 'Mehr', 'Daha fazla', 'Plus', 'Altro', 'Mais')}>
+      {signed && <Link className="bt-row" href="/duel/rating"><span>{t('Your rating, race by race', 'Твой рейтинг по гонкам', 'Tu rating, regata a regata', 'Deine Wertung, Regatta für Regatta', 'Yarış yarış reytingin', 'Ton classement, régate par régate', 'Il tuo rating, regata per regata', 'Seu rating, regata a regata')}</span></Link>}
+      <Link className="bt-row" href={RATING_HREF}><span>{t('Everyone’s 1-on-1 rating', 'Рейтинг 1 на 1 у всех', 'El rating 1 contra 1 de todos', 'Die 1-gegen-1-Wertung aller', 'Herkesin bire bir reytingi', 'Le classement en duel de tous', 'Il rating 1 contro 1 di tutti', 'O rating 1 contra 1 de todos')}</span></Link>
+      <Link className="bt-row" href="/help/duel"><span>{t('How 1-on-1 races work', 'Как устроены гонки 1 на 1', 'Cómo funcionan las regatas 1 contra 1', 'So funktionieren 1-gegen-1-Regatten', 'Bire bir yarışlar nasıl işler', 'Comment marchent les duels', 'Come funzionano le regate 1 contro 1', 'Como funcionam os duelos')}</span></Link>
+    </nav>
+  );
   return (
     <>
-      <section className="dp-hero">
-        <div className="dp-hero-in hm-page">
-          <div className="dp-hero-l">
-            <span className="lbl dp-kick">{t('1-on-1 race · rated', 'Гонка 1 на 1 · рейтинговая', 'Regata 1 contra 1 · con rating', '1-gegen-1-Regatta · gewertet', 'Bire bir yarış · reytingli', 'Duel · classé', 'Duello 1 contro 1 · valido', 'Duelo 1 contra 1 · vale rating')}</span>
-            <h1 className="dp-h1">{t('Race someone your level', 'Гонка с соперником твоего уровня', 'Regatea con alguien de tu nivel', 'Segle gegen jemanden auf deinem Niveau', 'Seviyende biriyle yarış', 'Régate contre quelqu’un de ton niveau', 'Sfida qualcuno del tuo livello', 'Corra contra alguém do seu nível')}</h1>
-            <p className="dp-lead">{heroP}<b>{readyLine}</b></p>
-            <div className="dp-acts">
-              {!signed ? <a className="dp-btn dp-btn-l" href="/sign-in?next=/duel">{t('Sign in to race', 'Войди, чтобы гоняться', 'Inicia sesión para regatear', 'Zum Segeln anmelden', 'Yarışmak için giriş yap', 'Connecte-toi pour régater', 'Accedi per gareggiare', 'Entre para correr')}</a>
-                : idle ? <button type="button" className="dp-btn dp-btn-l" onClick={find}>{t('Find a race · ±100', 'Найти гонку · ±100', 'Buscar regata · ±100', 'Regatta finden · ±100', 'Yarış bul · ±100', 'Trouver une régate · ±100', 'Trova una regata · ±100', 'Encontrar regata · ±100')}</button>
-                : <a className="dp-btn dp-btn-l" href="#dp-setup">{title}</a>}
-              <Link className="dp-btn dp-btn-g" href="/match/new">{t('Challenge a friend', 'Позвать друга', 'Reta a un amigo', 'Freund herausfordern', 'Arkadaşını çağır', 'Défier un ami', 'Sfida un amico', 'Desafiar um amigo')}</Link>
-              <a className="dp-link" href="/help/duel">{t('How it works', 'Как это устроено', 'Cómo funciona', 'So funktioniert’s', 'Nasıl işler', 'Comment ça marche', 'Come funziona', 'Como funciona')} →</a>
+      {/* the top: a race page over the game's own scene, as the HUD's "/race/free" board draws it: the heading, the HUD's
+          cells, and the card where the race is set up, looked for and found */}
+      <div className="scr bt-scr bc dp-hud">
+        <div className="bt">
+          <GameScene venue="phuket" boat="j70" wind="medium" title={t('A 1-on-1 race’s venue in 3D', 'Место гонки 1 на 1 в 3D', 'La sede de una regata 1 contra 1 en 3D', 'Das Revier einer 1-gegen-1-Regatta in 3D', 'Bire bir yarışın alanı 3D', 'Le plan d’eau d’un duel en 3D', 'Il campo di un duello in 3D', 'A raia de um duelo em 3D')} />
+          <div className="bt-info">
+            <div className="bt-top">
+              <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub', 'Yarış merkezine dön', 'Retour au centre de régate', 'Torna al centro regate', 'Voltar à central de regatas')} />
+              <SceneBrand lang={lang} />
+              <span className="bt-top-r">
+                <span className="bt-tick"><span className="dot-live" aria-hidden="true" />{signed ? t(`1-on-1 · ${readyN} ready now`, `1 на 1 · готовы: ${readyN}`, `1 contra 1 · ${readyN} listos`, `1 gegen 1 · ${readyN} bereit`, `Bire bir · ${readyN} hazır`, `Duel · ${readyN} prêts`, `1 contro 1 · ${readyN} pronti`, `1 contra 1 · ${readyN} prontos`) : t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', 'Duelo 1 contra 1')}</span>
+                <Link className="bt-ico" href="/help/duel" aria-label={t('How 1-on-1 races work', 'Как устроены гонки 1 на 1', 'Cómo funcionan las regatas 1 contra 1', 'So funktionieren 1-gegen-1-Regatten', 'Bire bir yarışlar nasıl işler', 'Comment marchent les duels', 'Come funzionano le regate 1 contro 1', 'Como funcionam os duelos')} title={t('How 1-on-1 races work', 'Как устроены гонки 1 на 1', 'Cómo funcionan las regatas 1 contra 1', 'So funktionieren 1-gegen-1-Regatten', 'Bire bir yarışlar nasıl işler', 'Comment marchent les duels', 'Come funzionano le regate 1 contro 1', 'Como funcionam os duelos')}>?</Link>
+              </span>
             </div>
+            <span className="bt-kick">{t('1-on-1 race · rated', 'Гонка 1 на 1 · рейтинговая', 'Regata 1 contra 1 · con rating', '1-gegen-1-Regatta · gewertet', 'Bire bir yarış · reytingli', 'Duel · classé', 'Duello 1 contro 1 · valido', 'Duelo 1 contra 1 · vale rating')}</span>
+            <h1 className="bt-h bt-hero">{t('Race someone your level', 'Гонка с соперником твоего уровня', 'Regatea con alguien de tu nivel', 'Segle gegen jemanden auf deinem Niveau', 'Seviyende biriyle yarış', 'Régate contre quelqu’un de ton niveau', 'Sfida qualcuno del tuo livello', 'Corra contra alguém do seu nível')}</h1>
+            <p className="bt-p">{heroP}<b>{readyLine}</b></p>
+            <HudCells lang={lang} mine={mine} ready={signed ? readyN : null} near={nearN} />
           </div>
-          <RatingPanel lang={lang} mine={mine} />
+          <section className="bt-card bt-docked dp-card" aria-labelledby="dp-setup">
+            <div className="bt-card-h">
+              <span className="lbl-ink bt-card-t" id="dp-setup">{title}</span>
+              {idle && signed && <Link className="bt-mini" href="/match/new">{t('Challenge a friend', 'Позвать друга', 'Reta a un amigo', 'Freund herausfordern', 'Arkadaşını çağır', 'Défier un ami', 'Sfida un amico', 'Desafiar um amigo')}</Link>}
+            </div>
+            {signed && idle && <div className="bt-dock bt-dock-t">{findBtn}</div>}
+            <div className="bt-body">
+              {body}
+              {rows}
+            </div>
+          </section>
         </div>
-      </section>
+      </div>
       <div className="dp-main hm-page">
-        <Card id="dp-setup" className="dp-setup" title={title}>
-          <div className="dp-body">{body}</div>
-        </Card>
         <div className="dp-side">
           {signed && phase !== 'found' && phase !== 'go' && now}{/* (gone once a match is found: the card is the match) */}
           <DuelHour lang={lang} signed={signed} looking={phase === 'looking'} onFind={find} />

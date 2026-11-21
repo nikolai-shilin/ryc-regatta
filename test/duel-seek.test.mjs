@@ -73,7 +73,7 @@ test('signed out: why an account, Sign in back to here, or a friend instead', ()
 });
 
 test('ready to look, looking, and a long wait offering a friend instead', () => {
-  assert.match(view(), /Set up your race Who Find one A friend Open call Ratings to race 1400 – 1600 ±100 to start\. It widens to ±200 at 0:20 and ±350 at 0:45/);
+  assert.match(view(), /Set up your race Challenge a friend Find a race ~4 min race Who Find one A friend Open call Ratings to race 1400 – 1600 ±100 to start\. It widens to ±200 at 0:20 and ±350 at 0:45/);
   assert.match(view(), /Find a race ~4 min race/);
   assert.match(view({ phase: 'looking', look: { waited: 23, band: 200, online: 3 } }), /Looking for a sailor 0:23 Within 200 of your rating · wider as you wait · 2 other looking now Stop looking/);
   assert.match(view({ phase: 'looking', look: { waited: 50, band: 350, online: 1 } }), /Within 350 of your rating Stop/);
@@ -129,7 +129,7 @@ test('Ready now under the button and while looking: nearest first, level or New,
   assert.match(view({ phase: 'looking', look: { waited: 5, band: 100, online: 3 }, list }), /Stop looking Keep looking if I leave .* Post an open call .* Ready now · 2 .*Cara M\./);
   assert.match(view(), /Ready now · 0 Nobody else is looking right now\. Find a race, and you’re the first one the next sailor sees\./);
   assert.match(view({ note: 'gone' }), /That sailor has just gone: paired with someone else, or stopped looking\. Who Find one/);
-  assert.doesNotMatch(view({ phase: 'found', pair: pairOf(), list }), /Ready now/, 'not over a match found');
+  assert.doesNotMatch(view({ phase: 'found', pair: pairOf(), list }), /Ready now · \d/, 'not under a match found');
   assert.match(plain(renderToStaticMarkup(DuelFinderView({ lang: 'ru', signed: true, phase: 'idle', look: { waited: 0, band: 100, online: 0 }, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop, list }))), /Готовы сейчас · 2 .*Cara M\. ждёт 0:23 Национальный 1900 .* Гонка/);
 });
 
@@ -139,7 +139,7 @@ test('the wishes, a venue and a yacht or Any, and when they count; a signed-out 
   assert.match(html, /<option value="j70">J\/70<\/option>/);
   assert.match(plain(html), /Venue Any .* Yacht Any .* Your wishes count from your fourth rated race; the host’s come first\./);
   const out = plain(renderToStaticMarkup(DuelFinderView({ lang: 'en', signed: false, phase: 'idle', look: { waited: 0, band: 100, online: 0 }, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop, list: parseReady(READY) })));
-  assert.doesNotMatch(out, /Ready now|Venue/);
+  assert.doesNotMatch(out, /Ready now|Venue Any/); // (the scene's menu has Venues, the site's page)
 });
 
 test('POST /connect/seek: call posts with a band it knows and clean wishes; take names a code; a bad code asks nothing', async () => {

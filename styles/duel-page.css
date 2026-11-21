@@ -150,3 +150,31 @@
   .dp-tr > * { padding: 10px 10px; }
   .dpg .dp-btn-l, .dpg .dp-btn-g { height: 48px; font-size: 15px; }
 }
+
+/* the top: a race page over the game's own scene, in the HUD's design (styles/broadcast.css: .bt-scr, .bt, .bt-info,
+   .bt-stats, .bt-card). On the race pages it fills the screen and stays; here it is the page's first screen, and the
+   page goes on under it */
+.dpg .bt-scr.dp-hud { position: relative; inset: auto; height: 100vh; height: 100svh; min-height: 620px; max-height: 1080px; }
+.dpg .dp-hud .bt-p b { color: var(--ink); }
+.dpg .dp-hud .bt-h.bt-hero { max-width: 18ch; }
+/* the cells: the rating and the place open their pages */
+.dpg .dp-stats-hud > .dp-cell-a { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; gap: var(--s-2); padding: var(--s-4) var(--s-5); border-right: 1px solid var(--rule); color: var(--ink); text-decoration: none; }
+.dpg .dp-stats-hud > .dp-cell-a:hover { background: var(--fill-1); }
+.dpg .dp-stats-hud > .dp-cell-a b { font: 700 var(--fs-h3)/1 var(--cond); }
+@container scr (orientation: portrait) { .dpg .dp-stats-hud > .dp-cell-a { padding: var(--s-2) var(--s-3); } .dpg .dp-stats-hud > .dp-cell-a b { font-size: var(--fs-row); } .dpg .dp-stats-hud > :nth-child(4) { display: none; } }
+@container scr (max-height: 500px) and (orientation: landscape) { .dpg .dp-stats-hud > .dp-cell-a b { font-size: var(--fs-title); } }
+/* the card's body: the set-up, the search and Match found, in the card's glass */
+.dpg .dp-card .bt-body > .df { display: flex; flex-direction: column; gap: var(--s-5); }
+.dpg .dp-card .dp-cell { background: var(--fill-1); }
+.dpg .dp-card .dp-grid { background: transparent; }
+.dpg .dp-card .dp-cell select { background: var(--fill-2); }
+.dpg .dp-card .bt-pills { display: flex; flex-wrap: wrap; gap: var(--s-1); }
+.dpg .dp-card .bt-pill { display: inline-flex; align-items: center; text-decoration: none; cursor: pointer; }
+.dpg .dp-card .bt-go.dp-go { margin: 0; }
+.dpg .dp-card .bt-rows { margin: 0 calc(-1 * var(--cp)); }
+/* under the top: the lists, one column at the page's width */
+.dpg .dp-main { display: block; }
+.dpg .dp-main .dp-side { gap: var(--s-6); }
+/* the card under the top bar's ticker, which stands over its column (the race hub's card is short enough to clear it) */
+.dpg .dp-hud .bt-card { align-self: flex-end; max-height: calc(100% - var(--h-m) - var(--s-4)); }
+@container scr (orientation: portrait) { .dpg .dp-hud .bt-card { align-self: stretch; max-height: 56%; } }

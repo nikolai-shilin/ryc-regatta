@@ -14,7 +14,7 @@ const rpc = { calls: {}, near: null, ready: [], err: false };
 mock('@supabase/ssr', 'export const createServerClient = () => globalThis.__sb; export const createBrowserClient = () => globalThis.__sb;');
 globalThis.__sb = { rpc: async (fn) => (rpc.err ? { data: null, error: { message: 'x' } } : { data: fn === 'regatta_calls_open' ? rpc.calls : fn === 'regatta_rating_near' ? rpc.near : fn === 'regatta_ready_now' ? rpc.ready : null, error: null }), auth: { getClaims: async () => ({ data: null }) } };
 const { parseCalls, parseNear } = await import('../lib/duel-page.ts');
-const { RatingPanel, ReadyTable, OpenCalls, LastRaces, NearTable } = await import('../components/duel-page.tsx');
+const { HudCells, ReadyTable, OpenCalls, LastRaces, NearTable } = await import('../components/duel-page.tsx');
 const { DuelFinderView } = await import('../components/duel-finder.tsx');
 const { NextRequest } = await import('next/server');
 const { POST: seek } = await import('../app/connect/seek/route.ts');
@@ -38,16 +38,17 @@ test('the database\'s open calls and rating around you, checked: a bad code, an 
   assert.equal(parseNear({ rows: 'x' }), null);
 });
 
-test('the hero\'s panel: your rating, its level and the bar to the next, record, place and best; provisional without the bar; signed out, how it works', () => {
-  const settled = plain(h(RatingPanel({ lang: 'en', mine: MINE() })));
-  assert.match(settled, /Your 1-on-1 rating/); assert.match(settled, /1558/); assert.match(settled, /Fleet/);
-  assert.match(settled, /42 to Regional/); assert.match(settled, /1600/); assert.match(settled, /24–17/); assert.match(settled, /#198 \/ 1,240/);
-  assert.match(h(RatingPanel({ lang: 'en', mine: MINE() })), /href="\/duel\/rating"/); // (your rating, race by race; everyone's from the rating around you)
-  assert.match(plain(h(RatingPanel({ lang: 'en', mine: MINE() }))), /Your rating, race by race →/);
-  const prov = plain(h(RatingPanel({ lang: 'en', mine: MINE({ rating: 1532, races: 2, wins: 1, losses: 1, place: null }) })));
-  assert.match(prov, /~1532/); assert.match(prov, /Provisional/); assert.match(prov, /2 \/ 5/); assert.doesNotMatch(prov, /to Regional/);
-  assert.match(plain(h(RatingPanel({ lang: 'en', mine: null }))), /Everyone starts at 1500/);
-  assert.match(plain(h(RatingPanel({ lang: 'ru', mine: MINE() }))), /42 до уровня «Региональный»/);
+test('the HUD\'s cells over the scene: your rating and level (or how far into the first five), record, place and who is ready', () => {
+  const settled = h(HudCells({ lang: 'en', mine: MINE(), ready: 6, near: 2 }));
+  assert.match(plain(settled), /^Your rating 1558 Fleet · 42 to Regional Record 24–17 rated races won · lost Place #198 of 1,240 settled Ready now 6 2 at your level$/);
+  assert.match(settled, /^<div class="bt-stats dp-stats-hud">/);
+  assert.match(settled, /<a href="\/duel\/rating" class="dp-cell-a">/, 'the rating opens your rating, race by race');
+  assert.match(settled, /<a href="\/rating#duel" class="dp-cell-a">/, 'the place opens everyone\'s');
+  const prov = plain(h(HudCells({ lang: 'en', mine: MINE({ rating: 1532, races: 2, wins: 1, losses: 1, place: null }), ready: 0, near: 0 })));
+  assert.match(prov, /~1532 Provisional · 2 of 5/); assert.match(prov, /Place – after five rated races/);
+  const guest = plain(h(HudCells({ lang: 'en', mine: null, ready: null, near: 0 })));
+  assert.match(guest, /^1-on-1 rating 1500 Where everyone starts Record – no rated race yet Place – after five rated races$/, 'a visitor: no Ready now, which is read for the signed-in alone');
+  assert.match(plain(h(HudCells({ lang: 'ru', mine: MINE(), ready: 6, near: 2 }))), /Флот · 42 до уровня «Региональный»/);
 });
 
 test('Ready now: a table with level, rating, your chance and what a win or a loss would do; your level alone, or everyone', () => {
@@ -84,7 +85,10 @@ test('the page: the hero, the set-up card with the race\'s settings and the band
   const page = h(DuelFinderView({ lang: 'en', signed: true, phase: 'idle', look: { waited: 0, band: 100, online: 1 }, pair: null, said: false, left: 8, note: '', longWait: false, find: n, stop: n, ready: n, decline: n,
     list: READY, mine: MINE(), near: parseNear(NEAR), calls: parseCalls([CALL]), filter: 'all' }));
   const p = plain(page);
-  assert.match(p, /Race someone your level/); assert.match(p, /2 ready now/); assert.match(p, /Find a race · ±100/); assert.match(p, /Challenge a friend/);
+  assert.match(p, /1-on-1 · 2 ready now/); assert.match(p, /1-on-1 race · rated Race someone your level/); assert.match(p, /Your rating 1558/); assert.match(p, /Challenge a friend/);
+  assert.match(page, /<div class="scr bt-scr bc dp-hud"><div class="bt">/, 'the top: a race page over the game\'s scene, as the HUD\'s race pages are');
+  assert.match(page, /<section class="bt-card bt-docked dp-card" aria-labelledby="dp-setup">/);
+  assert.match(page, /<div class="bt-dock bt-dock-t"><button type="button" class="bt-go df-go dp-go">/, 'Find a race docked at the top of the card');
   assert.match(p, /Set up your race/); assert.match(p, /Find one/); assert.match(p, /Open call/);
   assert.match(p, /Ratings to race1458 – 1658|Ratings to race 1458 – 1658/); assert.match(p, /±200 at 0:20 and ±350 at 0:45/);
   assert.match(p, /Medium/); assert.match(p, /Up and down/); assert.match(p, /Short · 1 lap · ~4 min/);
@@ -96,7 +100,7 @@ test('the page: the hero, the set-up card with the race\'s settings and the band
   const looking = plain(h(DuelFinderView({ lang: 'en', signed: true, phase: 'looking', look: { waited: 25, band: 200, online: 4, near: 2 }, pair: null, said: false, left: 8, note: '', longWait: false, find: n, stop: n, ready: n, decline: n, mine: MINE() })));
   assert.match(looking, /Looking for a sailor/); assert.match(looking, /2 in your band/); assert.match(looking, /1358 – 1758/);
   const guest = plain(h(DuelFinderView({ lang: 'en', signed: false, phase: 'idle', look: { waited: 0, band: 100, online: 0 }, pair: null, said: false, left: 8, note: '', longWait: false, find: n, stop: n, ready: n, decline: n })));
-  assert.match(guest, /Sign in to race/); assert.match(guest, /Everyone starts at 1500/); assert.doesNotMatch(guest, /Ready now/);
+  assert.match(guest, /Sign in to race/); assert.match(guest, /1-on-1 rating 1500 Where everyone starts/); assert.doesNotMatch(guest, /Ready now/);
 });
 
 test('Match found says the whole race: where, the yacht, the wind, the course, the laps and the start', () => {
@@ -120,9 +124,10 @@ test('the routes: Ready now carries the open calls; the rating around you, or nu
   rpc.err = false;
 });
 
-test('the page has the site\'s header with 1-on-1 marked, and For you in its column', () => {
+test('the page: the HUD\'s top bar in place of the site\'s header (as the race pages have it), its footer, and For you under the top', () => {
   const pg = src('app/[lang]/duel/page.tsx');
-  assert.match(pg, /<SiteHead lang=\{lang\} t=\{t\} page="duel" \/>/);
+  assert.doesNotMatch(pg, /<SiteHead/); assert.match(pg, /<SiteFoot lang=\{lang\} t=\{t\} back="\/duel" \/>/);
+  assert.match(src('components/duel-finder.tsx'), /<BackLink href="\/race"/); assert.match(src('components/duel-finder.tsx'), /<SceneBrand lang=\{lang\} \/>/);
   assert.match(pg, /<DuelFinder lang=\{lang\} signed=\{!!account\}>\s*<ForYou lang=\{lang\} \/>/);
   assert.match(src('components/site-chrome.tsx'), /href="\/duel" \{\.\.\.cur\('duel'\)\}/);
 });

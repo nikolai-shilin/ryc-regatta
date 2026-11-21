@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { LOCALE, pick, tx, type Lang } from '@/lib/lang';
-import { levelName, levelOf, nextLevel } from '@/lib/levels';
+import { levelName, nextLevel } from '@/lib/levels';
 import { provisional, shown, stakes, signed as sgn, PROVISIONAL, START } from '@/lib/elo';
 import type { MyRating } from '@/lib/duel-rating';
 import type { Ready } from '@/lib/duel-seek';
@@ -16,46 +16,29 @@ export const RATING_HREF = '/rating#duel';
 
 const dayOf = (at: string, lang: Lang) => new Date(at).toLocaleDateString(LOCALE[lang], { day: 'numeric', month: 'short', timeZone: 'UTC' });
 
-// your 1-on-1 rating, as the hero's panel: the number, the level, the bar to the next, the record, the place and the best
-export function RatingPanel({ lang, mine, name }: { lang: Lang; mine: MyRating | null | undefined; name?: string | null }) {
+// your 1-on-1 rating as the HUD's cells, the race pages' lower third (the HUD canvas's "/race/free" board): the rating
+// and its level (or how many of the first five are done), the record, the place, and who is ready now
+export function HudCells({ lang, mine, ready, near }: { lang: Lang; mine: MyRating | null | undefined; ready: number | null; near: number }) {
   const t = tx(lang), num = (n: number) => n.toLocaleString(LOCALE[lang]);
-  const k = t('Your 1-on-1 rating', 'Твой рейтинг 1 на 1', 'Tu rating 1 contra 1', 'Deine 1-gegen-1-Wertung', 'Bire bir reytingin', 'Ton classement en duel', 'Il tuo rating 1 contro 1', 'Seu rating 1 contra 1');
-  if (mine === undefined) return <div className="dp-panel dp-panel-wait" aria-hidden="true" />;
-  if (!mine) return (
-    <div className="dp-panel">
-      <div className="dp-pt"><span className="lbl">{t('The 1-on-1 rating', 'Рейтинг 1 на 1', 'El rating 1 contra 1', 'Die 1-gegen-1-Wertung', 'Bire bir reyting', 'Le classement en duel', 'Il rating 1 contro 1', 'O rating 1 contra 1')}</span><b className="dp-big">{START}</b></div>
-      <p className="dp-pp">{t(`Everyone starts at ${START}. Your first ${PROVISIONAL} rated races find your level; after them a win moves you up to 32, more against someone stronger.`, `У всех старт с ${START}. Первые ${PROVISIONAL} рейтинговых гонок находят твой уровень; после них победа даёт до 32, больше — против сильного.`, `Todos empiezan en ${START}. Tus primeras ${PROVISIONAL} regatas con rating encuentran tu nivel; después, una victoria sube hasta 32, más contra alguien más fuerte.`, `Alle beginnen bei ${START}. Deine ersten ${PROVISIONAL} gewerteten Regatten finden dein Niveau; danach bringt ein Sieg bis zu 32, mehr gegen Stärkere.`, `Herkes ${START} ile başlar. İlk ${PROVISIONAL} reytingli yarışın seviyeni bulur; sonra bir galibiyet 32’ye kadar, güçlü birine karşı daha fazla getirir.`, `Tout le monde part de ${START}. Tes ${PROVISIONAL} premières régates classées trouvent ton niveau ; ensuite une victoire rapporte jusqu’à 32, plus contre plus fort.`, `Tutti partono da ${START}. Le prime ${PROVISIONAL} regate valide trovano il tuo livello; poi una vittoria vale fino a 32, di più contro chi è più forte.`, `Todos começam em ${START}. Suas primeiras ${PROVISIONAL} regatas valendo rating acham seu nível; depois uma vitória vale até 32, mais contra alguém mais forte.`)}</p>
-      <Link className="dp-pl" href={RATING_HREF}>{t('The whole rating', 'Весь рейтинг', 'El rating completo', 'Die ganze Wertung', 'Tüm reyting', 'Tout le classement', 'Tutto il rating', 'O rating completo')} →</Link>
-    </div>
-  );
-  // the bar to the next level, once the rating is settled (a provisional one is still finding its level)
-  const prov = provisional(mine.races), lv = levelOf(mine.rating), nx = prov ? null : nextLevel(mine.rating);
-  const pct = nx ? Math.max(4, Math.round(nx.at * 100)) : 100;
-  const today = mine.changes.filter((c) => c.at.slice(0, 10) === new Date().toISOString().slice(0, 10)).reduce((a, c) => a + c.delta, 0);
-  const stats: [string, string][] = [
-    [t('Record', 'Счёт', 'Balance', 'Bilanz', 'Skor', 'Bilan', 'Bilancio', 'Retrospecto'), `${mine.wins}–${mine.losses}`],
-    prov
-      ? [t('Rated races', 'Рейтинговых', 'Con rating', 'Gewertet', 'Reytingli', 'Classées', 'Valide', 'Com rating'), `${mine.races} / ${PROVISIONAL}`]
-      : [t('Place', 'Место', 'Puesto', 'Platz', 'Sıra', 'Place', 'Posizione', 'Posição'), mine.place ? `#${num(mine.place)} / ${num(mine.of)}` : '–'],
-    [t('Best', 'Лучший', 'Mejor', 'Bestwert', 'En iyi', 'Meilleur', 'Migliore', 'Melhor'), String(mine.best)],
-  ];
-  return (
-    <Link className="dp-panel" href="/duel/rating">
-      <div className="dp-pt">
-        <span className="dp-pk"><span className="lbl">{name ? `${k} · ${name}` : k}</span>
-          <span className="dp-pn"><b className="dp-big">{shown(mine.rating, mine.races)}</b>{today !== 0 && <b className={today > 0 ? 'dp-up' : 'dp-down'}>{sgn(today)} {t('today', 'сегодня', 'hoy', 'heute', 'bugün', 'aujourd’hui', 'oggi', 'hoje')}</b>}</span></span>
-        <span className="dp-lv">{prov ? t('Provisional', 'Предварительный', 'Provisional', 'Vorläufig', 'Geçici', 'Provisoire', 'Provvisorio', 'Provisório') : levelName(mine.rating, lang)}</span>
-      </div>
-      {nx && (
-        <div className="dp-bar">
-          <span className="dp-track" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
-          <span className="dp-ends"><span className="lbl">{pick(lv.name, lang)}{Number.isFinite(lv.min) ? ` ${lv.min}` : ''}</span><span className="lbl dp-gold">{t(`${nx.to} to ${pick(nx.level.name, lang)}`, `${nx.to} до уровня «${pick(nx.level.name, lang)}»`, `${nx.to} para ${pick(nx.level.name, lang)}`, `${nx.to} bis ${pick(nx.level.name, lang)}`, `${pick(nx.level.name, lang)} için ${nx.to}`, `${nx.to} avant ${pick(nx.level.name, lang)}`, `${nx.to} a ${pick(nx.level.name, lang)}`, `${nx.to} para ${pick(nx.level.name, lang)}`)}</span><span className="lbl">{nx.level.min}</span></span>
-        </div>
-      )}
-      <div className="dp-stats">{stats.map(([a, b]) => <span key={a}><span className="lbl">{a}</span><b>{b}</b></span>)}</div>
-      <span className="dp-pl">{t('Your rating, race by race', 'Твой рейтинг по гонкам', 'Tu rating, regata a regata', 'Deine Wertung, Regatta für Regatta', 'Yarış yarış reytingin', 'Ton classement, régate par régate', 'Il tuo rating, regata per regata', 'Seu rating, regata a regata')} →</span>
-    </Link>
-  );
+  const prov = mine ? provisional(mine.races) : true, nx = mine && !prov ? nextLevel(mine.rating) : null;
+  const cell = (k: string, b: ReactNode, v: string, href?: string) => {
+    const inner = <><span className="bt-sk">{k}</span><b>{b}</b><span className="bt-sv">{v}</span></>;
+    return href ? <Link key={k} href={href} className="dp-cell-a">{inner}</Link> : <div key={k}>{inner}</div>;
+  };
+  const rating = !mine
+    ? cell(t('1-on-1 rating', 'Рейтинг 1 на 1', 'Rating 1 contra 1', '1-gegen-1-Wertung', 'Bire bir reyting', 'Classement en duel', 'Rating 1 contro 1', 'Rating 1 contra 1'), String(START), t('Where everyone starts', 'Старт у всех', 'Donde empiezan todos', 'Hier beginnen alle', 'Herkesin başladığı yer', 'Là où tous commencent', 'Da dove partono tutti', 'Onde todos começam'))
+    : cell(t('Your rating', 'Твой рейтинг', 'Tu rating', 'Deine Wertung', 'Reytingin', 'Ton classement', 'Il tuo rating', 'Seu rating'), shown(mine.rating, mine.races),
+      prov ? t(`Provisional · ${mine.races} of ${PROVISIONAL}`, `Предварительный · ${mine.races} из ${PROVISIONAL}`, `Provisional · ${mine.races} de ${PROVISIONAL}`, `Vorläufig · ${mine.races} von ${PROVISIONAL}`, `Geçici · ${PROVISIONAL} yarışın ${mine.races}.`, `Provisoire · ${mine.races} sur ${PROVISIONAL}`, `Provvisorio · ${mine.races} di ${PROVISIONAL}`, `Provisório · ${mine.races} de ${PROVISIONAL}`)
+        : nx ? `${levelName(mine.rating, lang)} · ${t(`${nx.to} to ${pick(nx.level.name, lang)}`, `${nx.to} до уровня «${pick(nx.level.name, lang)}»`, `${nx.to} para ${pick(nx.level.name, lang)}`, `${nx.to} bis ${pick(nx.level.name, lang)}`, `${pick(nx.level.name, lang)} için ${nx.to}`, `${nx.to} avant ${pick(nx.level.name, lang)}`, `${nx.to} a ${pick(nx.level.name, lang)}`, `${nx.to} para ${pick(nx.level.name, lang)}`)}` : levelName(mine.rating, lang),
+      '/duel/rating');
+  const record = cell(t('Record', 'Счёт', 'Balance', 'Bilanz', 'Skor', 'Bilan', 'Bilancio', 'Retrospecto'), mine ? `${mine.wins}–${mine.losses}` : '–',
+    mine?.races ? t('rated races won · lost', 'побед · поражений', 'ganadas · perdidas', 'gewonnen · verloren', 'kazanılan · kaybedilen', 'gagnées · perdues', 'vinte · perse', 'vencidas · perdidas') : t('no rated race yet', 'рейтинговых гонок пока нет', 'aún sin regatas con rating', 'noch keine gewertete', 'henüz reytingli yarış yok', 'pas encore de régate classée', 'ancora nessuna regata valida', 'ainda sem regata valendo'));
+  const place = cell(t('Place', 'Место', 'Puesto', 'Platz', 'Sıra', 'Place', 'Posizione', 'Posição'), mine?.place ? `#${num(mine.place)}` : '–',
+    mine?.place ? t(`of ${num(mine.of)} settled`, `из ${num(mine.of)}`, `de ${num(mine.of)}`, `von ${num(mine.of)}`, `${num(mine.of)} içinde`, `sur ${num(mine.of)}`, `su ${num(mine.of)}`, `de ${num(mine.of)}`) : t('after five rated races', 'после пяти рейтинговых', 'tras cinco con rating', 'nach fünf gewerteten', 'beş reytingli yarıştan sonra', 'après cinq classées', 'dopo cinque valide', 'depois de cinco valendo'), RATING_HREF);
+  // (who is ready is read for a signed-in sailor alone: a visitor's cells leave it out)
+  const now = ready === null ? null : cell(t('Ready now', 'Готовы сейчас', 'Listos ahora', 'Jetzt bereit', 'Şu an hazır', 'Prêts maintenant', 'Pronti ora', 'Prontos agora'), String(ready),
+    t(`${near} at your level`, `твоего уровня: ${near}`, `${near} de tu nivel`, `${near} auf deinem Niveau`, `seviyende ${near}`, `${near} de ton niveau`, `${near} del tuo livello`, `${near} do seu nível`));
+  return <div className="bt-stats dp-stats-hud">{rating}{record}{place}{now}</div>;
 }
 
 export function Card({ id, title, aside, children, className = '' }: { id: string; title: ReactNode; aside?: ReactNode; children: ReactNode; className?: string }) {
