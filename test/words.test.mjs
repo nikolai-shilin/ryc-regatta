@@ -65,6 +65,11 @@ test('a search folds case and accents, needs every word typed, and puts the term
   // in Russian, Russian words
   assert.ok(find(DATA.ru, 'лейлайн', '', 'ru').some((x) => x.terms.some((y) => y.id === 'layline' && y.shown)));
   assert.ok(find(DATA.de, 'uberlappung', '', 'de').some((x) => x.terms.some((y) => y.id === 'overlap' && y.shown)), 'ü found as u');
+  // and by its English name, which each word in another language has beside it ("Поворот оверштаг (tack)")
+  const tack = find(DATA.ru, 'tack', '', 'ru').flatMap((x) => x.terms).find((y) => y.id === 'tack');
+  assert.ok(tack.shown && tack.named, 'tack finds Поворот оверштаг by name');
+  assert.equal(tack.en, 'tack');
+  assert.equal(DATA.en[0].terms.every((x) => x.length === 3), true, 'none in English');
 });
 
 // ---------- on a page ----------
@@ -158,6 +163,13 @@ test('in Russian, Russian; the title the race gives it', async () => {
   assert.equal($('.wd-g h3 span').textContent, DATA.ru[0].title);
   await type($('.wd-q'), 'зона');
   assert.ok(shownTerms().includes('zone'));
+  // each word's English name beside it, and found by it
+  assert.equal($('.wd-w[data-id="tack"] .wd-en').textContent, '(tack)');
+  assert.equal($('.wd-w[data-id="tack"] .wd-en').lang, 'en');
+  assert.ok(!$('.wd-w[data-id="vmg"] .wd-en'), 'VMG (скорость к цели) says it already');
+  await type($('.wd-q'), 'close-hauled');
+  assert.deepEqual(shownTerms(), ['close-hauled']);
+  assert.equal($('.wd-w[data-id="close-hauled"] .wd-en mark').textContent, 'close-hauled');
 });
 
 test("the words fetched once a page; when they don't come it says so, and tries again on a tap", async () => {
@@ -189,6 +201,7 @@ test('in the race the panel docks beside the water: the first word with a scene 
   assert.equal(views.length, 1, 'the open part of the screen told');
   assert.equal($('.wd-cap').hidden, false);
   assert.equal($('.wd-cap b').textContent, 'Beat');
+  assert.equal($('.wd-cap em').hidden, true, 'in English, no English name beside it');
   assert.equal($('.wd-cap span').textContent, DATA.en[0].title);
   assert.ok($('.wd-w[data-id="beat"]').classList.contains('on'));
   assert.equal($('.wd-w[data-id="beat"] .wd-pick').getAttribute('aria-pressed'), 'true');

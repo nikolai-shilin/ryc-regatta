@@ -34,7 +34,7 @@ export default async function Dictionary({ params }: LangParams) {
   const name = dictName(t);
   const ld = {
     '@context': 'https://schema.org', '@type': 'DefinedTermSet', '@id': url, name, inLanguage: lang, url,
-    hasDefinedTerm: terms.map((x) => ({ '@type': 'DefinedTerm', '@id': SITE + langUrl(dictPath(x.id), lang), url: SITE + langUrl(dictPath(x.id), lang), name: x.term, description: x.def, inDefinedTermSet: url })),
+    hasDefinedTerm: terms.map((x) => ({ '@type': 'DefinedTerm', '@id': SITE + langUrl(dictPath(x.id), lang), url: SITE + langUrl(dictPath(x.id), lang), name: x.term, ...(x.en ? { alternateName: x.en } : {}), description: x.def, inDefinedTermSet: url })),
   };
   const w: DictWords = {
     title: name,
@@ -63,7 +63,7 @@ export default async function Dictionary({ params }: LangParams) {
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <style dangerouslySetInnerHTML={{ __html: WORDS_CSS }} />
       <DictionaryScreen lang={lang} w={w} shown3d={[...SCENES_3D]}
-        groups={groups.map((g) => ({ id: g.id, title: g.title, terms: g.terms.map((x) => ({ id: x.id, term: x.term, def: x.def })) }))} />
+        groups={groups.map((g) => ({ id: g.id, title: g.title, terms: g.terms.map((x) => ({ id: x.id, term: x.term, def: x.def, ...(x.en ? { en: x.en } : {}) })) }))} />
     </div>
   );
 }

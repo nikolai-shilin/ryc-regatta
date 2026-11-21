@@ -5,7 +5,10 @@ import { guide, isGuide } from './guides';
 // "what is a layline", and AI assistants too), with the guide that goes further where there is one. In six groups,
 // each in the order a sailor meets them.
 export type GroupId = 'points-of-sail' | 'right-of-way' | 'wind' | 'start' | 'marks' | 'boat';
-export type Term = { id: string; group: GroupId; term: string; def: string; see?: string };
+// en: the English name, for a reader in another language ("Поворот оверштаг (tack)"): without its own aside ("Tack
+// (to tack)" is "tack"), lower case but for an abbreviation, and left out where the name already has it ("Layline",
+// "VMG (скорость к цели)")
+export type Term = { id: string; group: GroupId; term: string; def: string; see?: string; en?: string };
 
 export function glossaryGroups(t: T): { id: GroupId; title: string; terms: Term[] }[] {
   const all = glossary(t);
@@ -50,7 +53,21 @@ export const SCENES_3D: readonly string[] = [
 export const dictPath = (id?: string) => (id ? `/dictionary/${id}` : '/dictionary');
 export const dictName = (t: T) => t('Sailing dictionary', 'Словарь яхтсмена', 'Diccionario de vela', 'Segelwörterbuch', 'Yelken sözlüğü', 'Dictionnaire de la voile', 'Dizionario della vela', 'Dicionário de vela');
 
+const EN: T = (en) => en;
+const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+export function englishName(en: string): string {
+  const head = en.replace(/\s*\([^)]*\)\s*$/, '');
+  return /^[A-Z]{2,}\b/.test(head) ? head : head[0].toLowerCase() + head.slice(1);
+}
 export function glossary(t: T): Term[] {
+  const own = words(t), en = words(EN);
+  return own.map((x, i) => {
+    const e = englishName(en[i].term);
+    return fold(x.term).includes(fold(e)) ? x : { ...x, en: e };
+  });
+}
+
+function words(t: T): Term[] {
   const terms: Term[] = [
     { id: 'beat', group: 'points-of-sail', term: t('Beat', 'Лавировка', 'Ceñida', 'Kreuz', 'Orsa', 'Bord de près', 'Bolina', 'Orça'), see: '/learn/shifts', def: t(
       'Sailing towards a mark that lies upwind. No boat can sail straight into the wind, so she zigzags towards it, close-hauled on one tack and then the other.',
