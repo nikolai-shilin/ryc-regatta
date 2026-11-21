@@ -185,6 +185,14 @@ test('a day with no races is an empty track in the chart, across a month\'s end'
   assert.match(plain(html({ days }, 'ru')), /31 янв\. Нет гонок/);
 });
 
+test('a day\'s tip opens to the right only from the first 40% of the chart, so on a phone it doesn\'t run off the screen', () => {
+  const days = Array.from({ length: 10 }, (_, i) => ({ d: `2026-11-${String(i + 1).padStart(2, '0')}`, n: 1, fin: 1 }));
+  const fig = /<figure class="adm-days">(.*?)<\/figure>/.exec(html({ days }))[1];
+  assert.match(fig, /--days:10/);
+  const sides = slotsOf(fig).map((s) => (/class="adm-days-tip left"/.test(s) ? 'L' : 'R')).join('');
+  assert.equal(sides, 'RRRRLLLLLL');
+});
+
 test('one day of races is a bar in a week\'s room, on the right, its date said once', () => {
   const fig = /<figure class="adm-days">(.*?)<\/figure>/.exec(html({ days: [{ d: '2026-11-18', n: 1, fin: 1 }] }))[1];
   assert.match(fig, /--days:7/);
