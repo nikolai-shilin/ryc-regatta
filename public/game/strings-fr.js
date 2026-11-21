@@ -6,7 +6,7 @@ export const MAIN = {
   changeRace: 'Changer de régate', leaveHub: 'Retour au centre de régate', quickK: 'Réglages rapides', camK: 'Caméra', sAuto: 'Auto', guidesSw: 'Repères sur l’eau', avK: 'Son et graphismes', wordsK: 'Mots de la voile', startsOver: 'recommence', loadingK: 'On grée le bateau', escResumes: 'Échap pour reprendre',
   leaveK: 'Quitter cette régate ?', leaveTxt: (pl, leg) => `Tu es ${pl} dans le bord ${leg}.`, keepRacing: 'Continuer la régate', doRestart: 'Recommencer', doChange: 'Changer', doLeave: 'Quitter',
   inSeq: 'Tu es dans la procédure de départ.', notKept: 'Le temps et la place de cette régate ne sont pas conservés.',
-  leaveHost: 'La régate est annulée sur les deux écrans.', leaveGuest: (w) => (w ? `Tu abandonnes, et la régate revient à ${w}.` : 'Tu abandonnes, et la régate se termine sans vainqueur.'), leaveHome: 'Ta place reste acquise pour l’autre régatier, mais si tu pars maintenant, tu n’auras pas le résultat complet.',
+  leaveHost: 'La régate est annulée sur les deux écrans.', leaveGuest: (w) => (w ? `Tu abandonnes, et la régate revient à ${w}.` : 'Tu abandonnes, et la régate se termine sans vainqueur.'), leaveBefore: 'Le départ n’a pas encore été donné : si tu pars maintenant, la régate est annulée pour vous deux et rien ne compte.', leaveHome: 'Ta place reste acquise pour l’autre régatier, mais si tu pars maintenant, tu n’auras pas le résultat complet.',
   askK: { restart: 'Recommencer', change: 'Changer de régate', leave: 'Quitter' }, askH: { restart: 'Recommencer cette régate ?', change: 'Changer de régate ?', leave: 'Quitter cette régate ?' },
   askT: { restart: 'Elle reprend depuis la procédure de départ, même parcours, même vent.', change: 'Tu choisis ensuite le plan d’eau, le vent et le parcours, et la régate recommence avec eux.', leave: 'Tu retournes au centre de régate.' },
   sailUp: 'Au près vers', sailDown: (k) => (k ? 'Au portant, sous gennaker, vers' : 'Au portant, gennaker affalé, vers'), sailReach: 'Au largue vers', aheadOf: (n, s) => `${n} a ${s} d’avance.`, leadBy: (s) => `Tu mènes de ${s}.`, leadAlone: 'Tu mènes.',
@@ -117,7 +117,7 @@ export const MAIN = {
 };
 
 export const HUD = {
-  title: 'Up and down', daily: 'Régate du jour', free: 'Régate libre', first: 'Première régate', live: 'En direct', startIn: 'Départ dans', gun: 'Signal',
+  title: 'Up and down', daily: 'Régate du jour', free: 'Régate libre', duel: 'Duel', first: 'Première régate', live: 'En direct', startIn: 'Départ dans', gun: 'Signal',
   bias: 'Biais de la ligne', pinEnd: 'Côté bouée', boatEnd: 'Côté comité', square: 'Équilibrée', line: 'Ligne',
   legOf: (n, N) => `Bord ${n} sur ${N}`, legN: (n) => `Bord ${n}`, legShort: (n, N) => `Bord ${n}/${N}`, up: 'Près', down: 'Portant', reach: 'Largue',
   upwind: 'au près', downwind: 'au portant', reaching: 'au largue', stbd: 'tribord', port: 'bâbord', preStart: 'Pré-départ',

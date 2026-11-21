@@ -309,7 +309,8 @@ test('a page going away sends the end that was waiting', async () => {
   assert.deepEqual(of('end'), []);
   hides.get(x.h.loc)();
   assert.equal(of('end').length, 1);
-  assert.equal(of('end')[0].forfeited, 'guest');
+  // (she left in the start sequence: called off, nothing counts; the end says she was the one who left, before the gun)
+  assert.equal(of('end')[0].state, 'abandoned'); assert.equal(of('end')[0].left, 'guest'); assert.equal(of('end')[0].gun, false);
 });
 
 test('a page going away with the race on says nothing yet: the page opened again will', async () => {

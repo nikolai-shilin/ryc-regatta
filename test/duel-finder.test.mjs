@@ -23,7 +23,7 @@ const race = (v) => v.$$('.df-race')[0];
 
 test('Ready now is read as the page opens and every 10 s after, each sailor with Race', async () => {
   const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
-  assert.match(v.text(), /Ready now Cara M\. National 1900 waiting 0:23 Race/);
+  assert.match(v.text(), /Ready now · 1 .*Cara M\. waiting 0:23 National 1900 .* Race/);
   assert.equal(asks().filter((a) => a.do === 'ready_now').length, 1);
   await tick(10000);
   assert.equal(asks().filter((a) => a.do === 'ready_now').length, 2);
@@ -35,7 +35,7 @@ test('Race on a sailor who has gone says so, reads the list again and leaves the
   answer.ready_now = { list: [] };
   await click(race(v));
   assert.deepEqual(asks().find((a) => a.do === 'challenge'), { do: 'challenge', handle: '3f9a0c1d2e4b', wishes: {} });
-  assert.match(v.text(), /That sailor has just gone.* Find a race .* Nobody else is looking right now/);
+  assert.match(v.text(), /Find a race .*That sailor has just gone.* Nobody else is looking right now/);
   assert.equal(asks().filter((a) => a.do === 'ready_now').length, 2);
   await v.unmount();
 });
@@ -45,7 +45,7 @@ test('Race answered by a match: Match found with the sailor challenged, and the 
   answer.challenge = { status: 'found', pair: PAIR }; answer.seek = { status: 'found', pair: PAIR };
   await click(race(v));
   assert.match(v.text(), /Match found Cara M\. National 1900 about 6 min/);
-  assert.doesNotMatch(v.text(), /Ready now/);
+  assert.doesNotMatch(v.text(), /Ready now · \d/, 'the list gone from under the match');
   await v.unmount();
 });
 
@@ -108,7 +108,7 @@ test('/duel?take= takes that call once, and the address loses it; a call taken a
   let v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
   assert.deepEqual(asks().filter((a) => a.do === 'take'), [{ do: 'take', code: 'K7M2QZ', wishes: {} }]);
   assert.equal(location.search, '');
-  assert.match(v.text(), /That call has been taken: someone else got there first\. .*Find a race/);
+  assert.match(v.text(), /Find a race .*That call has been taken: someone else got there first\./);
   await v.unmount();
   reset({ url: 'https://updown.test/duel?take=K7M2QZ' });
   answer.take = { status: 'found', pair: PAIR };

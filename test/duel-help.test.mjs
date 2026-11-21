@@ -78,7 +78,7 @@ test('open to search, in the sitemap, linked from /duel, the result\'s rating, t
   assert.match(src('app/sitemap.ts'), /\['\/help\/duel', 0\.7\]/);
   assert.match(src('components/site-chrome.tsx'), /<FootLink href="\/help\/duel">/);
   assert.match(src('components/race-board.tsx'), /href="\/help\/duel"/);
-  assert.match(src('app/[lang]/duel/page.tsx'), /href="\/help\/duel"/);
+  assert.match(src('components/duel-finder.tsx'), /href="\/help\/duel"/); // (the 1-on-1 page's hero)
   const rated = renderToStaticMarkup(DuelRatingView({ r: { status: 'rated', side: 'host', me: { before: 1540, after: 1558, delta: 18, races: 9, won: true }, them: { name: 'Anna K.', before: 1600, after: 1582, delta: -18, races: 20 } }, lang: 'en' }));
   assert.match(rated, /href="\/help\/duel#h-rating">How 1-on-1 races work ›/);
   const unrated = renderToStaticMarkup(DuelRatingView({ r: { status: 'unrated', side: 'host', reason: 'limit' }, lang: 'en' }));

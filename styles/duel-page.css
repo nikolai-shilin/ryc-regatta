@@ -1,0 +1,180 @@
+/* The 1-on-1 page as designed (the design canvas "1-on-1 races", board "The 1-on-1 page"; components/duel-finder.tsx,
+   components/duel-page.tsx): a hero over the start photograph with your rating's panel, then the set-up card beside
+   Ready now, the open calls, your last races and the rating around you. No rounded corners; the slanted cut is the shape. */
+.dpg { background: #070d16; }
+.dpg .lbl { font: 600 12px/1.2 var(--cond); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.dpg .dp-up { color: var(--up); }
+.dpg .dp-down { color: var(--down); }
+.dpg .dp-gold { color: var(--gold); }
+
+/* the hero */
+.dp-hero { position: relative; overflow: hidden; padding: 48px 0 40px; background: #03080e url(/images/drone-desk-v10.jpg) center 40% / cover no-repeat; }
+.dp-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(3,8,14,.95) 0%, rgba(3,8,14,.8) 52%, rgba(3,8,14,.45) 100%); }
+.dp-hero-in { position: relative; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 40px; align-items: end; }
+.dp-hero-l { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.dpg .dp-kick { color: var(--you); }
+.dp-h1 { margin: 0; font: 800 clamp(52px, 7vw, 96px)/.86 var(--cond); text-transform: uppercase; text-wrap: balance; }
+.dp-lead { margin: 0; max-width: 620px; font: 500 18px/1.5 var(--sans); color: rgba(255,255,255,.82); }
+.dp-lead b { color: #fff; }
+.dp-acts { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 4px; }
+
+/* buttons: blue with the slanted cut, grey, small; and a text link */
+.dpg .dp-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 44px; padding: 0 28px 0 18px; border: 0; cursor: pointer; text-decoration: none;
+  background: var(--you); color: var(--ink-on); font: 700 14px/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+.dpg .dp-btn:hover { filter: brightness(1.08); }
+.dpg .dp-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.dpg .dp-btn-l { height: 56px; padding: 0 48px 0 24px; font-size: 18px; letter-spacing: .14em; clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%); }
+.dpg .dp-btn-g { height: 56px; padding: 0 20px; background: rgba(255,255,255,.1); color: #fff; clip-path: none; }
+.dpg .dp-btn-s { height: 32px; padding: 0 18px 0 12px; font-size: 12px; }
+.dpg .dp-btn-q { background: rgba(255,255,255,.1); color: #fff; }
+.dpg .dp-link { padding: 0; border: 0; background: none; cursor: pointer; color: var(--you); font: 700 12px/1 var(--cond); letter-spacing: .14em; text-transform: uppercase; text-decoration: none; white-space: nowrap; }
+.dpg .dp-link:hover { color: #8fd6ff; }
+
+/* your rating's panel */
+.dpg .dp-panel { display: flex; flex-direction: column; min-width: 0; background: rgba(5,10,18,.88); backdrop-filter: blur(16px) saturate(1.2); color: #fff; text-decoration: none; }
+.dp-panel-wait { min-height: 220px; }
+.dp-pt { padding: 20px 22px 16px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.dp-pk { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.dp-pn { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.dp-pn > b:not(.dp-big) { font: 700 22px/1 var(--cond); }
+.dp-big { font: 800 80px/.8 var(--cond); }
+.dp-lv { flex: none; padding: 6px 24px 6px 10px; background: var(--you); color: var(--ink-on); font: 700 13px/1.2 var(--cond); letter-spacing: .14em; text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+.dp-pp { margin: 0; padding: 0 22px 18px; font: 500 14px/1.5 var(--sans); color: var(--ink-2); }
+.dp-bar { padding: 0 22px 16px; display: flex; flex-direction: column; gap: 8px; }
+.dpg .dp-track { position: relative; display: block; height: 8px; background: rgba(255,255,255,.12); }
+.dpg .dp-track i { position: absolute; inset: 0 auto 0 0; background: var(--you); }
+.dp-ends { display: flex; justify-content: space-between; gap: 8px; }
+.dpg .dp-ends .lbl { font-size: 10px; }
+.dp-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid rgba(255,255,255,.12); }
+.dp-stats > span { padding: 14px 22px; display: flex; flex-direction: column; gap: 7px; border-right: 1px solid rgba(255,255,255,.12); min-width: 0; }
+.dp-stats > span:last-child { border-right: 0; }
+.dpg .dp-stats .lbl { font-size: 10px; }
+.dp-stats b { font: 700 22px/1 var(--cond); white-space: nowrap; }
+.dpg .dp-pl { padding: 12px 22px; border-top: 1px solid rgba(255,255,255,.12); font: 700 12px/1 var(--cond); letter-spacing: .14em; text-transform: uppercase; color: var(--you); text-decoration: none; }
+
+/* the two columns and the cards */
+.dp-main { display: grid; grid-template-columns: 440px minmax(0, 1fr); gap: 24px; align-items: start; padding-top: 32px; padding-bottom: 56px; }
+.dp-side { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+.dp-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.dp-card { background: var(--surface, #0b1420); display: flex; flex-direction: column; min-width: 0; }
+.dp-setup { box-shadow: inset 0 4px 0 var(--you); }
+.dp-card > .dp-ch { padding: 20px 20px 12px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.dp-h2 { margin: 0; display: flex; align-items: center; gap: 12px; font: 800 26px/.95 var(--cond); text-transform: uppercase; }
+.dp-setup .dp-h2 { font-size: 30px; }
+.dp-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live); box-shadow: 0 0 0 3px rgba(255,59,48,.28); }
+.dpg .dp-tag { display: inline-flex; padding: 3px 6px; font: 700 10px/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; box-shadow: inset 0 0 0 1px currentColor; color: var(--ink-2); white-space: nowrap; }
+.dpg .dp-tag-live { color: var(--live); }
+.dp-empty { margin: 0; padding: 4px 20px 20px; font: 500 14px/1.5 var(--sans); color: var(--ink-3); }
+.dp-sub { font: 500 13px/1.3 var(--sans); color: var(--ink-3); }
+
+/* the set-up card's body: whatever the search is doing */
+.dp-body { padding: 4px 22px 22px; }
+.dpg .dp-body .df { display: flex; flex-direction: column; gap: 18px; }
+.dp-who-seg, .dp-band { display: flex; flex-direction: column; gap: 8px; }
+.dp-seg { display: flex; gap: 2px; }
+.dp-seg > * { flex: 1 1 0; height: 44px; display: grid; place-items: center; padding: 0 6px; border: 0; cursor: pointer; text-align: center; text-decoration: none;
+  font: 700 13px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; background: rgba(255,255,255,.06); color: rgba(255,255,255,.78); }
+.dp-seg > *:hover { background: rgba(255,255,255,.12); color: #fff; }
+.dp-seg > .on { background: var(--you); color: var(--ink-on); }
+.dp-band-h { display: flex; justify-content: space-between; align-items: baseline; }
+.dp-band-h b { font: 700 13px/1 var(--cond); letter-spacing: .1em; }
+.dp-band-bar { position: relative; height: 28px; }
+.dp-band-bar::before { content: ''; position: absolute; left: 0; right: 0; top: 12px; height: 4px; background: rgba(255,255,255,.12); }
+.dp-band-bar i { position: absolute; top: 12px; height: 4px; background: var(--you); transition: left .6s, right .6s; }
+.dp-band-bar i::before, .dp-band-bar i::after { content: ''; position: absolute; top: -8px; width: 20px; height: 20px; background: #fff; }
+.dp-band-bar i::before { left: -10px; }
+.dp-band-bar i::after { right: -10px; }
+.dp-band-bar em { position: absolute; top: 0; width: 2px; height: 28px; margin-left: -1px; background: var(--you); }
+.dpg .dp-note { margin: 0; font: 500 13px/1.45 var(--sans); color: var(--ink-3); }
+.dp-easy { padding: 12px 14px; background: rgba(46,230,160,.08); box-shadow: inset 3px 0 0 var(--up); display: flex; flex-direction: column; gap: 6px; }
+.dpg .dp-easy .lbl { color: var(--up); }
+.dp-easy p { margin: 0; font: 500 13px/1.45 var(--sans); color: var(--ink-2); }
+.dp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: rgba(255,255,255,.06); }
+.dp-cell { padding: 11px 12px; background: var(--surface, #0b1420); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.dpg .dp-cell .lbl { font-size: 10px; }
+.dp-cell b { font: 700 16px/1.05 var(--cond); text-transform: uppercase; }
+.dp-cell select { width: 100%; min-width: 0; height: 30px; padding: 0 6px; border: 0; border-radius: 0; background: rgba(255,255,255,.08); color: #fff; font: 700 15px/1 var(--cond); text-transform: uppercase; }
+.dp-cell select option { background: #0b1420; text-transform: none; }
+.dpg .bt-go.dp-go { width: 100%; height: 56px; justify-content: space-between; padding: 0 32px 0 20px; font-size: 18px; }
+.dpg .bt-go.dp-go > span:first-of-type { flex: 1; text-align: left; }
+.dp-go-sub { font: 700 12px/1 var(--cond); letter-spacing: .1em; opacity: .75; }
+.dpg .dp-body .df-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* tables: Ready now and the rating around you */
+.dp-tab { display: grid; }
+.dp-ready .dp-tab { grid-template-columns: minmax(0, 1.6fr) 90px 70px 120px 96px 84px; }
+.dp-near .dp-tab { grid-template-columns: 70px minmax(0, 1fr) 110px 90px 80px; }
+.dp-tr { display: contents; }
+.dp-tr > * { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; gap: 8px; min-width: 0; font: 700 15px/1.1 var(--cond); }
+.dp-th > * { padding-top: 0; padding-bottom: 10px; border-top: 0; }
+.dpg .dp-th .lbl { font-size: 10px; }
+.dp-who { flex-direction: column; align-items: flex-start !important; gap: 4px !important; }
+.dp-who b { font: 700 17px/1 var(--cond); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.dp-lvc { font-size: 13px !important; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.dp-ch .dp-track { flex: 1 1 auto; height: 4px; }
+.dp-me > * { background: rgba(61,184,255,.12); }
+.dp-me > :first-child { box-shadow: inset 3px 0 0 var(--you); }
+.dp-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.dp-chips button { height: 32px; padding: 0 14px; border: 0; cursor: pointer; font: 700 12px/1 var(--cond); letter-spacing: .14em; text-transform: uppercase; background: rgba(255,255,255,.08); color: rgba(255,255,255,.86); }
+.dp-chips button.on { background: #fff; color: var(--ink-on); }
+
+/* rows: open calls and your last races */
+.dp-row { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,.08); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.dp-row-wl { grid-template-columns: 30px minmax(0, 1fr) auto; padding: 12px 20px; }
+.dp-rl { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.dp-rl b { font: 700 16px/1.1 var(--cond); text-transform: uppercase; }
+.dpg .dp-rl .lbl { font-size: 10px; }
+.dp-rr { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.dpg .dp-rr .lbl { font-size: 10px; }
+.dp-row-wl > b { font: 700 18px/1 var(--cond); }
+.dp-wl { width: 26px; height: 26px; display: grid; place-items: center; font: 800 13px/1 var(--cond); }
+.dp-w { background: rgba(46,230,160,.16); color: var(--up); }
+.dp-l { background: rgba(255,138,61,.16); color: var(--down); }
+
+/* the duel hour and For you sit in the column as cards too */
+.dpg .dp-side > .df-hour, .dpg .dp-side > .fy { background: var(--surface, #0b1420); }
+
+@media (max-width: 1100px) {
+  .dp-main { grid-template-columns: minmax(0, 1fr); }
+  .dp-hero-in { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+}
+@media (max-width: 720px) {
+  .dp-hero { padding: 28px 0 24px; }
+  .dp-two { grid-template-columns: minmax(0, 1fr); }
+  .dp-big { font-size: 64px; }
+  .dp-stats > span { padding: 12px 14px; }
+  .dp-ready .dp-tab { grid-template-columns: minmax(0, 1fr) 64px 76px; }
+  .dp-ready .dp-tr > :nth-child(2), .dp-ready .dp-tr > :nth-child(4) { display: none; }
+  .dp-near .dp-tab { grid-template-columns: 56px minmax(0, 1fr) 64px 64px; }
+  .dp-near .dp-tr > :nth-child(3) { display: none; }
+  .dp-tr > * { padding: 10px 10px; }
+  .dpg .dp-btn-l, .dpg .dp-btn-g { height: 48px; font-size: 15px; }
+}
+
+/* the top: a race page over the game's own scene, in the HUD's design (styles/broadcast.css: .bt-scr, .bt, .bt-info,
+   .bt-stats, .bt-card). On the race pages it fills the screen and stays; here it is the page's first screen, and the
+   page goes on under it */
+.dpg .bt-scr.dp-hud { position: relative; inset: auto; height: 100vh; height: 100svh; min-height: 620px; max-height: 1080px; }
+.dpg .dp-hud .bt-p b { color: var(--ink); }
+.dpg .dp-hud .bt-h.bt-hero { max-width: 18ch; }
+/* the cells: the rating and the place open their pages */
+.dpg .dp-stats-hud > .dp-cell-a { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; gap: var(--s-2); padding: var(--s-4) var(--s-5); border-right: 1px solid var(--rule); color: var(--ink); text-decoration: none; }
+.dpg .dp-stats-hud > .dp-cell-a:hover { background: var(--fill-1); }
+.dpg .dp-stats-hud > .dp-cell-a b { font: 700 var(--fs-h3)/1 var(--cond); }
+@container scr (orientation: portrait) { .dpg .dp-stats-hud > .dp-cell-a { padding: var(--s-2) var(--s-3); } .dpg .dp-stats-hud > .dp-cell-a b { font-size: var(--fs-row); } .dpg .dp-stats-hud > :nth-child(4) { display: none; } }
+@container scr (max-height: 500px) and (orientation: landscape) { .dpg .dp-stats-hud > .dp-cell-a b { font-size: var(--fs-title); } }
+/* the card's body: the set-up, the search and Match found, in the card's glass */
+.dpg .dp-card .bt-body > .df { display: flex; flex-direction: column; gap: var(--s-5); }
+.dpg .dp-card .dp-cell { background: var(--fill-1); }
+.dpg .dp-card .dp-grid { background: transparent; }
+.dpg .dp-card .dp-cell select { background: var(--fill-2); }
+.dpg .dp-card .bt-pills { display: flex; flex-wrap: wrap; gap: var(--s-1); }
+.dpg .dp-card .bt-pill { display: inline-flex; align-items: center; text-decoration: none; cursor: pointer; }
+.dpg .dp-card .bt-go.dp-go { margin: 0; }
+.dpg .dp-card .bt-rows { margin: 0 calc(-1 * var(--cp)); }
+/* under the top: the lists, one column at the page's width */
+.dpg .dp-main { display: block; }
+.dpg .dp-main .dp-side { gap: var(--s-6); }
+/* the card under the top bar's ticker, which stands over its column (the race hub's card is short enough to clear it) */
+.dpg .dp-hud .bt-card { align-self: flex-end; max-height: calc(100% - var(--h-m) - var(--s-4)); }
+@container scr (orientation: portrait) { .dpg .dp-hud .bt-card { align-self: stretch; max-height: 56%; } }

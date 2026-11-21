@@ -8,7 +8,7 @@ export const MAIN = {
   changeRace: 'Mudar a regata', leaveHub: 'Voltar à central de regatas', quickK: 'Atalhos rápidos', camK: 'Câmera', sAuto: 'Auto', guidesSw: 'Guias na água', avK: 'Áudio e gráficos', wordsK: 'Palavras da vela', startsOver: 'recomeça', loadingK: 'Aparelhando o barco', escResumes: 'Esc para continuar',
   leaveK: 'Sair desta regata?', leaveTxt: (pl, leg) => `Você está em ${pl} na perna ${leg}.`, keepRacing: 'Continuar a regata', doRestart: 'Recomeçar', doChange: 'Mudar', doLeave: 'Sair',
   inSeq: 'Você está no procedimento de largada.', notKept: 'O tempo e a posição desta regata não são salvos.',
-  leaveHost: 'A regata é anulada nas duas telas.', leaveGuest: (w) => (w ? `Você abandona, e a regata fica com ${w}.` : 'Você abandona, e a regata termina sem vencedor.'), leaveHome: 'Sua posição vale para o outro velejador, mas se sair agora você não verá o resultado completo.',
+  leaveHost: 'A regata é anulada nas duas telas.', leaveGuest: (w) => (w ? `Você abandona, e a regata fica com ${w}.` : 'Você abandona, e a regata termina sem vencedor.'), leaveBefore: 'A largada ainda não foi dada: se você sair agora, a regata é cancelada para os dois e nada conta.', leaveHome: 'Sua posição vale para o outro velejador, mas se sair agora você não verá o resultado completo.',
   askK: { restart: 'Recomeçar', change: 'Mudar a regata', leave: 'Sair' }, askH: { restart: 'Recomeçar esta regata?', change: 'Mudar a regata?', leave: 'Sair desta regata?' },
   askT: { restart: 'Ela recomeça do procedimento de largada, no mesmo percurso e com o mesmo vento.', change: 'Depois você escolhe a raia, o vento e o percurso, e a regata recomeça com eles.', leave: 'Você volta à central de regatas.' },
   sailUp: 'Na orça rumo', sailDown: (k) => (k ? 'Na popa, de gennaker, rumo' : 'Na popa, sem gennaker, rumo'), sailReach: 'No través rumo', aheadOf: (n, s) => `${n} está ${s} à frente.`, leadBy: (s) => `Você lidera por ${s}.`, leadAlone: 'Você lidera.',
@@ -121,7 +121,7 @@ export const MAIN = {
 };
 
 export const HUD = {
-  title: 'Up and down', daily: 'Regata do dia', free: 'Regata livre', first: 'Primeira regata', live: 'Ao vivo', startIn: 'Largada em', gun: 'Sinal',
+  title: 'Up and down', daily: 'Regata do dia', free: 'Regata livre', duel: 'Duelo 1 contra 1', first: 'Primeira regata', live: 'Ao vivo', startIn: 'Largada em', gun: 'Sinal',
   bias: 'Linha favorecida', pinEnd: 'Lado da boia', boatEnd: 'Lado da comissão', square: 'Em esquadro', line: 'Linha',
   legOf: (n, N) => `Perna ${n} de ${N}`, legN: (n) => `Perna ${n}`, legShort: (n, N) => `Perna ${n}/${N}`, up: 'Orça', down: 'Popa', reach: 'Través',
   upwind: 'na orça', downwind: 'na popa', reaching: 'no través', stbd: 'boreste', port: 'bombordo', preStart: 'Pré-largada',

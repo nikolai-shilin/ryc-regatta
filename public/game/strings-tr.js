@@ -6,7 +6,7 @@ export const MAIN = {
   changeRace: 'Yarışı değiştir', leaveHub: 'Yarış merkezine dön', quickK: 'Hızlı ayarlar', camK: 'Kamera', sAuto: 'Oto', guidesSw: 'Sudaki kılavuzlar', avK: 'Ses ve grafik', wordsK: 'Yelken sözlüğü', startsOver: 'baştan başlar', loadingK: 'Tekne hazırlanıyor', escResumes: 'Esc: devam',
   leaveK: 'Yarıştan çıkılsın mı?', leaveTxt: (pl, leg) => `${leg}. ayakta ${pl} sıradasın.`, keepRacing: 'Yarışa devam', doRestart: 'Baştan başla', doChange: 'Değiştir', doLeave: 'Çık',
   inSeq: 'Start sürecindesin.', notKept: 'Bu yarışın süresi ve sırası kaydedilmez.',
-  leaveHost: 'Yarış iki ekranda da iptal edilir.', leaveGuest: (w) => (w ? `Yarıştan çekiliyorsun ve yarışı ${w} kazanıyor.` : 'Yarıştan çekiliyorsun ve yarış kazanansız biter.'), leaveHome: 'Sıran diğer yelkenci için geçerli kalır, ama şimdi çıkarsan tam sonucu alamazsın.',
+  leaveHost: 'Yarış iki ekranda da iptal edilir.', leaveGuest: (w) => (w ? `Yarıştan çekiliyorsun ve yarışı ${w} kazanıyor.` : 'Yarıştan çekiliyorsun ve yarış kazanansız biter.'), leaveBefore: 'Start henüz verilmedi: şimdi çıkarsan yarış ikiniz için iptal olur ve hiçbir şey sayılmaz.', leaveHome: 'Sıran diğer yelkenci için geçerli kalır, ama şimdi çıkarsan tam sonucu alamazsın.',
   askK: { restart: 'Baştan başla', change: 'Yarışı değiştir', leave: 'Çık' }, askH: { restart: 'Bu yarış baştan başlasın mı?', change: 'Yarış değişsin mi?', leave: 'Bu yarıştan çıkılsın mı?' },
   askT: { restart: 'Start sürecinden baştan başlar: aynı parkur, aynı rüzgâr.', change: 'Sırada yarış alanını, rüzgârı ve parkuru seçmek var; yarış bunlarla baştan başlar.', leave: 'Yarış merkezine dönersin.' },
   sailUp: 'Orsa yaparak', sailDown: (k) => (k ? 'Gennakerle pupa yaparak' : 'Gennakersiz pupa yaparak'), sailReach: 'Apaz yaparak', aheadOf: (n, s) => `${n} senden ${s} önde.`, leadBy: (s) => `${s} farkla öndesin.`, leadAlone: 'Öndesin.',
@@ -117,7 +117,7 @@ export const MAIN = {
 };
 
 export const HUD = {
-  title: 'Up and down', daily: 'Günün yarışı', free: 'Serbest yarış', first: 'İlk yarış', live: 'Canlı', startIn: 'Startta', gun: 'İşaret',
+  title: 'Up and down', daily: 'Günün yarışı', free: 'Serbest yarış', duel: 'Bire bir yarış', first: 'İlk yarış', live: 'Canlı', startIn: 'Startta', gun: 'İşaret',
   bias: 'Hat avantajı', pinEnd: 'Pin ucu', boatEnd: 'Tekne ucu', square: 'Düz', line: 'Hat',
   legOf: (n, N) => `Ayak ${n} / ${N}`, legN: (n) => `Ayak ${n}`, legShort: (n, N) => `Ayak ${n}/${N}`, up: 'Orsa', down: 'Pupa', reach: 'Apaz',
   upwind: 'orsa', downwind: 'pupa', reaching: 'apaz', stbd: 'sancak', port: 'iskele', preStart: 'Start öncesi',

@@ -77,7 +77,7 @@ const T = {
     changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', camK: 'Camera', sAuto: 'Auto', guidesSw: 'Guides on the water', avK: 'Audio & graphics', wordsK: 'Sailing words', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
     leaveK: 'Leave this race?', leaveTxt: (pl, leg) => `You are ${pl} on leg ${leg}.`, keepRacing: 'Keep racing', doRestart: 'Restart', doChange: 'Change it', doLeave: 'Leave',
     inSeq: 'You are in the start sequence.', notKept: 'This race’s time and place are not kept.',
-    leaveHost: 'The race is abandoned on both screens.', leaveGuest: (w) => (w ? `You drop out, and the race goes to ${w}.` : 'You drop out, and the race ends with no winner.'), leaveHome: 'Your place stands for the other sailor, but if you leave now you won’t get the full result.',
+    leaveHost: 'The race is abandoned on both screens.', leaveGuest: (w) => (w ? `You drop out, and the race goes to ${w}.` : 'You drop out, and the race ends with no winner.'), leaveBefore: 'The start hasn’t gone yet: leaving now calls the race off for both of you, and nothing counts.', leaveHome: 'Your place stands for the other sailor, but if you leave now you won’t get the full result.',
     askK: { restart: 'Restart', change: 'Change the race', leave: 'Leave' }, askH: { restart: 'Restart this race?', change: 'Change the race?', leave: 'Leave this race?' },
     askT: { restart: 'It starts over from the start sequence, the same course in the same wind.', change: 'Next you pick the place, the wind and the course, and the race starts over with them.', leave: 'You go back to the race hub.' },
     sailUp: 'Beating to', sailDown: (k) => (k ? 'Running to' : 'Running, kite down, to'), sailReach: 'Reaching to', aheadOf: (n, s) => `${n} is ${s} ahead.`, leadBy: (s) => `You lead by ${s}.`, leadAlone: 'You lead.',
@@ -191,7 +191,7 @@ const T = {
     changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', camK: 'Камера', sAuto: 'Авто', guidesSw: 'Подсказки на воде', avK: 'Звук и графика', wordsK: 'Словарь яхтсмена', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
     leaveK: 'Выйти из гонки?', leaveTxt: (pl, leg) => `Ты ${pl}-й на ${leg}-м отрезке.`, keepRacing: 'Продолжить', doRestart: 'Заново', doChange: 'Изменить', doLeave: 'Выйти',
     inSeq: 'Идёт стартовая процедура.', notKept: 'Время и место этой гонки не сохранятся.',
-    leaveHost: 'Гонка прекратится на обоих экранах.', leaveGuest: (w) => (w ? `Ты сходишь, и гонка достаётся: ${w}.` : 'Ты сходишь, и гонка закончится без победителя.'), leaveHome: 'Для соперника твоё место останется, но если выйдешь сейчас, полного результата не получишь.',
+    leaveHost: 'Гонка прекратится на обоих экранах.', leaveGuest: (w) => (w ? `Ты сходишь, и гонка достаётся: ${w}.` : 'Ты сходишь, и гонка закончится без победителя.'), leaveBefore: 'Старт ещё не дан: если выйдешь сейчас, гонка отменится для вас обоих и ничего не засчитается.', leaveHome: 'Для соперника твоё место останется, но если выйдешь сейчас, полного результата не получишь.',
     askK: { restart: 'Заново', change: 'Изменить гонку', leave: 'Выход' }, askH: { restart: 'Начать заново?', change: 'Изменить гонку?', leave: 'Выйти из гонки?' },
     askT: { restart: 'Всё начнётся со стартовой процедуры: та же дистанция, тот же ветер.', change: 'Дальше выберешь место, ветер и дистанцию — и гонка начнётся заново.', leave: 'Ты вернёшься в меню гонок.' },
     sailUp: 'Лавировка к', sailDown: (k) => (k ? 'Фордевинд под генакером к' : 'Фордевинд без генакера к'), sailReach: 'Галфвинд к', aheadOf: (n, s) => `${n} впереди на ${s}.`, leadBy: (s) => `Ты лидируешь на ${s}.`, leadAlone: 'Ты лидируешь.',
@@ -1715,7 +1715,7 @@ function ask(action) {
   if (action === 'leave' && race.multi) { // a race shared by two: what leaving does to it, on the host's tab or the guest's (a boat out herself wins nothing)
     const o = race.humans.find((b) => b !== P);
     $('#cKick').textContent = t('askK')[action]; $('#cHead').textContent = t('askH')[action];
-    $('#cTxt').textContent = !mx?.isGuest ? t('leaveHost') : P.done ? t('leaveHome') : t('leaveGuest', o.ufd || o.bfd || o.dsq ? null : o.name);
+    $('#cTxt').textContent = !mx?.isGuest ? t('leaveHost') : P.done ? t('leaveHome') : !(race.clock >= 0 || race.recalls > 0) ? t('leaveBefore') : t('leaveGuest', o.ufd || o.bfd || o.dsq ? null : o.name); // (before the gun: called off, nothing counts)
   } else if (race.clock >= 0 && P.leg >= 1 && !P.done) { // racing: the question in the bar, where you are as the headline
     $('#cKick').textContent = t('askH')[action];
     $('#cHead').textContent = t('whereH', placeWord(place), Math.round(race.distToNext(P)), t('toK')[legKey(c, c.legs[P.leg])]);

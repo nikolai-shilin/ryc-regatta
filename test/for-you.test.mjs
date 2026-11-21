@@ -134,7 +134,7 @@ test('on the page: a guest\'s list and its × kept on this device; a newcomer\'s
   await v.unmount();
   document.documentElement.removeAttribute('data-back');
   v = await mount(h(ForYou, { lang: 'en' }));
-  assert.match(v.text(), /^For you Your first race: three minutes/);
+  assert.match(v.text(), /^For you First race Your first race: three minutes/);
   await v.unmount();
 });
 

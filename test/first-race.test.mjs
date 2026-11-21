@@ -54,7 +54,7 @@ test('the pages over a scene have the site\'s menu by the name; the sign-in page
   const withMenu = renderToStaticMarkup(createElement(SceneBrand, { lang: 'en' }));
   assert.match(withMenu, /<a href="\/" class="bt-brand">/);
   assert.ok(withMenu.includes('class="hm-menu"'), 'the menu');
-  for (const p of ['/race', '/race/drills', '/race#board', '/players', '/venues', '/yachts', '/help']) assert.ok(withMenu.includes(`href="${p}"`), p);
+  for (const p of ['/race', '/race/drills', '/rating', '/players', '/venues', '/yachts', '/help']) assert.ok(withMenu.includes(`href="${p}"`), p);
   const plain = renderToStaticMarkup(createElement(SceneBrand));
   assert.ok(!plain.includes('hm-menu'));
 });

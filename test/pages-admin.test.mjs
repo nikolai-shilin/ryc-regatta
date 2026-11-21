@@ -48,7 +48,7 @@ const SETTINGS = { jib_ad: { url: 'https://cdn.example/SECRET-JIB.png', path: 'j
 // ---------- the database, as the session reading it is answered ----------
 const db = { user: null, isAdmin: { data: false, error: null }, rpc: {}, settings: SETTINGS, calls: [] };
 const ACCOUNT = { id: 'u1', email: 'sailor@example.com', user_metadata: { display_name: 'Anna Sailor' }, app_metadata: { provider: 'email' } };
-const answers = () => ({ regatta_admin_stats: { data: STATS, error: null }, regatta_admin_insight: { data: INSIGHT, error: null }, regatta_admin_players: { data: PLAYERS, error: null }, regatta_admin_logs: { data: LOGS, error: null }, regatta_admin_duels: { data: DUELS, error: null } });
+const answers = () => ({ regatta_admin_stats: { data: STATS, error: null }, regatta_admin_insight: { data: INSIGHT, error: null }, regatta_admin_players: { data: PLAYERS, error: null }, regatta_admin_logs: { data: LOGS, error: null }, regatta_admin_duels: { data: DUELS, error: null }, regatta_admin_targets: { data: { since: null }, error: null } });
 globalThis.__sb = {
   auth: { getUser: async () => ({ data: { user: db.user } }) },
   rpc: async (fn, args) => {

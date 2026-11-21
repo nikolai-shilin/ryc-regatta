@@ -1563,6 +1563,8 @@
 .bc .adm-tab th:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); }
 .bc .adm-tab tbody tr:hover th:first-child { background: linear-gradient(var(--fill-2), var(--fill-2)) var(--surface); }
 .bc .adm-tab thead th { font: 600 var(--fs-label)/1.2 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); border-bottom-color: var(--rule); }
+/* the 1-on-1 plan's targets (components/admin-targets.tsx): what each measures, left and wrapping, beside its figures */
+.bc .adm-targets :is(td, th):nth-child(2) { text-align: left; white-space: normal; min-width: 240px; }
 .bc .adm-tab tbody tr:hover { background: var(--fill-2); }
 /* the races a day (components/admin-days.tsx): a gauge of the HUD's, square bars on their tracks */
 .bc .adm-days { --days-y: 40px; --days-h: 200px; --days-bar: 48px; padding: var(--s-4); background: var(--fill-1); }

@@ -14,9 +14,18 @@ import { shareHref } from '@/lib/share';
 import { linkPush, pushable, subscribe } from '@/lib/push';
 import { readLog } from '@/lib/log';
 import { IconPlay } from './ui';
+import { SHAPE_NAME } from '@/lib/race';
 import { DuelHour } from './duel-hour';
 import { hourAt } from '@/lib/duel-hour';
+import { parseMine, type MyRating } from '@/lib/duel-rating';
+import { parseCalls, parseNear, type Call, type Near } from '@/lib/duel-page';
+import { HudCells, ReadyTable, OpenCalls, LastRaces, NearTable, RATING_HREF } from './duel-page';
+import { GameScene } from './game-scene';
+import { BackLink } from './back-link';
+import { SceneBrand } from './scene-brand';
+import type { ReactNode } from 'react';
 import '@/styles/duel-rating.css';
+import '@/styles/duel-page.css';
 
 // Find a race (app/[lang]/duel/page.tsx): a signed-in sailor is matched with another of about their rating (POST
 // /connect/seek, the database's regatta_seek): Looking (how long, the band, how many are looking), then Match found with ten
@@ -37,6 +46,9 @@ import '@/styles/duel-rating.css';
 // starts looking, and while it's on Ready now says so.
 // Opened from the home's Race (/duel?challenge=<handle>, components/duel-home.tsx), it challenges that sailor at once.
 // The wishes, a venue and a yacht, kept on this device, are the race's from a sailor's fourth rated race (the host's first).
+// Laid out as the page was designed (components/duel-page.tsx): the hero with your rating, then the set-up card (whatever
+// the search is doing) beside Ready now as a table, the open calls to take (read with Ready now), your last races and
+// the 1-on-1 rating around you (GET /connect/rating/me and /connect/rating/near, once).
 type Phase = 'idle' | 'looking' | 'found' | 'go' | 'missed' | 'error';
 type Note = '' | 'noanswer' | 'declined' | 'gone' | 'taken' | 'away' | 'closed' | 'band' | 'mine' | 'nocall' | 'nopush' | 'pushdenied' | 'noaway' | 'nobot' | 'quiet' | 'msgoff';
 export type OpenCall = { code: string; lo: number; hi: number; url: string };
@@ -63,12 +75,17 @@ function handOver(p: Pair) {
 
 const readWishes = (): Wishes => { try { const w = JSON.parse(localStorage.getItem(WISH_KEY) || '{}'); return { ...(VENUES.some((v) => v.id === w.venue) && { venue: w.venue }), ...(YACHTS.some((y) => y.id === w.yacht) && { yacht: w.yacht }) }; } catch { return {}; } };
 
-export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
+export function DuelFinder({ lang, signed, children }: { lang: Lang; signed: boolean; children?: ReactNode }) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [list, setList] = useState<Ready[]>([]);
+  const [calls, setCalls] = useState<Call[]>([]);
+  const [mine, setMine] = useState<MyRating | null | undefined>(signed ? undefined : null);
+  const [near, setNear] = useState<Near | null | undefined>(signed ? undefined : null);
+  const [filter, setFilter] = useState<'level' | 'all' | null>(null); // null: my level when anyone is near it, else everyone
+  const wantCall = useRef(false); // Open call chosen while not looking: posted once the first answer says looking
   const [wishes, setWishes] = useState<Wishes>({});
   const wishesRef = useRef<Wishes>({});
-  const [look, setLook] = useState<{ waited: number; band: number; online: number }>({ waited: 0, band: 100, online: 0 });
+  const [look, setLook] = useState<{ waited: number; band: number; online: number; near?: number }>({ waited: 0, band: 100, online: 0 });
   const [pair, setPair] = useState<Pair | null>(null);
   const [said, setSaid] = useState(false); // this sailor said Ready to the pair on screen
   const [note, setNote] = useState<Note>('');
@@ -102,7 +119,8 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
     if (had && !wasReady && !early) { on.current = false; setPhase('missed'); post({ do: 'stop' }); return; }
     if (had) setNote(early ? 'declined' : 'noanswer');
     if (s.status === 'looking') {
-      setLook({ waited: s.waited, band: s.band, online: s.online }); keepAway(s.away); setPhase('looking');
+      setLook({ waited: s.waited, band: s.band, online: s.online, near: s.near }); keepAway(s.away); setPhase('looking');
+      if (wantCall.current) { wantCall.current = false; postCall(); }
       timer.current = setTimeout(ask, LOOK_MS);
       return;
     }
@@ -139,6 +157,7 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
     }
     if (j?.status === 'away') { keepAway(true); track('Duel away', {}); } else setNote(j?.reason === 'no_push' ? 'nopush' : j?.reason === 'quiet' ? 'quiet' : j?.reason === 'off' ? 'msgoff' : 'noaway');
   };
+  const callNow = () => { if (on.current && phase === 'looking') postCall(); else { wantCall.current = true; find(); } };
   const awayOff = () => { keepAway(false); fetch('/connect/seek', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ do: 'away', on: false }) }).catch(() => {}); };
   // an open call, while looking: its link to share (the call lives while this page goes on looking, an hour at most)
   const postCall = async () => {
@@ -182,7 +201,8 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
   const readList = useCallback(async () => {
     try {
       const r = await fetch('/connect/seek', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ do: 'ready_now' }) });
-      setList(r.ok ? parseReady((await r.json())?.list) : []);
+      const j = r.ok ? await r.json() : null;
+      setList(parseReady(j?.list)); setCalls(parseCalls(j?.calls));
     } catch { /* the list stays as it was */ }
   }, []);
   const decline = () => { const p = pairRef.current; stopTimer(); preload.current?.abort(); setLoaded(null); on.current = false; pairRef.current = null; setPair(null); setPhase('idle'); if (p) post({ do: 'decline', pair: p.id }); };
@@ -202,11 +222,16 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
     if (resume) history.replaceState(history.state, '', location.pathname);
     if (signed && resume) find();
     // the duel hour's message tapped (lib/duel-hour.ts): looking at once
-    const hour = new URLSearchParams(location.search).has('hour');
+    const hour = new URLSearchParams(location.search).has('hour') || new URLSearchParams(location.search).has('find'); // (?find: the home's Find a race, a result's Another 1-on-1 race)
     if (hour) history.replaceState(history.state, '', location.pathname);
     if (signed && hour && !resume) find();
     // a browser that already takes the site's messages: tied to this account, so away works without asking again
     if (signed && pushable() && Notification.permission === 'granted') linkPush();
+    // your rating (the hero's panel, the chances in Ready now, your last races) and the rating around you, once
+    if (signed) {
+      fetch('/connect/rating/me', { cache: 'no-store', credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)).then((j) => setMine(parseMine(j)), () => setMine(null));
+      fetch('/connect/rating/near', { cache: 'no-store', credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)).then((j) => setNear(parseNear(j)), () => setNear(null));
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // the duel hour on: marked beside Ready now (checked every 30 s)
   const [hourOn, setHourOn] = useState(false);
@@ -228,17 +253,21 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
     return () => { removeEventListener('pagehide', away); stopTimer(); preload.current?.abort(); };
   }, []);
 
+  const me = mine?.rating ?? 1500, nearCount = list.filter((r) => Math.abs(r.rating - me) <= 100).length;
   return <DuelFinderView lang={lang} signed={signed} phase={phase} look={look} pair={pair} said={said} left={left} note={note}
     longWait={phase === 'looking' && look.waited >= OFFER_AFTER_S} find={find} stop={stop} ready={ready} decline={decline}
-    list={list} challenge={challenge} wishes={wishes} setWish={setWish} loaded={loaded} call={call} postCall={postCall} away={away} awayOn={awayOn} awayOff={awayOff} hourOn={hourOn} />;
+    list={list} challenge={challenge} wishes={wishes} setWish={setWish} loaded={loaded} call={call} postCall={callNow} away={away} awayOn={awayOn} awayOff={awayOff} hourOn={hourOn}
+    mine={mine} near={near} calls={calls} take={take} filter={filter ?? (nearCount ? 'level' : 'all')} setFilter={setFilter}>{children}</DuelFinderView>;
 }
 
-type ViewProps = { lang: Lang; signed: boolean; phase: Phase; look: { waited: number; band: number; online: number }; pair: Pair | null; said: boolean; left: number;
+type ViewProps = { lang: Lang; signed: boolean; phase: Phase; look: { waited: number; band: number; online: number; near?: number }; pair: Pair | null; said: boolean; left: number;
   note: Note; longWait: boolean; find: () => void; stop: () => void; ready: () => void; decline: () => void;
   list?: Ready[]; challenge?: (handle: string) => void; wishes?: Wishes; setWish?: (k: keyof Wishes, v: string) => void; loaded?: number | null;
-  call?: OpenCall | null; postCall?: () => void; away?: boolean; awayOn?: () => void; awayOff?: () => void; hourOn?: boolean };
+  call?: OpenCall | null; postCall?: () => void; away?: boolean; awayOn?: () => void; awayOff?: () => void; hourOn?: boolean;
+  mine?: MyRating | null; near?: Near | null; calls?: Call[]; take?: (code: string) => void; filter?: 'level' | 'all'; setFilter?: (f: 'level' | 'all') => void; children?: ReactNode };
 
-export function DuelFinderView({ lang, signed, phase, look, pair, said, left, note, longWait, find, stop, ready, decline, list = [], challenge = () => {}, wishes = {}, setWish = () => {}, loaded = null, call = null, postCall = () => {}, away = false, awayOn = () => {}, awayOff = () => {}, hourOn = false }: ViewProps) {
+export function DuelFinderView({ lang, signed, phase, look, pair, said, left, note, longWait, find, stop, ready, decline, list = [], challenge = () => {}, wishes = {}, setWish = () => {}, loaded = null, call = null, postCall = () => {}, away = false, awayOn = () => {}, awayOff = () => {}, hourOn = false,
+  mine = signed ? undefined : null, near = signed ? undefined : null, calls = [], take = () => {}, filter = 'all', setFilter = () => {}, children }: ViewProps) {
   const t = tx(lang);
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const friend = <Link className="bt-show" href="/match/new">{t('Challenge a friend instead', 'Позвать друга', 'Reta a un amigo', 'Lieber einen Freund herausfordern', 'Bunun yerine bir arkadaşını çağır', 'Défier plutôt un ami', 'Sfida invece un amico', 'Desafiar um amigo')}</Link>;
@@ -279,52 +308,73 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
     </div>
   );
   const gone = note === 'gone' && <p className="dr-note">{t('That sailor has just gone: paired with someone else, or stopped looking.', 'Этот соперник уже ушёл: нашёл гонку или перестал искать.', 'Ese regatista ya se fue: emparejado con otro o dejó de buscar.', 'Dieser Segler ist schon weg: mit jemand anderem gepaart oder nicht mehr auf der Suche.', 'O denizci az önce gitti: başkasıyla eşleşti ya da aramayı bıraktı.', 'Ce marin vient de partir : apparié avec un autre ou plus en recherche.', 'Quel velista se n’è appena andato: abbinato a un altro o ha smesso di cercare.', 'Esse velejador acabou de sair: pareado com outro ou parou de procurar.')}</p>;
-  // who else is looking now, nearest your rating first, each with Race: a challenge whatever the gap
-  const now = (
-    <div className="df-now">
-      <span className="bt-k">{t('Ready now', 'Готовы сейчас', 'Listos ahora', 'Jetzt bereit', 'Şu an hazır', 'Prêts maintenant', 'Pronti ora', 'Prontos agora')}{hourOn && <span className="df-lv df-hour-tag">{t('Duel hour', 'Час дуэлей', 'Hora de duelos', 'Duell-Stunde', 'Düello saati', 'Heure des duels', 'Ora dei duelli', 'Hora dos duelos')}</span>}</span>
-      {list.length ? (
-        <ul className="df-list">{list.map((r) => (
-          <li key={r.handle} className="df-row">
-            <span className="df-who"><b className="df-n">{r.name || anyone}</b><span className="df-meta">
-            <span className="df-lv">{provisional(r.races) ? t('New', 'Новичок', 'Nuevo', 'Neu', 'Yeni', 'Nouveau', 'Nuovo', 'Novo') : levelName(r.rating, lang)}</span>
-            <span className="iv-r">{shown(r.rating, r.races)}</span>
-            {r.away && <span className="df-lv df-away-tag">{t('away · gets a message', 'не на странице · получит сообщение', 'fuera · recibe un mensaje', 'weg · bekommt eine Nachricht', 'uzakta · mesaj alır', 'absent · reçoit un message', 'via · riceve un messaggio', 'fora · recebe uma mensagem')}</span>}
-            <span className="iv-m">{t(`waiting ${mmss(r.waited)}`, `ждёт ${mmss(r.waited)}`, `esperando ${mmss(r.waited)}`, `wartet ${mmss(r.waited)}`, `${mmss(r.waited)} bekliyor`, `attend ${mmss(r.waited)}`, `aspetta ${mmss(r.waited)}`, `esperando ${mmss(r.waited)}`)}</span></span></span>
-            <button type="button" className="bt-show df-race" onClick={() => challenge(r.handle)} aria-label={t(`Race ${r.name || 'this sailor'}`, `Гонка с ${r.name || 'этим соперником'}`, `Regatear con ${r.name || 'este regatista'}`, `Gegen ${r.name || 'diesen Segler'} segeln`, `${r.name || 'Bu denizci'} ile yarış`, `Régater contre ${r.name || 'ce marin'}`, `Sfida ${r.name || 'questo velista'}`, `Correr contra ${r.name || 'este velejador'}`)}>{t('Race', 'Гонка', 'Regatear', 'Segeln', 'Yarış', 'Régater', 'Sfida', 'Correr')}</button>
-          </li>))}
-        </ul>
-      ) : <p className="iv-note">{t('Nobody else is looking right now. Find a race, and you’re the first one the next sailor sees.', 'Сейчас больше никто не ищет. Начни поиск — и следующий соперник увидит тебя первым.', 'Ahora nadie más está buscando. Busca una regata y serás lo primero que vea el próximo regatista.', 'Gerade sucht sonst niemand. Starte die Suche, dann sieht dich der nächste Segler zuerst.', 'Şu an başka arayan yok. Yarış ara; sıradaki denizci ilk seni görür.', 'Personne d’autre ne cherche pour l’instant. Lance la recherche : le prochain marin te verra en premier.', 'Ora nessun altro sta cercando. Cerca una regata e sarai il primo che vedrà il prossimo velista.', 'Ninguém mais está procurando agora. Procure uma regata e você será o primeiro que o próximo velejador vê.')}</p>}
-      <DuelHour lang={lang} signed={signed} looking={phase === 'looking'} onFind={find} />
-    </div>
-  );
+  // who else is looking now, nearest your rating first, each with your chance and Race: a challenge whatever the gap
+  const now = <ReadyTable lang={lang} list={list} mine={mine} filter={filter} setFilter={setFilter} challenge={challenge} hour={hourOn} />;
   const anyOpt = t('Any', 'Любая', 'Cualquiera', 'Egal', 'Fark etmez', 'Peu importe', 'Qualsiasi', 'Qualquer');
+  const fixed: [string, string][] = [
+    [t('Wind', 'Ветер', 'Viento', 'Wind', 'Rüzgâr', 'Vent', 'Vento', 'Vento'), t('Medium', 'Средний', 'Medio', 'Mittel', 'Orta', 'Moyen', 'Medio', 'Médio')],
+    [t('Course', 'Дистанция', 'Recorrido', 'Bahn', 'Parkur', 'Parcours', 'Percorso', 'Percurso'), t('Up and down', 'Вверх-вниз', 'Barlovento–sotavento', 'Up and Down', 'Orsa–pupa', 'Banane', 'Bastone', 'Barlavento–sotavento')],
+    [t('Length', 'Длина', 'Duración', 'Länge', 'Uzunluk', 'Longueur', 'Lunghezza', 'Duração'), t('Short · 1 lap · ~4 min', 'Короткая · 1 круг · ~4 мин', 'Corta · 1 vuelta · ~4 min', 'Kurz · 1 Runde · ~4 Min.', 'Kısa · 1 tur · ~4 dk', 'Courte · 1 tour · ~4 min', 'Corta · 1 giro · ~4 min', 'Curta · 1 volta · ~4 min')],
+    [t('Start', 'Старт', 'Salida', 'Start', 'Start', 'Départ', 'Partenza', 'Largada'), t('1 min', '1 мин', '1 min', '1 Min.', '1 dk', '1 min', '1 min', '1 min')],
+  ];
   const wish = (
-    <div className="df-wish">
-      <label className="df-sel"><span>{t('Venue', 'Акватория', 'Sede', 'Revier', 'Yarış alanı', 'Plan d’eau', 'Campo', 'Raia')}</span>
+    <div className="df-wish dp-grid">
+      <label className="df-sel dp-cell"><span className="lbl">{t('Venue', 'Акватория', 'Sede', 'Revier', 'Yarış alanı', 'Plan d’eau', 'Campo', 'Raia')}</span>
         <select value={wishes.venue || ''} onChange={(e) => setWish('venue', e.target.value)}><option value="">{anyOpt}</option>{[...VENUES].sort((a, b) => pick(a.name, lang).localeCompare(pick(b.name, lang))).map((v) => <option key={v.id} value={v.id}>{pick(v.name, lang)}</option>)}</select></label>
-      <label className="df-sel"><span>{t('Yacht', 'Яхта', 'Yate', 'Yacht', 'Yat', 'Bateau', 'Barca', 'Barco')}</span>
+      <label className="df-sel dp-cell"><span className="lbl">{t('Yacht', 'Яхта', 'Yate', 'Yacht', 'Yat', 'Bateau', 'Barca', 'Barco')}</span>
         <select value={wishes.yacht || ''} onChange={(e) => setWish('yacht', e.target.value)}><option value="">{anyOpt}</option>{YACHTS.map((y) => <option key={y.id} value={y.id}>{pick(y.name, lang)}</option>)}</select></label>
-      <p className="iv-note">{t('Your wishes count from your fourth rated race; the host’s come first.', 'Пожелания действуют с четвёртой рейтинговой гонки; у хозяина гонки — в первую очередь.', 'Tus preferencias cuentan desde tu cuarta regata con rating; las del anfitrión van primero.', 'Deine Wünsche zählen ab deiner vierten gewerteten Regatta; die des Gastgebers zuerst.', 'İstekler dördüncü reytingli yarışından itibaren geçerli; önce ev sahibininkiler.', 'Tes souhaits comptent à partir de ta quatrième régate classée ; ceux de l’hôte d’abord.', 'Le tue preferenze contano dalla quarta regata valida; prima quelle di chi ospita.', 'Suas preferências valem a partir da quarta regata com rating; as do anfitrião primeiro.')}</p>
+      {fixed.map(([k, v]) => <span key={k} className="dp-cell"><span className="lbl">{k}</span><b>{v}</b></span>)}
     </div>
   );
+  const wishNote = <p className="dp-note">{t('Your wishes count from your fourth rated race; the host’s come first.', 'Пожелания действуют с четвёртой рейтинговой гонки; у хозяина гонки — в первую очередь.', 'Tus preferencias cuentan desde tu cuarta regata con rating; las del anfitrión van primero.', 'Deine Wünsche zählen ab deiner vierten gewerteten Regatta; die des Gastgebers zuerst.', 'İstekler dördüncü reytingli yarışından itibaren geçerli; önce ev sahibininkiler.', 'Tes souhaits comptent à partir de ta quatrième régate classée ; ceux de l’hôte d’abord.', 'Le tue preferenze contano dalla quarta regata valida; prima quelle di chi ospita.', 'Suas preferências valem a partir da quarta regata com rating; as do anfitrião primeiro.')}</p>;
+  // the ratings a search starts with: yours ±100, drawn on a bar of ±350 (as far as it ever widens)
+  const me = mine?.rating ?? 1500, wide = phase === 'looking' ? look.band : 100, at = (x: number) => `${50 + ((x - me) / 700) * 100}%`;
+  const band = (
+    <div className="dp-band">
+      <div className="dp-band-h"><span className="lbl">{t('Ratings to race', 'Рейтинги соперников', 'Ratings a regatear', 'Wertungen der Gegner', 'Rakip reytingleri', 'Classements à affronter', 'Rating da sfidare', 'Ratings para correr')}</span><b>{me - wide} – {me + wide}</b></div>
+      <span className="dp-band-bar" aria-hidden="true"><i style={{ left: at(me - wide), right: `calc(100% - ${at(me + wide)})` }} /><em style={{ left: '50%' }} /></span>
+      <p className="dp-note">{t('±100 to start. It widens to ±200 at 0:20 and ±350 at 0:45 if nobody is free.', '±100 в начале. Если никого нет, к 0:20 расширяется до ±200, к 0:45 — до ±350.', '±100 al principio. Se amplía a ±200 a los 0:20 y a ±350 a los 0:45 si no hay nadie libre.', '±100 zu Beginn. Ist niemand frei, wird es bei 0:20 auf ±200 und bei 0:45 auf ±350 breiter.', 'Başta ±100. Kimse boşta değilse 0:20’de ±200’e, 0:45’te ±350’ye genişler.', '±100 au départ. Elle s’élargit à ±200 à 0:20 et à ±350 à 0:45 si personne n’est libre.', '±100 all’inizio. Si allarga a ±200 a 0:20 e a ±350 a 0:45 se nessuno è libero.', '±100 no início. Abre para ±200 aos 0:20 e ±350 aos 0:45 se ninguém estiver livre.')}</p>
+    </div>
+  );
+  // a sailor's first three rated races are set for them (regatta_make_pair: a light venue, the J/70, the short course)
+  const easy = mine && mine.races < 3 ? (
+    <div className="dp-easy">
+      <span className="lbl">{t('Your first three rated races', 'Твои первые три рейтинговые гонки', 'Tus tres primeras regatas con rating', 'Deine ersten drei gewerteten Regatten', 'İlk üç reytingli yarışın', 'Tes trois premières régates classées', 'Le tue prime tre regate valide', 'Suas três primeiras regatas valendo rating')}</span>
+      <p>{t('They’re set for you: a light venue, the J/70, a medium breeze, the short course, one lap, about 4 minutes. After them your venue and yacht count.', 'Их задаём мы: лёгкая акватория, J/70, средний ветер, короткая дистанция, один круг, около 4 минут. После них учитываются твои акватория и яхта.', 'Te las fijamos: una sede ligera, el J/70, viento medio, recorrido corto, una vuelta, unos 4 minutos. Después cuentan tu sede y tu yate.', 'Sie sind vorgegeben: ein leichtes Revier, die J/70, mittlerer Wind, kurze Bahn, eine Runde, etwa 4 Minuten. Danach zählen dein Revier und deine Yacht.', 'Bunları biz belirleriz: hafif bir alan, J/70, orta rüzgâr, kısa parkur, tek tur, yaklaşık 4 dakika. Sonrasında alanın ve yatın dikkate alınır.', 'Elles sont fixées pour toi : un plan d’eau léger, le J/70, un vent moyen, le parcours court, un tour, environ 4 minutes. Ensuite, ton plan d’eau et ton bateau comptent.', 'Sono fissate per te: un campo leggero, il J/70, vento medio, percorso corto, un giro, circa 4 minuti. Dopo contano il tuo campo e la tua barca.', 'Elas são definidas para você: uma raia leve, o J/70, vento médio, percurso curto, uma volta, cerca de 4 minutos. Depois valem sua raia e seu barco.')}</p>
+    </div>
+  ) : null;
+  // who: find one, a friend's link, or an open call for any chat
+  const who = (
+    <div className="bt-g">
+      <span className="bt-k" id="dp-who">{t('Who', 'С кем', 'Con quién', 'Mit wem', 'Kiminle', 'Avec qui', 'Con chi', 'Com quem')}</span>
+      <div className="bt-pills" role="group" aria-labelledby="dp-who">
+        <span className="bt-pill" aria-checked="true" role="radio">{t('Find one', 'Найти', 'Buscar', 'Finden', 'Bul', 'En trouver un', 'Trovane uno', 'Encontrar')}</span>
+        <Link className="bt-pill" href="/match/new">{t('A friend', 'Друг', 'Un amigo', 'Ein Freund', 'Bir arkadaş', 'Un ami', 'Un amico', 'Um amigo')}</Link>
+        <button type="button" className="bt-pill" onClick={postCall}>{t('Open call', 'Открытый вызов', 'Reto abierto', 'Offene', 'Açık çağrı', 'Appel ouvert', 'Sfida aperta', 'Desafio aberto')}</button>
+      </div>
+    </div>
+  );
+  const body = (() => {
   if (!signed) return (
     <div className="df">
       <p className="bt-p">{t('Rated races need an account on both sides, so finding a race takes one. Signing in takes ten seconds.', 'Для рейтинговых гонок у обоих нужен аккаунт, поэтому для поиска гонки тоже. Вход — десять секунд.', 'Las regatas con rating necesitan cuenta en los dos lados, así que buscar una también. Iniciar sesión lleva diez segundos.', 'Gewertete Regatten brauchen auf beiden Seiten ein Konto, die Suche also auch. Die Anmeldung dauert zehn Sekunden.', 'Reytingli yarışlar için iki tarafta da hesap gerekir, bu yüzden yarış aramak da gerektirir. Giriş on saniye sürer.', 'Les régates classées demandent un compte des deux côtés, donc la recherche aussi. Se connecter prend dix secondes.', 'Le regate valide richiedono un account da entrambe le parti, quindi anche la ricerca. L’accesso richiede dieci secondi.', 'Regatas valendo rating pedem conta dos dois lados, então a busca também. Entrar leva dez segundos.')}</p>
-      <div className="df-acts"><a className="bt-go" href="/sign-in?next=/duel"><span>{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden', 'Giriş yap', 'Se connecter', 'Accedi', 'Entrar')}</span></a>{friend}</div>
-      <DuelHour lang={lang} signed={false} looking={false} onFind={() => {}} />
+      <div className="df-acts"><a className="bt-go dp-go" href="/sign-in?next=/duel"><span>{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden', 'Giriş yap', 'Se connecter', 'Accedi', 'Entrar')}</span></a>{friend}</div>
     </div>
   );
   if (phase === 'found' && pair) {
     const first = provisional(pair.me.races), them = pair.them.name || t('A sailor', 'Соперник', 'Un regatista', 'Ein Segler', 'Bir denizci', 'Un marin', 'Un velista', 'Um velejador');
     const st = stakes(pair.me.rating, pair.them.rating, pair.me.races);
-    const where = [pick(VENUES.find((v) => v.id === pair.settings.venue)?.name, lang), pick(YACHTS.find((y) => y.id === pair.settings.yacht)?.name, lang)].filter(Boolean).join(' · ');
+    const S = pair.settings;
+    const wind = { light: t('light breeze', 'слабый ветер', 'viento flojo', 'leichter Wind', 'hafif rüzgâr', 'petit vent', 'vento leggero', 'vento fraco'), medium: t('medium breeze', 'средний ветер', 'viento medio', 'mittlerer Wind', 'orta rüzgâr', 'vent moyen', 'vento medio', 'vento médio'), strong: t('strong breeze', 'сильный ветер', 'viento fuerte', 'starker Wind', 'kuvvetli rüzgâr', 'vent fort', 'vento forte', 'vento forte') }[S.preset];
+    const shape = S.course in SHAPE_NAME ? pick(SHAPE_NAME[S.course as keyof typeof SHAPE_NAME], lang) : null;
+    const laps = t(`${S.laps} ${S.laps === 1 ? 'lap' : 'laps'}`, `${S.laps} ${S.laps === 1 ? 'круг' : 'круга'}`, `${S.laps} ${S.laps === 1 ? 'vuelta' : 'vueltas'}`, `${S.laps} ${S.laps === 1 ? 'Runde' : 'Runden'}`, `${S.laps} tur`, `${S.laps} ${S.laps === 1 ? 'tour' : 'tours'}`, `${S.laps} ${S.laps === 1 ? 'giro' : 'giri'}`, `${S.laps} ${S.laps === 1 ? 'volta' : 'voltas'}`);
+    const start = t(`${S.start}-min start`, `старт ${S.start} мин`, `salida de ${S.start} min`, `${S.start}-Min.-Start`, `${S.start} dk start`, `départ ${S.start} min`, `partenza di ${S.start} min`, `largada de ${S.start} min`);
+    const where = [pick(VENUES.find((v) => v.id === S.venue)?.name, lang), pick(YACHTS.find((y) => y.id === S.yacht)?.name, lang), wind, shape, laps, start].filter(Boolean).join(' · ');
     return (
       <div className="df df-found" aria-live="assertive">
-        <span className="bt-kick bt-kick-w">{t('Match found', 'Соперник найден', 'Rival encontrado', 'Gegner gefunden', 'Rakip bulundu', 'Adversaire trouvé', 'Avversario trovato', 'Adversário encontrado')}</span>
-        <p className="iv-who"><b>{them}</b><span className="dr-lvl">{provisional(pair.them.races) ? t('New to 1-on-1', 'Новичок в 1 на 1', 'Nuevo en 1 contra 1', 'Neu im 1 gegen 1', 'Bire birde yeni', 'Nouveau en duel', 'Nuovo all’1 contro 1', 'Novo no 1 contra 1') : levelName(pair.them.rating, lang)}</span><span className="iv-r">{shown(pair.them.rating, pair.them.races)}</span>
+        <p className="iv-who"><b>{them}</b><span className="dr-lvl">{provisional(pair.them.races) ? t('New to 1-on-1', 'Новичок в 1 на 1', 'Nuevo en 1 contra 1', 'Neu im 1 gegen 1', 'Bire birde yeni', 'Nouveau en duel', 'Nuovo all’1 contro 1', 'Novo no 1 contra 1') : levelName(pair.them.rating, lang)}</span>{!first && <span className="iv-r">{shown(pair.them.rating, pair.them.races)}</span>}
           {pair.minutes ? <span className="iv-m">{t(`about ${pair.minutes} min`, `около ${pair.minutes} мин`, `unos ${pair.minutes} min`, `etwa ${pair.minutes} Min.`, `yaklaşık ${pair.minutes} dk`, `environ ${pair.minutes} min`, `circa ${pair.minutes} min`, `cerca de ${pair.minutes} min`)}</span> : null}</p>
-        {where && <p className="df-where">{where}</p>}
+        {where && !first && <p className="df-where">{where}</p>}{/* (a first match: who, about how long, Ready: fewer numbers) */}
         {loaded !== null && (() => {
           const v = pick(VENUES.find((x) => x.id === pair.settings.venue)?.name, lang) ?? '', pct = Math.round(loaded * 100);
           return <p className="df-load">{pct < 100
@@ -336,8 +386,9 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
           ? <p className="df-wait">{t(`Ready. Waiting for ${them}…`, `Готов. Ждём ${them}…`, `Listo. Esperando a ${them}…`, `Bereit. Warte auf ${them} …`, `Hazırsın. ${them} bekleniyor…`, `Prêt. On attend ${them}…`, `Pronto. In attesa di ${them}…`, `Pronto. Esperando ${them}…`)}</p>
           : <div className="df-acts">
               <button type="button" className="bt-go df-ready" onClick={ready}><IconPlay /><span>{t('Ready', 'Готов', 'Listo', 'Bereit', 'Hazırım', 'Prêt', 'Pronto', 'Pronto')}</span><span className="df-left">{Math.ceil(left)}</span></button>
-              <button type="button" className="bt-show" onClick={decline}>{t('Decline', 'Отказаться', 'Rechazar', 'Ablehnen', 'Reddet', 'Refuser', 'Rifiuta', 'Recusar')}</button>
+              <button type="button" className="bt-show" onClick={decline}>{first ? t('Not now', 'Не сейчас', 'Ahora no', 'Nicht jetzt', 'Şimdi değil', 'Pas maintenant', 'Non ora', 'Agora não') : t('Decline', 'Отказаться', 'Rechazar', 'Ablehnen', 'Reddet', 'Refuser', 'Rifiuta', 'Recusar')}</button>
             </div>}
+        {first && <p className="dp-note">{t('It counts for your rating; what it did to it is on the result.', 'Гонка идёт в рейтинг; как она его изменила — в результате.', 'Cuenta para tu rating; lo que le hizo está en el resultado.', 'Sie zählt für deine Wertung; was sie bewirkt hat, steht im Ergebnis.', 'Reytingine sayılır; ona etkisi sonuçta yazar.', 'Elle compte pour ton classement ; ce qu’elle y a fait est dans le résultat.', 'Conta per il tuo rating; cosa gli ha fatto è nel risultato.', 'Vale para o seu rating; o que fez com ele está no resultado.')}</p>}
         <span className="dr-bar df-bar" aria-hidden="true"><i style={{ width: `${Math.round((left / pair.ttl) * 100)}%` }} /></span>
       </div>
     );
@@ -345,8 +396,8 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
   if (phase === 'go') return <div className="df" aria-live="assertive"><p className="df-wait">{t('Both ready. Off to the race…', 'Оба готовы. К гонке…', 'Los dos listos. A la regata…', 'Beide bereit. Auf zur Regatta …', 'İkiniz de hazırsınız. Yarışa…', 'Prêts tous les deux. En route pour la régate…', 'Entrambi pronti. Alla regata…', 'Os dois prontos. Para a regata…')}</p></div>;
   if (phase === 'looking') return (
     <div className="df" aria-live="polite">
-      <p className="df-look"><b>{t('Looking for a sailor', 'Ищем соперника', 'Buscando un regatista', 'Suche einen Segler', 'Denizci aranıyor', 'Recherche d’un marin', 'Cerchiamo un velista', 'Procurando um velejador')}</b><span className="df-time">{mmss(look.waited)}</span></p>
-      <p className="df-band">{t(`Within ${look.band} of your rating`, `В пределах ${look.band} от твоего рейтинга`, `A ${look.band} o menos de tu rating`, `Bis ${look.band} um deine Wertung`, `Reytingine ${look.band} yakın`, `À ${look.band} de ton classement au plus`, `Entro ${look.band} dal tuo rating`, `Até ${look.band} do seu rating`)}{look.band < 350 ? t(' · wider as you wait', ' · шире по мере ожидания', ' · más amplio mientras esperas', ' · breiter, je länger du wartest', ' · bekledikçe genişler', ' · plus large à mesure que tu attends', ' · più ampio mentre aspetti', ' · mais amplo enquanto você espera') : ''}{look.online > 1 ? t(` · ${look.online - 1} other looking now`, ` · ещё ищут: ${look.online - 1}`, ` · ${look.online - 1} más buscando`, ` · ${look.online - 1} weitere suchen gerade`, ` · şu an ${look.online - 1} kişi daha arıyor`, ` · ${look.online - 1} autre(s) en recherche`, ` · altri ${look.online - 1} in cerca`, ` · mais ${look.online - 1} procurando`) : ''}</p>
+      <p className="df-look"><span className="df-time" aria-label={t('Looking for', 'Ищем уже', 'Buscando desde hace', 'Suche seit', 'Aranıyor', 'Recherche depuis', 'Cerchiamo da', 'Procurando há')}>{mmss(look.waited)}</span></p>{/* (the card's title says Looking for a sailor) */}
+      <p className="df-band">{t(`Within ${look.band} of your rating`, `В пределах ${look.band} от твоего рейтинга`, `A ${look.band} o menos de tu rating`, `Bis ${look.band} um deine Wertung`, `Reytingine ${look.band} yakın`, `À ${look.band} de ton classement au plus`, `Entro ${look.band} dal tuo rating`, `Até ${look.band} do seu rating`)}{look.band < 350 ? t(' · wider as you wait', ' · шире по мере ожидания', ' · más amplio mientras esperas', ' · breiter, je länger du wartest', ' · bekledikçe genişler', ' · plus large à mesure que tu attends', ' · più ampio mentre aspetti', ' · mais amplo enquanto você espera') : ''}{look.near ? t(` · ${look.near} in your band`, ` · в твоём диапазоне: ${look.near}`, ` · ${look.near} en tu rango`, ` · ${look.near} in deinem Bereich`, ` · aralığında ${look.near}`, ` · ${look.near} dans ta fourchette`, ` · ${look.near} nel tuo intervallo`, ` · ${look.near} na sua faixa`) : ''}{look.online > 1 ? t(` · ${look.online - 1} other looking now`, ` · ещё ищут: ${look.online - 1}`, ` · ${look.online - 1} más buscando`, ` · ${look.online - 1} weitere suchen gerade`, ` · şu an ${look.online - 1} kişi daha arıyor`, ` · ${look.online - 1} autre(s) en recherche`, ` · altri ${look.online - 1} in cerca`, ` · mais ${look.online - 1} procurando`) : ''}</p>
       {note === 'noanswer' && <p className="dr-note">{t('The other sailor didn’t say Ready. Still looking.', 'Соперник не нажал «Готов». Ищем дальше.', 'El otro regatista no dijo Listo. Seguimos buscando.', 'Der andere Segler hat nicht Bereit gesagt. Wir suchen weiter.', 'Diğer denizci hazır demedi. Aramaya devam.', 'L’autre marin n’a pas dit Prêt. On continue de chercher.', 'L’altro velista non ha detto Pronto. Continuiamo a cercare.', 'O outro velejador não disse Pronto. Seguimos procurando.')}</p>}
       {note === 'declined' && <p className="dr-note">{t('The other sailor declined. Still looking.', 'Соперник отказался. Ищем дальше.', 'El otro regatista rechazó. Seguimos buscando.', 'Der andere Segler hat abgelehnt. Wir suchen weiter.', 'Diğer denizci reddetti. Aramaya devam.', 'L’autre marin a refusé. On continue de chercher.', 'L’altro velista ha rifiutato. Continuiamo a cercare.', 'O outro velejador recusou. Seguimos procurando.')}</p>}
       {gone}{noted}
@@ -362,8 +413,8 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
           <p className="iv-note">{t('A message when a sailor is found, for 30 minutes: to this browser, or from our Telegram bot.', 'Сообщение, когда соперник найдётся, — в течение 30 минут: в этот браузер или от нашего бота в Telegram.', 'Un mensaje cuando haya rival, durante 30 minutos: en este navegador o de nuestro bot de Telegram.', 'Eine Nachricht, wenn ein Segler gefunden ist, 30 Minuten lang: in diesem Browser oder von unserem Telegram-Bot.', 'Bir denizci bulunduğunda mesaj, 30 dakika boyunca: bu tarayıcıya ya da Telegram botumuzdan.', 'Un message quand un marin est trouvé, pendant 30 minutes : dans ce navigateur ou par notre bot Telegram.', 'Un messaggio quando troviamo un velista, per 30 minuti: in questo browser o dal nostro bot Telegram.', 'Uma mensagem quando acharmos um velejador, por 30 minutos: neste navegador ou do nosso bot no Telegram.')}</p>
         </>}
       </div>
+      {band}
       {callBox}
-      {now}
     </div>
   );
   return (
@@ -371,13 +422,78 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
       {phase === 'missed' && <p className="dr-note">{t('The match went: Ready wasn’t said in time.', 'Соперник ушёл: «Готов» не нажали вовремя.', 'El emparejamiento se perdió: no se dijo Listo a tiempo.', 'Die Partie ist weg: Bereit kam nicht rechtzeitig.', 'Eşleşme kaçtı: zamanında hazır denmedi.', 'Le duel est passé : Prêt n’a pas été dit à temps.', 'L’abbinamento è sfumato: Pronto non è arrivato in tempo.', 'O pareamento se foi: Pronto não foi dito a tempo.')}</p>}
       {gone}{noted}
       {phase === 'error' && <p className="dr-note">{t('Finding a race didn’t work just now. Try again.', 'Поиск гонки сейчас не удался. Попробуй ещё раз.', 'Buscar una regata no funcionó ahora. Inténtalo de nuevo.', 'Die Suche hat gerade nicht geklappt. Versuch es noch einmal.', 'Yarış arama şu an olmadı. Tekrar dene.', 'La recherche n’a pas marché. Réessaie.', 'La ricerca non ha funzionato. Riprova.', 'A busca não funcionou agora. Tente de novo.')}</p>}
-      <div className="df-acts">
-        <button type="button" className="bt-go df-go" onClick={find}><IconPlay /><span>{t('Find a race', 'Найти гонку', 'Buscar una regata', 'Regatta finden', 'Yarış bul', 'Trouver une régate', 'Trova una regata', 'Encontrar uma regata')}</span></button>
-        {friend}
-      </div>
-      <p className="iv-note">{t('Matched by rating: within 100 at first, wider as you wait. About 4 minutes, one lap; your first three are easy ones.', 'Подбор по рейтингу: сначала в пределах 100, потом шире. Около 4 минут, один круг; первые три — лёгкие.', 'Emparejado por rating: a 100 al principio, más amplio mientras esperas. Unos 4 minutos, una vuelta; las tres primeras son fáciles.', 'Nach Wertung: zuerst bis 100, breiter, je länger du wartest. Etwa 4 Minuten, eine Runde; die ersten drei sind leicht.', 'Reytinge göre eşleşme: önce 100 içinde, bekledikçe daha geniş. Yaklaşık 4 dakika, tek tur; ilk üçü kolay.', 'Par classement : à 100 près au début, plus large à mesure que tu attends. Environ 4 minutes, un tour ; tes trois premières sont faciles.', 'Abbinati per rating: entro 100 all’inizio, più ampio mentre aspetti. Circa 4 minuti, un giro; le prime tre sono facili.', 'Pareado por rating: até 100 no início, mais amplo enquanto espera. Cerca de 4 minutos, uma volta; as três primeiras são fáceis.')}</p>
+      {who}
+      {band}
+      {easy}
       {wish}
-      {now}
+      {wishNote}
     </div>
+  );
+  })();
+
+  const title = !signed ? t('Sign in to race', 'Войди, чтобы гоняться', 'Inicia sesión para regatear', 'Zum Segeln anmelden', 'Yarışmak için giriş yap', 'Connecte-toi pour régater', 'Accedi per gareggiare', 'Entre para correr')
+    : phase === 'found' ? t('Match found', 'Соперник найден', 'Rival encontrado', 'Gegner gefunden', 'Rakip bulundu', 'Adversaire trouvé', 'Avversario trovato', 'Adversário encontrado')
+    : phase === 'looking' || phase === 'go' ? t('Looking for a sailor', 'Ищем соперника', 'Buscando un regatista', 'Suche einen Segler', 'Denizci aranıyor', 'Recherche d’un marin', 'Cerchiamo un velista', 'Procurando um velejador')
+    : t('Set up your race', 'Настрой гонку', 'Prepara tu regata', 'Stell deine Regatta ein', 'Yarışını ayarla', 'Prépare ta régate', 'Imposta la tua regata', 'Monte sua regata');
+  const readyN = list.length;
+  const heroP = t('One race, one rival, the same wind. Win and your rating goes up; beat someone stronger and it goes up more.', 'Одна гонка, один соперник, один ветер. Победишь — рейтинг вырастет; победишь сильнее себя — вырастет больше.', 'Una regata, un rival, el mismo viento. Gana y tu rating sube; vence a alguien más fuerte y sube más.', 'Eine Regatta, ein Gegner, derselbe Wind. Gewinnst du, steigt deine Wertung; schlägst du jemand Stärkeren, steigt sie mehr.', 'Bir yarış, bir rakip, aynı rüzgâr. Kazan, reytingin yükselsin; daha güçlüsünü yen, daha çok yükselsin.', 'Une régate, un adversaire, le même vent. Gagne et ton classement monte ; bats plus fort que toi et il monte davantage.', 'Una regata, un avversario, lo stesso vento. Vinci e il tuo rating sale; batti qualcuno più forte e sale di più.', 'Uma regata, um adversário, o mesmo vento. Vença e seu rating sobe; vença alguém mais forte e sobe mais.');
+  const readyLine = readyN > 0 ? t(` ${readyN} ready now.`, ` Сейчас готовы: ${readyN}.`, ` ${readyN} listos ahora.`, ` ${readyN} jetzt bereit.`, ` Şu an ${readyN} kişi hazır.`, ` ${readyN} prêts maintenant.`, ` ${readyN} pronti ora.`, ` ${readyN} prontos agora.`) : '';
+  const idle = phase === 'idle' || phase === 'missed' || phase === 'error';
+  const nearN = list.filter((r) => Math.abs(r.rating - me) <= 100).length;
+  // Find a race, docked at the top of the card as the race hub's action is, over the set-up that scrolls under it
+  const findBtn = (
+<button type="button" className="bt-go df-go dp-go" onClick={find}><IconPlay /><span>{t('Find a race', 'Найти гонку', 'Buscar una regata', 'Regatta finden', 'Yarış bul', 'Trouver une régate', 'Trova una regata', 'Encontrar uma regata')}</span><span className="dp-go-sub">{t('~4 min race', 'гонка ~4 мин', 'regata de ~4 min', '~4 Min. Regatta', '~4 dk yarış', 'régate de ~4 min', 'regata di ~4 min', 'regata de ~4 min')}</span></button>
+  );
+  const rows = (
+    <nav className="bt-rows" aria-label={t('More', 'Ещё', 'Más', 'Mehr', 'Daha fazla', 'Plus', 'Altro', 'Mais')}>
+      {signed && <Link className="bt-row" href="/duel/rating"><span>{t('Your rating, race by race', 'Твой рейтинг по гонкам', 'Tu rating, regata a regata', 'Deine Wertung, Regatta für Regatta', 'Yarış yarış reytingin', 'Ton classement, régate par régate', 'Il tuo rating, regata per regata', 'Seu rating, regata a regata')}</span></Link>}
+      <Link className="bt-row" href={RATING_HREF}><span>{t('Everyone’s 1-on-1 rating', 'Рейтинг 1 на 1 у всех', 'El rating 1 contra 1 de todos', 'Die 1-gegen-1-Wertung aller', 'Herkesin bire bir reytingi', 'Le classement en duel de tous', 'Il rating 1 contro 1 di tutti', 'O rating 1 contra 1 de todos')}</span></Link>
+      <Link className="bt-row" href="/help/duel"><span>{t('How 1-on-1 races work', 'Как устроены гонки 1 на 1', 'Cómo funcionan las regatas 1 contra 1', 'So funktionieren 1-gegen-1-Regatten', 'Bire bir yarışlar nasıl işler', 'Comment marchent les duels', 'Come funzionano le regate 1 contro 1', 'Como funcionam os duelos')}</span></Link>
+    </nav>
+  );
+  return (
+    <>
+      {/* the top: a race page over the game's own scene, as the HUD's "/race/free" board draws it: the heading, the HUD's
+          cells, and the card where the race is set up, looked for and found */}
+      <div className="scr bt-scr bc dp-hud">
+        <div className="bt">
+          <GameScene venue="phuket" boat="j70" wind="medium" title={t('A 1-on-1 race’s venue in 3D', 'Место гонки 1 на 1 в 3D', 'La sede de una regata 1 contra 1 en 3D', 'Das Revier einer 1-gegen-1-Regatta in 3D', 'Bire bir yarışın alanı 3D', 'Le plan d’eau d’un duel en 3D', 'Il campo di un duello in 3D', 'A raia de um duelo em 3D')} />
+          <div className="bt-info">
+            <div className="bt-top">
+              <BackLink href="/race" label={t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub', 'Yarış merkezine dön', 'Retour au centre de régate', 'Torna al centro regate', 'Voltar à central de regatas')} />
+              <SceneBrand lang={lang} />
+              <span className="bt-top-r">
+                <span className="bt-tick"><span className="dot-live" aria-hidden="true" />{signed ? t(`1-on-1 · ${readyN} ready now`, `1 на 1 · готовы: ${readyN}`, `1 contra 1 · ${readyN} listos`, `1 gegen 1 · ${readyN} bereit`, `Bire bir · ${readyN} hazır`, `Duel · ${readyN} prêts`, `1 contro 1 · ${readyN} pronti`, `1 contra 1 · ${readyN} prontos`) : t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', 'Duelo 1 contra 1')}</span>
+                <Link className="bt-ico" href="/help/duel" aria-label={t('How 1-on-1 races work', 'Как устроены гонки 1 на 1', 'Cómo funcionan las regatas 1 contra 1', 'So funktionieren 1-gegen-1-Regatten', 'Bire bir yarışlar nasıl işler', 'Comment marchent les duels', 'Come funzionano le regate 1 contro 1', 'Como funcionam os duelos')} title={t('How 1-on-1 races work', 'Как устроены гонки 1 на 1', 'Cómo funcionan las regatas 1 contra 1', 'So funktionieren 1-gegen-1-Regatten', 'Bire bir yarışlar nasıl işler', 'Comment marchent les duels', 'Come funzionano le regate 1 contro 1', 'Como funcionam os duelos')}>?</Link>
+              </span>
+            </div>
+            <span className="bt-kick">{t('1-on-1 race · rated', 'Гонка 1 на 1 · рейтинговая', 'Regata 1 contra 1 · con rating', '1-gegen-1-Regatta · gewertet', 'Bire bir yarış · reytingli', 'Duel · classé', 'Duello 1 contro 1 · valido', 'Duelo 1 contra 1 · vale rating')}</span>
+            <h1 className="bt-h bt-hero">{t('Race someone your level', 'Гонка с соперником твоего уровня', 'Regatea con alguien de tu nivel', 'Segle gegen jemanden auf deinem Niveau', 'Seviyende biriyle yarış', 'Régate contre quelqu’un de ton niveau', 'Sfida qualcuno del tuo livello', 'Corra contra alguém do seu nível')}</h1>
+            <p className="bt-p">{heroP}<b>{readyLine}</b></p>
+            <HudCells lang={lang} mine={mine} ready={signed ? readyN : null} near={nearN} />
+          </div>
+          <section className="bt-card bt-docked dp-card" aria-labelledby="dp-setup">
+            <div className="bt-card-h">
+              <span className="lbl-ink bt-card-t" id="dp-setup">{title}</span>
+              {idle && signed && <Link className="bt-mini" href="/match/new">{t('Challenge a friend', 'Позвать друга', 'Reta a un amigo', 'Freund herausfordern', 'Arkadaşını çağır', 'Défier un ami', 'Sfida un amico', 'Desafiar um amigo')}</Link>}
+            </div>
+            {signed && idle && <div className="bt-dock bt-dock-t">{findBtn}</div>}
+            <div className="bt-body">
+              {body}
+              {rows}
+            </div>
+          </section>
+        </div>
+      </div>
+      <div className="dp-main hm-page">
+        <div className="dp-side">
+          {signed && phase !== 'found' && phase !== 'go' && now}{/* (gone once a match is found: the card is the match) */}
+          <DuelHour lang={lang} signed={signed} looking={phase === 'looking'} onFind={find} />
+          {signed && <div className="dp-two"><OpenCalls lang={lang} calls={calls} take={take} post={postCall} canPost={!call && (phase === 'idle' || phase === 'looking')} /><LastRaces lang={lang} mine={mine} /></div>}
+          {signed && <NearTable lang={lang} near={near} />}
+          {children}
+        </div>
+      </div>
+    </>
   );
 }

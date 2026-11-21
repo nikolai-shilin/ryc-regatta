@@ -54,7 +54,7 @@ export async function adminLoad<D = null>(params: LangParams['params'], load?: (
 }
 
 // one of the database's sums for an admin over the last `days`, or why it didn't come
-export async function adminRpc<D>(sb: Supabase, fn: 'regatta_admin_stats' | 'regatta_admin_insight' | 'regatta_admin_players' | 'regatta_admin_logs' | 'regatta_admin_duels', days: number | null, more?: { person: string | null }): Promise<{ data: D | null; error: string | null }> {
+export async function adminRpc<D>(sb: Supabase, fn: 'regatta_admin_stats' | 'regatta_admin_insight' | 'regatta_admin_players' | 'regatta_admin_logs' | 'regatta_admin_duels' | 'regatta_admin_targets', days: number | null, more?: { person: string | null }): Promise<{ data: D | null; error: string | null }> {
   const r = await sb.rpc(fn, { days, ...more });
   return r.error ? { data: null, error: r.error.message } : { data: r.data as D, error: null };
 }

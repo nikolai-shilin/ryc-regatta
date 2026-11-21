@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { DuelHour } from './duel-hour';
 import { LOCALE, tx, type Lang } from '@/lib/lang';
 import { levelName, nextLevel } from '@/lib/levels';
 import { provisional, shown, stakes, signed as sgn, START } from '@/lib/elo';
@@ -49,7 +50,7 @@ export function DuelHomeView({ lang, mine, list }: { lang: Lang; mine: MyRating 
         <h2 className="ho-h2" id="h-duel">{t('Race someone your level', 'Гонка с соперником твоего уровня', 'Regatea con alguien de tu nivel', 'Segle gegen jemanden auf deinem Niveau', 'Seviyendeki biriyle yarış', 'Affronte quelqu’un de ton niveau', 'Sfida qualcuno del tuo livello', 'Corra contra alguém do seu nível')}</h2>
         <p className="ho-ps">{t('One other sailor, live, on the same course. Win and your rating goes up; the less likely the win, the more it’s worth.', 'Один соперник, вживую, на той же дистанции. Победа поднимает рейтинг; чем менее вероятна победа, тем больше она стоит.', 'Otro regatista, en directo, en el mismo recorrido. Si ganas, tu rating sube; cuanto menos probable la victoria, más vale.', 'Ein anderer Segler, live, auf derselben Bahn. Gewinnst du, steigt deine Wertung; je unwahrscheinlicher der Sieg, desto mehr ist er wert.', 'Bir başka denizci, canlı, aynı parkurda. Kazanırsan reytingin yükselir; galibiyet ne kadar zorsa o kadar değerli.', 'Un autre marin, en direct, sur le même parcours. Gagne et ton classement monte ; moins la victoire est probable, plus elle vaut.', 'Un altro velista, dal vivo, sullo stesso percorso. Se vinci il tuo rating sale; meno è probabile la vittoria, più vale.', 'Outro velejador, ao vivo, no mesmo percurso. Vença e seu rating sobe; quanto menos provável a vitória, mais ela vale.')}</p>
         <div className="ho-acts">
-          <Link className="ho-go" href="/duel" data-cta="duel-find"><IconPlay s={18} /><span>{t('Find a race', 'Найти гонку', 'Buscar una regata', 'Regatta finden', 'Yarış bul', 'Trouver une régate', 'Trova una regata', 'Encontrar uma regata')}</span></Link>
+          <Link className="ho-go" href="/duel?find" data-cta="duel-find"><IconPlay s={18} /><span>{t('Find a race', 'Найти гонку', 'Buscar una regata', 'Regatta finden', 'Yarış bul', 'Trouver une régate', 'Trova una regata', 'Encontrar uma regata')}</span></Link>
           <Link className="ho-ghost" href="/match/new" data-cta="duel-friend">{t('Challenge a friend', 'Позвать друга', 'Reta a un amigo', 'Einen Freund herausfordern', 'Bir arkadaşını çağır', 'Défier un ami', 'Sfida un amico', 'Desafiar um amigo')}</Link>
         </div>
         <dl className="dh-strip">
@@ -66,6 +67,8 @@ export function DuelHomeView({ lang, mine, list }: { lang: Lang; mine: MyRating 
             <div className="dh-wide"><dt>{t('Not rated yet', 'Пока без рейтинга', 'Aún sin rating', 'Noch keine Wertung', 'Henüz reyting yok', 'Pas encore classé', 'Ancora senza rating', 'Ainda sem rating')}</dt><dd><span className="dh-s">{t(`Everyone starts at ${START}; your first five races find your level.`, `У всех старт с ${START}; первые пять гонок найдут твой уровень.`, `Todos empiezan en ${START}; tus cinco primeras regatas encuentran tu nivel.`, `Alle beginnen bei ${START}; deine ersten fünf Regatten finden dein Niveau.`, `Herkes ${START} ile başlar; ilk beş yarışın seviyeni bulur.`, `Tout le monde part de ${START} ; tes cinq premières régates trouvent ton niveau.`, `Tutti partono da ${START}; le prime cinque regate trovano il tuo livello.`, `Todos começam em ${START}; suas cinco primeiras regatas acham seu nível.`)}</span></dd></div>
           )}
         </dl>
+        {/* the duel hour, as on /duel: counted down, and I'm in; its Find a race goes to /duel looking at once */}
+        <DuelHour lang={lang} signed looking={false} onFind={() => { location.href = '/duel?hour'; }} />
       </div>
       <aside className="ho-card dh-now" aria-label={t('Ready now', 'Готовы сейчас', 'Listos ahora', 'Jetzt bereit', 'Şu an hazır', 'Prêts maintenant', 'Pronti ora', 'Prontos agora')}>
         <div className="ho-card-h"><span className="lbl-ink">{t('Ready now', 'Готовы сейчас', 'Listos ahora', 'Jetzt bereit', 'Şu an hazır', 'Prêts maintenant', 'Pronti ora', 'Prontos agora')}</span><span className="lbl">{t('Nearest your rating', 'Ближе всего к тебе', 'Más cerca de tu rating', 'Nah an deiner Wertung', 'Reytingine en yakın', 'Les plus proches de toi', 'I più vicini a te', 'Mais perto do seu rating')}</span></div>

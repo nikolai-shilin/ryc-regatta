@@ -142,6 +142,9 @@ export function timeLeft(race, limit) {
 let api = null; // the race on this page, for main.js's leaveMatch()
 // Leave the race (on the water main.js has asked first: ask('leave'))
 export function leaveMatch() { if (api) api.leave(); }
+// the race hasn't reached the gun: its clock still counts down to it, and no recall (after which it counts again) has
+// been called (as duel-log.js gunOf has it)
+export const beforeGun = (race) => !!race && !(race.clock >= 0 || race.recalls > 0);
 
 // The race at `code` on this page. t: main.js's words (the T keys); world, venue and cls: the page's; onRace(session)
 // puts the race on screen ({ race, step(dt), isGuest }), onIdle() takes it off (the card); onEnd() leaves the page;
@@ -248,9 +251,13 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     } catch (e) {}
     // who left is told with the end (duel-log.js endBody `left`): leaving after the gun loses the race. The host's going
     // abandons it (it lived in this tab); the guest's going, before her own finish, gives it to the host, as the host's
-    // screen has it (Host.guestLeft), so the two ends agree
+    // screen has it (Host.guestLeft), so the two ends agree. Before the gun nobody has raced yet: the race is called off on
+    // both screens and counts for nothing (the brief: leaving before the gun, nothing; after it, a loss)
     if (isHost && match?.state === 'race') match.leave(myId);
-    else if (!isHost && match?.state === 'race' && onScreen() && !cur.race.player?.done) { match.endRace({ winner: match.hostId, forfeited: myId }); match.leftBy = myId; }
+    else if (!isHost && match?.state === 'race' && onScreen() && !cur.race.player?.done) {
+      if (beforeGun(cur.race)) match.endRace({ abandoned: true }); else match.endRace({ winner: match.hostId, forfeited: myId });
+      match.leftBy = myId;
+    }
     tellEnd(true); tellPerf(cur);
     cur?.H?.stop(); cur?.G?.stop();
     if (isHost) try { localStorage.removeItem('regatta-match-' + code); } catch (e) {}
@@ -325,7 +332,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     link.all.on('leave', (m) => {
       if (!match || !m || m.id !== otherId()) return;
       // the guest gone in a race: before her finish she gives it up, after it it runs on; not yet under way, there's no race
-      if (isHost && match.state === 'race') { if (cur?.H) cur.H.guestLeft(); else match.endRace({ abandoned: true }); }
+      if (isHost && match.state === 'race') { if (cur?.H) cur.H.guestLeft(); else match.endRace({ abandoned: true }); } // (before the gun Host.guestLeft calls it off)
       match.leave(m.id);
       if (isHost) { saveMatch(); sendState(); }
     });

@@ -8,7 +8,7 @@ export const MAIN = {
   changeRace: 'Cambia regata', leaveHub: 'Torna al centro regate', quickK: 'Comandi rapidi', camK: 'Telecamera', sAuto: 'Auto', guidesSw: 'Guide sull’acqua', avK: 'Audio e grafica', wordsK: 'Parole della vela', startsOver: 'ricomincia', loadingK: 'Armiamo la barca', escResumes: 'Esc per riprendere',
   leaveK: 'Lasciare questa regata?', leaveTxt: (pl, leg) => `Sei ${pl} nel lato ${leg}.`, keepRacing: 'Continua la regata', doRestart: 'Ricomincia', doChange: 'Cambia', doLeave: 'Esci',
   inSeq: 'Sei nella procedura di partenza.', notKept: 'Il tempo e la posizione di questa regata non vengono salvati.',
-  leaveHost: 'La regata viene annullata su entrambi gli schermi.', leaveGuest: (w) => (w ? `Ti ritiri, e la regata va a ${w}.` : 'Ti ritiri, e la regata finisce senza vincitore.'), leaveHome: 'La tua posizione resta valida per l’altro regatante, ma se esci ora non avrai il risultato completo.',
+  leaveHost: 'La regata viene annullata su entrambi gli schermi.', leaveGuest: (w) => (w ? `Ti ritiri, e la regata va a ${w}.` : 'Ti ritiri, e la regata finisce senza vincitore.'), leaveBefore: 'La partenza non è ancora stata data: se esci ora, la regata viene annullata per entrambi e non conta nulla.', leaveHome: 'La tua posizione resta valida per l’altro regatante, ma se esci ora non avrai il risultato completo.',
   askK: { restart: 'Ricomincia', change: 'Cambia regata', leave: 'Esci' }, askH: { restart: 'Ricominciare questa regata?', change: 'Cambiare regata?', leave: 'Lasciare questa regata?' },
   askT: { restart: 'Si riparte dalla procedura di partenza, stesso percorso, stesso vento.', change: 'Poi scegli il campo di regata, il vento e il percorso, e la regata riparte con quelli.', leave: 'Torni al centro regate.' },
   sailUp: 'Di bolina verso', sailDown: (k) => (k ? 'In poppa, col gennaker, verso' : 'In poppa, senza gennaker, verso'), sailReach: 'Al lasco verso', aheadOf: (n, s) => `${n} è avanti di ${s}.`, leadBy: (s) => `Sei in testa con ${s} di vantaggio.`, leadAlone: 'Sei in testa.',
@@ -119,7 +119,7 @@ export const MAIN = {
 };
 
 export const HUD = {
-  title: 'Up and down', daily: 'Regata del giorno', free: 'Regata libera', first: 'Prima regata', live: 'In diretta', startIn: 'Partenza tra', gun: 'Segnale',
+  title: 'Up and down', daily: 'Regata del giorno', free: 'Regata libera', duel: 'Duello 1 contro 1', first: 'Prima regata', live: 'In diretta', startIn: 'Partenza tra', gun: 'Segnale',
   bias: 'Favore della linea', pinEnd: 'Lato boa', boatEnd: 'Lato comitato', square: 'In squadra', line: 'Linea',
   legOf: (n, N) => `Lato ${n} di ${N}`, legN: (n) => `Lato ${n}`, legShort: (n, N) => `Lato ${n}/${N}`, up: 'Bolina', down: 'Poppa', reach: 'Lasco',
   upwind: 'di bolina', downwind: 'in poppa', reaching: 'al lasco', stbd: 'dritta', port: 'sinistra', preStart: 'Prepartenza',

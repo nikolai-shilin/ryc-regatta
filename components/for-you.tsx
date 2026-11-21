@@ -80,12 +80,24 @@ export function ForYou({ lang, max = 3 }: { lang: Lang; max?: number }) {
 
 export function ForYouView({ lang, cards, mark }: { lang: Lang; cards: Card[]; mark: (c: Card, ev: 'tap' | 'dismiss' | 'fewer') => void }) {
   const t = tx(lang);
+  // what kind of thing each card is, over its title (the design's GOAL, LIVE, …)
+  const kindName = (k: string) => ({
+    first_race: t('First race', 'Первая гонка', 'Primera regata', 'Erste Regatta', 'İlk yarış', 'Première régate', 'Prima regata', 'Primeira regata'),
+    sign_in: t('Keep it', 'Сохрани', 'Guárdalo', 'Behalten', 'Sakla', 'Garde-le', 'Tienilo', 'Guarde'),
+    today: t('Today’s race', 'Гонка дня', 'Regata del día', 'Regatta des Tages', 'Günün yarışı', 'Régate du jour', 'Regata del giorno', 'Regata do dia'),
+    today_better: t('Today’s race', 'Гонка дня', 'Regata del día', 'Regatta des Tages', 'Günün yarışı', 'Régate du jour', 'Regata del giorno', 'Regata do dia'),
+    ready: t('1-on-1', '1 на 1', '1 contra 1', '1 gegen 1', 'Bire bir', 'Duel', '1 contro 1', '1 contra 1'),
+    hour: t('Duel hour', 'Час дуэлей', 'Hora de duelos', 'Duell-Stunde', 'Düello saati', 'Heure des duels', 'Ora dei duelli', 'Hora dos duelos'),
+    level: t('Level', 'Уровень', 'Nivel', 'Niveau', 'Seviye', 'Niveau', 'Livello', 'Nível'),
+    first_duel: t('1-on-1', '1 на 1', '1 contra 1', '1 gegen 1', 'Bire bir', 'Duel', '1 contro 1', '1 contra 1'),
+    goal: t('Goal', 'Цель', 'Meta', 'Ziel', 'Hedef', 'Objectif', 'Obiettivo', 'Meta'),
+  } as Record<string, string>)[k] ?? '';
   return (
     <section className="fy" aria-labelledby="fy-h">
       <h2 className="fy-h" id="fy-h">{t('For you', 'Для тебя', 'Para ti', 'Für dich', 'Senin için', 'Pour toi', 'Per te', 'Para você')}</h2>
       <ol className="fy-list">{cards.map((c) => (
         <li key={c.kind} className={`fy-c fy-${c.kind}${c.live ? ' live' : ''}`}>
-          {c.live ? <span className="fy-live"><span className="dot-live" />{t('Now', 'Сейчас', 'Ahora', 'Jetzt', 'Şimdi', 'Maintenant', 'Ora', 'Agora')}</span> : null}
+          {c.live ? <span className="fy-live"><span className="dot-live" />{t('Now', 'Сейчас', 'Ahora', 'Jetzt', 'Şimdi', 'Maintenant', 'Ora', 'Agora')}</span> : <span className="fy-kind">{kindName(c.kind)}</span>}
           <b className="fy-t">{c.title}</b>
           <p className="fy-why"><span>{t('Why:', 'Почему:', 'Por qué:', 'Warum:', 'Neden:', 'Pourquoi :', 'Perché:', 'Por quê:')}</span> {c.why}</p>
           <div className="fy-acts">

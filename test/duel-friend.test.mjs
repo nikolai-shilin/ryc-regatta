@@ -67,12 +67,13 @@ test('an invite is read as the database gives it: a minutes figure out of reason
 
 test('the invite page: who is asking, their level and rating, about how long, and "Race Alex P."', () => {
   const s = plain(renderToStaticMarkup(InviteJoinView({ inv: parseInvite(INV), href: '/play?match=K7M2QZ', lang: 'en' })));
-  assert.match(s, /Alex P\. Fleet 1558 about 7 min Race Alex P\. No account needed/);
+  assert.match(s, /Alex P\. Fleet 1558 about 7 min Göcek · J\/70 · medium breeze · Up and down · 1 lap Race Alex P\. No account needed/);
+  assert.match(s, /You’re both signed in, so this race counts for your 1-on-1 ratings/); // (shown when signed in: .if-me)
   const prov = plain(renderToStaticMarkup(InviteJoinView({ inv: parseInvite({ ...INV, rating: 1500, races: 0, minutes: null }), href: '/x', lang: 'en' })));
-  assert.match(prov, /Alex P\. New to 1-on-1 ~1500 Race Alex P\./); assert.doesNotMatch(prov, /about/);
+  assert.match(prov, /Alex P\. New to 1-on-1 ~1500 Göcek · J\/70 · medium breeze · Up and down · 1 lap Race Alex P\./); assert.doesNotMatch(prov, /about/);
   const none = renderToStaticMarkup(InviteJoinView({ inv: null, href: '/play?match=K7M2QZ', lang: 'en' }));
   assert.match(plain(none), /^Join the race/); assert.match(none, /href="\/play\?match=K7M2QZ"/);
-  assert.match(plain(renderToStaticMarkup(InviteJoinView({ inv: parseInvite(INV), href: '/x', lang: 'de' }))), /etwa 7 Min\. Gegen Alex P\. segeln/);
+  assert.match(plain(renderToStaticMarkup(InviteJoinView({ inv: parseInvite(INV), href: '/x', lang: 'de' }))), /etwa 7 Min\. Göcek · J\/70 · mittlerer Wind · Luv–Lee · 1 Runde Gegen Alex P\. segeln/);
 });
 
 const claim = (body, headers = {}) => CLAIM(req('/connect/claim', { method: 'POST', body: JSON.stringify(body), headers }));

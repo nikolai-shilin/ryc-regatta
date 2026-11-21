@@ -18,7 +18,6 @@ import { PauseCard } from '@/components/pause-card';
 import { MyRow } from '@/components/home-client';
 import { SITE, RYC_LD, crumbsLd, jsonLd, langUrl } from '@/lib/seo';
 import { getRating } from '@/lib/rating';
-import { getDuelBoard } from '@/lib/duel-board';
 import { RaceBoard } from '@/components/race-board';
 
 // Built for everyone alike and refreshed every five minutes, as Home is (today's fastest move): who is signed in is
@@ -39,8 +38,9 @@ export const generateMetadata = titled('Race hub: today’s sailing race and cus
 export default async function Hub({ params }: LangParams) {
   const { lang, t } = await getT(params);
   const d0 = dailyRace().day;
-  // today's fastest for the card; the whole day, the month and the 1-on-1 rating for the leaderboard (/race#board)
-  const [today, rating, duel] = await Promise.all([todayTop(), getRating(d0), getDuelBoard()]);
+  // today's fastest for the card; the whole day and the month for today's race's leaderboard (/race#board; the 1-on-1
+  // rating has its own board, beside it on /rating)
+  const [today, rating] = await Promise.all([todayTop(), getRating(d0)]);
   const d = dailyRace(), v = venueOf(d.venue), boat = yachtOf(d.yacht);
   const date = new Date(d.day + 'T12:00:00Z').toLocaleDateString(LOCALE[lang], { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
   const top = today && today.d === d.day ? today.top : [];
@@ -121,7 +121,7 @@ export default async function Hub({ params }: LangParams) {
         </PauseCard>
       </div>
       <DailyLock lang={lang} chips={[`${t(...venueOf(d.venue).name)}`, t(...boat.name), `${breeze} ${KN[d.preset]} ${t('kn', 'уз', 'kn', 'kn', 'kn', 'kn', 'kn', 'nós')}`, `${t(...SHAPE_NAME[d.course])} · ${metres}`, t(`${d.fleet} boats`, `${d.fleet} лодок`, `${d.fleet} barcos`, `${d.fleet} Boote`, `${d.fleet} tekne`, `${d.fleet} bateaux`, `${d.fleet} barche`, `${d.fleet} barcos`), t(`${d.start} min start`, `старт ${d.start} мин`, `Salida de ${d.start} min`, `Start ${d.start} Min.`, `${d.start} dk start`, `Départ en ${d.start} min`, `Partenza: ${d.start} min`, `Largada de ${d.start} min`), d.current ? t('Current on', 'С течением', 'Con corriente', 'Strömung an', 'Akıntı var', 'Avec courant', 'Con corrente', 'Com correnteza') : t('No current', 'Без течения', 'Sin corriente', 'Keine Strömung', 'Akıntı yok', 'Sans courant', 'Senza corrente', 'Sem correnteza')]} />
-      <RaceBoard lang={lang} t={t} day={d.day} venue={pick(v.name, lang)} data={rating && rating.d === d.day ? rating : null} duel={duel} />
+      <RaceBoard lang={lang} t={t} day={d.day} venue={pick(v.name, lang)} data={rating && rating.d === d.day ? rating : null} />
     </div>
   );
 }

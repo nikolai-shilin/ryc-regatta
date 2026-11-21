@@ -564,3 +564,12 @@ test('the results are in the order of the result, whatever the water says: the w
   assert.equal(f.hrace.winner, null);
   assert.deepEqual(ids(f.guest.results), ['g', 'h']);
 });
+
+test('guestLeft before the gun calls the race off: nobody has raced yet, so nothing counts (the brief: before the gun, nothing; after it, a loss)', async () => {
+  const d = await duel();
+  assert.ok(d.hrace.clock < 0 && !d.hrace.recalls, 'still before the gun');
+  d.host.guestLeft();
+  assert.equal(d.host.abandoned, true, 'called off');
+  assert.equal(d.host.guestGone, true, 'by the guest, so the end names her as the one who left');
+  assert.equal(d.hrace.forfeited, null, 'no forfeit'); assert.equal(d.hrace.winner, null, 'no winner');
+});
