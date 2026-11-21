@@ -46,7 +46,7 @@ export default async function Glossary({ params }: LangParams) {
   const n = GUIDES.length;
   const ld = {
     '@context': 'https://schema.org', '@type': 'DefinedTermSet', '@id': url, name: t('Sailing racing glossary', 'Словарь парусных гонок', 'Glosario de regatas a vela', 'Segelregatta-Glossar', 'Yelken yarışı sözlüğü', 'Glossaire de la régate à la voile', 'Glossario delle regate a vela', 'Glossário de regata a vela'), inLanguage: lang, url,
-    hasDefinedTerm: terms.map((x) => ({ '@type': 'DefinedTerm', '@id': `${url}#${x.id}`, name: x.term, description: x.def, inDefinedTermSet: url })),
+    hasDefinedTerm: terms.map((x) => ({ '@type': 'DefinedTerm', '@id': `${url}#${x.id}`, name: x.term, ...(x.en ? { alternateName: x.en } : {}), description: x.def, inDefinedTermSet: url })),
   };
   const cards: [string, string, string][] = [
     [t('Racing rules', 'Правила гонок', 'Reglas de regatas', 'Wettfahrtregeln', 'Yarış kuralları', 'Règles de course', 'Regole di regata', 'Regras de regata'), t('The racing rules, rule by rule', 'Правила гонок, правило за правилом', 'Las reglas de regatas, regla a regla', 'Die Wettfahrtregeln, Regel für Regel', 'Yarış kuralları, kural kural', 'Les règles de course, règle par règle', 'Le regole di regata, una per una', 'As regras de regata, regra por regra'), '/rulebook'],
@@ -85,7 +85,7 @@ export default async function Glossary({ params }: LangParams) {
                 <dl className="rb-rules">
                   {g.terms.map((x) => (
                     <div key={x.id} id={x.id} className="rb-rule">
-                      <dt><Link className="dc-term" href={dictPath(x.id)}>{x.term}</Link></dt>
+                      <dt><Link className="dc-term" href={dictPath(x.id)}>{x.term}</Link>{x.en ? <span className="dc-en-s" lang="en"> ({x.en})</span> : null}</dt>
                       <dd>{x.def}</dd>
                       {x.see && <dd className="gd-see-d"><Link className="gd-see" href={x.see}>{seeLabel(x.see, t, lang)}<IconArrow s={12} /></Link></dd>}
                     </div>

@@ -169,7 +169,9 @@ for (const lang of LANGS) {
     const h = await html(glossaryPage, lang);
     for (const x of terms) {
       assert.ok(h.includes(`id="${x.id}"`), x.id);
-      assert.ok(h.includes(`<dt><a href="/dictionary/${x.id}" class="dc-term">${esc(x.term)}</a></dt>`), `${x.term}: a link to its page in the dictionary`);
+      // in another language, its English name beside it ("Поворот оверштаг (tack)")
+      const en = x.en ? `<span class="dc-en-s" lang="en"> (${esc(x.en)})</span>` : '';
+      assert.ok(h.includes(`<dt><a href="/dictionary/${x.id}" class="dc-term">${esc(x.term)}</a>${en}</dt>`), `${x.term}: a link to its page in the dictionary`);
       assert.ok(h.includes(`<dd>${esc(x.def)}</dd>`), `${x.id}: its definition`);
     }
     const ids = idsOf(h);
@@ -189,7 +191,7 @@ for (const lang of LANGS) {
     assert.equal(ld['@id'], url);
     assert.equal(ld.inLanguage, lang);
     assert.equal(ld.hasDefinedTerm.length, terms.length);
-    assert.deepEqual(ld.hasDefinedTerm[0], { '@type': 'DefinedTerm', '@id': `${url}#${terms[0].id}`, name: terms[0].term, description: terms[0].def, inDefinedTermSet: url });
+    assert.deepEqual(ld.hasDefinedTerm[0], { '@type': 'DefinedTerm', '@id': `${url}#${terms[0].id}`, name: terms[0].term, ...(lang === 'en' ? {} : { alternateName: 'beat' }), description: terms[0].def, inDefinedTermSet: url });
   });
 }
 

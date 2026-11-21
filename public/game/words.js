@@ -53,6 +53,9 @@ const CSS = `
 .wd-w dt { margin: 0 0 var(--s-1); font: 700 var(--fs-row)/1.1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; color: var(--ink); }
 .wd-w dd { margin: 0; font: 500 var(--fs-small)/1.5 var(--sans); color: var(--ink-2); text-wrap: pretty; }
 .wd-w mark { background: color-mix(in srgb, var(--you) 34%, transparent); color: inherit; }
+/* the English name, beside the name in another language: "Поворот оверштаг (tack)" */
+.wd-en { font-weight: 600; color: var(--ink-3); }
+dt > .wd-en { margin-left: .35em; }
 .wd-w.hit { border-left-color: var(--you); }
 .wd-say { margin: 0; padding: var(--s-8) 0; font: 500 var(--fs-body)/1.5 var(--sans); color: var(--ink-3); text-align: center; }
 .wd-say[hidden] { display: none; }
@@ -84,6 +87,8 @@ const CSS = `
 .wd-cap span { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--gold); }
 .wd-cap b { font: 700 var(--fs-title)/1.05 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; color: var(--ink); }
 .wd-cap p { margin: 0; font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-2); }
+.wd-cap em { margin-top: -2px; font: 600 var(--fs-label)/1.2 var(--cond); font-style: normal; letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.wd-cap em[hidden] { display: none; }
 .wd-cap i { font: 600 var(--fs-label)/1.2 var(--cond); font-style: normal; letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 .wd-cap.top p { display: none; }
 @media (max-width: 559px) and (orientation: portrait) { .wd.staged { align-items: flex-end; } .wd.staged .wd-card { width: 100%; height: 58%; } .wd.staged .wd-top { padding-top: 0; } .wd-cap b { font-size: var(--fs-row); } }
@@ -104,14 +109,14 @@ export const wordsTitle = (lang) => at(['Sailing words', 'Словарь яхт�
 export const fold = (s, lang = 'en') => String(s).toLocaleLowerCase(lang).normalize('NFD').replace(/\p{M}/gu, '').replace(/ı/g, 'i');
 
 // The groups as they show for a search and a tab: each with its terms in order, each term with whether it shows and
-// whether the search found it in its name (those come first). q: what's typed; tab: a group's id, or '' for all.
+// whether the search found it in its name or its English one (those come first: "tack" finds "Поворот оверштаг"). q: what's typed; tab: a group's id, or '' for all.
 export function find(groups, q, tab = '', lang = 'en') {
   const parts = fold(q, lang).split(/\s+/).filter(Boolean);
   return groups.map((g) => {
-    const terms = g.terms.map(([id, term, def]) => {
-      const name = fold(term, lang), all = `${name} ${fold(def, lang)}`;
+    const terms = g.terms.map(([id, term, def, en = '']) => {
+      const name = `${fold(term, lang)} ${fold(en, 'en')}`, all = `${name} ${fold(def, lang)}`;
       const shown = parts.every((p) => all.includes(p));
-      return { id, term, def, shown, named: shown && parts.length > 0 && parts.every((p) => name.includes(p)) };
+      return { id, term, def, en, shown, named: shown && parts.length > 0 && parts.every((p) => name.includes(p)) };
     });
     const order = [...terms.filter((x) => x.named), ...terms.filter((x) => !x.named)];
     const count = terms.filter((x) => x.shown).length;
@@ -184,8 +189,9 @@ export function openWords({ lang = 'en', title = wordsTitle(lang), url, zIndex =
   body.append(cols, say);
   top.append(h, n, back); card.append(top, bar, body); ov.append(card);
   // what's shown on the water: its group, its name, its words (a word with no scene says so, and the race is in view)
-  const cap = el('div', 'wd-cap'), capK = el('span'), capT = el('b'), capP = el('p'), capN = el('i');
-  cap.hidden = true; cap.setAttribute('aria-live', 'polite'); cap.append(capK, capT, capP, capN);
+  const cap = el('div', 'wd-cap'), capK = el('span'), capT = el('b'), capE = el('em', 'wd-cap-en'), capP = el('p'), capN = el('i');
+  capE.lang = 'en'; capE.hidden = true;
+  cap.hidden = true; cap.setAttribute('aria-live', 'polite'); cap.append(capK, capT, capE, capP, capN);
   if (stage) ov.append(cap);
   const has = new Set(stage?.ids || []);
   bar.hidden = true;
@@ -207,19 +213,22 @@ export function openWords({ lang = 'en', title = wordsTitle(lang), url, zIndex =
     const secs = groups.map((g, i) => {
       const s = el('section', 'wd-g'), head = el('h3'), dl = el('dl');
       head.append(el('b', '', String(i + 1).padStart(2, '0')), el('span', '', g.title));
-      const rows = new Map(g.terms.map(([id, term, def]) => {
+      const rows = new Map(g.terms.map(([id, term, def, en]) => {
         const w = el('div', 'wd-w'), dt = el('dt'), dd = el('dd', '', def);
-        let name = dt, pick = null;
+        const name = el('span', 'wd-tn'), eng = en ? el('span', 'wd-en') : null;
+        if (eng) eng.lang = 'en';
+        let pick = null;
         if (stage) { // a button: the word on the water
-          pick = button('wd-pick'); name = el('span', 'wd-tn');
-          pick.append(name); if (has.has(id)) pick.append(el('span', 'wd-3d', '3D'));
+          pick = button('wd-pick');
+          pick.append(name); if (eng) pick.append(eng); if (has.has(id)) pick.append(el('span', 'wd-3d', '3D'));
           pick.setAttribute('aria-pressed', 'false');
           pick.addEventListener('click', () => choose(id));
           dt.append(pick);
-        }
+        } else { dt.append(name); if (eng) dt.append(eng); }
         name.textContent = term;
+        if (eng) eng.textContent = `(${en})`;
         w.dataset.id = id; w.append(dt, dd); dl.append(w);
-        return [id, { w, dt: name, term, def, pick, group: g.title }];
+        return [id, { w, dt: name, eng, term, en, def, pick, group: g.title }];
       }));
       s.append(head, dl); cols.append(s);
       return { s, dl, rows };
@@ -232,6 +241,7 @@ export function openWords({ lang = 'en', title = wordsTitle(lang), url, zIndex =
       picked = id; r.w.classList.toggle('on', true); r.pick.setAttribute('aria-pressed', 'true');
       const onWater = !!stage.show(id);
       capK.textContent = r.group; capT.textContent = r.term; capP.textContent = r.def;
+      capE.textContent = r.en ? `(${r.en})` : ''; capE.hidden = !r.en;
       capN.textContent = onWater ? '' : t('Not shown on the water', 'На воде не показать', 'No se muestra en el agua', 'Nicht auf dem Wasser zu sehen', 'Suda gösterilmiyor', 'Pas montré sur l’eau', 'Non mostrato in acqua', 'Não mostrado na água');
       capN.hidden = onWater; cap.hidden = false;
     };
@@ -248,6 +258,7 @@ export function openWords({ lang = 'en', title = wordsTitle(lang), url, zIndex =
           const r = rows.get(term.id);
           r.w.hidden = !term.shown; r.w.classList.toggle('hit', term.named);
           named(r.dt, r.term, term.shown ? v : '', lang);
+          if (r.eng) named(r.eng, `(${r.en})`, term.shown ? v : '', 'en');
           dl.append(r.w); // the ones found by name first
         }
       });

@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [{ term: id }, { lang, t }] = await Promise.all([params, getT(params)]);
   const x = glossary(t).find((y) => y.id === id);
   if (!x) return {};
-  return pageMeta(lang, { title: titleOf(t, x.term), description: SCENES_3D.includes(id) ? `${x.def} ${in3d(t)}` : x.def, path: dictPath(id), card: '/og/page/glossary' });
+  return pageMeta(lang, { title: titleOf(t, x.en ? `${x.term} (${x.en})` : x.term), description: SCENES_3D.includes(id) ? `${x.def} ${in3d(t)}` : x.def, path: dictPath(id), card: '/og/page/glossary' });
 }
 
 // D2 · A word of the sailing dictionary: its name and its definition over the word sailed on the water in 3D (or the
@@ -50,7 +50,7 @@ export default async function TermPage({ params }: Props) {
   const guides = t('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen', 'Yarış rehberleri', 'Guides de régate', 'Guide alla regata', 'Guias de regata');
   const crumbs: Crumb[] = [[guides, '/learn'], [name, dictPath()], [x.term, dictPath(id)]];
   const ld = { '@context': 'https://schema.org', '@graph': [
-    { '@type': 'DefinedTerm', '@id': url, url, name: x.term, description: x.def, inLanguage: lang, termCode: id,
+    { '@type': 'DefinedTerm', '@id': url, url, name: x.term, ...(x.en ? { alternateName: x.en } : {}), description: x.def, inLanguage: lang, termCode: id,
       inDefinedTermSet: { '@type': 'DefinedTermSet', '@id': setUrl, name, url: setUrl } },
     { '@type': 'BreadcrumbList', itemListElement: crumbs.map(([n, p], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: SITE + langUrl(p, lang) })) },
   ] };
@@ -68,6 +68,7 @@ export default async function TermPage({ params }: Props) {
           <Trail t={t} crumbs={crumbs} />
           <span className="kicker">{`${name} · ${group.title}`}</span>
           <h1 className="hm-ph-h">{x.term}</h1>
+          {x.en ? <p className="dc-en" lang="en">({x.en})</p> : null}
           <p className="hm-text">{x.def}</p>
           {x.see && <p className="gd-see-d"><Link className="gd-see" href={x.see}>{seeLabel(x.see, t, lang)}<IconArrow s={12} /></Link></p>}
         </div>
@@ -79,7 +80,7 @@ export default async function TermPage({ params }: Props) {
             <section className="gd-sec" aria-labelledby="dc-group">
               <h2 id="dc-group">{group.title}</h2>
               <ul className="dc-near">
-                {near.map((y) => <li key={y.id}><Link href={dictPath(y.id)}><b>{y.term}{SCENES_3D.includes(y.id) ? <span className="dc-3d">3D</span> : null}</b><span>{y.def}</span></Link></li>)}
+                {near.map((y) => <li key={y.id}><Link href={dictPath(y.id)}><b>{y.term}{y.en ? <i className="dc-en-s" lang="en"> ({y.en})</i> : null}{SCENES_3D.includes(y.id) ? <span className="dc-3d">3D</span> : null}</b><span>{y.def}</span></Link></li>)}
               </ul>
             </section>
           )}

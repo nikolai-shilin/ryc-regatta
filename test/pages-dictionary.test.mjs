@@ -32,7 +32,9 @@ for (const lang of ['en', 'ru', 'de']) {
     assert.match(h, /<div class="wd bc staged"/);
     assert.match(h, new RegExp(`<h1 id="dc-h">${esc(dictName(t))}</h1><span class="wd-n">${terms.length}</span>`));
     for (const x of terms) {
-      assert.match(h, new RegExp(`<div class="wd-w" data-id="${x.id}"><dt><a class="wd-pick" href="/dictionary/${x.id}"><span class="wd-tn">${esc(x.term).replace(/[()]/g, '\\$&')}</span>`), x.id);
+      const re = (s) => esc(s).replace(/[()]/g, '\\$&');
+      assert.match(h, new RegExp(`<div class="wd-w" data-id="${x.id}"><dt><a class="wd-pick" href="/dictionary/${x.id}"><span class="wd-tn">${re(x.term)}</span>${x.en ? `<span class="wd-en" lang="en">${re(`(${x.en})`)}</span>` : ''}`), x.id);
+      if (x.id === 'tack') assert.equal(x.en, lang === 'en' ? undefined : 'tack', 'its English name in another language');
       assert.ok(h.includes(`<dd>${esc(x.def)}</dd>`), `${x.id}: its definition`);
     }
     assert.equal((h.match(/class="wd-3d"/g) || []).length, terms.filter((x) => SCENES_3D.includes(x.id)).length, 'the 3D mark on the words the game sails');
@@ -42,14 +44,18 @@ for (const lang of ['en', 'ru', 'de']) {
     assert.equal(ld['@type'], 'DefinedTermSet');
     assert.equal(ld.url, SITE + addressed('/dictionary', lang));
     assert.equal(ld.hasDefinedTerm.length, terms.length);
-    for (const d of ld.hasDefinedTerm) assert.equal(d.url, SITE + addressed(`/dictionary/${terms.find((x) => x.term === d.name).id}`, lang));
+    for (const d of ld.hasDefinedTerm) {
+      const x = terms.find((y) => y.term === d.name);
+      assert.equal(d.url, SITE + addressed(`/dictionary/${x.id}`, lang));
+      assert.equal(d.alternateName, x.en, `${x.id}: the English name, as another name for it`);
+    }
   });
 
   test(`/dictionary/<word> (${lang}): the word, its definition, its group and the way on, as a DefinedTerm`, async () => {
     const groups = glossaryGroups(t);
     for (const x of terms) {
       const h = await html(termPage, lang, { term: x.id });
-      assert.ok(h.includes(`<h1 class="hm-ph-h">${esc(x.term)}</h1>`), `${x.id}: its heading`);
+      assert.ok(h.includes(`<h1 class="hm-ph-h">${esc(x.term)}</h1>${x.en ? `<p class="dc-en" lang="en">(${esc(x.en)})</p>` : ''}`), `${x.id}: its heading, and its English name`);
       assert.ok(h.includes(esc(x.def)), `${x.id}: its definition`);
       // the 3D scene where the game sails it, the guides' picture where it doesn't
       assert.equal(h.includes('wd-scene'), SCENES_3D.includes(x.id), `${x.id}: 3D`);
@@ -69,7 +75,7 @@ for (const lang of ['en', 'ru', 'de']) {
   test(`/dictionary/<word> (${lang}) is titled and described by the word, with its own address`, async () => {
     const x = terms.find((y) => y.id === 'layline');
     const meta = await termPage.generateMetadata(props(lang, { term: 'layline' }));
-    assert.ok(meta.title.includes(x.term), meta.title);
+    assert.ok(meta.title.includes(lang === 'en' ? x.term : `${x.term} (layline)`) || (lang !== 'en' && !x.en), meta.title);
     assert.ok(meta.description.startsWith(x.def), 'the definition, as an answer engine quotes it');
     assert.equal(meta.alternates.canonical, addressed('/dictionary/layline', lang));
   });

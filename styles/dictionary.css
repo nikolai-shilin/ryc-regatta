@@ -52,3 +52,6 @@
 .dc-foot { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); margin: var(--s-6) 0 0; padding: var(--s-4) 0 0; border-top: 1px solid var(--rule); }
 .dc-foot a { font: 700 var(--fs-label)/1.4 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); text-decoration: none; }
 .dc-foot a:hover { color: var(--ink); }
+/* the English name beside a name in another language: "Поворот оверштаг (tack)" (lib/glossary.ts Term en) */
+.bc .dc-en { margin: calc(-1 * var(--s-2)) 0 var(--s-2); font: 700 var(--fs-title)/1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; color: var(--ink-3); }
+.bc .dc-en-s { font-style: normal; font-weight: 600; color: var(--ink-3); }

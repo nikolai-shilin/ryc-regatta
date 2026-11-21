@@ -9,9 +9,9 @@ import '../test/load.mjs'; // the site's TypeScript, as the tests import it
 const { tx, LANGS } = await import('../lib/lang.ts');
 const { glossaryGroups } = await import('../lib/glossary.ts');
 
-// { en: [{ id, title, terms: [[id, term, definition], …] }, …], ru: …, … }
+// { en: [{ id, title, terms: [[id, term, definition], …] }, …], ru: [… [id, term, definition, English name], …], … }
 export const wordsData = () => Object.fromEntries(LANGS.map((lang) => [lang,
-  glossaryGroups(tx(lang)).map((g) => ({ id: g.id, title: g.title, terms: g.terms.map((x) => [x.id, x.term, x.def]) }))]));
+  glossaryGroups(tx(lang)).map((g) => ({ id: g.id, title: g.title, terms: g.terms.map((x) => (x.en ? [x.id, x.term, x.def, x.en] : [x.id, x.term, x.def])) }))]));
 
 export const WORDS_FILE = fileURLToPath(new URL('../public/game/words.json', import.meta.url));
 export const wordsJson = () => `${JSON.stringify(wordsData())}\n`;

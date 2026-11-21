@@ -10,7 +10,7 @@ import { useSceneStart } from '@/lib/scene-start';
 // Every word is in the page as it is sent, and each one's name is the link to its own page (/dictionary/<word>), so a
 // search engine reads them all; a click shows it on the water instead, and the caption leads to its page. The word
 // shown is kept in the address (#layline), so a link can open on it.
-export type DictGroup = { id: string; title: string; terms: { id: string; term: string; def: string }[] };
+export type DictGroup = { id: string; title: string; terms: { id: string; term: string; def: string; en?: string }[] };
 export type DictWords = {
   title: string; back: string; find: string; clear: string; topics: string; all: string; allGroups: string;
   notShown: string; notIn: string; none: string; page: string; scene: string; more: string;
@@ -33,7 +33,7 @@ export function DictionaryScreen({ lang, groups, shown3d, w }: { lang: string; g
   const { go } = useSceneStart(false);
   const water = useRef<HTMLIFrameElement>(null), card = useRef<HTMLElement>(null), cap = useRef<HTMLDivElement>(null), field = useRef<HTMLInputElement>(null);
   const has = useMemo(() => new Set(shown3d), [shown3d]);
-  const tuples = useMemo(() => groups.map((g) => ({ id: g.id, title: g.title, terms: g.terms.map((x) => [x.id, x.term, x.def] as [string, string, string]) })), [groups]);
+  const tuples = useMemo(() => groups.map((g) => ({ id: g.id, title: g.title, terms: g.terms.map((x): [string, string, string] | [string, string, string, string] => (x.en ? [x.id, x.term, x.def, x.en] : [x.id, x.term, x.def])) })), [groups]);
   const byId = useMemo(() => new Map(groups.flatMap((g) => g.terms.map((x) => [x.id, { ...x, group: g.title }]))), [groups]);
   const v = q.trim(), res = find(tuples, v, tab, lang);
   const any = res.reduce((s, g) => s + (g.shown ? g.count : 0), 0), total = byId.size;
@@ -136,7 +136,9 @@ export function DictionaryScreen({ lang, groups, shown3d, w }: { lang: string; g
                     {g.terms.map((x) => (
                       <div key={x.id} className={`wd-w${x.id === picked ? ' on' : ''}${x.named ? ' hit' : ''}`} data-id={x.id} hidden={!x.shown}>
                         <dt><a className="wd-pick" href={`/dictionary/${x.id}`} aria-current={x.id === picked ? 'true' : undefined} onClick={(e) => pick(e, x.id)}>
-                          <span className="wd-tn"><Named term={x.term} q={x.shown ? v : ''} lang={lang} /></span>{has.has(x.id) ? <span className="wd-3d">3D</span> : null}
+                          <span className="wd-tn"><Named term={x.term} q={x.shown ? v : ''} lang={lang} /></span>
+                          {x.en ? <span className="wd-en" lang="en"><Named term={`(${x.en})`} q={x.shown ? v : ''} lang="en" /></span> : null}
+                          {has.has(x.id) ? <span className="wd-3d">3D</span> : null}
                         </a></dt>
                         <dd>{x.def}</dd>
                       </div>
@@ -155,7 +157,7 @@ export function DictionaryScreen({ lang, groups, shown3d, w }: { lang: string; g
         </section>
         <div className="wd-cap" ref={cap} hidden={!p} aria-live="polite">
           {p ? <>
-            <span>{p.group}</span><b>{p.term}</b><p>{p.def}</p>
+            <span>{p.group}</span><b>{p.term}</b>{p.en ? <em lang="en">({p.en})</em> : null}<p>{p.def}</p>
             {has.has(p.id) ? null : <i>{w.notShown}</i>}
             <a className="dc-cap-go" href={`/dictionary/${p.id}`}>{w.page} →</a>
           </> : null}
