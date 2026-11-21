@@ -12,7 +12,12 @@ import { plainName } from './name';
 // key the daily reminder's list takes (PUSH_LIST_KEY), and sends each a push in its own language: who, level and
 // rating, and the minute to say Ready. public/sw.js shows it; a tap opens /duel?resume, which picks the pair up. A
 // device the push service says is gone is dropped (regatta_push_drop), as the daily reminder does.
-export type PushRow = { endpoint: string; p256dh: string; auth: string; lang: string; them_name: string | null; them_rating: number; them_races: number; ttl: number };
+// A sailor signed in with Telegram whom the bot may write to gets it from the bot as well (kind 'telegram', release 5c):
+// the IYT server holds the bot's token, and is asked with the secret both share (REGATTA_NOTIFY_SECRET; iyt-test
+// api/regatta-notify.mjs); its button opens /duel?resume inside Telegram, signed in from the launch data.
+export type PushRow = { kind?: 'push' | 'telegram'; endpoint: string | null; p256dh: string | null; auth: string | null; telegram_id?: number | null;
+  lang: string; them_name: string | null; them_rating: number; them_races: number; ttl: number };
+const IYT = process.env.IYT_API_URL || 'https://iyt.rycrentals.com';
 
 export function matchFoundMessage(r: PushRow) {
   const lang: Lang = isLang(r.lang) ? r.lang : 'en', t = tx(lang);
@@ -32,9 +37,18 @@ const sb = (fn: string, body: Record<string, unknown>) => fetch(`${process.env.N
   body: JSON.stringify(body),
 });
 
-// the away sailor(s) of this pair told; how many pushes went. Never throws: a message that doesn't go leaves the pair
+// the bot's words: the title and the body as one message, and its button
+export function telegramNotice(r: PushRow) {
+  const m = matchFoundMessage(r), t = tx(m.lang);
+  return { telegram_id: r.telegram_id, text: `${m.title}\n${m.body}`,
+    button: { text: t('Open Match found', 'Открыть: соперник найден', 'Abrir: rival encontrado', 'Öffnen: Gegner gefunden', 'Aç: rakip bulundu', 'Ouvrir : adversaire trouvé', 'Apri: avversario trovato', 'Abrir: adversário encontrado'), url: `${SITE}${m.url}` } };
+}
+const tell = (body: object) => fetch(`${IYT}/api/regatta-notify`, { method: 'POST', cache: 'no-store', signal: AbortSignal.timeout(10000),
+  headers: { authorization: `Bearer ${process.env.REGATTA_NOTIFY_SECRET}`, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+// the away sailor(s) of this pair told; how many messages went. Never throws: a message that doesn't go leaves the pair
 // as it is (the sailor still finds it on /duel within its minute)
-export async function sendMatchFound(pairId: string, send: typeof webpush.sendNotification = (s, p, o) => webpush.sendNotification(s, p, o)): Promise<number> {
+export async function sendMatchFound(pairId: string, send: typeof webpush.sendNotification = (s, p, o) => webpush.sendNotification(s, p, o), bot: (body: object) => Promise<Response> = tell): Promise<number> {
   const key = process.env.PUSH_LIST_KEY, priv = process.env.VAPID_PRIVATE_KEY;
   if (!key || !priv) return 0;
   try {
@@ -45,6 +59,12 @@ export async function sendMatchFound(pairId: string, send: typeof webpush.sendNo
     webpush.setVapidDetails(SITE, VAPID_PUBLIC, priv);
     let sent = 0;
     await Promise.all(rows.map(async (row) => {
+      if (row.kind === 'telegram') {
+        if (!process.env.REGATTA_NOTIFY_SECRET || !row.telegram_id) return;
+        try { if ((await bot(telegramNotice(row))).ok) sent++; } catch { /* the bot's server didn't answer: the pair still waits on /duel */ }
+        return;
+      }
+      if (!row.endpoint || !row.p256dh || !row.auth) return;
       try {
         await send({ endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } }, JSON.stringify(matchFoundMessage(row)), { TTL: Math.max(10, row.ttl), urgency: 'high', topic: 'duel-found' });
         sent++;

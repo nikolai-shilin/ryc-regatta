@@ -34,7 +34,7 @@ import '@/styles/duel-rating.css';
 // Opened from the home's Race (/duel?challenge=<handle>, components/duel-home.tsx), it challenges that sailor at once.
 // The wishes, a venue and a yacht, kept on this device, are the race's from a sailor's fourth rated race (the host's first).
 type Phase = 'idle' | 'looking' | 'found' | 'go' | 'missed' | 'error';
-type Note = '' | 'noanswer' | 'declined' | 'gone' | 'taken' | 'away' | 'closed' | 'band' | 'mine' | 'nocall' | 'nopush' | 'pushdenied' | 'noaway';
+type Note = '' | 'noanswer' | 'declined' | 'gone' | 'taken' | 'away' | 'closed' | 'band' | 'mine' | 'nocall' | 'nopush' | 'pushdenied' | 'noaway' | 'nobot';
 export type OpenCall = { code: string; lo: number; hi: number; url: string };
 export type Wishes = { venue?: string; yacht?: string };
 const LOOK_MS = 3000, FOUND_MS = 1000, OFFER_AFTER_S = 90, LIST_MS = 10000, WISH_KEY = 'regatta-duel-wishes';
@@ -113,13 +113,26 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
   // then the database told; or back to looking only while here
   const awayOn = async () => {
     setNote('');
-    if (!pushable()) { setNote('nopush'); return; }
-    const st = await subscribe(lang, readLog());
-    if (st !== 'on') { setNote(st === 'denied' ? 'pushdenied' : 'nopush'); return; }
-    await linkPush();
-    let r = null;
-    try { r = await fetch('/connect/seek', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ do: 'away', on: true }) }); } catch { /* said below */ }
-    const j = r?.ok ? await r.json().catch(() => null) : null;
+    const ask = async () => {
+      try { const r = await fetch('/connect/seek', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ do: 'away', on: true }) }); return r.ok ? await r.json().catch(() => null) : null; } catch { return null; }
+    };
+    // a device already tied to the account, or the Telegram bot, may reach this sailor: asked first
+    let j = await ask();
+    if (j?.status !== 'away' && j?.reason === 'no_push') {
+      const tg = (window as unknown as { Telegram?: { WebApp?: { initData?: string; requestWriteAccess?: (cb: (ok: boolean) => void) => void } } }).Telegram?.WebApp;
+      if (tg?.initData && tg.requestWriteAccess) {
+        // inside Telegram: the bot's leave to write (it hears the answer, and remembers this sailor), then asked again
+        const ok = await new Promise<boolean>((res) => { try { tg.requestWriteAccess!((a) => res(!!a)); } catch { res(false); } });
+        if (!ok) { setNote('nobot'); return; }
+        await new Promise((r) => setTimeout(r, 1500));
+        j = await ask();
+      } else if (pushable()) {
+        const st = await subscribe(lang, readLog());
+        if (st !== 'on') { setNote(st === 'denied' ? 'pushdenied' : 'nopush'); return; }
+        await linkPush();
+        j = await ask();
+      } else { setNote('nopush'); return; }
+    }
     if (j?.status === 'away') { keepAway(true); track('Duel away', {}); } else setNote(j?.reason === 'no_push' ? 'nopush' : 'noaway');
   };
   const awayOff = () => { keepAway(false); fetch('/connect/seek', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ do: 'away', on: false }) }).catch(() => {}); };
@@ -229,6 +242,7 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
     nocall: t('The call couldn’t be posted just now. Try again.', 'Вызов сейчас не удалось опубликовать. Попробуй ещё раз.', 'No se pudo publicar el reto ahora. Inténtalo de nuevo.', 'Die Herausforderung ließ sich gerade nicht stellen. Versuch es noch einmal.', 'Çağrı şu an yayınlanamadı. Tekrar dene.', 'L’appel n’a pas pu être lancé. Réessaie.', 'Non è stato possibile lanciare la sfida. Riprova.', 'Não deu para publicar o desafio agora. Tente de novo.'),
     nopush: t('This browser can’t take the site’s messages. On an iPhone, add the site to your Home Screen first.', 'Этот браузер не принимает сообщения сайта. На iPhone сначала добавь сайт на экран «Домой».', 'Este navegador no recibe los mensajes del sitio. En un iPhone, añade antes el sitio a la pantalla de inicio.', 'Dieser Browser kann keine Nachrichten der Seite empfangen. Auf dem iPhone füge die Seite zuerst zum Home-Bildschirm hinzu.', 'Bu tarayıcı sitenin mesajlarını alamıyor. iPhone’da önce siteyi Ana Ekrana ekle.', 'Ce navigateur ne peut pas recevoir les messages du site. Sur iPhone, ajoute d’abord le site à l’écran d’accueil.', 'Questo browser non riceve i messaggi del sito. Su iPhone, aggiungi prima il sito alla schermata Home.', 'Este navegador não recebe as mensagens do site. No iPhone, adicione antes o site à Tela de Início.'),
     pushdenied: t('Messages from this site are blocked in your browser’s settings. Allow them there, then try again.', 'Сообщения этого сайта запрещены в настройках браузера. Разреши их там и попробуй снова.', 'Los mensajes de este sitio están bloqueados en los ajustes del navegador. Permítelos allí y vuelve a intentarlo.', 'Nachrichten dieser Seite sind in den Browser-Einstellungen blockiert. Erlaube sie dort und versuch es noch einmal.', 'Bu sitenin mesajları tarayıcı ayarlarında engelli. Orada izin ver ve tekrar dene.', 'Les messages de ce site sont bloqués dans les réglages du navigateur. Autorise-les là, puis réessaie.', 'I messaggi di questo sito sono bloccati nelle impostazioni del browser. Consentili lì e riprova.', 'As mensagens deste site estão bloqueadas nas configurações do navegador. Permita-as lá e tente de novo.'),
+    nobot: t('Without the bot’s messages we can’t reach you while you’re away. You can still look while you’re here.', 'Без сообщений от бота мы не сможем позвать тебя, пока тебя нет. Искать, пока ты здесь, можно и так.', 'Sin los mensajes del bot no podemos avisarte mientras no estás. Puedes seguir buscando mientras estés aquí.', 'Ohne Nachrichten vom Bot erreichen wir dich nicht, während du weg bist. Solange du hier bist, kannst du trotzdem suchen.', 'Botun mesajları olmadan sen yokken sana ulaşamayız. Buradayken yine de arayabilirsin.', 'Sans les messages du bot, on ne peut pas te prévenir pendant ton absence. Tu peux toujours chercher tant que tu es là.', 'Senza i messaggi del bot non possiamo avvisarti mentre sei via. Puoi comunque cercare mentre sei qui.', 'Sem as mensagens do bot não conseguimos te avisar enquanto você está fora. Você ainda pode procurar enquanto estiver aqui.'),
     noaway: t('Couldn’t keep looking for you just now. Try again.', 'Сейчас не получилось продолжить поиск без тебя. Попробуй ещё раз.', 'No se pudo seguir buscando por ti ahora. Inténtalo de nuevo.', 'Die Suche ließ sich gerade nicht für dich fortsetzen. Versuch es noch einmal.', 'Senin için aramaya şu an devam edilemedi. Tekrar dene.', 'Impossible de continuer à chercher pour toi pour l’instant. Réessaie.', 'Non è stato possibile continuare a cercare per te. Riprova.', 'Não deu para continuar procurando por você agora. Tente de novo.'),
   };
   const noted = NOTES[note] ? <p className="dr-note">{NOTES[note]}</p> : null;
@@ -326,11 +340,11 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
       <div className="df-call df-away">
         {away ? <>
           <span className="bt-k">{t('Looking for you while you’re away', 'Ищем, пока тебя нет', 'Buscando mientras no estás', 'Wir suchen, während du weg bist', 'Sen yokken arıyoruz', 'On cherche pendant ton absence', 'Cerchiamo mentre sei via', 'Procurando enquanto você está fora')}</span>
-          <p className="df-band">{t('You can leave this page. We’ll message this device the moment a sailor is found, for 30 minutes; then a minute to say Ready.', 'Можно закрыть страницу. Как только найдём соперника, пришлём сообщение на это устройство — в течение 30 минут; потом будет минута, чтобы нажать «Готов».', 'Puedes salir de esta página. Te avisaremos en este dispositivo en cuanto haya rival, durante 30 minutos; luego tendrás un minuto para decir Listo.', 'Du kannst die Seite verlassen. Wir schicken diesem Gerät eine Nachricht, sobald ein Segler gefunden ist, 30 Minuten lang; dann hast du eine Minute für Bereit.', 'Bu sayfadan çıkabilirsin. Bir denizci bulunur bulunmaz bu cihaza mesaj göndeririz, 30 dakika boyunca; sonra hazırım demek için bir dakikan olur.', 'Tu peux quitter cette page. On envoie un message à cet appareil dès qu’un marin est trouvé, pendant 30 minutes ; puis une minute pour dire Prêt.', 'Puoi lasciare questa pagina. Mandiamo un messaggio a questo dispositivo appena troviamo un velista, per 30 minuti; poi un minuto per dire Pronto.', 'Você pode sair desta página. Mandamos uma mensagem a este aparelho assim que acharmos um velejador, por 30 minutos; depois um minuto para dizer Pronto.')}</p>
+          <p className="df-band">{t('You can leave this page. We’ll message you the moment a sailor is found, for 30 minutes; then a minute to say Ready.', 'Можно закрыть страницу. Как только найдём соперника, пришлём тебе сообщение — в течение 30 минут; потом будет минута, чтобы нажать «Готов».', 'Puedes salir de esta página. Te avisaremos en cuanto haya rival, durante 30 minutos; luego tendrás un minuto para decir Listo.', 'Du kannst die Seite verlassen. Wir schicken dir eine Nachricht, sobald ein Segler gefunden ist, 30 Minuten lang; dann hast du eine Minute für Bereit.', 'Bu sayfadan çıkabilirsin. Bir denizci bulunur bulunmaz sana mesaj göndeririz, 30 dakika boyunca; sonra hazırım demek için bir dakikan olur.', 'Tu peux quitter cette page. On t’envoie un message dès qu’un marin est trouvé, pendant 30 minutes ; puis une minute pour dire Prêt.', 'Puoi lasciare questa pagina. Ti mandiamo un messaggio appena troviamo un velista, per 30 minuti; poi un minuto per dire Pronto.', 'Você pode sair desta página. Mandamos uma mensagem assim que acharmos um velejador, por 30 minutos; depois um minuto para dizer Pronto.')}</p>
           <div className="df-acts"><button type="button" className="bt-show" onClick={awayOff}>{t('Only while I’m here', 'Только пока я здесь', 'Solo mientras estoy aquí', 'Nur solange ich hier bin', 'Sadece buradayken', 'Seulement quand je suis là', 'Solo mentre sono qui', 'Só enquanto estou aqui')}</button></div>
         </> : <>
           <div className="df-acts"><button type="button" className="bt-show" onClick={awayOn}>{t('Keep looking if I leave', 'Искать, даже если я уйду', 'Seguir buscando si salgo', 'Weitersuchen, wenn ich gehe', 'Çıkarsam aramaya devam et', 'Continuer si je pars', 'Continua a cercare se esco', 'Continuar procurando se eu sair')}</button></div>
-          <p className="iv-note">{t('A message to this device when a sailor is found, for 30 minutes.', 'Сообщение на это устройство, когда соперник найдётся, — в течение 30 минут.', 'Un mensaje a este dispositivo cuando haya rival, durante 30 minutos.', 'Eine Nachricht an dieses Gerät, wenn ein Segler gefunden ist, 30 Minuten lang.', 'Bir denizci bulunduğunda bu cihaza mesaj, 30 dakika boyunca.', 'Un message sur cet appareil quand un marin est trouvé, pendant 30 minutes.', 'Un messaggio su questo dispositivo quando troviamo un velista, per 30 minuti.', 'Uma mensagem neste aparelho quando acharmos um velejador, por 30 minutos.')}</p>
+          <p className="iv-note">{t('A message when a sailor is found, for 30 minutes: to this browser, or from our Telegram bot.', 'Сообщение, когда соперник найдётся, — в течение 30 минут: в этот браузер или от нашего бота в Telegram.', 'Un mensaje cuando haya rival, durante 30 minutos: en este navegador o de nuestro bot de Telegram.', 'Eine Nachricht, wenn ein Segler gefunden ist, 30 Minuten lang: in diesem Browser oder von unserem Telegram-Bot.', 'Bir denizci bulunduğunda mesaj, 30 dakika boyunca: bu tarayıcıya ya da Telegram botumuzdan.', 'Un message quand un marin est trouvé, pendant 30 minutes : dans ce navigateur ou par notre bot Telegram.', 'Un messaggio quando troviamo un velista, per 30 minuti: in questo browser o dal nostro bot Telegram.', 'Uma mensagem quando acharmos um velejador, por 30 minutos: neste navegador ou do nosso bot no Telegram.')}</p>
         </>}
       </div>
       {callBox}

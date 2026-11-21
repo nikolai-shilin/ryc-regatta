@@ -159,7 +159,7 @@ test('POST /connect/seek: call posts with a band it knows and clean wishes; take
 
 test('looking: Post an open call; posted, the call\'s band, its link and the ways to send it', () => {
   const looking = { phase: 'looking', look: { waited: 30, band: 200, online: 1 } };
-  assert.match(view(looking), /Stop looking Keep looking if I leave A message to this device when a sailor is found, for 30 minutes\. Post an open call A link for any chat: the first sailor near your rating to take it races you\./);
+  assert.match(view(looking), /Stop looking Keep looking if I leave A message when a sailor is found, for 30 minutes: to this browser, or from our Telegram bot\. Post an open call A link for any chat: the first sailor near your rating to take it races you\./);
   const call = { code: 'K7M2QZ', lo: 1458, hi: 1658, url: 'https://www.sailupdown.com/call/K7M2QZ' };
   const html = renderToStaticMarkup(DuelFinderView({ lang: 'en', signed: true, ...looking, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop, call }));
   assert.match(plain(html), /Your open call For ratings 1458–1658: the first to take it races you\. Open while you look, an hour at most\. Telegram WhatsApp Copy link/);
@@ -177,11 +177,12 @@ test('a call that couldn\'t be taken says why, in each case', () => {
 
 test('Keep looking if I leave: off, on (you can leave; Only while I’m here), why it couldn’t; the away marked in Ready now', () => {
   const looking = { phase: 'looking', look: { waited: 30, band: 200, online: 1 } };
-  assert.match(view({ ...looking, away: true }), /Looking for you while you’re away You can leave this page\. We’ll message this device the moment a sailor is found, for 30 minutes; then a minute to say Ready\. Only while I’m here/);
+  assert.match(view({ ...looking, away: true }), /Looking for you while you’re away You can leave this page\. We’ll message you the moment a sailor is found, for 30 minutes; then a minute to say Ready\. Only while I’m here/);
   assert.doesNotMatch(view({ ...looking, away: true }), /Keep looking if I leave/);
   assert.match(view({ ...looking, note: 'nopush' }), /This browser can’t take the site’s messages\. On an iPhone, add the site to your Home Screen first\./);
   assert.match(view({ ...looking, note: 'pushdenied' }), /Messages from this site are blocked in your browser’s settings/);
   assert.match(view({ ...looking, note: 'noaway' }), /Couldn’t keep looking for you just now/);
+  assert.match(view({ ...looking, note: 'nobot' }), /Without the bot’s messages we can’t reach you while you’re away\./);
   assert.match(view({ list: parseReady([{ ...READY[0], away: true }]) }), /Cara M\. National 1900 away · gets a message waiting 0:23 Race/);
   assert.doesNotMatch(view(), /Keep looking if I leave/, 'only while looking');
 });

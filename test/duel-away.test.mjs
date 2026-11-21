@@ -10,7 +10,7 @@ const rpc = { calls: [], data: null, error: null };
 mock('@supabase/ssr', 'export const createServerClient = () => globalThis.__sb; export const createBrowserClient = () => globalThis.__sb;');
 globalThis.__sb = { rpc: async (fn, args) => { rpc.calls.push({ fn, ...(args || {}) }); return { data: rpc.data, error: rpc.error }; } };
 const { NextRequest } = await import('next/server');
-const { matchFoundMessage, sendMatchFound } = await import('../lib/push-send.ts');
+const { matchFoundMessage, sendMatchFound, telegramNotice } = await import('../lib/push-send.ts');
 const { POST: link } = await import('../app/connect/push-link/route.ts');
 const { POST: seek } = await import('../app/connect/seek/route.ts');
 const { parseSeek, parseReady } = await import('../lib/duel-seek.ts');
@@ -94,4 +94,26 @@ test('a pair\'s own time to answer: a minute when one was away, else 12 s; looki
   assert.equal(parseSeek({ status: 'looking', waited: 3, band: 100, online: 1, near: 0, away: true }).away, true);
   assert.equal(parseSeek({ status: 'looking', waited: 3, band: 100, online: 1, near: 0 }).away, false);
   assert.deepEqual(parseReady([{ handle: '3f9a0c1d2e4b', name: 'A', rating: 1500, races: 1, waited: 9, away: true }, { handle: 'a1b2c3d4e5f6', name: 'B', rating: 1500, races: 1, waited: 9 }]).map((r) => r.away), [true, false]);
+});
+
+test('the bot\'s Match found: the title and body as one message, a button to /duel?resume, in the sailor\'s language', () => {
+  assert.deepEqual(telegramNotice({ ...ROW, kind: 'telegram', endpoint: null, p256dh: null, auth: null, telegram_id: 990000001 }),
+    { telegram_id: 990000001, text: 'Match found: Bea K.\n1585 · Fleet. Tap within 60 s to say Ready.', button: { text: 'Open Match found', url: 'https://www.sailupdown.com/duel?resume' } });
+  assert.equal(telegramNotice({ ...ROW, lang: 'ru', telegram_id: 1 }).button.text, 'Открыть: соперник найден');
+});
+
+test('sendMatchFound: a Telegram row goes to the bot\'s server with the shared secret; without the secret it is left', async () => {
+  process.env.PUSH_LIST_KEY = 'k'; process.env.VAPID_PRIVATE_KEY = 'x'.repeat(43);
+  const TG = { ...ROW, kind: 'telegram', endpoint: null, p256dh: null, auth: null, telegram_id: 990000001 };
+  restAnswers({ regatta_pair_push: [TG, { ...ROW, kind: 'push' }] });
+  const told = [], pushed = [];
+  assert.equal(await sendMatchFound('p', async (sub) => { pushed.push(sub.endpoint); }, async (b) => { told.push(b); return new Response(null, { status: 200 }); }), 1, 'no secret: only the push');
+  assert.deepEqual([told.length, pushed.length], [0, 1]);
+  process.env.REGATTA_NOTIFY_SECRET = 'shared';
+  restAnswers({ regatta_pair_push: [TG] });
+  assert.equal(await sendMatchFound('p', async () => {}, async (b) => { told.push(b); return Response.json({ sent: true }); }), 1);
+  assert.equal(told[0].telegram_id, 990000001);
+  restAnswers({ regatta_pair_push: [TG] });
+  assert.equal(await sendMatchFound('p', async () => {}, async () => { throw new Error('down'); }), 0, 'the bot\'s server down: nothing, and no throw');
+  process.env.REGATTA_NOTIFY_SECRET = '';
 });

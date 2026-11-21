@@ -129,13 +129,46 @@ test('/duel?resume, as a Match found message opens it: looking again at once, an
   await v.unmount();
 });
 
-test('Keep looking if I leave, on a browser that can\'t take messages: says so, and asks the site nothing', async () => {
+const keepLooking = (v) => click(v.$$('.df-away button').find((b) => b.textContent === 'Keep looking if I leave'));
+
+test('Keep looking if I leave: the site asked first; with nothing to reach this sailor and a browser that can\'t take messages, says so', async () => {
+  answer.away = { status: 'none', reason: 'no_push' };
   const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
   await click(v.$('.bt-go'));
-  await click(v.$$('.df-away button').find((b) => b.textContent === 'Keep looking if I leave'));
+  await keepLooking(v);
+  assert.deepEqual(asks().filter((a) => a.do === 'away'), [{ do: 'away', on: true }]);
   assert.match(v.text(), /This browser can’t take the site’s messages/);
-  assert.equal(asks().filter((a) => a.do === 'away').length, 0);
   await v.unmount();
+});
+
+test('Keep looking if I leave, when a device or the bot already reaches this sailor: on at once, this browser not asked', async () => {
+  answer.away = { status: 'away', left: 1800 };
+  const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  await click(v.$('.bt-go'));
+  await keepLooking(v);
+  assert.match(v.text(), /Looking for you while you’re away You can leave this page\. We’ll message you/);
+  await v.unmount();
+});
+
+test('Keep looking if I leave, inside Telegram: the bot\'s leave to write asked, then the site again; declined, said why', async () => {
+  let n = 0, allow = true;
+  globalThis.Telegram = { WebApp: { initData: 'query_id=1', requestWriteAccess: (cb) => cb(allow) } };
+  answer.away = () => (++n === 1 ? { status: 'none', reason: 'no_push' } : { status: 'away', left: 1800 });
+  serve([['/connect/seek', (u, init) => { const d = JSON.parse(init.body).do, a = answer[d]; return json(typeof a === 'function' ? a() : a ?? { status: 'none', reason: null }); }]]);
+  let v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  await click(v.$('.bt-go'));
+  await keepLooking(v);
+  await tick(1600);
+  assert.equal(asks().filter((a) => a.do === 'away').length, 2);
+  assert.match(v.text(), /Looking for you while you’re away/);
+  await v.unmount();
+  n = 0; allow = false;
+  v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  await click(v.$('.bt-go'));
+  await keepLooking(v);
+  assert.match(v.text(), /Without the bot’s messages we can’t reach you while you’re away/);
+  await v.unmount();
+  globalThis.Telegram = undefined;
 });
 
 test('looking, as the database says a sailor is looked for while away: the page says so', async () => {
