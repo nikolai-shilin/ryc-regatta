@@ -1,0 +1,19 @@
+/* Your achievements on your player card (components/achievements.tsx): a badge each, its name and what earns it, and
+   the day it came or how far along you are; the ones not had yet faded. Gold for today's race, green for the venues,
+   blue for 1-on-1. */
+.ach-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 2px; }
+.ach-list li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px; background: var(--panel, rgba(255, 255, 255, 0.05)); --ac: var(--you, #3db8ff); }
+.ach-list li.ach-race { --ac: var(--gold, #f5c400); } .ach-list li.ach-venues { --ac: var(--up, #2ee6a0); }
+.ach-badge { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; font: 800 16px/1 var(--cond, 'Sofia Sans Condensed', sans-serif);
+  background: rgba(255, 255, 255, 0.08); color: var(--ink-3, rgba(255, 255, 255, 0.62)); clip-path: polygon(0 0, 100% 0, 100% 78%, 78% 100%, 0 100%); }
+.ach-list li.got .ach-badge { background: var(--ac); color: var(--ink-on, #04121e); }
+.ach-list li.none { opacity: 0.55; }
+.ach-t { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ach-k { font: 700 10px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3, rgba(255, 255, 255, 0.62)); }
+.ach-t b { font: 800 17px/1.1 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink, #fff); }
+.ach-how { font: 500 13px/1.4 var(--sans, 'Sofia Sans', sans-serif); color: var(--ink-2, rgba(255, 255, 255, 0.78)); }
+.ach-got { font: 700 12px/1.3 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ac); }
+.ach-not { font: 600 12px/1.3 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3, rgba(255, 255, 255, 0.62)); }
+.ach-prog { display: flex; align-items: center; gap: 8px; font: 700 12px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink-2, rgba(255, 255, 255, 0.78)); font-variant-numeric: tabular-nums; }
+.ach-bar { flex: 1 1 auto; height: 4px; background: rgba(255, 255, 255, 0.1); }
+.ach-bar i { display: block; height: 100%; background: var(--ac); }
