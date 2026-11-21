@@ -106,3 +106,8 @@ test('the card opens on the overview; 1-on-1 for your own alone; the passport mo
   assert.match(src, /<TabBar lang=\{lang\} tab=\{shown\} set=\{setTab\} duel=\{mine\} \/>/);
   assert.match(src, /\{shown === 'venues' && \(<div[^>]*>\n\s*<PassportBlock/);
 });
+
+test('the tab bar keeps its height in the card\'s column, however long the card (it scrolls sideways, so it may not shrink)', () => {
+  const css = readFileSync(new URL('../styles/players.css', import.meta.url), 'utf8');
+  assert.match(css, /\.bc \.pt-tabs \{[^}]*flex: 0 0 auto;[^}]*overflow-x: auto;/);
+});

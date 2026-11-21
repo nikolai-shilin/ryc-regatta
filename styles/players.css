@@ -73,7 +73,7 @@
 }
 
 /* the card's tabs (components/player-tabs.tsx): the overview, 1-on-1 (your own card), today's races and the venues */
-.bc .pt-tabs { display: flex; gap: 2px; margin: 4px 0 2px; overflow-x: auto; scrollbar-width: none; }
+.bc .pt-tabs { display: flex; flex: 0 0 auto; gap: 2px; margin: 4px 0 2px; overflow-x: auto; scrollbar-width: none; }
 .bc .pt-tab { flex: 1 0 auto; min-height: 40px; padding: 0 12px; border: 0; cursor: pointer; font: 700 12px/1 var(--cond, 'Sofia Sans Condensed', sans-serif);
   letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink, #fff); background: var(--fill-1, rgba(255, 255, 255, 0.08)); }
 .bc .pt-tab[aria-selected="true"] { background: var(--ink, #fff); color: var(--ink-on, #04121e); }
