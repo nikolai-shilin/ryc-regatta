@@ -59,7 +59,7 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
           <a className="hm-tab hm-tab-first" href="/play?race=first&intro">{t('First race', 'Первая гонка', 'Primera regata', 'Erste Regatta', 'İlk yarış', 'Première régate', 'Prima regata', 'Primeira regata')}<span className="hm-tag">{t('3 min', '3 мин', '3 min', '3 Min.', '3 dk', '3 min', '3 min', '3 min')}</span></a>
           <Link className="hm-tab" href="/race" {...cur('race')}>{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı', 'La régate du jour', 'La regata del giorno', 'A regata do dia')}</Link>
           <Link className="hm-tab" href="/race/free" {...cur('free')}>{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış', 'Régate libre', 'Regata libera', 'Regata livre')}</Link>
-          <Link className="hm-tab" href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', 'Duelo 1 contra 1')}</Link>
+          <Link className="hm-tab" href="/duel">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', 'Duelo 1 contra 1')}</Link>
           <Link className="hm-tab" href="/race/rating" {...cur('rating')}>{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama', 'Classement', 'Classifica', 'Classificação')}</Link>
         </nav>
         {/* a guest's way to sign in, in the bar where there's room (else in the menu); signed in, the avatar says who */}
@@ -97,7 +97,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
             <li><a href="/play?race=first&intro">{t('First race', 'Первая гонка', 'Primera regata', 'Erste Regatta', 'İlk yarış', 'Première régate', 'Prima regata', 'Primeira regata')}</a></li>
             <FootLink href="/race">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı', 'La régate du jour', 'La regata del giorno', 'A regata do dia')}</FootLink>
             <FootLink href="/race/free">{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış', 'Régate libre', 'Regata libera', 'Regata livre')}</FootLink>
-            <FootLink href="/match/new">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', 'Duelo 1 contra 1')}</FootLink>
+            <FootLink href="/duel">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', 'Duelo 1 contra 1')}</FootLink>
             <FootLink href="/race/drills">{t('Drills', 'Тренировки', 'Ejercicios', 'Übungen', 'Alıştırmalar', 'Entraînements', 'Esercizi', 'Treinos')}</FootLink>
           </FootGroup>
           <FootGroup title={t('Explore', 'Мир игры', 'Explorar', 'Entdecken', 'Keşfet', 'Explorer', 'Esplora', 'Explorar')}>

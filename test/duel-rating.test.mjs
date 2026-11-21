@@ -149,6 +149,7 @@ test('your card while provisional: a ~, how many of the five are done, a place o
   assert.doesNotMatch(s, /to Regional/);
   const none = card(parseMine({ ...MINE, rating: 1500, races: 0, wins: 0, losses: 0, place: null, changes: [] }));
   assert.match(none, /Not rated yet: everyone starts at 1500/);
-  assert.match(renderToStaticMarkup(MyDuelRatingView({ mine: parseMine({ ...MINE, races: 0, changes: [] }), lang: 'en' })), /href="\/match\/new"/);
+  assert.match(renderToStaticMarkup(MyDuelRatingView({ mine: parseMine({ ...MINE, races: 0, changes: [] }), lang: 'en' })), /href="\/duel"/);
+  assert.doesNotMatch(renderToStaticMarkup(MyDuelRatingView({ mine: parseMine({ ...MINE, races: 0, changes: [] }), lang: 'en', here: true })), /href="\/duel"/, 'not on /duel itself');
   assert.match(card(parseMine(MINE), 'pt'), /Retrospecto 24–17/);
 });

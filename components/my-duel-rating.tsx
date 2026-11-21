@@ -13,7 +13,8 @@ import '@/styles/duel-rating.css';
 // Your 1-on-1 rating on your own card on /players (components/players-view.tsx, `mine`): the number and the level (a ~ and
 // how many of the first five are done while provisional), the record, your place among the settled ratings, best and lowest,
 // the bar to the next level, and your last five rated races. From GET /connect/rating/me; nothing for a sailor not signed in.
-export function MyDuelRating({ lang }: { lang: Lang }) {
+// On /duel itself (`here`) it has no link to race 1-on-1: the page is that.
+export function MyDuelRating({ lang, here }: { lang: Lang; here?: boolean }) {
   const [mine, setMine] = useState<MyRating | null | undefined>(undefined);
   useEffect(() => {
     let on = true;
@@ -21,10 +22,10 @@ export function MyDuelRating({ lang }: { lang: Lang }) {
       .then((r) => (r.ok ? r.json() : null)).then((j) => { if (on) setMine(parseMine(j)); }, () => { if (on) setMine(null); });
     return () => { on = false; };
   }, []);
-  return mine ? <MyDuelRatingView mine={mine} lang={lang} /> : null;
+  return mine ? <MyDuelRatingView mine={mine} lang={lang} here={here} /> : null;
 }
 
-export function MyDuelRatingView({ mine, lang }: { mine: MyRating; lang: Lang }) {
+export function MyDuelRatingView({ mine, lang, here }: { mine: MyRating; lang: Lang; here?: boolean }) {
   const t = tx(lang), num = (n: number) => n.toLocaleString(LOCALE[lang]);
   const head = <span className="bt-k"><IconCrew s={14} />{t('1-on-1 rating', 'Рейтинг 1 на 1', 'Rating 1 contra 1', '1-gegen-1-Wertung', 'Bire bir reyting', 'Classement en duel', 'Rating 1 contro 1', 'Rating 1 contra 1')}</span>;
   if (!mine.races) return (
@@ -32,7 +33,7 @@ export function MyDuelRatingView({ mine, lang }: { mine: MyRating; lang: Lang })
       {head}
       <p className="bt-hint">{t(`Not rated yet: everyone starts at ${START}. Race someone 1-on-1, both signed in, and your first five races find your level.`, `Рейтинга пока нет: у всех старт с ${START}. Проведи гонку 1 на 1, оба с аккаунтом, и первые пять гонок найдут твой уровень.`, `Aún sin rating: todos empiezan en ${START}. Haz una regata 1 contra 1, los dos con sesión iniciada, y tus cinco primeras regatas encontrarán tu nivel.`, `Noch keine Wertung: alle beginnen bei ${START}. Segle eine 1-gegen-1-Regatta, beide angemeldet, und deine ersten fünf Regatten finden dein Niveau.`, `Henüz reyting yok: herkes ${START} ile başlar. İkiniz de giriş yapmış olarak bire bir yarış; ilk beş yarışın seviyeni bulur.`, `Pas encore classé : tout le monde part de ${START}. Fais un duel, tous deux connectés, et tes cinq premières régates trouveront ton niveau.`, `Ancora senza rating: tutti partono da ${START}. Fai una regata 1 contro 1, entrambi con l’accesso, e le prime cinque regate troveranno il tuo livello.`, `Ainda sem rating: todos começam em ${START}. Corra um duelo 1 contra 1, os dois conectados, e suas cinco primeiras regatas acham o seu nível.`)}</p>
       <History mine={mine} lang={lang} />
-      <Link className="bt-row" href="/match/new"><IconCrew s={18} /><span>{t('Race someone 1-on-1', 'Гонка 1 на 1', 'Una regata 1 contra 1', 'Eine 1-gegen-1-Regatta', 'Bire bir yarış', 'Un duel 1 contre 1', 'Una regata 1 contro 1', 'Um duelo 1 contra 1')}</span></Link>
+      {!here && <Link className="bt-row" href="/duel"><IconCrew s={18} /><span>{t('Race someone 1-on-1', 'Гонка 1 на 1', 'Una regata 1 contra 1', 'Eine 1-gegen-1-Regatta', 'Bire bir yarış', 'Un duel 1 contre 1', 'Una regata 1 contro 1', 'Um duelo 1 contra 1')}</span></Link>}
     </div>
   );
   const prov = provisional(mine.races), next = prov ? null : nextLevel(mine.rating);

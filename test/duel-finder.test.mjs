@@ -1,0 +1,70 @@
+// Find a race's own page, mounted (components/duel-finder.tsx DuelFinder): Ready now read as the page opens and every 10 s,
+// Race beside a sailor challenging them (POST /connect/seek challenge with the wishes), a sailor gone said and the list read
+// again, a challenge answered by Match found, and the wishes kept on this device and sent with each ask.
+// Run: node --test test/duel-finder.test.mjs
+import { test, beforeEach, afterEach } from 'node:test';
+import assert from 'node:assert/strict';
+import './load.mjs';
+import { click, dom, done, fire, h, json, mount, reset, serve, tick } from './fake-dom.mjs';
+
+const { DuelFinder } = await import('../components/duel-finder.tsx');
+const SETTINGS = { venue: 'phuket', yacht: 'j70', preset: 'medium', length: 'short', course: 'wl', laps: 1, start: 1, current: 0, daytime: 'any' };
+const PAIR = { id: '0b8f1c2e-1111-4222-8333-944455556666', code: 'K7M2QZ', role: 'guest', settings: SETTINGS, them: { name: 'Cara M.', rating: 1900, races: 12 }, me: { rating: 1500, races: 8, ok: null }, them_ok: null, left: 10, minutes: 6 };
+const LIST = [{ handle: '3f9a0c1d2e4b', name: 'Cara M.', rating: 1900, races: 12, waited: 23 }];
+let answer = {};
+const asks = () => dom.fetches.filter((f) => f.url === '/connect/seek').map((f) => JSON.parse(f.init.body));
+beforeEach(() => {
+  reset({ url: 'https://updown.test/duel' });
+  answer = { ready_now: { list: LIST }, challenge: { status: 'none', reason: 'gone' }, seek: { status: 'looking', waited: 0, band: 100, online: 1, near: 0 } };
+  serve([['/connect/seek', (u, init) => json(answer[JSON.parse(init.body).do] ?? { status: 'none', reason: null })]]);
+});
+afterEach(done);
+const race = (v) => v.$$('.df-race')[0];
+
+test('Ready now is read as the page opens and every 10 s after, each sailor with Race', async () => {
+  const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  assert.match(v.text(), /Ready now Cara M\. National 1900 waiting 0:23 Race/);
+  assert.equal(asks().filter((a) => a.do === 'ready_now').length, 1);
+  await tick(10000);
+  assert.equal(asks().filter((a) => a.do === 'ready_now').length, 2);
+  await v.unmount();
+});
+
+test('Race on a sailor who has gone says so, reads the list again and leaves the page ready to look', async () => {
+  const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  answer.ready_now = { list: [] };
+  await click(race(v));
+  assert.deepEqual(asks().find((a) => a.do === 'challenge'), { do: 'challenge', handle: '3f9a0c1d2e4b', wishes: {} });
+  assert.match(v.text(), /That sailor has just gone.* Find a race .* Nobody else is looking right now/);
+  assert.equal(asks().filter((a) => a.do === 'ready_now').length, 2);
+  await v.unmount();
+});
+
+test('Race answered by a match: Match found with the sailor challenged, and the list gone from over it', async () => {
+  const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  answer.challenge = { status: 'found', pair: PAIR }; answer.seek = { status: 'found', pair: PAIR };
+  await click(race(v));
+  assert.match(v.text(), /Match found Cara M\. National 1900 about 6 min/);
+  assert.doesNotMatch(v.text(), /Ready now/);
+  await v.unmount();
+});
+
+test('the wishes are kept on this device and sent with Find a race and with a challenge', async () => {
+  localStorage.setItem('regatta-duel-wishes', JSON.stringify({ venue: 'cowes', yacht: 'titanic' }));
+  const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  const yacht = v.$$('.df-sel select')[1];
+  yacht.value = 'dragon'; await fire(yacht, 'change');
+  assert.deepEqual(JSON.parse(localStorage.getItem('regatta-duel-wishes')), { venue: 'cowes', yacht: 'dragon' });
+  await click(v.$('.bt-go'));
+  assert.deepEqual(asks().find((a) => a.do === 'seek').wishes, { venue: 'cowes', yacht: 'dragon' });
+  await click(race(v));
+  assert.deepEqual(asks().find((a) => a.do === 'challenge').wishes, { venue: 'cowes', yacht: 'dragon' });
+  await v.unmount();
+});
+
+test('signed out, nothing is asked', async () => {
+  const v = await mount(h(DuelFinder, { lang: 'en', signed: false }));
+  await tick(10000);
+  assert.deepEqual(asks(), []);
+  await v.unmount();
+});

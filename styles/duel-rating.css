@@ -45,3 +45,20 @@
 .df-ready { position: relative; }
 .df-left { margin-left: 10px; font-variant-numeric: tabular-nums; opacity: .75; }
 .df-bar { flex: none; width: 100%; height: 4px; } /* (a line, not the level bar's row: in this column its basis would be its height) */
+
+/* Ready now on /duel (components/duel-finder.tsx): who else is looking, a row each with Race; and the wishes */
+.df-now { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.df-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.df-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--rule, rgba(255,255,255,.14));
+  font: 600 15px/1.2 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink-2, rgba(255,255,255,.78)); font-variant-numeric: tabular-nums; }
+.df-row:last-child { border-bottom: 1px solid var(--rule, rgba(255,255,255,.14)); }
+.df-n { font: 800 18px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink, #fff); min-width: 0; overflow-wrap: anywhere; }
+.df-lv { font: 700 12px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--you, #3db8ff); }
+.df-who { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.df-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.df-wish { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; }
+.df-wish .iv-note { flex-basis: 100%; }
+.df-sel { display: flex; flex-direction: column; gap: 4px; font: 700 12px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3, rgba(255,255,255,.62)); }
+.df-sel select { min-width: 150px; max-width: 100%; padding: 8px 10px; font: 600 15px/1.2 var(--sans, 'Sofia Sans', sans-serif); letter-spacing: 0; text-transform: none;
+  color: var(--ink, #fff); background: rgba(255,255,255,.06); border: 1px solid var(--rule, rgba(255,255,255,.22)); border-radius: 0; }
+.df-sel select option { color: #04121e; background: #fff; }

@@ -59,3 +59,21 @@ export function wishesOf(w: unknown): { venue?: string; yacht?: string } {
   if (!o || typeof o !== 'object') return {};
   return { ...(VENUE_IDS.has(o.venue as string) && { venue: o.venue as string }), ...(YACHT_IDS.has(o.yacht as string) && { yacht: o.yacht as string }) };
 }
+
+// Ready now (the database's regatta_ready_now): who is looking at this moment, nearest your rating first, at most 20, each
+// by a handle (a hash of the account, never its id) that a challenge names (regatta_seek_challenge)
+export type Ready = { handle: string; name: string | null; rating: number; races: number; waited: number };
+const HANDLE_RE = /^[0-9a-f]{12}$/;
+export const isHandle = (h: unknown): h is string => typeof h === 'string' && HANDLE_RE.test(h);
+
+export function parseReady(j: unknown): Ready[] {
+  if (!Array.isArray(j)) return [];
+  const out: Ready[] = [];
+  for (const e of j.slice(0, 20)) {
+    const o = e as Record<string, unknown> | null;
+    if (!o || typeof o !== 'object' || !isHandle(o.handle) || !int(o.rating) || !int(o.races)) continue;
+    const w = num(o.waited);
+    out.push({ handle: o.handle, name: plainName(o.name as string) ?? null, rating: o.rating as number, races: o.races as number, waited: Number.isFinite(w) ? Math.max(0, w) : 0 });
+  }
+  return out;
+}

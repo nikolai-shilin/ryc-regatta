@@ -1,7 +1,8 @@
 // Find a race: the database's answers read (lib/duel-seek.ts), POST /connect/seek over a stand-in for Supabase, the
 // link each sailor is sent to (the host's with ?auto), and the finder's screens (components/duel-finder.tsx DuelFinderView):
 // signed out, ready to look, looking, a long wait, Match found (the short one, and the full one with the stakes), waiting
-// for the other, off to the race, missed. Run: node --test test/duel-seek.test.mjs
+// for the other, off to the race, missed; Ready now (who else is looking, each with Race), a challenge, a sailor gone, the
+// wishes. Run: node --test test/duel-seek.test.mjs
 import { mock } from './load.mjs';
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,7 +14,7 @@ mock('@supabase/ssr', 'export const createServerClient = () => globalThis.__sb; 
 globalThis.__sb = { rpc: async (fn, args) => { rpc.calls.push({ fn, ...(args || {}) }); return { data: rpc.data, error: rpc.error }; } };
 const { NextRequest } = await import('next/server');
 const { POST } = await import('../app/connect/seek/route.ts');
-const { parseSeek, raceHref, wishesOf } = await import('../lib/duel-seek.ts');
+const { parseSeek, parseReady, raceHref, wishesOf } = await import('../lib/duel-seek.ts');
 const { DuelFinderView } = await import('../components/duel-finder.tsx');
 
 const SETTINGS = { venue: 'phuket', yacht: 'j70', preset: 'medium', length: 'short', course: 'wl', laps: 1, start: 1, current: 0, daytime: 'any' };
@@ -96,4 +97,46 @@ test('off to the race, and a missed match', () => {
   assert.match(view({ phase: 'go', pair: pairOf() }), /Both ready\. Off to the race…/);
   assert.match(view({ phase: 'missed' }), /The match went: Ready wasn’t said in time\. Find a race/);
   assert.match(plain(renderToStaticMarkup(DuelFinderView({ lang: 'ru', signed: true, phase: 'idle', look: { waited: 0, band: 100, online: 0 }, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop }))), /Найти гонку/);
+});
+
+const READY = [{ handle: '3f9a0c1d2e4b', name: 'Cara M.', rating: 1900, races: 12, waited: 23 }, { handle: 'a1b2c3d4e5f6', name: 'Lina S.', rating: 1508, races: 2, waited: '4' }];
+
+test('Ready now is read as it is: a handle, never an id, the name, rating, races and wait; anything else dropped', () => {
+  const r = parseReady([...READY, { handle: '00000000-0000-4000-8000-00000000000a', name: 'x', rating: 1500, races: 0 }, { handle: 'abc', rating: 1500, races: 0 }, { handle: 'bbbbbbbbbbbb', rating: '1500', races: 0 }, null]);
+  assert.deepEqual(r, [{ handle: '3f9a0c1d2e4b', name: 'Cara M.', rating: 1900, races: 12, waited: 23 }, { handle: 'a1b2c3d4e5f6', name: 'Lina S.', rating: 1508, races: 2, waited: 4 }]);
+  assert.deepEqual(parseReady(null), []); assert.deepEqual(parseReady({ handle: 'x' }), []);
+  assert.equal(parseReady(Array.from({ length: 30 }, (_, i) => ({ ...READY[0], handle: i.toString(16).padStart(12, '0') }))).length, 20);
+});
+
+test('POST /connect/seek: ready_now lists who is looking; challenge names a handle with clean wishes; a bad handle asks nothing', async () => {
+  rpc.data = READY;
+  assert.deepEqual((await post({ do: 'ready_now' })).list.map((x) => x.name), ['Cara M.', 'Lina S.']);
+  assert.deepEqual(rpc.calls.at(-1), { fn: 'regatta_ready_now' });
+  rpc.data = { status: 'found', pair: PAIR };
+  assert.equal((await post({ do: 'challenge', handle: '3f9a0c1d2e4b', wishes: { yacht: 'dragon', venue: 'nowhere' } })).status, 'found');
+  assert.deepEqual(rpc.calls.at(-1), { fn: 'regatta_seek_challenge', p_handle: '3f9a0c1d2e4b', p_wishes: { yacht: 'dragon' } });
+  rpc.data = { status: 'none', reason: 'gone' };
+  assert.deepEqual(await post({ do: 'challenge', handle: '3f9a0c1d2e4b' }), { status: 'none', reason: 'gone' });
+  for (const handle of [undefined, '', 'ZZZZZZZZZZZZ', '00000000-0000-4000-8000-00000000000a', 42]) { rpc.calls = []; assert.equal((await post({ do: 'challenge', handle })).status, 'none'); assert.equal(rpc.calls.length, 0, String(handle)); }
+  rpc.error = { code: '42501' }; assert.deepEqual(await post({ do: 'ready_now' }), { list: [] });
+});
+
+test('Ready now under the button and while looking: nearest first, level or New, rating, how long, Race; nobody yet; gone', () => {
+  const list = parseReady(READY), raced = [];
+  const s = view({ list, challenge: (h) => raced.push(h) });
+  assert.match(s, /Ready now Cara M\. National 1900 waiting 0:23 Race Lina S\. New ~1508 waiting 0:04 Race/);
+  assert.match(view({ phase: 'looking', look: { waited: 5, band: 100, online: 3 }, list }), /Stop looking Ready now Cara M\./);
+  assert.match(view(), /Ready now Nobody else is looking right now\. Find a race, and you’re the first one the next sailor sees\./);
+  assert.match(view({ note: 'gone' }), /That sailor has just gone: paired with someone else, or stopped looking\. Find a race/);
+  assert.doesNotMatch(view({ phase: 'found', pair: pairOf(), list }), /Ready now/, 'not over a match found');
+  assert.match(plain(renderToStaticMarkup(DuelFinderView({ lang: 'ru', signed: true, phase: 'idle', look: { waited: 0, band: 100, online: 0 }, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop, list }))), /Готовы сейчас Cara M\. .* ждёт 0:23 Гонка/);
+});
+
+test('the wishes, a venue and a yacht or Any, and when they count; a signed-out visitor sees neither them nor the list', () => {
+  const html = renderToStaticMarkup(DuelFinderView({ lang: 'en', signed: true, phase: 'idle', look: { waited: 0, band: 100, online: 0 }, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop, wishes: { venue: 'phuket' } }));
+  assert.match(html, /<option value="phuket" selected="">Phuket<\/option>/);
+  assert.match(html, /<option value="j70">J\/70<\/option>/);
+  assert.match(plain(html), /Venue Any .* Yacht Any .* Your wishes count from your fourth rated race; the host’s come first\./);
+  const out = plain(renderToStaticMarkup(DuelFinderView({ lang: 'en', signed: false, phase: 'idle', look: { waited: 0, band: 100, online: 0 }, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop, list: parseReady(READY) })));
+  assert.doesNotMatch(out, /Ready now|Venue/);
 });
