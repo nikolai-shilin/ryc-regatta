@@ -1,9 +1,9 @@
 # Regatta: the F50's moulded platform (game/boats3d.js F50View), modelled here and exported to game/f50.glb: her two
 # hulls, each a long slim hull of rounded sections, narrowing over its forward half to a low rounded nose, its deck sloping down
 # to it, aft its sides drawing in to a small upright transom, the bottom rising to both ends, the
-# cockpit well aft in each where the crew stand; the main beam across at the wing's step, faired to a thick foil section
-# as the photographs show it; a lighter beam aft; the central pod (her batteries' housing) forward from the main beam to
-# the jib's tack; the nets between the hulls from one beam to the other. The boards, the rudders, the wing and the jib,
+# cockpit well aft in each where the crew stand; the main beam across at the wing's step, a slim faired tube flaring
+# into the hulls at its roots, as the photographs show it; an open truss aft; the central pod (her batteries' housing) forward from the main beam to
+# the jib's tack, braced to the hulls by a rod either side under the beam; the nets between the hulls from one beam to the other. The boards, the rudders, the wing and the jib,
 # the wheels and pedestals, the fittings and the crew stay in boats3d.js (they move, or are made per boat).
 #
 # Her size from the class (15 m hulls, 8.8 m across the boards' tips; the AC50 she came from 8.47 m over the hulls) and
@@ -122,6 +122,19 @@ def build_beam(bm, M, z, y, chord, th, n=14, span=24):
             bm.faces.new((rows[k][i], rows[k][(i + 1) % m], rows[k + 1][(i + 1) % m], rows[k + 1][i])).material_index = M['hull']
     bm.faces.new(list(reversed(rows[0]))).material_index = M['hull']; bm.faces.new(rows[-1]).material_index = M['hull']
 
+# the main beam, as she shows it head-on: a slim faired tube across at deck height, its section an ellipse (chord fore
+# and aft, depth up and down), flaring at each root into a smooth fairing on the hull's inboard topside
+def build_main_beam(bm, M, z, y, chord, depth, seg=20, span=40):
+    ends = HX - 0.15
+    rows = []
+    for k in range(span + 1):
+        x = lerp(-ends, ends, k / span); r = smooth(ends - 1.0, ends, abs(x))  # the root's flare, over its last metre
+        a, b, yc = chord / 2 * (1 + 1.3 * r), depth / 2 * (1 + 0.6 * r), y + 0.08 * r
+        rows.append([bm.verts.new(G(x, yc + b * math.sin(2 * math.pi * j / seg), z + a * math.cos(2 * math.pi * j / seg) * (0.85 if math.cos(2 * math.pi * j / seg) < 0 else 1.15))) for j in range(seg)])
+    for k in range(span):
+        for j in range(seg): bm.faces.new((rows[k][j], rows[k][(j + 1) % seg], rows[k + 1][(j + 1) % seg], rows[k + 1][j])).material_index = M['hull']
+    bm.faces.new(list(reversed(rows[0]))).material_index = M['hull']; bm.faces.new(rows[-1]).material_index = M['hull']
+
 # the pod: a body of revolution forward along her middle from inside the main beam to its rounded nose at the jib's
 # tack, thickest aft
 def build_pod(bm, M, z0, z1, y, r0, r1, seg=24, n=40):
@@ -160,7 +173,7 @@ def tube_between(bm, M, a, b, r, seg=8):
     bm.faces.new(list(reversed(ra))).material_index = M['pod']; bm.faces.new(rb).material_index = M['pod']
 def build_truss(bm, M, z, y0, y1, n=8):
     ends = HX - 0.2
-    for y in (y0, y1): tube_between(bm, M, G(-ends, y, z), G(ends, y, z), 0.05)
+    for y in (y0, y1): tube_between(bm, M, G(-ends, y, z), G(ends, y, z), 0.06)
     for k in range(n):
         xa, xb = lerp(-ends, ends, k / n), lerp(-ends, ends, (k + 1) / n)
         tube_between(bm, M, G(xa, y0 if k % 2 else y1, z), G(xb, y1 if k % 2 else y0, z), 0.025)
@@ -218,10 +231,11 @@ bpy.context.view_layer.objects.active = hulls; bpy.ops.object.modifier_apply(mod
 bpy.data.objects.remove(cut)
 
 # the cockpits' fairings: a low streamlined cowl on the deck at each one's forward end, in front of the crew (the
-# photographs show it), 1.4 m long, 0.56 m wide and 0.24 m high, its nose rounded and its tail running into the cockpit
+# photographs show it), clear of the main beam's root: 0.9 m long, 0.56 m wide and 0.24 m high, its nose rounded and its
+# tail running over the cockpit's forward end
 fair = new_object('fairings'); bm = bmesh.new()
 for cx in (-HX, HX):
-    z0, z1, n, seg = COCKPIT[0] - 1.1, COCKPIT[0] + 0.3, 16, 14
+    z0, z1, n, seg = COCKPIT[0] - 0.15, COCKPIT[0] + 0.75, 16, 14
     rows = []
     for i in range(n + 1):
         s = i / n; z = lerp(z0, z1, s); k = math.sin(math.pi * min(1, s / 0.7) / 2) * (1 - 0.15 * s)
@@ -232,13 +246,15 @@ for cx in (-HX, HX):
     bm.faces.new(rows[-1]).material_index = IDX['pod']
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(fair.data); bm.free()
 
-# the platform: the main beam at the wing's step (boats3d.js F.MAST_Z), the aft beam, the pod and the nets
+# the platform: the main beam at the wing's step (boats3d.js F.MAST_Z), the aft truss, the pod and its rods, the nets
 MAIN_Z, AFT_Z, TACK_Z = -STERN + 7.4, STERN - 1.0, -STERN + 3.2
 plat = new_object('platform'); bm = bmesh.new()
-build_beam(bm, IDX, MAIN_Z + 0.25, 0.8, 1.3, 0.2)
-build_truss(bm, IDX, AFT_Z, 0.55, 0.88)
-build_pod(bm, IDX, MAIN_Z, TACK_Z, 0.86, 0.32, 0.12)
-build_net(bm, IDX, MAIN_Z + 0.25 + 0.55 * 1.5, AFT_Z - 0.45 * 0.6, 0.85)
+build_main_beam(bm, IDX, MAIN_Z + 0.25, 0.86, 0.6, 0.38)
+build_truss(bm, IDX, AFT_Z, 0.42, 0.9)
+# under the main beam, the pod braced to the hulls: a rod from its keel to each hull's inboard side at the beam's root
+for sx in (-1, 1): tube_between(bm, IDX, G(0, 0.82 - 0.45 * 2.2 + 0.08, MAIN_Z + 0.1), G(sx * (HX - 0.42), 0.62, MAIN_Z + 0.25), 0.03)
+build_pod(bm, IDX, MAIN_Z + 0.1, TACK_Z, 0.82, 0.45, 0.13)
+build_net(bm, IDX, MAIN_Z + 0.25 + 0.36, AFT_Z - 0.1, 0.85)
 bmesh.ops.recalc_face_normals(bm, faces=[f for f in bm.faces if f.material_index != IDX['net']]); bm.to_mesh(plat.data); bm.free()
 
 bpy.ops.object.select_all(action='DESELECT')

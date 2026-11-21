@@ -2717,9 +2717,9 @@ class AC75View extends ClassView {
 // 7.4 m apart, each some 1.0 m wide and 1.2 m deep amidships, of rounded sections, narrowing steadily over her forward
 // half to a low rounded nose, its deck sloping down to it; the bottom straight amidships and rising to both ends; a
 // stern drawing in to a small upright transom shaped like a rounded shield; a cockpit well aft with a low streamlined fairing at its forward end. The wing
-// stepped near amidships on the main beam, a slim faired foil section, its leading edge 7.4 m aft of the bows; the aft
-// beam an open truss, the nets between; the pod forward from the main beam to the jib's tack, 3.2 m aft of the bows, a
-// teardrop in section, deep and narrowing to a keel below. The hulls, beams, pod and nets are moulded (blender/f50.py,
+// stepped near amidships on the main beam, a slim faired tube flaring into the hulls at its roots, its leading edge 7.4 m
+// aft of the bows; the aft beam an open truss, the nets between; the pod forward from the main beam to the jib's tack,
+// 3.2 m aft of the bows, a teardrop in section, deep and narrowing to a keel below, braced to the hulls by a rod either side. The hulls, beams, pod and nets are moulded (blender/f50.py,
 // on these same lines); built here if the model doesn't load
 const F = (() => {
   const L = 15, HX = 3.7, DECK = 0.85, BOTTOM = -0.38, NOSE_Y = 0.15, TIP = 0.94, AFT = 0.14;
@@ -2736,7 +2736,7 @@ const F = (() => {
     n: (t) => (t < 0.4 ? lerp(2.4, 2.7, smooth(0, 0.15, t)) : lerp(2.7, 2.2, smooth(0.4, 0.9, t))), // a rounded box, rounder at the transom and forward
   });
   const MAST_Z = hull.BOW + 7.4, BEAM_Z = MAST_Z + 0.25, AFT_Z = hull.STERN - 1.0, BOARD_Z = hull.BOW + 7.0;
-  const BEAM_Y = 0.98, NET_Y = 0.85, FOOT_Y = 1.3, WING_H = 22, MASTHEAD = FOOT_Y + WING_H, RAKE = Math.tan(4 * D2R);
+  const BEAM_Y = 1.05, NET_Y = 0.85, FOOT_Y = 1.3, WING_H = 22, MASTHEAD = FOOT_Y + WING_H, RAKE = Math.tan(4 * D2R);
   // the wing: its leading edge straight and raked 4° aft; its trailing edge a long curve, the chord 3.8 m at the foot,
   // 4.3 m at its widest a third of the way up, 3.6 m at two thirds, 1.8 m at its flat head (the class's drawing). Some
   // 22 m over the deck: the drawing and the side-on photographs measure 20–21 m against her 15 m hulls, which the
@@ -2763,7 +2763,12 @@ const F50_FRAME = canvasTex(256, 64, (x, w, h) => {
   for (const u of [0, 0.23, 0.455, 0.49, 0.75, 1]) x.fillRect(Math.round(u * w) - 4, 0, 8, h); // the edges, the mullions, the slot
 });
 const F50_GLASS = [THREE.FrontSide, THREE.BackSide].map((side) => new THREE.MeshPhysicalMaterial({ map: F50_FRAME, transparent: true, roughness: 0.08, metalness: 0, clearcoat: 1, envMapIntensity: 1.2, depthWrite: false, side }));
-const F50_NET = new THREE.MeshStandardMaterial({ color: '#5a5f66', roughness: 0.95, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false });
+// the nets: a fine dark mesh, the water showing through it (its UVs from the plan, twelve cells to the metre)
+const F50_MESH = canvasTex(64, 64, (x, w, h) => {
+  x.clearRect(0, 0, w, h); x.fillStyle = 'rgba(70,75,82,0.45)'; x.fillRect(0, 0, w, h);
+  x.fillStyle = 'rgba(28,31,36,0.95)'; for (let i = 0; i < 8; i++) { x.fillRect(i * 8, 0, 2, h); x.fillRect(0, i * 8, w, 2); }
+});
+const F50_NET = new THREE.MeshStandardMaterial({ map: F50_MESH, roughness: 0.95, transparent: true, side: THREE.DoubleSide, depthWrite: false });
 
 const _wv = new THREE.Vector3(), _wv2 = new THREE.Vector3();
 class F50View extends ClassView {
@@ -2807,11 +2812,13 @@ class F50View extends ClassView {
     if (!MOD) {
       // the beams (a faired foil section), the pod and the nets
       const beam = (z, y, c, th) => { const m = new THREE.Mesh(new THREE.CapsuleGeometry(c * th * 0.5, 2 * HX - c * th, 6, 14).rotateZ(Math.PI / 2).scale(1, 1, 1 / th), paint); m.position.set(0, y, z); T.add(m); };
-      beam(F.BEAM_Z, 0.8, 1.3, 0.2); beam(F.AFT_Z, 0.72, 0.4, 0.3);
+      beam(F.BEAM_Z, 0.86, 0.6, 0.63); beam(F.AFT_Z, 0.66, 0.4, 0.3);
       const len = F.MAST_Z - F.TACK.z, pod = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.13, len, 16).rotateX(Math.PI / 2).scale(1, 0.85, 1), paint);
       pod.position.set(0, 0.8, F.TACK.z + len / 2); T.add(pod);
       const x = HX - 0.45, z0 = F.BEAM_Z + 0.83, z1 = F.AFT_Z - 0.27;
-      const net = new THREE.Mesh(new THREE.PlaneGeometry(2 * x, z1 - z0).rotateX(-Math.PI / 2), F50_NET);
+      const ng = new THREE.PlaneGeometry(2 * x, z1 - z0).rotateX(-Math.PI / 2), uv = ng.attributes.uv; // its UVs in metres, as the model's
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 3 * x, uv.getY(i) * 1.5 * (z1 - z0));
+      const net = new THREE.Mesh(ng, F50_NET);
       net.position.set(0, F.NET_Y, (z0 + z1) / 2); net.userData.flat = true; T.add(net);
     }
     // the daggerboards: down through each hull just ahead of the wing's leading edge, canted out a little so the T-foil on
@@ -3011,7 +3018,7 @@ const [BV_MODEL, LZ_MODEL, OZ_MODEL, J70_MODEL, RS21_MODEL, AC75_MODEL, DRAGON_M
   CLS.id !== 'ac75' && !ON_FLEET ? null : loadModel('ac75.glb', A.hull, [['deck', 1]]),
   CLS.id !== 'dragon' && !ON_FLEET ? null : loadModel('dragon.glb', DZ.hull, [['deck', 1], ['teak', 1 / 0.8]]),
   CLS.id !== 'jclass' && !ON_FLEET ? null : loadModel('jclass.glb', JZ.hull, [['deck', 1 / 0.8], ['teak', 1 / 0.8]]),
-  CLS.id !== 'f50' && !ON_FLEET ? null : loadModel('f50.glb', F.hull, [['deck', 1]]),
+  CLS.id !== 'f50' && !ON_FLEET ? null : loadModel('f50.glb', F.hull, [['deck', 1], ['net', 1.5]]),
 ]);
 // the Dragon's mahogany: its grain laid along her, its UVs the height and the length in metres (the band's faces stand
 // upright, so the plan's would smear it)
