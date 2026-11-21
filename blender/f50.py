@@ -31,8 +31,8 @@ OUT = os.path.normpath(os.path.join(HERE, '..', 'public', 'game', 'f50.glb'))
 L, HX = 15.0, 3.7          # the hulls' length; their centres either side of hers
 STERN = L / 2
 FLARE, CROWN = 0.02, 0.1
-DECK, BOTTOM, NOSE_Y = 0.85, -0.38, 0.15   # the deck and the bottom amidships, and the height of the nose's rounded tip
-TIP = 0.94                                 # where the nose's rounded tip begins (0.9 m from it)
+DECK, BOTTOM, NOSE_Y = 1.0, -0.38, -0.1    # the deck at the stern, the bottom amidships, and the height of the nose's tip
+TIP = 0.95                                 # where the nose's rounded tip begins (0.75 m from it)
 AFT = 0.14                                 # the stern narrowing in plan over its last 2.1 m to a small transom, as the photographs show it
 def clamp(v, a, b): return max(a, min(b, v))
 def lerp(a, b, t): return a + (b - a) * t
@@ -40,13 +40,15 @@ def smooth(e0, e1, x): t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 
 # the same lines as boats3d.js F (t = 0 at the transom, 1 at the nose's tip)
 def ell(t, t0): return math.sqrt(max(0.0, 1 - ((t - t0) / (1 - t0)) ** 2)) if t > t0 else 1.0  # a quarter ellipse to the tip
 def aft(t): return 1 - 0.45 * (1 - t / AFT) ** 1.6 if t < AFT else 1.0  # the sides drawing in to a transom 55% of her width
-# in plan: full amidships, then narrowing steadily over her forward half to a rounded tip; aft, the sides drawing in to
+# in plan: full amidships, then narrowing steadily over her forward half to a fine rounded tip; aft, the sides drawing in to
 # a small, flat, upright transom shaped like a rounded shield (its corners rounded, its top crowned)
 def hb_of(t): return 0.5 * (0.92 + 0.08 * smooth(0, 0.3, t)) * (1 - 0.5 * smooth(0.45, 0.97, t)) * ell(t, TIP) * aft(t)
-# in profile: the deck level aft, sloping down over her forward 40% to some 0.6 m, then rounding down to the nose;
-# the bottom straight amidships, rising 0.3 m aft to the transom and some 0.25 m forward before rounding up to the nose
-def deck0(t): return DECK + 0.02 * math.sin(math.pi * t) - 0.27 * smooth(0.55, TIP, t)
-def bot0(t): return BOTTOM + 0.3 * (1 - smooth(0, 0.5, t)) + 0.25 * smooth(0.7, TIP, t)
+# in profile, as the photographs of the boats flying side-on show it (ITA at Sassnitz, 2025, measured against her
+# hull): the deck highest at the stern, some 1.0 m, and sloping steadily down over her forward two thirds, 0.85 m
+# amidships, 0.45 m three quarters forward, to a fine low nose a quarter metre above the bottom; the bottom straight from
+# amidships to near the nose and rising 0.48 m over her aft 6 m to a transom some 0.9 m deep
+def deck0(t): return DECK - 0.72 * smooth(0.1, 1.0, t) ** 1.5
+def bot0(t): return BOTTOM + 0.48 * (1 - smooth(0, 0.42, t)) ** 1.3 + 0.08 * smooth(0.85, TIP, t)
 def sheer(t): return NOSE_Y + (deck0(t) - NOSE_Y) * ell(t, TIP)
 def bottom(t): return NOSE_Y - (NOSE_Y - bot0(t)) * ell(t, TIP)
 def depth(t): return -bottom(t)

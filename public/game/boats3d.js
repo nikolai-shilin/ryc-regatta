@@ -2714,18 +2714,20 @@ class AC75View extends ClassView {
 // SailGP's one-design catamaran, from the class's figures (15 m, 8.8 m across the boards' tips; the AC50 she grew from
 // 8.47 m over the hulls, 2.4 m of draft), the class's profile drawing and photographs of the boats racing, 2019 to 2026,
 // measured against her 15 m hulls, from the side, head-on and from below on the crane. Two slim hulls, their centres
-// 7.4 m apart, each some 1.0 m wide and 1.2 m deep amidships, of rounded sections, narrowing steadily over her forward
-// half to a low rounded nose, its deck sloping down to it; the bottom straight amidships and rising to both ends; a
+// 7.4 m apart, each some 1.0 m wide and 1.25 m deep amidships, of rounded sections, the deck highest at the stern and
+// sloping steadily down over her forward two thirds to a fine low nose; the bottom straight, rising aft; a
 // stern drawing in to a small upright transom shaped like a rounded shield; a cockpit well aft with a low streamlined fairing at its forward end. The wing
 // stepped near amidships on the main beam, a slim faired tube flaring into the hulls at its roots, its leading edge 7.4 m
 // aft of the bows; the aft beam an open truss, the nets between; the pod forward from the main beam to the jib's tack,
 // 3.2 m aft of the bows, a teardrop in section, deep and narrowing to a keel below, braced to the hulls by a rod either side. The hulls, beams, pod and nets are moulded (blender/f50.py,
 // on these same lines); built here if the model doesn't load
 const F = (() => {
-  const L = 15, HX = 3.7, DECK = 0.85, BOTTOM = -0.38, NOSE_Y = 0.15, TIP = 0.94, AFT = 0.14;
+  const L = 15, HX = 3.7, DECK = 1.0, BOTTOM = -0.38, NOSE_Y = -0.1, TIP = 0.95, AFT = 0.14;
   const ell = (t, t0) => (t > t0 ? Math.sqrt(Math.max(0, 1 - ((t - t0) / (1 - t0)) ** 2)) : 1); // a quarter ellipse to the tip
-  const deck0 = (t) => DECK + 0.02 * Math.sin(Math.PI * t) - 0.27 * smooth(0.55, TIP, t);
-  const bot0 = (t) => BOTTOM + 0.3 * (1 - smooth(0, 0.5, t)) + 0.25 * smooth(0.7, TIP, t);
+  // in profile (as she flies side-on at Sassnitz, measured against her hull): the deck highest at the stern and sloping
+  // steadily down over her forward two thirds to a fine low nose; the bottom straight, rising 0.48 m over her aft 6 m
+  const deck0 = (t) => DECK - 0.72 * smooth(0.1, 1.0, t) ** 1.5;
+  const bot0 = (t) => BOTTOM + 0.48 * (1 - smooth(0, 0.42, t)) ** 1.3 + 0.08 * smooth(0.85, TIP, t);
   const hull = hullOf({
     L, flare: 0.02,
     // in plan full amidships, narrowing steadily over her forward half to a rounded tip; aft, the sides drawing in over
@@ -2804,9 +2806,9 @@ class F50View extends ClassView {
         g.add(new THREE.Mesh(tb.floor, MAT.rubber));
       }
       g.add(tube(rounded(F.COCKPIT, 0.3, 0.15).map(([x, z]) => [x, H.deckY(z) + 0.1, z]), 0.025, MAT.rubber, true)); // the cockpit's rim
-      g.add(...bowNumber(H, look, H.BOW + 3.9, 0.42, 1.5, 0.4));
+      g.add(...bowNumber(H, look, H.BOW + 3.9, 0.12, 1.5, 0.36));
       const z = H.STERN - 1.9; for (const d of nameDecal(H, look, z, 0.42, 3.0)) g.add(d);
-      if (look.logo) g.add(logoDecal(H, sx, look.logo, H.BOW + 5.6, 0.42, 1.9, 0.5));
+      if (look.logo) g.add(logoDecal(H, sx, look.logo, H.BOW + 5.6, 0.22, 1.9, 0.5));
       return g;
     });
     if (!MOD) {
