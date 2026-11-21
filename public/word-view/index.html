@@ -9,8 +9,9 @@
      sailing sailed on the water, as the race's dictionary shows it behind its panel (game/word-scenes.js), on a race
      of its own laid for it at the venue: a triangle for the wing mark, an upwind finish's course for the offset mark,
      a stream for the current. ?w= the word, ?lang= the tags' language; the page that holds it can send another word
-     ({ type: 'word', id }), say how much of the scene from the top its words leave clear ({ type: 'view', h }: the
-     word framed there), and say it has scrolled out of sight ({ type: 'away', on }). It tells the page when it is
+     ({ type: 'word', id }), say what part of the scene its words leave clear ({ type: 'view', x, y, w, h }, as shares
+     of the scene, x and y from its top left, 0 and 0 when left out, w 1: the word framed there), and say it has
+     scrolled out of sight ({ type: 'away', on }). It tells the page when it is
      ready for them ({ type: 'ready' }) and when its first frame is up ({ type: 'live' }). -->
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
@@ -85,8 +86,9 @@ async function start() {
   try { world = await makeWorld(canvas); } catch (e) { return; } // no WebGL: the page's words stay as they are
   world.showGuides = false;
   const skipFrame = followSettings(world); // Audio & graphics: the level chosen, and the battery saver
-  let race = null, laid = null, stage = null, word = pick(q.get('w')), ready = false, on = true, last = performance.now(), live = false, clear = 1;
-  const view = () => stage?.view({ x: 0, y: 0, w: innerWidth, h: Math.max(1, innerHeight * clear) });
+  let race = null, laid = null, stage = null, word = pick(q.get('w')), ready = false, on = true, last = performance.now(), live = false;
+  let clear = { x: 0, y: 0, w: 1, h: 1 };
+  const view = () => stage?.view({ x: innerWidth * clear.x, y: innerHeight * clear.y, w: Math.max(1, innerWidth * clear.w), h: Math.max(1, innerHeight * clear.h) });
 
   async function show(w) {
     word = pick(w);
@@ -110,7 +112,11 @@ async function start() {
     if (e.origin !== location.origin) return;
     if (e.data?.type === 'word' && typeof e.data.id === 'string') show(e.data.id);
     if (e.data?.type === 'away') { on = !e.data.on; last = performance.now(); }
-    if (e.data?.type === 'view' && e.data.h > 0) { clear = Math.min(1, e.data.h); view(); }
+    if (e.data?.type === 'view' && e.data.h > 0) {
+      const f = (v, d) => (typeof v === 'number' && v >= 0 && v <= 1 ? v : d);
+      clear = { x: f(e.data.x, 0), y: f(e.data.y, 0), w: f(e.data.w, 1) || 1, h: f(e.data.h, 1) };
+      view();
+    }
   });
   document.addEventListener('visibilitychange', () => { last = performance.now(); });
   const size = () => { world.resize(innerWidth, innerHeight); view(); };

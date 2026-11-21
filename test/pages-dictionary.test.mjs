@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-const { glossary, glossaryGroups, SCENES_3D } = await import('../lib/glossary.ts');
+const { glossary, glossaryGroups, SCENES_3D, dictName } = await import('../lib/glossary.ts');
 const { tx } = await import('../lib/lang.ts');
 const index = await import('../app/[lang]/dictionary/page.tsx');
 const termPage = await import('../app/[lang]/dictionary/[term]/page.tsx');
@@ -25,12 +25,19 @@ const addressed = (path, lang) => (lang === 'en' ? path : `${path}?lang=${lang}`
 for (const lang of ['en', 'ru', 'de']) {
   const t = tx(lang), terms = glossary(t);
 
-  test(`/dictionary (${lang}) has every word, each a link to its own page, the 3D ones marked`, async () => {
+  test(`/dictionary (${lang}) is the race's dictionary over the water, every word in the page as sent, each a link to its own page`, async () => {
     const h = await html(index, lang);
-    for (const x of terms) assert.ok(h.includes(`<a class="dc-term" href="/dictionary/${x.id}">${esc(x.term)}</a>`) || h.includes(`<a href="/dictionary/${x.id}" class="dc-term">${esc(x.term)}</a>`), x.id);
-    for (const x of terms) assert.ok(h.includes(`<dd>${esc(x.def)}</dd>`), `${x.id}: its definition`);
-    assert.equal((h.match(/class="dc-3d"/g) || []).length, terms.filter((x) => SCENES_3D.includes(x.id)).length);
-    assert.match(h, /class="gd-hero-bg wd-scene"/, 'the scene in the picture’s place');
+    // the panel of the race's own (public/game/words.js): its look in the page, its parts
+    assert.ok(h.includes('<style>') && h.includes('.wd-card {'), "words.js's look, in the page as sent");
+    assert.match(h, /<div class="wd bc staged"/);
+    assert.match(h, new RegExp(`<h1 id="dc-h">${esc(dictName(t))}</h1><span class="wd-n">${terms.length}</span>`));
+    for (const x of terms) {
+      assert.match(h, new RegExp(`<div class="wd-w" data-id="${x.id}"><dt><a class="wd-pick" href="/dictionary/${x.id}"><span class="wd-tn">${esc(x.term).replace(/[()]/g, '\\$&')}</span>`), x.id);
+      assert.ok(h.includes(`<dd>${esc(x.def)}</dd>`), `${x.id}: its definition`);
+    }
+    assert.equal((h.match(/class="wd-3d"/g) || []).length, terms.filter((x) => SCENES_3D.includes(x.id)).length, 'the 3D mark on the words the game sails');
+    assert.equal((h.match(/role="radio"/g) || []).length, glossaryGroups(t).length + 1, 'a tab for all, and one for each group');
+    assert.match(h, /class="dc-foot"/);
     const ld = ldOf(h);
     assert.equal(ld['@type'], 'DefinedTermSet');
     assert.equal(ld.url, SITE + addressed('/dictionary', lang));

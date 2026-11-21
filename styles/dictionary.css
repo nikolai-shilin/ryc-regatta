@@ -31,3 +31,24 @@
 .bc .dc-steps span { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
 .bc .dc-steps b { font: 700 var(--fs-row)/1.1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; }
 .bc .dc-steps a:hover b { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- /dictionary: the race's dictionary over the water (components/dictionary-screen.tsx) ----------
+   the panel is public/game/words.js's own (WORDS_CSS, in the page); here only what the site's page adds to it: the
+   water behind, the page's heading (an h1 and h2s where the race has an h2 and h3s), links where the race has buttons
+   (each word's name is the link to its page), the caption's way to it, and the ways on at the foot of the list */
+.dc-scr { position: fixed; inset: 0; overflow: hidden; background: linear-gradient(180deg, #2a5f86 0%, #123f5e 55%, #0a2a40 100%); }
+.dc-water { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; opacity: 0; transition: opacity .8s var(--ease); }
+.dc-water.live { opacity: 1; }
+.dc-scr .wd { z-index: 1; }
+.dc-scr .wd-top h1 { min-width: 0; margin: 0; font: 700 var(--fs-title)/1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dc-scr .wd-g .dc-h3 { display: flex; align-items: baseline; gap: var(--s-2); margin: 0; padding: var(--s-5) 0 var(--s-2); border-bottom: 1px solid var(--rule); break-after: avoid;
+  font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink); }
+.dc-scr .wd-g .dc-h3 b { font-weight: 700; color: var(--gold); }
+.dc-scr a.wd-back { display: inline-flex; align-items: center; text-decoration: none; }
+.dc-scr a.wd-pick { text-decoration: none; }
+.dc-scr a.wd-pick:focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
+.dc-scr .wd-cap a.dc-cap-go { align-self: flex-start; margin-top: var(--s-1); pointer-events: auto; font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--you); text-decoration: none; }
+.dc-scr .wd-cap a.dc-cap-go:hover { text-decoration: underline; text-underline-offset: 3px; }
+.dc-foot { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); margin: var(--s-6) 0 0; padding: var(--s-4) 0 0; border-top: 1px solid var(--rule); }
+.dc-foot a { font: 700 var(--fs-label)/1.4 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); text-decoration: none; }
+.dc-foot a:hover { color: var(--ink); }

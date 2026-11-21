@@ -5,7 +5,8 @@
 // the definitions, accents and case aside; the tabs keep one group.
 //
 // The race's page has no React, so this is plain DOM, with its look in here too. Fetched only when opened (main.js
-// imports it then), so it costs the race's start nothing.
+// imports it then), so it costs the race's start nothing. The site's /dictionary is the same panel over the same
+// water, drawn by React from WORDS_CSS, find and fold (components/dictionary-screen.tsx).
 
 const CSS = `
 .wd { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: var(--s-4); background: rgba(3, 8, 14, 0.62); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); color: var(--ink); font-family: var(--sans); text-align: left; text-shadow: none; }
@@ -89,6 +90,9 @@ const CSS = `
 @media (max-height: 519px) and (orientation: landscape) { .wd.staged .wd-card { width: min(380px, 48vw); } }
 @media (prefers-reduced-motion: reduce) { .wd-card, .wd-cap { animation: none; } }
 `;
+
+// the panel's look, the site's /dictionary too (components/dictionary-screen.tsx): one look, the race's
+export const WORDS_CSS = CSS;
 
 const LANG_AT = { en: 0, ru: 1, es: 2, de: 3, tr: 4, fr: 5, it: 6, pt: 7 };
 const at = (p, lang) => p[LANG_AT[lang] ?? 0] ?? p[0]; // [English, Russian, Spanish, German, Turkish, French, Italian, Portuguese]
