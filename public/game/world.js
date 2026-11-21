@@ -679,15 +679,20 @@ void main() {
   if (a < 0.005) discard;
   gl_FragColor = vec4(col, a);
 }`;
+// what a class's wake is laid from (classes.js): a track for each hull — its wash from the transom and the two Kelvin
+// arms from its bow, the catamaran's two hulls (hulls: their offsets across her) two of them — and, for a foiler that
+// flies on several (traces), a thin wash behind each foil that cuts the water while she flies, in place of the hulls'
+const wakeSpec = (cls) => ({ tracks: (cls?.hulls || [0]).map((x) => ({ x })), traces: cls?.traces || [], cat: !!cls?.hulls });
 class Wake {
-  constructor(scene, uniforms, field) {
-    this.trail = []; this.acc = 0;
-    const n = 3 * WAKE_N * 2, g = new THREE.BufferGeometry(); // 3 ribbons, two edges each
+  constructor(scene, uniforms, field, spec = wakeSpec(null)) {
+    this.trail = []; this.acc = 0; this.spec = spec;
+    const R = this.R = spec.tracks.length * 3 + spec.traces.length; // the ribbons: three a hull, one a foil
+    const n = R * WAKE_N * 2, g = new THREE.BufferGeometry(); // two edges each
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
     for (const a of ['aAge', 'aSide', 'aKind', 'aStr']) g.setAttribute(a, new THREE.BufferAttribute(new Float32Array(n), 1));
     g.setAttribute('aAcross', new THREE.BufferAttribute(new Float32Array(n * 3), 3)); // the ribbon's across, in the world, and its half-width
     const idx = [];
-    for (let r = 0; r < 3; r++) for (let i = 0; i < WAKE_N - 1; i++) { const a = (r * WAKE_N + i) * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+    for (let r = 0; r < R; r++) for (let i = 0; i < WAKE_N - 1; i++) { const a = (r * WAKE_N + i) * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
     g.setIndex(idx);
     this.mesh = new THREE.Mesh(g, new THREE.ShaderMaterial({ uniforms, vertexShader: WAKE_VS, fragmentShader: WAKE_FS, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
     this.mesh.frustumCulled = false; this.mesh.renderOrder = 2;
@@ -698,7 +703,7 @@ class Wake {
   update(b, dt, t, W, seen) {
     // a new sample every WAKE_DT seconds; the newest point always rides with the boat
     this.acc += dt;
-    const here = { x: b.x, z: b.z, h: b.h, v: b.v, born: t, fly: b.ride || 0 };
+    const here = { x: b.x, z: b.z, h: b.h, v: b.v, born: t, fly: b.ride || 0, lee: -(b.boom || (b.twa >= 0 ? 1 : -1)) };
     if (!this.trail.length || this.acc >= WAKE_DT) { this.acc = 0; this.trail.unshift(here); if (this.trail.length > WAKE_N) this.trail.pop(); }
     else this.trail[0] = here;
     // a wake wholly off the screen isn't laid on the waves, nor drawn (seen: World.frame); its trail goes on
@@ -710,21 +715,30 @@ class Wake {
       if (!on) return;
     }
     const g = this.mesh.geometry, P = g.attributes.position, AG = g.attributes.aAge, SD = g.attributes.aSide, KD = g.attributes.aKind, ST = g.attributes.aStr, AC = g.attributes.aAcross;
-    for (let r = 0; r < 3; r++) for (let i = 0; i < WAKE_N; i++) {
+    const T = this.spec.tracks.length * 3, cat = this.spec.cat;
+    for (let r = 0; r < this.R; r++) for (let i = 0; i < WAKE_N; i++) {
       const s = this.trail[Math.min(i, this.trail.length - 1)], age = Math.max(0, t - s.born);
       const fx = Math.sin(s.h), fz = -Math.cos(s.h), rx = Math.cos(s.h), rz = Math.sin(s.h);
-      // (flying, a foiler leaves no bow wave: only the thin wash of her rudder and foil)
-      const str = clamp((s.v - 0.6) / 3.5, 0, 1) * (i < this.trail.length ? 1 : 0) * (r && s.fly ? 1 - s.fly : 1);
+      const k = r < T ? r % 3 : 0, base = clamp((s.v - 0.6) / 3.5, 0, 1) * (i < this.trail.length ? 1 : 0);
+      // (flying, a foiler leaves no bow wave: only the thin wash of her rudder and foil — a catamaran's from each foil
+      // in the water, and none from her hulls, clear of it)
+      const str = r < T ? base * (k || cat ? 1 - s.fly : 1) : base * s.fly;
       let cx, cz, half;
-      if (r === 0) { cx = s.x - fx * 5.0 * SC; cz = s.z - fz * 5.0 * SC; half = 0.7 + age * 0.12; } // wash, from the transom
-      else {
-        const side = r === 1 ? 1 : -1, out = 1.0 + 0.354 * s.v * age; // tan 19.5° ≈ 0.354: the arms spread as the waves travel
-        cx = s.x + fx * 4.2 * SC + rx * side * out; cz = s.z + fz * 4.2 * SC + rz * side * out; half = 0.7 + age * 0.09; // a crest's width, broadening as it travels
+      if (r >= T) { // a foil's trace: thin, from the strut, widening a little as it ages
+        const tc = this.spec.traces[r - T], x = tc.lee ? s.lee * tc.lee : tc.x;
+        cx = s.x + fx * tc.along + rx * x; cz = s.z + fz * tc.along + rz * x; half = 0.25 + age * 0.08;
+      } else {
+        const x = this.spec.tracks[(r - k) / 3].x, w = cat ? 0.45 : 1; // a catamaran's slim hull: a narrower wash, the arms from nearer its side
+        if (k === 0) { cx = s.x - fx * 5.0 * SC + rx * x; cz = s.z - fz * 5.0 * SC + rz * x; half = 0.7 * w + age * 0.12; } // wash, from the transom
+        else {
+          const side = k === 1 ? 1 : -1, out = w + 0.354 * s.v * age; // tan 19.5° ≈ 0.354: the arms spread as the waves travel
+          cx = s.x + fx * 4.2 * SC + rx * (x + side * out); cz = s.z + fz * 4.2 * SC + rz * (x + side * out); half = 0.7 * w + age * 0.09; // a crest's width, broadening as it travels
+        }
       }
       for (let e = 0; e < 2; e++) {
         const o = (r * WAKE_N + i) * 2 + e, sd = e ? 1 : -1, x = cx + rx * sd * half, z = cz + rz * sd * half;
         P.setXYZ(o, x, waveHeight(W, x, z, t) + 0.07, z);
-        AG.setX(o, age); SD.setX(o, sd); KD.setX(o, r ? 1 : 0); ST.setX(o, str); AC.setXYZ(o, rx, rz, half); // across (the way aSide runs) in the world
+        AG.setX(o, age); SD.setX(o, sd); KD.setX(o, k ? 1 : 0); ST.setX(o, str); AC.setXYZ(o, rx, rz, half); // across (the way aSide runs) in the world
       }
     }
     P.needsUpdate = AG.needsUpdate = SD.needsUpdate = KD.needsUpdate = ST.needsUpdate = AC.needsUpdate = true;
@@ -762,7 +776,9 @@ void main() {
 // the sea's uniforms a patch riding it needs: the FFT's and the wake field's
 const seaUniforms = (u) => Object.fromEntries(Object.entries(u).filter(([k]) => k.startsWith('uFft') || k.startsWith('uWake')));
 class HullContact {
-  constructor(scene, uniforms, field) {
+  // dx: the hull's offset across her (a catamaran's two hulls, a patch each)
+  constructor(scene, uniforms, field, dx = 0) {
+    this.dx = dx;
     const NA = 28, NC = 10, A0 = -7.8, A1 = 8.4, C = 4.0, aL = [], idx = [];
     for (let i = 0; i <= NA; i++) for (let j = 0; j <= NC; j++) aL.push(lerp(A0, A1, i / NA), lerp(-C, C, j / NC));
     for (let i = 0; i < NA; i++) for (let j = 0; j < NC; j++) { const a = i * (NC + 1) + j, b = a + NC + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
@@ -778,17 +794,17 @@ class HullContact {
     this.hmesh = field?.add(new THREE.Mesh(g, field.hullMat(this.u.uSpd, this.uK)));
   }
   dispose(scene) { scene.remove(this.mesh); this.mesh.geometry.dispose(); this.mesh.material.dispose(); if (this.hmesh) { this.field.scene.remove(this.hmesh); this.hmesh.material.dispose(); } }
-  update(b, t, W, seen) {
+  update(b, t, W, seen, cls = b.cls) {
     // another class's hull is laid HULL / 12.2 times the club boat's size (a boat of a class of her own, b.cls, at
     // hers); a foiler flying has none in the water; nor is one off the screen ridden on the waves (seen: World.frame)
     this.mesh.visible = !(b.ride > 0.5) && (!seen || seen(b.x, b.z, 14));
     if (this.hmesh) this.hmesh.visible = this.mesh.visible;
     if (!this.mesh.visible) return;
-    const g = this.mesh.geometry, P = g.attributes.position, L = g.attributes.aL, S = (b.cls?.loa ?? HULL) / 12.2, Sc = b.cls?.wlb ? b.cls.wlb / 3.5 : S; // Sc: a narrower hull's across her (a catamaran's)
+    const g = this.mesh.geometry, P = g.attributes.position, L = g.attributes.aL, S = (cls?.loa ?? HULL) / 12.2, Sc = cls?.wlb ? cls.wlb / 3.5 : S; // Sc: a narrower hull's across her (a catamaran's)
     this.uK.value = S;
     const fx = Math.sin(b.h), fz = -Math.cos(b.h), rx = Math.cos(b.h), rz = Math.sin(b.h);
     for (let i = 0; i < P.count; i++) {
-      const a = L.getX(i) * S, c = L.getY(i) * Sc, x = b.x + fx * a + rx * c, z = b.z + fz * a + rz * c;
+      const a = L.getX(i) * S, c = L.getY(i) * Sc + this.dx, x = b.x + fx * a + rx * c, z = b.z + fz * a + rz * c;
       P.setXYZ(i, x, waveHeight(W, x, z, t) + 0.05, z);
     }
     P.needsUpdate = true;
@@ -1610,10 +1626,10 @@ export class World {
     this.guides = guides(race.wind.p.tws); this.scene.add(this.guides);
     for (const f of this.foam) f.age = 99;
     for (const w of this.wakes) w.dispose(this.scene);
-    this.wakes = race.boats.map(() => new Wake(this.scene, this.wakeU, this.wakeField));
+    this.wakes = race.boats.map((b) => new Wake(this.scene, this.wakeU, this.wakeField, wakeSpec(b.cls ?? CLS)));
     this.juryWake?.dispose(this.scene); this.juryWake = new Wake(this.scene, this.wakeU, this.wakeField);
     for (const h of this.contacts || []) h.dispose(this.scene);
-    this.contacts = race.boats.map(() => new HullContact(this.scene, this.wakeU, this.wakeField));
+    this.contacts = race.boats.flatMap((b, i) => ((b.cls ?? CLS).hulls || [0]).map((dx) => Object.assign(new HullContact(this.scene, this.wakeU, this.wakeField, dx), { bi: i }))); // a patch for each hull
     this.wild.reset(race);
     this.plane.reset(race, (x, z) => groundAt(x + race.at.x, z + race.at.z)); // the land is laid round race.at
     this.airliner.reset(race, (x, z) => groundAt(x + race.at.x, z + race.at.z));
@@ -1763,6 +1779,7 @@ export class World {
   spawnFoam(b, dt) {
     if (b.v < 0.5) return;
     if (b.v < 1.2) return;
+    const hulls = (b.cls ?? CLS).hulls, hx = () => (hulls ? hulls[Math.floor(Math.random() * hulls.length)] : 0); // (a catamaran's: at either hull's bow)
     b._foam = (b._foam || 0) + dt * b.v * 3; // the wake itself is drawn by Wake; these are splashes at the bow
     while (b._foam > 1) {
       b._foam -= 1;
@@ -1770,7 +1787,7 @@ export class World {
       const fx = Math.sin(b.h), fz = -Math.cos(b.h), side = Math.random() < 0.5 ? -1 : 1, r = Math.random();
       const kind = 'bow';
       const along = kind === 'bow' ? (-3.2 - Math.random() * 1.5) * SC : kind === 'wash' ? 5.3 + Math.random() : 4.2;
-      const across = kind === 'bow' ? side * 1.2 * SC : kind === 'wash' ? (Math.random() - 0.5) * 1.6 : side * 1.45;
+      const across = hulls ? hx() + side * 0.45 : kind === 'bow' ? side * 1.2 * SC : kind === 'wash' ? (Math.random() - 0.5) * 1.6 : side * 1.45;
       f.x = b.x - fx * along + -fz * across; f.z = b.z - fz * along + fx * across;
       const spread = kind === 'bow' ? 1.1 : kind === 'wash' ? 0.1 : 0.55;
       f.vx = -fz * side * spread * (0.6 + b.v * 0.12) + fx * 0.15; f.vz = fx * side * spread * (0.6 + b.v * 0.12) + fz * 0.15;
@@ -1784,7 +1801,8 @@ export class World {
       b._sheet -= 1;
       const f = this.foam[this.foamI]; this.foamI = (this.foamI + 1) % this.foamMax;
       const fx = Math.sin(b.h), fz = -Math.cos(b.h), side = Math.random() < 0.5 ? -1 : 1, along = (2.2 + Math.random() * 1.6) * SC;
-      f.x = b.x + fx * along - fz * side * 1.3 * SC; f.z = b.z + fz * along + fx * side * 1.3 * SC; f.y = 0.25;
+      const across = hulls ? hx() + side * 0.5 : side * 1.3 * SC;
+      f.x = b.x + fx * along - fz * across; f.z = b.z + fz * along + fx * across; f.y = 0.25;
       const out = 1.2 + Math.random() * 1.6 + b.v * 0.15;
       f.vx = fx * b.v * 0.35 - fz * side * out; f.vz = fz * b.v * 0.35 + fx * side * out;
       f.vy = 0.9 + Math.random() * 1.1; f.age = 0; f.life = 0.45 + Math.random() * 0.4; f.spray = true; f.s0 = 0.18; f.s1 = 0.45; f.a = 0.92;
@@ -1799,7 +1817,8 @@ export class World {
     b._spr = (b._spr || 0) + dt * b.v * 1.6;
     while (b._spr > 1) {
       b._spr -= 1;
-      const rud = Math.random() < 0.35, along = rud ? -HULL / 2 + 0.3 : -0.6, across = rud ? 0 : lee * 2.6;
+      const tr = (b.cls ?? CLS).traces, tc = tr && tr[Math.floor(Math.random() * tr.length)]; // (a catamaran's: where her board and rudders cut it)
+      const rud = tc ? !tc.lee : Math.random() < 0.35, along = tc ? tc.along : rud ? -HULL / 2 + 0.3 : -0.6, across = tc ? (tc.lee ? lee * tc.lee : tc.x) : rud ? 0 : lee * 2.6;
       const f = this.foam[this.foamI]; this.foamI = (this.foamI + 1) % this.foamMax;
       f.x = b.x + fx * along + rx * across; f.z = b.z + fz * along + rz * across; f.y = 0.2;
       const back = 0.25 + Math.random() * 0.35, out = (Math.random() - 0.3) * 1.6;
@@ -1938,8 +1957,8 @@ export class World {
     race.boats.forEach((b, i) => {
       if (b.ride > 0.5) this.spawnFoilSpray(b, dt); else { this.spawnFoam(b, dt); this.spawnSpray(b, dt, race); }
       if (this.wakes[i]) this.wakes[i].update(b, dt, t, this.W, seen);
-      if (this.contacts[i]) this.contacts[i].update(b, t, this.W, seen);
     });
+    this.contacts.forEach((c, k) => { const b = race.boats[c.bi ?? k]; if (b) c.update(b, t, this.W, seen, b.cls ?? CLS); });
     const ga = this.foamPts.geometry.attributes, fp = ga.position, fa = ga.aAlpha, fs = ga.aSize;
     for (let i = 0; i < this.foamMax; i++) {
       const f = this.foam[i];

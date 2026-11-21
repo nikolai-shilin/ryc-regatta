@@ -305,6 +305,9 @@ export const CLASSES = {
     tau: 2.8, coast: 320, hullV: 60, heelK: 0.3, awsK: 2.6, heelShow: 0.25, turn: 1.1, yawLag: 0.5, courseK: 2.2, lineK: 1.6, startK: 3.5,
     surfK: 0, chopK: 0.3, // flying, her hulls are clear of the sea
     latG: 0.7, // two rudders and a lighter boat: a little tighter round at speed than the AC75
+    // her two hulls, 3.7 m either side of her middle, each some 0.85 m wide at the water: a wake from each (world.js),
+    // and where she flies, a trace on the water from each foil that cuts it: both rudders, 7 m aft, and the leeward board
+    hulls: [-3.7, 3.7], wlb: 0.85, traces: [{ x: -3.7, along: -7.0 }, { x: 3.7, along: -7.0 }, { lee: 3.7, along: 0.5 }],
     foil: { takeoff: 15, land: 12, dispCoast: 22, disp: [[28, 0], [40, 1.4], [60, 1.9], [90, 2.5], [120, 2.4], [150, 1.6], [180, 0.9]] },
     tws: TWS, twa: TWA,
     beat: [48, 47, 46, 45, 44, 44, 44, 45, 46],
