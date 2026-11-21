@@ -8,6 +8,7 @@ import { DayChart, type DaySlot } from './admin-days';
 import { Table, Tile } from './admin-stats';
 import { PlayersTable, type Col, type Row } from './admin-players-table';
 import { logHref } from './admin-logs';
+import { AdminTargets, type Targets } from './admin-targets';
 import { IconCrew, clock } from './ui';
 
 // The admin's look at the 1-on-1 races, from the database's regatta_admin_duels (which answers an admin alone): the
@@ -48,7 +49,7 @@ const pct = (a: number, b: number) => (b ? `${Math.round((100 * a) / b)}%` : '�
 export const slowScreen = (p: Perf) => (p.low != null && p.low < 20) || (p.stall != null && p.stall >= 2);
 const ordinal = (n: number, lang: Lang) => (lang === 'ru' ? `${n}-е` : lang === 'es' ? `${n}.º` : lang === 'pt' ? `${n}º` : lang === 'it' ? `${n}º` : lang === 'fr' ? (n === 1 ? '1er' : `${n}e`) : lang === 'de' || lang === 'tr' ? `${n}.` : ['1st', '2nd', '3rd'][n - 1] ?? `${n}th`);
 
-export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days: number | null }) {
+export function AdminDuels({ lang, data, days, targets }: { lang: Lang; data: Duels; days: number | null; targets?: Targets | null }) {
   const t = tx(lang), T = data.totals, R = data.races;
   const when = (s: string) => new Date(s).toLocaleString(LOCALE[lang], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
   const venue = (v: string | null) => (v ? pick(VENUES.find((x) => x.id === v)?.name, lang) ?? v : '–');
@@ -183,6 +184,7 @@ export function AdminDuels({ lang, data, days }: { lang: Lang; data: Duels; days
         {T.finished_accounts ? <Tile k={t('Trusted results', 'Надёжный итог', 'Resultado fiable', 'Gesichertes Ergebnis', 'Güvenilir sonuç', 'Résultat fiable', 'Risultato affidabile', 'Resultado confiável')} v={`${T.trusted ?? 0} · ${pct(T.trusted ?? 0, T.finished_accounts)}`} /> : null}
         {T.perf_seats ? <Tile k={t('Slow screens', 'Медленные экраны', 'Pantallas lentas', 'Langsame Bildschirme', 'Yavaş ekranlar', 'Écrans lents', 'Schermi lenti', 'Telas lentas')} v={`${T.slow_seats ?? 0} · ${pct(T.slow_seats ?? 0, T.perf_seats)}`} /> : null}
       </div>
+      {targets && <AdminTargets lang={lang} data={targets} />}
       {data.days.length > 0 && <DayChart lang={lang} title={t('Races a day', 'Гонок в день', 'Regatas al día', 'Regatten pro Tag', 'Günde yarış', 'Régates par jour', 'Regate al giorno', 'Regatas por dia')} label={t('Races started each day', 'Гонок начато в каждый день', 'Regatas iniciadas cada día', 'Pro Tag gestartete Regatten', 'Her gün başlayan yarışlar', 'Régates lancées chaque jour', 'Regate iniziate ogni giorno', 'Regatas iniciadas por dia')} slots={slots} />}
       <section className="adm-tab">
         <h3 className="adm-tab-h">{t('How the finished races ended', 'Чем закончились гонки', 'Cómo acabaron las regatas terminadas', 'Wie die beendeten Regatten ausgingen', 'Biten yarışlar nasıl sona erdi', 'Comment se sont terminées les régates finies', 'Come sono finite le regate concluse', 'Como terminaram as regatas concluídas')}</h3>
