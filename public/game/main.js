@@ -1251,6 +1251,7 @@ function lostCard() {
 }
 canvas.addEventListener('webglcontextlost', () => {
   glLost = true;
+  if (wordStage && avClose) avClose(); // (the dictionary's scene put away first: the race's own is what comes back)
   if (running && !paused && !mx) pause();
   if ((opts.gfx || 'auto') === 'auto') saveAuto(lighterParts(world.gfx));
   clearTimeout(glT); glT = setTimeout(lostCard, 2000);
@@ -1734,14 +1735,28 @@ $('#pAv').addEventListener('click', () => {
     onClose: () => { avClose = null; if (running && race) paintPause(); } });
 });
 // Sailing words, over the pause menu as Audio & graphics is: the site's glossary in the race's language (words.js,
-// fetched the first time it opens). It takes avClose too, so Back, Esc and the browser's back close it the same way.
+// fetched the first time it opens), each word that can be shown shown on the water behind it (word-scenes.js: boats
+// of its own on the race's course, the race itself put away and given back as it was). It takes avClose too, so Back,
+// Esc and the browser's back close it the same way. In a 1-on-1 race, which runs on under the menu, the words alone.
+let wordStage = null;
 $('#pWords').addEventListener('click', async () => {
   if (avClose) return;
   avClose = () => {}; // (opening: a second tap waits for the first)
   try {
-    const { openWords } = await import('./words.js');
-    avClose = openWords({ lang: LANG, title: t('wordsK'), url: fileAt('words.json'), zIndex: 15, onClose: () => { avClose = null; } });
-  } catch (e) { avClose = null; }
+    const [{ openWords }, sc] = await Promise.all([import('./words.js'), mx || glLost ? null : import('./word-scenes.js').catch(() => null)]);
+    if (!paused || !running) { avClose = null; return; } // (the race went on meanwhile)
+    try { wordStage = sc ? sc.createStage({ world, race, lang: LANG }) : null; } catch (e) { wordStage = null; }
+    const hudWas = hud.hidden;
+    avClose = openWords({ lang: LANG, title: t('wordsK'), url: fileAt('words.json'), zIndex: 15,
+      stage: wordStage && { ids: sc.sceneIds(), show: (id) => wordStage.show(id), view: (r) => wordStage.view(r) },
+      onClose: () => {
+        avClose = null;
+        if (!wordStage) return;
+        wordStage.close(); wordStage = null;
+        hud.hidden = hudWas; if (running && paused) { pauseEl.hidden = false; paintPause(); }
+      } });
+    if (wordStage) { pauseEl.hidden = true; hud.hidden = true; }
+  } catch (e) { avClose = null; if (wordStage) { wordStage.close(); wordStage = null; } }
 });
 $('#cKeep').addEventListener('click', () => { confirmEl.hidden = true; pauseEl.hidden = false; });
 $('#cGo').addEventListener('click', () => {
@@ -2322,6 +2337,7 @@ function frame(now) {
   // left them, the boats would move on one frame and stand still on the next (at 120 Hz, every other frame), and the
   // helm view, bolted to the hull, would judder with her. So the picture is drawn where they are between their last
   // two steps, as far on as the time left over says (a step behind at most), and the race is put back as it was.
+  if (wordStage) { wordStage.frame(dt); world.frame(dt, race.t, dt); frameBusy = (performance.now() - began) / 1000; return; } // the dictionary's scene, the race put away
   const frac = mx ? mx.frac : acc / STEP, lerped = running && (!paused || mx) && between(frac); // (a match: its steps are match-ui.js's)
   world.frame(running && (!paused || mx) ? dt * timeScale : 0, lerped ? race.t - STEP + frac * STEP : race.t, dt); // foam and wakes keep pace with the race; the cameras on the frame's clock
   if (lerped) putBack();
@@ -2347,7 +2363,7 @@ function between(a) {
 }
 function putBack() { for (const b of race.boats) if (b._now) { for (const k of LERP) b[k] = b._now[k]; b._now = null; } }
 requestAnimationFrame(loop);
-if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, get mx() { return mx; }, get running() { return running; }, get paused() { return paused; }, world, audio, skipper, crews, asides, engine, jetRoar };
+if (/[?&]debug\b/.test(location.search)) window.__rg = { get race() { return race; }, get mx() { return mx; }, get running() { return running; }, get paused() { return paused; }, get wordStage() { return wordStage; }, world, audio, skipper, crews, asides, engine, jetRoar };
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && running && !paused && !window.__rg && !MATCH) { pause(); awayHeld = !!race.coach; }
   if (!document.hidden) { // back: the Ready card's count from the start, and in the first races the card that says it held

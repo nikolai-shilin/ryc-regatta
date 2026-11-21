@@ -67,7 +67,27 @@ const CSS = `
   .wd-w dt { font-size: var(--fs-lead); }
 }
 @media (max-height: 519px) { .wd-bar { flex-direction: row; align-items: center; padding-top: var(--s-2); padding-bottom: var(--s-2); } .wd-find { flex: 0 1 300px; } .wd-tabs { flex: 1 1 0; margin: 0; padding: 0; } }
-@media (prefers-reduced-motion: reduce) { .wd-card { animation: none; } }
+/* in the race, with its scenes: the panel at the side (at the foot on a phone held upright), the water open beside it */
+.wd.staged { justify-content: flex-start; align-items: stretch; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; }
+.wd.staged .wd-card { pointer-events: auto; width: min(440px, 42vw); height: 100%; background: rgba(8, 13, 21, 0.94); }
+.wd.staged .wd-cols { columns: 1; }
+.wd.staged .wd-w { position: relative; padding-right: var(--s-2); cursor: pointer; transition: background-color var(--t-quick); }
+.wd.staged .wd-w:hover { background: var(--w-06); }
+.wd.staged .wd-w.on { background: color-mix(in srgb, var(--you) 14%, transparent); border-left-color: var(--you); }
+.wd-pick { display: inline-flex; align-items: baseline; gap: var(--s-2); padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: left; cursor: pointer; }
+.wd-pick::after { content: ''; position: absolute; inset: 0; }
+.wd-3d { flex: none; padding: 2px 5px; background: var(--fill-2); font: 700 10px/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); transform: translateY(-2px); }
+.wd-w.on .wd-3d { background: var(--you); color: var(--ink-on); }
+.wd-cap { position: fixed; display: flex; flex-direction: column; gap: var(--s-1); max-width: 620px; padding: var(--s-3) var(--s-4) var(--s-3) var(--s-4); border-left: 4px solid var(--gold); background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); pointer-events: none; animation: wd-in .25s var(--ease) both; }
+.wd-cap[hidden] { display: none; }
+.wd-cap span { font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--gold); }
+.wd-cap b { font: 700 var(--fs-title)/1.05 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; color: var(--ink); }
+.wd-cap p { margin: 0; font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-2); }
+.wd-cap i { font: 600 var(--fs-label)/1.2 var(--cond); font-style: normal; letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.wd-cap.top p { display: none; }
+@media (max-width: 559px) and (orientation: portrait) { .wd.staged { align-items: flex-end; } .wd.staged .wd-card { width: 100%; height: 58%; } .wd.staged .wd-top { padding-top: 0; } .wd-cap b { font-size: var(--fs-row); } }
+@media (max-height: 519px) and (orientation: landscape) { .wd.staged .wd-card { width: min(380px, 48vw); } }
+@media (prefers-reduced-motion: reduce) { .wd-card, .wd-cap { animation: none; } }
 `;
 
 const LANG_AT = { en: 0, ru: 1, es: 2, de: 3, tr: 4, fr: 5, it: 6, pt: 7 };
@@ -128,9 +148,11 @@ function named(dt, term, q, lang) {
 
 let shown = null, ids = 0; // the menu open now: its close
 
-// lang: the race's language; title: its name (wordsTitle's by default); url: where words.json is (main.js gives its address in the import map); zIndex: over
-// what's on the page; onClose: called once it has closed. Gives back its close.
-export function openWords({ lang = 'en', title = wordsTitle(lang), url, zIndex = 1000, onClose }) {
+// lang: the race's language; title: its name (wordsTitle's by default); url: where words.json is (main.js gives its
+// address in the import map); zIndex: over what's on the page; onClose: called once it has closed. stage, in the race:
+// its scenes (word-scenes.js) — ids, the words that have one; show(id), true when it's shown on the water; view(rect),
+// the part of the screen the panel leaves open. Gives back its close.
+export function openWords({ lang = 'en', title = wordsTitle(lang), url, zIndex = 1000, onClose, stage = null }) {
   if (shown) return shown;
   if (!document.getElementById('wd-css')) { const s = el('style', '', CSS); s.id = 'wd-css'; document.head.append(s); }
   const t = (...p) => at(p, lang);
@@ -138,7 +160,7 @@ export function openWords({ lang = 'en', title = wordsTitle(lang), url, zIndex =
   // tap (its keyboard would cover the words)
   const fine = typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches;
 
-  const ov = el('div', 'wd bc'), card = el('section', 'wd-card'), top = el('div', 'wd-top'), h = el('h2', '', title), n = el('span', 'wd-n');
+  const ov = el('div', stage ? 'wd bc staged' : 'wd bc'), card = el('section', 'wd-card'), top = el('div', 'wd-top'), h = el('h2', '', title), n = el('span', 'wd-n');
   const back = button('wd-back', t('Back', 'Назад', 'Atrás', 'Zurück', 'Geri', 'Retour', 'Indietro', 'Voltar'));
   const bar = el('div', 'wd-bar'), findBox = el('div', 'wd-find'), q = el('input', 'wd-q'), x = button('wd-x', '×'), tabs = el('div', 'wd-tabs');
   const body = el('div', 'wd-body'), cols = el('div', 'wd-cols'), say = el('p', 'wd-say');
@@ -157,6 +179,11 @@ export function openWords({ lang = 'en', title = wordsTitle(lang), url, zIndex =
   findBox.append(q, x); bar.append(findBox, tabs);
   body.append(cols, say);
   top.append(h, n, back); card.append(top, bar, body); ov.append(card);
+  // what's shown on the water: its group, its name, its words (a word with no scene says so, and the race is in view)
+  const cap = el('div', 'wd-cap'), capK = el('span'), capT = el('b'), capP = el('p'), capN = el('i');
+  cap.hidden = true; cap.setAttribute('aria-live', 'polite'); cap.append(capK, capT, capP, capN);
+  if (stage) ov.append(cap);
+  const has = new Set(stage?.ids || []);
   bar.hidden = true;
   say.textContent = t('Loading the words…', 'Загружаем слова…', 'Cargando las palabras…', 'Die Wörter werden geladen…', 'Sözcükler yükleniyor…', 'Chargement des mots…', 'Caricamento delle parole…', 'Carregando as palavras…');
 
@@ -177,13 +204,33 @@ export function openWords({ lang = 'en', title = wordsTitle(lang), url, zIndex =
       const s = el('section', 'wd-g'), head = el('h3'), dl = el('dl');
       head.append(el('b', '', String(i + 1).padStart(2, '0')), el('span', '', g.title));
       const rows = new Map(g.terms.map(([id, term, def]) => {
-        const w = el('div', 'wd-w'), dt = el('dt', '', term), dd = el('dd', '', def);
+        const w = el('div', 'wd-w'), dt = el('dt'), dd = el('dd', '', def);
+        let name = dt, pick = null;
+        if (stage) { // a button: the word on the water
+          pick = button('wd-pick'); name = el('span', 'wd-tn');
+          pick.append(name); if (has.has(id)) pick.append(el('span', 'wd-3d', '3D'));
+          pick.setAttribute('aria-pressed', 'false');
+          pick.addEventListener('click', () => choose(id));
+          dt.append(pick);
+        }
+        name.textContent = term;
         w.dataset.id = id; w.append(dt, dd); dl.append(w);
-        return [id, { w, dt, term }];
+        return [id, { w, dt: name, term, def, pick, group: g.title }];
       }));
       s.append(head, dl); cols.append(s);
       return { s, dl, rows };
     });
+    const rowOf = (id) => { for (const x of secs) if (x.rows.has(id)) return x.rows.get(id); return null; };
+    // a word chosen: shown on the water, named in the caption, marked in the list
+    choose = (id) => {
+      const r = rowOf(id); if (!r) return;
+      if (picked) { const p = rowOf(picked); p.w.classList.toggle('on', false); p.pick.setAttribute('aria-pressed', 'false'); }
+      picked = id; r.w.classList.toggle('on', true); r.pick.setAttribute('aria-pressed', 'true');
+      const onWater = !!stage.show(id);
+      capK.textContent = r.group; capT.textContent = r.term; capP.textContent = r.def;
+      capN.textContent = onWater ? '' : t('Not shown on the water', 'На воде не показать', 'No se muestra en el agua', 'Nicht auf dem Wasser zu sehen', 'Suda gösterilmiyor', 'Pas montré sur l’eau', 'Non mostrato in acqua', 'Não mostrado na água');
+      capN.hidden = onWater; cap.hidden = false;
+    };
     bar.hidden = false;
     paint = () => {
       const v = q.value.trim(), res = find(groups, v, tab, lang);
@@ -218,8 +265,10 @@ export function openWords({ lang = 'en', title = wordsTitle(lang), url, zIndex =
       }
     };
     paint();
+    if (stage) { const first = groups.flatMap((g) => g.terms).find(([id]) => has.has(id)); if (first) choose(first[0]); }
     if (fine && document.activeElement === back) q.focus({ preventScroll: true });
   };
+  let picked = null, choose = () => {};
   const fail = () => {
     say.textContent = t('The words didn’t load. Check the connection.', 'Слова не загрузились. Проверьте соединение.', 'Las palabras no se cargaron. Revisa la conexión.', 'Die Wörter wurden nicht geladen. Prüfe die Verbindung.', 'Sözcükler yüklenmedi. Bağlantını kontrol et.', 'Les mots ne se sont pas chargés. Vérifie la connexion.', 'Le parole non si sono caricate. Controlla la connessione.', 'As palavras não carregaram. Verifique a conexão.');
     const again = button('', t('Try again', 'Ещё раз', 'Reintentar', 'Nochmal', 'Tekrar dene', 'Réessayer', 'Riprova', 'Tentar de novo'));
@@ -236,6 +285,7 @@ export function openWords({ lang = 'en', title = wordsTitle(lang), url, zIndex =
     if (shown !== close) return;
     shown = null;
     removeEventListener('keydown', keys, true);
+    if (stage) removeEventListener('resize', place);
     ov.remove();
     if (was && was.isConnected && was.focus) was.focus();
     if (onClose) onClose();
@@ -252,6 +302,13 @@ export function openWords({ lang = 'en', title = wordsTitle(lang), url, zIndex =
       return;
     }
     if (e.key === '/' && e.target !== q && !bar.hidden) { e.preventDefault(); q.focus({ preventScroll: true }); return; }
+    const go = { ArrowDown: 1, ArrowUp: -1 }[e.key];
+    if (go && stage && e.target.classList?.contains('wd-pick')) {
+      e.preventDefault();
+      const ps = [...card.querySelectorAll('.wd-pick')].filter((b) => b.offsetParent !== null), i = ps.indexOf(e.target), next = ps[i + go];
+      if (next) { next.click(); next.focus({ preventScroll: true }); next.scrollIntoView?.({ block: 'nearest' }); }
+      return;
+    }
     const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
     if (step && e.target.getAttribute && e.target.getAttribute('role') === 'radio') {
       e.preventDefault();
@@ -263,6 +320,15 @@ export function openWords({ lang = 'en', title = wordsTitle(lang), url, zIndex =
   ov.addEventListener('pointerdown', (e) => { if (e.target === ov) close(); });
   addEventListener('keydown', keys, true);
   document.body.append(ov);
+  // the open part of the screen: beside the panel, or over it on a phone held upright; the caption at its foot (its top)
+  function place() {
+    const r = card.getBoundingClientRect(), Wd = innerWidth, Hd = innerHeight, side = r.width < Wd * 0.8;
+    const open = side ? { x: r.right, y: 0, w: Math.max(1, Wd - r.right), h: Hd } : { x: 0, y: 0, w: Wd, h: Math.max(1, r.top) };
+    stage.view(open);
+    cap.classList.toggle('top', !side);
+    Object.assign(cap.style, { left: `${open.x + 16}px`, right: side ? '16px' : '16px', top: side ? 'auto' : '12px', bottom: side ? '16px' : 'auto' });
+  }
+  if (stage) { place(); addEventListener('resize', place); }
   back.focus({ preventScroll: true });
   shown = close;
   return close;

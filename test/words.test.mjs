@@ -37,8 +37,9 @@ test("the pause menu's row names the panel as its title does, in every language"
     assert.equal(pack.wordsK, wordsTitle(lang), lang);
   }
   // fetched only when opened: the race's start loads none of it
-  assert.doesNotMatch(main, /^import .*words\.js/m);
-  assert.match(main, /await import\('\.\/words\.js'\)/);
+  assert.doesNotMatch(main, /^import .*word(s|-scenes)\.js/m);
+  assert.match(main, /import\('\.\/words\.js'\)/);
+  assert.match(main, /import\('\.\/word-scenes\.js'\)/, 'the scenes too, but not in a 1-on-1 race');
   assert.match(main, /fileAt\('words\.json'\)/);
 });
 
@@ -176,4 +177,53 @@ test("the words fetched once a page; when they don't come it says so, and tries 
   // one panel at a time
   assert.equal(openWords({ lang: 'en', url }), close);
   await settle();
+});
+
+// ---------- in the race, with its scenes ----------
+test('in the race the panel docks beside the water: the first word with a scene is shown, each word a button that shows its own', async () => {
+  const shown = [], views = [];
+  const stage = { ids: ['beat', 'tack', 'close-hauled'], show: (id) => { shown.push(id); return id !== 'luff'; }, view: (r) => views.push(r) };
+  const closes = await open({ stage });
+  assert.ok($('.wd').classList.contains('staged'));
+  assert.deepEqual(shown, ['beat'], 'the first word with a scene, at once');
+  assert.equal(views.length, 1, 'the open part of the screen told');
+  assert.equal($('.wd-cap').hidden, false);
+  assert.equal($('.wd-cap b').textContent, 'Beat');
+  assert.equal($('.wd-cap span').textContent, DATA.en[0].title);
+  assert.ok($('.wd-w[data-id="beat"]').classList.contains('on'));
+  assert.equal($('.wd-w[data-id="beat"] .wd-pick').getAttribute('aria-pressed'), 'true');
+  // the 3D mark on the words that have a scene only
+  assert.equal($$('.wd-3d').length, 3);
+  assert.ok($('.wd-w[data-id="tack"] .wd-3d') && !$('.wd-w[data-id="luff"] .wd-3d'));
+  // another word: shown, marked, the last one unmarked
+  await click($('.wd-w[data-id="tack"] .wd-pick'));
+  assert.deepEqual(shown, ['beat', 'tack']);
+  assert.ok(!$('.wd-w[data-id="beat"]').classList.contains('on'));
+  assert.equal($('.wd-cap b').textContent, DATA.en[0].terms.find((x) => x[0] === 'tack')[1]);
+  assert.equal($('.wd-cap i').hidden, true);
+  // one with none: the race in view, and the caption says so
+  await click($('.wd-w[data-id="luff"] .wd-pick'));
+  assert.equal($('.wd-cap i').hidden, false);
+  assert.equal($('.wd-cap i').textContent, 'Not shown on the water');
+  // ↓ and ↑ from a word go to the next and the last one shown, and show them
+  await press('ArrowDown', $('.wd-w[data-id="luff"] .wd-pick'));
+  assert.equal(shown.at(-1), 'bear-away');
+  assert.equal(document.activeElement, $('.wd-w[data-id="bear-away"] .wd-pick'));
+  await press('ArrowUp');
+  assert.equal(shown.at(-1), 'luff');
+  // a search keeps what's shown
+  await type($('.wd-q'), 'gybe');
+  assert.equal(shown.at(-1), 'luff');
+  // closed: its listeners go with it (done() checks the window's)
+  await click($('.wd-back'));
+  assert.deepEqual(closes, [1]);
+  assert.equal($('.wd-cap'), null);
+  close = null;
+});
+
+test('without a stage (a 1-on-1 race, or the scenes not loaded) it is the list alone', async () => {
+  await open();
+  assert.ok(!$('.wd').classList.contains('staged'));
+  assert.equal($('.wd-pick'), null);
+  assert.equal($('.wd-cap'), null);
 });

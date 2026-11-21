@@ -1971,7 +1971,9 @@ export class World {
     // Optimist from 14 m (40% of the JPK's size on the screen), the Laser from 21, the J/70 from 27, the Dragon from 28
     const fk = (P.cls ?? CLS).frame ?? 1; // a boat of a class of her own (b.cls), or the page's class
     const ck = fk ** (fk < 1 ? this.framePowSmall : this.framePow);
-    if (this.mode === 'top') {
+    // a shot of its own (the dictionary’s scenes, word-scenes.js): it places the camera, eased on cl, and the views stand by
+    if (this.shot) this.shot(cam, cl, t);
+    else if (this.mode === 'top') {
       // straight down, your heading up the screen, so steering left turns her left on screen too
       const hgt = (20 + this.dist * 1.6 * (cam.aspect < 1 ? 1.5 : 1)) * ck;
       cam.position.lerp(new THREE.Vector3(P.x, hgt, P.z), cl(8));
