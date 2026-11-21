@@ -7,6 +7,13 @@
 .bc .wd-scene { overflow: hidden; background: linear-gradient(180deg, #2a5f86 0%, #123f5e 55%, #0a2a40 100%); }
 .bc .wd-scene iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; opacity: 0; transition: opacity .8s var(--ease); }
 .bc .wd-scene.live iframe { opacity: 1; }
+/* while its first frame loads: the words, pulsing in the middle of the water (and the bar along the top, .bc-load) */
+.bc .wd-load { position: absolute; left: 50%; top: 50%; translate: -50% -50%; z-index: 1; pointer-events: none; white-space: nowrap;
+  font: 700 12px/1 var(--cond, sans-serif); letter-spacing: .14em; text-transform: uppercase; color: rgba(255, 255, 255, 0.7);
+  opacity: 0; transition: opacity .6s var(--ease); }
+.bc .wd-load.on { opacity: 1; animation: wd-load 1.6s ease-in-out infinite; }
+@keyframes wd-load { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .bc .wd-load.on { animation: none; } }
 /* the word shown, on the dictionary's own page, as it goes from word to word */
 .bc .wd-now { position: absolute; top: var(--s-4); right: var(--s-4); z-index: 2; display: inline-flex; align-items: center; gap: var(--s-2); max-width: calc(100% - 2 * var(--s-4));
   padding: var(--s-2) var(--s-3); background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border-left: 3px solid var(--gold);
@@ -40,6 +47,10 @@
 .dc-water { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; opacity: 0; transition: opacity .8s var(--ease); }
 .dc-water.live { opacity: 1; }
 .dc-scr .wd { z-index: 1; }
+/* on /dictionary, the loading words in the open water: beside the panel, or above it on a phone held upright */
+.dc-scr .wd-load.dc-load { position: fixed; left: calc(min(440px, 42vw) + (100vw - min(440px, 42vw)) / 2); }
+@media (max-height: 519px) and (orientation: landscape) { .dc-scr .wd-load.dc-load { left: calc(min(380px, 48vw) + (100vw - min(380px, 48vw)) / 2); } }
+@media (max-width: 559px) and (orientation: portrait) { .dc-scr .wd-load.dc-load { left: 50%; top: 21%; } }
 .dc-scr .wd-top h1 { min-width: 0; margin: 0; font: 700 var(--fs-title)/1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dc-scr .wd-g .dc-h3 { display: flex; align-items: baseline; gap: var(--s-2); margin: 0; padding: var(--s-5) 0 var(--s-2); border-bottom: 1px solid var(--rule); break-after: avoid;
   font: 700 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink); }

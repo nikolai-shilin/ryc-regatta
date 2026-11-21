@@ -2,6 +2,16 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSceneStart } from '@/lib/scene-start';
+import { tx, type Lang } from '@/lib/lang';
+import { LoadBar } from './skeleton';
+
+// what the scene's place says while its first frame loads (here and on /dictionary, components/dictionary-screen.tsx)
+export const loadingWater = (lang: string) => tx(lang as Lang)('Loading the water', 'Загружаем акваторию', 'Cargando el agua', 'Das Wasser wird geladen', 'Su yükleniyor', 'Chargement du plan d’eau', 'Caricamento dell’acqua', 'Carregando a água');
+// the loader: the bar running along the top of the screen, and the words pulsing on the sea's colours (styles/dictionary.css)
+export const WaterLoading = ({ lang, on, className = '' }: { lang: string; on: boolean; className?: string }) => (<>
+  <LoadBar label={loadingWater(lang)} on={on} />
+  <span className={`wd-load${on ? ' on' : ''} ${className}`} aria-hidden="true">{loadingWater(lang)}</span>
+</>);
 
 // A word of sailing sailed on the water, in 3D: the race's own scene for it (public/word-view, game/word-scenes.js),
 // in the sailing dictionary's pages (app/[lang]/dictionary). It starts once the page has loaded and gone idle, and
@@ -51,6 +61,7 @@ export function WordScene({ lang, word, tour, title, now, className = '' }: { la
   return (<>
     <div className={`${className} wd-scene${live ? ' live' : ''}`}>
       {go ? <iframe ref={frame} src={`/word-view?w=${encodeURIComponent(first)}&lang=${lang}`} title={title} /> : null}
+      <WaterLoading lang={lang} on={go && !live} />
     </div>
     {tour && shown && live ? <Link className="wd-now" href={shown.href}><span>{now}</span>{shown.term}</Link> : null}
   </>);
