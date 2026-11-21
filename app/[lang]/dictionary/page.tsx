@@ -63,7 +63,7 @@ export default async function Dictionary({ params }: LangParams) {
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <style dangerouslySetInnerHTML={{ __html: WORDS_CSS }} />
       <DictionaryScreen lang={lang} w={w} shown3d={[...SCENES_3D]}
-        groups={groups.map((g) => ({ id: g.id, title: g.title, terms: g.terms.map((x) => ({ id: x.id, term: x.term, def: x.def, ...(x.en ? { en: x.en } : {}) })) }))} />
+        groups={groups.map((g) => ({ id: g.id, title: g.title, terms: g.terms.map((x) => ({ id: x.id, term: x.term, def: x.def, ...(x.en ? { en: x.en } : {}), ...(x.warn ? { warn: x.warn } : {}) })) }))} />
     </div>
   );
 }

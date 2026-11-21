@@ -9,7 +9,7 @@
 // flags are the race's own) with boat views of their own; the race itself is never stepped or changed. world.shot
 // takes the camera (world.js), framed into the part of the screen the dictionary leaves open.
 import * as THREE from 'three';
-import { Boat, KN, D2R, clamp, lerp, wrap, beatAngle, runAngle, polarSpeed, rng } from './sim.js';
+import { Boat, KN, D2R, clamp, lerp, wrap, beatAngle, runAngle, polarSpeed, rng, waveHeight } from './sim.js';
 import { CLS } from './classes.js';
 import { labelSprite } from './yacht.js';
 import { OVERLAY } from './post.js';
@@ -38,6 +38,13 @@ export const TAGS = {
   veer: ['Veer', 'Сдвиг вправо', 'Rolada a la derecha', 'Rechtsdreher', 'Sağa dönüş', 'Bascule à droite', 'Rotazione a destra', 'Rondada à direita'],
   back: ['Back', 'Сдвиг влево', 'Rolada a la izquierda', 'Linksdreher', 'Sola dönüş', 'Bascule à gauche', 'Rotazione a sinistra', 'Rondada à esquerda'],
   layline: ['On the layline', 'На лейлайне', 'En la layline', 'Auf der Layline', 'Layline üzerinde', 'Sur la lay-line', 'Sulla layline', 'Na layline'],
+  wind: ['Wind', 'Ветер', 'Viento', 'Wind', 'Rüzgâr', 'Vent', 'Vento', 'Vento'],
+  higher: ['Higher', 'Острее', 'Más orzado', 'Höher', 'Daha orsa', 'Plus près', 'Più stretto', 'Mais orçado'],
+  lower: ['Lower', 'Полнее', 'Más abierto', 'Tiefer', 'Daha açık', 'Plus abattu', 'Più largo', 'Mais arribado'],
+  closeHauled: ['Close-hauled', 'Бейдевинд', 'De ceñida', 'Hoch am Wind', 'Orsa', 'Au près', 'Di bolina', 'Na orça'],
+  square: ['Square to the wind', 'Перпендикуляр к ветру', 'Perpendicular al viento', 'Rechtwinklig zum Wind', 'Rüzgâra dik', 'Perpendiculaire au vent', 'Perpendicolare al vento', 'Perpendicular ao vento'],
+  umpire: ['Umpire', 'Ампайр', 'Umpire', 'Umpire', 'Hakem', 'Umpire', 'Umpire', 'Umpire'],
+  danger: ['Danger', 'Опасно', 'Peligro', 'Gefahr', 'Tehlike', 'Danger', 'Pericolo', 'Perigo'],
 };
 const tagIn = (k, lang) => (TAGS[k] ? TAGS[k][LANG_AT[lang] ?? 0] ?? TAGS[k][0] : k);
 
@@ -49,6 +56,10 @@ const tagIn = (k, lang) => (TAGS[k] ? TAGS[k][LANG_AT[lang] ?? 0] ?? TAGS[k][0] 
 // angle she's steered to, twa by default; null: the helm left alone), kite, tag, warn (a red tag), you (your boat).
 // A camera: on (a boat, or two: their middle) or at (a place); r (what has to fit, in lengths, round it); el (degrees
 // above the water); az (degrees round from behind her, or from downwind with wind: true or a place); spin (°/s).
+// arrow: the wind's arrow on the water, alongside what the camera's on, on the side away from the other boat (true,
+// or how many lengths off), or upwind of it ({ up: lengths, scale }); square: the
+// line square to the wind through the start line's far end, so the favoured end shows ahead of it; umpire: the
+// umpire's boat by a boat ({ by, at: [lengths to her right, ahead] }), her flag up in that boat's colour.
 const SCENES = {
   beat: (S) => ({
     boats: [{ at: S.up(S.M, -13, 2), tack: 1, twa: S.bt }],
@@ -59,21 +70,27 @@ const SCENES = {
   reach: (S) => ({ boats: [{ at: S.o, tack: 1, twa: 95 }], cam: { on: 0, r: 1.6, el: 14, az: 70 }, T: 24 }),
   run: (S) => ({ boats: [{ at: S.o, tack: 1, twa: S.ra, kite: S.kite }], cam: { on: 0, r: 1.7, el: 16, az: 145 }, T: 24 }),
   tack: (S) => ({
-    boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 2.2, el: 38, az: 180, wind: true }, T: 12,
+    boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 2.2, el: 38, az: 180, wind: true }, T: 12, arrow: true,
     tick: (t, [b]) => { if (t > 2.5 && !b.done1) { b.done1 = 1; b.tackOrGybe(); } },
   }),
   gybe: (S) => ({
-    boats: [{ at: S.o, tack: 1, twa: 150, kite: S.kite }], cam: { on: 0, r: 2.3, el: 34, az: 0, wind: true }, T: 13,
+    boats: [{ at: S.o, tack: 1, twa: 150, kite: S.kite }], cam: { on: 0, r: 2.3, el: 34, az: 0, wind: true }, T: 13, arrow: true,
     tick: (t, [b]) => { if (t > 2.5 && !b.done1) { b.done1 = 1; b.tackOrGybe(); } },
   }),
-  luff: (S) => ({
-    boats: [{ at: S.o, tack: 1, twa: 110 }], cam: { on: 0, r: 2.4, el: 62, az: 0, wind: true }, T: 10,
-    tick: (t, [b]) => { if (t > 2) b.hold = 42; },
-  }),
-  'bear-away': (S) => ({
-    boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 2.6, el: 62, az: 0, wind: true }, T: 11,
-    tick: (t, [b]) => { if (t > 2) b.hold = 145; },
-  }),
+  // side by side on a reach, the leeward one (yours) luffs, higher, and the windward one comes up after her to keep clear
+  luff: (S) => {
+    const h = S.h(1, 110);
+    return { boats: [{ at: S.o, tack: 1, twa: 110, tag: 'leeward' }, { at: S.o, tack: 1, twa: 110, tag: 'windward', ...off(S.stb(h), 2.6 * S.L, S.fwd(h), -0.3 * S.L) }],
+      cam: { on: [0, 1], r: 3.6, el: 64, az: 0, wind: true }, T: 11, arrow: 2.6,
+      tick: (t, [a, b]) => { if (t > 2) { a.hold = 42; a.tag = 'higher'; } if (t > 2.8) b.hold = 48; } };
+  },
+  // side by side close-hauled, yours to leeward bears away, lower, and the other sails on close-hauled
+  'bear-away': (S) => {
+    const h = S.h(1, S.bt);
+    return { boats: [{ at: S.o, tack: 1, twa: S.bt }, { at: S.o, tack: 1, twa: S.bt, tag: 'closeHauled', ...off(S.stb(h), 2.4 * S.L, S.fwd(h), 0) }],
+      cam: { on: [0, 1], r: 3.8, el: 64, az: 0, wind: true }, T: 11, arrow: 2.6,
+      tick: (t, [a]) => { if (t > 2) { a.hold = 115; a.tag = 'lower'; } } };
+  },
   'in-irons': (S) => ({ boats: [{ at: S.o, tack: 1, twa: 2, v: 0.2, hold: null }], cam: { on: 0, r: 1.6, el: 22, az: 120 }, T: 7, pre: 0 }),
   starboard: (S) => crossing(S, 0),
   port: (S) => crossing(S, 1),
@@ -125,7 +142,7 @@ const SCENES = {
   }),
   'favoured-end': (S) => ({
     boats: [{ at: S.up(S.fav, -1.6, 0), tack: 1, twa: S.bt, tag: 'favoured' }, { at: S.up(S.unfav, -1.6, 0), tack: 1, twa: S.bt }],
-    cam: { at: S.Lm, r: S.lineL / 2 + 2.5, el: 55, az: 0 }, T: 12, leg: 'start', guides: true,
+    cam: { at: S.Lm, r: S.lineL / 2 + 2.5, el: 55, az: 0 }, T: 12, leg: 'start', guides: true, arrow: { up: 3, scale: 2.2 }, square: true,
   }),
   ocs: (S) => ({
     boats: [{ at: S.up(S.lerpLine(0.5), 1.2, 0), tack: 1, twa: S.bt, tag: 'ocs', warn: true }, ...[0.25, 0.75].map((f) => ({ at: S.up(S.lerpLine(f), -1.5, 0), tack: 1, twa: S.bt }))],
@@ -159,12 +176,12 @@ const SCENES = {
   footing: (S) => ({ boats: [{ at: S.o, tack: 1, twa: S.bt + 8, hold: S.bt + 8 }], cam: { on: 0, r: 1.3, el: 20, az: 60 }, T: 20 }),
   // past dead downwind slowly, the boom left where it was: a few degrees by the lee; on further, it slams across
   'by-the-lee': (S) => ({
-    boats: [{ at: S.o, tack: 1, twa: 160, kite: S.kite }], cam: { on: 0, r: 2, el: 40, az: 0, wind: true }, T: 18,
+    boats: [{ at: S.o, tack: 1, twa: 160, kite: S.kite }], cam: { on: 0, r: 2, el: 40, az: 0, wind: true }, T: 18, arrow: true,
     tick: (t, [b]) => { b.holdH = S.h(1, 160 + clamp((t - 1) * 2, 0, 27)); },
   }),
   'crash-gybe': (S) => ({
-    boats: [{ at: S.o, tack: 1, twa: 160 }], cam: { on: 0, r: 2, el: 40, az: 0, wind: true }, T: 16,
-    tick: (t, [b]) => { if (!b.flipped) b.holdH = S.h(1, 160 + clamp((t - 1) * 3, 0, 45)); if (b.boom < 0) { b.flipped = 1; b.holdH = null; b.hold = 150; } },
+    boats: [{ at: S.o, tack: 1, twa: 160 }], cam: { on: 0, r: 2, el: 40, az: 0, wind: true }, T: 16, arrow: true,
+    tick: (t, [b]) => { if (!b.flipped) b.holdH = S.h(1, 160 + clamp((t - 1) * 3, 0, 45)); if (b.boom < 0) { b.flipped = 1; b.holdH = null; b.hold = 150; b.tag = 'danger'; b.warn = true; } },
   }),
   heel: (S) => ({ boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 1.3, el: 6, az: 180 }, T: 24 }),
   'keep-clear': (S) => crossing(S, 1),
@@ -188,6 +205,12 @@ const SCENES = {
   pin: (S) => ({
     boats: [{ at: S.up(S.lerpLine(0.2), -2.2, 0), tack: 1, twa: S.bt }], cam: { at: S.pin, r: 2.2, el: 20, az: 0, spin: 7 }, T: 30, leg: 'start',
   }),
+  umpire: (S) => {
+    const h = S.h(1, S.bt);
+    return { boats: [{ at: S.o, tack: -1, twa: S.bt, hold: null, tag: 'penalty', pen: true }, { at: S.o, tack: 1, twa: S.bt, tag: 'stbd', ...off(S.fwd(h), 2.6 * S.L, S.stb(h), -1.2 * S.L) }],
+      cam: { on: 0, r: 2.4, el: 28, az: 25, wind: true }, T: 18, umpire: { by: 0, at: [-1.7, -0.6] },
+      tick: (t, [b]) => { b.rudder = t > 0.6 && b.pen ? -1 : 0; if (!b.pen) { b.hold = S.bt; b.tag = null; } } };
+  },
   'starting-signal': (S) => SCENES['start-line'](S),
   'line-bias': (S) => SCENES['favoured-end'](S),
   leg: (S) => ({
@@ -319,7 +342,7 @@ export function createStage({ world, race, lang = 'en' }) {
     for (const w of [...saved.wakes, ...saved.contacts]) { if (w.mesh) w.mesh.visible = true; if (w.hmesh) w.hmesh.visible = true; }
     Object.assign(world, { race: saved.race, boatViews: saved.views, wakes: saved.wakes, contacts: saved.contacts, showGuides: saved.guides, mode: saved.mode, intro: saved.intro, shot: null, beatI: -1 });
     world.camera.clearViewOffset();
-    stern.visible = false;
+    stern.visible = false; hideExtras();
     saved = null;
   };
   let wakes = [], contacts = [];
@@ -328,6 +351,50 @@ export function createStage({ world, race, lang = 'en' }) {
   // the line square across a boat's stern, for clear astern and overlapped
   const stern = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: '#f5c400', transparent: true, opacity: 0.9, fog: false }));
   stern.frustumCulled = false; stern.visible = false; world.scene.add(stern);
+
+  // the wind's arrow, flat on the water and pointing the way the wind blows, with its tag at its tail
+  const AL = 2.4 * L, AW = 0.3 * L, HL = 0.8 * L, HW = 0.8 * L;
+  const ash = new THREE.Shape();
+  ash.moveTo(0, -AW / 2); ash.lineTo(AL - HL, -AW / 2); ash.lineTo(AL - HL, -HW / 2); ash.lineTo(AL, 0); ash.lineTo(AL - HL, HW / 2); ash.lineTo(AL - HL, AW / 2); ash.lineTo(0, AW / 2); ash.closePath();
+  const arrow = new THREE.Group(), arrowM = new THREE.Mesh(new THREE.ShapeGeometry(ash), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.85, depthWrite: false, fog: false, side: THREE.DoubleSide }));
+  arrowM.rotation.x = -Math.PI / 2; arrowM.renderOrder = 5; arrow.add(arrowM);
+  const windTag = labelSprite('#ffffff'); windTag.layers.set(OVERLAY); windTag.position.set(0, 0.25 * L, 0); arrow.add(windTag);
+  arrow.visible = false; world.scene.add(arrow);
+  // the line square to the wind through the start line's unfavoured end, out past the favoured one, with its tag
+  const square = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineDashedMaterial({ color: '#ffffff', dashSize: 0.5 * L, gapSize: 0.35 * L, transparent: true, opacity: 0.9, fog: false }));
+  square.frustumCulled = false; square.visible = false; world.scene.add(square);
+  const squareTag = labelSprite('#ffffff'); squareTag.layers.set(OVERLAY); squareTag.visible = false; world.scene.add(squareTag);
+  windTag.userData.set(tagIn('wind', lang), false);
+  squareTag.userData.set(tagIn('square', lang), false);
+  // the umpire's boat: a grey RIB, its driver at the console, the umpire standing with the flag up
+  let rib = null;
+  const makeRib = () => {
+    const g = new THREE.Group(), mat = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, ...o });
+    const hs = new THREE.Shape(); // the hull from above, her bow to −z
+    [[0, -2.4], [0.9, -1.3], [1, 0.9], [0.95, 2.3], [-0.95, 2.3], [-1, 0.9], [-0.9, -1.3]].forEach(([x, z], i) => (i ? hs.lineTo(x, z) : hs.moveTo(x, z)));
+    hs.closePath();
+    const hull = new THREE.ExtrudeGeometry(hs, { depth: 0.35, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.2, bevelSegments: 3 });
+    hull.rotateX(Math.PI / 2); hull.translate(0, 0.55, 0);
+    g.add(new THREE.Mesh(hull, mat('#3a4048')));
+    const box = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c)); m.position.set(x, y, z); g.add(m); return m; };
+    box(0.7, 0.75, 0.5, '#e9edf0', 0, 1.0, 0.2); // the console
+    box(0.45, 0.7, 0.4, '#15181c', 0, 0.75, 2.45); // the outboard
+    const person = (x, z, jacket) => {
+      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.21, 0.6, 4, 8), mat(jacket)); body.position.set(x, 1.25, z); g.add(body);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 8), mat('#d9ab8c')); head.position.set(x, 1.82, z); g.add(head);
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat('#14223a')); cap.position.set(x, 1.86, z); g.add(cap);
+    };
+    person(0, 0.85, '#14223a'); // the driver
+    person(0.35, 1.55, '#e8462a'); // the umpire
+    const staff = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 2.1, 6), mat('#cfd4d8')); staff.position.set(0.62, 2.2, 1.55); g.add(staff);
+    const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.62), new THREE.MeshStandardMaterial({ color: '#3db8ff', side: THREE.DoubleSide, roughness: 0.8 }));
+    flag.position.set(0.62 + 0.48, 2.95, 1.55); g.add(flag);
+    const tag = labelSprite('#ffffff'); tag.layers.set(OVERLAY); tag.position.set(0, 3.6, 0); tag.userData.set(tagIn('umpire', lang), false); g.add(tag);
+    g.userData.flag = flag; g.visible = false; world.scene.add(g);
+    return g;
+  };
+  let ribAt = null;
+  const hideExtras = () => { arrow.visible = false; square.visible = false; squareTag.visible = false; if (rib) rib.visible = false; };
 
   // ---------- a word ----------
   let def = null, specs = null, id = null, t = 0, acc = 0;
@@ -358,6 +425,15 @@ export function createStage({ world, race, lang = 'en' }) {
     world.wakes = wakes; world.contacts = contacts;
     world.showGuides = !!def.guides; world.beatI = -1;
     t = 0; shiftNow = 0;
+    hideExtras();
+    if (def.square) { // through the unfavoured end, square to the wind, out past the favoured end
+      const k = (S.fav.x - S.unfav.x) * rightV.x + (S.fav.z - S.unfav.z) * rightV.z >= 0 ? 1 : -1, len = (S.lineL * 1.2 + 1) * L;
+      const a = S.unfav, b = { x: a.x + rightV.x * k * len, z: a.z + rightV.z * k * len }, pos = square.geometry.attributes.position;
+      pos.setXYZ(0, a.x, 0.4, a.z); pos.setXYZ(1, b.x, 0.4, b.z); pos.needsUpdate = true; square.computeLineDistances();
+      squareTag.position.set(b.x, 0.25 * L, b.z);
+      square.visible = squareTag.visible = true;
+    }
+    if (def.umpire) { rib ||= makeRib(); rib.visible = true; ribAt = null; }
     // the run-up: she comes to where she starts already sailing, her sails set
     for (let n = Math.round((def.pre ?? 1.2) / STEP); n > 0; n--) stepAll(true);
   };
@@ -431,6 +507,33 @@ export function createStage({ world, race, lang = 'en' }) {
       const text = b.tag && t >= (specs[i]?.tagAt || 0) ? tagIn(b.tag, lang) : '';
       tag.visible = !!text; if (text) { tag.userData.set(text, b.warn); tag.position.set(0, tagY, 0); keepIn(tag, cam, Wd, r); }
     });
+    // the wind's arrow, upwind of what the camera's on, pointing down the wind there is now
+    arrow.visible = !!def.arrow;
+    if (arrow.visible) {
+      const wn = W + shiftNow, u = fwd(wn), r = stb(wn), k = def.arrow.scale || 1;
+      arrowM.scale.setScalar(k);
+      let cx, cz;
+      if (def.arrow.up) { cx = p.x + u.x * (def.arrow.up * L + AL * k); cz = p.z + u.z * (def.arrow.up * L + AL * k); }
+      else {
+        const gap = (def.arrow === true ? 2.2 : def.arrow) * L, two = bs[1] && on?.length > 1;
+        const side = two && (bs[1].x - bs[0].x) * r.x + (bs[1].z - bs[0].z) * r.z > 0 ? -1 : two ? 1 : -1;
+        cx = p.x + r.x * side * gap + u.x * AL * 0.6; cz = p.z + r.z * side * gap + u.z * AL * 0.6;
+      }
+      arrow.position.set(cx, 0.45, cz);
+      arrow.rotation.y = Math.atan2(-Math.cos(wn), -Math.sin(wn)); // its +x down the wind
+    }
+    // the umpire's boat: by the boat she watches, on the way that boat set out on, riding the swell
+    if (rib && rib.visible && def.umpire) {
+      const b = bs[def.umpire.by];
+      if (b) {
+        if (!ribAt) ribAt = { h: b.h, x: b.x, z: b.z };
+        const [r1, a1] = def.umpire.at, f1 = fwd(ribAt.h), s1 = stb(ribAt.h);
+        ribAt.x += (b.x - ribAt.x) * cl(2); ribAt.z += (b.z - ribAt.z) * cl(2);
+        const x = ribAt.x + s1.x * r1 * L + f1.x * a1 * L, z = ribAt.z + s1.z * r1 * L + f1.z * a1 * L;
+        rib.position.set(x, waveHeight(world.W, x, z, time) * 0.8, z); rib.rotation.y = -ribAt.h;
+        rib.userData.flag.rotation.y = Math.sin(time * 5) * 0.25;
+      }
+    }
     stern.visible = !!def.stern && !!bs[def.stern];
     if (stern.visible) {
       const a = bs[def.stern], hf = fwd(a.h), hs = stb(a.h), sx = a.x - hf.x * L * 0.5, sz = a.z - hf.z * L * 0.5, pos = stern.geometry.attributes.position;
@@ -447,7 +550,7 @@ export function createStage({ world, race, lang = 'en' }) {
     show(w) {
       const make = SCENES[w];
       const d = make && ids.includes(w) ? make(S) : null;
-      if (!d) { def = null; id = null; giveBack(); return false; }
+      if (!d) { def = null; id = null; hideExtras(); giveBack(); return false; }
       hideRace();
       id = w; def = d; specs = d.boats; acc = 0;
       build();
@@ -461,11 +564,14 @@ export function createStage({ world, race, lang = 'en' }) {
     },
     view(r) { rect = r; },
     get id() { return id; },
+    // (for the tests: the wind's arrow, the square line and the umpire's boat)
+    get extras() { return { arrow, square, rib }; },
     close() {
       giveBack();
       for (const v of views) if (v) { world.scene.remove(v.root); world.seaShade.remove(v); v.root.traverse((x) => { if (x.geometry) x.geometry.dispose(); }); }
       views.length = 0;
       world.scene.remove(stern); stern.geometry.dispose(); stern.material.dispose();
+      for (const o of [arrow, square, squareTag, rib]) if (o) { world.scene.remove(o); o.traverse((x) => { x.geometry?.dispose(); x.material?.map?.dispose(); x.material?.dispose(); }); }
     },
   };
 }
