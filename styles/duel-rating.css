@@ -57,6 +57,14 @@
 .df-lv { font: 700 12px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--you, #3db8ff); }
 .df-who { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .df-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+/* the duel hour in Ready now (components/duel-hour.tsx): when it starts, or that it's on, who's in, I'm in */
+.df-hour { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; background: var(--panel-2, rgba(255,255,255,.06)); box-shadow: inset 4px 0 0 var(--you, #3db8ff); }
+.df-hour.on { box-shadow: inset 4px 0 0 var(--up, #2ee6a0); }
+.df-hour-t { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font: 600 14px/1.35 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink-2, rgba(255,255,255,.78)); }
+.df-hour-t b { font: 800 24px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink, #fff); font-variant-numeric: tabular-nums; }
+.df-hour.on .df-hour-t b { color: var(--up, #2ee6a0); }
+.df-hour .df-acts { margin: 0; }
+.df-hour-tag { margin-left: 10px; color: var(--up, #2ee6a0); }
 .df-wish { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; }
 .df-wish .iv-note { flex-basis: 100%; }
 .df-sel { display: flex; flex-direction: column; gap: 4px; font: 700 12px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3, rgba(255,255,255,.62)); }

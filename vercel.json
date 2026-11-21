@@ -2,5 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "regions": ["arn1"],
-  "crons": [{ "path": "/push/remind", "schedule": "0 17 * * *" }]
+  "crons": [{ "path": "/push/remind", "schedule": "0 17 * * *" }, { "path": "/push/hour", "schedule": "45 18 * * *" }]
 }

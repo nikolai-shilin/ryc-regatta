@@ -14,6 +14,8 @@ import { shareHref } from '@/lib/share';
 import { linkPush, pushable, subscribe } from '@/lib/push';
 import { readLog } from '@/lib/log';
 import { IconPlay } from './ui';
+import { DuelHour } from './duel-hour';
+import { hourAt } from '@/lib/duel-hour';
 import '@/styles/duel-rating.css';
 
 // Find a race (app/[lang]/duel/page.tsx): a signed-in sailor is matched with another of about their rating (POST
@@ -31,6 +33,8 @@ import '@/styles/duel-rating.css';
 // Keep looking if I leave: on a device that can take a push (lib/push.ts, tied to the account), the search goes on for
 // 30 minutes after the page is gone, and Match found comes as a message with a minute to say Ready (lib/push-send.ts);
 // its tap opens /duel?resume, which looks again and finds the pair waiting.
+// The duel hour (components/duel-hour.tsx): every day 19:00–20:00 UTC, in Ready now; its message opens /duel?hour, which
+// starts looking, and while it's on Ready now says so.
 // Opened from the home's Race (/duel?challenge=<handle>, components/duel-home.tsx), it challenges that sailor at once.
 // The wishes, a venue and a yacht, kept on this device, are the race's from a sailor's fourth rated race (the host's first).
 type Phase = 'idle' | 'looking' | 'found' | 'go' | 'missed' | 'error';
@@ -197,9 +201,16 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
     const resume = new URLSearchParams(location.search).has('resume');
     if (resume) history.replaceState(history.state, '', location.pathname);
     if (signed && resume) find();
+    // the duel hour's message tapped (lib/duel-hour.ts): looking at once
+    const hour = new URLSearchParams(location.search).has('hour');
+    if (hour) history.replaceState(history.state, '', location.pathname);
+    if (signed && hour && !resume) find();
     // a browser that already takes the site's messages: tied to this account, so away works without asking again
     if (signed && pushable() && Notification.permission === 'granted') linkPush();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // the duel hour on: marked beside Ready now (checked every 30 s)
+  const [hourOn, setHourOn] = useState(false);
+  useEffect(() => { const c = () => setHourOn(hourAt().on); c(); const i = setInterval(c, 30_000); return () => clearInterval(i); }, []);
   // Ready now, read every 10 s while the list is on screen (not once a match is found), and not in a hidden tab
   const listed = signed && phase !== 'found' && phase !== 'go';
   useEffect(() => {
@@ -219,15 +230,15 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
 
   return <DuelFinderView lang={lang} signed={signed} phase={phase} look={look} pair={pair} said={said} left={left} note={note}
     longWait={phase === 'looking' && look.waited >= OFFER_AFTER_S} find={find} stop={stop} ready={ready} decline={decline}
-    list={list} challenge={challenge} wishes={wishes} setWish={setWish} loaded={loaded} call={call} postCall={postCall} away={away} awayOn={awayOn} awayOff={awayOff} />;
+    list={list} challenge={challenge} wishes={wishes} setWish={setWish} loaded={loaded} call={call} postCall={postCall} away={away} awayOn={awayOn} awayOff={awayOff} hourOn={hourOn} />;
 }
 
 type ViewProps = { lang: Lang; signed: boolean; phase: Phase; look: { waited: number; band: number; online: number }; pair: Pair | null; said: boolean; left: number;
   note: Note; longWait: boolean; find: () => void; stop: () => void; ready: () => void; decline: () => void;
   list?: Ready[]; challenge?: (handle: string) => void; wishes?: Wishes; setWish?: (k: keyof Wishes, v: string) => void; loaded?: number | null;
-  call?: OpenCall | null; postCall?: () => void; away?: boolean; awayOn?: () => void; awayOff?: () => void };
+  call?: OpenCall | null; postCall?: () => void; away?: boolean; awayOn?: () => void; awayOff?: () => void; hourOn?: boolean };
 
-export function DuelFinderView({ lang, signed, phase, look, pair, said, left, note, longWait, find, stop, ready, decline, list = [], challenge = () => {}, wishes = {}, setWish = () => {}, loaded = null, call = null, postCall = () => {}, away = false, awayOn = () => {}, awayOff = () => {} }: ViewProps) {
+export function DuelFinderView({ lang, signed, phase, look, pair, said, left, note, longWait, find, stop, ready, decline, list = [], challenge = () => {}, wishes = {}, setWish = () => {}, loaded = null, call = null, postCall = () => {}, away = false, awayOn = () => {}, awayOff = () => {}, hourOn = false }: ViewProps) {
   const t = tx(lang);
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const friend = <Link className="bt-show" href="/match/new">{t('Challenge a friend instead', 'Позвать друга', 'Reta a un amigo', 'Lieber einen Freund herausfordern', 'Bunun yerine bir arkadaşını çağır', 'Défier plutôt un ami', 'Sfida invece un amico', 'Desafiar um amigo')}</Link>;
@@ -271,7 +282,7 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
   // who else is looking now, nearest your rating first, each with Race: a challenge whatever the gap
   const now = (
     <div className="df-now">
-      <span className="bt-k">{t('Ready now', 'Готовы сейчас', 'Listos ahora', 'Jetzt bereit', 'Şu an hazır', 'Prêts maintenant', 'Pronti ora', 'Prontos agora')}</span>
+      <span className="bt-k">{t('Ready now', 'Готовы сейчас', 'Listos ahora', 'Jetzt bereit', 'Şu an hazır', 'Prêts maintenant', 'Pronti ora', 'Prontos agora')}{hourOn && <span className="df-lv df-hour-tag">{t('Duel hour', 'Час дуэлей', 'Hora de duelos', 'Duell-Stunde', 'Düello saati', 'Heure des duels', 'Ora dei duelli', 'Hora dos duelos')}</span>}</span>
       {list.length ? (
         <ul className="df-list">{list.map((r) => (
           <li key={r.handle} className="df-row">
@@ -284,6 +295,7 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
           </li>))}
         </ul>
       ) : <p className="iv-note">{t('Nobody else is looking right now. Find a race, and you’re the first one the next sailor sees.', 'Сейчас больше никто не ищет. Начни поиск — и следующий соперник увидит тебя первым.', 'Ahora nadie más está buscando. Busca una regata y serás lo primero que vea el próximo regatista.', 'Gerade sucht sonst niemand. Starte die Suche, dann sieht dich der nächste Segler zuerst.', 'Şu an başka arayan yok. Yarış ara; sıradaki denizci ilk seni görür.', 'Personne d’autre ne cherche pour l’instant. Lance la recherche : le prochain marin te verra en premier.', 'Ora nessun altro sta cercando. Cerca una regata e sarai il primo che vedrà il prossimo velista.', 'Ninguém mais está procurando agora. Procure uma regata e você será o primeiro que o próximo velejador vê.')}</p>}
+      <DuelHour lang={lang} signed={signed} looking={phase === 'looking'} onFind={find} />
     </div>
   );
   const anyOpt = t('Any', 'Любая', 'Cualquiera', 'Egal', 'Fark etmez', 'Peu importe', 'Qualsiasi', 'Qualquer');
@@ -300,6 +312,7 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
     <div className="df">
       <p className="bt-p">{t('Rated races need an account on both sides, so finding a race takes one. Signing in takes ten seconds.', 'Для рейтинговых гонок у обоих нужен аккаунт, поэтому для поиска гонки тоже. Вход — десять секунд.', 'Las regatas con rating necesitan cuenta en los dos lados, así que buscar una también. Iniciar sesión lleva diez segundos.', 'Gewertete Regatten brauchen auf beiden Seiten ein Konto, die Suche also auch. Die Anmeldung dauert zehn Sekunden.', 'Reytingli yarışlar için iki tarafta da hesap gerekir, bu yüzden yarış aramak da gerektirir. Giriş on saniye sürer.', 'Les régates classées demandent un compte des deux côtés, donc la recherche aussi. Se connecter prend dix secondes.', 'Le regate valide richiedono un account da entrambe le parti, quindi anche la ricerca. L’accesso richiede dieci secondi.', 'Regatas valendo rating pedem conta dos dois lados, então a busca também. Entrar leva dez segundos.')}</p>
       <div className="df-acts"><a className="bt-go" href="/sign-in?next=/duel"><span>{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden', 'Giriş yap', 'Se connecter', 'Accedi', 'Entrar')}</span></a>{friend}</div>
+      <DuelHour lang={lang} signed={false} looking={false} onFind={() => {}} />
     </div>
   );
   if (phase === 'found' && pair) {

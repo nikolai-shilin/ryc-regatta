@@ -5,6 +5,7 @@ import { isLang, tx, type Lang } from './lang';
 import { levelName } from './levels';
 import { provisional, shown } from './elo';
 import { plainName } from './name';
+import { hourMessage } from './duel-hour';
 
 // Match found, sent to a sailor who asked to be looked for after leaving /duel (release 5b of the 1-on-1 plan;
 // iyt-test supabase/migrations/20261121240000_regatta_away.sql). The site's server, having just made a pair
@@ -75,4 +76,35 @@ export async function sendMatchFound(pairId: string, send: typeof webpush.sendNo
     }));
     return sent;
   } catch { return 0; }
+}
+
+// The duel hour's message (release 6d; lib/duel-hour.ts), 15 minutes before 19:00 UTC, to every sailor in for that
+// day's hour: by the browsers tied to their account and from the bot, as they take Match found and not in their quiet
+// hours, once each (regatta_hour_due marks them told). A device the push service says is gone is dropped.
+export type HourRow = { kind: 'push' | 'telegram'; endpoint: string | null; p256dh: string | null; auth: string | null; telegram_id: number | null; lang: string; n_in: number };
+export async function sendDuelHour(day: string, send: typeof webpush.sendNotification = (s, p, o) => webpush.sendNotification(s, p, o), bot: (body: object) => Promise<Response> = tell) {
+  const key = process.env.PUSH_LIST_KEY, priv = process.env.VAPID_PRIVATE_KEY;
+  if (!key || !priv) return { error: 'VAPID_PRIVATE_KEY or PUSH_LIST_KEY is not set' };
+  const r = await sb('regatta_hour_due', { p_key: key, p_day: day });
+  if (!r.ok) return { error: `regatta_hour_due: ${r.status}` };
+  const rows: HourRow[] = await r.json();
+  webpush.setVapidDetails(SITE, VAPID_PUBLIC, priv);
+  let sent = 0, failed = 0, gone = 0;
+  await Promise.all((Array.isArray(rows) ? rows : []).map(async (row) => {
+    const m = hourMessage(row.lang, row.n_in);
+    if (row.kind === 'telegram') {
+      if (!process.env.REGATTA_NOTIFY_SECRET || !row.telegram_id) return;
+      try { if ((await bot({ telegram_id: row.telegram_id, text: `${m.title}\n${m.body}`, button: { text: m.button, url: `${SITE}${m.url}` } })).ok) sent++; else failed++; } catch { failed++; }
+      return;
+    }
+    if (!row.endpoint || !row.p256dh || !row.auth) return;
+    try {
+      await send({ endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } }, JSON.stringify({ title: m.title, body: m.body, lang: m.lang, tag: m.tag, url: m.url }), { TTL: 75 * 60, urgency: 'high', topic: 'duel-hour' });
+      sent++;
+    } catch (e) {
+      const code = (e as { statusCode?: number }).statusCode;
+      if (code === 404 || code === 410) { gone++; await sb('regatta_push_drop', { p_endpoint: row.endpoint }).catch(() => {}); } else failed++;
+    }
+  }));
+  return { day, due: Array.isArray(rows) ? rows.length : 0, sent, gone, failed };
 }

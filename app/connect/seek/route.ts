@@ -3,6 +3,7 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { isHandle, parseReady, parseSeek, wishesOf } from '@/lib/duel-seek';
 import { BANDS, callCode, parsePosted } from '@/lib/duel-call';
 import { sendMatchFound } from '@/lib/push-send';
+import { parseHour } from '@/lib/duel-hour';
 
 // Matchmaking for the signed-in sailor (components/duel-finder.tsx):
 //   POST /connect/seek { do: 'seek', wishes? }      → looking | found | go | none   (asked every 3 s while looking, every 1 s once found)
@@ -13,6 +14,8 @@ import { sendMatchFound } from '@/lib/push-send';
 //   POST /connect/seek { do: 'call', band?, wishes? }  → { status: 'open', code, lo, hi, left } | none: an open call, while looking
 //   POST /connect/seek { do: 'take', code, wishes? }   → found | none (taken, away, closed, band, mine): an open call taken
 //   POST /connect/seek { do: 'away', on }              → { status: 'away', left } | { status: 'here' } | none (no_push, not_looking)
+//   POST /connect/seek { do: 'hour' }                 → { hour }: the duel hour's day, how many are in, near you, you in (lib/duel-hour.ts)
+//   POST /connect/seek { do: 'hour_in', on }           → { hour }: in, or out, for that day's hour
 // A pair just made with a sailor who is away (looked for after leaving /duel) sends them Match found by push once the
 // answer has gone (lib/push-send.ts; the database hands their devices over once per pair).
 // The sailor is the session's; the database pairs (regatta_seek, regatta_seek_ready, regatta_seek_stop, regatta_ready_now, regatta_seek_challenge, regatta_call_post,
@@ -31,6 +34,10 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
     let res;
+    if (body.do === 'hour' || body.do === 'hour_in') {
+      const r = body.do === 'hour' ? await supabase.rpc('regatta_hour_state') : await supabase.rpc('regatta_hour_join', { p_in: body.on === true });
+      return json({ hour: r.error ? null : parseHour(r.data) });
+    }
     if (body.do === 'ready_now') { const r = await supabase.rpc('regatta_ready_now'); return json({ list: r.error ? [] : parseReady(r.data) }); }
     if (body.do === 'call') {
       const band = BANDS.includes(body.band as 100) ? (body.band as number) : 100;
