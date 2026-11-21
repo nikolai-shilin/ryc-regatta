@@ -17,8 +17,9 @@ export type Volume = 'loud' | 'normal' | 'quiet';
 export type Daytime = 'any' | 'morning' | 'midday' | 'afternoon' | 'evening' | 'sunset';
 export const DAYTIMES: readonly Daytime[] = ['any', 'morning', 'midday', 'afternoon', 'evening', 'sunset'];
 
-// Graphics: Auto, a level, or Custom with each of its parts set apart (public/game/gfx.js, set in public/game/av-menu.js)
-export type Gfx = 'auto' | 'high' | 'medium' | 'low' | 'custom';
+// Graphics: Auto, a level (Lowest: Low drawn at two thirds of its resolution), or Custom with each of its parts set apart
+// (public/game/gfx.js, set in public/game/av-menu.js)
+export type Gfx = 'auto' | 'high' | 'medium' | 'low' | 'lowest' | 'custom';
 export type GfxLevel = 'high' | 'medium' | 'low';
 export type GfxPart = 'res' | 'shadows' | 'sea' | 'refl' | 'post' | 'wakes' | 'under' | 'land' | 'life';
 

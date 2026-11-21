@@ -246,6 +246,20 @@ test('the resolution below Low is remembered with the parts, for Auto alone: no 
   assert.match(store.get(GFX_KEY), /^lllllllll\|\d+$/, 'no scale: none written');
 });
 
+test('Lowest draws every part Low at the resolution below Low Auto goes to last, whatever Auto remembers', () => {
+  store.clear();
+  store.set(GFX_KEY, `mmmmmmmmm@0.8|${Date.now()}`);
+  assert.deepEqual(gfxNow({ gfx: 'lowest' }), ['low']);
+  assert.deepEqual(gfxDetail({ gfx: 'lowest' }), gfxParts('low'), 'Custom begun from it: every part Low');
+  assert.equal(gfxScale({ gfx: 'lowest' }), RES_BELOW.at(-1));
+  assert.equal(startQuality({ gfx: 'lowest' }), 'lowest');
+  const calls = [], scales = [];
+  store.set('regatta', JSON.stringify({ gfx: 'lowest' }));
+  globalThis.addEventListener = () => {};
+  followSettings({ setQuality: (q) => calls.push(q), setResScale: (s) => scales.push(s) });
+  assert.deepEqual([calls, scales], [['low'], [RES_BELOW.at(-1)]], 'and every view behind the site\'s pages with it');
+});
+
 test('a view draws the level chosen, follows a change, and lets frames go on the battery saver', () => {
   store.clear();
   store.set('regatta', JSON.stringify({ gfx: 'low' }));

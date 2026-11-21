@@ -298,5 +298,6 @@ test('a perf with a bad side, fps or secs is dropped; any other bad field is kep
   assert.deepEqual(r.perf, { fps: 30.3, low: null, stall: null, secs: 282, q0: 'low', q: null, gfx: null, saver: 0, rs: null, dev: null, tg: 0, os: null, br: null, dpr: null,
     cores: null, mem: null, gpu: null, w: null, h: null, net: { rtt: null, late: null } });
   assert.equal(parseReport({ ...PERFR, perf: { ...PERF, net: 'fast' } }).perf.net, null);
+  for (const gfx of ['auto', 'high', 'medium', 'low', 'lowest', 'custom']) assert.equal(parseReport({ ...PERFR, perf: { ...PERF, gfx } }).perf.gfx, gfx);
   assert.deepEqual(toRow(parseReport(PERFR), 'u-1', 'h'), { kind: 'perf', code: 'K7M2QZ', seed: 4242, side: 'host', perf: parseReport(PERFR).perf });
 });

@@ -42,10 +42,10 @@ export const GFX_LADDER = [
   ['wakes', 'low', 0.05, 0, 5],
 ];
 const FRAME_MS = 13.3, FRAME_CPU = 5.4;
-// Below Low, for Auto alone: Low's resolution (one pixel to a CSS pixel) times 0.8, then 0.65 (64% and 42% of its pixels).
+// Below Low, for Auto (and the menu's Lowest, which takes the last step for good): Low's resolution (one pixel to a CSS pixel) times 0.8, then 0.65 (64% and 42% of its pixels).
 // Tried only under 24 fps once every part is Low, as on the laptops with Intel graphics that sailed whole races at 15–20
 // fps on Low (19–20 Nov 2026). The HUD is the page's, not the picture's: its words stay sharp. A step that buys no
-// frames (a phone held up by its CPU) is undone. It rides with the parts as `scale` (none: 1), and no level or Custom draws it.
+// frames (a phone held up by its CPU) is undone. It rides with the parts as `scale` (none: 1); no other level and no Custom draws it.
 export const RES_BELOW = [0.8, 0.65];
 const SCALES = [1, ...RES_BELOW];
 const RANK = { high: 0, medium: 1, low: 2 };
@@ -158,7 +158,8 @@ function remembered() {
 export const autoParts = () => remembered()?.[0] ?? autoBase();
 export const autoScale = () => remembered()?.[1] ?? 1;
 // the resolution below Low a choice draws: Auto's, and none for any other
-export const gfxScale = (o) => (((o && o.gfx) || 'auto') === 'auto' ? autoScale() : 1);
+// (Lowest, a choice in the menu for a device slow even on Low: the last step Auto would take, for good)
+export const gfxScale = (o) => { const g = (o && o.gfx) || 'auto'; return g === 'auto' ? autoScale() : g === 'lowest' ? RES_BELOW.at(-1) : 1; };
 export function saveAuto(parts) {
   const base = autoBase();
   try {
@@ -170,9 +171,11 @@ export function saveAuto(parts) {
 // the parts Auto has eased off on this device, for the menu to name
 export const autoEased = (parts) => { const base = autoBase(); return GFX_PARTS.filter((k) => RANK[parts[k]] > RANK[base[k]]); };
 
-// what a choice draws, as world.setQuality takes it: a level, or Custom and its parts (Auto's, once they're a mix)
+// what a choice draws, as world.setQuality takes it: a level, or Custom and its parts (Auto's, once they're a mix).
+// Lowest is Low's parts, its resolution below Low (gfxScale)
 export function gfxNow(o) {
   const g = (o && o.gfx) || 'auto';
+  if (g === 'lowest') return ['low'];
   if (g !== 'auto') return [g, o && o.gfxD];
   const p = autoParts(), q = gfxLevel(p);
   return GFX_PARTS.every((k) => p[k] === q) ? [q] : ['custom', p];

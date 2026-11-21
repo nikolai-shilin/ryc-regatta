@@ -114,6 +114,9 @@ test('the button in a panel\'s head says the graphics level alone', () => {
   assert.equal(avGfx({ gfx: 'high' }, 'en'), 'High');
   assert.equal(avGfx({ gfx: 'high' }, 'ru'), 'Макс.');
   assert.equal(avGfx({ gfx: 'custom' }, 'ru'), 'Своя');
+  assert.equal(avGfx({ gfx: 'lowest' }, 'en'), 'Lowest');
+  assert.equal(avGfx({ gfx: 'lowest' }, 'ru'), 'Ещё ниже');
+  assert.equal(avSummary({ gfx: 'lowest', sound: 1, music: 'riff' }, 'de'), 'Minimal · Riff');
 });
 
 // ---------- opening ----------
@@ -156,7 +159,7 @@ test('every group and control is there in English', () => {
   const heads = m.all().filter((e) => e.tag === 'h3').map((e) => e.own);
   assert.deepEqual(heads, ['Graphics', 'Audio']);
   for (const n of ['Quality', 'People on board', 'Battery saver · 30 fps', 'Sound', 'Voice on board', 'Music', 'Music volume', 'Sea']) assert.ok(m.named(n), n);
-  assert.deepEqual(m.radios('Quality').map((b) => b.own), ['Auto', 'High', 'Medium', 'Low', 'Custom']);
+  assert.deepEqual(m.radios('Quality').map((b) => b.own), ['Auto', 'High', 'Medium', 'Low', 'Lowest', 'Custom']);
   assert.deepEqual(m.radios('Music').map((b) => b.own), ['Playlist', 'Racing', 'Groove', 'Riff', 'Open water', 'Off']);
   assert.deepEqual(m.radios('Music volume').map((b) => b.own), ['Loud', 'Normal', 'Quiet']);
   assert.deepEqual(m.radios('Sea').map((b) => b.own), ['Loud', 'Normal', 'Quiet', 'Off']);
@@ -166,7 +169,7 @@ test('every group and control is there in Russian', () => {
   const m = menu({}, { lang: 'ru' });
   assert.deepEqual(m.all().filter((e) => e.tag === 'h3').map((e) => e.own), ['Графика', 'Звук']);
   for (const n of ['Качество', 'Люди на борту', 'Экономия батареи · 30 к/с', 'Голос шкипера', 'Музыка', 'Громкость музыки', 'Море']) assert.ok(m.named(n), n);
-  assert.deepEqual(m.radios('Качество').map((b) => b.own), ['Авто', 'Макс.', 'Сред.', 'Мин.', 'Своя']);
+  assert.deepEqual(m.radios('Качество').map((b) => b.own), ['Авто', 'Макс.', 'Сред.', 'Мин.', 'Ещё ниже', 'Своя']);
   assert.deepEqual(m.radios('Море').map((b) => b.own), ['Громко', 'Обычно', 'Тихо', 'Выкл']);
   assert.ok(m.button('Подробно'));
   assert.ok(m.button('Звук подробно'));
@@ -195,7 +198,7 @@ test('what is saved shows as picked, and what was never set shows its default', 
 
 test('only the picked radio takes the tab; with none picked, the first does', () => {
   const m = menu({ gfx: 'low' });
-  assert.deepEqual(m.radios('Quality').map((b) => b.tabIndex), [-1, -1, -1, 0, -1]);
+  assert.deepEqual(m.radios('Quality').map((b) => b.tabIndex), [-1, -1, -1, 0, -1, -1]);
   open();
   const n = menu({ music: 'nothing-known' });
   assert.deepEqual(n.picked('Music'), []);
@@ -215,6 +218,13 @@ test('picking a level saves it, and the mark moves to it', () => {
   m.radio('Quality', 'Low').click();
   assert.deepEqual(m.writes, [{ gfx: 'low' }]);
   assert.deepEqual(m.picked('Quality'), ['Low']);
+});
+
+test('Lowest is a level of its own: picked, saved and marked as the others', () => {
+  const m = menu({ gfx: 'low' });
+  m.radio('Quality', 'Lowest').click();
+  assert.deepEqual(m.writes, [{ gfx: 'lowest' }]);
+  assert.deepEqual(m.picked('Quality'), ['Lowest']);
 });
 
 test('picking the music, its volume and the sea saves each under its own key', () => {
@@ -259,6 +269,13 @@ test('a set level says every scene draws at it, in each language', () => {
   assert.equal(menu({ gfx: 'high' }).hint(), 'The race and every 3D scene on the site draw at this level.');
   open();
   assert.equal(menu({ gfx: 'low' }, { lang: 'ru' }).hint(), 'Гонка и все 3D-сцены на сайте рисуются с этим качеством.');
+});
+
+test('Lowest says what it gives up and who it is for, in each language', () => {
+  assert.equal(menu({ gfx: 'lowest' }).hint(), 'Low, with the picture drawn at two thirds of its resolution: for a device that is slow even on Low. The race and every 3D scene on the site draw at this level.');
+  open();
+  assert.match(menu({ gfx: 'lowest' }, { lang: 'ru' }).hint(), /^Как «Мин\.», но картинка рисуется в двух третях разрешения/);
+  for (const lang of ['es', 'de', 'tr', 'fr', 'it', 'pt']) { open(); assert.doesNotMatch(menu({ gfx: 'lowest' }, { lang }).hint(), /^Low, with/, lang); }
 });
 
 test('Custom says each part is as set below, in each language', () => {

@@ -67,7 +67,7 @@ function resultOf(r: unknown): Result | null {
   return { place, secs, mark, pens } as Result;
 }
 
-const LEVELS = ['high', 'medium', 'low', 'custom'] as const, SETS = ['auto', 'high', 'medium', 'low', 'custom'] as const;
+const LEVELS = ['high', 'medium', 'low', 'custom'] as const, SETS = ['auto', 'high', 'medium', 'low', 'lowest', 'custom'] as const;
 const num = (v: unknown, lo: number, hi: number) => (typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi ? Math.round(v * 100) / 100 : null);
 const whole = (v: unknown, lo: number, hi: number) => (int(v, lo, hi) ? v : null);
 const word = (v: unknown) => (typeof v === 'string' && /^[a-z0-9_-]{1,16}$/.test(v) ? v : null);
