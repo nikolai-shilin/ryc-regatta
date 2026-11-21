@@ -1,5 +1,6 @@
 # Regatta: the F50's moulded platform (game/boats3d.js F50View), modelled here and exported to game/f50.glb: her two
-# hulls, each a long slim box with rounded corners, a low, drooping nose and a stern rounded in plan, its bottom rising aft, the
+# hulls, each a long slim hull of rounded sections, narrowing over its forward half to a low rounded nose, its deck sloping down
+# to it, a blunt transom with rounded corners, the bottom rising to both ends, the
 # cockpit well aft in each where the crew stand; the main beam across at the wing's step, faired to a thick foil section
 # as the photographs show it; a lighter beam aft; the central pod (her batteries' housing) forward from the main beam to
 # the jib's tack; the nets between the hulls from one beam to the other. The boards, the rudders, the wing and the jib,
@@ -29,22 +30,27 @@ OUT = os.path.normpath(os.path.join(HERE, '..', 'public', 'game', 'f50.glb'))
 
 L, HX = 15.0, 3.7          # the hulls' length; their centres either side of hers
 STERN = L / 2
-FLARE, CROWN = 0.03, 0.08
-DECK, BOTTOM, NOSE_Y = 0.85, -0.38, -0.02  # the deck and the bottom amidships, and the height the nose's tip comes to
-DROOP, ROUND, KEEL = 0.82, 0.9, 0.93       # where the deck starts drooping, the plan rounding off, the bottom rising
-AFT = 0.035                                # the stern rounded off in plan over its last half metre, as the photographs show it
+FLARE, CROWN = 0.02, 0.1
+DECK, BOTTOM, NOSE_Y = 0.85, -0.38, 0.15   # the deck and the bottom amidships, and the height of the nose's rounded tip
+TIP = 0.94                                 # where the nose's rounded tip begins (0.9 m from it)
+AFT = 0.03                                 # the transom's corners rounded off over its last 0.45 m
 def clamp(v, a, b): return max(a, min(b, v))
 def lerp(a, b, t): return a + (b - a) * t
 def smooth(e0, e1, x): t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t)
 # the same lines as boats3d.js F (t = 0 at the transom, 1 at the nose's tip)
 def ell(t, t0): return math.sqrt(max(0.0, 1 - ((t - t0) / (1 - t0)) ** 2)) if t > t0 else 1.0  # a quarter ellipse to the tip
-def aft(t): return math.sqrt(max(0.02, 1 - ((AFT - t) / AFT) ** 2)) if t < AFT else 1.0  # a quarter ellipse to the stern
-def hb_of(t): return 0.5 * (0.9 + 0.1 * smooth(0, 0.25, t)) * ell(t, ROUND) * aft(t)
-def sheer(t): return NOSE_Y + (DECK + 0.02 * math.sin(math.pi * t) - NOSE_Y) * ell(t, DROOP)
-def bottom(t): return NOSE_Y - (NOSE_Y - (BOTTOM + 0.3 * (1 - smooth(0, 0.5, t)))) * ell(t, KEEL)
+def aft(t): return 0.78 + 0.22 * math.sqrt(max(0.0, 1 - ((AFT - t) / AFT) ** 2)) if t < AFT else 1.0  # the transom's rounded corners
+# in plan: full amidships, then narrowing steadily over her forward half to a rounded tip; the transom blunt
+def hb_of(t): return 0.5 * (0.92 + 0.08 * smooth(0, 0.3, t)) * (1 - 0.5 * smooth(0.45, 0.97, t)) * ell(t, TIP) * aft(t)
+# in profile: the deck level aft, sloping down over her forward 40% to some 0.6 m, then rounding down to the nose;
+# the bottom straight amidships, rising 0.3 m aft to the transom and some 0.25 m forward before rounding up to the nose
+def deck0(t): return DECK + 0.02 * math.sin(math.pi * t) - 0.27 * smooth(0.55, TIP, t)
+def bot0(t): return BOTTOM + 0.3 * (1 - smooth(0, 0.5, t)) + 0.25 * smooth(0.7, TIP, t)
+def sheer(t): return NOSE_Y + (deck0(t) - NOSE_Y) * ell(t, TIP)
+def bottom(t): return NOSE_Y - (NOSE_Y - bot0(t)) * ell(t, TIP)
 def depth(t): return -bottom(t)
-def n_of(t): return 2.8
-def crown(t): return CROWN * clamp((1 - t) / 0.2, 0, 1)
+def n_of(t): return lerp(2.7, 2.2, smooth(0.4, 0.9, t))  # a rounded box aft, rounder forward
+def crown(t): return CROWN * (1 - 0.6 * smooth(0.6, 1, t))
 def z_at(t): return STERN - t * L
 def t_at(z): return clamp((STERN - z) / L, 0, 1)
 def deck_y(z, x=0.0):
@@ -71,8 +77,8 @@ def build_hull(bm, M, cx):
     KH, KD = 18, 6
     # the stations: evenly along her to where the nose starts, then round it by equal angles, so the tip closes to a
     # point and not a flat end
-    ts = [AFT * (1 - math.cos(0.5 * math.pi * k / 8)) for k in range(8)] + [lerp(AFT, DROOP, i / 56) for i in range(56)] \
-         + [DROOP + (1 - DROOP) * math.sin(0.5 * math.pi * k / 20) for k in range(20)]
+    ts = [AFT * (1 - math.cos(0.5 * math.pi * k / 8)) for k in range(8)] + [lerp(AFT, TIP, i / 64) for i in range(64)] \
+         + [TIP + (1 - TIP) * math.sin(0.5 * math.pi * k / 16) for k in range(16)]
     N = len(ts) - 1
     rings = []
     for t in ts:
@@ -117,12 +123,16 @@ def build_beam(bm, M, z, y, chord, th, n=14, span=24):
 
 # the pod: a body of revolution forward along her middle from inside the main beam to its rounded nose at the jib's
 # tack, thickest aft
-def build_pod(bm, M, z0, z1, y, r0, r1, seg=20, n=40):
+def build_pod(bm, M, z0, z1, y, r0, r1, seg=24, n=40):
+    # its section a teardrop, as she shows it head-on: rounded on top, deep and narrowing to a keel below
+    def sec(a, r):
+        c, s = math.cos(a), math.sin(a)
+        return (r * c * (0.85 if s >= 0 else 0.85 * (1 + s) ** 0.6 + 0.02), r * (0.55 * s if s >= 0 else 2.2 * s))
     rows = []
     for i in range(n + 1):
         s = i / n; z = lerp(z0, z1, s)
         r = lerp(r0, r1, s ** 0.8) * (math.sqrt(max(0.0, 1 - ((s - 0.9) / 0.1) ** 2)) if s > 0.9 else 1.0)
-        rows.append([bm.verts.new(G(r * math.cos(2 * math.pi * k / seg), y + r * math.sin(2 * math.pi * k / seg) * 0.85, z)) for k in range(seg)])
+        rows.append([bm.verts.new(G(*(lambda p: (p[0], y + p[1]))(sec(2 * math.pi * k / seg, r)), z)) for k in range(seg)])
     for i in range(n):
         for k in range(seg):
             bm.faces.new((rows[i][k], rows[i][(k + 1) % seg], rows[i + 1][(k + 1) % seg], rows[i + 1][k])).material_index = M['hull']
@@ -137,6 +147,22 @@ def build_net(bm, M, z0, z1, y, n=24):
         z = lerp(z0, z1, i / n); x = HX - hb_of(t_at(z)) * 0.92
         rows.append((bm.verts.new(G(-x, y, z)), bm.verts.new(G(x, y, z))))
     for i in range(n): bm.faces.new((rows[i][0], rows[i][1], rows[i + 1][1], rows[i + 1][0])).material_index = M['net']
+
+# the aft beam: an open truss between the hulls, as the photographs of her on the crane show it: two tubes one above the
+# other, their ends in the hulls, and diagonals between them
+def tube_between(bm, M, a, b, r, seg=8):
+    a, b = Vector(a), Vector(b); d = (b - a).normalized()
+    u = d.cross(Vector((0, 0, 1)) if abs(d.z) < 0.9 else Vector((1, 0, 0))).normalized(); w = d.cross(u)
+    ra = [bm.verts.new(a + r * (math.cos(2 * math.pi * k / seg) * u + math.sin(2 * math.pi * k / seg) * w)) for k in range(seg)]
+    rb = [bm.verts.new(b + r * (math.cos(2 * math.pi * k / seg) * u + math.sin(2 * math.pi * k / seg) * w)) for k in range(seg)]
+    for k in range(seg): bm.faces.new((ra[k], ra[(k + 1) % seg], rb[(k + 1) % seg], rb[k])).material_index = M['pod']
+    bm.faces.new(list(reversed(ra))).material_index = M['pod']; bm.faces.new(rb).material_index = M['pod']
+def build_truss(bm, M, z, y0, y1, n=8):
+    ends = HX - 0.2
+    for y in (y0, y1): tube_between(bm, M, G(-ends, y, z), G(ends, y, z), 0.05)
+    for k in range(n):
+        xa, xb = lerp(-ends, ends, k / n), lerp(-ends, ends, (k + 1) / n)
+        tube_between(bm, M, G(xa, y0 if k % 2 else y1, z), G(xb, y1 if k % 2 else y0, z), 0.025)
 
 def plan_prism(bm, outline, y0, y1, ms, mb, mt):
     lo = [bm.verts.new(G(x, y0, z)) for x, z in outline]; hi = [bm.verts.new(G(x, y1, z)) for x, z in outline]
@@ -208,9 +234,9 @@ bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(fair.data); bm.fre
 # the platform: the main beam at the wing's step (boats3d.js F.MAST_Z), the aft beam, the pod and the nets
 MAIN_Z, AFT_Z, TACK_Z = -STERN + 7.4, STERN - 1.0, -STERN + 3.2
 plat = new_object('platform'); bm = bmesh.new()
-build_beam(bm, IDX, MAIN_Z + 0.25, 0.78, 1.5, 0.27)
-build_beam(bm, IDX, AFT_Z, 0.78, 0.6, 0.34)
-build_pod(bm, IDX, MAIN_Z, TACK_Z, 0.8, 0.3, 0.13)
+build_beam(bm, IDX, MAIN_Z + 0.25, 0.8, 1.3, 0.2)
+build_truss(bm, IDX, AFT_Z, 0.55, 0.88)
+build_pod(bm, IDX, MAIN_Z, TACK_Z, 0.86, 0.32, 0.12)
 build_net(bm, IDX, MAIN_Z + 0.25 + 0.55 * 1.5, AFT_Z - 0.45 * 0.6, 0.85)
 bmesh.ops.recalc_face_normals(bm, faces=[f for f in bm.faces if f.material_index != IDX['net']]); bm.to_mesh(plat.data); bm.free()
 
