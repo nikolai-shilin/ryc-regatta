@@ -157,7 +157,7 @@ export const MATCH = {
   rematch: 'Revanche', fullResult: 'Resultado completo', done: 'Concluir', waitRematch: (w) => `${w} pode começar a revanche`, left: (w) => `${w} saiu da regata`,
   stepAway: (w, c) => `${w} saiu · a largada espera · ${c}`,
   loadingPct: (w, p) => `${w} · carregando a regata · ${p}%`,
-  chat: (k) => ['Boa sorte!', 'Bela largada', 'Revanche?', 'Boa regata'][k] ?? '', chatK: 'Dizer',
+  chat: (k) => ['Boa sorte!', 'Bela largada', 'Revanche?', 'Boa regata'][k] ?? '', chatK: 'Dizer', help: 'Como funcionam os duelos',
   stillOut: (w) => `${w} ainda está na regata`, stillOutT: (w, s) => `${w} ainda está na regata · faltam ${s}`, keepOpen: 'Mantenha esta tela aberta',
   loadingRace: (w) => `Esperando ${w} carregar a regata…`,
   sec: 's', waitHost: 'Esperando o anfitrião…', noHost: 'Ninguém está organizando esta regata ainda. Talvez o link seja antigo, ou seu amigo saiu: peça um link novo a ele, ou saia e corra a regata do dia.', stale: 'O jogo foi atualizado: recarregue para participar', reload: 'Recarregar', fullRoom: 'Esta regata já tem dois velejadores',

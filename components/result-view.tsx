@@ -27,6 +27,7 @@ import { BOAT_EVENT, readBoat } from '@/lib/boat';
 import { briefUrl, readBrief, SCORES_API } from '@/lib/day-brief';
 import { useWho } from './me';
 import { DuelRating } from './duel-rating';
+import { ForYou } from './for-you';
 import { DuelKeep } from './duel-keep';
 import { duelShareUrl } from '@/lib/duel-share';
 import { FirstFinish } from './first-finish';
@@ -384,6 +385,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
           {!one && <p className="bt-hint rs-hint">{res.daily ? t('Today’s race is the one that ranks: everyone sails the same one.', 'В рейтинг идёт гонка дня: у всех она одна.', 'La regata de hoy es la que puntúa: todos navegan la misma.', 'Die Regatta des Tages ist die, die zählt: Alle segeln dieselbe.', 'Sıralamaya giren günün yarışıdır: herkes aynısını yarışır.', 'C’est la régate du jour qui compte au classement : tout le monde court la même.', 'La regata del giorno è quella che conta per la classifica: tutti corrono la stessa.', 'A regata do dia é a que vale para a classificação: todos correm a mesma.') : t('Custom races stay with you; today’s race is the one that ranks.', 'Свои гонки остаются у тебя; в рейтинг идёт гонка дня.', 'Las regatas personalizadas se quedan contigo; la de hoy es la que puntúa.', 'Eigene Regatten bleiben bei dir; die Regatta des Tages ist die, die zählt.', 'Serbest yarışlar sende kalır; sıralamaya giren günün yarışıdır.', 'Les régates libres restent chez toi ; c’est la régate du jour qui compte au classement.', 'Le regate libere restano tue; la regata del giorno è quella che conta per la classifica.', 'As regatas livres ficam com você; a regata do dia é a que vale para a classificação.')}</p>}
           {!shared && one && typeof res.duel?.code === 'string' && Number.isInteger(res.duel.seed) && <DuelRating duel={res.duel} lang={lang} />}{/* what your 1-on-1 race did to your rating */}
           {!shared && !one && Date.now() - res.at < 864e5 && <RateRace id={res.id} lang={lang} />}{/* how was it: your own race, just sailed */}
+          {!shared && <ForYou lang={lang} max={2} />}{/* what next, after your own race (components/for-you.tsx) */}
         </PauseCard>
         <a className="rs-down" href="#debrief" aria-label={t('The debrief', 'Разбор', 'El análisis', 'Die Nachbesprechung', 'Değerlendirme', 'Le débriefing', 'Il debriefing', 'A análise')}><span>{t('The debrief', 'Разбор', 'El análisis', 'Die Nachbesprechung', 'Değerlendirme', 'Le débriefing', 'Il debriefing', 'A análise')}</span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" /></svg></a>
       </div>

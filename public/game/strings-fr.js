@@ -153,7 +153,7 @@ export const MATCH = {
   rematch: 'Revanche', fullResult: 'Résultat complet', done: 'Terminer', waitRematch: (w) => `${w} peut lancer une revanche`, left: (w) => `${w} a quitté la régate`,
   stepAway: (w, c) => `${w} n’est plus là · le départ attend · ${c}`,
   loadingPct: (w, p) => `${w} · charge la régate · ${p} %`,
-  chat: (k) => ['Bonne chance !', 'Joli départ', 'Revanche ?', 'Belle régate'][k] ?? '', chatK: 'Dire',
+  chat: (k) => ['Bonne chance !', 'Joli départ', 'Revanche ?', 'Belle régate'][k] ?? '', chatK: 'Dire', help: 'Comment marchent les duels',
   stillOut: (w) => `${w} est encore en régate`, stillOutT: (w, s) => `${w} est encore en régate · encore ${s}`, keepOpen: 'Garde cet écran ouvert',
   loadingRace: (w) => `En attente que ${w} charge la régate…`,
   sec: 's', waitHost: 'En attente de l’hôte…', noHost: 'Personne n’organise encore cette régate. Le lien est peut-être ancien, ou ton ami est parti : demande-lui un nouveau lien, ou quitte la page et cours la régate du jour.', stale: 'Le jeu a été mis à jour : recharge pour rejoindre la régate', reload: 'Recharger', fullRoom: 'Cette régate a déjà deux régatiers',
