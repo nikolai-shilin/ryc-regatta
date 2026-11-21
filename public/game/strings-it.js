@@ -5,7 +5,7 @@ const da = (s) => String(s).replace(/^la /, 'dalla ').replace(/^il /, 'dal ').re
 
 export const MAIN = {
   pausedK: 'In pausa', legOf: (a, b) => `Lato ${a} di ${b}`, nextK: (m) => `Prossimo obiettivo: ${m}`, placeK: 'Posizione', ofN: (n) => `su ${n}`, timeK: 'Tempo di regata', penK: 'Penalità', penNone: 'nessuna finora', penS: 'giri di penalità',
-  changeRace: 'Cambia regata', leaveHub: 'Torna al centro regate', quickK: 'Comandi rapidi', camK: 'Telecamera', sAuto: 'Auto', guidesSw: 'Guide sull’acqua', avK: 'Audio e grafica', startsOver: 'ricomincia', loadingK: 'Armiamo la barca', escResumes: 'Esc per riprendere',
+  changeRace: 'Cambia regata', leaveHub: 'Torna al centro regate', quickK: 'Comandi rapidi', camK: 'Telecamera', sAuto: 'Auto', guidesSw: 'Guide sull’acqua', avK: 'Audio e grafica', wordsK: 'Parole della vela', startsOver: 'ricomincia', loadingK: 'Armiamo la barca', escResumes: 'Esc per riprendere',
   leaveK: 'Lasciare questa regata?', leaveTxt: (pl, leg) => `Sei ${pl} nel lato ${leg}.`, keepRacing: 'Continua la regata', doRestart: 'Ricomincia', doChange: 'Cambia', doLeave: 'Esci',
   inSeq: 'Sei nella procedura di partenza.', notKept: 'Il tempo e la posizione di questa regata non vengono salvati.',
   leaveHost: 'La regata viene annullata su entrambi gli schermi.', leaveGuest: (w) => (w ? `Ti ritiri, e la regata va a ${w}.` : 'Ti ritiri, e la regata finisce senza vincitore.'), leaveHome: 'La tua posizione resta valida per l’altro regatante, ma se esci ora non avrai il risultato completo.',

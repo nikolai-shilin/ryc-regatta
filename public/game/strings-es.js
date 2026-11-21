@@ -3,7 +3,7 @@ const ord = (n) => `${n}.º`;
 
 export const MAIN = {
   pausedK: 'En pausa', legOf: (a, b) => `Tramo ${a} de ${b}`, nextK: (m) => `Siguiente: ${m}`, placeK: 'Puesto', ofN: (n) => `de ${n}`, timeK: 'Tiempo de regata', penK: 'Penalizaciones', penNone: 'sin penalizaciones', penS: 'giros de penalización',
-  changeRace: 'Cambiar la regata', leaveHub: 'Salir al centro de regatas', quickK: 'Ajustes rápidos', camK: 'Cámara', sAuto: 'Auto', guidesSw: 'Guías sobre el agua', avK: 'Sonido y gráficos', startsOver: 'vuelve a empezar', loadingK: 'Aparejando el barco', escResumes: 'Esc continúa',
+  changeRace: 'Cambiar la regata', leaveHub: 'Salir al centro de regatas', quickK: 'Ajustes rápidos', camK: 'Cámara', sAuto: 'Auto', guidesSw: 'Guías sobre el agua', avK: 'Sonido y gráficos', wordsK: 'Palabras de vela', startsOver: 'vuelve a empezar', loadingK: 'Aparejando el barco', escResumes: 'Esc continúa',
   leaveK: '¿Salir de esta regata?', leaveTxt: (pl, leg) => `Vas ${pl} en el tramo ${leg}.`, keepRacing: 'Seguir en regata', doRestart: 'Reiniciar', doChange: 'Cambiarla', doLeave: 'Salir',
   inSeq: 'Estás en la secuencia de salida.', notKept: 'El tiempo y el puesto de esta regata no se guardan.',
   leaveHost: 'La regata se abandona en las dos pantallas.', leaveGuest: (w) => (w ? `Abandonas, y la regata es para ${w}.` : 'Abandonas, y la regata termina sin ganador.'), leaveHome: 'Tu puesto se mantiene para el otro regatista, pero si te vas ahora no tendrás el resultado completo.',

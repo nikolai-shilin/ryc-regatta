@@ -5,7 +5,7 @@ const da = (s) => (/^(a|o|as|os) /.test(String(s)) ? `d${s}` : `de ${s}`);
 
 export const MAIN = {
   pausedK: 'Pausado', legOf: (a, b) => `Perna ${a} de ${b}`, nextK: (m) => `Próximo: ${m}`, placeK: 'Posição', ofN: (n) => `de ${n}`, timeK: 'Tempo de regata', penK: 'Penalidades', penNone: 'nenhuma até agora', penS: 'giros de penalidade',
-  changeRace: 'Mudar a regata', leaveHub: 'Voltar à central de regatas', quickK: 'Atalhos rápidos', camK: 'Câmera', sAuto: 'Auto', guidesSw: 'Guias na água', avK: 'Áudio e gráficos', startsOver: 'recomeça', loadingK: 'Aparelhando o barco', escResumes: 'Esc para continuar',
+  changeRace: 'Mudar a regata', leaveHub: 'Voltar à central de regatas', quickK: 'Atalhos rápidos', camK: 'Câmera', sAuto: 'Auto', guidesSw: 'Guias na água', avK: 'Áudio e gráficos', wordsK: 'Palavras da vela', startsOver: 'recomeça', loadingK: 'Aparelhando o barco', escResumes: 'Esc para continuar',
   leaveK: 'Sair desta regata?', leaveTxt: (pl, leg) => `Você está em ${pl} na perna ${leg}.`, keepRacing: 'Continuar a regata', doRestart: 'Recomeçar', doChange: 'Mudar', doLeave: 'Sair',
   inSeq: 'Você está no procedimento de largada.', notKept: 'O tempo e a posição desta regata não são salvos.',
   leaveHost: 'A regata é anulada nas duas telas.', leaveGuest: (w) => (w ? `Você abandona, e a regata fica com ${w}.` : 'Você abandona, e a regata termina sem vencedor.'), leaveHome: 'Sua posição vale para o outro velejador, mas se sair agora você não verá o resultado completo.',

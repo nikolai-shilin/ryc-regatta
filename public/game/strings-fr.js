@@ -3,7 +3,7 @@ const ord = (n) => (n === 1 ? '1er' : `${n}e`);
 
 export const MAIN = {
   pausedK: 'En pause', legOf: (a, b) => `Bord ${a} sur ${b}`, nextK: (m) => `Ensuite : ${m}`, placeK: 'Place', ofN: (n) => `sur ${n}`, timeK: 'Temps de régate', penK: 'Pénalités', penNone: 'aucune pour l’instant', penS: 'tours de pénalité',
-  changeRace: 'Changer de régate', leaveHub: 'Retour au centre de régate', quickK: 'Réglages rapides', camK: 'Caméra', sAuto: 'Auto', guidesSw: 'Repères sur l’eau', avK: 'Son et graphismes', startsOver: 'recommence', loadingK: 'On grée le bateau', escResumes: 'Échap pour reprendre',
+  changeRace: 'Changer de régate', leaveHub: 'Retour au centre de régate', quickK: 'Réglages rapides', camK: 'Caméra', sAuto: 'Auto', guidesSw: 'Repères sur l’eau', avK: 'Son et graphismes', wordsK: 'Mots de la voile', startsOver: 'recommence', loadingK: 'On grée le bateau', escResumes: 'Échap pour reprendre',
   leaveK: 'Quitter cette régate ?', leaveTxt: (pl, leg) => `Tu es ${pl} dans le bord ${leg}.`, keepRacing: 'Continuer la régate', doRestart: 'Recommencer', doChange: 'Changer', doLeave: 'Quitter',
   inSeq: 'Tu es dans la procédure de départ.', notKept: 'Le temps et la place de cette régate ne sont pas conservés.',
   leaveHost: 'La régate est annulée sur les deux écrans.', leaveGuest: (w) => (w ? `Tu abandonnes, et la régate revient à ${w}.` : 'Tu abandonnes, et la régate se termine sans vainqueur.'), leaveHome: 'Ta place reste acquise pour l’autre régatier, mais si tu pars maintenant, tu n’auras pas le résultat complet.',

@@ -74,7 +74,7 @@ const ord = (n) => `${n}${['st', 'nd', 'rd'][n - 1] || 'th'}`;
 const T = {
   en: {
     pausedK: 'Paused', legOf: (a, b) => `Leg ${a} of ${b}`, nextK: (m) => `Next: ${m}`, placeK: 'Place', ofN: (n) => `of ${n}`, timeK: 'Race time', penK: 'Penalties', penNone: 'clean so far', penS: 'spinning turns',
-    changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', camK: 'Camera', sAuto: 'Auto', guidesSw: 'Guides on the water', avK: 'Audio & graphics', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
+    changeRace: 'Change the race', leaveHub: 'Leave to the race hub', quickK: 'Quick switches', camK: 'Camera', sAuto: 'Auto', guidesSw: 'Guides on the water', avK: 'Audio & graphics', wordsK: 'Sailing words', startsOver: 'starts over', loadingK: 'Rigging the boat', escResumes: 'Esc resumes',
     leaveK: 'Leave this race?', leaveTxt: (pl, leg) => `You are ${pl} on leg ${leg}.`, keepRacing: 'Keep racing', doRestart: 'Restart', doChange: 'Change it', doLeave: 'Leave',
     inSeq: 'You are in the start sequence.', notKept: 'This race’s time and place are not kept.',
     leaveHost: 'The race is abandoned on both screens.', leaveGuest: (w) => (w ? `You drop out, and the race goes to ${w}.` : 'You drop out, and the race ends with no winner.'), leaveHome: 'Your place stands for the other sailor, but if you leave now you won’t get the full result.',
@@ -188,7 +188,7 @@ const T = {
   },
   ru: {
     pausedK: 'Пауза', legOf: (a, b) => `Отрезок ${a} из ${b}`, nextK: (m) => `Дальше: ${m}`, placeK: 'Место', ofN: (n) => `из ${n}`, timeK: 'Время', penK: 'Штрафы', penNone: 'пока чисто', penS: 'штрафные обороты',
-    changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', camK: 'Камера', sAuto: 'Авто', guidesSw: 'Подсказки на воде', avK: 'Звук и графика', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
+    changeRace: 'Изменить гонку', leaveHub: 'Выйти в меню гонок', quickK: 'Быстрые переключатели', camK: 'Камера', sAuto: 'Авто', guidesSw: 'Подсказки на воде', avK: 'Звук и графика', wordsK: 'Словарь яхтсмена', startsOver: 'новый старт', loadingK: 'Готовим лодку', escResumes: 'Esc — продолжить',
     leaveK: 'Выйти из гонки?', leaveTxt: (pl, leg) => `Ты ${pl}-й на ${leg}-м отрезке.`, keepRacing: 'Продолжить', doRestart: 'Заново', doChange: 'Изменить', doLeave: 'Выйти',
     inSeq: 'Идёт стартовая процедура.', notKept: 'Время и место этой гонки не сохранятся.',
     leaveHost: 'Гонка прекратится на обоих экранах.', leaveGuest: (w) => (w ? `Ты сходишь, и гонка достаётся: ${w}.` : 'Ты сходишь, и гонка закончится без победителя.'), leaveHome: 'Для соперника твоё место останется, но если выйдешь сейчас, полного результата не получишь.',
@@ -1732,6 +1732,16 @@ function applyAv(p) {
 $('#pAv').addEventListener('click', () => {
   avClose = openAvMenu({ lang: LANG, read: () => opts, write: (p) => { Object.assign(opts, p); saveOpts(); applyAv(p); }, now: levelNow, zIndex: 15,
     onClose: () => { avClose = null; if (running && race) paintPause(); } });
+});
+// Sailing words, over the pause menu as Audio & graphics is: the site's glossary in the race's language (words.js,
+// fetched the first time it opens). It takes avClose too, so Back, Esc and the browser's back close it the same way.
+$('#pWords').addEventListener('click', async () => {
+  if (avClose) return;
+  avClose = () => {}; // (opening: a second tap waits for the first)
+  try {
+    const { openWords } = await import('./words.js');
+    avClose = openWords({ lang: LANG, title: t('wordsK'), url: fileAt('words.json'), zIndex: 15, onClose: () => { avClose = null; } });
+  } catch (e) { avClose = null; }
 });
 $('#cKeep').addEventListener('click', () => { confirmEl.hidden = true; pauseEl.hidden = false; });
 $('#cGo').addEventListener('click', () => {

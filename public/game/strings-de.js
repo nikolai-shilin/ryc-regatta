@@ -3,7 +3,7 @@ const ord = (n) => `${n}.`;
 
 export const MAIN = {
   pausedK: 'Pausiert', legOf: (a, b) => `Schenkel ${a} von ${b}`, nextK: (m) => `Als Nächstes: ${m}`, placeK: 'Platz', ofN: (n) => `von ${n}`, timeK: 'Regattazeit', penK: 'Strafen', penNone: 'bisher sauber', penS: 'Strafkringel',
-  changeRace: 'Regatta ändern', leaveHub: 'Zurück zur Regattaübersicht', quickK: 'Schnellschalter', camK: 'Kamera', sAuto: 'Auto', guidesSw: 'Hilfslinien auf dem Wasser', avK: 'Ton & Grafik', startsOver: 'beginnt neu', loadingK: 'Das Boot wird aufgeriggt', escResumes: 'Esc: weiter',
+  changeRace: 'Regatta ändern', leaveHub: 'Zurück zur Regattaübersicht', quickK: 'Schnellschalter', camK: 'Kamera', sAuto: 'Auto', guidesSw: 'Hilfslinien auf dem Wasser', avK: 'Ton & Grafik', wordsK: 'Segelwörter', startsOver: 'beginnt neu', loadingK: 'Das Boot wird aufgeriggt', escResumes: 'Esc: weiter',
   leaveK: 'Regatta verlassen?', leaveTxt: (pl, leg) => `Du liegst auf Schenkel ${leg} auf dem ${pl} Platz.`, keepRacing: 'Weitersegeln', doRestart: 'Neu starten', doChange: 'Ändern', doLeave: 'Verlassen',
   inSeq: 'Du bist in der Startsequenz.', notKept: 'Zeit und Platz dieser Regatta werden nicht gespeichert.',
   leaveHost: 'Die Regatta wird auf beiden Bildschirmen abgebrochen.', leaveGuest: (w) => (w ? `Du gibst auf, und die Regatta geht an ${w}.` : 'Du gibst auf, und die Regatta endet ohne Sieger.'), leaveHome: 'Dein Platz bleibt für den anderen Segler bestehen, aber wenn du jetzt gehst, bekommst du nicht das volle Ergebnis.',

@@ -3,7 +3,7 @@ const ord = (n) => `${n}.`;
 
 export const MAIN = {
   pausedK: 'Duraklatıldı', legOf: (a, b) => `Ayak ${a} / ${b}`, nextK: (m) => `Sıradaki: ${m}`, placeK: 'Sıra', ofN: (n) => `/ ${n}`, timeK: 'Yarış süresi', penK: 'Cezalar', penNone: 'şimdilik temiz', penS: 'ceza dönüşleri',
-  changeRace: 'Yarışı değiştir', leaveHub: 'Yarış merkezine dön', quickK: 'Hızlı ayarlar', camK: 'Kamera', sAuto: 'Oto', guidesSw: 'Sudaki kılavuzlar', avK: 'Ses ve grafik', startsOver: 'baştan başlar', loadingK: 'Tekne hazırlanıyor', escResumes: 'Esc: devam',
+  changeRace: 'Yarışı değiştir', leaveHub: 'Yarış merkezine dön', quickK: 'Hızlı ayarlar', camK: 'Kamera', sAuto: 'Oto', guidesSw: 'Sudaki kılavuzlar', avK: 'Ses ve grafik', wordsK: 'Yelken sözlüğü', startsOver: 'baştan başlar', loadingK: 'Tekne hazırlanıyor', escResumes: 'Esc: devam',
   leaveK: 'Yarıştan çıkılsın mı?', leaveTxt: (pl, leg) => `${leg}. ayakta ${pl} sıradasın.`, keepRacing: 'Yarışa devam', doRestart: 'Baştan başla', doChange: 'Değiştir', doLeave: 'Çık',
   inSeq: 'Start sürecindesin.', notKept: 'Bu yarışın süresi ve sırası kaydedilmez.',
   leaveHost: 'Yarış iki ekranda da iptal edilir.', leaveGuest: (w) => (w ? `Yarıştan çekiliyorsun ve yarışı ${w} kazanıyor.` : 'Yarıştan çekiliyorsun ve yarış kazanansız biter.'), leaveHome: 'Sıran diğer yelkenci için geçerli kalır, ama şimdi çıkarsan tam sonucu alamazsın.',

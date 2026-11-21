@@ -219,13 +219,16 @@ class Element extends Node {
   set className(v) { this.setAttribute('class', v); }
   get title() { return this.getAttribute('title') ?? ''; }
   get hidden() { return this.hasAttribute('hidden'); }
-  get dataset() { const el = this; return new Proxy({}, { get: (_, k) => el.getAttribute(`data-${String(k).replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`) ?? undefined }); }
+  set hidden(v) { this.toggleAttribute('hidden', !!v); }
+  get dataset() { const el = this; return new Proxy({}, { get: (_, k) => el.getAttribute(`data-${String(k).replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`) ?? undefined,
+      set: (_, k, v) => { el.setAttribute(`data-${String(k).replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`, v); return true; } }); }
   get classList() {
     const el = this, all = () => el.className.split(/\s+/).filter(Boolean);
     return {
       contains: (c) => all().includes(c),
       add: (...cs) => { el.className = [...new Set([...all(), ...cs])].join(' '); },
       remove: (...cs) => { el.className = all().filter((c) => !cs.includes(c)).join(' '); },
+      toggle: (c, force) => { const on = force === undefined ? !all().includes(c) : !!force; el.className = on ? [...new Set([...all(), c])].join(' ') : all().filter((x) => x !== c).join(' '); return on; },
     };
   }
   get children() { return this.childNodes.filter((c) => c.nodeType === 1); }
