@@ -75,3 +75,10 @@ export const longDate = (day: string, lang: Lang) => new Date(day + 'T12:00:00Z'
 
 // Escaped for a <script type="application/ld+json">: no "</script>" can close it early.
 export const jsonLd = (data: unknown) => ({ __html: JSON.stringify(data).replace(/</g, '\\u003c') });
+
+// The BreadcrumbList for a page that draws no SiteHead (the 3D screens: the race hub, the yachts), as SiteHead's own:
+// Home, then the trail, each step its address in the reader's language.
+export const crumbsLd = (lang: Lang, home: string, trail: [name: string, path: string][]) => ({
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+  itemListElement: [[home, '/'], ...trail].map(([name, path], i) => ({ '@type': 'ListItem', position: i + 1, name, item: SITE + langUrl(path, lang) })),
+});

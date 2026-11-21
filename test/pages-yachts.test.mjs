@@ -26,7 +26,7 @@ const headingOf = (h) => /<h1 class="bt-h fl-h">([^<]+)<\/h1>/.exec(h)[1];
 // ---------- the fleet ----------
 test('/yachts opens on the whole fleet and tours it', async () => {
   const h = await html(fleet, 'en');
-  assert.equal(headingOf(h), 'Every yacht');
+  assert.equal(headingOf(h), 'From the Optimist to the AC75');
   assert.ok(h.includes('aria-label="Stop the tour"'), 'the tour is running');
   assert.ok((await html(fleet, 'ru')).includes('aria-label="Остановить облёт"'));
 });
@@ -42,7 +42,7 @@ test('/yachts?y= opens on that yacht and stays there', async () => {
 test('/yachts?y= with a yacht that does not exist is the plain tour', async () => {
   for (const y of ['titanic', 'J70', '', 'constructor']) {
     const h = await html(fleet, 'en', {}, { y });
-    assert.equal(headingOf(h), 'Every yacht', y);
+    assert.equal(headingOf(h), 'From the Optimist to the AC75', y);
     assert.ok(h.includes('aria-label="Stop the tour"'), y);
   }
 });
@@ -160,4 +160,20 @@ test('/boat is titled, described and addressed for each language', async () => {
   assert.equal(en.alternates.canonical, '/boat');
   assert.equal(ru.alternates.canonical, '/boat?lang=ru');
   assert.equal(en.openGraph.images[0].url, '/og/page/boat?lang=en');
+});
+
+test('/yachts tells search engines its trail and the nine yachts, each at her own page', async () => {
+  for (const lang of LANGS) {
+    const h = await html(fleet, lang);
+    const [crumbs, list] = ldOf(h);
+    assert.equal(crumbs['@type'], 'BreadcrumbList');
+    assert.deepEqual(crumbs.itemListElement.map((x) => x.item), [SITE + addressed('/', lang), SITE + addressed('/yachts', lang)]);
+    assert.equal(list['@type'], 'ItemList');
+    assert.equal(list.itemListElement.length, YACHTS.length);
+    list.itemListElement.forEach((x, i) => {
+      assert.equal(x.position, i + 1);
+      assert.equal(x.url, SITE + addressed(`/yachts/${YACHTS[i].id}`, lang));
+      assert.equal(x.name, lang === 'ru' ? YACHTS[i].name[1] : YACHTS[i].name[0]);
+    });
+  }
 });
