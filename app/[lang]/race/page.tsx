@@ -17,6 +17,9 @@ import { GameScene } from '@/components/game-scene';
 import { PauseCard } from '@/components/pause-card';
 import { MyRow } from '@/components/home-client';
 import { SITE, RYC_LD, crumbsLd, jsonLd, langUrl } from '@/lib/seo';
+import { getRating } from '@/lib/rating';
+import { getDuelBoard } from '@/lib/duel-board';
+import { RaceBoard } from '@/components/race-board';
 
 // Built for everyone alike and refreshed every five minutes, as Home is (today's fastest move): who is signed in is
 // the browser's to show (lib/me.ts: .if-me, .if-guest, the initials; the pause card's account reads the cookie).
@@ -35,7 +38,9 @@ export const generateMetadata = titled('Race hub: today’s sailing race and cus
 // card the start, today's fastest and a free race one tap away.
 export default async function Hub({ params }: LangParams) {
   const { lang, t } = await getT(params);
-  const today = await todayTop();
+  const d0 = dailyRace().day;
+  // today's fastest for the card; the whole day, the month and the 1-on-1 rating for the leaderboard (/race#board)
+  const [today, rating, duel] = await Promise.all([todayTop(), getRating(d0), getDuelBoard()]);
   const d = dailyRace(), v = venueOf(d.venue), boat = yachtOf(d.yacht);
   const date = new Date(d.day + 'T12:00:00Z').toLocaleDateString(LOCALE[lang], { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
   const top = today && today.d === d.day ? today.top : [];
@@ -106,7 +111,7 @@ export default async function Hub({ params }: LangParams) {
               {!top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов', 'Aún no hay tiempos hoy', 'Heute noch keine Zeiten', 'Bugün henüz süre yok', 'Pas encore de temps aujourd’hui', 'Ancora nessun tempo oggi', 'Ainda não há tempos hoje')}</span><span /></li>}
               <MyRow lang={lang} day={d.day} top={top} cap={today?.n} next="/race" />
             </ol>
-            <Link className="lb-more" href="/race/rating">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц', 'Clasificación completa y puntos del mes', 'Gesamtrangliste und Punkte des Monats', 'Tam sıralama ve ayın puanları', 'Classement complet et points du mois', 'Classifica completa e punti del mese', 'Classificação completa e os pontos do mês')}</Link>
+            <Link className="lb-more" href="#board">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц', 'Clasificación completa y puntos del mes', 'Gesamtrangliste und Punkte des Monats', 'Tam sıralama ve ayın puanları', 'Classement complet et points du mois', 'Classifica completa e punti del mese', 'Classificação completa e os pontos do mês')}</Link>
           </div>
           <FreeQuick lang={lang} />
           <MatchCard lang={lang} />
@@ -116,6 +121,7 @@ export default async function Hub({ params }: LangParams) {
         </PauseCard>
       </div>
       <DailyLock lang={lang} chips={[`${t(...venueOf(d.venue).name)}`, t(...boat.name), `${breeze} ${KN[d.preset]} ${t('kn', 'уз', 'kn', 'kn', 'kn', 'kn', 'kn', 'nós')}`, `${t(...SHAPE_NAME[d.course])} · ${metres}`, t(`${d.fleet} boats`, `${d.fleet} лодок`, `${d.fleet} barcos`, `${d.fleet} Boote`, `${d.fleet} tekne`, `${d.fleet} bateaux`, `${d.fleet} barche`, `${d.fleet} barcos`), t(`${d.start} min start`, `старт ${d.start} мин`, `Salida de ${d.start} min`, `Start ${d.start} Min.`, `${d.start} dk start`, `Départ en ${d.start} min`, `Partenza: ${d.start} min`, `Largada de ${d.start} min`), d.current ? t('Current on', 'С течением', 'Con corriente', 'Strömung an', 'Akıntı var', 'Avec courant', 'Con corrente', 'Com correnteza') : t('No current', 'Без течения', 'Sin corriente', 'Keine Strömung', 'Akıntı yok', 'Sans courant', 'Senza corrente', 'Sem correnteza')]} />
+      <RaceBoard lang={lang} t={t} day={d.day} venue={pick(v.name, lang)} data={rating && rating.d === d.day ? rating : null} duel={duel} />
     </div>
   );
 }

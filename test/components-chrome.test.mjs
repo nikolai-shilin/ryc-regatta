@@ -77,16 +77,16 @@ test('the logo is named for a screen reader, the icons are hidden from one', () 
 // ---------- site-chrome.tsx ----------
 test('the header links to the site’s pages and marks the one being read', () => {
   const html = ssr(h(SiteHead, { lang: 'en', t: en, page: 'rating' }));
-  for (const to of ['/race', '/race/free', '/race/drills', '/race/rating', '/players', '/venues', '/yachts', '/sign-in', '/play?race=today']) assert.ok(hrefs(html).includes(to), to);
+  for (const to of ['/race', '/race/free', '/race/drills', '/race#board', '/players', '/venues', '/yachts', '/sign-in', '/play?race=today']) assert.ok(hrefs(html).includes(to), to);
   assert.equal([...html.matchAll(/aria-current="page"/g)].length, 1);
-  assert.match(html, /<a href="\/race\/rating"[^>]*aria-current="page"/);
+  assert.match(html, /<a href="\/race#board"[^>]*aria-current="page"/);
   assert.match(plain(html), /Today’s race Custom race 1-on-1 race Leaderboard Drills Players Venues Yachts/);
 });
 
 test('Drills and Players are in the menu at every width, not among the header’s tabs', () => {
   const html = ssr(h(SiteHead, { lang: 'en', t: en, page: 'drills' }));
   const tabs = /<nav class="hm-nav"[^>]*>(.*?)<\/nav>/s.exec(html)[1];
-  assert.deepEqual(hrefs(tabs), ['/play?race=first&intro', '/race', '/race/free', '/duel', '/race/rating']);
+  assert.deepEqual(hrefs(tabs), ['/play?race=first&intro', '/race', '/race/free', '/duel', '/race#board']);
   const shown = html.split('class="hm-menu-nav"')[1].split('</nav>').slice(1).join('</nav>');
   for (const to of ['/race/drills', '/players', '/venues', '/yachts']) assert.ok(hrefs(shown).includes(to), to);
   assert.doesNotMatch(html, /aria-current/, 'no tab to mark on the drills’ page');
@@ -124,7 +124,7 @@ test('the trail over a guide links each step but the last, which is the page its
 
 test('the footer has every page that stands on its own, RYC’s sites, the language switch and the disclaimer', () => {
   const html = ssr(h(SiteFoot, { lang: 'en', t: en, back: '/faq' }));
-  for (const to of ['/', '/race', '/race/free', '/duel', '/race/drills', '/race/rating', '/players', '/venues', '/yachts', '/help', '/learn', '/rulebook', '/learn/glossary', '/dictionary', '/iyt', '/faq', '/boat', '/players?me=1', '/settings', '/sign-in', '/social', '/sponsorship', 'https://www.rycrentals.com/', 'https://www.rycsailing.com/', '/faq?lang=ru']) assert.ok(hrefs(html).includes(to), to);
+  for (const to of ['/', '/race', '/race/free', '/duel', '/race/drills', '/race#board', '/players', '/venues', '/yachts', '/help', '/learn', '/rulebook', '/learn/glossary', '/dictionary', '/iyt', '/faq', '/boat', '/players?me=1', '/settings', '/sign-in', '/social', '/sponsorship', 'https://www.rycrentals.com/', 'https://www.rycsailing.com/', '/faq?lang=ru']) assert.ok(hrefs(html).includes(to), to);
   assert.match(plain(html), /not affiliated with, sponsored by, or endorsed by America’s Cup/);
 });
 

@@ -1,0 +1,36 @@
+/* The leaderboard on the race hub (components/race-board.tsx): a sheet over the hub's scene, shown while the address is
+   /race#board; the boards' tabs are radio buttons (no script). The rows are the rating page's own (.rt-lb, broadcast.css). */
+.rb { position: fixed; inset: 0; z-index: 60; display: none; overflow-y: auto; overscroll-behavior: contain;
+  background: rgba(4, 10, 16, 0.94); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: var(--ink, #fff); }
+.rb:target { display: block; }
+.rb-in { max-width: 760px; margin: 0 auto; padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(32px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 16px; }
+.rb-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rb-close { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; font: 400 28px/1 var(--sans, sans-serif);
+  color: var(--ink, #fff); text-decoration: none; background: var(--panel, rgba(255, 255, 255, 0.06)); }
+.rb-close:hover { background: var(--panel-2, rgba(255, 255, 255, 0.12)); }
+.rb-h { margin: 0; font: 700 var(--fs-h2, 34px)/1 var(--cond, sans-serif); text-transform: uppercase; text-wrap: balance; }
+
+.rb-tabs { display: flex; flex-wrap: wrap; gap: 2px; }
+.rb-radio { position: absolute; opacity: 0; pointer-events: none; }
+.rb-tab { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 12px; cursor: pointer;
+  font: 700 13px/1.1 var(--cond, sans-serif); letter-spacing: 0.12em; text-transform: uppercase; text-align: center;
+  background: var(--fill-1, rgba(255, 255, 255, 0.08)); color: var(--ink, #fff); }
+.rb-radio:checked + .rb-tab { background: var(--ink, #fff); color: var(--ink-on, #04121e); }
+.rb-radio:focus-visible + .rb-tab { outline: 2px solid var(--you, #3db8ff); outline-offset: 2px; }
+.rb-p { display: none; flex-basis: 100%; flex-direction: column; gap: 14px; padding-top: 14px; }
+#rb-t-day:checked ~ .rb-p-day, #rb-t-month:checked ~ .rb-p-month, #rb-t-duel:checked ~ .rb-p-duel { display: flex; }
+
+.bc .rb-duel li { grid-template-columns: 40px minmax(0, 1fr) 84px; min-height: 56px; }
+/* the month's points run to thousands: a column wide enough for them, the divider clear and in line */
+.bc .rb .rt-lb-m li { grid-template-columns: 40px minmax(0, 1fr) 116px; } /* (five digits and "pts", one width for every row) */
+.bc .rb .rt-lb-m .rt-p { padding-left: var(--s-3, 12px); white-space: nowrap; }
+.bc .rb-duel .rt-p { color: var(--ink, #fff); }
+.rb-name { padding: 0 var(--s-3, 12px); font: 700 var(--fs-row, 16px)/1 var(--cond, sans-serif); letter-spacing: var(--ls-name, 0.02em);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.rb-none, .rb-note, .rb-how p, .rb-foot { margin: 0; font: 500 var(--fs-body, 15px)/1.5 var(--sans, sans-serif); color: var(--ink-2, rgba(255, 255, 255, 0.78)); }
+.rb-note, .rb-foot { font-size: var(--fs-small, 13px); color: var(--ink-3, rgba(255, 255, 255, 0.62)); }
+.rb-how { display: flex; flex-direction: column; gap: 8px; padding-top: 14px; border-top: 1px solid var(--rule, rgba(255, 255, 255, 0.14)); }
+.rb-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.rb-link { font: 700 14px/1.2 var(--cond, sans-serif); letter-spacing: 0.06em; text-transform: uppercase; color: var(--you, #3db8ff); text-decoration: none; }
+.rb-link:hover { text-decoration: underline; }

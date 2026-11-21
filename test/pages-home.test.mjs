@@ -102,7 +102,7 @@ for (const lang of LANGS) {
     assert.ok(h.includes(t('No name', 'Без имени')), 'someone with no name');
     assert.ok(h.includes('<small>+12.5</small>'), 'the gap to the first');
     assert.ok(h.includes(t('12 races', 'заездов: 12')));
-    assert.ok(h.includes('href="/race/rating"'));
+    assert.ok(h.includes('href="/race#board"'));
   });
 
   test(`home (${lang}) answers its short list of questions`, async () => {

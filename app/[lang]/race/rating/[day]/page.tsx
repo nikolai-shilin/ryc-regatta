@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
 export default async function DayRating({ params }: P) {
   const [{ day }, { lang, t }] = await Promise.all([params, getT(params)]);
   if (!validDay(day)) notFound();
-  if (day === todayUtc()) redirect(lang === 'en' ? '/race/rating' : `/race/rating?lang=${lang}`);
+  if (day === todayUtc()) redirect(lang === 'en' ? '/race#board' : `/race?lang=${lang}#board`); // (today's is the race hub's leaderboard)
   const data = await getRating(day);
   return (
     <div className="scr help hp bc rt-scr" lang={lang}>

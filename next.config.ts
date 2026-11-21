@@ -25,6 +25,7 @@ const config: NextConfig = {
       { source: '/passport', destination: '/players?me=1', permanent: true },
       { source: '/race/badges', destination: '/race', permanent: true },
       { source: '/learn/rulebook', destination: '/rulebook', permanent: true }, // the rule book's first address
+      { source: '/race/rating', destination: '/race#board', permanent: true }, // today's leaderboard is the race hub's sheet (components/race-board.tsx); the days before keep /race/rating/YYYY-MM-DD
     ];
   },
   async rewrites() {

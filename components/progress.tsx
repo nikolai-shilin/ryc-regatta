@@ -104,7 +104,7 @@ export function RivalRow({ lang }: { lang: Lang }) {
   const t = tx(lang), r = useRival();
   if (!r) return null;
   return (
-    <Link className="bt-row pg-rival" href="/race/rating">
+    <Link className="bt-row pg-rival" href="/race#board">
       <span className="pg-ico" aria-hidden="true">⚔</span>
       {r.rival
         ? <><span>{t('Your rival', 'Твой соперник', 'Tu rival', 'Dein Rivale', 'Rakibin', 'Ton rival', 'Il tuo rivale', 'Seu rival')}</span><span className="bt-row-m pg-rival-m"><Who fl={r.rival.fl} name={r.rival.name || t('No name', 'Без имени', 'Sin nombre', 'Kein Name', 'Adsız', 'Sans nom', 'Senza nome', 'Sem nome')} lang={lang} /> · {t(`${r.rival.pts - r.mine} ${r.rival.pts - r.mine === 1 ? 'pt' : 'pts'} ahead`, `впереди на ${pts(r.rival.pts - r.mine, lang)}`, `${r.rival.pts - r.mine} ${r.rival.pts - r.mine === 1 ? 'pto' : 'ptos'} por delante`, `${r.rival.pts - r.mine} Pkt voraus`, `${r.rival.pts - r.mine} puan önde`, `${r.rival.pts - r.mine} ${r.rival.pts - r.mine === 1 ? 'pt' : 'pts'} devant`, `${r.rival.pts - r.mine} ${r.rival.pts - r.mine === 1 ? 'punto' : 'punti'} davanti`, `${r.rival.pts - r.mine} ${r.rival.pts - r.mine === 1 ? 'pt' : 'pts'} à frente`)}</span></>

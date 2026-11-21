@@ -119,7 +119,7 @@ export default async function Home({ params }: LangParams) {
         {!top.length && <li><span className="hm-n">·</span><span className="hm-muted">{t('No times yet today', 'Сегодня ещё нет результатов', 'Aún no hay tiempos hoy', 'Heute noch keine Zeiten', 'Bugün henüz süre yok', 'Pas encore de temps aujourd’hui', 'Ancora nessun tempo oggi', 'Ainda não há tempos hoje')}</span><span /></li>}
         <MyRow lang={lang} day={d.day} top={top} cap={live?.n} />
       </ol>
-      <Link className="lb-more" href="/race/rating" data-cta="rank-more">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц', 'Clasificación completa y puntos del mes', 'Gesamtrangliste und Punkte des Monats', 'Tam sıralama ve ayın puanları', 'Classement complet et points du mois', 'Classifica completa e punti del mese', 'Classificação completa e os pontos do mês')}</Link>
+      <Link className="lb-more" href="/race#board" data-cta="rank-more">{t('Full rating and the month’s points', 'Весь рейтинг и очки за месяц', 'Clasificación completa y puntos del mes', 'Gesamtrangliste und Punkte des Monats', 'Tam sıralama ve ayın puanları', 'Classement complet et points du mois', 'Classifica completa e punti del mese', 'Classificação completa e os pontos do mês')}</Link>
     </>
   );
 

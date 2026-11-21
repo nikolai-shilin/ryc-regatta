@@ -57,7 +57,7 @@ test('today has no day after it, and its address is the plain one', () => {
   const html = rating();
   assert.match(html, /<span class="rt-step off" aria-hidden="true">›<\/span>/);
   assert.ok(hrefs(html).includes('/race/rating/2026-11-17'));
-  assert.ok(hrefs(html).includes('/race/rating'));
+  assert.ok(hrefs(html).includes('/race#board'), 'today: the race hub\'s leaderboard');
   assert.ok(!hrefs(html).includes(`/race/rating/${TODAY}`));
 });
 
@@ -65,7 +65,7 @@ test('the days along the top run from the newest back to the first of the month'
   const html = rating();
   const days = [...html.matchAll(/class="rt-day[^"]*"[^>]*><b>(\d+)<\/b>/g)].map((m) => +m[1]);
   assert.deepEqual(days, Array.from({ length: 18 }, (_, i) => 18 - i));
-  assert.match(html, /href="\/race\/rating" class="rt-day on has" aria-current="page"/);
+  assert.match(html, /href="\/race#board" class="rt-day on has" aria-current="page"/);
   assert.match(html, /href="\/race\/rating\/2026-11-16" class="rt-day  has"/);
   assert.match(html, /href="\/race\/rating\/2026-11-15" class="rt-day  "/);
 });
@@ -94,7 +94,7 @@ test('a name is shown as written, never as markup', () => {
 test('races sailed signed out are counted and the way to rank is offered', () => {
   const html = rating();
   assert.match(plain(html), /3 races were sailed signed out and don’t rank\./);
-  assert.ok(hrefs(html).includes('/sign-in?next=%2Frace%2Frating'));
+  assert.ok(hrefs(html).includes('/sign-in?next=%2Frace%23board'));
   assert.match(plain(rating({ data: { ...RATING, guests: 1 } })), /1 race was sailed signed out and doesn’t rank\./);
   assert.doesNotMatch(plain(rating({ data: { ...RATING, guests: 0 } })), /signed out/);
 });
@@ -335,7 +335,7 @@ const m = (name, pts, fl = null) => ({ k: name, name, fl, pts });
 test('your rival is the next above you, and by how much', async () => {
   rivalPage([m('Far', 50), m('Near', 5, 'au'), m('Below', 1)]); // 2nd of 3: 2 points
   const v = await mount(h(RivalRow, { lang: 'en' }));
-  assert.equal(v.$('a').getAttribute('href'), '/race/rating');
+  assert.equal(v.$('a').getAttribute('href'), '/race#board');
   assert.match(v.text(), /Your rival Near · 3 pts ahead/);
   assert.equal(v.$('.lb-who img').getAttribute('src'), '/flags/au.svg');
 });
