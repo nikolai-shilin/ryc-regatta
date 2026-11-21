@@ -1495,21 +1495,25 @@ export function kiteGuard(view) {
 }
 
 // ---------- labels ----------
+// a tag over a boat: her name, or a word's (word-scenes.js TAGS, "Внутренняя · место у знака" the longest), on a 640 px
+// canvas so the longest fits at full size; anything longer still is set smaller rather than cut off at the edges
 export function labelSprite(color) {
-  const c = document.createElement('canvas'); c.width = 320; c.height = 64;
+  const W = 640, c = document.createElement('canvas'); c.width = W; c.height = 64;
   const tex = new THREE.CanvasTexture(c);
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, sizeAttenuation: false, toneMapped: false }));
-  s.scale.set(0.2, 0.04, 1); s.renderOrder = 10;
+  s.scale.set(0.4, 0.04, 1); s.renderOrder = 10;
   s.userData.set = (text, warn) => {
     if (s.userData.text === text + warn) return;
     s.userData.text = text + warn;
     const x = c.getContext('2d');
-    x.clearRect(0, 0, 320, 64);
+    x.clearRect(0, 0, W, 64);
     x.font = '700 30px Carlito, Lato, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-    const w = x.measureText(text).width + 34;
-    x.fillStyle = warn ? 'rgba(190,30,20,0.8)' : 'rgba(0,0,0,0.45)'; x.beginPath(); x.roundRect((320 - w) / 2, 12, w, 40, 20); x.fill();
-    x.fillStyle = '#' + new THREE.Color(color).getHexString(); x.beginPath(); x.arc((320 - w) / 2 + 18, 32, 7, 0, 7); x.fill();
-    x.fillStyle = '#fff'; x.fillText(text, 160 + 8, 33);
+    const tw = x.measureText(text).width, px = Math.max(16, Math.min(30, Math.floor(30 * (W - 44) / Math.max(1, tw))));
+    if (px < 30) x.font = `700 ${px}px Carlito, Lato, system-ui, sans-serif`;
+    const w = Math.min(W - 4, tw * px / 30 + 34);
+    x.fillStyle = warn ? 'rgba(190,30,20,0.8)' : 'rgba(0,0,0,0.45)'; x.beginPath(); x.roundRect((W - w) / 2, 12, w, 40, 20); x.fill();
+    x.fillStyle = '#' + new THREE.Color(color).getHexString(); x.beginPath(); x.arc((W - w) / 2 + 18, 32, 7, 0, 7); x.fill();
+    x.fillStyle = '#fff'; x.fillText(text, W / 2 + 8, 33);
     tex.needsUpdate = true;
   };
   return s;

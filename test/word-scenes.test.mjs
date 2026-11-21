@@ -202,3 +202,15 @@ test('on a triangle the wing mark is rounded to port, and she goes on down towar
   stage.close(); stage = null;
   world.setRace(race);
 });
+
+test('every tag, in every language, fits its label whole: none is cut off at the edges', async () => {
+  const { labelSprite } = await import('../public/game/yacht.js');
+  for (const [k, names] of Object.entries(TAGS)) for (const name of names) {
+    const s = labelSprite('#ffffff'), x = s.material.map.image.getContext('2d'), W = s.material.map.image.width;
+    s.userData.set(name, false);
+    const t = x.texts.at(-1), half = x.measureText(name).width / 2;
+    assert.equal(t.text, name);
+    assert.ok(t.x - half >= 0 && t.x + half <= W, `${k} "${name}" runs off its ${W} px label`);
+    assert.match(t.font, /\b30px\b/, `${k} "${name}" is set at full size`);
+  }
+});
