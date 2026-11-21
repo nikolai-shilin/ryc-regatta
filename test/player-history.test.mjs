@@ -80,6 +80,6 @@ test('the card\'s achievements and its history ask for them once together', asyn
 
 test('on the overview, after today\'s race', () => {
   const src = readFileSync(new URL('../components/players-view.tsx', import.meta.url), 'utf8');
-  assert.match(src, /<PlayerHistory lang=\{lang\} k=\{player\.k\} mine=\{mine\} log=\{log\} venues=\{player\.venues\} \/>/);
+  assert.match(src, /<PlayerHistory lang=\{lang\} k=\{player\.k\} mine=\{mine\} log=\{log\} venues=\{player\.venues\} theirs=\{player\.achievements \?\? \[\]\} \/>/);
   assert.ok(src.indexOf('<PlayerHistory') > src.indexOf("t('Today’s race', 'Гонка дня'") && src.indexOf('<PlayerHistory') < src.indexOf('<IconKite'));
 });

@@ -20,7 +20,7 @@ import { passportShare, useLog } from './passport';
 import { PassportBlock, type PassportFacts } from './passport-card';
 import { ShareButton } from './share-sheet';
 import { MyDuelRating } from './my-duel-rating';
-import { MyAchievements } from './achievements';
+import { MyAchievements, AchievementsView } from './achievements';
 import { TabBar, DuelTab, DailyTab, VenueCounts, type Tab } from './player-tabs';
 import { PlayerHistory } from './player-history';
 import '@/styles/players.css';
@@ -190,7 +190,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
           </div>
 
           {mine && <MyDuelRating lang={lang} />}{/* your 1-on-1 rating: your own card alone */}
-          {mine && <MyAchievements lang={lang} />}{/* your achievements, the same on every device: your own card alone */}
+          {mine ? <MyAchievements lang={lang} /> : player.achievements?.length ? <AchievementsView a={{ got: player.achievements, progress: {} }} lang={lang} had /> : null}{/* achievements, the same on every device: yours with how far along, another's they have */}
 
           <div className="bt-g">
             <span className="bt-k"><IconTrophy s={14} />{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı', 'La régate du jour', 'La regata del giorno', 'A regata do dia')}</span>
@@ -204,7 +204,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
             ) : <p className="bt-hint">{t('Not sailed yet: every day a new race, the same for everyone.', 'Ещё не ходил: каждый день новая гонка, одна для всех.', 'Aún sin navegar: cada día una regata nueva, la misma para todos.', 'Noch nicht gesegelt: jeden Tag eine neue Regatta, für alle dieselbe.', 'Henüz yarışılmadı: her gün yeni bir yarış, herkes için aynı.', 'Pas encore navigué : chaque jour une nouvelle régate, la même pour tous.', 'Non ancora regatato: ogni giorno una nuova regata, la stessa per tutti.', 'Ainda não correu: todo dia uma regata nova, a mesma para todos.')}</p>}
           </div>
 
-          <PlayerHistory lang={lang} k={player.k} mine={mine} log={log} venues={player.venues} />{/* best of, and the last three months (components/player-history.tsx) */}
+          <PlayerHistory lang={lang} k={player.k} mine={mine} log={log} venues={player.venues} theirs={player.achievements ?? []} />{/* best of, and the last three months (components/player-history.tsx) */}
 
           <div className="bt-g">
             <span className="bt-k"><IconKite s={14} />{t('Their boat', 'Их яхта', 'Su barco', 'Ihr Boot', 'Teknesi', 'Son bateau', 'La sua barca', 'O barco dele')}</span>
