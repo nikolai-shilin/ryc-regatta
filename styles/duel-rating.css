@@ -62,3 +62,21 @@
 .df-sel select { min-width: 150px; max-width: 100%; padding: 8px 10px; font: 600 15px/1.2 var(--sans, 'Sofia Sans', sans-serif); letter-spacing: 0; text-transform: none;
   color: var(--ink, #fff); background: rgba(255,255,255,.06); border: 1px solid var(--rule, rgba(255,255,255,.22)); border-radius: 0; }
 .df-sel select option { color: #04121e; background: #fff; }
+
+/* The 1-on-1 block on a returning sailor's home (components/duel-home.tsx): the pitch, the buttons and your rating strip,
+   beside Ready now's three nearest; one column on a phone */
+.bc .ho-sec.dh { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--s-6, 24px); align-items: start; }
+.dh-main { display: flex; flex-direction: column; gap: var(--s-5, 20px); min-width: 0; }
+.dh-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); min-width: 0; gap: 1px; margin: 0; background: var(--rule, rgba(255,255,255,.14)); }
+.dh-strip > div { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; background: var(--panel, rgba(5,10,18,.88)); }
+.dh-strip .dh-wide { grid-column: span 2; }
+.dh-strip dt { font: 700 11px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3, rgba(255,255,255,.62)); }
+.dh-strip dd { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 0; }
+.dh-strip dd b { font: 800 28px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); font-variant-numeric: tabular-nums; color: var(--ink, #fff); }
+.dh-strip dd b.up, .dh-st .up { color: var(--up, #2ee6a0); } .dh-strip dd b.down, .dh-st .down { color: var(--down, #ff8a3d); }
+.dh-s { font: 500 var(--fs-small, 13px)/1.35 var(--sans, 'Sofia Sans', sans-serif); color: var(--ink-2, rgba(255,255,255,.78)); }
+.dh-now { display: flex; flex-direction: column; min-width: 0; }
+.dh-now .df-list, .dh-now > .iv-note { padding: 0 var(--cp, 20px); }
+.dh-now > .iv-note { padding-block: 12px; }
+.dh-st { font-variant-numeric: tabular-nums; }
+@media (max-width: 860px) { .bc .ho-sec.dh { grid-template-columns: minmax(0, 1fr); } .dh-strip .dh-wide { grid-column: auto; } }

@@ -20,6 +20,7 @@ import { faqGroups, HOME } from '@/lib/faq';
 import { CHANNELS } from '@/lib/social';
 import { DRILLS } from '@/lib/drills';
 import { BackStrip, PushButton, CtaTrack, Fold, MatchLink } from '@/components/home-back';
+import { DuelHome } from '@/components/duel-home';
 import '@/styles/home-back.css';
 
 // Built per language and rebuilt in the background at most every five minutes, for today's fastest (lib/today.ts
@@ -178,6 +179,8 @@ export default async function Home({ params }: LangParams) {
       </section>
 
       <main className="ho-main">
+        {/* 1-on-1, for a returning sailor who is signed in: ready now, your rating, Find a race (components/duel-home.tsx) */}
+        <DuelHome lang={lang} />
         {/* 2 · three targets: something to aim for at every level */}
         <section className="ho-sec" aria-labelledby="h-goals">
           <div className="ho-sec-h">

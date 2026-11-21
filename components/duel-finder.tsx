@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { pick, tx, type Lang } from '@/lib/lang';
 import { levelName } from '@/lib/levels';
 import { provisional, shown, stakes, signed as sgn } from '@/lib/elo';
-import { parseReady, parseSeek, raceHref, type Pair, type Ready, type Seek } from '@/lib/duel-seek';
+import { isHandle, parseReady, parseSeek, raceHref, type Pair, type Ready, type Seek } from '@/lib/duel-seek';
 import { VENUES } from '@/lib/venues';
 import { YACHTS } from '@/lib/yachts';
 import { track } from '@/lib/track';
@@ -19,6 +19,7 @@ import '@/styles/duel-rating.css';
 // while looking, every second once found. Nobody after 1:30: keep looking, or send a friend a link instead.
 // Ready now: who else is looking at this moment, nearest your rating first (read every 10 s), each with Race, which
 // challenges that sailor directly whatever the gap in rating (regatta_seek_challenge): both get Match found as above.
+// Opened from the home's Race (/duel?challenge=<handle>, components/duel-home.tsx), it challenges that sailor at once.
 // The wishes, a venue and a yacht, kept on this device, are the race's from a sailor's fourth rated race (the host's first).
 type Phase = 'idle' | 'looking' | 'found' | 'go' | 'missed' | 'error';
 type Note = '' | 'noanswer' | 'declined' | 'gone';
@@ -114,7 +115,13 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
   }, []);
   const decline = () => { const p = pairRef.current; stopTimer(); on.current = false; pairRef.current = null; setPair(null); setPhase('idle'); if (p) post({ do: 'decline', pair: p.id }); };
 
-  useEffect(() => { const w = readWishes(); wishesRef.current = w; setWishes(w); }, []);
+  useEffect(() => {
+    const w = readWishes(); wishesRef.current = w; setWishes(w);
+    // Race on the home: the challenge it names, once (the address loses it, so a reload doesn't ask again)
+    const h = new URLSearchParams(location.search).get('challenge');
+    if (h !== null) history.replaceState(history.state, '', location.pathname);
+    if (signed && isHandle(h)) challenge(h);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Ready now, read every 10 s while the list is on screen (not once a match is found), and not in a hidden tab
   const listed = signed && phase !== 'found' && phase !== 'go';
   useEffect(() => {
