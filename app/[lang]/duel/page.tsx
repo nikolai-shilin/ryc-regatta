@@ -4,6 +4,7 @@ import { BackLink } from '@/components/back-link';
 import { SceneBrand } from '@/components/scene-brand';
 import { DuelFinder } from '@/components/duel-finder';
 import { MyDuelRating } from '@/components/my-duel-rating';
+import { ForYou } from '@/components/for-you';
 
 // Find a race: a 1-on-1 with a sailor of about your rating, found for you (components/duel-finder.tsx, POST /connect/seek).
 // Finding one takes an account (a rated race needs one on both sides); a visitor is asked to sign in and comes back here.
@@ -27,6 +28,7 @@ export default async function DuelPage({ params }: LangParams) {
           <a className="df-help" href="/help/duel">{t('How 1-on-1 races work', 'Как устроены гонки 1 на 1', 'Cómo funcionan las regatas 1 contra 1', 'So funktionieren 1-gegen-1-Regatten', 'Bire bir yarışlar nasıl işler', 'Comment marchent les duels', 'Come funzionano le regate 1 contro 1', 'Como funcionam os duelos')} ›</a>
           <DuelFinder lang={lang} signed={!!account} />
           {account && <MyDuelRating lang={lang} here />}{/* your rating, level, record and last rated races */}
+          <ForYou lang={lang} />{/* up to three things to do next (components/for-you.tsx) */}
         </div>
       </div>
     </div>

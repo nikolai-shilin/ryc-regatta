@@ -1,0 +1,21 @@
+/* For you (components/for-you.tsx): up to three cards, best first, each with why in a line, its one button, "Fewer like
+   this" and ×; a live one (someone looking now, the duel hour on) marked. */
+.fy { display: flex; flex-direction: column; gap: 12px; }
+.fy-h { margin: 0; font: 700 var(--fs-h3, 22px)/1 var(--cond, 'Sofia Sans Condensed', sans-serif); text-transform: uppercase; letter-spacing: 0.02em; color: var(--ink, #fff); }
+.fy-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 2px; }
+.fy-c { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 16px 44px 16px 16px; background: var(--panel, rgba(5, 10, 18, 0.88)); box-shadow: inset 0 3px 0 var(--you, #3db8ff); }
+.fy-c.fy-today, .fy-c.fy-today_better, .fy-c.fy-first_race { box-shadow: inset 0 3px 0 var(--up, #2ee6a0); }
+.fy-c.fy-goal, .fy-c.fy-level { box-shadow: inset 0 3px 0 var(--gold, #f5c400); }
+.fy-c.fy-hour { box-shadow: inset 0 3px 0 var(--down, #ff8a3d); }
+.fy-live { display: inline-flex; align-items: center; gap: 6px; font: 700 11px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: 0.14em; text-transform: uppercase; color: var(--up, #2ee6a0); }
+.fy-t { font: 800 19px/1.15 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink, #fff); text-wrap: balance; }
+.fy-why { margin: 0; font: 500 14px/1.45 var(--sans, 'Sofia Sans', sans-serif); color: var(--ink-2, rgba(255, 255, 255, 0.78)); }
+.fy-why span { font-weight: 700; color: var(--ink-3, rgba(255, 255, 255, 0.62)); }
+.fy-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: auto; padding-top: 4px; }
+.fy-go { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; font: 700 13px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: 0.1em;
+  text-transform: uppercase; text-decoration: none; color: var(--ink-on, #04121e); background: var(--ink, #fff); }
+.fy-go:hover { background: var(--you, #3db8ff); }
+.fy-less { padding: 0; border: 0; background: none; cursor: pointer; font: 600 12px/1.2 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3, rgba(255, 255, 255, 0.62)); }
+.fy-less:hover { color: var(--ink, #fff); text-decoration: underline; }
+.fy-x { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border: 0; cursor: pointer; font: 400 22px/1 var(--sans, 'Sofia Sans', sans-serif); color: var(--ink-3, rgba(255, 255, 255, 0.62)); background: transparent; }
+.fy-x:hover { color: var(--ink, #fff); background: rgba(255, 255, 255, 0.08); }
