@@ -8,15 +8,24 @@ import { IconPlay } from '@/components/ui';
 import { venueOf } from '@/lib/venues';
 import { yachtOf } from '@/lib/yachts';
 import { InviteJoin } from '@/components/invite-info';
+import { duelFrom } from '@/lib/duel-share';
 
 // The page a 1-on-1 race's link opens: /match/K7M2QZ?v=cowes&b=jpk1050. A tap on Join (the tap lets the game start its sound)
 // opens the game at the race, in the host's venue and on the boat he picked. Never indexed.
 
 // the share card names the race's code, venue and boat, and lays the course she'll sail (app/og/page/[key], match)
-export async function generateMetadata({ params, searchParams }: LangParams & { params: Promise<{ lang: string; code: string }>; searchParams: Promise<{ v?: string | string[]; b?: string | string[] }> }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: LangParams & { params: Promise<{ lang: string; code: string }>; searchParams: Promise<{ v?: string | string[]; b?: string | string[]; w?: string | string[]; l?: string | string[]; m?: string | string[] }> }): Promise<Metadata> {
   const [{ lang, t }, { code: raw }, sp] = await Promise.all([getT(params), params, searchParams]);
   const one = (x?: string | string[]) => { const s = Array.isArray(x) ? x[0] : x; return s && /^[a-z0-9_-]{1,32}$/i.test(s) ? s : ''; };
   const code = parseCode(raw), v = one(sp.v), b = one(sp.b);
+  // a result shared from a 1-on-1 (lib/duel-share.ts): its card says who won, by how much, and calls to race the winner
+  const duel = duelFrom((k) => { const x = sp[k as 'w' | 'l' | 'm']; return Array.isArray(x) ? x[0] : x; });
+  if (duel) {
+    const by = duel.m != null ? ` ${t(`by ${duel.m.toFixed(1)} s`, `на ${duel.m.toFixed(1)} с`, `por ${duel.m.toFixed(1)} s`, `um ${duel.m.toFixed(1)} s`, `${duel.m.toFixed(1)} sn farkla`, `de ${duel.m.toFixed(1)} s`, `di ${duel.m.toFixed(1)} s`, `por ${duel.m.toFixed(1)} s`)}` : '';
+    const dcard = `/og/page/duel?${new URLSearchParams({ ...(v && { v }), ...(b && { b }), w: duel.w, l: duel.l, ...(duel.m != null && { m: duel.m.toFixed(1) }) })}`;
+    return pageMeta(lang, { title: t(`${duel.w} beat ${duel.l}${by}: race the winner`, `${duel.w} обогнал(а) ${duel.l}${by}: сразись с победителем`, `${duel.w} ganó a ${duel.l}${by}: reta al ganador`, `${duel.w} schlug ${duel.l}${by}: fordere den Sieger`, `${duel.w}, ${duel.l} karşısında${by} kazandı: kazananla yarış`, `${duel.w} a battu ${duel.l}${by} : défie le vainqueur`, `${duel.w} ha battuto ${duel.l}${by}: sfida il vincitore`, `${duel.w} venceu ${duel.l}${by}: desafie o vencedor`),
+      description: t('A 1-on-1 sailing race in your browser: open the link and race.', 'Гонка 1 на 1 под парусом в браузере: открой ссылку и гоняйся.', 'Una regata 1 contra 1 en tu navegador: abre el enlace y regatea.', 'Eine 1-gegen-1-Segelregatta im Browser: Link öffnen und segeln.', 'Tarayıcında bire bir yelken yarışı: bağlantıyı aç ve yarış.', 'Un duel de voile dans ton navigateur : ouvre le lien et régate.', 'Una regata a vela 1 contro 1 nel browser: apri il link e regata.', 'Um duelo de vela no seu navegador: abra o link e corra.'), index: false, card: dcard });
+  }
   const card = `/og/page/match?${new URLSearchParams({ ...(code && { c: code }), ...(v && { v }), ...(b && { b }) })}`;
   return pageMeta(lang, { title: t('Race me: a 1-on-1 race', 'Сыграем: гонка 1 на 1', 'Rétame: una regata 1 contra 1', 'Segle gegen mich: eine 1-gegen-1-Regatta', 'Bana karşı yarış: bire bir yarış', 'Défie-moi : un duel en 1 contre 1', 'Sfidami: un duello 1 contro 1', 'Me desafie: um duelo 1 contra 1'), description: t('You and a friend, one on one: join the race.', 'Вы и друг, один на один: войдите в гонку.', 'Tú y un amigo, uno contra uno: únete a la regata.', 'Du und ein Freund, eins gegen eins: nimm an der Regatta teil.', 'Sen ve bir arkadaşın, bire bir: yarışa katıl.', 'Toi et un ami, en tête-à-tête : rejoins la régate.', 'Tu e un amico, uno contro uno: entra in regata.', 'Você e um amigo, um contra um: entre na regata.'), index: false, card });
 }

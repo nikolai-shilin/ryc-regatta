@@ -28,6 +28,7 @@ import { briefUrl, readBrief, SCORES_API } from '@/lib/day-brief';
 import { useWho } from './me';
 import { DuelRating } from './duel-rating';
 import { DuelKeep } from './duel-keep';
+import { duelShareUrl } from '@/lib/duel-share';
 import { FirstFinish } from './first-finish';
 import { RateRace } from './rate-race';
 import { PauseCard } from './pause-card';
@@ -231,6 +232,20 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
     mark2: t('Mark 2', 'Знак 2', 'Baliza 2', 'Marke 2', 'Şamandıra 2', 'Bouée 2', 'Boa 2', 'Boia 2'), offset: t('Offset mark', 'Отбойник', 'Baliza de desmarque', 'Ablauftonne', 'Ofset şamandırası', 'Dégagement', 'Boa di disimpegno', 'Boia de offset'), gate: t('Leeward gate', 'Нижние ворота', 'Puerta de sotavento', 'Leetor', 'Rüzgâraltı kapısı', 'Porte sous le vent', 'Cancello di poppa', 'Portão de sotavento'), finish: t('Finish', 'Финиш', 'Llegada', 'Ziel', 'Bitiş', 'Arrivée', 'Arrivo', 'Chegada') }[k] || k);
 
   const where = sailedAt(raceVenue(res, shared ? 'gocek' : readOpts().venue)); // (a first race's, its own venue: lib/venues.ts FIRST_VENUE)
+  // a 1-on-1 race of this device's own: the other boat, the winner's margin, the result shared as the race's own link
+  // (lib/duel-share.ts: its card says who won, and whoever opens it races the sharer next), and a rematch on that link
+  const other = one ? res.boats.find((b) => !b.me) ?? null : null;
+  const duelLink = (() => {
+    if (!one || shared || !other || typeof res.duel?.code !== 'string' || !winner) return null;
+    const loser = winner === me ? other : me, m = winner.secs != null && loser.secs != null ? Math.abs(loser.secs - winner.secs) : null;
+    return duelShareUrl(location.origin, res.duel.code, { venue: where.id, yacht: res.yacht ?? null, winner: winner.name || '', loser: loser.name || '', margin: m });
+  })();
+  const duelShare = () => ({ title: 'Up and down', url: duelLink || '',
+    text: winner === me
+      ? t(`I beat ${rival} in a 1-on-1. Race me next:`, `Я обогнал(а) ${rival} в гонке 1 на 1. Сразись со мной:`, `Le gané a ${rival} en un 1 contra 1. Rétame:`, `Ich habe ${rival} im 1 gegen 1 geschlagen. Fordere mich heraus:`, `Bire birde ${rival} karşısında kazandım. Sıradaki sen ol:`, `J’ai battu ${rival} en duel. Défie-moi :`, `Ho battuto ${rival} in un 1 contro 1. Sfidami:`, `Venci ${rival} num 1 contra 1. Me desafie:`)
+      : t(`A 1-on-1 against ${rival}. Race the winner:`, `Гонка 1 на 1 с ${rival}. Сразись с победителем:`, `Un 1 contra 1 contra ${rival}. Reta al ganador:`, `Ein 1 gegen 1 gegen ${rival}. Fordere den Sieger heraus:`, `${rival} ile bire bir. Kazananla yarış:`, `Un duel contre ${rival}. Défie le vainqueur :`, `Un 1 contro 1 contro ${rival}. Sfida il vincitore:`, `Um 1 contra 1 contra ${rival}. Desafie o vencedor:`) });
+  const rematchHref = one && !shared && typeof res.duel?.code === 'string' ? `/play?match=${encodeURIComponent(res.duel.code)}&venue=${encodeURIComponent(where.id)}${res.yacht ? `&boat=${encodeURIComponent(res.yacht)}` : ''}` : null;
+
   const scene = finishScene(res);
   const nb = neighbours(res);
   const gapS = (g: number) => `${g.toFixed(1).replace('.', lang === 'en' ? '.' : ',')} ${t('s', 'с', 's', 's', 'sn', 's', 's', 's')}`;
@@ -344,6 +359,8 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
           <div className="rs-acts">
             <a className="bt-go" href={cta.href} onClick={() => track(shared ? 'Challenge taken' : 'Race again', { race: one ? 'one-on-one' : res.daily ? 'daily' : 'free', ...(target?.go && { target: 1 }) })}>{shared ? <IconPlay /> : <IconRestart />}<span>{ctaLabel}</span></a>
             {!shared && !one && <ShareButton lang={lang} data={shareData} className="bt-show rs-ghost" title={t('Share your result', 'Поделиться результатом', 'Comparte tu resultado', 'Teile dein Ergebnis', 'Sonucunu paylaş', 'Partage ton résultat', 'Condividi il tuo risultato', 'Compartilhar seu resultado')} />}
+            {rematchHref && <a className="bt-show rs-ghost" href={rematchHref} onClick={() => track('Rematch', { from: 'result' })}>{t(`Rematch ${rival}`, `Реванш с ${rival}`, `Revancha con ${rival}`, `Revanche gegen ${rival}`, `${rival} ile rövanş`, `Revanche contre ${rival}`, `Rivincita con ${rival}`, `Revanche contra ${rival}`)}</a>}
+            {duelLink && <ShareButton lang={lang} data={duelShare} className="bt-show rs-ghost" title={t('Share your result', 'Поделиться результатом', 'Comparte tu resultado', 'Teile dein Ergebnis', 'Sonucunu paylaş', 'Partage ton résultat', 'Condividi il tuo risultato', 'Compartilhar seu resultado')} />}
             <Link className="bt-show rs-ghost" href="/race">{t('Race hub', 'Меню гонок', 'Centro de regatas', 'Regattazentrale', 'Yarış merkezi', 'Centre de régate', 'Centro regate', 'Central de regatas')}</Link>
             {res.boats.some((b) => b.track?.length > 1) ? <Replay res={res} myLegs={me.legT} lang={lang} /> : null}
           </div>
@@ -414,6 +431,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
             <div className="rs-card rs-pad">
               <CourseMap className="cmap rs-track" lang={lang} geo={res.course} preset={res.preset} W={320} H={320} tracks={tracks} fouls={fouls} />
               <div className="rs-key"><span className="is-you">— {shared ? t('this boat', 'эта лодка', 'este barco', 'dieses Boot', 'bu tekne', 'ce bateau', 'questa barca', 'este barco') : t('you', 'ты', 'tú', 'du', 'sen', 'toi', 'tu', 'você')}</span><span>— {t('fleet', 'соперники', 'flota', 'Feld', 'filo', 'flotte', 'flotta', 'flotilha')}</span>
+                {one && other && <span style={{ color: other.color || undefined }}>— {other.name || rival}</span>}
                 <span>{t('Course', 'Дистанция', 'Recorrido', 'Bahn', 'Parkur', 'Parcours', 'Percorso', 'Percurso')} {fmtDistance(courseDistance(res.course, res.laps), lang)}</span>{L.fouls.length ? <span>{t('red rings mark the fouls', 'красные кольца — нарушения', 'los aros rojos marcan las infracciones', 'rote Ringe markieren die Fouls', 'kırmızı halkalar faulleri gösterir', 'les cercles rouges marquent les fautes', 'gli anelli rossi segnano le infrazioni', 'os círculos vermelhos marcam as infrações')}</span> : null}</div>
             </div>
             {!!legs.length && (
@@ -424,7 +442,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
                     <span className="rs-leg-n">{legName(x.k)}</span>
                     <span className="rs-leg-d">{legM[x.i] ? `${Math.round(legM[x.i])} ${t('m', 'м', 'm', 'm', 'm', 'm', 'm', 'm')}` : ''}</span>
                     <span className="rs-leg-t">{clock(Math.max(0, x.tm))}</span>
-                    <span className="rs-leg-p">{x.pl ? t(`${ordEn(x.pl)} of ${res.boats.length}`, `${x.pl}-й из ${res.boats.length}`, `${ordEs(x.pl)} de ${res.boats.length}`, `${ordDe(x.pl)} von ${res.boats.length}`, `${res.boats.length} içinde ${ordTr(x.pl)}`, `${x.pl}${x.pl === 1 ? 'er' : 'e'} sur ${res.boats.length}`, `${x.pl}º su ${res.boats.length}`, `${x.pl}º de ${res.boats.length}`) : ''}</span>
+                    {one && other ? <LegGap me={me} other={other} i={x.i} finish={x.k === 'finish'} t={t} lang={lang} /> : <span className="rs-leg-p">{x.pl ? t(`${ordEn(x.pl)} of ${res.boats.length}`, `${x.pl}-й из ${res.boats.length}`, `${ordEs(x.pl)} de ${res.boats.length}`, `${ordDe(x.pl)} von ${res.boats.length}`, `${res.boats.length} içinde ${ordTr(x.pl)}`, `${x.pl}${x.pl === 1 ? 'er' : 'e'} sur ${res.boats.length}`, `${x.pl}º su ${res.boats.length}`, `${x.pl}º de ${res.boats.length}`) : ''}</span>}
                   </li>
                 ))}
               </ol>
@@ -500,4 +518,18 @@ function Ranking({ t, lang, top, field, id, daily, me, signedName, you }: { t: (
       )}
     </div>
   );
+}
+
+// a 1-on-1's mark: how far ahead of the other boat you rounded it (green), or behind her (orange); her time at the mark
+// from her leg times (the finish: her finishing time). A mark she never reached: you were ahead of her there.
+export function LegGap({ me, other, i, finish, t, lang }: { me: Boat; other: Boat; i: number; finish: boolean; t: (en: string, ru: string, es?: string, de?: string, tr?: string, fr?: string, it?: string, pt?: string) => string; lang: Lang }) {
+  const mine = finish ? me.secs : me.legT?.[i], hers = finish ? other.secs : other.legT?.[i], who = other.name || t('the other boat', 'соперника', 'el otro barco', 'das andere Boot', 'diğer tekne', 'l’autre bateau', 'l’altra barca', 'o outro barco');
+  if (mine == null) return <span className="rs-leg-p" />;
+  const s = (g: number) => `${Math.abs(g).toFixed(1).replace('.', lang === 'en' ? '.' : ',')} ${t('s', 'с', 's', 's', 'sn', 's', 's', 's')}`;
+  if (hers == null) return <span className="rs-leg-p" style={{ color: 'var(--up)' }}>{t(`ahead of ${who}`, `впереди ${who}`, `por delante de ${who}`, `vor ${who}`, `${who} önünde`, `devant ${who}`, `davanti a ${who}`, `à frente de ${who}`)}</span>;
+  const g = hers - mine; // (positive: you got there first)
+  if (Math.abs(g) < 0.05) return <span className="rs-leg-p">{t(`level with ${who}`, `вровень с ${who}`, `a la par de ${who}`, `gleichauf mit ${who}`, `${who} ile başa baş`, `à égalité avec ${who}`, `alla pari con ${who}`, `empatado com ${who}`)}</span>;
+  return g > 0
+    ? <span className="rs-leg-p" style={{ color: 'var(--up)' }}>{t(`+${s(g)} on ${who}`, `+${s(g)} у ${who}`, `+${s(g)} sobre ${who}`, `+${s(g)} vor ${who}`, `${who} önünde +${s(g)}`, `+${s(g)} sur ${who}`, `+${s(g)} su ${who}`, `+${s(g)} sobre ${who}`)}</span>
+    : <span className="rs-leg-p" style={{ color: 'var(--down)' }}>{t(`${s(g)} behind ${who}`, `${s(g)} позади ${who}`, `${s(g)} detrás de ${who}`, `${s(g)} hinter ${who}`, `${who} arkasında ${s(g)}`, `${s(g)} derrière ${who}`, `${s(g)} dietro ${who}`, `${s(g)} atrás de ${who}`)}</span>;
 }

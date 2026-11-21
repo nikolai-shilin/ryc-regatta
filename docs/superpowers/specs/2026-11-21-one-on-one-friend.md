@@ -37,11 +37,20 @@ A screen that goes quiet, a phone flipped to Telegram say, stops the start seque
 - **After the gun:** the 30 s forfeit stands as before. Before this change, it also applied before the gun, so a guest
   who flipped apps during the start lost a race that hadn't begun.
 
+## 3c: the 1-on-1 result (built after 3b)
+
+- **Leg by leg** (`components/result-view.tsx` `LegGap`): each mark shows how far ahead of the other boat you rounded
+  it, "+3.2 s on Anna", or behind her, from both boats' leg times, and the finish your margin. The track's key names her
+  too. The replay already drew both boats.
+- **Rematch Anna:** back to the race's own link (`/play?match=<code>`), whose waiting room either sailor can start
+  again from.
+- **Share:** the race's own invite link, with who won, who lost and the margin in its address (`lib/duel-share.ts`).
+  Its card says "Alex P. won · 1.8 s ahead of Anna K." over the venue and the yacht, with "Race the winner"
+  (`/og/page/duel`). The invite page's title says it too. Whoever opens the link can race the sharer next.
+
 ## Left for the next slices of release 3
 
 - **The race screen's own pieces:** the HUD's gun clock on the start line, the order panel cut to two rows, and the
   four set phrases.
 - **The four cards before a first 1-on-1.**
-- **The result page with the other sailor's line in the debrief and replay,** a rematch on a new code, and the share
-  card at `/og/page/duel`.
 - **Head-to-head with one sailor** ("Anna 7–4"), now that a guest's races can be kept.

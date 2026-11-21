@@ -14,6 +14,7 @@ import { getPlayer, getPlayers, KEY_RE } from '@/lib/players';
 import { clock } from '@/lib/clock';
 import { parseCode } from '@/lib/code';
 import { card, C, type Bg } from '@/lib/og';
+import { duelFrom } from '@/lib/duel-share';
 
 // /og/page/<key>?lang=ru — the share card of a page that has no race or passport of its own, in the logo's look
 // (lib/og.tsx) over a picture of the game that suits it: what the page is, and the one thing about it worth a link (a
@@ -125,6 +126,21 @@ const CARDS: Record<string, Build> = {
       ...(code ? { tag: { text: code } } : {}),
       hero: { label: t('You and a friend, one on one', 'Вы и друг, один на один', 'Tú y un amigo, uno contra uno', 'Du und ein Freund, eins gegen eins', 'Sen ve bir arkadaşın, bire bir', 'Toi et un ami, en duel', 'Tu e un amico, uno contro uno', 'Você e um amigo, um contra um'), value: t('Race me', 'Сыграем', 'Rétame', 'Segle gegen mich', 'Bana karşı yarış', 'Défie-moi', 'Sfidami', 'Me desafie'), color: C.gold },
       call: t('Join the race', 'Войти в гонку', 'Unirse a la regata', 'An der Regatta teilnehmen', 'Yarışa katıl', 'Rejoindre la régate', 'Entra in regata', 'Entrar na regata'),
+    };
+  },
+  // a 1-on-1 race's result, shared: who beat whom and by how much, where and in what; the call to race them next
+  // (lib/duel-share.ts: the race's own link carries it)
+  duel: (t, lang, q) => {
+    const d = duelFrom((k) => q.get(k));
+    if (!d) return null;
+    const v = venueOf(q.get('v') || undefined), y = yachtOf(q.get('b'));
+    const by = d.m != null ? `${d.m.toFixed(1).replace('.', lang === 'en' ? '.' : ',')} ${t('s', 'с', 's', 's', 'sn', 's', 's', 's')}` : null;
+    return {
+      bg: 'start', kind: `${t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', 'Duelo 1 contra 1')} · ${t(...v.name)} · ${t(...y.name)}`,
+      hero: { label: by ? t(`${by} ahead of ${d.l}`, `на ${by} впереди ${d.l}`, `${by} por delante de ${d.l}`, `${by} vor ${d.l}`, `${d.l} önünde ${by}`, `${by} devant ${d.l}`, `${by} davanti a ${d.l}`, `${by} à frente de ${d.l}`)
+          : t(`ahead of ${d.l}`, `впереди ${d.l}`, `por delante de ${d.l}`, `vor ${d.l}`, `${d.l} önünde`, `devant ${d.l}`, `davanti a ${d.l}`, `à frente de ${d.l}`),
+        value: t(`${d.w} won`, `${d.w} побеждает`, `${d.w} ganó`, `${d.w} gewinnt`, `${d.w} kazandı`, `${d.w} gagne`, `${d.w} vince`, `${d.w} venceu`), wrap: true },
+      call: t('Race the winner', 'Сразись с победителем', 'Reta al ganador', 'Fordere den Sieger', 'Kazananla yarış', 'Défie le vainqueur', 'Sfida il vincitore', 'Desafie o vencedor'),
     };
   },
   iyt: (t, lang) => ({

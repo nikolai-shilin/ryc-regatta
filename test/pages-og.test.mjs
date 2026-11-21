@@ -255,6 +255,21 @@ test('a match\'s card with a bad code shows none, and an unknown venue the first
   assert.ok(text.includes(`1-on-1 race · ${VENUES[0].name[0]} · ${yachtOf(null).name[0]}`));
 });
 
+test('a 1-on-1 result\'s card says who won, by how much, where and in what, and calls to race the winner', async () => {
+  const { text } = await draw('duel', '?v=gocek&b=j70&w=Alex+P.&l=Anna+K.&m=1.8');
+  assert.ok(text.includes(`1-on-1 race · ${venueOf('gocek').name[0]} · ${yachtOf('j70').name[0]}`), text);
+  assert.ok(text.includes('1.8 s ahead of Anna K.'), text); assert.ok(text.includes('Alex P. won'), text); assert.ok(text.includes('Race the winner'), text);
+  const ru = (await draw('duel', '?v=gocek&b=j70&w=Alex&l=Anna&m=1.8&lang=ru')).text;
+  assert.ok(ru.includes('на 1,8 с впереди Anna') && ru.includes('Alex побеждает'), ru);
+  assert.ok((await draw('duel', '?v=gocek&w=Alex&l=Anna')).text.includes('ahead of Anna'), 'no margin: no number');
+});
+
+test('a 1-on-1 result\'s card without both names, or with markup in them, is not drawn as given', async () => {
+  for (const q of ['?w=Alex', '?l=Anna', '?w=&l=Anna', '?w=%3C%3E&l=Anna']) assert.equal((await page('duel', q)).status, 302, q);
+  const { text } = await draw('duel', '?w=%3Cb%3EAlex%3C%2Fb%3E&l=Anna');
+  assert.ok(!text.includes('<b>'));
+});
+
 test('the exam\'s card has the questions there are, the channels\' card the first channel', async () => {
   assert.ok((await draw('iyt')).text.includes(IYT_TOTAL.toLocaleString('en-GB')));
   assert.ok((await draw('social')).text.includes(CHANNELS[0].handle));
