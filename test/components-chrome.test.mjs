@@ -124,7 +124,7 @@ test('the trail over a guide links each step but the last, which is the page its
 
 test('the footer has every page that stands on its own, RYC’s sites, the language switch and the disclaimer', () => {
   const html = ssr(h(SiteFoot, { lang: 'en', t: en, back: '/faq' }));
-  for (const to of ['/', '/race', '/race/free', '/match/new', '/race/drills', '/race/rating', '/players', '/venues', '/yachts', '/help', '/learn', '/rulebook', '/learn/glossary', '/iyt', '/faq', '/boat', '/players?me=1', '/settings', '/sign-in', '/social', '/sponsorship', 'https://www.rycrentals.com/', 'https://www.rycsailing.com/', '/faq?lang=ru']) assert.ok(hrefs(html).includes(to), to);
+  for (const to of ['/', '/race', '/race/free', '/match/new', '/race/drills', '/race/rating', '/players', '/venues', '/yachts', '/help', '/learn', '/rulebook', '/learn/glossary', '/dictionary', '/iyt', '/faq', '/boat', '/players?me=1', '/settings', '/sign-in', '/social', '/sponsorship', 'https://www.rycrentals.com/', 'https://www.rycsailing.com/', '/faq?lang=ru']) assert.ok(hrefs(html).includes(to), to);
   assert.match(plain(html), /not affiliated with, sponsored by, or endorsed by America’s Cup/);
 });
 

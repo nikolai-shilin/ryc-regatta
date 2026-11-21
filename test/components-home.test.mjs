@@ -41,7 +41,7 @@ test('the menu holds your things, the reading pages and the site’s pages', () 
   const words = plain(html);
   assert.match(html, /hm-acct-s">Settings</, 'under your name, the link says Settings');
   assert.ok(!words.includes('Account and settings'));
-  for (const w of ['Sign in', 'To be ranked and keep your times', 'Your yacht', 'Your player card', 'Audio & graphics', 'How to play', 'Racing guides', 'Racing rules', 'FAQ', 'Today’s race', '1-on-1 race', 'Sign out']) assert.ok(words.includes(w), w);
+  for (const w of ['Sign in', 'To be ranked and keep your times', 'Your yacht', 'Your player card', 'Audio & graphics', 'How to play', 'Racing guides', 'Racing rules', 'Sailing dictionary in 3D', 'FAQ', 'Today’s race', '1-on-1 race', 'Sign out']) assert.ok(words.includes(w), w);
 });
 
 test('the menu in Russian', () => {

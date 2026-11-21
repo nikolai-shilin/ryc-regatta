@@ -69,6 +69,7 @@ export function SiteMenu({ lang }: { lang: Lang }) {
         <Link className="hm-mi" href="/help">{t('How to play', 'Как играть', 'Cómo jugar', 'So spielst du', 'Nasıl oynanır', 'Comment jouer', 'Come si gioca', 'Como jogar')}</Link>
         <Link className="hm-mi" href="/learn">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen', 'Yarış rehberleri', 'Guides de régate', 'Guide alla regata', 'Guias de regata')}</Link>
         <Link className="hm-mi" href="/rulebook">{t('Racing rules', 'Правила гонок', 'Reglas de regatas', 'Wettfahrtregeln', 'Yarış kuralları', 'Règles de course', 'Regole di regata', 'Regras de regata')}</Link>
+        <Link className="hm-mi" href="/dictionary">{t('Sailing dictionary in 3D', 'Словарь яхтсмена в 3D', 'Diccionario de vela en 3D', 'Segelwörterbuch in 3D', '3D yelken sözlüğü', 'Dictionnaire de la voile en 3D', 'Dizionario della vela in 3D', 'Dicionário de vela em 3D')}</Link>
         <Link className="hm-mi" href="/faq">{t('FAQ', 'Вопросы и ответы', 'Preguntas', 'FAQ', 'SSS', 'FAQ', 'Domande frequenti', 'Perguntas')}</Link>
         <form className="if-me" action="/auth/sign-out" method="post"
           onSubmit={(e) => { (e.currentTarget.elements.namedItem('next') as HTMLInputElement).value = location.pathname + location.search; forgetCard(); }}>

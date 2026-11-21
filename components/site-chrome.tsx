@@ -42,7 +42,7 @@ export function Trail({ t, crumbs }: { t: T; crumbs: Crumb[] }) {
 
 // The site's header, as on rycrentals.com: the logo, the site's pages in the middle (from 1100 px wide), and the menu
 // (the burger and your avatar) at the right; your account, your boat and passport, Drills, Players, Venues, Yachts,
-// How to play, Racing guides, Racing rules and FAQ are in the menu alone. On a page in the broadcast look (.bc,
+// How to play, Racing guides, Racing rules, the sailing dictionary and FAQ are in the menu alone. On a page in the broadcast look (.bc,
 // styles/broadcast.css) it is the broadcast's bar: the name with the blue mark, the pages as tabs (from 1280 px wide),
 // Sign in (a guest's) and Play now beside the menu. On every page: the scrolling ones (home, help, the race result) and the
 // app screens, where it sits over the screen and stays short on a phone held sideways.
@@ -111,6 +111,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
             <FootLink href="/learn">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen', 'Yarış rehberleri', 'Guides de régate', 'Guide alla regata', 'Guias de regata')}</FootLink>
             <FootLink href="/rulebook">{t('Racing rules', 'Правила гонок', 'Reglas de regatas', 'Wettfahrtregeln', 'Yarış kuralları', 'Règles de course', 'Regole di regata', 'Regras de regata')}</FootLink>
             <FootLink href="/learn/glossary">{t('Glossary', 'Словарь', 'Glosario', 'Glossar', 'Sözlük', 'Glossaire', 'Glossario', 'Glossário')}</FootLink>
+            <FootLink href="/dictionary">{t('Sailing dictionary in 3D', 'Словарь яхтсмена в 3D', 'Diccionario de vela en 3D', 'Segelwörterbuch in 3D', '3D yelken sözlüğü', 'Dictionnaire de la voile en 3D', 'Dizionario della vela in 3D', 'Dicionário de vela em 3D')}</FootLink>
             <FootLink href="/iyt">{t('Sailing exam practice', 'Тренажёр к яхтенному экзамену', 'Práctica del examen de vela', 'Prüfungsvorbereitung Segeln', 'Yelken sınavı alıştırması', 'Révisions pour les examens de voile', 'Preparazione all’esame di vela', 'Treino para o exame de vela')}</FootLink>
             <FootLink href="/faq">{t('FAQ', 'Вопросы и ответы', 'Preguntas', 'FAQ', 'SSS', 'FAQ', 'Domande frequenti', 'Perguntas')}</FootLink>
           </FootGroup>
