@@ -1,0 +1,65 @@
+/* Your 1-on-1 rating (app/[lang]/duel/rating, components/rating-page.tsx): the chart, the boards' tabs, the levels, the
+   spread, the record by opponent and why each race moved it. The head and the sections are your month's (race-month.css). */
+.bc .rp-stats { max-width: 980px; }
+.bc .rm-stat b.up { color: var(--up, #2ee6a0); } .bc .rm-stat b.gold { color: var(--gold, #f5c400); }
+.bc .rp-dn { color: var(--down, #ff8a3d); font-weight: 700; }
+
+.bc .rp-tabs { display: flex; flex-wrap: wrap; gap: 2px; padding-top: 8px; }
+.bc .rp-tab { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; font: 700 13px/1 var(--cond, sans-serif); letter-spacing: 0.12em;
+  text-transform: uppercase; text-decoration: none; color: var(--ink, #fff); background: var(--fill-1, rgba(255, 255, 255, 0.08)); }
+.bc .rp-tab.on { background: var(--ink, #fff); color: var(--ink-on, #04121e); }
+.bc a.rp-tab:hover { background: var(--panel-2, rgba(255, 255, 255, 0.14)); }
+
+.bc .rp-chart { display: block; width: 100%; height: auto; background: var(--panel, rgba(255, 255, 255, 0.04)); }
+.bc .rp-first { fill: rgba(245, 196, 0, 0.08); }
+.bc .rp-first-t { fill: var(--gold, #f5c400); font: 700 11px var(--cond, sans-serif); letter-spacing: 0.12em; }
+.bc .rp-grid line { stroke: rgba(255, 255, 255, 0.08); }
+.bc .rp-lvl line { stroke: rgba(255, 255, 255, 0.3); stroke-dasharray: 4 4; }
+.bc .rp-grid text, .bc .rp-lvl text { fill: var(--ink-3, rgba(255, 255, 255, 0.62)); font: 600 11px var(--cond, sans-serif); }
+.bc .rp-lvl .rp-lvl-n { fill: rgba(255, 255, 255, 0.5); letter-spacing: 0.12em; }
+.bc .rp-line { fill: none; stroke: var(--ink, #fff); stroke-width: 2; stroke-linejoin: round; }
+.bc .rp-up { fill: var(--up, #2ee6a0); } .bc .rp-down { fill: var(--down, #ff8a3d); }
+.bc .rp-now { fill: var(--you, #3db8ff); stroke: var(--ink, #fff); stroke-width: 2; }
+.bc .rp-note { fill: var(--ink-3, rgba(255, 255, 255, 0.62)); font: 700 11px var(--cond, sans-serif); letter-spacing: 0.1em; }
+.bc .rp-note.up { fill: var(--up, #2ee6a0); }
+.bc .rp-note-p { margin: 0; font: 500 var(--fs-small, 13px)/1.5 var(--sans, sans-serif); color: var(--ink-3, rgba(255, 255, 255, 0.62)); }
+
+.bc .rp-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: var(--s-10, 40px); }
+.bc .rp-levels, .bc .rp-vs, .bc .rp-why { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.bc .rp-levels li { display: grid; grid-template-columns: minmax(0, 9em) 6.5em minmax(0, 1fr) 3.5em; align-items: center; gap: 10px; padding: 9px 12px; background: var(--panel, rgba(255, 255, 255, 0.04)); }
+.bc .rp-levels li.me { background: rgba(61, 184, 255, 0.14); box-shadow: inset 4px 0 0 var(--you, #3db8ff); }
+.bc .rp-levels b { font: 700 15px/1 var(--cond, sans-serif); text-transform: uppercase; letter-spacing: 0.04em; }
+.bc .rp-r, .bc .rp-c { font: 600 13px/1 var(--cond, sans-serif); color: var(--ink-3, rgba(255, 255, 255, 0.62)); font-variant-numeric: tabular-nums; }
+.bc .rp-c { text-align: right; color: var(--ink, #fff); }
+.bc .rp-bar { display: block; height: 6px; background: rgba(255, 255, 255, 0.08); }
+.bc .rp-bar i { display: block; height: 100%; background: rgba(255, 255, 255, 0.45); }
+.bc .rp-levels li.me .rp-bar i { background: var(--you, #3db8ff); }
+
+.bc .rp-hist { list-style: none; margin: 0; padding: 0; display: flex; align-items: flex-end; gap: 2px; height: 170px; }
+.bc .rp-hist li { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+.bc .rp-hist i { display: block; height: calc(var(--h, 0) * (100% - 16px)); min-height: 2px; background: rgba(255, 255, 255, 0.14); }
+.bc .rp-hist li.lo i { background: rgba(255, 255, 255, 0.28); }
+.bc .rp-hist li.me i { background: var(--you, #3db8ff); }
+.bc .rp-hist small { height: 14px; margin-top: 2px; font: 600 10px/14px var(--cond, sans-serif); color: var(--ink-3, rgba(255, 255, 255, 0.62)); white-space: nowrap; overflow: visible; }
+
+.bc .rp-vs li { display: grid; grid-template-columns: minmax(0, 1fr) 4em minmax(0, 12em); grid-template-areas: "k r bar" "d d d"; align-items: center; gap: 8px 14px; padding: 12px 14px; background: var(--panel, rgba(255, 255, 255, 0.04)); }
+.bc .rp-vs .lbl { grid-area: k; } .bc .rp-vs b { grid-area: r; font: 800 22px/1 var(--cond, sans-serif); font-variant-numeric: tabular-nums; }
+.bc .rp-vs .rp-bar { grid-area: bar; } .bc .rp-vs .rp-bar i { background: var(--up, #2ee6a0); }
+.bc .rp-vs small { grid-area: d; font: 500 var(--fs-small, 13px)/1.4 var(--sans, sans-serif); color: var(--ink-2, rgba(255, 255, 255, 0.78)); }
+.bc .rp-vs small:empty { display: none; }
+
+.bc .rp-why li { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; background: var(--panel, rgba(255, 255, 255, 0.04)); }
+.bc .rp-why-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; font: 600 15px/1.3 var(--cond, sans-serif); }
+.bc .rp-d { color: var(--ink-3, rgba(255, 255, 255, 0.62)); }
+.bc .rp-res { font: 700 12px/1 var(--cond, sans-serif); letter-spacing: 0.12em; text-transform: uppercase; }
+.bc .rp-res.up, .bc .rp-ch.up { color: var(--up, #2ee6a0); } .bc .rp-res.dn, .bc .rp-ch.dn { color: var(--down, #ff8a3d); }
+.bc .rp-move { margin-left: auto; display: inline-flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+.bc .rp-ch { font: 800 18px/1 var(--cond, sans-serif); font-variant-numeric: tabular-nums; }
+.bc .rp-after { font: 700 15px/1 var(--cond, sans-serif); color: var(--ink-3, rgba(255, 255, 255, 0.62)); font-variant-numeric: tabular-nums; }
+.bc .rp-why-t { font: 500 var(--fs-body, 15px)/1.5 var(--sans, sans-serif); color: var(--ink-2, rgba(255, 255, 255, 0.78)); }
+@media (max-width: 560px) {
+  .bc .rp-chart text { font-size: 26px; } /* (the chart is drawn 1000 wide: on a phone its words would be 4 px) */
+  .bc .rp-chart .rp-first-t { font-size: 24px; }
+  .bc .rp-levels li { grid-template-columns: minmax(0, 1fr) 6em 3em; } .bc .rp-levels .rp-bar { display: none; }
+  .bc .rp-vs li { grid-template-columns: minmax(0, 1fr) 4em; grid-template-areas: "k r" "bar bar" "d d"; }
+}

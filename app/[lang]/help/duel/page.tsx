@@ -199,6 +199,7 @@ export default async function DuelHelp({ params }: LangParams) {
           <div className="rb-acts rh-acts">
             <a className="rt-go" href="/duel"><IconPlay /><span>{t('Find a race', 'Найти гонку', 'Buscar una regata', 'Regatta finden', 'Yarış bul', 'Trouver une régate', 'Trova una regata', 'Achar uma regata')}</span></a>
             <Link className="rb-link" href="/match/new">{t('Set up a race', 'Настроить гонку', 'Preparar una regata', 'Regatta einrichten', 'Yarış kur', 'Préparer une régate', 'Prepara una regata', 'Preparar uma regata')} ›</Link>
+            <Link className="rb-link" href="/duel/rating">{t('Your rating', 'Твой рейтинг', 'Tu rating', 'Deine Wertung', 'Reytingin', 'Ton classement', 'Il tuo rating', 'Seu rating')} ›</Link>
             <Link className="rb-link" href="/race#board">{t('The 1-on-1 rating', 'Рейтинг 1 на 1', 'El rating 1 contra 1', 'Die 1-gegen-1-Wertung', 'Bire bir reyting', 'Le classement en duel', 'Il rating 1 contro 1', 'O rating 1 contra 1')} ›</Link>
           </div>
         </div>

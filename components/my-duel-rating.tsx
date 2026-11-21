@@ -59,6 +59,7 @@ export function MyDuelRatingView({ mine, lang, here }: { mine: MyRating; lang: L
         <div><dt>{t('Lowest', 'Худший', 'Más bajo', 'Tiefstwert', 'En düşük', 'Plus bas', 'Più basso', 'Mais baixo')}</dt><dd>{mine.lowest}</dd></div>
       </dl>
       <History mine={mine} lang={lang} />
+      <Link className="df-help" href="/duel/rating">{t('Your rating, race by race', 'Твой рейтинг по гонкам', 'Tu rating, regata a regata', 'Deine Wertung, Regatta für Regatta', 'Yarış yarış reytingin', 'Ton classement, régate par régate', 'Il tuo rating, regata per regata', 'Seu rating, regata a regata')} ›</Link>
     </div>
   );
 }

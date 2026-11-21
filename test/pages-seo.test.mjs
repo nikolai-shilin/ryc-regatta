@@ -195,7 +195,7 @@ user = null;
 const indexed = sweep.filter((p) => p.meta.robots?.index !== false);
 
 test('every page was opened, in both languages', () => {
-  assert.equal(new Set(sweep.map((p) => p.route)).size, 43); // (43: /help/duel, 1-on-1 races explained)
+  assert.equal(new Set(sweep.map((p) => p.route)).size, 44); // (44: /duel/rating, your 1-on-1 rating)
   assert.equal(sweep.length % 2, 0);
 });
 
