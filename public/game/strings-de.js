@@ -117,7 +117,7 @@ export const MAIN = {
 };
 
 export const HUD = {
-  title: 'Up and down', daily: 'Regatta des Tages', free: 'Freie Regatta', first: 'Erste Regatta', live: 'Live', startIn: 'Start in', gun: 'Signal',
+  title: 'Up and down', daily: 'Regatta des Tages', free: 'Freie Regatta', duel: '1-gegen-1-Regatta', first: 'Erste Regatta', live: 'Live', startIn: 'Start in', gun: 'Signal',
   bias: 'Linienvorteil', pinEnd: 'Pin-Ende', boatEnd: 'Schiffsende', square: 'Gerade', line: 'Linie',
   legOf: (n, N) => `Schenkel ${n} von ${N}`, legN: (n) => `Schenkel ${n}`, legShort: (n, N) => `Sch. ${n}/${N}`, up: 'Kreuz', down: 'Vorwind', reach: 'Halbwind',
   upwind: 'am Wind', downwind: 'vor dem Wind', reaching: 'Halbwind', stbd: 'Steuerbord', port: 'Backbord', preStart: 'Vor dem Start',

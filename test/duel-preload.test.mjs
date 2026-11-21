@@ -73,7 +73,7 @@ const n = () => {};
 const card = (o) => plain(renderToStaticMarkup(DuelFinderView({ lang: 'en', signed: true, phase: 'found', look: { waited: 0, band: 100, online: 1 }, pair, said: false, left: 8, note: '', longWait: false, find: n, stop: n, ready: n, decline: n, ...o })));
 
 test('Match found says how far the race has loaded, then that it opens at once', () => {
-  assert.match(card({ loaded: 0.46 }), /Phuket · J\/70 Loading Phuket · 46% Your chance/);
+  assert.match(card({ loaded: 0.46 }), /Phuket · J\/70 · medium breeze · .* Loading Phuket · 46% Your chance/);
   assert.match(card({ loaded: 1 }), /Phuket is loaded: the race opens at once/);
   assert.doesNotMatch(card({ loaded: null }), /Loading|loaded/);
   assert.match(card({ loaded: 0.5, lang: 'ru' }), /Загружается Пхукет · 50%/);

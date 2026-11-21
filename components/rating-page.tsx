@@ -80,9 +80,8 @@ export function RatingPageView({ d, lang }: { d: RatingPage; lang: Lang }) {
         ) : null}
       </header>
       <nav className="hm-page rp-tabs" aria-label={t('Boards', 'Таблицы', 'Clasificaciones', 'Ranglisten', 'Tablolar', 'Classements', 'Classifiche', 'Classificações')}>
-        <span className="rp-tab on" aria-current="page">{t('1-on-1 rating', 'Рейтинг 1 на 1', 'Rating 1 contra 1', '1-gegen-1-Wertung', 'Bire bir reyting', 'Classement en duel', 'Rating 1 contro 1', 'Rating 1 contra 1')}</span>
-        <Link className="rp-tab" href="/race#board">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı', 'La régate du jour', 'La regata del giorno', 'A regata do dia')}</Link>
-        <Link className="rp-tab" href="/race/month">{t('Your month', 'Твой месяц', 'Tu mes', 'Dein Monat', 'Senin ayın', 'Ton mois', 'Il tuo mese', 'Seu mês')}</Link>
+        <span className="rp-tab on" aria-current="page">{t('Your 1-on-1 rating', 'Твой рейтинг 1 на 1', 'Tu rating 1 contra 1', 'Deine 1-gegen-1-Wertung', 'Bire bir reytingin', 'Ton classement en duel', 'Il tuo rating 1 contro 1', 'Seu rating 1 contra 1')}</span>
+        <Link className="rp-tab" href="/rating#duel">{t('Everyone’s 1-on-1 rating', 'Рейтинг 1 на 1 у всех', 'El rating 1 contra 1 de todos', 'Die 1-gegen-1-Wertung aller', 'Herkesin bire bir reytingi', 'Le classement en duel de tous', 'Il rating 1 contro 1 di tutti', 'O rating 1 contra 1 de todos')}</Link>
       </nav>
 
       <div className="hm-page rm-main">
@@ -149,7 +148,7 @@ export function RatingPageView({ d, lang }: { d: RatingPage; lang: Lang }) {
         <div className="rb-acts">
           <a className="rt-go" href="/duel"><IconPlay /><span>{t('Find a race', 'Найти гонку', 'Buscar una regata', 'Regatta finden', 'Yarış bul', 'Trouver une régate', 'Trova una regata', 'Achar uma regata')}</span></a>
           <Link className="rb-link" href="/help/duel#h-rating">{t('How the rating works', 'Как устроен рейтинг', 'Cómo funciona el rating', 'So funktioniert die Wertung', 'Reyting nasıl işler', 'Comment marche le classement', 'Come funziona il rating', 'Como funciona o rating')} ›</Link>
-          <Link className="rb-link" href="/race#board">{t('Everyone’s ratings', 'Рейтинг всех', 'Los ratings de todos', 'Alle Wertungen', 'Herkesin reytingi', 'Tous les classements', 'I rating di tutti', 'Os ratings de todos')} ›</Link>
+          <Link className="rb-link" href="/rating#duel">{t('Everyone’s ratings', 'Рейтинг всех', 'Los ratings de todos', 'Alle Wertungen', 'Herkesin reytingi', 'Tous les classements', 'I rating di tutti', 'Os ratings de todos')} ›</Link>
         </div>
       </div>
     </>

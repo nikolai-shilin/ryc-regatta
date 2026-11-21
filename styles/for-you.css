@@ -8,6 +8,7 @@
 .fy-c.fy-goal, .fy-c.fy-level { box-shadow: inset 0 3px 0 var(--gold, #f5c400); }
 .fy-c.fy-hour { box-shadow: inset 0 3px 0 var(--down, #ff8a3d); }
 .fy-live { display: inline-flex; align-items: center; gap: 6px; font: 700 11px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: 0.14em; text-transform: uppercase; color: var(--up, #2ee6a0); }
+.fy-kind { font: 700 11px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3, rgba(255, 255, 255, 0.62)); }
 .fy-t { font: 800 19px/1.15 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink, #fff); text-wrap: balance; }
 .fy-why { margin: 0; font: 500 14px/1.45 var(--sans, 'Sofia Sans', sans-serif); color: var(--ink-2, rgba(255, 255, 255, 0.78)); }
 .fy-why span { font-weight: 700; color: var(--ink-3, rgba(255, 255, 255, 0.62)); }

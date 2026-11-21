@@ -1,0 +1,25 @@
+/* The site's two ratings side by side (app/[lang]/rating/page.tsx): the 1-on-1 rating and today's race, each its own column
+   with what it measures over its board. The boards' rows are the leaderboard sheet's (styles/race-board.css, .rt-lb). */
+.rtg-head { display: flex; flex-direction: column; gap: 12px; padding-top: 32px; }
+.rtg-head .lead { max-width: 760px; margin: 0; }
+.rtg-jump { display: flex; gap: 2px; margin-top: 4px; }
+.rtg-jump a { min-height: 44px; display: inline-flex; align-items: center; padding: 0 18px; background: var(--fill-1, rgba(255,255,255,.08)); color: var(--ink, #fff);
+  font: 700 13px/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; text-decoration: none; }
+.rtg-jump a:hover { background: rgba(255,255,255,.14); }
+.rtg-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; padding-top: 28px; padding-bottom: 32px; }
+.rtg-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 22px; background: var(--surface, #0b1420); scroll-margin-top: 80px; }
+.rtg-duel { box-shadow: inset 0 4px 0 var(--you, #3db8ff); }
+.rtg-race { box-shadow: inset 0 4px 0 var(--gold, #f5c400); }
+.rtg-h { margin: 0; font: 800 30px/.95 var(--cond); text-transform: uppercase; text-wrap: balance; }
+.rtg-p { margin: 0; font: 500 14px/1.5 var(--sans); color: var(--ink-2, rgba(255,255,255,.78)); }
+.rtg-you { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 14px; text-decoration: none; color: var(--ink, #fff);
+  background: rgba(61,184,255,.12); box-shadow: inset 3px 0 0 var(--you, #3db8ff); }
+.rtg-you b { font: 800 26px/1 var(--cond); }
+.rtg-you > span:nth-child(3) { font: 600 14px/1.3 var(--cond); letter-spacing: .04em; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rtg-more { font: 700 12px/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--you, #3db8ff); white-space: nowrap; }
+.rtg-foot { display: flex; flex-wrap: wrap; gap: 12px 24px; padding-bottom: 40px; margin: 0; }
+/* the boards as on the sheet (styles/race-board.css scopes these to .rb) */
+.bc.rtg .rt-lb-m li { grid-template-columns: 40px minmax(0, 1fr) 116px; }
+.bc.rtg .rt-lb-m .rt-p { padding-left: var(--s-3, 12px); white-space: nowrap; }
+@media (max-width: 960px) { .rtg-cols { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .rtg-col { padding: 16px; } .rtg-you { grid-template-columns: auto auto minmax(0, 1fr); } .rtg-more { display: none; } }

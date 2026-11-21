@@ -23,7 +23,7 @@ const race = (v) => v.$$('.df-race')[0];
 
 test('Ready now is read as the page opens and every 10 s after, each sailor with Race', async () => {
   const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
-  assert.match(v.text(), /Ready now Cara M\. National 1900 waiting 0:23 Race/);
+  assert.match(v.text(), /Ready now · 1 .*Cara M\. waiting 0:23 National 1900 .* Race/);
   assert.equal(asks().filter((a) => a.do === 'ready_now').length, 1);
   await tick(10000);
   assert.equal(asks().filter((a) => a.do === 'ready_now').length, 2);

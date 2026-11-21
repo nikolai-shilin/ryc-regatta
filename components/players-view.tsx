@@ -238,7 +238,7 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
           </div>)}
 
           <div className="bt-rows">
-            <Link className="bt-row" href="/race#board"><IconTrophy s={18} /><span>{t('The leaderboard', 'Рейтинг', 'La clasificación', 'Die Rangliste', 'Sıralama', 'Le classement', 'La classifica', 'A classificação')}</span><span className="bt-row-m">{t('Today and the month', 'День и месяц', 'Hoy y el mes', 'Heute und der Monat', 'Bugün ve ay', 'Aujourd’hui et le mois', 'Oggi e il mese', 'Hoje e o mês')}</span></Link>
+            <Link className="bt-row" href="/rating"><IconTrophy s={18} /><span>{t('The leaderboard', 'Рейтинг', 'La clasificación', 'Die Rangliste', 'Sıralama', 'Le classement', 'La classifica', 'A classificação')}</span><span className="bt-row-m">{t('Today and the month', 'День и месяц', 'Hoy y el mes', 'Heute und der Monat', 'Bugün ve ay', 'Aujourd’hui et le mois', 'Oggi e il mese', 'Hoje e o mês')}</span></Link>
           </div>
         </>) : (<>
           {!list ? (

@@ -52,7 +52,7 @@ export function SiteMenu({ lang }: { lang: Lang }) {
           <Link className="hm-mi" href="/race">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı', 'La régate du jour', 'La regata del giorno', 'A regata do dia')}</Link>
           <Link className="hm-mi" href="/race/free">{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış', 'Régate libre', 'Regata libera', 'Regata livre')}</Link>
           <Link className="hm-mi" href="/duel">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', 'Duelo 1 contra 1')}</Link>
-          <Link className="hm-mi" href="/race#board">{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama', 'Classement', 'Classifica', 'Classificação')}</Link>
+          <Link className="hm-mi" href="/rating">{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama', 'Classement', 'Classifica', 'Classificação')}</Link>
         </nav>
         {/* the drills, the players, the venues and the yachts: in the menu at every width, never in the header's row */}
         <span className="hm-msep" />

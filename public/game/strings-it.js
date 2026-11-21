@@ -119,7 +119,7 @@ export const MAIN = {
 };
 
 export const HUD = {
-  title: 'Up and down', daily: 'Regata del giorno', free: 'Regata libera', first: 'Prima regata', live: 'In diretta', startIn: 'Partenza tra', gun: 'Segnale',
+  title: 'Up and down', daily: 'Regata del giorno', free: 'Regata libera', duel: 'Duello 1 contro 1', first: 'Prima regata', live: 'In diretta', startIn: 'Partenza tra', gun: 'Segnale',
   bias: 'Favore della linea', pinEnd: 'Lato boa', boatEnd: 'Lato comitato', square: 'In squadra', line: 'Linea',
   legOf: (n, N) => `Lato ${n} di ${N}`, legN: (n) => `Lato ${n}`, legShort: (n, N) => `Lato ${n}/${N}`, up: 'Bolina', down: 'Poppa', reach: 'Lasco',
   upwind: 'di bolina', downwind: 'in poppa', reaching: 'al lasco', stbd: 'dritta', port: 'sinistra', preStart: 'Prepartenza',

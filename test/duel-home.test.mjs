@@ -65,7 +65,7 @@ test('on the home, only for a sailor who has raced here and is signed in; read a
   signIn();
   v = await mount(h(DuelHome, { lang: 'en' }));
   assert.match(v.text(), /4 ready now .* Your rating 1558 Fleet .* Cara M\./);
-  const reads = () => dom.fetches.filter((f) => f.url === '/connect/seek').length;
+  const reads = () => dom.fetches.filter((f) => f.url === '/connect/seek' && JSON.parse(f.init?.body || '{}').do === 'ready_now').length; // (the duel hour asks too)
   assert.equal(reads(), 1);
   await tick(15000);
   assert.equal(reads(), 2);

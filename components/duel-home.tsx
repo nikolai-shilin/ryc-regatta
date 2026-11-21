@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { DuelHour } from './duel-hour';
 import { LOCALE, tx, type Lang } from '@/lib/lang';
 import { levelName, nextLevel } from '@/lib/levels';
 import { provisional, shown, stakes, signed as sgn, START } from '@/lib/elo';
@@ -66,6 +67,8 @@ export function DuelHomeView({ lang, mine, list }: { lang: Lang; mine: MyRating 
             <div className="dh-wide"><dt>{t('Not rated yet', 'Пока без рейтинга', 'Aún sin rating', 'Noch keine Wertung', 'Henüz reyting yok', 'Pas encore classé', 'Ancora senza rating', 'Ainda sem rating')}</dt><dd><span className="dh-s">{t(`Everyone starts at ${START}; your first five races find your level.`, `У всех старт с ${START}; первые пять гонок найдут твой уровень.`, `Todos empiezan en ${START}; tus cinco primeras regatas encuentran tu nivel.`, `Alle beginnen bei ${START}; deine ersten fünf Regatten finden dein Niveau.`, `Herkes ${START} ile başlar; ilk beş yarışın seviyeni bulur.`, `Tout le monde part de ${START} ; tes cinq premières régates trouvent ton niveau.`, `Tutti partono da ${START}; le prime cinque regate trovano il tuo livello.`, `Todos começam em ${START}; suas cinco primeiras regatas acham seu nível.`)}</span></dd></div>
           )}
         </dl>
+        {/* the duel hour, as on /duel: counted down, and I'm in; its Find a race goes to /duel looking at once */}
+        <DuelHour lang={lang} signed looking={false} onFind={() => { location.href = '/duel?hour'; }} />
       </div>
       <aside className="ho-card dh-now" aria-label={t('Ready now', 'Готовы сейчас', 'Listos ahora', 'Jetzt bereit', 'Şu an hazır', 'Prêts maintenant', 'Pronti ora', 'Prontos agora')}>
         <div className="ho-card-h"><span className="lbl-ink">{t('Ready now', 'Готовы сейчас', 'Listos ahora', 'Jetzt bereit', 'Şu an hazır', 'Prêts maintenant', 'Pronti ora', 'Prontos agora')}</span><span className="lbl">{t('Nearest your rating', 'Ближе всего к тебе', 'Más cerca de tu rating', 'Nah an deiner Wertung', 'Reytingine en yakın', 'Les plus proches de toi', 'I più vicini a te', 'Mais perto do seu rating')}</span></div>

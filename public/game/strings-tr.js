@@ -117,7 +117,7 @@ export const MAIN = {
 };
 
 export const HUD = {
-  title: 'Up and down', daily: 'Günün yarışı', free: 'Serbest yarış', first: 'İlk yarış', live: 'Canlı', startIn: 'Startta', gun: 'İşaret',
+  title: 'Up and down', daily: 'Günün yarışı', free: 'Serbest yarış', duel: 'Bire bir yarış', first: 'İlk yarış', live: 'Canlı', startIn: 'Startta', gun: 'İşaret',
   bias: 'Hat avantajı', pinEnd: 'Pin ucu', boatEnd: 'Tekne ucu', square: 'Düz', line: 'Hat',
   legOf: (n, N) => `Ayak ${n} / ${N}`, legN: (n) => `Ayak ${n}`, legShort: (n, N) => `Ayak ${n}/${N}`, up: 'Orsa', down: 'Pupa', reach: 'Apaz',
   upwind: 'orsa', downwind: 'pupa', reaching: 'apaz', stbd: 'sancak', port: 'iskele', preStart: 'Start öncesi',

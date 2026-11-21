@@ -60,7 +60,8 @@ test('the page: the rating, its level and record, the place, the chart with the 
   assert.equal(globalThis.__asked, 'regatta_rating_page');
   assert.match(w, new RegExp(`Your 1-on-1 rating ${RAW.rating} Fleet 5 won · 3 lost #3 of 12`));
   assert.match(w, /Place #3 of 12 settled sailors Record 5–3 8 rated · 63% won Best ever \d+ lowest 1500 To Regional \d+ points to the next level/);
-  assert.match(w, /1-on-1 rating Today’s race Your month/);
+  assert.match(w, /Your 1-on-1 rating Everyone’s 1-on-1 rating/); // (the 1-on-1 rating's own tabs: today's race is a rating of its own, on /rating)
+  assert.doesNotMatch(w, /Today’s race Your month/);
   assert.match(w, /All 8 rated races/);
   assert.equal((h.match(/<circle class="rp-(up|down)"/g) || []).length, 8, 'a point a race');
   assert.match(h, /<rect class="rp-first"/); assert.match(w, /FIRST FIVE · ×2/);

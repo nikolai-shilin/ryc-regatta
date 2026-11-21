@@ -91,7 +91,7 @@ test('on /duel: in Ready now, marked while it\'s on; its message\'s tap, /duel?h
   const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
   assert.ok(asks().some((a) => a.do === 'seek'), 'looking');
   assert.deepEqual(history.replaced, ['/duel']);
-  assert.match(v.text(), /Ready now Duel hour .*Duel hour · every day · 19:00 UTC On now/);
+  assert.match(v.text(), /Ready now · \d+ Duel hour .*Duel hour · every day · 19:00 UTC On now/);
   await v.unmount();
 });
 

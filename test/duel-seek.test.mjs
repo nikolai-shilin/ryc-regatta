@@ -73,7 +73,8 @@ test('signed out: why an account, Sign in back to here, or a friend instead', ()
 });
 
 test('ready to look, looking, and a long wait offering a friend instead', () => {
-  assert.match(view(), /Find a race Challenge a friend instead Matched by rating: within 100 at first/);
+  assert.match(view(), /Set up your race Who Find one A friend Open call Ratings to race 1400 – 1600 ±100 to start\. It widens to ±200 at 0:20 and ±350 at 0:45/);
+  assert.match(view(), /Find a race ~4 min race/);
   assert.match(view({ phase: 'looking', look: { waited: 23, band: 200, online: 3 } }), /Looking for a sailor 0:23 Within 200 of your rating · wider as you wait · 2 other looking now Stop looking/);
   assert.match(view({ phase: 'looking', look: { waited: 50, band: 350, online: 1 } }), /Within 350 of your rating Stop/);
   assert.match(view({ phase: 'looking', look: { waited: 95, band: 350, online: 1 }, longWait: true }), /Nobody near your level is looking yet\. .* Stop looking Challenge a friend instead/);
@@ -83,7 +84,7 @@ test('ready to look, looking, and a long wait offering a friend instead', () => 
 
 test('Match found, the full one: who, level and rating, how long, where, the stakes, Ready with its seconds, Decline', () => {
   const s = view({ phase: 'found', pair: pairOf(), left: 8.2 });
-  assert.match(s, /Match found Anna K\. Fleet 1585 about 6 min Phuket · J\/70 Your chance 44% · win \+18 · lose −14 Ready 9 Decline/);
+  assert.match(s, /Match found Anna K\. Fleet 1585 about 6 min Phuket · J\/70 · medium breeze · Up and down · 1 lap · 1-min start Your chance 44% · win \+18 · lose −14 Ready 9 Decline/);
 });
 
 test('Match found, the short one for a first match: no stakes; and waiting once Ready is said', () => {
@@ -95,7 +96,7 @@ test('Match found, the short one for a first match: no stakes; and waiting once 
 
 test('off to the race, and a missed match', () => {
   assert.match(view({ phase: 'go', pair: pairOf() }), /Both ready\. Off to the race…/);
-  assert.match(view({ phase: 'missed' }), /The match went: Ready wasn’t said in time\. Find a race/);
+  assert.match(view({ phase: 'missed' }), /The match went: Ready wasn’t said in time\. Who Find one/);
   assert.match(plain(renderToStaticMarkup(DuelFinderView({ lang: 'ru', signed: true, phase: 'idle', look: { waited: 0, band: 100, online: 0 }, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop }))), /Найти гонку/);
 });
 
@@ -111,25 +112,25 @@ test('Ready now is read as it is: a handle, never an id, the name, rating, races
 test('POST /connect/seek: ready_now lists who is looking; challenge names a handle with clean wishes; a bad handle asks nothing', async () => {
   rpc.data = READY;
   assert.deepEqual((await post({ do: 'ready_now' })).list.map((x) => x.name), ['Cara M.', 'Lina S.']);
-  assert.deepEqual(rpc.calls.at(-1), { fn: 'regatta_ready_now' });
+  assert.ok(rpc.calls.some((c) => c.fn === 'regatta_ready_now') && rpc.calls.some((c) => c.fn === 'regatta_calls_open'), 'who is looking, and the open calls');
   rpc.data = { status: 'found', pair: PAIR };
   assert.equal((await post({ do: 'challenge', handle: '3f9a0c1d2e4b', wishes: { yacht: 'dragon', venue: 'nowhere' } })).status, 'found');
   assert.deepEqual(rpc.calls.at(-1), { fn: 'regatta_seek_challenge', p_handle: '3f9a0c1d2e4b', p_wishes: { yacht: 'dragon' } });
   rpc.data = { status: 'none', reason: 'gone' };
   assert.deepEqual(await post({ do: 'challenge', handle: '3f9a0c1d2e4b' }), { status: 'none', reason: 'gone' });
   for (const handle of [undefined, '', 'ZZZZZZZZZZZZ', '00000000-0000-4000-8000-00000000000a', 42]) { rpc.calls = []; assert.equal((await post({ do: 'challenge', handle })).status, 'none'); assert.equal(rpc.calls.length, 0, String(handle)); }
-  rpc.error = { code: '42501' }; assert.deepEqual(await post({ do: 'ready_now' }), { list: [] });
+  rpc.error = { code: '42501' }; assert.deepEqual(await post({ do: 'ready_now' }), { list: [], calls: [] });
 });
 
 test('Ready now under the button and while looking: nearest first, level or New, rating, how long, Race; nobody yet; gone', () => {
   const list = parseReady(READY), raced = [];
   const s = view({ list, challenge: (h) => raced.push(h) });
-  assert.match(s, /Ready now Cara M\. National 1900 waiting 0:23 Race Lina S\. New ~1508 waiting 0:04 Race/);
-  assert.match(view({ phase: 'looking', look: { waited: 5, band: 100, online: 3 }, list }), /Stop looking Keep looking if I leave .* Post an open call .* Ready now Cara M\./);
-  assert.match(view(), /Ready now Nobody else is looking right now\. Find a race, and you’re the first one the next sailor sees\./);
-  assert.match(view({ note: 'gone' }), /That sailor has just gone: paired with someone else, or stopped looking\. Find a race/);
+  assert.match(s, /Ready now · 2 .*Cara M\. waiting 0:23 National 1900 \d+% \+\d+ \/ −\d+ Race Lina S\. waiting 0:04 New ~1508 \d+% \+\d+ \/ −\d+ Race/);
+  assert.match(view({ phase: 'looking', look: { waited: 5, band: 100, online: 3 }, list }), /Stop looking Keep looking if I leave .* Post an open call .* Ready now · 2 .*Cara M\./);
+  assert.match(view(), /Ready now · 0 Nobody else is looking right now\. Find a race, and you’re the first one the next sailor sees\./);
+  assert.match(view({ note: 'gone' }), /That sailor has just gone: paired with someone else, or stopped looking\. Who Find one/);
   assert.doesNotMatch(view({ phase: 'found', pair: pairOf(), list }), /Ready now/, 'not over a match found');
-  assert.match(plain(renderToStaticMarkup(DuelFinderView({ lang: 'ru', signed: true, phase: 'idle', look: { waited: 0, band: 100, online: 0 }, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop, list }))), /Готовы сейчас Cara M\. .* ждёт 0:23 Гонка/);
+  assert.match(plain(renderToStaticMarkup(DuelFinderView({ lang: 'ru', signed: true, phase: 'idle', look: { waited: 0, band: 100, online: 0 }, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop, list }))), /Готовы сейчас · 2 .*Cara M\. ждёт 0:23 Национальный 1900 .* Гонка/);
 });
 
 test('the wishes, a venue and a yacht or Any, and when they count; a signed-out visitor sees neither them nor the list', () => {
@@ -159,7 +160,7 @@ test('POST /connect/seek: call posts with a band it knows and clean wishes; take
 
 test('looking: Post an open call; posted, the call\'s band, its link and the ways to send it', () => {
   const looking = { phase: 'looking', look: { waited: 30, band: 200, online: 1 } };
-  assert.match(view(looking), /Stop looking Keep looking if I leave A message when a sailor is found, for 30 minutes: to this browser, or from our Telegram bot\. Post an open call A link for any chat: the first sailor near your rating to take it races you\./);
+  assert.match(view(looking), /Stop looking Keep looking if I leave A message when a sailor is found, for 30 minutes: to this browser, or from our Telegram bot\. Ratings to race .* Post an open call A link for any chat: the first sailor near your rating to take it races you\./);
   const call = { code: 'K7M2QZ', lo: 1458, hi: 1658, url: 'https://www.sailupdown.com/call/K7M2QZ' };
   const html = renderToStaticMarkup(DuelFinderView({ lang: 'en', signed: true, ...looking, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop, call }));
   assert.match(plain(html), /Your open call For ratings 1458–1658: the first to take it races you\. Open while you look, an hour at most\. Telegram WhatsApp Copy link/);
@@ -183,7 +184,7 @@ test('Keep looking if I leave: off, on (you can leave; Only while I’m here), w
   assert.match(view({ ...looking, note: 'pushdenied' }), /Messages from this site are blocked in your browser’s settings/);
   assert.match(view({ ...looking, note: 'noaway' }), /Couldn’t keep looking for you just now/);
   assert.match(view({ ...looking, note: 'nobot' }), /Without the bot’s messages we can’t reach you while you’re away\./);
-  assert.match(view({ list: parseReady([{ ...READY[0], away: true }]) }), /Cara M\. National 1900 away · gets a message waiting 0:23 Race/);
+  assert.match(view({ list: parseReady([{ ...READY[0], away: true }]) }), /Cara M\. away · gets a message National 1900 \d+% .* Race/);
   assert.doesNotMatch(view(), /Keep looking if I leave/, 'only while looking');
 });
 

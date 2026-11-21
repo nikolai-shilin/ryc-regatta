@@ -117,7 +117,7 @@ export const MAIN = {
 };
 
 export const HUD = {
-  title: 'Up and down', daily: 'Régate du jour', free: 'Régate libre', first: 'Première régate', live: 'En direct', startIn: 'Départ dans', gun: 'Signal',
+  title: 'Up and down', daily: 'Régate du jour', free: 'Régate libre', duel: 'Duel', first: 'Première régate', live: 'En direct', startIn: 'Départ dans', gun: 'Signal',
   bias: 'Biais de la ligne', pinEnd: 'Côté bouée', boatEnd: 'Côté comité', square: 'Équilibrée', line: 'Ligne',
   legOf: (n, N) => `Bord ${n} sur ${N}`, legN: (n) => `Bord ${n}`, legShort: (n, N) => `Bord ${n}/${N}`, up: 'Près', down: 'Portant', reach: 'Largue',
   upwind: 'au près', downwind: 'au portant', reaching: 'au largue', stbd: 'tribord', port: 'bâbord', preStart: 'Pré-départ',

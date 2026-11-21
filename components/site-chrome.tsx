@@ -6,13 +6,15 @@ import { Logo, Langs } from './ui';
 import { SiteMenu } from './home-client';
 import '@/styles/first-race.css';
 
-type Page = 'home' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt' | 'learn' | 'rating' | 'drills' | 'social' | 'players' | 'venues' | 'yachts' | 'sponsorship' | 'rulebook';
+type Page = 'home' | 'duel' | 'help' | 'faq' | 'race' | 'free' | 'boat' | 'result' | 'settings' | 'signin' | 'iyt' | 'learn' | 'rating' | 'drills' | 'social' | 'players' | 'venues' | 'yachts' | 'sponsorship' | 'rulebook';
 
 // Where each page sits under Home, for the breadcrumb trail search engines show instead of the bare address
 // (BreadcrumbList). A guide passes its own trail: Home › Racing guides › the guide.
 export type Crumb = [name: string, path: string];
 const CRUMBS: Partial<Record<Page, [en: string, ru: string, path: string, es?: string, de?: string, tr?: string, fr?: string, it?: string, pt?: string]>> = {
   help: ['How to play', 'Как играть', '/help', 'Cómo jugar', 'So spielst du', 'Nasıl oynanır', 'Comment jouer', 'Come si gioca', 'Como jogar'], faq: ['FAQ', 'Вопросы и ответы', '/faq', 'Preguntas', 'Fragen', 'Sorular', 'FAQ', 'Domande frequenti', 'Perguntas'], race: ['Today’s race', 'Гонка дня', '/race', 'La regata del día', 'Die Regatta des Tages', 'Günün yarışı', 'La régate du jour', 'La regata del giorno', 'A regata do dia'],
+  duel: ['1-on-1 race', 'Гонка 1 на 1', '/duel', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', 'Duelo 1 contra 1'],
+  rating: ['Leaderboards', 'Рейтинги', '/rating', 'Clasificaciones', 'Ranglisten', 'Sıralamalar', 'Classements', 'Classifiche', 'Classificações'],
   free: ['Custom race', 'Своя гонка', '/race/free', 'Regata libre', 'Freie Regatta', 'Serbest yarış', 'Régate libre', 'Regata libera', 'Regata livre'], boat: ['Your yacht', 'Твоя яхта', '/boat', 'Tu yate', 'Deine Yacht', 'Yatın', 'Ton yacht', 'Il tuo yacht', 'Seu veleiro'],
   iyt: ['Sailing exam practice', 'Тренажёр к яхтенному экзамену', '/iyt', 'Práctica de examen de vela', 'Prüfungstraining Segeln', 'Yelken sınavı alıştırması', 'Révisions pour les examens de voile', 'Preparazione all’esame di vela', 'Treino para o exame de vela'], learn: ['Racing guides', 'Пособия по гонкам', '/learn', 'Guías de regata', 'Regatta-Leitfäden', 'Yarış rehberleri', 'Guides de régate', 'Guide alla regata', 'Guias de regata'],
   drills: ['Drills', 'Тренировки', '/race/drills', 'Ejercicios', 'Übungen', 'Alıştırmalar', 'Entraînements', 'Esercizi', 'Treinos'],
@@ -59,8 +61,8 @@ export function SiteHead({ lang, t, page, crumbs }: { lang: Lang; t: T; page: Pa
           <a className="hm-tab hm-tab-first" href="/play?race=first&intro">{t('First race', 'Первая гонка', 'Primera regata', 'Erste Regatta', 'İlk yarış', 'Première régate', 'Prima regata', 'Primeira regata')}<span className="hm-tag">{t('3 min', '3 мин', '3 min', '3 Min.', '3 dk', '3 min', '3 min', '3 min')}</span></a>
           <Link className="hm-tab" href="/race" {...cur('race')}>{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı', 'La régate du jour', 'La regata del giorno', 'A regata do dia')}</Link>
           <Link className="hm-tab" href="/race/free" {...cur('free')}>{t('Custom race', 'Своя гонка', 'Regata personalizada', 'Freie Regatta', 'Serbest yarış', 'Régate libre', 'Regata libera', 'Regata livre')}</Link>
-          <Link className="hm-tab" href="/duel">{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', 'Duelo 1 contra 1')}</Link>
-          <Link className="hm-tab" href="/race#board" {...cur('rating')}>{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama', 'Classement', 'Classifica', 'Classificação')}</Link>
+          <Link className="hm-tab" href="/duel" {...cur('duel')}>{t('1-on-1 race', 'Гонка 1 на 1', 'Regata 1 contra 1', '1-gegen-1-Regatta', 'Bire bir yarış', 'Duel 1 contre 1', 'Duello 1 contro 1', 'Duelo 1 contra 1')}</Link>
+          <Link className="hm-tab" href="/rating" {...cur('rating')}>{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama', 'Classement', 'Classifica', 'Classificação')}</Link>
         </nav>
         {/* a guest's way to sign in, in the bar where there's room (else in the menu); signed in, the avatar says who */}
         <Link className="hm-signin if-guest" href="/sign-in" {...cur('signin')}>{t('Sign in', 'Войти', 'Iniciar sesión', 'Anmelden', 'Giriş yap', 'Se connecter', 'Accedi', 'Entrar')}</Link>
@@ -101,7 +103,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
             <FootLink href="/race/drills">{t('Drills', 'Тренировки', 'Ejercicios', 'Übungen', 'Alıştırmalar', 'Entraînements', 'Esercizi', 'Treinos')}</FootLink>
           </FootGroup>
           <FootGroup title={t('Explore', 'Мир игры', 'Explorar', 'Entdecken', 'Keşfet', 'Explorer', 'Esplora', 'Explorar')}>
-            <FootLink href="/race#board">{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama', 'Classement', 'Classifica', 'Classificação')}</FootLink>
+            <FootLink href="/rating">{t('Leaderboard', 'Рейтинг', 'Clasificación', 'Rangliste', 'Sıralama', 'Classement', 'Classifica', 'Classificação')}</FootLink>
             <FootLink href="/players">{t('Players', 'Игроки', 'Jugadores', 'Spieler', 'Oyuncular', 'Joueurs', 'Giocatori', 'Jogadores')}</FootLink>
             <FootLink href="/venues">{t('Venues', 'Акватории', 'Sedes', 'Reviere', 'Yarış alanları', 'Plans d’eau', 'Campi di regata', 'Raias')}</FootLink>
             <FootLink href="/yachts">{t('Yachts', 'Яхты', 'Yates', 'Yachten', 'Yatlar', 'Yachts', 'Yacht', 'Veleiros')}</FootLink>

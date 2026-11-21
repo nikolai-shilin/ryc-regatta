@@ -4,12 +4,14 @@ import { isHandle, parseReady, parseSeek, wishesOf } from '@/lib/duel-seek';
 import { BANDS, callCode, parsePosted } from '@/lib/duel-call';
 import { sendMatchFound, sendLookPing } from '@/lib/push-send';
 import { parseHour } from '@/lib/duel-hour';
+import { parseCalls } from '@/lib/duel-page';
 
 // Matchmaking for the signed-in sailor (components/duel-finder.tsx):
 //   POST /connect/seek { do: 'seek', wishes? }      → looking | found | go | none   (asked every 3 s while looking, every 1 s once found)
 //   POST /connect/seek { do: 'ready' | 'decline', pair }  → found | go | none
 //   POST /connect/seek { do: 'stop' }               → none
-//   POST /connect/seek { do: 'ready_now' }          → { list }: who is looking now, nearest first (asked every 10 s)
+//   POST /connect/seek { do: 'ready_now' }          → { list, calls }: who is looking now, nearest first, and the open calls
+//                                                      to take (regatta_calls_open, nearest first; [] before its migration) (asked every 10 s)
 //   POST /connect/seek { do: 'challenge', handle, wishes? }  → found | none (gone: they left or were paired)
 //   POST /connect/seek { do: 'call', band?, wishes? }  → { status: 'open', code, lo, hi, left } | none: an open call, while looking
 //   POST /connect/seek { do: 'take', code, wishes? }   → found | none (taken, away, closed, band, mine): an open call taken
@@ -39,7 +41,10 @@ export async function POST(request: NextRequest) {
       const r = body.do === 'hour' ? await supabase.rpc('regatta_hour_state') : await supabase.rpc('regatta_hour_join', { p_in: body.on === true });
       return json({ hour: r.error ? null : parseHour(r.data) });
     }
-    if (body.do === 'ready_now') { const r = await supabase.rpc('regatta_ready_now'); return json({ list: r.error ? [] : parseReady(r.data) }); }
+    if (body.do === 'ready_now') {
+      const [r, c] = await Promise.all([supabase.rpc('regatta_ready_now'), supabase.rpc('regatta_calls_open')]);
+      return json({ list: r.error ? [] : parseReady(r.data), calls: c.error ? [] : parseCalls(c.data) });
+    }
     if (body.do === 'call') {
       const band = BANDS.includes(body.band as 100) ? (body.band as number) : 100;
       const r = await supabase.rpc('regatta_call_post', { p_wishes: wishesOf(body.wishes), p_band: band });
