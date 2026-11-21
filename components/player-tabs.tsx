@@ -36,13 +36,7 @@ export function TabBar({ lang, tab, set, duel }: { lang: Lang; tab: Tab; set: (t
 // overview)
 export function DuelTab({ lang }: { lang: Lang }) {
   const t = tx(lang), loc = LOCALE[lang];
-  const [d, setD] = useState<MyDuels | null | undefined>(undefined);
-  useEffect(() => {
-    let on = true;
-    fetch('/connect/duels/me', { cache: 'no-store', credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null))
-      .then((j) => { if (on) setD(parseMyDuels(j)); }, () => { if (on) setD(null); });
-    return () => { on = false; };
-  }, []);
+  const d = useMyDuels();
   const day = (s: string) => new Date(s).toLocaleDateString(loc, { day: 'numeric', month: 'short', timeZone: 'UTC' });
   const anyone = t('A sailor', 'Соперник', 'Un regatista', 'Ein Segler', 'Bir denizci', 'Un régatier', 'Un velista', 'Um velejador');
   return (
@@ -79,8 +73,8 @@ export function DuelTab({ lang }: { lang: Lang }) {
 
 // today's races: the last three months, each day with where, the place of how many and the points (the month's read
 // that /race/month has; anyone's, by their key)
-export function DailyTab({ lang, k, mine }: { lang: Lang; k: string; mine: boolean }) {
-  const t = tx(lang), loc = LOCALE[lang], ord = (n: number) => ordinal(n, lang);
+// the last three months of a sailor's today's race, from the scores API (null where one can't be had)
+export function useMonths(k: string) {
   const [months, setMonths] = useState<(PlayerMonth | null)[] | null>(null);
   useEffect(() => {
     let on = true;
@@ -89,6 +83,24 @@ export function DailyTab({ lang, k, mine }: { lang: Lang; k: string; mine: boole
       .then((x) => { if (on) setMonths(x); });
     return () => { on = false; };
   }, [k]);
+  return months;
+}
+// your own 1-on-1 races and rivals (undefined while asked, null when there is no answer)
+export function useMyDuels(on = true) {
+  const [d, setD] = useState<MyDuels | null | undefined>(undefined);
+  useEffect(() => {
+    if (!on) return;
+    let live = true;
+    fetch('/connect/duels/me', { cache: 'no-store', credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (live) setD(parseMyDuels(j)); }, () => { if (live) setD(null); });
+    return () => { live = false; };
+  }, [on]);
+  return d;
+}
+
+export function DailyTab({ lang, k, mine }: { lang: Lang; k: string; mine: boolean }) {
+  const t = tx(lang), loc = LOCALE[lang], ord = (n: number) => ordinal(n, lang);
+  const months = useMonths(k);
   const day = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
   const sailed = (months ?? []).filter((m): m is PlayerMonth => !!m && m.days.length > 0);
   const pts = (n: number) => t(`${n} pts`, `${n} оч.`, `${n} ptos`, `${n} Pkt`, `${n} puan`, `${n} pts`, `${n} pt`, `${n} pts`);

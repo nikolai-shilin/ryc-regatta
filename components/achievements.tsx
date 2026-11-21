@@ -11,14 +11,27 @@ import '@/styles/achievements.css';
 // them you have, then each, had ones first: its badge, name and what earns it, and the day it came with what it was
 // ("Podium · 9 Nov · 3rd of 25 · Cowes"), or how far along you are, or nothing yet. From POST /connect/achievements,
 // which the database answers the same on every device; nothing for a sailor not signed in.
-export function MyAchievements({ lang }: { lang: Lang }) {
+// one ask a page, shared by whoever wants them (the card's achievements and its history): the rules run once
+let asked: { at: number; p: Promise<Achievements | null> } | null = null;
+export function readAchievements(): Promise<Achievements | null> {
+  if (asked && Date.now() - asked.at < 30_000) return asked.p;
+  const p = fetch('/connect/achievements', { method: 'POST', cache: 'no-store', credentials: 'same-origin' })
+    .then((r) => (r.ok ? r.json() : null)).then(parseAchievements, () => null);
+  asked = { at: Date.now(), p };
+  return p;
+}
+export function useAchievements(on = true) {
   const [a, setA] = useState<Achievements | null>(null);
   useEffect(() => {
-    let on = true;
-    fetch('/connect/achievements', { method: 'POST', cache: 'no-store', credentials: 'same-origin' })
-      .then((r) => (r.ok ? r.json() : null)).then((j) => { if (on) setA(parseAchievements(j)); }, () => {});
-    return () => { on = false; };
-  }, []);
+    if (!on) return;
+    let live = true;
+    readAchievements().then((x) => { if (live) setA(x); });
+    return () => { live = false; };
+  }, [on]);
+  return a;
+}
+export function MyAchievements({ lang }: { lang: Lang }) {
+  const a = useAchievements();
   return a ? <AchievementsView a={a} lang={lang} /> : null;
 }
 

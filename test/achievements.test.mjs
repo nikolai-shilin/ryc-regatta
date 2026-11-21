@@ -76,6 +76,7 @@ test('on your card: asked once, by POST, and shown as the database says; nothing
   assert.deepEqual(dom.fetches.map((f) => [f.url, f.init.method]), [['/connect/achievements', 'POST']]);
   assert.match(v.text(), /Achievements · 3 of 15/);
   await v.unmount();
+  reset({ at: Date.now() + 60_000 }); // (a later visit: a minute on, the answer is asked again)
   serve([['/connect/achievements', json(null)]]);
   v = await mount(h(MyAchievements, { lang: 'en' }));
   assert.equal(v.text(), '');
