@@ -1,14 +1,17 @@
 # Regatta: the F50's moulded platform (game/boats3d.js F50View), modelled here and exported to game/f50.glb: her two
-# hulls, each a long slim tube with a domed deck and a rounded bullet nose, its bottom rockered up to the transom, the
+# hulls, each a long slim box with rounded corners and a low, drooping nose, its bottom rising to the transom, the
 # cockpit well aft in each where the crew stand; the main beam across at the wing's step, faired to a thick foil section
 # as the photographs show it; a lighter beam aft; the central pod (her batteries' housing) forward from the main beam to
 # the jib's tack; the nets between the hulls from one beam to the other. The boards, the rudders, the wing and the jib,
 # the wheels and pedestals, the fittings and the crew stay in boats3d.js (they move, or are made per boat).
 #
 # Her size from the class (15 m hulls, 8.8 m across the boards' tips; the AC50 she came from 8.47 m over the hulls) and
-# her proportions from photographs of the boats racing (2019 to 2026, Wikimedia Commons): the hull some 1.0 m wide and 1.3 m from the keel
-# to the top of the deck amidships, the nose round in plan and in profile; the wing stepped near amidships, its
-# leading edge some 7.4 m aft of the bows; the jib's tack on the pod 3.4 m aft of them; the crew aft of the wing.
+# her shape from the class's profile drawing (Wikimedia Commons, F50 Catamaran.png) and from photographs of the boats
+# racing (2019 to 2026, Wikimedia Commons), measured against her 15 m hulls: each hull some 1.0 m wide and 1.2 m from
+# the bottom to the deck amidships, 0.9 m at the transom, where the bottom has risen 0.3 m; the deck level until 2.7 m
+# from the bow and then drooping in a long curve to the nose, which comes down nearly to the bottom, at the waterline;
+# the bottom straight to within a metre of it, the hull rounding off in plan over the last 1.5 m; the wing stepped near
+# amidships, its leading edge some 7.4 m aft of the bows; the jib's tack on the pod 3.2 m aft of them; the crew aft.
 #
 # The hulls follow boats3d.js's lines for her (F: hullOf with her half-breadth, sheer, depth and sections), so her
 # number, name and logo still lie on them, and the cockpits are where its wheels, pedestals and crew expect them.
@@ -26,22 +29,25 @@ OUT = os.path.normpath(os.path.join(HERE, '..', 'public', 'game', 'f50.glb'))
 
 L, HX = 15.0, 3.7          # the hulls' length; their centres either side of hers
 STERN = L / 2
-FLARE, CROWN = 0.03, 0.1
-NOSE, NOSE_Y = 0.86, 0.42  # where the nose starts rounding off, and the height its tip comes to
+FLARE, CROWN = 0.03, 0.08
+DECK, BOTTOM, NOSE_Y = 0.85, -0.38, -0.02  # the deck and the bottom amidships, and the height the nose's tip comes to
+DROOP, ROUND, KEEL = 0.82, 0.9, 0.93       # where the deck starts drooping, the plan rounding off, the bottom rising
 def clamp(v, a, b): return max(a, min(b, v))
 def lerp(a, b, t): return a + (b - a) * t
 def smooth(e0, e1, x): t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t)
 # the same lines as boats3d.js F (t = 0 at the transom, 1 at the nose's tip)
-def nose(t): return math.sqrt(max(0.0, 1 - ((t - NOSE) / (1 - NOSE)) ** 2)) if t > NOSE else 1.0
-def hb_of(t): return 0.5 * (1 - 0.16 * smooth(0.45, NOSE, t)) * (0.9 + 0.1 * smooth(0, 0.2, t)) * nose(t)
-def sheer(t): return NOSE_Y + (1.0 + 0.06 * math.sin(math.pi * t) - NOSE_Y) * nose(t)
-def depth(t): return (NOSE_Y + 0.18 + 0.27 * math.sin(math.pi * min(1, t / 1.1)) ** 0.8) * nose(t) - NOSE_Y
-def n_of(t): return 2.5
+def ell(t, t0): return math.sqrt(max(0.0, 1 - ((t - t0) / (1 - t0)) ** 2)) if t > t0 else 1.0  # a quarter ellipse to the tip
+def hb_of(t): return 0.5 * (0.9 + 0.1 * smooth(0, 0.25, t)) * ell(t, ROUND)
+def sheer(t): return NOSE_Y + (DECK + 0.02 * math.sin(math.pi * t) - NOSE_Y) * ell(t, DROOP)
+def bottom(t): return NOSE_Y - (NOSE_Y - (BOTTOM + 0.3 * (1 - smooth(0, 0.5, t)))) * ell(t, KEEL)
+def depth(t): return -bottom(t)
+def n_of(t): return 2.8
+def crown(t): return CROWN * clamp((1 - t) / 0.2, 0, 1)
 def z_at(t): return STERN - t * L
 def t_at(z): return clamp((STERN - z) / L, 0, 1)
 def deck_y(z, x=0.0):
     hb = max(hb_of(t_at(z)), 0.12)
-    return sheer(t_at(z)) + CROWN * nose(t_at(z)) * (1 - min(1, abs(x) / hb) ** 2)
+    return sheer(t_at(z)) + crown(t_at(z)) * (1 - min(1, abs(x) / hb) ** 2)
 def round_pt(t, s):
     hb, sy, d, n = hb_of(t), sheer(t), depth(t), n_of(t)
     phi = s * math.pi / 2; c, sn = math.cos(phi), math.sin(phi); yr = sn ** (2 / n)
@@ -63,7 +69,7 @@ def build_hull(bm, M, cx):
     KH, KD = 18, 6
     # the stations: evenly along her to where the nose starts, then round it by equal angles, so the tip closes to a
     # point and not a flat end
-    ts = [NOSE * i / 64 for i in range(64)] + [NOSE + (1 - NOSE) * math.sin(0.5 * math.pi * k / 14) for k in range(14)]
+    ts = [DROOP * i / 60 for i in range(60)] + [DROOP + (1 - DROOP) * math.sin(0.5 * math.pi * k / 20) for k in range(20)]
     N = len(ts) - 1
     rings = []
     for t in ts:
@@ -182,12 +188,12 @@ bpy.context.view_layer.objects.active = hulls; bpy.ops.object.modifier_apply(mod
 bpy.data.objects.remove(cut)
 
 # the platform: the main beam at the wing's step (boats3d.js F.MAST_Z), the aft beam, the pod and the nets
-MAIN_Z, AFT_Z, TACK_Z = -STERN + 7.4, STERN - 1.0, -STERN + 3.4
+MAIN_Z, AFT_Z, TACK_Z = -STERN + 7.4, STERN - 1.0, -STERN + 3.2
 plat = new_object('platform'); bm = bmesh.new()
-build_beam(bm, IDX, MAIN_Z + 0.25, 0.9, 1.5, 0.27)
-build_beam(bm, IDX, AFT_Z, 0.9, 0.6, 0.34)
-build_pod(bm, IDX, MAIN_Z, TACK_Z, 0.9, 0.3, 0.13)
-build_net(bm, IDX, MAIN_Z + 0.25 + 0.55 * 1.5, AFT_Z - 0.45 * 0.6, 0.97)
+build_beam(bm, IDX, MAIN_Z + 0.25, 0.78, 1.5, 0.27)
+build_beam(bm, IDX, AFT_Z, 0.78, 0.6, 0.34)
+build_pod(bm, IDX, MAIN_Z, TACK_Z, 0.8, 0.3, 0.13)
+build_net(bm, IDX, MAIN_Z + 0.25 + 0.55 * 1.5, AFT_Z - 0.45 * 0.6, 0.85)
 bmesh.ops.recalc_face_normals(bm, faces=[f for f in bm.faces if f.material_index != IDX['net']]); bm.to_mesh(plat.data); bm.free()
 
 bpy.ops.object.select_all(action='DESELECT')
@@ -205,7 +211,7 @@ if os.environ.get('F50_SHOT'):
     cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); sc.collection.objects.link(cam); sc.camera = cam
     sun = bpy.data.objects.new('sun', bpy.data.lights.new('sun', 'SUN')); sc.collection.objects.link(sun); sun.rotation_euler = (0.6, 0.3, 0.8)
     sc.render.engine = 'BLENDER_WORKBENCH'; sc.render.resolution_x, sc.render.resolution_y = 1200, 800
-    for k, at in enumerate((G(13, 9, -14), G(-24, 0.6, 0.5))): # from forward and above her starboard bow; square on her port side
+    for k, at in enumerate((G(13, 9, -14), G(-45, 0.3, 0), G(3, 2.5, -13))): # above her starboard bow; square on her port side; her bows close
         cam.location = at; cam.rotation_euler = (G(0, 0.5, 0) - cam.location).to_track_quat('-Z', 'Y').to_euler()
         sc.render.filepath = os.environ['F50_SHOT'].replace('.png', f'-{k}.png'); bpy.ops.render.render(write_still=True)
     bpy.data.objects.remove(cam); bpy.data.objects.remove(sun)

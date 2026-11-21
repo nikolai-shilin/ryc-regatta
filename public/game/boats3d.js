@@ -2712,33 +2712,37 @@ class AC75View extends ClassView {
 
 // ---------- the F50 ----------
 // SailGP's one-design catamaran, from the class's figures (15 m, 8.8 m across the boards' tips; the AC50 she grew from
-// 8.47 m over the hulls, a 100 m² wing 23.6 m tall, 2.4 m of draft) and from photographs of the boats racing, 2019 to
-// 2026: two slim hulls, their centres 7.4 m apart, each a tube some 1.0 m wide and 1.3 m deep with a domed deck and a
-// rounded bullet nose, the bottom rockered up to the transom, a cockpit well aft; the wing stepped near amidships on
-// the main beam, faired to a thick foil section, its leading edge 7.4 m aft of the bows; a lighter beam aft, the nets
-// between; the pod forward from the main beam to the jib's tack, 3.4 m aft of the bows. The hulls, beams, pod and nets
+// 8.47 m over the hulls, 2.4 m of draft), the class's profile drawing and photographs of the boats racing, 2019 to 2026,
+// measured against her 15 m hulls. Two slim hulls, their centres 7.4 m apart, each a box with rounded corners some
+// 1.0 m wide and 1.2 m deep, the deck level until 2.7 m from the bow and then drooping in a long curve to a low nose at
+// the waterline, the bottom straight and rising 0.3 m to the transom, a cockpit well aft. The wing stepped near amidships
+// on the main beam, faired to a thick foil section, its leading edge 7.4 m aft of the bows; a lighter beam aft, the nets
+// between; the pod forward from the main beam to the jib's tack, 3.2 m aft of the bows. The hulls, beams, pod and nets
 // are moulded (blender/f50.py, on these same lines); built here if the model doesn't load
 const F = (() => {
-  const L = 15, HX = 3.7, NOSE = 0.86, NOSE_Y = 0.42;
-  const nose = (t) => (t > NOSE ? Math.sqrt(Math.max(0, 1 - ((t - NOSE) / (1 - NOSE)) ** 2)) : 1);
+  const L = 15, HX = 3.7, DECK = 0.85, BOTTOM = -0.38, NOSE_Y = -0.02, DROOP = 0.82, ROUND = 0.9, KEEL = 0.93;
+  const ell = (t, t0) => (t > t0 ? Math.sqrt(Math.max(0, 1 - ((t - t0) / (1 - t0)) ** 2)) : 1); // a quarter ellipse to the tip
   const hull = hullOf({
     L, flare: 0.03,
-    hb: (t) => 0.5 * (1 - 0.16 * smooth(0.45, NOSE, t)) * (0.9 + 0.1 * smooth(0, 0.2, t)) * nose(t),
-    sheer: (t) => NOSE_Y + (1.0 + 0.06 * Math.sin(Math.PI * t) - NOSE_Y) * nose(t),
-    depth: (t) => (NOSE_Y + 0.18 + 0.27 * Math.sin(Math.PI * Math.min(1, t / 1.1)) ** 0.8) * nose(t) - NOSE_Y,
-    n: () => 2.5,
+    hb: (t) => 0.5 * (0.9 + 0.1 * smooth(0, 0.25, t)) * ell(t, ROUND),
+    sheer: (t) => NOSE_Y + (DECK + 0.02 * Math.sin(Math.PI * t) - NOSE_Y) * ell(t, DROOP),
+    depth: (t) => -(NOSE_Y - (NOSE_Y - (BOTTOM + 0.3 * (1 - smooth(0, 0.5, t)))) * ell(t, KEEL)),
+    n: () => 2.8,
   });
-  const MAST_Z = hull.BOW + 7.4, BEAM_Z = MAST_Z + 0.25, AFT_Z = hull.STERN - 1.0, BOARD_Z = hull.BOW + 6.2;
-  const BEAM_Y = 1.1, NET_Y = 0.97, FOOT_Y = 1.45, WING_H = 23.4, MASTHEAD = FOOT_Y + WING_H, RAKE = Math.tan(6 * D2R);
-  // the wing's chord: 4.5 m at the foot to 3 m at its square head, the trailing edge's corner there rounded a little
-  const chord = (f) => lerp(4.5, 3.0, f) * (1 - 0.12 * smooth(0.94, 1, f));
-  const lead = (y) => MAST_Z + (y - FOOT_Y) * RAKE; // the wing's leading edge at height y, raked aft
-  const TACK = new THREE.Vector3(0, 1.12, hull.BOW + 3.4);
-  // the forestay from the pod's nose to the wing's leading edge 19 m up; the jib hoisted on it to some 10 m (35% of
-  // the wing's height, as the photographs show it), its clew just ahead of the main beam
-  const STAY = new THREE.Vector3(0, 19, lead(19) - 0.1), HEAD = TACK.clone().lerp(STAY, (10 - TACK.y) / (STAY.y - TACK.y));
-  const CLEW = new THREE.Vector3(0, 0.35, MAST_Z - 0.62 - TACK.z); // from the tack
-  const FLAP = 0.5, SLOT = 0.47; // the flap's share of the chord from here aft, the front element's to the slot
+  const MAST_Z = hull.BOW + 7.4, BEAM_Z = MAST_Z + 0.25, AFT_Z = hull.STERN - 1.0, BOARD_Z = hull.BOW + 7.0;
+  const BEAM_Y = 0.98, NET_Y = 0.85, FOOT_Y = 1.3, WING_H = 22, MASTHEAD = FOOT_Y + WING_H, RAKE = Math.tan(4 * D2R);
+  // the wing: its leading edge straight and raked 4° aft; its trailing edge a long curve, the chord 3.8 m at the foot,
+  // 4.3 m at its widest a third of the way up, 3.6 m at two thirds, 1.8 m at its flat head (the class's drawing). Some
+  // 22 m over the deck: the drawing and the side-on photographs measure 20–21 m against her 15 m hulls, which the
+  // class calls its 24 m wing
+  const chord = (f) => 3.8 + 1.6 * f - 2.3 * f * f - 1.3 * f ** 8;
+  const lead = (y) => MAST_Z + (y - FOOT_Y) * RAKE; // the wing's leading edge at height y
+  const TACK = new THREE.Vector3(0, 0.98, hull.BOW + 3.2);
+  // the forestay from the pod's nose to the wing's leading edge 83% of the way up it; the jib hoisted on it to some
+  // 9 m over the deck, its leech nearly upright, its clew at the deck just ahead of the wing
+  const STAY = new THREE.Vector3(0, FOOT_Y + 0.83 * WING_H, lead(FOOT_Y + 0.83 * WING_H) - 0.1), HEAD = TACK.clone().lerp(STAY, (9.9 - TACK.y) / (STAY.y - TACK.y));
+  const CLEW = new THREE.Vector3(0, 0.12, MAST_Z - 0.2 - TACK.z); // from the tack
+  const FLAP = 0.49, SLOT = 0.46; // the flap's share of the chord from here aft, the front element's to the slot
   const rig = rigOf({ span: WING_H, chord, numAt: 0.5, flagAt: 0.84, mark: 2.6, head: HEAD, tack: TACK, clew: CLEW });
   const COCKPIT = [hull.STERN - 6.9, hull.STERN - 2.3];
   return { L, HX, hull, MAST_Z, BEAM_Z, AFT_Z, BOARD_Z, BEAM_Y, NET_Y, FOOT_Y, WING_H, MASTHEAD, RAKE, chord, lead, TACK, STAY, HEAD, CLEW, FLAP, SLOT, rig, COCKPIT };
@@ -2776,25 +2780,25 @@ class F50View extends ClassView {
         g.add(new THREE.Mesh(tb.floor, MAT.rubber));
       }
       g.add(tube(rounded(F.COCKPIT, 0.3, 0.15).map(([x, z]) => [x, H.deckY(z) + 0.1, z]), 0.025, MAT.rubber, true)); // the cockpit's rim
-      g.add(...bowNumber(H, look, H.BOW + 3.0, 0.68, 1.5, 0.4));
-      const z = H.STERN - 1.9; for (const d of nameDecal(H, look, z, 0.62, 3.0)) g.add(d);
-      if (look.logo) g.add(logoDecal(H, sx, look.logo, H.BOW + 5.2, 0.6, 1.9, 0.5));
+      g.add(...bowNumber(H, look, H.BOW + 3.9, 0.42, 1.5, 0.4));
+      const z = H.STERN - 1.9; for (const d of nameDecal(H, look, z, 0.42, 3.0)) g.add(d);
+      if (look.logo) g.add(logoDecal(H, sx, look.logo, H.BOW + 5.6, 0.42, 1.9, 0.5));
       return g;
     });
     if (!MOD) {
       // the beams (a faired foil section), the pod and the nets
       const beam = (z, y, c, th) => { const m = new THREE.Mesh(new THREE.CapsuleGeometry(c * th * 0.5, 2 * HX - c * th, 6, 14).rotateZ(Math.PI / 2).scale(1, 1, 1 / th), paint); m.position.set(0, y, z); T.add(m); };
-      beam(F.BEAM_Z, 0.9, 1.5, 0.27); beam(F.AFT_Z, 0.9, 0.6, 0.34);
+      beam(F.BEAM_Z, 0.78, 1.5, 0.27); beam(F.AFT_Z, 0.78, 0.6, 0.34);
       const len = F.MAST_Z - F.TACK.z, pod = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.13, len, 16).rotateX(Math.PI / 2).scale(1, 0.85, 1), paint);
-      pod.position.set(0, 0.9, F.TACK.z + len / 2); T.add(pod);
+      pod.position.set(0, 0.8, F.TACK.z + len / 2); T.add(pod);
       const x = HX - 0.45, z0 = F.BEAM_Z + 0.83, z1 = F.AFT_Z - 0.27;
       const net = new THREE.Mesh(new THREE.PlaneGeometry(2 * x, z1 - z0).rotateX(-Math.PI / 2), F50_NET);
       net.position.set(0, F.NET_Y, (z0 + z1) / 2); net.userData.flat = true; T.add(net);
     }
-    // the daggerboards: down through each hull 1.2 m ahead of the wing, canted out a little so the T-foil on each tip
-    // reaches past her beam, 2.4 m below the water; the leeward one down, the windward one raised up through its hull
+    // the daggerboards: down through each hull just ahead of the wing's leading edge, canted out a little so the T-foil on
+    // each tip reaches past her beam, 2.4 m below the water; the leeward one down, the windward one raised up through its hull
     this.boards = [-1, 1].map((sx) => {
-      const g = add(new THREE.Group(), sx * HX, 1.05, F.BOARD_Z), SPAN = 3.5;
+      const g = add(new THREE.Group(), sx * HX, 0.9, F.BOARD_Z), SPAN = 3.35;
       const b = new THREE.Group(); b.rotation.z = sx * 0.1; g.add(b);
       b.add(new THREE.Mesh(finGeo(SPAN, 0.46, 0.4, 0.13, 0.04), foilMat));
       for (const wx of [-1, 1]) { const h = new THREE.Mesh(finGeo(1.3, 0.44, 0.24, 0.12, 0.12), foilMat); h.position.set(0, -SPAN + 0.05, 0.04); h.rotation.z = wx * (Math.PI / 2 - 0.06) - sx * 0.1; b.add(h); }
@@ -2805,9 +2809,9 @@ class F50View extends ClassView {
     });
     // the rudders: a T-foil on each transom, 2.2 m below the water, turning together with the wheels, their elevators
     this.rudderPair = [-1, 1].map((sx) => {
-      const r = add(new THREE.Group(), sx * HX, 0.75, H.STERN - 0.3);
-      r.add(new THREE.Mesh(finGeo(2.95, 0.4, 0.3, 0.12, 0.1), foilMat));
-      for (const wx of [-1, 1]) { const e = new THREE.Mesh(finGeo(0.7, 0.34, 0.2, 0.12, 0.08), foilMat); e.position.set(0, -2.85, 0.1); e.rotation.z = wx * Math.PI / 2; r.add(e); }
+      const r = add(new THREE.Group(), sx * HX, 0.7, H.STERN - 0.3);
+      r.add(new THREE.Mesh(finGeo(2.9, 0.4, 0.3, 0.12, 0.1), foilMat));
+      for (const wx of [-1, 1]) { const e = new THREE.Mesh(finGeo(0.7, 0.34, 0.2, 0.12, 0.08), foilMat); e.position.set(0, -2.8, 0.1); e.rotation.z = wx * Math.PI / 2; r.add(e); }
       mergeGroup(r);
       return r;
     });
@@ -2831,9 +2835,9 @@ class F50View extends ClassView {
       }
       this.spin.push(hd);
     }
-    // the wing: two elements, its front one turning on its spar stepped on the main beam and raked 6° aft, the flap
-    // hinged behind the slot and cambered to leeward; a short pole on its square head. The shrouds to the main beam's
-    // ends, the forestay from the pod's nose to 19 m up it. Drawn as the AC75's main is, two skins on the cloth's grid
+    // the wing: two elements, its front one turning on its spar stepped on the main beam and raked 4° aft, the flap
+    // hinged behind the slot and cambered to leeward; a short pole on its flat head. The shrouds to the main beam's
+    // ends, the forestay from the pod's nose to 83% of the way up it. Drawn as the AC75's main is, two skins on the cloth's grid
     // (so it takes your colours and number), here as a rigid section, thick as a wing is
     this.mainPivot = add(new THREE.Group(), 0, 0, F.MAST_Z);
     const mtex = sailTexture('main', look, F.rig);
@@ -2841,7 +2845,7 @@ class F50View extends ClassView {
     this.main2 = sailMesh(24, 16, mtex, true, 'main'); this.mainPivot.add(this.main2);
     this.wingPole = cyl(0.03, 0.04, 0.8, M.dark, 6); this.wingPole.position.set(0, F.MASTHEAD + 0.4, F.WING_H * F.RAKE + 0.3); this.mainPivot.add(this.wingPole);
     add(new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.2, 1.3), M.dark), 0, F.BEAM_Y - 0.05, F.MAST_Z); // the step's fairing
-    for (const sx of [-1, 1]) T.add(line([[0, 16.5, F.lead(16.5) + 0.2], [sx * (HX - 0.45), F.BEAM_Y, F.BEAM_Z]]));
+    for (const sx of [-1, 1]) T.add(line([[0, 15.5, F.lead(15.5) + 0.2], [sx * (HX - 0.45), F.BEAM_Y, F.BEAM_Z]]));
     T.add(line([[F.STAY.x, F.STAY.y, F.STAY.z], [F.TACK.x, F.TACK.y, F.TACK.z]]));
     this.mainsheet = line([[0, 0, 0], [0, 1, 0]]); this.mainsheet.frustumCulled = false; T.add(this.mainsheet);
     this.travCar = add(new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.1, 0.22), M.dark), 0, F.NET_Y + 0.2, F.AFT_Z);
@@ -2882,7 +2886,7 @@ class F50View extends ClassView {
     for (const g of this.boards) {
       const want = g.position.x * side < 0 || b.v < 1.5 ? 0 : 2.4;
       g.userData.up = lerp(g.userData.up, want, 0.04);
-      g.position.y = 1.05 + g.userData.up;
+      g.position.y = 0.9 + g.userData.up;
     }
     // the wing: turned about its spar to the sheet's angle; the flap cambered to leeward, the more in a light air, and
     // feathered as the wing luffs; each height twisted off a little more towards the head, and carried aft by the rake
@@ -2902,7 +2906,7 @@ class F50View extends ClassView {
       const tw = lee * 0.12 * f, ct = Math.cos(tw), st = Math.sin(tw), o = f * F.WING_H * F.RAKE;
       v.set(x * ct + z * st + o * rs, F.FOOT_Y + f * F.WING_H, -x * st + z * ct + o * rc);
     });
-    this.wingPole.position.set(F.WING_H * F.RAKE * rs, F.MASTHEAD + 0.4, F.WING_H * F.RAKE * rc + 0.3 * Math.cos(0));
+    this.wingPole.position.set(F.WING_H * F.RAKE * rs, F.MASTHEAD + 0.4, F.WING_H * F.RAKE * rc + 0.3);
     // the wing's sheet, from its foot's trailing edge down to the traveller's car on the aft beam
     const ch0 = F.chord(0), ma = psi, ms = this.mainsheet.geometry.attributes.position;
     ms.setXYZ(0, clamp(Math.sin(ma) * ch0 * 0.6, -2.2, 2.2), F.NET_Y + 0.24, F.AFT_Z); this.travCar.position.x = ms.getX(0);

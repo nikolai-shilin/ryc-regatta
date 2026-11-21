@@ -300,7 +300,7 @@ export const CLASSES = {
   // of the record (Sassnitz, 2026) in a blow; upwind about twice the wind's speed. Courses for her are laid 2.2
   // times as long, the line 1.6 times as wide, all within the AC75's, so every venue's water holds them.
   f50: {
-    id: 'f50', loa: 15, beam: 8.8, drawnL: 15, crew: 6, frame: 1.55, // the 24 m wing, her all-rounder
+    id: 'f50', loa: 15, beam: 8.8, drawnL: 15, crew: 6, frame: 1.5, // her all-rounder wing's head some 24 m over the water
     kite: false, zero: false, reef: false, j3: false,
     tau: 2.8, coast: 320, hullV: 60, heelK: 0.3, awsK: 2.6, heelShow: 0.25, turn: 1.1, yawLag: 0.5, courseK: 2.2, lineK: 1.6, startK: 3.5,
     surfK: 0, chopK: 0.3, // flying, her hulls are clear of the sea

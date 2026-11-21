@@ -154,7 +154,7 @@ test('the F50 flies on her leeward board, and her crew cross the nets to the new
   sail({ twa: -0.7, boom: -1 }, 20); // a second after the tack: on their way, on the net
   const mid = v.crew.filter((c) => Math.abs(c.x) < HX - 0.7);
   assert.ok(mid.length >= 3, `${mid.length} of six out on the net`);
-  for (const c of mid) close(c.y, 0.99, 0.05, 'their feet on the net:');
+  for (const c of mid) close(c.y, 0.87, 0.05, 'their feet on the net:');
   sail({ twa: -0.7, boom: -1 }, 80);
   for (const c of v.crew) close(c.x, -HX, 0.05, 'across in the new windward hull:');
   assert.ok(up(-1) > 2 && up(1) < 0.2, 'and the boards changed over');
