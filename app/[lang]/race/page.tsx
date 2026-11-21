@@ -16,6 +16,7 @@ import { SceneBrand } from '@/components/scene-brand';
 import { GameScene } from '@/components/game-scene';
 import { PauseCard } from '@/components/pause-card';
 import { MyRow } from '@/components/home-client';
+import { SITE, RYC_LD, crumbsLd, jsonLd, langUrl } from '@/lib/seo';
 
 // Built for everyone alike and refreshed every five minutes, as Home is (today's fastest move): who is signed in is
 // the browser's to show (lib/me.ts: .if-me, .if-guest, the initials; the pause card's account reads the cookie).
@@ -42,9 +43,26 @@ export default async function Hub({ params }: LangParams) {
   const metres = fmtDistance(courseDistance(plannedCourse(d.preset, d.length, d.fleet, d.course, boat), d.laps), lang).split(' · ')[0];
   const breeze = { light: t('Light breeze', 'Слабый ветер', 'Brisa suave', 'Leichte Brise', 'Hafif meltem', 'Petite brise', 'Brezza leggera', 'Vento fraco'), medium: t('Medium breeze', 'Средний ветер', 'Brisa media', 'Mittlere Brise', 'Orta meltem', 'Brise moyenne', 'Brezza media', 'Vento médio'), strong: t('Strong breeze', 'Сильный ветер', 'Brisa fuerte', 'Starke Brise', 'Kuvvetli meltem', 'Forte brise', 'Brezza forte', 'Vento forte') }[d.preset];
   const races = today && today.d === d.day ? today.races : 0;
+  // For search and AI engines: the trail (Home › Today's race) and today's race as what it is, an online sailing race
+  // open to all for the UTC day, at today's venue
+  const todayName = t('Today’s race', 'Гонка дня', 'La regata del día', 'Die Regatta des Tages', 'Günün yarışı', 'La régate du jour', 'La regata del giorno', 'A regata do dia');
+  const here = SITE + langUrl('/race', lang);
+  const ld = [
+    crumbsLd(lang, t('Home', 'Главная', 'Inicio', 'Start', 'Ana sayfa', 'Accueil', 'Home', 'Início'), [[todayName, '/race']]),
+    {
+      '@context': 'https://schema.org', '@type': 'SportsEvent', name: `${todayName}: ${pick(v.name, lang)}`, sport: 'Sailing',
+      description: `${pick(v.place, lang)}. ${pick(v.about, lang)}`, inLanguage: lang,
+      startDate: `${d.day}T00:00:00Z`, endDate: `${d.day}T23:59:59Z`,
+      eventStatus: 'https://schema.org/EventScheduled', eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
+      location: { '@type': 'VirtualLocation', url: here }, image: `${SITE}/og/today?lang=${lang}&d=${d.day}`,
+      isAccessibleForFree: true, offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD', availability: 'https://schema.org/InStock', url: here, validFrom: `${d.day}T00:00:00Z` },
+      organizer: RYC_LD,
+    },
+  ];
 
   return (
     <div className="scr bt-scr bc" lang={lang}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <div className="bt">
         <GameScene venue={d.venue} boat={d.yacht} wind={d.preset} title={t('Today’s venue in 3D', 'Место гонки дня в 3D', 'La sede de hoy en 3D', 'Das Revier von heute in 3D', 'Günün yarış alanı 3D’de', 'Le plan d’eau du jour en 3D', 'Il campo di regata di oggi in 3D', 'A raia de hoje em 3D')} loading={t('Loading the venue', 'Загружаем место гонки', 'Cargando la sede', 'Revier wird geladen', 'Yarış alanı yükleniyor', 'Chargement du plan d’eau', 'Caricamento del campo di regata', 'Carregando a raia')} />
 
@@ -58,7 +76,7 @@ export default async function Hub({ params }: LangParams) {
             </span>
           </div>
           <span className="bt-kick">{t('Today’s race', 'Гонка дня', 'La regata del día', 'Regatta des Tages', 'Günün yarışı', 'La régate du jour', 'La regata del giorno', 'A regata do dia')} · {pick(boat.name, lang)}</span>
-          <h1 className="bt-h bt-hero">{pick(v.name, lang)} <span className="bt-h-cc">{v.nation}</span></h1>
+          <h1 className="bt-h bt-hero"><span className="vh">{t('Today’s sailing race:', 'Парусная гонка дня:', 'La regata de vela del día:', 'Die Segelregatta des Tages:', 'Günün yelken yarışı:', 'La régate de voile du jour :', 'La regata a vela del giorno:', 'A regata de vela do dia:')} </span>{pick(v.name, lang)} <span className="bt-h-cc">{v.nation}</span></h1>
           <p className="bt-p">{pick(v.place, lang)}. {pick(v.about, lang)} {best
             ? t(`The same race for everyone today, in the ${boat.name[0]}: ${races} sailed so far.`, `Сегодня у всех одна гонка, на ${boat.name[1]}: уже ${races} ${ruPlural(races, ['заезд', 'заезда', 'заездов'])}.`, `La misma regata para todos hoy, en el ${(boat.name[2] ?? boat.name[0])}: ${races} navegadas hasta ahora.`, `Heute für alle dieselbe Regatta mit der Yacht ${(boat.name[3] ?? boat.name[0])}: ${races} bisher gesegelt.`, `Bugün herkes için aynı yarış, ${(boat.name[4] ?? boat.name[0])} ile: şimdiye kadar ${races} yarış yapıldı.`, `La même régate pour tous aujourd’hui, en ${(boat.name[5] ?? boat.name[0])} : ${races} courues jusqu’ici.`, `La stessa regata per tutti oggi, in ${(boat.name[6] ?? boat.name[0])}: ${races} regate corse finora.`, `A mesma regata para todos hoje, no ${(boat.name[7] ?? boat.name[0])}: ${races} velejadas até agora.`)
             : t(`The same race for everyone today, in the ${boat.name[0]}. Nobody has finished it yet.`, `Сегодня у всех одна гонка, на ${boat.name[1]}. Её ещё никто не прошёл.`, `La misma regata para todos hoy, en el ${boat.name[2] ?? boat.name[0]}. Todavía no la ha terminado nadie.`, `Heute segeln alle dieselbe Regatta, mit der ${(boat.name[3] ?? boat.name[0])}. Noch hat sie niemand beendet.`, `Bugün herkes için aynı yarış, ${(boat.name[4] ?? boat.name[0])} ile. Henüz kimse bitirmedi.`, `La même régate pour tous aujourd’hui, en ${(boat.name[5] ?? boat.name[0])}. Personne ne l’a encore terminée.`, `La stessa regata per tutti oggi, in ${(boat.name[6] ?? boat.name[0])}. Nessuno l’ha ancora finita.`, `A mesma regata para todos hoje, no ${(boat.name[7] ?? boat.name[0])}. Ninguém terminou ainda.`)} {t('A new yacht every day.', 'Каждый день — новая яхта.', 'Un yate nuevo cada día.', 'Jeden Tag eine neue Yacht.', 'Her gün yeni bir yat.', 'Un nouveau yacht chaque jour.', 'Un nuovo yacht ogni giorno.', 'Um veleiro novo todo dia.')}</p>

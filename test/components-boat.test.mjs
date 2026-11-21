@@ -477,7 +477,7 @@ test('the address follows the yacht picked, keeping the rest of it', async () =>
   await click(v.$('.fl-all'));
   assert.equal(history.replaced.at(-1), '/yachts?from=free');
   assert.deepEqual(lastSent(v), { type: 'overview' });
-  assert.equal(v.$('h1').textContent, 'Every yacht');
+  assert.equal(v.$('h1').textContent, 'From the Optimist to the AC75');
   assert.equal(v.$('.fl-all').getAttribute('aria-pressed'), 'true');
 });
 

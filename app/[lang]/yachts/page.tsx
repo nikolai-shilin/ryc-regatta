@@ -1,7 +1,8 @@
 import { getT, titled, type LangParams } from '@/lib/i18n';
 import { BackLink } from '@/components/back-link';
 import { FleetView } from '@/components/fleet-view';
-import { isYacht } from '@/lib/yachts';
+import { isYacht, YACHTS } from '@/lib/yachts';
+import { SITE, crumbsLd, jsonLd, langUrl } from '@/lib/seo';
 
 export const generateMetadata = titled('The yachts: from the Optimist to the AC75', 'Яхты: от Оптимиста до AC75', 'Los yates: del Optimist al AC75', 'Die Yachten: vom Optimist bis zum AC75', 'Yatlar: Optimist’ten AC75’e', 'Les yachts : de l’Optimist à l’AC75', 'Gli yacht: dall’Optimist all’AC75', 'Os veleiros: do Optimist ao AC75', {
   path: '/yachts', card: '/og/page/yachts',
@@ -17,8 +18,17 @@ export default async function YachtsPage({ params, searchParams }: LangParams & 
   const [{ lang, t }, q] = await Promise.all([getT(params), searchParams]);
   const back = q.from === 'free' ? '/race/free' : '/race';
   const start = isYacht(q.y) ? q.y : null;
+  // for search and AI engines, as /venues has: the trail, and the nine yachts each with her own page, in the game's order
+  const ld = [
+    crumbsLd(lang, t('Home', 'Главная', 'Inicio', 'Start', 'Ana sayfa', 'Accueil', 'Home', 'Início'), [[t('The yachts', 'Яхты', 'Los yates', 'Die Yachten', 'Yatlar', 'Les yachts', 'Gli yacht', 'Os veleiros'), '/yachts']]),
+    {
+      '@context': 'https://schema.org', '@type': 'ItemList', name: t('The yachts in Up and down', 'Яхты в Up and down', 'Los yates de Up and down', 'Die Yachten in Up and down', 'Up and down’daki yatlar', 'Les yachts de Up and down', 'Gli yacht di Up and down', 'Os veleiros do Up and down'),
+      itemListElement: YACHTS.map((y, i) => ({ '@type': 'ListItem', position: i + 1, name: t(...y.name), description: t(...y.kind), url: SITE + langUrl(`/yachts/${y.id}`, lang) })),
+    },
+  ];
   return (
     <div className="scr bt-scr bc" lang={lang}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <FleetView lang={lang} start={start} tour={!start} back={(
         <BackLink href={back} label={back === '/race' ? t('Back to the race hub', 'Назад в меню гонок', 'Volver al centro de regatas', 'Zurück zum Regatta-Hub', 'Yarış merkezine dön', 'Retour au centre de régate', 'Torna al centro regate', 'Voltar à central de regatas') : t('Back to the custom race', 'Назад к своей гонке', 'Volver a la regata personalizada', 'Zurück zur freien Regatta', 'Serbest yarışa dön', 'Retour à la régate libre', 'Torna alla regata libera', 'Voltar à regata livre')} />
       )} />
