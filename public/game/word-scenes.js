@@ -364,11 +364,12 @@ export function createStage({ world, race, lang = 'en' }) {
   const stern = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: '#f5c400', transparent: true, opacity: 0.9, fog: false }));
   stern.frustumCulled = false; stern.visible = false; world.scene.add(stern);
 
-  // the wind's arrow, flat on the water and pointing the way the wind blows, with its tag at its tail
-  const AL = 2.4 * L, AW = 0.3 * L, HL = 0.8 * L, HW = 0.8 * L;
+  // the wind's arrow, flat on the water and pointing the way the wind blows, with its tag at its tail: half see-through,
+  // it drifts down the wind and fades, over and over, like a gust running across the water
+  const AL = 1.5 * L, AW = 0.18 * L, HL = 0.5 * L, HW = 0.55 * L, ARROW_A = 0.5, ARROW_T = 1.8;
   const ash = new THREE.Shape();
   ash.moveTo(0, -AW / 2); ash.lineTo(AL - HL, -AW / 2); ash.lineTo(AL - HL, -HW / 2); ash.lineTo(AL, 0); ash.lineTo(AL - HL, HW / 2); ash.lineTo(AL - HL, AW / 2); ash.lineTo(0, AW / 2); ash.closePath();
-  const arrow = new THREE.Group(), arrowM = new THREE.Mesh(new THREE.ShapeGeometry(ash), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.85, depthWrite: false, fog: false, side: THREE.DoubleSide }));
+  const arrow = new THREE.Group(), arrowM = new THREE.Mesh(new THREE.ShapeGeometry(ash), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: ARROW_A, depthWrite: false, fog: false, side: THREE.DoubleSide }));
   arrowM.rotation.x = -Math.PI / 2; arrowM.renderOrder = 5; arrow.add(arrowM);
   const windTag = labelSprite('#ffffff'); windTag.layers.set(OVERLAY); windTag.position.set(0, 0.25 * L, 0); arrow.add(windTag);
   arrow.visible = false; world.scene.add(arrow);
@@ -584,6 +585,10 @@ export function createStage({ world, race, lang = 'en' }) {
       }
       arrow.position.set(cx, 0.45, cz);
       arrow.rotation.y = Math.atan2(-Math.cos(wn), -Math.sin(wn)); // its +x down the wind
+      // a third of its length down the wind, fading in and out as it goes (its tag stays put)
+      const ph = (time / ARROW_T) % 1;
+      arrowM.position.x = (ph - 0.5) * AL * k / 3;
+      arrowM.material.opacity = ARROW_A * (0.25 + 0.75 * Math.sin(Math.PI * ph));
     }
     // the umpire's boat: by the boat she watches, on the way that boat set out on, riding the swell
     if (rib && rib.visible && def.umpire) {
@@ -593,7 +598,7 @@ export function createStage({ world, race, lang = 'en' }) {
         const [r1, a1] = def.umpire.at, f1 = fwd(ribAt.h), s1 = stb(ribAt.h);
         ribAt.x += (b.x - ribAt.x) * cl(2); ribAt.z += (b.z - ribAt.z) * cl(2);
         const x = ribAt.x + s1.x * r1 * L + f1.x * a1 * L, z = ribAt.z + s1.z * r1 * L + f1.z * a1 * L;
-        rib.position.set(x, waveHeight(world.W, x, z, time) * 0.8 - 0.1, z); // her tubes just clear of the water rib.rotation.y = -ribAt.h;
+        rib.position.set(x, waveHeight(world.W, x, z, time) * 0.8 - 0.1, z); rib.rotation.y = -ribAt.h; // her tubes just clear of the water
         rib.userData.flagObj.update(time, ribAt.h - (W + shiftNow), tws * 0.514); // flying down the wind
       }
     }
