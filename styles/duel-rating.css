@@ -1,0 +1,28 @@
+/* The 1-on-1 rating under a 1-on-1 race's results (components/duel-rating.tsx), in the broadcast's own type: the label as
+   the results' labels, the number big in the condensed face, the change in green or orange, the level bar as a thin rule. */
+.dr { display: flex; flex-direction: column; gap: 8px; padding: 14px 2px 4px; border-top: 1px solid var(--rule, rgba(255,255,255,.14)); }
+.dr-k { font: 600 var(--fs-label, 12px)/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: var(--ls-label, .14em); text-transform: uppercase; color: var(--ink-3, rgba(255,255,255,.62)); }
+.dr-top { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+.dr-n { font: 800 40px/0.9 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink, #fff); font-variant-numeric: tabular-nums; }
+.dr-d { font: 700 22px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); font-variant-numeric: tabular-nums; color: var(--ink-2, rgba(255,255,255,.78)); }
+.dr .up { color: var(--up, #2ee6a0); } .dr .down { color: var(--down, #ff8a3d); }
+.dr-lvl { font: 700 13px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: .14em; text-transform: uppercase; padding: 5px 18px 5px 8px; background: var(--you, #3db8ff); color: var(--ink-on, #04121e);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+.dr-was { font: 600 13px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink-3, rgba(255,255,255,.62)); font-variant-numeric: tabular-nums; }
+.dr-next { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.dr-bar { flex: 1 1 120px; height: 4px; background: rgba(255,255,255,.12); position: relative; }
+.dr-bar > i { position: absolute; inset: 0 auto 0 0; background: var(--you, #3db8ff); }
+.dr-to { font: 600 12px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3, rgba(255,255,255,.62)); }
+.dr-note { margin: 0; font: 500 var(--fs-small, 13px)/1.45 var(--sans, 'Sofia Sans', sans-serif); color: var(--ink-3, rgba(255,255,255,.62)); }
+.dr-them { margin: 0; font: 600 14px/1.3 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink-2, rgba(255,255,255,.78)); font-variant-numeric: tabular-nums; }
+.dr-them b { color: var(--ink, #fff); }
+/* on your own card on /players (components/my-duel-rating.tsx) */
+.dr-card { border-top: 0; padding-top: 4px; }
+.dr-list { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--rule, rgba(255,255,255,.14)); }
+.dr-list li { display: flex; align-items: center; gap: 12px; min-height: 44px; border-bottom: 1px solid var(--rule-2, rgba(255,255,255,.08)); }
+.dr-when { flex: 0 0 52px; font: 600 12px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3, rgba(255,255,255,.62)); }
+.dr-who { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; font: 600 14px/1.2 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink, #fff); }
+.dr-who i { font-style: normal; color: var(--ink-3, rgba(255,255,255,.62)); font-variant-numeric: tabular-nums; }
+.dr-at { font: 500 12px/1.2 var(--sans, 'Sofia Sans', sans-serif); color: var(--ink-3, rgba(255,255,255,.62)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dr-list b { font: 700 16px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); font-variant-numeric: tabular-nums; color: var(--ink-2, rgba(255,255,255,.78)); }
+.dr-list b.up { color: var(--up, #2ee6a0); } .dr-list b.down { color: var(--down, #ff8a3d); }

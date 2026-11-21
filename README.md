@@ -80,6 +80,11 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     race reached the gun. A race whose two ends name the same state and winner is `agreed`, and a finished, agreed race
     between two accounts is a trusted result, the only kind a rating will count
     (`docs/superpowers/specs/2026-11-21-one-on-one-trusted-results.md`).
+  - **The rating:** plain Elo, from 1500, K 64 for the first five rated races and 32 after (`lib/elo.ts`, levels in
+    `lib/levels.ts`). The database rates each trusted result once, as it becomes agreed (`regatta_rate_duel`), and at most
+    three races a day for a pair. The game's card says the new rating after a race (`GET /connect/rating`), as does the
+    result page (`components/duel-rating.tsx`); your own card on `/players` shows yours (`GET /connect/rating/me`)
+    (`docs/superpowers/specs/2026-11-21-one-on-one-rating.md`).
   - **Not on the hub yet:** the race hub's 1-on-1 race card shows only with `?match` in its address, until the owner's
     test race with a friend; `/match/new` works for anyone with the address.
 - **A passport to share:** `/players?s=&v=&vs=&n=` (`lib/passport-share.ts`; its card `app/og/passport`): the streak and

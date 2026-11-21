@@ -26,6 +26,7 @@ import { plainRows, shortName } from '@/lib/name';
 import { BOAT_EVENT, readBoat } from '@/lib/boat';
 import { briefUrl, readBrief, SCORES_API } from '@/lib/day-brief';
 import { useWho } from './me';
+import { DuelRating } from './duel-rating';
 import { FirstFinish } from './first-finish';
 import { RateRace } from './rate-race';
 import { PauseCard } from './pause-card';
@@ -52,7 +53,8 @@ function Level({ lv, t }: { lv?: string; t: (en: string, ru: string, es?: string
 }
 type Foul = { rule: string; who: string | null; t: number | null; x: number | null; z: number | null };
 type Result = {
-  v: 1; id: string; at: number; daily: string | null; oneOnOne?: boolean; first?: boolean; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
+  v: 1; id: string; at: number; daily: string | null; oneOnOne?: boolean; duel?: { code: string; seed: number }; // duel: a 1-on-1 race's code and seed, for its rating (components/duel-rating.tsx)
+  first?: boolean; preset: 'light' | 'medium' | 'strong'; length: string; laps: number; start: number; current: boolean;
   // `type`, `marks` (every rounding mark, by the leg that goes to it) and `finish` (a finish line of its own) came with the
   // course shapes: a result saved before them has none, and a wing mark makes it a triangle
   course: { windward: [number, number]; gate: [number, number][]; pin: [number, number]; committee: [number, number]; legs: string[]; wing?: [number, number];
@@ -361,6 +363,7 @@ export default function ResultView({ id, lang, head, foot }: { id: string; lang:
           </ol>
           {hasLevels && <p className="bt-hint rs-hint">{t('Computer skippers:', 'Компьютерные шкиперы:', 'Patrones del ordenador:', 'Computer-Steuerleute:', 'Bilgisayar kaptanları:', 'Skippers de l’ordinateur :', 'Skipper del computer:', 'Timoneiros do computador:')} <Pips n={1} /> {t('beginner to', 'от новичка до', 'de principiante a', 'Anfänger bis', 'acemiden', 'de débutant à', 'da principiante a', 'de iniciante a')} <Pips n={4} /> {t('expert', 'эксперта', 'experto', 'Experte', 'uzmana', 'expert', 'esperto', 'especialista')}</p>}
           {!one && <p className="bt-hint rs-hint">{res.daily ? t('Today’s race is the one that ranks: everyone sails the same one.', 'В рейтинг идёт гонка дня: у всех она одна.', 'La regata de hoy es la que puntúa: todos navegan la misma.', 'Die Regatta des Tages ist die, die zählt: Alle segeln dieselbe.', 'Sıralamaya giren günün yarışıdır: herkes aynısını yarışır.', 'C’est la régate du jour qui compte au classement : tout le monde court la même.', 'La regata del giorno è quella che conta per la classifica: tutti corrono la stessa.', 'A regata do dia é a que vale para a classificação: todos correm a mesma.') : t('Custom races stay with you; today’s race is the one that ranks.', 'Свои гонки остаются у тебя; в рейтинг идёт гонка дня.', 'Las regatas personalizadas se quedan contigo; la de hoy es la que puntúa.', 'Eigene Regatten bleiben bei dir; die Regatta des Tages ist die, die zählt.', 'Serbest yarışlar sende kalır; sıralamaya giren günün yarışıdır.', 'Les régates libres restent chez toi ; c’est la régate du jour qui compte au classement.', 'Le regate libere restano tue; la regata del giorno è quella che conta per la classifica.', 'As regatas livres ficam com você; a regata do dia é a que vale para a classificação.')}</p>}
+          {!shared && one && typeof res.duel?.code === 'string' && Number.isInteger(res.duel.seed) && <DuelRating duel={res.duel} lang={lang} />}{/* what your 1-on-1 race did to your rating */}
           {!shared && !one && Date.now() - res.at < 864e5 && <RateRace id={res.id} lang={lang} />}{/* how was it: your own race, just sailed */}
         </PauseCard>
         <a className="rs-down" href="#debrief" aria-label={t('The debrief', 'Разбор', 'El análisis', 'Die Nachbesprechung', 'Değerlendirme', 'Le débriefing', 'Il debriefing', 'A análise')}><span>{t('The debrief', 'Разбор', 'El análisis', 'Die Nachbesprechung', 'Değerlendirme', 'Le débriefing', 'Il debriefing', 'A análise')}</span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" /></svg></a>
