@@ -100,7 +100,7 @@ const memory = () => Object.create({ getItem(k) { return k in this ? this[k] : n
 export async function page(name, { host = false, settings = {}, ls = null, ...more } = {}) {
   const s = { name, timers: [], channels: [], kept: [], records: [], opened: [], toasts: [], ended: 0, session: null, racing: false, heard: [], hands: null, ...more,
     doc: { head: new El('head'), body: new El('body'), activeElement: null, visibilityState: 'visible', createElement: (t) => new El(t), addEventListener() {}, execCommand() {} },
-    ls: ls ?? memory(), nav: { userAgent: 'test' }, loc: { origin: 'http://game.test', search: '', reload() {}, replace() {} } };
+    ls: ls ?? memory(), nav: { userAgent: 'test' }, loc: { origin: 'http://game.test', search: more.search ?? '', reload() {}, replace() {} } }; // (search: the page's address after its path, e.g. '?auto')
   s.connect = async () => ({ ok: true, json: async () => ({ url: 'u', key: 'k', name, canHost: true, build: 'b1' }) });
   s.$ = (sel) => s.doc.body.querySelector(sel);
   s.shows = (sel) => { const e = s.$(sel); return !!e && !e.hidden; };

@@ -33,3 +33,15 @@
 .iv-m { color: var(--ink-3, rgba(255,255,255,.62)); }
 .iv-note { margin: 0; font: 500 var(--fs-small, 13px)/1.45 var(--sans, 'Sofia Sans', sans-serif); color: var(--ink-3, rgba(255,255,255,.62)); }
 .dr-fun { font: 600 11px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3, rgba(255,255,255,.62)); white-space: nowrap; }
+/* Find a race (components/duel-finder.tsx) */
+.df { display: flex; flex-direction: column; gap: 14px; }
+.df-acts { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.df-look { display: flex; align-items: baseline; gap: 14px; margin: 0; font: 700 22px/1.1 var(--cond, 'Sofia Sans Condensed', sans-serif); text-transform: uppercase; letter-spacing: .02em; }
+.df-time { font-variant-numeric: tabular-nums; color: var(--you, #3db8ff); }
+.df-band, .df-where { margin: 0; font: 600 14px/1.4 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink-2, rgba(255,255,255,.78)); }
+.df-stakes { margin: 0; font: 600 15px/1.4 var(--cond, 'Sofia Sans Condensed', sans-serif); color: var(--ink-2, rgba(255,255,255,.78)); font-variant-numeric: tabular-nums; }
+.df-stakes .up { color: var(--up, #2ee6a0); } .df-stakes .down { color: var(--down, #ff8a3d); }
+.df-wait { margin: 0; font: 600 16px/1.4 var(--sans, 'Sofia Sans', sans-serif); color: var(--ink-2, rgba(255,255,255,.78)); }
+.df-ready { position: relative; }
+.df-left { margin-left: 10px; font-variant-numeric: tabular-nums; opacity: .75; }
+.df-bar { flex: none; width: 100%; height: 4px; } /* (a line, not the level bar's row: in this column its basis would be its height) */

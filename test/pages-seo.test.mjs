@@ -194,7 +194,7 @@ user = null;
 const indexed = sweep.filter((p) => p.meta.robots?.index !== false);
 
 test('every page was opened, in both languages', () => {
-  assert.equal(new Set(sweep.map((p) => p.route)).size, 39);
+  assert.equal(new Set(sweep.map((p) => p.route)).size, 40); // (40: /duel, Find a race)
   assert.equal(sweep.length % 2, 0);
 });
 
