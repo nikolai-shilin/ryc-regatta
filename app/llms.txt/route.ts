@@ -16,7 +16,7 @@ export function GET() {
 
 > ${HOME_DESC[0]}
 
-${NAME} is a free 3D sailing race game by RYC that runs in any modern web browser, on a phone or a computer, with nothing to install. You sail a yacht round one of four courses (up and down, a triangle, a trapezoid, or up and down with an upwind finish) at one of 66 famous regatta venues (Göcek, Cowes, Newport, Sydney, San Francisco, Auckland, Hong Kong, Cape Town, New York and more), against up to six computer boats that race by the Racing Rules of Sailing: they hail, give way and do their penalty turns. It is in English, Russian, Spanish, German and Turkish.
+${NAME} is a free 3D sailing race game by RYC that runs in any modern web browser, on a phone or a computer, with nothing to install. You sail a yacht round one of four courses (up and down, a triangle, a trapezoid, or up and down with an upwind finish) at one of 66 famous regatta venues (Göcek, Cowes, Newport, Sydney, San Francisco, Auckland, Hong Kong, Cape Town, New York and more), against up to six computer boats that race by the Racing Rules of Sailing: they hail, give way and do their penalty turns. Or race a friend live, one against one, by sending them a link. It is in English, Russian, Spanish, German, Turkish, French, Italian and Portuguese.
 
 ## Key facts
 
@@ -24,6 +24,7 @@ ${NAME} is a free 3D sailing race game by RYC that runs in any modern web browse
 - Platforms: web browser on phone, tablet or computer. Touch steering on a phone, arrow keys on a computer.
 - Today's race: a new race every midnight UTC, the same venue, wind, course and fleet for every player (the venues take turns), so times compare fairly; ranked for signed-in players.
 - Custom race: light (7 kn), medium (12 kn) or strong (19 kn) wind; 3, 5 or 7 boats; up and down, triangle, trapezoid or up and down with an upwind finish; short, medium or long; 1 or 2 laps; a 1, 3 or 5 minute start; current on or off.
+- 1-on-1 race: race a friend live, each on your own screen. Choose 1-on-1 race on Home, set the race as for a custom race and send the link; hosting takes an account, joining doesn't. At the finish: the gap to your rival at each mark, and a rematch. Races between two signed-in sailors are rated by Elo (everyone starts at 1500), with levels from Novice under 1200 to Olympian at 2200 and over.
 - Sailing: main and jib on their own sheets or auto-trim, tacks, gybes and a gennaker downwind; wind shifts of 10° and more, gusts and lulls; a real start sequence with the class flag, P, one minute and the gun.
 - Made by RYC (https://www.rycrentals.com/), alongside Sailing Certification Test, an app for sailing certification exam practice. The guides and the venue pages are written by ${AUTHOR.name[0]} of RYC.
 - The full text of the guides, the glossary, the venues, the yachts and the questions in one file: ${SITE}/llms-full.txt
@@ -56,7 +57,7 @@ ${YACHTS.map((y) => `  - [${y.name[0]}](${SITE}/yachts/${y.id}): ${y.kind[0]}`).
 - [The players](${SITE}/players): everyone who races signed in, the most races first: their races, wins and podiums, the yachts and venues they sail, and their boat in 3D in their colours
 - [Social media](${SITE}/social): where the game posts its news and best races (${CHANNELS.map((c) => `${c.name} ${c.url}`).join(', ')}), and sending it to a friend
 
-Every page is also in Russian: add ?lang=ru to the address (for example ${SITE}/faq?lang=ru).
+Every page is also in Russian, Spanish, German, Turkish, French, Italian and Portuguese: add ?lang=ru, ?lang=es, ?lang=de, ?lang=tr, ?lang=fr, ?lang=it or ?lang=pt to the address (for example ${SITE}/faq?lang=es).
 
 ## FAQ
 
