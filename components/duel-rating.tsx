@@ -46,6 +46,7 @@ export function DuelRatingView({ r, lang }: { r: R; lang: Lang }) {
   if (r.status === 'unrated') return (
     <div className="dr" aria-live="polite"><span className="dr-k">{label}</span>
       <p className="dr-note">{t('Not rated', 'Без рейтинга', 'Sin rating', 'Nicht gewertet', 'Reytinge sayılmadı', 'Hors classement', 'Non valida per il rating', 'Não conta para o rating')}: {whyText(r.reason, lang)}.</p>
+      <a className="dr-help" href="/help/duel#h-fair">{t('How 1-on-1 races work', 'Как устроены гонки 1 на 1', 'Cómo funcionan las regatas 1 contra 1', 'So funktionieren 1-gegen-1-Regatten', 'Bire bir yarışlar nasıl işler', 'Comment marchent les duels', 'Come funzionano le regate 1 contro 1', 'Como funcionam os duelos')} ›</a>
     </div>
   );
 
@@ -70,6 +71,7 @@ export function DuelRatingView({ r, lang }: { r: R; lang: Lang }) {
       )}
       {prov && <p className="dr-note">{t('Your first five rated races count double, so the rating finds your level fast. It shows with a ~ until they’re done.', 'Первые пять рейтинговых гонок идут в двойном размере, чтобы рейтинг быстро нашёл твой уровень. До их конца он показан с ~.', 'Tus cinco primeras regatas con rating cuentan doble, para que el rating encuentre pronto tu nivel. Hasta entonces se muestra con ~.', 'Deine ersten fünf gewerteten Regatten zählen doppelt, damit die Wertung dein Niveau schnell findet. Bis dahin steht sie mit ~.', 'İlk beş reytingli yarışın iki kat sayılır, böylece reyting seviyeni çabuk bulur. O zamana kadar ~ ile gösterilir.', 'Tes cinq premières régates classées comptent double, pour que le classement trouve vite ton niveau. D’ici là, il s’affiche avec un ~.', 'Le tue prime cinque regate valide contano doppio, così il rating trova presto il tuo livello. Fino ad allora si vede con ~.', 'Suas cinco primeiras regatas valendo rating contam em dobro, para o rating achar logo o seu nível. Até lá ele aparece com ~.')}</p>}
       <p className="dr-them">{them.name || t('The other sailor', 'Соперник', 'El otro regatista', 'Der andere Segler', 'Diğer denizci', 'L’autre marin', 'L’altro velista', 'O outro velejador')} <b>{shown(them.after, them.races)}</b> <span className={them.delta > 0 ? 'up' : them.delta < 0 ? 'down' : ''}>{signed(them.delta)}</span></p>
+      <a className="dr-help" href="/help/duel#h-rating">{t('How 1-on-1 races work', 'Как устроены гонки 1 на 1', 'Cómo funcionan las regatas 1 contra 1', 'So funktionieren 1-gegen-1-Regatten', 'Bire bir yarışlar nasıl işler', 'Comment marchent les duels', 'Come funzionano le regate 1 contro 1', 'Como funcionam os duelos')} ›</a>
     </div>
   );
 }

@@ -109,6 +109,7 @@ export function SiteFoot({ lang, t, back }: { lang: Lang; t: T; back: string }) 
           <FootGroup title={t('Learn', 'Обучение', 'Aprender', 'Lernen', 'Öğren', 'Apprendre', 'Impara', 'Aprender')}>
             <FootLink href="/help">{t('How to play', 'Как играть', 'Cómo jugar', 'So spielst du', 'Nasıl oynanır', 'Comment jouer', 'Come si gioca', 'Como jogar')}</FootLink>
             <FootLink href="/help/race">{t('Today’s race, explained', 'Гонка дня: как устроена', 'La regata del día, explicada', 'Die Regatta des Tages, erklärt', 'Günün yarışı, açıklamalı', 'La régate du jour, expliquée', 'La regata del giorno, spiegata', 'A regata do dia, explicada')}</FootLink>
+            <FootLink href="/help/duel">{t('1-on-1 races, explained', 'Гонки 1 на 1: как устроены', 'Regatas 1 contra 1, explicadas', '1-gegen-1-Regatten, erklärt', 'Bire bir yarışlar, açıklandı', 'Les duels, expliqués', 'Regate 1 contro 1, spiegate', 'Duelos 1 contra 1, explicados')}</FootLink>
             <FootLink href="/learn">{t('Racing guides', 'Пособия по гонкам', 'Guías de regatas', 'Regatta-Anleitungen', 'Yarış rehberleri', 'Guides de régate', 'Guide alla regata', 'Guias de regata')}</FootLink>
             <FootLink href="/rulebook">{t('Racing rules', 'Правила гонок', 'Reglas de regatas', 'Wettfahrtregeln', 'Yarış kuralları', 'Règles de course', 'Regole di regata', 'Regras de regata')}</FootLink>
             <FootLink href="/learn/glossary">{t('Glossary', 'Словарь', 'Glosario', 'Glossar', 'Sözlük', 'Glossaire', 'Glossario', 'Glossário')}</FootLink>

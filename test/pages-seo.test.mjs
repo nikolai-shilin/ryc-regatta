@@ -37,7 +37,7 @@ const urls = entries.map((e) => e.url);
 const langOf = (u) => (/\?lang=(ru|es|de|tr|fr|it|pt)$/.exec(u) || [, 'en'])[1];
 const paths = (lang) => urls.filter((u) => langOf(u) === lang).map((u) => u.slice(SITE.length).replace(/\?lang=(ru|es|de|tr|fr|it|pt)$/, ''));
 
-const PUBLIC = ['/', '/race', '/race/drills', '/race/free', '/help', '/help/race', '/faq', '/boat', '/yachts', '/venues', '/players', '/iyt', '/social', '/sponsorship', '/learn', '/learn/glossary', '/rulebook',
+const PUBLIC = ['/', '/race', '/race/drills', '/race/free', '/help', '/help/race', '/help/duel', '/faq', '/boat', '/yachts', '/venues', '/players', '/iyt', '/social', '/sponsorship', '/learn', '/learn/glossary', '/rulebook',
   ...GUIDES.map((g) => `/learn/${g}`), ...VENUES.map((v) => `/venues/${v.id}`), ...YACHT_IDS.map((y) => `/yachts/${y}`),
   '/dictionary', ...glossary(tx('en')).map((x) => `/dictionary/${x.id}`)];
 
@@ -195,7 +195,7 @@ user = null;
 const indexed = sweep.filter((p) => p.meta.robots?.index !== false);
 
 test('every page was opened, in both languages', () => {
-  assert.equal(new Set(sweep.map((p) => p.route)).size, 42); // (42: /race/month, your month day by day)
+  assert.equal(new Set(sweep.map((p) => p.route)).size, 43); // (43: /help/duel, 1-on-1 races explained)
   assert.equal(sweep.length % 2, 0);
 });
 

@@ -1,0 +1,40 @@
+/* 1-on-1 races, explained (app/[lang]/help/duel): the three ways to a start line, the first 1-on-1's four cards, the
+   table of what a race is worth, the seven levels and the fair-play rows. The frame is the help page's (race-help.css). */
+.bc .hd-new { font-size: var(--fs-small, 13px); color: var(--ink-3, rgba(255, 255, 255, 0.62)); }
+.bc .hd-new a { color: var(--you, #3db8ff); white-space: nowrap; }
+
+.bc .hd-ways { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 2px; }
+.bc .hd-ways li { display: flex; flex-direction: column; gap: 8px; padding: var(--s-5, 20px); background: var(--panel, rgba(255, 255, 255, 0.05)); box-shadow: inset 0 4px 0 var(--you, #3db8ff); }
+.bc .hd-ways li.hd-gold { box-shadow: inset 0 4px 0 var(--gold, #f5c400); }
+.bc .hd-ways li.hd-up { box-shadow: inset 0 4px 0 var(--up, #2ee6a0); }
+.bc .hd-ways .card-title { color: var(--ink, #fff); text-decoration: none; }
+.bc .hd-ways .card-title:hover { text-decoration: underline; }
+.bc .hd-ways .lead { font-size: var(--fs-body, 15px); }
+
+.bc .hd-four { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 2px; }
+.bc .hd-four li { display: flex; flex-direction: column; gap: 8px; padding: var(--s-5, 20px); background: var(--panel, rgba(255, 255, 255, 0.05)); }
+.bc .hd-n { font: 800 28px/1 var(--cond, sans-serif); color: var(--you, #3db8ff); font-variant-numeric: tabular-nums; }
+.bc .hd-four b { font: 700 var(--fs-row, 17px)/1.2 var(--cond, sans-serif); text-transform: uppercase; letter-spacing: 0.04em; }
+.bc .hd-four p { margin: 0; font: 500 var(--fs-body, 15px)/1.5 var(--sans, sans-serif); color: var(--ink-2, rgba(255, 255, 255, 0.78)); }
+
+.bc .hd-scroll { overflow-x: auto; }
+.bc .hd-table { min-width: 420px; }
+.bc .hd-table td:nth-child(2) { font: 600 var(--fs-body, 15px)/1.3 var(--sans, sans-serif); color: inherit; }
+.bc .hd-table td.up, .bc .hd-table td.down { font: 700 var(--fs-row, 17px)/1 var(--cond, sans-serif); }
+.bc .hd-table td.up { color: var(--up, #2ee6a0); } .bc .hd-table td.down { color: var(--down, #ff8a3d); }
+.bc .hd-table tr.on td { background: rgba(61, 184, 255, 0.12); font-weight: 700; }
+
+.bc .hd-levels { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 2px; }
+.bc .hd-levels li { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: var(--panel, rgba(255, 255, 255, 0.05)); box-shadow: inset 4px 0 0 var(--lc, rgba(255, 255, 255, 0.3)); }
+.bc .hd-levels b { font: 700 var(--fs-row, 17px)/1.1 var(--cond, sans-serif); text-transform: uppercase; letter-spacing: 0.04em; }
+.bc .hd-levels span { font: 600 13px/1 var(--cond, sans-serif); color: var(--ink-3, rgba(255, 255, 255, 0.62)); font-variant-numeric: tabular-nums; }
+.bc .hd-l-olympian { --lc: #f5c400; } .bc .hd-l-international { --lc: #ff8a3d; } .bc .hd-l-national { --lc: #ff3b30; }
+.bc .hd-l-regional { --lc: #2ee6a0; } .bc .hd-l-fleet { --lc: #3db8ff; } .bc .hd-l-local { --lc: rgba(255, 255, 255, 0.6); }
+
+.bc .hd-fair { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.bc .hd-fair li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 20px; padding: 14px 16px; background: var(--panel, rgba(255, 255, 255, 0.05)); }
+.bc .hd-fair b { display: block; font: 700 var(--fs-row, 17px)/1.2 var(--cond, sans-serif); }
+.bc .hd-fair .d { display: block; margin-top: 4px; font: 500 var(--fs-body, 15px)/1.5 var(--sans, sans-serif); color: var(--ink-2, rgba(255, 255, 255, 0.78)); }
+.bc .hd-r { font: 700 12px/1.1 var(--cond, sans-serif); letter-spacing: 0.12em; text-transform: uppercase; text-align: right; color: var(--ink-2, rgba(255, 255, 255, 0.78)); }
+.bc .hd-r.hd-you { color: var(--you, #3db8ff); } .bc .hd-r.hd-down { color: var(--down, #ff8a3d); } .bc .hd-r.hd-gold { color: var(--gold, #f5c400); }
+@media (max-width: 560px) { .bc .hd-fair li { grid-template-columns: 1fr; } .bc .hd-r { text-align: left; } }

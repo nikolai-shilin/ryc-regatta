@@ -97,3 +97,6 @@
 .df-state { align-self: flex-start; padding: 5px 10px; font: 700 12px/1 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: .14em; text-transform: uppercase; background: var(--w-12, rgba(255,255,255,.12)); color: var(--ink, #fff); }
 .df-state-open { background: var(--up, #2ee6a0); color: var(--ink-on, #04121e); }
 .df-away-tag { color: var(--ink-3, rgba(255,255,255,.62)); }
+/* the way to 1-on-1 races, explained (app/[lang]/help/duel): on /duel under its line, and under the result's rating */
+.df-help, .dr-help { align-self: flex-start; font: 700 13px/1.2 var(--cond, 'Sofia Sans Condensed', sans-serif); letter-spacing: .08em; text-transform: uppercase; color: var(--you, #3db8ff); text-decoration: none; }
+.df-help:hover, .dr-help:hover { text-decoration: underline; }
