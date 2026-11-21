@@ -1,6 +1,6 @@
 # Regatta: the F50's moulded platform (game/boats3d.js F50View), modelled here and exported to game/f50.glb: her two
 # hulls, each a long slim hull of rounded sections, narrowing over its forward half to a low rounded nose, its deck sloping down
-# to it, a blunt transom with rounded corners, the bottom rising to both ends, the
+# to it, aft its sides drawing in to a small upright transom, the bottom rising to both ends, the
 # cockpit well aft in each where the crew stand; the main beam across at the wing's step, faired to a thick foil section
 # as the photographs show it; a lighter beam aft; the central pod (her batteries' housing) forward from the main beam to
 # the jib's tack; the nets between the hulls from one beam to the other. The boards, the rudders, the wing and the jib,
@@ -33,14 +33,15 @@ STERN = L / 2
 FLARE, CROWN = 0.02, 0.1
 DECK, BOTTOM, NOSE_Y = 0.85, -0.38, 0.15   # the deck and the bottom amidships, and the height of the nose's rounded tip
 TIP = 0.94                                 # where the nose's rounded tip begins (0.9 m from it)
-AFT = 0.05                                 # the stern rounded off in plan over its last 0.75 m, as the photographs show it
+AFT = 0.14                                 # the stern narrowing in plan over its last 2.1 m to a small transom, as the photographs show it
 def clamp(v, a, b): return max(a, min(b, v))
 def lerp(a, b, t): return a + (b - a) * t
 def smooth(e0, e1, x): t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t)
 # the same lines as boats3d.js F (t = 0 at the transom, 1 at the nose's tip)
 def ell(t, t0): return math.sqrt(max(0.0, 1 - ((t - t0) / (1 - t0)) ** 2)) if t > t0 else 1.0  # a quarter ellipse to the tip
-def aft(t): return 0.5 + 0.5 * math.sqrt(max(0.0, 1 - ((AFT - t) / AFT) ** 2)) if t < AFT else 1.0  # the stern rounded off to a small transom
-# in plan: full amidships, then narrowing steadily over her forward half to a rounded tip; the stern rounded off
+def aft(t): return 1 - 0.45 * (1 - t / AFT) ** 1.6 if t < AFT else 1.0  # the sides drawing in to a transom 55% of her width
+# in plan: full amidships, then narrowing steadily over her forward half to a rounded tip; aft, the sides drawing in to
+# a small, flat, upright transom shaped like a rounded shield (its corners rounded, its top crowned)
 def hb_of(t): return 0.5 * (0.92 + 0.08 * smooth(0, 0.3, t)) * (1 - 0.5 * smooth(0.45, 0.97, t)) * ell(t, TIP) * aft(t)
 # in profile: the deck level aft, sloping down over her forward 40% to some 0.6 m, then rounding down to the nose;
 # the bottom straight amidships, rising 0.3 m aft to the transom and some 0.25 m forward before rounding up to the nose
@@ -49,7 +50,7 @@ def bot0(t): return BOTTOM + 0.3 * (1 - smooth(0, 0.5, t)) + 0.25 * smooth(0.7, 
 def sheer(t): return NOSE_Y + (deck0(t) - NOSE_Y) * ell(t, TIP)
 def bottom(t): return NOSE_Y - (NOSE_Y - bot0(t)) * ell(t, TIP)
 def depth(t): return -bottom(t)
-def n_of(t): return lerp(2.7, 2.2, smooth(0.4, 0.9, t))  # a rounded box aft, rounder forward
+def n_of(t): return lerp(2.4, 2.7, smooth(0, 0.15, t)) if t < 0.4 else lerp(2.7, 2.2, smooth(0.4, 0.9, t))  # a rounded box, rounder at the transom and forward
 def crown(t): return CROWN * (1 - 0.6 * smooth(0.6, 1, t))
 def z_at(t): return STERN - t * L
 def t_at(z): return clamp((STERN - z) / L, 0, 1)
@@ -77,7 +78,7 @@ def build_hull(bm, M, cx):
     KH, KD = 18, 6
     # the stations: evenly along her to where the nose starts, then round it by equal angles, so the tip closes to a
     # point and not a flat end
-    ts = [AFT * (1 - math.cos(0.5 * math.pi * k / 8)) for k in range(8)] + [lerp(AFT, TIP, i / 64) for i in range(64)] \
+    ts = [AFT * i / 14 for i in range(14)] + [lerp(AFT, TIP, i / 58) for i in range(58)] \
          + [TIP + (1 - TIP) * math.sin(0.5 * math.pi * k / 16) for k in range(16)]
     N = len(ts) - 1
     rings = []

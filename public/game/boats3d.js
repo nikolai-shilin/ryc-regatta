@@ -2716,24 +2716,24 @@ class AC75View extends ClassView {
 // measured against her 15 m hulls, from the side, head-on and from below on the crane. Two slim hulls, their centres
 // 7.4 m apart, each some 1.0 m wide and 1.2 m deep amidships, of rounded sections, narrowing steadily over her forward
 // half to a low rounded nose, its deck sloping down to it; the bottom straight amidships and rising to both ends; a
-// stern rounded off in plan to a small transom; a cockpit well aft with a low streamlined fairing at its forward end. The wing
+// stern drawing in to a small upright transom shaped like a rounded shield; a cockpit well aft with a low streamlined fairing at its forward end. The wing
 // stepped near amidships on the main beam, a slim faired foil section, its leading edge 7.4 m aft of the bows; the aft
 // beam an open truss, the nets between; the pod forward from the main beam to the jib's tack, 3.2 m aft of the bows, a
 // teardrop in section, deep and narrowing to a keel below. The hulls, beams, pod and nets are moulded (blender/f50.py,
 // on these same lines); built here if the model doesn't load
 const F = (() => {
-  const L = 15, HX = 3.7, DECK = 0.85, BOTTOM = -0.38, NOSE_Y = 0.15, TIP = 0.94, AFT = 0.05;
+  const L = 15, HX = 3.7, DECK = 0.85, BOTTOM = -0.38, NOSE_Y = 0.15, TIP = 0.94, AFT = 0.14;
   const ell = (t, t0) => (t > t0 ? Math.sqrt(Math.max(0, 1 - ((t - t0) / (1 - t0)) ** 2)) : 1); // a quarter ellipse to the tip
   const deck0 = (t) => DECK + 0.02 * Math.sin(Math.PI * t) - 0.27 * smooth(0.55, TIP, t);
   const bot0 = (t) => BOTTOM + 0.3 * (1 - smooth(0, 0.5, t)) + 0.25 * smooth(0.7, TIP, t);
   const hull = hullOf({
     L, flare: 0.02,
-    // in plan full amidships, narrowing steadily over her forward half to a rounded tip, the stern rounded off over its
-    // last 0.75 m to a small transom; in profile the deck level aft and sloping down over her forward 40% to the nose, the bottom rising to both ends
-    hb: (t) => 0.5 * (0.92 + 0.08 * smooth(0, 0.3, t)) * (1 - 0.5 * smooth(0.45, 0.97, t)) * ell(t, TIP) * (t < AFT ? 0.5 + 0.5 * Math.sqrt(Math.max(0, 1 - ((AFT - t) / AFT) ** 2)) : 1),
+    // in plan full amidships, narrowing steadily over her forward half to a rounded tip; aft, the sides drawing in over
+    // the last 2.1 m to a small, flat, upright transom 55% of her width, its corners rounded and its top crowned; in profile the deck level aft and sloping down over her forward 40% to the nose, the bottom rising to both ends
+    hb: (t) => 0.5 * (0.92 + 0.08 * smooth(0, 0.3, t)) * (1 - 0.5 * smooth(0.45, 0.97, t)) * ell(t, TIP) * (t < AFT ? 1 - 0.45 * (1 - t / AFT) ** 1.6 : 1),
     sheer: (t) => NOSE_Y + (deck0(t) - NOSE_Y) * ell(t, TIP),
     depth: (t) => -(NOSE_Y - (NOSE_Y - bot0(t)) * ell(t, TIP)),
-    n: (t) => lerp(2.7, 2.2, smooth(0.4, 0.9, t)), // a rounded box aft, rounder forward
+    n: (t) => (t < 0.4 ? lerp(2.4, 2.7, smooth(0, 0.15, t)) : lerp(2.7, 2.2, smooth(0.4, 0.9, t))), // a rounded box, rounder at the transom and forward
   });
   const MAST_Z = hull.BOW + 7.4, BEAM_Z = MAST_Z + 0.25, AFT_Z = hull.STERN - 1.0, BOARD_Z = hull.BOW + 7.0;
   const BEAM_Y = 0.98, NET_Y = 0.85, FOOT_Y = 1.3, WING_H = 22, MASTHEAD = FOOT_Y + WING_H, RAKE = Math.tan(4 * D2R);
@@ -2830,11 +2830,12 @@ class F50View extends ClassView {
     // on the transom
     for (const sx of [-1, 1]) {
       add(new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.62), M.dark), sx * HX, H.deckY(F.BOARD_Z) + 0.07, F.BOARD_Z);
-      add(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.14, 0.34), M.dark), sx * HX, H.deckY(H.STERN - 0.3) + 0.06, H.STERN - 0.3);
+      add(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.14, 0.34), M.dark), sx * HX, H.deckY(H.STERN - 0.5) + 0.06, H.STERN - 0.5);
     }
-    // the rudders: a T-foil on each transom, 2.2 m below the water, turning together with the wheels, their elevators
+    // the rudders: a T-foil under each hull half a metre ahead of the transom, 2.2 m below the water, turning together
+    // with the wheels, their elevators
     this.rudderPair = [-1, 1].map((sx) => {
-      const r = add(new THREE.Group(), sx * HX, 0.7, H.STERN - 0.3);
+      const r = add(new THREE.Group(), sx * HX, 0.7, H.STERN - 0.5);
       r.add(new THREE.Mesh(finGeo(2.9, 0.4, 0.3, 0.12, 0.1), foilMat));
       for (const wx of [-1, 1]) { const e = new THREE.Mesh(finGeo(0.7, 0.34, 0.2, 0.12, 0.08), foilMat); e.position.set(0, -2.8, 0.1); e.rotation.z = wx * Math.PI / 2; r.add(e); }
       mergeGroup(r);
