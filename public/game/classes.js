@@ -349,8 +349,11 @@ export const classById = (id) => CLASSES[id] || CLASSES[DEFAULT_CLASS];
 // The J Class joins on 18 November with the AC75, so today's Optimist and tomorrow's RS21 stay as they were: she
 // first sails on the 22nd. She is slower round her course than the JPK round hers, so the server's floor for the JPK
 // serves her as it is.
+// The F50 joins on 23 November, so the days before keep their yachts (the J Class's first, on the 22nd, among them):
+// she first sails on the 28th. She sails a short course in a blow as fast as the AC75 sails hers, in some 0.86 of the
+// 40-footer's floor, so the server keeps the AC75's 0.4 of it for her.
 // npm test sails every one of them well above the floor the server keeps for her.
-export const DAILY_YACHTS = { jpk1050: '2026-11-16', bavaria46: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16', laser: '2026-11-16', dragon: '2026-11-17', optimist: '2026-11-17', ac75: '2026-11-18', jclass: '2026-11-18' };
+export const DAILY_YACHTS = { jpk1050: '2026-11-16', bavaria46: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16', laser: '2026-11-16', dragon: '2026-11-17', optimist: '2026-11-17', ac75: '2026-11-18', jclass: '2026-11-18', f50: '2026-11-23' };
 const dayN = (s) => Math.floor(Date.parse(s) / 864e5);
 export const YACHT_ROUNDS = [...new Set(Object.values(DAILY_YACHTS).map(dayN))].sort((a, b) => a - b)
   .map((n0) => ({ n0, ids: Object.keys(DAILY_YACHTS).filter((id) => dayN(DAILY_YACHTS[id]) <= n0) }));

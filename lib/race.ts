@@ -36,8 +36,9 @@ export const dailyVenue = (date = new Date()): VenueId => venueOn(Math.floor(Dat
 // today's yacht, as public/game/classes.js dailyYacht: from the day each joins today's races (DAILY_YACHTS) the days go
 // round them in a shuffled order, never the same two days running; the days before the first joined, the JPK 1050
 // (the Dragon and the Optimist from 17 November, the AC75 and the J Class from 18 November; the scores server checks the AC75's and
-// the Optimist's times against their own share of its floor; every class sails them from then on)
-export const DAILY_YACHTS: Partial<Record<YachtId, string>> = { jpk1050: '2026-11-16', bavaria46: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16', laser: '2026-11-16', dragon: '2026-11-17', optimist: '2026-11-17', ac75: '2026-11-18', jclass: '2026-11-18' };
+// the Optimist's times against their own share of its floor; every class sails them from then on; the F50 from 23 November,
+// her times checked against the AC75's share)
+export const DAILY_YACHTS: Partial<Record<YachtId, string>> = { jpk1050: '2026-11-16', bavaria46: '2026-11-16', j70: '2026-11-16', rs21: '2026-11-16', laser: '2026-11-16', dragon: '2026-11-17', optimist: '2026-11-17', ac75: '2026-11-18', jclass: '2026-11-18', f50: '2026-11-23' };
 const YACHT_ROUNDS = [...new Set(Object.values(DAILY_YACHTS).map((s) => dayN(s!)))].sort((a, b) => a - b)
   .map((n0) => ({ n0, ids: (Object.keys(DAILY_YACHTS) as YachtId[]).filter((id) => dayN(DAILY_YACHTS[id]!) <= n0) }));
 function yachtRound(ids: YachtId[], k: number) {

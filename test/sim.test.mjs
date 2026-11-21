@@ -11,8 +11,8 @@ const site = await import('../lib/race.ts');
 const BEAT = { light: 200, medium: 260, strong: 280 }, FLOOR = 0.45;
 // …and a class's share of the floor, as the server has it (YACHT_FLOOR): the AC75's, the Optimist's on her short
 // courses, and the Laser's, the J/70's and the RS21's, which sail as near their polars upwind in a blow as in a breeze;
-// every other class, all of it
-const YACHT_FLOOR = { ac75: 0.4, optimist: 0.6, laser: 0.8, j70: 0.9, rs21: 0.9 };
+// every other class, all of it; the F50, as fast round her course as the AC75 round hers, the AC75's
+const YACHT_FLOOR = { ac75: 0.4, f50: 0.4, optimist: 0.6, laser: 0.8, j70: 0.9, rs21: 0.9 };
 
 // lib/race.ts is a copy of the game's dailyRace for the hub and Home: the same day must give the same race
 test('the site and the game agree on today’s race, every day for a year and more', () => {
