@@ -40,7 +40,7 @@ export function RatingPanel({ lang, mine, name }: { lang: Lang; mine: MyRating |
     [t('Best', 'Лучший', 'Mejor', 'Bestwert', 'En iyi', 'Meilleur', 'Migliore', 'Melhor'), String(mine.best)],
   ];
   return (
-    <Link className="dp-panel" href={RATING_HREF}>
+    <Link className="dp-panel" href="/duel/rating">
       <div className="dp-pt">
         <span className="dp-pk"><span className="lbl">{name ? `${k} · ${name}` : k}</span>
           <span className="dp-pn"><b className="dp-big">{shown(mine.rating, mine.races)}</b>{today !== 0 && <b className={today > 0 ? 'dp-up' : 'dp-down'}>{sgn(today)} {t('today', 'сегодня', 'hoy', 'heute', 'bugün', 'aujourd’hui', 'oggi', 'hoje')}</b>}</span></span>
@@ -53,7 +53,7 @@ export function RatingPanel({ lang, mine, name }: { lang: Lang; mine: MyRating |
         </div>
       )}
       <div className="dp-stats">{stats.map(([a, b]) => <span key={a}><span className="lbl">{a}</span><b>{b}</b></span>)}</div>
-      <span className="dp-pl">{t('The whole rating', 'Весь рейтинг', 'El rating completo', 'Die ganze Wertung', 'Tüm reyting', 'Tout le classement', 'Tutto il rating', 'O rating completo')} →</span>
+      <span className="dp-pl">{t('Your rating, race by race', 'Твой рейтинг по гонкам', 'Tu rating, regata a regata', 'Deine Wertung, Regatta für Regatta', 'Yarış yarış reytingin', 'Ton classement, régate par régate', 'Il tuo rating, regata per regata', 'Seu rating, regata a regata')} →</span>
     </Link>
   );
 }

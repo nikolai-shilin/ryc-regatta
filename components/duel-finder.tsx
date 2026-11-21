@@ -219,7 +219,7 @@ export function DuelFinder({ lang, signed, children }: { lang: Lang; signed: boo
     if (resume) history.replaceState(history.state, '', location.pathname);
     if (signed && resume) find();
     // the duel hour's message tapped (lib/duel-hour.ts): looking at once
-    const hour = new URLSearchParams(location.search).has('hour');
+    const hour = new URLSearchParams(location.search).has('hour') || new URLSearchParams(location.search).has('find'); // (?find: the home's Find a race, a result's Another 1-on-1 race)
     if (hour) history.replaceState(history.state, '', location.pathname);
     if (signed && hour && !resume) find();
     // a browser that already takes the site's messages: tied to this account, so away works without asking again
@@ -369,9 +369,9 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
     const where = [pick(VENUES.find((v) => v.id === S.venue)?.name, lang), pick(YACHTS.find((y) => y.id === S.yacht)?.name, lang), wind, shape, laps, start].filter(Boolean).join(' · ');
     return (
       <div className="df df-found" aria-live="assertive">
-        <p className="iv-who"><b>{them}</b><span className="dr-lvl">{provisional(pair.them.races) ? t('New to 1-on-1', 'Новичок в 1 на 1', 'Nuevo en 1 contra 1', 'Neu im 1 gegen 1', 'Bire birde yeni', 'Nouveau en duel', 'Nuovo all’1 contro 1', 'Novo no 1 contra 1') : levelName(pair.them.rating, lang)}</span><span className="iv-r">{shown(pair.them.rating, pair.them.races)}</span>
+        <p className="iv-who"><b>{them}</b><span className="dr-lvl">{provisional(pair.them.races) ? t('New to 1-on-1', 'Новичок в 1 на 1', 'Nuevo en 1 contra 1', 'Neu im 1 gegen 1', 'Bire birde yeni', 'Nouveau en duel', 'Nuovo all’1 contro 1', 'Novo no 1 contra 1') : levelName(pair.them.rating, lang)}</span>{!first && <span className="iv-r">{shown(pair.them.rating, pair.them.races)}</span>}
           {pair.minutes ? <span className="iv-m">{t(`about ${pair.minutes} min`, `около ${pair.minutes} мин`, `unos ${pair.minutes} min`, `etwa ${pair.minutes} Min.`, `yaklaşık ${pair.minutes} dk`, `environ ${pair.minutes} min`, `circa ${pair.minutes} min`, `cerca de ${pair.minutes} min`)}</span> : null}</p>
-        {where && <p className="df-where">{where}</p>}
+        {where && !first && <p className="df-where">{where}</p>}{/* (a first match: who, about how long, Ready: fewer numbers) */}
         {loaded !== null && (() => {
           const v = pick(VENUES.find((x) => x.id === pair.settings.venue)?.name, lang) ?? '', pct = Math.round(loaded * 100);
           return <p className="df-load">{pct < 100
@@ -383,8 +383,9 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
           ? <p className="df-wait">{t(`Ready. Waiting for ${them}…`, `Готов. Ждём ${them}…`, `Listo. Esperando a ${them}…`, `Bereit. Warte auf ${them} …`, `Hazırsın. ${them} bekleniyor…`, `Prêt. On attend ${them}…`, `Pronto. In attesa di ${them}…`, `Pronto. Esperando ${them}…`)}</p>
           : <div className="df-acts">
               <button type="button" className="bt-go df-ready" onClick={ready}><IconPlay /><span>{t('Ready', 'Готов', 'Listo', 'Bereit', 'Hazırım', 'Prêt', 'Pronto', 'Pronto')}</span><span className="df-left">{Math.ceil(left)}</span></button>
-              <button type="button" className="bt-show" onClick={decline}>{t('Decline', 'Отказаться', 'Rechazar', 'Ablehnen', 'Reddet', 'Refuser', 'Rifiuta', 'Recusar')}</button>
+              <button type="button" className="bt-show" onClick={decline}>{first ? t('Not now', 'Не сейчас', 'Ahora no', 'Nicht jetzt', 'Şimdi değil', 'Pas maintenant', 'Non ora', 'Agora não') : t('Decline', 'Отказаться', 'Rechazar', 'Ablehnen', 'Reddet', 'Refuser', 'Rifiuta', 'Recusar')}</button>
             </div>}
+        {first && <p className="dp-note">{t('It counts for your rating; what it did to it is on the result.', 'Гонка идёт в рейтинг; как она его изменила — в результате.', 'Cuenta para tu rating; lo que le hizo está en el resultado.', 'Sie zählt für deine Wertung; was sie bewirkt hat, steht im Ergebnis.', 'Reytingine sayılır; ona etkisi sonuçta yazar.', 'Elle compte pour ton classement ; ce qu’elle y a fait est dans le résultat.', 'Conta per il tuo rating; cosa gli ha fatto è nel risultato.', 'Vale para o seu rating; o que fez com ele está no resultado.')}</p>}
         <span className="dr-bar df-bar" aria-hidden="true"><i style={{ width: `${Math.round((left / pair.ttl) * 100)}%` }} /></span>
       </div>
     );
@@ -464,7 +465,7 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
         <div className="dp-side">
           {signed && phase !== 'found' && phase !== 'go' && now}{/* (gone once a match is found: the card is the match) */}
           <DuelHour lang={lang} signed={signed} looking={phase === 'looking'} onFind={find} />
-          {signed && <div className="dp-two"><OpenCalls lang={lang} calls={calls} take={take} post={postCall} canPost={phase === 'idle' || phase === 'looking'} /><LastRaces lang={lang} mine={mine} /></div>}
+          {signed && <div className="dp-two"><OpenCalls lang={lang} calls={calls} take={take} post={postCall} canPost={!call && (phase === 'idle' || phase === 'looking')} /><LastRaces lang={lang} mine={mine} /></div>}
           {signed && <NearTable lang={lang} near={near} />}
           {children}
         </div>

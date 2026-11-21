@@ -416,8 +416,13 @@ export class Host {
   // how the guest's inputs came, for the race's report: { rtt: null (the host measures no way there and back), late: inputs
   // more than LATE_MS past the slowest pace she sends them at (INPUT_MAX_MS), a minute } (null: under 20 s of them)
   net() { return netOf(this._came, null, this.now()); }
-  // the guest has left the race: before her finish she gives it up at once; after it her place stands (race.forfeit)
-  guestLeft() { if (!this.stopped) this.race.forfeit(this.guest); }
+  // the guest has left the race: before the gun nobody has raced yet, so it is called off and counts for nothing; after
+  // it, before her finish she gives it up at once, and after her finish her place stands (race.forfeit)
+  guestLeft() {
+    if (this.stopped) return;
+    if (!(this.race.clock >= 0 || this.race.recalls > 0)) { this.abandoned = true; this.guestGone = true; this.stop(); return; }
+    this.race.forfeit(this.guest);
+  }
   // the results, once a second until she answers
   flush() {
     const t = this.now();

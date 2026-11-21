@@ -447,8 +447,8 @@ test('the record takes its order from the results, not from where this screen la
 
 test('leaving a race on the water says what it does to it, in both languages, and the page has no second question', async () => {
   const en = mainSrc.slice(mainSrc.indexOf('\n  en: {'), mainSrc.indexOf('\n  ru: {')), ru = mainSrc.slice(mainSrc.indexOf('\n  ru: {'));
-  for (const k of ['leaveHost', 'leaveGuest', 'leaveHome']) for (const src of [en, ru]) assert.match(src, new RegExp(`\\b${k}: `), k);
-  const words = { leaveHost: 'HOST', leaveGuest: (w) => `GUEST ${w}`, leaveHome: 'HOME', askK: { leave: 'k' }, askH: { leave: 'h' }, askT: { leave: 'hub' }, notKept: 'NOT KEPT', inSeq: 'seq', doLeave: 'Leave', toK: {}, whereH: () => 'where' };
+  for (const k of ['leaveHost', 'leaveGuest', 'leaveHome', 'leaveBefore']) for (const src of [en, ru]) assert.match(src, new RegExp(`\\b${k}: `), k);
+  const words = { leaveHost: 'HOST', leaveGuest: (w) => `GUEST ${w}`, leaveHome: 'HOME', leaveBefore: 'BEFORE', askK: { leave: 'k' }, askH: { leave: 'h' }, askT: { leave: 'hub' }, notKept: 'NOT KEPT', inSeq: 'seq', doLeave: 'Leave', toK: {}, whereH: () => 'where' };
   const asked = (me, other, isGuest, clock = 60) => {
     const els = {}, $ = (id) => (els[id] ||= {});
     const P = { id: 'p', leg: 1, ...me }, O = { id: 'o', name: 'Rival', ...other };
@@ -460,7 +460,7 @@ test('leaving a race on the water says what it does to it, in both languages, an
   assert.equal(asked({}, {}, false), 'HOST');
   assert.equal(asked({ done: true }, {}, false), 'HOST', 'the host home too: the race lives in her tab');
   assert.equal(asked({}, {}, true), 'GUEST Rival');
-  assert.equal(asked({}, {}, true, -30), 'GUEST Rival', 'in the start sequence too');
+  assert.equal(asked({}, {}, true, -30), 'BEFORE', 'in the start sequence: called off, nothing counts');
   assert.equal(asked({}, { bfd: true }, true), 'GUEST null', 'a boat out herself wins nothing');
   assert.equal(asked({ done: true }, {}, true), 'HOME');
   const ui = readFileSync(new URL('../public/game/match-ui.js', import.meta.url), 'utf8');

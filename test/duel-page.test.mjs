@@ -42,7 +42,8 @@ test('the hero\'s panel: your rating, its level and the bar to the next, record,
   const settled = plain(h(RatingPanel({ lang: 'en', mine: MINE() })));
   assert.match(settled, /Your 1-on-1 rating/); assert.match(settled, /1558/); assert.match(settled, /Fleet/);
   assert.match(settled, /42 to Regional/); assert.match(settled, /1600/); assert.match(settled, /24–17/); assert.match(settled, /#198 \/ 1,240/);
-  assert.match(h(RatingPanel({ lang: 'en', mine: MINE() })), /href="\/rating#duel"/);
+  assert.match(h(RatingPanel({ lang: 'en', mine: MINE() })), /href="\/duel\/rating"/); // (your rating, race by race; everyone's from the rating around you)
+  assert.match(plain(h(RatingPanel({ lang: 'en', mine: MINE() }))), /Your rating, race by race →/);
   const prov = plain(h(RatingPanel({ lang: 'en', mine: MINE({ rating: 1532, races: 2, wins: 1, losses: 1, place: null }) })));
   assert.match(prov, /~1532/); assert.match(prov, /Provisional/); assert.match(prov, /2 \/ 5/); assert.doesNotMatch(prov, /to Regional/);
   assert.match(plain(h(RatingPanel({ lang: 'en', mine: null }))), /Everyone starts at 1500/);
@@ -124,4 +125,27 @@ test('the page has the site\'s header with 1-on-1 marked, and For you in its col
   assert.match(pg, /<SiteHead lang=\{lang\} t=\{t\} page="duel" \/>/);
   assert.match(pg, /<DuelFinder lang=\{lang\} signed=\{!!account\}>\s*<ForYou lang=\{lang\} \/>/);
   assert.match(src('components/site-chrome.tsx'), /href="\/duel" \{\.\.\.cur\('duel'\)\}/);
+});
+
+test('a first match shows who, about how long and Ready, with a small Not now; past five, the race and the stakes', () => {
+  const n = () => {};
+  const pair = (me) => ({ id: 'p1', code: 'K7M2QZ', role: 'guest', ttl: 10, left: 8, minutes: 4, settings: { venue: 'phuket', yacht: 'j70', preset: 'medium', length: 'short', course: 'wl', laps: 1, start: 1, current: 0, daytime: 'any' },
+    me, them: { name: 'Lina S.', rating: 1508, races: 2 } });
+  const view = (me) => plain(h(DuelFinderView({ lang: 'en', signed: true, phase: 'found', look: { waited: 0, band: 100, online: 1 }, pair: pair(me), said: false, left: 8, note: '', longWait: false, find: n, stop: n, ready: n, decline: n, mine: MINE() })));
+  const first = view({ rating: 1500, races: 0 });
+  assert.match(first, /Match found Lina S\. New to 1-on-1 about 4 min Ready 8 Not now It counts for your rating/);
+  assert.doesNotMatch(first, /~1508|Phuket · J\/70|Your chance/);
+  const later = view({ rating: 1558, races: 41 });
+  assert.match(later, /~1508/); assert.match(later, /Phuket · J\/70 · medium breeze/); assert.match(later, /Your chance/); assert.match(later, /Decline/);
+});
+
+test('Post yours only while no call of yours is out; ?find looks at once (the home\'s Find a race, a result\'s Another 1-on-1 race)', () => {
+  const n = () => {};
+  const call = { code: 'K7M2QZ', lo: 1458, hi: 1658, url: 'https://www.sailupdown.com/call/K7M2QZ' };
+  const looking = (o) => plain(h(DuelFinderView({ lang: 'en', signed: true, phase: 'looking', look: { waited: 5, band: 100, online: 1 }, pair: null, said: false, left: 8, note: '', longWait: false, find: n, stop: n, ready: n, decline: n, mine: MINE(), ...o })));
+  assert.match(looking({}), /Open calls · 0 Post yours/);
+  assert.doesNotMatch(looking({ call }), /Post yours/);
+  assert.match(src('components/duel-finder.tsx'), /has\('hour'\) \|\| new URLSearchParams\(location\.search\)\.has\('find'\)/);
+  assert.match(src('components/duel-home.tsx'), /href="\/duel\?find" data-cta="duel-find"/);
+  assert.match(src('components/result-view.tsx'), /const again = one \? '\/duel\?find'/);
 });

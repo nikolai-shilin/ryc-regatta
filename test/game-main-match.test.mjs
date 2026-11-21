@@ -108,7 +108,7 @@ test('the browser’s back in a match: the menu, then its question, then back to
   s.isGuest = true;
   $('#pauseBtn').click(); $('#pLeave').click();
   assert.notEqual($('#cTxt').textContent, host);
-  assert.match($('#cTxt').textContent, /Anna|Ben/);
+  assert.match($('#cTxt').textContent, s.race.clock >= 0 ? /Anna|Ben/ : /The start hasn’t gone yet/); // (before the gun: called off)
   $('#cKeep').click(); game.key('Escape');
 });
 

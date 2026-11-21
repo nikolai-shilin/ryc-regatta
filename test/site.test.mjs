@@ -77,7 +77,7 @@ test('the result page shows a 1-on-1 race as such', () => {
   const view = read('components/result-view.tsx');
   assert.match(view, /oneOnOne\?: boolean/); assert.match(view, /dnf\?: boolean/);
   assert.match(view, /'1-on-1 race', 'Гонка 1 на 1'/); assert.match(view, /'Did not finish'/);
-  assert.match(view, /one \? '\/duel'/); // (another 1-on-1: back to finding one)
+  assert.match(view, /one \? '\/duel\?find'/); // (another 1-on-1: looking for one at once)
   assert.match(view, /!shared && !one && <ShareButton/);
 });
 

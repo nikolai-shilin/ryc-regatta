@@ -89,7 +89,7 @@ test('Match found, the full one: who, level and rating, how long, where, the sta
 
 test('Match found, the short one for a first match: no stakes; and waiting once Ready is said', () => {
   const first = view({ phase: 'found', pair: pairOf({ me: { rating: 1500, races: 0, ok: null }, them: { name: 'Lina S.', rating: 1508, races: 2 } }), left: 10 });
-  assert.match(first, /Match found Lina S\. New to 1-on-1 ~1508 about 6 min/);
+  assert.match(first, /Match found Lina S\. New to 1-on-1 about 6 min Ready 10 Not now/);
   assert.doesNotMatch(first, /Your chance/);
   assert.match(view({ phase: 'found', pair: pairOf(), said: true }), /Ready\. Waiting for Anna K\.…/);
 });
