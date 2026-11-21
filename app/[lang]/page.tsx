@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getT, type LangParams } from '@/lib/i18n';
 import { pageMeta, jsonLd, SITE, NAME, OG_IMAGE, HOME_TITLE, HOME_DESC } from '@/lib/seo';
-import { pick, ruBoats, ruPlural } from '@/lib/lang';
+import { LANGS, pick, ruBoats, ruPlural } from '@/lib/lang';
 import { todayTop } from '@/lib/today';
 import { dailyRace, raceMinutes, KN } from '@/lib/race';
 import { yachtOf } from '@/lib/yachts';
@@ -38,13 +38,13 @@ function siteLd(lang: 'en' | 'ru' | 'es' | 'de' | 'tr' | 'fr' | 'it' | 'pt', t: 
     '@context': 'https://schema.org',
     '@graph': [
       org,
-      { '@type': 'WebSite', '@id': `${SITE}/#site`, url: `${SITE}/`, name: NAME, inLanguage: ['en', 'ru'], publisher: { '@id': org['@id'] }, sameAs: CHANNELS.map((c) => c.url) },
+      { '@type': 'WebSite', '@id': `${SITE}/#site`, url: `${SITE}/`, name: NAME, inLanguage: [...LANGS], publisher: { '@id': org['@id'] }, sameAs: CHANNELS.map((c) => c.url) },
       {
         '@type': 'VideoGame', '@id': `${SITE}/#game`, name: NAME, alternateName: t('Up and down sailing race', 'Up and down — парусная гонка', 'Regata de Up and down', 'Up and down Segelregatta', 'Up and down yelken yarışı', 'Régate Up and down', 'Up and down, regata a vela', 'Regata do Up and down'),
         url: `${SITE}/`, description: t(...HOME_DESC), inLanguage: lang, image: `${SITE}${OG_IMAGE.url}`,
         screenshot: [`${SITE}/images/hud-desk-v10.jpg`, `${SITE}/images/top-v10.jpg`],
         genre: ['Sailing', 'Racing', 'Sports simulation'], gamePlatform: ['Web browser', 'Mobile web browser'],
-        applicationCategory: 'GameApplication', operatingSystem: 'Any (runs in a web browser)', playMode: 'SinglePlayer',
+        applicationCategory: 'GameApplication', operatingSystem: 'Any (runs in a web browser)', playMode: ['SinglePlayer', 'MultiPlayer'], numberOfPlayers: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 2 },
         gameLocation: VENUES.map((v) => (v.place[0] === v.name[0] ? t(...v.name) : `${t(...v.name)}, ${t(...v.place)}`)), isAccessibleForFree: true,
         offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD', availability: 'https://schema.org/InStock', url: `${SITE}/race` },
         author: { '@id': org['@id'] }, publisher: { '@id': org['@id'] },
