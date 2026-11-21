@@ -387,6 +387,20 @@ export function createStage({ world, race, lang = 'en' }) {
   }
 
   // ---------- the camera ----------
+  // A tag keeps its size on screen whatever the camera's distance, so where the open water is narrow (the panel at the
+  // side of a screen held upright) a boat near its edge would carry her tag off it: the pill slides in, over her still,
+  // to stay inside the open part (r, in pixels of the canvas Wd wide) with 8 px to spare; one wider than it is centred.
+  const tp = new THREE.Vector3(), ts = new THREE.Vector3();
+  function keepIn(tag, cam, Wd, r) {
+    tag.center.x = 0.5;
+    const w = tag.userData.w; if (!w) return;
+    tag.getWorldPosition(tp); tag.getWorldScale(ts); tp.project(cam);
+    if (!(Math.abs(tp.z) <= 1)) return;
+    const spr = ts.x * cam.projectionMatrix.elements[0] / 2 * Wd, pill = spr * w / tag.material.map.image.width; // (sizeAttenuation off: the sprite's width on screen)
+    const x = (tp.x + 1) / 2 * Wd, lo = r.x + 8 + pill / 2, hi = r.x + r.w - 8 - pill / 2;
+    const want = lo > hi ? r.x + r.w / 2 : Math.min(hi, Math.max(lo, x));
+    tag.center.x = 0.5 + (x - want) / spr;
+  }
   let rect = null, camH = null;
   const target = new THREE.Vector3(), want = new THREE.Vector3(), look = new THREE.Vector3();
   let firstShot = true;
@@ -411,10 +425,11 @@ export function createStage({ world, race, lang = 'en' }) {
     // the picture's middle moved into the open part
     cam.setViewOffset(Wd, Hd, -((r.x + r.w / 2) - Wd / 2), -((r.y + r.h / 2) - Hd / 2), Wd, Hd);
     // the tags, and the line across a stern
+    cam.updateMatrixWorld();
     bs.forEach((b, i) => {
       const v = world.boatViews[i], tag = v?.tag; if (!tag) return;
       const text = b.tag && t >= (specs[i]?.tagAt || 0) ? tagIn(b.tag, lang) : '';
-      tag.visible = !!text; if (text) { tag.userData.set(text, b.warn); tag.position.set(0, tagY, 0); }
+      tag.visible = !!text; if (text) { tag.userData.set(text, b.warn); tag.position.set(0, tagY, 0); keepIn(tag, cam, Wd, r); }
     });
     stern.visible = !!def.stern && !!bs[def.stern];
     if (stern.visible) {
