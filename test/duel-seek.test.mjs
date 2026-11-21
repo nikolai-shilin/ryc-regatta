@@ -24,7 +24,7 @@ const post = async (body, origin) => (await POST(new NextRequest(new URL('/conne
 beforeEach(() => { rpc.calls = []; rpc.data = null; rpc.error = null; });
 
 test('the database\'s answers are read as they are; a pair with settings the game can\'t sail is none', () => {
-  assert.deepEqual(parseSeek({ status: 'looking', waited: '23', band: 100, online: 3, near: 1 }), { status: 'looking', waited: 23, band: 100, online: 3, near: 1 });
+  assert.deepEqual(parseSeek({ status: 'looking', waited: '23', band: 100, online: 3, near: 1 }), { status: 'looking', waited: 23, band: 100, online: 3, near: 1, away: false });
   const f = parseSeek({ status: 'found', pair: PAIR });
   assert.equal(f.status, 'found'); assert.equal(f.pair.left, 9.5); assert.equal(f.pair.them.name, 'Anna K.'); assert.equal(f.pair.themOk, null);
   assert.equal(parseSeek({ status: 'go', pair: PAIR }).status, 'go');
@@ -103,7 +103,7 @@ const READY = [{ handle: '3f9a0c1d2e4b', name: 'Cara M.', rating: 1900, races: 1
 
 test('Ready now is read as it is: a handle, never an id, the name, rating, races and wait; anything else dropped', () => {
   const r = parseReady([...READY, { handle: '00000000-0000-4000-8000-00000000000a', name: 'x', rating: 1500, races: 0 }, { handle: 'abc', rating: 1500, races: 0 }, { handle: 'bbbbbbbbbbbb', rating: '1500', races: 0 }, null]);
-  assert.deepEqual(r, [{ handle: '3f9a0c1d2e4b', name: 'Cara M.', rating: 1900, races: 12, waited: 23 }, { handle: 'a1b2c3d4e5f6', name: 'Lina S.', rating: 1508, races: 2, waited: 4 }]);
+  assert.deepEqual(r, [{ handle: '3f9a0c1d2e4b', name: 'Cara M.', rating: 1900, races: 12, waited: 23, away: false }, { handle: 'a1b2c3d4e5f6', name: 'Lina S.', rating: 1508, races: 2, waited: 4, away: false }]);
   assert.deepEqual(parseReady(null), []); assert.deepEqual(parseReady({ handle: 'x' }), []);
   assert.equal(parseReady(Array.from({ length: 30 }, (_, i) => ({ ...READY[0], handle: i.toString(16).padStart(12, '0') }))).length, 20);
 });
@@ -125,7 +125,7 @@ test('Ready now under the button and while looking: nearest first, level or New,
   const list = parseReady(READY), raced = [];
   const s = view({ list, challenge: (h) => raced.push(h) });
   assert.match(s, /Ready now Cara M\. National 1900 waiting 0:23 Race Lina S\. New ~1508 waiting 0:04 Race/);
-  assert.match(view({ phase: 'looking', look: { waited: 5, band: 100, online: 3 }, list }), /Stop looking Post an open call .* Ready now Cara M\./);
+  assert.match(view({ phase: 'looking', look: { waited: 5, band: 100, online: 3 }, list }), /Stop looking Keep looking if I leave .* Post an open call .* Ready now Cara M\./);
   assert.match(view(), /Ready now Nobody else is looking right now\. Find a race, and you’re the first one the next sailor sees\./);
   assert.match(view({ note: 'gone' }), /That sailor has just gone: paired with someone else, or stopped looking\. Find a race/);
   assert.doesNotMatch(view({ phase: 'found', pair: pairOf(), list }), /Ready now/, 'not over a match found');
@@ -159,7 +159,7 @@ test('POST /connect/seek: call posts with a band it knows and clean wishes; take
 
 test('looking: Post an open call; posted, the call\'s band, its link and the ways to send it', () => {
   const looking = { phase: 'looking', look: { waited: 30, band: 200, online: 1 } };
-  assert.match(view(looking), /Stop looking Post an open call A link for any chat: the first sailor near your rating to take it races you\./);
+  assert.match(view(looking), /Stop looking Keep looking if I leave A message to this device when a sailor is found, for 30 minutes\. Post an open call A link for any chat: the first sailor near your rating to take it races you\./);
   const call = { code: 'K7M2QZ', lo: 1458, hi: 1658, url: 'https://www.sailupdown.com/call/K7M2QZ' };
   const html = renderToStaticMarkup(DuelFinderView({ lang: 'en', signed: true, ...looking, pair: null, said: false, left: 0, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop, call }));
   assert.match(plain(html), /Your open call For ratings 1458–1658: the first to take it races you\. Open while you look, an hour at most\. Telegram WhatsApp Copy link/);
@@ -173,4 +173,20 @@ test('looking: Post an open call; posted, the call\'s band, its link and the way
 test('a call that couldn\'t be taken says why, in each case', () => {
   for (const [note, said] of [['taken', /That call has been taken/], ['away', /isn’t looking right now/], ['closed', /That call has closed\./], ['band', /outside that call’s range/], ['mine', /That’s your own call/]]) assert.match(view({ note }), said, note);
   assert.match(view({ phase: 'looking', note: 'nocall' }), /The call couldn’t be posted just now/);
+});
+
+test('Keep looking if I leave: off, on (you can leave; Only while I’m here), why it couldn’t; the away marked in Ready now', () => {
+  const looking = { phase: 'looking', look: { waited: 30, band: 200, online: 1 } };
+  assert.match(view({ ...looking, away: true }), /Looking for you while you’re away You can leave this page\. We’ll message this device the moment a sailor is found, for 30 minutes; then a minute to say Ready\. Only while I’m here/);
+  assert.doesNotMatch(view({ ...looking, away: true }), /Keep looking if I leave/);
+  assert.match(view({ ...looking, note: 'nopush' }), /This browser can’t take the site’s messages\. On an iPhone, add the site to your Home Screen first\./);
+  assert.match(view({ ...looking, note: 'pushdenied' }), /Messages from this site are blocked in your browser’s settings/);
+  assert.match(view({ ...looking, note: 'noaway' }), /Couldn’t keep looking for you just now/);
+  assert.match(view({ list: parseReady([{ ...READY[0], away: true }]) }), /Cara M\. National 1900 away · gets a message waiting 0:23 Race/);
+  assert.doesNotMatch(view(), /Keep looking if I leave/, 'only while looking');
+});
+
+test('Match found with a minute (one of you was away): the bar is of the minute', () => {
+  const p = parseSeek({ status: 'found', pair: { ...PAIR, left: 30, ttl: 60 } }).pair;
+  assert.match(renderToStaticMarkup(DuelFinderView({ lang: 'en', signed: true, phase: 'found', look: { waited: 0, band: 100, online: 1 }, pair: p, said: false, left: 30, note: '', longWait: false, find: noop, stop: noop, ready: noop, decline: noop })), /style="width:50%"/);
 });

@@ -117,3 +117,31 @@ test('/duel?take= takes that call once, and the address loses it; a call taken a
   assert.match(v.text(), /Match found Cara M\./);
   await v.unmount();
 });
+
+test('/duel?resume, as a Match found message opens it: looking again at once, and the address loses it', async () => {
+  reset({ url: 'https://updown.test/duel?resume' });
+  answer.seek = { status: 'found', pair: { ...PAIR, left: 40, ttl: 60 } };
+  serve([['/connect/seek', (u, init) => json(answer[JSON.parse(init.body).do] ?? { status: 'none', reason: null })], ['/play', { text: async () => '' }], [/\/game\//, json(null)]]);
+  const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  assert.ok(asks().some((a) => a.do === 'seek'));
+  assert.equal(location.search, '');
+  assert.match(v.text(), /Match found Cara M\./);
+  await v.unmount();
+});
+
+test('Keep looking if I leave, on a browser that can\'t take messages: says so, and asks the site nothing', async () => {
+  const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  await click(v.$('.bt-go'));
+  await click(v.$$('.df-away button').find((b) => b.textContent === 'Keep looking if I leave'));
+  assert.match(v.text(), /This browser can’t take the site’s messages/);
+  assert.equal(asks().filter((a) => a.do === 'away').length, 0);
+  await v.unmount();
+});
+
+test('looking, as the database says a sailor is looked for while away: the page says so', async () => {
+  answer.seek = { status: 'looking', waited: 40, band: 200, online: 2, near: 1, away: true };
+  const v = await mount(h(DuelFinder, { lang: 'en', signed: true }));
+  await click(v.$('.bt-go'));
+  assert.match(v.text(), /Looking for you while you’re away/);
+  await v.unmount();
+});

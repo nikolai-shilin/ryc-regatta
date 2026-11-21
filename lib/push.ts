@@ -81,3 +81,14 @@ export async function pushSync(lang: Lang, log: Log) {
   if (!sub || read() === syncKey(sub.endpoint, log, lang)) return;
   await save(sub, lang, log).catch(() => {});
 }
+
+// This browser's subscription tied to the signed-in sailor (POST /connect/push-link), so a 1-on-1 match found while
+// they are away reaches it (lib/push-send.ts). True once linked; nothing for a browser without one.
+export async function linkPush(): Promise<boolean> {
+  try {
+    const sub = await currentSub();
+    if (!sub) return false;
+    const r = await fetch('/connect/push-link', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ endpoint: sub.endpoint }) });
+    return r.ok && (await r.json())?.linked === true;
+  } catch { return false; }
+}

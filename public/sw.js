@@ -1,5 +1,5 @@
-// The service worker, for the daily reminder only (lib/push.ts): it shows the push app/push/remind sends, and opens
-// today's race when it's tapped. No caching: the pages are the CDN's.
+// The service worker, for the daily reminder (lib/push.ts) and a 1-on-1 match found while away (lib/push-send.ts): it
+// shows the push, kept on screen till answered when it's sticky, and opens its page when it's tapped. No caching: the pages are the CDN's.
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 
@@ -7,7 +7,7 @@ self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (_) {}
   e.waitUntil(self.registration.showNotification(d.title || 'Up and down', {
-    body: d.body || '', icon: '/apple-icon', badge: '/apple-icon', tag: d.tag || 'daily', lang: d.lang || 'en',
+    body: d.body || '', icon: '/apple-icon', badge: '/apple-icon', tag: d.tag || 'daily', lang: d.lang || 'en', requireInteraction: !!d.sticky, renotify: !!d.sticky,
     data: { url: d.url || '/race' },
   }));
 });

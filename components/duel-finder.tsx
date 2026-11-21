@@ -11,6 +11,8 @@ import { track } from '@/lib/track';
 import { preloadRace } from '@/lib/duel-preload';
 import { callCode, callHref, parsePosted } from '@/lib/duel-call';
 import { shareHref } from '@/lib/share';
+import { linkPush, pushable, subscribe } from '@/lib/push';
+import { readLog } from '@/lib/log';
 import { IconPlay } from './ui';
 import '@/styles/duel-rating.css';
 
@@ -26,10 +28,13 @@ import '@/styles/duel-rating.css';
 // Ready the game opens on a browser that has them.
 // While looking, Post an open call gives a link for any chat (lib/duel-call.ts): the first sailor in the band who opens
 // it and takes it (/call/[code] → /duel?take=<code>) is paired with this one, as a challenge is.
+// Keep looking if I leave: on a device that can take a push (lib/push.ts, tied to the account), the search goes on for
+// 30 minutes after the page is gone, and Match found comes as a message with a minute to say Ready (lib/push-send.ts);
+// its tap opens /duel?resume, which looks again and finds the pair waiting.
 // Opened from the home's Race (/duel?challenge=<handle>, components/duel-home.tsx), it challenges that sailor at once.
 // The wishes, a venue and a yacht, kept on this device, are the race's from a sailor's fourth rated race (the host's first).
 type Phase = 'idle' | 'looking' | 'found' | 'go' | 'missed' | 'error';
-type Note = '' | 'noanswer' | 'declined' | 'gone' | 'taken' | 'away' | 'closed' | 'band' | 'mine' | 'nocall';
+type Note = '' | 'noanswer' | 'declined' | 'gone' | 'taken' | 'away' | 'closed' | 'band' | 'mine' | 'nocall' | 'nopush' | 'pushdenied' | 'noaway';
 export type OpenCall = { code: string; lo: number; hi: number; url: string };
 export type Wishes = { venue?: string; yacht?: string };
 const LOOK_MS = 3000, FOUND_MS = 1000, OFFER_AFTER_S = 90, LIST_MS = 10000, WISH_KEY = 'regatta-duel-wishes';
@@ -64,6 +69,8 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
   const [said, setSaid] = useState(false); // this sailor said Ready to the pair on screen
   const [note, setNote] = useState<Note>('');
   const [call, setCall] = useState<OpenCall | null>(null); // this sailor's open call, posted while looking
+  const [away, setAway] = useState(false); const awayRef = useRef(false); // looked for after leaving the page
+  const keepAway = (v: boolean) => { awayRef.current = v; setAway(v); };
   const [left, setLeft] = useState(0);
   const [loaded, setLoaded] = useState<number | null>(null); // the share of the race's files fetched, once a match is found
   const preload = useRef<AbortController | null>(null);
@@ -75,7 +82,7 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
     if (s.status === 'go') { on.current = false; setPair(s.pair); setPhase('go'); track('Duel match', { role: s.pair.role }); handOver(s.pair); return; }
     if (s.status === 'found') {
       if (pairRef.current?.id !== s.pair.id) {
-        foundAt.current = Date.now(); setCall(null);
+        foundAt.current = Date.now(); setCall(null); keepAway(false);
         preload.current?.abort(); const ac = preload.current = new AbortController(); setLoaded(0);
         preloadRace(s.pair.settings.venue, s.pair.settings.yacht, (x) => { if (!ac.signal.aborted) setLoaded(x); }, ac.signal);
       }
@@ -85,13 +92,13 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
     }
     // the pair gone: before its time was up the other said no; after it, whoever hadn't said Ready let it go. This sailor's
     // own silence is a miss (the database dropped her; asking again would only look afresh): stop, and say so
-    const had = pairRef.current, wasReady = saidRef.current, early = had && Date.now() - foundAt.current < 11000;
+    const had = pairRef.current, wasReady = saidRef.current, early = had && Date.now() - foundAt.current < (had.ttl - 1) * 1000;
     if (had) { preload.current?.abort(); preload.current = null; setLoaded(null); }
     pairRef.current = null; saidRef.current = false; setSaid(false); setPair(null);
     if (had && !wasReady && !early) { on.current = false; setPhase('missed'); post({ do: 'stop' }); return; }
     if (had) setNote(early ? 'declined' : 'noanswer');
     if (s.status === 'looking') {
-      setLook({ waited: s.waited, band: s.band, online: s.online }); setPhase('looking');
+      setLook({ waited: s.waited, band: s.band, online: s.online }); keepAway(s.away); setPhase('looking');
       timer.current = setTimeout(ask, LOOK_MS);
       return;
     }
@@ -101,7 +108,21 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
   const ask = useCallback(async () => { if (!on.current) return; apply(await post({ do: 'seek', wishes: wishesRef.current })); }, [apply]);
 
   const find = () => { stopTimer(); on.current = true; started.current = Date.now(); setNote(''); setPhase('looking'); track('Duel find', {}); ask(); };
-  const stop = () => { stopTimer(); on.current = false; pairRef.current = null; setPair(null); setCall(null); setPhase('idle'); post({ do: 'stop' }); };
+  const stop = () => { stopTimer(); on.current = false; pairRef.current = null; setPair(null); setCall(null); keepAway(false); setPhase('idle'); post({ do: 'stop' }); };
+  // Keep looking if I leave: the browser's permission and subscription (the daily reminder's), tied to this account,
+  // then the database told; or back to looking only while here
+  const awayOn = async () => {
+    setNote('');
+    if (!pushable()) { setNote('nopush'); return; }
+    const st = await subscribe(lang, readLog());
+    if (st !== 'on') { setNote(st === 'denied' ? 'pushdenied' : 'nopush'); return; }
+    await linkPush();
+    let r = null;
+    try { r = await fetch('/connect/seek', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ do: 'away', on: true }) }); } catch { /* said below */ }
+    const j = r?.ok ? await r.json().catch(() => null) : null;
+    if (j?.status === 'away') { keepAway(true); track('Duel away', {}); } else setNote(j?.reason === 'no_push' ? 'nopush' : 'noaway');
+  };
+  const awayOff = () => { keepAway(false); fetch('/connect/seek', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ do: 'away', on: false }) }).catch(() => {}); };
   // an open call, while looking: its link to share (the call lives while this page goes on looking, an hour at most)
   const postCall = async () => {
     let r = null;
@@ -159,6 +180,12 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
     const c = new URLSearchParams(location.search).get('take');
     if (c !== null) history.replaceState(history.state, '', location.pathname);
     if (signed && callCode(c)) take(callCode(c)!);
+    // a Match found message tapped (lib/push-send.ts): look again, and the pair waiting is found
+    const resume = new URLSearchParams(location.search).has('resume');
+    if (resume) history.replaceState(history.state, '', location.pathname);
+    if (signed && resume) find();
+    // a browser that already takes the site's messages: tied to this account, so away works without asking again
+    if (signed && pushable() && Notification.permission === 'granted') linkPush();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Ready now, read every 10 s while the list is on screen (not once a match is found), and not in a hidden tab
   const listed = signed && phase !== 'found' && phase !== 'go';
@@ -172,22 +199,22 @@ export function DuelFinder({ lang, signed }: { lang: Lang; signed: boolean }) {
   useEffect(() => { if (phase !== 'found') return; const t = setInterval(() => setLeft((x) => Math.max(0, x - 0.25)), 250); return () => clearInterval(t); }, [phase]);
   // leaving the page stops looking
   useEffect(() => {
-    const away = () => { if (on.current) navigator.sendBeacon?.('/connect/seek', new Blob([JSON.stringify({ do: 'stop' })], { type: 'application/json' })); };
+    const away = () => { if (on.current && !awayRef.current) navigator.sendBeacon?.('/connect/seek', new Blob([JSON.stringify({ do: 'stop' })], { type: 'application/json' })); };
     addEventListener('pagehide', away);
     return () => { removeEventListener('pagehide', away); stopTimer(); preload.current?.abort(); };
   }, []);
 
   return <DuelFinderView lang={lang} signed={signed} phase={phase} look={look} pair={pair} said={said} left={left} note={note}
     longWait={phase === 'looking' && look.waited >= OFFER_AFTER_S} find={find} stop={stop} ready={ready} decline={decline}
-    list={list} challenge={challenge} wishes={wishes} setWish={setWish} loaded={loaded} call={call} postCall={postCall} />;
+    list={list} challenge={challenge} wishes={wishes} setWish={setWish} loaded={loaded} call={call} postCall={postCall} away={away} awayOn={awayOn} awayOff={awayOff} />;
 }
 
 type ViewProps = { lang: Lang; signed: boolean; phase: Phase; look: { waited: number; band: number; online: number }; pair: Pair | null; said: boolean; left: number;
   note: Note; longWait: boolean; find: () => void; stop: () => void; ready: () => void; decline: () => void;
   list?: Ready[]; challenge?: (handle: string) => void; wishes?: Wishes; setWish?: (k: keyof Wishes, v: string) => void; loaded?: number | null;
-  call?: OpenCall | null; postCall?: () => void };
+  call?: OpenCall | null; postCall?: () => void; away?: boolean; awayOn?: () => void; awayOff?: () => void };
 
-export function DuelFinderView({ lang, signed, phase, look, pair, said, left, note, longWait, find, stop, ready, decline, list = [], challenge = () => {}, wishes = {}, setWish = () => {}, loaded = null, call = null, postCall = () => {} }: ViewProps) {
+export function DuelFinderView({ lang, signed, phase, look, pair, said, left, note, longWait, find, stop, ready, decline, list = [], challenge = () => {}, wishes = {}, setWish = () => {}, loaded = null, call = null, postCall = () => {}, away = false, awayOn = () => {}, awayOff = () => {} }: ViewProps) {
   const t = tx(lang);
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const friend = <Link className="bt-show" href="/match/new">{t('Challenge a friend instead', 'Позвать друга', 'Reta a un amigo', 'Lieber einen Freund herausfordern', 'Bunun yerine bir arkadaşını çağır', 'Défier plutôt un ami', 'Sfida invece un amico', 'Desafiar um amigo')}</Link>;
@@ -200,6 +227,9 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
     band: t('Your rating is outside that call’s range.', 'Твой рейтинг вне диапазона этого вызова.', 'Tu rating está fuera del rango de ese reto.', 'Deine Wertung liegt außerhalb des Bereichs dieser Herausforderung.', 'Reytingin bu çağrının aralığı dışında.', 'Ton classement est hors de la fourchette de cet appel.', 'Il tuo rating è fuori dall’intervallo di quella sfida.', 'Seu rating está fora da faixa desse desafio.'),
     mine: t('That’s your own call: share it, and someone else takes it.', 'Это твой собственный вызов: поделись им, и его примет кто-то другой.', 'Es tu propio reto: compártelo y otro lo aceptará.', 'Das ist deine eigene Herausforderung: teil sie, dann nimmt sie jemand anderes an.', 'Bu senin çağrın: paylaş, başkası kabul etsin.', 'C’est ton propre appel : partage-le, quelqu’un d’autre le prendra.', 'È la tua sfida: condividila e la prenderà qualcun altro.', 'É o seu próprio desafio: compartilhe e outra pessoa aceita.'),
     nocall: t('The call couldn’t be posted just now. Try again.', 'Вызов сейчас не удалось опубликовать. Попробуй ещё раз.', 'No se pudo publicar el reto ahora. Inténtalo de nuevo.', 'Die Herausforderung ließ sich gerade nicht stellen. Versuch es noch einmal.', 'Çağrı şu an yayınlanamadı. Tekrar dene.', 'L’appel n’a pas pu être lancé. Réessaie.', 'Non è stato possibile lanciare la sfida. Riprova.', 'Não deu para publicar o desafio agora. Tente de novo.'),
+    nopush: t('This browser can’t take the site’s messages. On an iPhone, add the site to your Home Screen first.', 'Этот браузер не принимает сообщения сайта. На iPhone сначала добавь сайт на экран «Домой».', 'Este navegador no recibe los mensajes del sitio. En un iPhone, añade antes el sitio a la pantalla de inicio.', 'Dieser Browser kann keine Nachrichten der Seite empfangen. Auf dem iPhone füge die Seite zuerst zum Home-Bildschirm hinzu.', 'Bu tarayıcı sitenin mesajlarını alamıyor. iPhone’da önce siteyi Ana Ekrana ekle.', 'Ce navigateur ne peut pas recevoir les messages du site. Sur iPhone, ajoute d’abord le site à l’écran d’accueil.', 'Questo browser non riceve i messaggi del sito. Su iPhone, aggiungi prima il sito alla schermata Home.', 'Este navegador não recebe as mensagens do site. No iPhone, adicione antes o site à Tela de Início.'),
+    pushdenied: t('Messages from this site are blocked in your browser’s settings. Allow them there, then try again.', 'Сообщения этого сайта запрещены в настройках браузера. Разреши их там и попробуй снова.', 'Los mensajes de este sitio están bloqueados en los ajustes del navegador. Permítelos allí y vuelve a intentarlo.', 'Nachrichten dieser Seite sind in den Browser-Einstellungen blockiert. Erlaube sie dort und versuch es noch einmal.', 'Bu sitenin mesajları tarayıcı ayarlarında engelli. Orada izin ver ve tekrar dene.', 'Les messages de ce site sont bloqués dans les réglages du navigateur. Autorise-les là, puis réessaie.', 'I messaggi di questo sito sono bloccati nelle impostazioni del browser. Consentili lì e riprova.', 'As mensagens deste site estão bloqueadas nas configurações do navegador. Permita-as lá e tente de novo.'),
+    noaway: t('Couldn’t keep looking for you just now. Try again.', 'Сейчас не получилось продолжить поиск без тебя. Попробуй ещё раз.', 'No se pudo seguir buscando por ti ahora. Inténtalo de nuevo.', 'Die Suche ließ sich gerade nicht für dich fortsetzen. Versuch es noch einmal.', 'Senin için aramaya şu an devam edilemedi. Tekrar dene.', 'Impossible de continuer à chercher pour toi pour l’instant. Réessaie.', 'Non è stato possibile continuare a cercare per te. Riprova.', 'Não deu para continuar procurando por você agora. Tente de novo.'),
   };
   const noted = NOTES[note] ? <p className="dr-note">{NOTES[note]}</p> : null;
   // the open call: posted, its link and the ways to send it; else the button that posts one
@@ -232,6 +262,7 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
             <span className="df-who"><b className="df-n">{r.name || anyone}</b><span className="df-meta">
             <span className="df-lv">{provisional(r.races) ? t('New', 'Новичок', 'Nuevo', 'Neu', 'Yeni', 'Nouveau', 'Nuovo', 'Novo') : levelName(r.rating, lang)}</span>
             <span className="iv-r">{shown(r.rating, r.races)}</span>
+            {r.away && <span className="df-lv df-away-tag">{t('away · gets a message', 'не на странице · получит сообщение', 'fuera · recibe un mensaje', 'weg · bekommt eine Nachricht', 'uzakta · mesaj alır', 'absent · reçoit un message', 'via · riceve un messaggio', 'fora · recebe uma mensagem')}</span>}
             <span className="iv-m">{t(`waiting ${mmss(r.waited)}`, `ждёт ${mmss(r.waited)}`, `esperando ${mmss(r.waited)}`, `wartet ${mmss(r.waited)}`, `${mmss(r.waited)} bekliyor`, `attend ${mmss(r.waited)}`, `aspetta ${mmss(r.waited)}`, `esperando ${mmss(r.waited)}`)}</span></span></span>
             <button type="button" className="bt-show df-race" onClick={() => challenge(r.handle)} aria-label={t(`Race ${r.name || 'this sailor'}`, `Гонка с ${r.name || 'этим соперником'}`, `Regatear con ${r.name || 'este regatista'}`, `Gegen ${r.name || 'diesen Segler'} segeln`, `${r.name || 'Bu denizci'} ile yarış`, `Régater contre ${r.name || 'ce marin'}`, `Sfida ${r.name || 'questo velista'}`, `Correr contra ${r.name || 'este velejador'}`)}>{t('Race', 'Гонка', 'Regatear', 'Segeln', 'Yarış', 'Régater', 'Sfida', 'Correr')}</button>
           </li>))}
@@ -278,7 +309,7 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
               <button type="button" className="bt-go df-ready" onClick={ready}><IconPlay /><span>{t('Ready', 'Готов', 'Listo', 'Bereit', 'Hazırım', 'Prêt', 'Pronto', 'Pronto')}</span><span className="df-left">{Math.ceil(left)}</span></button>
               <button type="button" className="bt-show" onClick={decline}>{t('Decline', 'Отказаться', 'Rechazar', 'Ablehnen', 'Reddet', 'Refuser', 'Rifiuta', 'Recusar')}</button>
             </div>}
-        <span className="dr-bar df-bar" aria-hidden="true"><i style={{ width: `${Math.round((left / 12) * 100)}%` }} /></span>
+        <span className="dr-bar df-bar" aria-hidden="true"><i style={{ width: `${Math.round((left / pair.ttl) * 100)}%` }} /></span>
       </div>
     );
   }
@@ -292,6 +323,16 @@ export function DuelFinderView({ lang, signed, phase, look, pair, said, left, no
       {gone}{noted}
       {longWait && <p className="dr-note">{t('Nobody near your level is looking yet. Keep looking, or send a friend a link: it’s ready in a tap.', 'Пока никто твоего уровня не ищет. Ищи дальше или отправь другу ссылку — это одно касание.', 'Aún nadie de tu nivel está buscando. Sigue buscando o envía un enlace a un amigo: está en un toque.', 'Noch sucht niemand auf deinem Niveau. Such weiter oder schick einem Freund einen Link: ein Tipp genügt.', 'Henüz senin seviyende arayan yok. Aramaya devam et ya da bir arkadaşına bağlantı gönder: tek dokunuş.', 'Personne de ton niveau ne cherche encore. Continue, ou envoie un lien à un ami : un geste suffit.', 'Ancora nessuno del tuo livello sta cercando. Continua o manda un link a un amico: basta un tocco.', 'Ninguém do seu nível está procurando ainda. Continue ou mande um link a um amigo: é um toque.')}</p>}
       <div className="df-acts"><button type="button" className="bt-show" onClick={stop}>{t('Stop looking', 'Перестать искать', 'Dejar de buscar', 'Suche beenden', 'Aramayı bırak', 'Arrêter de chercher', 'Smetti di cercare', 'Parar de procurar')}</button>{longWait && friend}</div>
+      <div className="df-call df-away">
+        {away ? <>
+          <span className="bt-k">{t('Looking for you while you’re away', 'Ищем, пока тебя нет', 'Buscando mientras no estás', 'Wir suchen, während du weg bist', 'Sen yokken arıyoruz', 'On cherche pendant ton absence', 'Cerchiamo mentre sei via', 'Procurando enquanto você está fora')}</span>
+          <p className="df-band">{t('You can leave this page. We’ll message this device the moment a sailor is found, for 30 minutes; then a minute to say Ready.', 'Можно закрыть страницу. Как только найдём соперника, пришлём сообщение на это устройство — в течение 30 минут; потом будет минута, чтобы нажать «Готов».', 'Puedes salir de esta página. Te avisaremos en este dispositivo en cuanto haya rival, durante 30 minutos; luego tendrás un minuto para decir Listo.', 'Du kannst die Seite verlassen. Wir schicken diesem Gerät eine Nachricht, sobald ein Segler gefunden ist, 30 Minuten lang; dann hast du eine Minute für Bereit.', 'Bu sayfadan çıkabilirsin. Bir denizci bulunur bulunmaz bu cihaza mesaj göndeririz, 30 dakika boyunca; sonra hazırım demek için bir dakikan olur.', 'Tu peux quitter cette page. On envoie un message à cet appareil dès qu’un marin est trouvé, pendant 30 minutes ; puis une minute pour dire Prêt.', 'Puoi lasciare questa pagina. Mandiamo un messaggio a questo dispositivo appena troviamo un velista, per 30 minuti; poi un minuto per dire Pronto.', 'Você pode sair desta página. Mandamos uma mensagem a este aparelho assim que acharmos um velejador, por 30 minutos; depois um minuto para dizer Pronto.')}</p>
+          <div className="df-acts"><button type="button" className="bt-show" onClick={awayOff}>{t('Only while I’m here', 'Только пока я здесь', 'Solo mientras estoy aquí', 'Nur solange ich hier bin', 'Sadece buradayken', 'Seulement quand je suis là', 'Solo mentre sono qui', 'Só enquanto estou aqui')}</button></div>
+        </> : <>
+          <div className="df-acts"><button type="button" className="bt-show" onClick={awayOn}>{t('Keep looking if I leave', 'Искать, даже если я уйду', 'Seguir buscando si salgo', 'Weitersuchen, wenn ich gehe', 'Çıkarsam aramaya devam et', 'Continuer si je pars', 'Continua a cercare se esco', 'Continuar procurando se eu sair')}</button></div>
+          <p className="iv-note">{t('A message to this device when a sailor is found, for 30 minutes.', 'Сообщение на это устройство, когда соперник найдётся, — в течение 30 минут.', 'Un mensaje a este dispositivo cuando haya rival, durante 30 minutos.', 'Eine Nachricht an dieses Gerät, wenn ein Segler gefunden ist, 30 Minuten lang.', 'Bir denizci bulunduğunda bu cihaza mesaj, 30 dakika boyunca.', 'Un message sur cet appareil quand un marin est trouvé, pendant 30 minutes.', 'Un messaggio su questo dispositivo quando troviamo un velista, per 30 minuti.', 'Uma mensagem neste aparelho quando acharmos um velejador, por 30 minutos.')}</p>
+        </>}
+      </div>
       {callBox}
       {now}
     </div>
