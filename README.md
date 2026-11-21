@@ -85,6 +85,10 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
     three races a day for a pair. The game's card says the new rating after a race (`GET /connect/rating`), as does the
     result page (`components/duel-rating.tsx`); your own card on `/players` shows yours (`GET /connect/rating/me`)
     (`docs/superpowers/specs/2026-11-21-one-on-one-rating.md`).
+  - **The invite and the signed-out friend:** the host's screen reports its link (`kind: 'invite'`), and `/match/<code>` shows
+    who is asking, their level and about how long the race takes (`GET /connect/invite`, `components/invite-info.tsx`). A
+    friend who raced signed out keeps the race by signing in after it (`components/duel-keep.tsx`, `POST /connect/claim`):
+    it joins her history, never the rating (`docs/superpowers/specs/2026-11-21-one-on-one-friend.md`).
   - **Not on the hub yet:** the race hub's 1-on-1 race card shows only with `?match` in its address, until the owner's
     test race with a friend; `/match/new` works for anyone with the address.
 - **A passport to share:** `/players?s=&v=&vs=&n=` (`lib/passport-share.ts`; its card `app/og/passport`): the streak and

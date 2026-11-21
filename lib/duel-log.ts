@@ -6,7 +6,7 @@ import { noEmoji } from '@/lib/name';
 // What the 1-on-1 race's game reports to POST /connect/log (app/connect/log/route.ts), checked before it reaches the
 // database: the database casts these to smallint and int, so a number out of range would raise there and lose the
 // report. parseReport answers the report as the site understands it, or null for anything that is not exactly one of the
-// four. toRow makes the p_report of regatta_duel_log from it.
+// five (an invite, a start, a join, an end, a perf). toRow makes the p_report of regatta_duel_log from it.
 //
 // Both screens report the end: the host's with the write token it sent with the start, the guest's (side 'guest') with the
 // token she sent with her join. The database keeps the host's as the race's result and the guest's beside it, and a race
@@ -23,7 +23,8 @@ export type Report =
   | { kind: 'join'; code: string; seed: number; name: string; token: string | null }
   | { kind: 'end'; code: string; seed: number; token: string; side: Side; state: 'finished' | 'abandoned'; winner: Side | null; margin: number | null; forfeited: Side | null;
       recalls: number | null; prep: 'P' | 'I' | 'U' | 'B' | null; gun: boolean | null; left: Side | null; host: Result; guest: Result }
-  | { kind: 'perf'; code: string; seed: number; side: Side; perf: Perf };
+  | { kind: 'perf'; code: string; seed: number; side: Side; perf: Perf }
+  | { kind: 'invite'; code: string; host: string; settings: Settings };
 
 // How the race ran on one screen, as the game's stats.js perfSummary and match.js net() measure it: the middle frame's
 // rate (fps) and the slow end's (low, the 95th percentile frame), stalls over 100 ms a minute, seconds measured, the
@@ -87,6 +88,10 @@ function perfOf(p: unknown): Perf | null {
 export function parseReport(body: unknown): Report | null {
   if (!isObj(body)) return null;
   const { kind, code, seed } = body;
+  if (kind === 'invite') { // (a link, before any race: no seed)
+    const host = typeof code === 'string' && CODE_RE.test(code) ? cleanName(body.host) : '', settings = settingsOf(body.settings);
+    return host && settings ? { kind, code: code as string, host, settings } : null;
+  }
   if (typeof code !== 'string' || !CODE_RE.test(code) || !int(seed, 0, 100000)) return null;
   if (kind === 'join') {
     // her token, the proof that her end is hers (a build before it sends none)
@@ -121,6 +126,11 @@ export function parseReport(body: unknown): Report | null {
 // SHA-256 of the report's token (the host's write token, or the guest's), which is never sent on.
 export function toRow(r: Report, userId: string | null, hash: string | null): object {
   if (r.kind === 'join') return { kind: 'join', code: r.code, seed: r.seed, guest_user: userId, guest_name: r.name, guest_hash: hash };
+  if (r.kind === 'invite') {
+    const s = r.settings;
+    return { kind: 'invite', code: r.code, host_user: userId, host_name: r.host, venue: s.venue, yacht: s.yacht, wind: s.preset, length: s.length,
+      course: s.course, laps: s.laps, start_min: s.start, current: s.current === 1, daytime: s.daytime };
+  }
   if (r.kind === 'perf') return { kind: 'perf', code: r.code, seed: r.seed, side: r.side, perf: r.perf };
   if (r.kind === 'start') {
     const s = r.settings;

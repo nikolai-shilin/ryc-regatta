@@ -40,8 +40,10 @@ const gate = () => { let open; const promise = new Promise((r) => { open = () =>
 const mine = (p) => !(p.body.kind === 'end' && p.body.side === 'guest');
 const of = (kind) => posts.filter((p) => p.body.kind === kind && mine(p)).map((p) => p.body);
 const guestEnds = () => posts.filter((p) => !mine(p)).map((p) => p.body);
-const kinds = (s) => posts.filter((p) => p.loc === s.loc).map((p) => p.body.kind);
-const allKinds = () => posts.filter(mine).map((p) => p.body.kind);
+// (the host's invite, told as her room opens, before any race, is tested on its own: 'the host tells the invite …')
+const raceReport = (p) => p.body.kind !== 'invite';
+const kinds = (s) => posts.filter((p) => p.loc === s.loc && raceReport(p)).map((p) => p.body.kind);
+const allKinds = () => posts.filter((p) => mine(p) && raceReport(p)).map((p) => p.body.kind);
 
 // ---------- what happens on the water (as one-on-one-endings.test.mjs sails it) ----------
 const home = (x, b) => { toFinish(x.hr, b); until(() => b.done, x.live, 10, `${b.name} is home`); };
@@ -748,4 +750,25 @@ test('a host back on a race that was on when its tab went: the host left it', as
   await page('Host', { ls: x.h.ls });
   await settle();
   assert.deepEqual([of('end')[0].state, of('end')[0].left, of('end')[0].gun], ['abandoned', 'host', null]);
+});
+
+// ---------- the invite: who is asking, for the invite page (app/connect/invite) ----------
+test('the host tells the invite once, as her room opens: her name and the race\'s settings; the guest never does', async () => {
+  const x = await room();
+  await settle();
+  const inv = of('invite');
+  assert.equal(inv.length, 1);
+  assert.deepEqual(inv[0], { kind: 'invite', code: CODE, host: 'Host', settings: { venue: 'palma', yacht: 'jpk1050', preset: 'medium', length: 'short', course: 'wl', laps: 1, start: 1, current: 0, daytime: 'any' } });
+  assert.ok(posts.filter((p) => p.body.kind === 'invite').every((p) => p.loc === x.h.loc));
+  assert.equal(parseReport(inv[0]).kind, 'invite', 'one the site takes');
+});
+
+test('a guest\'s record keeps her token, the host\'s none: signed in after, she keeps the race with it', async () => {
+  const x = await afloat();
+  for (const s of x.both) s.records.push = function (res) { s.ls.setItem('regatta-result-' + res.id, JSON.stringify(res)); return Array.prototype.push.call(this, res); };
+  bothHome(x); await settle(); toCard(x); await settle();
+  const duel = (s) => JSON.parse(s.ls.getItem('regatta-result-' + s.records[0].id)).duel;
+  assert.deepEqual(duel(x.h), { code: CODE, seed: 11 });
+  assert.equal(duel(x.g).token, of('join')[0].token, 'the token her join was sent with');
+  assert.notEqual(duel(x.g).token, of('start')[0].token);
 });

@@ -267,6 +267,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
       hostSettings = isHost ? M.cleanSettings(store(SETTINGS_KEY), here()) : null;
       if (isHost && !settingsHere(hostSettings)) return; // (another page: the host's own venue and yacht)
       R.link.value = `${location.origin}/match/${code}?v=${encodeURIComponent(hostSettings ? hostSettings.venue : venue.id)}&b=${encodeURIComponent(hostSettings ? hostSettings.yacht : cls.id)}`;
+      if (isHost && hostSettings && Log?.inviteBody) try { Log.report(Log.inviteBody(code, hostSettings, myName)); } catch (e) { console.error(e); } // (who is asking, for the invite page)
       rt = net.realtime({ url: cfg.url, key: cfg.key });
       rt.setHeartbeat(5000); // a race notices a dead link in under 10 s
       link = M.makeLink(rt, code);
@@ -358,10 +359,12 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     if (c.rid || savedRid(c.seed)) return;
     try { c.rid = keepOneOnOne(c.race, results); store(RESULT_KEY, { code, seed: c.seed, id: c.rid }); markDuel(c.rid, c.seed); } catch (e) { console.error(e); }
   };
-  // the record names its race, so the result page can ask what it did to the rating (components/duel-rating.tsx)
+  // the record names its race, so the result page can ask what it did to the rating (components/duel-rating.tsx); a
+  // guest's also keeps her token, so that signing in after it keeps the race in her history (components/duel-keep.tsx)
   const markDuel = (id, seed) => {
     if (!id) return;
-    try { const k = 'regatta-result-' + id, rec = JSON.parse(localStorage.getItem(k) || 'null'); if (rec && typeof rec === 'object') localStorage.setItem(k, JSON.stringify({ ...rec, duel: { code, seed } })); } catch (e) {}
+    const token = isHost ? null : told.get(seed)?.claim ?? null;
+    try { const k = 'regatta-result-' + id, rec = JSON.parse(localStorage.getItem(k) || 'null'); if (rec && typeof rec === 'object') localStorage.setItem(k, JSON.stringify({ ...rec, duel: { code, seed, ...(token && { token }) } })); } catch (e) {}
   };
   const savedRid = (seed) => { const v = store(RESULT_KEY); return v && v.code === code && v.seed === seed ? v.id : null; };
   const resultId = () => (match ? (onScreen() && cur.rid) || savedRid(match.start.seed) : null);
@@ -445,6 +448,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
     if (told.has(seed)) return;
     try {
       const l = { token: Log.newToken(), settled: false, end: null };
+      l.claim = l.token; // (kept after her end has gone: signed in later, she keeps the race with it)
       told.set(seed, l);
       Log.report(Log.joinBody(match, code, myName, l.token), { done: () => { l.settled = true; if (l.end) sendEnd(l); } });
     } catch (e) { console.error(e); }

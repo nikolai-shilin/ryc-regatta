@@ -26,14 +26,12 @@ export function MyDuelRating({ lang }: { lang: Lang }) {
 
 export function MyDuelRatingView({ mine, lang }: { mine: MyRating; lang: Lang }) {
   const t = tx(lang), num = (n: number) => n.toLocaleString(LOCALE[lang]);
-  const date = (s: string) => new Date(s).toLocaleDateString(LOCALE[lang], { day: 'numeric', month: 'short', timeZone: 'UTC' });
-  const venue = (id: string | null) => (id ? pick(VENUES.find((v) => v.id === id)?.name, lang) ?? id : null);
-  const yacht = (id: string | null) => (id ? pick(YACHTS.find((y) => y.id === id)?.name, lang) ?? id : null);
   const head = <span className="bt-k"><IconCrew s={14} />{t('1-on-1 rating', 'Рейтинг 1 на 1', 'Rating 1 contra 1', '1-gegen-1-Wertung', 'Bire bir reyting', 'Classement en duel', 'Rating 1 contro 1', 'Rating 1 contra 1')}</span>;
   if (!mine.races) return (
     <div className="bt-g">
       {head}
       <p className="bt-hint">{t(`Not rated yet: everyone starts at ${START}. Race someone 1-on-1, both signed in, and your first five races find your level.`, `Рейтинга пока нет: у всех старт с ${START}. Проведи гонку 1 на 1, оба с аккаунтом, и первые пять гонок найдут твой уровень.`, `Aún sin rating: todos empiezan en ${START}. Haz una regata 1 contra 1, los dos con sesión iniciada, y tus cinco primeras regatas encontrarán tu nivel.`, `Noch keine Wertung: alle beginnen bei ${START}. Segle eine 1-gegen-1-Regatta, beide angemeldet, und deine ersten fünf Regatten finden dein Niveau.`, `Henüz reyting yok: herkes ${START} ile başlar. İkiniz de giriş yapmış olarak bire bir yarış; ilk beş yarışın seviyeni bulur.`, `Pas encore classé : tout le monde part de ${START}. Fais un duel, tous deux connectés, et tes cinq premières régates trouveront ton niveau.`, `Ancora senza rating: tutti partono da ${START}. Fai una regata 1 contro 1, entrambi con l’accesso, e le prime cinque regate troveranno il tuo livello.`, `Ainda sem rating: todos começam em ${START}. Corra um duelo 1 contra 1, os dois conectados, e suas cinco primeiras regatas acham o seu nível.`)}</p>
+      <History mine={mine} lang={lang} />
       <Link className="bt-row" href="/match/new"><IconCrew s={18} /><span>{t('Race someone 1-on-1', 'Гонка 1 на 1', 'Una regata 1 contra 1', 'Eine 1-gegen-1-Regatta', 'Bire bir yarış', 'Un duel 1 contre 1', 'Una regata 1 contro 1', 'Um duelo 1 contra 1')}</span></Link>
     </div>
   );
@@ -59,18 +57,38 @@ export function MyDuelRatingView({ mine, lang }: { mine: MyRating; lang: Lang })
         <div><dt>{t('Best', 'Лучший', 'Mejor', 'Bestwert', 'En iyi', 'Meilleur', 'Migliore', 'Melhor')}</dt><dd>{mine.best}</dd></div>
         <div><dt>{t('Lowest', 'Худший', 'Más bajo', 'Tiefstwert', 'En düşük', 'Plus bas', 'Più basso', 'Mais baixo')}</dt><dd>{mine.lowest}</dd></div>
       </dl>
-      {mine.changes.length > 0 && (
-        <ol className="dr-list" aria-label={t('Your last rated races', 'Последние рейтинговые гонки', 'Tus últimas regatas con rating', 'Deine letzten gewerteten Regatten', 'Son reytingli yarışların', 'Tes dernières régates classées', 'Le tue ultime regate valide', 'Suas últimas regatas valendo rating')}>
-          {mine.changes.slice(0, 5).map((c, i) => (
-            <li key={i}>
-              <span className="dr-when">{date(c.at)}</span>
-              <span className="dr-who"><span>{c.won ? t('Beat', 'Победа над', 'Ganó a', 'Sieg gegen', 'Yendi:', 'Victoire sur', 'Batte', 'Venceu') : t('Lost to', 'Проигрыш', 'Perdió con', 'Niederlage gegen', 'Kaybetti:', 'Défaite contre', 'Perde con', 'Perdeu para')} {c.them || t('a sailor', 'соперник', 'un regatista', 'einen Segler', 'bir denizci', 'un marin', 'un velista', 'um velejador')} <i>{c.them_before}</i></span>
-                <span className="dr-at">{[venue(c.venue), yacht(c.yacht)].filter(Boolean).join(' · ')}</span></span>
-              <b className={c.delta > 0 ? 'up' : c.delta < 0 ? 'down' : ''}>{signed(c.delta)}</b>
-            </li>
-          ))}
-        </ol>
-      )}
+      <History mine={mine} lang={lang} />
     </div>
+  );
+}
+
+// your last races, newest first: every 1-on-1 (recent), the rated ones with their change, the rest just for fun; the last
+// five rated ones (changes) where the database is older than recent
+function History({ mine, lang }: { mine: MyRating; lang: Lang }) {
+  const t = tx(lang);
+  const date = (s: string) => new Date(s).toLocaleDateString(LOCALE[lang], { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const venue = (id: string | null) => (id ? pick(VENUES.find((v) => v.id === id)?.name, lang) ?? id : null);
+  const yacht = (id: string | null) => (id ? pick(YACHTS.find((y) => y.id === id)?.name, lang) ?? id : null);
+  const rows = mine.recent.length
+    ? mine.recent.slice(0, 5).map((c) => ({ at: c.at, won: c.won, state: c.state, them: c.them, venue: c.venue, yacht: c.yacht, delta: c.delta, before: null as number | null }))
+    : mine.changes.slice(0, 5).map((c) => ({ at: c.at, won: c.won as boolean | null, state: 'finished' as const, them: c.them, venue: c.venue, yacht: c.yacht, delta: c.delta as number | null, before: c.them_before as number | null }));
+  if (!rows.length) return null;
+  const someone = t('a sailor', 'соперник', 'un regatista', 'einen Segler', 'bir denizci', 'un marin', 'un velista', 'um velejador');
+  const verb = (r: (typeof rows)[number]) => r.state !== 'finished' || r.won === null
+    ? t('Raced', 'Гонка с', 'Regateó con', 'Regatta mit', 'Yarıştı:', 'Régate avec', 'Regata con', 'Correu com')
+    : r.won ? t('Beat', 'Победа над', 'Ganó a', 'Sieg gegen', 'Yendi:', 'Victoire sur', 'Batte', 'Venceu') : t('Lost to', 'Проигрыш', 'Perdió con', 'Niederlage gegen', 'Kaybetti:', 'Défaite contre', 'Perde con', 'Perdeu para');
+  return (
+    <ol className="dr-list" aria-label={t('Your last 1-on-1 races', 'Последние гонки 1 на 1', 'Tus últimas regatas 1 contra 1', 'Deine letzten 1-gegen-1-Regatten', 'Son bire bir yarışların', 'Tes derniers duels', 'Le tue ultime regate 1 contro 1', 'Suas últimas regatas 1 contra 1')}>
+      {rows.map((r, i) => (
+        <li key={i}>
+          <span className="dr-when">{date(r.at)}</span>
+          <span className="dr-who"><span>{verb(r)} {r.them || someone}{r.before != null && <> <i>{r.before}</i></>}</span>
+            <span className="dr-at">{[venue(r.venue), yacht(r.yacht)].filter(Boolean).join(' · ')}</span></span>
+          {r.delta != null
+            ? <b className={r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : ''}>{signed(r.delta)}</b>
+            : <span className="dr-fun">{r.state === 'abandoned' ? t('Abandoned', 'Брошена', 'Abandonada', 'Abgebrochen', 'Terk edildi', 'Abandonnée', 'Abbandonata', 'Abandonada') : t('For fun', 'Для себя', 'Por diversión', 'Zum Spaß', 'Eğlence', 'Pour le plaisir', 'Per divertimento', 'Por diversão')}</span>}
+        </li>
+      ))}
+    </ol>
   );
 }
