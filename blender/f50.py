@@ -33,14 +33,14 @@ STERN = L / 2
 FLARE, CROWN = 0.02, 0.1
 DECK, BOTTOM, NOSE_Y = 0.85, -0.38, 0.15   # the deck and the bottom amidships, and the height of the nose's rounded tip
 TIP = 0.94                                 # where the nose's rounded tip begins (0.9 m from it)
-AFT = 0.03                                 # the transom's corners rounded off over its last 0.45 m
+AFT = 0.05                                 # the stern rounded off in plan over its last 0.75 m, as the photographs show it
 def clamp(v, a, b): return max(a, min(b, v))
 def lerp(a, b, t): return a + (b - a) * t
 def smooth(e0, e1, x): t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t)
 # the same lines as boats3d.js F (t = 0 at the transom, 1 at the nose's tip)
 def ell(t, t0): return math.sqrt(max(0.0, 1 - ((t - t0) / (1 - t0)) ** 2)) if t > t0 else 1.0  # a quarter ellipse to the tip
-def aft(t): return 0.78 + 0.22 * math.sqrt(max(0.0, 1 - ((AFT - t) / AFT) ** 2)) if t < AFT else 1.0  # the transom's rounded corners
-# in plan: full amidships, then narrowing steadily over her forward half to a rounded tip; the transom blunt
+def aft(t): return 0.5 + 0.5 * math.sqrt(max(0.0, 1 - ((AFT - t) / AFT) ** 2)) if t < AFT else 1.0  # the stern rounded off to a small transom
+# in plan: full amidships, then narrowing steadily over her forward half to a rounded tip; the stern rounded off
 def hb_of(t): return 0.5 * (0.92 + 0.08 * smooth(0, 0.3, t)) * (1 - 0.5 * smooth(0.45, 0.97, t)) * ell(t, TIP) * aft(t)
 # in profile: the deck level aft, sloping down over her forward 40% to some 0.6 m, then rounding down to the nose;
 # the bottom straight amidships, rising 0.3 m aft to the transom and some 0.25 m forward before rounding up to the nose

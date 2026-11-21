@@ -2716,21 +2716,21 @@ class AC75View extends ClassView {
 // measured against her 15 m hulls, from the side, head-on and from below on the crane. Two slim hulls, their centres
 // 7.4 m apart, each some 1.0 m wide and 1.2 m deep amidships, of rounded sections, narrowing steadily over her forward
 // half to a low rounded nose, its deck sloping down to it; the bottom straight amidships and rising to both ends; a
-// blunt transom with rounded corners; a cockpit well aft with a low streamlined fairing at its forward end. The wing
+// stern rounded off in plan to a small transom; a cockpit well aft with a low streamlined fairing at its forward end. The wing
 // stepped near amidships on the main beam, a slim faired foil section, its leading edge 7.4 m aft of the bows; the aft
 // beam an open truss, the nets between; the pod forward from the main beam to the jib's tack, 3.2 m aft of the bows, a
 // teardrop in section, deep and narrowing to a keel below. The hulls, beams, pod and nets are moulded (blender/f50.py,
 // on these same lines); built here if the model doesn't load
 const F = (() => {
-  const L = 15, HX = 3.7, DECK = 0.85, BOTTOM = -0.38, NOSE_Y = 0.15, TIP = 0.94, AFT = 0.03;
+  const L = 15, HX = 3.7, DECK = 0.85, BOTTOM = -0.38, NOSE_Y = 0.15, TIP = 0.94, AFT = 0.05;
   const ell = (t, t0) => (t > t0 ? Math.sqrt(Math.max(0, 1 - ((t - t0) / (1 - t0)) ** 2)) : 1); // a quarter ellipse to the tip
   const deck0 = (t) => DECK + 0.02 * Math.sin(Math.PI * t) - 0.27 * smooth(0.55, TIP, t);
   const bot0 = (t) => BOTTOM + 0.3 * (1 - smooth(0, 0.5, t)) + 0.25 * smooth(0.7, TIP, t);
   const hull = hullOf({
     L, flare: 0.02,
-    // in plan full amidships, narrowing steadily over her forward half to a rounded tip, the transom blunt with rounded
-    // corners; in profile the deck level aft and sloping down over her forward 40% to the nose, the bottom rising to both ends
-    hb: (t) => 0.5 * (0.92 + 0.08 * smooth(0, 0.3, t)) * (1 - 0.5 * smooth(0.45, 0.97, t)) * ell(t, TIP) * (t < AFT ? 0.78 + 0.22 * Math.sqrt(Math.max(0, 1 - ((AFT - t) / AFT) ** 2)) : 1),
+    // in plan full amidships, narrowing steadily over her forward half to a rounded tip, the stern rounded off over its
+    // last 0.75 m to a small transom; in profile the deck level aft and sloping down over her forward 40% to the nose, the bottom rising to both ends
+    hb: (t) => 0.5 * (0.92 + 0.08 * smooth(0, 0.3, t)) * (1 - 0.5 * smooth(0.45, 0.97, t)) * ell(t, TIP) * (t < AFT ? 0.5 + 0.5 * Math.sqrt(Math.max(0, 1 - ((AFT - t) / AFT) ** 2)) : 1),
     sheer: (t) => NOSE_Y + (deck0(t) - NOSE_Y) * ell(t, TIP),
     depth: (t) => -(NOSE_Y - (NOSE_Y - bot0(t)) * ell(t, TIP)),
     n: (t) => lerp(2.7, 2.2, smooth(0.4, 0.9, t)), // a rounded box aft, rounder forward
@@ -2774,7 +2774,9 @@ class F50View extends ClassView {
     const add = this.start(), T = this.tilt, H = F.hull, HX = F.HX, MOD = F50_MODEL;
     this.flyY = 1.4; // flying, her hulls a metre clear of the water, the boards' T-foils still a metre deep in it
     this.rollW = 3.7; // the sea's slope across her, taken between her two hulls
-    const paint = foilerMaterial(look.hull), deckMat = deckFinish(look, AC_DECK);
+    // her decks in her hull's colour, as the boats carry their livery over them (unless the player chose a deck), a fine
+    // non-skid moulded in
+    const paint = foilerMaterial(look.hull), deckMat = deckFinish(look.deck ? look : { ...look, deck: 'hull' }, AC_DECK);
     const well = new THREE.MeshStandardMaterial({ color: '#3a3f46', roughness: 0.6, side: THREE.DoubleSide });
     const foilMat = new THREE.MeshPhysicalMaterial({ color: '#23272d', roughness: 0.35, metalness: 0.2, clearcoat: 0.8 });
     const floorY = (z) => H.deckY(z) - 0.8; // the cockpit's floor: the crew stand in it with their heads and shoulders above the deck
