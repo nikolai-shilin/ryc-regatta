@@ -114,7 +114,7 @@ MAST_Z = -1.15
 COACH_Y = sheer(t_at(MAST_Z)) - 0.03                       # BV.coachY
 ROOF = COACH_Y + CH + 0.04                                 # BV.ROOF: where the hatches, winches and the mast's foot stand
 SIDE_DECK = 0.48
-WIN_F = (0.28, 0.37, 0.45, 0.54, 0.63, 0.71, 0.8)   # the window's band up the coachroof's side, in six strips
+WIN_F = (0.17, 0.28, 0.39, 0.5, 0.61, 0.72, 0.83)  # the window's band up the coachroof's side, in six strips: most of its height, as hers is
 def half_w(z):  # the plan: a rounded nose, then the full width, never closer than a side deck to the sheer
     u = clamp((z - CZF) / NOSE, 0, 1)
     return min(CW * (1 - (1 - u) ** 2) ** 0.4, hb_of(t_at(z)) - SIDE_DECK)
@@ -151,7 +151,7 @@ def build_coachroof(bm, M):
             mat = M['roof'] if seg >= len(WIN_F) + 4 else M['gel']                     # the top non-skid, its edge gelcoat
             k = seg - 2
             if 0 <= k < len(WIN_F) - 1:
-                if lerp(-2.0, -2.6, (k + 0.5) / (len(WIN_F) - 1)) < zc < 1.6: mat = M['glass']  # the long window, its front edge raked forward as it rises
+                if lerp(-2.3, -2.95, (k + 0.5) / (len(WIN_F) - 1)) < zc < 1.75: mat = M['glass']  # the long window, its front edge raked forward as it rises
                 if 2.45 < zc < 2.95: mat = M['glass']                                  # the small one in the coaming's side
             bm.faces.new((secs[i][j], secs[i][(j + 1) % R], secs[i + 1][(j + 1) % R], secs[i + 1][j])).material_index = mat
     bm.faces.new(list(reversed(secs[0]))).material_index = M['gel']

@@ -2141,6 +2141,41 @@ function loadModel(file, hull, uvs) {
   });
 }
 
+// her glass and her gelcoat, against the shared smoked pane: the coachroof's long window blue-grey smoked glass, dark
+// enough to stand out on the white deckhouse as hers does, with the sky only in it at a glancing angle; the hull windows
+// near black, flush in the topsides; the hull a production boat's moulded gelcoat, glossier than a painted race boat's
+const BV_GLASS = new THREE.MeshPhysicalMaterial({ color: '#1a2735', roughness: 0.08, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 0.75, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
+const BV_PORT = new THREE.MeshPhysicalMaterial({ color: '#080b0f', roughness: 0.12, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 0.55, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
+const gelcoat = (m) => { m.roughness = 0.18; m.clearcoatRoughness = 0.025; return m; };
+// the genoa's UV strip: the band of dark cloth sewn down her leech and along her foot, which is all that shows of her
+// genoa when it is rolled away, as a charter boat's always has; navy on a light sail, charcoal on a dark one. Drawn by
+// the sail's shader on top of its cloth (whatever the cloth is dyed), W metres wide: d from the leech is
+// (1 − u)(1 − f)·kL, from the foot f·kF, on the cloth's own map (u along the chord, f up the luff; the back face's map
+// mirrored)
+function uvStrip(grp, cloth, W = 0.5) {
+  const hd = BV.HEAD.clone().sub(BV.TACK), cl = BV.CLEW, leech = hd.clone().sub(cl).normalize(), foot = cl.clone().normalize();
+  const kL = Math.abs(cl.y * leech.z - cl.z * leech.y), kF = Math.abs(hd.y * foot.z - hd.z * foot.y);
+  const hsl = new THREE.Color(cloth).getHSL({}), color = hsl.l > 0.62 ? new THREE.Color('#1f2d47') : new THREE.Color().setHSL(0.6, 0.2, hsl.l * 0.38);
+  grp.children.forEach((mesh, i) => {
+    const m = mesh.material, prev = m.onBeforeCompile, key = m.customProgramCacheKey(), u = i ? '1.0 - vMapUv.x' : 'vMapUv.x';
+    m.onBeforeCompile = (sh, r) => {
+      prev.call(m, sh, r);
+      Object.assign(sh.uniforms, { uStripC: { value: color }, uStripK: { value: new THREE.Vector3(kL, kF, W) } });
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uStripC, uStripK;')
+        .replace('#include <map_fragment>', `#include <map_fragment>
+        float uvS = 0.0;
+        #ifdef USE_MAP
+        { float dL = (1.0 - (${u})) * (1.0 - vMapUv.y) * uStripK.x, dF = vMapUv.y * uStripK.y, aL = fwidth(dL), aF = fwidth(dF);
+          uvS = max(1.0 - smoothstep(uStripK.z - aL, uStripK.z + aL, dL), 1.0 - smoothstep(uStripK.z - aF, uStripK.z + aF, dF));
+          diffuseColor.rgb = mix(diffuseColor.rgb, uStripC, uvS); }
+        #endif`)
+        .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n        totalEmissiveRadiance = mix(totalEmissiveRadiance, emissive * uStripC, uvS);');
+    };
+    m.customProgramCacheKey = () => `${key}uv${i}`;
+  });
+  return grp;
+}
+
 class CruiserView extends ClassView {
   constructor({ look = LOOKS.player, label = null, player = false, cls = CLS }) {
     super();
@@ -2155,12 +2190,12 @@ class CruiserView extends ClassView {
       // the moulded parts, from the Blender model: in a group of their own, so the boat's merging of her small parts
       // (bake) leaves the shared geometry alone
       const moulded = add(new THREE.Group());
-      for (const [k, mat] of [['hull', hullMaterial(look.hull, look.stripe, look.bottom)], ['deck', skid], ['roof', roof], ['gel', M.gel], ['teak', M.teak], ['glass', MAT.pane]]) if (MOD[k]) moulded.add(new THREE.Mesh(MOD[k], mat));
-    } else add(new THREE.Mesh(H.geometry(), hullMaterial(look.hull, look.stripe, look.bottom)));
-    // the hull windows, small, flush and dark, four a side: one forward, a pair amidships and one aft; the dark stripe
+      for (const [k, mat] of [['hull', gelcoat(hullMaterial(look.hull, look.stripe, look.bottom))], ['deck', skid], ['roof', roof], ['gel', M.gel], ['teak', M.teak], ['glass', BV_GLASS]]) if (MOD[k]) moulded.add(new THREE.Mesh(MOD[k], mat));
+    } else add(new THREE.Mesh(H.geometry(), gelcoat(hullMaterial(look.hull, look.stripe, look.bottom))));
+    // the hull windows, flush and near black, four a side: one forward, a pair amidships and one aft; the dark stripe
     // along the topsides over them
-    const pane = MAT.pane;
-    for (const sx of [-1, 1]) for (const z of [-3.2, 0.2, 1.08, 3.75]) T.add(H.decal(sx, z, H.deckY(z) - 0.5, 0.62, 0.16, pane));
+    const pane = BV_GLASS;
+    for (const sx of [-1, 1]) for (const z of [-3.2, 0.2, 1.1, 3.75]) T.add(H.decal(sx, z, H.deckY(z) - 0.5, 0.7, 0.19, BV_PORT));
     for (const sx of [-1, 1]) {
       const pts = []; for (let i = 0; i <= 20; i++) { const z = lerp(H.STERN - 0.12, H.BOW + 3.15, i / 20), y = H.deckY(z) - 0.4; pts.push([sx * (H.xAt(H.tAt(z), y) + 0.004), y, z]); }
       T.add(tube(pts, 0.012, M.dark));
@@ -2361,9 +2396,9 @@ class CruiserView extends ClassView {
     this.TACK = BV.TACK; this.HEAD = BV.HEAD; this.CLEW = BV.CLEW; this.jibMax = 32; this.jibBelly = 0.13;
     this.jibPivot = add(new THREE.Group(), BV.TACK.x, BV.TACK.y, BV.TACK.z);
     this.jibAxis = BV.HEAD.clone().sub(BV.TACK).normalize();
-    // the furling genoa, in your colours
+    // the furling genoa, in your colours, its UV strip down the leech and along the foot
     const jtex = sailTexture('jib', look, BV.rig);
-    this.jib = sailMesh(18, 9, jtex, look.laminate, 'jib'); this.jibPivot.add(this.jib);
+    this.jib = uvStrip(sailMesh(18, 9, jtex, look.laminate, 'jib'), look.cloth); this.jibPivot.add(this.jib);
     this.kite = sailMesh(16, 10, sailTexture('kite', look), false, 'kite'); this.kite.visible = false; T.add(this.kite);
     this.makeTells(player);
     if (look.logo) for (const sx of [-1, 1]) T.add(logoDecal(H, sx, look.logo, H.BOW + 2.4, 1.15, 1.3, 0.48));
