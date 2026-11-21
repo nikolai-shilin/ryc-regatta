@@ -25,7 +25,7 @@ const CONTACT = { handle: '@fullcrimp', url: 'https://t.me/fullcrimp' };
 // the Laser and the Optimist sail with no jib (public/game/classes.js jib: false), so they carry no jib's ad; nor they and
 // the AC75 a gennaker or spinnaker (kite: false), so no logo there
 const WITH_JIB = YACHT_IDS.filter((y) => y !== 'laser' && y !== 'optimist').length;
-const WITH_KITE = YACHT_IDS.filter((y) => y !== 'laser' && y !== 'optimist' && y !== 'ac75').length;
+const WITH_KITE = YACHT_IDS.filter((y) => y !== 'laser' && y !== 'optimist' && y !== 'ac75' && y !== 'f50').length;
 // where each ad is in its picture: left, top, width and height in % (the words on the jib, the logo on the main, her
 // gennaker)
 const MARKS: Record<'jib' | 'main' | 'kite', [number, number, number, number]> = {

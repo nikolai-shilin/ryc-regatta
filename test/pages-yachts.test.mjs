@@ -67,10 +67,10 @@ test('/yachts is titled, described and addressed for each language', async () =>
 });
 
 test('/yachts says how many yachts the game really has', async () => {
-  assert.equal(YACHT_IDS.length, 9, 'the description says nine: change both together');
+  assert.equal(YACHT_IDS.length, 10, 'the description says ten: change both together');
   const [en, ru] = await Promise.all(LANGS.map((l) => fleet.generateMetadata(props(l))));
-  assert.match(en.description, /^The nine yachts/);
-  assert.match(ru.description, /^Девять яхт/);
+  assert.match(en.description, /^The ten yachts/);
+  assert.match(ru.description, /^Десять яхт/);
 });
 
 // ---------- a yacht ----------
@@ -162,7 +162,7 @@ test('/boat is titled, described and addressed for each language', async () => {
   assert.equal(en.openGraph.images[0].url, '/og/page/boat?lang=en');
 });
 
-test('/yachts tells search engines its trail and the nine yachts, each at her own page', async () => {
+test('/yachts tells search engines its trail and the ten yachts, each at her own page', async () => {
   for (const lang of LANGS) {
     const h = await html(fleet, lang);
     const [crumbs, list] = ldOf(h);

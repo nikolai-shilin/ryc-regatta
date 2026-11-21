@@ -2,6 +2,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { find, fold } from '@/public/game/words.js';
 import { useSceneStart } from '@/lib/scene-start';
+import { WaterLoading } from './word-scene';
 
 // /dictionary as the race shows its dictionary (public/game/words.js): the water in 3D filling the screen (public/word-view,
 // the race's own scenes) and the panel docked at its side (at its foot on a phone held upright), in the same look
@@ -110,6 +111,7 @@ export function DictionaryScreen({ lang, groups, shown3d, w }: { lang: string; g
     <>
       {go && start ? <iframe ref={water} className={`dc-water${live ? ' live' : ''}`} src={`/word-view?w=${encodeURIComponent(start)}&lang=${lang}`} title={w.scene} /> : null}
       <div className="wd bc staged" onKeyDown={keys}>
+        <WaterLoading lang={lang} on={!!(go && start) && !live} className="dc-load" />
         <section className="wd-card" ref={card} aria-labelledby="dc-h">
           <div className="wd-top">
             <h1 id="dc-h">{w.title}</h1><span className="wd-n">{total}</span>

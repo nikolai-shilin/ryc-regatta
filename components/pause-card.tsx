@@ -80,7 +80,7 @@ function Settings({ lang, back, close }: { lang: Lang; back: string; close: () =
 
       <div className="bt-g">
         <span className="bt-k" id="st-lang">{t('Language', 'Язык', 'Idioma', 'Sprache', 'Dil', 'Langue', 'Lingua', 'Idioma')}</span>
-        <nav className="bt-seg" style={{ ['--n' as string]: 8 }} aria-labelledby="st-lang">
+        <nav className="bt-seg" style={{ ['--n' as string]: 4 }} aria-labelledby="st-lang">
           <a href={`/lang?to=en&back=${to}`} aria-current={lang === 'en' ? 'true' : undefined} lang="en">English</a>
           <a href={`/lang?to=ru&back=${to}`} aria-current={lang === 'ru' ? 'true' : undefined} lang="ru">Русский</a>
           <a href={`/lang?to=es&back=${to}`} aria-current={lang === 'es' ? 'true' : undefined} lang="es">Español</a>

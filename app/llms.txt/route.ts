@@ -52,7 +52,7 @@ ${NAME} is a free 3D sailing race game by RYC that runs in any modern web browse
 - [Sailing certification exam practice](${SITE}/iyt): RYC's free practice app for sailing certification theory exams
 - [The venues](${SITE}/venues): the 66 regatta venues, each with the water, the wind, its regattas and how to race it
 ${VENUES.map((v) => `  - [${v.name[0]}, ${v.place[0]}](${SITE}/venues/${v.id})`).join('\n')}
-- [The yachts](${SITE}/yachts): the nine yachts in 3D, each with a page of her own
+- [The yachts](${SITE}/yachts): the ten yachts in 3D, each with a page of her own
 ${YACHTS.map((y) => `  - [${y.name[0]}](${SITE}/yachts/${y.id}): ${y.kind[0]}`).join('\n')}
 - [The players](${SITE}/players): everyone who races signed in, the most races first: their races, wins and podiums, the yachts and venues they sail, and their boat in 3D in their colours
 - [Social media](${SITE}/social): where the game posts its news and best races (${CHANNELS.map((c) => `${c.name} ${c.url}`).join(', ')}), and sending it to a friend

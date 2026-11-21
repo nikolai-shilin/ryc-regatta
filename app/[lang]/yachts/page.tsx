@@ -7,8 +7,8 @@ import { SITE, crumbsLd, jsonLd, langUrl } from '@/lib/seo';
 export const generateMetadata = titled('The yachts: from the Optimist to the AC75', 'Яхты: от Оптимиста до AC75', 'Los yates: del Optimist al AC75', 'Die Yachten: vom Optimist bis zum AC75', 'Yatlar: Optimist’ten AC75’e', 'Les yachts : de l’Optimist à l’AC75', 'Gli yacht: dall’Optimist all’AC75', 'Os veleiros: do Optimist ao AC75', {
   path: '/yachts', card: '/og/page/yachts',
   description: [
-    'The nine yachts you can race in 3D, from the Optimist, ILCA and J/70 to the Dragon, the J Class and the foiling AC75: what each is and how she sails.',
-    'Девять яхт, на которых можно гоняться в 3D, от Оптимиста, ILCA и J/70 до Дракона, класса J и AC75 на крыльях: что это за лодки и как они ходят.', 'Los nueve yates que puedes navegar en 3D, del Optimist, el ILCA y el J/70 al Dragon, el J Class y el AC75 con foils: qué es cada uno y cómo navega en el juego.', 'Die neun Yachten, die du in 3D segeln kannst, vom Optimist, ILCA und J/70 bis zum Dragon, der J Class und dem fliegenden AC75: was jede ist und wie sie segelt.', 'Optimist, ILCA ve J/70’ten Dragon’a, J Class’a ve foil üstünde uçan AC75’e kadar 3D’de yarışabileceğin dokuz yat: her biri nedir ve nasıl seyreder.', 'Les neuf yachts que tu peux mener en régate en 3D, de l’Optimist, de l’ILCA et du J/70 au Dragon, au Classe J et à l’AC75 à foils : ce qu’est chacun et comment il navigue.', 'I nove yacht che puoi portare in regata in 3D, dall’Optimist, l’ILCA e il J/70 al Dragon, al J Class e all’AC75 con i foil: cos’è ciascuno e come naviga.', 'Os nove veleiros em que você pode correr regata em 3D, do Optimist, ILCA e J/70 ao Dragon, ao J Class e ao AC75 com foils: o que é cada um e como veleja.'],
+    'The ten yachts you can race in 3D, from the Optimist, ILCA and J/70 to the Dragon, the J Class and the foiling AC75 and F50: what each is and how she sails.',
+    'Десять яхт, на которых можно гоняться в 3D, от Оптимиста, ILCA и J/70 до Дракона, класса J и летающих на крыльях AC75 и F50: что это за лодки и как они ходят.', 'Los diez yates que puedes navegar en 3D, del Optimist, el ILCA y el J/70 al Dragon, el J Class y el AC75 y el F50 con foils: qué es cada uno y cómo navega en el juego.', 'Die zehn Yachten, die du in 3D segeln kannst, vom Optimist, ILCA und J/70 bis zum Dragon, der J Class und den fliegenden AC75 und F50: was jede ist und wie sie segelt.', 'Optimist, ILCA ve J/70’ten Dragon’a, J Class’a ve foil üstünde uçan AC75 ile F50’ye kadar 3D’de yarışabileceğin on yat: her biri nedir ve nasıl seyreder.', 'Les dix yachts que tu peux mener en régate en 3D, de l’Optimist, de l’ILCA et du J/70 au Dragon, au Classe J et aux AC75 et F50 à foils : ce qu’est chacun et comment il navigue.', 'I dieci yacht che puoi portare in regata in 3D, dall’Optimist, l’ILCA e il J/70 al Dragon, al J Class e agli AC75 e F50 con i foil: cos’è ciascuno e come naviga.', 'Os dez veleiros em que você pode correr regata em 3D, do Optimist, ILCA e J/70 ao Dragon, ao J Class e aos AC75 e F50 com foils: o que é cada um e como veleja.'],
 });
 
 // The yachts: every class you can race in one scene, the drone flying from one to the next (components/fleet-view).
@@ -18,7 +18,7 @@ export default async function YachtsPage({ params, searchParams }: LangParams & 
   const [{ lang, t }, q] = await Promise.all([getT(params), searchParams]);
   const back = q.from === 'free' ? '/race/free' : '/race';
   const start = isYacht(q.y) ? q.y : null;
-  // for search and AI engines, as /venues has: the trail, and the nine yachts each with her own page, in the game's order
+  // for search and AI engines, as /venues has: the trail, and the ten yachts each with her own page, in the game's order
   const ld = [
     crumbsLd(lang, t('Home', 'Главная', 'Inicio', 'Start', 'Ana sayfa', 'Accueil', 'Home', 'Início'), [[t('The yachts', 'Яхты', 'Los yates', 'Die Yachten', 'Yatlar', 'Les yachts', 'Gli yacht', 'Os veleiros'), '/yachts']]),
     {

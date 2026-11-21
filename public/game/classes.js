@@ -1,5 +1,5 @@
 // The yachts you can race: the JPK 1050 offshore racer (the default), the Bavaria 46
-// cruiser, the J/70 and RS21 sportboats, the Dragon classic keelboat, the J Class America's Cup yacht of the 1930s, the Laser (ILCA) single-handed dinghy, the Optimist children's pram and the AC75 foiling monohull. A race is one-design: every boat in it is the same class, so the class is chosen for
+// cruiser, the J/70 and RS21 sportboats, the Dragon classic keelboat, the J Class America's Cup yacht of the 1930s, the Laser (ILCA) single-handed dinghy, the Optimist children's pram, the AC75 foiling monohull and the F50 foiling catamaran. A race is one-design: every boat in it is the same class, so the class is chosen for
 // the page, as the venue is (venues.js pageVenue): ?boat= in the address wins; a free race sails what its set-up chose
 // (localStorage 'regatta', yacht); today's race the day's (dailyYacht, below); every other page the JPK 1050.
 // lib/yachts.ts has the same ids and the words the site shows about them.
@@ -286,6 +286,50 @@ export const CLASSES = {
       [41, 43, 45, 46, 47, 46, 44, 40, 34, 29],
       [43, 45, 47, 48, 49, 48, 46, 42, 36, 31],
       [44, 46, 48, 49, 50, 49, 47, 43, 37, 32],
+    ],
+  },
+  // the F50: SailGP's one-design foiling catamaran (2019, from the 2017 America's Cup's AC50), 15 m long and 8.8 m
+  // across her boards, some 2.4 tonnes (the AC50's hull weighed 2.33–2.43). A two-element wing and a self-tacking jib, no spinnaker; six crew in the
+  // windward hull, crossing the nets at each tack and gybe. She flies on T-foil daggerboards (since 2025) and
+  // T-rudders: from some 15 knots of boat speed, on a reach in 6 knots of wind and more, down off them below 12 (a slow
+  // tack, a stop), when she is a light displacement catamaran until she can take off again. Flying, she sails at twice
+  // the wind upwind and three times it on a reach, a little slower than the AC75 round a course, a little quicker
+  // than her in light air. No full polar is public; hers is drawn to what the league has published: the boats' speed
+  // against the wind's from the first event (Sydney, 2019: 25 knots in 6 of wind, 30 to 33 in 8 to 10, lifting off at
+  // about 15 knots of boat speed, as SailGP's analyst put it), 50.2 knots in 19.3 of wind (Cowes, 2019) and the 58.1
+  // of the record (Sassnitz, 2026) in a blow; upwind about twice the wind's speed. In light air she flies only on a reach:
+  // SailGP's own trials of the T-foils (2025) found 13-16 km/h of wind (7-8.6 knots) enough to foil on a reach but not
+  // upwind or downwind, so in 6 knots her polar upwind and deep downwind is below the 12 knots she lands at, and in 8
+  // only just above it (a slow tack brings her down). Courses for her are laid 2.2
+  // times as long, the line 1.6 times as wide, all within the AC75's, so every venue's water holds them.
+  f50: {
+    id: 'f50', loa: 15, beam: 8.8, drawnL: 15, crew: 6, frame: 1.5, // her all-rounder wing's head some 24 m over the water
+    kite: false, zero: false, reef: false, j3: false,
+    // coast: how far she carries her way, far less than the 7-tonne AC75's (420): some 2.8 tonnes with her crew on foils
+    // and a wing that drag her at a lift-to-drag of about 5, so she loses some 2 m/s² once the drive goes; luffed head
+    // to wind at 30 knots she is off her foils in a few seconds, and through a tack she bottoms out near 18-20 knots
+    tau: 2.8, coast: 60, hullV: 60, heelK: 0.3, awsK: 2.6, heelShow: 0.25, turn: 1.1, yawLag: 0.5, courseK: 2.2, lineK: 1.6, startK: 3.5,
+    surfK: 0, chopK: 0.3, // flying, her hulls are clear of the sea
+    latG: 0.7, // two rudders and a lighter boat: a little tighter round at speed than the AC75
+    // her two hulls, 3.7 m either side of her middle, each some 0.85 m wide at the water: a wake from each (world.js),
+    // and where she flies, a trace on the water from each foil that cuts it: both rudders, 7 m aft, and the leeward board
+    hulls: [-3.7, 3.7], wlb: 0.85, traces: [{ x: -3.7, along: -7.0 }, { x: 3.7, along: -7.0 }, { lee: 3.7, along: 0.5 }],
+    // off her foils, knots for each knot of wind by the angle: on a reach 2.4 times it, so she lifts off (15 knots) from
+    // some 7 knots of wind and not in 6, as SailGP's own trials found
+    foil: { takeoff: 15, land: 12, dispCoast: 22, disp: [[28, 0], [40, 1.4], [60, 1.9], [90, 2.4], [120, 2.3], [150, 1.6], [180, 0.9]] },
+    tws: TWS, twa: TWA,
+    beat: [48, 47, 46, 45, 44, 44, 44, 45, 46],
+    beatV: [8, 10, 13, 24, 28, 30, 32, 34, 36],
+    v: [
+      [8, 9, 11, 13, 13, 12, 10, 8, 6, 5],
+      [11, 13, 17, 22, 23, 22, 17, 13, 10, 8],
+      [14, 17, 22, 27, 29, 28, 24, 18, 14, 11],
+      [26, 28, 31, 33, 34, 34, 33, 27, 21, 17],
+      [29, 31, 35, 37, 38, 38, 37, 30, 23, 18],
+      [31, 33, 38, 40, 41, 41, 40, 33, 26, 21],
+      [33, 35, 40, 43, 44, 44, 42, 36, 29, 23],
+      [35, 38, 45, 48, 50, 49, 46, 40, 33, 27],
+      [37, 41, 48, 52, 55, 54, 51, 44, 37, 30],
     ],
   },
 };

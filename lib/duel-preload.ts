@@ -8,7 +8,7 @@
 
 // the yachts' own models (public/game/<id>.glb, loaded by boats3d.js for its class); every race also loads yacht.glb
 // (yacht.js, the hull other boats share) and committee.glb (the committee boat). A yacht without one is built in code.
-export const MODELS = ['ac75', 'bavaria46', 'dragon', 'j70', 'jclass', 'laser', 'optimist', 'rs21'];
+export const MODELS = ['ac75', 'bavaria46', 'dragon', 'f50', 'j70', 'jclass', 'laser', 'optimist', 'rs21'];
 const LAND = (venue: string) => (venue === 'gocek' ? ['/game/skopea.json', '/game/skopea.bin'] : [`/game/venues/${venue}.json`, `/game/venues/${venue}.bin`]);
 const AT_ONCE = 6;
 

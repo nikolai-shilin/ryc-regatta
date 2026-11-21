@@ -24,7 +24,7 @@ const moment = (fn) => { const f = frames.find((x) => fn(x.b)); assert.ok(f, 'th
 const still = (o = {}) => ({ ...frames[300].b, x: 0, z: 0, h: 0, v: 3, heel: 10, ...o });
 
 test('every yacht\'s moulded parts were asked for on the fleet page', () => {
-  for (const f of ['bavaria46.glb', 'laser.glb', 'optimist.glb', 'j70.glb', 'rs21.glb', 'ac75.glb', 'dragon.glb', 'jclass.glb']) assert.ok(page.fetched.some((u) => u.endsWith(f)), f);
+  for (const f of ['bavaria46.glb', 'laser.glb', 'optimist.glb', 'j70.glb', 'rs21.glb', 'ac75.glb', 'dragon.glb', 'jclass.glb', 'f50.glb']) assert.ok(page.fetched.some((u) => u.endsWith(f)), f);
 });
 
 test('each class gets a view of her own kind', () => {
@@ -138,6 +138,26 @@ test('the AC75 lifts out of the water when she flies, her windward arm canted up
   for (let i = 0; i < 200; i++) v.update(still({ v: 0.5, ride: 0, twa: 0.7, boom: 1 }), 10 + i * 0.05, [], false);
   assert.ok(v.root.position.y < 1, 'and settles when she stops');
   assert.ok(Math.abs(v.arms[0].userData.cant) < 0.2 && Math.abs(v.arms[1].userData.cant) < 0.2, 'both arms down');
+});
+
+// the F50 flies on her leeward board, the windward one raised; her six stand in the windward hull and, when she tacks,
+// run across the nets to the other one, a few seconds' crossing, their feet on the net
+test('the F50 flies on her leeward board, and her crew cross the nets to the new windward hull', () => {
+  const v = make('f50'), HX = 3.7;
+  let t = 0;
+  const sail = (o, n) => { for (let i = 0; i < n; i++) v.update(still({ v: 22, ride: 1, ...o }), (t += 0.05), [], false); };
+  sail({ twa: 0.7, boom: 1 }, 200);
+  assert.ok(v.root.position.y > 1, `flying at ${v.root.position.y} m`);
+  const up = (sx) => v.boards.find((g) => Math.sign(g.position.x) === sx).userData.up;
+  assert.ok(up(1) > 2 && up(-1) < 0.2, `the windward board up ${up(1)}, the leeward ${up(-1)}`);
+  for (const c of v.crew) close(c.x, HX, 0.05, 'in the windward hull:');
+  sail({ twa: -0.7, boom: -1 }, 20); // a second after the tack: on their way, on the net
+  const mid = v.crew.filter((c) => Math.abs(c.x) < HX - 0.7);
+  assert.ok(mid.length >= 3, `${mid.length} of six out on the net`);
+  for (const c of mid) close(c.y, 0.87, 0.05, 'their feet on the net:');
+  sail({ twa: -0.7, boom: -1 }, 80);
+  for (const c of v.crew) close(c.x, -HX, 0.05, 'across in the new windward hull:');
+  assert.ok(up(-1) > 2 && up(1) < 0.2, 'and the boards changed over');
 });
 
 test('the Optimist\'s and the Laser\'s insides are kept dry by a lid the sea stops at', () => {
