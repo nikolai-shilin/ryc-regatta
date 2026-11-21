@@ -48,7 +48,8 @@ export function DayChart({ lang, title, label, slots }: { lang: Lang; title: str
           {slots.map((s, i) => (
             <li key={s.d} tabIndex={-1} className={i === peak ? 'adm-days-slot peak' : 'adm-days-slot'} style={{ gridColumnStart: pad + i + 1 }}>
               {s.n > 0 && <i className="adm-days-bar" style={{ height: `${(s.n / top) * 100}%` }} />}
-              <span className={pad + i < room / 2 ? 'adm-days-tip' : 'adm-days-tip left'}>
+              {/* to the right only from the first 40%: on a phone a tip (136 px) from just left of the middle ran off the screen */}
+              <span className={pad + i < room * 0.4 ? 'adm-days-tip' : 'adm-days-tip left'}>
                 <b>{date(s.d)}</b>
                 {s.n > 0
                   ? s.tip.map(([k, v]) => <span key={k}><em>{k}</em>{v}</span>)
