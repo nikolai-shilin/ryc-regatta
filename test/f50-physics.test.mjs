@@ -65,3 +65,23 @@ test('luffed head to wind at speed she is off her foils within seconds and stops
   assert.ok(down !== null && down < 14, `off her foils at ${down}`);
   assert.ok(d > 60 && d < 180, `${Math.round(d)} m to slow below 8 knots`);
 });
+
+// her boards and T-rudders hold her sideways far harder than a keel (classes.js leeK): close-hauled on her foils her
+// track runs within a degree and a half of her heading, and through a tack she slides sideways at under a knot, where a
+// keelboat's leeway at her speeds had her skidding at 1.4 knots, like a sledge on snow
+test('her foils hold her: little leeway close-hauled, and no skid through a tack', () => {
+  const { r, P } = setup(14), twa = sim.beatAngle(14); flying(P, 14, twa);
+  hold(r, P, twa, 30);
+  let x0 = P.x, z0 = P.z;
+  hold(r, P, twa, 10);
+  const off = Math.abs(((Math.atan2(P.x - x0, -(P.z - z0)) - P.h) / D2R + 540) % 360 - 180);
+  assert.ok(off < 1.5, `close-hauled her track is ${off.toFixed(1)}° off her heading`);
+  let px = P.x, pz = P.z, worst = 0;
+  P.tackOrGybe();
+  for (let i = 0; i < 12 * 30; i++) {
+    if (!P.auto) r.steerTo(P, hFor(-twa)); r.step(1 / 30);
+    const vx = (P.x - px) * 30, vz = (P.z - pz) * 30; px = P.x; pz = P.z;
+    worst = Math.max(worst, Math.abs(vx * Math.cos(P.h) + vz * Math.sin(P.h)));
+  }
+  assert.ok(kn(worst) < 1, `through a tack she slid sideways at ${kn(worst).toFixed(2)} knots`);
+});

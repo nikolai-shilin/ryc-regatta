@@ -310,6 +310,10 @@ export const CLASSES = {
     // to wind at 30 knots she is off her foils in a few seconds, and through a tack she bottoms out near 18-20 knots
     tau: 2.8, coast: 60, hullV: 60, heelK: 0.3, awsK: 2.6, heelShow: 0.25, turn: 1.1, yawLag: 0.5, courseK: 2.2, lineK: 1.6, startK: 3.5,
     surfK: 0, chopK: 0.3, // flying, her hulls are clear of the sea
+    // leeK: her leeway against a keelboat's: her daggerboard and her T-rudders hold her far harder than a keel, so she
+    // slips half as much. At her speeds a keelboat's angle had her skidding sideways at well over a knot through a
+    // tack, like a sledge on snow (a player's word, 21 Nov 2026)
+    leeK: 0.5,
     latG: 0.7, // two rudders and a lighter boat: a little tighter round at speed than the AC75
     // her two hulls, 3.7 m either side of her middle, each some 0.85 m wide at the water: a wake from each (world.js),
     // and where she flies, a trace on the water from each foil that cuts it: both rudders, 7 m aft, and the leeward board

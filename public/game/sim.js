@@ -280,6 +280,8 @@ export class Wind {
 // s: how long she takes to start turning, and to stop when the helm is centred; and how fast she turns, against the
 // JPK 1050 — each class her own (classes.js turn, yawLag): a dinghy spins round, a 14-tonne cruiser takes her time
 export const YAW_LAG = CLS.yawLag ?? 0.55;
+// a class whose foils grip the water harder slips the less: her leeway against a keelboat's (classes.js leeK)
+const LEE_K = CLS.leeK ?? 1;
 const TURN = CLS.turn ?? 1;
 // the gennaker's gybe (classes.js gybeT, gybeK): the seconds it takes the crew, more in a breeze, and how much of her
 // drive she keeps meanwhile. An asymmetric on a sprit goes round the forestay in some 6 s; a symmetric spinnaker's pole
@@ -573,7 +575,7 @@ export class Boat {
     if (this.heel > 52 && this.broachT <= 0) { this.broachT = 2.5; this.events.push('broach'); this.kite = false; this.kiteJob = null; }
 
     // leeway: sideways slip, worst when slow and close to the wind; drift when stopped; and the current
-    const leeDeg = a < 100 ? (2.5 + 6 * clamp(1 - this.v / 2.5, 0, 1)) * clamp((100 - a) / 50, 0, 1) : 0;
+    const leeDeg = a < 100 ? LEE_K * (2.5 + 6 * clamp(1 - this.v / 2.5, 0, 1)) * clamp((100 - a) / 50, 0, 1) : 0;
     const lee = Math.abs(this.v) * Math.tan(leeDeg * D2R) + (this.v < 1 ? 0.12 * w.tws / 12 : 0);
     const rx = Math.cos(this.h), rz = Math.sin(this.h); // starboard
     const cur = race.currentAt(this.x, this.z);
