@@ -40,10 +40,17 @@ test('every word of the glossary is a scene, but the two this class has no sail 
   const all = words.en.flatMap((g) => g.terms.map((x) => x[0]));
   const ids = sceneIds();
   for (const id of ids) assert.ok(all.includes(id), `${id} is a word of the glossary`);
-  // what can't be seen: an idea (the apparent wind, VMG), or what's too small to make out (telltales)
-  assert.deepEqual(all.filter((id) => !ids.includes(id)), ['apparent-wind', 'vmg', 'telltales'], 'the JPK 1050 has every sail: every other word has one');
-  const dinghy = sceneIds({ kite: false, reef: false, zero: false, jib: false });
-  for (const id of ['gennaker', 'reef', 'code-zero', 'jib']) assert.ok(!dinghy.includes(id), `a Laser has no ${id}`);
+  // what can't be seen: an idea (the apparent wind, VMG), what's too small to make out (telltales), or a sail she
+  // doesn't carry (her headsail is a genoa, her kite a gennaker)
+  assert.deepEqual(all.filter((id) => !ids.includes(id)), ['apparent-wind', 'vmg', 'jib', 'spinnaker', 'telltales'], 'every other word has one');
+  assert.ok(ids.includes('genoa') && ids.includes('gennaker'));
+  const dinghy = sceneIds({ id: 'laser', kite: false, reef: false, zero: false, jib: false });
+  for (const id of ['gennaker', 'spinnaker', 'reef', 'code-zero', 'jib', 'genoa']) assert.ok(!dinghy.includes(id), `a Laser has no ${id}`);
+  // the Dragon: a genoa and a spinnaker on a pole; the J/70: a jib and a gennaker
+  const dragon = sceneIds({ id: 'dragon', kite: true, reef: false, zero: false });
+  for (const [id, has] of [['spinnaker', true], ['genoa', true], ['gennaker', false], ['jib', false]]) assert.equal(dragon.includes(id), has, `the Dragon, ${id}`);
+  const j70 = sceneIds({ id: 'j70', kite: true, reef: false, zero: false });
+  for (const [id, has] of [['spinnaker', false], ['genoa', false], ['gennaker', true], ['jib', true]]) assert.equal(j70.includes(id), has, `the J/70, ${id}`);
   for (const [k, v] of Object.entries(TAGS)) assert.equal(v.length, 8, `the tag ${k} in every language`);
   // the site's pages know which words to show in 3D (lib/glossary.ts SCENES_3D, /dictionary)
   assert.deepEqual([...SCENES_3D].sort(), [...ids].sort());

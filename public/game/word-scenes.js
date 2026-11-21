@@ -161,7 +161,9 @@ const SCENES = {
     return { boats: [{ at: add(S.G, S.fwd(h), -5 * S.L), tack: 1, twa: S.ra, kite: S.kite }],
       cam: { at: S.G, r: S.gateW / 2 + 3, el: 50, az: 180 }, T: 16, leg: 'gate' };
   },
-  gennaker: (S) => (S.kite ? { boats: [{ at: S.o, tack: 1, twa: 135, kite: true }], cam: { on: 0, r: 1.5, el: 16, az: 40, spin: 6 }, T: 40 } : null),
+  gennaker: (S) => (S.kite && !S.sym ? { boats: [{ at: S.o, tack: 1, twa: 135, kite: true }], cam: { on: 0, r: 1.5, el: 16, az: 40, spin: 6 }, T: 40 } : null),
+  // a spinnaker on its pole, on a run, where it's best
+  spinnaker: (S) => (S.kite && S.sym ? { boats: [{ at: S.o, tack: 1, twa: 165, kite: true }], cam: { on: 0, r: 1.5, el: 16, az: 40, spin: 6 }, T: 40 } : null),
   sheet: (S) => ({
     boats: [{ at: S.o, tack: 1, twa: S.bt, manual: true }], cam: { on: 0, r: 1.15, el: 42, az: 25 }, T: 24,
     tick: (t, [b]) => { b.sheet = clamp(0.45 + 0.42 * Math.sin((t / 8) * 2 * Math.PI), 0, 1); },
@@ -229,7 +231,9 @@ const SCENES = {
     return { boats: [headed(S, add(mid, S.fwd(h), -4 * S.L), h)], cam: { at: mid, r: len / 2 + 2, el: 45, az: 0 }, T: 14, leg: 'finish' };
   },
   mainsail: (S) => ({ boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 1.1, el: 10, az: 95, y: 0.45 }, T: 24 }),
-  jib: (S) => (S.jib ? { boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 1, el: 14, az: 150, y: 0.4 }, T: 24 } : null),
+  jib: (S) => (S.jib && !S.genoa ? { boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 1, el: 14, az: 150, y: 0.4 }, T: 24 } : null),
+  // from above her lee side: its clew aft of the mast, over the main
+  genoa: (S) => (S.genoa ? { boats: [{ at: S.o, tack: 1, twa: S.bt }], cam: { on: 0, r: 0.9, el: 62, az: 100, y: 0.2 }, T: 24 } : null),
   boom: (S) => ({
     boats: [{ at: S.o, tack: 1, twa: 150 }], cam: { on: 0, r: 1.2, el: 52, az: 0, wind: true }, T: 11,
     tick: (t, [b]) => { if (t > 3 && !b.done1) { b.done1 = 1; b.tackOrGybe(); } },
@@ -275,8 +279,15 @@ function around(S, from, mark, next) {
   return { boats: [{ ...headed(S, at, h), route: [pass, next] }], cam: { at: mark, r: 4.5, el: 58, az: 0 }, T: 18, leg: 'mark' };
 }
 
+// the classes whose kite is a spinnaker on a pole (the rest fly a gennaker), and whose headsail is a genoa, its clew aft
+// of the mast (the rest carry a jib, short of it: a dinghy none)
+const SYM = ['dragon', 'jclass'], GENOA = ['jpk1050', 'bavaria46', 'dragon'];
 // the words that have a scene for this class (a dinghy has no gennaker, few classes a reef)
-export const sceneIds = (cls = CLS) => Object.keys(SCENES).filter((id) => !((id === 'gennaker' && !cls.kite) || (id === 'reef' && !cls.reef) || (id === 'code-zero' && !cls.zero) || (id === 'jib' && cls.jib === false)));
+export const sceneIds = (cls = CLS) => Object.keys(SCENES).filter((id) => {
+  const kite = !!cls.kite, sym = SYM.includes(cls.id), genoa = GENOA.includes(cls.id);
+  return !((id === 'gennaker' && !(kite && !sym)) || (id === 'spinnaker' && !(kite && sym)) || (id === 'reef' && !cls.reef) || (id === 'code-zero' && !cls.zero)
+    || (id === 'jib' && (cls.jib === false || genoa)) || (id === 'genoa' && !genoa));
+});
 
 // ---------- the stage ----------
 // world: the race's World; race: the race, paused; lang: for the tags. Gives back show(id) (true: shown; false: the
@@ -300,7 +311,7 @@ export function createStage({ world, race, lang = 'en' }) {
     lineL: Math.hypot(pin.x - cb.x, pin.z - cb.z) / L, gateW: Math.hypot(c.gate[0].x - c.gate[1].x, c.gate[0].z - c.gate[1].z) / L,
     fav: pinUp > 0 ? pin : cb, unfav: pinUp > 0 ? cb : pin,
     gust: gs[0] ? { x: gs[0].x, z: gs[0].z, r: gs[0].r } : null,
-    zero: !!CLS.zero, jib: CLS.jib !== false, marks: c.marks, finish: c.finish, cb, pin,
+    zero: !!CLS.zero, jib: CLS.jib !== false, sym: SYM.includes(CLS.id), genoa: GENOA.includes(CLS.id), marks: c.marks, finish: c.finish, cb, pin,
     current: Math.hypot(race.current?.x || 0, race.current?.z || 0) > 0.05,
     mid: (a, b) => ({ x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 }), dist: (a, b) => Math.hypot(a.x - b.x, a.z - b.z),
   };
