@@ -21,6 +21,7 @@ import { PassportBlock, type PassportFacts } from './passport-card';
 import { ShareButton } from './share-sheet';
 import { MyDuelRating } from './my-duel-rating';
 import { MyAchievements } from './achievements';
+import { TabBar, DuelTab, DailyTab, VenueCounts, type Tab } from './player-tabs';
 import '@/styles/players.css';
 import { useSceneStart } from '@/lib/scene-start';
 
@@ -54,6 +55,10 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
   const own = !!passport && !passport.shared;
   useEffect(() => { if (player || own) askKey(); }); // asks once: the hook remembers
   useEffect(() => { if (own && myKey) router.replace(href(1, myKey)); }, [own, myKey, router]);
+  // the card's tabs (components/player-tabs.tsx): the overview again for each player; 1-on-1 is your own card's alone
+  const [tab, setTab] = useState<Tab>('over');
+  useEffect(() => { setTab('over'); }, [player?.k]);
+  const shown: Tab = tab === 'duel' && !mine ? 'over' : tab;
   const [pending, start] = useTransition();
   const [going, setGoing] = useState<string | null>(null); // the row clicked, while its card comes
   const [down, setDown] = useState(false);
@@ -168,7 +173,9 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
             <button type="button" role="radio" aria-checked={!down} onClick={() => setDown(false)}>{t('Upwind', 'Бейдевинд', 'Ceñida', 'Am Wind', 'Orsa', 'Au près', 'Di bolina', 'Contravento')}</button>
             <button type="button" role="radio" aria-checked={down} onClick={() => setDown(true)}>{t('Gennaker', 'Генакер', 'Gennaker', 'Gennaker', 'Gennaker', 'Gennaker', 'Gennaker', 'Gennaker')}</button>
           </div>
+          <TabBar lang={lang} tab={shown} set={setTab} duel={mine} />
 
+          {shown === 'over' && (<div className="pt-p" role="tabpanel" id="pt-p-over" aria-labelledby="pt-over">
           <div className="fl-stats pl-stats">
             <div><span className="bt-sk">{t('Races', 'Гонок', 'Regatas', 'Regatten', 'Yarışlar', 'Régates', 'Regate', 'Regatas')}</span><b>{num(player.n)}</b></div>
             <div><span className="bt-sk">{t('Finished', 'Финиш', 'Terminada', 'Beendet', 'Bitirdi', 'Terminée', 'Finita', 'Terminada')}</span><b>{player.n ? `${Math.round((100 * player.fin) / player.n)}%` : '–'}</b></div>
@@ -181,7 +188,6 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
             <span className="bt-sv">{player.best && player.fleet ? t(`Best: ${place(player.best)} of ${player.fleet} boats. `, `Лучшее: ${player.best}-е из ${player.fleet}. `, `Mejor: ${place(player.best)} de ${player.fleet} barcos. `, `Beste: ${place(player.best)} von ${player.fleet} Booten. `, `En iyi: ${player.fleet} tekne içinde ${place(player.best)}. `, `Meilleure : ${place(player.best)} sur ${player.fleet} bateaux. `, `Miglior piazzamento: ${place(player.best)} su ${player.fleet} barche. `, `Melhor: ${place(player.best)} de ${player.fleet} barcos. `) : ''}{t(`Racing since ${date(player.first)}.`, `Гоняется с ${date(player.first)}.`, `Regatea desde ${date(player.first)}.`, `Segelt seit ${date(player.first)}.`, `${date(player.first)} tarihinden beri yarışıyor.`, `Régate depuis le ${date(player.first)}.`, `In regata dal ${date(player.first)}.`, `Corre desde ${date(player.first)}.`)}</span>
           </div>
 
-          <PassportBlock lang={lang} facts={cardFacts(player)} mine={mine} share={mine && log ? shareBtn(log) : undefined} />
           {mine && <MyDuelRating lang={lang} />}{/* your 1-on-1 rating: your own card alone */}
           {mine && <MyAchievements lang={lang} />}{/* your achievements, the same on every device: your own card alone */}
 
@@ -219,6 +225,14 @@ export function PlayersView({ lang, list, player, missing, back, passport }: {
               {player.yachts.slice(0, 6).map((y) => <div key={y.id}><dt>{yachtName(y.id)}</dt><dd>{races(y.n)}</dd></div>)}
             </dl>
           </div>
+
+          </div>)}
+          {shown === 'duel' && mine && <DuelTab lang={lang} />}
+          {shown === 'daily' && <DailyTab lang={lang} k={player.k} mine={mine} />}
+          {shown === 'venues' && (<div className="pt-p" role="tabpanel" id="pt-p-venues" aria-labelledby="pt-venues">
+            <PassportBlock lang={lang} facts={cardFacts(player)} mine={mine} share={mine && log ? shareBtn(log) : undefined} />
+            <VenueCounts lang={lang} venues={player.venues} />
+          </div>)}
 
           <div className="bt-rows">
             <Link className="bt-row" href="/race#board"><IconTrophy s={18} /><span>{t('The leaderboard', 'Рейтинг', 'La clasificación', 'Die Rangliste', 'Sıralama', 'Le classement', 'La classifica', 'A classificação')}</span><span className="bt-row-m">{t('Today and the month', 'День и месяц', 'Hoy y el mes', 'Heute und der Monat', 'Bugün ve ay', 'Aujourd’hui et le mois', 'Oggi e il mese', 'Hoje e o mês')}</span></Link>
