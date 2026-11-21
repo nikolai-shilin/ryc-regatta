@@ -1,5 +1,5 @@
 // The yachts you can race: the JPK 1050 offshore racer (the default), the Bavaria 46
-// cruiser, the J/70 and RS21 sportboats, the Dragon classic keelboat, the J Class America's Cup yacht of the 1930s, the Laser (ILCA) single-handed dinghy, the Optimist children's pram and the AC75 foiling monohull. A race is one-design: every boat in it is the same class, so the class is chosen for
+// cruiser, the J/70 and RS21 sportboats, the Dragon classic keelboat, the J Class America's Cup yacht of the 1930s, the Laser (ILCA) single-handed dinghy, the Optimist children's pram, the AC75 foiling monohull and the F50 foiling catamaran. A race is one-design: every boat in it is the same class, so the class is chosen for
 // the page, as the venue is (venues.js pageVenue): ?boat= in the address wins; a free race sails what its set-up chose
 // (localStorage 'regatta', yacht); today's race the day's (dailyYacht, below); every other page the JPK 1050.
 // lib/yachts.ts has the same ids and the words the site shows about them.
@@ -286,6 +286,37 @@ export const CLASSES = {
       [41, 43, 45, 46, 47, 46, 44, 40, 34, 29],
       [43, 45, 47, 48, 49, 48, 46, 42, 36, 31],
       [44, 46, 48, 49, 50, 49, 47, 43, 37, 32],
+    ],
+  },
+  // the F50: SailGP's one-design foiling catamaran (2019, from the 2017 America's Cup's AC50), 15 m long and 8.8 m
+  // across her boards, some 2.4 tonnes. A two-element wing and a self-tacking jib, no spinnaker; six crew in the
+  // windward hull, crossing the nets at each tack and gybe. She flies on T-foil daggerboards (since 2025) and
+  // T-rudders: from some 15 knots of boat speed, on a reach in 6 knots of wind and more, down off them below 12 (a slow
+  // tack, a stop), when she is a light displacement catamaran until she can take off again. Flying, she sails at twice
+  // the wind upwind and three times it on a reach, a little slower than the AC75 round a course, a little quicker
+  // than her in light air. Her polar is reckoned from what the league publishes (about 2× the wind's speed upwind, 3×
+  // across it, her 50-knot runs in some 19 knots of wind): no measured one is public. Courses for her are laid 2.2
+  // times as long, the line 1.6 times as wide, all within the AC75's, so every venue's water holds them.
+  f50: {
+    id: 'f50', loa: 15, beam: 8.8, drawnL: 15, crew: 6, frame: 1.55, // the 24 m wing, her all-rounder
+    kite: false, zero: false, reef: false, j3: false,
+    tau: 2.8, coast: 320, hullV: 60, heelK: 0.3, awsK: 2.6, heelShow: 0.25, turn: 1.1, yawLag: 0.5, courseK: 2.2, lineK: 1.6, startK: 3.5,
+    surfK: 0, chopK: 0.3, // flying, her hulls are clear of the sea
+    latG: 0.7, // two rudders and a lighter boat: a little tighter round at speed than the AC75
+    foil: { takeoff: 15, land: 12, dispCoast: 22, disp: [[28, 0], [40, 1.4], [60, 1.9], [90, 2.5], [120, 2.4], [150, 1.6], [180, 0.9]] },
+    tws: TWS, twa: TWA,
+    beat: [48, 47, 46, 45, 44, 44, 44, 45, 46],
+    beatV: [10, 16, 21, 25, 28, 30, 32, 34, 35],
+    v: [
+      [10, 11, 12, 13, 13, 12, 11, 9, 7, 6],
+      [17, 19, 21, 22, 22, 21, 20, 17, 13, 11],
+      [22, 24, 27, 28, 29, 29, 28, 23, 18, 15],
+      [26, 28, 31, 33, 34, 34, 33, 27, 21, 17],
+      [29, 31, 35, 37, 38, 38, 37, 30, 23, 18],
+      [31, 33, 38, 40, 41, 41, 40, 33, 26, 21],
+      [33, 35, 40, 43, 44, 44, 42, 36, 29, 23],
+      [35, 38, 44, 47, 49, 48, 45, 39, 32, 26],
+      [36, 40, 46, 50, 52, 51, 48, 42, 35, 28],
     ],
   },
 };

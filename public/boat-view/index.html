@@ -28,7 +28,7 @@
 <script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
 <!-- the venue, before the game's modules read it from the address, and its land fetched at once -->
 <script>(function () {
-  // ?boat=bavaria46|dragon|jclass|j70|rs21|laser|optimist|ac75: that class of yacht (public/game/classes.js), the whole fleet in it; the JPK 1050 without it
+  // ?boat=bavaria46|dragon|jclass|j70|rs21|laser|optimist|ac75|f50: that class of yacht (public/game/classes.js), the whole fleet in it; the JPK 1050 without it
   var q = new URLSearchParams(location.search), v = q.get('venue') || 'garda', w = q.get('wind') || 'light', fin = q.get('finish') === '1' ? '&finish=1' : q.get('setup') === '1' ? '&setup=1' : '', y = q.get('boat') || '';
   if (!/^[a-z-]+$/.test(v)) v = 'garda';
   if (!/^[a-z]+$/.test(w)) w = 'light';
