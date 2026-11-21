@@ -98,5 +98,5 @@ test('the route: the database\'s rules for the session\'s account, checked; anot
 
 test('your own player card carries them, under your rating', () => {
   const src = readFileSync(new URL('../components/players-view.tsx', import.meta.url), 'utf8');
-  assert.match(src, /\{mine && <MyDuelRating lang=\{lang\} \/>\}.*\n\s*\{mine && <MyAchievements lang=\{lang\} \/>\}/);
+  assert.match(src, /\{mine && <MyDuelRating lang=\{lang\} \/>\}.*\n\s*\{mine \? <MyAchievements lang=\{lang\} \/> : /); // (another's card: theirs, release 8b)
 });

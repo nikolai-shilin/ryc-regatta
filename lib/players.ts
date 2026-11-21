@@ -1,6 +1,7 @@
 import 'server-only';
 import type { Boat } from './boat';
 import { plainName, plainRows } from './name';
+import { parseAchievements, type Got } from './achievements';
 
 // the scores API; SCORES_API points the site at another one (a local copy, a stub for testing), as lib/rating.ts
 const SCORES = process.env.SCORES_API || 'https://iyt.rycrentals.com/api/game';
@@ -20,6 +21,7 @@ export type PlayerCard = PlayerRow & {
   daily: { n: number; days: number; wins: number; podiums: number }; // the daily races finished; the days ranked, won, in the top three
   yachts: Count[]; venues: Count[];
   boat: Partial<Boat> | null;
+  achievements: Got[]; // what they have of the site's achievements, as the database works them out (lib/achievements.ts); [] from an API before them
 };
 
 export const KEY_RE = /^[A-Za-z0-9_-]{8,64}$/;
@@ -42,5 +44,5 @@ export async function getPlayers(page: number): Promise<PlayerList | null> {
 export async function getPlayer(k: string): Promise<PlayerCard | null> {
   if (!KEY_RE.test(k)) return null;
   const j = await get<PlayerCard>(`player=${encodeURIComponent(k)}`);
-  return j && j.k === k ? { ...j, name: plainName(j.name) } : null;
+  return j && j.k === k ? { ...j, name: plainName(j.name), achievements: parseAchievements({ got: j.achievements, progress: {} })?.got ?? [] } : null;
 }

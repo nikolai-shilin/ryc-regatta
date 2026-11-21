@@ -108,3 +108,52 @@ export async function sendDuelHour(day: string, send: typeof webpush.sendNotific
   }));
   return { day, due: Array.isArray(rows) ? rows.length : 0, sent, gone, failed };
 }
+
+// "A sailor at your level is looking" (release 8c; For you's live message): when a sailor starts looking and nobody near
+// their rating is looking too, up to three sailors within 100 of them who raced a 1-on-1 lately are told (the database
+// chooses: regatta_ping_due, one a day each at most, never in quiet hours, not to one who put "ready" out of their For
+// you), by push and from the bot, with a tap that challenges the searcher at once. A searcher sets it off once in thirty
+// minutes at most.
+export type PingRow = { kind: 'push' | 'telegram'; endpoint: string | null; p256dh: string | null; auth: string | null; telegram_id: number | null;
+  lang: string; them_name: string | null; them_rating: number; them_races: number; handle: string };
+export function lookMessage(r: PingRow) {
+  const lang: Lang = isLang(r.lang) ? r.lang : 'en', t = tx(lang);
+  const who = plainName(r.them_name ?? '') || t('A sailor', 'Соперник', 'Un regatista', 'Ein Segler', 'Bir denizci', 'Un régatier', 'Un velista', 'Um velejador');
+  const lvl = provisional(r.them_races) ? t('new to 1-on-1', 'новичок в 1 на 1', 'nuevo en 1 contra 1', 'neu im 1 gegen 1', 'bire birde yeni', 'nouveau en duel', 'nuovo all’1 contro 1', 'novo no 1 contra 1') : levelName(r.them_rating, lang);
+  return {
+    title: t(`${who} is looking for a race`, `${who} ищет гонку`, `${who} busca regata`, `${who} sucht eine Regatta`, `${who} yarış arıyor`, `${who} cherche une régate`, `${who} cerca una regata`, `${who} procura uma regata`),
+    body: t(`${shown(r.them_rating, r.them_races)} · ${lvl}, near your rating. Tap to race them now.`, `${shown(r.them_rating, r.them_races)} · ${lvl}, рядом с твоим рейтингом. Нажми, чтобы сразиться.`, `${shown(r.them_rating, r.them_races)} · ${lvl}, cerca de tu rating. Toca para regatear ahora.`, `${shown(r.them_rating, r.them_races)} · ${lvl}, nahe deiner Wertung. Tippe, um jetzt zu segeln.`, `${shown(r.them_rating, r.them_races)} · ${lvl}, reytingine yakın. Şimdi yarışmak için dokun.`, `${shown(r.them_rating, r.them_races)} · ${lvl}, proche de ton classement. Touche pour régater maintenant.`, `${shown(r.them_rating, r.them_races)} · ${lvl}, vicino al tuo rating. Tocca per sfidarlo ora.`, `${shown(r.them_rating, r.them_races)} · ${lvl}, perto do seu rating. Toque para regatear agora.`),
+    lang, tag: 'duel-look', url: `/duel?challenge=${r.handle}`,
+    button: t('Race them', 'Сразиться', 'Regatear', 'Segeln', 'Yarış', 'Régater', 'Sfida', 'Regatear'),
+  };
+}
+export async function sendLookPing(seeker: string, send: typeof webpush.sendNotification = (s, p, o) => webpush.sendNotification(s, p, o), bot: (body: object) => Promise<Response> = tell): Promise<number> {
+  const key = process.env.PUSH_LIST_KEY, priv = process.env.VAPID_PRIVATE_KEY;
+  if (!key || !priv || !/^[0-9a-f-]{36}$/i.test(seeker)) return 0;
+  try {
+    const r = await sb('regatta_ping_due', { p_key: key, p_seeker: seeker });
+    if (!r.ok) return 0;
+    const rows: PingRow[] = await r.json();
+    if (!Array.isArray(rows) || !rows.length) return 0;
+    webpush.setVapidDetails(SITE, VAPID_PUBLIC, priv);
+    let sent = 0;
+    await Promise.all(rows.map(async (row) => {
+      if (!/^[0-9a-f]{12}$/.test(row.handle)) return;
+      const m = lookMessage(row);
+      if (row.kind === 'telegram') {
+        if (!process.env.REGATTA_NOTIFY_SECRET || !row.telegram_id) return;
+        try { if ((await bot({ telegram_id: row.telegram_id, text: `${m.title}\n${m.body}`, button: { text: m.button, url: `${SITE}${m.url}` } })).ok) sent++; } catch { /* the bot's server didn't answer */ }
+        return;
+      }
+      if (!row.endpoint || !row.p256dh || !row.auth) return;
+      try {
+        await send({ endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } }, JSON.stringify({ title: m.title, body: m.body, lang: m.lang, tag: m.tag, url: m.url }), { TTL: 300, urgency: 'high', topic: 'duel-look' });
+        sent++;
+      } catch (e) {
+        const code = (e as { statusCode?: number }).statusCode;
+        if (code === 404 || code === 410) await sb('regatta_push_drop', { p_endpoint: row.endpoint }).catch(() => {});
+      }
+    }));
+    return sent;
+  } catch { return 0; }
+}

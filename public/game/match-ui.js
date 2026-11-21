@@ -35,7 +35,7 @@ export const MATCH_STRINGS = {
     rematch: 'Rematch', fullResult: 'Full result', done: 'Done', waitRematch: (w) => `${w} can start a rematch`, left: (w) => `${w} left the race`,
     stepAway: (w, c) => `${w} stepped away · the start waits · ${c}`,
     loadingPct: (w, p) => `${w} · loading the race · ${p}%`,
-    chat: (k) => ['Good luck!', 'Nice start', 'Rematch?', 'GG'][k] ?? '', chatK: 'Say',
+    chat: (k) => ['Good luck!', 'Nice start', 'Rematch?', 'GG'][k] ?? '', chatK: 'Say', help: 'How 1-on-1 races work',
     stillOut: (w) => `${w} is still racing`, stillOutT: (w, s) => `${w} is still racing · ${s} left`, keepOpen: 'Keep this screen open',
     loadingRace: (w) => `Waiting for ${w} to load the race…`,
     sec: 's', waitHost: 'Waiting for the host…', noHost: 'Nobody is hosting this race yet. The link may be old, or your friend has left: ask them for a new one, or leave and sail today’s race.', stale: 'The game was updated: reload to join', reload: 'Reload', fullRoom: 'This race already has two sailors',
@@ -52,7 +52,7 @@ export const MATCH_STRINGS = {
     rematch: 'Реванш', fullResult: 'Полный результат', done: 'Закончить', waitRematch: (w) => `${w} может начать реванш`, left: (w) => `${w}: выход из гонки`,
     stepAway: (w, c) => `${w} не на связи · старт ждёт · ${c}`,
     loadingPct: (w, p) => `${w} · загружает гонку · ${p}%`,
-    chat: (k) => ['Удачи!', 'Хороший старт', 'Реванш?', 'Хорошая гонка'][k] ?? '', chatK: 'Сказать',
+    chat: (k) => ['Удачи!', 'Хороший старт', 'Реванш?', 'Хорошая гонка'][k] ?? '', chatK: 'Сказать', help: 'Как устроены гонки 1 на 1',
     stillOut: (w) => `${w} ещё в гонке`, stillOutT: (w, s) => `${w} ещё в гонке · осталось ${s}`, keepOpen: 'Не закрывай этот экран',
     loadingRace: (w) => `${w} загружает гонку…`,
     sec: 'с', waitHost: 'Ждём хозяина гонки…', noHost: 'Эту гонку пока никто не открыл. Возможно, ссылка устарела или друг вышел: попроси новую или выйди и пройди гонку дня.', stale: 'Игра обновилась: перезагрузи страницу, чтобы войти', reload: 'Перезагрузить', fullRoom: 'В этой гонке уже двое',
@@ -80,6 +80,8 @@ const CSS = `
 #mWrap button.m-prim { height: var(--h-l); border-radius: 0; background: var(--you); color: var(--ink-on); }
 #mWrap button.m-prim:disabled { background: var(--fill-2); color: var(--ink-3); cursor: default; }
 #mWrap .m-btns { display: flex; gap: var(--s-2); } #mWrap .m-btns button { flex: 1 1 0; }
+#mWrap .m-help { align-self: center; font: 700 12px/1.2 var(--cond, sans-serif); letter-spacing: .08em; text-transform: uppercase; color: var(--you, #3db8ff); text-decoration: none; }
+#mWrap .m-help:hover { text-decoration: underline; }
 #mWrap .m-chat { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 #mWrap .m-chat .m-k { margin-right: 2px; }
 #mWrap .m-chat button { height: 32px; padding: 0 10px; font: 600 var(--fs-small)/1 var(--cond); letter-spacing: 0.04em; text-transform: none; }
@@ -160,6 +162,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
       <button type="button" class="m-prim m-start"></button>
       <button type="button" class="m-prim m-signin" hidden></button>
       <div class="m-btns"><button type="button" class="m-retry" hidden></button><button type="button" class="m-leave"></button></div>
+      <a class="m-help" href="/help/duel" target="_blank" rel="noopener"></a>
     </div>
     <div class="m-card" id="mCard" role="dialog" aria-labelledby="mCardH" hidden>
       <span class="m-kick"></span><h2 id="mCardH"></h2><p class="m-sub"></p>
@@ -169,6 +172,7 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
       <span class="m-st"></span>
       <button type="button" class="m-prim m-go"></button>
       <div class="m-btns"><button type="button" class="m-full" hidden></button><button type="button" class="m-leave"></button></div>
+      <a class="m-help" href="/help/duel#h-rating" target="_blank" rel="noopener"></a>
     </div>
     <div id="mBanner" hidden></div>
     <div id="mNote" hidden></div>
@@ -183,6 +187,9 @@ export async function startMatch({ code, t, LANG = 'en', strings = null, perf = 
   C.h = q(C.card, 'h2');
   const txt = (el, s) => { s = String(s ?? ''); if (el._t !== s) { el._t = s; el.textContent = s; } };
   const show = (el, on) => { if (el.hidden === !!on) el.hidden = !on; };
+  // the way to 1-on-1 races, explained (app/[lang]/help/duel): before the gun and after the finish, in a tab of its own, so
+  // the race isn't left
+  for (const a of wrap.querySelectorAll('.m-help')) a.textContent = `${L.help || MATCH_STRINGS.en.help} ›`;
   R.kick.textContent = C.kick.textContent = L.kick; R.h.textContent = L.room; R.linkK.textContent = L.linkK; R.link.ariaLabel = L.linkK; R.nameK.textContent = L.nameK;
   R.name.placeholder = L.namePh; R.join.textContent = L.join; R.start.textContent = L.start; R.leave.textContent = L.leave; R.retry.textContent = L.retry; R.signin.textContent = L.signIn;
   C.leave.textContent = L.done; C.full.textContent = L.fullResult; C.go.textContent = L.rematch;

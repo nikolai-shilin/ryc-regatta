@@ -78,7 +78,7 @@ test('a player\'s card: a key that can\'t be one is never asked for', async () =
 
 test('a player\'s card: only the card of the player asked for', async () => {
   answer(() => json({ k: 'abcdefgh', name: 'Anna 🚤', pts: 3 }));
-  assert.deepEqual(await getPlayer('abcdefgh'), { k: 'abcdefgh', name: 'Anna', pts: 3 });
+  assert.deepEqual(await getPlayer('abcdefgh'), { k: 'abcdefgh', name: 'Anna', pts: 3, achievements: [] }); // (an API before the achievements: none)
   assert.match(asked[0].url, /\?player=abcdefgh$/);
   assert.equal(await getPlayer('zzzzzzzz'), null, 'the answer was someone else\'s');
   answer(() => json({}, 404));

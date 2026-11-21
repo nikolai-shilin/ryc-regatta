@@ -5,7 +5,7 @@ import { ordinal, monthName, type PlayerMonth } from '@/lib/player-month';
 import { dailyRace } from '@/lib/race';
 import { venueOf, VENUES } from '@/lib/venues';
 import { yachtOf, isYacht } from '@/lib/yachts';
-import { ACHIEVEMENTS, detailOf } from '@/lib/achievements';
+import { ACHIEVEMENTS, detailOf, type Got } from '@/lib/achievements';
 import { bestOf, byMonth, type Entry } from '@/lib/history';
 import type { Log } from '@/lib/log';
 import type { Count } from '@/lib/players';
@@ -16,15 +16,15 @@ import { useAchievements } from './achievements';
 // place in today's race, the biggest 1-on-1 win, the longest streak, the longest run of wins and the venue sailed most;
 // then the last three months, the latest first, each with its sum and every day of today's race ranked, every 1-on-1
 // finished and every achievement, mixed by day. Today's race is anyone's (the scores API's months, by their key); the
-// 1-on-1s, the achievements and the streak are your own card's alone.
+// 1-on-1s and the streak are your own card's alone; the achievements anyone's (another's come with their card, release 8b).
 const venueName = (id: string, lang: Lang) => { const v = VENUES.find((x) => x.id === id); return v ? pick(v.name, lang) : null; };
 
-export function PlayerHistory({ lang, k, mine, log, venues }: { lang: Lang; k: string; mine: boolean; log: Log | null; venues: Count[] }) {
+export function PlayerHistory({ lang, k, mine, log, venues, theirs = [] }: { lang: Lang; k: string; mine: boolean; log: Log | null; venues: Count[]; theirs?: Got[] }) {
   const t = tx(lang), loc = LOCALE[lang], ord = (n: number) => ordinal(n, lang);
   const months = useMonths(k), duels = useMyDuels(mine), ach = useAchievements(mine);
   if (months === null || (mine && duels === undefined)) return null; // (the months and your 1-on-1s in first; the achievements join when they come)
   const days = months.filter((m): m is PlayerMonth => !!m).flatMap((m) => m.days);
-  const races = mine && duels ? duels.races : [], got = mine && ach ? ach.got : [];
+  const races = mine && duels ? duels.races : [], got = mine ? (ach ? ach.got : []) : theirs; // (another's achievements come with their card)
   const best = bestOf({ days, duels: races, logDays: mine && log ? Object.keys(log.d) : [], venues });
   const list = byMonth({ days, duels: races, got }).slice(0, 3);
   const dayS = (iso: string) => new Date(iso).toLocaleDateString(loc, { day: 'numeric', month: 'short', timeZone: 'UTC' });

@@ -35,7 +35,8 @@ export function MyAchievements({ lang }: { lang: Lang }) {
   return a ? <AchievementsView a={a} lang={lang} /> : null;
 }
 
-export function AchievementsView({ a, lang }: { a: Achievements; lang: Lang }) {
+// had: another sailor's card, the ones they have alone (what they're short of is theirs to see)
+export function AchievementsView({ a, lang, had: onlyHad = false }: { a: Achievements; lang: Lang; had?: boolean }) {
   const t = tx(lang), loc = LOCALE[lang], ord = (n: number) => ordinal(n, lang);
   const had = new Map(a.got.map((g) => [g.key, g]));
   const day = (iso: string) => new Date(iso).toLocaleDateString(loc, { day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -54,7 +55,7 @@ export function AchievementsView({ a, lang }: { a: Achievements; lang: Lang }) {
   return (
     <div className="bt-g ach">
       <span className="bt-k">{t(`Achievements · ${had.size} of ${ACHIEVEMENTS.length}`, `Достижения · ${had.size} из ${ACHIEVEMENTS.length}`, `Logros · ${had.size} de ${ACHIEVEMENTS.length}`, `Erfolge · ${had.size} von ${ACHIEVEMENTS.length}`, `Başarılar · ${ACHIEVEMENTS.length} içinde ${had.size}`, `Succès · ${had.size} sur ${ACHIEVEMENTS.length}`, `Traguardi · ${had.size} su ${ACHIEVEMENTS.length}`, `Conquistas · ${had.size} de ${ACHIEVEMENTS.length}`)}</span>
-      <ul className="ach-list">{order.map((d) => {
+      <ul className="ach-list">{order.filter((d) => !onlyHad || had.has(d.key)).map((d) => {
         const g = had.get(d.key), p = !g ? a.progress[d.key] : null, part = p && p[0] > 0;
         const venue = g && typeof g.detail.day === 'string' ? pick(venueOf(dailyRace(new Date(`${g.detail.day}T12:00:00Z`)).venue).name, lang) : null;
         const more = g ? [detailOf(g, lang, ord), venue].filter(Boolean).join(' · ') : '';

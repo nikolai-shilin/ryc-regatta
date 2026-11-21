@@ -13,7 +13,8 @@ import { track } from '@/lib/track';
 import '@/styles/for-you.css';
 
 // For you (release 7e of the 1-on-1 plan; lib/suggest.ts): up to three things to do next, best first, each with why in
-// a line and one button; × hides that kind for a week, "Fewer like this" shows it less. On the home page and on /duel.
+// a line and one button; × hides that kind for a week, "Fewer like this" shows it less. On the home page, on /duel, and
+// after a race on its result page (two there: release 8d).
 // What it knows is gathered in the browser, as the pages are built once for everyone: this device's log, today's
 // ranked times once you've sailed today, and for a signed-in sailor their 1-on-1 rating, who is looking now, the duel
 // hour and the achievements under way; their weights are the database's (GET/POST /connect/suggest), a guest's this
@@ -46,7 +47,8 @@ async function gatherInputs(once: Once): Promise<{ inputs: Inputs; state: State 
   };
 }
 
-export function ForYou({ lang }: { lang: Lang }) {
+// max: how many at most (the result page's card is narrow: two)
+export function ForYou({ lang, max = 3 }: { lang: Lang; max?: number }) {
   const [cards, setCards] = useState<Card[] | null>(null);
   const signed = useRef(false), seen = useRef(new Set<string>()), once = useRef<Once>({});
   useEffect(() => {
@@ -56,7 +58,7 @@ export function ForYou({ lang }: { lang: Lang }) {
       const { inputs, state } = await gatherInputs(once.current);
       if (!on) return;
       signed.current = inputs.signed;
-      const list = suggest(inputs, lang, state);
+      const list = suggest(inputs, lang, state).slice(0, max);
       setCards(list);
       // a showing told once a visit for each kind (the database counts one in ten minutes anyway)
       const fresh = list.map((c) => c.kind).filter((k) => !seen.current.has(k));
@@ -66,7 +68,7 @@ export function ForYou({ lang }: { lang: Lang }) {
     read();
     const i = setInterval(read, EVERY_MS);
     return () => { on = false; clearInterval(i); };
-  }, [lang]);
+  }, [lang, max]);
   const mark = (c: Card, ev: 'tap' | 'dismiss' | 'fewer') => {
     track('For you', { kind: c.kind, ev });
     if (signed.current) post('/connect/suggest', { ev, kinds: [c.kind] });

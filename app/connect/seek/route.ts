@@ -2,7 +2,7 @@ import { after, type NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 import { isHandle, parseReady, parseSeek, wishesOf } from '@/lib/duel-seek';
 import { BANDS, callCode, parsePosted } from '@/lib/duel-call';
-import { sendMatchFound } from '@/lib/push-send';
+import { sendMatchFound, sendLookPing } from '@/lib/push-send';
 import { parseHour } from '@/lib/duel-hour';
 
 // Matchmaking for the signed-in sailor (components/duel-finder.tsx):
@@ -17,7 +17,8 @@ import { parseHour } from '@/lib/duel-hour';
 //   POST /connect/seek { do: 'hour' }                 → { hour }: the duel hour's day, how many are in, near you, you in (lib/duel-hour.ts)
 //   POST /connect/seek { do: 'hour_in', on }           → { hour }: in, or out, for that day's hour
 // A pair just made with a sailor who is away (looked for after leaving /duel) sends them Match found by push once the
-// answer has gone (lib/push-send.ts; the database hands their devices over once per pair).
+// answer has gone (lib/push-send.ts; the database hands their devices over once per pair). A search just begun with nobody
+// near tells a few sailors near your rating (sendLookPing).
 // The sailor is the session's; the database pairs (regatta_seek, regatta_seek_ready, regatta_seek_stop, regatta_ready_now, regatta_seek_challenge, regatta_call_post,
 // regatta_call_take). Only from this
 // site's own pages. Never cached.
@@ -63,6 +64,19 @@ export async function POST(request: NextRequest) {
     if (out.status === 'found') {
       const id = out.pair.id, task = () => sendMatchFound(id).then(() => {}, () => {});
       try { after(task); } catch { void task(); } // (outside a request, as in the tests: at once)
+    }
+    // just started looking, and nobody near your rating is looking too: a few sailors near it who raced lately are told
+    // (lib/push-send.ts sendLookPing; the database chooses, and lets a searcher set it off once in thirty minutes)
+    // (the search's own answer never waits on it, nor fails with it)
+    if (body.do === 'seek' && out.status === 'looking' && out.waited <= 6 && out.near === 0) {
+      try {
+        const { data: claims } = await supabase.auth.getClaims();
+        const me = claims?.claims?.sub;
+        if (typeof me === 'string') {
+          const task = () => sendLookPing(me).then(() => {}, () => {});
+          try { after(task); } catch { void task(); }
+        }
+      } catch { /* no session to read: no message */ }
     }
     return json(out);
   } catch { return json({ status: 'none', reason: null }); }
