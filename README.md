@@ -160,8 +160,8 @@ racing rules. It is a Next.js app (App Router) around a static Three.js game, de
   `public/game/jclass.glb`, from
   `blender/jclass.py` (which prints the water she displaces: some 170 t of the 175 she should), the
   J/70's and the RS21's `public/game/j70.glb` and `rs21.glb`, from `blender/sportboats.py`, and the AC75's
-  `public/game/ac75.glb`, from `blender/ac75.py`, likewise. The F50's two hulls are lofted in code (`boats3d.js`
-  F50View), with no model file yet.
+  `public/game/ac75.glb`, from `blender/ac75.py`, and the F50's two hulls, beams, pod and nets `public/game/f50.glb`,
+  from `blender/f50.py` (her lines and layout measured from photographs of the boats racing), likewise.
 - **The venues:** today's race goes to a venue a day (`dailyVenue()` in `public/game/venues.js`, copied in
   `lib/race.ts` and in `public/play/index.html`'s preloader, which `npm test` checks): the days go round all of them
   in a shuffled order, so each comes once a round and none two days running. A new venue goes in all three lists in

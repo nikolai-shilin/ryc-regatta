@@ -18,7 +18,7 @@ const close = (a, b, e = 1e-6, what = '') => assert.ok(Math.abs(a - b) <= e, `${
 const rec = await recordRace({ frames: 3600, every: 8 });
 
 test('the models were asked for and did not come', () => {
-  for (const f of ['yacht.glb', 'committee.glb', 'lagoon42.glb', 'bavaria46.glb', 'laser.glb', 'optimist.glb', 'j70.glb', 'rs21.glb', 'ac75.glb', 'dragon.glb', 'jclass.glb']) assert.ok(page.fetched.some((u) => u.endsWith(f)), f);
+  for (const f of ['yacht.glb', 'committee.glb', 'lagoon42.glb', 'bavaria46.glb', 'laser.glb', 'optimist.glb', 'j70.glb', 'rs21.glb', 'ac75.glb', 'dragon.glb', 'jclass.glb', 'f50.glb']) assert.ok(page.fetched.some((u) => u.endsWith(f)), f);
 });
 
 test('the catamaran does not go out without her model', () => {
