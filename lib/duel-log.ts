@@ -27,11 +27,11 @@ export type Report =
 
 // How the race ran on one screen, as the game's stats.js perfSummary and match.js net() measure it: the middle frame's
 // rate (fps) and the slow end's (low, the 95th percentile frame), stalls over 100 ms a minute, seconds measured, the
-// graphics level at the start and the end and the setting, the battery saver, the device, and how the other screen's
+// graphics level at the start and the end and the setting, the battery saver, the resolution below Low at the end (rs, 1: none), the device, and how the other screen's
 // messages came (rtt: the least way there and back, ms, measured on the guest's screen alone; late: messages more than
 // 250 ms past their due, a minute). fps and secs must be good; any other field that isn't is kept as null.
 export type Perf = {
-  fps: number; low: number | null; stall: number | null; secs: number; q0: string | null; q: string | null; gfx: string | null; saver: 0 | 1;
+  fps: number; low: number | null; stall: number | null; secs: number; q0: string | null; q: string | null; gfx: string | null; saver: 0 | 1; rs: number | null;
   dev: string | null; tg: 0 | 1; os: string | null; br: string | null; dpr: number | null; cores: number | null; mem: number | null; gpu: string | null;
   w: number | null; h: number | null; net: { rtt: number | null; late: number | null } | null;
 };
@@ -77,7 +77,7 @@ function perfOf(p: unknown): Perf | null {
   if (fps === null || secs === null) return null;
   const n = isObj(p.net) ? p.net : null;
   return {
-    fps, low: num(p.low, 0, 1000), stall: num(p.stall, 0, 10000), secs, q0: pick(p.q0, LEVELS), q: pick(p.q, LEVELS), gfx: pick(p.gfx, SETS), saver: p.saver === 1 ? 1 : 0,
+    fps, low: num(p.low, 0, 1000), stall: num(p.stall, 0, 10000), secs, q0: pick(p.q0, LEVELS), q: pick(p.q, LEVELS), gfx: pick(p.gfx, SETS), saver: p.saver === 1 ? 1 : 0, rs: num(p.rs, 0.25, 1),
     dev: pick(p.dev, ['phone', 'tablet', 'desktop'] as const), tg: p.tg === 1 ? 1 : 0, os: word(p.os), br: word(p.br), dpr: num(p.dpr, 0.25, 8),
     cores: whole(p.cores, 1, 1024), mem: num(p.mem, 0, 1024), gpu: typeof p.gpu === 'string' && /^[\w ()+\-.,/:]{1,60}$/.test(p.gpu) ? p.gpu : null,
     w: whole(p.w, 1, 20000), h: whole(p.h, 1, 20000), net: n && { rtt: whole(n.rtt, 0, 60000), late: num(n.late, 0, 10000) },

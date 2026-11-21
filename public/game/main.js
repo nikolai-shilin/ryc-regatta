@@ -5,7 +5,7 @@ import { lateLand } from './skopea.js';
 import { raceStarted, raceFinished, raceResult, perfSetup, perfFrame, perfMeter, statsContext, raceIncident, raceEnded, visitSend } from './stats.js';
 import { initExtras, onStart, onFrame, drill, drillSettings } from './extras.js'; // the drills, the analytics
 import { createHud } from './hud-bc.js';
-import { autoBase, autoTuner, gfxLevel, gfxNow, gfxParts, lighterParts, saveAuto, GFX_LEVELS, GFX_PARTS, SAVER_MS } from './gfx.js';
+import { autoBase, autoTuner, gfxLevel, gfxNow, gfxParts, gfxScale, lighterParts, saveAuto, GFX_LEVELS, GFX_PARTS, SAVER_MS } from './gfx.js';
 import { openAvMenu, avSummary } from './av-menu.js'; // Audio & graphics, the site's menu too
 import { LINE_DASH, mapPalette, placeLabels } from './course-map.js';
 import { LOOKS, playerLook, lookFrom } from './yacht.js';
@@ -1207,7 +1207,7 @@ try {
   const gl = world.renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info');
   perfSetup({ gpu: gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER), size: () => [canvas.width, canvas.height] });
 } catch (e) {}
-const applyGfx = () => world.setQuality(...gfxNow(opts)); // (gfx.js: a level, Custom's parts, or what Auto draws on this device)
+const applyGfx = () => { world.setQuality(...gfxNow(opts)); world.setResScale(gfxScale(opts)); }; // (gfx.js: a level, Custom's parts, or what Auto draws on this device, below Low too)
 world.setFigures(opts.figures !== 0); // Audio & graphics › People on board
 applyGfx();
 world.showGuides = !!opts.guides;
@@ -1217,16 +1217,20 @@ const levelNow = () => (opts.gfx === 'auto' || !opts.gfx ? gfxLevel(world.gfx) :
 // autoTuner), remembered for this device. Word of it only when the picture comes down a whole level.
 const tuneGfx = autoTuner(autoBase());
 let frameBusy = 0; // how long the last frame kept the CPU (frame, below)
+// what Auto is told is drawn: the parts, and the resolution below Low as `scale` (gfx.js RES_BELOW), one object while neither changes
+let autoNow = null;
+const drawnNow = () => (autoNow && autoNow.of === world.gfx && autoNow.scale === (world.resScale ?? 1) ? autoNow.p
+  : (autoNow = { of: world.gfx, scale: world.resScale ?? 1, p: { ...world.gfx, scale: world.resScale ?? 1 } }).p);
 // seconds of frames let pass after Audio & graphics changes the picture or the battery saver (applyAv): they're the new
 // shaders compiling, or the old pace, and say nothing of the new one
 let settleT = 0;
 function watchFps(raw) {
   if ((opts.gfx || 'auto') !== 'auto' || world.preparing) return; // (new shaders compiling: those frames say nothing)
   if (settleT > 0) { settleT -= raw; return; }
-  const next = tuneGfx(raw, frameBusy, world.gfx, !!opts.saver);
+  const next = tuneGfx(raw, frameBusy, drawnNow(), !!opts.saver);
   if (!next) return;
-  const was = gfxLevel(world.gfx), q = gfxLevel(next);
-  world.setQuality('custom', next); saveAuto(next);
+  const { scale = 1, ...parts } = next, was = gfxLevel(world.gfx), q = gfxLevel(parts);
+  world.setQuality('custom', parts); world.setResScale(scale); saveAuto(next);
   if (GFX_LEVELS.indexOf(q) > GFX_LEVELS.indexOf(was)) toast(t('gfxDown', t(q === 'medium' ? 'gMedium' : 'gLow')), 2.5);
 }
 // The GPU took the picture away (webglcontextlost: a phone short of memory, the graphics driver reset): three.js stops
@@ -1253,7 +1257,7 @@ canvas.addEventListener('webglcontextlost', () => {
   glLost = true;
   if (wordStage && avClose) avClose(); // (the dictionary's scene put away first: the race's own is what comes back)
   if (running && !paused && !mx) pause();
-  if ((opts.gfx || 'auto') === 'auto') saveAuto(lighterParts(world.gfx));
+  if ((opts.gfx || 'auto') === 'auto') saveAuto({ ...lighterParts(world.gfx), scale: world.resScale ?? 1 });
   clearTimeout(glT); glT = setTimeout(lostCard, 2000);
 });
 canvas.addEventListener('webglcontextrestored', () => {
@@ -2322,8 +2326,8 @@ function frame(now) {
     paintGun();
     if (world.gfx.res === 'high' || frameN++ % 3 === 0) drawMap(mctx, 240, false);
     watchFps(raw);
-    perfFrame(race, raw, levelNow(), opts.gfx, !!opts.saver); // (stats.js: a race's frames, for the site's /admin)
-    if (mx) duelPerf?.frame(raw, levelNow(), opts.gfx, !!opts.saver); // (a 1-on-1 race's: told with its report)
+    perfFrame(race, raw, levelNow(), opts.gfx, !!opts.saver, world.resScale ?? 1); // (stats.js: a race's frames, for the site's /admin)
+    if (mx) duelPerf?.frame(raw, levelNow(), opts.gfx, !!opts.saver, world.resScale ?? 1); // (a 1-on-1 race's: told with its report)
   } else {
     if (readyOn && !document.hidden) { readyLeft -= dt; paintReady(); if (readyLeft <= 0) ready(); }
     if (!awayEl.hidden && !document.hidden) { awayLeft -= dt; paintAway(); if (awayLeft <= 0) awayGo(); }

@@ -1676,6 +1676,19 @@ export class World {
     this.quality = q;
   }
 
+  // the resolution below Low, Auto's alone (gfx.js RES_BELOW): the res part's pixel ratio times it (1: none)
+  setResScale(s) {
+    s = s > 0 && s <= 1 ? s : 1;
+    if (s === (this.resScale ?? 1)) return;
+    this.resScale = s;
+    this.applyRes();
+  }
+  applyRes() {
+    const r = this.renderer;
+    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, PART.res[this.gfx?.res] ?? PART.res.high) * (this.resScale ?? 1));
+    if (this.w) r.setSize(this.w, this.h, false);
+  }
+
   // set each part of the graphics (GFX_PARTS), touching only those that change: resolution, sun shadows, the water's
   // mesh and shading, the reflection, the post-processing, the wakes and foam, the hulls under water, the land, the life
   setGraphics(g) {
@@ -1685,7 +1698,7 @@ export class World {
     const r = this.renderer;
     if (ch('land')) this.skopea.setQuality(g.land);
     if (ch('life')) this.wild.setLevel(g.life); // fewer gulls and dolphins lower down
-    if (ch('res')) { r.setPixelRatio(Math.min(window.devicePixelRatio || 1, PART.res[g.res])); if (this.w) r.setSize(this.w, this.h, false); }
+    if (ch('res')) this.applyRes();
     // the sun's shadows (and the sea's shade, which goes with them)
     const shadow = PART.shadows[g.shadows], sh = shadow > 0, hadShadow = was.shadows ? PART.shadows[was.shadows] > 0 : true;
     r.shadowMap.enabled = sh; this.sun.castShadow = sh;

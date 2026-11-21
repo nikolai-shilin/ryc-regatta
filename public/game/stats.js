@@ -83,7 +83,7 @@ export function raceResult(race, result) {
 // histogram of 2 ms bins, so a race of any length keeps a few hundred numbers. Once a race (at the finish, on the next
 // race, or as the page is left) it is boiled down and posted ({ ev: 'perf' }): the middle frame's rate (fps) and the
 // slow end's (low: the 95th percentile frame), the stalls (frames over 100 ms) a minute, the seconds measured, the
-// level at the start and the end, the device (phone, tablet or desktop; in Telegram or a browser; the system and the
+// level at the start and the end, the resolution below Low Auto drew at the end (rs: gfx.js RES_BELOW, 1: none), the device (phone, tablet or desktop; in Telegram or a browser; the system and the
 // browser; the graphics chip, as WebGL names it; the screen's pixel ratio and the size drawn; its cores and memory),
 // and the seconds from opening the page to the first race. Nothing in it names the player.
 const BIN = 2, NB = 126, STALL = 0.1; // ms a bin; the last bin takes every frame of 250 ms and more
@@ -110,20 +110,20 @@ export const device = () => ({
   cores: navigator.hardwareConcurrency || null,
   mem: navigator.deviceMemory || null,
 });
-const newPf = (q, gfx, saver) => ({ hist: new Uint32Array(NB), n: 0, t: 0, stalls: 0, q0: q, q, gfx, saver: saver ? 1 : 0, load: null });
-function addPf(p, raw, q, gfx, saver) {
+const newPf = (q, gfx, saver, rs = 1) => ({ hist: new Uint32Array(NB), n: 0, t: 0, stalls: 0, q0: q, q, gfx, saver: saver ? 1 : 0, rs, load: null });
+function addPf(p, raw, q, gfx, saver, rs = 1) {
   p.hist[Math.min(NB - 1, Math.floor((raw * 1000) / BIN))]++;
   p.n++; p.t += raw; if (raw > STALL) p.stalls++;
-  p.q = q; p.gfx = gfx; if (saver) p.saver = 1;
+  p.q = q; p.gfx = gfx; if (saver) p.saver = 1; p.rs = rs;
 }
-export function perfFrame(race, raw, q, gfx, saver) {
+export function perfFrame(race, raw, q, gfx, saver, rs) {
   if (!race || !race._rid || race.multi || !(raw > 0) || raw > 1) return; // (a second and more: the tab was away)
   if (!pf || pf.rid !== race._rid) {
     perfSend();
-    pf = { rid: race._rid, ...newPf(q, gfx, saver) };
+    pf = { rid: race._rid, ...newPf(q, gfx, saver, rs) };
     pf.load = loaded ? null : Math.round(performance.now() / 100) / 10; loaded = true; // the page's first race: since it opened
   }
-  addPf(pf, raw, q, gfx, saver);
+  addPf(pf, raw, q, gfx, saver, rs);
 }
 // A 1-on-1 race's frames on this screen, measured as perfFrame measures a race's: the race has no row of its own among the
 // races (stats.js posts nothing for it), so match-ui.js sends summary() with its own report of the race (duel-log.js).
@@ -131,7 +131,7 @@ export function perfFrame(race, raw, q, gfx, saver) {
 export function perfMeter() {
   let p = null;
   return {
-    frame(raw, q, gfx, saver) { if (!(raw > 0) || raw > 1) return; p ??= newPf(q, gfx, saver); addPf(p, raw, q, gfx, saver); },
+    frame(raw, q, gfx, saver, rs) { if (!(raw > 0) || raw > 1) return; p ??= newPf(q, gfx, saver, rs); addPf(p, raw, q, gfx, saver, rs); },
     summary() { return p && p.t >= 20 && p.n >= 200 ? perfSummary(p) : null; },
   };
 }
@@ -145,7 +145,7 @@ export function perfSummary(p, d = device(), extra = dev) {
   const r = (x, k = 10) => Math.round(x * k) / k;
   const [w, h] = (extra && extra.size && extra.size()) || [null, null];
   return { fps: r(1 / frameAt(p.hist, p.n, 0.5)), low: r(1 / frameAt(p.hist, p.n, 0.95)), stall: r((p.stalls / p.t) * 60, 100), secs: Math.round(p.t),
-    q0: p.q0, q: p.q, gfx: p.gfx, saver: p.saver, ...d, gpu: (extra && extra.gpu) || null, w, h, load: p.load ?? null };
+    q0: p.q0, q: p.q, gfx: p.gfx, saver: p.saver, rs: p.rs ?? 1, ...d, gpu: (extra && extra.gpu) || null, w, h, load: p.load ?? null };
 }
 // post the race measured so far, once (20 s of frames at least: a race left at once tells nothing)
 function perfSend() {

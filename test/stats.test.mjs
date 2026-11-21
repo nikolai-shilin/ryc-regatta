@@ -388,7 +388,17 @@ test("perfSummary reads what it is given, and a chip or a canvas nobody named is
   const { stats } = await open();
   const hist = new Uint32Array(126); hist[8] = 10;
   const s = stats.perfSummary({ hist, n: 10, t: 30, stalls: 3, q0: 1, q: 2, gfx: 'mid', saver: 0 }, { dev: 'desktop' }, null);
-  assert.deepEqual(s, { fps: 58.8, low: 58.8, stall: 6, secs: 30, q0: 1, q: 2, gfx: 'mid', saver: 0, dev: 'desktop', gpu: null, w: null, h: null, load: null });
+  assert.deepEqual(s, { fps: 58.8, low: 58.8, stall: 6, secs: 30, q0: 1, q: 2, gfx: 'mid', saver: 0, rs: 1, dev: 'desktop', gpu: null, w: null, h: null, load: null });
+});
+
+test('the resolution below Low is told as it was at the end, 1 when there was none', async () => {
+  const { stats } = await open();
+  const m = stats.perfMeter();
+  for (let i = 0; i < 600; i++) m.frame(1 / 20, 'low', 'auto', false, i < 300 ? 1 : 0.8);
+  assert.equal(m.summary().rs, 0.8);
+  const n = stats.perfMeter();
+  for (let i = 0; i < 600; i++) n.frame(1 / 20, 'low', 'auto', false);
+  assert.equal(n.summary().rs, 1, 'a caller that says nothing of it: none');
 });
 
 test('frames that the histogram has no bin for read as its slowest', async () => {

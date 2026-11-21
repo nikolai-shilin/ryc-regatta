@@ -42,6 +42,12 @@ export const GFX_LADDER = [
   ['wakes', 'low', 0.05, 0, 5],
 ];
 const FRAME_MS = 13.3, FRAME_CPU = 5.4;
+// Below Low, for Auto alone: Low's resolution (one pixel to a CSS pixel) times 0.8, then 0.65 (64% and 42% of its pixels).
+// Tried only under 24 fps once every part is Low, as on the laptops with Intel graphics that sailed whole races at 15–20
+// fps on Low (19–20 Nov 2026). The HUD is the page's, not the picture's: its words stay sharp. A step that buys no
+// frames (a phone held up by its CPU) is undone. It rides with the parts as `scale` (none: 1), and no level or Custom draws it.
+export const RES_BELOW = [0.8, 0.65];
+const SCALES = [1, ...RES_BELOW];
 const RANK = { high: 0, medium: 1, low: 2 };
 
 // The steps that free `need` of the frame (0.2: a fifth of it). A frame held up by the CPU gives up only what eases the
@@ -59,6 +65,8 @@ export function shedParts(parts, need, cpuBound) {
 }
 // the last step given up, back again (never past `base`, where this device starts); null: all of them are back
 export function raiseParts(parts, base) {
+  const i = SCALES.indexOf(parts.scale ?? 1);
+  if (i > 0) return { ...parts, scale: SCALES[i - 1] }; // (the resolution below Low, the last given up, first back)
   for (let i = GFX_LADDER.length - 1; i >= 0; i--) {
     const [k, to] = GFX_LADDER[i];
     if (parts[k] === to && RANK[to] > RANK[base[k]]) return { ...parts, [k]: GFX_LEVELS[RANK[to] - 1] };
@@ -81,7 +89,7 @@ export const gfxLevel = (parts) => GFX_LEVELS[Math.round(GFX_PARTS.reduce((s, k)
 // mode draws 30 a second whatever it's given): the picture comes back as it was, and stays unless the frames get worse.
 // Not under 24 fps, which no such cap explains: there it goes on giving up, the GPU's steps too, till all is low.
 export function autoTuner(base) {
-  let settle = 3, t = 0, d = [], b = [], calm = 0, wait = 40, clock = 0, raisedAt = -Infinity, tried = null, capped = 0;
+  let settle = 3, t = 0, d = [], b = [], calm = 0, wait = 40, clock = 0, raisedAt = -Infinity, tried = null, capped = 0, scaled = null, noScale = false;
   const mid = (a) => a.sort((x, y) => x - y)[a.length >> 1];
   return (raw, busy, parts, saver) => {
     if (raw > 0.25) return null;
@@ -101,16 +109,21 @@ export function autoTuner(base) {
       // are all gone: each round that bought a little (and so cleared `tried`) looked CPU-bound again, nothing was left
       // to give, and a laptop sailed nine races on Medium at 8.5–12 fps (2026-11-19)
       const slow = frame > 1 / 24;
+      if (scaled) { const was = scaled; scaled = null; if (frame >= was.frame * 0.95) { noScale = true; settle = 2; return { ...parts, scale: was.scale }; } } // fewer pixels bought nothing: back
       if (clock - raisedAt < 20) { wait = Math.min(wait * 3, 900); raisedAt = -Infinity; }
       if (capped && frame <= capped * 1.15 && !slow) return null;
       if (tried && frame < tried.frame * 0.95) tried = null; // that helped
       if (tried && tried.rounds >= 2 && !slow) { const back = tried.parts; capped = frame; tried = null; settle = 2; return back; }
       const need = 1 - target / frame, cpu = work > target * 0.75 && !(slow && tried);
       const next = shedParts(parts, need, cpu) || (cpu && slow ? shedParts(parts, need, false) : null);
-      if (next) { settle = 2; if (tried) tried.rounds++; else tried = { parts, frame, rounds: 1 }; }
-      return next;
+      if (next) { settle = 2; if (tried) tried.rounds++; else tried = { parts, frame, rounds: 1 }; return next; }
+      // every part Low and still under 24 fps: the resolution below Low, a step at a time
+      const s = SCALES.indexOf(parts.scale ?? 1);
+      if (!slow || noScale || s < 0 || s >= SCALES.length - 1 || !GFX_PARTS.every((k) => parts[k] === 'low')) return null;
+      scaled = { frame, scale: SCALES[s] }; settle = 2;
+      return { ...parts, scale: SCALES[s + 1] };
     }
-    tried = null;
+    tried = null; scaled = null;
     if (frame < capped * 0.85) capped = 0;
     calm = frame <= 1 / (saver ? 28 : 55) ? calm + span : 0;
     if (calm < wait) return null;
@@ -121,7 +134,8 @@ export function autoTuner(base) {
   };
 }
 
-// Auto remembers what it gave up as 'mhmmhhhmh|<when>' (each part's first letter, in GFX_PARTS order) for three days,
+// Auto remembers what it gave up as 'mhmmhhhmh|<when>' (each part's first letter, in GFX_PARTS order), and the resolution
+// below Low after an @ ('lllllllll@0.65|<when>'), for three days,
 // then tries the device's own level again: one slow race (another tab busy, a hot phone) shouldn't keep the picture down
 // for good. A bare level ('medium|<when>') is what it remembered before it went part by part.
 export const GFX_KEY = 'regatta-gfx';
@@ -132,19 +146,25 @@ const unpack = (s) => {
   if (s.length !== GFX_PARTS.length || !/^[hml]+$/.test(s)) return null;
   return Object.fromEntries(GFX_PARTS.map((k, i) => [k, GFX_LEVELS.find((l) => l[0] === s[i])]));
 };
-export function autoParts() {
+// what Auto remembers: [the parts, the resolution below Low (1: none)], or null
+function remembered() {
   try {
-    const [s, at] = (localStorage.getItem(GFX_KEY) || '').split('|'), p = unpack(s);
-    if (p && Date.now() - at < GFX_DAYS * 864e5) return p;
+    const [s, at] = (localStorage.getItem(GFX_KEY) || '').split('|'), [ps, sc] = s.split('@'), p = unpack(ps);
+    if (p && Date.now() - at < GFX_DAYS * 864e5) return [p, RES_BELOW.includes(Number(sc)) ? Number(sc) : 1];
     localStorage.removeItem(GFX_KEY);
   } catch (e) {}
-  return autoBase();
+  return null;
 }
+export const autoParts = () => remembered()?.[0] ?? autoBase();
+export const autoScale = () => remembered()?.[1] ?? 1;
+// the resolution below Low a choice draws: Auto's, and none for any other
+export const gfxScale = (o) => (((o && o.gfx) || 'auto') === 'auto' ? autoScale() : 1);
 export function saveAuto(parts) {
   const base = autoBase();
   try {
-    if (GFX_PARTS.every((k) => parts[k] === base[k])) localStorage.removeItem(GFX_KEY);
-    else localStorage.setItem(GFX_KEY, `${GFX_PARTS.map((k) => parts[k][0]).join('')}|${Date.now()}`);
+    const sc = RES_BELOW.includes(parts.scale) ? `@${parts.scale}` : '';
+    if (!sc && GFX_PARTS.every((k) => parts[k] === base[k])) localStorage.removeItem(GFX_KEY);
+    else localStorage.setItem(GFX_KEY, `${GFX_PARTS.map((k) => parts[k][0]).join('')}${sc}|${Date.now()}`);
   } catch (e) {}
 }
 // the parts Auto has eased off on this device, for the menu to name
@@ -174,7 +194,7 @@ export const SAVER_MS = 1000 / 30 - 4;
 export function followSettings(world) {
   const read = () => { try { return JSON.parse(localStorage.getItem('regatta') || '{}') || {}; } catch (e) { return {}; } };
   let o = read(), drawnAt = 0;
-  const apply = () => { world.setQuality(...gfxNow(o)); world.setFigures?.(o.figures !== 0); };
+  const apply = () => { world.setQuality(...gfxNow(o)); world.setResScale?.(gfxScale(o)); world.setFigures?.(o.figures !== 0); };
   apply();
   addEventListener('storage', (e) => { if (e.key === 'regatta' || e.key === GFX_KEY || e.key === null) { o = read(); apply(); } });
   return (now) => {

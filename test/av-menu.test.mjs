@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 const store = new Map();
 globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
-const { GFX_KEY, GFX_LADDER, GFX_LEVELS, GFX_PARTS, autoEased, autoParts, autoTuner, defaultQuality, followSettings, gfxDetail, gfxLevel, gfxNow, gfxParts, lighterParts, raiseParts, saveAuto, shedParts, startQuality } = await import('../public/game/gfx.js');
+const { GFX_KEY, GFX_LADDER, GFX_LEVELS, GFX_PARTS, RES_BELOW, autoEased, autoParts, autoScale, autoTuner, defaultQuality, followSettings, gfxDetail, gfxLevel, gfxNow, gfxParts, gfxScale, lighterParts, raiseParts, saveAuto, shedParts, startQuality } = await import('../public/game/gfx.js');
 
 test('a level chosen is the level drawn, and Custom draws its own parts', () => {
   assert.equal(startQuality({ gfx: 'low' }), 'low');
@@ -170,18 +170,100 @@ test('what Auto gave up is remembered part by part, and every scene draws it', (
   assert.deepEqual(GFX_LEVELS, ['high', 'medium', 'low']);
 });
 
+test('below Low, Auto draws fewer pixels: 0.8 of Low\'s resolution, then 0.65, while the frames stay under 24 fps', () => {
+  // the laptops of 19–20 Nov (Intel HD 620, UHD): 15–20 fps with every part already Low, held up by the pixels drawn
+  const tune = autoTuner(gfxParts('high'));
+  let parts = gfxParts('low');
+  const frameOf = (p) => (1 / 10) * (0.3 + 0.7 * (p.scale ?? 1) ** 2);
+  const seen = [];
+  for (let t = 0; t < 120;) { const raw = frameOf(parts), n = tune(raw, raw * 0.95, parts, false); t += raw; if (n) { parts = n; seen.push(n.scale); } }
+  assert.deepEqual(seen, RES_BELOW, 'one step, then the next, and no further');
+  assert.ok(GFX_PARTS.every((k) => parts[k] === 'low'), 'the parts stay as they were');
+});
+
+test('the resolution goes below Low only once every part is Low', () => {
+  const tune = autoTuner(gfxParts('high'));
+  let parts = gfxParts('medium');
+  const lows = (p) => GFX_PARTS.filter((k) => p[k] === 'low').length;
+  const frameOf = (p) => (1 / 9) * (1 - 0.04 * lows(p)) * (0.3 + 0.7 * (p.scale ?? 1) ** 2);
+  let scaled = false;
+  for (let t = 0; t < 150;) {
+    const raw = frameOf(parts), n = tune(raw, raw * 0.95, parts, false); t += raw;
+    if (!n) continue;
+    if ((n.scale ?? 1) < 1 && !scaled) { scaled = true; assert.equal(lows(parts), GFX_PARTS.length, 'every part was Low before it'); }
+    parts = n;
+  }
+  assert.ok(scaled, 'and then it went below');
+});
+
+test('a step below Low that buys nothing is undone, and not tried again', () => {
+  // a phone held up by its CPU (an iPhone at 24 fps on Low): fewer pixels change nothing
+  const tune = autoTuner(gfxParts('medium'));
+  let parts = gfxParts('low');
+  const seen = [];
+  for (let t = 0; t < 180;) { const raw = 1 / 20, n = tune(raw, raw * 0.95, parts, false); t += raw; if (n) { parts = n; seen.push(n.scale); } }
+  assert.deepEqual(seen, [RES_BELOW[0], 1]);
+});
+
+test('over 24 fps the resolution never goes below Low', () => {
+  const tune = autoTuner(gfxParts('high'));
+  let parts = gfxParts('low');
+  for (let t = 0; t < 120;) { const raw = 1 / 30, n = tune(raw, raw * 0.95, parts, false); t += raw; if (n) parts = n; }
+  assert.equal(parts.scale ?? 1, 1);
+});
+
+test('steady again, the resolution below Low is the first thing back', () => {
+  const base = gfxParts('high'), low = gfxParts('low');
+  assert.deepEqual(raiseParts({ ...low, scale: RES_BELOW[1] }, base), { ...low, scale: RES_BELOW[0] });
+  assert.deepEqual(raiseParts({ ...low, scale: RES_BELOW[0] }, base), { ...low, scale: 1 });
+  assert.deepEqual(raiseParts({ ...low, scale: 1 }, base), { ...low, scale: 1, wakes: 'medium' }, 'then the parts, as before');
+  const tune = autoTuner(base);
+  let parts = { ...low, scale: RES_BELOW[1] };
+  const seen = [];
+  for (let t = 0; t < 200 && seen.length < 3;) { const raw = 1 / 60, n = tune(raw, 0.004, parts, false); t += raw; if (n) { parts = n; seen.push(n.scale); } }
+  assert.deepEqual(seen.slice(0, 2), [RES_BELOW[0], 1]);
+});
+
+test('the resolution below Low is remembered with the parts, for Auto alone: no level and no Custom draws it', () => {
+  store.clear();
+  saveAuto({ ...gfxParts('low'), scale: 0.65 });
+  assert.match(store.get(GFX_KEY), /^lllllllll@0\.65\|\d+$/);
+  assert.equal(autoScale(), 0.65);
+  assert.deepEqual(autoParts(), gfxParts('low'), 'the parts as ever, no scale among them');
+  assert.deepEqual(gfxNow({ gfx: 'auto' }), ['low']);
+  assert.deepEqual(gfxDetail({}), gfxParts('low'), 'Custom, begun from what Auto draws, starts without it');
+  assert.equal(gfxScale({}), 0.65);
+  assert.equal(gfxScale({ gfx: 'auto' }), 0.65);
+  for (const g of ['low', 'medium', 'high', 'custom']) assert.equal(gfxScale({ gfx: g }), 1, g);
+  store.set(GFX_KEY, `lllllllll|${Date.now()}`);
+  assert.equal(autoScale(), 1, 'remembered before it was: full resolution');
+  for (const bad of ['0.3', 'x', '1', '']) { store.set(GFX_KEY, `lllllllll@${bad}|${Date.now()}`); assert.equal(autoScale(), 1, bad); assert.deepEqual(autoParts(), gfxParts('low')); }
+  store.set(GFX_KEY, `lllllllll@0.8|${Date.now() - 4 * 864e5}`);
+  assert.equal(autoScale(), 1, 'three days on, tried again from the top');
+  saveAuto({ ...gfxParts(defaultQuality()), scale: 1 });
+  assert.equal(store.has(GFX_KEY), false, 'all back: nothing to remember');
+  saveAuto({ ...gfxParts('low') });
+  assert.match(store.get(GFX_KEY), /^lllllllll\|\d+$/, 'no scale: none written');
+});
+
 test('a view draws the level chosen, follows a change, and lets frames go on the battery saver', () => {
   store.clear();
   store.set('regatta', JSON.stringify({ gfx: 'low' }));
   const calls = [], on = {};
   globalThis.addEventListener = (k, f) => { on[k] = f; };
-  const skip = followSettings({ setQuality: (q) => calls.push(q) });
+  const scales = [];
+  const skip = followSettings({ setQuality: (q) => calls.push(q), setResScale: (s) => scales.push(s) });
   assert.deepEqual(calls, ['low']);
+  assert.deepEqual(scales, [1], 'a level chosen: full resolution');
   assert.equal(skip(0), false);
   assert.equal(skip(8), false, 'no saver: every frame is drawn');
   store.set('regatta', JSON.stringify({ gfx: 'medium', saver: 1 }));
   on.storage({ key: 'regatta' });
   assert.deepEqual(calls, ['low', 'medium']);
+  store.set('regatta', JSON.stringify({ gfx: 'auto', saver: 1 }));
+  store.set(GFX_KEY, `lllllllll@0.8|${Date.now()}`);
+  on.storage({ key: GFX_KEY });
+  assert.deepEqual(scales, [1, 1, 0.8], 'on Auto, what Auto remembers below Low');
   assert.equal(skip(1000), false);
   assert.equal(skip(1016), true, 'the saver: the frame between is let go');
   assert.equal(skip(1033), false);
