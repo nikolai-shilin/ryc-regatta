@@ -1,5 +1,5 @@
 # Regatta: the F50's moulded platform (game/boats3d.js F50View), modelled here and exported to game/f50.glb: her two
-# hulls, each a long slim box with rounded corners and a low, drooping nose, its bottom rising to the transom, the
+# hulls, each a long slim box with rounded corners, a low, drooping nose and a stern rounded in plan, its bottom rising aft, the
 # cockpit well aft in each where the crew stand; the main beam across at the wing's step, faired to a thick foil section
 # as the photographs show it; a lighter beam aft; the central pod (her batteries' housing) forward from the main beam to
 # the jib's tack; the nets between the hulls from one beam to the other. The boards, the rudders, the wing and the jib,
@@ -32,12 +32,14 @@ STERN = L / 2
 FLARE, CROWN = 0.03, 0.08
 DECK, BOTTOM, NOSE_Y = 0.85, -0.38, -0.02  # the deck and the bottom amidships, and the height the nose's tip comes to
 DROOP, ROUND, KEEL = 0.82, 0.9, 0.93       # where the deck starts drooping, the plan rounding off, the bottom rising
+AFT = 0.035                                # the stern rounded off in plan over its last half metre, as the photographs show it
 def clamp(v, a, b): return max(a, min(b, v))
 def lerp(a, b, t): return a + (b - a) * t
 def smooth(e0, e1, x): t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t)
 # the same lines as boats3d.js F (t = 0 at the transom, 1 at the nose's tip)
 def ell(t, t0): return math.sqrt(max(0.0, 1 - ((t - t0) / (1 - t0)) ** 2)) if t > t0 else 1.0  # a quarter ellipse to the tip
-def hb_of(t): return 0.5 * (0.9 + 0.1 * smooth(0, 0.25, t)) * ell(t, ROUND)
+def aft(t): return math.sqrt(max(0.02, 1 - ((AFT - t) / AFT) ** 2)) if t < AFT else 1.0  # a quarter ellipse to the stern
+def hb_of(t): return 0.5 * (0.9 + 0.1 * smooth(0, 0.25, t)) * ell(t, ROUND) * aft(t)
 def sheer(t): return NOSE_Y + (DECK + 0.02 * math.sin(math.pi * t) - NOSE_Y) * ell(t, DROOP)
 def bottom(t): return NOSE_Y - (NOSE_Y - (BOTTOM + 0.3 * (1 - smooth(0, 0.5, t)))) * ell(t, KEEL)
 def depth(t): return -bottom(t)
@@ -69,7 +71,8 @@ def build_hull(bm, M, cx):
     KH, KD = 18, 6
     # the stations: evenly along her to where the nose starts, then round it by equal angles, so the tip closes to a
     # point and not a flat end
-    ts = [DROOP * i / 60 for i in range(60)] + [DROOP + (1 - DROOP) * math.sin(0.5 * math.pi * k / 20) for k in range(20)]
+    ts = [AFT * (1 - math.cos(0.5 * math.pi * k / 8)) for k in range(8)] + [lerp(AFT, DROOP, i / 56) for i in range(56)] \
+         + [DROOP + (1 - DROOP) * math.sin(0.5 * math.pi * k / 20) for k in range(20)]
     N = len(ts) - 1
     rings = []
     for t in ts:
@@ -187,6 +190,21 @@ except Exception as e: print('material_mode:', e)
 bpy.context.view_layer.objects.active = hulls; bpy.ops.object.modifier_apply(modifier=mod.name)
 bpy.data.objects.remove(cut)
 
+# the cockpits' fairings: a low streamlined cowl on the deck at each one's forward end, in front of the crew (the
+# photographs show it), 1.4 m long, 0.56 m wide and 0.24 m high, its nose rounded and its tail running into the cockpit
+fair = new_object('fairings'); bm = bmesh.new()
+for cx in (-HX, HX):
+    z0, z1, n, seg = COCKPIT[0] - 1.1, COCKPIT[0] + 0.3, 16, 14
+    rows = []
+    for i in range(n + 1):
+        s = i / n; z = lerp(z0, z1, s); k = math.sin(math.pi * min(1, s / 0.7) / 2) * (1 - 0.15 * s)
+        yb = deck_y(z) - 0.04
+        rows.append([bm.verts.new(G(cx + 0.28 * k * math.cos(math.pi * j / seg), yb + 0.24 * k * math.sin(math.pi * j / seg), z)) for j in range(seg + 1)])
+    for i in range(n):
+        for j in range(seg): bm.faces.new((rows[i][j], rows[i][j + 1], rows[i + 1][j + 1], rows[i + 1][j])).material_index = IDX['pod']
+    bm.faces.new(rows[-1]).material_index = IDX['pod']
+bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(fair.data); bm.free()
+
 # the platform: the main beam at the wing's step (boats3d.js F.MAST_Z), the aft beam, the pod and the nets
 MAIN_Z, AFT_Z, TACK_Z = -STERN + 7.4, STERN - 1.0, -STERN + 3.2
 plat = new_object('platform'); bm = bmesh.new()
@@ -197,7 +215,7 @@ build_net(bm, IDX, MAIN_Z + 0.25 + 0.55 * 1.5, AFT_Z - 0.45 * 0.6, 0.85)
 bmesh.ops.recalc_face_normals(bm, faces=[f for f in bm.faces if f.material_index != IDX['net']]); bm.to_mesh(plat.data); bm.free()
 
 bpy.ops.object.select_all(action='DESELECT')
-for o in (hulls, plat): o.select_set(True)
+for o in (hulls, plat, fair): o.select_set(True)
 bpy.context.view_layer.objects.active = hulls; bpy.ops.object.join()
 bm = bmesh.new(); bm.from_mesh(hulls.data)
 bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
