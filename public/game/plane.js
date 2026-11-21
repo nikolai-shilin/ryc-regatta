@@ -1,8 +1,10 @@
 // Regatta: a light plane towing an advertising banner low over the course now and then, as they do along any coast
-// in summer — a high-wing single-engine taildragger, 45 m of tow rope, and a letter banner that ripples in the
-// slipstream. All picture (and, in main.js, the engine's drone): nothing here touches the race.
+// in summer — a high-wing single-engine taildragger (blender/plane.py → plane.glb, a Super Cub's size and shape), 45 m
+// of tow rope, and a letter banner that ripples in the slipstream. All picture (and, in main.js, the engine's drone):
+// nothing here touches the race.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clamp } from './sim.js';
 import { sponsor } from './sponsor.js';
 
@@ -45,7 +47,36 @@ function fin(pts, depth) {
 }
 
 const WHITE = '#f4f5f3', BLUE = '#1f6fb2', DARK = '#23282d', GLASS = '#2b3a46';
-// 7 m long and 10.7 m across the wing, nose at −z: white with a blue cheat line, cowling and fin
+const HOOK = [0, 0, 3.3]; // the tow hook under her tail, where the rope starts
+
+// the moulded plane (blender/plane.py), by the address the import map gives the file: her parts by material name, each
+// painted and put with the others shaded alike (paint, glass, metal, rubber), and the propeller on its own, its hub at
+// the origin. Not waited for: she is built from the shapes below until it comes, long before her first pass
+const fileAt = (f) => (import.meta.resolve ? import.meta.resolve(`./${f}`) : new URL(f, import.meta.url).href);
+const LOOK = { white: [WHITE, 0], blue: [BLUE, 0], red: ['#d0202a', 0], green: ['#18a34a', 0], glass: [GLASS, 1], metal: ['#c3c8cc', 2], dark: ['#1b1d1f', 3] };
+export const planeModel = new Promise((res) => {
+  new GLTFLoader().load(fileAt('plane.glb'), (g) => {
+    g.scene.updateMatrixWorld(true);
+    const kinds = [[], [], [], []], prop = [];
+    g.scene.traverse((o) => {
+      if (!o.isMesh) return;
+      const name = o.material.name, geo = o.geometry.clone().applyMatrix4(o.matrixWorld);
+      if (name === 'prop' || name === 'tip') prop.push(solid(geo.translate(0, 0, 3.4), name === 'tip' ? '#f2c21b' : DARK));
+      else if (LOOK[name]) kinds[LOOK[name][1]].push(solid(geo, LOOK[name][0]));
+    });
+    if (!kinds[0].length || !prop.length) return res(null);
+    const body = mergeGeometries(kinds.map((k) => (k.length ? mergeGeometries(k) : solid(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute([], 3)), WHITE))), true);
+    res({ body, prop: mergeGeometries(prop) });
+  }, undefined, () => res(null));
+});
+const SHADES = () => [
+  new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.32, metalness: 0.0 }), // paint
+  new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.05, metalness: 0.55, envMapIntensity: 1.4 }), // glass
+  new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.3, metalness: 0.8 }), // struts, gear, spinner
+  new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0.0 }), // tyres
+];
+
+// the shapes she has until plane.glb comes (or if it never does): 7 m long and 10.7 m across the wing, nose at −z: white with a blue cheat line, cowling and fin
 function planeGeometry() {
   // the fuselage, turned from a profile (radius, along) and lifted towards the tail as a Cub's is
   const prof = [[0.02, 0], [0.32, 0.04], [0.48, 0.3], [0.56, 0.9], [0.58, 1.9], [0.5, 3.1], [0.32, 4.9], [0.14, 6.6], [0.02, 6.75]].map(([r, y]) => new THREE.Vector2(r, y));
@@ -104,7 +135,8 @@ export class BannerPlane {
     this.group = new THREE.Group(); // at the origin: the rope and the banner are drawn in world space
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.05 });
     this.craft = new THREE.Group(); this.craft.rotation.order = 'YXZ';
-    this.craft.add(new THREE.Mesh(planeGeometry(), mat));
+    this.body = new THREE.Mesh(planeGeometry(), mat);
+    this.craft.add(this.body);
     // the propeller: a pale disc where the blades blur, and the blades themselves turning through it
     const disc = new THREE.Mesh(new THREE.CircleGeometry(0.95, 24), new THREE.MeshBasicMaterial({ color: '#8b9196', transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }));
     disc.position.z = -3.42;
@@ -112,6 +144,11 @@ export class BannerPlane {
     this.prop.position.z = -3.4;
     this.craft.add(disc, this.prop);
     this.group.add(this.craft);
+    planeModel.then((m) => {
+      if (!m) return;
+      this.body.geometry.dispose(); this.body.geometry = m.body; this.body.material = SHADES();
+      this.prop.geometry.dispose(); this.prop.geometry = m.prop; this.prop.material = this.body.material[0];
+    });
 
     // the tow rope and the bridle to the banner's pole
     this.ropeN = 14;
@@ -220,7 +257,7 @@ export class BannerPlane {
     c.updateMatrixWorld(true);
 
     // the tow: from the hook under her tail, down and aft to the bridle, which spreads to the pole's ends
-    const hook = this._a.set(0, -0.05, 3.4).applyMatrix4(c.matrixWorld);
+    const hook = this._a.set(...HOOK).applyMatrix4(c.matrixWorld);
     const bx = -f.x, bz = -f.z, lx = -Math.cos(this.h), lz = -Math.sin(this.h); // aft, and to her left
     const sway = 0.8 * Math.sin(t * 0.5);
     const B = this._b.set(hook.x + bx * ROPE * Math.cos(ROPE_DROP) + lx * sway, hook.y - ROPE * Math.sin(ROPE_DROP), hook.z + bz * ROPE * Math.cos(ROPE_DROP) + lz * sway);

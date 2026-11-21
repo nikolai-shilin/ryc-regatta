@@ -10,7 +10,7 @@ import { installPage, page, runIdle, assertSoundGeometry, assertFiniteTree, boun
 mock('public/game/sponsor.js', 'export const sponsor = () => Promise.resolve(globalThis.__sponsor ?? null);');
 installPage();
 const THREE = await import('three');
-const { BannerPlane, BANNER } = await import('../public/game/plane.js');
+const { BannerPlane, BANNER, planeModel } = await import('../public/game/plane.js');
 const { Jets } = await import('../public/game/jets.js');
 const { Airliner } = await import('../public/game/airliners.js');
 const { TYPES, LIVERIES, airframe } = await import('../public/game/airliner-model.js');
@@ -45,6 +45,29 @@ test('the plane is about 7 m long and 10.7 m across, her nose forward, and sound
   assert.ok(b.size.z > 6.7 && b.size.z < 7.4, `her length is ${b.size.z}`);
   assert.ok(b.min.z < -3.4 && b.max.z < 3.6, 'the spinner leads');
   assert.ok(g.attributes.color, 'she is painted');
+});
+
+test('her moulded parts come in from plane.glb: a Super Cub\'s size, painted, the glass and metal and tyres shaded apart', async () => {
+  const m = await planeModel;
+  assert.ok(m, 'plane.glb came in');
+  const p = new BannerPlane();
+  await tick();
+  const g = p.body.geometry, b = boundsOf(g);
+  assert.equal(g, m.body);
+  assertSoundGeometry(g, 'the moulded plane');
+  close(b.size.x, 10.7, 0.01, 'her span');
+  assert.ok(b.size.z > 6.8 && b.size.z < 7.0, `her length is ${b.size.z}`);
+  assert.ok(b.min.z < -3.55 && b.max.z < 3.4, 'the spinner leads');
+  assert.ok(b.min.y < -1.35 && b.max.y > 1.4, `her wheels and fin: ${b.min.y}..${b.max.y}`);
+  assert.ok(g.attributes.color, 'she is painted');
+  assert.equal(g.groups.length, 4, 'paint, glass, metal, tyres');
+  assert.ok(g.groups.every((r) => r.count > 0));
+  assert.equal(p.body.material.length, 4);
+  // the propeller turns about her thrust line: its hub at the origin, its blades 0.95 m long
+  const pb = boundsOf(p.prop.geometry);
+  assertSoundGeometry(p.prop.geometry, 'the propeller');
+  close(pb.max.x, 0.95, 0.01, 'the blade'); close(pb.min.x, -0.95, 0.01, 'the other blade');
+  assert.ok(Math.abs(pb.min.z) < 0.15 && Math.abs(pb.max.z) < 0.15, 'at the hub');
 });
 
 test('she is hidden until a pass begins', () => {
@@ -145,7 +168,7 @@ test('the tow rope runs from her tail down and aft to the banner\'s pole', () =>
   const { p, cam } = flying();
   for (let i = 0; i < 300; i++) p.update(0.05, cam);
   const R = p.rope.geometry.attributes.position, v = (i) => new THREE.Vector3().fromBufferAttribute(R, i), hook = v(0), end = v(p.ropeN);
-  close(hook.distanceTo(new THREE.Vector3(0, -0.05, 3.4).applyMatrix4(p.craft.matrixWorld)), 0, 1e-3, 'it starts at the hook');
+  close(hook.distanceTo(new THREE.Vector3(0, 0, 3.3).applyMatrix4(p.craft.matrixWorld)), 0, 1e-3, 'it starts at the hook');
   assert.ok(end.y < hook.y - ROPE * Math.sin(DROP) + 1e-3 + 0.01);
   close(hook.distanceTo(end), ROPE, 1, 'its length');
   assert.ok(((end.x - hook.x) * p.f.x + (end.z - hook.z) * p.f.z) < -40, 'it trails aft');
