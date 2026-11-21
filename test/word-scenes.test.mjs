@@ -15,6 +15,7 @@ const real = pathToFileURL(join(ROOT, 'public/vendor/three@0.160.0/build/three.m
 mock('three', `export * from '${real}'; export class WebGLRenderer { constructor(o) { return globalThis.__renderer(o); } }`);
 globalThis.__renderer = () => fakeRenderer({ width: 1280, height: 720 });
 installPage();
+const THREE = await import(real);
 const { World } = await import('../public/game/world.js');
 const { Race, D2R, wrap } = await import('../public/game/sim.js');
 const { CLS } = await import('../public/game/classes.js');
@@ -213,4 +214,28 @@ test('every tag, in every language, fits its label whole: none is cut off at the
     assert.ok(t.x - half >= 0 && t.x + half <= W, `${k} "${name}" runs off its ${W} px label`);
     assert.match(t.font, /\b30px\b/, `${k} "${name}" is set at full size`);
   }
+});
+
+test('where the open water is a narrow strip, every tag stays inside it, its pill slid in over the boat near an edge', () => {
+  const r = { x: 680, y: 0, w: 600, h: 720 }; // the panel at the side of a screen held upright (/dictionary at 864 x 1080, as 4:5)
+  const cam = world.camera, p = new THREE.Vector3(), s = new THREE.Vector3();
+  for (const lang of ['ru', 'fr', 'en']) {
+    stage = createStage({ world, race, lang }); stage.view(r);
+    for (const id of ['mark-room', 'port', 'ocs', 'general-recall', 'windward']) {
+      assert.equal(stage.show(id), true, id);
+      let seen = 0, slid = 0;
+      sail(6, () => world.boatViews.forEach((v) => {
+        const tag = v.tag; if (!tag?.visible || !v.root.visible) return;
+        tag.getWorldPosition(p); tag.getWorldScale(s); p.project(cam);
+        const spr = s.x * cam.projectionMatrix.elements[0] / 2 * 1280, pill = spr * tag.userData.w / tag.material.map.image.width;
+        const mid = (p.x + 1) / 2 * 1280 - (tag.center.x - 0.5) * spr;
+        assert.ok(mid - pill / 2 >= r.x + 7 && mid + pill / 2 <= r.x + r.w + -7, `${lang} ${id}: the tag "${tag.userData.text}" inside the open water`);
+        seen++; if (Math.abs(tag.center.x - 0.5) > 0.01) slid++;
+      }));
+      assert.ok(seen > 0, `${lang} ${id}: its tags are shown`);
+      if (lang === 'ru' && id === 'mark-room') assert.ok(slid > 0, 'near the edge a tag is slid in');
+    }
+    stage.close(); stage = null;
+  }
+  world.frame(0, race.t, 1 / 30);
 });

@@ -1511,6 +1511,7 @@ export function labelSprite(color) {
     const tw = x.measureText(text).width, px = Math.max(16, Math.min(30, Math.floor(30 * (W - 44) / Math.max(1, tw))));
     if (px < 30) x.font = `700 ${px}px Carlito, Lato, system-ui, sans-serif`;
     const w = Math.min(W - 4, tw * px / 30 + 34);
+    s.userData.w = w; // the pill's width on the canvas, for a scene that keeps it in view (word-scenes.js keepIn)
     x.fillStyle = warn ? 'rgba(190,30,20,0.8)' : 'rgba(0,0,0,0.45)'; x.beginPath(); x.roundRect((W - w) / 2, 12, w, 40, 20); x.fill();
     x.fillStyle = '#' + new THREE.Color(color).getHexString(); x.beginPath(); x.arc((W - w) / 2 + 18, 32, 7, 0, 7); x.fill();
     x.fillStyle = '#fff'; x.fillText(text, W / 2 + 8, 33);
