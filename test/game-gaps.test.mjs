@@ -802,7 +802,7 @@ test('a name typed after leaving is told to nobody', async () => {
 
 // ---------- the stamping script, as the build runs it ----------
 const SCRIPT = fileURLToPath(new URL('../scripts/stamp-game.mjs', import.meta.url));
-const PAGES = ['/play/index.html', '/boat-view/index.html', '/hero-view/index.html', '/fleet-view/index.html', '/venue-view/index.html', '/venues-view/index.html'];
+const PAGES = ['/play/index.html', '/boat-view/index.html', '/hero-view/index.html', '/fleet-view/index.html', '/venue-view/index.html', '/venues-view/index.html', '/word-view/index.html'];
 const HTML = '<script type="importmap">{"imports":{"three":"/vendor/three.js"}}</script><link rel="modulepreload" href="/game/a.js"><script type="module" src="/game/a.js"></script>';
 const SOURCE = 'export const a = 1;\n', HASH = createHash('sha256').update(SOURCE).digest('hex').slice(0, 10);
 const dirs = [];

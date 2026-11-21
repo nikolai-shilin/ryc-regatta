@@ -36,6 +36,20 @@ export function seeLabel(href: string, t: T, lang: Lang): string {
   return t('More', 'Подробнее', 'Más', 'Mehr', 'Daha fazla', 'Plus', 'Altro', 'Mais');
 }
 
+// The sailing dictionary (/dictionary, a page for each word at /dictionary/<id>): the same words, each with its own
+// address, and the ones that can be seen sailed on the water in 3D (public/word-view, the race's own scenes:
+// public/game/word-scenes.js sceneIds for the JPK 1050, which npm test keeps this in step with). The rest are ideas
+// (apparent wind, VMG), a person (the umpire) or too small to make out at that distance (telltales).
+export const SCENES_3D: readonly string[] = [
+  'beat', 'close-hauled', 'reach', 'run', 'tack', 'gybe', 'luff', 'bear-away', 'in-irons', 'starboard', 'port', 'windward', 'overlap',
+  'clear-astern', 'proper-course', 'penalty', 'header', 'lift', 'layline', 'dirty-air', 'gust', 'start-line', 'favoured-end', 'ocs',
+  'general-recall', 'windward-mark', 'zone', 'mark-room', 'gate', 'gennaker', 'sheet', 'reef', 'no-go', 'pinching', 'footing',
+  'by-the-lee', 'crash-gybe', 'heel', 'keep-clear', 'veer-back', 'oscillating', 'persistent', 'current', 'committee-boat', 'pin',
+  'starting-signal', 'line-bias', 'leg', 'offset-mark', 'wing-mark', 'wide-in', 'finish-line', 'mainsail', 'jib', 'boom', 'code-zero', 'backing',
+];
+export const dictPath = (id?: string) => (id ? `/dictionary/${id}` : '/dictionary');
+export const dictName = (t: T) => t('Sailing dictionary', 'Словарь яхтсмена', 'Diccionario de vela', 'Segelwörterbuch', 'Yelken sözlüğü', 'Dictionnaire de la voile', 'Dizionario della vela', 'Dicionário de vela');
+
 export function glossary(t: T): Term[] {
   const terms: Term[] = [
     { id: 'beat', group: 'points-of-sail', term: t('Beat', 'Лавировка', 'Ceñida', 'Kreuz', 'Orsa', 'Bord de près', 'Bolina', 'Orça'), see: '/learn/shifts', def: t(

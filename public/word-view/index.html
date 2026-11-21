@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Sailing dictionary view</title>
+<!-- The sailing dictionary's pages' scene (app/[lang]/dictionary, components/word-scene.tsx embeds it): a word of
+     sailing sailed on the water, as the race's dictionary shows it behind its panel (game/word-scenes.js), on a race
+     of its own laid for it at the venue: a triangle for the wing mark, an upwind finish's course for the offset mark,
+     a stream for the current. ?w= the word, ?lang= the tags' language; the page that holds it can send another word
+     ({ type: 'word', id }), say how much of the scene from the top its words leave clear ({ type: 'view', h }: the
+     word framed there), and say it has scrolled out of sight ({ type: 'away', on }). It tells the page when it is
+     ready for them ({ type: 'ready' }) and when its first frame is up ({ type: 'live' }). -->
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+  canvas { display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 0.8s ease; }
+  canvas.live { opacity: 1; }
+</style>
+<script type="importmap">{ "imports": { "three": "/vendor/three@0.160.0/build/three.module.min.js", "three/addons/": "/vendor/three@0.160.0/examples/jsm/" } }</script>
+<!-- the land round the course (game/land.js, the venue's: venues.js landFiles): fetched at once, not after the modules
+     that ask for it -->
+<script>(function () { var v = 'gocek';
+  try { v = new URLSearchParams(location.search).get('venue') || v; } catch (e) {}
+  if (!/^[a-z-]+$/.test(v)) v = 'gocek';
+  var f = v === 'gocek' ? ['/game/skopea.bin', '/game/skopea.json'] : ['/game/venues/' + v + '.bin', '/game/venues/' + v + '.json'];
+  var map = {}; try { map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports; } catch (e) {}
+  f.forEach(function (h) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = map[h] || h; l.crossOrigin = 'anonymous'; document.head.appendChild(l); }); })();</script>
+<!-- every module the page will load, asked for at once rather than an import at a time, and the yacht with them
+     (game/yacht.js); npm test keeps the list in step with the imports -->
+<link rel="preload" as="fetch" href="/game/yacht.glb" crossorigin>
+<link rel="modulepreload" href="/game/world.js">
+<link rel="modulepreload" href="/game/compile.js">
+<link rel="modulepreload" href="/game/gfx.js">
+<link rel="modulepreload" href="/vendor/three@0.160.0/build/three.module.min.js">
+<link rel="modulepreload" href="/game/sim.js">
+<link rel="modulepreload" href="/game/land.js">
+<link rel="modulepreload" href="/game/venues.js">
+<link rel="modulepreload" href="/game/classes.js">
+<link rel="modulepreload" href="/game/yacht.js">
+<link rel="modulepreload" href="/vendor/three@0.160.0/examples/jsm/loaders/GLTFLoader.js">
+<link rel="modulepreload" href="/vendor/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js">
+<link rel="modulepreload" href="/game/skin.js">
+<link rel="modulepreload" href="/game/sailor-hi.js">
+<link rel="modulepreload" href="/game/sponsor.js">
+<link rel="modulepreload" href="/game/boats3d.js">
+<link rel="modulepreload" href="/game/committee.js">
+<link rel="modulepreload" href="/game/lagoon.js">
+<link rel="modulepreload" href="/game/marks.js">
+<link rel="modulepreload" href="/game/jury.js">
+<link rel="modulepreload" href="/game/wildlife.js">
+<link rel="modulepreload" href="/game/plane.js">
+<link rel="modulepreload" href="/game/airliners.js">
+<link rel="modulepreload" href="/game/airliner-model.js">
+<link rel="modulepreload" href="/game/airports.js">
+<link rel="modulepreload" href="/game/jets.js">
+<link rel="modulepreload" href="/game/light.js">
+<link rel="modulepreload" href="/game/ships.js">
+<link rel="modulepreload" href="/game/post.js">
+<link rel="modulepreload" href="/game/ocean.js">
+<link rel="modulepreload" href="/game/skopea.js">
+<link rel="modulepreload" href="/game/word-scenes.js">
+</head>
+<body>
+<canvas id="c" aria-hidden="true"></canvas>
+<script type="module">
+import { makeWorld } from '/game/world.js';
+import { followSettings } from '/game/gfx.js';
+import { Race } from '/game/sim.js';
+import { createStage, sceneIds } from '/game/word-scenes.js';
+
+const canvas = document.getElementById('c');
+const q = new URLSearchParams(location.search);
+const LANGS = ['en', 'ru', 'es', 'de', 'tr', 'fr', 'it', 'pt'];
+const lang = LANGS.includes(q.get('lang')) ? q.get('lang') : 'en';
+const ids = sceneIds();
+const pick = (w) => (ids.includes(w) ? w : 'beat');
+// the race a word is shown on: the same seed and breeze for every word, the course and the stream it needs
+const raceFor = (w) => ({ course: w === 'wing-mark' ? 'tri' : w === 'offset-mark' ? 'wlu' : 'wl', current: w === 'current' });
+const same = (a, b) => a.course === b.course && a.current === b.current;
+const tell = (msg) => { try { parent.postMessage(msg, location.origin); } catch (e) {} };
+
+async function start() {
+  let world;
+  try { world = await makeWorld(canvas); } catch (e) { return; } // no WebGL: the page's words stay as they are
+  world.showGuides = false;
+  const skipFrame = followSettings(world); // Audio & graphics: the level chosen, and the battery saver
+  let race = null, laid = null, stage = null, word = pick(q.get('w')), ready = false, on = true, last = performance.now(), live = false, clear = 1;
+  const view = () => stage?.view({ x: 0, y: 0, w: innerWidth, h: Math.max(1, innerHeight * clear) });
+
+  async function show(w) {
+    word = pick(w);
+    const want = raceFor(word);
+    if (!race || !same(laid, want)) {
+      ready = false;
+      if (stage) { stage.close(); stage = null; }
+      laid = want;
+      race = new Race({ preset: 'medium', fleet: 4, laps: 1, length: 'short', start: 1, seed: 4242, ...want });
+      race.settings = { daily: null, daytime: 'afternoon' }; // world.setRace lights her by it (light.js pickSky)
+      world.setRace(race);
+      await world.ready();
+      stage = createStage({ world, race, lang });
+      view();
+    }
+    if (!stage.show(word) && word !== 'beat') stage.show('beat'); // (a word this race can't show: the beat)
+    ready = true; last = performance.now();
+  }
+
+  addEventListener('message', (e) => {
+    if (e.origin !== location.origin) return;
+    if (e.data?.type === 'word' && typeof e.data.id === 'string') show(e.data.id);
+    if (e.data?.type === 'away') { on = !e.data.on; last = performance.now(); }
+    if (e.data?.type === 'view' && e.data.h > 0) { clear = Math.min(1, e.data.h); view(); }
+  });
+  document.addEventListener('visibilitychange', () => { last = performance.now(); });
+  const size = () => { world.resize(innerWidth, innerHeight); view(); };
+  size(); addEventListener('resize', size);
+  tell({ type: 'ready' });
+  await show(word);
+
+  function loop(now) {
+    requestAnimationFrame(loop);
+    if (skipFrame(now)) return;
+    if (!on || document.hidden || !ready) return;
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    race.idle(dt); stage.frame(dt);
+    world.frame(dt, race.t, dt);
+    if (!live) { live = true; canvas.classList.add('live'); tell({ type: 'live' }); }
+  }
+  requestAnimationFrame(loop);
+}
+
+start();
+</script>
+</body>
+</html>

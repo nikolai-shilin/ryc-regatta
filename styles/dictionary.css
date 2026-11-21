@@ -1,0 +1,33 @@
+/* ==========================================================================
+   The sailing dictionary (app/[lang]/dictionary): laid out as the glossary is (reading.css, broadcast.css), its
+   picture the word sailed on the water in 3D (components/word-scene.tsx), and each word a link to its own page.
+   ========================================================================== */
+
+/* the scene in the picture's place: the sea's colours until its first frame is up, faded in over them */
+.bc .wd-scene { overflow: hidden; background: linear-gradient(180deg, #2a5f86 0%, #123f5e 55%, #0a2a40 100%); }
+.bc .wd-scene iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; opacity: 0; transition: opacity .8s var(--ease); }
+.bc .wd-scene.live iframe { opacity: 1; }
+/* the word shown, on the dictionary's own page, as it goes from word to word */
+.bc .wd-now { position: absolute; top: var(--s-4); right: var(--s-4); z-index: 2; display: inline-flex; align-items: center; gap: var(--s-2); max-width: calc(100% - 2 * var(--s-4));
+  padding: var(--s-2) var(--s-3); background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border-left: 3px solid var(--gold);
+  font: 700 var(--fs-small)/1.2 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; color: var(--ink); text-decoration: none; }
+.bc .wd-now span { font-weight: 600; font-size: var(--fs-label); letter-spacing: var(--ls-label); color: var(--ink-3); }
+.bc .wd-now:hover { background: var(--panel-2); }
+
+/* a word in the list: its name a link to its page, the 3D mark on the ones sailed on the water */
+.bc .dc-term { color: inherit; text-decoration: none; }
+.bc .dc-term:hover { text-decoration: underline; text-underline-offset: 3px; }
+.bc .dc-3d { display: inline-block; margin-left: var(--s-2); padding: 2px 5px; vertical-align: 3px; background: var(--fill-2); font: 700 10px/1 var(--cond); letter-spacing: var(--ls-label); color: var(--ink-3); }
+
+/* a word's page: its group's other words, and the way to the word before and after it */
+.bc .dc-near { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--s-2); margin: var(--s-4) 0 0; padding: 0; list-style: none; }
+.bc .dc-near a { display: flex; flex-direction: column; gap: var(--s-1); height: 100%; padding: var(--s-3) var(--s-4); background: var(--fill-1); color: var(--ink); text-decoration: none; transition: background-color var(--t-quick); }
+.bc .dc-near a:hover { background: var(--fill-2); }
+.bc .dc-near b { font: 700 var(--fs-row)/1.1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; }
+.bc .dc-near span { font: 500 var(--fs-small)/1.45 var(--sans); color: var(--ink-2); }
+.bc .dc-steps { display: flex; justify-content: space-between; gap: var(--s-3); margin: var(--s-8) 0 0; }
+.bc .dc-steps a { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; color: var(--ink); text-decoration: none; }
+.bc .dc-steps a:last-child { text-align: right; margin-left: auto; }
+.bc .dc-steps span { font: 600 var(--fs-label)/1 var(--cond); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); }
+.bc .dc-steps b { font: 700 var(--fs-row)/1.1 var(--cond); letter-spacing: var(--ls-name); text-transform: uppercase; }
+.bc .dc-steps a:hover b { text-decoration: underline; text-underline-offset: 3px; }

@@ -169,7 +169,7 @@ for (const lang of LANGS) {
     const h = await html(glossaryPage, lang);
     for (const x of terms) {
       assert.ok(h.includes(`id="${x.id}"`), x.id);
-      assert.ok(h.includes(`<dt>${esc(x.term)}</dt>`), x.term);
+      assert.ok(h.includes(`<dt><a href="/dictionary/${x.id}" class="dc-term">${esc(x.term)}</a></dt>`), `${x.term}: a link to its page in the dictionary`);
       assert.ok(h.includes(`<dd>${esc(x.def)}</dd>`), `${x.id}: its definition`);
     }
     const ids = idsOf(h);

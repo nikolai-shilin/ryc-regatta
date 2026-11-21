@@ -24,6 +24,8 @@ const { GUIDES, GUIDE_DATES } = await import('../lib/guides.ts');
 const { VENUES } = await import('../lib/venues.ts');
 const { YACHT_IDS } = await import('../lib/yachts.ts');
 const { PAGES_DATE } = await import('../lib/venue-guides.ts');
+const { glossary } = await import('../lib/glossary.ts');
+const { tx } = await import('../lib/lang.ts');
 const sitemap = (await import('../app/sitemap.ts')).default;
 const robots = (await import('../app/robots.ts')).default;
 const manifest = (await import('../app/manifest.ts')).default;
@@ -36,7 +38,8 @@ const langOf = (u) => (/\?lang=(ru|es|de|tr|fr|it|pt)$/.exec(u) || [, 'en'])[1];
 const paths = (lang) => urls.filter((u) => langOf(u) === lang).map((u) => u.slice(SITE.length).replace(/\?lang=(ru|es|de|tr|fr|it|pt)$/, ''));
 
 const PUBLIC = ['/', '/race', '/race/rating', '/race/drills', '/race/free', '/help', '/faq', '/boat', '/yachts', '/venues', '/players', '/iyt', '/social', '/sponsorship', '/learn', '/learn/glossary', '/rulebook',
-  ...GUIDES.map((g) => `/learn/${g}`), ...VENUES.map((v) => `/venues/${v.id}`), ...YACHT_IDS.map((y) => `/yachts/${y}`)];
+  ...GUIDES.map((g) => `/learn/${g}`), ...VENUES.map((v) => `/venues/${v.id}`), ...YACHT_IDS.map((y) => `/yachts/${y}`),
+  '/dictionary', ...glossary(tx('en')).map((x) => `/dictionary/${x.id}`)];
 
 // ---------- the sitemap ----------
 test('the sitemap lists every public page in English', () => assert.deepEqual([...paths('en')].sort(), [...PUBLIC].sort()));
@@ -167,6 +170,7 @@ const instances = (route) => {
   if (route === '/learn/[slug]') return GUIDES.map((slug) => [`/learn/${slug}`, { slug }]);
   if (route === '/venues/[id]') return VENUES.map((v) => [`/venues/${v.id}`, { id: v.id }]);
   if (route === '/yachts/[id]') return YACHT_IDS.map((id) => [`/yachts/${id}`, { id }]);
+  if (route === '/dictionary/[term]') return glossary(tx('en')).map((x) => [`/dictionary/${x.id}`, { term: x.id }]);
   if (route === '/match/[code]') return [['/match/K7M2QZ', { code: 'K7M2QZ' }]];
   if (route === '/race/rating/[day]') return [['/race/rating/2026-11-17', { day: '2026-11-17' }]];
   if (route === '/race/result/[id]') return [[`/race/result/${RACE}`, { id: RACE }]];
@@ -190,7 +194,7 @@ user = null;
 const indexed = sweep.filter((p) => p.meta.robots?.index !== false);
 
 test('every page was opened, in both languages', () => {
-  assert.equal(new Set(sweep.map((p) => p.route)).size, 37);
+  assert.equal(new Set(sweep.map((p) => p.route)).size, 39);
   assert.equal(sweep.length % 2, 0);
 });
 

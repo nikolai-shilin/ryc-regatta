@@ -21,7 +21,7 @@ export function GET() {
     return [`## ${g.title}`, '', `${SITE}/learn/${slug} · by ${by} · updated ${GUIDE_DATES[slug].modified}`, '', g.intro, '',
       ...g.sections.map((s) => [`### ${s.h}`, '', ...s.p, ...(s.tip ? [`Tip: ${s.tip}`] : [])].join('\n\n')), ''].join('\n');
   }).join('\n');
-  const glossary = glossaryGroups(t).map((g) => [`### ${g.title}`, '', ...g.terms.map((x) => `- **${x.term}**: ${x.def}`)].join('\n')).join('\n\n');
+  const glossary = glossaryGroups(t).map((g) => [`### ${g.title}`, '', ...g.terms.map((x) => `- **${x.term}** (${SITE}/dictionary/${x.id}): ${x.def}`)].join('\n')).join('\n\n');
   const rules = rulebook(t).map((p) => [`## ${p.title}`, '', p.intro, '', ...p.sections.flatMap((s) => [
     ...(s.title ? [`### ${s.title}`, '', ...(s.intro ? [s.intro, ''] : [])] : []),
     ...s.entries.map((x) => `- **${x.no ? `${x.no} ` : ''}${x.title}**: ${x.text}`), '',

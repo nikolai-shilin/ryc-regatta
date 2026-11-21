@@ -20,6 +20,7 @@ const { Race, D2R, wrap } = await import('../public/game/sim.js');
 const { CLS } = await import('../public/game/classes.js');
 const { createStage, sceneIds, TAGS } = await import('../public/game/word-scenes.js');
 const words = (await import('../public/game/words.json', { with: { type: 'json' } })).default;
+const { SCENES_3D } = await import('../lib/glossary.ts');
 
 seedRandom(99);
 const race = new Race({ preset: 'medium', seed: 7, fleet: 4, start: 1, autoTrim: true });
@@ -43,6 +44,8 @@ test('every word of the glossary is a scene, but the two this class has no sail 
   const dinghy = sceneIds({ kite: false, reef: false, zero: false, jib: false });
   for (const id of ['gennaker', 'reef', 'code-zero', 'jib']) assert.ok(!dinghy.includes(id), `a Laser has no ${id}`);
   for (const [k, v] of Object.entries(TAGS)) assert.equal(v.length, 8, `the tag ${k} in every language`);
+  // the site's pages know which words to show in 3D (lib/glossary.ts SCENES_3D, /dictionary)
+  assert.deepEqual([...SCENES_3D].sort(), [...ids].sort());
 });
 
 test('a word shown puts the race away, its boats on the water instead; closed, the race is back as it was', () => {

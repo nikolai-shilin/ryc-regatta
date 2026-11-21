@@ -3,13 +3,14 @@ import Image from 'next/image';
 import { getT, titled, type LangParams } from '@/lib/i18n';
 import { ruPlural } from '@/lib/lang';
 import { jsonLd, langUrl, SITE, AUTHOR } from '@/lib/seo';
-import { glossaryGroups, seeLabel } from '@/lib/glossary';
+import { glossaryGroups, seeLabel, dictPath } from '@/lib/glossary';
 import { GUIDES, guide } from '@/lib/guides';
 import { IconArrow } from '@/components/ui';
 import { SiteHead, SiteFoot, Trail, type Crumb } from '@/components/site-chrome';
 import { Toc } from '@/components/toc';
 import { READING_VIEWPORT } from '@/lib/no-zoom';
 import '@/styles/reading.css';
+import '@/styles/dictionary.css';
 
 // text to read: it zooms (lib/no-zoom.ts)
 export const viewport = READING_VIEWPORT;
@@ -84,7 +85,7 @@ export default async function Glossary({ params }: LangParams) {
                 <dl className="rb-rules">
                   {g.terms.map((x) => (
                     <div key={x.id} id={x.id} className="rb-rule">
-                      <dt>{x.term}</dt>
+                      <dt><Link className="dc-term" href={dictPath(x.id)}>{x.term}</Link></dt>
                       <dd>{x.def}</dd>
                       {x.see && <dd className="gd-see-d"><Link className="gd-see" href={x.see}>{seeLabel(x.see, t, lang)}<IconArrow s={12} /></Link></dd>}
                     </div>

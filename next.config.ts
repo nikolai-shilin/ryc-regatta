@@ -35,6 +35,7 @@ const config: NextConfig = {
       { source: '/fleet-view', destination: '/fleet-view/index.html' }, // the fleet page's scene: every yacht afloat together
       { source: '/venue-view', destination: '/venue-view/index.html' }, // a venue page's scene: the drone over a race on its course
       { source: '/venues-view', destination: '/venues-view/index.html' }, // the list of venues' scene: the drone off your boat and round the water
+      { source: '/word-view', destination: '/word-view/index.html' }, // the sailing dictionary's scene: a word sailed on the water
     ];
   },
   async headers() {
@@ -45,6 +46,7 @@ const config: NextConfig = {
       { source: '/fleet-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/venue-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/venues-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
+      { source: '/word-view', headers: [{ key: 'x-robots-tag', value: 'noindex' }] },
       { source: '/game/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=0, must-revalidate' }] },
       { source: '/ui/:path*', headers: [{ key: 'cache-control', value: 'public, max-age=0, must-revalidate' }] }, // the design system's, as the game's
       // The game's files, /play's stylesheets and the logo on its cards at their hashed address (scripts/stamp-game.mjs,

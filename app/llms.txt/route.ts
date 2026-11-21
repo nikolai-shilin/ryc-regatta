@@ -46,6 +46,7 @@ ${NAME} is a free 3D sailing race game by RYC that runs in any modern web browse
   - [Sailing downwind](${SITE}/learn/downwind): the gennaker, sailing angles, gybing on the lifts, crash gybes and death rolls, surfing waves
   - [Sail trim and boat speed](${SITE}/learn/trim): the sheets, steering, footing for speed, heel, reefing in a blow
   - [Sailing racing glossary](${SITE}/learn/glossary): beat, overlap, clear astern, header, lift, layline, zone, mark-room, OCS and more
+- [Sailing dictionary](${SITE}/dictionary): the words of sailboat racing, each with a page of its own at ${SITE}/dictionary/<word> (for example ${SITE}/dictionary/layline), its definition, and most of them sailed on the water in 3D
 - [The racing rules, rule by rule](${SITE}/rulebook): every rule of the Racing Rules of Sailing 2025–2028 in plain words, with the definitions, appendices and race signals
 - [Sailing certification exam practice](${SITE}/iyt): RYC's free practice app for sailing certification theory exams
 - [The venues](${SITE}/venues): the 66 regatta venues, each with the water, the wind, its regattas and how to race it
